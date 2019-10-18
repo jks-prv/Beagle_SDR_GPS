@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <setjmp.h>
 #include <sched.h>
+#include <errno.h>
 #include <sys/time.h>
 
 #include "types.h"
@@ -122,8 +123,11 @@ void kiwi_usleep(u4_t usec)
     memset(&tv, 0, sizeof(tv));
     tv.tv_sec = usec / 1000000;
     tv.tv_nsec = (usec % 1000000) * 1000;
+
     if (tv.tv_nsec < 0 || tv.tv_nsec > 999999999) {
         real_printf("kiwi_usleep tv_nsec=%d\n", tv.tv_nsec);
     }
-    scall("nanosleep", nanosleep(&tv, NULL));
+
+    if (nanosleep(&tv, NULL) < 0 && errno != EINTR)
+        sys_panic("nanosleep");
 }

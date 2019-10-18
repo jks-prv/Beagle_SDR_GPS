@@ -1575,7 +1575,7 @@ void _lock_init(lock_t *lock, const char *name)
     #endif
 }
 
-#define	N_LOCK_LIST		128
+#define	N_LOCK_LIST		256
 static int n_lock_list;
 static lock_t *locks[N_LOCK_LIST];
 
@@ -1612,7 +1612,8 @@ void lock_dump()
             l->timer_since_no_owner? (now - l->timer_since_no_owner) : 0, l->name, l->enter_name);
         if (n_users) {
             if (owner)
-                lprintf(" held by: %s", task_ls(owner));
+                lprintf(" held by: %s%s", task_ls(owner),
+                    l->timer_since_no_owner? "BUT TIME_NO_OWNER!!!":"");
             else
                 lprintf(" held by: no task");
         }
@@ -1649,9 +1650,15 @@ bool lock_check()
 		if (l->timer_since_no_owner == 0) continue;
 		u4_t time_since_no_owner = timer_sec() - l->timer_since_no_owner;
 		if (time_since_no_owner <= LOCK_HUNG_TIME) continue;
-		int n_waiters = l->enter - l->leave;
-        lprintf("lock_check: HUNG LOCK? \"%s\" (%d waiters) has had no owner for > %d seconds\n",
-            l->name, n_waiters, LOCK_HUNG_TIME);
+		if (l->owner != NULL) {
+            int n_waiters = l->enter - l->leave -1;
+            lprintf("lock_check: BAD OWNER TIME? \"%s\" (%d waiters) owner time > %d seconds, but HAS an owner %s\n",
+                l->name, n_waiters, LOCK_HUNG_TIME, task_s((TASK *) l->owner));
+		} else {
+            int n_waiters = l->enter - l->leave;
+            lprintf("lock_check: HUNG LOCK? \"%s\" (%d waiters) has had no owner for > %d seconds\n",
+                l->name, n_waiters, LOCK_HUNG_TIME);
+        }
         lock_panic = true;
 	}
 	return lock_panic;
@@ -1671,6 +1678,7 @@ bool lock_check()
 	#define evLock2(c, e, p, s, s2)
 #endif
 
+// don't disable: spi_pump() will deadlock without LOCK_PRIORITY_SWAP
 #define LOCK_PRIORITY_INVERSION
 #define LOCK_PRIORITY_SWAP
 
@@ -1819,6 +1827,7 @@ void lock_enter(lock_t *lock)
     assert(token == lock->leave);	// check that we really own lock
     
     lock->owner = ct;
+    lock->timer_since_no_owner = 0;
 	ct->lock.wait = NULL;
     ct->lock.hold = lock;
 
@@ -1871,7 +1880,7 @@ void lock_leave(lock_t *lock)
     TASK *tp = head;
     while (tp != NULL) {
         
-        // remove us from lock users list
+        // remove ourselves from lock users list
         if (tp == ct) {
             TASK *next = tp->lock.next;
             TASK *prev = tp->lock.prev;
@@ -1932,16 +1941,28 @@ void lock_leave(lock_t *lock)
         lock->name, task_ls(ct), ct->pending_sleep? "pending_sleep" : (wake_higher_priority? "HIGHER_PRIORITY" : "normal_exit"), n_waiters));
 
     if (lock->enter == lock->leave) {
+        // no waiters on lock
+        
         assert(lock->users == NULL);
+        assert(n_waiters == 0);
         lock->enter = lock->leave = 0;      // reset so they don't potentially wrap
         lock->timer_since_no_owner = 0;
+
+        #if defined(LOCK_CHECK_HANG) && defined(EV_MEAS_LOCK)
+            if (lock == &spi_lock && !LINUX_CHILD_PROCESS()) {
+                expecting_spi_lock_next_task = 0;
+                evLock2(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("$$$$ in lock_leave set expecting_spi_lock_next_task=0, %s %d waiters", task_s(ct), n_waiters));
+            }
+        #endif
     } else {
+        // waiters on lock
+
         lock->timer_since_no_owner = timer_sec();
 
         #if defined(LOCK_CHECK_HANG) && defined(EV_MEAS_LOCK)
             if (lock == &spi_lock && !LINUX_CHILD_PROCESS()) {
                 expecting_spi_lock_next_task = 50;
-                evLock2(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("set expecting_spi_lock_next_task=50, %s %d waiters", task_s(ct), n_waiters));
+                evLock2(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("$$$ set expecting_spi_lock_next_task=50, %s %d waiters", task_s(ct), n_waiters));
             }
         #endif
 

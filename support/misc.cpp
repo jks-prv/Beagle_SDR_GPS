@@ -668,7 +668,7 @@ void grid_to_latLon(char *grid, latLon_t *loc)
 
 	loc->lat = lat;
 	loc->lon = lon;
-	//wprintf("GRID %s%s = (%f, %f)\n", grid, (slen != 6)? "[ll]":"", lat, lon);
+	//printf("GRID %s%s = (%f, %f)\n", grid, (slen != 6)? "[ll]":"", lat, lon);
 }
 
 int latLon_to_grid6(latLon_t *loc, char *grid6)

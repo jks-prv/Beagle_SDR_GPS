@@ -579,8 +579,8 @@ void SolveTask(void *param) {
 
         // this needs to replaced, see (*)
         gps.good = good;
-        bool enable = SearchTaskRun();
-        if (!enable || good == 0) continue;
+        SearchTaskRun();
+        if (good == 0) continue;
 
         const bool plot_E1B   = admcfg_bool("plot_E1B", NULL, CFG_REQUIRED);
         const bool use_kalman = admcfg_default_bool("use_kalman_position_solver", true, NULL);

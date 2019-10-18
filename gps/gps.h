@@ -141,7 +141,7 @@ extern u1_t E1B_code1[NUM_E1B_SATS][E1B_CODELEN];
 void SearchInit();
 void SearchFree();
 void SearchTask(void *param);
-bool SearchTaskRun();
+void SearchTaskRun();
 void SearchEnable(int sat);
 void SearchParams(int argc, char *argv[]);
 

@@ -223,5 +223,5 @@ static void led_reporter(void *param)
 
 void led_task(void *param)
 {
-    child_task("kiwi.led", led_reporter);
+    child_task("kiwi.leds", led_reporter);
 }

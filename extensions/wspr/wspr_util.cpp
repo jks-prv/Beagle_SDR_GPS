@@ -242,16 +242,16 @@ static void hash_update(char *call)
 
 	for (i=0; i < htsize; i++) {
 		if (ht[i].call[0] == '\0') {
-			//wprintf("W-HASH %d 0x%04x upd new %s\n", i, hash, call);
+			//wspr_gprintf("W-HASH %d 0x%04x upd new %s\n", i, hash, call);
 			ht[i].hash = hash;
 			strcpy(ht[i].call, call);
 			break;
 		}
 		if (ht[i].hash == hash) {
 			if (strcmp(ht[i].call, call) == 0) {
-				//wprintf("W-HASH %d 0x%04x upd hit %s\n", i, hash, call);
+				//wspr_gprintf("W-HASH %d 0x%04x upd hit %s\n", i, hash, call);
 			} else {
-				//wprintf("W-HASH %d 0x%04x upd COLLISION %s %s\n", i, hash, ht[i].call, call);
+				//wspr_gprintf("W-HASH %d 0x%04x upd COLLISION %s %s\n", i, hash, ht[i].call, call);
 				strcpy(ht[i].call, call);
 			}
 			break;
@@ -259,11 +259,11 @@ static void hash_update(char *call)
 	}
 	
 	if (i == htsize) {
-		//wprintf("W-HASH expand %d -> %d\n", htsize, htsize*2);
+		//wspr_gprintf("W-HASH expand %d -> %d\n", htsize, htsize*2);
 		htsize *= 2;
 		SAN_ASSERT(htsize > 0, ht = (hashtab_t *) realloc(ht, sizeof(hashtab_t) * htsize));
 		memset(ht + htsize/2, 0, sizeof(hashtab_t) * htsize/2);
-		//wprintf("W-HASH %d 0x%04x exp new %s\n", htsize/2, hash, call);
+		//wspr_gprintf("W-HASH %d 0x%04x exp new %s\n", htsize/2, hash, call);
 		ht[htsize/2].hash = hash;
 		strcpy(ht[htsize/2].call, call);
 	}
@@ -277,12 +277,12 @@ static char *hash_lookup(int hash)
 		if (ht[i].call[0] == '\0')
 			break;
 		if (ht[i].hash == hash) {
-			//wprintf("W-HASH %d 0x%04x lookup %s\n", i, hash, ht[i].call);
+			//wspr_gprintf("W-HASH %d 0x%04x lookup %s\n", i, hash, ht[i].call);
 			return ht[i].call;
 		}
 	}
 	
-	//wprintf("W-HASH 0x%04x lookup FAIL\n", hash);
+	//wspr_gprintf("W-HASH 0x%04x lookup FAIL\n", hash);
 	return NULL;
 }
 
@@ -376,14 +376,14 @@ int unpk_(u1_t *decdata, char *call_loc_pow, char *callsign, char *grid, int *dB
 
 int snr_comp(const void *elem1, const void *elem2)
 {
-	const pk_t *e1 = (const pk_t*) elem1, *e2 = (const pk_t*) elem2;
+	const wspr_pk_t *e1 = (const wspr_pk_t*) elem1, *e2 = (const wspr_pk_t*) elem2;
 	int r = (e1->snr0 < e2->snr0)? 1 : ((e1->snr0 > e2->snr0)? -1:0);	// NB: comparison reversed to sort in descending order
 	return r;
 }
 
 int freq_comp(const void *elem1, const void *elem2)
 {
-	const pk_t *e1 = (const pk_t*) elem1, *e2 = (const pk_t*) elem2;
+	const wspr_pk_t *e1 = (const wspr_pk_t*) elem1, *e2 = (const wspr_pk_t*) elem2;
 	int r = (e1->freq0 < e2->freq0)? -1 : ((e1->freq0 > e2->freq0)? 1:0);
 	return r;
 }

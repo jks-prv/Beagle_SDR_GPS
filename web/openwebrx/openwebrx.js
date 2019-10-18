@@ -100,7 +100,7 @@ function kiwi_main()
 		+' 9_10='+ override_9_10 +' min='+ override_min_dB +' max='+ override_max_dB);
 
 	// process URL query string parameters
-	var num_win = 4;     // FIXME: should really be rx_chans, but that's not available yet 
+	var num_win = 16;     // FIXME: should really be rx_chans, but that's not available yet 
 	console.log('URL: '+ window.location.href);
 	
 	var qs_parse = function(s) {
@@ -2915,8 +2915,8 @@ function resize_canvases(zoom)
             w3_text('w3-large|color:cyan', 'Audio FFT<br>'),
             w3_text('w3-small|color:cyan',
                   'Zoom waterfall not available<br>' +
-                  'on channels 2-6 of Kiwis<br>' +
-                  'configured for 8 channels.<br>'
+                  'on channels '+ wf_chans +'-'+ (rx_chans-1) +' of Kiwis<br>' +
+                  'configured for '+ rx_chans +' channels.<br>'
             ),
             w3_text('w3-small|color:cyan',
                'For details see: '+

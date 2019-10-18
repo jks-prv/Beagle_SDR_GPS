@@ -234,11 +234,13 @@ extern u4_t spi_retry;
 
 void spi_init();
 void spi_stats();
+
 void _spi_set(SPI_CMD cmd, uint16_t wparam=0, uint32_t lparam=0);
-void _spi_get(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint32_t lparam=0);
 void spi_set3(SPI_CMD cmd, uint16_t wparam, uint32_t lparam, uint16_t w2param);
-void spi_get_pipelined(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint32_t lparam=0);
 void spi_set_noduplex(SPI_CMD cmd, uint16_t wparam=0, uint32_t lparam=0);
+void spi_set_buf_noduplex(SPI_CMD cmd, SPI_MOSI *tx, int bytes);
+
+void _spi_get(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint32_t lparam=0);
+void spi_get_pipelined(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint32_t lparam=0);
 void spi_get_noduplex(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint32_t lparam=0);
 void spi_get3_noduplex(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint16_t w2param=0, uint16_t w3param=0);
-void spi_set_buf_noduplex(SPI_CMD cmd, SPI_MOSI *tx, int bytes);

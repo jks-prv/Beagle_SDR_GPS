@@ -22,14 +22,16 @@ Boston, MA  02110-1301, USA.
 
 //
 // Implements constant value decimation (R) using sequential logic comb stage to save slices.
-// Version for a real signal.
+// Version for a real signal with un-pruned integrator stages.
 //
-// fixed differential delay (D) = 1
+// Fixed differential delay (D) = 1
 //
+
+`include "kiwi.vh"
 
 module cic_seq_real (
 	input wire clock,
-	input wire [MD-1:0] decimation,
+	input wire reset,
 	input wire in_strobe,
 	output reg out_strobe,
 	input wire signed [IN_WIDTH-1:0] in_data,
@@ -48,11 +50,7 @@ module cic_seq_real (
 // trade-off: less output width means more quantization noise, but of course this effects
 // input width of subsequent stages
 
-//------------------------------------------------------------------------------
-//                               control
-//------------------------------------------------------------------------------
-
-localparam MD = 13;		// max decim = 4096, assumes excess counter bits get optimized away
+localparam MD = 18;		// assumes excess counter bits get optimized away
 
 reg [MD-1:0] sample_no;
 initial sample_no = {MD{1'b0}};
@@ -75,9 +73,6 @@ always @(posedge clock)
   else
     integ_strobe <= 0;
 
-//------------------------------------------------------------------------------
-//                                stages
-//------------------------------------------------------------------------------
 wire signed [ACC_WIDTH-1:0] integrator_data [0:STAGES];
 
 assign integrator_data[0] = in_data;
@@ -182,6 +177,10 @@ endgenerate
 		end
 	end
 	
+	//------------------------------------------------------------------------------
+	//                    parallel combinatorial state machine
+	//------------------------------------------------------------------------------
+		
 	localparam X = 1'bx;
 	wire [NSTAGE-1:0] STAGE_X = {NSTAGE{1'bx}};
 	

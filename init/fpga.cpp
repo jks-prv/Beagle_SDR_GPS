@@ -128,14 +128,8 @@ void fpga_init() {
 		if (i == 1*M) panic("FPGA_INIT never went HIGH");
 	}
 
-    const char *config[] = { "KiwiSDR.rx4.wf4.bit", "KiwiSDR.rx8.wf2.bit", "KiwiSDR.rx3.wf3.bit" };
-	
 	// FPGA configuration bitstream
-	if (background_mode) {
-        fp = fopen(stprintf("/usr/local/bin/%s", config[fw_sel]) , "rb");
-    } else {
-        fp = fopen(config[fw_sel], "rb");
-    }
+    fp = fopen(stprintf("%sKiwiSDR.rx%d.wf%d.bit", background_mode? "/usr/local/bin/":"", rx_chans, wf_chans) , "rb");
 
     if (!fp) panic("fopen config");
 

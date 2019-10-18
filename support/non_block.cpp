@@ -149,16 +149,6 @@ int child_task(const char *pname, funcP_t func, int poll_msec, void *param)
     return status;
 }
 
-static void _non_blocking_cmd_system(void *param)
-{
-	char *cmd = (char *) param;
-
-    //printf("_non_blocking_cmd_system: %s\n", cmd);
-    int rv = system(cmd);
-    //printf("_non_blocking_cmd_system: rv=%d %d %d \n", rv, WIFEXITED(rv), WEXITSTATUS(rv));
-	exit(WEXITSTATUS(rv));
-}
-
 #define NON_BLOCKING_POLL_MSEC 50
 
 // child task that calls a function for the entire command input read
@@ -202,6 +192,9 @@ static void _non_blocking_cmd_forall(void *param)
 // Like non_blocking_cmd() below, but run in a child process because pclose() can block
 // for long periods of time under certain conditions.
 // Calls func when _all_ output from cmd is ready to be processed.
+//
+// CAUTION: func is called in context of child process. So is subject to copy-on-write unless
+// shared memory is used to communicated with main Kiwi process.
 int non_blocking_cmd_func_forall(const char *pname, const char *cmd, funcPR_t func, int param, int poll_msec)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) malloc(sizeof(nbcmd_args_t));
@@ -285,6 +278,9 @@ static void _non_blocking_cmd_foreach(void *param)
 // Like non_blocking_cmd() below, but run in a child process because pclose() can block
 // for long periods of time under certain conditions.
 // Calls func as _any_ output from cmd is ready to be processed.
+//
+// CAUTION: func is called in context of child process. So is subject to copy-on-write unless
+// shared memory is used to communicated with main Kiwi process.
 int non_blocking_cmd_func_foreach(const char *pname, const char *cmd, funcPR_t func, int param, int poll_msec)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) malloc(sizeof(nbcmd_args_t));
@@ -296,6 +292,16 @@ int non_blocking_cmd_func_foreach(const char *pname, const char *cmd, funcPR_t f
 	free(args);
     //printf("non_blocking_cmd_child %d\n", status);
 	return status;
+}
+
+static void _non_blocking_cmd_system(void *param)
+{
+	char *cmd = (char *) param;
+
+    //printf("_non_blocking_cmd_system: %s\n", cmd);
+    int rv = system(cmd);
+    //printf("_non_blocking_cmd_system: rv=%d %d %d \n", rv, WIFEXITED(rv), WEXITSTATUS(rv));
+	exit(WEXITSTATUS(rv));
 }
 
 // Like non_blocking_cmd() below, but run in a child process because pclose() can block

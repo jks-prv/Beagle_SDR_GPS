@@ -4,6 +4,10 @@
 //		input range validation
 //		NTP status?
 
+var admin = {
+   BBAI:    false
+};
+
 
 ////////////////////////////////
 // status
@@ -75,12 +79,20 @@ function mode_html()
             w3_div('w3-left',
                w3_div('w3-flex w3-halign-center w3-margin-B-5', '<img src="gfx/kiwi.73x73.jpg" width="73" height="73" />'),
                w3_div('w3-flex w3-halign-center w3-margin-B-5', '<img src="gfx/cowbelly.73x73.jpg" width="73" height="73" />'),
-               w3_div('w3-flex', '<img src="gfx/kiwi.derp.113x73.jpg" width="113" height="73" />')
+               w3_div('w3-flex', '<img src="gfx/kiwi.derp.113x73.jpg" width="113" height="73" />'),
+               admin.BBAI? 
+                  w3_div('w3-flex', '<img src="gfx/kiwi.derp.113x73.jpg" width="113" height="73" />')
+               :
+                  ''
             ),
             w3_sidenav('id-fw-nav|width:'+ bwpx +';border-collapse:collapse',
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Kiwi classic', firmware_sel.RX_4_WF_4, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_4_WF_4)),
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More receivers', firmware_sel.RX_8_WF_2, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_8_WF_2)),
-               w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More bandwidth', firmware_sel.RX_3_WF_3, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_3_WF_3))
+               w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More bandwidth', firmware_sel.RX_3_WF_3, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_3_WF_3)),
+               admin.BBAI? 
+                  w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'BBAI rx14', firmware_sel.RX_14_WF_1, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_14_WF_1))
+               :
+                  ''
             ),
             w3_div('w3-margin-left w3-left',
                w3_div('id-fw-44 w3-flex w3-padding-TB-7'),
@@ -2531,7 +2543,7 @@ function kiwi_ws_open(conn_type, cb, cbp)
 
 function admin_draw(sdr_mode)
 {
-	var admin = w3_el("id-admin");
+	var ael = w3_el("id-admin");
 	var ci = 0;
 	
 	var s = '';
@@ -2558,7 +2570,7 @@ function admin_draw(sdr_mode)
       (sdr_mode? w3_nav(admin_colors[ci++], 'Extensions', 'extensions', 'admin_nav') : '') +
       w3_nav(admin_colors[ci++], 'Security', 'security', 'admin_nav');
 
-	admin.innerHTML =
+	ael.innerHTML =
 		w3_div('id-admin-header-container',
 			'<header class="w3-container w3-teal"><h5>Admin interface</h5></header>' +
 			w3_navbar('w3-border w3-light-grey', s) +
@@ -2612,7 +2624,7 @@ function admin_draw(sdr_mode)
 		(sdr_mode? extensions_html() : '') +
 		security_html();
 
-	admin.innerHTML += s;
+	ael.innerHTML += s;
 	log_setup();
 	console_setup();
 	stats_init();
@@ -2739,18 +2751,21 @@ function admin_recv(data)
 				admin_sdr_mode = (+param[1])? 0:1;
 				break;
 
+			case "BBAI":
+				admin.BBAI = true;
+				break;
+
 			case "init":
 		      // rx_chan == rx_chans for admin connections (e.g. 4 when ch = 0..3 for user connections)
 				rx_chans = rx_chan = param[1];
 				//console.log("ADMIN init rx_chans="+rx_chans);
 				
 				if (rx_chans == -1) {
-					var admin = w3_el("id-admin");
-					admin.innerHTML =
+					w3_innerHTML('id-admin',
 						'<header class="w3-container w3-red"><h5>Admin interface</h5></header>' +
 						'<p>To use the new admin interface you must edit the configuration ' +
 						'parameters from your current kiwi.config/kiwi.cfg into kiwi.config/kiwi.json<br>' +
-						'Use the file kiwi.config/kiwi.template.json as a guide.</p>';
+						'Use the file kiwi.config/kiwi.template.json as a guide.</p>');
 				} else {
 					admin_draw(admin_sdr_mode);
 					ext_send('SET extint_load_extension_configs');
@@ -2892,7 +2907,7 @@ function admin_draw_pie() {
 
 function admin_wait_then_reload(secs, msg)
 {
-	var admin = w3_el("id-admin");
+	var ael = w3_el("id-admin");
 	var s2;
 	
 	if (secs) {
@@ -2913,7 +2928,7 @@ function admin_wait_then_reload(secs, msg)
 	
 	var s = '<header class="w3-container w3-teal"><h5>Admin interface</h5></header>'+ s2;
 	//console.log('s='+ s);
-	admin.innerHTML = s;
+	ael.innerHTML = s;
 	
 	if (msg) w3_el("id-admin-reload-msg").innerHTML = msg;
 	

@@ -401,3 +401,14 @@ bool kiwi_sha256_strcmp(char *str, const char *key)
     return r;
 }
 
+kstr_t *kstr_list_int(const char *fmt, int *list, int nlist, bool *first)
+{
+    kstr_t *ks = NULL;
+    char *sb;
+    for (int i = 0; i < nlist; i++) {
+        asprintf(&sb, stprintf("%s%s", *first? "":",", fmt), list[i]);
+        *first = false;
+        ks = kstr_cat(ks, kstr_wrap(sb));
+    }
+    return ks;
+}

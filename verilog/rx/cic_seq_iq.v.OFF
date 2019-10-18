@@ -22,10 +22,12 @@ Boston, MA  02110-1301, USA.
 
 //
 // Implements constant value decimation (R) using sequential logic comb stage to save slices.
-// Version for an IQ signal.
+// Version for an IQ signal with un-pruned integrator stages.
 //
-// fixed differential delay (D) = 1
+// Fixed differential delay (D) = 1
 //
+
+`include "kiwi.vh"
 
 module cic_seq_iq (
 	input wire clock,
@@ -45,11 +47,10 @@ module cic_seq_iq (
 	localparam GROWTH = STAGES * clog2(DECIMATION);
 	localparam ACC_WIDTH = IN_WIDTH + GROWTH;
 
-//------------------------------------------------------------------------------
-//                               control
-//------------------------------------------------------------------------------
+// trade-off: less output width means more quantization noise, but of course this effects
+// input width of subsequent stages
 
-localparam MD = 13;		// max decim = 4096, assumes excess counter bits get optimized away
+localparam MD = 18;		// assumes excess counter bits get optimized away
 
 reg [MD-1:0] sample_no;
 initial sample_no = {MD{1'b0}};
@@ -72,9 +73,6 @@ always @(posedge clock)
   else
     integ_strobe <= 0;
 
-//------------------------------------------------------------------------------
-//                                stages
-//------------------------------------------------------------------------------
 wire signed [ACC_WIDTH-1:0] integ_data_i [0:STAGES], integ_data_q [0:STAGES];
 
 assign integ_data_i[0] = in_data_i;
@@ -260,7 +258,7 @@ endgenerate
 			// state == 2		// prev[stage] = t
 			begin
 				// next
-					 Raddr = {Q, R, COMB, stage};		// not stage-1 because stage about to be incremented
+					Raddr = {Q, R, COMB, stage};		// not stage-1 because stage about to be incremented
 			end
 		end else
 	

@@ -17,7 +17,7 @@ var try_again="";
 var conn_type;
 var seriousError = false;
 
-var firmware_sel = { RX_4_WF_4:0, RX_8_WF_2:1, RX_3_WF_3:2 };
+var firmware_sel = { RX_4_WF_4:0, RX_8_WF_2:1, RX_3_WF_3:2, RX_14_WF_1:3 };
 
 var modes_u = { 0:'AM', 1:'AMN', 2:'USB', 3:'LSB', 4:'CW', 5:'CWN', 6:'NBFM', 7:'IQ' };
 var modes_l = { 0:'am', 1:'amn', 2:'usb', 3:'lsb', 4:'cw', 5:'cwn', 6:'nbfm', 7:'iq' };
@@ -922,7 +922,7 @@ var kiwi_cpu_stats_str_long = '';
 var kiwi_config_str = '';
 var kiwi_config_str_long = '';
 
-function cpu_stats_cb(o, uptime_secs, user, sys, idle, ecpu, waterfall_fps)
+function cpu_stats_cb(o, uptime_secs, ecpu, waterfall_fps)
 {
    idle %= 100;   // handle multi-core cpus
    var cputempC = o.cc? o.cc : 0;
@@ -932,16 +932,26 @@ function cpu_stats_cb(o, uptime_secs, user, sys, idle, ecpu, waterfall_fps)
    var cpufreq = (o.cf >= 1000)? ((o.cf/1000).toFixed(1) +'GHz') : (o.cf.toFixed(0) +'MHz');
 	kiwi_cpu_stats_str =
 	   w3_text(optbar_prefix_color, 'BB ') +
-	   w3_text('', user +'|'+ sys +'|'+ idle +' usi% ') +
+	   w3_text('', o.cu[0] +'|'+ o.cs[0] +'|'+ o.ci[0] +' usi% ') +
 	   w3_text(temp_color, cputemp) +
 	   w3_text('', cpufreq +' ') +
 	   w3_text(optbar_prefix_color, 'FPGA') +
 	   w3_text('', ecpu.toFixed(0) +'%');
 	kiwi.wf_fps = waterfall_fps;
 
+   var user = '', sys = '', idle = '';
+   var first = true;
+   for (var i = 0; i < o.cu.length; i++) {
+      user += (first? '':' ') + o.cu[i] +'%';
+      sys  += (first? '':' ') + o.cs[i] +'%';
+      idle += (first? '':' ') + o.ci[i] +'%';
+      first = false;
+   }
+   var cpus = 'cpu';
+   if (o.cu.length > 1) cpus += '0 cpu1';
 	kiwi_cpu_stats_str_long =
 	   w3_inline('',
-         w3_text('w3-text-black', 'Beagle CPU: '+ user +'% usr | '+ sys +'% sys | '+ idle +'% idle' + (cputempC? '':', ')) +
+         w3_text('w3-text-black', 'Beagle: '+ cpus +' '+ user +' usr | '+ sys +' sys | '+ idle +' idle' + (cputempC? '':', ')) +
          (cputempC? ('&nbsp;'+ w3_div('w3-padding-LR-4|background-color:silver', w3_text(temp_color, cputemp)) +'&nbsp;') :'') +
          w3_text('w3-text-black', cpufreq + ', ') +
          w3_text('w3-text-black', 'FPGA eCPU: '+ ecpu.toFixed(0) +'%')
@@ -1296,7 +1306,7 @@ function kiwi_msg(param, ws)
 				var o = JSON.parse(param[1]);
 				//console.log(o);
 				if (o.ce != undefined)
-				   cpu_stats_cb(o, o.ct, o.cu, o.cs, o.ci, o.ce, o.fc);
+				   cpu_stats_cb(o, o.ct, o.ce, o.fc);
 				xfer_stats_cb(o.ac, o.wc, o.fc, o.ah, o.as);
 				extint_srate = o.sr;
 				gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);

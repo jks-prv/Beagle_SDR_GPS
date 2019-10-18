@@ -69,14 +69,15 @@ static const int wf_fps[] = { WF_SPEED_OFF, WF_SPEED_1FPS, WF_SPEED_SLOW, WF_SPE
         wf_shmem_t *wf_shmem_p = &wf_shmem;
 #endif
 
-#define WF_IPC_CREATE_WF
+// FIXME: doesn't work yet because currently no way to use SPI from LINUX_CHILD_PROCESS()
+//#define WF_IPC_SAMPLE_WF
 
-#if defined(WF_SHMEM_DISABLE) || !defined(WF_IPC_CREATE_WF)
+#if defined(WF_SHMEM_DISABLE) || !defined(WF_IPC_SAMPLE_WF)
     #define WFSleepReasonMsec(r, t) TaskSleepReasonMsec(r, t)
     #define WFSleepReasonUsec(r, t) TaskSleepReasonUsec(r, t)
     #define WFNextTask(r) NextTask(r)
 #else
-    // WF_IPC_CREATE_WF
+    // WF_IPC_SAMPLE_WF
     #define WFSleepReasonMsec(r, t) kiwi_msleep(t)
     #define WFSleepReasonUsec(r, t) kiwi_usleep(t)
     #define WFNextTask(r)
@@ -146,12 +147,12 @@ void c2s_waterfall_init()
 	
 #ifdef WF_SHMEM_DISABLE
 #else
-    #ifdef WF_IPC_CREATE_WF
-        void create_wf(int rx_chan);
-        shmem_ipc_setup("kiwi.wf ", SIG_IPC_WF, create_wf);
+    #ifdef WF_IPC_SAMPLE_WF
+        void sample_wf(int rx_chan);
+        shmem_ipc_setup("kiwi.waterfall", SIG_IPC_WF, sample_wf);
     #else
         void compute_frame(int rx_chan);
-        shmem_ipc_setup("kiwi.wf ", SIG_IPC_WF, compute_frame);
+        shmem_ipc_setup("kiwi.waterfall", SIG_IPC_WF, compute_frame);
     #endif
 #endif
 }
@@ -324,7 +325,7 @@ void c2s_waterfall(void *param)
 						assert(WF_1CIC_MAXD <= 32768);
 						decim = CIC1_DECIM << r1;
 					#else
-						// currently 15-levels of zoom: z0-z13, MAX_ZOOM == 14
+						// currently 15-levels of zoom: z0-z14, MAX_ZOOM == 14
 						if (zm1 == 0) {
 							// z0-1: R = 1 (R1 = R2 = 1)
 							r1 = r2 = 0;
@@ -559,8 +560,9 @@ void c2s_waterfall(void *param)
 			panic("shouldn't return");
 		}
 
-		if (rx_chan >= wf_num) {		// for debug
-			NextTask("skip");
+        // FIXME: until we figure out if no WF cmds are needed when no wf is present just occasionally wake up and check
+		if (rx_chan >= wf_num) {
+			TaskSleepMsec(500);
 			continue;
 		}
 		
@@ -604,11 +606,16 @@ void c2s_waterfall(void *param)
 		
 		if (new_map) {
 			assert(wf->fft_used <= MAX_FFT_USED);
+
+            #ifdef USE_WF_NEW
+                #define WF_FFT_UNWRAP_NEEDED
+            #endif
+
 			wf->fft_used_limit = 0;
 
 			if (wf->fft_used >= wf->plot_width) {
 				// >= FFT than plot
-				#ifdef USE_WF_NEW
+				#ifdef WF_FFT_UNWRAP_NEEDED
 					// IQ reverse unwrapping (X)
 					for (i=wf->fft_used/2,j=0; i<wf->fft_used; i++,j++) {
 						wf->fft2wf_map[i] = wf->plot_width * j/wf->fft_used;
@@ -625,7 +632,7 @@ void c2s_waterfall(void *param)
 				//for (i=0; i<wf->fft_used; i++) printf("%d>%d ", i, wf->fft2wf_map[i]);
 			} else {
 				// < FFT than plot
-				#ifdef USE_WF_NEW
+				#ifdef WF_FFT_UNWRAP_NEEDED
 					for (i=0; i<wf->plot_width_clamped; i++) {
 						int t = wf->fft_used * i/wf->plot_width;
 						if (t >= wf->fft_used/2) t -= wf->fft_used/2; else t += wf->fft_used/2;
@@ -695,20 +702,20 @@ void c2s_waterfall(void *param)
 		    new_scale_mask = false;
 		}
 
-        void create_wf(int rx_chan);
+        void sample_wf(int rx_chan);
         #ifdef WF_SHMEM_DISABLE
-            create_wf(rx_chan);
+            sample_wf(rx_chan);
         #else
-            #ifdef WF_IPC_CREATE_WF
-                shmem_ipc_invoke(SIG_IPC_WF, wf->rx_chan);      // invoke create_wf()
+            #ifdef WF_IPC_SAMPLE_WF
+                shmem_ipc_invoke(SIG_IPC_WF, wf->rx_chan);      // invoke sample_wf()
             #else
-                create_wf(rx_chan);
+                sample_wf(rx_chan);
             #endif
         #endif
 	}
 }
 
-void create_wf(int rx_chan)
+void sample_wf(int rx_chan)
 {
 	wf_inst_t *wf = &WF_SHMEM->wf_inst[rx_chan];
     int k;
@@ -740,7 +747,7 @@ void create_wf(int rx_chan)
             
             #ifdef WF_INFO
             if (!bg) printf("---- WF%d OLAP z%d samp_wait %d >= %d(2x) desired %d\n",
-                rx_chan, zoom, wf->samp_wait_ms, 2*desired, desired);
+                rx_chan, wf->zoom, wf->samp_wait_ms, 2*desired, desired);
             #endif
             
             evWFC(EC_TRIG1, EV_WF, -1, "WF", "OVERLAPPED CmdWFReset");
@@ -751,7 +758,7 @@ void create_wf(int rx_chan)
 
             #ifdef WF_INFO
             if (!bg) printf("---- WF%d NON-OLAP z%d samp_wait %d < %d(2x) desired %d\n",
-                rx_chan, zoom, wf->samp_wait_ms, 2*desired, desired);
+                rx_chan, wf->zoom, wf->samp_wait_ms, 2*desired, desired);
             #endif
         }
     }
@@ -849,7 +856,7 @@ void create_wf(int rx_chan)
         #ifdef WF_SHMEM_DISABLE
             compute_frame(rx_chan);
         #else
-            #ifdef WF_IPC_CREATE_WF
+            #ifdef WF_IPC_SAMPLE_WF
                 compute_frame(rx_chan);
             #else
                 shmem_ipc_invoke(SIG_IPC_WF, wf->rx_chan);      // invoke compute_frame()

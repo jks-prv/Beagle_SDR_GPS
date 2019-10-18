@@ -71,6 +71,9 @@ void c2s_admin_setup(void *param)
 
 	// send initial values
 	send_msg(conn, SM_NO_DEBUG, "ADM gps_only_mode=%d", VAL_CFG_GPS_ONLY);
+	#ifdef CPU_AM5729
+	    send_msg(conn, SM_NO_DEBUG, "ADM BBAI=1");
+	#endif
 	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", rx_chans);
 }
 
@@ -742,7 +745,7 @@ void c2s_admin(void *param)
 				kiwi_str_decode_inplace(ip_m);
 				//printf("network_ip_blacklist %s\n", ip_m);
 				asprintf(&cmd_p, "iptables -A KIWI -s %s -j DROP", ip_m);
-                rv = non_blocking_cmd_system_child("kiwi.ipt", cmd_p, POLL_MSEC(200));
+                rv = non_blocking_cmd_system_child("kiwi.iptables", cmd_p, POLL_MSEC(200));
                 rv = WEXITSTATUS(rv);
                 cprintf(conn, "\"%s\" rv=%d\n", cmd_p, rv);
                 send_msg_encoded(conn, "ADM", "network_ip_blacklist_status", "%d,%s", rv, ip_m);

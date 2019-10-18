@@ -622,7 +622,7 @@ void ip_blacklist_init()
         char *cmd_p;
         asprintf(&cmd_p, "iptables -A KIWI -s %s -j DROP", ips[i]);
         lprintf("ip_blacklist_init: \"%s\"\n", cmd_p);
-        non_blocking_cmd_system_child("kiwi.ipt", cmd_p, POLL_MSEC(200));
+        non_blocking_cmd_system_child("kiwi.iptables", cmd_p, POLL_MSEC(200));
         free(cmd_p);
     }
     system("iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI");

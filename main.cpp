@@ -266,6 +266,16 @@ int main(int argc, char *argv[])
         nrx_bufs = RXBUF_SIZE_3CH / NRX_SPI;
         lprintf("firmware: SDR_RX3_WF3\n");
     } else
+    if (fw_sel == FW_SEL_SDR_RX14_WF1) {
+        fpga_id = FPGA_ID_RX14_WF1;
+        rx_chans = 14;
+        wf_chans = 1;
+        snd_rate = SND_RATE_14CH;
+        snd_intr_usec = SND_INTR_14CH;
+        rx_decim = RX_DECIM_14CH;
+        nrx_bufs = RXBUF_SIZE_14CH / NRX_SPI;
+        lprintf("firmware: SDR_RX14_WF1\n");
+    } else
     if (VAL_CFG_GPS_ONLY) {
         fpga_id = FPGA_ID_GPS;
         lprintf("firmware: GPS_ONLY\n");

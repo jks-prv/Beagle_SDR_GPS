@@ -222,7 +222,7 @@ void update_vars_from_config()
     if (espeed != current_espeed) {
         printf("ETH0 espeed %d\n", espeed? 10:100);
         non_blocking_cmd_system_child(
-            "kiwi.eth", stprintf("ethtool -s eth0 speed %d duplex full", espeed? 10:100), NO_WAIT);
+            "kiwi.ethtool", stprintf("ethtool -s eth0 speed %d duplex full", espeed? 10:100), NO_WAIT);
         current_espeed = espeed;
     }
     
@@ -364,7 +364,7 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
     //cprintf(conn, "GEOLOC: <%s>\n", cmd_p);
     
     // NB: don't use non_blocking_cmd() here to prevent audio gliches
-    int status = non_blocking_cmd_func_forall("kiwi.geo", cmd_p, _geo_task, 0, POLL_MSEC(1000));
+    int status = non_blocking_cmd_func_forall("kiwi.geolocate", cmd_p, _geo_task, 0, POLL_MSEC(1000));
     free(cmd_p);
     int exit_status;
     if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
@@ -519,28 +519,29 @@ void webserver_collect_print_stats(int print)
 	current_nusers = nusers;
 
 	// construct cpu stats response
-	int user, sys, idle;
-	static int last_user, last_sys, last_idle;
-	user = sys = 0;
+	#define NCPU 2
+	int usi[3][NCPU], del_usi[3][NCPU];
+	static int last_usi[3][NCPU];
+
 	u4_t now = timer_ms();
 	static u4_t last_now;
 	float secs = (float)(now - last_now) / 1000;
 	last_now = now;
-	
-	float del_user = 0;
-	float del_sys = 0;
-	float del_idle = 0;
-	
+
 	char *reply = read_file_string_reply("/proc/stat");
 	
 	if (reply != NULL) {
-		sscanf(kstr_sp(reply), "cpu %d %*d %d %d", &user, &sys, &idle);
+		int n = sscanf(kstr_sp(reply), "%*[^\n]\ncpu0 %d %*d %d %d %*[^\n]\ncpu1 %d %*d %d %d",
+		    &usi[0][0], &usi[1][0], &usi[2][0], &usi[0][1], &usi[1][1], &usi[2][1]);
+		assert(n == 3 || n == 6);
+		int ncpu = (n == 3)? 1:2;
 		kstr_free(reply);
-		//long clk_tick = sysconf(_SC_CLK_TCK);
-		del_user = (float)(user - last_user) / secs;
-		del_sys = (float)(sys - last_sys) / secs;
-		del_idle = (float)(idle - last_idle) / secs;
-		//printf("CPU %.1fs u=%.1f%% s=%.1f%% i=%.1f%%\n", secs, del_user, del_sys, del_idle);
+		for (i = 0; i < ncpu; i++) {
+            del_usi[0][i] = lroundf((float)(usi[0][i] - last_usi[0][i]) / secs);
+            del_usi[1][i] = lroundf((float)(usi[1][i] - last_usi[1][i]) / secs);
+            del_usi[2][i] = lroundf((float)(usi[2][i] - last_usi[2][i]) / secs);
+            //printf("CPU%d %.1fs u=%d%% s=%d%% i=%d%%\n", i, secs, del_usi[0][i], del_usi[1][i], del_usi[2][i]);
+        }
 		
 	    int cpufreq_kHz = 1000000, temp_deg_mC = 0;
 
@@ -562,12 +563,31 @@ void webserver_collect_print_stats(int print)
 			kstr_free(ks);
 		}
 		char *sb;
-		asprintf(&sb, "\"ct\":%d,\"cu\":%.0f,\"cs\":%.0f,\"ci\":%.0f,\"ce\":%.0f,\"cf\":%d,\"cc\":%.0f",
-			timer_sec(), del_user, del_sys, del_idle, ecpu_use(), cpufreq_kHz / 1000, (float) temp_deg_mC / 1000);
+		asprintf(&sb, "\"ct\":%d,\"ce\":%.0f,\"cf\":%d,\"cc\":%.0f,",
+			timer_sec(), ecpu_use(), cpufreq_kHz / 1000, (float) temp_deg_mC / 1000);
 		ks = kstr_wrap(sb);
-		last_user = user;
-		last_sys = sys;
-		last_idle = idle;
+
+		ks = kstr_cat(ks, "\"cu\":[");
+		bool first = true;
+		ks = kstr_cat(ks, kstr_list_int("%d", &del_usi[0][0], ncpu, &first));
+		ks = kstr_cat(ks, "],");
+
+		ks = kstr_cat(ks, "\"cs\":[");
+		first = true;
+		ks = kstr_cat(ks, kstr_list_int("%d", &del_usi[1][0], ncpu, &first));
+		ks = kstr_cat(ks, "],");
+
+		ks = kstr_cat(ks, "\"ci\":[");
+		first = true;
+		ks = kstr_cat(ks, kstr_list_int("%d", &del_usi[2][0], ncpu, &first));
+		ks = kstr_cat(ks, "]");
+
+		for (i = 0; i < ncpu; i++) {
+            last_usi[0][i] = usi[0][i];
+            last_usi[1][i] = usi[1][i];
+            last_usi[2][i] = usi[2][i];
+        }
+
 		cpu_stats_buf = ks;
 	}
 

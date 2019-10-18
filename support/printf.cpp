@@ -76,7 +76,7 @@ void _sys_panic(const char *str, const char *file, int line)
 	char *buf;
 	
 	// errno might be overwritten if the malloc inside asprintf fails
-	asprintf(&buf, "SYS_PANIC: \"%s\" (%s, line %d)", str, file, line);
+	asprintf(&buf, "SYS_PANIC: \"%s\" %s (%s, line %d)", str, strerror(errno), file, line);
 
 	if (background_mode || log_foreground_mode) {
 		syslog(LOG_ERR, "%s %m\n", buf);
@@ -201,7 +201,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		rx_chan_t *rx;
 		char ch_stat[MAX_RX_CHANS + 3 + SPACE_FOR_NULL];
 		for (rx = rx_channels, i=0; rx < &rx_channels[rx_chans]; rx++, i++) {
-			ch_stat[i] = rx->busy? '0'+i : '.';
+			ch_stat[i] = rx->busy? ((i > 9)? ('A'+i-10) : ('0'+i)) : '.';
 		}
 		ch_stat[i] = ' ';
 		ch_stat[i+1] = '\0';
@@ -215,7 +215,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
             chan = c->ext_rx_chan;
         if (c == NULL || chan != -1) {
             for (i=0; i < rx_chans; i++) {
-                ch_stat[i] = (c != NULL && i == chan)? '0'+i : ' ';
+                ch_stat[i] = (c != NULL && i == chan)? ((i > 9)? ('A'+i-10) : ('0'+i)) : ' ';
             }
             if (!background_mode) {
                 ch_stat[i++] = ' ';

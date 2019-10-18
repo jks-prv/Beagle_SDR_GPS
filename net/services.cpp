@@ -378,7 +378,7 @@ static void UPnP_port_open_task(void *param)
 {
     char *cmd_p;
     asprintf(&cmd_p, "upnpc %s -a %s %d %d TCP 2>&1", (debian_ver != 7)? "-e KiwiSDR" : "", ddns.ip_pvt, ddns.port, ddns.port_ext);
-    int status = non_blocking_cmd_func_forall("kiwi.pnp", cmd_p, _UPnP_port_open, 0, POLL_MSEC(1000));
+    int status = non_blocking_cmd_func_forall("kiwi.UPnP", cmd_p, _UPnP_port_open, 0, POLL_MSEC(1000));
     int exit_status;
     if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
         ddns.auto_nat = exit_status;
@@ -675,7 +675,7 @@ static void reg_SDR_hu(void *param)
             if (sdr_hu_debug)
                 printf("%s\n", cmd_p);
 
-		    int status = non_blocking_cmd_func_forall("kiwi.reg", cmd_p, _reg_SDR_hu, retrytime_mins, POLL_MSEC(1000));
+		    int status = non_blocking_cmd_func_forall("kiwi.register", cmd_p, _reg_SDR_hu, retrytime_mins, POLL_MSEC(1000));
 		    int exit_status;
 		    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
 		        retrytime_mins = exit_status;
@@ -753,7 +753,7 @@ static void reg_kiwisdr_com(void *param)
                 printf("%s\n", cmd_p);
 
             retrytime_mins = RETRYTIME_KIWISDR_COM;
-		    int status = non_blocking_cmd_func_forall("kiwi.reg", cmd_p, _reg_kiwisdr_com, retrytime_mins, POLL_MSEC(1000));
+		    int status = non_blocking_cmd_func_forall("kiwi.register", cmd_p, _reg_kiwisdr_com, retrytime_mins, POLL_MSEC(1000));
 		    int exit_status;
 		    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
 		        reg_kiwisdr_com_status = exit_status;

@@ -13,12 +13,40 @@ set pagination off
 handle SIGPIPE nostop noprint
 handle SIGUSR1 nostop noprint
 handle SIGUSR2 nostop noprint
+
+# SIGRT (33 - 64)
 handle SIG33 nostop noprint
 handle SIG34 nostop noprint
 handle SIG35 nostop noprint
 handle SIG36 nostop noprint
 handle SIG37 nostop noprint
 handle SIG38 nostop noprint
+handle SIG39 nostop noprint
+handle SIG40 nostop noprint
+handle SIG41 nostop noprint
+handle SIG42 nostop noprint
+handle SIG43 nostop noprint
+handle SIG44 nostop noprint
+handle SIG45 nostop noprint
+handle SIG46 nostop noprint
+handle SIG47 nostop noprint
+handle SIG48 nostop noprint
+handle SIG49 nostop noprint
+handle SIG50 nostop noprint
+handle SIG51 nostop noprint
+handle SIG52 nostop noprint
+handle SIG53 nostop noprint
+handle SIG54 nostop noprint
+handle SIG55 nostop noprint
+handle SIG56 nostop noprint
+handle SIG57 nostop noprint
+handle SIG58 nostop noprint
+handle SIG59 nostop noprint
+handle SIG60 nostop noprint
+handle SIG61 nostop noprint
+handle SIG62 nostop noprint
+handle SIG63 nostop noprint
+handle SIG64 nostop noprint
 
 # save breakpoints to a file
 define bsave

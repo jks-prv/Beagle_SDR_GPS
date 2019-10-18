@@ -29,10 +29,11 @@ Boston, MA  02110-1301, USA.
 #define FW_SEL_SDR_RX4_WF4  0
 #define FW_SEL_SDR_RX8_WF2  1
 #define FW_SEL_SDR_RX3_WF3  2
+#define FW_SEL_SDR_RX14_WF1 3
 
-#define MAX_RX_CHANS    8
+#define MAX_RX_CHANS    16
 #define MAX_WF_CHANS    4
-#define MAX_NRX_BUFS    8
+#define MAX_NRX_BUFS    16
 #define MAX_NRX_SAMPS   340     // was 170
 #define NRX_SAMPS_CHANS(nch)    ((NRX_SPI - NRX_OVHD) / NRX_IQW / nch);
 

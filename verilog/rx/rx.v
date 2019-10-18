@@ -73,7 +73,7 @@ cic_prune_var #(.INCLUDE("rx1"), .STAGES(RX1_STAGES), .DECIMATION(RX1_DECIM), .G
 	rx_cic1_i(
 		.clock			(adc_clk),
 		.reset			(1'b0),
-		.decimation		(13'b0),
+		.decimation		(18'b0),
 		.in_strobe		(1'b1),
 		.out_strobe		(rx_cic1_avail),
 		.in_data		(rx_mix_i),
@@ -84,7 +84,7 @@ cic_prune_var #(.INCLUDE("rx1"), .STAGES(RX1_STAGES), .DECIMATION(RX1_DECIM), .G
 	rx_cic1_q(
 		.clock			(adc_clk),
 		.reset			(1'b0),
-		.decimation		(13'b0),
+		.decimation		(18'b0),
 		.in_strobe		(1'b1),
 		.out_strobe		(),
 		.in_data		(rx_mix_q),
@@ -96,11 +96,27 @@ cic_prune_var #(.INCLUDE("rx1"), .STAGES(RX1_STAGES), .DECIMATION(RX1_DECIM), .G
 
 	localparam RX2_GROWTH = RX2_STAGES * clog2(RX2_DECIM);
 
+`ifdef USE_RX_SEQ
+
+cic_prune_seq #(.INCLUDE("rx3"), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .GROWTH(RX2_GROWTH), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
+	rx_cic2 (
+		.clock			(adc_clk),
+		.reset			(1'b0),
+		.in_strobe		(rx_cic1_avail),
+		.out_strobe_i	(rx_cic2_strobe_i),
+		.out_strobe_q	(),
+		.in_data_i		(rx_cic1_out_i),
+		.in_data_q		(rx_cic1_out_q),
+		.out_data		(rx_cic2_out)
+    );
+
+`else
+
 cic_prune_var #(.INCLUDE("rx2"), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .GROWTH(RX2_GROWTH), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
 	rx_cic2_i(
 		.clock			(adc_clk),
 		.reset			(1'b0),
-		.decimation		(13'b0),
+		.decimation		(18'b0),
 		.in_strobe		(rx_cic1_avail),
 		.out_strobe		(rx_cic2_strobe_i),
 		.in_data		(rx_cic1_out_i),
@@ -112,7 +128,7 @@ cic_prune_var #(.INCLUDE("rx2"), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .G
 	rx_cic2_q(
 		.clock			(adc_clk),
 		.reset			(1'b0),
-		.decimation		(13'b0),
+		.decimation		(18'b0),
 		.in_strobe		(rx_cic1_avail),
 		.out_strobe		(),
 		.in_data		(rx_cic1_out_q),
@@ -126,5 +142,7 @@ cic_prune_var #(.INCLUDE("rx2"), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .G
 		rx_dout = rd_i? rx_cic2_out_i[15:0] : ( rd_q? rx_cic2_out_q[15:0] : {rx_cic2_out_i[RXO_BITS-1 -:8], rx_cic2_out_q[RXO_BITS-1 -:8]} );
 
 	assign rx_dout_A = rx_dout;
+
+`endif
 
 endmodule

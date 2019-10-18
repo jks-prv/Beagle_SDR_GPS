@@ -521,7 +521,7 @@ void SearchTask(void *param) {
 
     for(;;) {
         if (!gps.acq_Navstar && !gps.acq_QZSS && !gps.acq_Galileo) {
-            NextTask("no acq");     // let cpu run
+            TaskSleepSec(1);    // wait for UI to change acq settings
             continue;
         }
         
@@ -605,10 +605,9 @@ static int gps_acquire = 1;
 
 // Decide if the search task should run.
 // Conditional because of the large load the acquisition FFT places on the Beagle.
-// Also returns general GPS enable for use by GPS solve() loop when this routine is called from.
-bool SearchTaskRun()
+void SearchTaskRun()
 {
-	if (searchTaskID == -1) return false;
+	if (searchTaskID == -1) return;
 	
 	bool start = false;
 	int users = rx_count_server_conns(EXTERNAL_ONLY);
@@ -629,9 +628,6 @@ bool SearchTaskRun()
 	
 	if (update_in_progress || sd_copy_in_progress || backup_in_progress) start = false;
 	
-	bool enable = (admcfg_bool("enable_gps", NULL, CFG_REQUIRED) == true);
-	if (!enable) start = false;
-
 	//printf("SearchTaskRun: acq %d start %d good %d users %d fixes %d gps_corr %d\n",
 	//	gps_acquire, start, gps.good, users, gps.fixes, clk.adc_gps_clk_corrections);
 	
@@ -647,6 +643,4 @@ bool SearchTaskRun()
 		GPSstat(STAT_ACQUIRE, 0, gps_acquire);
 		TaskWakeup(searchTaskID, TWF_NONE, 0);
 	}
-	
-	return enable;
 }

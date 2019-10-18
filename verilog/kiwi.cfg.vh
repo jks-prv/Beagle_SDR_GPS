@@ -1,1 +1,2 @@
-parameter RX_CFG = 4;
+parameter RX_CFG = 14;
+`define USE_WF

@@ -771,6 +771,8 @@ int main(int argc, char *argv[])
 			if (p->ptype == PT_DEF) {
 				if ((p->flags & TF_CFG_H) && cfp) {
                     fprintf(cfp, "parameter RX_CFG = %d;\n", p->val);
+                    if (p->val <= 14)
+                        fprintf(cfp, "`define USE_WF\n");
 				}
 				if (p->flags & TF_DOT_H) {
 					fprintf(hfp, "%s#define %s    // DEFh 0x%x\n", p->val? "":"//", p->str, p->val);
