@@ -170,7 +170,7 @@ void dump_tokens(const char *pass, tokens_t *f, tokens_t *l)
 	tokens_t *t;
 	
 	printf("\n--------------------------------------------------------------------------------\n");
-	printf("%ld tokens at %s:\n%s ", l-f, pass, pass);
+	printf("%ld tokens at %s:\n%s ", (long) (l-f), pass, pass);
 	
 	for (t=f; t != l; t++) {
 		token_dump(t);

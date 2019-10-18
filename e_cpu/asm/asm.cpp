@@ -361,7 +361,7 @@ int main(int argc, char *argv[])
 
 	fn = ifiles[0];
 	ep0 = tp; pass1 = ep0;
-	if (debug) printf("\ntokenize pass 0: %d strings %ld tokens\n\n", num_strings(), ep0-tokens);
+	if (debug) printf("\ntokenize pass 0: %d strings %ld tokens\n\n", num_strings(), (long) (ep0-tokens));
 
 
 	// pass 1: MACRO
