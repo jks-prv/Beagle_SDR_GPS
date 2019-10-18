@@ -98,11 +98,11 @@ GetGPSchanPtr:									; chan#
 			
 ; ============================================================================
 
-#if GPS_INTEG_BITS 16
+#if GPS_INTEG_BITS == 16
                 error   // GPS_INTEG_BITS = 16 no longer supported in this code; see prior versions
 #endif
 
-#if GPS_INTEG_BITS 18
+#if GPS_INTEG_BITS == 18
 // get 18-bit I/Q data
 GetCount:		push	0						; 0
 				rdBit							; [17]
@@ -122,7 +122,7 @@ GetPower:		call	GetCount				; i[17:0]
 				ret                             ; pH L
 #endif
 
-#if GPS_INTEG_BITS 20
+#if GPS_INTEG_BITS == 20
 // get 20-bit I/Q data
 GetCount:		push	0						; 0
 				rdBit							; [19]
@@ -145,10 +145,10 @@ GetPower:		call	GetCount				; i[19:0]
 ; ============================================================================
 
                 MACRO   GPS_sext_32
-#if GPS_INTEG_BITS 18
+#if GPS_INTEG_BITS == 18
                  sext18_32
 #endif
-#if GPS_INTEG_BITS 20
+#if GPS_INTEG_BITS == 20
                  sext20_32
 #endif
                 ENDM
@@ -504,14 +504,14 @@ UploadClock:									; &GPS_channels + ch_NAV_MS
 				wrEvt	GET_MEMORY				; GPS_channels++ -> ch_NAV_MS
 				wrEvt	GET_MEMORY				; GPS_channels++ -> ch_NAV_BITS
 
-#if GPS_REPL_BITS 16
+#if GPS_REPL_BITS == 16
 				rdBit16							; 16-bit clock replica
 				wrReg	HOST_TX
 				push    0                       ; to simplify code always return 2 words
 				wrReg	HOST_TX
 #endif
 
-#if GPS_REPL_BITS 18
+#if GPS_REPL_BITS == 18
 				rdBit16							; 18-bit clock replica sent across 2 words
 				wrReg	HOST_TX
 				push    0

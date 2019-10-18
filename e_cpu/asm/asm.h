@@ -12,16 +12,12 @@
 #include <string.h>
 #include <fcntl.h>
 
+#define NIFILES_LIST 32
+extern char ifiles_list[NIFILES_LIST][32];
 extern int curline, debug;
 extern char *fn, *bfs, *cfs, *hfs, *vfs, *efs;
 
 #define	assert(cond) _assert(cond, # cond, __FILE__, __LINE__);
-
-void sys_panic(char *str);
-void panic(char *str);
-void syntax(int cond, const char *fmt, ...);
-void _assert(int cond, const char *str, const char *file, int line);
-void errmsg(char *str);
 
 
 // string pool
@@ -43,7 +39,7 @@ int num_strings();
 // tokens
 
 typedef enum {
-	TT_EOL, TT_LABEL, TT_SYM, TT_NUM, TT_OPC, TT_PRE, TT_OPR, TT_DATA, TT_STRUCT, TT_ITER, TT_DEF
+	TT_EOL=0, TT_LABEL, TT_SYM, TT_NUM, TT_OPC, TT_PRE, TT_OPR, TT_DATA, TT_STRUCT, TT_ITER, TT_DEF
 } token_type_e;
 
 #define	TF_RET		0x0001
@@ -60,15 +56,19 @@ typedef enum {
 typedef struct {
 	token_type_e ttype;
 	char *str;
-	int num, width;
+	int num;
+	union {
+	    int width;
+	    int ifl;
+	};
 	int flags;
 } tokens_t;
 
-tokens_t *tp_start, *tp_end;
+extern tokens_t *tp_start, *tp_end;
 
 const char *ttype(token_type_e ttype_e);
 void token_dump(tokens_t *tp);
-void dump_tokens(char *pass, tokens_t *f, tokens_t *l);
+void dump_tokens(const char *pass, tokens_t *f, tokens_t *l);
 void insert(int n, tokens_t *tp, tokens_t **ep);
 void pullup(tokens_t *dp, tokens_t *sp, tokens_t **ep);
 
@@ -99,18 +99,23 @@ void pullup(tokens_t *dp, tokens_t *sp, tokens_t **ep);
 #define	OPR_DIV		5
 #define	OPR_SHL		6
 #define	OPR_SHR		7
-#define	OPR_AND		8
-#define	OPR_OR		9
-#define	OPR_NOT		10
-#define	OPR_SIZEOF	11
-#define	OPR_CONCAT	12
-#define	OPR_LABEL	13
-#define	OPR_PAREN	14
-#define	OPR_MAX 	15
-#define	OPR_MIN 	16
+#define	OPR_LAND    8
+#define	OPR_AND		9
+#define	OPR_LOR		10
+#define	OPR_OR		11
+#define	OPR_EQ		12
+#define	OPR_NEQ		13
+#define	OPR_NOT		14
+#define	OPR_SIZEOF	15
+#define	OPR_CONCAT	16
+#define	OPR_LABEL	17
+#define	OPR_OPEN	18
+#define	OPR_CLOSE	19
+#define	OPR_MAX 	20
+#define	OPR_MIN 	21
 
 typedef enum {
-	PT_DEF, PT_STRUCT, PT_MEMBER, PT_MACRO
+	PT_NONE, PT_DEF, PT_STRUCT, PT_MEMBER, PT_MACRO
 } preproc_type_e;
 
 typedef struct {
@@ -141,8 +146,16 @@ preproc_t *pre(char *str, preproc_type_e ptype);
 // expressions
 
 int def(tokens_t *tp, tokens_t **ep);
+tokens_t *cond(tokens_t *t, tokens_t **ep, int *val);
 tokens_t *expr(tokens_t *tp, tokens_t **ep, int *val, int multi);
 int arg_match(tokens_t *body, tokens_t *args, int nargs);
 int exp_macro(tokens_t **dp, tokens_t **to);
+
+
+void sys_panic(const char *str);
+void panic(const char *str, tokens_t *t = NULL);
+void syntax(int cond, const char *fmt, ...);
+void _assert(int cond, const char *str, const char *file, int line);
+void errmsg(const char *str, tokens_t *t = NULL);
 
 #endif

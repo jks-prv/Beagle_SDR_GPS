@@ -33,9 +33,10 @@ Boston, MA  02110-1301, USA.
 
 #define MAX_RX_CHANS    16
 #define MAX_WF_CHANS    4
-#define MAX_NRX_BUFS    16
-#define MAX_NRX_SAMPS   340     // was 170
+#define MAX_NRX_BUFS    16      // for RXBUF_SIZE_14CH
+#define MAX_NRX_SAMPS   226     // for nch = 3
 #define NRX_SAMPS_CHANS(nch)    ((NRX_SPI - NRX_OVHD) / NRX_IQW / nch);
+//                              (((2048-1) - (3+1+1)) / 3 / nch) = 680 / nch
 
 extern int fw_sel, fpga_id, rx_chans, wf_chans, nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem,
     snd_rate, rx_decim;

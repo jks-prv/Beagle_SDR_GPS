@@ -13,7 +13,24 @@ static void remove_files()
 	system(rm);
 }
 
-void sys_panic(char *str)
+static void _errmsg(char *str, tokens_t *t = NULL)
+{
+    //dump_tokens("errmsg", tp_start, tp_end);
+    if (t == NULL)
+	    printf("%s:%d error: %s", fn, curline, str);
+	else {
+        for (; t->ttype != TT_EOL; t++)
+            ;
+	    printf("%s:%d error: %s", ifiles_list[t->ifl], t->num-1, str);
+	}
+}
+
+void errmsg(const char *str, tokens_t *t)
+{
+    _errmsg((char *) str, t);
+}
+
+void sys_panic(const char *str)
 {
 	printf("panic\n");
 	perror(str);
@@ -21,12 +38,17 @@ void sys_panic(char *str)
 	exit(-1);
 }
 
-void panic(char *str)
+static void _panic(char *str, tokens_t *t = NULL)
 {
-	errmsg(str);
+	_errmsg(str, t);
 	printf("\n");
 	remove_files();
 	exit(-1);
+}
+
+void panic(const char *str, tokens_t *t)
+{
+    _panic((char *) str, t);
 }
 
 void syntax(int cond, const char *fmt, ...)
@@ -38,7 +60,25 @@ void syntax(int cond, const char *fmt, ...)
         char *buf;
 		vasprintf(&buf, fmt, ap);
         va_end(ap);
-		panic(buf);
+		_panic(buf);
+	}
+}
+
+void syntax2(int cond, tokens_t *tp, const char *fmt, ...)
+{
+	if (!cond) {
+        tokens_t *t;
+        printf("\ntokens: ");
+        for (t = tp; t->ttype != TT_EOL; t++) {
+            token_dump(t);
+        }
+        printf("\n");
+        va_list ap;
+        va_start(ap, fmt);
+        char *buf;
+		vasprintf(&buf, fmt, ap);
+        va_end(ap);
+		_panic(buf, t);
 	}
 }
 
@@ -48,12 +88,6 @@ void _assert(int cond, const char *str, const char *file, int line)
 		printf("assert \"%s\" failed at %s:%d\n", str, file, line);
 		panic("assert");
 	}
-}
-
-void errmsg(char *str)
-{
-    //dump_tokens("errmsg", tp_start, tp_end);
-	printf("%s:%d error: %s", fn, curline, str);
 }
 
 
@@ -117,7 +151,7 @@ void token_dump(tokens_t *tp)
 {
 	switch (tp->ttype) {
 	
-	case TT_EOL:	printf("\\n%d: ", tp->num); break;
+	case TT_EOL:	printf("\\n:%s:%d ", ifiles_list[tp->ifl], tp->num); break;
 	case TT_LABEL:	printf("%s: ", tp->str); break;
 	case TT_SYM:	printf("\"%s\"%s ", tp->str, (tp->flags&TF_RET)? ".r": (tp->flags&TF_CIN)? ".cin":"");  break;
 	case TT_NUM:	if (tp->flags & TF_HEX) printf("0x%x ", tp->num); else if (tp->flags & TF_FIELD) printf("%d'd%d ", tp->width, tp->num); else printf("%d ", tp->num);  break;
@@ -131,7 +165,7 @@ void token_dump(tokens_t *tp)
 	}
 }
 
-void dump_tokens(char *pass, tokens_t *f, tokens_t *l)
+void dump_tokens(const char *pass, tokens_t *f, tokens_t *l)
 {
 	tokens_t *t;
 	
@@ -174,7 +208,7 @@ preproc_t *pre(char *str, preproc_type_e ptype)
 	
 	for (p=preproc; p->str; p++) {
 		if (strcmp(p->str, str) == 0) {
-			if ((int) ptype == -1) return p;
+			if (ptype == PT_NONE) return p;
 			if (p->ptype == ptype) return p;
 		}
 	}
@@ -217,6 +251,51 @@ int def(tokens_t *tp, tokens_t **ep)
 	return 0;
 }
 
+// destructive (does pullups)
+tokens_t *cond(tokens_t *t, tokens_t **ep, int *val)
+{
+	tokens_t *tp = t;
+	preproc_t *p;
+	
+	// replace all DEFs with resolved NUMs
+	while (tp->ttype != TT_EOL) {
+        if (tp->ttype == TT_SYM && (p = pre(tp->str, PT_DEF))) {
+            tp->ttype = TT_NUM;
+            tp->num = p->val;
+        }
+        tp++;
+	}
+	
+	// eval condition
+    int e_val;
+	tp = t;
+	while ((tp+1)->ttype != TT_EOL) {
+		// NUM OPR NUM -> NUM
+		if (tp->ttype == TT_NUM && (tp+1)->flags & TF_2OPR && (tp+2)->ttype == TT_NUM) {
+			if (debug) printf("COND %d %s %d = ", tp->num, (tp+1)->str, (tp+2)->num);
+			expr(tp, ep, &e_val, 0); tp->num = e_val;
+			if (debug) printf("%d\n", e_val);
+			pullup(tp+1, tp+3, ep);
+			continue;
+		}
+
+		// NUM OPR -> NUM
+		if (tp->ttype == TT_NUM && (tp+1)->flags & TF_1OPR) {
+			if (debug) printf("COND %d %s = ", tp->num, (tp+1)->str);
+			expr(tp, ep, &e_val, 0); tp->num = e_val;
+			if (debug) printf("%d\n", e_val);
+			pullup(tp+1, tp+2, ep);
+			continue;
+		}
+
+        syntax2(0, t-1, "expected \"NUM OPR NUM\" or \"NUM OPR\"");
+	}
+    if (debug) printf("COND FINAL = %d\n", tp->num);
+    *val = tp->num;
+    return tp+1;
+}
+
+// not destructive (no pullups)
 tokens_t *expr(tokens_t *tp, tokens_t **ep, int *val, int multi)
 {
 	tokens_t *t;
@@ -226,34 +305,38 @@ tokens_t *expr(tokens_t *tp, tokens_t **ep, int *val, int multi)
 	*val = tp->num; tp++;
 	while (tp->ttype != TT_EOL) {
 		t = tp;
-		syntax(t->ttype == TT_OPR, "expected expr operator");
+		syntax(t->ttype == TT_OPR, "expected expr OPR");
 		
 		if (t->flags & TF_2OPR) {
 			tp++; def(tp, ep);
-			syntax(tp->ttype == TT_NUM, "expected expr number 2");
+			syntax(tp->ttype == TT_NUM, "expected expr NUM");
 			switch (t->num) {
-				case OPR_ADD: *val += tp->num; break;
-				case OPR_SUB: *val -= tp->num; break;
-				case OPR_MUL: *val *= tp->num; break;
-				case OPR_DIV: *val /= tp->num; break;
-				case OPR_SHL: *val <<= tp->num; break;
-				case OPR_SHR: *val >>= tp->num; break;
-				case OPR_AND: *val &= tp->num; break;
-				case OPR_OR:  *val |= tp->num; break;
-				case OPR_MAX: *val  = MAX(*val, tp->num); break;
-				case OPR_MIN: *val  = MIN(*val, tp->num); break;
-				default: syntax(0, "bad expr operator"); break;
+				case OPR_ADD:   *val += tp->num; break;
+				case OPR_SUB:   *val -= tp->num; break;
+				case OPR_MUL:   *val *= tp->num; break;
+				case OPR_DIV:   *val /= tp->num; break;
+				case OPR_SHL:   *val <<= tp->num; break;
+				case OPR_SHR:   *val >>= tp->num; break;
+				case OPR_LAND:  *val  = *val && tp->num; break;
+				case OPR_AND:   *val &= tp->num; break;
+				case OPR_LOR:   *val  = *val || tp->num; break;
+				case OPR_OR:    *val |= tp->num; break;
+				case OPR_EQ:    *val  = *val == tp->num; break;
+				case OPR_NEQ:   *val  = *val != tp->num; break;
+				case OPR_MAX:   *val  = MAX(*val, tp->num); break;
+				case OPR_MIN:   *val  = MIN(*val, tp->num); break;
+				default: syntax(0, "unknown expr 2-arg OPR"); break;
 			}
 		} else
 		if (t->flags & TF_1OPR) {
 			switch (t->num) {
 				case OPR_INC: *val += 1; break;
 				case OPR_DEC: *val += 1; break;
-				case OPR_NOT: *val = (~*val) & 0xffff; break;
-				default: syntax(0, "bad expr operator 2"); break;
+				case OPR_NOT: *val = (~*val) & 0xffff; break;   // NB: currently done postfix
+				default: syntax(0, "unknown expr 1-arg OPR"); break;
 			}
 		} else {
-			syntax(0, "bad expr operator 3");
+			syntax(0, "expected expr OPR");
 		}
 		if (!multi) break;
 		tp++;
@@ -293,16 +376,16 @@ int exp_macro(tokens_t **dp, tokens_t **to)
 			if ((i = arg_match(t, p->args, p->nargs)) != -1) {
 				pt = params;
 				for (j=0; j < i; j++) {		// have params to skip
-					if (pt->ttype == TT_OPR && pt->num == OPR_PAREN) {
+					if (pt->ttype == TT_OPR && pt->num == OPR_OPEN) {
 						pt++;
-						while (!(pt->ttype == TT_OPR && pt->num == OPR_PAREN))
+						while (!(pt->ttype == TT_OPR && pt->num == OPR_CLOSE))
 							pt++;
 					}
 					pt++;
 				}
-				if (pt->ttype == TT_OPR && pt->num == OPR_PAREN) {
+				if (pt->ttype == TT_OPR && pt->num == OPR_OPEN) {
 					pt++;
-					while (!(pt->ttype == TT_OPR && pt->num == OPR_PAREN))
+					while (!(pt->ttype == TT_OPR && pt->num == OPR_CLOSE))
 						*te++ = *pt++;
 					//te--;
 				} else {

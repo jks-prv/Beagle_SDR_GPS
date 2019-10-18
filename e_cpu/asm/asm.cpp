@@ -34,9 +34,10 @@ char linebuf[LBUF];
 
 #define	TBUF	64*1024
 tokens_t tokens[TBUF], *pass1, *pass2, *pass3, *pass4;
+tokens_t *tp_start, *tp_end;
 
 typedef struct {
-	char *str;
+	const char *str;
 	token_type_e ttype;
 	int val;
 	int flags;
@@ -120,20 +121,24 @@ dict_t dict[] = {
 	{ "/",			TT_OPR,		OPR_DIV,	TF_2OPR },
 	{ "<<",			TT_OPR,		OPR_SHL,	TF_2OPR },
 	{ ">>",			TT_OPR,		OPR_SHR,	TF_2OPR },
+	{ "&&",			TT_OPR,		OPR_LAND,	TF_2OPR },
 	{ "&",			TT_OPR,		OPR_AND,	TF_2OPR },
+	{ "||",			TT_OPR,		OPR_LOR,    TF_2OPR },
 	{ "|",			TT_OPR,		OPR_OR,		TF_2OPR },
-	{ "~",			TT_OPR,		OPR_NOT,	TF_1OPR },
+	{ "==",			TT_OPR,		OPR_EQ,	    TF_2OPR },
+	{ "!=",			TT_OPR,		OPR_NEQ,	TF_2OPR },
+	{ "~",			TT_OPR,		OPR_NOT,	TF_1OPR },      // NB: currently done postfix
 	{ "max",        TT_OPR,		OPR_MAX,    TF_2OPR },
 	{ "min",        TT_OPR,		OPR_MIN,    TF_2OPR },
 	{ "sizeof",		TT_OPR,		OPR_SIZEOF },
 	{ "#",			TT_OPR,		OPR_CONCAT },
 	{ ":",			TT_OPR,		OPR_LABEL },
-	{ "(",			TT_OPR,		OPR_PAREN },
-	{ ")",			TT_OPR,		OPR_PAREN },
+	{ "(",			TT_OPR,		OPR_OPEN },
+	{ ")",			TT_OPR,		OPR_CLOSE },
 	
 	{ "<iter>",		TT_ITER,	0 },
 	
-	{ 0,			0,			0 }
+	{ 0,			TT_EOL,     0 }
 };
 
 #define SBUF 64
@@ -153,12 +158,14 @@ init_code_t init_code[] = {
 
 #define	FN_PREFIX	"kiwi"
 
+char ifiles_list[NIFILES_LIST][32];
+
 #define NIFILES_NEST 3
 char ifiles[NIFILES_NEST][32];
 int lineno[NIFILES_NEST];
 u4_t ocstat[256];
 
-char *ocname[256] = {
+const char *ocname[256] = {
 	"nop", "dup", "swap", "swap16", "over", "pop", "rot", "addi", "add", "sub", "mult", "and", "or", "xor", "not", "0x8F",
 	"shl64", "shl", "shr", "rdbit", "fetch16", "store16", "SP", "RP", "0x98", "0x99", "0x9A", "0x9B", "r", "r_from", "to_r", "0x9F",
 	"push", "add_cin", "rdbit2", "call", "br", "brz", "brnz",
@@ -171,16 +178,16 @@ int main(int argc, char *argv[])
 	
 	char *odir = (char *) ".";
 
-	char *ifs = FN_PREFIX ".asm";					// source input
-    //     *bfs                                     // loaded into FPGA via SPI
+	char *ifs = (char *) FN_PREFIX ".asm";                  // source input
+    //   *bfs                                               // loaded into FPGA via SPI
 
-	char *ofs;                                      // included by simulator
-	//	 *hfs                                       // included by .cpp / .c
-	      cfs = "../verilog/" FN_PREFIX ".cfg.vh";	// included by verilog
-	      vfs = "../verilog/" FN_PREFIX ".gen.vh";	// included by verilog
-	      efs = "../verilog/" FN_PREFIX ".coe";		// .coe file to init BRAMs (optional during FPGA development)
+	char *ofs;                                              // included by simulator
+	//	 *hfs                                               // included by .cpp / .c
+	      cfs = (char *) "../verilog/" FN_PREFIX ".cfg.vh"; // included by verilog
+	      vfs = (char *) "../verilog/" FN_PREFIX ".gen.vh";	// included by verilog
+	      efs = (char *) "../verilog/" FN_PREFIX ".coe";    // .coe file to init BRAMs (optional during FPGA development)
 
-	int ifn;
+	int ifn, ifl;
 	FILE *ifp[NIFILES_NEST], *ofp, *cfp, *hfp, *vfp, *efp;
 	
 	int bfd;
@@ -195,7 +202,7 @@ int main(int argc, char *argv[])
 	
 	for (i=1; i < argc; i++)
 	if (argv[i][0] == '-') switch (argv[i][1]) {
-		case 't': ifs = "test.asm"; ofs="test.aout.h"; bfs="test.aout"; break;
+		case 't': ifs = (char *) "test.asm"; ofs = (char *) "test.aout.h"; bfs = (char *) "test.aout"; break;
 		case 'c': compare_code=1; printf("compare mode\n"); break;
 		case 'd': debug=1; gen=0; break;
 		case 'b': show_bin=1; gen=0; break;
@@ -208,8 +215,9 @@ int main(int argc, char *argv[])
 	asprintf(&ofs, "%s/ecode.aout.h", odir);
 	asprintf(&hfs, "%s/%s.gen.h", odir, FN_PREFIX);
 	
-	ifn=0; fn = ifs;
+	ifn = ifl = 0; fn = ifs;
 	strcpy(ifiles[ifn], ifs);
+	strcpy(ifiles_list[ifl], ifs);
 	if ((ifp[ifn] = fopen(ifs, "r")) == NULL) sys_panic("fopen ifs");
 	if ((ofp = fopen(ofs, "w")) == NULL) sys_panic("fopen ofs");
 	if ((bfd = open(bfs, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0) sys_panic("open bfs");
@@ -247,12 +255,12 @@ int main(int argc, char *argv[])
 			lineno[ifn]++; curline = lineno[ifn];
 	
 			if (debug) printf("%s:%03d %s", fn, curline, lp);
-			cp=lp;
+			cp = lp;
 			
 			if (sscanf(cp, "#include %s", tsbuf) == 1) {
-				ifn++;
+				ifn++; ifl++;
 				if (ifn >= NIFILES_NEST) panic("too many nested include files");
-				fn = ifiles[ifn]; strcpy(fn, tsbuf);
+				fn = ifiles[ifn]; strcpy(fn, tsbuf); strcpy(ifiles_list[ifl], tsbuf);
 				printf("#include file: %s\n", fn);
 				if ((ifp[ifn] = fopen(fn, "r")) == NULL) sys_panic("fopen include file");
 				continue;
@@ -289,7 +297,7 @@ int main(int argc, char *argv[])
 					for (dp=dict; dp->str; dp++) {		// check for reserved names
 						if (strcmp(dp->str, sym) == 0) {
 							if (*cp==':') panic("resv name as label");
-							tp->ttype = dp->ttype; tp->str = dp->str; tp->num = dp->val; tp->flags = dp->flags;
+							tp->ttype = dp->ttype; tp->str = (char *) dp->str; tp->num = dp->val; tp->flags = dp->flags;
 							if (strncmp(cp, ".r", 2) == 0) tp->flags |= TF_RET, cp+=2;
 							if (strncmp(cp, ".cin", 4) == 0) tp->flags |= TF_CIN, cp+=4;
 							break;
@@ -313,7 +321,7 @@ int main(int argc, char *argv[])
 					while (!isspace(*cp) && *cp!=')') *sp++ = *cp++; *sp = 0;
 				for (dp=dict; dp->str; dp++) {		// check for reserved names
 					if (strcmp(dp->str, sym) == 0) {
-						tp->ttype = dp->ttype; tp->str = dp->str; tp->num = dp->val; tp->flags = dp->flags; tp++; break;
+						tp->ttype = dp->ttype; tp->str = (char *) dp->str; tp->num = dp->val; tp->flags = dp->flags; tp++; break;
 					}
 				}
 				if (dp->str) continue;
@@ -325,19 +333,30 @@ int main(int argc, char *argv[])
 			}
 			
 			if ((tp-1)->ttype != TT_EOL) {
-				tp->ttype = TT_EOL; tp->num = curline+1; tp++;
+				tp->ttype = TT_EOL; tp->num = curline+1; tp->ifl = ifl; tp++;
 			} else {
 				(tp-1)->num++;
 			}
 		
-			if (debug) for (t=ltp; t!=tp; t++) token_dump(t);
+			if (debug) {
+			    int seen = 0;
+			    for (t=ltp; t != tp; t++) {
+			        if (t->ttype != TT_EOL) {
+			            token_dump(t);
+			            seen = 1;
+			        }
+			    }
+			    if (seen) printf("\n");
+			}
 			ltp = tp;
-			if (debug) printf("\n");
 		}
 		
 		fclose(ifp[ifn]);
 		ifn--;
 		fn = ifiles[ifn];
+		
+		ifl++;
+		strcpy(ifiles_list[ifl], fn);
 	}
 
 	fn = ifiles[0];
@@ -405,35 +424,18 @@ int main(int argc, char *argv[])
 			// skip in this level if skipping in previous level
 			if (!keep[ifdef_lvl-1]) {
 				keep[ifdef_lvl] = 0;
-			} else
-			if ((tp+1)->ttype == TT_NUM) {
-				keep[ifdef_lvl] = ((tp+1)->num != 0);
-			} else
-			if ((tp+1)->ttype == TT_SYM) {
-				if ((p = pre((tp+1)->str, PP_DEF))) {
-			        if ((tp+2)->ttype == TT_NUM) {      // #if SYM (implied ==) NUM
-			            int sym_equals_num = (p->val == (tp+2)->num);
-					    keep[ifdef_lvl] = sym_equals_num;
-                        if (debug) printf("#if SYM (%s=%d) == %d? %s\n",
-                            (tp+1)->str, p->val, (tp+2)->num, sym_equals_num? "T":"F");
-			        } else {
-					    keep[ifdef_lvl] = (p->val != 0);
-                        if (debug) printf("#if SYM %s=%d\n", (tp+1)->str, p->val);
-					}
-				} else {
-					keep[ifdef_lvl] = 0;
-				}
-			} else panic("expected #if SYM or NUM");
-			
-			if (debug) printf("IF %s %d\n", (tp+1)->str, keep[ifdef_lvl]);
-			tp += 3; continue;
+			} else {
+			    tp = cond(tp+1, &ep1, &val);
+				keep[ifdef_lvl] = (val != 0);
+			}
+			if (debug) printf("IF %s:%03d %s\n", fn, curline, keep[ifdef_lvl]? "YES":"NO");
 		}
 		
 		if (tp->ttype == TT_PRE && tp->num == PP_ELSE) {
 		
 			// only act if not skipping in previous level
 			if (keep[ifdef_lvl-1]) keep[ifdef_lvl] ^= 1;
-			if (debug) printf("ELSE %d\n", keep[ifdef_lvl]);
+			if (debug) printf("ELSE %s:%03d %s\n", fn, curline, keep[ifdef_lvl]? "YES":"NO");
 			tp += 2; continue;
 		}
 
@@ -453,7 +455,7 @@ int main(int argc, char *argv[])
 
 		// process STRUCT/MEMBER
 		if (tp->ttype == TT_SYM) {
-			if ((p = pre(tp->str, (preproc_type_e) -1))) {
+			if ((p = pre(tp->str, PT_NONE))) {
 				if (p->ptype == PT_MEMBER) {
 					if (debug) printf("MEMBER \"%s\" offset %d\n", tp->str, p->offset);
 					to->ttype = TT_NUM; to->num = p->offset; to++;
@@ -472,7 +474,7 @@ int main(int argc, char *argv[])
 		if (tp->ttype == TT_PRE && tp->num == PP_DEF) {
 			pp->flags = tp->flags;
 			tp++; syntax(tp->ttype == TT_SYM, "expected DEF name");
-			if (pre(tp->str, -1)) syntax(0, "re-defined: %s", tp->str);
+			if (pre(tp->str, PT_NONE)) syntax(0, "re-defined: %s", tp->str);
 			t = tp; tp++;
 			if (tp->flags & TF_FIELD) {		// fixme: not quite right wrt expr()
 				pp->width = tp->width;
@@ -571,7 +573,7 @@ int main(int argc, char *argv[])
 					if (debug) printf("\tFCALL %d\n", fcall);
 					if (val >= fcall) {
 						val -= fcall;
-						to->ttype = TT_OPC, to->str = "call"; to->num = OC_CALL; to++;
+						to->ttype = TT_OPC, to->str = (char *) "call"; to->num = OC_CALL; to++;
 						if (debug) { printf("\t\tval %d call ", val); token_dump(tp); printf("\n"); }
 						*to++ = *tp; to->ttype = TT_EOL; to->num = curline+1; to++;	// target
 						tp = t;
@@ -702,11 +704,11 @@ int main(int argc, char *argv[])
 				if ((tn->num & 1) == 0) {
 					tn->num = tn->num >> 1;
 					if (debug) printf("shl;\n");
-					t->ttype = TT_OPC; t->str = "shl"; t->num = OC_SHL;
+					t->ttype = TT_OPC; t->str = (char *) "shl"; t->num = OC_SHL;
 				} else {
 					tn->num = tn->num & 0x7fff;
 					if (debug) printf("or_0x8000_assist;\n");
-					t->ttype = TT_SYM; t->str = "or_0x8000_assist"; t->num = 0;
+					t->ttype = TT_SYM; t->str = (char *) "or_0x8000_assist"; t->num = 0;
 				}
 				tp += 4; a += 2;
 				if (debug) printf("%04x %s\n", a, t->str);
@@ -1028,7 +1030,7 @@ int main(int argc, char *argv[])
 		} else
 		
 		{
-			errmsg("found unexpected: ");
+			errmsg("found unexpected: ", tp);
 			error = TRUE;
 			token_dump(tp);
 			printf("\n");
