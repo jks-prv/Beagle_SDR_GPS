@@ -57,6 +57,7 @@ void unpack50(u1_t *d, u4_t *call_28b, u4_t *grid_pwr_22b, u4_t *grid_15b, u4_t 
     *grid_pwr_22b = ((d[3]&0xf)<<18) | (d[4]<<10) | (d[5]<<2) | (d[6]>>6);
 	*grid_15b = *grid_pwr_22b >> 7;
 	*pwr_7b = *grid_pwr_22b & 0x7f;
+    //wspr_gprintf("unpack50 %d|%d|%d|%d 0x%08x\n", d[0], d[1], d[2], d[3], *call_28b);
 }
 
 static const char *c = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ ";		// 37 characters
@@ -198,18 +199,23 @@ void deinterleave(unsigned char *sym)
     unsigned char tmp[NSYM_162];
     unsigned char p, i, j;
     
-    p=0;
-    i=0;
-    while (p<NSYM_162) {
-        j=((i * 0x80200802ULL) & 0x0884422110ULL) * 0x0101010101ULL >> 32;
-        if (j < NSYM_162 ) {
-            tmp[p]=sym[j];
-            p=p+1;
+    p = 0;
+    i = 0;
+    while (p < NSYM_162) {
+        j = ((i * 0x80200802ULL) & 0x0884422110ULL) * 0x0101010101ULL >> 32;
+        if (j < NSYM_162) {
+            tmp[p] = sym[j];
+            p = p+1;
         }
-        i=i+1;
+        i = i+1;
     }
-    for (i=0; i<NSYM_162; i++)
-        sym[i]=tmp[i];
+
+    //real_printf("symbols: ");
+    for (i = 0; i < NSYM_162; i++) {
+        sym[i] = tmp[i];
+        //real_printf("%02x ", sym[i]); fflush(stdout);
+    }
+    //real_printf("\n");
 }
 
 #define WSPR_HASH_ENTRY_SIZE 16

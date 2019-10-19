@@ -472,7 +472,7 @@ bool wspr_update_vars_from_config()
     
 void wspr_init()
 {
-    float bias=0.45;						//Fano metric bias (used for both Fano and stack algorithms)
+    float bias = 0.45;						//Fano metric bias (used for both Fano and stack algorithms)
 
     // setup metric table
     for (int i=0; i < SPS; i++) {
@@ -560,7 +560,6 @@ void wspr_decode(int rx_chan)
     if (!w->init) {
 		if (w->stackdecoder)
 			w->stack = (struct snode *) malloc(WSPR_STACKSIZE * sizeof(struct snode));
-
     	w->init = true;
     }
 
@@ -893,11 +892,11 @@ void wspr_decode(int rx_chan)
 				wspr_pprintf("jig <>%3d #%02ld %6.1f snr  %9.6f (%7.2f) freq  %4.1f drift  %5d(%+4d) shift  %6.3f sync  %4.1f rms",
 					idt, pki, snr, w->dialfreq_MHz+(w->bfo+f1)/1e6, w->cf_offset+f1, drift1, jiggered_shift, ii, sync1, rms);
 				if (!weak) {
-					wspr_pprintf("  %4ld metric  %3ld cycles\n", metric, cycles);
+					wspr_pxprintf("  %4ld metric  %3ld cycles\n", metric, cycles);
 				} else {
-					if (sync1 <= minsync2) wspr_pprintf("  SYNC-WEAK");
-					if (rms <= minrms) wspr_pprintf("  RMS-WEAK");
-					wspr_pprintf("\n");
+					if (sync1 <= minsync2) wspr_pxprintf("  SYNC-WEAK");
+					if (rms <= minrms) wspr_pxprintf("  RMS-WEAK");
+					wspr_pxprintf("\n");
 				}
 				
                 idt++;

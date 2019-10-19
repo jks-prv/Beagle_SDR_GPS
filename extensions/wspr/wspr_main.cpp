@@ -775,6 +775,9 @@ void wspr_main()
     nbins_411 = ceilf(NFFT * BW_MAX / FSRATE) +1;
     hbins_205 = (nbins_411-1)/2;
 
+    // NB: must be called before shmem_ipc_setup() since it initializes referenced, but non-shared, memory
+    wspr_init();
+
 	for (i=0; i < rx_chans; i++) {
         wspr_t *w = &WSPR_SHMEM->wspr[i];
 		memset(w, 0, sizeof(wspr_t));
@@ -805,8 +808,6 @@ void wspr_main()
         #endif
 	}
 	
-    wspr_init();
-
 	for (i=0; i < NFFT; i++) {
 		window[i] = sin(i * K_PI/(NFFT-1));
 	}

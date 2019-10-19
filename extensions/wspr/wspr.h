@@ -68,11 +68,14 @@
 	#define wspr_printf(fmt, ...) \
 		printf("WSPR-%02d: " fmt, rx_chan, ## __VA_ARGS__)
 
-    #if 0
+    #if 1
 	    #define wspr_pprintf(fmt, ...) \
 	    	printf("WSPR-%02d: " fmt, rx_chan, ## __VA_ARGS__)
+	    #define wspr_pxprintf(fmt, ...) \
+	    	printf(fmt, ## __VA_ARGS__)
 	#else
 	    #define wspr_pprintf(fmt, ...)
+	    #define wspr_pxprintf(fmt, ...)
 	#endif
 
 	#define wspr_gprintf(fmt, ...) \
@@ -84,6 +87,7 @@
 #else
 	#define wspr_printf(fmt, ...)
 	#define wspr_pprintf(fmt, ...)
+    #define wspr_pxprintf(fmt, ...)
 	#define wspr_gprintf(fmt, ...)
 	#define wspr_dprintf(fmt, ...)
 #endif
