@@ -984,7 +984,7 @@ void c2s_sound(void *param)
 		smeter[1] = sMeter & 0xff;
 
         *flags = 0;
-		if (rx_adc_ovfl) *flags |= SND_FLAG_ADC_OVFL;
+		if (dpump.rx_adc_ovfl) *flags |= SND_FLAG_ADC_OVFL;
         if (mode == MODE_IQ) *flags |= SND_FLAG_MODE_IQ;
         if (compression && mode != MODE_IQ) *flags |= SND_FLAG_COMPRESSED;
         if (masked) *flags |= SND_FLAG_MASKED;

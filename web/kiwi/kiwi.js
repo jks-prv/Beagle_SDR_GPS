@@ -764,7 +764,7 @@ function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_gps_clk_c
 	}
 }
 
-function admin_stats_cb(audio_dropped, underruns, seq_errors, dpump_resets, dpump_nbufs, dpump_hist)
+function admin_stats_cb(audio_dropped, underruns, seq_errors, dp_resets, dp_hist_cnt, dp_hist, in_hist_cnt, in_hist)
 {
    if (audio_dropped == undefined) return;
    
@@ -773,13 +773,22 @@ function admin_stats_cb(audio_dropped, underruns, seq_errors, dpump_resets, dpum
 	   audio_dropped.toUnits() +' dropped, '+
 	   underruns.toUnits() +' underruns, '+
 	   seq_errors.toUnits() +' sequence, '+
-	   dpump_resets.toUnits() +' realtime';
+	   dp_resets.toUnits() +' realtime';
 
-	el = w3_el('id-status-dpump-hist');
+	el = w3_el('id-status-dp-hist');
 	if (el) {
-	   var s = 'Realtime response histogram: ';
-		for (var i = 0; i < dpump_nbufs; i++) {
-		   s += (i? ', ':'') + dpump_hist[i].toUnits();
+	   var s = 'Datapump: ';
+		for (var i = 0; i < dp_hist_cnt; i++) {
+		   s += (i? ', ':'') + dp_hist[i].toUnits();
+		}
+      el.innerHTML = s;
+	}
+
+	el = w3_el('id-status-in-hist');
+	if (el) {
+	   var s = 'SoundInQ: ';
+		for (var i = 0; i < in_hist_cnt; i++) {
+		   s += (i? ', ':'') + in_hist[i].toUnits();
 		}
       el.innerHTML = s;
 	}
@@ -928,11 +937,11 @@ function cpu_stats_cb(o, uptime_secs, ecpu, waterfall_fps)
    var cputempC = o.cc? o.cc : 0;
    var cputempF = cputempC * 9/5 + 32;
    var temp_color = o.cc? ((o.cc >= 60)? 'w3-text-css-red w3-bold' : ((o.cc >= 50)? 'w3-text-css-yellow' : 'w3-text-css-lime')) : '';
-   var cputemp = cputempC? (cputempC.toFixed(0) +'&deg;C|'+ cputempF.toFixed(0) +'&deg;F ') : '';
+   var cputemp = cputempC? (cputempC.toFixed(0) +'&deg;C '+ cputempF.toFixed(0) +'&deg;F ') : '';
    var cpufreq = (o.cf >= 1000)? ((o.cf/1000).toFixed(1) +'GHz') : (o.cf.toFixed(0) +'MHz');
 	kiwi_cpu_stats_str =
 	   w3_text(optbar_prefix_color, 'BB ') +
-	   w3_text('', o.cu[0] +'|'+ o.cs[0] +'|'+ o.ci[0] +' usi% ') +
+	   w3_text('', o.cu[0] +','+ o.cs[0] +','+ o.ci[0] +' usi% ') +
 	   w3_text(temp_color, cputemp) +
 	   w3_text('', cpufreq +' ') +
 	   w3_text(optbar_prefix_color, 'FPGA') +
@@ -951,8 +960,8 @@ function cpu_stats_cb(o, uptime_secs, ecpu, waterfall_fps)
    if (o.cu.length > 1) cpus += '0 cpu1';
 	kiwi_cpu_stats_str_long =
 	   w3_inline('',
-         w3_text('w3-text-black', 'Beagle: '+ cpus +' '+ user +' usr | '+ sys +' sys | '+ idle +' idle' + (cputempC? '':', ')) +
-         (cputempC? ('&nbsp;'+ w3_div('w3-padding-LR-4|background-color:silver', w3_text(temp_color, cputemp)) +'&nbsp;') :'') +
+         w3_text('w3-text-black', 'Beagle: '+ cpus +' '+ user +' usr | '+ sys +' sys | '+ idle +' idle,' + (cputempC? '':', ')) +
+         (cputempC? ('&nbsp;'+ w3_text(temp_color +' w3-text-outline w3-large', cputemp) +'&nbsp;') :'') +
          w3_text('w3-text-black', cpufreq + ', ') +
          w3_text('w3-text-black', 'FPGA eCPU: '+ ecpu.toFixed(0) +'%')
       );
@@ -1315,7 +1324,7 @@ function kiwi_msg(param, ws)
 				   kiwi.GPS_fixes = o.gf;
 				   //console.log('stat kiwi.WSPR_rgrid='+ kiwi.WSPR_rgrid);
 				}
-				admin_stats_cb(o.ad, o.au, o.ae, o.ar, o.an, o.ap);
+				admin_stats_cb(o.ad, o.au, o.ae, o.ar, o.an, o.ap, o.an2, o.ai);
 				time_display_cb(o);
 			} catch(ex) {
 				console.log('<'+ param[1] +'>');

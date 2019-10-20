@@ -41,10 +41,9 @@ Boston, MA  02110-1301, USA.
 #include <fftw3.h>
 
 rx_dpump_t rx_dpump[MAX_RX_CHANS];
+dpump_t dpump;
 
 #ifdef USE_SDR
-
-int rx_xfer_size;
 
 struct rx_data_t {
     #ifdef SND_SEQ_CHECK
@@ -63,11 +62,8 @@ struct rx_trailer_t {
 } __attribute__((packed));
 static rx_trailer_t *rxt;
 
+static int rx_xfer_size;
 static TYPEREAL rescale;
-int rx_adc_ovfl;
-int audio_dropped;
-u4_t dpump_resets, dpump_hist[MAX_NRX_BUFS];
-bool dpump_force_reset;
 static u4_t last_run_us;
 
 #ifdef SND_SEQ_CHECK
@@ -94,7 +90,7 @@ static void snd_service()
         // CTRL_SND_INTR cleared as a side-effect of the CmdGetRX
         spi_get3_noduplex(CmdGetRX, miso, rx_xfer_size, nrx_samps_rem, nrx_samps_loop);
         moved++;
-        rx_adc_ovfl = miso->status & SPI_ST_ADC_OVFL;
+        dpump.rx_adc_ovfl = miso->status & SPI_ST_ADC_OVFL;
         
         evDPC(EC_EVENT, EV_DPUMP, -1, "snd_svc", "..CmdGetRX");
         
@@ -115,15 +111,15 @@ static void snd_service()
             }
             u2_t new_seq = rxd->hdr.snd_seq;
             if (snd_seq != new_seq) {
-                real_printf("#%d %d:%d(%d)\n", audio_dropped, snd_seq, new_seq, new_seq-snd_seq);
-                evDPC(EC_EVENT, EV_DPUMP, -1, "SEQ DROP", evprintf("$dp #%d %d:%d(%d)", audio_dropped, snd_seq, new_seq, new_seq-snd_seq));
-                audio_dropped++;
+                real_printf("#%d %d:%d(%d)\n", dpump.audio_dropped, snd_seq, new_seq, new_seq-snd_seq);
+                evDPC(EC_EVENT, EV_DPUMP, -1, "SEQ DROP", evprintf("$dp #%d %d:%d(%d)", dpump.audio_dropped, snd_seq, new_seq, new_seq-snd_seq));
+                dpump.audio_dropped++;
                 //TaskLastRun();
                 bool dump = false;
                 //bool dump = true;
                 //bool dump = (new_seq-snd_seq < 0);
-                //bool dump = (audio_dropped == 2);
-                //bool dump = (audio_dropped == 6);
+                //bool dump = (dpump.audio_dropped == 2);
+                //bool dump = (dpump.audio_dropped == 6);
                 if (dump && ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "NextTask", evprintf("DUMP IN %.3f SEC",
                     ev_dump/1000.0));
                 snd_seq = new_seq;
@@ -186,6 +182,13 @@ static void snd_service()
                 #endif
                 
                 rx->wr_pos = (rx->wr_pos+1) & (N_DPBUF-1);
+                
+                diff = (rx->wr_pos >= rx->rd_pos)? rx->wr_pos - rx->rd_pos : N_DPBUF - rx->rd_pos + rx->wr_pos;
+                dpump.in_hist[diff]++;
+
+                if (rx->wr_pos == rx->rd_pos) {
+                    real_printf("#%d ", ch); fflush(stdout);
+                }
             }
         }
         
@@ -200,13 +203,13 @@ static void snd_service()
         evLatency(EC_EVENT, EV_DPUMP, 0, "DATAPUMP", evprintf("MOVED %d diff %d sto %d cur %d %.3f msec",
             moved, diff, stored, current, (timer_us() - last_run_us)/1e3));
 
-        if (diff > (nrx_bufs-1) || dpump_force_reset) {
-		    dpump_resets++;
-		    dpump_force_reset = false;
+        if (diff > (nrx_bufs-1) || dpump.force_reset) {
+		    if (!dpump.force_reset) dpump.resets++;
+		    dpump.force_reset = false;
 		    
 		    // dump on excessive latency between runs
 		    #ifdef EV_MEAS_DPUMP_LATENCY
-                //if (ev_dump /*&& dpump_resets > 1*/) {
+                //if (ev_dump /*&& dpump.resets > 1*/) {
                 u4_t last = timer_us() - last_run_us;
                 if ((ev_dump || bg) && last_run_us != 0 && last >= 40000) {
                     evLatency(EC_EVENT, EV_DPUMP, 0, "DATAPUMP", evprintf("latency %.3f msec", last/1e3));
@@ -217,15 +220,17 @@ static void snd_service()
             #if 0
                 #ifndef USE_VALGRIND
                     lprintf("DATAPUMP RESET #%d %5d %5d %5d %.3f msec\n",
-                        dpump_resets, diff, stored, current, (timer_us() - last_run_us)/1e3);
+                        dpump.resets, diff, stored, current, (timer_us() - last_run_us)/1e3);
                 #endif
             #endif
-		    memset(dpump_hist, 0, sizeof(dpump_hist));
+            
+		    memset(dpump.hist, 0, sizeof(dpump.hist));
+            memset(dpump.in_hist, 0, sizeof(dpump.in_hist));
             spi_set(CmdSetRXNsamps, nrx_samps);
             diff = 0;
         } else {
-            dpump_hist[diff]++;
-            if (ev_dump && p1 && p2 && dpump_hist[p1] > p2) {
+            dpump.hist[diff]++;
+            if (ev_dump && p1 && p2 && dpump.hist[p1] > p2) {
                 printf("DATAPUMP DUMP %d %d %d\n", diff, stored, current);
                 evLatency(EC_DUMP, EV_DPUMP, ev_dump, ">diff",
                     evprintf("MOVED %d, diff %d sto %d cur %d, DUMP", moved, diff, stored, current));

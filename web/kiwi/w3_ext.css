@@ -869,6 +869,18 @@ input[type=range]::-moz-range-thumb {
     background-color: #4CAF50
 }
 
+.w3-text-outline {
+    text-shadow: -1px 0 #444, 1px 0 #444, 0 -1px #444, 0 1px #444;
+}
+
+.w3-text-css-shadow {
+    text-shadow: 2px 2px 4px black;
+}
+
+.w3-text-css-underglow {
+    text-shadow: 2px 0 4px gray, -2px 0 4px gray, 0 2px 4px gray, 0 -2px 4px gray;
+}
+
 .w3int-cur-sel
 {
     color: white;

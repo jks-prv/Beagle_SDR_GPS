@@ -17,11 +17,18 @@ function status_html()
 {
    var s2 = admin_sdr_mode?
 		('<hr>' +
-		w3_div('id-msg-errors w3-container') + 
-		w3_div('w3-container w3-section w3-valign',
-		   w3_div('id-status-dpump-hist w3-show-inline-block') +
-         w3_button('w3-aqua|margin-left:10px', 'Reset', 'status_dpump_hist_reset_cb')
-      )) : '';
+         w3_div('id-msg-errors w3-container') + 
+         w3_div('w3-container w3-section',
+            w3_inline('',
+               w3_div('', 'Realtime response histograms:'),
+               w3_button('w3-padding-smaller w3-aqua|margin-left:10px', 'Reset', 'status_dpump_hist_reset_cb')
+            ),
+            w3_div('w3-container',
+               w3_div('id-status-dp-hist'),
+               w3_div('id-status-in-hist')
+            )
+         )
+      ) : '';
    
 	var s =
 	w3_div('id-status w3-hide',
@@ -2715,11 +2722,13 @@ function admin_msg(data)
          break;
 
       case "gps_az_el_history_cb":
+         var gps_az_el_json;
          try {
-            var gps_az_el_json = decodeURIComponent(param[1]);
+            gps_az_el_json = decodeURIComponent(param[1]);
             w3_call('gps_az_el_history_cb', JSON.parse(gps_az_el_json));
          } catch(ex) {
             console.log('kiwi_msg() gps_az_el_history_cb: JSON parse fail');
+            console.log(gps_az_el_json);
          }
          break;					
 

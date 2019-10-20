@@ -36,7 +36,7 @@ typedef struct {
 	u2_t i, q;
 } __attribute__((packed)) wf_iq_t;
 
-#define N_DPBUF	16
+#define N_DPBUF	32
 
 typedef struct {
 	struct {
@@ -70,14 +70,20 @@ typedef struct {
 		int zoom, samp_wait_ms;
 		bool overlapped_sampling;
 		ima_adpcm_state_t adpcm_snd;
+
 	};
 } rx_dpump_t;
 
-extern rx_dpump_t rx_dpump[MAX_RX_CHANS];
-extern u4_t dpump_resets, dpump_hist[MAX_NRX_BUFS];
-extern bool dpump_force_reset;
+typedef struct {
+    u4_t resets, hist[MAX_NRX_BUFS];
+    bool force_reset;
+    u4_t in_hist[N_DPBUF];
+    int rx_adc_ovfl;
+    int audio_dropped;
+} dpump_t;
 
-extern int rx_adc_ovfl;
+extern rx_dpump_t rx_dpump[MAX_RX_CHANS];
+extern dpump_t dpump;
 
 void data_pump_start_stop();
 void data_pump_init();
