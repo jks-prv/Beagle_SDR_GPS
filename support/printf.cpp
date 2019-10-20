@@ -180,7 +180,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		for (i=0; i < sl; i++)
 			if (buf[i] > 0x7f) buf[i] = '?';
 
-		char *sb, *sb2;
+		kstr_t *ks = NULL;
 		bool want_logged = (type & PRINTF_LOG);
 		
 		// uptime
@@ -189,13 +189,10 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		u4_t min = up % 60; up /= 60;
 		u4_t hr  = up % 24; up /= 24;
 		u4_t days = up;
-		sb = NULL;
 		if (days) {
-			asprintf(&sb, "%dd:", days);
-            sb = kstr_wrap(sb);
+			ks = kstr_asprintf(ks, "%dd:", days);
 		}
-        asprintf(&sb2, "%02d:%02d:%s%.3f ", hr, min, (sec < 10000)? "0":"", (float) sec/1e3);
-        sb = kstr_cat(sb, kstr_wrap(sb2));
+        ks = kstr_asprintf(ks, "%02d:%02d:%s%.3f ", hr, min, (sec < 10000)? "0":"", (float) sec/1e3);
 	
 		// show state of all rx channels
 		rx_chan_t *rx;
@@ -205,7 +202,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		}
 		ch_stat[i] = ' ';
 		ch_stat[i+1] = '\0';
-		sb = kstr_cat(sb, ch_stat);
+		ks = kstr_cat(ks, ch_stat);
 		
 		// show rx channel number if message is associated with a particular rx channel
         int chan = -1;
@@ -222,20 +219,19 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
                 ch_stat[i++] = want_logged? 'L':' ';
             }
             ch_stat[i] = '\0';
-            sb = kstr_cat(sb, ch_stat);
+            ks = kstr_cat(ks, ch_stat);
         } else {
             if (background_mode)
-                asprintf(&sb2, "%*s", rx_chans, stprintf("[%02d]", c->self_idx));
+                ks = kstr_asprintf(ks, "%*s", rx_chans, stprintf("[%02d]", c->self_idx));
             else
-                asprintf(&sb2, "%*s", rx_chans + 2, stprintf("[%02d] %c", c->self_idx, want_logged? 'L':' '));
-            sb = kstr_cat(sb, kstr_wrap(sb2));
+                ks = kstr_asprintf(ks, "%*s", rx_chans + 2, stprintf("[%02d] %c", c->self_idx, want_logged? 'L':' '));
         }
         
-        sb2 = kstr_sp(sb);
+        char *sp = kstr_sp(ks);
 		
 		bool actually_log = ((want_logged && (background_mode || log_foreground_mode)) || log_ordinary_printfs);
 		if (actually_log) {
-			syslog(LOG_INFO, "%s %s", sb2, buf);
+			syslog(LOG_INFO, "%s %s", sp, buf);
 		}
 	
 		char tb[CTIME_R_BUFSIZE];
@@ -244,7 +240,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		
 		// remove our override and call the actual underlying printf
 		#undef printf
-            printf("%s%s %s %s", need_newline? "\n":"", tb, sb2, buf);
+            printf("%s%s %s %s", need_newline? "\n":"", tb, sp, buf);
             need_newline = false;
 		#define printf ALT_PRINTF
 
@@ -268,7 +264,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
                 s = ls->arr[ls->idx++];
                 assert(s != NULL);
                 assert(s < ls->endp);
-                snprintf(s, N_LOG_MSG_LEN, "%s %s %s", tb, sb2, buf);
+                snprintf(s, N_LOG_MSG_LEN, "%s %s %s", tb, sp, buf);
                 strcpy(&s[N_LOG_MSG_LEN-2], "\n");      // truncate msg
             } else {
                 ls->not_shown++;
@@ -281,12 +277,12 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
                 ls->arr[N_LOG_SAVE-1] = t_arr;
 
                 s = ls->arr[N_LOG_SAVE-1];
-                snprintf(s, N_LOG_MSG_LEN, "%s %s %s", tb, sb2, buf);
+                snprintf(s, N_LOG_MSG_LEN, "%s %s %s", tb, sp, buf);
                 strcpy(&s[N_LOG_MSG_LEN-2], "\n");      // truncate msg
             }
 		}
 
-	    kstr_free(sb);
+	    kstr_free(ks);
 	}
 	
 	// attempt to selectively record message remotely

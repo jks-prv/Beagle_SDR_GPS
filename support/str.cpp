@@ -401,14 +401,29 @@ bool kiwi_sha256_strcmp(char *str, const char *key)
     return r;
 }
 
-kstr_t *kstr_list_int(const char *fmt, int *list, int nlist, bool *first)
+kstr_t *kstr_asprintf(kstr_t *ks, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	char *sb;
+	vasprintf(&sb, fmt, ap);
+	ks = kstr_cat(ks, kstr_wrap(sb));
+    return ks;
+}
+
+kstr_t *kstr_list_int(const char *head, const char *fmt, const char *tail, int *list, int nlist, int *qual, int bias)
 {
     kstr_t *ks = NULL;
-    char *sb;
+    bool first = true;
+    
+    if (head) ks = (kstr_t *) head;
+    
     for (int i = 0; i < nlist; i++) {
-        asprintf(&sb, stprintf("%s%s", *first? "":",", fmt), list[i]);
-        *first = false;
-        ks = kstr_cat(ks, kstr_wrap(sb));
+        if (qual != NULL && !qual[i]) continue;
+        ks = kstr_asprintf(ks, stprintf("%s%s", first? "":",", fmt), list[i] + bias);
+        first = false;
     }
+
+    if (tail) ks = kstr_cat(ks, tail);
     return ks;
 }

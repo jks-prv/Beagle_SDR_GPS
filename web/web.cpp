@@ -501,8 +501,7 @@ void reload_index_params()
 
 	sb = NULL;
 	for (i=0; gen_list_css[embed][i] != NULL; i++) {
-		asprintf(&sb2, "<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\" />\n", gen_list_css[embed][i]);
-		sb = kstr_cat(sb, kstr_wrap(sb2));
+		sb = kstr_asprintf(sb, "<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\" />\n", gen_list_css[embed][i]);
 	}
 	iparams_add("GEN_LIST_CSS", kstr_sp(sb));
 	kstr_free(sb);
@@ -528,8 +527,7 @@ void reload_index_params()
 
 	sb = NULL;
 	for (i=0; gen_list_js[embed][i] != NULL; i++) {
-		asprintf(&sb2, "<script src=\"%s\"></script>\n", gen_list_js[embed][i]);
-		sb = kstr_cat(sb, kstr_wrap(sb2));
+		sb = kstr_asprintf(sb, "<script src=\"%s\"></script>\n", gen_list_js[embed][i]);
 	}
 	iparams_add("GEN_LIST_JS", kstr_sp(sb));
 	kstr_free(sb);

@@ -562,25 +562,12 @@ void webserver_collect_print_stats(int print)
 			cpu_stats_buf = NULL;
 			kstr_free(ks);
 		}
-		char *sb;
-		asprintf(&sb, "\"ct\":%d,\"ce\":%.0f,\"cf\":%d,\"cc\":%.0f,",
+		ks = kstr_asprintf(NULL, "\"ct\":%d,\"ce\":%.0f,\"cf\":%d,\"cc\":%.0f,",
 			timer_sec(), ecpu_use(), cpufreq_kHz / 1000, (float) temp_deg_mC / 1000);
-		ks = kstr_wrap(sb);
 
-		ks = kstr_cat(ks, "\"cu\":[");
-		bool first = true;
-		ks = kstr_cat(ks, kstr_list_int("%d", &del_usi[0][0], ncpu, &first));
-		ks = kstr_cat(ks, "],");
-
-		ks = kstr_cat(ks, "\"cs\":[");
-		first = true;
-		ks = kstr_cat(ks, kstr_list_int("%d", &del_usi[1][0], ncpu, &first));
-		ks = kstr_cat(ks, "],");
-
-		ks = kstr_cat(ks, "\"ci\":[");
-		first = true;
-		ks = kstr_cat(ks, kstr_list_int("%d", &del_usi[2][0], ncpu, &first));
-		ks = kstr_cat(ks, "]");
+		ks = kstr_cat(ks, kstr_list_int("\"cu\":[", "%d", "],", &del_usi[0][0], ncpu));
+		ks = kstr_cat(ks, kstr_list_int("\"cs\":[", "%d", "],", &del_usi[1][0], ncpu));
+		ks = kstr_cat(ks, kstr_list_int("\"ci\":[", "%d", "]", &del_usi[2][0], ncpu));
 
 		for (i = 0; i < ncpu; i++) {
             last_usi[0][i] = usi[0][i];
