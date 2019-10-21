@@ -116,7 +116,7 @@
 `define DEF_RXO_BITS
 	parameter RX1_STAGES = 3;    // DEFp 0x3
 `define DEF_RX1_STAGES
-	parameter RX2_STAGES = 4;    // DEFp 0x4
+	parameter RX2_STAGES = 5;    // DEFp 0x5
 `define DEF_RX2_STAGES
 	parameter MAX_ZOOM = 14;    // DEFp 0xe
 `define DEF_MAX_ZOOM

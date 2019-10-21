@@ -122,7 +122,7 @@ alias gclone="function _gclone () { git clone https://github.com/jks-prv/\$1.git
 # current commit
 alias gcom="gsh --oneline -s"
 # list all commits <= current HEAD position
-alias gcoms="git log --no-color --oneline"
+alias gcoms="git log --pretty=format:'%h %ad %s' --date=short"
 # gco <sha>
 # gco master
 

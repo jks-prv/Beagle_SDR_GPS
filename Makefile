@@ -248,6 +248,10 @@ else
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
+	ifeq ($(BBAI),true)
+		CMD_DEPS += /usr/bin/cpufreq-info
+	endif
+
 	# -lrt required for clock_gettime() on Debian 7; see clock_gettime(2) man page
 	# jq command isn't available on Debian 7
 	ifeq ($(DEBIAN_7),true)
@@ -321,6 +325,11 @@ endif
 
 /usr/bin/dtc:
 	-apt-get -y install device-tree-compiler
+
+ifeq ($(BBAI),true)
+/usr/bin/cpufreq-info:
+	-apt-get -y install cpufrequtils
+endif
 
 ifneq ($(DEBIAN_7),true)
 /usr/bin/jq:
@@ -470,11 +479,12 @@ $(GEN_NOIP2): pkgs/noip2/noip2.c
 # constituents of edata_embed:
 #	extensions/*/*.min.{js,css}[.gz]
 #	kiwi/{admin,mfg}.min.html
-#	kiwi/{admin,admin_sdr,mfg}.js.min[.gz]	don't package: conflict with each other
+#	kiwi/{admin,admin_sdr,mfg}.min.js[.gz]	don't package: conflict with each other
 #	kiwi/kiwi_js_load.min.js				don't package: used by dynamic loader
-#	kiwisdr.min.{js,css}.gz					generated package
+#	kiwisdr.min.{js,css}.gz					generated package: font-awesome, text-security, w3, w3-ext, openwebrx, kiwi
 #	openwebrx/{index}.min.html
 #	openwebrx/robots.txt
+#	pkgs/js/*.min.js[.gz]
 #	pkgs/xdLocalStorage/*
 #	pkgs_maps/pkgs_maps.min.{js,css}[.gz]	generated package
 #
@@ -640,7 +650,7 @@ c_ctr_reset:
 #
 # But this means a "make install" must be performed on the *development machine* prior to installation
 # on targets or before uploading as a software release.
-# Previously doing a "make install" on the development machine made no sense and was flagged an error.
+# Previously doing a "make install" on the development machine made no sense and was flagged as an error.
 #
 
 $(BUILD_DIR)/kiwi.bin: c_ctr_reset $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(EXTS_DEPS)
@@ -744,6 +754,36 @@ $(TOOLS_DIR):
 ################################
 # installation
 ################################
+
+REBOOT = $(DIR_CFG)/.reboot
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
+	DO_ONCE =
+else
+	DO_ONCE = $(DIR_CFG)/.do_once.dep
+endif
+
+$(DO_ONCE):
+ifeq ($(BBAI),true)
+	@echo "disable window system"
+	systemctl stop lightdm.service
+	systemctl disable lightdm.service
+	make install_kiwi_device_tree
+endif
+	@mkdir -p $(DIR_CFG)
+	@touch $(DO_ONCE)
+
+ifeq ($(BBAI),true)
+DIR_DTB = dtb-$(SYS_MAJ).$(SYS_MIN)-ti
+install_kiwi_device_tree:
+	@echo "install Kiwi device tree to configure GPIO pins"
+	@echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
+	cp platform/beaglebone_AI/am5729-beagleboneai-kiwisdr-cape.dts /opt/source/$(DIR_DTB)/src/arm
+	(cd /opt/source/$(DIR_DTB); make)
+	cp /opt/source/dtb-4.14-ti/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)
+	cp /opt/source/dtb-4.14-ti/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb
+	@touch $(REBOOT)
+endif
+
 V_DIR = ~/shared/shared
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
@@ -798,7 +838,7 @@ install: c_ext_clang_conv
 	@make c_ext_clang_conv_install
 
 .PHONY: c_ext_clang_conv_install
-c_ext_clang_conv_install: $(KEYRING) $(LIBS_DEP) $(BUILD_DIR)/kiwid.bin
+c_ext_clang_conv_install: $(KEYRING) $(DO_ONCE) $(LIBS_DEP) $(BUILD_DIR)/kiwid.bin
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	@echo remainder of \'make install\' only makes sense to run on target
 else
@@ -878,20 +918,10 @@ endif
 
 # remove public keys leftover from development
 	@-sed -i -e '/.*jks-/d' /root/.ssh/authorized_keys
-endif
 
-ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
-ifeq ($(BBAI),true)
-DIR_DTB = dtb-$(SYS_MAJ).$(SYS_MIN)-ti
-install_kiwi_device_tree:
-	@echo "install Kiwi device tree to configure GPIO pins"
-	@echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
-	cp platform/beaglebone_AI/am5729-beagleboneai-kiwisdr-cape.dts /opt/source/$(DIR_DTB)/src/arm
-	(cd /opt/source/$(DIR_DTB); make)
-	cp /opt/source/dtb-4.14-ti/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)
-	cp /opt/source/dtb-4.14-ti/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb
-	@echo "REBOOT FOR CHANGES TO TAKE EFFECT"
-endif
+# must be last obviously
+	@if [ -f $(REBOOT) ]; then rm $(REBOOT); echo "MUST REBOOT FOR CHANGES TO TAKE EFFECT"; echo -n "Press \"return\" key to reboot else control-C: "; read in; echo reboot; fi;
+
 endif
 
 
@@ -1050,9 +1080,7 @@ clean_deprecated:
 	-rm -rf obj obj_O3 obj_keep kiwi.bin kiwid.bin *.dSYM web/edata*
 	-rm -rf *.dSYM pas $(addprefix pru/pru_realtime.,bin lst txt) extensions/ext_init.cpp kiwi.gen.h kiwid kiwid.aout kiwid_realtime.bin .comp_ctr
 
-clean_dist:
-	make clean_deprecated
-	make clean
+clean_dist: clean clean_deprecated
 	-rm -rf $(BUILD_DIR)
 
 

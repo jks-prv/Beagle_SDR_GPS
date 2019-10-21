@@ -97,7 +97,7 @@ function mode_html()
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More receivers', firmware_sel.RX_8_WF_2, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_8_WF_2)),
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More bandwidth', firmware_sel.RX_3_WF_3, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_3_WF_3)),
                admin.BBAI? 
-                  w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'BBAI rx14', firmware_sel.RX_14_WF_1, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_14_WF_1))
+                  w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'BBAI rx14_wf1', firmware_sel.RX_14_WF_1, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_14_WF_1))
                :
                   ''
             ),
