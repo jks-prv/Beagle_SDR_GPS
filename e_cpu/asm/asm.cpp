@@ -12,7 +12,7 @@
 	Look at the project assembler source code for examples of all the supported constructs.
 	
 	runtime arguments:
-		-c	compare generated binary to that from "gps44.h" for debugging
+		-c	compare generated binary to that from "cmp.h" for debugging
 		-d	enable debugging printfs
 		-b	print generated binary
 		-t	use input and output files "test.asm" & "test.h" instead of defaults
@@ -23,7 +23,7 @@
 		need runtime args instead of hardcoded stuff
 */
 
-// Copyright (c) 2013-2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2013-2019 John Seamons, ZL/KF6VO
 
 #include "asm.h"
 
@@ -61,7 +61,7 @@ dict_t dict[] = {
 	{ "FACTOR",		TT_PRE,		PP_FACTOR },
 	{ "ENDF",		TT_PRE,		PP_ENDF },
 	{ "FCALL",		TT_PRE,		PP_FCALL },
-	{ "#if",		TT_PRE,		PP_IF },			// supports '#if NUM (implied != 0)' and '#if SYM (implied != 0)' and '#if SYM (implied ==) NUM'
+	{ "#if",		TT_PRE,		PP_IF },        // supports '#if NUM|SYM (implied != 0)' and '#if SYM|NUM OPR SYM|NUM'
 	{ "#else",		TT_PRE,		PP_ELSE },
 	{ "#endif",		TT_PRE,		PP_ENDIF },
 
@@ -149,10 +149,7 @@ typedef struct {
 } init_code_t;
 
 init_code_t init_code[] = {
-
-//#include "gps44.h"
-#include "cmp.h"
-
+    #include "cmp.h"
 	-1, 0
 };
 
@@ -599,7 +596,7 @@ int main(int argc, char *argv[])
 	curline=1;
 
     tp_start = pass3; tp_end = ep3;
-	for (tp=pass3; tp != ep3; tp++) {
+	for (tp=pass3+1; tp != ep3-1; tp++) {   // +/- due to lookbehind / lookahead below
 
 		if (tp->ttype == TT_EOL) {
 			curline = tp->num;
@@ -607,23 +604,10 @@ int main(int argc, char *argv[])
 
 		def(tp, &ep3); def(tp+1, &ep3);		// fix sizeof forward references and dyn label construction
 		if (tp->ttype != TT_OPR) continue;
-
-		// NUM OPR NUM -> NUM
-		if ((tp-1)->ttype == TT_NUM && tp->flags & TF_2OPR && (tp+1)->ttype == TT_NUM) {
-			if (debug) printf("CONST %d %s %d = ", (tp-1)->num, tp->str, (tp+1)->num);
-			t = tp-1; expr(t, &ep3, &val, 0); t->num = val;
-			if (debug) printf("%d\n", val);
-			pullup(tp, tp+2, &ep3); tp--;
-			continue;
-		}
-
-		// NUM OPR -> NUM
-		if ((tp-1)->ttype == TT_NUM && tp->flags & TF_1OPR) {
-			if (debug) printf("CONST %d %s = ", (tp-1)->num, tp->str);
-			t = tp-1; expr(t, &ep3, &val, 0); t->num = val;
-			if (debug) printf("%d\n", val);
-			pullup(tp, tp+1, &ep3); tp--;
-			continue;
+		
+		if (expr_collapse(tp-1, &ep3, &val) != NULL) {
+		    tp--;
+		    continue;
 		}
 
 		// concat to make numeric generated branch target: SYM # NUM -> SYM

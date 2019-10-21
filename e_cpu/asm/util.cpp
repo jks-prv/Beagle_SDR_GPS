@@ -251,6 +251,36 @@ int def(tokens_t *tp, tokens_t **ep)
 	return 0;
 }
 
+// [NUM OPR] [NUM OPR NUM] ... -> NUM, return value
+// destructive (does pullups)
+tokens_t *expr_collapse(tokens_t *t, tokens_t **ep, int *val)
+{
+	tokens_t *tp = t;
+    int e_val;
+
+    // NUM OPR NUM -> NUM
+    if (tp->ttype == TT_NUM && (tp+1)->flags & TF_2OPR && (tp+2)->ttype == TT_NUM) {
+        if (debug) printf("COLLAPSE %d %s %d = ", tp->num, (tp+1)->str, (tp+2)->num);
+        expr(tp, ep, &e_val, 0); tp->num = e_val;
+        if (debug) printf("%d\n", e_val);
+        pullup(tp+1, tp+3, ep);
+    } else
+
+    // NUM OPR -> NUM
+    if (tp->ttype == TT_NUM && (tp+1)->flags & TF_1OPR) {
+        if (debug) printf("COLLAPSE %d %s = ", tp->num, (tp+1)->str);
+        expr(tp, ep, &e_val, 0); tp->num = e_val;
+        if (debug) printf("%d\n", e_val);
+        pullup(tp+1, tp+2, ep);
+    } else {
+        return NULL;
+    }
+    
+    *val = tp->num;
+    return tp;
+}
+
+// [NUM OPR] [NUM OPR NUM] ... -> nil, return value
 // destructive (does pullups)
 tokens_t *cond(tokens_t *t, tokens_t **ep, int *val)
 {
@@ -259,10 +289,7 @@ tokens_t *cond(tokens_t *t, tokens_t **ep, int *val)
 	
 	// replace all DEFs with resolved NUMs
 	while (tp->ttype != TT_EOL) {
-        if (tp->ttype == TT_SYM && (p = pre(tp->str, PT_DEF))) {
-            tp->ttype = TT_NUM;
-            tp->num = p->val;
-        }
+	    def(tp, ep);
         tp++;
 	}
 	
@@ -270,31 +297,21 @@ tokens_t *cond(tokens_t *t, tokens_t **ep, int *val)
     int e_val;
 	tp = t;
 	while ((tp+1)->ttype != TT_EOL) {
-		// NUM OPR NUM -> NUM
-		if (tp->ttype == TT_NUM && (tp+1)->flags & TF_2OPR && (tp+2)->ttype == TT_NUM) {
-			if (debug) printf("COND %d %s %d = ", tp->num, (tp+1)->str, (tp+2)->num);
-			expr(tp, ep, &e_val, 0); tp->num = e_val;
-			if (debug) printf("%d\n", e_val);
-			pullup(tp+1, tp+3, ep);
-			continue;
-		}
 
-		// NUM OPR -> NUM
-		if (tp->ttype == TT_NUM && (tp+1)->flags & TF_1OPR) {
-			if (debug) printf("COND %d %s = ", tp->num, (tp+1)->str);
-			expr(tp, ep, &e_val, 0); tp->num = e_val;
-			if (debug) printf("%d\n", e_val);
-			pullup(tp+1, tp+2, ep);
-			continue;
+		// NUM OPR NUM -> NUM or NUM OPR -> NUM
+		if (expr_collapse(tp, ep, val) != NULL) {
+		    continue;
 		}
-
+		
         syntax2(0, t-1, "expected \"NUM OPR NUM\" or \"NUM OPR\"");
 	}
-    if (debug) printf("COND FINAL = %d\n", tp->num);
+	
+    if (debug) printf("COND final = %d\n", tp->num);
     *val = tp->num;
     return tp+1;
 }
 
+// [NUM OPR] [NUM OPR NUM] ... -> return value
 // not destructive (no pullups)
 tokens_t *expr(tokens_t *tp, tokens_t **ep, int *val, int multi)
 {
@@ -343,6 +360,27 @@ tokens_t *expr(tokens_t *tp, tokens_t **ep, int *val, int multi)
 	}
 	
 	return tp;
+}
+
+// [NUM OPR] [NUM OPR NUM] ... -> NUM
+// destructive (does pullups)
+tokens_t *expr_parens(tokens_t *t, tokens_t **ep, int *val)
+{
+	tokens_t *tp = t;
+
+	while ((tp+1)->ttype != TT_EOL) {
+
+		// NUM OPR NUM -> NUM or NUM OPR -> NUM
+		if (expr_collapse(tp, ep, val) != NULL) {
+		    continue;
+		}
+		
+        syntax2(0, t-1, "expected \"NUM OPR NUM\" or \"NUM OPR\"");
+	}
+	
+    if (debug) printf("PARENS final = %d\n", tp->num);
+    *val = tp->num;
+    return tp;
 }
 
 int arg_match(tokens_t *body, tokens_t *args, int nargs)
