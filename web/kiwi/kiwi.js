@@ -938,11 +938,11 @@ function cpu_stats_cb(o, uptime_secs, ecpu, waterfall_fps)
    var cputempF = cputempC * 9/5 + 32;
    var temp_color = o.cc? ((o.cc >= 60)? 'w3-text-css-red w3-bold' : ((o.cc >= 50)? 'w3-text-css-yellow' : 'w3-text-css-lime')) : '';
    var cputemp = cputempC? (cputempC.toFixed(0) +'&deg;C '+ cputempF.toFixed(0) +'&deg;F ') : '';
-   var cpufreq = (o.cf >= 1000)? ((o.cf/1000).toFixed(1) +'GHz') : (o.cf.toFixed(0) +'MHz');
+   var cpufreq = (o.cf >= 1000)? ((o.cf/1000).toFixed(1) +' GHz') : (o.cf.toFixed(0) +' MHz');
 	kiwi_cpu_stats_str =
 	   w3_text(optbar_prefix_color, 'BB ') +
 	   w3_text('', o.cu[0] +','+ o.cs[0] +','+ o.ci[0] +' usi% ') +
-	   w3_text(temp_color, cputemp) +
+	   (cputempC? w3_text(temp_color, cputemp) :'') +
 	   w3_text('', cpufreq +' ') +
 	   w3_text(optbar_prefix_color, 'FPGA') +
 	   w3_text('', ecpu.toFixed(0) +'%');
@@ -960,7 +960,7 @@ function cpu_stats_cb(o, uptime_secs, ecpu, waterfall_fps)
    if (o.cu.length > 1) cpus += '0 cpu1';
 	kiwi_cpu_stats_str_long =
 	   w3_inline('',
-         w3_text('w3-text-black', 'Beagle: '+ cpus +' '+ user +' usr | '+ sys +' sys | '+ idle +' idle,' + (cputempC? '':', ')) +
+         w3_text('w3-text-black', 'Beagle: '+ cpus +' '+ user +' usr | '+ sys +' sys | '+ idle +' idle,' + (cputempC? '':' ')) +
          (cputempC? ('&nbsp;'+ w3_text(temp_color +' w3-text-outline w3-large', cputemp) +'&nbsp;') :'') +
          w3_text('w3-text-black', cpufreq + ', ') +
          w3_text('w3-text-black', 'FPGA eCPU: '+ ecpu.toFixed(0) +'%')
