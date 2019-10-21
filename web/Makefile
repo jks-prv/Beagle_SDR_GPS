@@ -8,7 +8,7 @@ FILES_EMBED_JS_NOPKG2 = $(shell $(FILE_OPTIM) -t2 -u -js $(FILES_EMBED_JS_NOPKG_
 
 #FILES_EMBED_CSS_F = $(filter-out %.gz,$(filter-out %.min.js,$(FILES_EMBED_CSS)))
 # correct css override order
-FILES_EMBED_CSS_KEEP_MIN  = web/pkgs/font-awesome-4.6.3/css/font-awesome.css
+FILES_EMBED_CSS_KEEP_MIN  = web/pkgs/font-awesome-4.6.3/css/font-awesome.min.css
 FILES_EMBED_CSS_F  = web/pkgs/text-security/text-security-disc.css
 FILES_EMBED_CSS_F += web/pkgs/w3.css
 FILES_EMBED_CSS_F += web/kiwi/w3_ext.css
