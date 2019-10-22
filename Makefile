@@ -920,7 +920,7 @@ endif
 	@-sed -i -e '/.*jks-/d' /root/.ssh/authorized_keys
 
 # must be last obviously
-	@if [ -f $(REBOOT) ]; then rm $(REBOOT); echo "MUST REBOOT FOR CHANGES TO TAKE EFFECT"; echo -n "Press \"return\" key to reboot else control-C: "; read in; echo reboot; fi;
+	@if [ -f $(REBOOT) ]; then rm $(REBOOT); echo "MUST REBOOT FOR CHANGES TO TAKE EFFECT"; echo -n "Press \"return\" key to reboot else control-C: "; read in; reboot; fi;
 
 endif
 
