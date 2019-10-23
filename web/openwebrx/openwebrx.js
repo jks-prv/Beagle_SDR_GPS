@@ -7781,8 +7781,8 @@ function add_problem(what, append, sticky, el_id)
 		   }
 		}
 		if (append == false) {
-		   while (el.children.length != 0) {
-		      el.removeChild(el.children.shift());
+		   while (el.firstChild) {
+		      el.removeChild(el.firstChild);
 		   }
 		}
 	}
