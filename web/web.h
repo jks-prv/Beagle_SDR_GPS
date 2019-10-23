@@ -33,7 +33,7 @@ Boston, MA  02110-1301, USA.
 	#define web_printf_sent(fmt, ...) \
 		if (web_caching_debug & WEB_CACHING_DEBUG_SENT) lprintf(fmt, ## __VA_ARGS__)
 
-	#define WEB_CACHING_DEBUG_CACHED 1
+	#define WEB_CACHING_DEBUG_CACHED 2
 	#define web_printf_cached(fmt, ...) \
 		if (web_caching_debug & WEB_CACHING_DEBUG_CACHED) lprintf(fmt, ## __VA_ARGS__)
 
