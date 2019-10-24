@@ -602,7 +602,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     char remote_ip[NET_ADDRSTRLEN];
     check_if_forwarded(NULL, mc, remote_ip);
     
-    bool is_sdr_hu = ip_match(remote_ip, &ddns.ips_sdr_hu);
+    bool is_sdr_hu = ip_match(remote_ip, &net.ips_sdr_hu);
     //printf("is_sdr_hu=%d %s %s\n", is_sdr_hu, remote_ip, mc->uri);
 		
     //#define WEB_PRINTF_ON_URL

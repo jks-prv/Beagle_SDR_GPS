@@ -711,6 +711,8 @@ void c2s_admin(void *param)
 			if (i == 0) {
                 cprintf(conn, "\"iptables -D INPUT -j KIWI; iptables -N KIWI; iptables -F KIWI\"\n");
 				system("iptables -D INPUT -j KIWI; iptables -N KIWI; iptables -F KIWI");
+
+                net.ipv4_blacklist_len = 0;
 				continue;
 			}
 
@@ -725,6 +727,8 @@ void c2s_admin(void *param)
                 cprintf(conn, "\"%s\" rv=%d\n", cmd_p, rv);
                 send_msg_encoded(conn, "ADM", "network_ip_blacklist_status", "%d,%s", rv, ip_m);
 				free(cmd_p);
+
+                ip_blacklist_add(ip_m);
 				free(ip_m);
 				continue;
 			}

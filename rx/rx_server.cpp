@@ -500,7 +500,8 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 
 	// determine real client ip if proxied
 	char remote_ip[NET_ADDRSTRLEN];
-    check_if_forwarded("CONN", mc, remote_ip);
+    if (check_if_forwarded("CONN", mc, remote_ip) && check_ip_blacklist(remote_ip, true))
+        return NULL;
     
 	if (down || update_in_progress || backup_in_progress) {
 		//printf("down=%d UIP=%d stream=%s\n", down, update_in_progress, st->uri);
