@@ -496,6 +496,14 @@ function ignore(ev)
 
 function rgb(r, g, b)
 {
+   if (r == null) return '';
+   
+   if (Array.isArray(r)) {
+      g = r[1];
+      b = r[2];
+      r = r[0];
+   }
+
 	return 'rgb('+ Math.floor(r) +','+ Math.floor(g) +','+ Math.floor(b) +')';
 }
 

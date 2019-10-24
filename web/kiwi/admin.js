@@ -931,7 +931,7 @@ function backup_html()
 			w3_div('id-sd-status class-sd-status')
 		),
 		'<hr>',
-		'<div id="id-output-msg" class="w3-container w3-text-output w3-scroll-down w3-small w3-margin-B-16"></div>'
+		w3_div('id-output-msg w3-container w3-text-output w3-scroll-down w3-small w3-margin-B-16')
 	);
 	return s;
 }
@@ -2338,15 +2338,8 @@ function console_html()
 			   '<pre><code id="id-console-msgs"></code></pre>'
 			),
          w3_div('w3-margin-top',
-            w3_input('', '', 'console_input', '', 'console_input_cb|console_ctrl_C_cb|console_ctrl_D_cb|console_ctrl_backslash_cb', 'enter shell command')
+            w3_input('', '', 'console_input', '', 'console_input_cb|console_ctrl_cb', 'enter shell command')
          ),
-         /*
-		   w3_div('w3-margin-top',
-            w3_button('w3-yellow', 'Send ^C', 'console_ctrl_C_cb') +
-            w3_button('w3-blue|margin-left:10px', 'Send ^D', 'console_ctrl_D_cb') +
-            w3_button('w3-red|margin-left:10px', 'Send ^\\', 'console_ctrl_backslash_cb')
-         )
-         */
          w3_text('w3-text-black w3-margin-top',
             'Control characters (^C, ^D, ^\\) and empty lines may now be typed directly into shell command field.'
          )
@@ -2367,19 +2360,9 @@ function console_connect_cb()
 	ext_send('SET console_open');
 }
 
-function console_ctrl_C_cb()
+function console_ctrl_cb(c)
 {
-	ext_send('SET console_ctrl_C');
-}
-
-function console_ctrl_D_cb()
-{
-	ext_send('SET console_ctrl_D');
-}
-
-function console_ctrl_backslash_cb()
-{
-	ext_send('SET console_ctrl_backslash');
+	ext_send('SET console_ctrl='+ c);
 }
 
 function console_setup()

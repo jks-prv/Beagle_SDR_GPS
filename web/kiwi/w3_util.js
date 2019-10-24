@@ -1405,26 +1405,16 @@ function w3_icon_cb2(psa, fa_icon, size, color, cb, cb_param)
 // Also detect and process control character sequences.
 function w3int_input_key(ev, path, cb)
 {
-   var k = ev.key;
+   var k = ev.key.toUpperCase();
    var ctl = ev.ctrlKey;
 	var el = w3_el(path);
    if (!el) return;
    //console.log('w3int_input_key k='+ k + (ctl? ' CTL ':'') +' val=<'+ el.value +'> cb='+ cb);
    cb = cb.split('|');
 
-   if (ctl && k == 'c' && cb[1]) {
-      //console.log('w3int_input_key ^C cb='+ cb[1]);
-      w3_call(cb[1]);
-   }
-
-   if (ctl && k == 'd' && cb[2]) {
-      //console.log('w3int_input_key ^D cb='+ cb[2]);
-      w3_call(cb[2]);
-   }
-
-   if (ctl && k == '\\' && cb[3]) {
-      //console.log('w3int_input_key ^\\ cb='+ cb[3]);
-      w3_call(cb[3]);
+   if (ctl && 'CD\\'.includes(k) && cb[1]) {
+      //console.log('w3int_input_key ^'+ k +' cb='+ cb[1]);
+      w3_call(cb[1], k);
    }
 
    var input_any_change = w3_contains(el, 'w3-input-any-change');

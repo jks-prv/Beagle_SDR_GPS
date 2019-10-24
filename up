@@ -7,7 +7,7 @@ if test ! -f /etc/dogtag; then
 	exit 0
 fi
 
-if test "x$TERM" = "xdumb" ; then
+if test "x$KIWI_CONSOLE" = "xyes" ; then
     echo "No! Don't do from a console connection. Will strand the Beagle. Instead do: m git; mi; (restart button)"
     exit 0
 fi

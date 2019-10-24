@@ -158,7 +158,6 @@ static void console(void *param)
     char *buf = (char *) malloc(NBUF + SPACE_FOR_NULL);
     int i, n, err;
     
-    // FIXME: why doesn't specifying -li or --login cause /etc/bash.bashrc to be read by bash?
     char *args[] = {(char *) "/bin/bash", (char *) "--login", NULL };
     scall("forkpty", (c->child_pid = forkpty(&c->master_pty_fd, NULL, NULL, NULL)));
     
@@ -178,7 +177,6 @@ static void console(void *param)
     */
 
     //printf("master_pty_fd=%d\n", c->master_pty_fd);
-    int input = 0;
     
     do {
         TaskSleepMsec(250);
@@ -208,32 +206,12 @@ static void console(void *param)
         #endif
         
             send_msg_encoded(c, "ADM", "console_c2w", "%s", buf);
-            input++;
         }
 
-        if (c->send_ctrl_c) {
-            write(c->master_pty_fd, "\x03", 1);
-            //printf("sent ^C\n");
-            c->send_ctrl_c = false;
-        }
-
-        if (c->send_ctrl_d) {
-            write(c->master_pty_fd, "\x04", 1);
-            //printf("sent ^D\n");
-            c->send_ctrl_d = false;
-        }
-
-        if (c->send_ctrl_backslash) {
-            write(c->master_pty_fd, "\x1c", 1);
-            //printf("sent ^\\\n");
-            c->send_ctrl_backslash = false;
-        }
-
-        // send initialization command
-        const char *term = "export TERM=dumb\n";
-        if (input == 1) {
-            write(c->master_pty_fd, term, strlen(term));
-            input = 2;
+        if (c->send_ctrl) {
+            write(c->master_pty_fd, &c->send_ctrl_char, 1);
+            //printf("sent ^%c\n", c->send_ctrl_char + '@');
+            c->send_ctrl = false;
         }
     } while ((n > 0 || (n == -1 && errno == EAGAIN)) && c->mc);
 
@@ -1098,21 +1076,13 @@ void c2s_admin(void *param)
 				continue;
 			}
 
-			i = strcmp(cmd, "SET console_ctrl_C");
-			if (i == 0) {
-			    if (conn->child_pid && !conn->send_ctrl_c) conn->send_ctrl_c = true;
-				continue;
-			}
-
-			i = strcmp(cmd, "SET console_ctrl_D");
-			if (i == 0) {
-			    if (conn->child_pid && !conn->send_ctrl_d) conn->send_ctrl_d = true;
-				continue;
-			}
-
-			i = strcmp(cmd, "SET console_ctrl_backslash");
-			if (i == 0) {
-			    if (conn->child_pid && !conn->send_ctrl_backslash) conn->send_ctrl_backslash = true;
+            char ch;
+			i = sscanf(cmd, "SET console_ctrl=%c", &ch);
+			if (i == 1) {
+			    if (conn->child_pid && !conn->send_ctrl) {
+			        conn->send_ctrl_char = ch - '@';
+			        conn->send_ctrl = true;
+			    }
 				continue;
 			}
 

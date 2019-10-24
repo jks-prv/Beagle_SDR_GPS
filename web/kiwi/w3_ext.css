@@ -202,6 +202,11 @@ input[type=range]::-moz-range-thumb {
 	padding: 10px;
 }
 
+.w3-text-output pre
+{
+    margin: 0;
+}
+
 .w3-menu {
     display: inline-block;
     visibility: hidden;

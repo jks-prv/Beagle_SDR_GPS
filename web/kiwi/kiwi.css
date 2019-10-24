@@ -256,6 +256,11 @@ hr
 	margin: 5px;
 }
 
+.class-mfg-status pre
+{
+    margin: 0;
+}
+
 .class-mfg-button
 {
 	display: inline-block;
