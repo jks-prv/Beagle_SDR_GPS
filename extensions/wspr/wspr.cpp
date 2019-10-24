@@ -494,7 +494,7 @@ void wspr_init()
 #ifdef WSPR_SHMEM_DISABLE
     #define send_peaks_all(w, npk) w->npk = npk; wspr_send_peaks(w, 0, npk)
     #define send_peak_single(w, pki) wspr_send_peaks(w, pki, pki+1)
-    #define send_decode(w, seq) wspr_send_decode(w, seq)
+    #define send_decode(w, seq) wspr_send_decode(w, seq-1)
 #else
     #define send_peaks_all(w, npk) \
         if (w->send_peaks_seq < MAX_NPKQ) { \
