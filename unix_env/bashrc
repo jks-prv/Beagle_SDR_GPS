@@ -280,8 +280,10 @@ alias geoloc="curl https://ipapi.co/json"
 alias geoloc2="curl https://extreme-ip-lookup.com/json"
 alias geoloc3="curl https://get.geojs.io/v1/ip/geo.json"
 alias geolocip="function _geolocip () { curl https://extreme-ip-lookup.com/json/\$1 ; } ; _geolocip"
-alias ipt="iptables -L -n"
-alias iptc="iptables -D INPUT -j KIWI; iptables -F KIWI; iptables -X KIWI"
+alias ipt="iptables -L -n -v"
+alias iptz="iptables -L -n -v -Z"
+alias iptc="iptables -L -n -v -Z"
+alias iptrm="iptables -D INPUT -j KIWI; iptables -F KIWI; iptables -X KIWI"
 alias mdu="killall -q -s USR1 kiwid; killall -q -s USR1 kiwi.bin"
 
 # sharing KiwiSDR sources with a development machine via NFS
