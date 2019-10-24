@@ -6,7 +6,7 @@ var cw = {
    pboff: -1,
    wspace: true,
    thresh: false,
-   threshold: 45,
+   threshold: 49,
 
    // must set "remove_returns" since pty output lines are terminated with \r\n instead of \n alone
    // otherwise the \r overwrite logic in kiwi_output_msg() will be triggered
