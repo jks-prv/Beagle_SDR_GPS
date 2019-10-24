@@ -55,6 +55,8 @@ typedef struct {
 	int port, port_ext;
 	char mac[64];
 	
+    ip_lookup_t ips_kiwisdr_com, ips_sdr_hu;
+
 	ip_lookup_t pub_ips;
 	bool pub_server;	// this kiwi is one of the public.kiwisdr.com servers
 	
@@ -104,8 +106,6 @@ typedef struct {
 extern ddns_t ddns;
 
 typedef struct {
-    ip_lookup_t ips_kiwisdr_com, ips_sdr_hu;
-    
     #define N_IP_BLACKLIST 64
     int ipv4_blacklist_len;
     u4_t ipv4_blacklist[N_IP_BLACKLIST];
