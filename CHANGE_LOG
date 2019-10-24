@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.336  October 25, 2019
+    Make ip blacklist work with proxy.
+
 v1.335  October 11, 2019
     Change GPS acquisition task scheduler hold-off time constant.
 
