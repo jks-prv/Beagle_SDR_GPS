@@ -55,8 +55,6 @@ typedef struct {
 	int port, port_ext;
 	char mac[64];
 	
-    ip_lookup_t ips_kiwisdr_com, ips_sdr_hu;
-
 	ip_lookup_t pub_ips;
 	bool pub_server;	// this kiwi is one of the public.kiwisdr.com servers
 	
@@ -105,6 +103,17 @@ typedef struct {
 
 extern ddns_t ddns;
 
+typedef struct {
+    ip_lookup_t ips_kiwisdr_com, ips_sdr_hu;
+    
+    #define N_IP_BLACKLIST 64
+    int ipv4_blacklist_len;
+    u4_t ipv4_blacklist[N_IP_BLACKLIST];
+    u4_t ipv4_blacklist_nm[N_IP_BLACKLIST];
+} net_t;
+
+extern net_t net;
+
 typedef enum { IS_NOT_LOCAL, IS_LOCAL, NO_LOCAL_IF } isLocal_t;
 // "struct conn_st" because of forward reference from inclusion by conn.h
 struct conn_st;
@@ -120,5 +129,7 @@ int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const cha
 bool ip_match(const char *ip, ip_lookup_t *ips);
 
 char *ip_remote(struct mg_connection *mc);
-void check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_ip);
+bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_ip);
 void ip_blacklist_init();
+void ip_blacklist_add(char *ips);
+bool check_ip_blacklist(char *remote_ip, bool log=false);

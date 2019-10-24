@@ -47,6 +47,7 @@ Boston, MA  02110-1301, USA.
 //#define IPV6_TEST
 
 ddns_t ddns;
+net_t net;
 
 // determine all possible IPv4, IPv4-mapped IPv6 and IPv6 addresses on local network interfaces
 bool find_local_IPs()
@@ -579,31 +580,57 @@ char *ip_remote(struct mg_connection *mc)
     return kiwi_skip_over(mc->remote_ip, "::ffff:");
 }
 
-void check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_ip)
+bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_ip)
 {
     kiwi_strncpy(remote_ip, ip_remote(mc), NET_ADDRSTRLEN);
     const char *x_real_ip = mg_get_header(mc, "X-Real-IP");
     const char *x_forwarded_for = mg_get_header(mc, "X-Forwarded-For");
 
-    int i = 0;
+    int n = 0;
     char *ip_r = NULL;
+    
     if (x_real_ip != NULL) {
         if (id != NULL)
             printf("%s: %s X-Real-IP %s\n", id, remote_ip, x_real_ip);
-        i = sscanf(x_real_ip, "%" NET_ADDRSTRLEN_S "ms", &ip_r);
+        n = sscanf(x_real_ip, "%" NET_ADDRSTRLEN_S "ms", &ip_r);
     }
+    
     if (x_forwarded_for != NULL) {
         if (id != NULL)
             printf("%s: %s X-Forwarded-For %s\n", id, remote_ip, x_forwarded_for);
-        if (x_real_ip == NULL || i != 1) {
+        if (x_real_ip == NULL || n != 1) {
             // take only client ip in case "X-Forwarded-For: client, proxy1, proxy2 ..."
-            i = sscanf(x_forwarded_for, "%" NET_ADDRSTRLEN_S "m[^, ]", &ip_r);
+            n = sscanf(x_forwarded_for, "%" NET_ADDRSTRLEN_S "m[^, ]", &ip_r);
         }
     }
 
-    if (i == 1)
+    bool forwarded = false;
+    if (n == 1) {
         kiwi_strncpy(remote_ip, ip_r, NET_ADDRSTRLEN);
+        forwarded = true;
+    }
+    
     free(ip_r);
+    return forwarded;
+}
+
+void ip_blacklist_add(char *ips)
+{
+    char ip_str[NET_ADDRSTRLEN];
+    u4_t nm;
+    int n = sscanf(ips, "%[^/]/%d", ip_str, &nm);
+    if (n == 0 || n > 2) return;
+    if (n == 1) nm = 32;
+    bool error;
+    
+    int i = net.ipv4_blacklist_len;
+    u4_t a,b,c,d;
+    net.ipv4_blacklist[i] = inet4_d2h(ip_str, &error, &a, &b, &c, &d);
+    if (error || nm < 1 || nm > 32) return;
+    net.ipv4_blacklist_nm[i] = ~( (1 << (32-nm)) -1 );
+    net.ipv4_blacklist[i] &= net.ipv4_blacklist_nm[i];      // make consistent with netmask
+    //printf("ip_blacklist_add[%d] %s %d.%d.%d.%d 0x%08x\n", net.ipv4_blacklist_len, ips, a,b,c,d, net.ipv4_blacklist_nm[i]);
+    net.ipv4_blacklist_len++;
 }
 
 void ip_blacklist_init()
@@ -611,11 +638,15 @@ void ip_blacklist_init()
     const char *bl_s = admcfg_string("ip_blacklist", NULL, CFG_REQUIRED);
     if (bl_s == NULL) return;
 
-    #define NIPS 64
-    char *r_buf, *ips[NIPS+1];
-    int n = kiwi_split((char *) bl_s, &r_buf, " ", ips, NIPS);
+    char *r_buf, *ips[N_IP_BLACKLIST+1];
+    int n = kiwi_split((char *) bl_s, &r_buf, " ", ips, N_IP_BLACKLIST);
     //printf("ip_blacklist_init n=%d bl_s=\"%s\"\n", n, bl_s);
     if (n == 0) return;
+    
+    net.ipv4_blacklist_len = 0;
+    for (int i=0; i < n; i++) {
+        ip_blacklist_add(ips[i]);
+    }
 
     system("iptables -D INPUT -j KIWI; iptables -N KIWI; iptables -F KIWI");
     for (int i=0; i < n; i++) {
@@ -628,4 +659,19 @@ void ip_blacklist_init()
     system("iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI");
     free(r_buf);
     admcfg_string_free(bl_s);
+}
+
+bool check_ip_blacklist(char *remote_ip, bool log)
+{
+    bool error;
+    u4_t ip = inet4_d2h(remote_ip, &error, NULL, NULL, NULL, NULL);
+    if (error) return false;
+    for (int i=0; i < net.ipv4_blacklist_len; i++) {
+        u4_t nm = net.ipv4_blacklist_nm[i];
+        if ((ip & nm) == net.ipv4_blacklist[i]) {   // netmask previously applied to net.ipv4_blacklist[i]
+            if (log) lprintf("IP BLACKLISTED: %s\n", remote_ip);
+            return true;
+        }
+    }
+    return false;
 }

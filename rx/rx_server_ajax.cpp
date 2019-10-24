@@ -86,7 +86,8 @@ char *rx_server_ajax(struct mg_connection *mc)
 	}
 	
 	char remote_ip[NET_ADDRSTRLEN];
-    check_if_forwarded("AJAX", mc, remote_ip);
+    if (check_if_forwarded("AJAX", mc, remote_ip) && check_ip_blacklist(remote_ip))
+    	return NULL;
 
 	switch (st->type) {
 	
