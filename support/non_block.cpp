@@ -58,6 +58,28 @@ typedef struct {
 
 zombies_t zombies;
 
+void register_zombie(pid_t child_pid)
+{
+    int i;
+    
+    for (i=0; i < zombies.size; i++) {
+        if (zombies.list[i] == 0) {
+            zombies.list[i] = child_pid;
+            //lprintf("==== add ZOMBIE @%d pid=%d\n", i, child_pid);
+            break;
+        }
+    }
+    
+    if (i == zombies.size) {
+        zombies.list = (pid_t *) realloc(zombies.list, sizeof(pid_t)*(zombies.size + ZEXP));
+        zombies.list[zombies.size] = child_pid;
+        //lprintf("==== add exp ZOMBIE @%d pid=%d\n", zombies.size, child_pid);
+        memset(&zombies.list[zombies.size+1], 0, sizeof(pid_t)*(ZEXP-1));
+        zombies.size += ZEXP;
+        //printf("### zombies.size %d\n", zombies.size);
+    }
+}
+
 void cull_zombies()
 {
     for (int i=0; i < zombies.size; i++) {
@@ -105,22 +127,7 @@ int child_task(const char *pname, funcP_t func, int poll_msec, void *param)
 	
     //lprintf("==== child_task: child_pid=%d %s pname=%s\n", child_pid, (poll_msec == 0)? "NO_WAIT":"WAIT", pname);
 	if (poll_msec == 0) {
-	    for (i=0; i < zombies.size; i++) {
-	        if (zombies.list[i] == 0) {
-	            zombies.list[i] = child_pid;
-		        //lprintf("==== add ZOMBIE @%d pid=%d\n", i, child_pid);
-	            break;
-	        }
-	    }
-	    if (i == zombies.size) {
-	        zombies.list = (pid_t *) realloc(zombies.list, sizeof(pid_t)*(zombies.size + ZEXP));
-	        zombies.list[zombies.size] = child_pid;
-		    //lprintf("==== add exp ZOMBIE @%d pid=%d\n", zombies.size, child_pid);
-	        memset(&zombies.list[zombies.size+1], 0, sizeof(pid_t)*(ZEXP-1));
-	        zombies.size += ZEXP;
-	        //printf("### zombies.size %d\n", zombies.size);
-	    }
-	    
+	    register_zombie(child_pid);
         //real_printf("CHILD_TASK EXIT %s child_pid=%d\n", pname, child_pid);
 	    return child_pid;   // don't wait
 	}

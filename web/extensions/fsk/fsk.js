@@ -320,8 +320,7 @@ function fsk_baud_error(err)
    }
 }
 
-// must set "remove_returns" since pty output lines are terminated with \r\n instead of \n alone
-// otherwise the \r overwrite logic in kiwi_output_msg() will be triggered
+// must set "remove_returns" so output lines with \r\n (instead of \n alone) don't produce double spacing
 var fsk_console_status_msg_p = { scroll_only_at_bottom: true, process_return_nexttime: false, remove_returns: true, ncol: 135 };
 
 function fsk_output_char(s)

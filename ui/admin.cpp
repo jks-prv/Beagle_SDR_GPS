@@ -53,6 +53,7 @@ Boston, MA  02110-1301, USA.
 #include <limits.h>
 #include <termios.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <signal.h>
 
 #ifdef HOST
@@ -81,15 +82,19 @@ void c2s_admin_shutdown(void *param)
 {
 	conn_t *c = (conn_t *) param;
 	int r;
-	
-	if (c->child_pid != 0) {
-	    r = kill(c->child_pid, 0);
+
+	if (c->console_child_pid != 0) {
+	    r = kill(c->console_child_pid, 0);      // see if child is still around
 	    if (r < 0) {
-	        cprintf(c, "CONSOLE: no child pid %d? errno=%d (%s)\n", c->child_pid, errno, strerror(errno));
+	        //cprintf(c, "CONSOLE: no child pid %d? errno=%d (%s)\n", c->console_child_pid, errno, strerror(errno));
 	    } else {
-	        scall("console child", kill(c->child_pid, SIGKILL));
+	        if (c->master_pty_fd > 0) {
+	            close(c->master_pty_fd);
+	            c->master_pty_fd = 0;
+	        }
+	        scall("console child", kill(c->console_child_pid, SIGKILL));
 	    }
-	    c->child_pid = 0;
+	    c->console_child_pid = 0;
 	}
 }
 
@@ -159,13 +164,19 @@ static void console(void *param)
     int i, n, err;
     
     char *args[] = {(char *) "/bin/bash", (char *) "--login", NULL };
-    scall("forkpty", (c->child_pid = forkpty(&c->master_pty_fd, NULL, NULL, NULL)));
+    scall("forkpty", (c->console_child_pid = forkpty(&c->master_pty_fd, NULL, NULL, NULL)));
     
-    if (c->child_pid == 0) {     // child
+    if (c->console_child_pid == 0) {     // child
+        #ifdef HOST
+            // terminate when parent exits
+            scall("PR_SET_PDEATHSIG", prctl(PR_SET_PDEATHSIG, SIGHUP));
+        #endif
+
         execve(args[0], args, NULL);
         exit(0);
     }
     
+    register_zombie(c->console_child_pid);
     scall("", fcntl(c->master_pty_fd, F_SETFL, O_NONBLOCK));
     
     /*
@@ -180,6 +191,12 @@ static void console(void *param)
     
     do {
         TaskSleepMsec(250);
+        
+        // Without this a reload of the admin console page with an active shell often
+        // hangs in the read() below even though O_NONBLOCK has been set on the fd!
+        if (c->mc == NULL)
+            break;
+        
         n = read(c->master_pty_fd, buf, NBUF);
         //real_printf("n=%d errno=%d\n", n, errno);
         if (n > 0 && c->mc) {
@@ -216,12 +233,13 @@ static void console(void *param)
     } while ((n > 0 || (n == -1 && errno == EAGAIN)) && c->mc);
 
     if (n < 0 /*&& errno != EIO*/ && c->mc) {
-        cprintf(c, "CONSOLE: n=%d errno=%d (%s)\n", n, errno, strerror(errno));
+        //cprintf(c, "CONSOLE: n=%d errno=%d (%s)\n", n, errno, strerror(errno));
     }
-    close(c->master_pty_fd);
+    if (c->master_pty_fd > 0)
+        close(c->master_pty_fd);
     free(buf);
     c->master_pty_fd = 0;
-    c->child_pid = 0;
+    c->console_child_pid = 0;
     
     if (c->mc) {
         send_msg_encoded(c, "ADM", "console_c2w", "CONSOLE: exited\n");
@@ -244,6 +262,9 @@ void c2s_admin(void *param)
 	nbuf_t *nb = NULL;
 	while (TRUE) {
 	
+        //rv = waitpid(-1, NULL, WNOHANG);
+        //if (rv) real_printf("c2s_admin CULLED %d\n", rv);
+
 		if (nb) web_to_app_done(conn, nb);
 		n = web_to_app(conn, &nb);
 				
@@ -1056,14 +1077,14 @@ void c2s_admin(void *param)
 				if (conn->master_pty_fd > 0)
 				    write(conn->master_pty_fd, buf_m, slen);
 				else
-				    clprintf(conn, "CONSOLE: not open for write\n");
+				    //clprintf(conn, "CONSOLE: not open for write\n");
 				free(buf_m);
 				continue;
 			}
 
 			i = strcmp(cmd, "SET console_open");
 			if (i == 0) {
-			    if (conn->child_pid == 0) {
+			    if (conn->console_child_pid == 0) {
 			        bool no_console = false;
 			        struct stat st;
 		            if (stat(DIR_CFG "/opt.no_console", &st) == 0)
@@ -1083,7 +1104,7 @@ void c2s_admin(void *param)
             char ch;
 			i = sscanf(cmd, "SET console_ctrl=%c", &ch);
 			if (i == 1) {
-			    if (conn->child_pid && !conn->send_ctrl) {
+			    if (conn->console_child_pid && !conn->send_ctrl) {
 			        conn->send_ctrl_char = ch - '@';
 			        conn->send_ctrl = true;
 			    }

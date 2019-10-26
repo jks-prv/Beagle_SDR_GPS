@@ -44,6 +44,7 @@ typedef struct {
 #define POLL_MSEC(n)    (n)
 
 int child_task(const char *pname, funcP_t func, int poll_msec=0, void *param=NULL);
+void register_zombie(pid_t child_pid);
 void cull_zombies();
 
 int non_blocking_cmd_func_forall(const char *pname, const char *cmd, funcPR_t func, int param, int poll_msec);
