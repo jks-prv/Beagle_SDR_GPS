@@ -862,7 +862,7 @@ function kiwi_output_msg(id, id_scroll, p)
                            color = ansi.colors[n8];
                            if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
                         } else
-                        if (n8 <= 231) {     // color pallet
+                        if (n8 <= 231) {     // 6x6x6 color cube
                            n8 -= 16;
                            r = Math.floor(n8/36); n8 -= r*36;
                            g = Math.floor(n8/6); n8 -= g*6;
@@ -873,8 +873,8 @@ function kiwi_output_msg(id, id_scroll, p)
                            color = [r,g,b];
                            if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
                         } else
-                        if (n8 <= 255) {     // grayscale pallet
-                           ci = Math.floor((n8-232) * 10.625);
+                        if (n8 <= 255) {     // grayscale ramp
+                           ci = 8 + (n8-232)*10;
                            //console.log('n8='+ n8 +' ci='+ ci);
                            color = [ci,ci,ci];
                            if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;

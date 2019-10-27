@@ -156,7 +156,7 @@ static void console(void *param)
 	char *tname;
     asprintf(&tname, "console[%02d]", c->self_idx);
     TaskNameSFree(tname);
-    clprintf(c, "CONSOLE: open connection\n");
+    cprintf(c, "CONSOLE: open connection\n");
     send_msg_encoded(c, "ADM", "console_c2w", "CONSOLE: open connection\n");
     
     #define NBUF 1024
@@ -1069,14 +1069,21 @@ void c2s_admin(void *param)
 ////////////////////////////////
 
             buf_m = NULL;
-			i = sscanf(cmd, "SET console_w2c=%256ms", &buf_m);
+			i = sscanf(cmd, "SET console_w2c=%512ms", &buf_m);
 			if (i == 1) {
 				kiwi_str_decode_inplace(buf_m);
 				int slen = strlen(buf_m);
-				//clprintf(conn, "CONSOLE write %d <%s>\n", slen, buf_m);
-				if (conn->master_pty_fd > 0)
-				    write(conn->master_pty_fd, buf_m, slen);
-				else
+				//cprintf(conn, "CONSOLE write %d <%s>\n", slen, buf_m);
+				if (conn->master_pty_fd > 0) {
+				    sb = buf_m;
+				    while (slen) {
+				        int burst = MIN(slen, 32);
+				        write(conn->master_pty_fd, sb, burst);
+				        //cprintf(conn, "CONSOLE burst %d <%.*s>\n", burst, burst, sb);
+				        sb += burst;
+				        slen -= burst;
+				    }
+				} else
 				    //clprintf(conn, "CONSOLE: not open for write\n");
 				free(buf_m);
 				continue;

@@ -2334,7 +2334,7 @@ function console_html()
             w3_label('w3-show-inline', 'Beagle Debian console') +
             w3_button('w3-aqua|margin-left:10px', 'Connect', 'console_connect_cb')
          ),
-			w3_div('id-console-msg w3-margin-T-8 w3-text-output w3-scroll-down w3-small w3-text-black',
+			w3_div('id-console-msg w3-margin-T-8 w3-text-output w3-scroll-down w3-small w3-text-black|background-color:#a8a8a8',
 			   '<pre><code id="id-console-msgs"></code></pre>'
 			),
          w3_div('w3-margin-top',
@@ -2350,7 +2350,7 @@ function console_html()
 
 function console_input_cb(path, val)
 {
-	//console.log('console_w2c='+ val);
+	//console.log('console_w2c '+ val.length +' <'+ val +'>');
 	ext_send('SET console_w2c='+ encodeURIComponent(val +'\n'));
    w3_set_value(path, '');    // erase input field
 }

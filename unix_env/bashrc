@@ -62,9 +62,12 @@ alias def='printf "\033[0m"'
 alias clr='printf "\f"'
 # 8-bit color escapes
 alias ansi='for fgbg in 38 48 ; do for color in $(seq 0 255) ; do printf "\e[${fgbg};5;%sm %3s \e[0m" "$color" "$color" ; if [ $(( (color + 1) % 6)) == 4 ] ; then echo ; fi done ; echo ; done'
+alias ansi2='for color in $(seq 0 255) ; do printf "\e[48;5;%sm %3s \e[0m" "$color" "$color" ; if [ $(( (color + 1) % 6)) == 4 ] ; then echo ; fi done ; echo'
+alias ansi3='for c in $(seq 0 255) ; do printf "\e[48;5;%sm %3s \e[97m %3s \e[0m" "$c" "$c" "$c" ; done ; echo'
 
 # make
 alias m="make"
+alias mh="make help"
 alias m0="make OPT=O0"
 alias masan="make ASAN=1"
 alias masan0="make ASAN=1 OPT=O0"
