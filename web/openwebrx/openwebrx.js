@@ -5031,6 +5031,10 @@ function confirmation_panel_init2()
 
 function confirmation_show_content(s, w, h, close_cb, bg_color)
 {
+   // can't simply call confirmation_panel_close() here because of how panel is toggled
+   if (confirmation.displayed)
+      w3_color('id-confirmation', null, '');    // remove any user applied bg_color
+   
    w3_innerHTML('id-confirmation-container', s);
    w3_color('id-confirmation', null, bg_color);
    
@@ -5070,6 +5074,7 @@ function confirmation_panel_close()
    if (confirmation.displayed) {
       w3_color('id-confirmation', null, '');    // remove any user applied bg_color
       toggle_panel('id-confirmation');
+      confirmation_panel_set_close_func(confirmation_panel_close);   // set default
       confirmation.displayed = false;
       //console.log('confirmation_panel_close CLOSE');
    }
@@ -5400,7 +5405,6 @@ function dx_filter_panel_close()
       ae.blur();
    }
 
-   confirmation_panel_set_close_func(confirmation_panel_close);   // restore default
    confirmation_panel_close();
 }
 
