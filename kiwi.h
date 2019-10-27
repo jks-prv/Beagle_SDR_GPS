@@ -47,7 +47,7 @@ extern int version_maj, version_min;
 
 extern bool background_mode, need_hardware, no_net, test_flag,
 	DUC_enable_start, rev_enable_start, web_nocache, auth_su, sdr_hu_debug,
-	have_ant_switch_ext, gps_e1b_only, disable_led_task;
+	have_ant_switch_ext, gps_e1b_only, disable_led_task, conn_nolocal;
 
 extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_start, tone, down, navg,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, meas, do_dyn_dns,

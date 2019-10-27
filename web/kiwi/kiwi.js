@@ -7,6 +7,7 @@ var kiwi = {
    WSPR_rgrid: '',
    GPS_fixes: 0,
    wf_fps: 0,
+   inactivity_panel: false,
 };
 
 var WATERFALL_CALIBRATION_DEFAULT = -13;
@@ -1284,7 +1285,11 @@ function users_init(called_from_admin)
 	for (var i=0; i < rx_chans; i++) {
 	   divlog(
 	      'RX'+ i +': <span id="id-user-'+ i +'"></span> ' +
-	      (called_from_admin? w3_button('id-user-kick-'+ i +' w3-small w3-white w3-border w3-border-red w3-round-large w3-padding-0 w3-padding-LR-8', 'Kick', 'status_user_kick_cb', i) : '')
+	      (called_from_admin?
+	         w3_button('id-user-kick-'+ i +' w3-small w3-white w3-border w3-border-red w3-round-large w3-padding-0 w3-padding-LR-8',
+	            'Kick', 'status_user_kick_cb', i)
+	         : ''
+	      )
 	   );
 	}
 	users_update();
@@ -1351,6 +1356,28 @@ function user_cb(obj)
          //for (var i=0; i < rx_chans; i++) if (s1 != '')
          w3_innerHTML('id-optbar-user-'+ i, (s1 != '')? (s1 +'<br>'+ s2) : '');
 		}
+		
+		// inactivity timeout warning panel
+		if (i == rx_chan && obj.rn) {
+		   if (obj.rn <= 55 && !kiwi.inactivity_panel) {
+            var s = 'Inactivity timeout in one minute.<br>Close this panel to avoid disconnection.';
+            confirmation_show_content(s, 350, 55,
+               function() {
+                  msg_send('SET inactivity_ack');
+                  confirmation_panel_close();
+                  kiwi.inactivity_panel = false;
+               },
+               'red'
+            );
+            kiwi.inactivity_panel = true;
+         }
+		}
+		
+		// another action like a frequency change reset timer
+      if (obj.rn > 55 && kiwi.inactivity_panel) {
+         confirmation_panel_close();
+         kiwi.inactivity_panel = false;
+      }
 	});
 	
 }

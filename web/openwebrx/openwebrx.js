@@ -5029,9 +5029,11 @@ function confirmation_panel_init2()
 	   }, true);
 }
 
-function confirmation_show_content(s, w, h, close_cb)
+function confirmation_show_content(s, w, h, close_cb, bg_color)
 {
    w3_innerHTML('id-confirmation-container', s);
+   w3_color('id-confirmation', null, bg_color);
+   
    if (close_cb) confirmation_panel_set_close_func(close_cb);
    confirmation_panel_show(w, h);
    
@@ -5066,6 +5068,7 @@ function confirmation_panel_close()
    //console.log('confirmation_panel_close CHECK displayed='+ confirmation.displayed);
    //kiwi_trace();
    if (confirmation.displayed) {
+      w3_color('id-confirmation', null, '');    // remove any user applied bg_color
       toggle_panel('id-confirmation');
       confirmation.displayed = false;
       //console.log('confirmation_panel_close CLOSE');

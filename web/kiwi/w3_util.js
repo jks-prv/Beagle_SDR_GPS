@@ -773,10 +773,13 @@ function w3_color(el_id, color, bkgColor)
 {
 	var el = w3_el(el_id);
 	if (!el) return null;
-	var prev = el.style.color;
-	if (color) el.style.color = color;
-	if (bkgColor) el.style.backgroundColor = bkgColor;
-	return prev;
+	var prev_fg = el.style.color;
+	var prev_bg = el.style.backgroundColor;
+	
+	// remember that setting colors to '' restores default
+	if (color != undefined && color != null) el.style.color = color;
+	if (bkgColor != undefined && bkgColor != null) el.style.backgroundColor = bkgColor;
+	return { color: prev_fg, backgroundColor: prev_bg };
 }
 
 // returns previous color

@@ -769,6 +769,9 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
                 web_nocache = true;
                 printf("### nocache\n");
             } else
+            if (strcmp(qs[i], "nolocal") == 0) {
+                conn_nolocal = true;
+            } else
             if (sscanf(qs[i], "ctrace=%d", &ctrace) == 1) {
                 web_caching_debug = ctrace;
                 printf("### ctrace=%d\n", web_caching_debug);

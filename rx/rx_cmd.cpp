@@ -58,6 +58,7 @@ char *current_authkey;
 int debug_v;
 bool auth_su;
 char auth_su_remote_ip[NET_ADDRSTRLEN];
+bool conn_nolocal;
 
 const char *mode_s[N_MODE] = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq" };
 const char *modu_s[N_MODE] = { "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ" };
@@ -228,16 +229,19 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             // For a non-local connection mc->remote_ip is 127.0.0.1 when the frp proxy is used
             // so it will never be considered a local connection.
             isLocal = isLocal_if_ip(conn, ip_remote(mc), (log_auth_attempt || pwd_debug)? "PWD" : NULL);
-            //#define TEST_IS_NOT_LOCAL
-            #ifdef TEST_IS_NOT_LOCAL
+
+            if (conn_nolocal) {
                 isLocal = IS_NOT_LOCAL;
                 pwd_debug = true;
-            #endif
+                conn_nolocal = false;
+            }
+
             //#define TEST_NO_LOCAL_IF
             #ifdef TEST_NO_LOCAL_IF
                 isLocal = NO_LOCAL_IF;
                 pwd_debug = true;
             #endif
+            
             is_local = (isLocal == IS_LOCAL);
             check_ip_against_restricted = false;
         }
@@ -1110,6 +1114,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		return true;
 	}
 #endif
+
+    if (strcmp(cmd, "SET inactivity_ack") == 0) {
+        conn->last_tune_time = timer_sec();
+        return true;
+    }
 
 
 ////////////////////////////////
