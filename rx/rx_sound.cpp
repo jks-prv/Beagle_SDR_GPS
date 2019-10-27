@@ -649,6 +649,7 @@ void c2s_sound(void *param)
 			#ifdef TR_SND_CMDS
 				clprintf(conn, "SND cmd_recv ALL 0x%x/0x%x\n", cmd_recv, CMD_ALL);
 			#endif
+            rx_enable(rx_chan, RX_DATA_ENABLE);
 			conn->snd_cmd_recv_ok = true;
 		}
 		
@@ -680,6 +681,7 @@ void c2s_sound(void *param)
         while (bc < 1024) {		// fixme: larger?
 			while (rx->wr_pos == rx->rd_pos) {
 				evSnd(EC_EVENT, EV_SND, -1, "rx_snd", "sleeping");
+
                 //#define MEAS_SND_LOOP
                 #ifdef MEAS_SND_LOOP
                     u4_t quanta = FROM_VOID_PARAM(TaskSleepReason("check pointers"));

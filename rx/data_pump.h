@@ -27,6 +27,8 @@ Boston, MA  02110-1301, USA.
 
 #include <fftw3.h>
 
+//#define DATA_PUMP_DEBUG
+
 typedef struct {
 	u2_t i, q;
 	u1_t q3, i3;	// NB: endian swap

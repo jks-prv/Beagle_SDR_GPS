@@ -24,7 +24,8 @@ Boston, MA  02110-1301, USA.
 #include "conn.h"
 
 typedef struct {
-	bool enabled;
+	bool chan_enabled;
+	bool data_enabled;
 	bool busy;
 	conn_t *conn;       // the STREAM_SOUND conn or STREAM_WATERFALL for WF-only connections
 } rx_chan_t;
@@ -66,7 +67,7 @@ int rx_count_server_conns(conn_count_e type, conn_t *our_conn = NULL);
 typedef enum { WS_MODE_ALLOC, WS_MODE_LOOKUP, WS_MODE_CLOSE, WS_INTERNAL_CONN } websocket_mode_e;
 conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc);
 
-typedef enum { RX_CHAN_ENABLE, RX_CHAN_DISABLE, RX_CHAN_FREE } rx_chan_action_e;
+typedef enum { RX_CHAN_ENABLE, RX_CHAN_DISABLE, RX_DATA_ENABLE, RX_CHAN_FREE } rx_chan_action_e;
 void rx_enable(int chan, rx_chan_action_e action);
 
 typedef enum { RX_COUNT_ALL, RX_COUNT_KIWI_UI_USERS } rx_free_count_e;

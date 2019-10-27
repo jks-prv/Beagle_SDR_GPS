@@ -444,7 +444,7 @@ void webserver_collect_print_stats(int print)
     for (rx = rx_channels; rx < &rx_channels[rx_chans]; rx++) {
         if (!rx->busy) continue;
 		c = rx->conn;
-		assert(c != NULL);
+		if (c == NULL || !c->valid) continue;
         //assert(c->type == STREAM_SOUND || c->type == STREAM_WATERFALL);
 		
 		u4_t now = timer_sec();

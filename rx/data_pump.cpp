@@ -156,7 +156,7 @@ static void snd_service()
         for (j=0; j < nrx_samps; j++) {
     
             for (int ch=0; ch < rx_chans; ch++) {
-                if (rx_channels[ch].enabled) {
+                if (rx_channels[ch].data_enabled) {
                     s4_t i, q;
                     i = S24_8_16(iqp->i3, iqp->i);
                     q = S24_8_16(iqp->q3, iqp->q);
@@ -167,12 +167,13 @@ static void snd_service()
                     i_samps[ch]->im = i * rescale + DC_offset_Q;
                     i_samps[ch]++;
                 }
+                
                 iqp++;
             }
         }
     
         for (int ch=0; ch < rx_chans; ch++) {
-            if (rx_channels[ch].enabled) {
+            if (rx_channels[ch].data_enabled) {
                 rx_dpump_t *rx = &rx_dpump[ch];
 
                 rx->ticks[rx->wr_pos] = S16x4_S64(0, rxt->ticks[2], rxt->ticks[1], rxt->ticks[0]);
@@ -186,9 +187,11 @@ static void snd_service()
                 diff = (rx->wr_pos >= rx->rd_pos)? rx->wr_pos - rx->rd_pos : N_DPBUF - rx->rd_pos + rx->wr_pos;
                 dpump.in_hist[diff]++;
 
-                if (rx->wr_pos == rx->rd_pos) {
-                    real_printf("#%d ", ch); fflush(stdout);
-                }
+                #ifdef DATA_PUMP_DEBUG
+                    if (rx->wr_pos == rx->rd_pos) {
+                        real_printf("#%d ", ch); fflush(stdout);
+                    }
+                #endif
             }
         }
         
@@ -289,7 +292,7 @@ static void data_pump(void *param)
 		
 		for (int ch=0; ch < rx_chans; ch++) {
 			rx_chan_t *rx = &rx_channels[ch];
-			if (!rx->enabled) continue;
+			if (!rx->chan_enabled) continue;
 			conn_t *c = rx->conn;
 			assert(c != NULL);
 			assert(c->type == STREAM_SOUND);
@@ -306,7 +309,7 @@ void data_pump_start_stop()
 	bool no_users = true;
 	for (int i = 0; i < rx_chans; i++) {
         rx_chan_t *rx = &rx_channels[i];
-		if (rx->enabled) {
+		if (rx->chan_enabled) {
 			no_users = false;
 			break;
 		}

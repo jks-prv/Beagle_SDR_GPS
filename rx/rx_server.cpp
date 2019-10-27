@@ -87,8 +87,9 @@ void rx_enable(int chan, rx_chan_action_e action)
 	
 	switch (action) {
 
-	case RX_CHAN_ENABLE: rx->enabled = true; break;
-	case RX_CHAN_DISABLE: rx->enabled = false; break;
+	case RX_CHAN_ENABLE: rx->chan_enabled = true; break;
+	case RX_CHAN_DISABLE: rx->chan_enabled = false; break;
+	case RX_DATA_ENABLE: rx->data_enabled = true; break;
 	case RX_CHAN_FREE: memset(rx, 0, sizeof(rx_chan_t)); break;
 	default: panic("rx_enable"); break;
 
@@ -164,7 +165,7 @@ void dump()
 	lprintf("dump --------\n");
 	for (i=0; i < rx_chans; i++) {
 		rx_chan_t *rx = &rx_channels[i];
-		lprintf("RX%d en%d busy%d conn%d-%p\n", i, rx->enabled, rx->busy,
+		lprintf("RX%d en%d busy%d conn%d-%p\n", i, rx->chan_enabled, rx->busy,
 			rx->conn? rx->conn->self_idx : 9999, rx->conn? rx->conn : 0);
 	}
 
@@ -197,7 +198,7 @@ static void dump_conn()
 	rx_chan_t *rc;
 	for (rc = rx_channels, i=0; rc < &rx_channels[rx_chans]; rc++, i++) {
 		lprintf("dump_conn: RX_CHAN-%d en %d busy %d conn = %s%d %p\n",
-			i, rc->enabled, rc->busy, rc->conn? "CONN-":"", rc->conn? rc->conn-conns:0, rc->conn);
+			i, rc->chan_enabled, rc->busy, rc->conn? "CONN-":"", rc->conn? rc->conn-conns:0, rc->conn);
 	}
 }
 
