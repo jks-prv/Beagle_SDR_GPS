@@ -447,7 +447,7 @@ var time_display_current = true;
 
 function time_display_cb(o)
 {
-	if (typeof o.tu == 'undefined') return;
+	if (isUndefined(o.tu)) return;
 	server_time_utc = o.tu;
 	server_time_local = o.tl;
 	server_time_tzid = decodeURIComponent(o.ti);
@@ -735,8 +735,8 @@ function kiwi_output_msg(id, id_scroll, p)
 	var el_scroll = w3_el(id_scroll);
    var wasScrolledDown = null;
    
-   if (typeof p.tstr == 'undefined') p.tstr = '';
-   if (typeof p.col == 'undefined') p.col = 0;
+   if (isUndefined(p.tstr)) p.tstr = '';
+   if (isUndefined(p.col)) p.col = 0;
 
    // handle beginning output with '\r' only to overwrite current line
    //console.log(JSON.stringify(s));
@@ -776,7 +776,7 @@ function kiwi_output_msg(id, id_scroll, p)
 		} else
 		
 		// ANSI color escapes
-		if (c == '\033') {
+		if (c == '\x1b') {
 		   p.esc.state = 1;
 		} else
 		if (p.esc.state == 1) {
@@ -785,7 +785,7 @@ function kiwi_output_msg(id, id_scroll, p)
             p.esc.state = 2;
          } else {
             console.log('ESC '+ JSON.stringify(c) +' unknown');
-            snew += '\033'+ c;
+            snew += '\x1b'+ c;
             p.esc.state = 0;
          }
 		} else
@@ -1313,7 +1313,7 @@ function user_cb(obj)
 		var name = obj.n;
 		var freq = obj.f;
 		var geoloc = obj.g;
-		var ip = (typeof obj.a != 'undefined' && obj.a != '')? (obj.a +', ') : '';
+		var ip = (isDefined(obj.a) && obj.a != '')? (obj.a +', ') : '';
 		var mode = obj.m;
 		var zoom = obj.z;
 		var connected = obj.t;
@@ -1324,7 +1324,7 @@ function user_cb(obj)
 		}
 		var ext = obj.e;
 		
-		if (typeof name != 'undefined') {
+		if (isDefined(name)) {
 			var id = kiwi_strip_tags(decodeURIComponent(name), '');
 			if (id != '') id = '"'+ id + '" ';
 			var g = (geoloc == '(null)' || geoloc == '')? 'unknown location' : decodeURIComponent(geoloc);
@@ -1666,7 +1666,7 @@ function kiwi_debug(msg)
 function divlog(what, is_error)
 {
 	//console.log('divlog: '+ what);
-	if (typeof is_error !== "undefined" && is_error) what = '<span class="class-error">'+ what +"</span>";
+	if (isDefined(is_error) && is_error) what = '<span class="class-error">'+ what +"</span>";
 	w3_el_softfail('id-debugdiv').innerHTML += what +"<br />";
 }
 
@@ -1690,9 +1690,9 @@ function kiwi_show_msg(s)
 
 function kiwi_server_error(s)
 {
-	kiwi_show_msg('Hmm, there seems to be a problem. <br> \
-	The server reported the error: <span style="color:red">'+s+'</span> <br> \
-	Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\',\'server error: '+s+'\');">email us</a> the above message. Thanks!');
+	kiwi_show_msg('Hmm, there seems to be a problem. <br>' +
+	   'The server reported the error: <span style="color:red">'+ s +'</span> <br>' +
+	   'Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\',\'server error: '+ s +'\');">email us</a> the above message. Thanks!');
 	seriousError = true;
 }
 

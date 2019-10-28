@@ -409,7 +409,7 @@ function toggle_panel(panel)
 
 function openwebrx_resize(a)
 {
-   a = (typeof a == 'string' && a.startsWith('orient'))? a : 'event';
+   a = (isString(a) && a.startsWith('orient'))? a : 'event';
 	resize_canvases();
 	resize_waterfall_container(true);
    extint_environment_changed( { resize:1 } );
@@ -550,13 +550,13 @@ function toggle_rx_photo()
 function animate(object, style_name, unit, from, to, accel, time_ms, fps, to_exec)
 {
 	//console.log(object.className);
-	if(typeof to_exec=="undefined") to_exec=0;
+	if (isUndefined(to_exec)) to_exec=0;
 	object.style[style_name]=from.toString()+unit;
 	object.anim_i=0;
 	n_of_iters=time_ms/(1000/fps);
 	if (n_of_iters < 1) n_of_iters = 1;
 	change=(to-from)/(n_of_iters);
-	if(typeof object.anim_timer!="undefined") { window.clearInterval(object.anim_timer);  }
+	if (isDefined(object.anim_timer)) { window.clearInterval(object.anim_timer);  }
 
 	object.anim_timer = window.setInterval(
 		function(){
@@ -635,7 +635,7 @@ function demod_envelope_draw(range, from, to, color, line)
    // Envelope is drawn on the scale canvas.
 	// A "drag range" object is returned, containing information about the draggable areas of the envelope
 	// (beginning, ending and the line showing the offset frequency).
-	if(typeof color == "undefined") color="#ffff00"; //yellow
+	if (isUndefined(color)) color="#ffff00"; //yellow
 	
 	env_bounding_line_w=5;   //    
 	env_att_w=5;             //     _______   ___env_h2 in px   ___|_____
@@ -690,7 +690,7 @@ function demod_envelope_draw(range, from, to, color, line)
 		scale_ctx.stroke();
 	}
 	
-	if (typeof line != "undefined") // out of screen? 
+	if (isDefined(line)) // out of screen? 
 	{
 		line_px = scale_px_from_freq(line,range);
 		if (!(line_px<0 || line_px>window.innerWidth))
@@ -1371,7 +1371,7 @@ function scale_canvas_start_drag(evt)
 
 function scale_offset_carfreq_from_px(x, visible_range)
 {
-	if (typeof visible_range === "undefined") visible_range = get_visible_freq_range();
+	if (isUndefined(visible_range)) visible_range = get_visible_freq_range();
 	var offset = passband_offset();
 	var f = visible_range.start + visible_range.bw*(x/canvas_container.clientWidth);
 	//console.log("SOCFFPX f="+f+" off="+offset+" f-o="+(f-offset)+" rtn="+(f - center_freq - offset));
@@ -1700,7 +1700,7 @@ function mk_freq_scale()
 		if (marker_hz % spacing.params.hz_per_large_marker == 0) {
 
 			//large marker
-			if (typeof first_large == "undefined") var first_large = marker_hz; 
+			if (isUndefined(first_large)) var first_large = marker_hz; 
 			last_large = marker_hz;
 			scale_ctx.lineWidth = 3.5;
 			scale_ctx.lineTo(x,22+11);
@@ -1916,7 +1916,7 @@ function clamp_xbin(xbin)
 
 function passband_visible()
 {
-	if (typeof demodulators[0] == "undefined") return x_bin;	// punt if no demod yet
+	if (isUndefined(demodulators[0])) return x_bin;	// punt if no demod yet
 	var f = freq_passband_center();
 	var pb_bin = freq_to_bin(f);
 	//console.log("PBV f="+f+" x_bin="+x_bin+" BACZ="+bins_at_cur_zoom()+" max_bin="+(x_bin+bins_at_cur_zoom())+" pb_bin="+pb_bin);
@@ -3404,7 +3404,9 @@ function waterfall_add(data_raw, audioFFT)
    */
 
 	canvas.ctx.putImageData(oneline_image, 0, wf_canvas_actual_line);
-	if (audioFFT == 0 && typeof(IBP_scan_plot) !== 'undefined') IBP_scan_plot(oneline_image);
+	
+	// NB: can't use isDefined() here
+	if (audioFFT == 0 && typeof(IBP_scan_plot) != 'undefined') IBP_scan_plot(oneline_image);
 	
 	if (need_wf_autoscale) {
 	   var pwr_dBm = [];
@@ -4212,7 +4214,7 @@ var freqset_tout;
 function freq_dsp_to_car(fdsp)
 {
 	var demod = demodulators[0];
-	if (typeof demod == "undefined") {
+	if (isUndefined(demod)) {
 	   console.log("freq_dsp_to_car no demod?");
 		return fdsp;
 	}
@@ -4228,7 +4230,7 @@ function freq_dsp_to_car(fdsp)
 function freq_car_to_dsp(fcar)
 {
 	var demod = demodulators[0];
-	if (typeof demod == "undefined") return fcar;
+	if (isUndefined(demod)) return fcar;
 	var offset = demod.low_cut + (demod.high_cut - demod.low_cut)/2;
 	fdsp = demod.isCW? fcar + offset : fcar;
 	//console.log("freq_car_to_dsp dsp="+fdsp+" car="+fcar+" isCW="+demod.isCW+" offset="+offset+" hcut="+demod.high_cut+" lcut="+demod.low_cut);
@@ -4240,7 +4242,7 @@ function passband_offset()
 	var offset=0;
 	var usePBCenter = false;
 	var demod = demodulators[0];
-	if (typeof demod != "undefined") {
+	if (isDefined(demod)) {
 		usePBCenter = demod.usePBCenter;
 		offset = usePBCenter? demod.low_cut + (demod.high_cut - demod.low_cut)/2 : 0;
 	}
@@ -4254,7 +4256,7 @@ function freq_passband_center()
 {
 	var freq = 0;
 	var demod = demodulators[0];
-	if (typeof demod != "undefined") {
+	if (isDefined(demod)) {
 		freq = center_freq + demod.offset_frequency;
 		freq += demod.low_cut + (demod.high_cut - demod.low_cut)/2;
 	}
@@ -4310,13 +4312,13 @@ function freqset_update_ui()
 	if (!waterfall_setup_done) return;
 	
 	var obj = w3_el('id-freq-input');
-	if (typeof obj == "undefined" || obj == null) return;		// can happen if SND comes up long before W/F
+	if (isUndefined(obj) || obj == null) return;		// can happen if SND comes up long before W/F
 
 	//obj.value = freq_displayed_kHz_str;
 	var f = freq_displayed_Hz + cfg.freq_offset*1e3;
 	obj.value = (f/1000).toFixed((f > 100e6)? 1:2);
 
-	//console.log("FUPD obj="+(typeof obj)+" val="+obj.value);
+	//console.log("FUPD obj="+ typeof(obj) +" val="+ obj.value);
 	freqset_select();
 	
 	// re-center if the new passband is outside the current waterfall 
@@ -4471,10 +4473,10 @@ function freq_link_update_cb(path, param, first)
 function freqset_complete(from)
 {
 	var obj = w3_el('id-freq-input');
-	//console.log("FCMPL from="+ from +" obj="+(typeof obj)+" val="+(obj.value).toString());
+	//console.log("FCMPL from="+ from +" obj="+ typeof(obj) +" val="+ (obj.value).toString());
 	kiwi_clearTimeout(freqset_tout);
    kiwi_clearTimeout(freq_up_down_timeout);
-	if (typeof obj == "undefined" || obj == null) return;		// can happen if SND comes up long before W/F
+	if (isUndefined(obj) || obj == null) return;		// can happen if SND comes up long before W/F
 
    var p = obj.value.split(/[\/:]/);
 	var slash = obj.value.includes('/');
@@ -4540,7 +4542,7 @@ var ignore_next_keyup_event = false;
 
 function freqset_keyup(obj, evt)
 {
-	//console.log("FKU obj="+(typeof obj)+" val="+obj.value +' ignore_next_keyup_event='+ ignore_next_keyup_event);
+	//console.log("FKU obj="+ typeof(obj) +" val="+ obj.value +' ignore_next_keyup_event='+ ignore_next_keyup_event);
 	//console.log(obj); console.log(evt);
 	kiwi_clearTimeout(freqset_tout);
 	
@@ -4684,7 +4686,7 @@ var freq_step_last_mode, freq_step_last_band;
 
 function freq_step_update_ui(force)
 {
-	if (typeof cur_mode == "undefined" || passbands[cur_mode] == undefined ) return;
+	if (isUndefined(cur_mode) || passbands[cur_mode] == undefined ) return;
 	var b = find_band(freq_displayed_Hz);
 	
 	//console.log("freq_step_update_ui: lm="+freq_step_last_mode+' cm='+cur_mode);
@@ -4751,7 +4753,7 @@ function bands_init()
 
 	for (i=0; i < bands.length; i++) {
 		var b = bands[i];
-		bands[i].chan = (typeof b.chan == "undefined")? 0 : b.chan;
+		bands[i].chan = isUndefined(b.chan)? 0 : b.chan;
 		b.min -= b.chan/2; b.max += b.chan/2;
 		
 		// fix LW/NDB/MW band definitions based on ITU region and MW channel spacing configuration settings
@@ -4904,7 +4906,7 @@ var last_selected_band = 0;
 function select_band(v, mode)
 {
    var v_num = +v;
-   //console.log('select_band t/o_v='+ (typeof v) +' v_num='+ v_num);
+   //console.log('select_band t/o_v='+ typeof(v) +' v_num='+ v_num);
    if (!isNaN(v_num)) {
       //console.log('select_band num v='+ v_num);
       b = band_menu[v_num];
@@ -4927,9 +4929,9 @@ function select_band(v, mode)
 	}
 	
 	var freq;
-	if (typeof b.sel != "undefined") {
+	if (isDefined(b.sel)) {
 		freq = parseFloat(b.sel);
-		if (typeof mode == "undefined" && typeof b.sel == "string") {
+		if (isUndefined(mode) && isString(b.sel)) {
 			mode = b.sel.search(/[a-z]/i);
 			mode = (mode == -1)? null : b.sel.slice(mode);
 		}
@@ -5274,8 +5276,8 @@ function dx_label_cb(arr)
 		var moff = obj.o;
 		var flags = obj.b;
 		var ident = obj.i;
-		var notes = (typeof obj.n != 'undefined')? obj.n : '';
-		var params = (typeof obj.p != 'undefined')? obj.p : '';
+		var notes = isDefined(obj.n)? obj.n : '';
+		var params = isDefined(obj.p)? obj.p : '';
 
 		var freqHz = freq * 1000;
 		var loff = passband_offset_dxlabel(modes_l[flags & DX_MODE]);	// always place label at center of passband
@@ -5318,8 +5320,8 @@ function dx_label_cb(arr)
 		obj = arr[i];
 		dx_idx = i-1;
 		var ident = obj.i;
-		var notes = (typeof obj.n != 'undefined')? obj.n : '';
-		//var params = (typeof obj.p != 'undefined')? obj.p : '';
+		var notes = (isDefined(obj.n))? obj.n : '';
+		//var params = (isDefined(obj.p))? obj.p : '';
 		var el = w3_el(dx_idx +'-id-dx-label');
 		
 		try {
@@ -5875,7 +5877,7 @@ function ident_complete()
 	var ident = el.value;
 	ident = kiwi_strip_tags(ident, '');
 	el.value = ident;
-	//console.log('ICMPL el='+ (typeof el) +' ident_user=<'+ ident +'>');
+	//console.log('ICMPL el='+ typeof(el) +' ident_user=<'+ ident +'>');
 	kiwi_clearTimeout(ident_tout);
 
 	// okay for ident='' to erase it
@@ -5891,7 +5893,7 @@ function ident_keyup(el, evt)
 {
 	//event_dump(evt, "IKU");
 	kiwi_clearTimeout(ident_tout);
-	//console.log("IKU el="+(typeof el)+" val="+el.value);
+	//console.log("IKU el="+ typeof(el) +" val="+ el.value);
 	
 	// Ignore modifier keys used with mouse events that also appear here.
 	// Also keeps ident_complete timeout from being set after return key.
@@ -6356,7 +6358,7 @@ function panels_setup()
 	spec_filter = readCookie('last_spec_filter');
 	if (spec_filter == null) spec_filter = 0;
 	
-   if (typeof(spectrum_show) == 'string') {
+   if (isString(spectrum_show)) {
       var ss = spectrum_show.toLowerCase();
       spec_filter_s.forEach(function(e, i) { if (ss == e.toLowerCase()) spec_filter = i; });
    }
@@ -6544,42 +6546,30 @@ function panels_setup()
 
 	w3_el("id-readme-inner").innerHTML =
 		'<span style="font-size: 15pt; font-weight: bold;">Welcome!</span>' +
-		'&nbsp;&nbsp;&nbsp;Project website: <a href="http://kiwisdr.com" target="_blank">kiwisdr.com</a>&nbsp;&nbsp;&nbsp;&nbsp;Here are some tips: \
-		<ul style="padding-left: 12px;"> \
-		<li> Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">email us</a> \
-			if your browser is having problems with the SDR. </li>\
-		<li> Windows: Firefox, Chrome & Edge work; IE does not work. </li>\
-		<li> Mac & Linux: Safari, Firefox, Chrome & Opera should work fine. </li>\
-		<li> Open and close the panels by using the circled arrows at the top right corner. </li>\
-		<li> You can click and/or drag almost anywhere on the page to change settings. </li>\
-		<li> Enter a numeric frequency in the box marked "kHz" at right. </li>\
-		<li> Or use the "select band" menu to jump to a pre-defined band. </li>\
-		<li> Use the zoom icons to control the waterfall span. </li>\
-		<li> Tune by clicking on the waterfall, spectrum or the cyan/red-colored station labels. </li>\
-		<li> Ctrl-shift or alt-shift click in the waterfall to lookup frequency in online databases. </li>\
-		<li> Control or option/alt click to page spectrum down and up in frequency. </li>\
-		<li> Adjust the "WF min" slider for best waterfall colors. </li>\
-		<li> See the <a href="http://www.kiwisdr.com/quickstart/" target="_blank">Operating information</a> page\
-		     and <a href="https://www.dropbox.com/s/i1bjyp1acghnc16/KiwiSDR.design.review.pdf?dl=1" target="_blank">Design review document</a>. </li>\
-		</ul> \
-		';
-
-		//<li> Noise across the band due to combination of active antenna and noisy location. </li>\
-		//<li> Noise floor is high due to the construction method of the prototype ... </li>\
-		//<li> ... so if you don\'t hear much on shortwave try \
-		//	<a href="javascript:ext_tune(346,\'am\');">LF</a>, <a href="javascript:ext_tune(15.25,\'lsb\');">VLF</a> or \
-		//	<a href="javascript:ext_tune(1107,\'am\');">MW</a>. </li>\
-
-		//<li> You must use a modern browser that supports HTML5. Partially working on iPad. </li>\
-		//<li> Acknowledging the pioneering web-based SDR work of Pieter-Tjerk de Bohr, PA3FWM author of \
-		//	<a href="http://websdr.ewi.utwente.nl:8901/" target="_blank">WebSDR</a>, and \
-		//	Andrew Holme\'s <a href="http://www.aholme.co.uk/GPS/Main.htm" target="_blank"> homemade GPS receiver</a>. </li> \
+		'&nbsp;&nbsp;&nbsp;Project website: <a href="http://kiwisdr.com" target="_blank">kiwisdr.com</a>&nbsp;&nbsp;&nbsp;&nbsp;Here are some tips:' +
+		'<ul style="padding-left: 12px;">' +
+		'<li> Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">email us</a>' +
+			'if your browser is having problems with the SDR. </li>' +
+		'<li> Windows: Firefox, Chrome & Edge work; IE does not work. </li>' +
+		'<li> Mac & Linux: Safari, Firefox, Chrome & Opera should work fine. </li>' +
+		'<li> Open and close the panels by using the circled arrows at the top right corner. </li>' +
+		'<li> You can click and/or drag almost anywhere on the page to change settings. </li>' +
+		'<li> Enter a numeric frequency in the box marked "kHz" at right. </li>' +
+		'<li> Or use the "select band" menu to jump to a pre-defined band. </li>' +
+		'<li> Use the zoom icons to control the waterfall span. </li>' +
+		'<li> Tune by clicking on the waterfall, spectrum or the cyan/red-colored station labels. </li>' +
+		'<li> Ctrl-shift or alt-shift click in the waterfall to lookup frequency in online databases. </li>' +
+		'<li> Control or option/alt click to page spectrum down and up in frequency. </li>' +
+		'<li> Adjust the "WF min" slider for best waterfall colors. </li>' +
+		'<li> See the <a href="http://www.kiwisdr.com/quickstart/" target="_blank">Operating information</a> page' +
+		     'and <a href="https://www.dropbox.com/s/i1bjyp1acghnc16/KiwiSDR.design.review.pdf?dl=1" target="_blank">Design review document</a>. </li>' +
+		'</ul>';
 
 
 	// id-msgs
 	
 	var contact_admin = ext_get_cfg_param('contact_admin');
-	if (typeof contact_admin == 'undefined') {
+	if (isUndefined(contact_admin)) {
 		// hasn't existed before: default to true
 		//console.log('contact_admin: INIT true');
 		contact_admin = true;
@@ -6900,7 +6890,7 @@ var spectrum_slow_dev = 0;
 
 function toggle_or_set_slow_dev(set, val)
 {
-	if (typeof set == 'number')
+	if (isNumber(set))
 		spectrum_slow_dev = kiwi_toggle(set, val, spectrum_slow_dev, 'last_slow_dev');
 	else
 		spectrum_slow_dev ^= 1;
@@ -6916,7 +6906,7 @@ var spectrum_peak_clear = false;
 
 function toggle_or_set_spec_peak(set, val)
 {
-	if (typeof set == 'number')
+	if (isNumber(set))
 		spectrum_peak = kiwi_toggle(set, val, spectrum_peak, 'last_spec_peak');
 	else
 		spectrum_peak ^= 1;
@@ -6950,7 +6940,7 @@ function setvolume(done, str)
 
 function toggle_or_set_mute(set)
 {
-	if (typeof set == 'number')
+	if (isNumber(set))
       muted = set;
    else
 	   muted ^= 1;
@@ -7000,7 +6990,7 @@ function audio_panner_ui_init()
 var hide_topbar = 0;
 function toggle_or_set_hide_topbar(set)
 {
-	if (typeof set == 'number')
+	if (isNumber(set))
       hide_topbar = set;
    else {
 	   hide_topbar = (hide_topbar + 1) & 3;
@@ -7018,7 +7008,7 @@ function toggle_or_set_hide_topbar(set)
 var hide_panels = 0;
 function toggle_or_set_hide_panels(set)
 {
-	if (typeof set == 'number')
+	if (isNumber(set))
       hide_panels = set;
    else
 	   hide_panels ^= 1;
@@ -7033,7 +7023,7 @@ function toggle_or_set_hide_panels(set)
 var test_button;
 function toggle_or_set_test(set)
 {
-	if (typeof set == 'number')
+	if (isNumber(set))
       test_button = set;
    else
 	   test_button ^= 1;
@@ -7144,7 +7134,7 @@ var btn_less_buffering = 0;
 
 function toggle_or_set_audio(set, val)
 {
-	if (typeof set == 'number')
+	if (isNumber(set))
 		btn_less_buffering = kiwi_toggle(set, val, btn_less_buffering, 'last_audio');
 	else
 		btn_less_buffering ^= 1;
@@ -7158,7 +7148,7 @@ function toggle_or_set_audio(set, val)
 	writeCookie('last_audio', btn_less_buffering.toString());
 	
 	// if toggling (i.e. not the first time during setup) reinitialize audio with specified buffering
-	if (typeof set != 'number') {
+	if (!isNumber(set)) {
 	   // haven't got audio_init() calls to work yet (other than initial)
 	   //audio_init(null, btn_less_buffering, btn_compression);
       window.location.reload(true);
@@ -7174,7 +7164,7 @@ function toggle_or_set_compression(set, val)
       return;
    }
 
-	if (typeof set == 'number')
+	if (isNumber(set))
 		btn_compression = kiwi_toggle(set, val, btn_compression, 'last_compression');
 	else
 		btn_compression ^= 1;
@@ -7469,7 +7459,7 @@ var spectrum_display = false;
 
 function toggle_or_set_spec(set, val)
 {
-	if (typeof set == 'number' && (set & toggle_e.SET)) {
+	if (isNumber(set) && (set & toggle_e.SET)) {
 		spectrum_display = val;
 	} else {
 		spectrum_display ^= 1;
@@ -7781,7 +7771,7 @@ function add_problem(what, append, sticky, el_id)
 	//kiwi_log('add_problem '+ what +' sticky='+ sticky +' id='+ id);
 	el = w3_el(id);
 	if (!el) return;
-	if (typeof el.children != "undefined") {
+	if (isDefined(el.children)) {
 		for (var i=0; i < el.children.length; i++) {
 		   if (el.children[i].innerHTML == what) {
 		      return;

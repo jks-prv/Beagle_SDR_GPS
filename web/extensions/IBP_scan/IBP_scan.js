@@ -24,7 +24,7 @@ function ibp_recv_msg(data)
       var param = params[i].split("=");
 
 /*    if (param[0] != "keepalive") {
-         if (typeof param[1] != "undefined")
+         if (isDefined(param[1]))
             console.log('ibp_recv: '+ param[0] +'='+ param[1]);
          else
             console.log('ibp_recv: '+ param[0]);
@@ -179,13 +179,13 @@ function IBP_Autosave(ch){
 var IBP_monitorBeacon = -1;
 var IBP_sound = false;
 var IBP_band = 0;
-var IBP_muted = (typeof muted != "undefined")? muted : 0;
+var IBP_muted = isDefined(muted)? muted : 0;
 var IBP_bands = [ "IBP 20m", "IBP 17m", "IBP 15m", "IBP 12m", "IBP 10m" ];
 
 
 var IBP_select = '<select id="select-IBP" class="w3-pointer" onchange="set_IBP(this.value)"><option value="-2" selected="" disabled="">IBP</option><option value="-1">OFF</option>';
 
-    if (typeof dx_ibp != "undefined") {
+    if (isDefined(dx_ibp)) {
        for( var i=0; i<18; i++) { IBP_select += '<option value="'+i+'">'+dx_ibp[i*2]+'</option>'; }
        IBP_select += '<option value="-1" disabled><b>By band:</b></option>';
        IBP_select += '<option value="20">All Bands</option>';

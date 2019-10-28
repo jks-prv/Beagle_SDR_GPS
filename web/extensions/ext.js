@@ -684,6 +684,6 @@ function extint_open(name, delay)
 
 function extint_audio_data(data, samps)
 {
-	if (typeof extint_audio_data_cb == 'function')
+	if (isFunction(extint_audio_data_cb))
 		extint_audio_data_cb(data, samps);
 }

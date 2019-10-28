@@ -84,7 +84,7 @@ var ooura32 = {
 	};
 
 	/* static */ ooura32.isPowerOf2 = function (n) {
-		if (typeof n !== 'number') {
+		if (!isNumber(n)) {
 			return false;
 		}
 		return n && (n & (n - 1)) === 0;

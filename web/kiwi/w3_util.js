@@ -199,20 +199,20 @@ function visible_block() {}      // FIXME: used by antenna switch ext
 function w3_console_obj(obj, prefix)
 {
    var s = prefix? (prefix + ' ') : '';
-   if (typeof obj == 'object')
+   if (isObject(obj))
       s += JSON.stringify(obj, null, 1);
    else
-   if (typeof obj == 'string')
+   if (isString(obj))
       s += '"'+ obj.toString() +'"';
    else
       s += obj.toString();
    console.log(s);
-   if (typeof obj == 'object') console.log(obj);
+   if (isObject(obj)) console.log(obj);
 }
 
 function w3_strip_quotes(s)
 {
-	if ((typeof s == "string") && (s.indexOf('\'') != -1 || s.indexOf('\"') != -1))
+	if (isString(s) && (s.indexOf('\'') != -1 || s.indexOf('\"') != -1))
 		return s.replace(/'/g, '').replace(/"/g, '') + ' [quotes stripped]';
 	return s;
 }
@@ -225,17 +225,17 @@ function w3_call(func, arg0, arg1, arg2, arg3)
    if (func == null || func == undefined) return rv;
    
 	try {
-	   if (typeof(func) === 'string') {
+	   if (isString(func)) {
          var f = getVarFromString(func);
-         //console.log('w3_call: '+ func +'() = '+ (typeof f));
-         if (typeof(f) === 'function') {
+         //console.log('w3_call: '+ func +'() = '+ typeof(f));
+         if (isFunction(f)) {
             //var args = Array.prototype.slice.call(arguments);
             rv = f(arg0, arg1, arg2, arg3);
          } else {
             //console.log('w3_call: getVarFromString(func) not a function: '+ func +' ('+ typeof(f) +')');
          }
       } else
-	   if (typeof(func) === 'function') {
+	   if (isFunction(func)) {
          rv = func(arg0, arg1, arg2, arg3);
 	   } else
 	      console.log('w3_call: func not a string or function');
@@ -257,12 +257,12 @@ function w3_first_value(v)
       return 'null';
 
    var rv = null;
-   var to_v = typeof v;
+   var to_v = typeof(v);
    if (to_v === 'number' || to_v === 'boolean' || to_v === 'string') {
       //console.log('w3_first_value prim');
       rv = v;
    } else
-   if (Array.isArray(v)) {
+   if (isArray(v)) {
       //console.log('w3_first_value array');
       rv = v[0];
    } else
@@ -379,7 +379,7 @@ function w3int_w3_el(id_name_class)
 // try id without, then with, leading 'id-'; then including cfg prefix as a last resort
 function w3_el(el_id)
 {
-	if (typeof el_id == "string") {
+	if (isString(el_id)) {
 	   if (el_id == '') return null;
 		var el = w3int_w3_el(el_id);
 		if (el == null) {
@@ -552,11 +552,11 @@ function w3_center_in_window(el_id)
 function w3_field_select(el_id, opts)
 {
 	var el = w3_el(el_id);
-	el = (el && typeof el.select == 'function')? el : null;
+	el = (el && isFunction(el.select))? el : null;
 
    var trace = 0;
    if (trace) {
-      var id = (typeof el_id == 'object')? el_id.id : el_id;
+      var id = isObject(el_id)? el_id.id : el_id;
       console.log('w3_field_select id='+ id +' el='+ el +' v='+ (el? el.value:null));
       console.log(el);
       console.log(opts);
@@ -1342,9 +1342,9 @@ function w3_icon(psa, fa_icon, size, color, cb, cb_param)
 	cb_param = cb_param || 0;
 
 	var font_size = null;
-	if (typeof size == 'number' && size >= 0) font_size = px(size);
+	if (isNumber(size) && size >= 0) font_size = px(size);
 	else
-	if (typeof size == 'string') font_size = size;
+	if (isString(size)) font_size = size;
 	font_size = font_size? (' font-size:'+ font_size +';') : '';
 
 	color = (color && color != '')? (' color:'+ color) : '';
@@ -1384,9 +1384,9 @@ function w3_icon_cb2(psa, fa_icon, size, color, cb, cb_param)
 	cb_param = cb_param || 0;
 
 	var font_size = null;
-	if (typeof size == 'number' && size >= 0) font_size = px(size);
+	if (isNumber(size) && size >= 0) font_size = px(size);
 	else
-	if (typeof size == 'string') font_size = size;
+	if (isString(size)) font_size = size;
 	font_size = font_size? (' font-size:'+ font_size +';') : '';
 
 	color = (color && color != '')? (' color:'+ color) : '';
@@ -1723,7 +1723,7 @@ function w3int_select_options(sel, opts)
 {
    var s = '';
    
-   if (typeof opts == 'string') {
+   if (isString(opts)) {
       // range of integers (increment one assumed)
       var rng = opts.split(':');
       if (rng.length == 2) {
@@ -1736,18 +1736,18 @@ function w3int_select_options(sel, opts)
          }
       }
    } else
-   if (Array.isArray(opts)) {
+   if (isArray(opts)) {
       // array of strings and/or numbers or take first object key as option
       for (var i=0; i < opts.length; i++) {
          var obj = opts[i];
-         if (typeof obj == 'object') {
+         if (isObject(obj)) {
             var keys = Object.keys(obj);
             obj = obj[keys[0]];
          }
          s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ obj +'</option>';
       }
    } else
-   if (typeof opts == 'object') {
+   if (isObject(opts)) {
       // object: enumerate sequentially like an array
       // allows object to serve a dual purpose by having non-integer keys
       w3_obj_enum_data(opts, null, function(i, key) {
@@ -1777,12 +1777,12 @@ function w3_select_hier(psa, label, title, path, sel, opts, cb)
 {
    var s = '';
    var idx = 0;
-   if (typeof opts != 'object') return;
+   if (!isObject(opts)) return;
 
    w3_obj_enum_data(opts, null, function(i, key) {
       s += '<option value='+ dq(idx++) +' disabled>'+ key +'</option> ';
       var a = opts[key];
-      if (!Array.isArray(a)) return;
+      if (!isArray(a)) return;
 
       for (var j=0; j < a.length; j++) {
          var v = w3_first_value(a[j]);
@@ -1796,7 +1796,7 @@ function w3_select_hier(psa, label, title, path, sel, opts, cb)
       var key = keys[i];
       s += '<option value='+ dq(idx++) +' disabled>'+ key +'</option> ';
       var a = opts[key];
-      if (!Array.isArray(a)) continue;
+      if (!isArray(a)) continue;
 
       for (var j=0; j < a.length; j++) {
          var v = w3_first_value(a[j]);
@@ -2104,7 +2104,7 @@ function w3_bool_set_cfg_cb(path, val, first)
 
 function w3_string_set_cfg_cb(path, val, first)
 {
-	//console.log('w3_string_set_cfg_cb: path='+ path +' '+ typeof val +' "'+ val +'" first='+ first);
+	//console.log('w3_string_set_cfg_cb: path='+ path +' '+ typeof(val) +' "'+ val +'" first='+ first);
 	
 	// if first time don't save, otherwise always save
 	var save = (first != undefined)? (first? false : true) : true;

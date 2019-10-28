@@ -1153,7 +1153,7 @@ function audio_stats()
 function audio_recompute_LPF(force)
 {
 	var lpf_freq = 4000;    // default if no modulator currently defined
-	if (typeof demodulators[0] != "undefined") {
+	if (isDefined(demodulators[0])) {
 		var hcut = Math.abs(demodulators[0].high_cut);
 		var lcut = Math.abs(demodulators[0].low_cut);
 		lpf_freq = Math.max(hcut, lcut);
