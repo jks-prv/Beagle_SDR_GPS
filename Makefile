@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 335
+VERSION_MIN = 336
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -828,6 +828,9 @@ EXISTS_DX_MIN = $(shell test -f $(DIR_CFG)/$(CFG_DX_MIN) && echo true)
 
 ETC_HOSTS_HAS_KIWI = $(shell grep -qi kiwisdr /etc/hosts && echo true)
 
+SSH_KEYS = /root/.ssh/authorized_keys
+EXISTS_SSH_KEYS = $(shell test -f $(SSH_KEYS) && echo true)
+
 # Only do a 'make install' on the target machine (not needed on the development machine).
 # For the Beagle this installs the device tree files in the right place and other misc stuff.
 # DANGER: do not use $(MAKE_ARGS) here! The targets for building $(EMBED_DEPS) must be run sequentially
@@ -917,7 +920,9 @@ endif
 	@echo $(C_CTR_DONE) >$(COMP_CTR)
 
 # remove public keys leftover from development
-	@-sed -i -e '/.*jks-/d' /root/.ssh/authorized_keys
+ifeq ($(EXISTS_SSH_KEYS),true)
+	@-sed -i -e '/.*jks-/d' $(SSH_KEYS)
+endif
 
 # must be last obviously
 	@if [ -f $(REBOOT) ]; then rm $(REBOOT); echo "MUST REBOOT FOR CHANGES TO TAKE EFFECT"; echo -n "Press \"return\" key to reboot else control-C: "; read in; reboot; fi;
