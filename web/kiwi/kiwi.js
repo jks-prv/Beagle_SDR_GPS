@@ -754,7 +754,7 @@ function kiwi_output_msg(id, id_scroll, p)
 	for (var i=0; i < s.length; i++) {
 
 		var c = s.charAt(i);
-      //console.log('c='+ c +' o='+ o);
+      //console.log('c='+ JSON.stringify(c));
 
 		if (c == '\f') {		// form-feed is how we clear accumulated pre elements (screen clear)
 		   while (parent_el.firstChild) {
@@ -777,150 +777,217 @@ function kiwi_output_msg(id, id_scroll, p)
 		
 		// ANSI color escapes
 		if (c == '\x1b') {
+		   p.esc.s = '';
 		   p.esc.state = 1;
 		} else
+
 		if (p.esc.state == 1) {
-		   if (c == '[') {
-            p.esc.s = '';
-            p.esc.state = 2;
-         } else {
-            console.log('ESC '+ JSON.stringify(c) +' unknown');
-            snew += '\x1b'+ c;
-            p.esc.state = 0;
-         }
-		} else
-		if (p.esc.state == 2) {
-		   if (c < '@') {
+         //console.log('acc '+ JSON.stringify(c));
+		   if (c < '@' || c == '[') {
             p.esc.s += c;
 		   } else {
+            p.esc.s += c;
+            //console.log('process ESC '+ JSON.stringify(p.esc.s));
+		      var first = p.esc.s.charAt(0);
+		      var second = p.esc.s.charAt(1);
+            var result = 0;
+		      
+		      if (first == '[') {
 
-            // fg/bg color
-            if (c == 'm') {
-               //console.log('SGR '+ dq(p.esc.s));
-               var sgr, done = 0;
-               var sa = p.esc.s.split(';');
-               var sl = sa.length
-               //console.log(sa);
+               // fg/bg color
+               if (c == 'm') {
+                  var sgr, saw_reset = 0, saw_color = 0;
+                  var sa = p.esc.s.substr(1).split(';');
+                  var sl = sa.length
+                  //console.log('SGR '+ JSON.stringify(p.esc.s) +' sl='+ sl);
+                  //console.log(sa);
+         
+                  for (var ai=0; ai < sl && result == 0; ai++) {
+                     sgr = (sa[ai] == '' || sa[ai] == 'm')? 0 : parseInt(sa[ai]);
+                     //console.log('sgr['+ ai +']='+ sgr);
+                     if (sgr == 0) {   // \e[m or \e[0m
+                        p.sgr.fg = p.sgr.bg = null;
+                        saw_reset = 1;
+                     } else
+                     if (isNaN(sgr)) {
+                        result = 2;
+                     } else
+                     if (sgr == 1)  { p.sgr.bright = 8; } else
+                     if (sgr == 2)  { p.sgr.bright = 0; } else
+                     if (sgr == 22) { p.sgr.bright = 0; } else
+                     
+                     if (sgr == 7) {      // reverse video (swap fg/bg)
+                        var tf = p.sgr.fg;
+                        p.sgr.fg = p.sgr.bg;
+                        p.sgr.bg = tf;
+                        if (p.sgr.fg == null) p.sgr.fg = [255,255,255];
+                        if (p.sgr.bg == null) p.sgr.bg = [0,0,0];
+                        saw_color = 1;
+                     } else
+                     if (sgr == 27) {     // inverse off
+                        p.sgr.fg = p.sgr.bg = null;
+                        saw_color = 1;
+                     } else
+                     
+                     // foreground
+                     if (sgr >= 30 && sgr <= 37) {
+                        //console.log('SGR='+ sgr +' bright='+ p.sgr.bright);
+                        p.sgr.fg = ansi.colors[sgr-30 + p.sgr.bright];
+                        saw_color = 1;
+                     } else
+                     if (sgr >= 90 && sgr <= 97) {
+                        p.sgr.fg = ansi.colors[sgr-90 + 8];
+                        saw_color = 1;
+                     } else
+                     if (sgr == 39) {
+                        p.sgr.fg = null;
+                        saw_color = 1;
+                     } else
       
-               for (var ai=0; ai < sl && done == 0; ai++) {
-                  sgr = (sa[ai] == '')? 0 : parseInt(sa[ai]);
-                  //console.log('sgr['+ ai +']='+ sgr);
-                  if (sl == 1 && sgr == 0) {   // \e[m or \e[0m
-                     p.sgr.fg = p.sgr.bg = null;
-                     done = 1;
-                  } else
-                  if (isNaN(sgr)) {
-                     done = -1;
-                  } else
-                  if (sgr == 1)  { p.sgr.bright = 8; } else
-                  if (sgr == 2)  { p.sgr.bright = 0; } else
-                  if (sgr == 22) { p.sgr.bright = 0; } else
-                  
-                  if (sgr == 7) {      // reverse video (swap fg/bg)
-                     var tf = p.sgr.fg;
-                     p.sgr.fg = p.sgr.bg;
-                     p.sgr.bg = tf;
-                     if (p.sgr.fg == null) p.sgr.fg = [255,255,255];
-                     if (p.sgr.bg == null) p.sgr.bg = [0,0,0];
-                  } else
-                  if (sgr == 27) {     // inverse off
-                     p.sgr.fg = p.sgr.bg = null;
-                     done = 1;
-                  } else
-                  
-                  // foreground
-                  if (sgr >= 30 && sgr <= 37) {
-                     //console.log('SGR='+ sgr +' bright='+ p.sgr.bright);
-                     p.sgr.fg = ansi.colors[sgr-30 + p.sgr.bright];
-                  } else
-                  if (sgr >= 90 && sgr <= 97) {
-                     p.sgr.fg = ansi.colors[sgr-90 + 8];
-                  } else
-                  if (sgr == 39) {
-                     p.sgr.fg = null;
-                  } else
+                     // background
+                     if (sgr >= 40 && sgr <= 47) {
+                        p.sgr.bg = ansi.colors[sgr-40 + p.sgr.bright];
+                        saw_color = 1;
+                     } else
+                     if (sgr >= 100 && sgr <= 107) {
+                        p.sgr.bg = ansi.colors[sgr-100 + 8];
+                        saw_color = 1;
+                     } else
+                     if (sgr == 49) {
+                        p.sgr.bg = null;
+                        saw_color = 1;
+                     } else
+                     
+                     // 8 or 24-bit fg/bg
+                     if (sgr == 38 || sgr == 48) {
+                        //console.log('SGR-8/24 sl='+ sl);
+                        var n8, r, g, b, color, ci;
    
-                  // background
-                  if (sgr >= 40 && sgr <= 47) {
-                     p.sgr.bg = ansi.colors[sgr-40 + p.sgr.bright];
-                  } else
-                  if (sgr >= 100 && sgr <= 107) {
-                     p.sgr.bg = ansi.colors[sgr-100 + 8];
-                  } else
-                  if (sgr == 49) {
-                     p.sgr.bg = null;
-                  } else
+                        if (sl == 3 && (parseInt(sa[1]) == 5) && (!isNaN(n8 = parseInt(sa[2])))) {
+                           //console.log('SGR n8='+ n8);
+                           ai += 2;
+                           if (n8 <= 15) {      // standard colors
+                              color = ansi.colors[n8];
+                              if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
+                              saw_color = 1;
+                           } else
+                           if (n8 <= 231) {     // 6x6x6 color cube
+                              n8 -= 16;
+                              r = Math.floor(n8/36); n8 -= r*36;
+                              g = Math.floor(n8/6); n8 -= g*6;
+                              b = n8;
+                              r = Math.floor(255 * r/5);
+                              g = Math.floor(255 * g/5);
+                              b = Math.floor(255 * b/5);
+                              color = [r,g,b];
+                              if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
+                              saw_color = 1;
+                           } else
+                           if (n8 <= 255) {     // grayscale ramp
+                              ci = 8 + (n8-232)*10;
+                              //console.log('n8='+ n8 +' ci='+ ci);
+                              color = [ci,ci,ci];
+                              if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
+                              saw_color = 1;
+                           } else
+                              result = 2;
+                        } else
+   
+                        if (sl == 5 && (parseInt(sa[1]) == 2) &&
+                           (!isNaN(r = parseInt(sa[2]))) && (!isNaN(g = parseInt(sa[3]))) && (!isNaN(b = parseInt(sa[4])))) {
+                              r = w3_clamp(r, 0,255);
+                              g = w3_clamp(g, 0,255);
+                              b = w3_clamp(b, 0,255);
+                              color = [r,g,b];
+                              if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
+                              saw_color = 1;
+                        } else
+                           result = 2;
+                     } else
+                        result = 2;
+                  }
                   
-                  // 8 or 24-bit fg/bg
-                  if (sgr == 38 || sgr == 48) {
-                     //console.log('SGR-8/24 sl='+ sl);
-                     var n8, r, g, b, color, ci;
-
-                     if (sl == 3 && (parseInt(sa[1]) == 5) && (!isNaN(n8 = parseInt(sa[2])))) {
-                        //console.log('SGR n8='+ n8);
-                        ai += 2;
-                        if (n8 <= 15) {      // standard colors
-                           color = ansi.colors[n8];
-                           if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
-                        } else
-                        if (n8 <= 231) {     // 6x6x6 color cube
-                           n8 -= 16;
-                           r = Math.floor(n8/36); n8 -= r*36;
-                           g = Math.floor(n8/6); n8 -= g*6;
-                           b = n8;
-                           r = Math.floor(255 * r/5);
-                           g = Math.floor(255 * g/5);
-                           b = Math.floor(255 * b/5);
-                           color = [r,g,b];
-                           if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
-                        } else
-                        if (n8 <= 255) {     // grayscale ramp
-                           ci = 8 + (n8-232)*10;
-                           //console.log('n8='+ n8 +' ci='+ ci);
-                           color = [ci,ci,ci];
-                           if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
-                        } else
-                           done = -1;
-                     } else
-
-                     if (sl == 5 && (parseInt(sa[1]) == 2) &&
-                        (!isNaN(r = parseInt(sa[2]))) && (!isNaN(g = parseInt(sa[3]))) && (!isNaN(b = parseInt(sa[4])))) {
-                           r = w3_clamp(r, 0,255);
-                           g = w3_clamp(g, 0,255);
-                           b = w3_clamp(b, 0,255);
-                           color = [r,g,b];
-                           if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
-                     } else
-                        done = -1;
+                  if (saw_reset) {  // \e[m or \e[0m
+                     //console.log('SGR DONE');
+                     if (p.sgr.span) {
+                        snew += '</span>';
+                        p.sgr.span = 0;
+                     }
                   } else
-                     done = -1;
-               }
-               
-               if (done == 1) {  // \e[m or \e[0m
-                  //console.log('SGR DONE');
-                  if (p.sgr.span) {
-                     snew += '</span>';
-                     p.sgr.span = 0;
+                  if (saw_color) {
+                     //console.log('SGR saw_color fg='+ rgb(p.sgr.fg) +' bg='+ rgb(p.sgr.bg));
+                     //console.log(p.sgr.fg);
+                     //console.log(p.sgr.bg);
+                     if (p.sgr.span) snew += '</span>';
+                     snew += '<span style="'+ (p.sgr.fg? ('color:'+ rgb(p.sgr.fg) +';') :'') + (p.sgr.bg? ('background-color:'+ rgb(p.sgr.bg) +';') :'') +'">';
+                     p.sgr.span = 1;
+                  } else {
+                     //console.log('SGR ERROR');
+                     result = 2;
                   }
                } else
-               if (done == 0) {
-                  //console.log('SGR fg='+ rgb(p.sgr.fg) +' bg='+ rgb(p.sgr.bg));
-                  //console.log(p.sgr.fg);
-                  //console.log(p.sgr.bg);
-                  if (p.sgr.span) snew += '</span>';
-                  snew += '<span style="'+ (p.sgr.fg? ('color:'+ rgb(p.sgr.fg) +';') :'') + (p.sgr.bg? ('background-color:'+ rgb(p.sgr.bg) +';') :'') +'">';
-                  p.sgr.span = 1;
-               } else {
-                  //console.log('SGR ERROR');
-               }
                
+               if (c == 'K') {
+                  result = 'erase in line';
+               } else
+               
+               if (c == 'P') {
+                  result = 'del # chars';
+               } else
+               
+               if (second == '?') {    // set/reset mode
+                  result = 'set/reset mode';
+                  //result = 1;
+               } else
+               
+               if (c == 'r') {      // set scrolling region (t_row;b_row)
+                  //result = 1;
+               } else
+               
+               if (c == 'l') {      // reset mode (i.e. "4l" = reset insert mode)
+                  result = 'reset mode';
+                  //result = 1;
+               } else
+		      
+               if (c == 'J') {
+                  if (second == '2' || second == '3') result = 'erase whole display'; else
+                  if (second == '1') result = 'erase start to cursor'; else
+                     result = 2;
+               } else
+               
+               if (c == 'H') {
+                  result = 'move row,col';
+               } else
+		      
+               if (c == 'd') {
+                  result = 'move row';
+               } else
+		      
+               if (c == 'G') {
+                  result = 'move col';
+               } else
+		      
+               {
+                  result = 2;
+               }
             } else
+
+		      if (first == '(') {     // define char set
+               //result = 1;
+		      } else
+		      
+		      {
+               result = 2;
+            }
             
-            if (c == 'K') {
-               //console.log('ESC[ EL '+ JSON.stringify(p.esc.s));
-               ;     // ignore EL (erase in line)
-            } else {
-               console.log('ESC[ UNKNOWN '+ JSON.stringify(p.esc.s));
+            if (result === 1) {
+                  console.log('ESC '+ JSON.stringify(p.esc.s) +' IGNORED');
+            } else
+            if (result === 2) {
+                  console.log('ESC '+ JSON.stringify(p.esc.s) +' UNKNOWN');
+            } else
+            if (isString(result)) {
+               console.log('ESC '+ JSON.stringify(p.esc.s) +' '+ result);
             }
    
             p.esc.state = 0;
@@ -945,6 +1012,7 @@ function kiwi_output_msg(id, id_scroll, p)
                p.tstr += snew;
                if (p.tstr == '') p.tstr = '&nbsp;';
                p.el.innerHTML = p.tstr;
+               //console.log('TEXT '+ JSON.stringify(p.tstr));
                p.tstr = snew = '';
                p.el = w3_appendElement(parent_el, 'pre', '');
                p.col = 0;
@@ -958,6 +1026,7 @@ function kiwi_output_msg(id, id_scroll, p)
 
    wasScrolledDown = kiwi_isScrolledDown(el_scroll);
    p.tstr += snew;
+   //console.log('TEXT '+ JSON.stringify(p.tstr));
    p.el.innerHTML = p.tstr;
 
 	if (w3_contains(el_scroll, 'w3-scroll-down') && (!p.scroll_only_at_bottom || (p.scroll_only_at_bottom && wasScrolledDown)))
