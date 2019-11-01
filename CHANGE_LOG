@@ -2,6 +2,16 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.337  November 2, 2019
+    Added waterfall filtering (averaging).
+    Added inactivity timeout warning panel.
+    CW decoder: better default threshold value.
+    Admin console: ANSI color escape support.
+    Faster builds via parallel Make jobs.
+
+v1.336  October 25, 2019
+    Make ip blacklist work with proxy.
+
 v1.335  October 11, 2019
     Change GPS acquisition task scheduler hold-off time constant.
 
