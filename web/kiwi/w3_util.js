@@ -970,9 +970,9 @@ function w3_copy_to_clipboard(val)
 // nav
 ////////////////////////////////
 
-function w3_click_nav(next_id, cb_next, cb_arg)
+function w3_click_nav(next_id, cb_next, cb_param)
 {
-   //console.log('w3_click_nav '+ next_id +' cb_next='+ cb_next +' cb_arg='+ cb_arg);
+   //console.log('w3_click_nav '+ next_id +' cb_next='+ cb_next +' cb_param='+ cb_param);
    //kiwi_trace();
 	var next_id_nav = 'id-nav-'+ next_id;		// to differentiate the nav anchor from the nav container
 	var cur_id = null;
@@ -1018,7 +1018,7 @@ function w3_click_nav(next_id, cb_next, cb_arg)
 	w3_toggle(next_id, 'w3-show-block');
 	if (cb_next != 'null') {
 	   //console.log('w3_click_nav FOCUS cb_next='+ cb_next +' next_id='+ next_id);
-      w3_call(cb_next +'_focus', next_id, cb_arg);
+      w3_call(cb_next +'_focus', next_id, cb_param);
    }
 	//console.log('w3_click_nav cb_prev='+ cb_prev +' cur_id='+ cur_id +' cb_next='+ cb_next +' next_id='+ next_id);
 }
@@ -1664,20 +1664,20 @@ function w3_checkbox_set(path, checked)
 
 var W3_SELECT_SHOW_TITLE = -1;
 
-function w3int_select_change(ev, path, save_cb)
+function w3int_select_change(ev, path, cb, cb_param)
 {
 	var el = ev.currentTarget;
 	w3_check_restart_reboot(el);
 
-	// save_cb is a string because can't pass an object to onclick
-	if (save_cb) {
-		w3_call(save_cb, path, el.value, /* first */ false);
+	// cb is a string because can't pass an object to onclick
+	if (cb) {
+		w3_call(cb, path, el.value, /* first */ false, cb_param);
 	}
 	
    w3int_post_action();
 }
 
-function w3int_select(psa, label, title, path, sel, opts_s, cb)
+function w3int_select(psa, label, title, path, sel, opts_s, cb, cb_param)
 {
 	var id = path? ('id-'+ path) : '';
 	var first = '';
@@ -1693,7 +1693,7 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb)
 	var spacing = (label != '' && !inline)? ' w3-margin-T-8' : '';
 	if (inline) spacing += ' w3-margin-left';
 	if (cb == undefined) cb = '';
-	var onchange = 'onchange="w3int_select_change(event, '+ sq(path) +', '+ sq(cb) +')"';
+	var onchange = 'onchange="w3int_select_change(event, '+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"';
 
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
@@ -1712,7 +1712,7 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb)
 	if (cb && sel != W3_SELECT_SHOW_TITLE)
 		setTimeout(function() {
 			//console.log('w3_select: initial callback: '+ cb +'('+ sq(path) +', '+ sel +')');
-			w3_call(cb, path, sel, /* first */ true);
+			w3_call(cb, path, sel, /* first */ true, cb_param);
 		}, 500);
 
 	//console.log(s);
@@ -1766,14 +1766,14 @@ function w3int_select_options(sel, opts)
    return s;
 }
 
-function w3_select(psa, label, title, path, sel, opts, save_cb)
+function w3_select(psa, label, title, path, sel, opts, cb, cb_param)
 {
    var s = w3int_select_options(sel, opts);
-   return w3int_select(psa, label, title, path, sel, s, save_cb);
+   return w3int_select(psa, label, title, path, sel, s, cb, cb_param);
 }
 
 // hierarchical -- menu entries interspersed with disabled (non-selectable) headers
-function w3_select_hier(psa, label, title, path, sel, opts, cb)
+function w3_select_hier(psa, label, title, path, sel, opts, cb, cb_param)
 {
    var s = '';
    var idx = 0;
@@ -1805,14 +1805,14 @@ function w3_select_hier(psa, label, title, path, sel, opts, cb)
    }
    */
    
-   return w3int_select(psa, label, title, path, sel, s, cb);
+   return w3int_select(psa, label, title, path, sel, s, cb, cb_param);
 }
 
 // used when current value should come from config param
-function w3_select_get_param(psa, label, title, path, opts, save_cb, init_val)
+function w3_select_get_param(psa, label, title, path, opts, cb, init_val)
 {
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? 0 : init_val);
-	return w3_select(psa, label, title, path, cur_val, opts, save_cb);
+	return w3_select(psa, label, title, path, cur_val, opts, cb);
 }
 
 function w3_select_enum(path, func)
