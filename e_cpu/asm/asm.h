@@ -147,7 +147,7 @@ preproc_t *pre(char *str, preproc_type_e ptype);
 
 int def(tokens_t *tp, tokens_t **ep);
 tokens_t *cond(tokens_t *t, tokens_t **ep, int *val);
-tokens_t *expr(tokens_t *tp, tokens_t **ep, int *val, int multi);
+tokens_t *expr(tokens_t *tp, tokens_t **ep, int *val, int multi=0, tokens_t *ltp=NULL);
 tokens_t *expr_collapse(tokens_t *t, tokens_t **ep, int *val);
 tokens_t *expr_parens(tokens_t *t, tokens_t **ep, int *val);
 int arg_match(tokens_t *body, tokens_t *args, int nargs);

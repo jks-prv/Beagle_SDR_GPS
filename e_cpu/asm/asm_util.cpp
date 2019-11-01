@@ -251,7 +251,7 @@ int def(tokens_t *tp, tokens_t **ep)
 	return 0;
 }
 
-// [NUM OPR] [NUM OPR NUM] ... -> NUM, return value
+// [NUM OPR] [NUM OPR NUM] ... -> NUM, returns value
 // destructive (does pullups)
 tokens_t *expr_collapse(tokens_t *t, tokens_t **ep, int *val)
 {
@@ -280,7 +280,7 @@ tokens_t *expr_collapse(tokens_t *t, tokens_t **ep, int *val)
     return tp;
 }
 
-// [NUM OPR] [NUM OPR NUM] ... -> nil, return value
+// [NUM OPR] [NUM OPR NUM] ... -> nil, returns value
 // destructive (does pullups)
 tokens_t *cond(tokens_t *t, tokens_t **ep, int *val)
 {
@@ -311,16 +311,16 @@ tokens_t *cond(tokens_t *t, tokens_t **ep, int *val)
     return tp+1;
 }
 
-// [NUM OPR] [NUM OPR NUM] ... -> return value
+// [NUM OPR] [NUM OPR NUM] ... -> (no change), returns value
 // not destructive (no pullups)
-tokens_t *expr(tokens_t *tp, tokens_t **ep, int *val, int multi)
+tokens_t *expr(tokens_t *tp, tokens_t **ep, int *val, int multi, tokens_t *ltp)
 {
 	tokens_t *t;
 	
 	def(tp, ep);
 	syntax(tp->ttype == TT_NUM, "expected expr NUM, got %s", ttype(tp->ttype));
 	*val = tp->num; tp++;
-	while (tp->ttype != TT_EOL) {
+	while (tp->ttype != TT_EOL && (ltp == NULL || tp != ltp)) {
 		t = tp;
 		syntax(t->ttype == TT_OPR, "expected expr OPR");
 		
@@ -362,13 +362,16 @@ tokens_t *expr(tokens_t *tp, tokens_t **ep, int *val, int multi)
 	return tp;
 }
 
-// [NUM OPR] [NUM OPR NUM] ... -> NUM
+// [NUM OPR] [NUM OPR NUM] ... -> NUM, returns value
 // destructive (does pullups)
 tokens_t *expr_parens(tokens_t *t, tokens_t **ep, int *val)
 {
 	tokens_t *tp = t;
 
-	while ((tp+1)->ttype != TT_EOL) {
+    syntax2(tp->ttype == TT_OPR && tp->num == OPR_OPEN, tp, "expected \"(\"");
+    tp++;
+    
+	while (!(tp->ttype == TT_OPR && tp->num == OPR_CLOSE)) {
 
 		// NUM OPR NUM -> NUM or NUM OPR -> NUM
 		if (expr_collapse(tp, ep, val) != NULL) {
