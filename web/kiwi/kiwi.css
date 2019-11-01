@@ -438,3 +438,12 @@ input.kiwi-pw
     background: white;
     border: 2px solid lime;
 }
+
+
+.id-wf-sp-button
+{
+    color: orange;
+    /* font-weight: normal; */
+    /* padding: 1px 3px 1px 3px; */
+    /* border: 2px solid orange; */
+}

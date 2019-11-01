@@ -3150,9 +3150,13 @@ function spectrum_dB_bands()
 
 var waterfall_dont_scale=0;
 var need_maxmindb_update = false;
+var need_clear_wf_sp_avg = false;
 
 var need_clear_specavg = false, clear_specavg = true;
 var specavg = [], specpeak = [];
+
+var need_clear_wfavg = false, clear_wfavg = true;
+var wfavg = [];
 
 // amounts empirically determined
 var wf_swallow_samples = [ 2, 4, 8, 18 ];    // for zoom: 11, 12, 13, 14
@@ -3188,9 +3192,10 @@ function waterfall_add(data_raw, audioFFT)
       }
    
       // when caught up, clear spectrum using new data
-      if (need_clear_specavg && x_bin == x_bin_server && zoom_level == x_zoom_server) {
-         clear_specavg = true;
-         need_clear_specavg = false;
+      if (x_bin == x_bin_server && zoom_level == x_zoom_server) {
+         if (need_clear_wf_sp_avg || need_clear_specavg) clear_specavg = true;
+         if (need_clear_wf_sp_avg || need_clear_wfavg)   clear_wfavg = true;
+         need_clear_wf_sp_avg = need_clear_wfavg = need_clear_specavg = false;
       }
       
       if (flags & wf_flags.COMPRESSED) {
@@ -3291,46 +3296,43 @@ function waterfall_add(data_raw, audioFFT)
 	// Add line to waterfall image			
 	
 	var oneline_image = canvas.oneline_image;
-	var zwf, color;
+	var z, color;
 	
    // spectrum
 	if (spectrum_display && need_spectrum_update) {
       spectrum_ctx.fillStyle = 'hsl(180, 100%, 70%)';
 
 		for (x=0; x<sw; x++) {
-         var ysp = spectrum_color_index(wf_gnd? wf_gnd_value : data[x]);
+         z = spectrum_color_index(wf_gnd? wf_gnd_value : data[x]);
 
          switch (spec_filter) {
          
-         case spec_filter_e.IIR:
+         case wf_sp_menu_e.IIR:
             // non-linear spectrum filter from Rocky (Alex, VE3NEA)
             // see http://www.dxatlas.com/rocky/advanced.asp
             
-            var iir_gain = 1 - Math.exp(-sp_param * ysp/255);
+            var iir_gain = 1 - Math.exp(-sp_param * z/255);
             if (iir_gain <= 0.01) iir_gain = 0.01;    // enforce minimum decay rate
-            var z = specavg[x];
-            z = z + iir_gain * (ysp - z);
-            if (z > 255) z = 255; if (z < 0) z = 0;
-            specavg[x] = z;
+            var z1 = specavg[x];
+            z1 = z1 + iir_gain * (z - z1);
+            if (z1 > 255) z1 = 255; if (z1 < 0) z1 = 0;
+            z = specavg[x] = z1;
             break;
             
-         case spec_filter_e.MMA:
-            z = ysp;
+         case wf_sp_menu_e.MMA:
             if (z > 255) z = 255; if (z < 0) z = 0;
             specavg[x] = ((specavg[x] * (sp_param-1)) + z) / sp_param;
             z = specavg[x];
             break;
             
-         case spec_filter_e.EMA:
-            z = ysp;
+         case wf_sp_menu_e.EMA:
             if (z > 255) z = 255; if (z < 0) z = 0;
             specavg[x] += (z - specavg[x]) / sp_param;
             z = specavg[x];
             break;
             
-         case spec_filter_e.OFF:
+         case wf_sp_menu_e.OFF:
          default:
-            z = ysp;
             if (z > 255) z = 255; if (z < 0) z = 0;
             break;
          }
@@ -3369,20 +3371,56 @@ function waterfall_add(data_raw, audioFFT)
 
    // waterfall
    for (x=0; x<w; x++) {
-      zwf = waterfall_color_index(wf_gnd? wf_gnd_value : data[x]);
+      z = waterfall_color_index(wf_gnd? wf_gnd_value : data[x]);
       
+      switch (wf_filter) {
+      
+      case wf_sp_menu_e.IIR:
+         // non-linear spectrum filter from Rocky (Alex, VE3NEA)
+         // see http://www.dxatlas.com/rocky/advanced.asp
+         
+         if (clear_wfavg) wfavg[x] = z;
+         var iir_gain = 1 - Math.exp(-wf_param * z/255);
+         if (iir_gain <= 0.01) iir_gain = 0.01;    // enforce minimum decay rate
+         var z1 = wfavg[x];
+         z1 = z1 + iir_gain * (z - z1);
+         if (z1 > 255) z1 = 255; if (z1 < 0) z1 = 0;
+         wfavg[x] = z1;
+         z = Math.round(wfavg[x]);
+         break;
+         
+      case wf_sp_menu_e.MMA:
+         if (clear_wfavg) wfavg[x] = z;
+         wfavg[x] = ((wfavg[x] * (wf_param-1)) + z) / wf_param;
+         z = Math.round(wfavg[x]);
+         break;
+         
+      case wf_sp_menu_e.EMA:
+         if (clear_wfavg) wfavg[x] = z;
+         wfavg[x] += (z - wfavg[x]) / wf_param;
+         //if (x == 400) console.log('old='+ old +' clr='+ clear_wfavg +' z='+ z +' new='+ wfavg[x]);
+         z = Math.round(wfavg[x]);
+         break;
+         
+      case wf_sp_menu_e.OFF:
+      default:
+         break;
+      }
+
       /*
-      color = color_map[zwf];
+      color = color_map[z];
 
       for (var i=0; i<4; i++) {
          oneline_image.data[x*4+i] = ((color>>>0) >> ((3-i)*8)) & 0xff;
       }
       */
-      oneline_image.data[x*4  ] = color_map_r[zwf];
-      oneline_image.data[x*4+1] = color_map_g[zwf];
-      oneline_image.data[x*4+2] = color_map_b[zwf];
+      oneline_image.data[x*4  ] = color_map_r[z];
+      oneline_image.data[x*4+1] = color_map_g[z];
+      oneline_image.data[x*4+2] = color_map_b[z];
       oneline_image.data[x*4+3] = 0xff;
    }
+   
+   if (clear_wfavg) clear_wfavg = false;
 	
 	// debug shear problems
 	/*
@@ -3544,7 +3582,7 @@ function waterfall_pan_canvases(bins)
 	wf_send("SET zoom="+ zoom_level +" start="+ x_bin);
 	
 	mkscale();
-	need_clear_specavg = true;
+	need_clear_wf_sp_avg = true;
 	dx_schedule_update();
    extint_environment_changed( { waterfall_pan:1 } );
 
@@ -3631,7 +3669,7 @@ function waterfall_zoom_canvases(dz, x)
 		waterfall_zoom(cv, dz, -1, x);
 	});
 	
-	need_clear_specavg = true;
+	need_clear_wf_sp_avg = true;
 }
 
 // window:
@@ -6354,13 +6392,14 @@ function panels_setup()
       );
 
 
-   // wf
+	wf_filter = readCookie('last_wf_filter');
+	if (wf_filter == null) wf_filter = wf_sp_menu_e.OFF;
 	spec_filter = readCookie('last_spec_filter');
-	if (spec_filter == null) spec_filter = 0;
+	if (spec_filter == null) spec_filter = wf_sp_menu_e.IIR;
 	
    if (isString(spectrum_show)) {
       var ss = spectrum_show.toLowerCase();
-      spec_filter_s.forEach(function(e, i) { if (ss == e.toLowerCase()) spec_filter = i; });
+      wf_sp_menu_s.forEach(function(e, i) { if (ss == e.toLowerCase()) spec_filter = i; });
    }
    
 	w3_el("id-optbar-wf").innerHTML =
@@ -6386,28 +6425,31 @@ function panels_setup()
             ),
 
             w3_col_percent('w3-valign/class-slider',
-               w3_text(optbar_prefix_color, 'SP parm'), 19,
-               w3_slider('slider-spparam', '', 'sp_param', sp_param, 0, 10, 1, 'spec_filter_param_cb'), 60,
-               w3_div('slider-spparam-field class-slider'), 19
+               //w3_text(optbar_prefix_color, 'SP parm'), 19,
+               w3_button('id-wf-sp-button class-button', 'Spec &Delta;', 'toggle_or_set_wf_sp_button'), 19,
+               w3_slider('id-wf-sp-slider', '', 'wf_sp_param', wf_sp_param, 0, 10, 1, 'wf_sp_slider_cb'), 60,
+               w3_div('id-wf-sp-slider-field class-slider'), 19
             ),
 
-            w3_inline('w3-halign-space-around/',
+            w3_inline('w3-halign-space-around w3-margin-T-6/',
                w3_select('|color:red', '', 'colormap', 'wf.cmap', wf.cmap, wf_cmap_s, 'wf_cmap_cb'),
                //w3_select('|color:red', '', 'contrast', 'wf.contr', W3_SELECT_SHOW_TITLE, wf_contr_s, 'wf_contr_cb'),
-               w3_select('|color:red', '', 'spec filter', 'spec_filter', spec_filter, spec_filter_s, 'spec_filter_cb'),
+               w3_select('|color:red', '', 'wf', 'wf_filter', wf_filter, wf_sp_menu_s, 'wf_sp_menu_cb', 1),
+               w3_select('|color:red', '', 'spec', 'spec_filter', spec_filter, wf_sp_menu_s, 'wf_sp_menu_cb', 0),
                w3_div('w3-hcenter', w3_button('id-button-spec-peak class-button', 'Peak', 'toggle_or_set_spec_peak'))
             )
          ), 85,
          w3_div('',
             w3_div('w3-hcenter w3-margin-T-2 w3-margin-B-10', w3_button('id-button-wf-autoscale class-button', 'Auto<br>Scale', 'wf_autoscale')),
             w3_div('w3-hcenter w3-margin-B-10', w3_button('id-button-slow-dev class-button', 'Slow<br>Dev', 'toggle_or_set_slow_dev')),
-            w3_div('w3-hcenter', w3_button('id-button-wf-gnd class-button w3-momentary', 'GND', 'wf_gnd_cb', 1))
+            w3_div('w3-hcenter w3-margin-T-16', w3_button('id-button-wf-gnd class-button w3-momentary', 'GND', 'wf_gnd_cb', 1))
          ), 15
       );
       
    setwfspeed(1, wf_speed);
    toggle_or_set_slow_dev(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
    toggle_or_set_spec_peak(toggle_e.FROM_COOKIE | toggle_e.SET_URL, peak_initially);
+   toggle_or_set_wf_sp_button(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
 
 
    // audio & nb
@@ -6698,16 +6740,28 @@ function wf_gnd_cb(path, idx, first)
 }
 
 
-var sp_param = 0;
-var spec_filter = 0;
-var spec_filter_s = [ 'IIR', 'MMA', 'EMA', 'off' ];
-var spec_filter_e = { IIR:0, MMA:1, EMA:2, OFF:3 };
-var spec_filter_p = {
-   IIR_min:0, IIR_max:1, IIR_step:0.1, IIR_def:0.2, IIR_val:undefined,
-   MMA_min:1, MMA_max:64, MMA_step:1, MMA_def:8, MMA_val:undefined,
-   EMA_min:1, EMA_max:64, EMA_step:1, EMA_def:8, EMA_val:undefined,
-   off_min:0, off_max:0, off_step:0, off_def:0, off_val:undefined
-};
+var wf_sp_param = 0;
+var wf_param = 0, sp_param = 0;
+var wf_sp_which = 0;   // 0 = spectrum, 1 = waterfall
+var wf_filter = 0, spec_filter = 0;
+var wf_sp_menu_s = [ 'IIR', 'MMA', 'EMA', 'off' ];
+var wf_sp_menu_e = { IIR:0, MMA:1, EMA:2, OFF:3 };
+var wf_sp_slider_s = [ 'gain', 'avgs', 'avgs', '' ];
+
+var wf_sp_filter_p = [
+   {  // spectrum
+      IIR_min:0, IIR_max:1, IIR_step:0.1, IIR_def:0.2, IIR_val:undefined,
+      MMA_min:1, MMA_max:32, MMA_step:1, MMA_def:8, MMA_val:undefined,
+      EMA_min:1, EMA_max:32, EMA_step:1, EMA_def:8, EMA_val:undefined,
+      off_min:0, off_max:0, off_step:0, off_def:0, off_val:undefined
+   },
+   {  // waterfall
+      IIR_min:0, IIR_max:2, IIR_step:0.1, IIR_def:0.8, IIR_val:undefined,
+      MMA_min:1, MMA_max:16, MMA_step:1, MMA_def:2, MMA_val:undefined,
+      EMA_min:1, EMA_max:16, EMA_step:1, EMA_def:2, EMA_val:undefined,
+      off_min:0, off_max:0, off_step:0, off_def:0, off_val:undefined
+   }
+];
 
 function spec_show()
 {
@@ -6717,54 +6771,103 @@ function spec_show()
    spectrum_param = parseFloat(spectrum_param);
    if (!isNaN(spectrum_param) && spectrum_param != -1) sp = spectrum_param;
    
-   var f = spec_filter_s[spec_filter];
-   if (sp >= spec_filter_p[f+'_min'] && sp <= spec_filter_p[f+'_max']) {
-      console.log('spec_show sp='+ sp);
-      spec_filter_param_cb('', sp, /* done */ true, /* first */ false);
+   wf_sp_which = 0;
+   var f = wf_sp_menu_s[spec_filter];
+   var f_p = wf_sp_filter_p[0];
+   
+   if (sp >= f_p[f+'_min'] && sp <= f_p[f+'_max']) {
+      //console.log('spec_show sp='+ sp);
+      wf_sp_slider_cb('id-wf-sp-slider', sp, /* done */ true, /* first */ false);
+      toggle_or_set_wf_sp_button(toggle_e.SET, 0);
    }
 }
 
-function spec_filter_cb(path, idx, first)
+function wf_sp_menu_cb(path, idx, first, param)    // param indicated which menu, wf or sp
 {
    idx = +idx;
-   //console.log('spec_filter_cb idx='+ idx +' first='+ first);
-   spec_filter = idx;
-   var f = spec_filter_s[spec_filter];
-   var val = spec_filter_p[f+'_val'];
-   if (val == undefined) {
-      val = spec_filter_p[f+'_def'];
-      var lsf = parseFloat(readCookie('last_spec_filter'));
-      var lsfp = parseFloat(readCookie('last_spec_filter_param'));
-      if (lsf == spec_filter && !isNaN(lsfp)) val = lsfp;
-   }
-   //console.log('spec_filter_cb val='+ val);
-	writeCookie('last_spec_filter', spec_filter.toString());
-   
-   w3_slider_setup('slider-spparam', spec_filter_p[f+'_min'], spec_filter_p[f+'_max'], spec_filter_p[f+'_step'], val);
-   spec_filter_param_cb('', val, /* done */ true, /* first */ false);
+   //console.log('wf_sp_menu_cb ENTER path='+ path +' idx='+ idx +' first='+ first +' which='+ param);
+   //kiwi_trace('wf_sp_menu_cb');
+   wf_sp_which = +param;
+   if (wf_sp_which) wf_filter = idx; else spec_filter = idx;
 
-	need_clear_specavg = true;
+   var f_val = wf_sp_which? wf_filter : spec_filter;
+   var f = wf_sp_menu_s[f_val];
+   var f_p = wf_sp_filter_p[wf_sp_which];
+   var val = f_p[f+'_val'];
+   //console.log('wf_sp_menu_cb which='+ wf_sp_which +' f_val='+ f_val +' f_p='+ f_p +' val='+ val);
+   
+   // update button and slider to match which menu was changed
+   wf_sp_slider_cb('id-wf-sp-slider', val, /* done */ true, /* first */ false);
+   toggle_or_set_wf_sp_button(toggle_e.SET, wf_sp_which);
+	writeCookie(wf_sp_which? 'last_wf_filter':'last_spec_filter', f_val.toString());
+
+	if (wf_sp_which) need_clear_wfavg = true; else need_clear_specavg = true;
    freqset_select();
+   //console.log('wf_sp_menu_cb EXIT path='+ path +' wf_filter='+ wf_filter +' wf_param='+ wf_param +' spec_filter='+ spec_filter +' sp_param='+ sp_param);
 }
 
 function spectrum_filter(filter)
 {
-   spec_filter_cb('', filter, false);
+   wf_sp_menu_cb('', filter, false, 0);
 }
 
-function spec_filter_param_cb(path, val, done, first)
+function toggle_or_set_wf_sp_button(set, val)
+{
+   //console.log('toggle_or_set_wf_sp_button ENTER set='+ set +' val='+ val);
+   //kiwi_trace('toggle_or_set_wf_sp_button');
+	if (isNumber(set))
+		wf_sp_which = +kiwi_toggle(set, +val, +val, 'last_wf_sp_filter');
+	else
+		wf_sp_which ^= 1;
+
+   //console.log('toggle_or_set_wf_sp_button new which='+ wf_sp_which);
+	w3_innerHTML('id-wf-sp-button', wf_sp_which? 'WF &Delta;':'Spec &Delta;');
+
+   // update slider 
+   var f_val = wf_sp_which? wf_filter : spec_filter;
+   var f = wf_sp_menu_s[f_val];
+   var f_p = wf_sp_filter_p[wf_sp_which];
+   wf_sp_slider_cb('id-wf-sp-slider', f_p[f+'_val'], /* done */ true, /* first */ false);
+	freqset_select();
+   //console.log('toggle_or_set_wf_sp_button EXIT');
+}
+
+function wf_sp_slider_cb(path, val, done, first)
 {
    if (first) return;
-	sp_param = +val;
-	//console.log('spec_filter_param_cb '+ sp_param +' spec_filter='+ spec_filter +' done='+ done +' first='+ first);
-	spec_filter_p[spec_filter_s[spec_filter] +'_val'] = sp_param;
-	w3_set_value('slider-spparam', sp_param)
-   w3_el('slider-spparam-field').innerHTML = sp_param;
+   val = +val;
+   //console.log('wf_sp_slider_cb ENTER path='+ path +' val='+ val +' which='+ wf_sp_which);
+   //kiwi_trace('wf_sp_slider_cb');
+	var f_val = wf_sp_which? wf_filter : spec_filter;
+   var f = wf_sp_menu_s[f_val];
+   var f_p = wf_sp_filter_p[wf_sp_which];
+
+   if (val == undefined || isNaN(val)) {
+      val = f_p[f+'_def'];
+      //console.log('wf_sp_slider_cb using default='+ val +'('+ typeof(val) +') which='+ wf_sp_which);
+      var lsf = parseFloat(readCookie(wf_sp_which? 'last_wf_filter':'last_spec_filter'));
+      var lsfp = parseFloat(readCookie(wf_sp_which? 'last_wf_filter_param':'last_spec_filter_param'));
+      if (lsf == f_val && !isNaN(lsfp)) {
+         //console.log('wf_sp_slider_cb USING READ_COOKIE last_filter_param='+ lsfp);
+         val = lsfp;
+      }
+   }
+
+   if (wf_sp_which) wf_param = val; else sp_param = val;
+	//console.log('wf_sp_slider_cb UPDATE slider='+ val +' which='+ wf_sp_which +' menu='+ f_val +' done='+ done +' first='+ first);
+	f_p[f+'_val'] = val;
+
+   // for benefit of direct callers
+   w3_slider_setup('id-wf-sp-slider', f_p[f+'_min'], f_p[f+'_max'], f_p[f+'_step'], val);
+   w3_el('id-wf-sp-slider-field').innerHTML = (f_val == wf_sp_menu_e.OFF)? '' : (val +' '+ wf_sp_slider_s[f_val]);
+
    if (done) {
-	   //console.log('spec_filter_param_cb sp_param='+ sp_param +' spec_filter='+ spec_filter +' done='+ done +' first='+ first);
-	   writeCookie('last_spec_filter_param', sp_param.toFixed(2));
+	   //console.log('wf_sp_slider_cb DONE WRITE_COOKIE last_filter_param='+ val.toFixed(2) +' which='+ wf_sp_which);
+	   writeCookie(wf_sp_which? 'last_wf_filter_param':'last_spec_filter_param', val.toFixed(2));
       freqset_select();
    }
+
+   //console.log('wf_sp_slider_cb EXIT path='+ path);
 }
 
 
@@ -6853,7 +6956,7 @@ function setmaxmindb(done)
 	full_scale = full_scale? full_scale : 1;	// can't be zero
 	spectrum_dB_bands();
    wf_send("SET maxdb="+maxdb.toFixed(0)+" mindb="+mindb.toFixed(0));
-	need_clear_specavg = true;
+	need_clear_wf_sp_avg = true;
    if (done) {
    	freqset_select();
    	writeCookie(audioFFT_active? 'last_AF_max_dB' : 'last_max_dB', maxdb.toFixed(0));
