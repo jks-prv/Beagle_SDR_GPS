@@ -6,8 +6,8 @@
  * -------------------------- */
 @font-face {
   font-family: 'FontAwesome';
-  src: url('pkgs/font-awesome/fonts/fontawesome-webfont.eot?v=4.6.3');
-  src: url('pkgs/font-awesome/fonts/fontawesome-webfont.eot?#iefix&v=4.6.3') format('embedded-opentype'), url('pkgs/font-awesome/fonts/fontawesome-webfont.woff2?v=4.6.3') format('woff2'), url('pkgs/font-awesome/fonts/fontawesome-webfont.woff?v=4.6.3') format('woff'), url('pkgs/font-awesome/fonts/fontawesome-webfont.ttf?v=4.6.3') format('truetype'), url('pkgs/font-awesome/fonts/fontawesome-webfont.svg?v=4.6.3#fontawesomeregular') format('svg');
+  src: url('/pkgs/font-awesome/fonts/fontawesome-webfont.eot?v=4.6.3');
+  src: url('/pkgs/font-awesome/fonts/fontawesome-webfont.eot?#iefix&v=4.6.3') format('embedded-opentype'), url('/pkgs/font-awesome/fonts/fontawesome-webfont.woff2?v=4.6.3') format('woff2'), url('/pkgs/font-awesome/fonts/fontawesome-webfont.woff?v=4.6.3') format('woff'), url('/pkgs/font-awesome/fonts/fontawesome-webfont.ttf?v=4.6.3') format('truetype'), url('/pkgs/font-awesome/fonts/fontawesome-webfont.svg?v=4.6.3#fontawesomeregular') format('svg');
   font-weight: normal;
   font-style: normal;
 }

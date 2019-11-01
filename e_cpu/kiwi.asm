@@ -98,9 +98,9 @@ Entry:
 Ready:
 			wrEvt2	CPU_CTR_DIS
 				wrEvt	HOST_RDY
-#if USE_HBEAT
-				call	heartbeat
-#endif
+				push	CTRL_CMD_READY
+				call	ctrl_set			        ; signal cmd finished
+
 				StackCheck	sp_ready 0
 
 NoCmd:
@@ -135,7 +135,8 @@ no_rx_svc:											; host_srq gps_srq(GPS_CHANS-1) ... (0)
 				ENDR								; host_srq
 #endif
 				
-				brZ		NoCmd
+				brZ		NoCmd                       ; no host_srq pending
+
 			wrEvt2	CPU_CTR_ENA
 				wrEvt	HOST_RST
 				rdReg	HOST_RX						; cmd
@@ -148,6 +149,9 @@ no_rx_svc:											; host_srq gps_srq(GPS_CHANS-1) ... (0)
 				pop
 				br		Ready						; just ignore a bad cmd
 cmd_ok:
+				push	CTRL_CMD_READY
+				call	ctrl_clr			        ; signal cmd busy
+
 #if STACK_CHECK
 				dup
 				push	0xff
@@ -313,29 +317,6 @@ tr_more:
 
 tr_id:			u16		0
 #else
-				drop.r
-#endif
-
-#if USE_HBEAT
-heartbeat:
-				push	HEARTBEAT_IND
-				push	hb
-				fetch16
-				push	hb_val
-				fetch16
-				and
-				brZ		hb_flip
-				call	ctrl_set
-				br		hb_cont
-
-hb:				u16		0
-hb_val:			u16		1
-
-hb_flip:
-				call	ctrl_clr
-hb_cont:
-				push	hb
-				incr16
 				drop.r
 #endif
 

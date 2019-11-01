@@ -31,7 +31,6 @@ Boston, MA  02110-1301, USA.
 #include "str.h"
 #include "rx.h"
 #include "clk.h"
-#include "spi.h"
 #include "ext_int.h"
 #include "debug.h"
 
@@ -502,8 +501,7 @@ void reload_index_params()
 
 	sb = NULL;
 	for (i=0; gen_list_css[embed][i] != NULL; i++) {
-		asprintf(&sb2, "<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\" />\n", gen_list_css[embed][i]);
-		sb = kstr_cat(sb, kstr_wrap(sb2));
+		sb = kstr_asprintf(sb, "<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\" />\n", gen_list_css[embed][i]);
 	}
 	iparams_add("GEN_LIST_CSS", kstr_sp(sb));
 	kstr_free(sb);
@@ -529,8 +527,7 @@ void reload_index_params()
 
 	sb = NULL;
 	for (i=0; gen_list_js[embed][i] != NULL; i++) {
-		asprintf(&sb2, "<script src=\"%s\"></script>\n", gen_list_js[embed][i]);
-		sb = kstr_cat(sb, kstr_wrap(sb2));
+		sb = kstr_asprintf(sb, "<script src=\"%s\"></script>\n", gen_list_js[embed][i]);
 	}
 	iparams_add("GEN_LIST_JS", kstr_sp(sb));
 	kstr_free(sb);
@@ -605,7 +602,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     char remote_ip[NET_ADDRSTRLEN];
     check_if_forwarded(NULL, mc, remote_ip);
     
-    bool is_sdr_hu = ip_match(remote_ip, &ddns.ips_sdr_hu);
+    bool is_sdr_hu = ip_match(remote_ip, &net.ips_sdr_hu);
     //printf("is_sdr_hu=%d %s %s\n", is_sdr_hu, remote_ip, mc->uri);
 		
     //#define WEB_PRINTF_ON_URL
@@ -771,6 +768,9 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
             if (strcmp(qs[i], "nocache") == 0) {
                 web_nocache = true;
                 printf("### nocache\n");
+            } else
+            if (strcmp(qs[i], "nolocal") == 0) {
+                conn_nolocal = true;
             } else
             if (sscanf(qs[i], "ctrace=%d", &ctrace) == 1) {
                 web_caching_debug = ctrace;

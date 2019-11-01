@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 336
+VERSION_MIN = 337
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -49,81 +49,117 @@ DEBIAN_VER = 8.5
 ################################
 # build environment detection
 ################################
-ARCH = sitara
-CPU = AM3359
-PLATFORM = beaglebone_black
-#CPU = AM5729
-#PLATFORM = beaglebone_ai
-
 DEBIAN_DEVSYS = $(shell grep -q -s Debian /etc/dogtag; echo $$?)
 DEBIAN = 0
 NOT_DEBIAN = 1
 DEVSYS = 2
 
-DEBIAN_7 = $(shell test -f /sys/devices/platform/bone_capemgr/slots; echo $$?)
 UNAME = $(shell uname)
+SYS = $(shell uname -r)
+SYS_MAJ = $(shell uname -r | awk '{print $1}' | cut -d. -f1)
+SYS_MIN = $(shell uname -r | awk '{print $1}' | cut -d. -f2)
+
+ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
+	BBAI = $(shell cat /proc/device-tree/model | grep -q -s "BeagleBone AI" && echo true)
+	DEBIAN_7 = $(shell cat /etc/debian_version | grep -q -s "7\." && echo true)
+
+	# enough parallel make jobs to overcome core stalls from filesystem or nfs delays
+	ifeq ($(BBAI),true)
+		MAKE_ARGS = -j 8
+	else
+		ifeq ($(DEBIAN_7),true)
+			# Debian 7 gcc runs out of memory compiling edata_always*.cpp in parallel
+			MAKE_ARGS =
+		else
+			MAKE_ARGS = -j 4
+		endif
+	endif
+else
+	# choices when building on development machine
+	BBAI = true
+#	BBAI = false
+	DEBIAN_7 = false
+	MAKE_ARGS = -j
+endif
+
+ARCH = sitara
+
+ifeq ($(BBAI),true)
+	CPU = AM5729
+	PLATFORM = beaglebone_ai
+else
+	CPU = AM3359
+	PLATFORM = beaglebone_black
+endif
 
 
 ################################
 # compiler/option selection
 ################################
 
+# devsys
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-ifeq ($(UNAME),Darwin)
-	CC = clang
-	CPP = clang++
-	CPP_FLAGS += -std=gnu++11
-else
-# try clang on your development system (if you have it) -- it's better
-#	CC = clang
-#	CPP = clang++
-
-	CC = gcc
-	CPP = g++
+	ifeq ($(UNAME),Darwin)
+		CC = clang
+		CPP = clang++
+		CPP_FLAGS += -std=gnu++11
+	else
+		# try clang on your development system (if you have it) -- it's better
+		#CC = clang
+		#CPP = clang++
+	
+		CC = gcc
+		CPP = g++
+	endif
 endif
-endif
 
+
+# Debian target
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
-ifeq ($(DEBIAN_7),1)
-# clang 3.0 available on Debian 7.9 doesn't work
-	CC = gcc
-	CPP = g++
-	CFLAGS += -DKIWI_DEBIAN7
-# needed for iq_display.cpp et al using g++ (-std=gnu++11 isn't available on Debian 7.9)
-	CPP_FLAGS += -std=gnu++0x
-else
-# clang(-3.5) on Debian 8.5 compiles project in 2 minutes vs 5 for gcc
-	CMD_DEPS_DEBIAN = /usr/bin/clang
-	CC = clang
+	ifeq ($(DEBIAN_7),true)
+		# clang 3.0 available on Debian 7.9 doesn't work
+		CC = gcc
+		CPP = g++
+		CFLAGS += -DKIWI_DEBIAN7
+		# needed for iq_display.cpp et al using g++ (-std=gnu++11 isn't available on Debian 7.9)
+		CPP_FLAGS += -std=gnu++0x
+	else
+		# clang(-3.5) on Debian 8.5 compiles project in 2 minutes vs 5 for gcc
+		CMD_DEPS_DEBIAN = /usr/bin/clang
+		CC = clang
 
-# To use clang address sanitizer build with "make ASAN=1 OPT=O0" on target using alias "masan"
-# There are shell aliases "masan" and "masan0" for these.
-# Use gdb "asan" alias to set breakpoint necessary to backtrace address errors.
-ifeq ($(ASAN),)
-	CPP = clang++
-else
-	CPP = clang++-3.9
-	CFLAGS += -fsanitize=address -fno-omit-frame-pointer
-	#LDFLAGS += -v -fsanitize=address
-	LDFLAGS += -fsanitize=address
-endif
+		# To use clang address sanitizer build with "make ASAN=1 OPT=O0" on target using alias "masan"
+		# There are shell aliases "masan" and "masan0" for these.
+		# Use gdb "asan" alias to set breakpoint necessary to backtrace address errors.
+		ifeq ($(ASAN),)
+			CPP = clang++
+		else
+			CPP = clang++-3.9
+			CFLAGS += -fsanitize=address -fno-omit-frame-pointer
+			#LDFLAGS += -v -fsanitize=address
+			LDFLAGS += -fsanitize=address
+		endif
 
-# needed for iq_display.cpp et al using clang 3.5
-	CPP_FLAGS += -std=gnu++11
+		# needed for iq_display.cpp et al using clang 3.5
+		CPP_FLAGS += -std=gnu++11
 
-#	CC = gcc
-#	CPP = g++
-# needed for iq_display.cpp et al using g++
-#	CPP_FLAGS += -std=gnu++11
-endif
+		#CC = gcc
+		#CPP = g++
+		# needed for iq_display.cpp et al using g++
+		#CPP_FLAGS += -std=gnu++11
+	endif
 endif
 
 # make the compiles fast on dev system
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	OPT = O0
-else
+endif
+
+# uncomment when using debugger so variables are not always optimized away
+ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 #	OPT = O0
 endif
+
 
 # static analyzer (different from address sanitizer)
 # build on devsys or target with "make SAN=1" using alias "msan"
@@ -191,7 +227,7 @@ CFILES_O3 = $(subst web/web.cpp,,$(CPP_F_O3))
 CFLAGS_UNSAFE_OPT = -funsafe-math-optimizations
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-# development machine, compile simulation version
+	# development machine, compile simulation version
 	CFLAGS += -g -MMD -DDEBUG -DDEVSYS
 	LIBS = -L/usr/local/lib -lfftw3f -lfftw3
 	LIBS_DEP = /usr/local/lib/libfftw3f.a /usr/local/lib/libfftw3.a
@@ -200,26 +236,29 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	CFG_PREFIX = dist.
 
 else
-
-# host machine (BBB), only build the FPGA-using version
-#	CFLAGS += -mfloat-abi=softfp -mfpu=neon
+	# host machine (BBB), only build the FPGA-using version
+	#CFLAGS += -mfloat-abi=softfp -mfpu=neon
 	CFLAGS +=  -mfpu=neon -mtune=cortex-a8 -mcpu=cortex-a8 -mfloat-abi=hard
-#	CFLAGS += -O3
+	#CFLAGS += -O3
 	CFLAGS += -g -MMD -DDEBUG -DHOST
 	LIBS = -lfftw3f -lfftw3 -lutil
 	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
-	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng /sbin/ethtool /usr/bin/sshpass /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget
+	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng /sbin/ethtool /usr/bin/sshpass
+	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
-# -lrt required for clock_gettime() on Debian 7; see clock_gettime(2) man page
-# jq command isn't available on Debian 7
-ifeq ($(DEBIAN_7),1)
-	LIBS += -lrt
-else
-	CMD_DEPS += /usr/bin/jq
-endif
+	ifeq ($(BBAI),true)
+		CMD_DEPS += /usr/bin/cpufreq-info
+	endif
 
+	# -lrt required for clock_gettime() on Debian 7; see clock_gettime(2) man page
+	# jq command isn't available on Debian 7
+	ifeq ($(DEBIAN_7),true)
+		LIBS += -lrt
+	else
+		CMD_DEPS += /usr/bin/jq
+	endif
 endif
 
 
@@ -228,7 +267,7 @@ endif
 ################################
 .PHONY: all
 all: c_ext_clang_conv
-	@make c_ext_clang_conv_all
+	@make $(MAKE_ARGS) c_ext_clang_conv_all
 
 
 ################################
@@ -241,7 +280,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 KEYRING = $(DIR_CFG)/.keyring.dep
 $(KEYRING):
-ifeq ($(DEBIAN_7),1)
+ifeq ($(DEBIAN_7),true)
 	cp /etc/apt/sources.list /etc/apt/sources.list.orig
 	sed -e 's/ftp\.us/archive/' < /etc/apt/sources.list >/tmp/sources.list
 	mv /tmp/sources.list /etc/apt/sources.list
@@ -287,7 +326,12 @@ endif
 /usr/bin/dtc:
 	-apt-get -y install device-tree-compiler
 
-ifneq ($(DEBIAN_7),1)
+ifeq ($(BBAI),true)
+/usr/bin/cpufreq-info:
+	-apt-get -y install cpufrequtils
+endif
+
+ifneq ($(DEBIAN_7),true)
 /usr/bin/jq:
 	-apt-get -y install jq
 endif
@@ -298,20 +342,20 @@ endif
 ################################
 # dependencies
 ################################
-#ALL_DEPS = pru/pru_realtime.bin
 #SRC_DEPS = Makefile
 SRC_DEPS = 
-BIN_DEPS = KiwiSDR.rx4.wf4.bit KiwiSDR.rx8.wf2.bit KiwiSDR.rx3.wf3.bit
+BIN_DEPS = KiwiSDR.rx4.wf4.bit KiwiSDR.rx8.wf2.bit KiwiSDR.rx3.wf3.bit KiwiSDR.rx14.wf1.bit
 #BIN_DEPS = 
 DEVEL_DEPS = $(OBJ_DIR_WEB)/web_devel.o $(KEEP_DIR)/edata_always.o $(KEEP_DIR)/edata_always2.o
 EMBED_DEPS = $(OBJ_DIR_WEB)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o  $(KEEP_DIR)/edata_always2.o
 EXTS_DEPS = $(OBJ_DIR)/ext_init.o
 
+# these MUST be run by single-threaded make before use of -j in sub makes
 GEN_ASM = $(GEN_DIR)/kiwi.gen.h verilog/kiwi.gen.vh
 OUT_ASM = $(GEN_DIR)/kiwi.aout
 GEN_VERILOG = $(addprefix verilog/rx/,cic_rx1_12k.vh cic_rx1_20k.vh cic_rx2_12k.vh cic_rx2_20k.vh cic_rx3_12k.vh cic_rx3_20k.vh cic_wf1.vh cic_wf2.vh)
 GEN_NOIP2 = $(GEN_DIR)/noip2
-ALL_DEPS += $(CMD_DEPS) $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
+SUB_MAKE_DEPS = $(CMD_DEPS) $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
 
 
 ################################
@@ -325,17 +369,17 @@ endif
 
 .PHONY: c_ext_clang_conv
 ifeq ($(PVT_EXT_C_FILES),)
-c_ext_clang_conv:
+c_ext_clang_conv: $(SUB_MAKE_DEPS)
 #	@echo no installed extensions with files needing conversion from .c to .cpp for clang compatibility
 else
-c_ext_clang_conv:
+c_ext_clang_conv: $(SUB_MAKE_DEPS)
 #	@echo PVT_EXT_C_FILES = $(PVT_EXT_C_FILES)
 	@echo convert installed extension .c files to .cpp for clang compatibility
 	find $(PVT_EXT_DIRS) -name '*.c' -exec mv '{}' '{}'pp \;
 endif
 
 .PHONY: c_ext_clang_conv_all
-c_ext_clang_conv_all: $(KEYRING) $(LIBS_DEP) $(ALL_DEPS) $(BUILD_DIR)/kiwi.bin
+c_ext_clang_conv_all: $(KEYRING) $(LIBS_DEP) $(BUILD_DIR)/kiwi.bin
 
 
 ################################
@@ -435,11 +479,12 @@ $(GEN_NOIP2): pkgs/noip2/noip2.c
 # constituents of edata_embed:
 #	extensions/*/*.min.{js,css}[.gz]
 #	kiwi/{admin,mfg}.min.html
-#	kiwi/{admin,admin_sdr,mfg}.js.min[.gz]	don't package: conflict with each other
+#	kiwi/{admin,admin_sdr,mfg}.min.js[.gz]	don't package: conflict with each other
 #	kiwi/kiwi_js_load.min.js				don't package: used by dynamic loader
-#	kiwisdr.min.{js,css}.gz					generated package
+#	kiwisdr.min.{js,css}.gz					generated package: font-awesome, text-security, w3, w3-ext, openwebrx, kiwi
 #	openwebrx/{index}.min.html
 #	openwebrx/robots.txt
+#	pkgs/js/*.min.js[.gz]
 #	pkgs/xdLocalStorage/*
 #	pkgs_maps/pkgs_maps.min.{js,css}[.gz]	generated package
 #
@@ -454,7 +499,7 @@ $(GEN_NOIP2): pkgs/noip2/noip2.c
 FILE_OPTIM = $(TOOLS_DIR)/file_optim
 FILE_OPTIM_SRC = tools/file_optim.cpp 
 
-$(FILE_OPTIM): $(TOOLS_DIR) $(FILE_OPTIM_SRC)
+$(FILE_OPTIM): $(FILE_OPTIM_SRC)
 	$(CC) $(FLAGS) -g $(FILE_OPTIM_SRC) -o $@
 
 -include $(wildcard web/*/Makefile)
@@ -511,23 +556,27 @@ $(EDATA_ALWAYS2): $(EDATA_DEP) $(FILES_ALWAYS2_SORTED_NW)
 ################################
 .PHONY: debug
 debug: c_ext_clang_conv
-	@make c_ext_clang_conv_debug
+	@make $(MAKE_ARGS) c_ext_clang_conv_debug
 
 .PHONY: c_ext_clang_conv_debug
 c_ext_clang_conv_debug:
 	@echo version $(VER)
 	@echo UNAME = $(UNAME)
 	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
+	@echo ARCH = $(ARCH)
+	@echo CPU = $(CPU)
+	@echo PLATFORM = $(PLATFORM)
 	@echo BUILD_DIR: $(BUILD_DIR)
 	@echo OBJ_DIR: $(OBJ_DIR)
 	@echo OBJ_DIR_O3: $(OBJ_DIR_O3)
 	@echo CMD_DEPS: $(CMD_DEPS)
+	@echo OPT: $(OPT)
 	@echo CFLAGS: $(CFLAGS) $(CPP_FLAGS)
 	@echo DEPS = $(OBJECTS:.o=.d)
 	@echo KIWI_UI_LIST = $(UI_LIST)
 	@echo SRC_DEPS: $(SRC_DEPS)
 	@echo BIN_DEPS: $(BIN_DEPS)
-	@echo ALL_DEPS: $(ALL_DEPS)
+	@echo SUB_MAKE_DEPS: $(SUB_MAKE_DEPS)
 	@echo GEN_ASM: $(GEN_ASM)
 	@echo FILES_EMBED: $(FILES_EMBED)
 	@echo FILES_EXT: $(FILES_EXT)
@@ -601,7 +650,7 @@ c_ctr_reset:
 #
 # But this means a "make install" must be performed on the *development machine* prior to installation
 # on targets or before uploading as a software release.
-# Previously doing a "make install" on the development machine made no sense and was flagged an error.
+# Previously doing a "make install" on the development machine made no sense and was flagged as an error.
 #
 
 $(BUILD_DIR)/kiwi.bin: c_ctr_reset $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(EXTS_DEPS)
@@ -661,32 +710,32 @@ $(KEEP_DIR):
 $(OBJ_DIR)/%.o: %.c $(SRC_DEPS)
 #	$(CC) -x c $(CFLAGS) $(FLAGS) -c -o $@ $<
 	$(CC) $(CFLAGS) $(FLAGS) -c -o $@ $<
-	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
+#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/%.o: %.c $(SRC_DEPS)
 	$(CC) -O3 $(CFLAGS) $(FLAGS) -c -o $@ $<
-	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
+#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/%.o: %.cpp $(SRC_DEPS)
 	$(CPP) $(CFLAGS) $(CPP_FLAGS) $(FLAGS) -c -o $@ $<
-	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
+#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/search.o: search.cpp $(SRC_DEPS)
 	$(CPP) -O3 $(CFLAGS) $(CPP_FLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
-	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
+#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/simd.o: simd.cpp $(SRC_DEPS)
 	$(CPP) -O3 $(CFLAGS) $(CPP_FLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
-	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
+#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/%.o: %.cpp $(SRC_DEPS)
 	$(CPP) -O3 $(CFLAGS) $(CPP_FLAGS) $(FLAGS) -c -o $@ $<
-	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
+#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR):
@@ -705,6 +754,36 @@ $(TOOLS_DIR):
 ################################
 # installation
 ################################
+
+REBOOT = $(DIR_CFG)/.reboot
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
+	DO_ONCE =
+else
+	DO_ONCE = $(DIR_CFG)/.do_once.dep
+endif
+
+$(DO_ONCE):
+ifeq ($(BBAI),true)
+	@echo "disable window system"
+	systemctl stop lightdm.service
+	systemctl disable lightdm.service
+	make install_kiwi_device_tree
+endif
+	@mkdir -p $(DIR_CFG)
+	@touch $(DO_ONCE)
+
+ifeq ($(BBAI),true)
+DIR_DTB = dtb-$(SYS_MAJ).$(SYS_MIN)-ti
+install_kiwi_device_tree:
+	@echo "install Kiwi device tree to configure GPIO pins"
+	@echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
+	cp platform/beaglebone_AI/am5729-beagleboneai-kiwisdr-cape.dts /opt/source/$(DIR_DTB)/src/arm
+	(cd /opt/source/$(DIR_DTB); make)
+	cp /opt/source/dtb-4.14-ti/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)
+	cp /opt/source/dtb-4.14-ti/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb
+	@touch $(REBOOT)
+endif
+
 V_DIR = ~/shared/shared
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
@@ -718,6 +797,9 @@ KiwiSDR.rx8.wf2.bit: $(V_DIR)/KiwiSDR.rx8.wf2.bit
 KiwiSDR.rx3.wf3.bit: $(V_DIR)/KiwiSDR.rx3.wf3.bit
 	rsync -av $(V_DIR)/KiwiSDR.rx3.wf3.bit .
 
+KiwiSDR.rx14.wf1.bit: $(V_DIR)/KiwiSDR.rx14.wf1.bit
+	rsync -av $(V_DIR)/KiwiSDR.rx14.wf1.bit .
+
 endif
 
 DEV = kiwi
@@ -727,34 +809,39 @@ PRU  = cape-bone-$(DEV)-P-00A0
 
 DIR_CFG_SRC = unix_env/kiwi.config
 
-EXISTS_BASHRC_LOCAL = $(shell test -f ~root/.bashrc.local; echo $$?)
+EXISTS_BASHRC_LOCAL = $(shell test -f ~root/.bashrc.local && echo true)
 
 CFG_KIWI = kiwi.json
-EXISTS_KIWI = $(shell test -f $(DIR_CFG)/$(CFG_KIWI); echo $$?)
+EXISTS_KIWI = $(shell test -f $(DIR_CFG)/$(CFG_KIWI) && echo true)
 
 CFG_ADMIN = admin.json
-EXISTS_ADMIN = $(shell test -f $(DIR_CFG)/$(CFG_ADMIN); echo $$?)
+EXISTS_ADMIN = $(shell test -f $(DIR_CFG)/$(CFG_ADMIN) && echo true)
 
 CFG_CONFIG = config.js
-EXISTS_CONFIG = $(shell test -f $(DIR_CFG)/$(CFG_CONFIG); echo $$?)
+EXISTS_CONFIG = $(shell test -f $(DIR_CFG)/$(CFG_CONFIG) && echo true)
 
 CFG_DX = dx.json
-EXISTS_DX = $(shell test -f $(DIR_CFG)/$(CFG_DX); echo $$?)
+EXISTS_DX = $(shell test -f $(DIR_CFG)/$(CFG_DX) && echo true)
 
 CFG_DX_MIN = dx.min.json
-EXISTS_DX_MIN = $(shell test -f $(DIR_CFG)/$(CFG_DX_MIN); echo $$?)
+EXISTS_DX_MIN = $(shell test -f $(DIR_CFG)/$(CFG_DX_MIN) && echo true)
 
-ETC_HOSTS_HAS_KIWI = $(shell grep -qi kiwisdr /etc/hosts; echo $$?)
+ETC_HOSTS_HAS_KIWI = $(shell grep -qi kiwisdr /etc/hosts && echo true)
+
+SSH_KEYS = /root/.ssh/authorized_keys
+EXISTS_SSH_KEYS = $(shell test -f $(SSH_KEYS) && echo true)
 
 # Only do a 'make install' on the target machine (not needed on the development machine).
 # For the Beagle this installs the device tree files in the right place and other misc stuff.
+# DANGER: do not use $(MAKE_ARGS) here! The targets for building $(EMBED_DEPS) must be run sequentially
 
 .PHONY: install
 install: c_ext_clang_conv
+	@# don't use MAKE_ARGS here!
 	@make c_ext_clang_conv_install
 
 .PHONY: c_ext_clang_conv_install
-c_ext_clang_conv_install: $(KEYRING) $(LIBS_DEP) $(ALL_DEPS) $(BUILD_DIR)/kiwid.bin
+c_ext_clang_conv_install: $(KEYRING) $(DO_ONCE) $(LIBS_DEP) $(BUILD_DIR)/kiwid.bin
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	@echo remainder of \'make install\' only makes sense to run on target
 else
@@ -767,6 +854,7 @@ else
 	install -D -o root -g root KiwiSDR.rx4.wf4.bit /usr/local/bin/KiwiSDR.rx4.wf4.bit
 	install -D -o root -g root KiwiSDR.rx8.wf2.bit /usr/local/bin/KiwiSDR.rx8.wf2.bit
 	install -D -o root -g root KiwiSDR.rx3.wf3.bit /usr/local/bin/KiwiSDR.rx3.wf3.bit
+	install -D -o root -g root KiwiSDR.rx14.wf1.bit /usr/local/bin/KiwiSDR.rx14.wf1.bit
 #
 	install -o root -g root unix_env/kiwid /etc/init.d
 	install -o root -g root -m 0644 unix_env/kiwid.service /etc/systemd/system
@@ -787,43 +875,43 @@ else
 	install -D -o root -g root -m 0644 unix_env/gdb_valgrind ~root/.gdb_valgrind
 
 # only install post-customized config files if they've never existed before
-ifeq ($(EXISTS_BASHRC_LOCAL),1)
+ifneq ($(EXISTS_BASHRC_LOCAL),true)
 	@echo installing .bashrc.local
 	cp unix_env/bashrc.local ~root/.bashrc.local
 endif
 
-ifeq ($(EXISTS_KIWI),1)
+ifneq ($(EXISTS_KIWI),true)
 	@echo installing $(DIR_CFG)/$(CFG_KIWI)
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_KIWI) $(DIR_CFG)/$(CFG_KIWI)
 
 # don't prevent admin.json transition process
-ifeq ($(EXISTS_ADMIN),1)
+ifneq ($(EXISTS_ADMIN),true)
 	@echo installing $(DIR_CFG)/$(CFG_ADMIN)
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_ADMIN) $(DIR_CFG)/$(CFG_ADMIN)
 endif
 endif
 
-ifeq ($(EXISTS_DX),1)
+ifneq ($(EXISTS_DX),true)
 	@echo installing $(DIR_CFG)/$(CFG_DX)
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_DX) $(DIR_CFG)/$(CFG_DX)
 endif
 
-ifeq ($(EXISTS_DX_MIN),1)
+ifneq ($(EXISTS_DX_MIN),true)
 	@echo installing $(DIR_CFG)/$(CFG_DX_MIN)
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_DX_MIN) $(DIR_CFG)/$(CFG_DX_MIN)
 endif
 
-ifeq ($(EXISTS_CONFIG),1)
+ifneq ($(EXISTS_CONFIG),true)
 	@echo installing $(DIR_CFG)/$(CFG_CONFIG)
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_CONFIG) $(DIR_CFG)/$(CFG_CONFIG)
 endif
 
-ifeq ($(ETC_HOSTS_HAS_KIWI),1)
+ifneq ($(ETC_HOSTS_HAS_KIWI),true)
 	@echo appending kiwisdr to /etc/hosts
 	@echo '127.0.0.1       kiwisdr' >>/etc/hosts
 endif
@@ -832,7 +920,13 @@ endif
 	@echo $(C_CTR_DONE) >$(COMP_CTR)
 
 # remove public keys leftover from development
-	@-sed -i -e '/.*jks-/d' /root/.ssh/authorized_keys
+ifeq ($(EXISTS_SSH_KEYS),true)
+	@-sed -i -e '/.*jks-/d' $(SSH_KEYS)
+endif
+
+# must be last obviously
+	@if [ -f $(REBOOT) ]; then rm $(REBOOT); echo "MUST REBOOT FOR CHANGES TO TAKE EFFECT"; echo -n "Press \"return\" key to reboot else control-C: "; read in; reboot; fi;
+
 endif
 
 
@@ -844,6 +938,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 enable disable start stop restart status:
 	-systemctl --full --lines=100 $@ kiwid.service || true
 
+# SIGUSR1 == SIG_DUMP
 reload dump:
 	-killall -q -s USR1 kiwid
 	-killall -q -s USR1 kiwi.bin
@@ -896,19 +991,19 @@ v ver version:
 	@echo "you are running version" $(VER)
 
 # workaround for sites having problems with git using https (even when curl with https works fine)
-OPT_GIT_USE_HTTPS = $(shell test -f /root/kiwi.config/opt.git_no_https; echo $$?)
-ifeq ($(OPT_GIT_USE_HTTPS),1)
-	PROTO = https
+OPT_GIT_NO_HTTPS = $(shell test -f /root/kiwi.config/opt.git_no_https && echo true)
+ifeq ($(OPT_GIT_NO_HTTPS),true)
+	GIT_PROTO = git
 else
-	PROTO = git
+	GIT_PROTO = https
 endif
 
 # invoked by update process -- alter with care!
 git:
-	# remove local changes from development activities before the pull
+	@# remove local changes from development activities before the pull
 	git clean -fd
 	git checkout .
-	git pull -v $(PROTO)://github.com/jks-prv/Beagle_SDR_GPS.git
+	git pull -v $(GIT_PROTO)://github.com/jks-prv/Beagle_SDR_GPS.git
 
 update_check:
 	curl --silent --ipv4 --show-error --connect-timeout 15 https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -o Makefile.1
@@ -924,10 +1019,14 @@ force_update:
 ################################
 dump_eeprom:
 	@echo KiwiSDR cape EEPROM:
-ifeq ($(DEBIAN_7),1)
+ifeq ($(DEBIAN_7),true)
 	hexdump -C /sys/bus/i2c/devices/1-0054/eeprom
 else
+ifeq ($(BBAI),true)
+	hexdump -C /sys/bus/i2c/devices/3-0054/eeprom
+else
 	hexdump -C /sys/bus/i2c/devices/2-0054/eeprom
+endif
 endif
 	@echo
 	@echo BeagleBone EEPROM:
@@ -947,10 +1046,10 @@ rsync_su:
 rsync_port:
 	sudo $(RSYNC_PORT)
 rsync_bit:
-	rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit $(V_DIR)/KiwiSDR.rx8.wf2.bit $(V_DIR)/KiwiSDR.rx3.wf3.bit .
+	rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit $(V_DIR)/KiwiSDR.rx8.wf2.bit $(V_DIR)/KiwiSDR.rx3.wf3.bit $(V_DIR)/KiwiSDR.rx14.wf1.bit .
 	sudo $(RSYNC)
 rsync_bit_port:
-	rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit $(V_DIR)/KiwiSDR.rx8.wf2.bit $(V_DIR)/KiwiSDR.rx3.wf3.bit .
+	rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit $(V_DIR)/KiwiSDR.rx8.wf2.bit $(V_DIR)/KiwiSDR.rx3.wf3.bit $(V_DIR)/KiwiSDR.rx14.wf1.bit .
 	sudo $(RSYNC_PORT)
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
@@ -986,9 +1085,7 @@ clean_deprecated:
 	-rm -rf obj obj_O3 obj_keep kiwi.bin kiwid.bin *.dSYM web/edata*
 	-rm -rf *.dSYM pas $(addprefix pru/pru_realtime.,bin lst txt) extensions/ext_init.cpp kiwi.gen.h kiwid kiwid.aout kiwid_realtime.bin .comp_ctr
 
-clean_dist:
-	make clean_deprecated
-	make clean
+clean_dist: clean clean_deprecated
 	-rm -rf $(BUILD_DIR)
 
 
@@ -1002,7 +1099,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 # used by scgit alias
 copy_to_git:
-	@(echo 'current dir is:'; pwd; git branch)
+	@(echo 'current dir is:'; pwd)
 	@echo
 	@(cd $(GITAPP)/$(REPO_NAME); echo 'repo branch set to:'; pwd; git branch)
 	@echo '################################'
@@ -1012,7 +1109,7 @@ copy_to_git:
 	rsync -av --delete --exclude .git --exclude .DS_Store . $(GITAPP)/$(REPO_NAME)
 
 copy_from_git:
-	@(echo 'current dir is:'; pwd; git branch)
+	@(echo 'current dir is:'; pwd)
 	@echo
 	@(cd $(GITAPP)/$(REPO_NAME); echo 'repo branch set to:'; pwd; git branch)
 	@echo -n 'are you sure? '

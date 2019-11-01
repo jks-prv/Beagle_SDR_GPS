@@ -27,11 +27,9 @@ Boston, MA  02110-1301, USA.
 #include "timer.h"
 #include "nbuf.h"
 #include "web.h"
-#include "peri.h"
 #include "spi.h"
 #include "gps.h"
 #include "coroutines.h"
-#include "pru_realtime.h"
 #include "cuteSDR.h"
 #include "agc.h"
 #include "fir.h"
@@ -48,6 +46,9 @@ Boston, MA  02110-1301, USA.
 #include "noiseproc.h"
 #include "lms.h"
 #include "dx.h"
+#include "rx_sound.h"
+#include "rx_waterfall.h"
+#include "shmem.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -139,7 +140,7 @@ void c2s_sound(void *param)
 	snd->seq = 0;
 	
     #ifdef SND_SEQ_CHECK
-        snd->snd_seq_init = false;
+        snd->snd_seq_ck_init = false;
     #endif
     
 	m_FmDemod[rx_chan].SetSampleRate(rx_chan, frate);
@@ -179,6 +180,7 @@ void c2s_sound(void *param)
 	switch (fw_sel) {
 	    case FW_SEL_SDR_RX4_WF4: norm_nrx_samps = nrx_samps - ref_nrx_samps; break;
 	    case FW_SEL_SDR_RX8_WF2: norm_nrx_samps = nrx_samps; break;
+	    case FW_SEL_SDR_RX14_WF1: norm_nrx_samps = nrx_samps; break;    // FIXME: this is now the smallest buffer size
 	    case FW_SEL_SDR_RX3_WF3: const double target = 15960.828e-6;      // empirically measured using GPS 1 PPS input
 	                             norm_nrx_samps = (int) (target * SND_RATE_3CH);
 	                             gps_delay2 = target - (double) norm_nrx_samps / SND_RATE_3CH; // fractional part of target delay
@@ -220,7 +222,7 @@ void c2s_sound(void *param)
 			char *cmd = nb->buf;
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
-    		TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "cmd", 0, 0, NULL);
+    		TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, "cmd");
 
 			evDP(EC_EVENT, EV_DPUMP, -1, "SND", evprintf("SND: %s", cmd));
 			
@@ -647,6 +649,7 @@ void c2s_sound(void *param)
 			#ifdef TR_SND_CMDS
 				clprintf(conn, "SND cmd_recv ALL 0x%x/0x%x\n", cmd_recv, CMD_ALL);
 			#endif
+            rx_enable(rx_chan, RX_DATA_ENABLE);
 			conn->snd_cmd_recv_ok = true;
 		}
 		
@@ -678,6 +681,7 @@ void c2s_sound(void *param)
         while (bc < 1024) {		// fixme: larger?
 			while (rx->wr_pos == rx->rd_pos) {
 				evSnd(EC_EVENT, EV_SND, -1, "rx_snd", "sleeping");
+
                 //#define MEAS_SND_LOOP
                 #ifdef MEAS_SND_LOOP
                     u4_t quanta = FROM_VOID_PARAM(TaskSleepReason("check pointers"));
@@ -703,7 +707,7 @@ void c2s_sound(void *param)
                 #endif
 			}
 			
-        	TaskStatU(0, 0, NULL, TSTAT_INCR|TSTAT_ZERO, 0, "aud");
+        	TaskStat2(TSTAT_INCR|TSTAT_ZERO, 0, "aud");
 
 			TYPECPX *i_samps = rx->in_samps[rx->rd_pos];
 
@@ -731,15 +735,15 @@ void c2s_sound(void *param)
 			gps_tsp->gpssec = fmod(gps_week_sec + clk.gps_secs + dt/clk.adc_clock_base - gps_delay + gps_delay2, gps_week_sec);
 
 		    #ifdef SND_SEQ_CHECK
-		        if (rx->in_seq[rx->rd_pos] != snd->snd_seq) {
-		            if (!snd->snd_seq_init) {
-		                snd->snd_seq_init = true;
+		        if (rx->in_seq[rx->rd_pos] != snd->snd_seq_ck) {
+		            if (!snd->snd_seq_ck_init) {
+		                snd->snd_seq_ck_init = true;
 		            } else {
-		                real_printf("rx%d: got %d expecting %d\n", rx_chan, rx->in_seq[rx->rd_pos], snd->snd_seq);
+		                real_printf("rx%d: got %d expecting %d\n", rx_chan, rx->in_seq[rx->rd_pos], snd->snd_seq_ck);
 		            }
-		            snd->snd_seq = rx->in_seq[rx->rd_pos];
+		            snd->snd_seq_ck = rx->in_seq[rx->rd_pos];
 		        }
-		        snd->snd_seq++;
+		        snd->snd_seq_ck++;
 		    #endif
 		    
 			rx->rd_pos = (rx->rd_pos+1) & (N_DPBUF-1);
@@ -982,7 +986,7 @@ void c2s_sound(void *param)
 		smeter[1] = sMeter & 0xff;
 
         *flags = 0;
-		if (rx_adc_ovfl) *flags |= SND_FLAG_ADC_OVFL;
+		if (dpump.rx_adc_ovfl) *flags |= SND_FLAG_ADC_OVFL;
         if (mode == MODE_IQ) *flags |= SND_FLAG_MODE_IQ;
         if (compression && mode != MODE_IQ) *flags |= SND_FLAG_COMPRESSED;
         if (masked) *flags |= SND_FLAG_MASKED;
@@ -1005,9 +1009,11 @@ void c2s_sound(void *param)
 		// send sequence number that waterfall syncs to on client-side
 		snd->seq++;
 		*seq = snd->seq;
+		WF_SHMEM->wf_inst[rx_chan].snd_seq = snd->seq;
 	    //{ real_printf("%d ", snd->seq & 1); fflush(stdout); }
 
 		//printf("hdr %d S%d\n", sizeof(out_pkt.h), bc); fflush(stdout);
+		int aud_bytes;
 		if (mode == MODE_IQ) {
 		    // allow GPS timestamps to be seen by internal extensions
 		    // but selectively remove from external connections (see admin page security tab)
@@ -1018,12 +1024,14 @@ void c2s_sound(void *param)
 		    }
 			const int bytes = sizeof(snd->out_pkt_iq.h) + bc;
 			app_to_web(conn, (char*) &snd->out_pkt_iq, bytes);
-			audio_bytes += sizeof(snd->out_pkt_iq.h.smeter) + bc;
+			aud_bytes = sizeof(snd->out_pkt_iq.h.smeter) + bc;
 		} else {
 			const int bytes = sizeof(snd->out_pkt_real.h) + bc;
 			app_to_web(conn, (char*) &snd->out_pkt_real, bytes);
-			audio_bytes += sizeof(snd->out_pkt_real.h.smeter) + bc;
+			aud_bytes = sizeof(snd->out_pkt_real.h.smeter) + bc;
 		}
+        audio_bytes[rx_chan] += aud_bytes;
+        audio_bytes[rx_chans] += aud_bytes;     // [rx_chans] is the sum of all audio channels
 
 		#if 0
 			static u4_t last_time[MAX_RX_CHANS];

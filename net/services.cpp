@@ -33,6 +33,8 @@ Boston, MA  02110-1301, USA.
 #include "gps.h"
 #include "leds.h"
 #include "non_block.h"
+#include "shmem.h"
+#include "eeprom.h"
 
 #include <string.h>
 #include <time.h>
@@ -224,14 +226,14 @@ static void sec_CK(void *param)
             server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : ddns.port_ext;
             asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
                 "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&vr=%d&vc=%u&sdr_hu=1&url=http://%s:%d\"",
-                ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
+                net.ips_kiwisdr_com.backup? net.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
                 SURVEY_LAST, ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac, vr, vc,
                 server_url, server_port);
             cfg_string_free(server_url);
         } else {
             asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
                 "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&vr=%d&vc=%u&sdr_hu=0\"",
-                ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
+                net.ips_kiwisdr_com.backup? net.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
                 SURVEY_LAST, ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac, vr, vc);
         }
 
@@ -245,7 +247,7 @@ static void sec_CK(void *param)
     if (my_kiwi) {
         asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 5 "
             "\"http://%s/php/my_kiwi.php?auth=308bb2580afb041e0514cd0d4f21919c&pub=%s&pvt=%s&port=%d&serno=%d\"",
-            ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
+            net.ips_kiwisdr_com.backup? net.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
             ddns.ip_pub, ddns.ip_pvt, ddns.port, ddns.serno);
 
         kstr_free(non_blocking_cmd(cmd_p, &status));
@@ -376,7 +378,7 @@ static void UPnP_port_open_task(void *param)
 {
     char *cmd_p;
     asprintf(&cmd_p, "upnpc %s -a %s %d %d TCP 2>&1", (debian_ver != 7)? "-e KiwiSDR" : "", ddns.ip_pvt, ddns.port, ddns.port_ext);
-    int status = non_blocking_cmd_func_forall("kiwi.pnp", cmd_p, _UPnP_port_open, 0, POLL_MSEC(1000));
+    int status = non_blocking_cmd_func_forall("kiwi.UPnP", cmd_p, _UPnP_port_open, 0, POLL_MSEC(1000));
     int exit_status;
     if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
         ddns.auto_nat = exit_status;
@@ -450,8 +452,8 @@ static void dyn_DNS(void *param)
 	if (ddns.serno == 0) lprintf("DDNS: no serial number?\n");
 	if (noInternet) lprintf("DDNS: no Internet access?\n");
 
-    DNS_lookup("sdr.hu", &ddns.ips_sdr_hu, N_IPS, SDR_HU_PUBLIC_IP);
-    DNS_lookup("kiwisdr.com", &ddns.ips_kiwisdr_com, N_IPS, KIWISDR_COM_PUBLIC_IP);
+    DNS_lookup("sdr.hu", &net.ips_sdr_hu, N_IPS, SDR_HU_PUBLIC_IP);
+    DNS_lookup("kiwisdr.com", &net.ips_kiwisdr_com, N_IPS, KIWISDR_COM_PUBLIC_IP);
 
     bool reg_sdr_hu = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);
     n = DNS_lookup("public.kiwisdr.com", &ddns.pub_ips, N_IPS, KIWISDR_COM_PUBLIC_IP);
@@ -636,8 +638,8 @@ static void reg_SDR_hu(void *param)
 	char *cmd_p;
 	int retrytime_mins = RETRYTIME_FAIL;
 	
-	while (!ddns.ips_sdr_hu.valid)
-        TaskSleepSec(5);		// wait for ddns.ips_sdr_hu to become valid (needed in processing of /status reply)
+	while (!net.ips_sdr_hu.valid)
+        TaskSleepSec(5);		// wait for net.ips_sdr_hu to become valid (needed in processing of /status reply)
 
 	while (1) {
         const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
@@ -660,7 +662,7 @@ static void reg_SDR_hu(void *param)
 			    server_url, server_port, api_key);
 		} else {
             asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- https://%s/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
-			    ddns.ips_sdr_hu.backup? ddns.ips_sdr_hu.ip_list[0] : "sdr.hu", server_url, server_port, api_key);
+			    net.ips_sdr_hu.backup? net.ips_sdr_hu.ip_list[0] : "sdr.hu", server_url, server_port, api_key);
 		}
         //free(server_enc);
         cfg_string_free(server_url);
@@ -673,7 +675,7 @@ static void reg_SDR_hu(void *param)
             if (sdr_hu_debug)
                 printf("%s\n", cmd_p);
 
-		    int status = non_blocking_cmd_func_forall("kiwi.reg", cmd_p, _reg_SDR_hu, retrytime_mins, POLL_MSEC(1000));
+		    int status = non_blocking_cmd_func_forall("kiwi.register", cmd_p, _reg_SDR_hu, retrytime_mins, POLL_MSEC(1000));
 		    int exit_status;
 		    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
 		        retrytime_mins = exit_status;
@@ -719,8 +721,8 @@ static void reg_kiwisdr_com(void *param)
 	while (ddns.mac[0] == '\0')
         TaskSleepSec(5);		// wait for ddns.mac to become valid (used below)
 
-	while (!ddns.ips_kiwisdr_com.valid)
-        TaskSleepSec(5);		// wait for ddns.ips_kiwisdr_com to become valid (not really necessary?)
+	while (!net.ips_kiwisdr_com.valid)
+        TaskSleepSec(5);		// wait for net.ips_kiwisdr_com to become valid (not really necessary?)
 
 	while (1) {
         const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
@@ -740,7 +742,7 @@ static void reg_kiwisdr_com(void *param)
 	    // done here because updating timer_sec() is sent
         asprintf(&cmd_p, "wget --timeout=30 --tries=2 --inet4-only -qO- "
             "\"http://%s/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d&up=%d\" 2>&1",
-            ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com", server_url, server_port, api_key, ddns.mac,
+            net.ips_kiwisdr_com.backup? net.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com", server_url, server_port, api_key, ddns.mac,
             email, add_nat, version_maj, version_min, debian_maj, debian_min, timer_sec());
     
 		bool server_enabled = (!down && admcfg_bool("server_enabled", NULL, CFG_REQUIRED) == true);
@@ -751,7 +753,7 @@ static void reg_kiwisdr_com(void *param)
                 printf("%s\n", cmd_p);
 
             retrytime_mins = RETRYTIME_KIWISDR_COM;
-		    int status = non_blocking_cmd_func_forall("kiwi.reg", cmd_p, _reg_kiwisdr_com, retrytime_mins, POLL_MSEC(1000));
+		    int status = non_blocking_cmd_func_forall("kiwi.register", cmd_p, _reg_kiwisdr_com, retrytime_mins, POLL_MSEC(1000));
 		    int exit_status;
 		    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
 		        reg_kiwisdr_com_status = exit_status;

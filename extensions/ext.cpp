@@ -238,20 +238,16 @@ void extint_send_extlist(conn_t *conn)
 char *extint_list_js()
 {
 	int i;
-	char *sb, *sb2;
+	char *sb;
 	
 	sb = NULL;
 	for (i=0; i < n_exts; i++) {
 		ext_t *ext = ext_list[i];
-		//asprintf(&sb2, "<script>alert('%s.js');</script>\n", ext->name);
-		//sb = kstr_cat(sb, kstr_wrap(sb2));
-		asprintf(&sb2, "<script src=\"extensions/%s/%s.js\"></script>\n", ext->name, ext->name);
-		sb = kstr_cat(sb, kstr_wrap(sb2));
-		asprintf(&sb2, "<link rel=\"stylesheet\" type=\"text/css\" href=\"extensions/%s/%s.css\" />\n", ext->name, ext->name);
-		sb = kstr_cat(sb, kstr_wrap(sb2));
+		//sb = kstr_asprintf(sb, "<script>alert('%s.js');</script>\n", ext->name);
+		sb = kstr_asprintf(sb, "<script src=\"extensions/%s/%s.js\"></script>\n", ext->name, ext->name);
+		sb = kstr_asprintf(sb, "<link rel=\"stylesheet\" type=\"text/css\" href=\"extensions/%s/%s.css\" />\n", ext->name, ext->name);
 	}
-    //asprintf(&sb2, "<script>alert('exts done');</script>\n");
-    //sb = kstr_cat(sb, kstr_wrap(sb2));
+    //sb = kstr_asprintf(sb, "<script>alert('exts done');</script>\n");
 
 	return sb;
 }

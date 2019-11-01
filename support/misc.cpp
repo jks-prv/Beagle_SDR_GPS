@@ -29,6 +29,7 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "net.h"
 #include "debug.h"
+#include "shmem.h"
 
 #include <sys/file.h>
 #include <fcntl.h>
@@ -42,6 +43,7 @@ Boston, MA  02110-1301, USA.
 #include <stdlib.h>
 #include <stdarg.h>
 #include <time.h>
+#include <sched.h>
 
 #ifdef MALLOC_DEBUG
 
@@ -206,12 +208,27 @@ int qsort_floatcomp(const void *elem1, const void *elem2)
     return f1 > f2;
 }
 
+static int misc_miso_busy;
+
+SPI_MISO *get_misc_miso()
+{
+    assert(misc_miso_busy == 0);
+    misc_miso_busy++;
+    return &SPI_SHMEM->misc_miso;
+}
+
+void release_misc_miso()
+{
+    misc_miso_busy--;
+}
+
 u2_t ctrl_get()
 {
-	static SPI_MISO ctrl;
+	SPI_MISO *ctrl = get_misc_miso();
 	
-	spi_get_noduplex(CmdCtrlGet, &ctrl, sizeof(ctrl.word[0]));
-	return ctrl.word[0];
+	spi_get_noduplex(CmdCtrlGet, ctrl, sizeof(ctrl->word[0]));
+	release_misc_miso();
+	return ctrl->word[0];
 }
 
 void ctrl_clr_set(u2_t clr, u2_t set)
@@ -228,24 +245,26 @@ void ctrl_positive_pulse(u2_t bits)
 
 stat_reg_t stat_get()
 {
-    static SPI_MISO status;
+    SPI_MISO *status = get_misc_miso();
     stat_reg_t stat;
     
-    spi_get_noduplex(CmdGetStatus, &status, sizeof(stat));
-    stat.word = status.word[0];
+    spi_get_noduplex(CmdGetStatus, status, sizeof(stat));
+	release_misc_miso();
+    stat.word = status->word[0];
 
     return stat;
 }
 
 u2_t getmem(u2_t addr)
 {
-	static SPI_MISO mem;
+	SPI_MISO *mem = get_misc_miso();
 	
-	memset(mem.word, 0x55, sizeof(mem.word));
-	spi_get_noduplex(CmdGetMem, &mem, 4, addr);
-	assert(addr == mem.word[1]);
+	memset(mem->word, 0x55, sizeof(mem->word));
+	spi_get_noduplex(CmdGetMem, mem, 4, addr);
+	release_misc_miso();
+	assert(addr == mem->word[1]);
 	
-	return mem.word[0];
+	return mem->word[0];
 }
 
 void printmem(const char *str, u2_t addr)
@@ -389,13 +408,16 @@ float ecpu_use()
 		u1_t f0, g0, f1, g1, f2, g2, f3, g3;
 	} ctr_t;
 	ctr_t *c;
-	static SPI_MISO cpu;
 	
 	if (down || do_fft) return 0;
-	spi_get_noduplex(CmdGetCPUCtr, &cpu, sizeof(u2_t[3]));
-	c = (ctr_t*) &cpu.word[0];
+
+	SPI_MISO *cpu = get_misc_miso();
+	spi_get_noduplex(CmdGetCPUCtr, cpu, sizeof(u2_t[3]));
+	release_misc_miso();
+	c = (ctr_t*) &cpu->word[0];
 	u4_t gated = (c->g3 << 24) | (c->g2 << 16) | (c->g1 << 8) | c->g0;
 	u4_t free_run = (c->f3 << 24) | (c->f2 << 16) | (c->f1 << 8) | c->f0;
+
 	spi_set(CmdCPUCtrClr);
 	return ((float) gated / (float) free_run * 100);
 }
@@ -646,7 +668,7 @@ void grid_to_latLon(char *grid, latLon_t *loc)
 
 	loc->lat = lat;
 	loc->lon = lon;
-	//wprintf("GRID %s%s = (%f, %f)\n", grid, (slen != 6)? "[ll]":"", lat, lon);
+	//printf("GRID %s%s = (%f, %f)\n", grid, (slen != 6)? "[ll]":"", lat, lon);
 }
 
 int latLon_to_grid6(latLon_t *loc, char *grid6)
@@ -683,4 +705,14 @@ int latLon_to_grid6(latLon_t *loc, char *grid6)
 	grid6[5] = subsquare[i];
 	
 	return 0;
+}
+
+void set_cpu_affinity(int cpu)
+{
+#if defined(HOST) && defined(CPU_AM5729)
+    cpu_set_t cpu_set;
+    CPU_ZERO(&cpu_set);
+    CPU_SET(cpu, &cpu_set);
+    scall("set_affinity", sched_setaffinity(getpid(), sizeof(cpu_set_t), &cpu_set));
+#endif
 }

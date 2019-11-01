@@ -109,12 +109,17 @@ void minify(const char *ext_s, u4_t mflags, const char *svc, const char *ext, ch
     }
 
     if (!okay) {
-        if (mflags & (MF_JS|MF_CSS|MF_HTML))
+        if (mflags & MF_HTML) {
             asprintf(&cmd, "curl -X POST -s --data-urlencode \'input@%s\' https://%s >%s",
                 fn, svc, fn_min);
-        else
+        } else
+        if (mflags & (MF_JS|MF_CSS)) {
+            asprintf(&cmd, "echo '\n\n/* %s */' >%s; curl -X POST -s --data-urlencode \'input@%s\' https://%s >>%s",
+                fn_min, fn_min, fn, svc, fn_min);
+        } else {
             asprintf(&cmd, "curl -X POST -s --form \'input=@%s;type=image/%s\' https://%s >%s",
                 fn, &ext[1], svc, fn_min);
+        }
         printf("%s\n", cmd);
         if (not_dry_run) system(cmd);
         free(cmd);

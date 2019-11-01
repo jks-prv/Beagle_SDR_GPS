@@ -38,7 +38,7 @@ RX_Buffer:
 				fetch16
 				brZ		not_init
 				
-				push	CTRL_INTERRUPT
+				push	CTRL_SND_INTR
 				call	ctrl_set			; signal the interrupt
 				
 #if SND_SEQ_CHECK
@@ -54,7 +54,7 @@ CmdGetRX:
                 rdReg	HOST_RX				; nrx_samps_rem nrx_samps_loop
 				wrEvt	HOST_RST
 
-				push	CTRL_INTERRUPT
+				push	CTRL_SND_INTR
 				call	ctrl_clr			; clear the interrupt as a side-effect
 
 #if SND_SEQ_CHECK

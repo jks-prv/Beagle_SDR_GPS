@@ -27,13 +27,13 @@ Boston, MA  02110-1301, USA.
 #include "printf.h"
 #include "timer.h"
 #include "web.h"
-#include "peri.h"
 #include "spi.h"
 #include "gps.h"
 #include "cfg.h"
 #include "coroutines.h"
 #include "net.h"
 #include "data_pump.h"
+#include "shmem.h"
 
 #ifndef CFG_GPS_ONLY
  #include "ext_int.h"
@@ -87,8 +87,9 @@ void rx_enable(int chan, rx_chan_action_e action)
 	
 	switch (action) {
 
-	case RX_CHAN_ENABLE: rx->enabled = true; break;
-	case RX_CHAN_DISABLE: rx->enabled = false; break;
+	case RX_CHAN_ENABLE: rx->chan_enabled = true; break;
+	case RX_CHAN_DISABLE: rx->chan_enabled = false; break;
+	case RX_DATA_ENABLE: rx->data_enabled = true; break;
 	case RX_CHAN_FREE: memset(rx, 0, sizeof(rx_chan_t)); break;
 	default: panic("rx_enable"); break;
 
@@ -164,7 +165,7 @@ void dump()
 	lprintf("dump --------\n");
 	for (i=0; i < rx_chans; i++) {
 		rx_chan_t *rx = &rx_channels[i];
-		lprintf("RX%d en%d busy%d conn%d-%p\n", i, rx->enabled, rx->busy,
+		lprintf("RX%d en%d busy%d conn%d-%p\n", i, rx->chan_enabled, rx->busy,
 			rx->conn? rx->conn->self_idx : 9999, rx->conn? rx->conn : 0);
 	}
 
@@ -197,40 +198,30 @@ static void dump_conn()
 	rx_chan_t *rc;
 	for (rc = rx_channels, i=0; rc < &rx_channels[rx_chans]; rc++, i++) {
 		lprintf("dump_conn: RX_CHAN-%d en %d busy %d conn = %s%d %p\n",
-			i, rc->enabled, rc->busy, rc->conn? "CONN-":"", rc->conn? rc->conn-conns:0, rc->conn);
+			i, rc->chan_enabled, rc->busy, rc->conn? "CONN-":"", rc->conn? rc->conn-conns:0, rc->conn);
 	}
 }
 
-// invoked by "make reload" command which will send SIGUSR1 to the kiwi server process
+// invoked by "make reload" command which will send SIG_DEBUG to the kiwi server process
 static void cfg_reload_handler(int arg)
 {
-	lprintf("SIGUSR1: reloading configuration, dx list..\n");
+	lprintf("SIG_DEBUG: reloading configuration, dx list..\n");
 	cfg_reload(NOT_CALLED_FROM_MAIN);
-
-	struct sigaction act;
-	act.sa_flags = 0;
-	sigemptyset(&act.sa_mask);
-	act.sa_handler = cfg_reload_handler;
-	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
+	sig_arm(SIG_DEBUG, cfg_reload_handler);
 }
 
-// can optionally configure SIGUSR1 to call this debug handler
+// can optionally configure SIG_DEBUG to call this debug handler
 static void debug_dump_handler(int arg)
 {
 	lprintf("\n");
-	lprintf("SIGUSR1: debugging..\n");
+	lprintf("SIG_DEBUG: debugging..\n");
 	dump();
-
-	struct sigaction act;
-	act.sa_flags = 0;
-	sigemptyset(&act.sa_mask);
-	act.sa_handler = debug_dump_handler;
-	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
+	sig_arm(SIG_DEBUG, debug_dump_handler);
 }
 
 static void debug_exit_backtrace_handler(int arg)
 {
-    panic("SIGRTMIN");
+    panic("debug_exit_backtrace_handler");
 }
 
 cfg_t cfg_ipl;
@@ -247,23 +238,15 @@ void rx_server_init()
 		c++;
 	}
 	
-	// SIGUSR2 is now used exclusively by TaskCollect()
-	struct sigaction act;
-	memset(&act, 0, sizeof(act));
-	sigemptyset(&act.sa_mask);
-	
 	#if 1
-	    act.sa_handler = debug_dump_handler;
-	    scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
+	    sig_arm(SIG_DEBUG, debug_dump_handler);
 	#else
-	    act.sa_handler = cfg_reload_handler;
-	    scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
+	    sig_arm(SIG_DEBUG, cfg_reload_handler);
 	#endif
 
     //#ifndef DEVSYS
     #if 0
-        act.sa_handler = debug_exit_backtrace_handler;
-        scall("SIGRTMIN", sigaction(SIGRTMIN, &act, NULL));
+	    sig_arm(SIG_BACKTRACE, debug_exit_backtrace_handler);
     #endif
 
 	update_vars_from_config();      // add any missing config vars

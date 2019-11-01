@@ -256,6 +256,11 @@ hr
 	margin: 5px;
 }
 
+.class-mfg-status pre
+{
+    margin: 0;
+}
+
 .class-mfg-button
 {
 	display: inline-block;
@@ -432,4 +437,13 @@ input.kiwi-pw
     color: black;
     background: white;
     border: 2px solid lime;
+}
+
+
+.id-wf-sp-button
+{
+    color: orange;
+    /* font-weight: normal; */
+    /* padding: 1px 3px 1px 3px; */
+    /* border: 2px solid orange; */
 }

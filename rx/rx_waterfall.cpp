@@ -25,11 +25,9 @@ Boston, MA  02110-1301, USA.
 #include "misc.h"
 #include "nbuf.h"
 #include "web.h"
-#include "peri.h"
 #include "spi.h"
 #include "gps.h"
 #include "coroutines.h"
-#include "pru_realtime.h"
 #include "debug.h"
 #include "data_pump.h"
 #include "cfg.h"
@@ -38,6 +36,9 @@ Boston, MA  02110-1301, USA.
 #include "rx.h"
 #include "noiseproc.h"
 #include "dx.h"
+#include "non_block.h"
+#include "rx_waterfall.h"
+#include "shmem.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -56,22 +57,6 @@ Boston, MA  02110-1301, USA.
 //#define SHOW_MAX_MIN_PWR
 //#define SHOW_MAX_MIN_DB
 
-#ifdef USE_WF_NEW
-#define	WF_USING_HALF_FFT	1	// the result is contained in the first half of the complex FFT
-#define	WF_USING_HALF_CIC	1	// only use half of the remaining FFT after a CIC
-#define	WF_BETTER_LOOKING	1	// increase in FFT size for better looking display
-#else
-#define	WF_USING_HALF_FFT	2	// the result is contained in the first half of the complex FFT
-#define	WF_USING_HALF_CIC	2	// only use half of the remaining FFT after a CIC
-#define	WF_BETTER_LOOKING	2	// increase in FFT size for better looking display
-#endif
-
-#define WF_OUTPUT	1024	// conceptually same as WF_WIDTH although not required
-#define WF_C_NFFT	(WF_OUTPUT * WF_USING_HALF_FFT * WF_USING_HALF_CIC * WF_BETTER_LOOKING)	// worst case FFT size needed
-#define WF_C_NSAMPS	WF_C_NFFT
-
-#define	WF_WIDTH		1024	// width of waterfall display
-
 #define MAX_FFT_USED	MAX(WF_C_NFFT / WF_USING_HALF_FFT, WF_WIDTH)
 
 #define	MAX_START(z)	((WF_WIDTH << MAX_ZOOM) - (WF_WIDTH << (MAX_ZOOM - z)))
@@ -79,69 +64,40 @@ Boston, MA  02110-1301, USA.
 #define WF_NSPEEDS 5
 static const int wf_fps[] = { WF_SPEED_OFF, WF_SPEED_1FPS, WF_SPEED_SLOW, WF_SPEED_MED, WF_SPEED_FAST };
 
-static float window_function_c[WF_C_NSAMPS];
+#ifdef WF_SHMEM_DISABLE
+        static wf_shmem_t wf_shmem;
+        wf_shmem_t *wf_shmem_p = &wf_shmem;
+#endif
+
+// FIXME: doesn't work yet because currently no way to use SPI from LINUX_CHILD_PROCESS()
+//#define WF_IPC_SAMPLE_WF
+
+#if defined(WF_SHMEM_DISABLE) || !defined(WF_IPC_SAMPLE_WF)
+    #define WFSleepReasonMsec(r, t) TaskSleepReasonMsec(r, t)
+    #define WFSleepReasonUsec(r, t) TaskSleepReasonUsec(r, t)
+    #define WFNextTask(r) NextTask(r)
+#else
+    // WF_IPC_SAMPLE_WF
+    #define WFSleepReasonMsec(r, t) kiwi_msleep(t)
+    #define WFSleepReasonUsec(r, t) kiwi_usleep(t)
+    #define WFNextTask(r)
+#endif
 
 struct iq_t {
 	u2_t i, q;
 } __attribute__((packed));
 
-static struct wf_t {
-	conn_t *conn;
-	int fft_used, plot_width, plot_width_clamped;
-	int maxdb, mindb, send_dB;
-	float fft_scale[WF_WIDTH], fft_offset;
-	u2_t fft2wf_map[WF_C_NFFT / WF_USING_HALF_FFT];		// map is 1:1 with fft
-	u2_t wf2fft_map[WF_WIDTH];							// map is 1:1 with plot
-	int start, prev_start, zoom, prev_zoom;
-	int mark, speed, fft_used_limit;
-	bool new_map, new_map2, compression, isWF, isFFT;
-	int flush_wf_pipe;
-	int noise_blanker, noise_threshold, nb_click;
-	u4_t last_noise_pulse;
-	snd_t *snd;
-	u4_t snd_seq;
-	SPI_MISO hw_miso;
-} wf_inst[MAX_RX_CHANS];        // NB: MAX_RX_CHANS even though there may be fewer MAX_WF_CHANS
-
-static struct fft_t {
-	fftwf_plan hw_dft_plan;
-	fftwf_complex *hw_c_samps;
-	fftwf_complex *hw_fft;
-} fft_inst[MAX_WF_CHANS];       // NB: MAX_WF_CHANS not MAX_RX_CHANS
-
-struct wf_pkt_t {
-	char id4[4];
-	u4_t x_bin_server;
-	#define WF_FLAGS_COMPRESSION 0x00010000
-	u4_t flags_x_zoom_server;
-	u4_t seq;
-	union {
-		u1_t buf[WF_WIDTH];
-		struct {
-			#define ADPCM_PAD 10
-			u1_t adpcm_pad[ADPCM_PAD];
-			u1_t buf2[WF_WIDTH];
-		};
-	} un;
-} __attribute__((packed));
-
-#define	SO_OUT_HDR	((int) (sizeof(out) - sizeof(out.un)))
-#define	SO_OUT_NOM	((int) (SO_OUT_HDR + sizeof(out.un.buf)))
+#define	SO_OUT_HDR	((int) (sizeof(wf_pkt_t) - sizeof(out->un)))
+#define	SO_OUT_NOM	((int) (SO_OUT_HDR + sizeof(out->un.buf)))
 		
-void compute_frame(wf_t *wf, fft_t *fft);
-
-static int n_chunks;
-
 void c2s_waterfall_init()
 {
 	int i;
 	
 	// do these here, rather than the beginning of c2s_waterfall(), because they take too long
 	// and cause the data pump to overrun
-	fft_t *fft;
-	for (fft = fft_inst; fft < &fft_inst[MAX_WF_CHANS]; fft++) {
-		fft->hw_c_samps = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * (WF_C_NSAMPS));
-		fft->hw_fft = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * (WF_C_NFFT));
+	for (i=0; i < MAX_WF_CHANS; i++) {
+	    fft_t *fft = &WF_SHMEM->fft_inst[i];
 		fft->hw_dft_plan = fftwf_plan_dft_1d(WF_C_NSAMPS, fft->hw_c_samps, fft->hw_fft, FFTW_FORWARD, FFTW_MEASURE);
 	}
 
@@ -152,10 +108,12 @@ void c2s_waterfall_init()
 	
 	//#define WINDOW_GAIN		2.0
 	#define WINDOW_GAIN		1.0
+	
+	float *window = WF_SHMEM->window_function;
 
 	for (i=0; i < WF_C_NSAMPS; i++) {
-    	window_function_c[i] = adc_scale_decim;
-    	window_function_c[i] *= WINDOW_GAIN *
+    	window[i] = adc_scale_decim;
+    	window[i] *= WINDOW_GAIN *
     	
 	    // Hanning
     	#if 1
@@ -182,15 +140,26 @@ void c2s_waterfall_init()
     	#endif
     }
     
-	n_chunks = (int) ceilf((float) WF_C_NSAMPS / NWF_SAMPS);
+	WF_SHMEM->n_chunks = (int) ceilf((float) WF_C_NSAMPS / NWF_SAMPS);
 	
 	assert(WF_C_NSAMPS == WF_C_NFFT);
 	assert(WF_C_NSAMPS <= 8192);	// hardware sample buffer length limitation
+	
+#ifdef WF_SHMEM_DISABLE
+#else
+    #ifdef WF_IPC_SAMPLE_WF
+        void sample_wf(int rx_chan);
+        shmem_ipc_setup("kiwi.waterfall", SIG_IPC_WF, sample_wf);
+    #else
+        void compute_frame(int rx_chan);
+        shmem_ipc_setup("kiwi.waterfall", SIG_IPC_WF, compute_frame);
+    #endif
+#endif
 }
 
 void c2s_waterfall_compression(int rx_chan, bool compression)
 {
-	wf_inst[rx_chan].compression = compression;
+	WF_SHMEM->wf_inst[rx_chan].compression = compression;
 }
 
 #define	CMD_ZOOM	0x01
@@ -220,16 +189,14 @@ void c2s_waterfall(void *param)
 	conn->wf_cmd_recv_ok = false;
 	rx_common_init(conn);
 	int rx_chan = conn->rx_channel;
-	wf_t *wf;
+	wf_inst_t *wf;
 	int i, j, k, n;
 	//float adc_scale_samps = powf(2, -ADC_BITS);
 
-	bool new_map = false, new_scale_mask = false, check_overlapped_sampling = true, overlapped_sampling = false;
+	bool new_map = false, new_scale_mask = false;
 	int wband=-1, _wband, zoom=-1, _zoom, scale=1, _scale, _speed, _dvar, _pipe;
 	float start=-1, _start, cf;
 	float samp_wait_us;
-	int samp_wait_ms, chunk_wait_us;
-	u64_t now, deadline;
 	float off_freq, HZperStart = ui_srate / (WF_WIDTH << MAX_ZOOM);
 	u4_t i_offset;
 	int tr_cmds = 0;
@@ -237,16 +204,21 @@ void c2s_waterfall(void *param)
 	int adc_clk_corrections = 0;
 	int masked_seq = 0;
 	
-	wf = &wf_inst[rx_chan];
-	memset(wf, 0, sizeof(wf_t));
+	wf = &WF_SHMEM->wf_inst[rx_chan];
+	memset(wf, 0, sizeof(wf_inst_t));
 	wf->conn = conn;
+	wf->rx_chan = rx_chan;
 	wf->compression = true;
 	wf->isWF = (rx_chan < wf_chans && conn->isWF_conn);
 	wf->isFFT = !wf->isWF;
     wf->mark = timer_ms();
     wf->prev_start = wf->prev_zoom = -1;
     wf->snd = &snd_inst[rx_chan];
-    
+
+    wf->check_overlapped_sampling = true;
+    int n_chunks = WF_SHMEM->n_chunks;
+    strncpy(wf->out.id4, "W/F ", 4);
+
 	#define SO_IQ_T 4
 	assert(sizeof(iq_t) == SO_IQ_T);
 	#if !((NWF_SAMPS * SO_IQ_T) <= SPIBUF_B)
@@ -285,7 +257,7 @@ void c2s_waterfall(void *param)
 			char *cmd = nb->buf;
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
-    		TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "cmd", 0, 0, NULL);
+    		TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, "cmd");
     		
     		#if 0
                 if (strcmp(conn->remote_ip, "") == 0 /* && strcmp(cmd, "SET keepalive") != 0 */)
@@ -353,7 +325,7 @@ void c2s_waterfall(void *param)
 						assert(WF_1CIC_MAXD <= 32768);
 						decim = CIC1_DECIM << r1;
 					#else
-						// currently 15-levels of zoom: z0-z13, MAX_ZOOM == 14
+						// currently 15-levels of zoom: z0-z14, MAX_ZOOM == 14
 						if (zm1 == 0) {
 							// z0-1: R = 1 (R1 = R2 = 1)
 							r1 = r2 = 0;
@@ -376,11 +348,11 @@ void c2s_waterfall(void *param)
 					#endif
 #endif
 					samp_wait_us =  WF_C_NSAMPS * (1 << zm1) / conn->adc_clock_corrected * 1000000.0;
-					chunk_wait_us = (int) ceilf(samp_wait_us / n_chunks);
-					samp_wait_ms = (int) ceilf(samp_wait_us / 1000);
+					wf->chunk_wait_us = (int) ceilf(samp_wait_us / n_chunks);
+					wf->samp_wait_ms = (int) ceilf(samp_wait_us / 1000);
 					#ifdef WF_INFO
 					if (!bg) cprintf(conn, "---- WF%d Z%d zm1 %d/%d R%04x n_chunks %d samp_wait_us %.1f samp_wait_ms %d chunk_wait_us %d\n",
-						rx_chan, zoom, zm1, 1<<zm1, decim, n_chunks, samp_wait_us, samp_wait_ms, chunk_wait_us);
+						rx_chan, zoom, zm1, 1<<zm1, decim, n_chunks, samp_wait_us, wf->samp_wait_ms, wf->chunk_wait_us);
 					#endif
 					
 					new_map = wf->new_map = wf->new_map2 = TRUE;
@@ -393,7 +365,7 @@ void c2s_waterfall(void *param)
                     }
                     
 					// when zoom changes reevaluate if overlapped sampling might be needed
-					check_overlapped_sampling = true;
+					wf->check_overlapped_sampling = true;
 					
 			        if (wf->isWF)
 					    spi_set(CmdSetWFDecim, rx_chan, decim);
@@ -535,20 +507,19 @@ void c2s_waterfall(void *param)
 		}
 		
 		if (do_gps && !do_sdr) {
-			wf_pkt_t out;
+			wf_pkt_t *out = &wf->out;
 			int *ns_bin = ClockBins();
 			int max=0;
 			
 			for (n=0; n<1024; n++) if (ns_bin[n] > max) max = ns_bin[n];
 			if (max == 0) max=1;
-			u1_t *bp = out.un.buf;
+			u1_t *bp = out->un.buf;
 			for (n=0; n<1024; n++) {
 				*bp++ = (u1_t) (int) (-256 + (ns_bin[n] * 255 / max));	// simulate negative dBm
 			}
 			int delay = 10000 - (timer_ms() - wf->mark);
 			if (delay > 0) TaskSleepReasonMsec("wait frame", delay);
 			wf->mark = timer_ms();
-			strncpy(out.id4, "W/F ", 4);
 			app_to_web(conn, (char*) &out, SO_OUT_NOM);
 		}
 		
@@ -589,8 +560,9 @@ void c2s_waterfall(void *param)
 			panic("shouldn't return");
 		}
 
-		if (rx_chan >= wf_num) {		// for debug
-			NextTask("skip");
+        // FIXME: until we figure out if no WF cmds are needed when no wf is present just occasionally wake up and check
+		if (rx_chan >= wf_num) {
+			TaskSleepMsec(500);
 			continue;
 		}
 		
@@ -613,7 +585,6 @@ void c2s_waterfall(void *param)
             continue;
         }
 		
-	    fft_t *fft = &fft_inst[rx_chan];
 		wf->fft_used = WF_C_NFFT / WF_USING_HALF_FFT;		// the result is contained in the first half of a complex FFT
 		
 		// if any CIC is used (z != 0) only look at half of it to avoid the aliased images
@@ -635,11 +606,16 @@ void c2s_waterfall(void *param)
 		
 		if (new_map) {
 			assert(wf->fft_used <= MAX_FFT_USED);
+
+            #ifdef USE_WF_NEW
+                #define WF_FFT_UNWRAP_NEEDED
+            #endif
+
 			wf->fft_used_limit = 0;
 
 			if (wf->fft_used >= wf->plot_width) {
 				// >= FFT than plot
-				#ifdef USE_WF_NEW
+				#ifdef WF_FFT_UNWRAP_NEEDED
 					// IQ reverse unwrapping (X)
 					for (i=wf->fft_used/2,j=0; i<wf->fft_used; i++,j++) {
 						wf->fft2wf_map[i] = wf->plot_width * j/wf->fft_used;
@@ -656,7 +632,7 @@ void c2s_waterfall(void *param)
 				//for (i=0; i<wf->fft_used; i++) printf("%d>%d ", i, wf->fft2wf_map[i]);
 			} else {
 				// < FFT than plot
-				#ifdef USE_WF_NEW
+				#ifdef WF_FFT_UNWRAP_NEEDED
 					for (i=0; i<wf->plot_width_clamped; i++) {
 						int t = wf->fft_used * i/wf->plot_width;
 						if (t >= wf->fft_used/2) t -= wf->fft_used/2; else t += wf->fft_used/2;
@@ -726,166 +702,209 @@ void c2s_waterfall(void *param)
 		    new_scale_mask = false;
 		}
 
-		
-		#ifdef SHOW_MAX_MIN_IQ
-		static void *IQi_state;
-		static void *IQf_state;
-		if (wf->new_map2) {
-			if (IQi_state != NULL) free(IQi_state);
-			IQi_state = NULL;
-			if (IQf_state != NULL) free(IQf_state);
-			IQf_state = NULL;
-		}
-		#endif
-
-		// create waterfall
-		
-		assert(wf_fps[wf->speed] != 0);
-		int desired = 1000 / wf_fps[wf->speed];
-
-		// desired frame rate greater than what full sampling can deliver, so start overlapped sampling
-		if (check_overlapped_sampling) {
-            check_overlapped_sampling = false;
-
-		    if (samp_wait_ms >= 2*desired) {
-                overlapped_sampling = true;
-                
-                #ifdef WF_INFO
-                if (!bg) printf("---- WF%d OLAP z%d samp_wait %d >= %d(2x) desired %d\n",
-                    rx_chan, zoom, samp_wait_ms, 2*desired, desired);
-                #endif
-                
-                evWFC(EC_TRIG1, EV_WF, -1, "WF", "OVERLAPPED CmdWFReset");
-                spi_set(CmdWFReset, rx_chan, WF_SAMP_RD_RST | WF_SAMP_WR_RST | WF_SAMP_CONTIN);
-                TaskSleepReasonMsec("fill pipe", samp_wait_ms+1);		// fill pipeline
-            } else {
-                overlapped_sampling = false;
-
-                #ifdef WF_INFO
-                if (!bg) printf("---- WF%d NON-OLAP z%d samp_wait %d < %d(2x) desired %d\n",
-                    rx_chan, zoom, samp_wait_ms, 2*desired, desired);
-                #endif
-            }
-        }
-		
-		SPI_CMD first_cmd;
-		if (overlapped_sampling) {
-			//
-			// Start reading immediately at synchronized write address plus a small offset to get to
-			// the old part of the buffer.
-			// This presumes zoom factor isn't so large that buffer fills too slowly and we
-			// overrun reading the last little bit (offset part). Also presumes that we can read the
-			// first part quickly enough that the write doesn't catch up to us.
-			//
-			// CmdGetWFContSamps asserts WF_SAMP_SYNC | WF_SAMP_CONTIN in kiwi.sdr.asm code
-			//
-			first_cmd = CmdGetWFContSamps;
-		} else {
-			evWFC(EC_TRIG1, EV_WF, -1, "WF", "NON-OVERLAPPED CmdWFReset");
-			spi_set(CmdWFReset, rx_chan, WF_SAMP_RD_RST | WF_SAMP_WR_RST);
-			deadline = timer_us64() + chunk_wait_us*2;
-			first_cmd = CmdGetWFSamples;
-		}
-
-	    // sync this waterfall line to audio packet currently going out
-	    wf->snd_seq = wf->snd->seq;
-
-		SPI_MISO *miso = &(wf->hw_miso);
-		s4_t ii, qq;
-		iq_t *iqp;
-
-		int chunk, sn;
-
-		for (chunk=0, sn=0; sn < WF_C_NSAMPS; chunk++) {
-			assert(chunk < n_chunks);
-
-			if (overlapped_sampling) {
-				evWF(EC_TRIG1, EV_WF, -1, "WF", "CmdGetWFContSamps");
-			} else {
-				// wait until current chunk is available in WF sample buffer
-				now = timer_us64();
-				if (now < deadline) {
-					u4_t diff = deadline - now;
-					if (diff) {
-						evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait chunk buffer");
-						TaskSleepReasonUsec("wait chunk", diff);
-						evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait chunk buffer done");
-					}
-				}
-				deadline += chunk_wait_us;
-			}
-		
-			if (chunk == 0) {
-				spi_get_noduplex(first_cmd, miso, NWF_SAMPS * sizeof(iq_t), rx_chan);
-			} else
-			if (chunk < n_chunks-1) {
-				spi_get_noduplex(CmdGetWFSamples, miso, NWF_SAMPS * sizeof(iq_t), rx_chan);
-			}
-
-			evWFC(EC_EVENT, EV_WF, -1, "WF", evprintf("%s SAMPLING chunk %d",
-				overlapped_sampling? "OVERLAPPED":"NON-OVERLAPPED", chunk));
-			
-			iqp = (iq_t*) &(miso->word[0]);
-			
-			for (k=0; k<NWF_SAMPS; k++) {
-				if (sn >= WF_C_NSAMPS) break;
-				ii = (s4_t) (s2_t) iqp->i;
-				qq = (s4_t) (s2_t) iqp->q;
-				iqp++;
-
-				float fi = ((float) ii) * window_function_c[sn];
-				float fq = ((float) qq) * window_function_c[sn];
-				
-				#ifdef SHOW_MAX_MIN_IQ
-				print_max_min_stream_i(&IQi_state, "IQi", k, 2, ii, qq);
-				print_max_min_stream_f(&IQf_state, "IQf", k, 2, (double) fi, (double) fq);
-				#endif
-				
-				fft->hw_c_samps[sn][I] = fi;
-				fft->hw_c_samps[sn][Q] = fq;
-				sn++;
-			}
-		}
-
-		#ifndef EV_MEAS_WF
-			static int wf_cnt;
-			evWFC(EC_EVENT, EV_WF, -1, "WF", evprintf("WF %d: loop done", wf_cnt));
-			wf_cnt++;
-		#endif
-
-		// contents of WF DDC pipeline is uncertain when mix freq or decim just changed
-		//jksd
-		//if (wf->flush_wf_pipe) {
-		//	wf->flush_wf_pipe--;
-		//} else {
-			compute_frame(wf, fft);
-		//}
-
-		int actual = timer_ms() - wf->mark;
-		int delay = desired - actual;
-		//printf("%d %d %d\n", delay, actual, desired);
-		
-		// full sampling faster than needed by frame rate
-		if (desired > actual) {
-			evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait FPS");
-			TaskSleepReasonMsec("wait frame", delay);
-			evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait FPS done");
-		} else {
-			NextTask("loop");
-		}
-		wf->mark = timer_ms();
+        void sample_wf(int rx_chan);
+        #ifdef WF_SHMEM_DISABLE
+            sample_wf(rx_chan);
+        #else
+            #ifdef WF_IPC_SAMPLE_WF
+                shmem_ipc_invoke(SIG_IPC_WF, wf->rx_chan);      // invoke sample_wf()
+            #else
+                sample_wf(rx_chan);
+            #endif
+        #endif
 	}
 }
 
-void compute_frame(wf_t *wf, fft_t *fft)
+void sample_wf(int rx_chan)
 {
-	int rx_chan = wf->conn->rx_channel;
+	wf_inst_t *wf = &WF_SHMEM->wf_inst[rx_chan];
+    int k;
+    fft_t *fft = &WF_SHMEM->fft_inst[rx_chan];
+    u64_t now, deadline;
+    
+    #ifdef SHOW_MAX_MIN_IQ
+    static void *IQi_state;
+    static void *IQf_state;
+    if (wf->new_map2) {
+        if (IQi_state != NULL) free(IQi_state);
+        IQi_state = NULL;
+        if (IQf_state != NULL) free(IQf_state);
+        IQf_state = NULL;
+    }
+    #endif
+
+    // create waterfall
+    
+    assert(wf_fps[wf->speed] != 0);
+    int desired = 1000 / wf_fps[wf->speed];
+
+    // desired frame rate greater than what full sampling can deliver, so start overlapped sampling
+    if (wf->check_overlapped_sampling) {
+        wf->check_overlapped_sampling = false;
+
+        if (wf->samp_wait_ms >= 2*desired) {
+            wf->overlapped_sampling = true;
+            
+            #ifdef WF_INFO
+            if (!bg) printf("---- WF%d OLAP z%d samp_wait %d >= %d(2x) desired %d\n",
+                rx_chan, wf->zoom, wf->samp_wait_ms, 2*desired, desired);
+            #endif
+            
+            evWFC(EC_TRIG1, EV_WF, -1, "WF", "OVERLAPPED CmdWFReset");
+            spi_set(CmdWFReset, rx_chan, WF_SAMP_RD_RST | WF_SAMP_WR_RST | WF_SAMP_CONTIN);
+            WFSleepReasonMsec("fill pipe", wf->samp_wait_ms+1);		// fill pipeline
+        } else {
+            wf->overlapped_sampling = false;
+
+            #ifdef WF_INFO
+            if (!bg) printf("---- WF%d NON-OLAP z%d samp_wait %d < %d(2x) desired %d\n",
+                rx_chan, wf->zoom, wf->samp_wait_ms, 2*desired, desired);
+            #endif
+        }
+    }
+    
+    SPI_CMD first_cmd;
+    if (wf->overlapped_sampling) {
+        //
+        // Start reading immediately at synchronized write address plus a small offset to get to
+        // the old part of the buffer.
+        // This presumes zoom factor isn't so large that buffer fills too slowly and we
+        // overrun reading the last little bit (offset part). Also presumes that we can read the
+        // first part quickly enough that the write doesn't catch up to us.
+        //
+        // CmdGetWFContSamps asserts WF_SAMP_SYNC | WF_SAMP_CONTIN in kiwi.sdr.asm code
+        //
+        first_cmd = CmdGetWFContSamps;
+    } else {
+        evWFC(EC_TRIG1, EV_WF, -1, "WF", "NON-OVERLAPPED CmdWFReset");
+        spi_set(CmdWFReset, rx_chan, WF_SAMP_RD_RST | WF_SAMP_WR_RST);
+        deadline = timer_us64() + wf->chunk_wait_us*2;
+        first_cmd = CmdGetWFSamples;
+    }
+
+    SPI_MISO *miso = &SPI_SHMEM->wf_miso[rx_chan];
+    s4_t ii, qq;
+    iq_t *iqp;
+
+    int chunk, sn;
+    int n_chunks = WF_SHMEM->n_chunks;
+
+    for (chunk=0, sn=0; sn < WF_C_NSAMPS; chunk++) {
+        assert(chunk < n_chunks);
+
+        if (wf->overlapped_sampling) {
+            evWF(EC_TRIG1, EV_WF, -1, "WF", "CmdGetWFContSamps");
+        } else {
+            // wait until current chunk is available in WF sample buffer
+            now = timer_us64();
+            if (now < deadline) {
+                u4_t diff = deadline - now;
+                if (diff) {
+                    evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait chunk buffer");
+                    WFSleepReasonUsec("wait chunk", diff);
+                    evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait chunk buffer done");
+                }
+            }
+            deadline += wf->chunk_wait_us;
+        }
+    
+        if (chunk == 0) {
+            spi_get_noduplex(first_cmd, miso, NWF_SAMPS * sizeof(iq_t), rx_chan);
+        } else
+        if (chunk < n_chunks-1) {
+            spi_get_noduplex(CmdGetWFSamples, miso, NWF_SAMPS * sizeof(iq_t), rx_chan);
+        }
+
+        evWFC(EC_EVENT, EV_WF, -1, "WF", evprintf("%s SAMPLING chunk %d",
+            wf->overlapped_sampling? "OVERLAPPED":"NON-OVERLAPPED", chunk));
+        
+        iqp = (iq_t*) &(miso->word[0]);
+	    float *window = WF_SHMEM->window_function;
+        
+        for (k=0; k<NWF_SAMPS; k++) {
+            if (sn >= WF_C_NSAMPS) break;
+            ii = (s4_t) (s2_t) iqp->i;
+            qq = (s4_t) (s2_t) iqp->q;
+            iqp++;
+
+            float fi = ((float) ii) * window[sn];
+            float fq = ((float) qq) * window[sn];
+            
+            #ifdef SHOW_MAX_MIN_IQ
+            print_max_min_stream_i(&IQi_state, "IQi", k, 2, ii, qq);
+            print_max_min_stream_f(&IQf_state, "IQf", k, 2, (double) fi, (double) fq);
+            #endif
+            
+            fft->hw_c_samps[sn][I] = fi;
+            fft->hw_c_samps[sn][Q] = fq;
+            sn++;
+        }
+    }
+
+    #ifndef EV_MEAS_WF
+        static int wf_cnt;
+        evWFC(EC_EVENT, EV_WF, -1, "WF", evprintf("WF %d: loop done", wf_cnt));
+        wf_cnt++;
+    #endif
+
+    // contents of WF DDC pipeline is uncertain when mix freq or decim just changed
+    //jksd
+    //if (wf->flush_wf_pipe) {
+    //	wf->flush_wf_pipe--;
+    //} else {
+        void compute_frame(int rx_chan);
+        #ifdef WF_SHMEM_DISABLE
+            compute_frame(rx_chan);
+        #else
+            #ifdef WF_IPC_SAMPLE_WF
+                compute_frame(rx_chan);
+            #else
+                shmem_ipc_invoke(SIG_IPC_WF, wf->rx_chan);      // invoke compute_frame()
+            #endif
+        #endif
+        
+        wf_pkt_t *out = &wf->out;
+        app_to_web(wf->conn, (char*) out, SO_OUT_HDR + wf->out_bytes);
+        waterfall_bytes[rx_chan] += wf->out_bytes;
+        waterfall_bytes[rx_chans] += wf->out_bytes; // [rx_chans] is the sum of all waterfalls
+        waterfall_frames[rx_chan]++;
+        waterfall_frames[rx_chans]++;       // [rx_chans] is the sum of all waterfalls
+        evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: done");
+    
+        #if 0
+            static u4_t last_time[MAX_RX_CHANS];
+            u4_t now = timer_ms();
+            printf("WF%d: %d %.3fs seq-%d\n", rx_chan, SO_OUT_HDR + wf->out_bytes,
+                (float) (now - last_time[rx_chan]) / 1e3, wf->out.seq);
+            last_time[rx_chan] = now;
+        #endif
+    //}
+
+    int actual = timer_ms() - wf->mark;
+    int delay = desired - actual;
+    //printf("%d %d %d\n", delay, actual, desired);
+    
+    // full sampling faster than needed by frame rate
+    if (desired > actual) {
+        evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait FPS");
+        WFSleepReasonMsec("wait frame", delay);
+        evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait FPS done");
+    } else {
+        WFNextTask("loop");
+    }
+    wf->mark = timer_ms();
+}
+
+void compute_frame(int rx_chan)
+{
+	wf_inst_t *wf = &WF_SHMEM->wf_inst[rx_chan];
 	int i;
-	wf_pkt_t out;
+	wf_pkt_t *out = &wf->out;
 	u1_t comp_in_buf[WF_WIDTH];
 	float pwr[MAX_FFT_USED];
+    fft_t *fft = &WF_SHMEM->fft_inst[rx_chan];
 		
-    TaskStatU(0, 0, NULL, TSTAT_INCR|TSTAT_ZERO, 0, "frm");
+    //TaskStat2(TSTAT_INCR|TSTAT_ZERO, 0, "frm");
 
     if (wf->nb_click) {
         u4_t now = timer_sec();
@@ -905,7 +924,7 @@ void compute_frame(wf_t *wf, fft_t *fft)
 	evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: FFT done");
 	//NextTask("FFT2");
 
-	u1_t *bp = (wf->compression)? out.un.buf2 : out.un.buf;
+	u1_t *bp = (wf->compression)? out->un.buf2 : out->un.buf;
 			
 	if (!wf->fft_used_limit) wf->fft_used_limit = wf->fft_used;
 
@@ -1091,11 +1110,9 @@ if (i == 516) printf("\n");
 		}
 	}
 	
-	strncpy(out.id4, "W/F ", 4);
-	
 	if (wf->flush_wf_pipe) {
-		out.x_bin_server = (wf->prev_start == -1)? wf->start : wf->prev_start;
-		out.flags_x_zoom_server = (wf->prev_zoom == -1)? wf->zoom : wf->prev_zoom;
+		out->x_bin_server = (wf->prev_start == -1)? wf->start : wf->prev_start;
+		out->flags_x_zoom_server = (wf->prev_zoom == -1)? wf->zoom : wf->prev_zoom;
 		wf->flush_wf_pipe--;
 		if (wf->flush_wf_pipe == 0) {
 			//jksd
@@ -1104,43 +1121,28 @@ if (i == 516) printf("\n");
 			wf->prev_zoom = wf->zoom;
 		}
 	} else {
-		out.x_bin_server = wf->start;
-		out.flags_x_zoom_server = wf->zoom;
+		out->x_bin_server = wf->start;
+		out->flags_x_zoom_server = wf->zoom;
 	}
 	
 	evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: fill out buf");
 
-	int bytes;
 	ima_adpcm_state_t adpcm_wf;
 	
 	if (wf->compression) {
-		memset(out.un.adpcm_pad, out.un.buf2[0], sizeof(out.un.adpcm_pad));
+		memset(out->un.adpcm_pad, out->un.buf2[0], sizeof(out->un.adpcm_pad));
 		memset(&adpcm_wf, 0, sizeof(ima_adpcm_state_t));
-		encode_ima_adpcm_u8_e8(out.un.buf, out.un.buf, ADPCM_PAD + WF_WIDTH, &adpcm_wf);
-		bytes = (ADPCM_PAD + WF_WIDTH) * sizeof(u1_t) / 2;
-		out.flags_x_zoom_server |= WF_FLAGS_COMPRESSION;
+		encode_ima_adpcm_u8_e8(out->un.buf, out->un.buf, ADPCM_PAD + WF_WIDTH, &adpcm_wf);
+		wf->out_bytes = (ADPCM_PAD + WF_WIDTH) * sizeof(u1_t) / 2;
+		out->flags_x_zoom_server |= WF_FLAGS_COMPRESSION;
 	} else {
-		bytes = WF_WIDTH * sizeof(u1_t);
+		wf->out_bytes = WF_WIDTH * sizeof(u1_t);
 	}
 
 	// sync this waterfall line to audio packet currently going out
-	out.seq = wf->snd_seq;
-	//if (out.seq != wf->snd->seq)
-	//{ real_printf("%d ", wf->snd->seq - out.seq); fflush(stdout); }
-
-	app_to_web(wf->conn, (char*) &out, SO_OUT_HDR + bytes);
-	waterfall_bytes += bytes;
-	waterfall_frames[rx_chans]++;       // [rx_chans] is the sum of all waterfalls
-	waterfall_frames[rx_chan]++;
-	evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: done");
-
-	#if 0
-		static u4_t last_time[MAX_RX_CHANS];
-		u4_t now = timer_ms();
-		printf("WF%d: %d %.3fs seq-%d\n", rx_chan, SO_OUT_HDR + bytes,
-			(float) (now - last_time[rx_chan]) / 1e3, out.seq);
-		last_time[rx_chan] = now;
-	#endif
+	out->seq = wf->snd_seq;
+	//if (out->seq != wf->snd->seq)
+	//{ real_printf("%d ", wf->snd->seq - out->seq); fflush(stdout); }
 }
 
 void c2s_waterfall_shutdown(void *param)

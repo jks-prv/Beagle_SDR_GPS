@@ -27,16 +27,17 @@ Boston, MA  02110-1301, USA.
 #include "str.h"
 #include "web.h"
 #include "peri.h"
+#include "eeprom.h"
 #include "spi.h"
 #include "spi_dev.h"
 #include "gps.h"
 #include "coroutines.h"
-#include "pru_realtime.h"
 #include "debug.h"
 #include "cfg.h"
 #include "net.h"
 #include "ext_int.h"
 #include "sanitizer.h"
+#include "shmem.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -93,9 +94,11 @@ int main(int argc, char *argv[])
 		const struct rlimit unlim = { RLIM_INFINITY, RLIM_INFINITY };
 		scall("setrlimit", setrlimit(RLIMIT_CORE, &unlim));
 		system("rm -f /tmp/core-kiwi.*-*");     // remove old core files
+		set_cpu_affinity(0);
 	#endif
 	
 	kstr_init();
+	shmem_init();
 	printf_init();
 
 	for (i=1; i<argc; ) {
@@ -262,6 +265,16 @@ int main(int argc, char *argv[])
         rx_decim = RX_DECIM_3CH;
         nrx_bufs = RXBUF_SIZE_3CH / NRX_SPI;
         lprintf("firmware: SDR_RX3_WF3\n");
+    } else
+    if (fw_sel == FW_SEL_SDR_RX14_WF1) {
+        fpga_id = FPGA_ID_RX14_WF1;
+        rx_chans = 14;
+        wf_chans = 1;
+        snd_rate = SND_RATE_14CH;
+        snd_intr_usec = SND_INTR_14CH;
+        rx_decim = RX_DECIM_14CH;
+        nrx_bufs = RXBUF_SIZE_14CH / NRX_SPI;
+        lprintf("firmware: SDR_RX14_WF1\n");
     } else
     if (VAL_CFG_GPS_ONLY) {
         fpga_id = FPGA_ID_GPS;

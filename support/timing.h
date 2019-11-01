@@ -39,4 +39,6 @@ u64_t time_diff48(u64_t next, u64_t prev);
 void spin_ms(u4_t msec);
 void spin_us(u4_t usec);
 
+void kiwi_usleep(u4_t usec);
+#define kiwi_msleep(msec) kiwi_usleep((msec) * 1000)
 #endif

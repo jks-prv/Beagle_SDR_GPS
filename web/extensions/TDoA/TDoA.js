@@ -164,7 +164,7 @@ function tdoa_recv(data)
 		var param = params[i].split("=");
 
 		if (0 && param[0] != "keepalive") {
-			if (typeof param[1] != "undefined")
+			if (isDefined(param[1]))
 				console.log('tdoa_recv: '+ param[0] +'='+ param[1]);
 			else
 				console.log('tdoa_recv: '+ param[0]);
@@ -1727,7 +1727,7 @@ function tdoa_KML_link(url)
 
 function tdoa_protocol_response_cb(json)
 {
-   if (typeof(json) == 'string') {
+   if (isString(json)) {
       json = json.trim();
       var sl = json.length;
       if (sl && json[0] == '{' && json[sl-1] != '}') {
@@ -2376,7 +2376,7 @@ function tdoa_pan_zoom(map, latlon, zoom)
       map.setView(latlon, zoom, { duration: 0, animate: false });
    } else {
       if (latlon != null) {
-         if (Array.isArray(latlon)) latlon = new google.maps.LatLng(latlon[0], latlon[1]);
+         if (isArray(latlon)) latlon = new google.maps.LatLng(latlon[0], latlon[1]);
          map.panTo(latlon);
       }
       if (zoom != -1) map.setZoom(zoom);

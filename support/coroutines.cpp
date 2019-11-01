@@ -30,6 +30,7 @@
 #include "debug.h"
 #include "peri.h"
 #include "spi.h"
+#include "shmem.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,7 +69,12 @@
 #ifdef DEVSYS
 	//#define SETUP_TRAMP_USING_JMP_BUF
 #else
-	#define SETUP_TRAMP_USING_JMP_BUF
+    #ifdef CPU_AM3359
+        // 10/6/2019 this seems broken all of a sudden?!?
+	    //#define SETUP_TRAMP_USING_JMP_BUF
+    #endif
+    #ifdef CPU_AM5729
+    #endif
 #endif
 
 #if defined(HOST) && defined(USE_VALGRIND)
@@ -157,6 +163,7 @@ struct TASK {
 
 	TASK *interrupted_task;
 	s64_t deadline;
+	u4_t *wakeup_test;
 	u4_t run, cmds;
 	#define N_REASON 64
 	char reason[N_REASON];
@@ -363,7 +370,7 @@ void TaskDump(u4_t flags)
 	ct->flags |= CTF_NO_CHARGE;     // don't charge the current task with the time to print all this
 
 	lfprintf(printf_type, "\n");
-	lfprintf(printf_type, "TASKS: used %d/%d, spi_retry %d, spi_delay %d\n", tused, MAX_TASKS, spi_retry, spi_delay);
+	lfprintf(printf_type, "TASKS: used %d/%d, spi_retry %d, spi_delay %d\n", tused, MAX_TASKS, spi.retry, spi_delay);
 
 	if (flags & TDUMP_LOG)
 	//lfprintf(printf_type, "Ttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxxu xxx%% cN\n");
@@ -490,10 +497,9 @@ void TaskDump(u4_t flags)
 	}
 }
 
-int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int s2_val, const char *s2_units)
+static int _TaskStat(TASK *t, u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int s2_val, const char *s2_units)
 {
 	int r=0;
-    TASK *t = cur_task;
     
     t->s1_func |= s1_func & TSTAT_LATCH;
     if (s1_units) t->units1 = s1_units;
@@ -501,6 +507,7 @@ int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int 
     	case TSTAT_NC: break;
     	case TSTAT_SET: t->stat1 = s1_val; break;
     	case TSTAT_INCR: t->stat1++; break;
+    	case TSTAT_MIN: if (s1_val < t->stat1 || t->stat1 == 0) t->stat1 = s1_val; break;
     	case TSTAT_MAX: if (s1_val > t->stat1) t->stat1 = s1_val; break;
     	default: break;
     }
@@ -511,6 +518,7 @@ int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int 
     	case TSTAT_NC: break;
     	case TSTAT_SET: t->stat2 = s2_val; break;
     	case TSTAT_INCR: t->stat2++; break;
+    	case TSTAT_MIN: if (s2_val < t->stat2 || t->stat2 == 0) t->stat2 = s2_val; break;
     	case TSTAT_MAX: if (s2_val > t->stat2) t->stat2 = s2_val; break;
     	default: break;
     }
@@ -526,6 +534,11 @@ int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int 
     }
 
 	return r;
+}
+
+int TaskStat(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int s2_val, const char *s2_units)
+{
+    return _TaskStat(cur_task, s1_func, s1_val, s1_units, s2_func, s2_val, s2_units);
 }
 
 static void task_init(TASK *t, int id, funcP_t funcP, void *param, const char *name, u4_t priority, u4_t flags, int f_arg)
@@ -589,6 +602,7 @@ static void task_stack(int id)
 	return;
 #endif
 
+    // initialize stack with pattern detected by TaskCheckStacks()
 	u64_t *s;
 	u64_t magic = 0x8BadF00d00000000ULL;
 	int i;
@@ -688,10 +702,10 @@ void TaskCollect()
 		sa.sa_handler = &trampoline;
 		sa.sa_flags = SA_ONSTACK;
 		sigemptyset(&sa.sa_mask);
-		scall("sigaction", sigaction(SIGUSR2, &sa, 0));
+		scall("sigaction", sigaction(SIG_SETUP_TRAMP, &sa, 0));
 		
 		new_ctx = c;
-		raise(SIGUSR2);
+		raise(SIG_SETUP_TRAMP);
 #endif
 
 		c->init = TRUE;
@@ -924,6 +938,7 @@ bool TaskIsChild()
     u4_t quanta;
 
 	ct = cur_task;
+    //real_printf("_NextTask ENTER %s\n", task_ls(ct));
 	
     if (param == NT_FAST_CHECK) {
         u4_t diff = (u4_t) (enter_us - ct->tstart_us);
@@ -1017,11 +1032,26 @@ bool TaskIsChild()
             TASK *tp = Tasks;
             for (i=0; i <= max_task; i++, tp++) {
                 if (!tp->valid) continue;
-                if (tp->deadline > 0 && tp->deadline < now_us) {
-                    evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("deadline expired %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
-                    tp->deadline = 0;
+                bool wake = false;
+                
+                if (tp->deadline > 0) {
+                    if (tp->deadline < now_us) {
+                        evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("deadline expired %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
+                        tp->deadline = 0;
+                        wake = true;
+                    }
+                } else
+                if (tp->wakeup_test != NULL) {
+                    if (*tp->wakeup_test != 0) {
+                        evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("wakeup_test completed %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
+                        tp->wakeup_test = NULL;
+                        wake = true;
+                    }
+                }
+                
+                if (wake) {
                     RUNNABLE_YES(tp);
-                    tp->wake_param = TO_VOID_PARAM(tp->last_run_time);  // return how long task ran last time
+                    tp->wake_param = TO_VOID_PARAM(tp->last_run_time);      // return how long task ran last time
                 }
             }
         }
@@ -1084,11 +1114,26 @@ bool TaskIsChild()
                     #endif
 					
                     if (test_deadline_update == true) {
-                        if (tp->deadline > 0 && tp->deadline < now_us) {
-                            evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("deadline expired %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
-                            tp->deadline = 0;
+                        bool wake = false;
+                        
+                        if (tp->deadline > 0) {
+                            if (tp->deadline < now_us) {
+                                evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("deadline expired %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
+                                tp->deadline = 0;
+                                wake = true;
+                            }
+                        } else
+                        if (tp->wakeup_test != NULL) {
+                            if (*tp->wakeup_test != 0) {
+                                evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("wakeup_test completed %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
+                                tp->wakeup_test = NULL;
+                                wake = true;
+                            }
+                        }
+                        
+                        if (wake) {
                             RUNNABLE_YES(tp);
-                            tp->wake_param = TO_VOID_PARAM(tp->last_run_time);  // return how long task ran last time
+                            tp->wake_param = TO_VOID_PARAM(tp->last_run_time);      // return how long task ran last time
                         }
                     }
                     
@@ -1156,6 +1201,7 @@ bool TaskIsChild()
                             #endif
 						} else {
                             // not eligible to run at this time
+                            _TaskStat(t, TSTAT_MIN|TSTAT_ZERO, last_time_run, "min", TSTAT_MAX|TSTAT_ZERO, last_time_run, "max");
 							#ifdef LOCK_CHECK_HANG
                                 if (lock_panic) t->lock_marker = 'N';
                             #endif
@@ -1215,7 +1261,7 @@ bool TaskIsChild()
     } while (p < LOWEST_PRIORITY);		// if no eligible tasks keep looking
     
 	if (!need_hardware || update_in_progress || sd_copy_in_progress || LINUX_CHILD_PROCESS()) {
-		usleep(100000);		// pause so we don't hog the machine
+		kiwi_usleep(100000);		// pause so we don't hog the machine
 	}
 
 	// remember where we were last running
@@ -1263,6 +1309,7 @@ bool TaskIsChild()
 		//printf("TaskJump  fake_stack=%p stack=%p %s (%s) id=%d\n", t->ctx->fake_stack, t->ctx->stack, t->name, where, t->id);
 	}
 #endif
+    //real_printf("_NextTask LONGJMP %s\n", task_ls(t));
     longjmp(t->ctx->jb, 1);
     panic("longjmp() shouldn't return");
 }
@@ -1285,19 +1332,27 @@ int _CreateTask(funcP_t funcP, const char *name, void *param, int priority, u4_t
 	return t->id;
 }
 
-static void taskSleepSetup(TASK *t, const char *reason, int usec)
+static void taskSleepSetup(TASK *t, const char *reason, int usec, u4_t *wakeup_test=NULL)
 {
 	// usec == 0 means sleep until someone does TaskWakeup() on us
 	// usec > 0 is microseconds time in future (added to current time)
 	
 	if (usec > 0) {
     	t->deadline = timer_us64() + usec;
+        t->wakeup_test = NULL;
     	sprintf(t->reason, "(%.3f msec) ", (float) usec/1000.0);
 		evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleep", evprintf("sleeping usec %d %s Qrunnable %d", usec, task_ls(t), t->tq->runnable));
 	} else {
-		t->deadline = usec;
-		strcpy(t->reason, "(evt) ");
-		evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleep", evprintf("sleeping event %s Qrunnable %d", task_ls(t), t->tq->runnable));
+	    assert(usec == 0);
+        t->wakeup_test = wakeup_test;
+		t->deadline = 0;
+		if (wakeup_test != NULL) {
+            sprintf(t->reason, "(test %p) ", wakeup_test);
+            evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleep", evprintf("sleeping test %p %s Qrunnable %d", wakeup_test, task_ls(t), t->tq->runnable));
+		} else {
+            strcpy(t->reason, "(evt) ");
+            evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleep", evprintf("sleeping event %s Qrunnable %d", task_ls(t), t->tq->runnable));
+        }
 	}
 	
     kiwi_strncat(t->reason, reason, N_REASON);
@@ -1305,11 +1360,11 @@ static void taskSleepSetup(TASK *t, const char *reason, int usec)
 	RUNNABLE_NO(t, /* prev_stopped */ t->stopped? 0:-1);
 }
 
-void *_TaskSleep(const char *reason, int usec)
+void *_TaskSleep(const char *reason, int usec, u4_t *wakeup_test)
 {
     TASK *t = cur_task;
 
-    taskSleepSetup(t, reason, usec);
+    taskSleepSetup(t, reason, usec, wakeup_test);
 
 	#if 0
 	static bool trigger;
@@ -1520,7 +1575,7 @@ void _lock_init(lock_t *lock, const char *name)
     #endif
 }
 
-#define	N_LOCK_LIST		128
+#define	N_LOCK_LIST		256
 static int n_lock_list;
 static lock_t *locks[N_LOCK_LIST];
 
@@ -1557,7 +1612,8 @@ void lock_dump()
             l->timer_since_no_owner? (now - l->timer_since_no_owner) : 0, l->name, l->enter_name);
         if (n_users) {
             if (owner)
-                lprintf(" held by: %s", task_ls(owner));
+                lprintf(" held by: %s%s", task_ls(owner),
+                    l->timer_since_no_owner? "BUT TIME_NO_OWNER!!!":"");
             else
                 lprintf(" held by: no task");
         }
@@ -1594,9 +1650,15 @@ bool lock_check()
 		if (l->timer_since_no_owner == 0) continue;
 		u4_t time_since_no_owner = timer_sec() - l->timer_since_no_owner;
 		if (time_since_no_owner <= LOCK_HUNG_TIME) continue;
-		int n_waiters = l->enter - l->leave;
-        lprintf("lock_check: HUNG LOCK? \"%s\" (%d waiters) has had no owner for > %d seconds\n",
-            l->name, n_waiters, LOCK_HUNG_TIME);
+		if (l->owner != NULL) {
+            int n_waiters = l->enter - l->leave -1;
+            lprintf("lock_check: BAD OWNER TIME? \"%s\" (%d waiters) owner time > %d seconds, but HAS an owner %s\n",
+                l->name, n_waiters, LOCK_HUNG_TIME, task_s((TASK *) l->owner));
+		} else {
+            int n_waiters = l->enter - l->leave;
+            lprintf("lock_check: HUNG LOCK? \"%s\" (%d waiters) has had no owner for > %d seconds\n",
+                l->name, n_waiters, LOCK_HUNG_TIME);
+        }
         lock_panic = true;
 	}
 	return lock_panic;
@@ -1616,6 +1678,7 @@ bool lock_check()
 	#define evLock2(c, e, p, s, s2)
 #endif
 
+// don't disable: spi_pump() will deadlock without LOCK_PRIORITY_SWAP
 #define LOCK_PRIORITY_INVERSION
 #define LOCK_PRIORITY_SWAP
 
@@ -1764,6 +1827,7 @@ void lock_enter(lock_t *lock)
     assert(token == lock->leave);	// check that we really own lock
     
     lock->owner = ct;
+    lock->timer_since_no_owner = 0;
 	ct->lock.wait = NULL;
     ct->lock.hold = lock;
 
@@ -1816,7 +1880,7 @@ void lock_leave(lock_t *lock)
     TASK *tp = head;
     while (tp != NULL) {
         
-        // remove us from lock users list
+        // remove ourselves from lock users list
         if (tp == ct) {
             TASK *next = tp->lock.next;
             TASK *prev = tp->lock.prev;
@@ -1877,16 +1941,28 @@ void lock_leave(lock_t *lock)
         lock->name, task_ls(ct), ct->pending_sleep? "pending_sleep" : (wake_higher_priority? "HIGHER_PRIORITY" : "normal_exit"), n_waiters));
 
     if (lock->enter == lock->leave) {
+        // no waiters on lock
+        
         assert(lock->users == NULL);
+        assert(n_waiters == 0);
         lock->enter = lock->leave = 0;      // reset so they don't potentially wrap
         lock->timer_since_no_owner = 0;
+
+        #if defined(LOCK_CHECK_HANG) && defined(EV_MEAS_LOCK)
+            if (lock == &spi_lock && !LINUX_CHILD_PROCESS()) {
+                expecting_spi_lock_next_task = 0;
+                evLock2(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("$$$$ in lock_leave set expecting_spi_lock_next_task=0, %s %d waiters", task_s(ct), n_waiters));
+            }
+        #endif
     } else {
+        // waiters on lock
+
         lock->timer_since_no_owner = timer_sec();
 
         #if defined(LOCK_CHECK_HANG) && defined(EV_MEAS_LOCK)
             if (lock == &spi_lock && !LINUX_CHILD_PROCESS()) {
                 expecting_spi_lock_next_task = 50;
-                evLock2(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("set expecting_spi_lock_next_task=50, %s %d waiters", task_s(ct), n_waiters));
+                evLock2(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("$$$ set expecting_spi_lock_next_task=50, %s %d waiters", task_s(ct), n_waiters));
             }
         #endif
 

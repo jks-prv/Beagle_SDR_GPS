@@ -57,6 +57,7 @@ void unpack50(u1_t *d, u4_t *call_28b, u4_t *grid_pwr_22b, u4_t *grid_15b, u4_t 
     *grid_pwr_22b = ((d[3]&0xf)<<18) | (d[4]<<10) | (d[5]<<2) | (d[6]>>6);
 	*grid_15b = *grid_pwr_22b >> 7;
 	*pwr_7b = *grid_pwr_22b & 0x7f;
+    //wspr_gprintf("unpack50 %d|%d|%d|%d 0x%08x\n", d[0], d[1], d[2], d[3], *call_28b);
 }
 
 static const char *c = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ ";		// 37 characters
@@ -198,18 +199,23 @@ void deinterleave(unsigned char *sym)
     unsigned char tmp[NSYM_162];
     unsigned char p, i, j;
     
-    p=0;
-    i=0;
-    while (p<NSYM_162) {
-        j=((i * 0x80200802ULL) & 0x0884422110ULL) * 0x0101010101ULL >> 32;
-        if (j < NSYM_162 ) {
-            tmp[p]=sym[j];
-            p=p+1;
+    p = 0;
+    i = 0;
+    while (p < NSYM_162) {
+        j = ((i * 0x80200802ULL) & 0x0884422110ULL) * 0x0101010101ULL >> 32;
+        if (j < NSYM_162) {
+            tmp[p] = sym[j];
+            p = p+1;
         }
-        i=i+1;
+        i = i+1;
     }
-    for (i=0; i<NSYM_162; i++)
-        sym[i]=tmp[i];
+
+    //real_printf("symbols: ");
+    for (i = 0; i < NSYM_162; i++) {
+        sym[i] = tmp[i];
+        //real_printf("%02x ", sym[i]); fflush(stdout);
+    }
+    //real_printf("\n");
 }
 
 #define WSPR_HASH_ENTRY_SIZE 16
@@ -242,16 +248,16 @@ static void hash_update(char *call)
 
 	for (i=0; i < htsize; i++) {
 		if (ht[i].call[0] == '\0') {
-			//wprintf("W-HASH %d 0x%04x upd new %s\n", i, hash, call);
+			//wspr_gprintf("W-HASH %d 0x%04x upd new %s\n", i, hash, call);
 			ht[i].hash = hash;
 			strcpy(ht[i].call, call);
 			break;
 		}
 		if (ht[i].hash == hash) {
 			if (strcmp(ht[i].call, call) == 0) {
-				//wprintf("W-HASH %d 0x%04x upd hit %s\n", i, hash, call);
+				//wspr_gprintf("W-HASH %d 0x%04x upd hit %s\n", i, hash, call);
 			} else {
-				//wprintf("W-HASH %d 0x%04x upd COLLISION %s %s\n", i, hash, ht[i].call, call);
+				//wspr_gprintf("W-HASH %d 0x%04x upd COLLISION %s %s\n", i, hash, ht[i].call, call);
 				strcpy(ht[i].call, call);
 			}
 			break;
@@ -259,11 +265,11 @@ static void hash_update(char *call)
 	}
 	
 	if (i == htsize) {
-		//wprintf("W-HASH expand %d -> %d\n", htsize, htsize*2);
+		//wspr_gprintf("W-HASH expand %d -> %d\n", htsize, htsize*2);
 		htsize *= 2;
 		SAN_ASSERT(htsize > 0, ht = (hashtab_t *) realloc(ht, sizeof(hashtab_t) * htsize));
 		memset(ht + htsize/2, 0, sizeof(hashtab_t) * htsize/2);
-		//wprintf("W-HASH %d 0x%04x exp new %s\n", htsize/2, hash, call);
+		//wspr_gprintf("W-HASH %d 0x%04x exp new %s\n", htsize/2, hash, call);
 		ht[htsize/2].hash = hash;
 		strcpy(ht[htsize/2].call, call);
 	}
@@ -277,12 +283,12 @@ static char *hash_lookup(int hash)
 		if (ht[i].call[0] == '\0')
 			break;
 		if (ht[i].hash == hash) {
-			//wprintf("W-HASH %d 0x%04x lookup %s\n", i, hash, ht[i].call);
+			//wspr_gprintf("W-HASH %d 0x%04x lookup %s\n", i, hash, ht[i].call);
 			return ht[i].call;
 		}
 	}
 	
-	//wprintf("W-HASH 0x%04x lookup FAIL\n", hash);
+	//wspr_gprintf("W-HASH 0x%04x lookup FAIL\n", hash);
 	return NULL;
 }
 
@@ -376,14 +382,14 @@ int unpk_(u1_t *decdata, char *call_loc_pow, char *callsign, char *grid, int *dB
 
 int snr_comp(const void *elem1, const void *elem2)
 {
-	const pk_t *e1 = (const pk_t*) elem1, *e2 = (const pk_t*) elem2;
+	const wspr_pk_t *e1 = (const wspr_pk_t*) elem1, *e2 = (const wspr_pk_t*) elem2;
 	int r = (e1->snr0 < e2->snr0)? 1 : ((e1->snr0 > e2->snr0)? -1:0);	// NB: comparison reversed to sort in descending order
 	return r;
 }
 
 int freq_comp(const void *elem1, const void *elem2)
 {
-	const pk_t *e1 = (const pk_t*) elem1, *e2 = (const pk_t*) elem2;
+	const wspr_pk_t *e1 = (const wspr_pk_t*) elem1, *e2 = (const wspr_pk_t*) elem2;
 	int r = (e1->freq0 < e2->freq0)? -1 : ((e1->freq0 > e2->freq0)? 1:0);
 	return r;
 }

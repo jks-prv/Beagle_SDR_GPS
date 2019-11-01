@@ -107,7 +107,7 @@ function s4285_recv(data)
 		var param = params[i].split("=");
 
 		if (0 && param[0] != "keepalive") {
-			if (typeof param[1] != "undefined")
+			if (isDefined(param[1]))
 				console.log('s4285_recv: '+ param[0] +'='+ param[1]);
 			else
 				console.log('s4285_recv: '+ param[0]);

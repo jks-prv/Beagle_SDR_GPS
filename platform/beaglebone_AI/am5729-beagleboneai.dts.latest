@@ -8,8 +8,8 @@
 /dts-v1/;
 
 #include "dra74x.dtsi"
-#include "am57xx-commercial-grade.dtsi"
 #include "dra74x-mmc-iodelay.dtsi"
+#include "dra74-ipu-dsp-common.dtsi"
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/pinctrl/dra.h>
@@ -1119,27 +1119,27 @@
 };
 
 &cpu_alert0 {
-	temperature = <65000>; /* milliCelsius */
+	temperature = <55000>; /* milliCelsius */
 };
 
 &cpu_crit {
-	temperature = <80000>; /* milliCelsius */
+	temperature = <85000>; /* milliCelsius */
 };
 
 &gpu_crit {
-	temperature = <80000>; /* milliCelsius */
+	temperature = <85000>; /* milliCelsius */
 };
 
 &core_crit {
-	temperature = <80000>; /* milliCelsius */
+	temperature = <85000>; /* milliCelsius */
 };
 
 &dspeve_crit {
-	temperature = <80000>; /* milliCelsius */
+	temperature = <85000>; /* milliCelsius */
 };
 
 &iva_crit {
-	temperature = <80000>; /* milliCelsius */
+	temperature = <85000>; /* milliCelsius */
 };
 
 &sata {
@@ -1159,4 +1159,15 @@
 &i2c4 {
 	status = "okay";
 	clock-frequency = <400000>;
+};
+
+/* thermal hacks */
+&cpu0_opp_table {
+	opp_slow-400000000 {
+		opp-hz = /bits/ 64 <400000000>;
+		opp-microvolt = <860000 850000 1100000>,
+				<860000 850000 1100000>;
+		opp-supported-hw = <0xFF 0x01>;
+		opp-suspend;
+	};
 };

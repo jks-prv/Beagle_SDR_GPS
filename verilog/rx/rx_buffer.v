@@ -58,11 +58,11 @@ module RX_BUFFER (
 		end
 	endgenerate
 `else
-    wire [15:0] doutb_8k, doutb_16k;
+    wire [15:0] doutb_8k, doutb_16k, doutb_32k;
     
-	assign doutb = (RXBUF_LARGE == 0)? doutb_8k : doutb_16k;
+	assign doutb = (RXBUF_LARGE == 0)? doutb_8k : ((RXBUF_LARGE == 1)? doutb_16k : doutb_32k);
 
-    // one of these will get optimized away because RXBUF_LARGE is a constant parameter
+    // All but one of these will be optimized away because RXBUF_LARGE is a constant parameter
     // set in kiwi.vh that depends on RX_CFG
     
     ipcore_bram_8k_16b rx_buf_8k (
@@ -76,6 +76,13 @@ module RX_BUFFER (
         .clka	(clka),         .clkb	(clkb),
         .addra	(addra),        .addrb	(addrb),
         .dina	(dina),         .doutb	(doutb_16k),
+        .wea	(wea)
+    );
+
+    ipcore_bram_32k_16b rx_buf_32k (
+        .clka	(clka),         .clkb	(clkb),
+        .addra	(addra),        .addrb	(addrb),
+        .dina	(dina),         .doutb	(doutb_32k),
         .wea	(wea)
     );
 `endif

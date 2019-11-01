@@ -56,91 +56,91 @@ bool find_local_IPs()
 	struct ifaddrs *ifaddr, *ifa;
 	scall("getifaddrs", getifaddrs(&ifaddr));
 	
-	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-		if (ifa->ifa_addr == NULL)
-			continue;
-		
-
-		int family = ifa->ifa_addr->sa_family;
-		int flags = ifa->ifa_flags;
-		//lprintf("getifaddrs: IF %s fam=%d flags=0x%x%s%s\n", ifa->ifa_name, family, flags,
-		//    (flags & IFF_UP)? " UP":"", (flags & IFF_RUNNING)? " RUNNING":"");
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == NULL)
+            continue;
+        
+        int family = ifa->ifa_addr->sa_family;
+        int flags = ifa->ifa_flags;
+        //lprintf("getifaddrs: IF %s fam=%d flags=0x%x%s%s\n", ifa->ifa_name, family, flags,
+        //    (flags & IFF_UP)? " UP":"", (flags & IFF_RUNNING)? " RUNNING":"");
         if (family != AF_INET && family != AF_INET6) continue;
         if (!(flags & IFF_UP) || !(flags & IFF_RUNNING)) continue;
-        if (strcmp(ifa->ifa_name, "lo") == 0 || strncmp(ifa->ifa_name, "usb", 3) == 0) continue;
+        if (strcmp(ifa->ifa_name, "lo") == 0 || kiwi_str_begins_with(ifa->ifa_name, "usb") || kiwi_str_begins_with(ifa->ifa_name, "SoftAp"))
+            continue;
         bool is_ipv4LL = (kiwi_str_ends_with(ifa->ifa_name, ":avahi") != NULL);
+        
+        //lprintf("getifaddrs: CHECK %s fam=%d\n", ifa->ifa_name, family);
 
-		//lprintf("getifaddrs: CHECK %s fam=%d\n", ifa->ifa_name, family);
+        char *ip_pvt;
+        socklen_t salen;
 
-		char *ip_pvt;
-		socklen_t salen;
-
-		if (family == AF_INET) {
-		    ddns.ip4_if_name = strdup(ifa->ifa_name);
-			struct sockaddr_in *sin = (struct sockaddr_in *) (ifa->ifa_addr);
-			ddns.ip4_pvt = INET4_NTOH(* (u4_t *) &sin->sin_addr);
-			ip_pvt = ddns.ip4_pvt_s;
-			salen = sizeof(struct sockaddr_in);
-			sin = (struct sockaddr_in *) (ifa->ifa_netmask);
-			ddns.netmask4 = INET4_NTOH(* (u4_t *) &sin->sin_addr);
+        if (family == AF_INET) {
+            ddns.ip4_if_name = strdup(ifa->ifa_name);
+            struct sockaddr_in *sin = (struct sockaddr_in *) (ifa->ifa_addr);
+            ddns.ip4_pvt = INET4_NTOH(* (u4_t *) &sin->sin_addr);
+            ip_pvt = ddns.ip4_pvt_s;
+            salen = sizeof(struct sockaddr_in);
+            sin = (struct sockaddr_in *) (ifa->ifa_netmask);
+            ddns.netmask4 = INET4_NTOH(* (u4_t *) &sin->sin_addr);
             //lprintf("DDNS: IF IPv4 0x%08x /%d 0x%08x %s\n", ddns.ip4_pvt,
             //    inet_nm_bits(AF_INET, &ddns.netmask4), ddns.netmask4, ddns.ip4_if_name);
-			
-			// FIXME: if ip4LL, because a DHCP server wasn't responding, need to periodically reprobe
-			// for when it comes back online
-			if (is_ipv4LL) ddns.ip4LL = true;
+            
+            // FIXME: if ip4LL, because a DHCP server wasn't responding, need to periodically reprobe
+            // for when it comes back online
+            if (is_ipv4LL) ddns.ip4LL = true;
 
-			#ifndef IPV6_TEST
-				ddns.ip4_valid = true;
-			#endif
-		} else {
-			struct sockaddr_in6 *sin6;
-			sin6 = (struct sockaddr_in6 *) (ifa->ifa_addr);
-			u1_t *a = (u1_t *) &(sin6->sin6_addr);
-			sin6 = (struct sockaddr_in6 *) (ifa->ifa_netmask);
-			u1_t *m = (u1_t *) &(sin6->sin6_addr);
+            #ifndef IPV6_TEST
+                ddns.ip4_valid = true;
+            #endif
+        } else {
+            struct sockaddr_in6 *sin6;
+            sin6 = (struct sockaddr_in6 *) (ifa->ifa_addr);
+            u1_t *a = (u1_t *) &(sin6->sin6_addr);
+            sin6 = (struct sockaddr_in6 *) (ifa->ifa_netmask);
+            u1_t *m = (u1_t *) &(sin6->sin6_addr);
 
-			if (is_inet4_map_6(a)) {
-		        ddns.ip4_6_if_name = strdup(ifa->ifa_name);
-				ddns.ip4_6_pvt = INET4_NTOH(* (u4_t *) &a[12]);
-				ip_pvt = ddns.ip4_6_pvt_s;
-				salen = sizeof(struct sockaddr_in);
-				ddns.netmask4_6 = INET4_NTOH(* (u4_t *) &m[12]);
+            if (is_inet4_map_6(a)) {
+                ddns.ip4_6_if_name = strdup(ifa->ifa_name);
+                ddns.ip4_6_pvt = INET4_NTOH(* (u4_t *) &a[12]);
+                ip_pvt = ddns.ip4_6_pvt_s;
+                salen = sizeof(struct sockaddr_in);
+                ddns.netmask4_6 = INET4_NTOH(* (u4_t *) &m[12]);
                 //lprintf("DDNS: IF IPv4_6 0x%08x /%d 0x%08x %s\n", ddns.ip4_6_pvt,
                 //    inet_nm_bits(AF_INET, &ddns.netmask4_6), ddns.netmask4_6, ddns.ip4_6_if_name);
-				ddns.ip4_6_valid = true;
-			} else {
-				if (a[0] == 0xfe && a[1] == 0x80) {
-		            ddns.ip6LL_if_name = strdup(ifa->ifa_name);
-					memcpy(ddns.ip6LL_pvt, a, sizeof(ddns.ip6LL_pvt));
-					ip_pvt = ddns.ip6LL_pvt_s;
-					salen = sizeof(struct sockaddr_in6);
-					memcpy(ddns.netmask6LL, m, sizeof(ddns.netmask6LL));
-		            //lprintf("DDNS: IF IPv6 LINK-LOCAL /%d %s\n", inet_nm_bits(AF_INET6, &ddns.netmask6LL), ddns.ip6LL_if_name);
-					ddns.ip6LL_valid = true;
-				} else {
-		            ddns.ip6_if_name = strdup(ifa->ifa_name);
-					memcpy(ddns.ip6_pvt, a, sizeof(ddns.ip6_pvt));
-					ip_pvt = ddns.ip6_pvt_s;
-					salen = sizeof(struct sockaddr_in6);
-					memcpy(ddns.netmask6, m, sizeof(ddns.netmask6));
-		            //lprintf("DDNS: IF IPv6 /%d ", inet_nm_bits(AF_INET6, &ddns.netmask6), ddns.ip6_if_name);
-	
-					#ifdef IPV6_TEST
-						ddns.netmask6[8] = 0xff;
-					#endif
-					
-					ddns.ip6_valid = true;
-				}
-			}
-		}
-		
-		int rc = getnameinfo(ifa->ifa_addr, salen, ip_pvt, NET_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
-		if (rc != 0) {
-			lprintf("getnameinfo() failed: %s, fam=%d %s\n", ifa->ifa_name, family, gai_strerror(rc));
-			continue;
-		}
-	}
+                ddns.ip4_6_valid = true;
+            } else {
+                if (a[0] == 0xfe && a[1] == 0x80) {
+                    ddns.ip6LL_if_name = strdup(ifa->ifa_name);
+                    memcpy(ddns.ip6LL_pvt, a, sizeof(ddns.ip6LL_pvt));
+                    ip_pvt = ddns.ip6LL_pvt_s;
+                    salen = sizeof(struct sockaddr_in6);
+                    memcpy(ddns.netmask6LL, m, sizeof(ddns.netmask6LL));
+                    //lprintf("DDNS: IF IPv6 LINK-LOCAL /%d %s\n", inet_nm_bits(AF_INET6, &ddns.netmask6LL), ddns.ip6LL_if_name);
+                    ddns.ip6LL_valid = true;
+                } else {
+                    ddns.ip6_if_name = strdup(ifa->ifa_name);
+                    memcpy(ddns.ip6_pvt, a, sizeof(ddns.ip6_pvt));
+                    ip_pvt = ddns.ip6_pvt_s;
+                    salen = sizeof(struct sockaddr_in6);
+                    memcpy(ddns.netmask6, m, sizeof(ddns.netmask6));
+                    //lprintf("DDNS: IF IPv6 /%d ", inet_nm_bits(AF_INET6, &ddns.netmask6), ddns.ip6_if_name);
+    
+                    #ifdef IPV6_TEST
+                        ddns.netmask6[8] = 0xff;
+                    #endif
+                    
+                    ddns.ip6_valid = true;
+                }
+            }
+        }
+        
+        int rc = getnameinfo(ifa->ifa_addr, salen, ip_pvt, NET_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+        if (rc != 0) {
+            lprintf("getnameinfo() failed: %s, fam=%d %s\n", ifa->ifa_name, family, gai_strerror(rc));
+            continue;
+        }
+    }
 	
 	if (ddns.ip4_valid) {
 		ddns.nm_bits4 = inet_nm_bits(AF_INET, &ddns.netmask4);
@@ -653,7 +653,7 @@ void ip_blacklist_init()
         char *cmd_p;
         asprintf(&cmd_p, "iptables -A KIWI -s %s -j DROP", ips[i]);
         lprintf("ip_blacklist_init: \"%s\"\n", cmd_p);
-        non_blocking_cmd_system_child("kiwi.ipt", cmd_p, POLL_MSEC(200));
+        non_blocking_cmd_system_child("kiwi.iptables", cmd_p, POLL_MSEC(200));
         free(cmd_p);
     }
     system("iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI");

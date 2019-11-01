@@ -25,7 +25,6 @@ Boston, MA  02110-1301, USA.
 #include "printf.h"
 #include "timer.h"
 #include "web.h"
-#include "peri.h"
 #include "spi.h"
 #include "clk.h"
 #include "gps.h"
@@ -183,8 +182,8 @@ char *rx_server_ajax(struct mg_connection *mc)
 		int sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
 		
 		// If sdr.hu registration is off then don't reply to sdr.hu, but reply to others.
-		// But don't reply to anyone until ddns.ips_sdr_hu is valid.
-		if (!sdr_hu_reg && (!ddns.ips_sdr_hu.valid || ip_match(remote_ip, &ddns.ips_sdr_hu))) {
+		// But don't reply to anyone until net.ips_sdr_hu is valid.
+		if (!sdr_hu_reg && (!net.ips_sdr_hu.valid || ip_match(remote_ip, &net.ips_sdr_hu))) {
 			if (sdr_hu_debug)
 				printf("/status: sdr.hu reg disabled, not replying to sdr.hu (%s)\n", remote_ip);
 			return (char *) -1;

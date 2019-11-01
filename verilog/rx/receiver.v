@@ -474,6 +474,7 @@ module RECEIVER (
     // waterfall(s)
     //////////////////////////////////////////////////////////////////////////
 
+`ifdef USE_WF
     localparam L2WF = max(1, clog2(V_WF_CHANS) - 1);
     reg [L2WF:0] wf_channel_C;
 	wire [V_WF_CHANS-1:0] wfn_sel_C = 1 << wf_channel_C;
@@ -512,5 +513,8 @@ module RECEIVER (
 		.get_wf_samp_i_C	(get_wf_samp_i_C),
 		.get_wf_samp_q_C	(get_wf_samp_q_C)
 	);
+`else
+    assign wf_dout_C = 16'b0;
+`endif
 
 endmodule

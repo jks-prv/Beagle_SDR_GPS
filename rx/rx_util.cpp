@@ -26,7 +26,6 @@ Boston, MA  02110-1301, USA.
 #include "printf.h"
 #include "timer.h"
 #include "web.h"
-#include "peri.h"
 #include "spi.h"
 #include "gps.h"
 #include "cfg.h"
@@ -35,6 +34,7 @@ Boston, MA  02110-1301, USA.
 #include "clk.h"
 #include "wspr.h"
 #include "ext_int.h"
+#include "shmem.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -222,7 +222,7 @@ void update_vars_from_config()
     if (espeed != current_espeed) {
         printf("ETH0 espeed %d\n", espeed? 10:100);
         non_blocking_cmd_system_child(
-            "kiwi.eth", stprintf("ethtool -s eth0 speed %d duplex full", espeed? 10:100), NO_WAIT);
+            "kiwi.ethtool", stprintf("ethtool -s eth0 speed %d duplex full", espeed? 10:100), NO_WAIT);
         current_espeed = espeed;
     }
     
@@ -364,7 +364,7 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
     //cprintf(conn, "GEOLOC: <%s>\n", cmd_p);
     
     // NB: don't use non_blocking_cmd() here to prevent audio gliches
-    int status = non_blocking_cmd_func_forall("kiwi.geo", cmd_p, _geo_task, 0, POLL_MSEC(1000));
+    int status = non_blocking_cmd_func_forall("kiwi.geolocate", cmd_p, _geo_task, 0, POLL_MSEC(1000));
     free(cmd_p);
     int exit_status;
     if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
@@ -444,7 +444,7 @@ void webserver_collect_print_stats(int print)
     for (rx = rx_channels; rx < &rx_channels[rx_chans]; rx++) {
         if (!rx->busy) continue;
 		c = rx->conn;
-		assert(c != NULL);
+		if (c == NULL || !c->valid) continue;
         //assert(c->type == STREAM_SOUND || c->type == STREAM_WATERFALL);
 		
 		u4_t now = timer_sec();
@@ -519,53 +519,76 @@ void webserver_collect_print_stats(int print)
 	current_nusers = nusers;
 
 	// construct cpu stats response
-	int user, sys, idle;
-	static int last_user, last_sys, last_idle;
-	user = sys = 0;
+	#define NCPU 2
+	int usi[3][NCPU], del_usi[3][NCPU];
+	static int last_usi[3][NCPU];
+
 	u4_t now = timer_ms();
 	static u4_t last_now;
 	float secs = (float)(now - last_now) / 1000;
 	last_now = now;
-	
-	float del_user = 0;
-	float del_sys = 0;
-	float del_idle = 0;
-	
+
 	char *reply = read_file_string_reply("/proc/stat");
 	
 	if (reply != NULL) {
-		sscanf(kstr_sp(reply), "cpu %d %*d %d %d", &user, &sys, &idle);
+		int n = sscanf(kstr_sp(reply), "%*[^\n]\ncpu0 %d %*d %d %d %*[^\n]\ncpu1 %d %*d %d %d",
+		    &usi[0][0], &usi[1][0], &usi[2][0], &usi[0][1], &usi[1][1], &usi[2][1]);
+		assert(n == 3 || n == 6);
+		int ncpu = (n == 3)? 1:2;
 		kstr_free(reply);
-		//long clk_tick = sysconf(_SC_CLK_TCK);
-		del_user = (float)(user - last_user) / secs;
-		del_sys = (float)(sys - last_sys) / secs;
-		del_idle = (float)(idle - last_idle) / secs;
-		//printf("CPU %.1fs u=%.1f%% s=%.1f%% i=%.1f%%\n", secs, del_user, del_sys, del_idle);
+		for (i = 0; i < ncpu; i++) {
+            del_usi[0][i] = lroundf((float)(usi[0][i] - last_usi[0][i]) / secs);
+            del_usi[1][i] = lroundf((float)(usi[1][i] - last_usi[1][i]) / secs);
+            del_usi[2][i] = lroundf((float)(usi[2][i] - last_usi[2][i]) / secs);
+            //printf("CPU%d %.1fs u=%d%% s=%d%% i=%d%%\n", i, secs, del_usi[0][i], del_usi[1][i], del_usi[2][i]);
+        }
 		
+	    int cpufreq_kHz = 1000000, temp_deg_mC = 0;
+
+#ifdef CPU_AM5729
+	    reply = read_file_string_reply("/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_cur_freq");
+		sscanf(kstr_sp(reply), "%d", &cpufreq_kHz);
+		kstr_free(reply);
+
+	    reply = read_file_string_reply("/sys/class/thermal/thermal_zone0/temp");
+		sscanf(kstr_sp(reply), "%d", &temp_deg_mC);
+		kstr_free(reply);
+#endif
+
 		// ecpu_use() below can thread block, so cpu_stats_buf must be properly set NULL for reading thread
+		kstr_t *ks;
 		if (cpu_stats_buf) {
-			char *s = cpu_stats_buf;
+			ks = cpu_stats_buf;
 			cpu_stats_buf = NULL;
-			free(s);
+			kstr_free(ks);
 		}
-		asprintf(&cpu_stats_buf, "\"ct\":%d,\"cu\":%.0f,\"cs\":%.0f,\"ci\":%.0f,\"ce\":%.0f",
-			timer_sec(), del_user, del_sys, del_idle, ecpu_use());
-		last_user = user;
-		last_sys = sys;
-		last_idle = idle;
+		ks = kstr_asprintf(NULL, "\"ct\":%d,\"ce\":%.0f,\"cf\":%d,\"cc\":%.0f,",
+			timer_sec(), ecpu_use(), cpufreq_kHz / 1000, (float) temp_deg_mC / 1000);
+
+		ks = kstr_cat(ks, kstr_list_int("\"cu\":[", "%d", "],", &del_usi[0][0], ncpu));
+		ks = kstr_cat(ks, kstr_list_int("\"cs\":[", "%d", "],", &del_usi[1][0], ncpu));
+		ks = kstr_cat(ks, kstr_list_int("\"ci\":[", "%d", "]", &del_usi[2][0], ncpu));
+
+		for (i = 0; i < ncpu; i++) {
+            last_usi[0][i] = usi[0][i];
+            last_usi[1][i] = usi[1][i];
+            last_usi[2][i] = usi[2][i];
+        }
+
+		cpu_stats_buf = ks;
 	}
 
 	// collect network i/o stats
 	static const float k = 1.0/1000.0/10.0;		// kbytes/sec every 10 secs
-	audio_kbps = audio_bytes*k;
-	waterfall_kbps = waterfall_bytes*k;
 	
-	for (i=0; i <= rx_chans; i++) {
+	for (i=0; i <= rx_chans; i++) {     // [rx_chans] is total of all channels
+        audio_kbps[i] = audio_bytes[i]*k;
+        waterfall_kbps[i] = waterfall_bytes[i]*k;
 		waterfall_fps[i] = waterfall_frames[i]/10.0;
-		waterfall_frames[i] = 0;
+		audio_bytes[i] = waterfall_bytes[i] = waterfall_frames[i] = 0;
 	}
 	http_kbps = http_bytes*k;
-	audio_bytes = waterfall_bytes = http_bytes = 0;
+	http_bytes = 0;
 
 	// on the hour: report number of connected users & schedule updates
 	int hour, min; utc_hour_min_sec(&hour, &min, NULL);
@@ -579,6 +602,8 @@ void webserver_collect_print_stats(int print)
 		schedule_update(hour, min);
 		last_min = min;
 	}
+	
+	spi_stats();
 }
 
 char *rx_users(bool include_ip)
@@ -618,27 +643,28 @@ char *rx_users(bool include_ip)
                 }
 
                 int rtype = 0;
-                t = 0;
+                u4_t rn = 0;
                 if (rem_24hr || rem_inact) {
                     if (rem_24hr && rem_inact) {
                         if (rem_24hr < rem_inact) {
-                            t = rem_24hr;
+                            rn = rem_24hr;
                             rtype = 2;
                         } else {
-                            t = rem_inact;
+                            rn = rem_inact;
                             rtype = 1;
                         }
                     } else
                     if (rem_24hr) {
-                        t = rem_24hr;
+                        rn = rem_24hr;
                         rtype = 2;
                     } else
                     if (rem_inact) {
-                        t = rem_inact;
+                        rn = rem_inact;
                         rtype = 1;
                     }
                 }
-                    
+                
+                t = rn;
                 u4_t r_sec = t % 60; t /= 60;
                 u4_t r_min = t % 60; t /= 60;
                 u4_t r_hr = t;
@@ -647,9 +673,9 @@ char *rx_users(bool include_ip)
                 char *geo = c->geo? kiwi_str_encode(c->geo) : NULL;
                 char *ext = ext_users[i].ext? kiwi_str_encode((char *) ext_users[i].ext->name) : NULL;
                 const char *ip = include_ip? c->remote_ip : "";
-                asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,\"m\":\"%s\",\"z\":%d,\"t\":\"%d:%02d:%02d\",\"rt\":%d,\"rs\":\"%d:%02d:%02d\",\"e\":\"%s\",\"a\":\"%s\"}",
+                asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,\"m\":\"%s\",\"z\":%d,\"t\":\"%d:%02d:%02d\",\"rt\":%d,\"rn\":%d,\"rs\":\"%d:%02d:%02d\",\"e\":\"%s\",\"a\":\"%s\"}",
                     need_comma? ",":"", i, user? user:"", geo? geo:"", c->freqHz,
-                    kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, hr, min, sec, rtype, r_hr, r_min, r_sec, ext? ext:"", ip);
+                    kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, hr, min, sec, rtype, rn, r_hr, r_min, r_sec, ext? ext:"", ip);
                 if (user) free(user);
                 if (geo) free(geo);
                 if (ext) free(ext);

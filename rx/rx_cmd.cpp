@@ -27,7 +27,6 @@ Boston, MA  02110-1301, USA.
 #include "printf.h"
 #include "timer.h"
 #include "web.h"
-#include "peri.h"
 #include "spi.h"
 #include "gps.h"
 #include "cfg.h"
@@ -52,13 +51,14 @@ Boston, MA  02110-1301, USA.
 #include <signal.h>
 #include <fftw3.h>
 
-char *cpu_stats_buf;
-volatile float audio_kbps, waterfall_kbps, waterfall_fps[MAX_RX_CHANS+1], http_kbps;
-volatile int audio_bytes, waterfall_bytes, waterfall_frames[MAX_RX_CHANS+1], http_bytes;
+kstr_t *cpu_stats_buf;
+volatile float audio_kbps[MAX_RX_CHANS+1], waterfall_kbps[MAX_RX_CHANS+1], waterfall_fps[MAX_RX_CHANS+1], http_kbps;
+volatile u4_t audio_bytes[MAX_RX_CHANS+1], waterfall_bytes[MAX_RX_CHANS+1], waterfall_frames[MAX_RX_CHANS+1], http_bytes;
 char *current_authkey;
 int debug_v;
 bool auth_su;
 char auth_su_remote_ip[NET_ADDRSTRLEN];
+bool conn_nolocal;
 
 const char *mode_s[N_MODE] = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq" };
 const char *modu_s[N_MODE] = { "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ" };
@@ -229,16 +229,19 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             // For a non-local connection mc->remote_ip is 127.0.0.1 when the frp proxy is used
             // so it will never be considered a local connection.
             isLocal = isLocal_if_ip(conn, ip_remote(mc), (log_auth_attempt || pwd_debug)? "PWD" : NULL);
-            //#define TEST_IS_NOT_LOCAL
-            #ifdef TEST_IS_NOT_LOCAL
+
+            if (conn_nolocal) {
                 isLocal = IS_NOT_LOCAL;
                 pwd_debug = true;
-            #endif
+                conn_nolocal = false;
+            }
+
             //#define TEST_NO_LOCAL_IF
             #ifdef TEST_NO_LOCAL_IF
                 isLocal = NO_LOCAL_IF;
                 pwd_debug = true;
             #endif
+            
             is_local = (isLocal == IS_LOCAL);
             check_ip_against_restricted = false;
         }
@@ -792,9 +795,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         clock_gettime(CLOCK_REALTIME, &ts);
         u4_t msec = ts.tv_nsec/1000000;
         // reset appending
-		asprintf(&sb, "[{\"t\":%d,\"s\":%ld,\"m\":%d,\"f\":%d}",
+		sb = kstr_asprintf(NULL, "[{\"t\":%d,\"s\":%ld,\"m\":%d,\"f\":%d}",
 		    type, ts.tv_sec, msec, (conn->dx_err_preg_ident? 1:0) + (conn->dx_err_preg_notes? 2:0));   
-		sb = kstr_wrap(sb);
 		int send = 0;
 		
 		// bsearch the lower bound for speed with large lists
@@ -865,11 +867,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			
 			// NB: ident, notes and params are already stored URL encoded
 			if (type == 4 || dp->freq != min) {
-                asprintf(&sb2, ",{\"g\":%d,\"f\":%.3f,\"lo\":%d,\"hi\":%d,\"o\":%d,\"b\":%d,\"ts\":%d,\"tg\":%d,\"i\":\"%s\"%s%s%s%s%s%s}",
+                sb = kstr_asprintf(sb, ",{\"g\":%d,\"f\":%.3f,\"lo\":%d,\"hi\":%d,\"o\":%d,\"b\":%d,\"ts\":%d,\"tg\":%d,\"i\":\"%s\"%s%s%s%s%s%s}",
                     dp->idx, freq, dp->low_cut, dp->high_cut, dp->offset, dp->flags, dp->timestamp, dp->tag, dp->ident,
                     dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"",
                     dp->params? ",\"p\":\"":"", dp->params? dp->params:"", dp->params? "\"":"");
-                sb = kstr_cat(sb, kstr_wrap(sb2));
                 //printf("DX %d: %.2f(%d)\n", send, freq, dp->idx);
                 send++;
             }
@@ -931,22 +932,15 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			}
 		}
 		
-		if (cpu_stats_buf != NULL) {
-			asprintf(&sb, "{%s,", cpu_stats_buf);
-		} else {
-			asprintf(&sb, "{");
-		}
-		sb = kstr_wrap(sb);
+		sb = kstr_asprintf(NULL, cpu_stats_buf? "{%s," : "{", kstr_sp(cpu_stats_buf));
 
-		float sum_kbps = audio_kbps + waterfall_kbps + http_kbps;
-		asprintf(&sb2, "\"aa\":%.0f,\"aw\":%.0f,\"af\":%.0f,\"at\":%.0f,\"ah\":%.0f,\"as\":%.0f,\"sr\":%.6f",
-			audio_kbps, waterfall_kbps, waterfall_fps[ch], waterfall_fps[MAX_RX_CHANS], http_kbps, sum_kbps,
+		float sum_kbps = audio_kbps[rx_chans] + waterfall_kbps[rx_chans] + http_kbps;
+		sb = kstr_asprintf(sb, "\"ac\":%.0f,\"wc\":%.0f,\"fc\":%.0f,\"ah\":%.0f,\"as\":%.0f,\"sr\":%.6f",
+			audio_kbps[ch], waterfall_kbps[ch], waterfall_fps[ch], http_kbps, sum_kbps,
 			ext_update_get_sample_rateHz(-1));
-		sb = kstr_cat(sb, kstr_wrap(sb2));
 
-		asprintf(&sb2, ",\"ga\":%d,\"gt\":%d,\"gg\":%d,\"gf\":%d,\"gc\":%.6f,\"go\":%d",
+		sb = kstr_asprintf(sb, ",\"ga\":%d,\"gt\":%d,\"gg\":%d,\"gf\":%d,\"gc\":%.6f,\"go\":%d",
 			gps.acquiring, gps.tracking, gps.good, gps.fixes, adc_clock_system()/1e6, clk.adc_gps_clk_corrections);
-		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 #ifndef CFG_GPS_ONLY
         //printf("ch=%d ug=%d lat=%d\n", ch, wspr_c.GPS_update_grid, (gps.StatLat != 0));
@@ -971,19 +965,13 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         
         // Always send WSPR grid. Won't reveal location if grid not set on WSPR admin page
         // and update-from-GPS turned off.
-        asprintf(&sb2, ",\"gr\":\"%s\"", wspr_c.rgrid);
-        sb = kstr_cat(sb, kstr_wrap(sb2));
+        sb = kstr_asprintf(sb, ",\"gr\":\"%s\"", wspr_c.rgrid);
         //printf("status sending wspr_c.rgrid=<%s>\n", wspr_c.rgrid);
         
-		extern int audio_dropped;
-		asprintf(&sb2, ",\"ad\":%d,\"au\":%d,\"ae\":%d,\"ar\":%d,\"an\":%d,\"ap\":[",
-			audio_dropped, underruns, seq_errors, dpump_resets, nrx_bufs);
-		sb = kstr_cat(sb, kstr_wrap(sb2));
-		for (i = 0; i < nrx_bufs; i++) {
-		    asprintf(&sb2, "%s%d", (i != 0)? ",":"", dpump_hist[i]);
-		    sb = kstr_cat(sb, kstr_wrap(sb2));
-		}
-        sb = kstr_cat(sb, "]");
+		sb = kstr_asprintf(sb, ",\"ad\":%d,\"au\":%d,\"ae\":%d,\"ar\":%d,\"an\":%d,\"an2\":%d,",
+			dpump.audio_dropped, underruns, seq_errors, dpump.resets, nrx_bufs, N_DPBUF);
+		sb = kstr_cat(sb, kstr_list_int("\"ap\":[", "%d", "],", (int *) dpump.hist, nrx_bufs));
+		sb = kstr_cat(sb, kstr_list_int("\"ai\":[", "%d", "]", (int *) dpump.in_hist, N_DPBUF));
 #endif
 
 		char utc_s[32], local_s[32];
@@ -997,12 +985,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		} else {
 			strcpy(local_s, "");
 		}
-		asprintf(&sb2, ",\"tu\":\"%s\",\"tl\":\"%s\",\"ti\":\"%s\",\"tn\":\"%s\"",
+		sb = kstr_asprintf(sb, ",\"tu\":\"%s\",\"tl\":\"%s\",\"ti\":\"%s\",\"tn\":\"%s\"}",
 			utc_s, local_s, tzone_id, tzone_name);
-		sb = kstr_cat(sb, kstr_wrap(sb2));
-
-		asprintf(&sb2, "}");
-		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 		send_msg(conn, false, "MSG stats_cb=%s", kstr_sp(sb));
 		kstr_free(sb);
@@ -1130,6 +1114,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		return true;
 	}
 #endif
+
+    if (strcmp(cmd, "SET inactivity_ack") == 0) {
+        conn->last_tune_time = timer_sec();
+        return true;
+    }
 
 
 ////////////////////////////////

@@ -21,6 +21,7 @@
 #include "gps.h"
 #include "spi.h"
 #include "misc.h"
+#include "shmem.h"
 #include "ephemeris.h"
 #include "fec.h"
 
@@ -76,7 +77,7 @@ struct CHANNEL { // Locally-held channel data
     //jks2
     int LASTsub;
     sdrnav_t nav;
-	SPI_MISO miso;
+	SPI_MISO *miso;
 	
     void  Reset(int sat, int codegen_init);
     void  Start(int sat, int t_sample, int lo_shift, int ca_shift, int snr);
@@ -151,8 +152,8 @@ const char E1BpreambleInverse [] = {1,0,1,0,0,1,1,1,1,1};
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 void CHANNEL::UploadEmbeddedState() {
-    spi_get(CmdGetChan, &miso, sizeof(ul), ch);
-    memcpy(&ul, miso.byte, sizeof(ul));
+    spi_get(CmdGetChan, miso, sizeof(ul), ch);
+    memcpy(&ul, miso->byte, sizeof(ul));
 	evGPS(EC_EVENT, EV_GPS, -1, "GPS", evprintf("UES ch %d ul %p ms %d bits %d glitches %d buf %d %d %d %d",
 		ch+1, &ul, ul.nav_ms, ul.nav_bits, ul.nav_glitch,
 		ul.nav_buf[0], ul.nav_buf[1], ul.nav_buf[2], ul.nav_buf[3]));
@@ -206,12 +207,13 @@ void CHANNEL::Reset(int sat, int codegen_init) {
         // download E1B code table
         // assumes BRAM write address is zero from when channel was last reset on signal loss
         int dbg = 0;
-        for (int i=0; i < E1B_CODE_XFER; i++) {
+        SPI_MOSI *code_buf = &SPI_SHMEM->gps_e1b_code_mosi;
+
+        for (int i=0; i < E1B_CODE_XFERS; i++) {    // number of SPIBUF_W sized xfers needed (currently 2)
             if (dbg && i == 0) printf("E1B download ch%2d try %s\nprn: ", ch+1, PRN(sat));
 
-            static SPI_MOSI code_buf;
-            for (int j=0; j < E1B_CODE_LOOP; j++) {
-                u2_t *code = &code_buf.words[j+1];      // NB: spi_mosi_data_t.cmd is in words[0]
+            for (int j=0; j < E1B_CODE_LOOP; j++) {     // code amount needed that also fits in SPIBUF_W
+                u2_t *code = &code_buf->words[j+1];     // NB: spi_mosi_data_t.cmd is in words[0]
                 *code = 0;
                 for (int chan = 0; chan < GPS_CHANS; chan++) {
                     CHANNEL *c = &Chans[chan];
@@ -228,7 +230,7 @@ void CHANNEL::Reset(int sat, int codegen_init) {
                 if (dbg && i == 0 && j < 16) printf("code(%4d) 0x%03x\n", j, *code);
                 if (dbg && i == 1 && j >= (E1B_CODE_LOOP-16)) printf("code(%4d) 0x%03x\n", (i*E1B_CODE_LOOP)+j, *code);
             }
-            spi_set_buf_noduplex(CmdSetE1Bcode, &code_buf, S2B(E1B_CODE_LOOP));
+            spi_set_buf_noduplex(CmdSetE1Bcode, code_buf, S2B(E1B_CODE_LOOP));
 
             // pause so as not to potentially starve other eCPU tasks
             TaskSleepMsec(1);
@@ -420,7 +422,7 @@ void CHANNEL::Tracking() {
 	    //evGPS(EC_EVENT, EV_GPS, ch, "GPS", evprintf("TaskSleepMsec(250) ch %d", ch+1));
         TaskSleepUsec(POLLING_US);
         UploadEmbeddedState();
-        TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
+        TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, "trk");
 
         // Process NAV data
         //for(int avail = RemoteBits(ul.nav_bits) & ~0xF; avail; avail-=16) {
@@ -868,6 +870,7 @@ void ChanTask(void *param) { // one thread per channel
     Chans[ch].ch = ch;
     unsigned bit = 1<<ch;
     Chans[ch].id = TaskID();
+    Chans[ch].miso = &SPI_SHMEM->gps_channel_miso[ch];
 
     for (;;) {
     	TaskSleep();

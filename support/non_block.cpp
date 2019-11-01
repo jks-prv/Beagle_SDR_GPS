@@ -28,6 +28,8 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "net.h"
 #include "debug.h"
+#include "non_block.h"
+#include "shmem.h"
 
 #include <sys/file.h>
 #include <fcntl.h>
@@ -41,6 +43,7 @@ Boston, MA  02110-1301, USA.
 #include <stdlib.h>
 #include <stdarg.h>
 #include <time.h>
+#include <sys/mman.h>
 
 #ifdef HOST
 	#include <wait.h>
@@ -55,6 +58,28 @@ typedef struct {
 
 zombies_t zombies;
 
+void register_zombie(pid_t child_pid)
+{
+    int i;
+    
+    for (i=0; i < zombies.size; i++) {
+        if (zombies.list[i] == 0) {
+            zombies.list[i] = child_pid;
+            //lprintf("==== add ZOMBIE @%d pid=%d\n", i, child_pid);
+            break;
+        }
+    }
+    
+    if (i == zombies.size) {
+        zombies.list = (pid_t *) realloc(zombies.list, sizeof(pid_t)*(zombies.size + ZEXP));
+        zombies.list[zombies.size] = child_pid;
+        //lprintf("==== add exp ZOMBIE @%d pid=%d\n", zombies.size, child_pid);
+        memset(&zombies.list[zombies.size+1], 0, sizeof(pid_t)*(ZEXP-1));
+        zombies.size += ZEXP;
+        //printf("### zombies.size %d\n", zombies.size);
+    }
+}
+
 void cull_zombies()
 {
     for (int i=0; i < zombies.size; i++) {
@@ -68,7 +93,7 @@ void cull_zombies()
     }
 }
 
-int child_task(const char *pname, int poll_msec, funcP_t func, void *param)
+int child_task(const char *pname, funcP_t func, int poll_msec, void *param)
 {
     int i;
     
@@ -76,14 +101,18 @@ int child_task(const char *pname, int poll_msec, funcP_t func, void *param)
     // a zombie process unless we eventually wait for it.
     // We accomplish this by waiting for all child processes in the waitpid() below and detect the zombies.
 
+    //real_printf("CHILD_TASK ENTER %s poll_msec=%d\n", pname, poll_msec);
 	pid_t child_pid;
 	scall("fork", (child_pid = fork()));
 	
 	if (child_pid == 0) {
 		TaskForkChild();
 
-        // rename process as seen by top command
         #ifdef HOST
+            // terminate all children when parent exits
+            scall("PR_SET_PDEATHSIG", prctl(PR_SET_PDEATHSIG, SIGHUP));
+
+            // rename process as seen by top command
             prctl(PR_SET_NAME, (unsigned long) pname, 0, 0, 0);
         #endif
         // rename process as seen by ps command
@@ -98,22 +127,9 @@ int child_task(const char *pname, int poll_msec, funcP_t func, void *param)
 	
     //lprintf("==== child_task: child_pid=%d %s pname=%s\n", child_pid, (poll_msec == 0)? "NO_WAIT":"WAIT", pname);
 	if (poll_msec == 0) {
-	    for (i=0; i < zombies.size; i++) {
-	        if (zombies.list[i] == 0) {
-	            zombies.list[i] = child_pid;
-		        //lprintf("==== add ZOMBIE @%d pid=%d\n", i, child_pid);
-	            break;
-	        }
-	    }
-	    if (i == zombies.size) {
-	        zombies.list = (pid_t *) realloc(zombies.list, sizeof(pid_t)*(zombies.size + ZEXP));
-	        zombies.list[zombies.size] = child_pid;
-		    //lprintf("==== add exp ZOMBIE @%d pid=%d\n", zombies.size, child_pid);
-	        memset(&zombies.list[zombies.size+1], 0, sizeof(pid_t)*(ZEXP-1));
-	        zombies.size += ZEXP;
-	        //printf("### zombies.size %d\n", zombies.size);
-	    }
-	    return 0;   // don't wait
+	    register_zombie(child_pid);
+        //real_printf("CHILD_TASK EXIT %s child_pid=%d\n", pname, child_pid);
+	    return child_pid;   // don't wait
 	}
 	
 	int pid = 0, status, polls = 0;
@@ -121,10 +137,6 @@ int child_task(const char *pname, int poll_msec, funcP_t func, void *param)
 	    if (pid == 0) {
             TaskSleepMsec(poll_msec);
             polls += poll_msec;
-            if (shmem->kiwi_exit) {
-                printf("child_task CHILD kiwi_exit %s\n", pname);
-                exit(0);
-            }
         }
 		status = 0;
 		pid = waitpid(child_pid, &status, WNOHANG);
@@ -140,17 +152,8 @@ int child_task(const char *pname, int poll_msec, funcP_t func, void *param)
         printf("child_task WARNING: child returned without WIFEXITED status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",
             status, WIFEXITED(status), WEXITSTATUS(status));
 
+    //real_printf("CHILD_TASK EXIT %s status=%d\n", pname, status);
     return status;
-}
-
-static void _non_blocking_cmd_system(void *param)
-{
-	char *cmd = (char *) param;
-
-    //printf("_non_blocking_cmd_system: %s\n", cmd);
-    int rv = system(cmd);
-    //printf("_non_blocking_cmd_system: rv=%d %d %d \n", rv, WIFEXITED(rv), WEXITSTATUS(rv));
-	exit(WEXITSTATUS(rv));
 }
 
 #define NON_BLOCKING_POLL_MSEC 50
@@ -196,13 +199,17 @@ static void _non_blocking_cmd_forall(void *param)
 // Like non_blocking_cmd() below, but run in a child process because pclose() can block
 // for long periods of time under certain conditions.
 // Calls func when _all_ output from cmd is ready to be processed.
+//
+// CAUTION: func is called in context of child process. So is subject to copy-on-write unless
+// shared memory is used to communicated with main Kiwi process.
 int non_blocking_cmd_func_forall(const char *pname, const char *cmd, funcPR_t func, int param, int poll_msec)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) malloc(sizeof(nbcmd_args_t));
 	args->cmd = cmd;
 	args->func = func;
 	args->func_param = param;
-	int status = child_task(pname, poll_msec, _non_blocking_cmd_forall, (void *) args);
+	int status = child_task(pname, _non_blocking_cmd_forall, poll_msec, (void *) args);
+	if (poll_msec == NO_WAIT) status = 0;
 	free(args);
     //printf("non_blocking_cmd_child %d\n", status);
 	return status;
@@ -278,16 +285,30 @@ static void _non_blocking_cmd_foreach(void *param)
 // Like non_blocking_cmd() below, but run in a child process because pclose() can block
 // for long periods of time under certain conditions.
 // Calls func as _any_ output from cmd is ready to be processed.
+//
+// CAUTION: func is called in context of child process. So is subject to copy-on-write unless
+// shared memory is used to communicated with main Kiwi process.
 int non_blocking_cmd_func_foreach(const char *pname, const char *cmd, funcPR_t func, int param, int poll_msec)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) malloc(sizeof(nbcmd_args_t));
 	args->cmd = cmd;
 	args->func = func;
 	args->func_param = param;
-	int status = child_task(pname, poll_msec, _non_blocking_cmd_foreach, (void *) args);
+	int status = child_task(pname, _non_blocking_cmd_foreach, poll_msec, (void *) args);
+	if (poll_msec == NO_WAIT) status = 0;
 	free(args);
     //printf("non_blocking_cmd_child %d\n", status);
 	return status;
+}
+
+static void _non_blocking_cmd_system(void *param)
+{
+	char *cmd = (char *) param;
+
+    //printf("_non_blocking_cmd_system: %s\n", cmd);
+    int rv = system(cmd);
+    //printf("_non_blocking_cmd_system: rv=%d %d %d \n", rv, WIFEXITED(rv), WEXITSTATUS(rv));
+	exit(WEXITSTATUS(rv));
 }
 
 // Like non_blocking_cmd() below, but run in a child process because pclose() can block
@@ -299,7 +320,8 @@ int non_blocking_cmd_func_foreach(const char *pname, const char *cmd, funcPR_t f
 
 int non_blocking_cmd_system_child(const char *pname, const char *cmd, int poll_msec)
 {
-	int status = child_task(pname, poll_msec, _non_blocking_cmd_system, (void *) cmd);
+	int status = child_task(pname, _non_blocking_cmd_system, poll_msec, (void *) cmd);
+	if (poll_msec == NO_WAIT) status = 0;
     //printf("non_blocking_cmd_child %d\n", status);
 	return status;
 }

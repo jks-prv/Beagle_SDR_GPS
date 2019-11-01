@@ -30,12 +30,11 @@ Boston, MA  02110-1301, USA.
 #include "spi.h"
 #include "gps.h"
 #include "coroutines.h"
-#include "pru_realtime.h"
 #include "debug.h"
 #include "printf.h"
 #include "cfg.h"
 #include "clk.h"
-#include "non_block.h"
+#include "shmem.h"
 #include "wspr.h"
 
 #ifndef CFG_GPS_ONLY
@@ -54,7 +53,12 @@ Boston, MA  02110-1301, USA.
 #include <limits.h>
 #include <termios.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <signal.h>
+
+#ifdef HOST
+    #include <sys/prctl.h>
+#endif
 
 #ifdef DEVSYS
     #include <util.h>
@@ -68,6 +72,9 @@ void c2s_admin_setup(void *param)
 
 	// send initial values
 	send_msg(conn, SM_NO_DEBUG, "ADM gps_only_mode=%d", VAL_CFG_GPS_ONLY);
+	#ifdef CPU_AM5729
+	    send_msg(conn, SM_NO_DEBUG, "ADM BBAI=1");
+	#endif
 	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", rx_chans);
 }
 
@@ -75,15 +82,19 @@ void c2s_admin_shutdown(void *param)
 {
 	conn_t *c = (conn_t *) param;
 	int r;
-	
-	if (c->child_pid != 0) {
-	    r = kill(c->child_pid, 0);
+
+	if (c->console_child_pid != 0) {
+	    r = kill(c->console_child_pid, 0);      // see if child is still around
 	    if (r < 0) {
-	        cprintf(c, "CONSOLE: no child pid %d? errno=%d (%s)\n", c->child_pid, errno, strerror(errno));
+	        //cprintf(c, "CONSOLE: no child pid %d? errno=%d (%s)\n", c->console_child_pid, errno, strerror(errno));
 	    } else {
-	        scall("console child", kill(c->child_pid, SIGKILL));
+	        if (c->master_pty_fd > 0) {
+	            close(c->master_pty_fd);
+	            c->master_pty_fd = 0;
+	        }
+	        scall("console child", kill(c->console_child_pid, SIGKILL));
 	    }
-	    c->child_pid = 0;
+	    c->console_child_pid = 0;
 	}
 }
 
@@ -106,6 +117,11 @@ static void tunnel(void *param)
 	scall("fork", (child_pid = fork()));
 	
 	if (child_pid == 0) {
+        #ifdef HOST
+            // terminate when parent exits
+            scall("PR_SET_PDEATHSIG", prctl(PR_SET_PDEATHSIG, SIGHUP));
+        #endif
+        
 	    scall("dupSI", dup2(si[PIPE_R], STDIN_FILENO)); scall("closeSI", close(si[PIPE_W]));
 	    scall("closeSO", close(so[PIPE_R])); scall("dupSO", dup2(so[PIPE_W], STDOUT_FILENO));
         system("/usr/sbin/sshd -D -p 1138 >/dev/null 2>&1");
@@ -140,22 +156,27 @@ static void console(void *param)
 	char *tname;
     asprintf(&tname, "console[%02d]", c->self_idx);
     TaskNameSFree(tname);
-    clprintf(c, "CONSOLE: open connection\n");
+    cprintf(c, "CONSOLE: open connection\n");
     send_msg_encoded(c, "ADM", "console_c2w", "CONSOLE: open connection\n");
     
     #define NBUF 1024
     char *buf = (char *) malloc(NBUF + SPACE_FOR_NULL);
     int i, n, err;
     
-    // FIXME: why doesn't specifying -li or --login cause /etc/bash.bashrc to be read by bash?
     char *args[] = {(char *) "/bin/bash", (char *) "--login", NULL };
-    scall("forkpty", (c->child_pid = forkpty(&c->master_pty_fd, NULL, NULL, NULL)));
+    scall("forkpty", (c->console_child_pid = forkpty(&c->master_pty_fd, NULL, NULL, NULL)));
     
-    if (c->child_pid == 0) {     // child
+    if (c->console_child_pid == 0) {     // child
+        #ifdef HOST
+            // terminate when parent exits
+            scall("PR_SET_PDEATHSIG", prctl(PR_SET_PDEATHSIG, SIGHUP));
+        #endif
+
         execve(args[0], args, NULL);
         exit(0);
     }
     
+    register_zombie(c->console_child_pid);
     scall("", fcntl(c->master_pty_fd, F_SETFL, O_NONBLOCK));
     
     /*
@@ -167,10 +188,15 @@ static void console(void *param)
     */
 
     //printf("master_pty_fd=%d\n", c->master_pty_fd);
-    int input = 0;
     
     do {
         TaskSleepMsec(250);
+        
+        // Without this a reload of the admin console page with an active shell often
+        // hangs in the read() below even though O_NONBLOCK has been set on the fd!
+        if (c->mc == NULL)
+            break;
+        
         n = read(c->master_pty_fd, buf, NBUF);
         //real_printf("n=%d errno=%d\n", n, errno);
         if (n > 0 && c->mc) {
@@ -197,42 +223,23 @@ static void console(void *param)
         #endif
         
             send_msg_encoded(c, "ADM", "console_c2w", "%s", buf);
-            input++;
         }
 
-        if (c->send_ctrl_c) {
-            write(c->master_pty_fd, "\x03", 1);
-            //printf("sent ^C\n");
-            c->send_ctrl_c = false;
-        }
-
-        if (c->send_ctrl_d) {
-            write(c->master_pty_fd, "\x04", 1);
-            //printf("sent ^D\n");
-            c->send_ctrl_d = false;
-        }
-
-        if (c->send_ctrl_backslash) {
-            write(c->master_pty_fd, "\x1c", 1);
-            //printf("sent ^\\\n");
-            c->send_ctrl_backslash = false;
-        }
-
-        // send initialization command
-        const char *term = "export TERM=dumb\n";
-        if (input == 1) {
-            write(c->master_pty_fd, term, strlen(term));
-            input = 2;
+        if (c->send_ctrl) {
+            write(c->master_pty_fd, &c->send_ctrl_char, 1);
+            //printf("sent ^%c\n", c->send_ctrl_char + '@');
+            c->send_ctrl = false;
         }
     } while ((n > 0 || (n == -1 && errno == EAGAIN)) && c->mc);
 
     if (n < 0 /*&& errno != EIO*/ && c->mc) {
-        cprintf(c, "CONSOLE: n=%d errno=%d (%s)\n", n, errno, strerror(errno));
+        //cprintf(c, "CONSOLE: n=%d errno=%d (%s)\n", n, errno, strerror(errno));
     }
-    close(c->master_pty_fd);
+    if (c->master_pty_fd > 0)
+        close(c->master_pty_fd);
     free(buf);
     c->master_pty_fd = 0;
-    c->child_pid = 0;
+    c->console_child_pid = 0;
     
     if (c->mc) {
         send_msg_encoded(c, "ADM", "console_c2w", "CONSOLE: exited\n");
@@ -246,7 +253,7 @@ bool backup_in_progress, DUC_enable_start, rev_enable_start;
 
 void c2s_admin(void *param)
 {
-	int i, j, k, n, rv, first, status;
+	int i, j, k, n, rv, status;
 	conn_t *conn = (conn_t *) param;
 	rx_common_init(conn);
 	char *sb, *sb2;
@@ -255,6 +262,9 @@ void c2s_admin(void *param)
 	nbuf_t *nb = NULL;
 	while (TRUE) {
 	
+        //rv = waitpid(-1, NULL, WNOHANG);
+        //if (rv) real_printf("c2s_admin CULLED %d\n", rv);
+
 		if (nb) web_to_app_done(conn, nb);
 		n = web_to_app(conn, &nb);
 				
@@ -262,7 +272,7 @@ void c2s_admin(void *param)
 			char *cmd = nb->buf;
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
-    		TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "cmd", 0, 0, NULL);
+    		TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, "cmd");
 
             //#define ADMIN_TUNNEL
             #ifdef ADMIN_TUNNEL
@@ -310,9 +320,8 @@ void c2s_admin(void *param)
 #ifndef CFG_GPS_ONLY
 			i = strcmp(cmd, "SET dpump_hist_reset");
 			if (i == 0) {
-			    dpump_force_reset = true;
-			    dpump_resets = 0;
-		        memset(dpump_hist, 0, sizeof(dpump_hist));
+			    dpump.force_reset = true;
+			    dpump.resets = 0;
 				continue;
 			}
 #endif
@@ -519,8 +528,7 @@ void c2s_admin(void *param)
 
 			i = strcmp(cmd, "SET sdr_hu_update");
 			if (i == 0) {
-				asprintf(&sb, "{\"reg\":\"%s\"", shmem->sdr_hu_status_str);
-				sb = kstr_wrap(sb);
+				sb = kstr_asprintf(NULL, "{\"reg\":\"%s\"", shmem->sdr_hu_status_str);
 				
 				if (gps.StatLat) {
 					latLon_t loc;
@@ -531,9 +539,8 @@ void c2s_admin(void *param)
 						grid6[0] = '\0';
 					else
 						grid6[6] = '\0';
-					asprintf(&sb2, ",\"lat\":\"%4.2f\",\"lon\":\"%4.2f\",\"grid\":\"%s\"",
+					sb = kstr_asprintf(sb, ",\"lat\":\"%4.2f\",\"lon\":\"%4.2f\",\"grid\":\"%s\"",
 						gps.sgnLat, gps.sgnLon, grid6);
-					sb = kstr_cat(sb, kstr_wrap(sb2));
 				}
 				sb = kstr_cat(sb, "}");
 				send_msg_encoded(conn, "ADM", "sdr_hu_update", "%s", kstr_sp(sb));
@@ -736,7 +743,7 @@ void c2s_admin(void *param)
 				kiwi_str_decode_inplace(ip_m);
 				//printf("network_ip_blacklist %s\n", ip_m);
 				asprintf(&cmd_p, "iptables -A KIWI -s %s -j DROP", ip_m);
-                rv = non_blocking_cmd_system_child("kiwi.ipt", cmd_p, POLL_MSEC(200));
+                rv = non_blocking_cmd_system_child("kiwi.iptables", cmd_p, POLL_MSEC(200));
                 rv = WEXITSTATUS(rv);
                 cprintf(conn, "\"%s\" rv=%d\n", cmd_p, rv);
                 send_msg_encoded(conn, "ADM", "network_ip_blacklist_status", "%d,%s", rv, ip_m);
@@ -790,6 +797,7 @@ void c2s_admin(void *param)
                 memset(samp_seen, 0, sizeof(samp_seen));
         
                 // sat/prn seen during any sample period
+                int nsats = 0;
                 for (int sat = 0; sat < MAX_SATS; sat++) {
                     for (int samp = 0; samp < AZEL_NSAMP; samp++) {
                         if (gps.el[samp][sat] != 0) {
@@ -798,6 +806,7 @@ void c2s_admin(void *param)
                             break;
                         }
                     }
+                    if (sat_seen[sat]) nsats++;
                 }
         
                 #if 0
@@ -835,61 +844,33 @@ void c2s_admin(void *param)
                 #endif
         
                 // send history only for sats seen
-                asprintf(&sb, "{\"n_sats\":%d,\"n_samp\":%d,\"now\":%d,\"sat_seen\":[", MAX_SATS, AZEL_NSAMP, now);
-                sb = kstr_wrap(sb);
-        
-                first = 1;
-                for (int sat = 0; sat < MAX_SATS; sat++) {
-                    if (!sat_seen[sat]) continue;
-                    asprintf(&sb2, "%s%d", first? "":",", sat_seen[sat]-1);   // -1 bias
-                    sb = kstr_cat(sb, kstr_wrap(sb2));
-                    first = 0;
-                }
+                sb = kstr_asprintf(NULL, "{\"n_sats\":%d,\"n_samp\":%d,\"now\":%d,", MAX_SATS, AZEL_NSAMP, now);
+                sb = kstr_cat(sb, kstr_list_int("\"sat_seen\":[", "%d", "],\"prn_seen\":[", sat_seen, MAX_SATS, sat_seen, -1));   // -1 bias
                 
-                sb = kstr_cat(sb, "],\"prn_seen\":[");
-                first = 1;
+                int first = 1;
                 for (int sat = 0; sat < MAX_SATS; sat++) {
                     if (!sat_seen[sat]) continue;
                     char *prn_s = PRN(prn_seen[sat]-1);
                     if (*prn_s == 'N') prn_s++;
-                    asprintf(&sb2, "%s\"%s\"", first? "":",", prn_s);
-                    sb = kstr_cat(sb, kstr_wrap(sb2));
+                    sb = kstr_asprintf(sb, "%s\"%s\"", first? "":",", prn_s);
                     first = 0;
                 }
-        
                 sb = kstr_cat(sb, "],\"az\":[");
-                first = 1;
-                for (int samp = 0; samp < AZEL_NSAMP; samp++) {
-                    for (int sat = 0; sat < MAX_SATS; sat++) {
-                        if (!sat_seen[sat]) continue;
-                        asprintf(&sb2, "%s%d", first? "":",", gps.az[samp][sat]);
-                        sb = kstr_cat(sb, kstr_wrap(sb2));
-                        first = 0;
-                    }
+        
+                if (nsats) for (int samp = 0; samp < AZEL_NSAMP; samp++) {
+                    sb = kstr_cat(sb, kstr_list_int(samp? ",":"", "%d", "", gps.az[samp], MAX_SATS, sat_seen));
                 }
         
                 NextTask("gps_az_el_history1");
+
                 sb = kstr_cat(sb, "],\"el\":[");
-                first = 1;
-                for (int samp = 0; samp < AZEL_NSAMP; samp++) {
-                    for (int sat = 0; sat < MAX_SATS; sat++) {
-                        if (!sat_seen[sat]) continue;
-                        asprintf(&sb2, "%s%d", first? "":",", gps.el[samp][sat]);
-                        sb = kstr_cat(sb, kstr_wrap(sb2));
-                        first = 0;
-                    }
+                if (nsats) for (int samp = 0; samp < AZEL_NSAMP; samp++) {
+                    sb = kstr_cat(sb, kstr_list_int(samp? ",":"", "%d", "", gps.el[samp], MAX_SATS, sat_seen));
                 }
         
-                asprintf(&sb2, "],\"qzs3\":{\"az\":%d,\"el\":%d},\"shadow_map\":[", gps.qzs_3.az, gps.qzs_3.el);
-                sb = kstr_cat(sb, kstr_wrap(sb2));
-                first = 1;
-                for (int az = 0; az < 360; az++) {
-                    asprintf(&sb2, "%s%u", first? "":",", gps.shadow_map[az]);
-                    sb = kstr_cat(sb, kstr_wrap(sb2));
-                    first = 0;
-                }
+                sb = kstr_asprintf(sb, "],\"qzs3\":{\"az\":%d,\"el\":%d},", gps.qzs_3.az, gps.qzs_3.el);
+                sb = kstr_cat(sb, kstr_list_int("\"shadow_map\":[", "%u", "]}", (int *) gps.shadow_map, 360));
         
-                sb = kstr_cat(sb, "]}");
                 send_msg_encoded(conn, "MSG", "gps_az_el_history_cb", "%s", kstr_sp(sb));
                 kstr_free(sb);
                 NextTask("gps_az_el_history2");
@@ -899,8 +880,7 @@ void c2s_admin(void *param)
             n = strcmp(cmd, "SET gps_update");
             if (n == 0) {
                 if (gps.IQ_seq_w != gps.IQ_seq_r) {
-                    asprintf(&sb, "{\"ch\":%d,\"IQ\":[", 0);
-                    sb = kstr_wrap(sb);
+                    sb = kstr_asprintf(NULL, "{\"ch\":%d,\"IQ\":[", 0);
                     s4_t iq;
                     for (j = 0; j < GPS_IQ_SAMPS*NIQ; j++) {
                         #if GPS_INTEG_BITS == 16
@@ -908,8 +888,7 @@ void c2s_admin(void *param)
                         #else
                             iq = S32_16_16(gps.IQ_data[j*2], gps.IQ_data[j*2+1]);
                         #endif
-                        asprintf(&sb2, "%s%d", j? ",":"", iq);
-                        sb = kstr_cat(sb, kstr_wrap(sb2));
+                        sb = kstr_asprintf(sb, "%s%d", j? ",":"", iq);
                     }
                     sb = kstr_cat(sb, "]}");
                     send_msg_encoded(conn, "MSG", "gps_IQ_data_cb", "%s", kstr_sp(sb));
@@ -920,15 +899,13 @@ void c2s_admin(void *param)
         
                 // sends a list of the last gps.POS_len entries per query
                 if (gps.POS_seq_w != gps.POS_seq_r) {
-                    asprintf(&sb, "{\"ref_lat\":%.6f,\"ref_lon\":%.6f,\"POS\":[", gps.ref_lat, gps.ref_lon);
-                    sb = kstr_wrap(sb);
+                    sb = kstr_asprintf(NULL, "{\"ref_lat\":%.6f,\"ref_lon\":%.6f,\"POS\":[", gps.ref_lat, gps.ref_lon);
                     int xmax[GPS_NPOS], xmin[GPS_NPOS], ymax[GPS_NPOS], ymin[GPS_NPOS];
                     xmax[0] = xmax[1] = ymax[0] = ymax[1] = INT_MIN;
                     xmin[0] = xmin[1] = ymin[0] = ymin[1] = INT_MAX;
                     for (j = 0; j < GPS_NPOS; j++) {
                         for (k = 0; k < gps.POS_len; k++) {
-                            asprintf(&sb2, "%s%.6f,%.6f", (j||k)? ",":"", gps.POS_data[j][k].lat, gps.POS_data[j][k].lon);
-                            sb = kstr_cat(sb, kstr_wrap(sb2));
+                            sb = kstr_asprintf(sb, "%s%.6f,%.6f", (j||k)? ",":"", gps.POS_data[j][k].lat, gps.POS_data[j][k].lon);
                             if (gps.POS_data[j][k].lat != 0) {
                                 int x = gps.POS_data[j][k].x;
                                 if (x > xmax[j]) xmax[j] = x; else if (x < xmin[j]) xmin[j] = x;
@@ -937,9 +914,8 @@ void c2s_admin(void *param)
                             }
                         }
                     }
-                    asprintf(&sb2, "],\"x0span\":%d,\"y0span\":%d,\"x1span\":%d,\"y1span\":%d}",
+                    sb = kstr_asprintf(sb, "],\"x0span\":%d,\"y0span\":%d,\"x1span\":%d,\"y1span\":%d}",
                         xmax[0]-xmin[0], ymax[0]-ymin[0], xmax[1]-xmin[1], ymax[1]-ymin[1]);
-                    sb = kstr_cat(sb, kstr_wrap(sb2));
                     send_msg_encoded(conn, "MSG", "gps_POS_data_cb", "%s", kstr_sp(sb));
                     kstr_free(sb);
                     gps.POS_seq_r = gps.POS_seq_w;
@@ -948,16 +924,14 @@ void c2s_admin(void *param)
         
                 // sends a list of the newest, non-duplicate entries per query
                 if (gps.MAP_seq_w != gps.MAP_seq_r) {
-                    asprintf(&sb, "{\"ref_lat\":%.6f,\"ref_lon\":%.6f,\"MAP\":[", gps.ref_lat, gps.ref_lon);
-                    sb = kstr_wrap(sb);
+                    sb = kstr_asprintf(NULL, "{\"ref_lat\":%.6f,\"ref_lon\":%.6f,\"MAP\":[", gps.ref_lat, gps.ref_lon);
                     int any_new = 0;
                     for (j = 0; j < GPS_NMAP; j++) {
                         for (k = 0; k < gps.MAP_len; k++) {
                             u4_t seq = gps.MAP_data_seq[k];
                             if (seq <= gps.MAP_seq_r || gps.MAP_data[j][k].lat == 0) continue;
-                            asprintf(&sb2, "%s{\"nmap\":%d,\"lat\":%.6f,\"lon\":%.6f}", any_new? ",":"",
+                            sb = kstr_asprintf(sb, "%s{\"nmap\":%d,\"lat\":%.6f,\"lon\":%.6f}", any_new? ",":"",
                                 j, gps.MAP_data[j][k].lat, gps.MAP_data[j][k].lon);
-                            sb = kstr_cat(sb, kstr_wrap(sb2));
                             any_new = 1;
                         }
                     }
@@ -971,8 +945,7 @@ void c2s_admin(void *param)
         
                 gps_chan_t *c;
                 
-                asprintf(&sb, "{\"FFTch\":%d,\"ch\":[", gps.FFTch);
-                sb = kstr_wrap(sb);
+                sb = kstr_asprintf(NULL, "{\"FFTch\":%d,\"ch\":[", gps.FFTch);
                 
                 for (i=0; i < gps_chans; i++) {
                     c = &gps.ch[i];
@@ -982,13 +955,12 @@ void c2s_admin(void *param)
                         prn_s = sat_s[Sats[c->sat].type];
                         prn = Sats[c->sat].prn;
                     }
-                    asprintf(&sb2, "%s{\"ch\":%d,\"prn_s\":\"%c\",\"prn\":%d,\"snr\":%d,\"rssi\":%d,\"gain\":%d,\"age\":\"%s\",\"old\":%d,\"hold\":%d,\"wdog\":%d"
+                    sb = kstr_asprintf(sb, "%s{\"ch\":%d,\"prn_s\":\"%c\",\"prn\":%d,\"snr\":%d,\"rssi\":%d,\"gain\":%d,\"age\":\"%s\",\"old\":%d,\"hold\":%d,\"wdog\":%d"
                         ",\"unlock\":%d,\"parity\":%d,\"alert\":%d,\"sub\":%d,\"sub_renew\":%d,\"soln\":%d,\"ACF\":%d,\"novfl\":%d,\"az\":%d,\"el\":%d}",
                         i? ", ":"", i, prn_s, prn, c->snr, c->rssi, c->gain, c->age, c->too_old? 1:0, c->hold, c->wdog,
                         c->ca_unlocked, c->parity, c->alert, c->sub, c->sub_renew, c->has_soln, c->ACF_mode, c->novfl, c->az, c->el);
         //jks2
-        //if(i==3)printf("%s\n", sb2);
-                    sb = kstr_cat(sb, kstr_wrap(sb2));
+        //if(i==3)printf("%s\n", kstr_sp(sb));
                     c->parity = 0;
                     c->has_soln = 0;
                     for (j = 0; j < SUBFRAMES; j++) {
@@ -1000,60 +972,39 @@ void c2s_admin(void *param)
                     NextTask("gps_update4");
                 }
         
-                asprintf(&sb2, "],\"stype\":%d", gps.soln_type);
-                sb = kstr_cat(sb, kstr_wrap(sb2));
+                sb = kstr_asprintf(sb, "],\"stype\":%d", gps.soln_type);
         
                 UMS hms(gps.StatSec/60/60);
                 
                 unsigned r = (timer_ms() - gps.start)/1000;
                 if (r >= 3600) {
-                    asprintf(&sb2, ",\"run\":\"%d:%02d:%02d\"", r / 3600, (r / 60) % 60, r % 60);
+                    sb = kstr_asprintf(sb, ",\"run\":\"%d:%02d:%02d\"", r / 3600, (r / 60) % 60, r % 60);
                 } else {
-                    asprintf(&sb2, ",\"run\":\"%d:%02d\"", (r / 60) % 60, r % 60);
+                    sb = kstr_asprintf(sb, ",\"run\":\"%d:%02d\"", (r / 60) % 60, r % 60);
                 }
-                sb = kstr_cat(sb, kstr_wrap(sb2));
         
-                if (gps.ttff) {
-                    asprintf(&sb2, ",\"ttff\":\"%d:%02d\"", gps.ttff / 60, gps.ttff % 60);
-                } else {
-                    asprintf(&sb2, ",\"ttff\":null");
-                }
-                sb = kstr_cat(sb, kstr_wrap(sb2));
+                sb = kstr_asprintf(sb, gps.ttff? ",\"ttff\":\"%d:%02d\"" : ",\"ttff\":null", gps.ttff / 60, gps.ttff % 60);
         
-                if (gps.StatDay != -1) {
-                    asprintf(&sb2, ",\"gpstime\":\"%s %02d:%02d:%02.0f\"", Week[gps.StatDay], hms.u, hms.m, hms.s);
-                } else {
-                    asprintf(&sb2, ",\"gpstime\":null");
-                }
-                sb = kstr_cat(sb, kstr_wrap(sb2));
+                sb = kstr_asprintf(sb, (gps.StatDay != -1)? ",\"gpstime\":\"%s %02d:%02d:%02.0f\"" : ",\"gpstime\":null",
+                    Week[gps.StatDay], hms.u, hms.m, hms.s);
         
-                if (gps.tLS_valid) {
-                    asprintf(&sb2, ",\"utc_offset\":\"%+d sec\"", gps.delta_tLS);
-                } else {
-                    asprintf(&sb2, ",\"utc_offset\":null");
-                }
-                sb = kstr_cat(sb, kstr_wrap(sb2));
+                sb = kstr_asprintf(sb, gps.tLS_valid?",\"utc_offset\":\"%+d sec\"" : ",\"utc_offset\":null", gps.delta_tLS);
         
                 if (gps.StatLat) {
-                    //asprintf(&sb2, ",\"lat\":\"%8.6f %c\"", gps.StatLat, gps.StatNS);
-                    asprintf(&sb2, ",\"lat\":%.6f", gps.sgnLat);
-                    sb = kstr_cat(sb, kstr_wrap(sb2));
-                    //asprintf(&sb2, ",\"lon\":\"%8.6f %c\"", gps.StatLon, gps.StatEW);
-                    asprintf(&sb2, ",\"lon\":%.6f", gps.sgnLon);
-                    sb = kstr_cat(sb, kstr_wrap(sb2));
-                    asprintf(&sb2, ",\"alt\":\"%1.0f m\"", gps.StatAlt);
-                    sb = kstr_cat(sb, kstr_wrap(sb2));
-                    asprintf(&sb2, ",\"map\":\"<a href='http://wikimapia.org/#lang=en&lat=%8.6f&lon=%8.6f&z=18&m=b' target='_blank'>wikimapia.org</a>\"",
+                    //sb = kstr_asprintf(sb, ",\"lat\":\"%8.6f %c\"", gps.StatLat, gps.StatNS);
+                    sb = kstr_asprintf(sb, ",\"lat\":%.6f", gps.sgnLat);
+                    //sb = kstr_asprintf(sb, ",\"lon\":\"%8.6f %c\"", gps.StatLon, gps.StatEW);
+                    sb = kstr_asprintf(sb, ",\"lon\":%.6f", gps.sgnLon);
+                    sb = kstr_asprintf(sb, ",\"alt\":\"%1.0f m\"", gps.StatAlt);
+                    sb = kstr_asprintf(sb, ",\"map\":\"<a href='http://wikimapia.org/#lang=en&lat=%8.6f&lon=%8.6f&z=18&m=b' target='_blank'>wikimapia.org</a>\"",
                         gps.sgnLat, gps.sgnLon);
                 } else {
-                    //asprintf(&sb2, ",\"lat\":null");
-                    asprintf(&sb2, ",\"lat\":0");
+                    //sb = kstr_asprintf(sb, ",\"lat\":null");
+                    sb = kstr_asprintf(sb, ",\"lat\":0");
                 }
-                sb = kstr_cat(sb, kstr_wrap(sb2));
                     
-                asprintf(&sb2, ",\"acq\":%d,\"track\":%d,\"good\":%d,\"fixes\":%d,\"fixes_min\":%d,\"adc_clk\":%.6f,\"adc_corr\":%d,\"a\":\"%s\"}",
+                sb = kstr_asprintf(sb, ",\"acq\":%d,\"track\":%d,\"good\":%d,\"fixes\":%d,\"fixes_min\":%d,\"adc_clk\":%.6f,\"adc_corr\":%d,\"a\":\"%s\"}",
                     gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, gps.fixes_min, adc_clock_system()/1e6, clk.adc_gps_clk_corrections, gps.a);
-                sb = kstr_cat(sb, kstr_wrap(sb2));
         
                 send_msg_encoded(conn, "MSG", "gps_update_cb", "%s", kstr_sp(sb));
                 kstr_free(sb);
@@ -1118,22 +1069,29 @@ void c2s_admin(void *param)
 ////////////////////////////////
 
             buf_m = NULL;
-			i = sscanf(cmd, "SET console_w2c=%256ms", &buf_m);
+			i = sscanf(cmd, "SET console_w2c=%512ms", &buf_m);
 			if (i == 1) {
 				kiwi_str_decode_inplace(buf_m);
 				int slen = strlen(buf_m);
-				//clprintf(conn, "CONSOLE write %d <%s>\n", slen, buf_m);
-				if (conn->master_pty_fd > 0)
-				    write(conn->master_pty_fd, buf_m, slen);
-				else
-				    clprintf(conn, "CONSOLE: not open for write\n");
+				//cprintf(conn, "CONSOLE write %d <%s>\n", slen, buf_m);
+				if (conn->master_pty_fd > 0) {
+				    sb = buf_m;
+				    while (slen) {
+				        int burst = MIN(slen, 32);
+				        write(conn->master_pty_fd, sb, burst);
+				        //cprintf(conn, "CONSOLE burst %d <%.*s>\n", burst, burst, sb);
+				        sb += burst;
+				        slen -= burst;
+				    }
+				} else
+				    //clprintf(conn, "CONSOLE: not open for write\n");
 				free(buf_m);
 				continue;
 			}
 
 			i = strcmp(cmd, "SET console_open");
 			if (i == 0) {
-			    if (conn->child_pid == 0) {
+			    if (conn->console_child_pid == 0) {
 			        bool no_console = false;
 			        struct stat st;
 		            if (stat(DIR_CFG "/opt.no_console", &st) == 0)
@@ -1150,21 +1108,13 @@ void c2s_admin(void *param)
 				continue;
 			}
 
-			i = strcmp(cmd, "SET console_ctrl_C");
-			if (i == 0) {
-			    if (conn->child_pid && !conn->send_ctrl_c) conn->send_ctrl_c = true;
-				continue;
-			}
-
-			i = strcmp(cmd, "SET console_ctrl_D");
-			if (i == 0) {
-			    if (conn->child_pid && !conn->send_ctrl_d) conn->send_ctrl_d = true;
-				continue;
-			}
-
-			i = strcmp(cmd, "SET console_ctrl_backslash");
-			if (i == 0) {
-			    if (conn->child_pid && !conn->send_ctrl_backslash) conn->send_ctrl_backslash = true;
+            char ch;
+			i = sscanf(cmd, "SET console_ctrl=%c", &ch);
+			if (i == 1) {
+			    if (conn->console_child_pid && !conn->send_ctrl) {
+			        conn->send_ctrl_char = ch - '@';
+			        conn->send_ctrl = true;
+			    }
 				continue;
 			}
 
@@ -1210,7 +1160,6 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET restart");
 			if (i == 0) {
 				clprintf(conn, "ADMIN: restart requested by admin..\n");
-				shmem->kiwi_exit = true;
 				xit(0);
 			}
 
@@ -1219,7 +1168,7 @@ void c2s_admin(void *param)
 				clprintf(conn, "ADMIN: reboot requested by admin..\n");
 				system("reboot");
 				while (true)
-					usleep(100000);
+					kiwi_usleep(100000);
 			}
 
 			i = strcmp(cmd, "SET power_off");
@@ -1227,7 +1176,7 @@ void c2s_admin(void *param)
 				clprintf(conn, "ADMIN: power off requested by admin..\n");
 				system("poweroff");
 				while (true)
-					usleep(100000);
+					kiwi_usleep(100000);
 			}
 
 			printf("ADMIN: unknown command: <%s>\n", cmd);

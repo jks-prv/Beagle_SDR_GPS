@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 
 #include "types.h"
 #include "kiwi.gen.h"
+#include "str.h"
 #include "printf.h"
 #include "datatypes.h"
 #include "coroutines.h"
@@ -46,7 +47,7 @@ extern int version_maj, version_min;
 
 extern bool background_mode, need_hardware, no_net, test_flag,
 	DUC_enable_start, rev_enable_start, web_nocache, auth_su, sdr_hu_debug,
-	have_ant_switch_ext, gps_e1b_only, disable_led_task;
+	have_ant_switch_ext, gps_e1b_only, disable_led_task, conn_nolocal;
 
 extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_start, tone, down, navg,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, meas, do_dyn_dns,
@@ -63,13 +64,12 @@ extern u4_t ov_mask, snd_intr_usec;
 extern float g_genfreq, g_genampl, g_mixfreq;
 extern double ui_srate, freq_offset;
 extern TYPEREAL DC_offset_I, DC_offset_Q;
-extern char *cpu_stats_buf, *tzone_id, *tzone_name;
+extern kstr_t *cpu_stats_buf;
+extern char *tzone_id, *tzone_name;
 extern char auth_su_remote_ip[NET_ADDRSTRLEN];
 extern cfg_t cfg_ipl;
 
 extern lock_t spi_lock;
-extern volatile float audio_kbps, waterfall_kbps, waterfall_fps[MAX_RX_CHANS+1], http_kbps;
-extern volatile int audio_bytes, waterfall_bytes, waterfall_frames[], http_bytes;
 
 #define N_MODE 8
 extern const char *mode_s[N_MODE], *modu_s[N_MODE];	// = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq" };

@@ -24,8 +24,10 @@ Boston, MA  02110-1301, USA.
 // Implements constant value decimation (R) using sequential logic comb stage to save slices.
 // Version for an IQ signal with pruned integrator stages.
 //
-// fixed differential delay (D) = 1
+// Fixed differential delay (D) = 1
 //
+
+`include "kiwi.vh"
 
 module cic_seq_iq_prune (
 	input wire clock,
@@ -36,53 +38,45 @@ module cic_seq_iq_prune (
 	output reg signed [OUT_WIDTH-1:0] out_data
 	);
 
-	// design parameters
-	parameter INCLUDE = "required";
-	parameter STAGES = "required";
-	parameter DECIMATION = "required";  
-	parameter IN_WIDTH = "required";
-	parameter OUT_WIDTH = "required";
-	
-	localparam GROWTH = STAGES * clog2(DECIMATION);
-	localparam ACC_WIDTH = IN_WIDTH + GROWTH;
-
-//------------------------------------------------------------------------------
-//                               control
-//------------------------------------------------------------------------------
-
-localparam MD = 13;		// max decim = 4096, assumes excess counter bits get optimized away
-
-reg [MD-1:0] sample_no;
-initial sample_no = {MD{1'b0}};
-reg integ_strobe;
-
-always @(posedge clock)
-  if (in_strobe)
-    begin
-    if (sample_no == (DECIMATION-1))
-      begin
-      sample_no <= 0;
-      integ_strobe <= 1;
-      end
-    else
-      begin
-      sample_no <= sample_no + 1'b1;
-      integ_strobe <= 0;
-      end
-    end
-  else
-    integ_strobe <= 0;
-
-//------------------------------------------------------------------------------
-//                                stages
-//------------------------------------------------------------------------------
-
-wire signed [ACC_WIDTH-1:0] integ_out_i, integ_out_q;
-
-generate
-	if (INCLUDE == "rx3" && RX2_DECIM == RX2_12K_DECIM) begin : rx3_12k `include "cic_rx3_12k.vh" end
-	if (INCLUDE == "rx3" && RX2_DECIM == RX2_20K_DECIM) begin : rx3_20k `include "cic_rx3_20k.vh" end
-endgenerate
+    // design parameters
+    parameter INCLUDE = "required";
+    parameter STAGES = "required";
+    parameter DECIMATION = "required";  
+    parameter IN_WIDTH = "required";
+    parameter GROWTH = "required";
+    parameter OUT_WIDTH = "required";
+    
+    localparam ACC_WIDTH = IN_WIDTH + GROWTH;
+    
+    localparam MD = 18;		// assumes excess counter bits get optimized away
+    
+    reg [MD-1:0] sample_no;
+    initial sample_no = {MD{1'b0}};
+    reg integ_strobe;
+    
+    always @(posedge clock)
+      if (in_strobe)
+        begin
+        if (sample_no == (DECIMATION-1))
+          begin
+          sample_no <= 0;
+          integ_strobe <= 1;
+          end
+        else
+          begin
+          sample_no <= sample_no + 1'b1;
+          integ_strobe <= 0;
+          end
+        end
+      else
+        integ_strobe <= 0;
+    
+    wire signed [ACC_WIDTH-1:0] integ_out_i, integ_out_q;
+    
+    generate
+        if (INCLUDE == "rx3" && RX2_DECIM == RX2_12K_DECIM) begin : rx3_12k `include "cic_rx3_12k.vh" end
+        if (INCLUDE == "rx3" && RX2_DECIM == RX2_20K_DECIM) begin : rx3_20k `include "cic_rx3_20k.vh" end
+    endgenerate
 
 	localparam NPOST_STAGES = 2;
 	localparam NSTAGE = clog2(STAGES + NPOST_STAGES);
@@ -222,7 +216,7 @@ endgenerate
 			// state == 2		// prev[stage] = t
 			begin
 				// next
-					 Raddr = {Q, R, COMB, stage};		// not stage-1 because stage about to be incremented
+					Raddr = {Q, R, COMB, stage};		// not stage-1 because stage about to be incremented
 			end
 		end else
 	

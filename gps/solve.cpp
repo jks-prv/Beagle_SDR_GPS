@@ -29,6 +29,7 @@
 #include "ephemeris.h"
 #include "spi.h"
 #include "timer.h"
+#include "shmem.h"
 #include "PosSolver.h"
 
 #include <time.h>
@@ -103,19 +104,19 @@ static int LoadAtomic() {
     const int WPS = 1;      // words per SRQ field
     const int WPC = 2+2;    // words per clock replica field
 
-    SPI_MISO clocks;
+    SPI_MISO *clocks = &SPI_SHMEM->gps_clocks_miso;
     int chans=0;
 
     // Yielding to other tasks not allowed after spi_get_noduplex returns.
     // Why? Because below we need to snapshot the ephemerides state that match the just loaded clock replicas.
-	spi_get_noduplex(CmdGetClocks, &clocks, S2B(WPT) + S2B(WPS) + S2B(GPS_CHANS*WPC));
+	spi_get_noduplex(CmdGetClocks, clocks, S2B(WPT) + S2B(WPS) + S2B(GPS_CHANS*WPC));
 
-    uint16_t srq = clocks.word[WPT+0];              // un-serviced epochs
-    uint16_t *up = clocks.word+WPT+WPS;             // Embedded CPU memory containing ch_NAV_MS and ch_NAV_BITS
-    uint16_t *dn = clocks.word+WPT+WPC*GPS_CHANS;   // FPGA clocks (in reverse order)
+    uint16_t srq = clocks->word[WPT+0];              // un-serviced epochs
+    uint16_t *up = clocks->word+WPT+WPS;             // Embedded CPU memory containing ch_NAV_MS and ch_NAV_BITS
+    uint16_t *dn = clocks->word+WPT+WPC*GPS_CHANS;   // FPGA clocks (in reverse order)
 
     // NB: see tools/ext64.c for why the (u64_t) casting is very important
-    ticks = ((u64_t) clocks.word[0]<<32) | ((u64_t) clocks.word[1]<<16) | clocks.word[2];
+    ticks = ((u64_t) clocks->word[0]<<32) | ((u64_t) clocks->word[1]<<16) | clocks->word[2];
 
     //int any = 0;
     for (int ch=0; ch<gps_chans; ch++, srq>>=1, up+=WPC, dn-=WPC) {
@@ -136,7 +137,7 @@ static int LoadAtomic() {
 
 static int LoadReplicas() {
     const int GLITCH_GUARD=500;
-    SPI_MISO glitches[2];
+    SPI_MISO *glitches = SPI_SHMEM->gps_glitches_miso;
 
     // Get glitch counters "before"
     spi_get(CmdGetGlitches, glitches+0, GPS_CHANS*2);
@@ -556,11 +557,11 @@ void SolveTask(void *param) {
                 //printf("SOLVE CmdIQLogReset ch=%d\n", ch);
                 //TaskSleepMsec(1024 + 100);
                 TaskSleepMsec(900);     //jks2
-                static SPI_MISO rx;
-                spi_get(CmdIQLogGet, &rx, S2B(GPS_IQ_SAMPS_W));
-                memcpy(gps.IQ_data, rx.word, S2B(GPS_IQ_SAMPS_W));
-               // printf("gps.IQ_data %d rx.word %d S2B(GPS_IQ_SAMPS_W) %d\n", \
-                    sizeof(gps.IQ_data), sizeof(rx.word), S2B(GPS_IQ_SAMPS_W));
+                SPI_MISO *rx = &SPI_SHMEM->gps_iqdata_miso;
+                spi_get(CmdIQLogGet, rx, S2B(GPS_IQ_SAMPS_W));
+                memcpy(gps.IQ_data, rx->word, S2B(GPS_IQ_SAMPS_W));
+               // printf("gps.IQ_data %d rx->word %d S2B(GPS_IQ_SAMPS_W) %d\n", \
+                    sizeof(gps.IQ_data), sizeof(rx->word), S2B(GPS_IQ_SAMPS_W));
                 gps.IQ_seq_w++;
             }
         //#define SOLVE_RATE  (4-1)   // 1 is GLITCH_GUARD*2
@@ -578,8 +579,8 @@ void SolveTask(void *param) {
 
         // this needs to replaced, see (*)
         gps.good = good;
-        bool enable = SearchTaskRun();
-        if (!enable || good == 0) continue;
+        SearchTaskRun();
+        if (good == 0) continue;
 
         const bool plot_E1B   = admcfg_bool("plot_E1B", NULL, CFG_REQUIRED);
         const bool use_kalman = admcfg_default_bool("use_kalman_position_solver", true, NULL);
@@ -607,6 +608,6 @@ void SolveTask(void *param) {
         update_gps_info_after(gnssDataForEpoch, posSolvers, plot_E1B);
 
         // result_t result = Solve(good, &lat, &lon, &alt);
-        TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
+        TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, "sol");
     }
 }

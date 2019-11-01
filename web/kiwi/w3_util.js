@@ -199,20 +199,20 @@ function visible_block() {}      // FIXME: used by antenna switch ext
 function w3_console_obj(obj, prefix)
 {
    var s = prefix? (prefix + ' ') : '';
-   if (typeof obj == 'object')
+   if (isObject(obj))
       s += JSON.stringify(obj, null, 1);
    else
-   if (typeof obj == 'string')
+   if (isString(obj))
       s += '"'+ obj.toString() +'"';
    else
       s += obj.toString();
    console.log(s);
-   if (typeof obj == 'object') console.log(obj);
+   if (isObject(obj)) console.log(obj);
 }
 
 function w3_strip_quotes(s)
 {
-	if ((typeof s == "string") && (s.indexOf('\'') != -1 || s.indexOf('\"') != -1))
+	if (isString(s) && (s.indexOf('\'') != -1 || s.indexOf('\"') != -1))
 		return s.replace(/'/g, '').replace(/"/g, '') + ' [quotes stripped]';
 	return s;
 }
@@ -225,17 +225,17 @@ function w3_call(func, arg0, arg1, arg2, arg3)
    if (func == null || func == undefined) return rv;
    
 	try {
-	   if (typeof(func) === 'string') {
+	   if (isString(func)) {
          var f = getVarFromString(func);
-         //console.log('w3_call: '+ func +'() = '+ (typeof f));
-         if (typeof(f) === 'function') {
+         //console.log('w3_call: '+ func +'() = '+ typeof(f));
+         if (isFunction(f)) {
             //var args = Array.prototype.slice.call(arguments);
             rv = f(arg0, arg1, arg2, arg3);
          } else {
             //console.log('w3_call: getVarFromString(func) not a function: '+ func +' ('+ typeof(f) +')');
          }
       } else
-	   if (typeof(func) === 'function') {
+	   if (isFunction(func)) {
          rv = func(arg0, arg1, arg2, arg3);
 	   } else
 	      console.log('w3_call: func not a string or function');
@@ -257,12 +257,12 @@ function w3_first_value(v)
       return 'null';
 
    var rv = null;
-   var to_v = typeof v;
+   var to_v = typeof(v);
    if (to_v === 'number' || to_v === 'boolean' || to_v === 'string') {
       //console.log('w3_first_value prim');
       rv = v;
    } else
-   if (Array.isArray(v)) {
+   if (isArray(v)) {
       //console.log('w3_first_value array');
       rv = v[0];
    } else
@@ -379,7 +379,7 @@ function w3int_w3_el(id_name_class)
 // try id without, then with, leading 'id-'; then including cfg prefix as a last resort
 function w3_el(el_id)
 {
-	if (typeof el_id == "string") {
+	if (isString(el_id)) {
 	   if (el_id == '') return null;
 		var el = w3int_w3_el(el_id);
 		if (el == null) {
@@ -552,11 +552,11 @@ function w3_center_in_window(el_id)
 function w3_field_select(el_id, opts)
 {
 	var el = w3_el(el_id);
-	el = (el && typeof el.select == 'function')? el : null;
+	el = (el && isFunction(el.select))? el : null;
 
    var trace = 0;
    if (trace) {
-      var id = (typeof el_id == 'object')? el_id.id : el_id;
+      var id = isObject(el_id)? el_id.id : el_id;
       console.log('w3_field_select id='+ id +' el='+ el +' v='+ (el? el.value:null));
       console.log(el);
       console.log(opts);
@@ -773,10 +773,13 @@ function w3_color(el_id, color, bkgColor)
 {
 	var el = w3_el(el_id);
 	if (!el) return null;
-	var prev = el.style.color;
-	if (color) el.style.color = color;
-	if (bkgColor) el.style.backgroundColor = bkgColor;
-	return prev;
+	var prev_fg = el.style.color;
+	var prev_bg = el.style.backgroundColor;
+	
+	// remember that setting colors to '' restores default
+	if (color != undefined && color != null) el.style.color = color;
+	if (bkgColor != undefined && bkgColor != null) el.style.backgroundColor = bkgColor;
+	return { color: prev_fg, backgroundColor: prev_bg };
 }
 
 // returns previous color
@@ -967,9 +970,9 @@ function w3_copy_to_clipboard(val)
 // nav
 ////////////////////////////////
 
-function w3_click_nav(next_id, cb_next, cb_arg)
+function w3_click_nav(next_id, cb_next, cb_param)
 {
-   //console.log('w3_click_nav '+ next_id +' cb_next='+ cb_next +' cb_arg='+ cb_arg);
+   //console.log('w3_click_nav '+ next_id +' cb_next='+ cb_next +' cb_param='+ cb_param);
    //kiwi_trace();
 	var next_id_nav = 'id-nav-'+ next_id;		// to differentiate the nav anchor from the nav container
 	var cur_id = null;
@@ -1015,7 +1018,7 @@ function w3_click_nav(next_id, cb_next, cb_arg)
 	w3_toggle(next_id, 'w3-show-block');
 	if (cb_next != 'null') {
 	   //console.log('w3_click_nav FOCUS cb_next='+ cb_next +' next_id='+ next_id);
-      w3_call(cb_next +'_focus', next_id, cb_arg);
+      w3_call(cb_next +'_focus', next_id, cb_param);
    }
 	//console.log('w3_click_nav cb_prev='+ cb_prev +' cur_id='+ cur_id +' cb_next='+ cb_next +' next_id='+ next_id);
 }
@@ -1339,9 +1342,9 @@ function w3_icon(psa, fa_icon, size, color, cb, cb_param)
 	cb_param = cb_param || 0;
 
 	var font_size = null;
-	if (typeof size == 'number' && size >= 0) font_size = px(size);
+	if (isNumber(size) && size >= 0) font_size = px(size);
 	else
-	if (typeof size == 'string') font_size = size;
+	if (isString(size)) font_size = size;
 	font_size = font_size? (' font-size:'+ font_size +';') : '';
 
 	color = (color && color != '')? (' color:'+ color) : '';
@@ -1381,9 +1384,9 @@ function w3_icon_cb2(psa, fa_icon, size, color, cb, cb_param)
 	cb_param = cb_param || 0;
 
 	var font_size = null;
-	if (typeof size == 'number' && size >= 0) font_size = px(size);
+	if (isNumber(size) && size >= 0) font_size = px(size);
 	else
-	if (typeof size == 'string') font_size = size;
+	if (isString(size)) font_size = size;
 	font_size = font_size? (' font-size:'+ font_size +';') : '';
 
 	color = (color && color != '')? (' color:'+ color) : '';
@@ -1405,26 +1408,16 @@ function w3_icon_cb2(psa, fa_icon, size, color, cb, cb_param)
 // Also detect and process control character sequences.
 function w3int_input_key(ev, path, cb)
 {
-   var k = ev.key;
+   var k = ev.key.toUpperCase();
    var ctl = ev.ctrlKey;
 	var el = w3_el(path);
    if (!el) return;
    //console.log('w3int_input_key k='+ k + (ctl? ' CTL ':'') +' val=<'+ el.value +'> cb='+ cb);
    cb = cb.split('|');
 
-   if (ctl && k == 'c' && cb[1]) {
-      //console.log('w3int_input_key ^C cb='+ cb[1]);
-      w3_call(cb[1]);
-   }
-
-   if (ctl && k == 'd' && cb[2]) {
-      //console.log('w3int_input_key ^D cb='+ cb[2]);
-      w3_call(cb[2]);
-   }
-
-   if (ctl && k == '\\' && cb[3]) {
-      //console.log('w3int_input_key ^\\ cb='+ cb[3]);
-      w3_call(cb[3]);
+   if (ctl && 'CD\\'.includes(k) && cb[1]) {
+      //console.log('w3int_input_key ^'+ k +' cb='+ cb[1]);
+      w3_call(cb[1], k);
    }
 
    var input_any_change = w3_contains(el, 'w3-input-any-change');
@@ -1671,20 +1664,20 @@ function w3_checkbox_set(path, checked)
 
 var W3_SELECT_SHOW_TITLE = -1;
 
-function w3int_select_change(ev, path, save_cb)
+function w3int_select_change(ev, path, cb, cb_param)
 {
 	var el = ev.currentTarget;
 	w3_check_restart_reboot(el);
 
-	// save_cb is a string because can't pass an object to onclick
-	if (save_cb) {
-		w3_call(save_cb, path, el.value, /* first */ false);
+	// cb is a string because can't pass an object to onclick
+	if (cb) {
+		w3_call(cb, path, el.value, /* first */ false, cb_param);
 	}
 	
    w3int_post_action();
 }
 
-function w3int_select(psa, label, title, path, sel, opts_s, cb)
+function w3int_select(psa, label, title, path, sel, opts_s, cb, cb_param)
 {
 	var id = path? ('id-'+ path) : '';
 	var first = '';
@@ -1700,7 +1693,7 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb)
 	var spacing = (label != '' && !inline)? ' w3-margin-T-8' : '';
 	if (inline) spacing += ' w3-margin-left';
 	if (cb == undefined) cb = '';
-	var onchange = 'onchange="w3int_select_change(event, '+ sq(path) +', '+ sq(cb) +')"';
+	var onchange = 'onchange="w3int_select_change(event, '+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"';
 
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
@@ -1719,7 +1712,7 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb)
 	if (cb && sel != W3_SELECT_SHOW_TITLE)
 		setTimeout(function() {
 			//console.log('w3_select: initial callback: '+ cb +'('+ sq(path) +', '+ sel +')');
-			w3_call(cb, path, sel, /* first */ true);
+			w3_call(cb, path, sel, /* first */ true, cb_param);
 		}, 500);
 
 	//console.log(s);
@@ -1730,7 +1723,7 @@ function w3int_select_options(sel, opts)
 {
    var s = '';
    
-   if (typeof opts == 'string') {
+   if (isString(opts)) {
       // range of integers (increment one assumed)
       var rng = opts.split(':');
       if (rng.length == 2) {
@@ -1743,18 +1736,18 @@ function w3int_select_options(sel, opts)
          }
       }
    } else
-   if (Array.isArray(opts)) {
+   if (isArray(opts)) {
       // array of strings and/or numbers or take first object key as option
       for (var i=0; i < opts.length; i++) {
          var obj = opts[i];
-         if (typeof obj == 'object') {
+         if (isObject(obj)) {
             var keys = Object.keys(obj);
             obj = obj[keys[0]];
          }
          s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ obj +'</option>';
       }
    } else
-   if (typeof opts == 'object') {
+   if (isObject(opts)) {
       // object: enumerate sequentially like an array
       // allows object to serve a dual purpose by having non-integer keys
       w3_obj_enum_data(opts, null, function(i, key) {
@@ -1773,23 +1766,23 @@ function w3int_select_options(sel, opts)
    return s;
 }
 
-function w3_select(psa, label, title, path, sel, opts, save_cb)
+function w3_select(psa, label, title, path, sel, opts, cb, cb_param)
 {
    var s = w3int_select_options(sel, opts);
-   return w3int_select(psa, label, title, path, sel, s, save_cb);
+   return w3int_select(psa, label, title, path, sel, s, cb, cb_param);
 }
 
 // hierarchical -- menu entries interspersed with disabled (non-selectable) headers
-function w3_select_hier(psa, label, title, path, sel, opts, cb)
+function w3_select_hier(psa, label, title, path, sel, opts, cb, cb_param)
 {
    var s = '';
    var idx = 0;
-   if (typeof opts != 'object') return;
+   if (!isObject(opts)) return;
 
    w3_obj_enum_data(opts, null, function(i, key) {
       s += '<option value='+ dq(idx++) +' disabled>'+ key +'</option> ';
       var a = opts[key];
-      if (!Array.isArray(a)) return;
+      if (!isArray(a)) return;
 
       for (var j=0; j < a.length; j++) {
          var v = w3_first_value(a[j]);
@@ -1803,7 +1796,7 @@ function w3_select_hier(psa, label, title, path, sel, opts, cb)
       var key = keys[i];
       s += '<option value='+ dq(idx++) +' disabled>'+ key +'</option> ';
       var a = opts[key];
-      if (!Array.isArray(a)) continue;
+      if (!isArray(a)) continue;
 
       for (var j=0; j < a.length; j++) {
          var v = w3_first_value(a[j]);
@@ -1812,14 +1805,14 @@ function w3_select_hier(psa, label, title, path, sel, opts, cb)
    }
    */
    
-   return w3int_select(psa, label, title, path, sel, s, cb);
+   return w3int_select(psa, label, title, path, sel, s, cb, cb_param);
 }
 
 // used when current value should come from config param
-function w3_select_get_param(psa, label, title, path, opts, save_cb, init_val)
+function w3_select_get_param(psa, label, title, path, opts, cb, init_val)
 {
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? 0 : init_val);
-	return w3_select(psa, label, title, path, cur_val, opts, save_cb);
+	return w3_select(psa, label, title, path, cur_val, opts, cb);
 }
 
 function w3_select_enum(path, func)
@@ -2111,7 +2104,7 @@ function w3_bool_set_cfg_cb(path, val, first)
 
 function w3_string_set_cfg_cb(path, val, first)
 {
-	//console.log('w3_string_set_cfg_cb: path='+ path +' '+ typeof val +' "'+ val +'" first='+ first);
+	//console.log('w3_string_set_cfg_cb: path='+ path +' '+ typeof(val) +' "'+ val +'" first='+ first);
 	
 	// if first time don't save, otherwise always save
 	var save = (first != undefined)? (first? false : true) : true;

@@ -124,7 +124,7 @@ function wspr_recv(data)
 		var param = params[i].split("=");
 
 		if (0 && param[0] != "keepalive") {
-			if (typeof param[1] != "undefined")
+			if (isDefined(param[1]))
 				console.log('wspr_recv: '+ param[0] +'='+ param[1]);
 			else
 				console.log('wspr_recv: '+ param[0]);
@@ -360,8 +360,8 @@ function wspr_controls_setup()
 	// set band and start if URL parameter present
 	var p = ext_param();
 	if (p) {
-		p = p.toLowerCase();
-		if (typeof wspr_freqs_s[p] != 'undefined') {
+		//p = p.toLowerCase();
+		if (isDefined(wspr_freqs_s[p])) {
 			w3_set_value('wspr_init_band', wspr_freqs_s[p]);
 			wspr_band_select_cb('wspr_init_band', wspr_freqs_s[p], false);
 		} else {
@@ -484,7 +484,7 @@ function wspr_config_html()
                      'Spot decodes are available in the Kiwi log (use "Log" tab above) and are listed on <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a><br>' +
                      'The three fields above must be set to valid values for proper spot entry into the <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a> database.'),
                   w3_div('w3-text-red w3-margin-bottom', 'Must restart the KiwiSDR server for changes to have effect.'),
-                  w3_inline('id-wspr-admin-autorun/')
+                  w3_div('id-wspr-admin-autorun')
                )
             )
          )
@@ -492,8 +492,12 @@ function wspr_config_html()
 	);
 	
 	var s = '';
-	for (var i=0; i < rx_chans; i++) {
-	   s += w3_select_get_param('w3-margin-right|color:red', 'Autorun '+ i, 'WSPR band', 'WSPR.autorun'+ i, wspr_autorun_u, 'admin_select_cb');
+	for (var i=0; i < rx_chans;) {
+	   var s2 = '';
+	   for (var j=0; j < 8 && i < rx_chans; j++, i++) {
+	      s2 += w3_select_get_param('w3-margin-right|color:red', 'Autorun '+ i, 'WSPR band', 'WSPR.autorun'+ i, wspr_autorun_u, 'admin_select_cb');
+	   }
+	   s += w3_inline('w3-inline w3-margin-bottom/', s2);
 	}
 	w3_innerHTML('id-wspr-admin-autorun', s);
 }

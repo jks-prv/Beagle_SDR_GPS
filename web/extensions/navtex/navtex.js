@@ -35,7 +35,7 @@ function navtex_recv(data)
 		var param = params[i].split("=");
 
 		if (0 && param[0] != "keepalive") {
-			if (typeof param[1] != "undefined")
+			if (isDefined(param[1]))
 				console.log('navtex_recv: '+ param[0] +'='+ param[1]);
 			else
 				console.log('navtex_recv: '+ param[0]);
@@ -139,8 +139,7 @@ function navtex_baud_error(err)
    }
 }
 
-// must set "remove_returns" since pty output lines are terminated with \r\n instead of \n alone
-// otherwise the \r overwrite logic in kiwi_output_msg() will be triggered
+// must set "remove_returns" so output lines with \r\n (instead of \n alone) don't produce double spacing
 var navtex_console_status_msg_p = { scroll_only_at_bottom: true, process_return_nexttime: false, remove_returns: true, ncol: 135 };
 
 function navtex_output_char(c)

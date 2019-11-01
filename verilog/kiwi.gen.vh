@@ -37,6 +37,8 @@
 `define DEF_FPGA_ID_RX8_WF2
 	parameter FPGA_ID_RX3_WF3 = 4'd2;    // DEFp 0x2
 `define DEF_FPGA_ID_RX3_WF3
+	parameter FPGA_ID_RX14_WF1 = 4'd3;    // DEFp 0x3
+`define DEF_FPGA_ID_RX14_WF1
 	parameter FPGA_ID_GPS = 4'd3;    // DEFp 0x3
 `define DEF_FPGA_ID_GPS
 	parameter NUM_CMDS_BASE = 13;    // DEFp 0xd
@@ -48,8 +50,6 @@
 //`define CFG_GPS_ONLY    // DEFh 0x0
 	parameter NUM_CMDS = 41;    // DEFp 0x29
 `define DEF_NUM_CMDS
-	parameter GPS_CHANS = 12;    // DEFp 0xc
-`define DEF_GPS_CHANS
 `define SPI_32    // DEFh 0x1
 	parameter SPIBUF_W = 2048;    // DEFp 0x800
 `define DEF_SPIBUF_W
@@ -73,24 +73,32 @@
 `define DEF_SND_RATE_4CH
 	parameter SND_RATE_8CH = 12000;    // DEFp 0x2ee0
 `define DEF_SND_RATE_8CH
+	parameter SND_RATE_14CH = 12000;    // DEFp 0x2ee0
+`define DEF_SND_RATE_14CH
 	parameter RX_DECIM_3CH = 3292;    // DEFp 0xcdc
 `define DEF_RX_DECIM_3CH
 	parameter RX_DECIM_4CH = 5555;    // DEFp 0x15b3
 `define DEF_RX_DECIM_4CH
 	parameter RX_DECIM_8CH = 5555;    // DEFp 0x15b3
 `define DEF_RX_DECIM_8CH
+	parameter RX_DECIM_14CH = 5555;    // DEFp 0x15b3
+`define DEF_RX_DECIM_14CH
 	parameter RXBUF_SIZE_3CH = 16384;    // DEFp 0x4000
 `define DEF_RXBUF_SIZE_3CH
 	parameter RXBUF_SIZE_4CH = 8192;    // DEFp 0x2000
 `define DEF_RXBUF_SIZE_4CH
 	parameter RXBUF_SIZE_8CH = 16384;    // DEFp 0x4000
 `define DEF_RXBUF_SIZE_8CH
-	parameter SND_INTR_3CH = 16800;    // DEFp 0x41a0
+	parameter RXBUF_SIZE_14CH = 32768;    // DEFp 0x8000
+`define DEF_RXBUF_SIZE_14CH
+	parameter SND_INTR_3CH = 11200;    // DEFp 0x2bc0
 `define DEF_SND_INTR_3CH
 	parameter SND_INTR_4CH = 14000;    // DEFp 0x36b0
 `define DEF_SND_INTR_4CH
 	parameter SND_INTR_8CH = 7000;    // DEFp 0x1b58
 `define DEF_SND_INTR_8CH
+	parameter SND_INTR_14CH = 4000;    // DEFp 0xfa0
+`define DEF_SND_INTR_14CH
 	parameter NRX_IQW = 3;    // DEFp 0x3
 `define DEF_NRX_IQW
 	parameter NRX_SPI = 2047;    // DEFp 0x7ff
@@ -147,18 +155,24 @@
 `define DEF_WF_1CIC_MAXD
 	parameter WF_2CIC_MAXD = 0;    // DEFp 0x0
 //`define DEF_WF_2CIC_MAXD
-	parameter MAX_GPS_CHAN = 12;    // DEFp 0xc
-`define DEF_MAX_GPS_CHAN
-	parameter E1B_MODE = 2048;    // DEFp 0x800
-`define DEF_E1B_MODE
+	parameter MAX_GPS_CHANS = 12;    // DEFp 0xc
+`define DEF_MAX_GPS_CHANS
+	parameter GPS_CHANS = 12;    // DEFp 0xc
+`define DEF_GPS_CHANS
 	parameter GPS_INTEG_BITS = 20;    // DEFp 0x14
 `define DEF_GPS_INTEG_BITS
 	parameter GPS_REPL_BITS = 18;    // DEFp 0x12
 `define DEF_GPS_REPL_BITS
 	parameter MAX_NAV_BITS = 128;    // DEFp 0x80
 `define DEF_MAX_NAV_BITS
+	parameter GPS_RPT = 32;    // DEFp 0x20
+`define DEF_GPS_RPT
 	parameter GPS_SAMPS = 256;    // DEFp 0x100
 `define DEF_GPS_SAMPS
+	parameter GPS_SAMPS_RPT = 32;    // DEFp 0x20
+`define DEF_GPS_SAMPS_RPT
+	parameter GPS_SAMPS_LOOP = 8;    // DEFp 0x8
+`define DEF_GPS_SAMPS_LOOP
 	parameter GPS_IQ_SAMPS = 255;    // DEFp 0xff
 `define DEF_GPS_IQ_SAMPS
 	parameter GPS_IQ_SAMPS_W = 1020;    // DEFp 0x3fc
@@ -167,14 +181,24 @@
 `define DEF_L1_CODEBITS
 	parameter L1_CODELEN = 1023;    // DEFp 0x3ff
 `define DEF_L1_CODELEN
+	parameter E1B_MODE = 2048;    // DEFp 0x800
+`define DEF_E1B_MODE
 	parameter E1B_CODEBITS = 12;    // DEFp 0xc
 `define DEF_E1B_CODEBITS
 	parameter E1B_CODELEN = 4092;    // DEFp 0xffc
 `define DEF_E1B_CODELEN
-	parameter E1B_CODE_XFER = 2;    // DEFp 0x2
-`define DEF_E1B_CODE_XFER
+	parameter E1B_CODE_XFERS = 2;    // DEFp 0x2
+`define DEF_E1B_CODE_XFERS
 	parameter E1B_CODE_LOOP = 2046;    // DEFp 0x7fe
 `define DEF_E1B_CODE_LOOP
+	parameter E1B_CODE_RPT = 32;    // DEFp 0x20
+`define DEF_E1B_CODE_RPT
+	parameter E1B_CODE_LOOP2 = 63;    // DEFp 0x3f
+`define DEF_E1B_CODE_LOOP2
+	parameter E1B_CODE_LOOP3 = 2016;    // DEFp 0x7e0
+`define DEF_E1B_CODE_LOOP3
+	parameter E1B_CODE_REM = 30;    // DEFp 0x1e
+`define DEF_E1B_CODE_REM
 	parameter GET_CHAN_IQ = 0;    // DEFb: bit number for value: 0x1
 	parameter GET_SRQ = 1;    // DEFb: bit number for value: 0x2
 	parameter GET_SNAPSHOT = 2;    // DEFb: bit number for value: 0x4
@@ -240,11 +264,10 @@
 	parameter STAT_OVFL = 15;    // DEFb: bit number for value: 0x8000
 	parameter CTRL_OSC_EN = 8;    // DEFb: bit number for value: 0x100
 	parameter CTRL_EEPROM_WP = 9;    // DEFb: bit number for value: 0x200
-`define HEARTBEAT_IND    // DEFh 0x200
+	parameter CTRL_UNUSED_OUT = 9;    // DEFb: bit number for value: 0x200
 	parameter CTRL_USE_GEN = 10;    // DEFb: bit number for value: 0x400
-	parameter CTRL_TEST_MODE = 11;    // DEFb: bit number for value: 0x800
-	parameter CTRL_UNUSED_OUT = 11;    // DEFb: bit number for value: 0x800
-	parameter CTRL_INTERRUPT = 12;    // DEFb: bit number for value: 0x1000
+	parameter CTRL_CMD_READY = 11;    // DEFb: bit number for value: 0x800
+	parameter CTRL_SND_INTR = 12;    // DEFb: bit number for value: 0x1000
 	parameter CTRL_DNA_READ = 13;    // DEFb: bit number for value: 0x2000
 	parameter CTRL_DNA_SHIFT = 14;    // DEFb: bit number for value: 0x4000
 	parameter CTRL_DNA_CLK = 15;    // DEFb: bit number for value: 0x8000

@@ -6,6 +6,8 @@ var kiwi = {
    loaded_files: {},
    WSPR_rgrid: '',
    GPS_fixes: 0,
+   wf_fps: 0,
+   inactivity_panel: false,
 };
 
 var WATERFALL_CALIBRATION_DEFAULT = -13;
@@ -16,7 +18,7 @@ var try_again="";
 var conn_type;
 var seriousError = false;
 
-var firmware_sel = { RX_4_WF_4:0, RX_8_WF_2:1, RX_3_WF_3:2 };
+var firmware_sel = { RX_4_WF_4:0, RX_8_WF_2:1, RX_3_WF_3:2, RX_14_WF_1:3 };
 
 var modes_u = { 0:'AM', 1:'AMN', 2:'USB', 3:'LSB', 4:'CW', 5:'CWN', 6:'NBFM', 7:'IQ' };
 var modes_l = { 0:'am', 1:'amn', 2:'usb', 3:'lsb', 4:'cw', 5:'cwn', 6:'nbfm', 7:'iq' };
@@ -445,7 +447,7 @@ var time_display_current = true;
 
 function time_display_cb(o)
 {
-	if (typeof o.tu == 'undefined') return;
+	if (isUndefined(o.tu)) return;
 	server_time_utc = o.tu;
 	server_time_local = o.tl;
 	server_time_tzid = decodeURIComponent(o.ti);
@@ -680,10 +682,35 @@ function show_pref_blur()
 // status
 ////////////////////////////////
 
+var ansi = {
+   colors:  [  // MacOS Terminal.app colors
+   
+               // regular
+               [0,0,0],
+               [194,54,33],
+               [37,188,36],
+               [173,173,39],
+               [73,46,225],
+               [211,56,211],
+               [51,187,200],
+               [203,204,205],
+               
+               // bright
+               [129,131,131],
+               [252,57,31],
+               [49,231,34],
+               [234,236,35],
+               [88,51,255],
+               [249,53,248],
+               [20,240,240],
+               [233,235,235]
+            ]
+};
+
 function kiwi_output_msg(id, id_scroll, p)
 {
-	var el = w3_el(id);
-	if (!el) {
+	var parent_el = w3_el(id);
+	if (!parent_el) {
 	   console.log('kiwi_output_msg NOT_FOUND id='+ id);
 	   return;
 	}
@@ -697,47 +724,310 @@ function kiwi_output_msg(id, id_scroll, p)
 	   s = p.s;
 	}
 	
-   if (typeof p.tstr == 'undefined') p.tstr = '';
-   var o = p.tstr;
-   if (typeof p.col == 'undefined') p.col = 0;
+   if (!p.init) {
+      p.el = w3_appendElement(parent_el, 'pre', '');
+      p.esc = { s:'', state:0 };
+      p.sgr = { span:0, bright:0, fg:null, bg:null };
+      p.init = true;
+   }
+
+   var snew = '';
+	var el_scroll = w3_el(id_scroll);
+   var wasScrolledDown = null;
+   
+   if (isUndefined(p.tstr)) p.tstr = '';
+   if (isUndefined(p.col)) p.col = 0;
+
+   // handle beginning output with '\r' only to overwrite current line
+   //console.log(JSON.stringify(s));
+   if (s.charAt(0) == '\r' && (s.length == 1 || s.charAt(1) != '\n')) {
+      //console.log('\\r @ beginning:');
+      //console.log(JSON.stringify(s));
+      //console.log(JSON.stringify(p.tstr));
+      s = s.substring(1);
+      p.tstr = snew = '';
+      p.col = 0;
+   }
+
    if (p.remove_returns) s = s.replace(/\r/g, '');
       
-   // handles ending output with '\r' only to overwrite line
 	for (var i=0; i < s.length; i++) {
-		if (p.process_return_nexttime) {
-			var ci = o.lastIndexOf('\r');
-			if (ci == -1) {
-				o = '';
-			} else {
-				o = o.substring(0, ci+1);
-			}
-			p.process_return_nexttime = false;
-		}
 
 		var c = s.charAt(i);
-      //console.log('c='+ c +' o='+ o);
-		if (c == '\r') {
-			p.process_return_nexttime = true;
+      //console.log('c='+ JSON.stringify(c));
+
+		if (c == '\f') {		// form-feed is how we clear accumulated pre elements (screen clear)
+		   while (parent_el.firstChild) {
+		      parent_el.removeChild(parent_el.firstChild);
+		   }
+         p.el = w3_appendElement(parent_el, 'pre', '');
+         p.tstr = snew = '';
 			p.col = 0;
 		} else
-		if (c == '\f') {		// form-feed is how we clear element from appending
-			o = '';
-			p.col = 0;
-		} else {
-			o += c;
-			if (c == '\n') p.col = 0; else p.col++;
-			if (p.col == p.ncol) {
-			   o += '\n';
-			   p.col = 0;
-			}
-		}
+		
+		// tab-8
+		if (c == '\t') {
+         snew += '&nbsp;';
+         p.col++;
+		   while ((p.col & 7) != 0) {
+		      snew += '&nbsp;';
+		      p.col++;
+		   }
+		} else
+		
+		// ANSI color escapes
+		if (c == '\x1b') {
+		   p.esc.s = '';
+		   p.esc.state = 1;
+		} else
+
+		if (p.esc.state == 1) {
+         //console.log('acc '+ JSON.stringify(c));
+		   if (c < '@' || c == '[') {
+            p.esc.s += c;
+		   } else {
+            p.esc.s += c;
+            //console.log('process ESC '+ JSON.stringify(p.esc.s));
+		      var first = p.esc.s.charAt(0);
+		      var second = p.esc.s.charAt(1);
+            var result = 0;
+		      
+		      if (first == '[') {
+
+               // fg/bg color
+               if (c == 'm') {
+                  var sgr, saw_reset = 0, saw_color = 0;
+                  var sa = p.esc.s.substr(1).split(';');
+                  var sl = sa.length
+                  //console.log('SGR '+ JSON.stringify(p.esc.s) +' sl='+ sl);
+                  //console.log(sa);
+         
+                  for (var ai=0; ai < sl && result == 0; ai++) {
+                     sgr = (sa[ai] == '' || sa[ai] == 'm')? 0 : parseInt(sa[ai]);
+                     //console.log('sgr['+ ai +']='+ sgr);
+                     if (sgr == 0) {   // \e[m or \e[0m
+                        p.sgr.fg = p.sgr.bg = null;
+                        saw_reset = 1;
+                     } else
+                     if (isNaN(sgr)) {
+                        result = 2;
+                     } else
+                     if (sgr == 1)  { p.sgr.bright = 8; } else
+                     if (sgr == 2)  { p.sgr.bright = 0; } else
+                     if (sgr == 22) { p.sgr.bright = 0; } else
+                     
+                     if (sgr == 7) {      // reverse video (swap fg/bg)
+                        var tf = p.sgr.fg;
+                        p.sgr.fg = p.sgr.bg;
+                        p.sgr.bg = tf;
+                        if (p.sgr.fg == null) p.sgr.fg = [255,255,255];
+                        if (p.sgr.bg == null) p.sgr.bg = [0,0,0];
+                        saw_color = 1;
+                     } else
+                     if (sgr == 27) {     // inverse off
+                        p.sgr.fg = p.sgr.bg = null;
+                        saw_color = 1;
+                     } else
+                     
+                     // foreground
+                     if (sgr >= 30 && sgr <= 37) {
+                        //console.log('SGR='+ sgr +' bright='+ p.sgr.bright);
+                        p.sgr.fg = ansi.colors[sgr-30 + p.sgr.bright];
+                        saw_color = 1;
+                     } else
+                     if (sgr >= 90 && sgr <= 97) {
+                        p.sgr.fg = ansi.colors[sgr-90 + 8];
+                        saw_color = 1;
+                     } else
+                     if (sgr == 39) {
+                        p.sgr.fg = null;
+                        saw_color = 1;
+                     } else
+      
+                     // background
+                     if (sgr >= 40 && sgr <= 47) {
+                        p.sgr.bg = ansi.colors[sgr-40 + p.sgr.bright];
+                        saw_color = 1;
+                     } else
+                     if (sgr >= 100 && sgr <= 107) {
+                        p.sgr.bg = ansi.colors[sgr-100 + 8];
+                        saw_color = 1;
+                     } else
+                     if (sgr == 49) {
+                        p.sgr.bg = null;
+                        saw_color = 1;
+                     } else
+                     
+                     // 8 or 24-bit fg/bg
+                     if (sgr == 38 || sgr == 48) {
+                        //console.log('SGR-8/24 sl='+ sl);
+                        var n8, r, g, b, color, ci;
+   
+                        if (sl == 3 && (parseInt(sa[1]) == 5) && (!isNaN(n8 = parseInt(sa[2])))) {
+                           //console.log('SGR n8='+ n8);
+                           ai += 2;
+                           if (n8 <= 15) {      // standard colors
+                              color = ansi.colors[n8];
+                              if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
+                              saw_color = 1;
+                           } else
+                           if (n8 <= 231) {     // 6x6x6 color cube
+                              n8 -= 16;
+                              r = Math.floor(n8/36); n8 -= r*36;
+                              g = Math.floor(n8/6); n8 -= g*6;
+                              b = n8;
+                              r = Math.floor(255 * r/5);
+                              g = Math.floor(255 * g/5);
+                              b = Math.floor(255 * b/5);
+                              color = [r,g,b];
+                              if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
+                              saw_color = 1;
+                           } else
+                           if (n8 <= 255) {     // grayscale ramp
+                              ci = 8 + (n8-232)*10;
+                              //console.log('n8='+ n8 +' ci='+ ci);
+                              color = [ci,ci,ci];
+                              if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
+                              saw_color = 1;
+                           } else
+                              result = 2;
+                        } else
+   
+                        if (sl == 5 && (parseInt(sa[1]) == 2) &&
+                           (!isNaN(r = parseInt(sa[2]))) && (!isNaN(g = parseInt(sa[3]))) && (!isNaN(b = parseInt(sa[4])))) {
+                              r = w3_clamp(r, 0,255);
+                              g = w3_clamp(g, 0,255);
+                              b = w3_clamp(b, 0,255);
+                              color = [r,g,b];
+                              if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
+                              saw_color = 1;
+                        } else
+                           result = 2;
+                     } else
+                        result = 2;
+                  }
+                  
+                  if (saw_reset) {  // \e[m or \e[0m
+                     //console.log('SGR DONE');
+                     if (p.sgr.span) {
+                        snew += '</span>';
+                        p.sgr.span = 0;
+                     }
+                  } else
+                  if (saw_color) {
+                     //console.log('SGR saw_color fg='+ rgb(p.sgr.fg) +' bg='+ rgb(p.sgr.bg));
+                     //console.log(p.sgr.fg);
+                     //console.log(p.sgr.bg);
+                     if (p.sgr.span) snew += '</span>';
+                     snew += '<span style="'+ (p.sgr.fg? ('color:'+ rgb(p.sgr.fg) +';') :'') + (p.sgr.bg? ('background-color:'+ rgb(p.sgr.bg) +';') :'') +'">';
+                     p.sgr.span = 1;
+                  } else {
+                     //console.log('SGR ERROR');
+                     result = 2;
+                  }
+               } else
+               
+               if (c == 'K') {
+                  result = 'erase in line';
+               } else
+               
+               if (c == 'P') {
+                  result = 'del # chars';
+               } else
+               
+               if (second == '?') {    // set/reset mode
+                  result = 'set/reset mode';
+                  //result = 1;
+               } else
+               
+               if (c == 'r') {      // set scrolling region (t_row;b_row)
+                  //result = 1;
+               } else
+               
+               if (c == 'l') {      // reset mode (i.e. "4l" = reset insert mode)
+                  result = 'reset mode';
+                  //result = 1;
+               } else
+		      
+               if (c == 'J') {
+                  if (second == '2' || second == '3') result = 'erase whole display'; else
+                  if (second == '1') result = 'erase start to cursor'; else
+                     result = 2;
+               } else
+               
+               if (c == 'H') {
+                  result = 'move row,col';
+               } else
+		      
+               if (c == 'd') {
+                  result = 'move row';
+               } else
+		      
+               if (c == 'G') {
+                  result = 'move col';
+               } else
+		      
+               {
+                  result = 2;
+               }
+            } else
+
+		      if (first == '(') {     // define char set
+               //result = 1;
+		      } else
+		      
+		      {
+               result = 2;
+            }
+            
+            if (result === 1) {
+                  console.log('ESC '+ JSON.stringify(p.esc.s) +' IGNORED');
+            } else
+            if (result === 2) {
+                  console.log('ESC '+ JSON.stringify(p.esc.s) +' UNKNOWN');
+            } else
+            if (isString(result)) {
+               console.log('ESC '+ JSON.stringify(p.esc.s) +' '+ result);
+            }
+   
+            p.esc.state = 0;
+         }
+		} else
+		
+		if ((c >= ' ' && c <= '~') || c == '\n') {
+		   if (c == '<') {
+		      snew += '&lt;';
+            p.col++;
+		   } else
+		   if (c == '>') {
+		      snew += '&gt;';
+            p.col++;
+		   } else {
+            if (c != '\n') {
+               snew += c;
+               p.col++;
+            }
+            if (c == '\n' || p.col == p.ncol) {
+               wasScrolledDown = kiwi_isScrolledDown(el_scroll);
+               p.tstr += snew;
+               if (p.tstr == '') p.tstr = '&nbsp;';
+               p.el.innerHTML = p.tstr;
+               //console.log('TEXT '+ JSON.stringify(p.tstr));
+               p.tstr = snew = '';
+               p.el = w3_appendElement(parent_el, 'pre', '');
+               p.col = 0;
+            
+               if (w3_contains(el_scroll, 'w3-scroll-down') && (!p.scroll_only_at_bottom || (p.scroll_only_at_bottom && wasScrolledDown)))
+                  el_scroll.scrollTop = el_scroll.scrollHeight;
+            }
+         }
+		}  // ignore any other chars
 	}
 
-   p.tstr = o;
-	var el_scroll = w3_el(id_scroll);
-   var wasScrolledDown = kiwi_isScrolledDown(el_scroll);
-   el.innerHTML = o.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\r/g, '').replace(/\n/g, '<br>');
-	//console.log('kiwi_output_msg o='+ o);
+   wasScrolledDown = kiwi_isScrolledDown(el_scroll);
+   p.tstr += snew;
+   //console.log('TEXT '+ JSON.stringify(p.tstr));
+   p.el.innerHTML = p.tstr;
 
 	if (w3_contains(el_scroll, 'w3-scroll-down') && (!p.scroll_only_at_bottom || (p.scroll_only_at_bottom && wasScrolledDown)))
 		el_scroll.scrollTop = el_scroll.scrollHeight;
@@ -746,7 +1036,7 @@ function kiwi_output_msg(id, id_scroll, p)
 function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_gps_clk_corrections)
 {
    var s = (acquiring? 'yes':'pause') +', track '+ tracking +', good '+ good +', fixes '+ fixes.toUnits();
-	w3_el_softfail('id-msg-gps').innerHTML = 'GPS acquire '+ s;
+	w3_el_softfail('id-msg-gps').innerHTML = 'GPS: acquire '+ s;
 	w3_innerHTML('id-status-gps',
 	   w3_text(optbar_prefix_color, 'GPS'),
 	   w3_text('', 'acq '+ s)
@@ -756,11 +1046,14 @@ function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_gps_clk_c
 	if (adc_gps_clk_corrections) {
 	   s = adc_clock.toFixed(6) +' ('+ adc_gps_clk_corrections.toUnits() +' avgs)';
 		w3_el_softfail("id-msg-gps").innerHTML += ', ADC clock '+ s;
-		w3_innerHTML('id-status-adc', 'ADC clock: '+ s);
+		w3_innerHTML('id-status-adc',
+	      w3_text(optbar_prefix_color, 'ADC clock '),
+	      w3_text('', s)
+		);
 	}
 }
 
-function admin_stats_cb(audio_dropped, underruns, seq_errors, dpump_resets, dpump_nbufs, dpump_hist)
+function admin_stats_cb(audio_dropped, underruns, seq_errors, dp_resets, dp_hist_cnt, dp_hist, in_hist_cnt, in_hist)
 {
    if (audio_dropped == undefined) return;
    
@@ -769,13 +1062,22 @@ function admin_stats_cb(audio_dropped, underruns, seq_errors, dpump_resets, dpum
 	   audio_dropped.toUnits() +' dropped, '+
 	   underruns.toUnits() +' underruns, '+
 	   seq_errors.toUnits() +' sequence, '+
-	   dpump_resets.toUnits() +' realtime';
+	   dp_resets.toUnits() +' realtime';
 
-	el = w3_el('id-status-dpump-hist');
+	el = w3_el('id-status-dp-hist');
 	if (el) {
-	   var s = 'Realtime response histogram: ';
-		for (var i = 0; i < dpump_nbufs; i++) {
-		   s += (i? ', ':'') + dpump_hist[i].toUnits();
+	   var s = 'Datapump: ';
+		for (var i = 0; i < dp_hist_cnt; i++) {
+		   s += (i? ', ':'') + dp_hist[i].toUnits();
+		}
+      el.innerHTML = s;
+	}
+
+	el = w3_el('id-status-in-hist');
+	if (el) {
+	   var s = 'SoundInQ: ';
+		for (var i = 0; i < in_hist_cnt; i++) {
+		   s += (i? ', ':'') + in_hist[i].toUnits();
 		}
       el.innerHTML = s;
 	}
@@ -880,6 +1182,7 @@ function stats_init()
 
 function stats_update()
 {
+   //console.log('SET STATS_UPD ch='+ rx_chan);
 	msg_send('SET STATS_UPD ch='+ rx_chan);
 	var now = new Date();
 	var aligned_interval = Math.ceil(now/stats_interval)*stats_interval - now;
@@ -900,15 +1203,15 @@ function status_periodic()
 var kiwi_xfer_stats_str = "";
 var kiwi_xfer_stats_str_long = "";
 
-function xfer_stats_cb(audio_kbps, waterfall_kbps, waterfall_fps, waterfall_total_fps, http_kbps, sum_kbps)
+function xfer_stats_cb(audio_kbps, waterfall_kbps, waterfall_fps, http_kbps, sum_kbps)
 {
 	kiwi_xfer_stats_str =
 	   w3_text(optbar_prefix_color, 'Net') +
 	   w3_text('', 'aud '+ audio_kbps.toFixed(0) +', wf '+ waterfall_kbps.toFixed(0) +', http '+
 		http_kbps.toFixed(0) +', total '+ sum_kbps.toFixed(0) +' kB/s');
 
-	kiwi_xfer_stats_str_long = 'audio '+audio_kbps.toFixed(0)+' kB/s, waterfall '+waterfall_kbps.toFixed(0)+
-		' kB/s ('+waterfall_fps.toFixed(0)+'/'+waterfall_total_fps.toFixed(0)+' fps)' +
+	kiwi_xfer_stats_str_long = 'Network (all channels): audio '+audio_kbps.toFixed(0)+' kB/s, waterfall '+waterfall_kbps.toFixed(0)+
+		' kB/s ('+ waterfall_fps.toFixed(0)+' fps)' +
 		', http '+http_kbps.toFixed(0)+' kB/s, total '+sum_kbps.toFixed(0)+' kB/s ('+(sum_kbps*8).toFixed(0)+' kb/s)';
 }
 
@@ -917,16 +1220,40 @@ var kiwi_cpu_stats_str_long = '';
 var kiwi_config_str = '';
 var kiwi_config_str_long = '';
 
-function cpu_stats_cb(uptime_secs, user, sys, idle, ecpu, waterfall_fps, waterfall_total_fps)
+function cpu_stats_cb(o, uptime_secs, ecpu, waterfall_fps)
 {
+   idle %= 100;   // handle multi-core cpus
+   var cputempC = o.cc? o.cc : 0;
+   var cputempF = cputempC * 9/5 + 32;
+   var temp_color = o.cc? ((o.cc >= 60)? 'w3-text-css-red w3-bold' : ((o.cc >= 50)? 'w3-text-css-yellow' : 'w3-text-css-lime')) : '';
+   var cputemp = cputempC? (cputempC.toFixed(0) +'&deg;C '+ cputempF.toFixed(0) +'&deg;F ') : '';
+   var cpufreq = (o.cf >= 1000)? ((o.cf/1000).toFixed(1) +' GHz') : (o.cf.toFixed(0) +' MHz');
 	kiwi_cpu_stats_str =
-	   w3_text(optbar_prefix_color, 'Beagle') +
-	   w3_text('', user +'%u '+ sys +'%s '+ idle +'%i,') +
+	   w3_text(optbar_prefix_color, 'BB ') +
+	   w3_text('', o.cu[0] +','+ o.cs[0] +','+ o.ci[0] +' usi% ') +
+	   (cputempC? w3_text(temp_color, cputemp) :'') +
+	   w3_text('', cpufreq +' ') +
 	   w3_text(optbar_prefix_color, 'FPGA') +
-	   w3_text('', ecpu.toFixed(0) +'%') +
-	   w3_text(optbar_prefix_color, 'FPS') +
-	   w3_text('', waterfall_fps.toFixed(0) +'|'+ waterfall_total_fps.toFixed(0));
-	kiwi_cpu_stats_str_long = 'Beagle CPU '+ user +'% usr / '+ sys +'% sys / '+ idle +'% idle, FPGA eCPU '+ ecpu.toFixed(0) +'%';
+	   w3_text('', ecpu.toFixed(0) +'%');
+	kiwi.wf_fps = waterfall_fps;
+
+   var user = '', sys = '', idle = '';
+   var first = true;
+   for (var i = 0; i < o.cu.length; i++) {
+      user += (first? '':' ') + o.cu[i] +'%';
+      sys  += (first? '':' ') + o.cs[i] +'%';
+      idle += (first? '':' ') + o.ci[i] +'%';
+      first = false;
+   }
+   var cpus = 'cpu';
+   if (o.cu.length > 1) cpus += '0 cpu1';
+	kiwi_cpu_stats_str_long =
+	   w3_inline('',
+         w3_text('w3-text-black', 'Beagle: '+ cpus +' '+ user +' usr | '+ sys +' sys | '+ idle +' idle,' + (cputempC? '':' ')) +
+         (cputempC? ('&nbsp;'+ w3_text(temp_color +' w3-text-outline w3-large', cputemp) +'&nbsp;') :'') +
+         w3_text('w3-text-black', cpufreq + ', ') +
+         w3_text('w3-text-black', 'FPGA eCPU: '+ ecpu.toFixed(0) +'%')
+      );
 
 	var t = uptime_secs;
 	var sec = Math.trunc(t % 60); t = Math.trunc(t/60);
@@ -1027,7 +1354,11 @@ function users_init(called_from_admin)
 	for (var i=0; i < rx_chans; i++) {
 	   divlog(
 	      'RX'+ i +': <span id="id-user-'+ i +'"></span> ' +
-	      (called_from_admin? w3_button('id-user-kick-'+ i +' w3-small w3-white w3-border w3-border-red w3-round-large w3-padding-0 w3-padding-LR-8', 'Kick', 'status_user_kick_cb', i) : '')
+	      (called_from_admin?
+	         w3_button('id-user-kick-'+ i +' w3-small w3-white w3-border w3-border-red w3-round-large w3-padding-0 w3-padding-LR-8',
+	            'Kick', 'status_user_kick_cb', i)
+	         : ''
+	      )
 	   );
 	}
 	users_update();
@@ -1051,7 +1382,7 @@ function user_cb(obj)
 		var name = obj.n;
 		var freq = obj.f;
 		var geoloc = obj.g;
-		var ip = (typeof obj.a != 'undefined' && obj.a != '')? (obj.a +', ') : '';
+		var ip = (isDefined(obj.a) && obj.a != '')? (obj.a +', ') : '';
 		var mode = obj.m;
 		var zoom = obj.z;
 		var connected = obj.t;
@@ -1062,7 +1393,7 @@ function user_cb(obj)
 		}
 		var ext = obj.e;
 		
-		if (typeof name != 'undefined') {
+		if (isDefined(name)) {
 			var id = kiwi_strip_tags(decodeURIComponent(name), '');
 			if (id != '') id = '"'+ id + '" ';
 			var g = (geoloc == '(null)' || geoloc == '')? 'unknown location' : decodeURIComponent(geoloc);
@@ -1094,6 +1425,28 @@ function user_cb(obj)
          //for (var i=0; i < rx_chans; i++) if (s1 != '')
          w3_innerHTML('id-optbar-user-'+ i, (s1 != '')? (s1 +'<br>'+ s2) : '');
 		}
+		
+		// inactivity timeout warning panel
+		if (i == rx_chan && obj.rn) {
+		   if (obj.rn <= 55 && !kiwi.inactivity_panel) {
+            var s = 'Inactivity timeout in one minute.<br>Close this panel to avoid disconnection.';
+            confirmation_show_content(s, 350, 55,
+               function() {
+                  msg_send('SET inactivity_ack');
+                  confirmation_panel_close();
+                  kiwi.inactivity_panel = false;
+               },
+               'red'
+            );
+            kiwi.inactivity_panel = true;
+         }
+		}
+		
+		// another action like a frequency change reset timer
+      if (obj.rn > 55 && kiwi.inactivity_panel) {
+         confirmation_panel_close();
+         kiwi.inactivity_panel = false;
+      }
 	});
 	
 }
@@ -1275,9 +1628,10 @@ function kiwi_msg(param, ws)
 			//console.log('stats_cb='+ param[1]);
 			try {
 				var o = JSON.parse(param[1]);
+				//console.log(o);
 				if (o.ce != undefined)
-				   cpu_stats_cb(o.ct, o.cu, o.cs, o.ci, o.ce, o.af, o.at);
-				xfer_stats_cb(o.aa, o.aw, o.af, o.at, o.ah, o.as);
+				   cpu_stats_cb(o, o.ct, o.ce, o.fc);
+				xfer_stats_cb(o.ac, o.wc, o.fc, o.ah, o.as);
 				extint_srate = o.sr;
 				gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);
 				if (o.gr) {
@@ -1285,7 +1639,7 @@ function kiwi_msg(param, ws)
 				   kiwi.GPS_fixes = o.gf;
 				   //console.log('stat kiwi.WSPR_rgrid='+ kiwi.WSPR_rgrid);
 				}
-				admin_stats_cb(o.ad, o.au, o.ae, o.ar, o.an, o.ap);
+				admin_stats_cb(o.ad, o.au, o.ae, o.ar, o.an, o.ap, o.an2, o.ai);
 				time_display_cb(o);
 			} catch(ex) {
 				console.log('<'+ param[1] +'>');
@@ -1381,7 +1735,7 @@ function kiwi_debug(msg)
 function divlog(what, is_error)
 {
 	//console.log('divlog: '+ what);
-	if (typeof is_error !== "undefined" && is_error) what = '<span class="class-error">'+ what +"</span>";
+	if (isDefined(is_error) && is_error) what = '<span class="class-error">'+ what +"</span>";
 	w3_el_softfail('id-debugdiv').innerHTML += what +"<br />";
 }
 
@@ -1405,9 +1759,9 @@ function kiwi_show_msg(s)
 
 function kiwi_server_error(s)
 {
-	kiwi_show_msg('Hmm, there seems to be a problem. <br> \
-	The server reported the error: <span style="color:red">'+s+'</span> <br> \
-	Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\',\'server error: '+s+'\');">email us</a> the above message. Thanks!');
+	kiwi_show_msg('Hmm, there seems to be a problem. <br>' +
+	   'The server reported the error: <span style="color:red">'+ s +'</span> <br>' +
+	   'Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\',\'server error: '+ s +'\');">email us</a> the above message. Thanks!');
 	seriousError = true;
 }
 

@@ -18,17 +18,6 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-#include <stdio.h>
-#include <sys/file.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-
-#include <memory.h>
-#include <fftw3.h>
-#include <math.h>
-
 #include "types.h"
 #include "kiwi.h"
 #include "rx.h"
@@ -41,6 +30,18 @@
 #include "e1bcode.h"
 #include "debug.h"
 #include "simd.h"
+#include "shmem.h"
+
+#include <stdio.h>
+#include <sys/file.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+
+#include <memory.h>
+#include <fftw3.h>
+#include <math.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -197,6 +198,8 @@ void SearchInit() {
     
     GPSstat_init();
     printf("GPS_INTEG_BITS %d\n", GPS_INTEG_BITS);
+    
+    assert((GPS_SAMPS % GPS_SAMPS_RPT) == 0);
     
     const float ca_rate = CPS/FS;
 	float ca_phase=0;
@@ -386,21 +389,20 @@ static void Sample() {
 
     float lo_phase=0; // NCO phase accumulator
     int i=0;
+    SPI_MISO *rx = &SPI_SHMEM->gps_search_miso;
 	
 	spi_set(CmdSample); // Trigger sampler and reset code generator in FPGA
 	TaskSleepUsec(US);
 
-	while (i < NSAMPLES) {
-        static SPI_MISO rx;
-        
+	while (i < NSAMPLES) {        
 	    #ifdef GPS_SAMPLES_FROM_FILE
-		    GenSamples(rx.byte, PACKET);
+		    GenSamples(rx->byte, PACKET);
 		#else
-            spi_get(CmdGetGPSSamples, &rx, PACKET);
+            spi_get(CmdGetGPSSamples, rx, PACKET);
         #endif
 
         for (int j=0; j<PACKET; ++j) {
-			u1_t byte = rx.byte[j];
+			u1_t byte = rx->byte[j];
 
             for (int b=0; b<8; ++b, ++i, byte>>=1) {
             	const int bit = (byte&1);
@@ -519,7 +521,7 @@ void SearchTask(void *param) {
 
     for(;;) {
         if (!gps.acq_Navstar && !gps.acq_QZSS && !gps.acq_Galileo) {
-            NextTask("no acq");     // let cpu run
+            TaskSleepSec(1);    // wait for UI to change acq settings
             continue;
         }
         
@@ -603,9 +605,9 @@ static int gps_acquire = 1;
 
 // Decide if the search task should run.
 // Conditional because of the large load the acquisition FFT places on the Beagle.
-bool SearchTaskRun()
+void SearchTaskRun()
 {
-	if (searchTaskID == -1) return false;
+	if (searchTaskID == -1) return;
 	
 	bool start = false;
 	int users = rx_count_server_conns(EXTERNAL_ONLY);
@@ -626,9 +628,6 @@ bool SearchTaskRun()
 	
 	if (update_in_progress || sd_copy_in_progress || backup_in_progress) start = false;
 	
-	bool enable = (admcfg_bool("enable_gps", NULL, CFG_REQUIRED) == true);
-	if (!enable) start = false;
-
 	//printf("SearchTaskRun: acq %d start %d good %d users %d fixes %d gps_corr %d\n",
 	//	gps_acquire, start, gps.good, users, gps.fixes, clk.adc_gps_clk_corrections);
 	
@@ -644,6 +643,4 @@ bool SearchTaskRun()
 		GPSstat(STAT_ACQUIRE, 0, gps_acquire);
 		TaskWakeup(searchTaskID, TWF_NONE, 0);
 	}
-	
-	return enable;
 }

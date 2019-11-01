@@ -1,17 +1,27 @@
 # ~/.profile: executed by Bourne-compatible login shells.
 
-if [ "$TERM" == "dumb" ]; then
-  export HOME=/root
-  cd $HOME
-  export COLOR='--color=never'
-  export LS_OPTIONS='--color=never'
-else
-  export COLOR='--color=auto'
-  export LS_OPTIONS='--color=auto'
+export HOME=/root
+cd $HOME
+
+# for benefit of KiwiSDR admin console
+if [ "x${TERM}" == "xdumb" ]; then
+  export TERM=xterm-256color
+  export KIWI_CONSOLE=yes
+  stty cols 160
 fi
+
+export COLOR='--color=auto'
+export LS_OPTIONS='--color=auto'
 
 if [ -f ~/.bashrc ]; then
   . ~/.bashrc
+fi
+
+# PROJ is in .bashrc.local
+if [ "x${KIWI_CONSOLE}" == "xyes" ]; then
+  if [ "x${PROJ}" != "x" ]; then
+    cd $PROJ
+  fi
 fi
 
 # path set by /etc/profile

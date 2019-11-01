@@ -28,8 +28,8 @@ Boston, MA  02110-1301, USA.
 #include "spi_dev.h"
 #include "gps.h"
 #include "coroutines.h"
-#include "pru_realtime.h"
 #include "debug.h"
+#include "shmem.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -49,16 +49,70 @@ void fpga_init() {
 
     FILE *fp;
     int n, i, j;
-    static SPI_MISO ping;
 
 	gpio_setup(FPGA_PGM, GPIO_DIR_OUT, 1, PMUX_OUT_PU, 0);		// i.e. FPGA_PGM is an INPUT, active LOW
 	gpio_setup(FPGA_INIT, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, 0);
+	
+	#if 0
+	    while (1) {
+            GPIO_WRITE_BIT(FPGA_PGM, 1);
+            real_printf("w1r%d ", GPIO_READ_BIT(FPGA_INIT)); fflush(stdout);
+            kiwi_usleep(250000);
+            GPIO_WRITE_BIT(FPGA_PGM, 0);
+            real_printf("w0r%d ", GPIO_READ_BIT(FPGA_INIT)); fflush(stdout);
+	    }
+	#endif
+
+	#if 0
+        GPIO_OUTPUT(SPIn_CS1);
+        //GPIO_OUTPUT(P816);
+	    while (1) {
+            //real_printf("."); fflush(stdout);
+            GPIO_CLR_BIT(SPIn_CS1);
+            //GPIO_CLR_BIT(P816);
+            kiwi_usleep(1000);
+            GPIO_SET_BIT(SPIn_CS1);
+            //GPIO_SET_BIT(P816);
+            kiwi_usleep(1000);
+	    }
+	#endif
+
+#ifdef CPU_AM5729
+    #if 0
+        real_printf("before SPI2_MODULCTRL=0x%08x\n", spi[0x128>>2]);
+    
+        // IS DPE1 DPE0
+        //  1    1    0 hw reset    0x00060000  rx=d1 d1tx=no  d0tx=yes (DPE sense is inverted)
+        //  0    0    1 linux       0x20010fc4  rx=d0 d1tx=yes d0tx=no
+        //                          0x20010fc4  clkg=1(ok) wl=0x1f(32-bits) epol=1(spien_L) clkd=1(div=2)
+        u4_t conf = spi[0x12c>>2];
+        real_printf("before anything SPI2_CH0CONF=0x%08x\n", conf);
+        conf |=  0x00060000;  // ~IS ~DPE1
+        conf &= ~0x00010000;  // DPE0
+        spi[0x12c>>2] = conf;
+        real_printf("after force SPI2_CH0CONF=0x%08x\n", spi[0x12c>>2]);
+    #endif
+#endif
 
 	spi_dev_init(spi_clkg, spi_speed);
 
+#ifdef CPU_AM5729
+    //real_printf("after spi_dev_init SPI2_CHxCONF: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+    //    spi[(0x12c+0x14*0)>>2], spi[(0x12c+0x14*1)>>2], spi[(0x12c+0x14*2)>>2], spi[(0x12c+0x14*3)>>2]);
+    //real_printf("after spi_dev_init SPI2_CHxCTRL: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+    //    spi[(0x134+0x14*0)>>2], spi[(0x134+0x14*1)>>2], spi[(0x134+0x14*2)>>2], spi[(0x134+0x14*3)>>2]);
+    #if 0
+        conf = spi[0x12c>>2];
+        conf |=  0x00060000;  // ~IS ~DPE1
+        conf &= ~0x00010000;  // DPE0
+        spi[0x12c>>2] = conf;
+        real_printf("after force2 SPI2_CH0CONF=0x%08x\n", spi[0x12c>>2]);
+    #endif
+#endif
+
 #ifdef SPI_RFI_TEST
 	if (test_flag)
-		printf("SPI_RFI_TEST..\n");
+		real_printf("SPI_RFI_TEST..\n");
 	else
 #endif
 	{
@@ -74,14 +128,8 @@ void fpga_init() {
 		if (i == 1*M) panic("FPGA_INIT never went HIGH");
 	}
 
-    const char *config[] = { "KiwiSDR.rx4.wf4.bit", "KiwiSDR.rx8.wf2.bit", "KiwiSDR.rx3.wf3.bit" };
-	
 	// FPGA configuration bitstream
-	if (background_mode) {
-        fp = fopen(stprintf("/usr/local/bin/%s", config[fw_sel]) , "rb");
-    } else {
-        fp = fopen(config[fw_sel], "rb");
-    }
+    fp = fopen(stprintf("%sKiwiSDR.rx%d.wf%d.bit", background_mode? "/usr/local/bin/":"", rx_chans, wf_chans) , "rb");
 
     if (!fp) panic("fopen config");
 
@@ -110,8 +158,13 @@ void fpga_init() {
     
     #ifdef SPI_RFI_TEST
     	if (test_flag) {
+            //real_printf("."); fflush(stdout);
+            kiwi_usleep(3000);
     		if (n <= 0) {
 				rewind(fp);
+                #ifdef CPU_AM5729
+                    //real_printf("later SPI2_CH0CONF=0x%08x\n", spi[0x12c>>2]);
+                #endif
 				continue;
 			}
     	} else
@@ -119,7 +172,16 @@ void fpga_init() {
     	{
         	if (n <= 0) break;
         }
-        spi_dev(SPI_FPGA, &code, SPI_B2X(n), &readback, SPI_B2X(n));
+        
+        #if 0
+            static int first;
+            if (!first) real_printf("before spi_dev SPI2_CH0CONF=0x%08x SPI2_CH0CTRL=0x%08x\n", spi[0x12c>>2], spi[0x134>>2]);
+        #endif
+            spi_dev(SPI_FPGA, &code, SPI_B2X(n), &readback, SPI_B2X(n));
+        #if 0
+            if (!first) real_printf("after spi_dev SPI2_CH0CONF=0x%08x SPI2_CH0CTRL=0x%08x\n", spi[0x12c>>2], spi[0x134>>2]);
+            first = 1;
+        #endif
     }
 
 	// keep clocking until config/startup finishes
@@ -148,11 +210,12 @@ void fpga_init() {
     
 	spin_ms(100);
 	printf("ping..\n");
-	memset(&ping, 0, sizeof(ping));
+	SPI_MISO *ping = &SPI_SHMEM->pingx_miso;
+	memset(ping, 0, sizeof(*ping));
     strcpy(&gps.a[13], "[Y5EyEWjA65g");
-	spi_get_noduplex(CmdPing, &ping, 2);
-	if (ping.word[0] != 0xcafe) {
-		lprintf("FPGA not responding: 0x%04x\n", ping.word[0]);
+	spi_get_noduplex(CmdPing, ping, 2);
+	if (ping->word[0] != 0xcafe) {
+		lprintf("FPGA not responding: 0x%04x\n", ping->word[0]);
 		evSpi(EC_DUMP, EV_SPILOOP, -1, "main", "dump");
 		xit(-1);
 	}
@@ -185,9 +248,9 @@ void fpga_init() {
     fclose(fp);
 
 	printf("ping2..\n");
-	spi_get_noduplex(CmdPing2, &ping, 2);
-	if (ping.word[0] != 0xbabe) {
-		lprintf("FPGA not responding: 0x%04x\n", ping.word[0]);
+	spi_get_noduplex(CmdPing2, ping, 2);
+	if (ping->word[0] != 0xbabe) {
+		lprintf("FPGA not responding: 0x%04x\n", ping->word[0]);
 		evSpi(EC_DUMP, EV_SPILOOP, -1, "main", "dump");
 		xit(-1);
 	}

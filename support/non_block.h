@@ -23,34 +23,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "str.h"
 #include "printf.h"
-#include "kiwi.gen.h"
 
-#define N_LOG_MSG_LEN   256
-#define N_LOG_SAVE      256
-
-typedef struct {
-	int idx, not_shown;
-	char *arr[N_LOG_SAVE];
-	char mem[1];	// mem allocated starting here; must be last in struct
-} log_save_t;
-
-extern log_save_t *log_save_p;
-
-#define N_SHMEM_STATUS 4
-#define N_SHMEM_STATUS_STR  1024
-#define N_SHMEM_SDR_HU_STATUS_STR  256
-
-typedef struct {
-    bool kiwi_exit;
-    u4_t rv_u4_t[MAX_RX_CHANS];
-    u4_t status_u4[N_SHMEM_STATUS][MAX_RX_CHANS];
-    double status_f[N_SHMEM_STATUS][MAX_RX_CHANS];
-	char status_str[N_SHMEM_STATUS_STR];
-	char sdr_hu_status_str[N_SHMEM_SDR_HU_STATUS_STR];
-    log_save_t log_save;    // must be last because var length
-} non_blocking_shmem_t;
-
-extern non_blocking_shmem_t *shmem;
 
 typedef struct {
     bool open;
@@ -70,7 +43,8 @@ typedef struct {
 #define NO_WAIT         0
 #define POLL_MSEC(n)    (n)
 
-int child_task(const char *pname, int poll_msec, funcP_t func, void *param);
+int child_task(const char *pname, funcP_t func, int poll_msec=0, void *param=NULL);
+void register_zombie(pid_t child_pid);
 void cull_zombies();
 
 int non_blocking_cmd_func_forall(const char *pname, const char *cmd, funcPR_t func, int param, int poll_msec);

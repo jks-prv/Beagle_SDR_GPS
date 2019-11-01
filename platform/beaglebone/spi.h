@@ -77,7 +77,10 @@ typedef enum { // Embedded CPU commands, order must match 'Commands:' table in .
     CmdIQLogGet,
 #endif
     
-    CmdCheckLast
+    CmdCheckLast,
+    
+    // pseudo for debugging
+    CmdPumpFlush
 } SPI_CMD;
 
 static const char *cmds[] = {
@@ -132,7 +135,22 @@ static const char *cmds[] = {
     "CmdIQLogReset",
     "CmdIQLogGet",
 #endif
+
+    // pseudo for debugging
+    #define NSPI_CMD_PSEUDO 2
+    "(CmdCheckLast)",
+    "CmdPumpFlush"
 };
+
+typedef struct {
+    u4_t xfers, flush, bytes;
+    u4_t retry;
+    
+    #define NRETRY_HIST 8
+    u4_t retry_hist[NRETRY_HIST];
+} spi_t;
+
+extern spi_t spi;
 
 #define DMA_ALIGNMENT __attribute__ ((aligned(256)))
 #define	PAD_FRONT u4_t pad_front[256/4]
@@ -200,9 +218,9 @@ typedef struct {
 		} __attribute__((packed));
 	};
 	PAD_BACK;
-	int len_xfers;
+	u2_t len_xfers, len_bytes;
 	uint16_t cmd;
-	u4_t tid;
+	u2_t tid;
 } __attribute__((packed)) DMA_ALIGNMENT SPI_MISO;
 
 
@@ -215,11 +233,14 @@ extern u4_t spi_retry;
 //#define spi_get spi_get_noduplex
 
 void spi_init();
+void spi_stats();
+
 void _spi_set(SPI_CMD cmd, uint16_t wparam=0, uint32_t lparam=0);
-void _spi_get(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint32_t lparam=0);
 void spi_set3(SPI_CMD cmd, uint16_t wparam, uint32_t lparam, uint16_t w2param);
-void spi_get_pipelined(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint32_t lparam=0);
 void spi_set_noduplex(SPI_CMD cmd, uint16_t wparam=0, uint32_t lparam=0);
+void spi_set_buf_noduplex(SPI_CMD cmd, SPI_MOSI *tx, int bytes);
+
+void _spi_get(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint32_t lparam=0);
+void spi_get_pipelined(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint32_t lparam=0);
 void spi_get_noduplex(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint32_t lparam=0);
 void spi_get3_noduplex(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint16_t w2param=0, uint16_t w3param=0);
-void spi_set_buf_noduplex(SPI_CMD cmd, SPI_MOSI *tx, int bytes);

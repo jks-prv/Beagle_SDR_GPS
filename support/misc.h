@@ -116,3 +116,5 @@ typedef struct {
 
 void grid_to_latLon(char *grid, latLon_t *loc);
 int latLon_to_grid6(latLon_t *loc, char *grid);
+
+void set_cpu_affinity(int cpu);

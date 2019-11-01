@@ -143,7 +143,7 @@ static void update_task(void *param)
 
 	// Run curl in a Linux child process otherwise this thread will block and cause trouble
 	// if the check is invoked from the admin page while there are active user connections.
-	int status = child_task("kiwi.upd", POLL_MSEC(1000), curl_makefile_ctask, NULL);
+	int status = child_task("kiwi.update", curl_makefile_ctask, POLL_MSEC(1000));
 
 	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
 		lprintf("UPDATE: curl Makefile error, no Internet access? status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",
@@ -191,7 +191,7 @@ static void update_task(void *param)
 		// and display a "software update in progress" message.
 		// This is because the calls to system() in update_build_ctask() block for the duration of the build.
 		u4_t build_time = timer_sec();
-		status = child_task("kiwi.bld", POLL_MSEC(1000), update_build_ctask, TO_VOID_PARAM(force_build));
+		status = child_task("kiwi.build", update_build_ctask, POLL_MSEC(1000), TO_VOID_PARAM(force_build));
 		
         if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
             lprintf("UPDATE: build error, no Internet access? status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",

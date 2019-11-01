@@ -3,6 +3,17 @@
 // Copyright (c) 2014-2017 John Seamons, ZL/KF6VO
 
 
+// isUndeclared(v) => use inline "typeof(v) === 'undefined'" (i.e. can't pass undeclared v as func arg)
+function isUndefined(v) { return (typeof(v) === 'undefined'); }
+function isDefined(v) { return (typeof(v) !== 'undefined'); }
+function isNull(v) { return (v === null); }
+function isNumber(v) { return (typeof(v) === 'number'); }
+function isBoolean(v) { return (typeof(v) === 'boolean'); }
+function isString(v) { return (typeof(v) === 'string'); }
+function isArray(v) { return (Array.isArray(v)); }
+function isFunction(v) { return (typeof(v) === 'function'); }
+function isObject(v) { return (typeof(v) === 'object'); }
+
 // browsers have added includes() only relatively recently
 try {
 	if (!String.prototype.includes) {
@@ -82,7 +93,7 @@ document.onreadystatechange = function() {
 
 		console.log('safari='+ kiwi_isSafari() + ' firefox='+ kiwi_isFirefox() + ' chrome='+ kiwi_isChrome() + ' opera='+ kiwi_isOpera());
 
-		if (typeof kiwi_check_js_version != 'undefined') {
+		if (isDefined(kiwi_check_js_version)) {
 			// done as an AJAX because needed long before any websocket available
 			kiwi_ajax("/VER", 'kiwi_version_cb');
 		} else {
@@ -201,13 +212,13 @@ function kiwi_ip_str(ip)
 {
 	var s='';
 	
-	if (typeof ip === 'number')
+	if (isNumber(ip))
 		s = kiwi_h2n_32(ip,0)+'.'+kiwi_h2n_32(ip,1)+'.'+kiwi_h2n_32(ip,2)+'.'+kiwi_h2n_32(ip,3);
 	else
-	if (typeof ip === 'array')
+	if (isArray(ip))
 		s = ip[3] +'.'+ ip[2] +'.'+ ip[1] +'.'+ ip[0];
 	else
-	if (typeof ip === 'object')
+	if (isObject(ip))
 		s = ip.a +'.'+ ip.b +'.'+ ip.c +'.'+ ip.d;
 	
 	return s;
@@ -217,7 +228,7 @@ function kiwi_ip_str(ip)
 Number.prototype.leadingZeros = function(size)
 {
 	var s = String(this);
-	if (typeof size !== "number") size = 2;
+	if (!isNumber(size)) size = 2;
 	while (s.length < size) s = "0"+s;
 	return s;
 }
@@ -226,7 +237,7 @@ Number.prototype.leadingZeros = function(size)
 String.prototype.leadingZeros = function(size)
 {
 	var s = String(this);
-	if (typeof size !== 'number') size = 2;
+	if (!isNumber(size)) size = 2;
 	while (s.length < size) s = '0'+ s;
 	return s;
 }
@@ -235,7 +246,7 @@ String.prototype.leadingZeros = function(size)
 String.prototype.fieldWidth = function(size)
 {
 	var s = String(this);
-	if (typeof size !== 'number') return s;
+	if (!isNumber(size)) return s;
 	while (s.length < size) s = ' '+ s;
 	return s;
 }
@@ -260,7 +271,7 @@ String.prototype.withSign = function()
 // -digits: no leading '0x'
 Number.prototype.toHex = function(digits)
 {
-	if (typeof digits !== 'number') digits = 0;
+	if (!isNumber(digits)) digits = 0;
    var add_0x = (digits < 0)? 0:1;
    digits = Math.abs(digits);
 	var n = Number(this);
@@ -389,7 +400,7 @@ function kiwi_url_origin()
 // pnames can be: 'string' or [ 'string1', 'string2', ... ]
 function kiwi_url_param(pnames, default_val, not_found_val)
 {
-   var isArray = Array.isArray(pnames);
+   var pn_isArray = isArray(pnames);
 	if (default_val == undefined) default_val = true;
 	if (not_found_val == undefined) not_found_val = null;
 
@@ -400,7 +411,7 @@ function kiwi_url_param(pnames, default_val, not_found_val)
    var rv = not_found_val;
    params.split("&").forEach(function(pv) {
       var pv_a = pv.split("=");
-      if (isArray) {
+      if (pn_isArray) {
          pnames.forEach(function(pn) {
             if (pn != pv_a[0]) return;
             rv = (pv_a.length >= 2)? pv_a[1] : default_val;
@@ -496,6 +507,14 @@ function ignore(ev)
 
 function rgb(r, g, b)
 {
+   if (r == null) return '';
+   
+   if (isArray(r)) {
+      g = r[1];
+      b = r[2];
+      r = r[0];
+   }
+
 	return 'rgb('+ Math.floor(r) +','+ Math.floor(g) +','+ Math.floor(b) +')';
 }
 
@@ -578,7 +597,7 @@ function getVarFromString(path)
 	for (i = 0; i < scopeSplit.length - 1; i++) {
 		var scope_name = scopeSplit[i];
 		scope = scope[scope_name];
-		if (typeof scope == 'undefined') {
+		if (isUndefined(scope)) {
 			console.log('getVarFromString: NO SCOPE '+ path +' scope_name='+ scope_name);
 			throw 'no scope';
 		}
@@ -756,10 +775,10 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
 			ajax_requests[id].timer = -1;
 	      dbug('AJAX TIMEOUT occurred, recovered id='+ id +' url='+ url);
 	      var obj = { AJAX_error:'timeout' };
-         if (typeof callback === 'function')
+         if (isFunction(callback))
             callback(obj, cb_param);
          else
-         if (typeof callback === 'string')
+         if (isString(callback))
             w3_call(callback, obj, cb_param);
 			ajax.abort();
 			delete ajax;
@@ -770,10 +789,10 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
 	if (progress_cb) {
 	   ajax.onprogress = function() {
 	      var response = ajax.responseText.toString() || '';
-         if (typeof progress_cb === 'function')
+         if (isFunction(progress_cb))
             progress_cb(response, progress_cb_param);
          else
-         if (typeof progress_cb === 'string')
+         if (isString(progress_cb))
             w3_call(progress_cb, response, progress_cb_param);
 	   };
 	}
@@ -847,11 +866,11 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
             }
          }
    
-		   dbug('AJAX ORSC CALLBACK recovered id='+ id +' callback='+ typeof callback);
-         if (typeof callback === 'function')
+		   dbug('AJAX ORSC CALLBACK recovered id='+ id +' callback='+ typeof(callback));
+         if (isFunction(callback))
             callback(obj, cb_param);
          else
-         if (typeof callback === 'string')
+         if (isString(callback))
             w3_call(callback, obj, cb_param);
       } else {
 		   dbug('AJAX ORSC TIMED_OUT recovered id='+ id);
@@ -948,7 +967,7 @@ function enc(s) { return s.replace(/./gi, function(c) { return String.fromCharCo
 
 // encode/decodeURIComponent() to handle special characters enc() doesn't work with
 var sendmail = function (to, subject) {
-	var s = "mailto:"+ enc(decodeURIComponent(to)) + ((typeof subject != "undefined")? ('?subject='+subject):'');
+	var s = "mailto:"+ enc(decodeURIComponent(to)) + (isDefined(subject)? ('?subject='+subject):'');
 	//console.log(s);
 	window.location.href = s;
 }
@@ -1101,7 +1120,7 @@ function on_ws_recv(evt, ws)
 		params = stringData.substring(4).split(" ");
 	
 		//if (ws.stream == 'EXT')
-		//console.log('>>> '+ ws.stream +': msg_cb='+ (typeof ws.msg_cb) +' '+ params.length +' '+ stringData);
+		//console.log('>>> '+ ws.stream +': msg_cb='+ typeof(ws.msg_cb) +' '+ params.length +' '+ stringData);
 		for (var i=0; i < params.length; i++) {
 			param = params[i].split("=");
 			
@@ -1112,7 +1131,7 @@ function on_ws_recv(evt, ws)
 			
 			if (kiwi_msg(param, ws) == false && ws.msg_cb) {
 				//if (ws.stream == 'EXT')
-				//console.log('>>> '+ ws.stream + ': not kiwi_msg: msg_cb='+ (typeof ws.msg_cb) +' '+ params[i]);
+				//console.log('>>> '+ ws.stream + ': not kiwi_msg: msg_cb='+ typeof(ws.msg_cb) +' '+ params[i]);
 				ws.msg_cb(param, ws);
 			}
 		}
@@ -1120,12 +1139,12 @@ function on_ws_recv(evt, ws)
 		/*
 		if (ws.stream == 'EXT' && kiwi_flush_recv_input == true) {
 			var s = arrayBufferToString(data);
-			console.log('>>> FLUSH '+ ws.stream + ': recv_cb='+ (typeof ws.recv_cb) +' '+ s);
+			console.log('>>> FLUSH '+ ws.stream + ': recv_cb='+ typeof(ws.recv_cb) +' '+ s);
 		}
 		*/
 		if (ws.recv_cb && (ws.stream != 'EXT' || kiwi_flush_recv_input == false)) {
 			ws.recv_cb(data, ws);
-			if (typeof kiwi_gc_recv != 'undefined' && kiwi_gc_recv) data = null;	// gc
+			if (isDefined(kiwi_gc_recv) && kiwi_gc_recv) data = null;	// gc
 		}
 	}
 }

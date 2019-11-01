@@ -23,7 +23,7 @@ Boston, MA  02110-1301, USA.
 #include "misc.h"
 #include "timer.h"
 #include "web.h"
-#include "peri.h"
+#include "eeprom.h"
 #include "coroutines.h"
 #include "jsmn.h"
 #include "cfg.h"
@@ -1197,7 +1197,7 @@ void _cfg_save_json(cfg_t *cfg, char *json)
 
     // file writes can sometimes take a long time -- use a child task and wait via NextTask()
 	cfg->json_write = json;
-    int status = child_task("kiwi.cfg", POLL_MSEC(100), _cfg_write_file, TO_VOID_PARAM(cfg));
+    int status = child_task("kiwi.cfg", _cfg_write_file, POLL_MSEC(100), TO_VOID_PARAM(cfg));
     int exit_status;
     if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
         printf("cfg_write_file exit_status=0x%x\n", exit_status);

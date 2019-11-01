@@ -202,6 +202,11 @@ input[type=range]::-moz-range-thumb {
 	padding: 10px;
 }
 
+.w3-text-output pre
+{
+    margin: 0;
+}
+
 .w3-menu {
     display: inline-block;
     visibility: hidden;
@@ -507,6 +512,12 @@ input[type=range]::-moz-range-thumb {
 .w3-padding-L-16
 {
     padding-left: 16px
+}
+
+.w3-padding-LR-4
+{
+    padding-left: 4px !important;
+    padding-right: 4px !important;
 }
 
 .w3-padding-LR-8
@@ -839,6 +850,17 @@ input[type=range]::-moz-range-thumb {
     color: orange;
 }
 
+.w3-css-red
+{
+    color: black;
+    background-color: red;
+}
+
+.w3-text-css-red
+{
+    color: red;
+}
+
 .w3-override-yellow
 {
     color: black;
@@ -850,6 +872,18 @@ input[type=range]::-moz-range-thumb {
 {
     color: white;
     background-color: #4CAF50
+}
+
+.w3-text-outline {
+    text-shadow: -1px 0 #444, 1px 0 #444, 0 -1px #444, 0 1px #444;
+}
+
+.w3-text-css-shadow {
+    text-shadow: 2px 2px 4px black;
+}
+
+.w3-text-css-underglow {
+    text-shadow: 2px 0 4px gray, -2px 0 4px gray, 0 2px 4px gray, 0 -2px 4px gray;
 }
 
 .w3int-cur-sel

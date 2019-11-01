@@ -37,23 +37,70 @@
 #include <time.h>
 #include <fftw3.h>
 
+#ifdef CPU_AM5729
+    //#define WSPR_SHMEM_DISABLE
+#else
+    #define WSPR_SHMEM_DISABLE
+#endif
+
+#define WSPR_YIELD NextTask("wspr")
+
+#ifdef WSPR_SHMEM_DISABLE
+    #define WSPR_SHMEM_YIELD NextTask("wspr")
+#else
+    #define WSPR_SHMEM_YIELD
+#endif
 #define YIELD_EVERY_N_TIMES 64
-#define TRY_YIELD NextTask("wspr")
 
 //#define WSPR_DEBUG_MSG	true
 #define WSPR_DEBUG_MSG	false
 
+//#define WSPR_APRINTF
+#ifdef WSPR_APRINTF
+    #define wspr_aprintf(fmt, ...) \
+        printf("WSPR-%02d: " fmt, rx_chan, ## __VA_ARGS__)
+#else
+    #define wspr_aprintf(fmt, ...)
+#endif
+
 //#define WSPR_PRINTF
 #ifdef WSPR_PRINTF
-	#define wprintf(fmt, ...) \
+	#define wspr_printf(fmt, ...) \
+		printf("WSPR-%02d: " fmt, rx_chan, ## __VA_ARGS__)
+
+    #if 1
+	    #define wspr_pprintf(fmt, ...) \
+	    	printf("WSPR-%02d: " fmt, rx_chan, ## __VA_ARGS__)
+	    #define wspr_pxprintf(fmt, ...) \
+	    	printf(fmt, ## __VA_ARGS__)
+	#else
+	    #define wspr_pprintf(fmt, ...)
+	    #define wspr_pxprintf(fmt, ...)
+	#endif
+
+	#define wspr_gprintf(fmt, ...) \
 		printf(fmt, ## __VA_ARGS__)
 
-	#define wdprintf(fmt, ...) \
-		printf("%3ds ", timer_sec() - passes_start); \
-		printf(fmt, ## __VA_ARGS__)
+	#define wspr_dprintf(fmt, ...) \
+		/*printf("%3ds ", timer_sec() - passes_start);*/ \
+		printf("WSPR-%02d: " fmt, rx_chan, ## __VA_ARGS__)
 #else
-	#define wprintf(fmt, ...)
-	#define wdprintf(fmt, ...)
+	#define wspr_printf(fmt, ...)
+	#define wspr_pprintf(fmt, ...)
+    #define wspr_pxprintf(fmt, ...)
+	#define wspr_gprintf(fmt, ...)
+	#define wspr_dprintf(fmt, ...)
+#endif
+
+#define WSPR_CHECKING
+#ifdef WSPR_CHECKING
+    #define wspr_array_dim(d,l) assert_array_dim(d,l)
+    #define WSPR_CHECK(x) x
+    #define WSPR_CHECK_ALT(x,y) x
+#else
+    #define wspr_array_dim(d,l)
+    #define WSPR_CHECK(x)
+    #define WSPR_CHECK_ALT(x,y) y
 #endif
 
 #define WSPR_FLOAT
@@ -82,7 +129,9 @@
 #define	SRATE		375					// design sample rate
 #define	FSRATE		375.0
 #define	CTIME		120					// capture time secs
-#define	TPOINTS 	(SRATE * CTIME)
+#define	TPOINTS 	(SRATE * CTIME)     // 45000
+
+#define NBINS       411
 
 #define	FMIN		-110				// frequency range to search
 #define	FMAX		110
@@ -97,7 +146,7 @@
 #define	HSPS		(SPS/2)
 
 // groups
-#define	GROUPS		(TPOINTS/NFFT)
+#define	GROUPS		(TPOINTS/NFFT)      // 87
 #define	FPG			4					// FFTs per group
 
 #define	NSYM_162	162
@@ -117,7 +166,6 @@
 
 #define NPK 256
 #define MAX_NPK 12
-#define MAX_NPK_OLD 8
 
 typedef struct {
 	bool ignore;
@@ -125,7 +173,7 @@ typedef struct {
 	int shift0, bin0;
 	int freq_idx, flags;
 	char snr_call[LEN_CALL];
-} pk_t;
+} wspr_pk_t;
 
 #define	WSPR_F_BIN			0x0fff
 #define	WSPR_F_DECODING		0x1000
@@ -139,6 +187,7 @@ extern int nbins_411;
 extern int hbins_205;
 
 typedef struct {
+    int r_valid;
 	float freq;
 	char call[LEN_CALL];
 	char grid[LEN_GRID];
@@ -147,9 +196,34 @@ typedef struct {
 	float snr, dt_print, drift1;
 	double freq_print;
 	char c_l_p[LEN_C_L_P];
-} decode_t;
+	int dBm;
+} wspr_decode_t;
 
 typedef struct {
+    u1_t start, stop;
+} send_peaks_q_t;
+
+#define N_PING_PONG 2
+
+typedef struct {
+	WSPR_CPX_t i_data[N_PING_PONG][TPOINTS], q_data[N_PING_PONG][TPOINTS];
+	float pwr_samp[N_PING_PONG][NFFT][FPG*GROUPS];
+	float pwr_sampavg[N_PING_PONG][NFFT];
+	float savg[NFFT];
+	u1_t ws[NBINS+1];
+	
+	#define WSPR_RENORM_FFT        0
+	#define WSPR_RENORM_DECODE     1
+	float smspec[2][NBINS], tmpsort[2][NBINS];
+
+    wspr_pk_t pk_snr[NPK];
+	#define MAX_NPKQ 512
+	send_peaks_q_t send_peaks_q[MAX_NPKQ];
+} wspr_buf_t;
+
+typedef struct {
+    WSPR_CHECK(u4_t magic1;)
+    
 	bool init;
 	int rx_chan;
 	bool create_tasks;
@@ -183,13 +257,11 @@ typedef struct {
 	WSPR_FFTW_COMPLEX *fftin, *fftout;
 	WSPR_FFTW_PLAN fftplan;
 	int FFTtask_group;
+	int not_launched;
 	
 	// computed by sampler or FFT task, processed by decode task
-	#define N_PING_PONG 2
 	time_t utc[N_PING_PONG];
-	WSPR_CPX_t i_data[N_PING_PONG][TPOINTS], q_data[N_PING_PONG][TPOINTS];
-	float pwr_samp[N_PING_PONG][NFFT][FPG*GROUPS];
-	float pwr_sampavg[N_PING_PONG][NFFT];
+	wspr_buf_t *buf;        // prevent sizeof(wspr_t) being huge for benefit of debugger
 
 	// decode task
     int bfo;
@@ -199,7 +271,17 @@ typedef struct {
 	u1_t symbols[NSYM_162], decdata[LEN_DECODE], channel_symbols[NSYM_162];
 	char callsign[LEN_CALL], call_loc_pow[LEN_C_L_P], grid[LEN_GRID];
 	int dBm;
-	decode_t deco[NPK];
+	#define NDECO 32
+	wspr_decode_t deco[NDECO];
+
+	// decode task shmem
+	int uniques;
+	int send_peaks_seq_parent, send_peaks_seq;
+	int npk;
+    wspr_pk_t pk_freq[MAX_NPK], pk_save[MAX_NPK];
+    int send_decode_seq_parent, send_decode_seq;
+
+    WSPR_CHECK(u4_t magic2;)
 } wspr_t;
 
 // configuration
@@ -212,12 +294,24 @@ typedef struct {
 
 extern wspr_conf_t wspr_c;
 
+struct wspr_shmem_t {
+    wspr_t wspr[MAX_RX_CHANS];
+    wspr_buf_t wspr_buf[MAX_RX_CHANS];
+};
+
+#ifdef WSPR_SHMEM_DISABLE
+    extern wspr_shmem_t *wspr_shmem_p;
+    #define WSPR_SHMEM wspr_shmem_p
+#else
+    #define WSPR_SHMEM (&shmem->wspr_shmem)
+#endif
+
 void wspr_init();
 bool wspr_update_vars_from_config();
 void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps);
-void wspr_decode_old(wspr_t *w);
-void wspr_decode(wspr_t *w);
-void wspr_send_peaks(wspr_t *w, pk_t *pk, int npk);
+void wspr_decode(int rx_chan);
+void wspr_send_peaks(wspr_t *w, int start, int stop);
+void wspr_send_decode(wspr_t *w, int seq);
 void wspr_autorun(int which, int idx);
 
 void sync_and_demodulate(
@@ -227,7 +321,7 @@ void sync_and_demodulate(
 	int lagmin, int lagmax, int lagstep,
 	float drift1, int symfac, float *sync, int mode);
 
-void renormalize(wspr_t *w, float psavg[], float smspec[]);
+void renormalize(wspr_t *w, float psavg[], float smspec[], float tmpsort[]);
 
 void unpack50(u1_t *dat, u4_t *call_28b, u4_t *grid_pwr_22b, u4_t *grid_15b, u4_t *pwr_7b);
 int unpackcall(u4_t call_28b, char *call);

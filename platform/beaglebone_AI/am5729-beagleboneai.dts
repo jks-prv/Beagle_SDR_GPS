@@ -8,8 +8,8 @@
 /dts-v1/;
 
 #include "dra74x.dtsi"
-#include "am57xx-commercial-grade.dtsi"
 #include "dra74x-mmc-iodelay.dtsi"
+#include "dra74-ipu-dsp-common.dtsi"
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/pinctrl/dra.h>
@@ -543,32 +543,18 @@
 			DRA7XX_CORE_IOPAD(0x35AC, MUX_MODE10) /* D6: P9.14: vin2a_d17.off */
 			DRA7XX_CORE_IOPAD(0x3514, MUX_MODE14) /* AG4: P9.15: vin1a_d8.off */
 			DRA7XX_CORE_IOPAD(0x35B0, MUX_MODE13) /* C5: P9.16: vin2a_d18.off */
-#if 0
 			DRA7XX_CORE_IOPAD(0x37CC, MUX_MODE14) /* B24: P9.17a: spi2_cs0.off */
 			DRA7XX_CORE_IOPAD(0x36B8, MUX_MODE14) /* F12: P9.17b: mcasp1_axr1.off */
 			DRA7XX_CORE_IOPAD(0x37C8, MUX_MODE14) /* G17: P9.18a: spi2_d0.off */
 			DRA7XX_CORE_IOPAD(0x36B4, MUX_MODE14) /* G12: P9.18b: mcasp1_axr0.off */
-#else
-			DRA7XX_CORE_IOPAD(0x37CC, PIN_OUTPUT | MUX_MODE0) /* B24: P9.17a: spi2_cs0 */
-			DRA7XX_CORE_IOPAD(0x36B8, MUX_MODE15) /* F12: P9.17b: mcasp1_axr1.off */
-			DRA7XX_CORE_IOPAD(0x37C8, PIN_OUTPUT_PULLUP | MUX_MODE0) /* G17: P9.18a: spi2_d0 (mosi) */
-			DRA7XX_CORE_IOPAD(0x36B4, MUX_MODE15) /* G12: P9.18b: mcasp1_axr0.off */
-#endif
 			DRA7XX_CORE_IOPAD(0x3440, PIN_INPUT_PULLUP | MUX_MODE7) /* R6: P9.19a: gpmc_a0.i2c4_scl */
 			DRA7XX_CORE_IOPAD(0x357C, PIN_INPUT_PULLUP | MUX_MODE12 ) /* F4: P9.19b: vin2a_d5.pr1_pru1_gpi2 */
 			DRA7XX_CORE_IOPAD(0x3444, PIN_INPUT_PULLUP | MUX_MODE7) /* T9: P9.20a: gpmc_a1.i2c4_sda */
 			DRA7XX_CORE_IOPAD(0x3578, PIN_INPUT_PULLUP | MUX_MODE12) /* D2: P9.20b: vin2a_d4.pr1_pru1_gpi1 */
-#if 0
 			DRA7XX_CORE_IOPAD(0x34F0, MUX_MODE14) /* AF8: P9.21a: vin1a_vsync0.off */
 			DRA7XX_CORE_IOPAD(0x37C4, MUX_MODE14) /* B22: P9.21b: spi2_d1.off */
 			DRA7XX_CORE_IOPAD(0x369C, MUX_MODE14) /* B26: P9.22a: xref_clk2.off */
 			DRA7XX_CORE_IOPAD(0x37C0, MUX_MODE14) /* A26: P9.22b: spi2_sclk.off */
-#else
-			DRA7XX_CORE_IOPAD(0x34F0, MUX_MODE15) /* AF8: P9.21a: vin1a_vsync0.off */
-			DRA7XX_CORE_IOPAD(0x37C4, PIN_INPUT_PULLUP | MUX_MODE0) /* B22: P9.21b: spi2_d1 (miso) */
-			DRA7XX_CORE_IOPAD(0x369C, MUX_MODE15) /* B26: P9.22a: xref_clk2.off */
-			DRA7XX_CORE_IOPAD(0x37C0, PIN_OUTPUT_PULLUP | MUX_MODE0) /* A26: P9.22b: spi2_sclk FIXME: really bidir */
-#endif
 			DRA7XX_CORE_IOPAD(0x37B4, MUX_MODE14) /* A22: P9.23: spi1_cs1.off */
 			DRA7XX_CORE_IOPAD(0x368C, MUX_MODE14) /* F20: P9.24: gpio6_15.off */
 			DRA7XX_CORE_IOPAD(0x3694, MUX_MODE14) /* D18: P9.25: xref_clk0.off */
@@ -1173,4 +1159,15 @@
 &i2c4 {
 	status = "okay";
 	clock-frequency = <400000>;
+};
+
+/* thermal hacks */
+&cpu0_opp_table {
+	opp_slow-500000000 {
+		opp-hz = /bits/ 64 <500000000>;
+		opp-microvolt = <1060000 850000 1150000>,
+				<1060000 850000 1150000>;
+		opp-supported-hw = <0xFF 0x01>;
+		opp-suspend;
+	};
 };

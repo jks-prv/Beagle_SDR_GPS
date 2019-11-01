@@ -39,6 +39,7 @@ if { [info exists ::user_project_name] } {
 variable script_file
 set script_file "make_proj.tcl"
 set rx4_wf4 "no"
+set rx14_wf1 "no"
 set regen_ip "no"
 
 # Help information for this script
@@ -81,7 +82,8 @@ if { $::argc > 0 } {
       "--origin_dir"   { incr i; set origin_dir [lindex $::argv $i] }
       "--result_dir"   { incr i; set result_dir [lindex $::argv $i] }
       "--project_name" { incr i; set project_name [lindex $::argv $i] }
-      "--rx4_wf4"     {          set rx4_wf4  "yes" }
+      "--rx4_wf4"      {         set rx4_wf4  "yes" }
+      "--rx14_wf1"     {         set rx14_wf1 "yes" }
       "--regen_ip"     {         set regen_ip "yes" }
       "--help"         { help }
       default {
@@ -343,22 +345,47 @@ proc set_rx_cfg rx_cfg {
     #set_property generic {RX_CFG=4} [current_fileset]
     set fdw [open "kiwi.cfg.vh" "w"]
     puts $fdw "parameter RX_CFG = ${rx_cfg};"
+    if { ${rx_cfg} != 16 } {
+        puts $fdw "`define USE_WF"
+    }
     close $fdw
+}
+
+proc build_rx4_wf4 {
+    set_rx_cfg 4
+    update_compile_order -fileset sources_1
+    reset_run -quiet synth_1
+    #launch_runs synth_1 -jobs 6
+    #launch_runs impl_1 -jobs 6
+    launch_runs impl_1 -to_step write_bitstream -jobs 6
+    wait_on_run impl_1
+    file copy -force $impl_dir/KiwiSDR.bit $result_dir/KiwiSDR.rx4.wf4.bit
+    file copy -force $impl_dir/usage_statistics_webtalk.html $result_dir/KiwiSDR.rx4.wf4.html
+}
+
+proc build_rx14_wf1 {
+    set_rx_cfg 14
+    update_compile_order -fileset sources_1
+    reset_run -quiet synth_1
+    launch_runs impl_1 -to_step write_bitstream -jobs 6
+    wait_on_run impl_1
+    file copy -force $impl_dir/KiwiSDR.bit $result_dir/KiwiSDR.rx14.wf1.bit
+    file copy -force $impl_dir/usage_statistics_webtalk.html $result_dir/KiwiSDR.rx14.wf1.html
 }
 
 set impl_dir KiwiSDR/KiwiSDR.runs/impl_1
 
-set_rx_cfg 4
-update_compile_order -fileset sources_1
-reset_run -quiet synth_1
-#launch_runs synth_1 -jobs 6
-#launch_runs impl_1 -jobs 6
-launch_runs impl_1 -to_step write_bitstream -jobs 6
-wait_on_run impl_1
-file copy -force $impl_dir/KiwiSDR.bit $result_dir/KiwiSDR.rx4.wf4.bit
-file copy -force $impl_dir/usage_statistics_webtalk.html $result_dir/KiwiSDR.rx4.wf4.html
+if {[string equal $rx4_wf4 "yes"]} {
+    build_rx4_wf4
+}
 
-if {[string equal $rx4_wf4 "no"]} {
+if {[string equal $rx14_wf1 "yes"]} {
+    build_rx14_wf1
+}
+
+if {[string equal $rx4_wf4 "no"] && [string equal $rx14_wf1 "no"]} {
+    build_rx4_wf4
+
     set_rx_cfg 8
     update_compile_order -fileset sources_1
     reset_run -quiet synth_1
@@ -374,6 +401,8 @@ if {[string equal $rx4_wf4 "no"]} {
     wait_on_run impl_1
     file copy -force $impl_dir/KiwiSDR.bit $result_dir/KiwiSDR.rx3.wf3.bit
     file copy -force $impl_dir/usage_statistics_webtalk.html $result_dir/KiwiSDR.rx3.wf3.html
+    
+    build_rx14_wf1
 }
 
 puts "INFO: Build complete:$project_name"
