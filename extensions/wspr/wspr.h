@@ -257,7 +257,8 @@ typedef struct {
 	WSPR_FFTW_COMPLEX *fftin, *fftout;
 	WSPR_FFTW_PLAN fftplan;
 	int FFTtask_group;
-	int not_launched;
+	int fft_init, not_launched;
+	u4_t fft_wakeups, fft_runs;
 	
 	// computed by sampler or FFT task, processed by decode task
 	time_t utc[N_PING_PONG];

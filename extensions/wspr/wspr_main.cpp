@@ -103,6 +103,11 @@ void WSPR_FFT(void *param)
 		    { int cck = (int) FROM_VOID_PARAM(TaskSleep()); assert(rx_chan == cck) },
 		    TaskSleep();
 		)
+		w->fft_runs++;
+		if (w->fft_wakeups != w->fft_runs) {
+		    //printf("WSPR-%02d: wakeups=%d runs=%d\n", rx_chan, w->fft_wakeups, w->fft_runs);
+		    w->fft_runs = w->fft_wakeups;
+		}
 		//wspr_printf("WSPR_FFTtask ..wakeup\n");
 		
 		int grp = w->FFTtask_group;
@@ -110,11 +115,16 @@ void WSPR_FFT(void *param)
 	
 		if (grp == 0) {
 		    wspr_aprintf("FFT pp=%d grp=%d (%d-%d)\n", w->fft_ping_pong, grp, first, last);
-		    if (w->not_launched) {
-		        printf("WSPR-%02d: decoder not launched previously! pgrp=%d plast=%d nffts=%d ============================================\n",
-		            rx_chan, pgrp, plast, nffts);
-		    }
-		    w->not_launched = 1;
+		    #if 0
+                if (w->not_launched) {
+                    printf("WSPR-%02d: decoder missed launch! pgrp=%d/%d plast=%d/%d ============================================\n",
+                        rx_chan, pgrp, GROUPS, plast, nffts);
+                }
+            #endif
+		    if (!w->fft_init)
+		        w->fft_init = 1;
+		    else
+		        w->not_launched = 1;
 		}
 		pgrp = grp; plast = last;
 	
@@ -607,8 +617,10 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 			if ((w->didx % NFFT) == (NFFT-1)) {
 				w->fft_ping_pong = w->ping_pong;
 				w->FFTtask_group = w->group-1;
-				if (w->group)   // skip first to pipeline
+				if (w->group) {     // skip first to pipeline
+				    w->fft_wakeups++;
 				    TaskWakeup(w->WSPR_FFTtask_id, TWF_CHECK_WAKING, TO_VOID_PARAM(w->rx_chan));
+				}
 				w->group++;
 			}
 			w->didx++;
@@ -818,6 +830,15 @@ void wspr_main()
     int_decimate = snd_rate / FSRATE;
     wspr_gprintf("WSPR %s decimation: srate=%.6f/%d decim=%.6f/%d sps=%d NFFT=%d nbins_411=%d\n", FRACTIONAL_DECIMATION? "fractional" : "integer",
         frate, snd_rate, fdecimate, int_decimate, SPS, NFFT, nbins_411);
+
+    bool autorun = (*wspr_c.rcall == '\0' || wspr_c.rgrid[0] == '\0')? false : true;
+	//printf("autorun %d rcall <%s> rgrid <%s>\n", autorun, wspr_c.rcall, wspr_c.rgrid);
+
+    for (int i=0; autorun && i < rx_chans; i++) {
+        bool err;
+        int idx = cfg_int(stprintf("WSPR.autorun%d", i), &err, CFG_OPTIONAL);
+        if (!err && idx != 0) wspr_autorun(i, idx);
+    }
 }
 
 #endif
