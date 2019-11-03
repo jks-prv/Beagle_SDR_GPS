@@ -2,6 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.339  November 3, 2019
+    Incorrectly used RX2_STAGES = 4 for all FPGA configuration builds instead of original = 5
+        (rx14_wf1 config for BBAI had to use RX2_STAGES = 4 to fit in the FPGA)
+    Due to the additional noise caused by RX2_STAGES = 4 the BBAI rx14_wf1 config has to be
+        changed back to RX2_STAGES = 5 and downgraded to rx14_wf0 (i.e. no waterfall,
+        only audio FFT for all 14-channels) to fit in the FPGA.
+
 v1.338  November 3, 2019
     Launch WSPR autorun at correct time.
 

@@ -78,7 +78,7 @@ typedef enum { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NB
 
 typedef enum { DOM_SEL_NAM=0, DOM_SEL_DUC=1, DOM_SEL_PUB=2, DOM_SEL_SIP=3, DOM_SEL_REV=4 } sdr_hu_dom_sel_e;
 
-typedef enum { RX_4_WF_4=0, RX_8_WF_2=1, RX_3_WF_3=2 } firmware_e;
+typedef enum { RX4_WF4=0, RX8_WF2=1, RX3_WF3=2, RX14_WF0=3 } firmware_e;
 
 #define	KEEPALIVE_SEC		60
 
