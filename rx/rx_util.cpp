@@ -149,7 +149,7 @@ void update_vars_from_config()
     // force DC offsets to the default value if not configured
     // also if set to the previous default value
     int firmware_sel = admcfg_default_int("firmware_sel", 0, &update_admcfg);   // needed below
-    int mode_20kHz = (firmware_sel == RX_3_WF_3)? 1:0;
+    int mode_20kHz = (firmware_sel == RX3_WF3)? 1:0;
     TYPEREAL Ioff, Ioff_20kHz, Qoff, Qoff_20kHz;
     //printf("mode_20kHz=%d\n", mode_20kHz);
 

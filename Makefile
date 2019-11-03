@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 338
+VERSION_MIN = 339
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -344,7 +344,7 @@ endif
 ################################
 #SRC_DEPS = Makefile
 SRC_DEPS = 
-BIN_DEPS = KiwiSDR.rx4.wf4.bit KiwiSDR.rx8.wf2.bit KiwiSDR.rx3.wf3.bit KiwiSDR.rx14.wf1.bit
+BIN_DEPS = KiwiSDR.rx4.wf4.bit KiwiSDR.rx8.wf2.bit KiwiSDR.rx3.wf3.bit KiwiSDR.rx14.wf0.bit
 #BIN_DEPS = 
 DEVEL_DEPS = $(OBJ_DIR_WEB)/web_devel.o $(KEEP_DIR)/edata_always.o $(KEEP_DIR)/edata_always2.o
 EMBED_DEPS = $(OBJ_DIR_WEB)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o  $(KEEP_DIR)/edata_always2.o
@@ -797,8 +797,8 @@ KiwiSDR.rx8.wf2.bit: $(V_DIR)/KiwiSDR.rx8.wf2.bit
 KiwiSDR.rx3.wf3.bit: $(V_DIR)/KiwiSDR.rx3.wf3.bit
 	rsync -av $(V_DIR)/KiwiSDR.rx3.wf3.bit .
 
-KiwiSDR.rx14.wf1.bit: $(V_DIR)/KiwiSDR.rx14.wf1.bit
-	rsync -av $(V_DIR)/KiwiSDR.rx14.wf1.bit .
+KiwiSDR.rx14.wf0.bit: $(V_DIR)/KiwiSDR.rx14.wf0.bit
+	rsync -av $(V_DIR)/KiwiSDR.rx14.wf0.bit .
 
 endif
 
@@ -854,7 +854,7 @@ else
 	install -D -o root -g root KiwiSDR.rx4.wf4.bit /usr/local/bin/KiwiSDR.rx4.wf4.bit
 	install -D -o root -g root KiwiSDR.rx8.wf2.bit /usr/local/bin/KiwiSDR.rx8.wf2.bit
 	install -D -o root -g root KiwiSDR.rx3.wf3.bit /usr/local/bin/KiwiSDR.rx3.wf3.bit
-	install -D -o root -g root KiwiSDR.rx14.wf1.bit /usr/local/bin/KiwiSDR.rx14.wf1.bit
+	install -D -o root -g root KiwiSDR.rx14.wf0.bit /usr/local/bin/KiwiSDR.rx14.wf0.bit
 #
 	install -o root -g root unix_env/kiwid /etc/init.d
 	install -o root -g root -m 0644 unix_env/kiwid.service /etc/systemd/system
@@ -1046,10 +1046,10 @@ rsync_su:
 rsync_port:
 	sudo $(RSYNC_PORT)
 rsync_bit:
-	rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit $(V_DIR)/KiwiSDR.rx8.wf2.bit $(V_DIR)/KiwiSDR.rx3.wf3.bit $(V_DIR)/KiwiSDR.rx14.wf1.bit .
+	rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit $(V_DIR)/KiwiSDR.rx8.wf2.bit $(V_DIR)/KiwiSDR.rx3.wf3.bit $(V_DIR)/KiwiSDR.rx14.wf0.bit .
 	sudo $(RSYNC)
 rsync_bit_port:
-	rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit $(V_DIR)/KiwiSDR.rx8.wf2.bit $(V_DIR)/KiwiSDR.rx3.wf3.bit $(V_DIR)/KiwiSDR.rx14.wf1.bit .
+	rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit $(V_DIR)/KiwiSDR.rx8.wf2.bit $(V_DIR)/KiwiSDR.rx3.wf3.bit $(V_DIR)/KiwiSDR.rx14.wf0.bit .
 	sudo $(RSYNC_PORT)
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))

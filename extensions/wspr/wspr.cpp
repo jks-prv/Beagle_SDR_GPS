@@ -481,8 +481,6 @@ void wspr_init()
     }
     
     wspr_update_vars_from_config();
-    bool autorun = (*wspr_c.rcall == '\0' || wspr_c.rgrid[0] == '\0')? false : true;
-	//printf("autorun %d rcall <%s> rgrid <%s>\n", autorun, wspr_c.rcall, wspr_c.rgrid);
 }
 
 #ifdef WSPR_SHMEM_DISABLE

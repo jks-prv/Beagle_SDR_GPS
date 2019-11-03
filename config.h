@@ -29,7 +29,7 @@ Boston, MA  02110-1301, USA.
 #define FW_SEL_SDR_RX4_WF4  0
 #define FW_SEL_SDR_RX8_WF2  1
 #define FW_SEL_SDR_RX3_WF3  2
-#define FW_SEL_SDR_RX14_WF1 3
+#define FW_SEL_SDR_RX14_WF0 3
 
 #define MAX_RX_CHANS    16
 #define MAX_WF_CHANS    4

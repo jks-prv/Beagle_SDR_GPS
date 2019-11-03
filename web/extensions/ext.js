@@ -654,6 +654,8 @@ function extint_select_menu()
 	if (extint_names) for (var i=0; i < extint_names.length; i++) {
 		//if (!dbgUs && extint_names[i] == 'devl') continue;
 
+		if (!dbgUs && extint_names[i] == 'sig_gen') continue;	// when USE_GEN == 0
+
 		if (!dbgUs && extint_names[i] == 's4285') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'timecode') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'colormap') continue;	// FIXME: hide while we develop
