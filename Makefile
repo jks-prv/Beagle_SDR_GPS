@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 339
+VERSION_MIN = 340
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -290,49 +290,49 @@ endif
 	@mkdir -p $(DIR_CFG)
 	touch $(KEYRING)
 
-/usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a:
+/usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a: $(KEYRING)
 	apt-get -y install libfftw3-dev
 
-/usr/bin/clang:
+/usr/bin/clang: $(KEYRING)
 	apt-get -y install clang
 
-/usr/bin/curl:
+/usr/bin/curl: $(KEYRING)
 	-apt-get -y install curl
 
-/usr/bin/wget:
+/usr/bin/wget: $(KEYRING)
 	-apt-get -y install wget
 
-/usr/sbin/avahi-autoipd:
+/usr/sbin/avahi-autoipd: $(KEYRING)
 	-apt-get -y install avahi-daemon avahi-utils libnss-mdns avahi-autoipd
 
-/usr/bin/upnpc:
+/usr/bin/upnpc: $(KEYRING)
 	-apt-get -y install miniupnpc
 
-/usr/bin/dig:
+/usr/bin/dig: $(KEYRING)
 	-apt-get -y install dnsutils
 
-/usr/bin/pnmtopng:
+/usr/bin/pnmtopng: $(KEYRING)
 	-apt-get -y install pnmtopng
 
-/sbin/ethtool:
+/sbin/ethtool: $(KEYRING)
 	-apt-get -y install ethtool
 
-/usr/bin/sshpass:
+/usr/bin/sshpass: $(KEYRING)
 	-apt-get -y install sshpass
 
-/usr/bin/killall:
+/usr/bin/killall: $(KEYRING)
 	-apt-get -y install psmisc
 
-/usr/bin/dtc:
+/usr/bin/dtc: $(KEYRING)
 	-apt-get -y install device-tree-compiler
 
 ifeq ($(BBAI),true)
-/usr/bin/cpufreq-info:
+/usr/bin/cpufreq-info: $(KEYRING)
 	-apt-get -y install cpufrequtils
 endif
 
 ifneq ($(DEBIAN_7),true)
-/usr/bin/jq:
+/usr/bin/jq: $(KEYRING)
 	-apt-get -y install jq
 endif
 
