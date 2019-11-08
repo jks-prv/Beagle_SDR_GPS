@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.343  November 9, 2019
+    Fix for broken updating from v1.2 factory distro.
+
+v1.342  November 8, 2019
+    Emergency rollback to v1.339 state.
+
 v1.341  November 8, 2019
     A hopefully more correct fix for the v1.2 update problem.
     Fixed synchronization problem causing IQ display instability with VLF/LF stations.

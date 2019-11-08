@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 341
+VERSION_MIN = 343
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -286,6 +286,7 @@ ifeq ($(DEBIAN_7),true)
 	sed -e 's/ftp\.us/archive/' < /etc/apt/sources.list >/tmp/sources.list
 	mv /tmp/sources.list /etc/apt/sources.list
 endif
+	-apt-get update
 	-apt-get install debian-archive-keyring
 	-apt-get update
 	@mkdir -p $(DIR_CFG)
@@ -293,62 +294,48 @@ endif
 
 /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a:
 	apt-get -y install libfftw3-dev
-#	-@touch /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a
 
 /usr/bin/clang:
 	apt-get -y install clang
-#	-@touch /usr/bin/clang
 
 /usr/bin/curl:
 	-apt-get -y install curl
-#	-@touch /usr/bin/curl
 
 /usr/bin/wget:
 	-apt-get -y install wget
-#	-@touch /usr/bin/wget
 
 /usr/sbin/avahi-autoipd:
 	-apt-get -y install avahi-daemon avahi-utils libnss-mdns avahi-autoipd
-#	-@touch /usr/sbin/avahi-autoipd
 
 /usr/bin/upnpc:
 	-apt-get -y install miniupnpc
-#	-@touch /usr/bin/upnpc
 
 /usr/bin/dig:
 	-apt-get -y install dnsutils
-#	-@touch /usr/bin/dig
 
 /usr/bin/pnmtopng:
 	-apt-get -y install pnmtopng
-#	-@touch /usr/bin/pnmtopng
 
 /sbin/ethtool:
 	-apt-get -y install ethtool
-#	-@touch /sbin/ethtool
 
 /usr/bin/sshpass:
 	-apt-get -y install sshpass
-#	-@touch /usr/bin/sshpass
 
 /usr/bin/killall:
 	-apt-get -y install psmisc
-#	-@touch /usr/bin/killall
 
 /usr/bin/dtc:
 	-apt-get -y install device-tree-compiler
-#	-@touch /usr/bin/dtc
 
 ifeq ($(BBAI),true)
 /usr/bin/cpufreq-info:
 	-apt-get -y install cpufrequtils
-#	-@touch /usr/bin/cpufreq-info
 endif
 
 ifneq ($(DEBIAN_7),true)
 /usr/bin/jq:
 	-apt-get -y install jq
-#	-@touch /usr/bin/jq
 endif
 
 endif
