@@ -19,6 +19,33 @@ Boston, MA  02110-1301, USA.
 
 `include "kiwi.vh"
 
+`ifdef MEAS_CIC_OUT
+module RECEIVER (
+	input wire		   adc_clk,
+	input wire signed [ADC_BITS-1:0] adc_data,
+
+    output wire        rx_rd_C,
+    output wire [15:0] rx_dout_C,
+
+    output wire        wf_rd_C,
+    output wire [15:0] wf_dout_C,
+
+    input  wire [47:0] ticks_A,
+    
+	input  wire		   cpu_clk,
+    output wire        ser,
+    input  wire [31:0] tos,
+    input  wire [15:0] op,
+    input  wire        rdReg,
+    input  wire        rdBit2,
+    input  wire        wrReg2,
+    input  wire        wrEvt2,
+    
+    input  wire [15:0] ctrl,
+	
+	output wire [7:0]   cic_out
+	);
+`else
 module RECEIVER (
 	input wire		   adc_clk,
 	input wire signed [ADC_BITS-1:0] adc_data,
@@ -42,6 +69,7 @@ module RECEIVER (
     
     input  wire [15:0] ctrl
 	);
+`endif
 	
 	wire set_rx_chan_C =	wrReg2 && op[SET_RX_CHAN];
 	wire set_rx_freqH_C =	wrReg2 && op[SET_RX_FREQ];
@@ -59,21 +87,13 @@ module RECEIVER (
 	// e.g. an ecpu code sequence like this:
 	//		rdReg HOST_RX; wrEvt2 FREEZE_TOS; nop; nop; wrReg2 SET_WF_FREQ
 
-    wire freeze_C = wrEvt2 && op[FREEZE_TOS];
-	wire [31:0] freeze_tos_A;
+	wire freeze_C = wrEvt2 && op[FREEZE_TOS];
 
-    reg [31:0] latch_tos_C;
-    always @ (posedge cpu_clk)
-        if (freeze_C) latch_tos_C <= tos;
-    
-`ifdef USE_SYNC_REG
-    SYNC_REG #(.WIDTH(32)) sync_latch_tos (
-	    .in_qual(1),        .in_reg(latch_tos_C),       .in_clk(cpu_clk),
-	    .out_strobe(),      .out_reg(freeze_tos_A),     .out_clk(adc_clk)
+	wire [31:0] freeze_tos_A;
+	SYNC_REG #(.WIDTH(32)) sync_latch_tos (
+	    .in_strobe(freeze_C),   .in_reg(tos),               .in_clk(cpu_clk),
+	    .out_strobe(),          .out_reg(freeze_tos_A),     .out_clk(adc_clk)
 	);
-`else
-    SYNC_WIRE sync_latch_tos [31:0] (.in(latch_tos_C), .out_clk(adc_clk), .out(freeze_tos_A));
-`endif
 	
 	
     //////////////////////////////////////////////////////////////////////////
@@ -120,33 +140,23 @@ module RECEIVER (
 
 	wire [V_RX_CHANS-1:0] rxn_sel_C = 1 << rx_channel_C;
 
-	wire [V_RX_CHANS*RX_OUT_WIDTH-1:0] rxn_dout_A;
 	wire [V_RX_CHANS-1:0] rxn_avail_A;
-
-	localparam RX_OUT_WIDTH = 16;
-
+	wire [V_RX_CHANS*16-1:0] rxn_dout_A;
+	
 	// Verilog note: if rd_i & rd_q are not declared before use in arrayed module RX below
 	// then automatic fanout of single-bit signal to all RX instances doesn't occur and
 	// an "undriven" error for rd_* results.
 	reg rd_i, rd_q;
 
-
-`ifdef USE_RX_SEQ_MUX
-
-	localparam CIC2_INTEG_WIDTH = RX2_BITS + RX2_GROWTH;
-
-	wire [V_RX_CHANS*CIC2_INTEG_WIDTH-1:0] rxn_integ_i_A, rxn_integ_q_A;
-
-	RX #(.IN_WIDTH(RX_IN_WIDTH), .OUT_WIDTH(CIC2_INTEG_WIDTH)) rx_inst [V_RX_CHANS-1:0] (
+	RX #(.IN_WIDTH(RX_IN_WIDTH)) rx_inst [V_RX_CHANS-1:0] (
 		.adc_clk		(adc_clk),
 		.adc_data		(rx_data),
 		
 		.rx_sel_C		(rxn_sel_C),
 
-		.rd_i			(),
-		.rd_q			(),
-		.rx_dout_i_A    (rxn_integ_i_A),
-		.rx_dout_q_A    (rxn_integ_q_A),
+		.rd_i			(rd_i),
+		.rd_q			(rd_q),
+		.rx_dout_A		(rxn_dout_A),
 		.rx_avail_A		(rxn_avail_A),
 
 		.cpu_clk		(cpu_clk),
@@ -155,57 +165,26 @@ module RECEIVER (
 		.set_rx_freqH_C	(set_rx_freqH_C),
 		.set_rx_freqL_C	(set_rx_freqL_C)
 	);
-	
-	cic_seq_mux_iq_prune #(.IN_WIDTH(CIC2_INTEG_WIDTH), .OUT_WIDTH(RX_OUT_WIDTH), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM)) cic_mux (
-		.clock          (adc_clk),
-        .reset			(1'b0),
 
-		.rx_integ_i_A   (rxn_integ_i_A),
-		.rx_integ_q_A   (rxn_integ_q_A),
-		.rx_i_avail_A   (rxn_avail_A[0]),
-
-		.rd_i			(rd_i),
-		.rd_q			(rd_q),
-		.rx_dout_A      (rxn_dout_A),
-		.rx_o_avail_A   (rx_avail_A)
-	);
-
-	wire [RX_OUT_WIDTH-1:0] rx_dout_A;
-	MUX #(.WIDTH(RX_OUT_WIDTH), .SEL(V_RX_CHANS)) rx_mux(.in(rxn_dout_A), .sel(rxn_d[L2RX:0]), .out(rx_dout_A));
+`ifdef MEAS_CIC_OUT
+    reg [7:0] cic_out_A;
     
-`else
+	always @ (posedge adc_clk)
+		if (rx_avail_A && rd_i && !rd_q)
+		begin
+		    cic_out_A <= rxn_dout_A[15 -:4];
+		end
 
-	RX #(.IN_WIDTH(RX_IN_WIDTH), .OUT_WIDTH(RX_OUT_WIDTH)) rx_inst [V_RX_CHANS-1:0] (
-		.adc_clk		(adc_clk),
-		.adc_data		(rx_data),
-		
-		.rx_sel_C		(rxn_sel_C),
-
-		.rd_i			(rd_i),
-		.rd_q			(rd_q),
-		.rx_dout_i_A    (rxn_dout_A),
-		.rx_dout_q_A    (),
-		.rx_avail_A		(rxn_avail_A),
-
-		.cpu_clk		(cpu_clk),
-		.freeze_tos		(freeze_tos_A),
-		
-		.set_rx_freqH_C	(set_rx_freqH_C),
-		.set_rx_freqL_C	(set_rx_freqL_C)
-	);
-
-	wire rx_avail_A = rxn_avail_A[0];		// all DDCs should signal available at the same time since decimation is the same
-
-	wire [RX_OUT_WIDTH-1:0] rx_dout_A;
-	MUX #(.WIDTH(RX_OUT_WIDTH), .SEL(V_RX_CHANS)) rx_mux(.in(rxn_dout_A), .sel(rxn_d[L2RX:0]), .out(rx_dout_A));
-	
+    assign cic_out = cic_out_A;     // RX channel 0 top 4-bits
 `endif
 
-
+	
     //////////////////////////////////////////////////////////////////////////
 	// shared rx audio sample memory
 	// when the DDC samples are available, all the receiver outputs are interleaved into a common buffer
     //////////////////////////////////////////////////////////////////////////
+	
+	wire rx_avail_A = rxn_avail_A[0];		// all DDCs should signal available at the same time since decimation is the same
 	
     reg [L2RX+1:0] rxn;		// careful: needs to hold V_RX_CHANS for the "rxn == V_RX_CHANS" test, not V_RX_CHANS-1
     reg [L2RX:0] rxn_d;
@@ -420,18 +399,17 @@ module RECEIVER (
 	wire reset_bufs_C =  wrEvt2 && op[RX_BUFFER_RST];
 	wire get_buf_ctr_C = wrEvt2 && op[RX_GET_BUF_CTR];
 	
+	wire [15:0] rx_dout_A;
+	MUX #(.WIDTH(16), .SEL(V_RX_CHANS)) rx_mux(.in(rxn_dout_A), .sel(rxn_d[L2RX:0]), .out(rx_dout_A));
+	
 	reg  [15:0] buf_ctr;	
 	wire [15:0] buf_ctr_C;
 
     // continuously sync buf_ctr => buf_ctr_C
-`ifdef USE_SYNC_REG
 	SYNC_REG #(.WIDTH(16)) sync_buf_ctr (
-	    .in_qual(1),        .in_reg(buf_ctr),       .in_clk(adc_clk),
+	    .in_strobe(1),      .in_reg(buf_ctr),       .in_clk(adc_clk),
 	    .out_strobe(),      .out_reg(buf_ctr_C),    .out_clk(cpu_clk)
 	);
-`else
-    SYNC_WIRE sync_buf_ctr [15:0] (.in(buf_ctr), .out_clk(cpu_clk), .out(buf_ctr_C));
-`endif
 
 	always @ (posedge adc_clk)
 		if (reset_bufs_A)

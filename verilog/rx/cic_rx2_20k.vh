@@ -1,7 +1,7 @@
 // generated file
 
 // CIC: INTEG_COMB N=5 R=4 M=1 Bin=18 Bout=24
-// growth 10 = ceil(N=5 * log2(R=4)=2.0)
+// growth 10 = ceil(N=5 * log2(R=4)=2)
 // Bin 18 + growth 10 = acc_max 28
 
 wire signed [27:0] integrator0_data;

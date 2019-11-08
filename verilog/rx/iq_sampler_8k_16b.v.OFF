@@ -1,5 +1,3 @@
-`include "kiwi.vh"
-
 `default_nettype none
 
 // IQ sampler, 8K x 2 x 16-bit, 8 36kb BRAMs

@@ -116,7 +116,6 @@ CmdSetRXFreq:	rdReg	HOST_RX				; rx#
                 RdReg32	HOST_RX				; freqH
 				FreezeTOS
                 wrReg2	SET_RX_FREQ			;
-                B2B_FreezeTOS               ; delay so back-to-back FreezeTOS works
                 rdReg	HOST_RX				; freqL
 				FreezeTOS
                 wrReg2	SET_RX_FREQ_L		;

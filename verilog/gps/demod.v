@@ -18,8 +18,6 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-`include "kiwi.vh"
-
 `default_nettype none
 
 module DEMOD (

@@ -29,13 +29,6 @@
 				 nop
 				ENDM
 
-				MACRO	B2B_FreezeTOS
-				 nop								; enough time between two consecutive FreezeTOS
-				 nop
-				 nop
-				 nop
-				ENDM
-
 				MACRO	StackCheck	which expected
 #if STACK_CHECK
 				 push	which
