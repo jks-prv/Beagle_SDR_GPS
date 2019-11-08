@@ -215,6 +215,16 @@ preproc_t *pre(char *str, preproc_type_e ptype)
 	return 0;
 }
 
+int preval(const char *str)
+{
+    preproc_t *p = pre((char *) str, PT_DEF);
+    if (p == NULL) {
+        printf("preproc sym not found: %s\n", str);
+        panic("preval");
+    }
+    return p->val;
+}
+
 
 // expressions
 

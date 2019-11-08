@@ -24,9 +24,9 @@ Boston, MA  02110-1301, USA.
 //
 // See: zipcpu.com/blog/2017/10/20/cdc.html
 
-module SYNC_REG #(parameter WIDTH=1) (
-	input  wire in_qual,    // must be a qualifier, NOT a pulse
-	input  wire [WIDTH-1:0] in_reg,
+module SYNC_REG_LATCHED #(parameter WIDTH=1) (
+	input  wire in_strobe,
+	input  wire [WIDTH-1:0] in,
 	input  wire in_clk,
 
 	output reg  out_strobe,
@@ -34,6 +34,9 @@ module SYNC_REG #(parameter WIDTH=1) (
 	input  wire out_clk
 	);
 	
+	reg [WIDTH-1:0] in_reg;
+	reg in_avail;
+
 	reg [WIDTH-1:0] shared_reg;
 	reg valid_data;
 	
@@ -47,20 +50,33 @@ module SYNC_REG #(parameter WIDTH=1) (
 	wire out_req_last = out_reqs[1];
 
     always @ (posedge in_clk)
-        if (!busy && in_qual)
+    begin
+        if (in_strobe && !in_avail)
+        begin
+            in_reg <= in;
+            in_avail <= 1'b1;
+        end
+
+        if (!busy && in_avail)
         begin
             shared_reg <= in_reg;
             valid_data <= 1'b1;
         end else
         if (in_ack)
+        begin
             valid_data <= 1'b0;
+        end
 
-    always @ (posedge in_clk)
         if (!busy && valid_data)
+        begin
             in_req <= 1'b1;
-        else
+        end else
         if (in_ack)
+        begin
             in_req <= 1'b0;
+            in_avail <= 1'b0;
+        end
+    end
     
     // synchronize request from in_clk domain to out_clk domain
 	SYNC_WIRE #(.NOUT(2)) req_inst (.in(in_req),       .out_clk(out_clk), .out(out_reqs));

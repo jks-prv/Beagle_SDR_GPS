@@ -18,6 +18,8 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
+`include "kiwi.vh"
+
 module CACODE (
     input  wire        rst,
     input  wire        clk,

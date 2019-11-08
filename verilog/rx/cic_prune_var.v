@@ -35,9 +35,11 @@ module cic_prune_var (
 	input wire clock,
 	input wire reset,
 	input wire [MD-1:0] decimation,
+
 	input wire in_strobe,
-	output reg out_strobe,
 	input wire signed [IN_WIDTH-1:0] in_data,
+
+	output reg out_strobe,
 	output reg signed [OUT_WIDTH-1:0] out_data
 	);
 

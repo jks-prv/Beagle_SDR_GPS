@@ -18,6 +18,8 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
+`include "kiwi.vh"
+
 `default_nettype none
 
 // 64K bit buffer and serial-write to 16-bit parallel-read converter

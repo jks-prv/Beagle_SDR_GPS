@@ -1,3 +1,5 @@
+`include "kiwi.vh"
+
 `default_nettype none
 
 // IQ sampler, 8K x 2 x 16-bit, 8 36kb BRAMs
@@ -38,10 +40,14 @@ module IQ_SAMPLER_8K_32B (
 	wire [12:0] sync_wr_addr;
 
     // continuously sync wr_addr => sync_wr_addr
+`ifdef USE_SYNC_REG
 	SYNC_REG #(.WIDTH(13)) sync_wr_addr_inst (
-	    .in_strobe(1),      .in_reg(wr_addr),           .in_clk(wr_clk),
+	    .in_qual(1),        .in_reg(wr_addr),           .in_clk(wr_clk),
 	    .out_strobe(),      .out_reg(sync_wr_addr),     .out_clk(rd_clk)
 	);
+`else
+    SYNC_WIRE sync_wr_addr_inst [12:0] (.in(wr_addr), .out_clk(rd_clk), .out(sync_wr_addr));
+`endif
 	
     always @ (posedge rd_clk)
         if (rd_rst)
