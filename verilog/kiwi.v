@@ -148,12 +148,6 @@ module KiwiSDR (
 	assign P9[1] = ctrl[CTRL_UNUSED_OUT];
 	assign P9[3] = ctrl[CTRL_UNUSED_OUT];
 
-`ifdef MEAS_CIC_OUT
-    wire [7:0] cic_out;
-	assign P8[7:0] = cic_out;
-	assign P8[8] = ctrl[CTRL_UNUSED_OUT];
-	assign P8[9] = ctrl[CTRL_UNUSED_OUT];
-`else
 	assign P8[0] = ctrl[CTRL_UNUSED_OUT];
 	assign P8[1] = ctrl[CTRL_UNUSED_OUT];
 	assign P8[2] = ctrl[CTRL_UNUSED_OUT];
@@ -164,7 +158,6 @@ module KiwiSDR (
 	assign P8[7] = ctrl[CTRL_UNUSED_OUT];
 	assign P8[8] = ctrl[CTRL_UNUSED_OUT];
 	assign P8[9] = ctrl[CTRL_UNUSED_OUT];
-`endif
     
 	wire unused_inputs = IF_MAG | P9[2];
 
@@ -191,34 +184,6 @@ module KiwiSDR (
 	
 	wire [47:0] ticks_A;
 	
-`ifdef MEAS_CIC_OUT
-    RECEIVER receiver (
-    	.adc_clk	(adc_clk),
-    	.adc_data	(reg_adc_data),
-
-		// these are all on the cpu_clk
-        .rx_rd_C	(rx_rd),
-        .rx_dout_C	(rx_dout),
-
-        .wf_rd_C	(wf_rd),
-        .wf_dout_C	(wf_dout),
-
-        .ticks_A	(ticks_A),
-        
-		.cpu_clk	(cpu_clk),
-        .ser		(ser[1]),        
-        .tos		(tos),
-        .op			(op),        
-        .rdReg      (rdReg),
-        .rdBit2     (rdBit2),
-        .wrReg2     (wrReg2),
-        .wrEvt2     (wrEvt2),
-        
-        .ctrl       (ctrl),
-        
-        .cic_out    (cic_out)
-    	);
-`else
     RECEIVER receiver (
     	.adc_clk	(adc_clk),
     	.adc_data	(reg_adc_data),
@@ -243,7 +208,6 @@ module KiwiSDR (
         
         .ctrl       (ctrl)
     	);
-`endif
 
 	wire rx_ovfl_C, rx_orst;
 	reg rx_overflow_C;

@@ -215,8 +215,8 @@ void cic_gen(char *fn, int mflags, int N, int R, int Bin, int Bout)
 	}
 	trunc_extra[N2P1] = 0;
 	
-	printf("growth %.0f = ceil(N=%d * log2(R=%d)=%.0f)\n", Num_of_Bits_Growth, N, R, log2(R));
-	if (fp) fprintf(fp, "// growth %.0f = ceil(N=%d * log2(R=%d)=%.0f)\n", Num_of_Bits_Growth, N, R, log2(R));
+	printf("growth %.0f = ceil(N=%d * log2(R=%d)=%.1f)\n", Num_of_Bits_Growth, N, R, log2(R));
+	if (fp) fprintf(fp, "// growth %.0f = ceil(N=%d * log2(R=%d)=%.1f)\n", Num_of_Bits_Growth, N, R, log2(R));
 
 	printf("Bin %d + growth %.0f = acc_max %.0f\n", Bin, Num_of_Bits_Growth, Num_Output_Bits_With_No_Truncation);
 	if (fp) fprintf(fp, "// Bin %d + growth %.0f = acc_max %.0f\n\n", Bin, Num_of_Bits_Growth, Num_Output_Bits_With_No_Truncation);
@@ -359,8 +359,8 @@ int main (int argc, char *argv[])
 	cic_gen("cic_rx1_12k.vh", INTEG_COMB, RX1_STAGES, RX1_12K_DECIM, RX1_BITS, RX2_BITS);
 	cic_gen("cic_rx1_20k.vh", INTEG_COMB, RX1_STAGES, RX1_20K_DECIM, RX1_BITS, RX2_BITS);
 
-#ifdef USE_RX_SEQ
-	// For USE_RX_SEQ the cic_gen() mode is INTEG_ONLY because the comb part of the
+#if defined(USE_RX_SEQ_MUX) || defined(USE_RX_SEQ_SEP)
+	// For USE_RX_SEQ_MUX/SEP the cic_gen() mode is INTEG_ONLY because the comb part of the
 	// rx second stage is done by the rx sequential state machine.
 	cic_gen("cic_rx2_12k.vh", EMPTY, 0, 0, 0, 0);
 	cic_gen("cic_rx2_20k.vh", EMPTY, 0, 0, 0, 0);

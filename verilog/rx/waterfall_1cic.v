@@ -78,8 +78,8 @@ module WATERFALL_1CIC (
 
 	localparam MD = clog2(WF_1CIC_MAXD) + 1;		// +1 because need to represent WF_1CIC_MAXD, not WF_1CIC_MAXD-1
 	// see freeze_tos[] below
-	// assert(WF_1CIC_MAXD <= 32768);
-	// assert(MD <= 16);
+	localparam ASSERT_WF_1CIC_MAXD = assert(WF_1CIC_MAXD <= 32768, "WF_1CIC_MAXD");
+	localparam ASSERT_MD = assert(MD <= 16, "MD");
 	//wire [MD-1:0] md = 0; how_big(.p(md));
 
 	reg [MD-1:0] decim;

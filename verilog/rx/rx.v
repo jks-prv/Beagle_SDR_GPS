@@ -29,7 +29,7 @@ module RX (
 
 	input  wire		   rd_i,
 	input  wire		   rd_q,
-	output wire [15:0] rx_dout_A,
+	output wire [OUT_WIDTH-1:0] rx_dout_i_A, rx_dout_q_A,
 	output wire		   rx_avail_A,
 
 	input  wire		   cpu_clk,
@@ -40,6 +40,7 @@ module RX (
 	);
 	
 	parameter IN_WIDTH  = "required";
+	parameter OUT_WIDTH  = "required";
 
 	reg signed [47:0] rx_phase_inc;
 	wire set_phaseH, set_phaseL;
@@ -67,8 +68,6 @@ module RX (
 	wire rx_cic1_avail;
 	wire signed [RX2_BITS-1:0] rx_cic1_out_i, rx_cic1_out_q;
 
-	localparam RX1_GROWTH = RX1_STAGES * clog2(RX1_DECIM);
-
 cic_prune_var #(.INCLUDE("rx1"), .STAGES(RX1_STAGES), .DECIMATION(RX1_DECIM), .GROWTH(RX1_GROWTH), .IN_WIDTH(RX1_BITS), .OUT_WIDTH(RX2_BITS))
 	rx_cic1_i(
 		.clock			(adc_clk),
@@ -91,57 +90,105 @@ cic_prune_var #(.INCLUDE("rx1"), .STAGES(RX1_STAGES), .DECIMATION(RX1_DECIM), .G
 		.out_data		(rx_cic1_out_q)
     );
 
-    wire rx_cic2_strobe_i;
-	wire signed [RXO_BITS-1:0] rx_cic2_out_i, rx_cic2_out_q;
+`ifdef USE_RX_SEQ_MUX
 
-	localparam RX2_GROWTH = RX2_STAGES * clog2(RX2_DECIM);
+    wire rx_cic2_strobe_i, rx_cic2_strobe_q;
+	wire signed [OUT_WIDTH-1:0] rx_cic2_out_i, rx_cic2_out_q;
 
-`ifdef USE_RX_SEQ
+    cic_seq_integ_iq_prune #(.INCLUDE("rx3"), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .GROWTH(RX2_GROWTH), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(OUT_WIDTH))
+        rx_cic2 (
+            .clock			(adc_clk),
+            .reset			(1'b0),
+    
+            .in_strobe		(rx_cic1_avail),
+            .in_data_i		(rx_cic1_out_i),
+            .in_data_q		(rx_cic1_out_q),
+    
+            .out_strobe_i   (rx_cic2_strobe_i),
+            .out_strobe_q   (rx_cic2_strobe_q),
+            .out_data_i     (rx_cic2_out_i),
+            .out_data_q     (rx_cic2_out_q)
+        );
 
-cic_prune_seq #(.INCLUDE("rx3"), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .GROWTH(RX2_GROWTH), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
-	rx_cic2 (
-		.clock			(adc_clk),
-		.reset			(1'b0),
-		.in_strobe		(rx_cic1_avail),
-		.out_strobe_i	(rx_cic2_strobe_i),
-		.out_strobe_q	(),
-		.in_data_i		(rx_cic1_out_i),
-		.in_data_q		(rx_cic1_out_q),
-		.out_data		(rx_cic2_out)
-    );
+    assign rx_avail_A  = rx_cic2_strobe_i;
+	assign rx_dout_i_A = rx_cic2_out_i;
+	assign rx_dout_q_A = rx_cic2_out_q;
+
+`elsif USE_RX_SEQ_SEP
+
+    wire rx_cic2_strobe_i, rx_cic2_strobe_q;
+	wire signed [RXO_BITS-1:0] rx_cic2_out;
+	reg  signed [RXO_BITS-1:0] rx_cic2_out_i, rx_cic2_out_q;
+
+    cic_seq_sep_iq_prune #(.INCLUDE("rx3"), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .GROWTH(RX2_GROWTH), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
+        rx_cic2 (
+            .clock			(adc_clk),
+            .reset			(1'b0),
+    
+            .in_strobe		(rx_cic1_avail),
+            .in_data_i		(rx_cic1_out_i),
+            .in_data_q		(rx_cic1_out_q),
+    
+            .out_strobe_i   (rx_cic2_strobe_i),
+            .out_strobe_q   (rx_cic2_strobe_q),
+            .out_data_iq    (rx_cic2_out)
+        );
+
+    always @ (posedge adc_clk)
+    begin
+        if (rx_cic2_strobe_i) rx_cic2_out_i <= rx_cic2_out;
+        if (rx_cic2_strobe_q) rx_cic2_out_q <= rx_cic2_out;
+    end
+
+    assign rx_avail_A = rx_cic2_strobe_q;   // okay that this is one clock early due to delays in rx audio sample mem state machine
+
+	reg [OUT_WIDTH-1:0] rx_dout;
+	always @*
+		rx_dout = rd_i? rx_cic2_out_i[OUT_WIDTH-1:0] : ( rd_q? rx_cic2_out_q[OUT_WIDTH-1:0] : {rx_cic2_out_i[RXO_BITS-1 -:8], rx_cic2_out_q[RXO_BITS-1 -:8]} );
+
+	assign rx_dout_i_A = rx_dout;
+	assign rx_dout_q_A = {OUT_WIDTH{1'b0}};
 
 `else
 
-cic_prune_var #(.INCLUDE("rx2"), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .GROWTH(RX2_GROWTH), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
-	rx_cic2_i(
-		.clock			(adc_clk),
-		.reset			(1'b0),
-		.decimation		(18'b0),
-		.in_strobe		(rx_cic1_avail),
-		.out_strobe		(rx_cic2_strobe_i),
-		.in_data		(rx_cic1_out_i),
-		.out_data		(rx_cic2_out_i)
-		//.out_data		()
-    );
+    wire rx_cic2_strobe;
+	wire signed [RXO_BITS-1:0] rx_cic2_out_i, rx_cic2_out_q;
 
-cic_prune_var #(.INCLUDE("rx2"), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .GROWTH(RX2_GROWTH), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
-	rx_cic2_q(
-		.clock			(adc_clk),
-		.reset			(1'b0),
-		.decimation		(18'b0),
-		.in_strobe		(rx_cic1_avail),
-		.out_strobe		(),
-		.in_data		(rx_cic1_out_q),
-		.out_data		(rx_cic2_out_q)
-    );
+    cic_prune_var #(.INCLUDE("rx2"), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .GROWTH(RX2_GROWTH), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
+        rx_cic2_i(
+            .clock			(adc_clk),
+            .reset			(1'b0),
+            .decimation		(18'b0),
     
-    assign rx_avail_A = rx_cic2_strobe_i;
+            .in_strobe		(rx_cic1_avail),
+            .in_data		(rx_cic1_out_i),
+    
+            .out_strobe		(rx_cic2_strobe),
+            .out_data		(rx_cic2_out_i)
+        );
+    
+    cic_prune_var #(.INCLUDE("rx2"), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .GROWTH(RX2_GROWTH), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
+        rx_cic2_q(
+            .clock			(adc_clk),
+            .reset			(1'b0),
+            .decimation		(18'b0),
+    
+            .in_strobe		(rx_cic1_avail),
+            .in_data		(rx_cic1_out_q),
+    
+            .out_strobe		(),
+            .out_data		(rx_cic2_out_q)
+        );
+    
+    assign rx_avail_A = rx_cic2_strobe;
 
-	reg [15:0] rx_dout;
+	reg [OUT_WIDTH-1:0] rx_dout;
 	always @*
-		rx_dout = rd_i? rx_cic2_out_i[15:0] : ( rd_q? rx_cic2_out_q[15:0] : {rx_cic2_out_i[RXO_BITS-1 -:8], rx_cic2_out_q[RXO_BITS-1 -:8]} );
+		rx_dout = rd_i? rx_cic2_out_i[OUT_WIDTH-1:0] : ( rd_q? rx_cic2_out_q[OUT_WIDTH-1:0] : {rx_cic2_out_i[RXO_BITS-1 -:8], rx_cic2_out_q[RXO_BITS-1 -:8]} );
 
-	assign rx_dout_A = rx_dout;
+	assign rx_dout_i_A = rx_dout;
+	//assign rx_dout_q_A = {OUT_WIDTH{1'b0}};
+	assign rx_dout_q_A = 0;
 
 `endif
 

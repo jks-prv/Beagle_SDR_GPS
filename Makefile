@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 340
+VERSION_MIN = 341
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -280,6 +280,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 KEYRING = $(DIR_CFG)/.keyring.dep
 $(KEYRING):
+	@echo "KEYRING.."
 ifeq ($(DEBIAN_7),true)
 	cp /etc/apt/sources.list /etc/apt/sources.list.orig
 	sed -e 's/ftp\.us/archive/' < /etc/apt/sources.list >/tmp/sources.list
@@ -290,49 +291,49 @@ endif
 	@mkdir -p $(DIR_CFG)
 	touch $(KEYRING)
 
-/usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a: $(KEYRING)
+/usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a:
 	apt-get -y install libfftw3-dev
 
-/usr/bin/clang: $(KEYRING)
+/usr/bin/clang:
 	apt-get -y install clang
 
-/usr/bin/curl: $(KEYRING)
+/usr/bin/curl:
 	-apt-get -y install curl
 
-/usr/bin/wget: $(KEYRING)
+/usr/bin/wget:
 	-apt-get -y install wget
 
-/usr/sbin/avahi-autoipd: $(KEYRING)
+/usr/sbin/avahi-autoipd:
 	-apt-get -y install avahi-daemon avahi-utils libnss-mdns avahi-autoipd
 
-/usr/bin/upnpc: $(KEYRING)
+/usr/bin/upnpc:
 	-apt-get -y install miniupnpc
 
-/usr/bin/dig: $(KEYRING)
+/usr/bin/dig:
 	-apt-get -y install dnsutils
 
-/usr/bin/pnmtopng: $(KEYRING)
+/usr/bin/pnmtopng:
 	-apt-get -y install pnmtopng
 
-/sbin/ethtool: $(KEYRING)
+/sbin/ethtool:
 	-apt-get -y install ethtool
 
-/usr/bin/sshpass: $(KEYRING)
+/usr/bin/sshpass:
 	-apt-get -y install sshpass
 
-/usr/bin/killall: $(KEYRING)
+/usr/bin/killall:
 	-apt-get -y install psmisc
 
-/usr/bin/dtc: $(KEYRING)
+/usr/bin/dtc:
 	-apt-get -y install device-tree-compiler
 
 ifeq ($(BBAI),true)
-/usr/bin/cpufreq-info: $(KEYRING)
+/usr/bin/cpufreq-info:
 	-apt-get -y install cpufrequtils
 endif
 
 ifneq ($(DEBIAN_7),true)
-/usr/bin/jq: $(KEYRING)
+/usr/bin/jq:
 	-apt-get -y install jq
 endif
 
@@ -355,7 +356,7 @@ GEN_ASM = $(GEN_DIR)/kiwi.gen.h verilog/kiwi.gen.vh
 OUT_ASM = $(GEN_DIR)/kiwi.aout
 GEN_VERILOG = $(addprefix verilog/rx/,cic_rx1_12k.vh cic_rx1_20k.vh cic_rx2_12k.vh cic_rx2_20k.vh cic_rx3_12k.vh cic_rx3_20k.vh cic_wf1.vh cic_wf2.vh)
 GEN_NOIP2 = $(GEN_DIR)/noip2
-SUB_MAKE_DEPS = $(CMD_DEPS) $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
+SUB_MAKE_DEPS = $(KEYRING) $(CMD_DEPS) $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
 
 
 ################################
@@ -370,16 +371,17 @@ endif
 .PHONY: c_ext_clang_conv
 ifeq ($(PVT_EXT_C_FILES),)
 c_ext_clang_conv: $(SUB_MAKE_DEPS)
+#	@echo SUB_MAKE_DEPS = $(SUB_MAKE_DEPS)
 #	@echo no installed extensions with files needing conversion from .c to .cpp for clang compatibility
 else
 c_ext_clang_conv: $(SUB_MAKE_DEPS)
-#	@echo PVT_EXT_C_FILES = $(PVT_EXT_C_FILES)
+	@echo PVT_EXT_C_FILES = $(PVT_EXT_C_FILES)
 	@echo convert installed extension .c files to .cpp for clang compatibility
 	find $(PVT_EXT_DIRS) -name '*.c' -exec mv '{}' '{}'pp \;
 endif
 
 .PHONY: c_ext_clang_conv_all
-c_ext_clang_conv_all: $(KEYRING) $(LIBS_DEP) $(BUILD_DIR)/kiwi.bin
+c_ext_clang_conv_all: $(LIBS_DEP) $(BUILD_DIR)/kiwi.bin
 
 
 ################################
@@ -841,7 +843,7 @@ install: c_ext_clang_conv
 	@make c_ext_clang_conv_install
 
 .PHONY: c_ext_clang_conv_install
-c_ext_clang_conv_install: $(KEYRING) $(DO_ONCE) $(LIBS_DEP) $(BUILD_DIR)/kiwid.bin
+c_ext_clang_conv_install: $(DO_ONCE) $(LIBS_DEP) $(BUILD_DIR)/kiwid.bin
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	@echo remainder of \'make install\' only makes sense to run on target
 else

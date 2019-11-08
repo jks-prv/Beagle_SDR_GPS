@@ -18,6 +18,8 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
+`include "kiwi.vh"
+
 `default_nettype none
 
 // for capturing GPS IQ data

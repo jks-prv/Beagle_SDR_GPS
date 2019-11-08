@@ -109,10 +109,14 @@ module GPS (
     assign ticks_A = adc_ticks;
 
     // continuously sync ticks_A => ticks
+`ifdef USE_SYNC_REG
 	SYNC_REG #(.WIDTH(48)) sync_adc_ticks (
-	    .in_strobe(1),      .in_reg(ticks_A),   .in_clk(adc_clk),
+	    .in_qual(1),        .in_reg(ticks_A),   .in_clk(adc_clk),
 	    .out_strobe(),      .out_reg(ticks),    .out_clk(clk)
 	);
+`else
+    SYNC_WIRE sync_adc_ticks [47:0] (.in(adc_ticks), .out_clk(clk), .out(ticks));
+`endif
 	
     //////////////////////////////////////////////////////////////////////////
     // Read clock replica snapshots
