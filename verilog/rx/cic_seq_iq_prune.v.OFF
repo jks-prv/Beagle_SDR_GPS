@@ -29,15 +29,13 @@ Boston, MA  02110-1301, USA.
 
 `include "kiwi.vh"
 
-module cic_seq_sep_iq_prune (
+module cic_seq_iq_prune (
 	input wire clock,
 	input wire reset,
-
 	input wire in_strobe,
-	input wire signed [IN_WIDTH-1:0] in_data_i, in_data_q,
-
 	output reg out_strobe_i, out_strobe_q,
-	output reg signed [OUT_WIDTH-1:0] out_data_iq
+	input wire signed [IN_WIDTH-1:0] in_data_i, in_data_q,
+	output reg signed [OUT_WIDTH-1:0] out_data
 	);
 
     // design parameters
@@ -73,37 +71,26 @@ module cic_seq_sep_iq_prune (
       else
         integ_strobe <= 0;
     
-    reg  signed [ACC_WIDTH-1:0] in_i, in_q;
     wire signed [ACC_WIDTH-1:0] integ_out_i, integ_out_q;
     
-    always @(posedge clock)
-    begin
-        in_i <= in_data_i;      // will sign-extend since both declared signed
-        in_q <= in_data_q;
-    end
-
     generate
         if (INCLUDE == "rx3" && RX2_DECIM == RX2_12K_DECIM) begin : rx3_12k `include "cic_rx3_12k.vh" end
         if (INCLUDE == "rx3" && RX2_DECIM == RX2_20K_DECIM) begin : rx3_20k `include "cic_rx3_20k.vh" end
     endgenerate
 
-	localparam NPRE_STAGES = 1;
 	localparam NPOST_STAGES = 2;
-	localparam NSTAGE = clog2(NPRE_STAGES + STAGES + NPOST_STAGES -1);  // -1 because zero-based
-	localparam ASSERT_NSTAGE = assert(NSTAGE == 3, "NSTAGE");
+	localparam NSTAGE = clog2(STAGES + NPOST_STAGES);
 	reg [NSTAGE-1:0] stage;
 	wire [NSTAGE-1:0] FIRST_STAGE = 0, LAST_STAGE = STAGES;
 
 	localparam NSTATE = clog2(3);
 	reg [NSTATE-1:0] state;
 	
-	// addr: { Q:1, W:1, COMB/PREV:1, stage:NSTAGE }
-	localparam NADDR = 3 + NSTAGE;
-	localparam ASSERT_NADDR = assert(NADDR == 6, "NADDR");
+	localparam NADDR = NSTAGE + 3;
 	reg [NADDR-1:0] Raddr, Waddr;
 	
-	reg Wen, ping_pong;
-	wire R = ping_pong, W = ~ping_pong;
+	reg Wen, d_q;
+	wire R = d_q, W = ~d_q;
 	localparam COMB = 1'b0, PREV = 1'b1;
 	reg signed [ACC_WIDTH-1:0] Wdata, t;
 	wire signed [ACC_WIDTH-1:0] Rdata, diff;
@@ -122,9 +109,6 @@ module cic_seq_sep_iq_prune (
 
 	always @(posedge clock)
 	begin
-	
-	    // to process I and Q entire loop run twice per integ_strobe due to "|| Q" here and "Q <= ~Q" below
-	    
 		if (stage == 0)		// comb[0] = integ
 		begin
 			// prev
@@ -184,11 +168,11 @@ module cic_seq_sep_iq_prune (
 		// stage == (STAGES+2)
 		begin
 			// cur
-				out_data_iq <= Rdata[ACC_WIDTH-1 -:OUT_WIDTH] + Rdata[ACC_WIDTH-1-OUT_WIDTH];
+				out_data <= Rdata[ACC_WIDTH-1 -:OUT_WIDTH] + Rdata[ACC_WIDTH-1-OUT_WIDTH];
 				if (Q)
 				begin
 					out_strobe_q <= 1;
-					ping_pong <= ~ping_pong;
+					d_q <= ~d_q;
 				end else
 				begin
 					out_strobe_i <= 1;

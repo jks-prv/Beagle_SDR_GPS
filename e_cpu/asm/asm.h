@@ -141,7 +141,6 @@ typedef struct {
 extern preproc_t preproc[1024];
 
 preproc_t *pre(char *str, preproc_type_e ptype);
-int preval(const char *str);
 
 
 // expressions

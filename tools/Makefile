@@ -1,5 +1,5 @@
-UTIL = clog2
-UTILS = audio integrate hog multiply ext64 decimate security wspr e1b_fec viterbi27_test e1b_code clog2
+UTIL = audio
+UTILS = audio integrate hog multiply ext64 decimate security wspr e1b_fec viterbi27_test e1b_code
 
 CMD =
 

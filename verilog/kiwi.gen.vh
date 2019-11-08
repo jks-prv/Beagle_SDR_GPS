@@ -17,21 +17,20 @@
 `define DEF_ADC_BITS
 	parameter DEFAULT_NSYNC = 2;    // DEFp 0x2
 `define DEF_DEFAULT_NSYNC
-`define USE_SYNC_REG    // DEFh 0x1
 `define USE_MIX_DDS    // DEFh 0x1
 //`define USE_GEN    // DEFh 0x0
 //`define USE_HBEAT    // DEFh 0x0
 `define USE_LOGGER    // DEFh 0x1
 `define USE_CPU_CTR    // DEFh 0x1
 `define USE_DEBUG    // DEFh 0x1
-//`define USE_RX_SEQ_MUX    // DEFh 0x0
-//`define USE_RX_SEQ_SEP    // DEFh 0x0
+//`define USE_RX_SEQ    // DEFh 0x0
 `define USE_VIVADO    // DEFh 0x1
 `define SERIES_7    // DEFh 0x1
 //`define SPI_PUMP_CHECK    // DEFh 0x0
 //`define STACK_CHECK    // DEFh 0x0
 //`define SND_SEQ_CHECK    // DEFh 0x0
 //`define SND_TIMING_CK    // DEFh 0x0
+//`define MEAS_CIC_OUT    // DEFh 0x0
 	parameter FPGA_ID_RX4_WF4 = 4'd0;    // DEFp 0x0
 //`define DEF_FPGA_ID_RX4_WF4
 	parameter FPGA_ID_RX8_WF2 = 4'd1;    // DEFp 0x1
@@ -272,13 +271,5 @@
 	parameter CTRL_DNA_READ = 13;    // DEFb: bit number for value: 0x2000
 	parameter CTRL_DNA_SHIFT = 14;    // DEFb: bit number for value: 0x4000
 	parameter CTRL_DNA_CLK = 15;    // DEFb: bit number for value: 0x8000
-
-
-// generated values:
-
-parameter RX1_12K_GROWTH = 27;
-parameter RX1_20K_GROWTH = 30;
-parameter RX2_12K_GROWTH = 18;
-parameter RX2_20K_GROWTH = 10;
 
 `endif

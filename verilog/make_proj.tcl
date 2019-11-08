@@ -218,7 +218,6 @@ set_property -name "top" -value "KiwiSDR" -objects [get_filesets sources_1]
 if {[string equal $regen_ip "yes"]} {
     puts "INFO: kiwi::make_ipcores"
     kiwi::make_ipcores
-    exit 0
 }
 
 # Create 'constrs_1' fileset (if not found)

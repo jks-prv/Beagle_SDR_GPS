@@ -25,7 +25,7 @@ Boston, MA  02110-1301, USA.
 // See: zipcpu.com/blog/2017/10/20/cdc.html
 
 module SYNC_REG #(parameter WIDTH=1) (
-	input  wire in_qual,    // must be a qualifier, NOT a pulse
+	input  wire in_strobe,
 	input  wire [WIDTH-1:0] in_reg,
 	input  wire in_clk,
 
@@ -47,7 +47,7 @@ module SYNC_REG #(parameter WIDTH=1) (
 	wire out_req_last = out_reqs[1];
 
     always @ (posedge in_clk)
-        if (!busy && in_qual)
+        if (!busy && in_strobe)
         begin
             shared_reg <= in_reg;
             valid_data <= 1'b1;
