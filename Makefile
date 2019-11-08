@@ -286,6 +286,7 @@ ifeq ($(DEBIAN_7),true)
 	sed -e 's/ftp\.us/archive/' < /etc/apt/sources.list >/tmp/sources.list
 	mv /tmp/sources.list /etc/apt/sources.list
 endif
+	-apt-get update
 	-apt-get install debian-archive-keyring
 	-apt-get update
 	@mkdir -p $(DIR_CFG)
