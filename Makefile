@@ -290,50 +290,64 @@ endif
 	@mkdir -p $(DIR_CFG)
 	touch $(KEYRING)
 
-/usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a: $(KEYRING)
+/usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a:
 	apt-get -y install libfftw3-dev
+#	-@touch /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a
 
-/usr/bin/clang: $(KEYRING)
+/usr/bin/clang:
 	apt-get -y install clang
+#	-@touch /usr/bin/clang
 
-/usr/bin/curl: $(KEYRING)
+/usr/bin/curl:
 	-apt-get -y install curl
+#	-@touch /usr/bin/curl
 
-/usr/bin/wget: $(KEYRING)
+/usr/bin/wget:
 	-apt-get -y install wget
+#	-@touch /usr/bin/wget
 
-/usr/sbin/avahi-autoipd: $(KEYRING)
+/usr/sbin/avahi-autoipd:
 	-apt-get -y install avahi-daemon avahi-utils libnss-mdns avahi-autoipd
+#	-@touch /usr/sbin/avahi-autoipd
 
-/usr/bin/upnpc: $(KEYRING)
+/usr/bin/upnpc:
 	-apt-get -y install miniupnpc
+#	-@touch /usr/bin/upnpc
 
-/usr/bin/dig: $(KEYRING)
+/usr/bin/dig:
 	-apt-get -y install dnsutils
+#	-@touch /usr/bin/dig
 
-/usr/bin/pnmtopng: $(KEYRING)
+/usr/bin/pnmtopng:
 	-apt-get -y install pnmtopng
+#	-@touch /usr/bin/pnmtopng
 
-/sbin/ethtool: $(KEYRING)
+/sbin/ethtool:
 	-apt-get -y install ethtool
+#	-@touch /sbin/ethtool
 
-/usr/bin/sshpass: $(KEYRING)
+/usr/bin/sshpass:
 	-apt-get -y install sshpass
+#	-@touch /usr/bin/sshpass
 
-/usr/bin/killall: $(KEYRING)
+/usr/bin/killall:
 	-apt-get -y install psmisc
+#	-@touch /usr/bin/killall
 
-/usr/bin/dtc: $(KEYRING)
+/usr/bin/dtc:
 	-apt-get -y install device-tree-compiler
+#	-@touch /usr/bin/dtc
 
 ifeq ($(BBAI),true)
-/usr/bin/cpufreq-info: $(KEYRING)
+/usr/bin/cpufreq-info:
 	-apt-get -y install cpufrequtils
+#	-@touch /usr/bin/cpufreq-info
 endif
 
 ifneq ($(DEBIAN_7),true)
-/usr/bin/jq: $(KEYRING)
+/usr/bin/jq:
 	-apt-get -y install jq
+#	-@touch /usr/bin/jq
 endif
 
 endif
