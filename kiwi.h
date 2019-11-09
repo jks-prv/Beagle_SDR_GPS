@@ -68,6 +68,7 @@ extern kstr_t *cpu_stats_buf;
 extern char *tzone_id, *tzone_name;
 extern char auth_su_remote_ip[NET_ADDRSTRLEN];
 extern cfg_t cfg_ipl;
+extern char *fpga_file;
 
 extern lock_t spi_lock;
 

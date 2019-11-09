@@ -69,6 +69,7 @@ bool create_eeprom, need_hardware, no_net, test_flag, sdr_hu_debug, have_ant_swi
     disable_led_task;
 
 char **main_argv;
+char *fpga_file;
 
 int main(int argc, char *argv[])
 {
@@ -281,6 +282,8 @@ int main(int argc, char *argv[])
         lprintf("firmware: GPS_ONLY\n");
     } else
         panic("fw_sel");
+    
+    asprintf(&fpga_file, "rx%d.wf%d", rx_chans, wf_chans);
     
     bool no_wf = cfg_bool("no_wf", &err, CFG_OPTIONAL);
     if (err) no_wf = false;
