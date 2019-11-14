@@ -93,7 +93,7 @@ document.onreadystatechange = function() {
 
 		console.log('safari='+ kiwi_isSafari() + ' firefox='+ kiwi_isFirefox() + ' chrome='+ kiwi_isChrome() + ' opera='+ kiwi_isOpera());
 
-		if (isDefined(kiwi_check_js_version)) {
+		if (typeof(kiwi_check_js_version) !== 'undefined') {
 			// done as an AJAX because needed long before any websocket available
 			kiwi_ajax("/VER", 'kiwi_version_cb');
 		} else {

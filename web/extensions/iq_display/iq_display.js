@@ -256,7 +256,7 @@ function iq_display_controls_setup()
             iq.pll_bw = r.num;
          } else
          if ((r = w3_ext_param('gain', a)).match) {
-            iq.gain = w3_clamp(r.num, 0, 100);
+            iq.gain = w3_clamp(r.num, 0, 120);
          } else
          if ((r = w3_ext_param('cmax', a)).match) {
             iq.maxdb = w3_clamp(r.num, 0, 255);
@@ -280,7 +280,7 @@ function iq_display_controls_setup()
 			   ),
 				w3_div('w3-margin-L-8',
 					w3_div('w3-medium w3-text-aqua', '<b>IQ display</b>'),
-					w3_slider('w3-tspace-8//', 'Gain', 'iq.gain', iq.gain, 0, 100, 1, 'iq_display_gain_cb'),
+					w3_slider('w3-tspace-8//', 'Gain', 'iq.gain', iq.gain, 0, 120, 1, 'iq_display_gain_cb'),
 					w3_inline('w3-tspace-8/w3-margin-between-6',
 					   w3_select('', 'Draw', '', 'iq.draw', iq.draw, draw_s, 'iq_display_draw_select_cb'),
 					   w3_select('', 'Mode', '', 'iq.mode', iq.mode, mode_s, 'iq_display_mode_select_cb'),
@@ -318,6 +318,7 @@ function iq_display_controls_setup()
 	iq_display_canvas.ctx = iq_display_canvas.getContext("2d");
 	iq_display_imageData = iq_display_canvas.ctx.createImageData(256, 1);
 
+	ext_send('SET pll_bandwidth='+ iq.pll_bw);
 	ext_send('SET run=1');
 	
 	// give the PLL time to settle on startup
@@ -399,6 +400,7 @@ function iq_display_pll_bw_cb(path, val, complete, first)
    //console.log('iq_display_pll_bw_cb val='+ val);
 	w3_num_cb(path, val);
 	ext_send('SET pll_bandwidth='+ val);
+	iq_display_clear();
 }
 
 function iq_display_offset_cb(path, val)

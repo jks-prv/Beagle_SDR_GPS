@@ -258,6 +258,7 @@ function w3_first_value(v)
 
    var rv = null;
    var to_v = typeof(v);
+   
    if (to_v === 'number' || to_v === 'boolean' || to_v === 'string') {
       //console.log('w3_first_value prim');
       rv = v;
@@ -275,6 +276,15 @@ function w3_first_value(v)
    }
    //console.log('w3_first_value rv='+ rv);
    return rv;
+}
+
+function w3_obj_num(o)
+{
+   if (isUndefined(o) || isNull(o) || isObject(o)) return o;
+   if (isNumber(o)) return { num: o };
+   if (isBoolean(o)) return { num: (o? 1:0) };
+   if (isString(o)) return { num: parseFloat(o) };
+   return o;
 }
 
 function w3_obj_seq_el(o, idx)
@@ -301,6 +311,10 @@ function w3_obj_enum_key(obj, key, func)
    }
 }
 
+// arr:     [] string vals to iterate over
+// s:       string val to match with startsWith() (case-insensitive)
+// func:    (optional) called as func(arr-idx, val) only on first match
+// returns: found = true|false
 function w3_ext_param_array_match_str(arr, s, func)
 {
    var found = false;
@@ -309,13 +323,17 @@ function w3_ext_param_array_match_str(arr, s, func)
       //console.log('w3_ext_param_array_match_str CONSIDER '+ i +' '+ el +' '+ s);
       if (!found && el.startsWith(s)) {
          //console.log('w3_ext_param_array_match_str MATCH '+ i);
-         func(i, a_el.toString());
+         if (func) func(i, a_el.toString());
          found = true;
       }
    });
    return found;
 }
 
+// arr:     [] vals to iterate over
+// n:       num val to match
+// func:    (optional) called as func(arr-idx, val) only on first match
+// returns: found = true|false
 function w3_ext_param_array_match_num(arr, n, func)
 {
    var found = false;
@@ -324,13 +342,16 @@ function w3_ext_param_array_match_num(arr, n, func)
       //console.log('w3_ext_param_array_match_num CONSIDER '+ i +' '+ a_num +' '+ n);
       if (!found && a_num == n) {
          //console.log('w3_ext_param_array_match_num MATCH '+ i);
-         func(i, n);
+         if (func) func(i, n);
          found = true;
       }
    });
    return found;
 }
 
+// param:   name[:val]
+// s:       name.startsWith(s)   case-insensitive
+// returns: { match:true|false, num:parseFloat(val), string:val }
 function w3_ext_param(s, param)
 {
    p = param.toLowerCase().split(':');
@@ -381,6 +402,7 @@ function w3_el(el_id)
 {
 	if (isString(el_id)) {
 	   if (el_id == '') return null;
+	   if (el_id == 'body') return document.body;
 		var el = w3int_w3_el(el_id);
 		if (el == null) {
 			el = w3int_w3_el('id-'+ el_id);

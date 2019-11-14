@@ -503,6 +503,11 @@ input[type=range]::-moz-range-thumb {
     margin: 4px 0
 }
 
+.w3-margin-TB-8
+{
+    margin: 8px 0
+}
+
 
 .w3-padding-smaller
 {

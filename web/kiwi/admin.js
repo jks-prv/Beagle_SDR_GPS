@@ -2323,7 +2323,7 @@ function log_update()
 
 // must set "remove_returns" since pty output lines are terminated with \r\n instead of \n alone
 // otherwise the \r overwrite logic in kiwi_output_msg() will be triggered
-var console_status_msg_p = { scroll_only_at_bottom: true, process_return_nexttime: false, remove_returns: true, ncol: 160 };
+var console_status_msg_p = { scroll_only_at_bottom: true, process_return_alone: true, remove_returns: true, ncol: 160 };
 
 function console_html()
 {

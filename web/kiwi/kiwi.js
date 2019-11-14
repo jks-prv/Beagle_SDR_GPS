@@ -740,7 +740,7 @@ function kiwi_output_msg(id, id_scroll, p)
 
    // handle beginning output with '\r' only to overwrite current line
    //console.log(JSON.stringify(s));
-   if (s.charAt(0) == '\r' && (s.length == 1 || s.charAt(1) != '\n')) {
+   if (p.process_return_alone && s.charAt(0) == '\r' && (s.length == 1 || s.charAt(1) != '\n')) {
       //console.log('\\r @ beginning:');
       //console.log(JSON.stringify(s));
       //console.log(JSON.stringify(p.tstr));
@@ -1543,7 +1543,7 @@ var version_maj = -1, version_min = -1;
 var tflags = { INACTIVITY:1, WF_SM_CAL:2, WF_SM_CAL2:4 };
 var chan_no_pwd;
 var pref_import_ch;
-var kiwi_output_msg_p = { scroll_only_at_bottom: true, process_return_nexttime: false };
+var kiwi_output_msg_p = { scroll_only_at_bottom: true, process_return_alone: false };
 var client_public_ip;
 
 function kiwi_msg(param, ws)

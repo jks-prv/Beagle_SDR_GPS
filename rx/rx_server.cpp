@@ -506,6 +506,22 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
     
 	if (down || update_in_progress || backup_in_progress) {
 		//printf("down=%d UIP=%d stream=%s\n", down, update_in_progress, st->uri);
+
+        //printf("URL <%s> <%s> %s\n", mc->uri, mc->query_string, remote_ip);
+        if (auth_su && strcmp(remote_ip, auth_su_remote_ip) == 0) {
+            struct stat _st;
+            if (stat(DIR_CFG "/opt.no_console", &_st) == 0)
+                return NULL;
+            printf("allowed by su %s %s\n", streams[st->type].uri, remote_ip);
+            #ifndef CFG_GPS_ONLY
+                if (!init_snd_wf) {
+                    c2s_sound_init();
+                    c2s_waterfall_init();
+                    init_snd_wf = true;
+                }
+            #endif
+        } else
+
 		if (st->type == STREAM_SOUND && !internal) {
 			int type;
 			const char *reason_disabled = NULL;
@@ -535,12 +551,15 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			send_msg_mc(mc, SM_NO_DEBUG, "MSG comp_ctr=%d reason_disabled=%s down=%d", comp_ctr, reason_enc, type);
 			cfg_string_free(reason_disabled);
 			free(reason_enc);
+            //printf("DOWN %s %s\n", streams[st->type].uri, remote_ip);
 			return NULL;
-		}
+		} else
 
 		// always allow admin connections
-		if (st->type != STREAM_ADMIN)
+		if (st->type != STREAM_ADMIN) {
+            //printf("DOWN %s %s\n", streams[st->type].uri, remote_ip);
 			return NULL;
+		}
 	}
 	
 	//printf("CONN LOOKING for free conn for type=%d(%s) ip=%s:%d mc=%p\n", st->type, st->uri, remote_ip, mc->remote_port, mc);

@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.346  November 15, 2019
+    Fixed return/newline processing causing output line overwrites in fsk/navtex/cw extensions.
+
 v1.345  November 10, 2019
     Fixed bug with waterfall disable mode on admin page.
 
