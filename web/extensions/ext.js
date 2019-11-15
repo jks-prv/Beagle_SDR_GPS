@@ -111,7 +111,8 @@ function ext_set_cfg_param(path, val, save)
 
 function ext_get_freq_range()
 {
-   return { lo_kHz: cfg.sdr_hu_lo_kHz, hi_kHz: cfg.sdr_hu_hi_kHz, offset_kHz: cfg.freq_offset };
+   var offset = cfg.freq_offset;
+   return { lo_kHz: cfg.sdr_hu_lo_kHz + offset, hi_kHz: cfg.sdr_hu_hi_kHz + offset, offset_kHz: offset };
 }
 
 var ext_zoom = {

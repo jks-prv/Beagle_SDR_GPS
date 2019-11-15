@@ -705,7 +705,8 @@ bool wspr_msgs(char *msg, int rx_chan)
 }
 
 static double wspr_cfs[] = {
-    137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1
+    137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1,
+    50294.5, 70092.5, 144490.5, 432301.5, 1296501.5
 };
 
 static struct mg_connection wspr_snd_mc[MAX_RX_CHANS], wspr_ext_mc[MAX_RX_CHANS];
@@ -716,6 +717,7 @@ void wspr_autorun(int which, int idx)
 	#define WSPR_FILTER_BW 300
 	double center_freq_kHz = wspr_cfs[idx-1];
     double dial_freq_kHz = center_freq_kHz - WSPR_BFO/1e3;
+    double if_freq_kHz = dial_freq_kHz - freq_offset;
 	double cfo = roundf((center_freq_kHz - floorf(center_freq_kHz)) * 1e3);
 	
     struct mg_connection *mc;
@@ -734,13 +736,22 @@ void wspr_autorun(int which, int idx)
     w->arun_cf_MHz = center_freq_kHz / 1e3;
     w->arun_last_decoded = -1;
 
-	printf("wspr_autorun: which=%d RX%d idx=%d cf=%.2f df=%.2f cfo=%.0f\n", which, chan, idx, center_freq_kHz, dial_freq_kHz, cfo);
+	clprintf(csnd, "WSPR autorun: which=%d idx=%d off=%.2f if=%.2f df=%.2f cf=%.2f cfo=%.0f\n",
+	    which, idx, freq_offset, if_freq_kHz, dial_freq_kHz, center_freq_kHz, cfo);
+	
+	double max_freq = freq_offset + ui_srate/1e3;
+	if (dial_freq_kHz < freq_offset || dial_freq_kHz > max_freq) {
+	    clprintf(csnd, "WSPR autorun: ERROR dial_freq_kHz %.2f is outside rx range %.2f - %.2f\n",
+	        dial_freq_kHz, freq_offset, max_freq);
+	    rx_server_websocket(WS_MODE_CLOSE, mc);
+	    return;
+	}
 
     input_msg_internal(csnd, (char *) "SET auth t=kiwi p=");
 	input_msg_internal(csnd, (char *) "SET AR OK in=12000 out=44100");
 	input_msg_internal(csnd, (char *) "SET agc=1 hang=0 thresh=-100 slope=6 decay=1000 manGain=50");
     input_msg_internal(csnd, (char *) "SET mod=usb low_cut=%d high_cut=%d freq=%.2f",
-        WSPR_BFO - WSPR_FILTER_BW/2, WSPR_BFO + WSPR_FILTER_BW/2, dial_freq_kHz);
+        WSPR_BFO - WSPR_FILTER_BW/2, WSPR_BFO + WSPR_FILTER_BW/2, if_freq_kHz);
     input_msg_internal(csnd, (char *) "SET ident_user=WSPR-autorun");
     input_msg_internal(csnd, (char *) "SET geo=0%%20decoded");
 

@@ -250,6 +250,8 @@ var wspr_init_band = -1;
 
 function wspr_controls_setup()
 {
+   var i;
+   
    var data_html =
       time_display_html('wspr') +
 
@@ -284,15 +286,26 @@ function wspr_controls_setup()
    // re-define band menu if down-converter in use
    var r = ext_get_freq_range();
    if (r.lo_kHz > 32000 && r.hi_kHz > 32000) {
+      var found = false;
       var f_kHz;
-      for (i = 0; i < wspr_xvtr_center_freqs.length-1; i++) {
+      for (i = 0; i < wspr_xvtr_center_freqs.length; i++) {
          f_kHz = wspr_xvtr_center_freqs[i];
-         if (f_kHz >= r.lo_kHz && f_kHz <= r.hi_kHz)
+         if (f_kHz >= r.lo_kHz && f_kHz <= r.hi_kHz) {
+            found = true;
             break;
+         }
       }
-      if (i != wspr_xvtr_center_freqs.length) {
-         wspr_center_freqs = [ f_kHz ];
-         wspr_freqs_u = { 0:wspr_xvtr_freqs_u[i] };
+
+      console.log('found='+ found +' i='+ i);
+      wspr_center_freqs = [];
+      wspr_freqs_s = {};
+      wspr_freqs_m = [];
+
+      if (found) {
+         wspr_center_freqs[0] = f_kHz;
+         var s = wspr_xvtr_freqs_s[i];
+         wspr_freqs_m = [ s ];
+         wspr_freqs_s[s] = 0;
          if (wspr_init_band > 0) wspr_init_band = 0;
       }
    }
@@ -300,7 +313,7 @@ function wspr_controls_setup()
 	var controls_html =
 	w3_div('id-wspr-controls',
 		w3_inline('w3-halign-space-between|width:83%/',
-         w3_select('', '', 'band', 'wspr_init_band', wspr_init_band, wspr_freqs_u, 'wspr_band_select_cb'),
+         w3_select('', '', 'band', 'wspr_init_band', wspr_init_band, wspr_freqs_m, 'wspr_band_select_cb'),
          w3_button('cl-wspr-button', 'stop', 'wspr_stop_start_cb'),
          w3_button('cl-wspr-button', 'clear', 'wspr_clear_cb'),
          w3_div('id-wspr-upload-bkg cl-upload-checkbox',
@@ -360,10 +373,12 @@ function wspr_controls_setup()
 	// set band and start if URL parameter present
 	var p = ext_param();
 	if (p) {
-		//p = p.toLowerCase();
+		p = p.toLowerCase();
 		if (isDefined(wspr_freqs_s[p])) {
-			w3_set_value('wspr_init_band', wspr_freqs_s[p]);
-			wspr_band_select_cb('wspr_init_band', wspr_freqs_s[p], false);
+		   var sel = wspr_freqs_s[p];
+		   var freq = wspr_center_freqs[sel];
+         if (freq >= r.lo_kHz && freq <= r.hi_kHz)
+            wspr_band_select_cb('wspr_init_band', sel, false);
 		} else {
 			console.log('WSPR ext_param='+ p +' UNKNOWN');
 		}
@@ -400,6 +415,7 @@ function wspr_band_select_cb(path, idx, first)
 	//console.log('wspr_band_select_cb idx='+ idx +' path='+ path);
 	idx = +idx;
 	if (idx != -1 && !first) {
+      w3_set_value(path, idx);
 		wspr_init_band = idx;
 		wspr_freq(idx);
 	}
@@ -432,11 +448,11 @@ function wspr_input_grid_cb(path, val, first)
 	kiwi.WSPR_rgrid = val;
 }
 
-var wspr_autorun_u = {
-   0:'regular use', 1:'LF', 2:'MF', 3:'160m', 4:'80m_JA', 5:'80m', 6:'60m', 7:'60m_EU',
-   8:'40m', 9:'30m', 10:'20m', 11:'17m', 12:'15m', 13:'12m', 14:'10m'
-   //15:'hop coordinated', 16:'hop custom'
-};
+var wspr_autorun_u = [
+   'regular use', 'LF', 'MF', '160m', '80m_JA', '80m', '60m', '60m_EU',
+   '40m', '30m', '20m', '17m', '15m', '12m', '10m',
+   '6m', '4m', '2m', '440', '1296'
+];
 
 function wspr_config_html()
 {
@@ -721,13 +737,11 @@ function wspr_draw_pie() {
 // order matches menu instantiation order
 // see: wsprnet.org/drupal/node/7352
 var wspr_center_freqs = [ 137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1 ];
-
-var wspr_freqs_s = { 'lf':0, 'mf':1, '160m':2, '80m_JA':3, '80m':4, '60m':5, '60m_EU':6, '40m':7, '30m':8, '20m':9, '17m':10, '15m':11, '12m':12, '10m':13,
-                     '6m':0, '4m':0, '2m':0, '70cm':0, '440':0, '23cm':0, '1296':0 };
-var wspr_freqs_u = { 0:'LF', 1:'MF', 2:'160m', 3:'80m_JA', 4:'80m', 5:'60m', 6:'60m_EU', 7:'40m', 8:'30m', 9:'20m', 10:'17m', 11:'15m', 12:'12m', 13:'10m' };
+var wspr_freqs_s = { 'lf':0, 'mf':1, '160m':2, '80m_ja':3, '80m':4, '60m':5, '60m_eu':6, '40m':7, '30m':8, '20m':9, '17m':10, '15m':11, '12m':12, '10m':13 };
+var wspr_freqs_m = [ 'LF', 'MF', '160m', '80m_JA', '80m', '60m', '60m_EU', '40m', '30m', '20m', '17m', '15m', '12m', '10m' ];
 
 var wspr_xvtr_center_freqs = [ 50294.5, 70092.5, 144490.5, 432301.5, 1296501.5 ];
-var wspr_xvtr_freqs_u = [ '6m', '4m', '2m', '70cm', '23cm' ];
+var wspr_xvtr_freqs_s = [ '6m', '4m', '2m', '440', '1296' ];
 
 var wspr_rfreq=0, wspr_tfreq=0;
 var wspr_bfo = 750;

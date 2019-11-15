@@ -288,6 +288,8 @@ alias iptz="iptables -L -n -v -Z"
 alias iptc="iptables -L -n -v -Z"
 alias iptrm="iptables -D INPUT -j KIWI; iptables -F KIWI; iptables -X KIWI"
 alias mdu="killall -q -s USR1 kiwid; killall -q -s USR1 kiwi.bin"
+alias whilek="while true; do ./k; done"
+alias whiled="while true; do ./d; done"
 
 # sharing KiwiSDR sources with a development machine via NFS
 # download NFS with command: "pki nfs-common"

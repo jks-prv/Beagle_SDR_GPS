@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.347  November 16, 2019
+    WSPR extension & autorun works again with transverter/downconverter mode.
+
 v1.346  November 15, 2019
     Fixed return/newline processing causing output line overwrites in fsk/navtex/cw extensions.
 
