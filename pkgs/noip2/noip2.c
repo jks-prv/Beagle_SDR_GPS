@@ -1086,46 +1086,51 @@ int run_as_background()
         fclose(stdin);
         syslog(LOG_INFO, "v%s daemon started%s\n", 
             VERSION, (nat) ?  " with NAT enabled" : "");
+
         while (background) {
             delay = MAX(60, my_instance->interval * 60);
             if (nat)
-            get_our_visible_IPaddr(IPaddress);
+                get_our_visible_IPaddr(IPaddress);
             else
-            getip(IPaddress, device);
+                getip(IPaddress, device);
             if (startup) {
-            startup = 0;
-            my_instance->Last_IP_Addr[0] =  '0';// force  check
+                startup = 0;
+                my_instance->Last_IP_Addr[0] =  '0';// force  check
             }
 #ifdef DEBUG
             if (my_instance->debug)  {
-                Msg("! Last_IP_Addr = %s, IP = %s",my_instance->Last_IP_Addr, IPaddress);
+                Msg("! Last_IP_Addr = %s, IP = %s", my_instance->Last_IP_Addr, IPaddress);
 #if FORCE_UPDATE
-            Msg("Force_Update == %d\n", Force_Update);
+                Msg("Force_Update == %d\n", Force_Update);
 #endif
             }
 #endif
             if (*IPaddress) { 
-            if (strcmp(IPaddress, my_instance->Last_IP_Addr)) {
-                if (dynamic_update() == SUCCESS) 
-                strncpy(my_instance->Last_IP_Addr, IPaddress,
-                                    IPLEN);
-                if (connect_fail)
-                delay = MAX(300, delay); // wait at least 5 minutes more
-                *IPaddress = 0;
-            }
+                if (strcmp(IPaddress, my_instance->Last_IP_Addr) || kiwi_mode) {
+#ifdef DEBUG
+                    if (kiwi_mode)
+                        Msg("! kiwi_mode: forcing update\n");
+#endif
+                    if (dynamic_update() == SUCCESS) 
+                        strncpy(my_instance->Last_IP_Addr, IPaddress, IPLEN);
+                    if (connect_fail)
+                        delay = MAX(300, delay); // wait at least 5 minutes more
+                    *IPaddress = 0;
+                }
             }
 #if FORCE_UPDATE
             if (Force_Update < 0) {
-            if (force_update() == SUCCESS)
-                Force_Update = FORCE_INTERVAL;
+                if (force_update() == SUCCESS)
+                    Force_Update = FORCE_INTERVAL;
             } else {    // one time quanta closer to update trigger
-            Force_Update -= my_instance->interval;
+                Force_Update -= my_instance->interval;
             }
 #endif
             if (background) // signal may have reset this!
-            Sleep(delay);
+                Sleep(delay);
         }
-                syslog(LOG_INFO, "v%s daemon ended.\n", VERSION);
+        
+        syslog(LOG_INFO, "v%s daemon ended.\n", VERSION);
         break;
     }
     return SUCCESS;
