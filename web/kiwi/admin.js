@@ -543,7 +543,9 @@ function connect_focus()
    connect.focus = 1;
    connect_update_url();
 	ext_send('SET DUC_status_query');
-	ext_send('SET rev_status_query');
+	
+	if (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)
+	   ext_send('SET rev_status_query');
 }
 
 function connect_blur()
@@ -578,14 +580,15 @@ function connect_update_url()
    var host = decodeURIComponent(cfg.server_url);
    var host_and_port = host;
    
-   //console.log('connect_update_url: sdr_hu_dom_sel='+ cfg.sdr_hu_dom_sel +' REV='+ connect_dom_sel.REV +' host_and_port='+ host_and_port);
+   //console.log('connect_update_url: sdr_hu_dom_sel='+ cfg.sdr_hu_dom_sel +' REV='+ connect_dom_sel.REV +' host='+ host_and_port +' port_ext='+ adm.port_ext);
+
    if (cfg.sdr_hu_dom_sel != connect_dom_sel.REV) {
-      host_and_port += ':'+ config_net.pub_port;
+      host_and_port += ':'+ adm.port_ext;
       w3_set_label('Based on above selection, and external port from Network tab, the URL to connect to your Kiwi is:', 'connect-url-text');
    } else {
       host_and_port += ':8073';
-      if (config_net.pub_port != 8073)
-         host_and_port += ' (proxy always uses port 8073 even though your external port is '+ config_net.pub_port +')';
+      if (adm.port_ext != 8073)
+         host_and_port += ' (proxy always uses port 8073 even though your external port is '+ adm.port_ext +')';
       w3_set_label('Based on the above selection the URL to connect to your Kiwi is:', 'connect-url-text');
    }
    
@@ -719,6 +722,7 @@ function connect_DUC_start_cb(id, idx)
 	var s = '-u '+ sq(decodeURIComponent(adm.duc_user)) +' -p '+ sq(decodeURIComponent(adm.duc_pass)) +
 	   ' -H '+ sq(decodeURIComponent(adm.duc_host)) +' -U '+ duc_update_v[adm.duc_update];
 	console.log('start DUC: '+ s);
+	w3_innerHTML('id-net-duc-status', '');
 	ext_send('SET DUC_start args='+ encodeURIComponent(s));
 }
 
@@ -1179,13 +1183,13 @@ function network_ethernet_speed(path, idx, first)
 function network_port_open_init()
 {
    // proxy always uses port 8073
-	var port = (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)? 8073 : config_net.pub_port;
+	var port = (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)? 8073 : adm.port_ext;
 	w3_el('id-net-check-port-dom-q').innerHTML =
 	   (cfg.server_url != '')?
 	      'http://'+ cfg.server_url +':'+ port +' :' :
 	      '(incomplete information -- on "connect" tab please use a valid setting in menu) :';
 	w3_el('id-net-check-port-ip-q').innerHTML =
-	   'http://'+ config_net.pvt_ip +':'+ config_net.pub_port +' :';
+	   'http://'+ config_net.pvt_ip +':'+ adm.port_ext +' :';
    w3_el('id-net-check-port-dom-s').innerHTML = '';
    w3_el('id-net-check-port-ip-s').innerHTML = '';
 }
