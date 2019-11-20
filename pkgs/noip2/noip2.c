@@ -161,6 +161,8 @@
 #include <pwd.h>
 #include <time.h>
 
+#define KIWISDR
+
 // user errors
 #define KIWI_ERR_ACCT           100
 #define KIWI_ERR_NO_HOSTS       101
@@ -1107,10 +1109,6 @@ int run_as_background()
 #endif
             if (*IPaddress) { 
                 if (strcmp(IPaddress, my_instance->Last_IP_Addr) || kiwi_mode) {
-#ifdef DEBUG
-                    if (kiwi_mode)
-                        Msg("! kiwi_mode: forcing update\n");
-#endif
                     if (dynamic_update() == SUCCESS) 
                         strncpy(my_instance->Last_IP_Addr, IPaddress, IPLEN);
                     if (connect_fail)
@@ -1748,8 +1746,10 @@ int handle_dynup_error(int error_code)
     switch (error_code) {
         case ALREADYSET:
         case ALREADYSETGRP:
+#ifndef KIWISDR
         syslog(LOG_INFO, "%s was already set to %s.", 
                             ourname, IPaddress);
+#endif
         return SUCCESS;
             case BADHOST:
         Msg("No host '%s' found at %s.", ourname, NOIP_NAME);
