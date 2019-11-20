@@ -399,9 +399,9 @@ void c2s_admin(void *param)
 				if (status != 0) continue;
 				
                 if (background_mode)
-                    system("/usr/local/bin/noip2 -c " DIR_CFG "/noip2.conf");
+                    system("/usr/local/bin/noip2 -k -c " DIR_CFG "/noip2.conf");
                 else
-                    system(BUILD_DIR "/gen/noip2 -c " DIR_CFG "/noip2.conf");
+                    system(BUILD_DIR "/gen/noip2 -k -c " DIR_CFG "/noip2.conf");
 				
 				continue;
 			}

@@ -508,9 +508,9 @@ static void dyn_DNS(void *param)
 		lprintf("starting noip.com DUC\n");
 		DUC_enable_start = true;
     	if (background_mode)
-			system("sleep 1; /usr/local/bin/noip2 -c " DIR_CFG "/noip2.conf");
+			system("sleep 1; /usr/local/bin/noip2 -k -c " DIR_CFG "/noip2.conf");
 		else
-			system("sleep 1; " BUILD_DIR "/gen/noip2 -c " DIR_CFG "/noip2.conf");
+			system("sleep 1; " BUILD_DIR "/gen/noip2 -k -c " DIR_CFG "/noip2.conf");
 	}
 
     // reverse proxy
