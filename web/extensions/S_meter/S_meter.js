@@ -1,8 +1,8 @@
 // Copyright (c) 2016 John Seamons, ZL/KF6VO
 
 var S_meter = {
-   first_time:    true,
    ext_name:      'S_meter',     // NB: must match S_meter.c:S_meter_ext.name
+   first_time:    true,
    stop_start_state: 0,
    update_interval:  null,
    
@@ -293,19 +293,5 @@ function S_meter_blur()
 // called to display HTML for configuration parameters in admin interface
 function S_meter_config_html()
 {
-	ext_admin_config(S_meter.ext_name, 'S Meter',
-		w3_div('id-S_meter w3-text-teal w3-hide',
-			'<b>S-meter graph configuration</b>' +
-			'<hr>' +
-			''
-			/*
-			w3_third('', 'w3-container',
-				w3_divs('w3-margin-bottom',
-					w3_input_get('', 'int1', 'S_meter.int1', 'w3_num_cb'),
-					w3_input_get('', 'int2', 'S_meter.int2', 'w3_num_cb')
-				), '', ''
-			)
-			*/
-		)
-	);
+   ext_config_html(S_meter, 'S_meter', 'S-meter', 'S-meter graph configuration');
 }

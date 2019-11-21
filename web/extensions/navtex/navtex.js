@@ -1,15 +1,53 @@
 // Copyright (c) 2017 John Seamons, ZL/KF6VO
 
-var navtex_ext_name = 'navtex';		// NB: must match navtex.c:navtex_ext.name
+var nt = {
+   ext_name: 'navtex',     // NB: must match navtex.c:navtex_ext.name
+   first_time: true,
+   
+   lhs: 150,
+   tw: 1024,
+   th: 200,
+   x: 0,
+   last_y: [],
+   n_menu:     5,
+   menu0:      -1,
+   menu1:      -1,
+   menu2:      -1,
+   menu3:      -1,
+   menu4:      -1,
+   prev_disabled: 0,
+   disabled: 0,
 
-var navtex_first_time = true;
+   decode: 1,
+   freq_s: '',
+   cf: 500,
+   shift: 170,
+   baud: 100,
+   framing: '4/7',
+   inverted: 0,
+   encoding: 'CCIR476',
+   invert: 0,
+
+   dx: 0,
+   dxn: 80,
+   fifo: [],
+
+   scope: 0,
+   run: 0,
+   single: 0,
+   decim: 4,
+   sample_count: 0,
+   edge: 0,
+
+   last_last: 0
+};
 
 function navtex_main()
 {
-	ext_switch_to_client(navtex_ext_name, navtex_first_time, navtex_recv);		// tell server to use us (again)
-	if (!navtex_first_time)
+	ext_switch_to_client(nt.ext_name, nt.first_time, navtex_recv);		// tell server to use us (again)
+	if (!nt.first_time)
 		navtex_controls_setup();
-	navtex_first_time = false;
+	nt.first_time = false;
 }
 
 function navtex_recv(data)
@@ -250,45 +288,6 @@ var navtex_HF = {
          12581.5, 12599.5, 12603, 12631, 12637.5, 12654, 12709.9, 12729, 12799.5, 12825, 12877.5, 13050,
          16886, 16898.5, 16927, 16974, 17045, 17175.2, 17155
       ]
-};
-
-var nt = {
-   lhs: 150,
-   tw: 1024,
-   th: 200,
-   x: 0,
-   last_y: [],
-   n_menu:     5,
-   menu0:      -1,
-   menu1:      -1,
-   menu2:      -1,
-   menu3:      -1,
-   menu4:      -1,
-   prev_disabled: 0,
-   disabled: 0,
-
-   decode: 1,
-   freq_s: '',
-   cf: 500,
-   shift: 170,
-   baud: 100,
-   framing: '4/7',
-   inverted: 0,
-   encoding: 'CCIR476',
-   invert: 0,
-
-   dx: 0,
-   dxn: 80,
-   fifo: [],
-
-   scope: 0,
-   run: 0,
-   single: 0,
-   decim: 4,
-   sample_count: 0,
-   edge: 0,
-
-   last_last: 0
 };
 
 var navtex_mode_s = [ 'decode', 'DX', 'scope' ];
@@ -541,4 +540,10 @@ function navtex_blur()
 {
 	ext_unregister_audio_data_cb();
    ext_set_passband(nt.saved_passband.low, nt.saved_passband.high);
+}
+
+// called to display HTML for configuration parameters in admin interface
+function navtex_config_html()
+{
+   ext_config_html(nt, 'navtex', 'Navtex', 'Navtex configuration');
 }

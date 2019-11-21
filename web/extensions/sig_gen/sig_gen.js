@@ -1,5 +1,25 @@
 // Copyright (c) 2016 John Seamons, ZL/KF6VO
 
+var gen = {
+   ext_name: 'sig_gen',    // NB: must match sig_gen.c:sig_gen.name
+   first_time: true,
+
+	freq: 10000,
+	freq_stop: 10011,
+	step: 0.25,
+	dwell: 1000,
+	attn_dB: 60,
+	attn_ampl: 0,
+	filter: 0,
+
+	enable: true,
+	sweeping: 0,
+
+	attn_offset_val: 0,
+	attn_offset: 1,
+	attn_offset_s: [ 'no offset', 'waterfall' ]
+};
+
 function sig_gen_main()
 {
 	ext_switch_to_client(gen.ext_name, gen.first_time, gen_recv);		// tell server to use us (again)
@@ -49,26 +69,6 @@ function gen_recv(data)
 		}
 	}
 }
-
-var gen = {
-   ext_name: 'sig_gen',    // NB: must match sig_gen.c:sig_gen.name
-   first_time: true,
-
-	freq: 10000,
-	freq_stop: 10011,
-	step: 0.25,
-	dwell: 1000,
-	attn_dB: 60,
-	attn_ampl: 0,
-	filter: 0,
-
-	enable: true,
-	sweeping: 0,
-
-	attn_offset_val: 0,
-	attn_offset: 1,
-	attn_offset_s: [ 'no offset', 'waterfall' ]
-};
 
 function gen_auth()
 {
@@ -220,19 +220,5 @@ function sig_gen_blur()
 // called to display HTML for configuration parameters in admin interface
 function sig_gen_config_html()
 {
-	ext_admin_config(gen.ext_name, 'Gen',
-		w3_div('id-sig_gen w3-text-teal w3-hide',
-			'<b>Signal generator configuration</b>' +
-			'<hr>' +
-			''
-			/*
-			w3_third('', 'w3-container',
-				w3_divs('w3-margin-bottom',
-					w3_input_get('', 'int1', 'gen.int1', 'w3_num_cb'),
-					w3_input_get('', 'int2', 'gen.int2', 'w3_num_cb')
-				), '', ''
-			)
-			*/
-		)
-	);
+   ext_config_html(gen, 'sig_gen', 'Sig Gen', 'Signal Generator configuration');
 }

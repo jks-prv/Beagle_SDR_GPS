@@ -1,15 +1,16 @@
 // Copyright (c) 2016 John Seamons, ZL/KF6VO
 
-var s4285_ext_name = 's4285';		// NB: must match s4285.c:s4285_ext.name
-
-var s4285_first_time = true;
+var s4285 = {
+   ext_name: 's4285',      // NB: must match s4285.c:s4285_ext.name
+   first_time: true
+};
 
 function s4285_main()
 {
-	ext_switch_to_client(s4285_ext_name, s4285_first_time, s4285_recv);		// tell server to use us (again)
-	if (!s4285_first_time)
+	ext_switch_to_client(s4285.ext_name, s4285.first_time, s4285_recv);		// tell server to use us (again)
+	if (!s4285.first_time)
 		s4285_controls_setup();
-	s4285_first_time = false;
+	s4285.first_time = false;
 }
 
 var s4285_map = new Uint32Array(200*200);
@@ -249,19 +250,5 @@ function s4285_blur()
 // called to display HTML for configuration parameters in admin interface
 function s4285_config_html()
 {
-	ext_admin_config(s4285_ext_name, 's4285',
-		w3_div('id-s4285 w3-text-teal w3-hide',
-			'<b>s4285 configuration</b>' +
-			'<hr>' +
-			''
-			/*
-			w3_third('', 'w3-container',
-				w3_divs('w3-margin-bottom',
-					w3_input_get('', 'int1', 's4285.int1', 'w3_num_cb'),
-					w3_input_get('', 'int2', 's4285.int2', 'w3_num_cb')
-				), '', ''
-			)
-			*/
-		)
-	);
+   ext_config_html(s4285, 's4285', 'S4285', 'S4285 configuration');
 }

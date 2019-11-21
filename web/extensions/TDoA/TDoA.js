@@ -2,12 +2,12 @@
 
 var tdoa = {
    ext_name:   'TDoA',  // NB: must match tdoa.cpp:tdoa_ext.name
+   first_time: true,
    hostname:  'tdoa.kiwisdr.com',
    prev_ui:    false,
    spiderfied: false,
    spiderfy_deferred: false,
    ii:         0,
-   first_time: true,
    leaflet:    true,
    w_data:     1024,
    h_data:     465,
@@ -2503,41 +2503,37 @@ function TDoA_config_html()
    tdoa.chans_u = { 0:'none' };
    for (var i = 1; i <= rx_chans; i++)
       tdoa.chans_u[i] = i.toFixed(0);
+   
+   var s =
+      w3_inline_percent('w3-container',
+         w3_div('w3-center',
+            w3_select('', 'Number of simultaneous channels available<br>for connection by the TDoA service',
+               '', 'tdoa_nchans', tdoa.nchans, tdoa.chans_u, 'admin_select_cb'),
+            w3_div('w3-margin-T-8 w3-text-black',
+               'If you want to limit incoming connections from the <br> kiwisdr.com TDoA service set this value.<br>' +
+               'These connections are identified in the user lists and logs as: "TDoA_service"'
+            )
+         ), 40,
+         
+         w3_div('w3-text-black'), 15,
 
-	ext_admin_config(tdoa.ext_name, 'TDoA',
-		w3_div('id-TDoA w3-text-teal w3-hide',
-			'<b>TDoA configuration</b>',
-			'<hr>',
-			w3_inline_percent('w3-container',
-            w3_div('w3-center',
-               w3_select('', 'Number of simultaneous channels available<br>for connection by the TDoA service',
-                  '', 'tdoa_nchans', tdoa.nchans, tdoa.chans_u, 'admin_select_cb'),
-               w3_div('w3-margin-T-8 w3-text-black',
-                  'If you want to limit incoming connections from the <br> kiwisdr.com TDoA service set this value.<br>' +
-                  'These connections are identified in the user lists and logs as: <br>' +
-                  '"TDoA_service" (Fremont, California, USA)'
-               )
-            ), 40,
-            
-			   w3_div('w3-text-black'), 15,
+         w3_div('',
+            w3_input('||size=12', 'TDoA ID (alphanumeric and \'/\', 12 char max)', 'cfg.tdoa_id', '', 'tdoa_id_cb',
+               'TDoA map marker id (e.g. callsign)'
+            ),
+            w3_div('w3-margin-T-8 w3-text-black',
+               'When this Kiwi is used as a measurement station for the TDoA service it displays an ' +
+               'identifier on a map pin and in the first column of the TDoA extension control panel (when selected). ' +
+               '<br><br>You can customize that identifier by setting this field. By default the identifier will be ' +
+               'one of two items. Either what appears to be a ham callsign in the the "name" field on the ' +
+               'admin page sdr.hu tab or the grid square computed from your Kiwis lat/lon.'
+            )
+         ), 40,
 
-		      w3_div('',
-		         w3_input('||size=12', 'TDoA ID (alphanumeric and \'/\', 12 char max)', 'cfg.tdoa_id', '', 'tdoa_id_cb',
-		            'TDoA map marker id (e.g. callsign)'
-		         ),
-               w3_div('w3-margin-T-8 w3-text-black',
-                  'When this Kiwi is used as a measurement station for the TDoA service it displays an ' +
-                  'identifier on a map pin and in the first column of the TDoA extension control panel (when selected). ' +
-                  '<br><br>You can customize that identifier by setting this field. By default the identifier will be ' +
-                  'one of two items. Either what appears to be a ham callsign in the the "name" field on the ' +
-                  'admin page sdr.hu tab or the grid square computed from your Kiwis lat/lon.'
-               )
-		      ), 35,
+         w3_div('w3-text-black'), 5
+      );
 
-			   w3_div('w3-text-black'), 10
-         )
-		)
-	);
+   ext_config_html(tdoa, 'tdoa', 'TDoA', 'TDoA configuration', s);
 }
 
 function tdoa_id_cb(path, val)

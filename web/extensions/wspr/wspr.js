@@ -14,23 +14,21 @@
 // re-enable spot uploads
 
 var wspr = {
+   ext_name: 'wspr',    // NB: must match wspr.c:wspr_ext.name
+   first_time: true,
    focus_interval: null,
    pie_size: 25,
 };
 
-var wspr_ext_name = 'wspr';		// NB: must match wspr.c:wspr_ext.name
-
 var wspr_canvas_width = 1024;
 //var wspr_canvas_height = 150;		// not currently used
 
-var wspr_first_time = true;
-
 function wspr_main()
 {
-	ext_switch_to_client(wspr_ext_name, wspr_first_time, wspr_recv);		// tell server to use us (again)
-	if (!wspr_first_time)
+	ext_switch_to_client(wspr.ext_name, wspr.first_time, wspr_recv);		// tell server to use us (again)
+	if (!wspr.first_time)
 		wspr_controls_setup();
-	wspr_first_time = false;
+	wspr.first_time = false;
 }
 
 var wspr_cmd_e = { WSPR_DATA:0 };
@@ -456,58 +454,56 @@ var wspr_autorun_u = [
 
 function wspr_config_html()
 {
-	ext_admin_config(wspr_ext_name, 'WSPR',
-		w3_div('id-wspr w3-text-teal w3-hide',
-			'<b>WSPR configuration</b>',
-			'<hr>',
-			w3_div('w3-show-inline-block',
-            w3_col_percent('w3-container w3-restart/w3-margin-bottom',
-               w3_input_get('', 'BFO Hz (multiple of 375 Hz)', 'WSPR.BFO', 'w3_num_set_cfg_cb', '', 'typically 750 Hz'), 30, ''
-            ),
-            w3_col_percent('w3-container w3-restart/w3-margin-bottom',
-               w3_input_get('', 'Reporter callsign', 'WSPR.callsign', 'w3_string_set_cfg_cb', ''), 30, ''
-            ),
-            w3_col_percent('w3-container/w3-margin-bottom',
-                  w3_input_get('', w3_label('w3-bold', 'Reporter grid square ') +
-                     w3_div('id-wspr-grid-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS'),
-                     'WSPR.grid', 'wspr_input_grid_cb', '', '4 or 6-character grid square location'
-                  ), 30,
-                  '', 5,
-                  w3_divs('w3-center w3-tspace-8',
-                     w3_div('', '<b>Update grid continuously from GPS?</b>'),
-                     w3_switch('', 'Yes', 'No', 'cfg.WSPR.GPS_update_grid', cfg.WSPR.GPS_update_grid, 'admin_radio_YN_cb'),
-                     w3_text('w3-text-black w3-center',
-                        'Useful for Kiwis in motion <br> (e.g. marine mobile)'
-                     )
-                  ), 35,
-                  '', 5,
-                  w3_divs('w3-center w3-tspace-8',
-                     w3_div('', '<b>Log decodes to syslog?</b>'),
-                     w3_switch('', 'Yes', 'No', 'cfg.WSPR.syslog', cfg.WSPR.syslog, 'admin_radio_YN_cb'),
-                     w3_text('w3-text-black w3-center',
-                        'Use with care as over time <br> filesystem can fill up.'
-                     )
+   var s =
+      w3_div('w3-show-inline-block',
+         w3_col_percent('w3-container w3-restart/w3-margin-bottom',
+            w3_input_get('', 'BFO Hz (multiple of 375 Hz)', 'WSPR.BFO', 'w3_num_set_cfg_cb', '', 'typically 750 Hz'), 30, ''
+         ),
+         w3_col_percent('w3-container w3-restart/w3-margin-bottom',
+            w3_input_get('', 'Reporter callsign', 'WSPR.callsign', 'w3_string_set_cfg_cb', ''), 30, ''
+         ),
+         w3_col_percent('w3-container/w3-margin-bottom',
+               w3_input_get('', w3_label('w3-bold', 'Reporter grid square ') +
+                  w3_div('id-wspr-grid-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS'),
+                  'WSPR.grid', 'wspr_input_grid_cb', '', '4 or 6-character grid square location'
+               ), 30,
+               '', 5,
+               w3_divs('w3-center w3-tspace-8',
+                  w3_div('', '<b>Update grid continuously from GPS?</b>'),
+                  w3_switch('', 'Yes', 'No', 'cfg.WSPR.GPS_update_grid', cfg.WSPR.GPS_update_grid, 'admin_radio_YN_cb'),
+                  w3_text('w3-text-black w3-center',
+                     'Useful for Kiwis in motion <br> (e.g. marine mobile)'
                   )
-            ),
-            '<hr>',
-            w3_div('w3-container w3-restart',
-               w3_div('', '<b>Autorun</b>'),
-               w3_div('w3-container',
-                  w3_div('w3-text-black', 'On startup automatically begins running the WSPR decoder on the selected band(s).<br>' +
-                     'Channels available for regular use are reduced by one for each WSPR autorun enabled.<br>' +
-                     'If Kiwi has been configured for a mix of channels with and without waterfalls then channels without waterfalls will be used first.<br><br>' +
-                     
-                     'Spot decodes are available in the Kiwi log (use "Log" tab above) and are listed on <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a><br>' +
-                     'The three fields above must be set to valid values for proper spot entry into the <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a> database.'),
-                  w3_div('w3-text-red w3-margin-bottom', 'Must restart the KiwiSDR server for changes to have effect.'),
-                  w3_div('id-wspr-admin-autorun')
+               ), 35,
+               '', 5,
+               w3_divs('w3-center w3-tspace-8',
+                  w3_div('', '<b>Log decodes to syslog?</b>'),
+                  w3_switch('', 'Yes', 'No', 'cfg.WSPR.syslog', cfg.WSPR.syslog, 'admin_radio_YN_cb'),
+                  w3_text('w3-text-black w3-center',
+                     'Use with care as over time <br> filesystem can fill up.'
+                  )
                )
+         ),
+         '<hr>',
+         w3_div('w3-container w3-restart',
+            w3_div('', '<b>Autorun</b>'),
+            w3_div('w3-container',
+               w3_div('w3-text-black', 'On startup automatically begins running the WSPR decoder on the selected band(s).<br>' +
+                  'Channels available for regular use are reduced by one for each WSPR autorun enabled.<br>' +
+                  'If Kiwi has been configured for a mix of channels with and without waterfalls then channels without waterfalls will be used first.<br><br>' +
+                  
+                  'Spot decodes are available in the Kiwi log (use "Log" tab above) and are listed on <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a><br>' +
+                  'The three fields above must be set to valid values for proper spot entry into the <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a> database.'),
+               w3_div('w3-text-red w3-margin-bottom',
+                  'Must restart the KiwiSDR server for changes to have effect. Unaffected by user enable setting above.'),
+               w3_div('id-wspr-admin-autorun')
             )
          )
-		)
-	);
-	
-	var s = '';
+      );
+
+   ext_config_html(wspr, 'WSPR', 'WSPR', 'WSPR configuration', s);
+
+	s = '';
 	for (var i=0; i < rx_chans;) {
 	   var s2 = '';
 	   for (var j=0; j < 8 && i < rx_chans; j++, i++) {

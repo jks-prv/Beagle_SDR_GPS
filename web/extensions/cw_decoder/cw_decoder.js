@@ -207,6 +207,12 @@ function cw_decoder_blur()
 	ext_send('SET cw_stop');
 }
 
+// called to display HTML for configuration parameters in admin interface
+function cw_decoder_config_html()
+{
+   ext_config_html(cw, 'cw', 'CW', 'CW decoder configuration');
+}
+
 function cw_decoder_help(show)
 {
    if (show) {

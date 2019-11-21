@@ -985,6 +985,12 @@ function fsk_blur()
    fsk_crosshairs(0);
 }
 
+// called to display HTML for configuration parameters in admin interface
+function fsk_config_html()
+{
+   ext_config_html(fsk, 'fsk', 'FSK', 'FSK configuration');
+}
+
 function fsk_help(show)
 {
    if (show) {

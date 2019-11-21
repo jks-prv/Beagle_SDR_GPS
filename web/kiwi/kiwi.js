@@ -3,6 +3,7 @@
 // Copyright (c) 2014-2017 John Seamons, ZL/KF6VO
 
 var kiwi = {
+   is_local: [],
    loaded_files: {},
    WSPR_rgrid: '',
    GPS_fixes: 0,
@@ -1664,6 +1665,12 @@ function kiwi_msg(param, ws)
 		
 		case "is_admin":
 			extint_isAdmin_cb(param[1]);
+			break;
+
+		case "is_local":
+		   var p = param[1].split(',');
+		   console.log('kiwi_msg rx_chan='+ p[0] +' is_local='+ p[1]);
+			kiwi.is_local[+p[0]] = +p[1];
 			break;
 
 		case "authkey_cb":

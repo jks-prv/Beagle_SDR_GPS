@@ -651,17 +651,21 @@ function extint_list_json(param)
 
 function extint_select_menu()
 {
+   //console.log('extint_select_menu rx_chan='+ rx_chan +' is_local='+ kiwi.is_local[rx_chan]);
 	var s = '';
-	if (extint_names) for (var i=0; i < extint_names.length; i++) {
-		//if (!dbgUs && extint_names[i] == 'devl') continue;
-
-		if (!dbgUs && extint_names[i] == 'sig_gen') continue;	// when USE_GEN == 0
-
-		if (!dbgUs && extint_names[i] == 's4285') continue;	// FIXME: hide while we develop
-		if (!dbgUs && extint_names[i] == 'timecode') continue;	// FIXME: hide while we develop
-		if (!dbgUs && extint_names[i] == 'colormap') continue;	// FIXME: hide while we develop
-
-		s += '<option value="'+ i +'">'+ extint_names[i] +'</option>';
+	if (extint_names && isArray(extint_names)) {
+	   for (var i=0; i < extint_names.length; i++) {
+         var id = extint_names[i];
+         if (!dbgUs && id == 'sig_gen') return;	// when USE_GEN == 0
+         if (!dbgUs && id == 's4285') return;	// FIXME: hide while we develop
+         if (!dbgUs && id == 'timecode') return;	// FIXME: hide while we develop
+         if (!dbgUs && id == 'colormap') return;	// FIXME: hide while we develop
+         
+         if (id == 'wspr') id = 'WSPR';      // FIXME: workaround
+         var enable = ext_get_cfg_param(id +'.enable');
+         if (enable == null || kiwi.is_local[rx_chan]) enable = true;   // enable if no cfg param or local connection
+		   s += '<option value="'+ i +'" '+ (enable? '':'disabled') +'>'+ id +'</option>';
+		}
 	}
 	//console.log('extint_select_menu = '+ s);
 	return s;
@@ -669,10 +673,16 @@ function extint_select_menu()
 
 function extint_open(name, delay)
 {
+   //console.log('extint_open rx_chan='+ rx_chan +' is_local='+ kiwi.is_local[rx_chan]);
    name = name.toLowerCase();
 	for (var i=0; i < extint_names.length; i++) {
-		if (extint_names[i].toLowerCase().includes(name)) {
-			//console.log('extint_open match='+ extint_names[i]);
+      var id = extint_names[i];
+      if (id == 'wspr') id = 'WSPR';      // FIXME: workaround
+      var enable = ext_get_cfg_param(id +'.enable');
+      if (enable == null || kiwi.is_local[rx_chan]) enable = true;   // enable if no cfg param or local connection
+
+		if (enable && id.toLowerCase().includes(name)) {
+			//console.log('extint_open match='+ id);
 			if (delay) {
 			   //console.log('extint_open '+ name +' delay='+ delay);
 			   setTimeout(function() {extint_select(i);}, delay);

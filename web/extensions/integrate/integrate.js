@@ -1,15 +1,16 @@
 // Copyright (c) 2016 John Seamons, ZL/KF6VO
 
-var integrate_ext_name = 'integrate';		// NB: must match integrate.c:integrate_ext.name
-
-var integrate_first_time = true;
+var integrate = {
+   ext_name: 'integrate',     // NB: must match integrate.c:integrate_ext.name
+   first_time: true
+};
 
 function integrate_main()
 {
-	ext_switch_to_client(integrate_ext_name, integrate_first_time, integrate_recv);		// tell server to use us (again)
-	if (!integrate_first_time)
+	ext_switch_to_client(integrate.ext_name, integrate.first_time, integrate_recv);		// tell server to use us (again)
+	if (!integrate.first_time)
 		integrate_controls_setup();
-	integrate_first_time = false;
+	integrate.first_time = false;
 }
 
 var integ_w = 1024;
@@ -447,19 +448,5 @@ function integrate_blur()
 // called to display HTML for configuration parameters in admin interface
 function integrate_config_html()
 {
-	ext_admin_config(integrate_ext_name, 'Integrate',
-		w3_div('id-integrate w3-text-teal w3-hide',
-			'<b>Audio integration configuration</b>' +
-			'<hr>' +
-			''
-			/*
-			w3_third('', 'w3-container',
-				w3_divs('w3-margin-bottom',
-					w3_input_get('', 'int1', 'integrate.int1', 'w3_num_cb'),
-					w3_input_get('', 'int2', 'integrate.int2', 'w3_num_cb')
-				), '', ''
-			)
-			*/
-		)
-	);
+   ext_config_html(integrate, 'integrate', 'Integrate', 'Integrate configuration');
 }

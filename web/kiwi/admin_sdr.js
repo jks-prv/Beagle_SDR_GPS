@@ -963,6 +963,7 @@ function extensions_nav_focus(id, cb_arg)
 {
    //console.log('extensions_nav_focus id='+ id +' cb_arg='+ cb_arg);
    writeCookie('last_admin_ext_nav', id);
+   w3_show(id +'-container');
    w3_call(id +'_config_focus');
    ext_cur_nav = id;
 }
@@ -970,21 +971,43 @@ function extensions_nav_focus(id, cb_arg)
 function extensions_nav_blur(id, cb_arg)
 {
    //console.log('extensions_nav_blur id='+ id);
+   w3_hide(id +'-container');
    w3_call(id +'_config_blur');
 }
 
 var ext_seq = 0;
 
 // called by extensions to register extension admin configuration
-function ext_admin_config(id, nav_name, ext_html, focus_blur_cb)
+function ext_admin_config(id, nav_text, ext_html, focus_blur_cb)
 {
-   //console.log('ext_admin_config id='+ id +' nav_name='+ nav_name);
+   //console.log('ext_admin_config id='+ id +' nav_text='+ nav_text);
    // indicate we don't want a callback unless explicitly requested
    if (focus_blur_cb == undefined) focus_blur_cb = null;
 
 	var ci = ext_seq % admin_colors.length;
 	w3_el('id-extensions-nav').innerHTML +=
-		w3_nav(admin_colors[ci] + ' w3-border', nav_name, id, 'extensions_nav');
+		w3_nav(admin_colors[ci] + ' w3-border', nav_text, id, 'extensions_nav');
 	ext_seq++;
-	w3_el('id-extensions-config').innerHTML += w3_div('w3-show-inline-block', ext_html);
+	w3_el('id-extensions-config').innerHTML += w3_div('id-'+ id +'-container w3-hide|width:95%', ext_html);
+}
+
+function ext_config_html(vars, cfg_prefix, nav_text, title_text, s)
+{
+   var id = vars.ext_name;
+   vars.enable = ext_get_cfg_param(cfg_prefix +'.enable', true, EXT_SAVE);
+
+	ext_admin_config(id, nav_text,
+		w3_div('id-'+ id +' w3-text-teal w3-hide',
+         w3_col_percent('w3-valign/',
+            w3_div('w3-bold', title_text), 40,
+            w3_inline('',
+               w3_div('w3-bold w3-margin-R-8', 'User enabled?'),
+               w3_switch('', 'Yes', 'No', cfg_prefix +'.enable', vars.enable, 'admin_radio_YN_cb'),
+				   w3_div('w3-text-black w3-margin-L-32', 'Local connections exempt.')
+            )
+         ) +
+			'<hr>' +
+			(s? s:'')
+		)
+	);
 }

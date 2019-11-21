@@ -1,8 +1,7 @@
 // Copyright (c) 2017 John Seamons, ZL/KF6VO
 
-var fax_ext_name = 'fax';		// NB: must match fax.c:fax_ext.name
-
 var fax = {
+   ext_name: 'fax',     // NB: must match fax.c:fax_ext.name
    first_time: true,
    stop_start_state: 0,
    url_params: null,
@@ -38,7 +37,7 @@ var fax = {
 
 function fax_main()
 {
-	ext_switch_to_client(fax_ext_name, fax.first_time, fax_recv);		// tell server to use us (again)
+	ext_switch_to_client(fax.ext_name, fax.first_time, fax_recv);		// tell server to use us (again)
 	if (!fax.first_time)
 		fax_controls_setup();
 	fax.first_time = false;
@@ -702,12 +701,7 @@ function fax_blur()
 // called to display HTML for configuration parameters in admin interface
 function fax_config_html()
 {
-	ext_admin_config(fax_ext_name, 'fax',
-		w3_div('id-fax w3-text-teal w3-hide',
-			'<b>FAX configuration</b>' +
-			'<hr>'
-		)
-	);
+   ext_config_html(fax, 'fax', 'FAX', 'FAX configuration');
 }
 
 function fax_help(show)

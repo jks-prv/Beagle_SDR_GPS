@@ -16,6 +16,17 @@ TODO
 
 */
 
+var loran_c = {
+   ext_name: 'loran_c',       // NB: must match loran_c.c:loran_c_ext.name
+   first_time: true,
+   setup_init: true,
+   
+	gri0:0, gri_sel0:0, gain0:0, offset0:0, avg_algo0:0, avg_param0:0,
+	gri1:0, gri_sel1:0, gain1:0, offset1:0, avg_algo1:0, avg_param1:0,
+	
+	scope: null
+};
+
 var gri_s = [
    '5960 North Russia (Chayka)',
    '5990 Caucasus',
@@ -300,17 +311,6 @@ loran_c_param_init(loran_c_avg_algo_e.CMA);
 loran_c_param_init(loran_c_avg_algo_e.EMA);
 loran_c_param_init(loran_c_avg_algo_e.IIR);
 
-var loran_c = {
-   ext_name: 'loran_c',       // NB: must match loran_c.c:loran_c_ext.name
-   first_time: true,
-   setup_init: true,
-   
-	gri0:0, gri_sel0:0, gain0:0, offset0:0, avg_algo0:0, avg_param0:0,
-	gri1:0, gri_sel1:0, gain1:0, offset1:0, avg_algo1:0, avg_param1:0,
-	
-	scope: null
-};
-
 function loran_c_controls_setup()
 {
    if (loran_c.setup_init) {
@@ -511,18 +511,15 @@ function loran_c_avg_param_cb(path, slider_val)
 // called to display HTML for configuration parameters in admin interface
 function loran_c_config_html()
 {
-	ext_admin_config(loran_c.ext_name, 'Loran-C',
-		w3_div('id-loran_c w3-text-teal w3-hide',
-			'<b>Loran-C configuration</b>' +
-			'<hr>' +
-			w3_div('w3-show-inline-block',
-            w3_div('w3-container w3-show-inline-block|width:200px',
-               w3_divs('w3-margin-bottom',
-                  w3_input_get('', 'default GRI 0', 'loran_c.gri0', 'w3_num_set_cfg_cb', ''),
-                  w3_input_get('', 'default GRI 1', 'loran_c.gri1', 'w3_num_set_cfg_cb', '')
-               )
+   var s =
+      w3_div('w3-show-inline-block',
+         w3_div('w3-container w3-show-inline-block|width:200px',
+            w3_divs('w3-margin-bottom',
+               w3_input_get('', 'default GRI 0', 'loran_c.gri0', 'w3_num_set_cfg_cb', ''),
+               w3_input_get('', 'default GRI 1', 'loran_c.gri1', 'w3_num_set_cfg_cb', '')
             )
          )
-		)
-	);
+      );
+
+   ext_config_html(loran_c, 'loran_c', 'Loran-C', 'Loran-C configuration', s);
 }
