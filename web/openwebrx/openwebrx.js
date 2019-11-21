@@ -1175,8 +1175,9 @@ function demodulator_analog_replace(subtype, freq)
 		prev_pbo = passband_offset();
 		demodulator_remove(0);
 	} else {
-		//console.log("### init_freq="+init_frequency+" init_mode="+init_mode);
-		offset = (init_frequency*1000).toFixed(0) - center_freq;
+		var i_freqHz = Math.round((init_frequency - cfg.freq_offset) * 1000);
+      offset = (i_freqHz <= 0 || i_freqHz > bandwidth)? 0 : (i_freqHz - center_freq);
+		//console.log('### init_freq='+ init_frequency +' cfg.freq_offset='+ cfg.freq_offset +' i_freqHz='+ i_freqHz +' offset='+ offset +' init_mode='+ init_mode);
 		subtype = init_mode;
 	}
 	
