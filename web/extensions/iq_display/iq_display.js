@@ -1,8 +1,8 @@
-// Copyright (c) 2016 John Seamons, ZL/KF6VO
-
-var iq_display_ext_name = 'iq_display';		// NB: must match iq_display.c:iq_display_ext.name
+// Copyright (c) 2016-2019 John Seamons, ZL/KF6VO
 
 var iq = {
+   ext_name: 'iq_display',    // NB: must match iq.c:iq_display_ext.name
+   first_time: true,
    cmd_e: { IQ_POINTS:0, IQ_DENSITY:1, IQ_CLEAR:2 },
    draw: 1,
    mode: 0,
@@ -25,14 +25,12 @@ var iq = {
    phase: 0
 };
 
-var iq_display_first_time = true;
-
 function iq_display_main()
 {
-	ext_switch_to_client(iq_display_ext_name, iq_display_first_time, iq_display_recv);		// tell server to use us (again)
-	if (!iq_display_first_time)
+	ext_switch_to_client(iq.ext_name, iq.first_time, iq_display_recv);		// tell server to use us (again)
+	if (!iq.first_time)
 		iq_display_controls_setup();
-	iq_display_first_time = false;
+	iq.first_time = false;
 }
 
 var iq_display_map = new Uint32Array(256*256);
@@ -514,21 +512,7 @@ function iq_display_blur()
 // called to display HTML for configuration parameters in admin interface
 function iq_display_config_html()
 {
-	ext_admin_config(iq_display_ext_name, 'IQ',
-		w3_div('id-iq_display w3-text-teal w3-hide',
-			'<b>IQ display configuration</b>' +
-			'<hr>' +
-			''
-			/*
-			w3_third('', 'w3-container',
-				w3_divs('w3-margin-bottom',
-					w3_input_get('', 'int1', 'iq_display.int1', 'w3_num_cb'),
-					w3_input_get('', 'int2', 'iq_display.int2', 'w3_num_cb')
-				), '', ''
-			)
-			*/
-		)
-	);
+   ext_config_html(iq, 'iq_display', 'IQ', 'IQ display configuration');
 }
 
 function iq_display_help(show)

@@ -1,8 +1,14 @@
 // Copyright (c) 2016 John Seamons, ZL/KF6VO
 
+var integrate_itime_init = 10.0;
+var integrate_maxdb_init = -10;
+var integrate_mindb_init = -134;
+
 var integrate = {
    ext_name: 'integrate',     // NB: must match integrate.c:integrate_ext.name
-   first_time: true
+   first_time: true,
+
+	'itime':integrate_itime_init, 'pre':0, 'maxdb':integrate_maxdb_init, 'mindb':integrate_mindb_init
 };
 
 function integrate_main()
@@ -190,14 +196,6 @@ function integrate_recv(data)
 		}
 	}
 }
-
-var integrate_itime_init = 10.0;
-var integrate_maxdb_init = -10;
-var integrate_mindb_init = -134;
-
-var integrate = {
-	'itime':integrate_itime_init, 'pre':0, 'maxdb':integrate_maxdb_init, 'mindb':integrate_mindb_init
-};
 
 var integrate_data_canvas, integrate_info_canvas;
 
