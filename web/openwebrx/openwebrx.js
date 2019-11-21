@@ -777,16 +777,15 @@ demodulator_response_time=100;
 //in ms; if we don't limit the number of SETs sent to the server, audio will underrun (possibly output buffer is cleared on SETs in GNU Radio
 
 var passbands = {
-	am:		{ lo: -4900,	hi:  4900 },   // 9.8 kHz instead of 10 to avoid adjacent channel heterodynes in SW BCBs
+	am:		{ lo: -4900,	hi:  4900 },            // 9.8 kHz instead of 10 to avoid adjacent channel heterodynes in SW BCBs
 	amn:		{ lo: -2500,	hi:  2500 },
-	lsb:		{ lo: -2700,	hi:  -300 },	// cf = 1500 Hz, bw = 2400 Hz
-	usb:		{ lo:   300,	hi:  2700 },	// cf = 1500 Hz, bw = 2400 Hz
-	cw:		{ lo:   300,	hi:   700 },	// cf = 500 Hz, bw = 400 Hz
-	cwn:		{ lo:   470,	hi:   530 },	// cf = 500 Hz, bw = 60 Hz
-	nbfm:		{ lo: -6000,	hi:  6000 },	// FIXME: set based on current srate?
+	lsb:		{ lo: -2700,	hi:  -300 },	         // cf = 1500 Hz, bw = 2400 Hz
+	usb:		{ lo:   300,	hi:  2700 },	         // cf = 1500 Hz, bw = 2400 Hz
+	cw:		{ lo:   300,	hi:   700,  pbw: 400 },	// cf = 500 Hz, bw = 400 Hz
+	cwn:		{ lo:   470,	hi:   530,  pbw:  60 },	// cf = 500 Hz, bw = 60 Hz
+	nbfm:		{ lo: -6000,	hi:  6000 },	         // FIXME: set based on current srate?
 	iq:		{ lo: -5000,	hi:  5000 },
-	s4285:	{ lo:   600,	hi:  3000 },	// cf = 1800 Hz, bw = 2400 Hz, s4285 compatible
-//	s4285:	{ lo:   400,	hi:  3200 },	// cf = 1800 Hz, bw = 2800 Hz, made things a little worse?
+	s4285:	{ lo:   600,	hi:  3000 },	         // cf = 1800 Hz, bw = 2400 Hz, s4285 compatible
 };
 
 function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
@@ -1238,6 +1237,16 @@ function demodulator_set_offset_frequency(which, offset)
 	demod.offset_frequency = offset;
 	demod.set();
 	try_freqset_update_ui();
+}
+
+function owrx_cfg()
+{
+   var cw = passbands.cw;
+   cw.lo = cfg.init.cw_offset - cw.pbw/2;
+   cw.hi = cfg.init.cw_offset + cw.pbw/2;
+   var cwn = passbands.cwn;
+   cwn.lo = cfg.init.cw_offset - cwn.pbw/2;
+   cwn.hi = cfg.init.cw_offset + cwn.pbw/2;
 }
 
 

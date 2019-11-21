@@ -1590,6 +1590,7 @@ function kiwi_msg(param, ws)
 			var cfg_json = decodeURIComponent(param[1]);
 			//console.log('### load_cfg '+ ws.stream +' '+ cfg_json.length);
 			cfg = JSON.parse(cfg_json);
+			owrx_cfg();
 			break;
 
 		case "load_adm":

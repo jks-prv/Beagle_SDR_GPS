@@ -30,6 +30,7 @@ function config_html()
 	var init_AM_BCB_chan = ext_get_cfg_param('init.AM_BCB_chan', 0);
 	var init_ITU_region = ext_get_cfg_param('init.ITU_region', 0);
 	var max_freq = ext_get_cfg_param('max_freq', 0);
+	var max_freq = ext_get_cfg_param('max_freq', 0);
 	
 	var s1 =
 		'<hr>' +
@@ -38,15 +39,13 @@ function config_html()
 			w3_div('w3-center',
 				w3_select('', 'Initial mode', '', 'init.mode', init_mode, modes_u, 'admin_select_cb')
 			),
-			w3_input_get('', 'Initial zoom (0-11)', 'init.zoom', 'admin_int_cb')
+			w3_input_get('', 'Initial CW offset (Hz)', 'init.cw_offset', 'admin_int_cb')
 		) +
 
 		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
 			w3_input_get('', 'Initial waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'admin_int_cb'),
 			w3_input_get('', 'Initial waterfall max (dBFS)', 'init.max_dB', 'admin_int_cb'),
-			w3_div('w3-center',
-				w3_select('', 'Initial AM BCB channel spacing', '', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'admin_select_cb')
-			)
+			w3_input_get('', 'Initial zoom (0-13)', 'init.zoom', 'admin_int_cb')
 		);
 
    var s2 =
@@ -58,16 +57,6 @@ function config_html()
 					'116000 kHz when 144-148 maps to 28-32 MHz.'
 				)
 			),
-			w3_input_get('', 'S-meter calibration (dB)', 'S_meter_cal', 'admin_int_cb'),
-			w3_input_get('', 'Waterfall calibration (dB)', 'waterfall_cal', 'admin_int_cb')
-		) +
-		w3_quarter('w3-margin-bottom w3-text-teal', 'w3-container',
-			w3_div('w3-center w3-tspace-8',
-				w3_select('', 'ITU region', '', 'init.ITU_region', init_ITU_region, ITU_region_i, 'admin_select_cb'),
-				w3_div('w3-text-black',
-					'Configures LW/NDB, MW and <br> amateur band allocations, etc.'
-				)
-			),
 			w3_divs('w3-restart/w3-center w3-tspace-8',
 				w3_select('', 'Max receiver frequency', '', 'max_freq', max_freq, max_freq_i, 'admin_select_cb'),
 				w3_div('w3-text-black')
@@ -77,6 +66,22 @@ function config_html()
 				w3_div('w3-text-black',
 					'Set to 24 MHz to reduce interference <br> on 2 meters (144-148 MHz).'
 				)
+			),
+		) +
+		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
+			w3_input_get('', 'S-meter calibration (dB)', 'S_meter_cal', 'admin_int_cb'),
+			w3_input_get('', 'Waterfall calibration (dB)', 'waterfall_cal', 'admin_int_cb'),
+			''
+		) +
+		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
+			w3_div('w3-center w3-tspace-8',
+				w3_select('', 'ITU region', '', 'init.ITU_region', init_ITU_region, ITU_region_i, 'admin_select_cb'),
+				w3_div('w3-text-black',
+					'Configures LW/NDB, MW and <br> amateur band allocations, etc.'
+				)
+			),
+			w3_div('w3-center w3-tspace-8',
+				w3_select('', 'Initial AM BCB channel spacing', '', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'admin_select_cb')
 			),
 			w3_divs('w3-restart/w3-center w3-tspace-8',
 				w3_select_get_param('', 'Status LED brightness', '', 'led_brightness', led_brightness_i, 'admin_select_cb', 0),

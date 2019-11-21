@@ -214,6 +214,7 @@ void update_vars_from_config()
     cfg_default_bool("test_webserver_prio", false, &update_cfg);
     cfg_default_bool("test_deadline_update", false, &update_cfg);
     cfg_default_bool("disable_recent_changes", false, &update_cfg);
+    cfg_default_int("init.cw_offset", 500, &update_cfg);
 
     if (wspr_update_vars_from_config()) update_cfg = true;
 
