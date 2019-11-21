@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 John Seamons, ZL/KF6VO
+// Copyright (c) 2016-2019 John Seamons, ZL/KF6VO
 
 /*
 
@@ -276,6 +276,19 @@ function w3_first_value(v)
    }
    //console.log('w3_first_value rv='+ rv);
    return rv;
+}
+
+function w3_opt(opt, elem, default_val)
+{
+   //console.log('w3_opt opt:');
+   //console.log(opt);
+   if (isDefined(opt) && isDefined(opt[elem])) {
+      //console.log('w3_opt elem='+ elem +' DEFINED rv='+ opt[elem]);
+      return opt[elem];
+   } else {
+      //console.log('w3_opt elem='+ elem +' NOT DEFINED rv='+ default_val);
+      return default_val;
+   }
 }
 
 function w3_obj_num(o)
@@ -1758,6 +1771,7 @@ function w3int_select_options(sel, opts)
          }
       }
    } else
+   
    if (isArray(opts)) {
       // array of strings and/or numbers or take first object key as option
       for (var i=0; i < opts.length; i++) {
@@ -1769,6 +1783,7 @@ function w3int_select_options(sel, opts)
          s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ obj +'</option>';
       }
    } else
+   
    if (isObject(opts)) {
       // object: enumerate sequentially like an array
       // allows object to serve a dual purpose by having non-integer keys
@@ -1826,6 +1841,21 @@ function w3_select_hier(psa, label, title, path, sel, opts, cb, cb_param)
       }
    }
    */
+   
+   return w3int_select(psa, label, title, path, sel, s, cb, cb_param);
+}
+
+// conditional -- individual menu entries can be enabled/disabled
+function w3_select_conditional(psa, label, title, path, sel, opts, cb, cb_param)
+{
+   var s = '';
+   var idx = 0;
+   if (!isArray(opts)) return;
+
+   opts.forEach(function(el) {
+      if (isArray(el))
+         s += '<option value='+ dq(idx++) +' '+ (el[1]? 'disabled':'') +'>'+ el[0] +'</option> ';
+   });
    
    return w3int_select(psa, label, title, path, sel, s, cb, cb_param);
 }
@@ -2404,7 +2434,7 @@ function w3_half(prop_row, prop_col, left, right, prop_left, prop_right)
 			left +
 		'</div>' +
 		'<div class="w3-col w3-half '+ prop_col + prop_right +'">' +
-			right +
+			(right? right:'') +
 		'</div>' +
 	'</div>';
 	//console.log(s);
@@ -2419,10 +2449,10 @@ function w3_third(prop_row, prop_col, left, middle, right)
 			left +
 		'</div>' +
 		'<div class="w3-col w3-third '+ prop_col +'">' +
-			middle +
+			(middle? middle:'') +
 		'</div>' +
 		'<div class="w3-col w3-third '+ prop_col +'">' +
-			right +
+			(right? right:'') +
 		'</div>' +
 	'</div>';
 	//console.log(s);
@@ -2437,13 +2467,13 @@ function w3_quarter(prop_row, prop_col, left, middleL, middleR, right)
 			left +
 		'</div>' +
 		'<div class="w3-col w3-quarter '+ prop_col +'">' +
-			middleL +
+			(middleL? middleL:'') +
 		'</div>' +
 		'<div class="w3-col w3-quarter '+ prop_col +'">' +
-			middleR +
+			(middleR? middleR:'') +
 		'</div>' +
 		'<div class="w3-col w3-quarter '+ prop_col +'">' +
-			right +
+			(right? right:'') +
 		'</div>' +
 	'</div>';
 	//console.log(s);
