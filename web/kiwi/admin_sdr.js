@@ -66,7 +66,7 @@ function config_html()
 				w3_div('w3-text-black',
 					'Set to 24 MHz to reduce interference <br> on 2 meters (144-148 MHz).'
 				)
-			),
+			)
 		) +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_input_get('', 'S-meter calibration (dB)', 'S_meter_cal', 'admin_int_cb'),

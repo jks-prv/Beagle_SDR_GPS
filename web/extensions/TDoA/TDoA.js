@@ -1893,13 +1893,13 @@ function tdoa_result_menu_click_cb(path, idx, first)
                      //console.log(j);
       
                      // Create new kml overlay
-                     const parser = new DOMParser();
-                     const kml = parser.parseFromString(j.text, 'text/xml');
-                     const track = new L.KML(kml);
+                     parser = new DOMParser();
+                     kml = parser.parseFromString(j.text, 'text/xml');
+                     track = new L.KML(kml);
                      tdoa.result_map.addLayer(track);
          
                      // Adjust map to show the kml
-                     //const bounds = track.getBounds();
+                     //bounds = track.getBounds();
                      //tdoa.result_map.fitBounds(bounds);
                   } else {
                      if (j.polygons && j.polygons.length) {

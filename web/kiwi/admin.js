@@ -1761,7 +1761,7 @@ function gps_update_admin_cb()
 			w3_table_cells('w3-center', (cn == gps.FFTch)? refresh_icon:'') +
 			w3_table_cells('w3-right-align',
 				prn? (prn_pre + prn):'',
-				ch.snr? ch.snr:'',
+				ch.snr? ch.snr:''
 				//ch.rssi? ch.gain:'',
 			) +
 			w3_table_cells('w3-right-align'+ (ch.old? ' w3-text-red w3-bold':''), ch.age) +
