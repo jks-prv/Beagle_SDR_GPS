@@ -560,21 +560,21 @@ function animate(object, style_name, unit, from, to, accel, time_ms, fps, to_exe
 
 	object.anim_timer = window.setInterval(
 		function(){
-			if(object.anim_i++<n_of_iters)
+			if (object.anim_i++<n_of_iters)
 			{
 				if (accel==1) object.style[style_name] = (parseFloat(object.style[style_name]) + change).toString() + unit;
 				else 
 				{ 
 					remain=parseFloat(object.style[style_name])-to;
-					if(Math.abs(remain)>9||unit!="px") new_val=(to+accel*remain);
-					else {if(Math.abs(remain)<2) new_val=to;
+					if (Math.abs(remain)>9||unit!="px") new_val=(to+accel*remain);
+					else {if (Math.abs(remain)<2) new_val=to;
 					else new_val=to+remain-(remain/Math.abs(remain));}
 					object.style[style_name]=new_val.toString()+unit;
 				}
 			}
 			else 
 				{object.style[style_name]=to.toString()+unit; window.clearInterval(object.anim_timer); delete object.anim_timer;}
-			if(to_exec!=0) to_exec();
+			if (to_exec!=0) to_exec();
 		},1000/fps);
 }
 
@@ -605,7 +605,7 @@ function style_value(of_what, which)
 	
 	something.fade_timer=window.setInterval(
 		function(){
-			if(something.fade_i++<n_of_iters)
+			if (something.fade_i++<n_of_iters)
 				something.style.opacity=parseFloat(something.style.opacity)+change;
 			else 
 				{something.style.opacity=to; window.clearInterval(something.fade_timer); }
@@ -624,7 +624,7 @@ demodulator_colors=["#ffff00", "#00ff00", "#00ffff", "#058cff", "#ff9600", "#a1f
 
 function demodulators_get_next_color()
 {
-	if(demodulator_color_index>=demodulator_colors.length) demodulator_color_index=0;
+	if (demodulator_color_index>=demodulator_colors.length) demodulator_color_index=0;
 	return(demodulator_colors[demodulator_color_index++]);
 }
 
@@ -718,28 +718,28 @@ function demod_envelope_where_clicked(x, drag_ranges, key_modifiers)
 	//console.log(drag_ranges);
 	//console.log(key_modifiers);
 
-	if(key_modifiers.shiftKey)
+	if (key_modifiers.shiftKey)
 	{
 		//Check first: shift + center drag emulates BFO knob
-		if(drag_ranges.line_on_screen && in_range(x,drag_ranges.line)) return dr.bfo;
+		if (drag_ranges.line_on_screen && in_range(x,drag_ranges.line)) return dr.bfo;
 		
 		//Check second: shift + envelope drag emulates PBS knob
-		if(drag_ranges.envelope_on_screen && in_range(x,drag_ranges.whole_envelope)) return dr.pbs;
+		if (drag_ranges.envelope_on_screen && in_range(x,drag_ranges.whole_envelope)) return dr.pbs;
 	}
 	
-	if(key_modifiers.altKey)
+	if (key_modifiers.altKey)
 	{
-		if(drag_ranges.envelope_on_screen && in_range(x,drag_ranges.beginning)) return dr.bwlo;
-		if(drag_ranges.envelope_on_screen && in_range(x,drag_ranges.ending)) return dr.bwhi;
+		if (drag_ranges.envelope_on_screen && in_range(x,drag_ranges.beginning)) return dr.bwlo;
+		if (drag_ranges.envelope_on_screen && in_range(x,drag_ranges.ending)) return dr.bwhi;
 	}
 	
-	if(drag_ranges.envelope_on_screen)
+	if (drag_ranges.envelope_on_screen)
 	{ 
 		// For low and high cut:
-		if(in_range(x,drag_ranges.beginning)) return dr.beginning;
-		if(in_range(x,drag_ranges.ending)) return dr.ending;
+		if (in_range(x,drag_ranges.beginning)) return dr.beginning;
+		if (in_range(x,drag_ranges.ending)) return dr.ending;
 		// Last priority: having clicked anything else on the envelope, without holding the shift key
-		if(in_range(x,drag_ranges.whole_envelope)) return dr.anything_else; 
+		if (in_range(x,drag_ranges.whole_envelope)) return dr.anything_else; 
 	}
 	return dr.none; //User doesn't drag the envelope for this demodulator
 }
@@ -890,37 +890,37 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	this.usePBCenter = false;
 	this.isCW = false;
 
-	if(subtype=="am")
+	if (subtype=="am")
 	{
 	}	
-	else if(subtype=="amn")
+	else if (subtype=="amn")
 	{
 	}
-	else if(subtype=="lsb")
+	else if (subtype=="lsb")
 	{
 		this.usePBCenter=true;
 	}
-	else if(subtype=="usb")
+	else if (subtype=="usb")
 	{
 		this.usePBCenter=true;
 	}
-	else if(subtype=="cw")
-	{
-		this.usePBCenter=true;
-		this.isCW=true;
-	} 
-	else if(subtype=="cwn")
+	else if (subtype=="cw")
 	{
 		this.usePBCenter=true;
 		this.isCW=true;
 	} 
-	else if(subtype=="nbfm")
+	else if (subtype=="cwn")
+	{
+		this.usePBCenter=true;
+		this.isCW=true;
+	} 
+	else if (subtype=="nbfm")
 	{
 	}
-	else if(subtype=="iq")
+	else if (subtype=="iq")
 	{
 	}
-	else if(subtype=="s4285")
+	else if (subtype=="s4285")
 	{
 		// FIXME: hack for custom s4285 passband
 		this.usePBCenter=true;
@@ -1261,6 +1261,8 @@ var scale_canvas, band_canvas, dx_div, dx_canvas;
 
 function scale_setup()
 {
+	w3_el('id-scale-container').addEventListener("mouseout", scale_container_mouseout, false);
+   
 	scale_canvas = html("id-scale-canvas");	
 	scale_ctx = scale_canvas.getContext("2d");
 	add_scale_listner(scale_canvas);
@@ -1331,7 +1333,7 @@ var scale_canvas_drag_params = {
 
 function scale_canvas_mousedown(evt)
 {
-	//console.log("SC-MDN");
+	//event_dump(evt, 'SC-MDN', 1);
 	with (scale_canvas_drag_params) {
 		drag = false;
 		start_x = evt.pageX;
@@ -1340,7 +1342,7 @@ function scale_canvas_mousedown(evt)
 		key_modifiers.altKey = evt.altKey;
 		key_modifiers.ctrlKey = evt.ctrlKey;
 	}
-	scale_canvas_start_drag(evt);
+	scale_canvas_start_drag(evt, 1);
 	evt.preventDefault();
 }
 
@@ -1355,14 +1357,14 @@ function scale_canvas_touchStart(evt)
 			key_modifiers.altKey = false;
 			key_modifiers.ctrlKey = false;
 		}
-	   scale_canvas_start_drag(evt);
+	   scale_canvas_start_drag(evt, 0);
 	}
 	evt.preventDefault();
 }
 
 var scale_canvas_ignore_mouse_event = false;
 
-function scale_canvas_start_drag(evt)
+function scale_canvas_start_drag(evt, isMouse)
 {
 	// Distinguish ctrl-click right-button meta event from actual right-button on mouse (or touchpad two-finger tap).
 	// Must ignore true_right_click case even though contextmenu event is being handled elsewhere.
@@ -1377,6 +1379,7 @@ function scale_canvas_start_drag(evt)
 	}
 
    scale_canvas_drag_params.mouse_down = true;
+   if (isMouse) scale_canvas_mousemove(evt);
 }
 
 function scale_offset_carfreq_from_px(x, visible_range)
@@ -1392,10 +1395,11 @@ function scale_canvas_drag(evt, x)
 {
    if (scale_canvas_ignore_mouse_event) return;
    
+	//event_dump(evt, 'SC-MDRAG', 1);
 	var event_handled = 0;
 	var relX = Math.abs(x - scale_canvas_drag_params.start_x);
 
-	if (scale_canvas_drag_params.mouse_down && !scale_canvas_drag_params.drag && relX > canvas_drag_min_delta) {
+	if (scale_canvas_drag_params.mouse_down && !scale_canvas_drag_params.drag /* && relX > canvas_drag_min_delta */ ) {
 		//we can use the main drag_min_delta thing of the main canvas
 		scale_canvas_drag_params.drag = true;
 		//call the drag_start for all demodulators (and they will decide if they're dragged, based on X coordinate)
@@ -1403,9 +1407,9 @@ function scale_canvas_drag(evt, x)
 			event_handled |= demodulators[i].envelope.drag_start(x, scale_canvas_drag_params.key_modifiers);
 		//console.log("MOV1 evh? "+event_handled);
 		evt.target.style.cursor = "move";
-		//evt.target.style.cursor = "ew-resize";
 		//console.log('sc cursor');
-	} else
+	//} else
+	}     // scale is different from waterfall: mousedown alone immediately changes frequency
 
 	if (scale_canvas_drag_params.drag) {
 		//call the drag_move for all demodulators (and they will decide if they're dragged)
@@ -1420,6 +1424,7 @@ function scale_canvas_drag(evt, x)
 
 function scale_canvas_mousemove(evt)
 {
+	//event_dump(evt, 'SC-MM', 1);
 	scale_canvas_drag(evt, evt.pageX);
 }
 
@@ -1439,20 +1444,21 @@ function scale_canvas_end_drag(evt, x)
    }
 
 	scale_canvas_drag_params.drag = false;
-	scale_canvas_drag_params.mouse_down = false;
 	var event_handled = false;
 	
-	for (var i=0;i<demodulators.length;i++) event_handled |= demodulators[i].envelope.drag_end(x);
-	//console.log("MED evh? "+event_handled);
-	if (!event_handled) demodulator_set_offset_frequency(0, scale_offset_carfreq_from_px(x));
+	if (scale_canvas_drag_params.mouse_down == true) {
+      for (var i=0; i<demodulators.length; i++) event_handled |= demodulators[i].envelope.drag_end(x);
+      //console.log("MED evh? "+event_handled);
+      if (!event_handled) demodulator_set_offset_frequency(0, scale_offset_carfreq_from_px(x));
+   }
 
+	scale_canvas_drag_params.mouse_down = false;
 	evt.target.style.cursor = null;		// re-enable default mouseover cursor in .css (if any)
 }
 
 function scale_canvas_mouseup(evt)
 {
-	//console.log("SC-MUP");
-	//console.log('sc default');
+	//event_dump(evt, 'SC-MUP', 1);
 	scale_canvas_end_drag(evt, evt.pageX);
 }
 
@@ -1460,6 +1466,16 @@ function scale_canvas_touchEnd(evt)
 {
 	scale_canvas_end_drag(evt, scale_canvas_drag_params.last_x);
 	evt.preventDefault();
+}
+
+function scale_container_mouseout(evt)
+{
+   // Prevent mouseout generated from mouseover of passband elements from prematurely ending drag.
+   // Can't use "pb_el.style.pointerEvents = 'none'" trick because that disables pb tooltip.
+   var trel = evt.relatedTarget;
+   trel = (isObject(trel) && trel != null && isDefined(trel.id))? trel.id : null;
+   if (trel && (trel.startsWith('id-pb-adj') || trel.startsWith('id-scale'))) return;
+   scale_canvas_mouseup(evt);
 }
 
 function scale_px_from_freq(f,range) { return Math.round(((f-range.start)/range.bw)*canvas_container.clientWidth); }
@@ -1961,13 +1977,14 @@ function canvas_contextmenu(evt)
 
 function canvas_mouseover(evt)
 {
-	if(!waterfall_setup_done) return;
+	if (!waterfall_setup_done) return;
 	//html("id-freq-show").style.visibility="visible";	
 }
 
 function canvas_mouseout(evt)
 {
-	if(!waterfall_setup_done) return;
+	if (!waterfall_setup_done) return;
+	if (debug_canvas_drag) event_dump(evt, 'canvas_mouseout', 1);
 	//html("id-freq-show").style.visibility="hidden";
 }
 
@@ -2004,6 +2021,247 @@ canvas_mouse_down = false;
 canvas_ignore_mouse_event = false;
 
 var mouse = { 'left':0, 'middle':1, 'right':2 };
+
+var debug_canvas_drag = false;
+
+function canvas_start_drag(evt, x, y)
+{
+	var dump_event = false;
+	
+	// Distinguish ctrl-click right-button meta event from actual right-button on mouse (or touchpad two-finger tap).
+	// Must ignore true_right_click case even though contextmenu event is being handled elsewhere.
+	var true_right_click = false;
+	if (evt.button == mouse.right && !evt.ctrlKey) {
+		//dump_event = true;
+		true_right_click = true;
+		canvas_ignore_mouse_event = true;
+		right_click_menu(x, y);
+		return;
+	}
+	
+	if (dump_event) event_dump(evt, "MDN");
+
+	if (evt.shiftKey && evt.target.id == 'id-dx-container') {
+		canvas_ignore_mouse_event = true;
+		dx_show_edit_panel(evt, -1);
+	} else
+
+	// select waterfall on nearest appropriate boundary (1, 5 or 9/10 kHz depending on band)
+	if (evt.shiftKey && !(evt.ctrlKey || evt.altKey)) {
+		canvas_ignore_mouse_event = true;
+		var step_Hz = 1000;
+		var fold = canvas_get_dspfreq(x);
+		var b = find_band(fold);
+		if (b != null && (b.name == 'LW' || b.name == 'MW')) {
+			if (cur_mode == 'am' || cur_mode == 'amn' || cur_mode == 'lsb' || cur_mode == 'usb') {
+				step_Hz = step_9_10? 9000 : 10000;
+				//console.log('SFT-CLICK 9_10');
+			}
+		} else
+		if (b != null && (b.s == svc.B)) {		// SWBC bands
+			if (cur_mode == 'am' || cur_mode == 'amn' || cur_mode == 'lsb' || cur_mode == 'usb') {
+				step_Hz = 5000;
+				//console.log('SFT-CLICK SWBC');
+			}
+		}
+		
+		var trunc = fold / step_Hz;
+		var fnew = Math.round(trunc) * step_Hz;
+		//console.log('SFT-CLICK '+cur_mode+' fold='+fold+' step='+step_Hz+' trunc='+trunc+' fnew='+fnew);
+		freqmode_set_dsp_kHz(fnew/1000, null);
+	} else
+
+	// lookup mouse pointer frequency in online resource appropriate to the frequency band
+	if (evt.shiftKey && (evt.ctrlKey || evt.altKey)) {
+		canvas_ignore_mouse_event = true;
+		freq_database_lookup(canvas_get_dspfreq(x), evt.altKey);
+	} else
+	
+	// page scrolling via ctrl & alt-key click
+	if (evt.ctrlKey) {
+		canvas_ignore_mouse_event = true;
+		page_scroll(-page_scroll_amount);
+	} else
+	
+	if (evt.altKey) {
+		canvas_ignore_mouse_event = true;
+		page_scroll(page_scroll_amount);
+	}
+	
+	canvas_mouse_down = true;
+	canvas_dragging = false;
+	canvas_drag_last_x = canvas_drag_start_x = x;
+	canvas_drag_last_y = canvas_drag_start_y = y;
+}
+
+function canvas_mousedown(evt)
+{
+	if (debug_canvas_drag) console.log("C-MD");
+   //event_dump(evt, "C-MD");
+	canvas_start_drag(evt, evt.pageX, evt.pageY);
+	evt.preventDefault();	// don't show text selection mouse pointer
+}
+
+function canvas_touchStart(evt)
+{
+   if (evt.targetTouches.length == 1) {
+		canvas_start_drag(evt, evt.targetTouches[0].pageX, evt.targetTouches[0].pageY);
+	}
+	evt.preventDefault();	// don't show text selection mouse pointer
+}
+
+function spectrum_tooltip_update(evt, clientX, clientY)
+{
+	var target = (evt.target == spectrum_dB || evt.currentTarget == spectrum_dB || evt.target == spectrum_dB_ttip || evt.currentTarget == spectrum_dB_ttip);
+	//console.log('CD '+ target +' x='+ clientX +' tgt='+ evt.target.id +' ctg='+ evt.currentTarget.id);
+	//if (kiwi_isMobile()) alert('CD '+ tf +' x='+ clientX +' tgt='+ evt.target.id +' ctg='+ evt.currentTarget.id);
+
+	if (target) {
+		//event_dump(evt, 'SPEC');
+		
+		// This is a little tricky. The tooltip text span must be included as an event target so its position will update when the mouse
+		// is moved upward over it. But doing so means when the cursor goes below the bottom of the tooltip container, the entire
+		// spectrum div in this case, having included the tooltip text span will cause it to be re-positioned again. And the hover
+		// doesn't go away unless the mouse is moved quickly. So to stop this we need to manually detect when the mouse is out of the
+		// tooltip container and stop updating the tooltip text position so the hover will end.
+		
+		if (clientY >= 0 && clientY < height_spectrum_canvas) {
+			spectrum_dB_ttip.style.left = px(clientX);
+			spectrum_dB_ttip.style.bottom = px(200 + 10 - clientY);
+			var dB = (((height_spectrum_canvas - clientY) / height_spectrum_canvas) * full_scale) + mindb;
+			spectrum_dB_ttip.innerHTML = dB.toFixed(0) +' dBm';
+		}
+	}
+}
+
+function canvas_drag(evt, x, y, clientX, clientY)
+{
+	if (!waterfall_setup_done) return;
+	//element=html("id-freq-show");
+	var relativeX = x;
+	var relativeY = y;
+	spectrum_tooltip_update(evt, clientX, clientY);
+
+   if (debug_canvas_drag) console.log('CMD='+ canvas_mouse_down +' IME='+ canvas_ignore_mouse_event +' DG='+ canvas_dragging);
+	if (canvas_mouse_down && !canvas_ignore_mouse_event) {
+		if (!canvas_dragging && Math.abs(x - canvas_drag_start_x) > canvas_drag_min_delta) {
+			canvas_dragging = true;
+			canvas_container.style.cursor = "move";
+		}
+		if (canvas_dragging) {
+			var deltaX = canvas_drag_last_x - x;
+			var deltaY = canvas_drag_last_y - y;
+
+			var dbins = norm_to_bins(deltaX / waterfall_width);
+			waterfall_pan_canvases(dbins);
+
+			canvas_drag_last_x = x;
+			canvas_drag_last_y = y;
+		}
+	} else {
+		w3_innerHTML('id-mouse-unit', format_frequency("{x}", canvas_get_dspfreq(relativeX) + cfg.freq_offset*1e3, 1e3, 2));
+		//console.log("MOU rX="+relativeX.toFixed(1)+" f="+canvas_get_dspfreq(relativeX).toFixed(1));
+	}
+}
+
+function canvas_mousemove(evt)
+{
+	//if (debug_canvas_drag) console.log("C-MM");
+   //event_dump(evt, "C-MM");
+	canvas_drag(evt, evt.pageX, evt.pageY, evt.clientX, evt.clientY);
+}
+
+function canvas_touchMove(evt)
+{
+	for (var i=0; i < evt.touches.length; i++) {
+		var x = evt.touches[i].pageX;
+		var y = evt.touches[i].pageY;
+		canvas_drag(evt, x, y, x, y);
+	}
+	evt.preventDefault();
+}
+
+function canvas_end_drag2()
+{
+	if (debug_canvas_drag) { console.log("C-ED2"); }
+	canvas_container.style.cursor = "crosshair";
+	canvas_mouse_down = false;
+	canvas_ignore_mouse_event = false;
+}
+
+function canvas_container_mouseout(evt)
+{
+	if (debug_canvas_drag) event_dump(evt, "canvas_container_mouseout", 1);
+	canvas_end_drag2();
+}
+
+//function body_mouseup() { canvas_end_drag2(); console.log("body_mouseup"); }
+//function window_mouseout() { canvas_end_drag2(); console.log("document_mouseout"); }
+
+function canvas_end_drag(evt, x)
+{
+	if (!waterfall_setup_done) return;
+	//console.log("MUP "+this.id+" ign="+canvas_ignore_mouse_event);
+	var relativeX = x;
+
+	if (canvas_ignore_mouse_event) {
+	   //console.log('## canvas_ignore_mouse_event');
+		//ignore_next_keyup_event = true;
+	} else {
+		if (!canvas_dragging) {
+			//event_dump(evt, "MUP");
+			
+			// don't set freq if mouseup without mousedown due to move into canvas from elsewhere
+			if (canvas_mouse_down)
+			   demodulator_set_offset_frequency(0, canvas_get_carfreq_offset(relativeX, true));		
+		} else {
+			canvas_end_drag2();
+		}
+	}
+	
+	if (debug_canvas_drag) { console.log("C-ED"); }
+	canvas_mouse_down = false;
+	canvas_ignore_mouse_event = false;
+}
+
+function canvas_mouseup(evt)
+{
+	if (debug_canvas_drag) console.log("C-MU");
+   //event_dump(evt, "C-MU");
+	canvas_end_drag(evt, evt.pageX);
+}
+
+function canvas_touchEnd(evt)
+{
+	canvas_end_drag(evt, canvas_drag_last_x);
+	spectrum_tooltip_update(evt, canvas_drag_last_x, canvas_drag_last_y);
+	evt.preventDefault();
+}
+
+var canvas_mousewheel_rlimit = kiwi_rateLimit(canvas_mousewheel_cb, 170);
+
+function canvas_mousewheel(evt)
+{
+   canvas_mousewheel_rlimit(evt);
+	evt.preventDefault();	
+}
+
+function canvas_mousewheel_cb(evt)
+{
+	if (!waterfall_setup_done) return;
+	//console.log(evt);
+   zoom_step((evt.deltaY < 0)? ext_zoom.IN : ext_zoom.OUT, evt.pageX);
+	
+	/*
+   // scaling value is a scrolling sensitivity compromise between wheel mice and
+   // laptop trackpads (and also Apple trackpad mice)
+	zoom_level_f += evt.deltaY * -0.05;
+	zoom_level_f = Math.max(Math.min(zoom_level_f, zoom_levels_max), 0);
+	//console.log('mousewheel '+ zoom_level_f.toFixed(1));
+	//w3_innerHTML('id-owner-info', 'mousewheel '+ zoom_level_f.toFixed(2) +' '+ evt.deltaY);
+	zoom_step(ext_zoom.WHEEL, evt.pageX);
+	*/
+}
 
 
 ////////////////////////////////
@@ -2220,240 +2478,6 @@ function export_waterfall(Hz) {
     document.body.appendChild(dlLink);
     dlLink.click();
     document.body.removeChild(dlLink);
-}
-
-function canvas_start_drag(evt, x, y)
-{
-	var dump_event = false;
-	
-	// Distinguish ctrl-click right-button meta event from actual right-button on mouse (or touchpad two-finger tap).
-	// Must ignore true_right_click case even though contextmenu event is being handled elsewhere.
-	var true_right_click = false;
-	if (evt.button == mouse.right && !evt.ctrlKey) {
-		//dump_event = true;
-		true_right_click = true;
-		canvas_ignore_mouse_event = true;
-		right_click_menu(x, y);
-		return;
-	}
-	
-	if (dump_event)
-		event_dump(evt, "MDN");
-
-	if (evt.shiftKey && evt.target.id == 'id-dx-container') {
-		canvas_ignore_mouse_event = true;
-		dx_show_edit_panel(evt, -1);
-	} else
-
-	// select waterfall on nearest appropriate boundary (1, 5 or 9/10 kHz depending on band)
-	if (evt.shiftKey && !(evt.ctrlKey || evt.altKey)) {
-		canvas_ignore_mouse_event = true;
-		var step_Hz = 1000;
-		var fold = canvas_get_dspfreq(x);
-		var b = find_band(fold);
-		if (b != null && (b.name == 'LW' || b.name == 'MW')) {
-			if (cur_mode == 'am' || cur_mode == 'amn' || cur_mode == 'lsb' || cur_mode == 'usb') {
-				step_Hz = step_9_10? 9000 : 10000;
-				//console.log('SFT-CLICK 9_10');
-			}
-		} else
-		if (b != null && (b.s == svc.B)) {		// SWBC bands
-			if (cur_mode == 'am' || cur_mode == 'amn' || cur_mode == 'lsb' || cur_mode == 'usb') {
-				step_Hz = 5000;
-				//console.log('SFT-CLICK SWBC');
-			}
-		}
-		
-		var trunc = fold / step_Hz;
-		var fnew = Math.round(trunc) * step_Hz;
-		//console.log('SFT-CLICK '+cur_mode+' fold='+fold+' step='+step_Hz+' trunc='+trunc+' fnew='+fnew);
-		freqmode_set_dsp_kHz(fnew/1000, null);
-	} else
-
-	// lookup mouse pointer frequency in online resource appropriate to the frequency band
-	if (evt.shiftKey && (evt.ctrlKey || evt.altKey)) {
-		canvas_ignore_mouse_event = true;
-		freq_database_lookup(canvas_get_dspfreq(x), evt.altKey);
-	} else
-	
-	// page scrolling via ctrl & alt-key click
-	if (evt.ctrlKey) {
-		canvas_ignore_mouse_event = true;
-		page_scroll(-page_scroll_amount);
-	} else
-	
-	if (evt.altKey) {
-		canvas_ignore_mouse_event = true;
-		page_scroll(page_scroll_amount);
-	}
-	
-	canvas_mouse_down = true;
-	canvas_dragging = false;
-	canvas_drag_last_x = canvas_drag_start_x = x;
-	canvas_drag_last_y = canvas_drag_start_y = y;
-}
-
-function canvas_mousedown(evt)
-{
-	//console.log("C-MD");
-   //event_dump(evt, "C-MD");
-	canvas_start_drag(evt, evt.pageX, evt.pageY);
-	evt.preventDefault();	// don't show text selection mouse pointer
-}
-
-function canvas_touchStart(evt)
-{
-   if (evt.targetTouches.length == 1) {
-		canvas_start_drag(evt, evt.targetTouches[0].pageX, evt.targetTouches[0].pageY);
-	}
-	evt.preventDefault();	// don't show text selection mouse pointer
-}
-
-function spectrum_tooltip_update(evt, clientX, clientY)
-{
-	var target = (evt.target == spectrum_dB || evt.currentTarget == spectrum_dB || evt.target == spectrum_dB_ttip || evt.currentTarget == spectrum_dB_ttip);
-	//console.log('CD '+ target +' x='+ clientX +' tgt='+ evt.target.id +' ctg='+ evt.currentTarget.id);
-	//if (kiwi_isMobile()) alert('CD '+ tf +' x='+ clientX +' tgt='+ evt.target.id +' ctg='+ evt.currentTarget.id);
-
-	if (target) {
-		//event_dump(evt, 'SPEC');
-		
-		// This is a little tricky. The tooltip text span must be included as an event target so its position will update when the mouse
-		// is moved upward over it. But doing so means when the cursor goes below the bottom of the tooltip container, the entire
-		// spectrum div in this case, having included the tooltip text span will cause it to be re-positioned again. And the hover
-		// doesn't go away unless the mouse is moved quickly. So to stop this we need to manually detect when the mouse is out of the
-		// tooltip container and stop updating the tooltip text position so the hover will end.
-		
-		if (clientY >= 0 && clientY < height_spectrum_canvas) {
-			spectrum_dB_ttip.style.left = px(clientX);
-			spectrum_dB_ttip.style.bottom = px(200 + 10 - clientY);
-			var dB = (((height_spectrum_canvas - clientY) / height_spectrum_canvas) * full_scale) + mindb;
-			spectrum_dB_ttip.innerHTML = dB.toFixed(0) +' dBm';
-		}
-	}
-}
-
-function canvas_drag(evt, x, y, clientX, clientY)
-{
-	if (!waterfall_setup_done) return;
-	//element=html("id-freq-show");
-	var relativeX = x;
-	var relativeY = y;
-	spectrum_tooltip_update(evt, clientX, clientY);
-
-	if (canvas_mouse_down && !canvas_ignore_mouse_event) {
-		if (!canvas_dragging && Math.abs(x - canvas_drag_start_x) > canvas_drag_min_delta) {
-			canvas_dragging = true;
-			canvas_container.style.cursor = "move";
-			//console.log('cc move');
-		}
-		if (canvas_dragging) {
-			var deltaX = canvas_drag_last_x - x;
-			var deltaY = canvas_drag_last_y - y;
-
-			var dbins = norm_to_bins(deltaX / waterfall_width);
-			waterfall_pan_canvases(dbins);
-
-			canvas_drag_last_x = x;
-			canvas_drag_last_y = y;
-		}
-	} else {
-		w3_innerHTML('id-mouse-unit', format_frequency("{x}", canvas_get_dspfreq(relativeX) + cfg.freq_offset*1e3, 1e3, 2));
-		//console.log("MOU rX="+relativeX.toFixed(1)+" f="+canvas_get_dspfreq(relativeX).toFixed(1));
-	}
-}
-
-function canvas_mousemove(evt)
-{
-	//console.log("C-MM");
-   //event_dump(evt, "C-MM");
-	canvas_drag(evt, evt.pageX, evt.pageY, evt.clientX, evt.clientY);
-}
-
-function canvas_touchMove(evt)
-{
-	for (var i=0; i < evt.touches.length; i++) {
-		var x = evt.touches[i].pageX;
-		var y = evt.touches[i].pageY;
-		canvas_drag(evt, x, y, x, y);
-	}
-	evt.preventDefault();
-}
-
-function canvas_end_drag2()
-{
-	canvas_container.style.cursor = "crosshair";
-	canvas_mouse_down = false;
-	canvas_ignore_mouse_event = false;
-}
-
-function canvas_container_mouseout(evt)
-{
-	canvas_end_drag2();
-}
-
-//function body_mouseup() { canvas_end_drag2(); console.log("body_mouseup"); }
-//function window_mouseout() { canvas_end_drag2(); console.log("document_mouseout"); }
-
-function canvas_end_drag(evt, x)
-{
-	if (!waterfall_setup_done) return;
-	//console.log("MUP "+this.id+" ign="+canvas_ignore_mouse_event);
-	var relativeX = x;
-
-	if (canvas_ignore_mouse_event) {
-	   //console.log('## canvas_ignore_mouse_event');
-		//ignore_next_keyup_event = true;
-	} else {
-		if (!canvas_dragging) {
-			//event_dump(evt, "MUP");
-			demodulator_set_offset_frequency(0, canvas_get_carfreq_offset(relativeX, true));		
-		} else {
-			canvas_end_drag2();
-		}
-	}
-	
-	canvas_mouse_down = false;
-	canvas_ignore_mouse_event = false;
-}
-
-function canvas_mouseup(evt)
-{
-	//console.log("C-MU");
-   //event_dump(evt, "C-MU");
-	canvas_end_drag(evt, evt.pageX);
-}
-
-function canvas_touchEnd(evt)
-{
-	canvas_end_drag(evt, canvas_drag_last_x);
-	spectrum_tooltip_update(evt, canvas_drag_last_x, canvas_drag_last_y);
-	evt.preventDefault();
-}
-
-var canvas_mousewheel_rlimit = kiwi_rateLimit(canvas_mousewheel_cb, 170);
-
-function canvas_mousewheel(evt)
-{
-   canvas_mousewheel_rlimit(evt);
-	evt.preventDefault();	
-}
-
-function canvas_mousewheel_cb(evt)
-{
-	if (!waterfall_setup_done) return;
-	//console.log(evt);
-   zoom_step((evt.deltaY < 0)? ext_zoom.IN : ext_zoom.OUT, evt.pageX);
-	
-	/*
-   // scaling value is a scrolling sensitivity compromise between wheel mice and
-   // laptop trackpads (and also Apple trackpad mice)
-	zoom_level_f += evt.deltaY * -0.05;
-	zoom_level_f = Math.max(Math.min(zoom_level_f, zoom_levels_max), 0);
-	//console.log('mousewheel '+ zoom_level_f.toFixed(1));
-	//w3_innerHTML('id-owner-info', 'mousewheel '+ zoom_level_f.toFixed(2) +' '+ evt.deltaY);
-	zoom_step(ext_zoom.WHEEL, evt.pageX);
-	*/
 }
 
 
@@ -2780,8 +2804,6 @@ function init_canvas_container()
 	waterfall_width = canvas_container.clientWidth;
 	//console.log("init_canvas_container ww="+waterfall_width);
 	canvas_container.addEventListener("mouseout", canvas_container_mouseout, false);
-	//window.addEventListener("mouseout",window_mouseout,false);
-	//document.body.addEventListener("mouseup",body_mouseup,false);
 
 	// annotation canvas for FSK shift markers etc.
    canvas_annotation = create_canvas('id-annotation-canvas', wf_fft_size, wf_canvas_default_height, waterfall_width, wf_canvas_default_height);
@@ -2792,6 +2814,7 @@ function init_canvas_container()
 	// annotation div for text containing links etc.
 	annotation_div = w3_el('id-annotation-div');
 	add_canvas_listner(annotation_div);
+	annotation_div.style.pointerEvents = 'none';    // prevent premature end of canvas dragging
 
 	// a phantom one at the end
 	// not an actual canvas but a <div> spacer
@@ -7680,7 +7703,7 @@ function pop_bottommost_panel(from)
 	for (var i=0;i<from.length;i++)	
 	{
 		actual_order=parseInt(from[i].getAttribute('data-panel-order'));
-		if(actual_order<min_order) 
+		if (actual_order<min_order) 
 		{
 			min_index=i;
 			min_order=actual_order;
@@ -7847,20 +7870,26 @@ function panel_set_width_height(id, width, height)
 // misc
 ////////////////////////////////
 
-function event_dump(evt, id)
+function event_dump(evt, id, oneline)
 {
-   console.log('================================');
-	console.log('EVENT_DUMP: '+ id +' type='+ evt.type);
-	console.log((evt.shiftKey? 'SFT ':'') + (evt.ctrlKey? 'CTL ':'') + (evt.altKey? 'ALT ':'') + (evt.metaKey? 'META ':'') +'key='+evt.key);
-	console.log('this.id='+ this.id +' tgt.name='+ evt.target.nodeName +' tgt.id='+ evt.target.id +' ctgt.id='+ evt.currentTarget.id);
-	console.log('button='+evt.button+' buttons='+evt.buttons+' detail='+evt.detail+' which='+evt.which);
-	console.log('offX='+evt.offsetX+' pageX='+evt.pageX+' clientX='+evt.clientX+' layerX='+evt.layerX );
-	console.log('offY='+evt.offsetY+' pageY='+evt.pageY+' clientY='+evt.clientY+' layerY='+evt.layerY );
-	console.log('evt, evt.target, evt.currentTarget:');
-	console.log(evt);
-	console.log(evt.target);
-	console.log(evt.currentTarget);
-   console.log('----');
+   if (oneline) {
+      var trel = (isDefined(evt.relatedTarget) && evt.relatedTarget)? (' Trel='+ evt.relatedTarget.id) : '';
+      console.log('event_dump '+ id +' '+ evt.type +' T='+ evt.target.id +' Tcur='+ evt.currentTarget.id + trel);
+   } else {
+      console.log('================================');
+      console.log('EVENT_DUMP: '+ id +' type='+ evt.type);
+      console.log((evt.shiftKey? 'SFT ':'') + (evt.ctrlKey? 'CTL ':'') + (evt.altKey? 'ALT ':'') + (evt.metaKey? 'META ':'') +'key='+evt.key);
+      console.log('this.id='+ this.id +' tgt.name='+ evt.target.nodeName +' tgt.id='+ evt.target.id +' ctgt.id='+ evt.currentTarget.id);
+      console.log('button='+evt.button+' buttons='+evt.buttons+' detail='+evt.detail+' which='+evt.which);
+      console.log('offX='+evt.offsetX+' pageX='+evt.pageX+' clientX='+evt.clientX+' layerX='+evt.layerX );
+      console.log('offY='+evt.offsetY+' pageY='+evt.pageY+' clientY='+evt.clientY+' layerY='+evt.layerY );
+      console.log('evt, evt.target, evt.currentTarget, evt.relatedTarget:');
+      console.log(evt);
+      console.log(evt.target);
+      console.log(evt.currentTarget);
+      console.log(evt.relatedTarget);
+      console.log('----');
+   }
 }
 
 function arrayBufferToString(buf) {
