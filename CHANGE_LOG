@@ -2,6 +2,18 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.348  November 22, 2019
+    Admin config tab: add initial CW offset field.
+        Kiwi owners/admins: If you don't like the default 500 Hz this is where you change it.
+        Non-owner/admin users of a Kiwi have to change the passband manually as usual.
+    Admin extension tab: add user enable for each extension.
+        Don't want users using a particular extension on your Kiwi? Disable them here.
+        Only works for internal extensions currently (i.e. not for the antenna switch extension).
+        Local connections (same network) are exempt from these restrictions.
+    Fixed specifying frequency in URL when configured in transverter/downconverter mode.
+    Fixed premature end of waterfall panning when dragging near left edge.
+    Improved behavior when dragging in the frequency scale.
+
 v1.347  November 16, 2019
     WSPR extension & autorun works again with transverter/downconverter mode.
 
