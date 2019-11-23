@@ -1,13 +1,42 @@
-// Copyright (c) 2017 John Seamons, ZL/KF6VO
+// Copyright (c) 2017-2019 John Seamons, ZL/KF6VO
 
-var wwvb_ph_sync = [ 0,0,0,1,1,1,0,1,1,0,1,0,0,0 ];
+//
+// TODO
+//    inverted amplitude?
+//    parity checking
+//
+
+var wwvb = {
+   // ampl
+   AMPL_NOISE_THRESHOLD: 3,
+   arm: 0,
+
+   // phase
+   PHASE_NOISE_THRESHOLD: 15,
+   prev_one_width: 0,
+   ph_sync:    [ 0,0,0,1,1,1,0,1,1,0,1,0,0,0 ],    // sync[13..0] starting at :59 (double ampl marker pulses)
+   inverted: 0,
+   sixmin_mode: 0,
+   
+   cur: 0,
+   cnt: 0,
+   width: 0,
+   dcnt: 0,
+   tick: 0,
+   min: 0,
+   time0: 0,
+   time0_copy: 0,
+   line: 0,
+   
+   end: null
+};
 
 function wwvb_sync()
 {
-	var l = tc_data.length;
+	var rl = tc.raw.length;
 	var sync = 1;
 	for (i = 0; i < 14; i++) {
-		if (tc_data[l-(14-i)] != wwvb_ph_sync[i]) {
+		if (tc.raw[rl-(14-i)] != wwvb.ph_sync[i]) {
 			sync = 0;
 			break;
 		}
@@ -15,195 +44,336 @@ function wwvb_sync()
 	if (!sync) {
 			sync = 2;
 			for (i = 0; i < 14; i++) {
-				if (tc_data[l-(14-i)] != (wwvb_ph_sync[i] ^ 1)) {
+				if (tc.raw[rl-(14-i)] != (wwvb.ph_sync[i] ^ 1)) {
 					sync = 0;
 					break;
 				}
 			}
 	}
 	
+	if (sync != 0)
+      console.log('SYNC'+ ((sync == 2)? '-I':'') +' dlen='+ tc.raw.length);
+	
 	return sync;
 }
 
-function wwvb(d)
+function wwvb_dmsg(s)
 {
-	var i;
-	tc_trig++; if (tc_trig >= 100) tc_trig = 0;
+   w3_innerHTML('id-tc-wwvb', s);
+}
+
+// see: en.wikipedia.org/wiki/WWVB
+function wwvb_legend(phase)
+{
+   if ((wwvb.line++ & 3) == 0) {
+      if (phase)
+         tc_dmsg('sync           ppppp m d mmmmmmmmm r mmmmmmmmm r mmmmmmm LL N LLL dddddd<br>');
+      else
+         tc_dmsg('M mmm0mmmm M00 hh0hhhh M00 dd0ddddMdddd 00 +-+ M DDDD 0 yyyyMyyyy 0 YSDD M<br>');
+   }
+}
+
+function wwvb_ampl_decode(bits)
+{
+   var min  = (tc_gap_bcd(bits,  8,  8, -1) + 1) % 60;   // bits are what the minute _was_ at the previous minute boundary
+   var hour = tc_gap_bcd(bits, 18,  7, -1);
+   var doy  = tc_gap_bcd(bits, 33, 12, -1);
+   var yr   = tc_gap_bcd(bits, 53,  9, -1);
+
+   tc_dmsg('  day #'+ doy +' '+ (yr+2000) +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' UTC<br>');
+   tc_stat('lime', 'Time decoded: day #'+ doy +' '+ (yr+2000) +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' UTC');
+}
+
+function wwvb_clr()
+{
+   var w = wwvb;
+   
+   w.arm = 0;
+   w.cnt = w.dcnt = 0;
+   w.prev_one_width = w.one_width = w.zero_width = 0;
+   w.line = 0;
+}
+
+// called at 100 Hz (10 msec)
+function wwvb_ampl(ampl)
+{
+	var w = wwvb;
+	tc.trig++; if (tc.trig >= 100) tc.trig = 0;
+	ampl = (ampl > 0.95)? 1:0;
 	
-   if (d == tc_cur) {
-   	tc_cnt = 0;
+	// de-noise signal
+   if (ampl == w.cur) {
+   	w.cnt = 0;
    } else {
-   	tc_cnt++;
-   	if (tc_cnt > TC_NOISE_THRESHOLD) {
-   		tc_cur = d;
-   		tc_cnt = 0;
-   		if (tc_cur) {
-   			tc_phdata ^= 1;		// flip phase data on 0 -> 1 transition of phase reversal
+   	w.cnt++;
+   	if (w.cnt > w.AMPL_NOISE_THRESHOLD) {
+   		w.cur = ampl;
+   		w.cnt = 0;
+   		tc.data ^= 1;
+   		if (!tc.data) {
+   		   //tc_dmsg(w.one_width +' ');
+   		   if (tc.state == tc.ACQ_SYNC && w.prev_one_width > 0 && w.prev_one_width < 25 && w.one_width < 25) {
+   		      //tc_dmsg('[SYNC] ');
+               tc_stat('cyan', 'Found sync');
+               tc.trig = -20;
+               tc.sample_point = 80;
+               w.sec = 0;
+               w.msec = 0;
+               wwvb_legend(0);
+               tc.raw = [];
+   		      tc.state = tc.MIN_MARK;
+   		   }
+   		   w.prev_one_width = w.one_width;
    		}
+   		if (tc.data) w.one_width = 0; else w.zero_width = 0;
    	}
    }
 
-	if (tc_phdata) {
-		tc_width++;
+   if (tc.data) w.one_width++; else w.zero_width++;
+
+	if (tc.state == tc.MIN_MARK || (tc.state == tc.ACQ_DATA && tc.sample_point == tc.trig)) {
+	   var b = (tc.state == tc.MIN_MARK || w.one_width <= 60)? 1:0;
+      //tc_dmsg(b.toFixed(0) + w.one_width.toFixed(0) +'|');
+      tc_dmsg(b);
+      tc.raw[w.sec] = b;    // raw, not inversion-corrected data
+      if ([0,8,11,18,21,33,35,38,39,43,44,53,54,58].includes(w.dcnt)) tc_dmsg(' ');
+
+      if (tc.state == tc.MIN_MARK) {
+         w.msec = 990;
+	      tc.state = tc.ACQ_DATA;
+	   }
+
+      w.dcnt++;
+      if (w.dcnt == 60) {
+         wwvb_ampl_decode(tc.raw);   // for the minute just reached
+         wwvb_legend(0);
+         tc.raw = [];
+         w.sec = -1;
+         w.dcnt = 0;
+      }
+   }
+
+   w.msec += 10;
+
+   if (w.msec == 1000) {
+      w.sec++;
+      w.msec = 0;
+   }
+}
+
+// called at 100 Hz (10 msec)
+function wwvb_phase(ampl_sgn)
+{
+	var i;
+	var w = wwvb;
+	tc.trig++; if (tc.trig >= 100) tc.trig = 0;
+	
+	// de-noise signal
+   if (ampl_sgn == w.cur) {
+   	w.cnt = 0;
+   } else {
+   	w.cnt++;
+   	if (w.cnt > w.PHASE_NOISE_THRESHOLD) {
+   		w.cur = ampl_sgn;
+   		w.cnt = 0;
+   		tc.data ^= 1;
+   	}
+   }
+
+	if (tc.data) {
+		w.width++;
 	}
 	
-	// if we need it, measure width on falling edge tc_phdata
-	if (tc_sample_point == -1 && tc_phdata_last == 1 && tc_phdata == 0) {		
-		tc_dmsg(tc_width.toString() +' ');
-		if (tc_width > 50 && tc_width < 110) {
-			tc_sample_point = tc_trig - Math.round(tc_width/2);
-			if (tc_sample_point < 0) tc_sample_point += 100;
-			tc_dmsg('T='+ tc_sample_point.toString() +' ');
+	// if we need it, measure width on falling edge tc.data
+	if (tc.sample_point == -1 && tc.data_last != tc.data) {
+		//tc_dmsg(tc.data_last.toFixed(0) + tc.data.toFixed(0) +':'+ w.width.toFixed(0) +' ');
+		if (w.width > 50 && w.width < 110) {
+			//tc.sample_point = tc.trig - Math.round(w.width/2);
+			tc.sample_point = tc.trig - 1;
+			if (tc.sample_point < 0) tc.sample_point += 100;
+			//tc_dmsg('T'+ tc.sample_point.toString() +' ');
+			tc.start_point = 1;
 		}
-		tc_width = 0;
+		w.width = 0;
+	   tc.data_last = tc.data;
 	}
 	
-	if (tc_sample_point == tc_trig) {
-		if (tc_state == tc_st.ACQ_SYNC) {
-			tc_dmsg(tc_phdata.toString());
-			tc_data.push(tc_phdata);
+	//wwvb_dmsg('sp='+ tc.sample_point +' trig='+ tc.trig);
+
+	if (tc.sample_point == tc.trig) {
+		if (tc.state == tc.ACQ_SYNC) {
+			tc.raw.push(tc.data);
+			tc_dmsg(tc.data.toString());
 			
-			if (tc_data.length >= 14) {
-				tc_inverted = 0;
+			if (tc.raw.length >= 14) {
 				var sync = wwvb_sync();
-				if (sync == 2) tc_inverted = 1;
+				w.inverted = 0;
+				if (sync == 2) w.inverted = 1;
 				if (sync) {
-					tc_stat('magenta', 'Found sync');
-					tc_dmsg(' SYNC'+ (tc_inverted? '-I':'') +'<br>00011101101000 ');
-					tc_dcnt = 13;
-					tc_state = tc_st.ACQ_DATA;
-					tc_data = [];
-					tc_min = 0;
+					tc_stat('cyan', 'Found sync');
+					tc_dmsg(' SYNC'+ (w.inverted? '-inv<br>':'<br>'));
+					wwvb_legend(1);
+					tc_dmsg('00011101101000 ');
+					w.dcnt = 13;
+					tc.state = tc.ACQ_DATA;
+					tc.raw = [];
+					w.min = 0;
 				}
 			}
 
-			tc_recv++;
-			if (tc_recv > (65 + Math.round(Math.random()*20))) {		// no sync, pick another sample point
+			w.tick++;
+			if (w.tick > (60 + w.ph_sync.length + 5)) {
 				tc_dmsg(' RESTART<br>');
-				tc_sample_point = -1;
-				tc_width = 0;
-				tc_recv = 0;
+				tc.sample_point = -1;
+				w.width = 0;
+				w.tick = 0;
+            tc.raw = [];
+            w.min = 0;
 			}
 		} else
 		
-		if (tc_state == tc_st.ACQ_DATA) {
-			var data = tc_phdata ^ tc_inverted;
-			tc_data.push(data);
+		if (tc.state == tc.ACQ_DATA) {
+			tc.raw.push(tc.data);
+			var data = tc.data ^ w.inverted;
+			//tc_dmsg(w.inverted? (data? 'i':'o') : data.toString());
 			tc_dmsg(data.toString());
-			if (tc_dcnt == 12 ||
-					tc_dcnt == 17 ||
-					tc_dcnt == 28 ||
-					tc_dcnt == 29 ||
-					tc_dcnt == 38 ||
-					tc_dcnt == 39 ||
-					tc_dcnt == 46 ||
-					tc_dcnt == 52)
-				tc_dmsg(' ');
+         if ([12,17,18,19,28,29,38,39,46,48,49,52].includes(w.dcnt)) tc_dmsg(' ');
 			
-			if (tc_dcnt == 18 || (tc_dcnt >= 20 && tc_dcnt <= 46 && tc_dcnt != 29 && tc_dcnt != 39)) {
-				tc_min = (tc_min << 1) + data;
-				//console.log(tc_dcnt +': '+ data +' '+ tc_min);
+			if (w.dcnt == 18 || (w.dcnt >= 20 && w.dcnt <= 46 && w.dcnt != 29 && w.dcnt != 39)) {
+				w.min = (w.min << 1) + data;
+				//console.log(w.dcnt +': '+ data +' '+ w.min);
 			}
 
-			if (tc_dcnt == 19) tc_time0_copy = data;
-			if (tc_dcnt == 46) tc_time0 = data;
+			if (w.dcnt == 19) w.time0_copy = data;
+			if (w.dcnt == 46) w.time0 = data;
 			
-			if (tc_data.length >= 14 && tc_dcnt == 12) {
+			//tc_dmsg2('dlen='+ tc.raw.length +' dcnt='+ w.dcnt);
+			if (tc.raw.length >= 14 && w.dcnt == 12) {
 				var sync = wwvb_sync();
 				if (!sync) {
-					tc_dmsg('RESYNC<br>');
-					tc_state = tc_st.ACQ_SYNC;
-					tc_sample_point = -1;
-					tc_width = 0;
-					tc_recv = 0;
-				}
-				if ((sync == 1 && tc_inverted) || (sync == 2 && !tc_inverted)) {
+					tc_dmsg(' RESYNC<br>');
+					tc.state = tc.ACQ_SYNC;
+					tc.sample_point = -1;
+					w.width = 0;
+					w.tick = 0;
+				} else
+				if ((sync == 1 && w.inverted) || (sync == 2 && !w.inverted)) {
 					tc_dmsg(' PHASE INVERSION<br>00011101101000 ');
-					tc_inverted ^= 1;
+					w.inverted ^= 1;
 				}
 			}
 			
 			// NB: This only works for the 21st century.
-			if (tc_dcnt == 58) {
-				if (tc_min && tc_time0_copy != tc_time0) {
+			if (w.dcnt == 58) {
+				if (w.min && w.time0_copy != w.time0) {
 					tc_dmsg(' TIME BIT-0 MISMATCH');
 				} else
-				if (tc_min) {
-					tc_dmsg(' '+ tc_min.toString());
-					console.log('start '+ tc_min);
-					var m = tc_min - (tc_MpY + tc_MpD);	// 2000 is LY
+				if (w.min) {
+
+// minute of century:
+// example 6578970(min)/1440(min/day) = 4568.730, 6578970-(1440*4568) = 1050(min)
+// for 2012: 365*12 (2000..2011) + 3(LY: 2000, 2004, 2008) = 4383, 4568-4383=185(days)
+// 2012: 1/31 + 2/29(LY) + 3/31 + 4/30 + 5/31 + 6/30 = 182 days (#181 base-0), so day #185 = July 4 2012
+// 1050(min) = 60*17(hrs) + 30(min), so timecode is between 17:30..17:31 UTC
+
+					//console.log('start '+ w.min);
+					var m = w.min - (tc.MpY + tc.MpD);	// 2000 is LY
 					m++;		// minute increments just as we print decode
-					console.log('2000: '+ m);
+					//console.log('2000: '+ m);
 					var yr = 2001;
 					var LY;
 					while (true) {
 						LY = ((yr & 3) == 0);
-						var MpY = tc_MpY + (LY? tc_MpD : 0);
+						var MpY = tc.MpY + (LY? tc.MpD : 0);
 						if (m > MpY) {
 							m -= MpY;
-							console.log(yr +': '+ MpY +' '+ m);
+							//console.log(yr +': '+ MpY +' '+ m);
 							yr++;
 						} else {
 							break;
 						}
 					}
-					console.log('yr done: '+ m);
+					//console.log('yr done: '+ m);
 					
 					var mo = 0;
 					while (true) {
-						var days = tc_dim[mo];
+						var days = tc.dim[mo];
 						if (mo == 1 && LY) days++;
-						var MpM = tc_MpD * days;
-						console.log(tc_mo[mo] +': LY'+ LY +' '+ days);
+						var MpM = tc.MpD * days;
+						//console.log(tc.mo[mo] +': LY='+ LY +' '+ days);
 						if (m > MpM) {
 							m -= MpM;
-							console.log(tc_mo[mo] +': '+ MpM +' '+ m);
+							//console.log(tc.mo[mo] +': '+ MpM +' '+ m);
 							mo++;
 						} else {
 							break;
 						}
 					}
-					console.log('mo done: '+ m +' '+ (m/24));
-					var day = Math.floor(m / tc_MpD);
-					m -= day * tc_MpD;
+					//console.log('mo done: '+ m +' '+ (m/24));
+					var day = Math.floor(m / tc.MpD);
+					m -= day * tc.MpD;
 					var hour = Math.floor(m / 60);
 					m -= hour * 60;
-					tc_dmsg(' '+ (day+1) +' '+ tc_mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ m.leadingZeros(2) +' UTC');
-					tc_stat('lime', 'Time decoded: '+ (day+1) +' '+ tc_mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ m.leadingZeros(2) +' UTC');
+					tc_dmsg(' '+ (day+1) +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ m.leadingZeros(2) +' UTC');
+					tc_stat('lime', 'Time decoded: '+ (day+1) +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ m.leadingZeros(2) +' UTC');
 					
-					if (m == 10 || m == 40) tc_sixmin_mode = 1;
+					if (m == 10 || m == 40) w.sixmin_mode = 1;
 				}
 				
 				tc_dmsg('<br>');
-				tc_data = [];
-				tc_min = 0;
+				wwvb_legend(1);
+				tc.raw = [];
+				w.min = 0;
 			}
 			
-			tc_dcnt++;
-			if (tc_dcnt == 60) tc_dcnt = 0;
+			w.dcnt++;
+			if (w.dcnt == 60) w.dcnt = 0;
 
-			if (tc_dcnt == 0 && tc_sixmin_mode) {
-				tc_sixmin_mode = 0;
-				tc_state = tc_st.ACQ_SIXMIN;
+			if (w.dcnt == 0 && w.sixmin_mode) {
+				w.sixmin_mode = 0;
+				tc.state = tc.ACQ_DATA2;
 			}
 		} else
 
-		if (tc_state == tc_st.ACQ_SIXMIN) {
-			if (tc_dcnt == 0) tc_dmsg('127b: ');
-			if (tc_dcnt == 127) tc_dmsg('<br>106b: ');
-			if (tc_dcnt == 233) tc_dmsg('<br>127b: ');
+      // six-minute sequence
+		if (tc.state == tc.ACQ_DATA2) {
+			if (w.dcnt == 0) tc_dmsg('127b: ');
+			if (w.dcnt == 127) tc_dmsg('<br>106b: ');
+			if (w.dcnt == 233) tc_dmsg('<br>127b: ');
 
-			var data = tc_phdata ^ tc_inverted;
+			var data = tc.data ^ w.inverted;
 			tc_dmsg(data.toString());
 
-			tc_dcnt++;
-			if (tc_dcnt == 360) {
+			w.dcnt++;
+			if (w.dcnt == 359) {
 				tc_dmsg('<br>');
-				tc_dcnt = 0;
-				tc_state = tc_st.ACQ_DATA;
+				w.dcnt = 0;
+				tc.state = tc.ACQ_DATA;
+				tc.raw = [];
+				w.min = 0;
 			}
 		}
 	}
+	
+	return tc.data;
+}
 
-	tc_phdata_last = tc_phdata;
+function wwvb_focus()
+{
+}
+
+
+function wwvb_blur()
+{
+   var el;
+	el = w3_el('id-tc-bits');
+	if (el) el.innerHTML = '';
+	el = w3_el('id-tc-wwvb');
+	if (el) el.innerHTML = '';
+}
+
+
+function wwvb_init()
+{
+   w3_el('id-tc-addon').innerHTML += w3_div('id-tc-bits') + w3_div('id-tc-wwvb');
 }
