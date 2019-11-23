@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.351  November 24, 2019
+    Fixed another waterfall panning bug.
+    Fixed startup glitch in spectrum peak hold function.
+    Preliminary release: Time station decoder (timecode) extension.
+        Many missing features and has known problems.
+
 v1.348,349,350  November 23, 2019
     Admin config tab: add initial CW offset field.
         Kiwi owners/admins: If you don't like the default 500 Hz this is where you change it.
