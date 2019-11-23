@@ -1468,6 +1468,8 @@ function scale_canvas_touchEnd(evt)
 	evt.preventDefault();
 }
 
+// When mouseup occurs outside our original canvas scale_canvas_mouseup() doesn't occur terminating the drag.
+// So have to detect canvas crossing and terminate that way.
 function scale_container_mouseout(evt)
 {
    // Prevent mouseout generated from mouseover of passband elements from prematurely ending drag.
@@ -2189,14 +2191,13 @@ function canvas_end_drag2()
 	canvas_ignore_mouse_event = false;
 }
 
+// When mouseup occurs outside our original canvas canvas_mouseup() doesn't occur terminating the drag.
+// So have to detect canvas crossing and terminate that way.
 function canvas_container_mouseout(evt)
 {
 	if (debug_canvas_drag) event_dump(evt, "canvas_container_mouseout", 1);
 	canvas_end_drag2();
 }
-
-//function body_mouseup() { canvas_end_drag2(); console.log("body_mouseup"); }
-//function window_mouseout() { canvas_end_drag2(); console.log("document_mouseout"); }
 
 function canvas_end_drag(evt, x)
 {
@@ -3730,7 +3731,9 @@ function resize_waterfall_container(check_init)
 	var wf_height = waterfall_height();
 
 	if (wf_height >= 0) {
-		canvas_container.style.height = px(wf_height);
+	
+	   // canvas_annotation has to track canvas_container height so as not to generate undesired mouseout events
+		canvas_annotation.style.height = canvas_container.style.height = px(wf_height);
 		waterfall_scrollable_height = wf_height * 3;
 
       // Don't change the height because that clears the canvas.

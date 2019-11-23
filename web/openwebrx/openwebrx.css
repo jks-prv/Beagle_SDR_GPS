@@ -74,6 +74,12 @@ html, body
 
 /*---- begin id-top-container */
 
+/* prevent mouseout generated from mouseover of segmented waterfall elements (id-wf-canvas) from prematurely ending drag */
+#id-wf-canvas
+{
+	pointer-events: none;
+}
+
 #id-top-container
 {
 	position: relative;
