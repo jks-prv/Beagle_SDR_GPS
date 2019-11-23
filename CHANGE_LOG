@@ -2,7 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.348  November 22, 2019
+v1.349  November 23, 2019
+    Fix extension menu init.
+
+v1.348  November 23, 2019
     Admin config tab: add initial CW offset field.
         Kiwi owners/admins: If you don't like the default 500 Hz this is where you change it.
         Non-owner/admin users of a Kiwi have to change the passband manually as usual.

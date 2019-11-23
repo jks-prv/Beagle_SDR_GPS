@@ -656,10 +656,10 @@ function extint_select_menu()
 	if (extint_names && isArray(extint_names)) {
 	   for (var i=0; i < extint_names.length; i++) {
          var id = extint_names[i];
-         if (!dbgUs && id == 'sig_gen') return;	// when USE_GEN == 0
-         if (!dbgUs && id == 's4285') return;	// FIXME: hide while we develop
-         if (!dbgUs && id == 'timecode') return;	// FIXME: hide while we develop
-         if (!dbgUs && id == 'colormap') return;	// FIXME: hide while we develop
+         if (!dbgUs && id == 'sig_gen') continue;	// when USE_GEN == 0
+         if (!dbgUs && id == 's4285') continue;	// FIXME: hide while we develop
+         if (!dbgUs && id == 'timecode') continue;	// FIXME: hide while we develop
+         if (!dbgUs && id == 'colormap') continue;	// FIXME: hide while we develop
          
          if (id == 'wspr') id = 'WSPR';      // FIXME: workaround
          var enable = ext_get_cfg_param(id +'.enable');
