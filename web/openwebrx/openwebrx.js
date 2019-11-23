@@ -7049,7 +7049,7 @@ function toggle_or_set_spec_peak(set, val)
 		spectrum_peak = kiwi_toggle(set, val, spectrum_peak, 'last_spec_peak');
 	else
 		spectrum_peak ^= 1;
-	if (!spectrum_peak) spectrum_peak_clear = true;
+	if (spectrum_peak) spectrum_peak_clear = true;
 	w3_color('id-button-spec-peak', spectrum_peak? 'lime':'white');
 	freqset_select();
 	writeCookie('last_spec_peak', spectrum_peak.toString());
