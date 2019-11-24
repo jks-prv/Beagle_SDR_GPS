@@ -567,3 +567,9 @@ function timecode_blur()
 	kiwi_clearInterval(tc.interval);
    ext_set_passband(tc.save_pb.low, tc.save_pb.high);
 }
+
+// called to display HTML for configuration parameters in admin interface
+function timecode_config_html()
+{
+   ext_config_html(tc, 'timecode', 'Timecode', 'Timecode decoder configuration');
+}
