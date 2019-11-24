@@ -75,7 +75,7 @@ public:
     }
 
     void pll_init() {
-        _pll.init(_pll_bandwidth, 0.0, _fs);
+        _pll.init(_pll_bandwidth, _pll_offset, _fs);
     }
 
     bool process_msg(const char* msg) {
@@ -96,6 +96,10 @@ public:
         float pll_bandwidth = 0;
         if (sscanf(msg, "SET pll_bandwidth=%f", &pll_bandwidth) == 1)
             set_pll_bandwidth(pll_bandwidth);
+
+        float pll_offset = 0;
+        if (sscanf(msg, "SET pll_offset=%f", &pll_offset) == 1)
+            set_pll_offset(pll_offset);
 
         int draw = 0;
         if (sscanf(msg, "SET draw=%d", &draw)== 1)
@@ -126,6 +130,10 @@ protected:
         _pll_bandwidth = arg;
         pll_init();
     }
+    void set_pll_offset(float arg) {
+        _pll_offset = arg;
+        pll_init();
+    }
     void set_draw(int arg) { _draw = arg; }
     void set_display_mode(int arg) { _display_mode = arg; }
 
@@ -133,7 +141,7 @@ protected:
         _ama   = 0;
         _maN  = 0;
         _nsamp = 0;
-        _pll.init(_pll_bandwidth, 0.0f, _fs);
+        _pll.init(_pll_bandwidth, _pll_offset, _fs);
     }
 
 private:
@@ -150,7 +158,8 @@ private:
         , _ama(0)
         , _maNsend(0)
         , _pll_bandwidth(10)
-        , _pll(_fs, _pll_bandwidth, 0.0)
+        , _pll_offset(0)
+        , _pll(_fs, _pll_bandwidth, _pll_offset)
     { }
     timecode(const timecode&);
     timecode& operator=(const timecode&);
@@ -168,6 +177,7 @@ private:
     float               _ama;  // moving average of abs(z)
     int                 _maNsend; // for cma
     float _pll_bandwidth;
+    float _pll_offset;
     pll   _pll;        // PLL
 };
 

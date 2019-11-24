@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.352  November 24, 2019
+    Timecode extension improvements.
+
 v1.351  November 24, 2019
     Fixed another waterfall panning bug.
     Fixed startup glitch in spectrum peak hold function.

@@ -2,6 +2,7 @@
 // NB: not re-entrant
 
 var scope = {
+   init: 0,
    run: 1,
 
    width: 0,
@@ -41,12 +42,15 @@ function scope_init(canvas, opt)
    // set/increment to "zero" position of trace
    s.y_set = s.margin + s.line_height;
    s.y_inc = s.margin + s.line_height*2;
+   
+   s.init = 1;
    scope_clr();
 }
 
 function scope_clr()
 {
    var s = scope;
+   if (!s.init) return;
 	
 	s.trace_count = 0;
    s.x_inc = s.left + (s.single_shot? 0:64);
@@ -58,7 +62,7 @@ function scope_clr()
 function scope_draw(t1, t2, t3, t4, t5, trig)
 {
    var s = scope;
-	if (!s.run) return;
+	if (!s.init || !s.run) return;
 		
 	s.x_inc += s.width/s.srate / s.sec_per_sweep;
 	s.x = Math.round(s.x_inc);

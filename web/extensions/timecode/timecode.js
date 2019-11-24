@@ -37,23 +37,26 @@ var tc = {
    config:     0,
    sig:        { JJY40:0,  WWVBa:1, WWVBp:2, JJY60:3, MSF:4,   BPC:5,   DCF77a:6,   DCF77p:7,   TDF:8,   WWV:9 },
    freq:       [ 40,       60,      60,      60,      60,      68.5,    77.5,       77.5,       162,     10000.1, ],
-   pb:         [ 5,        5,       5,       5,       5,       5,       5,          5,          5,       50 ],
-   pll_bw_i:   [ 5,        5,       5,       5,       5,       5,       5,          5,          5,       5 ],
-   sigid_s:      [ 'jjy',  'wwvb',  'wwvb',  'jjy',   'msf',   'bpc',   'dcf77',    'dcf77',    'tdf',   'wwv' ],
+   pb:         [ 5,        5,       5,       5,       5,       5,       5,          5,          5,       5 ],
+   pll_bw_i:   [ 100,      100,     5,       100,     100,     100,     100,        100,        5,       5 ],
+   pll_off_i:  [ 500,      500,     0,       500,     500,     500,     500,        500,        0,       100 ],
+   sigid_s:    [ 'jjy',    'wwvb',  'wwvb',  'jjy',   'msf',   'bpc',   'dcf77',    'dcf77',    'tdf',   'wwv' ],
    prev_sig:   -1,
 
    sig_s: [
-      //                       dis
-      [ '40 kHz JJY-40',         1, 'JJY',      'https://en.wikipedia.org/wiki/JJY' ],
-      [ '60 kHz WWVB-ampl',      0, 'WWVB',     'https://en.wikipedia.org/wiki/WWVB' ],
-      [ '60 kHz WWVB-phase',     0, 'WWVB',     'https://en.wikipedia.org/wiki/WWVB' ],
-      [ '60 kHz JJY-60',         1, 'JJY',      'https://en.wikipedia.org/wiki/JJY' ],
-      [ '60 kHz MSF',            0, 'MSF',      'https://en.wikipedia.org/wiki/Time_from_NPL_(MSF)' ],
-      [ '68.5 kHz BPC',          1, 'BPC',      'https://en.wikipedia.org/wiki/BPC_(time_signal)' ],
-      [ '77.5 kHz DCF77-ampl',   0, 'DCF77',    'https://en.wikipedia.org/wiki/DCF77' ],
-      [ '77.5 kHz DCF77-phase',  1, 'DCF77',    'https://en.wikipedia.org/wiki/DCF77' ],
-      [ '162 kHz TDF',           0, 'TDF',      'https://en.wikipedia.org/wiki/TDF_time_signal' ],
-      [ '10 MHz WWV/WWVH',       1, 'WWV/WWVH', 'https://en.wikipedia.org/wiki/WWV_(radio_station)' ]
+      //                       ena
+      [ '40 kHz JJY-40',         0, 'JJY',      'https://en.wikipedia.org/wiki/JJY' ],
+      [ '60 kHz WWVB-ampl',      1, 'WWVB',     'https://en.wikipedia.org/wiki/WWVB' ],
+      [ '60 kHz WWVB-phase',     1, 'WWVB',     'https://en.wikipedia.org/wiki/WWVB' ],
+      [ '60 kHz JJY-60',         0, 'JJY',      'https://en.wikipedia.org/wiki/JJY' ],
+      [ '60 kHz MSF',            1, 'MSF',      'https://en.wikipedia.org/wiki/Time_from_NPL_(MSF)' ],
+      [ '68.5 kHz BPC',          0, 'BPC',      'https://en.wikipedia.org/wiki/BPC_(time_signal)' ],
+      [ '77.5 kHz DCF77-ampl',   1, 'DCF77',    'https://en.wikipedia.org/wiki/DCF77' ],
+      [ '77.5 kHz DCF77-phase',  0, 'DCF77',    'https://en.wikipedia.org/wiki/DCF77' ],
+      [ '162 kHz TDF',           1, 'TDF',      'https://en.wikipedia.org/wiki/TDF_time_signal' ],
+      [ 'WWV/WWVH',              0, 'WWV/WWVH', 'https://en.wikipedia.org/wiki/WWV_(radio_station)' ],
+      [ 'EFR Teleswitch (FSK)',  2, 'EFR',      'https://www.efr.de/en/efr-system/#/Technical-Data-forTransmitter-Stations' ],
+      [ 'CHU (FSK)',             2, 'CHU',      'https://en.wikipedia.org/wiki/CHU_(radio_station)' ]
    ],
    
    tct: {
@@ -225,7 +228,7 @@ function tc_recv(data)
                   tc._10Hz = 0;
                }
                
-               if (tc._1Hz++ >= 100) {
+               if (tc._1Hz++ >= 100 && tc.sig_s[tc.config][1] != 2) {
                   timecode_update_srate();
                   var s = 'cf '+ tc.pb_cf;
                   s += ', pll: '+ tc.df.toFixed(2).withSign() +' Hz ';
@@ -312,14 +315,6 @@ function tc_recv(data)
                break;
       
             default:
-               scope_draw(
-                  /* cyan */ 1,
-                  /* red  */ 0,
-                  /* org  */ undefined,
-                  /* blk  */ undefined,
-                  /* lime */ undefined,
-                  /* trig */ 0
-               );
                break;
             }
       
@@ -387,8 +382,8 @@ function tc_controls_setup()
 		w3_div('id-tc-controls w3-text-white|height:100%',
 			w3_col_percent('',
 				w3_div('w3-medium w3-text-aqua', '<b>Time station decoder</b>'), 25,
-				w3_div('',
-					'Little to no audio will be heard due to narrow passband, zero-IF AM mode used'
+				w3_div('id-tc-no-audio w3-text-css-lime w3-hide',
+					'No audio will be heard due to zero-IF mode used'
 				), 60
 			),
 			w3_inline('w3-margin-T-8/w3-margin-right',
@@ -419,7 +414,7 @@ function tc_controls_setup()
 	   p = p.split(',')[0];
       p = p.toLowerCase();
       for (i = 0; i < tc.sig_s.length; i++) {
-         if (!tc.sig_s[i][1] && tc.sig_s[i][0].toLowerCase().includes(p))
+         if (tc.sig_s[i][1] && tc.sig_s[i][0].toLowerCase().includes(p))
             break;
       }
       if (i < tc.sig_s.length) {
@@ -428,12 +423,10 @@ function tc_controls_setup()
       }
    }
 
-   tc_signal_menu_cb('tc.config', tc.config, false);
 	ext_send('SET draw=0');
 	ext_send('SET display_mode=0');     // IQ
-	ext_send('SET pll_mode=1 arg=2');   // PLL on, BPSK
-	ext_send('SET pll_bandwidth='+ tc.pll_bw);
 	ext_send('SET gain=0');
+   tc_signal_menu_cb('tc.config', tc.config, false);
 	ext_send('SET run=1');
 }
 
@@ -452,13 +445,34 @@ function tc_signal_menu_cb(path, val, first)
 	val = +val;
 	tc.config = val;
 	w3_select_value(path, val);
+	tc_dmsg2(w3_link('', tc.sig_s[tc.config][3], 'Time station info: '+ tc.sig_s[tc.config][2]));
    w3_call(tc.sigid_s[tc.prev_sig] +'_blur');
+   
+   if (tc.sig_s[tc.config][1] == 2) {
+	   scope_clr();
+	   tc_stat('', '');
+	   tc_stat2('', '');
+      w3_hide('id-tc-no-audio');
+      tc_dmsg();
+      tc_dmsg('This station can be decoded using the FSK extension (see "Ham/Utility" menu).');
+      return;
+   }
+
    tc.prev_sig = val;
    timecode_update_srate();
+	var phase_mode = (tc.pll_off_i[tc.config] == 0)? 1:0;
+   w3_show_hide('id-tc-no-audio', phase_mode);
 	
 	// defaults
-   ext_tune(tc.freq[val], 'am', ext_zoom.ABS, 8);
-   ext_set_passband(-tc.pb[val]/2, tc.pb[val]/2);
+   ext_tune(tc.freq[val], 'cwn', ext_zoom.ABS, 12);
+   var cwo = tc.pll_off_i[tc.config];
+   ext_set_passband(cwo-tc.pb[val]/2, cwo+tc.pb[val]/2);
+   ext_tune(tc.freq[val], 'cwn', ext_zoom.ABS, 12);      // in cw mode have to set freq again after pb change
+
+   tc.pll_bw = tc.pll_bw_i[tc.config];
+   timecode_pll_bw_cb('tc.pll_bw', tc.pll_bw, true, false);
+	ext_send('SET pll_offset='+ cwo);
+	ext_send('SET pll_mode=1 arg='+ (phase_mode? 2:1));   // PLL on, mode: carrier=1, BPSK=2
 
 	switch (val) {
 
@@ -522,7 +536,6 @@ function tc_signal_menu_cb(path, val, first)
 function timecode_resync_cb(path, val)
 {
 	tc_dmsg();
-	tc_dmsg2(w3_link('', tc.sig_s[tc.config][3], 'Time station info: '+ tc.sig_s[tc.config][2]));
 	tc_stat('yellow',
 	   w3_inline('',
 	      w3_icon('w3-text-aqua', 'fa-cog fa-spin', 20),
@@ -545,9 +558,11 @@ function timecode_reset_pll_cb(path, val)
 
 function timecode_pll_bw_cb(path, val, complete, first)
 {
+   console.log('timecode_pll_bw_cb path='+ path +' val='+ val +' first='+ first);
+   if (first) return;
    val = +val;
    tc.pll_bw = val;
-	w3_num_cb(path, val);
+	w3_set_value(path, val);
 	ext_send('SET pll_bandwidth='+ val);
 }
 
