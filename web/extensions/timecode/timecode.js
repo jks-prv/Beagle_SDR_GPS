@@ -451,6 +451,7 @@ function tc_signal_menu_cb(path, val, first)
    if (first) return;
 	val = +val;
 	tc.config = val;
+	w3_select_value(path, val);
    w3_call(tc.sigid_s[tc.prev_sig] +'_blur');
    tc.prev_sig = val;
    timecode_update_srate();
