@@ -34,12 +34,17 @@ shmem_t *shmem;
 void shmem_init()
 {
     int size = sizeof(shmem_t) + (N_LOG_SAVE * N_LOG_MSG_LEN);
-    real_printf("SHMEM=%.3f MB: ipc=%.3f spi=%.3f wf=%.3f wspr=%.3f\n",
+    real_printf("SHMEM=%.3f MB: ipc=%.3f spi=%.3f rx=%.3f wf=%.3f wspr=%.3f drm=%.3f\n",
         (float) size/M, (float) sizeof(shmem->ipc)/M,
         #ifdef SPI_SHMEM_DISABLE
             0,
         #else
             (float) sizeof(shmem->spi_shmem)/M,
+        #endif
+        #ifdef RX_SHMEM_DISABLE
+            0,
+        #else
+            (float) sizeof(shmem->rx_shmem)/M,
         #endif
         #ifdef WF_SHMEM_DISABLE
             0,
@@ -47,9 +52,14 @@ void shmem_init()
             (float) sizeof(shmem->wf_shmem)/M,
         #endif
         #ifdef WSPR_SHMEM_DISABLE
+            0,
+        #else
+            (float) sizeof(shmem->wspr_shmem)/M,
+        #endif
+        #ifdef DRM_SHMEM_DISABLE
             0
         #else
-            (float) sizeof(shmem->wspr_shmem)/M
+            (float) sizeof(shmem->drm_shmem)/M
         #endif
     );
     shmem = (shmem_t *) mmap((caddr_t) 0, size, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
@@ -58,7 +68,10 @@ void shmem_init()
     memset(shmem, 0, size);
     shmem->log_save.endp = (char *) shmem + size;
 
-    assert((SIGRTMIN + SIG_MAX_USED) <= SIGRTMAX);
+    if ((SIGRTMIN + SIG_MAX_USED) > SIGRTMAX) {
+        real_printf("SIGRTMIN=%d SIGRTMAX=%d\n", SIGRTMIN, SIGRTMAX);
+        assert((SIGRTMIN + SIG_MAX_USED) <= SIGRTMAX);
+    }
 }
 
 void sig_arm(int signal, funcPI_t handler, int flags)

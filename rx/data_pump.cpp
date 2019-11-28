@@ -43,6 +43,11 @@ Boston, MA  02110-1301, USA.
 rx_dpump_t rx_dpump[MAX_RX_CHANS];
 dpump_t dpump;
 
+#ifdef RX_SHMEM_DISABLE
+        static rx_shmem_t rx_shmem;
+        rx_shmem_t *rx_shmem_p = &rx_shmem;
+#endif
+
 #ifdef USE_SDR
 
 struct rx_data_t {

@@ -50,10 +50,6 @@ typedef struct {
 		    u4_t in_seq[N_DPBUF];
 		#endif
 		
-		u4_t iq_wr_pos, iq_rd_pos;
-		u4_t iq_seq, iq_seqnum[N_DPBUF];
-		TYPECPX iq_samples[N_DPBUF][FASTFIR_OUTBUF_SIZE];
-		
 		TYPECPX agc_samples[FASTFIR_OUTBUF_SIZE];
 
 		TYPEREAL demod_samples[FASTFIR_OUTBUF_SIZE];
@@ -76,6 +72,31 @@ typedef struct {
 	};
 } rx_dpump_t;
 
+extern rx_dpump_t rx_dpump[MAX_RX_CHANS];
+
+typedef struct {
+    u4_t iq_wr_pos, iq_rd_pos;
+    u4_t iq_seq, iq_seqnum[N_DPBUF];
+    TYPECPX iq_samples[N_DPBUF][FASTFIR_OUTBUF_SIZE];
+} iq_buf_t;
+
+typedef struct {
+    iq_buf_t iq_buf[MAX_RX_CHANS];
+} rx_shmem_t;
+
+#ifdef CPU_AM5729
+    //#define RX_SHMEM_DISABLE
+#else
+    #define RX_SHMEM_DISABLE
+#endif
+
+#ifdef RX_SHMEM_DISABLE
+    extern rx_shmem_t *rx_shmem_p;
+    #define RX_SHMEM rx_shmem_p
+#else
+    #define RX_SHMEM (&shmem->rx_shmem)
+#endif
+
 typedef struct {
     u4_t resets, hist[MAX_NRX_BUFS];
     bool force_reset;
@@ -84,7 +105,6 @@ typedef struct {
     int audio_dropped;
 } dpump_t;
 
-extern rx_dpump_t rx_dpump[MAX_RX_CHANS];
 extern dpump_t dpump;
 
 void data_pump_start_stop();

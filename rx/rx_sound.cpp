@@ -115,6 +115,7 @@ void c2s_sound(void *param)
 	int rx_chan = conn->rx_channel;
 	snd_t *snd = &snd_inst[rx_chan];
 	rx_dpump_t *rx = &rx_dpump[rx_chan];
+    iq_buf_t *iq = &RX_SHMEM->iq_buf[rx_chan];
 	
 	int j, k, n, len, slen;
 	//static u4_t ncnt[MAX_RX_CHANS];
@@ -748,9 +749,9 @@ void c2s_sound(void *param)
 		    
 			rx->rd_pos = (rx->rd_pos+1) & (N_DPBUF-1);
 			
-			TYPECPX *f_samps = &rx->iq_samples[rx->iq_wr_pos][0];
-			rx->iq_seqnum[rx->iq_wr_pos] = rx->iq_seq;
-			rx->iq_seq++;
+			TYPECPX *f_samps = &iq->iq_samples[iq->iq_wr_pos][0];
+			iq->iq_seqnum[iq->iq_wr_pos] = iq->iq_seq;
+			iq->iq_seq++;
 			const int ns_in = nrx_samps;
 			
 			if (masked) memset(i_samps, 0, sizeof(TYPECPX) * nrx_samps);
@@ -805,7 +806,7 @@ void c2s_sound(void *param)
 			snd->out_pkt_iq.h.dummy = 0;
 			gps_tsp->last_gpssec = gps_tsp->gpssec;
 
-			rx->iq_wr_pos = (rx->iq_wr_pos+1) & (N_DPBUF-1);
+			iq->iq_wr_pos = (iq->iq_wr_pos+1) & (N_DPBUF-1);
 
 			TYPECPX *f_sa = f_samps;
 			for (j=0; j<ns_out; j++) {
