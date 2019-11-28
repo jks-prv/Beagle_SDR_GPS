@@ -52,7 +52,7 @@ void dx_save_as_json()
 	TMEAS(printf("dx_save_as_json: START saving as dx.json, %d entries\n", dx.len);)
 
 	#define DX_JSON_OVERHEAD 128	// gross assumption about size required for everything else
-	n = 0;
+	n = DX_JSON_OVERHEAD;   // room for "{"dx":[]}" etc.
 	for (i=0, dxp = dx.list; i < dx.len; i++, dxp++) {
 		n += DX_JSON_OVERHEAD;
 		n += strlen(dxp->ident);

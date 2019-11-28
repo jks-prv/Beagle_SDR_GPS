@@ -605,10 +605,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			return true;
 		}
 		
-		if (dx.len == 0) {
-			return true;
-		}
-		
 		float freq = 0;
 		int gid = -999;
 		int low_cut, high_cut, mkr_off, flags, new_len;
@@ -632,6 +628,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		//  !-1 -1      delete
 		//  !-1 !-1     modify
 		//  -1  x       add new
+		
+		// dx.len == 0 only applies when adding first entry to empty list
+		if (gid != -1 && dx.len == 0) return true;
 		
 		bool err = false;
 		dx_t *dxp;
@@ -791,6 +790,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		dx_lastx = 0;
 		
 		if (dx.len == 0) {
+            send_msg(conn, false, "MSG mkr=[{\"t\":4}]");    // otherwise last marker won't get cleared
 			return true;
 		}
 		
