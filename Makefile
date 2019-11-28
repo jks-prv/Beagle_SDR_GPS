@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 352
+VERSION_MIN = 353
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -102,7 +102,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	ifeq ($(UNAME),Darwin)
 		CC = clang
 		CPP = clang++
-		CPP_FLAGS += -std=gnu++11
+		CPP_FLAGS += -std=gnu++11 -I/opt/local/include
 	else
 		# try clang on your development system (if you have it) -- it's better
 		#CC = clang
@@ -171,6 +171,14 @@ endif
 
 
 ################################
+# "all" target must be first
+################################
+.PHONY: all
+all: c_ext_clang_conv
+	@make $(MAKE_ARGS) c_ext_clang_conv_all
+
+
+################################
 # build files/directories
 ################################
 
@@ -190,10 +198,26 @@ TOOLS_DIR = $(BUILD_DIR)/tools
 PKGS = pkgs/mongoose
 PKGS_O3 = pkgs/jsmn pkgs/sha256 pkgs/TNT_JAMA
 
+# Each (internal) extension can have an optional Makefile:
+# The extension can opt-out of being included via EXT_SKIP (e.g. BBAI-only etc.)
+# EXT_SUBDIRS define any sub-dirs within the extension.
+# EXT_DEFINES set any additional defines for the extension.
+# Same for additional required libs via LIBS.
+# All of these should be appended to using "+="
+EXT_SKIP =
+EXT_SUBDIRS =
+EXT_DEFINES =
+LIBS =
+-include $(wildcard extensions/*/Makefile)
+
 PVT_EXT_DIR = ../extensions
-PVT_EXT_DIRS = $(sort $(dir $(wildcard $(PVT_EXT_DIR)/*/extensions/*/*)))
-INT_EXT_DIRS = $(sort $(dir $(wildcard extensions/*/*)))
-EXT_DIRS = extensions $(INT_EXT_DIRS) $(PVT_EXT_DIRS)
+PVT_EXT_DIRS = $(sort $(dir $(wildcard $(PVT_EXT_DIR)/*/extensions/*/)))
+
+INT_EXT_DIRS1 = $(sort $(dir $(wildcard extensions/*/)))
+EXT_SKIP1 = $(addsuffix /,$(addprefix extensions/,$(EXT_SKIP)))
+INT_EXT_DIRS = $(subst $(EXT_SKIP1),,$(INT_EXT_DIRS1))
+
+EXT_DIRS = $(INT_EXT_DIRS) $(PVT_EXT_DIRS)
 
 PVT_EXTS = $(subst $(PVT_EXT_DIR)/,,$(wildcard $(PVT_EXT_DIR)/*))
 INT_EXTS = $(subst /,,$(subst extensions/,,$(wildcard $(INT_EXT_DIRS))))
@@ -201,7 +225,7 @@ EXTS = $(INT_EXTS) $(PVT_EXTS)
 
 GPS = gps gps/ka9q-fec gps/GNSS-SDRLIB
 _DIRS = pru $(PKGS)
-_DIRS_O3 += . $(PKGS_O3) platform/beaglebone platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr rx/kiwi $(GPS) ui init support net web arch/$(ARCH)
+_DIRS_O3 += . $(PKGS_O3) platform/beaglebone platform/$(PLATFORM) $(EXT_DIRS) $(EXT_SUBDIRS) rx rx/CuteSDR rx/csdr rx/kiwi $(GPS) ui init support net web arch/$(ARCH)
 
 ifeq ($(OPT),O0)
 	DIRS = $(_DIRS) $(_DIRS_O3)
@@ -228,8 +252,8 @@ CFLAGS_UNSAFE_OPT = -funsafe-math-optimizations
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	# development machine, compile simulation version
-	CFLAGS += -g -MMD -DDEBUG -DDEVSYS
-	LIBS = -L/usr/local/lib -lfftw3f -lfftw3
+	CFLAGS += -g -pipe -MMD -DDEBUG -DDEVSYS
+	LIBS += -L/usr/local/lib  -L/opt/local/lib -lfftw3f -lfftw3
 	LIBS_DEP = /usr/local/lib/libfftw3f.a /usr/local/lib/libfftw3.a
 	CMD_DEPS =
 	DIR_CFG = unix_env/kiwi.config
@@ -240,8 +264,8 @@ else
 	#CFLAGS += -mfloat-abi=softfp -mfpu=neon
 	CFLAGS +=  -mfpu=neon -mtune=cortex-a8 -mcpu=cortex-a8 -mfloat-abi=hard
 	#CFLAGS += -O3
-	CFLAGS += -g -MMD -DDEBUG -DHOST
-	LIBS = -lfftw3f -lfftw3 -lutil
+	CFLAGS += -g -pipe -MMD -DDEBUG -DHOST
+	LIBS += -lfftw3f -lfftw3 -lutil
 	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
 	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng /sbin/ethtool /usr/bin/sshpass
 	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget
@@ -260,14 +284,6 @@ else
 		CMD_DEPS += /usr/bin/jq
 	endif
 endif
-
-
-################################
-# "all" target must be first
-################################
-.PHONY: all
-all: c_ext_clang_conv
-	@make $(MAKE_ARGS) c_ext_clang_conv_all
 
 
 ################################
@@ -357,7 +373,7 @@ GEN_ASM = $(GEN_DIR)/kiwi.gen.h verilog/kiwi.gen.vh
 OUT_ASM = $(GEN_DIR)/kiwi.aout
 GEN_VERILOG = $(addprefix verilog/rx/,cic_rx1_12k.vh cic_rx1_20k.vh cic_rx2_12k.vh cic_rx2_20k.vh cic_rx3_12k.vh cic_rx3_20k.vh cic_wf1.vh cic_wf2.vh)
 GEN_NOIP2 = $(GEN_DIR)/noip2
-SUB_MAKE_DEPS = $(KEYRING) $(CMD_DEPS) $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
+SUB_MAKE_DEPS = $(KEYRING) $(CMD_DEPS) $(LIBS_DEP) $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
 
 
 ################################
@@ -370,19 +386,23 @@ PVT_EXT_C_FILES = $(shell find $(PVT_EXT_DIRS) -name '*.c' -print)
 endif
 
 .PHONY: c_ext_clang_conv
-ifeq ($(PVT_EXT_C_FILES),)
 c_ext_clang_conv: $(SUB_MAKE_DEPS)
+ifeq ($(PVT_EXT_C_FILES),)
 #	@echo SUB_MAKE_DEPS = $(SUB_MAKE_DEPS)
 #	@echo no installed extensions with files needing conversion from .c to .cpp for clang compatibility
 else
-c_ext_clang_conv: $(SUB_MAKE_DEPS)
 	@echo PVT_EXT_C_FILES = $(PVT_EXT_C_FILES)
 	@echo convert installed extension .c files to .cpp for clang compatibility
 	find $(PVT_EXT_DIRS) -name '*.c' -exec mv '{}' '{}'pp \;
 endif
+# take this opportunity to update list of include (-I) dirs since Make will be re-invoked
+	@echo "----------------"
+	echo $(I) > $(GEN_DIR)/Makefile.includes
+	echo $(EXT_DEFINES) > $(GEN_DIR)/Makefile.defines
+	@echo "----------------"
 
 .PHONY: c_ext_clang_conv_all
-c_ext_clang_conv_all: $(LIBS_DEP) $(BUILD_DIR)/kiwi.bin
+c_ext_clang_conv_all: $(BUILD_DIR)/kiwi.bin
 
 
 ################################
@@ -569,37 +589,47 @@ c_ext_clang_conv_debug:
 	@echo ARCH = $(ARCH)
 	@echo CPU = $(CPU)
 	@echo PLATFORM = $(PLATFORM)
-	@echo BUILD_DIR: $(BUILD_DIR)
-	@echo OBJ_DIR: $(OBJ_DIR)
-	@echo OBJ_DIR_O3: $(OBJ_DIR_O3)
-	@echo CMD_DEPS: $(CMD_DEPS)
-	@echo OPT: $(OPT)
-	@echo CFLAGS: $(CFLAGS) $(CPP_FLAGS)
+	@echo BUILD_DIR = $(BUILD_DIR)
+	@echo OBJ_DIR = $(OBJ_DIR)
+	@echo OBJ_DIR_O3 = $(OBJ_DIR_O3)
+	@echo CMD_DEPS = $(CMD_DEPS)
+	@echo OPT = $(OPT)
+	@echo CFLAGS = $(CFLAGS) $(CPP_FLAGS)
+	@echo
 	@echo DEPS = $(OBJECTS:.o=.d)
 	@echo KIWI_UI_LIST = $(UI_LIST)
-	@echo SRC_DEPS: $(SRC_DEPS)
-	@echo BIN_DEPS: $(BIN_DEPS)
-	@echo SUB_MAKE_DEPS: $(SUB_MAKE_DEPS)
-	@echo GEN_ASM: $(GEN_ASM)
-	@echo FILES_EMBED: $(FILES_EMBED)
-	@echo FILES_EXT: $(FILES_EXT)
-	@echo FILES_ALWAYS $(FILES_ALWAYS)
-	@echo FILES_ALWAYS2 $(FILES_ALWAYS2)
-	@echo EXT_DIRS: $(EXT_DIRS)
-	@echo EXTS: $(EXTS)
-	@echo PVT_EXT_DIRS: $(PVT_EXT_DIRS)
-	@echo PVT_EXTS: $(PVT_EXTS)
-	@echo DIRS: $(DIRS)
-	@echo DIRS_O3: $(DIRS_O3)
-	@echo VPATH: $(VPATH)
-	@echo CFILES: $(CFILES)
-	@echo CFILES_O3: $(CFILES_O3)
-	@echo OBJECTS: $(OBJECTS)
-	@echo O3_OBJECTS: $(O3_OBJECTS)
-	@echo MF_FILES $(MF_FILES)
-	@echo MF_OBJ $(MF_OBJ)
-	@echo MF_O3 $(MF_O3)
-	@echo PKGS $(PKGS)
+	@echo SRC_DEPS = $(SRC_DEPS)
+	@echo BIN_DEPS = $(BIN_DEPS)
+	@echo SUB_MAKE_DEPS = $(SUB_MAKE_DEPS)
+	@echo GEN_ASM = $(GEN_ASM)
+	@echo
+	@echo FILES_EMBED = $(FILES_EMBED)
+	@echo FILES_EXT = $(FILES_EXT)
+	@echo FILES_ALWAYS = $(FILES_ALWAYS)
+	@echo FILES_ALWAYS2 = $(FILES_ALWAYS2)
+	@echo
+	@echo EXT_SKIP = $(EXT_SKIP)
+	@echo EXT_SKIP1 = $(EXT_SKIP1)
+	@echo INT_EXT_DIRS1 = $(INT_EXT_DIRS1)
+	@echo INT_EXT_DIRS = $(INT_EXT_DIRS)
+	@echo PVT_EXT_DIRS = $(PVT_EXT_DIRS)
+	@echo EXT_SUBDIRS = $(EXT_SUBDIRS)
+	@echo EXT_DIRS = $(EXT_DIRS)
+	@echo PVT_EXTS = $(PVT_EXTS)
+	@echo INT_EXTS = $(INT_EXTS)
+	@echo EXTS = $(EXTS)
+	@echo
+	@echo DIRS = $(DIRS)
+	@echo DIRS_O3 = $(DIRS_O3)
+	@echo VPATH = $(VPATH)
+	@echo CFILES = $(CFILES)
+	@echo CFILES_O3 = $(CFILES_O3)
+	@echo OBJECTS = $(OBJECTS)
+	@echo O3_OBJECTS = $(O3_OBJECTS)
+	@echo MF_FILES = $(MF_FILES)
+	@echo MF_OBJ = $(MF_OBJ)
+	@echo MF_O3 = $(MF_O3)
+	@echo PKGS = $(PKGS)
 
 
 ################################
@@ -608,7 +638,6 @@ c_ext_clang_conv_debug:
 
 # extension init generator and extension-specific makefiles
 -include extensions/Makefile
--include $(wildcard extensions/*/Makefile)
 
 comma := ,
 empty :=
@@ -618,9 +647,10 @@ UI_LIST = $(subst $(space),,$(KIWI_UI_LIST))
 
 VERSION = -DVERSION_MAJ=$(VERSION_MAJ) -DVERSION_MIN=$(VERSION_MIN)
 VER = v$(VERSION_MAJ).$(VERSION_MIN)
-FLAGS += $(I) $(VERSION) -DKIWI -DARCH_$(ARCH) -DCPU_$(CPU) -DARCH_CPU=$(CPU) -DPLATFORM_$(PLATFORM)
+FLAGS += @$(GEN_DIR)/Makefile.includes $(VERSION) -DKIWI -DARCH_$(ARCH) -DCPU_$(CPU) -DARCH_CPU=$(CPU) -DPLATFORM_$(PLATFORM)
 FLAGS += -DKIWI_UI_LIST=$(UI_LIST) -DDIR_CFG=\"$(DIR_CFG)\" -DCFG_PREFIX=\"$(CFG_PREFIX)\"
 FLAGS += -DBUILD_DIR=\"$(BUILD_DIR)\" -DREPO=\"$(REPO)\" -DREPO_NAME=\"$(REPO_NAME)\"
+FLAGS += @$(GEN_DIR)/Makefile.defines
 CSRC = $(notdir $(CFILES))
 CSRC_O3 = $(notdir $(CFILES_O3))
 OBJECTS1 = $(CSRC:%.c=$(OBJ_DIR)/%.o)
@@ -844,7 +874,7 @@ install: c_ext_clang_conv
 	@make c_ext_clang_conv_install
 
 .PHONY: c_ext_clang_conv_install
-c_ext_clang_conv_install: $(DO_ONCE) $(LIBS_DEP) $(BUILD_DIR)/kiwid.bin
+c_ext_clang_conv_install: $(DO_ONCE) $(BUILD_DIR)/kiwid.bin
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	@echo remainder of \'make install\' only makes sense to run on target
 else
@@ -876,6 +906,8 @@ else
 	install -D -o root -g root -m 0644 unix_env/gdbinit ~root/.gdbinit
 	install -D -o root -g root -m 0644 unix_env/gdb_break ~root/.gdb_break
 	install -D -o root -g root -m 0644 unix_env/gdb_valgrind ~root/.gdb_valgrind
+#
+	install -D -o root -g root -m 0644 $(DIR_CFG_SRC)/v.sed $(DIR_CFG)/v.sed
 
 # only install post-customized config files if they've never existed before
 ifneq ($(EXISTS_BASHRC_LOCAL),true)

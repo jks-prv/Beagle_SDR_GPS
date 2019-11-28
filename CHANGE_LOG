@@ -2,6 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.353  November 29, 2019
+    Security fixes. See the Kiwi forum for more information.
+    One-time check of Linux/Debian "root" and "debian" account passwords.
+        If they are unset or the defaults they are set to the Kiwi admin password (if set)
+        else the Kiwi's serial number. See the Kiwi log for a description of the action taken.
+    Added code to remove a new bot-virus reported on one Kiwi that had its ssh port open to the
+        Internet and root account unprotected (no password set, hence the reason the
+        above change was implemented).
+
 v1.352  November 24, 2019
     Timecode extension improvements.
 
