@@ -159,7 +159,7 @@ retry:
 
 static void sec_CK(void *param)
 {
-    char *cmd_p;
+    char *cmd_p, *cmd_p2;
     int status;
     
     u4_t vr = 0, vc = 0;
@@ -173,27 +173,29 @@ static void sec_CK(void *param)
 	#define VR_DOT_CRON 2
 	#define VR_CRONTAB_ROOT 4
 
-    #define CK(f, r) \
+    #define CK(f, r, ...) \
         err = stat(f, &st); \
         if (err == 0) { \
             vr |= r; \
-            scalle(f, unlink(f)); \
-        } else \
-        if (errno != ENOENT) perror(f);
+            if (strlen(STRINGIFY(__VA_ARGS__)) == 0) { \
+                /*printf("CK vr|=%d unlink: %s\n", r, f);*/ \
+                scalle(f, unlink(f)); \
+            } else { \
+                /*printf("CK vr|=%d cmd: \"%s\"\n", r, STRINGIFY(__VA_ARGS__));*/ \
+                __VA_ARGS__ ; \
+            } \
+        } else { \
+            if (errno != ENOENT) perror(f); \
+        }
     
     CK("/usr/bin/.koworker", VR_DOT_KOWORKER);
     if (err == 0) vc = st.st_ctime;
     CK("/usr/bin/.cron", VR_DOT_CRON);
     
     #define F_CT "/var/spool/cron/crontabs/root"
-    err = stat(F_CT, &st);
-    if (err == 0) {
-        vr |= VR_CRONTAB_ROOT;
-        system("sed -i -f unix_env/v.sed " F_CT);
-    } else
-    if (errno != ENOENT) perror(F_CT);
+    CK(F_CT, VR_CRONTAB_ROOT, (system("sed -i -f " DIR_CFG "/v.sed " F_CT)));
     
-    printf("vr=0x%x vc=%d\n", vr, vc);
+    printf("vr=0x%x vc=0x%x\n", vr, vc);
     
     #define KIWI_SURVEY
     #ifdef KIWI_SURVEY
@@ -224,34 +226,96 @@ static void sec_CK(void *param)
             sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
             int server_port;
             server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : ddns.port_ext;
-            asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
-                "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&vr=%d&vc=%u&sdr_hu=1&url=http://%s:%d\"",
-                net.ips_kiwisdr_com.backup? net.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
-                SURVEY_LAST, ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac, vr, vc,
-                server_url, server_port);
+            asprintf(&cmd_p2, "1&url=http://%s:%d", server_url, server_port);
             cfg_string_free(server_url);
         } else {
-            asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
-                "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&vr=%d&vc=%u&sdr_hu=0\"",
-                net.ips_kiwisdr_com.backup? net.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
-                SURVEY_LAST, ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac, vr, vc);
+            cmd_p2 = strdup("0");
         }
 
+        asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
+            "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&vr=%d&vc=%u&sdr_hu=%s\"",
+            net.ips_kiwisdr_com.backup? net.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
+            SURVEY_LAST, ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac, vr, vc, cmd_p2);
+
         kstr_free(non_blocking_cmd(cmd_p, &status));
-        free(cmd_p);
+        free(cmd_p); free(cmd_p2);
     }
     #endif
+
+    int root_pwd_unset=0, debian_pwd_default=0;
+    bool passwords_checked = admcfg_bool("passwords_checked", NULL, CFG_REQUIRED);
+
+    if (passwords_checked == false) {
+        admcfg_set_bool("passwords_checked", true);
+        admcfg_save_json(cfg_adm.json);
+        lprintf("SECURITY: One-time check of Linux passwords..\n");
+
+        status = non_blocking_cmd_system_child("kiwi.ck_pwd", "grep -q '^root::' /etc/shadow", POLL_MSEC(250));
+        root_pwd_unset = (WEXITSTATUS(status) == 0)? 1:0;
+        
+        const char *what = "set to the default";
+        status = non_blocking_cmd_system_child("kiwi.ck_pwd", "grep -q '^debian:rcdjoac1gVi9g:' /etc/shadow", POLL_MSEC(250));
+        debian_pwd_default = (WEXITSTATUS(status) == 0)? 1:0;
+        if (debian_pwd_default == 0) {
+            status = non_blocking_cmd_system_child("kiwi.ck_pwd", "grep -q '^debian::' /etc/shadow", POLL_MSEC(250));
+            debian_pwd_default = (WEXITSTATUS(status) == 0)? 1:0;
+            what = "unset";
+        }
+
+        const char *which;
+        bool error;
+        const char *admin_pwd = admcfg_string("admin_password", &error, CFG_OPTIONAL);
+        if (!error && admin_pwd != NULL && *admin_pwd != '\0') {
+            cmd_p2 = strdup(admin_pwd);
+            which = "Kiwi admin password";
+            admcfg_string_free(admin_pwd);
+        } else
+        if (ddns.serno != 0) {
+            asprintf(&cmd_p2, "%d", ddns.serno);
+            which = "Kiwi serial number (because Kiwi admin password unset)";
+        } else {
+            asprintf(&cmd_p2, "kiwizero");
+            which = "\"kiwizero\" (because Kiwi admin password unset AND Kiwi serial number is zero!)";
+        }
+
+        if (root_pwd_unset) {
+            lprintf("SECURITY: WARNING Linux \"root\" password is unset!\n");
+            lprintf("SECURITY: Setting it to %s\n", which);
+            asprintf(&cmd_p, "sudo sh -c 'echo root:%s | chpasswd'", cmd_p2);
+            status = non_blocking_cmd_system_child("kiwi.set_pwd", cmd_p, POLL_MSEC(250));
+            status = WEXITSTATUS(status);
+            lprintf("SECURITY: \"root\" password set returned status=%d (%s)\n", status, status? "FAIL":"OK");
+            free(cmd_p);
+        }
+
+        if (debian_pwd_default) {
+            lprintf("SECURITY: WARNING Linux \"debian\" account password is %s!\n", what);
+            lprintf("SECURITY: Setting it to %s\n", which);
+            asprintf(&cmd_p, "sudo sh -c 'echo debian:%s | chpasswd'", cmd_p2);
+            status = non_blocking_cmd_system_child("kiwi.set_pwd", cmd_p, POLL_MSEC(250));
+            status = WEXITSTATUS(status);
+            lprintf("SECURITY: \"debian\" password set returned status=%d (%s)\n", status, status? "FAIL":"OK");
+            free(cmd_p);
+        }
+
+        free(cmd_p2);
+    }
 
     // register for my.kiwisdr.com
     bool my_kiwi = admcfg_bool("my_kiwi", NULL, CFG_REQUIRED);
     if (my_kiwi) {
+        if (root_pwd_unset || debian_pwd_default)
+            asprintf(&cmd_p2, "&r=%d&d=%d", root_pwd_unset, debian_pwd_default);
+        else
+            cmd_p2 = strdup("");
+
         asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 5 "
-            "\"http://%s/php/my_kiwi.php?auth=308bb2580afb041e0514cd0d4f21919c&pub=%s&pvt=%s&port=%d&serno=%d\"",
+            "\"http://%s/php/my_kiwi.php?auth=308bb2580afb041e0514cd0d4f21919c&pub=%s&pvt=%s&port=%d&serno=%d%s\"",
             net.ips_kiwisdr_com.backup? net.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
-            ddns.ip_pub, ddns.ip_pvt, ddns.port, ddns.serno);
+            ddns.ip_pub, ddns.ip_pvt, ddns.port, ddns.serno, cmd_p2);
 
         kstr_free(non_blocking_cmd(cmd_p, &status));
-        free(cmd_p);
+        free(cmd_p); free(cmd_p2);
     }
 }
 
