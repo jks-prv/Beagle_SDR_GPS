@@ -157,6 +157,32 @@ retry:
 	}
 }
 
+// done this way because passwords containing single and double quotes are impossible to get to
+// chpasswd via a shell invokation
+static void CK_set_pwd_task(void *param)
+{
+    char *cmd_p = (char *) param;
+    
+    #define PIPE_R 0
+    #define PIPE_W 1
+    static int si[2];
+    scall("P pipe", pipe(si));
+
+
+	pid_t child_pid;
+	scall("fork", (child_pid = fork()));
+	
+	if (child_pid == 0) {
+        scall("C dup PIPE_R", dup2(si[PIPE_R], STDIN_FILENO)); scall("C close PIPE_W", close(si[PIPE_W]));
+        scall("C execl", execl("/usr/sbin/chpasswd", "/usr/sbin/chpasswd", (char *) NULL));
+        exit(EXIT_FAILURE);
+    }
+    
+    scall("P close PIPE_R", close(si[PIPE_R]));
+    scall("P write PIPE_W", write(si[PIPE_W], cmd_p, strlen(cmd_p)));
+    scall("P close PIPE_W", close(si[PIPE_W]));
+}
+
 static void sec_CK(void *param)
 {
     char *cmd_p, *cmd_p2;
@@ -243,10 +269,14 @@ static void sec_CK(void *param)
     #endif
 
     int root_pwd_unset=0, debian_pwd_default=0;
-    bool passwords_checked = admcfg_bool("passwords_checked", NULL, CFG_REQUIRED);
+    bool error;
+    bool passwords_checked = admcfg_bool("passwords_checked", &error, CFG_OPTIONAL);
+    if (error) passwords_checked = false;
+    bool onetime_password_check = admcfg_bool("onetime_password_check", NULL, CFG_REQUIRED);
 
-    if (passwords_checked == false) {
-        admcfg_set_bool("passwords_checked", true);
+    if (onetime_password_check == false) {
+        if (passwords_checked) admcfg_rem_bool("passwords_checked");    // for Kiwis that prematurely updated to v1.353
+        admcfg_set_bool("onetime_password_check", true);
         admcfg_save_json(cfg_adm.json);
         lprintf("SECURITY: One-time check of Linux passwords..\n");
 
@@ -263,8 +293,8 @@ static void sec_CK(void *param)
         }
 
         const char *which;
-        bool error;
         const char *admin_pwd = admcfg_string("admin_password", &error, CFG_OPTIONAL);
+
         if (!error && admin_pwd != NULL && *admin_pwd != '\0') {
             cmd_p2 = strdup(admin_pwd);
             which = "Kiwi admin password";
@@ -281,8 +311,8 @@ static void sec_CK(void *param)
         if (root_pwd_unset) {
             lprintf("SECURITY: WARNING Linux \"root\" password is unset!\n");
             lprintf("SECURITY: Setting it to %s\n", which);
-            asprintf(&cmd_p, "sudo sh -c 'echo root:%s | chpasswd'", cmd_p2);
-            status = non_blocking_cmd_system_child("kiwi.set_pwd", cmd_p, POLL_MSEC(250));
+            asprintf(&cmd_p, "root:%s", cmd_p2);
+            status = child_task("kiwi.set_pwd", CK_set_pwd_task, POLL_MSEC(250), cmd_p);
             status = WEXITSTATUS(status);
             lprintf("SECURITY: \"root\" password set returned status=%d (%s)\n", status, status? "FAIL":"OK");
             free(cmd_p);
@@ -291,8 +321,8 @@ static void sec_CK(void *param)
         if (debian_pwd_default) {
             lprintf("SECURITY: WARNING Linux \"debian\" account password is %s!\n", what);
             lprintf("SECURITY: Setting it to %s\n", which);
-            asprintf(&cmd_p, "sudo sh -c 'echo debian:%s | chpasswd'", cmd_p2);
-            status = non_blocking_cmd_system_child("kiwi.set_pwd", cmd_p, POLL_MSEC(250));
+            asprintf(&cmd_p, "debian:%s", cmd_p2);
+            status = child_task("kiwi.set_pwd", CK_set_pwd_task, POLL_MSEC(250), cmd_p);
             status = WEXITSTATUS(status);
             lprintf("SECURITY: \"debian\" password set returned status=%d (%s)\n", status, status? "FAIL":"OK");
             free(cmd_p);

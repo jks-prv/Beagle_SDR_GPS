@@ -93,6 +93,7 @@ void cull_zombies()
     }
 }
 
+// returns (poll_msec == NO_WAIT)? child_pid : child_status
 int child_task(const char *pname, funcP_t func, int poll_msec, void *param)
 {
     int i;
@@ -126,7 +127,7 @@ int child_task(const char *pname, funcP_t func, int poll_msec, void *param)
 	// parent
 	
     //lprintf("==== child_task: child_pid=%d %s pname=%s\n", child_pid, (poll_msec == 0)? "NO_WAIT":"WAIT", pname);
-	if (poll_msec == 0) {
+	if (poll_msec == NO_WAIT) {
 	    register_zombie(child_pid);
         //real_printf("CHILD_TASK EXIT %s child_pid=%d\n", pname, child_pid);
 	    return child_pid;   // don't wait
