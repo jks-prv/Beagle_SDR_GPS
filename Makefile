@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 354
+VERSION_MIN = 355
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -71,7 +71,8 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 			# Debian 7 gcc runs out of memory compiling edata_always*.cpp in parallel
 			MAKE_ARGS =
 		else
-			MAKE_ARGS = -j 4
+#			MAKE_ARGS = -j 4
+			MAKE_ARGS =
 		endif
 	endif
 else
