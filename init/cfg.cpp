@@ -105,7 +105,7 @@ static void cfg_test()
 	json_set_string(&cfgx, "foo", "baz");
 
 	//_cfg_walk(&cfgx, NULL, cfg_print_tok, NULL);
-	exit(0);
+	kiwi_exit(0);
 }
 
 int serial_number;
@@ -1187,7 +1187,6 @@ static void _cfg_write_file(void *param)
 	scallz("_cfg_write_file fopen", (fp = fopen(cfg->filename, "w")));
 	fprintf(fp, "%s\n", cfg->json_write);
 	fclose(fp);
-	exit(0);
 }
 
 // FIXME guard better against file getting trashed

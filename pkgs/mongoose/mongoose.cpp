@@ -1725,7 +1725,7 @@ static pid_t start_process(const char *interp, const char *cmd, const char *env,
              "500 Server Error: %s%s%s: %s", interp == NULL ? "" : interp,
              interp == NULL ? "" : " ", cmd, strerror(errno));
     send(1, buf, strlen(buf), 0);
-    exit(EXIT_FAILURE);  // exec call failed
+    child_exit(EXIT_FAILURE);  // exec call failed
   }
 
   return pid;

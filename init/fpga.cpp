@@ -217,7 +217,7 @@ void fpga_init() {
 	if (ping->word[0] != 0xcafe) {
 		lprintf("FPGA not responding: 0x%04x\n", ping->word[0]);
 		evSpi(EC_DUMP, EV_SPILOOP, -1, "main", "dump");
-		xit(-1);
+		kiwi_exit(-1);
 	}
 
     // FIXME: remove
@@ -252,7 +252,7 @@ void fpga_init() {
 	if (ping->word[0] != 0xbabe) {
 		lprintf("FPGA not responding: 0x%04x\n", ping->word[0]);
 		evSpi(EC_DUMP, EV_SPILOOP, -1, "main", "dump");
-		xit(-1);
+		kiwi_exit(-1);
 	}
 
 	stat_reg_t stat = stat_get();

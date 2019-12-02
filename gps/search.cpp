@@ -76,7 +76,7 @@ void SearchParams(int argc, char *argv[]) {
 		if (strcmp(v, "?")==0 || strcmp(v, "-?")==0 || strcmp(v, "--?")==0 || strcmp(v, "-h")==0 ||
 			strcmp(v, "h")==0 || strcmp(v, "-help")==0 || strcmp(v, "--h")==0 || strcmp(v, "--help")==0) {
 			printf("GPS args:\n\t-gsig signal_threshold\n\t-gt test mode\n");
-			xit(0);
+			kiwi_exit(0);
 		}
 		if (strcmp(v, "-gsig")==0) {
 			i++; minimum_sig = strtol(argv[i], 0, 0);
@@ -217,7 +217,7 @@ void SearchInit() {
             }
             printf("\t%s first 16 chips: 0%04x\n", PRN(sp->sat), chips);
         }
-        xit(0);
+        kiwi_exit(0);
 	#endif
 
     //#define QZSS_PRN_TEST
@@ -232,7 +232,7 @@ void SearchInit() {
             }
             printf("\t%s first 10 chips: 0%04o\n", PRN(sp->sat), chips);
         }
-        xit(0);
+        kiwi_exit(0);
 	#endif
 
 	printf("DECIM %d FFT %d planning..\n", DECIM, FFT_LEN);
@@ -299,7 +299,7 @@ void SearchInit() {
             e1bt2.Clock();
         }
         printf(" PRN E2 0x96b85\n");
-        xit(0);
+        kiwi_exit(0);
     #endif
 
     float e1b_rate = CPS/FS;
@@ -373,7 +373,7 @@ void GenSamples(char *rbuf, int bytes) {
     //printf("GenSamples bytes=%d/%d 0x%02x 0x%02x 0x%02x\n", i, bytes, rbuf[0], rbuf[1], rbuf[2]);
     if (i != bytes) {
         printf("end of GPS samples data file\n");
-        xit(0);
+        kiwi_exit(0);
     }
 }
 #endif

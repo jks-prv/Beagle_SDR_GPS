@@ -93,6 +93,11 @@ void cull_zombies()
     }
 }
 
+void child_exit(int rv)
+{
+    _exit(rv);
+}
+
 // returns (poll_msec == NO_WAIT)? child_pid : child_status
 int child_task(const char *pname, funcP_t func, int poll_msec, void *param)
 {
@@ -120,8 +125,8 @@ int child_task(const char *pname, funcP_t func, int poll_msec, void *param)
         int sl = strlen(main_argv[0]);
         sprintf(main_argv[0], "%-*.*s", sl, sl, pname);     // have to blank fill, and not overrun, old argv[0]
         
-		func(param);	// this function should exit() with some other value if it wants
-		exit(EXIT_SUCCESS);
+		func(param);	// this function should child_exit() with some other value if it wants
+		child_exit(EXIT_SUCCESS);
 	}
 	
 	// parent
@@ -171,9 +176,9 @@ static void _non_blocking_cmd_forall(void *param)
 
     //printf("_non_blocking_cmd_forall: %s\n", args->cmd);
 	FILE *pf = popen(args->cmd, "r");
-	if (pf == NULL) exit(EXIT_FAILURE);
+	if (pf == NULL) child_exit(EXIT_FAILURE);
 	int pfd = fileno(pf);
-	if (pfd <= 0) exit(EXIT_FAILURE);
+	if (pfd <= 0) child_exit(EXIT_FAILURE);
 	fcntl(pfd, F_SETFL, O_NONBLOCK);
 
 	do {
@@ -193,7 +198,7 @@ static void _non_blocking_cmd_forall(void *param)
 	pclose(pf);
 
     //printf("_non_blocking_cmd_forall: EXIT func_rv %d\n", func_rv);
-	exit(func_rv);
+	child_exit(func_rv);
 	#undef NCHUNK
 }
 
@@ -229,9 +234,9 @@ static void _non_blocking_cmd_foreach(void *param)
 	int offset = 0;
 
 	FILE *pf = popen(args->cmd, "r");
-	if (pf == NULL) exit(EXIT_FAILURE);
+	if (pf == NULL) child_exit(EXIT_FAILURE);
 	int pfd = fileno(pf);
-	if (pfd <= 0) exit(EXIT_FAILURE);
+	if (pfd <= 0) child_exit(EXIT_FAILURE);
 	fcntl(pfd, F_SETFL, O_NONBLOCK);
 
     //printf("_non_blocking_cmd_foreach START\n");
@@ -279,7 +284,7 @@ static void _non_blocking_cmd_foreach(void *param)
 
 	pclose(pf);
 
-	exit(func_rv);
+	child_exit(func_rv);
 	#undef NCHUNK
 }
 
@@ -309,7 +314,7 @@ static void _non_blocking_cmd_system(void *param)
     //printf("_non_blocking_cmd_system: %s\n", cmd);
     int rv = system(cmd);
     //printf("_non_blocking_cmd_system: rv=%d %d %d \n", rv, WIFEXITED(rv), WEXITSTATUS(rv));
-	exit(WEXITSTATUS(rv));
+	child_exit(WEXITSTATUS(rv));
 }
 
 // Like non_blocking_cmd() below, but run in a child process because pclose() can block

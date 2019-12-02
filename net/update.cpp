@@ -53,28 +53,28 @@ static void update_build_ctask(void *param)
                 build_normal = false;
             #endif
             if (status < 0)
-                exit(EXIT_FAILURE);
+                child_exit(EXIT_FAILURE);
             if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
-                exit(WEXITSTATUS(status));
-	        exit(EXIT_SUCCESS);
+                child_exit(WEXITSTATUS(status));
+	        child_exit(EXIT_SUCCESS);
         }
     #endif
 
 	if (build_normal) {
 		status = system("cd /root/" REPO_NAME "; make git");
         if (status < 0)
-            exit(EXIT_FAILURE);
+            child_exit(EXIT_FAILURE);
         if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
-            exit(WEXITSTATUS(status));
+            child_exit(WEXITSTATUS(status));
 
 		status = system("cd /root/" REPO_NAME "; make clean_dist; make; make install");
         if (status < 0)
-            exit(EXIT_FAILURE);
+            child_exit(EXIT_FAILURE);
         if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
-            exit(WEXITSTATUS(status));
+            child_exit(WEXITSTATUS(status));
 	}
 	
-	exit(EXIT_SUCCESS);
+	child_exit(EXIT_SUCCESS);
 }
 
 static void curl_makefile_ctask(void *param)
@@ -82,10 +82,10 @@ static void curl_makefile_ctask(void *param)
 	int status = system("cd /root/" REPO_NAME "; curl --silent --show-error --ipv4 --connect-timeout 15 https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -o Makefile.1");
 
 	if (status < 0)
-	    exit(EXIT_FAILURE);
+	    child_exit(EXIT_FAILURE);
 	if (WIFEXITED(status))
-		exit(WEXITSTATUS(status));
-	exit(EXIT_FAILURE);
+		child_exit(WEXITSTATUS(status));
+	child_exit(EXIT_FAILURE);
 }
 
 static void report_result(conn_t *conn)
@@ -122,10 +122,10 @@ static bool daily_restart = false;
             func() -> curl_makefile_ctask() / update_build_ctask()
                 status = system(...)
                 if (status < 0)
-                    exit(EXIT_FAILURE);
+                    child_exit(EXIT_FAILURE);
                 if (WIFEXITED(status))
-                    exit(WEXITSTATUS(status));
-                exit(EXIT_FAILURE);
+                    child_exit(WEXITSTATUS(status));
+                child_exit(EXIT_FAILURE);
         // parent
         while
             waitpid(&status)
@@ -202,7 +202,7 @@ static void update_task(void *param)
 		lprintf("UPDATE: build took %d secs\n", timer_sec() - build_time);
 		lprintf("UPDATE: switching to new version %d.%d\n", pending_maj, pending_min);
 		if (admcfg_int("update_restart", NULL, CFG_REQUIRED) == 0) {
-		    xit(0);
+		    kiwi_exit(0);
 		} else {
 		    lprintf("UPDATE: rebooting Beagle..\n");
 		    system("sleep 3; reboot");
@@ -213,7 +213,7 @@ static void update_task(void *param)
 	
 	if (daily_restart) {
 	    lprintf("UPDATE: daily restart..\n");
-	    xit(0);
+	    kiwi_exit(0);
 	}
 
 common_return:

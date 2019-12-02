@@ -126,7 +126,7 @@ static void tunnel(void *param)
 	    scall("closeSO", close(so[PIPE_R])); scall("dupSO", dup2(so[PIPE_W], STDOUT_FILENO));
         system("/usr/sbin/sshd -D -p 1138 >/dev/null 2>&1");
         scall("execl", execl("/bin/nc", "/bin/nc", "localhost", "1138", (char *) NULL));
-	    exit(EXIT_FAILURE);
+	    child_exit(EXIT_FAILURE);
 	}
 
 	#if 0
@@ -173,7 +173,7 @@ static void console(void *param)
         #endif
 
         execve(args[0], args, NULL);
-        exit(0);
+        child_exit(0);
     }
     
     register_zombie(c->console_child_pid);
@@ -1160,7 +1160,7 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET restart");
 			if (i == 0) {
 				clprintf(conn, "ADMIN: restart requested by admin..\n");
-				xit(0);
+				kiwi_exit(0);
 			}
 
 			i = strcmp(cmd, "SET reboot");

@@ -158,7 +158,7 @@ retry:
 }
 
 // done this way because passwords containing single and double quotes are impossible to get to
-// chpasswd via a shell invokation
+// chpasswd via a shell invocation
 static void CK_set_pwd_task(void *param)
 {
     char *cmd_p = (char *) param;
@@ -175,7 +175,7 @@ static void CK_set_pwd_task(void *param)
 	if (child_pid == 0) {
         scall("C dup PIPE_R", dup2(si[PIPE_R], STDIN_FILENO)); scall("C close PIPE_W", close(si[PIPE_W]));
         scall("C execl", execl("/usr/sbin/chpasswd", "/usr/sbin/chpasswd", (char *) NULL));
-        exit(EXIT_FAILURE);
+        child_exit(EXIT_FAILURE);
     }
     
     scall("P close PIPE_R", close(si[PIPE_R]));
@@ -674,7 +674,7 @@ static void git_commits(void *param)
                 result = popen(cmd)
                 rv = func(result) -> _reg_SDR_hu(result)
                                         if (result) ...
-                exit(rv)
+                child_exit(rv)
     
         // parent
         while

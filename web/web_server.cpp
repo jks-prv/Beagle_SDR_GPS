@@ -368,7 +368,7 @@ void web_server_init(ws_init_t type)
 			if (mg_set_option(ui->server, "listening_port", s_port) != NULL) {
 				lprintf("network port %s for \"%s\" in use\n", s_port, ui->name);
 				lprintf("app already running in background?\ntry \"make stop\" (or \"m stop\") first\n");
-				xit(-1);
+				kiwi_exit(-1);
 			}
 			lprintf("webserver for \"%s\" on port %s\n", ui->name, mg_get_option(ui->server, "listening_port"));
 			free(s_port);
