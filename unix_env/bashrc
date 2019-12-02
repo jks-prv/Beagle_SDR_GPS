@@ -105,10 +105,11 @@ alias lt="function _lt () { /bin/ls \$COLOR -lath \$* ; } ; _lt"
 alias ldt="function _ldt () { /bin/ls \$COLOR -ladth \$* ; } ; _ldt"
 
 # grep
+d_gr_exclude="--exclude-dir .git --exclude-dir .svn --exclude-dir ./web/pkgs_maps/leaflet/mapbox-gl"
 alias grep="grep \$COLOR"
 alias gr="grep -i \$COLOR"
-alias g="function _g () { gr -riI --exclude-dir .git --exclude-dir ./web/pkgs_maps/leaflet/mapbox-gl --exclude \*.min.\* \$* . ; } ; _g"
-alias gs="function _gs () { gr -rI --exclude-dir .git --exclude-dir ./web/pkgs_maps/leaflet/mapbox-gl --exclude \*.min.\* \$* . ; } ; _gs"
+alias g="function _g () { gr -riI ${d_gr_exclude} --exclude \*.min.\* \$* . ; } ; _g"
+alias gs="function _gs () { gr -rI ${d_gr_exclude} --exclude \*.min.\* \$* . ; } ; _gs"
 alias g.="function _gdot () { gr -iI \$* * ; } ; _gdot"
 alias gg="function _gfile () { gr -iI \$* ; } ; _gfile"
 alias gt="function _gtail () { tail -n 300 -f \$2 | gr -i --line-buffered \$1 ; } ; _gtail"
@@ -186,14 +187,17 @@ alias ai="echo cd: cdbo cdbdt; echo dt: cddt cpdt m cpdt2 \(cpdtr2\); echo gpio:
 alias cdbo="cd /boot"
 alias cdbdt="cd /boot/dtbs/${d_sys}"
 # dt
-d_dt=/opt/source/dtb-4.14-ti
-d_dt2=/opt/source/dtb-4.14-ti/src/arm
-d_ai=~/Beagle_SDR_GPS/platform/beaglebone_AI
-f_dtb=am5729-beagleboneai.dtb
-f_cape=am5729-beagleboneai-kiwisdr-cape
+# procedure: cddt; cpdt; m; cpdt2; reboot
+d_dt="/opt/source/dtb-4.14-ti"
+d_dt2="/opt/source/dtb-4.14-ti/src/arm"
+d_ai="~/Beagle_SDR_GPS/platform/beaglebone_AI"
+f_dts="am5729-beagleboneai.dts"
+f_dtb="am5729-beagleboneai.dtb"
+f_cape="am5729-beagleboneai-kiwisdr-cape"
 alias cddt="cd ${d_dt}"
 alias cddt2="cd ${d_dt2}"
-alias cpdt="pd ${d_ai}; echo *kiwisdr*[dts,dtsi] ; cp *kiwisdr*[dts,dtsi] ${d_dt2}; popd"
+#alias cpdt="pd ${d_ai}; echo *kiwisdr*[dts,dtsi] ; cp *kiwisdr*[dts,dtsi] ${d_dt2}; echo *allmem*; cp *allmem* ${d_dt2}/${f_dts}; popd"
+alias cpdt="pd ${d_ai}; echo *kiwisdr*[dts,dtsi] ; cp *kiwisdr*[dts,dtsi] ${d_dt2}; echo ${f_dts}; cp ${f_dts} ${d_dt2}; popd"
 alias cpdts="echo STANDARD DTB; cp ${d_dt2}/${f_dtb} /boot/dtbs/${d_sys}/${f_dtb}"
 alias cpdt2="cp ${d_dt2}/${f_cape}*.dtb /boot/dtbs/${d_sys}; cp ${d_dt2}/${f_cape}.dtb /boot/dtbs/${d_sys}/${f_dtb}; sum ${d_dt2}/${f_cape}*.dtb /boot/dtbs/${d_sys}/${f_cape}*.dtb /boot/dtbs/${d_sys}/${f_dtb}"
 alias cpdt3="cp ${d_dt2}/${f_dtb} /boot/dtbs/${d_sys}; sum ${d_dt2}/${f_dtb} /boot/dtbs/${d_sys}/${f_dtb}"
@@ -252,6 +256,7 @@ alias leds="echo heartbeat >${led}0/trigger; echo mmc0 >${led}1/trigger; echo no
 alias hbeat="echo heartbeat >${led}0/trigger; echo heartbeat >${led}1/trigger; echo heartbeat >${led}2/trigger; echo heartbeat >${led}3/trigger"
 
 # BB MMC
+# CAUTION: on the BBAI everything is on mmcblk[01]p1 (i.e. no sep /boot & / anymore)
 alias mmc="lsblk"
 # shows UUID
 alias mmcfs="lsblk -fs"
