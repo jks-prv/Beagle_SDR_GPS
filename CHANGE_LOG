@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.356  December 3, 2019
+    Additional Kiwi API input validation.
+
 v1.353,354  November 29, 2019
     Security fixes. See the Kiwi forum for more information.
     One-time check of Linux/Debian "root" and "debian" account passwords.
