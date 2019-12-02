@@ -806,6 +806,14 @@ void c2s_sound(void *param)
 			snd->out_pkt_iq.h.dummy = 0;
 			gps_tsp->last_gpssec = gps_tsp->gpssec;
 
+			// Forward IQ samples if requested.
+			// Do this before iq_wr_pos incremented in case receive_iq() is substituting test data.
+			if (receive_iq != NULL && mode != MODE_NBFM)
+				receive_iq(rx_chan, 0, ns_out, f_samps);
+			
+			if (receive_iq_tid != (tid_t) NULL && mode != MODE_NBFM)
+				TaskWakeup(receive_iq_tid, TWF_CHECK_WAKING, TO_VOID_PARAM(rx_chan));
+
 			iq->iq_wr_pos = (iq->iq_wr_pos+1) & (N_DPBUF-1);
 
 			TYPECPX *f_sa = f_samps;
@@ -829,13 +837,6 @@ void c2s_sound(void *param)
 					receive_S_meter(rx_chan, sMeterAvg_dB + S_meter_cal);
 			}
 			
-			// forward IQ samples if requested
-			if (receive_iq != NULL && mode != MODE_NBFM)
-				receive_iq(rx_chan, 0, ns_out, f_samps);
-			
-			if (receive_iq_tid != (tid_t) NULL && mode != MODE_NBFM)
-				TaskWakeup(receive_iq_tid, TWF_CHECK_WAKING, TO_VOID_PARAM(rx_chan));
-
 			TYPEMONO16 *r_samps;
 			
             if (mode != MODE_IQ) {
