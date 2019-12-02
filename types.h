@@ -86,6 +86,10 @@ typedef int (*funcPR_t)(void *);
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #define MIN(a,b) ((a)<(b)?(a):(b))
 
+static __inline__ u4_t round_up(u4_t val, u4_t size) { 
+	return (val + size - 1) / size * size;
+}
+
 #define I_DIV_CEIL(v,n) (((v)+(n))/(n))
 
 #define M_2_KM(m) ((m) / 1e3)
