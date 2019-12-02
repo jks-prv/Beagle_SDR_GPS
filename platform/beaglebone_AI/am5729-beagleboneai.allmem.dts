@@ -35,6 +35,7 @@
                 reg = <0x0 0x80000000 0x0 0x40000000>;
         };
 
+/*
         reserved-memory {
                 #address-cells = <2>;
                 #size-cells = <2>;
@@ -99,6 +100,7 @@
                         memory-region = <&cmem_block_mem_1_ocmc3>;
                 };
         };
+*/
 
         vdd_adc: gpioregulator-vdd_adc {
                 compatible = "regulator-gpio";
@@ -1082,6 +1084,7 @@
         status = "okay";
 };
 
+/*
 &ipu1 {
         status = "okay";
         memory-region = <&ipu1_memory_region>;
@@ -1101,6 +1104,7 @@
         status = "okay";
         memory-region = <&dsp2_memory_region>;
 };
+*/
 
 &pruss_soc_bus1 {
         status = "okay";
