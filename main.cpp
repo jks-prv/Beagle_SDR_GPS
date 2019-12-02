@@ -73,7 +73,6 @@ char *fpga_file;
 
 int main(int argc, char *argv[])
 {
-	u2_t *up;
 	int i;
 	int p_gps=0;
 	bool ext_clk = false;
