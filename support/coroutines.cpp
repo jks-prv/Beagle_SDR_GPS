@@ -710,6 +710,8 @@ void TaskCollect()
 
 		c->init = TRUE;
 	}
+	
+	collect_needed = false;
 }
 
 static int our_pid, kiwi_server_pid;
