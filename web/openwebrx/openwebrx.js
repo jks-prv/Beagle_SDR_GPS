@@ -6239,6 +6239,7 @@ function test_audio_suspended()
 function panels_setup()
 {
    var el;
+   var s;
    
 	w3_el("id-ident").innerHTML =
 		'<form id="id-ident-form" action="#" onsubmit="ident_complete(); return false;">' +
@@ -6352,17 +6353,13 @@ function panels_setup()
 	
 	button_9_10(step_9_10);
 
-	w3_el("id-control-mode").innerHTML =
-	   w3_inline('w3-halign-space-between/',
-		   w3_div('id-button-am class-button||onclick="mode_button(event, this)" onmousedown="cancelEvent(event)" onmouseover="mode_over(event, this)"', 'AM'),
-		   w3_div('id-button-amn class-button||onclick="mode_button(event, this)" onmousedown="cancelEvent(event)" onmouseover="mode_over(event, this)"', 'AMN'),
-		   w3_div('id-button-lsb class-button||onclick="mode_button(event, this)" onmousedown="cancelEvent(event)" onmouseover="mode_over(event, this)"', 'LSB'),
-		   w3_div('id-button-usb class-button||onclick="mode_button(event, this)" onmousedown="cancelEvent(event)" onmouseover="mode_over(event, this)"', 'USB'),
-		   w3_div('id-button-cw class-button||onclick="mode_button(event, this)" onmousedown="cancelEvent(event)" onmouseover="mode_over(event, this)"', 'CW'),
-		   w3_div('id-button-cwn class-button||onclick="mode_button(event, this)" onmousedown="cancelEvent(event)" onmouseover="mode_over(event, this)"', 'CWN'),
-		   w3_div('id-button-nbfm class-button||onclick="mode_button(event, this)" onmousedown="cancelEvent(event)" onmouseover="mode_over(event, this)"', 'NBFM'),
-		   w3_div('id-button-iq class-button||onclick="mode_button(event, this)" onmousedown="cancelEvent(event)" onmouseover="mode_over(event, this)"', 'IQ')
-		);
+	s = '';
+	['AM','AMN','LSB','USB','CW','CWN','NBFM','IQ'].forEach(
+	   function(ms) {
+	      s += w3_div('id-button-'+ ms.toLowerCase() +
+	         ' class-button||onclick="mode_button(event, this)" onmousedown="cancelEvent(event)" onmouseover="mode_over(event, this)"', ms);
+	   });
+	w3_el("id-control-mode").innerHTML = w3_inline('w3-halign-space-between/', s);
 
    var d = audioFFT_active? ' w3-disabled' : '';
    var d2 = audioFFT_active? ' w3-disabled||onclick="audioFFT_update()"' : '';
