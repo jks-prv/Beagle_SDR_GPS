@@ -1039,6 +1039,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         // name sent: save new, replace previous (if any)
 		if (!noname) {
 			kiwi_str_decode_inplace(ident_user_m);
+            char *esc = kiwi_str_escape_HTML(ident_user_m);
+            if (esc) {
+                free(ident_user_m);
+                ident_user_m = esc;
+            }
 			kiwi_str_redup(&conn->user, "user", ident_user_m);
 			conn->isUserIP = FALSE;
 			// printf(">>> isUserIP FALSE: %s:%05d setUserIP=%d noname=%d user=%s <%s>\n",
@@ -1084,6 +1089,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	if (n == 1) {
 		kiwi_str_decode_inplace(geo_m);
 		//cprintf(conn, "ch%d recv geoloc from client: %s\n", conn->rx_channel, geo_m);
+		char *esc = kiwi_str_escape_HTML(geo_m);
+		if (esc) {
+		    free(geo_m);
+		    geo_m = esc;
+		}
 		free(conn->geo);
 		conn->geo = geo_m;
 		return true;

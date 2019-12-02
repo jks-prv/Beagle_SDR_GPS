@@ -30,6 +30,7 @@ Boston, MA  02110-1301, USA.
 #include <ctype.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <ctype.h>
 
 
 // kstr: Kiwi C-string package
@@ -275,6 +276,57 @@ void kiwi_str_unescape_quotes(char *str)
 	}
 	
 	*o = '\0';
+}
+
+typedef struct {
+    const char c;
+    const char *rep;
+} esc_HTML_t;
+
+static esc_HTML_t esc_HTML[] = {
+    '<', "&lt;",
+    '>', "&gt;",
+    '&', "&amp;",
+    '"', "&quot;",
+    '\'', "&apos;"
+};
+
+// slow, but doesn't matter given who the current users are
+char *kiwi_str_escape_HTML(char *str)
+{
+    int i, n;
+	char *s, *o, *sn;
+	esc_HTML_t *esc;
+	
+	n = 0;
+	for (s = str; *s != '\0'; s++) {
+	    for (esc = esc_HTML; esc < ARRAY_END(esc_HTML); esc++) {
+            if (*s == esc->c) {
+                n += strlen(esc->rep) - 1;
+                break;
+            }
+        }
+    }
+    
+    if (n == 0) return NULL;
+	sn = (char *) malloc(strlen(str) + n + SPACE_FOR_NULL);
+	o = sn;
+
+	for (s = str; *s != '\0'; s++) {
+	    for (esc = esc_HTML; esc < ARRAY_END(esc_HTML); esc++) {
+            if (*s == esc->c) {
+                o = stpcpy(o, esc->rep);
+                break;
+            }
+        }
+        if (esc == ARRAY_END(esc_HTML)) {
+            if (isprint(*s))
+                *o++ = *s;
+        }
+    }
+	
+	*o = '\0';
+	return sn;
 }
 
 char *kiwi_str_encode(char *src)
