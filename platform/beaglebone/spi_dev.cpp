@@ -189,8 +189,6 @@ static void _spi_dev_init(int spi_clkg, int spi_speed)
 
 void spi_dev_init(int spi_clkg, int spi_speed)
 {
-    _spi_dev_init(spi_clkg, spi_speed);
-
 #ifdef SPI_SHMEM_DISABLE
 #else
     #ifdef CPU_AM3359
@@ -200,9 +198,12 @@ void spi_dev_init(int spi_clkg, int spi_speed)
     #endif
     
     #ifdef CPU_AM5729
+        use_spidev = 1;
         use_async = 1;
     #endif
 #endif
+
+    _spi_dev_init(spi_clkg, spi_speed);
 
     if (use_async) {
         shmem_ipc_setup("kiwi.spi", SIG_IPC_SPI, spi_dev_func);
