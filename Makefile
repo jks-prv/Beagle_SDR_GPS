@@ -65,7 +65,8 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 	# enough parallel make jobs to overcome core stalls from filesystem or nfs delays
 	ifeq ($(BBAI),true)
-		MAKE_ARGS = -j 8
+#		MAKE_ARGS = -j 2
+		MAKE_ARGS =
 	else
 		ifeq ($(DEBIAN_7),true)
 			# Debian 7 gcc runs out of memory compiling edata_always*.cpp in parallel
@@ -124,6 +125,12 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 		CFLAGS += -DKIWI_DEBIAN7
 		# needed for iq_display.cpp et al using g++ (-std=gnu++11 isn't available on Debian 7.9)
 		CPP_FLAGS += -std=gnu++0x
+	else ifeq ($(BBAI),true)
+		# clang bug on BBAI
+		CC = gcc
+		CPP = g++
+		# needed for iq_display.cpp et al using g++
+		CPP_FLAGS += -std=gnu++11
 	else
 		# clang(-3.5) on Debian 8.5 compiles project in 2 minutes vs 5 for gcc
 		CMD_DEPS_DEBIAN = /usr/bin/clang
