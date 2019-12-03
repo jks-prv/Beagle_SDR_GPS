@@ -657,6 +657,7 @@ function extint_select_menu()
 	   for (var i=0; i < extint_names.length; i++) {
          var id = extint_names[i];
          if (!dbgUs && id == 'sig_gen') continue;	// when USE_GEN == 0
+         if (!dbgUs && id == 'devl') continue;
          if (!dbgUs && id == 's4285') continue;	// FIXME: hide while we develop
          if (!dbgUs && id == 'colormap') continue;	// FIXME: hide while we develop
          

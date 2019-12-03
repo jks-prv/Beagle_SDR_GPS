@@ -70,8 +70,8 @@ function config_html()
 		) +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_input_get('', 'S-meter calibration (dB)', 'S_meter_cal', 'admin_int_cb'),
-			w3_input_get('', 'Waterfall calibration (dB)', 'waterfall_cal', 'admin_int_cb'),
-			''
+         w3_slider('id-S_meter_OV_counts//', 'S-meter OV', 'cfg.S_meter_OV_counts', cfg.S_meter_OV_counts, 0, 15, 1, 'config_OV_counts_cb'),
+			w3_input_get('', 'Waterfall calibration (dB)', 'waterfall_cal', 'admin_int_cb')
 		) +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_div('w3-center w3-tspace-8',
@@ -208,6 +208,16 @@ function config_html()
 		'<hr>';
 
 	return w3_div('id-config w3-hide', s1 + s2 + s3 + s4 + s5);
+}
+
+function config_OV_counts_cb(path, val, complete, first)
+{
+   //console.log('config_OV_counts_cb path='+ path +' val='+ val);
+   val = +val;
+	var ov_counts = 1 << val;
+	w3_num_cb(path, val);
+	w3_set_label('S-meter OV if &ge; '+ ov_counts +' ADC OV per 64k samples', path);
+	ext_send('SET ov_counts='+ ov_counts);
 }
 
 function config_clone_cb(id, idx)

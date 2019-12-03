@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.357  December 4, 2019
+    Added S-meter OV averaging control to admin config tab.
+
 v1.356  December 3, 2019
     Additional Kiwi API input validation.
 

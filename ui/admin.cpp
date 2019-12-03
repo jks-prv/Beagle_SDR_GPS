@@ -504,6 +504,18 @@ void c2s_admin(void *param)
 				send_msg(conn, SM_NO_DEBUG, "ADM config_clone_status=%d", status_c);
 				continue;
 			}
+			
+#ifdef USE_SDR
+			int ov_counts;
+			i = sscanf(cmd, "SET ov_counts=%d", &ov_counts);
+			if (i == 1) {
+                // adjust ADC overload detect count mask
+                u4_t ov_counts_mask = (~(ov_counts - 1)) & 0xffff;
+                //printf("ov_counts_mask %d 0x%x\n", ov_counts, ov_counts_mask);
+                spi_set(CmdSetOVMask, 0, ov_counts_mask);
+			    continue;
+			}
+#endif
 
 
 ////////////////////////////////
