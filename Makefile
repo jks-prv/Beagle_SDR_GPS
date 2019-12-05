@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 357
+VERSION_MIN = 358
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -131,6 +131,8 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 		CPP = g++
 		# needed for iq_display.cpp et al using g++
 		CPP_FLAGS += -std=gnu++11
+		# clang still used by other things (e_cpu etc)
+		CMD_DEPS_DEBIAN = /usr/bin/clang
 	else
 		# clang(-3.5) on Debian 8.5 compiles project in 2 minutes vs 5 for gcc
 		CMD_DEPS_DEBIAN = /usr/bin/clang

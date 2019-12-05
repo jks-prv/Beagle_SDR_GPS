@@ -215,7 +215,7 @@ function config_OV_counts_cb(path, val, complete, first)
    //console.log('config_OV_counts_cb path='+ path +' val='+ val);
    val = +val;
 	var ov_counts = 1 << val;
-	w3_num_cb(path, val);
+	admin_int_cb(path, val);
 	w3_set_label('S-meter OV if &ge; '+ ov_counts +' ADC OV per 64k samples', path);
 	ext_send('SET ov_counts='+ ov_counts);
 }
