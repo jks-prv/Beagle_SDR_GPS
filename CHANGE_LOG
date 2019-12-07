@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.359  December 7, 2019
+    Performance improvements.
+
 v1.358  December 6, 2019
     Fix S-meter OV averaging control to update configuration value on each change.
 
