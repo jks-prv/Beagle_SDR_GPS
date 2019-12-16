@@ -13,6 +13,9 @@
 	"RX_ASL":"30m",
 	"RX_GMAP":"Tauranga/@-37.7039674,176.1586309,12z"
 },
+"init":{
+    "cw_offset":500
+},
 "rx_name":"0-30 MHz SDR, ZL/KF6VO, New Zealand",
 "rx_device":"KiwiSDR on BeagleBone",
 "rx_location":"Tauranga, New Zealand",
