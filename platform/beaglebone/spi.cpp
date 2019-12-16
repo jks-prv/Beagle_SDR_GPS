@@ -158,7 +158,7 @@ void spi_init()
 	junk = &SPI_SHMEM->spi_junk_miso;
 	prev = junk;
 	junk->status = BUSY;
-	CreateTaskF(spi_pump, 0, SPIPUMP_PRIORITY, CTF_BUSY_HELPER, 0);
+	CreateTaskF(spi_pump, 0, SPIPUMP_PRIORITY, CTF_BUSY_HELPER);
 }
 
 static void spi_scan(int wait, SPI_MOSI *mosi, int tbytes=0, SPI_MISO *miso=junk, int rbytes=0) {

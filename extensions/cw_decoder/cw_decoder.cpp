@@ -90,7 +90,7 @@ bool cw_decoder_msgs(char *msg, int rx_chan)
 		CwDecode_Init(rx_chan);
 
         if (!e->task_created) {
-			e->tid = CreateTaskF(cw_task, TO_VOID_PARAM(rx_chan), EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL), 0);
+			e->tid = CreateTaskF(cw_task, TO_VOID_PARAM(rx_chan), EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL));
             e->task_created = true;
         }
 		
