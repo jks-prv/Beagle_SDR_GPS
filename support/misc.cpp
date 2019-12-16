@@ -716,3 +716,15 @@ void set_cpu_affinity(int cpu)
     scall("set_affinity", sched_setaffinity(getpid(), sizeof(cpu_set_t), &cpu_set));
 #endif
 }
+
+u4_t pos_wrap_diff(u4_t next, u4_t prev, u4_t size)
+{
+	u4_t diff;
+	
+	if (next >= prev)
+		diff = next - prev;
+	else
+		diff = ((size-1) - prev) + next;	// i.e. amount outside prev - next
+	
+	return diff;
+}
