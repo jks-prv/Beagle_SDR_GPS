@@ -1,3 +1,5 @@
+include ../Makefile.comp.inc
+
 UTIL = audio
 UTILS = audio integrate hog multiply ext64 decimate security wspr e1b_fec viterbi27_test e1b_code
 
@@ -23,16 +25,6 @@ ifeq ($(UTIL),wspr)
  CMD = cat $(FN_IN) | csdr convert_s16_f | csdr plain_interpolate_cc 32 | csdr bandpass_fir_fft_cc -0.015625 0.015625 0.002 | dd bs=8 count=1440000 > $(FN_OUT); xz --keep --force $(FN_OUT)
 endif
 
-DEBIAN_DEVSYS = $(shell grep -q -s Debian /etc/dogtag; echo $$?)
-DEBIAN = 0
-NOT_DEBIAN = 1
-DEVSYS = 2
-
-ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-	CFLAGS += -DDEVSYS
-else
-endif
-
 ARCH = sitara
 PLATFORM = beaglebone_black
 PKGS = pkgs/mongoose pkgs/jsmn pkgs/parson
@@ -46,10 +38,10 @@ I = $(addprefix -I../,$(DIRS)) -I/usr/local/include
 all: $(UTIL)
 
 $(UTIL): $(UTIL).o $(MORE)
-	g++ $(CFLAGS) $(I) -o $@ $?
+	$(CPP) $(CFLAGS) $(I) -o $@ $?
 
 %.o: %.cpp
-	clang++ $(CFLAGS) $(I) -c $<
+	$(CPP) $(CFLAGS) $(I) -c $<
 
 run: $(UTIL)
 	./$(UTIL) $(ARGS)

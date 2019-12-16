@@ -96,7 +96,9 @@ const char *edata_lookup(embedded_files_t files[], const char *name, size_t *siz
     return NULL;
 }
 
-u4_t mtime_obj_keep_edata_always_o, mtime_obj_keep_edata_always2_o;
+u4_t mtime_obj_keep_edata_always_o;
+//u4_t mtime_obj_keep_edata_always2_o;
+
 int web_caching_debug;
 
 static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *mtime, bool *is_file)
@@ -143,6 +145,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 		}
 	}
 
+#if 0
 	if (!data) {
 		data = edata_lookup(edata_always2, uri, size);
 		if (data) {
@@ -162,6 +165,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 #endif
 		}
 	}
+#endif
 
     if (data)
 	    web_printf_all("EDATA           %s, %s, %s: mtime=%lu/%lx %s\n", type, subtype, reason, *mtime, *mtime, uri);

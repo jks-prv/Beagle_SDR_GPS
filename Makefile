@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 357
+VERSION_MIN = 359
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -11,36 +11,20 @@ DEBIAN_VER = 8.5
 #
 # Copyright (c) 2014-2019 John Seamons, ZL/KF6VO
 #
-
-#
 # This Makefile can be run on both a build machine (I use a MacBook Pro) and the
 # BeagleBone Black target (Debian release).
-# Which machine you're on is figured out by this:
-#
-#	DEBIAN_DEVSYS = $(shell grep -q -s Debian /etc/dogtag; echo $$?)
-#	DEBIAN = 0
-#	NOT_DEBIAN = 1
-#	DEVSYS = 2
-#	ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
-#		...
-#	ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-#		...
-#
-# The '/etc/dogtag' file is present on the Beagle and not on the dev machine.
-# Grep returns 0 if "Debian" is found in /etc/dogtag, 1 if it isn't and 2 if /etc/dogtag doesn't exist.
-# This same mechanism is used in the wrapper shell script because device tree files need to be
-# loaded only on the Beagle.
 #
 
 #
 # installing FFTW:
-#
 #	to create /usr/local/lib/libfftw3f.a (the 'f' in '3f' means single precision)
+#
 #	Mac:
 #		download the sources from fftw.org
 #		./configure --enable-single
 #		make
 #		(sudo) make install
+#
 #	BeagleBone Black, Debian:
 #		the Makefile automatically installs the package using apt-get
 #
@@ -49,19 +33,10 @@ DEBIAN_VER = 8.5
 ################################
 # build environment detection
 ################################
-DEBIAN_DEVSYS = $(shell grep -q -s Debian /etc/dogtag; echo $$?)
-DEBIAN = 0
-NOT_DEBIAN = 1
-DEVSYS = 2
 
-UNAME = $(shell uname)
-SYS = $(shell uname -r)
-SYS_MAJ = $(shell uname -r | awk '{print $1}' | cut -d. -f1)
-SYS_MIN = $(shell uname -r | awk '{print $1}' | cut -d. -f2)
+include Makefile.comp.inc
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
-	BBAI = $(shell cat /proc/device-tree/model | grep -q -s "BeagleBone AI" && echo true)
-	DEBIAN_7 = $(shell cat /etc/debian_version | grep -q -s "7\." && echo true)
 
 	# enough parallel make jobs to overcome core stalls from filesystem or nfs delays
 	ifeq ($(BBAI),true)
@@ -92,70 +67,6 @@ ifeq ($(BBAI),true)
 else
 	CPU = AM3359
 	PLATFORM = beaglebone_black
-endif
-
-
-################################
-# compiler/option selection
-################################
-
-# devsys
-ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-	ifeq ($(UNAME),Darwin)
-		CC = clang
-		CPP = clang++
-		CPP_FLAGS += -std=gnu++11 -I/opt/local/include
-	else
-		# try clang on your development system (if you have it) -- it's better
-		#CC = clang
-		#CPP = clang++
-	
-		CC = gcc
-		CPP = g++
-	endif
-endif
-
-
-# Debian target
-ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
-	ifeq ($(DEBIAN_7),true)
-		# clang 3.0 available on Debian 7.9 doesn't work
-		CC = gcc
-		CPP = g++
-		CFLAGS += -DKIWI_DEBIAN7
-		# needed for iq_display.cpp et al using g++ (-std=gnu++11 isn't available on Debian 7.9)
-		CPP_FLAGS += -std=gnu++0x
-	else ifeq ($(BBAI),true)
-		# clang bug on BBAI
-		CC = gcc
-		CPP = g++
-		# needed for iq_display.cpp et al using g++
-		CPP_FLAGS += -std=gnu++11
-	else
-		# clang(-3.5) on Debian 8.5 compiles project in 2 minutes vs 5 for gcc
-		CMD_DEPS_DEBIAN = /usr/bin/clang
-		CC = clang
-
-		# To use clang address sanitizer build with "make ASAN=1 OPT=O0" on target using alias "masan"
-		# There are shell aliases "masan" and "masan0" for these.
-		# Use gdb "asan" alias to set breakpoint necessary to backtrace address errors.
-		ifeq ($(ASAN),)
-			CPP = clang++
-		else
-			CPP = clang++-3.9
-			CFLAGS += -fsanitize=address -fno-omit-frame-pointer
-			#LDFLAGS += -v -fsanitize=address
-			LDFLAGS += -fsanitize=address
-		endif
-
-		# needed for iq_display.cpp et al using clang 3.5
-		CPP_FLAGS += -std=gnu++11
-
-		#CC = gcc
-		#CPP = g++
-		# needed for iq_display.cpp et al using g++
-		#CPP_FLAGS += -std=gnu++11
-	endif
 endif
 
 # make the compiles fast on dev system
@@ -203,18 +114,25 @@ KEEP_DIR = $(BUILD_DIR)/obj_keep
 GEN_DIR = $(BUILD_DIR)/gen
 TOOLS_DIR = $(BUILD_DIR)/tools
 
+ifeq ($(OPT),O0)
+	OBJ_DIR_DEFAULT = $(OBJ_DIR)
+else
+	OBJ_DIR_DEFAULT = $(OBJ_DIR_O3)
+endif
+
 PKGS = pkgs/mongoose
 PKGS_O3 = pkgs/jsmn pkgs/sha256 pkgs/TNT_JAMA
 
 # Each (internal) extension can have an optional Makefile:
-# The extension can opt-out of being included via EXT_SKIP (e.g. BBAI-only etc.)
+# The extension can opt-out of being included via EXT_SKIP (e.g. BBAI only, not Debian 7 etc.)
 # EXT_SUBDIRS define any sub-dirs within the extension.
 # EXT_DEFINES set any additional defines for the extension.
-# Same for additional required libs via LIBS.
+# Same for additional required libs via LIBS_DEP and LIBS.
 # All of these should be appended to using "+="
 EXT_SKIP =
 EXT_SUBDIRS =
 EXT_DEFINES =
+LIBS_DEP =
 LIBS =
 -include $(wildcard extensions/*/Makefile)
 
@@ -238,11 +156,9 @@ _DIRS_O3 += . $(PKGS_O3) platform/beaglebone platform/$(PLATFORM) $(EXT_DIRS) $(
 ifeq ($(OPT),O0)
 	DIRS = $(_DIRS) $(_DIRS_O3)
 	DIRS_O3 =
-	OBJ_DIR_WEB = $(OBJ_DIR)
 else
 	DIRS = $(_DIRS)
 	DIRS_O3 = $(_DIRS_O3)
-	OBJ_DIR_WEB = $(OBJ_DIR_O3)
 endif
 
 VPATH = $(DIRS) $(DIRS_O3)
@@ -260,9 +176,9 @@ CFLAGS_UNSAFE_OPT = -funsafe-math-optimizations
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	# development machine, compile simulation version
-	CFLAGS += -g -pipe -MMD -DDEBUG -DDEVSYS
-	LIBS += -L/usr/local/lib  -L/opt/local/lib -lfftw3f -lfftw3
-	LIBS_DEP = /usr/local/lib/libfftw3f.a /usr/local/lib/libfftw3.a
+	CFLAGS += -g -pipe -MMD -DDEBUG
+	LIBS += -L/usr/local/lib -lfftw3f -lfftw3
+	LIBS_DEP += /usr/local/lib/libfftw3f.a /usr/local/lib/libfftw3.a
 	CMD_DEPS =
 	DIR_CFG = unix_env/kiwi.config
 	CFG_PREFIX = dist.
@@ -274,7 +190,7 @@ else
 	#CFLAGS += -O3
 	CFLAGS += -g -pipe -MMD -DDEBUG -DHOST
 	LIBS += -lfftw3f -lfftw3 -lutil
-	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
+	LIBS_DEP += /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
 	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng /sbin/ethtool /usr/bin/sshpass
 	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget
 	DIR_CFG = /root/kiwi.config
@@ -310,17 +226,25 @@ ifeq ($(DEBIAN_7),true)
 	sed -e 's/ftp\.us/archive/' < /etc/apt/sources.list >/tmp/sources.list
 	mv /tmp/sources.list /etc/apt/sources.list
 endif
-	-apt-get update
-	-apt-get install debian-archive-keyring
-	-apt-get update
+	-apt-get -y update
+	-apt-get -y install debian-archive-keyring
+	-apt-get -y update
 	@mkdir -p $(DIR_CFG)
 	touch $(KEYRING)
 
 /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a:
 	apt-get -y install libfftw3-dev
 
-/usr/bin/clang:
-	apt-get -y install clang
+# NB not a typo: "clang-6.0" vs "clang-7"
+
+/usr/bin/clang-6.0:
+	# only available recently?
+	-apt-get -y update
+	apt-get -y install clang-6.0
+
+/usr/bin/clang-7:
+	-apt-get -y update
+	apt-get -y install clang-7
 
 /usr/bin/curl:
 	-apt-get -y install curl
@@ -372,8 +296,10 @@ endif
 SRC_DEPS = 
 BIN_DEPS = KiwiSDR.rx4.wf4.bit KiwiSDR.rx8.wf2.bit KiwiSDR.rx3.wf3.bit KiwiSDR.rx14.wf0.bit
 #BIN_DEPS = 
-DEVEL_DEPS = $(OBJ_DIR_WEB)/web_devel.o $(KEEP_DIR)/edata_always.o $(KEEP_DIR)/edata_always2.o
-EMBED_DEPS = $(OBJ_DIR_WEB)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o  $(KEEP_DIR)/edata_always2.o
+DEVEL_DEPS = $(OBJ_DIR_DEFAULT)/web_devel.o $(KEEP_DIR)/edata_always.o
+#DEVEL_DEPS += $(KEEP_DIR)/edata_always2.o
+EMBED_DEPS = $(OBJ_DIR_DEFAULT)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o
+#EMBED_DEPS += $(KEEP_DIR)/edata_always2.o
 EXTS_DEPS = $(OBJ_DIR)/ext_init.o
 
 # these MUST be run by single-threaded make before use of -j in sub makes
@@ -405,8 +331,8 @@ else
 endif
 # take this opportunity to update list of include (-I) dirs since Make will be re-invoked
 	@echo "----------------"
-	echo $(I) > $(GEN_DIR)/Makefile.includes
-	echo $(EXT_DEFINES) > $(GEN_DIR)/Makefile.defines
+	echo $(I) > $(GEN_DIR)/Makefile.includes.inc
+	echo $(EXT_DEFINES) > $(GEN_DIR)/Makefile.defines.inc
 	@echo "----------------"
 
 .PHONY: c_ext_clang_conv_all
@@ -538,7 +464,8 @@ $(FILE_OPTIM): $(FILE_OPTIM_SRC)
 -include web/Makefile
 
 # NB: $(FILE_OPTIM) *MUST* be here so "make install" builds EDATA_EMBED properly when NFS_READ_ONLY == yes
-EDATA_DEP = web/kiwi/Makefile web/openwebrx/Makefile web/pkgs/Makefile web/extensions/Makefile $(wildcard extensions/*/Makefile) $(FILE_OPTIM)
+#EDATA_DEP = web/kiwi/Makefile web/openwebrx/Makefile web/pkgs/Makefile web/extensions/Makefile $(wildcard extensions/*/Makefile) $(FILE_OPTIM)
+EDATA_DEP = web/kiwi/Makefile web/openwebrx/Makefile web/pkgs/Makefile web/extensions/Makefile $(FILE_OPTIM)
 
 .PHONY: foptim_gen foptim_list foptim_clean
 
@@ -566,11 +493,11 @@ foptim_clean: roptim_embed roptim_ext roptim_maps
 
 FILES_EMBED_SORTED_NW = $(sort $(EMBED_NW) $(EXT_EMBED_NW) $(PKGS_MAPS_EMBED_NW))
 FILES_ALWAYS_SORTED_NW = $(sort $(FILES_ALWAYS))
-FILES_ALWAYS2_SORTED_NW = $(sort $(FILES_ALWAYS2))
+#FILES_ALWAYS2_SORTED_NW = $(sort $(FILES_ALWAYS2))
 
 EDATA_EMBED = $(GEN_DIR)/edata_embed.cpp
 EDATA_ALWAYS = $(GEN_DIR)/edata_always.cpp
-EDATA_ALWAYS2 = $(GEN_DIR)/edata_always2.cpp
+#EDATA_ALWAYS2 = $(GEN_DIR)/edata_always2.cpp
 
 $(EDATA_EMBED): $(EDATA_DEP) $(addprefix web/,$(FILES_EMBED_SORTED_NW))
 	(cd web; perl mkdata.pl edata_embed $(FILES_EMBED_SORTED_NW) >../$(EDATA_EMBED))
@@ -578,8 +505,8 @@ $(EDATA_EMBED): $(EDATA_DEP) $(addprefix web/,$(FILES_EMBED_SORTED_NW))
 $(EDATA_ALWAYS): $(EDATA_DEP) $(addprefix web/,$(FILES_ALWAYS_SORTED_NW))
 	(cd web; perl mkdata.pl edata_always $(FILES_ALWAYS_SORTED_NW) >../$(EDATA_ALWAYS))
 
-$(EDATA_ALWAYS2): $(EDATA_DEP) $(FILES_ALWAYS2_SORTED_NW)
-	perl web/mkdata.pl edata_always2 $(FILES_ALWAYS2_SORTED_NW) >$(EDATA_ALWAYS2)
+#$(EDATA_ALWAYS2): $(EDATA_DEP) $(FILES_ALWAYS2_SORTED_NW)
+#	perl web/mkdata.pl edata_always2 $(FILES_ALWAYS2_SORTED_NW) >$(EDATA_ALWAYS2)
 
 
 ################################
@@ -600,6 +527,7 @@ c_ext_clang_conv_debug:
 	@echo BUILD_DIR = $(BUILD_DIR)
 	@echo OBJ_DIR = $(OBJ_DIR)
 	@echo OBJ_DIR_O3 = $(OBJ_DIR_O3)
+	@echo OBJ_DIR_DEFAULT = $(OBJ_DIR_DEFAULT)
 	@echo CMD_DEPS = $(CMD_DEPS)
 	@echo OPT = $(OPT)
 	@echo CFLAGS = $(CFLAGS) $(CPP_FLAGS)
@@ -614,7 +542,7 @@ c_ext_clang_conv_debug:
 	@echo FILES_EMBED = $(FILES_EMBED)
 	@echo FILES_EXT = $(FILES_EXT)
 	@echo FILES_ALWAYS = $(FILES_ALWAYS)
-	@echo FILES_ALWAYS2 = $(FILES_ALWAYS2)
+#	@echo FILES_ALWAYS2 = $(FILES_ALWAYS2)
 	@echo
 	@echo EXT_SKIP = $(EXT_SKIP)
 	@echo EXT_SKIP1 = $(EXT_SKIP1)
@@ -655,10 +583,10 @@ UI_LIST = $(subst $(space),,$(KIWI_UI_LIST))
 
 VERSION = -DVERSION_MAJ=$(VERSION_MAJ) -DVERSION_MIN=$(VERSION_MIN)
 VER = v$(VERSION_MAJ).$(VERSION_MIN)
-FLAGS += @$(GEN_DIR)/Makefile.includes $(VERSION) -DKIWI -DARCH_$(ARCH) -DCPU_$(CPU) -DARCH_CPU=$(CPU) -DPLATFORM_$(PLATFORM)
+FLAGS += @$(GEN_DIR)/Makefile.includes.inc $(VERSION) -DKIWI -DKIWISDR -DARCH_$(ARCH) -DCPU_$(CPU) -DARCH_CPU=$(CPU) -DPLATFORM_$(PLATFORM)
 FLAGS += -DKIWI_UI_LIST=$(UI_LIST) -DDIR_CFG=\"$(DIR_CFG)\" -DCFG_PREFIX=\"$(CFG_PREFIX)\"
 FLAGS += -DBUILD_DIR=\"$(BUILD_DIR)\" -DREPO=\"$(REPO)\" -DREPO_NAME=\"$(REPO_NAME)\"
-FLAGS += @$(GEN_DIR)/Makefile.defines
+FLAGS += @$(GEN_DIR)/Makefile.defines.inc
 CSRC = $(notdir $(CFILES))
 CSRC_O3 = $(notdir $(CFILES_O3))
 OBJECTS1 = $(CSRC:%.c=$(OBJ_DIR)/%.o)
@@ -721,11 +649,11 @@ POST_PROCESS_DEPS = \
 	sed -e 's/^ *//' -e 's/$$/:/' >> $(df).d; \
 	rm -f $(df).d.tmp
 
-$(OBJ_DIR_WEB)/web_devel.o: web/web.cpp config.h
+$(OBJ_DIR_DEFAULT)/web_devel.o: web/web.cpp config.h
 	$(CPP) $(CFLAGS) $(FLAGS) -DEDATA_DEVEL -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
-$(OBJ_DIR_WEB)/web_embed.o: web/web.cpp config.h
+$(OBJ_DIR_DEFAULT)/web_embed.o: web/web.cpp config.h
 	$(CPP) $(CFLAGS) $(FLAGS) -DEDATA_EMBED -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
@@ -737,9 +665,9 @@ $(KEEP_DIR)/edata_always.o: $(EDATA_ALWAYS)
 	$(CPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
-$(KEEP_DIR)/edata_always2.o: $(EDATA_ALWAYS2)
-	$(CPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
-	$(POST_PROCESS_DEPS)
+#$(KEEP_DIR)/edata_always2.o: $(EDATA_ALWAYS2)
+#	$(CPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
+#	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/ext_init.o: $(GEN_DIR)/ext_init.cpp
 	$(CPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
@@ -916,6 +844,8 @@ else
 	install -D -o root -g root -m 0644 unix_env/gdb_valgrind ~root/.gdb_valgrind
 #
 	install -D -o root -g root -m 0644 $(DIR_CFG_SRC)/v.sed $(DIR_CFG)/v.sed
+#
+	rsync -av --delete $(DIR_CFG_SRC)/samples/ $(DIR_CFG)/samples
 
 # only install post-customized config files if they've never existed before
 ifneq ($(EXISTS_BASHRC_LOCAL),true)
@@ -1078,7 +1008,7 @@ endif
 REPO = https://github.com/jks-prv/$(REPO_NAME).git
 
 # selectively transfer files to the target so everything isn't compiled each time
-EXCLUDE_RSYNC = ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" \
+EXCLUDE_RSYNC = ".DS_Store" ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" \
 	"verilog/kiwi.gen.vh" "web/edata*" "node_modules" "morse-pro-compiled.js"
 RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) . root@$(HOST):~root/$(REPO_NAME)
 RSYNC = rsync $(RSYNC_ARGS)
