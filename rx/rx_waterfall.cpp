@@ -1143,6 +1143,7 @@ if (i == 516) printf("\n");
 	out->seq = wf->snd_seq;
 	//if (out->seq != wf->snd->seq)
 	//{ real_printf("%d ", wf->snd->seq - out->seq); fflush(stdout); }
+	//{ real_printf("ws%d,%d ", out->seq, wf->snd->seq); fflush(stdout); }
 }
 
 void c2s_waterfall_shutdown(void *param)

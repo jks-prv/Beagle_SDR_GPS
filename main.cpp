@@ -32,12 +32,17 @@ Boston, MA  02110-1301, USA.
 #include "spi_dev.h"
 #include "gps.h"
 #include "coroutines.h"
-#include "debug.h"
 #include "cfg.h"
 #include "net.h"
 #include "ext_int.h"
 #include "sanitizer.h"
 #include "shmem.h"
+
+#include "debug.h"
+
+#ifdef EV_MEAS
+    #warning NB: EV_MEAS is enabled
+#endif
 
 #include <string.h>
 #include <stdio.h>
