@@ -29,6 +29,7 @@ alias tr="traceroute"
 alias al="alias"
 alias soc="source ~/.profile"
 alias pe="printenv"
+alias se="setenv"
 alias cdp="cd \${PROJ}"
 alias cd2="cd \${PROJ2}"
 alias cd3="cd \${PROJ3}"
@@ -68,13 +69,13 @@ alias ansi3='for c in $(seq 0 255) ; do printf "\e[48;5;%sm %3s \e[97m %3s \e[0m
 # make
 alias m="make"
 alias mh="make help"
-alias m0="make OPT=O0"
+alias m0="make OPT=0"
 alias masan="make ASAN=1"
-alias masan0="make ASAN=1 OPT=O0"
+alias masan0="make ASAN=1 OPT=0"
 # NB: SAN is broken, not ASAN
-alias msan="echo the clang 3.5.0 static analyzer (SAN) used by the Kiwi Debian 8 release gives false positives"
+alias msan="echo (try now w/ clang-6.0) the clang 3.5.0 static analyzer (SAN) used by the Kiwi Debian 8 release gives false positives"
 alias mi="make install"
-alias mi0="make install OPT=O0"
+alias mi0="make install OPT=0"
 alias mc="make clean"
 alias mcd="make clean_dist"
 alias md="make debug"
@@ -145,7 +146,7 @@ alias gcoms="git log --pretty=format:'%h %ad %s' --date=short"
 # gco master
 
 # systemctl
-alias sc="echo systemctl: sctl ls=list_unit lsa=list_all_units scs=service_status sa/st=start/stop re=reload di/en"
+alias sc="echo systemctl: sctl=systemctl ls=list_unit lsa=list_all_units scs=service_status sa,st=start,stop re=reload di,en=disable,enable"
 alias sctl="function _sys () { systemctl \$* ; } ; _sys"
 alias scls="function _syg () { systemctl list-units | gr -i \$* ; systemctl list-unit-files | gr -i \$* ; } ; _syg"
 alias sclsa="function _syg () { systemctl list-units ; systemctl list-unit-files ; } ; _syg"
@@ -158,10 +159,12 @@ alias scen="function _sys () { systemctl --lines=100 enable \${*}.service ; } ; 
 alias sa="service --status-all"
 
 # packages
-alias pk="echo pk: s=search_available ls=list_installed ver=show_vers i=install rm=remove ar=autoremove; echo pk: up=update upp=single_pkg ug=dist-upgrade uug=upgrade fug=full-upgrade; echo pk: c=clean sz=sizes f=which_pkg_has_file fu=file_update fi=files_installed co=cape_overlays"
+alias pk="echo pk: s=search_available ls=list_installed ver,vers,pol=versions i=install rm=remove ar=autoremove; echo pk: up=update upp=single_pkg ug=dist-upgrade uug=upgrade fug=full-upgrade; echo pk: c=clean sz=sizes f=which_pkg_has_file fu=file_update fi=files_installed co=cape_overlays"
 alias pks="echo available pkgs:; apt-cache search"
 alias pkls="echo installed pkgs:; dpkg -l | gr"
 alias pkver="apt-cache showpkg"
+alias pkvers="apt-cache madison"
+alias pkpol="apt-cache policy"
 alias pkup="apt-get -y install debian-archive-keyring; apt-get update"
 # update(upgrade) single package
 alias pkupp="apt-get install --only-upgrade"

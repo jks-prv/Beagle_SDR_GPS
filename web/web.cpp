@@ -564,6 +564,11 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 
     //if (web_caching_debug == 0) web_caching_debug = bg? 3:1;
 
+
+    ////////////////////////////////
+    // web socket
+    ////////////////////////////////
+
 	if (mc->is_websocket) {
 		// This handler is called for each incoming websocket frame, one or more
 		// times for connection lifetime.
@@ -602,7 +607,10 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 	}
     
     
+    ////////////////////////////////
     // not web socket
+    ////////////////////////////////
+
     char remote_ip[NET_ADDRSTRLEN];
     check_if_forwarded(NULL, mc, remote_ip);
     

@@ -2655,7 +2655,7 @@ function admin_nav_blur(id, cb_arg)
 
 var gps = null;
 
-function admin_msg(data)
+function admin_msg(param)
 {
    //console.log('admin_msg: '+ param[0]);
    switch (param[0]) {
@@ -2717,13 +2717,18 @@ function admin_msg(data)
             console.log('kiwi_msg() gps_az_el_history_cb: JSON parse fail');
             console.log(gps_az_el_json);
          }
-         break;					
+         break;
 
 		case "dx_json":
 			console.log('dx_json len='+ param[1].length);
 			dx_json(JSON.parse(param[1]));
-			break;					
+			break;
+		
+		default:
+		   return false;
    }
+   
+   return true;
 }
 
 var log_msg_idx, log_msg_not_shown = 0;
@@ -2753,7 +2758,7 @@ function admin_recv(data)
 
 			case "init":
 		      // rx_chan == rx_chans for admin connections (e.g. 4 when ch = 0..3 for user connections)
-				rx_chans = rx_chan = param[1];
+				rx_chans = rx_chan = +param[1];
 				//console.log("ADMIN init rx_chans="+rx_chans);
 				
 				if (rx_chans == -1) {
@@ -2871,7 +2876,6 @@ function admin_recv(data)
 				
 			default:
 				console.log('ADMIN UNKNOWN: '+ param[0] +'='+ param[1]);
-				break;
 		}
 	}
 }
