@@ -204,7 +204,7 @@ struct TASK {
 	u4_t last_run_time, last_last_run_time;
 	u4_t spi_retry;
 	int stack_hiwat;
-	u4_t user_param;
+	void *user_param;
 };
 
 static bool task_package_init;
@@ -1552,18 +1552,14 @@ void TaskSetFlags(u4_t flags)
 	t->flags = flags;
 }
 
-u4_t TaskGetUserParam(int id)
+void *TaskGetUserParam()
 {
-    TASK *t = Tasks + id;
-    
-    return t->user_param;
+    return cur_task->user_param;
 }
 
-void TaskSetUserParam(int id, u4_t param)
+void TaskSetUserParam(void *param)
 {
-    TASK *t = Tasks + id;
-    
-    t->user_param = param;
+    cur_task->user_param = param;
 }
 
 

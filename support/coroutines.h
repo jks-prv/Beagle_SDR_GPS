@@ -141,8 +141,8 @@ void TaskForkChild();
 bool TaskIsChild();
 
 u4_t TaskID();
-u4_t TaskGetUserParam(int id);
-void TaskSetUserParam(int id, u4_t param);
+void *TaskGetUserParam();
+void TaskSetUserParam(void *param);
 
 // don't collide with PRINTF_FLAGS
 #define	TDUMP_PRINTF    0x00ff
