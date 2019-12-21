@@ -130,13 +130,13 @@ function cw_decoder_controls_setup()
 	cw.canvas.ctx = cw.canvas.getContext("2d");
 
    graph_init(cw.canvas, { dBm:0, speed:1, averaging:true });
-	//graph_mode(1);
-	graph_mode(0, 55-10, 30+5);
+	//graph_mode('auto');
+	graph_mode('fixed', 55-10, 30+5);
 	graph_clear();
 	cw_decoder_threshold_cb('cw.threshold', cw.threshold);
 
    ext_set_data_height(300);
-	ext_set_controls_width_height(550, 90);
+	ext_set_controls_width_height(550, 100);
 	
 	var p = ext_param();
 	cw.pboff_locked = parseFloat(p);

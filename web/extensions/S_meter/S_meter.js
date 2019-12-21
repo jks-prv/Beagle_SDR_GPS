@@ -136,7 +136,7 @@ function S_meter_controls_setup()
 	S_meter.data_canvas.ctx = S_meter.data_canvas.getContext("2d");
 
    graph_init(S_meter.data_canvas, { dBm:1, averaging:true });
-	graph_mode((S_meter.range_i == S_meter.range_AUTO)? 1:0, S_meter.maxdb, S_meter.mindb);
+	graph_mode((S_meter.range_i == S_meter.range_AUTO)? 'auto' : 'fixed', S_meter.maxdb, S_meter.mindb);
 
 	S_meter_environment_changed( {resize:1} );
 	ext_set_controls_width_height(250);
@@ -202,7 +202,7 @@ function S_meter_range_select_cb(path, idx, first)
 	} else {
 		w3_hide('id-S_meter-scale-sliders');
 	}
-	graph_mode((S_meter.range_i == S_meter.range_AUTO)? 1:0, S_meter.maxdb, S_meter.mindb);
+	graph_mode((S_meter.range_i == S_meter.range_AUTO)? 'auto' : 'fixed', S_meter.maxdb, S_meter.mindb);
 }
 
 function S_meter_maxdb_cb(path, val, complete)
@@ -211,7 +211,7 @@ function S_meter_maxdb_cb(path, val, complete)
    maxdb = Math.max(S_meter.mindb, maxdb);		// don't let min & max cross
 	w3_num_cb(path, maxdb.toString());
 	w3_set_label('Scale max '+ maxdb.toString() +' dBm', path);
-	graph_mode((S_meter.range_i == S_meter.range_AUTO)? 1:0, S_meter.maxdb, S_meter.mindb);
+	graph_mode((S_meter.range_i == S_meter.range_AUTO)? 'auto' : 'fixed', S_meter.maxdb, S_meter.mindb);
 }
 
 function S_meter_mindb_cb(path, val, complete)
@@ -220,7 +220,7 @@ function S_meter_mindb_cb(path, val, complete)
    mindb = Math.min(mindb, S_meter.maxdb);		// don't let min & max cross
 	w3_num_cb(path, mindb.toString());
 	w3_set_label('Scale min '+ mindb.toString() +' dBm', path);
-	graph_mode((S_meter.range_i == S_meter.range_AUTO)? 1:0, S_meter.maxdb, S_meter.mindb);
+	graph_mode((S_meter.range_i == S_meter.range_AUTO)? 'auto' : 'fixed', S_meter.maxdb, S_meter.mindb);
 }
 
 function S_meter_speed_cb(path, val, complete)

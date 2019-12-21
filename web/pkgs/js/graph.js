@@ -30,7 +30,8 @@ var gr = {
    bg_color: 'ghostWhite',
    grid_color: 'lightGrey',
    scale_color: 'white',
-   plot_color: 'black'
+   
+   last_last: 0
 };
 
 function graph_init(canvas, opt)
@@ -39,9 +40,10 @@ function graph_init(canvas, opt)
    gr.ct = canvas.ctx;
 
    gr.auto = 1;
-   gr.dBm = opt.dBm || 0;
-   gr.speed = opt.speed || 1;
-   gr.averaging = opt.averaging || false;
+   gr.dBm = w3_opt(opt, 'dBm', 0);
+   gr.speed = w3_opt(opt, 'speed', 1);
+   gr.averaging = w3_opt(opt, 'averaging', false);
+   gr.plot_color = w3_opt(opt, 'color', 'black');
    
    if (gr.dBm) {
       gr.padding_tb = 20;
@@ -67,9 +69,9 @@ function graph_rescale()
    gr.redraw_scale = true;
 }
 
-function graph_mode(auto, max, min)
+function graph_mode(scale, max, min)
 {
-   gr.auto = auto;
+   gr.auto = (scale == 'auto')? 1:0
    if (!gr.auto) { gr.max = max; gr.min = min; }
    //console.log('gr.auto='+ gr.auto +' max='+ max +' min='+ min);
    graph_rescale();
@@ -102,8 +104,11 @@ function graph_averaging(averaging)
    gr.avg_dB = 0;
 }
 
-function graph_plot(val_dB)
+function graph_plot(val_dB, opt)
 {
+   var plot_color = w3_opt(opt, 'color', gr.plot_color);
+   var plot_line = w3_opt(opt, 'line', false);
+   
    var cv = gr.cv;
    var ct = gr.ct;
    var w = cv.width - gr.scaleWidth;
@@ -240,8 +245,21 @@ function graph_plot(val_dB)
    }
 
    // if not averaging always plot, even if not shifting display
-   if (!gr.averaging || plot) {
-      ct.fillStyle = gr.plot_color;
-      ct.fillRect(w-1,y_dB(val_dB), 1,1);
+   var rv = null;
+   if (!gr.averaging || plot || plot_line != false) {
+      var y = y_dB(val_dB);
+      if (plot_line != false) {
+         ct.strokeStyle = plot_color;
+         ct.beginPath();
+         ct.moveTo(w-1, plot_line);
+         ct.lineTo(w, y);
+         ct.stroke();
+      } else {
+         ct.fillStyle = plot_color;
+         ct.fillRect(w-1,y, 1,1);
+      }
+      rv = y;
    }
+   
+   return rv;
 }
