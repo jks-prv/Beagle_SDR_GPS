@@ -7,7 +7,7 @@ var gr = {
    dBm: 0,
    db_units: 'dB',
    speed: 1,
-   marker: 1,
+   marker: -1,
    threshold: 0,
    averaging: false,
    avg_dB: 0,
@@ -88,7 +88,7 @@ function graph_marker(marker)
    gr.marker = marker;
 }
 
-function graph_divider(color)
+function graph_annotate(color)
 {
    gr.divider = color;
 }
@@ -107,7 +107,7 @@ function graph_averaging(averaging)
 function graph_plot(val_dB, opt)
 {
    var plot_color = w3_opt(opt, 'color', gr.plot_color);
-   var plot_line = w3_opt(opt, 'line', false);
+   var ylast = w3_opt(opt, 'line', false);
    
    var cv = gr.cv;
    var ct = gr.ct;
@@ -118,7 +118,7 @@ function graph_plot(val_dB, opt)
 
 	var y_dB = function(dB) {
 		var norm = (dB - gr.lo) / range;
-		return h - (norm * h);
+		return Math.round(h - (norm * h));
 	};
 
 	var gridC_10dB = function(dB) { return 10 * Math.ceil(dB/10); };
@@ -208,7 +208,7 @@ function graph_plot(val_dB, opt)
       var now = Math.floor(secs / gr.marker);
       var then = Math.floor(gr.secs_last / gr.marker);
 
-      if (now == then) {
+      if (gr.marker == -1 || now == then) {
 			// draw dB level lines by default
          ct.fillStyle = gr.bg_color;
          ct.fillRect(w-1,0, 1,h);
@@ -234,7 +234,7 @@ function graph_plot(val_dB, opt)
       if (gr.threshold) {
          ct.fillStyle = 'red';
          ct.fillRect(w-1,y_dB(gr.threshold), 1,1);
-      }
+      }y
       
       plot = true;
    }
@@ -246,19 +246,25 @@ function graph_plot(val_dB, opt)
 
    // if not averaging always plot, even if not shifting display
    var rv = null;
-   if (!gr.averaging || plot || plot_line != false) {
+   if (!gr.averaging || plot || ylast != false) {
       var y = y_dB(val_dB);
-      if (plot_line != false) {
+      if (ylast != false) {
          ct.strokeStyle = plot_color;
          ct.beginPath();
-         ct.moveTo(w-1, plot_line);
+         ct.moveTo(w-1, ylast);
          ct.lineTo(w, y);
+         //if (plot_color == 'black') console.log((w-1) +','+ ylast +' -> '+ w +','+ y);
+         rv = y;
          ct.stroke();
+         
+         //ct.fillStyle = plot_color;
+         //var h = y - ylast;
+         //if (h == 0) h = 1
+         //ct.fillRect(w-1,ylast, 1,h);
       } else {
          ct.fillStyle = plot_color;
          ct.fillRect(w-1,y, 1,1);
       }
-      rv = y;
    }
    
    return rv;

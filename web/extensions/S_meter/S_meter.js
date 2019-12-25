@@ -246,7 +246,7 @@ function S_meter_stop_start_cb(path, idx, first)
 
 function S_meter_mark_cb(path, idx, first)
 {
-   graph_divider('magenta');
+   graph_annotate('magenta');
    
    // if stopped plot last value so mark appears
    if (S_meter.stop_start_state)
@@ -274,8 +274,8 @@ function S_meter_update(init)
 
 	if (init || freq_chg || mode_chg) {
 	   if (!init) {
-         if (freq_chg) graph_divider('red');
-         if (mode_chg) graph_divider('lime');
+         if (freq_chg) graph_annotate('red');
+         if (mode_chg) graph_annotate('lime');
       }
 		S_meter.sm_last_freq = freq;
 		S_meter.sm_last_mode = mode;
