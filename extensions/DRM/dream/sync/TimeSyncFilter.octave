@@ -1,0 +1,176 @@
+%******************************************************************************\
+%* Technische Universitaet Darmstadt, Institut fuer Nachrichtentechnik
+%* Copyright (c) 2003
+%*
+%* Author:
+%*	Alexander Kurpiers, modified by David Flamand to support more sample rate
+%*
+%* Description:
+%* 	Hilbert Filter for timing acquisition
+%*  Runs at 48 kHz, can be downsampled to 48 kHz / 8 = 6 kHz
+%*
+%******************************************************************************
+%*
+%* This program is free software; you can redistribute it and/or modify it under
+%* the terms of the GNU General Public License as published by the Free Software
+%* Foundation; either version 2 of the License, or (at your option) any later 
+%* version.
+%*
+%* This program is distributed in the hope that it will be useful, but WITHOUT 
+%* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+%* FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+%* details.
+%*
+%* You should have received a copy of the GNU General Public License along with
+%* this program; if not, write to the Free Software Foundation, Inc., 
+%* 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+%*
+%******************************************************************************/
+
+function [b] = DesignFilter(fstart, fstop, ftrans, nhil, fs)
+    % Parks-McClellan optimal equiripple FIR filter design
+    B = fstop - fstart;
+    f = [0  B / 2  B / 2 + ftrans  fs / 2];
+    m = [2 2 0 0];
+    b = remez(nhil - 1, f * 2 / fs, m, [1 10]);
+endfunction
+
+
+% Hilbert filter characteristic frequencies
+% 5 kHz bandwidth
+global fstart5 = 800;
+global fstop5 = 5200;
+global ftrans5 = 800; % Size of transition region
+% 10 kHz bandwidth
+global fstart10 = 800;
+global fstop10 = 10200;
+global ftrans10 = 800; % Size of transition region
+
+
+function MakeFilter(fid_cpp, fid_h, multi)
+    global fstart5 fstop5 ftrans5;
+    global fstart10 fstop10 ftrans10;
+
+    fs = 48000 * multi;
+    ntaps = 80 * multi + 1;
+
+    % Length of hilbert filter
+    % 5 kHz bandwidth
+    nhil5 = ntaps;
+    % 10 kHz bandwidth
+    nhil10 = ntaps;
+
+    % Actual filter design
+    b5 = DesignFilter(fstart5, fstop5, ftrans5, nhil5, fs);
+    b10 = DesignFilter(fstart10, fstop10, ftrans10, nhil10, fs);
+
+    % Display the filter
+    PLOT = 0;
+    if (PLOT == 1)
+        close all;
+
+        % 5 kHz bandwidth filter
+        subplot(2, 1, 1)
+        f05 = (fstop5 + ftrans5) / 2;
+        t = linspace(0, (nhil5 - 1) / fs, nhil5);
+        hr = b5 .* cos(2 * pi * f05 * t);
+        hi = b5 .* sin(2 * pi * f05 * t);
+
+        % Complex hilbert filter
+        hbp = hr + hi * j;
+
+        [h1, f]= freqz(hbp, 1, 512, 'whole', fs);
+        plot(f - fs / 2, 20 * log10(abs([h1(257:512); h1(1:256)])));
+        axis([-fstart5 fstop5 + ftrans5 -90 10]);
+        grid;
+        % zoom on;
+        title('Hilbert-transformer 5 kHz bandwidth');
+        xlabel('Frequency [Hz]');
+        ylabel('Attenuation [dB]');
+
+        % 10 kHz bandwidth filter
+        subplot(2, 1, 2)
+        f010 = (fstop10 + ftrans10) / 2;
+        t = linspace(0, (nhil10 - 1) / fs, nhil10);
+        hr = b10 .* cos(2 * pi * f010 * t);
+        hi = b10 .* sin(2 * pi * f010 * t);
+
+        % Complex hilbert filter
+        hbp = hr + hi * j;
+
+        [h1, f]= freqz(hbp, 1, 512, 'whole', fs);
+        plot(f - fs / 2, 20 * log10(abs([h1(257:512); h1(1:256)])));
+        axis([-fstart10 fstop10 + ftrans5 -90 10]);
+        grid;
+        % zoom on;
+        title('Hilbert-transformer 10 kHz bandwidth');
+        xlabel('Frequency [Hz]');
+        ylabel('Attenuation [dB]');
+    end
+
+
+    % Export coefficients to file ****************************************
+
+    f = fs / 1000;
+
+    % Write header file
+    fprintf(fid_h, '/* Filter parameters for %i Hz sample rate */\n', fs);
+    fprintf(fid_h, '#define NUM_TAPS_HILB_FILT_5_%i            %i\n', f, nhil5);
+    fprintf(fid_h, '#define NUM_TAPS_HILB_FILT_10_%i           %i\n', f, nhil10);
+    fprintf(fid_h, '/* Low pass prototype for Hilbert-filter 5 kHz bandwidth */\n');
+    fprintf(fid_h, 'extern const float fHilLPProt5_%i[NUM_TAPS_HILB_FILT_5_%i];\n', f, f);
+    fprintf(fid_h, '/* Low pass prototype for Hilbert-filter 10 kHz bandwidth */\n');
+    fprintf(fid_h, 'extern const float fHilLPProt10_%i[NUM_TAPS_HILB_FILT_10_%i];\n', f, f);
+    fprintf(fid_h, '\n');
+
+    % Write filter taps
+    fprintf(fid_cpp, '/*********************************************************/\n');
+    fprintf(fid_cpp, '/* Filter taps for %-6i Hz sample rate                 */\n', fs);
+    fprintf(fid_cpp, '/* Low pass prototype for Hilbert-filter 5 kHz bandwidth */\n');
+    fprintf(fid_cpp, 'const float fHilLPProt5_%i[NUM_TAPS_HILB_FILT_5_%i] =\n', f, f);
+    fprintf(fid_cpp, '{\n');
+    fprintf(fid_cpp, '	%.18ef,\n', b5(1:end - 1));
+    fprintf(fid_cpp, '	%.18ef\n', b5(end));
+    fprintf(fid_cpp, '};\n');
+    fprintf(fid_cpp, '/* Low pass prototype for Hilbert-filter 10 kHz bandwidth */\n');
+    fprintf(fid_cpp, 'const float fHilLPProt10_%i[NUM_TAPS_HILB_FILT_10_%i] =\n', f, f);
+    fprintf(fid_cpp, '{\n');
+    fprintf(fid_cpp, '	%.18ef,\n', b10(1:end - 1));
+    fprintf(fid_cpp, '	%.18ef\n', b10(end));
+    fprintf(fid_cpp, '};\n');
+    fprintf(fid_cpp, '\n');
+endfunction
+
+
+fid_cpp = fopen('TimeSyncFilter.cpp', 'w');
+fprintf(fid_cpp, '/* Automatically generated file with GNU Octave */\n');
+fprintf(fid_cpp, '\n');
+fprintf(fid_cpp, '/* File name: "TimeSyncFilter.octave" */\n');
+fprintf(fid_cpp, '/* Filter taps in time-domain */\n');
+fprintf(fid_cpp, '\n');
+fprintf(fid_cpp, '#include "TimeSyncFilter.h"\n');
+fprintf(fid_cpp, '\n');
+
+fid_h = fopen('TimeSyncFilter.h', 'w');
+fprintf(fid_h, '/* Automatically generated file with GNU Octave */\n');
+fprintf(fid_h, '/* File name: "TimeSyncFilter.octave" */\n');
+fprintf(fid_h, '/* Filter taps in time-domain */\n');
+fprintf(fid_h, '\n');
+fprintf(fid_h, '#ifndef _TIMESYNCFILTER_H_\n');
+fprintf(fid_h, '#define _TIMESYNCFILTER_H_\n');
+fprintf(fid_h, '\n');
+fprintf(fid_h, '/* Filter bandwidths */\n');
+fprintf(fid_h, '#define HILB_FILT_BNDWIDTH_5            %i\n', fstop5 - fstart5 + ftrans5);
+fprintf(fid_h, '#define HILB_FILT_BNDWIDTH_10           %i\n', fstop10 - fstart10 + ftrans10);
+fprintf(fid_h, '\n');
+
+MakeFilter(fid_cpp, fid_h, 0.5); % 24000 kHz
+MakeFilter(fid_cpp, fid_h, 1);   % 48000 kHz
+MakeFilter(fid_cpp, fid_h, 2);   % 96000 kHz
+MakeFilter(fid_cpp, fid_h, 4);   % 192000 kHz
+MakeFilter(fid_cpp, fid_h, 8);   % 384000 kHz
+
+fprintf(fid_h, '#endif	/* _TIMESYNCFILTER_H_ */\n');
+
+fclose(fid_h);
+fclose(fid_cpp);

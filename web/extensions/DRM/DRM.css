@@ -1,0 +1,14 @@
+/* DRM.css */
+
+.cl-drm-blk
+{
+    border-radius: 2px;
+    margin: 0 2px;
+    padding: 0 2px;
+    background-color: grey;
+}
+
+.id-drm-options
+{
+	font-size: 85%;
+}

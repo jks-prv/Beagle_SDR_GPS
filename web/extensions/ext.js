@@ -9,6 +9,7 @@ var extint = {
    using_data_container: false,
    default_w: 525,
    default_h: 300,
+   prev_mode: null,
 };
 
 var devl = {
@@ -129,11 +130,11 @@ var ext_zoom = {
 var extint_ext_is_tuning = false;
 
 // mode, zoom and passband are optional
-function ext_tune(fdsp, mode, zoom, zoom_level, low_cut, high_cut) {
-	//console.log('ext_tune: '+ fdsp +', '+ mode +', '+ zoom +', '+ zoom_level);
+function ext_tune(freq_dial_kHz, mode, zoom, zoom_level, low_cut, high_cut) {
+	//console.log('ext_tune: '+ freq_dial_kHz +', '+ mode +', '+ zoom +', '+ zoom_level);
 	
 	extint_ext_is_tuning = true;
-      freqmode_set_dsp_kHz(fdsp, mode);
+      freqmode_set_dsp_kHz(freq_dial_kHz, mode);
       
       if (low_cut != undefined && high_cut != undefined)
          ext_set_passband(low_cut, high_cut);
@@ -176,9 +177,16 @@ function ext_get_mode()
 	return cur_mode;
 }
 
+function ext_get_prev_mode()
+{
+	return extint.prev_mode;
+}
+
 function ext_set_mode(mode)
 {
-   //console.log('### ext_set_mode '+ mode);
+   if (mode == 'drm')
+      extint.prev_mode = cur_mode;
+   //console.log('### ext_set_mode '+ mode +' prev='+ extint.prev_mode);
 	demodulator_analog_replace(mode);
 }
 
@@ -188,7 +196,7 @@ function ext_get_passband()
 	return { low: demod.low_cut, high: demod.high_cut };
 }
 
-function ext_set_passband(low_cut, high_cut, set_mode_pb, fdsp)		// specifying fdsp is optional
+function ext_set_passband(low_cut, high_cut, set_mode_pb, freq_dial_Hz)		// specifying freq_dial_Hz is optional
 {
 	var demod = demodulators[0];
 	var filter = demod.filter;
@@ -220,14 +228,19 @@ function ext_set_passband(low_cut, high_cut, set_mode_pb, fdsp)		// specifying f
 		passbands[cur_mode].last_hi = high_cut;
 	}
 	
-	if (fdsp != undefined && fdsp != null) {
-		fdsp *= 1000;
-		freq_car_Hz = freq_dsp_to_car(fdsp);
+	if (freq_dial_Hz != undefined && freq_dial_Hz != null) {
+		freq_dial_Hz *= 1000;
+		freq_car_Hz = freq_dsp_to_car(freq_dial_Hz);
 	}
 
 	extint_ext_is_tuning = true;
 	   demodulator_set_offset_frequency(0, freq_car_Hz - center_freq);
 	extint_ext_is_tuning = false;
+}
+
+function ext_get_tuning()
+{
+   return { low: demod.low_cut, high: demod.high_cut, mode: cur_mode, freq_dial_kHz: freq_displayed_Hz/1000 };
 }
 
 function ext_get_zoom()
@@ -577,7 +590,12 @@ function extint_msg_cb(param, ws)
 		case "ext_client_init":
 			extint_focus();
 			break;
+		
+		default:
+		   return false;
 	}
+	
+	return true;
 }
 
 function extint_blur_prev()

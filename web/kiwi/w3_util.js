@@ -364,15 +364,20 @@ function w3_ext_param_array_match_num(arr, n, func)
 
 // param:   name[:val]
 // s:       name.startsWith(s)   case-insensitive
-// returns: { match:true|false, num:parseFloat(val), string:val }
+// returns: { match:true|false, has_value:true|false, num:parseFloat(val), string:val }
 function w3_ext_param(s, param)
 {
    p = param.toLowerCase().split(':');
    if (s.startsWith(p[0])) {
       rv = { match: true };
       if (p.length > 1) {
+         rv.has_value = true;
          rv.num = parseFloat(p[1]);
          rv.string = p[1];
+      } else {
+         rv.has_value = false;
+         rv.num = 0;
+         rv.string = '';
       }
       return rv;
    }
@@ -706,6 +711,15 @@ function w3_show(el_id, display)
 	return el;
 }
 
+function w3_attribute(el_id, name, val)
+{
+	var el = w3_el(el_id);
+	if (el == null) return;
+	var attr = document.createAttribute(name);
+	attr.value = val;
+	el.setAttributeNode(attr);
+}
+
 function w3_show_block(el_id)
 {
    return w3_show(el_id, 'w3-show-block');
@@ -804,7 +818,7 @@ function w3_unflag(path)
 
 // for when you don't want to w3_add(el_id, "[w3-text-color]")
 // returns previous color
-function w3_color(el_id, color, bkgColor)
+function w3_color(el_id, color, bkgColor, cond)
 {
 	var el = w3_el(el_id);
 	if (!el) return null;
@@ -812,8 +826,9 @@ function w3_color(el_id, color, bkgColor)
 	var prev_bg = el.style.backgroundColor;
 	
 	// remember that setting colors to '' restores default
-	if (color != undefined && color != null) el.style.color = color;
-	if (bkgColor != undefined && bkgColor != null) el.style.backgroundColor = bkgColor;
+	cond = (isUndefined(cond) || cond);
+   if (color != undefined && color != null) el.style.color = cond? color:'';
+   if (bkgColor != undefined && bkgColor != null) el.style.backgroundColor = cond? bkgColor:'';
 	return { color: prev_fg, backgroundColor: prev_bg };
 }
 
@@ -1168,7 +1183,7 @@ function w3int_link_click(ev, cb, cb_param)
 
    // cb is a string because can't pass an object to onclick
    if (cb) {
-      w3_call(cb, el, cb_param, /* first */ false);
+      w3_call(cb, el, cb_param, /* first */ false);   // links don't really have first callback
    }
 
    w3int_post_action();
@@ -1221,7 +1236,7 @@ function w3int_radio_click(ev, path, cb)
 
 	// cb is a string because can't pass an object to onclick
 	if (cb) {
-		w3_call(cb, path, idx, /* first */ false);
+		w3_call(cb, path, idx, /* first */ false);   // radio buttons don't really have first callback
 	}
 
    w3int_post_action();
@@ -1315,7 +1330,7 @@ function w3int_button_click(ev, path, cb, cb_param)
    
       // cb is a string because can't pass an object to onclick
       if (cb) {
-         w3_call(cb, path, cb_param, /* first */ false);
+         w3_call(cb, path, cb_param, /* first */ false);    // buttons don't really have first callback
       }
    }
 
@@ -1817,7 +1832,10 @@ function w3_select_hier(psa, label, title, path, sel, opts, cb, cb_param)
    if (!isObject(opts)) return;
 
    w3_obj_enum_data(opts, null, function(i, key) {
-      s += '<option value='+ dq(idx++) +' disabled>'+ key +'</option> ';
+      as = key.split('\\');
+      as.forEach(function(e) {
+         s += '<option value='+ dq(idx++) +' disabled>'+ e +'</option> ';
+      });
       var a = opts[key];
       if (!isArray(a)) return;
 
@@ -2325,6 +2343,19 @@ function w3_div(psa)
 	return s;
 }
 
+function w3_span(psa)
+{
+   var p = w3_psa(psa, 'w3-show-span');
+	var s = '<div w3d-span '+ p +'>';
+	var narg = arguments.length;
+		for (var i=1; i < narg; i++) {
+			s += arguments[i];
+		}
+	s += '</div>';
+	//console.log(s);
+	return s;
+}
+
 function w3_divs(psa, attr)
 {
    var narg = arguments.length;
@@ -2476,6 +2507,24 @@ function w3_quarter(prop_row, prop_col, left, middleL, middleR, right)
 			(right? right:'') +
 		'</div>' +
 	'</div>';
+	//console.log(s);
+	return s;
+}
+
+function w3_canvas(psa, w, h, opt)
+{
+   var pad = w3_opt(opt, 'padding', 0);
+   var left = w3_opt(opt, 'left', '');
+   if (left != '') left = sprintf(' left:%dpx;', left);
+   var right = w3_opt(opt, 'right', '');
+   if (right != '') right = sprintf(' right:%dpx;', right);
+   var padding = '';
+   if (pad) {
+      w -= pad*2; h -= pad*2;
+      padding = sprintf(' padding:%dpx;', pad);
+   }
+   var p = w3_psa(psa, null, 'position:absolute;'+ left + right + padding, sprintf('width="%d" height="%d"', w, h));
+	var s = '<canvas '+ p +'></canvas>';
 	//console.log(s);
 	return s;
 }

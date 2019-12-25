@@ -365,7 +365,7 @@ void data_pump_init()
 	// rescale factor from hardware samples to what CuteSDR code is expecting
 	rescale = MPOW(2, -RXOUT_SCALE + CUTESDR_SCALE);
 
-	CreateTaskF(data_pump, 0, DATAPUMP_PRIORITY, CTF_POLL_INTR, 0);
+	CreateTaskF(data_pump, 0, DATAPUMP_PRIORITY, CTF_POLL_INTR);
 }
 
 #endif

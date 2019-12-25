@@ -7,7 +7,7 @@ var gr = {
    dBm: 0,
    db_units: 'dB',
    speed: 1,
-   marker: 1,
+   marker: -1,
    threshold: 0,
    averaging: false,
    avg_dB: 0,
@@ -30,7 +30,8 @@ var gr = {
    bg_color: 'ghostWhite',
    grid_color: 'lightGrey',
    scale_color: 'white',
-   plot_color: 'black'
+   
+   last_last: 0
 };
 
 function graph_init(canvas, opt)
@@ -39,9 +40,10 @@ function graph_init(canvas, opt)
    gr.ct = canvas.ctx;
 
    gr.auto = 1;
-   gr.dBm = opt.dBm || 0;
-   gr.speed = opt.speed || 1;
-   gr.averaging = opt.averaging || false;
+   gr.dBm = w3_opt(opt, 'dBm', 0);
+   gr.speed = w3_opt(opt, 'speed', 1);
+   gr.averaging = w3_opt(opt, 'averaging', false);
+   gr.plot_color = w3_opt(opt, 'color', 'black');
    
    if (gr.dBm) {
       gr.padding_tb = 20;
@@ -67,9 +69,9 @@ function graph_rescale()
    gr.redraw_scale = true;
 }
 
-function graph_mode(auto, max, min)
+function graph_mode(scale, max, min)
 {
-   gr.auto = auto;
+   gr.auto = (scale == 'auto')? 1:0
    if (!gr.auto) { gr.max = max; gr.min = min; }
    //console.log('gr.auto='+ gr.auto +' max='+ max +' min='+ min);
    graph_rescale();
@@ -86,7 +88,7 @@ function graph_marker(marker)
    gr.marker = marker;
 }
 
-function graph_divider(color)
+function graph_annotate(color)
 {
    gr.divider = color;
 }
@@ -102,8 +104,11 @@ function graph_averaging(averaging)
    gr.avg_dB = 0;
 }
 
-function graph_plot(val_dB)
+function graph_plot(val_dB, opt)
 {
+   var plot_color = w3_opt(opt, 'color', gr.plot_color);
+   var ylast = w3_opt(opt, 'line', false);
+   
    var cv = gr.cv;
    var ct = gr.ct;
    var w = cv.width - gr.scaleWidth;
@@ -113,7 +118,7 @@ function graph_plot(val_dB)
 
 	var y_dB = function(dB) {
 		var norm = (dB - gr.lo) / range;
-		return h - (norm * h);
+		return Math.round(h - (norm * h));
 	};
 
 	var gridC_10dB = function(dB) { return 10 * Math.ceil(dB/10); };
@@ -203,7 +208,7 @@ function graph_plot(val_dB)
       var now = Math.floor(secs / gr.marker);
       var then = Math.floor(gr.secs_last / gr.marker);
 
-      if (now == then) {
+      if (gr.marker == -1 || now == then) {
 			// draw dB level lines by default
          ct.fillStyle = gr.bg_color;
          ct.fillRect(w-1,0, 1,h);
@@ -229,7 +234,7 @@ function graph_plot(val_dB)
       if (gr.threshold) {
          ct.fillStyle = 'red';
          ct.fillRect(w-1,y_dB(gr.threshold), 1,1);
-      }
+      }y
       
       plot = true;
    }
@@ -240,8 +245,27 @@ function graph_plot(val_dB)
    }
 
    // if not averaging always plot, even if not shifting display
-   if (!gr.averaging || plot) {
-      ct.fillStyle = gr.plot_color;
-      ct.fillRect(w-1,y_dB(val_dB), 1,1);
+   var rv = null;
+   if (!gr.averaging || plot || ylast != false) {
+      var y = y_dB(val_dB);
+      if (ylast != false) {
+         ct.strokeStyle = plot_color;
+         ct.beginPath();
+         ct.moveTo(w-1, ylast);
+         ct.lineTo(w, y);
+         //if (plot_color == 'black') console.log((w-1) +','+ ylast +' -> '+ w +','+ y);
+         rv = y;
+         ct.stroke();
+         
+         //ct.fillStyle = plot_color;
+         //var h = y - ylast;
+         //if (h == 0) h = 1
+         //ct.fillRect(w-1,ylast, 1,h);
+      } else {
+         ct.fillStyle = plot_color;
+         ct.fillRect(w-1,y, 1,1);
+      }
    }
+   
+   return rv;
 }

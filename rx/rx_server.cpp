@@ -110,15 +110,15 @@ int rx_chan_free_count(rx_free_count_e flags, int *idx)
     // Note that we correctly detect the WF-only use of kiwirecorder
     // (e.g. SNR-measuring applications)
 
-    if (!(flags & RX_COUNT_KIWI_UI_USERS) && fw_sel == FW_SEL_SDR_RX8_WF2) {
-        for (i = 2; i < rx_chans; i++) {
+    if (flags == RX_COUNT_NO_WF_FIRST && wf_chans < rx_chans) {
+        for (i = wf_chans; i < rx_chans; i++) {
             rx = &rx_channels[i];
             if (!rx->busy) {
                 free_cnt++;
                 if (free_idx == -1) free_idx = i;
             }
         }
-        for (i = 0; i < 2; i++) {
+        for (i = 0; i < wf_chans; i++) {
             rx = &rx_channels[i];
             if (!rx->busy) {
                 free_cnt++;
@@ -636,10 +636,24 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	if (snd_or_wf) {
 		int rx;
 		if (!cother) {
-		    rx_free_count_e flags = ((isKiwi_UI || isWF_conn) && !isNo_WF)? RX_COUNT_KIWI_UI_USERS : RX_COUNT_ALL;
-			rx_chan_free_count(flags, &rx);
-            //printf("### %s cother=%p isKiwi_UI=%d isNo_WF=%d isWF_conn=%d use_rx=%d\n",
-            //    st->uri, cother, isKiwi_UI, isNo_WF, isWF_conn, rx);
+		    rx_free_count_e flags = ((isKiwi_UI || isWF_conn) && !isNo_WF)? RX_COUNT_ALL : RX_COUNT_NO_WF_FIRST;
+			int nch_inuse = rx_chans - rx_chan_free_count(flags, &rx);
+            //printf("### %s cother=%p isKiwi_UI=%d isWF_conn=%d isNo_WF=%d inuse=%d/%d use_rx=%d locked=%d %s\n",
+            //    st->uri, cother, isKiwi_UI, isWF_conn, isNo_WF, nch_inuse, rx_chans, rx, is_locked,
+            //    (flags == RX_COUNT_ALL)? "RX_COUNT_ALL" : "RX_COUNT_NO_WF_FIRST");
+            
+            if (is_locked) {
+                if (nch_inuse == 0) {
+                    printf("*** LOCKED BUT NO CHANNELS IN USE! ***\n");
+                    is_locked = 0;
+                } else {
+                    printf("(locked for exclusive use %s)\n", st->uri);
+                    send_msg_mc(mc, SM_NO_DEBUG, "MSG exclusive_use");
+                    mc->connection_param = NULL;
+                    conn_init(c);
+                    return NULL;
+                }
+            }
 
 			if (rx == -1) {
 				//printf("(too many rx channels open for %s)\n", st->uri);
@@ -680,6 +694,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			rx = -1;
 			cother->other = c;
 		}
+		
 		c->rx_channel = cother? cother->rx_channel : rx;
 		if (st->type == STREAM_SOUND) rx_channels[c->rx_channel].conn = c;
 		
@@ -709,6 +724,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
     		asprintf(&c->tname, "%s[%02d]", st->uri, c->self_idx);
     	u4_t flags = CTF_TNAME_FREE;    // ask TaskRemove to free name so debugging has longer access to it
     	if (c->rx_channel != -1) flags |= CTF_RX_CHANNEL | (c->rx_channel & CTF_CHANNEL);
+    	if (isWF_conn) flags |= CTF_STACK_MED;
 		int id = CreateTaskSF(rx_stream_tramp, c->tname, c, (st->priority == TASK_MED_PRIORITY)? task_medium_priority : st->priority, flags, 0);
 		c->task = id;
 	}

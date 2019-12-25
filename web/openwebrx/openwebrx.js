@@ -26,6 +26,8 @@ var owrx = {
    last_mode: '',
    last_locut: -1,
    last_hicut: -1,
+   
+   last_mode_el: null,
 };
 
 // key freq concepts:
@@ -779,13 +781,15 @@ demodulator_response_time=100;
 var passbands = {
 	am:		{ lo: -4900,	hi:  4900 },            // 9.8 kHz instead of 10 to avoid adjacent channel heterodynes in SW BCBs
 	amn:		{ lo: -2500,	hi:  2500 },
+	drm:		{ lo: -5000,	hi:  5000 },
 	lsb:		{ lo: -2700,	hi:  -300 },	         // cf = 1500 Hz, bw = 2400 Hz
+	lsn:		{ lo: -2400,	hi:  -300 },	         // cf = 1350 Hz, bw = 2100 Hz
 	usb:		{ lo:   300,	hi:  2700 },	         // cf = 1500 Hz, bw = 2400 Hz
+	usn:		{ lo:   300,	hi:  2400 },	         // cf = 1350 Hz, bw = 2100 Hz
 	cw:		{ lo:   300,	hi:   700,  pbw: 400 },	// cf = 500 Hz, bw = 400 Hz
 	cwn:		{ lo:   470,	hi:   530,  pbw:  60 },	// cf = 500 Hz, bw = 60 Hz
 	nbfm:		{ lo: -6000,	hi:  6000 },	         // FIXME: set based on current srate?
 	iq:		{ lo: -5000,	hi:  5000 },
-	s4285:	{ lo:   600,	hi:  3000 },	         // cf = 1800 Hz, bw = 2400 Hz, s4285 compatible
 };
 
 function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
@@ -889,44 +893,33 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	
 	this.usePBCenter = false;
 	this.isCW = false;
+	
+	switch (subtype) {
+	
+	   case 'am':
+	   case 'amn':
+	   case 'drm':
+	   case 'nbfm':
+	   case 'iq':
+		   break;
+		   
+	   case 'lsb':
+	   case 'lsn':
+	   case 'usb':
+	   case 'usn':
+		   this.usePBCenter = true;
+		   break;
 
-	if (subtype=="am")
-	{
-	}	
-	else if (subtype=="amn")
-	{
+	   case 'cw':
+	   case 'cwn':
+		   this.usePBCenter = true;
+		   this.isCW = true;
+		   break;
+		   
+		default:
+		   console.log('DEMOD-new: unknown subtype='+ subtype);
+		   break;
 	}
-	else if (subtype=="lsb")
-	{
-		this.usePBCenter=true;
-	}
-	else if (subtype=="usb")
-	{
-		this.usePBCenter=true;
-	}
-	else if (subtype=="cw")
-	{
-		this.usePBCenter=true;
-		this.isCW=true;
-	} 
-	else if (subtype=="cwn")
-	{
-		this.usePBCenter=true;
-		this.isCW=true;
-	} 
-	else if (subtype=="nbfm")
-	{
-	}
-	else if (subtype=="iq")
-	{
-	}
-	else if (subtype=="s4285")
-	{
-		// FIXME: hack for custom s4285 passband
-		this.usePBCenter=true;
-		this.server_mode='usb';
-	}
-	else console.log("DEMOD-new: unknown subtype="+subtype);
 
 	this.wait_for_timer = false;
 	this.set_after = false;
@@ -957,6 +950,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		var mode = this.server_mode;
 		var locut = this.low_cut.toString();
 		var hicut = this.high_cut.toString()
+		//console.log('SET mod='+ mode +' low_cut='+ locut +' high_cut='+ hicut +' freq='+ freq);
 		snd_send('SET mod='+ mode +' low_cut='+ locut +' high_cut='+ hicut +' freq='+ freq);
 
       var changed = null;
@@ -1163,7 +1157,8 @@ function demodulator_add(what)
 }
 
 function demodulator_analog_replace(subtype, freq)
-{ //this function should only exist until the multi-demodulator capability is added	
+{ //this function should only exist until the multi-demodulator capability is added
+   //console.log('demodulator_analog_replace subtype='+ subtype);
    if (passbands[subtype] == null) subtype = 'am';
 
 	var offset = 0, prev_pbo = 0, low_cut = NaN, high_cut = NaN;
@@ -1213,6 +1208,8 @@ function demodulator_analog_replace(subtype, freq)
 		//console.log('DEMOD-replace SAME freq='+ (offset + center_freq) +' PBO='+ pbo +' prev='+ prev_pbo +' toCW='+ toCW +' fromCW='+ fromCW);
 	}
 
+   if (cur_mode != 'drm')
+      extint.prev_mode = cur_mode;
 	cur_mode = subtype;
 	//console.log("demodulator_analog_replace: cur_mode="+ cur_mode);
 
@@ -1489,7 +1486,7 @@ function get_visible_freq_range()
 	if (audioFFT_active && cur_mode != undefined) {
 	   var off, span;
       var srate = Math.round(audio_input_rate || 12000);
-	   if (cur_mode == 'iq') {
+	   if (cur_mode == 'iq' || cur_mode == 'drm') {
 	      off = 0;
 	      span = srate;
 	   } else {
@@ -1996,8 +1993,9 @@ function canvas_get_carfreq_offset(relativeX, incl_PBO)
    var norm = relativeX/waterfall_width;
    if (audioFFT_active) {
       var cur = center_freq + demodulators[0].offset_frequency;
-      norm -= (cur_mode == 'iq')? 0.5 : 0.25;
-      var incr = norm * audio_input_rate * ((cur_mode == 'iq')? 2 : 1);
+      var iq_or_drm = (cur_mode == 'iq' || cur_mode == 'drm');
+      norm -= iq_or_drm? 0.5 : 0.25;
+      var incr = norm * audio_input_rate * (iq_or_drm? 2 : 1);
       freq = cur + incr;
       //console.log('canvas_get_carfreq_offset(audioFFT) f='+ freq +' cur='+ cur +' incr='+ incr +' norm='+ norm);
    } else {
@@ -2054,14 +2052,19 @@ function canvas_start_drag(evt, x, y)
 		var step_Hz = 1000;
 		var fold = canvas_get_dspfreq(x);
 		var b = find_band(fold);
+		var cm = cur_mode.substr(0,2);
+		var am_ssb_iq = (cm == 'am' || cm == 'ls' || cm == 'us' || cm == 'iq');
+	   var ITU_region = cfg.init.ITU_region + 1;
+	   var ham_80m_swbc_75m_overlap = (ITU_region == 2 && b.name == '75m');
+
 		if (b != null && (b.name == 'LW' || b.name == 'MW')) {
-			if (cur_mode == 'am' || cur_mode == 'amn' || cur_mode == 'lsb' || cur_mode == 'usb') {
+			if (am_ssb_iq) {
 				step_Hz = step_9_10? 9000 : 10000;
 				//console.log('SFT-CLICK 9_10');
 			}
 		} else
-		if (b != null && (b.s == svc.B)) {		// SWBC bands
-			if (cur_mode == 'am' || cur_mode == 'amn' || cur_mode == 'lsb' || cur_mode == 'usb') {
+		if (b != null && (b.s == svc.B) && !ham_80m_swbc_75m_overlap) {      // SWBC bands
+			if (am_ssb_iq) {
 				step_Hz = 5000;
 				//console.log('SFT-CLICK SWBC');
 			}
@@ -2949,12 +2952,13 @@ function resize_canvases(zoom)
             w3_text('w3-large|color:cyan', 'Audio FFT<br>'),
             w3_text('w3-small|color:cyan',
                   'Zoom waterfall not available<br>' +
-                  'on channels '+ wf_chans +'-'+ (rx_chans-1) +' of Kiwis<br>' +
+                  'on channels '+ wf_chans_real +'-'+ (rx_chans-1) +' of Kiwis<br>' +
                   'configured for '+ rx_chans +' channels.<br>'
             ),
             w3_text('w3-small|color:cyan',
-               'For details see: '+
-               w3_link('w3-small', 'valentfx.com/vanilla/discussion/1309', 'forum post') + '.'
+               'For details see the Kiwi forum.'
+               //'For details see: '+
+               //w3_link('w3-small', 'valentfx.com/vanilla/discussion/1309', 'forum post') + '.'
             )
          )
       );
@@ -3795,13 +3799,14 @@ function waterfall_dequeue()
 		var seq = waterfall_queue[0].seq;
 		var target = audio_ext_sequence + waterfall_delay;
 		if (seq > target) {
-			//console.log('SEQ too soon: '+ seq +' > '+ target +' ('+ (seq - target) +')');
+			//console.log('SEQ too soon: s'+ seq +' > t'+ target +' ('+ (seq - target) +')');
 			return;		// too soon
 		}
 
 		var now = Date.now();
 		if (seq == audio_ext_sequence && now < (waterfall_last_out + waterfall_queue[0].spacing)) {
 			//console.log('SEQ need spacing');
+			//console.log('SEQ need spacing: s'+ seq +' sp'+ waterfall_queue[0].spacing +' ('+ (now - waterfall_last_out) +')');
 			return;		// need spacing
 		}
 	
@@ -4340,7 +4345,8 @@ function freq_passband_center()
 function passband_offset_dxlabel(mode)
 {
 	var pb = passbands[mode];
-	var usePBCenter = (mode == 'usb' || mode == 'lsb');
+	var m = mode.substr(0,2);
+	var usePBCenter = (m == 'us' || m == 'ls');
 	var offset = usePBCenter? pb.lo + (pb.hi - pb.lo)/2 : 0;
 	//console.log("passband_offset: m="+mode+" use="+usePBCenter+' o='+offset);
 	return offset;
@@ -4478,16 +4484,16 @@ function freqset_select(id)
 	}
 }
 
-var last_mode_obj = null;
-
 function modeset_update_ui(mode)
 {
-	if (last_mode_obj != null) last_mode_obj.style.color = "white";
+	if (owrx.last_mode_el != null) owrx.last_mode_el.style.color = "white";
 	
 	// if sound comes up before waterfall then the button won't be there
-	var obj = w3_el('id-button-'+mode);
-	if (obj && obj.style) obj.style.color = "lime";
-	last_mode_obj = obj;
+	var el = w3_el('id-mode-'+ mode.substr(0,2));
+	el.innerHTML = mode.toUpperCase();
+	if (el && el.style) el.style.color = "lime";
+	owrx.last_mode_el = el;
+
 	squelch_setup(0);
 	writeCookie('last_mode', mode);
 	freq_link_update();
@@ -4504,7 +4510,9 @@ function try_freqset_update_ui()
 		if (audioFFT_active) {
 		
          // if not already clearing then clear on iq mode change
-		   if (!audioFFT_clear_wf && ((cur_mode == 'iq' && audioFFT_prev_mode != 'iq') || (cur_mode != 'iq' && audioFFT_prev_mode == 'iq')))
+         var c_iq_drm = (cur_mode == 'iq' || cur_mode == 'drm')? 1:0;
+         var p_iq_drm = (audioFFT_prev_mode == 'iq' || audioFFT_prev_mode == 'drm')? 1:0;
+		   if (!audioFFT_clear_wf && (c_iq_drm ^ p_iq_drm))
 		      audioFFT_clear_wf = true;
 		   audioFFT_update();
 		   audioFFT_prev_mode = cur_mode;
@@ -4660,20 +4668,25 @@ var num_step_buttons = 6;
 var up_down = {
 	am: [ 0, -1, -0.1, 0.1, 1, 0 ],
 	amn: [ 0, -1, -0.1, 0.1, 1, 0 ],
+	drm: [ 0, -1, -0.1, 0.1, 1, 0 ],
 	usb: [ 0, -1, -0.1, 0.1, 1, 0 ],
+	usn: [ 0, -1, -0.1, 0.1, 1, 0 ],
 	lsb: [ 0, -1, -0.1, 0.1, 1, 0 ],
+	lsn: [ 0, -1, -0.1, 0.1, 1, 0 ],
 	cw: [ 0, -0.1, -0.01, 0.01, 0.1, 0 ],
 	cwn: [ 0, -0.1, -0.01, 0.01, 0.1, 0 ],
 	nbfm: [ -5, -1, -0.1, 0.1, 1, 5 ],		// FIXME
 	iq: [ -5, -1, -0.1, 0.1, 1, 5 ],
-	s4285: [ -5, -1, -0.1, 0.1, 1, 5 ]
 };
 
 var up_down_default = {
 	am: [ 5, 0, 0, 0, 0, 5 ],
 	amn: [ 5, 0, 0, 0, 0, 5 ],
+	drm: [ 5, 0, 0, 0, 0, 5 ],
 	usb: [ 5, 0, 0, 0, 0, 5 ],
+	usn: [ 5, 0, 0, 0, 0, 5 ],
 	lsb: [ 5, 0, 0, 0, 0, 5 ],
+	lsn: [ 5, 0, 0, 0, 0, 5 ],
 	cw: [ 1, 0, 0, 0, 0, 1 ],
 	cwn: [ 1, 0, 0, 0, 0, 1 ],
 };
@@ -4694,7 +4707,8 @@ function special_step(b, sel, caller)
 		s += ' NDB';
 	} else
 	if (b != null && (b.name == 'LW' || b.name == 'MW')) {
-		if (cur_mode == 'am' || cur_mode == 'amn' || cur_mode == 'lsb' || cur_mode == 'usb') {
+	   var cm = cur_mode.substr(0,2);
+		if (cm == 'am' || cm == 'ls' || cm == 'us') {
 			step_Hz = step_9_10? 9000 : 10000;
 		} else {
 			step_Hz = -1;
@@ -4769,8 +4783,9 @@ function freq_step_update_ui(force)
 		return;
 	}
 
+   var cm = cur_mode.substr(0,2);
 	var show_9_10 = (b != null && (b.name == 'LW' || b.name == 'MW') &&
-		(cur_mode == 'am' || cur_mode == 'amn' || cur_mode == 'lsb' || cur_mode == 'usb'))? true:false;
+	   (cm == 'am' || cm == 'ls' || cm == 'us'))? true:false;
 	w3_visible('id-9-10-cell', show_9_10);
 
 	for (var i=0; i < num_step_buttons; i++) {
@@ -4843,8 +4858,11 @@ function bands_init()
 		
 		b.min *= 1000; b.max *= 1000; b.chan *= 1000;
 		var bw = b.max - b.min;
+		//console.log(b.name +' bw='+ bw);
 		for (z=zoom_nom; z >= 0; z--) {
-			if (bw <= bandwidth / (1 << z))
+		   var zbw = bandwidth / (1 << z);
+		   //console.log('z'+ z +' '+ (bw / zbw * 100).toFixed(0) +'%');
+			if (bw <= 0.80 * zbw)
 				break;
 		}
 		bands[i].zoom_level = z;
@@ -4871,7 +4889,7 @@ function find_band(freq)
 		b = bands[i];
 		if (b.region != "-" && b.region != "*" && b.region.charAt(0) != '>') continue;
 		if (freq >= b.min && freq <= b.max)
-			return b;;
+			return b;
 	}
 	return null;
 }
@@ -4917,40 +4935,40 @@ function mk_bands_scale()
 		if (min_inside && !max_inside) { x1 = b.min; x2 = r.end; } else
 		if (b.min < r.start && b.max > r.end) { x1 = r.start; x2 = r.end; }
 
-		if (x1) {
-			x = scale_px_from_freq(x1, g_range); var xx = scale_px_from_freq(x2, g_range);
-			w = xx - x;
-			//console.log("BANDS x="+x1+'/'+x+" y="+x2+'/'+xx+" w="+w);
-			if (w >= 3) {
-				band_ctx.fillStyle = b.s.color;
-				band_ctx.globalAlpha = 0.2;
-				//console.log("BB x="+x+" y="+y+" w="+w+" h="+h);
-				band_ctx.fillRect(x,y,w,h);
-				band_ctx.globalAlpha = 1;
+		if (x1 == 0) continue;
+ 
+      x = scale_px_from_freq(x1, g_range); var xx = scale_px_from_freq(x2, g_range);
+      w = xx - x;
+      //console.log("BANDS x="+x1+'/'+x+" y="+x2+'/'+xx+" w="+w);
+      if (w < 3) continue;
 
-				//band_ctx.fillStyle = "Black";
-				band_ctx.font = "bold 12px sans-serif";
-				band_ctx.textBaseline = "top";
-				var tx = x + w/2;
-				var txt = b.longName;
-				var mt = band_ctx.measureText(txt);
-				//console.log("BB mt="+mt.width+" txt="+txt);
-				if (w >= mt.width+4) {
-					;
-				} else {
-					txt = b.name;
-					mt = band_ctx.measureText(txt);
-					//console.log("BB mt="+mt.width+" txt="+txt);
-					if (w >= mt.width+4) {
-						;
-					} else {
-						txt = null;
-					}
-				}
-				//if (txt) console.log("BANDS tx="+(tx - mt.width/2)+" ty="+ty+" mt="+mt.width+" txt="+txt);
-				if (txt) band_ctx.fillText(txt, tx - mt.width/2, ty);
-			}
-		}
+      band_ctx.fillStyle = b.s.color;
+      band_ctx.globalAlpha = 0.2;
+      //console.log("BB x="+x+" y="+y+" w="+w+" h="+h);
+      band_ctx.fillRect(x,y,w,h);
+      band_ctx.globalAlpha = 1;
+
+      //band_ctx.fillStyle = "Black";
+      band_ctx.font = "bold 12px sans-serif";
+      band_ctx.textBaseline = "top";
+      var tx = x + w/2;
+      var txt = b.longName;
+      var mt = band_ctx.measureText(txt);
+      //console.log("BB mt="+mt.width+" txt="+txt);
+      if (w >= mt.width+4) {
+         ;     // long name fits in bar
+      } else {
+         txt = b.name;
+         mt = band_ctx.measureText(txt);
+         //console.log("BB mt="+mt.width+" txt="+txt);
+         if (w >= mt.width+4) {
+            ;  // short name fits in bar
+         } else {
+            txt = null;
+         }
+      }
+      //if (txt) console.log("BANDS tx="+(tx - mt.width/2)+" ty="+ty+" mt="+mt.width+" txt="+txt);
+      if (txt) band_ctx.fillText(txt, tx - mt.width/2, ty);
 	}
 }
 
@@ -5316,7 +5334,7 @@ function dx_label_cb(arr)
 	   if (dl) {
 	      //console.log('dx_label_cb: type=2 f='+ dl.f);
 	      //console.log(dl);
-	      var mode = modes_l[dl.b & DX_MODE];
+	      var mode = kiwi.modes_l[dl.b & DX_MODE];
          freqmode_set_dsp_kHz(dl.f, mode);
          if (dl.lo != 0 && dl.hi != 0) {
             ext_set_passband(dl.lo, dl.hi);     // label has custom pb
@@ -5354,7 +5372,7 @@ function dx_label_cb(arr)
 		var params = isDefined(obj.p)? obj.p : '';
 
 		var freqHz = freq * 1000;
-		var loff = passband_offset_dxlabel(modes_l[flags & DX_MODE]);	// always place label at center of passband
+		var loff = passband_offset_dxlabel(kiwi.modes_l[flags & DX_MODE]);	// always place label at center of passband
 		var x = scale_px_from_freq(freqHz + loff, g_range) - 1;	// fixme: why are we off by 1?
 		var cmkr_x = 0;		// optional carrier marker for NDBs
 		var carrier = freqHz - moff;
@@ -5364,7 +5382,7 @@ function dx_label_cb(arr)
 		var h = dx_container_h - t;
 		var color = type_colors[flags & DX_TYPE];
 		if (ident == 'IBP' || ident == 'IARU%2fNCDXF') color = type_colors[0x20];		// FIXME: hack for now
-		//console.log("DX "+dx_seq+':'+dx_idx+" f="+freq+" o="+loff+" k="+moff+" F="+flags+" m="+modes_u[flags & DX_MODE]+" <"+ident+"> <"+notes+'>');
+		//console.log("DX "+dx_seq+':'+dx_idx+" f="+freq+" o="+loff+" k="+moff+" F="+flags+" m="+kiwi.modes_u[flags & DX_MODE]+" <"+ident+"> <"+notes+'>');
 		
 		carrier /= 1000;
 		dx_list[gid] = { "gid":gid, "carrier":carrier, "lo":obj.lo, "hi":obj.hi, "freq":freq, "moff":moff, "flags":flags, "ident":ident, "notes":notes, "params":params };
@@ -5557,7 +5575,7 @@ function dx_label_step(dir)
    
    // after changing display to this frequency the normal dx_schedule_update() process will
    // acquire a new set of labels
-   var mode = modes_l[dl.flags & DX_MODE];
+   var mode = kiwi.modes_l[dl.flags & DX_MODE];
    //console.log('FOUND #'+ i +' '+ f +' '+ dl.ident +' '+ mode +' '+ dl.lo +' '+ dl.hi);
    freqmode_set_dsp_kHz(dl.freq, mode);
    if (dl.lo != 0 && dl.hi != 0) {
@@ -5603,7 +5621,7 @@ function dx_show_edit_panel2()
 		//console.log('DX EDIT new f='+ freq_car_Hz +'/'+ freq_displayed_Hz +' m='+ cur_mode);
 		dxo.f = freq_displayed_kHz_str;
 		dxo.lo = dxo.hi = dxo.o = 0;
-		dxo.m = modes_s[cur_mode];
+		dxo.m = kiwi.modes_s[cur_mode];
 		dxo.y = types_s.active;
 		dxo.i = dxo.n = dxo.p = '';
 	} else {
@@ -5669,7 +5687,7 @@ function dx_show_edit_panel2()
 		w3_divs('w3-text-aqua/w3-margin-T-8',
          w3_inline('w3-hspace-16',
 				w3_input('w3-padding-small', 'Freq', 'dxo.f', dxo.f, 'dx_num_cb'),
-				w3_select('', 'Mode', '', 'dxo.m', dxo.m, modes_u, 'dx_sel_cb'),
+				w3_select('', 'Mode', '', 'dxo.m', dxo.m, kiwi.modes_u, 'dx_sel_cb'),
 				w3_input('w3-padding-small', 'Passband', 'dxo.pb', dxo.pb, 'dx_passband_cb'),
 				w3_select('', 'Type', '', 'dxo.y', dxo.y, types, 'dx_sel_cb'),
 				w3_input('w3-padding-small', 'Offset', 'dxo.o', dxo.o, 'dx_num_cb')
@@ -5756,7 +5774,7 @@ function dx_click(ev, gid)
 		dx_show_edit_panel(ev, gid);
 	} else {
 	   var freq = dx_list[gid].freq;
-		var mode = modes_l[dx_list[gid].flags & DX_MODE];
+		var mode = kiwi.modes_l[dx_list[gid].flags & DX_MODE];
 		var lo = dx_list[gid].lo;
 		var hi = dx_list[gid].hi;
 		//console.log("DX-click f="+ dx_list[gid].freq +" mode="+ mode +" cur_mode="+ cur_mode +' lo='+ lo +' hi='+ hi);
@@ -6004,14 +6022,14 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny', 'g =', 25, 'select frequency entry field'),
          w3_inline_percent('w3-padding-tiny', 'j i LR-arrow-keys', 25, 'frequency step down/up, add shift or alt/ctrl for faster<br>shift plus alt/ctrl to step to next/prev DX label'),
          w3_inline_percent('w3-padding-tiny', 't T', 25, 'scroll frequency memory list'),
-         w3_inline_percent('w3-padding-tiny', 'a l u c f q', 25, 'select mode: AM LSB USB CW NBFM IQ'),
+         w3_inline_percent('w3-padding-tiny', 'a d l u c f q', 25, 'select mode: AM DRM LSB USB CW NBFM IQ'),
          w3_inline_percent('w3-padding-tiny', 'p P', 25, 'passband narrow/widen'),
          w3_inline_percent('w3-padding-tiny', 'r', 25, 'toggle audio recording'),
          w3_inline_percent('w3-padding-tiny', 'z Z', 25, 'zoom in/out, add alt/ctrl for max in/out'),
          w3_inline_percent('w3-padding-tiny', '< >', 25, 'waterfall page down/up'),
          w3_inline_percent('w3-padding-tiny', 'w W', 25, 'waterfall min dB slider -/+ 1 dB, add alt/ctrl for -/+ 10 dB'),
          w3_inline_percent('w3-padding-tiny', 'S', 25, 'waterfall auto-scale'),
-         w3_inline_percent('w3-padding-tiny', 's d', 25, 'spectrum on/off toggle, slow device mode'),
+         w3_inline_percent('w3-padding-tiny', 's D', 25, 'spectrum on/off toggle, slow device mode'),
          w3_inline_percent('w3-padding-tiny', 'v V m', 25, 'volume less/more, mute'),
          w3_inline_percent('w3-padding-tiny', 'o', 25, 'toggle between option bar "off" and "stats" mode,<br>others selected by related shortcut key'),
          w3_inline_percent('w3-padding-tiny', '@', 25, 'DX label filter'),
@@ -6055,6 +6073,11 @@ function keyboard_shortcut_url_keys()
    keyboard_shortcut_key_proc();
 }
 
+// abcdefghijklmnopqrstuvwxyz <>@? 0123456789.,/:kM
+// . .. .....F.. ............ .... FFFFFFFFFFFFFFFF   F = frequency entry keys
+//    .    ..  F  .  .. ..  .
+// ABCDEFGHIJKLMNOPQRSTUVWXYZ
+
 function keyboard_shortcut(key, mod, ctlAlt)
 {
    var action = true;
@@ -6064,10 +6087,11 @@ function keyboard_shortcut(key, mod, ctlAlt)
    switch (key) {
    
    // mode
-   case 'a': ext_set_mode((mode == 'am')? 'amn' : ((mode == 'amn')? 'am' : 'am')); break;
-   case 'l': ext_set_mode('lsb'); break;
-   case 'u': ext_set_mode('usb'); break;
-   case 'c': ext_set_mode((mode == 'cw')? 'cwn' : ((mode == 'cwn')? 'cw' : 'cw')); break;
+   case 'a': ext_set_mode((mode == 'am')? 'amn' : 'am'); break;
+   case 'd': ext_set_mode('drm'); extint_open('drm'); break;
+   case 'l': ext_set_mode((mode == 'lsb')? 'lsn' : 'lsb'); break;
+   case 'u': ext_set_mode((mode == 'usb')? 'usn' : 'usb'); break;
+   case 'c': ext_set_mode((mode == 'cw')? 'cwn' : 'cw'); break;
    case 'f': ext_set_mode('nbfm'); break;
    case 'q': ext_set_mode('iq'); break;
    
@@ -6104,7 +6128,7 @@ function keyboard_shortcut(key, mod, ctlAlt)
    // spectrum
    case 's': toggle_or_set_spec(); keyboard_shortcut_nav('wf'); break;
    case 'S': wf_autoscale(); keyboard_shortcut_nav('wf'); break;
-   case 'd': toggle_or_set_slow_dev(); keyboard_shortcut_nav('wf'); break;
+   case 'D': toggle_or_set_slow_dev(); keyboard_shortcut_nav('wf'); break;
 
    // misc
    case 'o': keyboard_shortcut_nav(shortcut.nav_off? 'status':'off'); shortcut.nav_off ^= 1; break;
@@ -6354,10 +6378,20 @@ function panels_setup()
 	button_9_10(step_9_10);
 
 	s = '';
-	['AM','AMN','LSB','USB','CW','CWN','NBFM','IQ'].forEach(
-	   function(ms) {
-	      s += w3_div('id-button-'+ ms.toLowerCase() +
-	         ' class-button||onclick="mode_button(event, this)" onmousedown="cancelEvent(event)" onmouseover="mode_over(event, this)"', ms);
+   mode_buttons.forEach(
+	   function(mba, i) {
+	      var ms = mba.s[0];
+	      var mslc = ms.toLowerCase();
+	      
+	      // kiwi.is_BBAI not valid yet -- will fix button disable when it is
+	      //console.log('mode_buttons setup is_BBAI='+ kiwi.is_BBAI);
+	      //var disabled = (mba.dis || mslc == 'drm');
+	      var disabled = mba.dis;
+	      var attr = disabled? '' : ' onclick="mode_button(event, this)"';
+	      attr += ' onmouseover="mode_over(event, this)"';
+	      s += w3_div('id-button-'+ mslc + ' id-mode-'+ mslc.substr(0,2) +
+	         ' class-button'+ (disabled? ' class-button-disbled':'') +
+	         ' ||id="'+ i +'-id-mode-col"' + attr + ' onmousedown="cancelEvent(event)"', ms);
 	   });
 	w3_el("id-control-mode").innerHTML = w3_inline('w3-halign-space-between/', s);
 
@@ -6503,7 +6537,6 @@ function panels_setup()
 			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color +' cl-closer-spaced-label-text', 'Noise<br>threshold')), 20,
 			'<input id="input-noise-th" type="range" min="0" max="100" value="'+ noiseThresh +'" step="1" onchange="setNoiseThresh(1,this.value)" oninput="setNoiseThresh(0,this.value)">', 50,
 			w3_div('field-noise-th w3-show-inline-block', noiseThresh.toString()) +'%', 15,
-			//w3_div('w3-hcenter', w3_div('id-button-nb-test class-button||onclick="toggle_nb_test();"', 'Test')), 15
 		   w3_button('id-button-compression class-button w3-hcenter||title="compression"', 'Comp', 'toggle_or_set_compression'), 15
 		) +
 		w3_col_percent('w3-valign w3-margin-TB-4/',
@@ -7204,7 +7237,7 @@ function toggle_or_set_rec(set)
       wav_data.setUint32(12, 0x666d7420);                                 // ASCII "fmt "
       wav_data.setUint32(16, 16, true);                                   // Length of this section ("fmt ") in bytes
       wav_data.setUint16(20, 1, true);                                    // PCM coding
-      var nch = (cur_mode === 'iq')? 2 : 1;                               // Two channels for IQ mode, one channel otherwise
+      var nch = (cur_mode === 'iq' || cur_mode === 'drm')? 2 : 1;         // Two channels for IQ mode, one channel otherwise
       wav_data.setUint16(22, nch, true);
       var srate = Math.round(audio_input_rate || 12000);
       wav_data.setUint32(24, srate, true);                                // Sample rate
@@ -7371,17 +7404,6 @@ function nb_setup(toggle_flags)
 {
 	noiseGate = kiwi_toggle(toggle_flags, default_noiseGate, noiseGate, 'last_noiseGate'); setNoiseGate(true, noiseGate);
 	noiseThresh = kiwi_toggle(toggle_flags, default_noiseThresh, noiseThresh, 'last_noiseThresh'); setNoiseThresh(true, noiseThresh);
-}
-
-var nb_test = 0;
-
-function toggle_nb_test()
-{
-   nb_test ^= 1;
-   var el = w3_el('id-button-nb-test');
-	el.style.color = nb_test? 'lime':'white';
-	freqset_select();
-	nb_send(nb_test? -1 : -2, noiseThresh);
 }
 
 
@@ -7644,7 +7666,23 @@ function setup_band_menu()
 
 function mode_over(evt, el)
 {
-   el.title = evt.shiftKey? 'restore passband':'';
+   var mode = el.innerHTML.toLowerCase();
+   //console.log('mode_over mode='+ mode);
+   
+   switch (mode) {
+   
+      case 'sam':
+         el.title = 'not yet implemented';
+         break;
+      
+      case 'drm':
+         //if (kiwi.is_BBAI != 1) el.title = 'only when using Beaglebone-AI';
+         break;
+      
+      default:
+         el.title = evt.shiftKey? 'restore passband':'';
+         break;
+   }
 }
 
 function any_alternate_click_event(evt)
@@ -7661,12 +7699,26 @@ function restore_passband(mode)
    //console.log('DEMOD PB reset');
 }
 
+var mode_buttons = [
+   { s:[ 'AM', 'AMN' ],          dis:0 },    // fixme: add AMW dynamically if 20 kHz mode? would have to deal with last_mode=ANW cookie
+   { s:[ 'SAM', 'SAU', 'SAL' ],  dis:1 },
+   { s:[ 'DRM' ],                dis:0 },
+   { s:[ 'LSB', 'LSN' ],         dis:0 },
+   { s:[ 'USB', 'USN' ],         dis:0 },
+   { s:[ 'CW', 'CWN' ],          dis:0 },
+   { s:[ 'NBFM' ],               dis:0 },
+   { s:[ 'IQ' ],                 dis:0 },
+];
+
 function mode_button(evt, el)
 {
    var mode = el.innerHTML.toLowerCase();
 
 	// Prevent going between mono and stereo modes while recording
-	if ((recording && cur_mode === 'iq') || (recording && cur_mode != 'iq' && mode === 'iq')) {
+	// FIXME: do something better like disable ineligible mode buttons and show reason in mouseover tooltip 
+   var c_iq_drm = (cur_mode == 'iq' || cur_mode == 'drm')? 1:0;
+   var m_iq_drm = (mode == 'iq' || mode == 'drm')? 1:0;
+	if (recording && (c_iq_drm ^ m_iq_drm)) {
 		return;
 	}
 
@@ -7674,8 +7726,33 @@ function mode_button(evt, el)
 	if (any_alternate_click_event(evt)) {
 	   restore_passband(mode);
 	}
-	
-	demodulator_analog_replace(mode);
+
+	// cycle button to next value
+	//console.log(el);
+   var col = parseInt(el.id);
+
+   if (isUndefined(owrx.last_mode_col)) {
+      owrx.last_mode_col = parseInt(owrx.last_mode_el.id);
+      //console.log('#### mode_button: last_mode_col UNDEF set to '+ owrx.last_mode_col);
+   }
+   
+   if (owrx.last_mode_col != col) {
+      //console.log('#### mode_button: col '+ owrx.last_mode_col +'>'+ col +' '+ mode);
+      owrx.last_mode_col = col;
+   } else {
+      var sa = mode_buttons[col].s;
+      mode = mode.toUpperCase();
+      var i = sa.indexOf(mode);
+      if (i == sa.length-1) i = 0; else i++;
+      mode = sa[i];
+      el.innerHTML = mode;
+      mode = mode.toLowerCase();
+      //console.log('#### mode_button: col '+ col +' '+ mode);
+   }
+
+   demodulator_analog_replace(mode);
+   if (mode == 'drm')
+      extint_open('drm');
 }
 
 var step_9_10;
@@ -7958,8 +8035,6 @@ function owrx_msg_cb(param, ws)
 			// now that we have the list of extensions see if there is an override
 			if (override_ext)
 				extint_open(override_ext, 3000);
-			else
-				if (override_mode == 's4285') extint_open('s4285', 3000);	//jks
 			break;
 		case "bandwidth":
 			bandwidth = parseInt(param[1]);
@@ -8008,7 +8083,11 @@ function owrx_msg_cb(param, ws)
 			//console.log('SQ '+ squelch_state);
 			if (el) el.style.color = squelch_state? 'lime':'white';
 			break;
+		default:
+		   return false;
 	}
+	
+	return true;
 }
 
 function owrx_ws_open_snd(cb, cbp)

@@ -96,7 +96,9 @@ const char *edata_lookup(embedded_files_t files[], const char *name, size_t *siz
     return NULL;
 }
 
-u4_t mtime_obj_keep_edata_always_o, mtime_obj_keep_edata_always2_o;
+u4_t mtime_obj_keep_edata_always_o;
+//u4_t mtime_obj_keep_edata_always2_o;
+
 int web_caching_debug;
 
 static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *mtime, bool *is_file)
@@ -143,6 +145,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 		}
 	}
 
+#if 0
 	if (!data) {
 		data = edata_lookup(edata_always2, uri, size);
 		if (data) {
@@ -162,6 +165,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 #endif
 		}
 	}
+#endif
 
     if (data)
 	    web_printf_all("EDATA           %s, %s, %s: mtime=%lu/%lx %s\n", type, subtype, reason, *mtime, *mtime, uri);
@@ -560,6 +564,11 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 
     //if (web_caching_debug == 0) web_caching_debug = bg? 3:1;
 
+
+    ////////////////////////////////
+    // web socket
+    ////////////////////////////////
+
 	if (mc->is_websocket) {
 		// This handler is called for each incoming websocket frame, one or more
 		// times for connection lifetime.
@@ -598,7 +607,10 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 	}
     
     
+    ////////////////////////////////
     // not web socket
+    ////////////////////////////////
+
     char remote_ip[NET_ADDRSTRLEN];
     check_if_forwarded(NULL, mc, remote_ip);
     

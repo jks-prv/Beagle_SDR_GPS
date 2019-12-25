@@ -49,6 +49,7 @@ char *kiwi_str_escape_HTML(char *str);
 char *kiwi_str_encode(char *s);
 char *kiwi_str_decode_inplace(char *src);
 char *kiwi_str_decode_static(char *src);
+char *kiwi_str_clean(char *s);
 int kiwi_str2enum(const char *s, const char *strs[], int len);
 const char *kiwi_enum2str(int e, const char *strs[], int len);
 void kiwi_chrrep(char *str, const char from, const char to);

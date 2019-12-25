@@ -73,12 +73,13 @@ extern rx_stream_t streams[];
 
 extern embedded_files_t edata_embed[];
 extern embedded_files_t edata_always[];
-extern embedded_files_t edata_always2[];
+//extern embedded_files_t edata_always2[];
 
 const char *edata_lookup(embedded_files_t files[], const char *name, size_t *size);
 
 extern char *web_server_hdr;
-extern u4_t mtime_obj_keep_edata_always_o, mtime_obj_keep_edata_always2_o;
+extern u4_t mtime_obj_keep_edata_always_o;
+//extern u4_t mtime_obj_keep_edata_always2_o;
 
 void webserver_connection_cleanup(conn_t *c);
 

@@ -42,6 +42,7 @@ typedef void (*ext_receive_iq_samps_t)(int rx_chan, int ch, int ns_out, TYPECPX 
 typedef void (*ext_receive_real_samps_t)(int rx_chan, int ch, int ns_out, TYPEMONO16 *samps);
 typedef void (*ext_receive_FFT_samps_t)(int rx_chan, int ch, int ratio, int ns_out, TYPECPX *samps);
 typedef void (*ext_receive_S_meter_t)(int rx_chan, float S_meter_dBm);
+typedef void (*ext_poll_t)(int rx_chan);
 
 // used by extension server-part to describe itself
 typedef struct {
@@ -49,6 +50,7 @@ typedef struct {
 	ext_main_t main_unused;             // unused, ext_main_t routines are called via ext_init.c:extint_init()
 	ext_close_conn_t close_conn;		// routine to cleanup when connection closed
 	ext_receive_msgs_t receive_msgs;	// routine to receive messages from client-part
+	ext_poll_t poll_cb;                 // periodic callback that cal be used for polling (e.g. shared mem comm)
 } ext_t;
 
 void ext_register(ext_t *ext);

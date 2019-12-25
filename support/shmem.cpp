@@ -42,30 +42,37 @@ void shmem_init()
     u1_t *shmem_end = ((u1_t *) shmem) + size;
     shmem->log_save.endp = (char *) shmem_end;
 
-    real_printf("SHMEM=%.3f MB: mem=%p..%p ipc=%.3f spi=%.3f rx=%.3f wf=%.3f wspr=%.3f drm=%.3f\n",
-        (float) size/M, shmem, shmem_end, (float) sizeof(shmem->ipc)/M,
+    real_printf("SHMEM=%.3f MB: ipc=%.3f spi=%.3f rx=%.3f wf=%.3f wspr=%.3f drm=%.3f\n",
+        (float) size/M,
+        
+        (float) sizeof(shmem->ipc)/M,
+
         #ifdef SPI_SHMEM_DISABLE
-            0,
+            0.,
         #else
             (float) sizeof(shmem->spi_shmem)/M,
         #endif
+
         #ifdef RX_SHMEM_DISABLE
-            0,
+            0.,
         #else
             (float) sizeof(shmem->rx_shmem)/M,
         #endif
+
         #ifdef WF_SHMEM_DISABLE
-            0,
+            0.,
         #else
             (float) sizeof(shmem->wf_shmem)/M,
         #endif
+
         #ifdef WSPR_SHMEM_DISABLE
-            0,
+            0.,
         #else
             (float) sizeof(shmem->wspr_shmem)/M,
         #endif
+
         #ifdef DRM_SHMEM_DISABLE
-            0
+            0.
         #else
             (float) sizeof(shmem->drm_shmem)/M
         #endif

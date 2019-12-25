@@ -683,8 +683,8 @@ bool wspr_msgs(char *msg, int rx_chan)
 	if (n == 1) {
 		if (w->capture) {
 			if (!w->create_tasks) {
-				w->WSPR_FFTtask_id = CreateTaskF(WSPR_FFT, TO_VOID_PARAM(rx_chan), EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL), 0);
-				w->WSPR_DecodeTask_id = CreateTaskF(WSPR_Deco, TO_VOID_PARAM(rx_chan), EXT_PRIORITY_LOW, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL), 0);
+				w->WSPR_FFTtask_id = CreateTaskF(WSPR_FFT, TO_VOID_PARAM(rx_chan), EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL));
+				w->WSPR_DecodeTask_id = CreateTaskF(WSPR_Deco, TO_VOID_PARAM(rx_chan), EXT_PRIORITY_LOW, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL));
 				w->create_tasks = true;
 			}
 			
@@ -728,7 +728,11 @@ void wspr_autorun(int which, int idx)
     kiwi_strncpy(mc->remote_ip, "127.0.0.1", NET_ADDRSTRLEN);
     mc->remote_port = mc->local_port = ddns.port;
     conn_t *csnd = rx_server_websocket(WS_INTERNAL_CONN, mc);
-    if (csnd == NULL) return;
+    if (csnd == NULL) {
+        printf("WSPR autorun: couldn't get websocket which=%d uri=%s port=%d\n",
+            which, mc->uri, mc->remote_port);
+        return;
+    }
 
     int chan = csnd->rx_channel;
     wspr_t *w = &WSPR_SHMEM->wspr[chan];
@@ -845,10 +849,16 @@ void wspr_main()
     bool autorun = (*wspr_c.rcall == '\0' || wspr_c.rgrid[0] == '\0')? false : true;
 	//printf("autorun %d rcall <%s> rgrid <%s>\n", autorun, wspr_c.rcall, wspr_c.rgrid);
 
-    for (int i=0; autorun && i < rx_chans; i++) {
+    for (int i=0; i < rx_chans; i++) {
         bool err;
         int idx = cfg_int(stprintf("WSPR.autorun%d", i), &err, CFG_OPTIONAL);
-        if (!err && idx != 0) wspr_autorun(i, idx);
+        if (!err && idx != 0) {
+            if (!autorun) {
+                printf("WSPR autorun: reporter callsign and grid square fields must be entered on WSPR section of admin page\n");
+                break;
+            }
+            wspr_autorun(i, idx);
+        }
     }
 }
 

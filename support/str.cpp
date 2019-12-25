@@ -367,6 +367,26 @@ char *kiwi_str_decode_static(char *src)
 	return dst_static;
 }
 
+// FIXME: do something better
+char *kiwi_str_clean(char *str)
+{
+    char *s = str;
+
+    for (; *s != '\0'; s++) {
+        if (*s == '\'') *s = ' '; else
+        if (*s == '"') *s = ' '; else
+        if (*s == '\\') *s = ' '; else
+        if (*s == '<') *s = ' '; else
+        if (*s == '>') *s = ' '; else
+        if (*s == '&') *s = ' ';
+
+        if (isprint(*s)) continue;
+        *s = ' ';
+    }
+
+    return str;
+}
+
 int kiwi_str2enum(const char *s, const char *strs[], int len)
 {
 	int i;

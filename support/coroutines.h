@@ -58,11 +58,16 @@ extern u4_t task_medium_priority;
 
 #define	MISC_TASKS			6					// main, stats, spi, data pump, web server, sdr_hu
 #define GPS_TASKS			(GPS_CHANS + 3)		// chan*n + search + solve + stat
-#define	RX_TASKS			(MAX_RX_CHANS * 2)  // SND, W/F
+#define	SND_TASKS			MAX_RX_CHANS        // SND
 #define	EXT_TASKS			MAX_RX_CHANS        // each extension server-side part runs as a separate task
 #define	EXTRA_TASKS			(MAX_RX_CHANS * 4)  // additional tasks created by extensions etc.
 #define	ADMIN_TASKS			4					// simultaneous admin connections
-#define	MAX_TASKS           (MISC_TASKS + GPS_TASKS + RX_TASKS + EXT_TASKS + EXTRA_TASKS + ADMIN_TASKS)
+
+#define	REG_STACK_TASKS     (MISC_TASKS + GPS_TASKS + SND_TASKS + EXT_TASKS + EXTRA_TASKS + ADMIN_TASKS)
+#define MED_STACK_TASKS     MAX_RX_CHANS        // WF
+#define LARGE_STACK_TASKS   1                   // DRM
+
+#define	MAX_TASKS           (REG_STACK_TASKS + MED_STACK_TASKS + LARGE_STACK_TASKS)
 
 typedef int tid_t;
 
@@ -79,10 +84,16 @@ void TaskCollect();
 #define CTF_NO_CHARGE		0x0200
 #define CTF_TNAME_FREE		0x0400
 #define CTF_NO_PRIO_INV		0x0800
+#define CTF_STACK_SIZE		0x3000
 
-int _CreateTask(funcP_t entry, const char *name, void *param, int priority, u4_t flags, int f_arg);
-#define CreateTask(f, param, priority)				_CreateTask(f, #f, param, priority, 0, 0)
-#define CreateTaskF(f, param, priority, flags, fa)	_CreateTask(f, #f, param, priority, flags, fa)
+#define CTF_STACK_REG		0x0000
+#define CTF_STACK_MED		0x1000
+#define CTF_STACK_LARGE		0x2000
+
+int _CreateTask(funcP_t entry, const char *name, void *param, int priority, u4_t flags=0, int f_arg=0);
+#define CreateTask(f, param, priority)				    _CreateTask(f, #f, param, priority)
+#define CreateTaskF(f, param, priority, flags)          _CreateTask(f, #f, param, priority, flags)
+#define CreateTaskFA(f, param, priority, flags, fa)     _CreateTask(f, #f, param, priority, flags, fa)
 #define CreateTaskSF(f, s, param, priority, flags, fa)	_CreateTask(f, s, param, priority, flags, fa)
 
 // usec == 0 means sleep until someone does TaskWakeup() on us
@@ -130,8 +141,8 @@ void TaskForkChild();
 bool TaskIsChild();
 
 u4_t TaskID();
-u4_t TaskGetUserParam(int id);
-void TaskSetUserParam(int id, u4_t param);
+void *TaskGetUserParam();
+void TaskSetUserParam(void *param);
 
 // don't collide with PRINTF_FLAGS
 #define	TDUMP_PRINTF    0x00ff

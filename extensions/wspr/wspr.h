@@ -37,7 +37,7 @@
 #include <time.h>
 #include <fftw3.h>
 
-#ifdef CPU_AM5729
+#ifdef MULTI_CORE
     //#define WSPR_SHMEM_DISABLE
 #else
     #define WSPR_SHMEM_DISABLE

@@ -177,8 +177,10 @@ void c2s_waterfall_setup(void *param)
 	send_msg(conn, SM_WF_DEBUG, "MSG kiwi_up=1 rx_chan=%d", rx_chan);       // rx_chan needed by extint_send_extlist() on js side
 	extint_send_extlist(conn);
 
-	send_msg(conn, SM_WF_DEBUG, "MSG wf_fft_size=1024 wf_fps=%d wf_fps_max=%d zoom_max=%d rx_chans=%d wf_chans=%d color_map=%d wf_setup",
-		WF_SPEED_FAST, WF_SPEED_MAX, MAX_ZOOM, rx_chans, conn->isWF_conn? wf_chans:0,
+    // If not wanting a wf (!conn->isWF_conn) send wf_chans=0 to force audio FFT to be used.
+    // But need to send actual value via wf_chans_real for use elsewhere.
+	send_msg(conn, SM_WF_DEBUG, "MSG wf_fft_size=1024 wf_fps=%d wf_fps_max=%d zoom_max=%d rx_chans=%d wf_chans=%d wf_chans_real=%d color_map=%d wf_setup",
+		WF_SPEED_FAST, WF_SPEED_MAX, MAX_ZOOM, rx_chans, conn->isWF_conn? wf_chans:0, wf_chans,
 		color_map? (~conn->ui->color_map)&1 : conn->ui->color_map);
 	if (do_gps && !do_sdr) send_msg(conn, SM_WF_DEBUG, "MSG gps");
 }
@@ -1143,6 +1145,7 @@ if (i == 516) printf("\n");
 	out->seq = wf->snd_seq;
 	//if (out->seq != wf->snd->seq)
 	//{ real_printf("%d ", wf->snd->seq - out->seq); fflush(stdout); }
+	//{ real_printf("ws%d,%d ", out->seq, wf->snd->seq); fflush(stdout); }
 }
 
 void c2s_waterfall_shutdown(void *param)

@@ -136,8 +136,9 @@ function decode_ima_adpcm_e8_i16(input, output, input_length, state)
 	var i, k=0;
 	for (i=0; i<input_length; i++)
 	{
-		output[k++] = ImaAdpcmDecode(input[i]&0xf, state);
-		output[k++] = ImaAdpcmDecode((input[i]>>4)&0xf, state);
+	   var byte = input.getUint8(i);
+		output[k++] = ImaAdpcmDecode(byte&0xf, state);
+		output[k++] = ImaAdpcmDecode((byte>>4)&0xf, state);
 	}
 }
 

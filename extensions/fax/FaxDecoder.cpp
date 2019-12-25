@@ -577,7 +577,7 @@ void FaxDecoder::FileOpen()
     asprintf(&m_fn, "/root/kiwi.config/fax.ch%d.pgm", m_rx_chan);
     m_file = pgm_file_open(m_fn, &m_offset, m_imagewidth, 0, 255);
 
-    if (m_file <= 0) {
+    if (m_file == NULL) {
         faxprintf("FAX open FAILED %s\n", m_fn);
     } else {
         faxprintf("FAX open %s\n", m_fn);
@@ -586,7 +586,7 @@ void FaxDecoder::FileOpen()
 
 void FaxDecoder::FileWrite(u1_t *data, int datalen)
 {
-    if (m_file <= 0) return;
+    if (m_file == NULL) return;
     //faxprintf("len=%d m_fax_line=%d\n", datalen, m_fax_line);
     fwrite(data, datalen, 1, m_file);
     m_fax_line++;
@@ -595,7 +595,7 @@ void FaxDecoder::FileWrite(u1_t *data, int datalen)
 
 void FaxDecoder::FileClose()
 {
-    if (m_file <= 0) return;
+    if (m_file == NULL) return;
     
     fflush(m_file);
     pgm_file_height(m_file, m_offset, m_fax_line);

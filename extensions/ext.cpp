@@ -384,11 +384,12 @@ void extint_c2s(void *param)
 			continue;
 		}
 		
+        ext_rx_chan = conn_ext->ext_rx_chan;
+        ext = (ext_rx_chan == -1)? NULL : ext_users[ext_rx_chan].ext;
+
 		conn_ext->keep_alive = timer_sec() - conn_ext->keepalive_time;
 		bool keepalive_expired = (!conn_ext->internal_connection && conn_ext->keep_alive > KEEPALIVE_SEC);
 		if (keepalive_expired || conn_ext->kick) {
-			ext_rx_chan = conn_ext->ext_rx_chan;
-			ext = (ext_rx_chan == -1)? NULL : ext_users[ext_rx_chan].ext;
 			//printf("EXT %s RX%d %s\n", conn_ext->kick? "KICKED" : "KEEP-ALIVE EXPIRED", ext_rx_chan, ext? ext->name : "(no ext)");
 			if (ext != NULL && ext->close_conn != NULL)
 				ext->close_conn(ext_rx_chan);
@@ -397,6 +398,10 @@ void extint_c2s(void *param)
 			rx_server_remove(conn_ext);
 			panic("shouldn't return");
 		}
+		
+		// call periodic callback if requested
+        if (ext != NULL && ext->poll_cb != NULL)
+            ext->poll_cb(ext_rx_chan);
 
 		TaskSleepReasonMsec("ext-cmd", 250);
 	}

@@ -743,6 +743,11 @@ input[type=range]::-moz-range-thumb {
 	overflow: auto;
 }
 
+.w3-no-scroll
+{
+	overflow: hidden;
+}
+
 .w3-scroll-x
 {
 	overflow-x: auto;
@@ -857,7 +862,7 @@ input[type=range]::-moz-range-thumb {
 
 .w3-css-red
 {
-    color: black;
+    color: white;
     background-color: red;
 }
 

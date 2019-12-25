@@ -9,21 +9,28 @@ var kiwi = {
    GPS_fixes: 0,
    wf_fps: 0,
    inactivity_panel: false,
+   is_BBAI: 0,
+   
+   // must match rx_cmd.cpp
+   modes_l: [ 'am', 'amn', 'usb', 'lsb', 'cw', 'cwn', 'nbfm', 'iq', 'drm', 'usn', 'lsn' ],
+   modes_u: [],
+   modes_s: {},
    
    RX4_WF4:0, RX8_WF2:1, RX3_WF3:2, RX14_WF0:3
 };
 
+kiwi.modes_l.forEach(function(e,i) { kiwi.modes_u.push(e.toUpperCase()); kiwi.modes_s[e] = i});
+//console.log(kiwi.modes_u);
+//console.log(kiwi.modes_s);
+
 var WATERFALL_CALIBRATION_DEFAULT = -13;
 var SMETER_CALIBRATION_DEFAULT = -13;
 
-var rx_chans, wf_chans, rx_chan;
+var rx_chans, wf_chans, wf_chans_real, rx_chan;
 var try_again="";
 var conn_type;
 var seriousError = false;
 
-var modes_u = { 0:'AM', 1:'AMN', 2:'USB', 3:'LSB', 4:'CW', 5:'CWN', 6:'NBFM', 7:'IQ' };
-var modes_l = { 0:'am', 1:'amn', 2:'usb', 3:'lsb', 4:'cw', 5:'cwn', 6:'nbfm', 7:'iq' };
-var modes_s = { 'am':0, 'amn':1, 'usb':2, 'lsb':3, cw:4, 'cwn':5, 'nbfm':6, 'iq':7 };
 
 var types = { 0:'active', 1:'watch-list', 2:'sub-band', 3:'DGPS', 4:'special event', 5:'interference', 6:'masked' };
 var types_s = { active:0, watch_list:1, sub_band:2, DGPS:3, special_event:4, interference:5, masked:6 };
@@ -309,23 +316,25 @@ function kiwi_get_init_settings()
 	// if not configured, take value from config.js, if present, for backward compatibility
 
 	var init_f = (init_frequency == undefined)? 7020 : init_frequency;
-	init_f = ext_get_cfg_param('init.freq', init_f);
+	init_f = ext_get_cfg_param('init.freq', init_f, EXT_NO_SAVE);
 	init_frequency = override_freq? override_freq : init_f;
 
-	var init_m = (init_mode == undefined)? modes_s['lsb'] : modes_s[init_mode];
-	init_m = ext_get_cfg_param('init.mode', init_m);
-	init_mode = override_mode? override_mode : modes_l[init_m];
+	var init_m = (init_mode == undefined)? kiwi.modes_s['lsb'] : kiwi.modes_s[init_mode];
+	init_m = ext_get_cfg_param('init.mode', init_m, EXT_NO_SAVE);
+	//console.log('INIT init_mode='+ init_mode +' init.mode='+ init_m +' override_mode='+ override_mode);
+	init_mode = override_mode? override_mode : kiwi.modes_l[init_m];
+	if (init_mode === 'drm') init_mode = 'am';      // don't allow inherited drm mode from another channel
 
 	var init_z = (init_zoom == undefined)? 0 : init_zoom;
-	init_z = ext_get_cfg_param('init.zoom', init_z);
+	init_z = ext_get_cfg_param('init.zoom', init_z, EXT_NO_SAVE);
 	init_zoom = override_zoom? override_zoom : init_z;
 
 	var init_max = (init_max_dB == undefined)? -10 : init_max_dB;
-	init_max = ext_get_cfg_param('init.max_dB', init_max);
+	init_max = ext_get_cfg_param('init.max_dB', init_max, EXT_NO_SAVE);
 	init_max_dB = override_max_dB? override_max_dB : init_max;
 
 	var init_min = (init_min_dB == undefined)? -110 : init_min_dB;
-	init_min = ext_get_cfg_param('init.min_dB', init_min);
+	init_min = ext_get_cfg_param('init.min_dB', init_min, EXT_NO_SAVE);
 	init_min_dB = override_min_dB? override_min_dB : init_min;
 	
 	console.log('INIT f='+ init_frequency +' m='+ init_mode +' z='+ init_zoom
@@ -339,7 +348,7 @@ function kiwi_get_init_settings()
 		el.innerHTML = 'Antenna: '+ decodeURIComponent(ant);
 	}
 
-   kiwi.WSPR_rgrid = ext_get_cfg_param_string('WSPR.grid', '');
+   kiwi.WSPR_rgrid = ext_get_cfg_param_string('WSPR.grid', '', EXT_NO_SAVE);
 }
 
 
@@ -353,6 +362,7 @@ var adm = { };
 function cfg_save_json(path, ws)
 {
 	//console.log('cfg_save_json: path='+ path);
+	//kiwi_trace();
 
 	if (ws == undefined || ws == null)
 		return;
@@ -364,6 +374,7 @@ function cfg_save_json(path, ws)
 		s = encodeURIComponent(JSON.stringify(cfg));
 		ws.send('SET save_cfg='+ s);
 	}
+	console.log('cfg_save_json: DONE');
 }
 
 ////////////////////////////////
@@ -1091,6 +1102,14 @@ function kiwi_too_busy(rx_chans)
 	kiwi_show_msg(s);
 }
 
+function kiwi_exclusive_use()
+{
+	var s = 'Sorry, a single user has locked this Kiwi for exclusive use. <br>' +
+	'This happens when using an extension (e.g. DRM decoder) that requires all available resources. <br>' +
+	'Please check <a href="https://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
+	kiwi_show_msg(s);
+}
+
 function kiwi_ip_limit_pwd_cb(pwd)
 {
    console.log('kiwi_ip_limit_pwd_cb pwd='+ pwd);
@@ -1582,6 +1601,10 @@ function kiwi_msg(param, ws)
 			wf_chans = parseInt(param[1]);
 			break;
 
+		case "wf_chans_real":
+			wf_chans_real = parseInt(param[1]);
+			break;
+
 		case "rx_chan":
 			rx_chan = parseInt(param[1]);
 			break;
@@ -1616,7 +1639,7 @@ function kiwi_msg(param, ws)
 		case "config_cb":
 			//console.log('config_cb='+ param[1]);
 			var o = JSON.parse(param[1]);
-			config_cb(o.r, o.g, o.s, o.pu, o.pe, o.pv, o.pi, o.n, o.m, o.v1, o.v2);
+			config_cb(o.r, o.g, o.s, o.pu, o.pe, o.pv, o.pi, o.n, o.m, o.v1, o.v2, o.ai);
 			break;					
 
 		case "update_cb":
@@ -1673,6 +1696,18 @@ function kiwi_msg(param, ws)
 		   console.log('kiwi_msg rx_chan='+ p[0] +' is_local='+ p[1]);
 			kiwi.is_local[+p[0]] = +p[1];
 			break;
+		
+      /*
+      // enable DRM mode button
+      var el = w3_el('id-button-drm');
+      if (el && kiwi.is_BBAI) {
+         w3_remove(el, 'class-button-disbled');
+         w3_attribute(el, 'onclick', 'mode_button(event, this)');
+      }
+      */
+		case "is_BBAI":
+		   kiwi.is_BBAI = 1;
+		   break;
 
 		case "authkey_cb":
 			extint_authkey_cb(param[1]);
@@ -1684,6 +1719,10 @@ function kiwi_msg(param, ws)
 
 		case "too_busy":
 			kiwi_too_busy(parseInt(param[1]));
+			break;
+
+		case "exclusive_use":
+			kiwi_exclusive_use();
 			break;
 
 		case "inactivity_timeout":

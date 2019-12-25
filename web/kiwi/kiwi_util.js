@@ -13,6 +13,7 @@ function isString(v) { return (typeof(v) === 'string'); }
 function isArray(v) { return (Array.isArray(v)); }
 function isFunction(v) { return (typeof(v) === 'function'); }
 function isObject(v) { return (typeof(v) === 'object'); }
+function isArg(v) { return (isUndefined(v) || isNull(v))? false:true; }
 
 // browsers have added includes() only relatively recently
 try {
@@ -288,13 +289,13 @@ Number.prototype.toUnits = function()
 	if (n < 1000) {
 		return n.toString();
 	} else
-	if (n < 1000000) {
-		return (n/1000).toFixed(1)+'k';
+	if (n < 1e6) {
+		return (n/1e3).toFixed(1)+'k';
 	} else
-	if (n < 1000000000) {
-		return (n/1000000).toFixed(1)+'M';
+	if (n < 1e9) {
+		return (n/1e6).toFixed(1)+'M';
 	} else {
-		return n.toString();
+		return (n/1e9).toFixed(1)+'G';
 	}
 }
 
@@ -1115,25 +1116,32 @@ function on_ws_recv(evt, ws)
 		return;
 	} else
 	
+	var claimed = false;
 	if (firstChars == "MSG") {
 		var stringData = arrayBufferToString(data);
-		params = stringData.substring(4).split(" ");
+		params = stringData.substring(4).split(" ");    // "foo=arg bar=arg"
 	
 		//if (ws.stream == 'EXT')
 		//console.log('>>> '+ ws.stream +': msg_cb='+ typeof(ws.msg_cb) +' '+ params.length +' '+ stringData);
 		for (var i=0; i < params.length; i++) {
-			param = params[i].split("=");
+			var msg_a = params[i].split("=");
 			
-			if (ws.stream == 'EXT' && param[0] == 'EXT-STOP-FLUSH-INPUT') {
+			if (ws.stream == 'EXT' && msg_a[0] == 'EXT-STOP-FLUSH-INPUT') {
 				//console.log('EXT-STOP-FLUSH-INPUT');
 				kiwi_flush_recv_input = false;
 			}
 			
-			if (kiwi_msg(param, ws) == false && ws.msg_cb) {
-				//if (ws.stream == 'EXT')
-				//console.log('>>> '+ ws.stream + ': not kiwi_msg: msg_cb='+ typeof(ws.msg_cb) +' '+ params[i]);
-				ws.msg_cb(param, ws);
+			claimed = kiwi_msg(msg_a, ws);
+			if (claimed == false) {
+			   if (ws.msg_cb) {
+               //if (ws.stream == 'EXT')
+               //console.log('>>> '+ ws.stream + ': not kiwi_msg: msg_cb='+ typeof(ws.msg_cb) +' '+ params[i]);
+               claimed = ws.msg_cb(msg_a, ws);
+            }
 			}
+			
+         if (claimed == false)
+            console.log('>>> '+ ws.stream + ': message not claimed: '+ params[i]);
 		}
 	} else {
 		/*
