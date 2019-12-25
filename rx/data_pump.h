@@ -84,10 +84,14 @@ typedef struct {
     iq_buf_t iq_buf[MAX_RX_CHANS];
 } rx_shmem_t;
 
-#ifdef CPU_AM5729
-    //#define RX_SHMEM_DISABLE
+#ifdef DRM
+    #include "DRM.h"
 #else
-    #define RX_SHMEM_DISABLE
+    #ifdef MULTI_CORE
+        //#define RX_SHMEM_DISABLE
+    #else
+        #define RX_SHMEM_DISABLE
+    #endif
 #endif
 
 #ifdef RX_SHMEM_DISABLE

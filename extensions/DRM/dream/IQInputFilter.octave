@@ -1,0 +1,109 @@
+%******************************************************************************\
+%* Technische Universitaet Darmstadt, Institut fuer Nachrichtentechnik
+%* Copyright (c) 2004
+%*
+%* Author:
+%*	Volker Fischer, modified by David Flamand (bandwith increased)
+%*
+%* Description:
+%* 	Hilbert Filter for I / Q input
+%*
+%******************************************************************************
+%*
+%* This program is free software; you can redistribute it and/or modify it under
+%* the terms of the GNU General Public License as published by the Free Software
+%* Foundation; either version 2 of the License, or (at your option) any later 
+%* version.
+%*
+%* This program is distributed in the hope that it will be useful, but WITHOUT 
+%* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+%* FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+%* details.
+%*
+%* You should have received a copy of the GNU General Public License along with
+%* this program; if not, write to the Free Software Foundation, Inc., 
+%* 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+%*
+%******************************************************************************/
+
+function [b] = DesignFilter(filterbw, nhil, fs)
+    % Parks-McClellan optimal equiripple FIR filter design
+    trans = (fs / 2 - filterbw) / 2 / (fs / 2);
+    f = [trans  1 - trans];
+    a = [1 1];
+    b = remez(nhil - 1, f, a, 'hilbert', 8192);
+endfunction
+
+
+% Number of taps (should be odd)
+nhil = 151;
+
+% Sampling frequency
+fs = 48000;
+
+% Filter bandwidth
+%filterbw = 18000; # 75% of fs/2 (18000 = 24000 - 24000/4)
+filterbw = 22500; # 93.75% of fs/2 (22500 = 24000 - 24000/16)
+
+
+function MakeFilter(fid_cpp, fid_h, fs, filterbw, nhil, sufix)
+    % Generate filter coefficients
+    b = DesignFilter(filterbw, nhil, fs);
+    % Display the filter
+    PLOT = 1;
+    if (PLOT == 1)
+        close all;
+        plot(b);
+        figure;
+        freqz(b);
+    end
+    % Write to header file
+    fprintf(fid_h, '#define NUM_TAPS_IQ_INPUT_FILT%s        %i\n', sufix, nhil);
+    fprintf(fid_h, '#define IQ_INP_HIL_FILT_DELAY%s         %i\n', sufix, floor(nhil / 2));
+    fprintf(fid_h, '\n');
+    fprintf(fid_h, '/* Low pass prototype for Hilbert-filter */\n');
+    fprintf(fid_h, 'extern const float fHilFiltIQ%s[NUM_TAPS_IQ_INPUT_FILT%s];\n', sufix, sufix);
+    fprintf(fid_h, '\n');
+    % Write filter taps to cpp file
+    fprintf(fid_cpp, '/* Low pass prototype for Hilbert-filter */\n');
+    fprintf(fid_cpp, 'const float fHilFiltIQ%s[NUM_TAPS_IQ_INPUT_FILT%s] =\n', sufix, sufix);
+    fprintf(fid_cpp, '{\n');
+    fprintf(fid_cpp, '	%.18ef,\n', b(1:end - 1));
+    fprintf(fid_cpp, '	%.18ef\n', b(end));
+    fprintf(fid_cpp, '};\n');
+    fprintf(fid_cpp, '\n');
+endfunction
+
+
+% Export coefficients to file ****************************************
+
+% Open/Write header file
+fid_h = fopen('IQInputFilter.h', 'w');
+fprintf(fid_h, '/* Automatically generated file with GNU Octave */\n');
+fprintf(fid_h, '\n');
+fprintf(fid_h, '/* File name: "IQInputFilter.octave" */\n');
+fprintf(fid_h, '/* Filter taps in time-domain */\n');
+fprintf(fid_h, '\n');
+fprintf(fid_h, '#ifndef _IQINPUTFILTER_H_\n');
+fprintf(fid_h, '#define _IQINPUTFILTER_H_\n');
+fprintf(fid_h, '\n');
+
+% Open/Write cpp file
+fid_cpp = fopen('IQInputFilter.cpp', 'w');
+fprintf(fid_cpp, '/* Automatically generated file with GNU Octave */\n');
+fprintf(fid_cpp, '\n');
+fprintf(fid_cpp, '/* File name: "IQInputFilter.octave" */\n');
+fprintf(fid_cpp, '/* Filter taps in time-domain */\n');
+fprintf(fid_cpp, '\n');
+fprintf(fid_cpp, '#include "IQInputFilter.h"\n');
+fprintf(fid_cpp, '\n');
+
+MakeFilter(fid_cpp, fid_h, fs, filterbw, 101, "")
+MakeFilter(fid_cpp, fid_h, fs, filterbw, 169, "_HQ")
+
+fclose(fid_cpp);
+
+fprintf(fid_h, '#endif /* _IQINPUTFILTER_H_ */\n');
+fclose(fid_h);
+
+

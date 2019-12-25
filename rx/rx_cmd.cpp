@@ -60,10 +60,10 @@ bool auth_su;
 char auth_su_remote_ip[NET_ADDRSTRLEN];
 bool conn_nolocal;
 
-const char *mode_s[N_MODE] = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq" };
-const char *modu_s[N_MODE] = { "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ" };
-const int mode_hbw[N_MODE] = { 9800/2, 5000/2, 2400/2, 2400/2, 400/2, 60/2, 12000/2, 10000/2 };
-const int mode_offset[N_MODE] = { 0, 0, 1500, -1500, 0, 0, 0, 0 };
+const char *mode_s[N_MODE] = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq", "drm", "usn", "lsn" };
+const char *modu_s[N_MODE] = { "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ", "DRM", "USN", "LSN" };
+const int mode_hbw[N_MODE] = { 9800/2, 5000/2, 2400/2, 2400/2, 400/2, 60/2, 12000/2, 10000/2, 10000/2, 2100/2, 2100/2 };
+const int mode_offset[N_MODE] = { 0, 0, 1500, -1500, 0, 0, 0, 0, 0, 1350, -1350 };
 
 #ifndef CFG_GPS_ONLY
 
@@ -98,6 +98,9 @@ int bsearch_freqcomp(const void *key, const void *elem)
 void rx_common_init(conn_t *conn)
 {
 	conn->keepalive_time = timer_sec();
+
+    if (is_BBAI)
+	    send_msg(conn, true, "MSG is_BBAI");
 }
 
 bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
@@ -107,7 +110,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	char *sb, *sb2;
 	int slen;
 	
-	if (mc == NULL) return false;
+	if (mc == NULL) {
+	    cprintf(conn, "### cmd but mc is null <%s>\n", cmd);
+	    return false;
+	}
 	
 	NextTask("rx_common_cmd");      // breakup long runs of sequential commands -- sometimes happens at startup
     evLatency(EC_EVENT, EV_RX, 0, "rx_common_cmd", evprintf("%s", cmd));
@@ -334,7 +340,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			
 			if (!type_prot) {       // consider only if protected mode not requested
 			
-				int rx_free = rx_chan_free_count(RX_COUNT_KIWI_UI_USERS, NULL);
+				int rx_free = rx_chan_free_count(RX_COUNT_ALL, NULL);
 				
 				// Allow with no password if minimum number of channels needing password remains.
 				// This minimum number is reduced by the number of already privileged connections.
@@ -973,8 +979,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         
 		sb = kstr_asprintf(sb, ",\"ad\":%d,\"au\":%d,\"ae\":%d,\"ar\":%d,\"an\":%d,\"an2\":%d,",
 			dpump.audio_dropped, underruns, seq_errors, dpump.resets, nrx_bufs, N_DPBUF);
-		sb = kstr_cat(sb, kstr_list_int("\"ap\":[", "%d", "],", (int *) dpump.hist, nrx_bufs));
-		sb = kstr_cat(sb, kstr_list_int("\"ai\":[", "%d", "]", (int *) dpump.in_hist, N_DPBUF));
+		sb = kstr_cat(sb, kstr_list_int("\"ap\":[", "%u", "],", (int *) dpump.hist, nrx_bufs));
+		sb = kstr_cat(sb, kstr_list_int("\"ai\":[", "%u", "]", (int *) dpump.in_hist, N_DPBUF));
 #endif
 
 		char utc_s[32], local_s[32];

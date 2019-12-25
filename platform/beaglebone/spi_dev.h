@@ -48,7 +48,12 @@ typedef struct {
     spi_dev_ipc_t spi_dev_ipc;
 } spi_shmem_t;
 
-//#define SPI_SHMEM_DISABLE
+#ifdef CPU_AM5729
+    //#define SPI_SHMEM_DISABLE
+#else
+    #define SPI_SHMEM_DISABLE
+#endif
+
 #ifdef SPI_SHMEM_DISABLE
     #define SPI_SHMEM   spi_shmem_p
     extern spi_shmem_t  *spi_shmem_p;

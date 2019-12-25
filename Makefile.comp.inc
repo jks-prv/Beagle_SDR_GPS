@@ -19,6 +19,11 @@ SYS_MIN = $(shell uname -r | awk '{print $1}' | cut -d. -f2)
 # compiler/option selection
 ################################
 
+O_OPT =
+O_UNOPT =
+
+BUILD_OBJ = $(BUILD_DIR)/kiwi.bin
+
 # devsys
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	ifeq ($(UNAME),Darwin)
@@ -47,13 +52,24 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 		CC = gcc
 		CPP = g++
 		CFLAGS += -DKIWI_DEBIAN7
+		O_OPT = -O3
 		# needed for iq_display.cpp et al (-std=gnu++11 isn't available on Debian 7.9)
 		CPP_FLAGS += -std=gnu++0x
 	else ifeq ($(BBAI),true)
-		CC = clang-7
-		CPP = clang++-7
-		#CC = clang
-		#CPP = clang++
+	    #PROFILING = true
+	    PROFILING = false
+	    ifeq ($(PROFILING),true)
+            CC = gcc
+            CPP = g++
+            CFLAGS += -pg -fprofile-arcs -ftest-coverage
+            LDFLAGS += -pg -lgcov --coverage
+		    O_OPT =
+		    BUILD_OBJ = ./kiwi.bin
+		else
+            CC = clang-7
+            CPP = clang++-7
+		    O_OPT = -Ofast
+        endif
 		# needed for iq_display.cpp et al
 		CPP_FLAGS += -std=gnu++11
 		# clang still used by other things (e_cpu etc)
@@ -64,8 +80,10 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 		CPP = clang++-6.0
 		#CC = clang
 		#CPP = clang++
+        O_OPT = -Ofast
+        #O_OPT = -O3
 
-		# To use clang address sanitizer build with "make ASAN=1 OPT=O0" on target using alias "masan"
+		# To use clang address sanitizer build with "make ASAN=1 OPT=0" on target using alias "masan"
 		# There are shell aliases "masan" and "masan0" for these.
 		# Use gdb "asan" alias to set breakpoint necessary to backtrace address errors.
 		ifeq ($(ASAN),1)

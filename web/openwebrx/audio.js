@@ -28,13 +28,14 @@ This file is part of OpenWebRX.
 var audio_periodic_interval_ms = 1000; // the interval in which audio_periodic() is called
 
 var audio_flags = {
-   SND_FLAG_LPF:        0x01,
-   SND_FLAG_ADC_OVFL:   0x02,
-   SND_FLAG_NEW_FREQ:   0x04,
-   SND_FLAG_MODE_IQ:    0x08,
-   SND_FLAG_COMPRESSED: 0x10,
-   SND_FLAG_RESTART:    0x20,
-   SND_FLAG_MASKED:     0x40
+   SND_FLAG_LPF:           0x01,
+   SND_FLAG_ADC_OVFL:      0x02,
+   SND_FLAG_NEW_FREQ:      0x04,
+   SND_FLAG_MODE_IQ:       0x08,
+   SND_FLAG_COMPRESSED:    0x10,
+   SND_FLAG_RESTART:       0x20,
+   SND_FLAG_MASKED:        0x40,
+   SND_FLAG_LITTLE_ENDIAN: 0x80
 };
 
 // init only once
@@ -345,6 +346,7 @@ function audio_init(is_local, less_buffering, compression)
 		return true;
 	}
 
+setTimeout("snd_send('SET little-endian');   // we can accept arm native little-endian data", 10000);
    audio_running = true;
    return false;
 }
@@ -687,23 +689,22 @@ function audio_recv(data)
    //if (!audio_running) console.log('AUDIO audio_recv running='+ audio_running);
    if (!audio_running) return;
    
-	var f8 = new Uint8Array(data, 0, 4);   // data, offset, length
-   var flags = f8[3];
+	var h8 = new Uint8Array(data, 0, 8);   // data, offset, length
+   var flags = h8[3];
+   //console.log('AUDIO flags='+ flags.toHex(+4));
    
-	var u32View = new Uint32Array(data, 4, 1);
-	var seq = u32View[0];
+	var seq = (h8[7] << 24) | (h8[6] << 16) | (h8[5] << 8) | h8[4];
 	
 	var sm8 = new Uint8Array(data, 8, 2);
 	var smeter = (sm8[0] << 8) | sm8[1];
 	
-	var offset = 10;
-	if (flags & audio_flags.SND_FLAG_MODE_IQ)
-		offset = 20;
-	
+	var isIQ = (flags & audio_flags.SND_FLAG_MODE_IQ);
+	var offset = isIQ? 20 : 10;
+	var data_view = new DataView(data, offset);
+	var bytes = data_view.byteLength;
+		
 	audio_masked = (flags & audio_flags.SND_FLAG_MASKED);
-
-	var ad8 = new Uint8Array(data, offset);
-	var i, bytes = ad8.length, samps;
+	var i, samps;
 	
 	if (audio_watchdog_restart) {
 	   if (!(flags & audio_flags.SND_FLAG_RESTART)) return;
@@ -726,7 +727,7 @@ function audio_recv(data)
 
       audio_connect(1);
 	} else
-	if (flags & audio_flags.SND_FLAG_MODE_IQ) {
+	if (isIQ) {
 	
 	   // current buffer flag is IQ mode
 	   if (!audio_mode_iq) {    // !IQ -> IQ transition
@@ -771,14 +772,16 @@ function audio_recv(data)
 	}
 
 	if (audio_compression) {
-		decode_ima_adpcm_e8_i16(ad8, audio_data, bytes, audio_adpcm);
+      //console.log('AUDIO COMP bytes='+ bytes);
+		decode_ima_adpcm_e8_i16(data_view, audio_data, bytes, audio_adpcm);
 		samps = bytes*2;		// i.e. 1024 8b bytes -> 2048 16b real samps, 1KB -> 4KB, 4:1 over uncompressed
 	} else {
-		for (i=0; i<bytes; i+=2) {
-			audio_data[i/2] = (ad8[i]<<8) | ad8[i+1];		// convert from network byte-order
-		}
+      //console.log('AUDIO NO_COMP bytes='+ bytes);
 		samps = bytes/2;		// i.e. non-IQ: 1024 8b bytes ->  512 16b real samps,                     1KB -> 1KB, 1:1 no compression
 		                     // i.e.     IQ: 2048 8b bytes -> 1024 16b  I,Q samps (512 IQ samp pairs), 2KB -> 2KB, 1:1 never compression
+      for (i=0; i < samps; i++) {
+         audio_data[i] = data_view.getInt16(i*2, (flags & audio_flags.SND_FLAG_LITTLE_ENDIAN)? true:false);   // convert from network byte-order
+      }
 	}
 	
 	audio_prepare(audio_data, samps, seq, flags, smeter);

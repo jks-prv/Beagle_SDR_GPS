@@ -1,6 +1,6 @@
 include ../Makefile.comp.inc
 
-UTIL = audio
+UTIL = wspr
 UTILS = audio integrate hog multiply ext64 decimate security wspr e1b_fec viterbi27_test e1b_code
 
 CMD =
@@ -31,7 +31,8 @@ PKGS = pkgs/mongoose pkgs/jsmn pkgs/parson
 
 GPS = gps gps/ka9q-fec gps/GNSS-SDRLIB
 DIRS = . pru $(PKGS) web extensions
-DIRS += platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr $(GPS) ui support arch arch/$(ARCH)
+DIRS += platform/beaglebone platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr $(GPS) init net ui support arch arch/$(ARCH)
+DIRS += ../build/gen
 VPATH = $(addprefix ../,$(DIRS))
 I = $(addprefix -I../,$(DIRS)) -I/usr/local/include
 

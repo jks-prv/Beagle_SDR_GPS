@@ -1,4 +1,5 @@
 /* Test viterbi decoder speeds */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -7,9 +8,11 @@
 #include <memory.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
 #endif
+
 #include "fec.h"
 
 #define	MAX_RANDOM	0x7fffffff
@@ -54,6 +57,16 @@ printf("%d ", *symbols);
     c = r > 255 ? 255 : (r < 0 ? 0 : r);
     *symbols++ = c;
   }
+}
+
+int popcnt(unsigned int v)
+{
+    int n;
+    
+	for (n = 0; v != 0; v >>= 1)
+	    if (v & 1) n++;
+	
+	return n;
 }
 
 #if HAVE_GETOPT_LONG
@@ -120,7 +133,7 @@ int main(int argc,char *argv[]){
     fprintf(stderr,"Frame limited to %d bits\n",MAXBYTES*8);
     framebits = MAXBYTES*8;
   }
-  if((vp = create_viterbi27(framebits)) == NULL){
+  if((vp = create_viterbi27_port(framebits)) == NULL){
     printf("create_viterbi27 failed\n");
     exit(1);
   }
@@ -147,16 +160,16 @@ int main(int argc,char *argv[]){
       addnoise(symbols,2*(framebits+6),Gain,noise);
       /* Decode it and make sure we get the right answer */
       /* Initialize Viterbi decoder */
-      init_viterbi27(vp,0);
+      init_viterbi27_port(vp,0);
       
       /* Decode block */
 for(i=0;i<framebits+6;i++) printf("%d %d ", symbols[2*i+0], symbols[2*i+1]);
 printf("\n");
-      update_viterbi27_blk(vp,symbols,framebits+6);
+      update_viterbi27_blk_port(vp,symbols,framebits+6);
       
       /* Do Viterbi chainback */
 for(i=0;i<framebits/8;i++) data[i] = 0xaa;
-      chainback_viterbi27(vp,data,framebits,0);
+      chainback_viterbi27_port(vp,data,framebits,0);
 for(i=0;i<framebits/8;i++) printf("0x%08x ", data[i]);
 printf("\n");
       errcnt = 0;
@@ -197,13 +210,13 @@ printf("\n");
     getrusage(RUSAGE_SELF,&start);
     for(tr=0;tr < trials;tr++){
       /* Initialize Viterbi decoder */
-      init_viterbi27(vp,0);
+      init_viterbi27_port(vp,0);
       
       /* Decode block */
-      update_viterbi27_blk(vp,symbols,framebits);
+      update_viterbi27_blk_port(vp,symbols,framebits);
       
       /* Do Viterbi chainback */
-      chainback_viterbi27(vp,data,framebits,0);
+      chainback_viterbi27_port(vp,data,framebits,0);
     }
     getrusage(RUSAGE_SELF,&finish);
     extime = finish.ru_utime.tv_sec - start.ru_utime.tv_sec + 1e-6*(finish.ru_utime.tv_usec - start.ru_utime.tv_usec);

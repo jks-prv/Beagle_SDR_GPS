@@ -37,7 +37,7 @@ function config_html()
 		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
 			w3_input_get('', 'Initial frequency (kHz)', 'init.freq', 'admin_float_cb'),
 			w3_div('w3-center',
-				w3_select('', 'Initial mode', '', 'init.mode', init_mode, modes_u, 'admin_select_cb')
+				w3_select('', 'Initial mode', '', 'init.mode', init_mode, kiwi.modes_u, 'admin_select_cb')
 			),
 			w3_input_get('', 'Initial CW offset (Hz)', 'init.cw_offset', 'admin_int_cb')
 		) +
@@ -215,7 +215,7 @@ function config_OV_counts_cb(path, val, complete, first)
    //console.log('config_OV_counts_cb path='+ path +' val='+ val);
    val = +val;
 	var ov_counts = 1 << val;
-	w3_num_cb(path, val);
+	admin_int_cb(path, val);
 	w3_set_label('S-meter OV if &ge; '+ ov_counts +' ADC OV per 64k samples', path);
 	ext_send('SET ov_counts='+ ov_counts);
 }
@@ -856,7 +856,7 @@ function dx_json2(dx)
       if (i != -1) {
          d = dx.dx[i];
          fr = d[0];
-         mo = modes_s[d[1].toLowerCase()];
+         mo = kiwi.modes_s[d[1].toLowerCase()];
          id = decodeURIComponent(d[2]);
          no = decodeURIComponent(d[3]);
          ts = d[4];
@@ -902,7 +902,7 @@ function dx_json2(dx)
                   (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-selection-green', '+', 'dx_add_cb', i), 1,
                   (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-red', '-', 'dx_rem_cb', i), 1,
                   w3_input(h('w3-padding-small||size=8'), l('Freq'), 'dxo.f_'+i, fr, 'dx_num_cb'), 19,
-                  w3_select(h(''), l('Mode'), '', 'dxo.m_'+i, mo, modes_u, 'dx_sel_cb'), 19,
+                  w3_select(h(''), l('Mode'), '', 'dxo.m_'+i, mo, kiwi.modes_u, 'dx_sel_cb'), 19,
                   w3_input(h('w3-padding-small||size=4'), l('Passband'), 'dxo.pb_'+i, pb, 'dx_passband_cb'), 19,
                   w3_select(h(''), l('Type'), '', 'dxo.y_'+i, ty, types, 'dx_sel_cb'), 19,
                   w3_input(h('w3-padding-small||size=2'), l('Offset'), 'dxo.o_'+i, os, 'dx_num_cb'), 19

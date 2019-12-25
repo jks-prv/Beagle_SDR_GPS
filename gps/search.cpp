@@ -626,10 +626,10 @@ void SearchTaskRun()
 	
 	if (admcfg_bool("always_acq_gps", NULL, CFG_REQUIRED) == true) start = true;
 	
-	if (update_in_progress || sd_copy_in_progress || backup_in_progress) start = false;
+	if (update_in_progress || sd_copy_in_progress || backup_in_progress || is_locked) start = false;
 	
-	//printf("SearchTaskRun: acq %d start %d good %d users %d fixes %d gps_corr %d\n",
-	//	gps_acquire, start, gps.good, users, gps.fixes, clk.adc_gps_clk_corrections);
+	//printf("SearchTaskRun: acq %d start %d is_locked %d good %d users %d fixes %d gps_corr %d\n",
+	//	gps_acquire, start, is_locked, gps.good, users, gps.fixes, clk.adc_gps_clk_corrections);
 	
 	if (gps_acquire && !start) {
 		//printf("SearchTaskRun: $sleep\n");

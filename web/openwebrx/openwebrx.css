@@ -969,6 +969,12 @@ html, body
 	background:-moz-linear-gradient( center top, #373737 0%, #4F4F4F 100% );
 }
 
+.class-button.class-button-disbled
+{
+    cursor: not-allowed;
+    opacity: 0.3;
+}
+
 #id-button-hang
 {
 	border-width: 2px;

@@ -116,7 +116,7 @@ struct wf_shmem_t {
     int n_chunks;
 };     
 
-#ifdef CPU_AM5729
+#ifdef MULTI_CORE
     //#define WF_SHMEM_DISABLE
 #else
     #define WF_SHMEM_DISABLE

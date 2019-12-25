@@ -73,6 +73,7 @@
         // 10/6/2019 this seems broken all of a sudden?!?
 	    //#define SETUP_TRAMP_USING_JMP_BUF
     #endif
+    
     #ifdef CPU_AM5729
     #endif
 #endif
@@ -1196,9 +1197,12 @@ bool TaskIsChild()
 				#endif
 			#endif
 
+            //if (p == 2 && t_runnable) real_printf("P2-%d ", t_runnable); fflush(stdout);
+
 			if (p == ct->priority && t_runnable == 1 && no_run_same) {
 				evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("%s no_run_same TRIGGERED ***", task_s(ct)));
 				no_run_same = false;
+                //if (p == 2) real_printf("NRS?%s ", task_s(ct)); fflush(stdout);
 				continue;
 			}
 			
@@ -1303,6 +1307,18 @@ bool TaskIsChild()
         #endif
 
 		idle_count++;
+		
+		#if 0
+            static int is_idle;
+            if (p < LOWEST_PRIORITY) {
+                is_idle++;
+            } else {
+                if (is_idle) {
+                    real_printf(".%d ", is_idle); fflush(stdout);
+                    is_idle = 0;
+                }
+            }
+        #endif
     } while (p < LOWEST_PRIORITY);		// if no eligible tasks keep looking
     
 	if (!need_hardware || update_in_progress || sd_copy_in_progress || LINUX_CHILD_PROCESS()) {

@@ -35,14 +35,14 @@ typedef struct
 
 typedef struct
 {
-	s2_t re;
-	s2_t im;
+	s2_t left;
+	s2_t right;
 } tStereo16;
 
 typedef struct
 {
-	s4_t re;
-	s4_t im;
+	s4_t left;
+	s4_t right;
 } tStereo24;
 
 #ifdef USE_DOUBLE_PRECISION

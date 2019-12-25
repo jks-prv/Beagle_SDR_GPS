@@ -64,6 +64,7 @@ ARCH = sitara
 ifeq ($(BBAI),true)
 	CPU = AM5729
 	PLATFORM = beaglebone_ai
+	CFLAGS += -DMULTI_CORE
 else
 	CPU = AM3359
 	PLATFORM = beaglebone_black
@@ -71,21 +72,22 @@ endif
 
 # make the compiles fast on dev system
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-	OPT = O0
+	OPT = 0
 endif
 
 # uncomment when using debugger so variables are not always optimized away
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
-#	OPT = O0
+#	OPT = 0
 endif
 
 
-# static analyzer (different from address sanitizer)
+# static analyzer (NB: different from address sanitizer "asan")
 # build on devsys or target with "make SAN=1" using alias "msan"
 # uses -O0 for speedup when used on target (clang on Debian seems to catch more errors than on OSX)
 ifeq ($(SAN),1)
 	CPP_FLAGS += -Werror --analyze -DKIWI_STATIC_ANALYSIS
-	OPT = O0
+	OPT = 0
+	O_UNOPT = -O0
 endif
 
 
@@ -109,12 +111,12 @@ all: c_ext_clang_conv
 
 BUILD_DIR = ../build
 OBJ_DIR = $(BUILD_DIR)/obj
-OBJ_DIR_O3 = $(OBJ_DIR)_O3
+OBJ_DIR_O3 = $(BUILD_DIR)/obj_O3
 KEEP_DIR = $(BUILD_DIR)/obj_keep
 GEN_DIR = $(BUILD_DIR)/gen
 TOOLS_DIR = $(BUILD_DIR)/tools
 
-ifeq ($(OPT),O0)
+ifeq ($(OPT),0)
 	OBJ_DIR_DEFAULT = $(OBJ_DIR)
 else
 	OBJ_DIR_DEFAULT = $(OBJ_DIR_O3)
@@ -150,10 +152,12 @@ INT_EXTS = $(subst /,,$(subst extensions/,,$(wildcard $(INT_EXT_DIRS))))
 EXTS = $(INT_EXTS) $(PVT_EXTS)
 
 GPS = gps gps/ka9q-fec gps/GNSS-SDRLIB
+RX = rx rx/CuteSDR rx/csdr rx/kiwi
 _DIRS = pru $(PKGS)
-_DIRS_O3 += . $(PKGS_O3) platform/beaglebone platform/$(PLATFORM) $(EXT_DIRS) $(EXT_SUBDIRS) rx rx/CuteSDR rx/csdr rx/kiwi $(GPS) ui init support net web arch/$(ARCH)
+_DIRS_O3 += . $(PKGS_O3) platform/beaglebone platform/$(PLATFORM) $(EXT_DIRS) $(EXT_SUBDIRS) \
+	$(RX) $(GPS) ui init support net web arch/$(ARCH)
 
-ifeq ($(OPT),O0)
+ifeq ($(OPT),0)
 	DIRS = $(_DIRS) $(_DIRS_O3)
 	DIRS_O3 =
 else
@@ -161,11 +165,12 @@ else
 	DIRS_O3 = $(_DIRS_O3)
 endif
 
-VPATH = $(DIRS) $(DIRS_O3)
-I = -I$(GEN_DIR) $(addprefix -I,$(DIRS)) $(addprefix -I,$(DIRS_O3)) -I/usr/local/include
+VPATH = $(DIRS) $(DIRS_O3) $(EXT_SUBDIRS_KEEP)
+I = -I$(GEN_DIR) $(addprefix -I,$(DIRS)) $(addprefix -I,$(DIRS_O3)) $(addprefix -I,$(EXT_SUBDIRS_KEEP)) -I/usr/local/include
 H = $(wildcard $(addsuffix /*.h,$(DIRS))) $(wildcard $(addsuffix /*.h,$(DIRS_O3)))
 CPP_F = $(wildcard $(addsuffix /*.cpp,$(DIRS)))
 CPP_F_O3 = $(wildcard $(addsuffix /*.cpp,$(DIRS_O3)))
+CFILES_KEEP = $(wildcard $(addsuffix /*.cpp,$(EXT_SUBDIRS_KEEP)))
 
 # remove generated files
 CFILES = $(subst web/web.cpp,,$(CPP_F))
@@ -187,7 +192,6 @@ else
 	# host machine (BBB), only build the FPGA-using version
 	#CFLAGS += -mfloat-abi=softfp -mfpu=neon
 	CFLAGS +=  -mfpu=neon -mtune=cortex-a8 -mcpu=cortex-a8 -mfloat-abi=hard
-	#CFLAGS += -O3
 	CFLAGS += -g -pipe -MMD -DDEBUG -DHOST
 	LIBS += -lfftw3f -lfftw3 -lutil
 	LIBS_DEP += /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
@@ -297,9 +301,7 @@ SRC_DEPS =
 BIN_DEPS = KiwiSDR.rx4.wf4.bit KiwiSDR.rx8.wf2.bit KiwiSDR.rx3.wf3.bit KiwiSDR.rx14.wf0.bit
 #BIN_DEPS = 
 DEVEL_DEPS = $(OBJ_DIR_DEFAULT)/web_devel.o $(KEEP_DIR)/edata_always.o
-#DEVEL_DEPS += $(KEEP_DIR)/edata_always2.o
 EMBED_DEPS = $(OBJ_DIR_DEFAULT)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o
-#EMBED_DEPS += $(KEEP_DIR)/edata_always2.o
 EXTS_DEPS = $(OBJ_DIR)/ext_init.o
 
 # these MUST be run by single-threaded make before use of -j in sub makes
@@ -497,16 +499,12 @@ FILES_ALWAYS_SORTED_NW = $(sort $(FILES_ALWAYS))
 
 EDATA_EMBED = $(GEN_DIR)/edata_embed.cpp
 EDATA_ALWAYS = $(GEN_DIR)/edata_always.cpp
-#EDATA_ALWAYS2 = $(GEN_DIR)/edata_always2.cpp
 
 $(EDATA_EMBED): $(EDATA_DEP) $(addprefix web/,$(FILES_EMBED_SORTED_NW))
 	(cd web; perl mkdata.pl edata_embed $(FILES_EMBED_SORTED_NW) >../$(EDATA_EMBED))
 
 $(EDATA_ALWAYS): $(EDATA_DEP) $(addprefix web/,$(FILES_ALWAYS_SORTED_NW))
 	(cd web; perl mkdata.pl edata_always $(FILES_ALWAYS_SORTED_NW) >../$(EDATA_ALWAYS))
-
-#$(EDATA_ALWAYS2): $(EDATA_DEP) $(FILES_ALWAYS2_SORTED_NW)
-#	perl web/mkdata.pl edata_always2 $(FILES_ALWAYS2_SORTED_NW) >$(EDATA_ALWAYS2)
 
 
 ################################
@@ -560,12 +558,22 @@ c_ext_clang_conv_debug:
 	@echo VPATH = $(VPATH)
 	@echo CFILES = $(CFILES)
 	@echo CFILES_O3 = $(CFILES_O3)
+	@echo CFILES_KEEP = $(CFILES_KEEP)
 	@echo OBJECTS = $(OBJECTS)
 	@echo O3_OBJECTS = $(O3_OBJECTS)
+	@echo KEEP_OBJECTS = $(KEEP_OBJECTS)
 	@echo MF_FILES = $(MF_FILES)
 	@echo MF_OBJ = $(MF_OBJ)
 	@echo MF_O3 = $(MF_O3)
 	@echo PKGS = $(PKGS)
+
+makefiles:
+	@echo
+	@echo $(GEN_DIR)/Makefile.includes.inc
+	@cat $(GEN_DIR)/Makefile.includes.inc
+	@echo
+	@echo $(GEN_DIR)/Makefile.defines.inc
+	@cat $(GEN_DIR)/Makefile.defines.inc
 
 
 ################################
@@ -587,16 +595,24 @@ FLAGS += @$(GEN_DIR)/Makefile.includes.inc $(VERSION) -DKIWI -DKIWISDR -DARCH_$(
 FLAGS += -DKIWI_UI_LIST=$(UI_LIST) -DDIR_CFG=\"$(DIR_CFG)\" -DCFG_PREFIX=\"$(CFG_PREFIX)\"
 FLAGS += -DBUILD_DIR=\"$(BUILD_DIR)\" -DREPO=\"$(REPO)\" -DREPO_NAME=\"$(REPO_NAME)\"
 FLAGS += @$(GEN_DIR)/Makefile.defines.inc
+
 CSRC = $(notdir $(CFILES))
-CSRC_O3 = $(notdir $(CFILES_O3))
 OBJECTS1 = $(CSRC:%.c=$(OBJ_DIR)/%.o)
 OBJECTS = $(OBJECTS1:%.cpp=$(OBJ_DIR)/%.o)
+
+CSRC_O3 = $(notdir $(CFILES_O3))
 O3_OBJECTS1 = $(CSRC_O3:%.c=$(OBJ_DIR_O3)/%.o)
 O3_OBJECTS = $(O3_OBJECTS1:%.cpp=$(OBJ_DIR_O3)/%.o)
+
+CSRC_KEEP = $(notdir $(CFILES_KEEP))
+KEEP_OBJECTS1 = $(CSRC_KEEP:%.c=$(KEEP_DIR)/%.o)
+KEEP_OBJECTS = $(KEEP_OBJECTS1:%.cpp=$(KEEP_DIR)/%.o)
+
 
 # pull in dependency info for *existing* .o files
 -include $(OBJECTS:.o=.d)
 -include $(O3_OBJECTS:.o=.d)
+-include $(KEEP_OBJECTS:.o=.d)
 -include $(DEVEL_DEPS:.o=.d)
 -include $(EMBED_DEPS:.o=.d)
 -include $(EXTS_DEPS:.o=.d)
@@ -622,18 +638,18 @@ c_ctr_reset:
 # Previously doing a "make install" on the development machine made no sense and was flagged as an error.
 #
 
-$(BUILD_DIR)/kiwi.bin: c_ctr_reset $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(EXTS_DEPS)
+$(BUILD_DIR)/kiwi.bin: c_ctr_reset $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(KEEP_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(EXTS_DEPS)
 	@echo $(C_CTR_LINK) >$(COMP_CTR)
 ifneq ($(SAN),1)
-	$(CPP) $(LDFLAGS) $(OBJECTS) $(O3_OBJECTS) $(DEVEL_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
+	$(CPP) $(LDFLAGS) $(OBJECTS) $(O3_OBJECTS) $(KEEP_OBJECTS) $(DEVEL_DEPS) $(EXTS_DEPS) $(LIBS) -o $(BUILD_OBJ)
 else
 	@echo loader skipped for static analysis
 endif
 
-$(BUILD_DIR)/kiwid.bin: c_ctr_reset foptim_gen $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS) $(EXTS_DEPS)
+$(BUILD_DIR)/kiwid.bin: c_ctr_reset foptim_gen $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(KEEP_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS) $(EXTS_DEPS)
 	@echo $(C_CTR_LINK) >$(COMP_CTR)
 ifneq ($(SAN),1)
-	$(CPP) $(LDFLAGS) $(OBJECTS) $(O3_OBJECTS) $(EMBED_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
+	$(CPP) $(LDFLAGS) $(OBJECTS) $(O3_OBJECTS) $(KEEP_OBJECTS) $(EMBED_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
 else
 	@echo loader skipped for static analysis
 endif
@@ -649,63 +665,77 @@ POST_PROCESS_DEPS = \
 	sed -e 's/^ *//' -e 's/$$/:/' >> $(df).d; \
 	rm -f $(df).d.tmp
 
+
+# special
+
 $(OBJ_DIR_DEFAULT)/web_devel.o: web/web.cpp config.h
-	$(CPP) $(CFLAGS) $(FLAGS) -DEDATA_DEVEL -c -o $@ $<
+	$(CPP) $(O_UNOPT) $(CFLAGS) $(FLAGS) -DEDATA_DEVEL -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_DEFAULT)/web_embed.o: web/web.cpp config.h
-	$(CPP) $(CFLAGS) $(FLAGS) -DEDATA_EMBED -c -o $@ $<
+	$(CPP) $(O_UNOPT) $(CFLAGS) $(FLAGS) -DEDATA_EMBED -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/edata_embed.o: $(EDATA_EMBED)
-	$(CPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(CPP) $(O_UNOPT) $(CFLAGS) $(FLAGS) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR)/edata_always.o: $(EDATA_ALWAYS)
-	$(CPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(CPP) $(O_UNOPT) $(CFLAGS) $(FLAGS) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
-
-#$(KEEP_DIR)/edata_always2.o: $(EDATA_ALWAYS2)
-#	$(CPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
-#	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/ext_init.o: $(GEN_DIR)/ext_init.cpp
-	$(CPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(CPP) $(O_UNOPT) $(CFLAGS) $(FLAGS) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
-$(KEEP_DIR):
-	@mkdir -p $(KEEP_DIR)
+
+# .c
 
 $(OBJ_DIR)/%.o: %.c $(SRC_DEPS)
 #	$(CC) -x c $(CFLAGS) $(FLAGS) -c -o $@ $<
-	$(CC) $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(CC) $(O_UNOPT) $(CFLAGS) $(FLAGS) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/%.o: %.c $(SRC_DEPS)
-	$(CC) -O3 $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(CC) $(O_OPT) $(CFLAGS) $(FLAGS) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
-$(OBJ_DIR)/%.o: %.cpp $(SRC_DEPS)
-	$(CPP) $(CFLAGS) $(CPP_FLAGS) $(FLAGS) -c -o $@ $<
-#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
-	$(POST_PROCESS_DEPS)
+
+# .cpp $(CFLAGS_UNSAFE_OPT)
 
 $(OBJ_DIR_O3)/search.o: search.cpp $(SRC_DEPS)
-	$(CPP) -O3 $(CFLAGS) $(CPP_FLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
+	$(CPP) $(O_OPT) $(CFLAGS) $(CPP_FLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/simd.o: simd.cpp $(SRC_DEPS)
-	$(CPP) -O3 $(CFLAGS) $(CPP_FLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
+	$(CPP) $(O_OPT) $(CFLAGS) $(CPP_FLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
+#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
+	$(POST_PROCESS_DEPS)
+
+
+# .cpp
+
+$(OBJ_DIR)/%.o: %.cpp $(SRC_DEPS)
+	$(CPP) $(O_UNOPT) $(CFLAGS) $(CPP_FLAGS) $(FLAGS) -c -o $@ $<
+#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
+	$(POST_PROCESS_DEPS)
+
+$(KEEP_DIR)/%.o: %.cpp $(SRC_DEPS)
+	$(CPP) $(O_OPT) $(CFLAGS) $(CPP_FLAGS) $(FLAGS) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/%.o: %.cpp $(SRC_DEPS)
-	$(CPP) -O3 $(CFLAGS) $(CPP_FLAGS) $(FLAGS) -c -o $@ $<
+	$(CPP) $(O_OPT) $(CFLAGS) $(CPP_FLAGS) $(FLAGS) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
+
+
+$(KEEP_DIR):
+	@mkdir -p $(KEEP_DIR)
 
 $(OBJ_DIR):
 	@mkdir -p $(OBJ_DIR)
