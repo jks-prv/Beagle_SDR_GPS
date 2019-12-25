@@ -100,14 +100,20 @@ bool DRM_msgs(char *msg, int rx_chan)
     }
 
     if (strcmp(msg, "SET lock_set") == 0) {
-        if (is_BBAI) {
-            is_locked = (rx_chan < drm_info.drm_chan)? 0 : drm_info.drm_chan;
+        int rv;
+        if (snd_rate != SND_RATE_4CH) {
+            rv = -1;
         } else {
-            int inuse = rx_chans - rx_chan_free_count(RX_COUNT_ALL, NULL);
-            is_locked = (inuse == 1)? 1:0;
-            printf("DRM lock_set inuse=%d locked=%d\n", inuse, is_locked);
+            if (is_BBAI) {
+                is_locked = (rx_chan < drm_info.drm_chan)? 0 : drm_info.drm_chan;
+            } else {
+                int inuse = rx_chans - rx_chan_free_count(RX_COUNT_ALL, NULL);
+                is_locked = (inuse == 1)? 1:0;
+                printf("DRM lock_set inuse=%d locked=%d\n", inuse, is_locked);
+            }
+            rv = is_locked;
         }
-		ext_send_msg(rx_chan, false, "EXT locked=%d", is_locked);
+		ext_send_msg(rx_chan, false, "EXT locked=%d", rv);
         return true;    
     }
     

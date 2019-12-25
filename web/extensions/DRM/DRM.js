@@ -4,6 +4,7 @@ var drm = {
    ext_name: 'DRM',     // NB: must match DRM.cpp:DRM_ext.name
    first_time: true,
    locked: 0,
+   wrong_srate: false,
 
    h: 200,
    w_lhs: 75,
@@ -224,6 +225,10 @@ function drm_recv(data)
 			
 			case "locked":
 			   var p = +param[1];
+			   if (p == -1) {
+			      drm.wrong_srate = true;
+			      drm.locked = 0;
+			   } else
 			   if (kiwi.is_BBAI) {
 			      drm.drm_chan = p;
 			      drm.locked = p? 0:1;
@@ -440,6 +445,14 @@ function drm_controls_setup()
    }
 
    var controls_inner, data_html;
+   
+   if (drm.wrong_srate) {
+      controls_inner =
+            w3_text('w3-medium w3-text-css-yellow',
+               'Currently, DRM does not support Kiwis configured for 20 kHz wide channels.'
+            );
+      data_html = null;
+   } else
    
    if (drm.locked == 0) {
       controls_inner =
