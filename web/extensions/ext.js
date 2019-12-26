@@ -182,12 +182,17 @@ function ext_get_prev_mode()
 	return extint.prev_mode;
 }
 
-function ext_set_mode(mode)
+function ext_set_mode(mode, freq, opt)
 {
-   if (mode == 'drm')
+   var drm = (mode == 'drm');
+   if (drm)
       extint.prev_mode = cur_mode;
    //console.log('### ext_set_mode '+ mode +' prev='+ extint.prev_mode);
-	demodulator_analog_replace(mode);
+	demodulator_analog_replace(mode, freq);
+	
+	var open_ext = w3_opt(opt, 'open_ext', false);
+   if (drm && open_ext)
+      extint_open('drm');
 }
 
 function ext_get_passband()
