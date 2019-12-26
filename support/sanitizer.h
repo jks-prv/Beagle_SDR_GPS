@@ -25,5 +25,8 @@ Boston, MA  02110-1301, USA.
 	#if __has_feature(address_sanitizer) && ((__clang_major__ == 3 && __clang_minor__ >= 9) || __clang_major__ >= 4)
 		#include <sanitizer/asan_interface.h>
 		#define USE_ASAN
+	    #if (__clang_major__ >= 6)
+		    #define USE_ASAN2
+        #endif	        
 	#endif
 #endif

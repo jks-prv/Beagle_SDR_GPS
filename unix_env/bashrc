@@ -237,7 +237,7 @@ alias cf5="${_cfp} userspace; ${_cfs} 500MHz; ${_cf}"
 alias cf1="${_cfp} userspace; ${_cfs} 1GHz; ${_cf}"
 alias cf11="${_cfp} userspace; ${_cfs} 1.176GHz; ${_cf}"
 alias cf15="${_cfp} userspace; ${_cfs} 1.5GHz; ${_cf}"
-alias cm="while true; do date; ct; cf; sleep 2; done"
+alias cm="while true; do date; ct; cf; vmstat; sleep 2; done"
 alias opp="omapconf show opp"
 
 # BBB

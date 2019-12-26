@@ -1106,7 +1106,10 @@ function kiwi_exclusive_use()
 {
 	var s = 'Sorry, a single user has locked this Kiwi for exclusive use. <br>' +
 	'This happens when using an extension (e.g. DRM decoder) that requires all available resources. <br>' +
-	'Please check <a href="https://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
+	'Please check <a href="https://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide. <br><br>' +
+	'申し訳ありませんが、1人のユーザーがこの Kiwi を排他的にロックしています。 <br>' +
+	'これは、利用可能なすべてのリソースを必要とする拡張機能（DRM デコーダーなど）を使用している場合に発生します。 <br>' +
+	'世界中で利用できる KiwiSDR レシーバーについては、<a href="https://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> を確認してください。';
 	kiwi_show_msg(s);
 }
 

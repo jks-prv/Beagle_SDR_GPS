@@ -42,8 +42,8 @@ void AACSuperFrame::init(const CAudioParam &audioParam, ERobMode eRobMode, unsig
         break;
     }
     if (numFrames != 0) {
-        audioFrame.resize(numFrames);
-        aacCRC.resize(numFrames);
+        audioFrame.resize(numFrames);   // KiwiSDR: asan says leak?
+        aacCRC.resize(numFrames);       // KiwiSDR: asan says leak?
     }
     this->lengthPartA = lengthPartA;
     this->lengthPartB = lengthPartB;
