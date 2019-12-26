@@ -103,7 +103,7 @@ FdkAacCodec::CanDecode(CAudioParam::EAudCod eAudioCoding)
     }
 //#endif
 
-    printf("FDK can decode NO\n");
+    //printf("FDK can decode NO\n");
     return false;
 }
 
@@ -299,7 +299,7 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
     }
 
     CStreamInfo *pinfo = aacDecoder_GetStreamInfo(hDecoder);
-    if (pinfo==nullptr) {
+    if (pinfo == nullptr) {
         cerr << "FDK No stream info" << endl;
         //return nullptr; this breaks everything!
     }
@@ -357,7 +357,9 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
         ;
     }
     else if (err == AAC_DEC_PARSE_ERROR) {
-        cerr << "FDK Error parsing bitstream." << endl;
+        //cerr << "FDK Error parsing bitstream." << endl;
+        ext_send_msg(drm->rx_chan, false, "EXT annotate=3");
+        return CAudioCodec::DECODER_ERROR_UNKNOWN;
     }
     else if (err == AAC_DEC_OUTPUT_BUFFER_TOO_SMALL) {
         cerr << "FDK The provided output buffer is too small." << endl;
@@ -389,8 +391,8 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
     {
         /* Mono */
         //cerr << "mono " << pinfo->frameSize << endl;
-        _REAL d = 0.0;
-        for(size_t i=0; i<output_size; i++) d += _REAL(decode_buf[i]);
+        //_REAL d = 0.0;
+        //for(size_t i=0; i<output_size; i++) d += _REAL(decode_buf[i]);
         //cerr << "energy in good frame " << (d/output_size) << endl;
         //printf("m%d_%.1f ", pinfo->frameSize, d/output_size); fflush(stdout);
         for(int i = 0; i<pinfo->frameSize; i++) {

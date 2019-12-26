@@ -644,7 +644,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
             
             if (is_locked) {
                 if (nch_inuse == 0) {
-                    printf("*** LOCKED BUT NO CHANNELS IN USE! ***\n");
+                    printf("note: locked but no channels in use\n");
                     is_locked = 0;
                 } else {
                     printf("(locked for exclusive use %s)\n", st->uri);

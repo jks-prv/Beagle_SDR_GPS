@@ -144,7 +144,8 @@ struct ctx_t {
 	int id;
 	bool init;
     u64_t *stack, *stack_last;
-    u4_t stack_size;                // in STACK_SIZE_U64_T (not bytes)
+    u4_t stack_size_u64;            // in STACK_SIZE_U64_T (not bytes)
+    u4_t stack_size_bytes;
     bool valgrind_stack_reg;
 	int valgrind_stack_id;
 #ifdef USE_ASAN
@@ -431,7 +432,7 @@ void TaskDump(u4_t flags)
 			f_usec, f_longest, f_usec/f_elapsed*100,
 			t->run, t->cmds,
 			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
-			deadline, dunit, t->stack_hiwat*100 / t->ctx->stack_size, (t->flags & CTF_STACK_MED)? 'M' : ((t->flags & CTF_STACK_LARGE)? 'L' : ' '),
+			deadline, dunit, t->stack_hiwat*100 / t->ctx->stack_size_u64, (t->flags & CTF_STACK_MED)? 'M' : ((t->flags & CTF_STACK_LARGE)? 'L' : ' '),
 			(rx_channel != -1)? "c":"", rx_channel,
 			t->name, t->where? t->where : "-"
 		);
@@ -444,7 +445,7 @@ void TaskDump(u4_t flags)
 			t->run, t->cmds,
 			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
 			t->wu_count, t->no_run_same, t->spi_retry,
-			deadline, dunit, t->stack_hiwat*100 / t->ctx->stack_size, (t->flags & CTF_STACK_MED)? 'M' : ((t->flags & CTF_STACK_LARGE)? 'L' : ' '),
+			deadline, dunit, t->stack_hiwat*100 / t->ctx->stack_size_u64, (t->flags & CTF_STACK_MED)? 'M' : ((t->flags & CTF_STACK_LARGE)? 'L' : ' '),
 			(rx_channel != -1)? "c":"", rx_channel,
 			t->name, t->where? t->where : "-",
 			t->long_name? t->long_name : "-"
@@ -604,9 +605,10 @@ static void task_stack(int id)
 	c->id = id;
 	
 	c->stack = (u64_t *) (task_stacks + stack_map[id]);
-    c->stack_size = STACK_SIZE_U64_T * stack_nel[id];	
+    c->stack_size_u64 = STACK_SIZE_U64_T * stack_nel[id];	
 	c->stack_last = (u64_t *) (task_stacks + (stack_map[id] + stack_nel[id]));
-	//printf("task_stack T%d %d (STACK_SIZE_U64_T) %d bytes %p-%p\n", id, c->stack_size, c->stack_size * sizeof(u64_t), c->stack, c->stack_last);
+	c->stack_size_bytes = c->stack_size_u64 * sizeof(u64_t);
+	//printf("task_stack T%d %d (STACK_SIZE_U64_T) %d bytes %p-%p\n", id, c->stack_size_u64, c->stack_size_bytes, c->stack, c->stack_last);
 
 #if defined(HOST) && defined(USE_VALGRIND)
 	if (RUNNING_ON_VALGRIND) {
@@ -628,7 +630,7 @@ static void task_stack(int id)
 	int i;
 	for (s = c->stack, i=0; s < c->stack_last; s++, i++) {
 		*s = magic | ((u64_t) s & 0xffffffff);
-		//if (i == (t->ctx->stack_size - 1)) printf("T%02d W %08x|%08x\n", c->id, PRINTF_U64_ARG(*s));
+		//if (i == (t->ctx->stack_size_u64 - 1)) printf("T%02d W %08x|%08x\n", c->id, PRINTF_U64_ARG(*s));
 	}
 }
 
@@ -675,7 +677,11 @@ static void trampoline(int signo)
 
 #ifdef USE_ASAN
 	//printf("TaskResume(trampoline) fake_stack=%p stack=%p %s\n", t->ctx->fake_stack, t->ctx->stack, t->name);
-	__sanitizer_finish_switch_fiber(c->fake_stack);
+    #ifdef USE_ASAN2
+	    __sanitizer_finish_switch_fiber(c->fake_stack, (const void **) &(c->stack), &(c->stack_size_bytes));
+	#else
+	    __sanitizer_finish_switch_fiber(c->fake_stack);
+	#endif
 #endif
 	//printf("trampoline BOUNCE sp %p ctx %p T%d-%p %p-%p\n", &c, c, c->id, t, c->stack, c->stack_last);
 	(t->funcP)(t->create_param);
@@ -714,9 +720,9 @@ void TaskCollect()
 	
 		stack_t stack;
 		stack.ss_flags = 0;
-		stack.ss_size = c->stack_size * sizeof(u64_t);
+		stack.ss_size = c->stack_size_u64 * sizeof(u64_t);
 		stack.ss_sp = (void *) c->stack;
-        //printf("i=%d ss=%d %d stk=%p\n", i, c->stack_size, c->stack_size * sizeof(u64_t), c->stack);
+        //printf("i=%d ss=%d %d stk=%p\n", i, c->stack_size_u64, c->stack_size_bytes, c->stack);
 		scall("sigaltstack", sigaltstack(&stack, 0));
 			 
 		struct sigaction sa;
@@ -758,7 +764,7 @@ void TaskInit()
 	cur_task = t;
 
 	task_init(t, 0, NULL, NULL, "main", MAIN_PRIORITY, 0, 0);
-	t->ctx->stack_size = STACK_SIZE_U64_T;
+	t->ctx->stack_size_u64 = STACK_SIZE_U64_T;
 
 	last_dump = t->tstart_us = timer_us64();
 	//if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "TaskInit", evprintf("DUMP IN %.3f SEC", ev_dump/1000.0));
@@ -832,7 +838,7 @@ void TaskCheckStacks(bool report)
 	for (i=1; i <= max_task; i++) {
 		t = Tasks + i;
 		if (!t->valid || !t->ctx->init) continue;
-		int m, l = 0, u = t->ctx->stack_size - 1;
+		int m, l = 0, u = t->ctx->stack_size_u64 - 1;
 		
 		// bisect stack until high-water mark is found
 		do {
@@ -841,14 +847,14 @@ void TaskCheckStacks(bool report)
 			if (*s == (magic | ((u64_t) s & 0xffffffff))) l = m; else u = m;
 		} while ((u-l) > 1);
 		
-		int used = t->ctx->stack_size - m - 1;
+		int used = t->ctx->stack_size_u64 - m - 1;
 		t->stack_hiwat = used;
-		int pct = used*100/t->ctx->stack_size;
+		int pct = used*100/t->ctx->stack_size_u64;
 		if (report) {
-            printf("%s stack used %d/%d (%d%%) PEAK %s\n", task_s(t), used, t->ctx->stack_size, pct, (pct >= 50)? "DANGER":"");
+            printf("%s stack used %d/%d (%d%%) PEAK %s\n", task_s(t), used, t->ctx->stack_size_u64, pct, (pct >= 50)? "DANGER":"");
         } else {
             if (pct >= 50) {
-                printf("DANGER: %s stack used %d/%d (%d%%) PEAK\n", task_s(t), used, t->ctx->stack_size, pct);
+                printf("DANGER: %s stack used %d/%d (%d%%) PEAK\n", task_s(t), used, t->ctx->stack_size_u64, pct);
                 stk_panic = true;
             }
         }
@@ -1329,7 +1335,11 @@ bool TaskIsChild()
     if (ct->valid && setjmp(ct->ctx->jb)) {
 #ifdef USE_ASAN
 		//printf("TaskResume(NextTask) fake_stack=%p stack=%p %s\n", t->ctx->fake_stack, t->ctx->stack, t->name);
-		__sanitizer_finish_switch_fiber(ct->ctx->fake_stack);
+        #ifdef USE_ASAN2
+            __sanitizer_finish_switch_fiber(ct->ctx->fake_stack, (const void **) &(ct->ctx->stack), &(ct->ctx->stack_size_bytes));
+        #else
+            __sanitizer_finish_switch_fiber(ct->ctx->fake_stack);
+        #endif
 #endif
     	return;		// returns here when task next run
     }
@@ -1363,10 +1373,10 @@ bool TaskIsChild()
 
 #ifdef USE_ASAN
 	if (!t->valid) { // tell the address sanitizer to schedule the task to be removed
-		__sanitizer_start_switch_fiber(nullptr, t->ctx->stack, t->ctx->stack_last - t->ctx->stack);
+		__sanitizer_start_switch_fiber(nullptr, t->ctx->stack, t->ctx->stack_size_bytes);
 		//printf("TaskRemove fake_stack=%p stack=%p %s (%s) id=%d\n", t->ctx->fake_stack, t->ctx->stack, t->name, where, t->id);
 	} else {         // tell the address sanitizer about the task
-		__sanitizer_start_switch_fiber(&(t->ctx->fake_stack), t->ctx->stack, t->ctx->stack_last - t->ctx->stack);
+		__sanitizer_start_switch_fiber(&(t->ctx->fake_stack), t->ctx->stack, t->ctx->stack_size_bytes);
 		//printf("TaskJump  fake_stack=%p stack=%p %s (%s) id=%d\n", t->ctx->fake_stack, t->ctx->stack, t->name, where, t->id);
 	}
 #endif

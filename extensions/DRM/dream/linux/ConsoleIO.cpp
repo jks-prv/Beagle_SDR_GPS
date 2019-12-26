@@ -99,24 +99,23 @@ CConsoleIO::Update(drm_t *drm)
 	time = curtime;
 	
 	#if 1
-        CVector<_COMPLEX> facIQ, sdcIQ, mscIQ;
         pDRMReceiver->GetFACMLC()->GetVectorSpace(facIQ);
         pDRMReceiver->GetSDCMLC()->GetVectorSpace(sdcIQ);
         pDRMReceiver->GetMSCMLC()->GetVectorSpace(mscIQ);
         #define N_IQDATA (64*2 + 256*2 + 2048*2)
         u1_t u1[N_IQDATA];
-        int i;
-        for (i=0; i < 64; i++) {
-            u1[i*2]   = (facIQ[i].real() + 1.5) * 255.0 / 3.0;
-            u1[i*2+1] = (facIQ[i].imag() + 1.5) * 255.0 / 3.0;
+        int i, j;
+        for (i = j = 0; i < 64; i++, j++) {
+            u1[j*2]   = (facIQ[i].real() + 1.5) * 255.0 / 3.0;
+            u1[j*2+1] = (facIQ[i].imag() + 1.5) * 255.0 / 3.0;
         }
-        for (; i < 64+256; i++) {
-            u1[i*2]   = (sdcIQ[i].real() + 1.5) * 255.0 / 3.0;
-            u1[i*2+1] = (sdcIQ[i].imag() + 1.5) * 255.0 / 3.0;
+        for (i = 0; i < 256; i++, j++) {
+            u1[j*2]   = (sdcIQ[i].real() + 1.5) * 255.0 / 3.0;
+            u1[j*2+1] = (sdcIQ[i].imag() + 1.5) * 255.0 / 3.0;
         }
-        for (; i < 64+256+2048; i++) {
-            u1[i*2]   = (mscIQ[i].real() + 1.5) * 255.0 / 3.0;
-            u1[i*2+1] = (mscIQ[i].imag() + 1.5) * 255.0 / 3.0;
+        for (i = 0; i < 2048; i++, j++) {
+            u1[j*2]   = (mscIQ[i].real() + 1.5) * 255.0 / 3.0;
+            u1[j*2+1] = (mscIQ[i].imag() + 1.5) * 255.0 / 3.0;
         }
         DRM_data(drm, (u1_t) DRM_DAT_IQ, u1, N_IQDATA);
         //printf("%d|%d|%d ", facIQ.Size(), sdcIQ.Size(), mscIQ.Size()); fflush(stdout);

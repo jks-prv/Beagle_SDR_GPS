@@ -141,7 +141,8 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
                 if (eDecError == CAudioCodec::DECODER_ERROR_OK) {
                     /* Resample data */
                     iResOutBlockSize = outputSampleRate * vecTempResBufInLeft.Size() / inputSampleRate;
-                    //printf("iResOutBlockSize=%d vecTempResBufOutCurLeft=%d\n", iResOutBlockSize, vecTempResBufOutCurLeft.Size());
+
+                    // KiwiSDR: comment "NOOP for AAC" not true for us since our outputSampleRate = 12k, not usual soundcard 48k!
                     if (iResOutBlockSize != vecTempResBufOutCurLeft.Size()) { // NOOP for AAC, needed for xHE-AAC
                         vecTempResBufOutCurLeft.Init(iResOutBlockSize, 0.0);
                         vecTempResBufOutCurRight.Init(iResOutBlockSize, 0.0);
@@ -219,6 +220,16 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
         /* Conversion from _REAL to _SAMPLE with special function */
         for (int i = 0; i < iResOutBlockSize; i++)
         {
+            #if 0
+                if (i > vecTempResBufOutCurLeft.Size()) {
+                    real_printf("i=%d vecTempResBufOutCurLeft.Size=%d\n",
+                        i, vecTempResBufOutCurLeft.Size());
+                }
+                if (iOutputBlockSize + i * 2 + 1 > (*pvecOutputData).Size()) {
+                    real_printf("i=%d iResOutBlockSize=%d iOutputBlockSize=%d pvecOutputData.Size=%d\n",
+                        i, iResOutBlockSize, iOutputBlockSize, (*pvecOutputData).Size());
+                }
+            #endif
             (*pvecOutputData)[iOutputBlockSize + i * 2] = Real2Sample(vecTempResBufOutCurLeft[i]);	/* Left channel */
             (*pvecOutputData)[iOutputBlockSize + i * 2 + 1] = Real2Sample(vecTempResBufOutCurRight[i]);	/* Right channel */
         }
@@ -359,11 +370,14 @@ CAudioSourceDecoder::InitInternal(CParameter & Parameters)
         int numFrames = pAudioSuperFrame->getNumFrames();
         if(numFrames==0) {
             // xHE-AAC - can't tell yet!
+            //printf("$ xHE-AAC - can't tell yet! (\n");
         }
         else {
             int samplesPerChannelPerSuperFrame = pAudioSuperFrame->getSuperFrameDurationMilliseconds() * inputSampleRate / 1000;
             iLenDecOutPerChan = samplesPerChannelPerSuperFrame / numFrames;
+            //printf("$ samplesPerChannelPerSuperFrame=%d numFrames=%d\n", samplesPerChannelPerSuperFrame, numFrames);
         }
+        //printf("$ iLenDecOutPerChan=%d\n", iLenDecOutPerChan);
 
         /* set string for GUI */
         Parameters.audiodecoder = audiodecoder;
@@ -377,6 +391,8 @@ CAudioSourceDecoder::InitInternal(CParameter & Parameters)
         /* Since we do not do Mode E or correct for sample rate offsets here (yet), we do not
            have to consider larger buffers. An audio frame always corresponds to 400 ms */
         iMaxLenResamplerOutput = int(_REAL(outputSampleRate) * 0.4 /* 400ms */  * 2 /* for stereo */ );
+        iMaxLenResamplerOutput *= 2;    // KiwiSDR: to prevent buffer overruns with xHE-AAC
+        //printf("$ iMaxLenResamplerOutput=%d\n", iMaxLenResamplerOutput);
 
         if(inputSampleRate != outputSampleRate) {
             _REAL rRatio = _REAL(outputSampleRate) / _REAL(inputSampleRate);
@@ -399,6 +415,7 @@ CAudioSourceDecoder::InitInternal(CParameter & Parameters)
            between _REAL and _SAMPLE. We have to init the buffers with
            zeros since it can happen, that we have bad CRC right at the
            start of audio blocks */
+        //printf("$ vecTempResBufInLeft.Init iLenDecOutPerChan=%d\n", iLenDecOutPerChan);
         vecTempResBufInLeft.Init(iLenDecOutPerChan, 0.0);
         vecTempResBufInRight.Init(iLenDecOutPerChan, 0.0);
         vecTempResBufOutCurLeft.Init(iResOutBlockSize, 0.0);

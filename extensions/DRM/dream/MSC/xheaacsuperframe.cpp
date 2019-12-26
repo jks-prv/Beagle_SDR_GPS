@@ -131,6 +131,17 @@ bool XHEAACSuperFrame::parse(CVectorEx<_BINARY>& asf)
     audioFrame.resize(frameBorderCount);
     audioFrame[i].resize(0);
     while(true) {
+        #if 0
+            if (i >= audioFrame.size()) {
+                printf("audioFrame size: i=%d af_size=%d frameBorderCount=%d\n", (int) i, (int) audioFrame.size(), frameBorderCount);
+                exit(-1);
+            }
+            int psize = payload.size();
+            if (psize == 0) {
+                printf("payload size: i=%d af_size=%d frameBorderCount=%d\n", (int) i, (int) audioFrame.size(), frameBorderCount);
+                exit(-1);
+            }
+        #endif
         audioFrame[i].push_back(payload.front());
         payload.pop_front();
         if(audioFrame[i].size()==frameSize[i]) {

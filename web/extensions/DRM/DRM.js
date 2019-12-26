@@ -318,7 +318,10 @@ function drm_recv(data)
                         'Resistance to large delay/doppler spread'
                      ][o.mod]
                   );
-			   }
+			   } else {
+               drm_reset_status();
+            }
+			   
 			   w3_show_hide('id-drm-mode', isDefined(o.mod));
 			   
 			   var codec = drm.AAC;
@@ -327,7 +330,7 @@ function drm_recv(data)
                //if (ao.cur && i == 2) ao.ac = drm.xHE_AAC;
 			      s = i;
 			      if (ao.id) {
-                  s += ' '+ drm.EAudCod[ao.ac] +' ('+ ao.id +') '+ ao.lbl + (ao.ep? (' UEP ('+ ao.ep.toFixed(1) +'% ') : ' EEP ') +
+                  s += ' '+ drm.EAudCod[ao.ac] +' ('+ ao.id +') '+ ao.lbl + (ao.ep? (' UEP ('+ ao.ep.toFixed(1) +'%) ') : ' EEP ') +
                      (ao.ad? 'Audio ':'Data ') + ao.br.toFixed(2) +' kbps';
                }
                var el = w3_el('id-drm-svc-'+ i);
@@ -339,7 +342,7 @@ function drm_recv(data)
             w3_show('id-drm-svcs');
             if (codec != drm.AAC) console.log('codec='+ codec);
             w3_innerHTML('id-drm-error',
-               (codec != drm.AAC)? ('WARNING: '+ ((codec == drm.xHE_AAC)? 'xHE_AAC ':'') +'codec not supported yet -- no audio will play') : '<br>');
+               (codec != drm.AAC)? ('WARNING: '+ ((codec == drm.xHE_AAC)? 'xHE_AAC ':'') +'codec not supported yet -- audio will be bad') : '<br>');
             w3_color('id-drm-error', 'white', 'red', (codec != drm.AAC));
 
             if (o.msg)
@@ -361,6 +364,7 @@ function drm_recv(data)
                case 0: graph_annotate('lime'); break;
                case 1: graph_annotate('gold'); break;
                case 2: graph_annotate('red'); break;
+               case 3: graph_annotate('blue'); break;
             }
 			   break;
 			
@@ -373,10 +377,13 @@ function drm_recv(data)
 
 function drm_reset_status()
 {
+   //console.log('drm_reset_status');
    drm_all_status(4,4,4,4,4,4);
    w3_innerHTML('id-drm-if_level', '');
    w3_innerHTML('id-drm-snr', '');
    w3_hide('id-drm-mode');
+   for (var i = 0; i <= 3; i++)
+      w3_color('id-drm-'+ ['A','B','C','D'][i], '', '');
    w3_innerHTML('id-drm-error', '');
    w3_hide('id-drm-svcs');
    w3_innerHTML('id-drm-msgs', '');
@@ -547,7 +554,7 @@ function drm_controls_setup()
 			w3_divs('w3-container/',
             w3_col_percent('',
 				   w3_div('w3-medium w3-text-aqua', '<b>Digital Radio Mondiale (DRM30) decoder</b>'), 60,
-					w3_div('', 'Based on <b><a href="https://sourceforge.net/projects/drm/" target="_blank">Dream 2.1.1</a></b>'), 40
+					w3_div('', 'Based on <b><a href="https://sourceforge.net/projects/drm/" target="_blank">Dream 2.2.1</a></b>'), 40
 				),
 				
             w3_col_percent('w3-margin-T-4/',
@@ -639,6 +646,7 @@ function drm_run(run)
       drm.saved_passband = ext_get_passband();
    }
 
+   //console.log('drm_run run='+ run);
    //kiwi_trace();
    drm.run = run;
    ext_send('SET run='+ drm.run);
@@ -710,8 +718,8 @@ function drm_test_cb(path, val, first)
 {
    console.log('drm_test_cb '+ val);
    drm_station('Test Recording '+ val);
-   drm_reset_status();
-   drm_run(0); drm_run(1);
+   drm_run(0);
+   drm_start();
    drm_test(val);
    ext_set_mode('drm');
    w3_show('id-drm-bar-container');

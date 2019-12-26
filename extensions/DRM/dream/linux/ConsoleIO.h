@@ -29,6 +29,8 @@
 #include <signal.h>
 #include "../DRMReceiver.h"
 
+static CVector<_COMPLEX> facIQ, sdcIQ, mscIQ;
+
 class CConsoleIO
 {
 public:

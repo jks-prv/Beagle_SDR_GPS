@@ -81,18 +81,19 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 		#CC = clang
 		#CPP = clang++
         O_OPT = -Ofast
-        #O_OPT = -O3
-
-		# To use clang address sanitizer build with "make ASAN=1 OPT=0" on target using alias "masan"
-		# There are shell aliases "masan" and "masan0" for these.
-		# Use gdb "asan" alias to set breakpoint necessary to backtrace address errors.
-		ifeq ($(ASAN),1)
-			CFLAGS += -fsanitize=address -fno-omit-frame-pointer
-			#LDFLAGS += -v -fsanitize=address
-			LDFLAGS += -fsanitize=address
-		endif
-
 		# needed for iq_display.cpp et al
 		CPP_FLAGS += -std=gnu++11
 	endif
+
+    # To use clang address sanitizer build with "make ASAN=1 [OPT=0]" on target.
+    # There are shell aliases "masan" and "masan0" for these.
+    # Use gdb "asan" alias to set breakpoint necessary to backtrace address errors.
+    ifeq ($(ASAN),1)
+        CFLAGS += -fsanitize=address -fno-omit-frame-pointer
+        #LDFLAGS += -v -fsanitize=address
+        LDFLAGS += -fsanitize=address
+        ifeq ($(OPT),0)
+            O_OPT =
+        endif
+    endif
 endif
