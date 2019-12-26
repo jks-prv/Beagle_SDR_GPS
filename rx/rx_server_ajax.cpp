@@ -280,8 +280,13 @@ char *rx_server_ajax(struct mg_connection *mc)
 		bool has_masked = (dx.masked_len > 0);
 		bool has_limits = (has_tlimit || has_masked);
 		
+		bool error;
+		bool DRM_enable = cfg_bool("DRM.enable", &error, CFG_OPTIONAL);
+		if (error) DRM_enable = true;
+		bool have_DRM_ext = (DRM_enable && (snd_rate == SND_RATE_4CH));
+		
 		asprintf(&sb, "status=%s\noffline=%s\nname=%s\nsdr_hw=KiwiSDR v%d.%d"
-			"%s%s%s%s%s%s%s ⁣\n"
+			"%s%s%s%s%s%s%s%s ⁣\n"
 			"op_email=%s\nbands=%.0f-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\n"
 			"gps=%s\ngps_good=%d\nfixes=%d\nfixes_min=%d\nfixes_hour=%d\n"
 			"tdoa_id=%s\ntdoa_ch=%d\n"
@@ -307,6 +312,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			has_tlimit?						"⏳" : "",
 			has_masked?						"🚫" : "",
 			has_limits?						" LIMITS" : "",
+			have_DRM_ext?					" ⁣ 📻 DRM" : "",
 			have_ant_switch_ext?			" ⁣ 📶 ANT-SWITCH" : "",
 
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
