@@ -306,22 +306,21 @@ function w3_obj_seq_el(o, idx)
    return o[keys[idx]];
 }
 
-function w3_obj_enum_data(obj, data, func)
+function w3_obj_enum(obj, func, opt)
 {
-   var keys = Object.keys(obj);
-   for (var i=0, len = keys.length; i < len; i++) {
-      var key = keys[i];
-      if (data == null || obj[key] == data) func(i, key);
-   }
-}
+   var key_match = w3_opt(opt, 'key_match', undefined);
+   var value_match = w3_opt(opt, 'value_match', undefined);
 
-function w3_obj_enum_key(obj, key, func)
-{
-   var keys = Object.keys(obj);
-   for (var i=0, len = keys.length; i < len; i++) {
-      var k = keys[i];
-      if (key == null || k == key) func(i, obj[key]);
-   }
+   Object.keys(obj).forEach(function(key, i) {
+      if (isDefined(key_match)) {
+         if (key == key_match) func(key, i);
+      } else
+      if (isDefined(value_match)) {
+         if (obj[key] == value_match) func(key, i);
+      } else {
+         func(key, i);
+      }
+   });
 }
 
 // arr:     [] string vals to iterate over
@@ -505,15 +504,15 @@ function w3_iterate_classname(cname, func)
 {
 	var els = document.getElementsByClassName(cname);
 	if (els == null) return;
-	for (var i=0; i < els.length; i++) {
+	for (var i=0; i < els.length; i++) {      // els is not an array
 		func(els[i], i);
-	};
+	}
 }
 
 function w3_iterate_classList(el_id, func)
 {
 	var el = w3_el(el_id);
-	if (el) for (var i = 0; i < el.classList.length; i++) {
+	if (el && el.classList) for (var i = 0; i < el.classList.length; i++) {     // el.classList is not an array
 		func(el.classList.item(i), i);
 	}
 	return el;
@@ -527,11 +526,24 @@ function w3_appendElement(el_parent, el_type, html)
 	return el_child;
 }
 
+function w3_iterate_parent(el_id, func)
+{
+	var el = w3_el(el_id);
+	var i = 0;
+	
+	do {
+		if (func(el, i) != null)
+		   break;
+		el = el.parentNode;
+		i++;
+	} while (el);
+}
+
 function w3_iterate_children(el_id, func)
 {
 	var el = w3_el(el_id);
 	
-	for (var i=0; i < el.children.length; i++) {
+	for (var i=0; i < el.children.length; i++) {    // el.children is not an array
 		var child_el = el.children[i];
 		func(child_el, i);
 	}
@@ -541,7 +553,7 @@ function w3_iterateDeep_children(el_id, func)
 {
 	var el = w3_el(el_id);
 	
-	for (var i=0; i < el.children.length; i++) {
+	for (var i=0; i < el.children.length; i++) {    // el.children is not an array
 		var child_el = el.children[i];
 		func(child_el);
 		if (child_el.hasChildNodes)
@@ -647,9 +659,10 @@ function w3_remove_wildcard(el_id, prefix)
 	var el = w3_el(el_id);
 	//console.log('w3_remove_wildcard <'+ prefix +'>');
 	if (!el) return null;
-	el.classList.forEach(function(cl) {
+	for (var i = 0; i < el.classList.length; i++) {    // el.classList is not an array
+	   var cl = el.classList.item(i);
 	   if (cl.startsWith(prefix)) el.classList.remove(cl);
-	});
+	}
 	return el;
 }
 
@@ -674,6 +687,20 @@ function w3_contains(el_id, prop)
 	if (!el) return 0;
 	var clist = el.classList;
 	return (!clist || !clist.contains(prop))? 0:1;
+}
+
+function w3_parent_with(el_id, prop)
+{
+	var el = w3_el(el_id);
+   if (!el) return;
+	
+	var found = null;
+	w3_iterate_parent(el, function(parent) {
+	   if (!found && w3_contains(parent, prop)) {
+	      found = parent;
+	   }
+	});
+	return found;
 }
 
 function w3_toggle(el_id, prop)
@@ -846,17 +873,17 @@ function w3_check_restart_reboot(el_id)
 	var el = w3_el(el_id);
    if (!el) return;
 	
-	do {
+	w3_iterate_parent(el, function(el) {
 		if (w3_contains(el, 'w3-restart')) {
 			w3_restart_cb();
-			break;
+			return el;
 		}
 		if (w3_contains(el, 'w3-reboot')) {
 			w3_reboot_cb();
-			break;
+			return el;
 		}
-		el = el.parentNode;
-	} while (el);
+		return null;
+	});
 }
 
 function w3_set_value(path, val)
@@ -1773,8 +1800,9 @@ function w3int_select_options(sel, opts)
 {
    var s = '';
    
+   // 'min:max'
+   // range of integers (increment one assumed)
    if (isString(opts)) {
-      // range of integers (increment one assumed)
       var rng = opts.split(':');
       if (rng.length == 2) {
          var min = +rng[0];
@@ -1786,33 +1814,29 @@ function w3int_select_options(sel, opts)
          }
       }
    } else
-   
+
+   // [ n, n ... ]
+   // [ 's', 's', n, 's' ... ]
+   // [ 's', n, { first_key:x, key:x ... }, n ... ]
+   // mixed array of strings, numbers or take first object key as menu option
    if (isArray(opts)) {
-      // array of strings and/or numbers or take first object key as option
-      for (var i=0; i < opts.length; i++) {
-         var obj = opts[i];
+      //for (var i=0; i < opts.length; i++) {
+      //   var obj = opts[i];
+      opts.forEach(function(obj, i) {
          if (isObject(obj)) {
             var keys = Object.keys(obj);
             obj = obj[keys[0]];
          }
          s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ obj +'</option>';
-      }
+      });
    } else
-   
+
+   // { key0:opt0, key1:opt1 ... }
+   // object: enumerate sequentially like an array using object element values as the menu options
    if (isObject(opts)) {
-      // object: enumerate sequentially like an array
-      // allows object to serve a dual purpose by having non-integer keys
-      w3_obj_enum_data(opts, null, function(i, key) {
+      w3_obj_enum(opts, function(key, i) {
          s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ opts[key] +'</option>';
       });
-      
-      /*
-      var keys = Object.keys(opts);
-      for (var i=0; i < keys.length; i++) {
-         var key = keys[i];
-         s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ opts[key] +'</option>';
-      }
-      */
    }
    
    return s;
@@ -1831,7 +1855,7 @@ function w3_select_hier(psa, label, title, path, sel, opts, cb, cb_param)
    var idx = 0;
    if (!isObject(opts)) return;
 
-   w3_obj_enum_data(opts, null, function(i, key) {
+   w3_obj_enum(opts, function(key, i) {
       as = key.split('\\');
       as.forEach(function(e) {
          s += '<option value='+ dq(idx++) +' disabled>'+ e +'</option> ';
@@ -1839,10 +1863,10 @@ function w3_select_hier(psa, label, title, path, sel, opts, cb, cb_param)
       var a = opts[key];
       if (!isArray(a)) return;
 
-      for (var j=0; j < a.length; j++) {
-         var v = w3_first_value(a[j]);
+      a.forEach(function(el, j) {
+         var v = w3_first_value(el);
          s += '<option value='+ dq(idx++) +' id="id-'+ i +'-'+ j +'">'+ v.toString() +'</option> ';
-      }
+      });
    });
    
    /*

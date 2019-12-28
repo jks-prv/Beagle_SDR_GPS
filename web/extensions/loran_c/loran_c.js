@@ -297,9 +297,9 @@ function loran_c_param_init(algo)
 
 var loran_c_nalgo = 3;
 var loran_c_avg_algo_e = { CMA:0, EMA:1, IIR:2 };
-var loran_c_avg_algo_s = { 0:'CMA', 1:'EMA', 2:'IIR' };
+var loran_c_avg_algo_s = [ 'CMA', 'EMA', 'IIR' ];
 
-var loran_c_avg_param_s = { 0:'Averages', 1:'Decay', 2:'Exp' };
+var loran_c_avg_param_s = [ 'Averages', 'Decay', 'Exp' ];
 var loran_c_avg_param_init = { 0:8, 1:256, 2:0.2 };
 var loran_c_avg_param_min = { 0:1, 1:1, 2:0 };
 var loran_c_avg_param_max = { 0:32, 1:512, 2:1 };

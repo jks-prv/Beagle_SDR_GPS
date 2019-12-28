@@ -375,6 +375,12 @@ function kiwi_rateLimit(cb, time)
    return rtn;
 }
 
+function kiwi_UTC_minutes()
+{
+   var d = new Date();
+   return (d.getUTCHours()*60 + d.getUTCMinutes());
+}
+
 
 ////////////////////////////////
 // HTML helpers
@@ -784,7 +790,7 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
 			ajax.abort();
 			delete ajax;
 		   delete ajax_requests[id];
-		}, timeout);
+		}, Math.abs(timeout));
 	}
 	
 	if (progress_cb) {
@@ -861,7 +867,7 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
                   } catch(ex) {
                      dbug("AJAX response JSON.parse failed: <"+ response +'>');
                      dbug(ex);
-                     obj = { AJAX_error:'JSON parse', response:response };
+                     obj = { AJAX_error:'JSON parse', JSON_ex:ex.toString(), response:response };
                   }
                }
             }
@@ -882,9 +888,11 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
 		delete ajax_requests[id];
 	}
 
-	ajax.open(method, url, true);
-	dbug('AJAX SEND id='+ ajax_id +' url='+ url);
-	ajax.send(data);
+   if (timeout >= 0) {     // timeout < 0 is test mode
+      ajax.open(method, url, true);
+      dbug('AJAX SEND id='+ ajax_id +' url='+ url);
+      ajax.send(data);
+   }
 	return true;
 }
 

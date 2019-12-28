@@ -1177,7 +1177,7 @@ function demodulator_analog_replace(subtype, freq)
 	}
 	
 	// initial offset, but doesn't consider demod.isCW since it isn't valid yet
-	if (freq != undefined) {
+	if (isArg(freq)) {
 		offset = freq - center_freq;
 	}
 	
@@ -1190,7 +1190,7 @@ function demodulator_analog_replace(subtype, freq)
 		fromCW = true;
 	
 	// determine actual offset now that demod.isCW is valid
-	if (freq != undefined) {
+	if (isArg(freq)) {
 		freq_car_Hz = freq_dsp_to_car(freq);
 		//console.log('DEMOD-replace SPECIFIED freq='+ freq +' car='+ freq_car_Hz);
 		offset = freq_car_Hz - center_freq;
@@ -4357,15 +4357,16 @@ function passband_offset_dxlabel(mode)
 // frequency entry
 ////////////////////////////////
 
-function freqmode_set_dsp_kHz(fdsp, mode, dont_clear_wf)
+function freqmode_set_dsp_kHz(fdsp, mode, opt)
 {
+   var dont_clear_wf = w3_opt(opt, 'dont_clear_wf', false);
 	fdsp *= 1000;
 	//console.log("freqmode_set_dsp_kHz: fdsp="+fdsp+' mode='+mode);
-	if (dont_clear_wf != true) audioFFT_clear_wf = true;
+	if (dont_clear_wf = false) audioFFT_clear_wf = true;
 
-	if (mode != undefined && mode != null && mode != cur_mode) {
+	if (isArg(mode) && mode != cur_mode) {
 		//console.log("freqmode_set_dsp_kHz: calling demodulator_analog_replace");
-		demodulator_analog_replace(mode, fdsp);
+		ext_set_mode(mode, fdsp, opt);
 	} else {
 		freq_car_Hz = freq_dsp_to_car(fdsp);
 		//console.log("freqmode_set_dsp_kHz: calling demodulator_set_offset_frequency NEW freq_car_Hz="+freq_car_Hz);
@@ -4766,8 +4767,8 @@ function freqstep(sel)
 	}
 	//console.log('STEP '+sel+' '+cur_mode+' fold='+freq_displayed_Hz+' inc='+incHz+' trunc='+trunc+' fnew='+fnew+' '+took);
 	
-	// audioFFT mode: don't clear waterfall for small frequency steps (third arg = true)
-	freqmode_set_dsp_kHz(fnew/1000, null, true);
+	// audioFFT mode: don't clear waterfall for small frequency steps
+	freqmode_set_dsp_kHz(fnew/1000, null, { dont_clear_wf:true });
 }
 
 var freq_step_last_mode, freq_step_last_band;
@@ -5778,7 +5779,7 @@ function dx_click(ev, gid)
 		var lo = dx_list[gid].lo;
 		var hi = dx_list[gid].hi;
 		//console.log("DX-click f="+ dx_list[gid].freq +" mode="+ mode +" cur_mode="+ cur_mode +' lo='+ lo +' hi='+ hi);
-		freqmode_set_dsp_kHz(freq, mode);
+		freqmode_set_dsp_kHz(freq, mode, { open_ext:true });
 		if (lo || hi) {
 		   ext_set_passband(lo, hi, undefined, freq);
 		}
@@ -6088,7 +6089,7 @@ function keyboard_shortcut(key, mod, ctlAlt)
    
    // mode
    case 'a': ext_set_mode((mode == 'am')? 'amn' : 'am'); break;
-   case 'd': ext_set_mode('drm'); extint_open('drm'); break;
+   case 'd': ext_set_mode('drm', null, { open_ext:true }); break;
    case 'l': ext_set_mode((mode == 'lsb')? 'lsn' : 'lsb'); break;
    case 'u': ext_set_mode((mode == 'usb')? 'usn' : 'usb'); break;
    case 'c': ext_set_mode((mode == 'cw')? 'cwn' : 'cw'); break;
@@ -7750,9 +7751,7 @@ function mode_button(evt, el)
       //console.log('#### mode_button: col '+ col +' '+ mode);
    }
 
-   demodulator_analog_replace(mode);
-   if (mode == 'drm')
-      extint_open('drm');
+   ext_set_mode(mode, null, { open_ext:true });
 }
 
 var step_9_10;

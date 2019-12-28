@@ -1,16 +1,18 @@
-// Copyright (c) 2019 John Seamons, ZL/KF6VO
+// Copyright (c) 2019-2020 John Seamons, ZL/KF6VO
 
 var drm = {
    ext_name: 'DRM',     // NB: must match DRM.cpp:DRM_ext.name
    first_time: true,
+   url: 'http://DRM.kiwisdr.com/drm/',
+
    locked: 0,
    wrong_srate: false,
 
-   h: 200,
-   w_lhs: 75,
-   w_msg: 600,
+   h: 250,
+   w_lhs: 25,
+   w_msg: 500,
    w_msg2: 450,
-   w_graph: 500,
+   w_graph: 675,
    pad_graph: 10,
 
    n_menu: 5,
@@ -24,13 +26,43 @@ var drm = {
    is_stopped: 0,
    freq_s: '',
    freq: 0,
-   display: 0,
-   display_s: [ 'graph', 'IQ', 'FAC', 'SDC', 'MSC' ],
-   IQ: 1,
-   FAC: 2,
-   SDC: 3,
-   MSC: 4,
-   last_canvas: 0,
+
+   //panel_0:       [  'info',     'info',     'info',     'info',  'info',  'info',  'info',  'info' ],
+   //panel_1:       [  'by-svc',   'by-area',  'by-freq',  'graph', 'IQ',    'IQ',    'IQ',    'IQ' ],
+   panel_0:       [  'info',     'info',  'info',  'info',  'info',  'info' ],
+   panel_1:       [  'by-svc',   'graph', 'IQ',    'IQ',    'IQ',    'IQ' ],
+   SCHED0: 0,
+   GRAPH0: 1,
+   IQ_ALL: 2,
+   FAC: 3,
+   SDC: 4,
+   MSC: 5,
+   
+   display_idx: 1,
+   display_s: {
+      'Schedule': [
+         { m:'by service' },              // display_idx = 1
+         //{ m:'by area' },
+         //{ m:'by freq' }
+      ],
+      'Display': [
+         { m:'IF/SNR', c:'graph' },
+      ],
+      'IQ': [
+         { m:'all', c:'IQ' },
+         { m:'FAC', c:'IQ' },
+         { m:'SDC', c:'IQ' },
+         { m:'MSC', c:'IQ' }
+      ]
+   },
+   
+   stations: null,
+   using_default: false,
+   SINGLE: 0,
+   MULTI: 1,
+   REGION: 2,
+   SERVICE: 3,
+   
    monitor: 0,
    monitor_s: [ 'DRM', 'source' ],
    
@@ -58,7 +90,17 @@ var drm = {
       'Voice of\\Nigeria':       [ 15120 ],
    },
 
-   menu_India_MW: 2,
+   asia_pac: {
+      'China National\\Radio':   [ 6030, 7360, 9420, 9655, 9870, 11695, 13825, 15180, 17770, 17800, 17830 ],
+      'Radio\\New Zealand':      [ 5975, 7285, 7330, 9780, 11690 ],
+      'Transworld\\KTWR':        [ 7500, 11995, 13800 ],
+   },
+
+   americas: {
+      'WINB USA':               [ 7315, 9265, 13690 ],
+   },
+
+   menu_India_MW: 4,
    india_MW: {
       'Ahmedabad':               [ 855 ],
       'Ajmer':                   [ 612 ],
@@ -97,17 +139,6 @@ var drm = {
       'Trichirapalli':           [ 945 ],
       'Varanasi':                [ 1251 ],
       'Vijayawada':              [ 846 ],
-   },
-
-   asia_pac: {
-      'China National\\Radio':   [ 6030, 7360, 9420, 9655, 9870, 11695, 13825, 13850, 15180, 17770, 17800, 17830 ],
-      'Chukotka\\Radio':         [ 5935, 6025, 11860, 15325 ],
-      'Radio\\New Zealand':      [ 5975, 7285, 7330, 9780, 11690 ],
-      'Transworld\\KTWR':        [ 7500, 11995, 13800 ],
-   },
-
-   americas: {
-      'WINB USA':               [ 7315, 9265, 13690 ],
    },
 
    last_last: 0
@@ -166,7 +197,7 @@ function drm_recv(data)
          ct.fillRect(0,h/2, w,1);
          ct.fillRect(w/2,0, 1,h);
          
-         if (drm.display == drm.IQ || drm.display == drm.FAC) {
+         if (drm.display == drm.IQ_ALL || drm.display == drm.FAC) {
             ct.fillStyle = 'green';
             for (i = 0; i < 64; i++) {
                var x = d[i*2]   / 255.0 * w;
@@ -176,7 +207,7 @@ function drm_recv(data)
          }
          i = 64;
          
-         if (drm.display == drm.IQ || drm.display == drm.SDC) {
+         if (drm.display == drm.IQ_ALL || drm.display == drm.SDC) {
             ct.fillStyle = 'red';
             for (; i < 64+256; i++) {
                var x = d[i*2]   / 255.0 * w;
@@ -186,7 +217,7 @@ function drm_recv(data)
          }
          i = 64+256;
 
-         if (drm.display == drm.IQ || drm.display == drm.MSC) {
+         if (drm.display == drm.IQ_ALL || drm.display == drm.MSC) {
             ct.fillStyle = 'blue';
             for (; i < 64+256+2048; i++) {
                var x = d[i*2]   / 255.0 * w;
@@ -426,6 +457,189 @@ function drm_saved_mode()
    console.log('drm_save_mode FINAL saved_mode='+ drm.saved_mode);
 }
 
+function drm_tscale(utc)
+{
+   return (0.35 * drm.w_sched) + (utc * 0.025 * drm.w_sched);
+}
+
+function drm_schedule_static()
+{
+   var s = '';
+   
+   for (var hour = 0; hour <= 24; hour++) {
+      s += w3_div(sprintf('id-drm-sched-tscale|left:%fpx;', drm_tscale(hour)));
+   }
+
+   s += w3_div(sprintf('id-drm-sched-now|left:%fpx;', drm_tscale(kiwi_UTC_minutes()/60)));
+   drm.interval = setInterval(function() {
+      w3_el('id-drm-sched-now').style.left = px(drm_tscale(kiwi_UTC_minutes()/60));
+   }, 60000);
+   
+   return s;
+}
+
+function drm_set_freq_menu(freq, station)
+{      
+   // select matching menu item frequency and optionally station
+   station = isArg(station)? station.toLowerCase() : null;
+   var found = false;
+   for (var i = 0; i < drm.n_menu; i++) {
+      var menu = 'drm.menu'+ i;
+      var last_disabled;
+      w3_select_enum(menu, function(option) {
+         if (option.disabled) last_disabled = option.innerHTML.toLowerCase();
+
+         var f = parseFloat(option.innerHTML);
+         if (!isNaN(f)) {
+            //console.log('CONSIDER '+ parseFloat(option.innerHTML) +' '+ dq(last_disabled));
+            if (!found && parseFloat(option.innerHTML) == freq && (!station || station.includes(last_disabled))) {
+               drm_pre_select_cb(menu, option.value, false);
+               //console.log('FOUND option.value='+ option.value);
+               found = true;
+            }
+         }
+      });
+      if (found) break;
+   }
+   if (!found) drm_set_freq(freq);
+}
+
+function drm_click(idx)
+{
+   var o = drm.stations[idx];
+   console.log('drm_click '+ o.f +' '+ dq(o.s.toLowerCase()));
+   drm_set_freq_menu(o.f, o.s);
+}
+
+function drm_schedule()
+{
+   if (!drm.stations) return;
+
+   var i;
+   var s = drm.using_default? w3_div('w3-yellow w3-padding w3-show-inline-block', 'can\'t contact kiwisdr.com<br>using default data') : '';
+
+   for (i = 0; i < drm.stations.length; i++) {
+      var o = drm.stations[i];
+      if (o.t == drm.REGION) continue;
+      var station = o.s;
+      var freq = o.f;
+      var si = '';
+
+      while (i < drm.stations.length && o.s == station && o.f == freq) {
+         var b_px = drm_tscale(o.b);
+         var e_px = drm_tscale(o.e);
+         si += w3_div(sprintf('id-drm-sched-time|left:%fpx; width:%fpx;|onclick=\"drm_click(%d);\"', b_px, e_px - b_px + 2, i));
+         i++;
+         o = drm.stations[i];
+      }
+      i--;
+
+      s += w3_div('cl-drm-sched-station cl-drm-sched-striped', station.replace('_',' ') +'&nbsp;&nbsp;&nbsp;'+ freq, si);
+      if (o && o.t == drm.SERVICE) {
+         s += w3_div('cl-drm-sched-hr-div cl-drm-sched-striped', '<hr class="cl-drm-sched-hr">');
+         i++;
+      }
+   }
+   
+   return s;
+}
+
+function drm_get_stations_cb(stations)
+{
+   var fault = false;
+   
+   if (!stations) {
+      console.log('drm_get_stations_cb: stations='+ stations);
+      fault = true;
+   } else
+   
+   if (stations.AJAX_error && stations.AJAX_error == 'timeout') {
+      console.log('drm_get_stations_cb: TIMEOUT');
+      stations = JSON.parse(drm.default_stations);
+      drm.using_default = true;
+      fault = true;
+   } else
+   
+   if (!isArray(stations)) {
+      console.log('drm_get_stations_cb: not array');
+      fault = true;
+   }
+   
+   if (fault) {
+      console.log(stations);
+      console.log('drm_get_stations_cb: using default station list');
+      stations = JSON.parse(drm.default_stations);
+      drm.using_default = true;
+   }
+   
+   drm.stations = [];
+   var region, station, freq, begin, end, prefix;
+   var is_India = false;
+   stations.forEach(function(obj, i) {
+      prefix = '';
+      w3_obj_enum(obj, function(key, i1) {
+         var ar1 = obj[key];
+         if (i1 == 0) {
+            region = key;
+            if (region == 'India MW') {
+               prefix = 'India, ';
+               is_India = true;
+            }
+            drm.stations.push( { t:drm.REGION, f:0, s:'', r:region } );
+            return;
+         } else {
+            if (!isArray(ar1)) return;
+            station = prefix + key;
+            for (i1 = 0; i1 < ar1.length; i1++) {
+               freq = ar1[i1++];
+               var ae = ar1[i1];
+               if (isArray(ae)) {
+                  for (var i2 = 0; i2 < ae.length; i2++) {
+                     begin = ae[i2++];
+                     end = ae[i2];
+                     drm.stations.push( { t:drm.MULTI, f:freq, s:station, r:region, b:begin, e:end } );
+                  }
+               } else {
+                  begin = ar1[i1++];
+                  end = ar1[i1];
+                  drm.stations.push( { t:drm.SINGLE, f:freq, s:station, r:region, b:begin, e:end } );
+               }
+            }
+            if (!is_India)
+               drm.stations.push( { t:drm.SERVICE, f:0, s:station, r:region } );
+         }
+      });
+   });
+   console.log(drm.stations);
+
+   w3_innerHTML('id-drm-panel-by-svc', drm_schedule());
+}
+
+function drm_panel_show(controls_inner, data_html)
+{
+	var controls_html =
+		w3_div('id-drm-controls w3-text-white',
+			w3_divs('w3-container/',
+            w3_col_percent('',
+				   w3_div('w3-medium w3-text-aqua', '<b>Digital Radio Mondiale (DRM30) decoder</b>'), 60,
+					w3_div('', 'Based on <b><a href="https://sourceforge.net/projects/drm/" target="_blank">Dream 2.2.1</a></b>'), 40
+				),
+				
+            w3_col_percent('w3-margin-T-4/',
+               w3_div('id-drm-station w3-text-css-yellow', '&nbsp;'), 60,
+               w3_div('', 'Schedules: ' +
+                  '<a href="https://www.drm.org/what-can-i-hear/broadcast-schedule-2/" target="_blank">drm.org</a> ' +
+                  '<a href="http://www.hfcc.org/drm" target="_blank">hfcc.org</a>'), 40
+            ),
+            
+            controls_inner
+         )
+      );
+   
+	ext_panel_show(controls_html, data_html, null);
+	ext_set_controls_width_height(700, 150);
+}
+
 function drm_controls_setup()
 {
    drm_saved_mode();
@@ -451,14 +665,13 @@ function drm_controls_setup()
       });
    }
 
-   var controls_inner, data_html;
+   var controls_inner, data_html = null;
    
    if (drm.wrong_srate) {
       controls_inner =
             w3_text('w3-medium w3-text-css-yellow',
                'Currently, DRM does not support Kiwis configured for 20 kHz wide channels.'
             );
-      data_html = null;
    } else
    
    if (drm.locked == 0) {
@@ -473,7 +686,6 @@ function drm_controls_setup()
                'While the DRM decoder is used there can be no other active connections.<br>' +
                'Please try again when this is the only connection.'
             );
-      data_html = null;
    } else {
       var svcs = 'Services:<br>';
       for (var i=1; i <= 4; i++) {
@@ -490,14 +702,33 @@ function drm_controls_setup()
       var qsdc = function(id) { return w3_span('id-drm-sdc-'+ id +' cl-drm-blk', id); };
       var qmsc = function(id) { return w3_span('id-drm-msc-'+ id +' cl-drm-blk', id); };
 
-      var twidth = drm.w_lhs + drm.w_msg + drm.w_graph;
+      var width =  drm.w_msg + drm.w_graph;
+      drm.w_sched = drm.w_graph;
+      var twidth = drm.w_lhs + width;
+      var margin = 10;
+      var loading = '&nbsp;loading data from kiwisdr.com ...';
+
       data_html =
          time_display_html('drm') +
          
-         w3_div(sprintf('id-drm-data w3-relative w3-no-scroll|width:%dpx; height:%dpx; background-color:black;', twidth, drm.h),
-            w3_div(sprintf('id-drm-plot w3-absolute|width:%dpx; height:%dpx; left:%dpx;', drm.w_graph, drm.h, drm.w_lhs + drm.w_msg),
-               w3_canvas('id-drm-graph', drm.w_graph, drm.h, { padding:drm.pad_graph }),
-               w3_canvas('id-drm-IQ w3-hide', drm.w_graph, drm.h, { padding:drm.pad_graph })
+         w3_div(sprintf('id-drm-panel-0-info w3-relative w3-no-scroll|width:%dpx; height:%dpx; background-color:black;', twidth, drm.h),
+            w3_div(sprintf('id-drm-panel-graph w3-absolute|width:%dpx; height:%dpx; left:%dpx;', drm.w_graph, drm.h, drm.w_lhs + drm.w_msg),
+               w3_div(sprintf('id-drm-panel-1-by-svc cl-drm-sched|width:%dpx; height:100%%;', drm.w_graph),
+                  w3_div('', drm_schedule_static()),
+                  w3_div('id-drm-panel-by-svc w3-scroll-y w3-absolute|width:100%; height:100%;', loading)
+               ),
+            /*
+               w3_div(sprintf('id-drm-panel-1-by-area cl-drm-sched|width:%dpx; height:100%%;', drm.w_graph),
+                  w3_div('', drm_schedule_static()),
+                  w3_div('id-drm-panel-by-area w3-scroll-y w3-absolute|width:100%; height:100%;', loading),
+               ),
+               w3_div(sprintf('id-drm-panel-1-by-freq cl-drm-sched|width:%dpx; height:100%%;', drm.w_graph),
+                  w3_div('', drm_schedule_static()),
+                  w3_div('id-drm-panel-by-freq w3-scroll-y w3-absolute|width:100%; height:100%;', loading),
+               ),
+            */
+               w3_canvas('id-drm-panel-1-graph', drm.w_graph, drm.h, { padding:drm.pad_graph }),
+               w3_canvas('id-drm-panel-1-IQ', drm.w_graph, drm.h, { padding:drm.pad_graph })
             ),
             w3_div(sprintf('id-drm-console-msg w3-margin-T-8 w3-small w3-text-white w3-absolute|left:%dpx; width:%dpx; height:%dpx; overflow-x:hidden;',
                drm.w_lhs, drm.w_msg, drm.h),
@@ -506,12 +737,13 @@ function drm_controls_setup()
                   w3_div('id-drm-if_level'),
                   w3_div('id-drm-snr')
                ),
-               w3_div('id-drm-mode w3-hide',
+               w3_divs('id-drm-mode w3-hide/w3-margin-T-6',
                   w3_inline('/w3-show-inline',
                      'DRM mode ', tblk('A'), tblk('B'), tblk('C'), tblk('D'),
-                     '&nbsp;&nbsp;&nbsp; Chan '+ oblk('4.5'), oblk('5'), oblk('9'), oblk('10'), oblk('18'), oblk('20'), ' kHz',
-                     '&nbsp;&nbsp;&nbsp; SDC ', qsdc('4'), qsdc('16'), ' QAM',
-                     '&nbsp;&nbsp;&nbsp; MSC ', qmsc('16'), qmsc('64'), ' QAM'
+                     '&nbsp;&nbsp;&nbsp; Chan '+ oblk('4.5'), oblk('5'), oblk('9'), oblk('10'), oblk('18'), oblk('20'), ' kHz'
+                  ),
+                  w3_inline('/w3-show-inline',
+                     'SBC '+ qsdc('4'), qsdc('16'), ' QAM', '&nbsp;&nbsp;&nbsp; MSC ', qmsc('16'), qmsc('64'), ' QAM'
                   ),
                   w3_div('id-drm-desc')
                ),
@@ -523,16 +755,16 @@ function drm_controls_setup()
          ) +
 
          w3_div('id-drm-options w3-display-right w3-text-white|top:230px; right:0px; width:200px; height:200px',
-            w3_select('|color:red', '', 'display', 'drm.display', drm.display, drm.display_s, 'drm_display_cb')
+            w3_select_hier('w3-text-red', '', '', 'drm.display_idx', drm.display_idx, drm.display_s, 'drm_display_cb')
          );
 
       controls_inner =
          w3_inline('w3-halign-space-between w3-margin-T-8/',
             w3_select_hier('w3-text-red', 'Europe', 'select', 'drm.menu0', drm.menu0, drm.europe, 'drm_pre_select_cb'),
             w3_select_hier('w3-text-red', 'Middle East, Africa', 'select', 'drm.menu1', drm.menu1, drm.middle_east_africa, 'drm_pre_select_cb'),
-            w3_select_hier('w3-text-red', 'India MW', 'select', 'drm.menu2', drm.menu2, drm.india_MW, 'drm_pre_select_cb'),
-            w3_select_hier('w3-text-red', 'Asia/Pacific', 'select', 'drm.menu3', drm.menu3, drm.asia_pac, 'drm_pre_select_cb'),
-            w3_select_hier('w3-text-red', 'Americas', 'select', 'drm.menu4', drm.menu4, drm.americas, 'drm_pre_select_cb')
+            w3_select_hier('w3-text-red', 'Asia/Pacific', 'select', 'drm.menu2', drm.menu2, drm.asia_pac, 'drm_pre_select_cb'),
+            w3_select_hier('w3-text-red', 'Americas', 'select', 'drm.menu3', drm.menu3, drm.americas, 'drm_pre_select_cb'),
+            w3_select_hier('w3-text-red', 'India MW', 'select', 'drm.menu4', drm.menu4, drm.india_MW, 'drm_pre_select_cb')
          ) +
 
          w3_inline('w3-margin-T-8/w3-margin-between-16',
@@ -549,62 +781,29 @@ function drm_controls_setup()
          );
    }
 
-	var controls_html =
-		w3_div('id-drm-controls w3-text-white',
-			w3_divs('w3-container/',
-            w3_col_percent('',
-				   w3_div('w3-medium w3-text-aqua', '<b>Digital Radio Mondiale (DRM30) decoder</b>'), 60,
-					w3_div('', 'Based on <b><a href="https://sourceforge.net/projects/drm/" target="_blank">Dream 2.2.1</a></b>'), 40
-				),
-				
-            w3_col_percent('w3-margin-T-4/',
-               w3_div('id-drm-station w3-text-css-yellow', '&nbsp;'), 60,
-               w3_div('', 'Schedules: ' +
-                  '<a href="https://www.drm.org/what-can-i-hear/broadcast-schedule-2/" target="_blank">drm.org</a> ' +
-                  '<a href="http://www.hfcc.org/drm" target="_blank">hfcc.org</a>'), 40
-            ),
-            
-            controls_inner
-         )
-      );
+   drm_panel_show(controls_inner, data_html);
+	ext_set_data_height(drm.h);
    
-	ext_panel_show(controls_html, data_html, null);
-	ext_set_controls_width_height(700, 150);
-
 	if (drm.locked == 0) return;
 
 	time_display_setup('drm');
 
-	drm.graph = w3_el('id-drm-graph');
-	drm.graph.ctx = drm.graph.getContext("2d");
-   graph_init(drm.graph, { dBm:0, speed:1, averaging:false });
+	drm.canvas_graph = w3_el('id-drm-panel-1-graph');
+	drm.canvas_graph.ctx = drm.canvas_graph.getContext("2d");
+   graph_init(drm.canvas_graph, { dBm:0, speed:1, averaging:false });
 	graph_mode('auto');
 	//graph_mode('fixed', 30, -30);
 	graph_clear();
 	//graph_marker(30);
 	
-	drm.canvas_IQ = w3_el('id-drm-IQ');
+	drm.canvas_IQ = w3_el('id-drm-panel-1-IQ');
 	drm.canvas_IQ.ctx = drm.canvas_IQ.getContext("2d");
 	drm.w_IQ = drm.w_graph - drm.pad_graph*2;
 	drm.h_IQ = drm.h - drm.pad_graph*2;
 
 	if (drm.url_params) {
       var freq = parseFloat(drm.url_params);
-      if (freq) {
-         // select matching menu item frequency
-         var found = false;
-         for (var i = 0; i < drm.n_menu; i++) {
-            var menu = 'drm.menu'+ i;
-            w3_select_enum(menu, function(option) {
-               //console.log('CONSIDER '+ parseFloat(option.innerHTML));
-               if (parseFloat(option.innerHTML) == freq) {
-                  drm_pre_select_cb(menu, option.value, false);
-                  found = true;
-               }
-            });
-            if (found) break;
-         }
-      }
+      if (freq) drm_set_freq_menu(freq);
    }
 
    // URL params that need to be setup after controls instantiated
@@ -630,6 +829,13 @@ function drm_controls_setup()
       });
    }
 
+   // Request json file with DRM station schedules.
+   // Can't use file w/ .json extension since our file contains comments and
+   // Firefox improperly caches json files with errors!
+   // FIXME: rate limit this
+   //kiwi_ajax(drm.url +'stations.cjson', 'drm_get_stations_cb', 0, -1000);      // test timeout
+   kiwi_ajax(drm.url +'stations.cjson', 'drm_get_stations_cb', 0, 10000);
+
    drm_run(1);
    // done after drm_run() so correct drm.saved_{mode,passband} is set
    drm_set_freq(ext_get_freq_kHz());
@@ -654,7 +860,7 @@ function drm_run(run)
 
 function drm_test(test)
 {
-   console.log('drm_test test='+ test);
+   //console.log('drm_test test='+ test);
    ext_send('SET test='+ test);
 }
 
@@ -676,6 +882,7 @@ function drm_stop()
 
 function drm_start()
 {
+   drm_test(0);
    drm_run(1);
    ext_set_mode('drm');
    drm.is_stopped = 0;     // for when called by drm_pre_select_cb()
@@ -718,6 +925,7 @@ function drm_test_cb(path, val, first)
 {
    console.log('drm_test_cb '+ val);
    drm_station('Test Recording '+ val);
+   drm_reset_menus();
    drm_run(0);
    drm_start();
    drm_test(val);
@@ -729,7 +937,7 @@ function drm_test_cb(path, val, first)
 function drm_svcs_cbox_cb(path, checked, first)
 {
    var which = path.substr(-1,1);
-   console.log('drm_svcs_cbox_cb path='+ path +' checked='+ checked +' which='+ which);
+   //console.log('drm_svcs_cbox_cb path='+ path +' checked='+ checked +' which='+ which);
    if (first) return;
    for (var i = 1; i <= 4; i++)
       w3_checkbox_set('drm.svc'+ i, false);
@@ -747,12 +955,40 @@ function drm_monitor_cb(path, idx, first)
 
 function drm_display_cb(path, idx, first)
 {
-   drm.display = +idx;
-   var canvas = (+idx)? 1:0;
-   w3_color('id-drm-plot', null, idx? 'black' : 'mediumBlue');
-   w3_hide('id-drm-'+ drm.display_s[drm.last_canvas]);
-   w3_show('id-drm-'+ drm.display_s[canvas]);
-   drm.last_canvas = canvas;
+   idx = +idx;
+   //console.log('$ drm_display_cb idx='+ idx);
+   w3_select_value(path, idx);   // for benefit of non-default startup drm.display_idx values
+
+   var i = 0, idx_actual = -1;
+   var found = false;
+	w3_select_enum(path, function(option) {
+	   //console.log('drm_display_cb opt.val='+ option.value +' opt.disabled='+ option.disabled +' opt.inner='+ option.innerHTML +' i='+ i);
+	   
+	   if (!option.disabled) {
+         if (!found && option.value == idx) {
+            idx_actual = i;
+            found = true;
+         }
+         i++;
+	   }
+	   
+	});
+
+   drm.display = idx_actual;
+   w3_color('id-drm-panel-graph', null, (drm.panel_1[drm.display] != 'graph')? 'black' : 'mediumBlue');
+   
+   console.log('$ drm_display_cb idx='+ idx +' show='+ drm.display +' '+ drm.panel_0[drm.display] +'/'+ drm.panel_1[drm.display]);
+   drm.panel_0.forEach(function(el) { w3_hide('id-drm-panel-0-'+ el); });
+   drm.panel_1.forEach(function(el) { w3_hide('id-drm-panel-1-'+ el); });
+   w3_show('id-drm-panel-0-'+ drm.panel_0[drm.display]);
+   w3_show('id-drm-panel-1-'+ drm.panel_1[drm.display]);
+}
+
+function drm_reset_menus()
+{
+   for (var i = 0; i < drm.n_menu; i++) {
+      w3_select_value('drm.menu'+ i, -1);
+   }
 }
 
 function drm_pre_select_cb(path, idx, first)
@@ -763,6 +999,9 @@ function drm_pre_select_cb(path, idx, first)
 	var menu_n = parseInt(path.split('drm.menu')[1]);
    //console.log('drm_pre_select_cb path='+ path +' idx='+ idx +' menu_n='+ menu_n);
    drm.last_disabled = false;
+
+   drm_reset_menus();
+   drm_station('');     // in case no match
 
 	w3_select_enum(path, function(option) {
 	   //console.log('drm_pre_select_cb opt.val='+ option.value +' opt.inner='+ option.innerHTML);
@@ -783,18 +1022,12 @@ function drm_pre_select_cb(path, idx, first)
          // if called directly instead of from menu callback, select menu item
          w3_select_value(path, option.value);
 
-         drm_station(drm.station_id.join(' ') + ((menu_n == drm.menu_India_MW)? ', India':''));
+         drm_station(((menu_n == drm.menu_India_MW)? 'India, ':'') + drm.station_id.join(' '));
          drm_start();
          rv = true;
 	   }
 	});
 
-   // reset other menus
-   for (var i = 0; i < drm.n_menu; i++) {
-      if (i != menu_n)
-         w3_select_value('drm.menu'+ i, -1);
-   }
-   
    return rv;
 }
 
@@ -865,6 +1098,7 @@ function drm_next_prev_cb(path, np, first)
 function DRM_blur()
 {
    console.log('DRM_blur saved_mode='+ drm.saved_mode);
+   kiwi_clearInterval(drm.interval);
    
    drm_stop();
    if (isUndefined(drm.saved_mode) || drm.saved_mode == 'drm') {
@@ -873,6 +1107,7 @@ function DRM_blur()
    }
    drm.locked = 0;
    ext_send('SET lock_clear');
+   ext_set_data_height();     // restore default height
 }
 
 function DRM_help(show)
@@ -881,6 +1116,13 @@ function DRM_help(show)
       var s = 
          w3_text('w3-medium w3-bold w3-text-aqua', 'Digital Radio Mondiale (DRM30) decoder help') + '<br><br>' +
          w3_div('w3-scroll-y|height:85%',
+            w3_text('w3-text-css-yellow w3-bold', 'Development in progress. Updates daily.') +
+            '<br>With DRM selective fading can prevent even the strongest signals from being received properly. ' +
+            'To see if signal fading is occurring adjust the waterfall "WF max/min" controls carefully so the ' +
+            'waterfall colors are not saturated. The image below shows fading (dark areas) that might cause problems. See the ' +
+            '<a href="http://valentfx.com/vanilla/discussion/1842/v1-360-drm-extension-now-available-for-beta-testing/p1" target="_blank">' +
+            'Kiwi forum</a> for more information. ' +
+            '<br><br><img src="gfx/DRM.sel.fade.png" /><br>' +
             '<hr>' +
             'DRM code from <b>Dream 2.2.1</b> <br>' +
             'Technische Universitaet Darmstadt, Institut fuer Nachrichtentechnik <br>' +
@@ -906,7 +1148,7 @@ function DRM_help(show)
             '<hr>'
          );
       confirmation_show_content(s, 610, 350);
-      w3_el('id-confirmation-container').style.height = '100%';
+      w3_el('id-confirmation-container').style.height = '100%';   // to get the w3-scroll-y above to work
    }
    return true;
 }
@@ -916,3 +1158,79 @@ function DRM_config_html()
 {
    ext_config_html(drm, 'DRM', 'DRM', 'DRM configuration');
 }
+
+// NB: don't forget to strip out our cjson comments (lines beginning with '//')
+drm.default_stations =
+'['+
+'    {'+
+'    "Europe": null,'+
+'    "BBC_Worldservice": [3955,[6,7,9,10], 15620,8,9],'+
+'    "Radio_France Intl": [3965,0,24, 6175,9,15],'+
+'    "Voice of_Russia": [5925,21,23, 6025,[6,10,20,22], 6110,16,20, 6125,17,21, 7435,19,22, 9590,7,11, 9625,8,15, 9800,14,16, 11620,11,13, 11860,[0,1,22,24], 15325,1,6],'+
+'    "Radio_Romania Intl": [5940,5.5,6, 5955,19,19.5, 6025,17,18, 6030,[16,16.5,21,22], 6040,[6,7,23,24], 6175,7,7.5, 7220,5,6, 7235,19,20, 7350,18,19, 9490,22,23, 9820,4,5, 13730,5,5.5],'+
+'    "Funklust_(bitXpress)": [15785,0,24]'+
+'    },'+
+''+
+'    {'+
+'    "Middle East, Africa": null,'+
+'    "All India_Radio": [6100,8.75,12, 7550,17.75,19.75, 9950,[8.25,13.25,17.5,22.5]],'+
+'    "Radio Kuwait": [11970,5,8, 13650,17,20, 15110,9.75,13.5, 15540,16,21],'+
+'    "Voice of_Nigeria": [15120,16,19]'+
+'    },'+
+'    '+
+'    {'+
+'    "Asia, Pacific": null,'+
+'    "China National_Radio": [6030,[0,18,20.5,24], 7360,4,10, 9420,0,4, 9655,[0,1,8,12,22,24], 9870,10,12, 11695,1,9, 13825,1,9, 15180,[1,4,8,11], 17770,1,9, 17800,4,8, 17830,1,8],'+
+'    "Radio_New Zealand": [5975,16.75,18, 7285,16.75,19, 7330,16.75,19, 9780,17.75,20, 11690,18.75,21],'+
+''+
+'    "Transworld_KTWR": [7500,12.25,12.75, 11995,10.5,11, 13800,10.5,11]'+
+'    },'+
+'    '+
+'    {'+
+'    "Americas": null,'+
+'    "WINB USA": [7315,7,10, 9265,10,12, 13690,12,17]'+
+'    },'+
+''+
+'    {'+
+'    "India MW": null,'+
+'    "Ahmedabad": [855,0,24],'+
+'    "Ajmer": [612,0,24],'+
+'    "Bengaluru": [621,0,24],'+
+'    "Barmer": [1467,0,24],'+
+'    "Bikaner": [1404,0,24],'+
+'    "Chennai A": [729,0,24],'+
+'    "Chennai B": [783,0,24],'+
+'    "Chinsurah": [603,0,24],'+
+'    "Delhi A": [828,0,24],'+
+'    "Delhi B": [1368,0,24],'+
+'    "Dharwad": [774,0,24],'+
+'    "Dibrugarh": [576,0,24],'+
+'    "Guwahati B": [1044,0,24],'+
+'    "Hyderabad": [747,0,24],'+
+'    "Itanagar": [684,0,24],'+
+'    "Jabalpur": [810,0,24],'+
+'    "Jalandhar": [882,0,24],'+
+'    "Jammu": [999,0,24],'+
+'    "Kolkata A": [666,0,24],'+
+'    "Kolkata B": [1017,0,24],'+
+'    "Luknow": [756,0,24],'+
+'    "Mumbai A": [1053,0,24],'+
+'    "Mumbai B": [567,0,24],'+
+'    "Panaji": [1296,0,24],'+
+'    "Passighat": [1071,0,24],'+
+'    "Patna": [630,0,24],'+
+'    "Pune": [801,0,24],'+
+'    "Rajkot A": [819,0,24],'+
+'    "Rajkot B": [1080,0,24],'+
+'    "Rajkot C": [1071,0,24],'+
+'    "Ranchi": [558,0,24],'+
+'    "Siliguri": [720,0,24],'+
+'    "Suratgarh": [927,0,24],'+
+'    "Tawang": [1530,0,24],'+
+'    "Trichirapalli": [945,0,24],'+
+'    "Varanasi": [1251,0,24],'+
+'    "Vijayawada": [846,0,24]'+
+'    },'+
+'    '+
+'    {}'+
+']';
