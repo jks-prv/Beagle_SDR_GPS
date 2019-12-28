@@ -481,7 +481,7 @@ function drm_schedule_static()
 function drm_set_freq_menu(freq, station)
 {      
    // select matching menu item frequency and optionally station
-   station = station.toLowerCase();
+   station = isArg(station)? station.toLowerCase() : null;
    var found = false;
    for (var i = 0; i < drm.n_menu; i++) {
       var menu = 'drm.menu'+ i;
@@ -492,7 +492,7 @@ function drm_set_freq_menu(freq, station)
          var f = parseFloat(option.innerHTML);
          if (!isNaN(f)) {
             //console.log('CONSIDER '+ parseFloat(option.innerHTML) +' '+ dq(last_disabled));
-            if (!found && parseFloat(option.innerHTML) == freq && station.includes(last_disabled)) {
+            if (!found && parseFloat(option.innerHTML) == freq && (!station || station.includes(last_disabled))) {
                drm_pre_select_cb(menu, option.value, false);
                //console.log('FOUND option.value='+ option.value);
                found = true;
