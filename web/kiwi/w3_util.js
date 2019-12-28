@@ -306,19 +306,20 @@ function w3_obj_seq_el(o, idx)
    return o[keys[idx]];
 }
 
-function w3_obj_enum_data(obj, data_match, func)
+function w3_obj_enum(obj, func, opt)
 {
-   var keys = Object.keys(obj);
-   keys.forEach(function(key, i) {
-      if (data_match == null || obj[key] == data_match) func(i, key);
-   });
-}
+   var key_match = w3_opt(opt, 'key_match', undefined);
+   var value_match = w3_opt(opt, 'value_match', undefined);
 
-function w3_obj_enum_key(obj, key_match, func)
-{
-   var keys = Object.keys(obj);
-   keys.forEach(function(key, i) {
-      if (key_match == null || key == key_match) func(i, obj[key]);
+   Object.keys(obj).forEach(function(key, i) {
+      if (isDefined(key_match)) {
+         if (key == key_match) func(key, i);
+      } else
+      if (isDefined(value_match)) {
+         if (obj[key] == value_match) func(key, i);
+      } else {
+         func(key, i);
+      }
    });
 }
 
@@ -511,7 +512,7 @@ function w3_iterate_classname(cname, func)
 function w3_iterate_classList(el_id, func)
 {
 	var el = w3_el(el_id);
-	if (el) for (var i = 0; i < el.classList.length; i++) {     // el.classList is not an array
+	if (el && el.classList) for (var i = 0; i < el.classList.length; i++) {     // el.classList is not an array
 		func(el.classList.item(i), i);
 	}
 	return el;
@@ -523,6 +524,19 @@ function w3_appendElement(el_parent, el_type, html)
    w3_innerHTML(el_child, html);
 	w3_el(el_parent).appendChild(el_child);
 	return el_child;
+}
+
+function w3_iterate_parent(el_id, func)
+{
+	var el = w3_el(el_id);
+	var i = 0;
+	
+	do {
+		if (func(el, i) != null)
+		   break;
+		el = el.parentNode;
+		i++;
+	} while (el);
 }
 
 function w3_iterate_children(el_id, func)
@@ -673,6 +687,20 @@ function w3_contains(el_id, prop)
 	if (!el) return 0;
 	var clist = el.classList;
 	return (!clist || !clist.contains(prop))? 0:1;
+}
+
+function w3_parent_with(el_id, prop)
+{
+	var el = w3_el(el_id);
+   if (!el) return;
+	
+	var found = null;
+	w3_iterate_parent(el, function(parent) {
+	   if (!found && w3_contains(parent, prop)) {
+	      found = parent;
+	   }
+	});
+	return found;
 }
 
 function w3_toggle(el_id, prop)
@@ -845,17 +873,17 @@ function w3_check_restart_reboot(el_id)
 	var el = w3_el(el_id);
    if (!el) return;
 	
-	do {
+	w3_iterate_parent(el, function(el) {
 		if (w3_contains(el, 'w3-restart')) {
 			w3_restart_cb();
-			break;
+			return el;
 		}
 		if (w3_contains(el, 'w3-reboot')) {
 			w3_reboot_cb();
-			break;
+			return el;
 		}
-		el = el.parentNode;
-	} while (el);
+		return null;
+	});
 }
 
 function w3_set_value(path, val)
@@ -1806,7 +1834,7 @@ function w3int_select_options(sel, opts)
    // { key0:opt0, key1:opt1 ... }
    // object: enumerate sequentially like an array using object element values as the menu options
    if (isObject(opts)) {
-      w3_obj_enum_data(opts, null, function(i, key) {
+      w3_obj_enum(opts, function(key, i) {
          s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ opts[key] +'</option>';
       });
    }
@@ -1827,7 +1855,7 @@ function w3_select_hier(psa, label, title, path, sel, opts, cb, cb_param)
    var idx = 0;
    if (!isObject(opts)) return;
 
-   w3_obj_enum_data(opts, null, function(i, key) {
+   w3_obj_enum(opts, function(key, i) {
       as = key.split('\\');
       as.forEach(function(e) {
          s += '<option value='+ dq(idx++) +' disabled>'+ e +'</option> ';
@@ -1835,7 +1863,6 @@ function w3_select_hier(psa, label, title, path, sel, opts, cb, cb_param)
       var a = opts[key];
       if (!isArray(a)) return;
 
-      //for (var j=0; j < a.length; j++) {
       a.forEach(function(el, j) {
          var v = w3_first_value(el);
          s += '<option value='+ dq(idx++) +' id="id-'+ i +'-'+ j +'">'+ v.toString() +'</option> ';
