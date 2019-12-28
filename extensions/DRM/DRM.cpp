@@ -112,6 +112,14 @@ bool DRM_msgs(char *msg, int rx_chan)
                 printf("DRM lock_set inuse=%d locked=%d\n", inuse, is_locked);
             }
             rv = is_locked;
+            //#define DRM_TEST_MULTI
+            #ifdef DRM_TEST_MULTI
+                //jks test BBG/B 2 DRM
+                if (!is_BBAI) {
+                    is_locked = 0;
+                    rv = 1;
+                }
+            #endif
         }
 		ext_send_msg(rx_chan, false, "EXT locked=%d", rv);
         return true;    
@@ -243,7 +251,11 @@ ext_t DRM_ext = {
 void DRM_main()
 {
     drm_t *d;
-    drm_info.drm_chan = is_BBAI? MAX_DRM_RX : 1;
+    #ifdef DRM_TEST_MULTI
+        drm_info.drm_chan = is_BBAI? MAX_DRM_RX : 2;        //jks test BBG/B 2 DRM
+    #else
+        drm_info.drm_chan = is_BBAI? MAX_DRM_RX : 1;
+    #endif
     
 	for (int i=0; i < MAX_DRM_RX; i++) {
         d = &DRM_SHMEM->drm[i];
