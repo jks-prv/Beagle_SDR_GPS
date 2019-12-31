@@ -28,6 +28,9 @@ var owrx = {
    last_hicut: -1,
    
    last_mode_el: null,
+   dseq: 0,
+   
+   touch_hold_pressed: false,
 };
 
 // key freq concepts:
@@ -75,6 +78,7 @@ var override_pbw = '';
 var override_pbc = '';
 var nb_click = false;
 var no_geoloc = false;
+var mobile_laptop_test = false;
 
 var freq_memory = [];
 var freq_memory_pointer = -1;
@@ -207,6 +211,7 @@ function kiwi_main()
 	s = 'gc_recv'; if (q[s]) kiwi_gc_recv = parseInt(q[s]);
 	s = 'gc_wspr'; if (q[s]) kiwi_gc_wspr = parseInt(q[s]);
 	s = 'ctrace'; if (q[s]) { param_ctrace = true; ctrace = parseInt(q[s]); }
+	s = 'mobile'; if (q[s]) mobile_laptop_test = true;
 	s = 'v'; if (q[s]) console.log('URL: debug_v = '+ (debug_v = q[s]));
 
 	if (kiwi_gc_snd == -1) kiwi_gc_snd = kiwi_gc;
@@ -336,7 +341,9 @@ function init_panel_toggle(type, panel, scrollable, timeo, color)
 			'<a id="'+panel+'-show" class="class-vis-show" onclick="toggle_panel('+ sq(panel) +');"><img src="icons/hide'+ show +'.24.png" width="24" height="24" /></a>';
 	} else {		// ptype.POPUP or ptype:HIDE
 		divVis.innerHTML =
-			'<a id="'+panel+'-close" onclick="toggle_panel('+ sq(panel) +');"><img src="icons/close.24.png" width="24" height="24" /></a>';
+			'<a id="'+panel+'-close" onclick="toggle_panel('+ sq(panel) +');">' +
+			   '<img id='+ dq(panel +'-close-img') +' src="icons/close.24.png" width="24" height="24" />' +
+			'</a>';
 	}
 
 	var visOffset = divPanel.activeWidth - visIcon;
@@ -368,11 +375,13 @@ function init_panel_toggle(type, panel, scrollable, timeo, color)
 	}
 }
 
-function toggle_panel(panel)
+function toggle_panel(panel, set)
 {
 	var divPanel = w3_el(panel);
 	var divVis = w3_el(panel +'-vis');
 	//console.log('toggle_panel '+ panel +' ptype='+ divPanel.ptype +' panelShown='+ divPanel.panelShown);
+	
+	if (isDefined(set)) divPanel.panelShown = set ^ 1;    // ^1 because of inverted logic below
 
 	if (divPanel.ptype == ptype.POPUP) {
 		divPanel.style.visibility = divPanel.panelShown? 'hidden' : 'visible';
@@ -419,13 +428,25 @@ function openwebrx_resize(a)
 	check_top_bar_congestion();
 }
 
+/*
+var orient = { cnt:0 };
 function orientation_change() {
    //openwebrx_resize('orient '+ orientation);
+   orient.AW = window.innerWidth;
+   orient.AH = window.innerHeight;
+   if (orient.cnt == 0) {
+      setTimeout(function() {    // timing matters on iphone-5S but not iPad-2!
+         alert('orient #'+ orient.cnt +' '+
+            orient.AW +','+ orient.AH +' '+ window.innerWidth +','+ window.innerHeight);
+         orient.cnt = 0;
+      }, 500);
+   } else orient.cnt++;
 }
 
 try {
    window.onorientationchange = orientation_change;
 } catch(ex) {}
+*/
 
 var offsetDiff_init = false;
 var p_left, p_owner, p_mid, p_right;
@@ -2111,7 +2132,24 @@ function canvas_touchStart(evt)
 {
    if (evt.targetTouches.length == 1) {
 		canvas_start_drag(evt, evt.targetTouches[0].pageX, evt.targetTouches[0].pageY);
+   /*
+		owrx.touch_pending_start_drag = true;
+		owrx.touch_pending_evt = evt;
+
+      owrx.touch_hold_start = (new Date()).getTime();
+      owrx.touch_hold_pressed = true;
+      owrx.touch_hold_interval =
+         setInterval(function() {
+            if ((new Date()).getTime() - owrx.touch_hold_start > 750) {
+               owrx.touch_hold_pressed = owrx.touch_pending_start_drag = false;
+               kiwi_clearInterval(owrx.touch_hold_interval);
+               alert(evt.targetTouches[0].pageX +' '+ evt.targetTouches[0].pageY +' '+ evt.target.id);
+               canvas_start_drag(touch_pending_evt, evt.targetTouches[0].pageX, evt.targetTouches[0].pageY);
+            }
+         }, 200);
+	*/
 	}
+	
 	evt.preventDefault();	// don't show text selection mouse pointer
 }
 
@@ -2181,6 +2219,20 @@ function canvas_touchMove(evt)
 	for (var i=0; i < evt.touches.length; i++) {
 		var x = evt.touches[i].pageX;
 		var y = evt.touches[i].pageY;
+
+   /*
+      // any movement cancels touch hold
+      if (owrx.touch_hold_pressed) {
+         owrx.touch_hold_pressed = false;
+         kiwi_clearInterval(owrx.touch_hold_interval);
+      }
+
+      if (owrx.touch_pending_start_drag) {
+		   canvas_start_drag(evt, x, y);
+         owrx.touch_pending_start_drag = false;
+      }
+   */
+   
 		canvas_drag(evt, x, y, x, y);
 	}
 	evt.preventDefault();
@@ -2238,6 +2290,10 @@ function canvas_mouseup(evt)
 function canvas_touchEnd(evt)
 {
 	canvas_end_drag(evt, canvas_drag_last_x);
+/*
+   owrx.touch_hold_pressed = false;
+   kiwi_clearInterval(owrx.touch_hold_interval);
+*/
 	spectrum_tooltip_update(evt, canvas_drag_last_x, canvas_drag_last_y);
 	evt.preventDefault();
 }
@@ -2997,33 +3053,6 @@ function resize_canvases(zoom)
 // mobile
 ////////////////////////////////
 
-var mobile_cur_portrait;
-//var mobile_seq = 0;
-
-function mobile_poll_orientation()
-{
-	//if (mobile_seq & 1) w3_innerHTML('id-rx-title', 'w='+ screen.width +' h='+ screen.height +' '+ mobile_seq);
-	//if (mobile_seq & 1) w3_innerHTML('id-rx-title', 'overflowY='+ css_style(w3_el('id-waterfall-container'), 'overflow-y') +' '+ mobile_seq);
-	//mobile_seq++;
-
-	var isPortrait = (screen.width < screen.height);
-	if (isPortrait == mobile_cur_portrait) return;
-	mobile_cur_portrait = isPortrait;
-
-	var el = w3_el('id-control');
-   if (isPortrait && screen.width <= 600) {
-	   // scale control panel up or down to fit width of all narrow screens
-	   var scale = screen.width / el.uiWidth * 0.95;
-	   //alert('scnW='+ screen.width +' cpW='+ el.uiWidth +' sc='+ scale.toFixed(2));
-      el.style.transform = 'scale('+ scale.toFixed(2) +')';
-      el.style.transformOrigin = 'bottom right';
-      el.style.right = '0px';
-   } else {
-      el.style.transform = 'none';
-      el.style.right = '10px';
-   }
-}
-
 function mobile_init()
 {
 	// When a mobile device connects to a Kiwi while held in portrait orientation:
@@ -3031,27 +3060,59 @@ function mobile_init()
 	// which should catch all iPhones but no iPads (iPhone X width = 414px).
 	// Also scale control panel for small-screen tablets, e.g. 7" tablets with 600px portrait width.
 
-	var isPortrait = (screen.width < screen.height);
-	mobile_cur_portrait = undefined;
+	var mobile = ext_mobile_info();
+   //console.log('$ wh='+ mobile.width +','+ mobile.height);
 	
 	// anything smaller than iPad: remove top bar and switch control panel to "off".
-	if (isPortrait && screen.width < 768) {
+	if (mobile.small) {
 	   toggle_or_set_hide_topbar(1);
 	   optbar_focus('optbar-off', 'init');
 	}
 	
 	// for narrow screen devices, i.e. phones and 7" tablets
-	if (isPortrait && screen.width <= 600) {
-	
+	if (mobile.narrow) {
 	   w3_hide('id-readme');   // don't show readme panel closed icon
 	   
 	   // remove top bar and band/label areas on phones
-	   if (screen.width < 600) {
+	   if (mobile.width < 600) {
 	      toggle_or_set_hide_topbar(3);
 	   }
 	}
 	
-	setInterval(mobile_poll_orientation, 500);
+   owrx.last_mobile = {};     // force rescale first time
+   owrx.rescale_cnt = owrx.rescale_cnt2 = 0;
+
+	setInterval(function() {
+      mobile = ext_mobile_info(owrx.last_mobile);
+      owrx.last_mobile = mobile;
+
+      //extint_news('Cwh='+ mobile.width +','+ mobile.height +' '+ mobile.orient_unchanged +
+      //   '<br>r='+ owrx.rescale_cnt  +','+ owrx.rescale_cnt2 +' #'+ owrx.dseq);
+      //owrx.dseq++;
+
+      if (mobile.orient_unchanged) return;
+      owrx.rescale_cnt++;
+
+      var el = w3_el('id-control');
+
+	   if (mobile_laptop_test) {
+         extint_news('whu='+ mobile.width +','+ mobile.height +','+ el.uiWidth +
+            ' psn='+ mobile.isPortrait +','+ mobile.small +','+ mobile.narrow +' #'+ owrx.dseq);
+         owrx.dseq++;
+      }
+   
+      if (mobile.narrow) {
+         // scale control panel up or down to fit width of all narrow screens
+         var scale = mobile.width / el.uiWidth * 0.95;
+         el.style.transform = 'scale('+ scale.toFixed(2) +')';
+         el.style.transformOrigin = 'bottom right';
+         el.style.right = '0px';
+         owrx.rescale_cnt2++;
+      } else {
+         el.style.transform = 'none';
+         el.style.right = '10px';
+      }
+	}, 500);
 }
 
 
@@ -3094,7 +3155,7 @@ function waterfall_init()
 	
 	if (shortcut.keys != '') setTimeout(keyboard_shortcut_url_keys, 3000);
 
-   if (kiwi_isMobile())
+   if (kiwi_isMobile() || mobile_laptop_test)
       mobile_init();
 	waterfall_setup_done=1;
 }
@@ -4360,11 +4421,13 @@ function passband_offset_dxlabel(mode)
 function freqmode_set_dsp_kHz(fdsp, mode, opt)
 {
    var dont_clear_wf = w3_opt(opt, 'dont_clear_wf', false);
+   var open_ext = w3_opt(opt, 'open_ext', false);
+
 	fdsp *= 1000;
 	//console.log("freqmode_set_dsp_kHz: fdsp="+fdsp+' mode='+mode);
 	if (dont_clear_wf = false) audioFFT_clear_wf = true;
 
-	if (isArg(mode) && mode != cur_mode) {
+	if (isArg(mode) && (mode != cur_mode || open_ext == true)) {
 		//console.log("freqmode_set_dsp_kHz: calling demodulator_analog_replace");
 		ext_set_mode(mode, fdsp, opt);
 	} else {

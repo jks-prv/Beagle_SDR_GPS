@@ -1827,3 +1827,8 @@ function kiwi_trace(msg)
    if (msg) console.log('console.trace: '+ msg);
 	try { console.trace(); } catch(ex) {}		// no console.trace() on IE
 }
+
+function kiwi_trace_mobile(msg)
+{
+   alert(msg +' '+ Error().stack);
+}

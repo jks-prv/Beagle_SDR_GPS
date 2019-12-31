@@ -10,6 +10,7 @@ var extint = {
    default_w: 525,
    default_h: 300,
    prev_mode: null,
+   seq: 0,
 };
 
 var devl = {
@@ -184,15 +185,28 @@ function ext_get_prev_mode()
 
 function ext_set_mode(mode, freq, opt)
 {
-   var drm = (mode == 'drm');
-   if (drm)
+   var new_drm = (mode == 'drm');
+   if (new_drm)
       extint.prev_mode = cur_mode;
    //console.log('### ext_set_mode '+ mode +' prev='+ extint.prev_mode);
 	demodulator_analog_replace(mode, freq);
 	
 	var open_ext = w3_opt(opt, 'open_ext', false);
-   if (drm && open_ext)
-      extint_open('drm');
+	var drm_active = (typeof(drm) != 'undefined' && drm.active);
+	console.log('$ new_drm='+ new_drm +' open_ext='+ open_ext);
+   if (new_drm && open_ext) {
+      if (drm_active) {
+         // DRM already loaded and running, just open the control panel again (mobile mode)
+         toggle_panel("ext-controls", 1);
+      } else {
+         extint_open('drm');
+      }
+   } else
+   if (!new_drm && drm_active) {
+      // shutdown DRM (if active) when mode changed
+      extint_panel_hide();
+	   demodulator_analog_replace(mode, freq);   // don't use mode restored by DRM_blur()
+   }
 }
 
 function ext_get_passband()
@@ -406,10 +420,37 @@ function ext_panel_set_name(name)
 	extint.current_ext_name = name;
 }
 
+function ext_mobile_info(last)
+{
+   var w = window.innerWidth;
+   var h = window.innerHeight;
+   var rv = { width:w, height:h };
+   rv.wh_unchanged = (last && last.width == w && last.height == h)? 1:0;
+
+	var isPortrait = (w < h || mobile_laptop_test)? 1:0;
+   rv.orient_unchanged = (last && last.isPortrait == isPortrait)? 1:0;
+
+	rv.isPortrait = isPortrait? 1:0;
+	rv.iPad     = (isPortrait && w <= 768)? 1:0;    // iPad or smaller
+	rv.small    = (isPortrait && w <  768)? 1:0;    // anything smaller than iPad
+	rv.narrow   = (isPortrait && h <= 600)? 1:0;    // narrow screens, i.e. phones and 7" tablets
+   return rv;
+}
+
 
 ////////////////////////////////
 // internal routines
 ////////////////////////////////
+
+function extint_news(s)
+{
+   var el = w3_el('id-news');
+   el.style.width = '200px';
+   el.style.height = '60px';
+   el.style.visibility = 'visible';
+   el.style.zIndex = 9999;
+   w3_innerHTML('id-news-inner', s);
+}
 
 function ext_panel_init()
 {
@@ -417,12 +458,12 @@ function ext_panel_init()
       '<div id="id-ext-controls" class="class-panel" data-panel-name="ext-controls" data-panel-pos="bottom-left" data-panel-order="0" ' +
       'data-panel-size="'+ extint.default_w +','+ extint.default_h +'"></div>';
 
-	var el = html('id-ext-data-container');
+	var el = w3_el('id-ext-data-container');
 	el.style.zIndex = 100;
 
-	el = html('id-ext-controls');
+	el = w3_el('id-ext-controls');
 	el.innerHTML =
-		w3_div('id-ext-controls-container|height:100%') +
+		w3_div('id-ext-controls-container w3-relative|width:100%;height:100%;') +
 		w3_div('id-ext-controls-vis class-vis') +
 		w3_div('id-ext-controls-help cl-ext-help',
 		   w3_button('id-ext-controls-help-btn w3-green w3-small w3-padding-small w3-disabled||onclick="extint_help_click()"', 'help')
@@ -440,7 +481,11 @@ function ext_panel_init()
 	// close ext panel if escape key
 	w3_el('id-kiwi-body').addEventListener('keyup',
 	   function(evt) {
-	      if (evt.key == 'Escape' && extint.displayed && !confirmation.displayed) extint_panel_hide();
+	      if (evt.key == 'Escape' && extint.displayed && !confirmation.displayed) {
+	         // simulate click in case something other than extint_panel_hide() has been hooked
+	         //extint_panel_hide();
+	         w3_el('id-ext-controls-close').click();
+	      }
 	   }, true);
 }
 
@@ -466,26 +511,35 @@ function extint_panel_show(controls_html, data_html, show_func)
    }
 
 	// hook the close icon to call extint_panel_hide()
-	var el = html('id-ext-controls-close');
+	var el = w3_el('id-ext-controls-close');
 	el.onclick = function() { toggle_panel("ext-controls"); extint_panel_hide(); };
 	//console.log('extint_panel_show onclick='+ el.onclick);
 	
-	var el = html('id-ext-controls-container');
+	// some exts change these -- change back to default
+	w3_el('id-ext-controls').style.zIndex = 150;
+   w3_attribute('id-ext-controls-close-img', 'src', 'icons/close.24.png');
+	
+	var el = w3_el('id-ext-controls-container');
 	el.innerHTML = controls_html;
 	//console.log(controls_html);
 	
 	if (show_func) show_func();
 	
-	el = html('id-ext-controls');
+	el = w3_el('id-ext-controls');
 	el.style.zIndex = 150;
 	//el.style.top = px((extint.using_data_container? height_spectrum_canvas : height_top_bar_parts) +157+10);
 	w3_visible(el, true);
+	el.panelShown = 1;
    toggle_or_set_hide_panels(0);    // cancel panel hide mode
 
 	
 	// help button
+	w3_el('id-confirmation-container').style.height = '';    // some exts modify this
 	var show_help_button = w3_call(extint.current_ext_name +'_help', false);
-   w3_set_props('id-ext-controls-help-btn', 'w3-disabled', !show_help_button);
+	//console.log('show_help_button '+ extint.current_ext_name +' '+ show_help_button);
+   w3_set_props('id-ext-controls-help-btn', 'w3-disabled', show_help_button == false);
+   if (show_help_button == 'off')
+      w3_hide('id-ext-controls-help-btn');
 	
 	extint.displayed = true;
 }
@@ -653,7 +707,7 @@ function extint_select(idx)
 	extint_blur_prev();
 	
 	idx = +idx;
-	html('select-ext').value = idx;
+	w3_el('select-ext').value = idx;
 	extint.current_ext_name = extint_names[idx];
 	if (extint_first_ext_load) {
 		extint.ws = extint_connect_server();

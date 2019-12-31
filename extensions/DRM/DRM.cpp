@@ -167,6 +167,12 @@ bool DRM_msgs(char *msg, int rx_chan)
         return true;
     }
     
+    int send_iq;
+    if (sscanf(msg, "SET send_iq=%d", &send_iq) == 1) {
+        d->send_iq = send_iq? true:false;
+        return true;
+    }
+    
     int monitor = 0;
     if (sscanf(msg, "SET monitor=%d", &monitor) == 1) {
         return true;

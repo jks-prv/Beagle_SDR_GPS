@@ -47,7 +47,7 @@ This file is part of OpenWebRX.
 		 130	control
 		 130	msgs
 		 140	readme
-		 150	dx-edit
+		 150	dx-edit (id-ext-controls)
 		 998	dx-line active
 		 999	dx-label active
 		1000	top-container
@@ -843,6 +843,7 @@ html, body
 	cursor: pointer;
 	/*left: 570px;*/
 	top: 51px;
+	z-index: 9999;
 }
 
 .class-vis-show
@@ -885,7 +886,7 @@ html, body
 	-moz-border-radius: 10px;
 	background-color: #999999;
 	color: White;
-	z-index:9999; /*should be higher?
+	z-index: 9999; /*should be higher?
 	
 }*/
 

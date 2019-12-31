@@ -7,6 +7,7 @@ Reverb::Reverb()
 
 void Reverb::Init(int outputSampleRate, bool bUse)
 {
+    //printf("Reverb::Init outputSampleRate=%d\n", outputSampleRate);
     /* Clear reverberation object */
     AudioRev.Init(1.0 /* seconds delay */, outputSampleRate);
     AudioRev.Clear();
@@ -54,6 +55,7 @@ ETypeRxStatus Reverb::apply(bool bCurBlockOK, bool bCurBlockFaulty, CVector<_REA
 
                 if (okToReverb)
                 {
+//printf("$1 "); fflush(stdout);
                     /* Fade in input signal for reverberation to avoid clicks */
                     const _REAL rAttRev = _REAL( i / iResOutBlockSize);
 
@@ -75,6 +77,7 @@ ETypeRxStatus Reverb::apply(bool bCurBlockOK, bool bCurBlockFaulty, CVector<_REA
 
             if (okToReverb)
             {
+//printf("$2 "); fflush(stdout);
                 /* Add Reverberation effect */
                 for (int i = 0; i < iResOutBlockSize; i++)
                 {
@@ -105,6 +108,7 @@ ETypeRxStatus Reverb::apply(bool bCurBlockOK, bool bCurBlockFaulty, CVector<_REA
         {
             if (okToReverb)
             {
+//printf("$3 "); fflush(stdout);
                 /* Add "last" reverbration only to old block */
                 for (int i = 0; i < iResOutBlockSize; i++)
                 {
@@ -125,6 +129,7 @@ ETypeRxStatus Reverb::apply(bool bCurBlockOK, bool bCurBlockFaulty, CVector<_REA
 
                 if (okToReverb)
                 {
+//printf("$4 "); fflush(stdout);
                     /* Cross-fade reverberation effect */
                     const _REAL rRevSam = (1.0 - rAtt) * AudioRev.ProcessSample(0, 0);
 
