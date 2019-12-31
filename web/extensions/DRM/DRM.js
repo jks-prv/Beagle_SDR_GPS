@@ -3,17 +3,12 @@
 var drm = {
    ext_name: 'DRM',     // NB: must match DRM.cpp:DRM_ext.name
    first_time: true,
+   active: false,
    url: 'http://DRM.kiwisdr.com/drm/',
+   dseq: 0,
 
    locked: 0,
    wrong_srate: false,
-
-   h: 250,
-   w_lhs: 25,
-   w_msg: 500,
-   w_msg2: 450,
-   w_graph: 675,
-   pad_graph: 10,
 
    n_menu: 5,
    menu0: W3_SELECT_SHOW_TITLE,
@@ -26,6 +21,10 @@ var drm = {
    is_stopped: 0,
    freq_s: '',
    freq: 0,
+   
+   // ui
+   w_graph_nom: 675,
+   w_graph_min: 400,
 
    //panel_0:       [  'info',     'info',     'info',     'info',  'info',  'info',  'info',  'info' ],
    //panel_1:       [  'by-svc',   'by-area',  'by-freq',  'graph', 'IQ',    'IQ',    'IQ',    'IQ' ],
@@ -37,6 +36,7 @@ var drm = {
    FAC: 3,
    SDC: 4,
    MSC: 5,
+   IQ_END: 5,
    
    display_idx: 1,
    display_s: {
@@ -58,6 +58,7 @@ var drm = {
    
    stations: null,
    using_default: false,
+   loading_msg: '&nbsp;loading data from kiwisdr.com ...',
    SINGLE: 0,
    MULTI: 1,
    REGION: 2,
@@ -67,6 +68,7 @@ var drm = {
    monitor_s: [ 'DRM', 'source' ],
    
    last_occ: -1,
+   last_ilv: -1,
    last_sdc: -1,
    last_msc: -1,
    
@@ -270,7 +272,7 @@ function drm_recv(data)
 				break;
 			
 			case "drm_status_cb":
-			   if (!drm.run)
+			   if (!drm.run || !drm.desktop)
 			      break;
 
 			   var deco;
@@ -310,7 +312,7 @@ function drm_recv(data)
 			   if (isDefined(o.mod)) {
 			      i = o.mod;
 			      if (i >= 0 && i <= 3)
-			         w3_color('id-drm-'+ ['A','B','C','D'][i], 'black', 'lime');
+			         w3_color('id-drm-mod-'+ ['A','B','C','D'][i], 'black', 'lime');
 
 			      i = o.occ;
 			      if (i >= 0 && i <= 5) {
@@ -319,6 +321,15 @@ function drm_recv(data)
 			         }
 			         w3_color('id-drm-occ-'+ ['4.5','5','9','10','18','20'][i], 'black', 'lime');
 			         drm.last_occ = i;
+			      }
+
+			      i = o.ilv;
+			      if (i >= 0 && i <= 1) {
+			         if (drm.last_ilv != i) {
+			            w3_color('id-drm-ilv-'+ ['L','S'][drm.last_ilv], '', '');
+			         }
+			         w3_color('id-drm-ilv-'+ ['L','S'][i], 'black', 'lime');
+			         drm.last_ilv = i;
 			      }
 
 			      i = o.sdc;
@@ -339,6 +350,10 @@ function drm_recv(data)
 			         w3_color('id-drm-msc-'+ ['16','64'][i-1], 'black', 'lime');
 			         drm.last_msc = i;
 			      }
+
+			      w3_innerHTML('id-drm-prot', sprintf('Protect: A=%d B=%d', o.pla, o.plb));
+
+			      w3_innerHTML('id-drm-nsvc', sprintf('Services: A=%d D=%d', o.nas, o.nds));
 
 			      if (o.mod >= 0 && o.mod <= 3)
                   w3_innerHTML('id-drm-desc',
@@ -414,7 +429,7 @@ function drm_reset_status()
    w3_innerHTML('id-drm-snr', '');
    w3_hide('id-drm-mode');
    for (var i = 0; i <= 3; i++)
-      w3_color('id-drm-'+ ['A','B','C','D'][i], '', '');
+      w3_color('id-drm-mod-'+ ['A','B','C','D'][i], '', '');
    w3_innerHTML('id-drm-error', '');
    w3_hide('id-drm-svcs');
    w3_innerHTML('id-drm-msgs', '');
@@ -459,7 +474,9 @@ function drm_saved_mode()
 
 function drm_tscale(utc)
 {
-   return (0.35 * drm.w_sched) + (utc * 0.025 * drm.w_sched);
+   var pct = drm.mobile? 0.30 : 0.35;
+   var factor = drm.mobile? 0.026 : 0.025;
+   return (pct * drm.w_sched) + (utc * factor * drm.w_sched);
 }
 
 function drm_schedule_static()
@@ -517,6 +534,7 @@ function drm_schedule()
 
    var i;
    var s = drm.using_default? w3_div('w3-yellow w3-padding w3-show-inline-block', 'can\'t contact kiwisdr.com<br>using default data') : '';
+   var narrow = drm.narrow_listing;
 
    for (i = 0; i < drm.stations.length; i++) {
       var o = drm.stations[i];
@@ -534,7 +552,12 @@ function drm_schedule()
       }
       i--;
 
-      s += w3_div('cl-drm-sched-station cl-drm-sched-striped', station.replace('_',' ') +'&nbsp;&nbsp;&nbsp;'+ freq, si);
+      station = station.replace('_', narrow? '<br>':' ');
+      if (narrow) station = station.replace(',', '<br>');
+      s += w3_inline('cl-drm-sched-station cl-drm-sched-striped/',
+         w3_div('', station + '&nbsp;&nbsp;&nbsp;'+ (narrow? '<br>':'') + freq),
+         si
+      );
       if (o && o.t == drm.SERVICE) {
          s += w3_div('cl-drm-sched-hr-div cl-drm-sched-striped', '<hr class="cl-drm-sched-hr">');
          i++;
@@ -640,33 +663,98 @@ function drm_panel_show(controls_inner, data_html)
 	ext_set_controls_width_height(700, 150);
 }
 
-function drm_controls_setup()
+function drm_mobile_controls_setup(mobile)
 {
-   drm_saved_mode();
-   console.log('drm_controls_setup saved_mode='+ drm.saved_mode);
-   drm.saved_passband = ext_get_passband();
+	drm.mobile = 1;
+	console.log('$ mobile drm mobile_laptop_test='+ mobile_laptop_test);
+	drm.w_nom = drm.w_sched = 300;
+   drm.h_sched = mobile_laptop_test? 100:230;
+   drm.cpanel_margin = 20;
+
+	var controls_html =
+      w3_div(sprintf('id-drm-controls w3-absolute|width:%dpx; height:%dpx;', drm.w_sched, drm.h_sched),
+         w3_div(sprintf('id-drm-panel-container cl-drm-sched|width:100%%; height:100%%;'),
+            w3_div('id-drm-panel-by-svc-static', drm_schedule_static()),
+            w3_div('id-drm-panel-by-svc w3-iphone-scroll w3-absolute|width:100%; height:100%;', drm.loading_msg)
+         )
+      )
+
+	ext_panel_show(controls_html, null, null);
+	ext_set_controls_width_height(drm.w_sched + drm.cpanel_margin, drm.h_sched + drm.cpanel_margin);
+
+   // in mobile mode close button just closes panel but keeps DRM running
+	var el = w3_el('id-ext-controls-close');
+      console.log('DRM mobile setup panelShown='+ w3_el('id-ext-controls').panelShown);
+
+	el.onclick = function() {
+	   toggle_panel("ext-controls", 0);
+	   //extint_panel_hide();
+      console.log('DRM mobile ext-controls-close panelShown='+ w3_el('id-ext-controls').panelShown);
+      //kiwi_clearInterval(drm.interval);
+      //kiwi_clearInterval(drm.interval2);
+	};
+
+   w3_attribute('id-ext-controls-close-img', 'src', 'icons/close.black.24.png');
+   drm.last_mobile = {};   // force rescale first time
+   drm.rescale_cnt = drm.rescale_cnt2 = 0;
+   drm.fit = '';
+
+	drm.interval2 = setInterval(function() {
+      mobile = ext_mobile_info(drm.last_mobile);
+      drm.last_mobile = mobile;
+
+      //extint_news('Dwh='+ mobile.width +','+ mobile.height +' '+ mobile.orient_unchanged +
+      //   '<br>r='+ drm.rescale_cnt  +','+ drm.rescale_cnt2 +' '+ drm.fit +' #'+ drm.dseq);
+      //drm.dseq++;
+
+      if (mobile.orient_unchanged) return;
+      drm.rescale_cnt++;
+
+      var cwidth = w3_el('id-control').uiWidth;    // typ 365
+      if (drm.w_nom + cwidth <= mobile.width) {    // can fit side-by-side
+         drm.w_sched = mobile.width - cwidth - 60;
+	      w3_el('id-ext-controls').style.zIndex = 125;       // so pinch zoom of id-control takes priority
+         drm.fit = 'sbs'+ drm.w_sched;
+      } else {
+         drm.w_sched = mobile.width - drm.cpanel_margin*2;  // fit width
+         w3_el('id-ext-controls').style.zIndex = 150;       // restore original priority when overlapped
+         drm.fit = 'fw'+ drm.w_sched;
+      }
+
+      // don't need to scale using code below, just redraw
+	   ext_set_controls_width_height(drm.w_sched + drm.cpanel_margin, drm.h_sched + drm.cpanel_margin);
+      w3_el('id-drm-controls').style.width = px(drm.w_sched);
+      w3_innerHTML('id-drm-panel-by-svc-static', drm_schedule_static());
+      w3_innerHTML('id-drm-panel-by-svc', drm_schedule());
+
+      /*
+      var el = w3_el('id-ext-controls');
+      console.log('$ id-ext-controls wh='+ mobile.width +','+ mobile.height +' uiw='+ el.uiWidth);
    
-   drm.is_stopped = 0;
-   console.log('drm_controls_setup is_stopped='+ drm.is_stopped);
+      if (mobile.narrow) {
+         // scale control panel up or down to fit width of all narrow screens
+         var scale = mobile.width / el.uiWidth * 0.95;
+         //alert('scnW='+ mobile.width +' cpW='+ el.uiWidth +' sc='+ scale.toFixed(2));
+         el.style.transform = 'scale('+ scale.toFixed(2) +')';
+         el.style.transformOrigin = 'bottom left';    // panel has left:0 by default
+         console.log('$ id-ext-controls scale='+ scale.toFixed(3) +' wh='+ mobile.width +','+ mobile.height);
+         drm.rescale_cnt2++;
+      } else {
+         el.style.transform = 'none';
+      }
+      */
+	}, 500);
+}
 
-   // URL params that need to be setup before controls instantiated
-	var p = drm.url_params = ext_param();
-	if (p) {
-      p = p.split(',');
-      p.forEach(function(a, i) {
-         //console.log('DRM param1 <'+ a +'>');
-         var a1 = a.split(':');
-         a1 = a1[a1.length-1].toLowerCase();
-         var r;
-         if ((r = w3_ext_param('debug', a)).match) {
-            var debug = r.has_value? r.num : 0;
-            ext_send('SET debug='+ debug);
-         }
-      });
-   }
-
+function drm_desktop_controls_setup(w_graph)
+{
    var controls_inner, data_html = null;
-   
+   var h = 250;
+   var w_lhs = 25;
+   var w_msg = 500;
+   var w_msg2 = 450;
+   var pad_graph = 10;
+
    if (drm.wrong_srate) {
       controls_inner =
             w3_text('w3-medium w3-text-css-yellow',
@@ -696,61 +784,65 @@ function drm_controls_setup()
             );
       }
    
-      var sblk = function(id) { return id +' '+ w3_icon('id-drm-status-'+ id.toLowerCase(), 'fa-square', 16, 'grey') +' &nbsp;&nbsp;'; };
-      var tblk = function(id) { return w3_span('id-drm-'+ id +' cl-drm-blk', id); };
-      var oblk = function(id) { return w3_span('id-drm-occ-'+ id +' cl-drm-blk', id); };
-      var qsdc = function(id) { return w3_span('id-drm-sdc-'+ id +' cl-drm-blk', id); };
-      var qmsc = function(id) { return w3_span('id-drm-msc-'+ id +' cl-drm-blk', id); };
+      var sblk = function(id)    { return id +' '+ w3_icon('id-drm-status-'+ id.toLowerCase(), 'fa-square', 16, 'grey') +' &nbsp;&nbsp;'; };
+      var tblk = function(id,t)  { return w3_span('id-drm-'+ id +' cl-drm-blk', t); };
+      var mblk = function(t)     { return tblk('mod-'+ t, t); };
+      var oblk = function(t)     { return tblk('occ-'+ t, t); };
+      var iblk = function(t)     { return tblk('ilv-'+ t, t); };
+      var qsdc = function(t)     { return tblk('sdc-'+ t, t); };
+      var qmsc = function(t)     { return tblk('msc-'+ t, t); };
 
-      var width =  drm.w_msg + drm.w_graph;
-      drm.w_sched = drm.w_graph;
-      var twidth = drm.w_lhs + width;
+      var width =  w_msg + w_graph;
+      drm.w_sched = w_graph;
+      var twidth = w_lhs + width;
       var margin = 10;
-      var loading = '&nbsp;loading data from kiwisdr.com ...';
 
       data_html =
          time_display_html('drm') +
          
-         w3_div(sprintf('id-drm-panel-0-info w3-relative w3-no-scroll|width:%dpx; height:%dpx; background-color:black;', twidth, drm.h),
-            w3_div(sprintf('id-drm-panel-graph w3-absolute|width:%dpx; height:%dpx; left:%dpx;', drm.w_graph, drm.h, drm.w_lhs + drm.w_msg),
-               w3_div(sprintf('id-drm-panel-1-by-svc cl-drm-sched|width:%dpx; height:100%%;', drm.w_graph),
+         w3_div(sprintf('id-drm-panel-0-info w3-relative w3-no-scroll|width:%dpx; height:%dpx; background-color:black;', twidth, h),
+            w3_div(sprintf('id-drm-panel-graph w3-absolute|width:%dpx; height:%dpx; left:%dpx;', w_graph, h, w_lhs + w_msg),
+               w3_div(sprintf('id-drm-panel-1-by-svc cl-drm-sched|width:%dpx; height:100%%;', w_graph),
                   w3_div('', drm_schedule_static()),
-                  w3_div('id-drm-panel-by-svc w3-scroll-y w3-absolute|width:100%; height:100%;', loading)
+                  w3_div('id-drm-panel-by-svc w3-scroll-y w3-absolute|width:100%; height:100%;', drm.loading_msg)
                ),
             /*
-               w3_div(sprintf('id-drm-panel-1-by-area cl-drm-sched|width:%dpx; height:100%%;', drm.w_graph),
+               w3_div(sprintf('id-drm-panel-1-by-area cl-drm-sched|width:%dpx; height:100%%;', w_graph),
                   w3_div('', drm_schedule_static()),
-                  w3_div('id-drm-panel-by-area w3-scroll-y w3-absolute|width:100%; height:100%;', loading),
+                  w3_div('id-drm-panel-by-area w3-scroll-y w3-absolute|width:100%; height:100%;', drm.loading_msg),
                ),
-               w3_div(sprintf('id-drm-panel-1-by-freq cl-drm-sched|width:%dpx; height:100%%;', drm.w_graph),
+               w3_div(sprintf('id-drm-panel-1-by-freq cl-drm-sched|width:%dpx; height:100%%;', w_graph),
                   w3_div('', drm_schedule_static()),
-                  w3_div('id-drm-panel-by-freq w3-scroll-y w3-absolute|width:100%; height:100%;', loading),
+                  w3_div('id-drm-panel-by-freq w3-scroll-y w3-absolute|width:100%; height:100%;', drm.loading_msg),
                ),
             */
-               w3_canvas('id-drm-panel-1-graph', drm.w_graph, drm.h, { padding:drm.pad_graph }),
-               w3_canvas('id-drm-panel-1-IQ', drm.w_graph, drm.h, { padding:drm.pad_graph })
+               w3_canvas('id-drm-panel-1-graph', w_graph, h, { padding:pad_graph }),
+               w3_canvas('id-drm-panel-1-IQ', w_graph, h, { padding:pad_graph })
             ),
             w3_div(sprintf('id-drm-console-msg w3-margin-T-8 w3-small w3-text-white w3-absolute|left:%dpx; width:%dpx; height:%dpx; overflow-x:hidden;',
-               drm.w_lhs, drm.w_msg, drm.h),
+               w_lhs, w_msg, h),
                w3_div('id-drm-status', sblk('IO') + sblk('Time') + sblk('Frame') + sblk('FAC') + sblk('SDC') + sblk('MSC')),
-               w3_inline('w3-halign-space-between|width:200px/',
+               w3_inline('w3-halign-space-between|width:250px/',
                   w3_div('id-drm-if_level'),
                   w3_div('id-drm-snr')
                ),
                w3_divs('id-drm-mode w3-hide/w3-margin-T-6',
                   w3_inline('/w3-show-inline',
-                     'DRM mode ', tblk('A'), tblk('B'), tblk('C'), tblk('D'),
-                     '&nbsp;&nbsp;&nbsp; Chan '+ oblk('4.5'), oblk('5'), oblk('9'), oblk('10'), oblk('18'), oblk('20'), ' kHz'
+                     'DRM mode ', mblk('A'), mblk('B'), mblk('C'), mblk('D'),
+                     '&nbsp;&nbsp;&nbsp; Chan ', oblk('4.5'), oblk('5'), oblk('9'), oblk('10'), oblk('18'), oblk('20'), ' kHz',
+                     '&nbsp;&nbsp;&nbsp; ILV ', iblk('L'), iblk('S')
                   ),
                   w3_inline('/w3-show-inline',
-                     'SBC '+ qsdc('4'), qsdc('16'), ' QAM', '&nbsp;&nbsp;&nbsp; MSC ', qmsc('16'), qmsc('64'), ' QAM'
+                     'SDC ', qsdc('4'), qsdc('16'), ' QAM', '&nbsp;&nbsp;&nbsp; MSC ', qmsc('16'), qmsc('64'), ' QAM',
+                     w3_div('id-drm-prot w3-margin-left'),
+                     w3_div('id-drm-nsvc w3-margin-left')
                   ),
                   w3_div('id-drm-desc')
                ),
-               w3_div('id-drm-error|width:'+ px(drm.w_msg2)),
-               w3_div('id-drm-svcs w3-hide|width:'+ px(drm.w_msg2), svcs),
+               w3_div('id-drm-error|width:'+ px(w_msg2)),
+               w3_div('id-drm-svcs w3-hide|width:'+ px(w_msg2), svcs),
                '<br><br>',
-               w3_div(sprintf('id-drm-msgs|width:%dpx', drm.w_msg))
+               w3_div(sprintf('id-drm-msgs|width:%dpx', w_msg))
             )
          ) +
 
@@ -782,7 +874,7 @@ function drm_controls_setup()
    }
 
    drm_panel_show(controls_inner, data_html);
-	ext_set_data_height(drm.h);
+	ext_set_data_height(h);
    
 	if (drm.locked == 0) return;
 
@@ -798,8 +890,54 @@ function drm_controls_setup()
 	
 	drm.canvas_IQ = w3_el('id-drm-panel-1-IQ');
 	drm.canvas_IQ.ctx = drm.canvas_IQ.getContext("2d");
-	drm.w_IQ = drm.w_graph - drm.pad_graph*2;
-	drm.h_IQ = drm.h - drm.pad_graph*2;
+	drm.w_IQ = w_graph - pad_graph*2;
+	drm.h_IQ = h - pad_graph*2;
+	
+	drm.desktop = 1;
+}
+
+function drm_controls_setup()
+{
+   drm_saved_mode();
+   console.log('drm_controls_setup saved_mode='+ drm.saved_mode);
+   drm.saved_passband = ext_get_passband();
+   
+   drm.is_stopped = 0;
+   console.log('drm_controls_setup is_stopped='+ drm.is_stopped);
+
+   // URL params that need to be setup before controls instantiated
+	var p = drm.url_params = ext_param();
+	if (p) {
+      p = p.split(',');
+      p.forEach(function(a, i) {
+         //console.log('DRM param1 <'+ a +'>');
+         var a1 = a.split(':');
+         a1 = a1[a1.length-1].toLowerCase();
+         var r;
+         if ((r = w3_ext_param('mobile', a)).match) {
+            drm.mobile = 1;
+         } else
+         if ((r = w3_ext_param('debug', a)).match) {
+            var debug = r.has_value? r.num : 0;
+            ext_send('SET debug='+ debug);
+         }
+      });
+   }
+   
+	var mobile = ext_mobile_info();
+   var w_graph = drm.w_graph_nom - (Math.max(0, 1440 - mobile.width));
+   drm.narrow_listing = (w_graph < drm.w_graph_nom);
+   //console.log('$ whg='+ mobile.width +','+ mobile.height +','+ w_graph);
+	
+	//alert('mw='+ mobile.width +' w_graph='+ w_graph);
+	if (drm.mobile || w_graph <= drm.w_graph_min) {
+	   drm_mobile_controls_setup(mobile);
+	} else {
+	   drm_desktop_controls_setup(w_graph);
+	}
+
+	if (drm.locked == 0) return;
+	drm.active = true;
 
 	if (drm.url_params) {
       var freq = parseFloat(drm.url_params);
@@ -974,14 +1112,16 @@ function drm_display_cb(path, idx, first)
 	   
 	});
 
-   drm.display = idx_actual;
-   w3_color('id-drm-panel-graph', null, (drm.panel_1[drm.display] != 'graph')? 'black' : 'mediumBlue');
+   var dsp = drm.display = idx_actual;
+   w3_color('id-drm-panel-graph', null, (drm.panel_1[dsp] != 'graph')? 'black' : 'mediumBlue');
    
-   console.log('$ drm_display_cb idx='+ idx +' show='+ drm.display +' '+ drm.panel_0[drm.display] +'/'+ drm.panel_1[drm.display]);
+   console.log('$ drm_display_cb idx='+ idx +' show='+ dsp +' '+ drm.panel_0[dsp] +'/'+ drm.panel_1[dsp]);
    drm.panel_0.forEach(function(el) { w3_hide('id-drm-panel-0-'+ el); });
    drm.panel_1.forEach(function(el) { w3_hide('id-drm-panel-1-'+ el); });
-   w3_show('id-drm-panel-0-'+ drm.panel_0[drm.display]);
-   w3_show('id-drm-panel-1-'+ drm.panel_1[drm.display]);
+   w3_show('id-drm-panel-0-'+ drm.panel_0[dsp]);
+   w3_show('id-drm-panel-1-'+ drm.panel_1[dsp]);
+
+   ext_send('SET send_iq='+ ((dsp >= drm.IQ_ALL && dsp <= drm.IQ_END)? 1:0));
 }
 
 function drm_reset_menus()
@@ -1033,6 +1173,7 @@ function drm_pre_select_cb(path, idx, first)
 
 function drm_station(s)
 {
+   if (!drm.desktop) return;
    drm.last_station = s;
    if (s == '') s = '&nbsp;';
    w3_el('id-drm-station').innerHTML = '<b>'+ s +'</b>';
@@ -1099,6 +1240,8 @@ function DRM_blur()
 {
    console.log('DRM_blur saved_mode='+ drm.saved_mode);
    kiwi_clearInterval(drm.interval);
+   kiwi_clearInterval(drm.interval2);
+	drm.active = false;     // NB: must be before ext_set_mode() below to prevent recursion
    
    drm_stop();
    if (isUndefined(drm.saved_mode) || drm.saved_mode == 'drm') {
@@ -1149,6 +1292,11 @@ function DRM_help(show)
          );
       confirmation_show_content(s, 610, 350);
       w3_el('id-confirmation-container').style.height = '100%';   // to get the w3-scroll-y above to work
+   } else {
+      if (drm.mobile) {
+         return 'off';
+         //return true;
+      }
    }
    return true;
 }

@@ -760,6 +760,13 @@ input[type=range]::-moz-range-thumb {
 	overflow-y: auto;
 }
 
+.w3-iphone-scroll
+{
+    -webkit-overflow-scrolling: touch;
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+
 .w3-nowrap
 {
 	white-space: nowrap;

@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.364  December 28, 2019
+    DRM extension fixes and improvements:
+        UI improvements for mobile devices.
+
 v1.363  December 28, 2019
     DRM extension fixes and improvements:
         Added station schedule timeline.

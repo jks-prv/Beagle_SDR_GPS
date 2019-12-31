@@ -74,6 +74,7 @@ typedef struct {
 	u4_t MeasureTime[16];
 	
 	int audio_service;
+	bool send_iq;
 
     #ifdef DRM_TEST_FILE
         int test;

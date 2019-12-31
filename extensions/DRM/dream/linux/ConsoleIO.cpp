@@ -98,7 +98,7 @@ CConsoleIO::Update(drm_t *drm)
     //printf("."); fflush(stdout);
 	time = curtime;
 	
-	#if 1
+	if (drm->send_iq) {
         pDRMReceiver->GetFACMLC()->GetVectorSpace(facIQ);
         pDRMReceiver->GetSDCMLC()->GetVectorSpace(sdcIQ);
         pDRMReceiver->GetMSCMLC()->GetVectorSpace(mscIQ);
@@ -119,7 +119,7 @@ CConsoleIO::Update(drm_t *drm)
         }
         DRM_data(drm, (u1_t) DRM_DAT_IQ, u1, N_IQDATA);
         //printf("%d|%d|%d ", facIQ.Size(), sdcIQ.Size(), mscIQ.Size()); fflush(stdout);
-    #endif
+    }
 
 	char *sb;
 
@@ -134,7 +134,6 @@ CConsoleIO::Update(drm_t *drm)
     ETypeRxStatus soundCardStatusO = Parameters.ReceiveStatus.InterfaceO.GetStatus(); /* Output */
     int inter = ETypeRxStatus2int(soundCardStatusO == NOT_PRESENT ||
 		(soundCardStatusI != NOT_PRESENT && soundCardStatusI != RX_OK) ? soundCardStatusI : soundCardStatusO);
-	//cprintf(HOME "        IO:%c  Time:%c  Frame:%c  FAC:%c  SDC:%c  MSC:%c" NL, inter, time, frame, fac, sdc, msc);
 	
 	_REAL rIFLevel = Parameters.GetIFSignalLevel();
 	//if (rIFLevel > MINIMUM_IF_LEVEL)
@@ -145,17 +144,16 @@ CConsoleIO::Update(drm_t *drm)
 	asprintf(&sb, "{\"io\":%d,\"time\":%d,\"frame\":%d,\"FAC\":%d,\"SDC\":%d,\"MSC\":%d,\"if\":%.1f",
 	    inter, time, frame, fac, sdc, msc, rIFLevel);
 	
-    int signal = pDRMReceiver->GetAcquiState() == AS_WITH_SIGNAL;
-    if (signal)
-    {
+    int signal = (pDRMReceiver->GetAcquiState() == AS_WITH_SIGNAL);
+    if (signal) {
         _REAL rSNR = Parameters.GetSNR();
         //cprintf("                        SNR: %.1f dB" NL, rSNR);
-        
         sb = kstr_asprintf(sb,
-            ",\"snr\":%.1f,\"mod\":%d,\"occ\":%d,\"int\":%d,\"sdc\":%d,\"msc\":%d,\"plb\":%d,\"pla\":%d",
+            ",\"snr\":%.1f,\"mod\":%d,\"occ\":%d,\"ilv\":%d,\"sdc\":%d,\"msc\":%d,\"plb\":%d,\"pla\":%d,\"nas\":%d,\"nds\":%d",
             rSNR, Parameters.GetWaveMode(), Parameters.GetSpectrumOccup(), Parameters.eSymbolInterlMode,
             Parameters.eSDCCodingScheme, Parameters.eMSCCodingScheme,
-            Parameters.MSCPrLe.iPartB, Parameters.MSCPrLe.iPartA
+            Parameters.MSCPrLe.iPartB, Parameters.MSCPrLe.iPartA,
+            Parameters.iNumAudioService, Parameters.iNumDataService
         );
     }
 

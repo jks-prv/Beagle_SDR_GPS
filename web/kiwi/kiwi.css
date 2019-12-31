@@ -227,6 +227,7 @@ hr
 	top: 10px;
 	right: 40px;
 	cursor: pointer;
+	z-index:9999;
 }
 
 .class-mfg-panel
