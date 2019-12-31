@@ -481,6 +481,7 @@ function tdoa_update_link()
    url += '&pbw='+ (pb.high * 2).toFixed(0) +'&ext=tdoa';
 
    var m = tdoa.cur_map;
+   if (!m) return;
    var c = m.getCenter();
    url += ',lat:'+ tdoa_lat(c).toFixed(2) +',lon:'+ tdoa_lon(c).toFixed(2) +',z:'+ m.getZoom();
    if (!tdoa.leaflet && m.getMapTypeId() != 'satellite') url += ',map:1';

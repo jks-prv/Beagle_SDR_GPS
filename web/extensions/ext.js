@@ -537,7 +537,7 @@ function extint_panel_show(controls_html, data_html, show_func)
 	w3_el('id-confirmation-container').style.height = '';    // some exts modify this
 	var show_help_button = w3_call(extint.current_ext_name +'_help', false);
 	//console.log('show_help_button '+ extint.current_ext_name +' '+ show_help_button);
-   w3_set_props('id-ext-controls-help-btn', 'w3-disabled', show_help_button == false);
+   w3_set_props('id-ext-controls-help-btn', 'w3-disabled', isUndefined(show_help_button) || show_help_button == false);
    if (show_help_button == 'off')
       w3_hide('id-ext-controls-help-btn');
 	

@@ -1,7 +1,7 @@
 // Copyright (c) 2017 John Seamons, ZL/KF6VO
 
 var example = {
-   ext_name: 'example',    // NB: must match example.c:example_ext.name
+   ext_name: 'example',    // NB: must match example.cpp:example_ext.name
    first_time: true,
    CMD1: 0
 };

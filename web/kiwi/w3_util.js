@@ -222,7 +222,7 @@ function w3_call(func, arg0, arg1, arg2, arg3)
 {
    var rv = undefined;
 
-   if (func == null || func == undefined) return rv;
+   if (!isArg(func)) return rv;
    
 	try {
 	   if (isString(func)) {
@@ -902,6 +902,7 @@ function w3_set_decoded_value(path, val)
 function w3_get_value(path)
 {
 	var el = w3_el(path);
+	if (!el) return null;
 	return el.value;
 }
 
