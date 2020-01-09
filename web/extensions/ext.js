@@ -79,6 +79,7 @@ function ext_get_cfg_param(path, init_val, save)
 		cur_val = null;
 	}
 	
+   //console.log('ext_get_cfg_param: path='+ path +' cur_val='+ cur_val +' init_val='+ init_val);
 	if ((cur_val == null || cur_val == undefined) && init_val != undefined) {		// scope or parameter doesn't exist, create it
 		cur_val = init_val;
 		// parameter hasn't existed before or hasn't been set (empty field)
@@ -192,20 +193,24 @@ function ext_set_mode(mode, freq, opt)
 	demodulator_analog_replace(mode, freq);
 	
 	var open_ext = w3_opt(opt, 'open_ext', false);
+	var no_drm_proc = w3_opt(opt, 'no_drm_proc', false);
 	var drm_active = (typeof(drm) != 'undefined' && drm.active);
 	console.log('$ new_drm='+ new_drm +' open_ext='+ open_ext);
-   if (new_drm && open_ext) {
-      if (drm_active) {
-         // DRM already loaded and running, just open the control panel again (mobile mode)
-         toggle_panel("ext-controls", 1);
-      } else {
-         extint_open('drm');
+
+   if (!no_drm_proc) {
+      if (new_drm && open_ext) {
+         if (drm_active) {
+            // DRM already loaded and running, just open the control panel again (mobile mode)
+            toggle_panel("ext-controls", 1);
+         } else {
+            extint_open('drm');
+         }
+      } else
+      if (!new_drm && drm_active) {
+         // shutdown DRM (if active) when mode changed
+         extint_panel_hide();
+         demodulator_analog_replace(mode, freq);   // don't use mode restored by DRM_blur()
       }
-   } else
-   if (!new_drm && drm_active) {
-      // shutdown DRM (if active) when mode changed
-      extint_panel_hide();
-	   demodulator_analog_replace(mode, freq);   // don't use mode restored by DRM_blur()
    }
 }
 
@@ -589,6 +594,7 @@ function extint_environment_changed(changed)
    
    setTimeout(
       function() {
+         //console_log_fqn('extint_environment_changed', 'extint.current_ext_name');
          if (extint.current_ext_name) {
             w3_call(extint.current_ext_name +'_environment_changed', changed);
          }
@@ -647,7 +653,8 @@ function extint_msg_cb(param, ws)
 			break;
 
 		case "ext_client_init":
-			extint_focus();
+		   console.log('ext_client_init is_locked='+ +param[1]);
+			extint_focus(+param[1]);
 			break;
 		
 		default:
@@ -671,11 +678,21 @@ function extint_blur_prev()
 		ext_send('SET ext_blur='+ rx_chan);
 }
 
-function extint_focus()
+function extint_focus(is_locked)
 {
    // dynamically load extension (if necessary) before calling <ext>_main()
    var ext = extint.current_ext_name;
 	console.log('extint_focus: loading '+ ext +'.js');
+	
+	if (is_locked) {
+	   var s =
+         w3_text('w3-medium w3-text-css-yellow',
+            'Cannot use extensions while <br> another channel is in DRM mode.'
+         );
+      extint_panel_show(s);
+      ext_set_controls_width_height(450, 75);
+      return;
+	}
 
 	kiwi_load_js_dir('extensions/'+ ext +'/'+ ext, ['.js', '.css'],
 
@@ -694,6 +711,8 @@ function extint_focus()
             var s = 'loading extension...';
             extint_panel_show(s);
             ext_set_controls_width_height(325, 45);
+            if (kiwi.is_locked)
+               console.log('==== IS_LOCKED =================================================');
          }
 	   }
 	);
@@ -713,7 +732,8 @@ function extint_select(idx)
 		extint.ws = extint_connect_server();
 		extint_first_ext_load = false;
 	} else {
-		extint_focus();
+		//extint_focus();
+		ext_send('SET ext_is_locked_status');     // request is_locked status
 	}
 }
 
@@ -741,6 +761,7 @@ function extint_select_menu()
          if (id == 'wspr') id = 'WSPR';      // FIXME: workaround
          var enable = ext_get_cfg_param(id +'.enable');
          if (enable == null || kiwi.is_local[rx_chan]) enable = true;   // enable if no cfg param or local connection
+         if (id == 'DRM') kiwi.DRM_enable = enable;
 		   s += '<option value="'+ i +'" '+ (enable? '':'disabled') +'>'+ id +'</option>';
 		}
 	}

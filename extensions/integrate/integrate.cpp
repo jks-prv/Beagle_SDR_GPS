@@ -187,6 +187,8 @@ ext_t integrate_ext = {
 	integrate_main,
 	NULL,
 	integrate_msgs,
+	EXT_NEW_VERSION,
+	EXT_FLAGS_HEAVY
 };
 
 void integrate_main()

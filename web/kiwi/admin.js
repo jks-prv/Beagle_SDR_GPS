@@ -5,7 +5,8 @@
 //		NTP status?
 
 var admin = {
-   BBAI:    false
+   BBAI: false,
+   reg_status: {}
 };
 
 
@@ -505,7 +506,7 @@ function connect_html()
 			
 			w3_col_percent('w3-text-teal/w3-container',
 				w3_div(), 50,
-				w3_input_get('', 'User key (same as sdr.hu API key, see instructions)',
+				w3_input_get('', 'User key (see instructions)',
 				   'adm.rev_user', 'w3_string_set_cfg_cb', '', 'required'
 				), 50
 			),
@@ -820,7 +821,7 @@ function connect_rev_status_cb(status)
 // all in admin_sdr.js
 // config
 // webpage
-// sdr.hu
+// public
 // dx
 ////////////////////////////////
 
@@ -2552,7 +2553,7 @@ function admin_draw(sdr_mode)
          //w3_nav(admin_colors[ci++], 'Channels', 'channels', 'admin_nav') +
          w3_nav(admin_colors[ci++], 'Config', 'config', 'admin_nav') +
          w3_nav(admin_colors[ci++], 'Webpage', 'webpage', 'admin_nav') +
-         w3_nav(admin_colors[ci++], 'sdr.hu', 'sdr_hu', 'admin_nav') +
+         w3_nav(admin_colors[ci++], 'Public', 'sdr_hu', 'admin_nav') +
          w3_nav(admin_colors[ci++], 'DX', 'dx', 'admin_nav');
    s += 
       w3_nav(admin_colors[ci++], 'Update', 'update', 'admin_nav') +
@@ -2782,8 +2783,8 @@ function admin_recv(data)
 				w3_call(ext_func, ext_param);
 				break;
 
-			case "sdr_hu_update":
-				sdr_hu_update(param[1]);
+			case "public_update":
+				public_update(param[1]);
 				break;
 
 			case "auto_nat":

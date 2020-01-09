@@ -86,7 +86,7 @@ function S_meter_recv(data)
 			case "smeter":
 			   if (S_meter.stop_start_state == 0) {
 			      S_meter.last_plot = parseFloat(param[1]);
-				   graph_plot(S_meter.last_plot);
+				   graph_plot(S_meter.gr, S_meter.last_plot);
 				}
 				break;
 
@@ -135,8 +135,8 @@ function S_meter_controls_setup()
 	S_meter.data_canvas = w3_el('id-S_meter-data-canvas');
 	S_meter.data_canvas.ctx = S_meter.data_canvas.getContext("2d");
 
-   graph_init(S_meter.data_canvas, { dBm:1, averaging:true });
-	graph_mode((S_meter.range_i == S_meter.range_AUTO)? 'auto' : 'fixed', S_meter.maxdb, S_meter.mindb);
+   S_meter.gr = graph_init(S_meter.data_canvas, { dBm:1, averaging:true });
+	graph_mode(S_meter.gr, (S_meter.range_i == S_meter.range_AUTO)? 'auto' : 'fixed', S_meter.maxdb, S_meter.mindb);
 
 	S_meter_environment_changed( {resize:1} );
 	ext_set_controls_width_height(250);
@@ -162,7 +162,7 @@ function S_meter_environment_changed(changed)
       S_meter.data.style.width = px(w + sm_padding*2);
       S_meter.data_canvas.width = w;
 	   el.style.left = px(left);
-	   graph_clear();
+	   graph_clear(S_meter.gr);
 	   return;
 	}
 
@@ -174,7 +174,7 @@ function S_meter_environment_changed(changed)
       S_meter.data.style.width = px(w + sm_padding*2);
       S_meter.data_canvas.width = w;
 	   el.style.left = px(left);
-	   graph_clear();
+	   graph_clear(S_meter.gr);
 	   return;
 	}
 	
@@ -186,7 +186,7 @@ function S_meter_environment_changed(changed)
 	S_meter.data.style.width = px(w);
 	S_meter.data_canvas.width = w - sm_padding*2;
 	el.style.left = px(border);
-   graph_clear();
+   graph_clear(S_meter.gr);
    S_meter_update(1);
    return;
 }
@@ -202,7 +202,7 @@ function S_meter_range_select_cb(path, idx, first)
 	} else {
 		w3_hide('id-S_meter-scale-sliders');
 	}
-	graph_mode((S_meter.range_i == S_meter.range_AUTO)? 'auto' : 'fixed', S_meter.maxdb, S_meter.mindb);
+	graph_mode(S_meter.gr, (S_meter.range_i == S_meter.range_AUTO)? 'auto' : 'fixed', S_meter.maxdb, S_meter.mindb);
 }
 
 function S_meter_maxdb_cb(path, val, complete)
@@ -211,7 +211,7 @@ function S_meter_maxdb_cb(path, val, complete)
    maxdb = Math.max(S_meter.mindb, maxdb);		// don't let min & max cross
 	w3_num_cb(path, maxdb.toString());
 	w3_set_label('Scale max '+ maxdb.toString() +' dBm', path);
-	graph_mode((S_meter.range_i == S_meter.range_AUTO)? 'auto' : 'fixed', S_meter.maxdb, S_meter.mindb);
+	graph_mode(S_meter.gr, (S_meter.range_i == S_meter.range_AUTO)? 'auto' : 'fixed', S_meter.maxdb, S_meter.mindb);
 }
 
 function S_meter_mindb_cb(path, val, complete)
@@ -220,7 +220,7 @@ function S_meter_mindb_cb(path, val, complete)
    mindb = Math.min(mindb, S_meter.maxdb);		// don't let min & max cross
 	w3_num_cb(path, mindb.toString());
 	w3_set_label('Scale min '+ mindb.toString() +' dBm', path);
-	graph_mode((S_meter.range_i == S_meter.range_AUTO)? 'auto' : 'fixed', S_meter.maxdb, S_meter.mindb);
+	graph_mode(S_meter.gr, (S_meter.range_i == S_meter.range_AUTO)? 'auto' : 'fixed', S_meter.maxdb, S_meter.mindb);
 }
 
 function S_meter_speed_cb(path, val, complete)
@@ -229,13 +229,13 @@ function S_meter_speed_cb(path, val, complete)
    var speed_pow2 = Math.round(Math.pow(2, S_meter.speed_max - val_i));
 	w3_num_cb(path, val_i.toString());
 	w3_set_label('Speed 1'+ ((speed_pow2 != 1)? ('/'+speed_pow2.toString()) : ''), path);
-	graph_speed(speed_pow2);
+	graph_speed(S_meter.gr, speed_pow2);
 }
 
 function S_meter_marker_select_cb(path, idx)
 {
 	S_meter.marker_v = S_meter.marker_sec[+idx];
-	graph_marker(S_meter.marker_v);
+	graph_marker(S_meter.gr, S_meter.marker_v);
 }
 
 function S_meter_stop_start_cb(path, idx, first)
@@ -246,22 +246,23 @@ function S_meter_stop_start_cb(path, idx, first)
 
 function S_meter_mark_cb(path, idx, first)
 {
-   graph_annotate('magenta');
+   graph_annotate(S_meter.gr, 'magenta');
    
    // if stopped plot last value so mark appears
    if (S_meter.stop_start_state)
-      graph_plot(S_meter.last_plot);
+      graph_plot(S_meter.gr, S_meter.last_plot);
 }
 
 function S_meter_clear_cb(path, val)
 {
-	graph_clear();
+	graph_clear(S_meter.gr);
 	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);
 }
 
 function S_meter_averaging_cb(path, checked, first)
 {
-	graph_averaging(checked);
+   if (first) return;
+	graph_averaging(S_meter.gr, checked);
 }
 
 // detect when frequency or mode has changed and mark graph
@@ -274,8 +275,8 @@ function S_meter_update(init)
 
 	if (init || freq_chg || mode_chg) {
 	   if (!init) {
-         if (freq_chg) graph_annotate('red');
-         if (mode_chg) graph_annotate('lime');
+         if (freq_chg) graph_annotate(S_meter.gr, 'red');
+         if (mode_chg) graph_annotate(S_meter.gr, 'lime');
       }
 		S_meter.sm_last_freq = freq;
 		S_meter.sm_last_mode = mode;

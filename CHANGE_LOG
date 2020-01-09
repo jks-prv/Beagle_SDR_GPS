@@ -2,6 +2,18 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.365  January 10, 2020
+    Decouple kiwisdr.com/public and sdr.hu registration.
+        Can register on either or both.
+        Rename admin page tab "sdr.hu" to "Public".
+        API key only applies to sdr.hu
+    Allow limited regular connections when DRM active.
+    Build DRM files only when needed.
+    Consider local timezone when scheduling updates (i.e. 1AM - 6AM local, not UTC).
+    Log build messages to /root/build.log file to aid in build failure determination.
+    Improve web server caching (more closely follow web caching standards).
+    More protection against users making invisible connections and other hacks.
+
 v1.364  December 28, 2019
     DRM extension fixes and improvements:
         UI improvements for mobile devices.
@@ -206,8 +218,6 @@ v1.312  August 17, 2019
     Pan slider does not appear when using Safari or with any browser on iOS (i.e. iPhone, iPad).
     This is because Apple doesn't have the necessary audio support.
     Tested with desktop Firefox/Chrome and with Android 8.x
-
-    Feature suggested by github.com/jks-prv/Beagle_SDR_GPS/issues/282
 
 v1.311  August 16, 2019
     Added IP blacklist to admin network tab (uses Linux iptables).
@@ -488,7 +498,6 @@ v1.276, 277  March 29, 2019
         But some playback software may have compensated for this issue automatically.
 
     Fixed problem with IQ mode AGC distortion found by DazDSP. This may improve DRM reception.
-        See: https://github.com/jks-prv/Beagle_SDR_GPS/issues/220
 
 v1.275  March 20, 2019
     Improvements to FSK extension

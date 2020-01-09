@@ -399,12 +399,11 @@ function fax_controls_setup()
                w3_checkbox('w3-label-inline w3-label-not-bold/', 'auto align', 'fax.phasing', fax.phasing, 'fax_phasing_cb'),
                w3_div('id-fax-phased w3-margin-left w3-padding-small w3-text-black w3-css-lime w3-hidden', 'aligned'),
                w3_checkbox('w3-margin-left/w3-label-inline w3-label-not-bold/', 'auto stop', 'fax.autostop', fax.autostop, 'fax_autostop_cb'),
-               w3_div('id-fax-stopped w3-margin-left w3-padding-small w3-text-black w3-css-orange w3-hidden', 'stopped'),
+               w3_div('id-fax-stopped w3-margin-left w3-padding-small w3-text-black w3-css-orange w3-hidden', 'stopped')
             ),
 				w3_div('',
 				   w3_inline('w3-halign-space-between/',
-                  w3_link('', 'www.nws.noaa.gov/os/marine/rfax.pdf', 'FAX transmission schedules'),
-                  w3_div('', 'Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">report</a> station corrections/updates.')
+                  w3_link('', 'www.nws.noaa.gov/os/marine/rfax.pdf', 'FAX transmission schedules')
                ),
                w3_div('', 'Shift-click (PC) or touch (mobile) the image to align.')
                //w3_slider('', 'Contrast', 'fax.contrast', fax.contrast, 1, 255, 1, 'fax_contrast_cb')

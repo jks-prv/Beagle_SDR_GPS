@@ -36,7 +36,8 @@
 
 enum { DRM_DAT_IQ=0 } drm_dat_e;
 
-#define MAX_DRM_RX 4
+#define DRM_MAX_RX 4
+#define DRM_NREG_CHANS_DEFAULT 3
 
 typedef struct {
     #define N_DRM_OBUF 32
@@ -100,8 +101,8 @@ typedef struct {
 } drm_t;
 
 struct drm_shmem_t {
-    drm_t drm[MAX_DRM_RX];
-    drm_buf_t drm_buf[MAX_DRM_RX];
+    drm_t drm[DRM_MAX_RX];
+    drm_buf_t drm_buf[DRM_MAX_RX];
 };
 
 #ifdef DRM_SHMEM_DISABLE

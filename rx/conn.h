@@ -60,7 +60,7 @@ typedef struct conn_st {
 	user_iface_t *ui;
 
 	// set in STREAM_SOUND or STREAM_WATERFALL (WF-only connections)
-	bool arrived;
+	bool ident, arrived;
 	char *user;
 	bool isUserIP;
 
@@ -75,6 +75,7 @@ typedef struct conn_st {
 	float half_bw;
 	TYPECPX last_sample;
 	char *pref_id, *pref;
+	bool is_locked;
 	
 	// set only in STREAM_WATERFALL
 	bool wf_cmd_recv_ok;

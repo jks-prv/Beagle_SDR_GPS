@@ -50,9 +50,9 @@ ext_t navtex_ext = {
 	"navtex",
 	navtex_main,
 	NULL,
-	navtex_msgs
-	// assumes the fsk extension has already specified these
-	//{ "JNX.js", "BiQuadraticFilter.js", "CCIR476.js", "FSK_async.js" }
+	navtex_msgs,
+	EXT_NEW_VERSION,
+	EXT_FLAGS_HEAVY
 };
 
 void navtex_main()

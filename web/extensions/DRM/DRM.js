@@ -9,6 +9,7 @@ var drm = {
 
    locked: 0,
    wrong_srate: false,
+   hacked: false,
 
    n_menu: 5,
    menu0: W3_SELECT_SHOW_TITLE,
@@ -39,9 +40,12 @@ var drm = {
    IQ_END: 5,
    
    display_idx: 1,
+   display_idx_s:    [ 'schedule', 'graph', 'iq' ],
+   display_idx_si:   [ 1, 3, 5 ],   // index into display_s below (enumerated object keys and values)
+   
    display_s: {
       'Schedule': [
-         { m:'by service' },              // display_idx = 1
+         { m:'by service' },        // display_idx = 1
          //{ m:'by area' },
          //{ m:'by freq' }
       ],
@@ -256,10 +260,22 @@ function drm_recv(data)
 				kiwi_load_js(['pkgs/js/graph.js', 'pkgs/js/sprintf/sprintf.js'], 'drm_lock_setup');
 				break;
 			
+			case "inuse":
+			   drm.inuse = +param[1];
+				break;
+			
+			case "heavy":
+			   drm.heavy = +param[1];
+				break;
+			
 			case "locked":
 			   var p = +param[1];
 			   if (p == -1) {
 			      drm.wrong_srate = true;
+			      drm.locked = 0;
+			   } else
+			   if (p == -2) {
+			      drm.hacked = true;
 			      drm.locked = 0;
 			   } else
 			   if (kiwi.is_BBAI) {
@@ -300,13 +316,13 @@ function drm_recv(data)
 			   w3_innerHTML('id-drm-if_level', 'IF Level: '+ o.if.toFixed(1) +' dB');
 			   if (o.if < 0 && o.if > -100) {
 			      if (isUndefined(drm.last_if)) drm.last_if = o.if;
-			      drm.last_if = graph_plot(o.if, { line: drm.last_if, color: 'green' });
+			      drm.last_if = graph_plot(drm.gr_if, o.if, { line: drm.last_if, color: 'green' });
 			   }
 
 			   w3_innerHTML('id-drm-snr', o.snr? ('SNR: '+ o.snr.toFixed(1) +' dB') : '');
 			   if (o.snr > 0) {
 			      if (isUndefined(drm.last_snr)) drm.last_snr = o.snr;
-			      drm.last_snr = graph_plot(o.snr, { line: drm.last_snr });
+			      drm.last_snr = graph_plot(drm.gr_snr, o.snr, { line: drm.last_snr });
 			   }
 
 			   if (isDefined(o.mod)) {
@@ -407,10 +423,10 @@ function drm_recv(data)
 
 			case "annotate":
 			   switch (+param[1]) {
-               case 0: graph_annotate('lime'); break;
-               case 1: graph_annotate('gold'); break;
-               case 2: graph_annotate('red'); break;
-               case 3: graph_annotate('blue'); break;
+               case 0: drm_annotate('lime'); break;
+               case 1: drm_annotate('gold'); break;
+               case 2: drm_annotate('red'); break;
+               case 3: drm_annotate('blue'); break;
             }
 			   break;
 			
@@ -419,6 +435,12 @@ function drm_recv(data)
 				break;
 		}
 	}
+}
+
+function drm_annotate(color)
+{
+   graph_annotate(drm.gr_if, color);
+   graph_annotate(drm.gr_snr, color);
 }
 
 function drm_reset_status()
@@ -748,12 +770,13 @@ function drm_mobile_controls_setup(mobile)
 
 function drm_desktop_controls_setup(w_graph)
 {
+   var s;
    var controls_inner, data_html = null;
    var h = 250;
    var w_lhs = 25;
    var w_msg = 500;
    var w_msg2 = 450;
-   var pad_graph = 10;
+   var pad = 10;
 
    if (drm.wrong_srate) {
       controls_inner =
@@ -762,18 +785,30 @@ function drm_desktop_controls_setup(w_graph)
             );
    } else
    
+   if (drm.hacked) {
+      controls_inner = w3_text('w3-medium w3-text-css-yellow', 'Yeah, nah..');
+   } else
+   
    if (drm.locked == 0) {
-      controls_inner =
-         kiwi.is_BBAI?
-            w3_text('w3-medium w3-text-css-yellow',
-               sprintf('Limited to %d active instances.', drm.drm_chan)
-            )
-         :
-            w3_text('w3-medium w3-text-css-yellow',
-               'Requires exclusive use of the Kiwi.<br>' +
-               'While the DRM decoder is used there can be no other active connections.<br>' +
-               'Please try again when this is the only connection.'
-            );
+      if (kiwi.is_BBAI) {
+         s = sprintf('Limited to %d active instances.', drm.drm_chan);
+      } else {
+         // DRM_config_html() will have set cfg.DRM.nreg_chans before use here
+         var drm_nreg_chans = cfg.DRM.nreg_chans;
+         console_log('drm_nreg_chans', drm_nreg_chans);
+         if (drm_nreg_chans == 0)
+            s = 'Requires exclusive use of the Kiwi. There can be no other connections.';
+         else {
+            if (drm_nreg_chans == 1)
+               s = 'Can only run DRM with one other Kiwi connection.<br>' +
+                   'And the other connection is not using any extensions.';
+            else
+               s = 'Can only run DRM with '+ drm_nreg_chans +' or fewer other Kiwi connections.<br>' +
+                   'And the other connections are not using any extensions.';
+         }
+         s += '<br>Please try again when these conditions are met.';
+      }
+      controls_inner = w3_text('w3-medium w3-text-css-yellow', s);
    } else {
       var svcs = 'Services:<br>';
       for (var i=1; i <= 4; i++) {
@@ -801,24 +836,6 @@ function drm_desktop_controls_setup(w_graph)
          time_display_html('drm') +
          
          w3_div(sprintf('id-drm-panel-0-info w3-relative w3-no-scroll|width:%dpx; height:%dpx; background-color:black;', twidth, h),
-            w3_div(sprintf('id-drm-panel-graph w3-absolute|width:%dpx; height:%dpx; left:%dpx;', w_graph, h, w_lhs + w_msg),
-               w3_div(sprintf('id-drm-panel-1-by-svc cl-drm-sched|width:%dpx; height:100%%;', w_graph),
-                  w3_div('', drm_schedule_static()),
-                  w3_div('id-drm-panel-by-svc w3-scroll-y w3-absolute|width:100%; height:100%;', drm.loading_msg)
-               ),
-            /*
-               w3_div(sprintf('id-drm-panel-1-by-area cl-drm-sched|width:%dpx; height:100%%;', w_graph),
-                  w3_div('', drm_schedule_static()),
-                  w3_div('id-drm-panel-by-area w3-scroll-y w3-absolute|width:100%; height:100%;', drm.loading_msg),
-               ),
-               w3_div(sprintf('id-drm-panel-1-by-freq cl-drm-sched|width:%dpx; height:100%%;', w_graph),
-                  w3_div('', drm_schedule_static()),
-                  w3_div('id-drm-panel-by-freq w3-scroll-y w3-absolute|width:100%; height:100%;', drm.loading_msg),
-               ),
-            */
-               w3_canvas('id-drm-panel-1-graph', w_graph, h, { padding:pad_graph }),
-               w3_canvas('id-drm-panel-1-IQ', w_graph, h, { padding:pad_graph })
-            ),
             w3_div(sprintf('id-drm-console-msg w3-margin-T-8 w3-small w3-text-white w3-absolute|left:%dpx; width:%dpx; height:%dpx; overflow-x:hidden;',
                w_lhs, w_msg, h),
                w3_div('id-drm-status', sblk('IO') + sblk('Time') + sblk('Frame') + sblk('FAC') + sblk('SDC') + sblk('MSC')),
@@ -843,6 +860,30 @@ function drm_desktop_controls_setup(w_graph)
                w3_div('id-drm-svcs w3-hide|width:'+ px(w_msg2), svcs),
                '<br><br>',
                w3_div(sprintf('id-drm-msgs|width:%dpx', w_msg))
+            ),
+
+            w3_div(sprintf('id-drm-panel-graph w3-absolute|width:%dpx; height:%dpx; left:%dpx;', w_graph, h, w_lhs + w_msg),
+               w3_div(sprintf('id-drm-panel-1-by-svc cl-drm-sched|width:%dpx; height:100%%;', w_graph),
+                  w3_div('', drm_schedule_static()),
+                  w3_div('id-drm-panel-by-svc w3-scroll-y w3-absolute|width:100%; height:100%;', drm.loading_msg)
+               ),
+            /*
+               w3_div(sprintf('id-drm-panel-1-by-area cl-drm-sched|width:%dpx; height:100%%;', w_graph),
+                  w3_div('', drm_schedule_static()),
+                  w3_div('id-drm-panel-by-area w3-scroll-y w3-absolute|width:100%; height:100%;', drm.loading_msg),
+               ),
+               w3_div(sprintf('id-drm-panel-1-by-freq cl-drm-sched|width:%dpx; height:100%%;', w_graph),
+                  w3_div('', drm_schedule_static()),
+                  w3_div('id-drm-panel-by-freq w3-scroll-y w3-absolute|width:100%; height:100%;', drm.loading_msg),
+               ),
+            */
+               w3_div('id-drm-panel-1-graph w3-show-block',
+                  //w3_canvas('id-drm-graph-if', w_graph, h/2, { pad_top:pad, pad_bottom:pad/2 }),
+                  //w3_canvas('id-drm-graph-snr', w_graph, h/2, { pad_top:pad, pad_bottom:pad/2, top:h/2 })
+                  w3_canvas('id-drm-graph-if', w_graph, h/2 - pad*2 , { top:pad }),
+                  w3_canvas('id-drm-graph-snr', w_graph, h/2 - pad*2, { top:h/2 + pad })
+               ),
+               w3_canvas('id-drm-panel-1-IQ', w_graph, h, { pad:pad })
             )
          ) +
 
@@ -880,18 +921,26 @@ function drm_desktop_controls_setup(w_graph)
 
 	time_display_setup('drm');
 
-	drm.canvas_graph = w3_el('id-drm-panel-1-graph');
-	drm.canvas_graph.ctx = drm.canvas_graph.getContext("2d");
-   graph_init(drm.canvas_graph, { dBm:0, speed:1, averaging:false });
-	graph_mode('auto');
-	//graph_mode('fixed', 30, -30);
-	graph_clear();
-	//graph_marker(30);
+	drm.canvas_if = w3_el('id-drm-graph-if');
+	drm.canvas_if.ctx = drm.canvas_if.getContext("2d");
+   drm.gr_if = graph_init(drm.canvas_if, { dBm:0, speed:1, averaging:false });
+	graph_mode(drm.gr_if, 'auto');
+	//graph_mode(drm.gr_if, 'fixed', 30, -30);
+	graph_clear(drm.gr_if);
+	//graph_marker(drm.gr_if, 30);
+	
+	drm.canvas_snr = w3_el('id-drm-graph-snr');
+	drm.canvas_snr.ctx = drm.canvas_snr.getContext("2d");
+   drm.gr_snr = graph_init(drm.canvas_snr, { dBm:0, speed:1, averaging:false });
+	graph_mode(drm.gr_snr, 'auto');
+	//graph_mode(drm.gr_snr, 'fixed', 30, -30);
+	graph_clear(drm.gr_snr);
+	//graph_marker(drm.gr_snr, 30);
 	
 	drm.canvas_IQ = w3_el('id-drm-panel-1-IQ');
 	drm.canvas_IQ.ctx = drm.canvas_IQ.getContext("2d");
-	drm.w_IQ = w_graph - pad_graph*2;
-	drm.h_IQ = h - pad_graph*2;
+	drm.w_IQ = w_graph - pad*2;
+	drm.h_IQ = h - pad*2;
 	
 	drm.desktop = 1;
 }
@@ -913,6 +962,7 @@ function drm_controls_setup()
          //console.log('DRM param1 <'+ a +'>');
          var a1 = a.split(':');
          a1 = a1[a1.length-1].toLowerCase();
+         w3_ext_param_array_match_str(drm.display_idx_s, a, function(i) { drm.display_idx = drm.display_idx_si[i]; });
          var r;
          if ((r = w3_ext_param('mobile', a)).match) {
             drm.mobile = 1;
@@ -1002,6 +1052,12 @@ function drm_test(test)
    ext_send('SET test='+ test);
 }
 
+function drm_set_mode(mode)
+{
+   console_log('drm_set_mode', mode);
+   ext_set_mode(mode, null, { no_drm_proc:true });
+}
+
 function drm_stop()
 {
    drm_test(0);
@@ -1014,7 +1070,7 @@ function drm_stop()
       ext_set_passband(drm.saved_passband.low, drm.saved_passband.high);
    if (isDefined(drm.saved_mode)) {
       console.log('drm_stop RESTORE saved_mode='+ drm.saved_mode);
-      ext_set_mode(drm.saved_mode);
+      drm_set_mode(drm.saved_mode);
    }
 }
 
@@ -1022,7 +1078,7 @@ function drm_start()
 {
    drm_test(0);
    drm_run(1);
-   ext_set_mode('drm');
+   drm_set_mode('drm');
    drm.is_stopped = 0;     // for when called by drm_pre_select_cb()
    w3_button_text('id-drm-stop-button', 'Stop', 'w3-pink', 'w3-green');
 }
@@ -1067,9 +1123,9 @@ function drm_test_cb(path, val, first)
    drm_run(0);
    drm_start();
    drm_test(val);
-   ext_set_mode('drm');
+   drm_set_mode('drm');
    w3_show('id-drm-bar-container');
-   graph_annotate('magenta');
+   drm_annotate('magenta');
 }
 
 function drm_svcs_cbox_cb(path, checked, first)
@@ -1177,10 +1233,10 @@ function drm_station(s)
    drm.last_station = s;
    if (s == '') s = '&nbsp;';
    w3_el('id-drm-station').innerHTML = '<b>'+ s +'</b>';
-   graph_annotate('magenta');
+   drm_annotate('magenta');
 }
 
-function drm_environment_changed(changed)
+function DRM_environment_changed(changed)
 {
    // reset all frequency menus when frequency etc. is changed by some other means (direct entry, WF click, etc.)
    // but not for changed.zoom, changed.resize etc.
@@ -1188,9 +1244,7 @@ function drm_environment_changed(changed)
    var mode = ext_get_mode();
    //console.log('DRM ENV drm.freq='+ drm.freq +' dsp_freq='+ dsp_freq);
    if (drm.freq != dsp_freq || mode != 'drm') {
-      for (var i = 0; i < drm.n_menu; i++) {
-         w3_select_value('drm.menu'+ i, -1);
-      }
+      drm_reset_menus();
       drm.menu_sel = '';
       drm_station('');
    }
@@ -1241,12 +1295,12 @@ function DRM_blur()
    console.log('DRM_blur saved_mode='+ drm.saved_mode);
    kiwi_clearInterval(drm.interval);
    kiwi_clearInterval(drm.interval2);
-	drm.active = false;     // NB: must be before ext_set_mode() below to prevent recursion
+	drm.active = false;
    
    drm_stop();
    if (isUndefined(drm.saved_mode) || drm.saved_mode == 'drm') {
       console.log('DRM_blur FORCE iq');
-      ext_set_mode('iq');
+      drm_set_mode('iq');
    }
    drm.locked = 0;
    ext_send('SET lock_clear');
@@ -1304,7 +1358,27 @@ function DRM_help(show)
 // called to display HTML for configuration parameters in admin interface
 function DRM_config_html()
 {
-   ext_config_html(drm, 'DRM', 'DRM', 'DRM configuration');
+   // Let cfg.DRM.nreg_chans retain values > rx_chans if it was set when another configuration was used.
+   // Just clamp the menu value to the current rx_chans;
+   var default_nreg_chans = 3;      // FIXME: should be config param?
+	var nreg_chans = ext_get_cfg_param('DRM.nreg_chans', default_nreg_chans);
+	if (nreg_chans == -1) nreg_chans = default_nreg_chans;   // has never been set
+	//console_log('nreg_chans/rx_chans', nreg_chans, rx_chans);
+	drm.nreg_chans = Math.min(nreg_chans, rx_chans-1);
+	var max_chans = Math.max(4, rx_chans);    // FIXME: "4" should be config param?
+   drm.nreg_chans_u = { 0:'none' };
+   for (var i = 1; i < max_chans; i++)
+      drm.nreg_chans_u[i] = i.toFixed(0);
+   
+   var s =
+      w3_inline_percent('w3-container',
+         w3_div('w3-center',
+            w3_select('', 'Number of non-DRM connections allowed<br>when DRM in use',
+               '', 'DRM.nreg_chans', drm.nreg_chans, drm.nreg_chans_u, 'admin_select_cb')
+         ), 40
+      );
+
+   ext_config_html(drm, 'DRM', 'DRM', 'DRM configuration', s);
 }
 
 // NB: don't forget to strip out our cjson comments (lines beginning with '//')

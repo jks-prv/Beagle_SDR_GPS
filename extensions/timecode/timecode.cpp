@@ -226,7 +226,9 @@ ext_t timecode_ext = {
 	"timecode",
 	timecode_main,
 	timecode_close,
-	timecode_msgs
+	timecode_msgs,
+	EXT_NEW_VERSION,
+	EXT_FLAGS_HEAVY
 };
 
 void timecode_main()

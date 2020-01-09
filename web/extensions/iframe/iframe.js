@@ -76,7 +76,7 @@ function iframe_controls_setup()
             '<iframe src='+ dq(iframe.url) +
                ' style="width:'+ px(iframe.width) +'; height:'+ px(iframe.height) +'; border:0;">' +
             '</iframe>'
-         ),
+         )
       );
 
    ext_panel_show(controls_html, null, null);

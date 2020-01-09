@@ -46,10 +46,10 @@ static void update_build_ctask(void *param)
         bool force_build = (bool) FROM_VOID_PARAM(param);
         if (force_build) {
             #if defined(BUILD_SHORT_MF)
-                status = system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/r*.o; make");
+                status = system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/r*.o; make >>/root/build.log 2>&1");
                 build_normal = false;
             #elif defined(BUILD_SHORT)
-                status = system("cd /root/" REPO_NAME "; rm -f obj_O3/u*.o; make");
+                status = system("cd /root/" REPO_NAME "; rm -f obj_O3/u*.o; make >>/root/build.log 2>&1");
                 build_normal = false;
             #endif
             if (status < 0)
@@ -61,13 +61,15 @@ static void update_build_ctask(void *param)
     #endif
 
 	if (build_normal) {
-		status = system("cd /root/" REPO_NAME "; make git");
+		status = system("cd /root/" REPO_NAME "; make git >>/root/build.log 2>&1");
         if (status < 0)
             child_exit(EXIT_FAILURE);
         if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
             child_exit(WEXITSTATUS(status));
 
-		status = system("cd /root/" REPO_NAME "; make clean_dist; make; make install");
+        // starting with v1.365 the "make clean" below replaced the former "make clean_dist"
+        // so that $(BUILD_DIR)/obj_keep stays intact across updates
+        status = system("cd /root/" REPO_NAME "; make clean; make; make install >>/root/build.log 2>&1");
         if (status < 0)
             child_exit(EXIT_FAILURE);
         if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
@@ -79,7 +81,8 @@ static void update_build_ctask(void *param)
 
 static void curl_makefile_ctask(void *param)
 {
-	int status = system("cd /root/" REPO_NAME "; curl --silent --show-error --ipv4 --connect-timeout 15 https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -o Makefile.1");
+	int status = system("cd /root/" REPO_NAME " ; echo Kiwi build >/root/build.log; date >>/root/build.log; " \
+	    "curl --silent --show-error --ipv4 --connect-timeout 15 https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -o Makefile.1 >>/root/build.log 2>&1");
 
 	if (status < 0)
 	    child_exit(EXIT_FAILURE);
@@ -257,22 +260,40 @@ void check_for_update(update_check_e type, conn_t *conn)
 static bool update_on_startup = true;
 
 // called at the top of each minute
-void schedule_update(int hour, int min)
+void schedule_update(int min)
 {
-	#define UPDATE_SPREAD_HOURS	4	// # hours to spread updates over
+	#define UPDATE_SPREAD_HOURS	5	// # hours to spread updates over
 	#define UPDATE_SPREAD_MIN	(UPDATE_SPREAD_HOURS * 60)
 
-	#define UPDATE_START_HOUR	2	// 2 AM UTC, 2(3) PM NZT(NZDT)
+	#define UPDATE_START_HOUR	1	// 1 AM local time
 	#define UPDATE_END_HOUR		(UPDATE_START_HOUR + UPDATE_SPREAD_HOURS)
+	
+	// relative to local time if timezone has been determined
+    time_t utc = utc_time();
+    time_t local = utc;
+    if (utc_offset != -1 && dst_offset != -1)
+        local += utc_offset + dst_offset;
+    int local_hour;
+    time_hour_min_sec(local, &local_hour);
 
-	bool update = (hour >= UPDATE_START_HOUR && hour < UPDATE_END_HOUR);
+	//#define TEST_UPDATE
+	#ifdef TEST_UPDATE
+        int utc_hour;
+        time_hour_min_sec(utc, &utc_hour);
+	    printf("UPDATE: UTC=%02d:%02d Local=%02d:%02d\n", utc_hour, min, local_hour, min);
+	#endif
+
+	bool update = (local_hour >= UPDATE_START_HOUR && local_hour < UPDATE_END_HOUR);
 	
 	// don't let Kiwis hit github.com all at once!
-	int mins;
 	if (update) {
-		mins = min + (hour - UPDATE_START_HOUR) * 60;
-		//printf("UPDATE: %02d:%02d waiting for %d min = %d min(sn=%d)\n", hour, min,
-		//	mins, serial_number % UPDATE_SPREAD_MIN, serial_number);
+		int mins = min + (local_hour - UPDATE_START_HOUR) * 60;
+		
+		#ifdef TEST_UPDATE
+            printf("UPDATE: %02d:%02d waiting for %d min = %d min(sn=%d)\n", local_hour, min,
+                mins, serial_number % UPDATE_SPREAD_MIN, serial_number);
+        #endif
+        
 		update = update && (mins == (serial_number % UPDATE_SPREAD_MIN));
 		
 		if (update) {

@@ -1,4 +1,4 @@
-[updated 28 May 2018]
+[updated 8 January 2020]
 
 [![KiwiSDR](http://www.kiwisdr.com/ks/Seeed.sample.1.780px.jpg)](http://www.kiwisdr.com/ks/Seeed.sample.1.jpg)
 
@@ -21,7 +21,7 @@ KiwiSDR had a successful [Kickstarter](https://www.kickstarter.com/projects/1575
 
 ### Details
 
-* Listen live: [SDR.hu](https://sdr.hu/?top=kiwi), [kiwisdr.com](http://kiwisdr.com/public), [rx.linkfanel.net](http://rx.linkfanel.net)
+* Listen live: [List](http://kiwisdr.com/public), [Map](http://rx.linkfanel.net)
 * [Project webpage](http://www.kiwisdr.com/)
 * [Operating information: installation, operation, FAQ](http://www.kiwisdr.com/quickstart/)
 * Latest [source code commits](https://github.com/jks-prv/Beagle_SDR_GPS/commits/master)

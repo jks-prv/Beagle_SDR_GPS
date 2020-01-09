@@ -653,6 +653,14 @@ void c2s_sound(void *param)
 			panic("shouldn't return");
 		}
 
+        // set arrived when "ident_user=" received or if too much time has passed without it being received
+        if (!conn->arrived && (((cmd_recv & CMD_FREQ) && timer_sec() > (conn->arrival + 15)) || conn->ident)) {
+            if (!conn->ident)
+			    kiwi_str_redup(&conn->user, "user", (char *) "(no identity)");
+            rx_loguser(conn, LOG_ARRIVED);
+            conn->arrived = TRUE;
+        }
+
 		// don't process any audio data until we've received all necessary commands
 		if (cmd_recv != CMD_ALL) {
 			TaskSleepMsec(100);

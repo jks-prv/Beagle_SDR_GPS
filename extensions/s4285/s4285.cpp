@@ -311,6 +311,8 @@ ext_t s4285_ext = {
 	s4285_main,
 	s4285_close,
 	s4285_msgs,
+	EXT_NEW_VERSION,
+	EXT_FLAGS_HEAVY
 };
 
 void s4285_main()

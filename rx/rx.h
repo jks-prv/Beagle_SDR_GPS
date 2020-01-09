@@ -28,6 +28,7 @@ typedef struct {
 	bool data_enabled;
 	bool busy;
 	conn_t *conn;       // the STREAM_SOUND conn or STREAM_WATERFALL for WF-only connections
+	ext_t *ext;
 } rx_chan_t;
 
 extern rx_chan_t rx_channels[];
@@ -71,7 +72,7 @@ typedef enum { RX_CHAN_ENABLE, RX_CHAN_DISABLE, RX_DATA_ENABLE, RX_CHAN_FREE } r
 void rx_enable(int chan, rx_chan_action_e action);
 
 typedef enum { RX_COUNT_ALL, RX_COUNT_NO_WF_FIRST } rx_free_count_e;
-int rx_chan_free_count(rx_free_count_e flags, int *idx);
+int rx_chan_free_count(rx_free_count_e flags, int *idx = NULL, int *heavy = NULL);
 
 typedef enum { LOG_ARRIVED, LOG_UPDATE, LOG_UPDATE_NC, LOG_LEAVING } logtype_e;
 void rx_loguser(conn_t *c, logtype_e type);

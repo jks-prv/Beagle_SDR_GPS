@@ -89,6 +89,8 @@ ext_t gen_ext = {
 	sig_gen_main,
 	NULL,
 	gen_msgs,
+	EXT_NEW_VERSION,
+	EXT_FLAGS_HEAVY
 };
 
 void sig_gen_main()

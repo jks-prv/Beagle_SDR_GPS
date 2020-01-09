@@ -361,7 +361,7 @@ private:
 void update_gps_info_before()
 {
     int samp_hour=0, samp_min=0;
-    utc_hour_min_sec(&samp_hour, &samp_min, NULL);
+    utc_hour_min_sec(&samp_hour, &samp_min);
 
     if (gps.last_samp_hour != samp_hour) {
         gps.fixes_hour = gps.fixes_hour_incr;
@@ -499,7 +499,7 @@ void update_gps_info_after(GNSSDataForEpoch const& gnssDataForEpoch,
             if (gnssDataForEpoch.prn(i)  == 199 && gnssDataForEpoch.type(i) == QZSS) {
                 gps.qzs_3.az = az;
                 gps.qzs_3.el = el;
-                printf("QZS-3 az=%d el=%d\n", az, el);
+                //printf("QZS-3 az=%d el=%d\n", az, el);
             }
             
         } // next satellite

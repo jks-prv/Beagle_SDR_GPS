@@ -59,11 +59,13 @@ struct mg_connection {
   struct mg_cache {			  // cache info for non-filesystem stored data
     struct stat st;
     int cached;
-    bool if_mod_since;
-      time_t client_mtime;
-      bool not_mod_since;
     bool if_none_match;
       bool etag_match;
+      #define N_ETAG 64
+      char etag_server[N_ETAG], etag_client[N_ETAG];
+    bool if_mod_since;
+      bool not_mod_since;
+      time_t server_mtime, client_mtime;
   } cache_info;
 
   void *connection_param;     // Placeholder for connection-specific data

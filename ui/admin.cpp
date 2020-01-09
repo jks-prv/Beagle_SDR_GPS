@@ -535,12 +535,21 @@ void c2s_admin(void *param)
 
 
 ////////////////////////////////
-// sdr.hu
+// public
 ////////////////////////////////
 
-			i = strcmp(cmd, "SET sdr_hu_update");
+			i = strcmp(cmd, "SET public_update");
 			if (i == 0) {
-				sb = kstr_asprintf(NULL, "{\"reg\":\"%s\"", shmem->sdr_hu_status_str);
+                if (admcfg_bool("kiwisdr_com_register", NULL, CFG_REQUIRED) == false) {
+		            // force switch to short sleep cycle
+		            if (reg_kiwisdr_com_status && reg_kiwisdr_com_tid) {
+                        TaskWakeup(reg_kiwisdr_com_tid, TWF_CANCEL_DEADLINE);
+                    }
+		            reg_kiwisdr_com_status = 0;
+                }
+
+				sb = kstr_asprintf(NULL, "{\"kiwisdr_com\":%d,\"sdr_hu\":\"%s\"",
+				    reg_kiwisdr_com_status, shmem->sdr_hu_status_str);
 				
 				if (gps.StatLat) {
 					latLon_t loc;
@@ -555,7 +564,7 @@ void c2s_admin(void *param)
 						gps.sgnLat, gps.sgnLon, grid6);
 				}
 				sb = kstr_cat(sb, "}");
-				send_msg_encoded(conn, "ADM", "sdr_hu_update", "%s", kstr_sp(sb));
+				send_msg_encoded(conn, "ADM", "public_update", "%s", kstr_sp(sb));
 				kstr_free(sb);
 				continue;
 			}
@@ -800,7 +809,7 @@ void c2s_admin(void *param)
 
             n = strcmp(cmd, "SET gps_az_el_history");
             if (n == 0) {
-                int now; utc_hour_min_sec(NULL, &now, NULL);
+                int now; utc_hour_min_sec(NULL, &now);
                 
                 int az, el;
                 int sat_seen[MAX_SATS], prn_seen[MAX_SATS], samp_seen[AZEL_NSAMP];
@@ -1135,7 +1144,7 @@ void c2s_admin(void *param)
 // extensions
 ////////////////////////////////
 
-            // compute grid from GPS on-demand (similar to "SET sdr_hu_update")
+            // compute grid from GPS on-demand (similar to "SET public_update")
 			i = strcmp(cmd, "ADM wspr_gps_info");
 			if (i == 0) {
 				if (gps.StatLat) {

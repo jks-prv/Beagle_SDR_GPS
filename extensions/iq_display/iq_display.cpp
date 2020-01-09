@@ -297,6 +297,8 @@ ext_t iq_display_ext = {
     iq_display_main,
     iq_display_close,
     iq_display_msgs,
+	EXT_NEW_VERSION,
+	EXT_FLAGS_HEAVY
 };
 
 void iq_display_main()

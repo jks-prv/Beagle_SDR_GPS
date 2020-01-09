@@ -98,7 +98,8 @@ document.onreadystatechange = function() {
 			// done as an AJAX because needed long before any websocket available
 			kiwi_ajax("/VER", 'kiwi_version_cb');
 		} else {
-			kiwi_bodyonload('');
+		   if (typeof(kiwi_bodyonload) != 'undefined')
+			   kiwi_bodyonload('');
 		}
 	}
 }
@@ -356,7 +357,23 @@ function _change(v)
 
 function console_log()
 {
-   //console.log('console_log: '+ typeof(arguments));
+   //console.log('console_log_fqn: '+ typeof(arguments));
+   //console.log(arguments);
+   var s;
+   for (var i = 0; i < arguments.length; i++) {
+      var arg = arguments[i];
+      if (i == 0) {
+         s = arg +': ';
+      } else {
+         s += 'arg'+ (i-1) +'='+ arg +' ';
+      }
+   }
+   console.log('CONSOLE_LOG '+ s);
+}
+
+function console_log_fqn()
+{
+   //console.log('console_log_fqn: '+ typeof(arguments));
    //console.log(arguments);
    var s;
    for (var i = 0; i < arguments.length; i++) {
@@ -375,7 +392,7 @@ function console_log()
          s += name +'='+ val +' ';
       }
    }
-   console.log(s);
+   console.log('FQN '+ s);
 }
 
 // console log via a timeout for routines that are realtime critical (e.g. audio on_process() routines)

@@ -100,9 +100,9 @@ void rx_enable(int chan, rx_chan_action_e action)
 	#endif
 }
 
-int rx_chan_free_count(rx_free_count_e flags, int *idx)
+int rx_chan_free_count(rx_free_count_e flags, int *idx, int *heavy)
 {
-	int i, free_cnt = 0, free_idx = -1;
+	int i, free_cnt = 0, free_idx = -1, heavy_cnt = 0;
 	rx_chan_t *rx;
 
     // When configuration has a limited number of channels with waterfalls
@@ -110,32 +110,27 @@ int rx_chan_free_count(rx_free_count_e flags, int *idx)
     // Note that we correctly detect the WF-only use of kiwirecorder
     // (e.g. SNR-measuring applications)
 
+    #define RX_CHAN_FREE_COUNT() { \
+        rx = &rx_channels[i]; \
+        if (rx->busy) { \
+            /*printf("rx_chan_free_count rx%d: ext=%p flags=0x%x\n", i, rx->ext, rx->ext? rx->ext->flags : 0xffffffff);*/ \
+            if (rx->ext && (rx->ext->flags & EXT_FLAGS_HEAVY)) \
+                heavy_cnt++; \
+        } else { \
+            free_cnt++; \
+            if (free_idx == -1) free_idx = i; \
+        } \
+    }
+
     if (flags == RX_COUNT_NO_WF_FIRST && wf_chans < rx_chans) {
-        for (i = wf_chans; i < rx_chans; i++) {
-            rx = &rx_channels[i];
-            if (!rx->busy) {
-                free_cnt++;
-                if (free_idx == -1) free_idx = i;
-            }
-        }
-        for (i = 0; i < wf_chans; i++) {
-            rx = &rx_channels[i];
-            if (!rx->busy) {
-                free_cnt++;
-                if (free_idx == -1) free_idx = i;
-            }
-        }
+        for (i = wf_chans; i < rx_chans; i++) RX_CHAN_FREE_COUNT();
+        for (i = 0; i < wf_chans; i++) RX_CHAN_FREE_COUNT();
     } else {
-        for (i = 0; i < rx_chans; i++) {
-            rx = &rx_channels[i];
-            if (!rx->busy) {
-                free_cnt++;
-                if (free_idx == -1) free_idx = i;
-            }
-        }
+        for (i = 0; i < rx_chans; i++) RX_CHAN_FREE_COUNT();
     }
 	
 	if (idx != NULL) *idx = free_idx;
+	if (heavy != NULL) *heavy = heavy_cnt;
 	return free_cnt;
 }
 
@@ -293,7 +288,8 @@ void rx_loguser(conn_t *c, logtype_e type)
 		clprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq_offset,
 			kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom,
 			c->ext? c->ext->name : "", c->ext? " ":"",
-			c->user, c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip, c->geo? " ":"", c->geo? c->geo:"", s);
+			c->user? c->user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
+			c->geo? " ":"", c->geo? c->geo:"", s);
 	}
 	
 	// we don't do anything with LOG_UPDATE and LOG_UPDATE_NC at present
@@ -318,6 +314,11 @@ void rx_server_remove(conn_t *c)
 	free(c->dx_filter_notes);
     if (c->dx_has_preg_ident) { regfree(&c->dx_preg_ident); c->dx_has_preg_ident = false; }
     if (c->dx_has_preg_notes) { regfree(&c->dx_preg_notes); c->dx_has_preg_notes = false; }
+    
+    if (!is_BBAI && c->is_locked) {
+        //cprintf(c, "DRM rx_server_remove: global is_locked = 0\n");
+        is_locked = 0;
+    }
 	
 	int task = c->task;
 	conn_init(c);
@@ -499,7 +500,9 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	}
 #endif
 
-	// determine real client ip if proxied
+	// iptables will stop regular connection attempts from a blacklisted ip.
+	// But when proxied we need to check the forwarded ip address.
+	// Note that this code always sets remote_ip[] as a side-effect for later use (the real client ip).
 	char remote_ip[NET_ADDRSTRLEN];
     if (check_if_forwarded("CONN", mc, remote_ip) && check_ip_blacklist(remote_ip, true))
         return NULL;
@@ -634,24 +637,27 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	c->other = cother;
 
 	if (snd_or_wf) {
-		int rx;
+		int rx, heavy;
 		if (!cother) {
 		    rx_free_count_e flags = ((isKiwi_UI || isWF_conn) && !isNo_WF)? RX_COUNT_ALL : RX_COUNT_NO_WF_FIRST;
-			int nch_inuse = rx_chans - rx_chan_free_count(flags, &rx);
-            //printf("### %s cother=%p isKiwi_UI=%d isWF_conn=%d isNo_WF=%d inuse=%d/%d use_rx=%d locked=%d %s\n",
-            //    st->uri, cother, isKiwi_UI, isWF_conn, isNo_WF, nch_inuse, rx_chans, rx, is_locked,
+			int inuse = rx_chans - rx_chan_free_count(flags, &rx, &heavy);
+            //printf("%s cother=%p isKiwi_UI=%d isWF_conn=%d isNo_WF=%d inuse=%d/%d use_rx=%d heavy=%d locked=%d %s\n",
+            //    st->uri, cother, isKiwi_UI, isWF_conn, isNo_WF, inuse, rx_chans, rx, heavy, is_locked,
             //    (flags == RX_COUNT_ALL)? "RX_COUNT_ALL" : "RX_COUNT_NO_WF_FIRST");
             
             if (is_locked) {
-                if (nch_inuse == 0) {
-                    printf("note: locked but no channels in use\n");
+                if (inuse == 0) {
+                    printf("DRM note: locked but no channels in use?\n");
                     is_locked = 0;
                 } else {
-                    printf("(locked for exclusive use %s)\n", st->uri);
-                    send_msg_mc(mc, SM_NO_DEBUG, "MSG exclusive_use");
-                    mc->connection_param = NULL;
-                    conn_init(c);
-                    return NULL;
+                    printf("DRM nreg_chans=%d inuse=%d heavy=%d (is_locked=1)\n", drm_nreg_chans, inuse, heavy);
+                    if (inuse > drm_nreg_chans) {
+                        printf("DRM (locked for exclusive use %s)\n", st->uri);
+                        send_msg_mc(mc, SM_NO_DEBUG, "MSG exclusive_use");
+                        mc->connection_param = NULL;
+                        conn_init(c);
+                        return NULL;
+                    }
                 }
             }
 

@@ -510,7 +510,7 @@ function fsk_controls_setup()
 				
             w3_col_percent('',
                w3_div('id-fsk-station w3-text-css-yellow', '&nbsp;'), 50,
-               w3_div('', 'Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">report</a> new stations for menus.'), 50
+               '', 50
             ),
 
 				w3_col_percent('',

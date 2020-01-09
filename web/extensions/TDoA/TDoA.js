@@ -2527,7 +2527,7 @@ function TDoA_config_html()
                'identifier on a map pin and in the first column of the TDoA extension control panel (when selected). ' +
                '<br><br>You can customize that identifier by setting this field. By default the identifier will be ' +
                'one of two items. Either what appears to be a ham callsign in the the "name" field on the ' +
-               'admin page sdr.hu tab or the grid square computed from your Kiwis lat/lon.'
+               'admin page Public tab or the grid square computed from your Kiwis lat/lon.'
             )
          ), 40,
 

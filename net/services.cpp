@@ -241,10 +241,10 @@ static void sec_CK(void *param)
             if (ddns.serno != 0) eeprom_write(SERNO_WRITE, ddns.serno);
         }
 	
-        bool sdr_hu_reg;
-        sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
+        bool kiwisdr_com_reg = (admcfg_bool("kiwisdr_com_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
+        bool sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
 
-        if (sdr_hu_reg) {
+        if (kiwisdr_com_reg || sdr_hu_reg) {
             const char *server_url;
             server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
             // proxy always uses port 8073
@@ -549,12 +549,13 @@ static void dyn_DNS(void *param)
     DNS_lookup("sdr.hu", &net.ips_sdr_hu, N_IPS, SDR_HU_PUBLIC_IP);
     DNS_lookup("kiwisdr.com", &net.ips_kiwisdr_com, N_IPS, KIWISDR_COM_PUBLIC_IP);
 
-    bool reg_sdr_hu = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);
+    bool kiwisdr_com_reg = (admcfg_bool("kiwisdr_com_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
+    bool sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);
     n = DNS_lookup("public.kiwisdr.com", &ddns.pub_ips, N_IPS, KIWISDR_COM_PUBLIC_IP);
     lprintf("SERVER-POOL: %d ip addresses for public.kiwisdr.com\n", n);
     for (i = 0; i < n; i++) {
         lprintf("SERVER-POOL: #%d %s\n", i+1, ddns.pub_ips.ip_list[i]);
-        if (ddns.pub_valid && strcmp(ddns.ip_pub, ddns.pub_ips.ip_list[i]) == 0 && ddns.port_ext == 8073 && reg_sdr_hu)
+        if (ddns.pub_valid && strcmp(ddns.ip_pub, ddns.pub_ips.ip_list[i]) == 0 && ddns.port_ext == 8073 && (kiwisdr_com_reg || sdr_hu_reg))
             ddns.pub_server = true;
     }
     if (ddns.pub_server)
@@ -763,9 +764,9 @@ static void reg_SDR_hu(void *param)
         admcfg_string_free(api_key);
 
 		bool server_enabled = (!down && admcfg_bool("server_enabled", NULL, CFG_REQUIRED) == true);
-        bool sdr_hu_register = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);
+        bool sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);
 
-        if (server_enabled && sdr_hu_register) {
+        if (server_enabled && sdr_hu_reg) {
             if (sdr_hu_debug)
                 printf("%s\n", cmd_p);
 
@@ -840,21 +841,23 @@ static void reg_kiwisdr_com(void *param)
             email, add_nat, version_maj, version_min, debian_maj, debian_min, timer_sec());
     
 		bool server_enabled = (!down && admcfg_bool("server_enabled", NULL, CFG_REQUIRED) == true);
-        bool sdr_hu_register = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);
+        bool kiwisdr_com_reg = (admcfg_bool("kiwisdr_com_register", NULL, CFG_REQUIRED) == true);
 
-        if (server_enabled && sdr_hu_register) {
+        if (server_enabled && kiwisdr_com_reg) {
             if (sdr_hu_debug)
                 printf("%s\n", cmd_p);
 
             retrytime_mins = RETRYTIME_KIWISDR_COM;
 		    int status = non_blocking_cmd_func_forall("kiwi.register", cmd_p, _reg_kiwisdr_com, retrytime_mins, POLL_MSEC(1000));
-		    int exit_status;
-		    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
-		        reg_kiwisdr_com_status = exit_status;
-                if (sdr_hu_debug)
-		            printf("reg_kiwisdr_com reg_kiwisdr_com_status=0x%x\n", reg_kiwisdr_com_status);
+		    if (WIFEXITED(status)) {
+		        int exit_status = WEXITSTATUS(status);
+                reg_kiwisdr_com_status = exit_status? exit_status : 1;      // for now just indicate that it completed
+                if (sdr_hu_debug) {
+                    printf("reg_kiwisdr_com reg_kiwisdr_com_status=0x%x\n", reg_kiwisdr_com_status);
+                }
 		    }
 		} else {
+		    reg_kiwisdr_com_status = 0;
 		    retrytime_mins = RETRYTIME_FAIL;    // check frequently for registration to be re-enabled
 		}
 
@@ -864,6 +867,7 @@ static void reg_kiwisdr_com(void *param)
         admcfg_string_free(api_key);
         free(email);
         
+        if (sdr_hu_debug) printf("reg_kiwisdr_com TaskSleepSec(min=%d)\n", retrytime_mins);
 		TaskSleepSec(MINUTES_TO_SEC(retrytime_mins));
 	}
 }

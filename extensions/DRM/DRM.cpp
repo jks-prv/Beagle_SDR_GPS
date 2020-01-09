@@ -100,28 +100,33 @@ bool DRM_msgs(char *msg, int rx_chan)
     }
 
     if (strcmp(msg, "SET lock_set") == 0) {
-        int rv;
+        int rv, heavy = 0;
+        int inuse = rx_chans - rx_chan_free_count(RX_COUNT_ALL, NULL, &heavy);
+        bool err;
+        bool DRM_enable = cfg_bool("DRM.enable", &err, CFG_OPTIONAL);
+		if (err) DRM_enable = true;
+		conn_t *conn = rx_channels[rx_chan].conn;
+
         if (snd_rate != SND_RATE_4CH) {
             rv = -1;
+        } else
+        if (!DRM_enable && !conn->isLocal) {
+            rv = -2;    // prevent attempt to bypass the javascript kiwi.is_local check
         } else {
             if (is_BBAI) {
                 is_locked = (rx_chan < drm_info.drm_chan)? 0 : drm_info.drm_chan;
+                printf("DRM BBAI lock_set inuse=%d heavy=%d locked=%d\n", inuse, heavy, is_locked);
             } else {
-                int inuse = rx_chans - rx_chan_free_count(RX_COUNT_ALL, NULL);
-                is_locked = (inuse == 1)? 1:0;
-                printf("DRM lock_set inuse=%d locked=%d\n", inuse, is_locked);
+                // inuse-1 to not count DRM channel
+                is_locked = ((inuse-1) <= drm_nreg_chans && heavy == 0)? 1:0;
+                if (conn->is_locked)
+                    printf("DRM global is_locked was already set?\n");
+                if (is_locked) conn->is_locked = true;
+                printf("DRM BBG/B lock_set inuse=%d(%d) heavy=%d locked=%d\n", inuse, inuse-1, heavy, is_locked);
             }
             rv = is_locked;
-            //#define DRM_TEST_MULTI
-            #ifdef DRM_TEST_MULTI
-                //jks test BBG/B 2 DRM
-                if (!is_BBAI) {
-                    is_locked = 0;
-                    rv = 1;
-                }
-            #endif
         }
-		ext_send_msg(rx_chan, false, "EXT locked=%d", rv);
+		ext_send_msg(rx_chan, false, "EXT inuse=%d heavy=%d locked=%d", inuse, heavy, rv);
         return true;    
     }
     
@@ -251,19 +256,17 @@ ext_t DRM_ext = {
 	DRM_main,
 	DRM_close,
 	DRM_msgs,
+	EXT_NEW_VERSION,
+	EXT_NO_FLAGS,       // don't set EXT_FLAGS_HEAVY for ourselves
 	DRM_poll
 };
 
 void DRM_main()
 {
     drm_t *d;
-    #ifdef DRM_TEST_MULTI
-        drm_info.drm_chan = is_BBAI? MAX_DRM_RX : 2;        //jks test BBG/B 2 DRM
-    #else
-        drm_info.drm_chan = is_BBAI? MAX_DRM_RX : 1;
-    #endif
+    drm_info.drm_chan = DRM_MAX_RX;
     
-	for (int i=0; i < MAX_DRM_RX; i++) {
+	for (int i=0; i < DRM_MAX_RX; i++) {
         d = &DRM_SHMEM->drm[i];
 		memset(d, 0, sizeof(drm_t));
 		d->init = true;
