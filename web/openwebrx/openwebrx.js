@@ -246,7 +246,7 @@ function kiwi_main()
 	smeter_init();
 	time_display_setup('id-topbar-right-container');
 	
-	window.setTimeout(function() {window.setInterval(send_keepalive, 5000);}, 5000);
+	window.setInterval(send_keepalive, 5000);
 	window.addEventListener("resize", openwebrx_resize);
         
    if (param_nocache) {
@@ -6446,11 +6446,7 @@ function panels_setup()
 	   function(mba, i) {
 	      var ms = mba.s[0];
 	      var mslc = ms.toLowerCase();
-	      
-	      // kiwi.is_BBAI not valid yet -- will fix button disable when it is
-	      //console.log('mode_buttons setup is_BBAI='+ kiwi.is_BBAI);
-	      //var disabled = (mba.dis || mslc == 'drm');
-	      var disabled = mba.dis;
+	      var disabled = mba.dis || (mslc == 'drm' && !kiwi.DRM_enable);
 	      var attr = disabled? '' : ' onclick="mode_button(event, this)"';
 	      attr += ' onmouseover="mode_over(event, this)"';
 	      s += w3_div('id-button-'+ mslc + ' id-mode-'+ mslc.substr(0,2) +
@@ -6667,7 +6663,7 @@ function panels_setup()
 			w3_col_percent('w3-valign/class-slider',
 				w3_div('label-decay w3-show-inline-block', 'Decay'), 18,
 				'<input id="input-decay" type="range" min="20" max="5000" value="'+ decay +'" step="1" onchange="setDecay(1,this.value)" oninput="setDecay(0,this.value)">', 52,
-				w3_div('field-decay w3-show-inline-block', decay.toString()) +' mS', 30
+				w3_div('field-decay w3-show-inline-block', decay.toString()) +' msec', 30
 			)
 		);
 	setup_agc(toggle_e.FROM_COOKIE | toggle_e.SET);
@@ -6720,8 +6716,6 @@ function panels_setup()
 		'<span style="font-size: 15pt; font-weight: bold;">Welcome!</span>' +
 		'&nbsp;&nbsp;&nbsp;Project website: <a href="http://kiwisdr.com" target="_blank">kiwisdr.com</a>&nbsp;&nbsp;&nbsp;&nbsp;Here are some tips:' +
 		'<ul style="padding-left: 12px;">' +
-		'<li> Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">email us</a>' +
-			'if your browser is having problems with the SDR. </li>' +
 		'<li> Windows: Firefox, Chrome & Edge work; IE does not work. </li>' +
 		'<li> Mac & Linux: Safari, Firefox, Chrome & Opera should work fine. </li>' +
 		'<li> Open and close the panels by using the circled arrows at the top right corner. </li>' +
@@ -6761,7 +6755,6 @@ function panels_setup()
 	      w3_text(optbar_prefix_color, 'Links'),
 	      w3_text('',
             (admin_email? '<a href="javascript:sendmail(\''+ admin_email +'\');">Owner/Admin</a> | ' : '') +
-            //'<a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">KiwiSDR</a> ' +
             '<a href="http://kiwisdr.com" target="_blank">KiwiSDR</a> ' +
             '| <a href="http://valentfx.com/vanilla/discussions" target="_blank">Forum</a> ' +
             '| <a href="https://kiwiirc.com/client/chat.freenode.net/#kiwisdr" target="_blank">Chat</a> '
@@ -6778,23 +6771,6 @@ function panels_setup()
 		w3_div('id-status-stats-xfer');
 
 	setTimeout(function() { setInterval(status_periodic, 5000); }, 1000);
-
-   /*
-	w3_el_softfail("id-msgs-inner").innerHTML =
-		w3_div('w3-margin-B-5',
-		   '<strong> Contacts: </strong>' +
-		   (admin_email? '<a href="javascript:sendmail(\''+ admin_email +'\');"><strong>Owner/Admin</strong></a>, ' : '') +
-		   '<a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');"><strong>KiwiSDR</strong></a>, ' +
-		   '<a href="javascript:sendmail(\'kb4jonCpgq-kv\');"><strong>OpenWebRX</strong></a> ' +
-		   '| <a href="https://kiwiirc.com/client/chat.freenode.net/#kiwisdr" target="_blank"><strong>Chat</strong></a> ' +
-		   w3_div('id-problems w3-show-inline')
-		) +
-		w3_div('id-msg-status') +
-		w3_div('id-msg-config') +
-		w3_div('id-msg-gps') +
-		w3_div('id-msg-audio') +
-		w3_div('id-debugdiv');
-	*/
 }
 
 
@@ -7737,10 +7713,6 @@ function mode_over(evt, el)
    
       case 'sam':
          el.title = 'not yet implemented';
-         break;
-      
-      case 'drm':
-         //if (kiwi.is_BBAI != 1) el.title = 'only when using Beaglebone-AI';
          break;
       
       default:

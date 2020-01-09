@@ -340,7 +340,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			
 			if (!type_prot) {       // consider only if protected mode not requested
 			
-				int rx_free = rx_chan_free_count(RX_COUNT_ALL, NULL);
+				int rx_free = rx_chan_free_count(RX_COUNT_ALL);
 				
 				// Allow with no password if minimum number of channels needing password remains.
 				// This minimum number is reduced by the number of already privileged connections.
@@ -985,11 +985,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 		char utc_s[32], local_s[32];
 		time_t utc = utc_time();
-		strncpy(utc_s, &utc_ctime()[11], 5);
+		strncpy(utc_s, &utc_ctime_static()[11], 5);
 		utc_s[5] = '\0';
 		if (utc_offset != -1 && dst_offset != -1) {
 			time_t local = utc + utc_offset + dst_offset;
-			strncpy(local_s, &var_ctime(&local)[11], 5);
+			strncpy(local_s, &var_ctime_static(&local)[11], 5);
 			local_s[5] = '\0';
 		} else {
 			strcpy(local_s, "");
@@ -1035,6 +1035,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		
 		// else no name sent, but ip didn't change: do nothing
 		
+		//cprintf(conn, "SET ident_user=<%s> noname=%d setUserIP=%d\n", ident_user_m, noname, setUserIP);
+		
 		if (setUserIP) {
 			kiwi_str_redup(&conn->user, "user", conn->remote_ip);
 			conn->isUserIP = TRUE;
@@ -1056,12 +1058,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			// 	conn->remote_ip, conn->remote_port, setUserIP, noname, conn->user, cmd);
 		}
 		
-		//clprintf(conn, "SND user: <%s>\n", cmd);
-		if (!conn->arrived) {
-			rx_loguser(conn, LOG_ARRIVED);
-			conn->arrived = TRUE;
-		}
-		
 		// Can only distinguish the TDoA service at the time the kiwirecorder identifies itself.
 		// If a match and the limit is exceeded then kick the connection off immediately.
 		// This identification is typically sent right after initial connection is made.
@@ -1078,6 +1074,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		}
 
 		free(ident_user_m);
+		conn->ident = true;
 		return true;
 	}
 
@@ -1109,7 +1106,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	n = sscanf(cmd, "SET geojson=%256ms", &geojson_m);
 	if (n == 1) {
 		kiwi_str_decode_inplace(geojson_m);
-		//clprintf(conn, "SND geo: <%s>\n", geojson_m);
+		//clprintf(conn, "SET geojson<%s>\n", geojson_m);
 		free(geojson_m);
 		return true;
 	}
@@ -1118,7 +1115,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	n = sscanf(cmd, "SET browser=%256ms", &browser_m);
 	if (n == 1) {
 		kiwi_str_decode_inplace(browser_m);
-		//clprintf(conn, "SND browser: <%s>\n", browser_m);
+		//clprintf(conn, "SET browser=<%s>\n", browser_m);
 		free(browser_m);
 		return true;
 	}

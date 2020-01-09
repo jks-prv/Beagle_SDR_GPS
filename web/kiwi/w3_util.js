@@ -222,7 +222,7 @@ function w3_call(func, arg0, arg1, arg2, arg3)
 {
    var rv = undefined;
 
-   if (func == null || func == undefined) return rv;
+   if (!isArg(func)) return rv;
    
 	try {
 	   if (isString(func)) {
@@ -902,6 +902,7 @@ function w3_set_decoded_value(path, val)
 function w3_get_value(path)
 {
 	var el = w3_el(path);
+	if (!el) return null;
 	return el.value;
 }
 
@@ -2537,18 +2538,25 @@ function w3_quarter(prop_row, prop_col, left, middleL, middleR, right)
 
 function w3_canvas(psa, w, h, opt)
 {
-   var pad = w3_opt(opt, 'padding', 0);
-   var left = w3_opt(opt, 'left', '');
-   if (left != '') left = sprintf(' left:%dpx;', left);
-   var right = w3_opt(opt, 'right', '');
-   if (right != '') right = sprintf(' right:%dpx;', right);
-   var padding = '';
+   var s = '';
+   var pad = w3_opt(opt, 'pad', null);
+   var pad_top = w3_opt(opt, 'pad_top', 0);
+   var pad_bot = w3_opt(opt, 'pad_bottom', 0);
+   if (!isNull(pad)) pad_top = pad_bot = pad;
+   pad = pad_top + pad_bot;
    if (pad) {
-      w -= pad*2; h -= pad*2;
-      padding = sprintf(' padding:%dpx;', pad);
+      //w -= pad*2; h -= pad*2;
+      s += sprintf(' padding-top:%dpx; padding-bottom:%dpx;', pad_top, pad_bot);
    }
-   var p = w3_psa(psa, null, 'position:absolute;'+ left + right + padding, sprintf('width="%d" height="%d"', w, h));
-	var s = '<canvas '+ p +'></canvas>';
+
+   var left = w3_opt(opt, 'left', '');
+   if (left != '') s += sprintf(' left:%dpx;', left);
+   var right = w3_opt(opt, 'right', '');
+   if (right != '') s += sprintf(' right:%dpx;', right);
+   var top = w3_opt(opt, 'top', '');
+   if (top != '') s += sprintf(' top:%dpx;', top);
+
+   s = '<canvas '+ w3_psa(psa, null, 'position:absolute;'+ s, sprintf('width="%d" height="%d"', w, h)) +'></canvas>';
 	//console.log(s);
 	return s;
 }

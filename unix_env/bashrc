@@ -216,6 +216,7 @@ alias wdt="strings /boot/dtbs/${d_sys}/${f_dtb} | grep '.dts'"
 alias cdi2c="cd /sys/bus/i2c/devices"
 alias ver="/opt/scripts/tools/version.sh"
 alias ht="htop"
+alias io="iotop -obtqqq"
 alias kai="function _kai () { ../build/kiwi.bin -debian 8 -use_spidev 1 \$* ; } ; _kai"
 alias reb="shutdown -r now"
 # cpu

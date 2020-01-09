@@ -66,7 +66,7 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns=1, debian_ver,
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
 	color_map, print_stats, ecpu_cmds, ecpu_tcmds, use_spidev, debian_maj, debian_min,
-	gps_debug, gps_var, gps_lo_gain, gps_cg_gain, use_foptim, is_locked;
+	gps_debug, gps_var, gps_lo_gain, gps_cg_gain, use_foptim, is_locked, drm_nreg_chans;
 
 u4_t ov_mask, snd_intr_usec;
 

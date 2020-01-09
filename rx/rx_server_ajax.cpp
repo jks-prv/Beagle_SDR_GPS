@@ -84,9 +84,14 @@ char *rx_server_ajax(struct mg_connection *mc)
 		return NULL;
 	}
 	
+	// iptables will stop regular connection attempts from a blacklisted ip.
+	// But when proxied we need to check the forwarded ip address.
+	// Note that this code always sets remote_ip[] as a side-effect for later use (the real client ip).
 	char remote_ip[NET_ADDRSTRLEN];
-    if (check_if_forwarded("AJAX", mc, remote_ip) && check_ip_blacklist(remote_ip))
+    if (check_if_forwarded("AJAX", mc, remote_ip) && check_ip_blacklist(remote_ip)) {
+		lprintf("AJAX: IP BLACKLISTED: url=<%s> qs=<%s>\n", uri, mc->query_string);
     	return NULL;
+    }
 
 	switch (st->type) {
 	

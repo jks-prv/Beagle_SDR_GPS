@@ -33,7 +33,7 @@ Boston, MA  02110-1301, USA.
  #include "DRM.h"
 #else
  #define DRM_SHMEM_DISABLE
- #define MAX_DRM_RX 0
+ #define DRM_MAX_RX 0
 #endif
 
 #include <signal.h>
@@ -72,8 +72,8 @@ extern log_save_t *log_save_p;
 #define SIG_IPC_WF      (SIG_IPC_SPI + 1)
 #define SIG_IPC_WSPR    (SIG_IPC_WF + 1)
 #define SIG_IPC_DRM     (SIG_IPC_WSPR + MAX_RX_CHANS)
-#define SIG_BACKTRACE   (SIG_IPC_DRM + MAX_DRM_RX)
-#define SIG_MAX_USED    (1 + 1 + MAX_RX_CHANS + MAX_DRM_RX + 1)      // done this way because SIGRTMIN is not a constant
+#define SIG_BACKTRACE   (SIG_IPC_DRM + DRM_MAX_RX)
+#define SIG_MAX_USED    (1 + 1 + MAX_RX_CHANS + DRM_MAX_RX + 1)      // done this way because SIGRTMIN is not a constant
 
 #define SIG2IPC(sig)    ((sig) - SIG_IPC_MIN)
 

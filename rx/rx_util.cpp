@@ -35,6 +35,7 @@ Boston, MA  02110-1301, USA.
 #include "wspr.h"
 #include "ext_int.h"
 #include "shmem.h"
+#include "DRM.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -193,6 +194,9 @@ void update_vars_from_config()
         dc_off_msg = true;
     }
 
+    // DON'T use cfg_default_int() here because "DRM.nreg_chans" is a two-level we can't init from C code
+    drm_nreg_chans = cfg_int("DRM.nreg_chans", &err, CFG_OPTIONAL);
+    if (err) drm_nreg_chans = DRM_NREG_CHANS_DEFAULT;
 
     S_meter_cal = cfg_default_int("S_meter_cal", SMETER_CALIBRATION_DEFAULT, &update_cfg);
     cfg_default_int("waterfall_cal", WATERFALL_CALIBRATION_DEFAULT, &update_cfg);
@@ -295,6 +299,7 @@ void update_vars_from_config()
     admcfg_default_bool("no_dup_ip", false, &update_admcfg);
     admcfg_default_bool("my_kiwi", true, &update_admcfg);
     admcfg_default_bool("onetime_password_check", false, &update_admcfg);
+    admcfg_default_bool("kiwisdr_com_register", false, &update_admcfg);
 
     // historical uses of options parameter:
     //int new_find_local = admcfg_int("options", NULL, CFG_REQUIRED) & 1;
@@ -594,7 +599,7 @@ void webserver_collect_print_stats(int print)
 	http_bytes = 0;
 
 	// on the hour: report number of connected users & schedule updates
-	int hour, min; utc_hour_min_sec(&hour, &min, NULL);
+	int hour, min; utc_hour_min_sec(&hour, &min);
 	
 	if (hour != last_hour) {
 		if (print) lprintf("(%d %s)\n", nusers, (nusers==1)? "user":"users");
@@ -602,7 +607,7 @@ void webserver_collect_print_stats(int print)
 	}
 
 	if (min != last_min) {
-		schedule_update(hour, min);
+		schedule_update(min);
 		last_min = min;
 	}
 	
@@ -620,7 +625,7 @@ char *rx_users(bool include_ip)
         n = 0;
         if (rx->busy) {
             conn_t *c = rx->conn;
-            if (c && c->valid && c->arrived && c->user != NULL) {
+            if (c && c->valid && c->arrived) {
                 assert(c->type == STREAM_SOUND || c->type == STREAM_WATERFALL);
 
                 // connected time
@@ -672,7 +677,7 @@ char *rx_users(bool include_ip)
                 u4_t r_min = t % 60; t /= 60;
                 u4_t r_hr = t;
 
-                char *user = c->isUserIP? NULL : kiwi_str_encode(c->user);
+                char *user = (c->isUserIP || !c->user)? NULL : kiwi_str_encode(c->user);
                 char *geo = c->geo? kiwi_str_encode(c->geo) : NULL;
                 char *ext = ext_users[i].ext? kiwi_str_encode((char *) ext_users[i].ext->name) : NULL;
                 const char *ip = include_ip? c->remote_ip : "";

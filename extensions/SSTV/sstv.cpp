@@ -270,7 +270,9 @@ ext_t sstv_ext = {
 	"SSTV",
 	SSTV_main,
 	sstv_close,
-	sstv_msgs
+	sstv_msgs,
+	EXT_NEW_VERSION,
+	EXT_FLAGS_HEAVY
 };
 
 void SSTV_main() {

@@ -98,7 +98,8 @@ document.onreadystatechange = function() {
 			// done as an AJAX because needed long before any websocket available
 			kiwi_ajax("/VER", 'kiwi_version_cb');
 		} else {
-			kiwi_bodyonload('');
+		   if (typeof(kiwi_bodyonload) != 'undefined')
+			   kiwi_bodyonload('');
 		}
 	}
 }
@@ -354,6 +355,46 @@ function _change(v)
    return (!_nochange(v) && !_default(v));
 }
 
+function console_log()
+{
+   //console.log('console_log_fqn: '+ typeof(arguments));
+   //console.log(arguments);
+   var s;
+   for (var i = 0; i < arguments.length; i++) {
+      var arg = arguments[i];
+      if (i == 0) {
+         s = arg +': ';
+      } else {
+         s += 'arg'+ (i-1) +'='+ arg +' ';
+      }
+   }
+   console.log('CONSOLE_LOG '+ s);
+}
+
+function console_log_fqn()
+{
+   //console.log('console_log_fqn: '+ typeof(arguments));
+   //console.log(arguments);
+   var s;
+   for (var i = 0; i < arguments.length; i++) {
+      var arg = arguments[i];
+      if (i == 0) {
+         s = arg +': ';
+      } else {
+         var val;
+         try {
+            val = getVarFromString(arg);
+         } catch(ex) {
+            val = '[not defined]';
+         }
+         var lio = arg.lastIndexOf('.');
+         var name = (lio == -1)? arg : arg.substr(lio+1);
+         s += name +'='+ val +' ';
+      }
+   }
+   console.log('FQN '+ s);
+}
+
 // console log via a timeout for routines that are realtime critical (e.g. audio on_process() routines)
 function kiwi_log(s)
 {
@@ -459,9 +500,11 @@ function html(id_or_name)
 
 function px(num)
 {
+   if (num == '') return '0';
    if (isNaN(num)) {
       console.log('px num='+ num);
       kiwi_trace();
+      return '0';
    }
 	return num.toFixed(0) +'px';
 }
@@ -788,7 +831,6 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
          if (isString(callback))
             w3_call(callback, obj, cb_param);
 			ajax.abort();
-			delete ajax;
 		   delete ajax_requests[id];
 		}, Math.abs(timeout));
 	}
@@ -884,7 +926,6 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
       }
 		
 		ajax.abort();
-		delete ajax;
 		delete ajax_requests[id];
 	}
 

@@ -44,12 +44,19 @@ typedef void (*ext_receive_FFT_samps_t)(int rx_chan, int ch, int ratio, int ns_o
 typedef void (*ext_receive_S_meter_t)(int rx_chan, float S_meter_dBm);
 typedef void (*ext_poll_t)(int rx_chan);
 
+#define EXT_NEW_VERSION     0xcafebeef
+#define EXT_NO_FLAGS        0x00
+#define EXT_FLAGS_HEAVY     0x01
+
 // used by extension server-part to describe itself
 typedef struct {
 	const char *name;					// name of extension, short, no whitespace
 	ext_main_t main_unused;             // unused, ext_main_t routines are called via ext_init.c:extint_init()
 	ext_close_conn_t close_conn;		// routine to cleanup when connection closed
 	ext_receive_msgs_t receive_msgs;	// routine to receive messages from client-part
+
+    u4_t version;                       // for backward compatibility with external extensions (e.g. antenna switch)
+	u4_t flags;
 	ext_poll_t poll_cb;                 // periodic callback that cal be used for polling (e.g. shared mem comm)
 } ext_t;
 

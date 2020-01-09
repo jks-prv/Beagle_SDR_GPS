@@ -2768,29 +2768,59 @@ static void construct_etag(char *buf, size_t buf_len, const file_stat_t *st) {
 static int is_not_modified(struct connection *conn,
                            const file_stat_t *stp) {
   struct mg_connection *mc = &conn->mg_conn;
-  char etag[64];
-  const char *ims = mg_get_header(mc, "If-Modified-Since");
   const char *inm = mg_get_header(mc, "If-None-Match");
-  construct_etag(etag, sizeof(etag), stp);
+  const char *ims = mg_get_header(mc, "If-Modified-Since");
+  construct_etag(mc->cache_info.etag_server, sizeof(mc->cache_info.etag_server), stp);
 
   mc->cache_info.if_none_match = (inm != NULL);
+  web_printf_all("%-16s etag_match=%c", "MG_CACHE_INFO", mc->cache_info.if_none_match? 'T':'F');
   if (inm != NULL) {
-    mc->cache_info.etag_match = !mg_strcasecmp(etag, inm);
-	web_printf_all("MG_CACHE_INFO   etag_match=%s (server=%s client=%s)\n", mc->cache_info.etag_match? "T":"F", etag, inm);
+    mc->cache_info.etag_match = !mg_strcasecmp(mc->cache_info.etag_server, inm);
+	web_printf_all("%c (server=%s == client=%s)", mc->cache_info.etag_match? 'T':'F', mc->cache_info.etag_server, inm);
+	kiwi_strncpy(mc->cache_info.etag_client, inm, N_ETAG);
   }
+  web_printf_all("\n");
 
   mc->cache_info.if_mod_since = (ims != NULL);
+  web_printf_all("%-16s not_mod_since=%c", "MG_CACHE_INFO", mc->cache_info.if_mod_since? 'T':'F');
   if (ims != NULL) {
     time_t client_mtime = parse_date_string(ims);
 	mc->cache_info.not_mod_since = (stp->st_mtime <= client_mtime);
-	mc->cache_info.client_mtime= client_mtime;
-	web_printf_all("MG_CACHE_INFO   not_mod_since=%s (server=%lu/%lx client=%lu/%lx)\n", mc->cache_info.not_mod_since? "T":"F",
-		stp->st_mtime, stp->st_mtime, client_mtime, client_mtime);
+	mc->cache_info.server_mtime = stp->st_mtime;
+	mc->cache_info.client_mtime = client_mtime;
+	// two web_printf_all() due to var_ctime_static()
+	web_printf_all("%c (server=%lx[%s] <= ", mc->cache_info.not_mod_since? 'T':'F', stp->st_mtime, var_ctime_static((time_t *) &stp->st_mtime));
+	web_printf_all("client=%lx[-1 day],%lx[%s])", client_mtime - 86400, client_mtime, var_ctime_static(&client_mtime));
   }
+  web_printf_all("\n");
   
-  // spec says If-Modified-Since ignored if If-None-Match present
-  return (mc->cache_info.if_none_match && mc->cache_info.etag_match) ||
-  		 (mc->cache_info.if_mod_since && mc->cache_info.not_mod_since);
+  // 1/2020
+  // FF wasn't reloading extension .js file when it was touched on server while in development mode.
+  // For reasons we still don't understand FF requests file with client_mtime = server_mtime last time
+  // it was sent PLUS ONE DAY. This despite us having sent the file with max-age=0.
+  // Lead to review of caching logic and switch to NEW_CACHING_LOGIC below.
+  // See:
+  //    developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since
+  //    developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
+  //    stackoverflow.com/questions/1046966/whats-the-difference-between-cache-control-max-age-0-and-no-cache
+  
+  #define NEW_CACHING_LOGIC
+  #ifdef NEW_CACHING_LOGIC
+    // spec says If-Modified-Since ignored if If-None-Match present
+    bool rv = false;
+    if (mc->cache_info.if_none_match) {
+        if (mc->cache_info.etag_match) rv = true;
+    } else {
+        if (mc->cache_info.if_mod_since && mc->cache_info.not_mod_since) rv = true;
+    }
+  #else
+    // this fails the NEW_CACHING_LOGIC criteria above because etag_match could be F, but not_mod_since T,
+    // resulting in the overall is_not_modified T, which is WRONG. 
+    bool rv = (mc->cache_info.if_none_match && mc->cache_info.etag_match) || (mc->cache_info.if_mod_since && mc->cache_info.not_mod_since);
+  #endif
+
+  web_printf_all("%-16s is_not_modified = %s\n", "MG_CACHE_INFO", rv? "T (304_use_cache)":"F (don't_use_cache)");
+  return rv;
 }
 
 // For given directory path, substitute it to valid index file.

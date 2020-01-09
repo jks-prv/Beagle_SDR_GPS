@@ -67,6 +67,8 @@ ext_t S_meter_ext = {
 	S_meter_main,
 	NULL,
 	S_meter_msgs,
+	EXT_NEW_VERSION,
+	EXT_FLAGS_HEAVY
 };
 
 void S_meter_main()

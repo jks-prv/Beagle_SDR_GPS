@@ -24,18 +24,18 @@
 #define CTIME_R_NL          24      // offset of '\n' in ctime_r return buffer
 
 u4_t timer_epoch_sec();
-u4_t timer_server_build_unix_time();
-u4_t timer_server_start_unix_time();
+time_t timer_server_build_unix_time();
+time_t timer_server_start_unix_time();
 u4_t timer_sec();
 u4_t timer_ms();
 u4_t timer_us();
 u64_t timer_us64();
 
 time_t utc_time();
-void utc_hour_min_sec(int *hour, int *min, int *sec);
-void utc_time_hour_min_sec(time_t t, int *hour, int *min, int *sec);
-void utc_year_month_day(int *year, int *month, int *day);
-char *var_ctime(time_t *t);
-char *utc_ctime();
+void utc_hour_min_sec(int *hour, int *min = NULL, int *sec = NULL);
+void time_hour_min_sec(time_t t, int *hour, int *min = NULL, int *sec = NULL);
+void utc_year_month_day(int *year, int *month = NULL, int *day = NULL);
+char *var_ctime_static(time_t *t);
+char *utc_ctime_static();
 void utc_ctime_r(char *tb);
 int utc_time_since_2018();

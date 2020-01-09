@@ -972,7 +972,7 @@ void wspr_decode(int rx_chan)
                         dt_print = shift1*dt-1.0;
                     }
 
-					int hour, min; utc_time_hour_min_sec(w->utc[w->decode_ping_pong], &hour, &min, NULL);
+					int hour, min; time_hour_min_sec(w->utc[w->decode_ping_pong], &hour, &min);
             
 					wspr_pprintf("TYPE%d %02d%02d %3.0f %4.1f %10.6f %2d %-s %4s %2d [%s] in %.3f secs --------------------------------------------------------------------\n",
 					   r_valid, hour, min, snr, dt_print, freq_print, (int) drift1,

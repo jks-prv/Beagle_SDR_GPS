@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 364
+VERSION_MIN = 365
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -176,12 +176,8 @@ CFILES_KEEP = $(wildcard $(addsuffix /*.cpp,$(EXT_SUBDIRS_KEEP)))
 CFILES = $(subst web/web.cpp,,$(CPP_F))
 CFILES_O3 = $(subst web/web.cpp,,$(CPP_F_O3))
 
-#CFLAGS_UNSAFE_OPT = -fcx-limited-range -funsafe-math-optimizations
-CFLAGS_UNSAFE_OPT = -funsafe-math-optimizations
-
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	# development machine, compile simulation version
-	CFLAGS += -g -pipe -MMD -DDEBUG
 	LIBS += -L/usr/local/lib -lfftw3f -lfftw3
 	LIBS_DEP += /usr/local/lib/libfftw3f.a /usr/local/lib/libfftw3.a
 	CMD_DEPS =
@@ -190,9 +186,6 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 else
 	# host machine (BBB), only build the FPGA-using version
-	#CFLAGS += -mfloat-abi=softfp -mfpu=neon
-	CFLAGS +=  -mfpu=neon -mtune=cortex-a8 -mcpu=cortex-a8 -mfloat-abi=hard
-	CFLAGS += -g -pipe -MMD -DDEBUG -DHOST
 	LIBS += -lfftw3f -lfftw3 -lutil
 	LIBS_DEP += /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
 	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng /sbin/ethtool /usr/bin/sshpass
@@ -296,6 +289,7 @@ endif
 ################################
 # dependencies
 ################################
+
 #SRC_DEPS = Makefile
 SRC_DEPS = 
 BIN_DEPS = KiwiSDR.rx4.wf4.bit KiwiSDR.rx8.wf2.bit KiwiSDR.rx3.wf3.bit KiwiSDR.rx14.wf0.bit
@@ -310,6 +304,21 @@ OUT_ASM = $(GEN_DIR)/kiwi.aout
 GEN_VERILOG = $(addprefix verilog/rx/,cic_rx1_12k.vh cic_rx1_20k.vh cic_rx2_12k.vh cic_rx2_20k.vh cic_rx3_12k.vh cic_rx3_20k.vh cic_wf1.vh cic_wf2.vh)
 GEN_NOIP2 = $(GEN_DIR)/noip2
 SUB_MAKE_DEPS = $(KEYRING) $(CMD_DEPS) $(LIBS_DEP) $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
+
+
+################################
+# flags
+################################
+
+MF_INC = $(GEN_DIR)/Makefile.inc
+
+VERSION = -DVERSION_MAJ=$(VERSION_MAJ) -DVERSION_MIN=$(VERSION_MIN)
+VER = v$(VERSION_MAJ).$(VERSION_MIN)
+V = -Dv$(VERSION_MAJ)_$(VERSION_MIN)
+
+INT_FLAGS += $(VERSION) -DKIWI -DKIWISDR -DARCH_$(ARCH) -DCPU_$(CPU) -DARCH_CPU=$(CPU) -DPLATFORM_$(PLATFORM)
+INT_FLAGS += -DDIR_CFG=STRINGIFY\($(DIR_CFG)\) -DCFG_PREFIX=STRINGIFY\($(CFG_PREFIX)\)
+INT_FLAGS += -DBUILD_DIR=STRINGIFY\($(BUILD_DIR)\) -DREPO=STRINGIFY\($(REPO)\) -DREPO_NAME=STRINGIFY\($(REPO_NAME)\)
 
 
 ################################
@@ -331,10 +340,21 @@ else
 	@echo convert installed extension .c files to .cpp for clang compatibility
 	find $(PVT_EXT_DIRS) -name '*.c' -exec mv '{}' '{}'pp \;
 endif
-# take this opportunity to update list of include (-I) dirs since Make will be re-invoked
+# take this opportunity to consolidate flags into indirect Makefile since Make will be re-invoked
 	@echo "----------------"
-	echo $(I) > $(GEN_DIR)/Makefile.includes.inc
-	echo $(EXT_DEFINES) > $(GEN_DIR)/Makefile.defines.inc
+	echo $(I) > $(MF_INC)
+	@echo
+	@echo >> $(MF_INC)
+	echo $(CFLAGS) >> $(MF_INC)
+	@echo
+	@echo >> $(MF_INC)
+	echo $(CPP_FLAGS) >> $(MF_INC)
+	@echo
+	@echo >> $(MF_INC)
+	echo $(EXT_DEFINES) >> $(MF_INC)
+	@echo
+	@echo >> $(MF_INC)
+	echo $(INT_FLAGS) >> $(MF_INC)
 	@echo "----------------"
 
 .PHONY: c_ext_clang_conv_all
@@ -459,7 +479,8 @@ FILE_OPTIM = $(TOOLS_DIR)/file_optim
 FILE_OPTIM_SRC = tools/file_optim.cpp 
 
 $(FILE_OPTIM): $(FILE_OPTIM_SRC)
-	$(CC) $(FLAGS) -g $(FILE_OPTIM_SRC) -o $@
+#	use $(I) here, not full $(MF_INC)
+	$(CC) $(I) -g $(FILE_OPTIM_SRC) -o $@
 
 -include $(wildcard web/*/Makefile)
 -include $(wildcard web/extensions/*/Makefile)
@@ -528,10 +549,10 @@ c_ext_clang_conv_debug:
 	@echo OBJ_DIR_DEFAULT = $(OBJ_DIR_DEFAULT)
 	@echo CMD_DEPS = $(CMD_DEPS)
 	@echo OPT = $(OPT)
-	@echo CFLAGS = $(CFLAGS) $(CPP_FLAGS)
+	@echo CFLAGS = $(CFLAGS)
+	@echo CPP_FLAGS = $(CPP_FLAGS)
 	@echo
 	@echo DEPS = $(OBJECTS:.o=.d)
-	@echo KIWI_UI_LIST = $(UI_LIST)
 	@echo SRC_DEPS = $(SRC_DEPS)
 	@echo BIN_DEPS = $(BIN_DEPS)
 	@echo SUB_MAKE_DEPS = $(SUB_MAKE_DEPS)
@@ -569,11 +590,8 @@ c_ext_clang_conv_debug:
 
 makefiles:
 	@echo
-	@echo $(GEN_DIR)/Makefile.includes.inc
-	@cat $(GEN_DIR)/Makefile.includes.inc
-	@echo
-	@echo $(GEN_DIR)/Makefile.defines.inc
-	@cat $(GEN_DIR)/Makefile.defines.inc
+	@echo $(MF_INC)
+	@cat $(MF_INC)
 
 
 ################################
@@ -582,19 +600,6 @@ makefiles:
 
 # extension init generator and extension-specific makefiles
 -include extensions/Makefile
-
-comma := ,
-empty :=
-space := $(empty) $(empty)
-#UI_LIST = $(subst $(space),$(comma),$(KIWI_UI_LIST))
-UI_LIST = $(subst $(space),,$(KIWI_UI_LIST))
-
-VERSION = -DVERSION_MAJ=$(VERSION_MAJ) -DVERSION_MIN=$(VERSION_MIN)
-VER = v$(VERSION_MAJ).$(VERSION_MIN)
-FLAGS += @$(GEN_DIR)/Makefile.includes.inc $(VERSION) -DKIWI -DKIWISDR -DARCH_$(ARCH) -DCPU_$(CPU) -DARCH_CPU=$(CPU) -DPLATFORM_$(PLATFORM)
-FLAGS += -DKIWI_UI_LIST=$(UI_LIST) -DDIR_CFG=\"$(DIR_CFG)\" -DCFG_PREFIX=\"$(CFG_PREFIX)\"
-FLAGS += -DBUILD_DIR=\"$(BUILD_DIR)\" -DREPO=\"$(REPO)\" -DREPO_NAME=\"$(REPO_NAME)\"
-FLAGS += @$(GEN_DIR)/Makefile.defines.inc
 
 CSRC = $(notdir $(CFILES))
 OBJECTS1 = $(CSRC:%.c=$(OBJ_DIR)/%.o)
@@ -669,49 +674,49 @@ POST_PROCESS_DEPS = \
 # special
 
 $(OBJ_DIR_DEFAULT)/web_devel.o: web/web.cpp config.h
-	$(CPP) $(O_UNOPT) $(CFLAGS) $(FLAGS) -DEDATA_DEVEL -c -o $@ $<
+	$(CPP) $(V) $(O_UNOPT) @$(MF_INC) -DEDATA_DEVEL -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_DEFAULT)/web_embed.o: web/web.cpp config.h
-	$(CPP) $(O_UNOPT) $(CFLAGS) $(FLAGS) -DEDATA_EMBED -c -o $@ $<
+	$(CPP) $(V) $(O_UNOPT) @$(MF_INC) -DEDATA_EMBED -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/edata_embed.o: $(EDATA_EMBED)
-	$(CPP) $(O_UNOPT) $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(CPP) $(V) $(O_UNOPT) @$(MF_INC) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR)/edata_always.o: $(EDATA_ALWAYS)
-	$(CPP) $(O_UNOPT) $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(CPP) $(V) $(O_UNOPT) @$(MF_INC) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/ext_init.o: $(GEN_DIR)/ext_init.cpp
-	$(CPP) $(O_UNOPT) $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(CPP) $(V) $(O_UNOPT) @$(MF_INC) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 
 # .c
 
-$(OBJ_DIR)/%.o: %.c $(SRC_DEPS)
-#	$(CC) -x c $(CFLAGS) $(FLAGS) -c -o $@ $<
-	$(CC) $(O_UNOPT) $(CFLAGS) $(FLAGS) -c -o $@ $<
+#$(OBJ_DIR)/%.o: %.c $(SRC_DEPS)
+#	$(CC) -x c $(V) $(O_UNOPT) @$(MF_INC) -c -o $@ $<
+#	$(CC) $(V) $(O_UNOPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
-	$(POST_PROCESS_DEPS)
+#	$(POST_PROCESS_DEPS)
 
-$(OBJ_DIR_O3)/%.o: %.c $(SRC_DEPS)
-	$(CC) $(O_OPT) $(CFLAGS) $(FLAGS) -c -o $@ $<
+#$(OBJ_DIR_O3)/%.o: %.c $(SRC_DEPS)
+#	$(CC) $(V) $(O_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
-	$(POST_PROCESS_DEPS)
+#	$(POST_PROCESS_DEPS)
 
 
 # .cpp $(CFLAGS_UNSAFE_OPT)
 
 $(OBJ_DIR_O3)/search.o: search.cpp $(SRC_DEPS)
-	$(CPP) $(O_OPT) $(CFLAGS) $(CPP_FLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
+	$(CPP) $(V) $(O_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/simd.o: simd.cpp $(SRC_DEPS)
-	$(CPP) $(O_OPT) $(CFLAGS) $(CPP_FLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
+	$(CPP) $(V) $(O_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
@@ -719,17 +724,17 @@ $(OBJ_DIR_O3)/simd.o: simd.cpp $(SRC_DEPS)
 # .cpp
 
 $(OBJ_DIR)/%.o: %.cpp $(SRC_DEPS)
-	$(CPP) $(O_UNOPT) $(CFLAGS) $(CPP_FLAGS) $(FLAGS) -c -o $@ $<
+	$(CPP) $(V) $(O_UNOPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR)/%.o: %.cpp $(SRC_DEPS)
-	$(CPP) $(O_OPT) $(CFLAGS) $(CPP_FLAGS) $(FLAGS) -c -o $@ $<
+	$(CPP) $(V) $(O_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/%.o: %.cpp $(SRC_DEPS)
-	$(CPP) $(O_OPT) $(CFLAGS) $(CPP_FLAGS) $(FLAGS) -c -o $@ $<
+	$(CPP) $(V) $(O_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
@@ -1075,20 +1080,24 @@ cv2:
 
 endif
 
-clean:
+
+# files that have moved to $(BUILD_DIR) that are present in earlier versions (e.g. v1.2)
+clean_deprecated:
+	-rm -rf obj obj_O3 obj_keep kiwi.bin kiwid.bin *.dSYM web/edata*
+	-rm -rf *.dSYM pas extensions/ext_init.cpp kiwi.gen.h kiwid kiwid.aout kiwid_realtime.bin .comp_ctr
+
+clean: clean_deprecated
 	(cd e_cpu; make clean)
 	(cd verilog; make clean)
 	(cd verilog/rx; make clean)
 	(cd tools; make clean)
 	(cd pkgs/noip2; make clean)
-	-rm -rf $(GEN_DIR) $(OBJ_DIR) $(OBJ_DIR_O3) pas $(addprefix pru/pru_realtime.,bin lst txt) $(TOOLS_DIR)/file_optim
+	-rm -rf $(addprefix pru/pru_realtime.,bin lst txt) $(TOOLS_DIR)/file_optim
+	# but not $(KEEP_DIR)
+	-rm -rf $(BUILD_DIR)/kiwi* $(GEN_DIR) $(OBJ_DIR) $(OBJ_DIR_O3)
 	-rm -f Makefile.1
 
-clean_deprecated:
-	-rm -rf obj obj_O3 obj_keep kiwi.bin kiwid.bin *.dSYM web/edata*
-	-rm -rf *.dSYM pas $(addprefix pru/pru_realtime.,bin lst txt) extensions/ext_init.cpp kiwi.gen.h kiwid kiwid.aout kiwid_realtime.bin .comp_ctr
-
-clean_dist: clean clean_deprecated
+clean_dist: clean
 	-rm -rf $(BUILD_DIR)
 
 

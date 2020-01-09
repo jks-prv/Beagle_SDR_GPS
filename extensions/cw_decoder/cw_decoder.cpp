@@ -150,7 +150,9 @@ ext_t cw_decoder_ext = {
 	"cw_decoder",
 	cw_decoder_main,
 	cw_close,
-	cw_decoder_msgs
+	cw_decoder_msgs,
+	EXT_NEW_VERSION,
+	EXT_FLAGS_HEAVY
 };
 
 void cw_decoder_main()

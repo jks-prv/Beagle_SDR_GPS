@@ -1,41 +1,39 @@
 
-// NB: not re-entrant
-
-var gr = {
-   // options
-   auto: 1,
-   dBm: 0,
-   db_units: 'dB',
-   speed: 1,
-   marker: -1,
-   threshold: 0,
-   averaging: false,
-   avg_dB: 0,
-   divider: false,
-   
-   max: 0,
-   min: 0,
-   hi: 0,
-   lo: 0,
-   goalH: 0,
-   goalL: 0,
-   scroll: 0,
-   scaleWidth: 60,
-   hysteresis: 15,
-   padding_tb: 0,
-   xi: 0,					// initial x value as grid scrolls left until panel full
-   secs_last: 0,
-   redraw_scale: false,
-   clr_color: 'mediumBlue',
-   bg_color: 'ghostWhite',
-   grid_color: 'lightGrey',
-   scale_color: 'white',
-   
-   last_last: 0
-};
-
 function graph_init(canvas, opt)
 {
+   gr = {};
+
+   // options
+   gr.auto = 1;
+   gr.dBm = 0;
+   gr.db_units = 'dB';
+   gr.speed = 1;
+   gr.marker = -1;
+   gr.threshold = 0;
+   gr.averaging = false;
+   gr.avg_dB = 0;
+   gr.divider = false;
+   
+   gr.max = 0;
+   gr.min = 0;
+   gr.hi = 0;
+   gr.lo = 0;
+   gr.goalH = 0;
+   gr.goalL = 0;
+   gr.scroll = 0;
+   gr.scaleWidth = 60;
+   gr.hysteresis = 15;
+   gr.padding_tb = 0;
+   gr.xi = 0;					// initial x value as grid scrolls left until panel full
+   gr.secs_last = 0;
+   gr.redraw_scale = false;
+   gr.clr_color = 'mediumBlue';
+   gr.bg_color = 'ghostWhite';
+   gr.grid_color = 'lightGrey';
+   gr.scale_color = 'white';
+   
+   gr.last_last = 0;
+
    gr.cv = canvas;
    gr.ct = canvas.ctx;
 
@@ -52,59 +50,61 @@ function graph_init(canvas, opt)
       gr.db_units = 'dB';
       gr.padding_tb = 0;
    }
+   
+   return gr;
 }
 
-function graph_clear()
+function graph_clear(gr)
 {
 	var ct = gr.ct;
 	ct.fillStyle = gr.clr_color;
 	ct.fillRect(0,0, gr.cv.width - gr.scaleWidth, gr.cv.height);
 	gr.xi = gr.cv.width - gr.scaleWidth;
-	graph_rescale();
+	graph_rescale(gr);
 }
 
 // FIXME: handle window resize
-function graph_rescale()
+function graph_rescale(gr)
 {
    gr.redraw_scale = true;
 }
 
-function graph_mode(scale, max, min)
+function graph_mode(gr, scale, max, min)
 {
    gr.auto = (scale == 'auto')? 1:0
    if (!gr.auto) { gr.max = max; gr.min = min; }
    //console.log('gr.auto='+ gr.auto +' max='+ max +' min='+ min);
-   graph_rescale();
+   graph_rescale(gr);
 }
 
-function graph_speed(speed)
+function graph_speed(gr, speed)
 {
    if (speed < 1) speed = 1;
    gr.speed = speed;
 }
 
-function graph_marker(marker)
+function graph_marker(gr, marker)
 {
    gr.marker = marker;
 }
 
-function graph_annotate(color)
+function graph_annotate(gr, color)
 {
    gr.divider = color;
 }
 
-function graph_threshold(threshold_dB)
+function graph_threshold(gr, threshold_dB)
 {
    gr.threshold = threshold_dB;
 }
 
-function graph_averaging(averaging)
+function graph_averaging(gr, averaging)
 {
    gr.averaging = averaging;
    gr.avg_dB = 0;
 }
 
-function graph_plot(val_dB, opt)
+function graph_plot(gr, val_dB, opt)
 {
    var plot_color = w3_opt(opt, 'color', gr.plot_color);
    var ylast = w3_opt(opt, 'line', false);

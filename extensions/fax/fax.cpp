@@ -203,6 +203,8 @@ ext_t fax_ext = {
 	fax_main,
 	fax_close,
 	fax_msgs,
+	EXT_NEW_VERSION,
+	EXT_FLAGS_HEAVY
 };
 
 void fax_main()

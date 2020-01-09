@@ -24,8 +24,15 @@ O_UNOPT =
 
 BUILD_OBJ = $(BUILD_DIR)/kiwi.bin
 
+CFLAGS += -g -pipe -MMD -DDEBUG
+
+#CFLAGS_UNSAFE_OPT = -fcx-limited-range -funsafe-math-optimizations
+CFLAGS_UNSAFE_OPT = -funsafe-math-optimizations
+
 # devsys
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
+	CFLAGS += -DDEVSYS
+
 	ifeq ($(UNAME),Darwin)
 		CC = clang
 		CPP = clang++
@@ -38,12 +45,14 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 		CC = gcc
 		CPP = g++
 	endif
-
-	CFLAGS += -DDEVSYS
 endif
 
 # Debian target
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
+	#CFLAGS += -mfloat-abi=softfp -mfpu=neon
+	CFLAGS +=  -mfpu=neon -mtune=cortex-a8 -mcpu=cortex-a8 -mfloat-abi=hard
+	CFLAGS += -DHOST
+
 	BBAI = $(shell cat /proc/device-tree/model | grep -q -s "BeagleBone AI" && echo true)
 	DEBIAN_7 = $(shell cat /etc/debian_version | grep -q -s "7\." && echo true)
 

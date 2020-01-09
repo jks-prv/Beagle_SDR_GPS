@@ -50,7 +50,9 @@ ext_t fsk_ext = {
 	"fsk",
 	fsk_main,
 	NULL,
-	fsk_msgs
+	fsk_msgs,
+	EXT_NEW_VERSION,
+	EXT_FLAGS_HEAVY
 };
 
 void fsk_main()

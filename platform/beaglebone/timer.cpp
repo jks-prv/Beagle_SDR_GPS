@@ -35,13 +35,13 @@ u4_t timer_epoch_sec()
 	return epoch_sec;
 }
 
-u4_t timer_server_build_unix_time()
+time_t timer_server_build_unix_time()
 {
 	if (!init) set_epoch();
 	return server_build_unix_time;
 }
 
-u4_t timer_server_start_unix_time()
+time_t timer_server_start_unix_time()
 {
 	if (!init) set_epoch();
 	return server_start_unix_time;
@@ -106,10 +106,10 @@ time_t utc_time()
 void utc_hour_min_sec(int *hour, int *min, int *sec)
 {
 	time_t t; time(&t);
-	utc_time_hour_min_sec(t, hour, min, sec);
+	time_hour_min_sec(t, hour, min, sec);
 }
 
-void utc_time_hour_min_sec(time_t t, int *hour, int *min, int *sec)
+void time_hour_min_sec(time_t t, int *hour, int *min, int *sec)
 {
 	struct tm tm; gmtime_r(&t, &tm);
 	if (hour) *hour = tm.tm_hour;
@@ -126,14 +126,14 @@ void utc_year_month_day(int *year, int *month, int *day)
 	if (day) *day = tm.tm_mday;
 }
     
-char *var_ctime(time_t *t)
+char *var_ctime_static(time_t *t)
 {
     char *tb = asctime(gmtime(t));
     tb[CTIME_R_NL] = '\0';      // replace ending \n with \0
     return tb;
 }
 
-char *utc_ctime()
+char *utc_ctime_static()
 {
     time_t t; time(&t);
     char *tb = asctime(gmtime(&t));

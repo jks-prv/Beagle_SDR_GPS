@@ -50,7 +50,9 @@ ext_t tdoa_ext = {
 	"TDoA",
 	TDoA_main,
 	NULL,
-	tdoa_msgs
+	tdoa_msgs,
+	EXT_NEW_VERSION,
+	EXT_FLAGS_HEAVY
 };
 
 void TDoA_main()

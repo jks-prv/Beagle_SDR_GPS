@@ -1098,18 +1098,18 @@ function admin_stats_cb(audio_dropped, underruns, seq_errors, dp_resets, dp_hist
 function kiwi_too_busy(rx_chans)
 {
 	var s = 'Sorry, the KiwiSDR server is too busy right now ('+ rx_chans+((rx_chans>1)? ' users':' user') +' max). <br>' +
-	'Please check <a href="https://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
+	'Please check <a href="http://kiwisdr.com/public" target="_self">kiwisdr.com/public</a> for more KiwiSDR receivers available world-wide.';
 	kiwi_show_msg(s);
 }
 
 function kiwi_exclusive_use()
 {
-	var s = 'Sorry, a single user has locked this Kiwi for exclusive use. <br>' +
+	var s = 'Sorry, this Kiwi has been locked for special use. <br>' +
 	'This happens when using an extension (e.g. DRM decoder) that requires all available resources. <br>' +
-	'Please check <a href="https://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide. <br><br>' +
-	'申し訳ありませんが、1人のユーザーがこの Kiwi を排他的にロックしています。 <br>' +
+	'Please check <a href="http://kiwisdr.com/public" target="_self">kiwisdr.com/public</a> for more KiwiSDR receivers available world-wide. <br><br>' +
+	'申し訳ありませんが、このキーウィは特別な使用のためにロックされています。 <br>' +
 	'これは、利用可能なすべてのリソースを必要とする拡張機能（DRM デコーダーなど）を使用している場合に発生します。 <br>' +
-	'世界中で利用できる KiwiSDR レシーバーについては、<a href="https://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> を確認してください。';
+	'世界中で利用できる KiwiSDR レシーバーについては、<a href="http://kiwisdr.com/public" target="_self">kiwisdr.com/public</a> を確認してください。';
 	kiwi_show_msg(s);
 }
 
@@ -1142,7 +1142,7 @@ function kiwi_24hr_ip_limit(mins, ip)
 {
 	var s = 'Sorry, this KiwiSDR can only be used for '+ mins +' minutes every 24 hours by each IP address.<br>' +
       //'Your IP address is: '+ ip +'<br>' +
-      'Please check <a href="https://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
+      'Please check <a href="http://kiwisdr.com/public" target="_self">kiwisdr.com/public</a> for more KiwiSDR receivers available world-wide.';
 	
 	kiwi_show_error_ask_exemption(s);
 }
@@ -1164,7 +1164,7 @@ function kiwi_down(type, comp_ctr, reason)
 
 	if (type == 1) {
 		s = 'Sorry, software update in progress. Please check back in a few minutes.<br>' +
-			'Or check <a href="https://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
+			'Or check <a href="http://kiwisdr.com/public" target="_self">kiwisdr.com/public</a> for more KiwiSDR receivers available world-wide.';
 		
 		if (comp_ctr > 0 && comp_ctr < 9000)
 			s += '<br>Build: compiling file #'+ comp_ctr;
@@ -1183,7 +1183,7 @@ function kiwi_down(type, comp_ctr, reason)
 	} else {
 		if (reason == null || reason == '') {
 			reason = 'Sorry, this KiwiSDR server is being used for development right now. <br>' +
-				'Please check <a href="https://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
+				'Please check <a href="http://kiwisdr.com/public" target="_self">kiwisdr.com/public</a> for more KiwiSDR receivers available world-wide.';
 		}
 		s = reason;
 	}
@@ -1711,7 +1711,7 @@ function kiwi_msg(param, ws)
 		case "is_BBAI":
 		   kiwi.is_BBAI = 1;
 		   break;
-
+		
 		case "authkey_cb":
 			extint_authkey_cb(param[1]);
 			break;
@@ -1810,8 +1810,7 @@ function kiwi_show_msg(s)
 function kiwi_server_error(s)
 {
 	kiwi_show_msg('Hmm, there seems to be a problem. <br>' +
-	   'The server reported the error: <span style="color:red">'+ s +'</span> <br>' +
-	   'Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\',\'server error: '+ s +'\');">email us</a> the above message. Thanks!');
+	   'The server reported the error: <span style="color:red">'+ s +'</span>');
 	seriousError = true;
 }
 

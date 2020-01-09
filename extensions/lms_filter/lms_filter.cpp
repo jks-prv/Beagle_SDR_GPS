@@ -51,6 +51,8 @@ ext_t lms_ext = {
 	lms_filter_main,
 	NULL,
 	lms_msgs,
+	EXT_NEW_VERSION,
+	EXT_FLAGS_HEAVY     // FIXME: needs to also indicate this when selected from audio tab
 };
 
 void lms_filter_main()

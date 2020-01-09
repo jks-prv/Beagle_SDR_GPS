@@ -187,7 +187,7 @@ void CAgc::ProcessData(int Length, TYPECPX* pInData, TYPECPX* pOutData, bool mas
 				m_SigDelayPtr = 0;
 
 #if 0
-            // don't use this, see: https://github.com/jks-prv/Beagle_SDR_GPS/issues/220
+            // don't use this due to observed distortion problems
 			mag = MFABS(in.re);
 			TYPEREAL mim = MFABS(in.im);
 			if(mim>mag)
@@ -305,7 +305,7 @@ void CAgc::ProcessData(int Length, TYPECPX* pInData, TYPEMONO16* pOutData, bool 
 				m_SigDelayPtr = 0;
 
 #if 0
-            // don't use this, see: https://github.com/jks-prv/Beagle_SDR_GPS/issues/220
+            // don't use this due to observed distortion problems
 			mag = MFABS(in.re);
 			TYPEREAL mim = MFABS(in.im);
 			if(mim>mag)
