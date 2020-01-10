@@ -683,24 +683,26 @@ void c2s_sound(void *param)
 		#define SND_FLAG_RESTART        0x20
 		#define SND_FLAG_MASKED         0x40
 		#define SND_FLAG_LITTLE_ENDIAN  0x80
+		
+		bool isNBFM = (mode == MODE_NBFM);
+		bool IQ_or_DRM = (mode == MODE_IQ || mode == MODE_DRM);
 
 		u1_t *bp_real_u1  = snd->out_pkt_real.u1;
 		s2_t *bp_real_s2  = snd->out_pkt_real.s2;
 		u1_t *bp_iq_u1    = snd->out_pkt_iq.u1;
 		s2_t *bp_iq_s2    = snd->out_pkt_iq.s2;
-		bool IQ_or_DRM = (mode == MODE_IQ || mode == MODE_DRM);
 		u1_t *flags    = (IQ_or_DRM? &snd->out_pkt_iq.h.flags : &snd->out_pkt_real.h.flags);
 		u1_t *seq      = (IQ_or_DRM? snd->out_pkt_iq.h.seq    : snd->out_pkt_real.h.seq);
 		char *smeter   = (IQ_or_DRM? snd->out_pkt_iq.h.smeter : snd->out_pkt_real.h.smeter);
 
 		bool do_de_emp = (de_emp && !IQ_or_DRM);
-		bool do_lms    = (mode != MODE_NBFM && !IQ_or_DRM);
+		bool do_lms    = (!isNBFM && !IQ_or_DRM);
 		
 		u2_t bc = 0;
 
 		ext_receive_S_meter_t receive_S_meter   = ext_users[rx_chan].receive_S_meter;
-		ext_receive_iq_samps_t receive_iq       = ext_users[rx_chan].receive_iq;
-		tid_t receive_iq_tid                    = ext_users[rx_chan].receive_iq_tid;
+		ext_receive_iq_samps_t receive_iq       = isNBFM? NULL : ext_users[rx_chan].receive_iq;
+		tid_t receive_iq_tid                    = isNBFM? (tid_t) NULL : ext_users[rx_chan].receive_iq_tid;
 		ext_receive_real_samps_t receive_real   = ext_users[rx_chan].receive_real;
 		tid_t receive_real_tid                  = ext_users[rx_chan].receive_real_tid;
 		
@@ -779,10 +781,12 @@ void c2s_sound(void *param)
 			rx->rd_pos = (rx->rd_pos+1) & (N_DPBUF-1);
 			
 			f_samps = &iq->iq_samples[iq->iq_wr_pos][0];
-			iq->iq_seqnum[iq->iq_wr_pos] = iq->iq_seq;
-			iq->iq_seq++;
 			const int ns_in = nrx_samps;
 			
+			// update as soon as possible so waterfall sequence matching stays current
+			iq->iq_seqnum[iq->iq_wr_pos] = iq->iq_seq;
+			iq->iq_seq++;
+
 			if (masked) memset(i_samps, 0, sizeof(TYPECPX) * nrx_samps);
 			
             if (nb_click) {
@@ -848,14 +852,14 @@ void c2s_sound(void *param)
             gps_tsp->last_gpssec = gps_tsp->gpssec;
     
             // Forward IQ samples if requested.
-            // Do this before iq_wr_pos incremented in case receive_iq() is substituting test data.
-            if (receive_iq != NULL && mode != MODE_NBFM)
+            // Remember that receive_iq() is used to pushback test data in some cases, e.g. DRM
+            if (receive_iq != NULL)
                 receive_iq(rx_chan, 0, ns_out, f_samps);
             
-            if (receive_iq_tid != (tid_t) NULL && mode != MODE_NBFM)
+            if (receive_iq_tid != (tid_t) NULL)
                 TaskWakeup(receive_iq_tid, TWF_CHECK_WAKING, TO_VOID_PARAM(rx_chan));
     
-            iq->iq_wr_pos = (iq->iq_wr_pos+1) & (N_DPBUF-1);
+            // delay updating iq_wr_pos until after AGC applied below
             
             TYPECPX *f_sa = f_samps;
             for (j=0; j<ns_out; j++) {
@@ -974,9 +978,16 @@ void c2s_sound(void *param)
                 if (lms_denoise) m_LMS_denoise[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
                 if (lms_autonotch) m_LMS_autonotch[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
             }
+            
+            
+            ////////////////////////////////
+            // copy to output buffer and send to client
+            ////////////////////////////////
     
             if (mode == MODE_IQ) {
                 m_Agc[rx_chan].ProcessData(ns_out, f_samps, f_samps, masked);
+                iq->iq_wr_pos = (iq->iq_wr_pos+1) & (N_DPBUF-1);    // after AGC above
+
                 #if 0
                     if (ns_out) for (int i=0; i < ns_out; i++) {
                         TYPECPX *out = &f_samps[i];
@@ -1007,6 +1018,7 @@ void c2s_sound(void *param)
             } else
     
             if (mode != MODE_DRM) {
+                iq->iq_wr_pos = (iq->iq_wr_pos+1) & (N_DPBUF-1);
                 rx->real_wr_pos = (rx->real_wr_pos+1) & (N_DPBUF-1);
     
                 // forward real samples if requested
@@ -1038,7 +1050,14 @@ void c2s_sound(void *param)
             }
             
             #ifdef DRM
+            
+                // Data comes from DRM output routine writing directly to drm_buf[] and updating out_wr_pos.
+                // Send silence if buffers are not updated in time.
+                
                 if (mode == MODE_DRM) {
+                    m_Agc[rx_chan].ProcessData(ns_out, f_samps, f_samps, masked);
+                    iq->iq_wr_pos = (iq->iq_wr_pos+1) & (N_DPBUF-1);    // after AGC above
+
                     drm_buf_t *drm_buf = &DRM_SHMEM->drm_buf[rx_chan];
                     int pkt_remain = FASTFIR_OUTBUF_SIZE;
                     

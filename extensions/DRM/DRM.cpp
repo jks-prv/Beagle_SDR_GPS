@@ -152,7 +152,7 @@ bool DRM_msgs(char *msg, int rx_chan)
             d->s2p = ((d->test == 1)? d->info->s2p_start1 : d->info->s2p_start2);
             d->tsamp = 0;
             
-            // misuse ext_register_receive_real_samps() to pushback audio samples from the test file
+            // misuse ext_register_receive_iq_samps() to pushback audio samples from the test file
             ext_register_receive_iq_samps(drm_pushback_file_data, rx_chan);
         } else {
             ext_unregister_receive_iq_samps(rx_chan);
