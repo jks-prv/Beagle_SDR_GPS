@@ -304,7 +304,10 @@ void update_vars_from_config()
     admcfg_default_bool("no_dup_ip", false, &update_admcfg);
     admcfg_default_bool("my_kiwi", true, &update_admcfg);
     admcfg_default_bool("onetime_password_check", false, &update_admcfg);
-    admcfg_default_bool("kiwisdr_com_register", false, &update_admcfg);
+
+    // decouple kiwisdr.com/public and sdr.hu registration
+	bool sdr_hu_register = admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED);
+    admcfg_default_bool("kiwisdr_com_register", sdr_hu_register? true:false, &update_admcfg);
 
     // historical uses of options parameter:
     //int new_find_local = admcfg_int("options", NULL, CFG_REQUIRED) & 1;
