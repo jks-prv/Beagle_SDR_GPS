@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.368  January 11, 2020
+    DRM extension fixes and improvements:
+        AGC was missing from DRM IQ input. Should now work as well as Dream with weaker signals.
+
 v1.365,366,367  January 10, 2020
     Decouple kiwisdr.com/public and sdr.hu registration.
         Can register on either or both.
