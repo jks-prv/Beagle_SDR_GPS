@@ -35,7 +35,10 @@ Boston, MA  02110-1301, USA.
 #include "wspr.h"
 #include "ext_int.h"
 #include "shmem.h"
-#include "DRM.h"
+
+#ifdef DRM
+ #include "DRM.h"
+#endif
 
 #include <string.h>
 #include <stdio.h>
