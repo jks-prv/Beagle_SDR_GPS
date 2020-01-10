@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.365,366  January 10, 2020
+v1.365,366,367  January 10, 2020
     Decouple kiwisdr.com/public and sdr.hu registration.
         Can register on either or both.
         Rename admin page tab "sdr.hu" to "Public".
