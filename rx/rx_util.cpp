@@ -38,6 +38,8 @@ Boston, MA  02110-1301, USA.
 
 #ifdef DRM
  #include "DRM.h"
+#else
+ #define DRM_NREG_CHANS_DEFAULT 3
 #endif
 
 #include <string.h>
