@@ -306,8 +306,13 @@ void update_vars_from_config()
     admcfg_default_bool("onetime_password_check", false, &update_admcfg);
 
     // decouple kiwisdr.com/public and sdr.hu registration
-	bool sdr_hu_register = admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED);
-    admcfg_default_bool("kiwisdr_com_register", sdr_hu_register? true:false, &update_admcfg);
+    bool sdr_hu_register = admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED);
+	bool kiwisdr_com_register = admcfg_bool("kiwisdr_com_register", &err, CFG_OPTIONAL);
+    // never set or incorrectly set to false by v1.365,366
+	if (err || (VERSION_MAJ == 1 && VERSION_MIN <= 367)) {
+        admcfg_set_bool("kiwisdr_com_register", sdr_hu_register);
+        update_admcfg = true;
+    }
 
     // historical uses of options parameter:
     //int new_find_local = admcfg_int("options", NULL, CFG_REQUIRED) & 1;
