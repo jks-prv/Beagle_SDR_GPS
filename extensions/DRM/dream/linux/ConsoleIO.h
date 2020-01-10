@@ -29,16 +29,15 @@
 #include <signal.h>
 #include "../DRMReceiver.h"
 
-static CVector<_COMPLEX> facIQ, sdcIQ, mscIQ;
-
 class CConsoleIO
 {
 public:
-	static void Enter(CDRMReceiver* pDRMReceiver);
-	static void Leave();
-	static ERunState Update(drm_t *drm);
+	void Enter(CDRMReceiver* pDRMReceiver);
+	void Leave();
+	ERunState Update(drm_t *drm);
 protected:
-	static int ETypeRxStatus2int(ETypeRxStatus eTypeRxStatus);
-	static CDRMReceiver* pDRMReceiver;
-	static unsigned long long time;
+	int ETypeRxStatus2int(ETypeRxStatus eTypeRxStatus);
+	CDRMReceiver* pDRMReceiver;
+	unsigned long long time;
+	CVector<_COMPLEX> facIQ, sdcIQ, mscIQ;
 };

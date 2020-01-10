@@ -78,6 +78,8 @@ void DRM_loop(int rx_chan)
     //printf("$$$$ DRM_loop rx_chan=%d run=%d pid=%d\n", rx_chan, drm->run, getpid());
     assert(drm->init);
     
+    CConsoleIO ConsoleIO;
+    
     try {
 		CSettings Settings;
 		Settings.Load(ARRAY_LEN(drm_argv), (char **) drm_argv);
@@ -124,7 +126,7 @@ void DRM_loop(int rx_chan)
                 DRMReceiver.SetFrequency(iFreqkHz);
     
             #ifdef USE_CONSOLEIO
-                CConsoleIO::Enter(&DRMReceiver);
+                ConsoleIO.Enter(&DRMReceiver);
             #endif
 
             ERunState eRunState = RESTART;
@@ -138,7 +140,7 @@ void DRM_loop(int rx_chan)
                     MEASURE_TIME("p", 0, DRMReceiver.process());
     
                     #ifdef USE_CONSOLEIO
-                        eRunState = CConsoleIO::Update(drm);
+                        eRunState = ConsoleIO.Update(drm);
                     #endif
 
                     if (!drm->run) eRunState = STOPPED;
@@ -149,7 +151,7 @@ void DRM_loop(int rx_chan)
             DRMReceiver.CloseSoundInterfaces();
     
             #ifdef USE_CONSOLEIO
-                CConsoleIO::Leave();
+                ConsoleIO.Leave();
             #endif
             
             if (eRunState == STOP_REQUESTED)

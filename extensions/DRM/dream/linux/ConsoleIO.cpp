@@ -56,10 +56,6 @@ using namespace std;
 
 /* Implementation *************************************************************/
 
-CDRMReceiver* CConsoleIO::pDRMReceiver;
-unsigned long long CConsoleIO::time;
-
-
 void
 CConsoleIO::Enter(CDRMReceiver* pDRMReceiver)
 {
