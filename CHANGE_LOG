@@ -2,7 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.368  January 11, 2020
+v1.370  January 12, 2020
+    DRM extension fixes and improvements:
+        Fixed xHE-AAC codec interface.
+            This means the AM band DRM stations listed in India can now be decoded.
+
+v1.368,369  January 11, 2020
     DRM extension fixes and improvements:
         AGC was missing from DRM IQ input. Should now work as well as Dream with weaker signals.
 

@@ -375,8 +375,6 @@ CDRMReceiver::UtilizeDRM(bool& bEnoughData)
             }
         #endif
 
-        //jks
-        //AudioSourceDecoder.Setid();
         if (AudioSourceDecoder.ProcessData(Parameters,
                                            MSCUseBuf[iAudioStreamID],
                                            AudSoDecBuf))
@@ -1044,8 +1042,6 @@ CDRMReceiver::process()
     /* Play and/or save the audio */
     if (iAudioStreamID != STREAM_ID_NOT_USED || (eReceiverMode == RM_AM) || (eReceiverMode == RM_FM))
     {
-        //jks
-        //WriteData.Setid();
         bool rv;
         MEASURE_TIME("w", 5, rv = WriteData.WriteData(Parameters, AudSoDecBuf));
         if (rv)

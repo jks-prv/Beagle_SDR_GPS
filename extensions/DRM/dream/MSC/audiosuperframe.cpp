@@ -33,14 +33,16 @@
  *
  * 5.2
  *
- * audio_super_frame(audio_info) {
- * switch (audio_info.audio_coding) { case xHE-AAC:
- * xhe_aac_super_frame(audio_info);
- * break; case AAC:
- * aac_super_frame(audio_info);
- * break;
- * }
- * }
+ *    audio_super_frame(audio_info) {
+ *        switch (audio_info.audio_coding) {
+ *        case xHE-AAC:
+ *            xhe_aac_super_frame(audio_info);
+ *            break;
+ *        case AAC:
+ *            aac_super_frame(audio_info);
+ *            break;
+ *        }
+ *    }
  */
 
 AudioSuperFrame::AudioSuperFrame():audioFrame()

@@ -120,7 +120,8 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
     //real_printf("%s ", inputSampleRate? "OK":"ZERO!"); fflush(stdout);
     //real_printf(">%d ", inputSampleRate); fflush(stdout);
 
-    for (size_t j = 0; j < pAudioSuperFrame->getNumFrames(); j++)
+    int num_frames = pAudioSuperFrame->getNumFrames();
+    for (size_t j = 0; j < num_frames; j++)
     {
         bool bCodecUpdated = false;
         bool bCurBlockFaulty = false; // just for Opus or any other codec with FEC
@@ -141,6 +142,7 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
                 if (eDecError == CAudioCodec::DECODER_ERROR_OK) {
                     /* Resample data */
                     iResOutBlockSize = outputSampleRate * vecTempResBufInLeft.Size() / inputSampleRate;
+                    //printf("$ ASF %d/%d OK inputSampleRate=%d \n", j, num_frames, inputSampleRate);
 
                     // KiwiSDR: comment "NOOP for AAC" not true for us since our outputSampleRate = 12k, not usual soundcard 48k!
                     if (iResOutBlockSize != vecTempResBufOutCurLeft.Size()) { // NOOP for AAC, needed for xHE-AAC
@@ -153,10 +155,13 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
 
                     ResampleObjL.Resample(vecTempResBufInLeft, vecTempResBufOutCurLeft);
                     ResampleObjR.Resample(vecTempResBufInRight, vecTempResBufOutCurRight);
+                } else {
+                    //printf("$ ASF %d/%d ERROR inputSampleRate=%d \n", j, num_frames, inputSampleRate);
                 }
             }
             else {
                 eDecError = codec->Decode(audio_frame, aac_crc_bits, vecTempResBufOutCurLeft, vecTempResBufOutCurRight);
+                //printf("$ ASF %d/%d no resample\n", j, num_frames);
             }
 
             iResOutBlockSize = vecTempResBufOutCurLeft.Size();
@@ -185,6 +190,7 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
             Parameters.Lock();
             Parameters.vecbiAudioFrameStatus.Add(1);
             Parameters.Unlock();
+            //printf("$ ASF %d/%d BAD BLOCK\n", j, num_frames);
         }
 
         // This code is independent of particular audio source type and should work with all codecs
@@ -293,8 +299,8 @@ CAudioSourceDecoder::InitInternal(CParameter & Parameters)
         /* Init "audio was ok" flag */
         bAudioWasOK = true;
 
-         /* Get number of total input bits for this module */
-         iInputBlockSize = Parameters.iNumAudioDecoderBits;
+        /* Get number of total input bits for this module */
+        iInputBlockSize = Parameters.iNumAudioDecoderBits;
 
         /* Get current selected audio service */
         iCurSelServ = Parameters.GetCurSelAudioService();
@@ -315,7 +321,7 @@ CAudioSourceDecoder::InitInternal(CParameter & Parameters)
             throw CInitErr(ET_ALL);
         }
 
-        int iTotalFrameSize = Parameters.Stream[iCurAudioStreamID].iLenPartA+Parameters.Stream[iCurAudioStreamID].iLenPartB;
+        int iTotalFrameSize = Parameters.Stream[iCurAudioStreamID].iLenPartA + Parameters.Stream[iCurAudioStreamID].iLenPartB;
 
         /* Init text message application ------------------------------------ */
         if (AudioParam.bTextflag)
@@ -352,7 +358,7 @@ CAudioSourceDecoder::InitInternal(CParameter & Parameters)
         if (codec->CanDecode(eAudioCoding))
             audiodecoder = codec->DecGetVersion();
 
-        if(bWriteToFile)
+        if (bWriteToFile)
         {
             codec->openFile(Parameters);
         }
@@ -363,12 +369,13 @@ CAudioSourceDecoder::InitInternal(CParameter & Parameters)
         codec->Init(AudioParam, iInputBlockSize);
 
         /* Init decoder */
+        // KiwiSDR NB: inputSampleRate is set here because DecOpen() decl passes inputSampleRate by pointer
         codec->DecOpen(AudioParam, inputSampleRate);
         cerr << "DecOpen sample rate " << inputSampleRate << endl;
 
         int iLenDecOutPerChan = 0; // no need to use the one from the codec
         int numFrames = pAudioSuperFrame->getNumFrames();
-        if(numFrames==0) {
+        if (numFrames == 0) {
             // xHE-AAC - can't tell yet!
             //printf("$ xHE-AAC - can't tell yet! (\n");
         }
@@ -391,27 +398,31 @@ CAudioSourceDecoder::InitInternal(CParameter & Parameters)
         /* Since we do not do Mode E or correct for sample rate offsets here (yet), we do not
            have to consider larger buffers. An audio frame always corresponds to 400 ms */
         iMaxLenResamplerOutput = int(_REAL(outputSampleRate) * 0.4 /* 400ms */  * 2 /* for stereo */ );
-        iMaxLenResamplerOutput *= 2;    // KiwiSDR: to prevent buffer overruns with xHE-AAC
+        iMaxLenResamplerOutput *= 2;    // KiwiSDR: to prevent buffer overruns with xHE-AAC (as detected by clang asan)
         //printf("$ iMaxLenResamplerOutput=%d\n", iMaxLenResamplerOutput);
 
-        if(inputSampleRate != outputSampleRate) {
+        if (inputSampleRate != outputSampleRate) {
+            if (iLenDecOutPerChan == 0)
+                printf("$ numFrames=%d iLenDecOutPerChan=%d inputSampleRate=%d outputSampleRate=%d\n",
+                    numFrames, iLenDecOutPerChan, inputSampleRate, outputSampleRate);
             _REAL rRatio = _REAL(outputSampleRate) / _REAL(inputSampleRate);
             /* Init resample objects */
             ResampleObjL.Init(iLenDecOutPerChan, rRatio);
             ResampleObjR.Init(iLenDecOutPerChan, rRatio);
         }
 
-        //drmfix
         int iResOutBlockSize;
         if (inputSampleRate == 0) {
             iResOutBlockSize = iLenDecOutPerChan;
         } else {
             iResOutBlockSize = outputSampleRate * iLenDecOutPerChan / inputSampleRate;
         }
+        printf("$$$ numFrames=%d iLenDecOutPerChan=%d iResOutBlockSize=%d iMaxLenResamplerOutput=%d inputSampleRate=%d outputSampleRate=%d\n",
+            numFrames, iLenDecOutPerChan, iResOutBlockSize, iMaxLenResamplerOutput, inputSampleRate, outputSampleRate);
 
         //cerr << "output block size per channel " << iResOutBlockSize << " = samples " << iLenDecOutPerChan << " * " << Parameters.GetAudSampleRate() << " / " << iAudioSampleRate << endl;
 
-        /* Additional buffers needed for resampling since we need conversation
+        /* Additional buffers needed for resampling since we need conversion
            between _REAL and _SAMPLE. We have to init the buffers with
            zeros since it can happen, that we have bad CRC right at the
            start of audio blocks */

@@ -1,7 +1,7 @@
 #include "aacsuperframe.h"
 
 AACSuperFrame::AACSuperFrame():AudioSuperFrame (),
-    lengthPartA(0),lengthPartB(0),superFrameDurationMilliseconds(0),headerBytes(0),aacCRC()
+    lengthPartA(0), lengthPartB(0), superFrameDurationMilliseconds(0), headerBytes(0), aacCRC()
 {
 }
 
@@ -64,10 +64,10 @@ bool AACSuperFrame::header(CVectorEx<_BINARY>& header)
     size_t sumOfFrameLengths = 0;
     for (size_t n = 0; n < numBorders; n++) {
         unsigned frameBorder = header.Separate(12);
-        if(frameBorder<previous_border) frameBorder += 4096; // Table 11 Note 2
-        size_t frameLength = frameBorder-previous_border; // frame border in bytes
+        if (frameBorder < previous_border) frameBorder += 4096; // Table 11 Note 2
+        size_t frameLength = frameBorder - previous_border; // frame border in bytes
         sumOfFrameLengths += frameLength;
-        if(sumOfFrameLengths<audioPayloadLength) {
+        if (sumOfFrameLengths < audioPayloadLength) {
             audioFrame[n].resize(frameLength);
             previous_border = frameBorder;
         }
@@ -80,10 +80,10 @@ bool AACSuperFrame::header(CVectorEx<_BINARY>& header)
         header.Separate(4);
     }
     size_t frameLength = audioPayloadLength - previous_border;
-    if(ok) {
+    if (ok) {
         sumOfFrameLengths += frameLength;
     }
-    if(sumOfFrameLengths == audioPayloadLength) {
+    if (sumOfFrameLengths == audioPayloadLength) {
         audioFrame[numBorders].resize(frameLength);
         return true;
     }
@@ -94,22 +94,22 @@ bool AACSuperFrame::parse(CVectorEx<_BINARY>& asf)
 {
     unsigned numFrames = audioFrame.size();
     bool ok = header(asf);
-    if(!ok) {
+    if (!ok) {
         return false;
     }
     // higher protected part
     unsigned higherProtectedBytes = 0;
-    if(lengthPartA>0) {
-        higherProtectedBytes =  (lengthPartA-headerBytes-aacCRC.size())/numFrames;
+    if (lengthPartA > 0) {
+        higherProtectedBytes = (lengthPartA - headerBytes - aacCRC.size()) / numFrames;
     }
-    for(size_t f=0; f<numFrames; f++) {
+    for (size_t f=0; f < numFrames; f++) {
         for (size_t b = 0; b < higherProtectedBytes; b++) {
             audioFrame[f][b] = asf.Separate(8);
         }
         aacCRC[f] = asf.Separate(8);
     }
     // lower protected part
-    for(size_t f=0; f<numFrames; f++) {
+    for (size_t f=0; f < numFrames; f++) {
         unsigned lowerProtectedBytes = audioFrame[f].size() - higherProtectedBytes;
         //cerr << "frame " << f << " of " << numFrames << " size " << audioFrame[f].size() << " lower " << lowerProtectedBytes << endl;
         for (size_t b = 0; b < lowerProtectedBytes; b++) {

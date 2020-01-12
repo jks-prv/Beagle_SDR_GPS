@@ -402,10 +402,10 @@ function drm_recv(data)
 			         codec = ao.ac;
 			   });
             w3_show('id-drm-svcs');
-            if (codec != drm.AAC) console.log('codec='+ codec);
+            if (codec != drm.AAC && codec != drm.xHE_AAC) console.log('codec='+ codec);
             w3_innerHTML('id-drm-error',
-               (codec != drm.AAC)? ('WARNING: '+ ((codec == drm.xHE_AAC)? 'xHE_AAC ':'') +'codec not supported yet -- audio will be bad') : '<br>');
-            w3_color('id-drm-error', 'white', 'red', (codec != drm.AAC));
+               (codec != drm.AAC && codec != drm.xHE_AAC)? 'WARNING: codec not supported -- audio will be bad' : '<br>');
+            w3_color('id-drm-error', 'white', 'red', (codec != drm.AAC && codec != drm.xHE_AAC));
 
             if (o.msg)
 			      w3_innerHTML('id-drm-msgs', o.msg);

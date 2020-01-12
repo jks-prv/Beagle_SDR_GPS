@@ -307,7 +307,7 @@ void update_vars_from_config()
 
     // decouple kiwisdr.com/public and sdr.hu registration
     bool sdr_hu_register = admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED);
-	bool kiwisdr_com_register = admcfg_bool("kiwisdr_com_register", &err, CFG_OPTIONAL);
+	admcfg_bool("kiwisdr_com_register", &err, CFG_OPTIONAL);
     // never set or incorrectly set to false by v1.365,366
 	if (err || (VERSION_MAJ == 1 && VERSION_MIN <= 369)) {
         admcfg_set_bool("kiwisdr_com_register", sdr_hu_register);

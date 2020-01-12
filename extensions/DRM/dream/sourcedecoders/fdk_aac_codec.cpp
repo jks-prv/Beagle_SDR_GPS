@@ -38,7 +38,7 @@
 #include <cstring>
 
 FdkAacCodec::FdkAacCodec() :
-    hDecoder(nullptr), hEncoder(nullptr),bUsac(false),decode_buf()
+    hDecoder(nullptr), hEncoder(nullptr), bUsac(false), decode_buf()
 {
 }
 
@@ -93,15 +93,14 @@ FdkAacCodec::CanDecode(CAudioParam::EAudCod eAudioCoding)
         return true;
     }
 
-//drmfix
-//#ifdef HAVE_USAC
+#ifdef HAVE_USAC
     if (eAudioCoding == CAudioParam::AC_xHE_AAC) {
         if ((linfo.flags & CAPF_AAC_USAC) != 0) {
             //printf("FDK CAPF_AAC_USAC YES\n");
             return true;
         }
     }
-//#endif
+#endif
 
     //printf("FDK can decode NO\n");
     return false;
@@ -216,7 +215,7 @@ FdkAacCodec::DecOpen(const CAudioParam& AudioParam, int& iAudioSampleRate)
     type9Size = type9.size();
     t9 = &type9[0];
 
-    // NB: *this* is where CAudioSourceDecoder::inputSampleRate is set
+    // KiwiSDR NB: *this* is where CAudioSourceDecoder::inputSampleRate is set
     // as used in CAudioSourceDecoder::InitInternal()
     // Not obvious, but it is passed by pointer.
     
@@ -318,6 +317,7 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
 
     if (pinfo->aacNumChannels == 0) {
         cerr << "FDK zero output coded channels: err=" << err << endl;
+        //printf("err ZOCC ");
         //return CAudioCodec::DECODER_ERROR_UNKNOWN;
     }
     else {
@@ -326,22 +326,26 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
 
     if (err != AAC_DEC_OK) {
         cerr << "FDK Fill failed: " << err << endl;
+        //printf("err FILL ");
         return CAudioCodec::DECODER_ERROR_UNKNOWN;
     }
     //cerr << "aac decode after fill bufferSize " << bufferSize << ", bytesValid " << bytesValid << endl;
     if (bytesValid != 0) {
         cerr << "FDK Unable to feed all " << bufferSize << " input bytes, bytes left " << bytesValid << endl;
+        //printf("err FEED ");
         return CAudioCodec::DECODER_ERROR_UNKNOWN;
     }
 
     if (pinfo->numChannels == 0) {
         cerr << "FDK zero output channels: err=" << err << endl;
+        //printf("err ZOC ");
         //return CAudioCodec::DECODER_ERROR_UNKNOWN;
     }
 
     size_t output_size = pinfo->frameSize * pinfo->numChannels;
     if (sizeof (decode_buf) < sizeof(int16_t)*output_size) {
         cerr << "FDK can't fit output into decoder buffer" << endl;
+        //printf("err FIT ");
         return CAudioCodec::DECODER_ERROR_UNKNOWN;
     }
 
@@ -359,17 +363,21 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
     else if (err == AAC_DEC_PARSE_ERROR) {
         //cerr << "FDK Error parsing bitstream." << endl;
         ext_send_msg(drm->rx_chan, false, "EXT annotate=3");
+        //printf("err PARSE ");
         return CAudioCodec::DECODER_ERROR_UNKNOWN;
     }
     else if (err == AAC_DEC_OUTPUT_BUFFER_TOO_SMALL) {
         cerr << "FDK The provided output buffer is too small." << endl;
+        //printf("err BUFSMALL ");
     }
     else if (err == AAC_DEC_OUT_OF_MEMORY) {
         cerr << "FDK Heap returned NULL pointer. Output buffer is invalid." << endl;
+        //printf("err NOMEM ");
     }
     else if (err == AAC_DEC_CRC_ERROR) {
         //cerr << "FDK CRC error." << endl;     // happens often with marginal signals
         ext_send_msg(drm->rx_chan, false, "EXT annotate=1");
+        //printf("err CRC ");
         return CAudioCodec::DECODER_ERROR_UNKNOWN;
     }
     else if (err == AAC_DEC_UNKNOWN) {
@@ -381,6 +389,7 @@ CAudioCodec::EDecError FdkAacCodec::Decode(const vector<uint8_t>& audio_frame, u
     
     if (err != AAC_DEC_OK) {
         ext_send_msg(drm->rx_chan, false, "EXT annotate=2");
+        //printf("err 0x%x ", err);
         return CAudioCodec::DECODER_ERROR_UNKNOWN;
     }
 
