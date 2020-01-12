@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 369
+VERSION_MIN = 370
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -96,7 +96,7 @@ endif
 ################################
 .PHONY: all
 all: c_ext_clang_conv
-	@make $(MAKE_ARGS) c_ext_clang_conv_all
+	@make $(MAKE_ARGS) c_ext_clang_conv_all $(LOG)
 
 
 ################################
@@ -121,6 +121,9 @@ ifeq ($(OPT),0)
 else
 	OBJ_DIR_DEFAULT = $(OBJ_DIR_O3)
 endif
+
+LOG_FILE = $(BUILD_DIR)/build.log
+LOG = | tee -a $(LOG_FILE) 2>&1
 
 PKGS = pkgs/mongoose
 PKGS_O3 = pkgs/jsmn pkgs/sha256 pkgs/TNT_JAMA
@@ -341,21 +344,32 @@ else
 	find $(PVT_EXT_DIRS) -name '*.c' -exec mv '{}' '{}'pp \;
 endif
 # take this opportunity to consolidate flags into indirect Makefile since Make will be re-invoked
-	@echo "----------------"
-	echo $(I) > $(MF_INC)
-	@echo
+	@echo "----------------" $(LOG)
+#
+	@echo $(I) > $(MF_INC)
+	@echo $(I) $(LOG)
+#
+	@echo $(LOG)
 	@echo >> $(MF_INC)
-	echo $(CFLAGS) >> $(MF_INC)
-	@echo
+	@echo $(CFLAGS) >> $(MF_INC)
+	@echo $(CFLAGS) $(LOG)
+#
+	@echo $(LOG)
 	@echo >> $(MF_INC)
-	echo $(CPP_FLAGS) >> $(MF_INC)
-	@echo
+	@echo $(CPP_FLAGS) >> $(MF_INC)
+	@echo $(CPP_FLAGS) $(LOG)
+#
+	@echo $(LOG)
 	@echo >> $(MF_INC)
-	echo $(EXT_DEFINES) >> $(MF_INC)
-	@echo
+	@echo $(EXT_DEFINES) >> $(MF_INC)
+	@echo $(EXT_DEFINES) $(LOG)
+#
+	@echo $(LOG)
 	@echo >> $(MF_INC)
-	echo $(INT_FLAGS) >> $(MF_INC)
-	@echo "----------------"
+	@echo $(INT_FLAGS) >> $(MF_INC)
+	@echo $(INT_FLAGS) $(LOG)
+#
+	@echo "----------------" $(LOG)
 
 .PHONY: c_ext_clang_conv_all
 c_ext_clang_conv_all: $(BUILD_DIR)/kiwi.bin
@@ -842,7 +856,7 @@ EXISTS_SSH_KEYS = $(shell test -f $(SSH_KEYS) && echo true)
 .PHONY: install
 install: c_ext_clang_conv
 	@# don't use MAKE_ARGS here!
-	@make c_ext_clang_conv_install
+	@make c_ext_clang_conv_install $(LOG)
 
 .PHONY: c_ext_clang_conv_install
 c_ext_clang_conv_install: $(DO_ONCE) $(BUILD_DIR)/kiwid.bin
@@ -1094,7 +1108,7 @@ clean: clean_deprecated
 	(cd pkgs/noip2; make clean)
 	-rm -rf $(addprefix pru/pru_realtime.,bin lst txt) $(TOOLS_DIR)/file_optim
 	# but not $(KEEP_DIR)
-	-rm -rf $(BUILD_DIR)/kiwi* $(GEN_DIR) $(OBJ_DIR) $(OBJ_DIR_O3)
+	-rm -rf $(LOG_FILE) $(BUILD_DIR)/kiwi* $(GEN_DIR) $(OBJ_DIR) $(OBJ_DIR_O3)
 	-rm -f Makefile.1
 
 clean_dist: clean
