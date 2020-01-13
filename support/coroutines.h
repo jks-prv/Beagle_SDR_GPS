@@ -70,6 +70,8 @@ extern u4_t task_medium_priority;
 #define	MAX_TASKS           (REG_STACK_TASKS + MED_STACK_TASKS + LARGE_STACK_TASKS)
 
 typedef int tid_t;
+#define TID_MAIN    0
+#define TID_FIRST   (TID_MAIN + 1)
 
 void TaskInit();
 void TaskInitCfg();
