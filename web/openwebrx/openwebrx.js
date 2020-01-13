@@ -2074,18 +2074,19 @@ function canvas_start_drag(evt, x, y)
 		var fold = canvas_get_dspfreq(x);
 		var b = find_band(fold);
 		var cm = cur_mode.substr(0,2);
-		var am_ssb_iq = (cm == 'am' || cm == 'ls' || cm == 'us' || cm == 'iq');
+		var am_ssb_iq_drm = (cm == 'am' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
+		//console_log('nearest', cm, am_ssb_iq_drm);
 	   var ITU_region = cfg.init.ITU_region + 1;
 	   var ham_80m_swbc_75m_overlap = (ITU_region == 2 && b.name == '75m');
 
 		if (b != null && (b.name == 'LW' || b.name == 'MW')) {
-			if (am_ssb_iq) {
+			if (am_ssb_iq_drm) {
 				step_Hz = step_9_10? 9000 : 10000;
 				//console.log('SFT-CLICK 9_10');
 			}
 		} else
 		if (b != null && (b.s == svc.B) && !ham_80m_swbc_75m_overlap) {      // SWBC bands
-			if (am_ssb_iq) {
+			if (am_ssb_iq_drm) {
 				step_Hz = 5000;
 				//console.log('SFT-CLICK SWBC');
 			}
@@ -4730,6 +4731,7 @@ function freqset_keyup(obj, evt)
 var num_step_buttons = 6;
 
 var up_down = {
+   // 0 means use special step logic
 	am: [ 0, -1, -0.1, 0.1, 1, 0 ],
 	amn: [ 0, -1, -0.1, 0.1, 1, 0 ],
 	drm: [ 0, -1, -0.1, 0.1, 1, 0 ],
@@ -4739,11 +4741,13 @@ var up_down = {
 	lsn: [ 0, -1, -0.1, 0.1, 1, 0 ],
 	cw: [ 0, -0.1, -0.01, 0.01, 0.1, 0 ],
 	cwn: [ 0, -0.1, -0.01, 0.01, 0.1, 0 ],
-	nbfm: [ -5, -1, -0.1, 0.1, 1, 5 ],		// FIXME
-	iq: [ -5, -1, -0.1, 0.1, 1, 5 ],
+	nbfm: [ -5, -1, -0.1, 0.1, 1, 5 ],
+	iq: [ 0, -1, -0.1, 0.1, 1, 0 ],
 };
 
 var up_down_default = {
+   // only referenced by special step logic, so only max/min values used (that's why others are zero)
+   // NB: abs(values)
 	am: [ 5, 0, 0, 0, 0, 5 ],
 	amn: [ 5, 0, 0, 0, 0, 5 ],
 	drm: [ 5, 0, 0, 0, 0, 5 ],
@@ -4753,6 +4757,8 @@ var up_down_default = {
 	lsn: [ 5, 0, 0, 0, 0, 5 ],
 	cw: [ 1, 0, 0, 0, 0, 1 ],
 	cwn: [ 1, 0, 0, 0, 0, 1 ],
+	// nbfm doesn't have special step
+	iq: [ 5, 0, 0, 0, 0, 5 ],
 };
 
 var NDB_400_1000_mode = 1;		// special 400/1000 step mode for NDB band
@@ -4772,7 +4778,9 @@ function special_step(b, sel, caller)
 	} else
 	if (b != null && (b.name == 'LW' || b.name == 'MW')) {
 	   var cm = cur_mode.substr(0,2);
-		if (cm == 'am' || cm == 'ls' || cm == 'us') {
+		var am_ssb_iq_drm = (cm == 'am' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
+		//console_log('special step', cm, am_ssb_iq_drm);
+		if (am_ssb_iq_drm) {
 			step_Hz = step_9_10? 9000 : 10000;
 		} else {
 			step_Hz = -1;
@@ -4848,8 +4856,8 @@ function freq_step_update_ui(force)
 	}
 
    var cm = cur_mode.substr(0,2);
-	var show_9_10 = (b != null && (b.name == 'LW' || b.name == 'MW') &&
-	   (cm == 'am' || cm == 'ls' || cm == 'us'))? true:false;
+   var am_ssb_iq_drm = (cm == 'am' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
+	var show_9_10 = (b != null && (b.name == 'LW' || b.name == 'MW') && am_ssb_iq_drm)? true:false;
 	w3_visible('id-9-10-cell', show_9_10);
 
 	for (var i=0; i < num_step_buttons; i++) {

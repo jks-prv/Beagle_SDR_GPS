@@ -19,8 +19,8 @@ Boston, MA  02110-1301, USA.
 
 #pragma once
 
-#if defined(__clang__)
-	// only clang>=3.9 has support for the coroutines used by the KiwiSDR software
+#if defined(HOST) && defined(__clang__)
+	// only clang >= 3.9 has support for the coroutines used by the KiwiSDR software
 	// (__sanitizer_start_switch_fiber, __sanitizer_finish_switch_fiber)
 	#if __has_feature(address_sanitizer) && ((__clang_major__ == 3 && __clang_minor__ >= 9) || __clang_major__ >= 4)
 		#include <sanitizer/asan_interface.h>

@@ -19,8 +19,8 @@ SYS_MIN = $(shell uname -r | awk '{print $1}' | cut -d. -f2)
 # compiler/option selection
 ################################
 
-O_OPT =
-O_UNOPT =
+VIS_OPT =
+VIS_UNOPT =
 
 BUILD_OBJ = $(BUILD_DIR)/kiwi.bin
 
@@ -61,7 +61,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 		CC = gcc
 		CPP = g++
 		CFLAGS += -DKIWI_DEBIAN7
-		O_OPT = -O3
+		VIS_OPT = -O3
 		# needed for iq_display.cpp et al (-std=gnu++11 isn't available on Debian 7.9)
 		CPP_FLAGS += -std=gnu++0x
 	else ifeq ($(BBAI),true)
@@ -72,12 +72,12 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
             CPP = g++
             CFLAGS += -pg -fprofile-arcs -ftest-coverage
             LDFLAGS += -pg -lgcov --coverage
-		    O_OPT =
+		    VIS_OPT =
 		    BUILD_OBJ = ./kiwi.bin
 		else
             CC = clang-7
             CPP = clang++-7
-		    O_OPT = -Ofast
+		    VIS_OPT = -Ofast
         endif
 		# needed for iq_display.cpp et al
 		CPP_FLAGS += -std=gnu++11
@@ -89,20 +89,35 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 		CPP = clang++-6.0
 		#CC = clang
 		#CPP = clang++
-        O_OPT = -Ofast
+        VIS_OPT = -Ofast
 		# needed for iq_display.cpp et al
 		CPP_FLAGS += -std=gnu++11
 	endif
+endif
 
-    # To use clang address sanitizer build with "make ASAN=1 [OPT=0]" on target.
-    # There are shell aliases "masan" and "masan0" for these.
-    # Use gdb "asan" alias to set breakpoint necessary to backtrace address errors.
-    ifeq ($(ASAN),1)
-        CFLAGS += -fsanitize=address -fno-omit-frame-pointer
-        #LDFLAGS += -v -fsanitize=address
-        LDFLAGS += -fsanitize=address
-        ifeq ($(OPT),0)
-            O_OPT =
-        endif
+# To use clang address sanitizer build with "make ASAN=1 [OPT=0]" on target.
+# There are shell aliases "masan" and "masan0" for these.
+# Use gdb "asan" alias to set breakpoint necessary to backtrace address errors.
+ifeq ($(ASAN),1)
+    ifeq ($(OPT),0)
+        VIS_OPT = -fsanitize=address
+        VIS_UNOPT = -fsanitize=address
+    else
+        VIS_OPT += -fsanitize=address
+        VIS_UNOPT += -fsanitize=address
     endif
+    CFLAGS += -fno-omit-frame-pointer
+    #LDFLAGS += -v -fsanitize=address,leak
+    #LDFLAGS += -fsanitize=address,leak
+    LDFLAGS += -fsanitize=address
+endif
+
+
+# static analyzer (NB: different from address sanitizer "asan")
+# build on devsys or target with "make SAN=1" using alias "msan"
+# uses -O0 for speedup when used on target (clang on Debian seems to catch more errors than on OSX)
+ifeq ($(SAN),1)
+    CPP_FLAGS += -O0 -Werror --analyze -DKIWI_STATIC_ANALYSIS
+    OPT = 0
+    VIS_OPT =
 endif

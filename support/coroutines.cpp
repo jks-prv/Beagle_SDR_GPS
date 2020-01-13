@@ -702,7 +702,7 @@ void TaskCollect()
 	if (!collect_needed)
 		return;
 
-	for (i=1; i < MAX_TASKS; i++) {		// NB: start at task 1 as the main task uses the ordinary stack
+	for (i = TID_FIRST; i < MAX_TASKS; i++) {		// NB: start at task 1 as the main task uses the ordinary stack
 		ctx_t *c = ctx + i;
 		if (c->init) continue;
 		task_stack(i);
@@ -763,7 +763,7 @@ void TaskInit()
 	t = Tasks;
 	cur_task = t;
 
-	task_init(t, 0, NULL, NULL, "main", MAIN_PRIORITY, 0, 0);
+	task_init(t, TID_MAIN, NULL, NULL, "main", MAIN_PRIORITY, 0, 0);
 	t->ctx->stack_size_u64 = STACK_SIZE_U64_T;
 
 	last_dump = t->tstart_us = timer_us64();
@@ -835,7 +835,7 @@ void TaskCheckStacks(bool report)
 
 	u64_t magic = 0x8BadF00d00000000ULL;
     bool stk_panic = false;
-	for (i=1; i <= max_task; i++) {
+	for (i = TID_FIRST; i <= max_task; i++) {
 		t = Tasks + i;
 		if (!t->valid || !t->ctx->init) continue;
 		int m, l = 0, u = t->ctx->stack_size_u64 - 1;
@@ -1391,7 +1391,7 @@ int _CreateTask(funcP_t funcP, const char *name, void *param, int priority, u4_t
     TASK *t;
     u4_t stack_size = flags & CTF_STACK_SIZE;
     
-    for (i=1; i < MAX_TASKS; i++) {
+    for (i = TID_FIRST; i < MAX_TASKS; i++) {
         t = Tasks + i;
         u4_t t_stack_size = t->flags & CTF_STACK_SIZE;
         if (!t->valid && ctx[i].init && t_stack_size == stack_size) break;

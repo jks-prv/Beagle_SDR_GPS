@@ -4,9 +4,16 @@ fi
 
 alias bargs="function _bargs () { echo arg_one \$1 ; echo arg_two \$2 ; echo all_args \$* ; echo files_dirs * ; } ; _bargs"
 
+# shell
+alias al="alias"
+alias soc="source ~/.profile"
+alias pe="printenv"
+alias se="setenv"
+alias unexport="unset"
+alias h="history"
+alias z="suspend"
+alias x="exit"
 alias j="jobs -l"
-alias mo="more"
-alias syl="tail -n 1000 -f /var/log/syslog"
 alias d="dirs"
 alias pd="pushd"
 alias 2="pushd +2"
@@ -14,6 +21,9 @@ alias 3="pushd +3"
 alias 4="pushd +4"
 alias 5="pushd +5"
 alias 6="pushd +6"
+
+alias mo="more"
+alias syl="tail -n 1000 -f /var/log/syslog"
 alias ic="ifconfig"
 alias i="echo ==== interfaces; ic -a; echo ==== /etc/network/interfaces; cat /etc/network/interfaces; echo; echo ==== /etc/resolv.conf; cat /etc/resolv.conf"
 alias e="ethtool eth0"
@@ -22,14 +32,7 @@ alias e100="ethtool -s eth0 speed 100 duplex full"
 alias ip='ifconfig eth0 | grep inet'
 alias mac='cat /sys/class/net/eth0/address'
 alias df="/bin/df -h"
-alias h="history"
-alias z="suspend"
-alias x="exit"
 alias tr="traceroute"
-alias al="alias"
-alias soc="source ~/.profile"
-alias pe="printenv"
-alias se="setenv"
 alias cdp="cd \${PROJ}"
 alias cd2="cd \${PROJ2}"
 alias cd3="cd \${PROJ3}"
@@ -72,6 +75,8 @@ alias mh="make help"
 alias m0="make OPT=0"
 alias masan="make ASAN=1"
 alias masan0="make ASAN=1 OPT=0"
+alias miasan="make install ASAN=1"
+alias leaks="export ASAN_OPTIONS='detect_leaks=1'; export LSAN_OPTIONS='verbosity=1:log_threads=1'"
 # NB: SAN is broken, not ASAN
 alias msan="echo (try now w/ clang-6.0) the clang 3.5.0 static analyzer (SAN) used by the Kiwi Debian 8 release gives false positives"
 alias mi="make install"
@@ -315,6 +320,7 @@ alias nfsdn="cd ~; umount -a -f -t nfs"
 # KiwiSDR with gdb
 alias gk="gdb ../build/kiwi.bin"
 # aliases added to ~/.gdbinit
+# to detect leaks type "leaks" before gk and use asan
 # gdb> asan // sets ASAN breakpoint
 # gdb> ng   // no gps, leds
 # gdb> k    // normal run

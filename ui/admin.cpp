@@ -1181,7 +1181,14 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET restart");
 			if (i == 0) {
 				clprintf(conn, "ADMIN: restart requested by admin..\n");
-				kiwi_exit(0);
+				
+				#ifdef USE_ASAN
+				    // leak detector needs exit while running on main() stack
+				    kiwi_restart = true;
+				    TaskWakeup(TID_MAIN, TWF_CANCEL_DEADLINE);
+				#else
+				    kiwi_exit(0);
+				#endif
 			}
 
 			i = strcmp(cmd, "SET reboot");

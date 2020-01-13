@@ -1197,12 +1197,17 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 // kiwiclient
 ////////////////////////////////
 
+    // DEPRECATED
+    // Replaced by "--tlimit-pw" option that specifies an actual time limit exemption password.
+    // But silently accept for backward compatibility with old versions of kiwiclient still in use.
 	int inactivity_timeout;
 	n = sscanf(cmd, "SET OVERRIDE inactivity_timeout=%d", &inactivity_timeout);
 	if (n == 1) {
-		//clprintf(conn, "SET OVERRIDE inactivity_timeout=%d\n", inactivity_timeout);
-		if (inactivity_timeout == 0)
-			conn->inactivity_timeout_override = true;
+	    #if 0
+            //clprintf(conn, "SET OVERRIDE inactivity_timeout=%d\n", inactivity_timeout);
+            if (inactivity_timeout == 0)
+                conn->inactivity_timeout_override = true;
+		#endif
 		return true;
 	}
 
