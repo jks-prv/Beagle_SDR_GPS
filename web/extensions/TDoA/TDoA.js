@@ -960,9 +960,6 @@ function tdoa_get_hosts_cb(hosts)
             if (a.startsWith('map:')) {
                maptype = parseInt(a.substring(4));
             } else
-            if (a.startsWith('new:')) {
-               w3_checkbox_set('id-tdoa-new-algo', true);
-            } else
             if (a.startsWith('submit:')) {
                init_submit = true;
             } else
@@ -978,7 +975,10 @@ function tdoa_get_hosts_cb(hosts)
             if (a.startsWith('help:')) {
                extint_help_click();
             } else
-            if (a.startsWith('devl:')) {
+            if (a.startsWith('kml:')) {
+               tdoa.kml = true;
+            } else
+            if (a.startsWith('devl:') || a.startsWith('new:')) {
                tdoa.devl = true;
             }
 
@@ -1409,6 +1409,7 @@ function tdoa_submit_button_cb2()
       }
    }
    
+   if (tdoa.kml) s += ",'kml',1";
    s += ')';
    
    if (tdoa.rerun) s += '&rerun='+ tdoa.response.key;    // key from previous run
@@ -1501,7 +1502,7 @@ function tdoa_sample_status_cb(status)
    
    if (!error) {
       tdoa_set_icon('submit', -1, 'fa-refresh fa-spin', 20, 'lime');
-      tdoa_submit_state(tdoa.RUNNING, 'TDoA algorithm running');
+      tdoa_submit_state(tdoa.RUNNING, (tdoa.devl? 'TDoA-new':'TDoA') +' algorithm running');
    } else {
       if (0 && retry) {    // fixme: doesn't work yet
          tdoa_set_icon('submit', -1, 'fa-cog fa-spin', 20, 'yellow');
@@ -1714,7 +1715,7 @@ function tdoa_submit_status_old_cb(status, info)
 
       tdoa_result_menu_click_cb('', tdoa.TDOA_MAP);
       w3_select_value('tdoa.result_select', tdoa.TDOA_MAP);
-      tdoa_submit_state(tdoa.RESULT, info? info : 'TDoA complete');
+      tdoa_submit_state(tdoa.RESULT, info? info : (tdoa.devl? 'TDoA-new':'TDoA') +' complete');
    }
 
    w3_button_text('id-tdoa-submit-button', 'Submit', 'w3-css-yellow', 'w3-red');
@@ -1860,9 +1861,9 @@ function tdoa_result_menu_click_cb(path, idx, first)
          //console.log('SET ms/me='+ ms +'/'+ me +' idx='+ idx);
          
          for (var mi = ms; mi < me; mi++) {
-            var ext = tdoa.devl? 'kml':'json';
+            var ext = tdoa.kml? 'kml':'json';
             var fn = tdoa.url_files + tdoa.response.key +'/'+ tdoa.results[mi].ids +'_contour_for_map.'+ ext;
-            if (tdoa.devl) {
+            if (tdoa.kml) {
                if (idx != tdoa.COMBINED_MAP) tdoa_KML_link(fn);
                console.log('TDoA KML test: mi='+ mi +' '+ fn);
                //fn = tdoa.url +'/tdoa.test.kml';
@@ -1885,7 +1886,7 @@ function tdoa_result_menu_click_cb(path, idx, first)
                      tdoa.map_layers.push(tdoa.heatmap[midx]);
                   }
    
-                  if (tdoa.devl) {
+                  if (tdoa.kml) {
                      console.log('TDoA start KML '+ fn);
                      if (!j.XML) {
                         console.log(j);
