@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 370
+VERSION_MIN = 371
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -81,22 +81,12 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 endif
 
 
-# static analyzer (NB: different from address sanitizer "asan")
-# build on devsys or target with "make SAN=1" using alias "msan"
-# uses -O0 for speedup when used on target (clang on Debian seems to catch more errors than on OSX)
-ifeq ($(SAN),1)
-	CPP_FLAGS += -Werror --analyze -DKIWI_STATIC_ANALYSIS
-	OPT = 0
-	O_UNOPT = -O0
-endif
-
-
 ################################
 # "all" target must be first
 ################################
 .PHONY: all
 all: c_ext_clang_conv
-	@make $(MAKE_ARGS) c_ext_clang_conv_all $(LOG)
+	@make $(MAKE_ARGS) c_ext_clang_conv_all
 
 
 ################################
@@ -121,9 +111,6 @@ ifeq ($(OPT),0)
 else
 	OBJ_DIR_DEFAULT = $(OBJ_DIR_O3)
 endif
-
-LOG_FILE = $(BUILD_DIR)/build.log
-LOG = | tee -a $(LOG_FILE) 2>&1
 
 PKGS = pkgs/mongoose
 PKGS_O3 = pkgs/jsmn pkgs/sha256 pkgs/TNT_JAMA
@@ -314,6 +301,8 @@ SUB_MAKE_DEPS = $(KEYRING) $(CMD_DEPS) $(LIBS_DEP) $(GEN_ASM) $(OUT_ASM) $(GEN_V
 ################################
 
 MF_INC = $(GEN_DIR)/Makefile.inc
+START_MF_INC = | tee $(MF_INC) 2>&1
+APPEND_MF_INC = | tee -a $(MF_INC) 2>&1
 
 VERSION = -DVERSION_MAJ=$(VERSION_MAJ) -DVERSION_MIN=$(VERSION_MIN)
 VER = v$(VERSION_MAJ).$(VERSION_MIN)
@@ -344,32 +333,23 @@ else
 	find $(PVT_EXT_DIRS) -name '*.c' -exec mv '{}' '{}'pp \;
 endif
 # take this opportunity to consolidate flags into indirect Makefile since Make will be re-invoked
-	@echo "----------------" $(LOG)
+	@echo "----------------"
 #
-	@echo $(I) > $(MF_INC)
-	@echo $(I) $(LOG)
+	@echo $(I) $(START_MF_INC)
 #
-	@echo $(LOG)
-	@echo >> $(MF_INC)
-	@echo $(CFLAGS) >> $(MF_INC)
-	@echo $(CFLAGS) $(LOG)
+	@echo $(APPEND_MF_INC)
+	@echo $(CFLAGS) $(APPEND_MF_INC)
 #
-	@echo $(LOG)
-	@echo >> $(MF_INC)
-	@echo $(CPP_FLAGS) >> $(MF_INC)
-	@echo $(CPP_FLAGS) $(LOG)
+	@echo $(APPEND_MF_INC)
+	@echo $(CPP_FLAGS) $(APPEND_MF_INC)
 #
-	@echo $(LOG)
-	@echo >> $(MF_INC)
-	@echo $(EXT_DEFINES) >> $(MF_INC)
-	@echo $(EXT_DEFINES) $(LOG)
+	@echo $(APPEND_MF_INC)
+	@echo $(EXT_DEFINES) $(APPEND_MF_INC)
 #
-	@echo $(LOG)
-	@echo >> $(MF_INC)
-	@echo $(INT_FLAGS) >> $(MF_INC)
-	@echo $(INT_FLAGS) $(LOG)
+	@echo $(APPEND_MF_INC)
+	@echo $(INT_FLAGS) $(APPEND_MF_INC)
 #
-	@echo "----------------" $(LOG)
+	@echo "----------------"
 
 .PHONY: c_ext_clang_conv_all
 c_ext_clang_conv_all: $(BUILD_DIR)/kiwi.bin
@@ -602,10 +582,16 @@ c_ext_clang_conv_debug:
 	@echo MF_O3 = $(MF_O3)
 	@echo PKGS = $(PKGS)
 
+.PHONY: makefiles
 makefiles:
 	@echo
 	@echo $(MF_INC)
 	@cat $(MF_INC)
+
+.PHONY: build_log
+build_log:
+	@echo $(BUILD_DIR)/build.log:
+	@-cat $(BUILD_DIR)/build.log
 
 
 ################################
@@ -688,36 +674,36 @@ POST_PROCESS_DEPS = \
 # special
 
 $(OBJ_DIR_DEFAULT)/web_devel.o: web/web.cpp config.h
-	$(CPP) $(V) $(O_UNOPT) @$(MF_INC) -DEDATA_DEVEL -c -o $@ $<
+	$(CPP) $(V) $(VIS_UNOPT) @$(MF_INC) -DEDATA_DEVEL -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_DEFAULT)/web_embed.o: web/web.cpp config.h
-	$(CPP) $(V) $(O_UNOPT) @$(MF_INC) -DEDATA_EMBED -c -o $@ $<
+	$(CPP) $(V) $(VIS_UNOPT) @$(MF_INC) -DEDATA_EMBED -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/edata_embed.o: $(EDATA_EMBED)
-	$(CPP) $(V) $(O_UNOPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(V) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR)/edata_always.o: $(EDATA_ALWAYS)
-	$(CPP) $(V) $(O_UNOPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(V) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/ext_init.o: $(GEN_DIR)/ext_init.cpp
-	$(CPP) $(V) $(O_UNOPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(V) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 
 # .c
 
 #$(OBJ_DIR)/%.o: %.c $(SRC_DEPS)
-#	$(CC) -x c $(V) $(O_UNOPT) @$(MF_INC) -c -o $@ $<
-#	$(CC) $(V) $(O_UNOPT) @$(MF_INC) -c -o $@ $<
+#	$(CC) -x c $(V) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+#	$(CC) $(V) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 #	$(POST_PROCESS_DEPS)
 
 #$(OBJ_DIR_O3)/%.o: %.c $(SRC_DEPS)
-#	$(CC) $(V) $(O_OPT) @$(MF_INC) -c -o $@ $<
+#	$(CC) $(V) $(VIS_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 #	$(POST_PROCESS_DEPS)
 
@@ -725,12 +711,12 @@ $(OBJ_DIR)/ext_init.o: $(GEN_DIR)/ext_init.cpp
 # .cpp $(CFLAGS_UNSAFE_OPT)
 
 $(OBJ_DIR_O3)/search.o: search.cpp $(SRC_DEPS)
-	$(CPP) $(V) $(O_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(V) $(VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/simd.o: simd.cpp $(SRC_DEPS)
-	$(CPP) $(V) $(O_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(V) $(VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
@@ -738,17 +724,17 @@ $(OBJ_DIR_O3)/simd.o: simd.cpp $(SRC_DEPS)
 # .cpp
 
 $(OBJ_DIR)/%.o: %.cpp $(SRC_DEPS)
-	$(CPP) $(V) $(O_UNOPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(V) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR)/%.o: %.cpp $(SRC_DEPS)
-	$(CPP) $(V) $(O_OPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(V) $(VIS_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/%.o: %.cpp $(SRC_DEPS)
-	$(CPP) $(V) $(O_OPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(V) $(VIS_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
@@ -856,7 +842,7 @@ EXISTS_SSH_KEYS = $(shell test -f $(SSH_KEYS) && echo true)
 .PHONY: install
 install: c_ext_clang_conv
 	@# don't use MAKE_ARGS here!
-	@make c_ext_clang_conv_install $(LOG)
+	@make c_ext_clang_conv_install
 
 .PHONY: c_ext_clang_conv_install
 c_ext_clang_conv_install: $(DO_ONCE) $(BUILD_DIR)/kiwid.bin

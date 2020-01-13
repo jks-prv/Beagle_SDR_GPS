@@ -81,7 +81,7 @@ static void update_build_ctask(void *param)
 
 static void curl_makefile_ctask(void *param)
 {
-	int status = system("cd /root/" REPO_NAME " ; echo Kiwi build >/root/build.log; date >>/root/build.log; " \
+	int status = system("cd /root/" REPO_NAME " ; echo ======== >/root/build.log; echo Kiwi build >>/root/build.log; date >>/root/build.log; " \
 	    "curl --silent --show-error --ipv4 --connect-timeout 15 https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -o Makefile.1 >>/root/build.log 2>&1");
 
 	if (status < 0)
