@@ -590,8 +590,8 @@ makefiles:
 
 .PHONY: build_log
 build_log:
-	@echo $(BUILD_DIR)/build.log:
-	@-cat $(BUILD_DIR)/build.log
+	@echo /root/build.log:
+	@-cat /root/build.log
 
 
 ################################
