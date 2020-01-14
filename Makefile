@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 371
+VERSION_MIN = 372
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -590,8 +590,7 @@ makefiles:
 
 .PHONY: build_log
 build_log:
-	@echo /root/build.log:
-	@-cat /root/build.log
+	@-tail -n 500 -f /root/build.log
 
 
 ################################
@@ -1131,9 +1130,9 @@ copy_from_git:
 
 # used by gdiff alias
 gitdiff:
-	diff -br --exclude=.DS_Store --exclude=.git "--exclude=*.min.*" $(GITAPP)/$(REPO_NAME) . || true
+	colordiff -br --exclude=.DS_Store --exclude=.git "--exclude=*.min.*" $(GITAPP)/$(REPO_NAME) . || true
 gitdiff_brief:
-	diff -br --brief --exclude=.DS_Store --exclude=.git $(GITAPP)/$(REPO_NAME) . || true
+	colordiff -br --brief --exclude=.DS_Store --exclude=.git $(GITAPP)/$(REPO_NAME) . || true
 
 endif
 

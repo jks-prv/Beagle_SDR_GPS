@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.372  January 15, 2020
+    DRM extension improvements:
+        Schedule differentiates verified and non-verified times.
+        Added link for user reporting of schedule changes on Kiwi forum.
+        Service names in schedule can be links to their specific webpage.
+
 v1.371  January 14, 2020
     Support for new "--tlimit-pw" option in kiwirecorder (specify time limit exemption password).
     Better log messages to /root/build.log
