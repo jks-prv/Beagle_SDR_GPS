@@ -563,12 +563,14 @@ function drm_schedule()
       if (o.t == drm.REGION) continue;
       var station = o.s;
       var freq = o.f;
+      var url = o.u;
       var si = '';
 
       while (i < drm.stations.length && o.s == station && o.f == freq) {
          var b_px = drm_tscale(o.b);
          var e_px = drm_tscale(o.e);
-         si += w3_div(sprintf('id-drm-sched-time|left:%fpx; width:%fpx;|onclick=\"drm_click(%d);\"', b_px, e_px - b_px + 2, i));
+         si += w3_div(sprintf('id-drm-sched-time %s|left:%fpx; width:%fpx;|onclick=\"drm_click(%d);\"',
+            o.v? 'w3-light-green':'', b_px, e_px - b_px + 2, i));
          i++;
          o = drm.stations[i];
       }
@@ -576,6 +578,7 @@ function drm_schedule()
 
       station = station.replace('_', narrow? '<br>':' ');
       if (narrow) station = station.replace(',', '<br>');
+      if (url) station = w3_link('w3-link-darker-color', url, station);
       s += w3_inline('cl-drm-sched-station cl-drm-sched-striped/',
          w3_div('', station + '&nbsp;&nbsp;&nbsp;'+ (narrow? '<br>':'') + freq),
          si
@@ -588,6 +591,21 @@ function drm_schedule()
    
    return s;
 }
+
+// stations.cjson format:
+//
+//    [
+//       { "region0_name": null, "svc0_name": [ freq/times ], "svc1_name": [ freq/times ] ... },
+//       { "region1_name": null, "svc0_name": [ freq/times ], "svc1_name": [ freq/times ] ... },
+//       {}
+//    ]
+//
+// freq/times format:
+//
+//    [ freq0, start_time, stop_time, freq1, start_time, stop_time ... ]
+//
+//       "start_time, stop_time" can also be an array [ start0, stop0, start1, stop1 ... ]
+//
 
 function drm_get_stations_cb(stations)
 {
@@ -618,39 +636,48 @@ function drm_get_stations_cb(stations)
    }
    
    drm.stations = [];
-   var region, station, freq, begin, end, prefix;
-   var is_India = false;
-   stations.forEach(function(obj, i) {
+   var region, station, freq, begin, end, prefix, verified, url;
+   var is_India_MW = false;
+   stations.forEach(function(obj, i) {    // each object of outer array
       prefix = '';
-      w3_obj_enum(obj, function(key, i1) {
+      w3_obj_enum(obj, function(key, i1) {   // each object
          var ar1 = obj[key];
          if (i1 == 0) {
             region = key;
             if (region == 'India MW') {
                prefix = 'India, ';
-               is_India = true;
+               is_India_MW = true;
             }
             drm.stations.push( { t:drm.REGION, f:0, s:'', r:region } );
             return;
          } else {
             if (!isArray(ar1)) return;
             station = prefix + key;
+            url = null;
             for (i1 = 0; i1 < ar1.length; i1++) {
-               freq = ar1[i1++];
                var ae = ar1[i1];
+               if (i1 == 0 && isString(ae)) { url = ae; continue; }
+               freq = ae;
+               i1++;
+               
+               ae = ar1[i1];
                if (isArray(ae)) {
                   for (var i2 = 0; i2 < ae.length; i2++) {
                      begin = ae[i2++];
                      end = ae[i2];
-                     drm.stations.push( { t:drm.MULTI, f:freq, s:station, r:region, b:begin, e:end } );
+                     verified = (begin < 0 || end < 0);
+                     begin = Math.abs(begin); end = Math.abs(end);
+                     drm.stations.push( { t:drm.MULTI, f:freq, s:station, r:region, b:begin, e:end, v:verified, u:url } );
                   }
                } else {
                   begin = ar1[i1++];
                   end = ar1[i1];
-                  drm.stations.push( { t:drm.SINGLE, f:freq, s:station, r:region, b:begin, e:end } );
+                  verified = (begin < 0 || end < 0);
+                  begin = Math.abs(begin); end = Math.abs(end);
+                  drm.stations.push( { t:drm.SINGLE, f:freq, s:station, r:region, b:begin, e:end, v:verified, u:url } );
                }
             }
-            if (!is_India)
+            if (!is_India_MW)    // make all India MW appear as a single service
                drm.stations.push( { t:drm.SERVICE, f:0, s:station, r:region } );
          }
       });
@@ -888,7 +915,14 @@ function drm_desktop_controls_setup(w_graph)
          ) +
 
          w3_div('id-drm-options w3-display-right w3-text-white|top:230px; right:0px; width:200px; height:200px',
-            w3_select_hier('w3-text-red', '', '', 'drm.display_idx', drm.display_idx, drm.display_s, 'drm_display_cb')
+            w3_select_hier('w3-text-red', '', '', 'drm.display_idx', drm.display_idx, drm.display_s, 'drm_display_cb'),
+            w3_div('w3-margin-T-8',
+               w3_divs('id-drm-options-by-svc/w3-tspace-4',
+                  w3_div('cl-drm-sched-options-time w3-light-green', 'verified'),
+                  w3_div('cl-drm-sched-options-time', 'not-verified'),
+                  w3_link('w3-link-color', 'http://valentfx.com/vanilla/discussion/1865/drm-heard#latest', 'Please report<br>schedule changes')
+               )
+            )
          );
 
       controls_inner =
@@ -1021,8 +1055,8 @@ function drm_controls_setup()
    // Can't use file w/ .json extension since our file contains comments and
    // Firefox improperly caches json files with errors!
    // FIXME: rate limit this
-   //kiwi_ajax(drm.url +'stations.cjson', 'drm_get_stations_cb', 0, -1000);      // test timeout
-   kiwi_ajax(drm.url +'stations.cjson', 'drm_get_stations_cb', 0, 10000);
+   //kiwi_ajax(drm.url +'stations2.cjson', 'drm_get_stations_cb', 0, -1000);      // test timeout
+   kiwi_ajax(drm.url +'stations2.cjson', 'drm_get_stations_cb', 0, 10000);
 
    drm_run(1);
    // done after drm_run() so correct drm.saved_{mode,passband} is set
@@ -1174,8 +1208,10 @@ function drm_display_cb(path, idx, first)
    console.log('$ drm_display_cb idx='+ idx +' show='+ dsp +' '+ drm.panel_0[dsp] +'/'+ drm.panel_1[dsp]);
    drm.panel_0.forEach(function(el) { w3_hide('id-drm-panel-0-'+ el); });
    drm.panel_1.forEach(function(el) { w3_hide('id-drm-panel-1-'+ el); });
+   drm.panel_1.forEach(function(el) { w3_hide('id-drm-options-'+ el); });
    w3_show('id-drm-panel-0-'+ drm.panel_0[dsp]);
    w3_show('id-drm-panel-1-'+ drm.panel_1[dsp]);
+   w3_show('id-drm-options-'+ drm.panel_1[dsp]);
 
    ext_send('SET send_iq='+ ((dsp >= drm.IQ_ALL && dsp <= drm.IQ_END)? 1:0));
 }
