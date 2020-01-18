@@ -4,6 +4,7 @@ var tdoa = {
    ext_name:   'TDoA',  // NB: must match tdoa.cpp:tdoa_ext.name
    first_time: true,
    hostname:  'tdoa.kiwisdr.com',
+   old_algorithm: false,
    prev_ui:    false,
    spiderfied: false,
    spiderfy_deferred: false,
@@ -216,6 +217,7 @@ function tdoa_controls_setup()
          w3_checkbox(cbox, 'Show heatmap', 'tdoa.heatmap_visible', true, 'tdoa_heatmap_visible_cb'),
          w3_checkbox(cbox, 'Show day/night', 'tdoa.day_night_visible', true, 'tdoa_day_night_visible_cb'),
          w3_checkbox(cbox, 'Show graticule', 'tdoa.graticule_visible', true, 'tdoa_graticule_visible_cb'),
+         w3_checkbox(cbox, 'Old algorithm', 'tdoa.old_algorithm', false, 'tdoa_old_algorithm_cb'),
 
          w3_checkbox('w3-margin-T-10//'+ cbox, 'Kiwi hosts', 'tdoa.hosts_visible', true, 'tdoa_hosts_visible_cb'),
          w3_checkbox(cbox, 'Reference locations', 'tdoa.refs_visible', true, 'tdoa_refs_visible_cb'),
@@ -255,7 +257,8 @@ function tdoa_controls_setup()
             w3_button('id-tdoa-rerun-button w3-margin-left w3-padding-smaller w3-css-yellow w3-hide||title="rerun TDoA using same samples"',
                'Rerun', 'tdoa_rerun_button_cb'
             ),
-		      w3_div('id-tdoa-download-KML w3-margin-left w3-hide||title="download KML file"')
+		      w3_div('id-tdoa-download-KML w3-margin-left w3-hide||title="download KML file"'),
+		      w3_div('id-tdoa-download-MAT w3-margin-left w3-hide||title="download MAT file"')
          ),
 		   w3_inline_percent('',
             w3_select('w3-text-red', '', 'quick zoom', 'tdoa.quick_zoom', -1, tdoa.quick_zoom, 'tdoa_quick_zoom_cb'), 20,
@@ -268,7 +271,7 @@ function tdoa_controls_setup()
 	ext_panel_show(control_html, data_html, null);
 	time_display_setup('tdoa');
 
-	ext_set_controls_width_height(620, 270);
+	ext_set_controls_width_height(650, 270);
    ext_set_data_height(tdoa.h_data);
 
    var s = '';
@@ -978,7 +981,15 @@ function tdoa_get_hosts_cb(hosts)
             if (a.startsWith('kml:')) {
                tdoa.kml = true;
             } else
-            if (a.startsWith('devl:') || a.startsWith('new:')) {
+            if (a.startsWith('old:')) {
+               tdoa.old_algorithm = true;
+               w3_checkbox_set('tdoa.old_algorithm', true);
+            } else
+            if (a.startsWith('new:')) {
+               tdoa.old_algorithm = false;
+               w3_checkbox_set('tdoa.old_algorithm', false);
+            } else
+            if (a.startsWith('devl:')) {
                tdoa.devl = true;
             }
 
@@ -1112,6 +1123,7 @@ function tdoa_submit_state(state, msg)
    
    w3_show_hide('id-tdoa-rerun-button', state == tdoa.RESULT);
    w3_show_hide('id-tdoa-download-KML', state == tdoa.RESULT && tdoa.leaflet);
+   w3_show_hide('id-tdoa-download-MAT', state == tdoa.RESULT);
 
    tdoa.state = state;
 }
@@ -1120,6 +1132,7 @@ function tdoa_rerun_clear()
 {
    w3_hide('id-tdoa-rerun-button');
    w3_hide('id-tdoa-download-KML');
+   w3_hide('id-tdoa-download-MAT');
    tdoa.rerun = 0;
 }
 
@@ -1409,6 +1422,7 @@ function tdoa_submit_button_cb2()
       }
    }
    
+   if (!tdoa.old_algorithm) s += ",'new',true";
    if (tdoa.kml) s += ",'kml',1";
    s += ')';
    
@@ -1502,7 +1516,10 @@ function tdoa_sample_status_cb(status)
    
    if (!error) {
       tdoa_set_icon('submit', -1, 'fa-refresh fa-spin', 20, 'lime');
-      tdoa_submit_state(tdoa.RUNNING, (tdoa.devl? 'TDoA-new':'TDoA') +' algorithm running');
+      var which = 'TDoA';
+      if (tdoa.old_algorithm) which += '-old'; else
+      if (tdoa.devl) which += '-devl';
+      tdoa_submit_state(tdoa.RUNNING, which +' algorithm running');
    } else {
       if (0 && retry) {    // fixme: doesn't work yet
          tdoa_set_icon('submit', -1, 'fa-cog fa-spin', 20, 'yellow');
@@ -1715,7 +1732,10 @@ function tdoa_submit_status_old_cb(status, info)
 
       tdoa_result_menu_click_cb('', tdoa.TDOA_MAP);
       w3_select_value('tdoa.result_select', tdoa.TDOA_MAP);
-      tdoa_submit_state(tdoa.RESULT, info? info : (tdoa.devl? 'TDoA-new':'TDoA') +' complete');
+      var which = 'TDoA';
+      if (tdoa.old_algorithm) which += '-old'; else
+      if (tdoa.devl) which += '-devl';
+      tdoa_submit_state(tdoa.RESULT, info? info : which +' complete');
    }
 
    w3_button_text('id-tdoa-submit-button', 'Submit', 'w3-css-yellow', 'w3-red');
@@ -1851,6 +1871,9 @@ function tdoa_result_menu_click_cb(path, idx, first)
    
          tdoa_show_maps({ kiwi: false, result: true });
          
+         var url = tdoa.url_files + tdoa.response.key +'/tdoa_data.mat';
+         w3_innerHTML('id-tdoa-download-MAT', w3_link('', url, w3_icon('w3-text-aqua', 'fa-download', 18)) +' MAT');
+   
          var ms, me;
          if (idx == tdoa.COMBINED_MAP) {
             // stack overlay and contours for combined mode
@@ -1868,6 +1891,7 @@ function tdoa_result_menu_click_cb(path, idx, first)
                console.log('TDoA KML test: mi='+ mi +' '+ fn);
                //fn = tdoa.url +'/tdoa.test.kml';
             }
+
             kiwi_ajax(fn, function(j, midx) {
                if (j.AJAX_error) {
                   console.log(j);
@@ -1885,7 +1909,7 @@ function tdoa_result_menu_click_cb(path, idx, first)
                      tdoa.heatmap[midx].addTo(tdoa.result_map);
                      tdoa.map_layers.push(tdoa.heatmap[midx]);
                   }
-   
+                  
                   if (tdoa.kml) {
                      console.log('TDoA start KML '+ fn);
                      if (!j.XML) {
@@ -2059,6 +2083,11 @@ function tdoa_result_menu_click_cb(path, idx, first)
          w3_innerHTML('id-tdoa-gmap-link', w3_link('', url, w3_icon('w3-text-aqua', 'fa-map-marker', 18)));
       }
    }
+}
+
+function tdoa_old_algorithm_cb(path, checked)
+{
+   tdoa.old_algorithm = checked;
 }
 
 function tdoa_heatmap_visible_cb(path, checked)
