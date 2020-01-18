@@ -498,11 +498,12 @@ function html(id_or_name)
 	return el;
 }
 
-function px(num)
+function px(s)
 {
-   if (num == '') return '0';
+   if (!isArg(s) || s == '') return '0';
+   var num = parseFloat(s);
    if (isNaN(num)) {
-      console.log('px num='+ num);
+      console.log('px num='+ s);
       kiwi_trace();
       return '0';
    }
