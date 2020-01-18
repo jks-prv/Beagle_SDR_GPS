@@ -503,6 +503,9 @@ function tdoa_update_link()
       }
    }
 
+   if (tdoa.old_algorithm) url += ',old:';
+   if (tdoa.devl) url += ',devl:';
+   if (tdoa.kml) url += ',kml:';
 	w3_innerHTML('id-tdoa-bookmark', w3_link('', url, w3_icon('w3-text-css-lime', 'fa-external-link-square', 16)));
 }
 
