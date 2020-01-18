@@ -1,5 +1,6 @@
 #include "xheaacsuperframe.h"
 #include "../util/CRC.h"
+#include "printf.h"
 
 XHEAACSuperFrame::XHEAACSuperFrame():AudioSuperFrame(), numChannels(0), superFrameSize(0), payload(), frameSize(), borders()
 {    
@@ -8,6 +9,7 @@ XHEAACSuperFrame::XHEAACSuperFrame():AudioSuperFrame(), numChannels(0), superFra
 void
 XHEAACSuperFrame::init(const CAudioParam& audioParam, unsigned frameSize)
 {
+    printf("DRM xHE-AAC init\n");
     numChannels = audioParam.AM_MONO?1:2;
     superFrameSize = frameSize;
     payload.resize(0);
@@ -79,7 +81,13 @@ bool XHEAACSuperFrame::parse(CVectorEx<_BINARY>& asf)
     //cerr << "payload start " << start << " bit reservoir level " << bitReservoirLevel << " bitResLevel " << bitResLevel << " superframe size " << superFrameSize << " directory offset " << 8*directory_offset << " bits " << directory_offset << " bytes" << endl;
 
     // get the payload
-    for (size_t i=2; i < directory_offset; i++) payload.push_back(asf.Separate(8));
+    for (size_t i=2; i < directory_offset; i++) {
+        if (asf.Size() == 0) {
+            printf("DRM xHE-AAC asf UNDERRUN 1\n");
+            return false;
+        }
+        payload.push_back(asf.Separate(8));
+    }
     borders.resize(frameBorderCount);
     frameSize.resize(frameBorderCount);
 
@@ -87,6 +95,10 @@ bool XHEAACSuperFrame::parse(CVectorEx<_BINARY>& asf)
     if (frameBorderCount > 0) {
         // get the directory
         for (int i = int(frameBorderCount-1); i >= 0; i--) {
+            if (asf.Size() == 0) {
+                printf("DRM xHE-AAC asf UNDERRUN 2\n");
+                return false;
+            }
             unsigned frameBorderIndex = asf.Separate(12);
             unsigned frameBorderCountRepeat = asf.Separate(4);
             if (frameBorderCountRepeat != frameBorderCount) {
@@ -155,7 +167,7 @@ bool XHEAACSuperFrame::parse(CVectorEx<_BINARY>& asf)
             }
         #endif
     } else {
-        // frameBorderCount == 0: AU spans entire ASF payload (or bad data in header)
+        // frameBorderCount == 0: spans entire ASF payload or bad data in header
         //printf("xHE-fullspan\n");
         audioFrame.resize(0);
         return ok;
@@ -181,11 +193,16 @@ bool XHEAACSuperFrame::parse(CVectorEx<_BINARY>& asf)
             }
             int psize = payload.size();
             if (psize == 0) {
-                printf("payload size: i=%d af_size=%d frameBorderCount=%d\n", (int) i, (int) audioFrame.size(), frameBorderCount);
-                exit(-1);
+                printf("payload size: i=%d af_size=%d af_size[i]=%d frameSize=%d frameBorderCount=%d\n",
+                    (int) i, (int) audioFrame.size(), audioFrame[i].size(), frameSize[i], frameBorderCount);
+                //exit(-1);
             }
         #endif
 
+        if (payload.empty()) {
+            printf("DRM xHE-AAC payload UNDERRUN\n");
+            return false;
+        }
         audioFrame[i].push_back(payload.front());
         payload.pop_front();
         if (audioFrame[i].size() == frameSize[i]) {
@@ -196,9 +213,9 @@ bool XHEAACSuperFrame::parse(CVectorEx<_BINARY>& asf)
     }
 
     //cerr << "remaining payload is " << payload.size() << " bytes" << endl;
-    size_t allocated = 2 + 2*frameBorderCount; // bytes of the superframe for the header and directory
-    allocated += bytesInFrames - start; // do count bytes in frames but not the ones from previous superframes
-    allocated += next; // do count bytes for next superframe
+    //size_t allocated = 2 + 2*frameBorderCount; // bytes of the superframe for the header and directory
+    //allocated += bytesInFrames - start; // do count bytes in frames but not the ones from previous superframes
+    //allocated += next; // do count bytes for next superframe
     //cerr << "allocated " << allocated << " bytes out of " << superFrameSize << " in the superframe" << endl;
     return ok;
 }

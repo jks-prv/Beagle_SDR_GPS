@@ -309,7 +309,7 @@ CReceiveData::SetSoundInterface(string device)
         int sr = pAudioFileIn->GetSampleRate();
         if(iSampleRate!=sr) {
             // TODO
-            cerr << "file sample rate is " << sr << endl;
+            //cerr << "file sample rate is " << sr << endl;
             iSampleRate = sr;
         }
         pSound = pAudioFileIn;

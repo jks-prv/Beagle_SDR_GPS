@@ -109,7 +109,12 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
     /* Reset bit extraction access */
     (*pvecInputData).ResetBitAccess();
 
-    bGoodValues = pAudioSuperFrame->parse(*pvecInputData);
+    try {
+        bGoodValues = pAudioSuperFrame->parse(*pvecInputData);
+    } catch(std::exception& e) {
+        printf("DRM SuperFrame parse EXCEPTION %s\n", e.what());
+        bGoodValues = false;
+    }
 
     /* Audio decoding ******************************************************** */
     /* Init output block size to zero, this variable is also used for
@@ -403,7 +408,7 @@ CAudioSourceDecoder::InitInternal(CParameter & Parameters)
 
         if (inputSampleRate != outputSampleRate) {
             if (iLenDecOutPerChan == 0)
-                printf("$ numFrames=%d iLenDecOutPerChan=%d inputSampleRate=%d outputSampleRate=%d\n",
+                printf("DRM iLenDecOutPerChan == 0: numFrames=%d iLenDecOutPerChan=%d inputSampleRate=%d outputSampleRate=%d\n",
                     numFrames, iLenDecOutPerChan, inputSampleRate, outputSampleRate);
             _REAL rRatio = _REAL(outputSampleRate) / _REAL(inputSampleRate);
             /* Init resample objects */
@@ -417,8 +422,8 @@ CAudioSourceDecoder::InitInternal(CParameter & Parameters)
         } else {
             iResOutBlockSize = outputSampleRate * iLenDecOutPerChan / inputSampleRate;
         }
-        printf("$$$ numFrames=%d iLenDecOutPerChan=%d iResOutBlockSize=%d iMaxLenResamplerOutput=%d inputSampleRate=%d outputSampleRate=%d\n",
-            numFrames, iLenDecOutPerChan, iResOutBlockSize, iMaxLenResamplerOutput, inputSampleRate, outputSampleRate);
+        //printf("$$$ numFrames=%d iLenDecOutPerChan=%d iResOutBlockSize=%d iMaxLenResamplerOutput=%d inputSampleRate=%d outputSampleRate=%d\n",
+        //    numFrames, iLenDecOutPerChan, iResOutBlockSize, iMaxLenResamplerOutput, inputSampleRate, outputSampleRate);
 
         //cerr << "output block size per channel " << iResOutBlockSize << " = samples " << iLenDecOutPerChan << " * " << Parameters.GetAudSampleRate() << " / " << iAudioSampleRate << endl;
 

@@ -85,7 +85,7 @@ CAudioFileIn::SetFileName(const string& strFileName, FileTyper::type type)
         break;
     case fmt_direct:
         iFileChannels = 2;
-        iFileSampleRate = 12000;
+        iFileSampleRate = snd_rate;
         assert(drm->init);
         drm->iq_rd_pos = N_DPBUF-1;
         drm->remainingIQ = drm->iq_bpos = 0;

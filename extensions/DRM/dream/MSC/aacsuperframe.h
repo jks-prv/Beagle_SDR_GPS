@@ -17,6 +17,8 @@ private:
     unsigned headerBytes;
     std::vector<uint8_t> aacCRC;
     bool header(CVectorEx<_BINARY>&);
+    void dump();
+    size_t lastFrameLength;
 };
 
 #endif // AACSUPERFRAME_H

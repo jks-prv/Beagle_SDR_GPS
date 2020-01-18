@@ -43,9 +43,21 @@
     #define drm_next_task(...)
 #endif
 
+#define DRM_LOWEST_SIGSRATE 24000
+#if MAX_SND_RATE > DRM_LOWEST_SIGSRATE
+    #error MAX_SND_RATE > DRM_LOWEST_SIGSRATE
+#endif
+
 static const char *drm_argv[] = {
     "drm",
-    "--audsrate", "12000",
+    
+    // this is the lowest internal processing srate and supports
+    // both Kiwi 12k and 20.25k passband modes
+    "--sigsrate", STRINGIFY_DEFINE(DRM_LOWEST_SIGSRATE),
+
+    // audio output srate, now set in DRM_loop() to Kiwi 12k or 20.25k (snd_rate)
+    //"--audsrate", "12000",
+
     "-c", "8",
     "-f", "drm.dat",
     //"-f", "/root/kiwi.config/samples/Kuwait.15110.1.12k.iq.wav",

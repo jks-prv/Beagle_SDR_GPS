@@ -107,9 +107,11 @@ bool DRM_msgs(char *msg, int rx_chan)
 		if (err) DRM_enable = true;
 		conn_t *conn = rx_channels[rx_chan].conn;
 
+    #if 1
         if (snd_rate != SND_RATE_4CH) {
             rv = -1;
         } else
+    #endif
         if (!DRM_enable && !conn->isLocal) {
             rv = -2;    // prevent attempt to bypass the javascript kiwi.is_local check
         } else {

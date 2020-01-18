@@ -10,7 +10,14 @@
 
 #ifdef DRM
     #ifdef MULTI_CORE
-        // shared memory enabled
+        //#define BBAI_DRM_ASAN
+        #ifdef BBAI_DRM_ASAN
+            #warning don't forget to remove BBAI_DRM_ASAN
+            #define DRM_SHMEM_DISABLE
+            #define RX_SHMEM_DISABLE
+        #else
+            // shared memory enabled
+        #endif
     #else
         // normally shared memory disabled
         // but could be enabled for testing
@@ -41,9 +48,9 @@ enum { DRM_DAT_IQ=0 } drm_dat_e;
 
 typedef struct {
     #define N_DRM_OBUF 32
-    #define N_DRM_OSAMPS 4800
+    #define N_DRM_OSAMPS 9600
     u4_t out_wr_pos, out_rd_pos;
-    int out_pos;
+    int out_pos, out_samps;
     TYPESTEREO16 out_samples[N_DRM_OBUF][N_DRM_OSAMPS];
 } drm_buf_t;
 
