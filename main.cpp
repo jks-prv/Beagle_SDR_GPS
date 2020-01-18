@@ -232,8 +232,8 @@ int main(int argc, char *argv[])
     assert (NOT_FOUND != FALSE);
     
     if (background_mode) {
-    	lprintf("background mode: delaying start 30 secs...\n");
-    	sleep(30);
+    	lprintf("background mode: delaying start 60 secs...\n");
+    	sleep(60);
     }
     
 
