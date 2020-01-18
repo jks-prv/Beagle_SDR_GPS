@@ -83,6 +83,7 @@ void DRM_loop(int rx_chan)
     try {
 		CSettings Settings;
 		Settings.Load(ARRAY_LEN(drm_argv), (char **) drm_argv);
+		Settings.Put("Receiver", "samplerateaud", snd_rate);
 		
 		string mode = Settings.Get("command", "mode", string());
 

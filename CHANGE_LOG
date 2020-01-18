@@ -2,6 +2,16 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.373  January 18, 2020
+    DRM extension fixes and improvements:
+        Special USB IQ passband for WINB to help initial sync.
+        Scrolling in the schedule window shouldn't get "stuck" anymore.
+        Prevent weak signals from occasionally causing crashes in the AAC superframe processing.
+        Save cpu cycles by dropping internal processing rate from 48 kHz to 24 kHz.
+            Can do this because our input is always from Kiwi 12/20.25 kHz, not a 48 kHz soundcard.
+    Better log messages to /root/build.log
+    Fix (hopefully) for the admin page "Still determining local interface address" problem.
+
 v1.372  January 15, 2020
     DRM extension improvements:
         Schedule differentiates verified and non-verified times.

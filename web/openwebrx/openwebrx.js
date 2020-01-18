@@ -910,7 +910,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	
 	this.low_cut = Math.max(lo, this.filter.low_cut_limit);
 	this.high_cut = Math.min(hi, this.filter.high_cut_limit);
-	//console.log('DEMOD set lo='+ this.low_cut, ' hi='+ this.high_cut);
+	//console.log('DEMOD set subtype='+ subtype +' lo='+ this.low_cut, ' hi='+ this.high_cut);
 	
 	this.usePBCenter = false;
 	this.isCW = false;

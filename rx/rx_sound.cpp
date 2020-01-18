@@ -1062,8 +1062,8 @@ void c2s_sound(void *param)
                     int pkt_remain = FASTFIR_OUTBUF_SIZE;
                     
                     int bufs = pos_wrap_diff(drm_buf->out_wr_pos, drm_buf->out_rd_pos, N_DRM_OBUF);
-                    int remain = N_DRM_OSAMPS - drm_buf->out_pos;
-                    int avail_samples = bufs? (remain + (bufs-1) * N_DRM_OSAMPS) : 0;
+                    int remain = drm_buf->out_samps - drm_buf->out_pos;
+                    int avail_samples = bufs? (remain + (bufs-1) * drm_buf->out_samps) : 0;
                     //{ real_printf("d%d as%d ", bufs, avail_samples); fflush(stdout); }
                     //{ real_printf("d%d ", bufs); fflush(stdout); }
                     
@@ -1114,7 +1114,7 @@ void c2s_sound(void *param)
                                 }
                             }
                             drm_buf->out_pos += samps;
-                            if (drm_buf->out_pos == N_DRM_OSAMPS) {
+                            if (drm_buf->out_pos == drm_buf->out_samps) {
                                 drm_buf->out_pos = 0;
                                 drm_buf->out_rd_pos = (drm_buf->out_rd_pos + 1) & (N_DRM_OBUF-1);
                             }

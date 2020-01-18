@@ -46,6 +46,13 @@ Boston, MA  02110-1301, USA.
 
 //#define IPV6_TEST
 
+#define LOCAL_IP_DEBUG
+#ifdef LOCAL_IP_DEBUG
+	#define local_ip_printf(fmt, ...) lprintf(fmt, ## __VA_ARGS__)
+#else
+	#define local_ip_printf(fmt, ...)
+#endif
+
 ddns_t ddns;
 net_t net;
 
@@ -62,15 +69,21 @@ bool find_local_IPs()
         
         int family = ifa->ifa_addr->sa_family;
         int flags = ifa->ifa_flags;
-        //lprintf("getifaddrs: IF %s fam=%d flags=0x%x%s%s\n", ifa->ifa_name, family, flags,
-        //    (flags & IFF_UP)? " UP":"", (flags & IFF_RUNNING)? " RUNNING":"");
-        if (family != AF_INET && family != AF_INET6) continue;
-        if (!(flags & IFF_UP) || !(flags & IFF_RUNNING)) continue;
+        local_ip_printf("getifaddrs: IF %s fam=%d flags=0x%x%s%s\n", ifa->ifa_name, family, flags,
+            (flags & IFF_UP)? " UP":"", (flags & IFF_RUNNING)? " RUNNING":"");
+        if (family != AF_INET && family != AF_INET6) {
+            local_ip_printf("getifaddrs: IF %s wrong family\n", ifa->ifa_name);
+            continue;
+        }
+        if (!(flags & IFF_UP) || !(flags & IFF_RUNNING)) {
+            local_ip_printf("getifaddrs: IF %s not UP and RUNNING\n", ifa->ifa_name);
+            continue;
+        }
         if (strcmp(ifa->ifa_name, "lo") == 0 || kiwi_str_begins_with(ifa->ifa_name, "usb") || kiwi_str_begins_with(ifa->ifa_name, "SoftAp"))
             continue;
         bool is_ipv4LL = (kiwi_str_ends_with(ifa->ifa_name, ":avahi") != NULL);
         
-        //lprintf("getifaddrs: CHECK %s fam=%d\n", ifa->ifa_name, family);
+        local_ip_printf("getifaddrs: CHECK %s fam=%d\n", ifa->ifa_name, family);
 
         char *ip_pvt;
         socklen_t salen;
@@ -83,8 +96,8 @@ bool find_local_IPs()
             salen = sizeof(struct sockaddr_in);
             sin = (struct sockaddr_in *) (ifa->ifa_netmask);
             ddns.netmask4 = INET4_NTOH(* (u4_t *) &sin->sin_addr);
-            //lprintf("DDNS: IF IPv4 0x%08x /%d 0x%08x %s\n", ddns.ip4_pvt,
-            //    inet_nm_bits(AF_INET, &ddns.netmask4), ddns.netmask4, ddns.ip4_if_name);
+            local_ip_printf("DDNS: IF IPv4 0x%08x /%d 0x%08x %s\n", ddns.ip4_pvt,
+                inet_nm_bits(AF_INET, &ddns.netmask4), ddns.netmask4, ddns.ip4_if_name);
             
             // FIXME: if ip4LL, because a DHCP server wasn't responding, need to periodically reprobe
             // for when it comes back online
@@ -106,8 +119,8 @@ bool find_local_IPs()
                 ip_pvt = ddns.ip4_6_pvt_s;
                 salen = sizeof(struct sockaddr_in);
                 ddns.netmask4_6 = INET4_NTOH(* (u4_t *) &m[12]);
-                //lprintf("DDNS: IF IPv4_6 0x%08x /%d 0x%08x %s\n", ddns.ip4_6_pvt,
-                //    inet_nm_bits(AF_INET, &ddns.netmask4_6), ddns.netmask4_6, ddns.ip4_6_if_name);
+                local_ip_printf("DDNS: IF IPv4_6 0x%08x /%d 0x%08x %s\n", ddns.ip4_6_pvt,
+                    inet_nm_bits(AF_INET, &ddns.netmask4_6), ddns.netmask4_6, ddns.ip4_6_if_name);
                 ddns.ip4_6_valid = true;
             } else {
                 if (a[0] == 0xfe && a[1] == 0x80) {
@@ -116,7 +129,7 @@ bool find_local_IPs()
                     ip_pvt = ddns.ip6LL_pvt_s;
                     salen = sizeof(struct sockaddr_in6);
                     memcpy(ddns.netmask6LL, m, sizeof(ddns.netmask6LL));
-                    //lprintf("DDNS: IF IPv6 LINK-LOCAL /%d %s\n", inet_nm_bits(AF_INET6, &ddns.netmask6LL), ddns.ip6LL_if_name);
+                    local_ip_printf("DDNS: IF IPv6 LINK-LOCAL /%d %s\n", inet_nm_bits(AF_INET6, &ddns.netmask6LL), ddns.ip6LL_if_name);
                     ddns.ip6LL_valid = true;
                 } else {
                     ddns.ip6_if_name = strdup(ifa->ifa_name);
@@ -124,7 +137,7 @@ bool find_local_IPs()
                     ip_pvt = ddns.ip6_pvt_s;
                     salen = sizeof(struct sockaddr_in6);
                     memcpy(ddns.netmask6, m, sizeof(ddns.netmask6));
-                    //lprintf("DDNS: IF IPv6 /%d ", inet_nm_bits(AF_INET6, &ddns.netmask6), ddns.ip6_if_name);
+                    local_ip_printf("DDNS: IF IPv6 /%d ", inet_nm_bits(AF_INET6, &ddns.netmask6), ddns.ip6_if_name);
     
                     #ifdef IPV6_TEST
                         ddns.netmask6[8] = 0xff;

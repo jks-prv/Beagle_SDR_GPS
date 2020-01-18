@@ -5,6 +5,7 @@ var drm = {
    first_time: true,
    active: false,
    url: 'http://DRM.kiwisdr.com/drm/',
+   special_passband: null,
    dseq: 0,
 
    locked: 0,
@@ -337,6 +338,12 @@ function drm_recv(data)
 			         }
 			         w3_color('id-drm-occ-'+ ['4.5','5','9','10','18','20'][i], 'black', 'lime');
 			         drm.last_occ = i;
+			         
+			         /*
+			         if (i != drm.OOC_10_kHz && ) {
+			            drm.special_passband = ;
+			         }
+			         */
 			      }
 
 			      i = o.ilv;
@@ -498,18 +505,20 @@ function drm_tscale(utc)
 {
    var pct = drm.mobile? 0.30 : 0.35;
    var factor = drm.mobile? 0.026 : 0.025;
-   return (pct * drm.w_sched) + (utc * factor * drm.w_sched);
+   return ((pct * drm.w_sched) + (utc * factor * drm.w_sched)).toFixed(0);
 }
 
 function drm_schedule_static()
 {
    var s = '';
    
+   // using "title=" here doesn't work because of the "pointer-events: none" required for proper scrolling
    for (var hour = 0; hour <= 24; hour++) {
-      s += w3_div(sprintf('id-drm-sched-tscale|left:%fpx;', drm_tscale(hour)));
+      //s += w3_div(sprintf('id-drm-sched-tscale|left:%spx;|title="%02d:00"', drm_tscale(hour), hour));
+      s += w3_div(sprintf('id-drm-sched-tscale|left:%spx;', drm_tscale(hour)));
    }
 
-   s += w3_div(sprintf('id-drm-sched-now|left:%fpx;', drm_tscale(kiwi_UTC_minutes()/60)));
+   s += w3_div(sprintf('id-drm-sched-now|left:%spx;', drm_tscale(kiwi_UTC_minutes()/60)));
    drm.interval = setInterval(function() {
       w3_el('id-drm-sched-now').style.left = px(drm_tscale(kiwi_UTC_minutes()/60));
    }, 60000);
@@ -520,7 +529,9 @@ function drm_schedule_static()
 function drm_set_freq_menu(freq, station)
 {      
    // select matching menu item frequency and optionally station
-   station = isArg(station)? station.toLowerCase() : null;
+   var no_clear_special = isArg(station);
+   station = no_clear_special? station.toLowerCase() : null;
+
    var found = false;
    for (var i = 0; i < drm.n_menu; i++) {
       var menu = 'drm.menu'+ i;
@@ -532,7 +543,7 @@ function drm_set_freq_menu(freq, station)
          if (!isNaN(f)) {
             //console.log('CONSIDER '+ parseFloat(option.innerHTML) +' '+ dq(last_disabled));
             if (!found && parseFloat(option.innerHTML) == freq && (!station || station.includes(last_disabled))) {
-               drm_pre_select_cb(menu, option.value, false);
+               drm_pre_select_cb(menu, option.value, false, no_clear_special);
                //console.log('FOUND option.value='+ option.value);
                found = true;
             }
@@ -540,13 +551,25 @@ function drm_set_freq_menu(freq, station)
       });
       if (found) break;
    }
-   if (!found) drm_set_freq(freq);
+   if (!found) drm_set_freq(freq);     // if freq not set by drm_pre_select_cb() above
 }
 
 function drm_click(idx)
 {
    var o = drm.stations[idx];
-   console.log('drm_click '+ o.f +' '+ dq(o.s.toLowerCase()));
+   console.log('drm_click '+ o.f +' '+ dq(o.s.toLowerCase()) +' '+ (o.u? o.u:''));
+   
+   // a hack to add this to the broadcaster's URL link, but didn't want to change the cjson file format again
+   drm.special_passband = null;
+   if (o.u) {
+		var p = new RegExp('^.*\?f=\/([-0-9.k]*)?,?([-0-9.k]*)?.*$').exec(o.u);
+		console.log(p);
+		if (p && p.length == 3)
+         drm.special_passband = { low: p[1].parseFloatWithUnits('k'), high: p[2].parseFloatWithUnits('k') };
+   }
+   console.log('special_passband:');
+   console.log(drm.special_passband);
+   
    drm_set_freq_menu(o.f, o.s);
 }
 
@@ -569,8 +592,8 @@ function drm_schedule()
       while (i < drm.stations.length && o.s == station && o.f == freq) {
          var b_px = drm_tscale(o.b);
          var e_px = drm_tscale(o.e);
-         si += w3_div(sprintf('id-drm-sched-time %s|left:%fpx; width:%fpx;|onclick=\"drm_click(%d);\"',
-            o.v? 'w3-light-green':'', b_px, e_px - b_px + 2, i));
+         si += w3_div(sprintf('id-drm-sched-time %s|left:%spx; width:%spx;|title="%s"; onclick="drm_click(%d);"',
+            o.v? 'w3-light-green':'', b_px, (e_px - b_px + 2).toFixed(0), freq.toFixed(0), i));
          i++;
          o = drm.stations[i];
       }
@@ -919,7 +942,7 @@ function drm_desktop_controls_setup(w_graph)
             w3_div('w3-margin-T-8',
                w3_divs('id-drm-options-by-svc/w3-tspace-4',
                   w3_div('cl-drm-sched-options-time w3-light-green', 'verified'),
-                  w3_div('cl-drm-sched-options-time', 'not-verified'),
+                  w3_div('cl-drm-sched-options-time', 'not verified'),
                   w3_link('w3-link-color', 'http://valentfx.com/vanilla/discussion/1865/drm-heard#latest', 'Please report<br>schedule changes')
                )
             )
@@ -1086,13 +1109,7 @@ function drm_test(test)
    ext_send('SET test='+ test);
 }
 
-function drm_set_mode(mode)
-{
-   console_log('drm_set_mode', mode);
-   ext_set_mode(mode, null, { no_drm_proc:true });
-}
-
-function drm_stop()
+function drm_stop(from_stop_button)
 {
    drm_test(0);
    drm_run(0);
@@ -1100,11 +1117,17 @@ function drm_stop()
    drm_station('');
    w3_hide('id-drm-bar-container');
    
-   if (isDefined(drm.saved_passband))
-      ext_set_passband(drm.saved_passband.low, drm.saved_passband.high);
-   if (isDefined(drm.saved_mode)) {
-      console.log('drm_stop RESTORE saved_mode='+ drm.saved_mode);
-      drm_set_mode(drm.saved_mode);
+   if (from_stop_button) {
+      drm_set_mode('iq');
+   } else {
+      if (isDefined(drm.saved_passband)) {
+         console_log_fqn('drm_stop RESTORE', 'drm.saved_passband.low', 'drm.saved_passband.high');
+         ext_set_passband(drm.saved_passband.low, drm.saved_passband.high);
+      }
+      if (isDefined(drm.saved_mode)) {
+         console_log_fqn('drm_stop RESTORE', 'drm.saved_mode');
+         drm_set_mode(drm.saved_mode);
+      }
    }
 }
 
@@ -1124,12 +1147,31 @@ function drm_stop_start_cb(path, cb_param)
    
    if (drm.is_stopped) {
       console.log('$drm_stop_start_cb: do stop, show start');
-      drm_stop();
+      drm_stop(1);
       w3_button_text(path, 'Start', 'w3-green', 'w3-pink');
    } else {
       console.log('$drm_stop_start_cb: do start, show stop');
       drm_start();
    }
+}
+
+function drm_set_passband()
+{
+   if (drm.special_passband) {   // can't simply clear on first use because special pb needs to get set several times
+      console_log_fqn('drm_set_freq SPECIAL PB', 'drm.special_passband.low', 'drm.special_passband.high');
+      ext_set_passband(drm.special_passband.low, drm.special_passband.high);
+   } else {
+      //kiwi_trace();
+      ext_set_passband(-5000, 5000);
+   }
+}
+
+function drm_set_mode(mode)
+{
+   console_log('drm_set_mode', mode);
+   //kiwi_trace();
+   ext_set_mode(mode, null, { no_drm_proc:true });
+   if (mode == 'drm') drm_set_passband();
 }
 
 function drm_set_freq(freq)
@@ -1139,8 +1181,7 @@ function drm_set_freq(freq)
    if (zoom < 5) zoom = 5; else
    if (zoom > 9) zoom = 9;
    ext_tune(drm.freq, 'drm', ext_zoom.ABS, zoom);
-   ext_set_passband(-5000, 5000);
-   ext_tune(drm.freq, 'drm', ext_zoom.ABS, zoom);  // set again to get correct freq given new passband
+   drm_set_passband();
 }
 
 function drm_reset_cb(path, val, first)
@@ -1223,9 +1264,16 @@ function drm_reset_menus()
    }
 }
 
-function drm_pre_select_cb(path, idx, first)
+function drm_pre_select_cb(path, idx, first, no_clear_special)
 {
    if (first) return false;
+
+   if (no_clear_special != true) {
+      console.log('drm_pre_select_cb  RESET special_passband ########');
+      //kiwi_trace();
+      drm.special_passband = null;
+   }
+
    var rv = false;
 	idx = +idx;
 	var menu_n = parseInt(path.split('drm.menu')[1]);
@@ -1333,7 +1381,7 @@ function DRM_blur()
    kiwi_clearInterval(drm.interval2);
 	drm.active = false;
    
-   drm_stop();
+   drm_stop(0);
    if (isUndefined(drm.saved_mode) || drm.saved_mode == 'drm') {
       console.log('DRM_blur FORCE iq');
       drm_set_mode('iq');
