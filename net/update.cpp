@@ -37,7 +37,7 @@ int pending_maj = -1, pending_min = -1;
 
 static void update_build_ctask(void *param)
 {
-    int status;
+    int status, exit_status;
 	bool build_normal = true;
 	
     //#define BUILD_SHORT_MF
@@ -52,28 +52,33 @@ static void update_build_ctask(void *param)
                 status = system("cd /root/" REPO_NAME "; rm -f obj_O3/u*.o; make >>/root/build.log 2>&1");
                 build_normal = false;
             #endif
-            if (status < 0)
+            if (status < 0 || !WIFEXITED(status))
                 child_exit(EXIT_FAILURE);
-            if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
-                child_exit(WEXITSTATUS(status));
+            exit_status = WEXITSTATUS(status);
+            if (exit_status != 0)
+                child_exit(exit_status);
 	        child_exit(EXIT_SUCCESS);
         }
     #endif
 
 	if (build_normal) {
-		status = system("cd /root/" REPO_NAME "; make git >>/root/build.log 2>&1");
-        if (status < 0)
+		status = system("cd /root/" REPO_NAME "; echo ======== building >>/root/build.log; date >>/root/build.log; make git >>/root/build.log 2>&1");
+        if (status < 0 || !WIFEXITED(status))
             child_exit(EXIT_FAILURE);
-        if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
-            child_exit(WEXITSTATUS(status));
+        exit_status = WEXITSTATUS(status);
+        if (exit_status != 0)
+            child_exit(exit_status);
 
         // starting with v1.365 the "make clean" below replaced the former "make clean_dist"
         // so that $(BUILD_DIR)/obj_keep stays intact across updates
-        status = system("cd /root/" REPO_NAME "; make clean; make; make install >>/root/build.log 2>&1");
-        if (status < 0)
+        status = system("cd /root/" REPO_NAME "; make clean >>/root/build.log 2>&1; make >>/root/build.log 2>&1; make install >>/root/build.log 2>&1;");
+        if (status < 0 || !WIFEXITED(status))
             child_exit(EXIT_FAILURE);
-        if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
-            child_exit(WEXITSTATUS(status));
+        exit_status = WEXITSTATUS(status);
+        if (exit_status != 0)
+            child_exit(exit_status);
+        else
+            system("cd /root/" REPO_NAME "; date >>/root/build.log; echo ======== build complete >>/root/build.log");
 	}
 	
 	child_exit(EXIT_SUCCESS);
@@ -81,14 +86,16 @@ static void update_build_ctask(void *param)
 
 static void curl_makefile_ctask(void *param)
 {
-	int status = system("cd /root/" REPO_NAME " ; echo ======== >/root/build.log; echo Kiwi build >>/root/build.log; date >>/root/build.log; " \
+	int status = system("cd /root/" REPO_NAME " ; echo ======== checking for update >/root/build.log; date >>/root/build.log; " \
 	    "curl --silent --show-error --ipv4 --connect-timeout 15 https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -o Makefile.1 >>/root/build.log 2>&1");
 
-	if (status < 0)
+	if (status < 0 || !WIFEXITED(status))
 	    child_exit(EXIT_FAILURE);
-	if (WIFEXITED(status))
-		child_exit(WEXITSTATUS(status));
-	child_exit(EXIT_FAILURE);
+
+    int exit_status = WEXITSTATUS(status);
+    if (exit_status == 0)
+        system("cd /root/" REPO_NAME " ; diff Makefile Makefile.1 >>/root/build.log");
+	child_exit(exit_status);    // return exit status from curl
 }
 
 static void report_result(conn_t *conn)
@@ -149,7 +156,7 @@ static void update_task(void *param)
 	int status = child_task("kiwi.update", curl_makefile_ctask, POLL_MSEC(1000));
 
 	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-		lprintf("UPDATE: curl Makefile error, no Internet access? status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",
+		lprintf("UPDATE: Makefile fetch error, no Internet access? status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",
 		    status, WIFEXITED(status), WEXITSTATUS(status));
 		if (force_check) report_result(conn);
 		goto common_return;
@@ -197,7 +204,7 @@ static void update_task(void *param)
 		status = child_task("kiwi.build", update_build_ctask, POLL_MSEC(1000), TO_VOID_PARAM(force_build));
 		
         if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-            lprintf("UPDATE: build error, no Internet access? status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",
+            lprintf("UPDATE: build error, check /root/build.log file, status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",
                 status, WIFEXITED(status), WEXITSTATUS(status));
 		    goto common_return;
 		}
