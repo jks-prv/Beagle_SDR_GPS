@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.374  January 19, 2020
+    New, more accurate TDoA algorithm (thanks Christoph).
+        Use "Old algorithm" checkbox under TDoA options to revert.
+
 v1.373  January 18, 2020
     DRM extension fixes and improvements:
         Special USB IQ passband for WINB to help initial sync.
