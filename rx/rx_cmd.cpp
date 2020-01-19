@@ -255,31 +255,23 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			type_m, streams[conn->type].uri, conn->self_idx, isLocal, is_local,
 			conn->auth, conn->auth_kiwi, conn->auth_prot, conn->auth_admin, check_ip_against_restricted, restricted_ip_match, conn->remote_ip);
 		
-		// dx.masked_len and no_dup_ip here because they use the tlimit_exempt_by_pwd mechanism also
-        bool no_dup_ip = admcfg_bool("no_dup_ip", NULL, CFG_REQUIRED);
-        if (inactivity_timeout_mins || ip_limit_mins ||
-            #ifndef CFG_GPS_ONLY
-                dx.masked_len ||
-            #endif
-            no_dup_ip) {
-            const char *tlimit_exempt_pwd = admcfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL);
-            //#define TEST_TLIMIT_LOCAL
-            #ifndef TEST_TLIMIT_LOCAL
-                if (is_local) {
-                    conn->tlimit_exempt = true;
-                    cprintf(conn, "TLIMIT exempt local connection from %s\n", conn->remote_ip);
-                }
-            #endif
-		    pdbug_cprintf(conn, "PWD TLIMIT exempt password check: ipl=<%s> tlimit_exempt_pwd=<%s>\n",
-		        ipl_m, tlimit_exempt_pwd);
-            if (ipl_m != NULL && tlimit_exempt_pwd != NULL && strcasecmp(ipl_m, tlimit_exempt_pwd) == 0) {
+        const char *tlimit_exempt_pwd = admcfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL);
+        //#define TEST_TLIMIT_LOCAL
+        #ifndef TEST_TLIMIT_LOCAL
+            if (is_local) {
                 conn->tlimit_exempt = true;
-                conn->tlimit_exempt_by_pwd = true;
-				skip_dup_ip_check = true;
-                cprintf(conn, "TLIMIT exempt password from %s\n", conn->remote_ip);
+                cprintf(conn, "TLIMIT exempt local connection from %s\n", conn->remote_ip);
             }
-            cfg_string_free(tlimit_exempt_pwd);
+        #endif
+        pdbug_cprintf(conn, "PWD TLIMIT exempt password check: ipl=<%s> tlimit_exempt_pwd=<%s>\n",
+            ipl_m, tlimit_exempt_pwd);
+        if (ipl_m != NULL && tlimit_exempt_pwd != NULL && strcasecmp(ipl_m, tlimit_exempt_pwd) == 0) {
+            conn->tlimit_exempt = true;
+            conn->tlimit_exempt_by_pwd = true;
+            skip_dup_ip_check = true;
+            cprintf(conn, "TLIMIT exempt password from %s\n", conn->remote_ip);
         }
+        cfg_string_free(tlimit_exempt_pwd);
 
         // enforce 24hr ip address connect time limit
         if (ip_limit_mins && stream_snd && !conn->tlimit_exempt) {
@@ -464,6 +456,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         // only SND connection has tlimit_exempt_by_pwd
         if (stream_wf && conn->other && conn->other->tlimit_exempt_by_pwd) skip_dup_ip_check = true;
         
+        bool no_dup_ip = admcfg_bool("no_dup_ip", NULL, CFG_REQUIRED);
         bool skip_admin = (type_admin && allow);
 		if (no_dup_ip && !skip_admin && badp == 0 && !skip_dup_ip_check && stream_snd_or_wf) {
             conn_t *c = conns;
@@ -1203,11 +1196,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	int inactivity_timeout;
 	n = sscanf(cmd, "SET OVERRIDE inactivity_timeout=%d", &inactivity_timeout);
 	if (n == 1) {
-	    #if 0
-            //clprintf(conn, "SET OVERRIDE inactivity_timeout=%d\n", inactivity_timeout);
-            if (inactivity_timeout == 0)
-                conn->inactivity_timeout_override = true;
-		#endif
 		return true;
 	}
 
