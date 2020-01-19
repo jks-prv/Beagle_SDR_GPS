@@ -30,11 +30,11 @@ int jelinek(
             unsigned int *cycles,	/* Cycle count (returned value) */
             unsigned char *data,	/* Decoded output data */
             unsigned char *symbols,	/* Raw deinterleaved input symbols */
-            unsigned int nbits,	/* Number of output bits */
+            unsigned int nbits,	    /* Number of output bits */
             unsigned int stacksize,
             struct snode *stack,
-            int mettab[2][256],	/* Metric table, [sent sym][rx symbol] */
-            unsigned int maxcycles)/* Decoding timeout in cycles per bit */
+            int mettab[2][256],	    /* Metric table, [sent sym][rx symbol] */
+            unsigned int maxcycles) /* Decoding timeout in cycles per bit */
 {
     
     // Compute branch metrics for each symbol pair
@@ -51,35 +51,34 @@ int jelinek(
     }
     
     // zero the stack
-    // jksd very expensive given large enough stacksize
     memset(stack,0,stacksize*sizeof(struct snode));
     
     // initialize the loop variables
-    unsigned int lsym, ntail=31;
-    uint64_t encstate=0;
-    unsigned int nbuckets=1000;
-    unsigned int low_bucket=nbuckets-1; //will be set on first run-through
-    unsigned int high_bucket=0;
-    unsigned int *buckets, bucket=0;
+    unsigned int lsym, ntail = 31;
+    uint64_t encstate = 0;
+    unsigned int nbuckets = 1000;
+    unsigned int low_bucket = nbuckets-1; //will be set on first run-through
+    unsigned int high_bucket = 0;
+    unsigned int *buckets, bucket = 0;
     buckets = (unsigned int *) malloc(nbuckets*sizeof(unsigned int));
     memset(buckets,0,nbuckets*sizeof(unsigned int));
-    unsigned int ptr=1;
-    unsigned int stackptr=1; //pointer values of 0 are reserved (they mean that a bucket is empty)
-    unsigned int depth=0, nbits_minus_ntail=nbits-ntail;
-    unsigned int stacksize_minus_1=stacksize-1;
-    long int totmet0, totmet1, gamma=0;
-    
-    unsigned int ncycles=maxcycles*nbits;
+    unsigned int ptr = 1;
+    unsigned int stackptr = 1; //pointer values of 0 are reserved (they mean that a bucket is empty)
+    unsigned int depth = 0, nbits_minus_ntail = nbits-ntail;
+    unsigned int stacksize_minus_1 = stacksize-1;
+    long int totmet0, totmet1, gamma = 0;    
+    unsigned int ncycles = maxcycles*nbits;
+
     /********************* Start the stack decoder *****************/
     for (i=1; i <= ncycles; i++) {
-#ifdef DEBUG
-        printf("***stackptr=%ud, depth=%d, gamma=%ld, encstate=%llx, bucket %d, low_bucket %d, high_bucket %d\n",
+#if 0
+        printf("WSPR jelinek stackptr=%ud, depth=%d, gamma=%ld, encstate=%llx, bucket %d, low_bucket %d, high_bucket %d\n",
                stackptr, depth, gamma, encstate, bucket, low_bucket, high_bucket);
 #endif
         // no need to store more than 7 bytes (56 bits) for encoder state because
         // only 50 bits are not 0's.
-        if( depth < 56 ) {
-            encstate=encstate<<1;
+        if (depth < 56) {
+            encstate = encstate<<1;
             ENCODE(lsym,encstate); // get channel symbols associated with the 0 branch
         } else {
             ENCODE(lsym,encstate<<(depth-55));
@@ -91,51 +90,51 @@ int jelinek(
         totmet1 = gamma+metrics[depth][3^lsym]; // total metric for 1-branch daughter node
         depth++; //the depth of the daughter nodes
 
-        bucket=(totmet0>>5)+200; //fast, but not particularly safe - totmet can be negative
-        if( bucket > high_bucket ) high_bucket=bucket;
-        if( bucket < low_bucket ) low_bucket=bucket;
+        bucket = (totmet0>>5)+200; //fast, but not particularly safe - totmet can be negative
+        if (bucket > high_bucket) high_bucket = bucket;
+        if (bucket < low_bucket) low_bucket = bucket;
        
         // place the 0 node on the stack, overwriting the parent (current) node
-        stack[ptr].encstate=encstate;
-        stack[ptr].gamma=totmet0;
-        stack[ptr].depth=depth;
-        stack[ptr].jpointer=buckets[bucket];
-        buckets[bucket]=ptr;
+        stack[ptr].encstate = encstate;
+        stack[ptr].gamma = totmet0;
+        stack[ptr].depth = depth;
+        stack[ptr].jpointer = buckets[bucket];
+        buckets[bucket] = ptr;
         
         // if in the tail, only need to evaluate the "0" branch.
         // Otherwise, enter this "if" and place the 1 node on the stack,
-        if( depth <= nbits_minus_ntail ) {
-            if( stackptr < stacksize_minus_1 ) {
+        if (depth <= nbits_minus_ntail) {
+            if (stackptr < stacksize_minus_1) {
                 stackptr++;
-                ptr=stackptr;
+                ptr = stackptr;
             } else { // stack full
-                while( buckets[low_bucket] == 0 ) { //write latest to where the top of the lowest bucket points
+                while (buckets[low_bucket] == 0) { //write latest to where the top of the lowest bucket points
                     low_bucket++;
                 }
-                ptr=buckets[low_bucket];
-                buckets[low_bucket]=stack[ptr].jpointer; //make bucket point to next older entry
+                ptr = buckets[low_bucket];
+                buckets[low_bucket] = stack[ptr].jpointer; //make bucket point to next older entry
             }
 
-            bucket=(totmet1>>5)+200; //this may not be safe on all compilers
-            if( bucket > high_bucket ) high_bucket=bucket;
-            if( bucket < low_bucket ) low_bucket=bucket;
+            bucket = (totmet1>>5)+200; //this may not be safe on all compilers
+            if (bucket > high_bucket) high_bucket = bucket;
+            if (bucket < low_bucket) low_bucket = bucket;
             
-            stack[ptr].encstate=encstate+1;
-            stack[ptr].gamma=totmet1;
-            stack[ptr].depth=depth;
-            stack[ptr].jpointer=buckets[bucket];
-            buckets[bucket]=ptr;
+            stack[ptr].encstate = encstate+1;
+            stack[ptr].gamma = totmet1;
+            stack[ptr].depth = depth;
+            stack[ptr].jpointer = buckets[bucket];
+            buckets[bucket] = ptr;
         }
 
-    // pick off the latest entry from the high bucket
-        while( buckets[high_bucket] == 0 ) {
+        // pick off the latest entry from the high bucket
+        while (buckets[high_bucket] == 0) {
             high_bucket--;
         }
-        ptr=buckets[high_bucket];
-        buckets[high_bucket]=stack[ptr].jpointer;
-        depth=stack[ptr].depth;
-        gamma=stack[ptr].gamma;
-        encstate=stack[ptr].encstate;
+        ptr = buckets[high_bucket];
+        buckets[high_bucket] = stack[ptr].jpointer;
+        depth = stack[ptr].depth;
+        gamma = stack[ptr].gamma;
+        encstate = stack[ptr].encstate;
 
         // we are done if the top entry on the stack is at depth nbits
         if (depth == nbits) {
@@ -150,15 +149,14 @@ int jelinek(
     //           *cycles, stackptr, depth, *metric, encstate);
     
     for (i=0; i<7; i++) {
-        data[i]=(encstate>>(48-i*8))&(0x00000000000000ff);
+        data[i] = (encstate>>(48-i*8))&(0x00000000000000ff);
     }
     for (i=7; i<11; i++) {
-        data[i]=0;
+        data[i] = 0;
     }
 
-    if(*cycles/nbits >= maxcycles) //timed out
-    {
+    if (*cycles/nbits >= maxcycles) {    // timed out
         return 0;
     }
-    return 1;		//success
+    return 1;		// success
 }

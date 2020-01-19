@@ -18,6 +18,9 @@ var wspr = {
    first_time: true,
    focus_interval: null,
    pie_size: 25,
+   stack_decoder: 0,
+   debug: 0,
+   no_upload: 0
 };
 
 var wspr_canvas_width = 1024;
@@ -139,6 +142,8 @@ function wspr_recv(data)
 				}
 				ext_send('SET BFO='+ wspr_bfo.toFixed(0));
 				wspr_controls_setup();		// needs wspr_startx
+				ext_send('SET stack_decoder='+ wspr.stack_decoder);
+				ext_send('SET debug='+ wspr.debug);
 				break;
 
 			case "WSPR_TIME_MSEC":
@@ -315,7 +320,7 @@ function wspr_controls_setup()
          w3_button('cl-wspr-button', 'stop', 'wspr_stop_start_cb'),
          w3_button('cl-wspr-button', 'clear', 'wspr_clear_cb'),
          w3_div('id-wspr-upload-bkg cl-upload-checkbox',
-            '<input id="id-wspr-upload" type="checkbox" value="" onclick="wspr_set_upload(this.checked)"> upload spots'
+            '<input id="id-wspr-upload" type="checkbox" value="" onclick="wspr_set_upload_cb(this.checked)"> upload spots'
          ),
          w3_div('w3-medium w3-text-aqua cl-viewer-label', '<b>WSPR<br>viewer</b>')
 		),
@@ -365,21 +370,30 @@ function wspr_controls_setup()
    wspr_pie_interval = setInterval(wspr_draw_pie, 1000);
    wspr_draw_pie();
    wspr_draw_scale(100);
+	
    wspr_reset();
    wspr_upload_timeout = setTimeout(function() {wspr_upload(wspr_report_e.STATUS);}, 1000);
-	
+
 	// set band and start if URL parameter present
 	var p = ext_param();
 	if (p) {
-		p = p.toLowerCase();
-		if (isDefined(wspr_freqs_s[p])) {
-		   var sel = wspr_freqs_s[p];
-		   var freq = wspr_center_freqs[sel];
-         if (freq >= r.lo_kHz && freq <= r.hi_kHz)
-            wspr_band_select_cb('wspr_init_band', sel, false);
-		} else {
-			console.log('WSPR ext_param='+ p +' UNKNOWN');
-		}
+      p = p.toLowerCase().split(',');
+      p.forEach(function(a, i) {
+         if (i == 0 && isDefined(wspr_freqs_s[a])) {
+            var sel = wspr_freqs_s[a];
+            var freq = wspr_center_freqs[sel];
+            if (freq >= r.lo_kHz && freq <= r.hi_kHz)
+               wspr_band_select_cb('wspr_init_band', sel, false);
+            return;
+         }
+         if (a.startsWith('stack')) wspr.stack_decoder = 1; else
+         if (a.startsWith('debug')) wspr.debug = 1; else
+         if (a.startsWith('noupload')) {
+            wspr.no_upload = 1;
+            wspr_set_upload_cb(false);
+         } else
+         console.log('WSPR unknown URL param <'+ a +'>');
+      });
 	} else {
 		// if reactivating, start up on same band
 		if (wspr_init_band != -1)
@@ -581,7 +595,7 @@ function wspr_reset()
 	ext_send('SET capture=0');
 	wspr_set_status(wspr_status.IDLE);
 	
-	wspr_set_upload(wspr_config_okay);		// by default allow uploads unless manually unchecked
+	wspr_set_upload_cb(true);		// by default allow uploads unless manually unchecked
 }
 
 function wspr_clear_cb(path, idx, first)
@@ -620,14 +634,14 @@ function wspr_draw_scale(cf)
 	}
 }
 
-function wspr_set_upload(upload)
+function wspr_set_upload_cb(upload)
 {
 	// remove old cookie use
 	deleteCookie('wspr_upload');
 	
-	html('id-wspr-upload').checked = upload;
-	html('id-wspr-upload-bkg').style.color = upload? "white":"black";
-	html('id-wspr-upload-bkg').style.backgroundColor = upload? "inherit":"yellow";
+	if (!wspr_config_okay || wspr.no_upload) upload = false;
+	w3_checkbox_set('id-wspr-upload', upload);
+	w3_color('id-wspr-upload-bkg', upload? "white":"black", upload? "inherit":"yellow");
 }
 
 // from WSPR-X via tcpdump: (how can 'rcall' have an un-%-escaped '/'?)

@@ -63,31 +63,44 @@
     #define wspr_aprintf(fmt, ...)
 #endif
 
-//#define WSPR_PRINTF
+#define WSPR_PRINTF
 #ifdef WSPR_PRINTF
-	#define wspr_printf(fmt, ...) \
-		printf("WSPR-%02d: " fmt, rx_chan, ## __VA_ARGS__)
+    #if 0
+        #define wspr_printf(fmt, ...) \
+            printf("WSPR-%02d: " fmt, rx_chan, ## __VA_ARGS__)
+	#else
+	    #define wspr_printf(fmt, ...)
+    #endif
 
     #if 1
-	    #define wspr_pprintf(fmt, ...) \
+        #define wspr_dprintf(fmt, ...) \
+            /*printf("%3ds ", timer_sec() - passes_start);*/ \
+            if (w->debug) printf("WSPR-%02d: " fmt, rx_chan, ## __VA_ARGS__)
+	#else
+	    #define wspr_dprintf(fmt, ...)
+	#endif
+
+    #if 0
+	    #define wspr_d1printf(fmt, ...) \
 	    	printf("WSPR-%02d: " fmt, rx_chan, ## __VA_ARGS__)
-	    #define wspr_pxprintf(fmt, ...) \
+	#else
+	    #define wspr_d1printf(fmt, ...)
+	#endif
+
+    #if 0
+	    #define wspr_d2printf(fmt, ...) \
 	    	printf(fmt, ## __VA_ARGS__)
 	#else
-	    #define wspr_pprintf(fmt, ...)
-	    #define wspr_pxprintf(fmt, ...)
+	    #define wspr_d2printf(fmt, ...)
 	#endif
 
 	#define wspr_gprintf(fmt, ...) \
 		printf(fmt, ## __VA_ARGS__)
 
-	#define wspr_dprintf(fmt, ...) \
-		/*printf("%3ds ", timer_sec() - passes_start);*/ \
-		printf("WSPR-%02d: " fmt, rx_chan, ## __VA_ARGS__)
 #else
 	#define wspr_printf(fmt, ...)
-	#define wspr_pprintf(fmt, ...)
-    #define wspr_pxprintf(fmt, ...)
+	#define wspr_d1printf(fmt, ...)
+    #define wspr_d2printf(fmt, ...)
 	#define wspr_gprintf(fmt, ...)
 	#define wspr_dprintf(fmt, ...)
 #endif
@@ -232,9 +245,10 @@ typedef struct {
 	int status, status_resume;
 	bool send_error, abort_decode;
 	int WSPR_FFTtask_id, WSPR_DecodeTask_id;
+	int debug;
 	
 	// options
-	int quickmode, medium_effort, more_candidates, stackdecoder, subtraction;
+	int quickmode, medium_effort, more_candidates, stack_decoder, subtraction;
 	#define WSPR_TYPE_2MIN 2
 	#define WSPR_TYPE_15MIN 15
 	int wspr_type;
@@ -315,12 +329,14 @@ void wspr_send_peaks(wspr_t *w, int start, int stop);
 void wspr_send_decode(wspr_t *w, int seq);
 void wspr_autorun(int which, int idx);
 
+typedef enum { FIND_BEST_TIME_LAG, FIND_BEST_FREQ, CALC_SOFT_SYMS } wspr_mode_e;
+
 void sync_and_demodulate(
 	WSPR_CPX_t *id, WSPR_CPX_t *qd, long np,
 	unsigned char *symbols, float *f1, int ifmin, int ifmax, float fstep,
 	int *shift1,
 	int lagmin, int lagmax, int lagstep,
-	float drift1, int symfac, float *sync, int mode);
+	float drift1, int symfac, float *sync, wspr_mode_e mode);
 
 void renormalize(wspr_t *w, float psavg[], float smspec[], float tmpsort[]);
 
