@@ -371,7 +371,7 @@ static int _cfg_cut(cfg_t *cfg, jsmntok_t *jt, int skip)
 	if (*(s-1) == ',' && *e == '}')
 		s--;
 
-	strcpy(s, e);
+	kiwi_overlap_strcpy(s, e);
 	//real_printf("POST-CUT %d <<%s>>\n", s - cfg->json, cfg->json);
 	return s - cfg->json;
 }
