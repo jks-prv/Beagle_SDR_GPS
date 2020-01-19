@@ -63,6 +63,7 @@ var drm = {
    
    stations: null,
    using_default: false,
+   double_fault: false,
    loading_msg: '&nbsp;loading data from kiwisdr.com ...',
    SINGLE: 0,
    MULTI: 1,
@@ -625,10 +626,12 @@ function drm_schedule()
 //
 // freq/times format:
 //
-//    [ freq0, start_time, stop_time, freq1, start_time, stop_time ... ]
+//    [ "optional service URL", freq0, start_time, stop_time, freq1, start_time, stop_time ... ]
 //
 //       "start_time, stop_time" can also be an array [ start0, stop0, start1, stop1 ... ]
 //
+// underscores in station names are converted to line breaks in menu and schedule entries
+// negative start or end time means entry should be marked as verified
 
 function drm_get_stations_cb(stations)
 {
@@ -641,21 +644,26 @@ function drm_get_stations_cb(stations)
    
    if (stations.AJAX_error && stations.AJAX_error == 'timeout') {
       console.log('drm_get_stations_cb: TIMEOUT');
-      stations = JSON.parse(drm.default_stations);
       drm.using_default = true;
       fault = true;
    } else
-   
    if (!isArray(stations)) {
       console.log('drm_get_stations_cb: not array');
       fault = true;
    }
    
    if (fault) {
+      if (drm.double_fault) {
+         console.log('drm_get_stations_cb: default station list fetch FAILED');
+         return;
+      }
       console.log(stations);
-      console.log('drm_get_stations_cb: using default station list');
-      stations = JSON.parse(drm.default_stations);
+      var url = kiwi_url_origin() +'/extensions/DRM/stations.cjson';
+      console.log('drm_get_stations_cb: using default station list '+ url);
       drm.using_default = true;
+      drm.double_fault = true;
+      kiwi_ajax(url, 'drm_get_stations_cb', 0, 10000);
+      return;
    }
    
    drm.stations = [];
@@ -1078,8 +1086,13 @@ function drm_controls_setup()
    // Can't use file w/ .json extension since our file contains comments and
    // Firefox improperly caches json files with errors!
    // FIXME: rate limit this
-   //kiwi_ajax(drm.url +'stations2.cjson', 'drm_get_stations_cb', 0, -1000);      // test timeout
-   kiwi_ajax(drm.url +'stations2.cjson', 'drm_get_stations_cb', 0, 10000);
+   drm.using_default = drm.double_fault = false;
+   if (0 && !drm.timeout_tested) {
+      drm.timeout_tested = true;
+      kiwi_ajax(drm.url +'stations.fail.cjson', 'drm_get_stations_cb', 0, -3000);      // test timeout
+   } else {
+      kiwi_ajax(drm.url +'stations2.cjson', 'drm_get_stations_cb', 0, 10000);
+   }
 
    drm_run(1);
    // done after drm_run() so correct drm.saved_{mode,passband} is set
@@ -1464,79 +1477,3 @@ function DRM_config_html()
 
    ext_config_html(drm, 'DRM', 'DRM', 'DRM configuration', s);
 }
-
-// NB: don't forget to strip out our cjson comments (lines beginning with '//')
-drm.default_stations =
-'['+
-'    {'+
-'    "Europe": null,'+
-'    "BBC_Worldservice": [3955,[6,7,9,10], 15620,8,9],'+
-'    "Radio_France Intl": [3965,0,24, 6175,9,15],'+
-'    "Voice of_Russia": [5925,21,23, 6025,[6,10,20,22], 6110,16,20, 6125,17,21, 7435,19,22, 9590,7,11, 9625,8,15, 9800,14,16, 11620,11,13, 11860,[0,1,22,24], 15325,1,6],'+
-'    "Radio_Romania Intl": [5940,5.5,6, 5955,19,19.5, 6025,17,18, 6030,[16,16.5,21,22], 6040,[6,7,23,24], 6175,7,7.5, 7220,5,6, 7235,19,20, 7350,18,19, 9490,22,23, 9820,4,5, 13730,5,5.5],'+
-'    "Funklust_(bitXpress)": [15785,0,24]'+
-'    },'+
-''+
-'    {'+
-'    "Middle East, Africa": null,'+
-'    "All India_Radio": [6100,8.75,12, 7550,17.75,19.75, 9950,[8.25,13.25,17.5,22.5]],'+
-'    "Radio Kuwait": [11970,5,8, 13650,17,20, 15110,9.75,13.5, 15540,16,21],'+
-'    "Voice of_Nigeria": [15120,16,19]'+
-'    },'+
-'    '+
-'    {'+
-'    "Asia, Pacific": null,'+
-'    "China National_Radio": [6030,[0,18,20.5,24], 7360,4,10, 9420,0,4, 9655,[0,1,8,12,22,24], 9870,10,12, 11695,1,9, 13825,1,9, 15180,[1,4,8,11], 17770,1,9, 17800,4,8, 17830,1,8],'+
-'    "Radio_New Zealand": [5975,16.75,18, 7285,16.75,19, 7330,16.75,19, 9780,17.75,20, 11690,18.75,21],'+
-''+
-'    "Transworld_KTWR": [7500,12.25,12.75, 11995,10.5,11, 13800,10.5,11]'+
-'    },'+
-'    '+
-'    {'+
-'    "Americas": null,'+
-'    "WINB USA": [7315,7,10, 9265,10,12, 13690,12,17]'+
-'    },'+
-''+
-'    {'+
-'    "India MW": null,'+
-'    "Ahmedabad": [855,0,24],'+
-'    "Ajmer": [612,0,24],'+
-'    "Bengaluru": [621,0,24],'+
-'    "Barmer": [1467,0,24],'+
-'    "Bikaner": [1404,0,24],'+
-'    "Chennai A": [729,0,24],'+
-'    "Chennai B": [783,0,24],'+
-'    "Chinsurah": [603,0,24],'+
-'    "Delhi A": [828,0,24],'+
-'    "Delhi B": [1368,0,24],'+
-'    "Dharwad": [774,0,24],'+
-'    "Dibrugarh": [576,0,24],'+
-'    "Guwahati B": [1044,0,24],'+
-'    "Hyderabad": [747,0,24],'+
-'    "Itanagar": [684,0,24],'+
-'    "Jabalpur": [810,0,24],'+
-'    "Jalandhar": [882,0,24],'+
-'    "Jammu": [999,0,24],'+
-'    "Kolkata A": [666,0,24],'+
-'    "Kolkata B": [1017,0,24],'+
-'    "Luknow": [756,0,24],'+
-'    "Mumbai A": [1053,0,24],'+
-'    "Mumbai B": [567,0,24],'+
-'    "Panaji": [1296,0,24],'+
-'    "Passighat": [1071,0,24],'+
-'    "Patna": [630,0,24],'+
-'    "Pune": [801,0,24],'+
-'    "Rajkot A": [819,0,24],'+
-'    "Rajkot B": [1080,0,24],'+
-'    "Rajkot C": [1071,0,24],'+
-'    "Ranchi": [558,0,24],'+
-'    "Siliguri": [720,0,24],'+
-'    "Suratgarh": [927,0,24],'+
-'    "Tawang": [1530,0,24],'+
-'    "Trichirapalli": [945,0,24],'+
-'    "Varanasi": [1251,0,24],'+
-'    "Vijayawada": [846,0,24]'+
-'    },'+
-'    '+
-'    {}'+
-']';
