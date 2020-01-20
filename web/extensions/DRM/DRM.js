@@ -400,7 +400,8 @@ function drm_recv(data)
                //if (ao.cur && i == 2) ao.ac = drm.xHE_AAC;
 			      s = i;
 			      if (ao.id) {
-                  s += ' '+ drm.EAudCod[ao.ac] +' ('+ ao.id +') '+ ao.lbl + (ao.ep? (' UEP ('+ ao.ep.toFixed(1) +'%) ') : ' EEP ') +
+			         var label = kiwi_clean_html(kiwi_clean_newline(decodeURIComponent(ao.lbl)));
+                  s += ' '+ drm.EAudCod[ao.ac] +' ('+ ao.id +') '+ label + (ao.ep? (' UEP ('+ ao.ep.toFixed(1) +'%) ') : ' EEP ') +
                      (ao.ad? 'Audio ':'Data ') + ao.br.toFixed(2) +' kbps';
                }
                var el = w3_el('id-drm-svc-'+ i);
@@ -415,7 +416,7 @@ function drm_recv(data)
                (codec != drm.AAC && codec != drm.xHE_AAC)? 'WARNING: codec not supported -- audio will be bad' : '<br>');
             w3_color('id-drm-error', 'white', 'red', (codec != drm.AAC && codec != drm.xHE_AAC));
 
-			   w3_innerHTML('id-drm-msgs', o.msg? decodeURIComponent(o.msg) : '');
+			   w3_innerHTML('id-drm-msgs', o.msg? kiwi_clean_html(kiwi_clean_newline(decodeURIComponent(o.msg))) : '');
 			   break;
 
 			case "drm_bar_pct":
