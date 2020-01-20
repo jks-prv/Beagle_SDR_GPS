@@ -427,6 +427,16 @@ function kiwi_UTC_minutes()
 // HTML helpers
 ////////////////////////////////
 
+function kiwi_clean_html(s)
+{
+   return s.replace(/\&/g, '&amp;').replace(/\</g, '&lt;').replace(/\>/g, '&gt;');
+}
+
+function kiwi_clean_newline(s)
+{
+   return s.replace(/[\r\n\f\v]/g, '').replace(/\t/g, ' ');
+}
+
 // see: https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollHeight
 function kiwi_isScrolledDown(el)
 {
