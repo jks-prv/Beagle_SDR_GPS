@@ -135,7 +135,7 @@ void DRM_loop(int rx_chan)
                 DRMReceiver.InitReceiverMode();
                 DRMReceiver.SetInStartMode();
                 eRunState = RUNNING;
-
+                
                 do {
                     DRMReceiver.updatePosition();
                     MEASURE_TIME("p", 0, DRMReceiver.process());
@@ -146,6 +146,10 @@ void DRM_loop(int rx_chan)
 
                     if (!drm->run) eRunState = STOPPED;
                 } while (eRunState == RUNNING);
+
+                #ifdef USE_CONSOLEIO
+                    ConsoleIO.Restart();
+                #endif
 
             } while (eRunState == RESTART);
             

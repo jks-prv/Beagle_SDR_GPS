@@ -415,8 +415,7 @@ function drm_recv(data)
                (codec != drm.AAC && codec != drm.xHE_AAC)? 'WARNING: codec not supported -- audio will be bad' : '<br>');
             w3_color('id-drm-error', 'white', 'red', (codec != drm.AAC && codec != drm.xHE_AAC));
 
-            if (o.msg)
-			      w3_innerHTML('id-drm-msgs', o.msg);
+			   w3_innerHTML('id-drm-msgs', o.msg? decodeURIComponent(o.msg) : '');
 			   break;
 
 			case "drm_bar_pct":

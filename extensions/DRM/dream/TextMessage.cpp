@@ -532,9 +532,8 @@ void CTextMessageDecoder::ClearText()
 
 void CTextMessageDecoder::ResetSegments()
 {
-    //for (int i = 0; i < MAX_NUM_SEG_TEXT_MESSAGE; i++)
-    //    Segment[i].bIsOK = false;
-    for(CTextMessSegment segment: Segment) segment.bIsOK = false;
+    for (int i = 0; i < MAX_NUM_SEG_TEXT_MESSAGE; i++)
+        Segment[i].bIsOK = false;
 
     iNumSegments = 0;
 }

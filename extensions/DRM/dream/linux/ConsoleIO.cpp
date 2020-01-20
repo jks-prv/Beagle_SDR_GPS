@@ -60,11 +60,19 @@ void
 CConsoleIO::Enter(CDRMReceiver* pDRMReceiver)
 {
 	CConsoleIO::pDRMReceiver = pDRMReceiver;
+    text_msg_utf8_enc = nullptr;
 }
 
 void
 CConsoleIO::Leave()
 {
+}
+
+void
+CConsoleIO::Restart()
+{
+    free(text_msg_utf8_enc);
+    text_msg_utf8_enc = nullptr;
 }
 
 ERunState
@@ -155,7 +163,6 @@ CConsoleIO::Update(drm_t *drm)
 
     //cprintf(NL "Service:" NL);
     sb = kstr_cat(sb, ",\"svc\":[");
-    char* strTextMessage = nullptr;
     int iCurAudService = Parameters.GetCurSelAudioService();
     
     if (iCurAudService != drm->audio_service) {
@@ -174,7 +181,7 @@ CConsoleIO::Update(drm_t *drm)
             CAudioParam::EAudCod ac = service.AudioParam.eAudioCoding;
             const char *strLabel = kiwi_str_clean((char *) service.strLabel.c_str());
             int ID = service.iServiceID;
-            bool audio = service.eAudDataFlag == CService::SF_AUDIO;
+            bool audio = (service.eAudDataFlag == CService::SF_AUDIO);
             //cprintf("%c%i | %X | %s ", i==iCurAudService ? '>' : ' ', i+1, ID, strLabel);
             _REAL rPartABLenRat = Parameters.PartABLenRatio(i);
             //if (rPartABLenRat != (_REAL) 0.0)
@@ -191,9 +198,10 @@ CConsoleIO::Update(drm_t *drm)
                 br_audio = false;
                 //cprintf(" + Data %.2f kbps", rBitRate);
             }
-            if (i == iCurAudService)
-                strTextMessage = strdup(service.AudioParam.strTextMessage.c_str());
-                //strTextMessage = (char *) service.AudioParam.strTextMessage.c_str();
+            if (i == iCurAudService && service.AudioParam.bTextflag) {
+                free(text_msg_utf8_enc);
+                text_msg_utf8_enc = kiwi_str_encode((char *) service.AudioParam.strTextMessage.c_str());
+            }
 
             sb = kstr_asprintf(sb,
                 "\"cur\":%d,\"ac\":%d,\"id\":\"%X\",\"lbl\":\"%s\",\"ep\":%.1f,\"ad\":%d,\"br\":%.2f",
@@ -204,7 +212,7 @@ CConsoleIO::Update(drm_t *drm)
     }
     sb = kstr_cat(sb, "]");
 
-    if (strTextMessage != nullptr)
+    if (text_msg_utf8_enc)
     {
         //string msg(strTextMessage);
         //REPLACE_STR(msg, "\r\n", "\r");  /* Windows CR-LF */
@@ -216,11 +224,7 @@ CConsoleIO::Update(drm_t *drm)
         //cprintf(NL "%s", msg.c_str());
 
         //QString TextMessage(QString::fromUtf8(audioService.AudioParam.strTextMessage.c_str()));
-        char *s = strTextMessage;
-        //char *s = strdup(msg.c_str());
-        //printf("%d <<<%s>>>\n", strlen(s), kiwi_str_clean(s));
-        sb = kstr_asprintf(sb, ",\"msg\":\"%s\"", kiwi_str_clean(s));
-        free(s);
+        sb = kstr_asprintf(sb, ",\"msg\":\"%s\"", text_msg_utf8_enc);
     }
 
 #if 0
