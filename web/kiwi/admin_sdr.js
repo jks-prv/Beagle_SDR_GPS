@@ -378,7 +378,7 @@ function webpage_html()
 	var s3 =
 		'<hr>' +
 		w3_half('w3-margin-bottom w3-text-teal', 'w3-container',
-			w3_divs('w3-restart/w3-center w3-tspace-8',
+			w3_divs('/w3-center w3-tspace-8',
             w3_div('', '<b>Web server caching?</b>'),
             w3_switch('', 'Yes', 'No', 'webserver_caching', cfg.webserver_caching, 'admin_radio_YN_cb'),
             w3_text('w3-text-black w3-center',
