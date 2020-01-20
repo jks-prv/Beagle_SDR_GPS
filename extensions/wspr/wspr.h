@@ -38,7 +38,13 @@
 #include <fftw3.h>
 
 #ifdef MULTI_CORE
-    //#define WSPR_SHMEM_DISABLE
+    //#define BBAI_WSPR_ASAN
+    #ifdef BBAI_WSPR_ASAN
+        #warning don't forget to remove BBAI_WSPR_ASAN
+        #define WSPR_SHMEM_DISABLE
+    #else
+        // shared memory enabled
+    #endif
 #else
     #define WSPR_SHMEM_DISABLE
 #endif
