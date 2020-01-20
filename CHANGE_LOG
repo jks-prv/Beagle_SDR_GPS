@@ -2,6 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.375  January 21, 2020
+    DRM extension fixes and improvements:
+        Make service label UTF8 (e.g. allows Chinese characters)
+        Fixed service text message display.
+    Web server caching control added to admin webpage tab.
+        Set to "No" when when there are caching problems in your
+        network path, e.g. user interface icons don't load.
+    Adding a time limit (i.e. zero to non-zero) won't kick local connections anymore.
+
 v1.374  January 19, 2020
     New, more accurate TDoA algorithm (thanks Christoph).
         Use "Old algorithm" checkbox under TDoA options to revert.
