@@ -991,7 +991,8 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
             // GPS az/el img from flashing on periodic re-render with Safari.
             //mg_send_header(mc, "Cache-Control", "max-age=0");
             //mg_send_header(mc, "Cache-Control", isImage? "max-age=31536000":"max-age=0");
-            mg_send_header(mc, "Cache-Control", isImage? "max-age=31536000":"max-age=0, must-revalidate");
+            //mg_send_header(mc, "Cache-Control", isImage? "max-age=31536000":"max-age=0, must-revalidate");
+            mg_send_header(mc, "Cache-Control", isImage? "max-age=31536000":"max-age=0, must-revalidate, private");
             hdr_type = isImage? "CACHE-IMAGE" : "CACHE-REVAL";
         }
         
