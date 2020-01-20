@@ -247,7 +247,8 @@ void wspr_send_peaks(wspr_t *w, int start, int stop)
 void wspr_send_decode(wspr_t *w, int seq)
 {
     u4_t printf_type = wspr_c.syslog? (PRINTF_REG | PRINTF_LOG) : PRINTF_REG;
-    bool log_decodes = (wspr_c.syslog || w->autorun);
+    //bool log_decodes = (wspr_c.syslog || w->autorun);
+    bool log_decodes = true;    // always log, it's just PRINTF_LOG that's controlled by the admin page option
     double watts, factor;
     char *W_s;
     const char *units;
@@ -384,7 +385,9 @@ void WSPR_Deco(void *param)
 	while (1) {
 	
 		wspr_printf("WSPR_DecodeTask sleep..\n");
-		if (start) wspr_printf("WSPR_DecodeTask TOTAL %.1f sec\n", (float)(timer_ms()-start)/1000.0);
+		if (start) wspr_dprintf("WSPR_DecodeTask decoded %2d %s %5.1f sec (%s decoder)\n",
+		    w->uniques, w->abort_decode? "LIMIT":"TOTAL", (float)(timer_ms()-start)/1000.0,
+		    w->stack_decoder? "Jelinek":"Fano");
 		WSPR_CHECK_ALT(
 		    { int cck = (int) FROM_VOID_PARAM(TaskSleep()); assert(rx_chan == cck) },
 		    TaskSleep();
@@ -450,7 +453,7 @@ void WSPR_Deco(void *param)
                     "%02d%02d %3.0f %4.1f %9.6f %2d %s",
                     dp->hour, dp->min, dp->snr, dp->dt_print, dp->freq_print, (int) dp->drift1, dp->c_l_p);
             }
-            wspr_printf("UPLOAD U%d/%d %s"
+            wspr_d1printf("UPLOAD U%d/%d %s"
                 "%02d%02d %3.0f %4.1f %9.6f %2d %s" "\n", i, w->uniques, w->autorun? "autorun ":"",
                 dp->hour, dp->min, dp->snr, dp->dt_print, dp->freq_print, (int) dp->drift1, dp->c_l_p);
             TaskSleepMsec(1000);
@@ -648,7 +651,7 @@ bool wspr_msgs(char *msg, int rx_chan)
 {
     wspr_t *w = &WSPR_SHMEM->wspr[rx_chan];
     assert(rx_chan == w->rx_chan);
-	int n;
+	int i, n;
 	
 	wspr_printf("wspr_msgs <%s>\n", msg);
 	
@@ -663,7 +666,19 @@ bool wspr_msgs(char *msg, int rx_chan)
 		wspr_printf("BFO %d --------------------------------------------------------------\n", w->bfo);
 		return true;
 	}
-
+	
+	n = sscanf(msg, "SET stack_decoder=%d", &i);
+    if (n == 1) {
+        w->stack_decoder = i;
+        return true;
+    }
+    
+	n = sscanf(msg, "SET debug=%d", &i);
+    if (n == 1) {
+        w->debug = i;
+        return true;
+    }
+    
 	float f;
 	int d;
 	n = sscanf(msg, "SET dialfreq=%f cf_offset=%d", &f, &d);

@@ -225,6 +225,7 @@ void update_vars_from_config()
     cfg_default_bool("disable_recent_changes", false, &update_cfg);
     cfg_default_int("init.cw_offset", 500, &update_cfg);
     cfg_default_int("S_meter_OV_counts", 10, &update_cfg);
+    cfg_default_bool("webserver_caching", true, &update_cfg);
 
     if (wspr_update_vars_from_config()) update_cfg = true;
 
@@ -483,7 +484,7 @@ void webserver_collect_print_stats(int print)
 			}
 			
 			//cprintf(c, "TO_MINS=%d exempt=%d\n", inactivity_timeout_mins, c->tlimit_exempt);
-			if (!c->inactivity_timeout_override && (inactivity_timeout_mins != 0) && !c->tlimit_exempt) {
+			if (inactivity_timeout_mins != 0 && !c->tlimit_exempt) {
 			    if (c->last_tune_time == 0) c->last_tune_time = now;    // got here before first set in rx_loguser()
 				diff = now - c->last_tune_time;
 			    //cprintf(c, "diff=%d now=%d last=%d TO_SECS=%d\n", diff, now, c->last_tune_time,
@@ -657,7 +658,7 @@ char *rx_users(bool include_ip)
 
                 // conn inactivity TLIMIT time left (if applicable)
                 int rem_inact = 0;
-                if (!c->inactivity_timeout_override && inactivity_timeout_mins && !c->tlimit_exempt) {
+                if (inactivity_timeout_mins && !c->tlimit_exempt) {
                     if (c->last_tune_time == 0) c->last_tune_time = now;    // got here before first set in rx_loguser()
                     rem_inact = MINUTES_TO_SEC(inactivity_timeout_mins) - (now - c->last_tune_time);
                     if (rem_inact < 0 ) rem_inact = 0;

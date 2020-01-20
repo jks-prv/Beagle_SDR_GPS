@@ -7769,6 +7769,8 @@ function mode_button(evt, el)
 	// reset passband to default parameters
 	if (any_alternate_click_event(evt)) {
 	   restore_passband(mode);
+      ext_set_mode(mode, null, { open_ext:true });
+	   return;
 	}
 
 	// cycle button to next value

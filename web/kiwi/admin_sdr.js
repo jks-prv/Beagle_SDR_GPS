@@ -377,6 +377,18 @@ function webpage_html()
 		
 	var s3 =
 		'<hr>' +
+		w3_half('w3-margin-bottom w3-text-teal', 'w3-container',
+			w3_divs('w3-restart/w3-center w3-tspace-8',
+            w3_div('', '<b>Web server caching?</b>'),
+            w3_switch('', 'Yes', 'No', 'webserver_caching', cfg.webserver_caching, 'admin_radio_YN_cb'),
+            w3_text('w3-text-black w3-center',
+               'Set "No" when there are caching problems in your <br>' +
+               'network path, e.g. user interface icons don\'t load.'
+            )
+         )
+		) +
+		
+		'<hr>' +
       w3_div('w3-container',
          w3_textarea_get_param('w3-input-any-change|width:100%',
             w3_label('w3-show-inline-block w3-bold w3-text-teal', 'Additional HTML/Javascript for HTML &lt;head&gt; element (e.g. Google analytics or user customization)'),

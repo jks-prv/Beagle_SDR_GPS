@@ -60,11 +60,19 @@ void
 CConsoleIO::Enter(CDRMReceiver* pDRMReceiver)
 {
 	CConsoleIO::pDRMReceiver = pDRMReceiver;
+    text_msg_utf8_enc = nullptr;
 }
 
 void
 CConsoleIO::Leave()
 {
+}
+
+void
+CConsoleIO::Restart()
+{
+    free(text_msg_utf8_enc);
+    text_msg_utf8_enc = nullptr;
 }
 
 ERunState
@@ -132,10 +140,6 @@ CConsoleIO::Update(drm_t *drm)
 		(soundCardStatusI != NOT_PRESENT && soundCardStatusI != RX_OK) ? soundCardStatusI : soundCardStatusO);
 	
 	_REAL rIFLevel = Parameters.GetIFSignalLevel();
-	//if (rIFLevel > MINIMUM_IF_LEVEL)
-	//	cprintf("                   IF Level: %.1f dB" NL, rIFLevel);
-	//else
-	//	cprintf("                   IF Level: " NA NL);
 
 	asprintf(&sb, "{\"io\":%d,\"time\":%d,\"frame\":%d,\"FAC\":%d,\"SDC\":%d,\"MSC\":%d,\"if\":%.1f",
 	    inter, time, frame, fac, sdc, msc, rIFLevel);
@@ -143,7 +147,6 @@ CConsoleIO::Update(drm_t *drm)
     int signal = (pDRMReceiver->GetAcquiState() == AS_WITH_SIGNAL);
     if (signal) {
         _REAL rSNR = Parameters.GetSNR();
-        //cprintf("                        SNR: %.1f dB" NL, rSNR);
         sb = kstr_asprintf(sb,
             ",\"snr\":%.1f,\"mod\":%d,\"occ\":%d,\"ilv\":%d,\"sdc\":%d,\"msc\":%d,\"plb\":%d,\"pla\":%d,\"nas\":%d,\"nds\":%d",
             rSNR, Parameters.GetWaveMode(), Parameters.GetSpectrumOccup(), Parameters.eSymbolInterlMode,
@@ -153,13 +156,10 @@ CConsoleIO::Update(drm_t *drm)
         );
     }
 
-    //cprintf(NL "Service:" NL);
     sb = kstr_cat(sb, ",\"svc\":[");
-    char* strTextMessage = nullptr;
     int iCurAudService = Parameters.GetCurSelAudioService();
     
     if (iCurAudService != drm->audio_service) {
-        //printf("iCurAudService=%d => audio_service=%d\n", iCurAudService, drm->audio_service);
         Parameters.SetCurSelAudioService(drm->audio_service);
         iCurAudService = Parameters.GetCurSelAudioService();
     }
@@ -172,56 +172,34 @@ CConsoleIO::Update(drm_t *drm)
         if (service.IsActive())
         {
             CAudioParam::EAudCod ac = service.AudioParam.eAudioCoding;
-            const char *strLabel = kiwi_str_clean((char *) service.strLabel.c_str());
+            char *strLabel = kiwi_str_encode((char *) service.strLabel.c_str());
             int ID = service.iServiceID;
-            bool audio = service.eAudDataFlag == CService::SF_AUDIO;
-            //cprintf("%c%i | %X | %s ", i==iCurAudService ? '>' : ' ', i+1, ID, strLabel);
+            bool audio = (service.eAudDataFlag == CService::SF_AUDIO);
             _REAL rPartABLenRat = Parameters.PartABLenRatio(i);
-            //if (rPartABLenRat != (_REAL) 0.0)
-            //    cprintf("| UEP (%.1f%%) |", rPartABLenRat * 100);
-            //else
-            //    cprintf("| EEP |");
             _REAL rBitRate = Parameters.GetBitRateKbps(i, !audio);
             bool br_audio = audio;
-            //if (rBitRate > 0.0)
-            //    cprintf(" %s %.2f kbps", audio ? "Audio" : "Data", rBitRate);
             if (audio && service.DataParam.iStreamID != STREAM_ID_NOT_USED)
             {
                 _REAL rBitRate = Parameters.GetBitRateKbps(i, true);
                 br_audio = false;
-                //cprintf(" + Data %.2f kbps", rBitRate);
             }
-            if (i == iCurAudService)
-                strTextMessage = strdup(service.AudioParam.strTextMessage.c_str());
-                //strTextMessage = (char *) service.AudioParam.strTextMessage.c_str();
+            if (i == iCurAudService && service.AudioParam.bTextflag) {
+                free(text_msg_utf8_enc);
+                text_msg_utf8_enc = kiwi_str_encode((char *) service.AudioParam.strTextMessage.c_str());
+            }
 
             sb = kstr_asprintf(sb,
                 "\"cur\":%d,\"ac\":%d,\"id\":\"%X\",\"lbl\":\"%s\",\"ep\":%.1f,\"ad\":%d,\"br\":%.2f",
                 (i == iCurAudService)? 1:0, ac, ID, strLabel, rPartABLenRat * 100, br_audio? 1:0, rBitRate
             );
+            free(strLabel);
         }
         sb = kstr_cat(sb, "}");
     }
     sb = kstr_cat(sb, "]");
 
-    if (strTextMessage != nullptr)
-    {
-        //string msg(strTextMessage);
-        //REPLACE_STR(msg, "\r\n", "\r");  /* Windows CR-LF */
-        //REPLACE_CHAR(msg, '\n', "\r");   /* New Line */
-        //REPLACE_CHAR(msg, '\f', "\r");   /* Form Feed */
-        //REPLACE_CHAR(msg, '\v', "\r");   /* Vertical Tab */
-        //REPLACE_CHAR(msg, '\t', "    "); /* Horizontal Tab */
-        //REPLACE_CHAR(msg, '\r', NL);     /* Carriage Return */
-        //cprintf(NL "%s", msg.c_str());
-
-        //QString TextMessage(QString::fromUtf8(audioService.AudioParam.strTextMessage.c_str()));
-        char *s = strTextMessage;
-        //char *s = strdup(msg.c_str());
-        //printf("%d <<<%s>>>\n", strlen(s), kiwi_str_clean(s));
-        sb = kstr_asprintf(sb, ",\"msg\":\"%s\"", kiwi_str_clean(s));
-        free(s);
-    }
+    if (text_msg_utf8_enc)
+        sb = kstr_asprintf(sb, ",\"msg\":\"%s\"", text_msg_utf8_enc);
 
 #if 0
 		int signal = pDRMReceiver->GetAcquiState() == AS_WITH_SIGNAL;
@@ -244,53 +222,6 @@ CConsoleIO::Update(drm_t *drm)
 			cprintf("            Doppler / Delay: %.2f Hz / %.2f ms" NL, rSigma, rMinDelay);
 			else
 			cprintf("            Doppler / Delay: " NA NL);
-
-			const char *strRob;
-			switch (Parameters.GetWaveMode()) {
-			case RM_ROBUSTNESS_MODE_A: strRob = "A"; break;
-			case RM_ROBUSTNESS_MODE_B: strRob = "B"; break;
-			case RM_ROBUSTNESS_MODE_C: strRob = "C"; break;
-			case RM_ROBUSTNESS_MODE_D: strRob = "D"; break;
-			default:                   strRob = "?"; }
-			const char *strOcc;
-			switch (Parameters.GetSpectrumOccup()) {
-			case SO_0: strOcc = "4.5 kHz"; break;
-			case SO_1: strOcc = "5 kHz";   break;
-			case SO_2: strOcc = "9 kHz";   break;
-	 		case SO_3: strOcc = "10 kHz";  break;
-			case SO_4: strOcc = "18 kHz";  break;
-			case SO_5: strOcc = "20 kHz";  break;
-			default:   strOcc = "?";       }
-			cprintf("       DRM Mode / Bandwidth: %s / %s" NL, strRob, strOcc);
-
-			const char *strInter;
-		    switch (Parameters.eSymbolInterlMode) {
-		    case CParameter::SI_LONG:  strInter = "2 s";    break;
-		    case CParameter::SI_SHORT: strInter = "400 ms"; break;
-		    default:                   strInter = "?";      }
-			cprintf("          Interleaver Depth: %s" NL, strInter);
-
-			const char *strSDC;
-			switch (Parameters.eSDCCodingScheme) {
-			case CS_1_SM: strSDC = "4-QAM";  break;
-			case CS_2_SM: strSDC = "16-QAM"; break;
-			default:      strSDC = "?";      }
-			const char *strMSC;
-			switch (Parameters.eMSCCodingScheme) {
-			case CS_2_SM:    strMSC = "SM 16-QAM";    break;
-			case CS_3_SM:    strMSC = "SM 64-QAM";    break;
-			case CS_3_HMSYM: strMSC = "HMsym 64-QAM"; break;
-			case CS_3_HMMIX: strMSC = "HMmix 64-QAM"; break;
-			default:         strMSC = "?";            }
-			cprintf("             SDC / MSC Mode: %s / %s" NL, strSDC, strMSC);
-
-			int iPartB = Parameters.MSCPrLe.iPartB;
-			int iPartA = Parameters.MSCPrLe.iPartA;
-			cprintf("        Prot. Level (B / A): %i / %i" NL, iPartB, iPartA);
-
-			int iNumAudio = Parameters.iNumAudioService;
-			int iNumData = Parameters.iNumDataService;
-			cprintf("         Number of Services: Audio: %i / Data: %i" NL, (int)iNumAudio, (int)iNumData);
 
 			int iYear = Parameters.iYear;
 			int iMonth = Parameters.iMonth;

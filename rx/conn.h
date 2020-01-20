@@ -66,7 +66,7 @@ typedef struct conn_st {
 
 	// set only in STREAM_SOUND
 	bool snd_cmd_recv_ok;
-	bool inactivity_timeout, inactivity_timeout_override;
+	bool inactivity_timeout;
 	int freqHz, last_freqHz;
 	int mode, last_mode;
 	int zoom, last_zoom;	// zoom set in both

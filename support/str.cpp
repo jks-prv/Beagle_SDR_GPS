@@ -431,6 +431,17 @@ char *kiwi_skip_over(char *s, const char *skip)
     return match? (s + slen) : s;
 }
 
+// library strcpy() with overlapping args will trigger clang asan
+char *kiwi_overlap_strcpy(char *dst, const char *src)
+{
+    char *d = dst, c;
+    do {
+        c = *src++;
+        *d++ = c;
+    } while (c != '\0');
+    return dst;
+}
+
 
 // versions of strncpy/strncat that guarantee string terminated when max size reached
 // assumes n has included SPACE_FOR_NULL

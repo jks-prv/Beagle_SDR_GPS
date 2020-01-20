@@ -556,7 +556,7 @@ void reload_index_params()
 //	3) HTML GET AJAX requests
 //	4) HTML PUT requests
 
-bool web_nocache;
+bool webserver_caching, web_nocache;
 
 int web_request(struct mg_connection *mc, enum mg_event evt) {
 	int i, n;
@@ -678,31 +678,29 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         (evt == MG_CACHE_INFO)? "MG_CACHE_INFO" : "MG_REQUEST"));
 
     while (*o_uri == '/') o_uri++;
-    bool isIndexHTML = false;
     if (*o_uri == '\0' || strcmp(o_uri, "index") == 0 || strcmp(o_uri, "index.html") == 0 || strcmp(o_uri, "index.htm") == 0) {
         o_uri = (char *) "index.html";
-        isIndexHTML = true;
-    }
 
-    // Kiwi URL redirection
-    if (isIndexHTML && (rx_count_server_conns(INCLUDE_INTERNAL) == rx_chans || down)) {
-        char *url_redirect = (char *) admcfg_string("url_redirect", NULL, CFG_REQUIRED);
-        if (url_redirect != NULL && *url_redirect != '\0') {
-        
-            // if redirect url ends in numeric port number must add '/' before '?' of query string
-            char *sep = (char *) (isdigit(url_redirect[strlen(url_redirect)-1])? "/?" : "?");
-            kstr_t *args = mc->query_string? kstr_cat(sep, mc->query_string) : NULL;
-            kstr_t *redirect = kstr_cat(url_redirect, args);
-            printf("REDIRECT: %s\n", kstr_sp(redirect));
-            mg_send_status(mc, 307);
-            mg_send_header(mc, "Location", kstr_sp(redirect));
-            mg_send_data(mc, NULL, 0);
-            evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "307 redirect");
-            kstr_free(redirect);
+        // Kiwi URL redirection
+        if (rx_count_server_conns(INCLUDE_INTERNAL) == rx_chans || down) {
+            char *url_redirect = (char *) admcfg_string("url_redirect", NULL, CFG_REQUIRED);
+            if (url_redirect != NULL && *url_redirect != '\0') {
+            
+                // if redirect url ends in numeric port number must add '/' before '?' of query string
+                char *sep = (char *) (isdigit(url_redirect[strlen(url_redirect)-1])? "/?" : "?");
+                kstr_t *args = mc->query_string? kstr_cat(sep, mc->query_string) : NULL;
+                kstr_t *redirect = kstr_cat(url_redirect, args);
+                printf("REDIRECT: %s\n", kstr_sp(redirect));
+                mg_send_status(mc, 307);
+                mg_send_header(mc, "Location", kstr_sp(redirect));
+                mg_send_data(mc, NULL, 0);
+                evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "307 redirect");
+                kstr_free(redirect);
+                admcfg_string_free(url_redirect);
+                return MG_TRUE;
+            }
             admcfg_string_free(url_redirect);
-            return MG_TRUE;
         }
-        admcfg_string_free(url_redirect);
     }
 
     // SECURITY: prevent escape out of local directory
@@ -777,6 +775,8 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     // process query string parameters even if file is cached
     suffix = strrchr(uri, '.');
     if (edata_data && suffix && strcmp(suffix, ".html") == 0 && mc->query_string) {
+        webserver_caching = cfg_bool("webserver_caching", NULL, CFG_REQUIRED);
+
         int ctrace;
         #define NQS 32
         char *r_buf, *qs[NQS+1];
@@ -784,14 +784,19 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         for (i=0; i < n; i++) {
             if (strcmp(qs[i], "nocache") == 0) {
                 web_nocache = true;
-                printf("### nocache\n");
+                printf("WEB nocache\n");
+            } else
+            if (strcmp(qs[i], "cache") == 0) {
+                web_nocache = false;
+                printf("WEB cache\n");
             } else
             if (strcmp(qs[i], "nolocal") == 0) {
                 conn_nolocal = true;
+                printf("WEB nolocal\n");
             } else
             if (sscanf(qs[i], "ctrace=%d", &ctrace) == 1) {
                 web_caching_debug = ctrace;
-                printf("### ctrace=%d\n", web_caching_debug);
+                printf("WEB ctrace=%d\n", web_caching_debug);
             } else {
                 char *su_m = NULL;
                 if (sscanf(qs[i], "su=%256ms", &su_m) == 1) {
@@ -959,7 +964,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     bool isImage = (suffix && (strcmp(suffix, ".png") == 0 || strcmp(suffix, ".jpg") == 0 || strcmp(suffix, ".ico") == 0));
     int rtn = MG_TRUE;
     if (evt == MG_CACHE_INFO) {
-        if (dirty || isAJAX || is_sdr_hu || web_nocache) {
+        if (dirty || isAJAX || is_sdr_hu || web_nocache || !webserver_caching) {
             //web_printf_all("%-16s NO CACHE %s%s\n", "MG_CACHE_INFO", is_sdr_hu? "sdr.hu " : "", uri);
             web_printf_all("%-16s NO CACHE %s%s%s%s\n", "MG_CACHE_INFO",
                 dirty? "dirty-%[] " : "", isAJAX? "AJAX " : "", is_sdr_hu? "sdr.hu " : "", uri);
@@ -982,7 +987,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
             mg_send_header(mc, "Access-Control-Allow-Origin", "*");
             hdr_type = "AJAX";
         } else
-        if (web_nocache || is_sdr_hu) {    // sdr.hu doesn't like our new caching headers for the avatar
+        if (web_nocache || !webserver_caching || is_sdr_hu) {    // sdr.hu doesn't like our new caching headers for the avatar
             mg_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"));
             hdr_type = is_sdr_hu? "SDR.HU" : "NO-CACHE";
         } else {
