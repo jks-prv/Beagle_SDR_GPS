@@ -71,7 +71,7 @@ typedef struct {
 	int rx_chan;
 	tid_t tid;
 	int iq_rd_pos, iq_bpos, remainingIQ;
-	bool reset;
+	bool monitor, reset;
 	int run;
 	u4_t debug;
 	drm_info_t *info;

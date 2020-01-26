@@ -21,6 +21,7 @@ var drm = {
    
    run: 0,
    is_stopped: 0,
+   is_monitor: 0,
    freq_s: '',
    freq: 0,
    
@@ -969,7 +970,8 @@ function drm_desktop_controls_setup(w_graph)
             w3_button('w3-padding-smaller', 'Next', 'drm_next_prev_cb', 1),
             w3_button('w3-padding-smaller', 'Prev', 'drm_next_prev_cb', -1),
             w3_button('id-drm-stop-button w3-padding-smaller w3-pink', 'Stop', 'drm_stop_start_cb'),
-            w3_button('w3-padding-smaller w3-css-yellow', 'Reset', 'drm_reset_cb'),
+            w3_button('w3-padding-smaller w3-pink', 'Monitor IQ', 'drm_monitor_IQ_cb'),
+            //w3_button('w3-padding-smaller w3-css-yellow', 'Reset', 'drm_reset_cb'),
             w3_button('w3-padding-smaller w3-aqua', 'Test 1', 'drm_test_cb', 1),
             w3_button('w3-padding-smaller w3-aqua', 'Test 2', 'drm_test_cb', 2),
             //w3_select('w3-margin-left|color:red', '', 'monitor', 'drm.monitor', drm.monitor, drm.monitor_s, 'drm_monitor_cb')
@@ -1018,6 +1020,9 @@ function drm_controls_setup()
    
    drm.is_stopped = 0;
    console.log('drm_controls_setup is_stopped='+ drm.is_stopped);
+
+   drm.is_monitor = 0;
+   console.log('drm_controls_setup is_monitor='+ drm.is_monitor);
 
    // URL params that need to be setup before controls instantiated
 	var p = drm.url_params = ext_param();
@@ -1165,6 +1170,22 @@ function drm_stop_start_cb(path, cb_param)
    } else {
       console.log('$drm_stop_start_cb: do start, show stop');
       drm_start();
+   }
+}
+
+function drm_monitor_IQ_cb(path, cb_param)
+{
+   console.log('drm_monitor_IQ_cb ENTRY is_monitor='+ drm.is_monitor +' cb_param='+ cb_param);
+   drm.is_monitor ^= 1;
+   
+   if (drm.is_monitor) {
+      console.log('$drm_monitor_IQ_cb: do monitor start');
+      w3_remove_then_add(path, 'w3-pink', 'w3-green');
+      ext_send('SET monitor=1');
+   } else {
+      console.log('$drm_monitor_IQ_cb: do monitor stop');
+      w3_remove_then_add(path, 'w3-green', 'w3-pink');
+      ext_send('SET monitor=0');
    }
 }
 
