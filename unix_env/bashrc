@@ -29,7 +29,7 @@ alias i="echo ==== interfaces; ic -a; echo ==== /etc/network/interfaces; cat /et
 alias e="ethtool eth0"
 alias e10="ethtool -s eth0 speed 10 duplex full"
 alias e100="ethtool -s eth0 speed 100 duplex full"
-alias ip='ifconfig eth0 | grep inet'
+alias ip="ifconfig eth0 | grep 'eth0\|inet'"
 alias mac='cat /sys/class/net/eth0/address'
 alias df="/bin/df -h"
 alias tr="traceroute"
@@ -90,6 +90,7 @@ alias mcd="make clean_dist"
 alias md="make debug"
 alias ml="make log"
 alias msl="make slog"
+alias mtl="make tlog"
 alias ms="make status"
 alias mr="make run"
 alias muc="make update_check"
@@ -138,6 +139,7 @@ alias gurl="git config --get remote.origin.url"
 alias gfo="git fetch origin"
 alias gcl="git clean -fd"
 alias gco="git checkout"
+alias gcomaster="git checkout master"
 alias gpu="git pull -v"
 alias gup="gcl; gco .; gpu"
 alias gdi="git diff"
@@ -153,6 +155,10 @@ alias gcom="gsh --oneline -s"
 alias gcoms="git log --pretty=format:'%h %ad %s' --date=short"
 # gco <sha>
 # gco master
+
+# git Kiwi
+alias kvers='git log --pretty=format:"%h %ad %s" --grep="^v[1-9]" --grep="^release v[1-9]" | grep -v "Merge pull request" | head'
+alias kver=kvers
 
 # systemctl
 alias sc="echo systemctl: sctl=systemctl ls=list_unit lsa=list_all_units scs=service_status sa,st=start,stop re=reload di,en=disable,enable"

@@ -1408,7 +1408,7 @@ var _gps = {
    leaflet: true,
    gps_map_loaded: false,
    pkgs_maps_js: [ 'pkgs_maps/pkgs_maps.js', 'pkgs_maps/pkgs_maps.css' ],
-   gmap_js: ['http://maps.googleapis.com/maps/api/js?key=AIzaSyCtWThmj37c62a1qYzYUjlA0XUVC_lG8B8'],
+   gmap_js: ['http://maps.googleapis.com/maps/api/js?key='],
 
    RSSI:0, AZEL:1, POS:2, MAP:3, IQ:4,
    IQ_data: null,
@@ -2943,7 +2943,7 @@ function admin_wait_then_reload(secs, msg)
 function admin_restart_now_cb()
 {
 	ext_send('SET restart');
-	admin_wait_then_reload(75, 'Restarting KiwiSDR server');
+	admin_wait_then_reload(60, 'Restarting KiwiSDR server');
 }
 
 function admin_restart_cancel_cb()
@@ -2954,7 +2954,7 @@ function admin_restart_cancel_cb()
 function admin_reboot_now_cb()
 {
 	ext_send('SET reboot');
-	admin_wait_then_reload(120, 'Rebooting Beagle');
+	admin_wait_then_reload(90, 'Rebooting Beagle');
 }
 
 function admin_reboot_cancel_cb()
