@@ -2,6 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.376  January 29, 2020
+    DRM: added "monitor IQ" button which sends IQ to audio output while still decoding DRM.
+        Handy for comparing Kiwi DRM versus Dream.
+    Rewrite of network initialization code.
+        Handles DHCP servers slow to respond (e.g. after power failure).
+        Should help admin page "still determining local interface address" problem.
+    Fixed bug with protected login mode.
+    Print more debugging messages if /root/kiwi.config/opt.debug file is present.
+
 v1.375  January 21, 2020
     DRM extension fixes and improvements:
         Make service label UTF8 (e.g. allows Chinese characters)
