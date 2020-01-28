@@ -438,7 +438,7 @@ void c2s_admin(void *param)
 				u4_t server = status & 0xf;
 				
 				asprintf(&cmd_p, "sed -e s/SERVER/%d/ -e s/USER/%s/ -e s/HOST/%s/ -e s/PORT/%d/ %s >%s",
-				    server, user_m, host_m, ddns.port_ext, DIR_CFG "/frpc.template.ini", DIR_CFG "/frpc.ini");
+				    server, user_m, host_m, net.port_ext, DIR_CFG "/frpc.template.ini", DIR_CFG "/frpc.ini");
                 printf("proxy register: %s\n", cmd_p);
 				system(cmd_p);
                 free(cmd_p);
@@ -541,7 +541,7 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET public_update");
 			if (i == 0) {
                 if (admcfg_bool("kiwisdr_com_register", NULL, CFG_REQUIRED) == false) {
-		            // force switch to short sleep cycle
+		            // force switch to short sleep cycle so we get status returned sooner
 		            if (reg_kiwisdr_com_status && reg_kiwisdr_com_tid) {
                         TaskWakeup(reg_kiwisdr_com_tid, TWF_CANCEL_DEADLINE);
                     }
@@ -642,7 +642,7 @@ void c2s_admin(void *param)
 
 			i = strcmp(cmd, "SET auto_nat_status_poll");
 			if (i == 0) {
-				send_msg(conn, SM_NO_DEBUG, "ADM auto_nat=%d", ddns.auto_nat);
+				send_msg(conn, SM_NO_DEBUG, "ADM auto_nat=%d", net.auto_nat);
 				continue;
 			}
 
@@ -651,7 +651,7 @@ void c2s_admin(void *param)
 	            const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
                 // proxy always uses port 8073
                 int sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
-                int server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : ddns.port_ext;
+                int server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : net.port_ext;
                 int status;
 			    char *reply;
 		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"kiwisdr.com/php/check_port_open.php/?url=%s:%d\"",

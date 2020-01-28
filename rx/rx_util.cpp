@@ -435,7 +435,7 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
 static void geoloc_task(void *param)
 {
 	conn_t *conn = (conn_t *) param;
-	char *ip = (isLocal_ip(conn->remote_ip) && ddns.pub_valid)? ddns.ip_pub : conn->remote_ip;
+	char *ip = (isLocal_ip(conn->remote_ip) && net.pub_valid)? net.ip_pub : conn->remote_ip;
 
     u4_t i = timer_sec();   // mix it up a bit
     int retry = 0;

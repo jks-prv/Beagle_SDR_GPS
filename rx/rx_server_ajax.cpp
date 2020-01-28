@@ -55,7 +55,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 	
 	if (*uri == '/') uri++;
 	
-	for (st=streams; st->uri; st++) {
+	for (st = rx_streams; st->uri; st++) {
 		if (strcmp(uri, st->uri) == 0)
 			break;
 	}
@@ -164,7 +164,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 	case AJAX_DISCOVERY:
 		if (!isLocal_ip(remote_ip)) return (char *) -1;
 		asprintf(&sb, "%d %s %s %d %d %s",
-			ddns.serno, ddns.ip_pub, ddns.ip_pvt, ddns.port, ddns.nm_bits, ddns.mac);
+			net.serno, net.ip_pub, net.ip_pvt, net.port, net.nm_bits, net.mac);
 		printf("/DIS REQUESTED from %s: <%s>\n", remote_ip, sb);
 		break;
 
@@ -198,15 +198,15 @@ char *rx_server_ajax(struct mg_connection *mc)
 		
 		const char *s1, *s3, *s4, *s5, *s6, *s7;
 		
-		// if location hasn't been changed from the default try using DDNS lat/log
+		// if location hasn't been changed from the default try using ipinfo lat/log
 		// or, failing that, put us in Antarctica to be noticed
 		s4 = cfg_string("rx_gps", NULL, CFG_OPTIONAL);
 		const char *gps_loc;
-		char *ddns_lat_lon = NULL;
+		char *ipinfo_lat_lon = NULL;
 		if (strcmp(s4, "(-37.631120, 176.172210)") == 0) {
-			if (ddns.lat_lon_valid) {
-				asprintf(&ddns_lat_lon, "(%lf, %lf)", ddns.lat, ddns.lon);
-				gps_loc = ddns_lat_lon;
+			if (gps.ipinfo_ll_valid) {
+				asprintf(&ipinfo_lat_lon, "(%f, %f)", gps.ipinfo_lat, gps.ipinfo_lon);
+				gps_loc = ipinfo_lat_lon;
 			} else {
 				gps_loc = "(-69.0, 90.0)";		// Antarctica
 			}
@@ -334,7 +334,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			);
 
 		free(name);
-		free(ddns_lat_lon);
+		free(ipinfo_lat_lon);
 		cfg_string_free(s3);
 		cfg_string_free(s4);
 		cfg_string_free(s5);
