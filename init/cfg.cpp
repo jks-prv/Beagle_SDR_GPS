@@ -110,34 +110,27 @@ static void cfg_test()
 
 int serial_number;
 
-void cfg_reload(bool called_from_main)
+void cfg_reload()
 {
 	cfg_init();
 	admcfg_init();
 
-	if (called_from_main) {
-	
-		//cfg_test();
-		
-		if ((serial_number = cfg_int("serial_number", NULL, CFG_OPTIONAL)) > 0) {
-			lprintf("serial number override from configuration: %d\n", serial_number);
-		} else {
-			if ((serial_number = eeprom_check()) <= 0) {
-				lprintf("can't read serial number from EEPROM and no configuration override\n");
-				serial_number = 0;
-			} else {
-				lprintf("serial number from EEPROM: %d\n", serial_number);
-			}
-		}
-	}
+    //cfg_test();
+    
+    if ((serial_number = cfg_int("serial_number", NULL, CFG_OPTIONAL)) > 0) {
+        lprintf("serial number override from configuration: %d\n", serial_number);
+    } else {
+        if ((serial_number = eeprom_check()) <= 0) {
+            lprintf("can't read serial number from EEPROM and no configuration override\n");
+            serial_number = 0;
+        } else {
+            lprintf("serial number from EEPROM: %d\n", serial_number);
+        }
+    }
 
 #ifndef CFG_GPS_ONLY
 	dx_reload();
 #endif
-	
-	if (!called_from_main) {
-		services_start(SVCS_RESTART_TRUE);
-	}
 }
 
 cfg_t cfg_cfg, cfg_adm, cfg_dx;

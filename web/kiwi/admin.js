@@ -1101,7 +1101,7 @@ function network_html()
             w3_label('w3-bold w3-text-teal', 'Register this Kiwi on my.kiwisdr.com<br>on each reboot?<br>'),
             w3_switch('w3-margin-T-8 w3-margin-B-8', 'Yes', 'No', 'adm.my_kiwi', adm.my_kiwi, 'admin_radio_YN_cb'),
             w3_text('w3-block w3-center w3-text-black',
-               'Registering on my.kiwisdr.com allows the local ip address of Kiwis <br>' +
+               'Registering on <a href="http://my.kiwisdr.com" target="_blank">my.kiwisdr.com</a> allows the local ip address of Kiwis <br>' +
                'to be easily discovered. Set to "no" if you don\'t want your Kiwi <br>' +
                'sending information to kiwisdr.com. Defaults to "yes".'
             )

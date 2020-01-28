@@ -592,7 +592,6 @@ static void pub_NET(void *param)
     do {
         // don't use kiwisdr.com during first half of retries since it doesn't provide lat/lon
         i = (i+1) % ((retry < N_IPINFO_RETRY/2)? (N_IPINFO_SERVERS-1) : N_IPINFO_SERVERS);
-i = 3;
 
         if (i == 0) okay = ipinfo_json(1, "ipapi.co", "json", "ip", "latitude", "longitude");
         else
@@ -602,6 +601,7 @@ i = 3;
         else
         // must be last
         if (i == 3) okay = ipinfo_json(0, kiwisdr_com, "php/update.php/?pubip=94e2473e8df4e92a0c31944ec62b2a067c26b8d0", "ip");
+
         retry++;
     } while (!okay && retry <= N_IPINFO_RETRY);   // make multiple attempts
     if (!okay) lprintf("IPINFO: ### FAILED for all ipinfo servers ###\n");

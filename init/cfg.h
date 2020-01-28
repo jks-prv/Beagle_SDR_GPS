@@ -161,9 +161,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define json_set_string(cfg, name, val)		_cfg_set_string(cfg, name, val, CFG_SET, 0)
 #define json_rem_string(cfg, name)			_cfg_set_string(cfg, name, NULL, CFG_REMOVE, 0)
 
-#define	CALLED_FROM_MAIN		true
-#define	NOT_CALLED_FROM_MAIN	false
-void cfg_reload(bool called_from_main);
+void cfg_reload();
 
 bool _cfg_init(cfg_t *cfg, int flags, char *buf);
 void _cfg_release(cfg_t *cfg);
