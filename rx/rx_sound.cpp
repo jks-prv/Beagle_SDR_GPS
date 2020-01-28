@@ -698,6 +698,8 @@ void c2s_sound(void *param)
 		bool do_de_emp = (de_emp && !IQ_or_DRM);
 		bool do_lms    = (!isNBFM && !IQ_or_DRM);
 		
+        drm_t *drm = &DRM_SHMEM->drm[rx_chan];
+
 		u2_t bc = 0;
 
 		ext_receive_S_meter_t receive_S_meter   = ext_users[rx_chan].receive_S_meter;
@@ -984,7 +986,7 @@ void c2s_sound(void *param)
             // copy to output buffer and send to client
             ////////////////////////////////
     
-            if (mode == MODE_IQ) {
+            if (mode == MODE_IQ || (mode == MODE_DRM && drm->monitor)) {
                 m_Agc[rx_chan].ProcessData(ns_out, f_samps, f_samps, masked);
                 iq->iq_wr_pos = (iq->iq_wr_pos+1) & (N_DPBUF-1);    // after AGC above
 
@@ -1054,6 +1056,7 @@ void c2s_sound(void *param)
                 // Data comes from DRM output routine writing directly to drm_buf[] and updating out_wr_pos.
                 // Send silence if buffers are not updated in time.
                 
+                else
                 if (mode == MODE_DRM) {
                     m_Agc[rx_chan].ProcessData(ns_out, f_samps, f_samps, masked);
                     iq->iq_wr_pos = (iq->iq_wr_pos+1) & (N_DPBUF-1);    // after AGC above

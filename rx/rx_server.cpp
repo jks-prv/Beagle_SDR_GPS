@@ -53,7 +53,7 @@ conn_t conns[N_CONNS];
 rx_chan_t rx_channels[MAX_RX_CHANS];
 
 // NB: must be in conn_t.type order
-rx_stream_t streams[] = {
+rx_stream_t rx_streams[] = {
 	{ AJAX_VERSION,		"VER" },
 	{ STREAM_ADMIN,		"admin",	&c2s_admin,		&c2s_admin_setup,		&c2s_admin_shutdown,	 TASK_MED_PRIORITY },
 #ifndef CFG_GPS_ONLY
@@ -142,7 +142,7 @@ void show_conn(const char *prefix, conn_t *cd)
     }
     
     lprintf("%sCONN-%02d %s%s rx=%d auth%d kiwi%d prot%d admin%d local%d tle%d%d KA=%02d/60 KC=%05d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",
-        prefix, cd->self_idx, streams[cd->type].uri, cd->internal_connection? "(INT)":"",
+        prefix, cd->self_idx, rx_streams[cd->type].uri, cd->internal_connection? "(INT)":"",
         (cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel,
         cd->auth, cd->auth_kiwi, cd->auth_prot, cd->auth_admin, cd->isLocal, cd->tlimit_exempt, cd->tlimit_exempt_by_pwd,
         cd->keep_alive, cd->keepalive_count, cd->mc, cd->magic,
@@ -187,7 +187,7 @@ static void dump_conn()
 	conn_t *cd;
 	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
 		lprintf("dump_conn: CONN-%02d %p valid=%d type=%d [%s] auth=%d KA=%d/60 KC=%d mc=%p rx=%d %s magic=0x%x ip=%s:%d other=%s%d %s\n",
-			i, cd, cd->valid, cd->type, streams[cd->type].uri, cd->auth, cd->keep_alive, cd->keepalive_count, cd->mc, cd->rx_channel,
+			i, cd, cd->valid, cd->type, rx_streams[cd->type].uri, cd->auth, cd->keep_alive, cd->keepalive_count, cd->mc, cd->rx_channel,
 			cd->magic, cd->remote_ip, cd->remote_port, cd->other? "CONN-":"", cd->other? cd->other-conns:0, cd->stop_data? "STOP":"");
 	}
 	rx_chan_t *rc;
@@ -195,14 +195,6 @@ static void dump_conn()
 		lprintf("dump_conn: RX_CHAN-%d en %d busy %d conn = %s%d %p\n",
 			i, rc->chan_enabled, rc->busy, rc->conn? "CONN-":"", rc->conn? rc->conn-conns:0, rc->conn);
 	}
-}
-
-// invoked by "make reload" command which will send SIG_DEBUG to the kiwi server process
-static void cfg_reload_handler(int arg)
-{
-	lprintf("SIG_DEBUG: reloading configuration, dx list..\n");
-	cfg_reload(NOT_CALLED_FROM_MAIN);
-	sig_arm(SIG_DEBUG, cfg_reload_handler);
 }
 
 // can optionally configure SIG_DEBUG to call this debug handler
@@ -233,11 +225,7 @@ void rx_server_init()
 		c++;
 	}
 	
-	#if 1
 	    sig_arm(SIG_DEBUG, debug_dump_handler);
-	#else
-	    sig_arm(SIG_DEBUG, cfg_reload_handler);
-	#endif
 
     //#ifndef DEVSYS
     #if 0
@@ -298,7 +286,7 @@ void rx_loguser(conn_t *c, logtype_e type)
 
 void rx_server_remove(conn_t *c)
 {
-    rx_stream_t *st = &streams[c->type];
+    rx_stream_t *st = &rx_streams[c->type];
     if (st->shutdown) (st->shutdown)((void *) c);
     
 	c->stop_data = TRUE;
@@ -371,7 +359,7 @@ void rx_server_user_kick(int chan)
 		    if (chan == -1 || chan == c->rx_channel) {
                 c->kick = true;
                 if (chan != -1)
-                    printf("rx_server_user_kick KICKING rx=%d %s\n", chan, streams[c->type].uri);
+                    printf("rx_server_user_kick KICKING rx=%d %s\n", chan, rx_streams[c->type].uri);
             }
 		} else
 		
@@ -435,7 +423,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
         }
         
         if (mode == WS_MODE_CLOSE) {
-            //cprintf(c, "WS_MODE_CLOSE %s KICK KA=%02d/60 KC=%05d\n", streams[c->type].uri, c->keep_alive, c->keepalive_count);
+            //cprintf(c, "WS_MODE_CLOSE %s KICK KA=%02d/60 KC=%05d\n", rx_streams[c->type].uri, c->keep_alive, c->keepalive_count);
             if (!c->internal_connection)
                 mg_websocket_write(mc, WS_OPCODE_CLOSE, "", 0);
             c->mc = NULL;
@@ -476,14 +464,14 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
     if (strstr(uri_m, "W/F"))
         isWF_conn = true;
 	
-	for (i=0; streams[i].uri; i++) {
-		st = &streams[i];
+	for (i=0; rx_streams[i].uri; i++) {
+		st = &rx_streams[i];
 		
 		if (strcmp(uri_m, st->uri) == 0)
 			break;
 	}
 	
-	if (!streams[i].uri) {
+	if (!rx_streams[i].uri) {
 		lprintf("**** unknown stream type <%s>\n", uri_m);
         free(uri_m);
 		return NULL;
@@ -515,7 +503,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
             struct stat _st;
             if (stat(DIR_CFG "/opt.no_console", &_st) == 0)
                 return NULL;
-            printf("allowed by su %s %s\n", streams[st->type].uri, remote_ip);
+            printf("allowed by su %s %s\n", rx_streams[st->type].uri, remote_ip);
             #ifndef CFG_GPS_ONLY
                 if (!init_snd_wf) {
                     c2s_sound_init();
@@ -554,13 +542,13 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			send_msg_mc(mc, SM_NO_DEBUG, "MSG comp_ctr=%d reason_disabled=%s down=%d", comp_ctr, reason_enc, type);
 			cfg_string_free(reason_disabled);
 			free(reason_enc);
-            //printf("DOWN %s %s\n", streams[st->type].uri, remote_ip);
+            //printf("DOWN %s %s\n", rx_streams[st->type].uri, remote_ip);
 			return NULL;
 		} else
 
 		// always allow admin connections
 		if (st->type != STREAM_ADMIN) {
-            //printf("DOWN %s %s\n", streams[st->type].uri, remote_ip);
+            //printf("DOWN %s %s\n", rx_streams[st->type].uri, remote_ip);
 			return NULL;
 		}
 	}
@@ -576,7 +564,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 
 		// cull conns stuck in STOP_DATA state (Novosibirsk problem)
 		if (c->valid && c->stop_data && c->mc == NULL) {
-			clprintf(c, "STOP_DATA cull conn-%02d %s rx_chan=%d\n", c->self_idx, streams[c->type].uri, c->rx_channel);
+			clprintf(c, "STOP_DATA cull conn-%02d %s rx_chan=%d\n", c->self_idx, rx_streams[c->type].uri, c->rx_channel);
 			rx_enable(c->rx_channel, RX_CHAN_FREE);
 			rx_server_remove(c);
 		}
@@ -587,7 +575,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			continue;
 		}
 		
-		//printf("CONN-%d IS %p type=%d(%s) tstamp=%lld ip=%s:%d rx=%d auth=%d other%s%ld mc=%p\n", cn, c, c->type, streams[c->type].uri, c->tstamp,
+		//printf("CONN-%d IS %p type=%d(%s) tstamp=%lld ip=%s:%d rx=%d auth=%d other%s%ld mc=%p\n", cn, c, c->type, rx_streams[c->type].uri, c->tstamp,
 		//    c->remote_ip, c->remote_port, c->rx_channel, c->auth, c->other? "=CONN-":"=", c->other? c->other-conns:0, c->mc);
 		if (c->tstamp == tstamp && (strcmp(remote_ip, c->remote_ip) == 0)) {
 			if (snd_or_wf && c->type == st->type) {

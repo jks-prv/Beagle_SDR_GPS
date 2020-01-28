@@ -1,5 +1,5 @@
 [
-// underscores in station names are converted to line breaks in menu entries
+// underscores in station names are converted to line breaks in menu and schedule entries
 // negative start or end time means entry should be marked as verified
 
 {
@@ -10,7 +10,7 @@
     "Radio_France Intl": [3965,0,-24, 6175,9,15],
 
     "Voice of_Russia": [5925,21,23, 6025,[6,10,20,22], 6110,16,20, 6125,17,21, 7435,19,22, 9590,7,11,
-                            9625,8,15, 9800,14,16, 11620,11,13, 11860,[0,-1,22,24], 15325,1,6],
+                            9625,8,15, 9800,14,16, 11620,11,13, 11860,[0,-1,22,-24], 15325,1,6],
 
     "Radio_Romania Intl": [ "https://www.rri.ro/en_gb/frecvente-259",
                             5940,-5.5,6, 5955,-19,19.5, 6025,-17,18, 6030,[-16,16.5,-21,22], 6040,[-6,7,-23,24],
@@ -44,10 +44,10 @@
 
     "China National_Radio": [
                                 6030,[0,-18,20.5,-24], 7360,4,10,
-                                9420,0,-4, 9655,[0,1,8,12,22,24],
+                                9420,0,-4, 9655,[0,-1,-8,12,-22,24],
 // new, no info
                                 9860,5.75,-6,
-                                9870,10,12,
+                                9870,-10,12,
                                 11695,-1,9,
 // new, no info
                                 11850,1.75,-2,

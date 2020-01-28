@@ -253,8 +253,13 @@ typedef struct {
 	s2_t IQ_data[GPS_IQ_SAMPS_W];
 	u4_t IQ_seq_w, IQ_seq_r;
 
+    // reference lat/lon from early GPS fix
 	bool have_ref_lla;
 	float ref_lat, ref_lon, ref_alt;
+
+    // lat/lon returned by ipinfo lookup
+	bool ipinfo_ll_valid;
+	float ipinfo_lat, ipinfo_lon;
 
     // E1B_plot_separately == false
     #define MAP_ALL 0           // green map pin
@@ -277,9 +282,9 @@ typedef struct {
 	
 	int gps_gain, kick_lo_pll_ch;
 	char a[32];
-} gps_stats_t;
+} gps_t;
 
-extern gps_stats_t gps;
+extern gps_t gps;
 
 extern const char *Week[];
 

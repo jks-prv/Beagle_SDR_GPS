@@ -19,7 +19,7 @@ var tdoa = {
    ],
 
    gmap_js: [
-      'http://maps.googleapis.com/maps/api/js?key=AIzaSyCtWThmj37c62a1qYzYUjlA0XUVC_lG8B8',
+      'http://maps.googleapis.com/maps/api/js?key=',
       'pkgs_maps/gmaps/daynightoverlay.js',
       'pkgs_maps/gmaps/markerwithlabel.js',
       'pkgs_maps/gmaps/v3_ll_grat.js',
@@ -179,7 +179,7 @@ function tdoa_recv(data)
 			   tdoa.a[1] = enc(tdoa.a[1]);
             tdoa.params = ext_param();
             //console.log('### TDoA: tdoa.params='+ tdoa.params);
-            if (tdoa.params && tdoa.params.includes('gmap:')) tdoa.leaflet = false;
+            if (tdoa.params && tdoa.params.includes('gmap:')) { tdoa.leaflet = false; tdoa.gmap_param = true; }
             kiwi_load_js(tdoa.leaflet? tdoa.pkgs_maps_js : tdoa.gmap_js, 'tdoa_controls_setup');
 				break;
 
@@ -375,7 +375,8 @@ function tdoa_controls_setup()
          });
       
       tdoa.cur_map = tdoa.kiwi_map;
-      w3_show('id-tdoa-sorry');
+      if (!tdoa.gmap_param)
+         w3_show('id-tdoa-sorry');
       tdoa.day_night = new DayNightOverlay( { map:tdoa.kiwi_map, fillColor:'rgba(0,0,0,0.35)' } );
       var grid = new Graticule(tdoa.kiwi_map, false);
    
@@ -455,8 +456,8 @@ function tdoa_info_cb()
    tdoa_update_link();
 
    if (!tdoa.leaflet) {
-      tdoa_dismiss_google_dialog('id-tdoa-map-kiwi', 0);
-      tdoa_dismiss_google_dialog('id-tdoa-map-result', 0);
+      tdoa_gmap_update('id-tdoa-map-kiwi');
+      tdoa_gmap_update('id-tdoa-map-result');
    }
 }
 
@@ -1055,19 +1056,34 @@ function TDoA_environment_changed(changed)
 // UI
 ////////////////////////////////
 
-function tdoa_dismiss_google_dialog(id, tick)
+function tdoa_gmap_update(id, tick)
 {
    var el = w3_el(id);
    if (!el) return;
+   tick = tick || 0;
    if (el.childElementCount < 2) {
-      if (tick >= 10) return;
-      setTimeout(function() { tdoa_dismiss_google_dialog(id, tick+1); }, 200);
+      if (tick >= 50) return;
+      setTimeout(function() { tdoa_gmap_update(id, tick+1); }, 200);
       //console.log('G '+ id +' '+ (tick+1));
-   } else {
-      //console.log('REM');
-      //console.log(el.children[1]);
-      el.removeChild(el.children[1]);
+      return;
    }
+   //console.log('REM');
+   //console.log(el.children[1]);
+   el.removeChild(el.children[1]);
+   var observer = new MutationObserver(function() { tdoa.mo_w++; });
+   observer.observe(el, { attributes: true, childList: true, subtree: true });
+   setInterval(function() {
+      var w = tdoa.mo_w;
+      if (tdoa.mo_r != w) {
+         tdoa.mo_r = w;
+         w3_iterateDeep_children(el, function(el) {
+            if (el.tagName == 'SPAN' && el.innerHTML.endsWith('nly')) {
+               el.parentElement.parentElement.style.backgroundColor = '';
+               //el.innerHTML = '';
+            }
+         });
+      }
+   }, 250);
 }
 
 function tdoa_show_maps(map)
@@ -1085,8 +1101,8 @@ function tdoa_show_maps(map)
    }
    
    if (!tdoa.leaflet) {
-      tdoa_dismiss_google_dialog('id-tdoa-map-kiwi', 0);
-      tdoa_dismiss_google_dialog('id-tdoa-map-result', 0);
+      tdoa_gmap_update('id-tdoa-map-kiwi');
+      tdoa_gmap_update('id-tdoa-map-result');
    }
 }
 

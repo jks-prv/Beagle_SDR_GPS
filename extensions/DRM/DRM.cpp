@@ -182,6 +182,7 @@ bool DRM_msgs(char *msg, int rx_chan)
     
     int monitor = 0;
     if (sscanf(msg, "SET monitor=%d", &monitor) == 1) {
+        d->monitor = monitor;
         return true;
     }
     

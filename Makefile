@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 375
+VERSION_MIN = 376
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -177,7 +177,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 else
 	# host machine (BBB), only build the FPGA-using version
 	LIBS += -lfftw3f -lfftw3 -lutil
-	LIBS_DEP += /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
+	LIBS_DEP += /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a
 	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng /sbin/ethtool /usr/bin/sshpass
 	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget
 	DIR_CFG = /root/kiwi.config
@@ -970,6 +970,9 @@ log:
 
 slog:
 	-@cat /var/log/user.log | grep kiwid
+
+tlog:
+	-@cat /var/log/user.log | grep kiwid | tail -500
 
 syslog:
 	tail -n 1000 -f /var/log/syslog

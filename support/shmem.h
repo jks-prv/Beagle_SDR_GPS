@@ -26,6 +26,7 @@ Boston, MA  02110-1301, USA.
 #include "spi.h"
 #include "spi_dev.h"
 #include "data_pump.h"
+#include "net.h"
 #include "rx_waterfall.h"
 #include "wspr.h"
 
@@ -98,6 +99,8 @@ typedef struct {
 	char sdr_hu_status_str[N_SHMEM_SDR_HU_STATUS_STR];
 	
     shmem_ipc_t ipc[SIG_MAX_USED];
+    
+    net_t net_shmem;
 
     #ifdef SPI_SHMEM_DISABLE
     #else

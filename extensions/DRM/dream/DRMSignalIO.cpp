@@ -235,7 +235,7 @@ void CTransmitData::InitInternal(CParameter& Parameters)
     BPFilter.Init(iSampleRate, iSymbolBlockSize, rDefCarOffset, eSpecOcc, CDRMBandpassFilt::FT_TRANSMITTER);
 
     /* All robustness modes and spectrum occupancies should have the same output
-       power. Calculate the normaization factor based on the average power of
+       power. Calculate the normalization factor based on the average power of
        symbol (the number 3000 was obtained through output tests) */
     rNormFactor = (CReal) 3000.0 / Sqrt(Parameters.CellMappingTable.rAvPowPerSymbol);
 

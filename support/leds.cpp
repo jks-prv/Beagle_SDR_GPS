@@ -55,6 +55,7 @@ Boston, MA  02110-1301, USA.
 
 #define LED_FLASHES_POST_DIGIT  2
 #define LED_FLASHES_POST_NUM    6
+#define LED_FLASHES_IPV6        16
 #define LED_FLASHES_IP_ERROR    32
 
 // flags
@@ -184,27 +185,41 @@ static void led_reporter(void *param)
 {
     set_cpu_affinity(1);
 
-    bool error, ip_error;
+    bool error;
+    int ip_error;
     u4_t a, b, c, d;
-    inet4_d2h(ddns.ip_pvt, &ip_error, &a, &b, &c, &d);
-    //printf("led_reporter ip_pvt=%s inet4_d2h.error=%d\n", ddns.ip_pvt, ip_error);
-    
-    // after an upgrade from v1.2 "use_static" can be undefined before being defaulted
-    // NB: this will match "ip_address:{use_static:}" value
-	bool use_static = (admcfg_bool("use_static", &error, CFG_OPTIONAL) == true);
-	if (error) use_static = false;
-    
-	int brightness_idx = cfg_int("led_brightness", &error, CFG_OPTIONAL);
-	if (error || brightness_idx < 0 || brightness_idx > 4) brightness_idx = 0;
-	led_delay_off = pwm_off_time_ms[brightness_idx];
 
     while (1) {
+    
+        // these checks are inside the loop to react to admin config changes and delayed pvt_valid
+        if (net.pvt_valid == IPV4) {
+            inet4_d2h(net.ip_pvt, (bool *) &ip_error, &a, &b, &c, &d);
+            //printf("led_reporter ip4_valid=%d ip4_6_valid=%d ip_pvt=%s inet4_d2h.error=%d\n",
+            //    net.ip4_valid, net.ip4_6_valid, net.ip_pvt, ip_error);
+            if (ip_error) ip_error = LED_FLASHES_IP_ERROR;
+        } else
+        if (net.pvt_valid == IPV6) {
+            ip_error = LED_FLASHES_IPV6;    // don't show ipv6
+        } else {
+            ip_error = LED_FLASHES_IP_ERROR;
+        }
+        //printf("led_reporter net.pvt_valid=%d ip_error=%d\n", net.pvt_valid, ip_error);
+        
+        // after an upgrade from v1.2 "use_static" can be undefined before being defaulted
+        // NB: this will match "ip_address:{use_static:}" value
+        bool use_static = (admcfg_bool("use_static", &error, CFG_OPTIONAL) == true);
+        if (error) use_static = false;
+        
+        int brightness_idx = cfg_int("led_brightness", &error, CFG_OPTIONAL);
+        if (error || brightness_idx < 0 || brightness_idx > 4) brightness_idx = 0;
+        led_delay_off = pwm_off_time_ms[brightness_idx];
+
         led_cylon(3, LED_DLY_POST_CYLON);
         led_num(use_static? 2:1, 1, LED_F_NONE);
         led_cylon(2, LED_DLY_POST_CYLON);
         
         if (ip_error) {
-            led_flash_all(LED_FLASHES_IP_ERROR);
+            led_flash_all(ip_error);
             led_clear(LED_DLY_POST_NUM);
         } else {
             led_num(a, 3, LED_F_FLASH_POST_NUM);

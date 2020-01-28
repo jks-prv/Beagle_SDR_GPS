@@ -63,7 +63,7 @@ typedef struct {
 	int priority;
 } rx_stream_t;
 
-extern rx_stream_t streams[];
+extern rx_stream_t rx_streams[];
 
 #define	N_CONN_ADMIN        8
 #define N_CONN_SND_WF_EXT   3
@@ -96,7 +96,4 @@ void iparams_add(const char *id, char *val);
 
 typedef enum {WS_INIT_CREATE, WS_INIT_START} ws_init_t;
 void web_server_init(ws_init_t type);
-
-#define SVCS_RESTART_TRUE	true
-#define SVCS_RESTART_FALSE	false
-void services_start(bool restart);
+void services_start();

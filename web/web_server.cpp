@@ -335,20 +335,20 @@ void web_server_init(ws_init_t type)
 	if (type == WS_INIT_CREATE) {
 		// if specified, override the default port number
 		if (alt_port) {
-			ddns.port = ddns.port_ext = alt_port;
+			net.port = net.port_ext = alt_port;
 		} else {
-			ddns.port = admcfg_int("port", NULL, CFG_REQUIRED);
-			ddns.port_ext = admcfg_int("port_ext", NULL, CFG_REQUIRED);
+			net.port = admcfg_int("port", NULL, CFG_REQUIRED);
+			net.port_ext = admcfg_int("port_ext", NULL, CFG_REQUIRED);
 		}
 		lprintf("listening on %s port %d/%d for \"%s\"\n", alt_port? "alt":"default",
-			ddns.port, ddns.port_ext, ui->name);
-		ui->port = ddns.port;
-		ui->port_ext = ddns.port_ext;
+			net.port, net.port_ext, ui->name);
+		ui->port = net.port;
+		ui->port_ext = net.port_ext;
 	} else
 
 	if (type == WS_INIT_START) {
 		reload_index_params();
-		services_start(SVCS_RESTART_FALSE);
+		services_start();
 	}
 
 	// create webserver port(s)
@@ -357,8 +357,8 @@ void web_server_init(ws_init_t type)
 		if (type == WS_INIT_CREATE) {
 			// FIXME: stopgap until admin page supports config of multiple UIs
 			if (i != 0) {
-				ui->port = ddns.port + i;
-				ui->port_ext = ddns.port_ext + i;
+				ui->port = net.port + i;
+				ui->port_ext = net.port_ext + i;
 			}
 			
 			ui->server = mg_create_server(NULL, ev_handler);

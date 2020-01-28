@@ -741,7 +741,7 @@ void wspr_autorun(int which, int idx)
     mc->connection_param = NULL;
     asprintf((char **) &mc->uri, "%d/SND", 1138+which);
     kiwi_strncpy(mc->remote_ip, "127.0.0.1", NET_ADDRSTRLEN);
-    mc->remote_port = mc->local_port = ddns.port;
+    mc->remote_port = mc->local_port = net.port;
     conn_t *csnd = rx_server_websocket(WS_INTERNAL_CONN, mc);
     if (csnd == NULL) {
         printf("WSPR autorun: couldn't get websocket which=%d uri=%s port=%d\n",
@@ -778,7 +778,7 @@ void wspr_autorun(int which, int idx)
     mc->connection_param = NULL;
     asprintf((char **) &mc->uri, "%d/EXT", 1138+which);
     kiwi_strncpy(mc->remote_ip, "127.0.0.1", NET_ADDRSTRLEN);
-    mc->remote_port = mc->local_port = ddns.port;
+    mc->remote_port = mc->local_port = net.port;
     conn_t *cext = rx_server_websocket(WS_INTERNAL_CONN, mc);
     
     input_msg_internal(cext, (char *) "SET auth t=kiwi p=");

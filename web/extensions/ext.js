@@ -346,8 +346,11 @@ function ext_valpwd(conn_type, pwd, ws)
 	}
 	ipl = ipl? (' ipl='+ ipl) : '';
 
-   if (kiwi_url_param(['p', 'prot', 'protected'], 'true', null) != null) conn_type = 'prot';
+   // don't change to conn type 'prot' if e.g. admin panel privilege escalation during user connection (e.g. DX label editing)
+   if (kiwi_url_param(['p', 'prot', 'protected'], 'true', null) != null && conn_type != 'admin')
+      conn_type = 'prot';
 	//console.log('SET auth t='+ conn_type +' p='+ pwd + ipl);
+
 	ext_send('SET auth t='+ conn_type +' p='+ pwd + ipl, ws);
 	// the server reply then calls extint_valpwd_cb() below
 }
