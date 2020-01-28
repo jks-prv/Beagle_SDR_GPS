@@ -196,7 +196,9 @@ function kiwi_ask_pwd(conn_kiwi)
 	console.log('kiwi_ask_pwd chan_no_pwd='+ chan_no_pwd +' client_public_ip='+ client_public_ip);
 	var s1 = '';
 	if (conn_kiwi && chan_no_pwd) s1 = 'All channels busy that don\'t require a password ('+ chan_no_pwd +'/'+ rx_chans +')<br>';
-   var prot = kiwi_url_param(['p', 'prot', 'protected'], true, false);
+	
+	// "&& conn_kiwi" to ignore pathological "/admin?prot" etc.
+   var prot = (kiwi_url_param(['p', 'prot', 'protected'], true, false) && conn_kiwi);
 	if (prot) s1 = 'You have requested a password protected channel<br>';
 	var s = "KiwiSDR: software-defined receiver <br>"+ s1 +
 		"<form name='pform' style='display:inline-block' action='#' onsubmit='ext_valpwd(\""+ conn_type +"\", this.pwd.value); return false;'>"+
