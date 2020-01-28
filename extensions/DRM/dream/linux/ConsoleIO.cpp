@@ -198,7 +198,7 @@ CConsoleIO::Update(drm_t *drm)
     }
     sb = kstr_cat(sb, "]");
 
-    if (text_msg_utf8_enc)
+    if (signal && text_msg_utf8_enc)
         sb = kstr_asprintf(sb, ",\"msg\":\"%s\"", text_msg_utf8_enc);
 
 #if 0
