@@ -698,7 +698,9 @@ void c2s_sound(void *param)
 		bool do_de_emp = (de_emp && !IQ_or_DRM);
 		bool do_lms    = (!isNBFM && !IQ_or_DRM);
 		
-        drm_t *drm = &DRM_SHMEM->drm[rx_chan];
+		#ifdef DRM
+            drm_t *drm = &DRM_SHMEM->drm[rx_chan];
+        #endif
 
 		u2_t bc = 0;
 
@@ -986,7 +988,11 @@ void c2s_sound(void *param)
             // copy to output buffer and send to client
             ////////////////////////////////
     
-            if (mode == MODE_IQ || (mode == MODE_DRM && drm->monitor)) {
+            if (mode == MODE_IQ
+            #ifdef DRM
+                || (mode == MODE_DRM && drm->monitor)
+            #endif
+            ){
                 m_Agc[rx_chan].ProcessData(ns_out, f_samps, f_samps, masked);
                 iq->iq_wr_pos = (iq->iq_wr_pos+1) & (N_DPBUF-1);    // after AGC above
 
