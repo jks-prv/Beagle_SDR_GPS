@@ -239,7 +239,7 @@ var fax_asia_pac = {
    
    // www.nws.noaa.gov/om/marine/hfhi_links.htm
    "Honolulu": [],
-   "KVM70 HI": [ 9982.5, 11090, 16135 ],
+   "KVM70 HI": [ 8295.5, 9982.5, 11090, 16135 ],
    
    // www.nws.noaa.gov/om/marine/hfak_links.htm
    "Kodiak":   [],
@@ -300,7 +300,7 @@ var fax_americas = {
    "NOJ AK":   [ 2054, 4298, 8459, 12412.5 ],
    
    "Honolulu": [],
-   "KVM70 HI": [ 9982.5, 11090, 16135 ],
+   "KVM70 HI": [ 8295.5, 9982.5, 11090, 16135 ],
    
    "Nova Scotia": [],
    "VCO CA":   [ 4416, 6915.1 ],
