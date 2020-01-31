@@ -173,7 +173,7 @@ static void console(void *param)
         #endif
 
         execve(args[0], args, NULL);
-        child_exit(0);
+        child_exit(EXIT_SUCCESS);
     }
     
     register_zombie(c->console_child_pid);

@@ -37,7 +37,7 @@ int pending_maj = -1, pending_min = -1;
 
 static void update_build_ctask(void *param)
 {
-    int status, exit_status;
+    int status;
 	bool build_normal = true;
 	
     //#define BUILD_SHORT_MF
@@ -52,33 +52,50 @@ static void update_build_ctask(void *param)
                 status = system("cd /root/" REPO_NAME "; rm -f obj_O3/u*.o; make >>/root/build.log 2>&1");
                 build_normal = false;
             #endif
-            if (status < 0 || !WIFEXITED(status))
-                child_exit(EXIT_FAILURE);
-            exit_status = WEXITSTATUS(status);
-            if (exit_status != 0)
-                child_exit(exit_status);
+            child_status_exit(status);
 	        child_exit(EXIT_SUCCESS);
         }
     #endif
 
 	if (build_normal) {
-		status = system("cd /root/" REPO_NAME "; echo ======== building >>/root/build.log; date >>/root/build.log; make git >>/root/build.log 2>&1");
-        if (status < 0 || !WIFEXITED(status))
-            child_exit(EXIT_FAILURE);
-        exit_status = WEXITSTATUS(status);
-        if (exit_status != 0)
-            child_exit(exit_status);
+	
+	    // run git directly rather than depending on the Makefile to be intact
+	    // (for the failure case when the Makefile has become zero length)
+	    char *cmd_p;
+	    asprintf(&cmd_p, "cd /root/" REPO_NAME "; echo ======== building >>/root/build.log; date >>/root/build.log; " \
+		    "git clean -fd >>/root/build.log 2>&1; " \
+		    "git checkout . >>/root/build.log 2>&1; " \
+		);
+		status = system(cmd_p);
+		free(cmd_p);
+        child_status_exit(status);
+
+        struct stat st;
+        bool use_git_proto = (stat(DIR_CFG "/opt.git_no_https", &st) == 0);
+	    asprintf(&cmd_p, "cd /root/" REPO_NAME "; " \
+	        "git pull -v %s://github.com/jks-prv/Beagle_SDR_GPS.git >>/root/build.log 2>&1; ", \
+		    use_git_proto? "git" : "https" \
+		);
+		status = system(cmd_p);
+		free(cmd_p);
+        status = child_status_exit(status, NO_ERROR_EXIT);
+        
+        // try again using github.com well-known public ip address (failure mode when ISP messes with github.com DNS)
+        // must use git: protocol otherwise https: cert mismatch error will occur
+        if (status != 0) {
+            asprintf(&cmd_p, "cd /root/" REPO_NAME "; " \
+                "git pull -v git://" GITHUB_COM_PUBLIC_IP "/jks-prv/Beagle_SDR_GPS.git >>/root/build.log 2>&1; "
+            );
+            status = system(cmd_p);
+            free(cmd_p);
+            child_status_exit(status);
+        }
 
         // starting with v1.365 the "make clean" below replaced the former "make clean_dist"
         // so that $(BUILD_DIR)/obj_keep stays intact across updates
         status = system("cd /root/" REPO_NAME "; make clean >>/root/build.log 2>&1; make >>/root/build.log 2>&1; make install >>/root/build.log 2>&1;");
-        if (status < 0 || !WIFEXITED(status))
-            child_exit(EXIT_FAILURE);
-        exit_status = WEXITSTATUS(status);
-        if (exit_status != 0)
-            child_exit(exit_status);
-        else
-            system("cd /root/" REPO_NAME "; date >>/root/build.log; echo ======== build complete >>/root/build.log");
+        child_status_exit(status);
+        system("cd /root/" REPO_NAME "; date >>/root/build.log; echo ======== build complete >>/root/build.log");
 	}
 	
 	child_exit(EXIT_SUCCESS);
@@ -89,13 +106,9 @@ static void curl_makefile_ctask(void *param)
 	int status = system("cd /root/" REPO_NAME " ; echo ======== checking for update >/root/build.log; date >>/root/build.log; " \
 	    "curl --silent --show-error --ipv4 --connect-timeout 15 https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -o Makefile.1 >>/root/build.log 2>&1");
 
-	if (status < 0 || !WIFEXITED(status))
-	    child_exit(EXIT_FAILURE);
-
-    int exit_status = WEXITSTATUS(status);
-    if (exit_status == 0)
-        system("cd /root/" REPO_NAME " ; diff Makefile Makefile.1 >>/root/build.log");
-	child_exit(exit_status);    // return exit status from curl
+	child_status_exit(status);
+    system("cd /root/" REPO_NAME " ; diff Makefile Makefile.1 >>/root/build.log");
+	child_exit(EXIT_SUCCESS);
 }
 
 static void report_result(conn_t *conn)

@@ -98,6 +98,17 @@ void child_exit(int rv)
     _exit(rv);
 }
 
+int child_status_exit(int status, bool error_exit)
+{
+    if (status < 0 || !WIFEXITED(status))
+        child_exit(EXIT_FAILURE);
+
+    int exit_status = WEXITSTATUS(status);
+    if (error_exit && exit_status != 0)
+        child_exit(exit_status);
+    return exit_status;
+}
+
 // returns (poll_msec == NO_WAIT)? child_pid : child_status
 int child_task(const char *pname, funcP_t func, int poll_msec, void *param)
 {

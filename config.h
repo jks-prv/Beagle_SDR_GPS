@@ -41,10 +41,6 @@ Boston, MA  02110-1301, USA.
 extern int fw_sel, fpga_id, rx_chans, wf_chans, nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem,
     snd_rate, rx_decim;
 
-// backup values only if dig lookup fails
-#define KIWISDR_COM_PUBLIC_IP   "50.116.2.70"
-#define SDR_HU_PUBLIC_IP        "167.99.214.222"
-
 // INET6_ADDRSTRLEN (46) plus some extra in case ipv6 scope/zone is an issue
 // can't be in net.h due to #include recursion problems
 #define NET_ADDRSTRLEN      64
