@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.377  February 1, 2020
+    Improve software update reliability.
+    Add FAX frequency for KVM70 Hawaii.
+
 v1.376  January 29, 2020
     DRM: added "monitor IQ" button which sends IQ to audio output while still decoding DRM.
         Handy for comparing Kiwi DRM versus Dream.
