@@ -51,6 +51,7 @@ alias du.="/usr/bin/du -sh ."
 alias sha256sum="shasum -a 256"
 alias sha="sha256sum"
 alias sha256="sha256sum"
+alias col1="awk -- '{print \$1}'"
 
 # pki colordiff
 alias diff="colordiff"

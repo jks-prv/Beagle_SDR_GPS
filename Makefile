@@ -588,8 +588,8 @@ makefiles:
 	@echo $(MF_INC)
 	@cat $(MF_INC)
 
-.PHONY: build_log
-build_log:
+.PHONY: build_log blog
+build_log blog:
 	@-tail -n 500 -f /root/build.log
 
 
