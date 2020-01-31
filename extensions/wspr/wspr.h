@@ -40,7 +40,7 @@
 #ifdef MULTI_CORE
     //#define BBAI_WSPR_ASAN
     #ifdef BBAI_WSPR_ASAN
-        #warning don't forget to remove BBAI_WSPR_ASAN
+        #warning dont forget to remove BBAI_WSPR_ASAN
         #define WSPR_SHMEM_DISABLE
     #else
         // shared memory enabled
