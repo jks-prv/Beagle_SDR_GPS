@@ -357,17 +357,15 @@ void c2s_admin(void *param)
 // connect
 ////////////////////////////////
 
+
+		    // DUC
+
 			i = strcmp(cmd, "SET DUC_status_query");
 			if (i == 0) {
 				if (DUC_enable_start) {
 					send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=301");
+					net.DUC_status = 301;
 				}
-				continue;
-			}
-		
-			i = strcmp(cmd, "SET rev_status_query");
-			if (i == 0) {
-				send_msg(conn, SM_NO_DEBUG, "ADM rev_status=%d", rev_enable_start? 200:201);
 				continue;
 			}
 		
@@ -389,6 +387,7 @@ void c2s_admin(void *param)
 				if (stat < 0 || n <= 0) {
 					lprintf("DUC: noip2 failed?\n");
 					send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=300");
+					net.DUC_status = 300;
 					continue;
 				}
 				status = WEXITSTATUS(stat);
@@ -396,13 +395,25 @@ void c2s_admin(void *param)
 				printf("DUC: <%s>\n", kstr_sp(reply));
 				kstr_free(reply);
 				send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=%d", status);
+                net.DUC_status = status;
 				if (status != 0) continue;
-				
+                DUC_enable_start = true;
+                
                 if (background_mode)
                     system("/usr/local/bin/noip2 -k -c " DIR_CFG "/noip2.conf");
                 else
                     system(BUILD_DIR "/gen/noip2 -k -c " DIR_CFG "/noip2.conf");
 				
+				continue;
+			}
+
+
+		    // proxy
+
+			i = strcmp(cmd, "SET rev_status_query");
+			if (i == 0) {
+				net.proxy_status = rev_enable_start? 200:201;
+				send_msg(conn, SM_NO_DEBUG, "ADM rev_status=%d", net.proxy_status);
 				continue;
 			}
 		
@@ -430,6 +441,7 @@ void c2s_admin(void *param)
                 kstr_free(reply);
 
 				send_msg(conn, SM_NO_DEBUG, "ADM rev_status=%d", status);
+				net.proxy_status = status;
 				if (status < 0 || status > 99) {
 				    free(user_m); free(host_m);
 				    continue;

@@ -195,6 +195,7 @@ static void misc_NET(void *param)
 	if (admcfg_bool("duc_enable", NULL, CFG_REQUIRED) == true) {
 		lprintf("starting noip.com DUC\n");
 		DUC_enable_start = true;
+		
     	if (background_mode)
 			system("sleep 1; /usr/local/bin/noip2 -k -c " DIR_CFG "/noip2.conf");
 		else
@@ -785,6 +786,7 @@ static void reg_SDR_hu(void *param)
 }
 
 #define RETRYTIME_KIWISDR_COM		15
+//#define RETRYTIME_KIWISDR_COM		1
 
 static int _reg_kiwisdr_com(void *param)
 {
@@ -796,8 +798,15 @@ static int _reg_kiwisdr_com(void *param)
 	}
     //printf("_reg_kiwisdr_com <%s>\n", sp);
 
-    int status = 0;
-    sscanf(sp, "status %d", &status);
+    int n, status = 0, kod = 0, serno = 0;
+    n = sscanf(sp, "status %d %d %d", &status, &kod, &serno);
+    if (n == 3 && status == 22 && serno == net.serno) {
+        //printf("_reg_kiwisdr_com status=%d kod=%d serno=%d/%d\n", status, kod, serno, net.serno);
+        status = kod;
+    } else
+    if (status >= 42 && status < 50) {
+        status = 0;
+    }
     //printf("_reg_kiwisdr_com status=%d\n", status);
 
 	return status;
@@ -824,15 +833,21 @@ static void reg_kiwisdr_com(void *param)
         int add_nat = (admcfg_bool("auto_add_nat", NULL, CFG_OPTIONAL) == true)? 1:0;
         //char *server_enc = kiwi_str_encode((char *) server_url);
 
+        bool sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);
+
         // proxy always uses port 8073
 	    int sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
         int server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : net.port_ext;
+        int dom_stat = (sdr_hu_dom_sel == DOM_SEL_REV)? net.proxy_status : (DUC_enable_start? net.DUC_status : -1);
 
 	    // done here because updating timer_sec() is sent
         asprintf(&cmd_p, "wget --timeout=30 --tries=2 --inet4-only -qO- "
-            "\"http://%s/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d&up=%d\" 2>&1",
+            "\"http://%s/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d"
+            "&dom=%d&dom_stat=%d&serno=%d&sdr_hu=%d&pvt=%s&pub=%s&up=%d\" 2>&1",
             kiwisdr_com, server_url, server_port, api_key, net.mac,
-            email, add_nat, version_maj, version_min, debian_maj, debian_min, timer_sec());
+            email, add_nat, version_maj, version_min, debian_maj, debian_min,
+            sdr_hu_dom_sel, dom_stat, net.serno, sdr_hu_reg? 1:0,
+            net.pvt_valid? net.ip_pvt : "not_valid", net.pub_valid? net.ip_pub : "not_valid", timer_sec());
     
 		bool server_enabled = (!down && admcfg_bool("server_enabled", NULL, CFG_REQUIRED) == true);
         bool kiwisdr_com_reg = (admcfg_bool("kiwisdr_com_register", NULL, CFG_REQUIRED) == true);
@@ -848,6 +863,22 @@ static void reg_kiwisdr_com(void *param)
                 reg_kiwisdr_com_status = exit_status? exit_status : 1;      // for now just indicate that it completed
                 if (sdr_hu_debug) {
                     printf("reg_kiwisdr_com reg_kiwisdr_com_status=0x%x\n", reg_kiwisdr_com_status);
+                }
+                if (exit_status == 42) {
+                    system("touch " DIR_CFG "/opt.debug");
+                    
+                    #ifdef USE_ASAN
+                        // leak detector needs exit while running on main() stack
+                        kiwi_restart = true;
+                        TaskWakeup(TID_MAIN, TWF_CANCEL_DEADLINE);
+                    #else
+                        kiwi_exit(0);
+                    #endif
+                }
+                if (exit_status == 43) {
+				    system("reboot");
+                    while (true)
+                        kiwi_usleep(100000);
                 }
 		    }
 		} else {

@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.378  February 4, 2020
+    Changes to help diagnose problems with kiwisdr.com/public registration.
+
 v1.377  February 1, 2020
     Improve software update reliability.
     Add FAX frequency for KVM70 Hawaii.
