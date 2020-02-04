@@ -93,6 +93,8 @@ typedef struct {
 	
 	u4_t serno;
     u64_t dna;
+    
+    int proxy_status, DUC_status;
 	
 	// public.kiwisdr.com servers used to implement user prefs
 	ip_lookup_t pub_ips;
