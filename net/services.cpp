@@ -250,7 +250,7 @@ static void misc_NET(void *param)
     
     #define KIWI_SURVEY
     #ifdef KIWI_SURVEY
-    #define SURVEY_LAST 180
+    #define SURVEY_LAST 181
     bool need_survey = admcfg_int("survey", NULL, CFG_REQUIRED) != SURVEY_LAST;
     if (need_survey || (vr && vr != VR_CRONTAB_ROOT) || net.serno == 0) {
         if (need_survey) {
@@ -515,8 +515,6 @@ static void pvt_NET(void *param)
 	int i, n, retry;
 	char *reply;
 
-	net.serno = serial_number;
-	
     // make sure /etc/resolv.conf exists
     struct stat st;
     if (stat("/etc/resolv.conf", &st) < 0 || st.st_size == 0) {
@@ -901,6 +899,8 @@ int reg_kiwisdr_com_tid;
 
 void services_start()
 {
+	net.serno = serial_number;
+	
     // Because these run early on child_task() doesn't have to be used to avoid excessive task pauses.
     // This is good, because otherwise shared memory would have to be used to communicate with
     // the child tasks as it does with led_task.
