@@ -853,7 +853,7 @@ function kiwi_output_msg(id, id_scroll, p)
                         p.sgr.fg = ansi.colors[sgr-90 + 8];
                         saw_color = 1;
                      } else
-                     if (sgr == 39) {
+                     if (sgr == 39) {     // normal
                         p.sgr.fg = null;
                         saw_color = 1;
                      } else
@@ -867,7 +867,7 @@ function kiwi_output_msg(id, id_scroll, p)
                         p.sgr.bg = ansi.colors[sgr-100 + 8];
                         saw_color = 1;
                      } else
-                     if (sgr == 49) {
+                     if (sgr == 49) {     // normal
                         p.sgr.bg = null;
                         saw_color = 1;
                      } else
