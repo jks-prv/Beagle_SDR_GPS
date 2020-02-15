@@ -281,11 +281,10 @@ function drm_recv(data)
 			      drm.hacked = true;
 			      drm.locked = 0;
 			   } else
-			   if (kiwi.is_BBAI) {
-			      drm.drm_chan = p;
-			      drm.locked = p? 0:1;
+			   if (p == 1) {
+			      drm.locked = 1;
 			   } else {
-			      drm.locked = p;
+			      drm.locked = 0;
 			   }
             drm_controls_setup();
 				break;
@@ -850,7 +849,7 @@ function drm_desktop_controls_setup(w_graph)
    
    if (drm.locked == 0) {
       if (kiwi.is_BBAI) {
-         s = sprintf('Limited to %d active instances.', drm.drm_chan);
+         s = 'DRM not supported on this channel.';
       } else {
          // DRM_config_html() will have set cfg.DRM.nreg_chans before use here
          var drm_nreg_chans = cfg.DRM.nreg_chans;

@@ -116,18 +116,25 @@ bool DRM_msgs(char *msg, int rx_chan)
             rv = -2;    // prevent attempt to bypass the javascript kiwi.is_local check
         } else {
             if (is_BBAI) {
-                is_locked = (rx_chan < drm_info.drm_chan)? 0 : drm_info.drm_chan;
-                printf("DRM BBAI lock_set inuse=%d heavy=%d locked=%d\n", inuse, heavy, is_locked);
+                is_locked = (rx_chan < drm_info.drm_chan)? 1:0;
+                printf("DRM BBAI lock_set inuse=%d heavy=%d rx_chan=%d drm_chan=%d locked=%d\n",
+                    inuse, heavy, rx_chan, drm_info.drm_chan, is_locked);
             } else {
                 // inuse-1 to not count DRM channel
-                is_locked = ((inuse-1) <= drm_nreg_chans && heavy == 0)? 1:0;
+                is_locked = ((inuse-1) <= drm_nreg_chans && heavy == 0 && rx_chan < drm_info.drm_chan)? 1:0;
                 if (conn->is_locked)
-                    printf("DRM global is_locked was already set?\n");
+                    printf("DRM conn->is_locked was already set?\n");
                 if (is_locked) conn->is_locked = true;
                 printf("DRM BBG/B lock_set inuse=%d(%d) heavy=%d locked=%d\n", inuse, inuse-1, heavy, is_locked);
             }
             rv = is_locked;
         }
+        
+        // rv/locked:
+        // -2 hacked
+        // -1 wrong srate
+        //  0 not locked due to conflict (e.g. extension running)
+        //  1 locked
 		ext_send_msg(rx_chan, false, "EXT inuse=%d heavy=%d locked=%d", inuse, heavy, rv);
         return true;    
     }
