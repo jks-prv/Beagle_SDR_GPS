@@ -990,7 +990,7 @@ void c2s_sound(void *param)
     
             if (mode == MODE_IQ
             #ifdef DRM
-                || (mode == MODE_DRM && drm->monitor)
+                || (mode == MODE_DRM && (drm->monitor || rx_chan >= DRM_MAX_RX))
             #endif
             ){
                 m_Agc[rx_chan].ProcessData(ns_out, f_samps, f_samps, masked);
