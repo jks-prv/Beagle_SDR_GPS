@@ -167,6 +167,7 @@ u1_t sstv_get_vis(sstv_chan_t *e)
         if (gotvis) break;
         
         e->pcm.WindowPtr += samps_10ms;
+        NextTask("sstv get_vis");
     }
 
     // Skip rest of stop bit
