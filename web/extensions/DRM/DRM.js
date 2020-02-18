@@ -1430,8 +1430,13 @@ function DRM_help(show)
       var s = 
          w3_text('w3-medium w3-bold w3-text-aqua', 'Digital Radio Mondiale (DRM30) decoder help') + '<br><br>' +
          w3_div('w3-scroll-y|height:85%',
-            w3_text('w3-text-css-yellow w3-bold', 'Development in progress. Updates daily.') +
-            '<br>With DRM selective fading can prevent even the strongest signals from being received properly. ' +
+            //w3_text('w3-text-css-yellow w3-bold', 'Development in progress. Updates daily.') +
+            
+            'Schedule: Click on colored bars to tune a station. <br>' +
+            'Gray vertical lines are spaced 1 hour apart beginning at 00:00 UTC on the left. <br>' +
+            'Red line shows current UTC time and updates while the extension is running. <br><br>' +
+            
+            'With DRM selective fading can prevent even the strongest signals from being received properly. ' +
             'To see if signal fading is occurring adjust the waterfall "WF max/min" controls carefully so the ' +
             'waterfall colors are not saturated. The image below shows fading (dark areas) that might cause problems. See the ' +
             '<a href="http://valentfx.com/vanilla/discussion/1842/v1-360-drm-extension-now-available-for-beta-testing/p1" target="_blank">' +
