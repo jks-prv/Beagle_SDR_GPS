@@ -121,7 +121,10 @@ var emission_delay = {
 			],
 
 	8970: [ { s:'M Wildwood', d:0 },          // LoranView (DE) shows chain reception (when on-air)
-	        { s:'X Wildwood', d:31162.06 }
+	      //{ s:'X Wildwood', d:14355.11 }
+	      //{ s:'X Wildwood', d:31162.06 }
+	        { s:'X Wildwood', d:47753.74 }    // closer to observed value
+	      //{ s:'X Wildwood', d:63669.46 }
 	      ],
 
 	9930: [ { s:'M Pohang', d:0 },				// LoranView (DE) shows some reception
