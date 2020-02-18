@@ -2,6 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.381  February 19, 2020
+    Loran-C extension:
+        Add Wildwood (eLoran testing) GRI 9960 per Time-Nuts mailing list.
+        Add X chain slot to Wildwood GRI 8970.
+        Support variable screen widths.
+        Added help panel.
+    Updated DRM extension help panel.
+    Fixed observed looping in SSTV extension.
+
 v1.380  February 16, 2020
     Fixed bug with DRM and 8-channel Kiwis.
 
