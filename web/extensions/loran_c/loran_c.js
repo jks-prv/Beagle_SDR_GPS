@@ -1,4 +1,4 @@
-// Copyright (c) 2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2016-2020 John Seamons, ZL/KF6VO
 
 /*
 
@@ -39,7 +39,8 @@ var gri_s = [
    '8390 China East Sea',
    '8830 Saudi Arabia North',
    '8970 Wildwood USA (testing)',
-   '9930 Korea'
+   '9930 Korea',
+   '9960 Wildwood USA (testing)'
 ];
 
 var gri_2s = [
@@ -54,7 +55,8 @@ var gri_2s = [
    'China Sea', 'East',
    'Saudi Arabia', 'North',
    'Wildwood USA', '(testing)',
-   'Korea', ''
+   'Korea', '',
+   'Wildwood USA', '(testing)'
 ];
 
 var loran_c_default_chain1 = 7;
@@ -118,14 +120,18 @@ var emission_delay = {
 			  { s:'Z Al Muwassam', d:58790.00 }
 			],
 
-	8970: [ { s:'M Wildwood', d:0 } ],			// LoranView (DE) shows chain reception (when on-air)
+	8970: [ { s:'M Wildwood', d:0 },          // LoranView (DE) shows chain reception (when on-air)
+	        { s:'X Wildwood', d:31162.06 }
+	      ],
 
 	9930: [ { s:'M Pohang', d:0 },				// LoranView (DE) shows some reception
 			  { s:'W Kwang Ju', d:11946.97 },
 			  { s:'X (ex-Gesashi)', d:25565.52 },		// not listed on current LoranView, 1/2015 demolished on Google Earth
 			  { s:'Y (ex-Niijima)', d:40085.64 },		// not listed on current LoranView, 1/2015 tower standing on Google Earth
 			  { s:'Z Ussuriisk', d:54162.44 }
-			]
+			],
+
+	9960: [ { s:'M Wildwood', d:0 } ]         // ex-Dana
 };
 
 function loran_c_main()
@@ -137,7 +143,6 @@ function loran_c_main()
 }
 
 var loran_c_cmd_e = { SCOPE_DATA:0, SCOPE_RESET:1 };
-var loran_c_sidebarx = 15;
 var loran_c_startx = 125;
 var loran_c_hlegend = 20;
 var loran_c_nbuckets = [ ];
@@ -222,7 +227,6 @@ function loran_c_draw_legend(ch, gri, gri_menu_id)
 {
 	var w = loran_c.scope.width;
 	var h = loran_c.scope.height;
-	var ssx = loran_c_sidebarx;
 	var sx = loran_c_startx;
 	var sy = (ch+1)*h/2;
 	var hlegend = loran_c_hlegend;
@@ -232,12 +236,12 @@ function loran_c_draw_legend(ch, gri, gri_menu_id)
 	var htext = hlegend-hbar;
 	
 	loran_c.scope.ct.fillStyle = 'white';
-	loran_c.scope.ct.fillText('GRI '+ gri, ssx, sy-yh/3-hlegend - off);
+	loran_c.scope.ct.fillText('GRI '+ gri, 0, sy-yh/3-hlegend - off);
 	var menu = w3_el(gri_menu_id).value;
 	//console.log('loran_c_draw_legend: ch='+ ch +' gri='+ gri +' gri_menu_id='+ gri_menu_id +' menu='+ menu);
 	if (menu != null && menu != -1) {
-		loran_c.scope.ct.fillText(gri_2s[menu*2], ssx, sy-yh/3-hlegend + off);
-		loran_c.scope.ct.fillText(gri_2s[menu*2+1], ssx, sy-yh/3-hlegend + 3*off);
+		loran_c.scope.ct.fillText(gri_2s[menu*2], 0, sy-yh/3-hlegend + off);
+		loran_c.scope.ct.fillText(gri_2s[menu*2+1], 0, sy-yh/3-hlegend + 3*off);
 	}
 
 	var ed = emission_delay[gri];
@@ -269,11 +273,9 @@ function loran_c_update_gri(ch, path_to_menu, gri)
 {
 	var w = loran_c.scope.width;
 	var h = loran_c.scope.height;
-	var ssx = loran_c_sidebarx;
-	var sx = loran_c_startx;
 
 	loran_c.scope.ct.fillStyle = 'black';
-	loran_c.scope.ct.fillRect(ssx, ch*h/2, w-ssx, h/2);
+	loran_c.scope.ct.fillRect(0, ch*h/2, w, h/2);
 
 	loran_c.scope.ct.font = '12px Verdana';
 
@@ -327,26 +329,36 @@ function loran_c_controls_setup()
    var data_html =
       time_display_html('loran_c') +
 
-		w3_div('id-loran_c-data|width:1224px; height:200px; background-color:black; position:relative;',
-			'<canvas id="id-loran_c-scope" width="1224" height="200" style="position:absolute"></canvas>'
+		w3_div('id-loran_c-data|height:200px; background-color:black; position:relative;',
+			'<canvas id="id-loran_c-scope" height="200" style="position:absolute"></canvas>'
 		);
+
+   var gri = [];
+	var p = loran_c.url_param = ext_param();
+	if (p) p.split(',').forEach(function(a, i) { gri[i] = parseInt(a); });
 
 	// if not defined from previous run, set GRIs from admin config else default
 	var gri0 = loran_c.gri0;
 	if (gri0 == 0) {
-		gri0 = ext_get_cfg_param('loran_c.gri0');
-		if (gri0 == 0 || gri0 == null || gri0 == undefined) {
-			gri0 = parseInt(gri_s[loran_c_default_chain1]);
-		}
+	   gri0 = gri[0];
+	   if (isNaN(gri0)) {
+         gri0 = ext_get_cfg_param('loran_c.gri0');
+         if (gri0 == 0 || gri0 == null || gri0 == undefined) {
+            gri0 = parseInt(gri_s[loran_c_default_chain1]);
+         }
+      }
 		loran_c.gri0 = gri0;
 	}
 
 	var gri1 = loran_c.gri1;
 	if (gri1 == 0) {
-		gri1 = ext_get_cfg_param('loran_c.gri1');
-		if (gri1 == 0 || gri1 == null || gri1 == undefined) {
-			gri1 = parseInt(gri_s[loran_c_default_chain2]);
-		}
+	   gri1 = gri[1];
+	   if (isNaN(gri1)) {
+         gri1 = ext_get_cfg_param('loran_c.gri1');
+         if (gri1 == 0 || gri1 == null || gri1 == undefined) {
+            gri1 = parseInt(gri_s[loran_c_default_chain2]);
+         }
+      }
 		loran_c.gri1 = gri1;
 	}
 
@@ -389,25 +401,73 @@ function loran_c_controls_setup()
 	ext_set_controls_width_height(525, 290);
 	time_display_setup('loran_c');
 
-   // no dynamic resize used because id-loran_c-data implicitly uses left:0
-	
 	loran_c.scope = w3_el('id-loran_c-scope');
 	loran_c.scope.ct = loran_c.scope.getContext("2d");
 	loran_c.scope.addEventListener("mousedown", loran_c_mousedown, false);
 
+	loran_c.data = w3_el('id-loran_c-data');
+	loran_c_environment_changed( {resize:1} );
+	
+	var p = loran_c.url_param;
+	if (p) p.split(',').forEach(function(a, i) {
+      if (w3_ext_param('help', a).match) {
+         extint_help_click();
+      }
+	});
+
 	//console.log('### SET start');
 	ext_send('SET start');
+}
+
+function loran_c_environment_changed(changed)
+{
+   if (!changed.resize) return;
+   
+   var w;
+   var margin = 16;
+   var nom_w = (1440 - time_display_width()) - margin*2;
+	var el = w3_el('id-loran_c-data');
+	var left = (window.innerWidth - nom_w - time_display_width()) / 2;
+	w3_show_hide('loran_c-time-display', left > 0);
+
+	if (left > 0) {
+	   w = nom_w;
+      console.log('$nom '+ w);
+	} else {
+
+      // recalculate with time display off
+      left = (window.innerWidth - nom_w) / 2;
+      if (left > 0) {
+         w = nom_w;
+         console.log('$no time '+ w);
+      } else {
+	
+         // need to shrink canvas below nom_w
+         w = window.innerWidth - margin*2;
+         console.log('$shrink to '+ w);
+         left = margin;
+      }
+   }
+
+   loran_c.data.style.width = px(w);
+   loran_c.scope.width = w;
+   loran_c.left = left;
+   loran_c.data.style.left = px(left);
+
+   loran_c_update_gri(0, 'loran_c.gri_sel0', loran_c.gri0);
+   loran_c_update_gri(1, 'loran_c.gri_sel1', loran_c.gri1);
 }
 
 function loran_c_mousedown(evt)
 {
 	//console.log("MDN evt: offX="+evt.offsetX+" pageX="+evt.pageX+" clientX="+evt.clientX+" layerX="+evt.layerX );
 	//console.log("MDN evt: offY="+evt.offsetY+" pageY="+evt.pageY+" clientY="+evt.clientY+" layerY="+evt.layerY );
+	var x = evt.clientX? evt.clientX : (evt.offsetX? evt.offsetX : evt.layerX);
 	var y = evt.clientY? evt.clientY : (evt.offsetY? evt.offsetY : evt.layerY);
 	var ch = (y < loran_c.scope.height/2)? 0:1;
-	var offset = (evt.clientX? evt.clientX : (evt.offsetX? evt.offsetX : evt.layerX)) - loran_c_startx;
+	var offset = x - loran_c.left - loran_c_startx;
+	//console.log('ch='+ ch +' offset='+ offset +' x='+ x +' left='+ loran_c.left +' nbuckets='+ loran_c_nbuckets[ch]);
 	if (offset < 0 || offset >= loran_c_nbuckets[ch]) return;
-	//console.log('ch='+ ch +' offset='+ offset);
 	ext_send('SET offset'+ ch +'='+ offset);
 }
 
@@ -506,6 +566,25 @@ function loran_c_avg_param_cb(path, slider_val)
 	// update param label
 	//console.log('loran_c_avg_param_cb: path='+ path +' sv='+ slider_val +' pv='+ param_val +' algo='+ algo);
 	w3_set_label(loran_c_avg_param_s[algo] +' '+ param_val, path);
+}
+
+function loran_c_help(show)
+{
+   if (show) {
+      var s = 
+         w3_text('w3-medium w3-bold w3-text-aqua', 'Loran-C viewer help') + '<br><br>' +
+         'You can manually align the master station (the one with the 9th pulse) <br>' +
+         'to the left "M" slot by shift-clicking (touch on mobile devices) <br>' +
+         'at the location in the display you want moved to the left edge. <br><br>' +
+
+         'URL parameters: <br>' +
+         'First and second parameters can optionally be GRIs. <br>' +
+         'Example: <i>&ext=loran,8970,9960</i> <br>' +
+         '';
+      confirmation_show_content(s, 500, 200);
+   }
+
+   return true;
 }
 
 // called to display HTML for configuration parameters in admin interface
