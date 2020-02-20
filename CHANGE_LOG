@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.382  February 21, 2020
+    Minor fixes.
+
 v1.381  February 19, 2020
     Loran-C extension:
         Add Wildwood (eLoran testing) GRI 9960 per Time-Nuts mailing list.

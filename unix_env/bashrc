@@ -207,6 +207,8 @@ alias cdbo="cd /boot"
 alias cdbdt="cd /boot/dtbs/${d_sys}"
 # dt
 # procedure: cddt; cpdt; m; cpdt2; reboot
+# NB: /opt/source/dtb-4.14-ti is the version of dtb that must be used.
+# It matches the kernel version, e.g. uname -r => 4.14.108-ti-r123
 d_dt="/opt/source/dtb-4.14-ti"
 d_dt2="/opt/source/dtb-4.14-ti/src/arm"
 d_ai="~/Beagle_SDR_GPS/platform/beaglebone_AI"
