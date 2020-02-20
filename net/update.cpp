@@ -250,7 +250,7 @@ void check_for_update(update_check_e type, conn_t *conn)
 	bool force = (type != WAIT_UNTIL_NO_USERS);
 	
 	if (!force && admcfg_bool("update_check", NULL, CFG_REQUIRED) == false) {
-		lprintf("UPDATE: exiting because admin update check not enabled\n");
+		//printf("UPDATE: exiting because admin update check not enabled\n");
 		return;
 	}
 	

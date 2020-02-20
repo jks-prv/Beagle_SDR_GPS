@@ -38,9 +38,9 @@ var gri_s = [
    '8000 Western Russia (Chayka)',
    '8390 China East Sea',
    '8830 Saudi Arabia North',
-   '8970 Wildwood USA (testing)',
+   '8970 Wildwood USA (eLoran)',
    '9930 Korea',
-   '9960 Wildwood USA (testing)'
+   '9960 Wildwood USA (eLoran)'
 ];
 
 var gri_2s = [
@@ -54,9 +54,9 @@ var gri_2s = [
    'Western Russia', '(Chayka)',
    'China Sea', 'East',
    'Saudi Arabia', 'North',
-   'Wildwood USA', '(testing)',
+   'Wildwood USA', '(eLoran)',
    'Korea', '',
-   'Wildwood USA', '(testing)'
+   'Wildwood USA', '(eLoran)'
 ];
 
 var loran_c_default_chain1 = 7;
@@ -120,11 +120,11 @@ var emission_delay = {
 			  { s:'Z Al Muwassam', d:58790.00 }
 			],
 
-	8970: [ { s:'M Wildwood', d:0 },          // LoranView (DE) shows chain reception (when on-air)
-	      //{ s:'X Wildwood', d:14355.11 }
-	      //{ s:'X Wildwood', d:31162.06 }
-	        { s:'X Wildwood', d:47753.74 }    // closer to observed value
-	      //{ s:'X Wildwood', d:63669.46 }
+	8970: [ { s:'M Wildwood', d:0 }           // LoranView (DE) shows chain reception (when on-air)
+	      //{ s:'W', d:14355.11 },
+	      //{ s:'X', d:31162.06 },
+	      //{ s:'Y', d:47753.74 },
+	      //{ s:'Z', d:63669.46 }
 	      ],
 
 	9930: [ { s:'M Pohang', d:0 },				// LoranView (DE) shows some reception
