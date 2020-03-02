@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.383  March 3, 2020
+    TDoA and admin GPS tab:
+        Change to a no-cost map provider. Sorry, no more built-in satellite maps.
+        Use green pin to show solution location on Google sat maps in a new tab/window.
+    BBAI: fix for incorrect extensions lockout after DRM had been used.
+
 v1.382  February 21, 2020
     Minor fixes.
 

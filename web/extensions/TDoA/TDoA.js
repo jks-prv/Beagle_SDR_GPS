@@ -68,8 +68,6 @@ var tdoa = {
    init_lat: 20,
    init_lon: 15,
    init_zoom: 2,
-   maxZoom: 19,
-   minZoom: 2,
    mapZoom_nom: 17,
    hosts_clusterer: null,
    refs_clusterer: null,
@@ -290,22 +288,62 @@ function tdoa_controls_setup()
    w3_innerHTML('id-tdoa-hosts-container', s);
 
    if (tdoa.leaflet) {
-      var map_tiles = function(map_style) {
-         return L.mapboxGL({
-            attribution: '<a href="https://www.maptiler.com/license/maps/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
-            accessToken: 'not-needed',
-            style: 'https://api.maptiler.com/maps/'+ map_style +'/style.json'+ tdoa.a[1]
-         });
+      var map_tiles;
+      var maxZoom = 19;
+      var server_e = { MapTiler_Vector:0, MapTiler_Raster_512:1, MapTiler_Raster_256:2, OSM_Raster:3 };
+      var server = server_e.OSM_Raster;
+
+      // MapTiler vector tiles using LeafletGL/MapBoxGL
+      if (server == server_e.MapTiler_Vector) {
+         map_tiles = function(map_style) {
+            return L.mapboxGL({
+               attribution: '<a href="https://www.maptiler.com/license/maps/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
+               accessToken: 'not-needed',
+               style: 'https://api.maptiler.com/maps/'+ map_style +'/style.json'+ tdoa.a[1]
+            });
+         }
       }
+
+      // MapTiler 512/256 px raster tiles
+      if (server == server_e.MapTiler_Raster_512 || server == server_e.MapTiler_Raster_256) {
+         var slash_256 = (server == server_e.MapTiler_Raster_256)? '/256':'';
+         map_tiles = function(map_style) {
+            return L.tileLayer(
+               (map_style == 'hybrid')?
+                  'https://api.maptiler.com/maps/'+ map_style + slash_256 +'/{z}/{x}/{y}{r}.jpg'+ tdoa.a[1]
+               :
+                  'https://api.maptiler.com/maps/'+ map_style + slash_256 +'/{z}/{x}/{y}.png'+ tdoa.a[1], {
+               tileSize: (server == server_e.MapTiler_Raster_256)? 256 : 512,
+               zoomOffset: (server == server_e.MapTiler_Raster_256)? 0 : -1,
+               attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
+               crossOrigin: true
+            });
+         }
+      }
+
+      // OSM raster tiles
+      if (server == server_e.OSM_Raster) {
+         map_tiles = function() {
+            maxZoom = 18;
+            return L.tileLayer(
+               'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+               tileSize: 256,
+               zoomOffset: 0,
+               attribution: '<a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
+               crossOrigin: true
+            });
+         }
+      }
+
+      var sat_map = map_tiles('hybrid');
       var m = L.map('id-tdoa-map-kiwi',
          {
-            maxZoom: tdoa.maxZoom,
-            minZoom: tdoa.minZoom,
-            doubleClickZoom: false,    // don't interfeer with double-click of host/ref markers
+            maxZoom: maxZoom,
+            minZoom: 1,
+            doubleClickZoom: false,    // don't interfere with double-click of host/ref markers
             zoomControl: false
          }
       ).setView([tdoa.init_lat, tdoa.init_lon], tdoa.init_zoom);
-      var sat_map = map_tiles('hybrid');
       
       // NB: hack! jog map slightly to prevent grey, unfilled tiles after basemap change
       m.on('baselayerchange', function(e) {
@@ -322,17 +360,22 @@ function tdoa_controls_setup()
       L.control.zoom_TDoA().addTo(m);
       
       sat_map.addTo(m);
-      L.control.layers(
-         {
-            'Satellite': sat_map,
-            'Basic': map_tiles('basic'),
-            'Bright': map_tiles('bright'),
-            'Positron': map_tiles('positron'),
-            'Street': map_tiles('streets'),
-            'Topo': map_tiles('topo')
-         },
-         null
-      ).addTo(m);
+
+      // MapTiler map choices
+      if (server != server_e.OSM_Raster) {
+         L.control.layers(
+            {
+               'Satellite': sat_map,
+               'Basic': map_tiles('basic'),
+               'Bright': map_tiles('bright'),
+               'Positron': map_tiles('positron'),
+               'Street': map_tiles('streets'),
+               'Topo': map_tiles('topo')
+            },
+            null
+         ).addTo(m);
+      }
+      
       tdoa.cur_map = tdoa.kiwi_map = m;
       if (dbgUs) sat_map.getPane()._jks = 'MAP';
 

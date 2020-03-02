@@ -303,7 +303,8 @@ void rx_server_remove(conn_t *c)
     if (c->dx_has_preg_ident) { regfree(&c->dx_preg_ident); c->dx_has_preg_ident = false; }
     if (c->dx_has_preg_notes) { regfree(&c->dx_preg_notes); c->dx_has_preg_notes = false; }
     
-    if (!is_BBAI && c->is_locked) {
+    //if (!is_BBAI && c->is_locked) {
+    if (c->is_locked) {
         //cprintf(c, "DRM rx_server_remove: global is_locked = 0\n");
         is_locked = 0;
     }

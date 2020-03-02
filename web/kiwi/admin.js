@@ -1814,7 +1814,7 @@ function gps_update_admin_cb()
             cells +=
                w3_table_cells('|vertical-align:top;position:relative;|rowspan='+ gps.ch.length,
                   w3_div('w3-hcenter',
-                     '<canvas id="id-gps-canvas" width="400" height="400" style="position:absolute; z-index:2"></canvas>'
+                     '<canvas id="id-gps-canvas" width="400" height="400" style="position:absolute; z-index:2; pointer-events:none"></canvas>'
                   )
                );
          }
@@ -1875,32 +1875,77 @@ function gps_update_admin_cb()
 
       if (!_gps.map_init && !_gps.map_needs_height) {
          if (_gps.leaflet) {
-            var map_tiles = function(map_style) {
-               return L.mapboxGL({
-                  attribution: '<a href="https://www.maptiler.com/license/maps/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
-                  accessToken: 'not-needed',
-                  style: 'https://api.maptiler.com/maps/'+ map_style +'/style.json'+ _gps.a
-               });
+            var map_tiles;
+            maxZoom = 19;
+            var server_e = { MapTiler_Vector:0, MapTiler_Raster_512:1, MapTiler_Raster_256:2, OSM_Raster:3 };
+            var server = server_e.OSM_Raster;
+
+            // MapTiler vector tiles using LeafletGL/MapBoxGL
+            if (server == server_e.MapTiler_Vector) {
+               map_tiles = function(map_style) {
+                  return L.mapboxGL({
+                     attribution: '<a href="https://www.maptiler.com/license/maps/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
+                     accessToken: 'not-needed',
+                     style: 'https://api.maptiler.com/maps/'+ map_style +'/style.json'+ _gps.a
+                  });
+               }
             }
+
+            // MapTiler 512/256 px raster tiles
+            if (server == server_e.MapTiler_Raster_512 || server == server_e.MapTiler_Raster_256) {
+               var slash_256 = (server == server_e.MapTiler_Raster_256)? '/256':'';
+               map_tiles = function(map_style) {
+                  return L.tileLayer(
+                     (map_style == 'hybrid')?
+                        'https://api.maptiler.com/maps/'+ map_style + slash_256 +'/{z}/{x}/{y}{r}.jpg'+ _gps.a
+                     :
+                        'https://api.maptiler.com/maps/'+ map_style + slash_256 +'/{z}/{x}/{y}.png'+ _gps.a, {
+                     tileSize: (server == server_e.MapTiler_Raster_256)? 256 : 512,
+                     zoomOffset: (server == server_e.MapTiler_Raster_256)? 0 : -1,
+                     attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
+                     crossOrigin: true
+                  });
+               }
+            }
+
+            // OSM raster tiles
+            if (server == server_e.OSM_Raster) {
+               map_tiles = function() {
+                  maxZoom = 18;
+                  return L.tileLayer(
+                     'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                     tileSize: 256,
+                     zoomOffset: 0,
+                     attribution: '<a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
+                     crossOrigin: true
+                  });
+               }
+            }
+
+            var sat_map = map_tiles('hybrid');
             _gps.map = L.map('id-gps-map',
                {
-                  maxZoom: 19,
+                  maxZoom: maxZoom,
                   minZoom: 1,
                }
             ).setView([0, 0], 1);
-            var sat_map = map_tiles('hybrid');
             sat_map.addTo(_gps.map);
-            L.control.layers(
-               {
-                  'Satellite': sat_map,
-                  'Basic': map_tiles('basic'),
-                  'Bright': map_tiles('bright'),
-                  'Positron': map_tiles('positron'),
-                  'Street': map_tiles('streets'),
-                  'Topo': map_tiles('topo')
-               },
-               null
-            ).addTo(_gps.map);
+
+            // MapTiler map choices
+            if (server != server_e.OSM_Raster) {
+               L.control.layers(
+                  {
+                     'Satellite': sat_map,
+                     'Basic': map_tiles('basic'),
+                     'Bright': map_tiles('bright'),
+                     'Positron': map_tiles('positron'),
+                     'Street': map_tiles('streets'),
+                     'Topo': map_tiles('topo')
+                  },
+                  null
+               ).addTo(_gps.map);
+            }
+
          } else {
             var latlon = new google.maps.LatLng(0, 0);
             var map_div = w3_el('id-gps-map');
