@@ -2,7 +2,7 @@ VERSION_MAJ = 1
 VERSION_MIN = 383
 
 REPO_NAME = Beagle_SDR_GPS
-DEBIAN_VER = 8.5
+DEBIAN_VER = 8.11
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -1145,8 +1145,8 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	apt-get -y install xz-utils
 
 create_img_from_sd: /usr/bin/xz
-	@echo "--- this takes 45 minutes"
-	@echo "--- be sure to stop KiwiSDR server first to maximize write speed"
+	@echo "--- this takes about an hour"
+	@echo "--- KiwiSDR server will be stopped to maximize write speed"
 	make stop
 	dd if=/dev/mmcblk1 bs=1M iflag=count_bytes count=1G | xz --verbose > ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER).img.xz
 	sha256sum ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER).img.xz
