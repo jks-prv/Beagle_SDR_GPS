@@ -1396,7 +1396,11 @@ int _CreateTask(funcP_t funcP, const char *name, void *param, int priority, u4_t
         u4_t t_stack_size = t->flags & CTF_STACK_SIZE;
         if (!t->valid && ctx[i].init && t_stack_size == stack_size) break;
     }
-    if (i == MAX_TASKS) panic("create_task: no tasks available");
+    if (i == MAX_TASKS) {
+        dump();
+        lprintf("create_task: stack_size=%04x\n", stack_size);
+        panic("create_task: no tasks available");
+    }
     
 	if (i > max_task) max_task = i;
 	

@@ -65,7 +65,7 @@ extern u4_t task_medium_priority;
 
 #define	REG_STACK_TASKS     (MISC_TASKS + GPS_TASKS + SND_TASKS + EXT_TASKS + EXTRA_TASKS + ADMIN_TASKS)
 #define MED_STACK_TASKS     (MAX_RX_CHANS + 1)  // WF (+ reload slop)
-#define LARGE_STACK_TASKS   (1 +1 )             // DRM (+ reload slop)
+#define LARGE_STACK_TASKS   (1 + 1)             // DRM (+ reload slop)
 
 #define	MAX_TASKS           (REG_STACK_TASKS + MED_STACK_TASKS + LARGE_STACK_TASKS)
 
