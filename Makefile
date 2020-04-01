@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 383
+VERSION_MIN = 384
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.11
@@ -9,7 +9,7 @@ DEBIAN_VER = 8.11
 #
 # Makefile for KiwiSDR project
 #
-# Copyright (c) 2014-2019 John Seamons, ZL/KF6VO
+# Copyright (c) 2014-2020 John Seamons, ZL/KF6VO
 #
 # This Makefile can be run on both a build machine (I use a MacBook Pro) and the
 # BeagleBone Black target (Debian release).
