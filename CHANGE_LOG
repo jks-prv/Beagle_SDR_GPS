@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.384  April 1, 2020
+    "up" script now fetches current Makefile to make script more useful in recovering from
+        cases of filesystem damage.
+    Add more debugging messages to log for "out of tasks" panic.
+    Fix dropbox link in tools/kiwiSDR-download-KiwiSDR-create-micro-SD-flasher.sh script.
+
 v1.383  March 3, 2020
     TDoA and admin GPS tab:
         Change to a no-cost map provider. Sorry, no more built-in satellite maps.
