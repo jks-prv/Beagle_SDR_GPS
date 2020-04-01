@@ -8,11 +8,13 @@ if test ! -f /etc/dogtag; then
 fi
 
 if test "x$KIWI_CONSOLE" = "xyes" ; then
-    echo "No! Don't do from a console connection. Will strand the Beagle. Instead do: m git; mi; (restart button)"
+    echo "No! Don't do from a console connection. Will strand the Beagle."
+    echo "Instead do: m git; mc; m; mi; (restart button)"
     exit 0
 fi
 
 make stop
+curl --silent --ipv4 --show-error --connect-timeout 15 -O https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile
 git clean -fd
 git checkout .
 git pull -v
