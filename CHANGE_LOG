@@ -2,6 +2,16 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.385  April 5, 2020
+    DRM extension fixes and improvements:
+        Respect passband set in dx labels and in URL.
+            E.g. you have a dx label with mode=DRM and passband=-4.5k,4.5k like you might use
+            with 9 kHz DRM mode CNR 6030 kHz. You don't want the DRM extension to override that
+            passband and set to the default 10 kHz. Similarly if you've set a passband in the URL
+            e.g. "my_kiwi:8073/?pb=-4.5k,4.5k&ext=drm" (alternatively "pb=9k")
+        Fixed bug causing "out of tasks" panic when DRM had been started and stopped on
+            multiple channels over time.
+
 v1.384  April 1, 2020
     "up" script now fetches current Makefile to make script more useful in recovering from
         cases of filesystem damage.
