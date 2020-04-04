@@ -84,16 +84,6 @@ bool DRM_msgs(char *msg, int rx_chan)
 		// extension notified of rx_chan >= drm_info.drm_chan in response to lock_set below
 		if (rx_chan < drm_info.drm_chan) {
             d->rx_chan = rx_chan;	// remember our receiver channel number
-    
-            if (!d->tid) {
-                #ifdef DRM_SHMEM_DISABLE
-                    d->tid = CreateTaskF(drm_task, TO_VOID_PARAM(rx_chan), EXT_PRIORITY, CTF_STACK_LARGE | CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL));
-                #else
-                    rcprintf(rx_chan, "DRM ext_server_init shmem_ipc_invoke rx_chan=%d\n", rx_chan);
-                    shmem_ipc_invoke(SIG_IPC_DRM + rx_chan, rx_chan, NO_WAIT);
-                    d->tid = 1;
-                #endif
-            }
         }
         
         return true;
@@ -130,17 +120,31 @@ bool DRM_msgs(char *msg, int rx_chan)
             rv = is_locked;
         }
         
+		if (rv == 1) {
+            if (!d->tid) {
+                #ifdef DRM_SHMEM_DISABLE
+                    d->tid = CreateTaskF(drm_task, TO_VOID_PARAM(rx_chan), EXT_PRIORITY, CTF_STACK_LARGE | CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL));
+                #else
+                    rcprintf(rx_chan, "DRM ext_server_init shmem_ipc_invoke rx_chan=%d\n", rx_chan);
+                    shmem_ipc_invoke(SIG_IPC_DRM + rx_chan, rx_chan, NO_WAIT);
+                    d->tid = 1;
+                #endif
+            }
+		}
+		
         // rv/locked:
         // -2 hacked
         // -1 wrong srate
         //  0 not locked due to conflict (e.g. extension running)
         //  1 locked
 		ext_send_msg(rx_chan, false, "EXT inuse=%d heavy=%d locked=%d", inuse, heavy, rv);
+		
         return true;    
     }
     
     if (strcmp(msg, "SET lock_clear") == 0) {
         is_locked = 0;
+        DRM_close(rx_chan);
         printf("DRM lock_clear\n");
         return true;    
     }
