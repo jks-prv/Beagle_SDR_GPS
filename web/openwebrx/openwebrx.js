@@ -816,6 +816,7 @@ var passbands = {
 function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 {
    if (passbands[subtype] == null) subtype = 'am';
+   //console.log('demodulator_default_analog '+ subtype +' locut='+ locut +' hicut='+ hicut);
    
 	//http://stackoverflow.com/questions/4152931/javascript-inheritance-call-super-constructor-or-use-prototype-chain
 	demodulator.call(this, offset_frequency);
@@ -875,6 +876,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	   //console.log('### override_pbw=['+ override_pbw +'] len='+ p.length +' nlo='+ nlo +' nhi='+ nhi +' lo='+ lo +' hi='+ hi);
 
 	   override_pbw = '';
+	   extint.override_pb = true;
 	}
 	
 	if (override_pbc != '') {
@@ -906,6 +908,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	   //console.log('### override_pbc=['+ override_pbc +'] len='+ p.length +' pbc='+ pbc +' pbw='+ pbw +' lo='+ lo +' hi='+ hi);
 
 	   override_pbc = '';
+	   extint.override_pb = true;
 	}
 	
 	this.low_cut = Math.max(lo, this.filter.low_cut_limit);
@@ -5849,19 +5852,34 @@ function dx_click(ev, gid)
 		var mode = kiwi.modes_l[dx_list[gid].flags & DX_MODE];
 		var lo = dx_list[gid].lo;
 		var hi = dx_list[gid].hi;
-		//console.log("DX-click f="+ dx_list[gid].freq +" mode="+ mode +" cur_mode="+ cur_mode +' lo='+ lo +' hi='+ hi);
+		var params = dx_list[gid].params;
+		console.log('### dx_click f='+ dx_list[gid].freq +' mode='+ mode +' cur_mode='+ cur_mode +' lo='+ lo +' hi='+ hi +' params='+ params);
+
+      extint.extname = extint.param = null;
+      if (isArg(params)) {
+         var ext = (params == '')? [] : decodeURIComponent(params).split(',');
+         if (mode == 'drm') {
+            extint.extname = 'drm';
+            ext.push('lo:'+ lo);    // forward passband info from dx label panel to keep DRM ext from overriding it
+            ext.push('hi:'+ hi);
+            extint.param = ext.join(',');
+         } else {
+            extint.extname = ext[0];
+            extint.param = ext.slice(1).join(',');
+         }
+      }
+      console.log('### dx_click extname='+ extint.extname +' param=<'+ extint.param +'>');
+
 		freqmode_set_dsp_kHz(freq, mode, { open_ext:true });
 		if (lo || hi) {
 		   ext_set_passband(lo, hi, undefined, freq);
 		}
 		
 		// open specified extension
-		if (!any_alternate_click_event(ev) && !dx.ctrl_click && dx_list[gid].params) {
-		   var p = decodeURIComponent(dx_list[gid].params);
-		   //console.log('### dx_click extension <'+ p +'>');
-         var ext = p.split(',');
-         extint.param = ext.slice(1).join(',');
-			extint_open(ext[0], 250);
+		// setting DRM mode above opens DRM extension
+		if (mode != 'drm' && !any_alternate_click_event(ev) && !dx.ctrl_click && dx_list[gid].params) {
+		   console.log('### dx_click ext='+ extint.extname +' <'+ extint.param +'>');
+			extint_open(extint.extname, 250);
 		}
 		
 		dx.ctrl_click = false;

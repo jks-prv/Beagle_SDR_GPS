@@ -560,7 +560,8 @@ function drm_click(idx)
    var o = drm.stations[idx];
    console.log('drm_click '+ o.f +' '+ dq(o.s.toLowerCase()) +' '+ (o.u? o.u:''));
    
-   // a hack to add this to the broadcaster's URL link, but didn't want to change the cjson file format again
+   // it's a hack to add passband to the broadcaster's URL link, but didn't want to change the cjson file format again
+   // i.e. "<url>?f=/<pb_lo>,<pb_hi>"     e.g. pb value could 2300 or 2.3k
    drm.special_passband = null;
    if (o.u) {
 		var p = new RegExp('^.*\?f=\/([-0-9.k]*)?,?([-0-9.k]*)?.*$').exec(o.u);
@@ -1028,11 +1029,17 @@ function drm_controls_setup()
 	if (p) {
       p = p.split(',');
       p.forEach(function(a, i) {
-         //console.log('DRM param1 <'+ a +'>');
+         console.log('DRM param1 <'+ a +'>');
          var a1 = a.split(':');
          a1 = a1[a1.length-1].toLowerCase();
          w3_ext_param_array_match_str(drm.display_idx_s, a, function(i) { drm.display_idx = drm.display_idx_si[i]; });
          var r;
+         if ((r = w3_ext_param('lo', a)).match) {
+            drm.pb_lo = r.num;
+         } else
+         if ((r = w3_ext_param('hi', a)).match) {
+            drm.pb_hi = r.num;
+         } else
          if ((r = w3_ext_param('mobile', a)).match) {
             drm.mobile = 1;
          } else
@@ -1190,11 +1197,17 @@ function drm_monitor_IQ_cb(path, cb_param)
 
 function drm_set_passband()
 {
+   console.log('### drm_set_passband override_pbw='+ override_pbw +' extint.override_pb='+ extint.override_pb); 
+   
+   // respect pb set in dx labels and in URL
+   if (drm.pb_lo || drm.pb_hi || extint.override_pb) {
+      console.log('drm_set_passband PB FROM PARAMS '+ drm.pb_lo +','+ drm.pb_hi);
+   } else
    if (drm.special_passband) {   // can't simply clear on first use because special pb needs to get set several times
-      console_log_fqn('drm_set_freq SPECIAL PB', 'drm.special_passband.low', 'drm.special_passband.high');
+      console_log_fqn('drm_set_passband SPECIAL PB', 'drm.special_passband.low', 'drm.special_passband.high');
       ext_set_passband(drm.special_passband.low, drm.special_passband.high);
    } else {
-      //kiwi_trace();
+      console.log('drm_set_passband DEFAULT PB');
       ext_set_passband(-5000, 5000);
    }
 }
@@ -1430,8 +1443,7 @@ function DRM_help(show)
       var s = 
          w3_text('w3-medium w3-bold w3-text-aqua', 'Digital Radio Mondiale (DRM30) decoder help') + '<br><br>' +
          w3_div('w3-scroll-y|height:85%',
-            //w3_text('w3-text-css-yellow w3-bold', 'Development in progress. Updates daily.') +
-            
+         
             'Schedule: Click on colored bars to tune a station. <br>' +
             'Gray vertical lines are spaced 1 hour apart beginning at 00:00 UTC on the left. <br>' +
             'Red line shows current UTC time and updates while the extension is running. <br><br>' +
@@ -1441,24 +1453,32 @@ function DRM_help(show)
             'waterfall colors are not saturated. The image below shows fading (dark areas) that might cause problems. See the ' +
             '<a href="http://valentfx.com/vanilla/discussion/1842/v1-360-drm-extension-now-available-for-beta-testing/p1" target="_blank">' +
             'Kiwi forum</a> for more information. ' +
-            '<br><br><img src="gfx/DRM.sel.fade.png" /><br>' +
+            '<br><br><img src="gfx/DRM.sel.fade.png" /><br><br>' +
+            
+            'Custom passbands set before invoking the DRM extension will be respected. <br>' +
+            'For example the passband field of a DX label that has mode DRM, or a passband specification in ' +
+            'the URL e.g. "my_kiwi.com:8073/?pb=0,5k&ext=drm" ' +
             '<hr>' +
+
             'DRM code from <b>Dream 2.2.1</b> <br>' +
             'Technische Universitaet Darmstadt, Institut fuer Nachrichtentechnik <br>' +
-            'Copyright (c) 2001-2019 &nbsp;&nbsp;&nbsp;&nbsp;' +
+            'Copyright (c) 2001-2020 &nbsp;&nbsp;&nbsp;&nbsp;' +
             '<a href="https://sourceforge.net/projects/drm" target="_blank">sourceforge.net/projects/drm</a> <br>' +
             'License: GNU General Public License version 2.0 (GPLv2) <br>' +
             '<hr>' +
+
             '<b>Fraunhofer FDK AAC Codec Library for Android</b> <br>' +
             '© Copyright  1995 - 2018 Fraunhofer-Gesellschaft zur Förderung der angewandten <br>' +
             'Forschung e.V. All rights reserved. <br>' +
             'For more information visit <a href="http://www.iis.fraunhofer.de/amm" target="_blank">www.iis.fraunhofer.de/amm</a> <br>' +
             '<hr>' +
+
             '<b>OpenCORE-AMR modifications to Fraunhofer FDK AAC Codec</b> <br>' +
             'Copyright (C) 2009-2011 Martin Storsjo &nbsp;&nbsp;&nbsp;&nbsp;' +
             '<a href="https://sourceforge.net/projects/opencore-amr" target="_blank">sourceforge.net/projects/opencore-amr</a> <br>' +
             'License: Apache License V2.0 <br>' +
             '<hr>' +
+
             'Features <b>NewsService Journaline(R)</b> decoder technology by <br>' +
             'Fraunhofer IIS, Erlangen, Germany. <br>' +
             'Copyright (c) 2003, 2004 <br>' +
