@@ -1197,7 +1197,7 @@ function drm_monitor_IQ_cb(path, cb_param)
 
 function drm_set_passband()
 {
-   console.log('### drm_set_passband override_pbw='+ override_pbw +' extint.override_pb='+ extint.override_pb); 
+   //console.log('### drm_set_passband override_pbw='+ override_pbw +' extint.override_pb='+ extint.override_pb); 
    
    // respect pb set in dx labels and in URL
    if (drm.pb_lo || drm.pb_hi || extint.override_pb) {
@@ -1226,7 +1226,18 @@ function drm_set_freq(freq)
    var zoom = ext_get_zoom();
    if (zoom < 5) zoom = 5; else
    if (zoom > 9) zoom = 9;
+
+   // respect pb set in dx labels and in URL
+   var pb_specified = (drm.pb_lo || drm.pb_hi || extint.override_pb);
+   var saved_pb = pb_specified? ext_get_passband() : null;
    ext_tune(drm.freq, 'drm', ext_zoom.ABS, zoom);
+
+   if (pb_specified) {
+      //console.log('drm_set_freq PB FROM PARAMS '+ drm.pb_lo +','+ drm.pb_hi +' override_pb='+ extint.override_pb);
+      //console.log('drm_set_freq PB FROM PARAMS saved: '+ saved_pb.low +','+ saved_pb.high);
+      ext_set_passband(saved_pb.low, saved_pb.high);
+   }
+   
    drm_set_passband();
 }
 
