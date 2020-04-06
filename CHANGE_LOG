@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.386  April 6, 2020
+    Fix passband setting problem.
+
 v1.385  April 5, 2020
     DRM extension fixes and improvements:
         Respect passband set in dx labels and in URL.
