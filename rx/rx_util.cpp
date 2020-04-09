@@ -219,6 +219,7 @@ void update_vars_from_config()
     cfg_default_bool("ADC_clk_corr", true, &update_cfg);
     cfg_default_string("tdoa_id", "", &update_cfg);
     cfg_default_int("tdoa_nchans", -1, &update_cfg);
+    cfg_default_int("ext_api_nchans", -1, &update_cfg);
     cfg_default_bool("no_wf", false, &update_cfg);
     cfg_default_bool("test_webserver_prio", false, &update_cfg);
     cfg_default_bool("test_deadline_update", false, &update_cfg);

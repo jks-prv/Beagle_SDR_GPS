@@ -76,6 +76,7 @@ typedef struct conn_st {
 	TYPECPX last_sample;
 	char *pref_id, *pref;
 	bool is_locked;
+	bool ext_api;
 	
 	// set only in STREAM_WATERFALL
 	bool wf_cmd_recv_ok;

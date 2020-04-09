@@ -316,7 +316,7 @@ void rx_server_remove(conn_t *c)
 	TaskRemove(task);
 }
 
-int rx_count_server_conns(conn_count_e type, conn_t *our_conn)   // EXTERNAL_ONLY, INCLUDE_INTERNAL, TDOA_USERS
+int rx_count_server_conns(conn_count_e type, conn_t *our_conn)
 {
 	int users=0, any=0;
 	
@@ -327,6 +327,10 @@ int rx_count_server_conns(conn_count_e type, conn_t *our_conn)   // EXTERNAL_ONL
 
 	    if (type == TDOA_USERS) {
 	        if (sound && c->user && kiwi_str_begins_with(c->user, "TDoA_service"))
+	            users++;
+	    } else
+	    if (type == EXT_API_USERS) {
+	        if (sound && c->user && c->ext_api)
 	            users++;
 	    } else
 	    if (type == LOCAL_OR_PWD_PROTECTED_USERS) {

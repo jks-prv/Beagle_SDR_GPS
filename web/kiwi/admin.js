@@ -230,17 +230,37 @@ function control_html()
 			)
       );
 
+   // Let cfg.ext_api_nchans retain values > rx_chans if it was set when another configuration
+   // was used. Just clamp the menu value to the current rx_chans;
+	var ext_api_ch = ext_get_cfg_param('ext_api_nchans', -1);
+	if (ext_api_ch == -1) ext_api_ch = rx_chans;      // has never been set
+	var ext_api_nchans = Math.min(ext_api_ch, rx_chans);
+   var ext_api_chans_u = { 0:'none' };
+   for (var i = 1; i <= rx_chans; i++)
+      ext_api_chans_u[i] = i.toFixed(0);
+
 	var s2 =
 		'<hr>' +
-		w3_third('', 'w3-container w3-valign',
+		w3_inline_percent('w3-container w3-valign',
 			w3_divs('w3-center w3-tspace-8',
-				w3_div('', '<b>Enable user connections?</b>'),
+				w3_div('', '<b>Enable user<br>connections?</b>'),
             w3_switch('', 'Yes', 'No', 'adm.server_enabled', adm.server_enabled, 'server_enabled_cb')
-			),
+			), 15,
+			
 			w3_divs('w3-center w3-tspace-8',
-				w3_div('', '<b>Close all active user connections</b>'),
+				w3_div('', '<b>Close all active<br>user connections</b>'),
 				w3_button('w3-red', 'Kick', 'control_user_kick_cb')
-			),
+			), 15,
+
+         w3_div('w3-center',
+            w3_select('', 'Number of simultaneous channels available<br>for connection by non-Kiwi apps',
+               '', 'ext_api_nchans', ext_api_nchans, ext_api_chans_u, 'admin_select_cb'),
+            w3_div('w3-margin-T-8 w3-text-black',
+               'If you want to limit incoming connections from <br> non-Kiwi apps like kiwirecorder set this value. <br>' +
+               'This overrides similar value in TDoA extension settings.'
+            )
+         ), 35,
+
 			w3_divs('w3-restart/w3-center w3-tspace-8',
 				w3_div('', '<b>Disable waterfalls/spectrum?</b>'),
             w3_switch('', 'Yes', 'No', 'cfg.no_wf', cfg.no_wf, 'admin_radio_YN_cb'),
@@ -248,7 +268,7 @@ function control_html()
 				   'Set "yes" to save Internet bandwidth by preventing <br>' +
 				   'the waterfall and spectrum from being displayed.'
 				)
-			)
+			), 35
 		) +
 		w3_div('w3-container w3-margin-top',
 			w3_input_get('', 'Reason if disabled', 'reason_disabled', 'reason_disabled_cb', '', 'will be shown to users attempting to connect')

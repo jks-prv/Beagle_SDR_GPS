@@ -405,7 +405,7 @@ void c2s_sound(void *param)
 					if (rx_chan == 0) g_genfreq = gen * kHz / ui_srate;
 				}
 				if (rx_chan == 0) g_mixfreq = mix;
-			
+				conn->ext_api = true;
 				continue;
 			}
 
@@ -417,7 +417,7 @@ void c2s_sound(void *param)
 					//printf("===> CmdSetGenAttn %d 0x%x\n", genattn, genattn);
 					if (rx_chan == 0) g_genampl = genattn / (float)((1<<17)-1);
 				}
-			
+				conn->ext_api = true;
 				continue;
 			}
 
