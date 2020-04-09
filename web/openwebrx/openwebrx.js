@@ -271,7 +271,9 @@ function kiwi_main()
       gen_attn = 0x01ffff * ampl_gain;
       console.log('### GEN dB='+ dB +' ampl_gain='+ ampl_gain +' attn='+ gen_attn +' / '+ gen_attn.toHex());
    }
-	set_gen(gen_freq, gen_attn);
+   
+   if (gen_freq || gen_attn)
+	   set_gen(gen_freq, gen_attn);
 
 	snd_send("SET mod=am low_cut=-4000 high_cut=4000 freq=1000");
 	set_agc();

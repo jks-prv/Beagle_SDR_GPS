@@ -841,10 +841,10 @@ static void reg_kiwisdr_com(void *param)
 	    // done here because updating timer_sec() is sent
         asprintf(&cmd_p, "wget --timeout=30 --tries=2 --inet4-only -qO- "
             "\"http://%s/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d"
-            "&dom=%d&dom_stat=%d&serno=%d&sdr_hu=%d&pvt=%s&pub=%s&up=%d\" 2>&1",
+            "&dom=%d&dom_stat=%d&serno=%d&dna=%08x%08x&sdr_hu=%d&pvt=%s&pub=%s&up=%d\" 2>&1",
             kiwisdr_com, server_url, server_port, api_key, net.mac,
             email, add_nat, version_maj, version_min, debian_maj, debian_min,
-            sdr_hu_dom_sel, dom_stat, net.serno, sdr_hu_reg? 1:0,
+            sdr_hu_dom_sel, dom_stat, net.serno, PRINTF_U64_ARG(net.dna), sdr_hu_reg? 1:0,
             net.pvt_valid? net.ip_pvt : "not_valid", net.pub_valid? net.ip_pub : "not_valid", timer_sec());
     
 		bool server_enabled = (!down && admcfg_bool("server_enabled", NULL, CFG_REQUIRED) == true);

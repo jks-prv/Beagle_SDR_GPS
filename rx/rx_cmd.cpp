@@ -1055,14 +1055,29 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			// 	conn->remote_ip, conn->remote_port, setUserIP, noname, conn->user, cmd);
 		}
 		
+		// ext_api_nchans, if exceeded, overrides tdoa_nchans
+		if (conn->ext_api) {
+		    int ext_api_ch = cfg_int("ext_api_nchans", NULL, CFG_REQUIRED);
+		    if (ext_api_ch == -1) ext_api_ch = rx_chans;      // has never been set
+		    int ext_api_users = rx_count_server_conns(EXT_API_USERS);
+		    //cprintf(conn, "EXT_API ext_api_users=%d >? ext_api_ch=%d\n", ext_api_users, ext_api_ch);
+		    if (ext_api_users > ext_api_ch) {
+		        //cprintf(conn, "EXT_API TOO_BUSY %s\n", conn->remote_ip);
+		        clprintf(conn, "Non-Kiwi API denied connection: %d/%d %s \"%s\"\n",
+		            ext_api_users, ext_api_ch, conn->remote_ip, conn->user);
+			    send_msg(conn, SM_NO_DEBUG, "MSG too_busy=%d", ext_api_ch);
+		        conn->kick = true;
+		    }
+		}
+
 		// Can only distinguish the TDoA service at the time the kiwirecorder identifies itself.
 		// If a match and the limit is exceeded then kick the connection off immediately.
 		// This identification is typically sent right after initial connection is made.
-		if (kiwi_str_begins_with(conn->user, "TDoA_service")) {
+		if (!conn->kick && kiwi_str_begins_with(conn->user, "TDoA_service")) {
 		    int tdoa_ch = cfg_int("tdoa_nchans", NULL, CFG_REQUIRED);
 		    if (tdoa_ch == -1) tdoa_ch = rx_chans;      // has never been set
 		    int tdoa_users = rx_count_server_conns(TDOA_USERS);
-		    //cprintf(conn, "TDoA_service tdoa_users=%d > tdoa_ch=%d\n", tdoa_users, tdoa_ch);
+		    //cprintf(conn, "TDoA_service tdoa_users=%d >? tdoa_ch=%d\n", tdoa_users, tdoa_ch);
 		    if (tdoa_users > tdoa_ch) {
 		        //cprintf(conn, "TDoA_service TOO_BUSY\n");
 			    send_msg(conn, SM_NO_DEBUG, "MSG too_busy=%d", tdoa_ch);
