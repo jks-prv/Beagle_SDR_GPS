@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 386
+VERSION_MIN = 387
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.11
@@ -1144,11 +1144,17 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 /usr/bin/xz: $(KEYRING)
 	apt-get -y install xz-utils
 
+#
+# DANGER: "count=1600M" below (i.e. 1.6 GB) must be larger than the partition size (currently ~1.4 GB)
+# computed by the tools/kiwiSDR-make-microSD-flasher-from-eMMC.sh script.
+# Otherwise the image file will have strange effects like /boot/uEnv.txt being the correct size but
+# filled with zeroed bytes (which of course is a disaster).
+#
 create_img_from_sd: /usr/bin/xz
 	@echo "--- this takes about an hour"
 	@echo "--- KiwiSDR server will be stopped to maximize write speed"
 	make stop
-	dd if=/dev/mmcblk1 bs=1M iflag=count_bytes count=1G | xz --verbose > ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER).img.xz
+	dd if=/dev/mmcblk1 bs=1M iflag=count_bytes count=1600M | xz --verbose > ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER).img.xz
 	sha256sum ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER).img.xz
 
 endif

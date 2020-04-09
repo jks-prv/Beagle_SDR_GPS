@@ -2,6 +2,17 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.387  April 10, 2020
+    Admin page control tab:
+        By special request, added ability to limit number of simultaneous non-Kiwi API connections
+            (e.g. kiwirecorder). This works in the same way (and overrides) the TDoA extension
+            setting that limits the number of simultaneous TDoA connections.
+    DX label edit:
+        Passband frequencies can be entered using "k" and "M" suffixes for kHz and MHz.
+        I.e. "2100" and "2.1k" are equivalent, as are "1200000", "1200k" and "1.2M".
+        However subsequent display of the passband fiels is always in Hz.
+        So after entering "-2.1k, 1.2M" on the next edit the field will display "-2100, 1200000" (Hz).
+
 v1.386  April 6, 2020
     Fix passband setting problem.
 
