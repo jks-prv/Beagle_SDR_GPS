@@ -80,16 +80,17 @@ function dx_passband_cb(path, val, first)
 	console.log('dx_passband_cb path='+ path +' val='+ val +' a.len='+ len);
 	console.log(a);
    if (len == 1 && a[0] != '') {
-      var hbw = Math.round(parseInt(a[0]) / 2);
+      var hbw = Math.round(a[0].parseFloatWithUnits('kM') / 2);
       dxo.lo = -hbw;
       dxo.hi =  hbw;
    } else
-   if (len > 1) {
-      dxo.lo = Math.round(parseInt(a[0]));
-      dxo.hi = Math.round(parseInt(a[len-1]));
+   if (len >= 1 && a[0] != '' && a[len-1] != '') {    // len-1 because ", " becomes 2 array elements
+      dxo.lo = Math.round(a[0].parseFloatWithUnits('kM'));
+      dxo.hi = Math.round(a[len-1].parseFloatWithUnits('kM'));
    } else {
       dxo.lo = dxo.hi = 0;
    }
+	console.log('dx_passband_cb lo='+ dxo.lo +' hi='+ dxo.hi);
 
 	var o = w3_remove_trailing_index(path, '_');
 	dx_update_check(o.idx);
