@@ -429,6 +429,20 @@ function ext_panel_set_name(name)
 	extint.current_ext_name = name;
 }
 
+
+/*
+screen.{width,height}	P=portrait L=landscape
+			   w     h		screen.[wh] in portrait
+			   h     w		rotated to landscape
+iPhone 5S	320   568	P
+iPhone X	   414   896	P
+levono		600   976	P 7"
+huawei		600   976	P 7"
+
+iPad 2		768   1024	P
+MBP 15"		1440  900	L
+*/
+
 function ext_mobile_info(last)
 {
    var w = window.innerWidth;
@@ -454,8 +468,8 @@ function ext_mobile_info(last)
 function extint_news(s)
 {
    var el = w3_el('id-news');
-   el.style.width = '200px';
-   el.style.height = '60px';
+   el.style.width = '400px';
+   el.style.height = '300px';
    el.style.visibility = 'visible';
    el.style.zIndex = 9999;
    w3_innerHTML('id-news-inner', s);

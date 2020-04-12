@@ -241,7 +241,7 @@ input[type=range]::-moz-range-thumb {
 
 
 .w3-debug { border: 0.1px solid red }
-.w3-debug2 { border: 0.1px solid green }
+.w3-debug2 { border: 0.1px solid lime }
 .w3-debug3 { border: 0.1px solid cyan }
 .w3-debug4 { border: 0.1px solid yellow }
 

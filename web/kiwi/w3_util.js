@@ -592,11 +592,11 @@ function w3_boundingBox_children(el_id, debug)
 	return bbox;
 }
 
-function w3_center_in_window(el_id)
+function w3_center_in_window(el_id, id)
 {
 	var el = w3_el(el_id);
 	var rv = window.innerHeight/2 - el.clientHeight/2;
-	//console.log('w3_center_in_window wh='+ window.innerHeight +' ch='+ el.clientHeight +' rv='+ rv);
+	//console.log('w3_center_in_window wh='+ window.innerHeight +' ch='+ el.clientHeight +' rv='+ rv + (id? (' '+ id) : ''));
 	return rv;
 }
 
@@ -2064,15 +2064,26 @@ function w3_menu(psa, cb)
    w3_el('id-w3-main-container').innerHTML += s;
 }
 
-function w3_menu_items(id)
+// menu items can be in argument list or passed as an array
+function w3_menu_items(id, arr)
 {
    //console.log('w3_menu_items id='+ id);
 
    var s = '';
    var idx = 0, prop, attr;
+   var items;
 
-   for (var i=1; i < arguments.length; i++) {
-      if (arguments[i] == '<hr>') {
+   if (isArray(arr)) {
+      items = arr;
+   } else {
+      // isObject(arr)
+      items = [];
+      for (var i=1; i < arguments.length; i++)
+         items.push(arguments[i]);
+   }
+
+   for (var i=0; i < items.length; i++) {
+      if (items[i] == '<hr>') {
          prop = 'w3-menu-item-hr';
          attr = '';
       } else {
@@ -2080,7 +2091,7 @@ function w3_menu_items(id)
          attr = 'id='+ dq(idx);
          idx++;
       }
-      s += w3_div(prop +'||'+ attr, arguments[i]);
+      s += w3_div(prop +'||'+ attr, items[i]);
    }
    
    //console.log(s);
@@ -2126,7 +2137,6 @@ function w3int_menu_onclick(ev, id, cb)
    // allow right-button to select menu items
 	if (ev != null) {
       //console.log('w3int_menu_onclick: cancelEvent()');
-      canvas_ignore_mouse_event = true;
 	   return cancelEvent(ev);
 	}
 }
