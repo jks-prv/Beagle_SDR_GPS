@@ -2086,6 +2086,12 @@ function w3_menu_items(id, arr)
       if (items[i] == '<hr>') {
          prop = 'w3-menu-item-hr';
          attr = '';
+      } else
+      if (items[i].charAt(0) == '!') {    // first char == '!' hack to disable menu item
+         prop = 'w3-menu-item-disabled';
+         attr = 'id='+ dq(idx);
+         items[i] = items[i].substr(1);
+         idx++;
       } else {
          prop = 'w3-menu-item';
          attr = 'id='+ dq(idx);

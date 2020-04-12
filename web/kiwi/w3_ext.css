@@ -233,6 +233,13 @@ input[type=range]::-moz-range-thumb {
     color: white;
 }
 
+.w3-menu-item-disabled {
+    padding: 4px 16px;      /* instead of margin so :hover inverts color of full width */
+    background-color: rgb(240, 240, 240);
+    cursor: not-allowed;
+    opacity: 0.3;
+}
+
 .w3-menu-item-hr hr {
     background-color: rgb(240, 240, 240);
     border-top: 2px solid rgb(223, 223, 223);
