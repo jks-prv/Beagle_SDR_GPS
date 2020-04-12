@@ -22,6 +22,8 @@ This file is part of OpenWebRX.
 // Copyright (c) 2015 - 2018 John Seamons, ZL/KF6VO
 
 var owrx = {
+   mobile: null,
+   
    last_freq: -1,
    last_mode: '',
    last_locut: -1,
@@ -31,6 +33,7 @@ var owrx = {
    dseq: 0,
    
    touch_hold_pressed: false,
+   tuning_locked: 0,
 };
 
 // key freq concepts:
@@ -1981,6 +1984,17 @@ function passband_visible()
 // canvas
 ////////////////////////////////
 
+var debug_canvas_drag = false;
+
+function canvas_log(s)
+{
+   if (s.charAt(0) == '$')
+      owrx.news_acc_s = '<br><br>'+ s;
+   else
+      owrx.news_acc_s += ((owrx.news_acc_s != '')? ' | ' : '') + s;
+   extint_news(owrx.news_acc_s);
+}
+
 function canvas_contextmenu(evt)
 {
 	//console.log('## CMENU tgt='+ evt.target.id +' Ctgt='+ evt.currentTarget.id);
@@ -2048,11 +2062,10 @@ canvas_ignore_mouse_event = false;
 
 var mouse = { 'left':0, 'middle':1, 'right':2 };
 
-var debug_canvas_drag = false;
-
 function canvas_start_drag(evt, x, y)
 {
 	var dump_event = false;
+	if (debug_canvas_drag) canvas_log('CSD');
 	
 	// Distinguish ctrl-click right-button meta event from actual right-button on mouse (or touchpad two-finger tap).
 	// Must ignore true_right_click case even though contextmenu event is being handled elsewhere.
@@ -2061,7 +2074,12 @@ function canvas_start_drag(evt, x, y)
 		//dump_event = true;
 		true_right_click = true;
 		canvas_ignore_mouse_event = true;
+		if (debug_canvas_drag) console.log('CSD-Rclick IME=set-true');
+		if (debug_canvas_drag) canvas_log('ordinary-RCM');
 		right_click_menu(x, y);
+      owrx.right_click_menu_active = true;
+		canvas_ignore_mouse_event = false;
+		if (debug_canvas_drag) console.log('CSD-Rclick IME=set-false');
 		return;
 	}
 	
@@ -2069,12 +2087,14 @@ function canvas_start_drag(evt, x, y)
 
 	if (evt.shiftKey && evt.target.id == 'id-dx-container') {
 		canvas_ignore_mouse_event = true;
+		if (debug_canvas_drag) console.log('CSD-DX IME=set-true');
 		dx_show_edit_panel(evt, -1);
 	} else
 
 	// select waterfall on nearest appropriate boundary (1, 5 or 9/10 kHz depending on band)
 	if (evt.shiftKey && !(evt.ctrlKey || evt.altKey)) {
 		canvas_ignore_mouse_event = true;
+		if (debug_canvas_drag) console.log('CSD-Wboundary IME=set-true');
 		var step_Hz = 1000;
 		var fold = canvas_get_dspfreq(x);
 		var b = find_band(fold);
@@ -2106,29 +2126,33 @@ function canvas_start_drag(evt, x, y)
 	// lookup mouse pointer frequency in online resource appropriate to the frequency band
 	if (evt.shiftKey && (evt.ctrlKey || evt.altKey)) {
 		canvas_ignore_mouse_event = true;
+		if (debug_canvas_drag) console.log('CSD-lookup IME=set-true');
 		freq_database_lookup(canvas_get_dspfreq(x), evt.altKey);
 	} else
 	
 	// page scrolling via ctrl & alt-key click
 	if (evt.ctrlKey) {
 		canvas_ignore_mouse_event = true;
+		if (debug_canvas_drag) console.log('CSD-pageScroll1 IME=set-true');
 		page_scroll(-page_scroll_amount);
 	} else
 	
 	if (evt.altKey) {
 		canvas_ignore_mouse_event = true;
+		if (debug_canvas_drag) console.log('CSD-pageScroll2 IME=set-true');
 		page_scroll(page_scroll_amount);
 	}
 	
+	owrx.drag_count = 0;
 	canvas_mouse_down = true;
 	canvas_dragging = false;
-	canvas_drag_last_x = canvas_drag_start_x = x;
-	canvas_drag_last_y = canvas_drag_start_y = y;
+	owrx.canvas_drag_last_x = owrx.canvas_drag_start_x = x;
+	owrx.canvas_drag_last_y = owrx.canvas_drag_start_y = y;
 }
 
 function canvas_mousedown(evt)
 {
-	if (debug_canvas_drag) console.log("C-MD");
+	if (debug_canvas_drag) canvas_log('$C-MD RCMA'+ (owrx.right_click_menu_active? 1:0));
    //event_dump(evt, "C-MD");
 	canvas_start_drag(evt, evt.pageX, evt.pageY);
 	evt.preventDefault();	// don't show text selection mouse pointer
@@ -2136,8 +2160,14 @@ function canvas_mousedown(evt)
 
 function canvas_touchStart(evt)
 {
-   if (evt.targetTouches.length == 1) {
-		canvas_start_drag(evt, evt.targetTouches[0].pageX, evt.targetTouches[0].pageY);
+   var touches = evt.targetTouches.length;
+   var x = Math.round(evt.targetTouches[0].pageX);
+   var y = Math.round(evt.targetTouches[0].pageY);
+	if (debug_canvas_drag) canvas_log("$C-TS"+ touches +'-x'+ x +'-y'+ y);
+   owrx.double_touch_start = false;
+   
+   if (touches == 1) {
+		canvas_start_drag(evt, x, y);
    /*
 		owrx.touch_pending_start_drag = true;
 		owrx.touch_pending_evt = evt;
@@ -2149,38 +2179,26 @@ function canvas_touchStart(evt)
             if ((new Date()).getTime() - owrx.touch_hold_start > 750) {
                owrx.touch_hold_pressed = owrx.touch_pending_start_drag = false;
                kiwi_clearInterval(owrx.touch_hold_interval);
-               alert(evt.targetTouches[0].pageX +' '+ evt.targetTouches[0].pageY +' '+ evt.target.id);
-               canvas_start_drag(touch_pending_evt, evt.targetTouches[0].pageX, evt.targetTouches[0].pageY);
+               alert(x +' '+ y +' '+ evt.target.id);
+               canvas_start_drag(touch_pending_evt, x, y);
             }
          }, 200);
 	*/
+	} else
+	
+	if (touches == 2) {
+		canvas_start_drag(evt, x, y);
+	   //alert('canvas_touchStart='+ evt.targetTouches.length);
+		canvas_ignore_mouse_event = true;
+		if (debug_canvas_drag) console.log('CTS-doubleTouch IME=set-true');
+		owrx.touches_first_startx = x;
+      owrx.pinch_distance_first =
+         Math.round(Math.hypot(evt.touches[0].pageX - evt.touches[1].pageX, evt.touches[0].pageY - evt.touches[1].pageY));
+      owrx.pinch_distance_last = owrx.pinch_distance_first;
+		owrx.double_touch_start = true;
 	}
 	
 	evt.preventDefault();	// don't show text selection mouse pointer
-}
-
-function spectrum_tooltip_update(evt, clientX, clientY)
-{
-	var target = (evt.target == spectrum_dB || evt.currentTarget == spectrum_dB || evt.target == spectrum_dB_ttip || evt.currentTarget == spectrum_dB_ttip);
-	//console.log('CD '+ target +' x='+ clientX +' tgt='+ evt.target.id +' ctg='+ evt.currentTarget.id);
-	//if (kiwi_isMobile()) alert('CD '+ tf +' x='+ clientX +' tgt='+ evt.target.id +' ctg='+ evt.currentTarget.id);
-
-	if (target) {
-		//event_dump(evt, 'SPEC');
-		
-		// This is a little tricky. The tooltip text span must be included as an event target so its position will update when the mouse
-		// is moved upward over it. But doing so means when the cursor goes below the bottom of the tooltip container, the entire
-		// spectrum div in this case, having included the tooltip text span will cause it to be re-positioned again. And the hover
-		// doesn't go away unless the mouse is moved quickly. So to stop this we need to manually detect when the mouse is out of the
-		// tooltip container and stop updating the tooltip text position so the hover will end.
-		
-		if (clientY >= 0 && clientY < height_spectrum_canvas) {
-			spectrum_dB_ttip.style.left = px(clientX);
-			spectrum_dB_ttip.style.bottom = px(200 + 10 - clientY);
-			var dB = (((height_spectrum_canvas - clientY) / height_spectrum_canvas) * full_scale) + mindb;
-			spectrum_dB_ttip.innerHTML = dB.toFixed(0) +' dBm';
-		}
-	}
 }
 
 function canvas_drag(evt, x, y, clientX, clientY)
@@ -2190,22 +2208,40 @@ function canvas_drag(evt, x, y, clientX, clientY)
 	var relativeX = x;
 	var relativeY = y;
 	spectrum_tooltip_update(evt, clientX, clientY);
+	owrx.drag_count++;
 
-   if (debug_canvas_drag) console.log('CMD='+ canvas_mouse_down +' IME='+ canvas_ignore_mouse_event +' DG='+ canvas_dragging);
-	if (canvas_mouse_down && !canvas_ignore_mouse_event) {
-		if (!canvas_dragging && Math.abs(x - canvas_drag_start_x) > canvas_drag_min_delta) {
+   if (debug_canvas_drag)
+      canvas_log('CD#'+ owrx.drag_count +' x'+ x +' y'+ y +' CMD'+ (canvas_mouse_down? 1:0) +' IME'+ (canvas_ignore_mouse_event? 1:0) +' DG'+ (canvas_dragging? 1:0));
+
+   // drag_count > 10 was required on Lenovo TB-7104F / Android 8.1.0 to differentiate double-touch from true drag.
+   // I.e. an excessive number of touch events seem to be sent by browser for a single double-touch.
+	if (canvas_mouse_down && (!canvas_ignore_mouse_event || owrx.double_touch_start)) {
+		if (!canvas_dragging && owrx.drag_count > 10 && Math.abs(x - owrx.canvas_drag_start_x) > canvas_drag_min_delta) {
 			canvas_dragging = true;
 			canvas_container.style.cursor = "move";
 		}
 		if (canvas_dragging) {
-			var deltaX = canvas_drag_last_x - x;
-			var deltaY = canvas_drag_last_y - y;
+			var deltaX = owrx.canvas_drag_last_x - x;
+			var deltaY = owrx.canvas_drag_last_y - y;
 
-			var dbins = norm_to_bins(deltaX / waterfall_width);
-			waterfall_pan_canvases(dbins);
+         if (owrx.double_touch_start) {
+            var dist = Math.round(Math.hypot(owrx.canvas_drag_last_x - x, owrx.canvas_drag_last_y - y));
+            var delta = Math.abs(dist - owrx.pinch_distance_last);
+            if (debug_canvas_drag) canvas_log(dist.toFixed(0) +' '+ delta.toFixed(0));
+            if (delta > 25) {
+               if (debug_canvas_drag) canvas_log('*');
+               var pinch_in = (dist <= owrx.pinch_distance_last);
+               zoom_step(pinch_in? ext_zoom.OUT : ext_zoom.IN);
+               if (debug_canvas_drag) canvas_log(pinch_in? 'IN' : 'OUT');
+               owrx.pinch_distance_last = dist;
+            }
+         } else {
+            var dbins = norm_to_bins(deltaX / waterfall_width);
+            waterfall_pan_canvases(dbins);
+         }
 
-			canvas_drag_last_x = x;
-			canvas_drag_last_y = y;
+			owrx.canvas_drag_last_x = x;
+			owrx.canvas_drag_last_y = y;
 		}
 	} else {
 		w3_innerHTML('id-mouse-unit', format_frequency("{x}", canvas_get_dspfreq(relativeX) + cfg.freq_offset*1e3, 1e3, 2));
@@ -2222,9 +2258,14 @@ function canvas_mousemove(evt)
 
 function canvas_touchMove(evt)
 {
+	if (evt.touches.length >= 1) {
+	   owrx.touches_first_lastx = evt.touches[0].pageX;
+	}
+	
 	for (var i=0; i < evt.touches.length; i++) {
-		var x = evt.touches[i].pageX;
-		var y = evt.touches[i].pageY;
+		var x = Math.round(evt.touches[i].pageX);
+		var y = Math.round(evt.touches[i].pageY);
+	   //if (debug_canvas_drag) canvas_log('C-TM-x'+ x +'-y'+ y);
 
    /*
       // any movement cancels touch hold
@@ -2246,10 +2287,11 @@ function canvas_touchMove(evt)
 
 function canvas_end_drag2()
 {
-	if (debug_canvas_drag) { console.log("C-ED2"); }
+	if (debug_canvas_drag) canvas_log("C-ED2");
 	canvas_container.style.cursor = "crosshair";
 	canvas_mouse_down = false;
 	canvas_ignore_mouse_event = false;
+	if (debug_canvas_drag) { console.log("C-ED2 IME=set-false"); }
 }
 
 // When mouseup occurs outside our original canvas canvas_mouseup() doesn't occur terminating the drag.
@@ -2257,11 +2299,14 @@ function canvas_end_drag2()
 function canvas_container_mouseout(evt)
 {
 	if (debug_canvas_drag) event_dump(evt, "canvas_container_mouseout", 1);
+	if (debug_canvas_drag) canvas_log("C-MOUT");
 	canvas_end_drag2();
 }
 
 function canvas_end_drag(evt, x)
 {
+	if (debug_canvas_drag) canvas_log('C-ED IME'+ (canvas_ignore_mouse_event? 1:0) +' CD'+ (canvas_dragging? 1:0));
+
 	if (!waterfall_setup_done) return;
 	//console.log("MUP "+this.id+" ign="+canvas_ignore_mouse_event);
 	var relativeX = x;
@@ -2274,16 +2319,41 @@ function canvas_end_drag(evt, x)
 			//event_dump(evt, "MUP");
 			
 			// don't set freq if mouseup without mousedown due to move into canvas from elsewhere
-			if (canvas_mouse_down)
-			   demodulator_set_offset_frequency(0, canvas_get_carfreq_offset(relativeX, true));		
+			if (debug_canvas_drag) canvas_log('CMD'+ (canvas_mouse_down? 1:0) +' RCMA'+ (owrx.right_click_menu_active? 1:0) +' TL'+ owrx.tuning_locked);
+			if (canvas_mouse_down) {
+			
+			   // mobile mode (touch screen): hack to close menu when touch outside of menu area.
+			   // Desktop does this instead by intercepting mousedown and keyboard escape events.
+			   // Intercepting touchstart didn't work hence this hack.
+			   if (owrx.right_click_menu_active) {
+			      w3int_menu_onclick(null, 'id-right-click-menu');
+			      owrx.right_click_menu_active = false;
+			   } else {
+               if (owrx.tuning_locked) {
+                  var el = w3_el('id-tuning-lock-container');
+                  el.style.opacity = 0.8;
+                  w3_show(el);
+                  var el2 = w3_el('id-tuning-lock');
+                  el2.style.marginTop = px(w3_center_in_window(el2, 'TL'));
+                  setTimeout(function() {
+                     el.style.opacity = 0;      // CSS is setup so opacity fades
+                     setTimeout(function() { w3_hide(el); }, 500);
+                  }, 300);
+               } else {
+                  // single-click in canvas area
+                  if (debug_canvas_drag) canvas_log('*click*');
+                  demodulator_set_offset_frequency(0, canvas_get_carfreq_offset(relativeX, true));
+               }
+            }
+			}
 		} else {
 			canvas_end_drag2();
 		}
 	}
 	
-	if (debug_canvas_drag) { console.log("C-ED"); }
 	canvas_mouse_down = false;
 	canvas_ignore_mouse_event = false;
+	if (debug_canvas_drag) console.log('C-ED IME=set-false');
 }
 
 function canvas_mouseup(evt)
@@ -2295,12 +2365,36 @@ function canvas_mouseup(evt)
 
 function canvas_touchEnd(evt)
 {
-	canvas_end_drag(evt, canvas_drag_last_x);
+	var x = owrx.canvas_drag_last_x, y = owrx.canvas_drag_last_y;
+	if (debug_canvas_drag) canvas_log('C-TE-x'+ x +'-DTS'+ (owrx.double_touch_start? 1:0) +'-DRAG'+ (canvas_dragging? 1:0));
+	canvas_end_drag(evt, x);
 /*
    owrx.touch_hold_pressed = false;
    kiwi_clearInterval(owrx.touch_hold_interval);
 */
-	spectrum_tooltip_update(evt, canvas_drag_last_x, canvas_drag_last_y);
+	spectrum_tooltip_update(evt, x, y);
+	
+	if (owrx.double_touch_start) {
+	   if (debug_canvas_drag) canvas_log('dr'+ canvas_dragging);
+
+	   if (!canvas_dragging) {
+         // ensure menu on narrow screen devices is visible to prevent off-screen placement
+         if (kiwi_isMobile() && owrx.mobile && owrx.mobile.small)
+            x = 10;
+   
+         if (debug_canvas_drag) canvas_log('*');
+         right_click_menu(x, y);
+         owrx.right_click_menu_active = true;
+      } else {
+         //var pinch_in = (owrx.pinch_distance_first >= owrx.pinch_distance_last)? 1:0;
+         //if (debug_canvas_drag) canvas_log('pinch-'+ owrx.pinch_distance_first +'-'+ owrx.pinch_distance_last + (pinch_in? '-IN' : '-OUT'));
+      }
+      
+      canvas_ignore_mouse_event = false;
+      if (debug_canvas_drag) console.log('CTE-doubleTouch IME=set-false');
+		owrx.double_touch_start = false;
+	}
+	
 	evt.preventDefault();
 }
 
@@ -2337,7 +2431,28 @@ function canvas_mousewheel_cb(evt)
 function right_click_menu_init()
 {
    w3_menu('id-right-click-menu', 'right_click_menu_cb');
+
+   // for tuning lock
+   var s =
+      w3_div('id-tuning-lock-container class-overlay-container w3-hide',
+         w3_div('id-tuning-lock', w3_icon('', 'fa-lock', 192) + '<br>Tuning locked')
+      );
+   w3_appendElement('id-main-container', 'div', s);
+   el = w3_el('id-tuning-lock');
 }
+
+var right_click_menu_content = [
+   'database lookup',
+   'Utility database lookup',
+   'DX Cluster lookup',
+   '<hr>',
+   '🔒 lock tuning',
+   'restore passband',
+   'save waterfall as JPG',
+   'DX label filter',
+   '<hr>',
+   '<i>cal ADC clock (admin)</i>'
+];
 
 function right_click_menu(x, y)
 {
@@ -2353,18 +2468,8 @@ function right_click_menu(x, y)
    else
       db = 'SWBC';
 
-   w3_menu_items('id-right-click-menu',
-      db +' database lookup',
-      'Utility database lookup',
-      'DX Cluster lookup',
-      '<hr>',
-      'restore passband',
-      'save waterfall as JPG',
-      'DX label filter',
-      '<hr>',
-      '<i>cal ADC clock (admin)</i>'
-   );
-
+   right_click_menu_content[0] = db + ' database lookup';
+   w3_menu_items('id-right-click-menu', right_click_menu_content);
    w3_menu_popup('id-right-click-menu', x, y);
 }
 
@@ -2380,20 +2485,25 @@ function right_click_menu_cb(idx, x)
 		freq_database_lookup(canvas_get_dspfreq(x), idx);
       break;
    
-   case 3:  // restore passband
+   case 3:  // tuning lock
+      owrx.tuning_locked ^= 1;
+      right_click_menu_content[4] = (owrx.tuning_locked? '🔓 unlock' : '🔒 lock') +' tuning';
+      break;
+      
+   case 4:  // restore passband
       restore_passband(cur_mode);
       demodulator_analog_replace(cur_mode);
       break;
       
-   case 4:  // save waterfall image
+   case 5:  // save waterfall image
       export_waterfall(canvas_get_dspfreq(x));
       break;
    
-   case 5:
+   case 6:
       dx_filter();
       break;
    
-   case 6:  // cal ADC clock
+   case 7:  // cal ADC clock
       admin_pwd_query(function() {
          var r1k_kHz = Math.round(freq_displayed_Hz / 1e3);     // 1kHz windows on 1 kHz boundaries
          var r1k_Hz = r1k_kHz * 1e3;
@@ -2411,6 +2521,8 @@ function right_click_menu_cb(idx, x)
    default:
       break;
    }
+
+   owrx.right_click_menu_active = false;
 }
 
 function freq_database_lookup(Hz, utility)
@@ -3066,7 +3178,7 @@ function mobile_init()
 	// which should catch all iPhones but no iPads (iPhone X width = 414px).
 	// Also scale control panel for small-screen tablets, e.g. 7" tablets with 600px portrait width.
 
-	var mobile = ext_mobile_info();
+	var mobile = owrx.mobile = ext_mobile_info();
    //console.log('$ wh='+ mobile.width +','+ mobile.height);
 	
 	// anything smaller than iPad: remove top bar and switch control panel to "off".
@@ -3089,15 +3201,12 @@ function mobile_init()
    owrx.rescale_cnt = owrx.rescale_cnt2 = 0;
 
 	setInterval(function() {
-      mobile = ext_mobile_info(owrx.last_mobile);
+      mobile = owrx.mobile = ext_mobile_info(owrx.last_mobile);
       owrx.last_mobile = mobile;
 
       //extint_news('Cwh='+ mobile.width +','+ mobile.height +' '+ mobile.orient_unchanged +
       //   '<br>r='+ owrx.rescale_cnt  +','+ owrx.rescale_cnt2 +' #'+ owrx.dseq);
       //owrx.dseq++;
-
-      if (mobile.orient_unchanged) return;
-      owrx.rescale_cnt++;
 
       var el = w3_el('id-control');
 
@@ -3107,6 +3216,9 @@ function mobile_init()
          owrx.dseq++;
       }
    
+      if (mobile.orient_unchanged) return;
+      owrx.rescale_cnt++;
+
       if (mobile.narrow) {
          // scale control panel up or down to fit width of all narrow screens
          var scale = mobile.width / el.uiWidth * 0.95;
@@ -3251,6 +3363,30 @@ function spectrum_dB_bands()
 		i++;
 	}
 	redraw_spectrum_dB_scale = true;
+}
+
+function spectrum_tooltip_update(evt, clientX, clientY)
+{
+	var target = (evt.target == spectrum_dB || evt.currentTarget == spectrum_dB || evt.target == spectrum_dB_ttip || evt.currentTarget == spectrum_dB_ttip);
+	//console.log('CD '+ target +' x='+ clientX +' tgt='+ evt.target.id +' ctg='+ evt.currentTarget.id);
+	//if (kiwi_isMobile()) alert('CD '+ tf +' x='+ clientX +' tgt='+ evt.target.id +' ctg='+ evt.currentTarget.id);
+
+	if (target) {
+		//event_dump(evt, 'SPEC');
+		
+		// This is a little tricky. The tooltip text span must be included as an event target so its position will update when the mouse
+		// is moved upward over it. But doing so means when the cursor goes below the bottom of the tooltip container, the entire
+		// spectrum div in this case, having included the tooltip text span will cause it to be re-positioned again. And the hover
+		// doesn't go away unless the mouse is moved quickly. So to stop this we need to manually detect when the mouse is out of the
+		// tooltip container and stop updating the tooltip text position so the hover will end.
+		
+		if (clientY >= 0 && clientY < height_spectrum_canvas) {
+			spectrum_dB_ttip.style.left = px(clientX);
+			spectrum_dB_ttip.style.bottom = px(200 + 10 - clientY);
+			var dB = (((height_spectrum_canvas - clientY) / height_spectrum_canvas) * full_scale) + mindb;
+			spectrum_dB_ttip.innerHTML = dB.toFixed(0) +' dBm';
+		}
+	}
 }
 
 var waterfall_dont_scale=0;
@@ -6338,7 +6474,7 @@ function test_audio_suspended()
    //console.log('AudioContext.state='+ ac_play_button.state);
    if (ac_play_button.state != "running") {
       var s =
-         w3_div('id-play-button-container||onclick="play_button()"',
+         w3_div('id-play-button-container class-overlay-container||onclick="play_button()"',
             w3_div('id-play-button',
                '<img src="gfx/openwebrx-play-button.png" width="150" height="150" /><br><br>' +
                (kiwi_isMobile()? 'Tap to':'Click to') +' start OpenWebRX'

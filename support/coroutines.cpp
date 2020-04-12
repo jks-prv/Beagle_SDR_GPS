@@ -235,9 +235,9 @@ static char *_task_s(TASK *tp, char *bp)
 {
     assert(tp);
     if (tp->lock.wait != NULL || tp->lock.hold != NULL)
-        snprintf(bp, NTASK_BUF, "%s:P%d:T%02d|K%d", tp->name? tp->name:"?", tp->priority, tp->id, tp->lock.token);
+        snprintf(bp, NTASK_BUF, "%s:P%d:T%03d|K%d", tp->name? tp->name:"?", tp->priority, tp->id, tp->lock.token);
     else
-        snprintf(bp, NTASK_BUF, "%s:P%d:T%02d", tp->name? tp->name:"?", tp->priority, tp->id);
+        snprintf(bp, NTASK_BUF, "%s:P%d:T%03d", tp->name? tp->name:"?", tp->priority, tp->id);
     return bp;
 }
 
@@ -253,9 +253,9 @@ char *Task_s(int id)
 static char *_task_ls(TASK *tp, char *bp)
 {
     if (tp->lock.wait != NULL || tp->lock.hold != NULL)
-        snprintf(bp, NTASK_BUF, "%s:P%d:T%02d(%s)|K%d", tp->name? tp->name:"?", tp->priority, tp->id, tp->where? tp->where : "-", tp->lock.token);
+        snprintf(bp, NTASK_BUF, "%s:P%d:T%03d(%s)|K%d", tp->name? tp->name:"?", tp->priority, tp->id, tp->where? tp->where : "-", tp->lock.token);
     else
-        snprintf(bp, NTASK_BUF, "%s:P%d:T%02d(%s)", tp->name? tp->name:"?", tp->priority, tp->id, tp->where? tp->where : "-");
+        snprintf(bp, NTASK_BUF, "%s:P%d:T%03d(%s)", tp->name? tp->name:"?", tp->priority, tp->id, tp->where? tp->where : "-");
     return bp;
 }
 
@@ -392,11 +392,11 @@ void TaskDump(u4_t flags)
 	lfprintf(printf_type, "TASKS: used %d/%d, spi_retry %d, spi_delay %d\n", tused, MAX_TASKS, spi.retry, spi_delay);
 
 	if (flags & TDUMP_LOG)
-	//lfprintf(printf_type, "Ttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxxu xxx%%t cN\n");
-	  lfprintf(printf_type, "    I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2      deadline stk%%  ch task______ where___________________\n");
+	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxxu xxx%%t cN\n");
+	  lfprintf(printf_type, "     I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2      deadline stk%%  ch task______ where___________________\n");
 	else
-	//lfprintf(printf_type, "Ttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxxu xxx%%t cN\n");
-	  lfprintf(printf_type, "    I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry  deadline stk%%  ch task______ where___________________ longest ________________\n");
+	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxxu xxx%%t cN\n");
+	  lfprintf(printf_type, "     I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry  deadline stk%%  ch task______ where___________________ longest ________________\n");
 
 	for (i=0; i <= max_task; i++) {
 		t = Tasks + i;
@@ -425,7 +425,7 @@ void TaskDump(u4_t flags)
 		int rx_channel = (t->flags & CTF_RX_CHANNEL)? (t->flags & CTF_CHANNEL) : -1;
 
 		if (flags & TDUMP_LOG)
-		lfprintf(printf_type, "%c%02d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f%c %3d%%%c %s%d %-10s %-24s\n",
+		lfprintf(printf_type, "%c%03d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f%c %3d%%%c %s%d %-10s %-24s\n",
 		    (t == ct)? '*':'T', i, (t->flags & CTF_PRIO_INVERSION)? 'I':'P', t->priority, t->lock_marker,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock.wait? 'L':'_', t->lock.hold? 'H':'_', t->minrun? 'q':'_',
@@ -437,7 +437,7 @@ void TaskDump(u4_t flags)
 			t->name, t->where? t->where : "-"
 		);
 		else
-		lfprintf(printf_type, "%c%02d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f%c %3d%%%c %s%d %-10s %-24s %-24s\n",
+		lfprintf(printf_type, "%c%03d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f%c %3d%%%c %s%d %-10s %-24s %-24s\n",
 		    (t == ct)? '*':'T', i, (t->flags & CTF_PRIO_INVERSION)? 'I':'P', t->priority, t->lock_marker,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock.wait? 'L':'_', t->lock.hold? 'H':'_', t->minrun? 'q':'_',
@@ -481,13 +481,13 @@ void TaskDump(u4_t flags)
 	}
 	f_sum += f_idle;
 	float f_pct = f_idle/f_elapsed*100;
-	//lfprintf(printf_type, "Ttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%%
-	  lfprintf(printf_type, "idle             %7.3f           %5.1f%%\n", f_idle, f_pct);
+	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%%
+	  lfprintf(printf_type, "idle              %7.3f           %5.1f%%\n", f_idle, f_pct);
 	float f_remain = fabsf(f_elapsed - f_sum);
 	f_pct = f_remain/f_elapsed*100;
 	//if (f_remain > 0.01)
-	//lfprintf(printf_type, "Ttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%%
-	  lfprintf(printf_type, "Linux            %7.3f           %5.1f%%\n", f_remain, f_pct);
+	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%%
+	  lfprintf(printf_type, "Linux             %7.3f           %5.1f%%\n", f_remain, f_pct);
 
     const char *hist_name[N_HIST] = { "<1", "1", "2", "4", "8", "16", "32", "64", "128", "256", "512", ">=1k" };
     
@@ -506,7 +506,7 @@ void TaskDump(u4_t flags)
 		if (!t->valid)
 			continue;
 		if (flags & TDUMP_HIST) {
-		    lfprintf(printf_type, "T%02d   ", i);
+		    lfprintf(printf_type, "T%03d  ", i);
 		    for (j = 0; j < N_HIST; j++) {
 		        if (t->hist[j])
 		            lfprintf(printf_type, "%d|%sm ", t->hist[j], hist_name[j]);
@@ -630,7 +630,7 @@ static void task_stack(int id)
 	int i;
 	for (s = c->stack, i=0; s < c->stack_last; s++, i++) {
 		*s = magic | ((u64_t) s & 0xffffffff);
-		//if (i == (t->ctx->stack_size_u64 - 1)) printf("T%02d W %08x|%08x\n", c->id, PRINTF_U64_ARG(*s));
+		//if (i == (t->ctx->stack_size_u64 - 1)) printf("T%03d W %08x|%08x\n", c->id, PRINTF_U64_ARG(*s));
 	}
 }
 
@@ -803,16 +803,8 @@ void TaskInit()
 	task_package_init = TRUE;
 }
 
-// init requiring cfg to be setup
-bool test_deadline_update;
-
 void TaskInitCfg()
 {
-    bool err;
-    test_deadline_update = cfg_bool("test_deadline_update", &err, CFG_OPTIONAL);
-    printf("test_deadline_update=%d err=%d\n", test_deadline_update, err);
-    if (err) test_deadline_update = false;
-
 	#define TASK_INTR_USEC_EARLY 1000
 	task_snd_intr_usec = snd_intr_usec - TASK_INTR_USEC_EARLY;
 }
@@ -1079,35 +1071,6 @@ bool TaskIsChild()
     do {
         now_us = timer_us64();
 
-        if (test_deadline_update == false) {
-            // update scheduling deadlines
-            TASK *tp = Tasks;
-            for (i=0; i <= max_task; i++, tp++) {
-                if (!tp->valid) continue;
-                bool wake = false;
-                
-                if (tp->deadline > 0) {
-                    if (tp->deadline < now_us) {
-                        evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("deadline expired %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
-                        tp->deadline = 0;
-                        wake = true;
-                    }
-                } else
-                if (tp->wakeup_test != NULL) {
-                    if (*tp->wakeup_test != 0) {
-                        evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("wakeup_test completed %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
-                        tp->wakeup_test = NULL;
-                        wake = true;
-                    }
-                }
-                
-                if (wake) {
-                    RUNNABLE_YES(tp);
-                    tp->wake_param = TO_VOID_PARAM(tp->last_run_time);      // return how long task ran last time
-                }
-            }
-        }
-
 		TaskPollForInterrupt(CALLED_WITHIN_NEXTTASK);
 		
 		// check for lock deadlock, but only on main Linux process
@@ -1165,28 +1128,26 @@ bool TaskIsChild()
 				        if (lock_panic) lprintf("P%d: %s %s\n", p, task_s(tp), tp->stopped? "STOP":"RUN");
                     #endif
 					
-                    if (test_deadline_update == true) {
-                        bool wake = false;
-                        
-                        if (tp->deadline > 0) {
-                            if (tp->deadline < now_us) {
-                                evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("deadline expired %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
-                                tp->deadline = 0;
-                                wake = true;
-                            }
-                        } else
-                        if (tp->wakeup_test != NULL) {
-                            if (*tp->wakeup_test != 0) {
-                                evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("wakeup_test completed %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
-                                tp->wakeup_test = NULL;
-                                wake = true;
-                            }
+                    bool wake = false;
+                    
+                    if (tp->deadline > 0) {
+                        if (tp->deadline < now_us) {
+                            evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("deadline expired %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
+                            tp->deadline = 0;
+                            wake = true;
                         }
-                        
-                        if (wake) {
-                            RUNNABLE_YES(tp);
-                            tp->wake_param = TO_VOID_PARAM(tp->last_run_time);      // return how long task ran last time
+                    } else
+                    if (tp->wakeup_test != NULL) {
+                        if (*tp->wakeup_test != 0) {
+                            evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("wakeup_test completed %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
+                            tp->wakeup_test = NULL;
+                            wake = true;
                         }
+                    }
+                    
+                    if (wake) {
+                        RUNNABLE_YES(tp);
+                        tp->wake_param = TO_VOID_PARAM(tp->last_run_time);      // return how long task ran last time
                     }
                     
 					if (!tp->stopped)
@@ -1870,7 +1831,7 @@ void lock_enter(lock_t *lock)
 		    if (ow->flags & CTF_PRIO_INVERSION) {
 		        previous_prio_inversion++;      // someone else got there first, so leave the situation as is
 		        //lprintf("### LOCK_PRIORITY_INVERSION: lock %s ct %s\n", lock->name, task_ls(ct));
-		        //lprintf("### LOCK_PRIORITY_INVERSION: CTF_PRIO_INVERSION (saved=P%02d) already set in owner %s\n", ow->saved_priority, task_ls(ow));
+		        //lprintf("### LOCK_PRIORITY_INVERSION: CTF_PRIO_INVERSION (saved=P%03d) already set in owner %s\n", ow->saved_priority, task_ls(ow));
 		    } else {
                 // priority inversion: temp raise priority of lock owner to our priority so it releases the lock faster
                 ow->saved_priority = ow->priority;

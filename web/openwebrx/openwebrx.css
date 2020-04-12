@@ -616,7 +616,7 @@ html, body
 	/*border: 1px solid lime;	/* debug */
 }
 
-.id-play-button-container
+.class-overlay-container
 {
 	position: fixed;
 	width: 100%;

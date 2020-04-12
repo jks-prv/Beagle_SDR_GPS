@@ -58,7 +58,7 @@ static void evdump(evdump_e type, int lo, int hi)
             if (e->cmd == EC_TASK_SCHED || e->cmd == EC_TASK_IDLE) {
                 lfprintf(printf_type, "%10.3f %7.3f ", e->tepoch/1e3, e->ttask/1e3);
                 if (e->cmd == EC_TASK_SCHED)
-                    lfprintf(printf_type, "%16s:P%d:T%02d ", e->task, e->tprio, e->tid);
+                    lfprintf(printf_type, "%16s:P%d:T%03d ", e->task, e->tprio, e->tid);
                 else
                     lfprintf(printf_type, "%23s ", "idle");
                 lfprintf(printf_type, "%s\n",
@@ -74,7 +74,7 @@ static void evdump(evdump_e type, int lo, int hi)
 
 		#if 0
 		    // all info
-            lfprintf(printf_type, "%4d %5s %8s %7.3f %10.6f %7.3f %7.3f %7.3f %16s:P%d:T%02d %-10s | %s\n", i, evcmd[e->cmd], evn[e->event],
+            lfprintf(printf_type, "%4d %5s %8s %7.3f %10.6f %7.3f %7.3f %7.3f %16s:P%d:T%03d %-10s | %s\n", i, evcmd[e->cmd], evn[e->event],
                 /*(float) e->tlast/1e3,*/ (float) e->tseq/1e3, (float) e->tepoch/1e6,
                 (float) e->trig1/1e3, (float) e->trig2/1e3, (float) e->trig3/1e3,
                 e->task, e->tprio, e->tid, e->s, e->s2);
@@ -118,7 +118,7 @@ static void evdump(evdump_e type, int lo, int hi)
                 if (e->state)
                     lfprintf(printf_type, "%19s ", ev_state_s[e->state]);
                 else
-                    lfprintf(printf_type, "%12s:P%d:T%02d ", e->task, e->tprio, e->tid);
+                    lfprintf(printf_type, "%12s:P%d:T%03d ", e->task, e->tprio, e->tid);
             #if 0
                 if (e->rx_chan != 255)
                     lfprintf(printf_type, "ch%d ", e->rx_chan);
