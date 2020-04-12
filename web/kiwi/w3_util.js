@@ -561,6 +561,16 @@ function w3_iterateDeep_children(el_id, func)
 	}
 }
 
+function w3_iterate_childNodes(el_id, func)
+{
+	var el = w3_el(el_id);
+	
+	for (var i=0; i < el.childNodes.length; i++) {    // el.childNodes is not an array
+		var child_el = el.childNodes[i];
+		func(child_el, i);
+	}
+}
+
 // bounding box measured from the origin of parent
 function w3_boundingBox_children(el_id, debug)
 {
