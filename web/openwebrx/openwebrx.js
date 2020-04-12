@@ -34,6 +34,8 @@ var owrx = {
    
    touch_hold_pressed: false,
    tuning_locked: 0,
+   
+   dx_click_gid_last: undefined,
 };
 
 // key freq concepts:
@@ -2449,6 +2451,7 @@ var right_click_menu_content = [
    '🔒 lock tuning',
    'restore passband',
    'save waterfall as JPG',
+   'edit last selected DX label',
    'DX label filter',
    '<hr>',
    '<i>cal ADC clock (admin)</i>'
@@ -2469,6 +2472,10 @@ function right_click_menu(x, y)
       db = 'SWBC';
 
    right_click_menu_content[0] = db + ' database lookup';
+   
+   // disable menu item if last label gid is not set
+   right_click_menu_content[7] = (owrx.dx_click_gid_last? '':'!') +'edit last selected DX label';
+
    w3_menu_items('id-right-click-menu', right_click_menu_content);
    w3_menu_popup('id-right-click-menu', x, y);
 }
@@ -2499,11 +2506,15 @@ function right_click_menu_cb(idx, x)
       export_waterfall(canvas_get_dspfreq(x));
       break;
    
-   case 6:
+   case 6:  // edit last selected dx label
+      dx_show_edit_panel(null, owrx.dx_click_gid_last);
+      break;
+   
+   case 7:  // open dx label filter
       dx_filter();
       break;
    
-   case 7:  // cal ADC clock
+   case 8:  // cal ADC clock
       admin_pwd_query(function() {
          var r1k_kHz = Math.round(freq_displayed_Hz / 1e3);     // 1kHz windows on 1 kHz boundaries
          var r1k_Hz = r1k_kHz * 1e3;
@@ -5762,6 +5773,7 @@ function dx_label_step(dir)
 {
    //console.log('dx_label_step f='+ freq_car_Hz +'/'+ freq_displayed_Hz +' m='+ cur_mode);
    var i, dl;
+
    if (dir == 1) {
       for (i = 0; i < dx.displayed.length; i++) {
          dl = dx.displayed[i];
@@ -5806,7 +5818,7 @@ var dx_keys;
 // note that an entry can be cloned by selecting it, but then using the "add" button instead of "modify"
 function dx_show_edit_panel(ev, gid)
 {
-	dx_keys = { shift:ev.shiftKey, alt:ev.altKey, ctrl:ev.ctrlKey, meta:ev.metaKey };
+	dx_keys = ev? { shift:ev.shiftKey, alt:ev.altKey, ctrl:ev.ctrlKey, meta:ev.metaKey } : { shift:0, alt:0, ctrl:0, meta:0 };
 	dxo.gid = gid;
 	
 	if (!dx_panel_customize) {
@@ -5898,12 +5910,12 @@ function dx_show_edit_panel2()
 	var s =
 		w3_div('w3-medium w3-text-aqua w3-bold', 'DX label edit') +
 		w3_divs('w3-text-aqua/w3-margin-T-8',
-         w3_inline('w3-hspace-16',
-				w3_input('w3-padding-small', 'Freq', 'dxo.f', dxo.f, 'dx_num_cb'),
+         w3_inline('w3-halign-space-between/',
+				w3_input('w3-padding-small||size=8', 'Freq', 'dxo.f', dxo.f, 'dx_num_cb'),
 				w3_select('', 'Mode', '', 'dxo.m', dxo.m, kiwi.modes_u, 'dx_sel_cb'),
-				w3_input('w3-padding-small', 'Passband', 'dxo.pb', dxo.pb, 'dx_passband_cb'),
+				w3_input('w3-padding-small||size=10', 'Passband', 'dxo.pb', dxo.pb, 'dx_passband_cb'),
 				w3_select('', 'Type', '', 'dxo.y', dxo.y, types, 'dx_sel_cb'),
-				w3_input('w3-padding-small', 'Offset', 'dxo.o', dxo.o, 'dx_num_cb')
+				w3_input('w3-padding-small||size=8', 'Offset', 'dxo.o', dxo.o, 'dx_num_cb')
 			),
 		
 			w3_input('w3-label-inline/w3-padding-small w3-retain-input-focus', 'Ident', 'dxo.i', '', 'dx_string_cb'),
@@ -5913,7 +5925,8 @@ function dx_show_edit_panel2()
 			w3_inline('w3-hspace-16',
 				w3_button('w3-yellow', 'Modify', 'dx_modify_cb'),
 				w3_button('w3-green', 'Add', 'dx_add_cb'),
-				w3_button('w3-red', 'Delete', 'dx_delete_cb')
+				w3_button('w3-red', 'Delete', 'dx_delete_cb'),
+				w3_text('', 'Create new label with Add button')
 			)
 		);
 	
@@ -5929,7 +5942,7 @@ function dx_show_edit_panel2()
 		//console.log('dxo.i='+ el.value);
 		w3_field_select(el, {mobile:1});
 	});
-	ext_set_controls_width_height(525, 260);
+	ext_set_controls_width_height(550, 260);
 }
 
 function dx_close_edit_panel(id)
@@ -5969,6 +5982,7 @@ function dx_add_cb(id, val)
 	wf_send('SET DX_UPD g=-1 f='+ dxo.f +' lo='+ dxo.lo.toFixed(0) +' hi='+ dxo.hi.toFixed(0) +' o='+ dxo.o.toFixed(0) +' m='+ mode +
 		' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x') +' p='+ encodeURIComponent(dxo.p +'x'));
 	setTimeout(function() {dx_close_edit_panel(id);}, 250);
+	owrx.dx_click_gid_last = undefined;    // because gid's may get renumbered
 }
 
 function dx_delete_cb(id, val)
@@ -5978,6 +5992,7 @@ function dx_delete_cb(id, val)
 	if (dxo.gid == -1) return;
 	wf_send('SET DX_UPD g='+ dxo.gid +' f=-1');
 	setTimeout(function() {dx_close_edit_panel(id);}, 250);
+	owrx.dx_click_gid_last = undefined;    // because gid's may get renumbered
 }
 
 function dx_click(ev, gid)
@@ -5986,6 +6001,7 @@ function dx_click(ev, gid)
 	if (ev.shiftKey) {
 		dx_show_edit_panel(ev, gid);
 	} else {
+	   owrx.dx_click_gid_last = gid;
 	   var freq = dx_list[gid].freq;
 		var mode = kiwi.modes_l[dx_list[gid].flags & DX_MODE];
 		var lo = dx_list[gid].lo;

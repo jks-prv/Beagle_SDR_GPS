@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.389  April 12, 2020
+    Added to popup menu: "edit last selected DX label". This means you can now edit DX labels
+    on mobile devices.
+
 v1.388  April 11, 2020
     Desktop UI improvements:
         Added "tuning lock" to right-click popup menu. When active a single-click in waterfall
