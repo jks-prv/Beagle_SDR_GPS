@@ -1531,7 +1531,7 @@ function gps_html()
 
 	   w3_div('w3-valign',
          w3_div('id-gps-loading-maps w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue|width:100%',
-            'loading maps...'
+            'loading map...'
          ),
          w3_div('id-gps-channels w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue|width:100%',
             w3_table('id-gps-ch w3-table-6-8 w3-striped')
