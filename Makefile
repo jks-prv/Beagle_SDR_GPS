@@ -88,6 +88,10 @@ endif
 all: c_ext_clang_conv
 	@make $(MAKE_ARGS) c_ext_clang_conv_all
 
+.PHONY: debug
+debug: c_ext_clang_conv
+	@make $(MAKE_ARGS) DEBUG=-DDEBUG c_ext_clang_conv_all
+
 
 ################################
 # build files/directories
@@ -112,8 +116,8 @@ else
 	OBJ_DIR_DEFAULT = $(OBJ_DIR_O3)
 endif
 
-PKGS = pkgs/mongoose
-PKGS_O3 = pkgs/jsmn pkgs/sha256 pkgs/TNT_JAMA
+PKGS = 
+PKGS_O3 = pkgs/mongoose pkgs/jsmn pkgs/sha256 pkgs/TNT_JAMA
 
 # Each (internal) extension can have an optional Makefile:
 # The extension can opt-out of being included via EXT_SKIP (e.g. BBAI only, not Debian 7 etc.)
@@ -523,14 +527,14 @@ $(EDATA_ALWAYS): $(EDATA_DEP) $(addprefix web/,$(FILES_ALWAYS_SORTED_NW))
 
 
 ################################
-# debug
+# vars
 ################################
-.PHONY: debug
-debug: c_ext_clang_conv
-	@make $(MAKE_ARGS) c_ext_clang_conv_debug
+.PHONY: vars
+vars: c_ext_clang_conv
+	@make $(MAKE_ARGS) c_ext_clang_conv_vars
 
-.PHONY: c_ext_clang_conv_debug
-c_ext_clang_conv_debug:
+.PHONY: c_ext_clang_conv_vars
+c_ext_clang_conv_vars:
 	@echo version $(VER)
 	@echo UNAME = $(UNAME)
 	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
@@ -673,36 +677,36 @@ POST_PROCESS_DEPS = \
 # special
 
 $(OBJ_DIR_DEFAULT)/web_devel.o: web/web.cpp config.h
-	$(CPP) $(V) $(VIS_UNOPT) @$(MF_INC) -DEDATA_DEVEL -c -o $@ $<
+	$(CPP) $(V) $(DEBUG) $(VIS_UNOPT) @$(MF_INC) -DEDATA_DEVEL -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_DEFAULT)/web_embed.o: web/web.cpp config.h
-	$(CPP) $(V) $(VIS_UNOPT) @$(MF_INC) -DEDATA_EMBED -c -o $@ $<
+	$(CPP) $(V) $(DEBUG) $(VIS_UNOPT) @$(MF_INC) -DEDATA_EMBED -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/edata_embed.o: $(EDATA_EMBED)
-	$(CPP) $(V) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(V) $(DEBUG) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR)/edata_always.o: $(EDATA_ALWAYS)
-	$(CPP) $(V) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(V) $(DEBUG) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/ext_init.o: $(GEN_DIR)/ext_init.cpp
-	$(CPP) $(V) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(V) $(DEBUG) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 
 # .c
 
 #$(OBJ_DIR)/%.o: %.c $(SRC_DEPS)
-#	$(CC) -x c $(V) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
-#	$(CC) $(V) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+#	$(CC) -x c $(V) $(DEBUG) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+#	$(CC) $(V) $(DEBUG) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 #	$(POST_PROCESS_DEPS)
 
 #$(OBJ_DIR_O3)/%.o: %.c $(SRC_DEPS)
-#	$(CC) $(V) $(VIS_OPT) @$(MF_INC) -c -o $@ $<
+#	$(CC) $(V) $(DEBUG) $(VIS_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 #	$(POST_PROCESS_DEPS)
 
@@ -710,12 +714,12 @@ $(OBJ_DIR)/ext_init.o: $(GEN_DIR)/ext_init.cpp
 # .cpp $(CFLAGS_UNSAFE_OPT)
 
 $(OBJ_DIR_O3)/search.o: search.cpp $(SRC_DEPS)
-	$(CPP) $(V) $(VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(V) $(DEBUG) $(VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/simd.o: simd.cpp $(SRC_DEPS)
-	$(CPP) $(V) $(VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(V) $(DEBUG) $(VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
@@ -723,17 +727,17 @@ $(OBJ_DIR_O3)/simd.o: simd.cpp $(SRC_DEPS)
 # .cpp
 
 $(OBJ_DIR)/%.o: %.cpp $(SRC_DEPS)
-	$(CPP) $(V) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(V) $(DEBUG) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR)/%.o: %.cpp $(SRC_DEPS)
-	$(CPP) $(V) $(VIS_OPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(V) $(DEBUG) $(VIS_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/%.o: %.cpp $(SRC_DEPS)
-	$(CPP) $(V) $(VIS_OPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(V) $(DEBUG) $(VIS_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 

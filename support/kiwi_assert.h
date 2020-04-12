@@ -94,6 +94,16 @@
 		#define assert(e)
 	#endif
 	
+    #define assert_msg(msg, e)
+    #define assert_eq(v1, v2)
+    #define assert_ne(v1, v2)
+    #define assert_gt(v1, v2)
+    #define assert_ge(v1, v2)
+    #define assert_lt(v1, v2)
+    #define assert_le(v1, v2)
+    #define assert_eq(v1, v2)
+    #define assert_array_dim(ai, dim)
+	#define assert_dump(e)
 	#define assert_exit(e)
 #endif
 

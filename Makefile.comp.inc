@@ -24,7 +24,7 @@ VIS_UNOPT =
 
 BUILD_OBJ = $(BUILD_DIR)/kiwi.bin
 
-CFLAGS += -g -pipe -MMD -DDEBUG
+CFLAGS += -g -pipe -MMD
 
 #CFLAGS_UNSAFE_OPT = -fcx-limited-range -funsafe-math-optimizations
 CFLAGS_UNSAFE_OPT = -funsafe-math-optimizations

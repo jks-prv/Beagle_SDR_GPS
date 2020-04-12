@@ -987,7 +987,7 @@ bool TaskIsChild()
     if (param == NT_FAST_CHECK) {
         u4_t diff = (u4_t) (enter_us - ct->tstart_us);
         if (diff < task_snd_intr_usec) return;
-        //if (diff > snd_intr_usec) real_printf("OVER %6u %s\n", diff - task_snd_intr_usec, where);
+        //D_STMT(if (diff > snd_intr_usec) real_printf("OVER %6u %s\n", diff - task_snd_intr_usec, where));
 	}
 	
     quanta = enter_us - ct->tstart_us;
@@ -1018,16 +1018,19 @@ bool TaskIsChild()
 
     if (quanta > ct->longest) {
     	ct->longest = quanta;
-    	ct->long_name = where;
     	
-		// fixme: remove at some point
-		if (quanta > 2000000 && ct->id != 0) {
-			printf("LRUN %s %s %7.3f\n", task_ls(ct), where, (float) quanta / 1000);
-			//evNT(EC_DUMP, EV_NEXTTASK, -1, "NT", "LRUN");
-		}
+    	#ifdef DEBUG
+            ct->long_name = where;
+            
+            // fixme: remove at some point
+            if (quanta > 2000000 && ct->id != 0) {
+                printf("LRUN %s %s %7.3f\n", task_ls(ct), where, (float) quanta / 1000);
+                //evNT(EC_DUMP, EV_NEXTTASK, -1, "NT", "LRUN");
+            }
+        #endif
     }
 
-	ct->where = where;
+	D_STMT(ct->where = where);
 
     // don't switch until minrun expired (if any)
     if (ct->minrun && ((enter_us - ct->minrun_start_us) < ct->minrun))
@@ -1326,7 +1329,7 @@ bool TaskIsChild()
 
 	ct->last_last_run_time = ct->last_run_time;
 	ct->last_run_time = quanta;
-	ct->last_pc = pc;
+	D_STMT(ct->last_pc = pc);
 	last_task_run = ct;
 
     cur_task = t;

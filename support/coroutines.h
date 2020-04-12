@@ -198,6 +198,7 @@ int TaskStat(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func=0, int
  #define NextTask(s)		_NextTask(NT_NONE);
  #define NextTaskP(s,p)		_NextTask(p);
  #define NextTaskW(s,p)		_NextTask(p);
+ #define NextTaskFast(s)    _NextTask(NT_FAST_CHECK);
 #endif
 
 #define LOCK_MAGIC_B	0x10ccbbbb
