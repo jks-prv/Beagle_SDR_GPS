@@ -1271,7 +1271,12 @@ function cpu_stats_cb(o, uptime_secs, ecpu, waterfall_fps)
       first = false;
    }
    var cpus = 'cpu';
-   if (o.cu.length > 1) cpus += '0 cpu1';
+   if (o.cu.length > 1)
+	{
+		cpus += '0';
+		for (var i = 1; i < o.cu.length; i++)
+		cpus += ' cpu' + i;
+	}
 	kiwi_cpu_stats_str_long =
 	   w3_inline('',
          w3_text('w3-text-black', 'Beagle: '+ cpus +' '+ user +' usr | '+ sys +' sys | '+ idle +' idle,' + (cputempC? '':' ')) +
