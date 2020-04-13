@@ -32,10 +32,6 @@
 #include "non_block.h"
 #include "shmem.h"
 
-#ifndef EXT_WSPR
-	void wspr_main() {}
-#else
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -878,5 +874,3 @@ void wspr_main()
         }
     }
 }
-
-#endif

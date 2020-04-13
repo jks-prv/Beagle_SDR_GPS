@@ -30,8 +30,6 @@
 #include "wspr.h"
 #include "nhash.h"
 
-#ifdef EXT_WSPR
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -426,5 +424,3 @@ double grid_to_distance_km(char *grid)
 	double km = EARTH_RADIUS_KM * 2.0 * atan2(sqrt(t), sqrt(1.0-t));
 	return km;
 }
-
-#endif
