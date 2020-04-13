@@ -46,7 +46,6 @@ Boston, MA  02110-1301, USA.
 #include <sched.h>
 #include <math.h>
 #include <signal.h>
-#include <fftw3.h>
 
 conn_t conns[N_CONNS];
 

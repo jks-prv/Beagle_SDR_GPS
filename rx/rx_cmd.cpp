@@ -49,7 +49,6 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <limits.h>
 #include <signal.h>
-#include <fftw3.h>
 
 kstr_t *cpu_stats_buf;
 volatile float audio_kbps[MAX_RX_CHANS+1], waterfall_kbps[MAX_RX_CHANS+1], waterfall_fps[MAX_RX_CHANS+1], http_kbps;
