@@ -4602,8 +4602,9 @@ function freqset_update_ui()
 {
 	//console.log("FUPD-UI demod-ofreq="+(center_freq + demodulators[0].offset_frequency));
 	//kiwi_trace();
-	freq_displayed_Hz = freq_car_to_dsp(freq_car_Hz) + cfg.freq_offset*1e3;
-	freq_displayed_kHz_str = (freq_displayed_Hz/1000).toFixed(2);
+	freq_displayed_Hz = freq_car_to_dsp(freq_car_Hz);
+	var f = freq_car_Hz + cfg.freq_offset*1e3;
+	freq_displayed_kHz_str = (f/1000).toFixed(2);
 	//console.log("FUPD-UI freq_car_Hz="+freq_car_Hz+' NEW freq_displayed_Hz='+freq_displayed_Hz);
 	
 	if (!waterfall_setup_done) return;
@@ -4612,7 +4613,7 @@ function freqset_update_ui()
 	if (isUndefined(obj) || obj == null) return;		// can happen if SND comes up long before W/F
 
 	//obj.value = freq_displayed_kHz_str;
-	obj.value = (freq_displayed_Hz/1000).toFixed((freq_displayed_Hz > 100e6)? 1:2);
+	obj.value = (f/1000).toFixed((f > 100e6)? 1:2);
 
 	//console.log("FUPD obj="+ typeof(obj) +" val="+ obj.value);
 	freqset_select();
