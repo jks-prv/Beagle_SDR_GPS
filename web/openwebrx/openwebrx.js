@@ -2644,7 +2644,7 @@ function export_waterfall(Hz) {
 
     PNGcanvas.ctx.stroke(); 
     
-    var flabel = Math.floor(Hz/100)/10;
+    var flabel = Math.floor(Hz/100)/10 + cfg.freq_offset;
     flabel = flabel + ' KHz ';
     PNGcanvas.ctx.font = "18px Arial";
     PNGcanvas.ctx.fillStyle = "lime";
