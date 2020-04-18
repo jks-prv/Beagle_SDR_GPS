@@ -91,6 +91,7 @@ if (down_converter_6m) {
    bands.push({ s:svc.U, min:14670, max:14670, sel:"14670usb", region:'*', name:"Time 14.67" });
    bands.push({ s:svc.U, min:15000, max:15000, sel:"15000amn", region:'*', name:"Time 15" });
    bands.push({ s:svc.U, min:20000, max:20000, sel:"20000amn", region:'*', name:"Time 20" });
+   bands.push({ s:svc.U, min:25000, max:25000, sel:"25000amn", region:'*', name:"Time 25" });
    
    bands.push({ s:svc.A, min:135.7, max:137.8, region:'*', name:"LF" });	// 2200m
    bands.push({ s:svc.A, min:472, max:479, region:">23", name:"MF" });		// 630m
