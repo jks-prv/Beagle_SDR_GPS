@@ -453,6 +453,7 @@ function wspr_blur()
 
 function wspr_input_grid_cb(path, val, first)
 {
+    val = val.trim();
    //console.log('wspr_input_grid_cb val='+ val);
 	w3_string_set_cfg_cb(path, val);
 	

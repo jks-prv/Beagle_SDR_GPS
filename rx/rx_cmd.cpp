@@ -971,7 +971,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         
         // Always send WSPR grid. Won't reveal location if grid not set on WSPR admin page
         // and update-from-GPS turned off.
-        sb = kstr_asprintf(sb, ",\"gr\":\"%s\"", wspr_c.rgrid);
+        sb = kstr_asprintf(sb, ",\"gr\":\"%s\"", kiwi_str_encode_static(wspr_c.rgrid));
         //printf("status sending wspr_c.rgrid=<%s>\n", wspr_c.rgrid);
         
 		sb = kstr_asprintf(sb, ",\"ad\":%d,\"au\":%d,\"ae\":%d,\"ar\":%d,\"an\":%d,\"an2\":%d,",
@@ -995,6 +995,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			utc_s, local_s, tzone_id, tzone_name);
 
 		send_msg(conn, false, "MSG stats_cb=%s", kstr_sp(sb));
+        //printf("MSG stats_cb=<%s>\n", kstr_sp(sb));
 		kstr_free(sb);
 		return true;
 	}

@@ -1665,7 +1665,7 @@ function kiwi_msg(param, ws)
 				extint_srate = o.sr;
 				gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);
 				if (o.gr) {
-				   kiwi.WSPR_rgrid = o.gr;
+				   kiwi.WSPR_rgrid = decodeURIComponent(o.gr);
 				   kiwi.GPS_fixes = o.gf;
 				   //console.log('stat kiwi.WSPR_rgrid='+ kiwi.WSPR_rgrid);
 				}
