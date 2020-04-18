@@ -344,6 +344,17 @@ char *kiwi_str_encode(char *src)
 	return dst;		// NB: caller must free dst
 }
 
+#define N_DST_STATIC (1023 + SPACE_FOR_NULL)
+static char dst_static[N_DST_STATIC];
+
+// for use with e.g. an immediate printf argument
+char *kiwi_str_encode_static(char *src)
+{
+	if (src == NULL) src = (char *) "null";		// JSON compatibility
+	mg_url_encode(src, dst_static, N_DST_STATIC);
+	return dst_static;
+}
+
 char *kiwi_str_decode_inplace(char *src)
 {
 	if (src == NULL) return NULL;
@@ -354,9 +365,6 @@ char *kiwi_str_decode_inplace(char *src)
 	mg_url_decode(src, slen, dst, slen + SPACE_FOR_NULL, 0);
 	return dst;
 }
-
-#define N_DST_STATIC (255 + SPACE_FOR_NULL)
-static char dst_static[N_DST_STATIC];
 
 // for use with e.g. an immediate printf argument
 char *kiwi_str_decode_static(char *src)
