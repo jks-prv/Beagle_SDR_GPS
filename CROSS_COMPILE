@@ -1,0 +1,154 @@
+Instructions for cross-compiling KiwiSDR code on a fast development machine.
+[updated 20 April 2020]
+
+An ARM architecture, ELF-format executable kiwi.bin will be created that can
+be directly copied to Debian running on the Beagle of the Kiwi. It is essentially the same
+as the executable created if the code is compiled on the Beagle. Except that compilation
+time is greatly reduced using the development machine compared to the Beagle. This is
+especially true given the slow compilation speed of the new DRM code.
+
+
+How it works:
+
+Recall that on the Beagle or the development machine all Kiwi source code is contained in
+a directory called Beagle_SDR_GPS. And that all derived files from the build (e.g. object
+files, the final kiwi.bin executable) are stored in the directory ../build relative to
+Beagle_SDR_GPS. Thus the source files and compiled binaries are strictly separated.
+
+The current Kiwi development cycle is to edit and test compile the sources on a development
+machine. Then, after any compilation problems are resolved, to transfer (or share via a
+file sharing mechanism) the sources with the Kiwi Beagle. And recompile on the Kiwi
+where binaries for the ARM architecture are created. After an initial complete
+compile of all source files incremental compiles can be done when only a small subset of
+the source files have changed. This helps to reduce compile times.
+
+With the cross-compile option it is now possible to create the ARM architecture object
+files directly on the development machine and thus skip compilation on the Beagle entirely
+(minus some additional work done on the Beagle during the "make install").
+
+Important: In addition to the final kiwi.bin executable file all the intermediate object
+files (e.g. ../build/obj_O3/*.o) are also copied to the Beagle during the "make install_xc"
+command. Because of this is it possible to continue doing non cross-compiled incremental
+development at this point because all the object files will be present on the Beagle.
+The only difference is that they have been generated and copied from the development
+machine as opposed to being compiled on the Beagle.
+
+Cross compilation requires that the Beagle root filesystem be made available to the
+development machine via a file sharing mechanism (e.g. sshfs, nfs). The development
+machine mount point is assumed to be ${HOME}/mnt unless you specify it to be elsewhere
+by setting KIWI_XC_REMOTE_FS.
+
+To use sshfs use a command similar to:
+    sudo sshfs -o ro,follow_symlinks,auto_cache,reconnect root@kiwisdr:/ ${HOME}/mnt
+
+To use nfs follow this procedure:
+    On the Beagle first install the nfs server via the command "pki nfs-kernel-server".
+    Then edit the /etc/exports file and add: "/ 192.168.1.0/24(ro,sync,no_subtree_check)"
+    adjusting the subnet as necessary. Then on the development machine try:
+    sudo mount -t nfs -o ro,resvport kiwisdr:/ ${HOME}/mnt
+    "resvport" is required for macOS otherwise you get "operation not permitted" errors.
+    
+If the Beagle file sharing is working you should see a file called ${HOME}/mnt/ID.txt
+
+If you have changed the host name of your Kiwi to anything other than the default
+"kiwisdr", e.g. by editing the /etc/hostname file, then use that name in the commands
+given here and set the environment variable KIWI_XC_HOST so the Makefile copies to the
+correct host when "make install_xc" is used.
+
+
+Setup instructions:
+
+1. Follow setup instructions below for your specific development machine.
+
+2. Set environment variables described below if default values are not suitable.
+
+3. Run these commands on development machine:
+    make clean_dist     // removes all previous binary files that would othersize conflict
+    make xc             // make in cross-compile mode (xc)
+    make install_xc     // copies kiwi.bin and *.o files to Kiwi build directory
+    
+4. Now test and deploy by entering these commands on the Kiwi:
+    Test on Kiwi by doing:
+        cdp     // change to project directory
+        mst     // optional: stop normal Kiwi server from running
+        ./d     // run new server in debug mode ("./k" for non-debug which includes GPS)
+
+    Deploy on Kiwi by doing:
+        cdp
+        mi      // alias for "make install".
+        ku      // "kiwi up" starts new server in background mode
+
+
+Environment variables:
+(if not set the indicated defaults will be used)
+
+KIWI_XC_HOST
+Set to the host name or ip address of the Kiwi where the binary files will be copied to.
+Copying is done using rsync, i.e. "rsync .../*.o root@$(KIWI_XC_HOST):~root/build/..."
+Defaults to "kiwisdr".
+
+KIWI_XC_REMOTE_FS
+Set to a mount point (a directory) on the development machine where Beagle root directory
+will be mounted by your chosen file sharing mechanism (e.g. sshfs, nfs).
+Defaults to "${HOME}/mnt"
+
+KIWI_XC_LD
+Set to the location of a Clang/LLVM loader capable of cross-compilation if the loader
+of your Clang/LLVM tools doesn't work by default. E.g. this is the case with macOS.
+Defaults to "lld".
+
+
+Setup instructions for specific development machines:
+(these instructions current as of April 2020)
+
+==== Ubuntu (example of a generic Linux setup)
+
+Installing Clang-9, or another version, using a package mechanism is all that is needed.
+The cross compile capability in Linux Clang seems to work fine for generating ARM binaries.
+The Kiwi Makefile is already setup to use Clang when "make xc" is run.
+
+==== macOS Catalina (10.15)
+
+The linker that is part of Xcode Clang/LLVM doesn't seem to work with cross compilation.
+Follow the steps below to install an alternative linker which does work.
+
+NB: We initially tried to get this working with macOS Mojave 10.11 since that's what our
+laptop was running. Brew warned about trying to install LLVM using such an old macOS
+release and the resulting linker didn't work for cross compiling. So we had to update
+to Catalina.
+ 
+1. If necessary update Xcode to the latest version (11.4) so that the Clang/LLVM compiler
+tools are current.
+
+2. Install the Brew 3rd-party package management system if not already present.
+The MacPorts package system would also probably work.
+
+3. Using Brew install the latest LLVM (llvm@10). This does not conflict with the Xcode
+installed Clang/LLVM because it is placed in the separate /usr/local/opt/llvm directory
+(symlink to /usr/local/Cellar/llvm/10.0.0_1).
+
+4. Set the environment variable KIWI_XC_LD in your .cshrc (or equivalent) to
+"/usr/local/Cellar/llvm/10.0.0_1/bin/ld.lld" to reference the linker from llvm@10
+which works with cross compilation. References to $(KIWI_XC_LD) are made in the
+Kiwi Makefile.
+
+5. Cross compilation will need access to files from the root filesystem of the Kiwi.
+
+We found that using sshfs on macOS for this purpose has an interesting problem.
+The mount appears to work but then the local mount point directory disappears from the
+filesystem. It reappears when an unmount occurs. Example:
+"sudo sshfs -o ro,follow_symlinks,auto_cache,reconnect root@kiwisdr:/ /Users/jks/mnt"
+does not give an error. And the correct filesystem sizes are displayed by df.
+But the directory mnt disappears on a subsequent ls. A "sudo umount /Users/jks/mnt"
+restores the directory.
+
+We were able to use nfs instead:
+Follow the instructions above for setting up nfs. Be sure to use "resvport" in the
+mount command. Set the environment variable KIWI_XC_REMOTE_FS if a mount point other
+than the default is used.
+
+6. Now "make xc" described above should work.
+
+[end of document]
+
+

@@ -14,6 +14,7 @@ UNAME = $(shell uname)
 SYS = $(shell uname -r)
 SYS_MAJ = $(shell uname -r | awk '{print $1}' | cut -d. -f1)
 SYS_MIN = $(shell uname -r | awk '{print $1}' | cut -d. -f2)
+COMPILE_HOST = $(shell hostname)
 
 ################################
 # compiler/option selection
@@ -24,27 +25,62 @@ VIS_UNOPT =
 
 BUILD_OBJ = $(BUILD_DIR)/kiwi.bin
 
-CFLAGS += -g -pipe -MMD
+CFLAGS += -g -pipe -MMD -DCOMPILE_HOST=STRINGIFY\($(COMPILE_HOST)\)
 
 #CFLAGS_UNSAFE_OPT = -fcx-limited-range -funsafe-math-optimizations
 CFLAGS_UNSAFE_OPT = -funsafe-math-optimizations
 
 # devsys
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-	CFLAGS += -DDEVSYS
-
-	ifeq ($(UNAME),Darwin)
-		CC = clang
-		CPP = clang++
-		CPP_FLAGS += -std=gnu++11
+	ifeq ($(XC),-DXC)
+		# Headers+libraries from a KiwiSDR are needed for cross-compilation with clang
+		# For this mount the KiwiSDR's root file system:
+		#   sshfs -o ro,follow_symlinks,auto_cache,reconnect root@kiwisdr:/ ${HOME}/mnt
+        KIWI_XC_REMOTE_FS ?= ${HOME}/mnt
+        # nfs doesn't see special files in /proc, so assume BBAI if running Debian 9
+        HAS_PROC = $(shell test -d $(KIWI_XC_REMOTE_FS)/proc/device-tree && echo true)
+        ifeq ($(HAS_PROC),true)
+            BBAI = $(shell cat $(KIWI_XC_REMOTE_FS)/proc/device-tree/model | grep -q -s "BeagleBone AI" && echo true)
+        else
+            BBAI = $(shell cat $(KIWI_XC_REMOTE_FS)/etc/debian_version | grep -q -s "9\." && echo true)
+        endif
+        DEBIAN_7 = $(shell cat $(KIWI_XC_REMOTE_FS)/etc/debian_version | grep -q -s "7\." && echo true)
+        CC = clang
+        CPP = clang++
+        CPP_FLAGS += -std=gnu++11
+        CFLAGS += --target=armv7a-linux-gnueabihf
+        CFLAGS += -mfpu=neon
+        CFLAGS += -mfloat-abi=hard -mcpu=cortex-a8
+        CFLAGS += --sysroot=$(KIWI_XC_REMOTE_FS)
+        CFLAGS += -I$(KIWI_XC_REMOTE_FS)/usr/include/c++/4.9
+        CFLAGS += -I$(KIWI_XC_REMOTE_FS)/usr/include/arm-linux-gnueabihf/c++/4.9
+        CFLAGS += -DHOST
+        VIS_OPT = -Ofast
+        KIWI_XC_LD ?= lld
+        LDFLAGS += -fuse-ld=$(KIWI_XC_LD)
+        LDFLAGS += -v
+        LDFLAGS += --sysroot=$(KIWI_XC_REMOTE_FS)
+        LDFLAGS += --target=armv7a-linux-gnueabihf
+        LDFLAGS += -L$(KIWI_XC_REMOTE_FS)/usr/lib/arm-linux-gnueabihf
+        LDFLAGS += -L$(KIWI_XC_REMOTE_FS)/usr/local/lib/
 	else
-		# try clang on your development system (if you have it) -- it's better
-		#CC = clang
-		#CPP = clang++
-	
-		CC = gcc
-		CPP = g++
-	endif
+	    # make the compiles fast on dev system (but don't do this with cross-compiling case above)
+	    OPT = 0
+	    CFLAGS += -DDEVSYS
+
+        ifeq ($(UNAME),Darwin)
+            CC = clang
+            CPP = clang++
+            CPP_FLAGS += -std=gnu++11
+        else
+            # try clang on your development system (if you have it) -- it's better
+            #CC = clang
+            #CPP = clang++
+        
+            CC = gcc
+            CPP = g++
+        endif
+    endif
 endif
 
 # Debian target

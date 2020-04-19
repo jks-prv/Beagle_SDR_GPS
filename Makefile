@@ -53,10 +53,15 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	endif
 else
 	# choices when building on development machine
-	BBAI = true
-#	BBAI = false
-	DEBIAN_7 = false
-	MAKE_ARGS = -j
+	ifeq ($(XC),-DXC)
+		# BBAI,DEBIAN_7 are taken from the mounted KiwiSDR root file system
+		MAKE_ARGS = -j 7
+	else
+		BBAI = true
+		#BBAI = false
+		DEBIAN_7 = false
+		MAKE_ARGS = -j
+	endif
 endif
 
 ARCH = sitara
@@ -70,15 +75,13 @@ else
 	PLATFORM = beaglebone_black
 endif
 
-# make the compiles fast on dev system
-ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-	OPT = 0
-endif
-
 # uncomment when using debugger so variables are not always optimized away
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 #	OPT = 0
 endif
+
+KIWI_XC_REMOTE_FS ?= ${HOME}/mnt
+KIWI_XC_HOST ?= kiwisdr
 
 
 ################################
@@ -86,11 +89,24 @@ endif
 ################################
 .PHONY: all
 all: c_ext_clang_conv
+	@make $(MAKE_ARGS) build_makefile_inc
 	@make $(MAKE_ARGS) c_ext_clang_conv_all
 
 .PHONY: debug
 debug: c_ext_clang_conv
+	@make $(MAKE_ARGS) DEBUG=-DDEBUG build_makefile_inc
 	@make $(MAKE_ARGS) DEBUG=-DDEBUG c_ext_clang_conv_all
+
+.PHONY: xc
+xc: c_ext_clang_conv
+	@echo KIWI_XC_HOST=$(KIWI_XC_HOST)
+	@echo KIWI_XC_REMOTE_FS=$(KIWI_XC_REMOTE_FS)
+	@if [ ! -f $(KIWI_XC_REMOTE_FS)/ID.txt ]; then \
+		echo "ERROR: remote filesystem $(KIWI_XC_REMOTE_FS) not mounted?"; \
+		exit -1; \
+	fi
+	@make $(MAKE_ARGS) XC=-DXC build_makefile_inc
+	@make $(MAKE_ARGS) XC=-DXC c_ext_clang_conv_all
 
 
 ################################
@@ -171,12 +187,18 @@ CFILES = $(subst web/web.cpp,,$(CPP_F))
 CFILES_O3 = $(subst web/web.cpp,,$(CPP_F_O3))
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-	# development machine, compile simulation version
-	LIBS += -L/usr/local/lib -lfftw3f -lfftw3
-	LIBS_DEP += /usr/local/lib/libfftw3f.a /usr/local/lib/libfftw3.a
-	CMD_DEPS =
-	DIR_CFG = unix_env/kiwi.config
-	CFG_PREFIX = dist.
+	ifeq ($(XC),-DXC)
+		LIBS += -lfftw3f -lfftw3 -lutil
+		DIR_CFG = /root/kiwi.config
+		CFG_PREFIX =
+	else
+		# development machine, compile simulation version
+		LIBS += -L/usr/local/lib -lfftw3f -lfftw3
+		LIBS_DEP += /usr/local/lib/libfftw3f.a /usr/local/lib/libfftw3.a
+		CMD_DEPS =
+		DIR_CFG = unix_env/kiwi.config
+		CFG_PREFIX = dist.
+	endif
 
 else
 	# host machine (BBB), only build the FPGA-using version
@@ -323,7 +345,7 @@ INT_FLAGS += -DBUILD_DIR=STRINGIFY\($(BUILD_DIR)\) -DREPO=STRINGIFY\($(REPO)\) -
 
 # NB: afterwards have to rerun make to pickup filename change!
 ifneq ($(PVT_EXT_DIRS),)
-PVT_EXT_C_FILES = $(shell find $(PVT_EXT_DIRS) -name '*.c' -print)
+	PVT_EXT_C_FILES = $(shell find $(PVT_EXT_DIRS) -name '*.c' -print)
 endif
 
 .PHONY: c_ext_clang_conv
@@ -336,8 +358,17 @@ else
 	@echo convert installed extension .c files to .cpp for clang compatibility
 	find $(PVT_EXT_DIRS) -name '*.c' -exec mv '{}' '{}'pp \;
 endif
-# take this opportunity to consolidate flags into indirect Makefile since Make will be re-invoked
+
+.PHONY: build_makefile_inc
+build_makefile_inc:
+# consolidate flags into indirect Makefile since Make will be re-invoked
 	@echo "----------------"
+	@echo "building" $(MF_INC)
+	@echo $(VER)
+	@echo BBAI=$(BBAI)
+	@echo DEBUG=$(DEBUG)
+	@echo XC=$(XC)
+	@echo
 #
 	@echo $(I) $(START_MF_INC)
 #
@@ -675,38 +706,40 @@ POST_PROCESS_DEPS = \
 
 
 # special
+OPTS_VIS_UNOPT = $(strip $(V) $(DEBUG) $(XC) $(VIS_UNOPT))
+OPTS_VIS_OPT = $(strip $(V) $(DEBUG) $(XC) $(VIS_OPT))
 
 $(OBJ_DIR_DEFAULT)/web_devel.o: web/web.cpp config.h
-	$(CPP) $(V) $(DEBUG) $(VIS_UNOPT) @$(MF_INC) -DEDATA_DEVEL -c -o $@ $<
+	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) -DEDATA_DEVEL -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_DEFAULT)/web_embed.o: web/web.cpp config.h
-	$(CPP) $(V) $(DEBUG) $(VIS_UNOPT) @$(MF_INC) -DEDATA_EMBED -c -o $@ $<
+	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) -DEDATA_EMBED -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/edata_embed.o: $(EDATA_EMBED)
-	$(CPP) $(V) $(DEBUG) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR)/edata_always.o: $(EDATA_ALWAYS)
-	$(CPP) $(V) $(DEBUG) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/ext_init.o: $(GEN_DIR)/ext_init.cpp
-	$(CPP) $(V) $(DEBUG) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 
 # .c
 
 #$(OBJ_DIR)/%.o: %.c $(SRC_DEPS)
-#	$(CC) -x c $(V) $(DEBUG) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
-#	$(CC) $(V) $(DEBUG) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+#	$(CC) -x c $(OPTS_VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+#	$(CC) $(OPTS_VIS_UNOPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 #	$(POST_PROCESS_DEPS)
 
 #$(OBJ_DIR_O3)/%.o: %.c $(SRC_DEPS)
-#	$(CC) $(V) $(DEBUG) $(VIS_OPT) @$(MF_INC) -c -o $@ $<
+#	$(CC) $(OPTS_VIS_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 #	$(POST_PROCESS_DEPS)
 
@@ -714,12 +747,12 @@ $(OBJ_DIR)/ext_init.o: $(GEN_DIR)/ext_init.cpp
 # .cpp $(CFLAGS_UNSAFE_OPT)
 
 $(OBJ_DIR_O3)/search.o: search.cpp $(SRC_DEPS)
-	$(CPP) $(V) $(DEBUG) $(VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(OPTS_VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/simd.o: simd.cpp $(SRC_DEPS)
-	$(CPP) $(V) $(DEBUG) $(VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(OPTS_VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
@@ -727,17 +760,17 @@ $(OBJ_DIR_O3)/simd.o: simd.cpp $(SRC_DEPS)
 # .cpp
 
 $(OBJ_DIR)/%.o: %.cpp $(SRC_DEPS)
-	$(CPP) $(V) $(DEBUG) $(VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR)/%.o: %.cpp $(SRC_DEPS)
-	$(CPP) $(V) $(DEBUG) $(VIS_OPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(OPTS_VIS_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/%.o: %.cpp $(SRC_DEPS)
-	$(CPP) $(V) $(DEBUG) $(VIS_OPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(OPTS_VIS_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
@@ -838,7 +871,7 @@ ETC_HOSTS_HAS_KIWI = $(shell grep -qi kiwisdr /etc/hosts && echo true)
 SSH_KEYS = /root/.ssh/authorized_keys
 EXISTS_SSH_KEYS = $(shell test -f $(SSH_KEYS) && echo true)
 
-# Only do a 'make install' on the target machine (not needed on the development machine).
+# Doing a 'make install' on the development machine is only used to build the optimized files.
 # For the Beagle this installs the device tree files in the right place and other misc stuff.
 # DANGER: do not use $(MAKE_ARGS) here! The targets for building $(EMBED_DEPS) must be run sequentially
 
@@ -847,10 +880,21 @@ install: c_ext_clang_conv
 	@# don't use MAKE_ARGS here!
 	@make c_ext_clang_conv_install
 
+# copy binaries to Kiwi named $(KIWI_XC_HOST)
+.PHONY: install_xc
+install_xc: c_ext_clang_conv
+	sudo rsync -av $(BUILD_DIR)/kiwi.bin root@$(KIWI_XC_HOST):~root/build
+	# don't copy dependency files (*.d) here because include paths are slightly different
+	# e.g. development machine: /usr/local/include/fftw3.h
+	# versus Beagle: /usr/include/fftw3.h
+	sudo rsync -av $(OBJ_DIR)/*.o root@$(KIWI_XC_HOST):~root/build/$(OBJ_DIR)
+	sudo rsync -av $(OBJ_DIR_O3)/*.o root@$(KIWI_XC_HOST):~root/build/$(OBJ_DIR_O3)
+	sudo rsync -av $(KEEP_DIR)/*.o root@$(KIWI_XC_HOST):~root/build/$(KEEP_DIR)
+
 .PHONY: c_ext_clang_conv_install
 c_ext_clang_conv_install: $(DO_ONCE) $(BUILD_DIR)/kiwid.bin
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-	@echo remainder of \'make install\' only makes sense to run on target
+	# remainder of "make install" only makes sense to run on target
 else
 	@echo $(C_CTR_INSTALL) >$(COMP_CTR)
 # don't strip symbol table while we're debugging daemon crashes

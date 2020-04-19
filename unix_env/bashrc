@@ -104,7 +104,7 @@ alias men="make enable"
 alias mdi="make disable"
 alias mn="make -n"
 alias mk="make -k"
-alias mw="make --dry-run --debug=a"
+alias mw="make --dry-run --debug=b"
 alias mgit="make git"
 
 # ls
@@ -318,7 +318,7 @@ alias mdu="killall -q -s USR1 kiwid; killall -q -s USR1 kiwi.bin"
 alias whilek="while true; do ./k; done"
 alias whiled="while true; do ./d; done"
 
-# sharing KiwiSDR sources with a development machine via NFS
+# sharing KiwiSDR sources from a development machine to Beagle via NFS
 # download NFS with command: "pki nfs-common"
 alias nfs="mount -l -t nfs"
 # mount read-only so any changes don't flow backwards to development machine sources!
@@ -329,6 +329,16 @@ alias nfsdn="cd ~; umount -a -f -t nfs"
 #alias	nfsup	'sudo nfsd update; sudo nfsd enable; nfs'
 # and an entry in /etc/exports on the development machine like:
 #/path_to_kiwi_sources/Beagle_SDR_GPS -mapall=my_user_id -network 192.168.1.0 -mask 255.255.255.0
+
+# NFS reverse direction: sharing Beagle root fs with development machine to support cross compilation
+#   pki nfs-kernel-server
+# edit resulting /etc/exports file and add: (adjust for subnet address)
+#   / 192.168.1.0/24(ro,sync,no_subtree_check)
+# now on development machine: ("resvport" is necessary for OSX)
+#   mkdir -p ${HOME}/mnt
+#   sudo mount -t nfs -o ro,resvport beagle_hostname:/ ${HOME}/mnt
+# later:
+#   sudo umount ${HOME}/mnt
 
 # KiwiSDR with gdb
 alias gk="gdb ../build/kiwi.bin"
