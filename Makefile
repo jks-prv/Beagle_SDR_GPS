@@ -97,20 +97,22 @@ debug: c_ext_clang_conv
 	@make $(MAKE_ARGS) DEBUG=-DDEBUG build_makefile_inc
 	@make $(MAKE_ARGS) DEBUG=-DDEBUG c_ext_clang_conv_all
 
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 .PHONY: xc
 ifeq ($(XC),)
 xc:
+	@if [ ! -f $(KIWI_XC_REMOTE_FS)/ID.txt ]; then \
+		echo "ERROR: remote filesystem $(KIWI_XC_REMOTE_FS) not mounted?"; \
+		exit -1; \
+	fi
 	@make XC=-DXC $@
 else
 xc: c_ext_clang_conv
 	@echo KIWI_XC_HOST=$(KIWI_XC_HOST)
 	@echo KIWI_XC_REMOTE_FS=$(KIWI_XC_REMOTE_FS)
-	@if [ ! -f $(KIWI_XC_REMOTE_FS)/ID.txt ]; then \
-		echo "ERROR: remote filesystem $(KIWI_XC_REMOTE_FS) not mounted?"; \
-		exit -1; \
-	fi
 	@make $(MAKE_ARGS) build_makefile_inc
 	@make $(MAKE_ARGS) c_ext_clang_conv_all
+endif
 endif
 
 
@@ -831,6 +833,7 @@ endif
 
 V_DIR = ~/shared/shared
 
+ifeq ($(XC),) ## do not copy bit streams from ~/shared/shared when cross-compiling
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 KiwiSDR.rx4.wf4.bit: $(V_DIR)/KiwiSDR.rx4.wf4.bit
@@ -845,6 +848,7 @@ KiwiSDR.rx3.wf3.bit: $(V_DIR)/KiwiSDR.rx3.wf3.bit
 KiwiSDR.rx14.wf0.bit: $(V_DIR)/KiwiSDR.rx14.wf0.bit
 	rsync -av $(V_DIR)/KiwiSDR.rx14.wf0.bit .
 
+endif
 endif
 
 DEV = kiwi
@@ -886,6 +890,7 @@ install: c_ext_clang_conv
 	@make c_ext_clang_conv_install
 
 # copy binaries to Kiwi named $(KIWI_XC_HOST)
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 .PHONY: install_xc
 ifeq ($(XC),)
 install_xc:
@@ -899,6 +904,8 @@ install_xc: c_ext_clang_conv
 	rsync -av $(OBJ_DIR)/*.o root@$(KIWI_XC_HOST):~root/build/$(OBJ_DIR)
 	rsync -av $(OBJ_DIR_O3)/*.o root@$(KIWI_XC_HOST):~root/build/$(OBJ_DIR_O3)
 	rsync -av $(KEEP_DIR)/*.o root@$(KIWI_XC_HOST):~root/build/$(KEEP_DIR)
+	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) . root@$(KIWI_XC_HOST):~root/$(REPO_NAME)  ## copy sources
+endif
 endif
 
 .PHONY: c_ext_clang_conv_install
