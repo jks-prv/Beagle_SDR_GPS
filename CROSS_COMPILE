@@ -42,9 +42,13 @@ To use sshfs use a command similar to:
     sudo sshfs -o ro,follow_symlinks,auto_cache,reconnect root@kiwisdr:/ ${HOME}/mnt
 
 To use nfs follow this procedure:
-    On the Beagle first install the nfs server via the command "pki nfs-kernel-server".
-    Then edit the /etc/exports file and add: "/ 192.168.1.0/24(ro,sync,no_subtree_check)"
-    adjusting the subnet as necessary. Then on the development machine try:
+    On the Beagle first install the nfs server via the commands
+    "pki nfs-common" and "pki nfs-kernel-server".
+    Then edit the /etc/exports file and add "/ 192.168.1.0/24(ro,sync,no_subtree_check)"
+    adjusting the subnet as necessary. Try "ps ax | grep nfs" and see if there are any
+    processes named "nfsd". If not try rebooting.
+    
+    Then on the development machine try:
     sudo mount -t nfs -o ro,resvport kiwisdr:/ ${HOME}/mnt
     "resvport" is required for macOS otherwise you get "operation not permitted" errors.
     
