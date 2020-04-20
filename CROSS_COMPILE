@@ -1,44 +1,56 @@
 Instructions for cross-compiling KiwiSDR code on a fast development machine.
-[updated 20 April 2020]
+[updated 21 April 2020]
 
-An ARM architecture, ELF-format executable kiwi.bin will be created that can
-be directly copied to Debian running on the Beagle of the Kiwi. It is essentially the same
-as the executable created if the code is compiled on the Beagle. Except that compilation
-time is greatly reduced using the development machine compared to the Beagle. This is
-especially true given the slow compilation speed of the new DRM code.
+It is now possible to create an ARM architecture executable kiwi.bin file that can be
+directly copied to Debian running on the Beagle of the Kiwi. It is essentially the same as
+the executable created if the code is traditionally compiled on the Beagle. Except that
+the compilation time is greatly reduced using the (presumably fast) development machine
+compared to the Beagle. This is especially important given the slow compilation speed of
+the new DRM code.
 
 
 How it works:
 
-Recall that on the Beagle or the development machine all Kiwi source code is contained in
-a directory called Beagle_SDR_GPS. And that all derived files from the build (e.g. object
-files, the final kiwi.bin executable) are stored in the directory ../build relative to
-Beagle_SDR_GPS. Thus the source files and compiled binaries are strictly separated.
+Recall that on both the Beagle and the development machine all Kiwi source code is
+contained in a directory called Beagle_SDR_GPS. And that all derived files from the build
+(e.g. object files, the final kiwi.bin executable, other generated files) are stored in
+the directory ../build relative to Beagle_SDR_GPS. Thus the source files and compiled
+binaries are strictly separated. This is for the benefit of the auto update mechanism
+which uses git which needs to not be confused by the presence of object files in the
+Beagle_SDR_GPS directory.
 
-The current Kiwi development cycle is to edit and test compile the sources on a development
-machine. Then, after any compilation problems are resolved, to transfer (or share via a
-file sharing mechanism) the sources with the Kiwi Beagle. And recompile on the Kiwi
-where binaries for the ARM architecture are created. After an initial complete
+The current Kiwi development cycle is to edit and test compile the sources on a
+development machine. Then, after any compilation problems are resolved, to transfer (or
+share via a file sharing mechanism) the sources with the Kiwi Beagle. And then recompile
+on the Kiwi where binaries for the ARM architecture are created. After an initial complete
 compile of all source files incremental compiles can be done when only a small subset of
 the source files have changed. This helps to reduce compile times.
 
 With the cross-compile option it is now possible to create the ARM architecture object
 files directly on the development machine and thus skip compilation on the Beagle entirely
-(minus some additional work done on the Beagle during the "make install").
+(minus some additional work during a necessary "make install" run on the Beagle). At this
+point all that is necessary is to copy the object files (and optionally the source files)
+to the Beagle.
 
 Important: In addition to the final kiwi.bin executable file all the intermediate object
-files (e.g. ../build/obj_O3/*.o) are also copied to the Beagle during the "make install_xc"
+files (e.g. ../build/obj*/*.o) are also copied to the Beagle during the "make install_xc"
 command. Because of this is it possible to continue doing non cross-compiled incremental
-development at this point because all the object files will be present on the Beagle.
+development on the Beagle at this point because all the object files will be present.
 The only difference is that they have been generated and copied from the development
 machine as opposed to being compiled on the Beagle.
+
+Since the object files are being copied it may also make sense to copy all the source
+files from the Beagle_SDR_GPS tree as well. This can be accomplished by setting the
+environment variable KIWI_XC_COPY_SOURCES to "true". This variable is checked when the
+"make install_xc" is done. If you are already sharing source files via a file sharing
+mechanism (e.g. sshfs, nfs) this copying would not be needed.
 
 Cross compilation requires that the Beagle root filesystem be made available to the
 development machine via a file sharing mechanism (e.g. sshfs, nfs). The development
 machine mount point is assumed to be ${HOME}/mnt unless you specify it to be elsewhere
 by setting KIWI_XC_REMOTE_FS.
 
-To use sshfs use a command similar to:
+To use sshfs use a command on the development machine similar to:
     sudo sshfs -o ro,follow_symlinks,auto_cache,reconnect root@kiwisdr:/ ${HOME}/mnt
 
 To use nfs follow this procedure:
@@ -70,16 +82,19 @@ Setup instructions:
     make clean_dist     // removes all previous binary files that would othersize conflict
     make xc             // make in cross-compile mode (xc)
     make install_xc     // copies kiwi.bin and *.o files to Kiwi build directory
+                        // optionally copies source files as well
     
 4. Now test and deploy by entering these commands on the Kiwi:
     Test on Kiwi by doing:
-        cdp     // change to project directory
+        cdp     // change to project directory ~root/Beagle_SDR_GPS
         mst     // optional: stop normal Kiwi server from running
-        ./d     // run new server in debug mode ("./k" for non-debug which includes GPS)
+        ./d     // run newly installed server in debug mode
+                // (use "./k" for non-debug mode which includes enabling GPS)
 
     Deploy on Kiwi by doing:
+        ^C      // stop the above if running
         cdp
-        mi      // alias for "make install".
+        mi      // alias for "make install" (NB: NOT "make install_xc").
         ku      // "kiwi up" starts new server in background mode
 
 
@@ -87,13 +102,17 @@ Environment variables:
 (if not set the indicated defaults will be used)
 
 KIWI_XC_HOST
-Set to the host name or ip address of the Kiwi where the binary files will be copied to.
+Set to the host name or ip address of the Kiwi where the binary files will be copied.
 Copying is done using rsync, i.e. "rsync .../*.o root@$(KIWI_XC_HOST):~root/build/..."
 Defaults to "kiwisdr".
 
+KIWI_XC_COPY_SOURCES
+Set to "true" if you want the Kiwi source files copied along with the binaries to the
+Beagle when a "make install_xc" is done. If not set the source files will not be copied.
+
 KIWI_XC_REMOTE_FS
-Set to a mount point (a directory) on the development machine where Beagle root directory
-will be mounted by your chosen file sharing mechanism (e.g. sshfs, nfs).
+Set to a mount point (a directory) on the development machine where the Beagle root
+directory will be mounted by your chosen file sharing mechanism (e.g. sshfs, nfs).
 Defaults to "${HOME}/mnt"
 
 KIWI_XC_LD
