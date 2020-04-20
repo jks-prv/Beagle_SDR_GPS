@@ -98,6 +98,10 @@ debug: c_ext_clang_conv
 	@make $(MAKE_ARGS) DEBUG=-DDEBUG c_ext_clang_conv_all
 
 .PHONY: xc
+ifeq ($(XC),)
+xc:
+	@make XC=-DXC $@
+else
 xc: c_ext_clang_conv
 	@echo KIWI_XC_HOST=$(KIWI_XC_HOST)
 	@echo KIWI_XC_REMOTE_FS=$(KIWI_XC_REMOTE_FS)
@@ -105,8 +109,9 @@ xc: c_ext_clang_conv
 		echo "ERROR: remote filesystem $(KIWI_XC_REMOTE_FS) not mounted?"; \
 		exit -1; \
 	fi
-	@make $(MAKE_ARGS) XC=-DXC build_makefile_inc
-	@make $(MAKE_ARGS) XC=-DXC c_ext_clang_conv_all
+	@make $(MAKE_ARGS) build_makefile_inc
+	@make $(MAKE_ARGS) c_ext_clang_conv_all
+endif
 
 
 ################################
@@ -882,14 +887,19 @@ install: c_ext_clang_conv
 
 # copy binaries to Kiwi named $(KIWI_XC_HOST)
 .PHONY: install_xc
+ifeq ($(XC),)
+install_xc:
+	@make XC=-DXC $@
+else
 install_xc: c_ext_clang_conv
-	sudo rsync -av $(BUILD_DIR)/kiwi.bin root@$(KIWI_XC_HOST):~root/build
+	rsync -av $(BUILD_DIR)/kiwi.bin root@$(KIWI_XC_HOST):~root/build
 	# don't copy dependency files (*.d) here because include paths are slightly different
 	# e.g. development machine: /usr/local/include/fftw3.h
 	# versus Beagle: /usr/include/fftw3.h
-	sudo rsync -av $(OBJ_DIR)/*.o root@$(KIWI_XC_HOST):~root/build/$(OBJ_DIR)
-	sudo rsync -av $(OBJ_DIR_O3)/*.o root@$(KIWI_XC_HOST):~root/build/$(OBJ_DIR_O3)
-	sudo rsync -av $(KEEP_DIR)/*.o root@$(KIWI_XC_HOST):~root/build/$(KEEP_DIR)
+	rsync -av $(OBJ_DIR)/*.o root@$(KIWI_XC_HOST):~root/build/$(OBJ_DIR)
+	rsync -av $(OBJ_DIR_O3)/*.o root@$(KIWI_XC_HOST):~root/build/$(OBJ_DIR_O3)
+	rsync -av $(KEEP_DIR)/*.o root@$(KIWI_XC_HOST):~root/build/$(KEEP_DIR)
+endif
 
 .PHONY: c_ext_clang_conv_install
 c_ext_clang_conv_install: $(DO_ONCE) $(BUILD_DIR)/kiwid.bin
