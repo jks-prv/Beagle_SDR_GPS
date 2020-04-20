@@ -749,8 +749,10 @@ static void reg_SDR_hu(void *param)
         // against a possible ipv6 domain record ("AAAA") if it exists.
         
         if (sdr_hu_dom_sel == DOM_SEL_REV) {
-            asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- \"http://proxy.kiwisdr.com?url=http://%s:%d&apikey=%s\" 2>&1",
-			    server_url, server_port, api_key);
+            const char *proxy_server = admcfg_string("proxy_server", NULL, CFG_REQUIRED);
+            asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- \"http://%s?url=http://%s:%d&apikey=%s\" 2>&1",
+			    proxy_server, server_url, server_port, api_key);
+            admcfg_string_free(proxy_server);
 		} else {
             asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- https://%s/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
 			    sdr_hu, server_url, server_port, api_key);
