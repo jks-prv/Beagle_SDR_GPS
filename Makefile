@@ -904,7 +904,9 @@ install_xc: c_ext_clang_conv
 	rsync -av $(OBJ_DIR)/*.o root@$(KIWI_XC_HOST):~root/build/$(OBJ_DIR)
 	rsync -av $(OBJ_DIR_O3)/*.o root@$(KIWI_XC_HOST):~root/build/$(OBJ_DIR_O3)
 	rsync -av $(KEEP_DIR)/*.o root@$(KIWI_XC_HOST):~root/build/$(KEEP_DIR)
-	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) . root@$(KIWI_XC_HOST):~root/$(REPO_NAME)  ## copy sources
+ifeq ($(KIWI_XC_COPY_SOURCES),true)
+	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) . root@$(KIWI_XC_HOST):~root/$(REPO_NAME)
+endif
 endif
 endif
 
