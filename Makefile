@@ -82,6 +82,7 @@ endif
 
 KIWI_XC_REMOTE_FS ?= ${HOME}/mnt
 KIWI_XC_HOST ?= kiwisdr
+KIWI_XC_HOST_PORT ?= 22
 
 
 ################################
@@ -109,6 +110,7 @@ xc:
 else
 xc: c_ext_clang_conv
 	@echo KIWI_XC_HOST=$(KIWI_XC_HOST)
+	@echo KIWI_XC_HOST_PORT=$(KIWI_XC_HOST_PORT)
 	@echo KIWI_XC_REMOTE_FS=$(KIWI_XC_REMOTE_FS)
 	@make $(MAKE_ARGS) build_makefile_inc
 	@make $(MAKE_ARGS) c_ext_clang_conv_all
@@ -169,7 +171,7 @@ INT_EXTS = $(subst /,,$(subst extensions/,,$(wildcard $(INT_EXT_DIRS))))
 EXTS = $(INT_EXTS) $(PVT_EXTS)
 
 GPS = gps gps/ka9q-fec gps/GNSS-SDRLIB
-RX = rx rx/CuteSDR rx/csdr rx/kiwi
+RX = rx rx/CuteSDR rx/wdsp rx/csdr rx/kiwi
 _DIRS = pru $(PKGS)
 _DIRS_O3 += . $(PKGS_O3) platform/beaglebone platform/$(PLATFORM) $(EXT_DIRS) $(EXT_SUBDIRS) \
 	$(RX) $(GPS) ui init support net web arch/$(ARCH)
@@ -891,21 +893,23 @@ install: c_ext_clang_conv
 
 # copy binaries to Kiwi named $(KIWI_XC_HOST)
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
+RSYNC_XC_ARGS = -av -e "ssh -p $(KIWI_XC_HOST_PORT) -l root"
+
 .PHONY: install_xc
 ifeq ($(XC),)
 install_xc:
 	@make XC=-DXC $@
 else
 install_xc: c_ext_clang_conv
-	rsync -av $(BUILD_DIR)/kiwi.bin root@$(KIWI_XC_HOST):~root/build
+	rsync $(RSYNC_XC_ARGS) $(BUILD_DIR)/kiwi.bin root@$(KIWI_XC_HOST):~root/build
 	# don't copy dependency files (*.d) here because include paths are slightly different
 	# e.g. development machine: /usr/local/include/fftw3.h
 	# versus Beagle: /usr/include/fftw3.h
-	rsync -av $(OBJ_DIR)/*.o root@$(KIWI_XC_HOST):~root/build/$(OBJ_DIR)
-	rsync -av $(OBJ_DIR_O3)/*.o root@$(KIWI_XC_HOST):~root/build/$(OBJ_DIR_O3)
-	rsync -av $(KEEP_DIR)/*.o root@$(KIWI_XC_HOST):~root/build/$(KEEP_DIR)
+	rsync $(RSYNC_XC_ARGS) $(OBJ_DIR)/*.o root@$(KIWI_XC_HOST):~root/build/$(OBJ_DIR)
+	rsync $(RSYNC_XC_ARGS) $(OBJ_DIR_O3)/*.o root@$(KIWI_XC_HOST):~root/build/$(OBJ_DIR_O3)
+	rsync $(RSYNC_XC_ARGS) $(KEEP_DIR)/*.o root@$(KIWI_XC_HOST):~root/build/$(KEEP_DIR)
 ifeq ($(KIWI_XC_COPY_SOURCES),true)
-	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) . root@$(KIWI_XC_HOST):~root/$(REPO_NAME)
+	rsync $(RSYNC_XC_ARGS) --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) . root@$(KIWI_XC_HOST):~root/$(REPO_NAME)
 endif
 endif
 endif
