@@ -12,7 +12,7 @@ var kiwi = {
    is_BBAI: 0,
    
    // must match rx_cmd.cpp
-   modes_l: [ 'am', 'amn', 'usb', 'lsb', 'cw', 'cwn', 'nbfm', 'iq', 'drm', 'usn', 'lsn' ],
+   modes_l: [ 'am', 'amn', 'usb', 'lsb', 'cw', 'cwn', 'nbfm', 'iq', 'drm', 'usn', 'lsn', 'sam', 'sal', 'sau', 'sas' ],
    modes_u: [],
    modes_s: {},
    
@@ -1451,6 +1451,11 @@ function user_cb(obj)
          w3_innerHTML('id-optbar-user-'+ i, (s1 != '')? (s1 +'<br>'+ s2) : '');
 		}
 		
+		if (obj.c) {
+		   var el = w3_el('id-sam-carrier');
+		   if (el) w3_innerHTML(el, 'carrier '+ obj.c.toFixed(1) +' Hz');
+		}
+		
 		// inactivity timeout warning panel
 		if (i == rx_chan && obj.rn) {
 		   if (obj.rn <= 55 && !kiwi.inactivity_panel) {
@@ -1665,7 +1670,7 @@ function kiwi_msg(param, ws)
 				extint_srate = o.sr;
 				gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);
 				if (o.gr) {
-				   kiwi.WSPR_rgrid = o.gr;
+				   kiwi.WSPR_rgrid = decodeURIComponent(o.gr);
 				   kiwi.GPS_fixes = o.gf;
 				   //console.log('stat kiwi.WSPR_rgrid='+ kiwi.WSPR_rgrid);
 				}

@@ -72,13 +72,19 @@ extern char *fpga_file;
 
 extern lock_t spi_lock;
 
+
 // values defined in rx_cmd.cpp
 // CAUTION: order in mode_s/modu_s must match mode_e, mode_hbw, mode_offset
+// CAUTION: order in mode_s/modu_s must match kiwi.js:kiwi.modes_l
 // CAUTION: add new entries at the end
-#define N_MODE 11
-extern const char *mode_s[N_MODE], *modu_s[N_MODE];	// = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq", "drm", "usn", "lsn" };
+#define N_MODE 15
+// = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq", "drm", "usn", "lsn", "sam", "sau", "sal", "sas" };
+extern const char *mode_s[N_MODE], *modu_s[N_MODE];
 extern const int mode_hbw[N_MODE], mode_offset[N_MODE];
-typedef enum { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NBFM, MODE_IQ, MODE_DRM, MODE_USN, MODE_LSN } mode_e;
+typedef enum {
+    MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NBFM, MODE_IQ, MODE_DRM, MODE_USN, MODE_LSN, MODE_SAM, MODE_SAU, MODE_SAL, MODE_SAS
+} mode_e;
+
 
 typedef enum { DOM_SEL_NAM=0, DOM_SEL_DUC=1, DOM_SEL_PUB=2, DOM_SEL_SIP=3, DOM_SEL_REV=4 } sdr_hu_dom_sel_e;
 

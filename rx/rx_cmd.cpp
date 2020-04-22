@@ -60,10 +60,18 @@ bool auth_su;
 char auth_su_remote_ip[NET_ADDRSTRLEN];
 bool conn_nolocal;
 
-const char *mode_s[N_MODE] = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq", "drm", "usn", "lsn" };
-const char *modu_s[N_MODE] = { "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ", "DRM", "USN", "LSN" };
-const int mode_hbw[N_MODE] = { 9800/2, 5000/2, 2400/2, 2400/2, 400/2, 60/2, 12000/2, 10000/2, 10000/2, 2100/2, 2100/2 };
-const int mode_offset[N_MODE] = { 0, 0, 1500, -1500, 0, 0, 0, 0, 0, 1350, -1350 };
+const char *mode_s[N_MODE] = {
+    "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq", "drm", "usn", "lsn", "sam", "sau", "sal", "sas"
+};
+const char *modu_s[N_MODE] = {
+    "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ", "DRM", "USN", "LSN", "SAM", "SAU", "SAL", "SAS"
+};
+const int mode_hbw[N_MODE] = {
+    9800/2, 5000/2, 2400/2, 2400/2, 400/2, 60/2, 12000/2, 10000/2, 10000/2, 2100/2, 2100/2, 9800/2, 9800/2, 9800/2, 9800/2
+};
+const int mode_offset[N_MODE] = {
+    0, 0, 1500, -1500, 0, 0, 0, 0, 0, 1350, -1350, 0, 0, 0, 0
+};
 
 #ifndef CFG_GPS_ONLY
 
@@ -971,7 +979,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         
         // Always send WSPR grid. Won't reveal location if grid not set on WSPR admin page
         // and update-from-GPS turned off.
-        sb = kstr_asprintf(sb, ",\"gr\":\"%s\"", wspr_c.rgrid);
+        sb = kstr_asprintf(sb, ",\"gr\":\"%s\"", kiwi_str_encode_static(wspr_c.rgrid));
         //printf("status sending wspr_c.rgrid=<%s>\n", wspr_c.rgrid);
         
 		sb = kstr_asprintf(sb, ",\"ad\":%d,\"au\":%d,\"ae\":%d,\"ar\":%d,\"an\":%d,\"an2\":%d,",
@@ -995,6 +1003,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			utc_s, local_s, tzone_id, tzone_name);
 
 		send_msg(conn, false, "MSG stats_cb=%s", kstr_sp(sb));
+        //printf("MSG stats_cb=<%s>\n", kstr_sp(sb));
 		kstr_free(sb);
 		return true;
 	}

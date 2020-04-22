@@ -35,6 +35,7 @@ Boston, MA  02110-1301, USA.
 #include "wspr.h"
 #include "ext_int.h"
 #include "shmem.h"
+#include "wdsp.h"
 
 #ifdef DRM
  #include "DRM.h"
@@ -306,6 +307,7 @@ void update_vars_from_config()
     admcfg_default_bool("no_dup_ip", false, &update_admcfg);
     admcfg_default_bool("my_kiwi", true, &update_admcfg);
     admcfg_default_bool("onetime_password_check", false, &update_admcfg);
+    admcfg_default_string("proxy_server", "proxy.kiwisdr.com", &update_admcfg);
 
     // decouple kiwisdr.com/public and sdr.hu registration
     bool sdr_hu_register = admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED);
@@ -696,9 +698,11 @@ char *rx_users(bool include_ip)
                 char *geo = c->geo? kiwi_str_encode(c->geo) : NULL;
                 char *ext = ext_users[i].ext? kiwi_str_encode((char *) ext_users[i].ext->name) : NULL;
                 const char *ip = include_ip? c->remote_ip : "";
-                asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,\"m\":\"%s\",\"z\":%d,\"t\":\"%d:%02d:%02d\",\"rt\":%d,\"rn\":%d,\"rs\":\"%d:%02d:%02d\",\"e\":\"%s\",\"a\":\"%s\"}",
+                asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,\"m\":\"%s\",\"z\":%d,\"t\":\"%d:%02d:%02d\","
+                    "\"rt\":%d,\"rn\":%d,\"rs\":\"%d:%02d:%02d\",\"e\":\"%s\",\"a\":\"%s\",\"c\":%.1f}",
                     need_comma? ",":"", i, user? user:"", geo? geo:"", c->freqHz,
-                    kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, hr, min, sec, rtype, rn, r_hr, r_min, r_sec, ext? ext:"", ip);
+                    kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, hr, min, sec,
+                    rtype, rn, r_hr, r_min, r_sec, ext? ext:"", ip, wdsp_SAM_carrier(i));
                 if (user) free(user);
                 if (geo) free(geo);
                 if (ext) free(ext);

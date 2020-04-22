@@ -23,17 +23,8 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "datatypes.h"
 
-// extensions to compile
-#if 1
- #define EXT_WSPR
- #define EXT_EXAMPLE
- #define EXT_LORAN_C
- #define EXT_IQ_DISPLAY
- //#define EXT_S4285
- #define EXT_INTEGRATE
- #define EXT_S_METER
- #define EXT_TEST
-#endif
+// extensions to exclude
+//#define EXT_S4285
 
 typedef void (*ext_main_t)();
 typedef void (*ext_close_conn_t)(int rx_chan);

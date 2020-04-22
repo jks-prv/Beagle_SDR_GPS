@@ -6,10 +6,10 @@
 //	2011-03-27  Initial release
 //	2013-07-28  Added single/double precision math macros
 //////////////////////////////////////////////////////////////////////
-#ifndef DATATYPES_H
-#define DATATYPES_H
 
-#include <types.h>
+#pragma once
+
+#include "types.h"
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
@@ -18,38 +18,32 @@
 //#define USE_DOUBLE_PRECISION
 
 //define single or double precision reals and complex types
-typedef float tSReal;
-typedef double tDReal;
 
-typedef struct
-{
-	tSReal re;
-	tSReal im;
+typedef struct {
+	f32_t re;
+	f32_t im;
 } tSComplex;
 
-typedef struct
-{
-	tDReal re;
-	tDReal im;
+typedef struct {
+	d64_t re;
+	d64_t im;
 } tDComplex;
 
-typedef struct
-{
+typedef struct {
 	s2_t left;
 	s2_t right;
 } tStereo16;
 
-typedef struct
-{
+typedef struct {
 	s4_t left;
 	s4_t right;
 } tStereo24;
 
 #ifdef USE_DOUBLE_PRECISION
- #define TYPEREAL	tDReal
+ #define TYPEREAL	d64_t
  #define TYPECPX	tDComplex
 #else
- #define TYPEREAL	tSReal
+ #define TYPEREAL	f32_t
  #define TYPECPX	tSComplex
 #endif
 
@@ -99,13 +93,9 @@ typedef struct
  #define MFFTW_EXECUTE fftwf_execute
 #endif
 
-#define TYPESTEREO16 tStereo16
-#define TYPESTEREO24 tStereo24
-#define TYPEMONO16 s2_t
-
-typedef unsigned char u8_t;
-typedef unsigned int u32_t;
-typedef signed int qint32;
+#define TYPESTEREO16    tStereo16
+#define TYPESTEREO24    tStereo24
+#define TYPEMONO16      s2_t
 
 #define K_AMPMAX 32767.0	//maximum sin wave Pk for 16 bit input data
 
@@ -115,6 +105,3 @@ typedef signed int qint32;
 #define K_PI4 (K_PI/4.0)
 #define K_PI2 (K_PI/2.0)
 #define K_3PI4 (3.0*K_PI4)
-
-
-#endif // DATATYPES_H

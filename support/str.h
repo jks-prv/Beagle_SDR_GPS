@@ -47,6 +47,7 @@ int kiwi_split(char *ocp, char **mbuf, const char *delims, char *argv[], int nar
 void kiwi_str_unescape_quotes(char *str);
 char *kiwi_str_escape_HTML(char *str);
 char *kiwi_str_encode(char *s);
+char *kiwi_str_encode_static(char *src);
 char *kiwi_str_decode_inplace(char *src);
 char *kiwi_str_decode_static(char *src);
 char *kiwi_str_clean(char *s);

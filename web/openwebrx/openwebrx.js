@@ -809,6 +809,10 @@ demodulator_response_time=100;
 var passbands = {
 	am:		{ lo: -4900,	hi:  4900 },            // 9.8 kHz instead of 10 to avoid adjacent channel heterodynes in SW BCBs
 	amn:		{ lo: -2500,	hi:  2500 },
+	sam:		{ lo: -4900,	hi:  4900 },
+	sal:		{ lo: -4900,	hi:  4900 },
+	sau:		{ lo: -4900,	hi:  4900 },
+	sas:		{ lo: -4900,	hi:  4900 },
 	drm:		{ lo: -5000,	hi:  5000 },
 	lsb:		{ lo: -2700,	hi:  -300 },	         // cf = 1500 Hz, bw = 2400 Hz
 	lsn:		{ lo: -2400,	hi:  -300 },	         // cf = 1350 Hz, bw = 2100 Hz
@@ -929,6 +933,10 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	
 	   case 'am':
 	   case 'amn':
+	   case 'sam':
+	   case 'sal':
+	   case 'sau':
+	   case 'sas':
 	   case 'drm':
 	   case 'nbfm':
 	   case 'iq':
@@ -2101,7 +2109,7 @@ function canvas_start_drag(evt, x, y)
 		var fold = canvas_get_dspfreq(x);
 		var b = find_band(fold);
 		var cm = cur_mode.substr(0,2);
-		var am_ssb_iq_drm = (cm == 'am' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
+		var am_ssb_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
 		//console_log('nearest', cm, am_ssb_iq_drm);
 	   var ITU_region = cfg.init.ITU_region + 1;
 	   var ham_80m_swbc_75m_overlap = (ITU_region == 2 && b.name == '75m');
@@ -4727,9 +4735,9 @@ function try_freqset_update_ui()
 		if (audioFFT_active) {
 		
          // if not already clearing then clear on iq mode change
-         var c_iq_drm = (cur_mode == 'iq' || cur_mode == 'drm')? 1:0;
-         var p_iq_drm = (audioFFT_prev_mode == 'iq' || audioFFT_prev_mode == 'drm')? 1:0;
-		   if (!audioFFT_clear_wf && (c_iq_drm ^ p_iq_drm))
+         var c_iq_drm_sas = (cur_mode == 'iq' || cur_mode == 'drm' || cur_mode == 'sas')? 1:0;
+         var p_iq_drm_sas = (audioFFT_prev_mode == 'iq' || audioFFT_prev_mode == 'drm' || audioFFT_prev_mode == 'sas')? 1:0;
+		   if (!audioFFT_clear_wf && (c_iq_drm_sas ^ p_iq_drm_sas))
 		      audioFFT_clear_wf = true;
 		   audioFFT_update();
 		   audioFFT_prev_mode = cur_mode;
@@ -4829,7 +4837,7 @@ function freqset_complete(from)
          }
       }
 
-      ext_set_passband(lo, hi);     // does error checking for NaN, lo < hi, min pbw etc.
+      ext_set_passband(lo, hi, true);     // does error checking for NaN, lo < hi, min pbw etc.
 	}
 }
 
@@ -4886,6 +4894,10 @@ var up_down = {
    // 0 means use special step logic
 	am: [ 0, -1, -0.1, 0.1, 1, 0 ],
 	amn: [ 0, -1, -0.1, 0.1, 1, 0 ],
+	sam: [ 0, -1, -0.1, 0.1, 1, 0 ],
+	sal: [ 0, -1, -0.1, 0.1, 1, 0 ],
+	sau: [ 0, -1, -0.1, 0.1, 1, 0 ],
+	sas: [ 0, -1, -0.1, 0.1, 1, 0 ],
 	drm: [ 0, -1, -0.1, 0.1, 1, 0 ],
 	usb: [ 0, -1, -0.1, 0.1, 1, 0 ],
 	usn: [ 0, -1, -0.1, 0.1, 1, 0 ],
@@ -4902,6 +4914,10 @@ var up_down_default = {
    // NB: abs(values)
 	am: [ 5, 0, 0, 0, 0, 5 ],
 	amn: [ 5, 0, 0, 0, 0, 5 ],
+	sam: [ 5, 0, 0, 0, 0, 5 ],
+	sal: [ 5, 0, 0, 0, 0, 5 ],
+	sau: [ 5, 0, 0, 0, 0, 5 ],
+	sas: [ 5, 0, 0, 0, 0, 5 ],
 	drm: [ 5, 0, 0, 0, 0, 5 ],
 	usb: [ 5, 0, 0, 0, 0, 5 ],
 	usn: [ 5, 0, 0, 0, 0, 5 ],
@@ -4930,7 +4946,7 @@ function special_step(b, sel, caller)
 	} else
 	if (b != null && (b.name == 'LW' || b.name == 'MW')) {
 	   var cm = cur_mode.substr(0,2);
-		var am_ssb_iq_drm = (cm == 'am' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
+		var am_ssb_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
 		//console_log('special step', cm, am_ssb_iq_drm);
 		if (am_ssb_iq_drm) {
 			step_Hz = step_9_10? 9000 : 10000;
@@ -5008,7 +5024,7 @@ function freq_step_update_ui(force)
 	}
 
    var cm = cur_mode.substr(0,2);
-   var am_ssb_iq_drm = (cm == 'am' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
+   var am_ssb_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
 	var show_9_10 = (b != null && (b.name == 'LW' || b.name == 'MW') && am_ssb_iq_drm)? true:false;
 	w3_visible('id-9-10-cell', show_9_10);
 
@@ -6026,7 +6042,7 @@ function dx_click(ev, gid)
 
 		freqmode_set_dsp_kHz(freq, mode, { open_ext:true });
 		if (lo || hi) {
-		   ext_set_passband(lo, hi, undefined, freq);
+		   ext_set_passband(lo, hi, false, freq);
 		}
 		
 		// open specified extension
@@ -6266,7 +6282,7 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny', 'g =', 25, 'select frequency entry field'),
          w3_inline_percent('w3-padding-tiny', 'j i LR-arrow-keys', 25, 'frequency step down/up, add shift or alt/ctrl for faster<br>shift plus alt/ctrl to step to next/prev DX label'),
          w3_inline_percent('w3-padding-tiny', 't T', 25, 'scroll frequency memory list'),
-         w3_inline_percent('w3-padding-tiny', 'a d l u c f q', 25, 'select mode: AM DRM LSB USB CW NBFM IQ'),
+         w3_inline_percent('w3-padding-tiny', 'a A d l u c f q', 25, 'toggle modes: AM SAM DRM LSB USB CW NBFM IQ'),
          w3_inline_percent('w3-padding-tiny', 'p P', 25, 'passband narrow/widen'),
          w3_inline_percent('w3-padding-tiny', 'r', 25, 'toggle audio recording'),
          w3_inline_percent('w3-padding-tiny', 'z Z', 25, 'zoom in/out, add alt/ctrl for max in/out'),
@@ -6319,7 +6335,7 @@ function keyboard_shortcut_url_keys()
 
 // abcdefghijklmnopqrstuvwxyz <>@? 0123456789.,/:kM
 // . .. .....F.. ............ .... FFFFFFFFFFFFFFFF   F = frequency entry keys
-//    .    ..  F  .  .. ..  .
+// .  .    ..  F  .  .. ..  .
 // ABCDEFGHIJKLMNOPQRSTUVWXYZ
 
 function keyboard_shortcut(key, mod, ctlAlt)
@@ -6331,11 +6347,12 @@ function keyboard_shortcut(key, mod, ctlAlt)
    switch (key) {
    
    // mode
-   case 'a': ext_set_mode((mode == 'am')? 'amn' : 'am'); break;
+   case 'a': mode_button(null, w3_el('id-button-am')); break;
+   case 'A': mode_button(null, w3_el('id-button-sam')); break;
    case 'd': ext_set_mode('drm', null, { open_ext:true }); break;
-   case 'l': ext_set_mode((mode == 'lsb')? 'lsn' : 'lsb'); break;
-   case 'u': ext_set_mode((mode == 'usb')? 'usn' : 'usb'); break;
-   case 'c': ext_set_mode((mode == 'cw')? 'cwn' : 'cw'); break;
+   case 'l': mode_button(null, w3_el('id-button-lsb')); break;
+   case 'u': mode_button(null, w3_el('id-button-usb')); break;
+   case 'c': mode_button(null, w3_el('id-button-cw')); break;
    case 'f': ext_set_mode('nbfm'); break;
    case 'q': ext_set_mode('iq'); break;
    
@@ -6948,7 +6965,10 @@ function panels_setup()
 		   w3_div('id-status-problems')
 		) +
 		w3_div('id-status-stats-cpu') +
-		w3_div('id-status-stats-xfer');
+		w3_div('id-status-stats-xfer') +
+		w3_div('id-sam-carrier-container w3-hide',
+         w3_text(optbar_prefix_color, 'SAM'), w3_text('id-sam-carrier')
+      );
 
 	setTimeout(function() { setInterval(status_periodic, 5000); }, 1000);
 }
@@ -7888,22 +7908,24 @@ function mode_over(evt, el)
 {
    var mode = el.innerHTML.toLowerCase();
    //console.log('mode_over mode='+ mode);
+   var s;
    
    switch (mode) {
    
-      case 'sam':
-         el.title = 'not yet implemented';
-         break;
+      case 'sam': s = 'synchronous AM'; break;
+      case 'sal': s = 'synchronous AM LSB'; break;
+      case 'sau': s = 'synchronous AM USB'; break;
+      case 'sas': s = 'synchronous AM stereo'; break;
       
-      default:
-         el.title = evt.shiftKey? 'restore passband':'';
-         break;
+      default: s = ''; break;
    }
+
+   el.title = evt.shiftKey? 'restore passband' : s;
 }
 
 function any_alternate_click_event(evt)
 {
-	return (evt.shiftKey || evt.ctrlKey || evt.altKey || evt.button == mouse.middle || evt.button == mouse.right);
+	return (evt && (evt.shiftKey || evt.ctrlKey || evt.altKey || evt.button == mouse.middle || evt.button == mouse.right));
 }
 
 function restore_passband(mode)
@@ -7916,14 +7938,14 @@ function restore_passband(mode)
 }
 
 var mode_buttons = [
-   { s:[ 'AM', 'AMN' ],          dis:0 },    // fixme: add AMW dynamically if 20 kHz mode? would have to deal with last_mode=ANW cookie
-   { s:[ 'SAM', 'SAU', 'SAL' ],  dis:1 },
-   { s:[ 'DRM' ],                dis:0 },
-   { s:[ 'LSB', 'LSN' ],         dis:0 },
-   { s:[ 'USB', 'USN' ],         dis:0 },
-   { s:[ 'CW', 'CWN' ],          dis:0 },
-   { s:[ 'NBFM' ],               dis:0 },
-   { s:[ 'IQ' ],                 dis:0 },
+   { s:[ 'AM', 'AMN' ],                 dis:0 },    // fixme: add AMW dynamically if 20 kHz mode? would have to deal with last_mode=ANW cookie
+   { s:[ 'SAM', 'SAL', 'SAU', 'SAS' ],  dis:0 },
+   { s:[ 'DRM' ],                       dis:0 },
+   { s:[ 'LSB', 'LSN' ],                dis:0 },
+   { s:[ 'USB', 'USN' ],                dis:0 },
+   { s:[ 'CW', 'CWN' ],                 dis:0 },
+   { s:[ 'NBFM' ],                      dis:0 },
+   { s:[ 'IQ' ],                        dis:0 },
 ];
 
 function mode_button(evt, el)
@@ -7932,9 +7954,9 @@ function mode_button(evt, el)
 
 	// Prevent going between mono and stereo modes while recording
 	// FIXME: do something better like disable ineligible mode buttons and show reason in mouseover tooltip 
-   var c_iq_drm = (cur_mode == 'iq' || cur_mode == 'drm')? 1:0;
-   var m_iq_drm = (mode == 'iq' || mode == 'drm')? 1:0;
-	if (recording && (c_iq_drm ^ m_iq_drm)) {
+   var c_iq_drm_sas = (cur_mode == 'iq' || cur_mode == 'drm' || cur_mode == 'sas')? 1:0;
+   var m_iq_drm_sas = (mode == 'iq' || mode == 'drm' || mode == 'sas')? 1:0;
+	if (recording && (c_iq_drm_sas ^ m_iq_drm_sas)) {
 		return;
 	}
 

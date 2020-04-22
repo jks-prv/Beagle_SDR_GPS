@@ -190,6 +190,8 @@ function ext_set_mode(mode, freq, opt)
    var new_drm = (mode == 'drm');
    if (new_drm)
       extint.prev_mode = cur_mode;
+   w3_show_hide('id-sam-carrier-container', mode.startsWith('sa'));
+
    //console.log('### ext_set_mode '+ mode +' prev='+ extint.prev_mode);
 	demodulator_analog_replace(mode, freq);
 	
@@ -248,7 +250,7 @@ function ext_set_passband(low_cut, high_cut, set_mode_pb, freq_dial_Hz)		// spec
 	//console.log('SET_PB okay='+ okay);
 	
 	// set the passband for the current mode as well (sticky)
-	if (set_mode_pb != undefined && set_mode_pb && okay) {
+	if (isArg(set_mode_pb) && set_mode_pb && okay) {
 		passbands[cur_mode].last_lo = low_cut;
 		passbands[cur_mode].last_hi = high_cut;
 	}

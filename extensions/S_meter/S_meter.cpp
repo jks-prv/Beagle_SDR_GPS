@@ -2,10 +2,6 @@
 
 #include "ext.h"	// all calls to the extension interface begin with "ext_", e.g. ext_register()
 
-#ifndef EXT_S_METER
-	void S_meter_main() {}
-#else
-
 #include "kiwi.h"
 
 #include <stdio.h>
@@ -75,5 +71,3 @@ void S_meter_main()
 {
 	ext_register(&S_meter_ext);
 }
-
-#endif

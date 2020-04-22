@@ -2,10 +2,6 @@
 
 #include "ext.h"    // all calls to the extension interface begin with "ext_", e.g. ext_register()
 
-#ifndef EXT_IQ_DISPLAY
-    void iq_display_main() {}
-#else
-
 #include "clk.h"
 #include "pll.h"
 
@@ -305,5 +301,3 @@ void iq_display_main()
 {
     ext_register(&iq_display_ext);
 }
-
-#endif

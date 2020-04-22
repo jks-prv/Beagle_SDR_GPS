@@ -2,6 +2,28 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.390  April 23, 2020
+    Performance improvements:
+        Suggested by @howardsu on Kiwi forum: remove -DDEBUG so assert()'s are not evaluated.
+        	Added new "make debug" target to revert to compiling with -DDEBUG defined.
+
+        Christoph's cross-compilation changes: added "make xc" target that allows cross-compiling on
+            development host. Alternative to slow compiles on Beagle during development.
+            See file CROSS_COMPILE for complete details.
+    
+    Added synchronous AM (SAM) demodulators from Warren Pratt's wdsp package via the
+        Teensy-ConvolutionSDR implementation: github.com/DD4WH/Teensy-ConvolutionSDR
+        See the Kiwi operation manual for more information: kiwisdr.com/quickstart/index.html#id-faq-sam
+        Synchronous AM modes: SAM, SAL, SAU, SAS
+    
+    User interface changes:
+        Use keyboard shortcut 'A' to toggle the SAM modes (sorry, 's' and 'S' were taken).
+            As always type 'h' or '?' to see the list of all keyboard shortcuts.
+        Bugfix: Adjusting the passband via a "/width" or "/low,high" entry in the
+            frequency box is now "sticky" i.e. remembered when returning to the mode.
+            Just like when changing the passband via the 'p' and 'P' keyboard shortcuts.
+            Restore as usual by shift-clicking on the mode button.
+
 v1.389  April 12, 2020
     Added to popup menu: "edit last selected DX label". This means you can now edit DX labels
     on mobile devices.

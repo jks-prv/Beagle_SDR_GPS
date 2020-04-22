@@ -422,9 +422,10 @@ void c2s_admin(void *param)
 			if (n == 2) {
 			    // FIXME: validate unencoded user & host for allowed characters
 				system("killall -q frpc; sleep 1");
+				const char *proxy_server = admcfg_string("proxy_server", NULL, CFG_REQUIRED);
 
 			    char *reply;
-		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"proxy.kiwisdr.com/?u=%s&h=%s\"", user_m, host_m);
+		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"%s/?u=%s&h=%s\"", proxy_server, user_m, host_m);
                 reply = non_blocking_cmd(cmd_p, &status);
                 printf("proxy register: %s\n", cmd_p);
                 free(cmd_p);
@@ -434,7 +435,7 @@ void c2s_admin(void *param)
                 } else {
                     char *rp = kstr_sp(reply);
                     printf("proxy register: reply: %s\n", rp);
-                    status = -1;
+                    status = 901;
                     n = sscanf(rp, "status=%d", &status);
                     printf("proxy register: n=%d status=%d\n", n, status);
                 }
@@ -444,17 +445,17 @@ void c2s_admin(void *param)
 				net.proxy_status = status;
 				if (status < 0 || status > 99) {
 				    free(user_m); free(host_m);
+                    admcfg_string_free(proxy_server);
 				    continue;
 				}
 				
-				u4_t server = status & 0xf;
-				
-				asprintf(&cmd_p, "sed -e s/SERVER/%d/ -e s/USER/%s/ -e s/HOST/%s/ -e s/PORT/%d/ %s >%s",
-				    server, user_m, host_m, net.port_ext, DIR_CFG "/frpc.template.ini", DIR_CFG "/frpc.ini");
+				asprintf(&cmd_p, "sed -e s/SERVER/%s/ -e s/USER/%s/ -e s/HOST/%s/ -e s/PORT/%d/ %s >%s",
+				    proxy_server, user_m, host_m, net.port_ext, DIR_CFG "/frpc.template.ini", DIR_CFG "/frpc.ini");
                 printf("proxy register: %s\n", cmd_p);
 				system(cmd_p);
                 free(cmd_p);
 				free(user_m); free(host_m);
+                admcfg_string_free(proxy_server);
 
                 if (background_mode)
                     system("/usr/local/bin/frpc -c " DIR_CFG "/frpc.ini &");

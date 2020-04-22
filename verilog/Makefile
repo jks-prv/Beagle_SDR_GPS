@@ -25,7 +25,7 @@ rx4:
 	
 rx14:
 	@reset
-	@echo "build rx4_wf4 project with Vivado via tcl"
+	@echo "build rx14_wf0 project with Vivado via tcl"
 	time vivado -mode batch -source make_proj.tcl -tclargs --result_dir $(V_SRC_DIR) --rx14_wf0
 	
 rebuild:

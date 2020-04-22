@@ -1,7 +1,5 @@
 #include "wspr.h"
 
-#ifdef EXT_WSPR
-
 /*
  This file is part of wsprd.
  
@@ -244,5 +242,3 @@ int fano(
   if(i >= maxcycles) return 0;	          // Decoder timed out
   return 1;		                  // Successful completion
 }
-
-#endif

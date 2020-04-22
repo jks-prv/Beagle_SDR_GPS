@@ -193,8 +193,8 @@ static void dx_reload_json(cfg_t *cfg)
 	const char *s;
 	jsmntok_t *end_tok = &(cfg->tokens[cfg->ntok]);
 	jsmntok_t *jt = dxcfg_lookup_json("dx");
-	assert(jt != NULL);
-	assert(JSMN_IS_ARRAY(jt));
+	check(jt != NULL);
+	check(JSMN_IS_ARRAY(jt));
 	int _dx_list_len = jt->size;
 	jt++;
 	
@@ -206,29 +206,29 @@ static void dx_reload_json(cfg_t *cfg)
 	int i = 0;
 
 	for (; jt != end_tok; dxp++, i++) {
-		assert(i < _dx_list_len);
-		assert(JSMN_IS_ARRAY(jt));
+		check(i < _dx_list_len);
+		check(JSMN_IS_ARRAY(jt));
 		jt++;
 		
 		double f;
-		assert(dxcfg_float_json(jt, &f) == true);
+		check(dxcfg_float_json(jt, &f) == true);
 		dxp->freq = f;
 		jt++;
 		
 		const char *mode;
-		assert(dxcfg_string_json(jt, &mode) == true);
+		check(dxcfg_string_json(jt, &mode) == true);
 		dx_mode(dxp, mode);
 		dxcfg_string_free(mode);
 		jt++;
 		
-		assert(dxcfg_string_json(jt, &s) == true);
+		check(dxcfg_string_json(jt, &s) == true);
 		kiwi_str_unescape_quotes((char *) s);
         dxp->ident_s = strdup(s);
 		dxp->ident = kiwi_str_encode((char *) s);
 		dxcfg_string_free(s);
 		jt++;
 		
-		assert(dxcfg_string_json(jt, &s) == true);
+		check(dxcfg_string_json(jt, &s) == true);
 		kiwi_str_unescape_quotes((char *) s);
         dxp->notes_s = strdup(s);
 		dxp->notes = kiwi_str_encode((char *) s);
@@ -258,9 +258,9 @@ static void dx_reload_json(cfg_t *cfg)
 		if (JSMN_IS_OBJECT(jt)) {
 			jt++;
 			while (jt != end_tok && !JSMN_IS_ARRAY(jt)) {
-				assert(JSMN_IS_ID(jt));
+				check(JSMN_IS_ID(jt));
 				const char *id;
-				assert(dxcfg_string_json(jt, &id) == true);
+				check(dxcfg_string_json(jt, &id) == true);
 				jt++;
 				
 				int num;
@@ -326,6 +326,8 @@ static void dx_reload_json(cfg_t *cfg)
 void dx_reload()
 {
 	cfg_t *cfg = &cfg_dx;
+	
+	check(DX_MODE <= N_MODE);
 
 	TMEAS(u4_t start = timer_ms();)
 	TMEAS(printf("DX_RELOAD START\n");)

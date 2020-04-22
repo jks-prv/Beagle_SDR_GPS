@@ -732,7 +732,8 @@ function drm_panel_show(controls_inner, data_html)
             w3_col_percent('w3-margin-T-4/',
                w3_div('id-drm-station w3-text-css-yellow', '&nbsp;'), 60,
                w3_div('', 'Schedules: ' +
-                  '<a href="https://www.drm.org/what-can-i-hear/broadcast-schedule-2/" target="_blank">drm.org</a> ' +
+                  '<a href="http://ab27.bplaced.net/drm.pdf" target="_blank">ab27(pdf)</a> ' +
+                  '<a href="https://www.drm.org/what-can-i-hear/broadcast-schedule-2" target="_blank">drm.org</a> ' +
                   '<a href="http://www.hfcc.org/drm" target="_blank">hfcc.org</a>'), 40
             ),
             
