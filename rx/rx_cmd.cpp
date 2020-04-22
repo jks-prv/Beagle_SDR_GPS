@@ -60,10 +60,18 @@ bool auth_su;
 char auth_su_remote_ip[NET_ADDRSTRLEN];
 bool conn_nolocal;
 
-const char *mode_s[N_MODE] = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq", "drm", "usn", "lsn" };
-const char *modu_s[N_MODE] = { "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ", "DRM", "USN", "LSN" };
-const int mode_hbw[N_MODE] = { 9800/2, 5000/2, 2400/2, 2400/2, 400/2, 60/2, 12000/2, 10000/2, 10000/2, 2100/2, 2100/2 };
-const int mode_offset[N_MODE] = { 0, 0, 1500, -1500, 0, 0, 0, 0, 0, 1350, -1350 };
+const char *mode_s[N_MODE] = {
+    "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq", "drm", "usn", "lsn", "sam", "sau", "sal", "sas"
+};
+const char *modu_s[N_MODE] = {
+    "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ", "DRM", "USN", "LSN", "SAM", "SAU", "SAL", "SAS"
+};
+const int mode_hbw[N_MODE] = {
+    9800/2, 5000/2, 2400/2, 2400/2, 400/2, 60/2, 12000/2, 10000/2, 10000/2, 2100/2, 2100/2, 9800/2, 9800/2, 9800/2, 9800/2
+};
+const int mode_offset[N_MODE] = {
+    0, 0, 1500, -1500, 0, 0, 0, 0, 0, 1350, -1350, 0, 0, 0, 0
+};
 
 #ifndef CFG_GPS_ONLY
 

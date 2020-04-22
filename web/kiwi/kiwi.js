@@ -12,7 +12,7 @@ var kiwi = {
    is_BBAI: 0,
    
    // must match rx_cmd.cpp
-   modes_l: [ 'am', 'amn', 'usb', 'lsb', 'cw', 'cwn', 'nbfm', 'iq', 'drm', 'usn', 'lsn' ],
+   modes_l: [ 'am', 'amn', 'usb', 'lsb', 'cw', 'cwn', 'nbfm', 'iq', 'drm', 'usn', 'lsn', 'sam', 'sal', 'sau', 'sas' ],
    modes_u: [],
    modes_s: {},
    
@@ -1449,6 +1449,11 @@ function user_cb(obj)
          // new users display
          //for (var i=0; i < rx_chans; i++) if (s1 != '')
          w3_innerHTML('id-optbar-user-'+ i, (s1 != '')? (s1 +'<br>'+ s2) : '');
+		}
+		
+		if (obj.c) {
+		   var el = w3_el('id-sam-carrier');
+		   if (el) w3_innerHTML(el, 'carrier '+ obj.c.toFixed(1) +' Hz');
 		}
 		
 		// inactivity timeout warning panel

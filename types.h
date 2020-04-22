@@ -13,6 +13,9 @@ typedef signed int			s4_t;
 typedef signed short        s2_t;
 typedef signed char         s1_t;
 
+typedef float               f32_t;
+typedef double              d64_t;
+
 typedef void (*func_t)();
 typedef void (*funcPI_t)(int);
 typedef void (*funcP_t)(void *);

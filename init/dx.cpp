@@ -326,6 +326,8 @@ static void dx_reload_json(cfg_t *cfg)
 void dx_reload()
 {
 	cfg_t *cfg = &cfg_dx;
+	
+	check(DX_MODE <= N_MODE);
 
 	TMEAS(u4_t start = timer_ms();)
 	TMEAS(printf("DX_RELOAD START\n");)

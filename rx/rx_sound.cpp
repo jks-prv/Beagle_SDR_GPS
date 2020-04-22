@@ -49,6 +49,7 @@ Boston, MA  02110-1301, USA.
 #include "rx_sound.h"
 #include "rx_waterfall.h"
 #include "shmem.h"
+#include "wdsp.h"
 
 #ifdef DRM
  #include "DRM.h"
@@ -105,6 +106,7 @@ void c2s_sound_setup(void *param)
 {
 	conn_t *conn = (conn_t *) param;
 	double frate = ext_update_get_sample_rateHz(-1);
+	wdsp_SAM_demod_init();
 
     //cprintf(conn, "rx%d c2s_sound_setup\n", conn->rx_channel);
 	send_msg(conn, SM_SND_DEBUG, "MSG center_freq=%d bandwidth=%d adc_clk_nom=%.0f", (int) ui_srate/2, (int) ui_srate, ADC_CLOCK_NOM);
@@ -285,12 +287,17 @@ void c2s_sound(void *param)
 				if (mode != _mode) {
 
                     // when switching out of IQ or DRM modes: reset AGC, compression state
-		            bool IQ_or_DRM = (mode == MODE_IQ || mode == MODE_DRM);
-		            bool new_IQ_or_DRM = (_mode == MODE_IQ || _mode == MODE_DRM);
-				    if (IQ_or_DRM && !new_IQ_or_DRM && (cmd_recv & CMD_AGC)) {
+		            bool IQ_or_DRM_or_SAS = (mode == MODE_IQ || mode == MODE_DRM || mode == MODE_SAS);
+		            bool new_IQ_or_DRM_or_SAS = (_mode == MODE_IQ || _mode == MODE_DRM || _mode == MODE_SAS);
+				    if (IQ_or_DRM_or_SAS && !new_IQ_or_DRM_or_SAS && (cmd_recv & CMD_AGC)) {
 					    //cprintf(conn, "SND out IQ mode -> reset AGC, compression\n");
                         m_Agc[rx_chan].SetParameters(agc, hang, thresh, manGain, slope, decay, frate);
 	                    memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
+                    }
+                    
+                    // reset SAM demod on non-SAM to SAM transition
+                    if ((_mode >= MODE_SAM && _mode <= MODE_SAS) && !(mode >= MODE_SAM && mode <= MODE_SAS)) {
+                        wdsp_SAM_reset(rx_chan);
                     }
 
 					mode = _mode;
@@ -685,18 +692,18 @@ void c2s_sound(void *param)
 		#define SND_FLAG_LITTLE_ENDIAN  0x80
 		
 		bool isNBFM = (mode == MODE_NBFM);
-		bool IQ_or_DRM = (mode == MODE_IQ || mode == MODE_DRM);
+		bool IQ_or_DRM_or_SAS = (mode == MODE_IQ || mode == MODE_DRM || mode == MODE_SAS);
 
 		u1_t *bp_real_u1  = snd->out_pkt_real.u1;
 		s2_t *bp_real_s2  = snd->out_pkt_real.s2;
 		u1_t *bp_iq_u1    = snd->out_pkt_iq.u1;
 		s2_t *bp_iq_s2    = snd->out_pkt_iq.s2;
-		u1_t *flags    = (IQ_or_DRM? &snd->out_pkt_iq.h.flags : &snd->out_pkt_real.h.flags);
-		u1_t *seq      = (IQ_or_DRM? snd->out_pkt_iq.h.seq    : snd->out_pkt_real.h.seq);
-		char *smeter   = (IQ_or_DRM? snd->out_pkt_iq.h.smeter : snd->out_pkt_real.h.smeter);
+		u1_t *flags    = (IQ_or_DRM_or_SAS? &snd->out_pkt_iq.h.flags : &snd->out_pkt_real.h.flags);
+		u1_t *seq      = (IQ_or_DRM_or_SAS? snd->out_pkt_iq.h.seq    : snd->out_pkt_real.h.seq);
+		char *smeter   = (IQ_or_DRM_or_SAS? snd->out_pkt_iq.h.smeter : snd->out_pkt_real.h.smeter);
 
-		bool do_de_emp = (de_emp && !IQ_or_DRM);
-		bool do_lms    = (!isNBFM && !IQ_or_DRM);
+		bool do_de_emp = (de_emp && !IQ_or_DRM_or_SAS);
+		bool do_lms    = (!isNBFM && !IQ_or_DRM_or_SAS);
 		
 		#ifdef DRM
             drm_t *drm = &DRM_SHMEM->drm[rx_chan];
@@ -888,7 +895,7 @@ void c2s_sound(void *param)
             
             TYPEMONO16 *r_samps;
             
-            if (!IQ_or_DRM) {
+            if (!IQ_or_DRM_or_SAS) {
                 r_samps = &rx->real_samples[rx->real_wr_pos][0];
                 rx->real_seqnum[rx->real_wr_pos] = rx->real_seq;
                 rx->real_seq++;
@@ -905,10 +912,10 @@ void c2s_sound(void *param)
                 TYPEREAL *d_samps = rx->demod_samples;
     
                 for (j=0; j<ns_out; j++) {
-                    double pwr = a_samps->re*a_samps->re + a_samps->im*a_samps->im;
-                    double mag = sqrt(pwr);
-                    #define DC_ALPHA 0.99
-                    double z0 = mag + (z1 * DC_ALPHA);
+                    float pwr = a_samps->re*a_samps->re + a_samps->im*a_samps->im;
+                    float mag = sqrt(pwr);
+                    #define DC_ALPHA 0.99f
+                    float z0 = mag + (z1 * DC_ALPHA);
                     *d_samps = z0-z1;
                     z1 = z0;
                     d_samps++;
@@ -919,6 +926,18 @@ void c2s_sound(void *param)
                 // the non-FFT FIR has no pipeline delay issues
                 d_samps = rx->demod_samples;
                 m_AM_FIR[rx_chan].ProcessFilter(ns_out, d_samps, r_samps);
+                break;
+            }
+            
+            case MODE_SAM:
+            case MODE_SAL:
+            case MODE_SAU:
+            case MODE_SAS: {
+                TYPECPX *a_samps = rx->agc_samples;
+                m_Agc[rx_chan].ProcessData(ns_out, f_samps, a_samps, masked);
+
+                // NB: MODE_SAS stereo output samples put back into a_samps
+                wdsp_SAM_demod(rx_chan, mode, ns_out, a_samps, r_samps);
                 break;
             }
             
@@ -990,6 +1009,7 @@ void c2s_sound(void *param)
     
             if (mode == MODE_IQ
             #ifdef DRM
+                // DRM monitor mode is effectively the same as MODE_IQ
                 || (mode == MODE_DRM && (drm->monitor || rx_chan >= DRM_MAX_RX))
             #endif
             ){
@@ -1021,6 +1041,31 @@ void c2s_sound(void *param)
                         *bp_iq_u1++ = (im >> 8) & 0xff; bc++;
                         *bp_iq_u1++ = (im >> 0) & 0xff; bc++;
                         f_samps++;
+                    }
+                }
+            } else
+            
+            if (mode == MODE_SAS) {
+                TYPECPX *a_samps = rx->agc_samples;
+
+                if (little_endian) {
+                    bc = ns_out * NIQ * sizeof(s2_t);
+                    for (j=0; j < ns_out; j++) {
+                        // can cast TYPEREAL directly to s2_t due to choice of CUTESDR_SCALE
+                        s2_t re = (s2_t) a_samps->re, im = (s2_t) a_samps->im;
+                        *bp_iq_s2++ = re;      // arm native little-endian (put any swap burden on client)
+                        *bp_iq_s2++ = im;
+                        a_samps++;
+                    }
+                } else {
+                    for (j=0; j < ns_out; j++) {
+                        // can cast TYPEREAL directly to s2_t due to choice of CUTESDR_SCALE
+                        s2_t re = (s2_t) a_samps->re, im = (s2_t) a_samps->im;
+                        *bp_iq_u1++ = (re >> 8) & 0xff; bc++;  // choose a network byte-order (big-endian)
+                        *bp_iq_u1++ = (re >> 0) & 0xff; bc++;
+                        *bp_iq_u1++ = (im >> 8) & 0xff; bc++;
+                        *bp_iq_u1++ = (im >> 0) & 0xff; bc++;
+                        a_samps++;
                     }
                 }
             } else
@@ -1147,8 +1192,8 @@ void c2s_sound(void *param)
 
         *flags = 0;
         if (dpump.rx_adc_ovfl) *flags |= SND_FLAG_ADC_OVFL;
-        if (IQ_or_DRM) *flags |= SND_FLAG_MODE_IQ;
-        if (compression && !IQ_or_DRM) *flags |= SND_FLAG_COMPRESSED;
+        if (IQ_or_DRM_or_SAS) *flags |= SND_FLAG_MODE_IQ;
+        if (compression && !IQ_or_DRM_or_SAS) *flags |= SND_FLAG_COMPRESSED;
         if (masked) *flags |= SND_FLAG_MASKED;
         if (little_endian) *flags |= SND_FLAG_LITTLE_ENDIAN;
 
@@ -1176,7 +1221,7 @@ void c2s_sound(void *param)
 
         //printf("hdr %d S%d\n", sizeof(out_pkt.h), bc); fflush(stdout);
         int aud_bytes;
-        if (IQ_or_DRM) {
+        if (IQ_or_DRM_or_SAS) {
             // allow GPS timestamps to be seen by internal extensions
             // but selectively remove from external connections (see admin page security tab)
             if (!allow_gps_tstamp) {
