@@ -91,7 +91,7 @@ case "$1" in
     elif [ "x${RPI}" = "xtrue" ] ; then
         modprobe i2c-dev
         modprobe at24
-        echo "24c02 0x54" > /sys/class/i2c-adapter/i2c-1/new_device
+        echo "24c32 0x54" > /sys/class/i2c-adapter/i2c-1/new_device
         sleep 1
     else
         if test \( ! -f /lib/firmware/${CAPE}.dtbo \) -o \( /lib/firmware/${CAPE}.dts -nt /lib/firmware/${CAPE}.dtbo \) ; then
