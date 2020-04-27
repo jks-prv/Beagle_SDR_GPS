@@ -55,7 +55,11 @@
     spi_shmem_t *spi_shmem_p = &spi_shmem;
 #endif
 
-#define	SPI_DEVNAME	"/dev/spidev1.0"
+#if defined(CPU_BCM2837)
+    #define	SPI_DEVNAME	"/dev/spidev0.0"
+#else
+    #define	SPI_DEVNAME	"/dev/spidev1.0"
+#endif
 #define	NOT(bit)	0	// documentation aid
 
 static int spi_fd = -1;
@@ -64,11 +68,40 @@ static int speed;
 
 static int use_async;
 
+#if defined(CPU_BCM2837)
+    // RPI only supports 8 bit per word
+    // It is fine to support SPI_32 FPGA firmware
+    #undef SPI_BPW
+    #define SPI_BPW 8
+
+    #define SPI_INLINE_BUF_SIZE 2048
+#endif
+
 void _spi_dev(SPI_SEL sel, SPI_MOSI *mosi, int tx_xfers, SPI_MISO *miso, int rx_xfers)
 {
+#if defined(CPU_BCM2837)
+    SPI_T tx_buffer[SPI_INLINE_BUF_SIZE];
+#endif
+
     SPI_T *txb = mosi->msg;
     SPI_T *rxb = miso->msg;
-    
+
+#if defined(CPU_BCM2837)
+    if (tx_xfers < SPI_INLINE_BUF_SIZE) {
+		for (int i = 0; i < tx_xfers; i++)
+			tx_buffer[i] = __builtin_bswap32(txb[i]);
+		txb = tx_buffer;
+	}
+	else
+	{
+		SPI_T *t = (SPI_T*)malloc(sizeof(SPI_T)* tx_xfers);
+
+		for (int i = 0; i < tx_xfers; i++)
+			t[i] = __builtin_bswap32(txb[i]);
+		txb = t;
+	}
+#endif
+
 	if (sel == SPI_BOOT) {
 		GPIO_CLR_BIT(SPIn_CS1);
 	}
@@ -104,6 +137,13 @@ void _spi_dev(SPI_SEL sel, SPI_MOSI *mosi, int tx_xfers, SPI_MISO *miso, int rx_
 	if (sel == SPI_BOOT) {
 		GPIO_SET_BIT(SPIn_CS1);
 	}
+
+#if defined(CPU_BCM2837)
+	if (tx_xfers >= SPI_INLINE_BUF_SIZE)
+	{
+		free(txb);
+	}
+#endif
 }
 
 void spi_dev_func(int param)
@@ -196,7 +236,12 @@ void spi_dev_init(int spi_clkg, int spi_speed)
             use_async = 1;  // using 2nd process ipc on uni-processor makes sense due to spi async stall problem
         }
     #endif
-    
+
+    #ifdef CPU_BCM2837
+        use_spidev = 1;
+        use_async = 1;
+    #endif
+
     #ifdef CPU_AM5729
         use_spidev = 1;
         use_async = 1;

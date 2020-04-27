@@ -64,15 +64,20 @@ else
 	endif
 endif
 
-ARCH = sitara
-
 ifeq ($(BBAI),true)
+	ARCH = sitara
 	CPU = AM5729
-	PLATFORM = beaglebone_ai
+	PLATFORMS = beaglebone beaglebone_ai
+	CFLAGS += -DMULTI_CORE
+else ifeq ($(RPI),true)
+	ARCH = omap
+	CPU = BCM2837
+	PLATFORMS = raspberrypi
 	CFLAGS += -DMULTI_CORE
 else
+	ARCH = sitara
 	CPU = AM3359
-	PLATFORM = beaglebone_black
+	PLATFORMS = beaglebone beaglebone_black
 endif
 
 # uncomment when using debugger so variables are not always optimized away
@@ -102,7 +107,8 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 .PHONY: xc
 ifeq ($(XC),)
 xc:
-	@if [ ! -f $(KIWI_XC_REMOTE_FS)/ID.txt ]; then \
+	@if [ ! -f $(KIWI_XC_REMOTE_FS)/ID.txt ] && \
+	    [ ! -f $(KIWI_XC_REMOTE_FS)/boot/config.txt ]; then \
 		echo "ERROR: remote filesystem $(KIWI_XC_REMOTE_FS) not mounted?"; \
 		exit -1; \
 	fi
@@ -172,8 +178,11 @@ EXTS = $(INT_EXTS) $(PVT_EXTS)
 
 GPS = gps gps/ka9q-fec gps/GNSS-SDRLIB
 RX = rx rx/CuteSDR rx/wdsp rx/csdr rx/kiwi
-_DIRS = pru $(PKGS)
-_DIRS_O3 += . $(PKGS_O3) platform/beaglebone platform/$(PLATFORM) $(EXT_DIRS) $(EXT_SUBDIRS) \
+ifneq ($(RPI),true)
+	_DIRS = pru $(PKGS)
+endif
+_DIR_PLATFORMS = $(addprefix platform/, ${PLATFORMS})
+_DIRS_O3 += . $(PKGS_O3) platform/common $(_DIR_PLATFORMS) $(EXT_DIRS) $(EXT_SUBDIRS) \
 	$(RX) $(GPS) ui init support net web arch/$(ARCH)
 
 ifeq ($(OPT),0)
