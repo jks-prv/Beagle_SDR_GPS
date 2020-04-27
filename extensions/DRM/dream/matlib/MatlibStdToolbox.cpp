@@ -467,8 +467,8 @@ CMatlibVector<CComplex> Fft(const CMatlibVector<CComplex>& cvI,
 							CFftPlans& FftPlans)
 {
 	int				i;
-	fftw_complex*	pFftwComplexIn;
-	fftw_complex*	pFftwComplexOut;
+	fftwf_complex*	pFftwComplexIn;
+	fftwf_complex*	pFftwComplexOut;
 
 	const int				n(cvI.GetSize());
 
@@ -492,7 +492,7 @@ CMatlibVector<CComplex> Fft(const CMatlibVector<CComplex>& cvI,
 	}
 
 	/* Actual fftw call */
-	fftw_execute(FftPlans.FFTPlForw);
+	fftwf_execute(FftPlans.FFTPlForw);
 
 	for (i = 0; i < n; i++)
 		cvReturn[i] = CComplex(pFftwComplexOut[i][0], pFftwComplexOut[i][1]);
@@ -504,8 +504,8 @@ CMatlibVector<CComplex> Ifft(const CMatlibVector<CComplex>& cvI,
 							 CFftPlans& FftPlans)
 {
 	int				i;
-	fftw_complex*	pFftwComplexIn;
-	fftw_complex*	pFftwComplexOut;
+	fftwf_complex*	pFftwComplexIn;
+	fftwf_complex*	pFftwComplexOut;
 
 	const int		n(cvI.GetSize());
 
@@ -529,7 +529,7 @@ CMatlibVector<CComplex> Ifft(const CMatlibVector<CComplex>& cvI,
 	}
 
 	/* Actual fftw call */
-	fftw_execute(FftPlans.FFTPlBackw);
+	fftwf_execute(FftPlans.FFTPlBackw);
 	
 	const CReal scale = (CReal) 1.0 / n;
 	for (i = 0; i < n; i++)
@@ -545,8 +545,8 @@ CMatlibVector<CComplex> rfft(const CMatlibVector<CReal>& fvI,
 							 CFftPlans& FftPlans)
 {
 	int			i;
-	double* 	pFftwRealIn;
-	double* 	pFftwRealOut;
+	float* 	pFftwRealIn;
+	float* 	pFftwRealOut;
 
 	const int	iSizeI = fvI.GetSize();
 	const int	iLongLength(iSizeI);
@@ -571,7 +571,7 @@ CMatlibVector<CComplex> rfft(const CMatlibVector<CReal>& fvI,
 		pFftwRealIn[i] = fvI[i];
 
 	/* Actual fftw call */
-	fftw_execute(FftPlans.RFFTPlForw);
+	fftwf_execute(FftPlans.RFFTPlForw);
 
 	/* Now build complex output vector */
 	/* Zero frequency */
@@ -593,8 +593,8 @@ CMatlibVector<CReal> rifft(const CMatlibVector<CComplex>& cvI,
 	This function only works with EVEN N!
 */
 	int			i;
-	double*		pFftwRealIn;
-	double*		pFftwRealOut;
+	float*		pFftwRealIn;
+	float*		pFftwRealOut;
 
 	const int	iShortLength(cvI.GetSize() - 1); /* Nyquist frequency! */
 	const int	iLongLength(iShortLength * 2);
@@ -622,7 +622,7 @@ CMatlibVector<CReal> rifft(const CMatlibVector<CComplex>& cvI,
 	pFftwRealIn[iShortLength] = cvI[iShortLength].real(); 
 
 	/* Actual fftw call */
-	fftw_execute(FftPlans.RFFTPlBackw);
+	fftwf_execute(FftPlans.RFFTPlBackw);
 
 	/* Scale output vector */
 	const CReal scale = (CReal) 1.0 / iLongLength;
@@ -715,16 +715,16 @@ void CFftPlans::Init(const int iFSi, EFFTPlan eFFTPlan)
 		switch (eFFTPlan)
 		{
 		case FP_RFFTPlForw:
-			RFFTPlForw = fftw_plan_r2r_1d(fftw_n, pFftwRealIn, pFftwRealOut, FFTW_R2HC, PLANNER_FLAGS);
+			RFFTPlForw = fftwf_plan_r2r_1d(fftw_n, pFftwRealIn, pFftwRealOut, FFTW_R2HC, PLANNER_FLAGS);
 			break;
 		case FP_RFFTPlBackw:
-			RFFTPlBackw = fftw_plan_r2r_1d(fftw_n, pFftwRealIn, pFftwRealOut, FFTW_HC2R, PLANNER_FLAGS);
+			RFFTPlBackw = fftwf_plan_r2r_1d(fftw_n, pFftwRealIn, pFftwRealOut, FFTW_HC2R, PLANNER_FLAGS);
 			break;
 		case FP_FFTPlForw:
-			FFTPlForw = fftw_plan_dft_1d(fftw_n, pFftwComplexIn, pFftwComplexOut, FFTW_FORWARD, PLANNER_FLAGS);
+			FFTPlForw = fftwf_plan_dft_1d(fftw_n, pFftwComplexIn, pFftwComplexOut, FFTW_FORWARD, PLANNER_FLAGS);
 			break;
 		case FP_FFTPlBackw:
-			FFTPlBackw = fftw_plan_dft_1d(fftw_n, pFftwComplexIn, pFftwComplexOut, FFTW_BACKWARD, PLANNER_FLAGS);
+			FFTPlBackw = fftwf_plan_dft_1d(fftw_n, pFftwComplexIn, pFftwComplexOut, FFTW_BACKWARD, PLANNER_FLAGS);
 			break;
 		}
 		MATLIB_MUTEX_UNLOCK();
@@ -753,10 +753,10 @@ bool CFftPlans::InitInternal(const int iFSi)
 
 // TODO intermediate buffers should be created only when needed
     /* Create new intermediate buffers */
-	pFftwRealIn = new double[iFSi];
-	pFftwRealOut = new double[iFSi];
-	pFftwComplexIn = new fftw_complex[iFSi];
-	pFftwComplexOut = new fftw_complex[iFSi];
+	pFftwRealIn = new float[iFSi];
+	pFftwRealOut = new float[iFSi];
+	pFftwComplexIn = new fftwf_complex[iFSi];
+	pFftwComplexOut = new fftwf_complex[iFSi];
 
 	fftw_n = iFSi;
 	bInitialized = true;
@@ -769,10 +769,10 @@ void CFftPlans::Clean()
 	{
 		/* Delete old plans and intermediate buffers */
 		MATLIB_MUTEX_LOCK();
-		if (RFFTPlForw)  fftw_destroy_plan(RFFTPlForw);
-		if (RFFTPlBackw) fftw_destroy_plan(RFFTPlBackw);
-		if (FFTPlForw)   fftw_destroy_plan(FFTPlForw);
-		if (FFTPlBackw)  fftw_destroy_plan(FFTPlBackw);
+		if (RFFTPlForw)  fftwf_destroy_plan(RFFTPlForw);
+		if (RFFTPlBackw) fftwf_destroy_plan(RFFTPlBackw);
+		if (FFTPlForw)   fftwf_destroy_plan(FFTPlForw);
+		if (FFTPlBackw)  fftwf_destroy_plan(FFTPlBackw);
 		MATLIB_MUTEX_UNLOCK();
 
 		delete[] pFftwRealIn;
