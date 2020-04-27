@@ -143,6 +143,8 @@ void _spi_dev(SPI_SEL sel, SPI_MOSI *mosi, int tx_xfers, SPI_MISO *miso, int rx_
 	{
 		free(txb);
 	}
+	for (int i = 0; i < rx_xfers; i++)
+		rxb[i] = __builtin_bswap32(rxb[i]);
 #endif
 }
 
