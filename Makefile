@@ -197,13 +197,13 @@ CFILES_O3 = $(subst web/web.cpp,,$(CPP_F_O3))
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	ifeq ($(XC),-DXC)
-		LIBS += -lfftw3f -lfftw3 -lutil
+		LIBS += -lfftw3f -lutil
 		DIR_CFG = /root/kiwi.config
 		CFG_PREFIX =
 	else
 		# development machine, compile simulation version
-		LIBS += -L/usr/local/lib -lfftw3f -lfftw3
-		LIBS_DEP += /usr/local/lib/libfftw3f.a /usr/local/lib/libfftw3.a
+		LIBS += -L/usr/local/lib -lfftw3f
+		LIBS_DEP += /usr/local/lib/libfftw3f.a
 		CMD_DEPS =
 		DIR_CFG = unix_env/kiwi.config
 		CFG_PREFIX = dist.
@@ -211,8 +211,8 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 else
 	# host machine (BBB), only build the FPGA-using version
-	LIBS += -lfftw3f -lfftw3 -lutil
-	LIBS_DEP += /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a
+	LIBS += -lfftw3f -lutil
+	LIBS_DEP += /usr/lib/arm-linux-gnueabihf/libfftw3f.a
 	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng /sbin/ethtool /usr/bin/sshpass
 	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget
 	DIR_CFG = /root/kiwi.config
@@ -254,7 +254,7 @@ endif
 	@mkdir -p $(DIR_CFG)
 	touch $(KEYRING)
 
-/usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a:
+/usr/lib/arm-linux-gnueabihf/libfftw3f.a:
 	apt-get -y install libfftw3-dev
 
 # NB not a typo: "clang-6.0" vs "clang-7"

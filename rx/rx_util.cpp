@@ -50,7 +50,6 @@ Boston, MA  02110-1301, USA.
 #include <sched.h>
 #include <math.h>
 #include <signal.h>
-#include <fftw3.h>
 
 // copy admin-related configuration from kiwi.json to new admin.json file
 void cfg_adm_transition()
