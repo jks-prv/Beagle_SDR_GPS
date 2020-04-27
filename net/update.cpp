@@ -46,46 +46,69 @@ static void update_build_ctask(void *param)
         bool force_build = (bool) FROM_VOID_PARAM(param);
         if (force_build) {
             #if defined(BUILD_SHORT_MF)
-                status = system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/r*.o; make");
+                status = system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/r*.o; make >>/root/build.log 2>&1");
                 build_normal = false;
             #elif defined(BUILD_SHORT)
-                status = system("cd /root/" REPO_NAME "; rm -f obj_O3/u*.o; make");
+                status = system("cd /root/" REPO_NAME "; rm -f obj_O3/u*.o; make >>/root/build.log 2>&1");
                 build_normal = false;
             #endif
-            if (status < 0)
-                exit(EXIT_FAILURE);
-            if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
-                exit(WEXITSTATUS(status));
-	        exit(EXIT_SUCCESS);
+            child_status_exit(status);
+	        child_exit(EXIT_SUCCESS);
         }
     #endif
 
 	if (build_normal) {
-		status = system("cd /root/" REPO_NAME "; make git");
-        if (status < 0)
-            exit(EXIT_FAILURE);
-        if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
-            exit(WEXITSTATUS(status));
+	
+	    // run git directly rather than depending on the Makefile to be intact
+	    // (for the failure case when the Makefile has become zero length)
+	    char *cmd_p;
+	    asprintf(&cmd_p, "cd /root/" REPO_NAME "; echo ======== building >>/root/build.log; date >>/root/build.log; " \
+		    "git clean -fd >>/root/build.log 2>&1; " \
+		    "git checkout . >>/root/build.log 2>&1; " \
+		);
+		status = system(cmd_p);
+		free(cmd_p);
+        child_status_exit(status);
 
-		status = system("cd /root/" REPO_NAME "; make clean_dist; make; make install");
-        if (status < 0)
-            exit(EXIT_FAILURE);
-        if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
-            exit(WEXITSTATUS(status));
+        struct stat st;
+        bool use_git_proto = (stat(DIR_CFG "/opt.git_no_https", &st) == 0);
+	    asprintf(&cmd_p, "cd /root/" REPO_NAME "; " \
+	        "git pull -v %s://github.com/jks-prv/Beagle_SDR_GPS.git >>/root/build.log 2>&1; ", \
+		    use_git_proto? "git" : "https" \
+		);
+		status = system(cmd_p);
+		free(cmd_p);
+        status = child_status_exit(status, NO_ERROR_EXIT);
+        
+        // try again using github.com well-known public ip address (failure mode when ISP messes with github.com DNS)
+        // must use git: protocol otherwise https: cert mismatch error will occur
+        if (status != 0) {
+            asprintf(&cmd_p, "cd /root/" REPO_NAME "; " \
+                "git pull -v git://" GITHUB_COM_PUBLIC_IP "/jks-prv/Beagle_SDR_GPS.git >>/root/build.log 2>&1; "
+            );
+            status = system(cmd_p);
+            free(cmd_p);
+            child_status_exit(status);
+        }
+
+        // starting with v1.365 the "make clean" below replaced the former "make clean_dist"
+        // so that $(BUILD_DIR)/obj_keep stays intact across updates
+        status = system("cd /root/" REPO_NAME "; make clean >>/root/build.log 2>&1; make >>/root/build.log 2>&1; make install >>/root/build.log 2>&1;");
+        child_status_exit(status);
+        system("cd /root/" REPO_NAME "; date >>/root/build.log; echo ======== build complete >>/root/build.log");
 	}
 	
-	exit(EXIT_SUCCESS);
+	child_exit(EXIT_SUCCESS);
 }
 
 static void curl_makefile_ctask(void *param)
 {
-	int status = system("cd /root/" REPO_NAME "; curl --silent --show-error --ipv4 --connect-timeout 15 https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -o Makefile.1");
+	int status = system("cd /root/" REPO_NAME " ; echo ======== checking for update >/root/build.log; date >>/root/build.log; " \
+	    "curl --silent --show-error --ipv4 --connect-timeout 15 https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -o Makefile.1 >>/root/build.log 2>&1");
 
-	if (status < 0)
-	    exit(EXIT_FAILURE);
-	if (WIFEXITED(status))
-		exit(WEXITSTATUS(status));
-	exit(EXIT_FAILURE);
+	child_status_exit(status);
+    system("cd /root/" REPO_NAME " ; diff Makefile Makefile.1 >>/root/build.log");
+	child_exit(EXIT_SUCCESS);
 }
 
 static void report_result(conn_t *conn)
@@ -122,10 +145,10 @@ static bool daily_restart = false;
             func() -> curl_makefile_ctask() / update_build_ctask()
                 status = system(...)
                 if (status < 0)
-                    exit(EXIT_FAILURE);
+                    child_exit(EXIT_FAILURE);
                 if (WIFEXITED(status))
-                    exit(WEXITSTATUS(status));
-                exit(EXIT_FAILURE);
+                    child_exit(WEXITSTATUS(status));
+                child_exit(EXIT_FAILURE);
         // parent
         while
             waitpid(&status)
@@ -146,7 +169,7 @@ static void update_task(void *param)
 	int status = child_task("kiwi.update", curl_makefile_ctask, POLL_MSEC(1000));
 
 	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-		lprintf("UPDATE: curl Makefile error, no Internet access? status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",
+		lprintf("UPDATE: Makefile fetch error, no Internet access? status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",
 		    status, WIFEXITED(status), WEXITSTATUS(status));
 		if (force_check) report_result(conn);
 		goto common_return;
@@ -194,7 +217,7 @@ static void update_task(void *param)
 		status = child_task("kiwi.build", update_build_ctask, POLL_MSEC(1000), TO_VOID_PARAM(force_build));
 		
         if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-            lprintf("UPDATE: build error, no Internet access? status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",
+            lprintf("UPDATE: build error, check /root/build.log file, status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",
                 status, WIFEXITED(status), WEXITSTATUS(status));
 		    goto common_return;
 		}
@@ -202,7 +225,7 @@ static void update_task(void *param)
 		lprintf("UPDATE: build took %d secs\n", timer_sec() - build_time);
 		lprintf("UPDATE: switching to new version %d.%d\n", pending_maj, pending_min);
 		if (admcfg_int("update_restart", NULL, CFG_REQUIRED) == 0) {
-		    xit(0);
+		    kiwi_exit(0);
 		} else {
 		    lprintf("UPDATE: rebooting Beagle..\n");
 		    system("sleep 3; reboot");
@@ -213,7 +236,7 @@ static void update_task(void *param)
 	
 	if (daily_restart) {
 	    lprintf("UPDATE: daily restart..\n");
-	    xit(0);
+	    kiwi_exit(0);
 	}
 
 common_return:
@@ -226,13 +249,8 @@ void check_for_update(update_check_e type, conn_t *conn)
 {
 	bool force = (type != WAIT_UNTIL_NO_USERS);
 	
-	if (no_net) {
-		lprintf("UPDATE: not checked because no-network-mode set\n");
-		return;
-	}
-
 	if (!force && admcfg_bool("update_check", NULL, CFG_REQUIRED) == false) {
-		lprintf("UPDATE: exiting because admin update check not enabled\n");
+		//printf("UPDATE: exiting because admin update check not enabled\n");
 		return;
 	}
 	
@@ -257,22 +275,40 @@ void check_for_update(update_check_e type, conn_t *conn)
 static bool update_on_startup = true;
 
 // called at the top of each minute
-void schedule_update(int hour, int min)
+void schedule_update(int min)
 {
-	#define UPDATE_SPREAD_HOURS	4	// # hours to spread updates over
+	#define UPDATE_SPREAD_HOURS	5	// # hours to spread updates over
 	#define UPDATE_SPREAD_MIN	(UPDATE_SPREAD_HOURS * 60)
 
-	#define UPDATE_START_HOUR	2	// 2 AM UTC, 2(3) PM NZT(NZDT)
+	#define UPDATE_START_HOUR	1	// 1 AM local time
 	#define UPDATE_END_HOUR		(UPDATE_START_HOUR + UPDATE_SPREAD_HOURS)
+	
+	// relative to local time if timezone has been determined
+    time_t utc = utc_time();
+    time_t local = utc;
+    if (utc_offset != -1 && dst_offset != -1)
+        local += utc_offset + dst_offset;
+    int local_hour;
+    time_hour_min_sec(local, &local_hour);
 
-	bool update = (hour >= UPDATE_START_HOUR && hour < UPDATE_END_HOUR);
+	//#define TEST_UPDATE
+	#ifdef TEST_UPDATE
+        int utc_hour;
+        time_hour_min_sec(utc, &utc_hour);
+	    printf("UPDATE: UTC=%02d:%02d Local=%02d:%02d\n", utc_hour, min, local_hour, min);
+	#endif
+
+	bool update = (local_hour >= UPDATE_START_HOUR && local_hour < UPDATE_END_HOUR);
 	
 	// don't let Kiwis hit github.com all at once!
-	int mins;
 	if (update) {
-		mins = min + (hour - UPDATE_START_HOUR) * 60;
-		//printf("UPDATE: %02d:%02d waiting for %d min = %d min(sn=%d)\n", hour, min,
-		//	mins, serial_number % UPDATE_SPREAD_MIN, serial_number);
+		int mins = min + (local_hour - UPDATE_START_HOUR) * 60;
+		
+		#ifdef TEST_UPDATE
+            printf("UPDATE: %02d:%02d waiting for %d min = %d min(sn=%d)\n", local_hour, min,
+                mins, serial_number % UPDATE_SPREAD_MIN, serial_number);
+        #endif
+        
 		update = update && (mins == (serial_number % UPDATE_SPREAD_MIN));
 		
 		if (update) {

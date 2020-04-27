@@ -129,9 +129,9 @@ void fpga_init() {
 	}
 
 	// FPGA configuration bitstream
-    fp = fopen(stprintf("%sKiwiSDR.rx%d.wf%d.bit", background_mode? "/usr/local/bin/":"", rx_chans, wf_chans) , "rb");
-
+    fp = fopen(stprintf("%sKiwiSDR.%s.bit", background_mode? "/usr/local/bin/":"", fpga_file) , "rb");
     if (!fp) panic("fopen config");
+    free(fpga_file);
 
 	// byte-swap config data to match ended-ness of SPI
     while (1) {
@@ -217,7 +217,7 @@ void fpga_init() {
 	if (ping->word[0] != 0xcafe) {
 		lprintf("FPGA not responding: 0x%04x\n", ping->word[0]);
 		evSpi(EC_DUMP, EV_SPILOOP, -1, "main", "dump");
-		xit(-1);
+		kiwi_exit(-1);
 	}
 
     // FIXME: remove
@@ -252,7 +252,7 @@ void fpga_init() {
 	if (ping->word[0] != 0xbabe) {
 		lprintf("FPGA not responding: 0x%04x\n", ping->word[0]);
 		evSpi(EC_DUMP, EV_SPILOOP, -1, "main", "dump");
-		xit(-1);
+		kiwi_exit(-1);
 	}
 
 	stat_reg_t stat = stat_get();

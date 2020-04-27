@@ -145,7 +145,7 @@ bool fax_msgs(char *msg, int rx_chan)
         );
         
         if (!e->task_created) {
-			e->tid = CreateTaskF(fax_task, TO_VOID_PARAM(rx_chan), EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL), 0);
+			e->tid = CreateTaskF(fax_task, TO_VOID_PARAM(rx_chan), EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL));
             e->task_created = true;
         }
 		
@@ -203,6 +203,8 @@ ext_t fax_ext = {
 	fax_main,
 	fax_close,
 	fax_msgs,
+	EXT_NEW_VERSION,
+	EXT_FLAGS_HEAVY
 };
 
 void fax_main()

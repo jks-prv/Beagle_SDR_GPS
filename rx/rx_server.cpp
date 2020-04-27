@@ -53,7 +53,7 @@ conn_t conns[N_CONNS];
 rx_chan_t rx_channels[MAX_RX_CHANS];
 
 // NB: must be in conn_t.type order
-rx_stream_t streams[] = {
+rx_stream_t rx_streams[] = {
 	{ AJAX_VERSION,		"VER" },
 	{ STREAM_ADMIN,		"admin",	&c2s_admin,		&c2s_admin_setup,		&c2s_admin_shutdown,	 TASK_MED_PRIORITY },
 #ifndef CFG_GPS_ONLY
@@ -100,9 +100,9 @@ void rx_enable(int chan, rx_chan_action_e action)
 	#endif
 }
 
-int rx_chan_free_count(rx_free_count_e flags, int *idx)
+int rx_chan_free_count(rx_free_count_e flags, int *idx, int *heavy)
 {
-	int i, free_cnt = 0, free_idx = -1;
+	int i, free_cnt = 0, free_idx = -1, heavy_cnt = 0;
 	rx_chan_t *rx;
 
     // When configuration has a limited number of channels with waterfalls
@@ -110,32 +110,27 @@ int rx_chan_free_count(rx_free_count_e flags, int *idx)
     // Note that we correctly detect the WF-only use of kiwirecorder
     // (e.g. SNR-measuring applications)
 
-    if (!(flags & RX_COUNT_KIWI_UI_USERS) && fw_sel == FW_SEL_SDR_RX8_WF2) {
-        for (i = 2; i < rx_chans; i++) {
-            rx = &rx_channels[i];
-            if (!rx->busy) {
-                free_cnt++;
-                if (free_idx == -1) free_idx = i;
-            }
-        }
-        for (i = 0; i < 2; i++) {
-            rx = &rx_channels[i];
-            if (!rx->busy) {
-                free_cnt++;
-                if (free_idx == -1) free_idx = i;
-            }
-        }
+    #define RX_CHAN_FREE_COUNT() { \
+        rx = &rx_channels[i]; \
+        if (rx->busy) { \
+            /*printf("rx_chan_free_count rx%d: ext=%p flags=0x%x\n", i, rx->ext, rx->ext? rx->ext->flags : 0xffffffff);*/ \
+            if (rx->ext && (rx->ext->flags & EXT_FLAGS_HEAVY)) \
+                heavy_cnt++; \
+        } else { \
+            free_cnt++; \
+            if (free_idx == -1) free_idx = i; \
+        } \
+    }
+
+    if (flags == RX_COUNT_NO_WF_FIRST && wf_chans < rx_chans) {
+        for (i = wf_chans; i < rx_chans; i++) RX_CHAN_FREE_COUNT();
+        for (i = 0; i < wf_chans; i++) RX_CHAN_FREE_COUNT();
     } else {
-        for (i = 0; i < rx_chans; i++) {
-            rx = &rx_channels[i];
-            if (!rx->busy) {
-                free_cnt++;
-                if (free_idx == -1) free_idx = i;
-            }
-        }
+        for (i = 0; i < rx_chans; i++) RX_CHAN_FREE_COUNT();
     }
 	
 	if (idx != NULL) *idx = free_idx;
+	if (heavy != NULL) *heavy = heavy_cnt;
 	return free_cnt;
 }
 
@@ -147,7 +142,7 @@ void show_conn(const char *prefix, conn_t *cd)
     }
     
     lprintf("%sCONN-%02d %s%s rx=%d auth%d kiwi%d prot%d admin%d local%d tle%d%d KA=%02d/60 KC=%05d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",
-        prefix, cd->self_idx, streams[cd->type].uri, cd->internal_connection? "(INT)":"",
+        prefix, cd->self_idx, rx_streams[cd->type].uri, cd->internal_connection? "(INT)":"",
         (cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel,
         cd->auth, cd->auth_kiwi, cd->auth_prot, cd->auth_admin, cd->isLocal, cd->tlimit_exempt, cd->tlimit_exempt_by_pwd,
         cd->keep_alive, cd->keepalive_count, cd->mc, cd->magic,
@@ -192,7 +187,7 @@ static void dump_conn()
 	conn_t *cd;
 	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
 		lprintf("dump_conn: CONN-%02d %p valid=%d type=%d [%s] auth=%d KA=%d/60 KC=%d mc=%p rx=%d %s magic=0x%x ip=%s:%d other=%s%d %s\n",
-			i, cd, cd->valid, cd->type, streams[cd->type].uri, cd->auth, cd->keep_alive, cd->keepalive_count, cd->mc, cd->rx_channel,
+			i, cd, cd->valid, cd->type, rx_streams[cd->type].uri, cd->auth, cd->keep_alive, cd->keepalive_count, cd->mc, cd->rx_channel,
 			cd->magic, cd->remote_ip, cd->remote_port, cd->other? "CONN-":"", cd->other? cd->other-conns:0, cd->stop_data? "STOP":"");
 	}
 	rx_chan_t *rc;
@@ -200,14 +195,6 @@ static void dump_conn()
 		lprintf("dump_conn: RX_CHAN-%d en %d busy %d conn = %s%d %p\n",
 			i, rc->chan_enabled, rc->busy, rc->conn? "CONN-":"", rc->conn? rc->conn-conns:0, rc->conn);
 	}
-}
-
-// invoked by "make reload" command which will send SIG_DEBUG to the kiwi server process
-static void cfg_reload_handler(int arg)
-{
-	lprintf("SIG_DEBUG: reloading configuration, dx list..\n");
-	cfg_reload(NOT_CALLED_FROM_MAIN);
-	sig_arm(SIG_DEBUG, cfg_reload_handler);
 }
 
 // can optionally configure SIG_DEBUG to call this debug handler
@@ -238,11 +225,7 @@ void rx_server_init()
 		c++;
 	}
 	
-	#if 1
 	    sig_arm(SIG_DEBUG, debug_dump_handler);
-	#else
-	    sig_arm(SIG_DEBUG, cfg_reload_handler);
-	#endif
 
     //#ifndef DEVSYS
     #if 0
@@ -293,7 +276,8 @@ void rx_loguser(conn_t *c, logtype_e type)
 		clprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq_offset,
 			kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom,
 			c->ext? c->ext->name : "", c->ext? " ":"",
-			c->user, c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip, c->geo? " ":"", c->geo? c->geo:"", s);
+			c->user? c->user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
+			c->geo? " ":"", c->geo? c->geo:"", s);
 	}
 	
 	// we don't do anything with LOG_UPDATE and LOG_UPDATE_NC at present
@@ -302,7 +286,7 @@ void rx_loguser(conn_t *c, logtype_e type)
 
 void rx_server_remove(conn_t *c)
 {
-    rx_stream_t *st = &streams[c->type];
+    rx_stream_t *st = &rx_streams[c->type];
     if (st->shutdown) (st->shutdown)((void *) c);
     
 	c->stop_data = TRUE;
@@ -318,6 +302,12 @@ void rx_server_remove(conn_t *c)
 	free(c->dx_filter_notes);
     if (c->dx_has_preg_ident) { regfree(&c->dx_preg_ident); c->dx_has_preg_ident = false; }
     if (c->dx_has_preg_notes) { regfree(&c->dx_preg_notes); c->dx_has_preg_notes = false; }
+    
+    //if (!is_BBAI && c->is_locked) {
+    if (c->is_locked) {
+        //cprintf(c, "DRM rx_server_remove: global is_locked = 0\n");
+        is_locked = 0;
+    }
 	
 	int task = c->task;
 	conn_init(c);
@@ -326,7 +316,7 @@ void rx_server_remove(conn_t *c)
 	TaskRemove(task);
 }
 
-int rx_count_server_conns(conn_count_e type, conn_t *our_conn)   // EXTERNAL_ONLY, INCLUDE_INTERNAL, TDOA_USERS
+int rx_count_server_conns(conn_count_e type, conn_t *our_conn)
 {
 	int users=0, any=0;
 	
@@ -337,6 +327,10 @@ int rx_count_server_conns(conn_count_e type, conn_t *our_conn)   // EXTERNAL_ONL
 
 	    if (type == TDOA_USERS) {
 	        if (sound && c->user && kiwi_str_begins_with(c->user, "TDoA_service"))
+	            users++;
+	    } else
+	    if (type == EXT_API_USERS) {
+	        if (sound && c->user && c->ext_api)
 	            users++;
 	    } else
 	    if (type == LOCAL_OR_PWD_PROTECTED_USERS) {
@@ -370,7 +364,7 @@ void rx_server_user_kick(int chan)
 		    if (chan == -1 || chan == c->rx_channel) {
                 c->kick = true;
                 if (chan != -1)
-                    printf("rx_server_user_kick KICKING rx=%d %s\n", chan, streams[c->type].uri);
+                    printf("rx_server_user_kick KICKING rx=%d %s\n", chan, rx_streams[c->type].uri);
             }
 		} else
 		
@@ -434,7 +428,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
         }
         
         if (mode == WS_MODE_CLOSE) {
-            //cprintf(c, "WS_MODE_CLOSE %s KICK KA=%02d/60 KC=%05d\n", streams[c->type].uri, c->keep_alive, c->keepalive_count);
+            //cprintf(c, "WS_MODE_CLOSE %s KICK KA=%02d/60 KC=%05d\n", rx_streams[c->type].uri, c->keep_alive, c->keepalive_count);
             if (!c->internal_connection)
                 mg_websocket_write(mc, WS_OPCODE_CLOSE, "", 0);
             c->mc = NULL;
@@ -475,14 +469,14 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
     if (strstr(uri_m, "W/F"))
         isWF_conn = true;
 	
-	for (i=0; streams[i].uri; i++) {
-		st = &streams[i];
+	for (i=0; rx_streams[i].uri; i++) {
+		st = &rx_streams[i];
 		
 		if (strcmp(uri_m, st->uri) == 0)
 			break;
 	}
 	
-	if (!streams[i].uri) {
+	if (!rx_streams[i].uri) {
 		lprintf("**** unknown stream type <%s>\n", uri_m);
         free(uri_m);
 		return NULL;
@@ -499,13 +493,31 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	}
 #endif
 
-	// determine real client ip if proxied
+	// iptables will stop regular connection attempts from a blacklisted ip.
+	// But when proxied we need to check the forwarded ip address.
+	// Note that this code always sets remote_ip[] as a side-effect for later use (the real client ip).
 	char remote_ip[NET_ADDRSTRLEN];
     if (check_if_forwarded("CONN", mc, remote_ip) && check_ip_blacklist(remote_ip, true))
         return NULL;
     
 	if (down || update_in_progress || backup_in_progress) {
 		//printf("down=%d UIP=%d stream=%s\n", down, update_in_progress, st->uri);
+
+        //printf("URL <%s> <%s> %s\n", mc->uri, mc->query_string, remote_ip);
+        if (auth_su && strcmp(remote_ip, auth_su_remote_ip) == 0) {
+            struct stat _st;
+            if (stat(DIR_CFG "/opt.no_console", &_st) == 0)
+                return NULL;
+            printf("allowed by su %s %s\n", rx_streams[st->type].uri, remote_ip);
+            #ifndef CFG_GPS_ONLY
+                if (!init_snd_wf) {
+                    c2s_sound_init();
+                    c2s_waterfall_init();
+                    init_snd_wf = true;
+                }
+            #endif
+        } else
+
 		if (st->type == STREAM_SOUND && !internal) {
 			int type;
 			const char *reason_disabled = NULL;
@@ -535,12 +547,15 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			send_msg_mc(mc, SM_NO_DEBUG, "MSG comp_ctr=%d reason_disabled=%s down=%d", comp_ctr, reason_enc, type);
 			cfg_string_free(reason_disabled);
 			free(reason_enc);
+            //printf("DOWN %s %s\n", rx_streams[st->type].uri, remote_ip);
 			return NULL;
-		}
+		} else
 
 		// always allow admin connections
-		if (st->type != STREAM_ADMIN)
+		if (st->type != STREAM_ADMIN) {
+            //printf("DOWN %s %s\n", rx_streams[st->type].uri, remote_ip);
 			return NULL;
+		}
 	}
 	
 	//printf("CONN LOOKING for free conn for type=%d(%s) ip=%s:%d mc=%p\n", st->type, st->uri, remote_ip, mc->remote_port, mc);
@@ -554,7 +569,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 
 		// cull conns stuck in STOP_DATA state (Novosibirsk problem)
 		if (c->valid && c->stop_data && c->mc == NULL) {
-			clprintf(c, "STOP_DATA cull conn-%02d %s rx_chan=%d\n", c->self_idx, streams[c->type].uri, c->rx_channel);
+			clprintf(c, "STOP_DATA cull conn-%02d %s rx_chan=%d\n", c->self_idx, rx_streams[c->type].uri, c->rx_channel);
 			rx_enable(c->rx_channel, RX_CHAN_FREE);
 			rx_server_remove(c);
 		}
@@ -565,7 +580,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			continue;
 		}
 		
-		//printf("CONN-%d IS %p type=%d(%s) tstamp=%lld ip=%s:%d rx=%d auth=%d other%s%ld mc=%p\n", cn, c, c->type, streams[c->type].uri, c->tstamp,
+		//printf("CONN-%d IS %p type=%d(%s) tstamp=%lld ip=%s:%d rx=%d auth=%d other%s%ld mc=%p\n", cn, c, c->type, rx_streams[c->type].uri, c->tstamp,
 		//    c->remote_ip, c->remote_port, c->rx_channel, c->auth, c->other? "=CONN-":"=", c->other? c->other-conns:0, c->mc);
 		if (c->tstamp == tstamp && (strcmp(remote_ip, c->remote_ip) == 0)) {
 			if (snd_or_wf && c->type == st->type) {
@@ -615,12 +630,29 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	c->other = cother;
 
 	if (snd_or_wf) {
-		int rx;
+		int rx, heavy;
 		if (!cother) {
-		    rx_free_count_e flags = ((isKiwi_UI || isWF_conn) && !isNo_WF)? RX_COUNT_KIWI_UI_USERS : RX_COUNT_ALL;
-			rx_chan_free_count(flags, &rx);
-            //printf("### %s cother=%p isKiwi_UI=%d isNo_WF=%d isWF_conn=%d use_rx=%d\n",
-            //    st->uri, cother, isKiwi_UI, isNo_WF, isWF_conn, rx);
+		    rx_free_count_e flags = ((isKiwi_UI || isWF_conn) && !isNo_WF)? RX_COUNT_ALL : RX_COUNT_NO_WF_FIRST;
+			int inuse = rx_chans - rx_chan_free_count(flags, &rx, &heavy);
+            //printf("%s cother=%p isKiwi_UI=%d isWF_conn=%d isNo_WF=%d inuse=%d/%d use_rx=%d heavy=%d locked=%d %s\n",
+            //    st->uri, cother, isKiwi_UI, isWF_conn, isNo_WF, inuse, rx_chans, rx, heavy, is_locked,
+            //    (flags == RX_COUNT_ALL)? "RX_COUNT_ALL" : "RX_COUNT_NO_WF_FIRST");
+            
+            if (is_locked) {
+                if (inuse == 0) {
+                    printf("DRM note: locked but no channels in use?\n");
+                    is_locked = 0;
+                } else {
+                    printf("DRM nreg_chans=%d inuse=%d heavy=%d (is_locked=1)\n", drm_nreg_chans, inuse, heavy);
+                    if (inuse > drm_nreg_chans) {
+                        printf("DRM (locked for exclusive use %s)\n", st->uri);
+                        send_msg_mc(mc, SM_NO_DEBUG, "MSG exclusive_use");
+                        mc->connection_param = NULL;
+                        conn_init(c);
+                        return NULL;
+                    }
+                }
+            }
 
 			if (rx == -1) {
 				//printf("(too many rx channels open for %s)\n", st->uri);
@@ -661,6 +693,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			rx = -1;
 			cother->other = c;
 		}
+		
 		c->rx_channel = cother? cother->rx_channel : rx;
 		if (st->type == STREAM_SOUND) rx_channels[c->rx_channel].conn = c;
 		
@@ -690,6 +723,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
     		asprintf(&c->tname, "%s[%02d]", st->uri, c->self_idx);
     	u4_t flags = CTF_TNAME_FREE;    // ask TaskRemove to free name so debugging has longer access to it
     	if (c->rx_channel != -1) flags |= CTF_RX_CHANNEL | (c->rx_channel & CTF_CHANNEL);
+    	if (isWF_conn) flags |= CTF_STACK_MED;
 		int id = CreateTaskSF(rx_stream_tramp, c->tname, c, (st->priority == TASK_MED_PRIORITY)? task_medium_priority : st->priority, flags, 0);
 		c->task = id;
 	}

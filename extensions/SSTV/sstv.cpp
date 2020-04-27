@@ -11,6 +11,8 @@
 #include "kiwi.h"
 #include "web.h"
 
+#include <sys/mman.h>
+
 #define DEBUG_MSG	false
 
 // rx_chan is the receiver channel number we've been assigned, 0..rx_chans
@@ -152,7 +154,7 @@ bool sstv_msgs(char *msg, int rx_chan)
 		#endif
 
         if (!e->task_created) {
-			e->tid = CreateTaskF(sstv_task, TO_VOID_PARAM(rx_chan), EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL), 0);
+			e->tid = CreateTaskF(sstv_task, TO_VOID_PARAM(rx_chan), EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL));
             e->task_created = true;
         }
 		
@@ -268,7 +270,9 @@ ext_t sstv_ext = {
 	"SSTV",
 	SSTV_main,
 	sstv_close,
-	sstv_msgs
+	sstv_msgs,
+	EXT_NEW_VERSION,
+	EXT_FLAGS_HEAVY
 };
 
 void SSTV_main() {
@@ -276,49 +280,20 @@ void SSTV_main() {
     ext_register(&sstv_ext);
     sstv.nom_rate = snd_rate;
 
-//#define SSTV_FN "s1.test.pattern.au"   // slanted, 25 ms
-//#define SSTV_FN "m2.f5oql.FSK.au"   // bad pic
-//#define SSTV_FN "s1.strange.au"     // 30 ms, slanted
-#define SSTV_FN "s2.test.pattern.au"    // stop bit 30 ms
-//#define SSTV_FN "s2.f4cyh.FSK.au"
-//#define SSTV_FN "m1.au"   // stop bit 25 ms
-//#define SSTV_FN "r24.test.pattern.au"
-//#define SSTV_FN "r36.test.pattern.au"
-//#define SSTV_FN "r36.color.bars.au"
-//#define SSTV_FN "r72.test.pattern.au"
-//#define SSTV_FN "pd50.au"
-//#define SSTV_FN "pd90.au"
-//#define SSTV_FN "w2120.au"
-//#define SSTV_FN "w2180.au"
-//#define SSTV_FN "multiple.au"
-
-#define SSTV_TEST_FILE_DIR "extensions/SSTV/"
-#define SSTV_FNAME      SSTV_TEST_FILE_DIR SSTV_FN
-
 #ifdef SSTV_TEST_FILE
-    int n, words;
+    int n;
     char *file;
-    
-    #define SSTV_TEST_FILE_EMBEDDED
-    #ifdef SSTV_TEST_FILE_EMBEDDED
-        size_t size;
-        file = (char *) edata_lookup(edata_always2, SSTV_FNAME, &size);
-        assert(file != NULL);
-        words = size/2;
-    #else
-        int fd;
-        printf("SSTV: load " SSTV_FNAME "\n");
-        scall("sstv open", (fd = open(SSTV_FNAME, O_RDONLY)));
-        struct stat st;
-        scall("sstv fstat", fstat(fd, &st));
-        printf("SSTV: size=%d\n", st.st_size);
-        file = (char *) malloc(st.st_size);
-        assert(file != NULL);
-        scall("sstv read", (n = read(fd, file, st.st_size)));
-        assert(n == st.st_size);
-        words = st.st_size/2;
-    #endif
-
+    int fd;
+    #define SSTV_FNAME      DIR_CFG "/samples/s2.test.pattern.au"
+    printf("SSTV: mmap " SSTV_FNAME "\n");
+    scall("sstv open", (fd = open(SSTV_FNAME, O_RDONLY)));
+    struct stat st;
+    scall("sstv fstat", fstat(fd, &st));
+    printf("SSTV: size=%d\n", st.st_size);
+    file = (char *) mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (file == MAP_FAILED) sys_panic("SSTV mmap");
+    close(fd);
+    int words = st.st_size/2;
     sstv.s2p_start = (s2_t *) file;
     sstv.s2p_end = sstv.s2p_start + words;
 #endif

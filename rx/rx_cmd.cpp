@@ -60,10 +60,18 @@ bool auth_su;
 char auth_su_remote_ip[NET_ADDRSTRLEN];
 bool conn_nolocal;
 
-const char *mode_s[N_MODE] = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq" };
-const char *modu_s[N_MODE] = { "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ" };
-const int mode_hbw[N_MODE] = { 9800/2, 5000/2, 2400/2, 2400/2, 400/2, 60/2, 12000/2, 10000/2 };
-const int mode_offset[N_MODE] = { 0, 0, 1500, -1500, 0, 0, 0, 0 };
+const char *mode_s[N_MODE] = {
+    "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq", "drm", "usn", "lsn", "sam", "sau", "sal", "sas"
+};
+const char *modu_s[N_MODE] = {
+    "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ", "DRM", "USN", "LSN", "SAM", "SAU", "SAL", "SAS"
+};
+const int mode_hbw[N_MODE] = {
+    9800/2, 5000/2, 2400/2, 2400/2, 400/2, 60/2, 12000/2, 10000/2, 10000/2, 2100/2, 2100/2, 9800/2, 9800/2, 9800/2, 9800/2
+};
+const int mode_offset[N_MODE] = {
+    0, 0, 1500, -1500, 0, 0, 0, 0, 0, 1350, -1350, 0, 0, 0, 0
+};
 
 #ifndef CFG_GPS_ONLY
 
@@ -98,6 +106,9 @@ int bsearch_freqcomp(const void *key, const void *elem)
 void rx_common_init(conn_t *conn)
 {
 	conn->keepalive_time = timer_sec();
+
+    if (is_BBAI)
+	    send_msg(conn, true, "MSG is_BBAI");
 }
 
 bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
@@ -107,7 +118,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	char *sb, *sb2;
 	int slen;
 	
-	if (mc == NULL) return false;
+	if (mc == NULL) {
+	    cprintf(conn, "### cmd but mc is null <%s>\n", cmd);
+	    return false;
+	}
 	
 	NextTask("rx_common_cmd");      // breakup long runs of sequential commands -- sometimes happens at startup
     evLatency(EC_EVENT, EV_RX, 0, "rx_common_cmd", evprintf("%s", cmd));
@@ -129,6 +143,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	
 		const char *pwd_s = NULL;
 		int cfg_auto_login;
+		const char *uri = rx_streams[conn->type].uri;
 
 		char *type_m = NULL, *pwd_m = NULL, *ipl_m = NULL;
 		n = sscanf(cmd, "SET auth t=%16ms p=%256ms ipl=%256ms", &type_m, &pwd_m, &ipl_m);
@@ -184,13 +199,13 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		bool is_local = false;
         bool log_auth_attempt, pwd_debug;
 
-        #define PWD_DEBUG 0
 	    #define nwf_cprintf(conn, fmt, ...) \
 		    cprintf(conn, fmt, ## __VA_ARGS__)
 		    //if (!stream_wf) cprintf(conn, fmt, ## __VA_ARGS__)
+
 	    #define pdbug_cprintf(conn, fmt, ...) \
 		    if (pwd_debug) cprintf(conn, fmt, ## __VA_ARGS__)
-        if (PWD_DEBUG) {
+        if (debug_printfs) {
             log_auth_attempt = true;
             pwd_debug = true;
         } else {
@@ -233,7 +248,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             if (conn_nolocal) {
                 isLocal = IS_NOT_LOCAL;
                 pwd_debug = true;
-                conn_nolocal = false;
             }
 
             //#define TEST_NO_LOCAL_IF
@@ -247,34 +261,26 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         }
 
 		pdbug_cprintf(conn, "PWD %s %s conn #%d isLocal=%d is_local=%d auth=%d auth_kiwi=%d auth_prot=%d auth_admin=%d check_ip_against_restricted=%d restricted_ip_match=%d from %s\n",
-			type_m, streams[conn->type].uri, conn->self_idx, isLocal, is_local,
+			type_m, uri, conn->self_idx, isLocal, is_local,
 			conn->auth, conn->auth_kiwi, conn->auth_prot, conn->auth_admin, check_ip_against_restricted, restricted_ip_match, conn->remote_ip);
 		
-		// dx.masked_len and no_dup_ip here because they use the tlimit_exempt_by_pwd mechanism also
-        bool no_dup_ip = admcfg_bool("no_dup_ip", NULL, CFG_REQUIRED);
-        if (inactivity_timeout_mins || ip_limit_mins ||
-            #ifndef CFG_GPS_ONLY
-                dx.masked_len ||
-            #endif
-            no_dup_ip) {
-            const char *tlimit_exempt_pwd = admcfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL);
-            //#define TEST_TLIMIT_LOCAL
-            #ifndef TEST_TLIMIT_LOCAL
-                if (is_local) {
-                    conn->tlimit_exempt = true;
-                    cprintf(conn, "TLIMIT exempt local connection from %s\n", conn->remote_ip);
-                }
-            #endif
-		    pdbug_cprintf(conn, "PWD TLIMIT exempt password check: ipl=<%s> tlimit_exempt_pwd=<%s>\n",
-		        ipl_m, tlimit_exempt_pwd);
-            if (ipl_m != NULL && tlimit_exempt_pwd != NULL && strcasecmp(ipl_m, tlimit_exempt_pwd) == 0) {
+        const char *tlimit_exempt_pwd = admcfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL);
+        //#define TEST_TLIMIT_LOCAL
+        #ifndef TEST_TLIMIT_LOCAL
+            if (is_local) {
                 conn->tlimit_exempt = true;
-                conn->tlimit_exempt_by_pwd = true;
-				skip_dup_ip_check = true;
-                cprintf(conn, "TLIMIT exempt password from %s\n", conn->remote_ip);
+                cprintf(conn, "TLIMIT exempt local connection from %s\n", conn->remote_ip);
             }
-            cfg_string_free(tlimit_exempt_pwd);
+        #endif
+        pdbug_cprintf(conn, "PWD TLIMIT exempt password check: ipl=<%s> tlimit_exempt_pwd=<%s>\n",
+            ipl_m, tlimit_exempt_pwd);
+        if (ipl_m != NULL && tlimit_exempt_pwd != NULL && strcasecmp(ipl_m, tlimit_exempt_pwd) == 0) {
+            conn->tlimit_exempt = true;
+            conn->tlimit_exempt_by_pwd = true;
+            skip_dup_ip_check = true;
+            cprintf(conn, "TLIMIT exempt password from %s\n", conn->remote_ip);
         }
+        cfg_string_free(tlimit_exempt_pwd);
 
         // enforce 24hr ip address connect time limit
         if (ip_limit_mins && stream_snd && !conn->tlimit_exempt) {
@@ -296,7 +302,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		// Use public ip of Kiwi server when client connection is on local subnet.
 		// This distinction is for the benefit of setting the user's geolocation at short-wave.info
         if (!stream_wf) {
-            char *client_public_ip = (is_local && ddns.pub_valid)? ddns.ip_pub : conn->remote_ip;
+            char *client_public_ip = (is_local && net.pub_valid)? net.ip_pub : conn->remote_ip;
             send_msg(conn, false, "MSG client_public_ip=%s", client_public_ip);
             //cprintf(conn, "client_public_ip %s\n", client_public_ip);
         }
@@ -313,7 +319,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			// config pwd set, but auto_login for local subnet is true
 			if (cfg_auto_login && is_local) {
                 nwf_cprintf(conn, "PWD %s %s ALLOWED: config pwd set, but is_local and auto-login set\n",
-				    type_m, streams[conn->type].uri);
+				    type_m, uri);
 				allow = true;
 				skip_dup_ip_check = true;
 			} else
@@ -321,21 +327,21 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			// if no user password set allow unrestricted connection
 			if (no_pwd) {
 				nwf_cprintf(conn, "PWD %s %s ALLOWED: no config pwd set, allow any (%s)\n",
-				    type_m, streams[conn->type].uri, conn->remote_ip);
+				    type_m, uri, conn->remote_ip);
 				allow = true;
 			} else
 			
 			// internal connections always allowed
 			if (conn->internal_connection) {
 				nwf_cprintf(conn, "PWD %s %s ALLOWED: internal connection\n",
-				    type_m, streams[conn->type].uri);
+				    type_m, uri);
 				allow = true;
 				skip_dup_ip_check = true;
 			} else
 			
 			if (!type_prot) {       // consider only if protected mode not requested
 			
-				int rx_free = rx_chan_free_count(RX_COUNT_KIWI_UI_USERS, NULL);
+				int rx_free = rx_chan_free_count(RX_COUNT_ALL);
 				
 				// Allow with no password if minimum number of channels needing password remains.
 				// This minimum number is reduced by the number of already privileged connections.
@@ -344,7 +350,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 				chan_need_pwd -= already_privileged_conns;
 				if (chan_need_pwd < 0) chan_need_pwd = 0;
 				pdbug_cprintf(conn, "PWD %s %s rx_free=%d >= chan_need_pwd=%d %s already_privileged_conns=%d\n", 
-				    type_m, streams[conn->type].uri, rx_free, chan_need_pwd,
+				    type_m, uri, rx_free, chan_need_pwd,
 				    (rx_free >= chan_need_pwd)? "TRUE":"FALSE", already_privileged_conns);
 				
 				if (rx_free >= chan_need_pwd) {
@@ -352,7 +358,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			        //nwf_cprintf(conn, "PWD rx_free=%d >= chan_need_pwd=%d %s\n", rx_free, chan_need_pwd, allow? "TRUE":"FALSE");
 				}
 			} else {
-				nwf_cprintf(conn, "PWD %s %s NEED PWD: protected mode requested\n", type_m, streams[conn->type].uri);
+				nwf_cprintf(conn, "PWD %s %s NEED PWD: protected mode requested\n", type_m, uri);
 			}
 		} else
 		
@@ -416,8 +422,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		
 		int badp = 1;
 
-		pdbug_cprintf(conn, "PWD %s %s RESULT pwd_s=<%s> pwd_m=<%s> badp=%d cant_determine=%d allow=%d is_local=%d isLocal(enum)=%d %s\n",
-		    type_m, streams[conn->type].uri, pwd_s, pwd_m, badp, cant_determine, allow, is_local, isLocal, conn->remote_ip);
+		pdbug_cprintf(conn, "PWD %s %s RESULT allow=%d pwd_s=<%s> pwd_m=<%s> cant_determine=%d is_local=%d isLocal(enum)=%d %s\n",
+		    type_m, uri, allow, pwd_s, pwd_m, cant_determine, is_local, isLocal, conn->remote_ip);
 
 		if (check_ip_against_restricted && !allow && !restricted_ip_match) {
 		    badp = 3;
@@ -433,41 +439,42 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 		if (allow) {
 			if (log_auth_attempt || pwd_debug)
-				clprintf(conn, "PWD %s %s ALLOWED: from %s\n", type_m, streams[conn->type].uri, conn->remote_ip);
+				clprintf(conn, "PWD %s %s ALLOWED: from %s\n", type_m, uri, conn->remote_ip);
 			badp = 0;
 		} else
 		
 		if ((pwd_s == NULL || *pwd_s == '\0')) {
-			clprintf(conn, "PWD %s %s REJECTED: no config pwd set, from %s\n", type_m, streams[conn->type].uri, conn->remote_ip);
+			clprintf(conn, "PWD %s %s REJECTED: no config pwd set, from %s\n", type_m, uri, conn->remote_ip);
 			badp = 1;
 		} else {
 			if (pwd_m == NULL || pwd_s == NULL) {
-                pdbug_cprintf(conn, "PWD %s %s probably auto-login check, from %s\n", type_m, streams[conn->type].uri, conn->remote_ip);
+                pdbug_cprintf(conn, "PWD %s %s probably auto-login check, from %s\n", type_m, uri, conn->remote_ip);
 				badp = 1;
 			} else {
 				//cprintf(conn, "PWD CMP %s pwd_s \"%s\" pwd_m \"%s\" from %s\n", type_m, pwd_s, pwd_m, conn->remote_ip);
 				badp = strcasecmp(pwd_m, pwd_s)? 1:0;
-                pdbug_cprintf(conn, "PWD %s %s %s:%s from %s\n", type_m, streams[conn->type].uri, badp? "REJECTED":"ACCEPTED",
+                pdbug_cprintf(conn, "PWD %s %s %s:%s from %s\n", type_m, uri, badp? "REJECTED":"ACCEPTED",
                     type_prot? " (protected login)":"", conn->remote_ip);
                 if (!badp) skip_dup_ip_check = true;    // pwd needed and given correctly so allow dup ip
 			}
 		}
 		
         //cprintf(conn, "DUP_IP badp=%d skip_dup_ip_check=%d stream_snd_or_wf=%d\n", badp, skip_dup_ip_check, stream_snd_or_wf);
-        //cprintf(conn, "DUP_IP rx%d %s %s\n", conn->rx_channel, streams[conn->type].uri, conn->remote_ip);
+        //cprintf(conn, "DUP_IP rx%d %s %s\n", conn->rx_channel, uri, conn->remote_ip);
         
         // only SND connection has tlimit_exempt_by_pwd
         if (stream_wf && conn->other && conn->other->tlimit_exempt_by_pwd) skip_dup_ip_check = true;
         
+        bool no_dup_ip = admcfg_bool("no_dup_ip", NULL, CFG_REQUIRED);
         bool skip_admin = (type_admin && allow);
 		if (no_dup_ip && !skip_admin && badp == 0 && !skip_dup_ip_check && stream_snd_or_wf) {
             conn_t *c = conns;
-            //cprintf(conn, "DUP_IP NEW rx%d %s %s\n", conn->rx_channel, streams[conn->type].uri, conn->remote_ip);
+            //cprintf(conn, "DUP_IP NEW rx%d %s %s\n", conn->rx_channel, uri, conn->remote_ip);
             for (i=0; i < N_CONNS; i++, c++) {
                 bool snd_wf = (c->type == STREAM_SOUND || c->type == STREAM_WATERFALL);
                 if (!c->valid || c->internal_connection || !snd_wf) continue;
                 if (c->rx_channel == conn->rx_channel) continue;    // skip our own entry
-                //cprintf(conn, "DUP_IP CHK rx%d %s %s\n", c->rx_channel, streams[c->type].uri, c->remote_ip);
+                //cprintf(conn, "DUP_IP CHK rx%d %s %s\n", c->rx_channel, rx_streams[c->type].uri, c->remote_ip);
                 if (strcmp(conn->remote_ip, c->remote_ip) == 0) {
                     //cprintf(conn, "DUP_IP MATCH\n");
 				    badp = 5;
@@ -478,9 +485,13 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 		send_msg(conn, false, "MSG rx_chans=%d", rx_chans);
 		send_msg(conn, false, "MSG chan_no_pwd=%d", chan_no_pwd);
+		if (conn->type == STREAM_SOUND) {
+		    send_msg(conn, false, "MSG is_local=%d,%d", conn->rx_channel, is_local? 1:0);
+            conn_nolocal = false;
+		}
 		send_msg(conn, false, "MSG badp=%d", badp);
 
-        free(type_m); free(pwd_m); free(ipl_m);
+        free(pwd_m); free(ipl_m);
 		cfg_string_free(pwd_s);
 		
 		if (badp == 5) conn->kick = true;
@@ -524,11 +535,14 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 					rx_server_send_config(conn);
 				
 				// setup stream task first time it's authenticated
-				rx_stream_t *st = &streams[conn->type];
+				rx_stream_t *st = &rx_streams[conn->type];
 				if (st->setup) (st->setup)((void *) conn);
 			}
 		}
-
+		pdbug_cprintf(conn, "PWD %s %s AUTH=%d badp=%d auth_kiwi=%d auth_prot=%d auth_admin=%d\n", type_m, uri,
+		     conn->auth, badp, conn->auth_kiwi, conn->auth_prot, conn->auth_admin);
+        free(type_m);
+        
 		return true;
 	}
 
@@ -602,10 +616,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			return true;
 		}
 		
-		if (dx.len == 0) {
-			return true;
-		}
-		
 		float freq = 0;
 		int gid = -999;
 		int low_cut, high_cut, mkr_off, flags, new_len;
@@ -629,6 +639,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		//  !-1 -1      delete
 		//  !-1 !-1     modify
 		//  -1  x       add new
+		
+		// dx.len == 0 only applies when adding first entry to empty list
+		if (gid != -1 && dx.len == 0) return true;
 		
 		bool err = false;
 		dx_t *dxp;
@@ -788,6 +801,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		dx_lastx = 0;
 		
 		if (dx.len == 0) {
+            send_msg(conn, false, "MSG mkr=[{\"t\":4}]");    // otherwise last marker won't get cleared
 			return true;
 		}
 		
@@ -906,7 +920,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 	if (strcmp(cmd, "SET GET_CONFIG") == 0) {
 		asprintf(&sb, "{\"r\":%d,\"g\":%d,\"s\":%d,\"pu\":\"%s\",\"pe\":%d,\"pv\":\"%s\",\"pi\":%d,\"n\":%d,\"m\":\"%s\",\"v1\":%d,\"v2\":%d}",
-			rx_chans, GPS_CHANS, ddns.serno, ddns.ip_pub, ddns.port_ext, ddns.ip_pvt, ddns.port, ddns.nm_bits, ddns.mac, version_maj, version_min);
+			rx_chans, GPS_CHANS, net.serno, net.ip_pub, net.port_ext, net.ip_pvt, net.port, net.nm_bits, net.mac, version_maj, version_min);
 		send_msg(conn, false, "MSG config_cb=%s", sb);
 		free(sb);
 		return true;
@@ -965,22 +979,22 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         
         // Always send WSPR grid. Won't reveal location if grid not set on WSPR admin page
         // and update-from-GPS turned off.
-        sb = kstr_asprintf(sb, ",\"gr\":\"%s\"", wspr_c.rgrid);
+        sb = kstr_asprintf(sb, ",\"gr\":\"%s\"", kiwi_str_encode_static(wspr_c.rgrid));
         //printf("status sending wspr_c.rgrid=<%s>\n", wspr_c.rgrid);
         
 		sb = kstr_asprintf(sb, ",\"ad\":%d,\"au\":%d,\"ae\":%d,\"ar\":%d,\"an\":%d,\"an2\":%d,",
 			dpump.audio_dropped, underruns, seq_errors, dpump.resets, nrx_bufs, N_DPBUF);
-		sb = kstr_cat(sb, kstr_list_int("\"ap\":[", "%d", "],", (int *) dpump.hist, nrx_bufs));
-		sb = kstr_cat(sb, kstr_list_int("\"ai\":[", "%d", "]", (int *) dpump.in_hist, N_DPBUF));
+		sb = kstr_cat(sb, kstr_list_int("\"ap\":[", "%u", "],", (int *) dpump.hist, nrx_bufs));
+		sb = kstr_cat(sb, kstr_list_int("\"ai\":[", "%u", "]", (int *) dpump.in_hist, N_DPBUF));
 #endif
 
 		char utc_s[32], local_s[32];
 		time_t utc = utc_time();
-		strncpy(utc_s, &utc_ctime()[11], 5);
+		strncpy(utc_s, &utc_ctime_static()[11], 5);
 		utc_s[5] = '\0';
 		if (utc_offset != -1 && dst_offset != -1) {
 			time_t local = utc + utc_offset + dst_offset;
-			strncpy(local_s, &var_ctime(&local)[11], 5);
+			strncpy(local_s, &var_ctime_static(&local)[11], 5);
 			local_s[5] = '\0';
 		} else {
 			strcpy(local_s, "");
@@ -989,6 +1003,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			utc_s, local_s, tzone_id, tzone_name);
 
 		send_msg(conn, false, "MSG stats_cb=%s", kstr_sp(sb));
+        //printf("MSG stats_cb=<%s>\n", kstr_sp(sb));
 		kstr_free(sb);
 		return true;
 	}
@@ -1026,6 +1041,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		
 		// else no name sent, but ip didn't change: do nothing
 		
+		//cprintf(conn, "SET ident_user=<%s> noname=%d setUserIP=%d\n", ident_user_m, noname, setUserIP);
+		
 		if (setUserIP) {
 			kiwi_str_redup(&conn->user, "user", conn->remote_ip);
 			conn->isUserIP = TRUE;
@@ -1036,26 +1053,40 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         // name sent: save new, replace previous (if any)
 		if (!noname) {
 			kiwi_str_decode_inplace(ident_user_m);
+            char *esc = kiwi_str_escape_HTML(ident_user_m);
+            if (esc) {
+                free(ident_user_m);
+                ident_user_m = esc;
+            }
 			kiwi_str_redup(&conn->user, "user", ident_user_m);
 			conn->isUserIP = FALSE;
 			// printf(">>> isUserIP FALSE: %s:%05d setUserIP=%d noname=%d user=%s <%s>\n",
 			// 	conn->remote_ip, conn->remote_port, setUserIP, noname, conn->user, cmd);
 		}
 		
-		//clprintf(conn, "SND user: <%s>\n", cmd);
-		if (!conn->arrived) {
-			rx_loguser(conn, LOG_ARRIVED);
-			conn->arrived = TRUE;
+		// ext_api_nchans, if exceeded, overrides tdoa_nchans
+		if (conn->ext_api) {
+		    int ext_api_ch = cfg_int("ext_api_nchans", NULL, CFG_REQUIRED);
+		    if (ext_api_ch == -1) ext_api_ch = rx_chans;      // has never been set
+		    int ext_api_users = rx_count_server_conns(EXT_API_USERS);
+		    //cprintf(conn, "EXT_API ext_api_users=%d >? ext_api_ch=%d\n", ext_api_users, ext_api_ch);
+		    if (ext_api_users > ext_api_ch) {
+		        //cprintf(conn, "EXT_API TOO_BUSY %s\n", conn->remote_ip);
+		        clprintf(conn, "Non-Kiwi API denied connection: %d/%d %s \"%s\"\n",
+		            ext_api_users, ext_api_ch, conn->remote_ip, conn->user);
+			    send_msg(conn, SM_NO_DEBUG, "MSG too_busy=%d", ext_api_ch);
+		        conn->kick = true;
+		    }
 		}
-		
+
 		// Can only distinguish the TDoA service at the time the kiwirecorder identifies itself.
 		// If a match and the limit is exceeded then kick the connection off immediately.
 		// This identification is typically sent right after initial connection is made.
-		if (kiwi_str_begins_with(conn->user, "TDoA_service")) {
+		if (!conn->kick && kiwi_str_begins_with(conn->user, "TDoA_service")) {
 		    int tdoa_ch = cfg_int("tdoa_nchans", NULL, CFG_REQUIRED);
 		    if (tdoa_ch == -1) tdoa_ch = rx_chans;      // has never been set
 		    int tdoa_users = rx_count_server_conns(TDOA_USERS);
-		    //cprintf(conn, "TDoA_service tdoa_users=%d > tdoa_ch=%d\n", tdoa_users, tdoa_ch);
+		    //cprintf(conn, "TDoA_service tdoa_users=%d >? tdoa_ch=%d\n", tdoa_users, tdoa_ch);
 		    if (tdoa_users > tdoa_ch) {
 		        //cprintf(conn, "TDoA_service TOO_BUSY\n");
 			    send_msg(conn, SM_NO_DEBUG, "MSG too_busy=%d", tdoa_ch);
@@ -1064,6 +1095,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		}
 
 		free(ident_user_m);
+		conn->ident = true;
 		return true;
 	}
 
@@ -1081,6 +1113,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	if (n == 1) {
 		kiwi_str_decode_inplace(geo_m);
 		//cprintf(conn, "ch%d recv geoloc from client: %s\n", conn->rx_channel, geo_m);
+		char *esc = kiwi_str_escape_HTML(geo_m);
+		if (esc) {
+		    free(geo_m);
+		    geo_m = esc;
+		}
 		free(conn->geo);
 		conn->geo = geo_m;
 		return true;
@@ -1090,7 +1127,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	n = sscanf(cmd, "SET geojson=%256ms", &geojson_m);
 	if (n == 1) {
 		kiwi_str_decode_inplace(geojson_m);
-		//clprintf(conn, "SND geo: <%s>\n", geojson_m);
+		//clprintf(conn, "SET geojson<%s>\n", geojson_m);
 		free(geojson_m);
 		return true;
 	}
@@ -1099,7 +1136,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	n = sscanf(cmd, "SET browser=%256ms", &browser_m);
 	if (n == 1) {
 		kiwi_str_decode_inplace(browser_m);
-		//clprintf(conn, "SND browser: <%s>\n", browser_m);
+		//clprintf(conn, "SET browser=<%s>\n", browser_m);
 		free(browser_m);
 		return true;
 	}
@@ -1181,12 +1218,12 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 // kiwiclient
 ////////////////////////////////
 
+    // DEPRECATED
+    // Replaced by "--tlimit-pw" option that specifies an actual time limit exemption password.
+    // But silently accept for backward compatibility with old versions of kiwiclient still in use.
 	int inactivity_timeout;
 	n = sscanf(cmd, "SET OVERRIDE inactivity_timeout=%d", &inactivity_timeout);
 	if (n == 1) {
-		//clprintf(conn, "SET OVERRIDE inactivity_timeout=%d\n", inactivity_timeout);
-		if (inactivity_timeout == 0)
-			conn->inactivity_timeout_override = true;
 		return true;
 	}
 

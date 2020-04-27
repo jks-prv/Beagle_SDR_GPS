@@ -2,6 +2,234 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.390  April 23, 2020
+    Performance improvements:
+        Suggested by @howardsu on Kiwi forum: remove -DDEBUG so assert()'s are not evaluated.
+        	Added new "make debug" target to revert to compiling with -DDEBUG defined.
+
+        Christoph's cross-compilation changes: added "make xc" target that allows cross-compiling on
+            development host. Alternative to slow compiles on Beagle during development.
+            See file CROSS_COMPILE for complete details.
+    
+    Added synchronous AM (SAM) demodulators from Warren Pratt's wdsp package via the
+        Teensy-ConvolutionSDR implementation: github.com/DD4WH/Teensy-ConvolutionSDR
+        See the Kiwi operation manual for more information: kiwisdr.com/quickstart/index.html#id-faq-sam
+        Synchronous AM modes: SAM, SAL, SAU, SAS
+    
+    User interface changes:
+        Use keyboard shortcut 'A' to toggle the SAM modes (sorry, 's' and 'S' were taken).
+            As always type 'h' or '?' to see the list of all keyboard shortcuts.
+        Bugfix: Adjusting the passband via a "/width" or "/low,high" entry in the
+            frequency box is now "sticky" i.e. remembered when returning to the mode.
+            Just like when changing the passband via the 'p' and 'P' keyboard shortcuts.
+            Restore as usual by shift-clicking on the mode button.
+
+v1.389  April 12, 2020
+    Added to popup menu: "edit last selected DX label". This means you can now edit DX labels
+    on mobile devices.
+
+v1.388  April 11, 2020
+    Desktop UI improvements:
+        Added "tuning lock" to right-click popup menu. When active a single-click in waterfall
+        or DX label area will briefly show a "tuning locked" overlay. Should perhaps be extended
+        to include clicks in tuning scale. Does not effect other methods of tuning, e.g. entry in
+        frequency box, click on +/- step buttons.
+
+    Mobile UI improvements:
+        Double-tap/touch brings up popup menu (same menu as right-click on desktop).
+        Has tuning lock function same as desktop.
+        Two finger pinch-in/out gesture will zoom the waterfall in/out. Tested on iOS & Android.
+
+v1.387  April 10, 2020
+    Admin page control tab:
+        By special request, added ability to limit number of simultaneous non-Kiwi API connections
+            (e.g. kiwirecorder). This works in the same way (and overrides) the TDoA extension
+            setting that limits the number of simultaneous TDoA connections.
+    DX label edit:
+        Passband frequencies can be entered using "k" and "M" suffixes for kHz and MHz.
+        I.e. "2100" and "2.1k" are equivalent, as are "1200000", "1200k" and "1.2M".
+        However subsequent display of the passband field is always in Hz.
+        So after entering "-2.1k, 1.2M" on the next edit the field will display "-2100, 1200000" (Hz).
+
+v1.386  April 6, 2020
+    Fix passband setting problem.
+
+v1.385  April 5, 2020
+    DRM extension fixes and improvements:
+        Respect passband set in dx labels and in URL.
+            E.g. you have a dx label with mode=DRM and passband=-4.5k,4.5k like you might use
+            with 9 kHz DRM mode CNR 6030 kHz. You don't want the DRM extension to override that
+            passband and set to the default 10 kHz. Similarly if you've set a passband in the URL
+            e.g. "my_kiwi:8073/?pb=-4.5k,4.5k&ext=drm" (alternatively "pb=9k")
+        Fixed bug causing "out of tasks" panic when DRM had been started and stopped on
+            multiple channels over time.
+
+v1.384  April 1, 2020
+    "up" script now fetches current Makefile to make script more useful in recovering from
+        cases of filesystem damage.
+    Add more debugging messages to log for "out of tasks" panic.
+    Fix dropbox link in tools/kiwiSDR-download-KiwiSDR-create-micro-SD-flasher.sh script.
+
+v1.383  March 3, 2020
+    TDoA and admin GPS tab:
+        Change to a no-cost map provider. Sorry, no more built-in satellite maps.
+        Use green pin to show solution location on Google sat maps in a new tab/window.
+    BBAI: fix for incorrect extensions lockout after DRM had been used.
+
+v1.382  February 21, 2020
+    Minor fixes.
+
+v1.381  February 19, 2020
+    Loran-C extension:
+        Add Wildwood (eLoran testing) GRI 9960 per Time-Nuts mailing list.
+        Add X chain slot to Wildwood GRI 8970.
+        Support variable screen widths.
+        Added help panel.
+    Updated DRM extension help panel.
+    Fixed observed looping in SSTV extension.
+
+v1.380  February 16, 2020
+    Fixed bug with DRM and 8-channel Kiwis.
+
+v1.379  February 14, 2020
+    Fixed bug in recent network initialization rewrite.
+
+v1.378  February 4, 2020
+    Changes to help diagnose problems with kiwisdr.com/public registration.
+
+v1.377  February 1, 2020
+    Improve software update reliability.
+    Add FAX frequency for KVM70 Hawaii.
+
+v1.376  January 29, 2020
+    DRM: added "monitor IQ" button which sends IQ to audio output while still decoding DRM.
+        Handy for comparing Kiwi DRM versus Dream.
+    Rewrite of network initialization code.
+        Handles DHCP servers slow to respond (e.g. after power failure).
+        Should help admin page "still determining local interface address" problem.
+    Fixed bug with protected login mode.
+    Print more debugging messages if /root/kiwi.config/opt.debug file is present.
+
+v1.375  January 21, 2020
+    DRM extension fixes and improvements:
+        Make service label UTF8 (e.g. allows Chinese characters)
+        Fixed service text message display.
+    Web server caching control added to admin webpage tab.
+        Set to "No" when when there are caching problems in your
+        network path, e.g. user interface icons don't load.
+    Adding a time limit (i.e. zero to non-zero) won't kick local connections anymore.
+
+v1.374  January 19, 2020
+    New, more accurate TDoA algorithm (thanks Christoph).
+        Use "Old algorithm" checkbox under TDoA options to revert.
+
+v1.373  January 18, 2020
+    DRM extension fixes and improvements:
+        Special USB IQ passband for WINB to help initial sync.
+        Scrolling in the schedule window shouldn't get "stuck" anymore.
+        Prevent weak signals from occasionally causing crashes in the AAC superframe processing.
+        Save cpu cycles by dropping internal processing rate from 48 kHz to 24 kHz.
+            Can do this because our input is always from Kiwi 12/20.25 kHz, not a 48 kHz soundcard.
+    Better log messages to /root/build.log
+    Fix (hopefully) for the admin page "Still determining local interface address" problem.
+
+v1.372  January 15, 2020
+    DRM extension improvements:
+        Schedule differentiates verified and non-verified times.
+        Added link for user reporting of schedule changes on Kiwi forum.
+        Service names in schedule can be links to their specific webpage.
+
+v1.371  January 14, 2020
+    Support for new "--tlimit-pw" option in kiwirecorder (specify time limit exemption password).
+    Better log messages to /root/build.log
+
+v1.370  January 12, 2020
+    DRM extension fixes and improvements:
+        Fixed xHE-AAC codec interface.
+            This means the AM band DRM stations listed in India can now be decoded.
+
+v1.368,369  January 11, 2020
+    DRM extension fixes and improvements:
+        AGC was missing from DRM IQ input. Should now work as well as Dream with weaker signals.
+
+v1.365,366,367  January 10, 2020
+    Decouple kiwisdr.com/public and sdr.hu registration.
+        Can register on either or both.
+        Rename admin page tab "sdr.hu" to "Public".
+        API key only applies to sdr.hu
+    Allow limited regular connections when DRM active.
+    Build DRM files only when needed.
+    Consider local timezone when scheduling updates (i.e. 1AM - 6AM local, not UTC).
+    Log build messages to /root/build.log file to aid in build failure determination.
+    Improve web server caching (more closely follow web caching standards).
+    More protection against users making invisible connections and other hacks.
+
+v1.364  December 28, 2019
+    DRM extension fixes and improvements:
+        UI improvements for mobile devices.
+
+v1.363  December 28, 2019
+    DRM extension fixes and improvements:
+        Added station schedule timeline.
+        Fix launch of DRM from dx label click.
+
+v1.362  December 26, 2019
+    DRM extension fixes and improvements.
+
+v1.360,361  December 25, 2019
+    DRM extension: Beta test.
+
+v1.359  December 7, 2019
+    Performance improvements.
+
+v1.358  December 6, 2019
+    Fix S-meter OV averaging control to update configuration value on each change.
+
+v1.357  December 4, 2019
+    Added S-meter OV averaging control to admin config tab.
+
+v1.356  December 3, 2019
+    Additional Kiwi API input validation.
+
+v1.353,354  November 29, 2019
+    Security fixes. See the Kiwi forum for more information.
+    One-time check of Linux/Debian "root" and "debian" account passwords.
+        If they are unset or the defaults they are set to the Kiwi admin password (if set)
+        else the Kiwi's serial number. See the Kiwi log for a description of the action taken.
+    Added code to remove a new bot-virus reported on one Kiwi that had its ssh port open to the
+        Internet and root account unprotected (no password set, hence the reason the
+        above change was implemented).
+
+v1.352  November 24, 2019
+    Timecode extension improvements.
+
+v1.351  November 24, 2019
+    Fixed another waterfall panning bug.
+    Fixed startup glitch in spectrum peak hold function.
+    Preliminary release: Time station decoder (timecode) extension.
+        Many missing features and has known problems.
+
+v1.348,349,350  November 23, 2019
+    Admin config tab: add initial CW offset field.
+        Kiwi owners/admins: If you don't like the default 500 Hz this is where you change it.
+        Non-owner/admin users of a Kiwi have to change the passband manually as usual.
+    Admin extension tab: add user enable for each extension.
+        Don't want users using a particular extension on your Kiwi? Disable them here.
+        Only works for internal extensions currently (i.e. not for the antenna switch extension).
+        Local connections (same network) are exempt from these restrictions.
+    Fixed specifying frequency in URL when configured in transverter/downconverter mode.
+    Fixed premature end of waterfall panning when dragging near left edge.
+    Improved behavior when dragging in the frequency scale.
+
+v1.347  November 16, 2019
+    WSPR extension & autorun works again with transverter/downconverter mode.
+
+v1.346  November 15, 2019
+    Fixed return/newline processing causing output line overwrites in fsk/navtex/cw extensions.
+
+v1.345  November 10, 2019
+    Fixed bug with waterfall disable mode on admin page.
+
 v1.344  November 9, 2019
     Fixed synchronization problem causing IQ display instability with VLF/LF stations.
 
@@ -140,8 +368,6 @@ v1.312  August 17, 2019
     Pan slider does not appear when using Safari or with any browser on iOS (i.e. iPhone, iPad).
     This is because Apple doesn't have the necessary audio support.
     Tested with desktop Firefox/Chrome and with Android 8.x
-
-    Feature suggested by github.com/jks-prv/Beagle_SDR_GPS/issues/282
 
 v1.311  August 16, 2019
     Added IP blacklist to admin network tab (uses Linux iptables).
@@ -422,7 +648,6 @@ v1.276, 277  March 29, 2019
         But some playback software may have compensated for this issue automatically.
 
     Fixed problem with IQ mode AGC distortion found by DazDSP. This may improve DRM reception.
-        See: https://github.com/jks-prv/Beagle_SDR_GPS/issues/220
 
 v1.275  March 20, 2019
     Improvements to FSK extension

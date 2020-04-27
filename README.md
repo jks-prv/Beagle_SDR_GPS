@@ -1,4 +1,4 @@
-[updated 28 May 2018]
+[updated 8 January 2020]
 
 [![KiwiSDR](http://www.kiwisdr.com/ks/Seeed.sample.1.780px.jpg)](http://www.kiwisdr.com/ks/Seeed.sample.1.jpg)
 
@@ -14,14 +14,12 @@ Software-defined Radio (SDR) and GPS for the BeagleBone Black
 
 An add-on board ("cape") that turns your Beagle into a web-accessible shortwave receiver.
 
-Note: the KiwiSDR PCB design has moved to a separate repository called [KiwiSDR_PCB](https://github.com/jks-prv/KiwiSDR_PCB/).
-
 ### Kickstarter
 KiwiSDR had a successful [Kickstarter](https://www.kickstarter.com/projects/1575992013/kiwisdr-beaglebone-software-defined-radio-sdr-with/).
 
 ### Details
 
-* Listen live: [SDR.hu](https://sdr.hu/?top=kiwi), [kiwisdr.com](http://kiwisdr.com/public), [rx.linkfanel.net](http://rx.linkfanel.net)
+* Listen live: [List](http://kiwisdr.com/public), [Map](http://rx.linkfanel.net)
 * [Project webpage](http://www.kiwisdr.com/)
 * [Operating information: installation, operation, FAQ](http://www.kiwisdr.com/quickstart/)
 * Latest [source code commits](https://github.com/jks-prv/Beagle_SDR_GPS/commits/master)
@@ -53,9 +51,7 @@ This SDR is a bit different. It has a web interface that can be used by up to fo
 
 Give the live receivers a try at the links above. You'll need a recent version of a modern web browser that supports HTML5. The web interface works, with some problems, on mobile devices. But there is no mobile version of the interface yet.
 
-The files of a KiCAD PCB layout of the cape are available. This PCB has been fabricated in production quantities
-and shipped to thousands of customers worldwide.
-Please email us any comments you have after reviewing the design document above. The active antenna and injector PCBs have been fabricated and are undergoing development.
+Please email us any comments you have after reviewing the design document above.
 
 ### Objectives
 

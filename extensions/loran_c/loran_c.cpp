@@ -2,10 +2,6 @@
 
 #include "ext.h"	// all calls to the extension interface begin with "ext_", e.g. ext_register()
 
-#ifndef EXT_LORAN_C
-	void loran_c_main() {}
-#else
-
 #include "kiwi.h"
 #include "misc.h"
 
@@ -315,11 +311,11 @@ ext_t loran_c_ext = {
 	loran_c_main,
 	NULL,
 	loran_c_msgs,
+	EXT_NEW_VERSION,
+	EXT_FLAGS_HEAVY
 };
 
 void loran_c_main()
 {
 	ext_register(&loran_c_ext);
 }
-
-#endif

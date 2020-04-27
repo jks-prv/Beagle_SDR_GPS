@@ -2,10 +2,6 @@
 
 #include "ext.h"	// all calls to the extension interface begin with "ext_", e.g. ext_register()
 
-#ifndef EXT_INTEGRATE
-	void integrate_main() {}
-#else
-
 #include "kiwi.h"
 #include "misc.h"
 #include "cuteSDR.h"
@@ -187,11 +183,11 @@ ext_t integrate_ext = {
 	integrate_main,
 	NULL,
 	integrate_msgs,
+	EXT_NEW_VERSION,
+	EXT_FLAGS_HEAVY
 };
 
 void integrate_main()
 {
 	ext_register(&integrate_ext);
 }
-
-#endif

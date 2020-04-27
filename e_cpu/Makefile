@@ -2,28 +2,13 @@
 # assembler for the embedded processor
 #
 
+include ../Makefile.comp.inc
+
 BUILD_DIR = ../../build
 TOOLS_DIR = $(BUILD_DIR)/tools
 GEN_DIR = $(BUILD_DIR)/gen
 
 ASM = $(TOOLS_DIR)/asm
-
-DEBIAN_DEVSYS = $(shell grep -q -s Debian /etc/dogtag; echo $$?)
-DEBIAN = 0
-NOT_DEBIAN = 1
-DEVSYS = 2
-
-ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
-	DEBIAN_7 = $(shell cat /etc/debian_version | grep -q -s "7\." && echo true)
-	ifeq ($(DEBIAN_7),true)
-		# clang 3.0 available on Debian 7.9 doesn't work
-		CPP = g++
-	else
-		CPP = clang++
-	endif
-else
-	CPP = clang++
-endif
 
 all: $(ASM)
 	$(ASM) -o $(GEN_DIR)

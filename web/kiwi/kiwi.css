@@ -182,12 +182,12 @@ hr
 
 .id-extensions-nav
 {
-	width: 8%;
+	width: 10%;
 }
 
 .id-extensions-config
 {
-	margin-left: 10%;
+	margin-left: 12%;
 }
 
 .cl-optbar a
@@ -227,6 +227,7 @@ hr
 	top: 10px;
 	right: 40px;
 	cursor: pointer;
+	z-index:9999;
 }
 
 .class-mfg-panel

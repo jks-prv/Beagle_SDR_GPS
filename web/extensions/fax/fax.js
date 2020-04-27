@@ -1,8 +1,7 @@
 // Copyright (c) 2017 John Seamons, ZL/KF6VO
 
-var fax_ext_name = 'fax';		// NB: must match fax.c:fax_ext.name
-
 var fax = {
+   ext_name: 'fax',     // NB: must match fax.c:fax_ext.name
    first_time: true,
    stop_start_state: 0,
    url_params: null,
@@ -38,7 +37,7 @@ var fax = {
 
 function fax_main()
 {
-	ext_switch_to_client(fax_ext_name, fax.first_time, fax_recv);		// tell server to use us (again)
+	ext_switch_to_client(fax.ext_name, fax.first_time, fax_recv);		// tell server to use us (again)
 	if (!fax.first_time)
 		fax_controls_setup();
 	fax.first_time = false;
@@ -240,7 +239,7 @@ var fax_asia_pac = {
    
    // www.nws.noaa.gov/om/marine/hfhi_links.htm
    "Honolulu": [],
-   "KVM70 HI": [ 9982.5, 11090, 16135 ],
+   "KVM70 HI": [ 8295.5, 9982.5, 11090, 16135 ],
    
    // www.nws.noaa.gov/om/marine/hfak_links.htm
    "Kodiak":   [],
@@ -301,7 +300,7 @@ var fax_americas = {
    "NOJ AK":   [ 2054, 4298, 8459, 12412.5 ],
    
    "Honolulu": [],
-   "KVM70 HI": [ 9982.5, 11090, 16135 ],
+   "KVM70 HI": [ 8295.5, 9982.5, 11090, 16135 ],
    
    "Nova Scotia": [],
    "VCO CA":   [ 4416, 6915.1 ],
@@ -400,12 +399,11 @@ function fax_controls_setup()
                w3_checkbox('w3-label-inline w3-label-not-bold/', 'auto align', 'fax.phasing', fax.phasing, 'fax_phasing_cb'),
                w3_div('id-fax-phased w3-margin-left w3-padding-small w3-text-black w3-css-lime w3-hidden', 'aligned'),
                w3_checkbox('w3-margin-left/w3-label-inline w3-label-not-bold/', 'auto stop', 'fax.autostop', fax.autostop, 'fax_autostop_cb'),
-               w3_div('id-fax-stopped w3-margin-left w3-padding-small w3-text-black w3-css-orange w3-hidden', 'stopped'),
+               w3_div('id-fax-stopped w3-margin-left w3-padding-small w3-text-black w3-css-orange w3-hidden', 'stopped')
             ),
 				w3_div('',
 				   w3_inline('w3-halign-space-between/',
-                  w3_link('', 'www.nws.noaa.gov/os/marine/rfax.pdf', 'FAX transmission schedules'),
-                  w3_div('', 'Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">report</a> station corrections/updates.')
+                  w3_link('', 'https://www.weather.gov/media/marine/rfax.pdf', 'FAX transmission schedules')
                ),
                w3_div('', 'Shift-click (PC) or touch (mobile) the image to align.')
                //w3_slider('', 'Contrast', 'fax.contrast', fax.contrast, 1, 255, 1, 'fax_contrast_cb')
@@ -702,12 +700,7 @@ function fax_blur()
 // called to display HTML for configuration parameters in admin interface
 function fax_config_html()
 {
-	ext_admin_config(fax_ext_name, 'fax',
-		w3_div('id-fax w3-text-teal w3-hide',
-			'<b>FAX configuration</b>' +
-			'<hr>'
-		)
-	);
+   ext_config_html(fax, 'fax', 'FAX', 'FAX configuration');
 }
 
 function fax_help(show)

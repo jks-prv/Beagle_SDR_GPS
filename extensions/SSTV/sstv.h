@@ -97,7 +97,7 @@
 #define SSTV_MS_2_SAMPS(ms) (sstv.nom_rate * (ms) / 1000)
 #define SSTV_MS_2_MAX_SAMPS(ms) (MAX_SND_RATE * (ms) / 1000)
 
-#define GET_BIN(freq, FFTLen) ((u4_t) ( ((SSTV_REAL) (freq)) / sstv.nom_rate * (FFTLen)) )
+#define GET_BIN(freq, FFTLen) ((u4_t) ( ((SSTV_REAL) (freq)) / sstv.nom_rate * (FFTLen) ) )
 //u4_t GET_BIN(SSTV_REAL Freq, u4_t FFTLen);
 
 //SSTV_REAL POWER(SSTV_FFTW_COMPLEX coeff);

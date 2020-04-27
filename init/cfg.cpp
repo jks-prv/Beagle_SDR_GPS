@@ -105,39 +105,32 @@ static void cfg_test()
 	json_set_string(&cfgx, "foo", "baz");
 
 	//_cfg_walk(&cfgx, NULL, cfg_print_tok, NULL);
-	exit(0);
+	kiwi_exit(0);
 }
 
 int serial_number;
 
-void cfg_reload(bool called_from_main)
+void cfg_reload()
 {
 	cfg_init();
 	admcfg_init();
 
-	if (called_from_main) {
-	
-		//cfg_test();
-		
-		if ((serial_number = cfg_int("serial_number", NULL, CFG_OPTIONAL)) > 0) {
-			lprintf("serial number override from configuration: %d\n", serial_number);
-		} else {
-			if ((serial_number = eeprom_check()) <= 0) {
-				lprintf("can't read serial number from EEPROM and no configuration override\n");
-				serial_number = 0;
-			} else {
-				lprintf("serial number from EEPROM: %d\n", serial_number);
-			}
-		}
-	}
+    //cfg_test();
+    
+    if ((serial_number = cfg_int("serial_number", NULL, CFG_OPTIONAL)) > 0) {
+        lprintf("serial number override from configuration: %d\n", serial_number);
+    } else {
+        if ((serial_number = eeprom_check()) <= 0) {
+            lprintf("can't read serial number from EEPROM and no configuration override\n");
+            serial_number = 0;
+        } else {
+            lprintf("serial number from EEPROM: %d\n", serial_number);
+        }
+    }
 
 #ifndef CFG_GPS_ONLY
 	dx_reload();
 #endif
-	
-	if (!called_from_main) {
-		services_start(SVCS_RESTART_TRUE);
-	}
 }
 
 cfg_t cfg_cfg, cfg_adm, cfg_dx;
@@ -371,7 +364,7 @@ static int _cfg_cut(cfg_t *cfg, jsmntok_t *jt, int skip)
 	if (*(s-1) == ',' && *e == '}')
 		s--;
 
-	strcpy(s, e);
+	kiwi_overlap_strcpy(s, e);
 	//real_printf("POST-CUT %d <<%s>>\n", s - cfg->json, cfg->json);
 	return s - cfg->json;
 }
@@ -1187,7 +1180,6 @@ static void _cfg_write_file(void *param)
 	scallz("_cfg_write_file fopen", (fp = fopen(cfg->filename, "w")));
 	fprintf(fp, "%s\n", cfg->json_write);
 	fclose(fp);
-	exit(0);
 }
 
 // FIXME guard better against file getting trashed

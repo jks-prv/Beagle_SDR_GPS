@@ -30,6 +30,7 @@ Boston, MA  02110-1301, USA.
 #include <ctype.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <ctype.h>
 
 
 // kstr: Kiwi C-string package
@@ -277,6 +278,57 @@ void kiwi_str_unescape_quotes(char *str)
 	*o = '\0';
 }
 
+typedef struct {
+    const char c;
+    const char *rep;
+} esc_HTML_t;
+
+static esc_HTML_t esc_HTML[] = {
+    '<', "&lt;",
+    '>', "&gt;",
+    '&', "&amp;",
+    '"', "&quot;",
+    '\'', "&apos;"
+};
+
+// slow, but doesn't matter given who the current users are
+char *kiwi_str_escape_HTML(char *str)
+{
+    int i, n;
+	char *s, *o, *sn;
+	esc_HTML_t *esc;
+	
+	n = 0;
+	for (s = str; *s != '\0'; s++) {
+	    for (esc = esc_HTML; esc < ARRAY_END(esc_HTML); esc++) {
+            if (*s == esc->c) {
+                n += strlen(esc->rep) - 1;
+                break;
+            }
+        }
+    }
+    
+    if (n == 0) return NULL;
+	sn = (char *) malloc(strlen(str) + n + SPACE_FOR_NULL);
+	o = sn;
+
+	for (s = str; *s != '\0'; s++) {
+	    for (esc = esc_HTML; esc < ARRAY_END(esc_HTML); esc++) {
+            if (*s == esc->c) {
+                o = stpcpy(o, esc->rep);
+                break;
+            }
+        }
+        if (esc == ARRAY_END(esc_HTML)) {
+            if (isprint(*s))
+                *o++ = *s;
+        }
+    }
+	
+	*o = '\0';
+	return sn;
+}
+
 char *kiwi_str_encode(char *src)
 {
 	if (src == NULL) src = (char *) "null";		// JSON compatibility
@@ -292,6 +344,17 @@ char *kiwi_str_encode(char *src)
 	return dst;		// NB: caller must free dst
 }
 
+#define N_DST_STATIC (1023 + SPACE_FOR_NULL)
+static char dst_static[N_DST_STATIC];
+
+// for use with e.g. an immediate printf argument
+char *kiwi_str_encode_static(char *src)
+{
+	if (src == NULL) src = (char *) "null";		// JSON compatibility
+	mg_url_encode(src, dst_static, N_DST_STATIC);
+	return dst_static;
+}
+
 char *kiwi_str_decode_inplace(char *src)
 {
 	if (src == NULL) return NULL;
@@ -303,9 +366,6 @@ char *kiwi_str_decode_inplace(char *src)
 	return dst;
 }
 
-#define N_DST_STATIC (255 + SPACE_FOR_NULL)
-static char dst_static[N_DST_STATIC];
-
 // for use with e.g. an immediate printf argument
 char *kiwi_str_decode_static(char *src)
 {
@@ -313,6 +373,26 @@ char *kiwi_str_decode_static(char *src)
 	// yes, mg_url_decode() dst length includes SPACE_FOR_NULL
 	mg_url_decode(src, strlen(src), dst_static, N_DST_STATIC, 0);
 	return dst_static;
+}
+
+// FIXME: do something better
+char *kiwi_str_clean(char *str)
+{
+    char *s = str;
+
+    for (; *s != '\0'; s++) {
+        if (*s == '\'') *s = ' '; else
+        if (*s == '"') *s = ' '; else
+        if (*s == '\\') *s = ' '; else
+        if (*s == '<') *s = ' '; else
+        if (*s == '>') *s = ' '; else
+        if (*s == '&') *s = ' ';
+
+        if (isprint(*s)) continue;
+        *s = ' ';
+    }
+
+    return str;
 }
 
 int kiwi_str2enum(const char *s, const char *strs[], int len)
@@ -357,6 +437,17 @@ char *kiwi_skip_over(char *s, const char *skip)
     int slen = strlen(skip);
     bool match = (strncmp(s, skip, slen) == 0);
     return match? (s + slen) : s;
+}
+
+// library strcpy() with overlapping args will trigger clang asan
+char *kiwi_overlap_strcpy(char *dst, const char *src)
+{
+    char *d = dst, c;
+    do {
+        c = *src++;
+        *d++ = c;
+    } while (c != '\0');
+    return dst;
 }
 
 

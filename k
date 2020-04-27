@@ -17,7 +17,7 @@ case ${CMD} in
 		ARGS="+gps -stats 1 $*"
 		;;
 	"d")
-		ARGS="-gps -leds $*"
+		ARGS="-gps -leds -debug $*"
 		;;
 esac
 echo ARGS = ${ARGS}

@@ -48,12 +48,9 @@ bool devl_msgs(char *msg, int rx_chan)
 	if (n == 2) {
 	    //printf("DEVL: in%d=%lf\n", in_n, in_f);
 	    
-	    #ifdef USE_SDR
-            // adjust ADC overload detect averaging mask
-            if (in_n == 1) {
-                spi_set(CmdSetOVMask, 0, (u4_t) lrint(in_f));
-            }
-        #endif
+        if (in_n == 1) {
+	        p0 = (int) lrint(in_f);
+        }
 	    
 	    if (in_n == 2) {
 	        p1 = (int) lrint(in_f);

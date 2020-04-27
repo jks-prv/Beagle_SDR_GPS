@@ -3,28 +3,36 @@
 // Copyright (c) 2014-2017 John Seamons, ZL/KF6VO
 
 var kiwi = {
+   is_local: [],
    loaded_files: {},
    WSPR_rgrid: '',
    GPS_fixes: 0,
    wf_fps: 0,
    inactivity_panel: false,
+   is_BBAI: 0,
+   
+   // must match rx_cmd.cpp
+   modes_l: [ 'am', 'amn', 'usb', 'lsb', 'cw', 'cwn', 'nbfm', 'iq', 'drm', 'usn', 'lsn', 'sam', 'sal', 'sau', 'sas' ],
+   modes_u: [],
+   modes_s: {},
    
    RX4_WF4:0, RX8_WF2:1, RX3_WF3:2, RX14_WF0:3
 };
 
+kiwi.modes_l.forEach(function(e,i) { kiwi.modes_u.push(e.toUpperCase()); kiwi.modes_s[e] = i});
+//console.log(kiwi.modes_u);
+//console.log(kiwi.modes_s);
+
 var WATERFALL_CALIBRATION_DEFAULT = -13;
 var SMETER_CALIBRATION_DEFAULT = -13;
 
-var rx_chans, wf_chans, rx_chan;
+var rx_chans, wf_chans, wf_chans_real, rx_chan;
 var try_again="";
 var conn_type;
 var seriousError = false;
 
-var modes_u = { 0:'AM', 1:'AMN', 2:'USB', 3:'LSB', 4:'CW', 5:'CWN', 6:'NBFM', 7:'IQ' };
-var modes_l = { 0:'am', 1:'amn', 2:'usb', 3:'lsb', 4:'cw', 5:'cwn', 6:'nbfm', 7:'iq' };
-var modes_s = { 'am':0, 'amn':1, 'usb':2, 'lsb':3, cw:4, 'cwn':5, 'nbfm':6, 'iq':7 };
 
-var types = { 0:'active', 1:'watch-list', 2:'sub-band', 3:'DGPS', 4:'special event', 5:'interference', 6:'masked' };
+var types = [ 'active', 'watch-list', 'sub-band', 'DGPS', 'special event', 'interference', 'masked' ];
 var types_s = { active:0, watch_list:1, sub_band:2, DGPS:3, special_event:4, interference:5, masked:6 };
 var type_colors = { 0:'cyan', 0x10:'lightPink', 0x20:'aquamarine', 0x30:'lavender', 0x40:'violet', 0x50:'violet', 0x60:'lightGrey' };
 
@@ -188,7 +196,9 @@ function kiwi_ask_pwd(conn_kiwi)
 	console.log('kiwi_ask_pwd chan_no_pwd='+ chan_no_pwd +' client_public_ip='+ client_public_ip);
 	var s1 = '';
 	if (conn_kiwi && chan_no_pwd) s1 = 'All channels busy that don\'t require a password ('+ chan_no_pwd +'/'+ rx_chans +')<br>';
-   var prot = kiwi_url_param(['p', 'prot', 'protected'], true, false);
+	
+	// "&& conn_kiwi" to ignore pathological "/admin?prot" etc.
+   var prot = (kiwi_url_param(['p', 'prot', 'protected'], true, false) && conn_kiwi);
 	if (prot) s1 = 'You have requested a password protected channel<br>';
 	var s = "KiwiSDR: software-defined receiver <br>"+ s1 +
 		"<form name='pform' style='display:inline-block' action='#' onsubmit='ext_valpwd(\""+ conn_type +"\", this.pwd.value); return false;'>"+
@@ -308,23 +318,25 @@ function kiwi_get_init_settings()
 	// if not configured, take value from config.js, if present, for backward compatibility
 
 	var init_f = (init_frequency == undefined)? 7020 : init_frequency;
-	init_f = ext_get_cfg_param('init.freq', init_f);
+	init_f = ext_get_cfg_param('init.freq', init_f, EXT_NO_SAVE);
 	init_frequency = override_freq? override_freq : init_f;
 
-	var init_m = (init_mode == undefined)? modes_s['lsb'] : modes_s[init_mode];
-	init_m = ext_get_cfg_param('init.mode', init_m);
-	init_mode = override_mode? override_mode : modes_l[init_m];
+	var init_m = (init_mode == undefined)? kiwi.modes_s['lsb'] : kiwi.modes_s[init_mode];
+	init_m = ext_get_cfg_param('init.mode', init_m, EXT_NO_SAVE);
+	//console.log('INIT init_mode='+ init_mode +' init.mode='+ init_m +' override_mode='+ override_mode);
+	init_mode = override_mode? override_mode : kiwi.modes_l[init_m];
+	if (init_mode === 'drm') init_mode = 'am';      // don't allow inherited drm mode from another channel
 
 	var init_z = (init_zoom == undefined)? 0 : init_zoom;
-	init_z = ext_get_cfg_param('init.zoom', init_z);
+	init_z = ext_get_cfg_param('init.zoom', init_z, EXT_NO_SAVE);
 	init_zoom = override_zoom? override_zoom : init_z;
 
 	var init_max = (init_max_dB == undefined)? -10 : init_max_dB;
-	init_max = ext_get_cfg_param('init.max_dB', init_max);
+	init_max = ext_get_cfg_param('init.max_dB', init_max, EXT_NO_SAVE);
 	init_max_dB = override_max_dB? override_max_dB : init_max;
 
 	var init_min = (init_min_dB == undefined)? -110 : init_min_dB;
-	init_min = ext_get_cfg_param('init.min_dB', init_min);
+	init_min = ext_get_cfg_param('init.min_dB', init_min, EXT_NO_SAVE);
 	init_min_dB = override_min_dB? override_min_dB : init_min;
 	
 	console.log('INIT f='+ init_frequency +' m='+ init_mode +' z='+ init_zoom
@@ -338,7 +350,7 @@ function kiwi_get_init_settings()
 		el.innerHTML = 'Antenna: '+ decodeURIComponent(ant);
 	}
 
-   kiwi.WSPR_rgrid = ext_get_cfg_param_string('WSPR.grid', '');
+   kiwi.WSPR_rgrid = ext_get_cfg_param_string('WSPR.grid', '', EXT_NO_SAVE);
 }
 
 
@@ -352,6 +364,7 @@ var adm = { };
 function cfg_save_json(path, ws)
 {
 	//console.log('cfg_save_json: path='+ path);
+	//kiwi_trace();
 
 	if (ws == undefined || ws == null)
 		return;
@@ -363,6 +376,7 @@ function cfg_save_json(path, ws)
 		s = encodeURIComponent(JSON.stringify(cfg));
 		ws.send('SET save_cfg='+ s);
 	}
+	console.log('cfg_save_json: DONE');
 }
 
 ////////////////////////////////
@@ -740,7 +754,7 @@ function kiwi_output_msg(id, id_scroll, p)
 
    // handle beginning output with '\r' only to overwrite current line
    //console.log(JSON.stringify(s));
-   if (s.charAt(0) == '\r' && (s.length == 1 || s.charAt(1) != '\n')) {
+   if (p.process_return_alone && s.charAt(0) == '\r' && (s.length == 1 || s.charAt(1) != '\n')) {
       //console.log('\\r @ beginning:');
       //console.log(JSON.stringify(s));
       //console.log(JSON.stringify(p.tstr));
@@ -839,7 +853,7 @@ function kiwi_output_msg(id, id_scroll, p)
                         p.sgr.fg = ansi.colors[sgr-90 + 8];
                         saw_color = 1;
                      } else
-                     if (sgr == 39) {
+                     if (sgr == 39) {     // normal
                         p.sgr.fg = null;
                         saw_color = 1;
                      } else
@@ -853,7 +867,7 @@ function kiwi_output_msg(id, id_scroll, p)
                         p.sgr.bg = ansi.colors[sgr-100 + 8];
                         saw_color = 1;
                      } else
-                     if (sgr == 49) {
+                     if (sgr == 49) {     // normal
                         p.sgr.bg = null;
                         saw_color = 1;
                      } else
@@ -1086,7 +1100,18 @@ function admin_stats_cb(audio_dropped, underruns, seq_errors, dp_resets, dp_hist
 function kiwi_too_busy(rx_chans)
 {
 	var s = 'Sorry, the KiwiSDR server is too busy right now ('+ rx_chans+((rx_chans>1)? ' users':' user') +' max). <br>' +
-	'Please check <a href="https://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
+	'Please check <a href="http://kiwisdr.com/public" target="_self">kiwisdr.com/public</a> for more KiwiSDR receivers available world-wide.';
+	kiwi_show_msg(s);
+}
+
+function kiwi_exclusive_use()
+{
+	var s = 'Sorry, this Kiwi has been locked for special use. <br>' +
+	'This happens when using an extension (e.g. DRM decoder) that requires all available resources. <br>' +
+	'Please check <a href="http://kiwisdr.com/public" target="_self">kiwisdr.com/public</a> for more KiwiSDR receivers available world-wide. <br><br>' +
+	'申し訳ありませんが、このキーウィは特別な使用のためにロックされています。 <br>' +
+	'これは、利用可能なすべてのリソースを必要とする拡張機能（DRM デコーダーなど）を使用している場合に発生します。 <br>' +
+	'世界中で利用できる KiwiSDR レシーバーについては、<a href="http://kiwisdr.com/public" target="_self">kiwisdr.com/public</a> を確認してください。';
 	kiwi_show_msg(s);
 }
 
@@ -1119,7 +1144,7 @@ function kiwi_24hr_ip_limit(mins, ip)
 {
 	var s = 'Sorry, this KiwiSDR can only be used for '+ mins +' minutes every 24 hours by each IP address.<br>' +
       //'Your IP address is: '+ ip +'<br>' +
-      'Please check <a href="https://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
+      'Please check <a href="http://kiwisdr.com/public" target="_self">kiwisdr.com/public</a> for more KiwiSDR receivers available world-wide.';
 	
 	kiwi_show_error_ask_exemption(s);
 }
@@ -1141,7 +1166,7 @@ function kiwi_down(type, comp_ctr, reason)
 
 	if (type == 1) {
 		s = 'Sorry, software update in progress. Please check back in a few minutes.<br>' +
-			'Or check <a href="https://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
+			'Or check <a href="http://kiwisdr.com/public" target="_self">kiwisdr.com/public</a> for more KiwiSDR receivers available world-wide.';
 		
 		if (comp_ctr > 0 && comp_ctr < 9000)
 			s += '<br>Build: compiling file #'+ comp_ctr;
@@ -1160,7 +1185,7 @@ function kiwi_down(type, comp_ctr, reason)
 	} else {
 		if (reason == null || reason == '') {
 			reason = 'Sorry, this KiwiSDR server is being used for development right now. <br>' +
-				'Please check <a href="https://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
+				'Please check <a href="http://kiwisdr.com/public" target="_self">kiwisdr.com/public</a> for more KiwiSDR receivers available world-wide.';
 		}
 		s = reason;
 	}
@@ -1426,6 +1451,11 @@ function user_cb(obj)
          w3_innerHTML('id-optbar-user-'+ i, (s1 != '')? (s1 +'<br>'+ s2) : '');
 		}
 		
+		if (obj.c) {
+		   var el = w3_el('id-sam-carrier');
+		   if (el) w3_innerHTML(el, 'carrier '+ obj.c.toFixed(1) +' Hz');
+		}
+		
 		// inactivity timeout warning panel
 		if (i == rx_chan && obj.rn) {
 		   if (obj.rn <= 55 && !kiwi.inactivity_panel) {
@@ -1543,7 +1573,7 @@ var version_maj = -1, version_min = -1;
 var tflags = { INACTIVITY:1, WF_SM_CAL:2, WF_SM_CAL2:4 };
 var chan_no_pwd;
 var pref_import_ch;
-var kiwi_output_msg_p = { scroll_only_at_bottom: true, process_return_nexttime: false };
+var kiwi_output_msg_p = { scroll_only_at_bottom: true, process_return_alone: false };
 var client_public_ip;
 
 function kiwi_msg(param, ws)
@@ -1581,6 +1611,10 @@ function kiwi_msg(param, ws)
 			wf_chans = parseInt(param[1]);
 			break;
 
+		case "wf_chans_real":
+			wf_chans_real = parseInt(param[1]);
+			break;
+
 		case "rx_chan":
 			rx_chan = parseInt(param[1]);
 			break;
@@ -1589,6 +1623,7 @@ function kiwi_msg(param, ws)
 			var cfg_json = decodeURIComponent(param[1]);
 			//console.log('### load_cfg '+ ws.stream +' '+ cfg_json.length);
 			cfg = JSON.parse(cfg_json);
+			owrx_cfg();
 			break;
 
 		case "load_adm":
@@ -1614,7 +1649,7 @@ function kiwi_msg(param, ws)
 		case "config_cb":
 			//console.log('config_cb='+ param[1]);
 			var o = JSON.parse(param[1]);
-			config_cb(o.r, o.g, o.s, o.pu, o.pe, o.pv, o.pi, o.n, o.m, o.v1, o.v2);
+			config_cb(o.r, o.g, o.s, o.pu, o.pe, o.pv, o.pi, o.n, o.m, o.v1, o.v2, o.ai);
 			break;					
 
 		case "update_cb":
@@ -1635,7 +1670,7 @@ function kiwi_msg(param, ws)
 				extint_srate = o.sr;
 				gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);
 				if (o.gr) {
-				   kiwi.WSPR_rgrid = o.gr;
+				   kiwi.WSPR_rgrid = decodeURIComponent(o.gr);
 				   kiwi.GPS_fixes = o.gf;
 				   //console.log('stat kiwi.WSPR_rgrid='+ kiwi.WSPR_rgrid);
 				}
@@ -1666,6 +1701,24 @@ function kiwi_msg(param, ws)
 			extint_isAdmin_cb(param[1]);
 			break;
 
+		case "is_local":
+		   var p = param[1].split(',');
+		   console.log('kiwi_msg rx_chan='+ p[0] +' is_local='+ p[1]);
+			kiwi.is_local[+p[0]] = +p[1];
+			break;
+		
+      /*
+      // enable DRM mode button
+      var el = w3_el('id-button-drm');
+      if (el && kiwi.is_BBAI) {
+         w3_remove(el, 'class-button-disbled');
+         w3_attribute(el, 'onclick', 'mode_button(event, this)');
+      }
+      */
+		case "is_BBAI":
+		   kiwi.is_BBAI = 1;
+		   break;
+		
 		case "authkey_cb":
 			extint_authkey_cb(param[1]);
 			break;
@@ -1676,6 +1729,10 @@ function kiwi_msg(param, ws)
 
 		case "too_busy":
 			kiwi_too_busy(parseInt(param[1]));
+			break;
+
+		case "exclusive_use":
+			kiwi_exclusive_use();
 			break;
 
 		case "inactivity_timeout":
@@ -1760,8 +1817,7 @@ function kiwi_show_msg(s)
 function kiwi_server_error(s)
 {
 	kiwi_show_msg('Hmm, there seems to be a problem. <br>' +
-	   'The server reported the error: <span style="color:red">'+ s +'</span> <br>' +
-	   'Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\',\'server error: '+ s +'\');">email us</a> the above message. Thanks!');
+	   'The server reported the error: <span style="color:red">'+ s +'</span>');
 	seriousError = true;
 }
 
@@ -1776,4 +1832,9 @@ function kiwi_trace(msg)
 {
    if (msg) console.log('console.trace: '+ msg);
 	try { console.trace(); } catch(ex) {}		// no console.trace() on IE
+}
+
+function kiwi_trace_mobile(msg)
+{
+   alert(msg +' '+ Error().stack);
 }

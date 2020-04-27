@@ -47,7 +47,16 @@ int esnprintf(char *str, size_t slen, const char *fmt, ...);
 void kiwi_backtrace(const char *id, u4_t printf_type=0);
 void _panic(const char *str, bool coreFile, const char *file, int line);
 void _sys_panic(const char *str, const char *file, int line);
-void xit(int err);
+
+#ifdef KIWI
+ #define ALT_EXIT kiwi_exit_dont_use
+#else
+ #define ALT_EXIT exit
+#endif
+
+#define exit ALT_EXIT
+void kiwi_exit(int err);
+void kiwi_exit_dont_use(int err);
 
 #define scall(x, y) if ((y) < 0) sys_panic(x);
 #define scallz(x, y) if ((y) == 0) sys_panic(x);

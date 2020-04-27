@@ -1,47 +1,47 @@
 
-// NB: not re-entrant
-
-var gr = {
-   // options
-   auto: 1,
-   dBm: 0,
-   db_units: 'dB',
-   speed: 1,
-   marker: 1,
-   threshold: 0,
-   averaging: false,
-   avg_dB: 0,
-   divider: false,
-   
-   max: 0,
-   min: 0,
-   hi: 0,
-   lo: 0,
-   goalH: 0,
-   goalL: 0,
-   scroll: 0,
-   scaleWidth: 60,
-   hysteresis: 15,
-   padding_tb: 0,
-   xi: 0,					// initial x value as grid scrolls left until panel full
-   secs_last: 0,
-   redraw_scale: false,
-   clr_color: 'mediumBlue',
-   bg_color: 'ghostWhite',
-   grid_color: 'lightGrey',
-   scale_color: 'white',
-   plot_color: 'black'
-};
-
 function graph_init(canvas, opt)
 {
+   gr = {};
+
+   // options
+   gr.auto = 1;
+   gr.dBm = 0;
+   gr.db_units = 'dB';
+   gr.speed = 1;
+   gr.marker = -1;
+   gr.threshold = 0;
+   gr.averaging = false;
+   gr.avg_dB = 0;
+   gr.divider = false;
+   
+   gr.max = 0;
+   gr.min = 0;
+   gr.hi = 0;
+   gr.lo = 0;
+   gr.goalH = 0;
+   gr.goalL = 0;
+   gr.scroll = 0;
+   gr.scaleWidth = 60;
+   gr.hysteresis = 15;
+   gr.padding_tb = 0;
+   gr.xi = 0;					// initial x value as grid scrolls left until panel full
+   gr.secs_last = 0;
+   gr.redraw_scale = false;
+   gr.clr_color = 'mediumBlue';
+   gr.bg_color = 'ghostWhite';
+   gr.grid_color = 'lightGrey';
+   gr.scale_color = 'white';
+   
+   gr.last_last = 0;
+
    gr.cv = canvas;
    gr.ct = canvas.ctx;
 
    gr.auto = 1;
-   gr.dBm = opt.dBm || 0;
-   gr.speed = opt.speed || 1;
-   gr.averaging = opt.averaging || false;
+   gr.dBm = w3_opt(opt, 'dBm', 0);
+   gr.speed = w3_opt(opt, 'speed', 1);
+   gr.averaging = w3_opt(opt, 'averaging', false);
+   gr.plot_color = w3_opt(opt, 'color', 'black');
    
    if (gr.dBm) {
       gr.padding_tb = 20;
@@ -50,60 +50,65 @@ function graph_init(canvas, opt)
       gr.db_units = 'dB';
       gr.padding_tb = 0;
    }
+   
+   return gr;
 }
 
-function graph_clear()
+function graph_clear(gr)
 {
 	var ct = gr.ct;
 	ct.fillStyle = gr.clr_color;
 	ct.fillRect(0,0, gr.cv.width - gr.scaleWidth, gr.cv.height);
 	gr.xi = gr.cv.width - gr.scaleWidth;
-	graph_rescale();
+	graph_rescale(gr);
 }
 
 // FIXME: handle window resize
-function graph_rescale()
+function graph_rescale(gr)
 {
    gr.redraw_scale = true;
 }
 
-function graph_mode(auto, max, min)
+function graph_mode(gr, scale, max, min)
 {
-   gr.auto = auto;
+   gr.auto = (scale == 'auto')? 1:0
    if (!gr.auto) { gr.max = max; gr.min = min; }
    //console.log('gr.auto='+ gr.auto +' max='+ max +' min='+ min);
-   graph_rescale();
+   graph_rescale(gr);
 }
 
-function graph_speed(speed)
+function graph_speed(gr, speed)
 {
    if (speed < 1) speed = 1;
    gr.speed = speed;
 }
 
-function graph_marker(marker)
+function graph_marker(gr, marker)
 {
    gr.marker = marker;
 }
 
-function graph_divider(color)
+function graph_annotate(gr, color)
 {
    gr.divider = color;
 }
 
-function graph_threshold(threshold_dB)
+function graph_threshold(gr, threshold_dB)
 {
    gr.threshold = threshold_dB;
 }
 
-function graph_averaging(averaging)
+function graph_averaging(gr, averaging)
 {
    gr.averaging = averaging;
    gr.avg_dB = 0;
 }
 
-function graph_plot(val_dB)
+function graph_plot(gr, val_dB, opt)
 {
+   var plot_color = w3_opt(opt, 'color', gr.plot_color);
+   var ylast = w3_opt(opt, 'line', false);
+   
    var cv = gr.cv;
    var ct = gr.ct;
    var w = cv.width - gr.scaleWidth;
@@ -113,7 +118,7 @@ function graph_plot(val_dB)
 
 	var y_dB = function(dB) {
 		var norm = (dB - gr.lo) / range;
-		return h - (norm * h);
+		return Math.round(h - (norm * h));
 	};
 
 	var gridC_10dB = function(dB) { return 10 * Math.ceil(dB/10); };
@@ -203,7 +208,7 @@ function graph_plot(val_dB)
       var now = Math.floor(secs / gr.marker);
       var then = Math.floor(gr.secs_last / gr.marker);
 
-      if (now == then) {
+      if (gr.marker == -1 || now == then) {
 			// draw dB level lines by default
          ct.fillStyle = gr.bg_color;
          ct.fillRect(w-1,0, 1,h);
@@ -229,7 +234,7 @@ function graph_plot(val_dB)
       if (gr.threshold) {
          ct.fillStyle = 'red';
          ct.fillRect(w-1,y_dB(gr.threshold), 1,1);
-      }
+      }y
       
       plot = true;
    }
@@ -240,8 +245,27 @@ function graph_plot(val_dB)
    }
 
    // if not averaging always plot, even if not shifting display
-   if (!gr.averaging || plot) {
-      ct.fillStyle = gr.plot_color;
-      ct.fillRect(w-1,y_dB(val_dB), 1,1);
+   var rv = null;
+   if (!gr.averaging || plot || ylast != false) {
+      var y = y_dB(val_dB);
+      if (ylast != false) {
+         ct.strokeStyle = plot_color;
+         ct.beginPath();
+         ct.moveTo(w-1, ylast);
+         ct.lineTo(w, y);
+         //if (plot_color == 'black') console.log((w-1) +','+ ylast +' -> '+ w +','+ y);
+         rv = y;
+         ct.stroke();
+         
+         //ct.fillStyle = plot_color;
+         //var h = y - ylast;
+         //if (h == 0) h = 1
+         //ct.fillRect(w-1,ylast, 1,h);
+      } else {
+         ct.fillStyle = plot_color;
+         ct.fillRect(w-1,y, 1,1);
+      }
    }
+   
+   return rv;
 }

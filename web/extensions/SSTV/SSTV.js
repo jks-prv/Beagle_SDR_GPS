@@ -410,19 +410,5 @@ function SSTV_help(show)
 // called to display HTML for configuration parameters in admin interface
 function SSTV_config_html()
 {
-	ext_admin_config(sstv.ext_name, 'SSTV',
-		w3_div('id-SSTV w3-text-teal w3-hide',
-			'<b>SSTV decoder configuration</b>' +
-			'<hr>' +
-			''
-			/*
-			w3_third('', 'w3-container',
-				w3_divs('w3-margin-bottom',
-					w3_input_get('', 'int1', 'sstv.int1', 'w3_num_cb'),
-					w3_input_get('', 'int2', 'sstv.int2', 'w3_num_cb')
-				), '', ''
-			)
-			*/
-		)
-	);
+   ext_config_html(sstv, 'sstv', 'SSTV', 'SSTV configuration');
 }

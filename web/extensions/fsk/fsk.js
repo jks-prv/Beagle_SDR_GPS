@@ -321,7 +321,7 @@ function fsk_baud_error(err)
 }
 
 // must set "remove_returns" so output lines with \r\n (instead of \n alone) don't produce double spacing
-var fsk_console_status_msg_p = { scroll_only_at_bottom: true, process_return_nexttime: false, remove_returns: true, ncol: 135 };
+var fsk_console_status_msg_p = { scroll_only_at_bottom: true, process_return_alone: false, remove_returns: true, ncol: 135 };
 
 function fsk_output_char(s)
 {
@@ -510,7 +510,7 @@ function fsk_controls_setup()
 				
             w3_col_percent('',
                w3_div('id-fsk-station w3-text-css-yellow', '&nbsp;'), 50,
-               w3_div('', 'Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">report</a> new stations for menus.'), 50
+               '', 50
             ),
 
 				w3_col_percent('',
@@ -983,6 +983,12 @@ function fsk_blur()
 	ext_unregister_audio_data_cb();
    ext_set_passband(fsk.saved_passband.low, fsk.saved_passband.high);
    fsk_crosshairs(0);
+}
+
+// called to display HTML for configuration parameters in admin interface
+function fsk_config_html()
+{
+   ext_config_html(fsk, 'fsk', 'FSK', 'FSK configuration');
 }
 
 function fsk_help(show)

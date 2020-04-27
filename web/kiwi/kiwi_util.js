@@ -13,6 +13,7 @@ function isString(v) { return (typeof(v) === 'string'); }
 function isArray(v) { return (Array.isArray(v)); }
 function isFunction(v) { return (typeof(v) === 'function'); }
 function isObject(v) { return (typeof(v) === 'object'); }
+function isArg(v) { return (isUndefined(v) || isNull(v))? false:true; }
 
 // browsers have added includes() only relatively recently
 try {
@@ -93,11 +94,12 @@ document.onreadystatechange = function() {
 
 		console.log('safari='+ kiwi_isSafari() + ' firefox='+ kiwi_isFirefox() + ' chrome='+ kiwi_isChrome() + ' opera='+ kiwi_isOpera());
 
-		if (isDefined(kiwi_check_js_version)) {
+		if (typeof(kiwi_check_js_version) !== 'undefined') {
 			// done as an AJAX because needed long before any websocket available
 			kiwi_ajax("/VER", 'kiwi_version_cb');
 		} else {
-			kiwi_bodyonload('');
+		   if (typeof(kiwi_bodyonload) != 'undefined')
+			   kiwi_bodyonload('');
 		}
 	}
 }
@@ -288,13 +290,13 @@ Number.prototype.toUnits = function()
 	if (n < 1000) {
 		return n.toString();
 	} else
-	if (n < 1000000) {
-		return (n/1000).toFixed(1)+'k';
+	if (n < 1e6) {
+		return (n/1e3).toFixed(1)+'k';
 	} else
-	if (n < 1000000000) {
-		return (n/1000000).toFixed(1)+'M';
+	if (n < 1e9) {
+		return (n/1e6).toFixed(1)+'M';
 	} else {
-		return n.toString();
+		return (n/1e9).toFixed(1)+'G';
 	}
 }
 
@@ -353,6 +355,46 @@ function _change(v)
    return (!_nochange(v) && !_default(v));
 }
 
+function console_log()
+{
+   //console.log('console_log_fqn: '+ typeof(arguments));
+   //console.log(arguments);
+   var s;
+   for (var i = 0; i < arguments.length; i++) {
+      var arg = arguments[i];
+      if (i == 0) {
+         s = arg +': ';
+      } else {
+         s += 'arg'+ (i-1) +'='+ arg +' ';
+      }
+   }
+   console.log('CONSOLE_LOG '+ s);
+}
+
+function console_log_fqn()
+{
+   //console.log('console_log_fqn: '+ typeof(arguments));
+   //console.log(arguments);
+   var s;
+   for (var i = 0; i < arguments.length; i++) {
+      var arg = arguments[i];
+      if (i == 0) {
+         s = arg +': ';
+      } else {
+         var val;
+         try {
+            val = getVarFromString(arg);
+         } catch(ex) {
+            val = '[not defined]';
+         }
+         var lio = arg.lastIndexOf('.');
+         var name = (lio == -1)? arg : arg.substr(lio+1);
+         s += name +'='+ val +' ';
+      }
+   }
+   console.log('FQN '+ s);
+}
+
 // console log via a timeout for routines that are realtime critical (e.g. audio on_process() routines)
 function kiwi_log(s)
 {
@@ -374,10 +416,26 @@ function kiwi_rateLimit(cb, time)
    return rtn;
 }
 
+function kiwi_UTC_minutes()
+{
+   var d = new Date();
+   return (d.getUTCHours()*60 + d.getUTCMinutes());
+}
+
 
 ////////////////////////////////
 // HTML helpers
 ////////////////////////////////
+
+function kiwi_clean_html(s)
+{
+   return s.replace(/\&/g, '&amp;').replace(/\</g, '&lt;').replace(/\>/g, '&gt;');
+}
+
+function kiwi_clean_newline(s)
+{
+   return s.replace(/[\r\n\f\v]/g, '').replace(/\t/g, ' ');
+}
 
 // see: https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollHeight
 function kiwi_isScrolledDown(el)
@@ -450,11 +508,14 @@ function html(id_or_name)
 	return el;
 }
 
-function px(num)
+function px(s)
 {
+   if (!isArg(s) || s == '') return '0';
+   var num = parseFloat(s);
    if (isNaN(num)) {
-      console.log('px num='+ num);
+      console.log('px num='+ s);
       kiwi_trace();
+      return '0';
    }
 	return num.toFixed(0) +'px';
 }
@@ -781,9 +842,8 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
          if (isString(callback))
             w3_call(callback, obj, cb_param);
 			ajax.abort();
-			delete ajax;
 		   delete ajax_requests[id];
-		}, timeout);
+		}, Math.abs(timeout));
 	}
 	
 	if (progress_cb) {
@@ -860,7 +920,7 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
                   } catch(ex) {
                      dbug("AJAX response JSON.parse failed: <"+ response +'>');
                      dbug(ex);
-                     obj = { AJAX_error:'JSON parse', response:response };
+                     obj = { AJAX_error:'JSON parse', JSON_ex:ex.toString(), response:response };
                   }
                }
             }
@@ -877,13 +937,14 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
       }
 		
 		ajax.abort();
-		delete ajax;
 		delete ajax_requests[id];
 	}
 
-	ajax.open(method, url, true);
-	dbug('AJAX SEND id='+ ajax_id +' url='+ url);
-	ajax.send(data);
+   if (timeout >= 0) {     // timeout < 0 is test mode
+      ajax.open(method, url, true);
+      dbug('AJAX SEND id='+ ajax_id +' url='+ url);
+      ajax.send(data);
+   }
 	return true;
 }
 
@@ -1115,25 +1176,32 @@ function on_ws_recv(evt, ws)
 		return;
 	} else
 	
+	var claimed = false;
 	if (firstChars == "MSG") {
 		var stringData = arrayBufferToString(data);
-		params = stringData.substring(4).split(" ");
+		params = stringData.substring(4).split(" ");    // "foo=arg bar=arg"
 	
 		//if (ws.stream == 'EXT')
 		//console.log('>>> '+ ws.stream +': msg_cb='+ typeof(ws.msg_cb) +' '+ params.length +' '+ stringData);
 		for (var i=0; i < params.length; i++) {
-			param = params[i].split("=");
+			var msg_a = params[i].split("=");
 			
-			if (ws.stream == 'EXT' && param[0] == 'EXT-STOP-FLUSH-INPUT') {
+			if (ws.stream == 'EXT' && msg_a[0] == 'EXT-STOP-FLUSH-INPUT') {
 				//console.log('EXT-STOP-FLUSH-INPUT');
 				kiwi_flush_recv_input = false;
 			}
 			
-			if (kiwi_msg(param, ws) == false && ws.msg_cb) {
-				//if (ws.stream == 'EXT')
-				//console.log('>>> '+ ws.stream + ': not kiwi_msg: msg_cb='+ typeof(ws.msg_cb) +' '+ params[i]);
-				ws.msg_cb(param, ws);
+			claimed = kiwi_msg(msg_a, ws);
+			if (claimed == false) {
+			   if (ws.msg_cb) {
+               //if (ws.stream == 'EXT')
+               //console.log('>>> '+ ws.stream + ': not kiwi_msg: msg_cb='+ typeof(ws.msg_cb) +' '+ params[i]);
+               claimed = ws.msg_cb(msg_a, ws);
+            }
 			}
+			
+         if (claimed == false)
+            console.log('>>> '+ ws.stream + ': message not claimed: '+ params[i]);
 		}
 	} else {
 		/*

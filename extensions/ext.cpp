@@ -263,6 +263,9 @@ void extint_load_extension_configs(conn_t *conn)
 
 void extint_ext_users_init(int rx_chan)
 {
+    // so that rx_chan_free_count() doesn't count EXT_FLAGS_HEAVY when extension isn't running
+    //printf("extint_ext_users_init rx_chan=%d\n", rx_chan);
+    rx_channels[rx_chan].ext = NULL;
     memset(&ext_users[rx_chan], 0, sizeof(ext_users_t));
 }
 
@@ -272,7 +275,7 @@ void extint_setup_c2s(void *param)
 
 	// initialize extension for this connection
 	// NB: has to be a 'MSG' and not an 'EXT' due to sequencing of recv_cb setup
-	send_msg(conn_ext, false, "MSG ext_client_init");
+	send_msg(conn_ext, false, "MSG ext_client_init=%d", is_locked);
 }
 
 void extint_c2s(void *param)
@@ -322,9 +325,12 @@ void extint_c2s(void *param)
                         TaskSetFlags(flags | CTF_RX_CHANNEL | (conn_ext->ext_rx_chan & CTF_CHANNEL));
 
                         // point STREAM_SOUND conn at ext_t so it has access to the ext->name after ext conn_t is gone
+                        // point rx_channel at ext_t so it has access to ext->flags for EXT_FLAGS_HEAVY checking
                         conn_t *c = rx_channels[rx_chan].conn;
-                        if (c && c->valid && c->type == STREAM_SOUND)
+                        if (c && c->valid && c->type == STREAM_SOUND) {
                             c->ext = ext;
+                            rx_channels[rx_chan].ext = ext;
+                        }
 
 						break;
 					}
@@ -341,7 +347,7 @@ void extint_c2s(void *param)
 				if (first_time) {
 					SAN_NULL_PTR_CK(ext, ext->receive_msgs((char *) "SET ext_server_init", rx_chan));
 				}
-
+				
 			    free(client_m);
 				continue;
 			}
@@ -355,6 +361,13 @@ void extint_c2s(void *param)
 			
 			i = strcmp(cmd, "SET init");
 			if (i == 0) {
+				continue;
+			}
+
+			i = strcmp(cmd, "SET ext_is_locked_status");
+			if (i == 0) {
+			    //printf("%d SET ext_is_locked_status\n", conn_ext->ext_rx_chan);
+                send_msg(conn_ext, false, "MSG ext_client_init=%d", is_locked);
 				continue;
 			}
 
@@ -384,11 +397,12 @@ void extint_c2s(void *param)
 			continue;
 		}
 		
+        ext_rx_chan = conn_ext->ext_rx_chan;
+        ext = (ext_rx_chan == -1)? NULL : ext_users[ext_rx_chan].ext;
+
 		conn_ext->keep_alive = timer_sec() - conn_ext->keepalive_time;
 		bool keepalive_expired = (!conn_ext->internal_connection && conn_ext->keep_alive > KEEPALIVE_SEC);
 		if (keepalive_expired || conn_ext->kick) {
-			ext_rx_chan = conn_ext->ext_rx_chan;
-			ext = (ext_rx_chan == -1)? NULL : ext_users[ext_rx_chan].ext;
 			//printf("EXT %s RX%d %s\n", conn_ext->kick? "KICKED" : "KEEP-ALIVE EXPIRED", ext_rx_chan, ext? ext->name : "(no ext)");
 			if (ext != NULL && ext->close_conn != NULL)
 				ext->close_conn(ext_rx_chan);
@@ -397,6 +411,10 @@ void extint_c2s(void *param)
 			rx_server_remove(conn_ext);
 			panic("shouldn't return");
 		}
+		
+		// call periodic callback if requested
+        if (ext != NULL && ext->version == EXT_NEW_VERSION && ext->poll_cb != NULL)
+            ext->poll_cb(ext_rx_chan);
 
 		TaskSleepReasonMsec("ext-cmd", 250);
 	}

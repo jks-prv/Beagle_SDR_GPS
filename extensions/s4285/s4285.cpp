@@ -239,7 +239,7 @@ bool s4285_msgs(char *msg, int rx_chan)
 	if (n == 1) {
 		if (e->run) {
 			if (!e->rx_task) {
-				e->rx_task = CreateTaskF(s4285_rx, 0, EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL), 0);
+				e->rx_task = CreateTaskF(s4285_rx, 0, EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL));
 			}
 			m_CSt4285[rx_chan].reset();
 			//m_CSt4285[rx_chan].setSampleRate(ext_update_get_sample_rateHz());
@@ -311,6 +311,8 @@ ext_t s4285_ext = {
 	s4285_main,
 	s4285_close,
 	s4285_msgs,
+	EXT_NEW_VERSION,
+	EXT_FLAGS_HEAVY
 };
 
 void s4285_main()

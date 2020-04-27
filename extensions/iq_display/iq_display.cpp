@@ -2,13 +2,8 @@
 
 #include "ext.h"    // all calls to the extension interface begin with "ext_", e.g. ext_register()
 
-#ifndef EXT_IQ_DISPLAY
-    void iq_display_main() {}
-#else
-
 #include "clk.h"
-#include "gps.h"
-#include "fmdemod.h"
+#include "pll.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -29,59 +24,6 @@
 #define N_IQ_RING (16*1024)
 #define N_CH        2
 #define N_HISTORY   2
-
-#include <array>
-#include <complex>
-#include <memory>
-
-class pll {
-public:
-	pll(float fs=12e3, float dwl=10, float fc=0)
-		: _fs(fs)
-		, _fc(0)
-		, _df(0)
-		, _phase(0)
-		, _b()
-		, _ud(0) {
-		init(dwl, fc, _fs);
-	}
-
-	float phase() const { return _phase; }
-	float df() const { return _df; }
-	
-	void init(float dwl,                  // PLL bandwidth in Hz
-			  float fc,                   // frequency offset in Hz
-
-                  float fs, // sampling frequency
-			  float xi = 1.0f/sqrt(2.0f)) // PLL damping (default is critical damping)
-    {
-        const float wn  = M_PI*dwl/xi;
-        const float tau[2] = { 1/(wn*wn), 2*xi/wn };
-		_fs = fs;
-        const float ts2 = 0.5/_fs;
-        _b[0] = ts2/tau[0]*(1 + 1/std::tan(ts2/tau[1]));
-        _b[1] = ts2/tau[0]*(1 - 1/std::tan(ts2/tau[1]));
-        _phase = _ud = _df = 0;
-        _fc = fc;
-    }
-
-    float update(std::complex<float> sample) {    
-        _phase = std::fmod(_phase+float(2*M_PI*_fc+_df)/_fs, float(8*2*M_PI));
-        const float ud_old = _ud;
-        _ud  = std::arg(sample * std::exp(std::complex<float>(0.0f, -_phase)));
-        _df += _b[0]*_ud + _b[1]*ud_old;
-        return _phase;
-    }
-protected:
-    
-private:
-    float _fs;         // sampling frequency (Hz)
-    float _fc;         // frequency offset (Hz)
-    float _df;         // frequency error in radians per sample
-    float _phase;      // accumulated phase for frequency correction
-    float _b[2];       // loop filter coefficients
-    float _ud;         //
-} ;
 
 class iq_display {
 public:
@@ -121,7 +63,7 @@ public:
 
         _cma    = (float(_maN)*_cma +          sample )/float(_maN+1);
         _ama    = (float(_maN)*_ama + std::abs(sample))/float(_maN+1);
-        _maN  += (_maN < int(0.5*_fs));
+        _maN   += (_maN < int(0.5*_fs));
         return sample;
     }
     
@@ -136,7 +78,7 @@ public:
                 _iq[ch][_ring[ch]] = new_sample;
                 _ring[ch] += 1;
                 if (_ring[ch] >= _points) {
-                    ext_send_msg_data(_rx_chan, IQ_DISPLAY_DEBUG_MSG, cmd, (u1_t*)(&(_plot[ch][0][0])), 1 + _points*4);
+                    ext_send_msg_data(_rx_chan, IQ_DISPLAY_DEBUG_MSG, cmd, (u1_t*)(&(_plot[ch][0][0])), _points*N_CH*NIQ);
                     _ring[ch] = 0;
                 }
             }
@@ -147,7 +89,7 @@ public:
                 _map[_ring[ch]] = to_u1(ch, new_sample);
                 _ring[ch] += 1;
                 if (_ring[ch] >= _points) {
-                    ext_send_msg_data(_rx_chan, IQ_DISPLAY_DEBUG_MSG, cmd, (u1_t*)(&(_map[0])), 1 + _points*2);
+                    ext_send_msg_data(_rx_chan, IQ_DISPLAY_DEBUG_MSG, cmd, (u1_t*)(&(_map[0])), _points*NIQ);
                     _ring[ch] = 0;
                 }
             }
@@ -183,7 +125,7 @@ public:
     bool process_msg(const char* msg) {
         int gain = 0;
         if (sscanf(msg, "SET gain=%d", &gain) == 1)
-            set_gain(gain? std::pow(10.0, ((float) gain - 50) / 10.0) : 0); // 0 .. +100 dB of CUTESDR_MAX_VAL
+            set_gain(gain? std::pow(10.0, ((float) gain - 50) / 10.0) : 0); // 0 .. +120 dB of CUTESDR_MAX_VAL
 
         int points = 0;
         if (sscanf(msg, "SET points=%d", &points) == 1)
@@ -233,17 +175,15 @@ protected:
     }
     void set_pll_bandwidth(float arg) {
         _pll_bandwidth = arg;
-        // pll_init();
+        pll_init();
     }
     void set_draw(int arg) { _draw = arg; }
     void set_display_mode(int arg) { _display_mode = arg; }
 
     void clear() {
-        //printf("maN %d cmaI %e cmaQ %e\n", e->maN, e->cmaI, e->cmaQ);
-        //      e->cma = e->ncma = e->cmaI = e->cmaQ = e->maN = e->nsamp = 0;
         _ama   = 0;
         _cma   = 0;
-        _maN  = 0;
+        _maN   = 0;
         _nsamp = 0;
         _pll.init(_pll_bandwidth, 0.0f, _fs);
         _pllMinus.init(_pll_bandwidth, -0.5*_msk_baud, _fs);
@@ -353,11 +293,11 @@ ext_t iq_display_ext = {
     iq_display_main,
     iq_display_close,
     iq_display_msgs,
+	EXT_NEW_VERSION,
+	EXT_FLAGS_HEAVY
 };
 
 void iq_display_main()
 {
     ext_register(&iq_display_ext);
 }
-
-#endif

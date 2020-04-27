@@ -28,6 +28,7 @@ typedef struct {
 	bool data_enabled;
 	bool busy;
 	conn_t *conn;       // the STREAM_SOUND conn or STREAM_WATERFALL for WF-only connections
+	ext_t *ext;
 } rx_chan_t;
 
 extern rx_chan_t rx_channels[];
@@ -61,7 +62,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd);
 char *rx_users(bool include_ip);
 void show_conn(const char *prefix, conn_t *cd);
 
-enum conn_count_e { EXTERNAL_ONLY, INCLUDE_INTERNAL, TDOA_USERS, LOCAL_OR_PWD_PROTECTED_USERS };
+enum conn_count_e { EXTERNAL_ONLY, INCLUDE_INTERNAL, TDOA_USERS, EXT_API_USERS, LOCAL_OR_PWD_PROTECTED_USERS };
 int rx_count_server_conns(conn_count_e type, conn_t *our_conn = NULL);
 
 typedef enum { WS_MODE_ALLOC, WS_MODE_LOOKUP, WS_MODE_CLOSE, WS_INTERNAL_CONN } websocket_mode_e;
@@ -70,8 +71,8 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc);
 typedef enum { RX_CHAN_ENABLE, RX_CHAN_DISABLE, RX_DATA_ENABLE, RX_CHAN_FREE } rx_chan_action_e;
 void rx_enable(int chan, rx_chan_action_e action);
 
-typedef enum { RX_COUNT_ALL, RX_COUNT_KIWI_UI_USERS } rx_free_count_e;
-int rx_chan_free_count(rx_free_count_e flags, int *idx);
+typedef enum { RX_COUNT_ALL, RX_COUNT_NO_WF_FIRST } rx_free_count_e;
+int rx_chan_free_count(rx_free_count_e flags, int *idx = NULL, int *heavy = NULL);
 
 typedef enum { LOG_ARRIVED, LOG_UPDATE, LOG_UPDATE_NC, LOG_LEAVING } logtype_e;
 void rx_loguser(conn_t *c, logtype_e type);

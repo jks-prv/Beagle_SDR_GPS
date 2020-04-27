@@ -47,7 +47,7 @@ This file is part of OpenWebRX.
 		 130	control
 		 130	msgs
 		 140	readme
-		 150	dx-edit
+		 150	dx-edit (id-ext-controls)
 		 998	dx-line active
 		 999	dx-label active
 		1000	top-container
@@ -73,6 +73,12 @@ html, body
 
 
 /*---- begin id-top-container */
+
+/* prevent mouseout generated from mouseover of segmented waterfall elements (id-wf-canvas) from prematurely ending drag */
+#id-wf-canvas
+{
+	pointer-events: none;
+}
 
 #id-top-container
 {
@@ -610,7 +616,7 @@ html, body
 	/*border: 1px solid lime;	/* debug */
 }
 
-.id-play-button-container
+.class-overlay-container
 {
 	position: fixed;
 	width: 100%;
@@ -837,6 +843,7 @@ html, body
 	cursor: pointer;
 	/*left: 570px;*/
 	top: 51px;
+	z-index: 9999;
 }
 
 .class-vis-show
@@ -879,7 +886,7 @@ html, body
 	-moz-border-radius: 10px;
 	background-color: #999999;
 	color: White;
-	z-index:9999; /*should be higher?
+	z-index: 9999; /*should be higher?
 	
 }*/
 
@@ -961,6 +968,12 @@ html, body
 	cursor: pointer;
 	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.0	, #373737), color-stop(1, #4F4F4F) );
 	background:-moz-linear-gradient( center top, #373737 0%, #4F4F4F 100% );
+}
+
+.class-button.class-button-disbled
+{
+    cursor: not-allowed;
+    opacity: 0.3;
 }
 
 #id-button-hang

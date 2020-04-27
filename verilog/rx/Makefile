@@ -1,3 +1,5 @@
+include ../../Makefile.comp.inc
+
 BUILD_DIR = ../../../build
 TOOLS_DIR = $(BUILD_DIR)/tools
 GEN_DIR = $(BUILD_DIR)/gen
@@ -20,13 +22,13 @@ $(GEN_VERILOG): $(CIC_GEN)
 	time ./$(CIC_GEN)
 
 $(CIC_GEN): cic_gen.c $(TOOLS_DIR) Makefile $(GEN_DIR)/kiwi.gen.h
-	clang $(FLAGS) -o $@ $<
+	$(CC) $(FLAGS) -o $@ $<
 	
 debug: $(CIC_GEN_DEBUG)
 	./$(CIC_GEN_DEBUG)
 
 $(CIC_GEN_DEBUG): cic_gen_debug.c $(TOOLS_DIR) Makefile $(GEN_DIR)/kiwi.gen.h
-	clang $(FLAGS) -DDEBUG -o $@ $<
+	$(CC) $(FLAGS) -DDEBUG -o $@ $<
 
 diff:
 	-diff cic_gen.c cic_gen_debug.c

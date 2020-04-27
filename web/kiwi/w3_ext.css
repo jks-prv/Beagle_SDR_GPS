@@ -233,6 +233,13 @@ input[type=range]::-moz-range-thumb {
     color: white;
 }
 
+.w3-menu-item-disabled {
+    padding: 4px 16px;      /* instead of margin so :hover inverts color of full width */
+    background-color: rgb(240, 240, 240);
+    cursor: not-allowed;
+    opacity: 0.3;
+}
+
 .w3-menu-item-hr hr {
     background-color: rgb(240, 240, 240);
     border-top: 2px solid rgb(223, 223, 223);
@@ -241,7 +248,7 @@ input[type=range]::-moz-range-thumb {
 
 
 .w3-debug { border: 0.1px solid red }
-.w3-debug2 { border: 0.1px solid green }
+.w3-debug2 { border: 0.1px solid lime }
 .w3-debug3 { border: 0.1px solid cyan }
 .w3-debug4 { border: 0.1px solid yellow }
 
@@ -503,6 +510,11 @@ input[type=range]::-moz-range-thumb {
     margin: 4px 0
 }
 
+.w3-margin-TB-8
+{
+    margin: 8px 0
+}
+
 
 .w3-padding-smaller
 {
@@ -738,6 +750,11 @@ input[type=range]::-moz-range-thumb {
 	overflow: auto;
 }
 
+.w3-no-scroll
+{
+	overflow: hidden;
+}
+
 .w3-scroll-x
 {
 	overflow-x: auto;
@@ -746,6 +763,13 @@ input[type=range]::-moz-range-thumb {
 
 .w3-scroll-y
 {
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+
+.w3-iphone-scroll
+{
+    -webkit-overflow-scrolling: touch;
 	overflow-x: hidden;
 	overflow-y: auto;
 }
@@ -852,7 +876,7 @@ input[type=range]::-moz-range-thumb {
 
 .w3-css-red
 {
-    color: black;
+    color: white;
     background-color: red;
 }
 

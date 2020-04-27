@@ -9,7 +9,7 @@ var cw = {
    threshold: 49,
 
    // must set "remove_returns" so output lines with \r\n (instead of \n alone) don't produce double spacing
-   console_status_msg_p: { scroll_only_at_bottom: true, process_return_nexttime: false, remove_returns: true, ncol: 135 },
+   console_status_msg_p: { scroll_only_at_bottom: true, process_return_alone: false, remove_returns: true, ncol: 135 },
 
 };
 
@@ -76,7 +76,7 @@ function cw_decoder_recv(data)
 				break;
 			
 			case "cw_plot":
-			   graph_plot(+param[1]);
+			   graph_plot(cw.gr, +param[1]);
 			   break;
 
 			default:
@@ -129,14 +129,14 @@ function cw_decoder_controls_setup()
 	cw.canvas = w3_el('id-cw-canvas');
 	cw.canvas.ctx = cw.canvas.getContext("2d");
 
-   graph_init(cw.canvas, { dBm:0, speed:1, averaging:true });
-	//graph_mode(1);
-	graph_mode(0, 55-10, 30+5);
-	graph_clear();
+   cw.gr = graph_init(cw.canvas, { dBm:0, speed:1, averaging:true });
+	//graph_mode(cw.gr, 'auto');
+	graph_mode(cw.gr, 'fixed', 55-10, 30+5);
+	graph_clear(cw.gr);
 	cw_decoder_threshold_cb('cw.threshold', cw.threshold);
 
    ext_set_data_height(300);
-	ext_set_controls_width_height(550, 90);
+	ext_set_controls_width_height(550, 100);
 	
 	var p = ext_param();
 	cw.pboff_locked = parseFloat(p);
@@ -189,7 +189,7 @@ function cw_decoder_threshold_cb(path, val)
    console.log('cw_decoder_threshold_cb path='+ path +' val='+ val +' threshold_dB='+ threshold_dB);
 	w3_num_cb(path, threshold_dB);
 	cw.threshold = threshold_dB;
-	graph_threshold(cw.threshold);
+	graph_threshold(cw.gr, cw.threshold);
 	ext_send('SET cw_threshold='+ Math.pow(10, cw.threshold/10).toFixed(0));
 }
 
@@ -205,6 +205,12 @@ function cw_decoder_blur()
 {
 	ext_set_data_height();     // restore default height
 	ext_send('SET cw_stop');
+}
+
+// called to display HTML for configuration parameters in admin interface
+function cw_decoder_config_html()
+{
+   ext_config_html(cw, 'cw', 'CW', 'CW decoder configuration');
 }
 
 function cw_decoder_help(show)

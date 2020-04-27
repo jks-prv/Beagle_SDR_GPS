@@ -3,10 +3,6 @@
 #include "ext.h"	// all calls to the extension interface begin with "ext_", e.g. ext_register()
 #include "example.h"
 
-#ifndef EXT_EXAMPLE
-	void example_main() {}
-#else
-
 #include "kiwi.h"
 
 #include <stdio.h>
@@ -97,5 +93,3 @@ void example_main()
 	// commented out so extension doesn't actually appear
 	//ext_register(&example_ext);
 }
-
-#endif

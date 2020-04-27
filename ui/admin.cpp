@@ -126,7 +126,7 @@ static void tunnel(void *param)
 	    scall("closeSO", close(so[PIPE_R])); scall("dupSO", dup2(so[PIPE_W], STDOUT_FILENO));
         system("/usr/sbin/sshd -D -p 1138 >/dev/null 2>&1");
         scall("execl", execl("/bin/nc", "/bin/nc", "localhost", "1138", (char *) NULL));
-	    exit(EXIT_FAILURE);
+	    child_exit(EXIT_FAILURE);
 	}
 
 	#if 0
@@ -173,7 +173,7 @@ static void console(void *param)
         #endif
 
         execve(args[0], args, NULL);
-        exit(0);
+        child_exit(EXIT_SUCCESS);
     }
     
     register_zombie(c->console_child_pid);
@@ -357,17 +357,15 @@ void c2s_admin(void *param)
 // connect
 ////////////////////////////////
 
+
+		    // DUC
+
 			i = strcmp(cmd, "SET DUC_status_query");
 			if (i == 0) {
 				if (DUC_enable_start) {
 					send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=301");
+					net.DUC_status = 301;
 				}
-				continue;
-			}
-		
-			i = strcmp(cmd, "SET rev_status_query");
-			if (i == 0) {
-				send_msg(conn, SM_NO_DEBUG, "ADM rev_status=%d", rev_enable_start? 200:201);
 				continue;
 			}
 		
@@ -389,6 +387,7 @@ void c2s_admin(void *param)
 				if (stat < 0 || n <= 0) {
 					lprintf("DUC: noip2 failed?\n");
 					send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=300");
+					net.DUC_status = 300;
 					continue;
 				}
 				status = WEXITSTATUS(stat);
@@ -396,13 +395,25 @@ void c2s_admin(void *param)
 				printf("DUC: <%s>\n", kstr_sp(reply));
 				kstr_free(reply);
 				send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=%d", status);
+                net.DUC_status = status;
 				if (status != 0) continue;
-				
+                DUC_enable_start = true;
+                
                 if (background_mode)
-                    system("/usr/local/bin/noip2 -c " DIR_CFG "/noip2.conf");
+                    system("/usr/local/bin/noip2 -k -c " DIR_CFG "/noip2.conf");
                 else
-                    system(BUILD_DIR "/gen/noip2 -c " DIR_CFG "/noip2.conf");
+                    system(BUILD_DIR "/gen/noip2 -k -c " DIR_CFG "/noip2.conf");
 				
+				continue;
+			}
+
+
+		    // proxy
+
+			i = strcmp(cmd, "SET rev_status_query");
+			if (i == 0) {
+				net.proxy_status = rev_enable_start? 200:201;
+				send_msg(conn, SM_NO_DEBUG, "ADM rev_status=%d", net.proxy_status);
 				continue;
 			}
 		
@@ -411,9 +422,10 @@ void c2s_admin(void *param)
 			if (n == 2) {
 			    // FIXME: validate unencoded user & host for allowed characters
 				system("killall -q frpc; sleep 1");
+				const char *proxy_server = admcfg_string("proxy_server", NULL, CFG_REQUIRED);
 
 			    char *reply;
-		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"proxy.kiwisdr.com/?u=%s&h=%s\"", user_m, host_m);
+		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"%s/?u=%s&h=%s\"", proxy_server, user_m, host_m);
                 reply = non_blocking_cmd(cmd_p, &status);
                 printf("proxy register: %s\n", cmd_p);
                 free(cmd_p);
@@ -423,26 +435,27 @@ void c2s_admin(void *param)
                 } else {
                     char *rp = kstr_sp(reply);
                     printf("proxy register: reply: %s\n", rp);
-                    status = -1;
+                    status = 901;
                     n = sscanf(rp, "status=%d", &status);
                     printf("proxy register: n=%d status=%d\n", n, status);
                 }
                 kstr_free(reply);
 
 				send_msg(conn, SM_NO_DEBUG, "ADM rev_status=%d", status);
+				net.proxy_status = status;
 				if (status < 0 || status > 99) {
 				    free(user_m); free(host_m);
+                    admcfg_string_free(proxy_server);
 				    continue;
 				}
 				
-				u4_t server = status & 0xf;
-				
-				asprintf(&cmd_p, "sed -e s/SERVER/%d/ -e s/USER/%s/ -e s/HOST/%s/ -e s/PORT/%d/ %s >%s",
-				    server, user_m, host_m, ddns.port_ext, DIR_CFG "/frpc.template.ini", DIR_CFG "/frpc.ini");
+				asprintf(&cmd_p, "sed -e s/SERVER/%s/ -e s/USER/%s/ -e s/HOST/%s/ -e s/PORT/%d/ %s >%s",
+				    proxy_server, user_m, host_m, net.port_ext, DIR_CFG "/frpc.template.ini", DIR_CFG "/frpc.ini");
                 printf("proxy register: %s\n", cmd_p);
 				system(cmd_p);
                 free(cmd_p);
 				free(user_m); free(host_m);
+                admcfg_string_free(proxy_server);
 
                 if (background_mode)
                     system("/usr/local/bin/frpc -c " DIR_CFG "/frpc.ini &");
@@ -504,6 +517,18 @@ void c2s_admin(void *param)
 				send_msg(conn, SM_NO_DEBUG, "ADM config_clone_status=%d", status_c);
 				continue;
 			}
+			
+#ifdef USE_SDR
+			int ov_counts;
+			i = sscanf(cmd, "SET ov_counts=%d", &ov_counts);
+			if (i == 1) {
+                // adjust ADC overload detect count mask
+                u4_t ov_counts_mask = (~(ov_counts - 1)) & 0xffff;
+                //printf("ov_counts_mask %d 0x%x\n", ov_counts, ov_counts_mask);
+                spi_set(CmdSetOVMask, 0, ov_counts_mask);
+			    continue;
+			}
+#endif
 
 
 ////////////////////////////////
@@ -523,12 +548,21 @@ void c2s_admin(void *param)
 
 
 ////////////////////////////////
-// sdr.hu
+// public
 ////////////////////////////////
 
-			i = strcmp(cmd, "SET sdr_hu_update");
+			i = strcmp(cmd, "SET public_update");
 			if (i == 0) {
-				sb = kstr_asprintf(NULL, "{\"reg\":\"%s\"", shmem->sdr_hu_status_str);
+                if (admcfg_bool("kiwisdr_com_register", NULL, CFG_REQUIRED) == false) {
+		            // force switch to short sleep cycle so we get status returned sooner
+		            if (reg_kiwisdr_com_status && reg_kiwisdr_com_tid) {
+                        TaskWakeup(reg_kiwisdr_com_tid, TWF_CANCEL_DEADLINE);
+                    }
+		            reg_kiwisdr_com_status = 0;
+                }
+
+				sb = kstr_asprintf(NULL, "{\"kiwisdr_com\":%d,\"sdr_hu\":\"%s\"",
+				    reg_kiwisdr_com_status, shmem->sdr_hu_status_str);
 				
 				if (gps.StatLat) {
 					latLon_t loc;
@@ -543,7 +577,7 @@ void c2s_admin(void *param)
 						gps.sgnLat, gps.sgnLon, grid6);
 				}
 				sb = kstr_cat(sb, "}");
-				send_msg_encoded(conn, "ADM", "sdr_hu_update", "%s", kstr_sp(sb));
+				send_msg_encoded(conn, "ADM", "public_update", "%s", kstr_sp(sb));
 				kstr_free(sb);
 				continue;
 			}
@@ -621,7 +655,7 @@ void c2s_admin(void *param)
 
 			i = strcmp(cmd, "SET auto_nat_status_poll");
 			if (i == 0) {
-				send_msg(conn, SM_NO_DEBUG, "ADM auto_nat=%d", ddns.auto_nat);
+				send_msg(conn, SM_NO_DEBUG, "ADM auto_nat=%d", net.auto_nat);
 				continue;
 			}
 
@@ -630,7 +664,7 @@ void c2s_admin(void *param)
 	            const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
                 // proxy always uses port 8073
                 int sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
-                int server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : ddns.port_ext;
+                int server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : net.port_ext;
                 int status;
 			    char *reply;
 		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"kiwisdr.com/php/check_port_open.php/?url=%s:%d\"",
@@ -788,7 +822,7 @@ void c2s_admin(void *param)
 
             n = strcmp(cmd, "SET gps_az_el_history");
             if (n == 0) {
-                int now; utc_hour_min_sec(NULL, &now, NULL);
+                int now; utc_hour_min_sec(NULL, &now);
                 
                 int az, el;
                 int sat_seen[MAX_SATS], prn_seen[MAX_SATS], samp_seen[AZEL_NSAMP];
@@ -1123,7 +1157,7 @@ void c2s_admin(void *param)
 // extensions
 ////////////////////////////////
 
-            // compute grid from GPS on-demand (similar to "SET sdr_hu_update")
+            // compute grid from GPS on-demand (similar to "SET public_update")
 			i = strcmp(cmd, "ADM wspr_gps_info");
 			if (i == 0) {
 				if (gps.StatLat) {
@@ -1160,7 +1194,14 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET restart");
 			if (i == 0) {
 				clprintf(conn, "ADMIN: restart requested by admin..\n");
-				xit(0);
+				
+				#ifdef USE_ASAN
+				    // leak detector needs exit while running on main() stack
+				    kiwi_restart = true;
+				    TaskWakeup(TID_MAIN, TWF_CANCEL_DEADLINE);
+				#else
+				    kiwi_exit(0);
+				#endif
 			}
 
 			i = strcmp(cmd, "SET reboot");

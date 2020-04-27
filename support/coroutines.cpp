@@ -73,6 +73,7 @@
         // 10/6/2019 this seems broken all of a sudden?!?
 	    //#define SETUP_TRAMP_USING_JMP_BUF
     #endif
+    
     #ifdef CPU_AM5729
     #endif
 #endif
@@ -115,18 +116,36 @@ struct run_t {
 } run[MAX_TASKS];
 
 // FIXME: 32K is really too big. 8*K causes the W/F thread to exceed the 50% red zone. Need to optimize.
-#define STACK_SIZE_U64_T	(32*K)
+#if 1
+    #define STACK_SIZE_U64_T	    (16*K)
+    #define STACK_SIZE_REG          1
+    #define STACK_SIZE_MED          2
+    #define STACK_SIZE_LARGE        4
+#else
+    #define STACK_SIZE_U64_T	    (32*K)
+    #define STACK_SIZE_REG          1
+    #define STACK_SIZE_MED          1
+    #define STACK_SIZE_LARGE        2
+#endif
 
-struct Stack {
+struct task_stack_t {
 	u64_t elem[STACK_SIZE_U64_T];
 } __attribute__ ((aligned(256)));
 
-static Stack stacks[MAX_TASKS];
+#define N_REG_STACK_EL      (REG_STACK_TASKS * STACK_SIZE_REG)
+#define N_MED_STACK_EL      (MED_STACK_TASKS * STACK_SIZE_MED)
+#define N_LARGE_STACK_EL    (LARGE_STACK_TASKS * STACK_SIZE_LARGE)
+#define N_STACK_EL          (N_REG_STACK_EL + N_MED_STACK_EL + N_LARGE_STACK_EL)
+
+static task_stack_t task_stacks[N_STACK_EL];
+static int stack_map[MAX_TASKS], stack_nel[MAX_TASKS];
 
 struct ctx_t {
 	int id;
 	bool init;
     u64_t *stack, *stack_last;
+    u4_t stack_size_u64;            // in STACK_SIZE_U64_T (not bytes)
+    u4_t stack_size_bytes;
     bool valgrind_stack_reg;
 	int valgrind_stack_id;
 #ifdef USE_ASAN
@@ -187,7 +206,7 @@ struct TASK {
 	u4_t last_run_time, last_last_run_time;
 	u4_t spi_retry;
 	int stack_hiwat;
-	u4_t user_param;
+	void *user_param;
 };
 
 static bool task_package_init;
@@ -216,9 +235,9 @@ static char *_task_s(TASK *tp, char *bp)
 {
     assert(tp);
     if (tp->lock.wait != NULL || tp->lock.hold != NULL)
-        snprintf(bp, NTASK_BUF, "%s:P%d:T%02d|K%d", tp->name? tp->name:"?", tp->priority, tp->id, tp->lock.token);
+        snprintf(bp, NTASK_BUF, "%s:P%d:T%03d|K%d", tp->name? tp->name:"?", tp->priority, tp->id, tp->lock.token);
     else
-        snprintf(bp, NTASK_BUF, "%s:P%d:T%02d", tp->name? tp->name:"?", tp->priority, tp->id);
+        snprintf(bp, NTASK_BUF, "%s:P%d:T%03d", tp->name? tp->name:"?", tp->priority, tp->id);
     return bp;
 }
 
@@ -234,9 +253,9 @@ char *Task_s(int id)
 static char *_task_ls(TASK *tp, char *bp)
 {
     if (tp->lock.wait != NULL || tp->lock.hold != NULL)
-        snprintf(bp, NTASK_BUF, "%s:P%d:T%02d(%s)|K%d", tp->name? tp->name:"?", tp->priority, tp->id, tp->where? tp->where : "-", tp->lock.token);
+        snprintf(bp, NTASK_BUF, "%s:P%d:T%03d(%s)|K%d", tp->name? tp->name:"?", tp->priority, tp->id, tp->where? tp->where : "-", tp->lock.token);
     else
-        snprintf(bp, NTASK_BUF, "%s:P%d:T%02d(%s)", tp->name? tp->name:"?", tp->priority, tp->id, tp->where? tp->where : "-");
+        snprintf(bp, NTASK_BUF, "%s:P%d:T%03d(%s)", tp->name? tp->name:"?", tp->priority, tp->id, tp->where? tp->where : "-");
     return bp;
 }
 
@@ -373,11 +392,11 @@ void TaskDump(u4_t flags)
 	lfprintf(printf_type, "TASKS: used %d/%d, spi_retry %d, spi_delay %d\n", tused, MAX_TASKS, spi.retry, spi_delay);
 
 	if (flags & TDUMP_LOG)
-	//lfprintf(printf_type, "Ttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxxu xxx%% cN\n");
-	  lfprintf(printf_type, "    I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2      deadline stk%% ch task______ where___________________\n");
+	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxxu xxx%%t cN\n");
+	  lfprintf(printf_type, "     I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2      deadline stk%%  ch task______ where___________________\n");
 	else
-	//lfprintf(printf_type, "Ttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxxu xxx%% cN\n");
-	  lfprintf(printf_type, "    I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry  deadline stk%% ch task______ where___________________ longest ________________\n");
+	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxxu xxx%%t cN\n");
+	  lfprintf(printf_type, "     I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry  deadline stk%%  ch task______ where___________________ longest ________________\n");
 
 	for (i=0; i <= max_task; i++) {
 		t = Tasks + i;
@@ -406,19 +425,19 @@ void TaskDump(u4_t flags)
 		int rx_channel = (t->flags & CTF_RX_CHANNEL)? (t->flags & CTF_CHANNEL) : -1;
 
 		if (flags & TDUMP_LOG)
-		lfprintf(printf_type, "%c%02d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f%c %3d%% %s%d %-10s %-24s\n",
+		lfprintf(printf_type, "%c%03d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f%c %3d%%%c %s%d %-10s %-24s\n",
 		    (t == ct)? '*':'T', i, (t->flags & CTF_PRIO_INVERSION)? 'I':'P', t->priority, t->lock_marker,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock.wait? 'L':'_', t->lock.hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
 			t->run, t->cmds,
 			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
-			deadline, dunit, t->stack_hiwat*100 / STACK_SIZE_U64_T,
+			deadline, dunit, t->stack_hiwat*100 / t->ctx->stack_size_u64, (t->flags & CTF_STACK_MED)? 'M' : ((t->flags & CTF_STACK_LARGE)? 'L' : ' '),
 			(rx_channel != -1)? "c":"", rx_channel,
 			t->name, t->where? t->where : "-"
 		);
 		else
-		lfprintf(printf_type, "%c%02d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f%c %3d%% %s%d %-10s %-24s %-24s\n",
+		lfprintf(printf_type, "%c%03d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f%c %3d%%%c %s%d %-10s %-24s %-24s\n",
 		    (t == ct)? '*':'T', i, (t->flags & CTF_PRIO_INVERSION)? 'I':'P', t->priority, t->lock_marker,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock.wait? 'L':'_', t->lock.hold? 'H':'_', t->minrun? 'q':'_',
@@ -426,7 +445,7 @@ void TaskDump(u4_t flags)
 			t->run, t->cmds,
 			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
 			t->wu_count, t->no_run_same, t->spi_retry,
-			deadline, dunit, t->stack_hiwat*100 / STACK_SIZE_U64_T,
+			deadline, dunit, t->stack_hiwat*100 / t->ctx->stack_size_u64, (t->flags & CTF_STACK_MED)? 'M' : ((t->flags & CTF_STACK_LARGE)? 'L' : ' '),
 			(rx_channel != -1)? "c":"", rx_channel,
 			t->name, t->where? t->where : "-",
 			t->long_name? t->long_name : "-"
@@ -462,13 +481,13 @@ void TaskDump(u4_t flags)
 	}
 	f_sum += f_idle;
 	float f_pct = f_idle/f_elapsed*100;
-	//lfprintf(printf_type, "Ttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%%
-	  lfprintf(printf_type, "idle             %7.3f           %5.1f%%\n", f_idle, f_pct);
+	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%%
+	  lfprintf(printf_type, "idle              %7.3f           %5.1f%%\n", f_idle, f_pct);
 	float f_remain = fabsf(f_elapsed - f_sum);
 	f_pct = f_remain/f_elapsed*100;
 	//if (f_remain > 0.01)
-	//lfprintf(printf_type, "Ttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%%
-	  lfprintf(printf_type, "Linux            %7.3f           %5.1f%%\n", f_remain, f_pct);
+	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%%
+	  lfprintf(printf_type, "Linux             %7.3f           %5.1f%%\n", f_remain, f_pct);
 
     const char *hist_name[N_HIST] = { "<1", "1", "2", "4", "8", "16", "32", "64", "128", "256", "512", ">=1k" };
     
@@ -487,7 +506,7 @@ void TaskDump(u4_t flags)
 		if (!t->valid)
 			continue;
 		if (flags & TDUMP_HIST) {
-		    lfprintf(printf_type, "T%02d   ", i);
+		    lfprintf(printf_type, "T%03d  ", i);
 		    for (j = 0; j < N_HIST; j++) {
 		        if (t->hist[j])
 		            lfprintf(printf_type, "%d|%sm ", t->hist[j], hist_name[j]);
@@ -584,9 +603,12 @@ static void task_stack(int id)
 {
 	ctx_t *c = ctx + id;
 	c->id = id;
-	c->stack = (u64_t *) (stacks + id);
-	c->stack_last = (u64_t *) (stacks + (id + 1));
-	//printf("task_stack T%d %p-%p\n", id, c->stack, c->stack_last);
+	
+	c->stack = (u64_t *) (task_stacks + stack_map[id]);
+    c->stack_size_u64 = STACK_SIZE_U64_T * stack_nel[id];	
+	c->stack_last = (u64_t *) (task_stacks + (stack_map[id] + stack_nel[id]));
+	c->stack_size_bytes = c->stack_size_u64 * sizeof(u64_t);
+	//printf("task_stack T%d %d (STACK_SIZE_U64_T) %d bytes %p-%p\n", id, c->stack_size_u64, c->stack_size_bytes, c->stack, c->stack_last);
 
 #if defined(HOST) && defined(USE_VALGRIND)
 	if (RUNNING_ON_VALGRIND) {
@@ -608,7 +630,7 @@ static void task_stack(int id)
 	int i;
 	for (s = c->stack, i=0; s < c->stack_last; s++, i++) {
 		*s = magic | ((u64_t) s & 0xffffffff);
-		//if (i == (STACK_SIZE_U64_T-1)) printf("T%02d W %08x|%08x\n", c->id, PRINTF_U64_ARG(*s));
+		//if (i == (t->ctx->stack_size_u64 - 1)) printf("T%03d W %08x|%08x\n", c->id, PRINTF_U64_ARG(*s));
 	}
 }
 
@@ -655,7 +677,11 @@ static void trampoline(int signo)
 
 #ifdef USE_ASAN
 	//printf("TaskResume(trampoline) fake_stack=%p stack=%p %s\n", t->ctx->fake_stack, t->ctx->stack, t->name);
-	__sanitizer_finish_switch_fiber(c->fake_stack);
+    #ifdef USE_ASAN2
+	    __sanitizer_finish_switch_fiber(c->fake_stack, (const void **) &(c->stack), &(c->stack_size_bytes));
+	#else
+	    __sanitizer_finish_switch_fiber(c->fake_stack);
+	#endif
 #endif
 	//printf("trampoline BOUNCE sp %p ctx %p T%d-%p %p-%p\n", &c, c, c->id, t, c->stack, c->stack_last);
 	(t->funcP)(t->create_param);
@@ -676,7 +702,7 @@ void TaskCollect()
 	if (!collect_needed)
 		return;
 
-	for (i=1; i < MAX_TASKS; i++) {		// NB: start at task 1 as the main task uses the ordinary stack
+	for (i = TID_FIRST; i < MAX_TASKS; i++) {		// NB: start at task 1 as the main task uses the ordinary stack
 		ctx_t *c = ctx + i;
 		if (c->init) continue;
 		task_stack(i);
@@ -694,8 +720,9 @@ void TaskCollect()
 	
 		stack_t stack;
 		stack.ss_flags = 0;
-		stack.ss_size = sizeof (Stack);
+		stack.ss_size = c->stack_size_u64 * sizeof(u64_t);
 		stack.ss_sp = (void *) c->stack;
+        //printf("i=%d ss=%d %d stk=%p\n", i, c->stack_size_u64, c->stack_size_bytes, c->stack);
 		scall("sigaltstack", sigaltstack(&stack, 0));
 			 
 		struct sigaction sa;
@@ -710,6 +737,8 @@ void TaskCollect()
 
 		c->init = TRUE;
 	}
+	
+	collect_needed = false;
 }
 
 static int our_pid, kiwi_server_pid;
@@ -729,11 +758,14 @@ void TaskInit()
     //setpriority(PRIO_PROCESS, getpid(), -20);
 
 	kiwi_server_pid = getpid();
-	printf("TASK MAX_TASKS %d, stack memory %d kB, stack size %d k u64_t\n", MAX_TASKS, sizeof(stacks)/K, STACK_SIZE_U64_T/K);
+	printf("TASK MAX_TASKS %d, stack memory %.1f MB, stack size %d k so(u64_t)\n", MAX_TASKS, ((float) sizeof(task_stacks))/M, STACK_SIZE_U64_T/K);
 
 	t = Tasks;
 	cur_task = t;
-	task_init(t, 0, NULL, NULL, "main", MAIN_PRIORITY, 0, 0);
+
+	task_init(t, TID_MAIN, NULL, NULL, "main", MAIN_PRIORITY, 0, 0);
+	t->ctx->stack_size_u64 = STACK_SIZE_U64_T;
+
 	last_dump = t->tstart_us = timer_us64();
 	//if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "TaskInit", evprintf("DUMP IN %.3f SEC", ev_dump/1000.0));
 	for (int p = LOWEST_PRIORITY; p <= HIGHEST_PRIORITY; p++) TaskQ[p].p = p;	// debugging aid
@@ -745,22 +777,34 @@ void TaskInit()
 	//printf("JMP_BUF: key 0x%x sp 0x%x:0x%x pc 0x%x:0x%x\n", key, ctx[0].sp, ctx[0].sp^key, ctx[0].pc, ctx[0].pc^key);
 #endif
 
+    int s = 0;
+	for (int i = 0; i < MAX_TASKS; i++, t++) {
+	    stack_map[i] = s;
+	    
+	    if (i < REG_STACK_TASKS) {
+	        stack_nel[i] = STACK_SIZE_REG;
+	        s += STACK_SIZE_REG;
+	    } else
+	    if (MED_STACK_TASKS && i < REG_STACK_TASKS + MED_STACK_TASKS) {
+	        stack_nel[i] = STACK_SIZE_MED;
+	        s += STACK_SIZE_MED;
+	        t->flags |= CTF_STACK_MED;
+	    } else {
+	        stack_nel[i] = STACK_SIZE_LARGE;
+	        s += STACK_SIZE_LARGE;
+	        t->flags |= CTF_STACK_LARGE;
+	    }
+	}
+	assert(s == N_STACK_EL);
+
 	collect_needed = TRUE;
 	TaskCollect();
 	
 	task_package_init = TRUE;
 }
 
-// init requiring cfg to be setup
-bool test_deadline_update;
-
 void TaskInitCfg()
 {
-    bool err;
-    test_deadline_update = cfg_bool("test_deadline_update", &err, CFG_OPTIONAL);
-    printf("test_deadline_update=%d err=%d\n", test_deadline_update, err);
-    if (err) test_deadline_update = false;
-
 	#define TASK_INTR_USEC_EARLY 1000
 	task_snd_intr_usec = snd_intr_usec - TASK_INTR_USEC_EARLY;
 }
@@ -783,10 +827,10 @@ void TaskCheckStacks(bool report)
 
 	u64_t magic = 0x8BadF00d00000000ULL;
     bool stk_panic = false;
-	for (i=1; i <= max_task; i++) {
+	for (i = TID_FIRST; i <= max_task; i++) {
 		t = Tasks + i;
 		if (!t->valid || !t->ctx->init) continue;
-		int m, l = 0, u = STACK_SIZE_U64_T-1;
+		int m, l = 0, u = t->ctx->stack_size_u64 - 1;
 		
 		// bisect stack until high-water mark is found
 		do {
@@ -795,14 +839,14 @@ void TaskCheckStacks(bool report)
 			if (*s == (magic | ((u64_t) s & 0xffffffff))) l = m; else u = m;
 		} while ((u-l) > 1);
 		
-		int used = STACK_SIZE_U64_T - m - 1;
+		int used = t->ctx->stack_size_u64 - m - 1;
 		t->stack_hiwat = used;
-		int pct = used*100/STACK_SIZE_U64_T;
+		int pct = used*100/t->ctx->stack_size_u64;
 		if (report) {
-            printf("%s stack used %d/%d (%d%%) PEAK %s\n", task_s(t), used, STACK_SIZE_U64_T, pct, (pct >= 50)? "DANGER":"");
+            printf("%s stack used %d/%d (%d%%) PEAK %s\n", task_s(t), used, t->ctx->stack_size_u64, pct, (pct >= 50)? "DANGER":"");
         } else {
             if (pct >= 50) {
-                printf("DANGER: %s stack used %d/%d (%d%%) PEAK\n", task_s(t), used, STACK_SIZE_U64_T, pct);
+                printf("DANGER: %s stack used %d/%d (%d%%) PEAK\n", task_s(t), used, t->ctx->stack_size_u64, pct);
                 stk_panic = true;
             }
         }
@@ -943,7 +987,7 @@ bool TaskIsChild()
     if (param == NT_FAST_CHECK) {
         u4_t diff = (u4_t) (enter_us - ct->tstart_us);
         if (diff < task_snd_intr_usec) return;
-        //if (diff > snd_intr_usec) real_printf("OVER %6u %s\n", diff - task_snd_intr_usec, where);
+        //D_STMT(if (diff > snd_intr_usec) real_printf("OVER %6u %s\n", diff - task_snd_intr_usec, where));
 	}
 	
     quanta = enter_us - ct->tstart_us;
@@ -974,16 +1018,19 @@ bool TaskIsChild()
 
     if (quanta > ct->longest) {
     	ct->longest = quanta;
-    	ct->long_name = where;
     	
-		// fixme: remove at some point
-		if (quanta > 2000000 && ct->id != 0) {
-			printf("LRUN %s %s %7.3f\n", task_ls(ct), where, (float) quanta / 1000);
-			//evNT(EC_DUMP, EV_NEXTTASK, -1, "NT", "LRUN");
-		}
+    	#ifdef DEBUG
+            ct->long_name = where;
+            
+            // fixme: remove at some point
+            if (quanta > 2000000 && ct->id != 0) {
+                printf("LRUN %s %s %7.3f\n", task_ls(ct), where, (float) quanta / 1000);
+                //evNT(EC_DUMP, EV_NEXTTASK, -1, "NT", "LRUN");
+            }
+        #endif
     }
 
-	ct->where = where;
+	D_STMT(ct->where = where);
 
     // don't switch until minrun expired (if any)
     if (ct->minrun && ((enter_us - ct->minrun_start_us) < ct->minrun))
@@ -1026,35 +1073,6 @@ bool TaskIsChild()
 
     do {
         now_us = timer_us64();
-
-        if (test_deadline_update == false) {
-            // update scheduling deadlines
-            TASK *tp = Tasks;
-            for (i=0; i <= max_task; i++, tp++) {
-                if (!tp->valid) continue;
-                bool wake = false;
-                
-                if (tp->deadline > 0) {
-                    if (tp->deadline < now_us) {
-                        evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("deadline expired %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
-                        tp->deadline = 0;
-                        wake = true;
-                    }
-                } else
-                if (tp->wakeup_test != NULL) {
-                    if (*tp->wakeup_test != 0) {
-                        evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("wakeup_test completed %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
-                        tp->wakeup_test = NULL;
-                        wake = true;
-                    }
-                }
-                
-                if (wake) {
-                    RUNNABLE_YES(tp);
-                    tp->wake_param = TO_VOID_PARAM(tp->last_run_time);      // return how long task ran last time
-                }
-            }
-        }
 
 		TaskPollForInterrupt(CALLED_WITHIN_NEXTTASK);
 		
@@ -1113,28 +1131,26 @@ bool TaskIsChild()
 				        if (lock_panic) lprintf("P%d: %s %s\n", p, task_s(tp), tp->stopped? "STOP":"RUN");
                     #endif
 					
-                    if (test_deadline_update == true) {
-                        bool wake = false;
-                        
-                        if (tp->deadline > 0) {
-                            if (tp->deadline < now_us) {
-                                evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("deadline expired %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
-                                tp->deadline = 0;
-                                wake = true;
-                            }
-                        } else
-                        if (tp->wakeup_test != NULL) {
-                            if (*tp->wakeup_test != 0) {
-                                evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("wakeup_test completed %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
-                                tp->wakeup_test = NULL;
-                                wake = true;
-                            }
+                    bool wake = false;
+                    
+                    if (tp->deadline > 0) {
+                        if (tp->deadline < now_us) {
+                            evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("deadline expired %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
+                            tp->deadline = 0;
+                            wake = true;
                         }
-                        
-                        if (wake) {
-                            RUNNABLE_YES(tp);
-                            tp->wake_param = TO_VOID_PARAM(tp->last_run_time);      // return how long task ran last time
+                    } else
+                    if (tp->wakeup_test != NULL) {
+                        if (*tp->wakeup_test != 0) {
+                            evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("wakeup_test completed %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
+                            tp->wakeup_test = NULL;
+                            wake = true;
                         }
+                    }
+                    
+                    if (wake) {
+                        RUNNABLE_YES(tp);
+                        tp->wake_param = TO_VOID_PARAM(tp->last_run_time);      // return how long task ran last time
                     }
                     
 					if (!tp->stopped)
@@ -1151,9 +1167,12 @@ bool TaskIsChild()
 				#endif
 			#endif
 
+            //if (p == 2 && t_runnable) real_printf("P2-%d ", t_runnable); fflush(stdout);
+
 			if (p == ct->priority && t_runnable == 1 && no_run_same) {
 				evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("%s no_run_same TRIGGERED ***", task_s(ct)));
 				no_run_same = false;
+                //if (p == 2) real_printf("NRS?%s ", task_s(ct)); fflush(stdout);
 				continue;
 			}
 			
@@ -1258,6 +1277,18 @@ bool TaskIsChild()
         #endif
 
 		idle_count++;
+		
+		#if 0
+            static int is_idle;
+            if (p < LOWEST_PRIORITY) {
+                is_idle++;
+            } else {
+                if (is_idle) {
+                    real_printf(".%d ", is_idle); fflush(stdout);
+                    is_idle = 0;
+                }
+            }
+        #endif
     } while (p < LOWEST_PRIORITY);		// if no eligible tasks keep looking
     
 	if (!need_hardware || update_in_progress || sd_copy_in_progress || LINUX_CHILD_PROCESS()) {
@@ -1268,7 +1299,11 @@ bool TaskIsChild()
     if (ct->valid && setjmp(ct->ctx->jb)) {
 #ifdef USE_ASAN
 		//printf("TaskResume(NextTask) fake_stack=%p stack=%p %s\n", t->ctx->fake_stack, t->ctx->stack, t->name);
-		__sanitizer_finish_switch_fiber(ct->ctx->fake_stack);
+        #ifdef USE_ASAN2
+            __sanitizer_finish_switch_fiber(ct->ctx->fake_stack, (const void **) &(ct->ctx->stack), &(ct->ctx->stack_size_bytes));
+        #else
+            __sanitizer_finish_switch_fiber(ct->ctx->fake_stack);
+        #endif
 #endif
     	return;		// returns here when task next run
     }
@@ -1294,7 +1329,7 @@ bool TaskIsChild()
 
 	ct->last_last_run_time = ct->last_run_time;
 	ct->last_run_time = quanta;
-	ct->last_pc = pc;
+	D_STMT(ct->last_pc = pc);
 	last_task_run = ct;
 
     cur_task = t;
@@ -1302,10 +1337,10 @@ bool TaskIsChild()
 
 #ifdef USE_ASAN
 	if (!t->valid) { // tell the address sanitizer to schedule the task to be removed
-		__sanitizer_start_switch_fiber(nullptr, t->ctx->stack, t->ctx->stack_last - t->ctx->stack);
+		__sanitizer_start_switch_fiber(nullptr, t->ctx->stack, t->ctx->stack_size_bytes);
 		//printf("TaskRemove fake_stack=%p stack=%p %s (%s) id=%d\n", t->ctx->fake_stack, t->ctx->stack, t->name, where, t->id);
 	} else {         // tell the address sanitizer about the task
-		__sanitizer_start_switch_fiber(&(t->ctx->fake_stack), t->ctx->stack, t->ctx->stack_last - t->ctx->stack);
+		__sanitizer_start_switch_fiber(&(t->ctx->fake_stack), t->ctx->stack, t->ctx->stack_size_bytes);
 		//printf("TaskJump  fake_stack=%p stack=%p %s (%s) id=%d\n", t->ctx->fake_stack, t->ctx->stack, t->name, where, t->id);
 	}
 #endif
@@ -1318,12 +1353,18 @@ int _CreateTask(funcP_t funcP, const char *name, void *param, int priority, u4_t
 {
 	int i;
     TASK *t;
+    u4_t stack_size = flags & CTF_STACK_SIZE;
     
-    for (i=1; i < MAX_TASKS; i++) {
+    for (i = TID_FIRST; i < MAX_TASKS; i++) {
         t = Tasks + i;
-        if (!t->valid && ctx[i].init) break;
+        u4_t t_stack_size = t->flags & CTF_STACK_SIZE;
+        if (!t->valid && ctx[i].init && t_stack_size == stack_size) break;
     }
-    if (i == MAX_TASKS) panic("create_task: no tasks available");
+    if (i == MAX_TASKS) {
+        dump();
+        lprintf("create_task: stack_size=%04x\n", stack_size);
+        panic("create_task: no tasks available");
+    }
     
 	if (i > max_task) max_task = i;
 	
@@ -1505,18 +1546,14 @@ void TaskSetFlags(u4_t flags)
 	t->flags = flags;
 }
 
-u4_t TaskGetUserParam(int id)
+void *TaskGetUserParam()
 {
-    TASK *t = Tasks + id;
-    
-    return t->user_param;
+    return cur_task->user_param;
 }
 
-void TaskSetUserParam(int id, u4_t param)
+void TaskSetUserParam(void *param)
 {
-    TASK *t = Tasks + id;
-    
-    t->user_param = param;
+    cur_task->user_param = param;
 }
 
 
@@ -1797,7 +1834,7 @@ void lock_enter(lock_t *lock)
 		    if (ow->flags & CTF_PRIO_INVERSION) {
 		        previous_prio_inversion++;      // someone else got there first, so leave the situation as is
 		        //lprintf("### LOCK_PRIORITY_INVERSION: lock %s ct %s\n", lock->name, task_ls(ct));
-		        //lprintf("### LOCK_PRIORITY_INVERSION: CTF_PRIO_INVERSION (saved=P%02d) already set in owner %s\n", ow->saved_priority, task_ls(ow));
+		        //lprintf("### LOCK_PRIORITY_INVERSION: CTF_PRIO_INVERSION (saved=P%03d) already set in owner %s\n", ow->saved_priority, task_ls(ow));
 		    } else {
                 // priority inversion: temp raise priority of lock owner to our priority so it releases the lock faster
                 ow->saved_priority = ow->priority;

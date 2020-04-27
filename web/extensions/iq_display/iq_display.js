@@ -1,8 +1,8 @@
-// Copyright (c) 2016 John Seamons, ZL/KF6VO
-
-var iq_display_ext_name = 'iq_display';		// NB: must match iq_display.c:iq_display_ext.name
+// Copyright (c) 2016-2019 John Seamons, ZL/KF6VO
 
 var iq = {
+   ext_name: 'iq_display',    // NB: must match iq.c:iq_display_ext.name
+   first_time: true,
    cmd_e: { IQ_POINTS:0, IQ_DENSITY:1, IQ_CLEAR:2 },
    draw: 1,
    mode: 0,
@@ -25,14 +25,12 @@ var iq = {
    phase: 0
 };
 
-var iq_display_first_time = true;
-
 function iq_display_main()
 {
-	ext_switch_to_client(iq_display_ext_name, iq_display_first_time, iq_display_recv);		// tell server to use us (again)
-	if (!iq_display_first_time)
+	ext_switch_to_client(iq.ext_name, iq.first_time, iq_display_recv);		// tell server to use us (again)
+	if (!iq.first_time)
 		iq_display_controls_setup();
-	iq_display_first_time = false;
+	iq.first_time = false;
 }
 
 var iq_display_map = new Uint32Array(256*256);
@@ -256,7 +254,7 @@ function iq_display_controls_setup()
             iq.pll_bw = r.num;
          } else
          if ((r = w3_ext_param('gain', a)).match) {
-            iq.gain = w3_clamp(r.num, 0, 100);
+            iq.gain = w3_clamp(r.num, 0, 120);
          } else
          if ((r = w3_ext_param('cmax', a)).match) {
             iq.maxdb = w3_clamp(r.num, 0, 255);
@@ -280,7 +278,7 @@ function iq_display_controls_setup()
 			   ),
 				w3_div('w3-margin-L-8',
 					w3_div('w3-medium w3-text-aqua', '<b>IQ display</b>'),
-					w3_slider('w3-tspace-8//', 'Gain', 'iq.gain', iq.gain, 0, 100, 1, 'iq_display_gain_cb'),
+					w3_slider('w3-tspace-8//', 'Gain', 'iq.gain', iq.gain, 0, 120, 1, 'iq_display_gain_cb'),
 					w3_inline('w3-tspace-8/w3-margin-between-6',
 					   w3_select('', 'Draw', '', 'iq.draw', iq.draw, draw_s, 'iq_display_draw_select_cb'),
 					   w3_select('', 'Mode', '', 'iq.mode', iq.mode, mode_s, 'iq_display_mode_select_cb'),
@@ -318,6 +316,7 @@ function iq_display_controls_setup()
 	iq_display_canvas.ctx = iq_display_canvas.getContext("2d");
 	iq_display_imageData = iq_display_canvas.ctx.createImageData(256, 1);
 
+	ext_send('SET pll_bandwidth='+ iq.pll_bw);
 	ext_send('SET run=1');
 	
 	// give the PLL time to settle on startup
@@ -399,6 +398,7 @@ function iq_display_pll_bw_cb(path, val, complete, first)
    //console.log('iq_display_pll_bw_cb val='+ val);
 	w3_num_cb(path, val);
 	ext_send('SET pll_bandwidth='+ val);
+	iq_display_clear();
 }
 
 function iq_display_offset_cb(path, val)
@@ -460,7 +460,7 @@ function iq_balance_default()
 {
    console.log('mode_20kHz='+ iq.mode_20kHz +' iq_balance_default='+ iq.DC_offset_default[iq.mode_20kHz]);
    cfg[iq.DC_offset_I] = cfg[iq.DC_offset_Q] = iq.DC_offset_default[iq.mode_20kHz];
-   ext_set_cfg_param('cfg.'+ iq.DC_offset_I, cfg[iq.DC_offset_I], false);
+   ext_set_cfg_param('cfg.'+ iq.DC_offset_I, cfg[iq.DC_offset_I], true);
    ext_set_cfg_param('cfg.'+ iq.DC_offset_Q, cfg[iq.DC_offset_Q], true);
    confirmation_panel_close();
 }
@@ -470,7 +470,7 @@ function iq_balance_confirm()
    console.log('iq_balance_confirm: PREV I='+ cfg[iq.DC_offset_I].toFixed(6) +' Q='+ cfg[iq.DC_offset_Q].toFixed(6));
    console.log('iq_balance_confirm: INCR ADJ I='+ (-iq.cmaI) +' Q='+ (-iq.cmaQ));
    cfg[iq.DC_offset_I] += -iq.cmaI;
-   ext_set_cfg_param('cfg.'+ iq.DC_offset_I, cfg[iq.DC_offset_I], false);
+   ext_set_cfg_param('cfg.'+ iq.DC_offset_I, cfg[iq.DC_offset_I], true);
    cfg[iq.DC_offset_Q] += -iq.cmaQ;
    ext_set_cfg_param('cfg.'+ iq.DC_offset_Q, cfg[iq.DC_offset_Q], true);
    console.log('iq_balance_confirm: NEW I='+ cfg[iq.DC_offset_I].toFixed(6) +' Q='+ cfg[iq.DC_offset_Q].toFixed(6));
@@ -512,21 +512,7 @@ function iq_display_blur()
 // called to display HTML for configuration parameters in admin interface
 function iq_display_config_html()
 {
-	ext_admin_config(iq_display_ext_name, 'IQ',
-		w3_div('id-iq_display w3-text-teal w3-hide',
-			'<b>IQ display configuration</b>' +
-			'<hr>' +
-			''
-			/*
-			w3_third('', 'w3-container',
-				w3_divs('w3-margin-bottom',
-					w3_input_get('', 'int1', 'iq_display.int1', 'w3_num_cb'),
-					w3_input_get('', 'int2', 'iq_display.int2', 'w3_num_cb')
-				), '', ''
-			)
-			*/
-		)
-	);
+   ext_config_html(iq, 'iq_display', 'IQ', 'IQ display configuration');
 }
 
 function iq_display_help(show)

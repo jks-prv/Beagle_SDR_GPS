@@ -2,13 +2,17 @@
 
 var extint = {
    ws: null,
+   extname: null,
    param: null,
+   override_pb: false,
    displayed: false,
    help_displayed: false,
    current_ext_name: null,
    using_data_container: false,
    default_w: 525,
    default_h: 300,
+   prev_mode: null,
+   seq: 0,
 };
 
 var devl = {
@@ -77,6 +81,7 @@ function ext_get_cfg_param(path, init_val, save)
 		cur_val = null;
 	}
 	
+   //console.log('ext_get_cfg_param: path='+ path +' cur_val='+ cur_val +' init_val='+ init_val);
 	if ((cur_val == null || cur_val == undefined) && init_val != undefined) {		// scope or parameter doesn't exist, create it
 		cur_val = init_val;
 		// parameter hasn't existed before or hasn't been set (empty field)
@@ -111,7 +116,8 @@ function ext_set_cfg_param(path, val, save)
 
 function ext_get_freq_range()
 {
-   return { lo_kHz: cfg.sdr_hu_lo_kHz, hi_kHz: cfg.sdr_hu_hi_kHz, offset_kHz: cfg.freq_offset };
+   var offset = cfg.freq_offset;
+   return { lo_kHz: cfg.sdr_hu_lo_kHz + offset, hi_kHz: cfg.sdr_hu_hi_kHz + offset, offset_kHz: offset };
 }
 
 var ext_zoom = {
@@ -128,14 +134,13 @@ var ext_zoom = {
 var extint_ext_is_tuning = false;
 
 // mode, zoom and passband are optional
-function ext_tune(fdsp, mode, zoom, zoom_level, low_cut, high_cut) {
-	//console.log('ext_tune: '+ fdsp +', '+ mode +', '+ zoom +', '+ zoom_level);
+function ext_tune(freq_dial_kHz, mode, zoom, zoom_level, low_cut, high_cut) {
+   var pb_specified = (low_cut != undefined && high_cut != undefined);
+	//console.log('ext_tune: '+ freq_dial_kHz +', '+ mode +', '+ zoom +', '+ zoom_level);
 	
 	extint_ext_is_tuning = true;
-      freqmode_set_dsp_kHz(fdsp, mode);
-      
-      if (low_cut != undefined && high_cut != undefined)
-         ext_set_passband(low_cut, high_cut);
+      freqmode_set_dsp_kHz(freq_dial_kHz, mode);
+      if (pb_specified) ext_set_passband(low_cut, high_cut);
       
       if (zoom != undefined) {
          zoom_step(zoom, zoom_level);
@@ -175,10 +180,41 @@ function ext_get_mode()
 	return cur_mode;
 }
 
-function ext_set_mode(mode)
+function ext_get_prev_mode()
 {
-   //console.log('### ext_set_mode '+ mode);
-	demodulator_analog_replace(mode);
+	return extint.prev_mode;
+}
+
+function ext_set_mode(mode, freq, opt)
+{
+   var new_drm = (mode == 'drm');
+   if (new_drm)
+      extint.prev_mode = cur_mode;
+   w3_show_hide('id-sam-carrier-container', mode.startsWith('sa'));
+
+   //console.log('### ext_set_mode '+ mode +' prev='+ extint.prev_mode);
+	demodulator_analog_replace(mode, freq);
+	
+	var open_ext = w3_opt(opt, 'open_ext', false);
+	var no_drm_proc = w3_opt(opt, 'no_drm_proc', false);
+	var drm_active = (typeof(drm) != 'undefined' && drm.active);
+	console.log('$ new_drm='+ new_drm +' open_ext='+ open_ext);
+
+   if (!no_drm_proc) {
+      if (new_drm && open_ext) {
+         if (drm_active) {
+            // DRM already loaded and running, just open the control panel again (mobile mode)
+            toggle_panel("ext-controls", 1);
+         } else {
+            extint_open('drm');
+         }
+      } else
+      if (!new_drm && drm_active) {
+         // shutdown DRM (if active) when mode changed
+         extint_panel_hide();
+         demodulator_analog_replace(mode, freq);   // don't use mode restored by DRM_blur()
+      }
+   }
 }
 
 function ext_get_passband()
@@ -187,7 +223,7 @@ function ext_get_passband()
 	return { low: demod.low_cut, high: demod.high_cut };
 }
 
-function ext_set_passband(low_cut, high_cut, set_mode_pb, fdsp)		// specifying fdsp is optional
+function ext_set_passband(low_cut, high_cut, set_mode_pb, freq_dial_Hz)		// specifying freq_dial_Hz is optional
 {
 	var demod = demodulators[0];
 	var filter = demod.filter;
@@ -214,19 +250,24 @@ function ext_set_passband(low_cut, high_cut, set_mode_pb, fdsp)		// specifying f
 	//console.log('SET_PB okay='+ okay);
 	
 	// set the passband for the current mode as well (sticky)
-	if (set_mode_pb != undefined && set_mode_pb && okay) {
+	if (isArg(set_mode_pb) && set_mode_pb && okay) {
 		passbands[cur_mode].last_lo = low_cut;
 		passbands[cur_mode].last_hi = high_cut;
 	}
 	
-	if (fdsp != undefined && fdsp != null) {
-		fdsp *= 1000;
-		freq_car_Hz = freq_dsp_to_car(fdsp);
+	if (freq_dial_Hz != undefined && freq_dial_Hz != null) {
+		freq_dial_Hz *= 1000;
+		freq_car_Hz = freq_dsp_to_car(freq_dial_Hz);
 	}
 
 	extint_ext_is_tuning = true;
 	   demodulator_set_offset_frequency(0, freq_car_Hz - center_freq);
 	extint_ext_is_tuning = false;
+}
+
+function ext_get_tuning()
+{
+   return { low: demod.low_cut, high: demod.high_cut, mode: cur_mode, freq_dial_kHz: freq_displayed_Hz/1000 };
 }
 
 function ext_get_zoom()
@@ -308,8 +349,11 @@ function ext_valpwd(conn_type, pwd, ws)
 	}
 	ipl = ipl? (' ipl='+ ipl) : '';
 
-   if (kiwi_url_param(['p', 'prot', 'protected'], 'true', null) != null) conn_type = 'prot';
+   // don't change to conn type 'prot' if e.g. admin panel privilege escalation during user connection (e.g. DX label editing)
+   if (kiwi_url_param(['p', 'prot', 'protected'], 'true', null) != null && conn_type != 'admin')
+      conn_type = 'prot';
 	//console.log('SET auth t='+ conn_type +' p='+ pwd + ipl);
+
 	ext_send('SET auth t='+ conn_type +' p='+ pwd + ipl, ws);
 	// the server reply then calls extint_valpwd_cb() below
 }
@@ -388,9 +432,50 @@ function ext_panel_set_name(name)
 }
 
 
+/*
+screen.{width,height}	P=portrait L=landscape
+			   w     h		screen.[wh] in portrait
+			   h     w		rotated to landscape
+iPhone 5S	320   568	P
+iPhone X	   414   896	P
+levono		600   976	P 7"
+huawei		600   976	P 7"
+
+iPad 2		768   1024	P
+MBP 15"		1440  900	L
+*/
+
+function ext_mobile_info(last)
+{
+   var w = window.innerWidth;
+   var h = window.innerHeight;
+   var rv = { width:w, height:h };
+   rv.wh_unchanged = (last && last.width == w && last.height == h)? 1:0;
+
+	var isPortrait = (w < h || mobile_laptop_test)? 1:0;
+   rv.orient_unchanged = (last && last.isPortrait == isPortrait)? 1:0;
+
+	rv.isPortrait = isPortrait? 1:0;
+	rv.iPad     = (isPortrait && w <= 768)? 1:0;    // iPad or smaller
+	rv.small    = (isPortrait && w <  768)? 1:0;    // anything smaller than iPad
+	rv.narrow   = (isPortrait && h <= 600)? 1:0;    // narrow screens, i.e. phones and 7" tablets
+   return rv;
+}
+
+
 ////////////////////////////////
 // internal routines
 ////////////////////////////////
+
+function extint_news(s)
+{
+   var el = w3_el('id-news');
+   el.style.width = '400px';
+   el.style.height = '300px';
+   el.style.visibility = 'visible';
+   el.style.zIndex = 9999;
+   w3_innerHTML('id-news-inner', s);
+}
 
 function ext_panel_init()
 {
@@ -398,12 +483,12 @@ function ext_panel_init()
       '<div id="id-ext-controls" class="class-panel" data-panel-name="ext-controls" data-panel-pos="bottom-left" data-panel-order="0" ' +
       'data-panel-size="'+ extint.default_w +','+ extint.default_h +'"></div>';
 
-	var el = html('id-ext-data-container');
+	var el = w3_el('id-ext-data-container');
 	el.style.zIndex = 100;
 
-	el = html('id-ext-controls');
+	el = w3_el('id-ext-controls');
 	el.innerHTML =
-		w3_divs('id-ext-controls-container/class-panel-inner') +
+		w3_div('id-ext-controls-container w3-relative|width:100%;height:100%;') +
 		w3_div('id-ext-controls-vis class-vis') +
 		w3_div('id-ext-controls-help cl-ext-help',
 		   w3_button('id-ext-controls-help-btn w3-green w3-small w3-padding-small w3-disabled||onclick="extint_help_click()"', 'help')
@@ -421,7 +506,11 @@ function ext_panel_init()
 	// close ext panel if escape key
 	w3_el('id-kiwi-body').addEventListener('keyup',
 	   function(evt) {
-	      if (evt.key == 'Escape' && extint.displayed && !confirmation.displayed) extint_panel_hide();
+	      if (evt.key == 'Escape' && extint.displayed && !confirmation.displayed) {
+	         // simulate click in case something other than extint_panel_hide() has been hooked
+	         //extint_panel_hide();
+	         w3_el('id-ext-controls-close').click();
+	      }
 	   }, true);
 }
 
@@ -447,26 +536,35 @@ function extint_panel_show(controls_html, data_html, show_func)
    }
 
 	// hook the close icon to call extint_panel_hide()
-	var el = html('id-ext-controls-close');
+	var el = w3_el('id-ext-controls-close');
 	el.onclick = function() { toggle_panel("ext-controls"); extint_panel_hide(); };
 	//console.log('extint_panel_show onclick='+ el.onclick);
 	
-	var el = html('id-ext-controls-container');
+	// some exts change these -- change back to default
+	w3_el('id-ext-controls').style.zIndex = 150;
+   w3_attribute('id-ext-controls-close-img', 'src', 'icons/close.24.png');
+	
+	var el = w3_el('id-ext-controls-container');
 	el.innerHTML = controls_html;
 	//console.log(controls_html);
 	
 	if (show_func) show_func();
 	
-	el = html('id-ext-controls');
+	el = w3_el('id-ext-controls');
 	el.style.zIndex = 150;
 	//el.style.top = px((extint.using_data_container? height_spectrum_canvas : height_top_bar_parts) +157+10);
 	w3_visible(el, true);
+	el.panelShown = 1;
    toggle_or_set_hide_panels(0);    // cancel panel hide mode
 
 	
 	// help button
+	w3_el('id-confirmation-container').style.height = '';    // some exts modify this
 	var show_help_button = w3_call(extint.current_ext_name +'_help', false);
-   w3_set_props('id-ext-controls-help-btn', 'w3-disabled', !show_help_button);
+	//console.log('show_help_button '+ extint.current_ext_name +' '+ show_help_button);
+   w3_set_props('id-ext-controls-help-btn', 'w3-disabled', isUndefined(show_help_button) || show_help_button == false);
+   if (show_help_button == 'off')
+      w3_hide('id-ext-controls-help-btn');
 	
 	extint.displayed = true;
 }
@@ -516,6 +614,7 @@ function extint_environment_changed(changed)
    
    setTimeout(
       function() {
+         //console_log_fqn('extint_environment_changed', 'extint.current_ext_name');
          if (extint.current_ext_name) {
             w3_call(extint.current_ext_name +'_environment_changed', changed);
          }
@@ -574,9 +673,15 @@ function extint_msg_cb(param, ws)
 			break;
 
 		case "ext_client_init":
-			extint_focus();
+		   console.log('ext_client_init is_locked='+ +param[1]);
+			extint_focus(+param[1]);
 			break;
+		
+		default:
+		   return false;
 	}
+	
+	return true;
 }
 
 function extint_blur_prev()
@@ -593,11 +698,21 @@ function extint_blur_prev()
 		ext_send('SET ext_blur='+ rx_chan);
 }
 
-function extint_focus()
+function extint_focus(is_locked)
 {
    // dynamically load extension (if necessary) before calling <ext>_main()
    var ext = extint.current_ext_name;
 	console.log('extint_focus: loading '+ ext +'.js');
+	
+	if (is_locked) {
+	   var s =
+         w3_text('w3-medium w3-text-css-yellow',
+            'Cannot use extensions while <br> another channel is in DRM mode.'
+         );
+      extint_panel_show(s);
+      ext_set_controls_width_height(450, 75);
+      return;
+	}
 
 	kiwi_load_js_dir('extensions/'+ ext +'/'+ ext, ['.js', '.css'],
 
@@ -616,6 +731,8 @@ function extint_focus()
             var s = 'loading extension...';
             extint_panel_show(s);
             ext_set_controls_width_height(325, 45);
+            if (kiwi.is_locked)
+               console.log('==== IS_LOCKED =================================================');
          }
 	   }
 	);
@@ -629,13 +746,14 @@ function extint_select(idx)
 	extint_blur_prev();
 	
 	idx = +idx;
-	html('select-ext').value = idx;
+	w3_el('select-ext').value = idx;
 	extint.current_ext_name = extint_names[idx];
 	if (extint_first_ext_load) {
 		extint.ws = extint_connect_server();
 		extint_first_ext_load = false;
 	} else {
-		extint_focus();
+		//extint_focus();
+		ext_send('SET ext_is_locked_status');     // request is_locked status
 	}
 }
 
@@ -650,17 +768,22 @@ function extint_list_json(param)
 
 function extint_select_menu()
 {
+   //console.log('extint_select_menu rx_chan='+ rx_chan +' is_local='+ kiwi.is_local[rx_chan]);
 	var s = '';
-	if (extint_names) for (var i=0; i < extint_names.length; i++) {
-		//if (!dbgUs && extint_names[i] == 'devl') continue;
-
-		if (!dbgUs && extint_names[i] == 'sig_gen') continue;	// when USE_GEN == 0
-
-		if (!dbgUs && extint_names[i] == 's4285') continue;	// FIXME: hide while we develop
-		if (!dbgUs && extint_names[i] == 'timecode') continue;	// FIXME: hide while we develop
-		if (!dbgUs && extint_names[i] == 'colormap') continue;	// FIXME: hide while we develop
-
-		s += '<option value="'+ i +'">'+ extint_names[i] +'</option>';
+	if (extint_names && isArray(extint_names)) {
+	   for (var i=0; i < extint_names.length; i++) {
+         var id = extint_names[i];
+         if (!dbgUs && id == 'sig_gen') continue;	// when USE_GEN == 0
+         if (!dbgUs && id == 'devl') continue;
+         if (!dbgUs && id == 's4285') continue;	// FIXME: hide while we develop
+         if (!dbgUs && id == 'colormap') continue;	// FIXME: hide while we develop
+         
+         if (id == 'wspr') id = 'WSPR';      // FIXME: workaround
+         var enable = ext_get_cfg_param(id +'.enable');
+         if (enable == null || kiwi.is_local[rx_chan]) enable = true;   // enable if no cfg param or local connection
+         if (id == 'DRM') kiwi.DRM_enable = enable;
+		   s += '<option value="'+ i +'" '+ (enable? '':'disabled') +'>'+ id +'</option>';
+		}
 	}
 	//console.log('extint_select_menu = '+ s);
 	return s;
@@ -668,10 +791,16 @@ function extint_select_menu()
 
 function extint_open(name, delay)
 {
+   //console.log('extint_open rx_chan='+ rx_chan +' is_local='+ kiwi.is_local[rx_chan]);
    name = name.toLowerCase();
 	for (var i=0; i < extint_names.length; i++) {
-		if (extint_names[i].toLowerCase().includes(name)) {
-			//console.log('extint_open match='+ extint_names[i]);
+      var id = extint_names[i];
+      if (id == 'wspr') id = 'WSPR';      // FIXME: workaround
+      var enable = ext_get_cfg_param(id +'.enable');
+      if (enable == null || kiwi.is_local[rx_chan]) enable = true;   // enable if no cfg param or local connection
+
+		if (enable && id.toLowerCase().includes(name)) {
+			//console.log('extint_open match='+ id);
 			if (delay) {
 			   //console.log('extint_open '+ name +' delay='+ delay);
 			   setTimeout(function() {extint_select(i);}, delay);

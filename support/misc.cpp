@@ -278,12 +278,12 @@ void send_msg_buf(conn_t *c, char *s, int slen)
         //clprintf(c, "send_msg_buf: internal_connection <%s>\n", s);
     } else {
         if (c->mc == NULL) {
-            /*
-            clprintf(c, "send_msg_buf: c->mc is NULL\n");
-            clprintf(c, "send_msg_buf: CONN-%d %p valid=%d type=%d [%s] auth=%d KA=%d KC=%d mc=%p rx=%d magic=0x%x ip=%s:%d other=%s%d %s\n",
-                c->self_idx, c, c->valid, c->type, streams[c->type].uri, c->auth, c->keep_alive, c->keepalive_count, c->mc, c->rx_channel,
-                c->magic, c->remote_ip, c->remote_port, c->other? "CONN-":"", c->other? c->other-conns:0, c->stop_data? "STOP":"");
-            */
+            #if 1
+                clprintf(c, "send_msg_buf: c->mc is NULL\n");
+                clprintf(c, "send_msg_buf: CONN-%d %p valid=%d type=%d [%s] auth=%d KA=%d KC=%d mc=%p rx=%d magic=0x%x ip=%s:%d other=%s%d %s\n",
+                    c->self_idx, c, c->valid, c->type, rx_streams[c->type].uri, c->auth, c->keep_alive, c->keepalive_count, c->mc, c->rx_channel,
+                    c->magic, c->remote_ip, c->remote_port, c->other? "CONN-":"", c->other? c->other-conns:0, c->stop_data? "STOP":"");
+            #endif
             return;
         }
         mg_websocket_write(c->mc, WS_OPCODE_BINARY, s, slen);
@@ -709,10 +709,22 @@ int latLon_to_grid6(latLon_t *loc, char *grid6)
 
 void set_cpu_affinity(int cpu)
 {
-#if defined(HOST) && defined(CPU_AM5729)
+#if defined(HOST) && defined(MULTI_CORE)
     cpu_set_t cpu_set;
     CPU_ZERO(&cpu_set);
     CPU_SET(cpu, &cpu_set);
     scall("set_affinity", sched_setaffinity(getpid(), sizeof(cpu_set_t), &cpu_set));
 #endif
+}
+
+u4_t pos_wrap_diff(u4_t next, u4_t prev, u4_t size)
+{
+	u4_t diff;
+	
+	if (next >= prev)
+		diff = next - prev;
+	else
+		diff = ((size-1) - prev) + next;	// i.e. amount outside prev - next
+	
+	return diff;
 }

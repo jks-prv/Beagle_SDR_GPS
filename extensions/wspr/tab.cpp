@@ -1,7 +1,5 @@
 #include "wspr.h"
 
-#ifdef EXT_WSPR
-
 /*
  This file is part of wsprd.
  
@@ -42,5 +40,3 @@ unsigned char _Partab[] = {
  0, 1, 1, 0, 1, 0, 0, 1,
  1, 0, 0, 1, 0, 1, 1, 0,
 };
-
-#endif

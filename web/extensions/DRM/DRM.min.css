@@ -1,0 +1,4 @@
+
+
+/* web/extensions/DRM/DRM.min.css */
+.cl-drm-blk{border-radius:2px;margin:0 2px;padding:0 2px;background-color:grey}.id-drm-options{font-size:85%}.id-drm-sched-now{position:absolute;width:2px;height:100%;background-color:red;opacity:1;z-index:300;pointer-events:none}.id-drm-sched-tscale{position:absolute;width:2px;height:100%;background-color:#000;opacity:.1;z-index:100;pointer-events:none}.cl-drm-sched{position:absolute;background-color:#fff;font-size:80%}.cl-drm-sched-station{width:100%;padding:8px;color:#000;font-weight:700}.cl-drm-sched-hr-div{overflow:auto}.cl-drm-sched-hr{margin:15.8px;border-top:1px solid #000}.cl-drm-sched-striped:nth-child(even){background-color:#f1f1f1}.id-drm-sched-time{position:absolute;width:50px;height:20px;border-radius:10px;background-color:Pink;display:inline;cursor:pointer;z-index:200}.cl-drm-sched-options-time{width:100px;border-radius:10px;text-align:center;color:#000;background-color:Pink}

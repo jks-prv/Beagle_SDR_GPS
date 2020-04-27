@@ -47,7 +47,7 @@ Boston, MA  02110-1301, USA.
 // Once with EDATA_DEVEL defined when compiled into the build directory during development 
 
 user_iface_t user_iface[] = {
-	KIWI_UI_LIST
+	{ "openwebrx", 1 },
 	{0}
 };
 
@@ -96,10 +96,12 @@ const char *edata_lookup(embedded_files_t files[], const char *name, size_t *siz
     return NULL;
 }
 
-u4_t mtime_obj_keep_edata_always_o, mtime_obj_keep_edata_always2_o;
+time_t mtime_obj_keep_edata_always_o;
+//time_t mtime_obj_keep_edata_always2_o;
+
 int web_caching_debug;
 
-static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *mtime, bool *is_file)
+static const char* edata(const char *uri, bool cache_check, size_t *size, time_t *mtime, bool *is_file)
 {
 	const char* data = NULL;
 	bool absPath = (uri[0] == '/');
@@ -143,6 +145,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 		}
 	}
 
+#if 0
 	if (!data) {
 		data = edata_lookup(edata_always2, uri, size);
 		if (data) {
@@ -162,9 +165,10 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 #endif
 		}
 	}
+#endif
 
     if (data)
-	    web_printf_all("EDATA           %s, %s, %s: mtime=%lu/%lx %s\n", type, subtype, reason, *mtime, *mtime, uri);
+	    web_printf_all("%-16s %s, %s, %s: mtime=[%s] %s\n", "EDATA", type, subtype, reason, var_ctime_static(mtime), uri);
 
 #ifdef EDATA_EMBED
 	// only root-referenced files are opened from filesystem when in embedded (production) mode
@@ -193,7 +197,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 		static char *last_uri2_read;
 		static const char *last_data, *last_free;
 		static size_t last_size;
-		static u4_t last_mtime;
+		static time_t last_mtime;
 		struct stat st;
 		bool nofile = false;
 
@@ -286,7 +290,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
                 reason = "not .js file, using file";
             }
         }
-        web_printf_all("EDATA           %s, %s: mtime=%lu/%lx %s %s\n", type, reason, *mtime, *mtime, uri, uri2);
+        web_printf_all("%-16s %s, %s: mtime=[%s] %s %s\n", "EDATA", type, reason, var_ctime_static(mtime), uri, uri2);
 	    *is_file = nofile? false:true;
 	}
 
@@ -297,13 +301,13 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 static char *cached_o_uri;
 static const char *cached_edata_data;
 static size_t cached_size;
-static u4_t cached_mtime;
+static time_t cached_mtime;
 static bool cached_is_min;
 static bool cached_is_gzip;
 static bool cached_is_file;
 
 static const char* edata_with_file_ext(char **o_uri, bool free_o_uri, bool *free_uri, const char *prefix_list[],
-    bool cache_check, size_t *size, u4_t *mtime, bool *is_min, bool *is_gzip, bool *is_file)
+    bool cache_check, size_t *size, time_t *mtime, bool *is_min, bool *is_gzip, bool *is_file)
 {
 	const char *edata_data = NULL;
 	// the ".html" is here so a URL of "mykiwi:8073/admin" will match admin.html file
@@ -313,7 +317,7 @@ static const char* edata_with_file_ext(char **o_uri, bool free_o_uri, bool *free
 	const char *no_prefix[] = { "", NULL };
 	if (prefix_list == NULL) prefix_list = no_prefix;
 	
-	web_printf_all("%-15s basename: %s prefixes: ", cache_check? "CACHE_CHECK":"REQUEST", *o_uri);
+	web_printf_all("%-16s basename: %s prefixes: ", cache_check? "CACHE_CHECK":"REQUEST", *o_uri);
 	if (web_caching_debug & WEB_CACHING_DEBUG_ALL) {
         for (char **pre = (char **) prefix_list; *pre != NULL; pre++) {
             web_printf_all("%s ", (**pre == '\0')? "[./]" : *pre);
@@ -379,13 +383,13 @@ static const char* edata_with_file_ext(char **o_uri, bool free_o_uri, bool *free
                     *is_min = (cm? true:false);
                     *is_gzip = (kiwi_str_ends_with(uri, ".gz") != NULL);
                 }
-                web_printf_all("%-15s cm%d %s %p\n", "TRY", cm, uri, edata_data);
+                web_printf_all("%-16s cm%d %s %p\n", "TRY", cm, uri, edata_data);
                 // NB: "&& !edata_data" in both for loops will cause double break if edata_data becomes non-NULL
             }
         }
     }
     
-    web_printf_all("%-15s %p %s %s %s%s\n", edata_data? "RTN-FOUND" : "RTN-NIL",
+    web_printf_all("%-16s %p %s %s %s%s\n", edata_data? "RTN-FOUND" : "RTN-NIL",
         edata_data, uri, cache_check? "CACHE_CHECK":"REQUEST", *is_min? "MIN ":"", *is_gzip? "GZIP":"");
     if (*is_gzip) uri[strlen(uri) - 3] = '\0';      // remove ".gz" suffix
 
@@ -482,6 +486,7 @@ void reload_index_params()
 	// or in development mode when "-fopt" argument is used.
 	// Otherwise javascript errors would give line numbers in the optimized files which are
 	// useless for debugging.
+	// Currently this only applies to the kiwisdr.min.{js,css} package.
 	int embed = bg? 1 : (use_foptim? 1:0);
 
 	const char *gen_list_css[2][7] = {
@@ -551,7 +556,7 @@ void reload_index_params()
 //	3) HTML GET AJAX requests
 //	4) HTML PUT requests
 
-bool web_nocache;
+bool webserver_caching, web_nocache;
 
 int web_request(struct mg_connection *mc, enum mg_event evt) {
 	int i, n;
@@ -559,6 +564,11 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 	const char *edata_data;
 
     //if (web_caching_debug == 0) web_caching_debug = bg? 3:1;
+
+
+    ////////////////////////////////
+    // web socket
+    ////////////////////////////////
 
 	if (mc->is_websocket) {
 		// This handler is called for each incoming websocket frame, one or more
@@ -598,7 +608,10 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 	}
     
     
+    ////////////////////////////////
     // not web socket
+    ////////////////////////////////
+
     char remote_ip[NET_ADDRSTRLEN];
     check_if_forwarded(NULL, mc, remote_ip);
     
@@ -612,21 +625,25 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 		
     //#define WEB_PRINTF_ON_FILE
     #ifdef WEB_PRINTF_ON_FILE
-        web_caching_debug |= (
-            strcmp(mc->uri, "mfg") == 0 || strcmp(mc->uri, "/mfg") == 0 ||
-            strcmp(mc->uri, "admin") == 0 || strcmp(mc->uri, "/admin") == 0)? 3:0;
+        #if 0
+            web_caching_debug |= (
+                strcmp(mc->uri, "mfg") == 0 || strcmp(mc->uri, "/mfg") == 0 ||
+                strcmp(mc->uri, "admin") == 0 || strcmp(mc->uri, "/admin") == 0)? 3:0;
+        #else
+            web_caching_debug = (strstr(mc->uri, "DRM.js") != NULL)? 7:0;
+        #endif
     #endif
 		
 	if (evt == MG_CACHE_RESULT) {
 	    if (web_caching_debug == 0) return MG_TRUE;
 	    
 	    if (mc->cache_info.cached)
-            web_printf_cached("webserver %6s %11s %4s %3s %4s %s\n", "", mc->cache_info.cached? "304-CACHED":"", "", "", "", mc->uri);
+            web_printf_cached("%-16s %6s %11s %4s %3s %4s %5s %s\n", "webserver", "-", mc->cache_info.cached? "304-CACHED":"NO_CACHE", "", "", "", "", mc->uri);
 
-		web_printf_all("MG_CACHE_RESULT %s:%05d%s %s (etag_match=%d || not_mod_since=%d) mtime=%lu/%lx",
+		web_printf_all("%-16s %s:%05d%s %s (etag_match=%c not_mod_since=%c) mtime=[%s]", "MG_CACHE_RESULT",
 			remote_ip, mc->remote_port, is_sdr_hu? "[sdr.hu]":"",
-			mc->cache_info.cached? "### CLIENT_CACHED ###":"NOT_CACHED", mc->cache_info.etag_match, mc->cache_info.not_mod_since,
-			mc->cache_info.st.st_mtime, mc->cache_info.st.st_mtime);
+			mc->cache_info.cached? "### CLIENT_CACHED ###":"NOT_CACHED", mc->cache_info.etag_match? 'T':'F', mc->cache_info.not_mod_since? 'T':'F',
+			var_ctime_static(&mc->cache_info.st.st_mtime));
 
 		if (!mc->cache_info.if_mod_since) {
 			float diff = ((float) time_diff_s(mc->cache_info.st.st_mtime, mc->cache_info.client_mtime)) / 60.0;
@@ -642,7 +659,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 			web_printf_all("[%+.1f%c]", diff, suffix);
 		}
 		
-		web_printf_all(" client=%lu/%lx\n", mc->cache_info.client_mtime, mc->cache_info.client_mtime);
+		web_printf_all(" client=[%s]\n", var_ctime_static(&mc->cache_info.client_mtime));
 		assert(!is_sdr_hu);
 		return MG_TRUE;
 	}
@@ -653,39 +670,37 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     char *o_uri = (char *) mc->uri;      // o_uri = original uri
     char *uri;
     bool free_uri = FALSE, has_prefix = FALSE, is_extension = FALSE;
-    u4_t mtime = 0;
+    time_t mtime = 0;
 
     if (evt == MG_CACHE_INFO) web_printf_all("----\n");
-    web_printf_all("URL             %s %s\n", o_uri, mc->query_string);
+    web_printf_all("%-16s %s %s\n", "URL", o_uri, mc->query_string);
     evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", evprintf("URL <%s> <%s> %s", o_uri, mc->query_string,
         (evt == MG_CACHE_INFO)? "MG_CACHE_INFO" : "MG_REQUEST"));
 
     while (*o_uri == '/') o_uri++;
-    bool isIndexHTML = false;
     if (*o_uri == '\0' || strcmp(o_uri, "index") == 0 || strcmp(o_uri, "index.html") == 0 || strcmp(o_uri, "index.htm") == 0) {
         o_uri = (char *) "index.html";
-        isIndexHTML = true;
-    }
 
-    // Kiwi URL redirection
-    if (isIndexHTML && (rx_count_server_conns(INCLUDE_INTERNAL) == rx_chans || down)) {
-        char *url_redirect = (char *) admcfg_string("url_redirect", NULL, CFG_REQUIRED);
-        if (url_redirect != NULL && *url_redirect != '\0') {
-        
-            // if redirect url ends in numeric port number must add '/' before '?' of query string
-            char *sep = (char *) (isdigit(url_redirect[strlen(url_redirect)-1])? "/?" : "?");
-            kstr_t *args = mc->query_string? kstr_cat(sep, mc->query_string) : NULL;
-            kstr_t *redirect = kstr_cat(url_redirect, args);
-            printf("REDIRECT: %s\n", kstr_sp(redirect));
-            mg_send_status(mc, 307);
-            mg_send_header(mc, "Location", kstr_sp(redirect));
-            mg_send_data(mc, NULL, 0);
-            evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "307 redirect");
-            kstr_free(redirect);
+        // Kiwi URL redirection
+        if (rx_count_server_conns(INCLUDE_INTERNAL) == rx_chans || down) {
+            char *url_redirect = (char *) admcfg_string("url_redirect", NULL, CFG_REQUIRED);
+            if (url_redirect != NULL && *url_redirect != '\0') {
+            
+                // if redirect url ends in numeric port number must add '/' before '?' of query string
+                char *sep = (char *) (isdigit(url_redirect[strlen(url_redirect)-1])? "/?" : "?");
+                kstr_t *args = mc->query_string? kstr_cat(sep, mc->query_string) : NULL;
+                kstr_t *redirect = kstr_cat(url_redirect, args);
+                printf("REDIRECT: %s\n", kstr_sp(redirect));
+                mg_send_status(mc, 307);
+                mg_send_header(mc, "Location", kstr_sp(redirect));
+                mg_send_data(mc, NULL, 0);
+                evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "307 redirect");
+                kstr_free(redirect);
+                admcfg_string_free(url_redirect);
+                return MG_TRUE;
+            }
             admcfg_string_free(url_redirect);
-            return MG_TRUE;
         }
-        admcfg_string_free(url_redirect);
     }
 
     // SECURITY: prevent escape out of local directory
@@ -760,6 +775,8 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     // process query string parameters even if file is cached
     suffix = strrchr(uri, '.');
     if (edata_data && suffix && strcmp(suffix, ".html") == 0 && mc->query_string) {
+        webserver_caching = cfg_bool("webserver_caching", NULL, CFG_REQUIRED);
+
         int ctrace;
         #define NQS 32
         char *r_buf, *qs[NQS+1];
@@ -767,18 +784,23 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         for (i=0; i < n; i++) {
             if (strcmp(qs[i], "nocache") == 0) {
                 web_nocache = true;
-                printf("### nocache\n");
+                printf("WEB nocache\n");
+            } else
+            if (strcmp(qs[i], "cache") == 0) {
+                web_nocache = false;
+                printf("WEB cache\n");
             } else
             if (strcmp(qs[i], "nolocal") == 0) {
                 conn_nolocal = true;
+                printf("WEB nolocal\n");
             } else
             if (sscanf(qs[i], "ctrace=%d", &ctrace) == 1) {
                 web_caching_debug = ctrace;
-                printf("### ctrace=%d\n", web_caching_debug);
+                printf("WEB ctrace=%d\n", web_caching_debug);
             } else {
                 char *su_m = NULL;
                 if (sscanf(qs[i], "su=%256ms", &su_m) == 1) {
-                    if (kiwi_sha256_strcmp(su_m, "34ac320e522bdd9c8e5f8b9e5aa264e732473b0621a8b899ddf2c708d80b442c") == 0) {
+                    if (kiwi_sha256_strcmp(su_m, "df05611250593c4299da8b3216751552b5a690e44b7e1b63f419e64b5e14ed9c") == 0) {
                         auth_su = true;     // a little dodgy that we have to use a global -- be sure to reset asap
                         kiwi_strncpy(auth_su_remote_ip, remote_ip, NET_ADDRSTRLEN);
                     }
@@ -928,26 +950,24 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     // NB: Will see cases of etag_match=N but not_mod_since=Y because of %[] substitution.
     // The size in the etag is different due to the substitution, but the underlying file mtime hasn't changed.
     
-    // FIXME: Is what we do here re caching really correct? Do we need to be returning "Cache-Control: must-revalidate"?
-    
     mc->cache_info.st.st_size = edata_size + ver_size;
     if (!isAJAX) assert(mtime != 0);
     mc->cache_info.st.st_mtime = mtime;
 
     if (!(isAJAX && evt == MG_CACHE_INFO)) {		// don't print for isAJAX + MG_CACHE_INFO nop case
-        web_printf_all("%-15s %s:%05d%s size=%6d dirty=%d mtime=%lu/%lx %s %s %s%s\n", (evt == MG_CACHE_INFO)? "MG_CACHE_INFO" : "MG_REQUEST",
+        web_printf_all("%-16s %s:%05d%s size=%6d dirty=%d mtime=[%s] %s %s %s%s\n", (evt == MG_CACHE_INFO)? "MG_CACHE_INFO" : "MG_REQUEST",
             remote_ip, mc->remote_port, is_sdr_hu? "[sdr.hu]":"",
-            mc->cache_info.st.st_size, dirty, mtime, mtime, isAJAX? mc->uri : uri, mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"),
+            mc->cache_info.st.st_size, dirty, var_ctime_static(&mtime), isAJAX? mc->uri : uri, mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"),
             (mc->query_string != NULL)? "qs:" : "", (mc->query_string != NULL)? mc->query_string : "");
     }
 
     bool isImage = (suffix && (strcmp(suffix, ".png") == 0 || strcmp(suffix, ".jpg") == 0 || strcmp(suffix, ".ico") == 0));
     int rtn = MG_TRUE;
     if (evt == MG_CACHE_INFO) {
-        if (dirty || isAJAX || is_sdr_hu || web_nocache) {
-            //web_printf_all("%-15s NO CACHE %s%s\n", "MG_CACHE_INFO", is_sdr_hu? "sdr.hu " : "", uri);
-            web_printf_all("%-15s NO CACHE %s%s\n", "MG_CACHE_INFO",
-                is_sdr_hu? "sdr.hu " : "", uri);
+        if (dirty || isAJAX || is_sdr_hu || web_nocache || !webserver_caching) {
+            //web_printf_all("%-16s NO CACHE %s%s\n", "MG_CACHE_INFO", is_sdr_hu? "sdr.hu " : "", uri);
+            web_printf_all("%-16s NO CACHE %s%s%s%s\n", "MG_CACHE_INFO",
+                dirty? "dirty-%[] " : "", isAJAX? "AJAX " : "", is_sdr_hu? "sdr.hu " : "", uri);
             rtn = MG_FALSE;		// returning false here will prevent any 304 decision based on the mtime set above
         }
     } else {
@@ -967,7 +987,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
             mg_send_header(mc, "Access-Control-Allow-Origin", "*");
             hdr_type = "AJAX";
         } else
-        if (web_nocache || is_sdr_hu) {    // sdr.hu doesn't like our new caching headers for the avatar
+        if (web_nocache || !webserver_caching || is_sdr_hu) {    // sdr.hu doesn't like our new caching headers for the avatar
             mg_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"));
             hdr_type = is_sdr_hu? "SDR.HU" : "NO-CACHE";
         } else {
@@ -975,16 +995,29 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
             // Cache image files for a fixed amount of time to keep, e.g.,
             // GPS az/el img from flashing on periodic re-render with Safari.
             //mg_send_header(mc, "Cache-Control", "max-age=0");
-            mg_send_header(mc, "Cache-Control", isImage? "max-age=31536000":"max-age=0");
+            //mg_send_header(mc, "Cache-Control", isImage? "max-age=31536000":"max-age=0");
+            mg_send_header(mc, "Cache-Control", isImage? "max-age=31536000":"max-age=0, must-revalidate");
             hdr_type = isImage? "CACHE-IMAGE" : "CACHE-REVAL";
         }
         
         if (is_gzip) mg_send_header(mc, "Content-Encoding", "gzip");
         
-        web_printf_all("%-15s %11s %s%s\n", "sending", hdr_type, is_min? "MIN ":"", is_gzip? "GZIP":"");
+        web_printf_all("%-16s %11s %s%s\n", "sending", hdr_type, is_min? "MIN ":"", is_gzip? "GZIP":"");
 
-        web_printf_sent("webserver %6d %11s %4s %3s %4s %s\n", edata_size, hdr_type,
-            is_file? "FILE":"", is_min? "MIN":"", is_gzip? "GZIP":"", uri);
+        web_printf_sent("%-16s %6d %11s %4s %3s %4s %c%c|%c%c ", "webserver", edata_size, hdr_type,
+            is_file? "FILE":"", is_min? "MIN":"", is_gzip? "GZIP":"",
+            mc->cache_info.if_none_match? 'T':'F', mc->cache_info.etag_match? 'T':'F',
+            mc->cache_info.if_mod_since? 'T':'F', mc->cache_info.not_mod_since? 'T':'F');
+        if (web_caching_debug & WEB_CACHING_DEBUG_SENT) {
+            if (mc->cache_info.if_none_match && !mc->cache_info.etag_match)
+                web_printf_sent("%s %s ", mc->cache_info.etag_server, mc->cache_info.etag_client);
+            if (mc->cache_info.if_mod_since && !mc->cache_info.not_mod_since) {
+	            // two web_printf_all() due to var_ctime_static()
+                web_printf_sent("%s ", var_ctime_static(&mc->cache_info.server_mtime));
+                web_printf_sent("%s ", var_ctime_static(&mc->cache_info.client_mtime));
+            }
+        }
+        web_printf_sent("%s\n", uri);
         
         //if (is_sdr_hu) mg_send_header(mc, "Content-Length", stprintf("%d", edata_size));
         

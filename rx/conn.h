@@ -60,13 +60,13 @@ typedef struct conn_st {
 	user_iface_t *ui;
 
 	// set in STREAM_SOUND or STREAM_WATERFALL (WF-only connections)
-	bool arrived;
+	bool ident, arrived;
 	char *user;
 	bool isUserIP;
 
 	// set only in STREAM_SOUND
 	bool snd_cmd_recv_ok;
-	bool inactivity_timeout, inactivity_timeout_override;
+	bool inactivity_timeout;
 	int freqHz, last_freqHz;
 	int mode, last_mode;
 	int zoom, last_zoom;	// zoom set in both
@@ -75,6 +75,8 @@ typedef struct conn_st {
 	float half_bw;
 	TYPECPX last_sample;
 	char *pref_id, *pref;
+	bool is_locked;
+	bool ext_api;
 	
 	// set only in STREAM_WATERFALL
 	bool wf_cmd_recv_ok;

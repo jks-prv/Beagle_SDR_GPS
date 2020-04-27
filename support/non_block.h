@@ -44,6 +44,9 @@ typedef struct {
 #define POLL_MSEC(n)    (n)
 
 int child_task(const char *pname, funcP_t func, int poll_msec=0, void *param=NULL);
+void child_exit(int rv);
+#define NO_ERROR_EXIT false
+int child_status_exit(int status, bool error_exit = true);
 void register_zombie(pid_t child_pid);
 void cull_zombies();
 

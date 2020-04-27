@@ -32,12 +32,17 @@ Boston, MA  02110-1301, USA.
 #include "spi_dev.h"
 #include "gps.h"
 #include "coroutines.h"
-#include "debug.h"
 #include "cfg.h"
 #include "net.h"
 #include "ext_int.h"
 #include "sanitizer.h"
 #include "shmem.h"
+
+#include "debug.h"
+
+#ifdef EV_MEAS
+    #warning NB: EV_MEAS is enabled
+#endif
 
 #include <string.h>
 #include <stdio.h>
@@ -58,27 +63,31 @@ int fw_sel, fpga_id, rx_chans, wf_chans, nrx_bufs, nrx_samps, nrx_samps_loop, nr
 int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, tone, down,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, do_slice=-1,
 	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num, wf_num,
-	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns=1, debian_ver,
+	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, debian_ver,
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
 	color_map, print_stats, ecpu_cmds, ecpu_tcmds, use_spidev, debian_maj, debian_min,
-	gps_debug, gps_var, gps_lo_gain, gps_cg_gain, use_foptim;
+	gps_debug, gps_var, gps_lo_gain, gps_cg_gain, use_foptim, is_locked, drm_nreg_chans;
 
 u4_t ov_mask, snd_intr_usec;
 
-bool create_eeprom, need_hardware, no_net, test_flag, sdr_hu_debug, have_ant_switch_ext, gps_e1b_only,
-    disable_led_task;
+bool create_eeprom, need_hardware, test_flag, sdr_hu_debug, have_ant_switch_ext, gps_e1b_only,
+    disable_led_task, is_BBAI, kiwi_restart, debug_printfs;
 
 char **main_argv;
+char *fpga_file;
 
 int main(int argc, char *argv[])
 {
-	u2_t *up;
 	int i;
 	int p_gps=0;
 	bool ext_clk = false;
 	
 	version_maj = VERSION_MAJ;
 	version_min = VERSION_MIN;
+	
+	#ifdef CPU_AM5729
+	    is_BBAI = true;
+	#endif
 	
 	main_argv = argv;
 	
@@ -112,6 +121,7 @@ int main(int argc, char *argv[])
 		if (strcmp(argv[i], "+sdr")==0) do_sdr = 1;
 		if (strcmp(argv[i], "-sdr")==0) do_sdr = 0;
 		if (strcmp(argv[i], "+fft")==0) do_fft = 1;
+		if (strcmp(argv[i], "-debug")==0) debug_printfs = true;
 
 		if (strcmp(argv[i], "-gps_debug")==0) {
 		    errno = 0;
@@ -198,7 +208,7 @@ int main(int argc, char *argv[])
 	
 	lprintf("KiwiSDR v%d.%d --------------------------------------------------------------------\n",
 		version_maj, version_min);
-    lprintf("compiled: %s %s\n", __DATE__, __TIME__);
+    lprintf("compiled: %s %s on %s\n", __DATE__, __TIME__, COMPILE_HOST);
     if (debian_ver) lprintf("-debian %d\n", debian_ver);
     char *reply = read_file_string_reply("/etc/debian_version");
     if (reply != NULL) {
@@ -222,14 +232,18 @@ int main(int argc, char *argv[])
     assert (NOT_FOUND != TRUE);
     assert (NOT_FOUND != FALSE);
     
+    struct stat st;
+    debug_printfs |= (stat(DIR_CFG "/opt.debug", &st) == 0);
+
+    // on reboot let ntpd and other stuff settle first
     if (background_mode) {
-    	lprintf("background mode: delaying start 30 secs...\n");
-    	sleep(30);
+        lprintf("background mode: delaying start 30 secs...\n");
+        sleep(30);
     }
     
 
 	TaskInit();
-    cfg_reload(CALLED_FROM_MAIN);
+    cfg_reload();
     clock_init();
 
     bool err;
@@ -281,6 +295,8 @@ int main(int argc, char *argv[])
         lprintf("firmware: GPS_ONLY\n");
     } else
         panic("fw_sel");
+    
+    asprintf(&fpga_file, "rx%d.wf%d", rx_chans, wf_chans);
     
     bool no_wf = cfg_bool("no_wf", &err, CFG_OPTIONAL);
     if (err) no_wf = false;
@@ -335,14 +351,14 @@ int main(int argc, char *argv[])
 		ctrl_clr_set(CTRL_DNA_CLK | CTRL_DNA_SHIFT, CTRL_DNA_READ);
 		ctrl_positive_pulse(CTRL_DNA_CLK);
 		ctrl_clr_set(CTRL_DNA_CLK | CTRL_DNA_READ, CTRL_DNA_SHIFT);
-		ddns.dna = 0;
+		net.dna = 0;
 		for (int i=0; i < 64; i++) {
 		    stat_reg_t stat = stat_get();
-		    ddns.dna = (ddns.dna << 1) | ((stat.word & STAT_DNA_DATA)? 1ULL : 0ULL);
+		    net.dna = (net.dna << 1) | ((stat.word & STAT_DNA_DATA)? 1ULL : 0ULL);
 		    ctrl_positive_pulse(CTRL_DNA_CLK);
 		}
 		ctrl_clr_set(CTRL_DNA_CLK | CTRL_DNA_READ | CTRL_DNA_SHIFT, 0);
-		printf("device DNA %08x|%08x\n", PRINTF_U64_ARG(ddns.dna));
+		printf("device DNA %08x|%08x\n", PRINTF_U64_ARG(net.dna));
 	}
 	
 	if (do_fft) {
@@ -374,5 +390,9 @@ int main(int argc, char *argv[])
 		TaskCheckStacks(false);
 
 		TaskSleepReasonSec("main loop", 10);
+		
+		#ifdef USE_ASAN
+		    if (kiwi_restart) kiwi_exit(0);
+		#endif
 	}
 }

@@ -55,7 +55,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 	
 	if (*uri == '/') uri++;
 	
-	for (st=streams; st->uri; st++) {
+	for (st = rx_streams; st->uri; st++) {
 		if (strcmp(uri, st->uri) == 0)
 			break;
 	}
@@ -84,9 +84,14 @@ char *rx_server_ajax(struct mg_connection *mc)
 		return NULL;
 	}
 	
+	// iptables will stop regular connection attempts from a blacklisted ip.
+	// But when proxied we need to check the forwarded ip address.
+	// Note that this code always sets remote_ip[] as a side-effect for later use (the real client ip).
 	char remote_ip[NET_ADDRSTRLEN];
-    if (check_if_forwarded("AJAX", mc, remote_ip) && check_ip_blacklist(remote_ip))
+    if (check_if_forwarded("AJAX", mc, remote_ip) && check_ip_blacklist(remote_ip)) {
+		lprintf("AJAX: IP BLACKLISTED: url=<%s> qs=<%s>\n", uri, mc->query_string);
     	return NULL;
+    }
 
 	switch (st->type) {
 	
@@ -159,7 +164,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 	case AJAX_DISCOVERY:
 		if (!isLocal_ip(remote_ip)) return (char *) -1;
 		asprintf(&sb, "%d %s %s %d %d %s",
-			ddns.serno, ddns.ip_pub, ddns.ip_pvt, ddns.port, ddns.nm_bits, ddns.mac);
+			net.serno, net.ip_pub, net.ip_pvt, net.port, net.nm_bits, net.mac);
 		printf("/DIS REQUESTED from %s: <%s>\n", remote_ip, sb);
 		break;
 
@@ -193,15 +198,15 @@ char *rx_server_ajax(struct mg_connection *mc)
 		
 		const char *s1, *s3, *s4, *s5, *s6, *s7;
 		
-		// if location hasn't been changed from the default try using DDNS lat/log
+		// if location hasn't been changed from the default try using ipinfo lat/log
 		// or, failing that, put us in Antarctica to be noticed
 		s4 = cfg_string("rx_gps", NULL, CFG_OPTIONAL);
 		const char *gps_loc;
-		char *ddns_lat_lon = NULL;
+		char *ipinfo_lat_lon = NULL;
 		if (strcmp(s4, "(-37.631120, 176.172210)") == 0) {
-			if (ddns.lat_lon_valid) {
-				asprintf(&ddns_lat_lon, "(%lf, %lf)", ddns.lat, ddns.lon);
-				gps_loc = ddns_lat_lon;
+			if (gps.ipinfo_ll_valid) {
+				asprintf(&ipinfo_lat_lon, "(%f, %f)", gps.ipinfo_lat, gps.ipinfo_lon);
+				gps_loc = ipinfo_lat_lon;
 			} else {
 				gps_loc = "(-69.0, 90.0)";		// Antarctica
 			}
@@ -280,8 +285,13 @@ char *rx_server_ajax(struct mg_connection *mc)
 		bool has_masked = (dx.masked_len > 0);
 		bool has_limits = (has_tlimit || has_masked);
 		
+		bool error;
+		bool DRM_enable = cfg_bool("DRM.enable", &error, CFG_OPTIONAL);
+		if (error) DRM_enable = true;
+		bool have_DRM_ext = (DRM_enable && (snd_rate == SND_RATE_4CH));
+		
 		asprintf(&sb, "status=%s\noffline=%s\nname=%s\nsdr_hw=KiwiSDR v%d.%d"
-			"%s%s%s%s%s%s%s ⁣\n"
+			"%s%s%s%s%s%s%s%s ⁣\n"
 			"op_email=%s\nbands=%.0f-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\n"
 			"gps=%s\ngps_good=%d\nfixes=%d\nfixes_min=%d\nfixes_hour=%d\n"
 			"tdoa_id=%s\ntdoa_ch=%d\n"
@@ -307,6 +317,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			has_tlimit?						"⏳" : "",
 			has_masked?						"🚫" : "",
 			has_limits?						" LIMITS" : "",
+			have_DRM_ext?					" ⁣ 📻 DRM" : "",
 			have_ant_switch_ext?			" ⁣ 📶 ANT-SWITCH" : "",
 
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
@@ -323,7 +334,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			);
 
 		free(name);
-		free(ddns_lat_lon);
+		free(ipinfo_lat_lon);
 		cfg_string_free(s3);
 		cfg_string_free(s4);
 		cfg_string_free(s5);

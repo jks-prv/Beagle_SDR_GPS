@@ -27,6 +27,32 @@ Boston, MA  02110-1301, USA.
 #include <arpa/inet.h>
 #include <netdb.h>
 
+// backup values only if dig lookup fails
+#define KIWISDR_COM_PUBLIC_IP   "50.116.2.70"
+#define SDR_HU_PUBLIC_IP        "167.99.214.222"
+#define GITHUB_COM_PUBLIC_IP    "192.30.253.112"
+
+#define NET_DEBUG
+#ifdef NET_DEBUG
+	#define net_printf(fmt, ...) \
+	    if (debug_printfs) lprintf("NET(%d) DEBUG " fmt, retry, ## __VA_ARGS__)
+	#define net_printf2(fmt, ...) \
+	    if (debug_printfs) lprintf(fmt, ## __VA_ARGS__)
+#else
+	#define net_printf(fmt, ...)
+	#define net_printf2(fmt, ...)
+#endif
+
+#define NET_WAIT_COND(caller, from, cond) \
+    if (!(cond)) { \
+        net_printf2("NET_WAIT_COND %s %s(%s): waiting...\n", #cond, caller, from); \
+        while (!(cond)) \
+            TaskSleepSec(5); \
+        net_printf2("NET_WAIT_COND %s %s(%s): ...wakeup\n", #cond, caller, from); \
+    }
+
+typedef enum { IPV_NONE = 0, IPV4 = 4, IPV6 = 6 } ipv46_e;
+
 // dot to host (little-endian) conversion
 #define INET4_DTOH(a, b, c, d) \
 	( (((a)&0xff)<<24) | (((b)&0xff)<<16) | (((c)&0xff)<<8) | ((d)&0xff) )
@@ -47,23 +73,32 @@ typedef struct {
 } ip_lookup_t;
 
 typedef struct {
-	bool valid, pub_valid;
-	int auto_nat;
-	u4_t serno;
-    u64_t dna;
-	char ip_pub[NET_ADDRSTRLEN];
-	int port, port_ext;
-	char mac[64];
-	
-	ip_lookup_t pub_ips;
-	bool pub_server;	// this kiwi is one of the public.kiwisdr.com servers
-	
-	bool lat_lon_valid;
-	double lat, lon;
+    // set by init_NET()
+	ipv46_e pvt_valid;
 
 	// set by find_local_IPs()
 	char *ip_pvt;
 	int nm_bits;
+	
+	// set by ipinfo_json()
+	bool pub_valid;
+	char ip_pub[NET_ADDRSTRLEN];
+	int port, port_ext;
+
+    bool mac_valid;
+	char mac[64];
+	
+	bool auto_nat_valid;
+	int auto_nat;
+	
+	u4_t serno;
+    u64_t dna;
+    
+    int proxy_status, DUC_status;
+	
+	// public.kiwisdr.com servers used to implement user prefs
+	ip_lookup_t pub_ips;
+	bool pub_server;	// this kiwi is one of the public.kiwisdr.com servers
 	
 	// IPv4
 	bool ip4_valid;
@@ -99,11 +134,7 @@ typedef struct {
 	u1_t ip6LL_pvt[16];
 	u1_t netmask6LL[16];
 	int nm_bits6LL;
-} ddns_t;
 
-extern ddns_t ddns;
-
-typedef struct {
     ip_lookup_t ips_kiwisdr_com, ips_sdr_hu;
     
     #define N_IP_BLACKLIST 64
@@ -112,20 +143,24 @@ typedef struct {
     u4_t ipv4_blacklist_nm[N_IP_BLACKLIST];
 } net_t;
 
-extern net_t net;
+// (net_t) net located in shmem for benefit of e.g. led task
+// #include needs to be below definition of net_t
+#include "shmem.h"
+#define net shmem->net_shmem
 
 typedef enum { IS_NOT_LOCAL, IS_LOCAL, NO_LOCAL_IF } isLocal_t;
 // "struct conn_st" because of forward reference from inclusion by conn.h
 struct conn_st;
 isLocal_t isLocal_if_ip(struct conn_st *conn, char *ip_addr, const char *log_prefix);
 
-bool find_local_IPs();
+bool find_local_IPs(int retry);
 u4_t inet4_d2h(char *inet4_str, bool *error, u4_t *ap, u4_t *bp, u4_t *cp, u4_t *dp);
 bool is_inet4_map_6(u1_t *a);
 int inet_nm_bits(int family, void *netmask);
 bool isLocal_ip(char *ip);
 
 int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const char *ip_backup);
+char *DNS_lookup_result(const char *caller, const char *host, ip_lookup_t *ips);
 bool ip_match(const char *ip, ip_lookup_t *ips);
 
 char *ip_remote(struct mg_connection *mc);

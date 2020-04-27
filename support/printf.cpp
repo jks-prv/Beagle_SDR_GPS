@@ -27,12 +27,19 @@
 static bool log_foreground_mode = false;
 static bool log_ordinary_printfs = false;
 
-void xit(int err)
+void kiwi_exit_dont_use(int err)
+{
+    panic("don't use exit() -- use kiwi_exit() instead");
+}
+
+void kiwi_exit(int err)
 {
 	fflush(stdout);
 	spin_ms(1000);	// needed for syslog messages to be properly recorded
 	closelog();
-	exit(err);
+    #undef exit
+        exit(err);
+    #define exit ALT_EXIT
 }
 
 void kiwi_backtrace(const char *id, u4_t printf_type)
@@ -68,7 +75,7 @@ void _panic(const char *str, bool coreFile, const char *file, int line)
 	printf("%s\n", buf);
 	kiwi_backtrace("panic");
 	if (coreFile) abort();
-	xit(-1);
+	kiwi_exit(-1);
 }
 
 void _sys_panic(const char *str, const char *file, int line)
@@ -84,7 +91,7 @@ void _sys_panic(const char *str, const char *file, int line)
 	
 	printf("%s %s\n", buf, strerror(errno));
 	kiwi_backtrace("sys_panic");
-	xit(-1);
+	kiwi_exit(-1);
 }
 
 // NB: when debugging use real_printf() to avoid loops!

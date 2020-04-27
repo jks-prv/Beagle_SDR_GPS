@@ -1,15 +1,16 @@
 // Copyright (c) 2016 John Seamons, ZL/KF6VO
 
-var devl_ext_name = 'devl';		// NB: must match devl.c:devl_ext.name
-
-var devl_first_time = true;
+var devl = {
+   ext_name: 'devl',    // NB: must match iq.c:iq_display_ext.name
+   first_time: true,
+};
 
 function devl_main()
 {
-	ext_switch_to_client(devl_ext_name, devl_first_time, devl_recv);		// tell server to use us (again)
-	if (!devl_first_time)
+	ext_switch_to_client(devl.ext_name, devl.first_time, devl_recv);		// tell server to use us (again)
+	if (!devl.first_time)
 		devl_controls_setup();
-	devl_first_time = false;
+	devl.first_time = false;
 }
 
 function devl_recv(data)
@@ -86,3 +87,11 @@ function devl_controls_setup()
 	ext_panel_show(controls_html, null, null);
 	ext_set_controls_width_height(null, 250);
 }
+
+/*
+// called to display HTML for configuration parameters in admin interface
+function devl_display_config_html()
+{
+   ext_config_html(devl, 'devl', 'devl', 'development controls configuration');
+}
+*/

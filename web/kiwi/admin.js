@@ -5,7 +5,8 @@
 //		NTP status?
 
 var admin = {
-   BBAI:    false
+   BBAI: false,
+   reg_status: {}
 };
 
 
@@ -229,17 +230,37 @@ function control_html()
 			)
       );
 
+   // Let cfg.ext_api_nchans retain values > rx_chans if it was set when another configuration
+   // was used. Just clamp the menu value to the current rx_chans;
+	var ext_api_ch = ext_get_cfg_param('ext_api_nchans', -1);
+	if (ext_api_ch == -1) ext_api_ch = rx_chans;      // has never been set
+	var ext_api_nchans = Math.min(ext_api_ch, rx_chans);
+   var ext_api_chans_u = { 0:'none' };
+   for (var i = 1; i <= rx_chans; i++)
+      ext_api_chans_u[i] = i.toFixed(0);
+
 	var s2 =
 		'<hr>' +
-		w3_third('', 'w3-container w3-valign',
+		w3_inline_percent('w3-container w3-valign',
 			w3_divs('w3-center w3-tspace-8',
-				w3_div('', '<b>Enable user connections?</b>'),
+				w3_div('', '<b>Enable user<br>connections?</b>'),
             w3_switch('', 'Yes', 'No', 'adm.server_enabled', adm.server_enabled, 'server_enabled_cb')
-			),
+			), 15,
+			
 			w3_divs('w3-center w3-tspace-8',
-				w3_div('', '<b>Close all active user connections</b>'),
+				w3_div('', '<b>Close all active<br>user connections</b>'),
 				w3_button('w3-red', 'Kick', 'control_user_kick_cb')
-			),
+			), 15,
+
+         w3_div('w3-center',
+            w3_select('', 'Number of simultaneous channels available<br>for connection by non-Kiwi apps',
+               '', 'ext_api_nchans', ext_api_nchans, ext_api_chans_u, 'admin_select_cb'),
+            w3_div('w3-margin-T-8 w3-text-black',
+               'If you want to limit incoming connections from <br> non-Kiwi apps like kiwirecorder set this value. <br>' +
+               'This overrides similar value in TDoA extension settings.'
+            )
+         ), 35,
+
 			w3_divs('w3-restart/w3-center w3-tspace-8',
 				w3_div('', '<b>Disable waterfalls/spectrum?</b>'),
             w3_switch('', 'Yes', 'No', 'cfg.no_wf', cfg.no_wf, 'admin_radio_YN_cb'),
@@ -247,7 +268,7 @@ function control_html()
 				   'Set "yes" to save Internet bandwidth by preventing <br>' +
 				   'the waterfall and spectrum from being displayed.'
 				)
-			)
+			), 35
 		) +
 		w3_div('w3-container w3-margin-top',
 			w3_input_get('', 'Reason if disabled', 'reason_disabled', 'reason_disabled_cb', '', 'will be shown to users attempting to connect')
@@ -489,8 +510,8 @@ function connect_html()
 		);
 
    var s4 =
-		'<hr>' +
-		w3_divs('/w3-tspace-8',
+      '<hr>' +
+      w3_divs('/w3-tspace-8',
          w3_div('w3-container w3-valign',
             '<header class="w3-container w3-yellow"><h6>' +
             'Please read these instructions before use: ' +
@@ -500,12 +521,12 @@ function connect_html()
 
 			w3_col_percent('w3-text-teal/w3-container',
 			   w3_div('w3-text-teal w3-bold', 'Reverse proxy configuration'), 50,
-				w3_div('w3-text-teal w3-bold w3-center w3-light-grey', 'Proxy information for kiwisdr.com'), 50
+				w3_div('id-proxy-hdr w3-text-teal w3-bold w3-center w3-light-grey', 'Proxy information for proxy.kiwisdr.com'), 50
 			),
 			
 			w3_col_percent('w3-text-teal/w3-container',
 				w3_div(), 50,
-				w3_input_get('', 'User key (same as sdr.hu API key, see instructions)',
+				w3_input_get('', 'User key (see instructions)',
 				   'adm.rev_user', 'w3_string_set_cfg_cb', '', 'required'
 				), 50
 			),
@@ -518,13 +539,13 @@ function connect_html()
 					)
 				), 50,
 				
-				w3_div('',
+			w3_div('',
                w3_div('w3-show-inline-block|width:60%;',
                   w3_input_get('', 'Host name (your choice, see instructions)',
                      'adm.rev_host', 'connect_rev_host_cb', '', 'required'
                   )
                ) +
-               w3_div('id-connect-rev-url w3-show-inline-block', '.proxy.kiwisdr.com')
+               w3_div('id-connect-proxy_server w3-show-inline-block')
             ), 50
 			),
 			
@@ -540,18 +561,19 @@ function connect_html()
 
 function connect_focus()
 {
-   connect.focus = 1;
-   connect_update_url();
-	ext_send('SET DUC_status_query');
-	ext_send('SET rev_status_query');
+    connect.focus = 1;
+    connect_update_url();
+	w3_el('id-proxy-hdr').innerHTML = 'Proxy information for '+ adm.proxy_server;
+    ext_send('SET DUC_status_query');
+	
+	if (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)
+	   ext_send('SET rev_status_query');
 }
 
 function connect_blur()
 {
    connect.focus = 0;
 }
-
-var connect_rev_server = -1;
 
 function connect_update_url()
 {
@@ -562,13 +584,12 @@ function connect_update_url()
 	w3_el('id-connect-duc-dom').innerHTML = 'Use domain name from DUC configuration below: ' +
 	   w3_div('w3-show-inline-block w3-text-black '+ ok_color, ok? adm.duc_host : '(none currently set)');
 
-   var server = (connect_rev_server == -1)? '' : connect_rev_server;
-   var rev_server_url = '.proxy'+ server +'.kiwisdr.com';
    ok = (adm.rev_host && adm.rev_host != '');
    ok_color = ok? 'w3-background-pale-aqua' : 'w3-override-yellow';
+   var rev_host_fqdn = ok? (adm.rev_host +'.'+ adm.proxy_server) : '(none currently set)';
 	w3_el('id-connect-rev-dom').innerHTML = 'Use domain name from reverse proxy configuration below: ' +
-	   w3_div('w3-show-inline-block w3-text-black '+ ok_color, ok? (adm.rev_host + rev_server_url) : '(none currently set)');
-	w3_el('id-connect-rev-url').innerHTML = rev_server_url;
+	   w3_div('w3-show-inline-block w3-text-black '+ ok_color, rev_host_fqdn);
+	w3_el('id-connect-proxy_server').innerHTML = '.'+ adm.proxy_server;
 
    ok = config_net.pub_ip;
    ok_color = ok? 'w3-background-pale-aqua' : 'w3-override-yellow';
@@ -578,14 +599,15 @@ function connect_update_url()
    var host = decodeURIComponent(cfg.server_url);
    var host_and_port = host;
    
-   //console.log('connect_update_url: sdr_hu_dom_sel='+ cfg.sdr_hu_dom_sel +' REV='+ connect_dom_sel.REV +' host_and_port='+ host_and_port);
+   //console.log('connect_update_url: sdr_hu_dom_sel='+ cfg.sdr_hu_dom_sel +' REV='+ connect_dom_sel.REV +' host='+ host_and_port +' port_ext='+ adm.port_ext);
+
    if (cfg.sdr_hu_dom_sel != connect_dom_sel.REV) {
-      host_and_port += ':'+ config_net.pub_port;
+      host_and_port += ':'+ adm.port_ext;
       w3_set_label('Based on above selection, and external port from Network tab, the URL to connect to your Kiwi is:', 'connect-url-text');
    } else {
       host_and_port += ':8073';
-      if (config_net.pub_port != 8073)
-         host_and_port += ' (proxy always uses port 8073 even though your external port is '+ config_net.pub_port +')';
+      if (adm.port_ext != 8073)
+         host_and_port += ' (proxy always uses port 8073 even though your external port is '+ adm.port_ext +')';
       w3_set_label('Based on the above selection the URL to connect to your Kiwi is:', 'connect-url-text');
    }
    
@@ -614,8 +636,7 @@ function connect_dom_duc_focus()
 
 function connect_dom_rev_focus()
 {
-   var server = (connect_rev_server == -1)? '' : connect_rev_server;
-   var dom = (adm.rev_host == '')? '' : (adm.rev_host + '.proxy'+ server +'.kiwisdr.com');
+   var dom = (adm.rev_host == '')? '' : (adm.rev_host +'.'+ adm.proxy_server);
    console.log('connect_dom_rev_focus server_url='+ dom);
 	ext_set_cfg_param('cfg.server_url', dom, true);
 	ext_set_cfg_param('cfg.sdr_hu_dom_sel', connect_dom_sel.REV, true);
@@ -719,6 +740,7 @@ function connect_DUC_start_cb(id, idx)
 	var s = '-u '+ sq(decodeURIComponent(adm.duc_user)) +' -p '+ sq(decodeURIComponent(adm.duc_pass)) +
 	   ' -H '+ sq(decodeURIComponent(adm.duc_host)) +' -U '+ duc_update_v[adm.duc_update];
 	console.log('start DUC: '+ s);
+	w3_innerHTML('id-net-duc-status', '');
 	ext_send('SET DUC_start args='+ encodeURIComponent(s));
 }
 
@@ -783,9 +805,6 @@ function connect_rev_status_cb(status)
 	var s;
 	
 	if (status >= 0 && status <= 99 && cfg.sdr_hu_dom_sel == connect_dom_sel.REV) {
-	   // jks-proxy
-      //connect_rev_server = status & 0xf;
-      //status = status >> 4;
       connect_dom_rev_focus();
    }
 	
@@ -799,7 +818,8 @@ function connect_rev_status_cb(status)
 		case 103: s = 'Invalid characters in user key or host name field (use a-z, 0-9, -, _)'; break;
 		case 200: s = 'Reverse proxy enabled and running'; break;
 		case 201: s = 'Reverse proxy enabled and pending'; break;
-		case 900: s = 'Problem contacting proxy.kiwisdr.com; please check Internet connection'; break;
+		case 900: s = 'Problem contacting proxy server; please check Internet connection'; break;
+		case 901: s = 'Proxy server returned invalid status data?'; break;
 		default:  s = 'Reverse proxy internal error: '+ status; break;
 	}
 	
@@ -816,7 +836,7 @@ function connect_rev_status_cb(status)
 // all in admin_sdr.js
 // config
 // webpage
-// sdr.hu
+// public
 // dx
 ////////////////////////////////
 
@@ -1096,7 +1116,7 @@ function network_html()
             w3_label('w3-bold w3-text-teal', 'Register this Kiwi on my.kiwisdr.com<br>on each reboot?<br>'),
             w3_switch('w3-margin-T-8 w3-margin-B-8', 'Yes', 'No', 'adm.my_kiwi', adm.my_kiwi, 'admin_radio_YN_cb'),
             w3_text('w3-block w3-center w3-text-black',
-               'Registering on my.kiwisdr.com allows the local ip address of Kiwis <br>' +
+               'Registering on <a href="http://my.kiwisdr.com" target="_blank">my.kiwisdr.com</a> allows the local ip address of Kiwis <br>' +
                'to be easily discovered. Set to "no" if you don\'t want your Kiwi <br>' +
                'sending information to kiwisdr.com. Defaults to "yes".'
             )
@@ -1123,9 +1143,19 @@ function network_html()
          w3_label('w3-show-inline-block w3-margin-R-16 w3-margin-T-8 w3-text-teal', 'Status:') +
          w3_div('id-ip-blacklist-status w3-show-inline-block w3-text-black w3-background-pale-aqua', '')
       ) +
-		'<hr>' +
-		w3_div('w3-container', 'TODO: throttle #chan MB/dy GB/mo, hostname') +
-		'<hr>';
+
+    '<hr>' +
+    w3_half('w3-margin-bottom w3-text-teal', 'w3-container',
+        w3_div('w3-restart',
+            w3_input_get('id-proxy-server', 'Proxy server hostname', 'adm.proxy_server', 'network_proxy_server_cb'),
+            w3_div('w3-text-black',
+               'Change <b>only</b> if you have implemented a private proxy server. <br>' +
+               'Set to "proxy.kiwisdr.com" for the default proxy service.'
+            )
+        ),
+        w3_div()
+    ) +
+    '<hr>';
 
 	// FIXME replace this with general instantiation call from w3_input()
 	setTimeout(function() {
@@ -1134,6 +1164,16 @@ function network_html()
 	}, 500);
 	
 	return w3_div('id-network w3-hide', s1 + s2 + s3);
+}
+
+function network_proxy_server_cb(path, val)
+{
+   val = val.trim();
+   if (val == '') {
+      val = 'proxy.kiwisdr.com';
+      w3_set_value('id-proxy-server', val);
+   }
+	w3_string_set_cfg_cb(path, val);
 }
 
 function network_ip_blacklist_cb(path, val)
@@ -1179,13 +1219,13 @@ function network_ethernet_speed(path, idx, first)
 function network_port_open_init()
 {
    // proxy always uses port 8073
-	var port = (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)? 8073 : config_net.pub_port;
+	var port = (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)? 8073 : adm.port_ext;
 	w3_el('id-net-check-port-dom-q').innerHTML =
 	   (cfg.server_url != '')?
 	      'http://'+ cfg.server_url +':'+ port +' :' :
 	      '(incomplete information -- on "connect" tab please use a valid setting in menu) :';
 	w3_el('id-net-check-port-ip-q').innerHTML =
-	   'http://'+ config_net.pvt_ip +':'+ config_net.pub_port +' :';
+	   'http://'+ config_net.pvt_ip +':'+ adm.port_ext +' :';
    w3_el('id-net-check-port-dom-s').innerHTML = '';
    w3_el('id-net-check-port-ip-s').innerHTML = '';
 }
@@ -1403,7 +1443,7 @@ var _gps = {
    leaflet: true,
    gps_map_loaded: false,
    pkgs_maps_js: [ 'pkgs_maps/pkgs_maps.js', 'pkgs_maps/pkgs_maps.css' ],
-   gmap_js: ['http://maps.googleapis.com/maps/api/js?key=AIzaSyCtWThmj37c62a1qYzYUjlA0XUVC_lG8B8'],
+   gmap_js: ['http://maps.googleapis.com/maps/api/js?key='],
 
    RSSI:0, AZEL:1, POS:2, MAP:3, IQ:4,
    IQ_data: null,
@@ -1506,7 +1546,7 @@ function gps_html()
 
 	   w3_div('w3-valign',
          w3_div('id-gps-loading-maps w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue|width:100%',
-            'loading maps...'
+            'loading map...'
          ),
          w3_div('id-gps-channels w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue|width:100%',
             w3_table('id-gps-ch w3-table-6-8 w3-striped')
@@ -1757,7 +1797,7 @@ function gps_update_admin_cb()
 			w3_table_cells('w3-center', (cn == gps.FFTch)? refresh_icon:'') +
 			w3_table_cells('w3-right-align',
 				prn? (prn_pre + prn):'',
-				ch.snr? ch.snr:'',
+				ch.snr? ch.snr:''
 				//ch.rssi? ch.gain:'',
 			) +
 			w3_table_cells('w3-right-align'+ (ch.old? ' w3-text-red w3-bold':''), ch.age) +
@@ -1809,7 +1849,7 @@ function gps_update_admin_cb()
             cells +=
                w3_table_cells('|vertical-align:top;position:relative;|rowspan='+ gps.ch.length,
                   w3_div('w3-hcenter',
-                     '<canvas id="id-gps-canvas" width="400" height="400" style="position:absolute; z-index:2"></canvas>'
+                     '<canvas id="id-gps-canvas" width="400" height="400" style="position:absolute; z-index:2; pointer-events:none"></canvas>'
                   )
                );
          }
@@ -1870,32 +1910,77 @@ function gps_update_admin_cb()
 
       if (!_gps.map_init && !_gps.map_needs_height) {
          if (_gps.leaflet) {
-            var map_tiles = function(map_style) {
-               return L.mapboxGL({
-                  attribution: '<a href="https://www.maptiler.com/license/maps/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
-                  accessToken: 'not-needed',
-                  style: 'https://api.maptiler.com/maps/'+ map_style +'/style.json'+ _gps.a
-               });
+            var map_tiles;
+            maxZoom = 19;
+            var server_e = { MapTiler_Vector:0, MapTiler_Raster_512:1, MapTiler_Raster_256:2, OSM_Raster:3 };
+            var server = server_e.OSM_Raster;
+
+            // MapTiler vector tiles using LeafletGL/MapBoxGL
+            if (server == server_e.MapTiler_Vector) {
+               map_tiles = function(map_style) {
+                  return L.mapboxGL({
+                     attribution: '<a href="https://www.maptiler.com/license/maps/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
+                     accessToken: 'not-needed',
+                     style: 'https://api.maptiler.com/maps/'+ map_style +'/style.json'+ _gps.a
+                  });
+               }
             }
+
+            // MapTiler 512/256 px raster tiles
+            if (server == server_e.MapTiler_Raster_512 || server == server_e.MapTiler_Raster_256) {
+               var slash_256 = (server == server_e.MapTiler_Raster_256)? '/256':'';
+               map_tiles = function(map_style) {
+                  return L.tileLayer(
+                     (map_style == 'hybrid')?
+                        'https://api.maptiler.com/maps/'+ map_style + slash_256 +'/{z}/{x}/{y}{r}.jpg'+ _gps.a
+                     :
+                        'https://api.maptiler.com/maps/'+ map_style + slash_256 +'/{z}/{x}/{y}.png'+ _gps.a, {
+                     tileSize: (server == server_e.MapTiler_Raster_256)? 256 : 512,
+                     zoomOffset: (server == server_e.MapTiler_Raster_256)? 0 : -1,
+                     attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
+                     crossOrigin: true
+                  });
+               }
+            }
+
+            // OSM raster tiles
+            if (server == server_e.OSM_Raster) {
+               map_tiles = function() {
+                  maxZoom = 18;
+                  return L.tileLayer(
+                     'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                     tileSize: 256,
+                     zoomOffset: 0,
+                     attribution: '<a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
+                     crossOrigin: true
+                  });
+               }
+            }
+
+            var sat_map = map_tiles('hybrid');
             _gps.map = L.map('id-gps-map',
                {
-                  maxZoom: 19,
+                  maxZoom: maxZoom,
                   minZoom: 1,
                }
             ).setView([0, 0], 1);
-            var sat_map = map_tiles('hybrid');
             sat_map.addTo(_gps.map);
-            L.control.layers(
-               {
-                  'Satellite': sat_map,
-                  'Basic': map_tiles('basic'),
-                  'Bright': map_tiles('bright'),
-                  'Positron': map_tiles('positron'),
-                  'Street': map_tiles('streets'),
-                  'Topo': map_tiles('topo')
-               },
-               null
-            ).addTo(_gps.map);
+
+            // MapTiler map choices
+            if (server != server_e.OSM_Raster) {
+               L.control.layers(
+                  {
+                     'Satellite': sat_map,
+                     'Basic': map_tiles('basic'),
+                     'Bright': map_tiles('bright'),
+                     'Positron': map_tiles('positron'),
+                     'Street': map_tiles('streets'),
+                     'Topo': map_tiles('topo')
+                  },
+                  null
+               ).addTo(_gps.map);
+            }
+
          } else {
             var latlon = new google.maps.LatLng(0, 0);
             var map_div = w3_el('id-gps-map');
@@ -2323,7 +2408,7 @@ function log_update()
 
 // must set "remove_returns" since pty output lines are terminated with \r\n instead of \n alone
 // otherwise the \r overwrite logic in kiwi_output_msg() will be triggered
-var console_status_msg_p = { scroll_only_at_bottom: true, process_return_nexttime: false, remove_returns: true, ncol: 160 };
+var console_status_msg_p = { scroll_only_at_bottom: true, process_return_alone: true, remove_returns: true, ncol: 160 };
 
 function console_html()
 {
@@ -2548,7 +2633,7 @@ function admin_draw(sdr_mode)
          //w3_nav(admin_colors[ci++], 'Channels', 'channels', 'admin_nav') +
          w3_nav(admin_colors[ci++], 'Config', 'config', 'admin_nav') +
          w3_nav(admin_colors[ci++], 'Webpage', 'webpage', 'admin_nav') +
-         w3_nav(admin_colors[ci++], 'sdr.hu', 'sdr_hu', 'admin_nav') +
+         w3_nav(admin_colors[ci++], 'Public', 'sdr_hu', 'admin_nav') +
          w3_nav(admin_colors[ci++], 'DX', 'dx', 'admin_nav');
    s += 
       w3_nav(admin_colors[ci++], 'Update', 'update', 'admin_nav') +
@@ -2651,7 +2736,7 @@ function admin_nav_blur(id, cb_arg)
 
 var gps = null;
 
-function admin_msg(data)
+function admin_msg(param)
 {
    //console.log('admin_msg: '+ param[0]);
    switch (param[0]) {
@@ -2713,13 +2798,18 @@ function admin_msg(data)
             console.log('kiwi_msg() gps_az_el_history_cb: JSON parse fail');
             console.log(gps_az_el_json);
          }
-         break;					
+         break;
 
 		case "dx_json":
 			console.log('dx_json len='+ param[1].length);
 			dx_json(JSON.parse(param[1]));
-			break;					
+			break;
+		
+		default:
+		   return false;
    }
+   
+   return true;
 }
 
 var log_msg_idx, log_msg_not_shown = 0;
@@ -2749,7 +2839,7 @@ function admin_recv(data)
 
 			case "init":
 		      // rx_chan == rx_chans for admin connections (e.g. 4 when ch = 0..3 for user connections)
-				rx_chans = rx_chan = param[1];
+				rx_chans = rx_chan = +param[1];
 				//console.log("ADMIN init rx_chans="+rx_chans);
 				
 				if (rx_chans == -1) {
@@ -2773,8 +2863,8 @@ function admin_recv(data)
 				w3_call(ext_func, ext_param);
 				break;
 
-			case "sdr_hu_update":
-				sdr_hu_update(param[1]);
+			case "public_update":
+				public_update(param[1]);
 				break;
 
 			case "auto_nat":
@@ -2867,7 +2957,6 @@ function admin_recv(data)
 				
 			default:
 				console.log('ADMIN UNKNOWN: '+ param[0] +'='+ param[1]);
-				break;
 		}
 	}
 }

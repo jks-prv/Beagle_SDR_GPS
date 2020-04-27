@@ -2,12 +2,13 @@
 
 var tdoa = {
    ext_name:   'TDoA',  // NB: must match tdoa.cpp:tdoa_ext.name
+   first_time: true,
    hostname:  'tdoa.kiwisdr.com',
+   old_algorithm: false,
    prev_ui:    false,
    spiderfied: false,
    spiderfy_deferred: false,
    ii:         0,
-   first_time: true,
    leaflet:    true,
    w_data:     1024,
    h_data:     465,
@@ -18,7 +19,7 @@ var tdoa = {
    ],
 
    gmap_js: [
-      'http://maps.googleapis.com/maps/api/js?key=AIzaSyCtWThmj37c62a1qYzYUjlA0XUVC_lG8B8',
+      'http://maps.googleapis.com/maps/api/js?key=',
       'pkgs_maps/gmaps/daynightoverlay.js',
       'pkgs_maps/gmaps/markerwithlabel.js',
       'pkgs_maps/gmaps/v3_ll_grat.js',
@@ -67,8 +68,6 @@ var tdoa = {
    init_lat: 20,
    init_lon: 15,
    init_zoom: 2,
-   maxZoom: 19,
-   minZoom: 2,
    mapZoom_nom: 17,
    hosts_clusterer: null,
    refs_clusterer: null,
@@ -178,7 +177,7 @@ function tdoa_recv(data)
 			   tdoa.a[1] = enc(tdoa.a[1]);
             tdoa.params = ext_param();
             //console.log('### TDoA: tdoa.params='+ tdoa.params);
-            if (tdoa.params && tdoa.params.includes('gmap:')) tdoa.leaflet = false;
+            if (tdoa.params && tdoa.params.includes('gmap:')) { tdoa.leaflet = false; tdoa.gmap_param = true; }
             kiwi_load_js(tdoa.leaflet? tdoa.pkgs_maps_js : tdoa.gmap_js, 'tdoa_controls_setup');
 				break;
 
@@ -216,6 +215,7 @@ function tdoa_controls_setup()
          w3_checkbox(cbox, 'Show heatmap', 'tdoa.heatmap_visible', true, 'tdoa_heatmap_visible_cb'),
          w3_checkbox(cbox, 'Show day/night', 'tdoa.day_night_visible', true, 'tdoa_day_night_visible_cb'),
          w3_checkbox(cbox, 'Show graticule', 'tdoa.graticule_visible', true, 'tdoa_graticule_visible_cb'),
+         w3_checkbox(cbox, 'Old algorithm', 'tdoa.old_algorithm', false, 'tdoa_old_algorithm_cb'),
 
          w3_checkbox('w3-margin-T-10//'+ cbox, 'Kiwi hosts', 'tdoa.hosts_visible', true, 'tdoa_hosts_visible_cb'),
          w3_checkbox(cbox, 'Reference locations', 'tdoa.refs_visible', true, 'tdoa_refs_visible_cb'),
@@ -255,7 +255,8 @@ function tdoa_controls_setup()
             w3_button('id-tdoa-rerun-button w3-margin-left w3-padding-smaller w3-css-yellow w3-hide||title="rerun TDoA using same samples"',
                'Rerun', 'tdoa_rerun_button_cb'
             ),
-		      w3_div('id-tdoa-download-KML w3-margin-left w3-hide||title="download KML file"')
+		      w3_div('id-tdoa-download-KML w3-margin-left w3-hide||title="download KML file"'),
+		      w3_div('id-tdoa-download-MAT w3-margin-left w3-hide||title="download MAT file"')
          ),
 		   w3_inline_percent('',
             w3_select('w3-text-red', '', 'quick zoom', 'tdoa.quick_zoom', -1, tdoa.quick_zoom, 'tdoa_quick_zoom_cb'), 20,
@@ -268,7 +269,7 @@ function tdoa_controls_setup()
 	ext_panel_show(control_html, data_html, null);
 	time_display_setup('tdoa');
 
-	ext_set_controls_width_height(620, 270);
+	ext_set_controls_width_height(650, 270);
    ext_set_data_height(tdoa.h_data);
 
    var s = '';
@@ -287,22 +288,62 @@ function tdoa_controls_setup()
    w3_innerHTML('id-tdoa-hosts-container', s);
 
    if (tdoa.leaflet) {
-      var map_tiles = function(map_style) {
-         return L.mapboxGL({
-            attribution: '<a href="https://www.maptiler.com/license/maps/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
-            accessToken: 'not-needed',
-            style: 'https://api.maptiler.com/maps/'+ map_style +'/style.json'+ tdoa.a[1]
-         });
+      var map_tiles;
+      var maxZoom = 19;
+      var server_e = { MapTiler_Vector:0, MapTiler_Raster_512:1, MapTiler_Raster_256:2, OSM_Raster:3 };
+      var server = server_e.OSM_Raster;
+
+      // MapTiler vector tiles using LeafletGL/MapBoxGL
+      if (server == server_e.MapTiler_Vector) {
+         map_tiles = function(map_style) {
+            return L.mapboxGL({
+               attribution: '<a href="https://www.maptiler.com/license/maps/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
+               accessToken: 'not-needed',
+               style: 'https://api.maptiler.com/maps/'+ map_style +'/style.json'+ tdoa.a[1]
+            });
+         }
       }
+
+      // MapTiler 512/256 px raster tiles
+      if (server == server_e.MapTiler_Raster_512 || server == server_e.MapTiler_Raster_256) {
+         var slash_256 = (server == server_e.MapTiler_Raster_256)? '/256':'';
+         map_tiles = function(map_style) {
+            return L.tileLayer(
+               (map_style == 'hybrid')?
+                  'https://api.maptiler.com/maps/'+ map_style + slash_256 +'/{z}/{x}/{y}{r}.jpg'+ tdoa.a[1]
+               :
+                  'https://api.maptiler.com/maps/'+ map_style + slash_256 +'/{z}/{x}/{y}.png'+ tdoa.a[1], {
+               tileSize: (server == server_e.MapTiler_Raster_256)? 256 : 512,
+               zoomOffset: (server == server_e.MapTiler_Raster_256)? 0 : -1,
+               attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
+               crossOrigin: true
+            });
+         }
+      }
+
+      // OSM raster tiles
+      if (server == server_e.OSM_Raster) {
+         map_tiles = function() {
+            maxZoom = 18;
+            return L.tileLayer(
+               'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+               tileSize: 256,
+               zoomOffset: 0,
+               attribution: '<a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
+               crossOrigin: true
+            });
+         }
+      }
+
+      var sat_map = map_tiles('hybrid');
       var m = L.map('id-tdoa-map-kiwi',
          {
-            maxZoom: tdoa.maxZoom,
-            minZoom: tdoa.minZoom,
-            doubleClickZoom: false,    // don't interfeer with double-click of host/ref markers
+            maxZoom: maxZoom,
+            minZoom: 1,
+            doubleClickZoom: false,    // don't interfere with double-click of host/ref markers
             zoomControl: false
          }
       ).setView([tdoa.init_lat, tdoa.init_lon], tdoa.init_zoom);
-      var sat_map = map_tiles('hybrid');
       
       // NB: hack! jog map slightly to prevent grey, unfilled tiles after basemap change
       m.on('baselayerchange', function(e) {
@@ -319,17 +360,22 @@ function tdoa_controls_setup()
       L.control.zoom_TDoA().addTo(m);
       
       sat_map.addTo(m);
-      L.control.layers(
-         {
-            'Satellite': sat_map,
-            'Basic': map_tiles('basic'),
-            'Bright': map_tiles('bright'),
-            'Positron': map_tiles('positron'),
-            'Street': map_tiles('streets'),
-            'Topo': map_tiles('topo')
-         },
-         null
-      ).addTo(m);
+
+      // MapTiler map choices
+      if (server != server_e.OSM_Raster) {
+         L.control.layers(
+            {
+               'Satellite': sat_map,
+               'Basic': map_tiles('basic'),
+               'Bright': map_tiles('bright'),
+               'Positron': map_tiles('positron'),
+               'Street': map_tiles('streets'),
+               'Topo': map_tiles('topo')
+            },
+            null
+         ).addTo(m);
+      }
+      
       tdoa.cur_map = tdoa.kiwi_map = m;
       if (dbgUs) sat_map.getPane()._jks = 'MAP';
 
@@ -372,7 +418,8 @@ function tdoa_controls_setup()
          });
       
       tdoa.cur_map = tdoa.kiwi_map;
-      w3_show('id-tdoa-sorry');
+      if (!tdoa.gmap_param)
+         w3_show('id-tdoa-sorry');
       tdoa.day_night = new DayNightOverlay( { map:tdoa.kiwi_map, fillColor:'rgba(0,0,0,0.35)' } );
       var grid = new Graticule(tdoa.kiwi_map, false);
    
@@ -452,8 +499,8 @@ function tdoa_info_cb()
    tdoa_update_link();
 
    if (!tdoa.leaflet) {
-      tdoa_dismiss_google_dialog('id-tdoa-map-kiwi', 0);
-      tdoa_dismiss_google_dialog('id-tdoa-map-result', 0);
+      tdoa_gmap_update('id-tdoa-map-kiwi');
+      tdoa_gmap_update('id-tdoa-map-result');
    }
 }
 
@@ -481,6 +528,7 @@ function tdoa_update_link()
    url += '&pbw='+ (pb.high * 2).toFixed(0) +'&ext=tdoa';
 
    var m = tdoa.cur_map;
+   if (!m) return;
    var c = m.getCenter();
    url += ',lat:'+ tdoa_lat(c).toFixed(2) +',lon:'+ tdoa_lon(c).toFixed(2) +',z:'+ m.getZoom();
    if (!tdoa.leaflet && m.getMapTypeId() != 'satellite') url += ',map:1';
@@ -499,6 +547,9 @@ function tdoa_update_link()
       }
    }
 
+   if (tdoa.old_algorithm) url += ',old:';
+   if (tdoa.devl) url += ',devl:';
+   if (tdoa.kml) url += ',kml:';
 	w3_innerHTML('id-tdoa-bookmark', w3_link('', url, w3_icon('w3-text-css-lime', 'fa-external-link-square', 16)));
 }
 
@@ -959,9 +1010,6 @@ function tdoa_get_hosts_cb(hosts)
             if (a.startsWith('map:')) {
                maptype = parseInt(a.substring(4));
             } else
-            if (a.startsWith('new:')) {
-               w3_checkbox_set('id-tdoa-new-algo', true);
-            } else
             if (a.startsWith('submit:')) {
                init_submit = true;
             } else
@@ -976,6 +1024,17 @@ function tdoa_get_hosts_cb(hosts)
             } else
             if (a.startsWith('help:')) {
                extint_help_click();
+            } else
+            if (a.startsWith('kml:')) {
+               tdoa.kml = true;
+            } else
+            if (a.startsWith('old:')) {
+               tdoa.old_algorithm = true;
+               w3_checkbox_set('tdoa.old_algorithm', true);
+            } else
+            if (a.startsWith('new:')) {
+               tdoa.old_algorithm = false;
+               w3_checkbox_set('tdoa.old_algorithm', false);
             } else
             if (a.startsWith('devl:')) {
                tdoa.devl = true;
@@ -1040,19 +1099,34 @@ function TDoA_environment_changed(changed)
 // UI
 ////////////////////////////////
 
-function tdoa_dismiss_google_dialog(id, tick)
+function tdoa_gmap_update(id, tick)
 {
    var el = w3_el(id);
    if (!el) return;
+   tick = tick || 0;
    if (el.childElementCount < 2) {
-      if (tick >= 10) return;
-      setTimeout(function() { tdoa_dismiss_google_dialog(id, tick+1); }, 200);
+      if (tick >= 50) return;
+      setTimeout(function() { tdoa_gmap_update(id, tick+1); }, 200);
       //console.log('G '+ id +' '+ (tick+1));
-   } else {
-      //console.log('REM');
-      //console.log(el.children[1]);
-      el.removeChild(el.children[1]);
+      return;
    }
+   //console.log('REM');
+   //console.log(el.children[1]);
+   el.removeChild(el.children[1]);
+   var observer = new MutationObserver(function() { tdoa.mo_w++; });
+   observer.observe(el, { attributes: true, childList: true, subtree: true });
+   setInterval(function() {
+      var w = tdoa.mo_w;
+      if (tdoa.mo_r != w) {
+         tdoa.mo_r = w;
+         w3_iterateDeep_children(el, function(el) {
+            if (el.tagName == 'SPAN' && el.innerHTML.endsWith('nly')) {
+               el.parentElement.parentElement.style.backgroundColor = '';
+               //el.innerHTML = '';
+            }
+         });
+      }
+   }, 250);
 }
 
 function tdoa_show_maps(map)
@@ -1070,8 +1144,8 @@ function tdoa_show_maps(map)
    }
    
    if (!tdoa.leaflet) {
-      tdoa_dismiss_google_dialog('id-tdoa-map-kiwi', 0);
-      tdoa_dismiss_google_dialog('id-tdoa-map-result', 0);
+      tdoa_gmap_update('id-tdoa-map-kiwi');
+      tdoa_gmap_update('id-tdoa-map-result');
    }
 }
 
@@ -1111,6 +1185,7 @@ function tdoa_submit_state(state, msg)
    
    w3_show_hide('id-tdoa-rerun-button', state == tdoa.RESULT);
    w3_show_hide('id-tdoa-download-KML', state == tdoa.RESULT && tdoa.leaflet);
+   w3_show_hide('id-tdoa-download-MAT', state == tdoa.RESULT);
 
    tdoa.state = state;
 }
@@ -1119,6 +1194,7 @@ function tdoa_rerun_clear()
 {
    w3_hide('id-tdoa-rerun-button');
    w3_hide('id-tdoa-download-KML');
+   w3_hide('id-tdoa-download-MAT');
    tdoa.rerun = 0;
 }
 
@@ -1408,6 +1484,8 @@ function tdoa_submit_button_cb2()
       }
    }
    
+   if (!tdoa.old_algorithm) s += ",'new',true";
+   if (tdoa.kml) s += ",'kml',1";
    s += ')';
    
    if (tdoa.rerun) s += '&rerun='+ tdoa.response.key;    // key from previous run
@@ -1500,7 +1578,10 @@ function tdoa_sample_status_cb(status)
    
    if (!error) {
       tdoa_set_icon('submit', -1, 'fa-refresh fa-spin', 20, 'lime');
-      tdoa_submit_state(tdoa.RUNNING, 'TDoA algorithm running');
+      var which = 'TDoA';
+      if (tdoa.old_algorithm) which += '-old'; else
+      if (tdoa.devl) which += '-devl';
+      tdoa_submit_state(tdoa.RUNNING, which +' algorithm running');
    } else {
       if (0 && retry) {    // fixme: doesn't work yet
          tdoa_set_icon('submit', -1, 'fa-cog fa-spin', 20, 'yellow');
@@ -1713,7 +1794,10 @@ function tdoa_submit_status_old_cb(status, info)
 
       tdoa_result_menu_click_cb('', tdoa.TDOA_MAP);
       w3_select_value('tdoa.result_select', tdoa.TDOA_MAP);
-      tdoa_submit_state(tdoa.RESULT, info? info : 'TDoA complete');
+      var which = 'TDoA';
+      if (tdoa.old_algorithm) which += '-old'; else
+      if (tdoa.devl) which += '-devl';
+      tdoa_submit_state(tdoa.RESULT, info? info : which +' complete');
    }
 
    w3_button_text('id-tdoa-submit-button', 'Submit', 'w3-css-yellow', 'w3-red');
@@ -1849,6 +1933,9 @@ function tdoa_result_menu_click_cb(path, idx, first)
    
          tdoa_show_maps({ kiwi: false, result: true });
          
+         var url = tdoa.url_files + tdoa.response.key +'/tdoa_data.mat';
+         w3_innerHTML('id-tdoa-download-MAT', w3_link('', url, w3_icon('w3-text-aqua', 'fa-download', 18)) +' MAT');
+   
          var ms, me;
          if (idx == tdoa.COMBINED_MAP) {
             // stack overlay and contours for combined mode
@@ -1859,13 +1946,14 @@ function tdoa_result_menu_click_cb(path, idx, first)
          //console.log('SET ms/me='+ ms +'/'+ me +' idx='+ idx);
          
          for (var mi = ms; mi < me; mi++) {
-            var ext = tdoa.devl? 'kml':'json';
+            var ext = tdoa.kml? 'kml':'json';
             var fn = tdoa.url_files + tdoa.response.key +'/'+ tdoa.results[mi].ids +'_contour_for_map.'+ ext;
-            if (tdoa.devl) {
+            if (tdoa.kml) {
                if (idx != tdoa.COMBINED_MAP) tdoa_KML_link(fn);
                console.log('TDoA KML test: mi='+ mi +' '+ fn);
                //fn = tdoa.url +'/tdoa.test.kml';
             }
+
             kiwi_ajax(fn, function(j, midx) {
                if (j.AJAX_error) {
                   console.log(j);
@@ -1883,8 +1971,8 @@ function tdoa_result_menu_click_cb(path, idx, first)
                      tdoa.heatmap[midx].addTo(tdoa.result_map);
                      tdoa.map_layers.push(tdoa.heatmap[midx]);
                   }
-   
-                  if (tdoa.devl) {
+                  
+                  if (tdoa.kml) {
                      console.log('TDoA start KML '+ fn);
                      if (!j.XML) {
                         console.log(j);
@@ -1893,13 +1981,13 @@ function tdoa_result_menu_click_cb(path, idx, first)
                      //console.log(j);
       
                      // Create new kml overlay
-                     const parser = new DOMParser();
-                     const kml = parser.parseFromString(j.text, 'text/xml');
-                     const track = new L.KML(kml);
+                     parser = new DOMParser();
+                     kml = parser.parseFromString(j.text, 'text/xml');
+                     track = new L.KML(kml);
                      tdoa.result_map.addLayer(track);
          
                      // Adjust map to show the kml
-                     //const bounds = track.getBounds();
+                     //bounds = track.getBounds();
                      //tdoa.result_map.fitBounds(bounds);
                   } else {
                      if (j.polygons && j.polygons.length) {
@@ -2057,6 +2145,11 @@ function tdoa_result_menu_click_cb(path, idx, first)
          w3_innerHTML('id-tdoa-gmap-link', w3_link('', url, w3_icon('w3-text-aqua', 'fa-map-marker', 18)));
       }
    }
+}
+
+function tdoa_old_algorithm_cb(path, checked)
+{
+   tdoa.old_algorithm = checked;
 }
 
 function tdoa_heatmap_visible_cb(path, checked)
@@ -2503,41 +2596,37 @@ function TDoA_config_html()
    tdoa.chans_u = { 0:'none' };
    for (var i = 1; i <= rx_chans; i++)
       tdoa.chans_u[i] = i.toFixed(0);
+   
+   var s =
+      w3_inline_percent('w3-container',
+         w3_div('w3-center',
+            w3_select('', 'Number of simultaneous channels available<br>for connection by the TDoA service',
+               '', 'tdoa_nchans', tdoa.nchans, tdoa.chans_u, 'admin_select_cb'),
+            w3_div('w3-margin-T-8 w3-text-black',
+               'If you want to limit incoming connections from the <br> kiwisdr.com TDoA service set this value.<br>' +
+               'These connections are identified in the user lists and logs as: "TDoA_service"'
+            )
+         ), 40,
+         
+         w3_div('w3-text-black'), 15,
 
-	ext_admin_config(tdoa.ext_name, 'TDoA',
-		w3_div('id-TDoA w3-text-teal w3-hide',
-			'<b>TDoA configuration</b>',
-			'<hr>',
-			w3_inline_percent('w3-container',
-            w3_div('w3-center',
-               w3_select('', 'Number of simultaneous channels available<br>for connection by the TDoA service',
-                  '', 'tdoa_nchans', tdoa.nchans, tdoa.chans_u, 'admin_select_cb'),
-               w3_div('w3-margin-T-8 w3-text-black',
-                  'If you want to limit incoming connections from the <br> kiwisdr.com TDoA service set this value.<br>' +
-                  'These connections are identified in the user lists and logs as: <br>' +
-                  '"TDoA_service" (Fremont, California, USA)'
-               )
-            ), 40,
-            
-			   w3_div('w3-text-black'), 15,
+         w3_div('',
+            w3_input('||size=12', 'TDoA ID (alphanumeric and \'/\', 12 char max)', 'cfg.tdoa_id', '', 'tdoa_id_cb',
+               'TDoA map marker id (e.g. callsign)'
+            ),
+            w3_div('w3-margin-T-8 w3-text-black',
+               'When this Kiwi is used as a measurement station for the TDoA service it displays an ' +
+               'identifier on a map pin and in the first column of the TDoA extension control panel (when selected). ' +
+               '<br><br>You can customize that identifier by setting this field. By default the identifier will be ' +
+               'one of two items. Either what appears to be a ham callsign in the the "name" field on the ' +
+               'admin page Public tab or the grid square computed from your Kiwis lat/lon.'
+            )
+         ), 40,
 
-		      w3_div('',
-		         w3_input('||size=12', 'TDoA ID (alphanumeric and \'/\', 12 char max)', 'cfg.tdoa_id', '', 'tdoa_id_cb',
-		            'TDoA map marker id (e.g. callsign)'
-		         ),
-               w3_div('w3-margin-T-8 w3-text-black',
-                  'When this Kiwi is used as a measurement station for the TDoA service it displays an ' +
-                  'identifier on a map pin and in the first column of the TDoA extension control panel (when selected). ' +
-                  '<br><br>You can customize that identifier by setting this field. By default the identifier will be ' +
-                  'one of two items. Either what appears to be a ham callsign in the the "name" field on the ' +
-                  'admin page sdr.hu tab or the grid square computed from your Kiwis lat/lon.'
-               )
-		      ), 35,
+         w3_div('w3-text-black'), 5
+      );
 
-			   w3_div('w3-text-black'), 10
-         )
-		)
-	);
+   ext_config_html(tdoa, 'tdoa', 'TDoA', 'TDoA configuration', s);
 }
 
 function tdoa_id_cb(path, val)

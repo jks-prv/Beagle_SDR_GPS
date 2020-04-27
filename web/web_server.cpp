@@ -324,8 +324,8 @@ void web_server_init(ws_init_t type)
             struct stat st;
             scall("stat edata_always", stat(BUILD_DIR "/obj_keep/edata_always.o", &st));
             mtime_obj_keep_edata_always_o = st.st_mtime;
-            scall("stat edata_always2", stat(BUILD_DIR "/obj_keep/edata_always2.o", &st));
-            mtime_obj_keep_edata_always2_o = st.st_mtime;
+            //scall("stat edata_always2", stat(BUILD_DIR "/obj_keep/edata_always2.o", &st));
+            //mtime_obj_keep_edata_always2_o = st.st_mtime;
         }
 
         asprintf(&web_server_hdr, "KiwiSDR_Mongoose/%d.%d", version_maj, version_min);
@@ -335,20 +335,20 @@ void web_server_init(ws_init_t type)
 	if (type == WS_INIT_CREATE) {
 		// if specified, override the default port number
 		if (alt_port) {
-			ddns.port = ddns.port_ext = alt_port;
+			net.port = net.port_ext = alt_port;
 		} else {
-			ddns.port = admcfg_int("port", NULL, CFG_REQUIRED);
-			ddns.port_ext = admcfg_int("port_ext", NULL, CFG_REQUIRED);
+			net.port = admcfg_int("port", NULL, CFG_REQUIRED);
+			net.port_ext = admcfg_int("port_ext", NULL, CFG_REQUIRED);
 		}
 		lprintf("listening on %s port %d/%d for \"%s\"\n", alt_port? "alt":"default",
-			ddns.port, ddns.port_ext, ui->name);
-		ui->port = ddns.port;
-		ui->port_ext = ddns.port_ext;
+			net.port, net.port_ext, ui->name);
+		ui->port = net.port;
+		ui->port_ext = net.port_ext;
 	} else
 
 	if (type == WS_INIT_START) {
 		reload_index_params();
-		services_start(SVCS_RESTART_FALSE);
+		services_start();
 	}
 
 	// create webserver port(s)
@@ -357,8 +357,8 @@ void web_server_init(ws_init_t type)
 		if (type == WS_INIT_CREATE) {
 			// FIXME: stopgap until admin page supports config of multiple UIs
 			if (i != 0) {
-				ui->port = ddns.port + i;
-				ui->port_ext = ddns.port_ext + i;
+				ui->port = net.port + i;
+				ui->port_ext = net.port_ext + i;
 			}
 			
 			ui->server = mg_create_server(NULL, ev_handler);
@@ -368,7 +368,7 @@ void web_server_init(ws_init_t type)
 			if (mg_set_option(ui->server, "listening_port", s_port) != NULL) {
 				lprintf("network port %s for \"%s\" in use\n", s_port, ui->name);
 				lprintf("app already running in background?\ntry \"make stop\" (or \"m stop\") first\n");
-				xit(-1);
+				kiwi_exit(-1);
 			}
 			lprintf("webserver for \"%s\" on port %s\n", ui->name, mg_get_option(ui->server, "listening_port"));
 			free(s_port);

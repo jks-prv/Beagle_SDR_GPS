@@ -1,7 +1,7 @@
 // Copyright (c) 2017 John Seamons, ZL/KF6VO
 
 var example = {
-   ext_name: 'example',    // NB: must match example.c:example_ext.name
+   ext_name: 'example',    // NB: must match example.cpp:example_ext.name
    first_time: true,
    CMD1: 0
 };
@@ -100,16 +100,13 @@ function example_blur()
 // called to display HTML for configuration parameters in admin interface
 function example_config_html()
 {
-	ext_admin_config(example.ext_name, 'Example',
-		w3_div('id-example w3-text-teal w3-hide',
-			'<b>Example configuration</b>' +
-			'<hr>' +
-			w3_third('', 'w3-container',
-				w3_divs('w3-margin-bottom',
-					w3_input_get('', 'int1', 'example.int1', 'w3_num_cb'),
-					w3_input_get('', 'int2', 'example.int2', 'w3_num_cb')
-				), '', ''
-			)
-		)
-	);
+   var s =
+      w3_third('', 'w3-container',
+         w3_divs('w3-margin-bottom',
+            w3_input_get('', 'int1', 'example.int1', 'w3_num_cb'),
+            w3_input_get('', 'int2', 'example.int2', 'w3_num_cb')
+         ), '', ''
+      );
+
+   ext_config_html(example, 'example', 'Example', 'Example configuration');
 }

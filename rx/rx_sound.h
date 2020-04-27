@@ -27,30 +27,37 @@ typedef struct {
 	struct {
 		char id[3];
 		u1_t flags;
-		u4_t seq;           // waterfall syncs to this sequence number on the client-side
+		u1_t seq[4];            // waterfall syncs to this sequence number on the client-side
 		char smeter[2];
 	} __attribute__((packed)) h;
-	u1_t buf[FASTFIR_OUTBUF_SIZE * sizeof(u2_t)];
+	union {
+	    u1_t u1[FASTFIR_OUTBUF_SIZE * sizeof(s2_t)];
+	    s2_t s2[FASTFIR_OUTBUF_SIZE];
+	};
 } __attribute__((packed)) snd_pkt_real_t;
 
 typedef struct {
 	struct {
 		char id[3];
 		u1_t flags;
-		u4_t seq;                // waterfall syncs to this sequence number on the client-side
+		u1_t seq[4];            // waterfall syncs to this sequence number on the client-side
 		char smeter[2];
 		u1_t last_gps_solution; // time difference to last gps solution in seconds
 		u1_t dummy;
 		u4_t gpssec;            // GPS time stamp (GPS seconds)
 		u4_t gpsnsec;           // GPS time stamp (fractional seconds in units of ns)
 	} __attribute__((packed)) h;
-	u1_t buf[FASTFIR_OUTBUF_SIZE * 2 * sizeof(u2_t)];
+	union {
+	    u1_t u1[FASTFIR_OUTBUF_SIZE * NIQ * sizeof(s2_t)];
+	    s2_t s2[FASTFIR_OUTBUF_SIZE * NIQ];
+	};
 } __attribute__((packed)) snd_pkt_iq_t;
 
 typedef struct {
     snd_pkt_real_t out_pkt_real;
     snd_pkt_iq_t   out_pkt_iq;
 
+    u4_t firewall[32];
 	u4_t seq;
 	
     #ifdef SND_SEQ_CHECK

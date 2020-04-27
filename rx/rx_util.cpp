@@ -35,6 +35,13 @@ Boston, MA  02110-1301, USA.
 #include "wspr.h"
 #include "ext_int.h"
 #include "shmem.h"
+#include "wdsp.h"
+
+#ifdef DRM
+ #include "DRM.h"
+#else
+ #define DRM_NREG_CHANS_DEFAULT 3
+#endif
 
 #include <string.h>
 #include <stdio.h>
@@ -193,6 +200,9 @@ void update_vars_from_config()
         dc_off_msg = true;
     }
 
+    // DON'T use cfg_default_int() here because "DRM.nreg_chans" is a two-level we can't init from C code
+    drm_nreg_chans = cfg_int("DRM.nreg_chans", &err, CFG_OPTIONAL);
+    if (err) drm_nreg_chans = DRM_NREG_CHANS_DEFAULT;
 
     S_meter_cal = cfg_default_int("S_meter_cal", SMETER_CALIBRATION_DEFAULT, &update_cfg);
     cfg_default_int("waterfall_cal", WATERFALL_CALIBRATION_DEFAULT, &update_cfg);
@@ -210,10 +220,14 @@ void update_vars_from_config()
     cfg_default_bool("ADC_clk_corr", true, &update_cfg);
     cfg_default_string("tdoa_id", "", &update_cfg);
     cfg_default_int("tdoa_nchans", -1, &update_cfg);
+    cfg_default_int("ext_api_nchans", -1, &update_cfg);
     cfg_default_bool("no_wf", false, &update_cfg);
     cfg_default_bool("test_webserver_prio", false, &update_cfg);
     cfg_default_bool("test_deadline_update", false, &update_cfg);
     cfg_default_bool("disable_recent_changes", false, &update_cfg);
+    cfg_default_int("init.cw_offset", 500, &update_cfg);
+    cfg_default_int("S_meter_OV_counts", 10, &update_cfg);
+    cfg_default_bool("webserver_caching", true, &update_cfg);
 
     if (wspr_update_vars_from_config()) update_cfg = true;
 
@@ -292,6 +306,17 @@ void update_vars_from_config()
     admcfg_default_string("ip_blacklist", "47.88.219.24/24", &update_admcfg);
     admcfg_default_bool("no_dup_ip", false, &update_admcfg);
     admcfg_default_bool("my_kiwi", true, &update_admcfg);
+    admcfg_default_bool("onetime_password_check", false, &update_admcfg);
+    admcfg_default_string("proxy_server", "proxy.kiwisdr.com", &update_admcfg);
+
+    // decouple kiwisdr.com/public and sdr.hu registration
+    bool sdr_hu_register = admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED);
+	admcfg_bool("kiwisdr_com_register", &err, CFG_OPTIONAL);
+    // never set or incorrectly set to false by v1.365,366
+	if (err || (VERSION_MAJ == 1 && VERSION_MIN <= 369)) {
+        admcfg_set_bool("kiwisdr_com_register", sdr_hu_register);
+        update_admcfg = true;
+    }
 
     // historical uses of options parameter:
     //int new_find_local = admcfg_int("options", NULL, CFG_REQUIRED) & 1;
@@ -413,7 +438,7 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
 static void geoloc_task(void *param)
 {
 	conn_t *conn = (conn_t *) param;
-	char *ip = (isLocal_ip(conn->remote_ip) && ddns.pub_valid)? ddns.ip_pub : conn->remote_ip;
+	char *ip = (isLocal_ip(conn->remote_ip) && net.pub_valid)? net.ip_pub : conn->remote_ip;
 
     u4_t i = timer_sec();   // mix it up a bit
     int retry = 0;
@@ -462,7 +487,7 @@ void webserver_collect_print_stats(int print)
 			}
 			
 			//cprintf(c, "TO_MINS=%d exempt=%d\n", inactivity_timeout_mins, c->tlimit_exempt);
-			if (!c->inactivity_timeout_override && (inactivity_timeout_mins != 0) && !c->tlimit_exempt) {
+			if (inactivity_timeout_mins != 0 && !c->tlimit_exempt) {
 			    if (c->last_tune_time == 0) c->last_tune_time = now;    // got here before first set in rx_loguser()
 				diff = now - c->last_tune_time;
 			    //cprintf(c, "diff=%d now=%d last=%d TO_SECS=%d\n", diff, now, c->last_tune_time,
@@ -591,7 +616,7 @@ void webserver_collect_print_stats(int print)
 	http_bytes = 0;
 
 	// on the hour: report number of connected users & schedule updates
-	int hour, min; utc_hour_min_sec(&hour, &min, NULL);
+	int hour, min; utc_hour_min_sec(&hour, &min);
 	
 	if (hour != last_hour) {
 		if (print) lprintf("(%d %s)\n", nusers, (nusers==1)? "user":"users");
@@ -599,7 +624,7 @@ void webserver_collect_print_stats(int print)
 	}
 
 	if (min != last_min) {
-		schedule_update(hour, min);
+		schedule_update(min);
 		last_min = min;
 	}
 	
@@ -617,7 +642,7 @@ char *rx_users(bool include_ip)
         n = 0;
         if (rx->busy) {
             conn_t *c = rx->conn;
-            if (c && c->valid && c->arrived && c->user != NULL) {
+            if (c && c->valid && c->arrived) {
                 assert(c->type == STREAM_SOUND || c->type == STREAM_WATERFALL);
 
                 // connected time
@@ -636,7 +661,7 @@ char *rx_users(bool include_ip)
 
                 // conn inactivity TLIMIT time left (if applicable)
                 int rem_inact = 0;
-                if (!c->inactivity_timeout_override && inactivity_timeout_mins && !c->tlimit_exempt) {
+                if (inactivity_timeout_mins && !c->tlimit_exempt) {
                     if (c->last_tune_time == 0) c->last_tune_time = now;    // got here before first set in rx_loguser()
                     rem_inact = MINUTES_TO_SEC(inactivity_timeout_mins) - (now - c->last_tune_time);
                     if (rem_inact < 0 ) rem_inact = 0;
@@ -669,13 +694,15 @@ char *rx_users(bool include_ip)
                 u4_t r_min = t % 60; t /= 60;
                 u4_t r_hr = t;
 
-                char *user = c->isUserIP? NULL : kiwi_str_encode(c->user);
+                char *user = (c->isUserIP || !c->user)? NULL : kiwi_str_encode(c->user);
                 char *geo = c->geo? kiwi_str_encode(c->geo) : NULL;
                 char *ext = ext_users[i].ext? kiwi_str_encode((char *) ext_users[i].ext->name) : NULL;
                 const char *ip = include_ip? c->remote_ip : "";
-                asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,\"m\":\"%s\",\"z\":%d,\"t\":\"%d:%02d:%02d\",\"rt\":%d,\"rn\":%d,\"rs\":\"%d:%02d:%02d\",\"e\":\"%s\",\"a\":\"%s\"}",
+                asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,\"m\":\"%s\",\"z\":%d,\"t\":\"%d:%02d:%02d\","
+                    "\"rt\":%d,\"rn\":%d,\"rs\":\"%d:%02d:%02d\",\"e\":\"%s\",\"a\":\"%s\",\"c\":%.1f}",
                     need_comma? ",":"", i, user? user:"", geo? geo:"", c->freqHz,
-                    kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, hr, min, sec, rtype, rn, r_hr, r_min, r_sec, ext? ext:"", ip);
+                    kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, hr, min, sec,
+                    rtype, rn, r_hr, r_min, r_sec, ext? ext:"", ip, wdsp_SAM_carrier(i));
                 if (user) free(user);
                 if (geo) free(geo);
                 if (ext) free(ext);
