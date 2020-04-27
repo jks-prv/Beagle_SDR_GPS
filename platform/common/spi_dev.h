@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "sitara.h"
+#include "peri.h"
 #include "spi.h"
 
 enum SPI_SEL {

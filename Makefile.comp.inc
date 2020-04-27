@@ -6,6 +6,12 @@
 #
 
 DEBIAN_DEVSYS = $(shell grep -q -s Debian /etc/dogtag; echo $$?)
+
+#double check for RPI
+ifeq ($(DEBIAN_DEVSYS),2)
+	DEBIAN_DEVSYS = $(shell grep -q -s dtparam /boot/config.txt; echo $$?)
+endif
+
 DEBIAN = 0
 NOT_DEBIAN = 1
 DEVSYS = 2
@@ -41,8 +47,10 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
         HAS_PROC = $(shell test -d $(KIWI_XC_REMOTE_FS)/proc/device-tree && echo true)
         ifeq ($(HAS_PROC),true)
             BBAI = $(shell cat $(KIWI_XC_REMOTE_FS)/proc/device-tree/model | grep -q -s "BeagleBone AI" && echo true)
+            RPI = $(shell cat $(KIWI_XC_REMOTE_FS)/proc/device-tree/model | grep -q -s "Raspberry Pi 3" && echo true)
         else
             BBAI = $(shell cat $(KIWI_XC_REMOTE_FS)/etc/debian_version | grep -q -s "9\." && echo true)
+            RPI = $(shell cat $(KIWI_XC_REMOTE_FS)/etc/os-release | grep -q -s "raspbian" && echo true)
         endif
         DEBIAN_7 = $(shell cat $(KIWI_XC_REMOTE_FS)/etc/debian_version | grep -q -s "7\." && echo true)
         CC = clang
@@ -50,7 +58,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
         CPP_FLAGS += -std=gnu++11
         CFLAGS += --target=armv7a-linux-gnueabihf
         CFLAGS += -mfpu=neon
-        CFLAGS += -mfloat-abi=hard -mcpu=cortex-a8
+        CFLAGS += -mfloat-abi=hard
         CFLAGS += --sysroot=$(KIWI_XC_REMOTE_FS)
         CFLAGS += -I$(KIWI_XC_REMOTE_FS)/usr/include/c++/4.9
         CFLAGS += -I$(KIWI_XC_REMOTE_FS)/usr/include/arm-linux-gnueabihf/c++/4.9
@@ -63,6 +71,13 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
         LDFLAGS += --target=armv7a-linux-gnueabihf
         LDFLAGS += -L$(KIWI_XC_REMOTE_FS)/usr/lib/arm-linux-gnueabihf
         LDFLAGS += -L$(KIWI_XC_REMOTE_FS)/usr/local/lib/
+
+		ifeq ($(RPI),true)
+			CFLAGS += -mcpu=cortex-a53
+		else
+			CFLAGS += -mcpu=cortex-a8
+		endif
+
 	else
 	    # make the compiles fast on dev system (but don't do this with cross-compiling case above)
 	    OPT = 0
@@ -86,10 +101,11 @@ endif
 # Debian target
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	#CFLAGS += -mfloat-abi=softfp -mfpu=neon
-	CFLAGS +=  -mfpu=neon -mtune=cortex-a8 -mcpu=cortex-a8 -mfloat-abi=hard
+	CFLAGS +=  -mfpu=neon -mfloat-abi=hard
 	CFLAGS += -DHOST
 
 	BBAI = $(shell cat /proc/device-tree/model | grep -q -s "BeagleBone AI" && echo true)
+	RPI = $(shell cat /proc/device-tree/model | grep -q -s "Raspberry Pi 3" && echo true)
 	DEBIAN_7 = $(shell cat /etc/debian_version | grep -q -s "7\." && echo true)
 
 	ifeq ($(DEBIAN_7),true)
@@ -97,6 +113,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 		CC = gcc
 		CPP = g++
 		CFLAGS += -DKIWI_DEBIAN7
+		CFLAGS += -mtune=cortex-a8 -mcpu=cortex-a8
 		VIS_OPT = -O3
 		# needed for iq_display.cpp et al (-std=gnu++11 isn't available on Debian 7.9)
 		CPP_FLAGS += -std=gnu++0x
@@ -115,12 +132,22 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
             CPP = clang++-7
 		    VIS_OPT = -Ofast
         endif
+		CFLAGS += -mtune=cortex-a8 -mcpu=cortex-a8
 		# needed for iq_display.cpp et al
 		CPP_FLAGS += -std=gnu++11
 		# clang still used by other things (e_cpu etc)
 		CMD_DEPS_DEBIAN = /usr/bin/clang-7
+	else ifeq ($(RPI),true)
+		CMD_DEPS_DEBIAN = /usr/bin/clang-7
+		CC = clang-7
+		CPP = clang++-7
+        VIS_OPT = -Ofast
+		CFLAGS += -mtune=cortex-a53 -mcpu=cortex-a53
+		# needed for iq_display.cpp et al
+		CPP_FLAGS += -std=gnu++11
 	else
 		CMD_DEPS_DEBIAN = /usr/bin/clang-6.0
+		CFLAGS += -mtune=cortex-a8 -mcpu=cortex-a8
 		CC = clang-6.0
 		CPP = clang++-6.0
 		#CC = clang
