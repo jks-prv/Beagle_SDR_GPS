@@ -206,10 +206,11 @@ static void update_task(void *param)
 			force_build? " (forced)":"",
 			version_maj, version_min, pending_maj, pending_min);
 		lprintf("UPDATE: building new version..\n");
+#ifndef MULTI_CORE
 		update_in_progress = true;
         rx_server_user_kick(-1);        // kick everyone off to speed up build
         sleep(5);
-
+#endif
 		// Run build in a Linux child process so the server can continue to respond to connection requests
 		// and display a "software update in progress" message.
 		// This is because the calls to system() in update_build_ctask() block for the duration of the build.
