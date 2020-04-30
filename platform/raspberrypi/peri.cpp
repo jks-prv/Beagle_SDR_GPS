@@ -66,7 +66,7 @@ void peri_init()
 {
     int i, mem_fd;
 
-    scall("/dev/mem", mem_fd = open("/dev/mem", O_RDWR|O_SYNC));
+    scall("/dev/gpiomem", mem_fd = open("/dev/gpiomem", O_RDWR|O_SYNC));
 
     gpio = (volatile unsigned *) mmap(
         NULL,
