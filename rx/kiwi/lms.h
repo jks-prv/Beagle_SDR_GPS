@@ -2,8 +2,7 @@
 
 #include "datatypes.h"
 #include "kiwi.h"
-
-typedef enum { LMS_DENOISE_QRN, LMS_AUTONOTCH_QRM } lms_e;
+#include "rx.h"
 
 #define LMSLEN      121
 #define LMSLEN_M1   (LMSLEN - 1)
@@ -16,11 +15,11 @@ class CLMS
 {
 public:
     CLMS();
-    int Initialize(lms_e lms_type, TYPEREAL delayLineLen, TYPEREAL beta, TYPEREAL decay);
+    int Initialize(nr_type_e nr_type, TYPEREAL nr_param[NOISE_PARAMS]);
 	void ProcessFilter(int ilen, TYPEMONO16* ibuf, TYPEMONO16* obuf);
 
 private:
-    lms_e m_lms_type;
+    nr_type_e m_nr_type;
     int m_dlen;
     TYPEREAL m_beta;
     TYPEREAL m_decay;
@@ -30,5 +29,4 @@ private:
 	TYPEREAL m_lmscoef[LMSLEN];
 };
 
-extern CLMS m_LMS_denoise[MAX_RX_CHANS];
-extern CLMS m_LMS_autonotch[MAX_RX_CHANS];
+extern CLMS m_LMS[MAX_RX_CHANS][2];

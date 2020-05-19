@@ -14,21 +14,21 @@
 #define DEBUG_MSG	false
 
 // rx_chan is the receiver channel number we've been assigned, 0..rx_chans
-// We need this so the extension can support multiple users, each with their own lms[] data structure.
+// We need this so the extension can support multiple users, each with their own noise[] data structure.
 
 typedef struct {
 	int rx_chan;
 	int run;
-} lms_t;
+} noise_t;
 
-static lms_t lms[MAX_RX_CHANS];
+static noise_t noise[MAX_RX_CHANS];
 
-bool lms_msgs(char *msg, int rx_chan)
+bool noise_blanker_msgs(char *msg, int rx_chan)
 {
-	lms_t *e = &lms[rx_chan];
+	noise_t *e = &noise[rx_chan];
 	int n;
 	
-	//printf("### lms_msgs RX%d <%s>\n", rx_chan, msg);
+	//printf("### noise_msgs RX%d <%s>\n", rx_chan, msg);
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
 		e->rx_chan = rx_chan;	// remember our receiver channel number
@@ -44,18 +44,18 @@ bool lms_msgs(char *msg, int rx_chan)
 	return false;
 }
 
-void lms_filter_main();
+void noise_blanker_main();
 
-ext_t lms_ext = {
-	"LMS_filter",
-	lms_filter_main,
+ext_t noise_blanker_ext = {
+	"noise_blanker",
+	noise_blanker_main,
 	NULL,
-	lms_msgs,
+	noise_blanker_msgs,
 	EXT_NEW_VERSION,
 	EXT_FLAGS_HEAVY     // FIXME: needs to also indicate this when selected from audio tab
 };
 
-void lms_filter_main()
+void noise_blanker_main()
 {
-	ext_register(&lms_ext);
+	ext_register(&noise_blanker_ext);
 }

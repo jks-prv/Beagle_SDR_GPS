@@ -81,8 +81,9 @@ CNoiseProc::~CNoiseProc()
 		delete [] m_pZeroData;
 }
 
-void CNoiseProc::SetupBlanker(const char *id, TYPEREAL Threshold, TYPEREAL GateUsec, TYPEREAL SampleRate)
+void CNoiseProc::SetupBlanker(const char *id, TYPEREAL SampleRate, TYPEREAL nr_param[NOISE_PARAMS])
 {
+    TYPEREAL GateUsec = nr_param[0], Threshold = nr_param[1];
     m_id = id;
     m_GateUsec = GateUsec;
     
@@ -113,10 +114,8 @@ void CNoiseProc::SetupBlanker(const char *id, TYPEREAL Threshold, TYPEREAL GateU
         if (m_DelaySamples < 1)
             m_DelaySamples = 1;
 
-        //printf("NB %s sr=%.0f usec=%.0f th=%.0f gs=%d ms=%d ds=%d ratio=%f\n",
+        //printf("noiseproc %s sr=%.0f usec=%.0f th=%.0f gs=%d ms=%d ds=%d ratio=%f\n",
         //    id, SampleRate, GateUsec, Threshold, m_GateSamples, m_MagSamples, m_DelaySamples, m_Ratio);
-    } else {
-        // no sample rate means we need to process a specific fixed number of samples (waterfall use case)
     }
 
 	m_Dptr = 0;
@@ -168,10 +167,13 @@ void CNoiseProc::ProcessBlanker(int InLength, TYPECPX* pInData, TYPECPX* pOutDat
 		{
 			m_BlankCounter = m_GateSamples;
 			#if 0
+			    m_Blanked++;
                 int now = timer_sec();
                 if (m_LastMsg != now) {
-                    printf("NB %s blank usec=%.0f gs=%d mag=%f *ratio=%f > avg=%f\n", m_id, m_GateUsec, m_BlankCounter, mag, mag * m_Ratio, m_MagAveSum);
+                    printf("noiseproc %s blank=%d usec=%.0f gs=%d mag=%.1e mag*ratio=%.1e > avg=%.1e\n",
+                        m_id, m_Blanked, m_GateUsec, m_BlankCounter, mag, mag * m_Ratio, m_MagAveSum);
                     m_LastMsg = now;
+                    m_Blanked = 0;
                 }
 			#endif
 		}

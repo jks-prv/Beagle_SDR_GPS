@@ -99,8 +99,10 @@ struct wf_inst_t {
 	int mark, speed, fft_used_limit;
 	bool new_map, new_map2, compression, isWF, isFFT;
 	int flush_wf_pipe;
-	int noise_blanker, noise_threshold, nb_click;
 	u4_t last_noise_pulse;
+	int nb_enable[NOISE_ALGOS];
+	float nb_param[NOISE_TYPES][NOISE_PARAMS];
+	bool nb_param_change[NOISE_TYPES];
 	snd_t *snd;
 	u4_t snd_seq;
 	wf_pkt_t out;
