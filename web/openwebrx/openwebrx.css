@@ -740,8 +740,7 @@ html, body
 .cl-closer-spaced-label-text
 {
 	/* fine-tune position */
-	top: -3px;
-	line-height: 80%;
+	line-height: 100%;
 }
 
 .id-control-smeter
