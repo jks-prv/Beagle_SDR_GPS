@@ -680,6 +680,11 @@ input[type=range]::-moz-range-thumb {
 	margin-left: 16px !important
 }
 
+.w3-hspace-32:not(:first-child)
+{
+	margin-left: 32px !important
+}
+
 .w3-pad-between-16:not(:first-child)
 {
 	padding-left: 16px
@@ -703,6 +708,11 @@ input[type=range]::-moz-range-thumb {
 .w3-margin-between-16:not(:first-child)
 {
 	margin-left: 16px
+}
+
+.w3-margin-between-32:not(:first-child)
+{
+	margin-left: 32px
 }
 
 .w3-width-auto

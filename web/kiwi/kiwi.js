@@ -1452,6 +1452,7 @@ function user_cb(obj)
 		}
 		
 		if (obj.c) {
+		   //console.log('SAM carrier '+ obj.c);
 		   var el = w3_el('id-sam-carrier');
 		   if (el) w3_innerHTML(el, 'carrier '+ obj.c.toFixed(1) +' Hz');
 		}
