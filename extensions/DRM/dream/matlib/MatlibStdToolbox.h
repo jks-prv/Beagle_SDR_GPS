@@ -45,15 +45,15 @@ public:
 	void Init(const int iFSi);
 	void Init(const int iFSi, EFFTPlan eFFTPlan);
 
-	fftw_plan	RFFTPlForw;
-	fftw_plan	RFFTPlBackw;
-	double*		pFftwRealIn;
-	double*		pFftwRealOut;
-	fftw_plan	FFTPlForw;
-	fftw_plan	FFTPlBackw;
+	fftwf_plan	RFFTPlForw;
+	fftwf_plan	RFFTPlBackw;
+	float*		pFftwRealIn;
+	float*		pFftwRealOut;
+	fftwf_plan	FFTPlForw;
+	fftwf_plan	FFTPlBackw;
 
-	fftw_complex*	pFftwComplexIn;
-	fftw_complex*	pFftwComplexOut;
+	fftwf_complex*	pFftwComplexIn;
+	fftwf_complex*	pFftwComplexOut;
 
 protected:
 	void			Clean();

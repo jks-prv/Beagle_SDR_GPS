@@ -88,6 +88,9 @@ int main(int argc, char *argv[])
 	#ifdef CPU_AM5729
 	    is_BBAI = true;
 	#endif
+	#ifdef CPU_BCM2837
+            is_BBAI = true;
+        #endif
 	
 	main_argv = argv;
 	

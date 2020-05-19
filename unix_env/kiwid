@@ -18,10 +18,15 @@ KIWID_ARGS="-bg"
 
 [ -x $KIWID_EXEC ] || exit 1
 
+RPI=$(cat /proc/device-tree/model | grep -q -s "Raspberry Pi 3" && echo true)
 BBAI=$(cat /proc/device-tree/model | grep -q -s "BeagleBone AI" && echo true)
 if [ "x${BBAI}" = "xtrue" ] ; then
 	echo "BBAI USE_SPIDEV"
 	DEBIAN=9
+	USE_SPIDEV=1
+elif [ "x${RPI}" = "xtrue" ] ; then
+	echo "RPI USE_SPIDEV"
+	DEBIAN=10
 	USE_SPIDEV=1
 else
 
@@ -82,6 +87,11 @@ case "$1" in
 
 # cape
     if [ "x${BBAI}" = "xtrue" ] ; then
+        sleep 1
+    elif [ "x${RPI}" = "xtrue" ] ; then
+        modprobe i2c-dev
+        modprobe at24
+        echo "24c32 0x54" > /sys/class/i2c-adapter/i2c-1/new_device
         sleep 1
     else
         if test \( ! -f /lib/firmware/${CAPE}.dtbo \) -o \( /lib/firmware/${CAPE}.dts -nt /lib/firmware/${CAPE}.dtbo \) ; then

@@ -98,7 +98,7 @@ void c2s_waterfall_init()
 	// and cause the data pump to overrun
 	for (i=0; i < MAX_WF_CHANS; i++) {
 	    fft_t *fft = &WF_SHMEM->fft_inst[i];
-		fft->hw_dft_plan = fftwf_plan_dft_1d(WF_C_NSAMPS, fft->hw_c_samps, fft->hw_fft, FFTW_FORWARD, FFTW_MEASURE);
+		fft->hw_dft_plan = fftwf_plan_dft_1d(WF_C_NSAMPS, fft->hw_c_samps, fft->hw_fft, FFTW_FORWARD, FFTW_ESTIMATE);
 	}
 
 	float adc_scale_decim = powf(2, -16);		// gives +/- 0.5 float samples

@@ -38,7 +38,6 @@ Boston, MA  02110-1301, USA.
 #include <time.h>
 #include <sched.h>
 #include <math.h>
-#include <fftw3.h>
 
 rx_dpump_t rx_dpump[MAX_RX_CHANS];
 dpump_t dpump;

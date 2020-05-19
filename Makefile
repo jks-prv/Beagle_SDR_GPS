@@ -64,15 +64,20 @@ else
 	endif
 endif
 
-ARCH = sitara
-
 ifeq ($(BBAI),true)
+	ARCH = sitara
 	CPU = AM5729
-	PLATFORM = beaglebone_ai
+	PLATFORMS = beaglebone beaglebone_ai
+	CFLAGS += -DMULTI_CORE
+else ifeq ($(RPI),true)
+	ARCH = omap
+	CPU = BCM2837
+	PLATFORMS = raspberrypi
 	CFLAGS += -DMULTI_CORE
 else
+	ARCH = sitara
 	CPU = AM3359
-	PLATFORM = beaglebone_black
+	PLATFORMS = beaglebone beaglebone_black
 endif
 
 # uncomment when using debugger so variables are not always optimized away
@@ -102,7 +107,8 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 .PHONY: xc
 ifeq ($(XC),)
 xc:
-	@if [ ! -f $(KIWI_XC_REMOTE_FS)/ID.txt ]; then \
+	@if [ ! -f $(KIWI_XC_REMOTE_FS)/ID.txt ] && \
+	    [ ! -f $(KIWI_XC_REMOTE_FS)/boot/config.txt ]; then \
 		echo "ERROR: remote filesystem $(KIWI_XC_REMOTE_FS) not mounted?"; \
 		exit -1; \
 	fi
@@ -172,8 +178,11 @@ EXTS = $(INT_EXTS) $(PVT_EXTS)
 
 GPS = gps gps/ka9q-fec gps/GNSS-SDRLIB
 RX = rx rx/CuteSDR rx/Teensy rx/wdsp rx/csdr rx/kiwi
-_DIRS = pru $(PKGS)
-_DIRS_O3 += . $(PKGS_O3) platform/beaglebone platform/$(PLATFORM) $(EXT_DIRS) $(EXT_SUBDIRS) \
+ifneq ($(RPI),true)
+	_DIRS = pru $(PKGS)
+endif
+_DIR_PLATFORMS = $(addprefix platform/, ${PLATFORMS})
+_DIRS_O3 += . $(PKGS_O3) platform/common $(_DIR_PLATFORMS) $(EXT_DIRS) $(EXT_SUBDIRS) \
 	$(RX) $(GPS) ui init support net web arch/$(ARCH)
 
 ifeq ($(OPT),0)
@@ -197,13 +206,13 @@ CFILES_O3 = $(subst web/web.cpp,,$(CPP_F_O3))
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	ifeq ($(XC),-DXC)
-		LIBS += -lfftw3f -lfftw3 -lutil
+		LIBS += -lfftw3f -lutil
 		DIR_CFG = /root/kiwi.config
 		CFG_PREFIX =
 	else
 		# development machine, compile simulation version
-		LIBS += -L/usr/local/lib -lfftw3f -lfftw3
-		LIBS_DEP += /usr/local/lib/libfftw3f.a /usr/local/lib/libfftw3.a
+		LIBS += -L/usr/local/lib -lfftw3f
+		LIBS_DEP += /usr/local/lib/libfftw3f.a
 		CMD_DEPS =
 		DIR_CFG = unix_env/kiwi.config
 		CFG_PREFIX = dist.
@@ -211,8 +220,8 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 else
 	# host machine (BBB), only build the FPGA-using version
-	LIBS += -lfftw3f -lfftw3 -lutil
-	LIBS_DEP += /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a
+	LIBS += -lfftw3f -lutil
+	LIBS_DEP += /usr/lib/arm-linux-gnueabihf/libfftw3f.a
 	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng /sbin/ethtool /usr/bin/sshpass
 	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget
 	DIR_CFG = /root/kiwi.config
@@ -254,7 +263,7 @@ endif
 	@mkdir -p $(DIR_CFG)
 	touch $(KEYRING)
 
-/usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a:
+/usr/lib/arm-linux-gnueabihf/libfftw3f.a:
 	apt-get -y install libfftw3-dev
 
 # NB not a typo: "clang-6.0" vs "clang-7"
