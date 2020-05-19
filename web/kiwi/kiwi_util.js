@@ -602,7 +602,7 @@ function createCookie(name, value, days) {
 	document.cookie = name +"="+ value + expires +"; path=/";
 }
 
-function readCookie(name) {
+function readCookie(name, defaultValue) {
 	var nameEQ = name + "=";
 	var ca = document.cookie.split(';');
 	for (var i=0; i < ca.length; i++) {
@@ -611,7 +611,11 @@ function readCookie(name) {
 		//console.log('readCookie '+ name +' consider <'+ c +'>');
 		if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
 	}
-	return null;
+	if (isDefined(defaultValue)) {
+	   return defaultValue;
+	} else {
+	   return null;
+	}
 }
 
 function writeCookie(cookie, value)
