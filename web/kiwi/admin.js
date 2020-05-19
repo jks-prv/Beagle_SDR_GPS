@@ -962,7 +962,7 @@ function backup_focus()
 	w3_el('id-output-msg').style.height = px(300);
 }
 
-var sd_progress, sd_progress_max = 4*60;		// measured estimate -- in secs (varies with SD card write speed)
+var sd_progress, sd_progress_max = 6*60;		// measured estimate -- in secs (varies with SD card write speed)
 var backup_sd_interval;
 var backup_refresh_icon = w3_icon('', 'fa-refresh fa-spin', 20);
 

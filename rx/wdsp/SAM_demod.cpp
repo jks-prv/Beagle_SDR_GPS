@@ -38,7 +38,7 @@ struct wdsp_SAM_t {
     f32_t SAM_lowpass;
 };
 
-wdsp_SAM_t wdsp_SAM[MAX_RX_CHANS];
+static wdsp_SAM_t wdsp_SAM[MAX_RX_CHANS];
 
 static const f32_t pll_fmax = +22000.0;
 static const int zeta_help = 65;

@@ -267,8 +267,6 @@ function kiwi_main()
 	snd_send("SERVER DE CLIENT openwebrx.js SND");
 	snd_send("SET debug_v="+ debug_v);
 	snd_send("SET squelch=0 max="+ squelch_threshold.toFixed(0));
-	snd_send("SET lms_denoise=0");
-	snd_send("SET lms_autonotch=0");
 
    if (gen_attn != 0) {
       var dB = gen_attn;
@@ -294,8 +292,6 @@ function kiwi_main()
 	//console.log('wf_rate="'+ wf_rate +'" wf_speed='+ wf_speed);
 	if (wf_speed == undefined) wf_speed = WF_SPEED_FAST;
 	wf_send('SET wf_speed='+ wf_speed);
-
-	if (nb_click) nb_send(-1, noiseThresh);
 }
 
 var ptype = { HIDE:0, POPUP:1, TOGGLE:2 };
@@ -810,8 +806,8 @@ var passbands = {
 	am:		{ lo: -4900,	hi:  4900 },            // 9.8 kHz instead of 10 to avoid adjacent channel heterodynes in SW BCBs
 	amn:		{ lo: -2500,	hi:  2500 },
 	sam:		{ lo: -4900,	hi:  4900 },
-	sal:		{ lo: -4900,	hi:  4900 },
-	sau:		{ lo: -4900,	hi:  4900 },
+	sal:		{ lo: -4900,	hi:     0 },
+	sau:		{ lo:     0,	hi:  4900 },
 	sas:		{ lo: -4900,	hi:  4900 },
 	drm:		{ lo: -5000,	hi:  5000 },
 	lsb:		{ lo: -2700,	hi:  -300 },	         // cf = 1500 Hz, bw = 2400 Hz
@@ -1203,6 +1199,8 @@ function demodulator_analog_replace(subtype, freq)
 	var offset = 0, prev_pbo = 0, low_cut = NaN, high_cut = NaN;
 	var wasCW = false, toCW = false, fromCW = false;
 	
+   w3_show_hide('id-sam-carrier-container', subtype.startsWith('sa'));
+
 	if (demodulators.length) {
 		wasCW = demodulators[0].isCW;
 		offset = demodulators[0].offset_frequency;
@@ -1403,11 +1401,8 @@ var scale_canvas_ignore_mouse_event = false;
 function scale_canvas_start_drag(evt, isMouse)
 {
 	// Distinguish ctrl-click right-button meta event from actual right-button on mouse (or touchpad two-finger tap).
-	// Must ignore true_right_click case even though contextmenu event is being handled elsewhere.
-	var true_right_click = false;
 	if (evt.button == mouse.right && !evt.ctrlKey) {
 		//dump_event = true;
-		true_right_click = true;
 		right_click_menu(scale_canvas_drag_params.start_x, scale_canvas_drag_params.start_y);
       scale_canvas_drag_params.mouse_down = false;
 		scale_canvas_ignore_mouse_event = true;
@@ -2078,11 +2073,8 @@ function canvas_start_drag(evt, x, y)
 	if (debug_canvas_drag) canvas_log('CSD');
 	
 	// Distinguish ctrl-click right-button meta event from actual right-button on mouse (or touchpad two-finger tap).
-	// Must ignore true_right_click case even though contextmenu event is being handled elsewhere.
-	var true_right_click = false;
 	if (evt.button == mouse.right && !evt.ctrlKey) {
 		//dump_event = true;
-		true_right_click = true;
 		canvas_ignore_mouse_event = true;
 		if (debug_canvas_drag) console.log('CSD-Rclick IME=set-true');
 		if (debug_canvas_drag) canvas_log('ordinary-RCM');
@@ -2112,7 +2104,7 @@ function canvas_start_drag(evt, x, y)
 		var am_ssb_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
 		//console_log('nearest', cm, am_ssb_iq_drm);
 	   var ITU_region = cfg.init.ITU_region + 1;
-	   var ham_80m_swbc_75m_overlap = (ITU_region == 2 && b.name == '75m');
+	   var ham_80m_swbc_75m_overlap = (ITU_region == 2 && b && b.name == '75m');
 
 		if (b != null && (b.name == 'LW' || b.name == 'MW')) {
 			if (am_ssb_iq_drm) {
@@ -4299,10 +4291,8 @@ function audioFFT_setup()
 {
    if (!audioFFT_active) return;
    zoom_level = 0;
-   var last_AF_max_dB = readCookie('last_AF_max_dB');
-   if (last_AF_max_dB == null) last_AF_max_dB = maxdb;
-   var last_AF_min_dB = readCookie('last_AF_min_dB');
-   if (last_AF_min_dB == null) last_AF_min_dB = mindb_un;
+   var last_AF_max_dB = readCookie('last_AF_max_dB', maxdb);
+   var last_AF_min_dB = readCookie('last_AF_min_dB', mindb_un);
    setmaxdb(1, last_AF_max_dB);
    setmindb(1, last_AF_min_dB);
    update_maxmindb_sliders();
@@ -6270,6 +6260,9 @@ function ident_keyup(el, evt)
 var shortcut = {
    nav_off: 0,
    keys: '',
+   SHIFT: 1,
+   CTL_OR_ALT: 2,
+   SHIFT_PLUS_CTL_OR_ALT: 3
 };
 
 function keyboard_shortcut_init()
@@ -6282,7 +6275,7 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny', 'g =', 25, 'select frequency entry field'),
          w3_inline_percent('w3-padding-tiny', 'j i LR-arrow-keys', 25, 'frequency step down/up, add shift or alt/ctrl for faster<br>shift plus alt/ctrl to step to next/prev DX label'),
          w3_inline_percent('w3-padding-tiny', 't T', 25, 'scroll frequency memory list'),
-         w3_inline_percent('w3-padding-tiny', 'a A d l u c f q', 25, 'toggle modes: AM SAM DRM LSB USB CW NBFM IQ'),
+         w3_inline_percent('w3-padding-tiny', 'a A d l u c f q', 25, 'toggle modes: AM SAM DRM LSB USB CW NBFM IQ<br>add alt/ctrl to toggle backwards (e.g. SAM modes)'),
          w3_inline_percent('w3-padding-tiny', 'p P', 25, 'passband narrow/widen'),
          w3_inline_percent('w3-padding-tiny', 'r', 25, 'toggle audio recording'),
          w3_inline_percent('w3-padding-tiny', 'z Z', 25, 'zoom in/out, add alt/ctrl for max in/out'),
@@ -6305,7 +6298,7 @@ function keyboard_shortcut_init()
 
 function keyboard_shortcut_help()
 {
-   confirmation_show_content(shortcut.help, 550, 465);
+   confirmation_show_content(shortcut.help, 550, 485);
 }
 
 // FIXME: animate (light up) control panel icons?
@@ -6342,23 +6335,24 @@ function keyboard_shortcut(key, mod, ctlAlt)
 {
    var action = true;
    var mode = ext_get_mode();
+   var dir = ctlAlt? -1 : 1;
    shortcut.nav_click = false;
    
    switch (key) {
    
    // mode
-   case 'a': mode_button(null, w3_el('id-button-am')); break;
-   case 'A': mode_button(null, w3_el('id-button-sam')); break;
+   case 'a': mode_button(null, w3_el('id-button-am'), dir); break;
+   case 'A': mode_button(null, w3_el('id-button-sam'), dir); break;
    case 'd': ext_set_mode('drm', null, { open_ext:true }); break;
-   case 'l': mode_button(null, w3_el('id-button-lsb')); break;
-   case 'u': mode_button(null, w3_el('id-button-usb')); break;
-   case 'c': mode_button(null, w3_el('id-button-cw')); break;
+   case 'l': mode_button(null, w3_el('id-button-lsb'), dir); break;
+   case 'u': mode_button(null, w3_el('id-button-usb'), dir); break;
+   case 'c': mode_button(null, w3_el('id-button-cw'), dir); break;
    case 'f': ext_set_mode('nbfm'); break;
    case 'q': ext_set_mode('iq'); break;
    
    // step
-   case 'j': case 'J': case 'ArrowLeft':  if (mod < 3) freqstep(2-mod); else dx_label_step(-1); break;
-   case 'i': case 'I': case 'ArrowRight': if (mod < 3) freqstep(3+mod); else dx_label_step(+1); break;
+   case 'j': case 'J': case 'ArrowLeft':  if (mod != shortcut.SHIFT_PLUS_CTL_OR_ALT) freqstep(2-mod); else dx_label_step(-1); break;
+   case 'i': case 'I': case 'ArrowRight': if (mod != shortcut.SHIFT_PLUS_CTL_OR_ALT) freqstep(3+mod); else dx_label_step(+1); break;
    
    // passband
    case 'p': passband_increment(false); break;
@@ -6440,7 +6434,7 @@ function keyboard_shortcut_event(evt)
       var alt = evt.altKey;
       var meta = evt.metaKey;
       var ctlAlt = (ctl||alt);
-      var mod = (sft && !ctlAlt)? 1 : ( (!sft & ctlAlt)? 2 : ( (sft && ctlAlt)? 3:0 ) );
+      var mod = (sft && !ctlAlt)? shortcut.SHIFT : ( (!sft & ctlAlt)? shortcut.CTL_OR_ALT : ( (sft && ctlAlt)? shortcut.SHIFT_PLUS_CTL_OR_ALT : 0 ) );
 
       var field_input_key = (
             (k >= '0' && k <= '9' && !ctl) ||
@@ -6716,10 +6710,8 @@ function panels_setup()
       );
 
 
-	wf_filter = readCookie('last_wf_filter');
-	if (wf_filter == null) wf_filter = wf_sp_menu_e.OFF;
-	spec_filter = readCookie('last_spec_filter');
-	if (spec_filter == null) spec_filter = wf_sp_menu_e.IIR;
+	wf_filter = readCookie('last_wf_filter', wf_sp_menu_e.OFF);
+	spec_filter = readCookie('last_spec_filter', wf_sp_menu_e.IIR);
 	
    if (isString(spectrum_show)) {
       var ss = spectrum_show.toLowerCase();
@@ -6777,63 +6769,52 @@ function panels_setup()
 
 
    // audio & nb
-	de_emphasis = readCookie('last_de_emphasis');
-	if (de_emphasis == null) de_emphasis = 0;
-
-	pan = readCookie('last_pan');
-	if (pan == null) pan = 0;
+   var nb_algo_s = [ ['off',1], ['std',1], ['Wild',0] ];
+   var nr_algo_s = [ ['off',1], ['wdsp',1], ['LMS',1], ['Kim',0], ['spec',0] ];
+	de_emphasis = readCookie('last_de_emphasis', 0);
+	pan = readCookie('last_pan', 0);
 
 	w3_el('id-optbar-audio').innerHTML =
-		w3_col_percent('w3-valign/class-slider',
-			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color, 'Noise gate')), 20,
-			'<input id="input-noise-gate" type="range" min="100" max="5000" value="'+ noiseGate +'" step="100" onchange="setNoiseGate(1,this.value)" oninput="setNoiseGate(0,this.value)">', 50,
-			w3_div('field-noise-gate w3-show-inline-block', noiseGate.toString()) +' uS', 15,
-			w3_div('w3-hcenter', w3_div('id-button-nb class-button||title="noise blanker"; onclick="toggle_or_set_nb();"', 'NB')), 15
+		w3_col_percent('w3-valign/',
+			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color +' cl-closer-spaced-label-text', 'Noise')), 17,
+         w3_select_conditional('|color:red', '', 'blanker', 'nb_algo', 0, nb_algo_s, 'nb_algo_cb'), 24,
+			w3_div('w3-hcenter', w3_div('class-button||onclick="extint_open(\'noise_blanker\'); freqset_select();"', 'More')), 21,
+         w3_select_conditional('|color:red', '', 'filter', 'nr_algo', 0, nr_algo_s, 'nr_algo_cb'), 23,
+			w3_div('w3-hcenter', w3_div('class-button||onclick="extint_open(\'noise_filter\'); freqset_select();"', 'More')), 15
 		) +
 		w3_col_percent('w3-valign/class-slider',
-			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color +' cl-closer-spaced-label-text', 'Noise<br>threshold')), 20,
-			'<input id="input-noise-th" type="range" min="0" max="100" value="'+ noiseThresh +'" step="1" onchange="setNoiseThresh(1,this.value)" oninput="setNoiseThresh(0,this.value)">', 50,
-			w3_div('field-noise-th w3-show-inline-block', noiseThresh.toString()) +'%', 15,
+			w3_text(optbar_prefix_color, 'Volume'), 17,
+			'<input id="id-input-volume" type="range" min="0" max="200" value="'+ volume +'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 40,
+         w3_select('|color:red', '', 'de-emp', 'de_emphasis', de_emphasis, de_emphasis_s, 'de_emp_cb'), 28,
 		   w3_button('id-button-compression class-button w3-hcenter||title="compression"', 'Comp', 'toggle_or_set_compression'), 15
 		) +
-		w3_col_percent('w3-valign w3-margin-TB-4/',
-			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color, 'LMS filter')), 25,
-			w3_div('w3-valign',
-            w3_checkbox('w3-label-inline w3-label-not-bold', 'Denoiser', 'lms.denoise', false, 'lms_denoise_load_cb')
-         ), 30,
-			w3_div('w3-valign',
-            w3_checkbox('w3-label-inline w3-label-not-bold', 'Autonotch', 'lms.autonotch', false, 'lms_autonotch_load_cb')
-         ), 30,
-			w3_div('w3-hcenter', w3_div('id-button-lms-ext class-button||onclick="extint_open(\'LMS\'); freqset_select();"', 'More')), 15
-		) +
-		w3_col_percent('w3-valign/class-slider',
-			w3_text(optbar_prefix_color, 'Volume'), 20,
-			'<input id="id-input-volume" type="range" min="0" max="200" value="'+ volume +'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 35,
-         w3_select('|color:red', '', 'de-emp', 'de_emphasis', de_emphasis, de_emphasis_s, 'de_emp_cb'), 30,
-			//w3_div('w3-hcenter', w3_div('id-button-pref class-button|visibility:hidden|onclick="show_pref();"', 'Pref')), 15,
-			w3_div('w3-hcenter', w3_div('id-button-mute class-button||onclick="toggle_or_set_mute();"', 'Mute')), 15
-			//w3_div('w3-hcenter', w3_div('id-button-test class-button||onclick="toggle_or_set_test();"', 'Test')), 15
-		) +
+      w3_col_percent('id-pan w3-valign w3-hide/class-slider',
+         w3_text(optbar_prefix_color, 'Pan'), 17,
+         '<input id="id-pan-value" type="range" min="-1" max="1" value="'+ pan +'" step="0.01" onchange="setpan(1,this.value)" oninput="setpan(0, this.value)">', 50,
+         w3_div('id-pan-field'), 15
+      ) +
       w3_col_percent('id-squelch w3-valign w3-hide/class-slider',
-         //'<span id="id-squelch-label">Squelch </span>', 18,
-			w3_text('id-squelch-label', 'Squelch'), 20,
+			w3_text('id-squelch-label', 'Squelch'), 17,
          '<input id="id-squelch-value" type="range" min="0" max="99" value="'+ squelch +'" step="1" onchange="setsquelch(1,this.value)" oninput="setsquelch(1, this.value)">', 50,
          w3_div('id-squelch-field class-slider'), 30
 	   ) +
-      w3_col_percent('id-pan w3-valign w3-hide/class-slider',
-         w3_text(optbar_prefix_color, 'Pan'), 20,
-         '<input id="id-pan-value" type="range" min="-1" max="1" value="'+ pan +'" step="0.01" onchange="setpan(1,this.value)" oninput="setpan(0, this.value)">', 50,
-         w3_div('id-pan-field'), 15
+      w3_col_percent('id-sam-carrier-container w3-valign w3-hide/class-slider',
+         w3_text(optbar_prefix_color, 'SAM'), 17,
+         w3_text('id-sam-carrier')
       );
 
+   kiwi_load_js_dir('extensions/', ['noise_blanker/noise_blanker.js', 'noise_filter/noise_filter.js'],
+      function() {
+         noise_blanker_init();
+         noise_filter_init();
+      }
+   );
+
    w3_color('id-button-mute', muted? 'lime':'white');
-   toggle_or_set_test(0);
+   //toggle_or_set_test(0);
    //toggle_or_set_audio(toggle_e.FROM_COOKIE | toggle_e.SET, 1);
    toggle_or_set_compression(toggle_e.FROM_COOKIE | toggle_e.SET, 1);
-	nb_setup(toggle_e.FROM_COOKIE | toggle_e.SET);
-	toggle_or_set_nb(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
 	squelch_setup(toggle_e.FROM_COOKIE);
-
    audio_panner_ui_init();
 
 
@@ -6965,10 +6946,7 @@ function panels_setup()
 		   w3_div('id-status-problems')
 		) +
 		w3_div('id-status-stats-cpu') +
-		w3_div('id-status-stats-xfer') +
-		w3_div('id-sam-carrier-container w3-hide',
-         w3_text(optbar_prefix_color, 'SAM'), w3_text('id-sam-carrier')
-      );
+		w3_div('id-status-stats-xfer');
 
 	setTimeout(function() { setInterval(status_periodic, 5000); }, 1000);
 }
@@ -7396,6 +7374,7 @@ function audio_panner_ui_init()
    }
 }
 
+
 var hide_topbar = 0;
 function toggle_or_set_hide_topbar(set)
 {
@@ -7477,7 +7456,7 @@ function toggle_or_set_rec(set)
       wav_data.setUint32(12, 0x666d7420);                                 // ASCII "fmt "
       wav_data.setUint32(16, 16, true);                                   // Length of this section ("fmt ") in bytes
       wav_data.setUint16(20, 1, true);                                    // PCM coding
-      var nch = (cur_mode === 'iq' || cur_mode === 'drm')? 2 : 1;         // Two channels for IQ mode, one channel otherwise
+      var nch = (cur_mode === 'iq' || cur_mode === 'drm' || cur_mode === 'sas')? 2 : 1;   // Two channels for stereo modes, one channel otherwise
       wav_data.setUint16(22, nch, true);
       var srate = Math.round(audio_input_rate || 12000);
       wav_data.setUint32(24, srate, true);                                // Sample rate
@@ -7587,86 +7566,6 @@ function toggle_or_set_compression(set, val)
 	writeCookie('last_compression', btn_compression.toString());
 	//console.log('SET compression='+ btn_compression.toFixed(0));
 	snd_send('SET compression='+ btn_compression.toFixed(0));
-}
-
-// NB
-var btn_nb = 0;
-
-function toggle_or_set_nb(set, val)
-{
-	if (set != undefined)
-		btn_nb = kiwi_toggle(set, val, btn_nb, 'last_nb');
-	else
-		btn_nb ^= 1;
-
-   var el = w3_el('id-button-nb');
-	el.style.color = btn_nb? 'lime':'white';
-	el.style.visibility = 'visible';
-	freqset_select();
-	writeCookie('last_nb', btn_nb.toString());
-	nb_send(btn_nb? noiseGate : 0, noiseThresh);
-}
-
-function nb_send(gate, thresh)
-{
-	snd_send('SET nb='+ gate +' th='+ thresh);
-	wf_send('SET nb='+ gate +' th='+ thresh);
-	//console.log('NB gate='+ gate +' thresh='+ thresh);
-}
-
-var default_noiseGate = 100;
-var noiseGate = default_noiseGate;
-
-function setNoiseGate(done, str)
-{
-   noiseGate = parseFloat(str);
-   html('input-noise-gate').value = noiseGate;
-   html('field-noise-gate').innerHTML = str;
-	nb_send(btn_nb? noiseGate : 0, noiseThresh);
-	writeCookie('last_noiseGate', noiseGate.toString());
-   if (done) freqset_select();
-}
-
-var default_noiseThresh = 50;
-var noiseThresh = default_noiseThresh;
-
-function setNoiseThresh(done, str)
-{
-   noiseThresh = parseFloat(str);
-   html('input-noise-th').value = noiseThresh;
-   html('field-noise-th').innerHTML = str;
-	nb_send(btn_nb? noiseGate : 0, noiseThresh);
-	writeCookie('last_noiseThresh', noiseThresh.toString());
-   if (done) freqset_select();
-}
-
-function nb_setup(toggle_flags)
-{
-	noiseGate = kiwi_toggle(toggle_flags, default_noiseGate, noiseGate, 'last_noiseGate'); setNoiseGate(true, noiseGate);
-	noiseThresh = kiwi_toggle(toggle_flags, default_noiseThresh, noiseThresh, 'last_noiseThresh'); setNoiseThresh(true, noiseThresh);
-}
-
-
-// LMS filter
-
-function lms_denoise_load_cb(path, checked, first)
-{
-   if (first) return;
-   kiwi_load_js(['extensions/LMS_filter/LMS_filter.js'],
-      function() {
-         lms_denoise_cb(path, checked, first);
-      }
-   );
-}
-
-function lms_autonotch_load_cb(path, checked, first)
-{
-   if (first) return;
-   kiwi_load_js(['extensions/LMS_filter/LMS_filter.js'],
-      function() {
-         lms_autonotch_cb(path, checked, first);
-      }
-   );
 }
 
 
@@ -7948,9 +7847,10 @@ var mode_buttons = [
    { s:[ 'IQ' ],                        dis:0 },
 ];
 
-function mode_button(evt, el)
+function mode_button(evt, el, dir)
 {
    var mode = el.innerHTML.toLowerCase();
+   if (isUndefined(dir)) dir = 1;
 
 	// Prevent going between mono and stereo modes while recording
 	// FIXME: do something better like disable ineligible mode buttons and show reason in mouseover tooltip 
@@ -7962,12 +7862,16 @@ function mode_button(evt, el)
 
 	// reset passband to default parameters
 	if (any_alternate_click_event(evt)) {
-	   restore_passband(mode);
-      ext_set_mode(mode, null, { open_ext:true });
-	   return;
+	   if (evt.shiftKey || evt.button == mouse.middle) {
+         restore_passband(mode);
+         ext_set_mode(mode, null, { open_ext:true });
+         return;
+      }
+      
+      dir = -1;
 	}
 
-	// cycle button to next value
+	// cycle button to next/prev value
 	//console.log(el);
    var col = parseInt(el.id);
 
@@ -7982,8 +7886,9 @@ function mode_button(evt, el)
    } else {
       var sa = mode_buttons[col].s;
       mode = mode.toUpperCase();
-      var i = sa.indexOf(mode);
-      if (i == sa.length-1) i = 0; else i++;
+      var i = sa.indexOf(mode) + dir;
+      if (i <= -1) i = sa.length - 1;
+      if (i >= sa.length) i = 0;
       mode = sa[i];
       el.innerHTML = mode;
       mode = mode.toLowerCase();

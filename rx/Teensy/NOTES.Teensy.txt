@@ -1,0 +1,6 @@
+//
+// porting from Teensy:
+//  FFT_length/2 => ns_out
+//  FFT_length + i * 2 (I), FFT_length + i * 2 + 1 (Q) => [i].re, [i].im
+//  iFFT_buffer[] => in[]
+//

@@ -1,5 +1,5 @@
 Instructions for cross-compiling KiwiSDR code on a fast development machine.
-[updated 21 April 2020]
+[updated 27 April 2020]
 
 It is now possible to create an ARM architecture executable kiwi.bin file that can be
 directly copied to Debian running on the Beagle of the Kiwi. It is essentially the same as
@@ -105,6 +105,13 @@ KIWI_XC_HOST
 Set to the host name or ip address of the Kiwi where the binary files will be copied.
 Copying is done using rsync, i.e. "rsync .../*.o root@$(KIWI_XC_HOST):~root/build/..."
 Defaults to "kiwisdr".
+
+KIWI_XC_HOST_PORT
+If for some reason rsync to the Kiwi requires a port number other than 22 (ssh) then
+it can be specified here. This is unlikely when the target Kiwi is simply on your own
+local network. In our case it occurs when the target Kiwi is at a remote customer site
+where ssh connections from the Internet are on a non-standard port number for security
+reasons. Defaults to port 22.
 
 KIWI_XC_COPY_SOURCES
 Set to "true" if you want the Kiwi source files copied along with the binaries to the

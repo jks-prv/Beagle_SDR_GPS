@@ -120,6 +120,7 @@ void c2s_sound(void *param)
 	conn->snd_cmd_recv_ok = false;
 	int rx_chan = conn->rx_channel;
 	snd_t *snd = &snd_inst[rx_chan];
+	wf_inst_t *wf = &WF_SHMEM->wf_inst[rx_chan];
 	rx_dpump_t *rx = &rx_dpump[rx_chan];
     iq_buf_t *iq = &RX_SHMEM->iq_buf[rx_chan];
 	
@@ -129,9 +130,6 @@ void c2s_sound(void *param)
 	
 	double freq=-1, _freq, gen=-1, _gen, locut=0, _locut, hicut=0, _hicut, mix;
 	int mode=-1, _mode, genattn=0, _genattn, mute, test=0, de_emp=0;
-	int noise_blanker=0, noise_threshold=0, nb_click=0, last_noise_pulse=0;
-	int lms_denoise=0, lms_autonotch=0, lms_de_delay=0, lms_an_delay=0;
-	float lms_de_beta=0, lms_an_beta=0, lms_de_decay=0, lms_an_decay=0;
 	double z1 = 0;
 
 	double frate = ext_update_get_sample_rateHz(rx_chan);      // FIXME: do this in loop to get incremental changes
@@ -178,6 +176,11 @@ void c2s_sound(void *param)
 	
 	memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
 	
+	int last_noise_pulse=0;
+	int nb_algo=0, nr_algo=0;
+    int nb_enable[NOISE_ALGOS]={0}, nr_enable[NOISE_ALGOS]={0};
+	float nb_param[NOISE_TYPES][NOISE_PARAMS], nr_param[NOISE_TYPES][NOISE_PARAMS];
+
 	gps_timestamp_t *gps_tsp = &gps_ts[rx_chan];
 	memset(gps_tsp, 0, sizeof(gps_timestamp_t));
 
@@ -452,61 +455,75 @@ void c2s_sound(void *param)
 				continue;
 			}
 
-			n = sscanf(cmd, "SET lms_denoise=%d", &lms_denoise);
+			n = sscanf(cmd, "SET nb algo=%d", &nb_algo);
 			if (n == 1) {
-				//printf("lms_denoise %d\n", lms_denoise);
-			    if (lms_denoise)
-	                m_LMS_denoise[rx_chan].Initialize(LMS_DENOISE_QRN, lms_de_delay, lms_de_beta, lms_de_decay);
+				//cprintf(conn, "nb: algo=%d\n", nb_algo);
+				memset(nb_enable, 0, sizeof(nb_enable));
+				memset(wf->nb_enable, 0, sizeof(wf->nb_enable));
 				continue;
 			}
 
-			n = sscanf(cmd, "SET lms.de_delay=%d", &lms_de_delay);
+			n = sscanf(cmd, "SET nr algo=%d", &nr_algo);
 			if (n == 1) {
-				//printf("lms_de_delay %d\n", lms_de_delay);
-	            m_LMS_denoise[rx_chan].Initialize(LMS_DENOISE_QRN, lms_de_delay, lms_de_beta, lms_de_decay);
+				//cprintf(conn, "nr: algo=%d\n", nr_algo);
+				memset(nr_enable, 0, sizeof(nr_enable));
 				continue;
 			}
 
-			n = sscanf(cmd, "SET lms.de_beta=%f", &lms_de_beta);
-			if (n == 1) {
-				//printf("lms_de_beta %.3f\n", lms_de_beta);
-	            m_LMS_denoise[rx_chan].Initialize(LMS_DENOISE_QRN, lms_de_delay, lms_de_beta, lms_de_decay);
+            int n_type, n_en;
+			n = sscanf(cmd, "SET nb type=%d en=%d", &n_type, &n_en);
+			if (n == 2) {
+				//cprintf(conn, "nb: type=%d en=%d\n", n_type, n_en);
+				nb_enable[n_type] = n_en;
+				wf->nb_enable[n_type] = n_en;
+				continue;
+			}
+			n = sscanf(cmd, "SET nr type=%d en=%d", &n_type, &n_en);
+			if (n == 2) {
+				//cprintf(conn, "nr: type=%d en=%d\n", n_type, n_en);
+				nr_enable[n_type] = n_en;
 				continue;
 			}
 
-			n = sscanf(cmd, "SET lms.de_decay=%f", &lms_de_decay);
-			if (n == 1) {
-				//printf("lms_de_decay %.3f\n", lms_de_decay);
-	            m_LMS_denoise[rx_chan].Initialize(LMS_DENOISE_QRN, lms_de_delay, lms_de_beta, lms_de_decay);
+            int n_param;
+            float n_pval;
+			n = sscanf(cmd, "SET nb type=%d param=%d pval=%f", &n_type, &n_param, &n_pval);
+			if (n == 3) {
+				//cprintf(conn, "nb: type=%d param=%d pval=%f\n", n_type, n_param, n_pval);
+				nb_param[n_type][n_param] = n_pval;
+				wf->nb_param[n_type][n_param] = n_pval;
+				wf->nb_param_change[n_type] = true;
+
+                switch (nb_algo) {
+                    case NB_STD: m_NoiseProc[rx_chan][NB_SND].SetupBlanker("SND", frate, nb_param[n_type]); break;
+                    case NB_WILD: break;
+                }
+                
 				continue;
 			}
 
-			n = sscanf(cmd, "SET lms_autonotch=%d", &lms_autonotch);
-			if (n == 1) {
-				//printf("lms_autonotch %d\n", lms_autonotch);
-			    if (lms_autonotch)
-	                m_LMS_autonotch[rx_chan].Initialize(LMS_AUTONOTCH_QRM, lms_an_delay, lms_an_beta, lms_an_decay);
+			n = sscanf(cmd, "SET nr type=%d param=%d pval=%f", &n_type, &n_param, &n_pval);
+			if (n == 3) {
+				//cprintf(conn, "nr: type=%d param=%d pval=%f\n", n_type, n_param, n_pval);
+				nr_param[n_type][n_param] = n_pval;
+
+                switch (nr_algo) {
+                    case NR_WDSP: wdsp_ANR_init(rx_chan, (nr_type_e) n_type, nr_param[n_type]); break;
+                    case NR_ORIG: m_LMS[rx_chan][n_type].Initialize((nr_type_e) n_type, nr_param[n_type]); break;
+                }
+                
 				continue;
 			}
 
-			n = sscanf(cmd, "SET lms.an_delay=%d", &lms_an_delay);
-			if (n == 1) {
-				//printf("lms_an_delay %d\n", lms_an_delay);
-	            m_LMS_autonotch[rx_chan].Initialize(LMS_AUTONOTCH_QRM, lms_an_delay, lms_an_beta, lms_an_decay);
-				continue;
-			}
+            // old noise blanker API for kiwiclient et al
+            int nb, th;
+			n = sscanf(cmd, "SET nb=%d th=%d", &nb, &th);
+			if (n == 2) {
+				nb_param[NB_BLANKER][0] = nb;
+				nb_param[NB_BLANKER][1] = th;
+				nb_enable[NB_BLANKER] = nb? 1:0;
 
-			n = sscanf(cmd, "SET lms.an_beta=%f", &lms_an_beta);
-			if (n == 1) {
-				//printf("lms_an_beta %.3f\n", lms_an_beta);
-	            m_LMS_autonotch[rx_chan].Initialize(LMS_AUTONOTCH_QRM, lms_an_delay, lms_an_beta, lms_an_decay);
-				continue;
-			}
-
-			n = sscanf(cmd, "SET lms.an_decay=%f", &lms_an_decay);
-			if (n == 1) {
-				//printf("lms_an_decay %.3f\n", lms_an_decay);
-	            m_LMS_autonotch[rx_chan].Initialize(LMS_AUTONOTCH_QRM, lms_an_delay, lms_an_beta, lms_an_decay);
+				if (nb) m_NoiseProc[rx_chan][NB_SND].SetupBlanker("SND", frate, nb_param[NB_BLANKER]);
 				continue;
 			}
 
@@ -550,22 +567,6 @@ void c2s_sound(void *param)
 			n = sscanf(cmd, "SET test=%d", &test);
 			if (n == 1) {
 				//printf("test %d\n", test);
-				continue;
-			}
-
-            int nb, th;
-			n = sscanf(cmd, "SET nb=%d th=%d", &nb, &th);
-			if (n == 2) {
-			    if (nb < 0) {
-			        nb_click = (nb == -1)? 1:0;
-			        continue;
-			    }
-			    noise_blanker = nb;
-			    noise_threshold = th;
-
-				if (noise_blanker) {
-                    m_NoiseProc[rx_chan][NB_SND].SetupBlanker("SND", (float) noise_threshold, (float) noise_blanker, frate);
-				}
 				continue;
 			}
 
@@ -703,7 +704,7 @@ void c2s_sound(void *param)
 		char *smeter   = (IQ_or_DRM_or_SAS? snd->out_pkt_iq.h.smeter : snd->out_pkt_real.h.smeter);
 
 		bool do_de_emp = (de_emp && !IQ_or_DRM_or_SAS);
-		bool do_lms    = (!isNBFM && !IQ_or_DRM_or_SAS);
+		bool AM_or_SAM_or_SSB = (!isNBFM && !IQ_or_DRM_or_SAS);
 		
 		#ifdef DRM
             drm_t *drm = &DRM_SHMEM->drm[rx_chan];
@@ -800,7 +801,7 @@ void c2s_sound(void *param)
 
 			if (masked) memset(i_samps, 0, sizeof(TYPECPX) * nrx_samps);
 			
-            if (nb_click) {
+            if (nb_enable[NB_CLICK]) {
                 u4_t now = timer_sec();
                 if (now != last_noise_pulse) {
                     last_noise_pulse = now;
@@ -808,8 +809,8 @@ void c2s_sound(void *param)
                 }
             }
 
-			if (noise_blanker) {
-                m_NoiseProc[rx_chan][NB_SND].ProcessBlanker(ns_in, i_samps, i_samps);
+			if (nb_enable[NB_BLANKER]) {
+			    m_NoiseProc[rx_chan][NB_SND].ProcessBlanker(ns_in, i_samps, i_samps);
             }
 
 			ns_out  = m_PassbandFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps, f_samps);
@@ -994,14 +995,21 @@ void c2s_sound(void *param)
             if (do_de_emp) {    // AM and NBFM modes
                 m_de_emp_Biquad[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
             }
-    
-            if (do_lms) {       // AM and sideband modes
-    
-                // noise processors
-                if (lms_denoise) m_LMS_denoise[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
-                if (lms_autonotch) m_LMS_autonotch[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
-            }
             
+            // noise & autonotch processors (AM and sideband modes)
+            if (AM_or_SAM_or_SSB) {
+                switch (nr_algo) {
+                    case NR_WDSP:
+                        if (nr_enable[0]) wdsp_ANR_filter(rx_chan, NR_DENOISE, ns_out, r_samps, r_samps);
+                        if (nr_enable[1]) wdsp_ANR_filter(rx_chan, NR_AUTONOTCH, ns_out, r_samps, r_samps);
+                        break;
+
+                    case NR_ORIG:
+                        if (nr_enable[0]) m_LMS[rx_chan][NR_DENOISE].ProcessFilter(ns_out, r_samps, r_samps);
+                        if (nr_enable[1]) m_LMS[rx_chan][NR_AUTONOTCH].ProcessFilter(ns_out, r_samps, r_samps);
+                        break;
+                }
+            }
             
             ////////////////////////////////
             // copy to output buffer and send to client
@@ -1215,7 +1223,7 @@ void c2s_sound(void *param)
         // send sequence number that waterfall syncs to on client-side
         snd->seq++;
         SET_LE_U32(seq, snd->seq);
-        WF_SHMEM->wf_inst[rx_chan].snd_seq = snd->seq;
+        wf->snd_seq = snd->seq;
         //{ real_printf("%d ", snd->seq & 1); fflush(stdout); }
         //{ real_printf("q%d ", snd->seq); fflush(stdout); }
 

@@ -40,6 +40,7 @@
 
 #include "datatypes.h"
 #include "kiwi.h"
+#include "rx.h"
 
 class CNoiseProc
 {
@@ -47,7 +48,7 @@ public:
 	CNoiseProc();
 	virtual ~CNoiseProc();
 
-	void SetupBlanker(const char *id, TYPEREAL Threshold, TYPEREAL GateUsec, TYPEREAL SampleRate);
+	void SetupBlanker(const char *id, TYPEREAL SampleRate, TYPEREAL nr_param[NOISE_PARAMS]);
 	void ProcessBlanker(int InLength, TYPECPX* pInData, TYPECPX* pOutData);
 	void ProcessBlankerOneShot(int InLength, TYPECPX* pInData, TYPECPX* pOutData);
 
@@ -66,6 +67,7 @@ private:
 	int m_GateSamples;
 	TYPEREAL m_Ratio;
 	TYPEREAL m_MagAveSum;
+	int m_Blanked;
 	int m_LastMsg;
 };
 

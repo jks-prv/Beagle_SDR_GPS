@@ -1668,7 +1668,7 @@ function w3_textarea_get_param(psa, label, path, rows, cols, cb, init_val)
 // checkbox
 ////////////////////////////////
 
-function w3int_checkbox_change(path, save_cb)
+function w3int_checkbox_change(path, save_cb, cb_param)
 {
 	var el = w3_el(path);
 	w3_check_restart_reboot(el);
@@ -1681,7 +1681,7 @@ function w3int_checkbox_change(path, save_cb)
 		setTimeout(function() {
 			w3_unhighlight(el);
 		}, w3_highlight_time);
-		w3_call(save_cb, path, el.checked, /* first */ false);
+		w3_call(save_cb, path, el.checked, /* first */ false, cb_param);
 	}
 
    if (w3_contains(el, 'w3-retain-input-focus'))
@@ -1690,10 +1690,10 @@ function w3int_checkbox_change(path, save_cb)
       w3int_post_action();
 }
 
-function w3_checkbox(psa, label, path, checked, cb)
+function w3_checkbox(psa, label, path, checked, cb, cb_param)
 {
 	var id = path? ('id-'+ path) : '';
-	var onchange = ' onchange="w3int_checkbox_change('+ sq(path) +', '+ sq(cb) +')"';
+	var onchange = ' onchange="w3int_checkbox_change('+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"';
 	var checked_s = checked? ' checked' : '';
 	var inline = psa.includes('w3-label-inline');
 	var left = psa.includes('w3-label-left');
@@ -1716,7 +1716,7 @@ function w3_checkbox(psa, label, path, checked, cb)
 	if (cb)
 		setTimeout(function() {
 			//console.log('w3_checkbox: initial callback: '+ cb +'('+ sq(path) +', '+ checked +')');
-			w3_call(cb, path, checked, /* first */ true);
+			w3_call(cb, path, checked, /* first */ true, cb_param);
 		}, 500);
 
 	//if (label == 'Title') console.log(s);
@@ -1741,6 +1741,8 @@ function w3_checkbox_get(path)
 function w3_checkbox_set(path, checked)
 {
    var el = w3_el(path);
+   //console.log('w3_checkbox_set path='+ path +' el=...');
+   //console.log(el);
    if (!el) return;
 	el.checked = checked? true:false;
 }
@@ -1899,6 +1901,7 @@ function w3_select_hier(psa, label, title, path, sel, opts, cb, cb_param)
 }
 
 // conditional -- individual menu entries can be enabled/disabled
+// [ ['s', 1|0], ... ]
 function w3_select_conditional(psa, label, title, path, sel, opts, cb, cb_param)
 {
    var s = '';
@@ -2488,7 +2491,7 @@ function w3_col_percent(psa)
 // the w3-text makes it inline-block, so no surrounding w3_inline() needed
 function w3_text(psa, text)
 {
-	var s = w3_div(w3_psa_mix(psa, 'w3-text', 'padding:0 4px 0 0; background-color:inherit'), text);
+	var s = w3_div(w3_psa_mix(psa, 'w3-text', 'padding:0 4px 0 0; background-color:inherit'), text? text:' ');
 	//console.log(s);
 	return s;
 }

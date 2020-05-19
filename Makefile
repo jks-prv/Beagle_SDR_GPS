@@ -177,7 +177,7 @@ INT_EXTS = $(subst /,,$(subst extensions/,,$(wildcard $(INT_EXT_DIRS))))
 EXTS = $(INT_EXTS) $(PVT_EXTS)
 
 GPS = gps gps/ka9q-fec gps/GNSS-SDRLIB
-RX = rx rx/CuteSDR rx/wdsp rx/csdr rx/kiwi
+RX = rx rx/CuteSDR rx/Teensy rx/wdsp rx/csdr rx/kiwi
 ifneq ($(RPI),true)
 	_DIRS = pru $(PKGS)
 endif
