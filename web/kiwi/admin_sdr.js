@@ -415,6 +415,7 @@ function webpage_update_check_grid()
 
 function webpage_input_map(path, val)
 {
+   val = val.replace(/\s+/g, '');
 	webpage_string_cb(path, val);
 	webpage_update_check_map();
 }
