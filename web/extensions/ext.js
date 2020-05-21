@@ -13,6 +13,10 @@ var extint = {
    default_h: 300,
    prev_mode: null,
    seq: 0,
+   
+   // extensions not subject to DRM lockout
+   // FIXME: allow C-side API to specify
+   no_lockout: [ 'noise_blanker', 'noise_filter', 'ant_switch', 'iframe', 'colormap', 'devl' ]
 };
 
 var devl = {
@@ -707,7 +711,7 @@ function extint_focus(is_locked)
    var ext = extint.current_ext_name;
 	console.log('extint_focus: loading '+ ext +'.js');
 	
-	if (is_locked) {
+	if (is_locked && !extint.no_lockout.includes(ext)) {
 	   var s =
          w3_text('w3-medium w3-text-css-yellow',
             'Cannot use extensions while <br> another channel is in DRM mode.'
