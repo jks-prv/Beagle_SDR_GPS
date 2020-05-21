@@ -62,8 +62,13 @@ Boston, MA  02110-1301, USA.
 #define LED_F_NONE              0x00
 #define LED_F_FLASH_POST_NUM    0x01
 
-#define LED_PATH "/sys/class/leds/beaglebone:green:usr"
-#define NLED 4
+#ifdef CPU_BCM2837
+  #define LED_PATH "/sys/class/leds/led"
+  #define NLED 2
+#else
+  #define LED_PATH "/sys/class/leds/beaglebone:green:usr"
+  #define NLED 4
+#endif
 static int led_fd[NLED][2];
 static int led_delay_off;
 
@@ -109,9 +114,19 @@ static void led_set_one(int led, int v)
 static void led_set(int l0, int l1, int l2, int l3, int msec)
 {
     if (l0 != 2) led_set_one(0, l0);
+
+#if NLED > 1
     if (l1 != 2) led_set_one(1, l1);
+#endif
+
+#if NLED > 2
     if (l2 != 2) led_set_one(2, l2);
+#endif
+
+#if NLED > 3
     if (l3 != 2) led_set_one(3, l3);
+#endif
+
     kiwi_msleep(msec);
 }
 

@@ -238,12 +238,13 @@ int main(int argc, char *argv[])
     struct stat st;
     debug_printfs |= (stat(DIR_CFG "/opt.debug", &st) == 0);
 
-    // on reboot let ntpd and other stuff settle first
-    if (background_mode) {
-        lprintf("background mode: delaying start 30 secs...\n");
-        sleep(30);
-    }
-    
+    #ifndef PLATFORM_raspberrypi
+        // on reboot let ntpd and other stuff settle first
+        if (background_mode) {
+            lprintf("background mode: delaying start 30 secs...\n");
+            sleep(30);
+        }
+    #endif
 
 	TaskInit();
     cfg_reload();
