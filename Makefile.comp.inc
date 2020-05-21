@@ -73,9 +73,9 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
         LDFLAGS += -L$(KIWI_XC_REMOTE_FS)/usr/local/lib/
 
 		ifeq ($(RPI),true)
-			CFLAGS += -mcpu=cortex-a53
+			CFLAGS += -mtune=cortex-a53 -mcpu=cortex-a53
 		else
-			CFLAGS += -mcpu=cortex-a8
+			CFLAGS += -mtune=cortex-a8 -mcpu=cortex-a8
 		endif
 
 	else

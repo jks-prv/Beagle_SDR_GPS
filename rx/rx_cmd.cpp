@@ -106,8 +106,8 @@ void rx_common_init(conn_t *conn)
 {
 	conn->keepalive_time = timer_sec();
 
-    if (is_BBAI)
-	    send_msg(conn, true, "MSG is_BBAI");
+    if (is_multi_core)
+	    send_msg(conn, true, "MSG is_multi_core");
 }
 
 bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)

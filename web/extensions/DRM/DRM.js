@@ -850,7 +850,7 @@ function drm_desktop_controls_setup(w_graph)
    } else
    
    if (drm.locked == 0) {
-      if (kiwi.is_BBAI) {
+      if (kiwi.is_multi_core) {
          s = 'DRM not supported on this channel.';
       } else {
          // DRM_config_html() will have set cfg.DRM.nreg_chans before use here

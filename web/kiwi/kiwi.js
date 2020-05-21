@@ -9,7 +9,7 @@ var kiwi = {
    GPS_fixes: 0,
    wf_fps: 0,
    inactivity_panel: false,
-   is_BBAI: 0,
+   is_multi_core: 0,
    
    // must match rx_cmd.cpp
    modes_l: [ 'am', 'amn', 'usb', 'lsb', 'cw', 'cwn', 'nbfm', 'iq', 'drm', 'usn', 'lsn', 'sam', 'sal', 'sau', 'sas' ],
@@ -1711,13 +1711,13 @@ function kiwi_msg(param, ws)
       /*
       // enable DRM mode button
       var el = w3_el('id-button-drm');
-      if (el && kiwi.is_BBAI) {
+      if (el && kiwi.is_multi_core) {
          w3_remove(el, 'class-button-disbled');
          w3_attribute(el, 'onclick', 'mode_button(event, this)');
       }
       */
-		case "is_BBAI":
-		   kiwi.is_BBAI = 1;
+		case "is_multi_core":
+		   kiwi.is_multi_core = 1;
 		   break;
 		
 		case "authkey_cb":

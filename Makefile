@@ -40,26 +40,28 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 	# enough parallel make jobs to overcome core stalls from filesystem or nfs delays
 	ifeq ($(BBAI),true)
-#		MAKE_ARGS = -j 2
+		# currently even 2 parallel compiles can run out of memory on BBAI
+		#MAKE_ARGS = -j 2
 		MAKE_ARGS =
+	else ifeq ($(RPI),true)
+		# fixme: test, but presumably the 1GB (min) of DRAM on RPi 3B & 4 would support this many
+		MAKE_ARGS = -j 4
 	else
 		ifeq ($(DEBIAN_7),true)
 			# Debian 7 gcc runs out of memory compiling edata_always*.cpp in parallel
 			MAKE_ARGS =
 		else
-#			MAKE_ARGS = -j 4
 			MAKE_ARGS =
 		endif
 	endif
 else
 	# choices when building on development machine
 	ifeq ($(XC),-DXC)
-		# BBAI,DEBIAN_7 are taken from the mounted KiwiSDR root file system
+		# BBAI, DEBIAN_7 are taken from the mounted KiwiSDR root file system
 		MAKE_ARGS = -j 7
 	else
 		BBAI = true
-		#BBAI = false
-		DEBIAN_7 = false
+		#RPI = true
 		MAKE_ARGS = -j
 	endif
 endif
@@ -115,9 +117,9 @@ xc:
 	@make XC=-DXC $@
 else
 xc: c_ext_clang_conv
-	@echo KIWI_XC_HOST=$(KIWI_XC_HOST)
-	@echo KIWI_XC_HOST_PORT=$(KIWI_XC_HOST_PORT)
-	@echo KIWI_XC_REMOTE_FS=$(KIWI_XC_REMOTE_FS)
+	@echo KIWI_XC_HOST = $(KIWI_XC_HOST)
+	@echo KIWI_XC_HOST_PORT = $(KIWI_XC_HOST_PORT)
+	@echo KIWI_XC_REMOTE_FS = $(KIWI_XC_REMOTE_FS)
 	@make $(MAKE_ARGS) build_makefile_inc
 	@make $(MAKE_ARGS) c_ext_clang_conv_all
 endif
@@ -352,7 +354,7 @@ VERSION = -DVERSION_MAJ=$(VERSION_MAJ) -DVERSION_MIN=$(VERSION_MIN)
 VER = v$(VERSION_MAJ).$(VERSION_MIN)
 V = -Dv$(VERSION_MAJ)_$(VERSION_MIN)
 
-INT_FLAGS += $(VERSION) -DKIWI -DKIWISDR -DARCH_$(ARCH) -DCPU_$(CPU) -DARCH_CPU=$(CPU) -DPLATFORM_$(PLATFORM)
+INT_FLAGS += $(VERSION) -DKIWI -DKIWISDR -DARCH_$(ARCH) -DCPU_$(CPU) -DARCH_CPU=$(CPU) $(addprefix -DPLATFORM_,$(PLATFORMS))
 INT_FLAGS += -DDIR_CFG=STRINGIFY\($(DIR_CFG)\) -DCFG_PREFIX=STRINGIFY\($(CFG_PREFIX)\)
 INT_FLAGS += -DBUILD_DIR=STRINGIFY\($(BUILD_DIR)\) -DREPO=STRINGIFY\($(REPO)\) -DREPO_NAME=STRINGIFY\($(REPO_NAME)\)
 
@@ -383,9 +385,9 @@ build_makefile_inc:
 	@echo "----------------"
 	@echo "building" $(MF_INC)
 	@echo $(VER)
-	@echo BBAI=$(BBAI)
-	@echo DEBUG=$(DEBUG)
-	@echo XC=$(XC)
+	@echo PLATFORMS = $(PLATFORMS)
+	@echo DEBUG = $(DEBUG)
+	@echo XC = $(XC)
 	@echo
 #
 	@echo $(I) $(START_MF_INC)
@@ -589,7 +591,7 @@ c_ext_clang_conv_vars:
 	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
 	@echo ARCH = $(ARCH)
 	@echo CPU = $(CPU)
-	@echo PLATFORM = $(PLATFORM)
+	@echo PLATFORMS = $(PLATFORMS)
 	@echo BUILD_DIR = $(BUILD_DIR)
 	@echo OBJ_DIR = $(OBJ_DIR)
 	@echo OBJ_DIR_O3 = $(OBJ_DIR_O3)
@@ -1112,11 +1114,15 @@ dump_eeprom:
 ifeq ($(DEBIAN_7),true)
 	hexdump -C /sys/bus/i2c/devices/1-0054/eeprom
 else
-ifeq ($(BBAI),true)
-	hexdump -C /sys/bus/i2c/devices/3-0054/eeprom
-else
-	hexdump -C /sys/bus/i2c/devices/2-0054/eeprom
-endif
+	ifeq ($(BBAI),true)
+		hexdump -C /sys/bus/i2c/devices/3-0054/eeprom
+	else
+		ifeq ($(RPI),true)
+			hexdump -C /sys/bus/i2c/devices/1-0054/eeprom
+		else
+			hexdump -C /sys/bus/i2c/devices/3-0054/eeprom
+		endif
+	endif
 endif
 	@echo
 	@echo BeagleBone EEPROM:

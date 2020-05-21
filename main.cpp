@@ -71,7 +71,7 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 u4_t ov_mask, snd_intr_usec;
 
 bool create_eeprom, need_hardware, test_flag, sdr_hu_debug, have_ant_switch_ext, gps_e1b_only,
-    disable_led_task, is_BBAI, kiwi_restart, debug_printfs;
+    disable_led_task, is_multi_core, kiwi_restart, debug_printfs;
 
 char **main_argv;
 char *fpga_file;
@@ -86,10 +86,10 @@ int main(int argc, char *argv[])
 	version_min = VERSION_MIN;
 	
 	#ifdef CPU_AM5729
-	    is_BBAI = true;
+	    is_multi_core = true;
 	#endif
 	#ifdef CPU_BCM2837
-            is_BBAI = true;
+            is_multi_core = true;
         #endif
 	
 	main_argv = argv;
