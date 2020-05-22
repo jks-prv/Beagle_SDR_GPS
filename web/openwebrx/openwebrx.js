@@ -2593,7 +2593,7 @@ function freq_database_lookup(Hz, utility)
 function export_waterfall(Hz) {
 
     f = get_visible_freq_range()
-    var fileName = Math.floor(f.center/100)/10 +'+-'+Math.floor((f.end-f.center)/100)/10 + 'KHz.jpg'
+    var fileName = Math.floor(f.center/100)/10 + cfg.freq_offset +'+-'+ Math.floor((f.end-f.center)/100)/10 +'KHz.jpg'
 
     var PNGcanvas = document.createElement("canvas");
     PNGcanvas.width = wf_fft_size;
@@ -2644,7 +2644,7 @@ function export_waterfall(Hz) {
 
     PNGcanvas.ctx.stroke(); 
     
-    var flabel = Math.floor(Hz/100)/10;
+    var flabel = Math.floor(Hz/100)/10 + cfg.freq_offset;
     flabel = flabel + ' KHz ';
     PNGcanvas.ctx.font = "18px Arial";
     PNGcanvas.ctx.fillStyle = "lime";
@@ -4607,20 +4607,21 @@ var freq_dsp_set_last;
 
 function freqset_update_ui()
 {
-	//console.log("FUPD-UI demod-ofreq="+(center_freq + demodulators[0].offset_frequency));
+	//console.log('FUPD-UI freq_car_Hz='+ freq_car_Hz +' cf+of='+(center_freq + demodulators[0].offset_frequency));
+	//console.log('FUPD-UI center_freq='+ center_freq +' offset_frequency='+ demodulators[0].offset_frequency);
 	//kiwi_trace();
 	freq_displayed_Hz = freq_car_to_dsp(freq_car_Hz);
-	freq_displayed_kHz_str = (freq_displayed_Hz/1000).toFixed(2);
-	//console.log("FUPD-UI freq_car_Hz="+freq_car_Hz+' NEW freq_displayed_Hz='+freq_displayed_Hz);
+   freq_displayed_kHz_str = (freq_displayed_Hz/1000).toFixed(2);
+   //console.log("FUPD-UI freq_car_Hz="+freq_car_Hz+' NEW freq_displayed_Hz='+freq_displayed_Hz);
 	
 	if (!waterfall_setup_done) return;
 	
 	var obj = w3_el('id-freq-input');
 	if (isUndefined(obj) || obj == null) return;		// can happen if SND comes up long before W/F
 
-	//obj.value = freq_displayed_kHz_str;
-	var f = freq_displayed_Hz + cfg.freq_offset*1e3;
-	obj.value = (f/1000).toFixed((f > 100e6)? 1:2);
+   var f_with_freq_offset = freq_displayed_Hz + cfg.freq_offset*1e3;
+   freq_displayed_kHz_str_with_freq_offset = (f_with_freq_offset/1000).toFixed((f_with_freq_offset > 100e6)? 1:2);
+   obj.value = freq_displayed_kHz_str_with_freq_offset;
 
 	//console.log("FUPD obj="+ typeof(obj) +" val="+ obj.value);
 	freqset_select();
@@ -4637,8 +4638,8 @@ function freqset_update_ui()
 	// reset "select band" menu if freq is no longer inside band
 	check_band();
 	
-	writeCookie('last_freq', freq_displayed_kHz_str);
-	freq_dsp_set_last = freq_displayed_kHz_str;
+	writeCookie('last_freq', freq_displayed_kHz_str_with_freq_offset);
+	freq_dsp_set_last = freq_displayed_kHz_str_with_freq_offset;
 	//console.log('## freq_dsp_set_last='+ freq_dsp_set_last);
 
 	freq_step_update_ui();
@@ -4647,9 +4648,9 @@ function freqset_update_ui()
 	// update history list
    //console.log('freq_memory update');
    //console.log(freq_memory);
-	if (freq_displayed_kHz_str != freq_memory[freq_memory_pointer]) {
-	   freq_memory.push(freq_displayed_kHz_str);
-	   //console.log('freq_memory push='+ freq_displayed_kHz_str);
+	if (freq_displayed_kHz_str_with_freq_offset != freq_memory[freq_memory_pointer]) {
+	   freq_memory.push(freq_displayed_kHz_str_with_freq_offset);
+	   //console.log('freq_memory push='+ freq_displayed_kHz_str_with_freq_offset);
 	}
 	if (freq_memory.length > 25) freq_memory.shift();
 	freq_memory_pointer = freq_memory.length-1;
