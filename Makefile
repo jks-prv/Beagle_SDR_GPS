@@ -839,8 +839,8 @@ install_kiwi_device_tree:
 	@echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
 	cp platform/beaglebone_AI/am5729-beagleboneai-kiwisdr-cape.dts /opt/source/$(DIR_DTB)/src/arm
 	(cd /opt/source/$(DIR_DTB); make)
-	cp /opt/source/dtb-4.14-ti/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)
-	cp /opt/source/dtb-4.14-ti/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb
+	cp /opt/source/$(DIR_DTB)/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)
+	cp /opt/source/$(DIR_DTB)/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb
 	@touch $(REBOOT)
 endif
 
