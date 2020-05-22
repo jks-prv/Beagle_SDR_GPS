@@ -2,6 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.391  May 23, 2020
     User interface changes:
         SAL, SAU mode passband image will only show single sideband (just like LSB, USB).
         Ctrl/alt-click on mode button toggles modes backwards (most useful with SAM modes).
