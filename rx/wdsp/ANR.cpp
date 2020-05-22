@@ -41,7 +41,7 @@ static wdsp_ANR_t wdsp_ANR[NOISE_TYPES][MAX_RX_CHANS];
 
 void wdsp_ANR_init(int rx_chan, nr_type_e nr_type, TYPEREAL nr_param[NOISE_PARAMS])
 {
-    printf("wdsp_ANR_init type=%d\n", nr_type);
+    //printf("wdsp_ANR_init type=%d\n", nr_type);
     wdsp_ANR_t *w = &wdsp_ANR[nr_type][rx_chan];
     memset(w, 0, sizeof(wdsp_ANR_t));
 

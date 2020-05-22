@@ -559,7 +559,7 @@ void c2s_sound(void *param)
                     b1 = z1;
                     b2 = 0;
 					m_de_emp_Biquad[rx_chan].InitFilterCoef(a0, a1, a2, b0, b1, b2);
-					cprintf(conn, "SND de-emp: %dus frate %.0f\n", (de_emp == 1)? 75:50, frate);
+					//cprintf(conn, "SND de-emp: %dus frate %.0f\n", (de_emp == 1)? 75:50, frate);
 				}
 				continue;
 			}
