@@ -13,6 +13,10 @@ var extint = {
    default_h: 300,
    prev_mode: null,
    seq: 0,
+   
+   // extensions not subject to DRM lockout
+   // FIXME: allow C-side API to specify
+   no_lockout: [ 'noise_blanker', 'noise_filter', 'ant_switch', 'iframe', 'colormap', 'devl' ]
 };
 
 var devl = {
@@ -190,7 +194,6 @@ function ext_set_mode(mode, freq, opt)
    var new_drm = (mode == 'drm');
    if (new_drm)
       extint.prev_mode = cur_mode;
-   w3_show_hide('id-sam-carrier-container', mode.startsWith('sa'));
 
    //console.log('### ext_set_mode '+ mode +' prev='+ extint.prev_mode);
 	demodulator_analog_replace(mode, freq);
@@ -569,6 +572,10 @@ function extint_panel_show(controls_html, data_html, show_func)
 	extint.displayed = true;
 }
 
+function ext_panel_displayed() { return extint.displayed; }
+
+function ext_panel_redisplay(s) { w3_innerHTML('id-ext-controls-container', s); }
+
 function extint_panel_hide()
 {
 	//console.log('extint_panel_hide using_data_container='+ extint.using_data_container);
@@ -587,7 +594,7 @@ function extint_panel_hide()
 	w3_visible('id-ext-controls', false);
 	//w3_visible('id-msgs', true);
 	
-	extint_blur_prev();
+	extint_blur_prev(1);
 	
 	// on close, reset extension menu
 	w3_select_value('select-ext', -1);
@@ -684,12 +691,12 @@ function extint_msg_cb(param, ws)
 	return true;
 }
 
-function extint_blur_prev()
+function extint_blur_prev(restore)
 {
 	if (extint.current_ext_name != null) {
 		w3_call(extint.current_ext_name +'_blur');
 		recv_websocket(extint.ws, null);		// ignore further server ext messages
-		ext_set_controls_width_height();		// restore width
+		if (restore) ext_set_controls_width_height();		// restore width/height
 		extint.current_ext_name = null;
 		time_display_setup('id-topbar-right-container');
 	}
@@ -704,7 +711,7 @@ function extint_focus(is_locked)
    var ext = extint.current_ext_name;
 	console.log('extint_focus: loading '+ ext +'.js');
 	
-	if (is_locked) {
+	if (is_locked && !extint.no_lockout.includes(ext)) {
 	   var s =
          w3_text('w3-medium w3-text-css-yellow',
             'Cannot use extensions while <br> another channel is in DRM mode.'
@@ -743,7 +750,7 @@ var extint_first_ext_load = true;
 // called on extension menu item selection
 function extint_select(idx)
 {
-	extint_blur_prev();
+	extint_blur_prev(0);
 	
 	idx = +idx;
 	w3_el('select-ext').value = idx;

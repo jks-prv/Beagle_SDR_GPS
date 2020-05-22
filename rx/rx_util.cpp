@@ -50,7 +50,6 @@ Boston, MA  02110-1301, USA.
 #include <sched.h>
 #include <math.h>
 #include <signal.h>
-#include <fftw3.h>
 
 // copy admin-related configuration from kiwi.json to new admin.json file
 void cfg_adm_transition()
@@ -544,7 +543,7 @@ void webserver_collect_print_stats(int print)
 	current_nusers = nusers;
 
 	// construct cpu stats response
-	#define NCPU 2
+	#define NCPU 4
 	int usi[3][NCPU], del_usi[3][NCPU];
 	static int last_usi[3][NCPU];
 
@@ -556,11 +555,17 @@ void webserver_collect_print_stats(int print)
 	char *reply = read_file_string_reply("/proc/stat");
 	
 	if (reply != NULL) {
-		int n = sscanf(kstr_sp(reply), "%*[^\n]\ncpu0 %d %*d %d %d %*[^\n]\ncpu1 %d %*d %d %d",
-		    &usi[0][0], &usi[1][0], &usi[2][0], &usi[0][1], &usi[1][1], &usi[2][1]);
-		assert(n == 3 || n == 6);
-		int ncpu = (n == 3)? 1:2;
-		kstr_free(reply);
+		int ncpu;
+		char *cpu_ptr = kstr_sp(reply);
+		for (ncpu = 0; ncpu < NCPU; ncpu++) {
+			char buf[10];
+			sprintf(buf, "cpu%d", ncpu);
+			cpu_ptr = strstr(cpu_ptr, buf);
+			if (cpu_ptr == nullptr)
+				break;
+			sscanf(cpu_ptr + 4, " %d %*d %d %d", &usi[0][ncpu], &usi[1][ncpu], &usi[2][ncpu]);
+		}
+
 		for (i = 0; i < ncpu; i++) {
             del_usi[0][i] = lroundf((float)(usi[0][i] - last_usi[0][i]) / secs);
             del_usi[1][i] = lroundf((float)(usi[1][i] - last_usi[1][i]) / secs);
@@ -568,9 +573,10 @@ void webserver_collect_print_stats(int print)
             //printf("CPU%d %.1fs u=%d%% s=%d%% i=%d%%\n", i, secs, del_usi[0][i], del_usi[1][i], del_usi[2][i]);
         }
 		
+		kstr_free(reply);
 	    int cpufreq_kHz = 1000000, temp_deg_mC = 0;
 
-#ifdef CPU_AM5729
+#if defined(CPU_AM5729) || defined(CPU_BCM2837)
 	    reply = read_file_string_reply("/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_cur_freq");
 		sscanf(kstr_sp(reply), "%d", &cpufreq_kHz);
 		kstr_free(reply);

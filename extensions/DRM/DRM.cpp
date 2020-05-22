@@ -105,7 +105,7 @@ bool DRM_msgs(char *msg, int rx_chan)
         if (!DRM_enable && !conn->isLocal) {
             rv = -2;    // prevent attempt to bypass the javascript kiwi.is_local check
         } else {
-            if (is_BBAI) {
+            if (is_multi_core) {
                 is_locked = (rx_chan < drm_info.drm_chan)? 1:0;
                 printf("DRM BBAI lock_set inuse=%d heavy=%d rx_chan=%d drm_chan=%d locked=%d\n",
                     inuse, heavy, rx_chan, drm_info.drm_chan, is_locked);

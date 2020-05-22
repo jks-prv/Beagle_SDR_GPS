@@ -1,3 +1,4 @@
+#include "rx.h"
 #include "lms.h"
 
 #define DL_LEN_MAX              300     // 25 msec @ 12 kHz
@@ -10,25 +11,25 @@
 #define DECAY_AUTONOTCH_DEF     0.99915
 #define DECAY_NOISE_DEF         0.98
 
-CLMS m_LMS_denoise[MAX_RX_CHANS];
-CLMS m_LMS_autonotch[MAX_RX_CHANS];
+CLMS m_LMS[MAX_RX_CHANS][2];
 
 CLMS::CLMS()
 {
 }
 
-int CLMS::Initialize(lms_e lms_type, TYPEREAL delayLineLen, TYPEREAL beta, TYPEREAL decay)
+int CLMS::Initialize(nr_type_e nr_type, TYPEREAL nr_param[NOISE_PARAMS])
 {
-    m_lms_type = lms_type;
+    TYPEREAL delayLineLen = nr_param[0], beta = nr_param[1], decay = nr_param[2];
+    m_nr_type = nr_type;
     
-    if (m_lms_type == LMS_AUTONOTCH_QRM) {
+    if (m_nr_type == NR_AUTONOTCH) {
         if (delayLineLen <= 0) delayLineLen = DL_AUTONOTCH_LEN_DEF;
         if (beta <= 0) beta = BETA_AUTONOTCH_DEF;
         m_beta = beta;
         if (decay <= 0) decay = DECAY_AUTONOTCH_DEF;
         m_decay = decay;
     } else
-    if (m_lms_type == LMS_DENOISE_QRN) {
+    if (m_nr_type == NR_DENOISE) {
         if (delayLineLen <= 0) delayLineLen = DL_NOISE_LEN_DEF;
         if (beta <= 0) beta = BETA_NOISE_DEF;
         m_beta = beta;
@@ -44,8 +45,8 @@ int CLMS::Initialize(lms_e lms_type, TYPEREAL delayLineLen, TYPEREAL beta, TYPER
     memset(m_dline, 0, sizeof(m_dline));
     memset(m_lmscoef, 0, sizeof(m_lmscoef));
 
-    printf("LMS %s dlen=%d FIR=%d beta=%.6f decay=%.6f\n", (m_lms_type == LMS_AUTONOTCH_QRM)? "autonotch":"denoise",
-        m_dlen, LMSLEN, m_beta, m_decay);
+    //printf("LMS %s dlen=%d FIR=%d beta=%.6f decay=%.6f\n", (m_nr_type == NR_AUTONOTCH)? "autonotch" : "denoise",
+    //    m_dlen, LMSLEN, m_beta, m_decay);
     return 0;
 }
 
@@ -80,7 +81,7 @@ int CLMS::Initialize(lms_e lms_type, TYPEREAL delayLineLen, TYPEREAL beta, TYPER
 
 void CLMS::ProcessFilter(int ilen, TYPEMONO16* ibuf, TYPEMONO16* obuf)
 {
-    //printf("LMS run %s dlen=%d beta=%.6f decay=%.6f\n", (m_lms_type == LMS_AUTONOTCH_QRM)? "autonotch":"denoise", \
+    //printf("LMS run %s dlen=%d beta=%.6f decay=%.6f\n", (m_nr_type == NR_AUTONOTCH)? "autonotch" : "denoise", \
         m_dlen, m_beta, m_decay);
 
     int i;
@@ -97,13 +98,13 @@ void CLMS::ProcessFilter(int ilen, TYPEMONO16* ibuf, TYPEMONO16* obuf)
         }
         DEC(m_dlp);     // backup to last
 	
-        if (m_lms_type == LMS_DENOISE_QRN) {
+        if (m_nr_type == NR_DENOISE) {
             obuf[bp] = (TYPEMONO16) MROUND(fir * 2 * K_AMPMAX);
         }
     
         TYPEREAL err = samp - fir;
     
-        if (m_lms_type == LMS_AUTONOTCH_QRM) {
+        if (m_nr_type == NR_AUTONOTCH) {
             obuf[bp] = (TYPEMONO16) MROUND(err * K_AMPMAX);
         }
 

@@ -25,8 +25,6 @@ Boston, MA  02110-1301, USA.
 #include "cuteSDR.h"
 #include "ima_adpcm.h"
 
-#include <fftw3.h>
-
 //#define DATA_PUMP_DEBUG
 
 typedef struct {
@@ -62,7 +60,6 @@ typedef struct {
 	struct {
 	    int rx_chan;
 		u64_t gen, proc;
-		fftwf_complex *wf_c_samps;
 		u4_t desired;
 		float chunk_wait_us;
 		int zoom, samp_wait_ms;

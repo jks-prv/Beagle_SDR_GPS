@@ -45,7 +45,7 @@ Boston, MA  02110-1301, USA.
 
 extern int version_maj, version_min;
 
-extern bool background_mode, need_hardware, test_flag, is_BBAI, kiwi_restart,
+extern bool background_mode, need_hardware, test_flag, is_multi_core, kiwi_restart,
 	DUC_enable_start, rev_enable_start, web_nocache, auth_su, sdr_hu_debug,
 	have_ant_switch_ext, gps_e1b_only, disable_led_task, conn_nolocal, debug_printfs;
 

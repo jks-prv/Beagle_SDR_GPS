@@ -121,6 +121,8 @@ static bool debian8 = false;
 
 #ifdef CPU_AM5729
  #define EEPROM_DEV_DEBIAN8	    "/sys/bus/i2c/devices/3-0054/eeprom"
+#elif defined(CPU_BCM2837)
+ #define EEPROM_DEV_DEBIAN8	    "/sys/bus/i2c/devices/1-0054/eeprom"
 #else
  #define EEPROM_DEV_DEBIAN8	    "/sys/bus/i2c/devices/2-0054/eeprom"
 #endif

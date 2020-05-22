@@ -6,7 +6,7 @@ alias bargs="function _bargs () { echo arg_one \$1 ; echo arg_two \$2 ; echo all
 
 # shell
 alias al="alias"
-alias soc="source ~/.profile"
+alias soc="pd ~; source ~/.profile; popd"
 alias pe="printenv"
 alias se="setenv"
 alias unexport="unset"
@@ -54,9 +54,10 @@ alias sha256="sha256sum"
 alias col1="awk -- '{print \$1}'"
 
 # pki colordiff
+p_diff_exclude="--exclude=.DS_Store --exclude=.git --exclude=.svn --exclude=4_deploy"
 alias diff="colordiff"
-alias dif="colordiff -br --exclude=.DS_Store --exclude=.git --exclude=.svn"
-alias difff="colordiff -qbr --exclude=.DS_Store --exclude=.git --exclude=.svn"
+alias dif="colordiff -br ${p_diff_exclude}"
+alias difff="colordiff -qbr ${p_diff_exclude}"
 
 # ANSI color escapes
 alias red='printf "\033[1;31m"'
@@ -117,14 +118,19 @@ alias lt="function _lt () { /bin/ls \$COLOR -lath \$* ; } ; _lt"
 alias ldt="function _ldt () { /bin/ls \$COLOR -ladth \$* ; } ; _ldt"
 
 # grep
-d_gr_exclude="--exclude-dir .git --exclude-dir .svn --exclude-dir ./web/pkgs_maps/leaflet/mapbox-gl"
+d_gr_exclude="--exclude-dir .git --exclude-dir .svn --exclude-dir ./web/pkgs_maps/leaflet"
 alias grep="grep \$COLOR"
 alias gr="grep -i \$COLOR"
-alias g="function _g () { gr -riI ${d_gr_exclude} --exclude \*.min.\* \$* . ; } ; _g"
-alias gs="function _gs () { gr -rI ${d_gr_exclude} --exclude \*.min.\* \$* . ; } ; _gs"
-alias g.="function _gdot () { gr -iI \$* * ; } ; _gdot"
-alias gg="function _gfile () { gr -iI \$* ; } ; _gfile"
-alias gt="function _gtail () { tail -n 300 -f \$2 | gr -i --line-buffered \$1 ; } ; _gtail"
+alias g="function _g () { grep -riI ${d_gr_exclude} --exclude \*.min.\*  --exclude \*\ copy.\* \$* . ; } ; _g"
+alias gs="function _gs () { grep -rI ${d_gr_exclude} --exclude \*.min.\* --exclude \*\ copy.\* \$* . ; } ; _gs"
+alias gc="function _gc () { grep -riI ${d_gr_exclude} --exclude \*.min.\* --exclude \*\ copy.\* --include=\*.c --include=\*.cpp \$* . ; } ; _gc"
+alias gh="function _gh () { grep -riI ${d_gr_exclude} --exclude \*.min.\* --exclude \*\ copy.\* --include=\*.h --include=\*.hpp \$* . ; } ; _gh"
+alias gf="function _gf () { grep -riI ${d_gr_exclude} --exclude \*.min.\* --exclude \*\ copy.\* \[^a-zA-Z0-9_\]\$*\( . ; } ; _gf"
+alias gfs="function _gfs () { grep -rI ${d_gr_exclude} --exclude \*.min.\* --exclude \*\ copy.\* \[^a-zA-Z0-9_\]\$*\( . ; } ; _gfs"
+
+alias g.="function _gdot () { grep -iI \$* * ; } ; _gdot"
+alias gg="function _gfile () { grep -iI \$* ; } ; _gfile"
+alias gt="function _gtail () { tail -n 300 -f \$2 | grep -i --line-buffered \$1 ; } ; _gtail"
 # note that only $* is required here (not \$*) perhaps due to use in built-in commands?
 alias ff='function _ff () { export ffa=$* ; find . -name "*$ffa*" -print ; } ; _ff'
 
@@ -175,9 +181,10 @@ alias scen="function _sys () { systemctl --lines=100 enable \${*}.service ; } ; 
 alias sa="service --status-all"
 
 # packages
-alias pk="echo pk: s=search_available ls=list_installed ver,vers,pol=versions i=install rm=remove ar=autoremove; echo pk: up=update upp=single_pkg ug=dist-upgrade uug=upgrade fug=full-upgrade; echo pk: c=clean sz=sizes f=which_pkg_has_file fu=file_update fi=files_installed co=cape_overlays"
+alias pk="echo pk: s=search_available ls=list_installed ver,vers,show,pol=versions i=install rm=remove ar=autoremove; echo pk: up=update upp=single_pkg ug=dist-upgrade uug=upgrade fug=full-upgrade; echo pk: c=clean sz=sizes f,f2=which_pkg_has_file fu=file_update fi=files_installed co=cape_overlays"
 alias pks="echo available pkgs:; apt-cache search"
 alias pkls="echo installed pkgs:; dpkg -l | gr"
+alias pksh="apt show"
 alias pkver="apt-cache showpkg"
 alias pkvers="apt-cache madison"
 alias pkpol="apt-cache policy"
@@ -185,12 +192,13 @@ alias pkup="apt-get -y install debian-archive-keyring; apt-get update"
 # update(upgrade) single package
 alias pkupp="apt-get install --only-upgrade"
 alias pkug="apt-get -y dist-upgrade"
-alias pkuug="apt-get -y upgrade"
-alias pkfug="apt-get full-upgrade"
+#alias pkuug="apt-get -y upgrade"
+#alias pkfug="apt-get full-upgrade"
 alias pki="apt-get -y install"
 alias pkc="df; apt-get clean; echo; df"
 alias pksz="dpkg-query -W -f='\${Installed-Size;8}\t\${Status;1}\t\${Package}\n' | gr -v '\\sd\\s' | sort -n | cut -f1,3-"
 alias pkf="apt-file search"
+alias pkf2="dpkg -S"
 alias pkfu="apt-file update"
 alias pkfg="apt-file upgrade"
 alias pkfi="dpkg -L"
@@ -234,6 +242,7 @@ alias wdt="strings /boot/dtbs/${d_sys}/${f_dtb} | grep '.dts'"
 alias cdi2c="cd /sys/bus/i2c/devices"
 alias ver="/opt/scripts/tools/version.sh"
 alias ht="htop"
+alias it="iotop"
 alias io="iotop -obtqqq"
 alias kai="function _kai () { ../build/kiwi.bin -debian 8 -use_spidev 1 \$* ; } ; _kai"
 alias reb="shutdown -r now"
@@ -310,10 +319,13 @@ alias geoloc="curl https://ipapi.co/json"
 alias geoloc2="curl https://extreme-ip-lookup.com/json"
 alias geoloc3="curl https://get.geojs.io/v1/ip/geo.json"
 alias geolocip="function _geolocip () { curl https://extreme-ip-lookup.com/json/\$1 ; } ; _geolocip"
-alias ipt="iptables -L -n -v"
+alias ipt="function _ipt () { iptables -n -v -L \$* ; } ; _ipt"
 alias iptz="iptables -L -n -v -Z"
 alias iptc="iptables -L -n -v -Z"
+alias iptadd="iptables -N KIWI; iptables -F KIWI; iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI"
 alias iptrm="iptables -D INPUT -j KIWI; iptables -F KIWI; iptables -X KIWI"
+alias iptban="function _iptban () { iptables -I KIWI -s \$1 -j DROP ; } ; _iptban"
+alias iptunban="function _iptunban () { iptables -D KIWI -s \$1 -j DROP ; } ; _iptunban"
 alias mdu="killall -q -s USR1 kiwid; killall -q -s USR1 kiwi.bin"
 alias whilek="while true; do ./k; done"
 alias whiled="while true; do ./d; done"
@@ -331,7 +343,7 @@ alias nfsdn="cd ~; umount -a -f -t nfs"
 #/path_to_kiwi_sources/Beagle_SDR_GPS -mapall=my_user_id -network 192.168.1.0 -mask 255.255.255.0
 
 # NFS reverse direction: sharing Beagle root fs with development machine to support cross compilation
-#   pki nfs-kernel-server
+#   pki nfs-common nfs-kernel-server
 # edit resulting /etc/exports file and add: (adjust for subnet address)
 #   / 192.168.1.0/24(ro,sync,no_subtree_check)
 # now on development machine: ("resvport" is necessary for OSX)
@@ -339,6 +351,12 @@ alias nfsdn="cd ~; umount -a -f -t nfs"
 #   sudo mount -t nfs -o ro,resvport beagle_hostname:/ ${HOME}/mnt
 # later:
 #   sudo umount ${HOME}/mnt
+
+# NFS reverse direction: sharing Beagle root dir rw with development machine to support source file editing
+#   pki nfs-common nfs-kernel-server
+# edit resulting /etc/exports file and add: (adjust for subnet address)
+#   /root 192.168.1.0/24(rw,sync,no_subtree_check,all_squash,anonuid=0,anongid=0)
+# note how all uid/gid from dev machine is mapped to root/wheel on Beagle
 
 # KiwiSDR with gdb
 alias gk="gdb ../build/kiwi.bin"

@@ -41,7 +41,6 @@ Boston, MA  02110-1301, USA.
 #include <sched.h>
 #include <math.h>
 #include <signal.h>
-#include <fftw3.h>
 #include <stdlib.h>
 #include <sys/time.h>
 

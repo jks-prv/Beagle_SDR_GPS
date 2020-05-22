@@ -40,39 +40,46 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 	# enough parallel make jobs to overcome core stalls from filesystem or nfs delays
 	ifeq ($(BBAI),true)
-#		MAKE_ARGS = -j 2
+		# currently even 2 parallel compiles can run out of memory on BBAI
+		#MAKE_ARGS = -j 2
 		MAKE_ARGS =
+	else ifeq ($(RPI),true)
+		# fixme: test, but presumably the 1GB (min) of DRAM on RPi 3B & 4 would support this many
+		MAKE_ARGS = -j 4
 	else
 		ifeq ($(DEBIAN_7),true)
 			# Debian 7 gcc runs out of memory compiling edata_always*.cpp in parallel
 			MAKE_ARGS =
 		else
-#			MAKE_ARGS = -j 4
 			MAKE_ARGS =
 		endif
 	endif
 else
 	# choices when building on development machine
 	ifeq ($(XC),-DXC)
-		# BBAI,DEBIAN_7 are taken from the mounted KiwiSDR root file system
+		# BBAI, DEBIAN_7 are taken from the mounted KiwiSDR root file system
 		MAKE_ARGS = -j 7
 	else
 		BBAI = true
-		#BBAI = false
-		DEBIAN_7 = false
+		#RPI = true
 		MAKE_ARGS = -j
 	endif
 endif
 
-ARCH = sitara
-
 ifeq ($(BBAI),true)
+	ARCH = sitara
 	CPU = AM5729
-	PLATFORM = beaglebone_ai
+	PLATFORMS = beaglebone beaglebone_ai
+	CFLAGS += -DMULTI_CORE
+else ifeq ($(RPI),true)
+	ARCH = omap
+	CPU = BCM2837
+	PLATFORMS = raspberrypi
 	CFLAGS += -DMULTI_CORE
 else
+	ARCH = sitara
 	CPU = AM3359
-	PLATFORM = beaglebone_black
+	PLATFORMS = beaglebone beaglebone_black
 endif
 
 # uncomment when using debugger so variables are not always optimized away
@@ -102,16 +109,17 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 .PHONY: xc
 ifeq ($(XC),)
 xc:
-	@if [ ! -f $(KIWI_XC_REMOTE_FS)/ID.txt ]; then \
+	@if [ ! -f $(KIWI_XC_REMOTE_FS)/ID.txt ] && \
+	    [ ! -f $(KIWI_XC_REMOTE_FS)/boot/config.txt ]; then \
 		echo "ERROR: remote filesystem $(KIWI_XC_REMOTE_FS) not mounted?"; \
 		exit -1; \
 	fi
 	@make XC=-DXC $@
 else
 xc: c_ext_clang_conv
-	@echo KIWI_XC_HOST=$(KIWI_XC_HOST)
-	@echo KIWI_XC_HOST_PORT=$(KIWI_XC_HOST_PORT)
-	@echo KIWI_XC_REMOTE_FS=$(KIWI_XC_REMOTE_FS)
+	@echo KIWI_XC_HOST = $(KIWI_XC_HOST)
+	@echo KIWI_XC_HOST_PORT = $(KIWI_XC_HOST_PORT)
+	@echo KIWI_XC_REMOTE_FS = $(KIWI_XC_REMOTE_FS)
 	@make $(MAKE_ARGS) build_makefile_inc
 	@make $(MAKE_ARGS) c_ext_clang_conv_all
 endif
@@ -171,9 +179,12 @@ INT_EXTS = $(subst /,,$(subst extensions/,,$(wildcard $(INT_EXT_DIRS))))
 EXTS = $(INT_EXTS) $(PVT_EXTS)
 
 GPS = gps gps/ka9q-fec gps/GNSS-SDRLIB
-RX = rx rx/CuteSDR rx/wdsp rx/csdr rx/kiwi
-_DIRS = pru $(PKGS)
-_DIRS_O3 += . $(PKGS_O3) platform/beaglebone platform/$(PLATFORM) $(EXT_DIRS) $(EXT_SUBDIRS) \
+RX = rx rx/CuteSDR rx/Teensy rx/wdsp rx/csdr rx/kiwi
+ifneq ($(RPI),true)
+	_DIRS = pru $(PKGS)
+endif
+_DIR_PLATFORMS = $(addprefix platform/, ${PLATFORMS})
+_DIRS_O3 += . $(PKGS_O3) platform/common $(_DIR_PLATFORMS) $(EXT_DIRS) $(EXT_SUBDIRS) \
 	$(RX) $(GPS) ui init support net web arch/$(ARCH)
 
 ifeq ($(OPT),0)
@@ -197,13 +208,13 @@ CFILES_O3 = $(subst web/web.cpp,,$(CPP_F_O3))
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	ifeq ($(XC),-DXC)
-		LIBS += -lfftw3f -lfftw3 -lutil
+		LIBS += -lfftw3f -lutil
 		DIR_CFG = /root/kiwi.config
 		CFG_PREFIX =
 	else
 		# development machine, compile simulation version
-		LIBS += -L/usr/local/lib -lfftw3f -lfftw3
-		LIBS_DEP += /usr/local/lib/libfftw3f.a /usr/local/lib/libfftw3.a
+		LIBS += -L/usr/local/lib -lfftw3f
+		LIBS_DEP += /usr/local/lib/libfftw3f.a
 		CMD_DEPS =
 		DIR_CFG = unix_env/kiwi.config
 		CFG_PREFIX = dist.
@@ -211,8 +222,8 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 else
 	# host machine (BBB), only build the FPGA-using version
-	LIBS += -lfftw3f -lfftw3 -lutil
-	LIBS_DEP += /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a
+	LIBS += -lfftw3f -lutil
+	LIBS_DEP += /usr/lib/arm-linux-gnueabihf/libfftw3f.a
 	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng /sbin/ethtool /usr/bin/sshpass
 	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget
 	DIR_CFG = /root/kiwi.config
@@ -254,7 +265,7 @@ endif
 	@mkdir -p $(DIR_CFG)
 	touch $(KEYRING)
 
-/usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a:
+/usr/lib/arm-linux-gnueabihf/libfftw3f.a:
 	apt-get -y install libfftw3-dev
 
 # NB not a typo: "clang-6.0" vs "clang-7"
@@ -343,7 +354,7 @@ VERSION = -DVERSION_MAJ=$(VERSION_MAJ) -DVERSION_MIN=$(VERSION_MIN)
 VER = v$(VERSION_MAJ).$(VERSION_MIN)
 V = -Dv$(VERSION_MAJ)_$(VERSION_MIN)
 
-INT_FLAGS += $(VERSION) -DKIWI -DKIWISDR -DARCH_$(ARCH) -DCPU_$(CPU) -DARCH_CPU=$(CPU) -DPLATFORM_$(PLATFORM)
+INT_FLAGS += $(VERSION) -DKIWI -DKIWISDR -DARCH_$(ARCH) -DCPU_$(CPU) -DARCH_CPU=$(CPU) $(addprefix -DPLATFORM_,$(PLATFORMS))
 INT_FLAGS += -DDIR_CFG=STRINGIFY\($(DIR_CFG)\) -DCFG_PREFIX=STRINGIFY\($(CFG_PREFIX)\)
 INT_FLAGS += -DBUILD_DIR=STRINGIFY\($(BUILD_DIR)\) -DREPO=STRINGIFY\($(REPO)\) -DREPO_NAME=STRINGIFY\($(REPO_NAME)\)
 
@@ -374,9 +385,9 @@ build_makefile_inc:
 	@echo "----------------"
 	@echo "building" $(MF_INC)
 	@echo $(VER)
-	@echo BBAI=$(BBAI)
-	@echo DEBUG=$(DEBUG)
-	@echo XC=$(XC)
+	@echo PLATFORMS = $(PLATFORMS)
+	@echo DEBUG = $(DEBUG)
+	@echo XC = $(XC)
 	@echo
 #
 	@echo $(I) $(START_MF_INC)
@@ -580,7 +591,7 @@ c_ext_clang_conv_vars:
 	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
 	@echo ARCH = $(ARCH)
 	@echo CPU = $(CPU)
-	@echo PLATFORM = $(PLATFORM)
+	@echo PLATFORMS = $(PLATFORMS)
 	@echo BUILD_DIR = $(BUILD_DIR)
 	@echo OBJ_DIR = $(OBJ_DIR)
 	@echo OBJ_DIR_O3 = $(OBJ_DIR_O3)
@@ -828,8 +839,8 @@ install_kiwi_device_tree:
 	@echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
 	cp platform/beaglebone_AI/am5729-beagleboneai-kiwisdr-cape.dts /opt/source/$(DIR_DTB)/src/arm
 	(cd /opt/source/$(DIR_DTB); make)
-	cp /opt/source/dtb-4.14-ti/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)
-	cp /opt/source/dtb-4.14-ti/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb
+	cp /opt/source/$(DIR_DTB)/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)
+	cp /opt/source/$(DIR_DTB)/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb
 	@touch $(REBOOT)
 endif
 
@@ -1103,11 +1114,15 @@ dump_eeprom:
 ifeq ($(DEBIAN_7),true)
 	hexdump -C /sys/bus/i2c/devices/1-0054/eeprom
 else
-ifeq ($(BBAI),true)
-	hexdump -C /sys/bus/i2c/devices/3-0054/eeprom
-else
-	hexdump -C /sys/bus/i2c/devices/2-0054/eeprom
-endif
+	ifeq ($(BBAI),true)
+		hexdump -C /sys/bus/i2c/devices/3-0054/eeprom
+	else
+		ifeq ($(RPI),true)
+			hexdump -C /sys/bus/i2c/devices/1-0054/eeprom
+		else
+			hexdump -C /sys/bus/i2c/devices/3-0054/eeprom
+		endif
+	endif
 endif
 	@echo
 	@echo BeagleBone EEPROM:

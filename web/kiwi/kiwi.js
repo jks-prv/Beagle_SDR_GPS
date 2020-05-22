@@ -9,7 +9,7 @@ var kiwi = {
    GPS_fixes: 0,
    wf_fps: 0,
    inactivity_panel: false,
-   is_BBAI: 0,
+   is_multi_core: 0,
    
    // must match rx_cmd.cpp
    modes_l: [ 'am', 'amn', 'usb', 'lsb', 'cw', 'cwn', 'nbfm', 'iq', 'drm', 'usn', 'lsn', 'sam', 'sal', 'sau', 'sas' ],
@@ -1271,7 +1271,11 @@ function cpu_stats_cb(o, uptime_secs, ecpu, waterfall_fps)
       first = false;
    }
    var cpus = 'cpu';
-   if (o.cu.length > 1) cpus += '0 cpu1';
+   if (o.cu.length > 1) {
+      cpus += '0';
+		for (var i = 1; i < o.cu.length; i++)
+		   cpus += ' cpu' + i;
+   }
 	kiwi_cpu_stats_str_long =
 	   w3_inline('',
          w3_text('w3-text-black', 'Beagle: '+ cpus +' '+ user +' usr | '+ sys +' sys | '+ idle +' idle,' + (cputempC? '':' ')) +
@@ -1452,6 +1456,7 @@ function user_cb(obj)
 		}
 		
 		if (obj.c) {
+		   //console.log('SAM carrier '+ obj.c);
 		   var el = w3_el('id-sam-carrier');
 		   if (el) w3_innerHTML(el, 'carrier '+ obj.c.toFixed(1) +' Hz');
 		}
@@ -1710,13 +1715,13 @@ function kiwi_msg(param, ws)
       /*
       // enable DRM mode button
       var el = w3_el('id-button-drm');
-      if (el && kiwi.is_BBAI) {
+      if (el && kiwi.is_multi_core) {
          w3_remove(el, 'class-button-disbled');
          w3_attribute(el, 'onclick', 'mode_button(event, this)');
       }
       */
-		case "is_BBAI":
-		   kiwi.is_BBAI = 1;
+		case "is_multi_core":
+		   kiwi.is_multi_core = 1;
 		   break;
 		
 		case "authkey_cb":

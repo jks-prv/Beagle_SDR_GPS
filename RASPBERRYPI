@@ -1,0 +1,73 @@
+# Instruction to Attach kiwisdr to RaspberryPi Board
+[Updated Apr 27, 2020]
+
+This instruction describes how to build an adapter to attach a kiwisdr board to a RaspberryPi 3B.
+
+## Pinout connections
+  There are 16 pins to connect to RPI board. All 16 pins are in the left connector of the board when you are placing kiwisdr board ANT up and the pins face to you. The following diagram shows the connections.
+
+  Kiwi Board (ANT up, Pin face you)
+    LEFT CONN
+  -----------
+  |GND   GND|
+  |3.3    --|
+  |--     --|
+  |5V     5V|
+  |--     --|
+  |--    PGM|
+  |--   INIT|
+  |--    CS1|
+  |CS0  MOSI|
+  |SCL   SDA|
+  |MISO SCLK|
+  |CMD   SND|
+  |--     --|
+  -----------
+
+The following tables explains the connections
+3.3 ->        pin 1
+5V  ->        pin 2, pin 4
+GND ->        pin 6, pin 25
+
+SDA -> I2C1 SDA, pin 3
+SCL -> I2C1 SCL, pin 5
+
+CS0 -> SPI0 CS0, pin 24
+CS1 -> SPI0 CS1, pin 26
+MOSI -> SPIO MOSI, pin 19
+MISO -> SPIO MISO, pin 21
+SCLK -> SPI0 SCLK, pin 23
+
+PGM -> GPIO5, pin 29
+INIT -> GPIO6, pin 31
+CMD -> GPIO13, pin 33
+SND -> GPIO26, pin 37
+
+## Software Installation Guide
+1. Use the latest version of Raspbian *Lite* from the RaspberryPi official website.
+    https://www.raspberrypi.org/downloads/raspbian/
+1. Create SD image following the instruction
+1. Use PC or laptop to open the SD card, add 'ssh' (without extension name) into boot partition to enable SSH.
+    Reference: https://www.raspberrypi.org/documentation/remote-access/ssh/
+
+1. Install necessary software to build and run KiwiSDR software
+    >sudo apt update ; sudo apt-get install -y git libfftw3-single3 curl wget avahi-daemon avahi-utils libnss-mdns avahi-autoipd miniupnpc dnsutils pnmtopng ethtool sshpass psmisc jq zlib1g libsndfile1
+
+1. Enable SPI and I2C
+    You can following the GUI via raspi-config to enable two interfaces
+    Or you can remove # before the following two lines in /boot/config.txt:
+     dtparam=i2c_arm=on
+     dtparam=spi=on
+    
+    Reference: https://raspberrypi.stackexchange.com/questions/48228/how-to-enable-spi-on-raspberry-pi-3
+
+1. clone the bits and build/install
+    >sudo su
+    >cd /root
+    >git clone https://github.com/jks-prv/Beagle_SDR_GPS.git
+    >make
+    >make install
+
+1. Reboot, enjoy. The code will get update automatically when there is a new version.
+
+[TODO]: Publish a SD Image

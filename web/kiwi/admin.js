@@ -5,7 +5,7 @@
 //		NTP status?
 
 var admin = {
-   BBAI: false,
+   rx14_wf0: false,
    reg_status: {}
 };
 
@@ -88,7 +88,7 @@ function mode_html()
                w3_div('w3-flex w3-halign-center w3-margin-B-5', '<img src="gfx/kiwi.73x73.jpg" width="73" height="73" />'),
                w3_div('w3-flex w3-halign-center w3-margin-B-5', '<img src="gfx/cowbelly.73x73.jpg" width="73" height="73" />'),
                w3_div('w3-flex', '<img src="gfx/kiwi.derp.113x73.jpg" width="113" height="73" />'),
-               admin.BBAI? 
+               admin.rx14_wf0? 
                   w3_div('w3-flex', '<img src="gfx/kiwi.derp.113x73.jpg" width="113" height="73" />')
                :
                   ''
@@ -97,8 +97,8 @@ function mode_html()
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Kiwi classic', kiwi.RX4_WF4, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX4_WF4)),
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More receivers', kiwi.RX8_WF2, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX8_WF2)),
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More bandwidth', kiwi.RX3_WF3, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX3_WF3)),
-               admin.BBAI? 
-                  w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'BBAI rx14_wf0', kiwi.RX14_WF0, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX14_WF0))
+               admin.rx14_wf0? 
+                  w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'MCORE rx14_wf0', kiwi.RX14_WF0, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX14_WF0))
                :
                   ''
             ),
@@ -962,7 +962,7 @@ function backup_focus()
 	w3_el('id-output-msg').style.height = px(300);
 }
 
-var sd_progress, sd_progress_max = 4*60;		// measured estimate -- in secs (varies with SD card write speed)
+var sd_progress, sd_progress_max = 6*60;		// measured estimate -- in secs (varies with SD card write speed)
 var backup_sd_interval;
 var backup_refresh_icon = w3_icon('', 'fa-refresh fa-spin', 20);
 
@@ -2833,8 +2833,8 @@ function admin_recv(data)
 				admin_sdr_mode = (+param[1])? 0:1;
 				break;
 
-			case "BBAI":
-				admin.BBAI = true;
+			case "rx14_wf0":
+				admin.rx14_wf0 = true;
 				break;
 
 			case "init":

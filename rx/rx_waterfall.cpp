@@ -98,7 +98,7 @@ void c2s_waterfall_init()
 	// and cause the data pump to overrun
 	for (i=0; i < MAX_WF_CHANS; i++) {
 	    fft_t *fft = &WF_SHMEM->fft_inst[i];
-		fft->hw_dft_plan = fftwf_plan_dft_1d(WF_C_NSAMPS, fft->hw_c_samps, fft->hw_fft, FFTW_FORWARD, FFTW_MEASURE);
+		fft->hw_dft_plan = fftwf_plan_dft_1d(WF_C_NSAMPS, fft->hw_c_samps, fft->hw_fft, FFTW_FORWARD, FFTW_ESTIMATE);
 	}
 
 	float adc_scale_decim = powf(2, -16);		// gives +/- 0.5 float samples
@@ -359,12 +359,7 @@ void c2s_waterfall(void *param)
 					
 					new_map = wf->new_map = wf->new_map2 = TRUE;
 					
-					if (wf->noise_blanker) {
-					    //u4_t srate = round(conn->adc_clock_corrected) / (1 << (zoom+1));
-					    u4_t srate = WF_C_NSAMPS * 2;   // FIXME: what's the correct value to use?
-					    //printf("NB WF Z-change z%d sr=%d\n", zoom, srate);
-                        m_NoiseProc[rx_chan][NB_WF].SetupBlanker("WF", (float) wf->noise_threshold, (float) wf->noise_blanker, srate);
-                    }
+					if (wf->nb_enable[NB_BLANKER] && wf->nb_enable[NB_WF]) wf->nb_param_change[NB_BLANKER] = true;
                     
 					// when zoom changes reevaluate if overlapped sampling might be needed
 					wf->check_overlapped_sampling = true;
@@ -462,25 +457,6 @@ void c2s_waterfall(void *param)
 				    wf->speed = _speed;
 			    send_msg(conn, SM_NO_DEBUG, "MSG wf_fps=%d", wf_fps[wf->speed]);
 				cmd_recv |= CMD_SPEED;
-				continue;
-			}
-
-            int nb, th;
-			i = sscanf(cmd, "SET nb=%d th=%d", &nb, &th);
-			if (i == 2) {
-			    if (nb < 0) {
-			        wf->nb_click = (nb == -1)? 1:0;
-			        continue;
-			    }
-			    wf->noise_blanker = nb;
-			    wf->noise_threshold = th;
-
-                if (wf->noise_blanker) {
-                    //u4_t srate = round(conn->adc_clock_corrected) / (1 << (zoom+1));
-					u4_t srate = WF_C_NSAMPS * 2;   // FIXME: what's the correct value to use?
-                    //printf("NB WF ON usec=%d th=%d z%d sr=%d\n", wf->noise_blanker, wf->noise_threshold, zoom, srate);
-                    m_NoiseProc[rx_chan][NB_WF].SetupBlanker("WF", (float) wf->noise_threshold, (float) wf->noise_blanker, srate);
-                }
 				continue;
 			}
 
@@ -849,6 +825,26 @@ void sample_wf(int rx_chan)
         wf_cnt++;
     #endif
 
+    if (wf->nb_enable[NB_CLICK]) {
+        u4_t now = timer_sec();
+        if (now != wf->last_noise_pulse) {
+            wf->last_noise_pulse = now;
+            fft->hw_c_samps[255][I] = 0.49;
+        }
+    }
+
+    if (wf->nb_enable[NB_BLANKER] && wf->nb_enable[NB_WF]) {
+        if (wf->nb_param_change[NB_BLANKER]) {
+            //u4_t srate = round(conn->adc_clock_corrected) / (1 << (zoom+1));
+            u4_t srate = WF_C_NSAMPS;
+            //printf("NB WF sr=%d usec=%.0f th=%.0f\n", srate, wf->nb_param[NB_BLANKER][0], wf->nb_param[NB_BLANKER][1]);
+            m_NoiseProc[rx_chan][NB_WF].SetupBlanker("WF", srate, wf->nb_param[NB_BLANKER]);
+            wf->nb_param_change[NB_BLANKER] = false;
+        }
+
+        m_NoiseProc[rx_chan][NB_WF].ProcessBlankerOneShot(WF_C_NSAMPS, (TYPECPX*) fft->hw_c_samps, (TYPECPX*) fft->hw_c_samps);
+    }
+
     // contents of WF DDC pipeline is uncertain when mix freq or decim just changed
     //jksd
     //if (wf->flush_wf_pipe) {
@@ -907,18 +903,6 @@ void compute_frame(int rx_chan)
     fft_t *fft = &WF_SHMEM->fft_inst[rx_chan];
 		
     //TaskStat2(TSTAT_INCR|TSTAT_ZERO, 0, "frm");
-
-    if (wf->nb_click) {
-        u4_t now = timer_sec();
-        if (now != wf->last_noise_pulse) {
-            wf->last_noise_pulse = now;
-            fft->hw_c_samps[255][I] = 0.49;
-        }
-    }
-
-    if (wf->noise_blanker) {
-        m_NoiseProc[rx_chan][NB_WF].ProcessBlankerOneShot(WF_C_NSAMPS, (TYPECPX*) fft->hw_c_samps, (TYPECPX*) fft->hw_c_samps);
-    }
 
 	//NextTask("FFT1");
 	evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: FFT start");

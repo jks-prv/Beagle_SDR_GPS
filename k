@@ -28,13 +28,28 @@ if test ! -f /etc/dogtag; then
 	exit 0
 fi
 
+RPI=$(cat /proc/device-tree/model | grep -q -s "Raspberry Pi 3"; echo $?)
+#echo "not RPI = ${RPI}"
 BBAI=$(cat /proc/device-tree/model | grep -q -s "BeagleBone AI"; echo $?)
-if [ ${BBAI} = 0 ] ; then
+#echo "not BBAI = ${BBAI}"
+
+if [ "x${BBAI}" = "x0" ] ; then
 	echo "BBAI USE_SPIDEV"
 	DEBIAN=9
 	USE_SPIDEV=1
-else
+fi
 
+if [ "x${RPI}" = "x0" ] ; then
+	echo "RPI USE_SPIDEV"
+	DEBIAN=10
+	USE_SPIDEV=1
+
+    modprobe i2c-dev
+    modprobe at24
+    echo "24c32 0x54" > /sys/class/i2c-adapter/i2c-1/new_device
+fi
+
+if [ "x${BBAI}" = "x1" ] && [ "x${RPI}" = "x1" ] ; then
 # Debian 7, PIO: load our cape-bone-S overlay via echo > slots
 # Debian 7, SPIDEV: BB-SPIDEV0 loaded via echo > slots
 # Debian 8, PIO: load our cape-bone-S overlay via echo > slots
