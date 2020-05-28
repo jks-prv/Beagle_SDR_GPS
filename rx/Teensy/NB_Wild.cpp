@@ -1,5 +1,7 @@
 //
-// Michael Wild noise blanker [GNU GPLv3]
+// Michael Wild, DL2FW, noise blanker [GNU GPLv3]
+//
+// See: github.com/df8oe/UHSDR/wiki/Noise-blanker
 //
 // via the Teensy-ConvolutionSDR project: github.com/DD4WH/Teensy-ConvolutionSDR [GNU GPL v3.0]
 
