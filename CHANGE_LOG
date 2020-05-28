@@ -2,6 +2,22 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.392  May 28, 2020
+    Noise blankers and filters:
+        Added the Michael Wild noise blanker. Not a lot of operating experience with this yet.
+            It seems not to work on some noise sources compared to the standard blanker.
+            A good test source is 100 kHz Loran-C in AM mode using a UK Kiwi.
+            Increase the gate time (standard blanker) or impulse samples (Wild blanker) to
+            account for the longer Loran-C pulses compared to the usual impulse noise.
+
+        Fixed wdsp filter: the control sliders had no effect previously!
+            Now it works quite well.
+
+        Added test pulse gain and pulse width controls. And also whether the pulse is
+            applied before or after the passband filtering. The Wild blanker seems only
+            effective on post-filter pulses. Probably because the filter is turning the
+            pre-filter step function pulses into nicer band-limited pulses.
+
 v1.391  May 23, 2020
     User interface changes:
         SAL, SAU mode passband image will only show single sideband (just like LSB, USB).
@@ -20,6 +36,7 @@ v1.391  May 23, 2020
     Bug fixes:
         Audio recordings made in SAS (synchronous AM stereo) mode now work.
         Fixed problem with ITU region 2 Kiwis and shift-clicking waterfall in 75/80m band segment.
+        from lazywalker: fixed problems with frequency memory and reload value when transverter offset used.
 
 v1.390  April 23, 2020
     Performance improvements:
