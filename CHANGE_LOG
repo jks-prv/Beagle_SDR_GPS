@@ -11,7 +11,7 @@ v1.392  May 28, 2020
             account for the longer Loran-C pulses compared to the usual impulse noise.
 
         Fixed wdsp filter: the control sliders had no effect previously!
-            Now it works quite well.
+            Now it works quite well. You have to adjust the gain carefully to prevent overload.
 
         Added test pulse gain and pulse width controls. And also whether the pulse is
             applied before or after the passband filtering. The Wild blanker seems only
