@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.392  May 28, 2020
+v1.392,393  May 28, 2020
     Noise blankers and filters:
         Added the Michael Wild noise blanker. Not a lot of operating experience with this yet.
             It seems not to work on some noise sources compared to the standard blanker.
