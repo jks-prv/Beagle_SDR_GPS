@@ -968,11 +968,7 @@ bool TaskIsChild()
     static int expecting_spi_lock_next_task;
 #endif
 
-#ifdef DEBUG
- void _NextTask(const char *where, u4_t param, u_int64_t pc)
-#else
- void _NextTask(u4_t param)
-#endif
+void _NextTask(const char *where, u4_t param, u_int64_t pc)
 {
     if (!task_package_init) return;
     

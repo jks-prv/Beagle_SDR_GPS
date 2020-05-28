@@ -48,15 +48,18 @@ public:
 	CNoiseProc();
 	virtual ~CNoiseProc();
 
-	void SetupBlanker(const char *id, TYPEREAL SampleRate, TYPEREAL nr_param[NOISE_PARAMS]);
+	void SetupBlanker(const char *id, TYPEREAL SampleRate, TYPEREAL nb_param[NOISE_PARAMS]);
 	void ProcessBlanker(int InLength, TYPECPX* pInData, TYPECPX* pOutData);
+	void ProcessBlanker(int InLength, TYPEMONO16* pInData, TYPEMONO16* pOutData);
 	void ProcessBlankerOneShot(int InLength, TYPECPX* pInData, TYPECPX* pOutData);
 
 private:
     const char *m_id;
     TYPEREAL m_GateUsec;
 	TYPECPX* m_DelayBuf;
+	TYPEMONO16* m_DelayBuf_r;
 	TYPEREAL* m_MagBuf;
+	TYPEMONO16* m_MagBuf_r;
 	TYPECPX* m_pIgnoreData;
 	TYPECPX* m_pZeroData;
 	int m_Dptr;
@@ -67,6 +70,7 @@ private:
 	int m_GateSamples;
 	TYPEREAL m_Ratio;
 	TYPEREAL m_MagAveSum;
+	TYPEMONO16 m_MagAveSum_r;
 	int m_Blanked;
 	int m_LastMsg;
 };

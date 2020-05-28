@@ -40,6 +40,7 @@
 //==========================================================================================
 
 #include "noiseproc.h"
+#include "noise_blank.h"
 
 CNoiseProc m_NoiseProc[MAX_RX_CHANS][2];
 
@@ -59,7 +60,9 @@ CNoiseProc m_NoiseProc[MAX_RX_CHANS][2];
 CNoiseProc::CNoiseProc()
 {
 	m_DelayBuf = new TYPECPX[MAX_DELAY];
+	m_DelayBuf_r = new TYPEMONO16[MAX_DELAY];
 	m_MagBuf = new TYPEREAL[MAX_AVE];
+	m_MagBuf_r = new TYPEMONO16[MAX_AVE];
 
 	m_pIgnoreData = new TYPECPX[MAX_DELAY];
 	m_pZeroData = new TYPECPX[MAX_DELAY];
@@ -73,17 +76,21 @@ CNoiseProc::~CNoiseProc()
 {
 	if (m_DelayBuf)
 		delete [] m_DelayBuf;
+	if (m_DelayBuf_r)
+		delete [] m_DelayBuf_r;
 	if (m_MagBuf)
 		delete [] m_MagBuf;
+	if (m_MagBuf_r)
+		delete [] m_MagBuf_r;
 	if (m_pIgnoreData)
 		delete [] m_pIgnoreData;
 	if (m_pZeroData)
 		delete [] m_pZeroData;
 }
 
-void CNoiseProc::SetupBlanker(const char *id, TYPEREAL SampleRate, TYPEREAL nr_param[NOISE_PARAMS])
+void CNoiseProc::SetupBlanker(const char *id, TYPEREAL SampleRate, TYPEREAL nb_param[NOISE_PARAMS])
 {
-    TYPEREAL GateUsec = nr_param[0], Threshold = nr_param[1];
+    TYPEREAL GateUsec = nb_param[NB_GATE], Threshold = nb_param[NB_THRESHOLD];
     m_id = id;
     m_GateUsec = GateUsec;
     
@@ -122,16 +129,21 @@ void CNoiseProc::SetupBlanker(const char *id, TYPEREAL SampleRate, TYPEREAL nr_p
 	m_Mptr = 0;
 	m_BlankCounter = 0;
 	m_MagAveSum = 0.0;
+	m_MagAveSum_r = 0;
 	m_LastMsg = 0;
 
 	for (int i=0; i<MAX_DELAY ; i++)
 	{
 		m_DelayBuf[i].re = 0.0;
 		m_DelayBuf[i].im = 0.0;
+		m_DelayBuf_r[i] = 0;
 	}
 	
 	for (int i=0; i<MAX_AVE ; i++)
+	{
 		m_MagBuf[i] = 0.0;
+		m_MagBuf_r[i] = 0;
+	}
 }
 
 void CNoiseProc::ProcessBlanker(int InLength, TYPECPX* pInData, TYPECPX* pOutData)
@@ -184,6 +196,60 @@ void CNoiseProc::ProcessBlanker(int InLength, TYPECPX* pInData, TYPECPX* pOutDat
 			pOutData[i].re = 0.0;
 			pOutData[i].im = 0.0;
 			//pOutData[i].re = pOutData[i].im = m_MagAveSum;
+		}
+		else
+		{
+			pOutData[i] = oldest;
+		}
+	}
+}
+
+void CNoiseProc::ProcessBlanker(int InLength, TYPEMONO16* pInData, TYPEMONO16* pOutData)
+{
+    TYPEMONO16 new_samp;
+    TYPEMONO16 oldest;
+    int msg=0;
+    
+	for (int i=0; i<InLength; i++)
+	{
+		new_samp = pInData[i];
+
+		//calculate peak magnitude
+		TYPEMONO16 mag = new_samp;
+
+		//calc moving average of "m_MagSamples"
+		m_MagAveSum_r -= m_MagBuf_r[m_Mptr];	//subtract oldest sample
+		m_MagAveSum_r += mag;					//add new sample
+		m_MagBuf[m_Mptr++] = mag;			//stick in buffer
+
+		if (m_Mptr > m_MagSamples)
+			m_Mptr = 0;
+
+		//pull out oldest sample from delay buffer and put in new one
+		oldest = m_DelayBuf_r[m_Dptr];
+		m_DelayBuf_r[m_Dptr++] = new_samp;
+		if(m_Dptr > m_DelaySamples)
+			m_Dptr = 0;
+
+		if (MROUND(mag * m_Ratio) > m_MagAveSum_r)
+		{
+			m_BlankCounter = m_GateSamples;
+			#if 0
+			    m_Blanked++;
+                int now = timer_sec();
+                if (m_LastMsg != now) {
+                    printf("noiseproc %s blank=%d usec=%.0f gs=%d mag=%d mag*ratio=%.1f > avg=%d\n",
+                        m_id, m_Blanked, m_GateUsec, m_BlankCounter, mag, mag * m_Ratio, m_MagAveSum_r);
+                    m_LastMsg = now;
+                    m_Blanked = 0;
+                }
+			#endif
+		}
+
+		if (m_BlankCounter)
+		{
+			m_BlankCounter--;
+			pOutData[i] = 0;
 		}
 		else
 		{

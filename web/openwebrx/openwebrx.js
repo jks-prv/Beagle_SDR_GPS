@@ -6779,7 +6779,7 @@ function panels_setup()
 
 
    // audio & nb
-   var nb_algo_s = [ ['off',1], ['std',1], ['Wild',0] ];
+   var nb_algo_s = [ ['off',1], ['std',1], ['Wild',1] ];
    var nr_algo_s = [ ['off',1], ['wdsp',1], ['LMS',1], ['Kim',0], ['spec',0] ];
 	de_emphasis = readCookie('last_de_emphasis', 0);
 	pan = readCookie('last_pan', 0);
@@ -6788,7 +6788,7 @@ function panels_setup()
 		w3_col_percent('w3-valign/',
 			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color +' cl-closer-spaced-label-text', 'Noise')), 17,
          w3_select_conditional('|color:red', '', 'blanker', 'nb_algo', 0, nb_algo_s, 'nb_algo_cb'), 24,
-			w3_div('w3-hcenter', w3_div('class-button||onclick="extint_open(\'noise_blanker\'); freqset_select();"', 'More')), 21,
+			w3_div('w3-hcenter', w3_div('class-button||onclick="extint_open(\'noise_blank\'); freqset_select();"', 'More')), 21,
          w3_select_conditional('|color:red', '', 'filter', 'nr_algo', 0, nr_algo_s, 'nr_algo_cb'), 23,
 			w3_div('w3-hcenter', w3_div('class-button||onclick="extint_open(\'noise_filter\'); freqset_select();"', 'More')), 15
 		) +
@@ -6813,9 +6813,9 @@ function panels_setup()
          w3_text('id-sam-carrier')
       );
 
-   kiwi_load_js_dir('extensions/', ['noise_blanker/noise_blanker.js', 'noise_filter/noise_filter.js'],
+   kiwi_load_js_dir('extensions/', ['noise_blank/noise_blank.js', 'noise_filter/noise_filter.js'],
       function() {
-         noise_blanker_init();
+         noise_blank_init();
          noise_filter_init();
       }
    );

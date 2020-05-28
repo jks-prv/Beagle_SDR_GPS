@@ -1,5 +1,6 @@
 #include "rx.h"
 #include "lms.h"
+#include "noise_filter.h"
 
 #define DL_LEN_MAX              300     // 25 msec @ 12 kHz
 #define DL_AUTONOTCH_LEN_DEF    48      //  4 msec @ 12 kHz
@@ -19,7 +20,7 @@ CLMS::CLMS()
 
 int CLMS::Initialize(nr_type_e nr_type, TYPEREAL nr_param[NOISE_PARAMS])
 {
-    TYPEREAL delayLineLen = nr_param[0], beta = nr_param[1], decay = nr_param[2];
+    TYPEREAL delayLineLen = nr_param[NR_DELAY], beta = nr_param[NR_BETA], decay = nr_param[NR_DECAY];
     m_nr_type = nr_type;
     
     if (m_nr_type == NR_AUTONOTCH) {

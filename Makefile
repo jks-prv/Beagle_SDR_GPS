@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 391
+VERSION_MIN = 392
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.11
@@ -179,7 +179,7 @@ INT_EXTS = $(subst /,,$(subst extensions/,,$(wildcard $(INT_EXT_DIRS))))
 EXTS = $(INT_EXTS) $(PVT_EXTS)
 
 GPS = gps gps/ka9q-fec gps/GNSS-SDRLIB
-RX = rx rx/CuteSDR rx/Teensy rx/wdsp rx/csdr rx/kiwi
+RX = rx rx/CuteSDR rx/Teensy rx/wdsp rx/csdr rx/kiwi rx/CMSIS
 ifneq ($(RPI),true)
 	_DIRS = pru $(PKGS)
 endif

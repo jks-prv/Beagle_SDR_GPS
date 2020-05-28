@@ -39,6 +39,7 @@ Boston, MA  02110-1301, USA.
 #include "non_block.h"
 #include "rx_waterfall.h"
 #include "shmem.h"
+#include "noise_blank.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -829,7 +830,11 @@ void sample_wf(int rx_chan)
         u4_t now = timer_sec();
         if (now != wf->last_noise_pulse) {
             wf->last_noise_pulse = now;
-            fft->hw_c_samps[255][I] = 0.49;
+            TYPEREAL pulse = wf->nb_param[NB_CLICK][NB_PULSE_GAIN] * 0.49;
+            for (int i=0; i < wf->nb_param[NB_CLICK][NB_PULSE_SAMPLES]; i++) {
+                fft->hw_c_samps[i][I] = pulse;
+                fft->hw_c_samps[i][Q] = 0;
+            }
         }
     }
 
