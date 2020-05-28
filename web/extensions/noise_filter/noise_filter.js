@@ -18,12 +18,12 @@ var noise_filter = {
    NR_WDSP: 1,
    wdsp_de_taps: 64,
    wdsp_de_delay: 16,
-   wdsp_de_gain: 10,    // 0.00008
-   wdsp_de_leakage: 7,  // 0.125
+   wdsp_de_gain: 10,    // non-linear: 1..20 => 8.192e-2..1.5625e-7, 10 => 0.00008
+   wdsp_de_leakage: 7,  // non-linear: 1..23 => , 7 => 0.125
    wdsp_an_taps: 64,
    wdsp_an_delay: 16,
-   wdsp_an_gain: 10,    // 0.00008
-   wdsp_an_leakage: 7,  // 0.125
+   wdsp_an_gain: 10,    // non-linear: 1..20 => 8.192e-2..1.5625e-7, 10 => 0.00008
+   wdsp_an_leakage: 7,  // non-linear: 1..23 => , 7 => 0.125
    
    NR_ORIG: 2,
    de_delay: 1,
@@ -162,46 +162,77 @@ function noise_filter_controls_setup()
 	ext_set_controls_width_height(400, 475);
 }
 
+// called from openwebrx.js
 function noise_filter_init()
 {
 	noise_filter.algo = readCookie('last_nr_algo', 0);
 	nr_algo_cb('nr_algo', noise_filter.algo, false, true);
-	
-   noise_filter_send();
+   noise_filter_send(noise_filter.NR_DENOISE);
+   noise_filter_send(noise_filter.NR_AUTONOTCH);
 }
 
-function noise_filter_send()
+function noise_filter_send(type)
 {
-   snd_send('SET nr algo='+ noise_filter.algo);
+   var p0, p1, p2, p3;
+
    if (noise_filter.algo == noise_filter.NR_OFF) return;
+   
+   if (noise_filter.algo == noise_filter.NR_WDSP) {
+      if (type == noise_filter.NR_DENOISE) {
+         p0 = noise_filter.wdsp_de_taps;
+         p1 = noise_filter.wdsp_de_delay;
+         p2 = noise_filter.wdsp_de_gain;
+         p2 = 8.192e-2 / Math.pow(2, 20 - p2);
+         p3 = noise_filter.wdsp_de_leakage;
+         p3 = 8192 / Math.pow(2, 23 - p3);
+      } else {    // NR_AUTONOTCH
+         p0 = noise_filter.wdsp_an_taps;
+         p1 = noise_filter.wdsp_an_delay;
+         p2 = noise_filter.wdsp_an_gain;
+         p2 = 8.192e-2 / Math.pow(2, 20 - p2);
+         p3 = noise_filter.wdsp_an_leakage;
+         p3 = 8192 / Math.pow(2, 23 - p3);
+      }
+   } else {    // NR_ORIG
+      if (type == noise_filter.NR_DENOISE) {
+         p0 = noise_filter.de_delay;
+         p1 = noise_filter.de_beta;
+         p2 = noise_filter.de_decay;
+         p3 = 0;
+      } else {    // NR_AUTONOTCH
+         p0 = noise_filter.an_delay;
+         p1 = noise_filter.an_beta;
+         p2 = noise_filter.an_decay;
+         p3 = 0;
+      }
+   }
 
-   snd_send('SET nr type=0 param=0 pval='+ noise_filter.de_delay);
-   snd_send('SET nr type=0 param=1 pval='+ noise_filter.de_beta);
-   snd_send('SET nr type=0 param=2 pval='+ noise_filter.de_decay);
-
-   snd_send('SET nr type=1 param=0 pval='+ noise_filter.an_delay);
-   snd_send('SET nr type=1 param=1 pval='+ noise_filter.an_beta);
-   snd_send('SET nr type=1 param=2 pval='+ noise_filter.an_decay);
-
-   snd_send('SET nr type=0 en='+ noise_filter.enable[0]);
-   snd_send('SET nr type=1 en='+ noise_filter.enable[1]);
+   snd_send('SET nr type='+ type +' param=0 pval='+ p0);
+   snd_send('SET nr type='+ type +' param=1 pval='+ p1);
+   snd_send('SET nr type='+ type +' param=2 pval='+ p2);
+   snd_send('SET nr type='+ type +' param=3 pval='+ p3);
+   snd_send('SET nr type='+ type +' en='+ noise_filter.enable[type]);
 }
 
 function nr_algo_cb(path, idx, first, init)
 {
-   //console.log('nr_algo_cb idx='+ idx +' first='+ first +' init='+ init);
-   if (first) return;
+   console.log('nr_algo_cb idx='+ idx +' first='+ first +' init='+ init);
+   if (first) return;      // because call via openwebrx has zero, not restored value
    idx = +idx;
    w3_select_value(path, idx);
    noise_filter.algo = idx;
    writeCookie('last_nr_algo', idx.toString());
-   if (init != true) noise_filter_send();
+   snd_send('SET nr algo='+ noise_filter.algo);
+
+   if (init != true) {     // redundant when called from noise_filter_init()
+      noise_filter_send(noise_filter.NR_DENOISE);
+      noise_filter_send(noise_filter.NR_AUTONOTCH);
+   }
 
 	if (ext_panel_displayed()) {
 	   ext_panel_redisplay(noise_filter_controls_html());
 	}
 }
-
 
 function noise_filter_cb(path, checked, first)
 {
@@ -211,7 +242,7 @@ function noise_filter_cb(path, checked, first)
    w3_checkbox_set(path, checked);
    var type = path.includes('denoise')? 0:1;
    noise_filter.enable[type] = checked;
-   noise_filter_send();
+   noise_filter_send(type);
 }
 
 
@@ -219,11 +250,12 @@ function noise_filter_cb(path, checked, first)
 
 function nf_wdsp_taps_cb(path, val, complete, first)
 {
+	var type = path.includes('de_')? 0:1;
+	var delay = type? noise_filter.wdsp_an_delay : noise_filter.wdsp_de_delay;
    val = +val;
-   if (val < noise_filter.wdsp_de_delay) val = noise_filter.wdsp_de_delay;
+   if (val < delay) val = delay;
 	w3_num_cb(path, val);
 	w3_set_label('Taps: '+ val, path);
-	var type = path.includes('de_')? 0:1;
 	if (complete) {
 	   //console.log(path +' val='+ val);
       snd_send('SET nr type='+ type +' param=0 pval='+ val);
@@ -232,14 +264,15 @@ function nf_wdsp_taps_cb(path, val, complete, first)
 
 function nf_wdsp_delay_cb(path, val, complete, first)
 {
+	var type = path.includes('de_')? 0:1;
+	var taps = type? noise_filter.wdsp_an_taps : noise_filter.wdsp_de_taps;
    val = +val;
-   if (val > noise_filter.wdsp_de_taps) val = noise_filter.wdsp_de_taps;
+   if (val > taps) val = taps;
 	w3_num_cb(path, val);
 	w3_set_label('Delay: '+ val, path);
-	var type = path.includes('de_')? 0:1;
 	if (complete) {
 	   //console.log(path +' val='+ val);
-      snd_send('SET nr type='+ type +' param=0 pval='+ val);
+      snd_send('SET nr type='+ type +' param=1 pval='+ val);
 	}
 }
 
@@ -252,7 +285,7 @@ function nf_wdsp_gain_cb(path, val, complete, first)
 	var type = path.includes('de_')? 0:1;
 	if (complete) {
 	   console.log(path +' gain='+ gain);
-      snd_send('SET nr type='+ type +' param=0 pval='+ gain);
+      snd_send('SET nr type='+ type +' param=2 pval='+ gain);
 	}
 }
 
@@ -265,7 +298,7 @@ function nf_wdsp_leakage_cb(path, val, complete, first)
 	var type = path.includes('de_')? 0:1;
 	if (complete) {
 	   console.log(path +' leakage='+ leakage);
-      snd_send('SET nr type='+ type +' param=0 pval='+ leakage);
+      snd_send('SET nr type='+ type +' param=3 pval='+ leakage);
 	}
 }
 
@@ -297,13 +330,6 @@ function noise_filter_an_presets_cb(path, idx, first)
    w3_slider_set('noise_filter.an_delay', p[idx*3], 'noise_filter_delay_cb');
    w3_slider_set('noise_filter.an_beta', p[idx*3+1], 'noise_filter_beta_cb');
    w3_slider_set('noise_filter.an_decay', p[idx*3+2], 'noise_filter_decay_cb');
-   /*
-   w3_menu_items('id-right-click-menu',
-      'defaults',
-      'CW signals'
-   );
-   w3_menu_popup('id-noise-filter-presets-menu', x, y);
-   */
 }
 
 function noise_filter_delay_cb(path, val, complete, first)

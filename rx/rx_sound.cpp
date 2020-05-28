@@ -31,6 +31,7 @@ Boston, MA  02110-1301, USA.
 #include "gps.h"
 #include "coroutines.h"
 #include "cuteSDR.h"
+#include "teensy.h"
 #include "agc.h"
 #include "fir.h"
 #include "biquad.h"
@@ -49,6 +50,7 @@ Boston, MA  02110-1301, USA.
 #include "rx_sound.h"
 #include "rx_waterfall.h"
 #include "shmem.h"
+#include "noise_blank.h"
 #include "wdsp.h"
 
 #ifdef DRM
@@ -176,7 +178,7 @@ void c2s_sound(void *param)
 	
 	memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
 	
-	int last_noise_pulse=0;
+	int noise_pulse_last=0;
 	int nb_algo=0, nr_algo=0;
     int nb_enable[NOISE_ALGOS]={0}, nr_enable[NOISE_ALGOS]={0};
 	float nb_param[NOISE_TYPES][NOISE_PARAMS], nr_param[NOISE_TYPES][NOISE_PARAMS];
@@ -395,7 +397,7 @@ void c2s_sound(void *param)
 			}
 
 			if (strcmp(cmd, "SET little-endian") == 0) {
-				cprintf(conn, "SND little-endian\n");
+				//cprintf(conn, "SND little-endian\n");
 				little_endian = true;
 				continue;
 			}
@@ -489,14 +491,16 @@ void c2s_sound(void *param)
             float n_pval;
 			n = sscanf(cmd, "SET nb type=%d param=%d pval=%f", &n_type, &n_param, &n_pval);
 			if (n == 3) {
-				//cprintf(conn, "nb: type=%d param=%d pval=%f\n", n_type, n_param, n_pval);
+				//cprintf(conn, "nb: type=%d param=%d pval=%.9f\n", n_type, n_param, n_pval);
 				nb_param[n_type][n_param] = n_pval;
-				wf->nb_param[n_type][n_param] = n_pval;
-				wf->nb_param_change[n_type] = true;
+                wf->nb_param[n_type][n_param] = n_pval;
+                wf->nb_param_change[n_type] = true;
 
-                switch (nb_algo) {
-                    case NB_STD: m_NoiseProc[rx_chan][NB_SND].SetupBlanker("SND", frate, nb_param[n_type]); break;
-                    case NB_WILD: break;
+                if (n_type == NB_BLANKER) {
+                    switch (nb_algo) {
+                        case NB_STD: m_NoiseProc[rx_chan][NB_SND].SetupBlanker("SND", frate, nb_param[n_type]); break;
+                        case NB_WILD: nb_Wild_init(rx_chan, nb_param[n_type]); break;
+                    }
                 }
                 
 				continue;
@@ -504,7 +508,7 @@ void c2s_sound(void *param)
 
 			n = sscanf(cmd, "SET nr type=%d param=%d pval=%f", &n_type, &n_param, &n_pval);
 			if (n == 3) {
-				//cprintf(conn, "nr: type=%d param=%d pval=%f\n", n_type, n_param, n_pval);
+				//cprintf(conn, "nr: type=%d param=%d pval=%.9f\n", n_type, n_param, n_pval);
 				nr_param[n_type][n_param] = n_pval;
 
                 switch (nr_algo) {
@@ -519,8 +523,8 @@ void c2s_sound(void *param)
             int nb, th;
 			n = sscanf(cmd, "SET nb=%d th=%d", &nb, &th);
 			if (n == 2) {
-				nb_param[NB_BLANKER][0] = nb;
-				nb_param[NB_BLANKER][1] = th;
+				nb_param[NB_BLANKER][NB_GATE] = nb;
+				nb_param[NB_BLANKER][NB_THRESHOLD] = th;
 				nb_enable[NB_BLANKER] = nb? 1:0;
 
 				if (nb) m_NoiseProc[rx_chan][NB_SND].SetupBlanker("SND", frate, nb_param[NB_BLANKER]);
@@ -704,7 +708,6 @@ void c2s_sound(void *param)
 		char *smeter   = (IQ_or_DRM_or_SAS? snd->out_pkt_iq.h.smeter : snd->out_pkt_real.h.smeter);
 
 		bool do_de_emp = (de_emp && !IQ_or_DRM_or_SAS);
-		bool AM_or_SAM_or_SSB = (!isNBFM && !IQ_or_DRM_or_SAS);
 		
 		#ifdef DRM
             drm_t *drm = &DRM_SHMEM->drm[rx_chan];
@@ -801,17 +804,23 @@ void c2s_sound(void *param)
 
 			if (masked) memset(i_samps, 0, sizeof(TYPECPX) * nrx_samps);
 			
-            if (nb_enable[NB_CLICK]) {
+            if (nb_enable[NB_CLICK] == NB_PRE_FILTER) {
                 u4_t now = timer_sec();
-                if (now != last_noise_pulse) {
-                    last_noise_pulse = now;
-                    i_samps[50].re = K_AMPMAX - 16;
+                if (now != noise_pulse_last) {
+                    noise_pulse_last = now;
+                    TYPEREAL pulse = nb_param[NB_CLICK][NB_PULSE_GAIN] * (K_AMPMAX - 16);
+                    for (int i=0; i < nb_param[NB_CLICK][NB_PULSE_SAMPLES]; i++) {
+                        i_samps[i].re = pulse;
+                        i_samps[i].im = 0;
+                    }
                 }
             }
 
-			if (nb_enable[NB_BLANKER]) {
-			    m_NoiseProc[rx_chan][NB_SND].ProcessBlanker(ns_in, i_samps, i_samps);
-            }
+            //#define NB_STD_POST_FILTER
+            #ifndef NB_STD_POST_FILTER
+                if (nb_enable[NB_BLANKER] && nb_algo == NB_STD)
+		            m_NoiseProc[rx_chan][NB_SND].ProcessBlanker(ns_in, i_samps, i_samps);
+		    #endif
 
 			ns_out  = m_PassbandFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps, f_samps);
 			fir_pos = m_PassbandFIR[rx_chan].FirPos();
@@ -996,17 +1005,38 @@ void c2s_sound(void *param)
                 m_de_emp_Biquad[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
             }
             
-            // noise & autonotch processors (AM and sideband modes)
-            if (AM_or_SAM_or_SSB) {
+            if (nb_enable[NB_CLICK] == NB_POST_FILTER) {
+                u4_t now = timer_sec();
+                if (now != noise_pulse_last) {
+                    noise_pulse_last = now;
+                    TYPEMONO16 pulse = nb_param[NB_CLICK][NB_PULSE_GAIN] * (K_AMPMAX - 16);
+                    for (int i=0; i < nb_param[NB_CLICK][NB_PULSE_SAMPLES]; i++) {
+                        r_samps[i] = pulse;
+                    }
+                }
+            }
+
+            // noise & autonotch processors that only operate on real samples (i.e. non-IQ)
+            if (!IQ_or_DRM_or_SAS) {
+                if (nb_enable[NB_BLANKER]) {
+                    switch (nb_algo) {
+                        #ifdef NB_STD_POST_FILTER
+                            case NB_STD: m_NoiseProc[rx_chan][NB_SND].ProcessBlanker(ns_out, r_samps, r_samps); break;
+                        #endif
+                        case NB_WILD: nb_Wild_process(rx_chan, ns_out, r_samps, r_samps); break;
+                    }
+                }
+                
+                // ordered so denoiser can cleanup residual noise from autonotch
                 switch (nr_algo) {
                     case NR_WDSP:
-                        if (nr_enable[0]) wdsp_ANR_filter(rx_chan, NR_DENOISE, ns_out, r_samps, r_samps);
                         if (nr_enable[1]) wdsp_ANR_filter(rx_chan, NR_AUTONOTCH, ns_out, r_samps, r_samps);
+                        if (nr_enable[0]) wdsp_ANR_filter(rx_chan, NR_DENOISE, ns_out, r_samps, r_samps);
                         break;
 
                     case NR_ORIG:
-                        if (nr_enable[0]) m_LMS[rx_chan][NR_DENOISE].ProcessFilter(ns_out, r_samps, r_samps);
                         if (nr_enable[1]) m_LMS[rx_chan][NR_AUTONOTCH].ProcessFilter(ns_out, r_samps, r_samps);
+                        if (nr_enable[0]) m_LMS[rx_chan][NR_DENOISE].ProcessFilter(ns_out, r_samps, r_samps);
                         break;
                 }
             }

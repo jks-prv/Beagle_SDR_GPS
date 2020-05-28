@@ -13,6 +13,7 @@
 #include "types.h"
 #include "kiwi.h"
 #include "rx.h"
+#include "noise_filter.h"
 #include <math.h>
 
 #define ANR_DLINE_SIZE  512
@@ -41,15 +42,14 @@ static wdsp_ANR_t wdsp_ANR[NOISE_TYPES][MAX_RX_CHANS];
 
 void wdsp_ANR_init(int rx_chan, nr_type_e nr_type, TYPEREAL nr_param[NOISE_PARAMS])
 {
-    //printf("wdsp_ANR_init type=%d\n", nr_type);
     wdsp_ANR_t *w = &wdsp_ANR[nr_type][rx_chan];
     memset(w, 0, sizeof(wdsp_ANR_t));
 
-    w->taps =     64;
-    w->delay =    16;
+    w->taps =     (int) nr_param[NR_TAPS];
+    w->delay =    (int) nr_param[NR_DLY];
     w->position = 0;
-    w->two_mu =   0.0001;
-    w->gamma =    0.1;
+    w->two_mu =   nr_param[NR_GAIN];
+    w->gamma =    nr_param[NR_LEAKAGE];
     w->lidx =     120.0;
     w->lidx_min = 120.0;
     w->lidx_max = 200.0;
@@ -57,6 +57,8 @@ void wdsp_ANR_init(int rx_chan, nr_type_e nr_type, TYPEREAL nr_param[NOISE_PARAM
     w->den_mult = 6.25e-10;
     w->lincr =    1.0;
     w->ldecr =    3.0;
+    //printf("wdsp_ANR_init type=%d taps=%d delay=%d gain=%.9f leakage=%.9f\n",
+    //    nr_type, w->taps, w->delay, w->two_mu, w->gamma);
 }
 
 void wdsp_ANR_filter(int rx_chan, nr_type_e nr_type, int ns_out, TYPEMONO16 *in, TYPEMONO16 *out)

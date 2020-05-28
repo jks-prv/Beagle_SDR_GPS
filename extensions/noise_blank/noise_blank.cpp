@@ -23,7 +23,7 @@ typedef struct {
 
 static noise_t noise[MAX_RX_CHANS];
 
-bool noise_blanker_msgs(char *msg, int rx_chan)
+bool noise_blank_msgs(char *msg, int rx_chan)
 {
 	noise_t *e = &noise[rx_chan];
 	int n;
@@ -44,18 +44,18 @@ bool noise_blanker_msgs(char *msg, int rx_chan)
 	return false;
 }
 
-void noise_blanker_main();
+void noise_blank_main();
 
-ext_t noise_blanker_ext = {
-	"noise_blanker",
-	noise_blanker_main,
+ext_t noise_blank_ext = {
+	"noise_blank",
+	noise_blank_main,
 	NULL,
-	noise_blanker_msgs,
+	noise_blank_msgs,
 	EXT_NEW_VERSION,
 	EXT_FLAGS_HEAVY     // FIXME: needs to also indicate this when selected from audio tab
 };
 
-void noise_blanker_main()
+void noise_blank_main()
 {
-	ext_register(&noise_blanker_ext);
+	ext_register(&noise_blank_ext);
 }

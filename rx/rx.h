@@ -55,7 +55,7 @@ extern volatile u4_t audio_bytes[], waterfall_bytes[], waterfall_frames[], http_
 
 #define NOISE_ALGOS 8
 #define NOISE_TYPES 4
-#define NOISE_PARAMS 4
+#define NOISE_PARAMS 8
 
 typedef enum { NB_OFF = 0, NB_STD = 1, NB_WILD = 2 } nb_algo_e;
 typedef enum { NB_BLANKER = 0, NB_WF = 1, NB_CLICK = 2 } nb_type_e;
