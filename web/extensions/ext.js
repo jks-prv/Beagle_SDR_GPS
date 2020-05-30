@@ -184,6 +184,11 @@ function ext_get_mode()
 	return cur_mode;
 }
 
+function ext_is_IQ_or_stereo_mode()
+{
+   return (cur_mode == 'drm' || cur_mode == 'iq' || cur_mode == 'sas');
+}
+
 function ext_get_prev_mode()
 {
 	return extint.prev_mode;
@@ -572,7 +577,9 @@ function extint_panel_show(controls_html, data_html, show_func)
 	extint.displayed = true;
 }
 
-function ext_panel_displayed() { return extint.displayed; }
+function ext_panel_displayed(ext_name) {
+   return (extint.displayed && (ext_name? (ext_name == extint.current_ext_name) : true));
+}
 
 function ext_panel_redisplay(s) { w3_innerHTML('id-ext-controls-container', s); }
 
