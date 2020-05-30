@@ -35,10 +35,9 @@ Boston, MA  02110-1301, USA.
 #include "datatypes.h"
 #include "ext_int.h"
 #include "rx.h"
-#include "noiseproc.h"
+#include "rx_sound.h"
 #include "dx.h"
 #include "non_block.h"
-#include "rx_sound.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -99,10 +98,15 @@ struct wf_inst_t {
 	int mark, speed, fft_used_limit;
 	bool new_map, new_map2, compression, isWF, isFFT;
 	int flush_wf_pipe;
-	u4_t last_noise_pulse;
-	int nb_enable[NOISE_ALGOS];
+
+	// NB: matches rx_noise.h which is not included here to prevent re-compile cascade
+    #define NOISE_TYPES 4
+    #define NOISE_PARAMS 8
+	int nb_enable[NOISE_TYPES];
 	float nb_param[NOISE_TYPES][NOISE_PARAMS];
-	bool nb_param_change[NOISE_TYPES];
+	bool nb_param_change[NOISE_TYPES], nb_setup;
+	u4_t last_noise_pulse;
+
 	snd_t *snd;
 	u4_t snd_seq;
 	wf_pkt_t out;

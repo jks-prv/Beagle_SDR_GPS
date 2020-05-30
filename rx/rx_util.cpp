@@ -35,6 +35,7 @@ Boston, MA  02110-1301, USA.
 #include "wspr.h"
 #include "ext_int.h"
 #include "shmem.h"
+#include "rx_noise.h"
 #include "wdsp.h"
 
 #ifdef DRM

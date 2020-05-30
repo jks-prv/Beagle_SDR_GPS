@@ -8,6 +8,8 @@
 #include "types.h"
 #include "kiwi.h"
 #include "rx.h"
+#include "cuteSDR.h"
+#include "rx_noise.h"
 #include "teensy.h"
 #include "noise_blank.h"
 #include "arm_math.h"
@@ -17,6 +19,18 @@ struct nb_Wild_t {
     f32_t thresh;
     s1_t taps;
     s1_t impulse_samples;
+
+    #define MAX_ORDER 40    // aka taps
+    #define MAX_IMPULSE_LEN 41
+    #define MAX_PL ((MAX_IMPULSE_LEN - 1) / 2)
+    
+    #define WORKING_BUFFER
+    #ifdef WORKING_BUFFER
+        #define DIM_WBUF (FASTFIR_OUTBUF_SIZE + MAX_ORDER*2 + MAX_PL*2)
+        f32_t working_buffer[DIM_WBUF];
+    #else
+        f32_t last_frame_end[MAX_ORDER + MAX_PL]; // this takes the last samples from the previous frame to do the prediction within the boundaries
+    #endif
 };
 
 static nb_Wild_t nb_Wild[MAX_RX_CHANS];
@@ -49,7 +63,6 @@ void nb_Wild_inner(int rx_chan, int nsamps, f32_t *samps)
     nb_Wild_t *w = &nb_Wild[rx_chan];
     //printf("nb_Wild_inner: thresh=%.2f taps=%d samples=%d\n", w->thresh, w->taps, w->impulse_samples);
 
-    #define BOUNDARY_BLANK 14       // for first trials, very large
     u4_t impulse_length = w->impulse_samples | 1;   // must be odd
     u4_t PL = (impulse_length - 1) / 2;     // has to be (impulse_length-1)/2
     int order = w->taps;    // lpc's order
@@ -64,10 +77,6 @@ void nb_Wild_inner(int rx_chan, int nsamps, f32_t *samps)
     int search_pos = 0;
     int impulse_count = 0;
 
-    #define MAX_ORDER 40
-    #define MAX_PL ((41 - 1) / 2)
-    static f32_t last_frame_end[MAX_ORDER + MAX_PL]; // this takes the last samples from the previous frame to do the prediction within the boundaries
-
     f32_t R[order + 1];  // takes the autocorrelation results
     f32_t k, alfa;
 
@@ -76,6 +85,11 @@ void nb_Wild_inner(int rx_chan, int nsamps, f32_t *samps)
     f32_t Wfw[impulse_length], Wbw[impulse_length]; // taking linear windows for the combination of fwd and bwd
 
     f32_t s;
+    
+    #ifdef WORKING_BUFFER
+        // copy incomming samples to the end of our working buffer
+        memcpy(&w->working_buffer[2*PL + 2*order], samps, nsamps * sizeof(f32_t));
+    #endif
     
     // generating 2 windows for the combination of the 2 predictors
     // will be a constant window later
@@ -86,7 +100,12 @@ void nb_Wild_inner(int rx_chan, int nsamps, f32_t *samps)
 
     // calculate the autocorrelation of samps (moving by max. of #order# samples)
     for (i = 0; i < (order + 1); i++) {
-        arm_dot_prod_f32(&samps[0], &samps[i], nsamps - i, &R[i]); // R is carrying the cross-correlations
+         // R is carrying the cross-correlations
+        #ifdef WORKING_BUFFER
+            arm_dot_prod_f32(&w->working_buffer[order + PL], &w->working_buffer[order + PL + i], nsamps - i, &R[i]);
+        #else
+            arm_dot_prod_f32(&samps[0], &samps[i], nsamps - i, &R[i]);
+        #endif
     }
 
     // alternative Levinson Durben algorithm to calculate the lpc coefficients from the cross-correlation
@@ -124,7 +143,14 @@ void nb_Wild_inner(int rx_chan, int nsamps, f32_t *samps)
 
     arm_fir_instance_f32 LPC;
     arm_fir_init_f32(&LPC, order + 1, &reverse_lpcs[0], &firStateF32[0], nsamps);    // we are using the same function as used in freedv
-    arm_fir_f32(&LPC, samps, tempsamp, nsamps);    // do the inverse filtering to eliminate voice and enhance the impulses
+
+    // do the inverse filtering to eliminate voice and enhance the impulses
+    #ifdef WORKING_BUFFER
+        arm_fir_f32(&LPC, &w->working_buffer[order + PL], tempsamp, nsamps);
+    #else
+        arm_fir_f32(&LPC, samps, tempsamp, nsamps);
+    #endif
+
     arm_fir_init_f32(&LPC, order + 1, &lpcs[0], &firStateF32[0], nsamps);            // we are using the same function as used in freedv
     arm_fir_f32(&LPC, tempsamp, tempsamp, nsamps);  // do a matched filtering to detect an impulse in our now voiceless signal
 
@@ -147,7 +173,7 @@ void nb_Wild_inner(int rx_chan, int nsamps, f32_t *samps)
 
         search_pos++;
 
-    } while ((search_pos < nsamps - BOUNDARY_BLANK) && (impulse_count < N_IMPULSE_COUNT)); // avoid upper boundary
+    } while ((search_pos < nsamps) && (impulse_count < N_IMPULSE_COUNT)); // avoid upper boundary
 
     // boundary handling has to be fixed later
     // as a result we now will not find any impulse in these areas
@@ -168,19 +194,28 @@ void nb_Wild_inner(int rx_chan, int nsamps, f32_t *samps)
         // we have to copy some samples from the original signal as
         // basis for the reconstructions - could be done by memcopy
         for (int k = 0; k < order; k++) {
-            i = impulse_positions[j] - PL - order + k;
-            if (i < 0) {  // this solves the prediction problem at the left boundary
+            #ifdef WORKING_BUFFER
                 i = impulse_positions[j] + k;
-                assert_array_dim(i, order + PL);
-                Rfw[k] = last_frame_end[i]; // take the sample from the last frame
-            } else {
-                assert_array_dim(i, nsamps);
-                Rfw[k] = samps[i]; //take the sample from this frame as we are away from the boundary
-            }
+                assert_array_dim(i, DIM_WBUF);
+                Rfw[k] = w->working_buffer[i];
+                i = order + PL + impulse_positions[j] + PL + k + 1;
+                assert_array_dim(i, DIM_WBUF);
+                Rbw[impulse_length+k] = w->working_buffer[i];
+            #else
+                i = impulse_positions[j] - PL - order + k;
+                if (i < 0) {  // this solves the prediction problem at the left boundary
+                    i = impulse_positions[j] + k;
+                    assert_array_dim(i, order + PL);
+                    Rfw[k] = w->last_frame_end[i]; // take the sample from the last frame
+                } else {
+                    assert_array_dim(i, nsamps);
+                    Rfw[k] = samps[i]; //take the sample from this frame as we are away from the boundary
+                }
 
-            i = impulse_positions[j] + PL + k + 1;
-            assert_array_dim(i, nsamps);
-            Rbw[impulse_length + k] = samps[i];
+                i = impulse_positions[j] + PL + k + 1;
+                assert_array_dim(i, nsamps);
+                Rbw[impulse_length + k] = samps[i];
+            #endif
         }
 
         for (i = 0; i < impulse_length; i++) {  // now we calculate the forward and backward predictions
@@ -192,15 +227,27 @@ void nb_Wild_inner(int rx_chan, int nsamps, f32_t *samps)
         arm_mult_f32(&Wbw[0], &Rbw[0], &Rbw[0], impulse_length);
 
         // finally add the two weighted predictions and insert them into the original signal - thereby eliminating the distortion
-        arm_add_f32(&Rfw[order], &Rbw[0], &samps[impulse_positions[j] - PL], impulse_length);
+        #ifdef WORKING_BUFFER
+            arm_add_f32(&Rfw[order], &Rbw[0], &w->working_buffer[order + impulse_positions[j]], impulse_length);
+        #else
+            arm_add_f32(&Rfw[order], &Rbw[0], &samps[impulse_positions[j] - PL], impulse_length);
+        #endif
     }
 
-    for (int p = 0; p < (order + PL); p++) {
-        i = nsamps - 1 - order - PL + p;
-        assert_array_dim(i, nsamps);
-        assert_array_dim(p, order + PL);
-        last_frame_end[p] = samps[i];   // store samples from the current frame to use at the next frame
-    }
+    #ifdef WORKING_BUFFER
+        // copy the samples of the current frame back to the samps buffer for output
+        memcpy(samps, &w->working_buffer[order + PL], nsamps * sizeof(f32_t));
+        
+        // samples for next frame
+        memcpy(w->working_buffer, &w->working_buffer[nsamps], (2*order + 2*PL) * sizeof(f32_t));
+    #else
+        for (int p = 0; p < (order + PL); p++) {
+            i = nsamps - 1 - order - PL + p;
+            assert_array_dim(i, nsamps);
+            assert_array_dim(p, order + PL);
+            w->last_frame_end[p] = samps[i];   // store samples from the current frame to use at the next frame
+        }
+    #endif
 }
 
 void nb_Wild_process(int rx_chan, int nsamps, TYPEMONO16 *inputsamples, TYPEMONO16 *outputsamples )
@@ -212,4 +259,3 @@ void nb_Wild_process(int rx_chan, int nsamps, TYPEMONO16 *inputsamples, TYPEMONO
     nb_Wild_inner(rx_chan, nsamps, samps);
     for (i = 0; i < nsamps; i++) outputsamples[i] = samps[i];
 }
-

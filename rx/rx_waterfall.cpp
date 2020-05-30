@@ -33,11 +33,11 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "datatypes.h"
 #include "ext_int.h"
-#include "rx.h"
+#include "rx_noise.h"
+#include "rx_waterfall.h"
 #include "noiseproc.h"
 #include "dx.h"
 #include "non_block.h"
-#include "rx_waterfall.h"
 #include "shmem.h"
 #include "noise_blank.h"
 
@@ -845,9 +845,11 @@ void sample_wf(int rx_chan)
             //printf("NB WF sr=%d usec=%.0f th=%.0f\n", srate, wf->nb_param[NB_BLANKER][0], wf->nb_param[NB_BLANKER][1]);
             m_NoiseProc[rx_chan][NB_WF].SetupBlanker("WF", srate, wf->nb_param[NB_BLANKER]);
             wf->nb_param_change[NB_BLANKER] = false;
+            wf->nb_setup = true;
         }
 
-        m_NoiseProc[rx_chan][NB_WF].ProcessBlankerOneShot(WF_C_NSAMPS, (TYPECPX*) fft->hw_c_samps, (TYPECPX*) fft->hw_c_samps);
+        if (wf->nb_setup)
+            m_NoiseProc[rx_chan][NB_WF].ProcessBlankerOneShot(WF_C_NSAMPS, (TYPECPX*) fft->hw_c_samps, (TYPECPX*) fft->hw_c_samps);
     }
 
     // contents of WF DDC pipeline is uncertain when mix freq or decim just changed

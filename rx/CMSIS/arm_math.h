@@ -374,7 +374,15 @@ extern "C"
 #ifdef KIWISDR
  #undef K
  #undef M
+ 
+ #define ARM_DSP_CONFIG_TABLES
+ #define ARM_FFT_ALLOW_TABLES
+ #define ARM_TABLE_TWIDDLECOEF_F32_256
+ #define ARM_TABLE_BITREVIDX_FLT_256
+ #define ARM_TABLE_TWIDDLECOEF_F32_512
+ #define ARM_TABLE_BITREVIDX_FLT_512
 #endif
+
 #include <stdint.h>
 #define  __ALIGNED(x) __attribute__((aligned(x)))
 #define __STATIC_FORCEINLINE static __attribute__((inline))

@@ -59,6 +59,7 @@ typedef struct {
 
     u4_t firewall[32];
 	u4_t seq;
+	float locut, hicut, norm_locut, norm_hicut;
 	
     #ifdef SND_SEQ_CHECK
         bool snd_seq_ck_init;
