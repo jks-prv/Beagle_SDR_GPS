@@ -12,7 +12,7 @@
 
 #include "types.h"
 #include "kiwi.h"
-#include "rx.h"
+#include "rx_noise.h"
 #include "noise_filter.h"
 #include <math.h>
 

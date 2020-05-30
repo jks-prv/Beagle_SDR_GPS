@@ -5,7 +5,10 @@ var noise_filter = {
    first_time: true,
 
    algo: 0,
-   algo_s: [ '(none selected)', 'wdsp variable-leak LMS', 'original LMS', 'Kim algorithm', 'spectral' ],
+   algo_s: [ '(none selected)', 'wdsp variable-leak LMS', 'original LMS', 'spectral noise reduction' ],
+   width: 400,
+   height: [ 100, 475, 400, 200 ],
+   
    NR_OFF: 0,
    denoise: 0,
    autonotch: 0,
@@ -33,9 +36,10 @@ var noise_filter = {
    an_beta: 0.125,
    an_decay: 0.99915,
 
-   NR_KIM: 3,
-
-   NR_SPECTRAL: 4,
+   NR_SPECTRAL: 3,
+   spec_gain: 0,
+   spec_alpha: 0.95,
+   active_snr: 30,
 };
 
 function noise_filter_main()
@@ -140,6 +144,19 @@ function noise_filter_controls_html()
             w3_slider('', 'Decay', 'noise_filter.an_decay', noise_filter.an_decay, 0.90, 1.0, 0.0001, 'noise_filter_decay_cb')
          );
       break;
+
+   case noise_filter.NR_SPECTRAL:
+      s =
+         w3_div('w3-section',
+            w3_slider('', 'Gain', 'noise_filter.spec_gain', noise_filter.spec_gain, -30, 30, 1, 'nf_spectral_gain_cb'),
+            w3_slider('', 'Alpha', 'noise_filter.spec_alpha', noise_filter.spec_alpha, 0.90, 0.99, 0.01, 'nf_spectral_alpha_cb'),
+            w3_slider('', 'Active SNR', 'noise_filter.active_snr', noise_filter.active_snr, 2, 30, 1, 'nf_spectral_asnr_cb')
+         );
+      break;
+   }
+   
+   if (ext_is_IQ_or_stereo_mode()) {
+      s = 'No noise filtering in IQ or stereo modes';
    }
    
 	var controls_html =
@@ -159,7 +176,26 @@ function noise_filter_controls_html()
 function noise_filter_controls_setup()
 {
 	ext_panel_show(noise_filter_controls_html(), null, null);
-	ext_set_controls_width_height(400, 475);
+	ext_set_controls_width_height(noise_filter.width, noise_filter.height[noise_filter.algo]);
+}
+
+function noise_filter_controls_refresh()
+{
+	if (ext_panel_displayed('noise_filter')) {
+	   ext_panel_redisplay(noise_filter_controls_html());
+	   ext_set_controls_width_height(noise_filter.width, noise_filter.height[noise_filter.algo]);
+	}
+}
+
+function noise_filter_environment_changed(changed)
+{
+   if (changed.mode) {
+      var is_IQ_or_stereo_mode = ext_is_IQ_or_stereo_mode();
+      if (is_IQ_or_stereo_mode != noise_filter.is_IQ_or_stereo_mode) {
+         noise_filter_controls_refresh();
+         noise_filter.is_IQ_or_stereo_mode = is_IQ_or_stereo_mode;
+      }
+   }
 }
 
 // called from openwebrx.js
@@ -185,7 +221,8 @@ function noise_filter_send(type)
          p2 = 8.192e-2 / Math.pow(2, 20 - p2);
          p3 = noise_filter.wdsp_de_leakage;
          p3 = 8192 / Math.pow(2, 23 - p3);
-      } else {    // NR_AUTONOTCH
+      } else
+      if (type == noise_filter.NR_AUTONOTCH) {
          p0 = noise_filter.wdsp_an_taps;
          p1 = noise_filter.wdsp_an_delay;
          p2 = noise_filter.wdsp_an_gain;
@@ -193,18 +230,26 @@ function noise_filter_send(type)
          p3 = noise_filter.wdsp_an_leakage;
          p3 = 8192 / Math.pow(2, 23 - p3);
       }
-   } else {    // NR_ORIG
+   } else
+   if (noise_filter.algo == noise_filter.NR_ORIG) {
       if (type == noise_filter.NR_DENOISE) {
          p0 = noise_filter.de_delay;
          p1 = noise_filter.de_beta;
          p2 = noise_filter.de_decay;
          p3 = 0;
-      } else {    // NR_AUTONOTCH
+      } else
+      if (type == noise_filter.NR_AUTONOTCH) {
          p0 = noise_filter.an_delay;
          p1 = noise_filter.an_beta;
          p2 = noise_filter.an_decay;
          p3 = 0;
       }
+   } else
+   if (noise_filter.algo == noise_filter.NR_SPECTRAL) {
+      p0 = Math.pow(10, noise_filter.spec_gain/20);
+      p1 = noise_filter.spec_alpha;
+      p2 = Math.pow(10, noise_filter.active_snr/10);
+      p3 = 0;
    }
 
    snd_send('SET nr type='+ type +' param=0 pval='+ p0);
@@ -229,9 +274,7 @@ function nr_algo_cb(path, idx, first, init)
       noise_filter_send(noise_filter.NR_AUTONOTCH);
    }
 
-	if (ext_panel_displayed()) {
-	   ext_panel_redisplay(noise_filter_controls_html());
-	}
+   noise_filter_controls_refresh();
 }
 
 function noise_filter_cb(path, checked, first)
@@ -299,6 +342,42 @@ function nf_wdsp_leakage_cb(path, val, complete, first)
 	if (complete) {
 	   console.log(path +' leakage='+ leakage);
       snd_send('SET nr type='+ type +' param=3 pval='+ leakage);
+	}
+}
+
+
+// NR_SPECTRAL
+
+function nf_spectral_gain_cb(path, val, complete, first)
+{
+   val = +val;
+	w3_num_cb(path, val);
+	w3_set_label('Gain: '+ val +' dB', path);
+	if (complete) {
+	   console.log(path +' dB='+ val);
+      snd_send('SET nr type=0 param=0 pval='+ Math.pow(10, val/20));
+	}
+}
+
+function nf_spectral_alpha_cb(path, val, complete, first)
+{
+   val = +val;
+	w3_num_cb(path, val);
+	w3_set_label('Alpha: '+ val.toFixed(2), path);
+	if (complete) {
+	   console.log(path +'='+ val.toFixed(2));
+      snd_send('SET nr type=0 param=1 pval='+ val.toFixed(2));
+	}
+}
+
+function nf_spectral_asnr_cb(path, val, complete, first)
+{
+   val = +val;
+	w3_num_cb(path, val);
+	w3_set_label('Active SNR: '+ val +' dB', path);
+	if (complete) {
+	   console.log(path +' dB='+ val);
+      snd_send('SET nr type=0 param=2 pval='+ Math.pow(10, val/10));
 	}
 }
 

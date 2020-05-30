@@ -6,6 +6,9 @@ var noise_blank = {
    
    algo: 0,
    algo_s: [ '(none selected)', 'standard blanker', 'Wild algorithm' ],
+   width: 400,
+   height: [ 175, 300, 350 ],
+   
    NB_OFF: 0,
    blanker: 0,
    test: 0,
@@ -92,10 +95,13 @@ function noise_blank_controls_html()
       break;
    
    case noise_blank.NB_WILD:
-      s =
-         w3_slider('', 'Threshold', 'noise_blank.thresh', noise_blank.thresh, 0.05, 3, 0.05, 'noise_blank_thresh_cb') +
-         w3_slider('', 'Taps', 'noise_blank.taps', noise_blank.taps, 6, 40, 1, 'noise_blank_taps_cb') +
-         w3_slider('', 'Samples', 'noise_blank.impulse_samples', noise_blank.impulse_samples, 3, 41, 2, 'noise_blank_impulse_samples_cb');
+      if (ext_is_IQ_or_stereo_mode())
+         s = 'No Wild algorithm blanking in IQ or stereo modes';
+      else
+         s =
+            w3_slider('', 'Threshold', 'noise_blank.thresh', noise_blank.thresh, 0.05, 3, 0.05, 'noise_blank_thresh_cb') +
+            w3_slider('', 'Taps', 'noise_blank.taps', noise_blank.taps, 6, 40, 1, 'noise_blank_taps_cb') +
+            w3_slider('', 'Samples', 'noise_blank.impulse_samples', noise_blank.impulse_samples, 3, 41, 2, 'noise_blank_impulse_samples_cb');
       break;
    }
    
@@ -112,7 +118,7 @@ function noise_blank_controls_html()
             ),
             w3_slider('', 'Test pulse gain', 'noise_blank.test_gain', noise_blank.test_gain, -90, 0, 1, 'noise_blank_test_gain_cb'),
             w3_slider('', 'Test pulse width', 'noise_blank.test_width', noise_blank.test_width, 1, 30, 1, 'noise_blank_test_width_cb'),
-            '<hr>',
+            ((noise_blank.algo != noise_blank.NB_OFF)? '<hr>' : ''),
             w3_div('w3-section', s)
 			)
 		);
@@ -120,10 +126,29 @@ function noise_blank_controls_html()
 	return controls_html;
 }
 
+function noise_blank_controls_refresh()
+{
+	if (ext_panel_displayed('noise_blank')) {
+	   ext_panel_redisplay(noise_blank_controls_html());
+	   ext_set_controls_width_height(noise_blank.width, noise_blank.height[noise_blank.algo]);
+	}
+}
+
 function noise_blank_controls_setup()
 {
 	ext_panel_show(noise_blank_controls_html(), null, null);
-	ext_set_controls_width_height(400, 400);
+	ext_set_controls_width_height(noise_blank.width, noise_blank.height[noise_blank.algo]);
+}
+
+function noise_blank_environment_changed(changed)
+{
+   if (changed.mode) {
+      var is_IQ_or_stereo_mode = ext_is_IQ_or_stereo_mode();
+      if (is_IQ_or_stereo_mode != noise_blank.is_IQ_or_stereo_mode) {
+         noise_blank_controls_refresh();
+         noise_blank.is_IQ_or_stereo_mode = is_IQ_or_stereo_mode;
+      }
+   }
 }
 
 // called from openwebrx.js
@@ -181,9 +206,7 @@ function nb_algo_cb(path, idx, first, init)
       noise_blank_send();
    }
 
-	if (ext_panel_displayed()) {
-	   ext_panel_redisplay(noise_blank_controls_html());
-	}
+   noise_blank_controls_refresh();
 }
 
 function noise_blank_test_cb(path, idx, first)

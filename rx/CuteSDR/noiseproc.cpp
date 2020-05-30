@@ -39,8 +39,8 @@
 //or implied, of Moe Wheatley.
 //==========================================================================================
 
+#include "rx_noise.h"
 #include "noiseproc.h"
-#include "noise_blank.h"
 
 CNoiseProc m_NoiseProc[MAX_RX_CHANS][2];
 

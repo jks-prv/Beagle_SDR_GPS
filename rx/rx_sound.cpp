@@ -31,6 +31,7 @@ Boston, MA  02110-1301, USA.
 #include "gps.h"
 #include "coroutines.h"
 #include "cuteSDR.h"
+#include "rx_noise.h"
 #include "teensy.h"
 #include "agc.h"
 #include "fir.h"
@@ -47,10 +48,10 @@ Boston, MA  02110-1301, USA.
 #include "noiseproc.h"
 #include "lms.h"
 #include "dx.h"
+#include "noise_blank.h"
 #include "rx_sound.h"
 #include "rx_waterfall.h"
 #include "shmem.h"
-#include "noise_blank.h"
 #include "wdsp.h"
 
 #ifdef DRM
@@ -178,9 +179,9 @@ void c2s_sound(void *param)
 	
 	memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
 	
-	int noise_pulse_last=0;
-	int nb_algo=0, nr_algo=0;
-    int nb_enable[NOISE_ALGOS]={0}, nr_enable[NOISE_ALGOS]={0};
+	int noise_pulse_last = 0;
+	int nb_algo = NB_OFF, nr_algo = NR_OFF_;
+    int nb_enable[NOISE_TYPES] = {0}, nr_enable[NOISE_TYPES] = {0};
 	float nb_param[NOISE_TYPES][NOISE_PARAMS], nr_param[NOISE_TYPES][NOISE_PARAMS];
 
 	gps_timestamp_t *gps_tsp = &gps_ts[rx_chan];
@@ -324,6 +325,22 @@ void c2s_sound(void *param)
 					int fmax = frate/2 - 1;
 					if (hicut > fmax) hicut = fmax;
 					if (locut < -fmax) locut = -fmax;
+					
+					snd->locut = locut; snd->hicut = hicut;
+					
+					// normalized passband
+                    if (locut <= 0 && hicut >= 0) {     // straddles carrier
+                        snd->norm_locut = 0.0;
+                        snd->norm_hicut = MAX(-locut, hicut);
+                    } else {
+                        if (locut > 0) {
+                            snd->norm_locut = locut;
+                            snd->norm_hicut = hicut;
+                        } else {
+                            snd->norm_hicut = -locut;
+                            snd->norm_locut = -hicut;
+                        }
+                    }
 					
 					// bw for post AM det is max of hi/lo filter cuts
 					float bw = fmaxf(fabs(hicut), fabs(locut));
@@ -493,8 +510,11 @@ void c2s_sound(void *param)
 			if (n == 3) {
 				//cprintf(conn, "nb: type=%d param=%d pval=%.9f\n", n_type, n_param, n_pval);
 				nb_param[n_type][n_param] = n_pval;
-                wf->nb_param[n_type][n_param] = n_pval;
-                wf->nb_param_change[n_type] = true;
+
+				if (nb_algo == NB_STD || n_type == NB_CLICK) {
+                    wf->nb_param[n_type][n_param] = n_pval;
+                    wf->nb_param_change[n_type] = true;
+                }
 
                 if (n_type == NB_BLANKER) {
                     switch (nb_algo) {
@@ -514,6 +534,7 @@ void c2s_sound(void *param)
                 switch (nr_algo) {
                     case NR_WDSP: wdsp_ANR_init(rx_chan, (nr_type_e) n_type, nr_param[n_type]); break;
                     case NR_ORIG: m_LMS[rx_chan][n_type].Initialize((nr_type_e) n_type, nr_param[n_type]); break;
+                    case NR_SPECTRAL: nr_spectral_init(rx_chan, nr_param[n_type]); break;
                 }
                 
 				continue;
@@ -817,7 +838,8 @@ void c2s_sound(void *param)
             }
 
             //#define NB_STD_POST_FILTER
-            #ifndef NB_STD_POST_FILTER
+            #ifdef NB_STD_POST_FILTER
+            #else
                 if (nb_enable[NB_BLANKER] && nb_algo == NB_STD)
 		            m_NoiseProc[rx_chan][NB_SND].ProcessBlanker(ns_in, i_samps, i_samps);
 		    #endif
@@ -1030,13 +1052,17 @@ void c2s_sound(void *param)
                 // ordered so denoiser can cleanup residual noise from autonotch
                 switch (nr_algo) {
                     case NR_WDSP:
-                        if (nr_enable[1]) wdsp_ANR_filter(rx_chan, NR_AUTONOTCH, ns_out, r_samps, r_samps);
-                        if (nr_enable[0]) wdsp_ANR_filter(rx_chan, NR_DENOISE, ns_out, r_samps, r_samps);
+                        if (nr_enable[NR_AUTONOTCH]) wdsp_ANR_filter(rx_chan, NR_AUTONOTCH, ns_out, r_samps, r_samps);
+                        if (nr_enable[NR_DENOISE]) wdsp_ANR_filter(rx_chan, NR_DENOISE, ns_out, r_samps, r_samps);
                         break;
 
                     case NR_ORIG:
-                        if (nr_enable[1]) m_LMS[rx_chan][NR_AUTONOTCH].ProcessFilter(ns_out, r_samps, r_samps);
-                        if (nr_enable[0]) m_LMS[rx_chan][NR_DENOISE].ProcessFilter(ns_out, r_samps, r_samps);
+                        if (nr_enable[NR_AUTONOTCH]) m_LMS[rx_chan][NR_AUTONOTCH].ProcessFilter(ns_out, r_samps, r_samps);
+                        if (nr_enable[NR_DENOISE]) m_LMS[rx_chan][NR_DENOISE].ProcessFilter(ns_out, r_samps, r_samps);
+                        break;
+
+                    case NR_SPECTRAL:
+                        nr_spectral_process(rx_chan, ns_out, r_samps, r_samps);
                         break;
                 }
             }
