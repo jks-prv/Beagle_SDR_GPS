@@ -22,8 +22,8 @@ var sstv = {
    CMD_REDRAW: 1,
    img_width: 0,
    
-   // https://www.amateur-radio-wiki.net/index.php?title=SSTV_frequencies
-   freqs_s: [ 3845, 3730, 7033, 7171, 7040, 14230, 21340, 28680 ]
+   //en.wikipedia.org/wiki/Slow-scan_television#Frequencies
+   freqs_s: [ 3845, 3730, 6925, 7165, 7170, 14230, 21340, 27700, 28680 ]
 };
 
 function SSTV_main()
