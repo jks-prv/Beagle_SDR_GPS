@@ -1,6 +1,6 @@
 {
 "inactivity_timeout_mins":0,
-"status_msg":"Try other KiwiSDRs world-wide at <a href='http://kiwisdr.com/public' target='_blank'>kiwisdr.com/public</a>",
+"status_msg":"Try other KiwiSDRs world-wide at <a href='http://rx.kiwisdr.com' target='_blank'>rx.kiwisdr.com</a>",
 "index_html_params":{
 	"PAGE_TITLE":"KiwiSDR",
 	"RX_PHOTO_FILE":"kiwi/pcb.jpg",

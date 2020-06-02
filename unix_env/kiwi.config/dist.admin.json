@@ -9,5 +9,5 @@
 "update_check":true,
 "update_install":true,
 "sdr_hu_register":false,
-"api_key":"replaced with API key from sdr.hu/register"
+"api_key":""
 }

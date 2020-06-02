@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.395  June 2, 2020
+    Remove references to sdr.hu
+    Prevent "make install" from failing on BBAI if window system is not installed.
+
 v1.394  May 31, 2020
     Noise blankers and filters:
         Added the spectral noise reduction filter by Frank, DD4WH and Michael, DL2FW, via the
@@ -141,7 +145,7 @@ v1.379  February 14, 2020
     Fixed bug in recent network initialization rewrite.
 
 v1.378  February 4, 2020
-    Changes to help diagnose problems with kiwisdr.com/public registration.
+    Changes to help diagnose problems with rx.kiwisdr.com registration.
 
 v1.377  February 1, 2020
     Improve software update reliability.
@@ -199,7 +203,7 @@ v1.368,369  January 11, 2020
         AGC was missing from DRM IQ input. Should now work as well as Dream with weaker signals.
 
 v1.365,366,367  January 10, 2020
-    Decouple kiwisdr.com/public and sdr.hu registration.
+    Decouple rx.kiwisdr.com and sdr.hu registration.
         Can register on either or both.
         Rename admin page tab "sdr.hu" to "Public".
         API key only applies to sdr.hu
@@ -505,7 +509,7 @@ v1.292  June 16, 2019
     Fixed a bunch of masked frequency related bugs including a problem when running in 20 kHz mode.
 
     If a Kiwi has time limits or masked frequencies configured an icon will be included in the
-        status line appearing on sdr.hu and kiwisdr.com/public (i.e. alongside the existing icons
+        status line appearing on sdr.hu and rx.kiwisdr.com (i.e. alongside the existing icons
         indicating 20 kHz mode, GPS enabled and the antenna switch extension available).
         An hour-glass icon if inactivity or 24 hour time limits are configured.
         A red, circle-slash "no entry" icon if masked frequencies are configured.

@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 394
+VERSION_MIN = 395
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.11
@@ -825,9 +825,10 @@ endif
 $(DO_ONCE):
 ifeq ($(BBAI),true)
 	@echo "disable window system"
-	systemctl stop lightdm.service
-	systemctl disable lightdm.service
+	-systemctl stop lightdm.service
+	-systemctl disable lightdm.service
 	make install_kiwi_device_tree
+	@touch $(REBOOT)
 endif
 	@mkdir -p $(DIR_CFG)
 	@touch $(DO_ONCE)
@@ -841,7 +842,6 @@ install_kiwi_device_tree:
 	(cd /opt/source/$(DIR_DTB); make)
 	cp /opt/source/$(DIR_DTB)/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)
 	cp /opt/source/$(DIR_DTB)/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb
-	@touch $(REBOOT)
 endif
 
 V_DIR = ~/shared/shared
