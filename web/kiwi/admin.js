@@ -416,7 +416,7 @@ function connect_html()
 		
       w3_divs('w3-container/w3-tspace-8',
          w3_label('w3-bold', 'What domain name or IP address will people use to connect to your KiwiSDR?<br>' +
-            'If you are listing on sdr.hu this information will be part of your entry.<br>' +
+            'If you are listing on rx.kiwisdr.com this information will be part of your entry.<br>' +
             'Click one of the five options below and enter any additional information:<br><br>'),
          
          // (n/a anymore) w3-static because w3-sidenav does a position:fixed which is no good here at the bottom of the page
@@ -622,7 +622,7 @@ function connect_dom_nam_focus()
 	ext_set_cfg_param('cfg.server_url', cfg.sdr_hu_dom_name, true);
 	ext_set_cfg_param('cfg.sdr_hu_dom_sel', connect_dom_sel.NAM, true);
 	connect_update_url();
-   w3_hide('id-warn-ip');
+   //w3_hide('id-warn-ip');
 }
 
 function connect_dom_duc_focus()
@@ -631,7 +631,7 @@ function connect_dom_duc_focus()
 	ext_set_cfg_param('cfg.server_url', adm.duc_host, true);
 	ext_set_cfg_param('cfg.sdr_hu_dom_sel', connect_dom_sel.DUC, true);
 	connect_update_url();
-   w3_hide('id-warn-ip');
+   //w3_hide('id-warn-ip');
 }
 
 function connect_dom_rev_focus()
@@ -641,7 +641,7 @@ function connect_dom_rev_focus()
 	ext_set_cfg_param('cfg.server_url', dom, true);
 	ext_set_cfg_param('cfg.sdr_hu_dom_sel', connect_dom_sel.REV, true);
 	connect_update_url();
-   w3_hide('id-warn-ip');
+   //w3_hide('id-warn-ip');
 }
 
 function connect_dom_pub_focus()

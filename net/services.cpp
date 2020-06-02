@@ -916,7 +916,7 @@ void services_start()
         CreateTask(led_task, NULL, ADMIN_PRIORITY);
 
 	if (!alt_port) {
-		CreateTask(reg_SDR_hu, 0, SERVICES_PRIORITY);
+		//CreateTask(reg_SDR_hu, 0, SERVICES_PRIORITY);
 		reg_kiwisdr_com_tid = CreateTask(reg_kiwisdr_com, 0, SERVICES_PRIORITY);
         ip_blacklist_init();
 	}

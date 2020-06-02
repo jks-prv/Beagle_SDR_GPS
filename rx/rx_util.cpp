@@ -309,7 +309,7 @@ void update_vars_from_config()
     admcfg_default_bool("onetime_password_check", false, &update_admcfg);
     admcfg_default_string("proxy_server", "proxy.kiwisdr.com", &update_admcfg);
 
-    // decouple kiwisdr.com/public and sdr.hu registration
+    // decouple rx.kiwisdr.com and sdr.hu registration
     bool sdr_hu_register = admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED);
 	admcfg_bool("kiwisdr_com_register", &err, CFG_OPTIONAL);
     // never set or incorrectly set to false by v1.365,366

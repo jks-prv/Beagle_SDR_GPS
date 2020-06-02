@@ -563,23 +563,40 @@ function sdr_hu_html()
             '<header class="w3-container w3-yellow"><h5>' +
             'More information on <a href="http://kiwisdr.com/quickstart/index.html#id-sdr_hu" target="_blank">kiwisdr.com</a><br><br>' +
 
-            'To list your Kiwi on <a href="http://kiwisdr.com/public" target="_blank">kiwisdr.com/public</a> ' +
+            'To list your Kiwi on <a href="http://rx.kiwisdr.com" target="_blank">rx.kiwisdr.com</a> ' +
             'edit the fields below and set the register switch to <b>Yes</b>.<br>' +
-            'Look for a successful status result after a few minutes.<br><br>' +
+            'Look for a successful status result after a few minutes.<br>' +
 
-            'To list your Kiwi on <a href="https://sdr.hu" target="_blank">sdr.hu</a> ' +
+            /*
+            '<br>To list your Kiwi on <a href="https://sdr.hu" target="_blank">sdr.hu</a> ' +
             'edit the fields below and ' +
             'obtain an API key from <a href="https://sdr.hu/register" target="_blank">sdr.hu/register</a> ' +
             'and enter it into the <b>API key</b> field.<br>' +
             'Then set the register switch to <b>Yes</b> and look for a status result of "SUCCESS ..." after a few minutes.' +
+            */
             '</h5></header>'
          )
       ) +
 
 		'<hr>' +
+
+		w3_divs('w3-margin-bottom w3-container w3-center',
+			w3_div('',
+					'<b>Register on <a href="http://rx.kiwisdr.com" target="_blank">rx.kiwisdr.com</a>?</b> ' +
+					w3_switch('', 'Yes', 'No', 'adm.kiwisdr_com_register', adm.kiwisdr_com_register, 'kiwisdr_com_register_cb')
+			),
+         w3_div('id-kiwisdr_com-reg-status-container',
+            w3_div('w3-container',
+               w3_label('w3-show-inline-block w3-margin-R-16 w3-text-teal', 'kiwisdr.com registration status:') +
+               w3_div('id-kiwisdr_com-reg-status w3-show-inline-block w3-text-black', '')
+            )
+         )
+		);
+		
+      /*
 		w3_half('w3-margin-bottom', 'w3-container',
 			w3_div('',
-					'<b>Register on <a href="http://kiwisdr.com/public" target="_blank">kiwisdr.com/public</a>?</b> ' +
+					'<b>Register on <a href="http://rx.kiwisdr.com" target="_blank">rx.kiwisdr.com</a>?</b> ' +
 					w3_switch('', 'Yes', 'No', 'adm.kiwisdr_com_register', adm.kiwisdr_com_register, 'kiwisdr_com_register_cb')
 			),
 			w3_div('',
@@ -589,11 +606,9 @@ function sdr_hu_html()
 		) +
 
 		w3_half('w3-margin-bottom', 'w3-container',
-		   /*
-		   w3_div('w3-restart',
-		      w3_input('', 'kiwisdr.com API key', 'adm.api_key_kiwisdr_com', '', 'w3_string_set_cfg_cb')
-		   ),
-		   */
+		   //w3_div('w3-restart',
+		   //   w3_input('', 'kiwisdr.com API key', 'adm.api_key_kiwisdr_com', '', 'w3_string_set_cfg_cb')
+		   //),
 		   w3_div(),
 		   w3_div('w3-restart',
 		      w3_input('', 'sdr.hu API key', 'adm.api_key', '', 'w3_string_set_cfg_cb', 'enter value returned from sdr.hu/register process')
@@ -614,6 +629,7 @@ function sdr_hu_html()
             )
          )
       );
+		*/
       
    var s2 =
 		'<hr>' +
@@ -657,11 +673,10 @@ function sdr_hu_html()
 		   w3_div('',
             w3_input_get('', 'Coverage frequency low (kHz)', 'sdr_hu_lo_kHz', 'admin_int_cb'),
 				w3_div('w3-text-black',
-				   'These two settings effect the frequency coverage label displayed on sdr.hu <br>' +
+				   'These two settings effect the frequency coverage label displayed on rx.kiwisdr.com <br>' +
 				   'e.g. when set to 0 and 30000 sdr.hu shows "HF". If you\'re using a transverter <br>' +
 				   'then appropriate entries will cause "2m" or "70cm" to be shown. Other labels will be <br>' +
-				   'shown if you limit the range at HF due to antenna or filtering limitations. <br>' +
-				   'These settings don\'t apply to listings at kiwisdr.com/public'
+				   'shown if you limit the range at HF due to antenna or filtering limitations.'
 				)
 			),
          w3_input_get('', 'Coverage frequency high (kHz)', 'sdr_hu_hi_kHz', 'admin_int_cb')
@@ -824,9 +839,9 @@ function public_update(p)
 	//console.log('public_update='+ json);
 	admin.reg_status = JSON.parse(json);
 	
-	// kiwisdr.com/public registration status
+	// rx.kiwisdr.com registration status
 	if (adm.kiwisdr_com_register && admin.reg_status.kiwisdr_com != undefined && admin.reg_status.kiwisdr_com != '') {
-	   w3_innerHTML('id-kiwisdr_com-reg-status', 'kiwisdr.com/public registration: successful');
+	   w3_innerHTML('id-kiwisdr_com-reg-status', 'rx.kiwisdr.com registration: successful');
 	}
 	
 	// sdr.hu registration status
