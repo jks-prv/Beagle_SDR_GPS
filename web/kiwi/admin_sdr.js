@@ -674,7 +674,7 @@ function sdr_hu_html()
             w3_input_get('', 'Coverage frequency low (kHz)', 'sdr_hu_lo_kHz', 'admin_int_cb'),
 				w3_div('w3-text-black',
 				   'These two settings effect the frequency coverage label displayed on rx.kiwisdr.com <br>' +
-				   'e.g. when set to 0 and 30000 sdr.hu shows "HF". If you\'re using a transverter <br>' +
+				   'e.g. when set to 0 and 30000 "HF" is shown. If you\'re using a transverter <br>' +
 				   'then appropriate entries will cause "2m" or "70cm" to be shown. Other labels will be <br>' +
 				   'shown if you limit the range at HF due to antenna or filtering limitations.'
 				)
