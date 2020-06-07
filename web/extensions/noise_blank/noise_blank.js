@@ -113,7 +113,7 @@ function noise_blank_controls_html()
 				   w3_div('w3-text-white', noise_blank.algo_s[noise_blank.algo])
 				),
 				w3_inline('w3-margin-between-32',
-               w3_select('|color:red', '', 'test off', 'noise_blank.test', noise_blank.test, noise_blank.test_s, 'noise_blank_test_cb'),
+               w3_select('|color:red', '', 'test mode', 'noise_blank.test', noise_blank.test, noise_blank.test_s, 'noise_blank_test_cb'),
                w3_checkbox('w3-label-inline w3-text-css-orange/', 'Also blank WF', 'noise_blank.wf', noise_blank.wf, 'noise_blank_wf_cb')
             ),
             w3_slider('', 'Test pulse gain', 'noise_blank.test_gain', noise_blank.test_gain, -90, 0, 1, 'noise_blank_test_gain_cb'),
