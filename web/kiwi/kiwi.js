@@ -530,7 +530,7 @@ function time_display_setup(ext_name_or_id)
 		) +
 		w3_div('id-time-display-logo-inner',
 			w3_div('id-time-display-logo-text', 'Powered by'),
-			'<a href="http://openwebrx.org/" target="_blank"><img id="id-time-display-logo" src="gfx/openwebrx-top-logo.png" /></a>'
+			'<a href="https://github.com/ha7ilm/openwebrx" target="_blank"><img id="id-time-display-logo" src="gfx/openwebrx-top-logo.png" /></a>'
 		);
 
 	time_display(time_display_current);
