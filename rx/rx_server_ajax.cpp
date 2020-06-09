@@ -183,17 +183,19 @@ char *rx_server_ajax(struct mg_connection *mc)
 	//	OKAY, used by sdr.hu, kiwisdr.com and Priyom Pavlova at the moment
 	//	Returns '\n' delimited keyword=value pairs
 	case AJAX_STATUS: {
-		int sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
+		#if 0
+			int sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
 		
-		// If sdr.hu registration is off then don't reply to sdr.hu, but reply to others.
-		// But don't reply to anyone until net.ips_sdr_hu is valid.
-		if (!sdr_hu_reg && (!net.ips_sdr_hu.valid || ip_match(remote_ip, &net.ips_sdr_hu))) {
+			// If sdr.hu registration is off then don't reply to sdr.hu, but reply to others.
+			// But don't reply to anyone until net.ips_sdr_hu is valid.
+			if (!sdr_hu_reg && (!net.ips_sdr_hu.valid || ip_match(remote_ip, &net.ips_sdr_hu))) {
+				if (sdr_hu_debug)
+					printf("/status: sdr.hu reg disabled, not replying to sdr.hu (%s)\n", remote_ip);
+				return (char *) -1;
+			}
 			if (sdr_hu_debug)
-				printf("/status: sdr.hu reg disabled, not replying to sdr.hu (%s)\n", remote_ip);
-			return (char *) -1;
-		}
-		if (sdr_hu_debug)
-			printf("/status: replying to %s\n", remote_ip);
+				printf("/status: replying to %s\n", remote_ip);
+		#endif
 		
 		const char *s1, *s3, *s4, *s5, *s6, *s7;
 		
@@ -263,10 +265,14 @@ char *rx_server_ajax(struct mg_connection *mc)
 		
 		bool offline = (down || update_in_progress || backup_in_progress);
 		const char *status;
-		if (!sdr_hu_reg)
-			// Make sure to always keep set to private when private
-			status = "private";
-		else if (offline)
+
+		#if 0
+			if (!sdr_hu_reg)
+				// Make sure to always keep set to private when private
+				status = "private";
+			else
+		#endif
+		if (offline)
 			status = "offline";
 		else
 			status = "active";
