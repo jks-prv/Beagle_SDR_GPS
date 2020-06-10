@@ -94,6 +94,7 @@ Setup instructions:
     Deploy on Kiwi by doing:
         ^C      // stop the above if running
         cdp
+        m       // alias for "make" (NB: NOT "make xc")
         mi      // alias for "make install" (NB: NOT "make install_xc").
         ku      // "kiwi up" starts new server in background mode
 
