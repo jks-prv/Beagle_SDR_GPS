@@ -1,5 +1,5 @@
 Instructions for cross-compiling KiwiSDR code on a fast development machine.
-[updated 27 April 2020]
+[updated 10 June 2020]
 
 It is now possible to create an ARM architecture executable kiwi.bin file that can be
 directly copied to Debian running on the Beagle of the Kiwi. It is essentially the same as
@@ -129,7 +129,7 @@ Defaults to "lld".
 
 
 Setup instructions for specific development machines:
-(these instructions current as of April 2020)
+(these instructions current as of June 2020)
 
 ==== Ubuntu (example of a generic Linux setup)
 
@@ -147,18 +147,30 @@ laptop was running. Brew warned about trying to install LLVM using such an old m
 release and the resulting linker didn't work for cross compiling. So we had to update
 to Catalina.
  
-1. If necessary update Xcode to the latest version (11.4) so that the Clang/LLVM compiler
+1. If necessary update Xcode to the latest version (11.5) so that the Clang/LLVM compiler
 tools are current.
 
 2. Install the Brew 3rd-party package management system if not already present.
 The MacPorts package system would also probably work.
 
+3. In the next two step reference is made to the LLVM "{minor_ver}". This number changes
+as updates are made to the Brew repository. As of April 2020 this value was "1".
+In June 2020 the value was "3".
+
+After initial installation of the cross-compile environment, if sometime later you get an
+error message at Kiwi link time that the correct version of libffi cannot be found in
+/usr/local/opt/libffi/lib/ (e.g. libffi.7.dylib exists in that directory but LLVM is
+looking for version 6) then LLVM needs to be **completely reinstalled** to update
+{minor_ver} to a version that will look for libffi version 7.
+It is not known why libffi updates without a better error message indicating LLVM is
+now out-of-date.
+
 3. Using Brew install the latest LLVM (llvm@10). This does not conflict with the Xcode
 installed Clang/LLVM because it is placed in the separate /usr/local/opt/llvm directory
-(symlink to /usr/local/Cellar/llvm/10.0.0_1).
+(symlink to /usr/local/Cellar/llvm/10.0.0_{minor_ver}).
 
 4. Set the environment variable KIWI_XC_LD in your .cshrc (or equivalent) to
-"/usr/local/Cellar/llvm/10.0.0_1/bin/ld.lld" to reference the linker from llvm@10
+"/usr/local/Cellar/llvm/10.0.0_{minor_ver}/bin/ld.lld" to reference the linker from llvm@10
 which works with cross compilation. References to $(KIWI_XC_LD) are made in the
 Kiwi Makefile.
 
