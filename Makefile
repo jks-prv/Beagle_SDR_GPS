@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 395
+VERSION_MIN = 396
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.11
@@ -904,7 +904,7 @@ install: c_ext_clang_conv
 
 # copy binaries to Kiwi named $(KIWI_XC_HOST)
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-RSYNC_XC_ARGS = -av -e "ssh -p $(KIWI_XC_HOST_PORT) -l root"
+RSYNC_XC = rsync -av -e "ssh -p $(KIWI_XC_HOST_PORT) -l root"
 
 .PHONY: install_xc
 ifeq ($(XC),)
@@ -912,15 +912,16 @@ install_xc:
 	@make XC=-DXC $@
 else
 install_xc: c_ext_clang_conv
-	rsync $(RSYNC_XC_ARGS) $(BUILD_DIR)/kiwi.bin root@$(KIWI_XC_HOST):~root/build
+	# NB: --relative option use of "/./" to delimit creation dir path
+	$(RSYNC_XC) --relative .././build/kiwi.bin root@$(KIWI_XC_HOST):~root/
 	# don't copy dependency files (*.d) here because include paths are slightly different
 	# e.g. development machine: /usr/local/include/fftw3.h
 	# versus Beagle: /usr/include/fftw3.h
-	rsync $(RSYNC_XC_ARGS) $(OBJ_DIR)/*.o root@$(KIWI_XC_HOST):~root/build/$(OBJ_DIR)
-	rsync $(RSYNC_XC_ARGS) $(OBJ_DIR_O3)/*.o root@$(KIWI_XC_HOST):~root/build/$(OBJ_DIR_O3)
-	rsync $(RSYNC_XC_ARGS) $(KEEP_DIR)/*.o root@$(KIWI_XC_HOST):~root/build/$(KEEP_DIR)
+	$(RSYNC_XC) --relative .././build/obj/*.o root@$(KIWI_XC_HOST):~root/
+	$(RSYNC_XC) --relative .././build/obj_O3/*.o root@$(KIWI_XC_HOST):~root/
+	$(RSYNC_XC) --relative .././build/obj_keep/*.o root@$(KIWI_XC_HOST):~root/
 ifeq ($(KIWI_XC_COPY_SOURCES),true)
-	rsync $(RSYNC_XC_ARGS) --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) . root@$(KIWI_XC_HOST):~root/$(REPO_NAME)
+	$(RSYNC_XC) --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) . root@$(KIWI_XC_HOST):~root/$(REPO_NAME)
 endif
 endif
 endif

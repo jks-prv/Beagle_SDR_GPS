@@ -7,7 +7,7 @@ var noise_filter = {
    algo: 0,
    algo_s: [ '(none selected)', 'wdsp variable-leak LMS', 'original LMS', 'spectral noise reduction' ],
    width: 400,
-   height: [ 100, 475, 400, 200 ],
+   height: [ 100, 475, 400, 185 ],
    
    NR_OFF: 0,
    denoise: 0,

@@ -878,6 +878,24 @@ function w3_background_color(el_id, color)
 	return prev;
 }
 
+function w3_colors(el_id, colors)
+{
+   var el = w3_el(el_id);
+   if (!el) return null;
+   var ar = colors? colors.split(',') : null;
+   var bg = null, fg = null;
+   if (ar && ar.length > 0) bg = ar[0];
+   if (ar && ar.length > 1) fg = ar[1];
+   if (bg && bg.startsWith('w3-'))
+      w3_add(el, bg);
+   else
+      el.style.backgroundColor = bg;
+   if (fg && fg.startsWith('w3-'))
+      w3_add(el, fg);
+   else
+      el.style.color = fg;
+}
+
 function w3_check_restart_reboot(el_id)
 {
 	var el = w3_el(el_id);
