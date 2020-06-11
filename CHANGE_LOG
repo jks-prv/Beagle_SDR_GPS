@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.396  June 12, 2020
+    Remove more references to sdr.hu
+    Minor fixes/improvements (see commit log).
+
 v1.395  June 2, 2020
     Remove references to sdr.hu
     Prevent "make install" from failing on BBAI if window system is not installed.
