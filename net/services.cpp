@@ -71,7 +71,7 @@ static void get_TZ(void *param)
 			n = sscanf(lat_lon, "%*[^0-9+-]%f%*[^0-9+-]%f)", &lat, &lon);
 			// consider default lat/lon to be the same as unset
 			if (n == 2 && strcmp(lat_lon, "(-37.631120, 176.172210)") != 0) {
-				lprintf("TIMEZONE: lat/lon from sdr.hu config: (%f, %f)\n", lat, lon);
+				lprintf("TIMEZONE: lat/lon from admin public config: (%f, %f)\n", lat, lon);
 				haveLatLon = true;
 			}
 			cfg_string_free(lat_lon);
@@ -91,7 +91,7 @@ static void get_TZ(void *param)
 		}
 		
 		if (!haveLatLon) {
-			if (report) lprintf("TIMEZONE: no lat/lon available from sdr.hu config, ipinfo or GPS\n");
+			if (report) lprintf("TIMEZONE: no lat/lon available from admin public config, ipinfo or GPS\n");
 			goto retry;
 		}
 	
