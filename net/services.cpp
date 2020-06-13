@@ -522,7 +522,7 @@ static void pvt_NET(void *param)
         system("echo nameserver 8.8.8.8 >/etc/resolv.conf");
     }
 
-    DNS_lookup("sdr.hu", &net.ips_sdr_hu, N_IPS, SDR_HU_PUBLIC_IP);
+    //DNS_lookup("sdr.hu", &net.ips_sdr_hu, N_IPS, SDR_HU_PUBLIC_IP);
     DNS_lookup("kiwisdr.com", &net.ips_kiwisdr_com, N_IPS, KIWISDR_COM_PUBLIC_IP);
 
 	for (retry = 0; true; retry++) {
