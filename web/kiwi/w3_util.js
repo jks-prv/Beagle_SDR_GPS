@@ -217,6 +217,13 @@ function w3_strip_quotes(s)
 	return s;
 }
 
+function w3_esc_dq(s)
+{
+	if (isString(s) && s.indexOf('\"') != -1)
+		return s.replace(/"/g, '&quot;');
+	return s;
+}
+
 // a single-argument call that silently continues if func not found
 function w3_call(func, arg0, arg1, arg2, arg3)
 {
@@ -1575,13 +1582,18 @@ function w3_input_change(path, cb, cb_param)
 }
 
 // no cb_param here because w3_input_change() passes the input value as the callback parameter
+//
+// NB: using w3_esc_dq(val) below eliminates the need to call admin_set_decoded_value() via
+// admin tab *_focus() routines solely to work around the escaping of double quotes in the
+// val issue.
+
 function w3_input(psa, label, path, val, cb, placeholder)
 {
 	var id = path? ('id-'+ path) : '';
 	cb = cb || '';
 	var phold = placeholder? (' placeholder="'+ placeholder +'"') : '';
 	var onchange = path? (' onchange="w3_input_change('+ sq(path) +', '+ sq(cb) +')" onkeydown="w3int_input_key(event, '+ sq(path) +', '+ sq(cb) +')"') : '';
-	var val = ' value='+ dq(val || '');
+	var val = ' value='+ dq(w3_esc_dq(val) || '');
 	var inline = psa.includes('w3-label-inline');
 	var bold = !psa.includes('w3-label-not-bold');
 	var spacing = (label != '' && inline)? ' w3int-margin-input' : '';
@@ -1641,7 +1653,7 @@ function w3_input_get(psa, label, path, cb, init_val, placeholder)
 	return w3_input(psa, label, path, cur_val, cb, placeholder);
 }
 
-// DEPRECATED
+// DEPRECATED (still used by ant switch ext)
 function w3_input_get_param(label, path, cb, init_val, placeholder)
 {
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);

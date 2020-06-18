@@ -749,7 +749,7 @@ function sdr_hu_focus()
 	admin_set_decoded_value('rx_grid');
 	admin_set_decoded_value('rx_gps');
 	admin_set_decoded_value('admin_email');
-	admin_set_decoded_value('adm.api_key');
+	//admin_set_decoded_value('adm.api_key');
 
 	// The default in the factory-distributed kiwi.json is the kiwisdr.com NZ location.
 	// Detect this and ask user to change it so sdr.hu/map doesn't end up with multiple SDRs

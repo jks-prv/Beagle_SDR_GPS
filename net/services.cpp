@@ -71,7 +71,7 @@ static void get_TZ(void *param)
 			n = sscanf(lat_lon, "%*[^0-9+-]%f%*[^0-9+-]%f)", &lat, &lon);
 			// consider default lat/lon to be the same as unset
 			if (n == 2 && strcmp(lat_lon, "(-37.631120, 176.172210)") != 0) {
-				lprintf("TIMEZONE: lat/lon from sdr.hu config: (%f, %f)\n", lat, lon);
+				lprintf("TIMEZONE: lat/lon from admin public config: (%f, %f)\n", lat, lon);
 				haveLatLon = true;
 			}
 			cfg_string_free(lat_lon);
@@ -91,7 +91,7 @@ static void get_TZ(void *param)
 		}
 		
 		if (!haveLatLon) {
-			if (report) lprintf("TIMEZONE: no lat/lon available from sdr.hu config, ipinfo or GPS\n");
+			if (report) lprintf("TIMEZONE: no lat/lon available from admin public config, ipinfo or GPS\n");
 			goto retry;
 		}
 	
@@ -522,7 +522,7 @@ static void pvt_NET(void *param)
         system("echo nameserver 8.8.8.8 >/etc/resolv.conf");
     }
 
-    DNS_lookup("sdr.hu", &net.ips_sdr_hu, N_IPS, SDR_HU_PUBLIC_IP);
+    //DNS_lookup("sdr.hu", &net.ips_sdr_hu, N_IPS, SDR_HU_PUBLIC_IP);
     DNS_lookup("kiwisdr.com", &net.ips_kiwisdr_com, N_IPS, KIWISDR_COM_PUBLIC_IP);
 
 	for (retry = 0; true; retry++) {

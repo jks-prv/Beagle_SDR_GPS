@@ -205,6 +205,28 @@ static void debug_dump_handler(int arg)
 	sig_arm(SIG_DEBUG, debug_dump_handler);
 }
 
+static void dump_info_handler(int arg)
+{
+    printf("SIGHUP: info.json requested\n");
+    char *sb;
+    sb = kstr_asprintf(NULL, "echo '{ \"utc\": \"%s\", \"gps\": { \"lat\": %.6f, \"lon\": %.6f",
+        utc_ctime_static(), gps.sgnLat, gps.sgnLon);
+
+    latLon_t loc;
+    loc.lat = gps.sgnLat;
+    loc.lon = gps.sgnLon;
+    char grid6[LEN_GRID];
+    if (latLon_to_grid6(&loc, grid6) == 0) {
+        sb = kstr_asprintf(sb, ", \"grid\": \"%.6s\"", grid6);
+    }
+
+    sb = kstr_asprintf(sb, ", \"fixes\": %d, \"fixes_min\": %d } }' > /root/kiwi.config/info.json",
+        gps.fixes, gps.fixes_min);
+    non_blocking_cmd_system_child("kiwi.info", kstr_sp(sb), NO_WAIT);
+    kstr_free(sb);
+	sig_arm(SIGHUP, dump_info_handler);
+}
+
 static void debug_exit_backtrace_handler(int arg)
 {
     panic("debug_exit_backtrace_handler");
@@ -224,7 +246,8 @@ void rx_server_init()
 		c++;
 	}
 	
-	    sig_arm(SIG_DEBUG, debug_dump_handler);
+    sig_arm(SIG_DEBUG, debug_dump_handler);
+    sig_arm(SIGHUP, dump_info_handler);
 
     //#ifndef DEVSYS
     #if 0
