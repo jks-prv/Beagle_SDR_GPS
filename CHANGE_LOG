@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.398  July 3, 2020
+    Auto update: added check for filesystem full condition.
+    Fix to IQ balance (DC offset) old offset detection and correction.
+
 v1.397  June 18, 2020
     Fixed problem when using double-quotes in some admin page fields.
     SIGHUP of Kiwi server creates kiwi.config/info.json file with full precision GPS location.

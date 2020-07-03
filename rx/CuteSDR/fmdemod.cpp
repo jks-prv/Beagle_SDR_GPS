@@ -199,9 +199,79 @@ int CFmDemod::PerformNoiseSquelch(int InLength, TYPEREAL* pTmpData, TYPEMONO16* 
 	}
 	
 	if(m_SquelchState)
-	{	//zero output if squelched
+	{	//silence output if squelched
 		for(int i=0; i<InLength; i++)
-			pOutData[i] = 0;
+			pOutData[i] = 1;    // non-zero to keep FF silence detector from being tripped
+	}
+	else
+	{	//low pass filter audio if squelch is open
+//		ProcessDeemphasisFilter(InLength, pOutData, pOutData);
+		m_LpFir.ProcessFilter(InLength, pTmpData, pOutData);
+//g_pTestBench->DisplayData(InLength, pOutData, m_SampleRate,PROFILE_6);
+	}
+	
+	#if 1
+		if (sq_nc_open != 0 || m_SetSquelch) {
+			//printf("SQ th %f av %f %s\n", m_SquelchThreshold, m_SquelchAve, m_SquelchState? "SQ'd":"OPEN");
+			m_SetSquelch = false;
+		}
+	#endif
+	
+	return sq_nc_open;
+}
+
+int CFmDemod::PerformNoiseSquelch(int InLength, TYPEMONO16* pTmpData, TYPEMONO16* pOutData)
+{
+	int sq_nc_open = 0;
+
+	if(InLength>MAX_SQBUF_SIZE)
+		return 0;
+
+	TYPEMONO16 sqbuf[MAX_SQBUF_SIZE];
+
+	//high pass filter to get the high frequency noise above the voice
+	m_HpFir.ProcessFilter(InLength, pTmpData, sqbuf);
+//g_pTestBench->DisplayData(InLength, sqbuf, m_SampleRate,PROFILE_6);
+
+	for(int i=0; i<InLength; i++)
+	{
+		TYPEREAL mag = MFABS( (TYPEREAL) sqbuf[i] );	//get magnitude of High pass filtered data
+		// exponential filter squelch magnitude
+		m_SquelchAve = (1.0-m_SquelchAlpha)*m_SquelchAve + m_SquelchAlpha*mag;
+//g_pTestBench->DisplayData(1, &m_SquelchAve, m_SampleRate,PROFILE_3);
+	}
+
+	//perform squelch compare to threshold using some Hysteresis
+	#if 0
+		static int lp;
+		if (((lp++) % 16) == 0)
+			printf("SQ th %f av %f %s\n", m_SquelchThreshold, m_SquelchAve, m_SquelchState? "SQ'd":"OPEN");
+	#endif
+	
+	if(0==m_SquelchThreshold)
+	{	//force squelch if zero(strong signal threshold)
+		if (m_SquelchState == false) sq_nc_open = -1;
+		m_SquelchState = true;
+	}
+	else if(m_SquelchState)	//if in squelched state
+	{
+		if(m_SquelchAve < (m_SquelchThreshold-SQUELCH_HYSTERESIS)) {
+			sq_nc_open = 1;
+			m_SquelchState = false;
+		}
+	}
+	else
+	{
+		if(m_SquelchAve >= (m_SquelchThreshold+SQUELCH_HYSTERESIS)) {
+			sq_nc_open = -1;
+			m_SquelchState = true;
+		}
+	}
+	
+	if(m_SquelchState)
+	{	//silence output if squelched
+		for(int i=0; i<InLength; i++)
+			pOutData[i] = 1;    // non-zero to keep FF silence detector from being tripped
 	}
 	else
 	{	//low pass filter audio if squelch is open

@@ -32,7 +32,7 @@ Boston, MA  02110-1301, USA.
 #include <types.h>
 #include <unistd.h>
 
-bool update_pending = false, update_task_running = false, update_in_progress = false;
+bool update_pending = false, update_task_running = false, update_in_progress = false, fs_full = false;
 int pending_maj = -1, pending_min = -1;
 
 static void update_build_ctask(void *param)
@@ -118,8 +118,8 @@ static void report_result(conn_t *conn)
 	char *date_m = kiwi_str_encode((char *) __DATE__);
 	char *time_m = kiwi_str_encode((char *) __TIME__);
 	char *sb;
-	asprintf(&sb, "{\"p\":%d,\"i\":%d,\"r\":%d,\"g\":%d,\"v1\":%d,\"v2\":%d,\"p1\":%d,\"p2\":%d,\"d\":\"%s\",\"t\":\"%s\"}",
-		update_pending, update_in_progress, rx_chans, GPS_CHANS, version_maj, version_min, pending_maj, pending_min, date_m, time_m);
+	asprintf(&sb, "{\"f\":%d,\"p\":%d,\"i\":%d,\"r\":%d,\"g\":%d,\"v1\":%d,\"v2\":%d,\"p1\":%d,\"p2\":%d,\"d\":\"%s\",\"t\":\"%s\"}",
+		fs_full, update_pending, update_in_progress, rx_chans, GPS_CHANS, version_maj, version_min, pending_maj, pending_min, date_m, time_m);
 	send_msg(conn, false, "MSG update_cb=%s", sb);
 	//printf("UPDATE: %s\n", sb);
 	free(date_m);
@@ -163,10 +163,19 @@ static void update_task(void *param)
 	bool ver_changed, update_install;
 	
 	lprintf("UPDATE: checking for updates\n");
+	
+    #define FS_USE "df . | tail -1 | /usr/bin/tr -s ' ' | cut -d' ' -f 5 | grep '100%'"
+    int status = non_blocking_cmd_system_child("kiwi.fs_use", FS_USE, POLL_MSEC(250));
+    if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+        lprintf("UPDATE: Cannot build, filesystem is FULL!\n");
+        fs_full = true;
+		if (force_check) report_result(conn);
+		goto common_return;
+    }
 
 	// Run curl in a Linux child process otherwise this thread will block and cause trouble
 	// if the check is invoked from the admin page while there are active user connections.
-	int status = child_task("kiwi.update", curl_makefile_ctask, POLL_MSEC(1000));
+	status = child_task("kiwi.update", curl_makefile_ctask, POLL_MSEC(1000));
 
 	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
 		lprintf("UPDATE: Makefile fetch error, no Internet access? status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",

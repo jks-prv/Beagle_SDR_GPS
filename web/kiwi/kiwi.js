@@ -1342,7 +1342,7 @@ function config_cb(rx_chans, gps_chans, serno, pub, port_ext, pvt, port_int, nm,
 	}
 }
 
-function update_cb(pending, in_progress, rx_chans, gps_chans, vmaj, vmin, pmaj, pmin, build_date, build_time)
+function update_cb(fs_full, pending, in_progress, rx_chans, gps_chans, vmaj, vmin, pmaj, pmin, build_date, build_time)
 {
 	config_str_update(rx_chans, gps_chans, vmaj, vmin);
 
@@ -1351,6 +1351,9 @@ function update_cb(pending, in_progress, rx_chans, gps_chans, vmaj, vmin, pmaj, 
 	if (msg_update) {
 		var s;
 		s = 'Installed version: v'+ vmaj +'.'+ vmin +', built '+ build_date +' '+ build_time;
+		if (fs_full) {
+			s += '<br>Cannot build, filesystem is FULL!';
+		} else
 		if (in_progress) {
 			s += '<br>Update to version v'+ + pmaj +'.'+ pmin +' in progress';
 		} else
@@ -1660,7 +1663,7 @@ function kiwi_msg(param, ws)
 		case "update_cb":
 			//console.log('update_cb='+ param[1]);
 			var o = JSON.parse(param[1]);
-			update_cb(o.p, o.i, o.r, o.g, o.v1, o.v2, o.p1, o.p2,
+			update_cb(o.f, o.p, o.i, o.r, o.g, o.v1, o.v2, o.p1, o.p2,
 				decodeURIComponent(o.d), decodeURIComponent(o.t));
 			break;					
 
