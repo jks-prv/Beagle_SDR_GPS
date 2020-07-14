@@ -709,7 +709,7 @@ int latLon_to_grid6(latLon_t *loc, char *grid6)
 
 void set_cpu_affinity(int cpu)
 {
-#if defined(HOST) && defined(MULTI_CORE)
+#if defined(HOST) && defined(MULTI_CORE) && !defined(PLATFORM_raspberrypi)
     cpu_set_t cpu_set;
     CPU_ZERO(&cpu_set);
     CPU_SET(cpu, &cpu_set);

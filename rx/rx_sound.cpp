@@ -1334,8 +1334,8 @@ void c2s_sound(void *param)
 		#if 0
 			static u4_t last_time[MAX_RX_CHANS];
 			u4_t now = timer_ms();
-			printf("SND%d: %d %.3fs seq-%d\n", rx_chan, bytes,
-				(float) (now - last_time[rx_chan]) / 1e3, *seq);
+			printf("SND%d: %d %.3fs seq-%d\n", rx_chan, aud_bytes,
+				(float) (now - last_time[rx_chan]) / 1e3, snd->seq);
 			last_time[rx_chan] = now;
 		#endif
 
