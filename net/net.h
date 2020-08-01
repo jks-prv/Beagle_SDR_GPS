@@ -120,12 +120,13 @@ typedef struct {
 	int nm_bits4_6;
 
 	// IPv6
-	bool ip6_valid;
+	#define N_IPV6 8
+	int ip6_valid;
 	char *ip6_if_name;
-	char ip6_pvt_s[NET_ADDRSTRLEN];
-	u1_t ip6_pvt[16];
-	u1_t netmask6[16];
-	int nm_bits6;
+	char ip6_pvt_s[N_IPV6][NET_ADDRSTRLEN];
+	u1_t ip6_pvt[N_IPV6][16];
+	u1_t netmask6[N_IPV6][16];
+	int nm_bits6[N_IPV6];
 
 	// IPv6 link-local
 	bool ip6LL_valid;
