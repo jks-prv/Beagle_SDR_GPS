@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.399  August 2, 2020
+    Support multiple IPv6 addresses on network interfaces.
+    Better handling of user password panel timeout.
+
 v1.398  July 3, 2020
     Auto update: added check for filesystem full condition.
     Fix to IQ balance (DC offset) old offset detection and correction.
