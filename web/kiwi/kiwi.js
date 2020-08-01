@@ -1149,6 +1149,12 @@ function kiwi_24hr_ip_limit(mins, ip)
 	kiwi_show_error_ask_exemption(s);
 }
 
+function kiwi_password_entry_timeout()
+{
+   var s = 'Timeout. Please reload page to continue.';
+	kiwi_show_msg(s);
+}
+
 function kiwi_up(up)
 {
 	if (!seriousError) {
@@ -1750,6 +1756,10 @@ function kiwi_msg(param, ws)
 		case "ip_limit":
 		   var p = decodeURIComponent(param[1]).split(',');
 			kiwi_24hr_ip_limit(parseInt(p[0]), p[1]);
+			break;
+
+		case "password_timeout":
+			kiwi_password_entry_timeout();
 			break;
 
 		case "comp_ctr":

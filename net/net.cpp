@@ -52,7 +52,7 @@ static int test_delayed_ipv4 = 4;
 // determine all possible IPv4, IPv4-mapped IPv6 and IPv6 addresses on local network interfaces
 bool find_local_IPs(int retry)
 {
-	int i;
+	int i, j;
 	struct ifaddrs *ifaddr, *ifa;
 	scall("getifaddrs", getifaddrs(&ifaddr));
 	
@@ -85,6 +85,7 @@ bool find_local_IPs(int retry)
 
         char *ip_pvt;
         socklen_t salen;
+        bool multiple = false;
 
         if (family == AF_INET) {
             #ifdef TEST_DELAYED_IPV4
@@ -94,24 +95,29 @@ bool find_local_IPs(int retry)
                 }
             #endif
             
-            net.ip4_if_name = strdup(ifa->ifa_name);
-            struct sockaddr_in *sin = (struct sockaddr_in *) (ifa->ifa_addr);
-            net.ip4_pvt = INET4_NTOH(* (u4_t *) &sin->sin_addr);
-            ip_pvt = net.ip4_pvt_s;
-            salen = sizeof(struct sockaddr_in);
-            sin = (struct sockaddr_in *) (ifa->ifa_netmask);
-            net.netmask4 = INET4_NTOH(* (u4_t *) &sin->sin_addr);
-            net_printf("IF IPv4 0x%08x /%d 0x%08x %s\n", net.ip4_pvt,
-                inet_nm_bits(AF_INET, &net.netmask4), net.netmask4, net.ip4_if_name);
+            if (!net.ip4_valid) {
+                net.ip4_if_name = strdup(ifa->ifa_name);
+                struct sockaddr_in *sin = (struct sockaddr_in *) (ifa->ifa_addr);
+                net.ip4_pvt = INET4_NTOH(* (u4_t *) &sin->sin_addr);
+                ip_pvt = net.ip4_pvt_s;
+                salen = sizeof(struct sockaddr_in);
+                sin = (struct sockaddr_in *) (ifa->ifa_netmask);
+                net.netmask4 = INET4_NTOH(* (u4_t *) &sin->sin_addr);
+                net_printf("IF IPv4 0x%08x /%d 0x%08x %s\n", net.ip4_pvt,
+                    inet_nm_bits(AF_INET, &net.netmask4), net.netmask4, net.ip4_if_name);
             
-            // FIXME: if ip4LL, because a DHCP server wasn't responding, need to periodically reprobe
-            // for when it comes back online
-            if (is_ipv4LL) net.ip4LL = true;
+                // FIXME: if ip4LL, because a DHCP server wasn't responding, need to periodically reprobe
+                // for when it comes back online
+                if (is_ipv4LL) net.ip4LL = true;
 
-            #ifdef IPV6_TEST
-            #else
-                net.ip4_valid = true;
-            #endif
+                #ifdef IPV6_TEST
+                #else
+                    net.ip4_valid = true;
+                #endif
+            } else {
+                multiple = true;
+                net_printf("BAD: MULTIPLE ipv4 ADDRESS\n");
+            }
         } else {
             struct sockaddr_in6 *sin6;
             sin6 = (struct sockaddr_in6 *) (ifa->ifa_addr);
@@ -119,41 +125,59 @@ bool find_local_IPs(int retry)
             sin6 = (struct sockaddr_in6 *) (ifa->ifa_netmask);
             u1_t *m = (u1_t *) &(sin6->sin6_addr);
 
-            if (!net.ip4_6_valid && is_inet4_map_6(a)) {
-                net.ip4_6_if_name = strdup(ifa->ifa_name);
-                net.ip4_6_pvt = INET4_NTOH(* (u4_t *) &a[12]);
-                ip_pvt = net.ip4_6_pvt_s;
-                salen = sizeof(struct sockaddr_in);
-                net.netmask4_6 = INET4_NTOH(* (u4_t *) &m[12]);
-                net_printf("IF IPv4_6 0x%08x /%d 0x%08x %s\n", net.ip4_6_pvt,
-                    inet_nm_bits(AF_INET, &net.netmask4_6), net.netmask4_6, net.ip4_6_if_name);
-                net.ip4_6_valid = true;
+            if (is_inet4_map_6(a)) {
+                if (!net.ip4_6_valid) {
+                    net.ip4_6_if_name = strdup(ifa->ifa_name);
+                    net.ip4_6_pvt = INET4_NTOH(* (u4_t *) &a[12]);
+                    ip_pvt = net.ip4_6_pvt_s;
+                    salen = sizeof(struct sockaddr_in);
+                    net.netmask4_6 = INET4_NTOH(* (u4_t *) &m[12]);
+                    net_printf("IF IPv4_6 0x%08x /%d 0x%08x %s\n", net.ip4_6_pvt,
+                        inet_nm_bits(AF_INET, &net.netmask4_6), net.netmask4_6, net.ip4_6_if_name);
+                    net.ip4_6_valid = true;
+                } else {
+                    multiple = true;
+                    net_printf("BAD: MULTIPLE ipv4_6 ADDRESS\n");
+                }
             } else {
-                if (!net.ip6LL_valid && a[0] == 0xfe && a[1] == 0x80) {
-                    net.ip6LL_if_name = strdup(ifa->ifa_name);
-                    memcpy(net.ip6LL_pvt, a, sizeof(net.ip6LL_pvt));
-                    ip_pvt = net.ip6LL_pvt_s;
-                    salen = sizeof(struct sockaddr_in6);
-                    memcpy(net.netmask6LL, m, sizeof(net.netmask6LL));
-                    net_printf("IF IPv6 LINK-LOCAL /%d %s\n", inet_nm_bits(AF_INET6, &net.netmask6LL), net.ip6LL_if_name);
-                    net.ip6LL_valid = true;
+                if (a[0] == 0xfe && a[1] == 0x80) {
+                    if (!net.ip6LL_valid) {
+                        net.ip6LL_if_name = strdup(ifa->ifa_name);
+                        memcpy(net.ip6LL_pvt, a, sizeof(net.ip6LL_pvt));
+                        ip_pvt = net.ip6LL_pvt_s;
+                        salen = sizeof(struct sockaddr_in6);
+                        memcpy(net.netmask6LL, m, sizeof(net.netmask6LL));
+                        net_printf("IF IPv6 LINK-LOCAL /%d %s\n", inet_nm_bits(AF_INET6, &net.netmask6LL), net.ip6LL_if_name);
+                        net.ip6LL_valid = true;
+                    } else {
+                        multiple = true;
+                        net_printf("BAD: MULTIPLE ip6LL ADDRESS\n");
+                    }
                 } else
-                if (!net.ip6_valid) {
-                    net.ip6_if_name = strdup(ifa->ifa_name);
-                    memcpy(net.ip6_pvt, a, sizeof(net.ip6_pvt));
-                    ip_pvt = net.ip6_pvt_s;
+                if (net.ip6_valid < N_IPV6) {
+                    i = net.ip6_valid;
+                    if (i == 0) net.ip6_if_name = strdup(ifa->ifa_name);
+                    memcpy(net.ip6_pvt[i], a, sizeof(net.ip6_pvt[0]));
+                    ip_pvt = net.ip6_pvt_s[i];
                     salen = sizeof(struct sockaddr_in6);
-                    memcpy(net.netmask6, m, sizeof(net.netmask6));
-                    net_printf("IF IPv6 /%d ", inet_nm_bits(AF_INET6, &net.netmask6), net.ip6_if_name);
+                    memcpy(net.netmask6[i], m, sizeof(net.netmask6[0]));
+                    net_printf("IF IPv6 #%d /%d %s ", i, inet_nm_bits(AF_INET6, net.netmask6[i]), net.ip6_if_name);
+		            for (j=0; j < 16; j++) net_printf2("%02x:", net.ip6_pvt[i][j]);
+		            net_printf2("\n");
     
                     #ifdef IPV6_TEST
-                        net.netmask6[8] = 0xff;
+                        net.netmask6[i][8] = 0xff;
                     #endif
                     
-                    net.ip6_valid = true;
+                    net.ip6_valid++;
+                } else {
+                    multiple = true;
+                    net_printf("BAD: TOO MANY ipv6 ADDRESSES\n");
                 }
             }
         }
+        
+        if (multiple) continue;
         
         int rc = getnameinfo(ifa->ifa_addr, salen, ip_pvt, NET_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
         if (rc != 0) {
@@ -174,10 +198,12 @@ bool find_local_IPs(int retry)
 			net.nm_bits4_6, net.netmask4_6, net.ip4_6_if_name);
 	}
 
-	if (net.ip6_valid) {
-		net.nm_bits6 = inet_nm_bits(AF_INET6, &net.netmask6);
-		lprintf("NET(%d): private IPv6 <%s> /%d ", net.ip6_pvt_s, retry, net.nm_bits6);
-		for (i=0; i < 16; i++) lprintf("%02x:", net.netmask6[i]);
+	for (i = 0; i < net.ip6_valid; i++) {
+		net.nm_bits6[i] = inet_nm_bits(AF_INET6, net.netmask6[i]);
+		lprintf("NET(%d): private IPv6 #%d <%s> ", retry, i, net.ip6_pvt_s[i]);
+		for (j=0; j < 16; j++) lprintf("%02x:", net.ip6_pvt[i][j]);
+		lprintf(" /%d ", net.nm_bits6[i]);
+		for (j=0; j < 16; j++) lprintf("%02x:", net.netmask6[i][j]);
 		lprintf(" %s\n", net.ip6_if_name);
 	}
 
@@ -198,8 +224,8 @@ bool find_local_IPs(int retry)
 		net.nm_bits = net.nm_bits4_6;
 	} else
 	if (net.ip6_valid) {
-		net.ip_pvt = net.ip6_pvt_s;
-		net.nm_bits = net.nm_bits6;
+		net.ip_pvt = net.ip6_pvt_s[0];
+		net.nm_bits = net.nm_bits6[0];
 	} else
 	if (net.ip6LL_valid) {
 		net.ip_pvt = net.ip6LL_pvt_s;
@@ -259,7 +285,8 @@ isLocal_t isLocal_if_ip(conn_t *conn, char *remote_ip_s, const char *log_prefix)
 	isLocal_t isLocal = IS_NOT_LOCAL;
 	bool have_server_local = false;
 	int check = 0, n;
-	for (rp = res, n=0; rp != NULL; rp = rp->ai_next, n++) {
+
+	for (rp = res, n=0; rp != NULL && isLocal != IS_LOCAL; rp = rp->ai_next, n++) {
 
 		union socket_address {
 			struct sockaddr sa;
@@ -316,123 +343,136 @@ isLocal_t isLocal_if_ip(conn_t *conn, char *remote_ip_s, const char *log_prefix)
 		char *ip_server_s;
 		u4_t nm_bits, netmask;
 		u1_t *netmask6;
+        bool local = false;
+		int ip6_n = 0;
 
-		bool ipv4_test = false;
-		if (family == AF_INET) {
-			ip_client = INET4_NTOH(* (u4_t *) &sin->sin_addr);
+        do {
+        
+            bool ipv4_test = false;
+            if (family == AF_INET) {
+                ip_client = INET4_NTOH(* (u4_t *) &sin->sin_addr);
 
-			if (net.ip4_valid) {
-				ips_type = "IPv4";
-				ip_server = net.ip4_pvt;
-				ip_server_s = net.ip4_pvt_s;
-				netmask = net.netmask4;
-				have_server_local = true;
-			} else
-			if (net.ip4_6_valid) {
-				ips_type = "IPv4_6";
-				ip_server = net.ip4_6_pvt;
-				ip_server_s = net.ip4_6_pvt_s;
-				netmask = net.netmask4_6;
-				have_server_local = true;
-			} else {
-				if (log_prefix) clprintf(conn, "%s isLocal_if_ip: IPv4 client, but no server IPv4/IPv4_6\n", log_prefix);
-				continue;
-			}
+                if (net.ip4_valid) {
+                    ips_type = "IPv4";
+                    ip_server = net.ip4_pvt;
+                    ip_server_s = net.ip4_pvt_s;
+                    netmask = net.netmask4;
+                    have_server_local = true;
+                } else
+                if (net.ip4_6_valid) {
+                    ips_type = "IPv4_6";
+                    ip_server = net.ip4_6_pvt;
+                    ip_server_s = net.ip4_6_pvt_s;
+                    netmask = net.netmask4_6;
+                    have_server_local = true;
+                } else {
+                    if (log_prefix) clprintf(conn, "%s isLocal_if_ip: IPv4 client, but no server IPv4/IPv4_6\n", log_prefix);
+                    continue;
+                }
 
-			nm_bits = inet_nm_bits(AF_INET, &netmask);
-			ipv4_test = true;
-		} else
+                nm_bits = inet_nm_bits(AF_INET, &netmask);
+                ipv4_test = true;
+            } else
 
-		// detect IPv4-mapped IPv6 (::ffff:a.b.c.d/96)
-		if (family == AF_INET6) {
-			u1_t *a = (u1_t *) &sin6->sin6_addr;
+            if (family == AF_INET6) {
+                u1_t *a = (u1_t *) &sin6->sin6_addr;
 
-			if (is_inet4_map_6(a)) {
-				ip_client = INET4_NTOH(* (u4_t *) &a[12]);
-				
-				if (net.ip4_6_valid) {
-					ips_type = "IPv4_6";
-					ip_server = net.ip4_6_pvt;
-					ip_server_s = net.ip4_6_pvt_s;
-					netmask = net.netmask4_6;
-				    have_server_local = true;
-				} else
-				if (net.ip4_valid) {
-					ips_type = "IPv4";
-					ip_server = net.ip4_pvt;
-					ip_server_s = net.ip4_pvt_s;
-					netmask = net.netmask4;
-				    have_server_local = true;
-				} else {
-					if (log_prefix) clprintf(conn, "%s isLocal_if_ip: IPv4_6 client, but no server IPv4 or IPv4_6\n", log_prefix);
-					continue;
-				}
-					
-				nm_bits = inet_nm_bits(AF_INET, &netmask);
-				ipv4_test = true;
-			} else {
-				if (net.ip6_valid) {
-					ip_client6 = a;
-					ips_type = "IPv6";
-					ip_server6 = net.ip6_pvt;
-					ip_server_s = net.ip6_pvt_s;
-					netmask6 = net.netmask6;
-					nm_bits = inet_nm_bits(AF_INET6, netmask6);
-				    have_server_local = true;
-				} else
-				if (net.ip6LL_valid) {
-					ip_client6 = a;
-					ips_type = "IPv6LL";
-					ip_server6 = net.ip6LL_pvt;
-					ip_server_s = net.ip6LL_pvt_s;
-					netmask6 = net.netmask6LL;
-					nm_bits = inet_nm_bits(AF_INET6, netmask6);
-				    have_server_local = true;
-				} else {
-					if (log_prefix) clprintf(conn, "%s isLocal_if_ip: IPv6 client, but no server IPv6\n", log_prefix);
-					continue;
-				}
-			}
-		}
+                // detect IPv4-mapped IPv6 (::ffff:a.b.c.d/96)
+                if (is_inet4_map_6(a)) {
+                    ip_client = INET4_NTOH(* (u4_t *) &a[12]);
+                
+                    if (net.ip4_6_valid) {
+                        ips_type = "IPv4_6";
+                        ip_server = net.ip4_6_pvt;
+                        ip_server_s = net.ip4_6_pvt_s;
+                        netmask = net.netmask4_6;
+                        have_server_local = true;
+                    } else
+                    if (net.ip4_valid) {
+                        ips_type = "IPv4";
+                        ip_server = net.ip4_pvt;
+                        ip_server_s = net.ip4_pvt_s;
+                        netmask = net.netmask4;
+                        have_server_local = true;
+                    } else {
+                        if (log_prefix) clprintf(conn, "%s isLocal_if_ip: IPv4_6 client, but no server IPv4 or IPv4_6\n", log_prefix);
+                        continue;
+                    }
+                    
+                    nm_bits = inet_nm_bits(AF_INET, &netmask);
+                    ipv4_test = true;
+                } else {
+                    if (net.ip6_valid) {
+                        ip_client6 = a;
+                        ips_type = "IPv6";
+                        ip_server6 = net.ip6_pvt[ip6_n];
+                        ip_server_s = net.ip6_pvt_s[ip6_n];
+                        netmask6 = net.netmask6[ip6_n];
+                        nm_bits = inet_nm_bits(AF_INET6, netmask6);
+                        have_server_local = true;
+                        ip6_n++;
+                        if (ip6_n >= net.ip6_valid) ip6_n = 0;
+                    } else
+                    if (net.ip6LL_valid) {
+                        ip_client6 = a;
+                        ips_type = "IPv6LL";
+                        ip_server6 = net.ip6LL_pvt;
+                        ip_server_s = net.ip6LL_pvt_s;
+                        netmask6 = net.netmask6LL;
+                        nm_bits = inet_nm_bits(AF_INET6, netmask6);
+                        have_server_local = true;
+                    } else {
+                        if (log_prefix) clprintf(conn, "%s isLocal_if_ip: IPv6 client, but no server IPv6\n", log_prefix);
+                        continue;
+                    }
+                }
+            }
+        
+            // This makes the critical assumption that an ip_client coming from "outside" the
+            // local subnet could never match with a local subnet address.
+            // i.e. that local address space is truly un-routable across the internet or local subnet.
+        
+            #define IPV4_LOOPBACK 0x7f000001
+            u1_t ipv6_loopback[16] = { 0,0,0,0,0,0,0,1 };
+        
+            if (ipv4_test) {
+                local = (
+                    ((ip_client & netmask) == (ip_server & netmask))
+                    /* || (ip_client == IPV4_LOOPBACK) */
+                );
+                if (log_prefix) clprintf(conn, "%s isLocal_if_ip: %s IPv4/4_6 remote_ip %s ip_client %s/0x%08x ip_server[%s] %s/0x%08x nm /%d 0x%08x\n",
+                    log_prefix, local? "TRUE":"FALSE", remote_ip_s, ip_client_s, ip_client, ips_type, ip_server_s, ip_server, nm_bits, netmask);
+            } else {
+                local = true;
+                for (i=0; i < 16; i++) {
+                    bool match = ((ip_client6[i] & netmask6[i]) == (ip_server6[i] & netmask6[i]));
+                    if (!match)
+                        local = false;
+                    if (ip6_n) {
+                        net_printf2("NET DEBUG %s %d %c c=%02x s=%02x nm=%02x\n", ips_type, i, match? 'T':'F', ip_client6[i], ip_server6[i], netmask6[i]);
+                    } else {
+                        net_printf2("NET DEBUG %s %d %c c=%02x s=%02x nm=%02x\n", ips_type, i, match? 'T':'F', ip_client6[i], ip_server6[i], netmask6[i]);
+                    }
+                }
+                /*
+                if (!local) for (i=0; i < 16; i++) {
+                    local = (ip_client6[i] == ipv6_loopback[i]);
+                    if (local == false)
+                        break;
+                }
+                */
+                if (log_prefix) clprintf(conn, "%s isLocal_if_ip: %s IPv6 remote_ip %s ip_client %s ip_server[%s] %s nm /%d\n",
+                    log_prefix, local? "TRUE":"FALSE", remote_ip_s, ip_client_s, ips_type, ip_server_s, nm_bits);
+            }
 		
-		// This makes the critical assumption that an ip_client coming from "outside" the
-		// local subnet could never match with a local subnet address.
-		// i.e. that local address space is truly un-routable across the internet or local subnet.
-		
-		#define IPV4_LOOPBACK 0x7f000001
-		u1_t ipv6_loopback[16] = { 0,0,0,0,0,0,0,1 };
-		
-		bool local = false;
-		if (ipv4_test) {
-			local = (
-			    ((ip_client & netmask) == (ip_server & netmask))
-			    /* || (ip_client == IPV4_LOOPBACK) */
-			);
-			if (log_prefix) clprintf(conn, "%s isLocal_if_ip: %s IPv4/4_6 remote_ip %s ip_client %s/0x%08x ip_server[%s] %s/0x%08x nm /%d 0x%08x\n",
-				log_prefix, local? "TRUE":"FALSE", remote_ip_s, ip_client_s, ip_client, ips_type, ip_server_s, ip_server, nm_bits, netmask);
-		} else {
-			for (i=0; i < 16; i++) {
-				local = ((ip_client6[i] & netmask6[i]) == (ip_server6[i] & netmask6[i]));
-				if (local == false)
-					break;
-			}
-			/*
-			if (!local) for (i=0; i < 16; i++) {
-				local = (ip_client6[i] == ipv6_loopback[i]);
-				if (local == false)
-					break;
-			}
-			*/
-			if (log_prefix) clprintf(conn, "%s isLocal_if_ip: %s IPv6 remote_ip %s ip_client %s ip_server[%s] %s nm /%d\n",
-				log_prefix, local? "TRUE":"FALSE", remote_ip_s, ip_client_s, ips_type, ip_server_s, nm_bits);
-		}
+		} while (ip6_n && local == false);      // more ipv6 addresses to check
 		
 		if (local) isLocal = IS_LOCAL;
 	}
 	
 	if (res != NULL) freeaddrinfo(res);
 
-	if (res == NULL || check == 0 ) {
+	if (res == NULL || check == 0) {
 		if (log_prefix) clprintf(conn, "%s isLocal_if_ip: getaddrinfo %s NO CLIENT RESULTS?\n", log_prefix, remote_ip_s);
 		return IS_NOT_LOCAL;
 	}

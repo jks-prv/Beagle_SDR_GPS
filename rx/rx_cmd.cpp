@@ -484,9 +484,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 		send_msg(conn, false, "MSG rx_chans=%d", rx_chans);
 		send_msg(conn, false, "MSG chan_no_pwd=%d", chan_no_pwd);
-		if (conn->type == STREAM_SOUND) {
+		if (badp == 0 && (conn->type == STREAM_SOUND || conn->type == STREAM_ADMIN)) {
 		    send_msg(conn, false, "MSG is_local=%d,%d", conn->rx_channel, is_local? 1:0);
             conn_nolocal = false;
+		    //pdbug_cprintf(conn, "PWD %s %s resetting conn_nolocal\n", type_m, uri);
 		}
 		send_msg(conn, false, "MSG badp=%d", badp);
 

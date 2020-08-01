@@ -667,6 +667,8 @@ void c2s_sound(void *param)
 			//if (connection_hang) clprintf(conn, "SND CONNECTION HANG\n");
 			//if (conn->inactivity_timeout) clprintf(conn, "SND INACTIVITY T/O\n");
 			//if (conn->kick) clprintf(conn, "SND KICK\n");
+			
+			if (!conn->auth) send_msg(conn, SM_NO_DEBUG, "MSG password_timeout");
 		
 			// Ask waterfall task to stop (must not do while, for example, holding a lock).
 			// We've seen cases where the sound connects, then times out. But the w/f has never connected.
@@ -1334,8 +1336,8 @@ void c2s_sound(void *param)
 		#if 0
 			static u4_t last_time[MAX_RX_CHANS];
 			u4_t now = timer_ms();
-			printf("SND%d: %d %.3fs seq-%d\n", rx_chan, bytes,
-				(float) (now - last_time[rx_chan]) / 1e3, *seq);
+			printf("SND%d: %d %.3fs seq-%d\n", rx_chan, aud_bytes,
+				(float) (now - last_time[rx_chan]) / 1e3, snd->seq);
 			last_time[rx_chan] = now;
 		#endif
 
