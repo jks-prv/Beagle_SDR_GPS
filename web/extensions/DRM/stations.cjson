@@ -1,22 +1,51 @@
 [
-// underscores in station names are converted to line breaks in menu and schedule entries
-// negative start or end time means entry should be marked as verified
+// This file is used if kiwisdr.com cannot be contacted
+//
+// Double-slash comment sequence MUST start in column one!
+//
+// Underscores in station names are converted to line breaks in menu and schedule entries
+// negative start or end time means entry should be marked as verified.
+//
+// Updated: 16 may 2020 v1.2
+// ab27.bplaced.net/drm.pdf
+//
+// Updates from forum: 6 Aug 2020
 
 {
     "Europe": null,
 
-    "BBC_Worldservice": [3955,[-6,7,-9,10], 15620,-8,9],
+    "BBC_Worldservice": [
+// A20 per ab27
+                            3955,-5,6, 15620,-8,9
+                        ],
 
-    "Radio_France Intl": [3965,0,-24, 6175,9,15],
+    "Radio_France Intl": [3965,0,-24],
 
-//    "Voice of_Russia": [5925,21,23, 6025,[6,10,20,22], 6110,16,20, 6125,17,21, 7435,19,22, 9590,7,11,
-//                            9625,8,15, 9800,14,16, 11620,11,13, 11860,[0,-1,22,-24], 15325,-1,6],
+// inactive
+//    "Voice of_Russia": [
+//                          5925,21,23, 6025,[6,10,20,22], 6110,16,20, 6125,17,21, 7435,19,22, 9590,7,11,
+//                          9625,8,15, 9800,14,16, 11620,11,13, 11860,[0,-1,22,-24], 15325,-1,6
+//                       ],
 
-    "Chukotka Radio": [6025,-1,1.5, 11860,[0,-1,22,-24], 15325,-1,6],
+    "Chukotka Radio": [
+// A20 per ab27
+                            9850,-20,23, 12025,[0,-4,-23,24], 15735,-4,10
+                      ],
 
+// shows in service display: "SNR Tiganesti E2/E3", "Galbeni TX1/EM2" or "SNR Saftica"
     "Radio_Romania Intl": [ "https://www.rri.ro/en_gb/frecvente-259",
-                            5940,-5.5,6, 5955,-19,19.5, 6025,-17,18, 6030,[-16,16.5,-21,22], 6040,[-6,7,-23,24],
-                            6175,-7,7.5, 7220,-5,6, 7235,-19,20, 7350,-18,19, 9490,-22,23, 9820,4,5, 13730,5,5.5]
+// A20 per ab27
+                            5910,-18,18.5,
+                            6090,-18,19,
+                            7305,-4.5,5,
+                            7315,-20,21,
+                            7325,-5,6.5,
+                            9580,-15,16,
+                            9620,-21,22,
+                            9740,-3,4,
+                            9760,-17,18,
+                            13710,-4,5
+                          ]
 
 // ZKD says there's a Kiwi right at the campus and it hears nothing
 //  "Funklust_(bitXpress)": [15785,0,24]
@@ -25,65 +54,82 @@
 {
     "Middle East, Africa": null,
 
-    "All India_Radio": [ "https://qsl.net/vu2jos/es/Language.htm",
+    "All India_Radio (testing)": [ "https://qsl.net/vu2jos/sw/freq.htm",
+                            7550,-17.75,18,
+                            15030,-11.75,12,
+                            15410,-10,10.25
+
 // ex                       6100,8.75,12,
-                            7550,-17.75,22.5,
+//                            7550,-17.75,22.5,
 // new, no info
 // not real                 9445,22.25,-22.5,
 // ex                       9950,[8.25,13.25,17.5,22.5],
-                            15030,[11.75,-13.5],
-                            15410,-10,11
+//                            15030,[11.75,-13.5],
+//                            15410,-10,11
                         ],
 
-    "Radio Kuwait": [11970,-5,8, 13650,17,20, 15110,-9.75,13.5, 15540,16,21],
+    "Radio Kuwait": [
+// A20 per ab27
+                        11970,-5,8, 15110,-9.75,13.5
+                    ],
 
 // listed in drm.org, not hfcc.org
-    "Voice of_Nigeria": [15120,-16,19]
+// A20 per ab27
+    "Voice of_Nigeria": [15120,-16.5,19]
 },
     
 {
     "Asia, Pacific": null,
 
+    "DPRK (testing)": [ "www.radioworld.com/news-and-business/north-korea-resumes-drm-broadcasts",
+// per Twitter #drmlog
+// new times, per forum     3205,-9,13.5
+                            3205,[22,-24,0,-16]
+                        ],
     "China National_Radio": [
-                                6030,[0,-18,20.5,-24], 7360,-4,10,
-                                9420,0,-4, 9655,[0,-1,-8,12,-22,24],
-// new, no info
-                                9860,5.75,-6,
+// A20 per ab27
+                                6030,[-20.5,24,0,-18],
+                                7360,-4,10,
+                                9420,0,-4,
+                                9655,[-22,24,0,-12],
                                 9870,-10,12,
-                                11695,-1,9,
-// new, no info
-                                11850,1.75,-2,
-// new, no info
-                                13680,6,-6.25,
-// new, via hl5ntr.ddns.net:8073
-// max snapshot time 07:30
-                                13810,-4,7.5,
-// new, no info
-                                13765,6,-6.25,
+// off, per forum               11695,-1,9,
+                                11995,-1,10,
+                                13810,-4,11,
                                 13825,-1,9,
-                                15180,[1,-4,8,11],
-                                17770,-1,9, 17800,4,8, 17830,-1,8
+                                15180,-1,4,
+                                17770,-1,9,
+                                17830,-1,8
                             ],
 
     "Radio_New Zealand": [ "www.rnz.co.nz/international/listen",
-                            5975,16.83,-17.83,
-                            9780,17.83,-18.83,
-                            11690,-18.83,19.83
-// ex                       13840,18.83,20
+// A20 per a27
+                            6115,-17,17.5,
+                            7285,-17.5,18.5,
+                            9760,-18.5,20
                         ],
 
 // listed in drm.org, not hfcc.org
-    "Transworld_KTWR": [7500,-12.25,12.75, 9910,-10.5,11, 11995,10.5,11, 13800,10.5,11]
+    "Transworld_KTWR":  [
+// A20 per ab27
+                            7500,[-12.5,12.75,12.85,13.25], 11995,-10.5,11, 15200,-10.5,11
+                            
+                        ]
 },
     
 {
     "Americas": null,
     
-    "Radio Marti_(VOA)": [7345,[-17,24,0,-2]],
+    "Radio Marti_(VOA)": [
+// A20 per ab27
+                            7345,[-17,24,0,-2]
+                         ],
 
 // special USB IQ passband for WINB is specified by adding "?f=/0,5k" to station URL (hack)
     "WINB USA": [ "http://www.winb.com/Coverage Map.html?f=/0,5k",
-                    7315,-7,10, 9265,10,-12, 13690,-12,17]
+// A20 sched per twitter and ab27
+                    7315,-7,8.5, 9980,-8.5,11, 15750,-11,17
+                ]
 },
 
 {

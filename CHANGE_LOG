@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.400  August 7, 2020
+    Added code to removed another virus.
+    Synchronize backup DRM schedule.
+
 v1.399  August 2, 2020
     Support multiple IPv6 addresses on network interfaces.
     Better handling of user password panel timeout.
