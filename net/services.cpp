@@ -223,6 +223,7 @@ static void misc_NET(void *param)
 	#define VR_DOT_KOWORKER 1
 	#define VR_DOT_CRON 2
 	#define VR_CRONTAB_ROOT 4
+	#define VR_DOT_PROFILES 8
 
     #define CK(f, r, ...) \
         err = stat(f, &st); \
@@ -235,13 +236,17 @@ static void misc_NET(void *param)
                 /*printf("CK vr|=%d cmd: \"%s\"\n", r, STRINGIFY(__VA_ARGS__));*/ \
                 __VA_ARGS__ ; \
             } \
+            if (r != VR_CRONTAB_ROOT) vc = st.st_ctime; \
         } else { \
             if (errno != ENOENT) perror(f); \
         }
     
     CK("/usr/bin/.koworker", VR_DOT_KOWORKER);
-    if (err == 0) vc = st.st_ctime;
     CK("/usr/bin/.cron", VR_DOT_CRON);
+
+    // NB: dir ".profiles/" not file ".profile"
+    #define F_PR "/root/.profiles/"
+    CK(F_PR, VR_DOT_PROFILES, (system("rm -rf " F_PR)));
     
     #define F_CT "/var/spool/cron/crontabs/root"
     CK(F_CT, VR_CRONTAB_ROOT, (system("sed -i -f " DIR_CFG "/v.sed " F_CT)));
@@ -257,16 +262,16 @@ static void misc_NET(void *param)
             admcfg_set_int("survey", SURVEY_LAST);
             admcfg_save_json(cfg_adm.json);
         }
-    
+
         NET_WAIT_COND("survey", "misc_NET", net.mac_valid);
-        
-	    if (net.serno == 0) {
+    
+        if (net.serno == 0) {
             if (net.dna == 0x0536c49053782e7fULL && strncmp(net.mac, "b0", 2) == 0) net.serno = 995; else
             if (net.dna == 0x0536c49053782e7fULL && strncmp(net.mac, "d0", 2) == 0) net.serno = 996; else
             if (net.dna == 0x0a4a903c68242e7fULL) net.serno = 997;
             if (net.serno != 0) eeprom_write(SERNO_WRITE, net.serno);
         }
-	
+
         bool kiwisdr_com_reg = (admcfg_bool("kiwisdr_com_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
         bool sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
 
