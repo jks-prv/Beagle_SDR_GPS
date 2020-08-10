@@ -1099,7 +1099,8 @@ git:
 	git pull -v $(GIT_PROTO)://github.com/jks-prv/Beagle_SDR_GPS.git
 
 update_check:
-	git show master:Makefile > Makefile.1
+	git fetch origin
+	git show origin:Makefile > Makefile.1
 	diff Makefile Makefile.1 | head
 
 force_update:

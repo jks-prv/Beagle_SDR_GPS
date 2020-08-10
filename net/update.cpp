@@ -104,7 +104,8 @@ static void update_build_ctask(void *param)
 static void curl_makefile_ctask(void *param)
 {
 	int status = system("cd /root/" REPO_NAME " ; echo ======== checking for update >/root/build.log; date >>/root/build.log; " \
-	    "git show master:Makefile >Makefile.1 2>>/root/build.log");
+	    "git fetch origin >>/root/build.log 2>&1; " \
+	    "git show origin:Makefile >Makefile.1 2>>/root/build.log");
 
 	child_status_exit(status);
     system("cd /root/" REPO_NAME " ; diff Makefile Makefile.1 >>/root/build.log");
