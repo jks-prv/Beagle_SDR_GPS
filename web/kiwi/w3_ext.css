@@ -854,7 +854,14 @@ input[type=range]::-moz-range-thumb {
 .w3-css-yellow
 {
     color: black;
-    background-color: yellow
+    background-color: yellow;
+}
+
+.w3-text-yellow-highlight
+{
+    color: black;
+    background-color: yellow;
+    padding: 0 3px;
 }
 
 .w3-text-css-yellow
@@ -865,7 +872,7 @@ input[type=range]::-moz-range-thumb {
 .w3-css-lime
 {
     color: black;
-    background-color: lime
+    background-color: lime;
 }
 
 .w3-text-css-lime
@@ -898,14 +905,14 @@ input[type=range]::-moz-range-thumb {
 .w3-override-yellow
 {
     color: black;
-    background-color: #ffeb3b
+    background-color: #ffeb3b;
 }
 
 /* listed last so it overrides others when used as the highlight color in w3_util.js */
 .w3-selection-green
 {
     color: white;
-    background-color: #4CAF50
+    background-color: #4CAF50;
 }
 
 .w3-text-outline {
