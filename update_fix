@@ -1,0 +1,9 @@
+#!/bin/sh
+# update to the latest version on Github
+
+git clean -fd
+git checkout .
+git pull -v
+make clean
+make
+make install
