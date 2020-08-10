@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 400
+VERSION_MIN = 401
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.11
@@ -1099,7 +1099,8 @@ git:
 	git pull -v $(GIT_PROTO)://github.com/jks-prv/Beagle_SDR_GPS.git
 
 update_check:
-	curl --silent --ipv4 --show-error --connect-timeout 15 https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -o Makefile.1
+	git fetch origin
+	git show origin:Makefile > Makefile.1
 	diff Makefile Makefile.1 | head
 
 force_update:

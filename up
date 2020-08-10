@@ -14,7 +14,6 @@ if test "x$KIWI_CONSOLE" = "xyes" ; then
 fi
 
 make stop
-curl --silent --ipv4 --show-error --connect-timeout 15 -O https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile
 git clean -fd
 git checkout .
 git pull -v

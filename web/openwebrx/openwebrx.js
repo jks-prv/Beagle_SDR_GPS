@@ -4860,7 +4860,9 @@ function freqset_keyup(obj, evt)
 	// normal key is pressed (e.g. shift-$).
 	if (evt != undefined && evt.key != undefined) {
 		var klen = evt.key.length;
-		if (any_alternate_click_event(evt) || (klen != 1 && evt.key != 'Backspace')) {
+		
+		// any_alternate_click_event_except_shift() allows e.g. "10M" for 10 MHz
+		if (any_alternate_click_event_except_shift(evt) || (klen != 1 && evt.key != 'Backspace')) {
 	
 			// An escape while the the freq box has focus causes the browser to put input value back to the
 			// last entered value directly by keyboard. This value is likely different than what was set by
@@ -6231,7 +6233,9 @@ function ident_complete()
 
 	// okay for ident='' to erase it
 	// SECURITY: size limited by <input size=...> but guard against binary data injection?
-	w3_field_select(el, {mobile:1});
+	//w3_field_select(el, {mobile:1});
+	freqset_select();    // don't keep ident field selected
+
 	writeCookie('ident', ident);
 	ident_user = ident;
 	need_ident = true;
@@ -6249,7 +6253,7 @@ function ident_keyup(el, evt)
 	//if (ignore_next_keyup_event) {
 	if (evt != undefined && evt.key != undefined) {
 		var klen = evt.key.length;
-		if (any_alternate_click_event(evt) || klen != 1) {
+		if (any_alternate_click_event_except_shift(evt) || klen != 1) {
          //console.log("ignore shift-key ident_keyup");
          //ignore_next_keyup_event = false;
          return;
@@ -6529,14 +6533,14 @@ function panels_setup()
    
 	w3_el("id-ident").innerHTML =
 		'<form id="id-ident-form" action="#" onsubmit="ident_complete(); return false;">' +
-			w3_input('w3-label-not-bold/id-ident-input|padding:1px|size=20 onkeyup="ident_keyup(this, event)"', 'Your name or callsign:') +
+			w3_input('w3-label-not-bold/id-ident-input|padding:1px|size=20 onkeyup="ident_keyup(this, event)"', 'Your name or callsign:', 'ident-input') +
 		'</form>';
 	
 	w3_el("id-control-freq1").innerHTML =
 	   w3_inline('',
          w3_div('id-freq-cell',
             '<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
-               w3_input('id-freq-input|padding:0 4px;max-width:74px|size=8 onkeydown="freqset_keydown(event)" onkeyup="freqset_keyup(this, event)"') +
+               w3_input('id-freq-input|padding:0 4px;max-width:74px|size=8 onkeydown="freqset_keydown(event)" onkeyup="freqset_keyup(this, event)"', '', 'freq-input') +
             '</form>'
          ),
 
@@ -7828,6 +7832,11 @@ function mode_over(evt, el)
 function any_alternate_click_event(evt)
 {
 	return (evt && (evt.shiftKey || evt.ctrlKey || evt.altKey || evt.button == mouse.middle || evt.button == mouse.right));
+}
+
+function any_alternate_click_event_except_shift(evt)
+{
+	return (evt && (evt.ctrlKey || evt.altKey || evt.button == mouse.middle || evt.button == mouse.right));
 }
 
 function restore_passband(mode)
