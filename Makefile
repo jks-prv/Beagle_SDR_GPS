@@ -1099,7 +1099,7 @@ git:
 	git pull -v $(GIT_PROTO)://github.com/jks-prv/Beagle_SDR_GPS.git
 
 update_check:
-	curl --silent --ipv4 --show-error --connect-timeout 15 https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -o Makefile.1
+	git show master:Makefile > Makefile.1
 	diff Makefile Makefile.1 | head
 
 force_update:
