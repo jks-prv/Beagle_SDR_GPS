@@ -77,6 +77,26 @@ var drm = {
    EAudCod: [ 'AAC', 'OPUS', 'RESERVED', 'xHE_AAC', '' ],
    AAC: 0,
    xHE_AAC: 3,
+   
+   // extra wide band edges are intentional
+   bands: [
+      { n:'LW', b:140, e:300 },
+      { n:'MW', b:500, e:1700 },
+      { n:'120m', b:22500, e:2500 },
+      { n:'90m', b:3100, e:3500 },
+      { n:'75m', b:3800, e:4100 },
+      { n:'60m', b:4700, e:5100 },
+      { n:'49m', b:5800, e:6300 },
+      { n:'41m', b:7200, e:7600 },
+      { n:'31m', b:9300, e:10000 },
+      { n:'25m', b:11500, e:12200 },
+      { n:'22m', b:13500, e:14000 },
+      { n:'19m', b:15000, e:15900 },
+      { n:'16m', b:17400, e:18000 },
+      { n:'15m', b:18800, e:19100 },
+      { n:'13m', b:21400, e:22000 },
+      { n:'11m', b:25500, e:26200 }
+   ],
 
    last_last: 0
 };
@@ -575,6 +595,7 @@ function drm_schedule_time_freq(sort_by_freq)
    });
    console.log('sort_by_freq='+ sort_by_freq +' ...');
    console.log(drm.stations_freq);
+   var last_band = '';
    
    for (i = 0; i < drm.stations_freq.length; i++) {
       var o = drm.stations_freq[i];
@@ -583,9 +604,29 @@ function drm_schedule_time_freq(sort_by_freq)
       var url = o.u;
       var b_px = drm_tscale(o.b);
       var e_px = drm_tscale(o.e);
+      
+      if (sort_by_freq) {
+         var band = null;
+      
+         for (j = 0; j < drm.bands.length; j++) {
+            var b = drm.bands[j];
+            if (freq >= b.b && freq <= b.e) {
+               band = b.n;
+               break;
+            }
+         }
+         
+         if (band && band != last_band) {
+            s += w3_inline_percent('cl-drm-sched-hr-div cl-drm-sched-striped/',
+               '<hr class="cl-drm-sched-hr">', 10, '<b>'+ band +'</b>', 5, '<hr class="cl-drm-sched-hr">');
+            last_band = band;
+         }
+      }
+
       station = station.replace('_', narrow? '<br>':' ');
       if (narrow) station = station.replace(',', '<br>');
       if (url) station = w3_link('w3-link-darker-color', url, station);
+
       s += w3_inline('cl-drm-sched-station cl-drm-sched-striped/',
          w3_div('', freq + '&nbsp;&nbsp;&nbsp;'+ (narrow? '<br>':'') + station),
          w3_div(sprintf('id-drm-sched-time %s|left:%spx; width:%spx;|title="%s"; onclick="drm_click(%d);"',
@@ -918,11 +959,11 @@ function drm_desktop_controls_setup(w_graph)
                ),
                w3_div(sprintf('id-drm-panel-1-by-time cl-drm-sched|width:%dpx; height:100%%;', w_graph),
                   w3_div('', drm_schedule_static()),
-                  w3_div('id-drm-panel-by-time w3-scroll-y w3-absolute|width:100%; height:100%;', drm.loading_msg),
+                  w3_div('id-drm-panel-by-time w3-scroll-y w3-absolute|width:100%; height:100%;', drm.loading_msg)
                ),
                w3_div(sprintf('id-drm-panel-1-by-freq cl-drm-sched|width:%dpx; height:100%%;', w_graph),
                   w3_div('', drm_schedule_static()),
-                  w3_div('id-drm-panel-by-freq w3-scroll-y w3-absolute|width:100%; height:100%;', drm.loading_msg),
+                  w3_div('id-drm-panel-by-freq w3-scroll-y w3-absolute|width:100%; height:100%;', drm.loading_msg)
                ),
 
                w3_div('id-drm-panel-1-graph w3-show-block',
@@ -1307,7 +1348,7 @@ function drm_station(s)
    if (!drm.desktop) return;
    drm.last_station = s;
    if (s == '') s = '&nbsp;';
-   w3_el('id-drm-station').innerHTML = '<b>'+ s +'</b>';
+   w3_el('id-drm-station').innerHTML = '<b>'+ (s.replace('_', ' ')) +'</b>';
    drm_annotate('magenta');
 }
 
