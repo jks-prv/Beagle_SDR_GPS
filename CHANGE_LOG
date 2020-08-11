@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.401  August 11, 2020
+v1.401,402  August 11, 2020
     DRM extension:
         Added time & frequency sorted schedules.
         Removed menu-based station selection in favor of schedule selection.

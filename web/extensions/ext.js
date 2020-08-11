@@ -728,18 +728,18 @@ function extint_focus(is_locked)
       return;
 	}
 
-	kiwi_load_js_dir('extensions/'+ ext +'/'+ ext, ['.js', '.css'],
+   kiwi_load_js_dir('extensions/'+ ext +'/'+ ext, ['.js', '.css'],
 
-	   // post-load
-	   function() {
+      // post-load
+      function() {
          console.log('extint_focus: calling '+ ext +'_main()');
          //setTimeout('ext_set_controls_width_height(); w3_call('+ ext +'_main);', 3000);
          ext_set_controls_width_height();
          w3_call(ext +'_main');
-	   },
+      },
 
-	   // pre-load
-	   function(loaded) {
+      // pre-load
+      function(loaded) {
          console.log('extint_focus: '+ ext +' loaded='+ loaded);
          if (loaded) {
             var s = 'loading extension...';
@@ -748,8 +748,8 @@ function extint_focus(is_locked)
             if (kiwi.is_locked)
                console.log('==== IS_LOCKED =================================================');
          }
-	   }
-	);
+      }
+   );
 }
 
 var extint_first_ext_load = true;
