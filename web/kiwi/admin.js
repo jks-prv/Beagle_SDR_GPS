@@ -241,25 +241,29 @@ function control_html()
 
 	var s2 =
 		'<hr>' +
-		w3_inline_percent('w3-container w3-valign',
-			w3_divs('w3-center w3-tspace-8',
-				w3_div('', '<b>Enable user<br>connections?</b>'),
-            w3_switch('', 'Yes', 'No', 'adm.server_enabled', adm.server_enabled, 'server_enabled_cb')
-			), 15,
-			
-			w3_divs('w3-center w3-tspace-8',
-				w3_div('', '<b>Close all active<br>user connections</b>'),
-				w3_button('w3-red', 'Kick', 'control_user_kick_cb')
-			), 15,
+		w3_third('w3-container w3-valign', '',
+         w3_divs('/w3-center w3-tspace-8',
+            w3_inline('w3-halign-space-around/',
+               w3_divs('w3-center/w3-margin-T-8',
+                  w3_div('', '<b>Enable user<br>connections?</b>'),
+                  w3_switch('', 'Yes', 'No', 'adm.server_enabled', adm.server_enabled, 'server_enabled_cb')
+               ),
+         
+               w3_divs('w3-center/w3-margin-T-8',
+                  w3_div('', '<b>Close all active<br>user connections</b>'),
+                  w3_button('w3-red', 'Kick', 'control_user_kick_cb')
+               )
+            )
+         ),
 
-         w3_div('w3-center',
+         w3_divs('/w3-center w3-tspace-8',
             w3_select('', 'Number of simultaneous channels available<br>for connection by non-Kiwi apps',
                '', 'ext_api_nchans', ext_api_nchans, ext_api_chans_u, 'admin_select_cb'),
-            w3_div('w3-margin-T-8 w3-text-black',
+            w3_div('w3-text-black',
                'If you want to limit incoming connections from <br> non-Kiwi apps like kiwirecorder set this value. <br>' +
                'This overrides similar value in TDoA extension settings.'
             )
-         ), 35,
+         ),
 
 			w3_divs('w3-restart/w3-center w3-tspace-8',
 				w3_div('', '<b>Disable waterfalls/spectrum?</b>'),
@@ -268,11 +272,13 @@ function control_html()
 				   'Set "yes" to save Internet bandwidth by preventing <br>' +
 				   'the waterfall and spectrum from being displayed.'
 				)
-			), 35
+			)
 		) +
+
 		w3_div('w3-container w3-margin-top',
 			w3_input_get('', 'Reason if disabled', 'reason_disabled', 'reason_disabled_cb', '', 'will be shown to users attempting to connect')
 		) +
+
 		w3_divs('w3-margin-top/w3-container',
 			'<label><b>Reason HTML preview</b></label>',
 			w3_div('id-reason-disabled-preview w3-text-black w3-background-pale-aqua', '')
@@ -458,7 +464,10 @@ function connect_html()
             'Configure another Kiwi to use port 8074 and be known as "mykiwi.com:8074".<br>' +
             'On the port 8073 Kiwi set the above field to "http://mykiwi.com:8074".<br>' +
             'On the port 8074 Kiwi leave the above field blank.<br>' +
-            'Configure the port 8074 Kiwi as normal (i.e. router port open, dynamic DNS, proxy etc.)'
+            'Configure the port 8074 Kiwi as normal (i.e. router port open, dynamic DNS, proxy etc.)<br><br>' +
+            '<b>CAUTION:</b> Do not create a cycle by redirecting Kiwis like: A -> B -> A &nbsp;' +
+            'Always create a chain that stops redirecting at the end: A -> B <br>' +
+            'This prevents the browser from going into a loop when all channels on all Kiwis are full.'
          )
 		);
 
