@@ -546,6 +546,7 @@ function w3_iterate_parent(el_id, func)
 	} while (el);
 }
 
+// excludes text and comment nodes
 function w3_iterate_children(el_id, func)
 {
 	var el = w3_el(el_id);
@@ -556,6 +557,7 @@ function w3_iterate_children(el_id, func)
 	}
 }
 
+// excludes text and comment nodes
 function w3_iterateDeep_children(el_id, func)
 {
 	var el = w3_el(el_id);
@@ -568,6 +570,7 @@ function w3_iterateDeep_children(el_id, func)
 	}
 }
 
+// includes text and comment nodes
 function w3_iterate_childNodes(el_id, func)
 {
 	var el = w3_el(el_id);
@@ -1944,6 +1947,15 @@ function w3_select_conditional(psa, label, title, path, sel, opts, cb, cb_param)
    });
    
    return w3int_select(psa, label, title, path, sel, s, cb, cb_param);
+}
+
+function w3_select_disabled(path, value, disabled)
+{
+   w3_iterate_children('id-'+ path, function(el, i) {
+      //console.log('w3_select_disabled['+i+']');
+      //console.log(el);
+      if (el.value == value) el.disabled = disabled? true:false;
+   });
 }
 
 // used when current value should come from config param
