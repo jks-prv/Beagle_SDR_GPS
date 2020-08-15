@@ -59,6 +59,7 @@ u2_t getmem(u2_t addr);
 void printmem(const char *str, u2_t addr);
 float ecpu_use();
 int qsort_floatcomp(const void* elem1, const void* elem2);
+int qsort_intcomp(const void *elem1, const void *elem2);
 
 extern char *current_authkey;
 char *kiwi_authkey();

@@ -52,14 +52,9 @@ FaxDecoder m_FaxDecoder[MAX_RX_CHANS];
 /* Note: the decoding algorithms are adapted from yahfax (on sourceforge)
    which was an improved adaptation of hamfax. */
 
-static int qsort_minus_int(const void *a, const void *b)
-{
-    return *(const int*)a - *(const int*)b;
-}
-
 static int median(int *x, int n, int *ten_pct, int *ninety_pct)
 {
-     qsort(x, n, sizeof *x, qsort_minus_int);
+     qsort(x, n, sizeof *x, qsort_intcomp);
      *ten_pct    = x[(int) (n*0.1)];
      *ninety_pct = x[(int) (n*0.9)];
      return x[n/2];

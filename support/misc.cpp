@@ -208,6 +208,12 @@ int qsort_floatcomp(const void *elem1, const void *elem2)
     return f1 > f2;
 }
 
+int qsort_intcomp(const void *elem1, const void *elem2)
+{
+	const int i1 = *(const int *) elem1, i2 = *(const int *) elem2;
+	return i1 - i2;
+}
+
 static int misc_miso_busy;
 
 SPI_MISO *get_misc_miso()
