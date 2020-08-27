@@ -392,10 +392,26 @@ function w3_ext_param(s, param)
 
 function w3_clamp(v, min, max, clamp_val)
 {
-   if (clamp_val == undefined)
-      v = Math.max(min, Math.min(max, v));
-   else
-      if (v < min || v > max) v = clamp_val;
+   if (isObject(min)) {
+      var o = min;
+      try {
+         if (typeof(o.clamp) === 'undefined') {
+            v = Math.max(o.min, Math.min(o.max, v));
+         } else {
+            if (v < o.min || v > o.max) v = o.clamp;
+         }
+      } catch(ex) {
+         console.log('w3_clamp: bad obj:');
+         console.log(o);
+         return undefined;
+      }
+   } else {
+      if (clamp_val == undefined)
+         v = Math.max(min, Math.min(max, v));
+      else
+         if (v < min || v > max) v = clamp_val;
+   }
+   
    return v;
 }
 
@@ -491,6 +507,19 @@ function w3_id(el_id)
 function w3_innerHTML(id)
 {
 	var el = w3_el_softfail(id);
+	var s = '';
+	var narg = arguments.length;
+   for (var i=1; i < narg; i++) {
+      s += arguments[i];
+   }
+	el.innerHTML = s;
+	return el;
+}
+
+function w3_set_innerHTML(id)
+{
+	var el = w3_el(id);
+	if (!el) return null;
 	var s = '';
 	var narg = arguments.length;
    for (var i=1; i < narg; i++) {
@@ -830,6 +859,7 @@ function w3_visible(el_id, visible)
 // our standard for confirming (highlighting) a control action (e.g.button push)
 var w3_highlight_time = 250;
 var w3_highlight_color = 'w3-selection-green';
+var w3_selection_green = '#4CAF50';
 
 function w3_highlight(el_id)
 {
@@ -874,8 +904,8 @@ function w3_color(el_id, color, bkgColor, cond)
 	
 	// remember that setting colors to '' restores default
 	cond = (isUndefined(cond) || cond);
-   if (color != undefined && color != null) el.style.color = cond? color:'';
-   if (bkgColor != undefined && bkgColor != null) el.style.backgroundColor = cond? bkgColor:'';
+   if (isArg(color)) el.style.color = cond? color:'';
+   if (isArg(bkgColor)) el.style.backgroundColor = cond? bkgColor:'';
 	return { color: prev_fg, backgroundColor: prev_bg };
 }
 
@@ -1465,6 +1495,11 @@ function w3_icon(psa, fa_icon, size, color, cb, cb_param)
 
 	color = (color && color != '')? (' color:'+ color) : '';
 	var onclick = cb? ('onclick="w3int_button_click(event, '+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"') : '';
+	if (cb && psa.includes('w3-momentary')) {
+	   onclick += ' onmousedown="w3int_button_click(event, '+ sq(path) +', '+ sq(cb) +', 0)"';
+	   onclick += ' ontouchstart="w3int_button_click(event, '+ sq(path) +', '+ sq(cb) +', 0)"';
+	}
+
 	var p = w3_psa(psa, path + pointer +' fa '+ fa_icon, font_size + color, onclick);
 	var s = '<i '+ p +'></i>';
 	//console.log(s);
@@ -1949,10 +1984,10 @@ function w3_select_conditional(psa, label, title, path, sel, opts, cb, cb_param)
    return w3int_select(psa, label, title, path, sel, s, cb, cb_param);
 }
 
-function w3_select_disabled(path, value, disabled)
+function w3_select_set_disabled(path, value, disabled)
 {
    w3_iterate_children('id-'+ path, function(el, i) {
-      //console.log('w3_select_disabled['+i+']');
+      //console.log('w3_select_set_disabled['+i+']');
       //console.log(el);
       if (el.value == value) el.disabled = disabled? true:false;
    });
