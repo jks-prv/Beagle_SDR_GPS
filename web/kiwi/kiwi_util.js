@@ -268,6 +268,13 @@ String.prototype.withSign = function()
 	return (n < 0)? s : ('+'+ s);
 }
 
+String.prototype.positiveWithSign = function()
+{
+	var s = this;
+	var n = Number(s);
+	return (n <= 0)? s : ('+'+ s);
+}
+
 // pad with left zeros to 'digits' length
 // +digits: add leading '0x'
 // -digits: no leading '0x'
@@ -355,9 +362,11 @@ function _change(v)
    return (!_nochange(v) && !_default(v));
 }
 
+// usage: console_log('id', arg0, arg1 ...)
+// prints: "<id>: arg0=<arg0_value> arg1=<arg1_value> ..."
 function console_log()
 {
-   //console.log('console_log_fqn: '+ typeof(arguments));
+   //console.log('console_log: '+ typeof(arguments));
    //console.log(arguments);
    var s;
    for (var i = 0; i < arguments.length; i++) {
@@ -371,6 +380,8 @@ function console_log()
    console.log('CONSOLE_LOG '+ s);
 }
 
+// usage: console_log_fqn('id', fully.qualified.name0, fully.qualified.name1, ...)
+// prints: "<id>: <name0>=<fqn0_value> <name1>=<fqn1_value> ..."
 function console_log_fqn()
 {
    //console.log('console_log_fqn: '+ typeof(arguments));
@@ -393,6 +404,15 @@ function console_log_fqn()
       }
    }
    console.log('FQN '+ s);
+}
+
+function console_log_dbgUs()
+{
+   if (!dbgUs) return;
+   s = '';
+   for (var i = 0; i < arguments.length; i++)
+      s += arguments[i].toString();
+   console.log(s);
 }
 
 // console log via a timeout for routines that are realtime critical (e.g. audio on_process() routines)
@@ -1104,6 +1124,7 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	
 	var no_wf = (window.location.href.includes('?no_wf') || window.location.href.includes('&no_wf'));
 	ws_url = ws_protocol + ws_url +'/'+ (no_wf? 'no_wf/':'kiwi/') + timestamp +'/'+ stream;
+	if (no_wf) wf.no_wf = true;
 	
 	//console.log('open_websocket '+ ws_url);
 	var ws = new WebSocket(ws_url);
@@ -1122,12 +1143,20 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	ws.onopen = function() {
 		ws.up = true;
 
-		if (ws.open_cb)
-			ws.open_cb(ws.open_cb_param);
+		if (ws.open_cb) {
+	      try {
+			   ws.open_cb(ws.open_cb_param);
+         } catch(ex) { console.log(ex); }
+		}
 	};
 
 	ws.onmessage = function(evt) {
-		on_ws_recv(evt, ws);
+	   // We've seen a case where, if uncaught, an "undefined" error in this callback code
+	   // is never reported in the console. The callback just silently exits!
+	   // So add a try/catch to all web socket callbacks as a safety net.
+	   try {
+		   on_ws_recv(evt, ws);
+      } catch(ex) { console.log(ex); }
 	};
 
 	ws.onclose = function(evt) {
@@ -1138,8 +1167,11 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	ws.binaryType = "arraybuffer";
 
 	ws.onerror = function(evt) {
-		if (ws.error_cb)
-			ws.error_cb(evt, ws);
+		if (ws.error_cb) {
+	      try {
+			   ws.error_cb(evt, ws);
+         } catch(ex) { console.log(ex); }
+		}
 	};
 	
 	return ws;
@@ -1215,7 +1247,7 @@ function on_ws_recv(evt, ws)
 		}
 		*/
 		if (ws.recv_cb && (ws.stream != 'EXT' || kiwi_flush_recv_input == false)) {
-			ws.recv_cb(data, ws);
+			ws.recv_cb(data, ws, firstChars);
 			if (isDefined(kiwi_gc_recv) && kiwi_gc_recv) data = null;	// gc
 		}
 	}
