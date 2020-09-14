@@ -16,7 +16,8 @@ var extint = {
    
    // extensions not subject to DRM lockout
    // FIXME: allow C-side API to specify
-   no_lockout: [ 'noise_blank', 'noise_filter', 'ant_switch', 'iframe', 'colormap', 'devl' ]
+   no_lockout: [ 'noise_blank', 'noise_filter', 'ant_switch', 'iframe', 'colormap', 'devl' ],
+   excl_devl: [ 'sig_gen', 'devl', 's4285' ]
 };
 
 var devl = {
@@ -517,7 +518,8 @@ function ext_panel_init()
 	      if (evt.key == 'Escape' && extint.displayed && !confirmation.displayed) {
 	         // simulate click in case something other than extint_panel_hide() has been hooked
 	         //extint_panel_hide();
-	         w3_el('id-ext-controls-close').click();
+	         if (w3_call(extint.current_ext_name +'_escape_key_cb') != true)
+	            w3_el('id-ext-controls-close').click();
 	      }
 	   }, true);
 }
@@ -787,11 +789,7 @@ function extint_select_menu()
 	if (extint_names && isArray(extint_names)) {
 	   for (var i=0; i < extint_names.length; i++) {
          var id = extint_names[i];
-         if (!dbgUs && id == 'sig_gen') continue;	// when USE_GEN == 0
-         if (!dbgUs && id == 'devl') continue;
-         if (!dbgUs && id == 's4285') continue;	// FIXME: hide while we develop
-         if (!dbgUs && id == 'colormap') continue;	// FIXME: hide while we develop
-         
+         if (!dbgUs && extint.excl_devl.includes(id)) continue;
          if (id == 'wspr') id = 'WSPR';      // FIXME: workaround
          var enable = ext_get_cfg_param(id +'.enable');
          if (enable == null || kiwi.is_local[rx_chan]) enable = true;   // enable if no cfg param or local connection
@@ -809,6 +807,7 @@ function extint_open(name, delay)
    name = name.toLowerCase();
 	for (var i=0; i < extint_names.length; i++) {
       var id = extint_names[i];
+      if (!dbgUs && extint.excl_devl.includes(id)) continue;
       if (id == 'wspr') id = 'WSPR';      // FIXME: workaround
       var enable = ext_get_cfg_param(id +'.enable');
       if (enable == null || kiwi.is_local[rx_chan]) enable = true;   // enable if no cfg param or local connection
