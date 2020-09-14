@@ -586,7 +586,7 @@ function ignore(ev)
 	return cancelEvent(ev);
 }
 
-function rgb(r, g, b)
+function kiwi_rgb(r, g, b)
 {
    if (r == null) return '';
    

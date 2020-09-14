@@ -132,16 +132,17 @@ function kiwi_load_js_dir(dir, js_files, cb_post, cb_pre)
    for (var i = 0; i < js_files.length; i++) {
       js_files[i] = dir + js_files[i];
    }
-   console.log(js_files);
    kiwi_load_js(js_files, cb_post, cb_pre);
 }
 
+// cb_pre/cb_post can be string function names or function pointers (w3_call() is used)
 function kiwi_load_js(js_files, cb_post, cb_pre)
 {
 	console.log('DYNLOAD START');
 	// kiwi_js_load.js will begin running only after all others have loaded and run.
 	// Can then safely call the callback.
 	js_files.push('kiwi/kiwi_js_load.js');
+	console.log(js_files);
 
    var loaded_any = false;
    js_files.forEach(function(src) {
@@ -160,7 +161,13 @@ function kiwi_load_js(js_files, cb_post, cb_pre)
             script = document.createElement('script');
             script.src = src;
             script.type = 'text/javascript';
-            if (src == 'kiwi/kiwi_js_load.js') script.kiwi_cb = cb_post;
+            
+            // callback is associated with kiwi_js_load.js, in case there are
+            // multiple js_files to be loaded prior
+            if (src == 'kiwi/kiwi_js_load.js') {
+               script.kiwi_js = js_files[0];
+               script.kiwi_cb = cb_post;
+            }
          } else
          if (src.endsWith('.css')) {
             script = document.createElement('link');
@@ -183,12 +190,22 @@ function kiwi_load_js(js_files, cb_post, cb_pre)
    });
 	console.log('DYNLOAD FINISH');
 	
-	// if the kiwi_js_load.js process never loaded anything just call the callback here
+	// if the kiwi_js_load.js process never loaded anything just call the callback(s) here
 	if (!loaded_any) {
-	   w3_call(cb_pre, false);
-	   w3_call(cb_post);
+	   if (cb_pre) {
+         //console.log('call pre '+ cb_pre);
+	      w3_call(cb_pre, false);
+	   }
+	   if (cb_post) {
+         //console.log('call post '+ cb_post);
+         w3_call(cb_post);
+      }
 	} else {
-	   w3_call(cb_pre, true);
+	   if (cb_pre) {
+         //console.log('call pre subsequent '+ cb_pre);
+         w3_call(cb_pre, true);
+      }
+      // cb_post is called from kiwi_js_load.js after module has actually loaded
 	}
 }
 
@@ -931,11 +948,11 @@ function kiwi_output_msg(id, id_scroll, p)
                      }
                   } else
                   if (saw_color) {
-                     //console.log('SGR saw_color fg='+ rgb(p.sgr.fg) +' bg='+ rgb(p.sgr.bg));
+                     //console.log('SGR saw_color fg='+ kiwi_rgb(p.sgr.fg) +' bg='+ kiwi_rgb(p.sgr.bg));
                      //console.log(p.sgr.fg);
                      //console.log(p.sgr.bg);
                      if (p.sgr.span) snew += '</span>';
-                     snew += '<span style="'+ (p.sgr.fg? ('color:'+ rgb(p.sgr.fg) +';') :'') + (p.sgr.bg? ('background-color:'+ rgb(p.sgr.bg) +';') :'') +'">';
+                     snew += '<span style="'+ (p.sgr.fg? ('color:'+ kiwi_rgb(p.sgr.fg) +';') :'') + (p.sgr.bg? ('background-color:'+ kiwi_rgb(p.sgr.bg) +';') :'') +'">';
                      p.sgr.span = 1;
                   } else {
                      //console.log('SGR ERROR');
