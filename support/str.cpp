@@ -562,9 +562,10 @@ void str_hash_init(const char *id, str_hash_t *hashp, str_hashes_t *hashes, bool
     
     // increase hash length (#chars summed from end of strings) until hashes become unique
     for (hash_len = 1; hash_len <= hashp->max_hash_len; hash_len++) {
+        int hash_start = hashp->max_hash_len-hash_len;
         for (str_hashes_t *h1 = &hashes[1]; h1->name; h1++) {
             u4_t hash = 0;
-            for (cidx = hashp->max_hash_len-1; cidx >= hashp->max_hash_len-hash_len; cidx--) {
+            for (cidx = hashp->max_hash_len-1; cidx >= hash_start; cidx--) {
                 u1_t c = h1->name[cidx];
                 STR_HASH_FUNC(c, cidx);
             }
@@ -585,22 +586,42 @@ void str_hash_init(const char *id, str_hash_t *hashp, str_hashes_t *hashes, bool
     }
     
     if (!okay) {
-        for (str_hashes_t *h = &hashes[1]; h->name; h++) {
-            printf("str_hash_init(%s): hash=0x%04x key=%d \"%s\"\n", id, h->hash, h->key, h->name);
-        }
-        int collisions = 0;
-        for (str_hashes_t *h1 = &hashes[1]; h1->name; h1++) {
-            if (h1->hash > maxval) maxval = h1->hash;
-            for (str_hashes_t *h2 = h1+1; h2->name; h2++) {
-                if (h1 != h2 && h1->hash == h2->hash) {
-                    collisions++;
-                    printf("str_hash_init(%s): HASH COLLISION \"%s\"(0x%04x) == \"%s\"(0x%04x)\n",
-                        id, h1->name, h1->hash, h2->name, h2->hash);
+        printf("str_hash_init(%s): hash failure information follows\n", id);
+        
+        for (hash_len = 1; hash_len <= hashp->max_hash_len; hash_len++) {
+            int hash_start = hashp->max_hash_len-hash_len;
+            printf("str_hash_init(%s): hash_len=%d --------------------------------\n", id, hash_len);
+            for (str_hashes_t *h1 = &hashes[1]; h1->name; h1++) {
+                u4_t hash = 0;
+                for (cidx = hashp->max_hash_len-1; cidx >= hash_start; cidx--) {
+                    u1_t c = h1->name[cidx];
+                    STR_HASH_FUNC(c, cidx);
+                }
+                h1->hash = hash;
+            }
+
+            int collisions = maxval = 0;
+            for (str_hashes_t *h1 = &hashes[1]; h1->name; h1++) {
+                if (h1->hash > maxval) maxval = h1->hash;
+                for (str_hashes_t *h2 = h1+1; h2->name; h2++) {
+                    if (h1 != h2 && h1->hash == h2->hash) {
+                        collisions++;
+                        printf("str_hash_init(%s): HASH COLLISION \"%s\"(0x%04x) == \"%s\"(0x%04x) [\"%s\", \"%s\"]\n",
+                            id, h1->name + hash_start, h1->hash, h2->name + hash_start, h2->hash, h1->name, h2->name);
+                    }
                 }
             }
+
+            for (str_hashes_t *h = &hashes[1]; h->name; h++) {
+                printf("str_hash_init(%s): key=%d hash=0x%04x \"%s\"\n", id, h->key, h->hash, h->name);
+            }
+
+            printf("str_hash_init(%s): for hash_len=%d collisions=%d maxval=%d bits_required=%d\n",
+                id, hash_len, collisions, maxval, bits_required(maxval));
         }
-        printf("str_hash_init(%s): no unique hashes within max_hash_len=%d limit, collisions=%d\n",
-            id, hashp->max_hash_len, collisions);
+
+        printf("str_hash_init(%s): no unique hashes within max_hash_len=%d limit\n",
+            id, hashp->max_hash_len);
         panic("str_hash_init");
     }
     
@@ -621,7 +642,7 @@ void str_hash_init(const char *id, str_hash_t *hashp, str_hashes_t *hashes, bool
         id, entries, hash_len, maxval, bits, ((1 << bits) - 1), hashp->lookup_table_size);
     if (debug) {
         for (str_hashes_t *h = &hashes[1]; h->name; h++) {
-            printf("str_hash_init(%s): hash=0x%04x key=%d \"%s\"\n", id, h->hash, h->key, h->name);
+            printf("str_hash_init(%s): key=%d hash=0x%04x \"%s\"\n", id, h->key, h->hash, h->name);
         }
     }
 }

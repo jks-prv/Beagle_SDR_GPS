@@ -63,6 +63,8 @@ char *kiwi_strncat(char *dst, const char *src, size_t n);
 bool kiwi_sha256_strcmp(char *str, const char *key);
 
 
+#define STR_HASH_MISS 0
+
 struct str_hashes_t {
     const char *name;
     u2_t key, hash;
