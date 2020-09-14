@@ -30,7 +30,7 @@ Boston, MA  02110-1301, USA.
 // backup values only if dig lookup fails
 #define KIWISDR_COM_PUBLIC_IP   "50.116.2.70"
 #define SDR_HU_PUBLIC_IP        "167.99.214.222"
-#define GITHUB_COM_PUBLIC_IP    "192.30.253.112"
+#define GITHUB_COM_PUBLIC_IP    "52.64.108.95"      // was "192.30.253.112"
 
 #define NET_DEBUG
 #ifdef NET_DEBUG
