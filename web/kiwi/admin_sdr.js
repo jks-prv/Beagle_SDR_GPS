@@ -1003,9 +1003,9 @@ function dx_json2(dx)
                   (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-selection-green', '+', 'dx_add_cb', i), 1,
                   (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-red', '-', 'dx_rem_cb', i), 1,
                   w3_input(h('w3-padding-small||size=8'), l('Freq'), 'dxo.f_'+i, fr, 'dx_num_cb'), 19,
-                  w3_select(h(''), l('Mode'), '', 'dxo.m_'+i, mo, kiwi.modes_u, 'dx_sel_cb'), 19,
+                  w3_select(h('|color:red'), l('Mode'), '', 'dxo.m_'+i, mo, kiwi.modes_u, 'dx_sel_cb'), 19,
                   w3_input(h('w3-padding-small||size=4'), l('Passband'), 'dxo.pb_'+i, pb, 'dx_passband_cb'), 19,
-                  w3_select(h(''), l('Type'), '', 'dxo.y_'+i, ty, types, 'dx_sel_cb'), 19,
+                  w3_select(h('|color:red'), l('Type'), '', 'dxo.y_'+i, ty, types, 'dx_sel_cb'), 19,
                   w3_input(h('w3-padding-small||size=2'), l('Offset'), 'dxo.o_'+i, os, 'dx_num_cb'), 19
                ), 45,
                w3_col_percent('w3-valign/w3-margin-left',

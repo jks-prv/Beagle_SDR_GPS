@@ -280,9 +280,9 @@ function iq_display_controls_setup()
 					w3_div('w3-medium w3-text-aqua', '<b>IQ display</b>'),
 					w3_slider('w3-tspace-8//', 'Gain', 'iq.gain', iq.gain, 0, 120, 1, 'iq_display_gain_cb'),
 					w3_inline('w3-tspace-8/w3-margin-between-6',
-					   w3_select('', 'Draw', '', 'iq.draw', iq.draw, draw_s, 'iq_display_draw_select_cb'),
-					   w3_select('', 'Mode', '', 'iq.mode', iq.mode, mode_s, 'iq_display_mode_select_cb'),
-					   w3_select('', 'PLL', '', 'iq.pll', iq.pll, pll_s, 'iq_display_pll_select_cb')
+					   w3_select('|color:red', 'Draw', '', 'iq.draw', iq.draw, draw_s, 'iq_display_draw_select_cb'),
+					   w3_select('|color:red', 'Mode', '', 'iq.mode', iq.mode, mode_s, 'iq_display_mode_select_cb'),
+					   w3_select('|color:red', 'PLL', '', 'iq.pll', iq.pll, pll_s, 'iq_display_pll_select_cb')
 					),
 					w3_slider('w3-tspace-8 id-iq-size//', 'Size', 'iq.size', iq.size, 4, 14, 1, 'iq_display_size_cb'),
 					w3_slider('w3-tspace-8 id-iq-maxdb w3-hide//', 'Colormap max', 'iq.maxdb', iq.maxdb, 0, 255, 1, 'iq_display_maxdb_cb'),
