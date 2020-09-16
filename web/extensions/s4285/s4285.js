@@ -160,7 +160,7 @@ function s4285_controls_setup()
 	
 	var controls_html =
 		w3_div('id-s4285-controls w3-text-aqua',
-			w3_divs('w3-container/w3-tspace-8',
+			w3_divs('/w3-tspace-8',
 				w3_div('w3-medium w3-text-aqua', '<b>STANAG 4285 decoder</b>'),
 				w3_select('', 'Mode', '', 's4285.mode', s4285.mode, mode_s, 's4285_mode_select_cb'),
 				w3_slider('', 'Gain', 's4285.gain', s4285.gain, 0, 100, 1, 's4285_gain_cb'),

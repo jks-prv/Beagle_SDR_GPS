@@ -108,7 +108,7 @@ function S_meter_controls_setup()
 
 	var controls_html =
 		w3_div('id-S_meter-controls w3-text-white',
-			w3_divs('w3-container/w3-tspace-8',
+			w3_divs('/w3-tspace-8',
 				w3_div('id-S_meter-info w3-medium w3-text-aqua', '<b>S-meter graph</b>'),
             w3_inline('w3-halign-space-between/',
 				   w3_select('', 'Range', '', 'S_meter.range_i', S_meter.range_i, S_meter.range_s, 'S_meter_range_select_cb'),

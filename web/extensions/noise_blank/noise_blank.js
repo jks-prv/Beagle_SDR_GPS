@@ -107,7 +107,7 @@ function noise_blank_controls_html()
    
 	var controls_html =
 		w3_div('id-noise-blanker-controls w3-text-white',
-			w3_divs('w3-container/w3-tspace-8',
+			w3_divs('/w3-tspace-8',
 				w3_inline('w3-margin-between-8',
 				   w3_div('w3-medium w3-text-aqua', '<b>Noise blanker: </b>'),
 				   w3_div('w3-text-white', noise_blank.algo_s[noise_blank.algo])
