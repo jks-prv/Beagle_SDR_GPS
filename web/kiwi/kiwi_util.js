@@ -442,6 +442,24 @@ function kiwi_UTC_minutes()
    return (d.getUTCHours()*60 + d.getUTCMinutes());
 }
 
+function kiwi_hh_mm(hh_mm)
+{
+   if (isNumber(hh_mm)) return hh_mm;
+
+   if (isString(hh_mm)) {
+      var t = hh_mm.split(':');
+      var hr = +t[0];
+      if (t.length > 1) {
+         var min = (+t[1]) / 60;
+         hr = (hr < 0)? (hr - min) : (hr + min);
+      }
+      return hr;
+   }
+
+   return null;
+}
+//console.log('# '+ kiwi_hh_mm(-11) +' '+ + kiwi_hh_mm('-10') +' '+ kiwi_hh_mm('10:55') +' '+ kiwi_hh_mm('-10:55'));
+
 
 ////////////////////////////////
 // HTML helpers
