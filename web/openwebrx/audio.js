@@ -634,7 +634,7 @@ function audio_periodic()
       audio_started = true;
       audio_initial_connect = true;
       audio_watchdog_restart = true;
-      snd_send("SET restart");
+      snd_send("SET reinit");
    } else {
       audio_firefox_watchdog = 0;
    }

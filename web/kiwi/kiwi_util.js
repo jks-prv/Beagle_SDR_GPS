@@ -268,6 +268,13 @@ String.prototype.withSign = function()
 	return (n < 0)? s : ('+'+ s);
 }
 
+String.prototype.positiveWithSign = function()
+{
+	var s = this;
+	var n = Number(s);
+	return (n <= 0)? s : ('+'+ s);
+}
+
 // pad with left zeros to 'digits' length
 // +digits: add leading '0x'
 // -digits: no leading '0x'
@@ -355,9 +362,11 @@ function _change(v)
    return (!_nochange(v) && !_default(v));
 }
 
+// usage: console_log('id', arg0, arg1 ...)
+// prints: "<id>: arg0=<arg0_value> arg1=<arg1_value> ..."
 function console_log()
 {
-   //console.log('console_log_fqn: '+ typeof(arguments));
+   //console.log('console_log: '+ typeof(arguments));
    //console.log(arguments);
    var s;
    for (var i = 0; i < arguments.length; i++) {
@@ -371,6 +380,8 @@ function console_log()
    console.log('CONSOLE_LOG '+ s);
 }
 
+// usage: console_log_fqn('id', fully.qualified.name0, fully.qualified.name1, ...)
+// prints: "<id>: <name0>=<fqn0_value> <name1>=<fqn1_value> ..."
 function console_log_fqn()
 {
    //console.log('console_log_fqn: '+ typeof(arguments));
@@ -393,6 +404,15 @@ function console_log_fqn()
       }
    }
    console.log('FQN '+ s);
+}
+
+function console_log_dbgUs()
+{
+   if (!dbgUs) return;
+   s = '';
+   for (var i = 0; i < arguments.length; i++)
+      s += arguments[i].toString();
+   console.log(s);
 }
 
 // console log via a timeout for routines that are realtime critical (e.g. audio on_process() routines)
@@ -421,6 +441,24 @@ function kiwi_UTC_minutes()
    var d = new Date();
    return (d.getUTCHours()*60 + d.getUTCMinutes());
 }
+
+function kiwi_hh_mm(hh_mm)
+{
+   if (isNumber(hh_mm)) return hh_mm;
+
+   if (isString(hh_mm)) {
+      var t = hh_mm.split(':');
+      var hr = +t[0];
+      if (t.length > 1) {
+         var min = (+t[1]) / 60;
+         hr = (hr < 0)? (hr - min) : (hr + min);
+      }
+      return hr;
+   }
+
+   return null;
+}
+//console.log('# '+ kiwi_hh_mm(-11) +' '+ + kiwi_hh_mm('-10') +' '+ kiwi_hh_mm('10:55') +' '+ kiwi_hh_mm('-10:55'));
 
 
 ////////////////////////////////
@@ -566,7 +604,7 @@ function ignore(ev)
 	return cancelEvent(ev);
 }
 
-function rgb(r, g, b)
+function kiwi_rgb(r, g, b)
 {
    if (r == null) return '';
    
@@ -719,10 +757,11 @@ function kiwi_parseQuery ( query ) {
 ////////////////////////////////
 
 // http://stackoverflow.com/questions/298745/how-do-i-send-a-cross-domain-post-request-via-javascript
-var kiwi_GETrequest_debug = false;
 
-function kiwi_GETrequest(id, url)
+function kiwi_GETrequest(id, url, opt)
 {
+   var debug = w3_opt(opt, 'debug', 0);
+
   // Add the iframe with a unique name
   var iframe = document.createElement("iframe");
   var uniqueString = id +'_'+ (new Date()).toUTCString().substr(17,8);
@@ -738,26 +777,28 @@ function kiwi_GETrequest(id, url)
   form.method = "GET";
   w3_add(form, 'id-kiwi_GETrequest');  // for benefit of browser inspector
   
-  if (kiwi_GETrequest_debug) console.log('kiwi_GETrequest: '+ uniqueString);
-  return { iframe:iframe, form:form };
+  if (debug) console.log('kiwi_GETrequest: '+ uniqueString);
+  return { iframe:iframe, form:form, debug:debug };
 }
 
-function kiwi_GETrequest_submit(request, debug)
+function kiwi_GETrequest_submit(request, opt)
 {
-	if (debug) {
-		console.log('kiwi_GETrequest_submit: DEBUG, NO SUBMIT');
+   var no_submit = w3_opt(opt, 'no_submit', 0);
+   var gc = w3_opt(opt, 'gc', 0);
+   
+	if (no_submit) {
+		console.log('kiwi_GETrequest_submit: NO SUBMIT');
 	} else {
 		document.body.appendChild(request.form);
 		request.form.submit();
-		if (kiwi_GETrequest_debug) console.log('kiwi_GETrequest_submit: SUBMITTED');
+		if (request.debug) console.log('kiwi_GETrequest_submit: SUBMITTED');
 	}
-	
-	// gc
-	if (kiwi_gc_wspr) setTimeout(function() {
+
+	if (gc) setTimeout(function() {
 		//console.log('kiwi_GETrequest GC');
 		document.body.removeChild(request.form);
 		document.body.removeChild(request.iframe);
-	}, 30000);
+	}, 60000);
 }
 
 function kiwi_GETrequest_param(request, name, value)
@@ -768,7 +809,7 @@ function kiwi_GETrequest_param(request, name, value)
   input.value = value;
   request.form.appendChild(input);
 
-  if (kiwi_GETrequest_debug) console.log('kiwi_GETrequest_param: '+ name +'='+ value);
+  if (request.debug) console.log('kiwi_GETrequest_param: '+ name +'='+ value);
 }
 
 
@@ -780,32 +821,34 @@ function kiwi_GETrequest_param(request, name, value)
 
 var ajax_state = { DONE:4 };
 
-function kiwi_ajax(url, callback, cb_param, timeout)
+function kiwi_ajax(url, callback, cb_param, timeout, debug)
 {
-	kiwi_ajax_prim('GET', null, url, callback, cb_param, timeout);
+	kiwi_ajax_prim('GET', null, url, callback, cb_param, timeout, undefined, undefined, debug);
 }
 
-function kiwi_ajax_progress(url, callback, cb_param, timeout, progress_cb, progress_cb_param)
+function kiwi_ajax_progress(url, callback, cb_param, timeout, progress_cb, progress_cb_param, debug)
 {
-	kiwi_ajax_prim('GET', null, url, callback, cb_param, timeout, progress_cb, progress_cb_param);
+	kiwi_ajax_prim('GET', null, url, callback, cb_param, timeout, progress_cb, progress_cb_param, debug);
 }
 
-function kiwi_ajax_send(data, url, callback, cb_param, timeout)
+function kiwi_ajax_send(data, url, callback, cb_param, timeout, debug)
 {
-	kiwi_ajax_prim('PUT', data, url, callback, cb_param, timeout);
+	kiwi_ajax_prim('PUT', data, url, callback, cb_param, timeout, undefined, undefined, debug);
 }
 
 var ajax_id = 0;
 var ajax_requests = {};
 
-function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress_cb, progress_cb_param)
+function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress_cb, progress_cb_param, debug)
 {
    ajax_id++;
 	var ajax;
 	
 	var dbug = function(msg) {
-	   //kiwi_debug(msg);
-	   //console.log(msg);
+	   if (debug) {
+	      //kiwi_debug(msg);
+	      console.log(msg);
+	   }
 	};
 	
 	//try {
@@ -851,8 +894,10 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
 	}
 	
 	if (progress_cb) {
+      dbug('AJAX with progress_cb='+ progress_cb);
 	   ajax.onprogress = function() {
 	      var response = ajax.responseText.toString() || '';
+         dbug('XHR.onprogress='+ response);
          if (isFunction(progress_cb))
             progress_cb(response, progress_cb_param);
          else
@@ -863,12 +908,27 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
 	
 	ajax.onerror = function(e) {
       dbug('XHR.onerror='+ e);
-      //console.log(e);
+      if (debug) console.log(e);
+	}
+
+	ajax.onabort = function(e) {
+      dbug('XHR.onabort='+ e);
+      if (debug) console.log(e);
+	}
+
+	ajax.onload = function(e) {
+      dbug('XHR.onload='+ e);
+      if (debug) console.log(e);
+	}
+
+	ajax.onloadstart = function(e) {
+      dbug('XHR.onloadstart='+ e);
+      if (debug) console.log(e);
 	}
 
 	ajax.onreadystatechange = function() {
+      dbug('XHR.onreadystatechange readyState='+ ajax.readyState);
 		if (ajax.readyState != ajax_state.DONE) {
-         //dbug('XHR.readyState='+ ajax.readyState);
 			return false;
 		}
 
@@ -891,6 +951,7 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
          dbug('XHR.response='+ ajax.response);
          dbug('XHR.responseText='+ ajax.responseText);
          dbug('XHR.responseURL='+ ajax.responseURL);
+         if (debug) console.log(ajax);
 
          if (ajax.status != 200) {
             dbug('AJAX bad status='+ ajax.status +' url='+ url);
@@ -940,12 +1001,13 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
 		   dbug('AJAX ORSC TIMED_OUT recovered id='+ id);
       }
 		
+		dbug('AJAX ORSC ABORT/DELETE');
 		ajax.abort();
 		delete ajax_requests[id];
 	}
 
    if (timeout >= 0) {     // timeout < 0 is test mode
-      ajax.open(method, url, true);
+      ajax.open(method, url, /* async */ true);
       dbug('AJAX SEND id='+ ajax_id +' url='+ url);
       ajax.send(data);
    }
@@ -1104,6 +1166,7 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	
 	var no_wf = (window.location.href.includes('?no_wf') || window.location.href.includes('&no_wf'));
 	ws_url = ws_protocol + ws_url +'/'+ (no_wf? 'no_wf/':'kiwi/') + timestamp +'/'+ stream;
+	if (no_wf) wf.no_wf = true;
 	
 	//console.log('open_websocket '+ ws_url);
 	var ws = new WebSocket(ws_url);
@@ -1122,12 +1185,20 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	ws.onopen = function() {
 		ws.up = true;
 
-		if (ws.open_cb)
-			ws.open_cb(ws.open_cb_param);
+		if (ws.open_cb) {
+	      try {
+			   ws.open_cb(ws.open_cb_param);
+         } catch(ex) { console.log(ex); }
+		}
 	};
 
 	ws.onmessage = function(evt) {
-		on_ws_recv(evt, ws);
+	   // We've seen a case where, if uncaught, an "undefined" error in this callback code
+	   // is never reported in the console. The callback just silently exits!
+	   // So add a try/catch to all web socket callbacks as a safety net.
+	   try {
+		   on_ws_recv(evt, ws);
+      } catch(ex) { console.log(ex); }
 	};
 
 	ws.onclose = function(evt) {
@@ -1138,8 +1209,11 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	ws.binaryType = "arraybuffer";
 
 	ws.onerror = function(evt) {
-		if (ws.error_cb)
-			ws.error_cb(evt, ws);
+		if (ws.error_cb) {
+	      try {
+			   ws.error_cb(evt, ws);
+         } catch(ex) { console.log(ex); }
+		}
 	};
 	
 	return ws;
@@ -1215,7 +1289,7 @@ function on_ws_recv(evt, ws)
 		}
 		*/
 		if (ws.recv_cb && (ws.stream != 'EXT' || kiwi_flush_recv_input == false)) {
-			ws.recv_cb(data, ws);
+			ws.recv_cb(data, ws, firstChars);
 			if (isDefined(kiwi_gc_recv) && kiwi_gc_recv) data = null;	// gc
 		}
 	}

@@ -108,11 +108,11 @@ function S_meter_controls_setup()
 
 	var controls_html =
 		w3_div('id-S_meter-controls w3-text-white',
-			w3_divs('w3-container/w3-tspace-8',
+			w3_divs('/w3-tspace-8',
 				w3_div('id-S_meter-info w3-medium w3-text-aqua', '<b>S-meter graph</b>'),
             w3_inline('w3-halign-space-between/',
-				   w3_select('', 'Range', '', 'S_meter.range_i', S_meter.range_i, S_meter.range_s, 'S_meter_range_select_cb'),
-					w3_select('', 'Marker rate', '', 'S_meter.marker_i', S_meter.marker_i, S_meter.marker_s, 'S_meter_marker_select_cb')
+				   w3_select('|color:red', 'Range', '', 'S_meter.range_i', S_meter.range_i, S_meter.range_s, 'S_meter_range_select_cb'),
+					w3_select('|color:red', 'Marker rate', '', 'S_meter.marker_i', S_meter.marker_i, S_meter.marker_s, 'S_meter_marker_select_cb')
 				),
 				w3_div('id-S_meter-scale-sliders',
 					w3_slider('', 'Scale max', 'S_meter.maxdb', S_meter.maxdb, -160, 0, 10, 'S_meter_maxdb_cb'),

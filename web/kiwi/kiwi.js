@@ -118,10 +118,12 @@ function kiwi_load_js_polled(obj, js_files)
    if (!obj.started) {
       kiwi_load_js(js_files, function() {
          obj.finished = true;
+         //console.log('### kiwi_load_js_polled SET fin=TRUE '+ js_files);
       });
       obj.started = true;
       obj.finished = false;
    }
+   //if (!obj.finished) console.log('### kiwi_load_js_polled fin='+ obj.finished +' '+ js_files);
    return obj.finished;
 }
 
@@ -130,16 +132,17 @@ function kiwi_load_js_dir(dir, js_files, cb_post, cb_pre)
    for (var i = 0; i < js_files.length; i++) {
       js_files[i] = dir + js_files[i];
    }
-   console.log(js_files);
    kiwi_load_js(js_files, cb_post, cb_pre);
 }
 
+// cb_pre/cb_post can be string function names or function pointers (w3_call() is used)
 function kiwi_load_js(js_files, cb_post, cb_pre)
 {
 	console.log('DYNLOAD START');
 	// kiwi_js_load.js will begin running only after all others have loaded and run.
 	// Can then safely call the callback.
 	js_files.push('kiwi/kiwi_js_load.js');
+	console.log(js_files);
 
    var loaded_any = false;
    js_files.forEach(function(src) {
@@ -158,7 +161,13 @@ function kiwi_load_js(js_files, cb_post, cb_pre)
             script = document.createElement('script');
             script.src = src;
             script.type = 'text/javascript';
-            if (src == 'kiwi/kiwi_js_load.js') script.kiwi_cb = cb_post;
+            
+            // callback is associated with kiwi_js_load.js, in case there are
+            // multiple js_files to be loaded prior
+            if (src == 'kiwi/kiwi_js_load.js') {
+               script.kiwi_js = js_files[0];
+               script.kiwi_cb = cb_post;
+            }
          } else
          if (src.endsWith('.css')) {
             script = document.createElement('link');
@@ -181,12 +190,22 @@ function kiwi_load_js(js_files, cb_post, cb_pre)
    });
 	console.log('DYNLOAD FINISH');
 	
-	// if the kiwi_js_load.js process never loaded anything just call the callback here
+	// if the kiwi_js_load.js process never loaded anything just call the callback(s) here
 	if (!loaded_any) {
-	   w3_call(cb_pre, false);
-	   w3_call(cb_post);
+	   if (cb_pre) {
+         //console.log('call pre '+ cb_pre);
+	      w3_call(cb_pre, false);
+	   }
+	   if (cb_post) {
+         //console.log('call post '+ cb_post);
+         w3_call(cb_post);
+      }
 	} else {
-	   w3_call(cb_pre, true);
+	   if (cb_pre) {
+         //console.log('call pre subsequent '+ cb_pre);
+         w3_call(cb_pre, true);
+      }
+      // cb_post is called from kiwi_js_load.js after module has actually loaded
 	}
 }
 
@@ -482,9 +501,9 @@ function time_display(display_time)
 	if (!el) return;
 
 	var noLatLon = (server_time_local == '' || server_time_tzname == 'null');
-	w3_el('id-time-display-UTC').innerHTML = server_time_utc? server_time_utc : '?';
-	w3_el('id-time-display-local').innerHTML = noLatLon? '?' : server_time_local;
-	w3_el('id-time-display-tzname').innerHTML = noLatLon? 'Lat/lon needed for local time' : server_tz;
+	w3_set_innerHTML('id-time-display-UTC', server_time_utc? server_time_utc : '?');
+	w3_set_innerHTML('id-time-display-local', noLatLon? '?' : server_time_local);
+	w3_set_innerHTML('id-time-display-tzname', noLatLon? 'Lat/lon needed for local time' : server_tz);
 
 	w3_el('id-time-display-logo-inner').style.opacity = display_time? 0:1;
 	w3_el('id-time-display-inner').style.opacity = display_time? 1:0;
@@ -929,11 +948,11 @@ function kiwi_output_msg(id, id_scroll, p)
                      }
                   } else
                   if (saw_color) {
-                     //console.log('SGR saw_color fg='+ rgb(p.sgr.fg) +' bg='+ rgb(p.sgr.bg));
+                     //console.log('SGR saw_color fg='+ kiwi_rgb(p.sgr.fg) +' bg='+ kiwi_rgb(p.sgr.bg));
                      //console.log(p.sgr.fg);
                      //console.log(p.sgr.bg);
                      if (p.sgr.span) snew += '</span>';
-                     snew += '<span style="'+ (p.sgr.fg? ('color:'+ rgb(p.sgr.fg) +';') :'') + (p.sgr.bg? ('background-color:'+ rgb(p.sgr.bg) +';') :'') +'">';
+                     snew += '<span style="'+ (p.sgr.fg? ('color:'+ kiwi_rgb(p.sgr.fg) +';') :'') + (p.sgr.bg? ('background-color:'+ kiwi_rgb(p.sgr.bg) +';') :'') +'">';
                      p.sgr.span = 1;
                   } else {
                      //console.log('SGR ERROR');
@@ -1241,9 +1260,9 @@ function xfer_stats_cb(audio_kbps, waterfall_kbps, waterfall_fps, http_kbps, sum
 	   w3_text('', 'aud '+ audio_kbps.toFixed(0) +', wf '+ waterfall_kbps.toFixed(0) +', http '+
 		http_kbps.toFixed(0) +', total '+ sum_kbps.toFixed(0) +' kB/s');
 
-	kiwi_xfer_stats_str_long = 'Network (all channels): audio '+audio_kbps.toFixed(0)+' kB/s, waterfall '+waterfall_kbps.toFixed(0)+
-		' kB/s ('+ waterfall_fps.toFixed(0)+' fps)' +
-		', http '+http_kbps.toFixed(0)+' kB/s, total '+sum_kbps.toFixed(0)+' kB/s ('+(sum_kbps*8).toFixed(0)+' kb/s)';
+	kiwi_xfer_stats_str_long = 'Network (all channels): audio '+ audio_kbps.toFixed(0) +' kB/s, waterfall '+ waterfall_kbps.toFixed(0) +
+		' kB/s ('+ waterfall_fps.toFixed(0) +' fps)' +
+		', http '+ http_kbps.toFixed(0) +' kB/s, total '+ sum_kbps.toFixed(0) +' kB/s ('+ (sum_kbps*8).toFixed(0) +' kb/s)';
 }
 
 var kiwi_cpu_stats_str = '';
@@ -1307,6 +1326,15 @@ function cpu_stats_cb(o, uptime_secs, ecpu, waterfall_fps)
 	s = ' | Uptime: ';
 	if (days) s += days +' '+ ((days > 1)? 'days':'day') +' ';
 	s += hr +':'+ min.leadingZeros(2) +':'+ sec.leadingZeros(2);
+
+	var noLatLon = (server_time_local == '' || server_time_tzname == 'null');
+	if (server_time_utc) s += ' | UTC: '+ server_time_utc;
+	if (isDefined(server_time_tzname)) {
+	   s += ' | Local: ';
+      if (!noLatLon) s += server_time_local +' ';
+      s += noLatLon? 'Lat/lon needed for local time' : server_tz;
+   }
+
 	w3_innerHTML('id-msg-config', kiwi_config_str_long + s);
 }
 
@@ -1804,7 +1832,7 @@ function kiwi_msg(param, ws)
 function kiwi_debug(msg)
 {
 	console.log(msg);
-	msg_send('SET debug_msg='+ encodeURIComponent(msg));
+	msg_send('SET dbug_msg='+ encodeURIComponent(msg));
 }
 	
 function divlog(what, is_error)

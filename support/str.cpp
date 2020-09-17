@@ -518,3 +518,158 @@ kstr_t *kstr_list_int(const char *head, const char *fmt, const char *tail, int *
     if (tail) ks = kstr_cat(ks, tail);
     return ks;
 }
+
+
+// string hashing used for command processing
+
+// hash functions: seems like nothing beats simple character summation
+
+#define STR_HASH_FUNC(c,i)  hash += c;
+//str_hash_init(snd): entries=20 hash_len=4 maxval=0x01c0 bits_required=9 mask=0x01ff lookup_table_size=512
+//str_hash_init(wf): entries=7 hash_len=2 maxval=0x00e3 bits_required=8 mask=0x00ff lookup_table_size=256
+//str_hash_init(rx_common_cmd): entries=30 hash_len=3 maxval=0x014f bits_required=9 mask=0x01ff lookup_table_size=512
+
+//#define STR_HASH_FUNC(c,i)  hash += (i&1)? (~c & 0x7f) : c;
+//str_hash_init(snd): entries=20 hash_len=4 maxval=0x0144 bits_required=9 mask=0x01ff lookup_table_size=512
+//str_hash_init(wf): entries=7 hash_len=2 maxval=0x0082 bits_required=8 mask=0x00ff lookup_table_size=256
+//str_hash_init(rx_common_cmd): no unique hashes within max_hash_len=10 limit, collisions=7
+
+//#define STR_HASH_FUNC(c,i)  hash = (hash << 1) ^ c;
+//str_hash_init(snd): no unique hashes within max_hash_len=8 limit, collisions=2
+
+//#define STR_HASH_FUNC(c,i)  hash += (i&1)? ((c >> 4) | ((c & 0xf) << 4)) : c;
+//str_hash_init(snd): entries=20 hash_len=3 maxval=0x022d bits_required=10 mask=0x03ff lookup_table_size=1024
+//str_hash_init(wf): entries=7 hash_len=2 maxval=0x0157 bits_required=9 mask=0x01ff lookup_table_size=512
+//str_hash_init(rx_common_cmd): entries=30 hash_len=6 maxval=0x0363 bits_required=10 mask=0x03ff lookup_table_size=1024
+
+//#define STR_HASH_FUNC(c,i)  hash += (i&1)? (c << 1) : c;
+//str_hash_init(snd): entries=20 hash_len=3 maxval=0x022e bits_required=10 mask=0x03ff lookup_table_size=1024
+//str_hash_init(wf): entries=7 hash_len=2 maxval=0x0156 bits_required=9 mask=0x01ff lookup_table_size=512
+//str_hash_init(rx_common_cmd): no unique hashes within max_hash_len=10 limit, collisions=7
+
+void str_hash_init(const char *id, str_hash_t *hashp, str_hashes_t *hashes, bool debug)
+{
+    int i, hash_len, cidx;
+    u4_t maxval;
+    bool okay;
+    
+    if (hashp->init) return;
+    hashp->init = true;
+    hashp->id = id;
+    hashp->max_hash_len = strlen(hashes[1].name);
+    
+    // skip hashes[0] entry because that contains key = HASH_MISS = 0
+    
+    // increase hash length (#chars summed from end of strings) until hashes become unique
+    for (hash_len = 1; hash_len <= hashp->max_hash_len; hash_len++) {
+        int hash_start = hashp->max_hash_len-hash_len;
+        for (str_hashes_t *h1 = &hashes[1]; h1->name; h1++) {
+            u4_t hash = 0;
+            for (cidx = hashp->max_hash_len-1; cidx >= hash_start; cidx--) {
+                u1_t c = h1->name[cidx];
+                STR_HASH_FUNC(c, cidx);
+            }
+            h1->hash = hash;
+        }
+    
+        okay = true;
+        maxval = 0;
+        for (str_hashes_t *h1 = &hashes[1]; h1->name && okay; h1++) {
+            if (h1->hash > maxval) maxval = h1->hash;
+            for (str_hashes_t *h2 = h1+1; h2->name && okay; h2++) {
+                if (h1 != h2 && h1->hash == h2->hash) {
+                    okay = false;
+                }
+            }
+        }
+        if (okay) break;
+    }
+    
+    if (!okay) {
+        printf("str_hash_init(%s): hash failure information follows\n", id);
+        
+        for (hash_len = 1; hash_len <= hashp->max_hash_len; hash_len++) {
+            int hash_start = hashp->max_hash_len-hash_len;
+            printf("str_hash_init(%s): hash_len=%d --------------------------------\n", id, hash_len);
+            for (str_hashes_t *h1 = &hashes[1]; h1->name; h1++) {
+                u4_t hash = 0;
+                for (cidx = hashp->max_hash_len-1; cidx >= hash_start; cidx--) {
+                    u1_t c = h1->name[cidx];
+                    STR_HASH_FUNC(c, cidx);
+                }
+                h1->hash = hash;
+            }
+
+            int collisions = maxval = 0;
+            for (str_hashes_t *h1 = &hashes[1]; h1->name; h1++) {
+                if (h1->hash > maxval) maxval = h1->hash;
+                for (str_hashes_t *h2 = h1+1; h2->name; h2++) {
+                    if (h1 != h2 && h1->hash == h2->hash) {
+                        collisions++;
+                        printf("str_hash_init(%s): HASH COLLISION \"%s\"(0x%04x) == \"%s\"(0x%04x) [\"%s\", \"%s\"]\n",
+                            id, h1->name + hash_start, h1->hash, h2->name + hash_start, h2->hash, h1->name, h2->name);
+                    }
+                }
+            }
+
+            for (str_hashes_t *h = &hashes[1]; h->name; h++) {
+                printf("str_hash_init(%s): key=%d hash=0x%04x \"%s\"\n", id, h->key, h->hash, h->name);
+            }
+
+            printf("str_hash_init(%s): for hash_len=%d collisions=%d maxval=%d bits_required=%d\n",
+                id, hash_len, collisions, maxval, bits_required(maxval));
+        }
+
+        printf("str_hash_init(%s): no unique hashes within max_hash_len=%d limit\n",
+            id, hashp->max_hash_len);
+        panic("str_hash_init");
+    }
+    
+    // the maximum hash value determines how large the lookup table must be
+    int bits = bits_required(maxval);
+    hashp->hashes = hashes;
+    hashp->hash_len = hash_len;
+    hashp->lookup_table_size = 1 << bits;
+    int bsize = hashp->lookup_table_size * sizeof(u2_t);
+    hashp->keys = (u2_t *) malloc(bsize);
+    memset(hashp->keys, 0, bsize);
+    int entries = 0;
+    for (str_hashes_t *h = &hashes[1]; h->name; h++, entries++) {
+        hashp->keys[h->hash] = h->key;
+    }
+
+    printf("str_hash_init(%s): entries=%d hash_len=%d maxval=0x%04x bits_required=%d mask=0x%04x lookup_table_size=%d\n",
+        id, entries, hash_len, maxval, bits, ((1 << bits) - 1), hashp->lookup_table_size);
+    if (debug) {
+        for (str_hashes_t *h = &hashes[1]; h->name; h++) {
+            printf("str_hash_init(%s): key=%d hash=0x%04x \"%s\"\n", id, h->key, h->hash, h->name);
+        }
+    }
+}
+
+u2_t str_hash_lookup(str_hash_t *hashp, char *str, bool debug)
+{
+    u2_t hash = 0;
+    for (int i = 0; i < hashp->hash_len; i++) {
+        int cidx = hashp->max_hash_len-1-i;
+        u1_t c = str[cidx];
+        STR_HASH_FUNC(c, cidx);
+    }
+    hashp->cur_hash = hash;
+    u2_t key = hashp->keys[hash];
+
+    if (debug) {
+        if (key == 0) {
+                printf("#### str_hash_lookup(%s): hash_len=%d hash=0x%04x key=0 \"%s\"\n",
+                    hashp->id, hashp->hash_len, hash, str);
+        } else {
+            int n = strncmp(hashp->hashes[key].name, str, hashp->max_hash_len);
+            if (n)
+                printf("#### str_hash_lookup(%s): hash_len=%d hash=0x%04x key=%d strncmp=%d \"%s\" \"%s\"\n",
+                    hashp->id, hashp->hash_len, hash, key, n, hashp->hashes[key].name, str);
+        }
+    }
+    
+    return key;
+}
+

@@ -472,7 +472,7 @@ void WSPR_Deco(void *param)
                 non_blocking_cmd_system_child("kiwi.wsprnet.org", w->arun_stat_cmd, NO_WAIT);
 		    }
 		    if (w->arun_decoded > w->arun_last_decoded) {
-		        input_msg_internal(w->arun_csnd, (char *) "SET geo=%d%%20decoded", w->arun_decoded);
+		        input_msg_internal(w->arun_csnd, (char *) "SET geoloc=%d%%20decoded", w->arun_decoded);
 		        w->arun_last_decoded = w->arun_decoded;
             }
 		}
@@ -768,7 +768,7 @@ void wspr_autorun(int which, int idx)
     input_msg_internal(csnd, (char *) "SET mod=usb low_cut=%d high_cut=%d freq=%.2f",
         WSPR_BFO - WSPR_FILTER_BW/2, WSPR_BFO + WSPR_FILTER_BW/2, if_freq_kHz);
     input_msg_internal(csnd, (char *) "SET ident_user=WSPR-autorun");
-    input_msg_internal(csnd, (char *) "SET geo=0%%20decoded");
+    input_msg_internal(csnd, (char *) "SET geoloc=0%%20decoded");
 
     mc = &wspr_ext_mc[which];
     mc->connection_param = NULL;

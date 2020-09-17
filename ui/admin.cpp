@@ -119,7 +119,7 @@ static void tunnel(void *param)
 	if (child_pid == 0) {
         #ifdef HOST
             // terminate when parent exits
-            scall("PR_SET_PDEATHSIG", prctl(PR_SET_PDEATHSIG, SIGHUP));
+            scall("PR_SET_PDEATHSIG", prctl(PR_SET_PDEATHSIG, SIGTERM));
         #endif
         
 	    scall("dupSI", dup2(si[PIPE_R], STDIN_FILENO)); scall("closeSI", close(si[PIPE_W]));
@@ -169,7 +169,7 @@ static void console(void *param)
     if (c->console_child_pid == 0) {     // child
         #ifdef HOST
             // terminate when parent exits
-            scall("PR_SET_PDEATHSIG", prctl(PR_SET_PDEATHSIG, SIGHUP));
+            scall("PR_SET_PDEATHSIG", prctl(PR_SET_PDEATHSIG, SIGTERM));
         #endif
 
         execve(args[0], args, NULL);
@@ -561,8 +561,9 @@ void c2s_admin(void *param)
 		            reg_kiwisdr_com_status = 0;
                 }
 
-				sb = kstr_asprintf(NULL, "{\"kiwisdr_com\":%d,\"sdr_hu\":\"%s\"",
-				    reg_kiwisdr_com_status, shmem->sdr_hu_status_str);
+				//sb = kstr_asprintf(NULL, "{\"kiwisdr_com\":%d,\"sdr_hu\":\"%s\"",
+				//    reg_kiwisdr_com_status, shmem->status_str_large);
+				sb = kstr_asprintf(NULL, "{\"kiwisdr_com\":%d", reg_kiwisdr_com_status);
 				
 				if (gps.StatLat) {
 					latLon_t loc;

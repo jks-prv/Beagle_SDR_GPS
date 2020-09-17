@@ -61,3 +61,23 @@ char *kiwi_overlap_strcpy(char *dst, const char *src);
 char *kiwi_strncpy(char *dst, const char *src, size_t n);
 char *kiwi_strncat(char *dst, const char *src, size_t n);
 bool kiwi_sha256_strcmp(char *str, const char *key);
+
+
+#define STR_HASH_MISS 0
+
+struct str_hashes_t {
+    const char *name;
+    u2_t key, hash;
+};
+
+struct str_hash_t {
+    bool init;
+    const char *id;
+    str_hashes_t *hashes;
+    int hash_len, max_hash_len;
+    int lookup_table_size;
+    u2_t cur_hash, *keys;
+};
+
+void str_hash_init(const char *id, str_hash_t *hashp, str_hashes_t *hashes, bool debug=false);
+u2_t str_hash_lookup(str_hash_t *hashp, char *str, bool debug=false);

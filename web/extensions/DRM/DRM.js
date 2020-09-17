@@ -4,7 +4,6 @@ var drm = {
    ext_name: 'DRM',     // NB: must match DRM.cpp:DRM_ext.name
    first_time: true,
    active: false,
-   url: 'http://DRM.kiwisdr.com/drm/',
    special_passband: null,
    dseq: 0,
 
@@ -65,7 +64,14 @@ var drm = {
    SERVICE: 3,
    
    monitor: 0,
-   monitor_s: [ 'DRM', 'source' ],
+   
+   database: 0,
+   database_s: [ 'kiwisdr.com', 'drmrx.org' ],
+   database_url: [
+      'http://DRM.kiwisdr.com/drm/stations2.cjson',
+      'http://DRM.kiwisdr.com/drm/drmrx.cjson'
+      ],
+
    
    last_occ: -1,
    last_ilv: -1,
@@ -654,93 +660,114 @@ function drm_schedule_time_freq(sort_by_freq)
 // Underscores in station names are converted to line breaks in schedule entries.
 // Negative start or end time means entry should be marked as verified.
 
-function drm_get_stations_cb(stations)
+function drm_get_stations_done_cb(stations)
 {
    var fault = false;
    
    if (!stations) {
-      console.log('drm_get_stations_cb: stations='+ stations);
+      console.log('drm_get_stations_done_cb: stations='+ stations);
       fault = true;
    } else
    
    if (stations.AJAX_error && stations.AJAX_error == 'timeout') {
-      console.log('drm_get_stations_cb: TIMEOUT');
+      console.log('drm_get_stations_done_cb: TIMEOUT');
       drm.using_default = true;
       fault = true;
    } else
    if (!isArray(stations)) {
-      console.log('drm_get_stations_cb: not array');
+      console.log('drm_get_stations_done_cb: not array');
       fault = true;
    }
    
    if (fault) {
       if (drm.double_fault) {
-         console.log('drm_get_stations_cb: default station list fetch FAILED');
+         console.log('drm_get_stations_done_cb: default station list fetch FAILED');
          return;
       }
       console.log(stations);
       var url = kiwi_url_origin() +'/extensions/DRM/stations.cjson';
-      console.log('drm_get_stations_cb: using default station list '+ url);
+      console.log('drm_get_stations_done_cb: using default station list '+ url);
       drm.using_default = true;
       drm.double_fault = true;
-      kiwi_ajax(url, 'drm_get_stations_cb', 0, 10000);
+      kiwi_ajax_progress(url, 'drm_get_stations_done_cb', 0, /* timeout */ 10000);
       return;
    }
    
-   drm.stations = [];
-   var idx = 0;
-   var region, station, freq, begin, end, prefix, verified, url;
-   var is_India_MW = false;
-   stations.forEach(function(obj, i) {    // each object of outer array
-      prefix = '';
-      w3_obj_enum(obj, function(key, i1) {   // each object
-         var ar1 = obj[key];
-         if (i1 == 0) {
-            region = key;
-            if (region == 'India MW') {
-               prefix = 'India, ';
-               is_India_MW = true;
-            }
-            drm.stations.push( { t:drm.REGION, f:0, s:'', r:region } );
-            idx++;
-            return;
-         } else {
-            if (!isArray(ar1)) return;
-            station = prefix + key;
-            url = null;
-            for (i1 = 0; i1 < ar1.length; i1++) {
-               var ae = ar1[i1];
-               if (i1 == 0 && isString(ae)) { url = ae; continue; }
-               freq = ae;
-               i1++;
+   console.log('drm_get_stations_done_cb: from '+ drm.database_url[drm.database]);
+   
+   try {
+      drm.stations = [];
+      var idx = 0;
+      var region, station, freq, begin, end, wrap, prefix, verified, url;
+      var is_India_MW = false;
+      stations.forEach(function(obj, i) {    // each object of outer array
+         prefix = '';
+         w3_obj_enum(obj, function(key, i1) {   // each object
+            var ar1 = obj[key];
+            if (i1 == 0) {
+               region = key;
+               if (region == 'India MW') {
+                  prefix = 'India, ';
+                  is_India_MW = true;
+               }
+               drm.stations.push( { t:drm.REGION, f:0, s:'', r:region } );
+               idx++;
+               return;
+            } else {
+               if (!isArray(ar1)) return;
+               station = prefix + key;
+               url = null;
+               for (i1 = 0; i1 < ar1.length; i1++) {
+                  var ae = ar1[i1];
+                  if (i1 == 0 && isString(ae)) { url = ae; continue; }
+                  freq = ae;
+                  i1++;
                
-               ae = ar1[i1];
-               if (isArray(ae)) {
-                  for (var i2 = 0; i2 < ae.length; i2++) {
-                     begin = ae[i2++];
-                     end = ae[i2];
+                  ae = ar1[i1];
+                  if (isArray(ae)) {
+                     for (var i2 = 0; i2 < ae.length; i2++) {
+                        begin = kiwi_hh_mm(ae[i2++]);
+                        end = kiwi_hh_mm(ae[i2]);
+                        verified = (begin < 0 || end < 0);
+                        if (drm.database != 0) verified = !verified;
+                        begin = Math.abs(begin); end = Math.abs(end);
+                        wrap = (end < begin);
+                        if (wrap) {
+                           drm.stations.push( { t:drm.MULTI, f:freq, s:station, r:region, b:begin, e:24, v:verified, u:url, i:idx } );
+                           idx++;
+                           drm.stations.push( { t:drm.MULTI, f:freq, s:station, r:region, b:0, e:end, v:verified, u:url, i:idx } );
+                        } else
+                           drm.stations.push( { t:drm.MULTI, f:freq, s:station, r:region, b:begin, e:end, v:verified, u:url, i:idx } );
+                        idx++;
+                     }
+                  } else {
+                     begin = kiwi_hh_mm(ar1[i1++]);
+                     end = kiwi_hh_mm(ar1[i1]);
                      verified = (begin < 0 || end < 0);
+                     if (drm.database != 0) verified = !verified;
                      begin = Math.abs(begin); end = Math.abs(end);
-                     drm.stations.push( { t:drm.MULTI, f:freq, s:station, r:region, b:begin, e:end, v:verified, u:url, i:idx } );
+                     wrap = (end < begin);
+                     if (wrap) {
+                        drm.stations.push( { t:drm.SINGLE, f:freq, s:station, r:region, b:begin, e:24, v:verified, u:url, i:idx } );
+                        idx++;
+                        drm.stations.push( { t:drm.SINGLE, f:freq, s:station, r:region, b:0, e:end, v:verified, u:url, i:idx } );
+                     } else
+                        drm.stations.push( { t:drm.SINGLE, f:freq, s:station, r:region, b:begin, e:end, v:verified, u:url, i:idx } );
                      idx++;
                   }
-               } else {
-                  begin = ar1[i1++];
-                  end = ar1[i1];
-                  verified = (begin < 0 || end < 0);
-                  begin = Math.abs(begin); end = Math.abs(end);
-                  drm.stations.push( { t:drm.SINGLE, f:freq, s:station, r:region, b:begin, e:end, v:verified, u:url, i:idx } );
+               }
+               if (!is_India_MW) {     // make all India MW appear as a single service
+                  drm.stations.push( { t:drm.SERVICE, f:0, s:station, r:region } );
                   idx++;
                }
             }
-            if (!is_India_MW) {     // make all India MW appear as a single service
-               drm.stations.push( { t:drm.SERVICE, f:0, s:station, r:region } );
-               idx++;
-            }
-         }
+         });
       });
-   });
-   console.log(drm.stations);
+      console.log(drm.stations);
+   } catch(ex) {
+      console.log('drm_get_stations_done_cb: catch');
+      console.log(ex);
+   }
 
    w3_innerHTML('id-drm-panel-by-svc', drm_schedule_svc());
    w3_innerHTML('id-drm-panel-by-time', drm_schedule_time_freq(0));
@@ -751,18 +778,18 @@ function drm_panel_show(controls_inner, data_html)
 {
 	var controls_html =
 		w3_div('id-drm-controls w3-text-white',
-			w3_divs('w3-container/',
-            w3_col_percent('',
-				   w3_div('w3-medium w3-text-aqua', '<b>Digital Radio Mondiale (DRM30) decoder</b>'), 60,
-					w3_div('', 'Based on <b><a href="https://sourceforge.net/projects/drm/" target="_blank">Dream 2.2.1</a></b>'), 40
-				),
+			w3_divs('',
+				w3_div('w3-medium w3-text-aqua', '<b>Digital Radio Mondiale (DRM30) decoder</b>'),
 				
             w3_col_percent('w3-margin-T-4/',
-               w3_div('id-drm-station w3-text-css-yellow', '&nbsp;'), 60,
+               w3_div('id-drm-station w3-text-css-yellow', '&nbsp;'), 70,
+					w3_div('', 'Based on <b><a href="https://sourceforge.net/projects/drm/" target="_blank">Dream 2.2.1</a></b>')
+               /*
                w3_div('', 'Schedules: ' +
                   '<a href="http://ab27.bplaced.net/drm.pdf" target="_blank">ab27(pdf)</a> ' +
                   '<a href="https://www.drm.org/what-can-i-hear/broadcast-schedule-2" target="_blank">drm.org</a> ' +
                   '<a href="http://www.hfcc.org/drm" target="_blank">hfcc.org</a>'), 40
+               */
             ),
             
             controls_inner
@@ -770,7 +797,7 @@ function drm_panel_show(controls_inner, data_html)
       );
    
 	ext_panel_show(controls_html, data_html, null);
-	ext_set_controls_width_height(700, 150);
+	ext_set_controls_width_height(600, 185);
 }
 
 function drm_mobile_controls_setup(mobile)
@@ -991,21 +1018,24 @@ function drm_desktop_controls_setup(w_graph)
       controls_inner =
          w3_inline('w3-halign-space-between w3-margin-T-8/',
             w3_text('w3-text-white',
-               'Schedules in top panel: Click on green/pink bars to tune a station. ' +
-               '<span class="w3-text-yellow-highlight">New</span> Schedules by time & freq. <br>' +
+               'Schedules in top panel: Click on green/pink bars to tune a station. <br>' +
+               'Use menu to sort schedules by service, time or frequency. <br>' +
                'Gray vertical lines are spaced 1 hour apart beginning at 00:00 UTC on the left. <br>' +
-               'Red line shows current UTC time and updates while the extension is running.'
+               'Red line shows current UTC time and updates while the extension is running. <br>' +
+               '<span class="w3-text-yellow-highlight">New</span> ' +
+               'Database menu below selects source of schedule information including ' +
+               w3_link('w3-link-color', 'https://www.drmrx.org', 'drmrx.org')
             )
          ) +
 
          w3_inline('w3-margin-T-8/w3-margin-between-16',
+            w3_select('|color:red', '', 'database', 'drm.database', drm.database, drm.database_s, 'drm_database_cb'),
             w3_button('id-drm-stop-button w3-padding-smaller w3-pink', 'Stop', 'drm_stop_start_cb'),
             w3_button('w3-padding-smaller w3-pink', 'Monitor IQ', 'drm_monitor_IQ_cb'),
             //w3_button('w3-padding-smaller w3-css-yellow', 'Reset', 'drm_reset_cb'),
             w3_button('w3-padding-smaller w3-aqua', 'Test 1', 'drm_test_cb', 1),
             w3_button('w3-padding-smaller w3-aqua', 'Test 2', 'drm_test_cb', 2),
-            //w3_select('w3-margin-left|color:red', '', 'monitor', 'drm.monitor', drm.monitor, drm.monitor_s, 'drm_monitor_cb')
-            w3_div('id-drm-bar-container w3-progress-container w3-round-large w3-white w3-hide|width:220px; height:16px',
+            w3_div('id-drm-bar-container w3-progress-container w3-round-large w3-white w3-hide|width:160px; height:16px',
                w3_div('id-drm-bar w3-progressbar w3-round-large w3-light-green|width:'+ 50 +'%', '&nbsp;')
             )
          );
@@ -1121,18 +1151,6 @@ function drm_controls_setup()
            
          }
       });
-   }
-
-   // Request json file with DRM station schedules.
-   // Can't use file w/ .json extension since our file contains comments and
-   // Firefox improperly caches json files with errors!
-   // FIXME: rate limit this
-   drm.using_default = drm.double_fault = false;
-   if (0 && !drm.timeout_tested) {
-      drm.timeout_tested = true;
-      kiwi_ajax(drm.url +'stations.fail.cjson', 'drm_get_stations_cb', 0, -3000);      // test timeout
-   } else {
-      kiwi_ajax(drm.url +'stations2.cjson', 'drm_get_stations_cb', 0, 10000);
    }
 
    drm_run(1);
@@ -1300,12 +1318,33 @@ function drm_svcs_cbox_cb(path, checked, first)
    ext_send('SET svc='+ which);
 }
 
-function drm_monitor_cb(path, idx, first)
+function drm_database_cb(path, idx, first)
 {
-   if (first) return;
-   var monitor = drm.monitor_s[idx];
-   console.log('drm_monitor_cb idx='+ idx +' monitor='+ monitor);
-   ext_send('SET monitor='+ idx);
+   if (first)
+      idx = readCookie('last_drm', 0);
+   idx = +idx;
+   writeCookie('last_drm', idx);
+   w3_select_value(path, idx);
+   drm.database = idx;
+   console.log('drm_database_cb database='+ drm.database +' '+ drm.database_url[drm.database]);
+
+   // Request json file with DRM station schedules.
+   // Can't use file w/ .json extension since our file contains comments and
+   // Firefox improperly caches json files with errors!
+   // FIXME: rate limit this
+   drm.using_default = drm.double_fault = false;
+   var url, timeout;
+   
+   if (0 && !drm.timeout_tested) {
+      drm.timeout_tested = true;
+      url = drm.database_url[drm.database] +'.xxx';
+      timeout = -3000;
+   } else {
+      url = drm.database_url[drm.database];
+      timeout = 10000;
+   }
+
+   kiwi_ajax_progress(url, 'drm_get_stations_done_cb', 0, timeout);
 }
 
 function drm_display_cb(path, idx, first)
@@ -1387,9 +1426,12 @@ function DRM_help(show)
          w3_div('w3-scroll-y|height:85%',
          
             'Schedules in top panel: Click on green/pink bars to tune a station. <br>' +
-            '<span class="w3-text-yellow-highlight">New</span> Schedules by time and frequency added. <br>' +
+            'Use menu to sort schedules by service, time or frequency. <br>' +
             'Gray vertical lines are spaced 1 hour apart beginning at 00:00 UTC on the left. <br>' +
-            'Red line shows current UTC time and updates while the extension is running. <br><br>' +
+            'Red line shows current UTC time and updates while the extension is running. <br>' +
+            '<span class="w3-text-yellow-highlight">New</span> ' +
+            'A database menu allows selection of the source of schedule information. <br>' +
+            '<br>' +
             
             'With DRM selective fading can prevent even the strongest signals from being received properly. ' +
             'To see if signal fading is occurring adjust the waterfall "WF max/min" controls carefully so the ' +
@@ -1458,7 +1500,7 @@ function DRM_config_html()
    var s =
       w3_inline_percent('w3-container',
          w3_div('w3-center',
-            w3_select('', 'Number of non-DRM connections allowed<br>when DRM in use',
+            w3_select('|color:red', 'Number of non-DRM connections allowed<br>when DRM in use',
                '', 'DRM.nreg_chans', drm.nreg_chans, drm.nreg_chans_u, 'admin_select_cb')
          ), 40
       );

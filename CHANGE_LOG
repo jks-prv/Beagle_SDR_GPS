@@ -2,6 +2,53 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.403  September 17, 2020
+    DRM extension:
+        Added schedule database selection menu. Includes database from drmrx.org
+    
+    Waterfall/spectrum/colormap improvements:
+        New terminology, colormap "aperture" (what the WF max/min controls really define).
+            A colormap spectrum bar now appears above the WF sliders.
+            It is similar to the bar that appear on the right of the spectrum display.
+            It changes as you adjust WF max/min in manual aperture mode or automatically
+            in auto aperture mode (see next). Markers appear at the WF max/min points
+            whereas the bar itself covers a fixed -140 to -25 dBm.
+
+        Added aperture auto mode to existing manual and one-shot (auto-scale button) modes.
+            On the main control panel WF tab there is a new menu "aperture".
+            *** Auto mode is the new default, but the choice is saved across page reloads.
+                This is designed to help always keep the waterfall dynamic range optimal
+                for folks who never get around to learning how to use the WF max/min
+                sliders or even the "auto-scale" button.
+
+            In auto mode the WF max/min sliders become WF ceil(ceiling)/floor.
+                This is the amount of "headroom" to create above and below the
+                automatically calculated WF max/min values.
+
+        Added colormap control extension consisting of two parts:
+            1) Aperture auto mode controls.
+                The averaging algorithm/parameter choices are the same as for the
+                waterfall and spectrum averaging (on the WF tab of main control panel).
+                When in auto mode the calculated max/min values are shown, those that are
+                computed plus the selected floor/ceiling headroom.
+                In auto mode the "auto scale" button on the main control panel lights up
+                to remind you that auto mode is in effect.
+                When auto mode averaging is turned off the max/min values are only
+                recalculated when the waterfall zoom, pan or center frequency changes.
+
+            2) A "colormap designer" for creating custom colormaps.
+                A work-in-progress. The details of this will probably change.
+        
+        Added new colormap from the SdrDx project.
+        
+    Admin interface:
+        Disallow public listing unless at least one password-less channel is available.
+        Warn about creating URL redirect cycles.
+        Display UTC/local time on admin status page.
+
+    Use string hashing for faster API command decoding.
+    Many other bug fixes. As usual see the Github commit log.
+
 v1.401,402  August 11, 2020
     DRM extension:
         Added time & frequency sorted schedules.

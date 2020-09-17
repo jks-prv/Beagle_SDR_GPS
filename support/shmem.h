@@ -56,9 +56,9 @@ typedef struct {
 extern log_save_t *log_save_p;
 
 
-#define N_SHMEM_STATUS 4
-#define N_SHMEM_STATUS_STR  1024
-#define N_SHMEM_SDR_HU_STATUS_STR  256
+#define N_SHMEM_STATUS              4
+#define N_SHMEM_STATUS_STR          256
+#define N_SHMEM_STATUS_STR_LARGE    1024
 
 #ifndef linux
  #define SIGRTMIN 0
@@ -92,16 +92,20 @@ typedef struct {
 } shmem_ipc_t;
 
 typedef struct {
+    net_t net_shmem;
+
     u4_t rv_u4_t[MAX_RX_CHANS];
     u4_t status_u4[N_SHMEM_STATUS][MAX_RX_CHANS];
     double status_f[N_SHMEM_STATUS][MAX_RX_CHANS];
+    
+    // users: (none currently)
 	char status_str[N_SHMEM_STATUS_STR];
-	char sdr_hu_status_str[N_SHMEM_SDR_HU_STATUS_STR];
+
+	// users: geoloc
+	char status_str_large[N_SHMEM_STATUS_STR_LARGE];
 	
     shmem_ipc_t ipc[SIG_MAX_USED];
     
-    net_t net_shmem;
-
     #ifdef SPI_SHMEM_DISABLE
     #else
         // shared with SPI async i/o helper process

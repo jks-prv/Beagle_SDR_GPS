@@ -82,7 +82,7 @@ function gen_controls_setup()
 	
 	var controls_html =
 		w3_div('id-test-controls w3-text-white',
-			w3_divs('w3-container/w3-tspace-8',
+			w3_divs('/w3-tspace-8',
 				w3_div('w3-medium w3-text-aqua', '<b>Signal generator</b>'),
 				w3_div('', 'All frequencies in kHz'),
             w3_inline('',

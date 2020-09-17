@@ -20,9 +20,12 @@
 
 #include "gps.h"
 
+// FIXME: update periodically as new sats are commissioned
+
 SATELLITE Sats[] = {
 
     // Navstar
+    // www.navcen.uscg.gov/?Do=constellationstatus
     { 1,  2,  6, Navstar},
     { 2,  3,  7, Navstar},
     { 3,  4,  8, Navstar},
@@ -81,6 +84,8 @@ SATELLITE Sats[] = {
 */
 
     // QZSS (Japan) prn(saif) = 183++, prn(std) = 193++
+    // last checked: 9-Sep-2020
+    // sys.qzss.go.jp/dod/en/constellation.html [PNT L1 C/A entries]
     {193, 339, 01050, QZSS},   // J01, QZS-1
     {194, 208, 01607, QZSS},   // J02, QZS-2
     {195, 711, 01747, QZSS},   // J04, QZS-4
@@ -93,10 +98,9 @@ SATELLITE Sats[] = {
 //  {202, 900, 01045},
 
     // Galileo E1B
-    // FIXME: update periodically as new sats are commissioned
-    // last checked: 17-Jul-2019
-    // https://www.gsc-europa.eu/system-status/Constellation-Information
-    // https://en.wikipedia.org/wiki/List_of_Galileo_satellites
+    // last checked: 9-Sep-2020
+    // www.gsc-europa.eu/system-status/Constellation-Information
+    // en.wikipedia.org/wiki/List_of_Galileo_satellites
     { 1, 0, 0, E1B},    // gsat0210 "Galileo 13"
     { 2, 0, 0, E1B},    // gsat0211 "Galileo 14"
     { 3, 0, 0, E1B},    // gsat0212 "Galileo 16"
@@ -117,15 +121,15 @@ SATELLITE Sats[] = {
 
     {14, 0, 0, E1B},    // gsat0202 "Galileo 6", testing
     {18, 0, 0, E1B},    // gsat0201 "Galileo 5", testing
-    {21, 0, 0, E1B},    // gsat0215 "Galileo 19", under commissioning
-    {25, 0, 0, E1B},    // gsat0216 "Galileo 20" 
-    {27, 0, 0, E1B},    // gsat0217 "Galileo 21" 
-    {31, 0, 0, E1B},    // gsat0218 "Galileo 22" 
+    {21, 0, 0, E1B},    // gsat0215 "Galileo 19"
+    {25, 0, 0, E1B},    // gsat0216 "Galileo 20"
+    {27, 0, 0, E1B},    // gsat0217 "Galileo 21"
+    {31, 0, 0, E1B},    // gsat0218 "Galileo 22"
 
-    {36, 0, 0, E1B},    // gsat0219 "Galileo 23", under commissioning
-    {13, 0, 0, E1B},    // gsat0220 "Galileo 24", under commissioning
-    {15, 0, 0, E1B},    // gsat0221 "Galileo 25", under commissioning
-    {33, 0, 0, E1B},    // gsat0222 "Galileo 26", under commissioning
+    {36, 0, 0, E1B},    // gsat0219 "Galileo 23"
+    {13, 0, 0, E1B},    // gsat0220 "Galileo 24"
+    {15, 0, 0, E1B},    // gsat0221 "Galileo 25"
+    {33, 0, 0, E1B},    // gsat0222 "Galileo 26"
 
 //  {20, 0, 0, E1B},    // gsat0104 "Galileo 4", not available
 //  {22, 0, 0, E1B},    // gsat0224 "Galileo 8", not usable

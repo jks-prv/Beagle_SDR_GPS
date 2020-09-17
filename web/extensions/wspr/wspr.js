@@ -316,7 +316,7 @@ function wspr_controls_setup()
 	var controls_html =
 	w3_div('id-wspr-controls',
 		w3_inline('w3-halign-space-between|width:83%/',
-         w3_select('', '', 'band', 'wspr_init_band', wspr_init_band, wspr_freqs_m, 'wspr_band_select_cb'),
+         w3_select('|color:red', '', 'band', 'wspr_init_band', wspr_init_band, wspr_freqs_m, 'wspr_band_select_cb'),
          w3_button('cl-wspr-button', 'stop', 'wspr_stop_start_cb'),
          w3_button('cl-wspr-button', 'clear', 'wspr_clear_cb'),
          w3_div('id-wspr-upload-bkg cl-upload-checkbox',
@@ -522,7 +522,7 @@ function wspr_config_html()
 	for (var i=0; i < rx_chans;) {
 	   var s2 = '';
 	   for (var j=0; j < 8 && i < rx_chans; j++, i++) {
-	      s2 += w3_select_get_param('w3-margin-right|color:red', 'Autorun '+ i, 'WSPR band', 'WSPR.autorun'+ i, wspr_autorun_u, 'admin_select_cb');
+	      s2 += w3_select_get_param('w3-margin-right', 'Autorun '+ i, 'WSPR band', 'WSPR.autorun'+ i, wspr_autorun_u, 'admin_select_cb');
 	   }
 	   s += w3_inline('w3-inline w3-margin-bottom/', s2);
 	}
@@ -706,7 +706,7 @@ function wspr_upload(type, s)
 	var version = "1.3 Kiwi";
 	if (version.length <= 10) {
 		kiwi_GETrequest_param(request, "version", version);
-		kiwi_GETrequest_submit(request, false);
+		kiwi_GETrequest_submit(request, { gc: kiwi_gc_wspr } );
 
 		//jksd show how many updates there have been
 		var now = new Date();

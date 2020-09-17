@@ -47,7 +47,7 @@ Boston, MA  02110-1301, USA.
 // Once with EDATA_DEVEL defined when compiled into the build directory during development 
 
 user_iface_t user_iface[] = {
-	{ "openwebrx", 1 },
+	{ "openwebrx" },
 	{0}
 };
 

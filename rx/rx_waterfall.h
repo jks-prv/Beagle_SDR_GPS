@@ -73,7 +73,7 @@ struct fft_t {
 struct wf_pkt_t {
 	char id4[4];
 	u4_t x_bin_server;
-	#define WF_FLAGS_COMPRESSION 0x00010000
+	#define WF_FLAGS_COMPRESSION    0x00010000
 	u4_t flags_x_zoom_server;
 	u4_t seq;
 	union {
@@ -85,6 +85,9 @@ struct wf_pkt_t {
 		};
 	} un;
 } __attribute__((packed));
+
+enum aper_t { MAN=0, AUTO };
+enum aper_algo_t { IIR=0, MMA, EMA, OFF };
 
 struct wf_inst_t {
 	conn_t *conn;
@@ -113,6 +116,14 @@ struct wf_inst_t {
 	int out_bytes;
 	bool check_overlapped_sampling, overlapped_sampling;
 	int samp_wait_ms, chunk_wait_us;
+	
+	int aper, aper_algo;
+	float aper_param;
+	int need_autoscale, done_autoscale, sent_autoscale, avg_clear, signal, noise;
+    #define APER_PWR_LEN WF_OUTPUT
+    float avg_pwr[APER_PWR_LEN];
+    u4_t report_sec;
+    int last_noise, last_signal;
 };
 
 struct wf_shmem_t {
@@ -134,3 +145,9 @@ struct wf_shmem_t {
 #else
     #define WF_SHMEM (&shmem->wf_shmem)
 #endif
+
+
+enum wf_cmd_key_e {
+    CMD_SET_ZOOM=1, CMD_SET_MAX_MIN_DB, CMD_SET_CMAP, CMD_SET_APER, CMD_SET_BAND,
+    CMD_SET_SCALE, CMD_SET_WF_SPEED, CMD_SEND_DB, CMD_EXT_BLUR
+};

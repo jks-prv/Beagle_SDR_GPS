@@ -691,8 +691,17 @@ function kiwisdr_com_register_cb(path, idx)
    //console.log('kiwisdr_com_register_cb idx='+ idx);
    
    var text, color;
-   if (idx == w3_SWITCH_YES_IDX && cfg.server_url == '') {
-      text = 'Error, you must first setup a valid Kiwi connection URL on the admin "connect" tab';
+   var no_url = (cfg.server_url == '');
+   var no_passwordless_channels = (adm.user_password != '' && cfg.chan_no_pwd == 0);
+   //console.log('kiwisdr_com_register_cb has_u_pwd='+ (adm.user_password != '') +' chan_no_pwd='+ cfg.chan_no_pwd +' no_passwordless_channels='+ no_passwordless_channels);
+
+   if (idx == w3_SWITCH_YES_IDX && (no_url || no_passwordless_channels)) {
+      if (no_url)
+         text = 'Error, you must first setup a valid Kiwi connection URL on the admin "connect" tab';
+      else
+      if (no_passwordless_channels)
+         text = 'Error, must have at least one user channel that doesn\'t require a password (see admin "security" tab)';
+
       color = '#ffeb3b';
       w3_switch_set_value(path, w3_SWITCH_NO_IDX);    // force back to 'no'
       idx = w3_SWITCH_NO_IDX;
@@ -731,8 +740,10 @@ function sdr_hu_register_cb(path, idx)
       color = 'hsl(180, 100%, 95%)';
    }
    
+   /*
    w3_innerHTML('id-sdr_hu-reg-status', text);
    w3_color('id-sdr_hu-reg-status', null, color);
+   */
    admin_radio_YN_cb(path, idx);
    //console.log('sdr_hu_register_cb adm.sdr_hu_register='+ adm.sdr_hu_register);
 }
@@ -845,9 +856,11 @@ function public_update(p)
 	}
 	
 	// sdr.hu registration status
+	/*
 	if (adm.sdr_hu_register && admin.reg_status.sdr_hu != undefined && admin.reg_status.sdr_hu != '') {
 	   w3_innerHTML('id-sdr_hu-reg-status', admin.reg_status.sdr_hu);
 	}
+	*/
 	
 	// GPS has had a solution, show buttons
 	if (admin.reg_status.lat != undefined) {
@@ -990,9 +1003,9 @@ function dx_json2(dx)
                   (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-selection-green', '+', 'dx_add_cb', i), 1,
                   (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-red', '-', 'dx_rem_cb', i), 1,
                   w3_input(h('w3-padding-small||size=8'), l('Freq'), 'dxo.f_'+i, fr, 'dx_num_cb'), 19,
-                  w3_select(h(''), l('Mode'), '', 'dxo.m_'+i, mo, kiwi.modes_u, 'dx_sel_cb'), 19,
+                  w3_select(h('|color:red'), l('Mode'), '', 'dxo.m_'+i, mo, kiwi.modes_u, 'dx_sel_cb'), 19,
                   w3_input(h('w3-padding-small||size=4'), l('Passband'), 'dxo.pb_'+i, pb, 'dx_passband_cb'), 19,
-                  w3_select(h(''), l('Type'), '', 'dxo.y_'+i, ty, types, 'dx_sel_cb'), 19,
+                  w3_select(h('|color:red'), l('Type'), '', 'dxo.y_'+i, ty, types, 'dx_sel_cb'), 19,
                   w3_input(h('w3-padding-small||size=2'), l('Offset'), 'dxo.o_'+i, os, 'dx_num_cb'), 19
                ), 45,
                w3_col_percent('w3-valign/w3-margin-left',

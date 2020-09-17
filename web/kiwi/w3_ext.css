@@ -374,6 +374,11 @@ input[type=range]::-moz-range-thumb {
     margin-right: 16px;
 }
 
+.w3-margin-L-2
+{
+    margin-left: 2px
+}
+
 .w3-margin-L-3
 {
     margin-left: 3px
@@ -408,6 +413,11 @@ input[type=range]::-moz-range-thumb {
 .w3-margin-L-32
 {
     margin-left: 32px
+}
+
+.w3-margin-L-64
+{
+    margin-left: 64px
 }
 
 .w3-margin-R-4
@@ -505,6 +515,11 @@ input[type=range]::-moz-range-thumb {
     margin-bottom: 16px !important
 }
 
+.w3-margin-B-32
+{
+    margin-bottom: 32px !important
+}
+
 .w3-margin-TB-4
 {
     margin: 4px 0
@@ -556,6 +571,11 @@ input[type=range]::-moz-range-thumb {
 .w3-padding-TB-24
 {
     padding: 24px 0
+}
+
+.w3-padding-B-8
+{
+    padding: 0 0 8px 0
 }
 
 
@@ -643,6 +663,11 @@ input[type=range]::-moz-range-thumb {
 .w3-tspace-2:not(:first-child)
 {
 	margin-top: 2px !important
+}
+
+.w3-tspace-3:not(:first-child)
+{
+	margin-top: 3px !important
 }
 
 .w3-tspace-4:not(:first-child)
@@ -748,6 +773,11 @@ input[type=range]::-moz-range-thumb {
 .w3-width-half
 {
 	width: 50%;
+}
+
+.w3-width-full
+{
+	width: 100%;
 }
 
 .w3-width-one-sixth
@@ -952,4 +982,16 @@ input[type=range]::-moz-range-thumb {
 .w3-font-fixed {
     font-family: Consolas, "courier new";
     font-size: 18px;
+}
+
+.w3-font-12px {
+    font-size: 12px;
+}
+
+.w3-font-11_25px {
+    font-size: 11.25px;
+}
+
+.w3-font-11px {
+    font-size: 11px;
 }

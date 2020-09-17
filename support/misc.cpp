@@ -208,6 +208,12 @@ int qsort_floatcomp(const void *elem1, const void *elem2)
     return f1 > f2;
 }
 
+int qsort_intcomp(const void *elem1, const void *elem2)
+{
+	const int i1 = *(const int *) elem1, i2 = *(const int *) elem2;
+	return i1 - i2;
+}
+
 static int misc_miso_busy;
 
 SPI_MISO *get_misc_miso()
@@ -577,7 +583,11 @@ void print_max_min_c(const char *name, TYPECPX *data, int len)
 int bits_required(u4_t v)
 {
 	if (v == 0) return 1;
-	return ffs(v) + 1;
+	int bits;
+    for (bits = 31; bits >= 0; bits--)
+        if (v & (1 << bits)) break;
+    bits++;
+	return bits;
 }
 
 u4_t snd_hdr[8];

@@ -198,7 +198,7 @@ function sstv_controls_setup()
 
 	var controls_html =
 		w3_div('id-test-controls w3-text-white',
-			w3_divs('w3-container/w3-tspace-8',
+			w3_divs('/w3-tspace-8',
             w3_col_percent('',
 				   w3_div('w3-medium w3-text-aqua', '<b>SSTV decoder</b>'), 30,
 					w3_div('', 'From <b><a href="http://windytan.github.io/slowrx" target="_blank">slowrx</a></b> by Oona Räisänen, OH2EIQ')

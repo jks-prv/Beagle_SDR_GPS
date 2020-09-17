@@ -127,7 +127,7 @@ int child_task(const char *pname, funcP_t func, int poll_msec, void *param)
 
         #ifdef HOST
             // terminate all children when parent exits
-            scall("PR_SET_PDEATHSIG", prctl(PR_SET_PDEATHSIG, SIGHUP));
+            scall("PR_SET_PDEATHSIG", prctl(PR_SET_PDEATHSIG, SIGTERM));
 
             // rename process as seen by top command
             prctl(PR_SET_NAME, (unsigned long) pname, 0, 0, 0);

@@ -367,7 +367,7 @@ function fax_controls_setup()
 
 	var controls_html =
 		w3_div('id-fax-controls w3-text-white',
-			w3_divs('w3-container/w3-tspace-8',
+			w3_divs('/w3-tspace-8',
 				w3_col_percent('',
                w3_div('w3-medium w3-text-aqua', '<b>HF FAX decoder</b>'), 30,
                w3_div('id-fax-station w3-text-css-yellow'), 60,
