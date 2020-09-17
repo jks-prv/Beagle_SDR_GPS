@@ -104,8 +104,8 @@ html, body
 
 #id-top-bar
 {
-	margin:0;
-	padding:0;
+	margin: 0;
+	padding: 0;
 }
 
 #id-rx-title
@@ -551,6 +551,7 @@ html, body
 
 #id-control
 {
+    padding-bottom: 5px;
 	z-index: 130;
 	/*background: lightGrey;	/* debug */
 }
@@ -919,6 +920,7 @@ html, body
 
 .class-panel-inner
 {
+    position: relative;
 	overflow-y: auto;
 	overflow-x: hidden;
 	height: 100%;
@@ -965,8 +967,10 @@ html, body
 	text-align: center;
 	font-weight: bold;
 	cursor: pointer;
+	/*
 	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.0	, #373737), color-stop(1, #4F4F4F) );
 	background:-moz-linear-gradient( center top, #373737 0%, #4F4F4F 100% );
+	*/
 }
 
 .class-button.class-button-disbled
@@ -991,7 +995,7 @@ html, body
 	/*color: #FFFF50;*/
 }
 
-.class-button:active 
+.class-button:active
 {
 	background: #777777;
 	/*color: #FFFF50;*/

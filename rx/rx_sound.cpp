@@ -80,7 +80,7 @@ struct gps_timestamp_t {
     bool   init;
 	double gpssec;       // current gps timestamp
 	double last_gpssec;  // last gps timestamp
-} ;
+};
 
 gps_timestamp_t gps_ts[MAX_RX_CHANS];
 
@@ -88,8 +88,40 @@ snd_t snd_inst[MAX_RX_CHANS];
 
 float g_genfreq, g_genampl, g_mixfreq;
 
+// if entries here are ordered by cmd_key_e then the reverse lookup (str_hash_t *)->hashes[key].name
+// will work as a debugging aid
+static str_hashes_t snd_cmd_hashes[] = {
+    { "~~~~~~~~~", STR_HASH_MISS },
+    { "SET dbgA", CMD_AUDIO_START },
+    { "SET mod=", CMD_TUNE },
+    { "SET comp", CMD_COMPRESSION },
+    { "SET rein", CMD_REINIT },
+    { "SET litt", CMD_LITTLE_ENDIAN },
+    { "SET gen=", CMD_GEN_FREQ },
+    { "SET gena", CMD_GEN_ATTN },
+    { "SET agc=", CMD_SET_AGC },
+    { "SET sque", CMD_SQUELCH },
+    { "SET nb a", CMD_NB_ALGO },
+    { "SET nr a", CMD_NR_ALGO },
+    { "SET nb t", CMD_NB_TYPE },
+    { "SET nr t", CMD_NR_TYPE },
+    { "SET mute", CMD_MUTE },
+    { "SET de_e", CMD_DE_EMP },
+    { "SET test", CMD_TEST },
+    { "SET UAR ", CMD_UAR },
+    { "SET AR O", CMD_AR_OKAY },
+    { "SET unde", CMD_UNDERRUN },
+    { "SET seq=", CMD_SEQ },
+    { "SET lms_", CMD_LMS_AUTONOTCH },
+    { 0 }
+};
+
+static str_hash_t snd_cmd_hash;
+
 void c2s_sound_init()
 {
+    str_hash_init("snd", &snd_cmd_hash, snd_cmd_hashes);
+
 	//evSnd(EC_DUMP, EV_SND, 10000, "rx task", "overrun");
 	
 	if (do_sdr) {
@@ -257,290 +289,427 @@ void c2s_sound(void *param)
 				}
 			#endif
 
-			n = sscanf(cmd, "SET dbgAudioStart=%d", &k);
-			if (n == 1) {
-				continue;
-			}
+            u2_t key = str_hash_lookup(&snd_cmd_hash, cmd);
+            bool did_cmd = false;
+            
+            switch (key) {
 
-            char *mode_m = NULL;
-			n = sscanf(cmd, "SET mod=%16ms low_cut=%lf high_cut=%lf freq=%lf", &mode_m, &_locut, &_hicut, &_freq);
-			if (n == 4 && do_sdr) {
-				//cprintf(conn, "SND f=%.3f lo=%.3f hi=%.3f mode=%s\n", _freq, _locut, _hicut, mode_m);
-
-				bool new_freq = false;
-				if (freq != _freq) {
-					freq = _freq;
-					f_phase = freq * kHz / conn->adc_clock_corrected;
-                    i_phase = (u64_t) round(f_phase * pow(2,48));
-					//cprintf(conn, "SND SET freq %.3f kHz i_phase 0x%08x|%08x clk %.3f\n",
-					//    freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected);
-					if (do_sdr) spi_set3(CmdSetRXFreq, rx_chan, (i_phase >> 16) & 0xffffffff, i_phase & 0xffff);
-					cmd_recv |= CMD_FREQ;
-					new_freq = true;
-					change_freq_mode = true;
-				}
-				
-				_mode = kiwi_str2enum(mode_m, mode_s, ARRAY_LEN(mode_s));
-				cmd_recv |= CMD_MODE;
-
-				if (_mode == NOT_FOUND) {
-					clprintf(conn, "SND bad mode <%s>\n", mode_m);
-					_mode = MODE_AM;
-					change_freq_mode = true;
-				}
-				
-				bool new_nbfm = false;
-				if (mode != _mode) {
-
-                    // when switching out of IQ or DRM modes: reset AGC, compression state
-		            bool IQ_or_DRM_or_SAS = (mode == MODE_IQ || mode == MODE_DRM || mode == MODE_SAS);
-		            bool new_IQ_or_DRM_or_SAS = (_mode == MODE_IQ || _mode == MODE_DRM || _mode == MODE_SAS);
-				    if (IQ_or_DRM_or_SAS && !new_IQ_or_DRM_or_SAS && (cmd_recv & CMD_AGC)) {
-					    //cprintf(conn, "SND out IQ mode -> reset AGC, compression\n");
-                        m_Agc[rx_chan].SetParameters(agc, hang, thresh, manGain, slope, decay, frate);
-	                    memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
-                    }
-                    
-                    // reset SAM demod on non-SAM to SAM transition
-                    if ((_mode >= MODE_SAM && _mode <= MODE_SAS) && !(mode >= MODE_SAM && mode <= MODE_SAS)) {
-                        wdsp_SAM_reset(rx_chan);
-                    }
-
-					mode = _mode;
-					if (mode == MODE_NBFM)
-						new_nbfm = true;
-					change_freq_mode = true;
-					//cprintf(conn, "SND mode %s\n", mode_m);
-				}
-
-				if (mode == MODE_NBFM && (new_freq || new_nbfm)) {
-					m_FmDemod[rx_chan].Reset();
-					conn->last_sample.re = conn->last_sample.im = 0;
-				}
-			
-				if (hicut != _hicut || locut != _locut) {
-					hicut = _hicut; locut = _locut;
-					
-					// primary passband filtering
-					int fmax = frate/2 - 1;
-					if (hicut > fmax) hicut = fmax;
-					if (locut < -fmax) locut = -fmax;
-					
-					snd->locut = locut; snd->hicut = hicut;
-					
-					// normalized passband
-                    if (locut <= 0 && hicut >= 0) {     // straddles carrier
-                        snd->norm_locut = 0.0;
-                        snd->norm_hicut = MAX(-locut, hicut);
-                    } else {
-                        if (locut > 0) {
-                            snd->norm_locut = locut;
-                            snd->norm_hicut = hicut;
-                        } else {
-                            snd->norm_hicut = -locut;
-                            snd->norm_locut = -hicut;
-                        }
-                    }
-					
-					// bw for post AM det is max of hi/lo filter cuts
-					float bw = fmaxf(fabs(hicut), fabs(locut));
-					if (bw > frate/2) bw = frate/2;
-					//cprintf(conn, "SND LOcut %.0f HIcut %.0f BW %.0f/%.0f\n", locut, hicut, bw, frate/2);
-					
-					#define CW_OFFSET 0		// fixme: how is cw offset handled exactly?
-					m_PassbandFIR[rx_chan].SetupParameters(locut, hicut, CW_OFFSET, frate);
-					conn->half_bw = bw;
-					
-					// post AM detector filter
-					// FIXME: not needed if we're doing convolver-based LPF in javascript due to decompression?
-					float stop = bw*1.8;
-					if (stop > frate/2) stop = frate/2;
-					m_AM_FIR[rx_chan].InitLPFilter(0, 1.0, 50.0, bw, stop, frate);
-					cmd_recv |= CMD_PASSBAND;
-					
-					change_LPF = true;
-				}
-				
-				double nomfreq = freq;
-				if ((hicut-locut) < 1000) nomfreq += (hicut+locut)/2/kHz;	// cw filter correction
-				nomfreq = round(nomfreq*kHz);
-				
-				conn->freqHz = round(nomfreq/10.0)*10;	// round 10 Hz
-				conn->mode = mode;
-				
-                // apply masked frequencies
-                masked = false;
-                if (dx.masked_len != 0 && !conn->tlimit_exempt_by_pwd) {
-				    int f = round(freq*kHz);
-                    int pb_lo = f + locut;
-                    int pb_hi = f + hicut;
-                    //printf("SND f=%d lo=%.0f|%d hi=%.0f|%d ", f, locut, pb_lo, hicut, pb_hi);
-                    for (j=0; j < dx.masked_len; j++) {
-                        dx_t *dxp = &dx.list[dx.masked_idx[j]];
-                        if (!((pb_hi < dxp->masked_lo || pb_lo > dxp->masked_hi))) {
-                            masked = true;
-                            //printf("MASKED");
-                            break;
-                        }
-                    }
-                    //printf("\n");
+            case CMD_AUDIO_START:
+                n = sscanf(cmd, "SET dbgAudioStart=%d", &k);
+                if (n == 1) {
+                    did_cmd = true;
                 }
-			
+                break;
+
+            case CMD_TUNE: {
+                char *mode_m = NULL;
+                n = sscanf(cmd, "SET mod=%16ms low_cut=%lf high_cut=%lf freq=%lf", &mode_m, &_locut, &_hicut, &_freq);
+                if (n == 4 && do_sdr) {
+                    did_cmd = true;
+                    //cprintf(conn, "SND f=%.3f lo=%.3f hi=%.3f mode=%s\n", _freq, _locut, _hicut, mode_m);
+
+                    bool new_freq = false;
+                    if (freq != _freq) {
+                        freq = _freq;
+                        f_phase = freq * kHz / conn->adc_clock_corrected;
+                        i_phase = (u64_t) round(f_phase * pow(2,48));
+                        //cprintf(conn, "SND SET freq %.3f kHz i_phase 0x%08x|%08x clk %.3f\n",
+                        //    freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected);
+                        if (do_sdr) spi_set3(CmdSetRXFreq, rx_chan, (i_phase >> 16) & 0xffffffff, i_phase & 0xffff);
+                        cmd_recv |= CMD_FREQ;
+                        new_freq = true;
+                        change_freq_mode = true;
+                    }
+                
+                    _mode = kiwi_str2enum(mode_m, mode_s, ARRAY_LEN(mode_s));
+                    cmd_recv |= CMD_MODE;
+
+                    if (_mode == NOT_FOUND) {
+                        clprintf(conn, "SND bad mode <%s>\n", mode_m);
+                        _mode = MODE_AM;
+                        change_freq_mode = true;
+                    }
+                
+                    bool new_nbfm = false;
+                    if (mode != _mode) {
+
+                        // when switching out of IQ or DRM modes: reset AGC, compression state
+                        bool IQ_or_DRM_or_SAS = (mode == MODE_IQ || mode == MODE_DRM || mode == MODE_SAS);
+                        bool new_IQ_or_DRM_or_SAS = (_mode == MODE_IQ || _mode == MODE_DRM || _mode == MODE_SAS);
+                        if (IQ_or_DRM_or_SAS && !new_IQ_or_DRM_or_SAS && (cmd_recv & CMD_AGC)) {
+                            //cprintf(conn, "SND out IQ mode -> reset AGC, compression\n");
+                            m_Agc[rx_chan].SetParameters(agc, hang, thresh, manGain, slope, decay, frate);
+                            memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
+                        }
+                    
+                        // reset SAM demod on non-SAM to SAM transition
+                        if ((_mode >= MODE_SAM && _mode <= MODE_SAS) && !(mode >= MODE_SAM && mode <= MODE_SAS)) {
+                            wdsp_SAM_reset(rx_chan);
+                        }
+
+                        mode = _mode;
+                        if (mode == MODE_NBFM)
+                            new_nbfm = true;
+                        change_freq_mode = true;
+                        //cprintf(conn, "SND mode %s\n", mode_m);
+                    }
+
+                    if (mode == MODE_NBFM && (new_freq || new_nbfm)) {
+                        m_FmDemod[rx_chan].Reset();
+                        conn->last_sample.re = conn->last_sample.im = 0;
+                    }
+            
+                    if (hicut != _hicut || locut != _locut) {
+                        hicut = _hicut; locut = _locut;
+                    
+                        // primary passband filtering
+                        int fmax = frate/2 - 1;
+                        if (hicut > fmax) hicut = fmax;
+                        if (locut < -fmax) locut = -fmax;
+                    
+                        snd->locut = locut; snd->hicut = hicut;
+                    
+                        // normalized passband
+                        if (locut <= 0 && hicut >= 0) {     // straddles carrier
+                            snd->norm_locut = 0.0;
+                            snd->norm_hicut = MAX(-locut, hicut);
+                        } else {
+                            if (locut > 0) {
+                                snd->norm_locut = locut;
+                                snd->norm_hicut = hicut;
+                            } else {
+                                snd->norm_hicut = -locut;
+                                snd->norm_locut = -hicut;
+                            }
+                        }
+                    
+                        // bw for post AM det is max of hi/lo filter cuts
+                        float bw = fmaxf(fabs(hicut), fabs(locut));
+                        if (bw > frate/2) bw = frate/2;
+                        //cprintf(conn, "SND LOcut %.0f HIcut %.0f BW %.0f/%.0f\n", locut, hicut, bw, frate/2);
+                    
+                        #define CW_OFFSET 0		// fixme: how is cw offset handled exactly?
+                        m_PassbandFIR[rx_chan].SetupParameters(locut, hicut, CW_OFFSET, frate);
+                        conn->half_bw = bw;
+                    
+                        // post AM detector filter
+                        // FIXME: not needed if we're doing convolver-based LPF in javascript due to decompression?
+                        float stop = bw*1.8;
+                        if (stop > frate/2) stop = frate/2;
+                        m_AM_FIR[rx_chan].InitLPFilter(0, 1.0, 50.0, bw, stop, frate);
+                        cmd_recv |= CMD_PASSBAND;
+                    
+                        change_LPF = true;
+                    }
+                
+                    double nomfreq = freq;
+                    if ((hicut-locut) < 1000) nomfreq += (hicut+locut)/2/kHz;	// cw filter correction
+                    nomfreq = round(nomfreq*kHz);
+                
+                    conn->freqHz = round(nomfreq/10.0)*10;	// round 10 Hz
+                    conn->mode = mode;
+                
+                    // apply masked frequencies
+                    masked = false;
+                    if (dx.masked_len != 0 && !conn->tlimit_exempt_by_pwd) {
+                        int f = round(freq*kHz);
+                        int pb_lo = f + locut;
+                        int pb_hi = f + hicut;
+                        //printf("SND f=%d lo=%.0f|%d hi=%.0f|%d ", f, locut, pb_lo, hicut, pb_hi);
+                        for (j=0; j < dx.masked_len; j++) {
+                            dx_t *dxp = &dx.list[dx.masked_idx[j]];
+                            if (!((pb_hi < dxp->masked_lo || pb_lo > dxp->masked_hi))) {
+                                masked = true;
+                                //printf("MASKED");
+                                break;
+                            }
+                        }
+                        //printf("\n");
+                    }
+                }
 			    free(mode_m);
-				continue;
+			    break;
 			}
-			free(mode_m);
 			
-			int _comp;
-			n = sscanf(cmd, "SET compression=%d", &_comp);
-			if (n == 1) {
-				//printf("compression %d\n", _comp);
-				if (_comp && (compression != _comp)) {      // when enabling compression reset AGC, compression state
-				    if (cmd_recv & CMD_AGC)
+            case CMD_COMPRESSION: {
+                int _comp;
+                n = sscanf(cmd, "SET compression=%d", &_comp);
+                if (n == 1) {
+                    did_cmd = true;
+                    //printf("compression %d\n", _comp);
+                    if (_comp && (compression != _comp)) {      // when enabling compression reset AGC, compression state
+                        if (cmd_recv & CMD_AGC)
+                            m_Agc[rx_chan].SetParameters(agc, hang, thresh, manGain, slope, decay, frate);
+                        memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
+                    }
+                    compression = _comp;
+                }
+                break;
+            }
+
+            case CMD_REINIT:
+                if (strcmp(cmd, "SET reinit") == 0) {
+                    did_cmd = true;
+                    cprintf(conn, "SND restart\n");
+                    if (cmd_recv & CMD_AGC)
                         m_Agc[rx_chan].SetParameters(agc, hang, thresh, manGain, slope, decay, frate);
                     memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
-				}
-                compression = _comp;
-				continue;
-			}
+                    restart = true;
+                }
+                break;
 
-			if (strcmp(cmd, "SET restart") == 0) {
-				cprintf(conn, "SND restart\n");
-                if (cmd_recv & CMD_AGC)
+            case CMD_LITTLE_ENDIAN:
+                if (strcmp(cmd, "SET little-endian") == 0) {
+                    did_cmd = true;
+                    //cprintf(conn, "SND little-endian\n");
+                    little_endian = true;
+                }
+                break;
+
+            case CMD_GEN_FREQ:
+                n = sscanf(cmd, "SET gen=%lf mix=%lf", &_gen, &mix);
+                if (n == 2) {
+                    did_cmd = true;
+                    //printf("MIX %f %d\n", mix, (int) mix);
+                    if (gen != _gen) {
+                        gen = _gen;
+                        f_phase = gen * kHz / conn->adc_clock_corrected;
+                        u4_t u4_phase = (u4_t) round(f_phase * pow(2,32));
+                        //printf("sound %d: %s %.3f kHz phase %.3f 0x%08x\n", rx_chan, gen? "GEN_ON":"GEN_OFF", gen, f_phase, u4_phase);
+                        if (do_sdr) {
+                            spi_set(CmdSetGen, 0, u4_phase);
+                            ctrl_clr_set(CTRL_USE_GEN, gen? CTRL_USE_GEN:0);
+                        }
+                        if (rx_chan == 0) g_genfreq = gen * kHz / ui_srate;
+                    }
+                    if (rx_chan == 0) g_mixfreq = mix;
+                    conn->ext_api = true;
+                }
+                break;
+
+            case CMD_GEN_ATTN:
+                n = sscanf(cmd, "SET genattn=%d", &_genattn);
+                if (n == 1) {
+                    did_cmd = true;
+                    if (1 || genattn != _genattn) {
+                        genattn = _genattn;
+                        if (do_sdr) spi_set(CmdSetGenAttn, 0, (u4_t) genattn);
+                        //printf("===> CmdSetGenAttn %d 0x%x\n", genattn, genattn);
+                        if (rx_chan == 0) g_genampl = genattn / (float)((1<<17)-1);
+                    }
+                    conn->ext_api = true;
+                }
+                break;
+
+            case CMD_SET_AGC:
+                n = sscanf(cmd, "SET agc=%d hang=%d thresh=%d slope=%d decay=%d manGain=%d",
+                    &_agc, &_hang, &_thresh, &_slope, &_decay, &_manGain);
+                if (n == 6) {
+                    did_cmd = true;
+                    agc = _agc;
+                    hang = _hang;
+                    thresh = _thresh;
+                    slope = _slope;
+                    decay = _decay;
+                    manGain = _manGain;
+                    //printf("AGC %d hang=%d thresh=%d slope=%d decay=%d manGain=%d srate=%.1f\n",
+                    //	agc, hang, thresh, slope, decay, manGain, frate);
                     m_Agc[rx_chan].SetParameters(agc, hang, thresh, manGain, slope, decay, frate);
-                memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
-                restart = true;
-				continue;
-			}
+                    cmd_recv |= CMD_AGC;
+                }
+                break;
 
-			if (strcmp(cmd, "SET little-endian") == 0) {
-				//cprintf(conn, "SND little-endian\n");
-				little_endian = true;
-				continue;
-			}
+            case CMD_SQUELCH: {
+                int squelch, squelch_max;
+                n = sscanf(cmd, "SET squelch=%d max=%d", &squelch, &squelch_max);
+                if (n == 2) {
+                    did_cmd = true;
+                    //cprintf(conn, "SND squelch=%d max=%d\n", squelch, squelch_max);
+                    m_FmDemod[rx_chan].SetSquelch(squelch, squelch_max);
+                }
+                break;
+            }
 
-			n = sscanf(cmd, "SET gen=%lf mix=%lf", &_gen, &mix);
-			if (n == 2) {
-				//printf("MIX %f %d\n", mix, (int) mix);
-				if (gen != _gen) {
-					gen = _gen;
-					f_phase = gen * kHz / conn->adc_clock_corrected;
-					u4_t u4_phase = (u4_t) round(f_phase * pow(2,32));
-					//printf("sound %d: %s %.3f kHz phase %.3f 0x%08x\n", rx_chan, gen? "GEN_ON":"GEN_OFF", gen, f_phase, u4_phase);
-					if (do_sdr) {
-					    spi_set(CmdSetGen, 0, u4_phase);
-					    ctrl_clr_set(CTRL_USE_GEN, gen? CTRL_USE_GEN:0);
-					}
-					if (rx_chan == 0) g_genfreq = gen * kHz / ui_srate;
-				}
-				if (rx_chan == 0) g_mixfreq = mix;
-				conn->ext_api = true;
-				continue;
-			}
+            case CMD_NB_ALGO:
+                n = sscanf(cmd, "SET nb algo=%d", &nb_algo);
+                if (n == 1) {
+                    did_cmd = true;
+                    //cprintf(conn, "nb: algo=%d\n", nb_algo);
+                    memset(nb_enable, 0, sizeof(nb_enable));
+                    memset(wf->nb_enable, 0, sizeof(wf->nb_enable));
+                }
+                break;
 
-			n = sscanf(cmd, "SET genattn=%d", &_genattn);
-			if (n == 1) {
-				if (1 || genattn != _genattn) {
-					genattn = _genattn;
-					if (do_sdr) spi_set(CmdSetGenAttn, 0, (u4_t) genattn);
-					//printf("===> CmdSetGenAttn %d 0x%x\n", genattn, genattn);
-					if (rx_chan == 0) g_genampl = genattn / (float)((1<<17)-1);
-				}
-				conn->ext_api = true;
-				continue;
-			}
-
-			n = sscanf(cmd, "SET agc=%d hang=%d thresh=%d slope=%d decay=%d manGain=%d",
-				&_agc, &_hang, &_thresh, &_slope, &_decay, &_manGain);
-			if (n == 6) {
-				agc = _agc;
-				hang = _hang;
-				thresh = _thresh;
-				slope = _slope;
-				decay = _decay;
-				manGain = _manGain;
-				//printf("AGC %d hang=%d thresh=%d slope=%d decay=%d manGain=%d srate=%.1f\n",
-				//	agc, hang, thresh, slope, decay, manGain, frate);
-				m_Agc[rx_chan].SetParameters(agc, hang, thresh, manGain, slope, decay, frate);
-				cmd_recv |= CMD_AGC;
-				continue;
-			}
-
-			int squelch, squelch_max;
-			n = sscanf(cmd, "SET squelch=%d max=%d", &squelch, &squelch_max);
-			if (n == 2) {
-			    //cprintf(conn, "SND squelch=%d max=%d\n", squelch, squelch_max);
-				m_FmDemod[rx_chan].SetSquelch(squelch, squelch_max);
-				continue;
-			}
-
-			n = sscanf(cmd, "SET nb algo=%d", &nb_algo);
-			if (n == 1) {
-				//cprintf(conn, "nb: algo=%d\n", nb_algo);
-				memset(nb_enable, 0, sizeof(nb_enable));
-				memset(wf->nb_enable, 0, sizeof(wf->nb_enable));
-				continue;
-			}
-
-			n = sscanf(cmd, "SET nr algo=%d", &nr_algo);
-			if (n == 1) {
-				//cprintf(conn, "nr: algo=%d\n", nr_algo);
-				memset(nr_enable, 0, sizeof(nr_enable));
-				continue;
-			}
+            case CMD_NR_ALGO:
+                n = sscanf(cmd, "SET nr algo=%d", &nr_algo);
+                if (n == 1) {
+                    did_cmd = true;
+                    //cprintf(conn, "nr: algo=%d\n", nr_algo);
+                    memset(nr_enable, 0, sizeof(nr_enable));
+                }
+                break;
 
             int n_type, n_en;
-			n = sscanf(cmd, "SET nb type=%d en=%d", &n_type, &n_en);
-			if (n == 2) {
-				//cprintf(conn, "nb: type=%d en=%d\n", n_type, n_en);
-				nb_enable[n_type] = n_en;
-				wf->nb_enable[n_type] = n_en;
-				continue;
-			}
-			n = sscanf(cmd, "SET nr type=%d en=%d", &n_type, &n_en);
-			if (n == 2) {
-				//cprintf(conn, "nr: type=%d en=%d\n", n_type, n_en);
-				nr_enable[n_type] = n_en;
-				continue;
-			}
-
             int n_param;
             float n_pval;
-			n = sscanf(cmd, "SET nb type=%d param=%d pval=%f", &n_type, &n_param, &n_pval);
-			if (n == 3) {
-				//cprintf(conn, "nb: type=%d param=%d pval=%.9f\n", n_type, n_param, n_pval);
-				nb_param[n_type][n_param] = n_pval;
 
-				if (nb_algo == NB_STD || n_type == NB_CLICK) {
-                    wf->nb_param[n_type][n_param] = n_pval;
-                    wf->nb_param_change[n_type] = true;
-                }
+            case CMD_NB_TYPE:
+                if (sscanf(cmd, "SET nb type=%d en=%d", &n_type, &n_en) == 2) {
+                    did_cmd = true;
+                    //cprintf(conn, "nb: type=%d en=%d\n", n_type, n_en);
+                    nb_enable[n_type] = n_en;
+                    wf->nb_enable[n_type] = n_en;
+                } else
 
-                if (n_type == NB_BLANKER) {
-                    switch (nb_algo) {
-                        case NB_STD: m_NoiseProc[rx_chan][NB_SND].SetupBlanker("SND", frate, nb_param[n_type]); break;
-                        case NB_WILD: nb_Wild_init(rx_chan, nb_param[n_type]); break;
+                if (sscanf(cmd, "SET nb type=%d param=%d pval=%f", &n_type, &n_param, &n_pval) == 3) {
+                    did_cmd = true;
+                    //cprintf(conn, "nb: type=%d param=%d pval=%.9f\n", n_type, n_param, n_pval);
+                    nb_param[n_type][n_param] = n_pval;
+
+                    if (nb_algo == NB_STD || n_type == NB_CLICK) {
+                        wf->nb_param[n_type][n_param] = n_pval;
+                        wf->nb_param_change[n_type] = true;
+                    }
+
+                    if (n_type == NB_BLANKER) {
+                        switch (nb_algo) {
+                            case NB_STD: m_NoiseProc[rx_chan][NB_SND].SetupBlanker("SND", frate, nb_param[n_type]); break;
+                            case NB_WILD: nb_Wild_init(rx_chan, nb_param[n_type]); break;
+                        }
                     }
                 }
                 
-				continue;
-			}
+                break;
 
-			n = sscanf(cmd, "SET nr type=%d param=%d pval=%f", &n_type, &n_param, &n_pval);
-			if (n == 3) {
-				//cprintf(conn, "nr: type=%d param=%d pval=%.9f\n", n_type, n_param, n_pval);
-				nr_param[n_type][n_param] = n_pval;
+            case CMD_NR_TYPE:
+                if (sscanf(cmd, "SET nr type=%d en=%d", &n_type, &n_en) == 2) {
+                    did_cmd = true;
+                    //cprintf(conn, "nr: type=%d en=%d\n", n_type, n_en);
+                    nr_enable[n_type] = n_en;
+                } else
 
-                switch (nr_algo) {
-                    case NR_WDSP: wdsp_ANR_init(rx_chan, (nr_type_e) n_type, nr_param[n_type]); break;
-                    case NR_ORIG: m_LMS[rx_chan][n_type].Initialize((nr_type_e) n_type, nr_param[n_type]); break;
-                    case NR_SPECTRAL: nr_spectral_init(rx_chan, nr_param[n_type]); break;
+                if (sscanf(cmd, "SET nr type=%d param=%d pval=%f", &n_type, &n_param, &n_pval) == 3) {
+                    did_cmd = true;
+                    //cprintf(conn, "nr: type=%d param=%d pval=%.9f\n", n_type, n_param, n_pval);
+                    nr_param[n_type][n_param] = n_pval;
+
+                    switch (nr_algo) {
+                        case NR_WDSP: wdsp_ANR_init(rx_chan, (nr_type_e) n_type, nr_param[n_type]); break;
+                        case NR_ORIG: m_LMS[rx_chan][n_type].Initialize((nr_type_e) n_type, nr_param[n_type]); break;
+                        case NR_SPECTRAL: nr_spectral_init(rx_chan, nr_param[n_type]); break;
+                    }
                 }
                 
-				continue;
-			}
+                break;
 
-            // old noise blanker API for kiwiclient et al
+            case CMD_MUTE:
+                n = sscanf(cmd, "SET mute=%d", &mute);
+                if (n == 1) {
+                    did_cmd = true;
+                    //printf("mute %d\n", mute);
+                    // FIXME: stop audio stream to save bandwidth?
+                }
+
+            // https://dsp.stackexchange.com/questions/34605/biquad-cookbook-formula-for-broadcast-fm-de-emphasis
+            case CMD_DE_EMP: {
+                int _de_emp;
+                n = sscanf(cmd, "SET de_emp=%d", &_de_emp);
+                if (n == 1) {
+                    did_cmd = true;
+                    de_emp = _de_emp;
+                    if (de_emp) {
+                        TYPEREAL a0, a1, a2, b0, b1, b2;
+                    
+                        // frate 20250 Hz: -20 dB @ 10 kHz
+                        //  This seems to be the natural filter response when Fs = frate.
+                        //
+                        // frate 12000 Hz: -10 dB @  6 kHz
+                        //  Approximate this by increasing Fs until -10 dB @  6 kHz is achieved
+                        //  even though this results in an incorrect attenuation curve (too flat).
+                        double Fs = (snd_rate == SND_RATE_4CH)? frate*6 : frate;
+                        double T1 = (de_emp == 1)? 0.000075 : 0.000050;
+                        double z1 = -exp(-1.0/(Fs*T1));
+                        double p1 = 1.0 + z1;
+                        a0 = 1.0;
+                        a1 = p1;
+                        a2 = 0;
+                        b0 = 2.0;   // remove filter gain
+                        b1 = z1;
+                        b2 = 0;
+                        m_de_emp_Biquad[rx_chan].InitFilterCoef(a0, a1, a2, b0, b1, b2);
+                        //cprintf(conn, "SND de-emp: %dus frate %.0f\n", (de_emp == 1)? 75:50, frate);
+                    }
+                }
+                break;
+            }
+
+            case CMD_TEST:
+                n = sscanf(cmd, "SET test=%d", &test);
+                if (n == 1) {
+                    did_cmd = true;
+                    //printf("test %d\n", test);
+                }
+                break;
+
+            case CMD_UAR:
+                n = sscanf(cmd, "SET UAR in=%d out=%d", &arate_in, &arate_out);
+                if (n == 2) {
+                    did_cmd = true;
+                    //clprintf(conn, "UAR in=%d out=%d\n", arate_in, arate_out);
+                }
+                break;
+
+            case CMD_AR_OKAY:
+                n = sscanf(cmd, "SET AR OK in=%d out=%d", &arate_in, &arate_out);
+                if (n == 2) {
+                    did_cmd = true;
+                    //clprintf(conn, "AR OK in=%d out=%d\n", arate_in, arate_out);
+                    if (arate_out) cmd_recv |= CMD_AR_OK;
+                }
+                break;
+
+            case CMD_UNDERRUN:
+                n = sscanf(cmd, "SET underrun=%d", &j);
+                if (n == 1) {
+                    did_cmd = true;
+                    conn->audio_underrun++;
+                    cprintf(conn, "SND: audio underrun %d %s -------------------------\n",
+                        conn->audio_underrun, conn->user);
+                    //if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "NextTask", evprintf("DUMP IN %.3f SEC",
+                    //	ev_dump/1000.0));
+                }
+                break;
+
+		#ifdef SND_SEQ_CHECK
+            case CMD_SEQ: {
+				int _seq, _sequence;
+				n = sscanf(cmd, "SET seq=%d sequence=%d", &_seq, &_sequence);
+				if (n == 2) {
+                    did_cmd = true;
+					conn->sequence_errors++;
+					printf("SND%d: audio.js SEQ got %d, expecting %d, %s -------------------------\n",
+						rx_chan, _seq, _sequence, conn->user);
+				}
+			}
+		#endif
+			
+            // still sent by directTDoA -- ignore
+            case CMD_LMS_AUTONOTCH:
+                if (kiwi_str_begins_with(cmd, "SET lms_autonotch"))
+                    did_cmd = true;
+                break;
+
+            default:
+                // have to check for old API below
+                did_cmd = false;
+                break;
+
+            }   // switch
+            
+		    if (did_cmd) continue;
+
+            // kiwiclient has used "SET nb=" in the past which is shorter than the max_hash_len
+            // so must be checked manually
             int nb, th;
 			n = sscanf(cmd, "SET nb=%d th=%d", &nb, &th);
 			if (n == 2) {
@@ -552,94 +721,18 @@ void c2s_sound(void *param)
 				continue;
 			}
 
-			n = sscanf(cmd, "SET mute=%d", &mute);
-			if (n == 1) {
-				//printf("mute %d\n", mute);
-				// FIXME: stop audio stream to save bandwidth?
-				continue;
-			}
-
-            // https://dsp.stackexchange.com/questions/34605/biquad-cookbook-formula-for-broadcast-fm-de-emphasis
-            int _de_emp;
-			n = sscanf(cmd, "SET de_emp=%d", &_de_emp);
-			if (n == 1) {
-				de_emp = _de_emp;
-				if (de_emp) {
-				    TYPEREAL a0, a1, a2, b0, b1, b2;
-				    
-				    // frate 20250 Hz: -20 dB @ 10 kHz
-				    //  This seems to be the natural filter response when Fs = frate.
-				    //
-				    // frate 12000 Hz: -10 dB @  6 kHz
-				    //  Approximate this by increasing Fs until -10 dB @  6 kHz is achieved
-				    //  even though this results in an incorrect attenuation curve (too flat).
-                    double Fs = (snd_rate == SND_RATE_4CH)? frate*6 : frate;
-                    double T1 = (de_emp == 1)? 0.000075 : 0.000050;
-                    double z1 = -exp(-1.0/(Fs*T1));
-                    double p1 = 1.0 + z1;
-                    a0 = 1.0;
-                    a1 = p1;
-                    a2 = 0;
-                    b0 = 2.0;   // remove filter gain
-                    b1 = z1;
-                    b2 = 0;
-					m_de_emp_Biquad[rx_chan].InitFilterCoef(a0, a1, a2, b0, b1, b2);
-					//cprintf(conn, "SND de-emp: %dus frate %.0f\n", (de_emp == 1)? 75:50, frate);
-				}
-				continue;
-			}
-
-			n = sscanf(cmd, "SET test=%d", &test);
-			if (n == 1) {
-				//printf("test %d\n", test);
-				continue;
-			}
-
-			n = sscanf(cmd, "SET UAR in=%d out=%d", &arate_in, &arate_out);
-			if (n == 2) {
-				//clprintf(conn, "UAR in=%d out=%d\n", arate_in, arate_out);
-				continue;
-			}
-
-			n = sscanf(cmd, "SET AR OK in=%d out=%d", &arate_in, &arate_out);
-			if (n == 2) {
-				//clprintf(conn, "AR OK in=%d out=%d\n", arate_in, arate_out);
-				if (arate_out) cmd_recv |= CMD_AR_OK;
-				continue;
-			}
-
-			n = sscanf(cmd, "SET underrun=%d", &j);
-			if (n == 1) {
-				conn->audio_underrun++;
-				cprintf(conn, "SND: audio underrun %d %s -------------------------\n",
-					conn->audio_underrun, conn->user);
-				//if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "NextTask", evprintf("DUMP IN %.3f SEC",
-				//	ev_dump/1000.0));
-				continue;
-			}
-
-			#ifdef SND_SEQ_CHECK
-				int _seq, _sequence;
-				n = sscanf(cmd, "SET seq=%d sequence=%d", &_seq, &_sequence);
-				if (n == 2) {
-					conn->sequence_errors++;
-					printf("SND%d: audio.js SEQ got %d, expecting %d, %s -------------------------\n",
-						rx_chan, _seq, _sequence, conn->user);
-					continue;
-				}
-			#endif
-			
 			if (conn->mc != NULL) {
+                cprintf(conn, "#### SND hash=0x%04x key=%d \"%s\"\n", snd_cmd_hash.cur_hash, key, cmd);
 			    cprintf(conn, "SND BAD PARAMS: sl=%d %d|%d|%d [%s] ip=%s ####################################\n",
 			        strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn->remote_ip);
 			    conn->unknown_cmd_recvd++;
 			}
 			
-			continue;
-		} else {
-			assert(nb == NULL);
+			continue;       // keep checking until no cmds in queue
 		}
 		
+        check(nb == NULL);
+
 		if (!do_sdr) {
 			NextTask("SND skip");
 			continue;

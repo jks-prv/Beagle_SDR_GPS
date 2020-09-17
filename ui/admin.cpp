@@ -561,8 +561,9 @@ void c2s_admin(void *param)
 		            reg_kiwisdr_com_status = 0;
                 }
 
-				sb = kstr_asprintf(NULL, "{\"kiwisdr_com\":%d,\"sdr_hu\":\"%s\"",
-				    reg_kiwisdr_com_status, shmem->sdr_hu_status_str);
+				//sb = kstr_asprintf(NULL, "{\"kiwisdr_com\":%d,\"sdr_hu\":\"%s\"",
+				//    reg_kiwisdr_com_status, shmem->status_str_large);
+				sb = kstr_asprintf(NULL, "{\"kiwisdr_com\":%d", reg_kiwisdr_com_status);
 				
 				if (gps.StatLat) {
 					latLon_t loc;

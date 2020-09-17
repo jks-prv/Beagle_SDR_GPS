@@ -40,6 +40,7 @@ Boston, MA  02110-1301, USA.
 #include "non_block.h"
 #include "shmem.h"
 #include "noise_blank.h"
+#include "str.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -66,8 +67,8 @@ Boston, MA  02110-1301, USA.
 static const int wf_fps[] = { WF_SPEED_OFF, WF_SPEED_1FPS, WF_SPEED_SLOW, WF_SPEED_MED, WF_SPEED_FAST };
 
 #ifdef WF_SHMEM_DISABLE
-        static wf_shmem_t wf_shmem;
-        wf_shmem_t *wf_shmem_p = &wf_shmem;
+    static wf_shmem_t wf_shmem;
+    wf_shmem_t *wf_shmem_p = &wf_shmem;
 #endif
 
 // FIXME: doesn't work yet because currently no way to use SPI from LINUX_CHILD_PROCESS()
@@ -88,13 +89,34 @@ struct iq_t {
 	u2_t i, q;
 } __attribute__((packed));
 
-#define	SO_OUT_HDR	((int) (sizeof(wf_pkt_t) - sizeof(out->un)))
-#define	SO_OUT_NOM	((int) (SO_OUT_HDR + sizeof(out->un.buf)))
+#define	WF_OUT_HDR	((int) (sizeof(wf_pkt_t) - sizeof(out->un)))
+#define	WF_OUT_NOM	((int) (WF_OUT_HDR + sizeof(out->un.buf)))
 		
+// if entries here are ordered by cmd_key_e then the reverse lookup (str_hash_t *)->hashes[key].name
+// will work as a debugging aid
+static str_hashes_t wf_cmd_hashes[] = {
+    { "~~~~~~~~~", STR_HASH_MISS },
+    { "SET zoom=", CMD_SET_ZOOM },
+    { "SET maxdb", CMD_SET_MAX_MIN_DB },
+    { "SET cmap=", CMD_SET_CMAP },
+    { "SET aper=", CMD_SET_APER },
+    { "SET band=", CMD_SET_BAND },
+    { "SET scale", CMD_SET_SCALE },
+    { "SET wf_sp", CMD_SET_WF_SPEED },
+    { "SET send_", CMD_SEND_DB },
+    { "SET ext_b", CMD_EXT_BLUR },
+    { 0 }
+};
+
+static str_hash_t wf_cmd_hash;
+
 void c2s_waterfall_init()
 {
 	int i;
 	
+    wf_cmd_hash.max_hash_len = 9;
+    str_hash_init("wf", &wf_cmd_hash, wf_cmd_hashes);
+
 	// do these here, rather than the beginning of c2s_waterfall(), because they take too long
 	// and cause the data pump to overrun
 	for (i=0; i < MAX_WF_CHANS; i++) {
@@ -180,9 +202,8 @@ void c2s_waterfall_setup(void *param)
 
     // If not wanting a wf (!conn->isWF_conn) send wf_chans=0 to force audio FFT to be used.
     // But need to send actual value via wf_chans_real for use elsewhere.
-	send_msg(conn, SM_WF_DEBUG, "MSG wf_fft_size=1024 wf_fps=%d wf_fps_max=%d zoom_max=%d rx_chans=%d wf_chans=%d wf_chans_real=%d color_map=%d wf_setup",
-		WF_SPEED_FAST, WF_SPEED_MAX, MAX_ZOOM, rx_chans, conn->isWF_conn? wf_chans:0, wf_chans,
-		color_map? (~conn->ui->color_map)&1 : conn->ui->color_map);
+	send_msg(conn, SM_WF_DEBUG, "MSG wf_fft_size=1024 wf_fps=%d wf_fps_max=%d zoom_max=%d rx_chans=%d wf_chans=%d wf_chans_real=%d wf_setup",
+		WF_SPEED_FAST, WF_SPEED_MAX, MAX_ZOOM, rx_chans, conn->isWF_conn? wf_chans:0, wf_chans);
 	if (do_gps && !do_sdr) send_msg(conn, SM_WF_DEBUG, "MSG gps");
 }
 
@@ -197,8 +218,8 @@ void c2s_waterfall(void *param)
 	//float adc_scale_samps = powf(2, -ADC_BITS);
 
 	bool new_map = false, new_scale_mask = false;
-	int wband=-1, _wband, zoom=-1, _zoom, scale=1, _scale, _speed, _dvar, _pipe;
-	float start=-1, _start, cf;
+	int wband=-1, _wband, zoom=-1, _zoom, scale=1, _scale, _speed, cmap, aper, algo, _dvar, _pipe;
+	float start=-1, _start, cf, aper_param;
 	float samp_wait_us;
 	float off_freq, HZperStart = ui_srate / (WF_WIDTH << MAX_ZOOM);
 	u4_t i_offset;
@@ -222,10 +243,10 @@ void c2s_waterfall(void *param)
     int n_chunks = WF_SHMEM->n_chunks;
     strncpy(wf->out.id4, "W/F ", 4);
 
-	#define SO_IQ_T 4
-	assert(sizeof(iq_t) == SO_IQ_T);
-	#if !((NWF_SAMPS * SO_IQ_T) <= SPIBUF_B)
-		#error !((NWF_SAMPS * SO_IQ_T) <= SPIBUF_B)
+	#define WF_IQ_T 4
+	assert(sizeof(iq_t) == WF_IQ_T);
+	#if !((NWF_SAMPS * WF_IQ_T) <= SPIBUF_B)
+		#error !((NWF_SAMPS * WF_IQ_T) <= SPIBUF_B)
 	#endif
 
 	//clprintf(conn, "W/F INIT conn: %p mc: %p %s:%d %s\n",
@@ -238,8 +259,9 @@ void c2s_waterfall(void *param)
     #endif
 
 	//evWFC(EC_DUMP, EV_WF, 10000, "WF", "DUMP 10 SEC");
-
+	
 	nbuf_t *nb = NULL;
+
 	while (TRUE) {
 
 		// reload freq NCO if adc clock has been corrected
@@ -279,211 +301,274 @@ void c2s_waterfall(void *param)
 				}
 			#endif
 
-            bool zoom_start_chg = false;
-            if (kiwi_str_begins_with(cmd, "SET zoom=")) {
-                if (sscanf(cmd, "SET zoom=%d start=%f", &_zoom, &_start) == 2) {
-                    //cprintf(conn, "WF: zoom=%d/%d start=%.3f(%.1f)\n", _zoom, zoom, _start, _start * HZperStart / kHz);
-                    _zoom = CLAMP(_zoom, 0, MAX_ZOOM);
-                    zoom_start_chg = true;
-                } else
-                if (sscanf(cmd, "SET zoom=%d cf=%f", &_zoom, &cf) == 2) {
-                    _zoom = CLAMP(_zoom, 0, MAX_ZOOM);
-                    float halfSpan_Hz = (ui_srate / (1 << _zoom)) / 2;
-                    _start = (cf * kHz - halfSpan_Hz) / HZperStart;
-                    //cprintf(conn, "WF: zoom=%d cf=%.3f start=%.3f halfSpan=%.3f\n", _zoom, cf, _start * HZperStart / kHz, halfSpan_Hz/kHz);
-                    zoom_start_chg = true;
+            u2_t key = str_hash_lookup(&wf_cmd_hash, cmd);
+            bool did_cmd = false;
+            
+            switch (key) {
+
+            case CMD_SET_ZOOM: {
+                bool zoom_start_chg = false;
+                if (kiwi_str_begins_with(cmd, "SET zoom=")) {
+                    did_cmd = true;
+                    if (sscanf(cmd, "SET zoom=%d start=%f", &_zoom, &_start) == 2) {
+                        //cprintf(conn, "WF: zoom=%d/%d start=%.3f(%.1f)\n", _zoom, zoom, _start, _start * HZperStart / kHz);
+                        _zoom = CLAMP(_zoom, 0, MAX_ZOOM);
+                        zoom_start_chg = true;
+                    } else
+                    if (sscanf(cmd, "SET zoom=%d cf=%f", &_zoom, &cf) == 2) {
+                        _zoom = CLAMP(_zoom, 0, MAX_ZOOM);
+                        float halfSpan_Hz = (ui_srate / (1 << _zoom)) / 2;
+                        _start = (cf * kHz - halfSpan_Hz) / HZperStart;
+                        //cprintf(conn, "WF: zoom=%d cf=%.3f start=%.3f halfSpan=%.3f\n", _zoom, cf, _start * HZperStart / kHz, halfSpan_Hz/kHz);
+                        zoom_start_chg = true;
+                    }
                 }
-            }
-			
-            if (zoom_start_chg) {
-				if (zoom != _zoom) {
-				    zoom = _zoom;
-				    
-					#define CIC1_DECIM 0x0001
-					#define CIC2_DECIM 0x0100
-					u2_t decim, r1, r2;
-#ifdef USE_WF_NEW
-					// currently 11-levels of zoom: z0-z10, MAX_ZOOM == 10
-					// z0-10: R = 2,4,8,16,32,64,128,256,512,1024,2048 for MAX_ZOOM == 10
-					r1 = zoom + 1;
-					r2 = 1;		// R2 = 1
-					decim = ?;
-#else
-					// NB: because we only use half of the FFT with CIC can zoom one level less
-					int zm1 = (WF_USING_HALF_CIC == 2)? (zoom? (zoom-1) : 0) : zoom;
-
-					#ifdef USE_WF_1CIC
-					
-						// currently 15-levels of zoom: z0-z14, MAX_ZOOM == 14
-						if (zm1 == 0) {
-							// z0-1: R = 1,1
-							r1 = 0;
-						} else {
-							// z2-14: R = 2,4,8,16,32,64,128,256,512,1k,2k,4k,8k for MAX_ZOOM = 14
-							r1 = zm1;
-						}
-						
-						// hardware limitation
-						assert(r1 >= 0 && r1 <= 15);
-						assert(WF_1CIC_MAXD <= 32768);
-						decim = CIC1_DECIM << r1;
-					#else
-						// currently 15-levels of zoom: z0-z14, MAX_ZOOM == 14
-						if (zm1 == 0) {
-							// z0-1: R = 1 (R1 = R2 = 1)
-							r1 = r2 = 0;
-						} else
-						if (zm1 <= WF_2CIC_POW2) {
-							// z2-8: R = 2,4,8,16,32,64,128 (R1 = 1; R2 = 2,4,8,16,32,64,128)
-							r1 = 0;
-							r2 = zm1;
-						} else {
-							// z9-14: R = 128,256,512,1k,2k,4k (R1 = 2,4,8,16,32,64; R2 = 128)
-							r1 = zm1 - WF_2CIC_POW2;
-							r2 = WF_2CIC_POW2;
-						}
-						
-						// hardware limitation
-						assert(r1 >= 0 && r1 <= 7);
-						assert(r2 >= 0 && r2 <= 7);
-						assert(WF_2CIC_MAXD <= 127);
-						decim = (CIC2_DECIM << r2) | (CIC1_DECIM << r1);
-					#endif
-#endif
-					samp_wait_us =  WF_C_NSAMPS * (1 << zm1) / conn->adc_clock_corrected * 1000000.0;
-					wf->chunk_wait_us = (int) ceilf(samp_wait_us / n_chunks);
-					wf->samp_wait_ms = (int) ceilf(samp_wait_us / 1000);
-					#ifdef WF_INFO
-					if (!bg) cprintf(conn, "---- WF%d Z%d zm1 %d/%d R%04x n_chunks %d samp_wait_us %.1f samp_wait_ms %d chunk_wait_us %d\n",
-						rx_chan, zoom, zm1, 1<<zm1, decim, n_chunks, samp_wait_us, wf->samp_wait_ms, wf->chunk_wait_us);
-					#endif
-					
-					new_map = wf->new_map = wf->new_map2 = TRUE;
-					
-					if (wf->nb_enable[NB_BLANKER] && wf->nb_enable[NB_WF]) wf->nb_param_change[NB_BLANKER] = true;
+            
+                if (zoom_start_chg) {
+                    if (zoom != _zoom) {
+                        zoom = _zoom;
                     
-					// when zoom changes reevaluate if overlapped sampling might be needed
-					wf->check_overlapped_sampling = true;
-					
-			        if (wf->isWF)
-					    spi_set(CmdSetWFDecim, rx_chan, decim);
-					
-					// We've seen cases where the w/f connects, but the sound never does.
-					// So have to check for conn->other being valid.
-					conn_t *csnd = conn->other;
-					if (csnd && csnd->type == STREAM_SOUND && csnd->rx_channel == conn->rx_channel) {
-						csnd->zoom = zoom;		// set in the AUDIO conn
-					}
-					
-					//jksd
-					//printf("ZOOM z=%d ->z=%d\n", zoom, wf->zoom);
-					//wf->prev_zoom = (wf->zoom == -1)? zoom : wf->zoom;
-					wf->zoom = zoom;
-					cmd_recv |= CMD_ZOOM;
-				}
-				
-                start = _start;
-                //cprintf(conn, "WF: START %.0f ", start);
-                int maxstart = MAX_START(zoom);
-                start = CLAMP(start, 0, maxstart);
-                //printf(" CLAMPED %.0f %.3f\n", start, start * HZperStart / kHz);
+                        #define CIC1_DECIM 0x0001
+                        #define CIC2_DECIM 0x0100
+                        u2_t decim, r1, r2;
+    #ifdef USE_WF_NEW
+                        // currently 11-levels of zoom: z0-z10, MAX_ZOOM == 10
+                        // z0-10: R = 2,4,8,16,32,64,128,256,512,1024,2048 for MAX_ZOOM == 10
+                        r1 = zoom + 1;
+                        r2 = 1;		// R2 = 1
+                        decim = ?;
+    #else
+                        // NB: because we only use half of the FFT with CIC can zoom one level less
+                        int zm1 = (WF_USING_HALF_CIC == 2)? (zoom? (zoom-1) : 0) : zoom;
 
-                off_freq = start * HZperStart;
+                        #ifdef USE_WF_1CIC
+                    
+                            // currently 15-levels of zoom: z0-z14, MAX_ZOOM == 14
+                            if (zm1 == 0) {
+                                // z0-1: R = 1,1
+                                r1 = 0;
+                            } else {
+                                // z2-14: R = 2,4,8,16,32,64,128,256,512,1k,2k,4k,8k for MAX_ZOOM = 14
+                                r1 = zm1;
+                            }
+                        
+                            // hardware limitation
+                            assert(r1 >= 0 && r1 <= 15);
+                            assert(WF_1CIC_MAXD <= 32768);
+                            decim = CIC1_DECIM << r1;
+                        #else
+                            // currently 15-levels of zoom: z0-z14, MAX_ZOOM == 14
+                            if (zm1 == 0) {
+                                // z0-1: R = 1 (R1 = R2 = 1)
+                                r1 = r2 = 0;
+                            } else
+                            if (zm1 <= WF_2CIC_POW2) {
+                                // z2-8: R = 2,4,8,16,32,64,128 (R1 = 1; R2 = 2,4,8,16,32,64,128)
+                                r1 = 0;
+                                r2 = zm1;
+                            } else {
+                                // z9-14: R = 128,256,512,1k,2k,4k (R1 = 2,4,8,16,32,64; R2 = 128)
+                                r1 = zm1 - WF_2CIC_POW2;
+                                r2 = WF_2CIC_POW2;
+                            }
+                        
+                            // hardware limitation
+                            assert(r1 >= 0 && r1 <= 7);
+                            assert(r2 >= 0 && r2 <= 7);
+                            assert(WF_2CIC_MAXD <= 127);
+                            decim = (CIC2_DECIM << r2) | (CIC1_DECIM << r1);
+                        #endif
+    #endif
+                        samp_wait_us =  WF_C_NSAMPS * (1 << zm1) / conn->adc_clock_corrected * 1000000.0;
+                        wf->chunk_wait_us = (int) ceilf(samp_wait_us / n_chunks);
+                        wf->samp_wait_ms = (int) ceilf(samp_wait_us / 1000);
+                        #ifdef WF_INFO
+                        if (!bg) cprintf(conn, "---- WF%d Z%d zm1 %d/%d R%04x n_chunks %d samp_wait_us %.1f samp_wait_ms %d chunk_wait_us %d\n",
+                            rx_chan, zoom, zm1, 1<<zm1, decim, n_chunks, samp_wait_us, wf->samp_wait_ms, wf->chunk_wait_us);
+                        #endif
+                    
+                        new_map = wf->new_map = wf->new_map2 = TRUE;
+                    
+                        if (wf->nb_enable[NB_BLANKER] && wf->nb_enable[NB_WF]) wf->nb_param_change[NB_BLANKER] = true;
+                    
+                        // when zoom changes reevaluate if overlapped sampling might be needed
+                        wf->check_overlapped_sampling = true;
+                    
+                        if (wf->isWF)
+                            spi_set(CmdSetWFDecim, rx_chan, decim);
+                    
+                        // We've seen cases where the w/f connects, but the sound never does.
+                        // So have to check for conn->other being valid.
+                        conn_t *csnd = conn->other;
+                        if (csnd && csnd->type == STREAM_SOUND && csnd->rx_channel == conn->rx_channel) {
+                            csnd->zoom = zoom;		// set in the AUDIO conn
+                        }
+                    
+                        //jksd
+                        //printf("ZOOM z=%d ->z=%d\n", zoom, wf->zoom);
+                        //wf->prev_zoom = (wf->zoom == -1)? zoom : wf->zoom;
+                        wf->zoom = zoom;
+                        cmd_recv |= CMD_ZOOM;
+                    }
                 
-                #ifdef USE_WF_NEW
-                    off_freq += conn->adc_clock_corrected / (4<<zoom);
-                #endif
+                    start = _start;
+                    //cprintf(conn, "WF: START %.0f ", start);
+                    int maxstart = MAX_START(zoom);
+                    start = CLAMP(start, 0, maxstart);
+                    //printf(" CLAMPED %.0f %.3f\n", start, start * HZperStart / kHz);
+
+                    off_freq = start * HZperStart;
                 
-                i_offset = (u4_t) (s4_t) (off_freq / conn->adc_clock_corrected * pow(2,32));
-                i_offset = -i_offset;
-
-                #ifdef WF_INFO
-                if (!bg) cprintf(conn, "W/F z%d OFFSET %.3f kHz i_offset 0x%08x\n",
-                    zoom, off_freq/kHz, i_offset);
-                #endif
+                    #ifdef USE_WF_NEW
+                        off_freq += conn->adc_clock_corrected / (4<<zoom);
+                    #endif
                 
-                if (wf->isWF)
-                    spi_set(CmdSetWFFreq, rx_chan, i_offset);
-                //jksd
-                //printf("START s=%d ->s=%d\n", start, wf->start);
-                //wf->prev_start = (wf->start == -1)? start : wf->start;
-                wf->start = start;
-                new_scale_mask = true;
-                cmd_recv |= CMD_START;
-				
-                send_msg(conn, SM_NO_DEBUG, "MSG zoom=%d start=%d", zoom, (u4_t) start);
-                //printf("waterfall: send zoom %d start %d\n", zoom, u_start);
-                //jksd
-                //wf->flush_wf_pipe = 6;
-                //printf("flush_wf_pipe %d\n", debug_v);
-                //wf->flush_wf_pipe = debug_v;
-				
-				continue;
-			}
-			
-			i = sscanf(cmd, "SET maxdb=%d mindb=%d", &wf->maxdb, &wf->mindb);
-			if (i == 2) {
-				#ifdef WF_INFO
-				printf("waterfall: maxdb=%d mindb=%d\n", wf->maxdb, wf->mindb);
-				#endif
-				cmd_recv |= CMD_DB;
-				continue;
-			}
+                    i_offset = (u4_t) (s4_t) (off_freq / conn->adc_clock_corrected * pow(2,32));
+                    i_offset = -i_offset;
 
-			i = sscanf(cmd, "SET band=%d", &_wband);
-			if (i == 1) {
-				//printf("waterfall: band=%d\n", _wband);
-				if (wband != _wband) {
-					wband = _wband;
-					//printf("waterfall: BAND %d\n", wband);
-				}
-				continue;
-			}
+                    #ifdef WF_INFO
+                    if (!bg) cprintf(conn, "W/F z%d OFFSET %.3f kHz i_offset 0x%08x\n",
+                        zoom, off_freq/kHz, i_offset);
+                    #endif
+                
+                    if (wf->isWF)
+                        spi_set(CmdSetWFFreq, rx_chan, i_offset);
+                    //jksd
+                    //printf("START s=%d ->s=%d\n", start, wf->start);
+                    //wf->prev_start = (wf->start == -1)? start : wf->start;
+                    wf->start = start;
+                    new_scale_mask = true;
+                    cmd_recv |= CMD_START;
+                
+                    send_msg(conn, SM_NO_DEBUG, "MSG zoom=%d start=%d", zoom, (u4_t) start);
+                    //printf("waterfall: send zoom %d start %d\n", zoom, u_start);
+                    //jksd
+                    //wf->flush_wf_pipe = 6;
+                    //printf("flush_wf_pipe %d\n", debug_v);
+                    //wf->flush_wf_pipe = debug_v;
+                    
+                    // this also catches "start=" changes from panning
+                    if (wf->aper == AUTO) {
+                        wf->avg_clear = 1;
+                        wf->need_autoscale++;
+                    }
+                }
+                break;
+            }
+            
+            case CMD_SET_MAX_MIN_DB:
+                i = sscanf(cmd, "SET maxdb=%d mindb=%d", &wf->maxdb, &wf->mindb);
+                if (i == 2) {
+                    did_cmd = true;
+                    #ifdef WF_INFO
+                    printf("waterfall: maxdb=%d mindb=%d\n", wf->maxdb, wf->mindb);
+                    #endif
+                    cmd_recv |= CMD_DB;
+                }
+                break;
 
-			i = sscanf(cmd, "SET scale=%d", &_scale);
-			if (i == 1) {
-				//printf("waterfall: scale=%d\n", _scale);
-				if (scale != _scale) {
-					scale = _scale;
-					//printf("waterfall: SCALE %d\n", scale);
-				}
-				continue;
-			}
+            case CMD_SET_CMAP:
+                if (sscanf(cmd, "SET cmap=%d", &cmap) == 1) {
+                    //waterfall_cmap(conn, wf, cmap);
+                    did_cmd = true;
+                }
+                break;
 
-			i = sscanf(cmd, "SET wf_speed=%d", &_speed);
-			if (i == 1) {
-				//printf("W/F wf_speed=%d\n", _speed);
-				if (_speed == -1) _speed = WF_NSPEEDS-1;
-				if (_speed >= 0 && _speed < WF_NSPEEDS)
-				    wf->speed = _speed;
-			    send_msg(conn, SM_NO_DEBUG, "MSG wf_fps=%d", wf_fps[wf->speed]);
-				cmd_recv |= CMD_SPEED;
-				continue;
-			}
+            case CMD_SET_APER:
+                if (sscanf(cmd, "SET aper=%d algo=%d param=%f", &aper, &algo, &aper_param) == 3) {
+                    #ifdef WF_INFO
+                    printf("### W/F n/d/s=%d/%d/%d aper=%d algo=%d param=%f\n",
+                        wf->need_autoscale, wf->done_autoscale, wf->sent_autoscale, aper, algo, aper_param);
+                    #endif
+                    wf->aper = aper;
+                    wf->aper_algo = algo;
+                    if (aper == AUTO) {
+                        wf->aper_param = aper_param;
+                        wf->avg_clear = 1;
+                        wf->need_autoscale++;
+                    }
+                    did_cmd = true;
+                }
+                break;
 
-			i = sscanf(cmd, "SET send_dB=%d", &wf->send_dB);
-			if (i == 1) {
-				//cprintf(conn, "W/F send_dB=%d\n", wf->send_dB);
-				continue;
-			}
+        #if 0
+            // not currently used
+            case CMD_SET_BAND:
+                i = sscanf(cmd, "SET band=%d", &_wband);
+                if (i == 1) {
+                    did_cmd = true;
+                    //printf("waterfall: band=%d\n", _wband);
+                    if (wband != _wband) {
+                        wband = _wband;
+                        //printf("waterfall: BAND %d\n", wband);
+                    }
+                }
+                break;
+
+            // not currently used
+            case CMD_SET_SCALE:
+                i = sscanf(cmd, "SET scale=%d", &_scale);
+                if (i == 1) {
+                    did_cmd = true;
+                    //printf("waterfall: scale=%d\n", _scale);
+                    if (scale != _scale) {
+                        scale = _scale;
+                        //printf("waterfall: SCALE %d\n", scale);
+                    }
+                }
+                break;
+        #endif
+
+            case CMD_SET_WF_SPEED:
+                i = sscanf(cmd, "SET wf_speed=%d", &_speed);
+                if (i == 1) {
+                    did_cmd = true;
+                    //printf("W/F wf_speed=%d\n", _speed);
+                    if (_speed == -1) _speed = WF_NSPEEDS-1;
+                    if (_speed >= 0 && _speed < WF_NSPEEDS)
+                        wf->speed = _speed;
+                    send_msg(conn, SM_NO_DEBUG, "MSG wf_fps=%d", wf_fps[wf->speed]);
+                    cmd_recv |= CMD_SPEED;
+                }
+                break;
+
+            case CMD_SEND_DB:
+                i = sscanf(cmd, "SET send_dB=%d", &wf->send_dB);
+                if (i == 1) {
+                    did_cmd = true;
+                    //cprintf(conn, "W/F send_dB=%d\n", wf->send_dB);
+                }
+                break;
 
 			// FIXME: keep these from happening in the first place?
-			int ch;
-			i = sscanf(cmd, "SET ext_blur=%d", &ch);
-			if (i == 1) {
-				continue;
-			}
+            case CMD_EXT_BLUR:
+                int ch;
+                i = sscanf(cmd, "SET ext_blur=%d", &ch);
+                if (i == 1) {
+                    did_cmd = true;
+                }
+                break;
+            
+            default:
+                cprintf(conn, "#### W/F key=%d DEFAULT CASE <%s>\n", key, cmd);
+                did_cmd = true;     // force skip
+                break;
+ 
+            }   // switch
+            
+		    if (did_cmd) continue;
 
 			if (conn->mc != NULL) {
+                cprintf(conn, "#### W/F hash=0x%04x key=%d \"%s\"\n", wf_cmd_hash.cur_hash, key, cmd);
 			    cprintf(conn, "W/F BAD PARAMS: sl=%d %d|%d|%d [%s] ip=%s ####################################\n",
 			        strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn->remote_ip);
 			    conn->unknown_cmd_recvd++;
 			}
 			
-			continue;
-		} else {
-			assert(nb == NULL);
-		}
+			continue;       // keep checking until no cmds in queue
+        }
+
+		check(nb == NULL);
 		
 		if (do_gps && !do_sdr) {
 			wf_pkt_t *out = &wf->out;
@@ -499,7 +584,7 @@ void c2s_waterfall(void *param)
 			int delay = 10000 - (timer_ms() - wf->mark);
 			if (delay > 0) TaskSleepReasonMsec("wait frame", delay);
 			wf->mark = timer_ms();
-			app_to_web(conn, (char*) &out, SO_OUT_NOM);
+			app_to_web(conn, (char*) &out, WF_OUT_NOM);
 		}
 		
 		if (!do_sdr) {
@@ -633,7 +718,7 @@ void c2s_waterfall(void *param)
 				(wf->plot_width_clamped < wf->fft_used)? ">=":"<");
 			#endif
 			
-			send_msg(conn, SM_NO_DEBUG, "MSG plot_width=%d", wf->plot_width);
+			//send_msg(conn, SM_NO_DEBUG, "MSG plot_width=%d", wf->plot_width);
 			new_map = FALSE;
 		}
 		
@@ -702,14 +787,14 @@ void sample_wf(int rx_chan)
     u64_t now, deadline;
     
     #ifdef SHOW_MAX_MIN_IQ
-    static void *IQi_state;
-    static void *IQf_state;
-    if (wf->new_map2) {
-        if (IQi_state != NULL) free(IQi_state);
-        IQi_state = NULL;
-        if (IQf_state != NULL) free(IQf_state);
-        IQf_state = NULL;
-    }
+        static void *IQi_state;
+        static void *IQf_state;
+        if (wf->new_map2) {
+            if (IQi_state != NULL) free(IQi_state);
+            IQi_state = NULL;
+            if (IQf_state != NULL) free(IQf_state);
+            IQf_state = NULL;
+        }
     #endif
 
     // create waterfall
@@ -810,8 +895,8 @@ void sample_wf(int rx_chan)
             float fq = ((float) qq) * window[sn];
             
             #ifdef SHOW_MAX_MIN_IQ
-            print_max_min_stream_i(&IQi_state, "IQi", k, 2, ii, qq);
-            print_max_min_stream_f(&IQf_state, "IQf", k, 2, (double) fi, (double) fq);
+                print_max_min_stream_i(&IQi_state, "IQi", k, 2, ii, qq);
+                print_max_min_stream_f(&IQf_state, "IQf", k, 2, (double) fi, (double) fq);
             #endif
             
             fft->hw_c_samps[sn][I] = fi;
@@ -864,12 +949,36 @@ void sample_wf(int rx_chan)
             #ifdef WF_IPC_SAMPLE_WF
                 compute_frame(rx_chan);
             #else
-                shmem_ipc_invoke(SIG_IPC_WF, wf->rx_chan);      // invoke compute_frame()
+                shmem_ipc_invoke(SIG_IPC_WF, rx_chan);      // invoke compute_frame()
             #endif
+        #endif
+
+        #ifndef WF_IPC_SAMPLE_WF
+            if (wf->aper == AUTO && wf->done_autoscale > wf->sent_autoscale) {
+                wf->sent_autoscale++;
+
+                if (wf->last_noise != wf->noise || wf->last_signal != wf->signal) {
+                    #ifdef WF_INFO
+                    printf("### SENT d/s=%d/%d algo=%d %d:%d\n",
+                        wf->done_autoscale, wf->sent_autoscale, wf->aper_algo, wf->noise, wf->signal);
+                    #endif
+                    send_msg(wf->conn, false, "MSG maxdb=%d", wf->signal);
+                    send_msg(wf->conn, false, "MSG mindb=%d", wf->noise);
+                    wf->last_noise = wf->noise;
+                    wf->last_signal = wf->signal;
+                } else {
+                    #ifdef WF_INFO
+                    printf("### SAME algo=%d %d:%d\n", wf->aper_algo, wf->noise, wf->signal);
+                    #endif
+                }
+
+                if (wf->aper_algo != OFF)
+                    wf->need_autoscale++;   // go again
+            }
         #endif
         
         wf_pkt_t *out = &wf->out;
-        app_to_web(wf->conn, (char*) out, SO_OUT_HDR + wf->out_bytes);
+        app_to_web(wf->conn, (char*) out, WF_OUT_HDR + wf->out_bytes);
         waterfall_bytes[rx_chan] += wf->out_bytes;
         waterfall_bytes[rx_chans] += wf->out_bytes; // [rx_chans] is the sum of all waterfalls
         waterfall_frames[rx_chan]++;
@@ -879,7 +988,7 @@ void sample_wf(int rx_chan)
         #if 0
             static u4_t last_time[MAX_RX_CHANS];
             u4_t now = timer_ms();
-            printf("WF%d: %d %.3fs seq-%d\n", rx_chan, SO_OUT_HDR + wf->out_bytes,
+            printf("WF%d: %d %.3fs seq-%d\n", rx_chan, WF_OUT_HDR + wf->out_bytes,
                 (float) (now - last_time[rx_chan]) / 1e3, wf->out.seq);
             last_time[rx_chan] = now;
         #endif
@@ -900,6 +1009,104 @@ void sample_wf(int rx_chan)
     wf->mark = timer_ms();
 }
 
+static float dB_wire_to_dBm(int db_value)
+{
+    if (db_value < 0) db_value = 0;
+	if (db_value > 255) db_value = 255;
+	int dBm = -(255 - db_value);
+	return (float) (dBm + waterfall_cal);
+}
+
+static void aperture_auto(wf_inst_t *wf, u1_t *bp)
+{
+    int i, rx_chan = wf->rx_chan;
+    if (wf->need_autoscale <= wf->done_autoscale) return;
+    bool single_shot = (wf->aper_algo == OFF);
+
+    // FIXME: for audio FFT needs to be further limited to just passband
+    int start = 0, stop = APER_PWR_LEN, len = APER_PWR_LEN;
+    if (rx_chan >= wf_chans) start = 256, stop = 768, len = stop - start;       // audioFFT
+    
+    if (wf->avg_clear) {
+        for (i = start; i < stop; i++)
+            wf->avg_pwr[i] = dB_wire_to_dBm(bp[i]);
+        wf->report_sec = timer_sec();
+        wf->last_noise = wf->last_signal = -1;
+        wf->avg_clear = 0;
+    } else {
+        int algo = wf->aper_algo;
+        float param = wf->aper_param;
+        
+        if (single_shot) {
+            algo = MMA;
+            param = 8.0;
+        }
+        
+        switch (algo) {
+        
+        case IIR:
+            for (i = start; i < stop; i++) {
+                float pwr = dB_wire_to_dBm(bp[i]);
+                float iir_gain = 1.0 - expf(-param * pwr/255.0);
+                if (iir_gain <= 0.01) iir_gain = 0.01;  // enforce minimum decay rate
+                wf->avg_pwr[i] += (pwr - wf->avg_pwr[i]) * iir_gain;
+            }
+            break;
+
+        case MMA:
+            for (i = start; i < stop; i++) {
+                float pwr = dB_wire_to_dBm(bp[i]);
+                wf->avg_pwr[i] = ((wf->avg_pwr[i] * (param-1)) + pwr) / param;
+            }
+            break;
+
+        case EMA:
+            for (i = start; i < stop; i++) {
+                float pwr = dB_wire_to_dBm(bp[i]);
+                wf->avg_pwr[i] += (pwr - wf->avg_pwr[i]) / param;
+            }
+            break;
+        }
+    }
+    
+    u4_t now = timer_sec();
+    int delay = single_shot? 1 : 3;
+    if (now < wf->report_sec + delay) return;
+    wf->report_sec = now;
+
+    wf->done_autoscale++;
+
+    #define RESOLUTION_dB 5
+    int band[APER_PWR_LEN];
+    for (i = start; i < stop; i++)
+        band[i] = ((int) floorf(wf->avg_pwr[i] / RESOLUTION_dB)) * RESOLUTION_dB;
+    qsort(&band[start], len, sizeof(int), qsort_intcomp);
+    int last = band[start], same = 0, max_count = 0, max_dBm = -999, min_dBm;
+
+    for (i = start; i <= stop; i++) {
+        if (i == stop || band[i] != last) {
+            #ifdef WF_INFO
+            printf("%4d: %d\n", last, same);
+            #endif
+            if (same > max_count) max_count = same, min_dBm = last;
+            if (last > max_dBm) max_dBm = last;
+            if (i == stop) break;
+            same = 1;
+            last = band[i];
+        } else {
+            same++;
+        }
+    }
+
+    #ifdef WF_INFO
+    printf("### APER_AUTO n/d=%d/%d rx%d algo=%d max_count=%d dBm=%d:%d\n",
+        wf->need_autoscale, wf->done_autoscale, rx_chan, wf->aper_algo, max_count, min_dBm, max_dBm);
+    #endif
+    if (max_dBm < -80) max_dBm = -80;
+    wf->signal = max_dBm;   // headroom applied on js side
+    wf->noise = min_dBm;
+}
+
 void compute_frame(int rx_chan)
 {
 	wf_inst_t *wf = &WF_SHMEM->wf_inst[rx_chan];
@@ -917,7 +1124,8 @@ void compute_frame(int rx_chan)
 	evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: FFT done");
 	//NextTask("FFT2");
 
-	u1_t *bp = (wf->compression)? out->un.buf2 : out->un.buf;
+	u1_t *buf_p = wf->compression? out->un.buf2 : out->un.buf;
+	u1_t *bp = buf_p;
 			
 	if (!wf->fft_used_limit) wf->fft_used_limit = wf->fft_used;
 
@@ -927,21 +1135,21 @@ void compute_frame(int rx_chan)
 	pwr[1] = 0;
 	
 	#ifdef SHOW_MAX_MIN_PWR
-	static void *FFT_state;
-	static void *pwr_state;
-	static void *dB_state;
-	static void *buf_state;
-	if (wf->new_map2) {
-		if (FFT_state != NULL) free(FFT_state);
-		FFT_state = NULL;
-		if (pwr_state != NULL) free(pwr_state);
-		pwr_state = NULL;
-		if (dB_state != NULL) free(dB_state);
-		dB_state = NULL;
-		if (buf_state != NULL) free(buf_state);
-		buf_state = NULL;
-		wf->new_map2 = false;
-	}
+        static void *FFT_state;
+        static void *pwr_state;
+        static void *dB_state;
+        static void *buf_state;
+        if (wf->new_map2) {
+            if (FFT_state != NULL) free(FFT_state);
+            FFT_state = NULL;
+            if (pwr_state != NULL) free(pwr_state);
+            pwr_state = NULL;
+            if (dB_state != NULL) free(dB_state);
+            dB_state = NULL;
+            if (buf_state != NULL) free(buf_state);
+            buf_state = NULL;
+            wf->new_map2 = false;
+        }
 	#endif
 	
 	for (i=2; i < wf->fft_used_limit; i++) {
@@ -949,8 +1157,8 @@ void compute_frame(int rx_chan)
 		pwr[i] = re*re + im*im;
 
 		#ifdef SHOW_MAX_MIN_PWR
-		//print_max_min_stream_f(&FFT_state, "FFT", i, 2, (double) re, (double) im);
-		//print_max_min_stream_f(&pwr_state, "pwr", i, 1, (double) pwr[i]);
+            //print_max_min_stream_f(&FFT_state, "FFT", i, 2, (double) re, (double) im);
+            //print_max_min_stream_f(&pwr_state, "pwr", i, 1, (double) pwr[i]);
 		#endif
 	}
 		
@@ -1026,30 +1234,30 @@ void compute_frame(int rx_chan)
 		}
 
 		#ifdef SHOW_MAX_MIN_DB
-		float dBs_f[WF_WIDTH];
-		int dBs[WF_WIDTH];
+            float dBs_f[WF_WIDTH];
+            int dBs[WF_WIDTH];
 		#endif
 
 		for (i=0; i<WF_WIDTH; i++) {
 			p = pwr_out_peak[i];
 			//p = pwr_out_sum[i];
 
-			dB = 10.0 * log10f(p * wf->fft_scale[i] + (float) 1e-30) + wf->fft_offset;
-#if 0
-//jks
-if (i == 506) printf("Z%d ", wf->zoom);
-if (i >= 507 && i <= 515) {
-	float peak_dB = 10.0 * log10f(pwr_out_peak[i] * wf->fft_scale[i] + (float) 1e-30) + wf->fft_offset;
-	printf("%d:%.1f|%.1f ", i, dB, peak_dB);
-}
-if (i == 516) printf("\n");
-#endif
+			dB = 10.0 * log10f(p * wf->fft_scale[i] + 1e-30F) + wf->fft_offset;
+            #if 0
+                //jks
+                if (i == 506) printf("Z%d ", wf->zoom);
+                if (i >= 507 && i <= 515) {
+                    float peak_dB = 10.0 * log10f(pwr_out_peak[i] * wf->fft_scale[i] + 1e-30F) + wf->fft_offset;
+                    printf("%d:%.1f|%.1f ", i, dB, peak_dB);
+                }
+                if (i == 516) printf("\n");
+            #endif
 
 			#ifdef SHOW_MAX_MIN_DB
-			dBs_f[i] = dB;
+			    dBs_f[i] = dB;
 			#endif
 			#ifdef SHOW_MAX_MIN_PWR
-			print_max_min_stream_f(&dB_state, "dB", i, 1, (double) dB);
+			    print_max_min_stream_f(&dB_state, "dB", i, 1, (double) dB);
 			#endif
 
 			// We map 0..-200 dBm to (u1_t) 255..55
@@ -1062,27 +1270,27 @@ if (i == 516) printf("\n");
 			*bp++ = (u1_t) (int) dB;
 
 			#ifdef SHOW_MAX_MIN_DB
-			dBs[i] = *(bp-1);
+			    dBs[i] = *(bp-1);
 			#endif
 			#ifdef SHOW_MAX_MIN_PWR
-			print_max_min_stream_i(&buf_state, "buf", i, 1, (int) *(bp-1));
+			    print_max_min_stream_i(&buf_state, "buf", i, 1, (int) *(bp-1));
 			#endif
 		}
 
 		#ifdef SHOW_MAX_MIN_DB
-		//jks
-		printf("Z%d dB_f: ", wf->zoom);
-		for (i=505; i<514; i++) {
-			printf("%d:%.3f ", i, dBs_f[i]);
-		}
-		printf("\n");
-		print_max_min_f("dB_f", dBs_f, WF_WIDTH);
-		printf("Z%d dB: ", wf->zoom);
-		for (i=505; i<514; i++) {
-			printf("%d:%d ", i, dBs[i]);
-		}
-		printf("\n");
-		print_max_min_i("dB", dBs, WF_WIDTH);
+            //jks
+            printf("Z%d dB_f: ", wf->zoom);
+            for (i=505; i<514; i++) {
+                printf("%d:%.3f ", i, dBs_f[i]);
+            }
+            printf("\n");
+            print_max_min_f("dB_f", dBs_f, WF_WIDTH);
+            printf("Z%d dB: ", wf->zoom);
+            for (i=505; i<514; i++) {
+                printf("%d:%d ", i, dBs[i]);
+            }
+            printf("\n");
+            print_max_min_i("dB", dBs, WF_WIDTH);
 		#endif
 	} else {
 		// < FFT than plot
@@ -1095,7 +1303,7 @@ if (i == 516) printf("\n");
 		for (i=0; i<wf->plot_width_clamped; i++) {
 			p = pwr[wf->wf2fft_map[i]];
 			
-			dB = 10.0 * log10f(p * wf->fft_scale[i] + (float) 1e-30) + wf->fft_offset;
+			dB = 10.0 * log10f(p * wf->fft_scale[i] + 1e-30F) + wf->fft_offset;
 			if (dB > 0) dB = 0;
 			if (dB < -200.0) dB = -200.0;
 			dB--;
@@ -1119,6 +1327,9 @@ if (i == 516) printf("\n");
 	}
 	
 	evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: fill out buf");
+
+    if (wf->aper == AUTO)
+        aperture_auto(wf, buf_p);
 
 	ima_adpcm_state_t adpcm_wf;
 	

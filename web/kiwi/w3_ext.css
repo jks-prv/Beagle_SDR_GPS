@@ -415,6 +415,11 @@ input[type=range]::-moz-range-thumb {
     margin-left: 32px
 }
 
+.w3-margin-L-64
+{
+    margin-left: 64px
+}
+
 .w3-margin-R-4
 {
     margin-right: 4px
@@ -508,6 +513,11 @@ input[type=range]::-moz-range-thumb {
 .w3-margin-B-16
 {
     margin-bottom: 16px !important
+}
+
+.w3-margin-B-32
+{
+    margin-bottom: 32px !important
 }
 
 .w3-margin-TB-4
@@ -763,6 +773,11 @@ input[type=range]::-moz-range-thumb {
 .w3-width-half
 {
 	width: 50%;
+}
+
+.w3-width-full
+{
+	width: 100%;
 }
 
 .w3-width-one-sixth

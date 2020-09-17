@@ -120,7 +120,7 @@ void cfg_adm_transition()
 }
 
 int inactivity_timeout_mins, ip_limit_mins;
-int S_meter_cal;
+int S_meter_cal, waterfall_cal;
 double ui_srate, freq_offset;
 int sdr_hu_lo_kHz, sdr_hu_hi_kHz;
 
@@ -205,7 +205,7 @@ void update_vars_from_config()
     if (err) drm_nreg_chans = DRM_NREG_CHANS_DEFAULT;
 
     S_meter_cal = cfg_default_int("S_meter_cal", SMETER_CALIBRATION_DEFAULT, &update_cfg);
-    cfg_default_int("waterfall_cal", WATERFALL_CALIBRATION_DEFAULT, &update_cfg);
+    waterfall_cal = cfg_default_int("waterfall_cal", WATERFALL_CALIBRATION_DEFAULT, &update_cfg);
     cfg_default_bool("contact_admin", true, &update_cfg);
     cfg_default_int("chan_no_pwd", 0, &update_cfg);
     cfg_default_string("owner_info", "", &update_cfg);
@@ -372,12 +372,12 @@ void update_vars_from_config()
     }
 }
 
-// pass result json back to main process via shmem->status_str
+// pass result json back to main process via shmem->status_str_large
 static int _geo_task(void *param)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) param;
 	char *sp = kstr_sp(args->kstr);
-    kiwi_strncpy(shmem->status_str, sp, N_SHMEM_STATUS_STR);
+    kiwi_strncpy(shmem->status_str_large, sp, N_SHMEM_STATUS_STR_LARGE);
     return 0;
 }
 
@@ -396,10 +396,10 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
         clprintf(conn, "GEOLOC: failed for %s\n", geo_host_ip_s);
         return false;
     }
-    //cprintf(conn, "GEOLOC: returned <%s>\n", shmem->status_str);
+    //cprintf(conn, "GEOLOC: returned <%s>\n", shmem->status_str_large);
 
 	cfg_t cfg_geo;
-    if (json_init(&cfg_geo, shmem->status_str) == false) {
+    if (json_init(&cfg_geo, shmem->status_str_large) == false) {
         clprintf(conn, "GEOLOC: JSON parse failed for %s\n", geo_host_ip_s);
         return false;
     }

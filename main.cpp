@@ -65,7 +65,7 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num, wf_num,
 	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, debian_ver,
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
-	color_map, print_stats, ecpu_cmds, ecpu_tcmds, use_spidev, debian_maj, debian_min,
+	print_stats, ecpu_cmds, ecpu_tcmds, use_spidev, debian_maj, debian_min,
 	gps_debug, gps_var, gps_lo_gain, gps_cg_gain, use_foptim, is_locked, drm_nreg_chans;
 
 u4_t ov_mask, snd_intr_usec;
@@ -155,7 +155,6 @@ int main(int argc, char *argv[])
 		if (strcmp(argv[i], "-ext")==0) ext_clk = true;
 		if (strcmp(argv[i], "-use_spidev")==0) { i++; use_spidev = strtol(argv[i], 0, 0); }
 		if (strcmp(argv[i], "-eeprom")==0) create_eeprom = true;
-		if (strcmp(argv[i], "-cmap")==0) color_map = 1;
 		if (strcmp(argv[i], "-sim")==0) wf_sim = 1;
 		if (strcmp(argv[i], "-real")==0) wf_real = 1;
 		if (strcmp(argv[i], "-time")==0) wf_time = 1;
