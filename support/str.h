@@ -44,6 +44,7 @@ void kiwi_get_chars(char *field, char *value, size_t size);
 #define SET_CHARS(field, value, fill) kiwi_set_chars(field, value, fill, sizeof(field));
 void kiwi_set_chars(char *field, const char *value, const char fill, size_t size);
 int kiwi_split(char *ocp, char **mbuf, const char *delims, char *argv[], int nargs);
+char *kiwi_str_replace(char *s, const char *from, const char *to, bool *caller_must_free=NULL);
 void kiwi_str_unescape_quotes(char *str);
 char *kiwi_str_escape_HTML(char *str);
 char *kiwi_str_encode(char *s);
