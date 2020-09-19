@@ -284,6 +284,18 @@ void update_vars_from_config()
         admcfg_default_string("tlimit_exempt_pwd", "", &update_admcfg);
     }
     
+    // sdr.hu => rx.kiwisdr.com in status msg
+    char *status_msg = (char *) cfg_string("status_msg", NULL, CFG_REQUIRED);
+    bool caller_must_free;
+	char *nsm = kiwi_str_replace(status_msg, "sdr.hu", "rx.kiwisdr.com", &caller_must_free);
+	if (nsm) {
+	    nsm = kiwi_str_replace(nsm, "/?top=kiwi", "");  // shrinking, so nsm same memory space
+	    cfg_set_string("status_msg", nsm);
+	    if (caller_must_free) free(nsm);
+	    update_cfg = true;
+    }
+    cfg_string_free(status_msg); status_msg = NULL;
+
 	if (update_cfg)
 		cfg_save_json(cfg_cfg.json);
 
