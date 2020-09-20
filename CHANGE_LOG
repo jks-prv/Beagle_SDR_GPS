@@ -2,6 +2,16 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.404  September 20, 2020
+    DRM extension:
+        Condense schedule format:
+            Station name now overlaps timeline.
+            Links are now info buttons.
+    
+    Aperture auto mode no longer disturbs manual mode WF max/min settings.
+    Expand range of SdrDx colormap a little.
+    In stat tab status message replace sdr.hu with rx.kiwisdr.com
+
 v1.403  September 17, 2020
     DRM extension:
         Added schedule database selection menu. Includes database from drmrx.org
