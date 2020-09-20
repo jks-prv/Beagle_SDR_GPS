@@ -545,6 +545,7 @@ function drm_schedule_svc()
    var i;
    var s = drm.using_default? w3_div('w3-yellow w3-padding w3-show-inline-block', 'can\'t contact kiwisdr.com<br>using default data') : '';
    var narrow = drm.narrow_listing;
+   var toff = drm_tscale(narrow? 1.0 : 0.25);
 
    for (i = 0; i < drm.stations.length; i++) {
       var o = drm.stations[i];
@@ -554,28 +555,32 @@ function drm_schedule_svc()
       var url = o.u;
       var si = '';
 
+      //var station_name = station.replace('_', narrow? '<br>':' ');
+      //if (narrow) station_name = station_name.replace(',', '<br>');
+      var station_name = station.replace('_', ' ');
+      station_name += '&nbsp;&nbsp;&nbsp;'+ (narrow? '<br>':'') + freq;
+      var count = (station_name.match(/<br>/g) || [1]).length;
+      var em =  count + (narrow? 2:1);
+      var time_h = Math.max(20 * (em-1), 30);
+      //console.log(narrow +'|'+ count +'|'+ em +' '+ station_name);
+
       while (i < drm.stations.length && o.s == station && o.f == freq) {
          var b_px = drm_tscale(o.b);
          var e_px = drm_tscale(o.e);
-         si += w3_div(sprintf('id-drm-sched-time %s|left:%spx; width:%spx;|title="%s" onclick="drm_click(%d);"',
-            o.v? 'w3-light-green':'', b_px, (e_px - b_px + 2).toFixed(0), freq.toFixed(0), i));
+         si += w3_div(sprintf('id-drm-sched-time %s|left:%spx; width:%spx; height:%dpx|title="%s" onclick="drm_click(%d);"',
+            o.v? 'w3-light-green':'', b_px, (e_px - b_px + 2).toFixed(0), time_h, freq.toFixed(0), i));
          i++;
          o = drm.stations[i];
       }
       i--;
 
-      station = station.replace('_', narrow? '<br>':' ');
-      if (narrow) station = station.replace(',', '<br>');
-      var count = (station.match(/<br>/g) || [1]).length + (narrow? 3:1);
-
-      //if (url) station = w3_link('w3-link-darker-color', url, station);
       var info = '';
       if (url) info = w3_link('w3-valign', url, w3_icon('w3-link-darker-color cl-drm-sched-info', 'fa-info-circle', 24));
 
       s += w3_inline('cl-drm-sched-station cl-drm-sched-striped/w3-valign',
-         w3_div(sprintf('|font-size:%dem', count), '&nbsp;'),  // sets the parent height since other divs absolutely positioned
+         w3_div(sprintf('|font-size:%dem', em), '&nbsp;'),  // sets the parent height since other divs absolutely positioned
          info, si,
-         w3_div(sprintf('cl-drm-station-name|left:%spx', drm_tscale(0.25)), station + '&nbsp;&nbsp;&nbsp;'+ (narrow? '<br>':'') + freq)
+         w3_div(sprintf('cl-drm-station-name|left:%spx', toff), station_name)
       );
       if (o && o.t == drm.SERVICE) {
          s += w3_div('cl-drm-sched-hr-div cl-drm-sched-striped', '<hr class="cl-drm-sched-hr">');
@@ -617,6 +622,7 @@ function drm_schedule_time_freq(sort_by_freq)
    });
    console.log('sort_by_freq='+ sort_by_freq +' ...');
    console.log(drm.stations_freq);
+   var toff = drm_tscale(narrow? 1.0 : 0.25);
    var last_band = '';
    
    for (i = 0; i < drm.stations_freq.length; i++) {
@@ -624,9 +630,25 @@ function drm_schedule_time_freq(sort_by_freq)
       var station = o.s;
       var freq = o.f;
       var url = o.u;
-      var b_px = drm_tscale(o.b);
-      var e_px = drm_tscale(o.e);
+      var si = '';
       
+      var station_name = station.replace('_', narrow? '<br>':' ');
+      if (narrow) station_name = station_name.replace(',', '<br>');
+      station_name = freq +'&nbsp;&nbsp;&nbsp;'+ (narrow? '<br>':'') + station_name;
+      var count = (station_name.match(/<br>/g) || [1]).length;
+      var em =  count + (narrow? 2:1);
+      var time_h = Math.max(20 * (em-1), 30);
+
+      while (i < drm.stations_freq.length && o.s == station && o.f == freq) {
+         var b_px = drm_tscale(o.b);
+         var e_px = drm_tscale(o.e);
+         si += w3_div(sprintf('id-drm-sched-time %s|left:%spx; width:%spx; height:%dpx|title="%s" onclick="drm_click(%d);"',
+            o.v? 'w3-light-green':'', b_px, (e_px - b_px + 2).toFixed(0), time_h, freq.toFixed(0), i));
+         i++;
+         o = drm.stations_freq[i];
+      }
+      i--;
+
       if (sort_by_freq) {
          var band = null;
       
@@ -645,19 +667,13 @@ function drm_schedule_time_freq(sort_by_freq)
          }
       }
 
-      station = station.replace('_', narrow? '<br>':' ');
-      if (narrow) station = station.replace(',', '<br>');
-      var count = (station.match(/<br>/g) || [1]).length + (narrow? 3:1);
-
-      //if (url) station = w3_link('w3-link-darker-color', url, station);
       var info = '';
       if (url) info = w3_link('w3-valign', url, w3_icon('w3-link-darker-color cl-drm-sched-info', 'fa-info-circle', 24));
 
       s += w3_inline('cl-drm-sched-station cl-drm-sched-striped/w3-valign',
-         w3_div(sprintf('|font-size:%dem', count), '&nbsp;'),  // sets the parent height since other divs absolutely positioned
-         w3_div(sprintf('cl-drm-station-name|left:%spx', drm_tscale(0.25)), freq + '&nbsp;&nbsp;&nbsp;'+ (narrow? '<br>':'') + station),
-         w3_div(sprintf('id-drm-sched-time %s|left:%spx; width:%spx;|title="%s" onclick="drm_click(%d);"',
-            o.v? 'w3-light-green':'', b_px, (e_px - b_px + 2).toFixed(0), freq.toFixed(0), o.i))
+         w3_div(sprintf('|font-size:%dem', em), '&nbsp;'),  // sets the parent height since other divs absolutely positioned
+         info, si,
+         w3_div(sprintf('cl-drm-station-name|left:%spx', toff), station_name)
       );
    }
    
