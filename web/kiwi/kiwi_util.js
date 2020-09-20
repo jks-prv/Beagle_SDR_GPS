@@ -453,6 +453,8 @@ function kiwi_hh_mm(hh_mm)
          var min = (+t[1]) / 60;
          hr = (hr < 0)? (hr - min) : (hr + min);
       }
+      if (t[0] == '-0' || t[0] == '-00')
+         hr = -hr;
       return hr;
    }
 

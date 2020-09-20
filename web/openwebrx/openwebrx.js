@@ -4171,27 +4171,27 @@ function mkcolormap()
 
             original above was too compressed, so what we use is expanded a bit:
             0 0.0 0.0 0.0 
-            45 0.0 0.0 0.25 
-            60 0.0 0.0 0.5 
+            20 0.0 0.0 0.5 
+            60 0.0 0.0 1.0 
             150 1.0 1.0 0.0 
             180 1.0 0.0 0.0 
             210 1.0 1.0 1.0
          */
          
-			if (i <= 45) {
+			if (i <= 20) {
 				r0 = 0; g0 = 0; b0 = 0;
-				r = 0; g = 0; b = 0.25;
+				r = 0; g = 0; b = 0.5;
 				s0 = 0;
-				s1 = 45;
+				s1 = 20;
 			} else
 			if (i <= 60) {
-				r0 = 0; g0 = 0; b0 = 0.25;
-				r = 0; g = 0; b = 0.5;
-				s0 = 46;
+				r0 = 0; g0 = 0; b0 = 0.5;
+				r = 0; g = 0; b = 1.0;
+				s0 = 21;
 				s1 = 60;
 			} else
 			if (i <= 150) {
-				r0 = 0; g0 = 0; b0 = 0.5;
+				r0 = 0; g0 = 0; b0 = 1.0;
 				r = 1.0; g = 1.0; b = 0;
 				s0 = 61;
 				s1 = 150;
@@ -7597,6 +7597,7 @@ function set_ceilfloordb(done)
 function wf_autoscale_cb()
 {
    //console.log('wf_autoscale_cb');
+   wf.need_autoscale = 1;
 	colormap_update();
    freqset_select();
 }

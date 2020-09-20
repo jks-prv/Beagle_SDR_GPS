@@ -263,6 +263,35 @@ int kiwi_split(char *ocp, char **mbuf, const char *delims, char *argv[], int nar
 	return n;
 }
 
+char *kiwi_str_replace(char *s, const char *from, const char *to, bool *caller_must_free)
+{
+    char *fp;
+    if ((fp = strstr(s, from)) == NULL) return NULL;
+    
+    int flen = strlen(from);
+    int tlen = strlen(to);
+    
+    if (tlen <= flen) {
+        do {
+            strncpy((char *) fp, to, tlen);
+            strcpy((char *) fp+tlen, fp+flen);
+        } while ((fp = strstr(s, from)) != NULL);
+        if (caller_must_free) *caller_must_free = false;
+    } else {
+        bool first = true;
+        do {
+            char *ns;
+            asprintf(&ns, "%.*s%s%s", (int) (fp-s), s, to, fp+flen);
+            if (!first) free(s);
+            first = false;
+            s = ns;
+        } while ((fp = strstr(s, from)) != NULL);
+        if (caller_must_free) *caller_must_free = true;
+    }
+    
+    return (char *) s;
+}
+
 void kiwi_str_unescape_quotes(char *str)
 {
 	char *s, *o;

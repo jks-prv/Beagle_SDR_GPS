@@ -105,18 +105,19 @@ bool DRM_msgs(char *msg, int rx_chan)
         if (!DRM_enable && !conn->isLocal) {
             rv = -2;    // prevent attempt to bypass the javascript kiwi.is_local check
         } else {
+            int prev = is_locked;
             if (is_multi_core) {
                 is_locked = (rx_chan < drm_info.drm_chan)? 1:0;
-                printf("DRM BBAI lock_set inuse=%d heavy=%d rx_chan=%d drm_chan=%d locked=%d\n",
-                    inuse, heavy, rx_chan, drm_info.drm_chan, is_locked);
+                printf("DRM BBAI lock_set inuse=%d heavy=%d rx_chan=%d drm_chan=%d prev=%d locked=%d\n",
+                    inuse, heavy, rx_chan, drm_info.drm_chan, prev, is_locked);
             } else {
                 // inuse-1 to not count DRM channel
                 is_locked = ((inuse-1) <= drm_nreg_chans && heavy == 0 && rx_chan < drm_info.drm_chan)? 1:0;
                 if (conn->is_locked)
                     printf("DRM conn->is_locked was already set?\n");
-                if (is_locked) conn->is_locked = true;
-                printf("DRM BBG/B lock_set inuse=%d(%d) heavy=%d locked=%d\n", inuse, inuse-1, heavy, is_locked);
+                printf("DRM BBG/B lock_set inuse=%d(%d) heavy=%d prev=%d locked=%d\n", inuse, inuse-1, heavy, prev, is_locked);
             }
+            if (is_locked) conn->is_locked = true;
             rv = is_locked;
         }
         
