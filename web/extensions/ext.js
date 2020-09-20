@@ -524,7 +524,7 @@ function ext_panel_init()
 	   }, true);
 }
 
-function extint_panel_show(controls_html, data_html, show_func)
+function extint_panel_show(controls_html, data_html, show_func, show_help_button)
 {
 	extint.using_data_container = (data_html? true:false);
 	//console.log('extint_panel_show using_data_container='+ extint.using_data_container);
@@ -570,7 +570,10 @@ function extint_panel_show(controls_html, data_html, show_func)
 	
 	// help button
 	w3_el('id-confirmation-container').style.height = '';    // some exts modify this
-	var show_help_button = w3_call(extint.current_ext_name +'_help', false);
+	show_help_button = isDefined(show_help_button)?
+	      show_help_button
+	   :
+	      w3_call(extint.current_ext_name +'_help', false);
 	//console.log('show_help_button '+ extint.current_ext_name +' '+ show_help_button);
    w3_set_props('id-ext-controls-help-btn', 'w3-disabled', isUndefined(show_help_button) || show_help_button == false);
    if (show_help_button == 'off')
@@ -725,8 +728,8 @@ function extint_focus(is_locked)
          w3_text('w3-medium w3-text-css-yellow',
             'Cannot use extensions while <br> another channel is in DRM mode.'
          );
-      extint_panel_show(s);
-      ext_set_controls_width_height(450, 75);
+      extint_panel_show(s, null, null, 'off');
+      ext_set_controls_width_height(300, 75);
       return;
 	}
 
@@ -745,7 +748,7 @@ function extint_focus(is_locked)
          console.log('extint_focus: '+ ext +' loaded='+ loaded);
          if (loaded) {
             var s = 'loading extension...';
-            extint_panel_show(s);
+            extint_panel_show(s, null, null, 'off');
             ext_set_controls_width_height(325, 45);
             if (kiwi.is_locked)
                console.log('==== IS_LOCKED =================================================');
