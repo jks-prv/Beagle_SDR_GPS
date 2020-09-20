@@ -515,7 +515,7 @@ function drm_pre_set_freq(freq, station)
 function drm_click(idx)
 {
    var o = drm.stations[idx];
-   console.log('drm_click '+ o.f +' '+ dq(o.s.toLowerCase()) +' '+ (o.u? o.u:''));
+   //console.log('drm_click idx='+ idx +' '+ o.f +' '+ dq(o.s.toLowerCase()) +' '+ (o.u? o.u:''));
    
    // it's a hack to add passband to the broadcaster's URL link, but didn't want to change the cjson file format again
    // i.e. "<url>?f=/<pb_lo>,<pb_hi>"     e.g. pb value could 2300 or 2.3k
@@ -643,7 +643,7 @@ function drm_schedule_time_freq(sort_by_freq)
          var b_px = drm_tscale(o.b);
          var e_px = drm_tscale(o.e);
          si += w3_div(sprintf('id-drm-sched-time %s|left:%spx; width:%spx; height:%dpx|title="%s" onclick="drm_click(%d);"',
-            o.v? 'w3-light-green':'', b_px, (e_px - b_px + 2).toFixed(0), time_h, freq.toFixed(0), i));
+            o.v? 'w3-light-green':'', b_px, (e_px - b_px + 2).toFixed(0), time_h, freq.toFixed(0), o.i));
          i++;
          o = drm.stations_freq[i];
       }
