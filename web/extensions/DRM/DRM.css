@@ -34,14 +34,30 @@
 .cl-drm-sched {
     position: absolute;
     background-color: white;
-    font-size: 80%;
+    /* font-size: 80%; */
 }
 
 .cl-drm-sched-station {
+    position: relative;
     width: 100%;
     padding: 8px;
-    color: black;
+}
+
+.cl-drm-sched-info {
+    position: absolute;
+    left: 3px;
+}
+
+.cl-drm-station-name {
+    position: absolute;
+    z-index: 400;
     font-weight: bold;
+    color: black;
+    pointer-events: none;
+}
+
+.cl-drm-station-name a {
+	color: hsl(212, 100%, 50%);
 }
 
 .cl-drm-sched-hr-div {
@@ -63,6 +79,7 @@
     height: 20px;
     border-radius: 10px;
     background-color: Pink;
+    opacity: 0.75;
     display: inline;
     cursor: pointer;
     z-index: 200;

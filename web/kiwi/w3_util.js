@@ -1345,6 +1345,7 @@ function w3_link(psa, url, inner, title, cb, cb_param)
    var qual_url = url;
    if (!url.startsWith('http://') && !url.startsWith('https://'))
       qual_url = 'http://'+ url;
+   inner = inner || '';
    title = (title && title != '')? (' title='+ dq(title)) : '';
 
    // by default use pointer cursor if there is a callback

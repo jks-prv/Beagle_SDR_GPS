@@ -140,13 +140,15 @@ void show_conn(const char *prefix, conn_t *cd)
         return;
     }
     
-    lprintf("%sCONN-%02d %s%s rx=%d auth%d kiwi%d prot%d admin%d local%d tle%d%d KA=%02d/60 KC=%05d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",
+    lprintf("%sCONN-%02d %s%s rx=%d auth%d kiwi%d prot%d admin%d local%d tle%d%d KA=%02d/60 KC=%05d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s%s\n",
         prefix, cd->self_idx, rx_streams[cd->type].uri, cd->internal_connection? "(INT)":"",
         (cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel,
         cd->auth, cd->auth_kiwi, cd->auth_prot, cd->auth_admin, cd->isLocal, cd->tlimit_exempt, cd->tlimit_exempt_by_pwd,
         cd->keep_alive, cd->keepalive_count, cd->mc, cd->magic,
         cd->remote_ip, cd->remote_port, cd->other? "CONN-":"", cd->other? cd->other-conns:-1,
-        (cd->type == STREAM_EXT)? (cd->ext? cd->ext->name : "?") : "", cd->stop_data? " STOP_DATA":"");
+        (cd->type == STREAM_EXT)? (cd->ext? cd->ext->name : "?") : "",
+        cd->stop_data? " STOP_DATA":"",
+        cd->is_locked? " LOCKED":"");
     if (cd->arrived)
         lprintf("       user=<%s> isUserIP=%d geo=<%s>\n", cd->user, cd->isUserIP, cd->geo);
 }
@@ -169,7 +171,7 @@ void dump()
 		if (cd->valid) nconn++;
 	}
 	lprintf("\n");
-	lprintf("CONNS: used %d/%d\n", nconn, N_CONNS);
+	lprintf("CONNS: used %d/%d is_locked=%d\n", nconn, N_CONNS, is_locked);
 
 	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
 		if (!cd->valid) continue;

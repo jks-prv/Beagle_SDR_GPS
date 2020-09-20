@@ -275,6 +275,7 @@ void extint_setup_c2s(void *param)
 
 	// initialize extension for this connection
 	// NB: has to be a 'MSG' and not an 'EXT' due to sequencing of recv_cb setup
+    printf("rx%d SET extint_setup_c2s: ext_client_init=%d(is_locked)\n", conn_ext->ext_rx_chan, is_locked);
 	send_msg(conn_ext, false, "MSG ext_client_init=%d", is_locked);
 }
 
@@ -366,7 +367,7 @@ void extint_c2s(void *param)
 
 			i = strcmp(cmd, "SET ext_is_locked_status");
 			if (i == 0) {
-			    //printf("%d SET ext_is_locked_status\n", conn_ext->ext_rx_chan);
+			    printf("rx%d SET ext_is_locked_status: ext_client_init=%d(is_locked)\n", conn_ext->ext_rx_chan, is_locked);
                 send_msg(conn_ext, false, "MSG ext_client_init=%d", is_locked);
 				continue;
 			}
