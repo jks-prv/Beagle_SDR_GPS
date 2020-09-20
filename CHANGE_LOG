@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.404,405  September 20, 2020
+v1.404,405,406  September 20, 2020
     DRM extension:
         Condense schedule format:
             Station name now overlaps timeline.
