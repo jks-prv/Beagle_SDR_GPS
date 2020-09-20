@@ -7597,6 +7597,7 @@ function set_ceilfloordb(done)
 function wf_autoscale_cb()
 {
    //console.log('wf_autoscale_cb');
+   wf.need_autoscale = 1;
 	colormap_update();
    freqset_select();
 }
