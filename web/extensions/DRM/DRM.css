@@ -76,8 +76,8 @@
 .id-drm-sched-time {
     position: absolute;
     width: 50px;
-    height: 20px;
-    border-radius: 10px;
+    height: 30px;
+    border-radius: 15px;
     background-color: Pink;
     opacity: 0.75;
     display: inline;
