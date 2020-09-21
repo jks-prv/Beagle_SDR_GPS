@@ -5364,6 +5364,22 @@ function parse_freq_mode(freq_mode)
 
 var last_selected_band = 0;
 
+function band_scroll(dir)
+{
+   var i = last_selected_band;
+   var b;
+
+   do {
+      i += dir;
+      if (i < 0) i = band_menu.length - 1;
+      if (i >= band_menu.length) i = 0;
+      b = band_menu[i];
+   } while (b == null);
+   
+   select_band(i);
+   w3_set_value('id-select-band', i);
+}
+
 function select_band(v, mode)
 {
    var v_num = +v;
@@ -6419,7 +6435,9 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', 'Keys', 25, 'Function'),
          w3_inline_percent('w3-padding-tiny', 'g =', 25, 'select frequency entry field'),
          w3_inline_percent('w3-padding-tiny', 'j i LR-arrow-keys', 25, 'frequency step down/up, add shift or alt/ctrl for faster<br>shift plus alt/ctrl to step to next/prev DX label'),
-         w3_inline_percent('w3-padding-tiny', 't T', 25, 'scroll frequency memory list'),
+         w3_inline_percent('w3-padding-tiny', 't T UD-arrow-keys', 25, 'scroll frequency memory list'),
+         w3_inline_percent('w3-padding-tiny', 'b B', 25, 'scroll band menu'),
+         w3_inline_percent('w3-padding-tiny', 'e E', 25, 'scroll extension menu'),
          w3_inline_percent('w3-padding-tiny', 'a A d l u c f q', 25, 'toggle modes: AM SAM DRM LSB USB CW NBFM IQ<br>add alt/ctrl to toggle backwards (e.g. SAM modes)'),
          w3_inline_percent('w3-padding-tiny', 'p P', 25, 'passband narrow/widen'),
          w3_inline_percent('w3-padding-tiny', 'r', 25, 'toggle audio recording'),
@@ -6428,8 +6446,9 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny', 'w W', 25, 'waterfall min dB slider -/+ 1 dB, add alt/ctrl for -/+ 10 dB'),
          w3_inline_percent('w3-padding-tiny', 'S', 25, 'waterfall auto-scale'),
          w3_inline_percent('w3-padding-tiny', 's D', 25, 'spectrum on/off toggle, slow device mode'),
-         w3_inline_percent('w3-padding-tiny', 'v V m', 25, 'volume less/more, mute'),
+         w3_inline_percent('w3-padding-tiny', 'v V m space', 25, 'volume less/more, mute'),
          w3_inline_percent('w3-padding-tiny', 'o', 25, 'toggle between option bar "off" and "stats" mode,<br>others selected by related shortcut key'),
+         w3_inline_percent('w3-padding-tiny', '!', 25, 'toggle aperture manual/auto menu'),
          w3_inline_percent('w3-padding-tiny', '@', 25, 'DX label filter'),
          w3_inline_percent('w3-padding-tiny', 'x y', 25, 'toggle visibility of control panels, top bar'),
          w3_inline_percent('w3-padding-tiny', 'esc', 25, 'close/cancel action'),
@@ -6443,7 +6462,7 @@ function keyboard_shortcut_init()
 
 function keyboard_shortcut_help()
 {
-   confirmation_show_content(shortcut.help, 550, 485);
+   confirmation_show_content(shortcut.help, 550, 545);   // height +15 per added line
 }
 
 // FIXME: animate (light up) control panel icons?
@@ -6471,10 +6490,12 @@ function keyboard_shortcut_url_keys()
    keyboard_shortcut_key_proc();
 }
 
-// abcdefghijklmnopqrstuvwxyz <>@? 0123456789.,/:kM
-// . .. .....F.. ............ .... FFFFFFFFFFFFFFFF   F = frequency entry keys
-// .  .    ..  F  .  .. ..  .
+// abcdefghijklmnopqrstuvwxyz `~!@#$%^&*()-_=+[]{}\|;:'"<>? 0123456789.,/:kM
+// ..........F.. ............    .                      ... FFFFFFFFFFFFFFFF
+// .. ..   ..  F  .  .. ..  .                               F: frequency entry keys
 // ABCDEFGHIJKLMNOPQRSTUVWXYZ
+// :space: :tab:
+//    .
 
 function keyboard_shortcut(key, mod, ctlAlt)
 {
@@ -6506,12 +6527,15 @@ function keyboard_shortcut(key, mod, ctlAlt)
    // volume/mute
    case 'v': setvolume(1, volume-10); toggle_or_set_mute(0); keyboard_shortcut_nav('audio'); break;
    case 'V': setvolume(1, volume+10); toggle_or_set_mute(0); keyboard_shortcut_nav('audio'); break;
-   case 'm': toggle_or_set_mute(); shortcut.nav_click = true; break;
+   case 'm':
+   case ' ': toggle_or_set_mute(); shortcut.nav_click = true; break;
 
    // frequency entry / memory list
    case 'g': case '=': freqset_select(); break;
    case 't': freq_up_down_cb(null, 1); break;
    case 'T': freq_up_down_cb(null, 0); break;
+   case 'b': band_scroll(1); break;
+   case 'B': band_scroll(-1); break;
 
    // page scroll
    case '<': page_scroll(-page_scroll_amount); break;
@@ -6529,6 +6553,9 @@ function keyboard_shortcut(key, mod, ctlAlt)
    case 's': toggle_or_set_spec(); keyboard_shortcut_nav('wf'); break;
    case 'S': wf_autoscale_cb(); keyboard_shortcut_nav('wf'); break;
    case 'D': toggle_or_set_slow_dev(); keyboard_shortcut_nav('wf'); break;
+   
+   // colormap
+   case '!': keyboard_shortcut_nav('wf'); wf_aper_cb('wf.aper', wf.aper ^ 1, false); break;
 
    // misc
    case 'o': keyboard_shortcut_nav(shortcut.nav_off? 'status':'off'); shortcut.nav_off ^= 1; break;
@@ -6536,9 +6563,13 @@ function keyboard_shortcut(key, mod, ctlAlt)
    case 'x': toggle_or_set_hide_panels(); break;
    case 'y': toggle_or_set_hide_topbar(); break;
    case '@': dx_filter(); shortcut.nav_click = true; break;
+   case 'e': extension_scroll(1); break;
+   case 'E': extension_scroll(-1); break;
    case '?': case 'h': keyboard_shortcut_help(); break;
 
-   default: action = false; break;
+   default:
+      if (key.length == 1) console.log('no shortcut key <'+ key +'>');
+      action = false; break;
    
    }
    
@@ -6633,6 +6664,36 @@ function keyboard_shortcut_event(evt)
    }
 }
 
+function extension_scroll(dir)
+{
+   console.log('extension_scroll dir='+ dir);
+   console.log(extint_names);
+   var el = w3_el('id-select-ext');
+   console.log(el);
+   var ext_menu = el.childNodes;
+   console.log(ext_menu);
+   var menu;
+
+   // ext_menu[i: 1..n+1] for value = "0".."n"
+   // value = "-1" when menu has no selection
+   var i = (+el.value)+1;
+   console.log('extension_scroll initial i='+ i);
+
+   do {
+      i += dir;
+      if (i < 1) i = ext_menu.length - 1;
+      if (i >= ext_menu.length) i = 1;
+      menu = ext_menu[i];
+   } while (menu.disabled);
+   
+   var value = +(menu.value);
+   var idx = +(menu.getAttribute('kiwi_idx'));
+   console.log('extension_scroll i='+ i +' val='+ value +' idx='+ idx +' '+ menu.innerHTML);
+   w3_select_value('id-select-ext', value);
+   if (owrx.sel_ext_to) kiwi_clearTimeout(owrx.sel_ext_to);
+   owrx.sel_ext_to = setTimeout(function() { extint_select(value); }, 2000);
+}
+
 
 ////////////////////////////////
 // panels
@@ -6690,10 +6751,10 @@ function panels_setup()
             '</select>'
          ),
 
-         w3_div('select-ext-cell|padding:0',
-            '<select id="select-ext" class="w3-pointer" onchange="freqset_select(); extint_select(this.value)">' +
+         w3_div('id-select-ext-cell|padding:0',
+            '<select id="id-select-ext" class="w3-pointer" onchange="freqset_select(); extint_select(this.value)">' +
                '<option value="-1" selected disabled>extension</option>' +
-               extint_select_menu() +
+               extint_select_build_menu() +
             '</select>'
          )
       );
@@ -7461,6 +7522,7 @@ function setmaxdb(done, str)
 
 function incr_mindb(done, incr)
 {
+   if (wf.aper != wf.aper_e.man) return;
    var incrdb = (+mindb) + incr;
    var val = Math.max(-190, Math.min(-30, incrdb));
    //console.log('incr_mindb mindb='+ mindb +' incrdb='+ incrdb +' val='+ val);
