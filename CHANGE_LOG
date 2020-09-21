@@ -2,6 +2,16 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.407  September 22, 2020
+    Keyboard shortcuts:
+        Space bar now mutes in addition to existing 'm' key.
+        '!' toggles the waterfall aperture manual/auto menu.
+        'b' 'B' scrolls through the "select band" menu. The frequency update is immediate.
+        'e' 'E' scrolls through the "extension" menu. The extension open is delayed
+            slightly so you can scroll through the menu to the desired entry.
+            These keys can be used while an extension is open to select a new extension.
+            As always hit the escape key to close the open extension.
+
 v1.404,405,406  September 20, 2020
     DRM extension:
         Condense schedule format:
