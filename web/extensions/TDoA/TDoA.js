@@ -2243,6 +2243,13 @@ function tdoa_refs_visible_cb(path, checked, first)
 function tdoa_refs_cb(path, checked, first)
 {
    if (first) return;
+   
+   if (checked) {
+      tdoa.show_refs = checked;
+      w3_checkbox_set('tdoa.refs_visible', true);
+   }
+   
+   //console.log('tdoa_refs_cb path='+ path +' checked='+ checked);
    tdoa_rebuild_refs();
 }
 
@@ -2368,7 +2375,8 @@ function tdoa_rebuild_refs(opts)
       if (w3_checkbox_get('tdoa.refs_'+ id))
          ids.push(id);
    });
-   //console.log('tdoa_rebuild_refs REFS <'+ ids +'>');
+   //console.log('tdoa_rebuild_refs REFS <'+ ids +'> show_refs='+ tdoa.show_refs +' opts=...');
+   //console.log(opts);
 
    // make ref clusters contain only un-selected ref markers
    tdoa.cur_ref_markers = [];
