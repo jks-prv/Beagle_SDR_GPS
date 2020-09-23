@@ -2,6 +2,18 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.408  September 24, 2020
+    TDoA:
+        Easier way to select single "reference location" subcategory (e.g. "utility").
+            Previously you had to select all subcategories by checking the main
+            "reference locations" checkbox. Then uncheck all the subcategories you
+            _didn't_ want. Now simply de-select all subcategories by unchecking the
+            "reference locations" checkbox and check the subcategories you want.
+
+        The reference locations, utility subcategory has been updated to include 5 known
+            and suspected high-frequency stock trading (HFT) transmitting sites in the
+            USA directed towards Europe. If you know of others please post on the forum.
+
 v1.407  September 22, 2020
     Keyboard shortcuts:
         Space bar now mutes in addition to existing 'm' key.
