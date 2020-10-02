@@ -2,6 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.409  October 3, 2020
+    Added "Initial aperture" setting to admin page config tab. This setting determines
+    which waterfall colormap aperture mode, manual or auto, is used as the default for
+    "first time" visitors to your Kiwi. More precisely, for any connection to your Kiwi
+    where the "last aperture set" cookie has not been previously set ("first time"
+    visitors are a subset of that definition).    
+
 v1.408  September 24, 2020
     TDoA:
         Easier way to select single "reference location" subcategory (e.g. "utility").
