@@ -226,6 +226,7 @@ void update_vars_from_config()
     cfg_default_bool("test_deadline_update", false, &update_cfg);
     cfg_default_bool("disable_recent_changes", false, &update_cfg);
     cfg_default_int("init.cw_offset", 500, &update_cfg);
+    cfg_default_int("init.aperture", 1, &update_cfg);
     cfg_default_int("S_meter_OV_counts", 10, &update_cfg);
     cfg_default_bool("webserver_caching", true, &update_cfg);
 

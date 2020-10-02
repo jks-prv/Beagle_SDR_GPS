@@ -317,7 +317,8 @@ function kiwi_xdLocalStorage_init()
 	var iframeUrls = [];
 	for (var i = 0; i < 5; i++) {
 		if (dbgUs && i == 0)		// jksx XDLS
-			iframeUrls[i] = 'http://kiwi:8073/pkgs/xdLocalStorage/xdLocalStorage-min.html';
+			//iframeUrls[i] = 'http://kiwi:8073/pkgs/xdLocalStorage/xdLocalStorage-min.html';
+			iframeUrls[i] = 'http://kiwisdr.com/pkgs/xdLocalStorage/xdLocalStorage-min.html';
 		else
 			iframeUrls[i] = 'http://pub'+ i +'.kiwisdr.com:8073/pkgs/xdLocalStorage/xdLocalStorage-min.html';
 	}
