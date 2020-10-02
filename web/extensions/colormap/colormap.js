@@ -250,7 +250,9 @@ function colormap_controls_setup()
 function colormap_init()
 {
    // has to be done after spectrum_init() but before audioFFT_setup()
-   var last_aper = readCookie('last_aper', wf.aper_e.auto);
+   var init_aper = +ext_get_cfg_param('init.aperture', -1, EXT_NO_SAVE);
+   console.log('init_aper='+ init_aper);
+   var last_aper = readCookie('last_aper', (init_aper == -1)? 0 : init_aper);
    wf_aper_cb('wf.aper', last_aper, false);     // writes 'last_aper' cookie
    w3_show('id-aper-data');
    wf.aper_w = parseFloat(w3_el('id-control').style.width);

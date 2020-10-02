@@ -5,6 +5,10 @@
 //		NTP status?
 
 
+var admin_sdr = {
+   aper_s: [ 'man', 'auto' ]
+};
+
 ////////////////////////////////
 // config
 ////////////////////////////////
@@ -27,6 +31,7 @@ function config_html()
 	kiwi_get_init_settings();		// make sure defaults exist
 	
 	var init_mode = ext_get_cfg_param('init.mode', 0);
+	var init_aperture = ext_get_cfg_param('init.aperture', 1);
 	var init_AM_BCB_chan = ext_get_cfg_param('init.AM_BCB_chan', 0);
 	var init_ITU_region = ext_get_cfg_param('init.ITU_region', 0);
 	var max_freq = ext_get_cfg_param('max_freq', 0);
@@ -34,15 +39,16 @@ function config_html()
 	
 	var s1 =
 		'<hr>' +
-		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
+		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_input_get('', 'Initial frequency (kHz)', 'init.freq', 'admin_float_cb'),
-			w3_div('w3-center',
-				w3_select('', 'Initial mode', '', 'init.mode', init_mode, kiwi.modes_u, 'admin_select_cb')
+			w3_inline('/w3-halign-space-around/w3-center',
+				w3_select('', 'Initial mode', '', 'init.mode', init_mode, kiwi.modes_u, 'admin_select_cb'),
+				w3_select('', 'Initial aperture', '', 'init.aperture', init_aperture, admin_sdr.aper_s, 'admin_select_cb')
 			),
 			w3_input_get('', 'Initial CW offset (Hz)', 'init.cw_offset', 'admin_int_cb')
 		) +
 
-		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
+		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_input_get('', 'Initial waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'admin_int_cb'),
 			w3_input_get('', 'Initial waterfall max (dBFS)', 'init.max_dB', 'admin_int_cb'),
 			w3_input_get('', 'Initial zoom (0-13)', 'init.zoom', 'admin_int_cb')
