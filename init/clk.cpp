@@ -210,7 +210,7 @@ void tod_correction()
         UMS hms(gps_utc_fhours);
         // GPS time HH:MM:SS.sss = hms.u, hms.m, hms.s
 
-        time_t t; time(&t); struct tm tm; gmtime_r(&t, &tm);
+        time_t t; time(&t); struct tm tm, otm; gmtime_r(&t, &tm);
         struct timespec ts; clock_gettime(CLOCK_REALTIME, &ts);
         double tm_fsec = (double) ts.tv_nsec/1e9 + (double) tm.tm_sec;
         double host_utc_fsecs = (double) tm.tm_hour*60*60 + (double) tm.tm_min*60 + tm_fsec;
@@ -219,8 +219,10 @@ void tod_correction()
         double delta = gps_utc_fsecs - host_utc_fsecs;
         
         #define MAX_CLOCK_ERROR_SECS 2.0
-        // require same day to avoid boundary problem at day wrap (23:59:59 -> 00:00:00)
-        if (gps.StatDay == tm.tm_wday && fabs(delta) > MAX_CLOCK_ERROR_SECS) {
+        if (fabs(delta) > MAX_CLOCK_ERROR_SECS) {
+            otm.tm_hour = tm.tm_hour;
+            otm.tm_min = tm.tm_min;
+
             tm.tm_hour = hms.u;
             tm.tm_min = hms.m;
             tm.tm_sec = (int) floor(hms.s);
@@ -237,7 +239,7 @@ void tod_correction()
         
         if (msg) {
             printf("GPS %02d:%02d:%04.3f (%+d) UTC %02d:%02d:%04.3f deltaT %.3f %s\n",
-                hms.u, hms.m, hms.s, gps.delta_tLS, tm.tm_hour, tm.tm_min, tm_fsec, delta, (msg == 4)? "SET" : "CHECK");
+                hms.u, hms.m, hms.s, gps.delta_tLS, otm.tm_hour, otm.tm_min, tm_fsec, delta, (msg == 4)? "SET" : "CHECK");
             msg--;
         }
     }
