@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.410  October 7, 2020
+    GPS time-of-day (TOD) correction now works even if the Kiwi date is set incorrectly.
+        Previously the Kiwi week day number had to match GPS for TOD correction to work.
+        The GPS code currently does not know how to set the Kiwi date because it does
+        not parse the GPS almanac.
+
 v1.409  October 3, 2020
     Added "Initial aperture" setting to admin page config tab. This setting determines
     which waterfall colormap aperture mode, manual or auto, is used as the default for
