@@ -682,7 +682,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         o_uri = (char *) "index.html";
 
         // Kiwi URL redirection
-        if (rx_count_server_conns(INCLUDE_INTERNAL) == rx_chans || down) {
+        if (rx_count_server_conns(INCLUDE_INTERNAL) == rx_chans || down || update_in_progress || backup_in_progress) {
             char *url_redirect = (char *) admcfg_string("url_redirect", NULL, CFG_REQUIRED);
             if (url_redirect != NULL && *url_redirect != '\0') {
             
