@@ -205,42 +205,46 @@ void tod_correction()
     if (gps.tLS_valid) {
         static int msg;
         double gps_utc_fsecs = gps.StatSec - gps.delta_tLS;
-        double gps_utc_frac_sec = gps_utc_fsecs - floor(gps_utc_fsecs);
-        double gps_utc_fhours = gps_utc_fsecs/60/60;
-        UMS hms(gps_utc_fhours);
-        // GPS time HH:MM:SS.sss = hms.u, hms.m, hms.s
-
-        time_t t; time(&t); struct tm tm, otm; gmtime_r(&t, &tm);
-        struct timespec ts; clock_gettime(CLOCK_REALTIME, &ts);
-        double tm_fsec = (double) ts.tv_nsec/1e9 + (double) tm.tm_sec;
-        double host_utc_fsecs = (double) tm.tm_hour*60*60 + (double) tm.tm_min*60 + tm_fsec;
-        // Host time HH:MM:SS.sss = tm.tm_hour, tm.tm_min, tm_fsec
-
-        double delta = gps_utc_fsecs - host_utc_fsecs;
         
-        #define MAX_CLOCK_ERROR_SECS 2.0
-        if (fabs(delta) > MAX_CLOCK_ERROR_SECS) {
-            otm.tm_hour = tm.tm_hour;
-            otm.tm_min = tm.tm_min;
+        // avoid window after 00:00:00 where gps.StatSec - gps.delta_tLS is negative!
+        if (gps_utc_fsecs > 0) {
+            double gps_utc_frac_sec = gps_utc_fsecs - floor(gps_utc_fsecs);
+            double gps_utc_fhours = gps_utc_fsecs/60/60;
+            UMS hms(gps_utc_fhours);
+            // GPS time HH:MM:SS.sss = hms.u, hms.m, hms.s
 
-            tm.tm_hour = hms.u;
-            tm.tm_min = hms.m;
-            tm.tm_sec = (int) floor(hms.s);
-            ts.tv_sec = timegm(&tm);
+            time_t t; time(&t); struct tm tm, otm; gmtime_r(&t, &tm);
+            struct timespec ts; clock_gettime(CLOCK_REALTIME, &ts);
+            double tm_fsec = (double) ts.tv_nsec/1e9 + (double) tm.tm_sec;
+            double host_utc_fsecs = (double) tm.tm_hour*60*60 + (double) tm.tm_min*60 + tm_fsec;
+            // Host time HH:MM:SS.sss = tm.tm_hour, tm.tm_min, tm_fsec
 
-            // NB: doesn't work without the intermediate cast to (int)
-            ts.tv_nsec = (time_t) (int) (gps_utc_frac_sec * 1e9);
-            msg = 4;
+            double delta = gps_utc_fsecs - host_utc_fsecs;
+        
+            #define MAX_CLOCK_ERROR_SECS 2.0
+            if (fabs(delta) > MAX_CLOCK_ERROR_SECS) {
+                otm.tm_hour = tm.tm_hour;
+                otm.tm_min = tm.tm_min;
 
-            if (clock_settime(CLOCK_REALTIME, &ts) < 0) {
-                perror("clock_settime");
+                tm.tm_hour = hms.u;
+                tm.tm_min = hms.m;
+                tm.tm_sec = (int) floor(hms.s);
+                ts.tv_sec = timegm(&tm);
+
+                // NB: doesn't work without the intermediate cast to (int)
+                ts.tv_nsec = (time_t) (int) (gps_utc_frac_sec * 1e9);
+                msg = 4;
+
+                if (clock_settime(CLOCK_REALTIME, &ts) < 0) {
+                    perror("clock_settime");
+                }
             }
-        }
         
-        if (msg) {
-            printf("GPS %02d:%02d:%04.3f (%+d) UTC %02d:%02d:%04.3f deltaT %.3f %s\n",
-                hms.u, hms.m, hms.s, gps.delta_tLS, otm.tm_hour, otm.tm_min, tm_fsec, delta, (msg == 4)? "SET" : "CHECK");
-            msg--;
+            if (msg) {
+                printf("GPS %02d:%02d:%04.3f (%+d) UTC %02d:%02d:%04.3f deltaT %.3f %s\n",
+                    hms.u, hms.m, hms.s, gps.delta_tLS, otm.tm_hour, otm.tm_min, tm_fsec, delta, (msg == 4)? "SET" : "CHECK");
+                msg--;
+            }
         }
     }
 }
