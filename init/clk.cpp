@@ -195,6 +195,7 @@ void tod_correction()
     // corrects the time, but not the date
 
     #if 0
+        // testing: don't wait to receive from GPS which can sometimes take a long time
         if (!gps.tLS_valid) {
             gps.delta_tLS = 18;
             printf("GPS/UTC +%d sec (faked)\n", gps.delta_tLS);
@@ -208,21 +209,39 @@ void tod_correction()
         
         // avoid window after 00:00:00 where gps.StatSec - gps.delta_tLS is negative!
         if (gps_utc_fsecs > 0) {
+            #if 0
+                // assist with spans_midnight testing
+                static int inject_span;
+                if (inject_span != 1) {
+                    if (inject_span == 0)
+                        inject_span = 4;
+                    else
+                        inject_span--;
+                    gps_utc_fsecs = 4 + gps.delta_tLS;
+                }
+            #endif
+
             double gps_utc_frac_sec = gps_utc_fsecs - floor(gps_utc_fsecs);
             double gps_utc_fhours = gps_utc_fsecs/60/60;
             UMS hms(gps_utc_fhours);
             // GPS time HH:MM:SS.sss = hms.u, hms.m, hms.s
-
+            
             time_t t; time(&t); struct tm tm, otm; gmtime_r(&t, &tm);
             struct timespec ts; clock_gettime(CLOCK_REALTIME, &ts);
             double tm_fsec = (double) ts.tv_nsec/1e9 + (double) tm.tm_sec;
             double host_utc_fsecs = (double) tm.tm_hour*60*60 + (double) tm.tm_min*60 + tm_fsec;
             // Host time HH:MM:SS.sss = tm.tm_hour, tm.tm_min, tm_fsec
 
+            // don't do a correction that would result in an incorrect date change (i.e. +/- 1 day)
+            bool spans_midnight = ((hms.u == 23 && tm.tm_hour == 0) || (hms.u == 0 && tm.tm_hour == 23));
             double delta = gps_utc_fsecs - host_utc_fsecs;
-        
+            static int spans_midnight_msg;
+            
+            if (spans_midnight && !spans_midnight_msg) msg = spans_midnight_msg = 1;
+
             #define MAX_CLOCK_ERROR_SECS 2.0
-            if (fabs(delta) > MAX_CLOCK_ERROR_SECS) {
+            if (!spans_midnight && fabs(delta) > MAX_CLOCK_ERROR_SECS) {
+                spans_midnight_msg = 0;
                 otm.tm_hour = tm.tm_hour;
                 otm.tm_min = tm.tm_min;
 
@@ -239,10 +258,11 @@ void tod_correction()
                     perror("clock_settime");
                 }
             }
-        
+    
             if (msg) {
-                printf("GPS %02d:%02d:%04.3f (%+d) UTC %02d:%02d:%04.3f deltaT %.3f %s\n",
-                    hms.u, hms.m, hms.s, gps.delta_tLS, otm.tm_hour, otm.tm_min, tm_fsec, delta, (msg == 4)? "SET" : "CHECK");
+                printf("GPS %02d:%02d:%06.3f (%+d) UTC %02d:%02d:%06.3f deltaT %.3f %s\n",
+                    hms.u, hms.m, hms.s, gps.delta_tLS, otm.tm_hour, otm.tm_min, tm_fsec, delta,
+                    spans_midnight? "spans midnight, correction delayed" : ((msg == 4)? "SET" : "CHECK"));
                 msg--;
             }
         }
