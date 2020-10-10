@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.413  October 10, 2020
+    Include Kiwi's set UTC date/time in /status URL response.
+
 v1.412  October 8, 2020
     Another fix for GPS TOD correction.
     Do URL redirection during updates and backups.
