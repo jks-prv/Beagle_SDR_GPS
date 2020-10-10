@@ -301,7 +301,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			"gps=%s\ngps_good=%d\nfixes=%d\nfixes_min=%d\nfixes_hour=%d\n"
 			"tdoa_id=%s\ntdoa_ch=%d\n"
 			"asl=%d\nloc=%s\n"
-			"sw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
+			"sw_version=%s%d.%d\nantenna=%s\n%suptime=%d\ndate=%s\n",
 			status, offline? "yes":"no", name, version_maj, version_min,
 
 			// "nbsp;nbsp;" can't be used here because HTML can't be sent.
@@ -335,7 +335,8 @@ char *rx_server_ajax(struct mg_connection *mc)
 			"KiwiSDR_v", version_maj, version_min,
 			(s6 = cfg_string("rx_antenna", NULL, CFG_OPTIONAL)),
 			no_open_access? "auth=password\n" : "",
-			timer_sec()
+			timer_sec(),
+			utc_ctime_static()
 			);
 
 		free(name);
