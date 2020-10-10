@@ -1,23 +1,37 @@
-See the full copyright information in the _COPYRIGHT file in sub-directories and in individual files.
+See the full copyright information in the individual _COPYRIGHT files in most sub-directories
+and also in individual files.
 
-OpenWebRX
+KiwiSDR
+Copyright (c) 2014-2020 John Seamons, ZL/KF6VO
+Copyright (c) 2018-2020 Christoph Mayer, DL1CH
+
+OpenWebRX, CSDR
 Copyright (c) 2013-2014 Andras Retzler <randras@sdr.hu>
+    IMA_ADPCM
+        Copyright (c) 2015, Andras Retzler <randras@sdr.hu>
+        Copyright 1997 Tim Kientzle.
+        Copyright 1992 by Stichting Mathematisch Centrum, Amsterdam, The Netherlands.
+    font-expletus-sans
+        Copyright (c) 2011, Jasper de Waard (jasper@designtown.nl)
 
 Homemade GPS Receiver
-Copyright (C) 2013 Andrew Holme
-http://www.holmea.demon.co.uk/GPS/Main.htm
+Copyright (C) 2013 Andrew Holme, http://www.holmea.demon.co.uk/GPS/Main.htm
+    Kalman filter, SPP solver
+        Copyright (c) 2018-2020 Christoph Mayer, DL1CH
+    Galileo, QZSS support
+        Copyright (c) 2018-2020 John Seamons, ZL/KF6VO
+    GNSS-SDRLIB
+        Copyright (C) 2014 Taro Suzuki <gnsssdrlib@gmail.com>
+        Copyright (C) 2014 T. Takasu <http://www.rtklib.com>
+    ka9q-fec
+        Copyright 2004-2006, Phil Karn, KA9Q
+    TNT_JAMA
+        NIST - Pursuant to title 17 Section 105 of the United States Code, this software
+        is not subject to copyright protection and is in the public domain.
 
 CuteSDR
 Copyright 2010 Moe Wheatley. All rights reserved.
 Copyright(C) 1996-1998 Takuya OOURA
-
-WSPR decoder
-Copyright 2014, Steven Franke, K9AN
-Copyright (C) 2001-2013 by Joe Taylor, K1JT
-Copyright 1994, Phil Karn, KA9Q
-
-STANAG 4285 decoder
-Copyright (c) 2000-2016, C.H Brain, G4GUO
 
 openHPSDR Hermes
 Copyright (c) 2008 Alex Shovkoplyas, VE3NEA
@@ -28,11 +42,116 @@ Copyright (c) 2004-2013 Sergey Lyubka <valenok@gmail.com>
 Copyright (c) 2013-2014 Cesanta Software Limited
 Copyright (c) By Steve Reid <steve@edmweb.com>
 
-BeagleBone Black
+Teensy-ConvolutionSDR project
+(c) Frank DD4WH and Michael DL2FW 2017-2020
+
+WDSP
+(c) Warren Pratt wdsp library 2016
+
+CMSIS
+Copyright (C) 2010-2019 ARM Limited or its affiliates. All rights reserved.
+
+
+////////////////////////////////
+// Extensions
+////////////////////////////////
+
+CW decoder
+Copyright (c) 2016  Loftur E. Jonasson  (tf3lj [at] arrl [dot] net)
+
+DRM / Dream
+Copyright (c) 2001-2020, Technische Universitaet Darmstadt, Institut fuer Nachrichtentechnik
+    Fraunhofer FDK AAC Codec Library for Android
+        Copyright  1995 - 2018 Fraunhofer-Gesellschaft zur Förderung der angewandten
+        Forschung e.V. All rights reserved.
+    OpenCORE-AMR modifications to Fraunhofer FDK AAC Codec
+        Copyright (C) 2009-2011 Martin Storsjo
+    Features NewsService Journaline(R) decoder technology by Fraunhofer IIS,
+        Erlangen, Germany. Copyright (c) 2003, 2004
+
+FAX
+Copyright (C) 2015 by Sean D'Epagnier
+
+FSK / Navtex
+Copyright (C) 2011 by Paul Lutus
+
+IBP scanner
+Copyright (c) 2017 Peter Jennings, VE3SUN
+
+Iframe
+Copyright (c) 2020 Kari Karvonen, OH1KK
+
+SSTV
+Copyright (c) 2007-2013, Oona Räisänen (OH2EIQ [at] sral.fi)
+
+STANAG 4285 decoder
+Copyright (c) 2000-2016, C.H Brain, G4GUO
+
+TDoA
+Copyright (c) 2018-2020 Christoph Mayer, DL1CH
+Copyright (c) 2014-2020 John Seamons, ZL/KF6VO
+
+WSPR decoder
+Copyright (C) 2001-2015 by Joe Taylor, K1JT
+Copyright 2014-2015, Steven Franke, K9AN
+    Fano decoder
+        Copyright 1994, Phil Karn, KA9Q
+    nhash
+        Copyright (C) 2006 Bob Jenkins <bob_jenkins@burtleburtle.net>
+
+
+////////////////////////////////
+// Software packages
+////////////////////////////////
+
+FRP - fast reverse proxy
+Copyright 2017 fatedier, fatedier@gmail.com
+
+JSMN - Jasmine (JSON parser)
+Copyright (c) 2010 Serge A. Zaitsev
+
+noip2 - DDNS client
+Copyright 2000-2006 Free Software Foundation, Inc.
+
+parson
+Copyright (c) 2012 - 2017 Krzysztof Gabis
+
+OpenStreetMap
+Copyright (c) OpenStreetMap contributors
+
+xdLocalStorage
+Copyright (c) 2014 ofirdagan
+
+sprintf.js
+Copyright (c) 2007-present, Alexandru Mărășteanu <hello@alexei.ro>
+
+Ooura_FFT32.js
+Copyright(C) 1996-1998 Takuya OOURA
+Copyright (c) 2017 Nick Clark
+
+Leaflet
+(c) 2010-2018 Vladimir Agafonkin, (c) 2010-2011 CloudMade
+    MarkerCluster
+        Copyright (c) 2012 en.literateprograms.org
+    KML
+        Copyright (c) 2011-2015, Pavel Shramov, Bruno Bergot - MIT licence
+    markerwithlabel
+        Copyright 2012 Gary Little [gary at luxcentral.com]
+    daynightoverlay
+        Copyright 2011-2012 Martin Matysiak.
+
+BeagleBone Debian
+Copyright (c) 2014-2020 Robert Nelson <robertcnelson@gmail.com>
+Portions copyright (c) 2014 Charles Steinkuehler <charles@steinkuehler.net>
+    SPIDEV
+        Copyright (C) 2006 SWAPP, Andrea Paterniani <a.paterniani@swapp-eng.it>
+
+BeagleBone Black hardware
 Copyright (C) 2013 CircuitCo
 
-Sitara PRU
-Copyright (C) 2010-12 Texas Instruments Incorporated - http://www.ti.com/ 
+Sitara CPU / PRU
+Copyright (C) 2010-20 Texas Instruments Incorporated - http://www.ti.com
 
-KiwiSDR
-Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+Xilinx (FPGA, Vivado, Verilog)
+(c) Copyright 1995-2020 Xilinx, Inc. All rights reserved.
+
