@@ -193,7 +193,7 @@ function kiwi_main()
 	s = 'mute'; if (q[s]) muted_initially = parseInt(q[s]);
 	s = 'wf'; if (q[s]) wf_rate = q[s];
 	s = 'wfm'; if (q[s]) wf_mm = q[s];
-	s = 'cmap'; if (q[s]) wf.cmap_override = w3_clamp(parseInt(q[s]), 0, wf.cmap_s.length - 1, 0);
+	s = 'cmap'; if (q[s]) wf.cmap_override = w3_clamp(parseInt(q[s]), 0, kiwi.cmap_s.length - 1, 0);
 	s = 'sqrt'; if (q[s]) wf.sqrt = w3_clamp(parseInt(q[s]), 0, 4, 0);
 	s = 'peak'; if (q[s]) peak_initially = parseInt(q[s]);
 	s = 'no_geo'; if (q[s]) no_geoloc = true;
@@ -3282,7 +3282,7 @@ function waterfall_init()
 
 	waterfall_ms = 900/wf_fps_max;
 	waterfall_timer = window.setInterval(waterfall_dequeue, waterfall_ms);
-	console.log('waterfall_dequeue @ '+ waterfall_ms +' msec');
+	//console.log('waterfall_dequeue @ '+ waterfall_ms +' msec');
 	
 	if (shortcut.keys != '') setTimeout(keyboard_shortcut_url_keys, 3000);
 
@@ -3481,7 +3481,7 @@ function waterfall_add(data_raw, audioFFT)
             wf_swallow = wf_swallow_samples[zoom_level-11];
             if (wf_fps != wf_fps_max) {
                wf_swallow = Math.round(wf_swallow * wf_fps / wf_fps_max);
-               //console.log('wf_fps='+ wf_fps +' wf_swallow_samples='+ wf_swallow_samples[zoom_level-11] +' wf_swallow='+ wf_swallow);
+               //console.log('# wf_fps='+ wf_fps +' wf_swallow_samples='+ wf_swallow_samples[zoom_level-11] +' wf_swallow='+ wf_swallow);
             }
          }
       }
@@ -4093,8 +4093,8 @@ var color_map_b = new Uint8Array(256);
 function mkcolormap()
 {
    var ccm;
-   if (wf.cmap >= wf.cmap_e.custom_1)
-      ccm = wf.custom_colormaps[wf.cmap - wf.cmap_e.custom_1];
+   if (wf.cmap >= kiwi.cmap_e.custom_1)
+      ccm = wf.custom_colormaps[wf.cmap - kiwi.cmap_e.custom_1];
    
 	for (var i=0; i<256; i++) {
 		var r0, g0, b0, s0, s1;
@@ -4102,7 +4102,7 @@ function mkcolormap()
 		
 		switch (wf.cmap) {
 		
-		case wf.cmap_e.kiwi:
+		case kiwi.cmap_e.kiwi:
 			// new default
 			if (i < 32) {
 				r = 0; g = 0; b = i*255/31;
@@ -4119,7 +4119,7 @@ function mkcolormap()
 			}
 			break;
 
-		case wf.cmap_e.CuteSDR:
+		case kiwi.cmap_e.CuteSDR:
 			// old one from CuteSDR
 			if (i<43) {
 				r = 0; g = 0; b = i*255/43;
@@ -4136,7 +4136,7 @@ function mkcolormap()
 			}
 			break;
 
-		case wf.cmap_e.greyscale:
+		case kiwi.cmap_e.greyscale:
 			// greyscale
 			black_level = 0.0;
 			white_level = 48.0;
@@ -4144,7 +4144,7 @@ function mkcolormap()
 			r = g = b = v;
 			break;
 			
-		case wf.cmap_e.linear:
+		case kiwi.cmap_e.linear:
 			var c_from = { r:255, g:0, b:255 };
 			var c_to = { r:0, g:255, b:0 };
 			var s = 1.0;
@@ -4153,13 +4153,13 @@ function mkcolormap()
 			b = c_from.b * (i/255) + c_to.b * ((255-i)/255); b = b * (s + (i/255) * (1-s));
 			break;
 
-		case wf.cmap_e.turbo:
+		case kiwi.cmap_e.turbo:
 			r = turbo_colormap_data[i * 3 + 0] * 255;
 			g = turbo_colormap_data[i * 3 + 1] * 255;
 			b = turbo_colormap_data[i * 3 + 2] * 255;
 			break;
 		
-		case wf.cmap_e.SdrDx:
+		case kiwi.cmap_e.SdrDx:
 			/*
 			   from: fyngyrz.com/sdrdxdoc/waterfall2apf.html
             0 0.0 0.0 0.0 
@@ -4222,7 +4222,7 @@ function mkcolormap()
          g = (g0 + ((g - g0) * f)) * 255;
          b = (b0 + ((b - b0) * f)) * 255;
 
-         //if (wf.cmap == wf.cmap_e.SdrDx)
+         //if (wf.cmap == kiwi.cmap_e.SdrDx)
          //   console.log(i +' s0='+ s0 +' s1='+ s1 +' f='+ f.toFixed(3) +' r='+ r.toFixed(0) +' g='+ g.toFixed(0) +' b='+ b.toFixed(0));
 			break;
 
@@ -4420,7 +4420,7 @@ function audioFFT_setup()
    if (!wf.audioFFT_active) return;
    zoom_level = 0;
 
-   if (wf.aper != wf.aper_e.auto) {
+   if (wf.aper != kiwi.aper_e.auto) {
       var last_AF_max_dB = readCookie('last_AF_max_dB', maxdb);
       var last_AF_min_dB = readCookie('last_AF_min_dB', mindb_un);
       setmaxdb(1, last_AF_max_dB);
@@ -4456,7 +4456,7 @@ function audioFFT_update()
       wf.audioFFT_clear_wf = false;
    
       // colormap auto
-      if (wf.aper == wf.aper_e.auto) {
+      if (wf.aper == kiwi.aper_e.auto) {
          if (wf.audioFFT_active) wf.need_autoscale = 16;    // delay a bit before autoscaling
       }
    }
@@ -6988,8 +6988,8 @@ function panels_setup()
       ) +
 
       w3_inline('w3-halign-space-between w3-margin-T-2/',
-         w3_select('|color:red', '', 'colormap', 'wf.cmap', wf.cmap, wf.cmap_s, 'wf_cmap_cb'),
-         w3_select('|color:red', '', 'aperture', 'wf.aper', wf.aper, wf.aper_s, 'wf_aper_cb'),
+         w3_select('|color:red', '', 'colormap', 'wf.cmap', wf.cmap, kiwi.cmap_s, 'wf_cmap_cb'),
+         w3_select('|color:red', '', 'aperture', 'wf.aper', wf.aper, kiwi.aper_s, 'wf_aper_cb'),
          //w3_select('|color:red', '', 'contrast', 'wf.contr', W3_SELECT_SHOW_TITLE, wf_contr_s, 'wf_contr_cb'),
          w3_select('|color:red', '', 'wf', 'wf_filter', wf_filter, wf_sp_menu_s, 'wf_sp_menu_cb', 1),
          w3_select('|color:red', '', 'spec', 'spec_filter', spec_filter, wf_sp_menu_s, 'wf_sp_menu_cb', 0)
@@ -7239,20 +7239,10 @@ var wf_speeds = ['off', '1 Hz', 'slow', 'med', 'fast'];
 var wf = {
    no_wf: false,
    
-   cmap_s: [
-      'Kiwi', 'CuteSDR', 'grey', 'linear', 'turbo', 'SdrDx',
-      'custom 1', 'custom 2', 'custom 3', 'custom 4'
-   ],
-   cmap_e: {
-      kiwi:0, CuteSDR:1, greyscale:2, linear:3, turbo:4, SdrDx:5,
-      custom_1:6, custom_2:7, custom_3:8, custom_4:9
-   },
    cmap: 0,
    cmap_override: -1,
    custom_colormaps: [ new Uint8Array(3*256), new Uint8Array(3*256), new Uint8Array(3*256), new Uint8Array(3*256) ],
 
-   aper_s: [ 'man', 'auto' ],
-   aper_e: { man:0, auto:1 },
    aper: 0,
    aper_algo: 3,     // OFF
    aper_param: 0,
@@ -7423,12 +7413,10 @@ function wf_sp_slider_cb(path, val, done, first)
 
 function wf_cmap_cb(path, idx, first)
 {
-   if (first)
-      idx = (wf.cmap_override != -1)? wf.cmap_override : readCookie('last_cmap', 0);
-   
+   if (first) return;      // colormap_init() handles setup
    idx = +idx;
-   wf.cmap = w3_clamp(idx, 0, wf.cmap_s.length - 1, 0);
-   console_log_dbgUs('# wf_cmap_cb idx='+ idx +' first='+ first +' wf.cmap='+ wf.cmap +' audioFFT_active='+ wf.audioFFT_active);
+   wf.cmap = w3_clamp(idx, 0, kiwi.cmap_s.length - 1, 0);
+   //console_log_dbgUs('# wf_cmap_cb idx='+ idx +' first='+ first +' wf.cmap='+ wf.cmap +' audioFFT_active='+ wf.audioFFT_active);
    w3_select_value(path, idx, { all:1 });    // all:1 changes both menus together
    writeCookie('last_cmap', idx);
    mkcolormap();
@@ -7442,14 +7430,14 @@ function wf_cmap_cb(path, idx, first)
 
 function wf_aper_cb(path, idx, first)
 {
-   if (first) return;
+   if (first) return;      // colormap_init() handles setup
    idx = +idx;
-   wf.aper = w3_clamp(idx, 0, wf.aper_s.length - 1, 0);
+   wf.aper = w3_clamp(idx, 0, kiwi.aper_s.length - 1, 0);
    //console_log_dbgUs('# wf_aper_cb idx='+ idx +' first='+ first +' wf.aper='+ wf.aper +' audioFFT_active='+ wf.audioFFT_active);
    w3_select_value(path, idx);
    writeCookie('last_aper', idx);
 
-   var auto = (wf.aper == wf.aper_e.auto);
+   var auto = (wf.aper == kiwi.aper_e.auto);
    w3_set_innerHTML('id-wf-sliders', auto? wf.floor_ceil_sliders : wf.max_min_sliders);
    w3_color('id-button-wf-autoscale', null, auto? w3_selection_green : '');
 
@@ -7482,7 +7470,7 @@ function setwfspeed(done, str)
    }
    
 	wf_speed = +str;
-	//console.log('setwfspeed '+ wf_speed +' done='+ done);
+	//console.log('# setwfspeed '+ wf_speed +' done='+ done);
 	w3_set_value('slider-rate', wf_speed)
    w3_el('slider-rate-field').innerHTML = wf_speeds[wf_speed];
    w3_el('slider-rate-field').style.color = wf_speed? 'white':'orange';
@@ -7495,7 +7483,7 @@ function setmaxdb(done, str)
 	var strdb = parseFloat(str);
 	var write_cookies = false;
 
-   if (wf.aper == wf.aper_e.auto) {
+   if (wf.aper == kiwi.aper_e.auto) {
       maxdb = strdb + wf.auto_ceil.val;
    } else {
       var input_max = w3_el('id-input-maxdb');
@@ -7522,7 +7510,7 @@ function setmaxdb(done, str)
 
 function incr_mindb(done, incr)
 {
-   if (wf.aper != wf.aper_e.man) return;
+   if (wf.aper != kiwi.aper_e.man) return;
    var incrdb = (+mindb) + incr;
    var val = Math.max(-190, Math.min(-30, incrdb));
    //console.log('incr_mindb mindb='+ mindb +' incrdb='+ incrdb +' val='+ val);
@@ -7535,7 +7523,7 @@ function setmindb(done, str)
    //console.log('setmindb strdb='+ strdb +' maxdb='+ maxdb +' mindb='+ mindb +' done='+ done);
 	var write_cookies = false;
 
-   if (wf.aper == wf.aper_e.auto) {
+   if (wf.aper == kiwi.aper_e.auto) {
       mindb = strdb + wf.auto_floor.val;
    } else {
       var input_min = w3_el('id-input-mindb');
@@ -7582,7 +7570,7 @@ function setmaxmindb(done, write_cookies)
 
 function update_maxmindb_sliders()
 {
-	var auto = (wf.aper == wf.aper_e.auto);
+	var auto = (wf.aper == kiwi.aper_e.auto);
 	if (!auto) mindb = mindb_un - zoomCorrection();
 	
 	full_scale = maxdb - mindb;
@@ -8589,9 +8577,11 @@ function owrx_msg_cb(param, ws)
 			break;
 		case "wf_fps_max":
 			wf_fps_max = parseInt(param[1]);
+		   //console.log('# wf_fps_max='+ wf_fps_max);
 			break;
 		case "wf_fps":
 			wf_fps = parseInt(param[1]);
+		   //console.log('# wf_fps='+ wf_fps);
 			break;
 		case "start":
 			bin_server = parseInt(param[1]);

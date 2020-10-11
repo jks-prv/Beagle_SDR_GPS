@@ -6,7 +6,6 @@
 
 
 var admin_sdr = {
-   aper_s: [ 'man', 'auto' ]
 };
 
 ////////////////////////////////
@@ -31,6 +30,7 @@ function config_html()
 	kiwi_get_init_settings();		// make sure defaults exist
 	
 	var init_mode = ext_get_cfg_param('init.mode', 0);
+	var init_colormap = ext_get_cfg_param('init.colormap', 0);
 	var init_aperture = ext_get_cfg_param('init.aperture', 1);
 	var init_AM_BCB_chan = ext_get_cfg_param('init.AM_BCB_chan', 0);
 	var init_ITU_region = ext_get_cfg_param('init.ITU_region', 0);
@@ -39,33 +39,39 @@ function config_html()
 	
 	var s1 =
 		'<hr>' +
+		w3_text('w3-margin-B-8 w3-text-teal w3-bold', 'Initial values for:') +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
-			w3_input_get('', 'Initial frequency (kHz)', 'init.freq', 'admin_float_cb'),
+			w3_input_get('', 'Frequency (kHz)', 'init.freq', 'admin_float_cb'),
 			w3_inline('/w3-halign-space-around/w3-center',
-				w3_select('', 'Initial mode', '', 'init.mode', init_mode, kiwi.modes_u, 'admin_select_cb'),
-				w3_select('', 'Initial aperture', '', 'init.aperture', init_aperture, admin_sdr.aper_s, 'admin_select_cb')
+				w3_select('', 'Mode', '', 'init.mode', init_mode, kiwi.modes_u, 'admin_select_cb'),
+				w3_select('', 'Colormap', '', 'init.colormap', init_colormap, kiwi.cmap_s, 'admin_select_cb'),
+				w3_select('', 'Aperture', '', 'init.aperture', init_aperture, kiwi.aper_s, 'admin_select_cb')
 			),
-			w3_input_get('', 'Initial CW offset (Hz)', 'init.cw_offset', 'admin_int_cb')
+			w3_input_get('', 'CW offset (Hz)', 'init.cw_offset', 'admin_int_cb')
 		) +
 
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
-			w3_input_get('', 'Initial waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'admin_int_cb'),
-			w3_input_get('', 'Initial waterfall max (dBFS)', 'init.max_dB', 'admin_int_cb'),
-			w3_input_get('', 'Initial zoom (0-13)', 'init.zoom', 'admin_int_cb')
+			w3_input_get('', 'Waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'admin_int_cb'),
+			w3_input_get('', 'Waterfall max (dBFS)', 'init.max_dB', 'admin_int_cb'),
+			w3_input_get('', 'Zoom (0-13)', 'init.zoom', 'admin_int_cb')
 		);
 
    var s2 =
+		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_div('w3-restart',
 				w3_input_get('', 'Frequency scale offset (kHz)', 'freq_offset', 'admin_int_cb'),
 				w3_div('w3-text-black',
-					'Adds offset to frequency scale. <br> Useful when using a transverter, e.g. set to <br>' +
+					'Adds offset to frequency scale. <br> Useful when using a downconverter, e.g. set to <br>' +
 					'116000 kHz when 144-148 maps to 28-32 MHz.'
 				)
 			),
 			w3_divs('w3-restart/w3-center w3-tspace-8',
 				w3_select('', 'Max receiver frequency', '', 'max_freq', max_freq, max_freq_i, 'admin_select_cb'),
-				w3_div('w3-text-black')
+				w3_div('w3-text-black',
+				   '32 MHz necessary for some downconverters. But note <br>' +
+				   'there will be more spurs in the 30-32 MHz range.'
+				)
 			),
 			w3_divs('w3-restart/w3-center w3-tspace-8',
 				w3_select_get_param('', 'SPI clock', '', 'SPI_clock', SPI_clock_i, 'admin_select_cb', 0),
@@ -76,7 +82,12 @@ function config_html()
 		) +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_input_get('', 'S-meter calibration (dB)', 'S_meter_cal', 'admin_int_cb'),
-         w3_slider('id-S_meter_OV_counts//', 'S-meter OV', 'cfg.S_meter_OV_counts', cfg.S_meter_OV_counts, 0, 15, 1, 'config_OV_counts_cb'),
+			w3_divs('/w3-center',
+            w3_slider('id-S_meter_OV_counts//', 'S-meter OV', 'cfg.S_meter_OV_counts', cfg.S_meter_OV_counts, 0, 15, 1, 'config_OV_counts_cb'),
+            w3_text('w3-text-black',
+               'Increase if S-meter OV is flashing excessively.'
+            )
+         ),
 			w3_input_get('', 'Waterfall calibration (dB)', 'waterfall_cal', 'admin_int_cb')
 		) +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
