@@ -154,7 +154,7 @@ function colormap_controls_setup()
 
 		      w3_col_percent('w3-margin-T-32 w3-margin-B-16 w3-valign/',
                w3_div('w3-text-css-orange', '<b>Colormap<br>designer</b>'), 20,
-               w3_select('|color:red', '', 'colormap', 'wf.cmap', wf.cmap, wf.cmap_s, 'wf_cmap_cb'), 27,
+               w3_select('|color:red', '', 'colormap', 'wf.cmap', wf.cmap, kiwi.cmap_s, 'wf_cmap_cb'), 27,
                w3_div('w3-text-white', 'select custom colormap<br>then draw in box below'), 40,
                w3_button('w3-btn w3-round-xlarge w3-padding-small w3-aqua', 'clear', 'colormap_clear_button_cb')
             ),
@@ -207,7 +207,7 @@ function colormap_controls_setup()
 	ext_panel_show(controls_html, null);
 	ext_set_controls_width_height(440, 530);
 	
-	if (wf.aper == wf.aper_e.auto) {
+	if (wf.aper == kiwi.aper_e.auto) {
       w3_show_inline('id-cmap-maxmin');
       colormap_maxmin_cb();
       w3_hide('id-cmap-maxmin-empty');
@@ -250,11 +250,18 @@ function colormap_controls_setup()
 function colormap_init()
 {
    // has to be done after spectrum_init() but before audioFFT_setup()
+   var init_cmap = +ext_get_cfg_param('init.colormap', -1, EXT_NO_SAVE);
+   //console.log('# cmap  init_cmap='+ init_cmap +' cmap_override='+ wf.cmap_override);
+   var last_cmap = readCookie('last_cmap', (init_cmap == -1)? 0 : init_cmap);
+   if (wf.cmap_override != -1) last_cmap = wf.cmap_override;
+   wf_cmap_cb('wf.cmap', last_cmap, false);     // writes 'last_cmap' cookie
+
    var init_aper = +ext_get_cfg_param('init.aperture', -1, EXT_NO_SAVE);
-   console.log('init_aper='+ init_aper);
+   //console.log('# cmap init_aper='+ init_aper);
    var last_aper = readCookie('last_aper', (init_aper == -1)? 0 : init_aper);
    wf_aper_cb('wf.aper', last_aper, false);     // writes 'last_aper' cookie
    w3_show('id-aper-data');
+
    wf.aper_w = parseFloat(w3_el('id-control').style.width);
    wf.aper_h = 16;
    w3_el('id-aper-data').style.width = px(wf.aper_w);
@@ -265,7 +272,7 @@ function colormap_init()
 
 function colormap_select()
 {
-   var which = cmap.which = (wf.cmap >= wf.cmap_e.custom_1)? (wf.cmap - wf.cmap_e.custom_1) : -1;
+   var which = cmap.which = (wf.cmap >= kiwi.cmap_e.custom_1)? (wf.cmap - kiwi.cmap_e.custom_1) : -1;
    var s = localStorage.getItem('colormap');
    
    if (cmap.transfer_canvas && which == -1) {

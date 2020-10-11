@@ -16,7 +16,19 @@ var kiwi = {
    modes_u: [],
    modes_s: {},
    
-   RX4_WF4:0, RX8_WF2:1, RX3_WF3:2, RX14_WF0:3
+   RX4_WF4:0, RX8_WF2:1, RX3_WF3:2, RX14_WF0:3,
+   
+   // colormap definitions needed by admin config
+   cmap_s: [
+      'Kiwi', 'CuteSDR', 'grey', 'linear', 'turbo', 'SdrDx',
+      'custom 1', 'custom 2', 'custom 3', 'custom 4'
+   ],
+   cmap_e: {
+      kiwi:0, CuteSDR:1, greyscale:2, linear:3, turbo:4, SdrDx:5,
+      custom_1:6, custom_2:7, custom_3:8, custom_4:9
+   },
+   aper_s: [ 'man', 'auto' ],
+   aper_e: { man:0, auto:1 }
 };
 
 kiwi.modes_l.forEach(function(e,i) { kiwi.modes_u.push(e.toUpperCase()); kiwi.modes_s[e] = i});
