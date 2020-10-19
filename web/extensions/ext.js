@@ -576,8 +576,7 @@ function extint_panel_show(controls_html, data_html, show_func, show_help_button
 	      w3_call(extint.current_ext_name +'_help', false);
 	//console.log('show_help_button '+ extint.current_ext_name +' '+ show_help_button);
    w3_set_props('id-ext-controls-help-btn', 'w3-disabled', isUndefined(show_help_button) || show_help_button == false);
-   if (show_help_button == 'off')
-      w3_hide('id-ext-controls-help-btn');
+   w3_show_hide('id-ext-controls-help-btn', show_help_button != 'off');
 	
 	extint.displayed = true;
 }
