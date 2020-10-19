@@ -242,6 +242,15 @@ void update_vars_from_config()
         current_espeed = espeed;
     }
     
+    int mtu = cfg_default_int("ethernet_mtu", 0, &update_cfg);
+    static int current_mtu;
+    if (mtu != current_mtu) {
+        printf("ETH0 ifconfig eth0 mtu %d\n", mtu? 1440 : 1500);
+        non_blocking_cmd_system_child(
+            "kiwi.ifconfig", stprintf("ifconfig eth0 mtu %d", mtu? 1440 : 1500), NO_WAIT);
+        current_mtu = mtu;
+    }
+    
     // fix corruption left by v1.131 dotdot bug
     _cfg_int(&cfg_cfg, "WSPR.autorun", &err, CFG_OPTIONAL|CFG_NO_DOT);
     if (!err) {
@@ -314,8 +323,8 @@ void update_vars_from_config()
     admcfg_default_int("duc_update", 3, &update_admcfg);
     admcfg_default_bool("daily_restart", false, &update_admcfg);
     admcfg_default_int("update_restart", 0, &update_admcfg);
-    admcfg_default_string("ip_address.dns1", "8.8.8.8", &update_admcfg);
-    admcfg_default_string("ip_address.dns2", "8.8.4.4", &update_admcfg);
+    admcfg_default_string("ip_address.dns1", "1.1.1.1", &update_admcfg);
+    admcfg_default_string("ip_address.dns2", "8.8.8.8", &update_admcfg);
     admcfg_default_string("url_redirect", "", &update_admcfg);
     admcfg_default_string("ip_blacklist", "47.88.219.24/24", &update_admcfg);
     admcfg_default_bool("no_dup_ip", false, &update_admcfg);

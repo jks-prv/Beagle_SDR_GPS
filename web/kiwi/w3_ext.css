@@ -675,6 +675,11 @@ input[type=range]::-moz-range-thumb {
 	margin-top: 4px !important
 }
 
+.w3-tspace-6:not(:first-child)
+{
+	margin-top: 6px !important
+}
+
 .w3-tspace-8:not(:first-child)
 {
 	margin-top: 8px !important

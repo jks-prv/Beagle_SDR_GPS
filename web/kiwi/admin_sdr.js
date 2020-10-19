@@ -385,7 +385,7 @@ function webpage_html()
             ),
             w3_checkbox_get_param('w3-restart w3-label-inline', 'Photo left margin', 'index_html_params.RX_PHOTO_LEFT_MARGIN', 'admin_bool_cb', true)
          ),
-			w3_input('', 'Photo maximum height (pixels)', 'index_html_params.RX_PHOTO_HEIGHT', '', 'webpage_string_cb')
+			w3_input('', 'Photo maximum height (pixels)', 'index_html_params.RX_PHOTO_HEIGHT', '', 'webpage_int_cb')
 		) +
 		w3_half('', 'w3-container',
 			w3_input('', 'Photo title', 'index_html_params.RX_PHOTO_TITLE', '', 'webpage_string_cb'),
@@ -561,6 +561,19 @@ function webpage_string_cb(path, val)
 {
 	w3_string_set_cfg_cb(path, val);
 	ext_send('SET reload_index_params');
+}
+
+function webpage_int_cb(path, val)
+{
+	val = parseInt(val);
+	if (isNaN(val)) {
+	   // put old value back
+	   val = ext_get_cfg_param(path);
+		w3_set_value(path, val);
+	} else {
+	   w3_num_set_cfg_cb(path, val);
+	   ext_send('SET reload_index_params');
+	}
 }
 
 

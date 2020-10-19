@@ -523,8 +523,13 @@ static void pvt_NET(void *param)
     // make sure /etc/resolv.conf exists
     struct stat st;
     if (stat("/etc/resolv.conf", &st) < 0 || st.st_size == 0) {
-        lprintf("### /etc/resolv.conf missing or zero length, setting to default nameserver 8.8.8.8\n");
-        system("echo nameserver 8.8.8.8 >/etc/resolv.conf");
+        lprintf("### /etc/resolv.conf missing or zero length, setting to default nameserver 1.1.1.1\n");
+        system("echo nameserver 1.1.1.1 >/etc/resolv.conf");
+    } else
+    
+    // make sure well-known DNS server 1.1.1.1 is available as backup
+    if (system("grep '1.1.1.1' /etc/resolv.conf >/dev/null 2>&1")) {
+        system("echo nameserver 1.1.1.1 >>/etc/resolv.conf");
     }
 
     //DNS_lookup("sdr.hu", &net.ips_sdr_hu, N_IPS, SDR_HU_PUBLIC_IP);

@@ -2,6 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.415  October 20, 2020
+    Admin network tab: added Ethernet MTU selection option of 1440 (default 1500) which
+        seems to help some installations using 4G Internet connections.
+    Bug fixes:
+        Well-known DNS server 1.1.1.1 is always added to end of /etc/resolv.conf file.
+        "Photo max height" field can no longer be set blank (which prevented page load).
+
 v1.414  October 10, 2020
     Added initial waterfall colormap selection to admin page "config" tab.
         Some people now prefer to use the SdrDx colormap and have it shown to
