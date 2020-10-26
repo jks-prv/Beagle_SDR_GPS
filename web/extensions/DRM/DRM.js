@@ -66,12 +66,11 @@ var drm = {
    monitor: 0,
    
    database: 0,
-   database_s: [ 'kiwisdr.com', 'drmrx.org' ],
+   database_s: [ 'drmrx.org', 'kiwisdr.com' ],
    database_url: [
-      'http://DRM.kiwisdr.com/drm/stations2.cjson',
-      'http://DRM.kiwisdr.com/drm/drmrx.cjson'
-      ],
-
+      'http://DRM.kiwisdr.com/drm/drmrx.cjson',
+      'http://DRM.kiwisdr.com/drm/stations2.cjson'
+   ],
    
    last_occ: -1,
    last_ilv: -1,

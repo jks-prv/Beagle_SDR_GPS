@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.416  October 27, 2020
+    Make drmrx.org the default DRM schedule database.
+
 v1.415  October 20, 2020
     Admin network tab: added Ethernet MTU selection option of 1440 (default 1500) which
         seems to help some installations using 4G Internet connections.
