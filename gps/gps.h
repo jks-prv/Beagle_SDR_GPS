@@ -231,12 +231,15 @@ typedef struct {
 	u4_t fixes, fixes_min, fixes_min_incr;
 	u4_t fixes_hour, fixes_hour_incr, fixes_hour_samples;
 
-	double StatSec, StatLat, StatLon, StatAlt, sgnLat, sgnLon;
+	double StatWeekSec, StatDaySec;
 	int StatDay;    // 0 = Sunday
+	double StatLat, StatLon, StatAlt, sgnLat, sgnLon;
 	int StatNS, StatEW;
     signed delta_tLS, delta_tLSF;
     bool include_alert_gps;
     bool include_E1B;
+    bool set_date;
+    int tod_chan;
     int soln_type, E1B_plot_separately;
 	gps_chan_t ch[GPS_CHANS];
 	

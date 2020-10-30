@@ -24,6 +24,7 @@
 #define CTIME_R_NL          24      // offset of '\n' in ctime_r return buffer
 
 u4_t timer_epoch_sec();
+void timer_set(struct timespec *ts);
 time_t timer_server_build_unix_time();
 time_t timer_server_start_unix_time();
 u4_t timer_sec();

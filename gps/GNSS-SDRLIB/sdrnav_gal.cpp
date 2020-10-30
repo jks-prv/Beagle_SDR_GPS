@@ -218,9 +218,8 @@ void decode_word6(const uint8_t *buff, sdrnav_t *nav)
     
     /* compute GPS time of week */
     if (eph->week_gst!=0) {
-        eph->tow_gpst=
-            time2gpst(gst2time(eph->week_gst,tow_gst),&eph->week_gpst);
-            nav->tow_updated = 1;
+        eph->tow_gpst=time2gpst(gst2time(eph->week_gst,tow_gst),&eph->week_gpst);
+        nav->tow_updated = 1;
         eph->eph.ttr=gst2time(eph->week_gst,tow_gst);
 
         Ephemeris[nav->sat].Page6(eph->tow_gpst, eph->week_gpst);

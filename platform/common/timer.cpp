@@ -9,7 +9,7 @@
 #include <time.h>
 #include <sys/time.h>
 
-static bool init = false;
+static bool epoch_init = false;
 static u4_t epoch_sec;
 static time_t server_build_unix_time, server_start_unix_time;
 
@@ -26,24 +26,34 @@ static void set_epoch()
 	scall("stat kiwi server", stat(server, &st));
 	server_build_unix_time = st.st_mtime;
 	
-	init = true;
+	epoch_init = true;
 }
 
 u4_t timer_epoch_sec()
 {
-	if (!init) set_epoch();
+	if (!epoch_init) set_epoch();
 	return epoch_sec;
+}
+
+void timer_set(struct timespec *ts)
+{
+    if (clock_settime(CLOCK_REALTIME, ts) < 0) {
+        perror("clock_settime");
+    }
+	
+	// Hmm, resetting the epoch might actually be a bad idea
+	//epoch_sec = ts.tv_sec;
 }
 
 time_t timer_server_build_unix_time()
 {
-	if (!init) set_epoch();
+	if (!epoch_init) set_epoch();
 	return server_build_unix_time;
 }
 
 time_t timer_server_start_unix_time()
 {
-	if (!init) set_epoch();
+	if (!epoch_init) set_epoch();
 	return server_start_unix_time;
 }
 
@@ -52,7 +62,7 @@ u4_t timer_sec()
 {
 	struct timespec ts;
 
-	if (!init) set_epoch();
+	if (!epoch_init) set_epoch();
 	clock_gettime(CLOCK_MONOTONIC, &ts);
     return ts.tv_sec - epoch_sec;
 }
@@ -62,7 +72,7 @@ u4_t timer_ms()
 {
 	struct timespec ts;
 
-	if (!init) set_epoch();
+	if (!epoch_init) set_epoch();
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	int msec = ts.tv_nsec/1000000;
 	assert(msec >= 0 && msec < 1000);
@@ -74,7 +84,7 @@ u4_t timer_us()
 {
 	struct timespec ts;
 
-	if (!init) set_epoch();
+	if (!epoch_init) set_epoch();
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	int usec = ts.tv_nsec / 1000;
 	assert(usec >= 0 && usec < 1000000);
@@ -87,7 +97,7 @@ u64_t timer_us64()
 	struct timespec ts;
 	u64_t t;
 
-	if (!init) set_epoch();
+	if (!epoch_init) set_epoch();
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	int usec = ts.tv_nsec / 1000;
 	assert(usec >= 0 && usec < 1000000);

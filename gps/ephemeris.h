@@ -28,7 +28,7 @@ class EPHEM {
     unsigned IODN[4];
     
     // Subframe 1
-    unsigned week, IODC, t_oc;
+    unsigned IODC, t_oc;
     double t_gd, a_f[3];
 
     // Subframe 2
@@ -53,7 +53,7 @@ class EPHEM {
 
 public:
     double A() const { return sqrtA*sqrtA; }     // Semi-major axis
-    unsigned tow;
+    unsigned week, tow;
     
     // debug
     u4_t sub, tow_pg, tow_time;

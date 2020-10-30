@@ -24,12 +24,6 @@
 #include "shmem.h"
 #include "ephemeris.h"
 #include "fec.h"
-
-#undef B
-#undef K
-#undef M
-#undef I
-#undef Q
 #include "gnss_sdrlib.h"
 
 #include <inttypes.h>

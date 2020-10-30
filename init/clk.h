@@ -55,5 +55,5 @@ void clock_init();
 double clock_initial();
 void clock_conn_init(conn_t *conn);
 void clock_correction(double t_rx, u64_t ticks);
-void tod_correction();
+void tod_correction(u4_t week, int sat);
 int *ClockBins();

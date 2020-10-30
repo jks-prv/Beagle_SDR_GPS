@@ -28,6 +28,14 @@
 #ifndef RTKLIB_H
 #define RTKLIB_H
 
+#ifdef KIWISDR
+    #undef B
+    #undef K
+    #undef M
+    #undef I
+    #undef Q
+#endif
+
 #define ENAGLO
 #define ENAGAL
 #define ENAQZS
