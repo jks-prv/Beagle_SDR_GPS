@@ -195,7 +195,7 @@ void clock_correction(double t_rx, u64_t ticks)
 
 void tod_correction(u4_t week, int sat)
 {
-    #define FAKE_tLS_VALID
+    //#define FAKE_tLS_VALID
     #ifdef FAKE_tLS_VALID
         // testing: don't wait to receive from GPS which can sometimes take a long time
         if (!gps.tLS_valid) {
@@ -235,7 +235,7 @@ void tod_correction(u4_t week, int sat)
         gtime_t gpst = gpst2time(weeks, gps_utc_fsecs);   // actually gpst corrected to utc
         time_t syst; time(&syst);
 
-        #define TEST_TIME_CORR
+        //#define TEST_TIME_CORR
         #ifdef TEST_TIME_CORR
             gpst.time -= MAX_CLOCK_ERROR_SECS + 1;
         #endif
@@ -250,6 +250,7 @@ void tod_correction(u4_t week, int sat)
             // NB: doesn't work without the intermediate cast to (int)
             ts.tv_nsec = (time_t) (int) (gpst.sec * 1e9);
             timer_set(&ts);
+            lprintf("GPS correcting date: date/time UPDATED\n");
         }
         
         // set date/time only once per restart
