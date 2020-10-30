@@ -22,6 +22,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "clk.h"
 #include "gps.h"
+#include "gps/GNSS-SDRLIB/rtklib.h"
 #include "timing.h"
 #include "web.h"
 
@@ -190,11 +191,12 @@ void clock_correction(double t_rx, u64_t ticks)
     #endif
 }
 
-void tod_correction()
-{
-    // corrects the time, but not the date
+#define MAX_CLOCK_ERROR_SECS 2.0
 
-    #if 0
+void tod_correction(u4_t week, int sat)
+{
+    //#define FAKE_tLS_VALID
+    #ifdef FAKE_tLS_VALID
         // testing: don't wait to receive from GPS which can sometimes take a long time
         if (!gps.tLS_valid) {
             gps.delta_tLS = 18;
@@ -203,68 +205,117 @@ void tod_correction()
         }
     #endif
     
-    if (gps.tLS_valid) {
-        static int msg;
-        double gps_utc_fsecs = gps.StatSec - gps.delta_tLS;
+    if (!gps.tLS_valid || gps.fixes < 3) return;
+
+
+    // corrects the date and time if option enabled in admin GPS control panel
+    double gps_utc_fsecs = gps.StatWeekSec - gps.delta_tLS;     // NB: secs in week, not day
+    static bool date_set;
+
+    if (gps.set_date && !date_set) {
+
+        // GPS rollovers
+        // Navstar every 1024 weeks: 1/1980 <#0> 8/1999 <#1> 4/2019 <#2> 11/2038 <#3> ...
+        // Galileo every 4096 weeks: 8/1999 <#0> ?/2077 <#1> ...
+        //
+        // Use fixed rollover count for now. Caching a valid year to detect rollovers is
+        // problematic because of the cache initialization ambiguity.
+        // Could maybe use the longer Galileo rollover period to get initialized?
+
+        int rollover_weeks, rollover_count;
+        if (is_Navstar(sat) || is_QZSS(sat)) {
+            rollover_weeks = 1024;
+            rollover_count = 2;
+        } else {    // Galileo/E1B
+            rollover_weeks = 4096;
+            rollover_count = 0;
+        }
+        u4_t weeks = week + rollover_weeks * rollover_count;
+
+        gtime_t gpst = gpst2time(weeks, gps_utc_fsecs);   // actually gpst corrected to utc
+        time_t syst; time(&syst);
+
+        //#define TEST_TIME_CORR
+        #ifdef TEST_TIME_CORR
+            gpst.time -= MAX_CLOCK_ERROR_SECS + 1;
+        #endif
+
+        if (syst != gpst.time) {
+            lprintf("GPS correcting date: PRN-%s weeks=%d(%d+%d*%d) weekSec=%.1f\n",
+                PRN(sat), weeks, week, rollover_weeks, rollover_count, gps_utc_fsecs);
+            lprintf("GPS correcting date: gps    %s UTC\n", var_ctime_static(&gpst.time));
+            lprintf("GPS correcting date: system %s UTC\n", var_ctime_static(&syst));
+            struct timespec ts;
+            ts.tv_sec = gpst.time;
+            // NB: doesn't work without the intermediate cast to (int)
+            ts.tv_nsec = (time_t) (int) (gpst.sec * 1e9);
+            timer_set(&ts);
+            lprintf("GPS correcting date: date/time UPDATED\n");
+        }
         
-        // avoid window after 00:00:00 where gps.StatSec - gps.delta_tLS is negative!
-        if (gps_utc_fsecs > 0) {
-            #if 0
-                // assist with spans_midnight testing
-                static int inject_span;
-                if (inject_span != 1) {
-                    if (inject_span == 0)
-                        inject_span = 4;
-                    else
-                        inject_span--;
-                    gps_utc_fsecs = 4 + gps.delta_tLS;
-                }
-            #endif
+        // set date/time only once per restart
+        date_set = true;
+    }
 
-            double gps_utc_frac_sec = gps_utc_fsecs - floor(gps_utc_fsecs);
-            double gps_utc_fhours = gps_utc_fsecs/60/60;
-            UMS hms(gps_utc_fhours);
-            // GPS time HH:MM:SS.sss = hms.u, hms.m, hms.s
-            
-            time_t t; time(&t); struct tm tm, otm; gmtime_r(&t, &tm);
-            struct timespec ts; clock_gettime(CLOCK_REALTIME, &ts);
-            double tm_fsec = (double) ts.tv_nsec/1e9 + (double) tm.tm_sec;
-            double host_utc_fsecs = (double) tm.tm_hour*60*60 + (double) tm.tm_min*60 + tm_fsec;
-            // Host time HH:MM:SS.sss = tm.tm_hour, tm.tm_min, tm_fsec
 
-            // don't do a correction that would result in an incorrect date change (i.e. +/- 1 day)
-            bool spans_midnight = ((hms.u == 23 && tm.tm_hour == 0) || (hms.u == 0 && tm.tm_hour == 23));
-            double delta = gps_utc_fsecs - host_utc_fsecs;
-            static int spans_midnight_msg;
-            
-            if (spans_midnight && !spans_midnight_msg) msg = spans_midnight_msg = 1;
-
-            #define MAX_CLOCK_ERROR_SECS 2.0
-            if (!spans_midnight && fabs(delta) > MAX_CLOCK_ERROR_SECS) {
-                spans_midnight_msg = 0;
-                otm.tm_hour = tm.tm_hour;
-                otm.tm_min = tm.tm_min;
-
-                tm.tm_hour = hms.u;
-                tm.tm_min = hms.m;
-                tm.tm_sec = (int) floor(hms.s);
-                ts.tv_sec = timegm(&tm);
-
-                // NB: doesn't work without the intermediate cast to (int)
-                ts.tv_nsec = (time_t) (int) (gps_utc_frac_sec * 1e9);
-                msg = 4;
-
-                if (clock_settime(CLOCK_REALTIME, &ts) < 0) {
-                    perror("clock_settime");
-                }
-            }
+    // corrects the time, but not the date, if time difference greater than MAX_CLOCK_ERROR_SECS
+    gps_utc_fsecs = gps.StatDaySec - gps.delta_tLS;
+    static int msg;
     
-            if (msg) {
-                printf("GPS %02d:%02d:%06.3f (%+d) UTC %02d:%02d:%06.3f deltaT %.3f %s\n",
-                    hms.u, hms.m, hms.s, gps.delta_tLS, otm.tm_hour, otm.tm_min, tm_fsec, delta,
-                    spans_midnight? "spans midnight, correction delayed" : ((msg == 4)? "SET" : "CHECK"));
-                msg--;
+    // avoid window after 00:00:00 where gps.StatDaySec - gps.delta_tLS is negative!
+    if (gps_utc_fsecs > 0) {
+        //#define TEST_INJECT_SPAN
+        #ifdef TEST_INJECT_SPAN
+            // assist with spans_midnight testing
+            static int inject_span;
+            if (inject_span != 1) {
+                if (inject_span == 0)
+                    inject_span = 4;
+                else
+                    inject_span--;
+                gps_utc_fsecs = 4 + gps.delta_tLS;
             }
+        #endif
+
+        double gps_utc_frac_sec = gps_utc_fsecs - floor(gps_utc_fsecs);
+        double gps_utc_fhours = gps_utc_fsecs/60/60;
+        UMS hms(gps_utc_fhours);
+        // GPS time HH:MM:SS.sss = hms.u, hms.m, hms.s
+        
+        time_t t; time(&t); struct tm tm, otm; gmtime_r(&t, &tm);
+        struct timespec ts; clock_gettime(CLOCK_REALTIME, &ts);
+        double tm_fsec = (double) ts.tv_nsec/1e9 + (double) tm.tm_sec;
+        double host_utc_fsecs = (double) tm.tm_hour*60*60 + (double) tm.tm_min*60 + tm_fsec;
+        // Host time HH:MM:SS.sss = tm.tm_hour, tm.tm_min, tm_fsec
+
+        // don't do a correction that would result in an incorrect date change (i.e. +/- 1 day)
+        bool spans_midnight = ((hms.u == 23 && tm.tm_hour == 0) || (hms.u == 0 && tm.tm_hour == 23));
+        double delta = gps_utc_fsecs - host_utc_fsecs;
+        static int spans_midnight_msg;
+        
+        if (spans_midnight && !spans_midnight_msg) msg = spans_midnight_msg = 1;
+
+        if (!spans_midnight && fabs(delta) > MAX_CLOCK_ERROR_SECS) {
+            spans_midnight_msg = 0;
+            otm.tm_hour = tm.tm_hour;
+            otm.tm_min = tm.tm_min;
+
+            tm.tm_hour = hms.u;
+            tm.tm_min = hms.m;
+            tm.tm_sec = (int) floor(hms.s);
+            ts.tv_sec = timegm(&tm);
+
+            // NB: doesn't work without the intermediate cast to (int)
+            ts.tv_nsec = (time_t) (int) (gps_utc_frac_sec * 1e9);
+            msg = 4;
+            timer_set(&ts);
+        }
+
+        if (msg) {
+            lprintf("GPS correcting time: %02d:%02d:%06.3f (%+d) UTC %02d:%02d:%06.3f deltaT %.3f %s\n",
+                hms.u, hms.m, hms.s, gps.delta_tLS, otm.tm_hour, otm.tm_min, tm_fsec, delta,
+                spans_midnight? "spans midnight, correction delayed" : ((msg == 4)? "SET" : "CHECK"));
+            msg--;
         }
     }
 }

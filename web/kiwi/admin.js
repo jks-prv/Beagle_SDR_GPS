@@ -1505,6 +1505,10 @@ function gps_html()
          ),
 
          w3_div('w3-valign w3-text-teal',
+            w3_checkbox('w3-label-inline w3-small/w3-small', 'Set date<br>from GPS?', 'adm.gps_set_date', adm.gps_set_date, 'w3_bool_set_cfg_cb')
+         ),
+
+         w3_div('w3-valign w3-text-teal',
             //w3_div('w3-show-inline w3-margin-right w3-small', '<b>Include<br>alerted?</b>') +
             //w3_switch('w3-show-inline w3-padding-smaller', 'Yes', 'No', 'adm.include_alert_gps', adm.include_alert_gps, 'admin_radio_YN_cb')
             w3_checkbox('w3-label-inline w3-small/w3-small', 'Include<br>alerted sats in<br>solutions? [n]', 'adm.include_alert_gps', adm.include_alert_gps, 'w3_bool_set_cfg_cb')

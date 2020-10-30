@@ -1009,7 +1009,7 @@ void c2s_admin(void *param)
         
                 sb = kstr_asprintf(sb, "],\"stype\":%d", gps.soln_type);
         
-                UMS hms(gps.StatSec/60/60);
+                UMS hms(gps.StatDaySec/60/60);
                 
                 unsigned r = (timer_ms() - gps.start)/1000;
                 if (r >= 3600) {

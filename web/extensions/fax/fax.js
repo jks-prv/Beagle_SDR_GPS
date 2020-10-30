@@ -276,8 +276,16 @@ var fax_asia_pac = {
    "Seoul":    [],
    "HLL2 KR":  [ 3585, 5857.5, 7433.5, 9165, 13570 ],
    
+   // per forum user Fabrys 10/2020
+   "Guangzhou": [],
+   "XSQ, CN":  [ 4159.5, 8310.5, 12375.5, 16562.5 ],
+   
    "Shanghai": [],
    "XSG, CN":  [ 4170, 8302, 12382, 16559 ],
+   
+   // per forum user Fabrys 10/2020
+   "UNID": [],
+   "CN":  [ 4027, 7759, 12588 ],
    
    "Bangkok":  [],
    "HSW64 TH": [ 7395+1.9 ],

@@ -237,6 +237,7 @@ public:
         , _ch(max_channels, 0)
         , _prn(max_channels, 0)
         , _type(max_channels, 0)
+        , _week(max_channels, 0)
         , _adc_ticks(0ULL) {}
 
     int       chans() const { return _chans; }
@@ -247,6 +248,7 @@ public:
     int    sat(int i) const { return _sat[i]; }
     int     ch(int i) const { return _ch[i]; }
     int   type(int i) const { return _type[i]; }
+    int   week(int i) const { return _week[i]; }
 
     u4_t ch_has_soln() const {
         u4_t bitmap = 0;
@@ -330,6 +332,7 @@ public:
             _ch[_chans]   = Replicas[i].ch;
             _prn[_chans]  = Sats[_sat[i]].prn;
             _type[_chans] = Sats[_sat[i]].type;
+            _week[_chans] = replicas[i].eph.week;
             _chans       += 1;
         }
         return (_chans > 0);
@@ -345,6 +348,7 @@ protected:
         _ch        = 0;
         _prn       = 0;
         _type      = 0;
+        _week      = 0;
     }
 
 private:
@@ -355,6 +359,7 @@ private:
     ivec_type _ch;        // channel
     ivec_type _prn;       // prn
     ivec_type _type;      // type
+    ivec_type _week;      // week
     u64_t     _adc_ticks; // ADC clock ticks
 } ;
 
@@ -399,7 +404,10 @@ void update_gps_info_after(GNSSDataForEpoch const& gnssDataForEpoch,
         
         GPSstat(STAT_TIME, pos_solvers[0]->t_rx());
         clock_correction(pos_solvers[0]->t_rx(), gnssDataForEpoch.adc_ticks()); // TODO
-        tod_correction();
+        
+        if (gps.tod_chan >= gnssDataForEpoch.chans()) gps.tod_chan = 0;
+        tod_correction(gnssDataForEpoch.week(gps.tod_chan), gnssDataForEpoch.sat(gps.tod_chan));
+        gps.tod_chan++;
 
         const PosSolver::LonLatAlt llh = pos_solvers[0]->llh();
 

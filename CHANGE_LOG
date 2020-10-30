@@ -2,6 +2,21 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.417  October 30, 2020
+    Allow GPS to set date/time. See admin page, GPS tab, new setting on top bar.
+        Defaults to false.
+        
+        Before this can happen the GPS-to-UTC correction must be received from the GPS
+        navigation message stream. This can take from zero to 12.5 minutes depending on
+        the sat page/subframe transmission phase. The date correction has been tested
+        using navigation data streams from Navstar, QZSS and Galileo.
+        
+        Only one date correction is performed per restart. However the previous constant
+        correction of the system time (but not date) whenever it differs more than
+        2 seconds from GPS time is still in effect.
+
+    Added FAX extension frequencies for CN stations XSQ and an UNID per forum user Fabrys.
+
 v1.416  October 27, 2020
     Make drmrx.org the default DRM schedule database.
 

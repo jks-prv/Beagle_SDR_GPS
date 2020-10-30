@@ -175,7 +175,8 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
         	if (d == 0) return;
             gps.StatDay = d/(60*60*24);
             if (gps.StatDay < 0 || gps.StatDay >= 7) { gps.StatDay = -1; break; }
-            gps.StatSec = d-(60*60*24)*gps.StatDay;
+            gps.StatDaySec = d-(60*60*24)*gps.StatDay;
+            gps.StatWeekSec = d;
             break;
         case STAT_DOP:
 			if (i < 0 || i >= GPS_CHANS) return;
@@ -240,7 +241,7 @@ void StatTask(void *param) {
 	
 	while (1) {
 		UMS lat(gps.StatLat), lon(gps.StatLon);
-		UMS hms(gps.StatSec/60/60);
+		UMS hms(gps.StatDaySec/60/60);
 
 		TaskSleepMsec(1000);
 		
