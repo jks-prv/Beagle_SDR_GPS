@@ -7,9 +7,9 @@ FILES_EMBED_MISC += web/openwebrx/robots.txt
 
 ########
 
-FILES_ALWAYS += $(subst web/,,$(wildcard web/openwebrx/gfx/*.jpg))
-FILES_ALWAYS += $(subst web/,,$(wildcard web/openwebrx/gfx/*.png))
-FILES_ALWAYS += $(subst web/,,$(wildcard web/openwebrx/icons/*.png))
-FILES_ALWAYS += openwebrx/favicon.ico
-FILES_ALWAYS += openwebrx/gfx/font-expletus-sans/ExpletusSans-Medium.ttf
-#FILES_ALWAYS += openwebrx/openwebrx.ccomp.js
+FILES_ALWAYS2 += $(subst web/,,$(wildcard web/openwebrx/gfx/*.jpg))
+FILES_ALWAYS2 += $(subst web/,,$(wildcard web/openwebrx/gfx/*.png))
+FILES_ALWAYS2 += $(subst web/,,$(wildcard web/openwebrx/icons/*.png))
+FILES_ALWAYS2 += openwebrx/favicon.ico
+FILES_ALWAYS2 += openwebrx/gfx/font-expletus-sans/ExpletusSans-Medium.ttf
+#FILES_ALWAYS2 += openwebrx/openwebrx.ccomp.js

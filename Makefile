@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 417
+VERSION_MIN = 418
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.11
@@ -330,8 +330,8 @@ endif
 SRC_DEPS = 
 BIN_DEPS = KiwiSDR.rx4.wf4.bit KiwiSDR.rx8.wf2.bit KiwiSDR.rx3.wf3.bit KiwiSDR.rx14.wf0.bit
 #BIN_DEPS = 
-DEVEL_DEPS = $(OBJ_DIR_DEFAULT)/web_devel.o $(KEEP_DIR)/edata_always.o
-EMBED_DEPS = $(OBJ_DIR_DEFAULT)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o
+DEVEL_DEPS = $(OBJ_DIR_DEFAULT)/web_devel.o $(KEEP_DIR)/edata_always.o $(KEEP_DIR)/edata_always2.o
+EMBED_DEPS = $(OBJ_DIR_DEFAULT)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o $(KEEP_DIR)/edata_always2.o
 EXTS_DEPS = $(OBJ_DIR)/ext_init.o
 
 # these MUST be run by single-threaded make before use of -j in sub makes
@@ -565,16 +565,20 @@ foptim_clean: roptim_embed roptim_ext roptim_maps
 
 FILES_EMBED_SORTED_NW = $(sort $(EMBED_NW) $(EXT_EMBED_NW) $(PKGS_MAPS_EMBED_NW))
 FILES_ALWAYS_SORTED_NW = $(sort $(FILES_ALWAYS))
-#FILES_ALWAYS2_SORTED_NW = $(sort $(FILES_ALWAYS2))
+FILES_ALWAYS2_SORTED_NW = $(sort $(FILES_ALWAYS2))
 
 EDATA_EMBED = $(GEN_DIR)/edata_embed.cpp
 EDATA_ALWAYS = $(GEN_DIR)/edata_always.cpp
+EDATA_ALWAYS2 = $(GEN_DIR)/edata_always2.cpp
 
 $(EDATA_EMBED): $(EDATA_DEP) $(addprefix web/,$(FILES_EMBED_SORTED_NW))
 	(cd web; perl mkdata.pl edata_embed $(FILES_EMBED_SORTED_NW) >../$(EDATA_EMBED))
 
 $(EDATA_ALWAYS): $(EDATA_DEP) $(addprefix web/,$(FILES_ALWAYS_SORTED_NW))
 	(cd web; perl mkdata.pl edata_always $(FILES_ALWAYS_SORTED_NW) >../$(EDATA_ALWAYS))
+
+$(EDATA_ALWAYS2): $(EDATA_DEP) $(addprefix web/,$(FILES_ALWAYS2_SORTED_NW))
+	(cd web; perl mkdata.pl edata_always2 $(FILES_ALWAYS2_SORTED_NW) >../$(EDATA_ALWAYS2))
 
 
 ################################
@@ -610,7 +614,7 @@ c_ext_clang_conv_vars:
 	@echo FILES_EMBED = $(FILES_EMBED)
 	@echo FILES_EXT = $(FILES_EXT)
 	@echo FILES_ALWAYS = $(FILES_ALWAYS)
-#	@echo FILES_ALWAYS2 = $(FILES_ALWAYS2)
+	@echo FILES_ALWAYS2 = $(FILES_ALWAYS2)
 	@echo
 	@echo EXT_SKIP = $(EXT_SKIP)
 	@echo EXT_SKIP1 = $(EXT_SKIP1)
@@ -742,6 +746,10 @@ $(OBJ_DIR)/edata_embed.o: $(EDATA_EMBED)
 	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR)/edata_always.o: $(EDATA_ALWAYS)
+	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+	$(POST_PROCESS_DEPS)
+
+$(KEEP_DIR)/edata_always2.o: $(EDATA_ALWAYS2)
 	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 

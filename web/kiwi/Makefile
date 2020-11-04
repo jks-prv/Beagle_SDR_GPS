@@ -5,7 +5,7 @@ FILES_EMBED_CSS += web/kiwi/kiwi.css web/kiwi/w3_ext.css
 
 FILES_EMBED_HTML += web/kiwi/admin.html web/kiwi/mfg.html
 
-FILES_ALWAYS += $(subst web/,,$(wildcard web/kiwi/gfx/*.jpg))
-FILES_ALWAYS += $(subst web/,,$(wildcard web/kiwi/gfx/*.png))
-FILES_ALWAYS += $(subst web/,,$(wildcard web/kiwi/*.jpg))
-FILES_ALWAYS += $(subst web/,,$(wildcard web/kiwi/*.png))
+FILES_ALWAYS2 += $(subst web/,,$(wildcard web/kiwi/gfx/*.jpg))
+FILES_ALWAYS2 += $(subst web/,,$(wildcard web/kiwi/gfx/*.png))
+FILES_ALWAYS2 += $(subst web/,,$(wildcard web/kiwi/*.jpg))
+FILES_ALWAYS2 += $(subst web/,,$(wildcard web/kiwi/*.png))
