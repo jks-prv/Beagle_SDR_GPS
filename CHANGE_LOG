@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.418  November 5, 2020
+    Changes to help avoid running out of memory during builds under certain conditions.
+
 v1.417  October 30, 2020
     Allow GPS to set date/time. See admin page, GPS tab, new setting on top bar.
         Defaults to false.

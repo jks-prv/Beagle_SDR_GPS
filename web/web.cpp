@@ -68,12 +68,13 @@ static int bsearch_edatacomp(const void *key, const void *elem)
     return strcmp((char *) key, ef_elem->name);
 }
 
-const char *edata_lookup(embedded_files_t files[], const char *name, size_t *size)
+static const char *edata_lookup(embedded_files_t files[], const char *name, size_t *size)
 {
     embedded_files_t *p;
     
     #define EDATA_BSEARCH
     #ifdef EDATA_BSEARCH
+        // works because files[] is presorted by mkdata.pl script
         p = files;
         if (p->count == 0) {    // determine count needed by bsearch()
             for (; p->name != NULL; p++) files[0].count++;
@@ -97,7 +98,7 @@ const char *edata_lookup(embedded_files_t files[], const char *name, size_t *siz
 }
 
 time_t mtime_obj_keep_edata_always_o;
-//time_t mtime_obj_keep_edata_always2_o;
+time_t mtime_obj_keep_edata_always2_o;
 
 int web_caching_debug;
 
@@ -145,7 +146,6 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, time_t
 		}
 	}
 
-#if 0
 	if (!data) {
 		data = edata_lookup(edata_always2, uri, size);
 		if (data) {
@@ -165,7 +165,6 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, time_t
 #endif
 		}
 	}
-#endif
 
     if (data)
 	    web_printf_all("%-16s %s, %s, %s: mtime=[%s] %s\n", "EDATA", type, subtype, reason, var_ctime_static(mtime), uri);
