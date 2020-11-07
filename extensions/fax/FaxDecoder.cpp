@@ -52,14 +52,6 @@ FaxDecoder m_FaxDecoder[MAX_RX_CHANS];
 /* Note: the decoding algorithms are adapted from yahfax (on sourceforge)
    which was an improved adaptation of hamfax. */
 
-static int median(int *x, int n, int *ten_pct, int *ninety_pct)
-{
-     qsort(x, n, sizeof *x, qsort_intcomp);
-     *ten_pct    = x[(int) (n*0.1)];
-     *ninety_pct = x[(int) (n*0.9)];
-     return x[n/2];
-}
-
 static TYPEREAL apply_firfilter(FaxDecoder::firfilter *filter, TYPEREAL sample)
 {
 // Narrow, middle and wide fir low pass filter from ACfax
@@ -242,7 +234,7 @@ bool FaxDecoder::DecodeFaxLine()
             // If the extension was started in the middle of a fax transmission this can result in a false phasing align.
             // Filter that out by looking at the 10%/90% distribution width of the phasing data.
             int ten_pct, ninety_pct;
-            phasingSkipData = median(phasingPos, m_phasingLines - phasingSkipLines, &ten_pct, &ninety_pct);
+            phasingSkipData = median_i(phasingPos, m_phasingLines - phasingSkipLines, &ten_pct, &ninety_pct);
             rcprintf(m_rx_chan, "FAX L%d SET phasingSkipData=%d 10%%=%d 90%%=%d\n", m_imageline, phasingSkipData, ten_pct, ninety_pct);
             if ((ninety_pct - ten_pct) > m_SamplesPerLine/6) {
                 faxprintf("FAX L%d BAD phasingSkipData\n", m_imageline);

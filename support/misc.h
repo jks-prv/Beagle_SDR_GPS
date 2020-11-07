@@ -58,8 +58,11 @@ stat_reg_t stat_get();
 u2_t getmem(u2_t addr);
 void printmem(const char *str, u2_t addr);
 float ecpu_use();
+
 int qsort_floatcomp(const void* elem1, const void* elem2);
 int qsort_intcomp(const void *elem1, const void *elem2);
+float median_f(float *x, int n, float *ten_pct = NULL, float *ninety_pct = NULL);
+int median_i(int *x, int n, int *ten_pct = NULL, int *ninety_pct = NULL);
 
 extern char *current_authkey;
 char *kiwi_authkey();
