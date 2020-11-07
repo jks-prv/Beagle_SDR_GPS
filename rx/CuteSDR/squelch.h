@@ -1,13 +1,12 @@
 //////////////////////////////////////////////////////////////////////
-// fmdemod.h: interface for the CFmDemod class.
+// Interface for the CSquelch class.
 //
 // History:
 //	2011-01-17  Initial creation MSW
 //	2011-03-27  Initial release
 /////////////////////////////////////////////////////////////////////
 
-#ifndef FMDEMOD_H
-#define FMDEMOD_H
+#pragma once
 
 #include "datatypes.h"
 #include "fir.h"
@@ -15,22 +14,19 @@
 
 #define MAX_SQBUF_SIZE 1024
 
-class CFmDemod
+class CSquelch
 {
 public:
-	CFmDemod();
+	CSquelch();
 	
-	int ProcessData(int InLength, TYPEREAL FmBW, TYPECPX* pInData, TYPEREAL* pTmpData, TYPEMONO16* pOutData);
-
 	void Reset();
 	void SetSampleRate(int rx_chan, TYPEREAL samplerate);
 	void SetSquelch(int Value, int SquelchMax);		//call with range of 0 to 99 to set squelch threshold
-	int PerformNoiseSquelch(int InLength, TYPEREAL* pTmpData, TYPEMONO16* pOutData);
-	int PerformNoiseSquelch(int InLength, TYPEMONO16* pTmpData, TYPEMONO16* pOutData);
+	int PerformFMSquelch(int InLength, TYPEREAL* pTmpData, TYPEMONO16* pOutData);
+	int PerformNonFMSquelch(int InLength, TYPEMONO16* pTmpData, TYPEMONO16* pOutData);
 
 private:
 	void InitNoiseSquelch();
-	void ProcessDeemphasisFilter(int InLength, TYPEREAL* InBuf, TYPEREAL* OutBuf);
 
 	int m_rx_chan;
 	bool m_SquelchState, m_SetSquelch;
@@ -47,6 +43,7 @@ private:
 	TYPEREAL m_PllAlpha_P;
 	TYPEREAL m_PllBeta_F;
 
+	TYPEREAL m_SquelchValue;
 	TYPEREAL m_SquelchThreshold;
 	TYPEREAL m_SquelchAve;
 	TYPEREAL m_SquelchAlpha;
@@ -61,6 +58,4 @@ private:
 
 };
 
-extern CFmDemod m_FmDemod[MAX_RX_CHANS];
-
-#endif // FMDEMOD_H
+extern CSquelch m_Squelch[MAX_RX_CHANS];

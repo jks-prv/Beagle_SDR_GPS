@@ -36,7 +36,7 @@ Boston, MA  02110-1301, USA.
 #include "agc.h"
 #include "fir.h"
 #include "biquad.h"
-#include "fmdemod.h"
+#include "squelch.h"
 #include "debug.h"
 #include "data_pump.h"
 #include "cfg.h"
@@ -137,6 +137,8 @@ void c2s_sound_init()
 #define	CMD_AR_OK		0x10
 #define	CMD_ALL			(CMD_FREQ | CMD_MODE | CMD_PASSBAND | CMD_AGC | CMD_AR_OK)
 
+#define LOOP_BC 1024
+
 void c2s_sound_setup(void *param)
 {
 	conn_t *conn = (conn_t *) param;
@@ -171,7 +173,7 @@ void c2s_sound(void *param)
 	//printf("### frate %f snd_rate %d\n", frate, snd_rate);
 	#define ATTACK_TIMECONST .01	// attack time in seconds
 	float sMeterAlpha = 1.0 - expf(-1.0/((float) frate * ATTACK_TIMECONST));
-	float sMeterAvg_dB = 0;
+	float sMeterAvg_dB = 0, sMeter_dBm;
 	int compression = 1;
 	bool little_endian = false;
 	
@@ -184,8 +186,8 @@ void c2s_sound(void *param)
         snd->snd_seq_ck_init = false;
     #endif
     
-	m_FmDemod[rx_chan].SetSampleRate(rx_chan, frate);
-	m_FmDemod[rx_chan].SetSquelch(0, 0);
+	m_Squelch[rx_chan].SetSampleRate(rx_chan, frate);
+	m_Squelch[rx_chan].SetSquelch(0, 0);
 	
 	// don't start data pump until first connection so GPS search can run at full speed on startup
 	static bool data_pump_started;
@@ -216,6 +218,13 @@ void c2s_sound(void *param)
     int nb_enable[NOISE_TYPES] = {0}, nr_enable[NOISE_TYPES] = {0};
 	float nb_param[NOISE_TYPES][NOISE_PARAMS], nr_param[NOISE_TYPES][NOISE_PARAMS];
 
+	u4_t rssi_p = 0;
+	bool rssi_filled = false;
+	#define N_RSSI 65
+	float rssi_q[N_RSSI];
+	int squelch=0, squelch_on_seq=-1, tail_delay=0;
+	bool last_is_open=false, sq_init, squelched=false;
+	
 	gps_timestamp_t *gps_tsp = &gps_ts[rx_chan];
 	memset(gps_tsp, 0, sizeof(gps_timestamp_t));
 
@@ -355,7 +364,7 @@ void c2s_sound(void *param)
                     }
 
                     if (mode == MODE_NBFM && (new_freq || new_nbfm)) {
-                        m_FmDemod[rx_chan].Reset();
+                        m_Squelch[rx_chan].Reset();
                         conn->last_sample.re = conn->last_sample.im = 0;
                     }
             
@@ -520,12 +529,22 @@ void c2s_sound(void *param)
                 break;
 
             case CMD_SQUELCH: {
-                int squelch, squelch_max;
-                n = sscanf(cmd, "SET squelch=%d max=%d", &squelch, &squelch_max);
+                int _squelch;
+                float _squelch_param;
+                n = sscanf(cmd, "SET squelch=%d param=%f", &_squelch, &_squelch_param);
                 if (n == 2) {
                     did_cmd = true;
-                    //cprintf(conn, "SND squelch=%d max=%d\n", squelch, squelch_max);
-                    m_FmDemod[rx_chan].SetSquelch(squelch, squelch_max);
+                    squelch = _squelch;
+                    squelched = false;
+                    //cprintf(conn, "SND SET squelch=%d param=%.2f %s\n", squelch, _squelch_param, mode_s[mode]);
+                    if (mode == MODE_NBFM) {
+                        m_Squelch[rx_chan].SetSquelch(squelch, _squelch_param);
+                    } else {
+                        float squelch_tail = _squelch_param;
+                        tail_delay = roundf(squelch_tail * snd_rate / LOOP_BC);
+                        squelch_on_seq = -1;
+                        sq_init = true;
+                    }
                 }
                 break;
             }
@@ -1019,6 +1038,7 @@ void c2s_sound(void *param)
                 if (receive_S_meter != NULL && (j == 0 || j == ns_out/2))
                     receive_S_meter(rx_chan, sMeterAvg_dB + S_meter_cal);
             }
+            sMeter_dBm = sMeterAvg_dB + S_meter_cal;
             
             TYPEMONO16 *r_samps;
             
@@ -1072,7 +1092,6 @@ void c2s_sound(void *param)
                 TYPEREAL *d_samps = rx->demod_samples;
                 TYPECPX *a_samps = rx->agc_samples;
                 m_Agc[rx_chan].ProcessData(ns_out, f_samps, a_samps, masked);
-                int sq_nc_open;
                 
                 // FM demod from CSDR: https://github.com/simonyiszk/csdr
                 // also see: http://www.embedded.com/design/configurable-systems/4212086/DSP-Tricks--Frequency-demodulation-algorithms-
@@ -1093,11 +1112,8 @@ void c2s_sound(void *param)
                 d_samps = rx->demod_samples;
     
                 // use the noise squelch from CuteSDR
-                sq_nc_open = m_FmDemod[rx_chan].PerformNoiseSquelch(ns_out, d_samps, r_samps);
-                
-                if (sq_nc_open != 0) {
-                    send_msg(conn, SM_NO_DEBUG, "MSG squelch=%d", (sq_nc_open == 1)? 1:0);
-                }
+                int nsq_nc_sq = m_Squelch[rx_chan].PerformFMSquelch(ns_out, d_samps, r_samps);
+                if (nsq_nc_sq != 0) send_msg(conn, SM_NO_DEBUG, "MSG squelched=%d", (nsq_nc_sq == 1)? 1:0);
                 break;
             }
             
@@ -1162,6 +1178,56 @@ void c2s_sound(void *param)
                 }
             }
             
+            if ((squelch || sq_init) && !isNBFM && mode != MODE_DRM) {
+                if (!rssi_filled || squelch_on_seq == -1) {
+                    rssi_q[rssi_p++] = sMeter_dBm;
+                    if (rssi_p >= N_RSSI) { rssi_p = 0; rssi_filled = true; }
+                }
+                
+                bool squelch_off = (squelch == 0);
+                bool rtn_is_open = squelch_off? true:false;
+                if (!squelch_off && rssi_filled) {
+                    float median_nf = median_f(rssi_q, N_RSSI);
+                    float rssi_thresh = median_nf + squelch;
+                    bool is_open = (squelch_on_seq != -1);
+                    if (is_open) rssi_thresh -= 6;
+                    bool rssi_green = (sMeter_dBm >= rssi_thresh);
+                    if (rssi_green) {
+                        squelch_on_seq = snd->seq;
+                        is_open = true;
+                    }
+                    
+                    rtn_is_open = is_open;
+                    if (!is_open) rtn_is_open = false; 
+                    if (snd->seq > squelch_on_seq + tail_delay) {
+                        squelch_on_seq = -1;
+                        rtn_is_open = false; 
+                    }
+                }
+
+                if (sq_init || rtn_is_open != last_is_open) {
+                    //cprintf(conn, "SND PROCESS squelch=%d tail_delay=%d squelch_off=%d %s %s\n",
+                    //    squelch, tail_delay, squelch_off, rtn_is_open? "OPEN" : "SQUELCHED", mode_s[mode]);
+                    send_msg(conn, SM_NO_DEBUG, "MSG squelched=%d", rtn_is_open? 0:1);
+                    last_is_open = rtn_is_open;
+                    sq_init = false;
+                }
+                
+                if ((squelched = !rtn_is_open)) {
+                    if (mode == MODE_IQ) {
+                        TYPECPX *fs = f_samps;
+                        for (int i = 0; i < ns_out; i++) { fs->re = fs->im = 1; fs++; }
+                    } else
+                    if (mode == MODE_SAS) {
+                        TYPECPX *as = rx->agc_samples;
+                        for (int i = 0; i < ns_out; i++) { as->re = as->im = 1; as++; }
+                    } else {
+                        TYPEMONO16 *rs = r_samps;
+                        for (int i = 0; i < ns_out; i++) *rs++ = 1;
+                    }
+                }
+            }
+
             ////////////////////////////////
             // copy to output buffer and send to client
             ////////////////////////////////
@@ -1171,8 +1237,9 @@ void c2s_sound(void *param)
                 // DRM monitor mode is effectively the same as MODE_IQ
                 || (mode == MODE_DRM && (drm->monitor || rx_chan >= DRM_MAX_RX))
             #endif
-            ){
-                m_Agc[rx_chan].ProcessData(ns_out, f_samps, f_samps, masked);
+            ) {
+                if (!squelched)
+                    m_Agc[rx_chan].ProcessData(ns_out, f_samps, f_samps, masked);
                 iq->iq_wr_pos = (iq->iq_wr_pos+1) & (N_DPBUF-1);    // after AGC above
 
                 #if 0
@@ -1181,7 +1248,7 @@ void c2s_sound(void *param)
                         if (out->re > 32767.0) real_printf("IQ-out %.1f\n", out->re);
                     }
                 #endif
-    
+                
                 if (little_endian) {
                     bc = ns_out * NIQ * sizeof(s2_t);
                     for (j=0; j < ns_out; j++) {
@@ -1336,13 +1403,12 @@ void c2s_sound(void *param)
                 }
             #endif
 
-        } while (bc < 1024);    // multiple loops when compressing
+        } while (bc < LOOP_BC);     // multiple loops when compressing
 
         NextTask("s2c begin");
                 
         // send s-meter data with each audio packet
         #define SMETER_BIAS 127.0
-        float sMeter_dBm = sMeterAvg_dB + S_meter_cal;
         if (sMeter_dBm < -127.0) sMeter_dBm = -127.0; else
         if (sMeter_dBm >    3.4) sMeter_dBm =    3.4;
         u2_t sMeter = (u2_t) ((sMeter_dBm + SMETER_BIAS) * 10);
