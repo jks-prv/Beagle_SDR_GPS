@@ -8645,7 +8645,7 @@ function owrx_msg_cb(param, ws)
 			break;
 		case "squelched":
 			squelched = parseInt(param[1]);
-			console.log('squelched '+ squelched);
+			//console.log('squelched '+ squelched);
          var sq_color = squelched? 'white':'lime';
          w3_color('id-squelch-label', sq_color);
          w3_color('id-mute-no', sq_color);
