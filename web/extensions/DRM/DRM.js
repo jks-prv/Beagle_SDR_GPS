@@ -1120,6 +1120,7 @@ function drm_controls_setup()
 
    drm.is_monitor = 0;
    console.log('drm_controls_setup is_monitor='+ drm.is_monitor);
+   ext_send('SET monitor=0');
 
    // URL params that need to be setup before controls instantiated
 	var p = drm.url_params = ext_param();

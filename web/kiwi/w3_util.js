@@ -420,6 +420,11 @@ function w3_clamp(v, min, max, clamp_val)
 // HTML
 ////////////////////////////////
 
+function w3_add_id(path)
+{
+   return path? (path.startsWith('id-')? path : ('id-'+ path)) : '';
+}
+
 // return document element reference either by id or name
 function w3int_w3_el(id_name_class)
 {
@@ -1684,7 +1689,7 @@ function w3_input_change(path, cb, cb_param)
 
 function w3_input(psa, label, path, val, cb, placeholder)
 {
-	var id = path? ('id-'+ path) : '';
+	var id = w3_add_id(path);
 	cb = cb || '';
 	var phold = placeholder? (' placeholder="'+ placeholder +'"') : '';
 	var onchange = path? (' onchange="w3_input_change('+ sq(path) +', '+ sq(cb) +')" onkeydown="w3int_input_key(event, '+ sq(path) +', '+ sq(cb) +')"') : '';
@@ -1693,7 +1698,7 @@ function w3_input(psa, label, path, val, cb, placeholder)
 	var bold = !psa.includes('w3-label-not-bold');
 	var spacing = (label != '' && inline)? ' w3int-margin-input' : '';
 
-	// type="password" in no good because it forces the submit to be https which we don't support
+	// type="password" is no good because it forces the submit to be https which we don't support
 	var type = 'type='+ (psa.includes('w3-password')? '"password"' : '"text"');
 
    var psa3 = w3_psa3(psa);
@@ -1764,7 +1769,7 @@ function w3_input_get_param(label, path, cb, init_val, placeholder)
 
 function w3_textarea(psa, label, path, val, rows, cols, cb)
 {
-	var id = path? (' id-'+ path) : '';
+	var id = w3_add_id(path);
 	var spacing = (label != '')? ' w3-margin-T-8' : '';
 	var onchange = ' onchange="w3_input_change('+ sq(path) +', '+ sq(cb) +')" onkeydown="w3int_input_key(event, '+ sq(path) +', '+ sq(cb) +')"';
 	var val = val || '';
@@ -1817,7 +1822,7 @@ function w3int_checkbox_change(path, cb, cb_param)
 
 function w3_checkbox(psa, label, path, checked, cb, cb_param)
 {
-	var id = path? ('id-'+ path) : '';
+	var id = w3_add_id(path);
 	var onchange = ' onchange="w3int_checkbox_change('+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"';
 	var checked_s = checked? ' checked' : '';
 	var inline = psa.includes('w3-label-inline');
@@ -1894,7 +1899,7 @@ function w3int_select_change(ev, path, cb, cb_param)
 
 function w3int_select(psa, label, title, path, sel, opts_s, cb, cb_param)
 {
-	var id = path? ('id-'+ path) : '';
+	var id = w3_add_id(path);
 	var first = '';
 
 	if (title != '') {
@@ -2150,7 +2155,7 @@ function w3_slider_old(label, path, val, min, max, step, save_cb)
 
 function w3_slider(psa, label, path, val, min, max, step, cb, cb_param)
 {
-	var id = path? ('id-'+ path) : '';
+	var id = w3_add_id(path);
 	var inline = psa.includes('w3-label-inline');
 	var bold = !psa.includes('w3-label-not-bold');
 	var spacing = (label != '' && inline)? ' w3-margin-L-8' : '';

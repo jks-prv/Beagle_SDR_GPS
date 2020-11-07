@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 418
+VERSION_MIN = 419
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.11
@@ -369,7 +369,7 @@ ifneq ($(PVT_EXT_DIRS),)
 endif
 
 .PHONY: c_ext_clang_conv
-c_ext_clang_conv: $(SUB_MAKE_DEPS)
+c_ext_clang_conv: DISABLE_WS $(SUB_MAKE_DEPS)
 ifeq ($(PVT_EXT_C_FILES),)
 #	@echo SUB_MAKE_DEPS = $(SUB_MAKE_DEPS)
 #	@echo no installed extensions with files needing conversion from .c to .cpp for clang compatibility
@@ -822,6 +822,18 @@ $(TOOLS_DIR):
 ################################
 # installation
 ################################
+
+# on BBAI incremental update/upgrade can cause the window system to be re-enabled
+.PHONY: DISABLE_WS
+DISABLE_WS:
+ifeq ($(BBAI),true)
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
+else
+	@echo "disable window system"
+	-@systemctl stop lightdm.service >/dev/null 2>&1
+	-@systemctl disable lightdm.service >/dev/null 2>&1
+endif
+endif
 
 REBOOT = $(DIR_CFG)/.reboot
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))

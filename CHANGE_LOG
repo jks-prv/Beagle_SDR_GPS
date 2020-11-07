@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.419  November 8, 2020
+    Added a simple RSSI-based squelch for the non-NBFM modes.
+        See audio tab of control panel. Based on Christoph's squelch from kiwirecorder.
+
 v1.418  November 5, 2020
     Changes to help avoid running out of memory during builds under certain conditions.
 

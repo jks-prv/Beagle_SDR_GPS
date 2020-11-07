@@ -214,6 +214,22 @@ int qsort_intcomp(const void *elem1, const void *elem2)
 	return i1 - i2;
 }
 
+float median_f(float *x, int n, float *ten_pct, float *ninety_pct)
+{
+     qsort(x, n, sizeof *x, qsort_floatcomp);
+     if (ten_pct) *ten_pct    = x[(int) (n*0.1)];
+     if (ninety_pct) *ninety_pct = x[(int) (n*0.9)];
+     return x[n/2];
+}
+
+int median_i(int *x, int n, int *ten_pct, int *ninety_pct)
+{
+     qsort(x, n, sizeof *x, qsort_intcomp);
+     if (ten_pct) *ten_pct    = x[(int) (n*0.1)];
+     if (ninety_pct) *ninety_pct = x[(int) (n*0.9)];
+     return x[n/2];
+}
+
 static int misc_miso_busy;
 
 SPI_MISO *get_misc_miso()
