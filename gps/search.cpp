@@ -388,37 +388,38 @@ static void Sample() {
     const int PACKET = GPS_SAMPS * 2;
 
     float lo_phase=0; // NCO phase accumulator
-    int i=0;
+    int i=0, j = PACKET;
     SPI_MISO *rx = &SPI_SHMEM->gps_search_miso;
 	
 	spi_set(CmdSample); // Trigger sampler and reset code generator in FPGA
 	TaskSleepUsec(US);
 
-	while (i < NSAMPLES) {        
-	    #ifdef GPS_SAMPLES_FROM_FILE
-		    GenSamples(rx->byte, PACKET);
-		#else
-            spi_get(CmdGetGPSSamples, rx, PACKET);
-        #endif
+	while (i < NSAMPLES) {
+	    if (j == PACKET) {
+            #ifdef GPS_SAMPLES_FROM_FILE
+                GenSamples(rx->byte, PACKET);
+            #else
+                spi_get(CmdGetGPSSamples, rx, PACKET);
+            #endif
+            j = 0;
+        }
 
-        for (int j=0; j<PACKET; ++j) {
-			u1_t byte = rx->byte[j];
+        u1_t byte = rx->byte[j++];
 
-            for (int b=0; b<8; ++b, ++i, byte>>=1) {
-            	const int bit = (byte&1);
+        for (int b=0; b<8; ++b, ++i, byte>>=1) {
+            const int bit = (byte&1);
 //printf("j%03d byte 0x%02x bit#%d=%d\n", j, byte, b, bit);
 
-                // Down convert to complex (IQ) baseband by mixing (XORing)
-                // samples with quadrature local oscillators (mix down by FC)
-                if (i >= NSAMPLES)
-                	break;
+            // Down convert to complex (IQ) baseband by mixing (XORing)
+            // samples with quadrature local oscillators (mix down by FC)
+            if (i >= NSAMPLES)
+                break;
 
-				bits[i][0] = bit ^ lo_sin[int(lo_phase)];
-				bits[i][1] = bit ^ lo_cos[int(lo_phase)];
+            bits[i][0] = bit ^ lo_sin[int(lo_phase)];
+            bits[i][1] = bit ^ lo_cos[int(lo_phase)];
 
-                lo_phase += lo_rate;
-				lo_phase -= 4*(lo_phase >= 4);
-            }
+            lo_phase += lo_rate;
+            lo_phase -= 4*(lo_phase >= 4);
         }
     }
 
