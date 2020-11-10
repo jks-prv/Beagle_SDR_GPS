@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.421  November 11, 2020
+    Admin config tab: prevent waterfall min dB from being set >= max. Otherwise this case
+        causes the user interface to hang on page load.
+
 v1.419,420  November 10, 2020
     Added a simple RSSI-based squelch for the non-NBFM modes.
         See audio tab of control panel. Based on the squelch from kiwirecorder.

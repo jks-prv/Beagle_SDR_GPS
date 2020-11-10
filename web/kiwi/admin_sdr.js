@@ -50,11 +50,19 @@ function config_html()
 			w3_input_get('', 'CW offset (Hz)', 'init.cw_offset', 'admin_int_cb')
 		) +
 
-		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
-			w3_input_get('', 'Waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'admin_int_cb'),
-			w3_input_get('', 'Waterfall max (dBFS)', 'init.max_dB', 'admin_int_cb'),
-			w3_input_get('', 'Zoom (0-13)', 'init.zoom', 'admin_int_cb')
-		);
+		w3_third('w3-text-teal', 'w3-container',
+			w3_input_get('', 'Waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'config_wfmin_cb'),
+			w3_input_get('', 'Waterfall max (dBFS)', 'init.max_dB', 'config_wfmax_cb'),
+			w3_input_get('', 'Zoom (0-13)', 'init.zoom', 'config_zoom_cb')
+		) +
+		
+      w3_third('', 'w3-container',
+         w3_div('id-wfmin-error w3-margin-T-8 w3-red w3-hide', 'Waterfall min must be < max'),
+         w3_div('id-wfmax-error w3-margin-T-8 w3-red w3-hide', 'Waterfall max must be > min'),
+         w3_div('id-zoom-error w3-margin-T-8 w3-red w3-hide', 'Zoom must be 0 to 13')
+      ) +
+      
+      w3_div('w3-margin-bottom');
 
    var s2 =
 		'<hr>' +
@@ -225,6 +233,30 @@ function config_html()
 		'<hr>';
 
 	return w3_div('id-config w3-hide', s1 + s2 + s3 + s4 + s5);
+}
+
+function config_wfmin_cb(path, val, first)
+{
+   val = +val;
+   var ok = (val < cfg.init.max_dB);
+   if (ok) admin_int_cb(path, val, first);
+   w3_show_hide('id-wfmin-error', !ok);
+}
+
+function config_wfmax_cb(path, val, first)
+{
+   val = +val;
+   var ok = (val > cfg.init.min_dB);
+   if (ok) admin_int_cb(path, val, first);
+   w3_show_hide('id-wfmax-error', !ok);
+}
+
+function config_zoom_cb(path, val, first)
+{
+   val = +val;
+   var ok = (val >= 0 && val <= 13);
+   if (ok) admin_int_cb(path, val, first);
+   w3_show_hide('id-zoom-error', !ok);
 }
 
 function config_OV_counts_cb(path, val, complete, first)

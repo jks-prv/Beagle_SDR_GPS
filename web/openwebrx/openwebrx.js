@@ -3352,6 +3352,14 @@ function spectrum_dB_bands()
 	//var color_shift_dB = -8;	// give a little floor room to the spectrum colormap
 	var color_shift_dB = -12;	// give a little floor room to the spectrum colormap
 	var s_maxdb = maxdb, s_mindb = mindb;
+
+	// prevent an illegal configuration of mindb >= maxdb causing code below
+	// to loop infinitely (i.e. s_full_scale = 0 => / 0)
+	if (s_mindb >= s_maxdb) {
+	   s_maxdb = -10;
+	   s_mindb = -110;
+	}
+
 	var s_full_scale = s_maxdb - s_mindb;
 	var barmax = s_maxdb, barmin = s_mindb + color_shift_dB;
 	var rng = barmax - barmin;
@@ -3359,6 +3367,7 @@ function spectrum_dB_bands()
 	//console.log("DB barmax="+barmax+" barmin="+barmin+" s_maxdb="+s_maxdb+" s_mindb="+s_mindb);
 	var last_norm = 0;
 
+   var anti_looping = 0;
 	for (var dB = Math.floor(s_maxdb/10)*10; (s_mindb-dB) < 10; dB -= 10) {
 		var norm = 1 - ((dB - s_mindb) / s_full_scale);
 		var cmi = Math.round((dB - barmin) / rng * 255);
@@ -3373,11 +3382,13 @@ function spectrum_dB_bands()
 				spectrum_colormap.data[y*4+j] = ((color>>>0) >> ((3-j)*8)) & 0xff;
 				spectrum_colormap_transparent.data[y*4+j] = ((color_transparent>>>0) >> ((3-j)*8)) & 0xff;
 			}
+			if (anti_looping++ > 8192) break;
 		}
 		//console.log("DB"+i+' '+dB+' norm='+norm+' last_norm='+last_norm+' cmi='+cmi+' '+color_name+' sh='+spectrum_canvas.height);
 		last_norm = norm;
 		
 		i++;
+      if (anti_looping++ > 8192) break;
 	}
 
 	redraw_spectrum_dB_scale = true;
