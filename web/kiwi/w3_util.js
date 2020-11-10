@@ -1773,7 +1773,7 @@ function w3_textarea(psa, label, path, val, rows, cols, cb)
 	var spacing = (label != '')? ' w3-margin-T-8' : '';
 	var onchange = ' onchange="w3_input_change('+ sq(path) +', '+ sq(cb) +')" onkeydown="w3int_input_key(event, '+ sq(path) +', '+ sq(cb) +')"';
 	var val = val || '';
-	var p = w3_psa(psa, 'w3-input w3-border w3-hover-shadow'+ id + spacing, '', 'rows="'+ rows +'" cols="'+ cols +'"');
+	var p = w3_psa(psa, 'w3-input w3-border w3-hover-shadow '+ id + spacing, '', 'rows="'+ rows +'" cols="'+ cols +'"');
 
 	var s =
 	   w3_div('',
