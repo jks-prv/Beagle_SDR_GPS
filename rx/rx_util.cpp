@@ -259,6 +259,15 @@ void update_vars_from_config()
         printf("removed v1.131 dotdot bug corruption\n");
         update_cfg = true;
     }
+    
+    // enforce waterfall min_dB < max_dB
+    int min_dB = cfg_int("init.min_dB", NULL, CFG_REQUIRED);
+    int max_dB = cfg_int("init.max_dB", NULL, CFG_REQUIRED);
+    if (min_dB >= max_dB) {
+        min_dB = max_dB - 1;
+        cfg_set_int("init.min_dB", min_dB);
+        update_cfg = true;
+    }
 
     /* int dom_sel = */ cfg_default_int("sdr_hu_dom_sel", DOM_SEL_NAM, &update_cfg);
 

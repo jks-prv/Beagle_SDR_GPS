@@ -1223,7 +1223,7 @@ function network_ip_blacklist_status(status, ip)
 function network_ethernet_speed(path, idx, first)
 {
    idx = +idx;
-	console.log('network_ethernet_speed path='+ path +' idx='+ idx +' first='+ first);
+	//console.log('network_ethernet_speed path='+ path +' idx='+ idx +' first='+ first);
    if (first) return;
    admin_select_cb(path, idx, first)
 }
@@ -1231,7 +1231,7 @@ function network_ethernet_speed(path, idx, first)
 function network_ethernet_mtu(path, idx, first)
 {
    idx = +idx;
-	console.log('network_ethernet_mtu path='+ path +' idx='+ idx +' first='+ first);
+	//console.log('network_ethernet_mtu path='+ path +' idx='+ idx +' first='+ first);
    if (first) return;
    admin_select_cb(path, idx, first)
 }

@@ -363,7 +363,7 @@ function _change(v)
 }
 
 // usage: console_log('id', arg0, arg1 ...)
-// prints: "<id>: arg0=<arg0_value> arg1=<arg1_value> ..."
+// prints: "<id>: 'arg0'=<arg0_value> 'arg1'=<arg1_value> ..."
 function console_log()
 {
    //console.log('console_log: '+ typeof(arguments));
@@ -380,7 +380,7 @@ function console_log()
    console.log('CONSOLE_LOG '+ s);
 }
 
-// usage: console_log_fqn('id', fully.qualified.name0, fully.qualified.name1, ...)
+// usage: console_log_fqn('id', 'fully.qualified.name0', 'fully.qualified.name1', ...)
 // prints: "<id>: <name0>=<fqn0_value> <name1>=<fqn1_value> ..."
 function console_log_fqn()
 {
