@@ -2,11 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.422  November 16, 2020
+v1.422,423  November 16, 2020
     Squelch (all modes) will pause the record function (red circle to left of speaker icon)
         when the squelch is open. The record icon also changes to white.
         This is consistent with the other UI elements that change to white when the
-        squelch is open.
+        squelch is open. Kiwirecorder behavior is not effected.
 
 v1.421  November 11, 2020
     Admin config tab: prevent waterfall min dB from being set >= max. Otherwise this case

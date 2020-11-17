@@ -610,7 +610,7 @@ function audio_onprocess(ev)
 	}
 	
 	var sq = (flags & audio_flags.SND_FLAG_SQUELCH_UI)? true:false;
-	if (sq != audio_last_sq) {
+	if (sq != audio_last_sq && isDefined(squelch_action)) {
       setTimeout(function(sq) { squelch_action(sq); }, 1, sq);
 	   audio_last_sq = sq;
 	}
