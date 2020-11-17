@@ -34,7 +34,7 @@ var audio_flags = {
    SND_FLAG_MODE_IQ:       0x08,
    SND_FLAG_COMPRESSED:    0x10,
    SND_FLAG_RESTART:       0x20,
-   SND_FLAG_MASKED:        0x40,
+   SND_FLAG_SQUELCH_UI:    0x40,
    SND_FLAG_LITTLE_ENDIAN: 0x80
 };
 
@@ -95,6 +95,8 @@ var audio_ext_adc_ovfl;
 var audio_need_stats_reset;
 var audio_change_LPF_latch;
 var audio_change_freq_latch;
+var audio_change_sq_UI_latch;
+var audio_last_sq;
 var audio_panner = null;
 var audio_gain;
 
@@ -133,9 +135,6 @@ var audio_change_LPF_delayed;
 
 // set in audio_disconnect()
 var audio_disconnected;
-
-// set in audio_recv()
-var audio_masked;
 
 // set in audio_prepare()
 var audio_convolver;
@@ -249,6 +248,8 @@ function audio_init(is_local, less_buffering, compression)
    audio_need_stats_reset = true;
    audio_change_LPF_latch = false;
    audio_change_freq_latch = false;
+   audio_change_sq_UI_latch = false;
+   audio_last_sq = undefined;    // so set true/false first time
    
    var buffering_scheme = 0;
    var scheme_s;
@@ -526,7 +527,7 @@ function audio_connect(reconnect)
 // NB: always use kiwi_log() instead of console.log() in here
 function audio_watchdog_process(ev)
 {
-	if (muted || audio_buffering || audio_masked) {
+	if (muted || audio_buffering) {
 		audio_silence_count = 0;
 		return;
 	}
@@ -606,6 +607,12 @@ function audio_onprocess(ev)
 
 	if (flags & audio_flags.SND_FLAG_LPF) {
 		audio_change_LPF_delayed = true;
+	}
+	
+	var sq = (flags & audio_flags.SND_FLAG_SQUELCH_UI)? true:false;
+	if (sq != audio_last_sq) {
+      setTimeout(function(sq) { squelch_action(sq); }, 1, sq);
+	   audio_last_sq = sq;
 	}
 	
 	if (audio_meas_dly_ena && audio_meas_dly_start && (flags & audio_flags.SND_FLAG_NEW_FREQ)) {
@@ -703,7 +710,6 @@ function audio_recv(data)
 	var data_view = new DataView(data, offset);
 	var bytes = data_view.byteLength;
 		
-	audio_masked = (flags & audio_flags.SND_FLAG_MASKED);
 	var i, samps;
 	
 	if (audio_watchdog_restart) {
@@ -809,7 +815,7 @@ function audio_recv(data)
 
 
 	// Recording hooks
-	if (window.recording) {
+	if (window.recording && audio_last_sq == false) {
 		var samples = audio_mode_iq ? 1024 : (compressed ? 2048 : 512);
 
 		// There are 2048 or 512 little-endian samples in each audio_data, the rest of the elements are zeroes
@@ -854,6 +860,12 @@ function audio_prepare(data, data_len, seq, flags, smeter)
 		if (audio_change_freq_latch) {
 		   audio_change_freq_latch = false;
 			flags |= audio_flags.SND_FLAG_NEW_FREQ;
+		}
+		
+		// don't miss any SND_FLAG_SQUELCH_UI flags because dopush() isn't invoked for every call to audio_prepare()
+		if (audio_change_sq_UI_latch) {
+		   audio_change_sq_UI_latch = false;
+			flags |= audio_flags.SND_FLAG_SQUELCH_UI;
 		}
 		
 		audio_prepared_flags.push(flags);
@@ -1033,6 +1045,10 @@ function audio_prepare(data, data_len, seq, flags, smeter)
       }
    }
 	
+   if (flags & audio_flags.SND_FLAG_SQUELCH_UI) {
+      audio_change_sq_UI_latch = true;
+   }
+
 	//console.log("idata_length "+ idata_length);
 	if (audio_last_output_offset + idata_length <= audio_buffer_size) {
 	   // array fits into output buffer

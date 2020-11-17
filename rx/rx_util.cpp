@@ -261,8 +261,8 @@ void update_vars_from_config()
     }
     
     // enforce waterfall min_dB < max_dB
-    int min_dB = cfg_int("init.min_dB", NULL, CFG_REQUIRED);
-    int max_dB = cfg_int("init.max_dB", NULL, CFG_REQUIRED);
+    int min_dB = cfg_default_int("init.min_dB", -110, &update_cfg);
+    int max_dB = cfg_default_int("init.max_dB", -10, &update_cfg);
     if (min_dB >= max_dB) {
         cfg_set_int("init.min_dB", -110);
         cfg_set_int("init.max_dB", -10);

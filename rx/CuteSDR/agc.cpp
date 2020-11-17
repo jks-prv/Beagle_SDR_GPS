@@ -168,13 +168,13 @@ void CAgc::SetParameters(bool AgcOn,  bool UseHang, int Threshold, int ManualGai
 //////////////////////////////////////////////////////////////////////
 // Automatic Gain Control calculator for COMPLEX data
 //////////////////////////////////////////////////////////////////////
-void CAgc::ProcessData(int Length, TYPECPX* pInData, TYPECPX* pOutData, bool masked)
+void CAgc::ProcessData(int Length, TYPECPX* pInData, TYPECPX* pOutData)
 {
 	TYPEREAL gain;
 	TYPEREAL mag;
 	TYPECPX delayedin;
 	//m_Mutex.lock();
-	if (m_AgcOn && !masked)
+	if (m_AgcOn)
 	{
 		for(int i=0; i<Length; i++)
 		{
@@ -286,13 +286,13 @@ void CAgc::ProcessData(int Length, TYPECPX* pInData, TYPECPX* pOutData, bool mas
 //////////////////////////////////////////////////////////////////////
 // Automatic Gain Control calculator for COMPLEX input, MONO16 output
 //////////////////////////////////////////////////////////////////////
-void CAgc::ProcessData(int Length, TYPECPX* pInData, TYPEMONO16* pOutData, bool masked)
+void CAgc::ProcessData(int Length, TYPECPX* pInData, TYPEMONO16* pOutData)
 {
 	TYPEREAL gain;
 	TYPEREAL mag;
 	TYPECPX delayedin;
 	//m_Mutex.lock();
-	if (m_AgcOn && !masked)
+	if (m_AgcOn)
 	{
 		for(int i=0; i<Length; i++)
 		{

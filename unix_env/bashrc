@@ -119,6 +119,8 @@ alias lt="function _lt () { /bin/ls \$COLOR -lath \$* ; } ; _lt"
 alias ldt="function _ldt () { /bin/ls \$COLOR -ladth \$* ; } ; _ldt"
 
 # grep
+# to grep with embedded spaces on Debian now need: g 'text1[[:space:]]text2'
+#
 d_gr_exclude="--exclude-dir .git --exclude-dir .svn --exclude-dir ./web/pkgs_maps/leaflet ${no_grep}"
 alias grep="grep \$COLOR"
 alias gr="grep -i \$COLOR"
@@ -272,7 +274,7 @@ alias cm="while true; do date; ct; cf; vmstat; sleep 2; done"
 alias opp="omapconf show opp"
 
 # BBB
-alias dog="echo Debian `cat /etc/debian_version`; more /etc/dogtag; uname -a"
+alias dog="echo Debian `cat /etc/debian_version`; more /etc/dogtag; uname -a; lsb_release -ds"
 alias tag=dog
 alias slots7="cat /sys/devices/bone_capemgr.*/slots"
 alias slots8="cat /sys/devices/platform/bone_capemgr/slots"
