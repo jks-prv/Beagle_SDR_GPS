@@ -7816,13 +7816,13 @@ function toggle_or_set_rec(set)
    recording = !recording;
    //console.log('toggle_or_set_rec set=' + set + ' recording=' + recording);
    var el1 = w3_el('id-rec1');
-   var el2 = w3_el('id-rec2');
+   w3_show_hide('id-rec2', recording);
    if (recording) {
       w3_remove_then_add(el1, 'fa-circle', 'fa-circle-o-notch fa-spin');
-      w3_remove(el2, 'w3-hide');
    } else {
       w3_remove_then_add(el1, 'fa-circle-o-notch fa-spin', 'fa-circle');
-      w3_add(el2, 'w3-hide');
+      w3_remove_then_add('id-rec1', 'w3-text-white', 'w3-text-pink');
+      w3_remove_then_add('id-rec2', 'w3-text-white', 'w3-text-pink');
    }
    if (recording) {
       // Start recording. This is a 'window' property, so audio_recv(), where the
@@ -7881,6 +7881,21 @@ var squelch_tail = 0;
 var squelch_tail_s = [ '0', '.2s', '.5s', '1s', '2s' ];
 var squelch_tail_v = [ 0, 0.2, 0.5, 1, 2 ];
 
+function squelch_action(sq)
+{
+   squelched = sq;
+   var sq_color = squelched? 'white':'lime';
+   w3_color('id-squelch-label', sq_color);
+   w3_color('id-mute-no', sq_color);
+   
+   if (recording) {
+      sq_color = squelched? 'w3-text-white':'w3-text-pink';
+      w3_remove_then_add('id-rec1', 'fa-spin', squelched? '':'fa-spin');
+      w3_remove_then_add('id-rec1', 'w3-text-white w3-text-pink', sq_color);
+      w3_remove_then_add('id-rec2', 'w3-text-white w3-text-pink', sq_color);
+   }
+}
+
 function squelch_setup(flags)
 {
    var nbfm = (cur_mode == 'nbfm');
@@ -7896,9 +7911,7 @@ function squelch_setup(flags)
    set_squelch_cb('', squelch, true, false, true);
 
 	if (nbfm) {
-		var sq_color = squelched? 'white':'lime';
-      w3_color('id-squelch-label', sq_color);
-      w3_color('id-mute-no', sq_color);
+	   squelch_action(squelched);
    } else {
       w3_color('id-mute-no', 'lime');
    }
@@ -8653,13 +8666,6 @@ function owrx_msg_cb(param, ws)
 			break;
 		case "fft_mode":
 			kiwi_fft_mode();
-			break;
-		case "squelched":
-			squelched = parseInt(param[1]);
-			//console.log('squelched '+ squelched);
-         var sq_color = squelched? 'white':'lime';
-         w3_color('id-squelch-label', sq_color);
-         w3_color('id-mute-no', sq_color);
 			break;
 		case "maxdb":
 		   wf.auto_maxdb = +param[1];
