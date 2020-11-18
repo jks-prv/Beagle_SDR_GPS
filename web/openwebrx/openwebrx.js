@@ -4861,7 +4861,10 @@ function modeset_update_ui(mode)
 	freq_link_update();
 
 	// disable compression button in iq mode
-	w3_set_props('id-button-compression', 'w3-disabled', (mode == 'iq'));
+   var els = w3_els('id-button-compression');
+   for (var i = 0; i < els.length; i++) {
+	   w3_set_props(els[i], 'w3-disabled', (mode == 'iq'));
+	}
 }
 
 // delay the UI updates called from the audio path until the waterfall UI setup is done
@@ -7026,11 +7029,17 @@ function panels_setup()
          w3_select_conditional('|color:red', '', 'filter', 'nr_algo', 0, nr_algo_s, 'nr_algo_cb'), 23,
 			w3_div('w3-hcenter', w3_div('class-button||onclick="extint_open(\'noise_filter\'); freqset_select();"', 'More')), 15
 		) +
-		w3_col_percent('w3-valign w3-margin-T-4/class-slider',
+		w3_col_percent('id-vol w3-valign w3-margin-T-4 w3-hide/class-slider',
 			w3_text(optbar_prefix_color, 'Volume'), 17,
 			'<input id="id-input-volume" type="range" min="0" max="200" value="'+ volume +'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 50,
          '&nbsp;', 8,
          w3_select('|color:red', '', 'de-emp', 'de_emphasis', de_emphasis, de_emphasis_s, 'de_emp_cb')
+		) +
+		w3_col_percent('id-vol-comp w3-valign w3-margin-T-4/class-slider',
+			w3_text(optbar_prefix_color, 'Volume'), 17,
+			'<input id="id-input-volume" type="range" min="0" max="200" value="'+ volume +'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 40,
+         w3_select('|color:red', '', 'de-emp', 'de_emphasis', de_emphasis, de_emphasis_s, 'de_emp_cb'), 28,
+		   w3_button('id-button-compression class-button w3-hcenter||title="compression"', 'Comp', 'toggle_or_set_compression')
 		) +
       w3_col_percent('id-pan w3-valign w3-hide/class-slider',
          w3_text(optbar_prefix_color, 'Pan'), 17,
@@ -7759,6 +7768,8 @@ function setpan(done, str)
 function audio_panner_ui_init()
 {
    if (audio_panner) {
+      w3_hide('id-vol-comp');
+      w3_show_block('id-vol');
       w3_show_block('id-pan');
       setpan(1, pan);
    }
@@ -7994,8 +8005,9 @@ function toggle_or_set_compression(set, val)
 	else
 		btn_compression ^= 1;
 
-   var el = w3_el('id-button-compression');
-   if (el) {
+   var els = w3_els('id-button-compression');
+   for (var i = 0; i < els.length; i++) {
+      var el = els[i];
       el.style.color = btn_compression? 'lime':'white';
       el.style.visibility = 'visible';
       freqset_select();
