@@ -2499,7 +2499,7 @@ function TDoA_help(show)
    if (show) {
       var s = 
          w3_text('w3-medium w3-bold w3-text-aqua', 'TDoA Help') +
-         '<br>See the <a href="http://valentfx.com/vanilla/categories/kiwisdr-tdoa-topics" target="_blank">Kiwi forum</a> for more information. ' +
+         '<br>See the <a href="http://forum.kiwisdr.com/categories/kiwisdr-tdoa-topics" target="_blank">Kiwi forum</a> for more information. ' +
          'If you are getting errors check these <br> common problems:<ul>' +
          '<li>Not zoomed-in far enough. The TDoA process will run out of memory or have problems plotting the maps.</li>' +
          '<li>Not all Kiwis used for sampling have good reception of target signal. ' +
