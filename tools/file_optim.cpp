@@ -109,14 +109,14 @@ void minify(const char *ext_s, u4_t mflags, const char *svc, const char *ext, ch
     }
 
     if (!okay) {
-        #define MINIFY_WEBSITE_DOWN
+        //#define MINIFY_WEBSITE_DOWN
         #ifdef MINIFY_WEBSITE_DOWN
             if (mflags & MF_HTML) {
                 asprintf(&cmd, "cat %s >%s",
                     fn, fn_min);
             } else
             if (mflags & (MF_JS|MF_CSS)) {
-                asprintf(&cmd, "echo '\n\n/* %s */' >%s; cat %s >>%s; echo '\n\n' >>%s",
+                asprintf(&cmd, "echo '\n\n/* MINIFY_WEBSITE_DOWN %s */' >%s; cat %s >>%s; echo '\n\n' >>%s",
                     fn_min, fn_min, fn, fn_min, fn_min);
             } else {
                 asprintf(&cmd, "cat %s >%s",

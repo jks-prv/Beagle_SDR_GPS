@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 424
+VERSION_MIN = 425
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.11
@@ -1236,8 +1236,8 @@ copy_to_git:
 	@echo
 	@(cd $(GITAPP)/$(REPO_NAME); echo 'repo branch set to:'; pwd; git branch)
 	@echo '################################'
-	@echo 'DANGER: #define MINIFY_WEBSITE_DOWN'
-	@echo '################################'
+#	@echo 'DANGER: #define MINIFY_WEBSITE_DOWN'
+#	@echo '################################'
 	@echo -n 'did you make install to rebuild the optimized files? '
 	@read not_used
 	make clean_dist

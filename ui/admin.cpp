@@ -1131,7 +1131,16 @@ void c2s_admin(void *param)
 			        struct stat st;
 		            if (stat(DIR_CFG "/opt.no_console", &st) == 0)
 		                no_console = true;
-			        if (no_console == false && conn->isLocal) {
+
+		            //#define TEST_NOT_LOCAL
+		            #ifdef TEST_NOT_LOCAL
+		                bool is_local = false;
+		            #else
+		                bool is_local = conn->isLocal;
+		            #endif
+		            bool console_local = admcfg_bool("console_local", NULL, CFG_REQUIRED);
+
+			        if (no_console == false && ((console_local && is_local) || !console_local)) {
 			            CreateTask(console, conn, ADMIN_PRIORITY);
 			        } else
 			        if (no_console) {

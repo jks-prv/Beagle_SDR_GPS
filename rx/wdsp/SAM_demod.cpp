@@ -11,6 +11,7 @@
 
 #include "types.h"
 #include "kiwi.h"
+#include "wdsp.h"
 #include <math.h>
 
 #define SAM_PLL_HILBERT_STAGES 7
@@ -117,11 +118,12 @@ f32_t wdsp_SAM_carrier(int rx_chan)
     return wdsp_SAM[rx_chan].SAM_carrier;
 }
 
-void wdsp_SAM_demod(int rx_chan, int mode, int ns_out, TYPECPX *in, TYPEMONO16 *out)
+void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *in, TYPEMONO16 *out)
 {
     TYPECPX *out_stereo = in;
     wdsp_SAM_t *w = &wdsp_SAM[rx_chan];
     f32_t ai_ps, bi_ps, bq_ps, aq_ps;
+    bool isChanNull = (mode == MODE_SAM && chan_null != CHAN_NULL_NONE);
     
     for (u4_t i = 0; i < ns_out; i++) {
           
@@ -132,7 +134,7 @@ void wdsp_SAM_demod(int rx_chan, int mode, int ns_out, TYPECPX *in, TYPEMONO16 *
         f32_t aq = err_cos * in[i].im;
         f32_t bq = err_sin * in[i].im;
 
-        if (mode != MODE_SAM) {
+        if (mode != MODE_SAM || isChanNull) {
             w->a[0] = w->dsI;
             w->b[0] = bi;
             w->c[0] = w->dsQ;
@@ -161,27 +163,39 @@ void wdsp_SAM_demod(int rx_chan, int mode, int ns_out, TYPECPX *in, TYPEMONO16 *
             }
         }
 
-        f32_t corr[2];
-        corr[0] = +ai + bq;
-        corr[1] = -bi + aq;
+        f32_t corr[NIQ];
+        corr[I] = +ai + bq;
+        corr[Q] = -bi + aq;
 
-        f32_t audio, audiou;
+        f32_t audio, audiou, audion;
+
         switch (mode) {
             case MODE_SAM:
-                audio = corr[0];
+                if (isChanNull) {
+                    audio  = (ai_ps + bi_ps) - (aq_ps - bq_ps); // lsb
+                    audiou = (ai_ps - bi_ps) + (aq_ps + bq_ps); // usb
+
+                    if (chan_null == CHAN_NULL_LSB) {
+                        audion = audio - audiou;
+                    } else {    // CHAN_NULL_USB
+                        audion = audiou - audio;
+                    }
+                } else {
+                    audio = corr[I];
+                }
                 break;
 
             case MODE_SAU:
-                audio = (ai_ps - bi_ps) + (aq_ps + bq_ps);
+                audio = (ai_ps - bi_ps) + (aq_ps + bq_ps);  // usb
                 break;
 
             case MODE_SAL:
-                audio = (ai_ps + bi_ps) - (aq_ps - bq_ps);
+                audio = (ai_ps + bi_ps) - (aq_ps - bq_ps);  // lsb
                 break;
 
             case MODE_SAS:
-                audio = (ai_ps + bi_ps) - (aq_ps - bq_ps);
-                audiou = (ai_ps - bi_ps) + (aq_ps + bq_ps);
+                audio  = (ai_ps + bi_ps) - (aq_ps - bq_ps); // lsb
+                audiou = (ai_ps - bi_ps) + (aq_ps + bq_ps); // usb
                 break;
             
             default:
@@ -191,24 +205,39 @@ void wdsp_SAM_demod(int rx_chan, int mode, int ns_out, TYPECPX *in, TYPEMONO16 *
         
         if (FADE_LEVELER) {
             w->dc = mtauR * w->dc + onem_mtauR * audio;
-            w->dc_insert = mtauI * w->dc_insert + onem_mtauI * corr[0];
+            w->dc_insert = mtauI * w->dc_insert + onem_mtauI * corr[I];
             audio = audio + w->dc_insert - w->dc;
         }
         
-        if (mode == MODE_SAS) {
+        if (mode == MODE_SAS || isChanNull) {
             if (FADE_LEVELER) {
                 w->dcu = mtauR * w->dcu + onem_mtauR * audiou;
-                w->dc_insertu = mtauI * w->dc_insertu + onem_mtauI * corr[0];
+                w->dc_insertu = mtauI * w->dc_insertu + onem_mtauI * corr[I];
                 audiou = audiou + w->dc_insertu - w->dcu;
             }
             
-            out_stereo[i].re = audio;
-            out_stereo[i].im = audiou;
+            if (isChanNull) {
+                out[i] = audion;    // lsb or usb nulled
+
+                // also save lsb/usb for display purposes
+                if (chan_null == CHAN_NULL_LSB) {
+                    out_stereo[i].re = audion;  // lsb nulled
+                    //out_stereo[i].im = audiou;  // usb
+                    out_stereo[i].im = 0;  // usb
+                } else {
+                    //out_stereo[i].re = audio;   // lsb
+                    out_stereo[i].re = 0;   // lsb
+                    out_stereo[i].im = audion;  // usb nulled
+                }
+            } else {
+                out_stereo[i].re = audio;
+                out_stereo[i].im = audiou;
+            }
         } else {
             out[i] = audio;
         }
         
-        f32_t det = atan2f(corr[1], corr[0]);
+        f32_t det = atan2f(corr[Q], corr[I]);
         f32_t del_out = w->fil_out;
         w->omega2 = w->omega2 + g2 * det;
         w->omega2 = CLAMP(w->omega2, omega_min, omega_max);

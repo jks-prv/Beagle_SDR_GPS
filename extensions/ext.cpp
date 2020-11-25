@@ -113,10 +113,10 @@ void ext_unregister_receive_real_samps_task(int rx_chan)
 	ext_users[rx_chan].receive_real_tid = (tid_t) NULL;
 }
 
-void ext_register_receive_FFT_samps(ext_receive_FFT_samps_t func, int rx_chan, ext_FFT_filtering_e filtering)
+void ext_register_receive_FFT_samps(ext_receive_FFT_samps_t func, int rx_chan, int flags)
 {
 	ext_users[rx_chan].receive_FFT = func;
-	ext_users[rx_chan].filtering = filtering;
+	ext_users[rx_chan].FFT_flags = flags;
 }
 
 void ext_unregister_receive_FFT_samps(int rx_chan)

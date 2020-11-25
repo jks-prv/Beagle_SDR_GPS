@@ -23,7 +23,6 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "spi.h"
 #include "cuteSDR.h"
-#include "ima_adpcm.h"
 
 //#define DATA_PUMP_DEBUG
 
@@ -55,17 +54,6 @@ typedef struct {
 		u4_t real_wr_pos, real_rd_pos;
 		u4_t real_seq, real_seqnum[N_DPBUF];
 		TYPEMONO16 real_samples[N_DPBUF][FASTFIR_OUTBUF_SIZE];
-	};
-	
-	struct {
-	    int rx_chan;
-		u64_t gen, proc;
-		u4_t desired;
-		float chunk_wait_us;
-		int zoom, samp_wait_ms;
-		bool overlapped_sampling;
-		ima_adpcm_state_t adpcm_snd;
-
 	};
 } rx_dpump_t;
 

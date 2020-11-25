@@ -22,6 +22,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "kiwi.h"
 #include "cuteSDR.h"
+#include "ima_adpcm.h"
 
 typedef struct {
 	struct {
@@ -59,7 +60,10 @@ typedef struct {
 
     u4_t firewall[32];
 	u4_t seq;
+	int mode;
 	float locut, hicut, norm_locut, norm_hicut;
+	bool secondary_filter;
+	ima_adpcm_state_t adpcm_snd;
 	
     #ifdef SND_SEQ_CHECK
         bool snd_seq_ck_init;
