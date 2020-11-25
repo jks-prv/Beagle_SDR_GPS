@@ -25,12 +25,14 @@ public:
 	CFastFIR();
 	virtual ~CFastFIR();
 
-	void SetupParameters( TYPEREAL FLoCut,TYPEREAL FHiCut,TYPEREAL Offset, TYPEREAL SampleRate);
+	void SetupParameters(int ch, TYPEREAL FLoCut,TYPEREAL FHiCut,TYPEREAL Offset, TYPEREAL SampleRate);
 	int ProcessData(int rx_chan, int InLength, TYPECPX* InBuf, TYPECPX* OutBuf);
 
 	int FirPos() const { return m_InBufInPos - CONV_FIR_SIZE + 1; }
 private:
 	inline void CpxMpy(int N, TYPECPX* m, TYPECPX* src, TYPECPX* dest);
+	
+	int m_ch;
 
 	TYPEREAL m_FLoCut;
 	TYPEREAL m_FHiCut;
@@ -41,6 +43,7 @@ private:
 	TYPEREAL m_pWindowTbl[CONV_FIR_SIZE];
 	TYPECPX m_pFFTOverlapBuf[CONV_FIR_SIZE];
 	TYPECPX m_pFilterCoef[CONV_FFT_SIZE];
+	TYPECPX m_pFilterCoef_CIC[CONV_FFT_SIZE];
 	TYPECPX m_pFFTBuf[CONV_FFT_SIZE];
 	TYPECPX m_pFFTBuf_pre[CONV_FFT_SIZE]; // pre-filtered FFT with CIC compensation
 	TYPEREAL m_CIC[CONV_FFT_SIZE]; // CIC compensation coefficients
@@ -50,5 +53,6 @@ private:
 };
 
 extern CFastFIR m_PassbandFIR[MAX_RX_CHANS];
+extern CFastFIR m_chan_null_FIR[MAX_RX_CHANS];
 
 #endif // FASTFIR_H

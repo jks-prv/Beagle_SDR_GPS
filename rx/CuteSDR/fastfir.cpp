@@ -50,6 +50,7 @@
 #include "simd.h"
 
 CFastFIR m_PassbandFIR[MAX_RX_CHANS];
+CFastFIR m_chan_null_FIR[MAX_RX_CHANS];
 
 
 //////////////////////////////////////////////////////////////////////
@@ -60,12 +61,13 @@ CFastFIR::CFastFIR()
 {
 	int i;
 	m_InBufInPos = (CONV_FIR_SIZE - 1);
-	for( i=0; i<CONV_FFT_SIZE; i++)
-	{
+
+	for (i=0; i < CONV_FFT_SIZE; i++) {
 		m_pFFTBuf[i].re = 0.0;
 		m_pFFTBuf[i].im = 0.0;
 		m_pFFTBuf_pre[i].re = 0.0;
 		m_pFFTBuf_pre[i].im = 0.0;
+
 		// CIC compensating filter
 		const TYPEREAL f = fabs(fmod(TYPEREAL(i)/CONV_FFT_SIZE+0.5f, 1.0f) - 0.5f);
 		const TYPEREAL p1 = (snd_rate == SND_RATE_3CH ? -3.107f : -2.969f);
@@ -73,9 +75,10 @@ CFastFIR::CFastFIR()
 		const TYPEREAL sincf = f ? MSIN(f*K_PI)/(f*K_PI) : 1.0f;
 		m_CIC[i] = pow(sincf, -5) + p1*exp(p2*(f-0.5f));
 	}
+
 #if 1
 	//create Blackman-Nuttall window function for windowed sinc low pass filter design
-	for( i=0; i<CONV_FIR_SIZE; i++)
+	for (i=0; i < CONV_FIR_SIZE; i++)
 	{
 		m_pWindowTbl[i] = (0.3635819
 			- 0.4891775*MCOS( (K_2PI*i)/(CONV_FIR_SIZE-1) )
@@ -85,9 +88,10 @@ CFastFIR::CFastFIR()
 		m_pFFTOverlapBuf[i].im = 0.0;
 	}
 #endif
+
 #if 0
 	//create Blackman-Harris window function for windowed sinc low pass filter design
-	for( i=0; i<CONV_FIR_SIZE; i++)
+	for (i=0; i < CONV_FIR_SIZE; i++)
 	{
 		m_pWindowTbl[i] = (0.35875
 			- 0.48829*MCOS( (K_2PI*i)/(CONV_FIR_SIZE-1) )
@@ -97,9 +101,10 @@ CFastFIR::CFastFIR()
 		m_pFFTOverlapBuf[i].im = 0.0;
 	}
 #endif
+
 #if 0
 	//create Nuttall window function for windowed sinc low pass filter design
-	for( i=0; i<CONV_FIR_SIZE; i++)
+	for (i=0; i < CONV_FIR_SIZE; i++)
 	{
 		m_pWindowTbl[i] = (0.355768
 			- 0.487396*MCOS( (K_2PI*i)/(CONV_FIR_SIZE-1) )
@@ -135,10 +140,12 @@ CFastFIR::~CFastFIR()
 //		example to make 2700Hz USB filter:
 //	SetupParameters( 100, 2800, 0, 48000);
 //////////////////////////////////////////////////////////////////////
-void CFastFIR::SetupParameters( TYPEREAL FLoCut, TYPEREAL FHiCut,
+void CFastFIR::SetupParameters(int ch, TYPEREAL FLoCut, TYPEREAL FHiCut,
 								TYPEREAL Offset, TYPEREAL SampleRate)
 {
-int i;
+    int i;
+    m_ch = ch;
+    
 	if( (FLoCut==m_FLoCut) && (FHiCut==m_FHiCut) &&
 		(Offset==m_Offset) && (SampleRate==m_SampleRate) )
 	{
@@ -160,7 +167,6 @@ int i;
 	{
 		return;
 	}
-	//m_Mutex.lock();
 	//calculate some normalized filter parameters
 	TYPEREAL nFL = FLoCut/SampleRate;
 	TYPEREAL nFH = FHiCut/SampleRate;
@@ -168,14 +174,14 @@ int i;
 	TYPEREAL nFs = K_2PI*(nFH+nFL)/2.0;		//2 PI times required frequency shift (FHiCut+FLoCut)/2
 	TYPEREAL fCenter = 0.5*(TYPEREAL)(CONV_FIR_SIZE-1);	//floating point center index of FIR filter
 
-	for(i=0; i<CONV_FFT_SIZE; i++)		//zero pad entire coefficient buffer to FFT size
+	for (i=0; i < CONV_FFT_SIZE; i++)		//zero pad entire coefficient buffer to FFT size
 	{
-		m_pFilterCoef[i].re = 0.0;
-		m_pFilterCoef[i].im = 0.0;
+		m_pFilterCoef[i].re = m_pFilterCoef_CIC[i].re = 0.0;
+		m_pFilterCoef[i].im = m_pFilterCoef_CIC[i].im = 0.0;
 	}
 
 	//create LP FIR windowed sinc, MSIN(x)/x complex LP filter coefficients
-	for(i=0; i<CONV_FIR_SIZE; i++)
+	for (i=0; i < CONV_FIR_SIZE; i++)
 	{
 		TYPEREAL x = (TYPEREAL) i - fCenter;
 		TYPEREAL z;
@@ -194,14 +200,10 @@ int i;
 	//convert FIR coefficients to frequency domain by taking forward FFT
 	MFFTW_EXECUTE(m_FFT_CoefPlan);
 
-    #define CIC_COMPENSATION
-	#ifdef CIC_COMPENSATION
-        for (i = 0; i < CONV_FFT_SIZE; i++) {
-            m_pFilterCoef[i].re *= m_CIC[i];
-            m_pFilterCoef[i].im *= m_CIC[i];
-        }
-    #endif
-	//m_Mutex.unlock();
+    for (i = 0; i < CONV_FFT_SIZE; i++) {
+        m_pFilterCoef_CIC[i].re = m_pFilterCoef[i].re * m_CIC[i];
+        m_pFilterCoef_CIC[i].im = m_pFilterCoef[i].im * m_CIC[i];
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -213,72 +215,80 @@ int i;
 ///////////////////////////////////////////////////////////////////////////////
 int CFastFIR::ProcessData(int rx_chan, int InLength, TYPECPX* InBuf, TYPECPX* OutBuf)
 {
-//print_max_min_c("FIRin", InBuf, InLength);
+    //print_max_min_c("FIRin", InBuf, InLength);
 
-ext_receive_FFT_samps_t receive_FFT = ext_users[rx_chan].receive_FFT;
-bool receive_FFT_pre = (receive_FFT != NULL && ext_users[rx_chan].filtering == PRE_FILTERED);
-bool receive_FFT_post = (receive_FFT != NULL && ext_users[rx_chan].filtering == POST_FILTERED);
+    ext_users_t *ext_u = &ext_users[rx_chan];
+    ext_receive_FFT_samps_t receive_FFT = ext_u->receive_FFT;
+    int receive_FFT_ch = m_ch;
+    bool receive_FFT_pre = (receive_FFT != NULL && (ext_u->FFT_flags & PRE_FILTERED));
+    bool receive_FFT_post = (receive_FFT != NULL && (ext_u->FFT_flags & POST_FILTERED));
 
-int i = 0;
-int j;
-int len = InLength;
-int outpos = 0;
-	if( !InLength)	//if nothing to do
+    int i = 0;
+    int j;
+    int len = InLength;
+    int outpos = 0;
+
+	if (!InLength)	// if nothing to do
 		return 0;
-//StartPerformance();
-	//m_Mutex.lock();
-	while(len--)
-	{
+
+	while (len--) {
 		j = m_InBufInPos - (CONV_FFT_SIZE - CONV_FIR_SIZE + 1);
-		if(j >= 0 )
-		{	//keep copy of last CONV_FIR_SIZE-1 samples for overlap save
+		if (j >= 0) {   // keep copy of last CONV_FIR_SIZE-1 samples for overlap save
 			m_pFFTOverlapBuf[j] = InBuf[i];
 		}
 
 		m_pFFTBuf[m_InBufInPos++] = InBuf[i++];
 
-		if(m_InBufInPos >= CONV_FFT_SIZE)
-		{	//perform FFT -> complexMultiply by FIR coefficients -> inverse FFT on filled FFT input buffer
+        // perform FFT -> complexMultiply by FIR coefficients -> inverse FFT on filled FFT input buffer
+		if (m_InBufInPos >= CONV_FFT_SIZE) {
 			//print_max_min_c("preFFT", m_pFFTBuf, CONV_FFT_SIZE);
 			MFFTW_EXECUTE(m_FFT_FwdPlan);
 
+            bool buf_modified = false;
 			if (receive_FFT_pre) {
                 //print_max_min_c("postFFT", m_pFFTBuf, CONV_FFT_SIZE);
-#ifdef CIC_COMPENSATION
                 simd_multiply_cfc(CONV_FFT_SIZE,
                                   reinterpret_cast<const fftwf_complex *>(m_pFFTBuf),
                                   m_CIC,
                                   reinterpret_cast<fftwf_complex *>(m_pFFTBuf_pre));
-                receive_FFT(rx_chan, 0, CONV_FFT_TO_OUTBUF_RATIO, CONV_FFT_SIZE, m_pFFTBuf_pre);
-#else
-                receive_FFT(rx_chan, 0, CONV_FFT_TO_OUTBUF_RATIO, CONV_FFT_SIZE, m_pFFTBuf);
-#endif
+                buf_modified = receive_FFT(rx_chan, receive_FFT_ch, PRE_FILTERED, CONV_FFT_TO_OUTBUF_RATIO, CONV_FFT_SIZE, m_pFFTBuf_pre);
             }
 
-            //CpxMpy(CONV_FFT_SIZE, m_pFilterCoef, m_pFFTBuf, m_pFFTBuf);
-            simd_multiply_ccc(CONV_FFT_SIZE,
-                              reinterpret_cast<const fftwf_complex *>(m_pFilterCoef),
-                              reinterpret_cast<const fftwf_complex *>(m_pFFTBuf),
-                              reinterpret_cast<      fftwf_complex *>(m_pFFTBuf));
+            if (buf_modified) {
+                simd_multiply_ccc(CONV_FFT_SIZE,
+                                  reinterpret_cast<const fftwf_complex *>(m_pFilterCoef),
+                                  reinterpret_cast<const fftwf_complex *>(m_pFFTBuf_pre),
+                                  reinterpret_cast<      fftwf_complex *>(m_pFFTBuf));
+            } else {
+                //CpxMpy(CONV_FFT_SIZE, m_pFilterCoef_CIC, m_pFFTBuf, m_pFFTBuf);
+                simd_multiply_ccc(CONV_FFT_SIZE,
+                                  reinterpret_cast<const fftwf_complex *>(m_pFilterCoef_CIC),
+                                  reinterpret_cast<const fftwf_complex *>(m_pFFTBuf),
+                                  reinterpret_cast<      fftwf_complex *>(m_pFFTBuf));
+            }
 
 			if (receive_FFT_post)
-				receive_FFT(rx_chan, 0, CONV_FFT_TO_OUTBUF_RATIO, CONV_FFT_SIZE, m_pFFTBuf);
+				receive_FFT(rx_chan, receive_FFT_ch, POST_FILTERED, CONV_FFT_TO_OUTBUF_RATIO, CONV_FFT_SIZE, m_pFFTBuf);
 
 			MFFTW_EXECUTE(m_FFT_RevPlan);
-			for(j=(CONV_FIR_SIZE-1); j<CONV_FFT_SIZE; j++)
-			{	//copy FFT output into OutBuf minus CONV_FIR_SIZE-1 samples at beginning
-				OutBuf[outpos++] = m_pFFTBuf[j];
-			}
-			for(j=0; j<(CONV_FIR_SIZE - 1);j++)
-			{	//copy overlap buffer into start of fft input buffer
+
+            if (OutBuf != NULL) {
+                for (j = (CONV_FIR_SIZE-1); j < CONV_FFT_SIZE; j++) {
+                    // copy FFT output into OutBuf minus CONV_FIR_SIZE-1 samples at beginning
+                    OutBuf[outpos++] = m_pFFTBuf[j];
+                }
+            }
+
+			for (j=0; j < (CONV_FIR_SIZE - 1); j++) {
+			    // copy overlap buffer into start of fft input buffer
 				m_pFFTBuf[j] = m_pFFTOverlapBuf[j];
 			}
+
 			//reset input position to data start position of fft input buffer
 			m_InBufInPos = CONV_FIR_SIZE - 1;
 		}
 	}
-	//m_Mutex.unlock();
-//StopPerformance(InLength);
+
 	return outpos;	//return number of output samples processed and placed in OutBuf
 }
 
@@ -288,8 +298,7 @@ int outpos = 0;
 ///////////////////////////////////////////////////////////////////////////////
 inline void CFastFIR::CpxMpy(int N, TYPECPX* m, TYPECPX* src, TYPECPX* dest)
 {
-	for(int i=0; i<N; i++)
-	{
+	for (int i=0; i < N; i++) {
 		TYPEREAL sr = src[i].re;
 		TYPEREAL si = src[i].im;
 		dest[i].re = m[i].re * sr - m[i].im * si;

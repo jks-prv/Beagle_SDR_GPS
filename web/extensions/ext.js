@@ -7,6 +7,7 @@ var extint = {
    override_pb: false,
    displayed: false,
    help_displayed: false,
+   spectrum_used: false,
    current_ext_name: null,
    using_data_container: false,
    default_w: 525,
@@ -208,6 +209,7 @@ function ext_set_mode(mode, freq, opt)
 	var no_drm_proc = w3_opt(opt, 'no_drm_proc', false);
 	var drm_active = (typeof(drm) != 'undefined' && drm.active);
 	//console.log('$ new_drm='+ new_drm +' open_ext='+ open_ext);
+	w3_show_hide('id-chan-null', mode == 'sam');
 
    if (!no_drm_proc) {
       if (new_drm && open_ext) {
@@ -524,6 +526,18 @@ function ext_panel_init()
 	   }, true);
 }
 
+function ext_show_spectrum()
+{
+   w3_show_block('id-spectrum-container');
+   extint.spectrum_used = true;
+}
+
+function ext_hide_spectrum()
+{
+   w3_hide('id-spectrum-container');
+   extint.spectrum_used = false;
+}
+
 function extint_panel_show(controls_html, data_html, show_func, show_help_button)
 {
 	extint.using_data_container = (data_html? true:false);
@@ -535,9 +549,12 @@ function extint_panel_show(controls_html, data_html, show_func, show_help_button
 		w3_show_block(w3_innerHTML('id-ext-data-container', data_html));
 	} else {
 		w3_hide('id-ext-data-container');
-		if (!spectrum_display)
+		if (!spec.source_wf)
 			w3_show_block('id-top-container');
 	}
+
+   // remove previous use of spectrum (if any)
+   ext_hide_spectrum();
 
    // remove previous help panel if displayed
    if (extint.help_displayed == true) {
@@ -593,6 +610,7 @@ function extint_panel_hide()
 
 	if (extint.using_data_container) {
 		w3_hide('id-ext-data-container');
+      ext_hide_spectrum();
 		w3_show_block('id-top-container');
 		extint.using_data_container = false;
 		
