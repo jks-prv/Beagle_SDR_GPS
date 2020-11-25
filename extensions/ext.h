@@ -29,9 +29,9 @@ Boston, MA  02110-1301, USA.
 typedef void (*ext_main_t)();
 typedef void (*ext_close_conn_t)(int rx_chan);
 typedef bool (*ext_receive_msgs_t)(char *msg, int rx_chan);
+typedef bool (*ext_receive_FFT_samps_t)(int rx_chan, int ch, int flags, int ratio, int ns_out, TYPECPX *samps);
 typedef void (*ext_receive_iq_samps_t)(int rx_chan, int ch, int ns_out, TYPECPX *samps);
 typedef void (*ext_receive_real_samps_t)(int rx_chan, int ch, int ns_out, TYPEMONO16 *samps);
-typedef void (*ext_receive_FFT_samps_t)(int rx_chan, int ch, int ratio, int ns_out, TYPECPX *samps);
 typedef void (*ext_receive_S_meter_t)(int rx_chan, float S_meter_dBm);
 typedef void (*ext_poll_t)(int rx_chan);
 
@@ -53,6 +53,11 @@ typedef struct {
 
 void ext_register(ext_t *ext);
 
+// call to start/stop receiving audio channel FFT samples, pre- or post-FIR filter, detection & AGC
+typedef enum { PRE_FILTERED = 1, POST_FILTERED = 2 } ext_FFT_flags_e;
+void ext_register_receive_FFT_samps(ext_receive_FFT_samps_t func, int rx_chan, int flags);
+void ext_unregister_receive_FFT_samps(int rx_chan);
+
 // call to start/stop receiving audio channel IQ samples, post-FIR filter, but pre- detector & AGC
 void ext_register_receive_iq_samps(ext_receive_iq_samps_t func, int rx_chan);
 void ext_register_receive_iq_samps_task(tid_t tid, int rx_chan);
@@ -64,11 +69,6 @@ void ext_register_receive_real_samps(ext_receive_real_samps_t func, int rx_chan)
 void ext_register_receive_real_samps_task(tid_t tid, int rx_chan);
 void ext_unregister_receive_real_samps(int rx_chan);
 void ext_unregister_receive_real_samps_task(int rx_chan);
-
-// call to start/stop receiving audio channel FFT samples, pre- or post-FIR filter, detection & AGC
-typedef enum { PRE_FILTERED, POST_FILTERED } ext_FFT_filtering_e;
-void ext_register_receive_FFT_samps(ext_receive_FFT_samps_t func, int rx_chan, ext_FFT_filtering_e filtering);
-void ext_unregister_receive_FFT_samps(int rx_chan);
 
 // call to start/stop receiving S-meter data
 void ext_register_receive_S_meter(ext_receive_S_meter_t func, int rx_chan);
