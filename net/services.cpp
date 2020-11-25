@@ -797,7 +797,7 @@ static void reg_SDR_hu(void *param)
 }
 */
 
-#define RETRYTIME_KIWISDR_COM		15
+#define RETRYTIME_KIWISDR_COM		30
 //#define RETRYTIME_KIWISDR_COM		1
 #define RETRYTIME_KIWISDR_COM_FAIL		2
 
