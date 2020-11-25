@@ -2,6 +2,23 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.425  November 26, 2020
+    Channel nulling, preliminary release
+        See forum post: http://forum.kiwisdr.com/discussion/2169/early-demonstration-of-channel-nulling#p1
+    
+    Audio FFT extension:
+        Rename and expansion of former "integrate" extension.
+        Adds continuous audio FFT and audio spectrum modes to existing integration mode.
+        The audio spectrum function is particularly useful in visualizing the effectiveness
+            of the new channel nulling feature of SAS mode.
+
+    Admin security tab: added option to enable/disable console tab access from the local
+        network. This in response to a few Kiwis that still have trouble determining
+        their local network address, e.g. when using unsupported WiFi dongles.
+
+    Prevent open menus from unexpectedly closing when colormap averaging event occurs.
+    Update embedded URLs pointing to the forum.
+
 v1.422,423,424  November 16, 2020
     Squelch (all modes) will pause the record function (red circle to left of speaker icon)
         when the squelch is open. The record icon also changes to white.
@@ -216,10 +233,6 @@ v1.391  May 23, 2020
         Reworked the audio tab user interface to support multiple blanker/filter algorithms.
         New algorithms planned but not yet available are greyed-out in the menus.
         From Warren Pratt's wdsp package added the variable-leak LMS algorithm.
-    
-    Merged Howard Su's RPi changes.
-        Note: RPi is not officially supported by KiwiSDR. Ask for help on the KiwiSDR forum:
-            valentfx.com/vanilla/discussion/1986/port-kiwisdr-to-raspberrypi-3b
     
     Bug fixes:
         Audio recordings made in SAS (synchronous AM stereo) mode now work.
