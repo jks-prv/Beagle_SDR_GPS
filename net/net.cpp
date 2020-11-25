@@ -65,20 +65,31 @@ bool find_local_IPs(int retry)
         net_printf("getifaddrs: IF %s fam=%d(%s) flags=0x%x%s%s | ", ifa->ifa_name,
             family, (family == AF_INET)? "ipv4" : ((family == AF_INET6)? "ipv6" : "other"),
             flags, (flags & IFF_UP)? " UP":"", (flags & IFF_RUNNING)? " RUNNING":"");
+
         if (family != AF_INET && family != AF_INET6) {
             net_printf2("BAD: family\n");
             continue;
         }
-        //if (!(flags & IFF_UP) || !(flags & IFF_RUNNING)) {
+        
+        //bool is_eth0 = kiwi_str_begins_with(ifa->ifa_name, "eth0");
+        // require IFF_RUNNING for eth0 interface because of problems we've seen where
+        // eth0 is marked IFF_UP without the cable connected!
+        // But, decided don't want to do this because of possible side-effects.
+        // Instead, add an option to admin security tab that disables local network check.
+        //if ((is_eth0 && (!(flags & IFF_UP) || !(flags & IFF_RUNNING))) ||
+        //    (!is_eth0 && !(flags & IFF_UP))) {
+        //    net_printf2("BAD: not UP (eth0: and RUNNING)\n");
+        
         if (!(flags & IFF_UP)) {
-            //net_printf2("BAD: not UP and RUNNING\n");
             net_printf2("BAD: not UP\n");
             continue;
         }
+
         if (strcmp(ifa->ifa_name, "lo") == 0 || kiwi_str_begins_with(ifa->ifa_name, "usb") || kiwi_str_begins_with(ifa->ifa_name, "SoftAp")) {
             net_printf2("BAD: IF\n");
             continue;
         }
+
         bool is_ipv4LL = (kiwi_str_ends_with(ifa->ifa_name, ":avahi") != NULL);
         
         net_printf2("OK\n");

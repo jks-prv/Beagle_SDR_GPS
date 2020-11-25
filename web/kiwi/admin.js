@@ -2540,6 +2540,7 @@ function security_html()
 					'No password set: unrestricted Internet access to SDR')
 			), 50
 		) +
+
 		'<hr>' +
 		w3_inline_percent('w3-container/w3-hspace-16 w3-text-teal',
 			w3_div('',
@@ -2558,6 +2559,24 @@ function security_html()
 					'No password set: no admin access from Internet allowed')
 			), 50
 		) +
+
+		'<hr>' +
+		w3_inline_percent('w3-container/w3-hspace-16 w3-text-teal',
+			w3_div('',
+				w3_div('',
+					'<b>Restrict console connections <br> to the local network?</b><br>',
+					w3_switch('w3-margin-T-8', 'Yes', 'No', 'adm.console_local', adm.console_local, 'admin_radio_YN_cb')
+				)
+			), 25,
+
+			w3_div('w3-text-black',
+				'Set to "Yes" (default) to restrict use of the console tab ' +
+				'to connections from the local network. This is an important ' +
+				'security enhancement. You might want to set to "No" if the  ' +
+				'Kiwi has difficulty determining your local network address. '
+			), 33
+		) +
+
 		'<hr>' +
 		w3_inline_percent('w3-container/w3-hspace-16 w3-text-teal',
 			w3_div('',
@@ -2580,12 +2599,10 @@ function security_html()
 				'However we expect most Kiwi owners will want to participate and we encourage ' +
 				'you to do so. Your precise GPS location is not revealed by the timestamp information. ' +
 				'For more discussion please see the ' +
-				w3_link('w3-link-darker-color',
-				   'http://valentfx.com/vanilla/discussion/1218/participation-of-kiwis-in-the-tdoa-process',
-				   'Kiwi forums'
-				) +'.'
+				w3_link('w3-link-darker-color', 'http://http://forum.kiwisdr.com/discussion/1218/participation-of-kiwis-in-the-tdoa-process/p1', 'Kiwi forums') +'.'
 			), 33
 		) +
+
 		'<hr>' +
 		//w3_div('id-security-json w3-section w3-border')
 		''

@@ -298,7 +298,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 }
                 close(fd);
             }
-        
+
+            bool allow_gps_tstamp = admcfg_bool("console_local", NULL, CFG_REQUIRED);
             if (check_ip_against_interfaces) {
             
                 // SECURITY: call isLocal_if_ip() using mc->remote_ip NOT conn->remote_ip because the latter
