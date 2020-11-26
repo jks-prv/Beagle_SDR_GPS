@@ -25,7 +25,7 @@
 
 typedef struct {
 	int rx_chan;
-	int run, ch, integ, mode;
+	int run, ch, mode;
 	float fft_scale, spectrum_scale;
 	u4_t last_ms;
 	
@@ -49,15 +49,15 @@ static fft_t fft[MAX_RX_CHANS];
 #define	FFT		0
 #define	CLEAR	1
 
-enum data_e { FUNC_OFF=-1, FUNC_FFT=0, FUNC_SPEC=1, FUNC_INTEG=2 };
-static const char* func_s[] = { "off", "fft", "spec", "integ" };
+enum data_e { FUNC_OFF=-1, FUNC_WF=0, FUNC_SPEC=1, FUNC_INTEG=2 };
+static const char* func_s[] = { "off", "wf", "spec", "integ" };
 
 bool fft_data(int rx_chan, int ch, int flags, int ratio, int nsamps, TYPECPX *samps)
 {
 	fft_t *e = &fft[rx_chan];
 	if (ch != e->ch) return false;      // not the instance we want
 	//real_printf("%d", e->ch); fflush(stdout);
-	int i;
+	int i, bin;
 	bool buf_changed = false;
 	
 	// capture the ratio one time after each integration time change
@@ -75,16 +75,16 @@ bool fft_data(int rx_chan, int ch, int flags, int ratio, int nsamps, TYPECPX *sa
 		e->reset = false;
 	}
 	
-	double fr = fmod(e->fi, e->time);
-	double fb = fr / e->time;
-	double fbin = fb * e->bins;
-	int bin = trunc(fbin);
-	
-	e->fi += e->fft_sec;
-	
-	//printf("bin %d fi %.3f\n", bin, e->fi);
-	//assert(bin < MAX_BINS);
-	if (bin >= MAX_BINS) return false;	// punt for now
+	if (e->run == FUNC_INTEG) {
+        double fr = fmod(e->fi, e->time);
+        double fb = fr / e->time;
+        double fbin = fb * e->bins;
+        bin = trunc(fbin);
+        e->fi += e->fft_sec;
+	    if (bin >= MAX_BINS) return false;  // punt for now
+	} else {
+	    bin = 0;
+	}
 	
 	assert(nsamps == INTEG_WIDTH);
 	float pwr;
@@ -97,7 +97,7 @@ bool fft_data(int rx_chan, int ch, int flags, int ratio, int nsamps, TYPECPX *sa
 	meas_px = (e->time == 3.6)? (515 + (int) trunc(6 * fb) * 4) : -1;
 	#endif
 	
-    if (e->integ == 0) {
+    if (e->run != FUNC_INTEG) {
         for (i=0; i < INTEG_WIDTH; i++) {
             e->pwr[bin][i] = samps[i].re * samps[i].re;
         }
@@ -194,38 +194,37 @@ bool fft_msgs(char *msg, int rx_chan)
         snd_t *snd = &snd_inst[rx_chan];
         
 		if (e->run != FUNC_OFF) {
-			e->fft_scale = 10.0 * 2.0 / (CUTESDR_MAX_VAL * CUTESDR_MAX_VAL * INTEG_WIDTH * INTEG_WIDTH);
+			float scale = 10.0 * 2.0 / (CUTESDR_MAX_VAL * CUTESDR_MAX_VAL * INTEG_WIDTH * INTEG_WIDTH);
             e->isSAM = (snd->mode == MODE_SAM || snd->mode == MODE_SAL || snd->mode == MODE_SAU || snd->mode == MODE_SAS);
-            float boost = 0;
+            float boost = 1;
 			
 			switch (e->run) {
 			
-			    case FUNC_FFT:
+			    case FUNC_WF:
 			        e->ch = 0;
-			        e->integ = 0;
 			        snd->secondary_filter = false;
+			        boost = 1e4;
 			        break;
 			
 			    case FUNC_SPEC:
 			        e->ch = e->isSAM? 1:0;
-			        e->integ = 0;
 			        snd->secondary_filter = e->isSAM? true:false;
 
                     boost = e->isSAM? 1e4 : 1e6;    // scale up to roughly match WF spectrum values
-                    e->spectrum_scale = e->fft_scale * boost;
                     e->last_ms = 0;
 			        break;
 			
 			    case FUNC_INTEG:
 			        e->ch = 0;
-			        e->integ = 1;
 			        snd->secondary_filter = false;
 			        break;
 			}
 
+            e->spectrum_scale = scale * boost;
+            e->fft_scale      = scale * boost;
 			ext_register_receive_FFT_samps(fft_data, rx_chan, POST_FILTERED);
-            printf("FFT func=%s isSAM=%d boost=%.1g spectrum_scale=%g fft_scale=%g\n",
-                func_s[e->run+1], e->isSAM, boost, e->spectrum_scale, e->fft_scale);
+            //printf("FFT func=%s isSAM=%d scale=%g boost=%.1g spectrum_scale=%g fft_scale=%g\n",
+            //    func_s[e->run+1], e->isSAM, scale, boost, e->spectrum_scale, e->fft_scale);
 		} else {
             snd->secondary_filter = false;
 			ext_unregister_receive_FFT_samps(rx_chan);

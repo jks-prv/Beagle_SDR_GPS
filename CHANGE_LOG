@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.425  November 26, 2020
+v1.425,426  November 26, 2020
     Channel nulling, preliminary release
         See forum post: http://forum.kiwisdr.com/discussion/2169/early-demonstration-of-channel-nulling#p1
     
@@ -10,7 +10,7 @@ v1.425  November 26, 2020
         Rename and expansion of former "integrate" extension.
         Adds continuous audio FFT and audio spectrum modes to existing integration mode.
         The audio spectrum function is particularly useful in visualizing the effectiveness
-            of the new channel nulling feature of SAS mode.
+            of the new channel nulling feature of SAM mode.
 
     Admin security tab: added option to enable/disable console tab access from the local
         network. This in response to a few Kiwis that still have trouble determining

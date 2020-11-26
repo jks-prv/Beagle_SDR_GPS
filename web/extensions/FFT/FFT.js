@@ -10,17 +10,15 @@ var fft = {
    cmd_e: { FFT:0, CLEAR:1 },
 
    func: 1,
-   func_e: { OFF:-1, FFT:0, SPEC:1, INTEG:2 },
-   func_s: [ 'FFT', 'spectrum', 'integrate' ],
+   func_e: { OFF:-1, WF:0, SPEC:1, INTEG:2 },
+   func_s: [ 'waterfall', 'spectrum', 'integrate' ],
    spec_source_save: 0,
 
-   pre: 0,
+   pre: -1,
    pre_4_SEC: 0,
    pre_10_SEC: 1,
-   pre_ALPHA: 2,
+   pre_ALPHA: 0,
 	pre_s: [
-	   'integrate 4 s',
-	   'integrate 10 s',
 		'Alpha (RSDN-20)',
 		'40 JJY',
 		'60 WWVB/MSF/JJY',
@@ -30,10 +28,16 @@ var fft = {
 	],
 
    itime: 10,
-   maxdb: -10,
-   mindb: -130,
+   maxdb: -30,
+   mindb: -115,
    
-   data_canvas: null,
+   wf_canvas_i: 0,
+   wf_canvas: null,
+   wf1_canvas: null,
+   wf2_canvas: null,
+   actual_line: 0,
+
+   integ_canvas: null,
    integ_w: 1024,
    integ_th: 200,
    integ_hdr: 12,
@@ -81,11 +85,34 @@ function fft_clear()
 {
 	ext_send('SET clear');
 	fft.integ_draw = false;
-	var c = fft.data_canvas.ctx;
-	c.fillStyle = 'mediumBlue';
-	c.fillRect(0, 0, fft.integ_w, fft.integ_th);
+	var w = fft.integ_w, h = fft.integ_h, th = fft.integ_th;
 
-	var c = fft.info_canvas.ctx;
+	fft.actual_line = h - 1;
+	fft.wf_canvas_i = 0;
+	fft.wf_canvas = fft.wf1_canvas;
+	var top = -h+1 + fft.integ_hdr;
+
+   fft.wf1_canvas.ctx.clearRect(0, 0, w, h);
+	fft.wf1_canvas.top = top;
+	fft.wf1_canvas.style.top = px(top);
+
+   fft.wf2_canvas.ctx.clearRect(0, 0, w, h);
+	fft.wf2_canvas.top = top;
+	fft.wf2_canvas.style.top = px(top);
+
+	var c = fft.integ_canvas.ctx;
+	if (fft.func == fft.func_e.WF) {
+      c.clearRect(0, 0, w, th);
+	   th = fft.integ_hdr;
+	}
+   c.fillStyle = 'mediumBlue';
+   c.fillRect(0, 0, w, th);
+   
+	if (fft.func == fft.func_e.SPEC) {
+      spec.clear_avg = true;
+   }
+
+	c = fft.info_canvas.ctx;
 	c.fillStyle = '#575757';
 	c.fillRect(0, 0, 256, 280);
 	
@@ -95,14 +122,14 @@ function fft_clear()
 	switch (fft.pre) {
 	
 	case fft.pre_ALPHA:		// Alpha has sub-display on left
-		ext_set_controls_width_height(undefined, 290);		// default width
+		ext_set_controls_width_height(undefined, 275);		// default width
 		left.style.width = '49.9%';
 		right.style.width = '49.9%';
 		fft_alpha();
 		break;
 	
 	default:
-		ext_set_controls_width_height(275, 290);
+		ext_set_controls_width_height(275, 275);
 		left.style.width = '0%';
 		right.style.width = '100%';
 		var f = ext_get_freq();
@@ -130,7 +157,7 @@ function fft_update()
 function fft_marker(txt, left, f)
 {
 	// draw frequency markers on FFT canvas
-	var c = fft.data_canvas.ctx;
+	var c = fft.integ_canvas.ctx;
 	var pxphz = fft.integ_w / ext_sample_rate();
 	
 	txt = left? (txt + '\u25BC') : ('\u25BC'+ txt);
@@ -166,6 +193,8 @@ function fft_recv(data_raw)
 		var cmd = ba[0];
 		var o = 1;
 		var len = ba.length-1;
+      var bin = ba[o];
+      o++; len--;
 
 		if (cmd == fft.cmd_e.FFT) {
 			if (!fft.integ_draw) return;
@@ -174,14 +203,19 @@ function fft_recv(data_raw)
 			   var data = new Uint8Array(data_raw, 6);
 			   spectrum_update(data);
 			} else {
-            var c = fft.data_canvas.ctx;
-            var im = fft.data_canvas.im;
-            var bin = ba[o];
-            o++; len--;
-
-            bin -= fft.integ_bino;
-            if (bin < 0)
-               bin += fft.integ_bins;
+			   var fc, c, im;
+			   
+			   if (fft.func == fft.func_e.WF) {
+			      fc = fft.wf_canvas;
+               c = fc.ctx;
+               im = fc.im;
+			   } else {
+               c = fft.integ_canvas.ctx;
+               im = fft.integ_canvas.im;
+               bin -= fft.integ_bino;
+               if (bin < 0)
+                  bin += fft.integ_bins;
+			   }
 
             for (var x=0; x < fft.integ_w; x++) {
                var color = waterfall_color_index_max_min(ba[x+o], fft.integ_maxdb, fft.integ_mindb);
@@ -191,8 +225,25 @@ function fft_recv(data_raw)
                im.data[x*4+3] = 0xff;
             }
          
-            for (var y=0; y < fft.integ_dbl; y++) {
-               c.putImageData(im, 0, fft.integ_yo + (bin * fft.integ_dbl + y));
+			   if (fft.func == fft.func_e.WF) {
+               c.putImageData(im, 0, fft.actual_line);
+               fft.actual_line--;
+		         fft.wf1_canvas.style.top = px(fft.wf1_canvas.top++);
+		         fft.wf2_canvas.style.top = px(fft.wf2_canvas.top++);
+
+               if (fft.actual_line < 0) {
+                  var h = fft.integ_h;
+		            fft.wf_canvas_i ^= 1;
+		            fft.wf_canvas = fft.wf_canvas_i? fft.wf2_canvas : fft.wf1_canvas;
+		            fc = fft.wf_canvas;
+                  fc.top = -h+1 + fft.integ_hdr;
+                  fc.style.top = px(fc.top);
+                  fft.actual_line = h - 1;
+               }
+			   } else {
+               for (var y=0; y < fft.integ_dbl; y++) {
+                  c.putImageData(im, 0, fft.integ_yo + (bin * fft.integ_dbl + y));
+               }
             }
          }
 		} else
@@ -252,7 +303,10 @@ function fft_controls_setup()
       time_display_html('fft') +
 
       w3_div('id-fft-data|left:150px; width:1024px; height:200px; background-color:mediumBlue; position:relative;',
-   		'<canvas id="id-fft-data-canvas" width="1024" height="200" style="position:absolute"></canvas>'
+   		'<canvas id="id-fft-wf1-canvas" width="1024" height="188" style="position:absolute"></canvas>',
+   		'<canvas id="id-fft-wf2-canvas" width="1024" height="188" style="position:absolute"></canvas>',
+   		// after fft canvases so on top
+   		'<canvas id="id-fft-integ-canvas" width="1024" height="200" style="position:absolute"></canvas>'
       );
 
    var info_html =
@@ -270,13 +324,13 @@ function fft_controls_setup()
                   w3_select('|color:red', 'Function', '', 'fft.func', fft.func, fft.func_s, 'fft_func_cb'),
                   w3_input('w3-width-64 w3-padding-smaller', 'Integrate time', 'fft.itime', fft.itime, 'fft_itime_cb')
                ),
-					w3_select('w3-margin-T-8//|color:red', 'Presets', '', 'fft.pre', fft.pre, fft.pre_s, 'fft_pre_select_cb'),
+					w3_select('w3-margin-T-8//|color:red', 'Integrate presets', 'select', 'fft.pre', W3_SELECT_SHOW_TITLE, fft.pre_s, 'fft_pre_select_cb'),
 					w3_div('id-fft-msg-fft w3-margin-T-8',
-                  w3_slider('', 'max', 'fft.maxdb', fft.maxdb, -100, 20, 1, 'fft_maxdb_cb'),
+                  w3_slider('', 'max', 'fft.maxdb', fft.maxdb, -170, -10, 1, 'fft_maxdb_cb'),
                   w3_slider('', 'min', 'fft.mindb', fft.mindb, -190, -30, 1, 'fft_mindb_cb')
                ),
                w3_text('id-fft-msg-spec  w3-margin-T-8 w3-hide', 'Spectrum uses main control panel<br>WF tab sliders and settings'),
-					w3_button('w3-margin-T-8', 'Clear', 'fft_clear_cb')
+					w3_button('w3-margin-T-8 w3-padding-small', 'Clear', 'fft_clear_cb')
 				), 'id-fft-controls-left', 'id-fft-controls-right'
 			)
 		);
@@ -284,10 +338,18 @@ function fft_controls_setup()
 	ext_panel_show(controls_html, data_html, null);
 	time_display_setup('fft');
 
-	fft.data_canvas = w3_el('id-fft-data-canvas');
-	fft.data_canvas.ctx = fft.data_canvas.getContext("2d");
-	fft.data_canvas.im = fft.data_canvas.ctx.createImageData(fft.integ_w, 1);
-	fft.data_canvas.addEventListener("mousedown", fft_mousedown, false);
+	fft.integ_canvas = w3_el('id-fft-integ-canvas');
+	fft.integ_canvas.ctx = fft.integ_canvas.getContext("2d");
+	fft.integ_canvas.im = fft.integ_canvas.ctx.createImageData(fft.integ_w, 1);
+	fft.integ_canvas.addEventListener("mousedown", fft_mousedown, false);
+
+	fft.wf1_canvas = w3_el('id-fft-wf1-canvas');
+	fft.wf1_canvas.ctx = fft.wf1_canvas.getContext("2d");
+	fft.wf1_canvas.im = fft.wf1_canvas.ctx.createImageData(fft.integ_w, 1);
+
+	fft.wf2_canvas = w3_el('id-fft-wf2-canvas');
+	fft.wf2_canvas.ctx = fft.wf2_canvas.getContext("2d");
+	fft.wf2_canvas.im = fft.wf2_canvas.ctx.createImageData(fft.integ_w, 1);
 
 	fft.info_canvas = w3_el('id-fft-info-canvas');
 	fft.info_canvas.ctx = fft.info_canvas.getContext("2d");
@@ -367,7 +429,7 @@ function fft_alpha()
 	}
 
 	// draw frequency markers on FFT canvas
-	var c = fft.data_canvas.ctx;
+	var c = fft.integ_canvas.ctx;
 	var pxphz = fft.integ_w / ext_sample_rate();
 	
 	c.font = '12px Verdana';
@@ -424,27 +486,21 @@ function fft_func_cb(path, idx)
          break;
 	}
 	
+	w3_select_value(path, idx);      // for benefit of direct calls
 	fft.func = idx;
 	w3_show_hide('id-fft-msg-fft',  fft.func != fft.func_e.SPEC);
 	w3_show_hide('id-fft-msg-spec', fft.func == fft.func_e.SPEC);
 	fft_clear();
 }
 
-function fft_pre_select_cb(path, idx)
+function fft_pre_select_cb(path, idx, first)
 {
+   if (first) return;
 	idx = +idx;
 	fft.integ_draw = false;
 	fft.pre = idx;
 	
 	switch (fft.pre) {
-	
-	case fft.pre_4_SEC:
-		fft_set_itime(4);
-		break;
-	
-	case fft.pre_10_SEC:
-		fft_set_itime(10);
-		break;
 	
 	case fft.pre_ALPHA:
 		ext_tune(11.5, 'usb', ext_zoom.NOM_IN);
@@ -480,20 +536,22 @@ function fft_pre_select_cb(path, idx)
 	default:
 		break;
 	}
+
+	fft_func_cb('fft.func', fft.func_e.INTEG);
 }
 
 function fft_maxdb_cb(path, val, complete, first)
 {
    fft.integ_maxdb = parseFloat(val);
 	w3_num_cb(path, val);
-	w3_set_label('FFT/integrate max '+ val +' dB', path);
+	w3_set_label('WF/integrate max '+ val +' dB', path);
 }
 
 function fft_mindb_cb(path, val, complete, first)
 {
    fft.integ_mindb = parseFloat(val);
 	w3_num_cb(path, val);
-	w3_set_label('FFT/integrate min '+ val +' dB', path);
+	w3_set_label('WF/integrate min '+ val +' dB', path);
 }
 
 function fft_clear_cb(path, val)

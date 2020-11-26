@@ -4341,7 +4341,7 @@ function color_index(db_value, sqrt)
 }
 
 
-// waterfall_color_index_max_min() and color_index_max_min() used by iq_display.js and integrate.js
+// waterfall_color_index_max_min() and color_index_max_min() used by iq_display.js and FFT.js
 
 function waterfall_color_index_max_min(db_value, maxdb, mindb)
 {
@@ -4353,7 +4353,7 @@ function waterfall_color_index_max_min(db_value, maxdb, mindb)
 	if (db_value > maxdb) db_value = maxdb;
 	var relative_value = db_value - mindb;
 	var fullscale = maxdb - mindb;
-	fullscale = fullscale? full_scale : 1;	// can't be zero
+	fullscale = fullscale? fullscale : 1;	// can't be zero
 	var value_percent = relative_value / fullscale;
 	
 	var i = value_percent * 255;
@@ -4369,7 +4369,7 @@ function color_index_max_min(value, maxdb, mindb)
 	if (value > maxdb) value = maxdb;
 	var relative_value = value - mindb;
 	var fullscale = maxdb - mindb;
-	fullscale = fullscale? full_scale : 1;	// can't be zero
+	fullscale = fullscale? fullscale : 1;	// can't be zero
 	var value_percent = relative_value / fullscale;
 	
 	var i = value_percent * 255;
@@ -7983,9 +7983,9 @@ function squelch_tail_cb(path, val, first)
 
 function chan_null_cb(path, val, first)
 {
-   console.log('$chan_null_cb path='+ path +' val='+ val +' first='+ first);
+   //console.log('$chan_null_cb path='+ path +' val='+ val +' first='+ first);
    if (first) {
-      console.log('$cur_mode='+ cur_mode);
+      //console.log('$cur_mode='+ cur_mode);
 	   w3_show_hide('id-chan-null', cur_mode == 'sam');
       return;
    }
@@ -8239,11 +8239,11 @@ function toggle_or_set_spec(set, val)
 
 	// close the extension first if it's using the data container and the spectrum button is pressed
 	if (extint.using_data_container && spec.source_wf) {
-	   console.log('toggle_or_set_spec: extint_panel_hide()..');
+	   //console.log('toggle_or_set_spec: extint_panel_hide()..');
 		extint_panel_hide();
 	}
 
-   console.log('toggle_or_set_spec: source_wf='+ spec.source_wf);
+   //console.log('toggle_or_set_spec: source_wf='+ spec.source_wf);
 	html('id-button-spectrum').style.color = spec.source_wf? 'lime':'white';
 	w3_show_hide('id-spectrum-container', spec.source_wf);
 	w3_show_hide('id-top-container', !spec.source_wf);
