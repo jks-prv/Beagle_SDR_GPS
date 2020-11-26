@@ -495,7 +495,9 @@ function ext_panel_init()
       'data-panel-size="'+ extint.default_w +','+ extint.default_h +'"></div>';
 
 	var el = w3_el('id-ext-data-container');
-	el.style.zIndex = 100;
+	// removed because cascading canvases in FFT extension overlay RF waterfall
+	// why was this needed anyway?
+	//el.style.zIndex = 100;
 
 	el = w3_el('id-ext-controls');
 	el.innerHTML =
@@ -568,6 +570,7 @@ function extint_panel_show(controls_html, data_html, show_func, show_help_button
 	//console.log('extint_panel_show onclick='+ el.onclick);
 	
 	// some exts change these -- change back to default
+	ext_set_data_height();     // restore default height
 	w3_el('id-ext-controls').style.zIndex = 150;
    w3_attribute('id-ext-controls-close-img', 'src', 'icons/close.24.png');
 	
