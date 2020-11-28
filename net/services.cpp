@@ -259,8 +259,7 @@ static void misc_NET(void *param)
     bool need_survey = admcfg_int("survey", NULL, CFG_REQUIRED) != SURVEY_LAST;
     if (need_survey || (vr && vr != VR_CRONTAB_ROOT) || net.serno == 0) {
         if (need_survey) {
-            admcfg_set_int("survey", SURVEY_LAST);
-            admcfg_save_json(cfg_adm.json);
+            admcfg_set_int_save("survey", SURVEY_LAST);
         }
 
         NET_WAIT_COND("survey", "misc_NET", net.mac_valid);
@@ -307,8 +306,7 @@ static void misc_NET(void *param)
 
     if (onetime_password_check == false) {
         if (passwords_checked) admcfg_rem_bool("passwords_checked");    // for Kiwis that prematurely updated to v1.353
-        admcfg_set_bool("onetime_password_check", true);
-        admcfg_save_json(cfg_adm.json);
+        admcfg_set_bool_save("onetime_password_check", true);
         lprintf("SECURITY: One-time check of Linux passwords..\n");
 
         status = non_blocking_cmd_system_child("kiwi.chk_pwd", "grep -q '^root::' /etc/shadow", POLL_MSEC(250));
