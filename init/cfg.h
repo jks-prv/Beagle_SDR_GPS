@@ -45,6 +45,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define CFG_OPTIONAL	0x0000
 #define CFG_PRINT		0x0001
 #define CFG_REQUIRED	0x0002
+#define CFG_SAVE        0x0004
 #define CFG_SET			0x0010
 #define CFG_REMOVE		0x0020
 #define CFG_COPY		0x0040
@@ -62,28 +63,33 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 
 #define cfg_int(name, err, flags)			_cfg_int(&cfg_cfg, name, err, flags)
 #define cfg_set_int(name, val)				_cfg_set_int(&cfg_cfg, name, val, CFG_SET, 0)
+#define cfg_set_int_save(name, val)			_cfg_set_int(&cfg_cfg, name, val, CFG_SET | CFG_SAVE, 0)
 #define cfg_rem_int(name)					_cfg_set_int(&cfg_cfg, name, 0, CFG_REMOVE, 0)
 #define cfg_default_int(name, val, err)	    _cfg_default_int(&cfg_cfg, name, val, err)
 
 #define cfg_float(name, err, flags)			_cfg_float(&cfg_cfg, name, err, flags)
 #define cfg_set_float(name, val)			_cfg_set_float(&cfg_cfg, name, val, CFG_SET, 0)
+#define cfg_set_float_save(name, val)       _cfg_set_float(&cfg_cfg, name, val, CFG_SET | CFG_SAVE, 0)
 #define cfg_rem_float(name)					_cfg_set_float(&cfg_cfg, name, 0, CFG_REMOVE, 0)
 #define cfg_default_float(name, val, err)	_cfg_default_float(&cfg_cfg, name, val, err)
 
 #define cfg_bool(name, err, flags)			_cfg_bool(&cfg_cfg, name, err, flags)
 #define cfg_set_bool(name, val)				_cfg_set_bool(&cfg_cfg, name, (u4_t) val, CFG_SET, 0)
+#define cfg_set_bool_save(name, val)		_cfg_set_bool(&cfg_cfg, name, (u4_t) val, CFG_SET | CFG_SAVE, 0)
 #define cfg_rem_bool(name)					_cfg_set_bool(&cfg_cfg, name, 0, CFG_REMOVE, 0)
 #define cfg_default_bool(name, val, err)	_cfg_default_bool(&cfg_cfg, name, val, err)
 
 #define cfg_string(name, err, flags)		_cfg_string(&cfg_cfg, name, err, flags)
 #define cfg_string_free(val)				_cfg_free(&cfg_cfg, val)
 #define cfg_set_string(name, val)			_cfg_set_string(&cfg_cfg, name, val, CFG_SET, 0)
+#define cfg_set_string_save(name, val)		_cfg_set_string(&cfg_cfg, name, val, CFG_SET | CFG_SAVE, 0)
 #define cfg_rem_string(name)				_cfg_set_string(&cfg_cfg, name, NULL, CFG_REMOVE, 0)
 #define cfg_default_string(name, val, err)	_cfg_default_string(&cfg_cfg, name, val, err)
 
 #define cfg_object(name, err, flags)		_cfg_object(&cfg_cfg, name, err, flags)
 #define cfg_object_free(val)				_cfg_free(&cfg_cfg, val)
 #define cfg_set_object(name, val)			_cfg_set_object(&cfg_cfg, name, val, CFG_SET, 0)
+#define cfg_set_object_save(name, val)		_cfg_set_object(&cfg_cfg, name, val, CFG_SET | CFG_SAVE, 0)
 #define cfg_rem_object(name)				_cfg_set_object(&cfg_cfg, name, NULL, CFG_REMOVE, 0)
 #define cfg_default_object(name, val, err) 	_cfg_default_object(&cfg_cfg, name, val, err)
 
@@ -94,28 +100,33 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 
 #define admcfg_int(name, err, flags)		_cfg_int(&cfg_adm, name, err, flags)
 #define admcfg_set_int(name, val)			_cfg_set_int(&cfg_adm, name, val, CFG_SET, 0)
+#define admcfg_set_int_save(name, val)		_cfg_set_int(&cfg_adm, name, val, CFG_SET | CFG_SAVE, 0)
 #define admcfg_rem_int(name)				_cfg_set_int(&cfg_adm, name, 0, CFG_REMOVE, 0)
 #define admcfg_default_int(name, val, err)	_cfg_default_int(&cfg_adm, name, val, err)
 
 #define admcfg_float(name, err, flags)		_cfg_float(&cfg_adm, name, err, flags)
 #define admcfg_set_float(name, val)			_cfg_set_float(&cfg_adm, name, val, CFG_SET, 0)
+#define admcfg_set_float_save(name, val)	_cfg_set_float(&cfg_adm, name, val, CFG_SET | CFG_SAVE, 0)
 #define admcfg_rem_float(name)				_cfg_set_float(&cfg_adm, name, 0, CFG_REMOVE, 0)
 #define admcfg_default_float(name, val, err) _cfg_default_float(&cfg_adm, name, val, err)
 
 #define admcfg_bool(name, err, flags)		_cfg_bool(&cfg_adm, name, err, flags)
 #define admcfg_set_bool(name, val)			_cfg_set_bool(&cfg_adm, name, (u4_t) val, CFG_SET, 0)
+#define admcfg_set_bool_save(name, val)		_cfg_set_bool(&cfg_adm, name, (u4_t) val, CFG_SET | CFG_SAVE, 0)
 #define admcfg_rem_bool(name)				_cfg_set_bool(&cfg_adm, name, 0, CFG_REMOVE, 0)
 #define admcfg_default_bool(name, val, err)	_cfg_default_bool(&cfg_adm, name, val, err)
 
 #define admcfg_string(name, err, flags)		_cfg_string(&cfg_adm, name, err, flags)
 #define admcfg_string_free(val)				_cfg_free(&cfg_adm, val)
 #define admcfg_set_string(name, val)		_cfg_set_string(&cfg_adm, name, val, CFG_SET, 0)
+#define admcfg_set_string_save(name, val)	_cfg_set_string(&cfg_adm, name, val, CFG_SET | CFG_SAVE, 0)
 #define admcfg_rem_string(name)				_cfg_set_string(&cfg_adm, name, NULL, CFG_REMOVE, 0)
 #define admcfg_default_string(name, val, err) _cfg_default_string(&cfg_adm, name, val, err)
 
 #define admcfg_object(name, err, flags)		_cfg_object(&cfg_adm, name, err, flags)
 #define admcfg_object_free(val)				_cfg_free(&cfg_adm, val)
 #define admcfg_set_object(name, val)		_cfg_set_object(&cfg_adm, name, val, CFG_SET, 0)
+#define admcfg_set_object_save(name, val)	_cfg_set_object(&cfg_adm, name, val, CFG_SET | CFG_SAVE, 0)
 #define admcfg_rem_object(name)				_cfg_set_object(&cfg_adm, name, NULL, CFG_REMOVE, 0)
 #define admcfg_default_object(name, val, err) _cfg_default_object(&cfg_adm, name, val, err)
 

@@ -509,7 +509,10 @@ int _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags, int pos)
 	}
 
     assert((cfg->flags & CFG_NO_UPDATE) == 0);
-	_cfg_parse_json(cfg, true);	// must re-parse
+    if (flags & CFG_SAVE)
+        _cfg_save_json(cfg, cfg->json);
+    else
+	    _cfg_parse_json(cfg, true);	// must re-parse
 	return pos;
 }
 
@@ -621,7 +624,10 @@ int _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags, int pos
 	}
 	
     assert((cfg->flags & CFG_NO_UPDATE) == 0);
-	_cfg_parse_json(cfg, true);	// must re-parse
+    if (flags & CFG_SAVE)
+        _cfg_save_json(cfg, cfg->json);
+    else
+	    _cfg_parse_json(cfg, true);	// must re-parse
 	return pos;
 }
 
@@ -736,7 +742,10 @@ int _cfg_set_bool(cfg_t *cfg, const char *name, u4_t val, u4_t flags, int pos)
 	}
 	
     assert((cfg->flags & CFG_NO_UPDATE) == 0);
-	_cfg_parse_json(cfg, true);	// must re-parse
+    if (flags & CFG_SAVE)
+        _cfg_save_json(cfg, cfg->json);
+    else
+	    _cfg_parse_json(cfg, true);	// must re-parse
 	return pos;
 }
 
@@ -837,7 +846,10 @@ int _cfg_set_string(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 	}
 	
     assert((cfg->flags & CFG_NO_UPDATE) == 0);
-	_cfg_parse_json(cfg, true);	// must re-parse
+    if (flags & CFG_SAVE)
+        _cfg_save_json(cfg, cfg->json);
+    else
+	    _cfg_parse_json(cfg, true);	// must re-parse
 	return pos;
 }
 
@@ -940,7 +952,10 @@ int _cfg_set_object(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 	}
 	
     assert((cfg->flags & CFG_NO_UPDATE) == 0);
-	_cfg_parse_json(cfg, true);	// must re-parse
+    if (flags & CFG_SAVE)
+        _cfg_save_json(cfg, cfg->json);
+    else
+	    _cfg_parse_json(cfg, true);	// must re-parse
 	return pos;
 }
 

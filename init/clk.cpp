@@ -210,9 +210,8 @@ void tod_correction(u4_t week, int sat)
 
     // corrects the date and time if option enabled in admin GPS control panel
     double gps_utc_fsecs = gps.StatWeekSec - gps.delta_tLS;     // NB: secs in week, not day
-    static bool date_set;
 
-    if (gps.set_date && !date_set) {
+    if (gps.set_date && !gps.date_set) {
 
         // GPS rollovers
         // Navstar every 1024 weeks: 1/1980 <#0> 8/1999 <#1> 4/2019 <#2> 11/2038 <#3> ...
@@ -254,7 +253,7 @@ void tod_correction(u4_t week, int sat)
         }
         
         // set date/time only once per restart
-        date_set = true;
+        gps.date_set = true;
     }
 
 

@@ -316,8 +316,7 @@ void web_server_init(ws_init_t type)
 		bool error;
 		admcfg_int("port_ext", &error, CFG_OPTIONAL);
 		if (error) {
-			admcfg_set_int("port_ext", port);
-			admcfg_save_json(cfg_adm.json);
+			admcfg_set_int_save("port_ext", port);
 		}
 		
         if (!background_mode) {
