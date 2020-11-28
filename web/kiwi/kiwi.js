@@ -1528,13 +1528,28 @@ function user_cb(obj)
 		}
 		
 		// another action like a frequency change reset timer
-      if (obj.rn > 55 && kiwi.inactivity_panel) {
+      if (i == rx_chan && obj.rn > 55 && kiwi.inactivity_panel) {
          confirmation_panel_close();
          kiwi.inactivity_panel = false;
+      }
+      
+      // detect change in frequency scale offset
+      //if (i == rx_chan) console.log('obj.fo='+ obj.fo +' freq_offset='+ cfg.freq_offset);
+      if (i == rx_chan && isNumber(obj.fo) && obj.fo != cfg.freq_offset && !confirmation.displayed) {
+         var s =
+            w3_div('',
+               'Frequency scale offset changed. Page must be reloaded.',
+               w3_inline('w3-halign-space-around/',
+                  w3_button('w3-margin-T-16 w3-aqua', 'OK', 'freq_offset_page_reload')
+               )
+            );
+         confirmation_show_content(s, 425, 100);
       }
 	});
 	
 }
+
+function freq_offset_page_reload() { window.location.reload(true); }
 
 
 ////////////////////////////////

@@ -170,12 +170,13 @@
 	1) kiwisdr.com website content
 	
 	2) antenna switch extension is a user of API:
-	   visible_block()
+	   visible_block()         DEP
+	   w3_div()
 	   w3_divs()
 	   w3_inline()                   only in OLDER versions of the ant_switch ext
 	   w3_btn()
 	   w3_radio_btn(yes/no)    DEP   w3_radio_button
-	   w3_input_get_param()    DEP
+	   w3_input_get_param()    DEP   w3_input_get
 	   w3_string_set_cfg_cb()
 	   w3_highlight()
 	   w3_unhighlight()
@@ -189,7 +190,7 @@
 // deprecated
 ////////////////////////////////
 
-function visible_block() {}      // FIXME: used by antenna switch ext
+function visible_block() {}      // FIXME: used by OLDER versions of the antenna switch ext
 
 
 ////////////////////////////////
@@ -2361,6 +2362,17 @@ function w3_num_set_cfg_cb(path, val, first)
 {
 	var v = parseFloat(val);
 	if (isNaN(v)) v = 0;
+	
+	// if first time don't save, otherwise always save
+	var save = (first != undefined)? (first? false : true) : true;
+	ext_set_cfg_param(path, v, save);
+}
+
+function w3_int_set_cfg_cb(path, val, first)
+{
+	var v = parseInt(val);
+	if (isNaN(v)) v = 0;
+	w3_set_value(path, v);     // remove any fractional or non-number portion from field
 	
 	// if first time don't save, otherwise always save
 	var save = (first != undefined)? (first? false : true) : true;

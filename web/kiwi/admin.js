@@ -3090,10 +3090,10 @@ function admin_int_cb(path, val)
 	if (isNaN(val)) {
 	   // put old value back
 	   val = ext_get_cfg_param(path);
-		w3_set_value(path, val);
 	} else {
 	   ext_set_cfg_param(path, val, true);
 	}
+   w3_set_value(path, val);   // remove any fractional part from field
 }
 
 function admin_float_cb(path, val)
