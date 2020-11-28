@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.427  November 29, 2020
+    Added support for antenna switch extension changing frequency scale offset.
+    Added gps_date parameter to /status query. "gps_date=<enable>,<set>" where <enable> and
+        <set> are digits '0' or '1' indicating if gps is enabled to set date/time, and if
+        the set has actually occurred.
+
 v1.425,426  November 26, 2020
     Channel nulling, preliminary release
         See forum post: http://forum.kiwisdr.com/discussion/2169/early-demonstration-of-channel-nulling#p1
