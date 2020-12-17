@@ -36,7 +36,7 @@ Boston, MA  02110-1301, USA.
 #include <unistd.h>
 #include <ctype.h>
 
-//#define SPI_RFI_TEST
+//#define TEST_FLAG_SPI_RFI
 
 bool background_mode = FALSE;
 
@@ -110,9 +110,9 @@ void fpga_init() {
     #endif
 #endif
 
-#ifdef SPI_RFI_TEST
+#ifdef TEST_FLAG_SPI_RFI
 	if (test_flag)
-		real_printf("SPI_RFI_TEST..\n");
+		real_printf("TEST_FLAG_SPI_RFI..\n");
 	else
 #endif
 	{
@@ -156,7 +156,7 @@ void fpga_init() {
     	}
     #endif
     
-    #ifdef SPI_RFI_TEST
+    #ifdef TEST_FLAG_SPI_RFI
     	if (test_flag) {
             //real_printf("."); fflush(stdout);
             kiwi_usleep(3000);

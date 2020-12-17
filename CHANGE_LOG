@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.428  December 17, 2020
+    Reliability fixes.
+
 v1.427  November 29, 2020
     Added support for antenna switch extension changing frequency scale offset.
     Added gps_date parameter to /status query. "gps_date=<enable>,<set>" where <enable> and

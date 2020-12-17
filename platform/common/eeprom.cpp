@@ -37,13 +37,33 @@ Boston, MA  02110-1301, USA.
 #include <ctype.h>
 #include <time.h>
 
+//#define EEPROM_TEST_BAD_PART
 //#define EEPROM_TEST
+
 #define	SEQ_SERNO_FILE "/root/kiwi.config/seq_serno.txt"
 #define	SEQ_START		"1014"
+#define SERNO_MAX       99999
+
+#ifdef TEST_FLAG_EEPROM
+void eeprom_test()
+{
+    if (test_flag & 1) {
+        eeprom_check();
+        real_printf("r"); fflush(stdout);
+    }
+    
+    // full eeprom write takes just under 2 secs, so only start write every 4 secs (called at 1 Hz)
+    static int wcount;
+    if ((test_flag & 2) && (wcount++ & 3) == 0) {
+	    eeprom_write(SERNO_WRITE, 1006);
+        real_printf("W"); fflush(stdout);
+	}
+}
+#endif
 
 int eeprom_next_serno(next_serno_e type, int set_serno)
 {
-	int n, next_serno = 0, serno = -1;
+	int n, next_serno = 0, serno;
 	FILE *fp;
 
 	system("cp " SEQ_SERNO_FILE " " SEQ_SERNO_FILE ".bak");
@@ -52,14 +72,26 @@ retry:
 	if ((fp = fopen(SEQ_SERNO_FILE, "r+")) == NULL) {
 		if (errno == ENOENT) {
 			system("echo " SEQ_START " > " SEQ_SERNO_FILE);
+		    mlprintf("EEPROM next: no file, resetting to serial_no %s\n", SEQ_START);
 			goto retry;
 		}
 		mlprintf("EEPROM next: open %s %s\n", SEQ_SERNO_FILE, strerror(errno));
 		return -1;
 	}
-	if ((n = fscanf(fp, "%d\n", &serno)) != 1) {
-		mlprintf("EEPROM next: serial_no file scan\n");
-		return -1;
+	
+	serno = -1;
+	n = fscanf(fp, "%d\n", &serno);
+	if (n != 1 || serno < 0 || serno > SERNO_MAX) {
+	    // recover if the file contains bad data somehow
+	    rewind(fp);
+	    char s[64];
+	    fgets(s, sizeof(s), fp);
+	    int sl = strlen(s);
+	    if (sl && s[sl-1] == '\n') s[sl-1] = '\0';
+		mlprintf("EEPROM next: serial_no file bad scan: \"%s\"(%d)\n", s, sl);
+        system("echo " SEQ_START " > " SEQ_SERNO_FILE);
+		mlprintf("EEPROM next: resetting file to serial_no %s\n", SEQ_START);
+        goto retry;
 	}
 	
 	if (type == SERNO_READ)
@@ -165,8 +197,14 @@ int eeprom_check()
 		return -1;
 	}
 	
+	#ifdef EEPROM_TEST_BAD_PART
+	    memset(e, 0, sizeof(eeprom_t));
+	    //return -1;
+	#endif
+	
 	char serial_no[sizeof(e->serial_no) + SPACE_FOR_NULL];
 	GET_CHARS(e->serial_no, serial_no);
+
 	int serno = -1;
 	n = sscanf(serial_no, "%d", &serno);
 	mprintf("EEPROM check: read serial_no \"%s\" %d\n", serial_no, serno);
@@ -183,6 +221,10 @@ void eeprom_write(next_serno_e type, int serno)
 	int n;
 	const char *fn;
 	FILE *fp;
+	
+	#ifdef EEPROM_TEST_BAD_PART
+	    return;
+	#endif
 	
 	eeprom_t *e = &eeprom;
 	memset(e, 0, sizeof(eeprom_t));		// v1.1 fix: zero unused e->io_pins
@@ -244,8 +286,10 @@ void eeprom_write(next_serno_e type, int serno)
 	e->mA_5ext = FLIP16(EE_MA_5INT);
 	e->mA_DC = FLIP16(EE_MA_DC);
 
-	ctrl_clr_set(CTRL_EEPROM_WP, 0);
-	
+    // NB: have to change WP before fopen() and after fclose() because writes don't
+    // fully complete (flush) until after fclose() returns!
+	ctrl_clr_set(CTRL_EEPROM_WP, 0);    // takes effect about 600 us before last write
+
 	fn = debian8? EEPROM_DEV_DEBIAN8 : EEPROM_DEV_DEBIAN7;
 
 	if ((fp = fopen(fn, "r+")) == NULL) {
@@ -259,7 +303,7 @@ void eeprom_write(next_serno_e type, int serno)
 
 	mprintf("EEPROM write: wrote %d bytes\n", n);
 	fclose(fp);
-	ctrl_clr_set(0, CTRL_EEPROM_WP);
+	ctrl_clr_set(0, CTRL_EEPROM_WP);    // takes effect about 200 us after last write
 }
 
 void eeprom_update()

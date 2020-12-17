@@ -425,7 +425,7 @@ function audio_start()
 	window.setInterval(audio_periodic, audio_periodic_interval_ms);
 
 	try {
-		ext_set_mode(init_mode);		// needs audio_output_rate to exist
+		demodulator_analog_replace(init_mode);		// needs audio_output_rate to exist
 	} catch(ex) {
 		snd_send("SET x-DEBUG audio_start.demodulator_analog_replace: catch: "+ ex.toString());
 

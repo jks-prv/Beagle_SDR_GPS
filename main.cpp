@@ -65,12 +65,12 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num, wf_num,
 	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, debian_ver,
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
-	print_stats, ecpu_cmds, ecpu_tcmds, use_spidev, debian_maj, debian_min,
+	print_stats, ecpu_cmds, ecpu_tcmds, use_spidev, debian_maj, debian_min, test_flag,
 	gps_debug, gps_var, gps_lo_gain, gps_cg_gain, use_foptim, is_locked, drm_nreg_chans;
 
 u4_t ov_mask, snd_intr_usec;
 
-bool create_eeprom, need_hardware, test_flag, sdr_hu_debug, have_ant_switch_ext, gps_e1b_only,
+bool create_eeprom, need_hardware, sdr_hu_debug, have_ant_switch_ext, gps_e1b_only,
     disable_led_task, is_multi_core, kiwi_restart, debug_printfs;
 
 char **main_argv;
@@ -114,7 +114,6 @@ int main(int argc, char *argv[])
 	printf_init();
 
 	for (i=1; i<argc; ) {
-		if (strcmp(argv[i], "-test")==0) test_flag = TRUE;
 		if (strcmp(argv[i], "-sdr_hu")==0) sdr_hu_debug = TRUE;
 		if (strcmp(argv[i], "-bg")==0) { background_mode = TRUE; bg=1; }
 		if (strcmp(argv[i], "-fopt")==0) use_foptim = 1;    // in EDATA_DEVEL mode use foptim version of files
@@ -144,6 +143,7 @@ int main(int argc, char *argv[])
 			}
 		}
 		
+		if (strcmp(argv[i], "-test")==0) { i++; test_flag = strtol(argv[i], 0, 0); printf("test_flag %d(0x%x)\n", test_flag, test_flag); }
 		if (strcmp(argv[i], "-led")==0 || strcmp(argv[i], "-leds")==0) disable_led_task = true;
 		if (strcmp(argv[i], "-gps_e1b")==0) gps_e1b_only = true;
 		if (strcmp(argv[i], "-gps_var")==0) { i++; gps_var = strtol(argv[i], 0, 0); printf("gps_var %d\n", gps_var); }
