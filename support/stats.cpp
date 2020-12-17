@@ -27,6 +27,7 @@ Boston, MA  02110-1301, USA.
 #include "debug.h"
 #include "printf.h"
 #include "non_block.h"
+#include "eeprom.h"
 
 void stat_task(void *param)
 {
@@ -45,6 +46,7 @@ void stat_task(void *param)
 		}
 
 		NextTask("stat task");
+		eeprom_test();
 
 		if ((print_stats & STATS_TASK) && !(print_stats & STATS_GPS)) {
 			if (!background_mode) {

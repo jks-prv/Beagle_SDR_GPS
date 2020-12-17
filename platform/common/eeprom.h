@@ -21,6 +21,13 @@ Boston, MA  02110-1301, USA.
 
 typedef enum { SERNO_READ, SERNO_WRITE, SERNO_ALLOC } next_serno_e;
 
+//#define TEST_FLAG_EEPROM
+#ifdef TEST_FLAG_EEPROM
+    void eeprom_test();
+#else
+    #define eeprom_test()
+#endif
+
 int eeprom_next_serno(next_serno_e type, int set_serno);
 int eeprom_check();
 void eeprom_write(next_serno_e type, int serno);
