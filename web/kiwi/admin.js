@@ -1029,7 +1029,7 @@ var network = {
    auto_nat_color:   null,
    ip_blacklist_input_prev: null,
    ethernet_speed_s: [ '100 Mbps', '10 Mbps' ],
-   ethernet_mtu_s: [ '1500', '1440' ]
+   ethernet_mtu_s: [ '1500 (default)', '1440', '1400' ]
 };
 
 function network_html()

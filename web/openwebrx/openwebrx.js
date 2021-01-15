@@ -6340,6 +6340,7 @@ function smeter_init()
 
 var sm_px = 0, sm_timeout = 0, sm_interval = 10;
 var sm_ovfl_showing = false;
+//var audio_ext_adc_ovfl_test = 0;
 
 function update_smeter()
 {
@@ -6362,6 +6363,9 @@ function update_smeter()
 			sm_timeout = sm_interval;
 		}
 	}
+	
+	//audio_ext_adc_ovfl_test++;
+	//audio_ext_adc_ovfl = ((audio_ext_adc_ovfl_test % 16) == 15);
 	
 	if (audio_ext_adc_ovfl && !sm_ovfl_showing) {
 	   w3_hide('id-smeter-dbm-units');
