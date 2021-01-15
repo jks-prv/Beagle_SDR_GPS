@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.429  January 16, 2021
+    FAX: added Vanino Radio 6455 to Asia menu per forum user Fabrys.
+    By request: add value 1400 to MTU menu on admin page network tab.
+
 v1.428  December 17, 2020
     Reliability fixes.
 
