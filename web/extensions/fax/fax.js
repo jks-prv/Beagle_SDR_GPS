@@ -291,7 +291,11 @@ var fax_asia_pac = {
    "HSW64 TH": [ 7395+1.9 ],
    
    "Singapore": [],
-   "9VF SG":   [ 16035, 17430 ]
+   "9VF SG":   [ 16035, 17430 ],
+
+   // forum.kiwisdr.com/index.php?p=/discussion/comment/11280/#Comment_11280
+   "Vanino": [],
+   "RU":   [ 6455 ]
 };
 
 var fax_americas = {
