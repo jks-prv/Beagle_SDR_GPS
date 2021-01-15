@@ -347,7 +347,7 @@ alias nfsdn="cd ~; umount -a -f -t nfs"
 # and an entry in /etc/exports on the development machine like:
 #/path_to_kiwi_sources/Beagle_SDR_GPS -mapall=my_user_id -network 192.168.1.0 -mask 255.255.255.0
 
-# NFS reverse direction: sharing Beagle root fs with development machine to support cross compilation
+# NFS reverse direction: sharing Beagle / (root fs) read-only with development machine to support cross compilation
 #   pki nfs-common nfs-kernel-server
 # edit resulting /etc/exports file and add: (adjust for subnet address)
 #   / 192.168.1.0/24(ro,sync,no_subtree_check)
@@ -357,7 +357,7 @@ alias nfsdn="cd ~; umount -a -f -t nfs"
 # later:
 #   sudo umount ${HOME}/mnt
 
-# NFS reverse direction: sharing Beagle root dir rw with development machine to support source file editing
+# NFS reverse direction: sharing Beagle /root dir read-write with development machine to support source file editing
 #   pki nfs-common nfs-kernel-server
 # edit resulting /etc/exports file and add: (adjust for subnet address)
 #   /root 192.168.1.0/24(rw,sync,no_subtree_check,all_squash,anonuid=0,anongid=0)
