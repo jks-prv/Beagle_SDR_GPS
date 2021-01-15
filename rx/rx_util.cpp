@@ -132,6 +132,9 @@ TYPEREAL DC_offset_I, DC_offset_Q;
 #define WATERFALL_CALIBRATION_DEFAULT -13
 #define SMETER_CALIBRATION_DEFAULT -13
 
+#define N_MTU 3
+static int mtu_v[N_MTU] = { 1500, 1440, 1400 };
+
 void update_vars_from_config()
 {
 	bool update_cfg = false;
@@ -243,11 +246,12 @@ void update_vars_from_config()
     }
     
     int mtu = cfg_default_int("ethernet_mtu", 0, &update_cfg);
+    if (mtu < 0 || mtu >= N_MTU) mtu = 0;
     static int current_mtu;
     if (mtu != current_mtu) {
-        printf("ETH0 ifconfig eth0 mtu %d\n", mtu? 1440 : 1500);
-        non_blocking_cmd_system_child(
-            "kiwi.ifconfig", stprintf("ifconfig eth0 mtu %d", mtu? 1440 : 1500), NO_WAIT);
+        int mtu_val = mtu_v[mtu];
+        printf("ETH0 ifconfig eth0 mtu %d\n", mtu_val);
+        non_blocking_cmd_system_child("kiwi.ifconfig", stprintf("ifconfig eth0 mtu %d", mtu_val), NO_WAIT);
         current_mtu = mtu;
     }
     
