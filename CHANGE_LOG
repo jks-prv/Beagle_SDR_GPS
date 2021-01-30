@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.430  January 30, 2021
+    Make de-emphasis option simply on/off since we've been unable to figure out why
+        the 75/50 usec filter coefficient code doesn't work anymore.
+
 v1.429  January 16, 2021
     FAX: added Vanino Radio 6455 to Asia menu per forum user Fabrys.
     By request: add value 1400 to MTU menu on admin page network tab.

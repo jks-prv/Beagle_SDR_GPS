@@ -7036,6 +7036,7 @@ function panels_setup()
    var nb_algo_s = [ ['off',1], ['std',1], ['Wild',1] ];
    var nr_algo_s = [ ['off',1], ['wdsp',1], ['LMS',1], ['spec',1] ];
 	de_emphasis = readCookie('last_de_emphasis', 0);
+	de_emphasis = w3_clamp(de_emphasis, 0, 1);
 	pan = readCookie('last_pan', 0);
 
 	w3_el('id-optbar-audio').innerHTML =
@@ -7758,7 +7759,8 @@ function toggle_or_set_mute(set)
 }
 
 var de_emphasis = 0;
-var de_emphasis_s = [ 'off', '75us', '50us' ];
+//var de_emphasis_s = [ 'off', '75us', '50us' ];
+var de_emphasis_s = [ 'off', 'on' ];
 
 function de_emp_cb(path, idx, first)
 {
