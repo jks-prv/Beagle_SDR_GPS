@@ -87,6 +87,7 @@ var override_pbc = '';
 var nb_click = false;
 var no_geoloc = false;
 var mobile_laptop_test = false;
+var user_url = null;
 
 var freq_memory = [];
 var freq_memory_pointer = -1;
@@ -201,6 +202,8 @@ function kiwi_main()
 	s = 'peak'; if (q[s]) peak_initially = parseInt(q[s]);
 	s = 'no_geo'; if (q[s]) no_geoloc = true;
 	s = 'keys'; if (q[s]) shortcut.keys = q[s];
+	s = 'user'; if (q[s]) user_url = q[s];
+	s = 'u'; if (q[s]) user_url = q[s];
 	// 'no_wf' is handled in kiwi_util.js
 
    // development
@@ -2560,10 +2563,11 @@ function freq_database_lookup(Hz, utility)
    if (utility == 0) {
       if (kHz >= b.NDB_lo && kHz < b.NDB_hi) {
          f = kHz_r1k.toFixed(0);		// 1kHz windows on 1 kHz boundaries for NDBs
-         url += "www.classaxe.com/dx/ndb/rww/signal_list/?mode=signal_list&submode=&targetID=&sort_by=khz&limit=-1&offset=0&show=list&"+
-         "type_DGPS=1&type_NAVTEX=1&type_NDB=1&filter_id=&filter_khz_1="+ f +"&filter_khz_2="+ f +
-         "&filter_channels=&filter_sp=&filter_sp_itu_clause=AND&filter_itu=&filter_continent=&filter_dx_gsq=&region=&"+
-         "filter_listener=&filter_heard_in=&filter_date_1=&filter_date_2=&offsets=&sort_by_column=khz";
+         //url += "www.classaxe.com/dx/ndb/rww/signal_list/?mode=signal_list&submode=&targetID=&sort_by=khz&limit=-1&offset=0&show=list&"+
+         //"type_DGPS=1&type_NAVTEX=1&type_NDB=1&filter_id=&filter_khz_1="+ f +"&filter_khz_2="+ f +
+         //"&filter_channels=&filter_sp=&filter_sp_itu_clause=AND&filter_itu=&filter_continent=&filter_dx_gsq=&region=&"+
+         //"filter_listener=&filter_heard_in=&filter_date_1=&filter_date_2=&offsets=&sort_by_column=khz";
+         url += 'rxx.classaxe.com/en/rww/signals?types=DGPS,NAVTEX,NDB&khz='+ f +'&limit=-1';
       } else
    
       if (kHz < b.LW_lo) {		// VLF/LF
@@ -6392,6 +6396,7 @@ var need_ident = false;
 
 function ident_init()
 {
+   if (user_url) writeCookie('ident', kiwi_strip_tags(decodeURIComponent(user_url), ''));
 	var ident = initCookie('ident', '');
 	ident = kiwi_strip_tags(ident, '');
 	//console.log('IINIT ident_user=<'+ ident +'>');
