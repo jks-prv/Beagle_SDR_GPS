@@ -247,7 +247,7 @@ function wwvb_phase(ampl_sgn)
 			if (w.dcnt == 19) w.time0_copy = data;
 			if (w.dcnt == 46) w.time0 = data;
 			
-			//tc_dmsg2('dlen='+ tc.raw.length +' dcnt='+ w.dcnt);
+			//tc_info('dlen='+ tc.raw.length +' dcnt='+ w.dcnt);
 			if (tc.raw.length >= 14 && w.dcnt == 12) {
 				var sync = wwvb_sync();
 				if (!sync) {
