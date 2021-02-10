@@ -3,6 +3,7 @@
 var tc = {
    ext_name:   'timecode',    // NB: must match timecode.c:timecode_ext.name
    first_time: true,
+   update: false,
    start_point: 0,
    
    state:      0,
@@ -12,6 +13,7 @@ var tc = {
    ACQ_DATA2:  3,
 
    dbug:       '',
+   test:       0,
    
 	srate:		0,
 	srate_upd:  0,
@@ -35,12 +37,12 @@ var tc = {
    pll_bw:     0,
 
    config:     0,
-   sig:        { JJY40:0,  WWVBa:1, WWVBp:2, JJY60:3, MSF:4,   BPC:5,   DCF77a:6,   DCF77p:7,   TDF:8,   WWV:9 },
-   freq:       [ 40,       60,      60,      60,      60,      68.5,    77.5,       77.5,       162,     10000.1, ],
-   pb:         [ 5,        5,       5,       5,       5,       5,       5,          5,          5,       5 ],
-   pll_bw_i:   [ 100,      100,     5,       100,     100,     100,     100,        100,        5,       5 ],
-   pll_off_i:  [ 500,      500,     0,       500,     500,     500,     500,        500,        0,       100 ],
-   sigid_s:    [ 'jjy',    'wwvb',  'wwvb',  'jjy',   'msf',   'bpc',   'dcf77',    'dcf77',    'tdf',   'wwv' ],
+   sig:        { JJY40:0,  WWVBa:1, WWVBp:2, JJY60:3, MSF:4,   BPCa:5,  BPCss:6, DCF77a:7,   DCF77ss:8,  TDF:9,   WWV:10 },
+   freq:       [ 40,       60,      60,      60,      60,      68.5,    68.5,    77.5,       77.5,       162,     10000.1, ],
+   pb:         [ 5,        5,       5,       5,       5,       5,       5,       5,          5,          5,       5 ],
+   pll_bw_i:   [ 100,      100,     5,       100,     100,     100,     100,     100,        100,        5,       5 ],
+   pll_off_i:  [ 500,      500,     0,       500,     500,     500,     500,     500,        500,        0,       100 ],
+   sigid_s:    [ 'jjy',    'wwvb',  'wwvb',  'jjy',   'msf',   'bpc',   'bpc',   'dcf77',    'dcf77',    'tdf',   'wwv' ],
    prev_sig:   -1,
 
    sig_s: [
@@ -50,9 +52,10 @@ var tc = {
       [ '60 kHz WWVB-phase',     1, 'WWVB',     'https://en.wikipedia.org/wiki/WWVB' ],
       [ '60 kHz JJY-60',         0, 'JJY',      'https://en.wikipedia.org/wiki/JJY' ],
       [ '60 kHz MSF',            1, 'MSF',      'https://en.wikipedia.org/wiki/Time_from_NPL_(MSF)' ],
-      [ '68.5 kHz BPC',          0, 'BPC',      'https://en.wikipedia.org/wiki/BPC_(time_signal)' ],
+      [ '68.5 kHz BPC-ampl',     1, 'BPC',      'https://en.wikipedia.org/wiki/BPC_(time_signal)' ],
+      [ '68.5 kHz BPC-ss',       0, 'BPC',      'https://en.wikipedia.org/wiki/BPC_(time_signal)' ],
       [ '77.5 kHz DCF77-ampl',   1, 'DCF77',    'https://en.wikipedia.org/wiki/DCF77' ],
-      [ '77.5 kHz DCF77-phase',  0, 'DCF77',    'https://en.wikipedia.org/wiki/DCF77' ],
+      [ '77.5 kHz DCF77-ss',     0, 'DCF77',    'https://en.wikipedia.org/wiki/DCF77' ],
       [ '162 kHz TDF',           1, 'TDF',      'https://en.wikipedia.org/wiki/TDF_time_signal' ],
       [ 'WWV/WWVH',              0, 'WWV/WWVH', 'https://en.wikipedia.org/wiki/WWV_(radio_station)' ],
       [ 'EFR Teleswitch (FSK)',  2, 'EFR',      'https://www.efr.de/en/efr-system/#/Technical-Data-forTransmitter-Stations' ],
@@ -96,9 +99,9 @@ function tc_dmsg(s)
 	w3_el('id-tc-dbug').innerHTML = tc.dbug;
 }
 
-function tc_dmsg2(s)
+function tc_info(s)
 {
-	w3_el('id-tc-dbug2').innerHTML = s;
+	w3_el('id-tc-info').innerHTML = s;
 }
 
 function tc_stat(color, s)
@@ -212,6 +215,10 @@ function tc_recv(data)
                   decision = msf_ampl(ampl_abs);
                   break;
          
+               case tc.sig.BPCa:
+                  decision = bpc_ampl(ampl_abs);
+                  break;
+         
                default:
                   break;
          
@@ -219,7 +226,7 @@ function tc_recv(data)
                
                if (tc._10Hz++ >= 10) {
                /*
-                  tc_dmsg2(
+                  tc_info(
                      'mix '+ tc.pll.mix_re.toFixed(2).fieldWidth(10) +' '+ tc.pll.mix_im.toFixed(2).fieldWidth(10) +
                      ' lpf '+ tc.pll.lpf_re.toFixed(2).fieldWidth(10) +' '+ tc.pll.lpf_im.toFixed(2).fieldWidth(10) +
                      ' err '+ tc.pll.phase_err.toFixed(2).fieldWidth(6)
@@ -314,6 +321,17 @@ function tc_recv(data)
                );
                break;
       
+            case tc.sig.BPCa:
+               scope_draw(
+                  /* cyan */ tc.trig == 1,
+                  /* red  */ ampl_abs,
+                  /* org  */ undefined,
+                  /* blk  */ tc.data? -0.6 : -0.3,    // inverted
+                  /* lime */ 0,
+                  /* trig */ 0
+               );
+               break;
+      
             default:
                break;
             }
@@ -345,7 +363,7 @@ function tc_recv(data)
 
 			case "ready":
             kiwi_load_js_dir('extensions/timecode/',
-               ['wwvb.js', 'msf.js', 'dcf77.js', 'tdf.js', '../../pkgs/js/scope.js'],
+               ['wwvb.js', 'msf.js', 'dcf77.js', 'tdf.js', 'bpc.js', '../../pkgs/js/scope.js'],
                'tc_controls_setup');
 				break;
 
@@ -390,8 +408,10 @@ function tc_controls_setup()
 			   w3_select_conditional('w3-text-red', '', '', 'tc.config', tc.config, tc.sig_s, 'tc_signal_menu_cb'),
             w3_button('w3-padding-small w3-css-yellow', 'Re-sync', 'timecode_resync_cb'),
             w3_button('w3-padding-small w3-aqua', 'Reset PLL', 'timecode_reset_pll_cb'),
+            w3_checkbox('w3-label-inline w3-label-not-bold/', 'update Kiwi<br>date &amp; time', 'tc.update', tc.update, 'w3_bool_cb'),
 			   w3_input('w3-padding-tiny w3-label-inline w3-label-not-bold|width:auto|size=3', 'pll bw:', 'tc.pll_bw', tc.pll_bw, 'timecode_pll_bw_cb'),
-				w3_div('', '<pre id="id-tc-dbug2" style="margin:0"></pre>')
+            w3_button('w3-padding-small w3-aqua', 'Test', 'timecode_test_cb'),
+				w3_div('', '<pre id="id-tc-info" style="margin:0"></pre>')
 			),
 			w3_inline('w3-margin-T-4/w3-margin-right',
 				w3_div('id-tc-status w3-show-inline-block'),
@@ -445,7 +465,7 @@ function tc_signal_menu_cb(path, val, first)
 	val = +val;
 	tc.config = val;
 	w3_select_value(path, val);
-	tc_dmsg2(w3_link('', tc.sig_s[tc.config][3], 'Time station info: '+ tc.sig_s[tc.config][2]));
+	tc_info(w3_link('', tc.sig_s[tc.config][3], 'Time station info: '+ tc.sig_s[tc.config][2]));
    w3_call(tc.sigid_s[tc.prev_sig] +'_blur');
    
    if (tc.sig_s[tc.config][1] == 2) {
@@ -507,6 +527,15 @@ function tc_signal_menu_cb(path, val, first)
       });
 		break;
 
+	case tc.sig.BPCa:
+	   scope_init(w3_el('id-tc-scope'), {
+         sec_per_sweep: 20,
+         srate: tc.srate,
+         single_shot: 0,
+         background_color: '#f5f5f5'
+      });
+		break;
+
 	case tc.sig.TDF:
 		tdf_focus();
 	   scope_init(w3_el('id-tc-scope'), {
@@ -549,6 +578,7 @@ function timecode_resync_cb(path, val)
 	tc.data_last = tc.data = 0;
    w3_call(tc.sigid_s[tc.config] +'_clr');
 	scope_clr();
+	if (tc.test) ext_send('SET test');
 }
 
 function timecode_reset_pll_cb(path, val)
@@ -564,6 +594,13 @@ function timecode_pll_bw_cb(path, val, complete, first)
    tc.pll_bw = val;
 	w3_set_value(path, val);
 	ext_send('SET pll_bandwidth='+ val);
+}
+
+function timecode_test_cb(path, val, first)
+{
+   if (first) return;
+   tc.test = 1;
+	ext_send('SET test');
 }
 
 function timecode_update_srate()

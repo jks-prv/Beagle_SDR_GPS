@@ -2,6 +2,8 @@
 
 #include "ext.h"	// all calls to the extension interface begin with "ext_", e.g. ext_register()
 
+#include "kiwi.h"
+#include "printf.h"
 #include "clk.h"
 #include "cuteSDR.h"
 #include "pll.h"
@@ -11,6 +13,12 @@
 #include <stdlib.h>
 #include <math.h>
 #include <strings.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+
+static bool test_init = false;
+static s2_t *testStart, *testEnd;
 
 class timecode {
 
@@ -79,41 +87,85 @@ public:
     }
 
     bool process_msg(const char* msg) {
+
         int gain = 0;
-        if (sscanf(msg, "SET gain=%d", &gain) == 1)
+        if (sscanf(msg, "SET gain=%d", &gain) == 1) {
             set_gain(gain? std::pow(10.0, ((float) gain - 50) / 10.0) : 0); // 0 .. +100 dB of CUTESDR_MAX_VAL
+            return true;
+        }
 
         int points = 0;
-        if (sscanf(msg, "SET points=%d", &points) == 1)
+        if (sscanf(msg, "SET points=%d", &points) == 1) {
             set_points(points);
+            return true;
+        }
 
         int pll_mode = 0, arg=0;
         // pll_mode = 0 -> no PLL
         // pll_mode = 1 -> single carrier tracking arg= exponent (allowed values are 1,2,4,8)
-        if (sscanf(msg, "SET pll_mode=%d arg=%d", &pll_mode, &arg) == 2)
+        if (sscanf(msg, "SET pll_mode=%d arg=%d", &pll_mode, &arg) == 2) {
             set_pll_mode(pll_mode, arg);
+            return true;
+        }
 
         float pll_bandwidth = 0;
-        if (sscanf(msg, "SET pll_bandwidth=%f", &pll_bandwidth) == 1)
+        if (sscanf(msg, "SET pll_bandwidth=%f", &pll_bandwidth) == 1) {
             set_pll_bandwidth(pll_bandwidth);
+            return true;
+        }
 
         float pll_offset = 0;
-        if (sscanf(msg, "SET pll_offset=%f", &pll_offset) == 1)
+        if (sscanf(msg, "SET pll_offset=%f", &pll_offset) == 1) {
             set_pll_offset(pll_offset);
+            return true;
+        }
 
         int draw = 0;
-        if (sscanf(msg, "SET draw=%d", &draw)== 1)
+        if (sscanf(msg, "SET draw=%d", &draw) == 1) {
             set_draw(draw);
+            return true;
+        }
 
         int display_mode = 0;
-        if (sscanf(msg, "SET display_mode=%d", &display_mode)== 1)
+        if (sscanf(msg, "SET display_mode=%d", &display_mode) == 1) {
             set_display_mode(display_mode);
+            return true;
+        }
 
-        if (strcmp(msg, "SET clear") == 0)
+        if (strcmp(msg, "SET clear") == 0) {
             clear();
+            return true;
+        }
 
-        return true;
+        if (strcmp(msg, "SET test") == 0) {
+            if (!test_init) {
+                char *file;
+                int fd;
+                #define TIMECODE_FNAME DIR_CFG "/samples/timecode.test.au"
+                printf("timecode: mmap " TIMECODE_FNAME "\n");
+                scall("timecode open", (fd = open(TIMECODE_FNAME, O_RDONLY)));
+                struct stat st;
+                scall("timecode fstat", fstat(fd, &st));
+                printf("timecode: size=%ld\n", st.st_size);
+                file = (char *) mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+                if (file == MAP_FAILED) sys_panic("timecode mmap");
+                close(fd);
+                int words = st.st_size / sizeof(s2_t);
+                testStart = (s2_t *) file;
+                testEnd = testStart + words;
+                test_init = true;
+            }
+
+            testP = testStart;
+            test = true;
+            return true;
+        }
+
+        return false;
     }
+
+    bool test = false;
+    s2_t *testP;
 
 protected:
     int rx_chan() const { return _rx_chan; }
@@ -185,8 +237,30 @@ std::array<timecode::sptr, MAX_RX_CHANS> tc;
 
 void timecode_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 {
-    if (tc[rx_chan])
-        tc[rx_chan]->display_data(ch, nsamps, samps);
+    if (!tc[rx_chan]) return;
+    
+    if (tc[rx_chan]->test) {
+    
+        // pushback audio samples from the test file
+        TYPECPX *s = samps;
+        for (int i = 0; i < nsamps; i++) {
+            if (tc[rx_chan]->testP >= testEnd) {
+                tc[rx_chan]->testP = testStart;
+            }
+
+            u2_t t;            
+            t = (u2_t) *tc[rx_chan]->testP;
+            tc[rx_chan]->testP++;
+            s->re = (TYPEREAL) (s4_t) (s2_t) FLIP16(t);
+            t = (u2_t) *tc[rx_chan]->testP;
+            tc[rx_chan]->testP++;
+            s->im = (TYPEREAL) (s4_t) (s2_t) FLIP16(t);
+            s++;
+        }
+    }
+    
+    tc[rx_chan]->display_data(ch, nsamps, samps);
+        
 }
 
 void timecode_close(int rx_chan) {
