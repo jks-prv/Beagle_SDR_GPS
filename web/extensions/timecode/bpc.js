@@ -15,8 +15,7 @@ var bpc = {
    prev: [],
    chr: 0,
    tod: 0,
-   time: 8*3600 + 0*60 + 0,
-   //time: 7*3600 + 59*60 + 0,
+   time: 0,
    
    end: null
 };
@@ -42,6 +41,10 @@ function bpc_clr()
    m.cur = m.cnt = m.one_width = m.zero_width = 0;
    m.arm = m.no_modulation = m.dcnt = m.modct = m.line = m.sec = m.msec = 0;
    tc.trig = 0;
+
+   if (server_time_local != null && server_time_local != '') {
+      m.time = parseInt(server_time_local)*3600 + parseInt(server_time_local.substr(3))*60 + 60;
+   }
    m.tod = m.time;
 }
 
@@ -107,52 +110,8 @@ function bpc_ampl(ampl)
    if (tc.data) m.one_width++; else m.zero_width++;
 	
 	// 1900 ms (2 sec - 10 ms) of carrier every 20 sec
-	if (tc.state == tc.ACQ_SYNC && m.arm == 0 && m.one_width >= 190) { m.arm = 1; m.one_width = 0; }
+	if (tc.state == tc.ACQ_SYNC && m.arm == 0 && m.one_width >= 170) { m.arm = 1; m.one_width = 0; }
 	if (m.arm == 1 && tc.data_last == 1 && tc.data == 0) { m.arm = 2; tc.trig = 1; }
-
-/*
-	if (m.arm == 2 && tc.data == 0) {
-	   tc.trig = 0;
-      tc.sample_point = 25;
-      m.sec = 0;
-      m.msec = 0;
-      if (tc.state == tc.ACQ_SYNC) {
-         tc_stat('cyan', 'Found sync');
-         //tc_dmsg('SYNC<br>');
-      }
-      bpc_legend();
-      tc.raw = [];
-      tc.state = tc.MIN_MARK;
-	   m.arm = 0;
-	}
-	
-	if (tc.state == tc.MIN_MARK || (tc.state == tc.ACQ_DATA && tc.sample_point == tc.trig)) {
-	   var a_bit = (tc.state == tc.MIN_MARK || m.zero_width > 15)? 1:0;     // inverted
-      tc.raw[m.sec] = a_bit;
-
-      if (tc.state == tc.MIN_MARK) {
-         m.msec = 990;
-	      tc.state = tc.ACQ_DATA;
-	   }
-
-      if (1) {
-         //tc_dmsg(m.sec.toFixed(0) + a_bit.toFixed(0) +'|');
-         tc_dmsg(a_bit);
-         if ([0,16,24,29,35,38,44,51].includes(m.dcnt)) tc_dmsg(' ');
-      } else {
-         tc_dmsg(m.zero_width +' ');
-      }
-
-      m.dcnt++;
-      if (m.dcnt == 60) {
-         bpc_decode(tc.raw);   // for the minute just reached
-         bpc_legend();
-         tc.raw = [];
-         m.sec = -1;
-         m.dcnt = 0;
-      }
-   }
-*/
 
    m.msec += 10;
 
