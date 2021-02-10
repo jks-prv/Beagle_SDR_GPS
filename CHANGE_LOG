@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.432  February 10, 2021
+    Fix bug with long name/callsign entries containing Unicode characters.
+
 v1.431  February 6, 2021
     Use new format NDB database at rxx.classaxe.com
     New URL parameter user=... or u=... that sets name/callsign field in top bar.

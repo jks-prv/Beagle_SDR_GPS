@@ -1473,7 +1473,24 @@ function user_cb(obj)
 		var ext = obj.e;
 		
 		if (isDefined(name)) {
-			var id = kiwi_strip_tags(decodeURIComponent(name), '');
+		
+		   // Server imposes a hard limit on name length. But this might result in a Unicode
+		   // sequence at the end of a max length name that is truncated causing
+		   // decodeURIComponent() to fail. It's difficult to fix this on the server where there is no
+		   // decodeURIComponent() equivalent. So do it here in an iterative way.
+		   var okay = false;
+		   var deco;
+		   do {
+            try {
+               deco = decodeURIComponent(name);
+               okay = true;
+            } catch(ex) {
+               name = name.slice(0, -1);
+               //console.log('try <'+ name +'>');
+            }
+         } while (!okay);
+		   
+			var id = kiwi_strip_tags(deco, '');
 			if (id != '') id = '"'+ id + '" ';
 			var g = (geoloc == '(null)' || geoloc == '')? 'unknown location' : decodeURIComponent(geoloc);
 			ip = ip.replace(/::ffff:/, '');		// remove IPv4-mapped IPv6 if any

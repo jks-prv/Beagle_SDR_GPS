@@ -126,7 +126,7 @@ function config_html()
       ) +
 		w3_inline_percent('w3-text-teal/w3-container',
 			w3_input('', 'Clone config from Kiwi host', 'clone_host', '', 'w3_string_cb', 'enter hostname (no port number)'), 25,
-			w3_input('', 'Kiwi host root password', 'clone_pwd', '', 'w3_string_cb', 'can be blank'), 25,
+			w3_input('', 'Kiwi host root password', 'clone_pwd', '', 'w3_string_cb', 'required'), 25,
          w3_select('w3-center//', 'Config to clone', '', 'clone_files', 0, clone_files_s, 'w3_num_cb'), 15,
          w3_button('w3-center//w3-red', 'Clone', 'config_clone_cb'), 10,
          w3_label('w3-show-inline-block w3-margin-R-16 w3-text-teal', 'Status:') +
@@ -135,7 +135,7 @@ function config_html()
 		w3_inline_percent('w3-margin-bottom w3-text-teal/w3-container',
 		   '', 25,
          w3_div('w3-center w3-text-black',
-            'Not the same as Kiwi admin password.<br>Leave blank unless you\'ve explicitly changed host\'s Beagle root password.'
+            'Either the root password you\'ve explicitly set or the same as the Kiwi admin password or device serial number.'
          ), 25
 		);
 
