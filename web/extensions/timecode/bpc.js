@@ -14,6 +14,7 @@ var bpc = {
    line: 0,
    prev: [],
    crnt: [],
+   diff: [],
    chr: 0,
    tod: 0,
    time: 0,
@@ -89,10 +90,12 @@ function bpc_ampl(ampl)
    		      
    		      var t = Math.round((m.zero_width - 9) / 10);
    		      var s = t +'  ';
+               m.diff[m.dcnt] = 0;
                if (t != m.prev[m.dcnt] && m.line) {
                   s = '<span style="color:lime">'+ t +'</span>. ';
+                  m.diff[m.dcnt] = 1;
                }
-               m.crnt[m.dcnt] = t;
+               m.prev[m.dcnt] = t;
                tc_dmsg(s);
                //m.chr += s.length;
                //if (m.chr > 80) { tc_dmsg('<br>'); m.chr = 0; }
@@ -100,17 +103,16 @@ function bpc_ampl(ampl)
                if (m.dcnt >= 19) {
                   tc_dmsg('   ');
                   for (i=0; i < 19; i++) {
-                     var tt = m.crnt[i];
+                     var tt = m.prev[i];
                      if (tt >= 4) tt = 4;
                      s = m.dibit[tt];
-                     if (tt != m.prev[i] && m.line) {
+                     if (m.diff[i]) {
                         s = '<span style="color:lime">'+ s +'</span>';
                      }
                      tc_dmsg(s);
                   }
                   tc_dmsg('<br>'); m.dcnt = 0; m.line++;
                }
-               m.prev[m.dcnt] = t;
             }
    		   m.one_width = 0;
    		} else {
