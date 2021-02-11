@@ -100,6 +100,7 @@ function wwvb_ampl(ampl)
 	var w = wwvb;
 	tc.trig++; if (tc.trig >= 100) tc.trig = 0;
 	ampl = (ampl > 0.95)? 1:0;
+	if (!tc.ref) { tc.data = ampl; tc.ref = 1; }
 	
 	// de-noise signal
    if (ampl == w.cur) {
@@ -167,6 +168,7 @@ function wwvb_phase(ampl_sgn)
 	var i;
 	var w = wwvb;
 	tc.trig++; if (tc.trig >= 100) tc.trig = 0;
+	if (!tc.ref) { tc.data = ampl_sgn; tc.ref = 1; }
 	
 	// de-noise signal
    if (ampl_sgn == w.cur) {

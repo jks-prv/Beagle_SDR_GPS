@@ -5,6 +5,8 @@ var tc = {
    first_time: true,
    update: false,
    start_point: 0,
+   ref: 0,
+   NO_GAPS: true,
    
    state:      0,
    ACQ_SYNC:   0,
@@ -37,21 +39,23 @@ var tc = {
    pll_bw:     0,
 
    config:     0,
-   sig:        { JJY40:0,  WWVBa:1, WWVBp:2, JJY60:3, MSF:4,   BPCa:5,  BPCss:6, DCF77a:7,   DCF77ss:8,  TDF:9,   WWV:10 },
-   freq:       [ 40,       60,      60,      60,      60,      68.5,    68.5,    77.5,       77.5,       162,     10000.1, ],
-   pb:         [ 5,        5,       5,       5,       5,       5,       5,       5,          5,          5,       5 ],
-   pll_bw_i:   [ 100,      100,     5,       100,     100,     100,     100,     100,        100,        5,       5 ],
-   pll_off_i:  [ 500,      500,     0,       500,     500,     500,     500,     500,        500,        0,       100 ],
-   sigid_s:    [ 'jjy',    'wwvb',  'wwvb',  'jjy',   'msf',   'bpc',   'bpc',   'dcf77',    'dcf77',    'tdf',   'wwv' ],
+   sig:        { JJY40:0,  RTZ:1,   WWVBa:2, WWVBp:3, JJY60:4, MSF:5,   RBU:6,   BPCa:7,  BPCss:8, DCF77a:9,   DCF77ss:10, TDF:11,  WWV:12 },
+   freq:       [ 40,       50.1,    60,      60,      60,      60,      66.766,  68.5,    68.5,    77.5,       77.5,       162,     10000.1, ],
+   pb:         [ 5,        30,      5,       5,       5,       5,       30,      5,       5,       5,          5,          5,       5 ],
+   pll_bw_i:   [ 100,      100,     100,     5,       100,     100,     100,     100,     100,     100,        100,        5,       5 ],
+   pll_off_i:  [ 500,      500,     500,     0,       500,     500,     500,     500,     500,     500,        500,        0,       100 ],
+   sigid_s:    [ 'jjy',    'rus',   'wwvb',  'wwvb',  'jjy',   'msf',   'rus',   'bpc',   'bpc',   'dcf77',    'dcf77',    'tdf',   'wwv' ],
    prev_sig:   -1,
 
    sig_s: [
       //                       ena
-      [ '40 kHz JJY-40',         0, 'JJY',      'https://en.wikipedia.org/wiki/JJY' ],
+      [ '40 kHz JJY-40',         1, 'JJY',      'https://en.wikipedia.org/wiki/JJY' ],
+      [ '50 kHz RTZ',            1, 'RTZ',      'https://en.wikipedia.org/wiki/RTZ_(radio_station)' ],
       [ '60 kHz WWVB-ampl',      1, 'WWVB',     'https://en.wikipedia.org/wiki/WWVB' ],
       [ '60 kHz WWVB-phase',     1, 'WWVB',     'https://en.wikipedia.org/wiki/WWVB' ],
-      [ '60 kHz JJY-60',         0, 'JJY',      'https://en.wikipedia.org/wiki/JJY' ],
+      [ '60 kHz JJY-60',         1, 'JJY',      'https://en.wikipedia.org/wiki/JJY' ],
       [ '60 kHz MSF',            1, 'MSF',      'https://en.wikipedia.org/wiki/Time_from_NPL_(MSF)' ],
+      [ '66.666 kHz RBU',        1, 'RBU',      'https://en.wikipedia.org/wiki/RBU_(radio_station)' ],
       [ '68.5 kHz BPC-ampl',     1, 'BPC',      'https://en.wikipedia.org/wiki/BPC_(time_signal)' ],
       [ '68.5 kHz BPC-ss',       0, 'BPC',      'https://en.wikipedia.org/wiki/BPC_(time_signal)' ],
       [ '77.5 kHz DCF77-ampl',   1, 'DCF77',    'https://en.wikipedia.org/wiki/DCF77' ],
@@ -123,10 +127,11 @@ function tc_bcd(bits, offset, n_bits, dir)
    return val;
 }
 
-function tc_gap_bcd(bits, offset, n_bits, dir)
+function tc_gap_bcd(bits, offset, n_bits, dir, no_gaps)
 {
    var val = 0;
-   for (var i=0; i < n_bits; i++) val += bits[offset + (dir*i)]? [1,2,4,8,0,10,20,40,80,0,100,200][i] : 0;
+   var seq = (no_gaps && no_gaps == tc.NO_GAPS)? [1,2,4,8,10,20,40,80,100,200] : [1,2,4,8,0,10,20,40,80,0,100,200];
+   for (var i=0; i < n_bits; i++) val += bits[offset + (dir*i)]? seq[i] : 0;
    return val;
 }
 
@@ -217,6 +222,16 @@ function tc_recv(data)
          
                case tc.sig.BPCa:
                   decision = bpc_ampl(ampl_abs);
+                  break;
+         
+               case tc.sig.JJY40:
+               case tc.sig.JJY60:
+                  decision = jjy_ampl(ampl_abs);
+                  break;
+         
+               case tc.sig.RBU:
+               case tc.sig.RTZ:
+                  decision = rus_ampl(ampl_abs);
                   break;
          
                default:
@@ -332,6 +347,30 @@ function tc_recv(data)
                );
                break;
       
+            case tc.sig.JJY40:
+            case tc.sig.JJY60:
+               scope_draw(
+                  /* cyan */ (tc.trig >= 0 && tc.trig <= tc.sample_point),
+                  /* red  */ ampl_abs,
+                  /* org  */ undefined,
+                  /* blk  */ tc.data? -0.3 : -0.6,
+                  /* lime */ 0,
+                  /* trig */ 0
+               );
+               break;
+      
+            case tc.sig.RBU:
+            case tc.sig.RTZ:
+               scope_draw(
+                  /* cyan */ (tc.trig >= 0 && tc.trig <= tc.sample_point),
+                  /* red  */ ampl_abs,
+                  /* org  */ undefined,
+                  /* blk  */ tc.data? -0.3 : -0.6,
+                  /* lime */ 0,
+                  /* trig */ 0
+               );
+               break;
+      
             default:
                break;
             }
@@ -363,7 +402,7 @@ function tc_recv(data)
 
 			case "ready":
             kiwi_load_js_dir('extensions/timecode/',
-               ['wwvb.js', 'msf.js', 'dcf77.js', 'tdf.js', 'bpc.js', '../../pkgs/js/scope.js'],
+               ['wwvb.js', 'jjy.js', 'msf.js', 'dcf77.js', 'tdf.js', 'bpc.js', 'rus.js', '../../pkgs/js/scope.js'],
                'tc_controls_setup');
 				break;
 
@@ -393,6 +432,7 @@ function tc_controls_setup()
 	
    tc.save_mode = ext_get_mode();
    tc.save_pb = ext_get_passband();
+   tc.save_agc_delay = ext_agc_delay(5000);
 	tc.config = tc.sig.WWVBp;
    tc.pll_bw = tc.pll_bw_i[tc.config];
 
@@ -408,7 +448,7 @@ function tc_controls_setup()
 			   w3_select_conditional('w3-text-red', '', '', 'tc.config', tc.config, tc.sig_s, 'tc_signal_menu_cb'),
             w3_button('w3-padding-small w3-css-yellow', 'Re-sync', 'timecode_resync_cb'),
             w3_button('w3-padding-small w3-aqua', 'Reset PLL', 'timecode_reset_pll_cb'),
-            w3_checkbox('w3-label-inline w3-label-not-bold/', 'update Kiwi<br>date &amp; time', 'tc.update', tc.update, 'w3_bool_cb'),
+            //w3_checkbox('w3-label-inline w3-label-not-bold/', 'update Kiwi<br>date &amp; time', 'tc.update', tc.update, 'w3_bool_cb'),
 			   w3_input('w3-padding-tiny w3-label-inline w3-label-not-bold|width:auto|size=3', 'pll bw:', 'tc.pll_bw', tc.pll_bw, 'timecode_pll_bw_cb'),
             w3_button('w3-padding-small w3-aqua', 'Test', 'timecode_test_cb'),
 				w3_div('', '<pre id="id-tc-info" style="margin:0"></pre>')
@@ -536,6 +576,28 @@ function tc_signal_menu_cb(path, val, first)
       });
 		break;
 
+	case tc.sig.JJY40:
+	case tc.sig.JJY60:
+		jjy_focus();
+	   scope_init(w3_el('id-tc-scope'), {
+         sec_per_sweep: 10,
+         srate: tc.srate,
+         single_shot: 0,
+         background_color: '#f5f5f5'
+      });
+		break;
+
+	case tc.sig.RBU:
+	case tc.sig.RTZ:
+		rus_focus(val == tc.sig.RTZ);
+	   scope_init(w3_el('id-tc-scope'), {
+         sec_per_sweep: 10,
+         srate: tc.srate,
+         single_shot: 0,
+         background_color: '#f5f5f5'
+      });
+		break;
+
 	case tc.sig.TDF:
 		tdf_focus();
 	   scope_init(w3_el('id-tc-scope'), {
@@ -576,6 +638,7 @@ function timecode_resync_cb(path, val)
 	tc.state = tc.ACQ_SYNC;
 	tc.sample_point = -1;
 	tc.data_last = tc.data = 0;
+	tc.ref = 0;
    w3_call(tc.sigid_s[tc.config] +'_clr');
 	scope_clr();
 	if (tc.test) ext_send('SET test');
@@ -618,6 +681,7 @@ function timecode_blur()
 	ext_send('SET run=0');
 	kiwi_clearInterval(tc.interval);
    ext_set_passband(tc.save_pb.low, tc.save_pb.high);
+   ext_agc_delay(tc.save_agc_delay);
 }
 
 // called to display HTML for configuration parameters in admin interface

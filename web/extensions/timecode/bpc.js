@@ -58,6 +58,7 @@ function bpc_ampl(ampl)
 	var m = bpc;
 	//tc.trig++; if (tc.trig >= 100) tc.trig = 0;
 	ampl = (ampl > 0.5)? 1:0;
+	if (!tc.ref) { tc.data = ampl; tc.ref = 1; }
 	
 	// de-noise signal
    if (ampl == m.cur) {

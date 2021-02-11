@@ -286,6 +286,13 @@ function ext_get_zoom()
 	return zoom_level;
 }
 
+function ext_agc_delay(set_val)
+{
+   var prev_val = w3_el('input-decay').value;
+   if (isDefined(set_val)) setDecay(true, set_val);
+   return prev_val;
+}
+
 extint.optbars = {
    'optbar-wf':0, 'optbar-audio':1, 'optbar-agc':2, 'optbar-users':3, 'optbar-status':4, 'optbar-off':5
 };
