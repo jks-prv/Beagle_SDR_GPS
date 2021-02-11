@@ -13,9 +13,11 @@ var bpc = {
    dcnt: 0,
    line: 0,
    prev: [],
+   crnt: [],
    chr: 0,
    tod: 0,
    time: 0,
+   dibit: [ '00', '01', '10', '11', '--' ],
    
    end: null
 };
@@ -85,17 +87,30 @@ function bpc_ampl(ampl)
    		         m.tod += 20;
    		      }
    		      
-   		      var t = Math.round((m.zero_width - 9) / 10) + 1;
+   		      var t = Math.round((m.zero_width - 9) / 10);
    		      var s = t +'  ';
                if (t != m.prev[m.dcnt] && m.line) {
                   s = '<span style="color:lime">'+ t +'</span>. ';
                }
-               m.prev[m.dcnt] = t;
+               m.crnt[m.dcnt] = t;
                tc_dmsg(s);
                //m.chr += s.length;
                //if (m.chr > 80) { tc_dmsg('<br>'); m.chr = 0; }
                m.dcnt++;
-               if (m.dcnt >= 19) { tc_dmsg('<br>'); m.dcnt = 0; m.line++; }
+               if (m.dcnt >= 19) {
+                  tc_dmsg('   ');
+                  for (i=0; i < 19; i++) {
+                     var tt = m.crnt[i];
+                     if (tt >= 4) tt = 4;
+                     s = m.dibit[tt];
+                     if (tt != m.prev[i] && m.line) {
+                        s = '<span style="color:lime">'+ s +'</span>';
+                     }
+                     tc_dmsg(s);
+                  }
+                  tc_dmsg('<br>'); m.dcnt = 0; m.line++;
+               }
+               m.prev[m.dcnt] = t;
             }
    		   m.one_width = 0;
    		} else {
