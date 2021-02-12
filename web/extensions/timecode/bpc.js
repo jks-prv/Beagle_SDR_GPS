@@ -76,7 +76,7 @@ function bpc_ampl(ampl)
 {
 	var i;
 	var m = bpc;
-	//tc.trig++; if (tc.trig >= 100) tc.trig = 0;
+	tc.trig++; if (tc.trig >= 100) tc.trig = 0;
 	ampl = (ampl > 0.5)? 1:0;
 	if (!tc.ref) { tc.data = ampl^1; tc.ref = 1; }
 	
@@ -98,7 +98,7 @@ function bpc_ampl(ampl)
    		if (tc.data) {
    		   //tc_dmsg('0-'+ m.zero_width +' ');
    		   //m.chr += 5;
-   		   if (tc.trig) {
+   		   if (tc.state != tc.ACQ_SYNC) {
    		   /*
    		      if (m.dcnt == 0) {
    		         var secs = m.tod;
@@ -160,7 +160,15 @@ function bpc_ampl(ampl)
 	
 	// 1900 ms (2 sec - 10 ms) of carrier every 20 sec
 	if (tc.state == tc.ACQ_SYNC && m.arm == 0 && m.one_width >= 170) { m.arm = 1; m.one_width = 0; }
-	if (m.arm == 1 && tc.data_last == 1 && tc.data == 0) { m.arm = 2; tc.trig = 1; bpc_legend(); }
+	if (m.arm == 1 && tc.data_last == 1 && tc.data == 0) {
+	   m.arm = 2;
+	   tc.state = tc.MIN_MARK;
+      tc.trig = 0;
+      tc.sample_point = 40;
+	   bpc_legend();
+      tc_stat('cyan', 'Found sync');
+
+	}
 
    m.msec += 10;
 
