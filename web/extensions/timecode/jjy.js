@@ -40,13 +40,13 @@ function jjy_legend()
 
 function jjy_ampl_decode(bits)
 {
-   var min  = (tc_gap_bcd(bits,  8,  8, -1) + 1) % 60;   // bits are what the minute _was_ at the previous minute boundary
+   var min  = (tc_gap_bcd(bits, 8,  8, -1) + 1) % 60;   // bits are what the minute _was_ at the previous minute boundary
    var hour = tc_gap_bcd(bits, 18,  7, -1);
    var doy  = tc_gap_bcd(bits, 33, 12, -1);
-   var yr   = tc_gap_bcd(bits, 48,  8, -1, tc.NO_GAPS);
+   var yr   = tc_gap_bcd(bits, 48,  8, -1, tc.NO_GAPS) + 2000;
 
-   tc_dmsg('  day #'+ doy +' '+ (yr+2000) +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' JST<br>');
-   tc_stat('lime', 'Time decoded: day #'+ doy +' '+ (yr+2000) +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' JST');
+   tc_dmsg('  day #'+ doy +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' JST<br>');
+   tc_stat('lime', 'Time decoded: day #'+ doy +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' JST');
 }
 
 function jjy_clr()

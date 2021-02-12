@@ -13,7 +13,6 @@ var rus = {
    prev_zero_width: 0,
    wait: 0,
    
-   RTZ: 0,
    cur: 0,
    cnt: 0,
    dat0: 0,
@@ -45,15 +44,14 @@ function rus_legend()
 
 function rus_ampl_decode(bits)
 {
-   var min  = (tc_gap_bcd(bits,  59,  7, -1, tc.NO_GAPS) + 1) % 60;   // bits are what the minute _was_ at the previous minute boundary
-   var hour = tc_gap_bcd(bits, 52,  6, -1, tc.NO_GAPS);
+   var min  = tc_gap_bcd(bits, 59, 7, -1, tc.NO_GAPS) % 60;    // what the minute _will be_ at the approaching minute boundary
+   var hour = tc_gap_bcd(bits, 52, 6, -1, tc.NO_GAPS);
    var day  = tc_gap_bcd(bits, 46, 6, -1, tc.NO_GAPS);
    var mo   = tc_gap_bcd(bits, 37, 5, -1, tc.NO_GAPS);
-   var yr   = tc_gap_bcd(bits, 32,  8, -1, tc.NO_GAPS) + 2000;
+   var yr   = tc_gap_bcd(bits, 32, 8, -1, tc.NO_GAPS) + 2000;
 
-   var tz = rus.RTZ? ' IRKT' : ' MSK';
-   tc_dmsg('  '+ day +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) + tz +'<br>');
-   tc_stat('lime', 'Time decoded: '+ day +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) + tz);
+   tc_dmsg('  '+ day +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' MSK<br>');
+   tc_stat('lime', 'Time decoded: '+ day +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' MSK');
 }
 
 function rus_clr()
@@ -92,13 +90,15 @@ function rus_ampl(ampl)
    		if (tc.data) {    // 0 to 1 transition, w.dat0 now valid
    		
    		   if (tc.state == tc.ACQ_SYNC) {
+   		   /*
    		      var s = w.dat0 +' ';
    		      tc_dmsg(s);
    		      w.dcnt += s.length;
                if (w.dcnt > 80) { tc_dmsg('<br>'); w.dcnt = 0; }
+            */
 
    		      if (w.dat0 == 5) {
-                  tc_dmsg('[SYNC]<br>');
+                  //tc_dmsg('[SYNC]<br>');
                   tc_stat('cyan', 'Found sync');
                   tc.trig = 30;
                   tc.sample_point = 30;
@@ -124,9 +124,11 @@ function rus_ampl(ampl)
    		   
    		   }
    		   
-   		   if (0 && tc.state != tc.ACQ_SYNC && w.dat0 == 5) {
+   		/*
+   		   if (tc.state != tc.ACQ_SYNC && w.dat0 == 5) {
    		      tc_dmsg('<br>'); w.dcnt = 0;
    		   }
+   		*/
    		   
    		   w.prev_zero_width = w.zero_width;
    		}
@@ -153,9 +155,8 @@ function rus_ampl(ampl)
    }
 }
 
-function rus_focus(rtz)
+function rus_focus()
 {
-   rus.RTZ = rtz;
 }
 
 

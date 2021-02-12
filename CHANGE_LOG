@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.433  February 12, 2021
+    Timecode extension improvements:
+        Support for JJY(Japan), RBU(Moscow), RTZ(Irkutsk), BPC(China) added.
+        While running AGC delay is temporarily increased to improve noise immunity.
+
 v1.432  February 10, 2021
     Fix bug with long name/callsign entries containing Unicode characters.
 

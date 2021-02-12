@@ -589,7 +589,7 @@ function tc_signal_menu_cb(path, val, first)
 
 	case tc.sig.RBU:
 	case tc.sig.RTZ:
-		rus_focus(val == tc.sig.RTZ);
+		rus_focus();
 	   scope_init(w3_el('id-tc-scope'), {
          sec_per_sweep: 10,
          srate: tc.srate,
