@@ -15,6 +15,7 @@ var bpc = {
    prev: [],
    crnt: [],
    diff: [],
+   raw: [],
    chr: 0,
    tod: 0,
    time: 0,
@@ -31,10 +32,26 @@ function bpc_dmsg(s)
 // see: en.wikipedia.org/wiki/BPC_(time_signal)
 function bpc_legend()
 {
+   if ((bpc.line & 3) == 0) {
+      //tc_dmsg('         ');
+      tc_dmsg('ss hhhhhh mmmmmm ????P? dddddd mmmm yyyyyy ?? <br>');
+   }
 }
 
-function bpc_decode(bits)
+function bpc_decode(b)
 {
+   var hour = b[1]*16 + b[2]*4 + b[3];
+   var pm = b[9] & 2;
+   if (pm) hour += 12;
+   var min = b[4]*16 + b[5]*4 + b[6];
+   var sec = b[0]*20;
+   
+   var day = b[10]*16 + b[11]*4 + b[12];
+   var mo = b[13]*4 + b[14] - 1;
+   var yr = b[15]*16 + b[16]*4 + b[17] + 2000;
+   
+   tc_dmsg('   '+ day +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +':'+ sec.leadingZeros(2) +' CST<br>');
+   tc_stat('lime', 'Time decoded: '+ day +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +':'+ sec.leadingZeros(2) +' CST');
 }
 
 function bpc_clr()
@@ -44,10 +61,13 @@ function bpc_clr()
    m.cur = m.cnt = m.one_width = m.zero_width = 0;
    m.arm = m.no_modulation = m.dcnt = m.modct = m.line = m.sec = m.msec = 0;
    tc.trig = 0;
+   tc.state = tc.ACQ_SYNC;
 
    if (server_time_local != null && server_time_local != '') {
       m.time = parseInt(server_time_local)*3600 + parseInt(server_time_local.substr(3))*60 + 60;
    }
+   
+   //m.time = 7*3600 + 59*60;
    m.tod = m.time;
 }
 
@@ -58,7 +78,7 @@ function bpc_ampl(ampl)
 	var m = bpc;
 	//tc.trig++; if (tc.trig >= 100) tc.trig = 0;
 	ampl = (ampl > 0.5)? 1:0;
-	if (!tc.ref) { tc.data = ampl; tc.ref = 1; }
+	if (!tc.ref) { tc.data = ampl^1; tc.ref = 1; }
 	
 	// de-noise signal
    if (ampl == m.cur) {
@@ -79,6 +99,7 @@ function bpc_ampl(ampl)
    		   //tc_dmsg('0-'+ m.zero_width +' ');
    		   //m.chr += 5;
    		   if (tc.trig) {
+   		   /*
    		      if (m.dcnt == 0) {
    		         var secs = m.tod;
    		         var hh = Math.floor(secs/3600);
@@ -88,31 +109,41 @@ function bpc_ampl(ampl)
    		         tc_dmsg(hh.leadingZeros(2) +':'+ mm.leadingZeros(2) +':'+ secs.leadingZeros(2) +' ');
    		         m.tod += 20;
    		      }
+   		   */
    		      
    		      var t = Math.round((m.zero_width - 9) / 10);
-   		      var s = t +'  ';
+   		      if (t >= 4) t = 0;
+   		      m.raw[m.dcnt] = t;
+   		      var s = m.dibit[t];
                m.diff[m.dcnt] = 0;
                if (t != m.prev[m.dcnt] && m.line) {
-                  s = '<span style="color:lime">'+ t +'</span>. ';
+                  s = '<span style="color:lime">'+ s +'</span>';
                   m.diff[m.dcnt] = 1;
                }
                m.prev[m.dcnt] = t;
                tc_dmsg(s);
+               if ([0,3,6,9,12,14,17].includes(m.dcnt)) tc_dmsg(' ');
                //m.chr += s.length;
                //if (m.chr > 80) { tc_dmsg('<br>'); m.chr = 0; }
                m.dcnt++;
                if (m.dcnt >= 19) {
-                  tc_dmsg('   ');
+               /*
+                  //tc_dmsg(' ');
                   for (i=0; i < 19; i++) {
                      var tt = m.prev[i];
+                     m.raw[i] = (tt >= 4)? 0 : tt;
                      if (tt >= 4) tt = 4;
                      s = m.dibit[tt];
                      if (m.diff[i]) {
                         s = '<span style="color:lime">'+ s +'</span>';
                      }
                      tc_dmsg(s);
+                     if ([0,3,6,9,12,14,17].includes(i)) tc_dmsg(' ');
                   }
-                  tc_dmsg('<br>'); m.dcnt = 0; m.line++;
+               */
+                  bpc_decode(m.raw);
+                  m.dcnt = 0; m.line++;
+                  bpc_legend();
                }
             }
    		   m.one_width = 0;
@@ -129,7 +160,7 @@ function bpc_ampl(ampl)
 	
 	// 1900 ms (2 sec - 10 ms) of carrier every 20 sec
 	if (tc.state == tc.ACQ_SYNC && m.arm == 0 && m.one_width >= 170) { m.arm = 1; m.one_width = 0; }
-	if (m.arm == 1 && tc.data_last == 1 && tc.data == 0) { m.arm = 2; tc.trig = 1; }
+	if (m.arm == 1 && tc.data_last == 1 && tc.data == 0) { m.arm = 2; tc.trig = 1; bpc_legend(); }
 
    m.msec += 10;
 

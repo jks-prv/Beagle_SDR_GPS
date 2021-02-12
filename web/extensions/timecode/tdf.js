@@ -34,11 +34,11 @@ function tdf_decode(bits)
    var day  = tc_bcd(bits, 36, 6, 1);
    var wday = tc_bcd(bits, 42, 3, 1);
    var mo   = tc_bcd(bits, 45, 5, 1) - 1;
-   var yr   = tc_bcd(bits, 50, 8, 1);
+   var yr   = tc_bcd(bits, 50, 8, 1) + 2000;
    var tz   = bits[17]? 'CEST' : (bits[18]? 'CET' : 'TZ?');
 
-   tc_dmsg('  '+ day +' '+ tc.mo[mo] +' '+ (yr+2000) +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' '+ tz +'<br>');
-   tc_stat('lime', 'Time decoded: '+ day +' '+ tc.mo[mo] +' '+ (yr+2000) +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' '+ tz);
+   tc_dmsg('  '+ day +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' '+ tz +'<br>');
+   tc_stat('lime', 'Time decoded: '+ day +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' '+ tz);
 }
 
 function tdf_clr()
