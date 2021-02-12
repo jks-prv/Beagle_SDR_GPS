@@ -338,7 +338,7 @@ function tc_recv(data)
       
             case tc.sig.BPCa:
                scope_draw(
-                  /* cyan */ tc.trig == 1,
+                  /* cyan */ (tc.trig >= 0 && tc.trig <= tc.sample_point),
                   /* red  */ ampl_abs,
                   /* org  */ undefined,
                   /* blk  */ tc.data? -0.6 : -0.3,    // inverted
