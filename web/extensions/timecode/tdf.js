@@ -29,7 +29,9 @@ function tdf_legend()
 
 function tdf_decode(bits)
 {
-   var min  = tc_bcd(bits, 21, 7, 1);     // what the minute _will be_ at the approaching minute boundary
+   // bits are what the minute _will be_ at the approaching minute boundary
+   
+   var min  = tc_bcd(bits, 21, 7, 1);
    var hour = tc_bcd(bits, 29, 6, 1);
    var day  = tc_bcd(bits, 36, 6, 1);
    var wday = tc_bcd(bits, 42, 3, 1);

@@ -1,7 +1,7 @@
 // Copyright (c) 2017-2021 John Seamons, ZL/KF6VO
 
 //
-// Just display the bits. The actual decode is currently unknown.
+// The protocol is unpublished, so some of the data bit values are still unknown.
 //
 
 var bpc = {
@@ -13,13 +13,11 @@ var bpc = {
    dcnt: 0,
    line: 0,
    prev: [],
-   crnt: [],
-   diff: [],
    raw: [],
    chr: 0,
    tod: 0,
    time: 0,
-   dibit: [ '00', '01', '10', '11', '--' ],
+   dibit: [ '00', '01', '10', '11' ],
    
    end: null
 };
@@ -34,24 +32,46 @@ function bpc_legend()
 {
    if ((bpc.line & 3) == 0) {
       //tc_dmsg('         ');
-      tc_dmsg('ss hhhhhh mmmmmm ????P? dddddd mmmm yyyyyy ?? <br>');
+      tc_dmsg('ss hhhhhh mmmmmm ????Pp dddddd mmmm yyyyyy ?? <br>');
    }
 }
 
 function bpc_decode(b)
 {
+   // bits are what time the 20 second frame _was_ at the previous sync boundary
+   
    var hour = b[1]*16 + b[2]*4 + b[3];
-   var pm = b[9] & 2;
-   if (pm) hour += 12;
+   if (hour <= 11) {
+      var pm = b[9] & 2;
+      if (pm) hour += 12;
+      hour = hour.leadingZeros(2);
+   } else hour = '??';
+
    var min = b[4]*16 + b[5]*4 + b[6];
-   var sec = b[0]*20;
+   min = (min > 59)? '??' : min.leadingZeros(2);
+
+   var sec = b[0];   // 0..2
+   sec = (sec > 2)? '??' : (sec*20).leadingZeros(2);
    
    var day = b[10]*16 + b[11]*4 + b[12];
-   var mo = b[13]*4 + b[14] - 1;
+   day = (day == 0 || day > 31)? '??' : day.fieldWidth(2);
+
+   var mo = b[13]*4 + b[14];  // 1..12
+   mo = (mo == 0 || mo > 12)? '???' : tc.mo[mo-1];
+
    var yr = b[15]*16 + b[16]*4 + b[17] + 2000;
    
-   tc_dmsg('   '+ day +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +':'+ sec.leadingZeros(2) +' CST<br>');
-   tc_stat('lime', 'Time decoded: '+ day +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +':'+ sec.leadingZeros(2) +' CST');
+   // odd-parity bit is b[9] & 1
+   var parity = 0;
+   for (var i = 0; i < 19; i++) {
+      parity += [0,1,1,2][b[i]];
+   }
+   parity = parity & 1;
+
+   var s = day +' '+ mo +' '+ yr +' '+ hour +':'+ min +':'+ sec +' CST';
+   var p = parity? 'PARITY ERROR' : '';
+   tc_dmsg('   '+ s +'  '+ p +'<br>');
+   tc_stat('lime', 'Time decoded: '+ (parity? p : s));
 }
 
 function bpc_clr()
@@ -95,7 +115,9 @@ function bpc_ampl(ampl)
 	      tc.data_last = tc.data;
    		tc.data ^= 1;
    		//if (tc.data) m.one_width = 0; else m.zero_width = 0;
+
    		if (tc.data) {
+   		   // zero-to-one transition
    		   //tc_dmsg('0-'+ m.zero_width +' ');
    		   //m.chr += 5;
    		   if (tc.state != tc.ACQ_SYNC) {
@@ -111,14 +133,14 @@ function bpc_ampl(ampl)
    		      }
    		   */
    		      
+   		      // each pulse is 1, 2, 3 or 4 ten msec periods of no carrier
+   		      // representing the dibit values 00, 01, 10 and 11 respectively
    		      var t = Math.round((m.zero_width - 9) / 10);
    		      if (t >= 4) t = 0;
    		      m.raw[m.dcnt] = t;
    		      var s = m.dibit[t];
-               m.diff[m.dcnt] = 0;
                if (t != m.prev[m.dcnt] && m.line) {
                   s = '<span style="color:lime">'+ s +'</span>';
-                  m.diff[m.dcnt] = 1;
                }
                m.prev[m.dcnt] = t;
                tc_dmsg(s);
@@ -126,21 +148,9 @@ function bpc_ampl(ampl)
                //m.chr += s.length;
                //if (m.chr > 80) { tc_dmsg('<br>'); m.chr = 0; }
                m.dcnt++;
+               
+               // each 20 sec frame is sync followed by 19 data dibits
                if (m.dcnt >= 19) {
-               /*
-                  //tc_dmsg(' ');
-                  for (i=0; i < 19; i++) {
-                     var tt = m.prev[i];
-                     m.raw[i] = (tt >= 4)? 0 : tt;
-                     if (tt >= 4) tt = 4;
-                     s = m.dibit[tt];
-                     if (m.diff[i]) {
-                        s = '<span style="color:lime">'+ s +'</span>';
-                     }
-                     tc_dmsg(s);
-                     if ([0,3,6,9,12,14,17].includes(i)) tc_dmsg(' ');
-                  }
-               */
                   bpc_decode(m.raw);
                   m.dcnt = 0; m.line++;
                   bpc_legend();
@@ -158,7 +168,7 @@ function bpc_ampl(ampl)
 
    if (tc.data) m.one_width++; else m.zero_width++;
 	
-	// 1900 ms (2 sec - 10 ms) of carrier every 20 sec
+	// sync is 1900 ms (2 sec - 10 ms) of carrier every 20 sec
 	if (tc.state == tc.ACQ_SYNC && m.arm == 0 && m.one_width >= 170) { m.arm = 1; m.one_width = 0; }
 	if (m.arm == 1 && tc.data_last == 1 && tc.data == 0) {
 	   m.arm = 2;

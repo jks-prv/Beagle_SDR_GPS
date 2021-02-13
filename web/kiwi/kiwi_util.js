@@ -231,7 +231,7 @@ Number.prototype.leadingZeros = function(size)
 {
 	var s = String(this);
 	if (!isNumber(size)) size = 2;
-	while (s.length < size) s = "0"+s;
+	while (s.length < size) s = '0'+ s;
 	return s;
 }
 
@@ -245,6 +245,14 @@ String.prototype.leadingZeros = function(size)
 }
 
 // size is total number of characters, padded to the left with spaces
+Number.prototype.fieldWidth = function(size)
+{
+	var s = String(this);
+	if (!isNumber(size)) return s;
+	while (s.length < size) s = ' '+ s;
+	return s;
+}
+
 String.prototype.fieldWidth = function(size)
 {
 	var s = String(this);
@@ -461,6 +469,13 @@ function kiwi_hh_mm(hh_mm)
    return null;
 }
 //console.log('# '+ kiwi_hh_mm(-11) +' '+ + kiwi_hh_mm('-10') +' '+ kiwi_hh_mm('10:55') +' '+ kiwi_hh_mm('-10:55'));
+
+// stackoverflow.com/questions/8619879/javascript-calculate-the-day-of-the-year-1-366
+function kiwi_doyToDate(doy, year, hour, min, sec)
+{
+   return new Date(year, 0, doy, hour, min, sec);   // yes, doy = 1..366 really works!
+}
+
 
 
 ////////////////////////////////

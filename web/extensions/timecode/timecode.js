@@ -6,7 +6,6 @@ var tc = {
    update: false,
    start_point: 0,
    ref: 0,
-   NO_GAPS: true,
    
    state:      0,
    ACQ_SYNC:   0,
@@ -123,15 +122,14 @@ function tc_stat2(color, s)
 function tc_bcd(bits, offset, n_bits, dir)
 {
    var val = 0;
-   for (var i=0; i < n_bits; i++) val += bits[offset + (dir*i)]? [1,2,4,8,10,20,40,80][i] : 0;
+   for (var i=0; i < n_bits; i++) val += bits[offset + (dir*i)]? [1,2,4,8,10,20,40,80,100,200][i] : 0;
    return val;
 }
 
-function tc_gap_bcd(bits, offset, n_bits, dir, no_gaps)
+function tc_gap_bcd(bits, offset, n_bits, dir)
 {
    var val = 0;
-   var seq = (no_gaps && no_gaps == tc.NO_GAPS)? [1,2,4,8,10,20,40,80,100,200] : [1,2,4,8,0,10,20,40,80,0,100,200];
-   for (var i=0; i < n_bits; i++) val += bits[offset + (dir*i)]? seq[i] : 0;
+   for (var i=0; i < n_bits; i++) val += bits[offset + (dir*i)]? [1,2,4,8,0,10,20,40,80,0,100,200][i] : 0;
    return val;
 }
 

@@ -44,14 +44,17 @@ function rus_legend()
 
 function rus_ampl_decode(bits)
 {
-   var min  = tc_gap_bcd(bits, 59, 7, -1, tc.NO_GAPS) % 60;    // what the minute _will be_ at the approaching minute boundary
-   var hour = tc_gap_bcd(bits, 52, 6, -1, tc.NO_GAPS);
-   var day  = tc_gap_bcd(bits, 46, 6, -1, tc.NO_GAPS);
-   var mo   = tc_gap_bcd(bits, 37, 5, -1, tc.NO_GAPS);
-   var yr   = tc_gap_bcd(bits, 32, 8, -1, tc.NO_GAPS) + 2000;
+   // bits are what the minute _will be_ at the approaching minute boundary
+   
+   var min  = tc_bcd(bits, 59, 7, -1) % 60;
+   var hour = tc_bcd(bits, 52, 6, -1);
+   var day  = tc_bcd(bits, 46, 6, -1);
+   var mo   = tc_bcd(bits, 37, 5, -1) - 1;
+   var yr   = tc_bcd(bits, 32, 8, -1) + 2000;
 
-   tc_dmsg('  '+ day +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' MSK<br>');
-   tc_stat('lime', 'Time decoded: '+ day +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' MSK');
+   var s = day +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' MSK';
+   tc_dmsg('  '+ s +'<br>');
+   tc_stat('lime', 'Time decoded: '+ s);
 }
 
 function rus_clr()

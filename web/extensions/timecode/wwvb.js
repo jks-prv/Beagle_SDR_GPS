@@ -75,13 +75,21 @@ function wwvb_legend(phase)
 
 function wwvb_ampl_decode(bits)
 {
-   var min  = (tc_gap_bcd(bits, 8,  8, -1) + 1) % 60;   // bits are what the minute _was_ at the previous minute boundary
+   // bits are what the minute _was_ at the previous minute boundary
+   
+   // all given in UTC
+   var min  = (tc_gap_bcd(bits, 8,  8, -1) + 1) % 60;
    var hour = tc_gap_bcd(bits, 18,  7, -1);
    var doy  = tc_gap_bcd(bits, 33, 12, -1);
    var yr   = tc_gap_bcd(bits, 53,  9, -1) + 2000;
 
-   tc_dmsg('  day #'+ doy +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' UTC<br>');
-   tc_stat('lime', 'Time decoded: day #'+ doy +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' UTC');
+   var d = kiwi_doyToDate(doy, yr, hour, min, 0);
+   var day = d.getUTCDate().fieldWidth(2);
+   var mo = tc.mo[d.getUTCMonth()];
+
+   var s = day +' '+ mo +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' UTC';
+   tc_dmsg('  ' + 'day #'+ doy +' '+ s +'<br>');
+   tc_stat('lime', 'Time decoded: '+ s);
 }
 
 function wwvb_clr()
