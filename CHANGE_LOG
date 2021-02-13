@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.434  February 13, 2021
+    Timecode extension bug fixes and improvements
+
 v1.433  February 12, 2021
     Timecode extension improvements:
         Support for JJY(Japan), RBU(Moscow), RTZ(Irkutsk), BPC(China) added.

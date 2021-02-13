@@ -471,9 +471,9 @@ function kiwi_hh_mm(hh_mm)
 //console.log('# '+ kiwi_hh_mm(-11) +' '+ + kiwi_hh_mm('-10') +' '+ kiwi_hh_mm('10:55') +' '+ kiwi_hh_mm('-10:55'));
 
 // stackoverflow.com/questions/8619879/javascript-calculate-the-day-of-the-year-1-366
-function kiwi_doyToDate(doy, year, hour, min, sec)
+function kiwi_UTCdoyToDate(doy, year, hour, min, sec)
 {
-   return new Date(year, 0, doy, hour, min, sec);   // yes, doy = 1..366 really works!
+   return new Date(Date.UTC(year, 0, doy, hour, min, sec));    // yes, doy = 1..366 really works!
 }
 
 

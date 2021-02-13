@@ -83,7 +83,7 @@ function wwvb_ampl_decode(bits)
    var doy  = tc_gap_bcd(bits, 33, 12, -1);
    var yr   = tc_gap_bcd(bits, 53,  9, -1) + 2000;
 
-   var d = kiwi_doyToDate(doy, yr, hour, min, 0);
+   var d = kiwi_UTCdoyToDate(doy, yr, hour, min, 0);
    var day = d.getUTCDate().fieldWidth(2);
    var mo = tc.mo[d.getUTCMonth()];
 
