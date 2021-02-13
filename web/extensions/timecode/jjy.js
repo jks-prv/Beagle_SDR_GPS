@@ -40,13 +40,24 @@ function jjy_legend()
 
 function jjy_ampl_decode(bits)
 {
-   var min  = (tc_gap_bcd(bits, 8,  8, -1) + 1) % 60;   // bits are what the minute _was_ at the previous minute boundary
+   // bits are what the minute _was_ at the previous minute boundary
+   
+   // all given in JST (UTC + 9)
+   var min  = (tc_gap_bcd(bits, 8,  8, -1) + 1) % 60;
    var hour = tc_gap_bcd(bits, 18,  7, -1);
    var doy  = tc_gap_bcd(bits, 33, 12, -1);
-   var yr   = tc_gap_bcd(bits, 48,  8, -1, tc.NO_GAPS) + 2000;
+   var yr   = tc_bcd(bits, 48,  8, -1) + 2000;
+   
+   var d = kiwi_doyToDate(doy, yr, hour, min, 0);
+   d = new Date(d.getTime() - 9*60*60*1000);  // convert JST to UTC (-9 hours)
+   var st = d.toLocaleString("en-US", {timeZone:"Japan"});
+   d = new Date(st +' UTC');
+   var day = d.getUTCDate().fieldWidth(2);
+   var mo = tc.mo[d.getUTCMonth()];
 
-   tc_dmsg('  day #'+ doy +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' JST<br>');
-   tc_stat('lime', 'Time decoded: day #'+ doy +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' JST');
+   var s = day +' '+ mo +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' JST';
+   tc_dmsg('  ' + 'day #'+ doy +' '+ s +'<br>');
+   tc_stat('lime', 'Time decoded: '+ s);
 }
 
 function jjy_clr()
