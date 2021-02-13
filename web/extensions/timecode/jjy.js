@@ -48,12 +48,13 @@ function jjy_ampl_decode(bits)
    var doy  = tc_gap_bcd(bits, 33, 12, -1);
    var yr   = tc_bcd(bits, 48,  8, -1) + 2000;
    
-   var d = kiwi_doyToDate(doy, yr, hour, min, 0);
+   var d = kiwi_UTCdoyToDate(doy, yr, hour, min, 0);
    d = new Date(d.getTime() - 9*60*60*1000);  // convert JST to UTC (-9 hours)
    var st = d.toLocaleString("en-US", {timeZone:"Japan"});
-   d = new Date(st +' UTC');
-   var day = d.getUTCDate().fieldWidth(2);
-   var mo = tc.mo[d.getUTCMonth()];
+   // use the local tz calls (not UTC) to interpret values returned by toLocaleString() 
+   d = new Date(st);
+   var day = d.getDate().fieldWidth(2);
+   var mo = tc.mo[d.getMonth()];
 
    var s = day +' '+ mo +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' JST';
    tc_dmsg('  ' + 'day #'+ doy +' '+ s +'<br>');
