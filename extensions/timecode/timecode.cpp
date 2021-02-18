@@ -164,7 +164,7 @@ public:
         return false;
     }
 
-    bool test = false;
+    bool test;
     s2_t *testP;
 
 protected:
@@ -280,6 +280,7 @@ bool timecode_msgs(char *msg, int rx_chan)
     int do_run = 0;
     if (sscanf(msg, "SET run=%d", &do_run)) {
         if (do_run) {
+            tc[rx_chan]->test = false;
             tc[rx_chan]->set_sample_rate(ext_update_get_sample_rateHz(rx_chan));
             ext_register_receive_iq_samps(timecode_data, rx_chan);
         } else {
