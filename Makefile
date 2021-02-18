@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 434
+VERSION_MIN = 435
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.11
@@ -561,7 +561,17 @@ fopt foptim: foptim_files_embed foptim_ext foptim_files_maps
 endif
 
 foptim_list: loptim_embed loptim_ext loptim_maps
+
+CLEAN_MIN_GZ_2 = $(wildcard $(CLEAN_MIN_GZ))
+ifeq ($(CLEAN_MIN_GZ_2),)
 foptim_clean: roptim_embed roptim_ext roptim_maps
+	@echo "nothing to foptim_clean"
+else
+foptim_clean: roptim_embed roptim_ext roptim_maps
+	@echo "removing:"
+	@-ls -la $(CLEAN_MIN_GZ_2)
+	@-rm $(CLEAN_MIN_GZ_2)
+endif
 
 FILES_EMBED_SORTED_NW = $(sort $(EMBED_NW) $(EXT_EMBED_NW) $(PKGS_MAPS_EMBED_NW))
 FILES_ALWAYS_SORTED_NW = $(sort $(FILES_ALWAYS))

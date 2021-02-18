@@ -431,7 +431,7 @@ Commands:
 #if USE_SDR
 				u16		CmdSetRXFreq
 				u16		CmdSetRXNsamps
-				u16		CmdSetGen
+				u16		CmdSetGenFreq
 				u16		CmdSetGenAttn
 				u16		CmdGetRX
 				u16		CmdClrRXOvfl
@@ -692,7 +692,7 @@ ctrl_clr:
 				and
 ctrl_update:
 				dup
-				wrReg2	SET_CTRL
+				wrReg   SET_CTRL
 				push	ctrl
 				store16
 				drop
@@ -713,7 +713,7 @@ CmdCtrlClrSet:
 				and                         ; set ctrl_clr
 				or                          ; ctrl_clr_set
 				dup
-				wrReg2	SET_CTRL
+				wrReg   SET_CTRL
 				push	ctrl
 				store16
 				drop

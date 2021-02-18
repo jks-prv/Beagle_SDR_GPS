@@ -18,7 +18,7 @@ var extint = {
    // extensions not subject to DRM lockout
    // FIXME: allow C-side API to specify
    no_lockout: [ 'noise_blank', 'noise_filter', 'ant_switch', 'iframe', 'colormap', 'devl' ],
-   excl_devl: [ 'sig_gen', 'devl', 's4285' ]
+   excl_devl: [ 'devl', 's4285' ]
 };
 
 var devl = {
@@ -829,6 +829,7 @@ function extint_names_enum(func)
    for (i = value = 0; i < extint_names.length; i++) {
       var id = extint_names[i];
       if (!dbgUs && extint.excl_devl.includes(id)) continue;
+      if (id == 'sig_gen' && (rx_chan != 0 || rx_chans >= 14)) continue;   // sig gen only visible to chan 0
       if (id == 'wspr') id = 'WSPR';      // FIXME: workaround
 
       // workaround mistake that config enable ids don't match ext names

@@ -138,6 +138,7 @@ function gen_enable_cb(path, idx, first)
 	//console.log('gen_enable_cb enabled='+ gen.enable +' f='+ (gen.enable? gen.freq : 0));
 	if (!gen.enable && gen.sweeping) gen_sweep_cancel();
 	gen_set(gen.enable? gen.freq : 0, gen.attn_ampl, true);
+   colormap_update();
 }
 
 function gen_freq_cb(path, val)
@@ -191,8 +192,10 @@ function gen_attn_cb(path, val, complete)
 	w3_num_cb(path, val);
 	w3_set_label('Attenuation '+ (-val).toString() +' dB', path);
 	
-	if (complete)
+	if (complete) {
 		gen_set(gen.freq, gen.attn_ampl);
+		colormap_update();
+	}
 }
 
 function gen_attn_offset_cb(path, idx, first)
@@ -215,6 +218,7 @@ function sig_gen_blur()
 	gen_set(0, 0, true);
 	ext_send('SET run=0');
 	ext_send('SET wf_comp=1');
+   toggle_or_set_spec(toggle_e.SET, 0);
 }
 
 // called to display HTML for configuration parameters in admin interface

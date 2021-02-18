@@ -10,8 +10,8 @@ parameter V_WF_CHANS = (RX_CFG == 4)? 4 : ((RX_CFG == 8)? 2 : ((RX_CFG == 3)? 3 
 parameter RXBUF_SIZE = (RX_CFG == 4)? RXBUF_SIZE_4CH : ((RX_CFG == 8)? RXBUF_SIZE_8CH : ((RX_CFG == 3)? RXBUF_SIZE_3CH : ((RX_CFG == 14)? RXBUF_SIZE_14CH : 0)));
 parameter RXBUF_LARGE = (RX_CFG == 4)? 0 : ((RX_CFG == 8)? 1 : ((RX_CFG == 3)? 1 : ((RX_CFG == 14)? 2 : 0)));
 
-parameter RX1_DECIM = (RX_CFG == 4)? RX1_12K_DECIM : ((RX_CFG == 8)? RX1_12K_DECIM : ((RX_CFG == 3)? RX1_20K_DECIM : ((RX_CFG == 14)? RX1_12K_DECIM : 0)));
-parameter RX2_DECIM = (RX_CFG == 4)? RX2_12K_DECIM : ((RX_CFG == 8)? RX2_12K_DECIM : ((RX_CFG == 3)? RX2_20K_DECIM : ((RX_CFG == 14)? RX2_12K_DECIM : 0)));
+parameter RX1_DECIM = (RX_CFG == 4)? RX1_STD_DECIM : ((RX_CFG == 8)? RX1_STD_DECIM : ((RX_CFG == 3)? RX1_WIDE_DECIM : ((RX_CFG == 14)? RX1_STD_DECIM : 0)));
+parameter RX2_DECIM = (RX_CFG == 4)? RX2_STD_DECIM : ((RX_CFG == 8)? RX2_STD_DECIM : ((RX_CFG == 3)? RX2_WIDE_DECIM : ((RX_CFG == 14)? RX2_STD_DECIM : 0)));
 
 parameter FPGA_ID = (RX_CFG == 4)? FPGA_ID_RX4_WF4 : ((RX_CFG == 8)? FPGA_ID_RX8_WF2 : ((RX_CFG == 3)? FPGA_ID_RX3_WF3 : ((RX_CFG == 14)? FPGA_ID_RX14_WF0 : 0)));
 

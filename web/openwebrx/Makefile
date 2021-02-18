@@ -13,3 +13,6 @@ FILES_ALWAYS2 += $(subst web/,,$(wildcard web/openwebrx/icons/*.png))
 FILES_ALWAYS2 += openwebrx/favicon.ico
 FILES_ALWAYS2 += openwebrx/gfx/font-expletus-sans/ExpletusSans-Medium.ttf
 #FILES_ALWAYS2 += openwebrx/openwebrx.ccomp.js
+
+CLEAN_OWRX = audio openwebrx
+CLEAN_MIN_GZ += $(addprefix web/openwebrx/,$(addsuffix .min.js, $(CLEAN_OWRX)))

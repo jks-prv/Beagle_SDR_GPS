@@ -33,7 +33,7 @@ module RX (
 	output wire		   rx_avail_A,
 
 	input  wire		   cpu_clk,
-    input  wire [31:0] freeze_tos,
+    input  wire [31:0] freeze_tos_A,
     
     input  wire        set_rx_freqH_C,
     input  wire        set_rx_freqL_C
@@ -49,13 +49,13 @@ module RX (
 
     always @ (posedge adc_clk)
     begin
-        if (set_phaseH) rx_phase_inc[16 +:32] <= freeze_tos;
-        if (set_phaseL) rx_phase_inc[ 0 +:16] <= freeze_tos;
+        if (set_phaseH) rx_phase_inc[16 +:32] <= freeze_tos_A;
+        if (set_phaseL) rx_phase_inc[ 0 +:16] <= freeze_tos_A;
     end
 
 	wire signed [RX1_BITS-1:0] rx_mix_i, rx_mix_q;
 
-	IQ_MIXER #(.PHASE_WIDTH(48), .IN_WIDTH(IN_WIDTH), .OUT_WIDTH(RX1_BITS))
+	IQ_MIXER #(.IN_WIDTH(IN_WIDTH), .OUT_WIDTH(RX1_BITS))
 		rx_mixer (
 			.clk		(adc_clk),
 			.phase_inc	(rx_phase_inc),

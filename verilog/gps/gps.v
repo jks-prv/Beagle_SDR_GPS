@@ -109,6 +109,8 @@ module GPS (
     assign ticks_A = adc_ticks;
 
     // continuously sync ticks_A => ticks
+    // ticks_A is on adc_clk and exported to receiver for inclusion in audio stream
+    // ticks is synced to gps_clk for inclusion in snapshot data below
 	SYNC_REG #(.WIDTH(48)) sync_adc_ticks (
 	    .in_strobe(1),      .in_reg(ticks_A),   .in_clk(adc_clk),
 	    .out_strobe(),      .out_reg(ticks),    .out_clk(clk)
@@ -181,7 +183,7 @@ module GPS (
     wire        cg_resume;
 
     always @ (posedge clk)
-        if (wrReg && op[SET_PAUSE])
+        if (wrReg & op[SET_PAUSE])
             cg_cnt <= tos[15:0];
         else
             cg_cnt <= cg_nxt;
@@ -211,7 +213,7 @@ module GPS (
     wire [(GPS_CHANS * E1B_CODEBITS)-1:0] nchip;
     wire [GPS_CHANS-1:0] e1b_full_chip, e1b_code;
     
-    wire e1b_wr = wrReg && op[SET_E1B_CODE];
+    wire e1b_wr = wrReg & op[SET_E1B_CODE];
     E1BCODE e1b (
         .rst            (sampler_rst),
         .clk            (clk),

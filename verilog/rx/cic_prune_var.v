@@ -83,10 +83,10 @@ module cic_prune_var (
     wire signed [OUT_WIDTH-1:0] out;
     
     generate
-        if (INCLUDE == "rx1" && RX1_DECIM == RX1_12K_DECIM) begin : rx1_12k `include "cic_rx1_12k.vh" end
-        if (INCLUDE == "rx2" && RX2_DECIM == RX2_12K_DECIM) begin : rx2_12k `include "cic_rx2_12k.vh" end
-        if (INCLUDE == "rx1" && RX1_DECIM == RX1_20K_DECIM) begin : rx1_20k `include "cic_rx1_20k.vh" end
-        if (INCLUDE == "rx2" && RX2_DECIM == RX2_20K_DECIM) begin : rx2_20k `include "cic_rx2_20k.vh" end
+        if (INCLUDE == "rx1" && RX1_DECIM == RX1_STD_DECIM) begin : rx1_12k `include "cic_rx1_12k.vh" end
+        if (INCLUDE == "rx2" && RX2_DECIM == RX2_STD_DECIM) begin : rx2_12k `include "cic_rx2_12k.vh" end
+        if (INCLUDE == "rx1" && RX1_DECIM == RX1_WIDE_DECIM) begin : rx1_20k `include "cic_rx1_20k.vh" end
+        if (INCLUDE == "rx2" && RX2_DECIM == RX2_WIDE_DECIM) begin : rx2_20k `include "cic_rx2_20k.vh" end
     
         if (INCLUDE == "wf1") begin : wf1 `include "cic_wf1.vh" end
         if (INCLUDE == "wf2") begin : wf2 `include "cic_wf2.vh" end

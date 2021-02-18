@@ -74,8 +74,8 @@ module cic_seq_iq_prune (
     wire signed [ACC_WIDTH-1:0] integ_out_i, integ_out_q;
     
     generate
-        if (INCLUDE == "rx3" && RX2_DECIM == RX2_12K_DECIM) begin : rx3_12k `include "cic_rx3_12k.vh" end
-        if (INCLUDE == "rx3" && RX2_DECIM == RX2_20K_DECIM) begin : rx3_20k `include "cic_rx3_20k.vh" end
+        if (INCLUDE == "rx3" && RX2_DECIM == RX2_STD_DECIM) begin : rx3_12k `include "cic_rx3_12k.vh" end
+        if (INCLUDE == "rx3" && RX2_DECIM == RX2_WIDE_DECIM) begin : rx3_20k `include "cic_rx3_20k.vh" end
     endgenerate
 
 	localparam NPOST_STAGES = 2;

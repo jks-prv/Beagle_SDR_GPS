@@ -1,7 +1,7 @@
 include ../Makefile.comp.inc
 
-UTIL = wspr
-UTILS = audio integrate hog multiply ext64 decimate security wspr e1b_fec viterbi27_test e1b_code
+UTIL = multiply2
+UTILS = audio integrate hog multiply ext64 decimate security wspr e1b_fec viterbi27_test e1b_code multiply2
 
 CMD =
 
@@ -49,4 +49,4 @@ run: $(UTIL)
 	$(CMD)
 
 clean:
-	rm -f $(UTILS) *.o *.dat *.xz
+	rm -f $(UTILS) *.o *.d *.dat *.xz

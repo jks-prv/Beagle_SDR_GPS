@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+#define WSPR_RATE 375
+
 void interp_decim(int net_rate, int out_rate, double target_rem)
 {
 	int interp;
@@ -19,6 +21,26 @@ void interp_decim(int net_rate, int out_rate, double target_rem)
 		    return;
 		}
 	}
+}
+
+void decim_search(int in_rate, int decim1, int decim2, int out_rate1, int out_rate2, double target_rem)
+{
+	int out_rate, i_decim;
+	double decim, decim_rem;
+
+	printf("in_rate %d, decim %d:%d, out_rate %d:%d, target_rem %f\n", in_rate, decim1, decim2, out_rate1, out_rate2, target_rem);
+    for (out_rate = out_rate1; out_rate <= out_rate2; out_rate++) {
+        for (i_decim = decim1; i_decim <= decim2; i_decim++) {
+            decim = (double) in_rate / i_decim;
+            decim_rem = fabs(decim - out_rate);
+            if (decim_rem <= target_rem) {
+                printf("decim_rem %.6f: out_rate %d i_decim %d decim %.6f WSPR %.2f ", decim_rem, out_rate, i_decim, decim, (float) out_rate / WSPR_RATE);
+                if (decim_rem == 0)
+                    printf("EXACT MATCH");
+                printf("\n");
+            }
+        }
+    }
 }
 
 double min_decim_rem;
@@ -40,20 +62,18 @@ void decim_2stage(int in_rate, int out_rate, double target_rem)
 			min_decim1 = decim1;
 			min_decim2 = (int) decim2_floor;
 		}
-		if (decim_rem < target_rem) {
-			printf("OKAY  decim_rem %.6f %.3f: decim1 %d (%.4f kHz) decim2 %d (%.4f MHz)\n",
+		if (decim_rem <= target_rem) {
+			printf("OKAY  decim_rem %.6f %.3f: decim1 %d (%.4f kHz) decim2 %d (%.4f MHz) ",
 				decim_rem, (double)in_rate/decim1/decim2_floor, decim1, in_rate/decim1/1e3, (int) decim2_floor, in_rate/decim2/1e6);
             if (decim_rem == 0) {
                 printf("EXACT MATCH\n");
-                return;
-            }
+                //return;
+            } else printf("\n");
 		}
 	}
 	printf("\nLEAST decim_rem %.6f %.3f: decim1 %d (%.4f kHz) decim2 %d (%.4f MHz)\n",
 		min_decim_rem, (double)in_rate/min_decim1/min_decim2, min_decim1, in_rate/min_decim1/1e3, min_decim2, in_rate/min_decim2/1e6);
 }
-
-#define WSPR_RATE 375
 
 int main()
 {
@@ -66,12 +86,12 @@ int main()
 	//int net_rate = 8250, out_rate = 44100;
 	//int net_rate = 8250, out_rate = 16000;
 
-#if 1
+#if 0
 	printf("integer interp/decim for exact AUDIO out_rate\n");
 	interp_decim(net_rate, out_rate, DECIM_REM);
 #endif
 
-#if 1
+#if 0
 	printf("\nDDC decim1/decim2 for exact AUDIO net_rate\n");
 	#define ADC_CLOCK 66666600
 	//#define ADC_CLOCK 66665900

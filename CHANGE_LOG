@@ -2,8 +2,17 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.435  February 19, 2021
+    Signal generator extension working again.
+        Still requires admin password (local network exemption applies).
+        Now only works with channel 0 so using it won't disturb other channels listening
+        in a multi-channel environment.
+    Change all NCOs to use 48-bit phase registers.
+    Timecode extension: use RBU's lower sideband as it seems stronger.
+    Misc code cleanup.
+
 v1.434  February 13, 2021
-    Timecode extension bug fixes and improvements
+    Timecode extension bug fixes and improvements.
 
 v1.433  February 12, 2021
     Timecode extension improvements:

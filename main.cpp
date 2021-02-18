@@ -258,7 +258,6 @@ int main(int argc, char *argv[])
         rx_chans = 4;
         wf_chans = 4;
         snd_rate = SND_RATE_4CH;
-        snd_intr_usec = SND_INTR_4CH;
         rx_decim = RX_DECIM_4CH;
         nrx_bufs = RXBUF_SIZE_4CH / NRX_SPI;
         lprintf("firmware: SDR_RX4_WF4\n");
@@ -268,7 +267,6 @@ int main(int argc, char *argv[])
         rx_chans = 8;
         wf_chans = 2;
         snd_rate = SND_RATE_8CH;
-        snd_intr_usec = SND_INTR_8CH;
         rx_decim = RX_DECIM_8CH;
         nrx_bufs = RXBUF_SIZE_8CH / NRX_SPI;
         lprintf("firmware: SDR_RX8_WF2\n");
@@ -278,7 +276,6 @@ int main(int argc, char *argv[])
         rx_chans = 3;
         wf_chans = 3;
         snd_rate = SND_RATE_3CH;
-        snd_intr_usec = SND_INTR_3CH;
         rx_decim = RX_DECIM_3CH;
         nrx_bufs = RXBUF_SIZE_3CH / NRX_SPI;
         lprintf("firmware: SDR_RX3_WF3\n");
@@ -288,7 +285,6 @@ int main(int argc, char *argv[])
         rx_chans = 14;
         wf_chans = 0;
         snd_rate = SND_RATE_14CH;
-        snd_intr_usec = SND_INTR_14CH;
         rx_decim = RX_DECIM_14CH;
         nrx_bufs = RXBUF_SIZE_14CH / NRX_SPI;
         lprintf("firmware: SDR_RX14_WF0\n");
@@ -313,14 +309,15 @@ int main(int argc, char *argv[])
     nrx_samps = NRX_SAMPS_CHANS(rx_chans);
     nrx_samps_loop = nrx_samps * rx_chans / NRX_SAMPS_RPT;
     nrx_samps_rem = (nrx_samps * rx_chans) - (nrx_samps_loop * NRX_SAMPS_RPT);
-    lprintf("firmware: NRX bufs=%d samps=%d loop=%d rem=%d\n",
-        nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem);
+    snd_intr_usec = 1e6 / ((float) snd_rate/nrx_samps);
+    lprintf("firmware: RX bufs=%d samps=%d loop=%d rem=%d intr_usec=%d\n",
+        nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem, snd_intr_usec);
 
     assert(nrx_bufs <= MAX_NRX_BUFS);
     assert(nrx_samps <= MAX_NRX_SAMPS);
     assert(nrx_samps < FASTFIR_OUTBUF_SIZE);    // see data_pump.h
 
-    lprintf("firmware: NWF xfer=%d samps=%d rpt=%d loop=%d rem=%d\n",
+    lprintf("firmware: WF xfer=%d samps=%d rpt=%d loop=%d rem=%d\n",
         NWF_NXFER, NWF_SAMPS, NWF_SAMPS_RPT, NWF_SAMPS_LOOP, NWF_SAMPS_REM);
 
     rx_num = rx_chans, wf_num = wf_chans;

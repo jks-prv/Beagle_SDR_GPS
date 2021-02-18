@@ -39,6 +39,8 @@ if { [info exists ::user_project_name] } {
 variable script_file
 set script_file "make_proj.tcl"
 set rx4_wf4 "no"
+set rx8_wf2 "no"
+set rx3_wf3 "no"
 set rx14_wf0 "no"
 set regen_ip "no"
 
@@ -55,7 +57,7 @@ proc help {} {
   puts "$script_file -tclargs \[--origin_dir <path>\]"
   puts "$script_file -tclargs \[--result_dir <path>\]"
   puts "$script_file -tclargs \[--project_name <name>\]"
-  puts "$script_file -tclargs \[--rx4_wf4\]"
+  puts "$script_file -tclargs \[--rx4_wf4\] \[--rx8_wf2\] \[--rx3_wf3\] \[--rx14_wf0\]"
   puts "$script_file -tclargs \[--regen_ip\]"
   puts "$script_file -tclargs \[--help\]\n"
   puts "Usage:"
@@ -68,7 +70,8 @@ proc help {} {
   puts "\[--project_name <name>\] Create project with the specified name. Default"
   puts "                       name is the name of the project from where this"
   puts "                       script was generated.\n"
-  puts "\[--rx4_wf4\] Build only rx4_wf4 of the three configurations.\n"
+  puts "\[--rx4_wf4\] Build only rx4_wf4 of the multiple configurations.\n"
+  puts "                       All configurations built if none are selected.\n"
   puts "\[--regen_ip\] Regenerate all of the IP blocks.\n"
   puts "\[--help\]               Print help information for this script"
   puts "-------------------------------------------------------------------------\n"
@@ -83,6 +86,8 @@ if { $::argc > 0 } {
       "--result_dir"   { incr i; set result_dir [lindex $::argv $i] }
       "--project_name" { incr i; set project_name [lindex $::argv $i] }
       "--rx4_wf4"      {         set rx4_wf4  "yes" }
+      "--rx8_wf2"      {         set rx8_wf2  "yes" }
+      "--rx3_wf3"      {         set rx3_wf3  "yes" }
       "--rx14_wf0"     {         set rx14_wf0 "yes" }
       "--regen_ip"     {         set regen_ip "yes" }
       "--help"         { help }
@@ -179,7 +184,6 @@ set files [ list \
                 "[file normalize ${origin_dir}/ip/ip_add_u32b.v]" \
                 "[file normalize ${origin_dir}/ip/ip_add_u30b.v]" \
                 "[file normalize ${origin_dir}/ip/ip_acc_u32b.v]" \
-                "[file normalize ${origin_dir}/ip/ip_dds_sin_cos_13b_15b.v]" \
                 "[file normalize ${origin_dir}/ip/ip_dds_sin_cos_13b_15b_48b.v]" \
                ]
 if {[string equal $proj_create "yes"]} {
@@ -357,6 +361,7 @@ proc build_rx4_wf4 {s_dir d_dir} {
     set_rx_cfg 4
     update_compile_order -fileset sources_1
     reset_run -quiet synth_1
+    reset_run -quiet impl_1
     #launch_runs synth_1 -jobs 6
     #launch_runs impl_1 -jobs 6
     launch_runs impl_1 -to_step write_bitstream -jobs 6
@@ -365,43 +370,69 @@ proc build_rx4_wf4 {s_dir d_dir} {
     file copy -force $s_dir/usage_statistics_webtalk.html $d_dir/KiwiSDR.rx4.wf4.html
 }
 
+proc build_rx8_wf2 {s_dir d_dir} {
+    set_rx_cfg 8
+    update_compile_order -fileset sources_1
+    reset_run -quiet synth_1
+    reset_run -quiet impl_1
+    #launch_runs synth_1 -jobs 6
+    #launch_runs impl_1 -jobs 6
+    launch_runs impl_1 -to_step write_bitstream -jobs 6
+    wait_on_run impl_1
+    file copy -force $s_dir/KiwiSDR.bit $d_dir/KiwiSDR.rx8.wf2.bit
+    file copy -force $s_dir/usage_statistics_webtalk.html $d_dir/KiwiSDR.rx8.wf2.html
+}
+
+proc build_rx3_wf3 {s_dir d_dir} {
+    set_rx_cfg 3
+    update_compile_order -fileset sources_1
+    reset_run -quiet synth_1
+    reset_run -quiet impl_1
+    #launch_runs synth_1 -jobs 6
+    #launch_runs impl_1 -jobs 6
+    launch_runs impl_1 -to_step write_bitstream -jobs 6
+    wait_on_run impl_1
+    file copy -force $s_dir/KiwiSDR.bit $d_dir/KiwiSDR.rx3.wf3.bit
+    file copy -force $s_dir/usage_statistics_webtalk.html $d_dir/KiwiSDR.rx3.wf3.html
+}
+
 proc build_rx14_wf0 {s_dir d_dir} {
     set_rx_cfg 14
     update_compile_order -fileset sources_1
     reset_run -quiet synth_1
+    reset_run -quiet impl_1
     launch_runs impl_1 -to_step write_bitstream -jobs 6
     wait_on_run impl_1
     file copy -force $s_dir/KiwiSDR.bit $d_dir/KiwiSDR.rx14.wf0.bit
     file copy -force $s_dir/usage_statistics_webtalk.html $d_dir/KiwiSDR.rx14.wf0.html
 }
 
+set last_run "no"
+
 if {[string equal $rx4_wf4 "yes"]} {
     build_rx4_wf4 $impl_dir $result_dir
+    set last_run "rx4"
+}
+
+if {[string equal $rx8_wf2 "yes"]} {
+    build_rx8_wf2 $impl_dir $result_dir
+    set last_run "rx8"
+}
+
+if {[string equal $rx3_wf3 "yes"]} {
+    build_rx3_wf3 $impl_dir $result_dir
+    set last_run "rx3"
 }
 
 if {[string equal $rx14_wf0 "yes"]} {
     build_rx14_wf0 $impl_dir $result_dir
+    set last_run "rx14"
 }
 
-if {[string equal $rx4_wf4 "no"] && [string equal $rx14_wf0 "no"]} {
-    build_rx4_wf4 $impl_dir $result_dir
-
-    set_rx_cfg 8
-    update_compile_order -fileset sources_1
-    reset_run -quiet synth_1
-    launch_runs impl_1 -to_step write_bitstream -jobs 6
-    wait_on_run impl_1
-    file copy -force $impl_dir/KiwiSDR.bit $result_dir/KiwiSDR.rx8.wf2.bit
-    file copy -force $impl_dir/usage_statistics_webtalk.html $result_dir/KiwiSDR.rx8.wf2.html
-    
-    set_rx_cfg 3
-    update_compile_order -fileset sources_1
-    reset_run -quiet synth_1
-    launch_runs impl_1 -to_step write_bitstream -jobs 6
-    wait_on_run impl_1
-    file copy -force $impl_dir/KiwiSDR.bit $result_dir/KiwiSDR.rx3.wf3.bit
-    file copy -force $impl_dir/usage_statistics_webtalk.html $result_dir/KiwiSDR.rx3.wf3.html
-    
+if {[string equal $last_run "no"]} {
+    build_rx4_wf4  $impl_dir $result_dir
+    build_rx8_wf2  $impl_dir $result_dir
+    build_rx3_wf3  $impl_dir $result_dir
     build_rx14_wf0 $impl_dir $result_dir
 }
 
