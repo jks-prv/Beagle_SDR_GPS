@@ -356,34 +356,29 @@ int main (int argc, char *argv[])
 
 #include "kiwi.gen.h"
 
-	cic_gen("cic_rx1_12k.vh", INTEG_COMB, RX1_STAGES, RX1_12K_DECIM, RX1_BITS, RX2_BITS);
-	cic_gen("cic_rx1_20k.vh", INTEG_COMB, RX1_STAGES, RX1_20K_DECIM, RX1_BITS, RX2_BITS);
+	cic_gen("cic_rx1_12k.vh", INTEG_COMB, RX1_STAGES, RX1_STD_DECIM, RX1_BITS, RX2_BITS);
+	cic_gen("cic_rx1_20k.vh", INTEG_COMB, RX1_STAGES, RX1_WIDE_DECIM, RX1_BITS, RX2_BITS);
 
 #ifdef USE_RX_SEQ
 	// For USE_RX_SEQ the cic_gen() mode is INTEG_ONLY because the comb part of the
 	// rx second stage is done by the rx sequential state machine.
 	cic_gen("cic_rx2_12k.vh", EMPTY, 0, 0, 0, 0);
 	cic_gen("cic_rx2_20k.vh", EMPTY, 0, 0, 0, 0);
-	cic_gen("cic_rx3_12k.vh", INTEG_ONLY, RX2_STAGES, RX2_12K_DECIM, RX2_BITS, RXO_BITS);
-	cic_gen("cic_rx3_20k.vh", INTEG_ONLY, RX2_STAGES, RX2_20K_DECIM, RX2_BITS, RXO_BITS);
+	cic_gen("cic_rx3_12k.vh", INTEG_ONLY, RX2_STAGES, RX2_STD_DECIM, RX2_BITS, RXO_BITS);
+	cic_gen("cic_rx3_20k.vh", INTEG_ONLY, RX2_STAGES, RX2_WIDE_DECIM, RX2_BITS, RXO_BITS);
 #else
-	cic_gen("cic_rx2_12k.vh", INTEG_COMB, RX2_STAGES, RX2_12K_DECIM, RX2_BITS, RXO_BITS);
-	cic_gen("cic_rx2_20k.vh", INTEG_COMB, RX2_STAGES, RX2_20K_DECIM, RX2_BITS, RXO_BITS);
+	cic_gen("cic_rx2_12k.vh", INTEG_COMB, RX2_STAGES, RX2_STD_DECIM, RX2_BITS, RXO_BITS);
+	cic_gen("cic_rx2_20k.vh", INTEG_COMB, RX2_STAGES, RX2_WIDE_DECIM, RX2_BITS, RXO_BITS);
 	cic_gen("cic_rx3_12k.vh", EMPTY, 0, 0, 0, 0);
 	cic_gen("cic_rx3_20k.vh", EMPTY, 0, 0, 0, 0);
 #endif
 
-#ifdef USE_WF_PRUNE
-	#ifdef USE_WF_1CIC
-		cic_gen("cic_wf1.vh", INTEG_COMB, WF1_STAGES, WF_1CIC_MAXD, WF1_BITS, WFO_BITS);
-		cic_gen("cic_wf2.vh", EMPTY, 0, 0, 0, 0);
-	#else
-		cic_gen("cic_wf1.vh", INTEG_COMB, WF1_STAGES, WF_2CIC_MAXD, WF1_BITS, WF2_BITS);
-		cic_gen("cic_wf2.vh", INTEG_COMB, WF2_STAGES, WF_2CIC_MAXD, WF2_BITS, WFO_BITS);
-	#endif
+#ifdef USE_WF_1CIC
+    cic_gen("cic_wf1.vh", INTEG_COMB, WF1_STAGES, WF_1CIC_MAXD, WF1_BITS, WFO_BITS);
+    cic_gen("cic_wf2.vh", EMPTY, 0, 0, 0, 0);
 #else
-	cic_gen("cic_wf1.vh", EMPTY, 0, 0, 0, 0);
-	cic_gen("cic_wf2.vh", EMPTY, 0, 0, 0, 0);
+    cic_gen("cic_wf1.vh", INTEG_COMB, WF1_STAGES, WF_2CIC_MAXD, WF1_BITS, WF2_BITS);
+    cic_gen("cic_wf2.vh", INTEG_COMB, WF2_STAGES, WF_2CIC_MAXD, WF2_BITS, WFO_BITS);
 #endif
 
 	//cic_gen("Hogenauer's paper", INTEG_COMB, 4, 25, 16, 16);

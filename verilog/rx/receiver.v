@@ -19,33 +19,6 @@ Boston, MA  02110-1301, USA.
 
 `include "kiwi.vh"
 
-`ifdef MEAS_CIC_OUT
-module RECEIVER (
-	input wire		   adc_clk,
-	input wire signed [ADC_BITS-1:0] adc_data,
-
-    output wire        rx_rd_C,
-    output wire [15:0] rx_dout_C,
-
-    output wire        wf_rd_C,
-    output wire [15:0] wf_dout_C,
-
-    input  wire [47:0] ticks_A,
-    
-	input  wire		   cpu_clk,
-    output wire        ser,
-    input  wire [31:0] tos,
-    input  wire [15:0] op,
-    input  wire        rdReg,
-    input  wire        rdBit2,
-    input  wire        wrReg2,
-    input  wire        wrEvt2,
-    
-    input  wire [15:0] ctrl,
-	
-	output wire [7:0]   cic_out
-	);
-`else
 module RECEIVER (
 	input wire		   adc_clk,
 	input wire signed [ADC_BITS-1:0] adc_data,
@@ -69,16 +42,17 @@ module RECEIVER (
     
     input  wire [15:0] ctrl
 	);
-`endif
 	
-	wire set_rx_chan_C =	wrReg2 && op[SET_RX_CHAN];
-	wire set_rx_freqH_C =	wrReg2 && op[SET_RX_FREQ];
-	wire set_rx_freqL_C =	wrReg2 && op[SET_RX_FREQ_L];
-	wire set_rx_nsamps_C =	wrReg2 && op[SET_RX_NSAMPS];
+	wire set_rx_chan_C =	wrReg2 & op[SET_RX_CHAN];
+	wire freq_l =           wrReg2 & op[FREQ_L];
+	wire set_rx_freqH_C =   (wrReg2 & op[SET_RX_FREQ]) && !freq_l;
+	wire set_rx_freqL_C =   (wrReg2 & op[SET_RX_FREQ]) &&  freq_l;
+	wire set_rx_nsamps_C =	wrReg2 & op[SET_RX_NSAMPS];
 	
-	wire set_wf_chan_C =	wrReg2 && op[SET_WF_CHAN];
-	wire set_wf_freq_C =	wrReg2 && op[SET_WF_FREQ];
-	wire set_wf_decim_C =	wrReg2 && op[SET_WF_DECIM];
+	wire set_wf_chan_C =	wrReg2 & op[SET_WF_CHAN];
+	wire set_wf_freqH_C =   (wrReg2 & op[SET_WF_FREQ]) && !freq_l;
+	wire set_wf_freqL_C =   (wrReg2 & op[SET_WF_FREQ]) &&  freq_l;
+	wire set_wf_decim_C =	wrReg2 & op[SET_WF_DECIM];
 
 	// The FREEZE_TOS event starts the process of latching and synchronizing of the ecpu TOS data
 	// from the cpu_clk to the adc_clk domain. This is needed by subsequent wrReg instructions
@@ -87,7 +61,7 @@ module RECEIVER (
 	// e.g. an ecpu code sequence like this:
 	//		rdReg HOST_RX; wrEvt2 FREEZE_TOS; nop; nop; wrReg2 SET_WF_FREQ
 
-	wire freeze_C = wrEvt2 && op[FREEZE_TOS];
+	wire freeze_C = wrEvt2 & op[FREEZE_TOS];
 
 	wire [31:0] freeze_tos_A;
 	SYNC_REG #(.WIDTH(32)) sync_latch_tos (
@@ -101,27 +75,43 @@ module RECEIVER (
     //////////////////////////////////////////////////////////////////////////
     
 `ifdef USE_GEN
-	localparam RX_IN_WIDTH = 18;
+    `ifdef USE_WF
+        localparam RX_IN_WIDTH = 18;
 
-	wire use_gen_A;
-	SYNC_WIRE sync_use_gen (.in(ctrl[CTRL_USE_GEN]), .out_clk(adc_clk), .out(use_gen_A));
+        wire use_gen_A;
+        SYNC_WIRE sync_use_gen (.in(ctrl[CTRL_USE_GEN]), .out_clk(adc_clk), .out(use_gen_A));
 
-	wire signed [RX_IN_WIDTH-1:0] gen_data;
-	wire [RX_IN_WIDTH-1:0] rx_data = use_gen_A? gen_data : { adc_data, {RX_IN_WIDTH-ADC_BITS{1'b0}} };
+        wire signed [RX_IN_WIDTH-1:0] gen_data;
+        wire signed [RX_IN_WIDTH-1:0] adc_ext_data = { adc_data, {RX_IN_WIDTH-ADC_BITS{1'b0}} };
+    
+        // only allow gen to be used on channel 0 to prevent disruption to others when multiple channels in use
+        wire [(V_RX_CHANS * RX_IN_WIDTH)-1:0] rx_data = { {V_RX_CHANS-1{adc_ext_data}}, use_gen_A? gen_data : adc_ext_data };
+        wire [(V_WF_CHANS * RX_IN_WIDTH)-1:0] wf_data = { {V_WF_CHANS-1{adc_ext_data}}, use_gen_A? gen_data : adc_ext_data };
 
-	GEN gen_inst (
-		.adc_clk	(adc_clk),
-		.gen_data	(gen_data),
+        GEN gen_inst (
+            .adc_clk	    (adc_clk),
+            .gen_data	    (gen_data),
 
-		.cpu_clk	(cpu_clk),
-		.freeze_tos	(freeze_tos_A),
-        .op			(op),        
-        .wrReg2     (wrReg2)
-	);
+            .cpu_clk	    (cpu_clk),
+            .freeze_tos_A   (freeze_tos_A),
+            .op			    (op),        
+            .wrReg2         (wrReg2)
+        );
+    `else
+        // sig gen doesn't fit when RX_CFG == 14
+        // and USE_WF is conveniently not defined when RX_CFG == 14 (rx14_wf0 configuration)
+        
+        localparam RX_IN_WIDTH = ADC_BITS;
+    
+        wire [RX_IN_WIDTH-1:0] rx_data = adc_data;
+        wire [RX_IN_WIDTH-1:0] wf_data = adc_data;
+
+    `endif
 `else
 	localparam RX_IN_WIDTH = ADC_BITS;
 	
-	wire [ADC_BITS-1:0] rx_data = adc_data;
+	wire [RX_IN_WIDTH-1:0] rx_data = adc_data;
+	wire [RX_IN_WIDTH-1:0] wf_data = adc_data;
 
 `endif
 	
@@ -160,23 +150,11 @@ module RECEIVER (
 		.rx_avail_A		(rxn_avail_A),
 
 		.cpu_clk		(cpu_clk),
-		.freeze_tos		(freeze_tos_A),
+		.freeze_tos_A   (freeze_tos_A),
 		
 		.set_rx_freqH_C	(set_rx_freqH_C),
 		.set_rx_freqL_C	(set_rx_freqL_C)
 	);
-
-`ifdef MEAS_CIC_OUT
-    reg [7:0] cic_out_A;
-    
-	always @ (posedge adc_clk)
-		if (rx_avail_A && rd_i && !rd_q)
-		begin
-		    cic_out_A <= rxn_dout_A[15 -:4];
-		end
-
-    assign cic_out = cic_out_A;     // RX channel 0 top 4-bits
-`endif
 
 	
     //////////////////////////////////////////////////////////////////////////
@@ -383,7 +361,7 @@ module RECEIVER (
 
 	wire inc_C;
 	SYNC_PULSE sync_inc_C (.in_clk(adc_clk), .in(inc_A), .out_clk(cpu_clk), .out(inc_C));
-    wire get_rx_srq = rdReg && op[GET_RX_SRQ];
+    wire get_rx_srq = rdReg & op[GET_RX_SRQ];
 	
     reg srq_noted, srq_out;
     always @ (posedge cpu_clk)
@@ -395,9 +373,9 @@ module RECEIVER (
 
 	assign ser = srq_out;
 
-	wire get_rx_samp_C = wrEvt2 && op[GET_RX_SAMP];
-	wire reset_bufs_C =  wrEvt2 && op[RX_BUFFER_RST];
-	wire get_buf_ctr_C = wrEvt2 && op[RX_GET_BUF_CTR];
+	wire get_rx_samp_C = wrEvt2 & op[GET_RX_SAMP];
+	wire reset_bufs_C =  wrEvt2 & op[RX_BUFFER_RST];
+	wire get_buf_ctr_C = wrEvt2 & op[RX_GET_BUF_CTR];
 	
 	wire [15:0] rx_dout_A;
 	MUX #(.WIDTH(16), .SEL(V_RX_CHANS)) rx_mux(.in(rxn_dout_A), .sel(rxn_d[L2RX:0]), .out(rx_dout_A));
@@ -460,9 +438,9 @@ module RECEIVER (
     // Read and write addresses just wrap and are reset at the start.
 
 	RX_BUFFER #(.ADDR_MSB(RXBUF_MSB)) rx_buffer (
-		.clka	(adc_clk),							.clkb	(cpu_clk),
-		.addra	(waddr),					        .addrb	(raddr + rd),
-		.dina	(din),		                        .doutb	(dout),
+		.clka	(adc_clk),      .clkb	(cpu_clk),
+		.addra	(waddr),        .addrb	(raddr + rd),
+		.dina	(din),          .doutb	(dout),
 		.wea	(wr)
 	);
 
@@ -487,9 +465,9 @@ module RECEIVER (
 	wire [V_WF_CHANS*16-1:0] wfn_dout_C;
 	MUX #(.WIDTH(16), .SEL(V_WF_CHANS)) wf_dout_mux(.in(wfn_dout_C), .sel(wf_channel_C), .out(wf_dout_C));
 
-	wire rst_wf_sampler_C =	wrReg2 && op[WF_SAMPLER_RST];
-	wire get_wf_samp_i_C =	wrEvt2 && op[GET_WF_SAMP_I];
-	wire get_wf_samp_q_C =	wrEvt2 && op[GET_WF_SAMP_Q];
+	wire rst_wf_sampler_C =	wrReg2 & op[WF_SAMPLER_RST];
+	wire get_wf_samp_i_C =	wrEvt2 & op[GET_WF_SAMP_I];
+	wire get_wf_samp_q_C =	wrEvt2 & op[GET_WF_SAMP_Q];
 	assign wf_rd_C =		get_wf_samp_i_C || get_wf_samp_q_C;
 
 `ifdef USE_WF_1CIC
@@ -498,16 +476,17 @@ module RECEIVER (
 	WATERFALL #(.IN_WIDTH(RX_IN_WIDTH)) waterfall_inst [V_WF_CHANS-1:0] (
 `endif
 		.adc_clk			(adc_clk),
-		.adc_data			(rx_data),
+		.adc_data			(wf_data),
 		
 		.wf_sel_C			(wfn_sel_C),
 		.wf_dout_C			(wfn_dout_C),
 
 		.cpu_clk			(cpu_clk),
 		.tos				(tos),
-		.freeze_tos			(freeze_tos_A),
+		.freeze_tos_A       (freeze_tos_A),
 
-		.set_wf_freq_C		(set_wf_freq_C),
+		.set_wf_freqH_C		(set_wf_freqH_C),
+		.set_wf_freqL_C		(set_wf_freqL_C),
 		.set_wf_decim_C		(set_wf_decim_C),
 		.rst_wf_sampler_C	(rst_wf_sampler_C),
 		.get_wf_samp_i_C	(get_wf_samp_i_C),

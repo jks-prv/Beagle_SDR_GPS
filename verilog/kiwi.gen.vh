@@ -17,9 +17,7 @@
 `define DEF_ADC_BITS
 	parameter DEFAULT_NSYNC = 2;    // DEFp 0x2
 `define DEF_DEFAULT_NSYNC
-`define USE_MIX_DDS    // DEFh 0x1
-//`define USE_GEN    // DEFh 0x0
-//`define USE_HBEAT    // DEFh 0x0
+`define USE_GEN    // DEFh 0x1
 `define USE_LOGGER    // DEFh 0x1
 `define USE_CPU_CTR    // DEFh 0x1
 `define USE_DEBUG    // DEFh 0x1
@@ -30,7 +28,6 @@
 //`define STACK_CHECK    // DEFh 0x0
 //`define SND_SEQ_CHECK    // DEFh 0x0
 //`define SND_TIMING_CK    // DEFh 0x0
-//`define MEAS_CIC_OUT    // DEFh 0x0
 	parameter FPGA_ID_RX4_WF4 = 4'd0;    // DEFp 0x0
 //`define DEF_FPGA_ID_RX4_WF4
 	parameter FPGA_ID_RX8_WF2 = 4'd1;    // DEFp 0x1
@@ -57,14 +54,14 @@
 `define DEF_SPIBUF_B
 	parameter SPIBUF_BMAX = 4094;    // DEFp 0xffe
 `define DEF_SPIBUF_BMAX
-	parameter RX1_20K_DECIM = 823;    // DEFp 0x337
-`define DEF_RX1_20K_DECIM
-	parameter RX2_20K_DECIM = 4;    // DEFp 0x4
-`define DEF_RX2_20K_DECIM
-	parameter RX1_12K_DECIM = 505;    // DEFp 0x1f9
-`define DEF_RX1_12K_DECIM
-	parameter RX2_12K_DECIM = 11;    // DEFp 0xb
-`define DEF_RX2_12K_DECIM
+	parameter RX1_WIDE_DECIM = 823;    // DEFp 0x337
+`define DEF_RX1_WIDE_DECIM
+	parameter RX2_WIDE_DECIM = 4;    // DEFp 0x4
+`define DEF_RX2_WIDE_DECIM
+	parameter RX1_STD_DECIM = 505;    // DEFp 0x1f9
+`define DEF_RX1_STD_DECIM
+	parameter RX2_STD_DECIM = 11;    // DEFp 0xb
+`define DEF_RX2_STD_DECIM
 	parameter MAX_SND_RATE = 20250;    // DEFp 0x4f1a
 `define DEF_MAX_SND_RATE
 	parameter SND_RATE_3CH = 20250;    // DEFp 0x4f1a
@@ -91,14 +88,6 @@
 `define DEF_RXBUF_SIZE_8CH
 	parameter RXBUF_SIZE_14CH = 32768;    // DEFp 0x8000
 `define DEF_RXBUF_SIZE_14CH
-	parameter SND_INTR_3CH = 11200;    // DEFp 0x2bc0
-`define DEF_SND_INTR_3CH
-	parameter SND_INTR_4CH = 14000;    // DEFp 0x36b0
-`define DEF_SND_INTR_4CH
-	parameter SND_INTR_8CH = 7000;    // DEFp 0x1b58
-`define DEF_SND_INTR_8CH
-	parameter SND_INTR_14CH = 4000;    // DEFp 0xfa0
-`define DEF_SND_INTR_14CH
 	parameter NRX_IQW = 3;    // DEFp 0x3
 `define DEF_NRX_IQW
 	parameter NRX_SPI = 2047;    // DEFp 0x7ff
@@ -137,7 +126,6 @@
 	parameter NWF_SAMPS_REM = 11;    // DEFp 0xb
 `define DEF_NWF_SAMPS_REM
 `define USE_WF_1CIC    // DEFh 0x1
-`define USE_WF_PRUNE    // DEFh 0x1
 `define USE_WF_CIC24    // DEFh 0x1
 //`define USE_WF_MEM24    // DEFh 0x0
 //`define USE_WF_NEW    // DEFh 0x0
@@ -217,18 +205,18 @@
 	parameter SET_SAT = 5;    // DEFb: bit number for value: 0x20
 	parameter SET_E1B_CODE = 6;    // DEFb: bit number for value: 0x40
 	parameter SET_PAUSE = 7;    // DEFb: bit number for value: 0x80
-	parameter SET_CNT_MASK = 10;    // DEFb: bit number for value: 0x400
-	parameter SET_CTRL = 0;    // DEFb: bit number for value: 0x1
-	parameter SET_RX_CHAN = 1;    // DEFb: bit number for value: 0x2
-	parameter SET_RX_FREQ = 2;    // DEFb: bit number for value: 0x4
-	parameter SET_RX_FREQ_L = 3;    // DEFb: bit number for value: 0x8
-	parameter SET_RX_NSAMPS = 4;    // DEFb: bit number for value: 0x10
-	parameter SET_GEN = 5;    // DEFb: bit number for value: 0x20
-	parameter SET_GEN_ATTN = 6;    // DEFb: bit number for value: 0x40
+	parameter SET_CTRL = 10;    // DEFb: bit number for value: 0x400
+	parameter SET_RX_CHAN = 0;    // DEFb: bit number for value: 0x1
+	parameter SET_RX_FREQ = 1;    // DEFb: bit number for value: 0x2
+	parameter FREQ_L = 2;    // DEFb: bit number for value: 0x4
+	parameter SET_RX_NSAMPS = 3;    // DEFb: bit number for value: 0x8
+	parameter SET_GEN_FREQ = 4;    // DEFb: bit number for value: 0x10
+	parameter SET_GEN_ATTN = 5;    // DEFb: bit number for value: 0x20
+	parameter SET_WF_CHAN = 6;    // DEFb: bit number for value: 0x40
 	parameter SET_WF_FREQ = 7;    // DEFb: bit number for value: 0x80
 	parameter SET_WF_DECIM = 8;    // DEFb: bit number for value: 0x100
-	parameter SET_WF_CHAN = 9;    // DEFb: bit number for value: 0x200
-	parameter WF_SAMPLER_RST = 10;    // DEFb: bit number for value: 0x400
+	parameter WF_SAMPLER_RST = 9;    // DEFb: bit number for value: 0x200
+	parameter SET_CNT_MASK = 10;    // DEFb: bit number for value: 0x400
 	parameter HOST_RST = 0;    // DEFb: bit number for value: 0x1
 	parameter HOST_RDY = 1;    // DEFb: bit number for value: 0x2
 	parameter GPS_SAMPLER_RST = 2;    // DEFb: bit number for value: 0x4

@@ -24,17 +24,26 @@
 //
 // Was INCORRECTLY interpreting as {csmm MMMmmmx XXXX} and doing {34 -:18} to get result
 //		i.e. (s36>>17) & 0x3ffff gives:
-// +1 * +1 = 0x1ffff * 0x1ffff = 0x3 fffc 0001 = 0x1fffe (+1 minus 1)
+// +1 * +1 = 0x1ffff * 0x1ffff = 0x3 fffc 0001 = 0x1fffe (+1 minus lsb)
 // -1 * -1 = 0x20000 * 0x20000 = 0x4 0000 0000 = 0x20000 (-1, wrong: overflow s0c1, should be +1)
-// +1 * -1 = 0x1ffff * 0x20000 = 0xc 0002 0000 = 0x20001 (-1 plus 1))
+// +1 * -1 = 0x1ffff * 0x20000 = 0xc 0002 0000 = 0x20001 (-1 plus lsb))
 //
 // Now CORRECTLY interpreting as {scmm MMMmmmx XXXX} and doing {35, [33 -:17]} to get result
 //		i.e. ((s36 & b35) >> 18) | ((s36>>17) & 0x1ffff) gives:
-// +1 * +1 = 0x1ffff * 0x1ffff = 0x3 fffc 0001 = 0x1fffe (+1 minus 1)
+// +1 * +1 = 0x1ffff * 0x1ffff = 0x3 fffc 0001 = 0x1fffe (+1 minus lsb)
 // -1 * -1 = 0x20000 * 0x20000 = 0x4 0000 0000 = 0x00000 (0, wrong: overflow s0c1, should be +1)
-// +1 * -1 = 0x1ffff * 0x20000 = 0xc 0002 0000 = 0x20001 (-1 plus 1))
+// +1 * -1 = 0x1ffff * 0x20000 = 0xc 0002 0000 = 0x20001 (-1 plus lsb))
 //
 // Overflow (s=0 c=1) only ever occurs for -1 * -1.
+//
+// "Q" fixed-point notation concept
+// QIa.Fa op QIb.Fb = QIa+Ib.Fa+Fb e.g. Q1.7 + Q2.6 = Q3.13
+// But note in corner case of Q1.n * Q1.n this rule gives Q2.n*2 when only Q1 is required
+// to represent +/-1 * +/-1 (i.e. it's not an optimal representation)
+// see: www.superkits.net/whitepapers/Fixed%20Point%20Representation%20&%20Fractional%20Math.pdf
+//   s.m MMMM       = Q1.17(18) = {-1, 1/2^1, ... 1/2^17}
+// sm.mm MMMM MMMM  = Q2.34(36) = {-2, 1, 1/2^1, ... 1/2^34}
+// smm.m MMMM MMMM  = Q3.33(36) = {-4, 2, 1, 1/2^1, ... 1/2^33}
 //
 // Simulated a range of sine values that the Xilinx DDS IP is likely to produce.
 // Tested against lots of random values in addition to the corner cases.
@@ -92,7 +101,8 @@ int main()
 	double pacc=0, pinc = K_2PI / depth;
 	int run=0, diffs=0;
 	
-	double s18_f = pow(2,-(18-1));
+	double s18_f = pow(2,-(18-1));      // 18-1 because 18-bit format is s.m MMMM
+	double s35_f = pow(2,-(35-1));      // 35-1 because 36-bit format is sc.mm MMMM MMMM
 	
 	double max_pos_f = pow(2,31)-1;
 	//printf("D=%d/0x%04x D=%db W=%db/0x%x 0x%08x 0x%08x %.12e %d %f %f\n", depth, depth, D, W, W_mask,
@@ -115,11 +125,14 @@ int main()
 	u64_t b_carry = 0x400000000ULL;
 	u64_t b_round = ROUND? 0x10000 : 0;		// i.e. 1 << (17-1)
 
+    // 18b = { -1 1/2 1/4 1/8 m m MMM }
+    // NB: careful forming neg numbers, must sign-extend in 18b part! e.g. -1/8 = these set: -1 1/2 1/4 1/8 i.e. neg of 1/8
 	s4_t plus_one = 0x1ffff;
 	s4_t plus_one_half = 0x10000;
 	s4_t plus_one_quarter = 0x08000;
 	s4_t minus_one = EXTS4(0x20000, 18);
 	s4_t minus_one_half = EXTS4(0x30000, 18);
+	s4_t minus_one_quarter = EXTS4(0x38000, 18);
 	
 #define CHECK(quiet, title, mulA_s4, mulB_s4, ck_expr) { \
 	s64_t prod_s64 = (s64_t) (mulA_s4) * (s64_t) (mulB_s4); \
@@ -127,17 +140,25 @@ int main()
 	bool s = prod_s64 & b_sign; \
 	s4_t r_m18 = CONV_MUL_S36_S18(prod_s64); \
 	s4_t r_old_m18 = CONV_MUL_S36_S18_OLD(prod_s64); \
-	s4_t r = EXTS4(r_m18 ,18); \
-	s4_t ck = (ck_expr); \
-	s4_t d = ck - r; \
+	s4_t r = EXTS4(r_m18, 18); \
+	s4_t ck_s4 = (ck_expr); \
+	s4_t d = ck_s4 - r; \
 	diffs += d? 1:0; \
 	bool overflow = (s != c); \
 	bool bad = ((d < -MAX_DIFF || d > MAX_DIFF) && !overflow); \
-	if (!quiet || bad || overflow) printf("\"%s\" #%d: %05x %+f * %05x %+f = %009llx s%d c%d " \
-		"%05x %05x %d%s new: %05x old: %05x %s\n", \
-		title, run, mulA_s4 & m18, mulA_s4 * s18_f, mulB_s4 & m18, mulB_s4 * s18_f, \
-		prod_s64 & m36, s? 1:0, c? 1:0, \
-		r_m18, ck & m18, d, overflow? "(overflow)":"", r_m18, r_old_m18, \
+	s4_t t = (prod_s64 >> 18); \
+\
+	if (0) if (!quiet || bad || overflow) printf("\"%12s\" #%d: %08x %05x %+.3f * %08x %05x %+.3f = %016llx %09llx(36) %+.3lf [%09llx(36) %+.3lf] t: %08x %08x(18) %+.3f ck: %08x %+.3f %08x %+.3f\n", \
+		title, run, mulA_s4, mulA_s4 & m18, mulA_s4 * s18_f, mulB_s4, mulB_s4 & m18, mulB_s4 * s18_f, \
+		prod_s64, prod_s64 & m36, prod_s64 * s35_f, (-prod_s64) & m36, (-prod_s64) * s35_f, \
+		t, t & m18, t*s18_f, \
+		ck_s4, ck_s4 * s18_f, -ck_s4, -ck_s4 * s18_f); \
+\
+	if (1) if (!quiet || bad || overflow) printf("\"%12s\" #%d: %08x %05x %+f * %08x %05x %+f = %016llx %009llx %+lf s%d c%d " \
+		"%05x %+f %05x %+f %d%s new: %05x old: %05x %s\n", \
+		title, run, mulA_s4, mulA_s4 & m18, mulA_s4 * s18_f, mulB_s4, mulB_s4 & m18, mulB_s4 * s18_f, \
+		prod_s64, prod_s64 & m36, prod_s64 * s35_f, s? 1:0, c? 1:0, \
+		r_m18, r * s18_f, ck_s4 & m18, ck_s4 * s18_f, d, overflow? "(overflow)":"", r_m18, r_old_m18, \
 		bad? "**************************************":""); \
 	if (bad) { printf("BAD ***********************************\n"); exit(0); } \
 	run++; \
@@ -171,7 +192,7 @@ int main()
 		bool s = prod_s64 & b_sign; \
 		bool c = prod_s64 & b_carry; \
 		s4_t r_m18 = CONV_MUL_S36_S18(prod_s64); \
-		s4_t r = EXTS4(r_m18 ,18); \
+		s4_t r = EXTS4(r_m18, 18); \
 		double mulA_f = (double) sin_s4 * s18_f; \
 		double prod_f = mulA_f * mulB_f; \
 		s4_t ck = (s4_t) (prod_f * pow(2, (18-1))); \
@@ -200,6 +221,9 @@ int main()
 	CHECK(!QUIET, "+1 * +1", plus_one, plus_one, plus_one);
 	CHECK(!QUIET, "+1 * -1", plus_one, minus_one, minus_one);
 	CHECK(!QUIET, "-1 * -1", minus_one, minus_one, plus_one);
+	CHECK(!QUIET, "+1/2 * +1/2", plus_one_half, plus_one_half, plus_one_quarter);
+	CHECK(!QUIET, "-1/2 * +1/2", minus_one_half, plus_one_half, minus_one_quarter);
+	CHECK(!QUIET, "+1/2 * +1/2", plus_one_half, plus_one_half, plus_one_quarter);
 	
 	// check mixing of DDS sin output by max gain RF/GEN input: +1 & -1
 	#if 1
@@ -209,7 +233,7 @@ int main()
 	CHECK_SIN(QUIET, "SIN * -1/2", depth, minus_one_half, -0.5);
 	#endif
 	
-	#if 0
+	#if 1
 	long long ii;
 	for (ii=0; ii < 1*B; ii++) {
 	//for (i=0; i < 1000000; i++) {
@@ -225,8 +249,10 @@ int main()
 	}
 	#endif
 
+	u4_t seqA, seqB, last_seq;
+
 	#if 0
-	u4_t seqA, seqB, last_seq = m18;
+	last_seq = m18;
 	for (seqA = 0; seqA <= m18; seqA++) {
 		if ((seqA & 0x3f000) != (last_seq & 0x3f000)) {
 			printf("seqA %05x\n", seqA);
@@ -241,7 +267,7 @@ int main()
 	#endif
 
 	#if 0
-	u4_t seqA, seqB, last_seq = m18;
+	last_seq = m18;
 	for (seqA = 0; seqA <= m18; seqA++) {
 		if ((seqA & 0x3f000) != (last_seq & 0x3f000)) {
 			printf("seqA %05x\n", seqA);

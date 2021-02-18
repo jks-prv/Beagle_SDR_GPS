@@ -48,7 +48,7 @@ module DEMOD (
     reg [10:1] init;
 
     always @ (posedge clk)
-        if (wrReg && op[SET_SAT]) begin
+        if (wrReg & op[SET_SAT]) begin
             {e1b_mode, g2_init, init} <= tos[11:0];
         end
 
@@ -58,7 +58,7 @@ module DEMOD (
     reg cg_en;
 
     always @ (posedge clk)
-        if (wrReg && op[SET_PAUSE])
+        if (wrReg & op[SET_PAUSE])
             cg_en <= 0;
         else if (~cg_en)
             cg_en <= cg_resume;
@@ -98,8 +98,8 @@ module DEMOD (
 	ip_acc_u32b lo_nco (.clk(clk), .sclr(1'b0), .b(lo_rate), .q(lo_phase));
 
     always @ (posedge clk) begin
-        if (wrReg && op[SET_LO_NCO]) lo_rate <= tos;
-        if (wrReg && op[SET_CG_NCO]) cg_rate <= tos;
+        if (wrReg & op[SET_LO_NCO]) lo_rate <= tos;
+        if (wrReg & op[SET_CG_NCO]) cg_rate <= tos;
         if (rst) cg_phase <= 0; else if (cg_en) cg_phase <= cg_sum;
     end
 

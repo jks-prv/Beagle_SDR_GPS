@@ -31,6 +31,8 @@ FILES_EMBED_HTML_F2 = $(subst web/,,$(shell $(FILE_OPTIM) -t3 -u -html $(FILES_E
 EMBED_FOPT_W = $(FILES_EMBED_JS_F) $(FILES_EMBED_JS_NOPKG_F) $(FILES_EMBED_CSS_F1) $(FILES_EMBED_CSS_F2) $(FILES_EMBED_HTML_F)
 EMBED_NW = $(subst web/,,$(FILES_EMBED_MISC)) $(FILES_EMBED_HTML_F2) $(subst web/,,$(FILES_EMBED_JS_NOPKG2)) kiwisdr.min.js.gz kiwisdr.min.css.gz
 
+CLEAN_MIN_GZ += web/kiwisdr.min.js web/kiwisdr.min.js.gz web/kiwisdr.min.css web/kiwisdr.min.css.gz
+
 .PHONY: foptim_files_embed
 foptim_files_embed: foptim_embed web/kiwisdr.min.js web/kiwisdr.min.css
 

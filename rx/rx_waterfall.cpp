@@ -222,7 +222,7 @@ void c2s_waterfall(void *param)
 	float start=-1, _start, cf, aper_param;
 	float samp_wait_us;
 	float off_freq, HZperStart = ui_srate / (WF_WIDTH << MAX_ZOOM);
-	u4_t i_offset;
+	u64_t i_offset;
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
 	int adc_clk_corrections = 0;
@@ -268,10 +268,10 @@ void c2s_waterfall(void *param)
 		if (start >= 0 && adc_clk_corrections != clk.adc_clk_corrections) {
 			adc_clk_corrections = clk.adc_clk_corrections;
 			off_freq = start * HZperStart;
-			i_offset = (u4_t) (s4_t) (off_freq / conn->adc_clock_corrected * pow(2,32));
+			i_offset = (u64_t) (s64_t) (off_freq / conn->adc_clock_corrected * pow(2,48));
 			i_offset = -i_offset;
 			if (wf->isWF)
-			    spi_set(CmdSetWFFreq, rx_chan, i_offset);
+			    spi_set3(CmdSetWFFreq, rx_chan, (i_offset >> 16) & 0xffffffff, i_offset & 0xffff);
 			//printf("WF%d freq updated due to ADC clock correction\n", rx_chan);
 		}
 
@@ -423,16 +423,16 @@ void c2s_waterfall(void *param)
                         off_freq += conn->adc_clock_corrected / (4<<zoom);
                     #endif
                 
-                    i_offset = (u4_t) (s4_t) (off_freq / conn->adc_clock_corrected * pow(2,32));
+			        i_offset = (u64_t) (s64_t) (off_freq / conn->adc_clock_corrected * pow(2,48));
                     i_offset = -i_offset;
 
                     #ifdef WF_INFO
-                    if (!bg) cprintf(conn, "W/F z%d OFFSET %.3f kHz i_offset 0x%08x\n",
+                    if (!bg) cprintf(conn, "W/F z%d OFFSET %.3f kHz i_offset 0x%012llx\n",
                         zoom, off_freq/kHz, i_offset);
                     #endif
                 
                     if (wf->isWF)
-                        spi_set(CmdSetWFFreq, rx_chan, i_offset);
+                        spi_set3(CmdSetWFFreq, rx_chan, (i_offset >> 16) & 0xffffffff, i_offset & 0xffff);
                     //jksd
                     //printf("START s=%d ->s=%d\n", start, wf->start);
                     //wf->prev_start = (wf->start == -1)? start : wf->start;

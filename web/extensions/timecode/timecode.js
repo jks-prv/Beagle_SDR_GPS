@@ -1,5 +1,24 @@
 // Copyright (c) 2017-2019 John Seamons, ZL/KF6VO
 
+//
+// TODO
+//
+// all
+//    For amplitude modes do better auto-inversion detection and restart.
+//    No leap second, UTC correction processing etc.
+//
+// JJY
+//    Add hours, minutes field parity checking.
+//    Minute 15/45: CW ID, year field replaced with service interruption field.
+//
+// RBU/RTZ
+//    Decode second data bit so parity bits can be used.
+//
+// WWVB
+//    Process six-minute sequences.
+//    Do some of the weak signal integration scenarios?
+//
+
 var tc = {
    ext_name:   'timecode',    // NB: must match timecode.c:timecode_ext.name
    first_time: true,
@@ -38,8 +57,9 @@ var tc = {
    pll_bw:     0,
 
    config:     0,
+   // RBU: lsb stronger, RTZ: usb stronger
    sig:        { JJY40:0,  RTZ:1,   WWVBa:2, WWVBp:3, JJY60:4, MSF:5,   RBU:6,   BPCa:7,  BPCss:8, DCF77a:9,   DCF77ss:10, TDF:11,  WWV:12 },
-   freq:       [ 40,       50.1,    60,      60,      60,      60,      66.766,  68.5,    68.5,    77.5,       77.5,       162,     10000.1, ],
+   freq:       [ 40,       50.1,    60,      60,      60,      60,      66.566,  68.5,    68.5,    77.5,       77.5,       162,     10000.1, ],
    pb:         [ 5,        30,      5,       5,       5,       5,       30,      5,       5,       5,          5,          5,       5 ],
    pll_bw_i:   [ 100,      100,     100,     5,       100,     100,     100,     100,     100,     100,        100,        5,       5 ],
    pll_off_i:  [ 500,      500,     500,     0,       500,     500,     500,     500,     500,     500,        500,        0,       100 ],

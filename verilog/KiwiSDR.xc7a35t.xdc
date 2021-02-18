@@ -130,6 +130,7 @@ set_false_path -from [get_ports {BBB_CS_N[0] BBB_CS_N[1]}] -to [get_clocks BBB_S
 # ignore ha_out3/d1 hold violations (on posedge of ha_clk) since d1 is always unchanged
 set_false_path -rise_from [get_clocks BBB_SCLK] -to [get_ports BBB_MISO]
 
+# define async clock domains
 set_clock_groups -asynchronous -group [get_clocks GPS_TCXO] -group [get_clocks ADC_CLKIN]
 set_clock_groups -asynchronous -group [get_clocks ADC_CLKIN] -group [get_clocks GPS_TCXO]
 set_clock_groups -asynchronous -group [get_clocks GPS_TCXO] -group [get_clocks BBB_SCLK]

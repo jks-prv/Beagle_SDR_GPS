@@ -45,7 +45,7 @@ typedef enum { // Embedded CPU commands, order must match 'Commands:' table in .
 #ifdef USE_SDR
     CmdSetRXFreq,
     CmdSetRXNsamps,
-    CmdSetGen,
+    CmdSetGenFreq,
     CmdSetGenAttn,
     CmdGetRX,
     CmdClrRXOvfl,
@@ -104,7 +104,7 @@ static const char *cmds[] = {
 #ifdef USE_SDR
     "CmdSetRXFreq",
     "CmdSetRXNsamps",
-    "CmdSetGen",
+    "CmdSetGenFreq",
     "CmdSetGenAttn",
     "CmdGetRX",
     "CmdClrRXOvfl",

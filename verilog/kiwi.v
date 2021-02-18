@@ -27,7 +27,7 @@
 
 module KiwiSDR (
 
-    input  wire	signed [13:0] ADC_DATA,
+    input  wire	signed [ADC_BITS-1:0] ADC_DATA,
     input  wire	ADC_OVFL,
     input  wire	ADC_CLKIN,
     output wire	ADC_CLKEN,
@@ -102,7 +102,7 @@ module KiwiSDR (
     //////////////////////////////////////////////////////////////////////////
     // clocks
 
-    wire gps_clk, adc_clk, cpu_clk;
+    wire adc_clk, gps_clk, cpu_clk;
     
     IBUFG vcxo_ibufg(.I(ADC_CLKIN), .O(adc_clk));
 	assign ADC_CLKEN = ctrl[CTRL_OSC_EN];
@@ -110,8 +110,7 @@ module KiwiSDR (
     IBUFG tcxo_ibufg(.I(GPS_TCXO), .O(gps_clk));		// 16.368 MHz TCXO
     assign cpu_clk = gps_clk;
 
-
-	reg signed [13:0] reg_adc_data;
+	reg signed [ADC_BITS-1:0] reg_adc_data;
     always @ (posedge adc_clk)
     begin
     	reg_adc_data <= ADC_DATA;
@@ -136,7 +135,7 @@ module KiwiSDR (
     
     always @ (posedge cpu_clk)
     begin
-        if (wrReg2 && op[SET_CTRL]) ctrl <= tos[15:0];
+        if (wrReg & op[SET_CTRL]) ctrl <= tos[15:0];
     end
 
 	assign EWP = ctrl[CTRL_EEPROM_WP];
@@ -148,12 +147,6 @@ module KiwiSDR (
 	assign P9[1] = ctrl[CTRL_UNUSED_OUT];
 	assign P9[3] = ctrl[CTRL_UNUSED_OUT];
 
-`ifdef MEAS_CIC_OUT
-    wire [7:0] cic_out;
-	assign P8[7:0] = cic_out;
-	assign P8[8] = ctrl[CTRL_UNUSED_OUT];
-	assign P8[9] = ctrl[CTRL_UNUSED_OUT];
-`else
 	assign P8[0] = ctrl[CTRL_UNUSED_OUT];
 	assign P8[1] = ctrl[CTRL_UNUSED_OUT];
 	assign P8[2] = ctrl[CTRL_UNUSED_OUT];
@@ -164,7 +157,6 @@ module KiwiSDR (
 	assign P8[7] = ctrl[CTRL_UNUSED_OUT];
 	assign P8[8] = ctrl[CTRL_UNUSED_OUT];
 	assign P8[9] = ctrl[CTRL_UNUSED_OUT];
-`endif
     
 	wire unused_inputs = IF_MAG | P9[2];
 
@@ -191,34 +183,6 @@ module KiwiSDR (
 	
 	wire [47:0] ticks_A;
 	
-`ifdef MEAS_CIC_OUT
-    RECEIVER receiver (
-    	.adc_clk	(adc_clk),
-    	.adc_data	(reg_adc_data),
-
-		// these are all on the cpu_clk
-        .rx_rd_C	(rx_rd),
-        .rx_dout_C	(rx_dout),
-
-        .wf_rd_C	(wf_rd),
-        .wf_dout_C	(wf_dout),
-
-        .ticks_A	(ticks_A),
-        
-		.cpu_clk	(cpu_clk),
-        .ser		(ser[1]),        
-        .tos		(tos),
-        .op			(op),        
-        .rdReg      (rdReg),
-        .rdBit2     (rdBit2),
-        .wrReg2     (wrReg2),
-        .wrEvt2     (wrEvt2),
-        
-        .ctrl       (ctrl),
-        
-        .cic_out    (cic_out)
-    	);
-`else
     RECEIVER receiver (
     	.adc_clk	(adc_clk),
     	.adc_data	(reg_adc_data),
@@ -243,7 +207,6 @@ module KiwiSDR (
         
         .ctrl       (ctrl)
     	);
-`endif
 
 	wire rx_ovfl_C, rx_orst;
 	reg rx_overflow_C;
@@ -263,7 +226,7 @@ module KiwiSDR (
     reg adc_ovfl;
 
     always @ (posedge cpu_clk)
-        if (wrReg && op[SET_CNT_MASK]) cnt_mask <= tos[ADC_OVFL_CTR_BITS-1:0];
+        if (wrReg2 & op[SET_CNT_MASK]) cnt_mask <= tos[ADC_OVFL_CTR_BITS-1:0];
 
     always @ (posedge adc_clk)
     begin
@@ -291,13 +254,13 @@ wire [31:0] wcnt;
 
     always @*
 `ifdef USE_CPU_CTR
-		if (rdReg && op[GET_CPU_CTR0]) par = { cpu_ctr[1][ 7 -:8], cpu_ctr[0][ 7 -:8] }; else
-		if (rdReg && op[GET_CPU_CTR1]) par = { cpu_ctr[1][15 -:8], cpu_ctr[0][15 -:8] }; else
-		if (rdReg && op[GET_CPU_CTR2]) par = { cpu_ctr[1][23 -:8], cpu_ctr[0][23 -:8] }; else
-		if (rdReg && op[GET_CPU_CTR3]) par = { cpu_ctr[1][31 -:8], cpu_ctr[0][31 -:8] }; else
+		if (rdReg & op[GET_CPU_CTR0]) par = { cpu_ctr[1][ 7 -:8], cpu_ctr[0][ 7 -:8] }; else
+		if (rdReg & op[GET_CPU_CTR1]) par = { cpu_ctr[1][15 -:8], cpu_ctr[0][15 -:8] }; else
+		if (rdReg & op[GET_CPU_CTR2]) par = { cpu_ctr[1][23 -:8], cpu_ctr[0][23 -:8] }; else
+		if (rdReg & op[GET_CPU_CTR3]) par = { cpu_ctr[1][31 -:8], cpu_ctr[0][31 -:8] }; else
 `endif
 
-		if (rdReg && op[GET_STATUS]) par = status; else
+		if (rdReg & op[GET_STATUS]) par = status; else
 		par = host_dout;
 	
 
@@ -344,15 +307,15 @@ wire [31:0] wcnt;
 `ifdef USE_CPU_CTR
     reg cpu_ctr_ena;
     wire [31:0] cpu_ctr[1:0];
-    wire sclr = wrEvt2 && op[CPU_CTR_CLR];
+    wire sclr = wrEvt2 & op[CPU_CTR_CLR];
     
 	ip_acc_u32b cpu_ctr0 (.clk(cpu_clk), .sclr(sclr), .b(1), .q(cpu_ctr[0]));
 	ip_acc_u32b cpu_ctr1 (.clk(cpu_clk), .sclr(sclr), .b({{31{1'b0}}, cpu_ctr_ena}), .q(cpu_ctr[1]));
 
 	always @ (posedge cpu_clk)
 	begin
-		if (wrEvt2 && op[CPU_CTR_ENA]) cpu_ctr_ena <= 1;
-		if (wrEvt2 && op[CPU_CTR_DIS]) cpu_ctr_ena <= 0;
+		if (wrEvt2 & op[CPU_CTR_ENA]) cpu_ctr_ena <= 1;
+		if (wrEvt2 & op[CPU_CTR_DIS]) cpu_ctr_ena <= 0;
 	end
 `endif
 
@@ -407,9 +370,9 @@ wire [31:0] wcnt;
 	
     always @ (posedge cpu_clk)
     begin
-        if (rdReg && op[GET_SRQ]) srq_noted <= host_srq;
+        if (rdReg & op[GET_SRQ]) srq_noted <= host_srq;
         else				      srq_noted <= host_srq | srq_noted;
-        if (rdReg && op[GET_SRQ]) srq_out <= srq_noted;
+        if (rdReg & op[GET_SRQ]) srq_out <= srq_noted;
     end
 `endif
 

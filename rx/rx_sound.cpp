@@ -125,7 +125,7 @@ void c2s_sound_init()
 	//evSnd(EC_DUMP, EV_SND, 10000, "rx task", "overrun");
 	
 	if (do_sdr) {
-		spi_set(CmdSetGen, 0, 0);
+		spi_set(CmdSetGenFreq, 0, 0);
 		spi_set(CmdSetGenAttn, 0, 0);
 	}
 }
@@ -489,10 +489,10 @@ void c2s_sound(void *param)
                     if (gen != _gen) {
                         gen = _gen;
                         f_phase = gen * kHz / conn->adc_clock_corrected;
-                        u4_t u4_phase = (u4_t) round(f_phase * pow(2,32));
-                        //printf("sound %d: %s %.3f kHz phase %.3f 0x%08x\n", rx_chan, gen? "GEN_ON":"GEN_OFF", gen, f_phase, u4_phase);
+                        i_phase = (u64_t) round(f_phase * pow(2,48));
+                        //printf("sound %d: %s %.3f kHz phase %.3f 0x%012llx\n", rx_chan, gen? "GEN_ON":"GEN_OFF", gen, f_phase, i_phase);
                         if (do_sdr) {
-                            spi_set(CmdSetGen, 0, u4_phase);
+                            spi_set3(CmdSetGenFreq, rx_chan, (i_phase >> 16) & 0xffffffff, i_phase & 0xffff);
                             ctrl_clr_set(CTRL_USE_GEN, gen? CTRL_USE_GEN:0);
                         }
                         if (rx_chan == 0) g_genfreq = gen * kHz / ui_srate;

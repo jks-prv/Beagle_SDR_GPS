@@ -119,20 +119,24 @@ CmdSetRXFreq:	rdReg	HOST_RX				; rx#
                 B2B_FreezeTOS               ; delay so back-to-back FreezeTOS works
                 rdReg	HOST_RX				; freqL
 				FreezeTOS
-                wrReg2	SET_RX_FREQ_L		;
+                wrReg2	SET_RX_FREQ | FREQ_L
                 ret
 
 CmdClrRXOvfl:
 				wrEvt2	CLR_RX_OVFL
 				ret
 
-CmdSetGen:
+CmdSetGenFreq:
 #if	USE_GEN
-				rdReg	HOST_RX				; wparam
-                RdReg32	HOST_RX				; wparam lparam
+				rdReg	HOST_RX				; rx#   ignored: gen is applied in place of ADC data
+                RdReg32	HOST_RX				; rx# genH
 				FreezeTOS
-                wrReg2	SET_GEN				; wparam
-                drop.r
+                wrReg2	SET_GEN_FREQ        ; rx#
+                B2B_FreezeTOS               ; delay so back-to-back FreezeTOS works
+                rdReg	HOST_RX				; genL
+				FreezeTOS
+                wrReg2	SET_RX_FREQ | FREQ_L ; rx#
+                drop.r                      ;
 #else
                 ret
 #endif
@@ -152,7 +156,7 @@ CmdSetOVMask:
 				rdReg	HOST_RX				; wparam
                 RdReg32	HOST_RX				; wparam lparam
 				FreezeTOS
-                wrReg	SET_CNT_MASK		; wparam
+                wrReg2  SET_CNT_MASK		; wparam
                 drop.r
 
 
@@ -201,9 +205,13 @@ CmdGetWFContSamps:
 
 CmdSetWFFreq:	rdReg	HOST_RX				; wf_chan
 				wrReg2	SET_WF_CHAN			;
-                RdReg32	HOST_RX				; i_offset
+                RdReg32	HOST_RX				; freqH
 				FreezeTOS
                 wrReg2	SET_WF_FREQ			;
+                B2B_FreezeTOS               ; delay so back-to-back FreezeTOS works
+                rdReg	HOST_RX				; freqL
+				FreezeTOS
+                wrReg2	SET_WF_FREQ | FREQ_L
 				ret
 
 CmdSetWFDecim:	

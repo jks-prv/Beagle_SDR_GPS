@@ -164,7 +164,7 @@ static void snd_service()
                     s4_t i, q;
                     i = S24_8_16(iqp->i3, iqp->i);
                     q = S24_8_16(iqp->q3, iqp->q);
-                    
+                
                     // NB: I/Q reversed to get correct sideband polarity; fixme: why?
                     // [probably because mixer NCO polarity is wrong, i.e. cos/sin should really be cos/-sin]
                     i_samps[ch]->re = q * rescale + DC_offset_I;
