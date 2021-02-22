@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.436  February 23, 2021
+    Minor improvements.
+
 v1.435  February 19, 2021
     Signal generator extension working again.
         Still requires admin password (local network exemption applies).

@@ -320,6 +320,24 @@ void update_vars_from_config()
     }
     cfg_string_free(status_msg); status_msg = NULL;
 
+    char *rx_name = (char *) cfg_string("rx_name", NULL, CFG_REQUIRED);
+    // shrinking, so same memory space
+	nsm = kiwi_str_replace(rx_name, ", ZL/KF6VO, New Zealand", "");
+	if (nsm) {
+        cfg_set_string("rx_name", nsm);
+        update_cfg = true;
+    }
+    cfg_string_free(rx_name); rx_name = NULL;
+
+    char *rx_title = (char *) cfg_string("RX_TITLE", NULL, CFG_REQUIRED);
+    // shrinking, so same memory space
+	nsm = kiwi_str_replace(rx_title, " at <a href='http://kiwisdr.com' target='_blank' onclick='dont_toggle_rx_photo()'>ZL/KF6VO</a>", "");
+	if (nsm) {
+        cfg_set_string("RX_TITLE", nsm);
+        update_cfg = true;
+    }
+    cfg_string_free(rx_title); rx_title = NULL;
+
 	if (update_cfg)
 		cfg_save_json(cfg_cfg.json);
 

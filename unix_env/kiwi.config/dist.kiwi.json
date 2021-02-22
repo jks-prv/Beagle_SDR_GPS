@@ -7,7 +7,7 @@
 	"RX_PHOTO_HEIGHT":"350",
 	"RX_PHOTO_TITLE":"KiwiSDR: software-defined receiver",
 	"RX_PHOTO_DESC":"First production PCB",
-	"RX_TITLE":"KiwiSDR: Software-defined receiver at <a href='http://kiwisdr.com' target='_blank' onclick='dont_toggle_rx_photo()'>ZL/KF6VO</a>",
+	"RX_TITLE":"KiwiSDR: Software-defined receiver",
 	"RX_LOC":"Tauranga, New Zealand",
 	"RX_QRA":"RF82ci",
 	"RX_ASL":"30m",
@@ -16,7 +16,7 @@
 "init":{
     "cw_offset":500
 },
-"rx_name":"0-30 MHz SDR, ZL/KF6VO, New Zealand",
+"rx_name":"0-30 MHz SDR",
 "rx_device":"KiwiSDR on BeagleBone",
 "rx_location":"Tauranga, New Zealand",
 "rx_grid":"RF82ci",
