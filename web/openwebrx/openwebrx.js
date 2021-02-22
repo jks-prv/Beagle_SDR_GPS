@@ -5315,7 +5315,7 @@ function mk_bands_scale()
 	
 	// band bars & station labels
 	var tw = band_ctx.canvas.width;
-	var i, x, y=band_scale_top, w, h=band_scale_h, ty=y+band_scale_text_top;
+	var i, x, y=band_scale_top, w, h=band_scale_h, ty=y+band_scale_text_top, foff=cfg.freq_offset * 1000;
 	//console.log("BB fftw="+wf_fft_size+" tw="+tw+" rs="+r.start+" re="+r.end+" bw="+(r.end-r.start));
 	//console.log("BB pixS="+scale_px_from_freq(r.start, g_range)+" pixE="+scale_px_from_freq(r.end, g_range));
 	band_ctx.globalAlpha = 1;
@@ -5325,6 +5325,9 @@ function mk_bands_scale()
 	for (i=0; i < bands.length; i++) {
 		var b = bands[i];
 		if (b.region != "-" && b.region != "*" && b.region.charAt(0) != '>') continue;
+		
+		// if bands[] hasn't been updated for freq offset then don't display
+		if (b.min < foff) break;
 
 		var x1=0, x2;
 		var min_inside = (b.min >= r.start && b.min <= r.end)? 1:0;
