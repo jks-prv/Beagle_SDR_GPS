@@ -876,7 +876,7 @@ endif
 
 V_DIR = ~/shared/shared
 
-ifeq ($(XC),) ## do not copy bit streams from ~/shared/shared when cross-compiling
+ifeq ($(XC),) ## do not copy bit streams from $(V_DIR) when cross-compiling
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 KiwiSDR.rx4.wf4.bit: $(V_DIR)/KiwiSDR.rx4.wf4.bit
@@ -1244,7 +1244,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 copy_to_git:
 	@(echo 'current dir is:'; pwd)
 	@echo
-	@(cd $(GITAPP)/$(REPO_NAME); echo 'repo branch set to:'; pwd; git branch)
+	@(cd $(GITAPP)/$(REPO_NAME); echo 'repo branch set to:'; pwd; git --no-pager branch)
 	@echo '################################'
 #	@echo 'DANGER: #define MINIFY_WEBSITE_DOWN'
 #	@echo '################################'
@@ -1256,7 +1256,7 @@ copy_to_git:
 copy_from_git:
 	@(echo 'current dir is:'; pwd)
 	@echo
-	@(cd $(GITAPP)/$(REPO_NAME); echo 'repo branch set to:'; pwd; git branch)
+	@(cd $(GITAPP)/$(REPO_NAME); echo 'repo branch set to:'; pwd; git --no-pager branch)
 	@echo -n 'are you sure? '
 	@read not_used
 	make clean_dist

@@ -1241,7 +1241,7 @@ function rational_resampler_cc(input, outputI, outputQ, input_size, interpolatio
 {
 	// Theory: http://www.dspguru.com/dsp/faqs/multirate/resampling
 	// oi: output index, i: tap index
-	consoled.log('WARNING rational_resampler_cc() not working yet!');
+	console.log('WARNING rational_resampler_cc() not working yet!');
    return;
 /*
 	input_size /= 2;
