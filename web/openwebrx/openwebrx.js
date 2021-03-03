@@ -6340,7 +6340,7 @@ function smeter_init()
 		sMeter_ctx.fillText(bars.text[i], x, y-15);
 		//console.log("SM x="+x+' dBm='+bars.dBm[i]+' '+bars.text[i]);
 	}
-
+	line_stroke(sMeter_ctx, 0, 2, "black", 0,y-3,w,y-3);
 	line_stroke(sMeter_ctx, 0, 5, "black", 0,y,w,y);
 	setInterval(update_smeter, 100);
 }
@@ -6354,7 +6354,10 @@ function update_smeter()
 	var x = smeter_dBm_biased_to_x(sMeter_dBm_biased);
 	var y = SMETER_SCALE_HEIGHT-8;
 	var w = smeter_width;
+	var x_thr = smeter_dBm_biased_to_x(-thresh);
 	sMeter_ctx.globalAlpha = 1;
+	line_stroke(sMeter_ctx, 0, 2, "white", 0,y-3,w-x_thr,y-3);
+	line_stroke(sMeter_ctx, 0, 2, "black", w-x_thr,y-3,w,y-3);
 	line_stroke(sMeter_ctx, 0, 5, "lime", 0,y,x,y);
 	
 	if (sm_timeout-- == 0) {
