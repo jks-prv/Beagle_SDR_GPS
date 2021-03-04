@@ -226,6 +226,14 @@ void c2s_sound(void *param)
 	int squelch=0, squelch_on_seq=-1, tail_delay=0;
 	bool sq_init, squelched=false;
 	
+	// OVERLOAD stuff marco
+	bool mute_overload = true; // activate the muting when overloaded
+	bool squelched_overload = false; // squelch flag specific for the overloading
+	bool overload_before = false; // were we overloaded in the previous instant?
+	bool overload_flag = false; // are we overloaded now?
+	int overload_timer = -1; // keep track of when we stopped being overloaded to allow a decay
+	float max_thr = -20; // marco: this is the maximum signal in dBm before muting
+
 	gps_timestamp_t *gps_tsp = &gps_ts[rx_chan];
 	memset(gps_tsp, 0, sizeof(gps_timestamp_t));
 
@@ -1192,12 +1200,12 @@ void c2s_sound(void *param)
                 }
             }
             
+            
             if ((squelch || sq_init) && !isNBFM && mode != MODE_DRM) {
                 if (!rssi_filled || squelch_on_seq == -1) {
                     rssi_q[rssi_p++] = sMeter_dBm;
                     if (rssi_p >= N_RSSI) { rssi_p = 0; rssi_filled = true; }
                 }
-                
                 bool squelch_off = (squelch == 0);
                 bool rtn_is_open = squelch_off? true:false;
                 if (!squelch_off && rssi_filled) {
@@ -1207,28 +1215,48 @@ void c2s_sound(void *param)
                     if (is_open) rssi_thresh -= 6;
                     bool rssi_green = (sMeter_dBm >= rssi_thresh);
                     if (rssi_green) {
-                        squelch_on_seq = snd->seq;
+                        squelch_on_seq = snd->seq; // mem time when squelch opened
                         is_open = true;
                     }
                     
                     rtn_is_open = is_open;
                     if (!is_open) rtn_is_open = false; 
                     if (snd->seq > squelch_on_seq + tail_delay) {
-                        squelch_on_seq = -1;
+                        squelch_on_seq = -1; // forget when squelch was opened
                         rtn_is_open = false; 
                     }
-                }
+                    printf("median_nf %f, rssi_thresh %f, is_open %d, rss_green %d, sMeter_dBm %f, seq %d, squelch_on_seq %d, squelch_lev %d\n", median_nf, rssi_thresh, is_open, rssi_green, sMeter_dBm, snd->seq, squelch_on_seq, squelch);
 
+                }
                 if (sq_init) sq_init = false;
                 
-                squelched = !rtn_is_open;
+                squelched = (!rtn_is_open);
+            }
+
+            // mute receiver if overload is detected            
+            if (mute_overload) {
+            	overload_flag = (sMeter_dBm >= max_thr)?true:false;
+            	if (overload_before && !overload_flag) {
+            		if (snd->seq > overload_timer + tail_delay+1) {
+            			overload_timer = -1;
+            			squelched_overload = false;
+            		}
+            		else { 
+            			squelched_overload = true;
+            		}
+            	}
+                if (overload_flag) {
+                	squelched_overload = true;
+                	overload_before = true;
+                	overload_timer = snd->seq;
+                	}
             }
 
             ////////////////////////////////
             // copy to output buffer and send to client
             ////////////////////////////////
             
-            bool send_silence = (masked || squelched);
+            bool send_silence = (masked || squelched || squelched_overload);
     
             // IQ output modes
             if (mode == MODE_IQ || mode == MODE_SAS
