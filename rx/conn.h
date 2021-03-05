@@ -35,9 +35,8 @@ Boston, MA  02110-1301, USA.
 typedef struct conn_st {
 	#define CN_MAGIC 0xcafecafe
 	u4_t magic;
-	struct conn_st *self;
 	int self_idx;
-	bool valid, auth, auth_kiwi, auth_prot, auth_admin, isLocal;
+	bool valid, auth, auth_kiwi, auth_prot, auth_admin, isLocal, force_isLocal;
 	int type;
 	struct conn_st *other;
 	int rx_channel;
@@ -91,6 +90,10 @@ typedef struct conn_st {
 	int ext_rx_chan;
 	ext_t *ext;
 	
+	// set only in STREAM_MONITOR
+	bool queued;
+	bool camp_init, camp_passband;
+
 	// set only in STREAM_ADMIN
 	int log_last_sent, log_last_not_shown;
 	int master_pty_fd, console_child_pid;
@@ -126,9 +129,10 @@ typedef struct conn_st {
 #define STREAM_WATERFALL	3
 #define STREAM_MFG			4
 #define STREAM_EXT			5
-#define AJAX_DISCOVERY		6
-#define AJAX_PHOTO			7
-#define AJAX_STATUS			8
-#define AJAX_USERS			9
+#define STREAM_MONITOR      6
+#define AJAX_DISCOVERY		7
+#define AJAX_PHOTO			8
+#define AJAX_STATUS			9
+#define AJAX_USERS			10
 
 extern conn_t conns[];

@@ -10,6 +10,7 @@ var kiwi = {
    wf_fps: 0,
    inactivity_panel: false,
    is_multi_core: 0,
+   queued: 0,
    
    // must match rx_cmd.cpp
    modes_l: [ 'am', 'amn', 'usb', 'lsb', 'cw', 'cwn', 'nbfm', 'iq', 'drm', 'usn', 'lsn', 'sam', 'sal', 'sau', 'sas' ],
@@ -222,6 +223,12 @@ function kiwi_load_js(js_files, cb_post, cb_pre)
 }
 
 
+function kiwi_ask_pwd_cb(path, val, first)
+{
+	//console.log('kiwi_ask_pwd_cb: path='+ path +' '+ typeof(val) +' "'+ val +'" first='+ first);
+   ext_valpwd(conn_type, val);
+}
+
 function kiwi_ask_pwd(conn_kiwi)
 {
 	console.log('kiwi_ask_pwd chan_no_pwd='+ chan_no_pwd +' client_public_ip='+ client_public_ip);
@@ -231,14 +238,10 @@ function kiwi_ask_pwd(conn_kiwi)
 	// "&& conn_kiwi" to ignore pathological "/admin?prot" etc.
    var prot = (kiwi_url_param(['p', 'prot', 'protected'], true, false) && conn_kiwi);
 	if (prot) s1 = 'You have requested a password protected channel<br>';
-	var s = "KiwiSDR: software-defined receiver <br>"+ s1 +
-		"<form name='pform' style='display:inline-block' action='#' onsubmit='ext_valpwd(\""+ conn_type +"\", this.pwd.value); return false;'>"+
-			try_again +
-			w3_input('w3-label-inline w3-label-not-bold/kiwi-pw|padding:1px|name="pwd" size=40 onclick="this.focus(); this.select()"', 'Password:') +
-		"</form>";
+	var s = "KiwiSDR: software-defined receiver <br>"+ s1 + try_again +
+      w3_input('w3-retain-input-focus w3-label-inline w3-label-not-bold/w3-margin-T-4 kiwi-pw|padding:1px|size=40', 'Password:', 'id-pwd', '', 'kiwi_ask_pwd_cb');
 	kiwi_show_msg(s);
-	document.pform.pwd.focus();
-	document.pform.pwd.select();
+	w3_field_select('id-pwd', {mobile:1});
 }
 
 var body_loaded = false;
@@ -1154,16 +1157,19 @@ function kiwi_ip_limit_pwd_cb(pwd)
    window.location.reload(true);
 }
 
+function kiwi_show_error_ask_exemption_cb(path, val, first)
+{
+	//console.log('kiwi_show_error_ask_exemption_cb: path='+ path +' '+ typeof(val) +' "'+ val +'" first='+ first);
+   kiwi_ip_limit_pwd_cb(val);
+}
+
 function kiwi_show_error_ask_exemption(s)
 {
    s += '<br><br>If you have an exemption password from the KiwiSDR owner/admin <br> please enter it here: ' +
-      '<form name="pform" style="display:inline-block" action="#" onsubmit="kiwi_ip_limit_pwd_cb(this.pinput.value); return false">' +
-			w3_input('w3-label-inline w3-label-not-bold/kiwi-pw|padding:1px|name="pinput" size=40 onclick="this.focus(); this.select()"', 'Password:') +
-      '</form>';
-
+      w3_input('w3-retain-input-focus w3-label-inline w3-label-not-bold/w3-margin-T-4 kiwi-pw|padding:1px|size=40',
+         'Password:', 'id-epwd', '', 'kiwi_show_error_ask_exemption_cb');
 	kiwi_show_msg(s);
-	document.pform.pinput.focus();
-	document.pform.pinput.select();
+	w3_field_select('id-epwd', {mobile:1});
 }
 
 function kiwi_inactivity_timeout(mins)
@@ -1427,13 +1433,17 @@ function update_cb(fs_full, pending, in_progress, rx_chans, gps_chans, vmaj, vmi
 var users_interval = 2500;
 var user_init = false;
 
-function users_init(called_from_admin)
+function users_init(called_from)
 {
-	console.log("users_init #rx="+ rx_chans);
+	kiwi.called_from_admin = called_from.admin;
+	kiwi.called_from_user = called_from.user;
+	kiwi.called_from_monitor = called_from.monitor;
+
+	var id_prefix = kiwi.called_from_admin? 'id-admin-user-' : 'id-user-';
 	for (var i=0; i < rx_chans; i++) {
 	   divlog(
-	      'RX'+ i +': <span id="id-user-'+ i +'"></span> ' +
-	      (called_from_admin?
+	      'RX'+ i +': <span id='+ dq(id_prefix + i) +'></span> ' +
+	      (kiwi.called_from_admin?
 	         w3_button('id-user-kick-'+ i +' w3-small w3-white w3-border w3-border-red w3-round-large w3-padding-0 w3-padding-LR-8',
 	            'Kick', 'status_user_kick_cb', i)
 	         : ''
@@ -1454,6 +1464,9 @@ function users_update()
 
 function user_cb(obj)
 {
+	var id_prefix = kiwi.called_from_admin? 'id-admin-user-' : 'id-user-';
+	var host = kiwi_url_origin();
+
 	obj.forEach(function(obj) {
 		//console.log(obj);
 		var s1 = '', s2 = '';
@@ -1499,16 +1512,26 @@ function user_cb(obj)
 			var f = (f/1000).toFixed((f > 100e6)? 1:2);
 			var f_s = f + ' kHz ';
 			var fo = (freq/1000).toFixed(2);
-			var anchor = '<a href="javascript:tune('+ fo +','+ sq(mode) +','+ zoom +');">';
+
+			var link, target;
+		   if (kiwi.called_from_admin) {
+			   link = host +'/?f='+ fo + mode +'z'+ zoom;
+			   target = ' target="_blank"';
+			} else {
+			   var ch = kiwi.called_from_monitor? (i+',') : '';
+			   link = 'javascript:'+ (kiwi.called_from_user? 'tune':'camp') +'('+ ch + fo +','+ sq(mode) +','+ zoom +')';
+			   target = '';
+			}
+
 			if (ext != '') ext = decodeURIComponent(ext) +' ';
 			s1 = id + g;
-			s2 = anchor + f_s + mode +' z'+ zoom +'</a> '+ ext + connected + remaining;
+			s2 = '<a href='+ dq(link) + target +'>' + f_s + mode +' z'+ zoom +'</a> '+ ext + connected + remaining;
 		}
 		
 		//if (s1 != '') console.log('user'+ i +'='+ s1 + s2);
 		if (user_init) {
 		   // status display used by admin page
-		   w3_innerHTML('id-user-'+ i, s1 + s2);
+		   w3_innerHTML(id_prefix + i, s1 + s2);
 		   var kick = 'id-user-kick-'+ i;
 	      if (w3_el(kick)) {
             if (s1 != '')
@@ -1799,7 +1822,7 @@ function kiwi_msg(param, ws)
       var el = w3_el('id-button-drm');
       if (el && kiwi.is_multi_core) {
          w3_remove(el, 'class-button-disbled');
-         w3_attribute(el, 'onclick', 'mode_button(event, this)');
+         w3_create_attribute(el, 'onclick', 'mode_button(event, this)');
       }
       */
 		case "is_multi_core":
@@ -1816,6 +1839,10 @@ function kiwi_msg(param, ws)
 
 		case "too_busy":
 			kiwi_too_busy(parseInt(param[1]));
+			break;
+
+		case "monitor":
+			kiwi_monitor();
 			break;
 
 		case "exclusive_use":
