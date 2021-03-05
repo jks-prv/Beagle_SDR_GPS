@@ -81,24 +81,28 @@ function config_html()
 				   'there will be more spurs in the 30-32 MHz range.'
 				)
 			),
-			w3_divs('w3-restart/w3-center w3-tspace-8',
-				w3_select_get_param('', 'SPI clock', '', 'SPI_clock', SPI_clock_i, 'admin_select_cb', 0),
-				w3_div('w3-text-black',
-					'Set to 24 MHz to reduce interference <br> on 2 meters (144-148 MHz).'
-				)
-			)
+			''
 		) +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_input_get('', 'S-meter calibration (dB)', 'S_meter_cal', 'admin_int_cb'),
 			w3_divs('/w3-center',
-            w3_slider('id-S_meter_OV_counts//', 'S-meter OV', 'cfg.S_meter_OV_counts', cfg.S_meter_OV_counts, 0, 15, 1, 'config_OV_counts_cb'),
+            w3_slider('', 'S-meter OV', 'cfg.S_meter_OV_counts', cfg.S_meter_OV_counts, 0, 15, 1, 'config_OV_counts_cb'),
             w3_text('w3-text-black',
                'Increase if S-meter OV is flashing excessively.'
             )
          ),
-			w3_input_get('', 'Waterfall calibration (dB)', 'waterfall_cal', 'admin_int_cb')
+			w3_divs('/w3-center',
+            w3_slider('', 'Passband overload mute', 'cfg.overload_mute', cfg.overload_mute, -33, 0, 1, 'overload_mute_cb'),
+            w3_text('w3-text-black',
+               'When the signal level in the passband exceeds this level <br>' +
+               'the audio will be muted. The icon '+ w3_icon('|padding:0 3px;', 'fa-exclamation-triangle', 20, 'yellow|#575757') +' will replace the <br>' +
+               'mute icon in the control panel. Useful for muting when <br>' +
+               'a strong nearby transmitter is active.'
+            )
+         )
 		) +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
+			w3_input_get('', 'Waterfall calibration (dB)', 'waterfall_cal', 'admin_int_cb'),
 			w3_div('w3-center w3-tspace-8',
 				w3_select('', 'ITU region', '', 'init.ITU_region', init_ITU_region, ITU_region_i, 'admin_select_cb'),
 				w3_div('w3-text-black',
@@ -107,16 +111,28 @@ function config_html()
 			),
 			w3_div('w3-center w3-tspace-8',
 				w3_select('', 'Initial AM BCB channel spacing', '', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'admin_select_cb')
+			)
+		);
+
+	var s3 =
+		'<hr>' +
+		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
+			w3_divs('w3-restart/w3-center w3-tspace-8',
+				w3_select_get_param('', 'SPI clock', '', 'SPI_clock', SPI_clock_i, 'admin_select_cb', 0),
+				w3_div('w3-text-black',
+					'Set to 24 MHz to reduce interference <br> on 2 meters (144-148 MHz).'
+				)
 			),
 			w3_divs('w3-restart/w3-center w3-tspace-8',
 				w3_select_get_param('', 'Status LED brightness', '', 'led_brightness', led_brightness_i, 'admin_select_cb', 0),
 				w3_div('w3-text-black',
 					'Sets brightness of the 4 LEDs <br> that show status info.'
 				)
-			)
+			),
+			''
 		);
 
-   var s3 =
+   var s4 =
 		'<hr>' +
       w3_div('w3-valign w3-container w3-section',
          '<header class="w3-container w3-yellow"><h6>' +
@@ -141,7 +157,7 @@ function config_html()
 
    // FIXME: this should really be in a tab defined by admin.js
    // but don't move it without leaving an explanation since old forum posts may refer to it as being here
-   var s4 =
+   var s5 =
 		'<hr>' +
       w3_div('w3-valign w3-container w3-section',
          '<header class="w3-container w3-yellow"><h6>' +
@@ -203,14 +219,14 @@ function config_html()
          )
       );
 
-   var s5 = '<hr>';
+   var s6 = '<hr>';
    
    var mode_20kHz = (adm.firmware_sel == kiwi.RX3_WF3)? 1 : 0;
    console.log('mode_20kHz='+ mode_20kHz);
    var DC_offset_I = 'DC_offset'+ (mode_20kHz? '_20kHz':'') +'_I';
    var DC_offset_Q = 'DC_offset'+ (mode_20kHz? '_20kHz':'') +'_Q';
 
-   if (dbgUs) s5 = s5 +
+   if (dbgUs) s6 = s6 +
 		w3_div('w3-section w3-text-teal w3-bold', 'Development settings') +
 		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
 			w3_input_get('', 'I balance (DC offset)', DC_offset_I, 'admin_float_cb'),
@@ -232,7 +248,7 @@ function config_html()
 		) +
 		'<hr>';
 
-	return w3_div('id-config w3-hide', s1 + s2 + s3 + s4 + s5);
+	return w3_div('id-config w3-hide', s1 + s2 + s3 + s4 + s5 + s6);
 }
 
 function config_wfmin_cb(path, val, first)
@@ -267,6 +283,16 @@ function config_OV_counts_cb(path, val, complete, first)
 	admin_int_cb(path, val);
 	w3_set_label('S-meter OV if &ge; '+ ov_counts +' ADC OV per 64k samples', path);
 	ext_send('SET ov_counts='+ ov_counts);
+}
+
+function overload_mute_cb(path, val, complete, first)
+{
+   //console.log('overload_mute_cb path='+ path +' val='+ val);
+   val = +val;
+	admin_int_cb(path, val);
+	var s = 'Passband overload mute '+ val +' dBm';
+	if (val >= -73) s += ' (S9+'+ (val - -73) +')';
+	w3_set_label(s, path);
 }
 
 function config_clone_cb(id, idx)
@@ -613,7 +639,7 @@ function webpage_int_cb(path, val)
 // public
 ////////////////////////////////
 
-function sdr_hu_html()
+function kiwi_reg_html()
 {
 	var s1 =
 		w3_div('w3-tspace-16',
@@ -629,13 +655,6 @@ function sdr_hu_html()
             'edit the fields below and set the register switch to <b>Yes</b>.<br>' +
             'Look for a successful status result after a few minutes.<br>' +
 
-            /*
-            '<br>To list your Kiwi on <a href="https://sdr.hu" target="_blank">sdr.hu</a> ' +
-            'edit the fields below and ' +
-            'obtain an API key from <a href="https://sdr.hu/register" target="_blank">sdr.hu/register</a> ' +
-            'and enter it into the <b>API key</b> field.<br>' +
-            'Then set the register switch to <b>Yes</b> and look for a status result of "SUCCESS ..." after a few minutes.' +
-            */
             '</h5></header>'
          )
       ) +
