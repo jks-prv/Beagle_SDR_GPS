@@ -180,23 +180,9 @@ char *rx_server_ajax(struct mg_connection *mc)
 		break;
 
 	// SECURITY:
-	//	OKAY, used by sdr.hu, kiwisdr.com and Priyom Pavlova at the moment
+	//	OKAY, used by kiwisdr.com and Priyom Pavlova at the moment
 	//	Returns '\n' delimited keyword=value pairs
 	case AJAX_STATUS: {
-		#if 0
-			int sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
-		
-			// If sdr.hu registration is off then don't reply to sdr.hu, but reply to others.
-			// But don't reply to anyone until net.ips_sdr_hu is valid.
-			if (!sdr_hu_reg && (!net.ips_sdr_hu.valid || ip_match(remote_ip, &net.ips_sdr_hu))) {
-				if (sdr_hu_debug)
-					printf("/status: sdr.hu reg disabled, not replying to sdr.hu (%s)\n", remote_ip);
-				return (char *) -1;
-			}
-			if (sdr_hu_debug)
-				printf("/status: replying to %s\n", remote_ip);
-		#endif
-		
 		const char *s1, *s3, *s4, *s5, *s6, *s7;
 		
 		// if location hasn't been changed from the default try using ipinfo lat/log
@@ -245,7 +231,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		}
 		
 		// if this Kiwi doesn't have any open access (no password required)
-		// prevent it from being listed on sdr.hu
+		// prevent it from being listed
 		const char *pwd_s = admcfg_string("user_password", NULL, CFG_REQUIRED);
 		int chan_no_pwd = cfg_int("chan_no_pwd", NULL, CFG_REQUIRED);
 		if (chan_no_pwd >= rx_chans) chan_no_pwd = rx_chans - 1;
@@ -256,22 +242,22 @@ char *rx_server_ajax(struct mg_connection *mc)
 		bool no_open_access = (pwd_s != NULL && *pwd_s != '\0' && chan_no_pwd == 0);
 		//printf("STATUS user_pwd=%d chan_no_pwd=%d no_open_access=%d\n", *pwd_s != '\0', chan_no_pwd, no_open_access);
 
+        bool kiwisdr_com_reg = (admcfg_bool("kiwisdr_com_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
+
 		// Advertise whether Kiwi can be publicly listed,
 		// and is available for use
 		//
-		// sdr_hu_reg:	returned status values:
+		// kiwisdr_com_reg:	returned status values:
 		//		no		private
 		//		yes		active, offline
 		
 		bool offline = (down || update_in_progress || backup_in_progress);
 		const char *status;
 
-		#if 0
-			if (!sdr_hu_reg)
-				// Make sure to always keep set to private when private
-				status = "private";
-			else
-		#endif
+		if (!kiwisdr_com_reg)
+			// Make sure to always keep set to private when private
+			status = "private";
+		else
 		if (offline)
 			status = "offline";
 		else
@@ -327,7 +313,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			have_ant_switch_ext?			" ⁣ 📶 ANT-SWITCH" : "",
 
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
-			(float) sdr_hu_lo_kHz * kHz, (float) sdr_hu_hi_kHz * kHz,
+			(float) kiwi_reg_lo_kHz * kHz, (float) kiwi_reg_hi_kHz * kHz,
 			users, users_max, avatar_ctime,
 			gps_loc, gps.good, gps.fixes, gps.fixes_min, gps.fixes_hour,
 			(s7 = cfg_string("tdoa_id", NULL, CFG_OPTIONAL)), tdoa_ch,

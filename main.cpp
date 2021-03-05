@@ -70,7 +70,7 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 
 u4_t ov_mask, snd_intr_usec;
 
-bool create_eeprom, need_hardware, sdr_hu_debug, have_ant_switch_ext, gps_e1b_only,
+bool create_eeprom, need_hardware, kiwi_reg_debug, have_ant_switch_ext, gps_e1b_only,
     disable_led_task, is_multi_core, kiwi_restart, debug_printfs;
 
 char **main_argv;
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
 	printf_init();
 
 	for (i=1; i<argc; ) {
-		if (strcmp(argv[i], "-sdr_hu")==0) sdr_hu_debug = TRUE;
+		if (strcmp(argv[i], "-kiwi_reg")==0) kiwi_reg_debug = TRUE;
 		if (strcmp(argv[i], "-bg")==0) { background_mode = TRUE; bg=1; }
 		if (strcmp(argv[i], "-fopt")==0) use_foptim = 1;    // in EDATA_DEVEL mode use foptim version of files
 		if (strcmp(argv[i], "-down")==0) down = 1;

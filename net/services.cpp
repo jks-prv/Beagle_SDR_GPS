@@ -204,9 +204,9 @@ static void misc_NET(void *param)
 
     // reverse proxy
 	system("killall -q frpc");
-	int sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
-	bool proxy = (sdr_hu_dom_sel == DOM_SEL_REV);
-	lprintf("PROXY: %s dom_sel_menu=%d\n", proxy? "YES":"NO", sdr_hu_dom_sel);
+	int dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
+	bool proxy = (dom_sel == DOM_SEL_REV);
+	lprintf("PROXY: %s dom_sel_menu=%d\n", proxy? "YES":"NO", dom_sel);
 	
 	if (proxy) {
 		lprintf("PROXY: starting frpc\n");
@@ -272,16 +272,15 @@ static void misc_NET(void *param)
         }
 
         bool kiwisdr_com_reg = (admcfg_bool("kiwisdr_com_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
-        bool sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
 
-        if (kiwisdr_com_reg || sdr_hu_reg) {
+        if (kiwisdr_com_reg) {
             const char *server_url;
             server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
             // proxy always uses port 8073
-            int sdr_hu_dom_sel;
-            sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
+            int dom_sel;
+            dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
             int server_port;
-            server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : net.port_ext;
+            server_port = (dom_sel == DOM_SEL_REV)? 8073 : net.port_ext;
             asprintf(&cmd_p2, "1&url=http://%s:%d", server_url, server_port);
             cfg_string_free(server_url);
         } else {
@@ -530,7 +529,6 @@ static void pvt_NET(void *param)
         system("echo nameserver 1.1.1.1 >>/etc/resolv.conf");
     }
 
-    //DNS_lookup("sdr.hu", &net.ips_sdr_hu, N_IPS, SDR_HU_PUBLIC_IP);
     DNS_lookup("kiwisdr.com", &net.ips_kiwisdr_com, N_IPS, KIWISDR_COM_PUBLIC_IP);
 
 	for (retry = 0; true; retry++) {
@@ -615,12 +613,11 @@ static void pub_NET(void *param)
 	
     #ifdef USER_PREFS
         bool kiwisdr_com_reg = (admcfg_bool("kiwisdr_com_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
-        bool sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);
         n = DNS_lookup("public.kiwisdr.com", &net.pub_ips, N_IPS, KIWISDR_COM_PUBLIC_IP);
         lprintf("SERVER-POOL: %d ip addresses for public.kiwisdr.com\n", n);
         for (i = 0; i < n; i++) {
             lprintf("SERVER-POOL: #%d %s\n", i+1, net.pub_ips.ip_list[i]);
-            if (net.pub_valid && strcmp(net.ip_pub, net.pub_ips.ip_list[i]) == 0 && net.port_ext == 8073 && (kiwisdr_com_reg || sdr_hu_reg))
+            if (net.pub_valid && strcmp(net.ip_pub, net.pub_ips.ip_list[i]) == 0 && net.port_ext == 8073 && kiwisdr_com_reg)
                 net.pub_server = true;
         }
         if (net.pub_server)
@@ -665,8 +662,8 @@ static void git_commits(void *param)
 
 /*
     // task
-    reg_SDR_hu()
-        status = non_blocking_cmd_func_forall(cmd, _reg_SDR_hu)
+    reg_kiwi()
+        status = non_blocking_cmd_func_forall(cmd, _reg_kiwi)
 		    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status)))
 		        retrytime_mins = exit_status;
 
@@ -678,7 +675,7 @@ static void git_commits(void *param)
             // child
             func() -> _non_blocking_cmd_forall(cmd, func)
                 result = popen(cmd)
-                rv = func(result) -> _reg_SDR_hu(result)
+                rv = func(result) -> _reg_kiwi(result)
                                         if (result) ...
                 child_exit(rv)
     
@@ -689,111 +686,6 @@ static void git_commits(void *param)
 */
 
 // routine that processes the output of the registration wget command
-
-/*
-#define RETRYTIME_WORKED	20
-#define RETRYTIME_FAIL		2
-
-static int _reg_SDR_hu(void *param)
-{
-	nbcmd_args_t *args = (nbcmd_args_t *) param;
-	char *sp = kstr_sp(args->kstr), *sp2, *sp3;
-	int retrytime_mins = args->func_param;
-
-	if (sp == NULL) {
-		lprintf("sdr.hu registration: DOWN\n");
-        retrytime_mins = RETRYTIME_FAIL;
-	} else {
-        if ((sp2 = strstr(sp, "UPDATE:")) != 0) {
-            sp2 += 7;
-            
-            if ((sp3 = strchr(sp2, '\n')) != NULL)
-                *sp3 = '\0';
-            else
-            if ((sp3 = strchr(sp2, '<')) != NULL)
-                *sp3 = '\0';
-            
-            if (strncmp(sp2, "SUCCESS", 7) == 0) {
-                if (retrytime_mins != RETRYTIME_WORKED || sdr_hu_debug)
-                    lprintf("sdr.hu registration: WORKED\n");
-                retrytime_mins = RETRYTIME_WORKED;
-            } else {
-                lprintf("sdr.hu registration: \"%s\"\n", sp2);
-                retrytime_mins = RETRYTIME_FAIL;
-            }
-        } else {
-            lprintf("sdr.hu registration: FAILED <%.64s>\n", sp);
-            retrytime_mins = RETRYTIME_FAIL;
-        }
-        
-        // pass sdr.hu reply message back to parent task
-        //printf("SET sdr_hu_status %d [%s]\n", strlen(sp2), sp2);
-        kiwi_strncpy(shmem->status_str_large, sp2, N_SHMEM_STATUS_STR_LARGE);
-    }
-	
-	return retrytime_mins;
-}
-
-static void reg_SDR_hu(void *param)
-{
-	char *cmd_p;
-	int retrytime_mins = RETRYTIME_FAIL;
-	
-    char *sdr_hu = DNS_lookup_result("reg_SDR_hu", "sdr.hu", &net.ips_sdr_hu);
-
-	while (1) {
-        const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
-        const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
-
-        if (server_url == NULL || api_key == NULL) return;
-        //char *server_enc = kiwi_str_encode((char *) server_url);
-        
-        // proxy always uses port 8073
-	    int sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
-        int server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : net.port_ext;
-        
-        // registration must be sent from proxy server if proxying so sdr.hu ip-address/url-address check will work
-        
-        // use "--inet4-only" because if sdr.hu receives an ipv6 registration packet it doesn't match
-        // against a possible ipv6 domain record ("AAAA") if it exists.
-        
-        if (sdr_hu_dom_sel == DOM_SEL_REV) {
-            const char *proxy_server = admcfg_string("proxy_server", NULL, CFG_REQUIRED);
-            asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- \"http://%s?url=http://%s:%d&apikey=%s\" 2>&1",
-			    proxy_server, server_url, server_port, api_key);
-            admcfg_string_free(proxy_server);
-		} else {
-            asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- https://%s/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
-			    sdr_hu, server_url, server_port, api_key);
-		}
-        //free(server_enc);
-        cfg_string_free(server_url);
-        admcfg_string_free(api_key);
-
-		bool server_enabled = (!down && admcfg_bool("server_enabled", NULL, CFG_REQUIRED) == true);
-        bool sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);
-
-        if (server_enabled && sdr_hu_reg) {
-            if (sdr_hu_debug)
-                printf("%s\n", cmd_p);
-
-		    int status = non_blocking_cmd_func_forall("kiwi.register", cmd_p, _reg_SDR_hu, retrytime_mins, POLL_MSEC(1000));
-		    int exit_status;
-		    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
-		        retrytime_mins = exit_status;
-                if (sdr_hu_debug)
-		            printf("reg_SDR_hu retrytime_mins=%d\n", retrytime_mins);
-		    }
-		} else {
-		    retrytime_mins = RETRYTIME_FAIL;    // check frequently for registration to be re-enabled
-		}
-		
-	    free(cmd_p);
-
-		TaskSleepSec(MINUTES_TO_SEC(retrytime_mins));
-	}
-}
-*/
 
 #define RETRYTIME_KIWISDR_COM		30
 //#define RETRYTIME_KIWISDR_COM		1
@@ -844,12 +736,12 @@ static void reg_kiwisdr_com(void *param)
         int add_nat = (admcfg_bool("auto_add_nat", NULL, CFG_OPTIONAL) == true)? 1:0;
         //char *server_enc = kiwi_str_encode((char *) server_url);
 
-        bool sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);
+        bool kiwisdr_com_reg = (admcfg_bool("kiwisdr_com_register", NULL, CFG_OPTIONAL) == true);
 
         // proxy always uses port 8073
-	    int sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
-        int server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : net.port_ext;
-        int dom_stat = (sdr_hu_dom_sel == DOM_SEL_REV)? net.proxy_status : (DUC_enable_start? net.DUC_status : -1);
+	    int dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
+        int server_port = (dom_sel == DOM_SEL_REV)? 8073 : net.port_ext;
+        int dom_stat = (dom_sel == DOM_SEL_REV)? net.proxy_status : (DUC_enable_start? net.DUC_status : -1);
 
 	    // done here because updating timer_sec() is sent
         asprintf(&cmd_p, "wget --timeout=30 --tries=2 --inet4-only -qO- "
@@ -857,14 +749,13 @@ static void reg_kiwisdr_com(void *param)
             "&dom=%d&dom_stat=%d&serno=%d&dna=%08x%08x&sdr_hu=%d&pvt=%s&pub=%s&up=%d\" 2>&1",
             kiwisdr_com, server_url, server_port, api_key, net.mac,
             email, add_nat, version_maj, version_min, debian_maj, debian_min,
-            sdr_hu_dom_sel, dom_stat, net.serno, PRINTF_U64_ARG(net.dna), sdr_hu_reg? 1:0,
+            dom_sel, dom_stat, net.serno, PRINTF_U64_ARG(net.dna), kiwisdr_com_reg? 1:0,
             net.pvt_valid? net.ip_pvt : "not_valid", net.pub_valid? net.ip_pub : "not_valid", timer_sec());
     
 		bool server_enabled = (!down && admcfg_bool("server_enabled", NULL, CFG_REQUIRED) == true);
-        bool kiwisdr_com_reg = (admcfg_bool("kiwisdr_com_register", NULL, CFG_REQUIRED) == true);
 
         if (server_enabled && kiwisdr_com_reg) {
-            if (sdr_hu_debug)
+            if (kiwi_reg_debug)
                 printf("%s\n", cmd_p);
 
             retrytime_mins = RETRYTIME_KIWISDR_COM;
@@ -872,7 +763,7 @@ static void reg_kiwisdr_com(void *param)
 		    if (WIFEXITED(status)) {
 		        int exit_status = WEXITSTATUS(status);
                 reg_kiwisdr_com_status = exit_status? exit_status : 1;      // for now just indicate that it completed
-                if (sdr_hu_debug) {
+                if (kiwi_reg_debug) {
                     printf("reg_kiwisdr_com reg_kiwisdr_com_status=0x%x\n", reg_kiwisdr_com_status);
                 }
                 if (exit_status == 42) {
@@ -903,7 +794,7 @@ static void reg_kiwisdr_com(void *param)
         admcfg_string_free(api_key);
         free(email);
         
-        if (sdr_hu_debug) printf("reg_kiwisdr_com TaskSleepSec(min=%d)\n", retrytime_mins);
+        if (kiwi_reg_debug) printf("reg_kiwisdr_com TaskSleepSec(min=%d)\n", retrytime_mins);
 		TaskSleepSec(MINUTES_TO_SEC(retrytime_mins));
 	}
 }
@@ -927,7 +818,6 @@ void services_start()
         CreateTask(led_task, NULL, ADMIN_PRIORITY);
 
 	if (!alt_port) {
-		//CreateTask(reg_SDR_hu, 0, SERVICES_PRIORITY);
 		reg_kiwisdr_com_tid = CreateTask(reg_kiwisdr_com, 0, SERVICES_PRIORITY);
         ip_blacklist_init();
 	}

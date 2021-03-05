@@ -46,8 +46,8 @@ Boston, MA  02110-1301, USA.
 extern int version_maj, version_min;
 
 extern bool background_mode, need_hardware, is_multi_core, kiwi_restart,
-	DUC_enable_start, rev_enable_start, web_nocache, auth_su, sdr_hu_debug,
-	have_ant_switch_ext, gps_e1b_only, disable_led_task, conn_nolocal, debug_printfs;
+	DUC_enable_start, rev_enable_start, web_nocache, auth_su, kiwi_reg_debug,
+	have_ant_switch_ext, gps_e1b_only, disable_led_task, debug_printfs, force_camp;
 
 extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_start, tone, down, navg,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, meas,
@@ -55,13 +55,13 @@ extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_s
 	spi_delay, do_fft, noisePwr, unwrap, rev_iq, ineg, qneg, fft_file, fftsize, fftuse, bg, alt_port,
 	port, print_stats, ecpu_cmds, ecpu_tcmds, serial_number, ip_limit_mins, is_locked, test_flag,
 	use_spidev, inactivity_timeout_mins, S_meter_cal, waterfall_cal, current_nusers, debug_v, debian_ver, drm_nreg_chans,
-	utc_offset, dst_offset, reg_kiwisdr_com_status, reg_kiwisdr_com_tid, sdr_hu_lo_kHz, sdr_hu_hi_kHz,
+	utc_offset, dst_offset, reg_kiwisdr_com_status, reg_kiwisdr_com_tid, kiwi_reg_lo_kHz, kiwi_reg_hi_kHz,
 	debian_maj, debian_min, gps_debug, gps_var, gps_lo_gain, gps_cg_gain, use_foptim, web_caching_debug;
 
 extern char **main_argv;
 
 extern u4_t ov_mask, snd_intr_usec;
-extern float g_genfreq, g_genampl, g_mixfreq;
+extern float g_genfreq, g_genampl, g_mixfreq, max_thr;
 extern double ui_srate, freq_offset;
 extern TYPEREAL DC_offset_I, DC_offset_Q;
 extern kstr_t *cpu_stats_buf;
@@ -86,7 +86,7 @@ typedef enum {
 } mode_e;
 
 
-typedef enum { DOM_SEL_NAM=0, DOM_SEL_DUC=1, DOM_SEL_PUB=2, DOM_SEL_SIP=3, DOM_SEL_REV=4 } sdr_hu_dom_sel_e;
+typedef enum { DOM_SEL_NAM=0, DOM_SEL_DUC=1, DOM_SEL_PUB=2, DOM_SEL_SIP=3, DOM_SEL_REV=4 } dom_sel_e;
 
 typedef enum { RX4_WF4=0, RX8_WF2=1, RX3_WF3=2, RX14_WF0=3 } firmware_e;
 
@@ -113,6 +113,9 @@ void c2s_waterfall_compression(int rx_chan, bool compression);
 void c2s_waterfall_setup(void *param);
 void c2s_waterfall(void *param);
 void c2s_waterfall_shutdown(void *param);
+
+void c2s_mon_setup(void *param);
+void c2s_mon(void *param);
 
 void c2s_admin_setup(void *param);
 void c2s_admin_shutdown(void *param);

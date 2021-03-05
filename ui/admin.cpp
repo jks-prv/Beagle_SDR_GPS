@@ -561,8 +561,6 @@ void c2s_admin(void *param)
 		            reg_kiwisdr_com_status = 0;
                 }
 
-				//sb = kstr_asprintf(NULL, "{\"kiwisdr_com\":%d,\"sdr_hu\":\"%s\"",
-				//    reg_kiwisdr_com_status, shmem->status_str_large);
 				sb = kstr_asprintf(NULL, "{\"kiwisdr_com\":%d", reg_kiwisdr_com_status);
 				
 				if (gps.StatLat) {
@@ -664,8 +662,8 @@ void c2s_admin(void *param)
 			if (i == 0) {
 	            const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
                 // proxy always uses port 8073
-                int sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
-                int server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : net.port_ext;
+                int dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
+                int server_port = (dom_sel == DOM_SEL_REV)? 8073 : net.port_ext;
                 int status;
 			    char *reply;
 		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"kiwisdr.com/php/check_port_open.php/?url=%s:%d\"",

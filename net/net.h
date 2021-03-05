@@ -29,7 +29,6 @@ Boston, MA  02110-1301, USA.
 
 // backup values only if dig lookup fails
 #define KIWISDR_COM_PUBLIC_IP   "50.116.2.70"
-#define SDR_HU_PUBLIC_IP        "167.99.214.222"
 #define GITHUB_COM_PUBLIC_IP    "52.64.108.95"      // was "192.30.253.112"
 
 #define NET_DEBUG
@@ -136,7 +135,7 @@ typedef struct {
 	u1_t netmask6LL[16];
 	int nm_bits6LL;
 
-    ip_lookup_t ips_kiwisdr_com, ips_sdr_hu;
+    ip_lookup_t ips_kiwisdr_com;
     
     #define N_IP_BLACKLIST 64
     int ipv4_blacklist_len;
