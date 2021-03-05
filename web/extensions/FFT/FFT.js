@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2020 John Seamons, ZL/KF6VO
+// Copyright (c) 2016-2021 John Seamons, ZL/KF6VO
 
 var fft_a = { KRAS:1, NOVO:2, KHAB:3, REVD:4, SEYD:5, MULT:6 };
 
@@ -15,12 +15,19 @@ var fft = {
    spec_source_save: 0,
 
    pre: -1,
-   pre_4_SEC: 0,
-   pre_10_SEC: 1,
-   pre_ALPHA: 0,
+   pre_none: 0,
+   pre_ALPHA: 1,
+   pre_JJY40: 2,
+   pre_RTZ: 3,
+   pre_WWVB_MSF_JJY60: 4,
+   pre_RBU: 5,
+   pre_BPC: 6,
+   pre_DCF77: 7,
 	pre_s: [
+	   'none',
 		'Alpha (RSDN-20)',
 		'40 JJY',
+		'50 RTZ',
 		'60 WWVB/MSF/JJY',
 		'200/3 RBU',
 		'68.5 BPC',
@@ -49,8 +56,6 @@ var fft = {
    integ_last_freq: 0,
    integ_last_offset: 0,
    integ_dbl: 0,     // vertical line doubling (or more)
-   integ_maxdb: 0,
-   integ_mindb: 0,
 
    info_canvas: null,
 
@@ -119,22 +124,17 @@ function fft_clear()
 	var left = w3_el('fft-controls-left');
 	var right = w3_el('fft-controls-right');
 
-	switch (fft.pre) {
-	
-	case fft.pre_ALPHA:		// Alpha has sub-display on left
-		ext_set_controls_width_height(undefined, 275);		// default width
+	if (fft.pre == fft.pre_ALPHA) {
+		ext_set_controls_width_height(525, 300);
 		left.style.width = '49.9%';
 		right.style.width = '49.9%';
 		fft_alpha();
-		break;
-	
-	default:
+	} else {
 		ext_set_controls_width_height(275, 275);
 		left.style.width = '0%';
 		right.style.width = '100%';
 		var f = ext_get_freq();
 		fft_marker((f/1e3).toFixed(2), false, f);
-		break;
 	}
 
    ext_send('SET run='+ fft.func);
@@ -218,7 +218,7 @@ function fft_recv(data_raw)
 			   }
 
             for (var x=0; x < fft.integ_w; x++) {
-               var color = waterfall_color_index_max_min(ba[x+o], fft.integ_maxdb, fft.integ_mindb);
+               var color = waterfall_color_index_max_min(ba[x+o], fft.maxdb, fft.mindb);
                im.data[x*4+0] = color_map_r[color];
                im.data[x*4+1] = color_map_g[color];
                im.data[x*4+2] = color_map_b[color];
@@ -314,6 +314,30 @@ function fft_controls_setup()
    		'<canvas id="id-fft-info-canvas" width="256" height="280" style="position:absolute"></canvas>'
       );
 
+   var p = ext_param();
+   if (p) {
+      p = p.split(',');
+      p.forEach(function(a, i) {
+         console.log('FFT param <'+ a +'>');
+         w3_ext_param_array_match_str(fft.func_s, a, function(i) { fft.func = i; });
+         w3_ext_param_array_match_str(fft.pre_s, a, function(i) { fft.pre = i; });
+         var r;
+         if ((r = w3_ext_param('itime', a)).match) {
+            fft.itime = w3_clamp(r.num, 1, 60);
+         } else
+         if ((r = w3_ext_param('maxdb', a)).match) {
+            fft.maxdb = w3_clamp(r.num, -170, -10);
+         } else
+         if ((r = w3_ext_param('mindb', a)).match) {
+            fft.mindb = w3_clamp(r.num, -190, -30);
+         } else
+         if (w3_ext_param('help', a).match) {
+            // delay needed due to interference with spectrum display render
+            extint_help_click(true);
+         }
+      });
+   }
+
 	var controls_html =
 		w3_div('id-fft-controls w3-text-white',
 			w3_half('', '',
@@ -361,6 +385,8 @@ function fft_controls_setup()
 	fft_clear();
 
 	fft.update_interval = setInterval(fft_update, 1000);
+	fft_func_cb('fft.func', fft.func, false);
+	if (fft.pre != -1) fft_pre_select_cb('fft.pre', fft.pre, false);
 }
 
 function FFT_environment_changed(changed)
@@ -459,9 +485,10 @@ function fft_set_itime(itime)
 	fft_itime_cb('fft.itime', itime);
 }
 
-function fft_func_cb(path, idx)
+function fft_func_cb(path, idx, first)
 {
-   //console.log('fft_func_cb new='+ idx +' prev='+ fft.func);
+   //console.log('fft_func_cb new='+ idx +' prev='+ fft.func +' first='+ first);
+   if (first) return;
 	idx = +idx;
 	
 	switch (idx) {
@@ -491,16 +518,23 @@ function fft_func_cb(path, idx)
 	w3_show_hide('id-fft-msg-fft',  fft.func != fft.func_e.SPEC);
 	w3_show_hide('id-fft-msg-spec', fft.func == fft.func_e.SPEC);
 	fft_clear();
+	w3_attribute(fft.integ_canvas, 'title', 'click to align vertically', fft.func == fft.func_e.INTEG);
 }
 
 function fft_pre_select_cb(path, idx, first)
 {
+   //console.log('fft_pre_select_cb path='+ path +' idx='+ idx +' first='+ first);
    if (first) return;
 	idx = +idx;
 	fft.integ_draw = false;
 	fft.pre = idx;
+	var func = fft.func_e.INTEG;
 	
 	switch (fft.pre) {
+	
+	case fft.pre_none:
+		fft_set_itime(10.0);
+		break;
 	
 	case fft.pre_ALPHA:
 		ext_tune(11.5, 'usb', ext_zoom.NOM_IN);
@@ -508,48 +542,56 @@ function fft_pre_select_cb(path, idx, first)
 		fft_set_itime(3.6);
 		break;
 	
-	case fft.pre_ALPHA +1:
+	case fft.pre_JJY40:
 		ext_tune(40, 'cw', ext_zoom.NOM_IN);
 		fft_set_itime(1.0);
 		break;
 	
-	case fft.pre_ALPHA +2:
+	case fft.pre_RTZ:
+		ext_tune(50.32, 'cwn', ext_zoom.NOM_IN);
+		fft_set_itime(1.0);
+		break;
+	
+	case fft.pre_WWVB_MSF_JJY60:
 		ext_tune(60, 'cw', ext_zoom.NOM_IN);
 		fft_set_itime(1.0);
 		break;
 	
-	case fft.pre_ALPHA +3:
-		ext_tune(66.35, 'cw', ext_zoom.NOM_IN);
+	case fft.pre_RBU:
+		ext_tune(66.35, 'cwn', ext_zoom.NOM_IN);
 		fft_set_itime(1.0);
 		break;
 	
-	case fft.pre_ALPHA +4:
+	case fft.pre_BPC:
 		ext_tune(68.5, 'cw', ext_zoom.NOM_IN);
 		fft_set_itime(1.0);
 		break;
 	
-	case fft.pre_ALPHA +5:
+	case fft.pre_DCF77:
 		ext_tune(77.5, 'cw', ext_zoom.NOM_IN);
 		fft_set_itime(1.0);
 		break;
 	
 	default:
+	   func = fft.func_e.SPEC;
 		break;
 	}
 
-	fft_func_cb('fft.func', fft.func_e.INTEG);
+	w3_select_value(path, idx);      // for benefit of direct calls
+	//console.log('fft_pre_select_cb SET func='+ func);
+	fft_func_cb('fft.func', func, false);
 }
 
 function fft_maxdb_cb(path, val, complete, first)
 {
-   fft.integ_maxdb = parseFloat(val);
+   fft.maxdb = parseFloat(val);
 	w3_num_cb(path, val);
 	w3_set_label('WF/integrate max '+ val +' dB', path);
 }
 
 function fft_mindb_cb(path, val, complete, first)
 {
-   fft.integ_mindb = parseFloat(val);
+   fft.mindb = parseFloat(val);
 	w3_num_cb(path, val);
 	w3_set_label('WF/integrate min '+ val +' dB', path);
 }
@@ -574,4 +616,30 @@ function FFT_blur()
 function FFT_config_html()
 {
    ext_config_html(fft, 'fft', 'FFT', 'FFT configuration');
+}
+
+function FFT_help(show)
+{
+   if (show) {
+      var s = 
+         w3_text('w3-medium w3-bold w3-text-aqua', 'Audio FFT help') +
+         '<br>Remember that on KiwiSDR the audio and waterfall channels are completely separate. <br>' +
+         'For example you can pan the waterfall frequency without effecting the audio. <br>' +
+         'By contrast this extension allows visualization of the <i>audio</i> channel itself by using<br>' +
+         'an FFT, waterfall and integrator (summing waterfall) for weak signals. <br>' +
+         
+         '<br>URL parameters: <br>' +
+         'itime:<i>num</i> &nbsp; maxdb:<i>num</i> &nbsp; mindb:<i>num</i> <br>' +
+         'Non-numeric values are those appearing in their respective menus. <br>' +
+         'Keywords are case-insensitive and can be abbreviated. <br>' +
+         'So for example these are valid: <br>' +
+         '<i>&ext=fft,integ,itime:5</i> &nbsp;&nbsp; ' +
+         '<i>&ext=fft,water,min:-130,max:-40</i> &nbsp;&nbsp; <i>&ext=fft,alpha</i> <br>' +
+         '<br>' +
+         'Clicking on integrate display will restart it such that the click-point is <br>' +
+         'moved to top of the display (i.e. vertical timing can be realigned).' +
+         '';
+      confirmation_show_content(s, 610, 300);
+   }
+   return true;
 }
