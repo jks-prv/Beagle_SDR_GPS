@@ -18,7 +18,9 @@ var extint = {
    // extensions not subject to DRM lockout
    // FIXME: allow C-side API to specify
    no_lockout: [ 'noise_blank', 'noise_filter', 'ant_switch', 'iframe', 'colormap', 'devl' ],
-   excl_devl: [ 'devl', 's4285' ]
+   excl_devl: [ 'devl', 's4285' ],
+   
+   OPT_NOLOCAL: 1,
 };
 
 var devl = {
@@ -371,6 +373,10 @@ function ext_valpwd(conn_type, pwd, ws)
    if (kiwi_url_param(['p', 'prot', 'protected'], 'true', null) != null && conn_type != 'admin')
       conn_type = 'prot';
 	//console.log('SET auth t='+ conn_type +' p='+ pwd + ipl);
+	
+	var options = 0;
+	if (kiwi_url_param('nolocal')) options |= extint.OPT_NOLOCAL;
+	if (options != 0) ext_send('SET options='+ options);
 
 	ext_send('SET auth t='+ conn_type +' p='+ pwd + ipl, ws);
 	// the server reply then calls extint_valpwd_cb() below
@@ -579,7 +585,7 @@ function extint_panel_show(controls_html, data_html, show_func, show_help_button
 	// some exts change these -- change back to default
 	ext_set_data_height();     // restore default height
 	w3_el('id-ext-controls').style.zIndex = 150;
-   w3_attribute('id-ext-controls-close-img', 'src', 'icons/close.24.png');
+   w3_create_attribute('id-ext-controls-close-img', 'src', 'icons/close.24.png');
 	
 	var el = w3_el('id-ext-controls-container');
 	el.innerHTML = controls_html;
@@ -644,13 +650,21 @@ function extint_panel_hide()
    extint.displayed = false;
 }
 
-function extint_help_click()
+function extint_help_click_now()
+{
+	extint.help_displayed = w3_call(extint.current_ext_name +'_help', true);
+}
+
+function extint_help_click(delay)
 {
    // will send click event even if w3-disabled!
    if (w3_contains('id-ext-controls-help-btn', 'w3-disabled')) return;
    console.log(extint.current_ext_name +'_help_click CLICKED');
    
-	extint.help_displayed = w3_call(extint.current_ext_name +'_help', true);
+   if (delay)
+      setTimeout(function() { extint_help_click_now(); }, 2000);
+   else
+      extint_help_click_now();
 }
 
 function extint_environment_changed(changed)
