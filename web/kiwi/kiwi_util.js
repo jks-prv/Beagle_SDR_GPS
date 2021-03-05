@@ -1213,9 +1213,9 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	   // We've seen a case where, if uncaught, an "undefined" error in this callback code
 	   // is never reported in the console. The callback just silently exits!
 	   // So add a try/catch to all web socket callbacks as a safety net.
-	   try {
+	   //try {
 		   on_ws_recv(evt, ws);
-      } catch(ex) { console.log(ex); }
+      //} catch(ex) { console.log(ex); }
 	};
 
 	ws.onclose = function(evt) {
@@ -1262,6 +1262,8 @@ function on_ws_recv(evt, ws)
 	//if (ws.stream == 'EXT') console.log('on_ws_recv: <'+ s +'>');
 
 	var firstChars = arrayBufferToStringLen(data,3);
+
+   //console.log(firstChars +' '+ (new DataView(data, 0)).byteLength);
 	//divlog("on_ws_recv: "+firstChars);
 
 	if (firstChars == "CLI") {

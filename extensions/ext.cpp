@@ -297,7 +297,7 @@ void extint_c2s(void *param)
 			char *cmd = nb->buf;
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
-			// SECURITY: this must be first for auth check (except for keepalive check above)
+			// SECURITY: this must be first for auth check
 			if (rx_common_cmd("EXT", conn_ext, cmd))
 				continue;
 			
