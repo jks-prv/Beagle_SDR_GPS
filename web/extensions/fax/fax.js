@@ -451,6 +451,7 @@ function fax_controls_setup()
    ext_set_data_height(fax.winH);
    w3_el('id-fax-data').scrollTop = 0;
    fax_clear_display();
+	w3_attribute(fax.data_canvas, 'title', 'shift-click/touch to align horizontally');
    
    // no dynamic resize used because id-fax-data uses left:0 and the canvas begins at the window left edge
 
