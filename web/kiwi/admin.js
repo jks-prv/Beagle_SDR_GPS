@@ -2727,7 +2727,7 @@ function admin_draw(sdr_mode)
          //channels_html() +
 		   config_html() +
          webpage_html() +
-         sdr_hu_html() +
+         kiwi_reg_html() +
          dx_html();
 
    s +=
@@ -2746,7 +2746,7 @@ function admin_draw(sdr_mode)
 	stats_init();
 
 	if (sdr_mode) {
-	   users_init(true);
+	   users_init( { admin:1 } );
 	   //gps_focus();
 	} else {
 	   gps_focus();
@@ -3138,6 +3138,14 @@ function admin_select_cb(path, idx, first)
 		var save = first? false : true;
 		ext_set_cfg_param(path, idx, save);
 	}
+}
+
+function admin_slider_cb(path, val, done, first)
+{
+   if (!done || first) return;
+	//console.log('admin_slider_cb path='+ path +' val='+ val);
+	val = +val;
+   ext_set_cfg_param(path, val, true);
 }
 
 function admin_preview_status_box(val)

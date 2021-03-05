@@ -29,6 +29,11 @@ typedef struct {
 	bool busy;
 	conn_t *conn;       // the STREAM_SOUND conn or STREAM_WATERFALL for WF-only connections
 	ext_t *ext;
+
+	#define N_CAMP 4
+	int n_camp;
+	conn_t *camp_conn[N_CAMP];
+	u4_t camp_id[N_CAMP];
 } rx_chan_t;
 
 extern rx_chan_t rx_channels[];

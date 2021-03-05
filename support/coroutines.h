@@ -56,7 +56,7 @@ extern u4_t task_medium_priority;
 #define	LOWEST_PRIORITY		0
 #define	NUM_PRIORITY		(HIGHEST_PRIORITY+1)
 
-#define	MISC_TASKS			6					// main, stats, spi, data pump, web server, sdr_hu
+#define	MISC_TASKS			6					// main, stats, spi, data pump, web server, registration
 #define GPS_TASKS			(GPS_CHANS + 3)		// chan*n + search + solve + stat
 #define	SND_TASKS			MAX_RX_CHANS        // SND
 #define	EXT_TASKS			MAX_RX_CHANS        // each extension server-side part runs as a separate task

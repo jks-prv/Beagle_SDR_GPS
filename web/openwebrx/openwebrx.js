@@ -32,6 +32,11 @@ var owrx = {
    last_mode_el: null,
    dseq: 0,
    
+   sMeter_dBm_biased: 0,
+   sMeter_dBm: 0,
+   squelched_overload: false,
+   prev_squelched_overload: false,
+   
    touch_hold_pressed: false,
    tuning_locked: 0,
    
@@ -3550,7 +3555,7 @@ function waterfall_init()
 	bands_init();
 	spectrum_init();
 	dx_schedule_update();
-	users_init(false);
+	users_init( { user:1 } );
 	stats_init();
 	check_top_bar_congestion();
 	if (spectrum_show) setTimeout(spec_show, 2000);    // after control instantiation finishes
@@ -4813,6 +4818,7 @@ function freqset_update_ui()
 	writeCookie('freq_memory', JSON.stringify(freq_memory));
 }
 
+// using keydown event allows key autorepeat to work
 function freqset_keydown(event)
 {
    if (event.keyCode == '38') {  // up-arrow
@@ -4847,7 +4853,7 @@ function freq_memory_up_down(up)
          w3_el('id-freq-input').value = freq_dsp_set_last;
       }
       
-      freqset_complete(2);
+      freqset_complete('u/d t/o');
    }, kiwi_isMobile()? 2000:3000);
 }
 
@@ -4920,7 +4926,7 @@ function try_modeset_update_ui(mode)
 function freq_link_update()
 {
 	var host = kiwi_url_origin();
-	var url = host + '/?f='+ freq_displayed_kHz_str + cur_mode +'z'+ zoom_level;
+	var url = host +'/?f='+ freq_displayed_kHz_str + cur_mode +'z'+ zoom_level;
 	w3_innerHTML('id-freq-link',
       w3_icon('w3-text-css-lime||title='+ dq('copy to clipboard:\n'+ url),
          'fa-external-link-square', 15, '', 'freq_link_update_cb', url
@@ -4947,6 +4953,14 @@ function freqset_complete(from)
    // 'k' suffix is simply ignored since default frequencies are in kHz
 	var f = p[0].replace(',', '.').parseFloatWithUnits('M', 1e-3);    // Thanks Petri, OH1BDF
 	var err = true;
+
+   if (obj.value == '/') {
+      //console.log('--> restore_passband '+ cur_mode);
+      restore_passband(cur_mode);
+      demodulator_analog_replace(cur_mode);
+      freqset_update_ui();    // restore previous
+      return;
+   } else
 	if (f > 0 && !isNaN(f)) {
 	   f -= cfg.freq_offset;
 	   if (f > 0 && !isNaN(f)) {
@@ -4960,6 +4974,7 @@ function freqset_complete(from)
 	// accept "freq/pbw" or "/pbw" to quickly change passband width to a numeric value
 	// also "lo,hi" in place of "pbw"
 	// and ":pbc" or ":pbc,pbw" to set the pbc at the current pbw
+	// "/" alone resets to default passband
 	if (p[1]) {
 	   p2 = p[1].split(',');
 	   var lo = p2[0].parseFloatWithUnits('k');
@@ -4972,7 +4987,7 @@ function freqset_complete(from)
       var cpbhw = (cpb.high - cpb.low)/2;
       var cpbcf = cpb.low + cpbhw;
 	   
-	   if (slash) {
+      if (slash) {
          // adjust passband width about current pb center
          if (p2.length == 1) {
             // /pbw
@@ -5000,9 +5015,14 @@ function freqset_complete(from)
 
 var ignore_next_keyup_event = false;
 
-// freqset_keyup is called on each key-up while the frequency box is selected so that if a numeric
+// freqset_keyup() is called on each key-up while the frequency box is selected so that if a numeric
 // entry is made, without a terminating <return> key, a setTimeout(freqset_complete()) can be done to
 // arrange automatic completion.
+//
+// Also, keyup is used instead of keydown because the global id-kiwi-body has an eventlistener for keydown
+// to implement keyboard shortcut event interception before the keyup event of freqset (i.e. sequencing).
+// We use w3-custom-events in the freq box w3_input() to allow both onkeydown and onkeyup event handlers.
+// freqset_keydown() called by onkeydown is used to implement key autorepeat of history arrow keys.
 
 function freqset_keyup(obj, evt)
 {
@@ -5012,7 +5032,7 @@ function freqset_keyup(obj, evt)
 	
 	// Ignore modifier-key key-up events triggered because the frequency box is selected while
 	// modifier-key-including mouse event occurs somewhere else.
-	// Also keeps ident_complete timeout from being set after return key.
+	// Also keeps freqset_complete timeout from being set after return key.
 	
 	// But this is tricky. Key-up of a shift/ctrl/alt/cmd key can only be detected by looking for a
 	// evt.key string length != 1, i.e. evt.shiftKey et al don't seem to be valid for the key-up event!
@@ -5021,8 +5041,9 @@ function freqset_keyup(obj, evt)
 	if (evt != undefined && evt.key != undefined) {
 		var klen = evt.key.length;
 		
-		// any_alternate_click_event_except_shift() allows e.g. "10M" for 10 MHz
-		if (any_alternate_click_event_except_shift(evt) || (klen != 1 && evt.key != 'Backspace')) {
+		// any_alternate_click_event_except_shift(), and check for evt.key != 'Shift',  allows e.g. "10M" for 10 MHz
+		if (any_alternate_click_event_except_shift(evt) || (klen != 1 && evt.key != 'Backspace' && evt.key != 'Shift')) {
+		   //console.log('--> key='+ evt.key);
 	
 			// An escape while the the freq box has focus causes the browser to put input value back to the
 			// last entered value directly by keyboard. This value is likely different than what was set by
@@ -5031,6 +5052,9 @@ function freqset_keyup(obj, evt)
 			   //event_dump(evt, 'Escape-freq');
 				//console.log('** restore freq box');
 				freqset_update_ui();
+			} else
+			if (evt.key == 'Enter') {
+			   freqset_complete('Enter');
 			}
 	
 			//console.log('FKU IGNORE ign='+ ignore_next_keyup_event +' klen='+ klen);
@@ -5040,11 +5064,13 @@ function freqset_keyup(obj, evt)
 	}
 	
 	if (ignore_next_keyup_event) {
+      freqset_complete('IKU');
+      //console.log('--> IKU');
       ignore_next_keyup_event = false;
       return;
    }
    
-	freqset_tout = setTimeout(function() {freqset_complete(1);}, 3000);
+	freqset_tout = setTimeout(function() {freqset_complete('t/o');}, 3000);
 }
 
 var num_step_buttons = 6;
@@ -6289,7 +6315,6 @@ var SMETER_INPUT_MAX = 3.4;
 var SMETER_INPUT_RANGE = (SMETER_BIAS + SMETER_INPUT_MAX);
 var SMETER_DISPLAY_MAX = -6;     // don't display all the way to SMETER_INPUT_MAX
 var SMETER_DISPLAY_RANGE = (SMETER_BIAS + SMETER_DISPLAY_MAX);
-var sMeter_dBm_biased = 0;
 var sMeter_ctx;
 var smeter_ovfl;
 
@@ -6352,7 +6377,7 @@ var sm_ovfl_showing = false;
 
 function update_smeter()
 {
-	var x = smeter_dBm_biased_to_x(sMeter_dBm_biased);
+	var x = smeter_dBm_biased_to_x(owrx.sMeter_dBm_biased);
 	var x_thr = smeter_dBm_biased_to_x(-thresh);
 	var y = SMETER_SCALE_HEIGHT-8;
 	var w = smeter_width;
@@ -6365,7 +6390,6 @@ function update_smeter()
 		sm_timeout = sm_interval;
 		if (x < sm_px) line_stroke(sMeter_ctx, 0, 5, "black", x,y,sm_px,y);
 		//if (x < sm_px) line_stroke(sMeter_ctx, 0, 5, "black", x,y,w,y);
-		
 		sm_px = x;
 	} else {
 		if (x < sm_px) {
@@ -6390,7 +6414,7 @@ function update_smeter()
 	   sm_ovfl_showing = false;
 	}
 	
-	w3_innerHTML('id-smeter-dbm-value', (sMeter_dBm_biased - SMETER_BIAS).toFixed(0));
+	w3_innerHTML('id-smeter-dbm-value', (owrx.sMeter_dBm).toFixed(0));
 }
 
 
@@ -6415,11 +6439,12 @@ function ident_init()
 	//console.log('ident_init: SET ident='+ ident_user);
 }
 
-function ident_complete()
+function ident_complete(from)
 {
 	var el = w3_el('id-ident-input');
 	var ident = el.value;
 	ident = kiwi_strip_tags(ident, '');
+	//console.log('ICMPL from='+ from +' ident='+ ident);
 	el.value = ident;
 	//console.log('ICMPL el='+ typeof(el) +' ident_user=<'+ ident +'>');
 	kiwi_clearTimeout(ident_tout);
@@ -6427,6 +6452,7 @@ function ident_complete()
 	// okay for ident='' to erase it
 	// SECURITY: size limited by <input size=...> but guard against binary data injection?
 	//w3_field_select(el, {mobile:1});
+	w3_schedule_highlight(el);
 	freqset_select();    // don't keep ident field selected
 
 	writeCookie('ident', ident);
@@ -6446,14 +6472,18 @@ function ident_keyup(el, evt)
 	//if (ignore_next_keyup_event) {
 	if (evt != undefined && evt.key != undefined) {
 		var klen = evt.key.length;
-		if (any_alternate_click_event_except_shift(evt) || klen != 1) {
+		if (any_alternate_click_event_except_shift(evt) || klen != 1 && evt.key != 'Backspace' && evt.key != 'Shift') {
+		   //console.log('--> IDENT key='+ evt.key);
+			if (evt.key == 'Enter') {
+			   ident_complete('Enter');
+			}
          //console.log("ignore shift-key ident_keyup");
          //ignore_next_keyup_event = false;
          return;
       }
 	}
 	
-	ident_tout = setTimeout(ident_complete, 5000);
+	ident_tout = setTimeout(function() { ident_complete('t/o'); } , 5000);
 }
 
 
@@ -6770,16 +6800,12 @@ function panels_setup()
    var s;
    
 	w3_el("id-ident").innerHTML =
-		'<form id="id-ident-form" action="#" onsubmit="ident_complete(); return false;">' +
-			w3_input('w3-label-not-bold/id-ident-input|padding:1px|size=20 onkeyup="ident_keyup(this, event)"', 'Your name or callsign:', 'ident-input') +
-		'</form>';
+		w3_input('w3-label-not-bold/w3-custom-events|padding:1px|size=20 onkeyup="ident_keyup(this, event)"', 'Your name or callsign:', 'ident-input');
 	
 	w3_el("id-control-freq1").innerHTML =
 	   w3_inline('',
          w3_div('id-freq-cell',
-            '<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
-               w3_input('id-freq-input|padding:0 4px;max-width:74px|size=8 onkeydown="freqset_keydown(event)" onkeyup="freqset_keyup(this, event)"', '', 'freq-input') +
-            '</form>'
+            w3_input('w3-custom-events|padding:0 4px;max-width:74px|size=8 onkeydown="freqset_keydown(event)" onkeyup="freqset_keyup(this, event)"', '', 'freq-input')
          ),
 
          w3_div('|padding:0 0 0 3px',
@@ -6845,7 +6871,7 @@ function panels_setup()
             '<img id="id-step-5" src="icons/stepup.20.png" onclick="freqstep(5)" />'
          ),
          w3_div('',
-            w3_button('id-button-spectrum class-button', 'Spec', 'toggle_or_set_spec')
+            w3_button('id-button-spectrum class-button||title="toggle spectrum display"', 'Spec', 'toggle_or_set_spec')
          ),
          w3_div('',
             w3_div('fa-stack||title="record"',
@@ -6861,6 +6887,9 @@ function panels_setup()
             w3_div('id-mute-yes fa-stack w3-hide|width:100%;color:magenta;',  // hsl(340, 82%, 60%) w3-text-pink but lighter
                w3_icon('', 'fa-volume-off fa-stack-2x fa-nudge-left', 24, '', 'toggle_or_set_mute'),
                w3_icon('', 'fa-times fa-right fa-nudge-left-OFF', 12, '', 'toggle_or_set_mute')
+            ),
+            w3_div('id-mute-exclaim fa-stack w3-hide|width:100%; color:yellow',
+               w3_icon('', 'fa-exclamation-triangle fa-stack-1x fa-nudge-right-OFF', 20, 'inherit')
             )
          )
       );
@@ -7021,21 +7050,21 @@ function panels_setup()
          ), 85,
          
          w3_divs('/w3-tspace-4 w3-hcenter w3-font-11_25px',
-            w3_button('id-button-wf-autoscale class-button', 'Auto<br>Scale', 'wf_autoscale_cb'),
-            w3_button('id-button-slow-dev class-button', 'Slow<br>Dev', 'toggle_or_set_slow_dev'),
+            w3_button('id-button-wf-autoscale class-button||title="waterfall auto scale"', 'Auto<br>Scale', 'wf_autoscale_cb'),
+            w3_button('id-button-slow-dev class-button||title="slow device mode"', 'Slow<br>Dev', 'toggle_or_set_slow_dev'),
             w3_inline('',
-               w3_button('id-button-spec-peak class-button', 'Pk', 'toggle_or_set_spec_peak'),
+               w3_button('id-button-spec-peak class-button||title="toggle peak hold"', 'Pk', 'toggle_or_set_spec_peak'),
                w3_icon('id-wf-gnd w3-margin-L-4 w3-momentary', 'fa-caret-down', 22, 'white', 'wf_gnd_cb', 1)
             )
          ), 15
       ) +
 
       w3_inline('w3-halign-space-between w3-margin-T-2/',
-         w3_select('|color:red', '', 'colormap', 'wf.cmap', wf.cmap, kiwi.cmap_s, 'wf_cmap_cb'),
-         w3_select('|color:red', '', 'aperture', 'wf.aper', wf.aper, kiwi.aper_s, 'wf_aper_cb'),
+         w3_select('|color:red|title="colormap selection"', '', 'colormap', 'wf.cmap', wf.cmap, kiwi.cmap_s, 'wf_cmap_cb'),
+         w3_select('|color:red|title="aperture selection"', '', 'aperture', 'wf.aper', wf.aper, kiwi.aper_s, 'wf_aper_cb'),
          //w3_select('|color:red', '', 'contrast', 'wf.contr', W3_SELECT_SHOW_TITLE, wf_contr_s, 'wf_contr_cb'),
-         w3_select('|color:red', '', 'wf', 'wf_filter', wf_filter, wf_sp_menu_s, 'wf_sp_menu_cb', 1),
-         w3_select('|color:red', '', 'spec', 'spec_filter', spec_filter, wf_sp_menu_s, 'wf_sp_menu_cb', 0)
+         w3_select('|color:red|title="waterfall filter selection"', '', 'wf', 'wf_filter', wf_filter, wf_sp_menu_s, 'wf_sp_menu_cb', 1),
+         w3_select('|color:red|title="spectrum filter selection"', '', 'spec', 'spec_filter', spec_filter, wf_sp_menu_s, 'wf_sp_menu_cb', 0)
          //w3_div('w3-hcenter', w3_button('id-button-spec-peak class-button', 'Peak', 'toggle_or_set_spec_peak'))
          //w3_button('id-button-wf-gnd class-button w3-momentary', 'G', 'wf_gnd_cb', 1)
       );
@@ -7055,16 +7084,16 @@ function panels_setup()
 	w3_el('id-optbar-audio').innerHTML =
 		w3_col_percent('w3-valign/',
 			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color +' cl-closer-spaced-label-text', 'Noise')), 17,
-         w3_select_conditional('|color:red', '', 'blanker', 'nb_algo', 0, nb_algo_s, 'nb_algo_cb'), 24,
-			w3_div('w3-hcenter', w3_div('class-button||onclick="extint_open(\'noise_blank\'); freqset_select();"', 'More')), 21,
-         w3_select_conditional('|color:red', '', 'filter', 'nr_algo', 0, nr_algo_s, 'nr_algo_cb'), 23,
-			w3_div('w3-hcenter', w3_div('class-button||onclick="extint_open(\'noise_filter\'); freqset_select();"', 'More')), 15
+         w3_select_conditional('|color:red|title="noise blanker selection"', '', 'blanker', 'nb_algo', 0, nb_algo_s, 'nb_algo_cb'), 24,
+			w3_div('w3-hcenter', w3_div('class-button||onclick="extint_open(\'noise_blank\'); freqset_select();" title="noise blanker parameters"', 'More')), 21,
+         w3_select_conditional('|color:red|title="noise filter selection"', '', 'filter', 'nr_algo', 0, nr_algo_s, 'nr_algo_cb'), 23,
+			w3_div('w3-hcenter', w3_div('class-button||onclick="extint_open(\'noise_filter\'); freqset_select();" title="noise filter parameters"', 'More')), 15
 		) +
 		w3_col_percent('id-vol w3-valign w3-margin-T-4 w3-hide/class-slider',
 			w3_text(optbar_prefix_color, 'Volume'), 17,
 			'<input id="id-input-volume" type="range" min="0" max="200" value="'+ volume +'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 50,
          '&nbsp;', 8,
-         w3_select('|color:red', '', 'de-emp', 'de_emphasis', de_emphasis, de_emphasis_s, 'de_emp_cb')
+         w3_select('|color:red|title="de-emphasis selection"', '', 'de-emp', 'de_emphasis', de_emphasis, de_emphasis_s, 'de_emp_cb')
 		) +
 		w3_col_percent('id-vol-comp w3-valign w3-margin-T-4/class-slider',
 			w3_text(optbar_prefix_color, 'Volume'), 17,
@@ -7082,7 +7111,7 @@ function panels_setup()
 			w3_text('id-squelch-label', 'Squelch'), 17,
          w3_slider('', '', 'squelch-value', squelch, 0, 99, 1, 'set_squelch_cb'), 50,
          '&nbsp;', 3, w3_div('id-squelch-field class-slider'), 14,
-         w3_select('w3-hide|color:red', '', 'tail', 'squelch_tail', squelch_tail, squelch_tail_s, 'squelch_tail_cb')
+         w3_select('w3-hide|color:red|title="squelch tail length"', '', 'tail', 'squelch_tail', squelch_tail, squelch_tail_s, 'squelch_tail_cb')
 	   ) +
       w3_col_percent('id-sam-carrier-container w3-valign w3-hide/class-slider',
          w3_text(optbar_prefix_color, 'SAM'), 17,
@@ -7194,7 +7223,8 @@ function panels_setup()
 		'<li> Tune by clicking on the waterfall, spectrum or the cyan/red-colored station labels. </li>' +
 		'<li> Ctrl-shift or alt-shift click in the waterfall to lookup frequency in online databases. </li>' +
 		'<li> Control or option/alt click to page spectrum down and up in frequency. </li>' +
-		'<li> Adjust the "WF min" slider for best waterfall colors. </li>' +
+		'<li> Adjust the "WF min" slider for best waterfall colors or use the "Auto Scale" button. </li>' +
+		"<li> Type 'h' or '?' to see the list of keyboard shortcuts. </li>" +
 		'<li> See the <a href="http://www.kiwisdr.com/quickstart/" target="_blank">Operating information</a> page' +
 		     'and <a href="https://www.dropbox.com/s/i1bjyp1acghnc16/KiwiSDR.design.review.pdf?dl=1" target="_blank">Design review document</a>. </li>' +
 		'</ul>';
@@ -7765,8 +7795,10 @@ function toggle_or_set_mute(set)
    else
 	   muted ^= 1;
    //console.log('toggle_or_set_mute set='+ set +' muted='+ muted);
-   w3_show_hide('id-mute-no', !muted);
-   w3_show_hide('id-mute-yes', muted);
+	if (!owrx.squelched_overload) {
+      w3_show_hide('id-mute-no', !muted);
+      w3_show_hide('id-mute-yes', muted);
+   }
    f_volume = muted? 0 : volume/100;
    freqset_select();
 }
@@ -7930,9 +7962,21 @@ var squelch_tail_v = [ 0, 0.2, 0.5, 1, 2 ];
 function squelch_action(sq)
 {
    squelched = sq;
-   var sq_color = squelched? 'white':'lime';
+   //console.log('squelch_action squelched='+ (squelched? 1:0) +' sMeter_dBm='+ owrx.sMeter_dBm.toFixed(0));
+   var mute_color = squelched? 'white' : 'lime';
+   var sq_color = mute_color;
+
+   owrx.squelched_overload = (owrx.sMeter_dBm >= cfg.overload_mute);
+   if (owrx.prev_squelched_overload != owrx.squelched_overload) {
+      //console.log('--> squelched_overload='+ (owrx.squelched_overload? 1:0));
+      w3_show_hide('id-mute-exclaim', owrx.squelched_overload);
+      w3_show_hide('id-mute-no', owrx.squelched_overload? false : !muted);
+      w3_show_hide('id-mute-yes', owrx.squelched_overload? false : muted);
+      owrx.prev_squelched_overload = owrx.squelched_overload;
+   }   
+   
    w3_color('id-squelch-label', sq_color);
-   w3_color('id-mute-no', sq_color);
+   w3_color('id-mute-no', mute_color);
    
    if (recording) {
       sq_color = squelched? 'w3-text-white':'w3-text-pink';
@@ -8033,7 +8077,7 @@ function toggle_or_set_audio(set, val)
 	// if toggling (i.e. not the first time during setup) reinitialize audio with specified buffering
 	if (!isNumber(set)) {
 	   // haven't got audio_init() calls to work yet (other than initial)
-	   //audio_init(null, btn_less_buffering, btn_compression);
+	   //audio_init(0, null, btn_less_buffering, btn_compression);
       window.location.reload(true);
    }
 }
@@ -8541,7 +8585,6 @@ function panel_setup_control(el)
          w3_div('id-control-freq2'),
          w3_div('id-control-mode w3-margin-T-6'),
          w3_div('id-control-zoom w3-margin-T-6'),
-         w3_div('id-control-squelch'),
          w3_div('id-optbar w3-margin-T-4')
       ) +
 	   w3_div('id-optbar-content w3-margin-T-6 w3-scroll-y|height:'+ px(OPTBAR_CONTENT_HEIGHT),
@@ -8557,8 +8600,8 @@ function panel_setup_control(el)
 	// make first line of controls full width less vis button
 	w3_el('id-control-freq1').style.width = px(el.activeWidth - visIcon - 6);
 	
-	w3_show_hide('id-mute-no', !muted);
-	w3_show_hide('id-mute-yes', muted);
+   w3_show_hide('id-mute-no', !muted);
+   w3_show_hide('id-mute-yes', muted);
 }
 
 function panel_set_vis_button(id)
@@ -8712,10 +8755,22 @@ function owrx_msg_cb(param, ws)
 			break;
 		case "audio_init":
          toggle_or_set_audio(toggle_e.FROM_COOKIE | toggle_e.SET, 1);
-			audio_init(parseInt(param[1]), btn_less_buffering, kiwi_toggle(toggle_e.FROM_COOKIE | toggle_e.SET, 1, 1, 'last_compression'));
+			audio_init(+param[1], btn_less_buffering, kiwi_toggle(toggle_e.FROM_COOKIE | toggle_e.SET, 1, 1, 'last_compression'));
+			break;
+		case "audio_camp":
+         var p = param[1].split(',');
+			audio_camp(+p[0], +p[1], btn_less_buffering, kiwi_toggle(toggle_e.FROM_COOKIE | toggle_e.SET, 1, 1, 'last_compression'));
 			break;
 		case "audio_rate":
 			audio_rate(parseFloat(param[1]));
+			break;
+		case "audio_adpcm_state":
+         var p = param[1].split(',');
+			audio_adpcm_state(+p[0], +p[1]);
+			break;
+		case "audio_passband":
+         var p = param[1].split(',');
+			audio_recompute_LPF(1, +p[0], +p[1]);
 			break;
 		case "kiwi_up":
 			kiwi_up(parseInt(param[1]));
@@ -8735,6 +8790,9 @@ function owrx_msg_cb(param, ws)
          setmindb(1, wf.auto_mindb, true);
 	      w3_call('colormap_maxmin_cb');
          update_maxmindb_sliders(true);
+			break;
+		case "max_thr":
+			cfg.overload_mute = Math.round(+param[1]);
 			break;
 		default:
 		   return false;
@@ -8784,6 +8842,13 @@ function wf_send(s)
 		kiwi_trace();
 		return -1;
 	}
+}
+
+function ws_any()
+{
+   if (ws_snd) return ws_snd;
+   if (ws_wf) return ws_wf;
+   return null;
 }
 
 var need_geo = true;

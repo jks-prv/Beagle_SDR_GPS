@@ -158,6 +158,7 @@ void c2s_sound(void *param)
 	int rx_chan = conn->rx_channel;
 	snd_t *snd = &snd_inst[rx_chan];
 	wf_inst_t *wf = &WF_SHMEM->wf_inst[rx_chan];
+	rx_chan_t *rxc = &rx_channels[rx_chan];
 	rx_dpump_t *rx = &rx_dpump[rx_chan];
     iq_buf_t *iq = &RX_SHMEM->iq_buf[rx_chan];
 	
@@ -225,14 +226,15 @@ void c2s_sound(void *param)
 	float rssi_q[N_RSSI];
 	int squelch=0, squelch_on_seq=-1, tail_delay=0;
 	bool sq_init, squelched=false;
-	
+
 	// Overload muting stuff
 	bool mute_overload = true; // activate the muting when overloaded
 	bool squelched_overload = false; // squelch flag specific for the overloading
 	bool overload_before = false; // were we overloaded in the previous instant?
 	bool overload_flag = false; // are we overloaded now?
 	int overload_timer = -1; // keep track of when we stopped being overloaded to allow a decay
-	float max_thr = -15; // this is the maximum signal in dBm before muting
+	//float max_thr = -35; // this is the maximum signal in dBm before muting (now a global config parameter)
+	float last_max_thr = max_thr;
 
 	gps_timestamp_t *gps_tsp = &gps_ts[rx_chan];
 	memset(gps_tsp, 0, sizeof(gps_timestamp_t));
@@ -1231,10 +1233,10 @@ void c2s_sound(void *param)
                 squelched = (!rtn_is_open);
             }
 
-	// mute receiver if overload is detected
-	// use the same tail_delay parameter user for the squelch
+            // mute receiver if overload is detected
+            // use the same tail_delay parameter used for the squelch
             if (mute_overload) {
-            	overload_flag = (sMeter_dBm >= max_thr)?true:false;
+            	overload_flag = (sMeter_dBm >= max_thr)? true:false;
             	if (overload_before && !overload_flag) {
             		if (snd->seq > overload_timer + tail_delay+1) {
             			overload_timer = -1;
@@ -1248,7 +1250,13 @@ void c2s_sound(void *param)
                 	squelched_overload = true;
                 	overload_before = true;
                 	overload_timer = snd->seq;
-                	}
+                }
+            }
+            
+            // update UI with admin changes to max_thr
+            if (max_thr != last_max_thr) {
+                send_msg(conn, false, "MSG max_thr=%.0f", roundf(max_thr));
+                last_max_thr = max_thr;
             }
 
             ////////////////////////////////
@@ -1436,7 +1444,7 @@ void c2s_sound(void *param)
         if (dpump.rx_adc_ovfl) *flags |= SND_FLAG_ADC_OVFL;
         if (IQ_or_DRM_or_SAS) *flags |= SND_FLAG_MODE_IQ;
         if (compression && !IQ_or_DRM_or_SAS) *flags |= SND_FLAG_COMPRESSED;
-        if (squelched) *flags |= SND_FLAG_SQUELCH_UI;
+        if (squelched || squelched_overload) *flags |= SND_FLAG_SQUELCH_UI;
         if (little_endian) *flags |= SND_FLAG_LITTLE_ENDIAN;
 
         if (change_LPF) {
@@ -1463,6 +1471,8 @@ void c2s_sound(void *param)
 
         //printf("hdr %d S%d\n", sizeof(out_pkt.h), bc); fflush(stdout);
         int aud_bytes;
+        int c2s_sound_camp(rx_chan_t *rxc, conn_t *conn, u1_t flags, char *bp, int bytes, int aud_bytes);
+
         if (IQ_or_DRM_or_SAS) {
             // allow GPS timestamps to be seen by internal extensions
             // but selectively remove from external connections (see admin page security tab)
@@ -1474,11 +1484,16 @@ void c2s_sound(void *param)
             const int bytes = sizeof(snd->out_pkt_iq.h) + bc;
             app_to_web(conn, (char*) &snd->out_pkt_iq, bytes);
             aud_bytes = sizeof(snd->out_pkt_iq.h.smeter) + bc;
+            if (rxc->n_camp)
+                aud_bytes += c2s_sound_camp(rxc, conn, *flags, (char*) &snd->out_pkt_iq, bytes, aud_bytes);
         } else {
             const int bytes = sizeof(snd->out_pkt_real.h) + bc;
             app_to_web(conn, (char*) &snd->out_pkt_real, bytes);
             aud_bytes = sizeof(snd->out_pkt_real.h.smeter) + bc;
+            if (rxc->n_camp)
+                aud_bytes += c2s_sound_camp(rxc, conn, *flags, (char*) &snd->out_pkt_real, bytes, aud_bytes);
         }
+
         audio_bytes[rx_chan] += aud_bytes;
         audio_bytes[rx_chans] += aud_bytes;     // [rx_chans] is the sum of all audio channels
 
@@ -1486,77 +1501,10 @@ void c2s_sound(void *param)
 	}
 }
 
-        #if 0
-            static u4_t last_time[MAX_RX_CHANS];
-            static int nctr;
-            ncnt[rx_chan] += ns_out * (compression? 4:1);
-            int nbuf = ncnt[rx_chan] / snd_rate;
-            if (nbuf >= nctr) {
-                nctr++;
-                u4_t now = timer_ms();
-                printf("SND%d: %d %d %.3fs\n", rx_chan, snd_rate, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
-                
-                #if 0
-                    stat_reg_t stat = stat_get();
-                    if (stat.word & STAT_OVFL) {
-                        //printf("OVERFLOW ==============================================");
-                        spi_set(CmdClrRXOvfl);
-                    }
-                #endif
-
-                //ncnt[rx_chan] = 0;
-                last_time[rx_chan] = now;
-            }
-        #endif
-        
-		#if 0
-			static u4_t last_time[MAX_RX_CHANS];
-			u4_t now = timer_ms();
-			printf("SND%d: %d %.3fs seq-%d\n", rx_chan, aud_bytes,
-				(float) (now - last_time[rx_chan]) / 1e3, snd->seq);
-			last_time[rx_chan] = now;
-		#endif
-
-		#if 0
-            static u4_t last_time[MAX_RX_CHANS];
-            static int nctr;
-            ncnt[rx_chan] += bc * (compression? 4:1);
-            int nbuf = ncnt[rx_chan] / snd_rate;
-            if (nbuf >= nctr) {
-                nctr++;
-                u4_t now = timer_ms();
-                printf("SND%d: %d %d %.3fs\n", rx_chan, snd_rate, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
-                
-                #if 0
-                    stat_reg_t stat = stat_get();
-                    if (stat.word & STAT_OVFL) {
-                        //printf("OVERFLOW ==============================================");
-                        spi_set(CmdClrRXOvfl);
-                    }
-                #endif
-    
-                //ncnt[rx_chan] = 0;
-                last_time[rx_chan] = now;
-            }
-		#endif
-
-		//#define MEAS_SND_TASK
-		#ifdef MEAS_SND_TASK
-            static u4_t last, cps;
-            u4_t now = timer_sec();
-            if (last != now) {
-                for (; last < now; last++) {
-                    if (last < (now-1))
-                        real_printf(">- ");
-                    else
-                        real_printf(">%d ", cps);
-                    fflush(stdout);
-                }
-                cps = 0;
-            } else {
-                cps++;
-            }
-        #endif
+int c2s_sound_camp(rx_chan_t *rxc, conn_t *conn, u1_t flags, char *bp, int bytes, int aud_bytes)
+{
+    return 0;
+}
 
 void c2s_sound_shutdown(void *param)
 {

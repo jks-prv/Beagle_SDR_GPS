@@ -6,6 +6,8 @@ var drm = {
    active: false,
    special_passband: null,
    dseq: 0,
+   interval: null,
+   interval2: null,
 
    locked: 0,
    wrong_srate: false,
@@ -483,9 +485,12 @@ function drm_schedule_static()
    }
 
    s += w3_div(sprintf('id-drm-sched-now|left:%spx;', drm_tscale(kiwi_UTC_minutes()/60)));
-   drm.interval = setInterval(function() {
-      w3_el('id-drm-sched-now').style.left = px(drm_tscale(kiwi_UTC_minutes()/60));
-   }, 60000);
+   
+   if (drm.interval == null) {
+      drm.interval = setInterval(function() {
+         w3_el('id-drm-sched-now').style.left = px(drm_tscale(kiwi_UTC_minutes()/60));
+      }, 60000);
+   }
    
    return s;
 }
@@ -864,16 +869,14 @@ function drm_mobile_controls_setup(mobile)
 	   toggle_panel("ext-controls", 0);
 	   //extint_panel_hide();
       console.log('DRM mobile ext-controls-close panelShown='+ w3_el('id-ext-controls').panelShown);
-      //kiwi_clearInterval(drm.interval);
-      //kiwi_clearInterval(drm.interval2);
 	};
 
-   w3_attribute('id-ext-controls-close-img', 'src', 'icons/close.black.24.png');
+   w3_create_attribute('id-ext-controls-close-img', 'src', 'icons/close.black.24.png');
    drm.last_mobile = {};   // force rescale first time
    drm.rescale_cnt = drm.rescale_cnt2 = 0;
    drm.fit = '';
 
-	drm.interval2 = setInterval(function() {
+	if (drm.interval2 == null) drm.interval2 = setInterval(function() {
       mobile = ext_mobile_info(drm.last_mobile);
       drm.last_mobile = mobile;
 
@@ -1444,8 +1447,8 @@ function DRM_environment_changed(changed)
 function DRM_blur()
 {
    console.log('DRM_blur saved_mode='+ drm.saved_mode);
-   kiwi_clearInterval(drm.interval);
-   kiwi_clearInterval(drm.interval2);
+   kiwi_clearInterval(drm.interval); drm.interval = null;
+   kiwi_clearInterval(drm.interval2); drm.interval2 = null;
 	drm.active = false;
    
    drm_stop(0);
