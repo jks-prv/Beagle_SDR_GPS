@@ -56,6 +56,9 @@ Copyright (C) 2010-2019 ARM Limited or its affiliates. All rights reserved.
 // Extensions
 ////////////////////////////////
 
+Antenna switch
+Copyright (c) 2016-2019 Kari Karvonen, OH1KK
+
 CW decoder
 Copyright (c) 2016  Loftur E. Jonasson  (tf3lj [at] arrl [dot] net)
 
@@ -98,6 +101,67 @@ Copyright 2014-2015, Steven Franke, K9AN
         Copyright 1994, Phil Karn, KA9Q
     nhash
         Copyright (C) 2006 Bob Jenkins <bob_jenkins@burtleburtle.net>
+
+
+////////////////////////////////
+// Code contributors (not mentioned elsewhere)
+//
+// Please email us if we have missed your contribution.
+// We are slowly going through all the github issues and emails trying to complete this list.
+////////////////////////////////
+
+Pierre Ynard (linkfanel), priyom.org
+    KiwiSDR map site: rx.linkfanel.net
+    Dyatlov map maker
+    Pavlova dispatcher
+    Added IRC chat room link to stats tab
+
+Marco Cogoni, IS0KYB
+    AGC threshold indicator for S-meter
+    Passband overload mute
+    microkiwi_waterfall.py in kiwiclient distro
+
+Rik van Riel
+    DSC frequencies for label list
+    NBDP MSI frequencies for Navtex extension
+    Waterfall colormap improvements
+    Misc bug fixes
+
+lazywalker
+    Fixed bugs related to frequency scale offset
+    Reverse proxy improvements
+
+Howard Su
+    Raspberry Pi support
+
+Daniel Ekmann
+    Record button on main control panel
+    Fixed bug with band indicator returned by /status query
+    Make /status access generally available
+
+weissbier
+    Use https with geolocation sites
+
+Frank, HB9FXQ
+    Use wss: when Kiwi behind SSL proxy
+
+icm7216
+    Fixed bug in waterfall max/min controls
+    Improved waterfall colormap SQRT function
+    Misc bug fixes
+
+Michael Gernoth (stargo)
+    clock_gettime() needs to use CLOCK_MONOTONIC
+    Enable use of IPv6
+
+Petri, OH1BDF
+    Frequency input internationalization
+
+Peter Jennings, VE3SUN
+    Frequency entry memory
+    Right-click menu
+        DX cluster lookup
+        Save waterfall as JPG
 
 
 ////////////////////////////////
