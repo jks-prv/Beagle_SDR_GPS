@@ -2,6 +2,29 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.437  March 6, 2021
+    From Marco, IS0KYB (thanks Marco!)
+        AGC threshold bar added to S-meter:
+            The white bar appearing above the green S-meter bar is the AGC threshold value
+            (from control panel AGC tab). The threshold dBm value can read on the
+            S-meter scale in equivalent S-units.
+        Passband overload mute:
+            Mutes the audio when the signal level in the passband exceeds a set value.
+            The value is defined by a new setting on the admin page config tab.
+            When active a "!" appears in place of the mute icon on main control panel.
+            Useful for example when a nearby transmitter would otherwise result in a
+            loud annoying signal. Mute recovery time uses existing squelch tail setting.
+            
+    Added list of code contributors to _COPYRIGHT file.
+        Work in progress. If we missed your code contribution please email us.
+        We have hundreds of github issues and thousands of emails and forum posts to review.
+
+    Typing '/' alone into frequency box will restore the passband to the default value
+        for the current mode. Shortcut to shift-clicking over a mode button.
+    FFT extension: add help button, URL parameters, preset for RTZ.
+    Add mouseover popups to more buttons and menus on main control panel.
+    Removed more references to sdr.hu
+
 v1.436  February 23, 2021
     Minor improvements.
 
