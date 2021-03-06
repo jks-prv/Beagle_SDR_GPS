@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.438  March 7, 2021
+    Add admin page config tab option to disable AGC threshold display on S-meter.
+    Simplify record icons for audio and FAX files.
+    Restore frequency entry <form> interface for benefit of CATSync app.
+
 v1.437  March 6, 2021
     From Marco, IS0KYB (thanks Marco!)
         AGC threshold bar added to S-meter:

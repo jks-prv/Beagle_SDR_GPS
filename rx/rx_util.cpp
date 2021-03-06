@@ -235,6 +235,7 @@ void update_vars_from_config()
     cfg_default_int("S_meter_OV_counts", 10, &update_cfg);
     cfg_default_bool("webserver_caching", true, &update_cfg);
     max_thr = (float) cfg_default_int("overload_mute", -15, &update_cfg);
+    cfg_default_bool("agc_thresh_smeter", true, &update_cfg);
 
     if (wspr_update_vars_from_config()) update_cfg = true;
 

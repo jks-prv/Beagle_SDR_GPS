@@ -4955,7 +4955,7 @@ function freqset_complete(from)
 	var err = true;
 
    if (obj.value == '/') {
-      //console.log('--> restore_passband '+ cur_mode);
+      //console.log('restore_passband '+ cur_mode);
       restore_passband(cur_mode);
       demodulator_analog_replace(cur_mode);
       freqset_update_ui();    // restore previous
@@ -5041,9 +5041,8 @@ function freqset_keyup(obj, evt)
 	if (evt != undefined && evt.key != undefined) {
 		var klen = evt.key.length;
 		
-		// any_alternate_click_event_except_shift(), and check for evt.key != 'Shift',  allows e.g. "10M" for 10 MHz
-		if (any_alternate_click_event_except_shift(evt) || (klen != 1 && evt.key != 'Backspace' && evt.key != 'Shift')) {
-		   //console.log('--> key='+ evt.key);
+		// any_alternate_click_event_except_shift() allows e.g. "10M" for 10 MHz
+		if (any_alternate_click_event_except_shift(evt) || (klen != 1 && evt.key != 'Backspace')) {
 	
 			// An escape while the the freq box has focus causes the browser to put input value back to the
 			// last entered value directly by keyboard. This value is likely different than what was set by
@@ -5052,9 +5051,6 @@ function freqset_keyup(obj, evt)
 			   //event_dump(evt, 'Escape-freq');
 				//console.log('** restore freq box');
 				freqset_update_ui();
-			} else
-			if (evt.key == 'Enter') {
-			   freqset_complete('Enter');
 			}
 	
 			//console.log('FKU IGNORE ign='+ ignore_next_keyup_event +' klen='+ klen);
@@ -5064,8 +5060,6 @@ function freqset_keyup(obj, evt)
 	}
 	
 	if (ignore_next_keyup_event) {
-      freqset_complete('IKU');
-      //console.log('--> IKU');
       ignore_next_keyup_event = false;
       return;
    }
@@ -6366,7 +6360,8 @@ function smeter_init()
 		//console.log("SM x="+x+' dBm='+bars.dBm[i]+' '+bars.text[i]);
 	}
 
-	line_stroke(sMeter_ctx, 0, 2, "black", 0,y-3,w,y-3);
+   if (cfg.agc_thresh_smeter)
+	   line_stroke(sMeter_ctx, 0, 2, "black", 0,y-3,w,y-3);
 	line_stroke(sMeter_ctx, 0, 5, "black", 0,y,w,y);
 	setInterval(update_smeter, 100);
 }
@@ -6378,13 +6373,16 @@ var sm_ovfl_showing = false;
 function update_smeter()
 {
 	var x = smeter_dBm_biased_to_x(owrx.sMeter_dBm_biased);
-	var x_thr = smeter_dBm_biased_to_x(-thresh);
 	var y = SMETER_SCALE_HEIGHT-8;
 	var w = smeter_width;
 	sMeter_ctx.globalAlpha = 1;
 	line_stroke(sMeter_ctx, 0, 5, "lime", 0,y,x,y);
-	line_stroke(sMeter_ctx, 0, 2, "white", 0,y-3,w-x_thr,y-3);
-	line_stroke(sMeter_ctx, 0, 2, "black", w-x_thr,y-3,w,y-3);
+
+   if (cfg.agc_thresh_smeter) {
+	   var x_thr = smeter_dBm_biased_to_x(-thresh);
+	   line_stroke(sMeter_ctx, 0, 2, "white", 0,y-3,w-x_thr,y-3);
+	   line_stroke(sMeter_ctx, 0, 2, "black", w-x_thr,y-3,w,y-3);
+	}
 	
 	if (sm_timeout-- == 0) {
 		sm_timeout = sm_interval;
@@ -6473,7 +6471,7 @@ function ident_keyup(el, evt)
 	if (evt != undefined && evt.key != undefined) {
 		var klen = evt.key.length;
 		if (any_alternate_click_event_except_shift(evt) || klen != 1 && evt.key != 'Backspace' && evt.key != 'Shift') {
-		   //console.log('--> IDENT key='+ evt.key);
+		   //console.log('IDENT key='+ evt.key);
 			if (evt.key == 'Enter') {
 			   ident_complete('Enter');
 			}
@@ -6805,7 +6803,13 @@ function panels_setup()
 	w3_el("id-control-freq1").innerHTML =
 	   w3_inline('',
          w3_div('id-freq-cell',
-            w3_input('w3-custom-events|padding:0 4px;max-width:74px|size=8 onkeydown="freqset_keydown(event)" onkeyup="freqset_keyup(this, event)"', '', 'freq-input')
+            // NB: DO NOT remove the following <form> (3/2021)
+            // The CATSync app depends on this API by using the following javascript injection:
+            // Dim jsFreqKiwiSDR As String = "targetForm = document.forms['form_freq'];targetForm.elements[0].value = '" + frequency + "';freqset_complete(0); false"
+            // Form1.browser.ExecuteScriptAsync(jsFreqKiwiSDR)
+            '<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
+               w3_input('w3-custom-events|padding:0 4px;max-width:74px|size=8 onkeydown="freqset_keydown(event)" onkeyup="freqset_keyup(this, event)"', '', 'freq-input') +
+            '</form>'
          ),
 
          w3_div('|padding:0 0 0 3px',
@@ -6875,21 +6879,20 @@ function panels_setup()
          ),
          w3_div('',
             w3_div('fa-stack||title="record"',
-               w3_icon('id-rec1', 'fa-circle fa-nudge-down fa-stack-2x w3-text-pink', 22, '', 'toggle_or_set_rec'),
-               w3_icon('id-rec2', 'fa-stop fa-stack-1x w3-text-pink w3-hide', 10, '', 'toggle_or_set_rec')
+               w3_icon('id-rec1', 'fa-repeat fa-stack-1x w3-text-pink', 22, '', 'toggle_or_set_rec')
             )
          ),
          w3_div('|width:8%|title="mute"',
             // from https://jsfiddle.net/cherrador/jomgLb2h since fa doesn't have speaker-slash
             w3_div('id-mute-no fa-stack|width:100%; color:lime',
-               w3_icon('', 'fa-volume-up fa-stack-2x fa-nudge-right-OFF', 24, 'inherit', 'toggle_or_set_mute')
+               w3_icon('', 'fa-volume-up fa-stack-2x', 24, 'inherit', 'toggle_or_set_mute')
             ),
             w3_div('id-mute-yes fa-stack w3-hide|width:100%;color:magenta;',  // hsl(340, 82%, 60%) w3-text-pink but lighter
                w3_icon('', 'fa-volume-off fa-stack-2x fa-nudge-left', 24, '', 'toggle_or_set_mute'),
-               w3_icon('', 'fa-times fa-right fa-nudge-left-OFF', 12, '', 'toggle_or_set_mute')
+               w3_icon('', 'fa-times fa-right', 12, '', 'toggle_or_set_mute')
             ),
             w3_div('id-mute-exclaim fa-stack w3-hide|width:100%; color:yellow',
-               w3_icon('', 'fa-exclamation-triangle fa-stack-1x fa-nudge-right-OFF', 20, 'inherit')
+               w3_icon('', 'fa-exclamation-triangle fa-stack-1x', 20, 'inherit')
             )
          )
       );
@@ -7150,7 +7153,7 @@ function panels_setup()
 			w3_col_percent('w3-valign/class-slider',
 				w3_div('label-threshold w3-show-inline-block', 'Threshold'), 18,
 				'<input id="input-threshold" type="range" min="-130" max="0" value="'+ thresh +'" step="1" onchange="setThresh(1,this.value)" oninput="setThresh(0,this.value)">', 52,
-				w3_div('field-threshold w3-show-inline-block', thresh.toString()) +' dB', 30
+				w3_div('field-threshold w3-show-inline-block', thresh.toString()) +' dBm', 30
 			),
 			w3_col_percent('w3-valign/class-slider',
 				w3_div('label-slope w3-show-inline-block', 'Slope'), 18,
@@ -7893,15 +7896,9 @@ function toggle_or_set_rec(set)
 {
    recording = !recording;
    //console.log('toggle_or_set_rec set=' + set + ' recording=' + recording);
-   var el1 = w3_el('id-rec1');
-   w3_show_hide('id-rec2', recording);
-   if (recording) {
-      w3_remove_then_add(el1, 'fa-circle', 'fa-circle-o-notch fa-spin');
-   } else {
-      w3_remove_then_add(el1, 'fa-circle-o-notch fa-spin', 'fa-circle');
-      w3_remove_then_add('id-rec1', 'w3-text-white', 'w3-text-pink');
-      w3_remove_then_add('id-rec2', 'w3-text-white', 'w3-text-pink');
-   }
+   w3_remove_then_add('id-rec1', 'fa-spin', recording? 'fa-spin':'');
+   w3_remove_then_add('id-rec1', 'w3-text-white', 'w3-text-pink');      // in case squelched when recording stopped
+
    if (recording) {
       // Start recording. This is a 'window' property, so audio_recv(), where the
       // recording hooks are, can access it.
@@ -7968,7 +7965,7 @@ function squelch_action(sq)
 
    owrx.squelched_overload = (owrx.sMeter_dBm >= cfg.overload_mute);
    if (owrx.prev_squelched_overload != owrx.squelched_overload) {
-      //console.log('--> squelched_overload='+ (owrx.squelched_overload? 1:0));
+      //console.log('squelched_overload='+ (owrx.squelched_overload? 1:0));
       w3_show_hide('id-mute-exclaim', owrx.squelched_overload);
       w3_show_hide('id-mute-no', owrx.squelched_overload? false : !muted);
       w3_show_hide('id-mute-yes', owrx.squelched_overload? false : muted);
@@ -7979,10 +7976,9 @@ function squelch_action(sq)
    w3_color('id-mute-no', mute_color);
    
    if (recording) {
-      sq_color = squelched? 'w3-text-white':'w3-text-pink';
-      w3_remove_then_add('id-rec1', 'fa-spin', squelched? '':'fa-spin');
-      w3_remove_then_add('id-rec1', 'w3-text-white w3-text-pink', sq_color);
-      w3_remove_then_add('id-rec2', 'w3-text-white w3-text-pink', sq_color);
+      var stop = (squelched || owrx.squelched_overload);
+      w3_remove_then_add('id-rec1', 'fa-spin', stop? '':'fa-spin');
+      w3_remove_then_add('id-rec1', 'w3-text-white w3-text-pink', stop? 'w3-text-white' : 'w3-text-pink');
    }
 }
 
