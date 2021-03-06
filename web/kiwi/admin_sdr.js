@@ -81,7 +81,7 @@ function config_html()
 				   'there will be more spurs in the 30-32 MHz range.'
 				)
 			),
-			''
+         w3_checkbox_get_param('w3-halign-center//w3-restart w3-label-inline', 'Show AGC threshold on S-meter', 'agc_thresh_smeter', 'admin_bool_cb', true)
 		) +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_input_get('', 'S-meter calibration (dB)', 'S_meter_cal', 'admin_int_cb'),

@@ -170,8 +170,7 @@ function fax_recv(data)
             var file = kiwi_url_origin() +'/kiwi.config/fax.ch'+ fax.ch +'_'+ param[1];
             var png = file +'.png';
             var thumb = file +'.thumb.png';
-            w3_remove_then_add('id-fax-file-icon1', 'fa-circle-o-notch fa-refresh fa-spin w3-text-aqua', 'fa-circle w3-text-pink');
-            w3_add('id-fax-file-icon2', 'w3-hide');
+            w3_remove_then_add('id-fax-file-icon', 'fa-refresh fa-spin w3-text-aqua', 'fa-repeat w3-text-pink');
             w3_el('id-fax-file-status').innerHTML =
                w3_link('', png, '<img src='+ dq(thumb) +' />');
 				break;
@@ -400,8 +399,7 @@ function fax_controls_setup()
 					w3_inline('',
                   w3_div('',
                      w3_div('fa-stack||title="record"',
-                        w3_icon('id-fax-file-icon1', 'fa-circle fa-nudge-down fa-stack-2x w3-text-pink', 22, '', 'fax_file_cb'),
-                        w3_icon('id-fax-file-icon2', 'fa-stop fa-stack-1x w3-text-pink w3-hide', 10, '', 'fax_file_cb')
+                        w3_icon('id-fax-file-icon', 'fa-repeat fa-stack-1x w3-text-pink', 22, '', 'fax_file_cb')
                      )
                   ),
                   w3_div('id-fax-file-status w3-margin-left')
@@ -676,8 +674,7 @@ function fax_clear_cb()
 {
    fax_clear_display();
    if (!fax.file) {
-      w3_remove_then_add('id-fax-file-icon1', 'fa-circle-o-notch fa-refresh fa-spin w3-text-aqua', 'fa-circle  w3-text-pink');
-      w3_add('id-fax-file-icon2', 'w3-hide');
+      w3_remove_then_add('id-fax-file-icon', 'fa-repeat fa-refresh fa-spin w3-text-aqua', 'fa-repeat  w3-text-pink');
       w3_el('id-fax-file-status').innerHTML = '';
    }
 }
@@ -686,19 +683,16 @@ function fax_file_cb(path, param, first)
 {
    fax.file ^= 1;
    //console.log('flip fax.file='+ fax.file);
-   var el1 = w3_el('id-fax-file-icon1');
-   var el2 = w3_el('id-fax-file-icon2');
+   var el1 = w3_el('id-fax-file-icon');
    
    if (fax.file) {
 	   ext_send('SET fax_file_open');
-      w3_remove_then_add(el1, 'fa-circle', 'fa-circle-o-notch fa-spin');
-      w3_remove(el2, 'w3-hide');
+      w3_remove_then_add(el1, '', 'fa-spin');
       w3_el('id-fax-file-status').innerHTML =
          w3_div('w3-show-inline-block', 'recording<br>line '+ w3_div('id-fax-line w3-show-inline-block'));
 	} else {
 	   ext_send('SET fax_file_close');
-      w3_remove_then_add(el1, 'fa-circle-o-notch w3-text-pink', 'fa-refresh fa-spin w3-text-aqua');
-      w3_add(el2, 'w3-hide');
+      w3_remove_then_add(el1, 'fa-repeat w3-text-pink', 'fa-refresh fa-spin w3-text-aqua');
       w3_el('id-fax-file-status').innerHTML = 'processing';
 	}
 }
