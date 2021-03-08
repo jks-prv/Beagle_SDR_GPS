@@ -233,8 +233,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		// if this Kiwi doesn't have any open access (no password required)
 		// prevent it from being listed
 		const char *pwd_s = admcfg_string("user_password", NULL, CFG_REQUIRED);
-		int chan_no_pwd = cfg_int("chan_no_pwd", NULL, CFG_REQUIRED);
-		if (chan_no_pwd >= rx_chans) chan_no_pwd = rx_chans - 1;
+		int chan_no_pwd = rx_chan_no_pwd();
 		int users_max = (pwd_s != NULL && *pwd_s != '\0')? chan_no_pwd : rx_chans;
 		int users = MIN(current_nusers, users_max);
 		//printf("STATUS current_nusers=%d users_max=%d users=%d\n", current_nusers, users_max, users);

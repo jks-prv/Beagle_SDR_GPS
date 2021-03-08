@@ -340,6 +340,14 @@ void rx_server_remove(conn_t *c)
 	TaskRemove(task);
 }
 
+int rx_chan_no_pwd()
+{
+    int chan_no_pwd = cfg_int("chan_no_pwd", NULL, CFG_REQUIRED);
+    // adjust if number of rx channels changed due to mode change but chan_no_pwd wasn't adjusted
+    if (chan_no_pwd >= rx_chans) chan_no_pwd = rx_chans - 1;
+    return chan_no_pwd;
+}
+
 int rx_count_server_conns(conn_count_e type, conn_t *our_conn)
 {
 	int users=0, any=0;

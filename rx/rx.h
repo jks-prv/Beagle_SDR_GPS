@@ -81,3 +81,5 @@ int rx_chan_free_count(rx_free_count_e flags, int *idx = NULL, int *heavy = NULL
 
 typedef enum { LOG_ARRIVED, LOG_UPDATE, LOG_UPDATE_NC, LOG_LEAVING } logtype_e;
 void rx_loguser(conn_t *c, logtype_e type);
+
+int rx_chan_no_pwd();

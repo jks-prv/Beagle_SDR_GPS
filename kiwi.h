@@ -77,12 +77,12 @@ extern lock_t spi_lock;
 // CAUTION: order in mode_s/modu_s must match mode_e, mode_hbw, mode_offset
 // CAUTION: order in mode_s/modu_s must match kiwi.js:kiwi.modes_l
 // CAUTION: add new entries at the end
-#define N_MODE 15
-// = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq", "drm", "usn", "lsn", "sam", "sau", "sal", "sas" };
+#define N_MODE 16
+// = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq", "drm", "usn", "lsn", "sam", "sau", "sal", "sas", "qam" };
 extern const char *mode_s[N_MODE], *modu_s[N_MODE];
 extern const int mode_hbw[N_MODE], mode_offset[N_MODE];
 typedef enum {
-    MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NBFM, MODE_IQ, MODE_DRM, MODE_USN, MODE_LSN, MODE_SAM, MODE_SAU, MODE_SAL, MODE_SAS
+    MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NBFM, MODE_IQ, MODE_DRM, MODE_USN, MODE_LSN, MODE_SAM, MODE_SAU, MODE_SAL, MODE_SAS, MODE_QAM
 } mode_e;
 
 
@@ -90,7 +90,8 @@ typedef enum { DOM_SEL_NAM=0, DOM_SEL_DUC=1, DOM_SEL_PUB=2, DOM_SEL_SIP=3, DOM_S
 
 typedef enum { RX4_WF4=0, RX8_WF2=1, RX3_WF3=2, RX14_WF0=3 } firmware_e;
 
-#define	KEEPALIVE_SEC		60
+#define	KEEPALIVE_SEC		    60
+#define KEEPALIVE_SEC_NO_AUTH   15      // don't hang the rx channel as long if waiting for password entry
 
 // print_stats
 #define STATS_GPS       0x01

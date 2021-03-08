@@ -354,9 +354,9 @@ void c2s_sound(void *param)
                     if (mode != _mode || n == 5) {
 
                         // when switching out of IQ or DRM modes: reset AGC, compression state
-                        bool IQ_or_DRM_or_SAS = (mode == MODE_IQ || mode == MODE_DRM || mode == MODE_SAS);
-                        bool new_IQ_or_DRM_or_SAS = (_mode == MODE_IQ || _mode == MODE_DRM || _mode == MODE_SAS);
-                        if (IQ_or_DRM_or_SAS && !new_IQ_or_DRM_or_SAS && (cmd_recv & CMD_AGC)) {
+                        bool IQ_or_DRM_or_stereo = (mode == MODE_IQ || mode == MODE_DRM || mode == MODE_SAS || mode == MODE_QAM);
+                        bool new_IQ_or_DRM_or_stereo = (_mode == MODE_IQ || _mode == MODE_DRM || _mode == MODE_SAS || _mode == MODE_QAM);
+                        if (IQ_or_DRM_or_stereo && !new_IQ_or_DRM_or_stereo && (cmd_recv & CMD_AGC)) {
                             //cprintf(conn, "SND out IQ mode -> reset AGC, compression\n");
                             m_Agc[rx_chan].SetParameters(agc, hang, thresh, manGain, slope, decay, frate);
                             memset(&snd->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
@@ -367,7 +367,7 @@ void c2s_sound(void *param)
                         }
 
                         // reset SAM demod on non-SAM to SAM transition
-                        if ((_mode >= MODE_SAM && _mode <= MODE_SAS) && !(mode >= MODE_SAM && mode <= MODE_SAS)) {
+                        if ((_mode >= MODE_SAM && _mode <= MODE_QAM) && !(mode >= MODE_SAM && mode <= MODE_QAM)) {
                             wdsp_SAM_reset(rx_chan);
                         }
 
@@ -790,7 +790,7 @@ void c2s_sound(void *param)
 		// no keep-alive seen for a while or the bug where the initial cmds are not received and the connection hangs open
 		// and locks-up a receiver channel
 		conn->keep_alive = timer_sec() - conn->keepalive_time;
-		bool keepalive_expired = (!conn->internal_connection && conn->keep_alive > KEEPALIVE_SEC);
+		bool keepalive_expired = (!conn->internal_connection && conn->keep_alive > (conn->auth? KEEPALIVE_SEC : KEEPALIVE_SEC_NO_AUTH));
 		bool connection_hang = (conn->keepalive_count > 4 && cmd_recv != CMD_ALL);
 		if (keepalive_expired || connection_hang || conn->inactivity_timeout || conn->kick) {
 			//if (keepalive_expired) clprintf(conn, "SND KEEP-ALIVE EXPIRED\n");
@@ -798,7 +798,10 @@ void c2s_sound(void *param)
 			//if (conn->inactivity_timeout) clprintf(conn, "SND INACTIVITY T/O\n");
 			//if (conn->kick) clprintf(conn, "SND KICK\n");
 			
-			if (!conn->auth) send_msg(conn, SM_NO_DEBUG, "MSG password_timeout");
+			if (!conn->auth) {
+			    cprintf(conn, "PWD entry timeout\n");
+			    send_msg(conn, SM_NO_DEBUG, "MSG password_timeout");
+			}
 		
 			// Ask waterfall task to stop (must not do while, for example, holding a lock).
 			// We've seen cases where the sound connects, then times out. But the w/f has never connected.
@@ -850,17 +853,17 @@ void c2s_sound(void *param)
 		#define SND_FLAG_LITTLE_ENDIAN  0x80
 		
 		bool isNBFM = (mode == MODE_NBFM);
-		bool IQ_or_DRM_or_SAS = (mode == MODE_IQ || mode == MODE_DRM || mode == MODE_SAS);
+		bool IQ_or_DRM_or_stereo = (mode == MODE_IQ || mode == MODE_DRM || mode == MODE_SAS || mode == MODE_QAM);
 
 		u1_t *bp_real_u1  = snd->out_pkt_real.u1;
 		s2_t *bp_real_s2  = snd->out_pkt_real.s2;
 		u1_t *bp_iq_u1    = snd->out_pkt_iq.u1;
 		s2_t *bp_iq_s2    = snd->out_pkt_iq.s2;
-		u1_t *flags    = (IQ_or_DRM_or_SAS? &snd->out_pkt_iq.h.flags : &snd->out_pkt_real.h.flags);
-		u1_t *seq      = (IQ_or_DRM_or_SAS? snd->out_pkt_iq.h.seq    : snd->out_pkt_real.h.seq);
-		char *smeter   = (IQ_or_DRM_or_SAS? snd->out_pkt_iq.h.smeter : snd->out_pkt_real.h.smeter);
+		u1_t *flags    = (IQ_or_DRM_or_stereo? &snd->out_pkt_iq.h.flags : &snd->out_pkt_real.h.flags);
+		u1_t *seq      = (IQ_or_DRM_or_stereo? snd->out_pkt_iq.h.seq    : snd->out_pkt_real.h.seq);
+		char *smeter   = (IQ_or_DRM_or_stereo? snd->out_pkt_iq.h.smeter : snd->out_pkt_real.h.smeter);
 
-		bool do_de_emp = (de_emp && !IQ_or_DRM_or_SAS);
+		bool do_de_emp = (de_emp && !IQ_or_DRM_or_stereo);
 		
 		#ifdef DRM
             drm_t *drm = &DRM_SHMEM->drm[rx_chan];
@@ -1058,7 +1061,7 @@ void c2s_sound(void *param)
             
             TYPEMONO16 *r_samps;
             
-            if (!IQ_or_DRM_or_SAS) {
+            if (!IQ_or_DRM_or_stereo) {
                 r_samps = &rx->real_samples[rx->real_wr_pos][0];
                 rx->real_seqnum[rx->real_wr_pos] = rx->real_seq;
                 rx->real_seq++;
@@ -1097,12 +1100,13 @@ void c2s_sound(void *param)
             case MODE_SAM:
             case MODE_SAL:
             case MODE_SAU:
-            case MODE_SAS: {
+            case MODE_SAS:
+            case MODE_QAM: {
                 TYPECPX *a_samps = rx->agc_samples;
                 m_Agc[rx_chan].ProcessData(ns_out, f_samps, a_samps);
 
                 // NB:
-                //      MODE_SAS stereo mode: output samples put back into a_samps
+                //      MODE_SAS/QAM stereo mode: output samples put back into a_samps
                 //      chan_null mode: in addition to r_samps output compute FFT of nulled a_samps
                 wdsp_SAM_demod(rx_chan, mode, chan_null, ns_out, a_samps, r_samps);
                 if (snd->secondary_filter) {
@@ -1174,7 +1178,7 @@ void c2s_sound(void *param)
             }
 
             // noise & autonotch processors that only operate on real samples (i.e. non-IQ)
-            if (!IQ_or_DRM_or_SAS) {
+            if (!IQ_or_DRM_or_stereo) {
                 if (nb_enable[NB_BLANKER]) {
                     switch (nb_algo) {
                         #ifdef NB_STD_POST_FILTER
@@ -1266,14 +1270,14 @@ void c2s_sound(void *param)
             bool send_silence = (masked || squelched || squelched_overload);
     
             // IQ output modes
-            if (mode == MODE_IQ || mode == MODE_SAS
+            if (mode == MODE_IQ || mode == MODE_SAS || mode == MODE_QAM
             #ifdef DRM
                 // DRM monitor mode is effectively the same as MODE_IQ
                 || (mode == MODE_DRM && (drm->monitor || rx_chan >= DRM_MAX_RX))
             #endif
             ) {
                 TYPECPX *cp;
-                if (mode == MODE_SAS) {
+                if (mode == MODE_SAS || mode == MODE_QAM) {
                     cp = rx->agc_samples;
                 } else {
                     cp = f_samps;
@@ -1442,8 +1446,8 @@ void c2s_sound(void *param)
 
         *flags = 0;
         if (dpump.rx_adc_ovfl) *flags |= SND_FLAG_ADC_OVFL;
-        if (IQ_or_DRM_or_SAS) *flags |= SND_FLAG_MODE_IQ;
-        if (compression && !IQ_or_DRM_or_SAS) *flags |= SND_FLAG_COMPRESSED;
+        if (IQ_or_DRM_or_stereo) *flags |= SND_FLAG_MODE_IQ;
+        if (compression && !IQ_or_DRM_or_stereo) *flags |= SND_FLAG_COMPRESSED;
         if (squelched || squelched_overload) *flags |= SND_FLAG_SQUELCH_UI;
         if (little_endian) *flags |= SND_FLAG_LITTLE_ENDIAN;
 
@@ -1473,7 +1477,7 @@ void c2s_sound(void *param)
         int aud_bytes;
         int c2s_sound_camp(rx_chan_t *rxc, conn_t *conn, u1_t flags, char *bp, int bytes, int aud_bytes);
 
-        if (IQ_or_DRM_or_SAS) {
+        if (IQ_or_DRM_or_stereo) {
             // allow GPS timestamps to be seen by internal extensions
             // but selectively remove from external connections (see admin page security tab)
             if (!allow_gps_tstamp) {
@@ -1503,7 +1507,49 @@ void c2s_sound(void *param)
 
 int c2s_sound_camp(rx_chan_t *rxc, conn_t *conn, u1_t flags, char *bp, int bytes, int aud_bytes)
 {
-    return 0;
+    int i, n;
+    int rx_chan = conn->rx_channel;
+	snd_t *snd = &snd_inst[rx_chan];
+    int additional_bytes = 0;
+    
+    for (i = 0, n = 0; i < N_CAMP; i++) {
+        conn_t *c = rxc->camp_conn[i];
+        if (c == NULL) continue;
+        
+        // detect camping connection has gone away
+        if (c->type != STREAM_MONITOR || c->remote_port != rxc->camp_id[i]) {
+            cprintf(conn, ">>> CAMP gone rx%d type=%d id=%d/%d slot=%d/%d\n",
+                rx_chan, c->type, c->remote_port, rxc->camp_id[i], i+1, N_CAMP);
+            rxc->camp_conn[i] = NULL;
+            rxc->n_camp--;
+            continue;
+        }
+
+        if (!c->camp_init) {
+            cprintf(conn, ">>> CAMP init rx%d slot=%d/%d\n", rx_chan, i+1, N_CAMP);
+            double frate = ext_update_get_sample_rateHz(-1);
+            send_msg(c, SM_SND_DEBUG, "MSG center_freq=%d bandwidth=%d adc_clk_nom=%.0f", (int) ui_srate/2, (int) ui_srate, ADC_CLOCK_NOM);
+            send_msg(c, SM_SND_DEBUG, "MSG audio_camp=0,%d audio_rate=%d sample_rate=%.6f", conn->isLocal, snd_rate, frate);
+            send_msg(c, SM_SND_DEBUG, "MSG audio_adpcm_state=%d,%d", snd->adpcm_snd.index, snd->adpcm_snd.previousValue);
+            cprintf(c, "MSG audio_adpcm_state=%d,%d seq=%d\n", snd->adpcm_snd.index, snd->adpcm_snd.previousValue, snd->seq);
+            c->camp_init = c->camp_passband = true;
+        } else {
+            if (c->camp_passband || (flags & SND_FLAG_LPF)) {
+                send_msg(c, SM_SND_DEBUG, "MSG audio_passband=%.0f,%.0f", snd->locut, snd->hicut);
+                cprintf(c, "MSG audio_passband=%.0f,%.0f\n", snd->locut, snd->hicut);
+                c->camp_passband = false;
+            }
+            
+            // adpcm state has to be sent *before* generation/transmission of new compressed data
+            app_to_web(c, bp, bytes);
+            additional_bytes += aud_bytes;
+        }
+        
+        n++;
+    }
+    check(n == rxc->n_camp);
+    
+    return additional_bytes;
 }
 
 void c2s_sound_shutdown(void *param)

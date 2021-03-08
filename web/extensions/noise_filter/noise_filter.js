@@ -155,7 +155,7 @@ function noise_filter_controls_html()
       break;
    }
    
-   if (ext_is_IQ_or_stereo_mode()) {
+   if (ext_is_IQ_or_stereo_curmode()) {
       s = 'No noise filtering in IQ or stereo modes';
    }
    
@@ -190,7 +190,7 @@ function noise_filter_controls_refresh()
 function noise_filter_environment_changed(changed)
 {
    if (changed.mode) {
-      var is_IQ_or_stereo_mode = ext_is_IQ_or_stereo_mode();
+      var is_IQ_or_stereo_mode = ext_is_IQ_or_stereo_curmode();
       if (is_IQ_or_stereo_mode != noise_filter.is_IQ_or_stereo_mode) {
          noise_filter_controls_refresh();
          noise_filter.is_IQ_or_stereo_mode = is_IQ_or_stereo_mode;

@@ -197,6 +197,11 @@ void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *i
                 audio  = (ai_ps + bi_ps) - (aq_ps - bq_ps); // lsb
                 audiou = (ai_ps - bi_ps) + (aq_ps + bq_ps); // usb
                 break;
+
+            case MODE_QAM:  // C-QUAM
+                audio  = corr[I]/2 + corr[Q]/2; // L
+                audiou = corr[I]/2 - corr[Q]/2; // R
+                break;
             
             default:
                 panic("SAM");
@@ -209,7 +214,7 @@ void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *i
             audio = audio + w->dc_insert - w->dc;
         }
         
-        if (mode == MODE_SAS || isChanNull) {
+        if (mode == MODE_SAS || mode == MODE_QAM || isChanNull) {
             if (FADE_LEVELER) {
                 w->dcu = mtauR * w->dcu + onem_mtauR * audiou;
                 w->dc_insertu = mtauI * w->dc_insertu + onem_mtauI * corr[I];

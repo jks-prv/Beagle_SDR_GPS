@@ -60,16 +60,16 @@ bool auth_su;
 char auth_su_remote_ip[NET_ADDRSTRLEN];
 
 const char *mode_s[N_MODE] = {
-    "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq", "drm", "usn", "lsn", "sam", "sau", "sal", "sas"
+    "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq", "drm", "usn", "lsn", "sam", "sau", "sal", "sas", "qam"
 };
 const char *modu_s[N_MODE] = {
-    "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ", "DRM", "USN", "LSN", "SAM", "SAU", "SAL", "SAS"
+    "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ", "DRM", "USN", "LSN", "SAM", "SAU", "SAL", "SAS", "QAM"
 };
 const int mode_hbw[N_MODE] = {
-    9800/2, 5000/2, 2400/2, 2400/2, 400/2, 60/2, 12000/2, 10000/2, 10000/2, 2100/2, 2100/2, 9800/2, 9800/2, 9800/2, 9800/2
+    9800/2, 5000/2, 2400/2, 2400/2, 400/2, 60/2, 12000/2, 10000/2, 10000/2, 2100/2, 2100/2, 9800/2, 9800/2, 9800/2, 9800/2, 9800/2
 };
 const int mode_offset[N_MODE] = {
-    0, 0, 1500, -1500, 0, 0, 0, 0, 0, 1350, -1350, 0, 0, 0, 0
+    0, 0, 1500, -1500, 0, 0, 0, 0, 0, 1350, -1350, 0, 0, 0, 0, 0
 };
 
 #ifndef CFG_GPS_ONLY
@@ -385,8 +385,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 //cprintf(conn, "client_public_ip %s\n", client_public_ip);
             }
 
-            int chan_no_pwd = cfg_int("chan_no_pwd", NULL, CFG_REQUIRED);
-            if (chan_no_pwd >= rx_chans) chan_no_pwd = rx_chans - 1;
+		    int chan_no_pwd = rx_chan_no_pwd();
             int chan_need_pwd = rx_chans - chan_no_pwd;
 
             if (type_kiwi || type_prot) {
@@ -562,7 +561,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             }
 
             send_msg(conn, false, "MSG rx_chans=%d", rx_chans);
-            send_msg(conn, false, "MSG chan_no_pwd=%d", chan_no_pwd);
+            send_msg(conn, false, "MSG chan_no_pwd=%d", chan_no_pwd);   // potentially corrected from cfg.chan_no_pwd
             if (badp == 0 && (stream_snd || conn->type == STREAM_ADMIN)) {
                 send_msg(conn, false, "MSG is_local=%d,%d", conn->rx_channel, is_local? 1:0);
                 //pdbug_cprintf(conn, "PWD %s %s\n", type_m, uri);

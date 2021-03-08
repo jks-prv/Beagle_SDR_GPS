@@ -820,6 +820,7 @@ var passbands = {
 	sal:		{ lo: -4900,	hi:     0 },
 	sau:		{ lo:     0,	hi:  4900 },
 	sas:		{ lo: -4900,	hi:  4900 },
+	qam:		{ lo: -4900,	hi:  4900 },
 	drm:		{ lo: -5000,	hi:  5000 },
 	lsb:		{ lo: -2700,	hi:  -300 },	         // cf = 1500 Hz, bw = 2400 Hz
 	lsn:		{ lo: -2400,	hi:  -300 },	         // cf = 1350 Hz, bw = 2100 Hz
@@ -944,6 +945,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	   case 'sal':
 	   case 'sau':
 	   case 'sas':
+	   case 'qam':
 	   case 'drm':
 	   case 'nbfm':
 	   case 'iq':
@@ -1213,7 +1215,7 @@ function demodulator_analog_replace(subtype, freq)
 	var offset = 0, prev_pbo = 0, low_cut = NaN, high_cut = NaN;
 	var wasCW = false, toCW = false, fromCW = false;
 	
-   w3_show_hide('id-sam-carrier-container', subtype.startsWith('sa'));
+   w3_show_hide('id-sam-carrier-container', subtype.startsWith('sa') || subtype.startsWith('qa'));
 
 	if (demodulators.length) {
 		wasCW = demodulators[0].isCW;
@@ -2115,7 +2117,7 @@ function canvas_start_drag(evt, x, y)
 		var fold = canvas_get_dspfreq(x);
 		var b = find_band(fold);
 		var cm = cur_mode.substr(0,2);
-		var am_ssb_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
+		var am_ssb_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'qa' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
 		//console_log('nearest', cm, am_ssb_iq_drm);
 	   var ITU_region = cfg.init.ITU_region + 1;
 	   var ham_80m_swbc_75m_overlap = (ITU_region == 2 && b && b.name == '75m');
@@ -4874,7 +4876,9 @@ function modeset_update_ui(mode)
 	if (owrx.last_mode_el != null) owrx.last_mode_el.style.color = "white";
 	
 	// if sound comes up before waterfall then the button won't be there
-	var el = w3_el('id-mode-'+ mode.substr(0,2));
+	var m = mode.substr(0,2);
+	if (m == 'qa') m = 'sa';   // QAM -> SAM case
+	var el = w3_el('id-mode-'+ m);
 	el.innerHTML = mode.toUpperCase();
 	if (el && el.style) el.style.color = "lime";
 	owrx.last_mode_el = el;
@@ -4898,8 +4902,8 @@ function try_freqset_update_ui()
 		if (wf.audioFFT_active) {
 		
          // if not already clearing then clear on iq mode change
-         var c_iq_drm_sas = (cur_mode == 'iq' || cur_mode == 'drm' || cur_mode == 'sas')? 1:0;
-         var p_iq_drm_sas = (wf.audioFFT_prev_mode == 'iq' || wf.audioFFT_prev_mode == 'drm' || wf.audioFFT_prev_mode == 'sas')? 1:0;
+         var c_iq_drm_sas = ext_is_IQ_or_stereo_curmode()? 1:0;
+         var p_iq_drm_sas = ext_is_IQ_or_stereo_mode(wf.audioFFT_prev_mode)? 1:0;
 		   if (!wf.audioFFT_clear_wf && (c_iq_drm_sas ^ p_iq_drm_sas))
 		      wf.audioFFT_clear_wf = true;
 		   audioFFT_update();
@@ -5077,6 +5081,7 @@ var up_down = {
 	sal: [ 0, -1, -0.1, 0.1, 1, 0 ],
 	sau: [ 0, -1, -0.1, 0.1, 1, 0 ],
 	sas: [ 0, -1, -0.1, 0.1, 1, 0 ],
+	qam: [ 0, -1, -0.1, 0.1, 1, 0 ],
 	drm: [ 0, -1, -0.1, 0.1, 1, 0 ],
 	usb: [ 0, -1, -0.1, 0.1, 1, 0 ],
 	usn: [ 0, -1, -0.1, 0.1, 1, 0 ],
@@ -5097,6 +5102,7 @@ var up_down_default = {
 	sal: [ 5, 0, 0, 0, 0, 5 ],
 	sau: [ 5, 0, 0, 0, 0, 5 ],
 	sas: [ 5, 0, 0, 0, 0, 5 ],
+	qam: [ 5, 0, 0, 0, 0, 5 ],
 	drm: [ 5, 0, 0, 0, 0, 5 ],
 	usb: [ 5, 0, 0, 0, 0, 5 ],
 	usn: [ 5, 0, 0, 0, 0, 5 ],
@@ -5125,7 +5131,7 @@ function special_step(b, sel, caller)
 	} else
 	if (b != null && (b.name == 'LW' || b.name == 'MW')) {
 	   var cm = cur_mode.substr(0,2);
-		var am_ssb_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
+		var am_ssb_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'qa' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
 		//console_log('special step', cm, am_ssb_iq_drm);
 		if (am_ssb_iq_drm) {
 			step_Hz = step_9_10? 9000 : 10000;
@@ -5203,7 +5209,7 @@ function freq_step_update_ui(force)
 	}
 
    var cm = cur_mode.substr(0,2);
-   var am_ssb_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
+   var am_ssb_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'qa' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
 	var show_9_10 = (b != null && (b.name == 'LW' || b.name == 'MW') && am_ssb_iq_drm)? true:false;
 	w3_visible('id-9-10-cell', show_9_10);
 
@@ -6355,14 +6361,12 @@ function smeter_init()
 	sMeter_ctx.fillStyle = "white";
 	for (var i=0; i < bars.text.length; i++) {
 		var x = smeter_dBm_biased_to_x(bars.dBm[i] + SMETER_BIAS);
-		line_stroke(sMeter_ctx, 1, 3, "white", x,y-8,x,y+8);
+		line_stroke(sMeter_ctx, 1, 3, "white", x,y-8, x,y+8);
 		sMeter_ctx.fillText(bars.text[i], x, y-15);
 		//console.log("SM x="+x+' dBm='+bars.dBm[i]+' '+bars.text[i]);
 	}
 
-   if (cfg.agc_thresh_smeter)
-	   line_stroke(sMeter_ctx, 0, 2, "black", 0,y-3,w,y-3);
-	line_stroke(sMeter_ctx, 0, 5, "black", 0,y,w,y);
+	line_stroke(sMeter_ctx, 0, 5, "black", 0,y, w,y);
 	setInterval(update_smeter, 100);
 }
 
@@ -6376,22 +6380,21 @@ function update_smeter()
 	var y = SMETER_SCALE_HEIGHT-8;
 	var w = smeter_width;
 	sMeter_ctx.globalAlpha = 1;
-	line_stroke(sMeter_ctx, 0, 5, "lime", 0,y,x,y);
+	line_stroke(sMeter_ctx, 0, 5, "lime", 0,y, x,y);
 
    if (cfg.agc_thresh_smeter) {
 	   var x_thr = smeter_dBm_biased_to_x(-thresh);
-	   line_stroke(sMeter_ctx, 0, 2, "white", 0,y-3,w-x_thr,y-3);
-	   line_stroke(sMeter_ctx, 0, 2, "black", w-x_thr,y-3,w,y-3);
+	   line_stroke(sMeter_ctx, 0, 2, "white", 0,y-3, w-x_thr,y-3);
+	   line_stroke(sMeter_ctx, 0, 2, "black", w-x_thr,y-3, w,y-3);
 	}
 	
 	if (sm_timeout-- == 0) {
 		sm_timeout = sm_interval;
-		if (x < sm_px) line_stroke(sMeter_ctx, 0, 5, "black", x,y,sm_px,y);
-		//if (x < sm_px) line_stroke(sMeter_ctx, 0, 5, "black", x,y,w,y);
+		if (x < sm_px) line_stroke(sMeter_ctx, 0, 5, "black", x,y, sm_px,y);
 		sm_px = x;
 	} else {
 		if (x < sm_px) {
-			line_stroke(sMeter_ctx, 0, 5, "red", x,y,sm_px,y);
+			line_stroke(sMeter_ctx, 0, 5, "red", x,y, sm_px,y);
 		} else {
 			sm_px = x;
 			sm_timeout = sm_interval;
@@ -7921,7 +7924,7 @@ function toggle_or_set_rec(set)
       wav_data.setUint32(12, 0x666d7420);                                 // ASCII "fmt "
       wav_data.setUint32(16, 16, true);                                   // Length of this section ("fmt ") in bytes
       wav_data.setUint16(20, 1, true);                                    // PCM coding
-      var nch = (cur_mode === 'iq' || cur_mode === 'drm' || cur_mode === 'sas')? 2 : 1;   // Two channels for stereo modes, one channel otherwise
+      var nch = ext_is_IQ_or_stereo_curmode()? 2 : 1;                     // Two channels for stereo modes, one channel otherwise
       wav_data.setUint16(22, nch, true);
       var srate = Math.round(audio_input_rate || 12000);
       wav_data.setUint32(24, srate, true);                                // Sample rate
@@ -8351,6 +8354,7 @@ function mode_over(evt, el)
       case 'sal': s = 'synchronous AM LSB'; break;
       case 'sau': s = 'synchronous AM USB'; break;
       case 'sas': s = 'synchronous AM stereo'; break;
+      case 'qam': s = 'C-QUAM AM stereo'; break;
       
       default: s = ''; break;
    }
@@ -8378,14 +8382,14 @@ function restore_passband(mode)
 }
 
 var mode_buttons = [
-   { s:[ 'AM', 'AMN' ],                 dis:0 },    // fixme: add AMW dynamically if 20 kHz mode? would have to deal with last_mode=ANW cookie
-   { s:[ 'SAM', 'SAL', 'SAU', 'SAS' ],  dis:0 },
-   { s:[ 'DRM' ],                       dis:0 },
-   { s:[ 'LSB', 'LSN' ],                dis:0 },
-   { s:[ 'USB', 'USN' ],                dis:0 },
-   { s:[ 'CW', 'CWN' ],                 dis:0 },
-   { s:[ 'NBFM' ],                      dis:0 },
-   { s:[ 'IQ' ],                        dis:0 },
+   { s:[ 'AM', 'AMN' ],                         dis:0 },    // fixme: add AMW dynamically if 20 kHz mode? would have to deal with last_mode=ANW cookie
+   { s:[ 'SAM', 'SAL', 'SAU', 'SAS', 'QAM' ],   dis:0 },
+   { s:[ 'DRM' ],                               dis:0 },
+   { s:[ 'LSB', 'LSN' ],                        dis:0 },
+   { s:[ 'USB', 'USN' ],                        dis:0 },
+   { s:[ 'CW', 'CWN' ],                         dis:0 },
+   { s:[ 'NBFM' ],                              dis:0 },
+   { s:[ 'IQ' ],                                dis:0 },
 ];
 
 function mode_button(evt, el, dir)
@@ -8395,8 +8399,8 @@ function mode_button(evt, el, dir)
 
 	// Prevent going between mono and stereo modes while recording
 	// FIXME: do something better like disable ineligible mode buttons and show reason in mouseover tooltip 
-   var c_iq_drm_sas = (cur_mode == 'iq' || cur_mode == 'drm' || cur_mode == 'sas')? 1:0;
-   var m_iq_drm_sas = (mode == 'iq' || mode == 'drm' || mode == 'sas')? 1:0;
+   var c_iq_drm_sas = ext_is_IQ_or_stereo_curmode()? 1:0;
+   var p_iq_drm_sas = ext_is_IQ_or_stereo_mode(wf.audioFFT_prev_mode)? 1:0;
 	if (recording && (c_iq_drm_sas ^ m_iq_drm_sas)) {
 		return;
 	}
