@@ -358,6 +358,11 @@ input[type=range]::-moz-range-thumb {
     margin: 8px !important
 }
 
+.w3-margin-16
+{
+    margin: 16px !important
+}
+
 .w3-margin-32
 {
     margin: 32px !important
@@ -528,6 +533,11 @@ input[type=range]::-moz-range-thumb {
 .w3-margin-TB-8
 {
     margin: 8px 0
+}
+
+.w3-margin-TB-16
+{
+    margin: 16px 0
 }
 
 

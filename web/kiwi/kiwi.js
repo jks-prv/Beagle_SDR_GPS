@@ -239,7 +239,7 @@ function kiwi_ask_pwd(conn_kiwi)
    var prot = (kiwi_url_param(['p', 'prot', 'protected'], true, false) && conn_kiwi);
 	if (prot) s1 = 'You have requested a password protected channel<br>';
 	var s = "KiwiSDR: software-defined receiver <br>"+ s1 + try_again +
-      w3_input('w3-retain-input-focus w3-label-inline w3-label-not-bold/w3-margin-T-4 kiwi-pw|padding:1px|size=40', 'Password:', 'id-pwd', '', 'kiwi_ask_pwd_cb');
+      w3_input('w3-retain-input-focus w3-margin-TB-8/w3-label-inline w3-label-not-bold/kiwi-pw|padding:1px|size=40', 'Password:', 'id-pwd', '', 'kiwi_ask_pwd_cb');
 	kiwi_show_msg(s);
 	w3_field_select('id-pwd', {mobile:1});
 }
@@ -1139,6 +1139,113 @@ function kiwi_too_busy(rx_chans)
 	kiwi_show_msg(s);
 }
 
+function kiwi_monitor_reconnect_with_pwd_cb(path, val, first)
+{
+   var url = window.location.href;
+   console.log(url);
+   url = url.replace('?camp&', '?').replace('&camp&', '&').replace('?camp', '').replace('&camp', '');
+   console.log('--> '+ url);
+   //window.location.href = url;
+}
+
+function kiwi_queue_cb() {
+   kiwi.queued ^= 1;
+   w3_innerHTML('id-queue-button', kiwi.queued? 'Exit queue' : 'Enter queue');
+   if (!kiwi.queued) w3_innerHTML('id-queue-pos', '');
+   msg_send('SET MON_QSET='+ (kiwi.queued? 1:0));
+}
+
+function kiwi_monitor()
+{
+   var s =
+	   w3_div('',
+	      w3_text('w3-text-black', 'All Kiwi channels busy. Click button to wait in queue for an available channel.'),
+         w3_inline('w3-margin-T-4/w3-margin-right w3-valign',
+            w3_button('id-queue-button w3-medium w3-padding-smaller w3-green', 'Enter queue', 'kiwi_queue_cb'),
+            w3_text('id-queue-pos w3-text-black')
+         ),
+         w3_text('id-queue-status w3-margin-T-4 w3-text-black', ''),
+
+         w3_div('id-camp-container w3-hide',
+            w3_hr('w3-margin-16'),
+            w3_text('id-camp-status w3-margin-T-4 w3-text-black', '')
+         ),
+         
+         w3_hr('w3-margin-16'),
+         w3_div('id-debugdiv w3-margin-T-10')
+      );
+	kiwi_show_msg(s);
+	users_init( { monitor:1 } );
+
+   pwd_prot =  chan_no_pwd? (rx_chans - chan_no_pwd) : 0;
+   console.log('rx_chans='+ rx_chans +' chan_no_pwd='+ chan_no_pwd +' pwd_prot='+ pwd_prot);
+   var plural1 = (pwd_prot == 1)? '':'s';
+   var plural2 = (pwd_prot == 1)? 'is':'are';
+   if (pwd_prot) {
+      s = '<br>But also, '+ pwd_prot +' channel'+ plural1 +' on this Kiwi '+ plural2 +' password protected. <br> If you know the password please click here: ' +
+         //w3_input('w3-retain-input-focus w3-margin-TB-8/w3-label-inline w3-label-not-bold/kiwi-pw|padding:1px|size=40',
+         //   'Password:', 'id-mpwd', '', 'kiwi_monitor_reconnect_with_pwd_cb');
+         w3_button('w3-medium w3-padding-smaller w3-aqua', 'Connect using password', 'kiwi_monitor_reconnect_with_pwd_cb'),
+      w3_innerHTML('id-queue-status', s);
+      w3_field_select('id-mpwd', {mobile:1});
+   } else
+      w3_innerHTML('id-queue-status', '');
+
+   setInterval(function() {
+      msg_send('SET keepalive');
+      if (kiwi.queued) msg_send('SET MON_QPOS');
+   }, 2500);
+   
+   ws_any().msg_cb = function(msg_a) {
+      var a = msg_a[1].split(',');
+      switch (msg_a[0]) {
+
+         case 'qpos':
+            var pos = a[0], waiters = a[1], reload = +a[2];
+            if (reload) window.location.reload(true);
+            var s = '';
+            if (kiwi.queued) s += 'You are '+ pos +' of '+ waiters +' in queue.';
+            w3_innerHTML('id-queue-pos', s);
+            break;
+
+         case 'camp':
+            var okay = +a[0], rx = +a[1];
+            var s;
+            if (okay) {
+               s = w3_inline('w3-margin-T-4/w3-margin-right w3-valign',
+                  w3_text('id-queue-pos w3-text-black', 'Camping on RX'+ rx),
+                  w3_button('w3-medium w3-padding-smaller w3-red', 'Stop', 'kiwi_camp_stop_cb')
+               );
+            } else {
+               s = 'Too many campers on this channel.';
+            }
+            w3_innerHTML('id-camp-status', s);
+            w3_show_block('id-camp-container');
+            break;
+
+         default:
+            //console.log('>>> FWD OWRX '+ msg_a[0]);
+            owrx_msg_cb(msg_a);
+            break;
+      }
+   };
+}
+
+function camp(ch, freq, mode, zoom)
+{
+   console.log('camp ch'+ ch);
+   msg_send('SET MON_CAMP='+ ch);
+}
+
+function kiwi_camp_stop_cb()
+{
+   console.log('camp STOP');
+   w3_hide('id-camp-container');
+   w3_innerHTML('id-camp-status', '');
+   msg_send('SET MON_CAMP=-1');
+}
+
+
 function kiwi_exclusive_use()
 {
 	var s = 'Sorry, this Kiwi has been locked for special use. <br>' +
@@ -1166,7 +1273,7 @@ function kiwi_show_error_ask_exemption_cb(path, val, first)
 function kiwi_show_error_ask_exemption(s)
 {
    s += '<br><br>If you have an exemption password from the KiwiSDR owner/admin <br> please enter it here: ' +
-      w3_input('w3-retain-input-focus w3-label-inline w3-label-not-bold/w3-margin-T-4 kiwi-pw|padding:1px|size=40',
+      w3_input('w3-retain-input-focus w3-margin-TB-8/w3-label-inline w3-label-not-bold/kiwi-pw|padding:1px|size=40',
          'Password:', 'id-epwd', '', 'kiwi_show_error_ask_exemption_cb');
 	kiwi_show_msg(s);
 	w3_field_select('id-epwd', {mobile:1});

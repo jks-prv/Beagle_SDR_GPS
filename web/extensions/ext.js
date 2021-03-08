@@ -188,9 +188,14 @@ function ext_get_mode()
 	return cur_mode;
 }
 
-function ext_is_IQ_or_stereo_mode()
+function ext_is_IQ_or_stereo_mode(mode)
 {
-   return (cur_mode == 'drm' || cur_mode == 'iq' || cur_mode == 'sas');
+   return (mode == 'drm' || mode == 'iq' || mode == 'sas' || mode == 'qam');
+}
+
+function ext_is_IQ_or_stereo_curmode()
+{
+   return ext_is_IQ_or_stereo_mode(cur_mode);
 }
 
 function ext_get_prev_mode()

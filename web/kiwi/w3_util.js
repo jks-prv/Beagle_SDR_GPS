@@ -1195,6 +1195,22 @@ function w3_copy_to_clipboard(val)
 
 
 ////////////////////////////////
+// hr
+////////////////////////////////
+
+function w3_hr(psa)
+{
+   var p = w3_psa(psa);
+	var s = '<hr '+ p +'>';
+	var narg = arguments.length;
+		for (var i=1; i < narg; i++) {
+			s += arguments[i];
+		}
+	//console.log(s);
+	return s;
+}
+
+////////////////////////////////
 // nav
 ////////////////////////////////
 

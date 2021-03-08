@@ -95,7 +95,7 @@ function noise_blank_controls_html()
       break;
    
    case noise_blank.NB_WILD:
-      if (ext_is_IQ_or_stereo_mode())
+      if (ext_is_IQ_or_stereo_curmode())
          s = 'No Wild algorithm blanking in IQ or stereo modes';
       else
          s =
@@ -143,7 +143,7 @@ function noise_blank_controls_setup()
 function noise_blank_environment_changed(changed)
 {
    if (changed.mode) {
-      var is_IQ_or_stereo_mode = ext_is_IQ_or_stereo_mode();
+      var is_IQ_or_stereo_mode = ext_is_IQ_or_stereo_curmode();
       if (is_IQ_or_stereo_mode != noise_blank.is_IQ_or_stereo_mode) {
          noise_blank_controls_refresh();
          noise_blank.is_IQ_or_stereo_mode = is_IQ_or_stereo_mode;
