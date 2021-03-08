@@ -12,6 +12,8 @@
 #include "types.h"
 #include "kiwi.h"
 #include "wdsp.h"
+#include "fir.h"
+
 #include <math.h>
 
 #define SAM_PLL_HILBERT_STAGES 7
@@ -37,6 +39,8 @@ struct wdsp_SAM_t {
 
     f32_t SAM_carrier;
     f32_t SAM_lowpass;
+    
+    CFir m_QAM_HPF_FIR[NIQ];
 };
 
 static wdsp_SAM_t wdsp_SAM[MAX_RX_CHANS];
@@ -110,7 +114,13 @@ void wdsp_SAM_demod_init()
 
 void wdsp_SAM_reset(int rx_chan)
 {
-    memset(&wdsp_SAM[rx_chan], 0, sizeof(wdsp_SAM_t));
+    wdsp_SAM_t *w = &wdsp_SAM[rx_chan];
+    memset(w, 0, sizeof(wdsp_SAM_t));
+
+    float frate = ext_update_get_sample_rateHz(rx_chan);
+    int taps = w->m_QAM_HPF_FIR[I].InitHPFilter(0, 1.0, 50.0, 75.0, 25.0, frate);
+    w->m_QAM_HPF_FIR[Q].InitHPFilter(0, 1.0, 50.0, 75.0, 25.0, frate);
+    printf("QAM_HPF_FIR taps = %d\n", taps);
 }
 
 f32_t wdsp_SAM_carrier(int rx_chan)
@@ -120,10 +130,12 @@ f32_t wdsp_SAM_carrier(int rx_chan)
 
 void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *in, TYPEMONO16 *out)
 {
-    TYPECPX *out_stereo = in;
+    TYPECPX *out_stereo = in;   // stereo output is pushed back onto IQ input buffer
     wdsp_SAM_t *w = &wdsp_SAM[rx_chan];
     f32_t ai_ps, bi_ps, bq_ps, aq_ps;
     bool isChanNull = (mode == MODE_SAM && chan_null != CHAN_NULL_NONE);
+    bool need_ps = ((mode != MODE_SAM && mode != MODE_QAM) || isChanNull);
+    bool stereoMode = (mode == MODE_SAS || mode == MODE_QAM || isChanNull);
     
     for (u4_t i = 0; i < ns_out; i++) {
           
@@ -134,7 +146,7 @@ void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *i
         f32_t aq = err_cos * in[i].im;
         f32_t bq = err_sin * in[i].im;
 
-        if (mode != MODE_SAM || isChanNull) {
+        if (need_ps) {
             w->a[0] = w->dsI;
             w->b[0] = bi;
             w->c[0] = w->dsQ;
@@ -187,15 +199,19 @@ void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *i
 
             case MODE_SAU:
                 audio = (ai_ps - bi_ps) + (aq_ps + bq_ps);  // usb
+                audio /= 2;
                 break;
 
             case MODE_SAL:
                 audio = (ai_ps + bi_ps) - (aq_ps - bq_ps);  // lsb
+                audio /= 2;
                 break;
 
             case MODE_SAS:
                 audio  = (ai_ps + bi_ps) - (aq_ps - bq_ps); // lsb
+                audio /= 2;
                 audiou = (ai_ps - bi_ps) + (aq_ps + bq_ps); // usb
+                audiou /= 2;
                 break;
 
             case MODE_QAM:  // C-QUAM
@@ -214,7 +230,7 @@ void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *i
             audio = audio + w->dc_insert - w->dc;
         }
         
-        if (mode == MODE_SAS || mode == MODE_QAM || isChanNull) {
+        if (stereoMode) {
             if (FADE_LEVELER) {
                 w->dcu = mtauR * w->dcu + onem_mtauR * audiou;
                 w->dc_insertu = mtauI * w->dc_insertu + onem_mtauI * corr[I];

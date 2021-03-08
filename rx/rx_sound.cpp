@@ -1082,6 +1082,9 @@ void c2s_sound(void *param)
                 for (j=0; j<ns_out; j++) {
                     float pwr = a_samps->re*a_samps->re + a_samps->im*a_samps->im;
                     float mag = sqrt(pwr);
+
+                    // high pass filter (DC removal) with IIR filter
+                    // H(z) = (1 - z^-1) / (1 - DC_ALPHA*z^-1)
                     #define DC_ALPHA 0.99f
                     float z0 = mag + (z1 * DC_ALPHA);
                     *d_samps = z0-z1;
