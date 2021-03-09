@@ -71,8 +71,8 @@ extern cfg_t cfg_ipl;
 extern char *fpga_file;
 extern lock_t spi_lock;
 
-extern float p0_f, p1_f, p2_f;
-extern int p0_i, p1_i, p2_i;
+extern float p0_f, p1_f, p2_f, p3_f, p4_f, p5_f, p6_f, p7_f;
+extern int p0_i, p1_i, p2_i, p3_i, p4_i, p5_i, p6_i, p7_i;
 
 
 // values defined in rx_cmd.cpp

@@ -79,14 +79,21 @@ function devl_controls_setup()
 		w3_div('id-devl-controls w3-text-white',
 			w3_divs('/w3-tspace-8',
 				w3_div('w3-medium w3-text-aqua', '<b>Development controls</b>'),
-			   w3_input('id-devl-input1||size=10', '', 'devl.in1', devl.in1, 'devl_num_cb'),
-			   w3_input('id-devl-input2||size=10', '', 'devl.in2', devl.in2, 'devl_num_cb'),
-			   w3_input('id-devl-input3||size=10', '', 'devl.in3', devl.in3, 'devl_num_cb')
+            w3_divs('/w3-tspace-8',
+               w3_input('w3-label-inline w3-label-not-bold//w3-padding-small||size=10', 'p0', 'devl.in1', devl.in1, 'devl_num_cb'),
+               w3_input('w3-label-inline w3-label-not-bold//w3-padding-small||size=10', 'p1', 'devl.in2', devl.in2, 'devl_num_cb'),
+               w3_input('w3-label-inline w3-label-not-bold//w3-padding-small||size=10', 'p2', 'devl.in3', devl.in3, 'devl_num_cb'),
+               w3_input('w3-label-inline w3-label-not-bold//w3-padding-small||size=10', 'p3', 'devl.in4', devl.in4, 'devl_num_cb'),
+               w3_input('w3-label-inline w3-label-not-bold//w3-padding-small||size=10', 'p4', 'devl.in5', devl.in5, 'devl_num_cb'),
+               w3_input('w3-label-inline w3-label-not-bold//w3-padding-small||size=10', 'p5', 'devl.in6', devl.in6, 'devl_num_cb')
+               w3_input('w3-label-inline w3-label-not-bold//w3-padding-small||size=10', 'p6', 'devl.in7', devl.in7, 'devl_num_cb')
+               w3_input('w3-label-inline w3-label-not-bold//w3-padding-small||size=10', 'p7', 'devl.in8', devl.in8, 'devl_num_cb')
+            )
 			)
 		);
 
 	ext_panel_show(controls_html, null, null);
-	ext_set_controls_width_height(null, 250);
+	ext_set_controls_width_height(null, 350);
 }
 
 /*
