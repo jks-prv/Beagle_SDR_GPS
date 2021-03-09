@@ -204,7 +204,7 @@ bool fft_msgs(char *msg, int rx_chan)
 			        e->ch = 0;
 			        snd->secondary_filter = false;
 			        //boost = 1e4;
-			        boost = (p2_f? p2_f : 1e4);
+			        boost = (p3_f? p3_f : 1e4);
 			        break;
 			
 			    case FUNC_SPEC:
@@ -212,7 +212,7 @@ bool fft_msgs(char *msg, int rx_chan)
 			        snd->secondary_filter = e->isSAM? true:false;
 
                     //boost = e->isSAM? 1e4 : 1e6;    // scale up to roughly match WF spectrum values
-                    boost = e->isSAM? (p0_f? p0_f : 1e-3) : (p1_f? p1_f : 1e-3);    // scale up to roughly match WF spectrum values
+                    boost = e->isSAM? ( (snd->mode == MODE_QAM)? (p2_f? p2_f : 0.002) : (p1_f? p1_f : 0.001) ) : (p0_f? p0_f : 1e6);    // scale up to roughly match WF spectrum values
                     e->last_ms = 0;
 			        break;
 			
@@ -220,7 +220,7 @@ bool fft_msgs(char *msg, int rx_chan)
 			        e->ch = 0;
 			        snd->secondary_filter = false;
 			        //boost = 1e4;
-			        boost = (p2_f? p2_f : 1e4);
+			        boost = (p3_f? p3_f : 1e4);
 			        break;
 			}
 

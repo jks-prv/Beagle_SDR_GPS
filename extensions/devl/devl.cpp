@@ -45,51 +45,51 @@ bool devl_msgs(char *msg, int rx_chan)
 		return true;
 	}
 	
-	int in_n;
-	double in_f;
-	n = sscanf(msg, "SET devl.in%d=%lf", &in_n, &in_f);
+	int pn;
+	double pf;
+	n = sscanf(msg, "SET devl.p%d=%lf", &pn, &pf);
 	if (n == 2) {
-	    //printf("DEVL: in%d=%lf\n", in_n, in_f);
+	    printf("DEVL: p%d=%lf\n", pn, pf);
 	    
-        if (in_n == 1) {
-            p0_f = in_f;
-	        p0_i = (int) lrint(in_f);
+        if (pn == 0) {
+            p0_f = pf;
+	        p0_i = (int) lrint(pf);
         } else
 	    
-	    if (in_n == 2) {
-            p1_f = in_f;
-	        p1_i = (int) lrint(in_f);
+	    if (pn == 1) {
+            p1_f = pf;
+	        p1_i = (int) lrint(pf);
         } else
 	    
-	    if (in_n == 3) {
-            p2_f = in_f;
-	        p2_i = (int) lrint(in_f);
+	    if (pn == 2) {
+            p2_f = pf;
+	        p2_i = (int) lrint(pf);
         } else
 	    
-	    if (in_n == 4) {
-            p3_f = in_f;
-	        p3_i = (int) lrint(in_f);
+	    if (pn == 3) {
+            p3_f = pf;
+	        p3_i = (int) lrint(pf);
         } else
 	    
-	    if (in_n == 5) {
-            p4_f = in_f;
-	        p4_i = (int) lrint(in_f);
+	    if (pn == 4) {
+            p4_f = pf;
+	        p4_i = (int) lrint(pf);
         } else
 	    
-	    if (in_n == 6) {
-            p5_f = in_f;
-	        p5_i = (int) lrint(in_f);
+	    if (pn == 5) {
+            p5_f = pf;
+	        p5_i = (int) lrint(pf);
         } else
 	    
-	    if (in_n == 7) {
-            p6_f = in_f;
-	        p6_i = (int) lrint(in_f);
+	    if (pn == 6) {
+            p6_f = pf;
+	        p6_i = (int) lrint(pf);
         } else
 	    
-	    if (in_n == 8) {
-            p7_f = in_f;
-	        p7_i = (int) lrint(in_f);
-        } else
+	    if (pn == 7) {
+            p7_f = pf;
+	        p7_i = (int) lrint(pf);
+        }
 	    
 		return true;
 	}

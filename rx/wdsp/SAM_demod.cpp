@@ -40,7 +40,7 @@ struct wdsp_SAM_t {
     f32_t SAM_carrier;
     f32_t SAM_lowpass;
     
-    CFir m_QAM_HPF_FIR[NIQ];
+    //CFir m_QAM_HPF_FIR[NIQ];
 };
 
 static wdsp_SAM_t wdsp_SAM[MAX_RX_CHANS];
@@ -117,10 +117,12 @@ void wdsp_SAM_reset(int rx_chan)
     wdsp_SAM_t *w = &wdsp_SAM[rx_chan];
     memset(w, 0, sizeof(wdsp_SAM_t));
 
+#if 0
     float frate = ext_update_get_sample_rateHz(rx_chan);
     int taps = w->m_QAM_HPF_FIR[I].InitHPFilter(0, 1.0, 50.0, 75.0, 25.0, frate);
     w->m_QAM_HPF_FIR[Q].InitHPFilter(0, 1.0, 50.0, 75.0, 25.0, frate);
     printf("QAM_HPF_FIR taps = %d\n", taps);
+#endif
 }
 
 f32_t wdsp_SAM_carrier(int rx_chan)
@@ -194,29 +196,29 @@ void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *i
                     }
                 } else {
                     audio = corr[I];
-                    audio /= (p5_f? p5_f : 2);
+                    audio /= (p5_f? p5_f : 1.5);
                 }
                 break;
 
             case MODE_SAU:
                 audio = (ai_ps - bi_ps) + (aq_ps + bq_ps);  // usb
-                //audio /= 2;
-                audio /= (p6_f? p6_f : 2);
+                //audio /= 2.25;
+                audio /= (p6_f? p6_f : 2.25);
                 break;
 
             case MODE_SAL:
                 audio = (ai_ps + bi_ps) - (aq_ps - bq_ps);  // lsb
-                //audio /= 2;
-                audio /= (p6_f? p6_f : 2);
+                //audio /= 2.25;
+                audio /= (p6_f? p6_f : 2.25);
                 break;
 
             case MODE_SAS:
                 audio  = (ai_ps + bi_ps) - (aq_ps - bq_ps); // lsb
-                //audio /= 2;
-                audio /= (p6_f? p6_f : 2);
+                //audio /= 2.25;
+                audio /= (p6_f? p6_f : 2.25);
                 audiou = (ai_ps - bi_ps) + (aq_ps + bq_ps); // usb
-                //audiou /= 2;
-                audiou /= (p6_f? p6_f : 2);
+                //audiou /= 2.25;
+                audiou /= (p6_f? p6_f : 2.25);
                 break;
 
             case MODE_QAM:  // C-QUAM
