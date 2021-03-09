@@ -14,6 +14,9 @@
 //#define DEBUG_MSG	true
 #define DEBUG_MSG	false
 
+float p0_f, p1_f, p2_f;
+int p0_i, p1_i, p2_i;
+
 // rx_chan is the receiver channel number we've been assigned, 0..rx_chans
 // We need this so the extension can support multiple users, each with their own devl[] data structure.
 
@@ -49,15 +52,18 @@ bool devl_msgs(char *msg, int rx_chan)
 	    //printf("DEVL: in%d=%lf\n", in_n, in_f);
 	    
         if (in_n == 1) {
-	        p0 = (int) lrint(in_f);
+            p0_f = in_f;
+	        p0_i = (int) lrint(in_f);
         }
 	    
 	    if (in_n == 2) {
-	        p1 = (int) lrint(in_f);
+            p1_f = in_f;
+	        p1_i = (int) lrint(in_f);
         }
 	    
 	    if (in_n == 3) {
-	        p2 = (int) lrint(in_f);
+            p2_f = in_f;
+	        p2_i = (int) lrint(in_f);
         }
 	    
 		return true;

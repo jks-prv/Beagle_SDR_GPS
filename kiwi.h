@@ -49,7 +49,7 @@ extern bool background_mode, need_hardware, is_multi_core, kiwi_restart,
 	DUC_enable_start, rev_enable_start, web_nocache, auth_su, kiwi_reg_debug,
 	have_ant_switch_ext, gps_e1b_only, disable_led_task, debug_printfs, force_camp;
 
-extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_start, tone, down, navg,
+extern int wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_start, tone, down, navg,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, meas,
 	rx_yield, gps_chans, spi_clkg, spi_speed, wf_max, rx_num, wf_num, do_slice, do_gps, do_sdr, wf_olap,
 	spi_delay, do_fft, noisePwr, unwrap, rev_iq, ineg, qneg, fft_file, fftsize, fftuse, bg, alt_port,
@@ -69,8 +69,10 @@ extern char *tzone_id, *tzone_name;
 extern char auth_su_remote_ip[NET_ADDRSTRLEN];
 extern cfg_t cfg_ipl;
 extern char *fpga_file;
-
 extern lock_t spi_lock;
+
+extern float p0_f, p1_f, p2_f;
+extern int p0_i, p1_i, p2_i;
 
 
 // values defined in rx_cmd.cpp

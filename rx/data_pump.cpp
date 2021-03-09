@@ -237,11 +237,13 @@ static void snd_service()
             diff = 0;
         } else {
             dpump.hist[diff]++;
-            if (ev_dump && p1 && p2 && dpump.hist[p1] > p2) {
-                printf("DATAPUMP DUMP %d %d %d\n", diff, stored, current);
-                evLatency(EC_DUMP, EV_DPUMP, ev_dump, ">diff",
-                    evprintf("MOVED %d, diff %d sto %d cur %d, DUMP", moved, diff, stored, current));
-            }
+            #if 0
+                if (ev_dump && p1 && p2 && dpump.hist[p1] > p2) {
+                    printf("DATAPUMP DUMP %d %d %d\n", diff, stored, current);
+                    evLatency(EC_DUMP, EV_DPUMP, ev_dump, ">diff",
+                        evprintf("MOVED %d, diff %d sto %d cur %d, DUMP", moved, diff, stored, current));
+                }
+            #endif
         }
         
         last_run_us = timer_us();
