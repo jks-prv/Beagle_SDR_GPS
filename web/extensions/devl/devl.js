@@ -68,6 +68,7 @@ function devl_num_cb(path, val)
 	   v = 0;
 	}
 	console.log('devl_num_cb: path='+ path +' val='+ val +' v='+ v);
+	v = v.toFixed(6);
 	setVarFromString(path, v);
 	ext_send('SET '+ path +'='+ v);
 }
