@@ -194,29 +194,36 @@ void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *i
                     }
                 } else {
                     audio = corr[I];
+                    audio /= (p5_f? p5_f : 2);
                 }
                 break;
 
             case MODE_SAU:
                 audio = (ai_ps - bi_ps) + (aq_ps + bq_ps);  // usb
-                audio /= 2;
+                //audio /= 2;
+                audio /= (p6_f? p6_f : 2);
                 break;
 
             case MODE_SAL:
                 audio = (ai_ps + bi_ps) - (aq_ps - bq_ps);  // lsb
-                audio /= 2;
+                //audio /= 2;
+                audio /= (p6_f? p6_f : 2);
                 break;
 
             case MODE_SAS:
                 audio  = (ai_ps + bi_ps) - (aq_ps - bq_ps); // lsb
-                audio /= 2;
+                //audio /= 2;
+                audio /= (p6_f? p6_f : 2);
                 audiou = (ai_ps - bi_ps) + (aq_ps + bq_ps); // usb
-                audiou /= 2;
+                //audiou /= 2;
+                audiou /= (p6_f? p6_f : 2);
                 break;
 
             case MODE_QAM:  // C-QUAM
                 audio  = corr[I]/2 + corr[Q]/2; // L
+                audio /= (p7_f? p7_f : 1);
                 audiou = corr[I]/2 - corr[Q]/2; // R
+                audiou /= (p7_f? p7_f : 1);
                 break;
             
             default:

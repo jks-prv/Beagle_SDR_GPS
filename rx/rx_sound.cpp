@@ -798,7 +798,7 @@ void c2s_sound(void *param)
 			//if (conn->inactivity_timeout) clprintf(conn, "SND INACTIVITY T/O\n");
 			//if (conn->kick) clprintf(conn, "SND KICK\n");
 			
-			if (!conn->auth) {
+			if (keepalive_expired && !conn->auth) {
 			    cprintf(conn, "PWD entry timeout\n");
 			    send_msg(conn, SM_NO_DEBUG, "MSG password_timeout");
 			}
