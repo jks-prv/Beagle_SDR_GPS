@@ -1608,15 +1608,15 @@ void _lock_init(lock_t *lock, const char *name)
     #endif
 }
 
-#define	N_LOCK_LIST		256
+#define	N_LOCK_LIST		512
 static int n_lock_list;
 static lock_t *locks[N_LOCK_LIST];
 
 void lock_register(lock_t *lock)
 {
-	assert(n_lock_list < N_LOCK_LIST);
 	locks[n_lock_list] = lock;
 	n_lock_list++;
+	check(n_lock_list < N_LOCK_LIST);
 }
 
 void lock_dump()

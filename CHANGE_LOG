@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.439  March 13, 2021
+v1.439,440  March 14, 2021
     Channel queuing and camping:
         When all the Kiwi channels are busy(*) it is now possible to enter a queue to wait
         for the next available channel. The queue is FIFO and multiple parties can
