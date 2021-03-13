@@ -124,6 +124,7 @@ int S_meter_cal, waterfall_cal;
 double ui_srate, freq_offset;
 int kiwi_reg_lo_kHz, kiwi_reg_hi_kHz;
 float max_thr;
+int n_camp;
 
 #define DC_OFFSET_DEFAULT -0.02F
 #define DC_OFFSET_DEFAULT_PREV 0.05F
@@ -236,6 +237,7 @@ void update_vars_from_config()
     cfg_default_bool("webserver_caching", true, &update_cfg);
     max_thr = (float) cfg_default_int("overload_mute", -15, &update_cfg);
     cfg_default_bool("agc_thresh_smeter", true, &update_cfg);
+    n_camp = cfg_default_int("n_camp", N_CAMP, &update_cfg);
 
     if (wspr_update_vars_from_config()) update_cfg = true;
 
@@ -765,10 +767,10 @@ char *rx_users(bool include_ip)
                 char *ext = ext_users[i].ext? kiwi_str_encode((char *) ext_users[i].ext->name) : NULL;
                 const char *ip = include_ip? c->remote_ip : "";
                 asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,\"m\":\"%s\",\"z\":%d,\"t\":\"%d:%02d:%02d\","
-                    "\"rt\":%d,\"rn\":%d,\"rs\":\"%d:%02d:%02d\",\"e\":\"%s\",\"a\":\"%s\",\"c\":%.1f,\"fo\":%.0f}",
+                    "\"rt\":%d,\"rn\":%d,\"rs\":\"%d:%02d:%02d\",\"e\":\"%s\",\"a\":\"%s\",\"c\":%.1f,\"fo\":%.0f,\"ca\":%d}",
                     need_comma? ",":"", i, user? user:"", geo? geo:"", c->freqHz,
                     kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, hr, min, sec,
-                    rtype, rn, r_hr, r_min, r_sec, ext? ext:"", ip, wdsp_SAM_carrier(i), freq_offset);
+                    rtype, rn, r_hr, r_min, r_sec, ext? ext:"", ip, wdsp_SAM_carrier(i), freq_offset, rx->n_camp);
                 if (user) free(user);
                 if (geo) free(geo);
                 if (ext) free(ext);

@@ -1515,21 +1515,21 @@ int c2s_sound_camp(rx_chan_t *rxc, conn_t *conn, u1_t flags, char *bp, int bytes
 	snd_t *snd = &snd_inst[rx_chan];
     int additional_bytes = 0;
     
-    for (i = 0, n = 0; i < N_CAMP; i++) {
+    for (i = 0, n = 0; i < n_camp; i++) {
         conn_t *c = rxc->camp_conn[i];
         if (c == NULL) continue;
         
         // detect camping connection has gone away
-        if (c->type != STREAM_MONITOR || c->remote_port != rxc->camp_id[i]) {
-            cprintf(conn, ">>> CAMP gone rx%d type=%d id=%d/%d slot=%d/%d\n",
-                rx_chan, c->type, c->remote_port, rxc->camp_id[i], i+1, N_CAMP);
+        if (!c->valid || c->type != STREAM_MONITOR || c->remote_port != rxc->camp_id[i]) {
+            cprintf(conn, ">>> CAMPER gone rx%d type=%d id=%d/%d slot=%d/%d\n",
+                rx_chan, c->type, c->remote_port, rxc->camp_id[i], i+1, n_camp);
             rxc->camp_conn[i] = NULL;
             rxc->n_camp--;
             continue;
         }
 
         if (!c->camp_init) {
-            cprintf(conn, ">>> CAMP init rx%d slot=%d/%d\n", rx_chan, i+1, N_CAMP);
+            cprintf(conn, ">>> CAMP init rx%d slot=%d/%d\n", rx_chan, i+1, n_camp);
             double frate = ext_update_get_sample_rateHz(-1);
             send_msg(c, SM_SND_DEBUG, "MSG center_freq=%d bandwidth=%d adc_clk_nom=%.0f", (int) ui_srate/2, (int) ui_srate, ADC_CLOCK_NOM);
             send_msg(c, SM_SND_DEBUG, "MSG audio_camp=0,%d audio_rate=%d sample_rate=%.6f", conn->isLocal, snd_rate, frate);
@@ -1550,7 +1550,11 @@ int c2s_sound_camp(rx_chan_t *rxc, conn_t *conn, u1_t flags, char *bp, int bytes
         
         n++;
     }
-    check(n == rxc->n_camp);
+    
+    if (n != rxc->n_camp) {
+        cprintf(conn, ">>> WARNING n(%d) != n_camp(%d)\n", n, rxc->n_camp);
+        rxc->n_camp = n;
+    }
     
     return additional_bytes;
 }

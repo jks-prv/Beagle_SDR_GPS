@@ -32,18 +32,20 @@ function status_html()
       ) : '';
    
 	var s =
-	w3_div('id-status w3-hide',
-		'<hr>' +
-		w3_div('id-problems w3-container') +
-		w3_div('id-msg-config w3-container') +
-		w3_div('id-msg-gps w3-container') +
-		'<hr>' +
-		w3_div('id-msg-stats-cpu w3-container') +
-		w3_div('id-msg-stats-xfer w3-container') +
-		s2 +
-      '<hr>' +
-		w3_div('id-debugdiv w3-container')
-	);
+      w3_div('id-status w3-hide',
+         '<hr>' +
+         w3_div('id-problems w3-container') +
+         w3_div('id-msg-config w3-container') +
+         w3_div('id-msg-gps w3-container') +
+         '<hr>' +
+         w3_div('id-msg-stats-cpu w3-container') +
+         w3_div('id-msg-stats-xfer w3-container') +
+         s2 +
+         '<hr>' +
+         w3_div('id-users-list w3-container') +
+         '<hr>'
+      );
+
 	return s;
 }
 
@@ -284,6 +286,12 @@ function control_html()
 			w3_div('id-reason-disabled-preview w3-text-black w3-background-pale-aqua', '')
 		);
 	
+	var n_camp = ext_get_cfg_param('n_camp', -1);
+	console.log('rx_chans='+ rx_chans +' n_camp='+ n_camp +' max_camp='+ max_camp);
+   var n_camp_u = { 0:'disable camping' };
+   for (var i = 1; i <= max_camp; i++)
+      n_camp_u[i] = i.toFixed(0);
+
 	var s3 =
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
@@ -299,7 +307,21 @@ function control_html()
 				w3_input_get('', 'Time limit exemption password', 'adm.tlimit_exempt_pwd', 'w3_string_set_cfg_cb'),
 				w3_div('w3-text-black', 'Password users can give to override time limits.')
 			)
-		);
+		) +
+
+		'<hr>' +
+		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
+         w3_divs('w3-restart/w3-center w3-tspace-8',
+            w3_select('', 'Number of audio campers per channel', '', 'n_camp', n_camp, n_camp_u, 'admin_select_cb'),
+            w3_div('w3-text-black',
+               'Reduce this value if your Kiwi is experiencing <br>' +
+               'performance problems from too many audio campers.'
+            )
+         ),
+         '',
+         ''
+		) +
+		'<hr>';
 
    return w3_div('id-control w3-text-teal w3-hide', s1 + (admin_sdr_mode? (s2 + s3) : ''));
 }
@@ -3006,12 +3028,14 @@ function admin_recv(data)
 function w3_restart_cb()
 {
 	w3_show_block('id-restart');
+	w3_el('id-kiwi-container').scrollTop = 0;
 }
 
 // callback when a control has w3-reboot property
 function w3_reboot_cb()
 {
 	w3_show_block('id-reboot');
+	w3_el('id-kiwi-container').scrollTop = 0;
 }
 
 var admin_pie_size = 25;

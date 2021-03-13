@@ -340,11 +340,18 @@ void rx_server_remove(conn_t *c)
 	TaskRemove(task);
 }
 
-int rx_chan_no_pwd()
+int rx_chan_no_pwd(pwd_check_e pwd_check)
 {
     int chan_no_pwd = cfg_int("chan_no_pwd", NULL, CFG_REQUIRED);
     // adjust if number of rx channels changed due to mode change but chan_no_pwd wasn't adjusted
     if (chan_no_pwd >= rx_chans) chan_no_pwd = rx_chans - 1;
+
+    if (pwd_check == PWD_CHECK_YES) {
+        const char *pwd_s = admcfg_string("user_password", NULL, CFG_REQUIRED);
+		if (pwd_s == NULL || *pwd_s == '\0') chan_no_pwd = 0;   // ignore setting if no password set
+		cfg_string_free(pwd_s);
+    }
+
     return chan_no_pwd;
 }
 
@@ -370,7 +377,7 @@ int rx_count_server_conns(conn_count_e type, conn_t *our_conn)
 	        if (our_conn && c->other && c->other == our_conn) continue;
 
 	        if (sound && (c->isLocal || c->auth_prot)) {
-                show_conn("LOCAL_OR_PWD_PROTECTED_USERS ", c);
+                //show_conn("LOCAL_OR_PWD_PROTECTED_USERS ", c);
 	            users++;
 	        }
 	    } else {
@@ -596,8 +603,9 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	int cn, cnfree;
 	conn_t *cfree = NULL, *cother = NULL;
 	bool snd_or_wf = (st->type == STREAM_SOUND || st->type == STREAM_WATERFALL);
+	int mon_total = 0;
 	
-	for (c=conns, cn=0; c<&conns[N_CONNS]; c++, cn++) {
+	for (c = conns, cn=0; c < &conns[N_CONNS]; c++, cn++) {
 		assert(c->magic == CN_MAGIC);
 
 		// cull conns stuck in STOP_DATA state (Novosibirsk problem)
@@ -643,6 +651,8 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 				}
 			}
 		}
+		
+		if (c->type == STREAM_MONITOR) mon_total++;
 	}
 	
 	if (c == &conns[N_CONNS]) {
@@ -689,22 +699,17 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
                 }
             }
 
-        //#define TEST_STREAM_MONITOR
-        #ifdef TEST_STREAM_MONITOR
+	        printf("mon_total=%d monitors_max=%d\n", mon_total, monitors_max);
             if (rx == -1 || force_camp) {
                 if (force_camp) rx = -1;
                 cprintf(c, "rx=%d force_camp=%d\n", rx, force_camp);
                 force_camp = false;
-                if (isKiwi_UI) {
+                if (isKiwi_UI && (mon_total < monitors_max)) {
                     // turn first connection when no channels (SND or WF) into MONITOR
                     c->type = STREAM_MONITOR;
                     st = &rx_streams[STREAM_MONITOR];
                     snd_or_wf = false;
-                } else
-        #else
-                if (rx == -1) {
-        #endif
-                {
+                } else {
                     //printf("(too many rx channels open for %s)\n", st->uri);
                     send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
                     mc->connection_param = NULL;

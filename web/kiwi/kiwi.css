@@ -375,6 +375,11 @@ hr
 	bottom: auto;
 }
 
+.fa-stack > .fa-nudge-up
+{
+	bottom: 3px;
+}
+
 
 /* text-security */
 

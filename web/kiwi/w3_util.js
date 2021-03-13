@@ -1393,17 +1393,24 @@ function w3int_link_click(ev, cb, cb_param)
 function w3_link(psa, url, inner, title, cb, cb_param)
 {
    var qual_url = url;
-   if (!url.startsWith('http://') && !url.startsWith('https://'))
-      qual_url = 'http://'+ url;
+   var target;
+   if (url.startsWith('javascript:')) {
+      target = '';
+   } else {
+      if (!url.startsWith('http://') && !url.startsWith('https://'))
+         qual_url = 'http://'+ url;
+      target = ' target="_blank"';
+   }
    inner = inner || '';
-   title = (title && title != '')? (' title='+ dq(title)) : '';
+   title = title || '';
+   if (title != '') title = ' title='+ dq(title);
 
    // by default use pointer cursor if there is a callback
 	var pointer = (cb && cb != '')? 'w3-pointer':'';
 	cb_param = cb_param || 0;
 	var onclick = cb? (' onclick="w3int_link_click(event, '+ sq(cb) +', '+ sq(cb_param) +')"') : '';
 
-	var p = w3_psa(psa, pointer, '', 'href='+ dq(qual_url) +' target="_blank"'+ title + onclick);
+	var p = w3_psa(psa, pointer, '', 'href='+ dq(qual_url) + target + title + onclick);
 	var s = '<a '+ p +'>'+ inner +'</a>';
 	//console.log(s);
 	return s;

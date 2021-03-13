@@ -22,6 +22,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "kiwi.h"
 #include "conn.h"
+#include "web.h"
 
 typedef struct {
 	bool chan_enabled;
@@ -30,7 +31,6 @@ typedef struct {
 	conn_t *conn;       // the STREAM_SOUND conn or STREAM_WATERFALL for WF-only connections
 	ext_t *ext;
 
-	#define N_CAMP 4
 	int n_camp;
 	conn_t *camp_conn[N_CAMP];
 	u4_t camp_id[N_CAMP];
@@ -82,4 +82,5 @@ int rx_chan_free_count(rx_free_count_e flags, int *idx = NULL, int *heavy = NULL
 typedef enum { LOG_ARRIVED, LOG_UPDATE, LOG_UPDATE_NC, LOG_LEAVING } logtype_e;
 void rx_loguser(conn_t *c, logtype_e type);
 
-int rx_chan_no_pwd();
+typedef enum { PWD_CHECK_NO, PWD_CHECK_YES } pwd_check_e;
+int rx_chan_no_pwd(pwd_check_e pwd_check = PWD_CHECK_NO);

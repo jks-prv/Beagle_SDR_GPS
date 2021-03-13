@@ -10,6 +10,12 @@ var kiwi = {
    wf_fps: 0,
    inactivity_panel: false,
    is_multi_core: 0,
+
+   volume: 50,
+   volume_f: 0,
+   muted: false,
+   unmuted_color: 'lime',
+
    queued: 0,
    
    // must match rx_cmd.cpp
@@ -39,7 +45,7 @@ kiwi.modes_l.forEach(function(e,i) { kiwi.modes_u.push(e.toUpperCase()); kiwi.mo
 var WATERFALL_CALIBRATION_DEFAULT = -13;
 var SMETER_CALIBRATION_DEFAULT = -13;
 
-var rx_chans, wf_chans, wf_chans_real, rx_chan;
+var rx_chans, wf_chans, wf_chans_real, rx_chan, max_camp;
 var try_again="";
 var conn_type;
 var seriousError = false;
@@ -229,17 +235,34 @@ function kiwi_ask_pwd_cb(path, val, first)
    ext_valpwd(conn_type, val);
 }
 
+function kiwi_queue_or_camp_cb(path, val, first)
+{
+   var url = window.location.href;
+   console.log(url);
+   url = url + kiwi_add_search_param(window.location, 'camp');
+   console.log('--> '+ url);
+   window.location.href = url;
+
+}
+
 function kiwi_ask_pwd(conn_kiwi)
 {
-	console.log('kiwi_ask_pwd chan_no_pwd='+ chan_no_pwd +' client_public_ip='+ client_public_ip);
-	var s1 = '';
-	if (conn_kiwi && chan_no_pwd) s1 = 'All channels busy that don\'t require a password ('+ chan_no_pwd +'/'+ rx_chans +')<br>';
+	console.log('kiwi_ask_pwd chan_no_pwd_true='+ chan_no_pwd_true +' client_public_ip='+ client_public_ip);
+	var s1 = '', s2 = '';
+	if (conn_kiwi && chan_no_pwd_true) {
+	   s1 = 'All channels busy that don\'t require a password ('+ chan_no_pwd_true +'/'+ rx_chans +')<br>';
+	   s2  = '<br> <b>OR</b> <br><br> click to queue for an available channel, <br>' +
+	      'or camp on an existing channel: <br>' +
+         w3_button('w3-medium w3-padding-smaller w3-aqua w3-margin-T-8', 'Queue or Camp', 'kiwi_queue_or_camp_cb');
+	}
 	
 	// "&& conn_kiwi" to ignore pathological "/admin?prot" etc.
    var prot = (kiwi_url_param(['p', 'prot', 'protected'], true, false) && conn_kiwi);
 	if (prot) s1 = 'You have requested a password protected channel<br>';
 	var s = "KiwiSDR: software-defined receiver <br>"+ s1 + try_again +
-      w3_input('w3-retain-input-focus w3-margin-TB-8/w3-label-inline w3-label-not-bold/kiwi-pw|padding:1px|size=40', 'Password:', 'id-pwd', '', 'kiwi_ask_pwd_cb');
+      w3_input('w3-retain-input-focus w3-margin-TB-8/w3-label-inline w3-label-not-bold/kiwi-pw|padding:1px|size=40', 'Password:', 'id-pwd', '', 'kiwi_ask_pwd_cb') +
+      s2;
+
 	kiwi_show_msg(s);
 	w3_field_select('id-pwd', {mobile:1});
 }
@@ -1134,117 +1157,11 @@ function admin_stats_cb(audio_dropped, underruns, seq_errors, dp_resets, dp_hist
 
 function kiwi_too_busy(rx_chans)
 {
-	var s = 'Sorry, the KiwiSDR server is too busy right now ('+ rx_chans+((rx_chans>1)? ' users':' user') +' max). <br>' +
+	var s = 'Sorry, the KiwiSDR server is too busy right now ('+ rx_chans +' users max). <br>' +
+	'There is also a limit on the total number of channel queuers and campers. <br>' +
 	'Please check <a href="http://rx.kiwisdr.com" target="_self">rx.kiwisdr.com</a> for more KiwiSDR receivers available world-wide.';
 	kiwi_show_msg(s);
 }
-
-function kiwi_monitor_reconnect_with_pwd_cb(path, val, first)
-{
-   var url = window.location.href;
-   console.log(url);
-   url = url.replace('?camp&', '?').replace('&camp&', '&').replace('?camp', '').replace('&camp', '');
-   console.log('--> '+ url);
-   //window.location.href = url;
-}
-
-function kiwi_queue_cb() {
-   kiwi.queued ^= 1;
-   w3_innerHTML('id-queue-button', kiwi.queued? 'Exit queue' : 'Enter queue');
-   if (!kiwi.queued) w3_innerHTML('id-queue-pos', '');
-   msg_send('SET MON_QSET='+ (kiwi.queued? 1:0));
-}
-
-function kiwi_monitor()
-{
-   var s =
-	   w3_div('',
-	      w3_text('w3-text-black', 'All Kiwi channels busy. Click button to wait in queue for an available channel.'),
-         w3_inline('w3-margin-T-4/w3-margin-right w3-valign',
-            w3_button('id-queue-button w3-medium w3-padding-smaller w3-green', 'Enter queue', 'kiwi_queue_cb'),
-            w3_text('id-queue-pos w3-text-black')
-         ),
-         w3_text('id-queue-status w3-margin-T-4 w3-text-black', ''),
-
-         w3_div('id-camp-container w3-hide',
-            w3_hr('w3-margin-16'),
-            w3_text('id-camp-status w3-margin-T-4 w3-text-black', '')
-         ),
-         
-         w3_hr('w3-margin-16'),
-         w3_div('id-debugdiv w3-margin-T-10')
-      );
-	kiwi_show_msg(s);
-	users_init( { monitor:1 } );
-
-   pwd_prot =  chan_no_pwd? (rx_chans - chan_no_pwd) : 0;
-   console.log('rx_chans='+ rx_chans +' chan_no_pwd='+ chan_no_pwd +' pwd_prot='+ pwd_prot);
-   var plural1 = (pwd_prot == 1)? '':'s';
-   var plural2 = (pwd_prot == 1)? 'is':'are';
-   if (pwd_prot) {
-      s = '<br>But also, '+ pwd_prot +' channel'+ plural1 +' on this Kiwi '+ plural2 +' password protected. <br> If you know the password please click here: ' +
-         //w3_input('w3-retain-input-focus w3-margin-TB-8/w3-label-inline w3-label-not-bold/kiwi-pw|padding:1px|size=40',
-         //   'Password:', 'id-mpwd', '', 'kiwi_monitor_reconnect_with_pwd_cb');
-         w3_button('w3-medium w3-padding-smaller w3-aqua', 'Connect using password', 'kiwi_monitor_reconnect_with_pwd_cb'),
-      w3_innerHTML('id-queue-status', s);
-      w3_field_select('id-mpwd', {mobile:1});
-   } else
-      w3_innerHTML('id-queue-status', '');
-
-   setInterval(function() {
-      msg_send('SET keepalive');
-      if (kiwi.queued) msg_send('SET MON_QPOS');
-   }, 2500);
-   
-   ws_any().msg_cb = function(msg_a) {
-      var a = msg_a[1].split(',');
-      switch (msg_a[0]) {
-
-         case 'qpos':
-            var pos = a[0], waiters = a[1], reload = +a[2];
-            if (reload) window.location.reload(true);
-            var s = '';
-            if (kiwi.queued) s += 'You are '+ pos +' of '+ waiters +' in queue.';
-            w3_innerHTML('id-queue-pos', s);
-            break;
-
-         case 'camp':
-            var okay = +a[0], rx = +a[1];
-            var s;
-            if (okay) {
-               s = w3_inline('w3-margin-T-4/w3-margin-right w3-valign',
-                  w3_text('id-queue-pos w3-text-black', 'Camping on RX'+ rx),
-                  w3_button('w3-medium w3-padding-smaller w3-red', 'Stop', 'kiwi_camp_stop_cb')
-               );
-            } else {
-               s = 'Too many campers on this channel.';
-            }
-            w3_innerHTML('id-camp-status', s);
-            w3_show_block('id-camp-container');
-            break;
-
-         default:
-            //console.log('>>> FWD OWRX '+ msg_a[0]);
-            owrx_msg_cb(msg_a);
-            break;
-      }
-   };
-}
-
-function camp(ch, freq, mode, zoom)
-{
-   console.log('camp ch'+ ch);
-   msg_send('SET MON_CAMP='+ ch);
-}
-
-function kiwi_camp_stop_cb()
-{
-   console.log('camp STOP');
-   w3_hide('id-camp-container');
-   w3_innerHTML('id-camp-status', '');
-   msg_send('SET MON_CAMP=-1');
-}
-
 
 function kiwi_exclusive_use()
 {
@@ -1546,17 +1463,20 @@ function users_init(called_from)
 	kiwi.called_from_user = called_from.user;
 	kiwi.called_from_monitor = called_from.monitor;
 
-	var id_prefix = kiwi.called_from_admin? 'id-admin-user-' : 'id-user-';
-	for (var i=0; i < rx_chans; i++) {
-	   divlog(
-	      'RX'+ i +': <span id='+ dq(id_prefix + i) +'></span> ' +
-	      (kiwi.called_from_admin?
-	         w3_button('id-user-kick-'+ i +' w3-small w3-white w3-border w3-border-red w3-round-large w3-padding-0 w3-padding-LR-8',
-	            'Kick', 'status_user_kick_cb', i)
-	         : ''
-	      )
-	   );
-	}
+   if (kiwi.called_from_admin || kiwi.called_from_monitor) {
+      var id_prefix = kiwi.called_from_admin? 'id-admin-user-' : 'id-monitor-user-';
+      var s1 = '', s2;
+   
+      for (var i=0; i < rx_chans; i++) {
+         if (kiwi.called_from_admin) {
+            s1 = w3_button('id-user-kick-'+ i +' w3-small w3-white w3-border w3-border-red w3-round-large w3-padding-0 w3-padding-LR-8',
+               'Kick', 'status_user_kick_cb', i);
+         }
+         s2 = w3_div('id-campers-'+ i +' w3-css-orange w3-padding-LR-8');
+         w3_el('id-users-list').innerHTML += w3_inline('/w3-hspace-8', 'RX'+ i, w3_div(id_prefix + i), s1, s2);
+      }
+   }
+	
 	users_update();
 	w3_call('users_setup');
 	user_init = true;
@@ -1571,12 +1491,12 @@ function users_update()
 
 function user_cb(obj)
 {
-	var id_prefix = kiwi.called_from_admin? 'id-admin-user-' : 'id-user-';
+	var id_prefix = kiwi.called_from_admin? 'id-admin-user-' : 'id-monitor-user-';
 	var host = kiwi_url_origin();
 
 	obj.forEach(function(obj) {
 		//console.log(obj);
-		var s1 = '', s2 = '';
+		var s1 = '', s2 = '', s3 = '';
 		var i = obj.i;
 		var name = obj.n;
 		var freq = obj.f;
@@ -1625,31 +1545,32 @@ function user_cb(obj)
 			   link = host +'/?f='+ fo + mode +'z'+ zoom;
 			   target = ' target="_blank"';
 			} else {
-			   var ch = kiwi.called_from_monitor? (i+',') : '';
-			   link = 'javascript:'+ (kiwi.called_from_user? 'tune':'camp') +'('+ ch + fo +','+ sq(mode) +','+ zoom +')';
+			   link = 'javascript:'+ (kiwi.called_from_user? ('tune('+ fo +','+ sq(mode) +','+ zoom +')') : ('camp('+ i +')'));
 			   target = '';
 			}
 
 			if (ext != '') ext = decodeURIComponent(ext) +' ';
 			s1 = id + g;
-			s2 = '<a href='+ dq(link) + target +'>' + f_s + mode +' z'+ zoom +'</a> '+ ext + connected + remaining;
+			s2 = w3_link('w3-link-darker-color', link, f_s + mode +' z'+ zoom) +' '+ ext + connected + remaining;
 		}
 		
 		//if (s1 != '') console.log('user'+ i +'='+ s1 + s2);
 		if (user_init) {
-		   // status display used by admin page
-		   w3_innerHTML(id_prefix + i, s1 + s2);
-		   var kick = 'id-user-kick-'+ i;
-	      if (w3_el(kick)) {
-            if (s1 != '')
-               w3_show_inline_block(kick);
-            else
-               w3_hide(kick);
-         }
+
+		   if (kiwi.called_from_user) {
+            w3_innerHTML('id-optbar-user-'+ i, (s1 != '')? (s1 +'<br>'+ s2) : '');
+         } else {
          
-         // new users display
-         //for (var i=0; i < rx_chans; i++) if (s1 != '')
-         w3_innerHTML('id-optbar-user-'+ i, (s1 != '')? (s1 +'<br>'+ s2) : '');
+		      // status display used by admin & monitor page
+            w3_innerHTML(id_prefix + i, s1 + s2 + s3);
+            var kick = 'id-user-kick-'+ i;
+            if (w3_el(kick)) {
+               if (s1 != '')
+                  w3_show_inline_block(kick);
+               else
+                  w3_hide(kick);
+            }
+         }
 		}
 		
 		if (obj.c) {
@@ -1658,6 +1579,8 @@ function user_cb(obj)
 		   if (el) w3_innerHTML(el, 'carrier '+ obj.c.toFixed(1) +' Hz');
 		}
 		
+      w3_innerHTML('id-campers-'+ i, obj.ca? (obj.ca + plural(obj.ca, ' camper')) : '');
+
 		// inactivity timeout warning panel
 		if (i == rx_chan && obj.rn) {
 		   if (obj.rn <= 55 && !kiwi.inactivity_panel) {
@@ -1788,7 +1711,7 @@ function kiwi_mapPinSymbol(fillColor, strokeColor) {
 var comp_ctr, reason_disabled = '';
 var version_maj = -1, version_min = -1;
 var tflags = { INACTIVITY:1, WF_SM_CAL:2, WF_SM_CAL2:4 };
-var chan_no_pwd;
+var chan_no_pwd, chan_no_pwd_true;
 var pref_import_ch;
 var kiwi_output_msg_p = { scroll_only_at_bottom: true, process_return_alone: false };
 var client_public_ip;
@@ -1820,6 +1743,10 @@ function kiwi_msg(param, ws)
 			chan_no_pwd = parseInt(param[1]);
 			break;					
 
+		case "chan_no_pwd_true":
+			chan_no_pwd_true = parseInt(param[1]);
+			break;					
+
 		case "rx_chans":
 			rx_chans = parseInt(param[1]);
 			break;
@@ -1834,6 +1761,10 @@ function kiwi_msg(param, ws)
 
 		case "rx_chan":
 			rx_chan = parseInt(param[1]);
+			break;
+
+		case "max_camp":
+			max_camp = parseInt(param[1]);
 			break;
 
 		case "load_cfg":
@@ -2014,13 +1945,6 @@ function kiwi_debug(msg)
 	msg_send('SET dbug_msg='+ encodeURIComponent(msg));
 }
 	
-function divlog(what, is_error)
-{
-	//console.log('divlog: '+ what);
-	if (isDefined(is_error) && is_error) what = '<span class="class-error">'+ what +"</span>";
-	w3_el_softfail('id-debugdiv').innerHTML += what +"<br />";
-}
-
 function kiwi_show_msg(s)
 {
    html('id-kiwi-msg').innerHTML = s;
@@ -2055,7 +1979,7 @@ function kiwi_serious_error(s)
 
 function kiwi_trace(msg)
 {
-   if (msg) console.log('console.trace: '+ msg);
+   if (msg) console.log('kiwi_trace: '+ msg);
 	try { console.trace(); } catch(ex) {}		// no console.trace() on IE
 }
 
