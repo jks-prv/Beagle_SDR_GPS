@@ -487,7 +487,9 @@ function w3_el(el_id)
 	return (el_id);
 }
 
-function w3_els(el_id)
+// for when there are multiple elements with the same "id-*"
+// returns element list and optionally calls iterates calling func()
+function w3_els(el_id, func)
 {
 	if (isString(el_id)) {
 	   if (el_id == '') return null;
@@ -503,6 +505,9 @@ function w3_els(el_id)
 				}
 			}
 		}
+      if (els && func) for (var i = 0; i < els.length; i++) {
+         func(els[i], i);
+      }
 		return els;
 	}
 	return (el_id);
@@ -2130,11 +2135,9 @@ function w3_select_enum(path, func)
 function w3_select_value(path, idx, opt)
 {
    if (w3_opt(opt, 'all')) {
-      var els = w3_els(path);
-      if (!els) return;
-      for (var i = 0; i < els.length; i++) {
-         els[i].value = idx;
-      }
+      w3_els(path, function(el) {
+         el.value = idx;
+      });
    } else {
       var el = w3_el(path);
       if (!el) return;
