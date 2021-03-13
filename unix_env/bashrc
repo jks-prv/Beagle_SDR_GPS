@@ -80,6 +80,7 @@ alias ansi3='for c in $(seq 0 255) ; do printf "\e[48;5;%sm %3s \e[97m %3s \e[0m
 alias m="make"
 alias mh="make help"
 alias m0="make OPT=0"
+alias mgdb="make debug GDB=1"
 alias masan="make ASAN=1"
 alias masan0="make ASAN=1 OPT=0"
 alias miasan="make install ASAN=1"

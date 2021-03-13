@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 438
+VERSION_MIN = 440
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.11
@@ -387,6 +387,7 @@ build_makefile_inc:
 	@echo $(VER)
 	@echo PLATFORMS = $(PLATFORMS)
 	@echo DEBUG = $(DEBUG)
+	@echo GDB = $(GDB)
 	@echo XC = $(XC)
 	@echo
 #

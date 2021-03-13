@@ -184,3 +184,9 @@ ifeq ($(SAN),1)
     OPT = 0
     VIS_OPT =
 endif
+
+ifeq ($(GDB),1)
+    CPP_FLAGS += -O0
+    OPT = 0
+    VIS_OPT =
+endif
