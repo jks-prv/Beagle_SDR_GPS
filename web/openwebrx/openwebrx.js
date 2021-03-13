@@ -1533,12 +1533,16 @@ function get_visible_freq_range()
 {
 	out={};
 	
-	if (wf.audioFFT_active && cur_mode != undefined) {
+	if (wf.audioFFT_active && cur_mode) {
 	   var off, span;
       var srate = Math.round(audio_input_rate || 12000);
-	   if (cur_mode == 'iq' || cur_mode == 'drm') {
+	   if (ext_is_IQ_or_stereo_curmode()) {
 	      off = 0;
 	      span = srate;
+	   } else
+	   if (cur_mode && (cur_mode.substr(0,2) == 'ls' || cur_mode == 'sal')) {
+	      off = 0;
+	      span = srate/2;
 	   } else {
 	      off = srate/4;
 	      span = srate/2;
@@ -2054,9 +2058,9 @@ function canvas_get_carfreq_offset(relativeX, incl_PBO)
    var norm = relativeX/waterfall_width;
    if (wf.audioFFT_active) {
       var cur = center_freq + demodulators[0].offset_frequency;
-      var iq_or_drm = (cur_mode == 'iq' || cur_mode == 'drm');
-      norm -= iq_or_drm? 0.5 : 0.25;
-      var incr = norm * audio_input_rate * (iq_or_drm? 2 : 1);
+      var iq = (ext_is_IQ_or_stereo_curmode());
+      norm -= iq? 0.5 : 0.25;
+      var incr = norm * audio_input_rate * (iq? 2 : 1);
       freq = cur + incr;
       //console.log('canvas_get_carfreq_offset(audioFFT) f='+ freq +' cur='+ cur +' incr='+ incr +' norm='+ norm);
    } else {
@@ -4439,6 +4443,7 @@ function color_between(first, second, percent)
 var afft = {
    init: false,
    comp_1x: false,
+   prev_lsb: false,
    audioFFT_dynload: {},
 
    offt: 0,
@@ -4504,16 +4509,19 @@ function audioFFT_update()
 
 function wf_audio_FFT(audio_data, samps)
 {
-   if (!wf.audioFFT_active) return;
+   if (!wf.audioFFT_active || !isDefined(cur_mode)) return;
    
    if (!kiwi_load_js_polled(afft.audioFFT_dynload, ['pkgs/js/Ooura_FFT32.js'])) return;
    
-   var i, j, k;
+   var i, j, k, ki;
    
    //console.log('iq='+ audio_mode_iq +' comp='+ audio_compression +' samps='+ samps);
 
-   var iq = (ext_get_mode() == 'iq');
-   if (!afft.init || iq != afft.iq || audio_compression != afft.comp) {
+   var iq = ext_is_IQ_or_stereo_curmode();
+   var lsb = (cur_mode.substr(0,2) == 'ls' || cur_mode == 'sal');
+   var fft_setup = (!afft.init || iq != afft.iq || audio_compression != afft.comp);
+
+   if (fft_setup) {
       console.log('audio_FFT: SWITCHING iq='+ iq +' comp='+ audio_compression);
       var type;
       if (iq) {
@@ -4534,10 +4542,14 @@ function wf_audio_FFT(audio_data, samps)
       // FIXME: What's the correct value to use here? Adding the third afft.size was just arbitrary.
       afft.scale = 10.0 * 2.0 / (afft.size * afft.size * afft.size * afft.CUTESDR_MAX_VAL * afft.CUTESDR_MAX_VAL);
       
-      for (i = 0; i < 1024; i++) afft.pwr_dB[i] = 0;
       afft.iq = iq;
       afft.comp = audio_compression;
       afft.init = true;
+   }
+
+   if (fft_setup || (lsb != afft.prev_lsb)) {
+      for (i = 0; i < 1024; i++) afft.pwr_dB[i] = 0;
+      afft.prev_lsb = lsb;
    }
 
    if (afft.iq) {
@@ -4569,13 +4581,17 @@ function wf_audio_FFT(audio_data, samps)
                afft.i_re[i] = audio_data[i] * afft.window_2k[i];
             }
             afft.offt.fft(afft.offt, afft.i_re.buffer, afft.o_re.buffer, afft.o_im.buffer);
-            for (j = 0, k = 256; j < 1024; j++) {
+            if (lsb)
+               k = 512, ki = -1;
+            else
+               k = 256, ki = +1;
+            for (j = 0; j < 1024; j++) {
                var re = afft.o_re[j], im = afft.o_im[j];
                var pwr = re*re + im*im;
                afft.dBi[j&1] = Math.round(255 + (10.0 * Math.log10(pwr * afft.scale + 1e-30)));
                if (j & 1) {
                   afft.pwr_dB[k] = Math.max(afft.dBi[0], afft.dBi[1]);
-                  k++;
+                  k += ki;
                }
             }
          } else {
@@ -4584,7 +4600,11 @@ function wf_audio_FFT(audio_data, samps)
                afft.i_re[i] = audio_data[i] * afft.window_1k[i];
             }
             afft.offt.fft(afft.offt, afft.i_re.buffer, afft.o_re.buffer, afft.o_im.buffer);
-            for (j = 0, k = 256; j < 512; j++, k++) {
+            if (lsb)
+               k = 512, ki = -1;
+            else
+               k = 256, ki = +1;
+            for (j = 0; j < 512; j++, k += ki) {
                var re = afft.o_re[j], im = afft.o_im[j];
                var pwr = re*re + im*im;
                afft.pwr_dB[k] = Math.round(255 + (10.0 * Math.log10(pwr * afft.scale + 1e-30)));
@@ -4595,7 +4615,11 @@ function wf_audio_FFT(audio_data, samps)
                afft.i_re[i] = audio_data[i] * afft.window_2k[i-1024];
             }
             afft.offt.fft(afft.offt, afft.i_re.buffer, afft.o_re.buffer, afft.o_im.buffer);
-            for (j = 0, k = 256; j < 512; j++, k++) {
+            if (lsb)
+               k = 512, ki = -1;
+            else
+               k = 256, ki = +1;
+            for (j = 0; j < 512; j++, k += ki) {
                var re = afft.o_re[j], im = afft.o_im[j];
                var pwr = re*re + im*im;
                afft.pwr_dB[k] = Math.round(255 + (10.0 * Math.log10(pwr * afft.scale + 1e-30)));
@@ -4607,7 +4631,11 @@ function wf_audio_FFT(audio_data, samps)
             afft.i_re[i] = audio_data[i] * afft.window_512[i];
          }
          afft.offt.fft(afft.offt, afft.i_re.buffer, afft.o_re.buffer, afft.o_im.buffer);
-         for (j = 0, k = 256; j < 256; j++, k += 2) {
+         if (lsb)
+            k = 512, ki = -2;
+         else
+            k = 256, ki = +2;
+         for (j = 0; j < 256; j++, k += ki) {
             var re = afft.o_re[j], im = afft.o_im[j];
             var pwr = re*re + im*im;
             afft.pwr_dB[k] = afft.pwr_dB[k+1] = Math.round(255 + (10.0 * Math.log10(pwr * afft.scale + 1e-30)));
@@ -4893,11 +4921,12 @@ function modeset_update_ui(mode)
 	writeCookie('last_mode', mode);
 	freq_link_update();
 
-	// disable compression button in iq mode
-   var els = w3_els('id-button-compression');
-   for (var i = 0; i < els.length; i++) {
-	   w3_set_props(els[i], 'w3-disabled', (mode == 'iq'));
-	}
+	// disable compression button in iq or stereo modes
+	var disabled = ext_is_IQ_or_stereo_mode(mode);
+   w3_els('id-button-compression',
+      function(el) {
+	      w3_set_props(el, 'w3-disabled', disabled);
+      });
 }
 
 // delay the UI updates called from the audio path until the waterfall UI setup is done
@@ -4906,12 +4935,8 @@ function try_freqset_update_ui()
 	if (waterfall_setup_done) {
 		freqset_update_ui();
 		if (wf.audioFFT_active) {
-		
-         // if not already clearing then clear on iq mode change
-         var c_iq_drm_sas = ext_is_IQ_or_stereo_curmode()? 1:0;
-         var p_iq_drm_sas = ext_is_IQ_or_stereo_mode(wf.audioFFT_prev_mode)? 1:0;
-		   if (!wf.audioFFT_clear_wf && (c_iq_drm_sas ^ p_iq_drm_sas))
-		      wf.audioFFT_clear_wf = true;
+         if (cur_mode != wf.audioFFT_prev_mode)
+            wf.audioFFT_clear_wf = true;
 		   audioFFT_update();
 		   wf.audioFFT_prev_mode = cur_mode;
 		} else {
@@ -6657,7 +6682,6 @@ function keyboard_shortcut_url_keys()
 function keyboard_shortcut(key, mod, ctlAlt)
 {
    var action = true;
-   var mode = ext_get_mode();
    var dir = ctlAlt? -1 : 1;
    shortcut.nav_click = false;
    
@@ -8175,13 +8199,12 @@ function toggle_or_set_compression(set, val)
 	else
 		btn_compression ^= 1;
 
-   var els = w3_els('id-button-compression');
-   for (var i = 0; i < els.length; i++) {
-      var el = els[i];
-      el.style.color = btn_compression? 'lime':'white';
-      el.style.visibility = 'visible';
-      freqset_select();
-   }
+   w3_els('id-button-compression',
+      function(el) {
+         el.style.color = btn_compression? 'lime':'white';
+         el.style.visibility = 'visible';
+         freqset_select();
+      });
 	writeCookie('last_compression', btn_compression.toString());
 	//console.log('SET compression='+ btn_compression.toFixed(0));
 	snd_send('SET compression='+ btn_compression.toFixed(0));
