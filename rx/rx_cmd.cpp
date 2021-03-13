@@ -415,7 +415,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     allow = true;
                     skip_dup_ip_check = true;
                 } else
-            
+                
                 if (!type_prot) {       // consider only if protected mode not requested
             
                     int rx_free = rx_chan_free_count(RX_COUNT_ALL);
@@ -426,11 +426,14 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     int already_privileged_conns = rx_count_server_conns(LOCAL_OR_PWD_PROTECTED_USERS, conn);
                     chan_need_pwd -= already_privileged_conns;
                     if (chan_need_pwd < 0) chan_need_pwd = 0;
+                    
+                    // NB: ">=" not ">" because channel already allocated (freed if this check fails)
                     pdbug_cprintf(conn, "PWD %s %s rx_free=%d >= chan_need_pwd=%d %s already_privileged_conns=%d\n", 
                         type_m, uri, rx_free, chan_need_pwd,
                         (rx_free >= chan_need_pwd)? "TRUE":"FALSE", already_privileged_conns);
-                
-                    if (rx_free >= chan_need_pwd) {
+
+                    // always allow STREAM_MONITOR for the case when channels could become available
+                    if (rx_free >= chan_need_pwd || stream_mon) {
                         allow = true;
                         //nwf_cprintf(conn, "PWD rx_free=%d >= chan_need_pwd=%d %s\n", rx_free, chan_need_pwd, allow? "TRUE":"FALSE");
                     }
@@ -562,10 +565,12 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
             send_msg(conn, false, "MSG rx_chans=%d", rx_chans);
             send_msg(conn, false, "MSG chan_no_pwd=%d", chan_no_pwd);   // potentially corrected from cfg.chan_no_pwd
+            send_msg(conn, false, "MSG chan_no_pwd_true=%d", rx_chan_no_pwd(PWD_CHECK_YES));
             if (badp == 0 && (stream_snd || conn->type == STREAM_ADMIN)) {
                 send_msg(conn, false, "MSG is_local=%d,%d", conn->rx_channel, is_local? 1:0);
                 //pdbug_cprintf(conn, "PWD %s %s\n", type_m, uri);
             }
+            send_msg(conn, false, "MSG max_camp=%d", N_CAMP);
             send_msg(conn, false, "MSG badp=%d", badp);
 
             free(pwd_m); free(ipl_m);

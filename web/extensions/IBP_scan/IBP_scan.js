@@ -179,7 +179,7 @@ function IBP_Autosave(ch){
 var IBP_monitorBeacon = -1;
 var IBP_sound = false;
 var IBP_band = 0;
-var IBP_muted = isDefined(muted)? muted : 0;
+var IBP_muted = isDefined(kiwi.muted)? kiwi.muted : 0;
 var IBP_bands = [ "IBP 20m", "IBP 17m", "IBP 15m", "IBP 12m", "IBP 10m" ];
 
 
@@ -364,7 +364,7 @@ function IBP_scan_plot( oneline_image )
    
    if ( IBP_oldSlot != slot )
       {
-      if ( muted && (IBP_monitorBeacon == beaconN) )
+      if ( kiwi.muted && (IBP_monitorBeacon == beaconN) )
          {
          toggle_or_set_mute();
          setTimeout(function() { toggle_or_set_mute()}, 50000 );

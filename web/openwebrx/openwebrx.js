@@ -198,7 +198,7 @@ function kiwi_main()
 	s = 'pbc'; if (q[s]) override_pbc = q[s];
 	s = 'sp'; if (q[s]) spectrum_show = q[s];
 	s = 'spp'; if (q[s]) spectrum_param = parseFloat(q[s]);
-	s = 'vol'; if (q[s]) { volume = parseInt(q[s]); volume = Math.max(0, volume); volume = Math.min(400, volume); }
+	s = 'vol'; if (q[s]) { kiwi.volume = parseInt(q[s]); kiwi.volume = Math.max(0, Math.min(400, kiwi.volume)); }
 	s = 'mute'; if (q[s]) muted_initially = parseInt(q[s]);
 	s = 'wf'; if (q[s]) wf_rate = q[s];
 	s = 'wfm'; if (q[s]) wf_mm = q[s];
@@ -2755,10 +2755,15 @@ function zoom_step(dir, arg2)
 				if (sb_trace)
 					console.log("ZTB-user f="+f+" cf="+cf+" b="+b.name+" z="+b.zoom_level);
 			} else {
+	         var ITU_region = cfg.init.ITU_region + 1;    // cfg.init.ITU_region = 0:R1, 1:R2, 2:R3
+            //console.log('zoom_band f='+ f +' ITU_region=R'+ ITU_region);
 				for (i=0; i < bands.length; i++) {		// search for first containing band
 					b = bands[i];
-					if (f >= b.min && f <= b.max)
+		         if (!(b.itu == 0 || b.itu == ITU_region)) continue;
+					if (f >= b.min && f <= b.max) {
+		            //console.log('zoom_band FOUND itu=R'+ b.itu +' '+ b.min +' '+ f +' '+ b.max);
 						break;
+					}
 				}
 				if (i != bands.length) {
 					//console.log("ZTB-calc f="+f+" cf="+b.cf+" b="+b.name+" z="+b.zoom_level);
@@ -3550,11 +3555,12 @@ function waterfall_init()
    wf.audioFFT_active = (rx_chan >= wf_chans);
 	resize_waterfall_container(false);
 	resize_canvases();
+	bands_init();
 	panels_setup();
 	ident_init();
 	scale_setup();
 	mkcolormap();
-	bands_init();
+   mkscale();
 	spectrum_init();
 	dx_schedule_update();
 	users_init( { user:1 } );
@@ -5241,7 +5247,7 @@ function band_info()
 {
 	var _9_10 = (+cfg.init.AM_BCB_chan)? 10:9;
 
-	var ITU_region = cfg.init.ITU_region + 1;
+	var ITU_region = cfg.init.ITU_region + 1;    // cfg.init.ITU_region = 0:R1, 1:R2, 2:R3
 	var LW_lo = 153-9/2, NDB_lo, NDB_hi, MW_hi;
 	
 	if (ITU_region == 1) {		// really 526.5 in UK?
@@ -5261,12 +5267,84 @@ function band_info()
 // augment bands[] found in the config.js configuration file
 function bands_init()
 {
-	var i, z;
+	var i, j, k, z;
+	owrx.nbands = [];
+
+	for (i=j=0; i < bands.length; i++) {
+		var b = bands[i];
+		
+		// apply some fixes to known deficiencies in the bands[] from the default config.js,
+		// but in a way that hopefully won't upset any customizations to config.js
+		// a user might have made (e.g. adjustment to freq ranges)
+		
+		if (b.name == 'LW' && b.region == 'E') b.region = '1';
+		if (b.name == 'LW' && b.region == '>') b.region = '23';
+
+      // not too important as LW/NDB/MW details are all custom fixed below
+		if (b.name == 'MW' && b.region == '3') b.region = '13';
+
+		if (b.name == 'NDB' && b.region == 'E') b.region = '1';
+		if (b.name == 'NDB' && b.region == 'U') b.region = '2';
+		if (b.name == 'NDB' && b.region == '>') b.region = '3';
+		
+      // ham band fixes
+		if (b.name == 'MF' && b.region == '>23') b.region = '*';
+		
+		// time freqs are really markers
+		if (b.name.startsWith('Time ') && b.region == '*') b.region = 'm';
+
+		if (b.region) {
+		   var len = b.region.length;
+		   if (len == 1) {
+            owrx.nbands[j] = kiwi_deep_copy(b);
+            var b2 = owrx.nbands[j];
+            j++;
+            var c = b2.region.charAt(0);
+            if (c >= '1' && c <= '3')
+               b2.itu = c.charCodeAt(0) - '1'.charCodeAt(0) + 1;
+            else
+            if (c == 'm')
+               b2.itu = -1;
+            else
+            if (c == '-' || c == '*' || c == '>')
+               b2.itu = 0;
+            else {
+               b2.itu = -1;
+            }
+		   } else {
+            for (k = 0; k < len; k++) {
+               var c = b.region.charAt(k);
+               if (c == '>') continue;    // '>' alone is detected above in (len == 1)
+               owrx.nbands[j] = kiwi_deep_copy(b);
+               var b2 = owrx.nbands[j];
+               j++;
+               if (c >= '1' && c <= '3')
+                  b2.itu = c.charCodeAt(0) - '1'.charCodeAt(0) + 1;
+               else {
+                  b2.itu = -1;
+               }
+            }
+         }
+		} else {
+		   // shouldn't happen but handle anyway
+		   owrx.nbands[j] = kiwi_deep_copy(b);
+		   var b2 = owrx.nbands[j];
+		   b2.itu = 0;
+		   j++;
+		}
+	}
+	
+	bands = owrx.nbands;
+	for (i=0; i < bands.length; i++) {
+		var b = bands[i];
+		//console.log('bands_init '+ i +' R'+ b.itu +' '+ b.region +' '+ b.name);
+	}
 
 	var bi = band_info();
 
-	for (i=0; i < bands.length; i++) {
+	for (i=j=0; i < bands.length; i++) {
 		var b = bands[i];
+		
 		bands[i].chan = isUndefined(b.chan)? 0 : b.chan;
 		b.min -= b.chan/2; b.max += b.chan/2;
 		
@@ -5303,18 +5381,21 @@ function bands_init()
 		      b.sel = b.sel.replace('cw', 'cwn');
 		}
 	}
-
-	mkscale();
 }
 
 function find_band(freq)
 {
 	var b;
+	var ITU_region = cfg.init.ITU_region + 1;    // cfg.init.ITU_region = 0:R1, 1:R2, 2:R3
+   //console.log('find_band f='+ freq +' ITU_region=R'+ ITU_region);
+
 	for (var i=0; i < bands.length; i++) {
 		b = bands[i];
-		if (b.region != "-" && b.region != "*" && b.region.charAt(0) != '>') continue;
-		if (freq >= b.min && freq <= b.max)
+      if (!(b.itu == 0 || b.itu == ITU_region)) continue;
+		if (freq >= b.min && freq <= b.max) {
+		   //console.log('find_band FOUND itu=R'+ b.itu +' '+ b.min +' '+ freq +' '+ b.max);
 			return b;
+		}
 	}
 	return null;
 }
@@ -5347,10 +5428,12 @@ function mk_bands_scale()
 	band_ctx.globalAlpha = 1;
 	band_ctx.fillStyle = "White";
 	band_ctx.fillRect(0,band_canvas_top,tw,band_canvas_h);
+	var ITU_region = cfg.init.ITU_region + 1;    // cfg.init.ITU_region = 0:R1, 1:R2, 2:R3
 
 	for (i=0; i < bands.length; i++) {
 		var b = bands[i];
-		if (b.region != "-" && b.region != "*" && b.region.charAt(0) != '>') continue;
+		if (!(b.itu == 0 || b.itu == ITU_region)) continue;
+		//console.log('mk_bands_scale CONSIDER '+ b.name +' R'+ b.itu);
 		
 		// if bands[] hasn't been updated for freq offset then don't display
 		if (b.min < foff) break;
@@ -6599,8 +6682,8 @@ function keyboard_shortcut(key, mod, ctlAlt)
    case 'P': passband_increment(true); break;
    
    // volume/mute
-   case 'v': setvolume(1, volume-10); toggle_or_set_mute(0); keyboard_shortcut_nav('audio'); break;
-   case 'V': setvolume(1, volume+10); toggle_or_set_mute(0); keyboard_shortcut_nav('audio'); break;
+   case 'v': setvolume(1, kiwi.volume-10); toggle_or_set_mute(0); keyboard_shortcut_nav('audio'); break;
+   case 'V': setvolume(1, kiwi.volume+10); toggle_or_set_mute(0); keyboard_shortcut_nav('audio'); break;
    case 'm':
    case ' ': toggle_or_set_mute(); shortcut.nav_click = true; break;
 
@@ -7097,13 +7180,13 @@ function panels_setup()
 		) +
 		w3_col_percent('id-vol w3-valign w3-margin-T-4 w3-hide/class-slider',
 			w3_text(optbar_prefix_color, 'Volume'), 17,
-			'<input id="id-input-volume" type="range" min="0" max="200" value="'+ volume +'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 50,
+			'<input id="id-input-volume" type="range" min="0" max="200" value="'+ kiwi.volume +'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 50,
          '&nbsp;', 8,
          w3_select('|color:red|title="de-emphasis selection"', '', 'de-emp', 'de_emphasis', de_emphasis, de_emphasis_s, 'de_emp_cb')
 		) +
 		w3_col_percent('id-vol-comp w3-valign w3-margin-T-4/class-slider',
 			w3_text(optbar_prefix_color, 'Volume'), 17,
-			'<input id="id-input-volume" type="range" min="0" max="200" value="'+ volume +'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 40,
+			'<input id="id-input-volume" type="range" min="0" max="200" value="'+ kiwi.volume +'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 40,
          w3_select('|color:red', '', 'de-emp', 'de_emphasis', de_emphasis, de_emphasis_s, 'de_emp_cb'), 28,
 		   w3_button('id-button-compression class-button w3-hcenter||title="compression"', 'Comp', 'toggle_or_set_compression')
 		) +
@@ -7778,18 +7861,15 @@ function toggle_or_set_spec_peak(set, val)
 ////////////////////////////////
 
 var muted_until_freq_set = true;
-var muted = false;
-var volume = 50;
-var f_volume = 0;
 var recording = false;
 
 function setvolume(done, str)
 {
-   volume = +str;
-   volume = Math.max(0, Math.min(200, volume));
-   f_volume = muted? 0 : volume/100;
+   kiwi.volume = +str;
+   kiwi.volume = Math.max(0, Math.min(200, kiwi.volume));
+   kiwi.volume_f = kiwi.muted? 0 : kiwi.volume/100;
    if (done) {
-      w3_set_value('id-input-volume', volume);
+      w3_set_value('id-input-volume', kiwi.volume);
       freqset_select();
    }
 }
@@ -7797,15 +7877,15 @@ function setvolume(done, str)
 function toggle_or_set_mute(set)
 {
 	if (isNumber(set))
-      muted = set;
+      kiwi.muted = set;
    else
-	   muted ^= 1;
-   //console.log('toggle_or_set_mute set='+ set +' muted='+ muted);
+	   kiwi.muted ^= 1;
+   //console.log('toggle_or_set_mute set='+ set +' muted='+ kiwi.muted);
 	if (!owrx.squelched_overload) {
-      w3_show_hide('id-mute-no', !muted);
-      w3_show_hide('id-mute-yes', muted);
+      w3_show_hide('id-mute-no', !kiwi.muted);
+      w3_show_hide('id-mute-yes', kiwi.muted);
    }
-   f_volume = muted? 0 : volume/100;
+   kiwi.volume_f = kiwi.muted? 0 : kiwi.volume/100;
    freqset_select();
 }
 
@@ -7963,15 +8043,15 @@ function squelch_action(sq)
 {
    squelched = sq;
    //console.log('squelch_action squelched='+ (squelched? 1:0) +' sMeter_dBm='+ owrx.sMeter_dBm.toFixed(0));
-   var mute_color = squelched? 'white' : 'lime';
+   var mute_color = squelched? 'white' : kiwi.unmuted_color;
    var sq_color = mute_color;
 
    owrx.squelched_overload = (owrx.sMeter_dBm >= cfg.overload_mute);
    if (owrx.prev_squelched_overload != owrx.squelched_overload) {
       //console.log('squelched_overload='+ (owrx.squelched_overload? 1:0));
       w3_show_hide('id-mute-exclaim', owrx.squelched_overload);
-      w3_show_hide('id-mute-no', owrx.squelched_overload? false : !muted);
-      w3_show_hide('id-mute-yes', owrx.squelched_overload? false : muted);
+      w3_show_hide('id-mute-no', owrx.squelched_overload? false : !kiwi.muted);
+      w3_show_hide('id-mute-yes', owrx.squelched_overload? false : kiwi.muted);
       owrx.prev_squelched_overload = owrx.squelched_overload;
    }   
    
@@ -8002,7 +8082,7 @@ function squelch_setup(flags)
 	if (nbfm) {
 	   squelch_action(squelched);
    } else {
-      w3_color('id-mute-no', 'lime');
+      w3_color('id-mute-no', kiwi.unmuted_color);
    }
 
    //w3_show_hide('id-sq-thresh', !nbfm);
@@ -8319,9 +8399,13 @@ function setup_band_menu()
 	var i, op=0, service = null;
 	var s="";
 	band_menu[op++] = null;		// menu title
+	var ITU_region = cfg.init.ITU_region + 1;    // cfg.init.ITU_region = 0:R1, 1:R2, 2:R3
+
 	for (i=0; i < bands.length; i++) {
 		var b = bands[i];
-		if (b.region != "*" && b.region.charAt(0) != '>' && b.region != 'm') continue;
+		//if (b.region != "*" && b.region.charAt(0) != '>' && b.region != 'm') continue;
+		if (b.region == '-') continue;
+		if (!(b.region == 'm' || b.itu == 0 || b.itu == ITU_region)) continue;
 
 		// FIXME: Add prefix to IBP names to differentiate from ham band names.
 		// A software release can't modify bands[] definition in config.js so do this here.
@@ -8600,8 +8684,8 @@ function panel_setup_control(el)
 	// make first line of controls full width less vis button
 	w3_el('id-control-freq1').style.width = px(el.activeWidth - visIcon - 6);
 	
-   w3_show_hide('id-mute-no', !muted);
-   w3_show_hide('id-mute-yes', muted);
+   w3_show_hide('id-mute-no', !kiwi.muted);
+   w3_show_hide('id-mute-yes', kiwi.muted);
 }
 
 function panel_set_vis_button(id)
@@ -8815,7 +8899,7 @@ function owrx_ws_open_wf(cb, cbp)
 
 function on_ws_error()
 {
-	divlog("WebSocket error.", 1);
+	console.log("WebSocket error");
 }
 
 function snd_send(s)

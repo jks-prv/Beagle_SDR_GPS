@@ -2,6 +2,49 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.439  March 13, 2021
+    Channel queuing and camping:
+        When all the Kiwi channels are busy(*) it is now possible to enter a queue to wait
+        for the next available channel. The queue is FIFO and multiple parties can
+        occupy the queue (your queue order will be shown).
+        
+        If all channels are busy you can also now "camp" on an existing connection and
+        hear the audio of that channel. The only adjustment is to change the audio volume.
+        Otherwise you experience all the changes performed by the owner of the channel
+        (tuning, mode, etc).
+        
+        You can also be in the queue waiting for your own channel while camping.
+
+        It is possible to use camping even if free channels are available by connecting
+        using the URL parameter "camp", e.g. my_kiwi:8073/?camp
+        You might want to do this if you know there is already a connection you want to
+        camp on, but there are also free channels you don't want to unnecessarily occupy.
+
+        In theory camping requires only slightly more resources because the audio stream
+        is simply being duplicated and sent to the camper's network connection.
+        The Kiwi admin can configure the maximum number of campers allowed, including zero.
+        
+        Later on we can look at adding audio-related features to camping that only require
+        browser/javascript resources, hence place no additional load on the Kiwi server
+        (e.g. S-meter, recording, audio FFT waterfall/spectrum display).
+        
+        These changes are complex and will no doubt have bugs and corner cases to fix.
+        
+        (*) or unavailable due to password protection on those Kiwis that have split
+        public/private channels.
+
+    Added C-QUAM AM stereo mode to SAM mode button which now cycles as: SAM/SAL/SAU/SAS/QAM
+        Based on the work of Github user MaPePeR, see: github.com/jks-prv/Beagle_SDR_GPS/issues/395
+        Remember that alt-click will toggle the mode buttons backwards, e.g.
+        alt-click on SAS wraps back to QAM (faster than clicking forward on SAM 4 times).
+        The same applies to the keyboard shortcut: shift-A is SAM mode forward to SAL
+        alt-shift-A is SAM backward to QAM.
+    
+    Apply ITU region selection to band display (e.g. 40m ham band now stops at 7.2M for R1)
+        It is possible this change will cause problems if extensive customization of
+        the kiwi.config/config.js file has been made by the user. Please let us know if
+        this happens to you.
+
 v1.438  March 7, 2021
     Add admin page config tab option to disable AGC threshold display on S-meter.
     Simplify record icons for audio and FAX files.

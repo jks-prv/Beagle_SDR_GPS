@@ -65,11 +65,13 @@ typedef struct {
 
 extern rx_stream_t rx_streams[];
 
-#define	N_CONN_ADMIN        8
 #define N_CONN_SND_WF_EXT   3
-#define	N_CONN_EXTRA        16
+#define N_CAMP              4
+#define	N_CONN_ADMIN        8
+#define N_QUEUERS           8
+#define	N_CONN_EXTRA        8
 
-#define	N_CONNS	(MAX_RX_CHANS * (N_CONN_SND_WF_EXT) + N_CONN_ADMIN + N_CONN_EXTRA)
+#define	N_CONNS	(MAX_RX_CHANS * (N_CONN_SND_WF_EXT + N_CAMP) + N_CONN_ADMIN + N_QUEUERS + N_CONN_EXTRA)
 
 extern embedded_files_t edata_embed[];
 extern embedded_files_t edata_always[];
