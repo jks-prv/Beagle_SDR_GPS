@@ -1214,8 +1214,8 @@ function demodulator_analog_replace(subtype, freq)
 
 	var offset = 0, prev_pbo = 0, low_cut = NaN, high_cut = NaN;
 	var wasCW = false, toCW = false, fromCW = false;
-	
-   w3_show_hide('id-sam-carrier-container', subtype.startsWith('sa') || subtype.startsWith('qa'));
+	var m = subtype.substr(0,2);
+   w3_show_hide('id-sam-carrier-container', m == 'sa' || m == 'qa');
 
 	if (demodulators.length) {
 		wasCW = demodulators[0].isCW;
@@ -6895,6 +6895,32 @@ function extension_scroll(dir)
 var panel_margin = 10;
 var ac_play_button;
 
+function check_suspended_audio_state()
+{
+   // Because we don't know exactly when audio_init() will be called,
+   // we create a new audio context here and check for the suspended state
+   // if no-autoplay mode is in effect.
+   // That determines if the "click to start" overlay is displayed or not.
+   // If it is, then when it is clicked an attempt is made to resume() the
+   // audio context that has most likely been setup by audio_init()
+   // in the interim.
+   try {
+      window.AudioContext = window.AudioContext || window.webkitAudioContext;
+      ac_play_button = new AudioContext();
+      
+      // Safari has to play something before audioContext.state is valid
+      if (kiwi_isSafari()) {
+         var bufsrc = ac_play_button.createBufferSource();
+         bufsrc.connect(ac_play_button.destination);
+         try { bufsrc.start(0); } catch(ex) { bufsrc.noteOn(0); }
+      }
+      
+      setTimeout(test_audio_suspended, 500);    // check after a delay
+   } catch(e) {
+      console.log('#### no AudioContext?');
+   }
+}
+
 function test_audio_suspended()
 {
    //console.log('AudioContext.state='+ ac_play_button.state);
@@ -6906,11 +6932,37 @@ function test_audio_suspended()
                (kiwi_isMobile()? 'Tap to':'Click to') +' start OpenWebRX'
             )
          );
-      w3_appendElement('id-main-container', 'div', s);
+      w3_appendElement('id-kiwi-body', 'div', s);
       el = w3_el('id-play-button');
       el.style.marginTop = px(w3_center_in_window(el));
       //alert('state '+ ac_play_button.state);
    }
+}
+
+// Safari on iOS only plays webaudio after it has been started by clicking a button.
+// Same now for Chrome and Safari 12 on OS X.
+function play_button()
+{
+	try {
+	   if (kiwi_is_iOS()) {
+         var actx = audio_context;
+         var bufsrc = actx.createBufferSource();
+         bufsrc.connect(actx.destination);
+         try { bufsrc.start(0); } catch(ex) { bufsrc.noteOn(0); }
+	   } else {
+	      try {
+	         if (audio_context) audio_context.resume();
+	      } catch(ex) {
+	         console.log('#### audio_context.resume() FAILED');
+	      }
+      }
+   } catch(ex) { add_problem("audio start"); }
+
+   // CSS is setup so opacity fades
+	w3_el('id-play-button-container').style.opacity = 0;
+	setTimeout(function() { w3_hide('id-play-button-container'); }, 1100);
+	audio_reset();    // handle possible audio overflow condition during wait for button click
+   freqset_select();
 }
 
 // called from waterfall_init()
@@ -6954,28 +7006,7 @@ function panels_setup()
          )
       );
 
-   // Because we don't know exactly when audio_init() will be called,
-   // we create a new audio context here and check for the suspended state
-   // if no-autoplay mode is in effect.
-   // That determines if the "click to start" overlay is displayed or not.
-   // If it is, then when it is clicked an attempt is made to resume() the
-   // audio context that has most likely been setup by audio_init()
-   // in the interim.
-   try {
-      window.AudioContext = window.AudioContext || window.webkitAudioContext;
-      ac_play_button = new AudioContext();
-      
-      // Safari has to play something before audioContext.state is valid
-      if (kiwi_isSafari()) {
-         var bufsrc = ac_play_button.createBufferSource();
-         bufsrc.connect(ac_play_button.destination);
-         try { bufsrc.start(0); } catch(ex) { bufsrc.noteOn(0); }
-      }
-      
-      setTimeout(test_audio_suspended, 500);    // check after a delay
-   } catch(e) {
-      console.log('#### no AudioContext?');
-   }
+   check_suspended_audio_state();
 	
 	w3_el("id-control-freq2").innerHTML =
 	   w3_inline('w3-halign-space-between w3-margin-T-4/',
@@ -8397,31 +8428,6 @@ function users_setup()
 ////////////////////////////////
 // control panel
 ////////////////////////////////
-
-// Safari on iOS only plays webaudio after it has been started by clicking a button.
-// Same now for Chrome and Safari 12 on OS X.
-function play_button()
-{
-	try {
-	   if (kiwi_is_iOS()) {
-         var actx = audio_context;
-         var bufsrc = actx.createBufferSource();
-         bufsrc.connect(actx.destination);
-         try { bufsrc.start(0); } catch(ex) { bufsrc.noteOn(0); }
-	   } else {
-	      try {
-	         if (audio_context) audio_context.resume();
-	      } catch(ex) {
-	         console.log('#### audio_context.resume() FAILED');
-	      }
-      }
-   } catch(ex) { add_problem("audio start"); }
-
-   // CSS is setup so opacity fades
-	w3_el('id-play-button-container').style.opacity = 0;
-	setTimeout(function() { w3_hide('id-play-button-container'); }, 1100);
-   freqset_select();
-}
 
 // icon callbacks
 function freq_up_down_cb(path, up)
