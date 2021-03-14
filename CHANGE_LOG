@@ -2,6 +2,29 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.441  March 15, 2021
+    Audio camping bug fixes:
+        URL redirect now respects URL camp parameter. More work needed for other cases.
+        Audio now plays on Safari.
+    
+    Added separate CW AGC threshold control.
+        Typically a lower AGC threshold is required for very narrow passband settings to
+        avoid low sensitivity. Since narrow passbands are most often associated with the
+        CW/CWN modes it was decided to add a separate AGC threshold control active only in
+        those modes. The original threshold control applies to all other modes.
+        The two are stored in their own separate browser cookies.
+    
+    Fixed bugs in the Audio FFT display (the one that appears in 8-channel mode when more
+    than two channels are busy, or if the URL "no_wf" parameter is given):
+        The LSB passband is drawn in the same place as the actual FTT output.
+        The FFT display bins were flipped to be correct (i.e. low vs high frequency).
+        Autoscale mode works better than before.
+    
+    Disabled compression ("comp") button in DRM/SAS/QAM modes since it has no meaning
+        and effect in these modes.
+    Fixed shift-click in SWBC bands not selecting nearest 5 kHz boundary.
+    Fix long audio latency on browsers that display "Click to start OpenWebRX" overlay.
+
 v1.439,440  March 14, 2021
     Channel queuing and camping:
         When all the Kiwi channels are busy(*) it is now possible to enter a queue to wait
@@ -36,7 +59,7 @@ v1.439,440  March 14, 2021
     Added C-QUAM AM stereo mode to SAM mode button which now cycles as: SAM/SAL/SAU/SAS/QAM
         Based on the work of Github user MaPePeR, see: github.com/jks-prv/Beagle_SDR_GPS/issues/395
         Remember that alt-click will toggle the mode buttons backwards, e.g.
-        alt-click on SAS wraps back to QAM (faster than clicking forward on SAM 4 times).
+        alt-click on SAM wraps back to QAM (faster than clicking forward on SAM 4 times).
         The same applies to the keyboard shortcut: shift-A is SAM mode forward to SAL
         alt-shift-A is SAM backward to QAM.
     
