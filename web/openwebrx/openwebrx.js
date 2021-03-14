@@ -1264,6 +1264,8 @@ function demodulator_analog_replace(subtype, freq)
    if (cur_mode != 'drm')
       extint.prev_mode = cur_mode;
 	cur_mode = subtype;
+   if (toCW || fromCW)
+      set_agc();
 	//console.log("demodulator_analog_replace: cur_mode="+ cur_mode);
 
 	// must be done here after demod is added, so demod.isCW is available after demodulator_add()
@@ -5157,9 +5159,10 @@ function special_step(b, sel, caller)
 {
 	var s = 'SPECIAL_STEP '+ caller +' sel='+ sel;
 	var step_Hz;
+   var cm = cur_mode.substr(0,2);
 
 	if (b != null && b.name == 'NDB') {
-		if (cur_mode == 'cw' || cur_mode == 'cwn') {
+		if (cm == 'cw') {
 			step_Hz = NDB_400_1000_mode;
 		} else {
 			step_Hz = -1;
@@ -5167,7 +5170,6 @@ function special_step(b, sel, caller)
 		s += ' NDB';
 	} else
 	if (b != null && (b.name == 'LW' || b.name == 'MW')) {
-	   var cm = cur_mode.substr(0,2);
 		var am_ssb_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'qa' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
 		//console_log('special step', cm, am_ssb_iq_drm);
 		if (am_ssb_iq_drm) {
@@ -7258,7 +7260,7 @@ function panels_setup()
 
    // agc
 	w3_el('id-optbar-agc').innerHTML =
-		w3_col_percent('w3-valign/class-slider',
+		w3_col_percent('w3-valign w3-margin-B-4/class-slider',
 			'<div id="id-button-agc" class="class-button" onclick="toggle_agc(event)" onmousedown="cancelEvent(event)" onmouseover="agc_over(event)">AGC</div>', 13,
 			'<div id="id-button-hang" class="class-button" onclick="toggle_or_set_hang();">Hang</div>', 17,
 			w3_divs('w3-show-inline-block/id-label-man-gain cl-closer-spaced-label-text', 'Manual<br>gain'), 15,
@@ -7267,19 +7269,24 @@ function panels_setup()
 		) +
 		w3_div('',
 			w3_col_percent('w3-valign/class-slider',
-				w3_div('label-threshold w3-show-inline-block', 'Threshold'), 18,
+				w3_div('label-threshold w3-show-inline-block', 'Threshold'), 20,
 				'<input id="input-threshold" type="range" min="-130" max="0" value="'+ thresh +'" step="1" onchange="setThresh(1,this.value)" oninput="setThresh(0,this.value)">', 52,
-				w3_div('field-threshold w3-show-inline-block', thresh.toString()) +' dBm', 30
+				w3_div('field-threshold w3-show-inline-block', thresh.toString()) +' dBm'
 			),
 			w3_col_percent('w3-valign/class-slider',
-				w3_div('label-slope w3-show-inline-block', 'Slope'), 18,
+				w3_div('label-threshCW w3-show-inline-block', 'Thresh CW'), 20,
+				'<input id="input-threshCW" type="range" min="-130" max="0" value="'+ threshCW +'" step="1" onchange="setThreshCW(1,this.value)" oninput="setThreshCW(0,this.value)">', 52,
+				w3_div('field-threshCW w3-show-inline-block', threshCW.toString()) +' dBm'
+			),
+			w3_col_percent('w3-valign/class-slider',
+				w3_div('label-slope w3-show-inline-block', 'Slope'), 20,
 				'<input id="input-slope" type="range" min="0" max="10" value="'+ slope +'" step="1" onchange="setSlope(1,this.value)" oninput="setSlope(0,this.value)">', 52,
-				w3_div('field-slope w3-show-inline-block', slope.toString()) +' dB', 30
+				w3_div('field-slope w3-show-inline-block', slope.toString()) +' dB'
 			),
 			w3_col_percent('w3-valign/class-slider',
-				w3_div('label-decay w3-show-inline-block', 'Decay'), 18,
+				w3_div('label-decay w3-show-inline-block', 'Decay'), 20,
 				'<input id="input-decay" type="range" min="20" max="5000" value="'+ decay +'" step="1" onchange="setDecay(1,this.value)" oninput="setDecay(0,this.value)">', 52,
-				w3_div('field-decay w3-show-inline-block', decay.toString()) +' msec', 30
+				w3_div('field-decay w3-show-inline-block', decay.toString()) +' msec'
 			)
 		);
 	setup_agc(toggle_e.FROM_COOKIE | toggle_e.SET);
@@ -8115,7 +8122,6 @@ function squelch_setup(flags)
       w3_color('id-mute-no', kiwi.unmuted_color);
    }
 
-   //w3_show_hide('id-sq-thresh', !nbfm);
    w3_show_hide('id-squelch_tail', !nbfm);
    w3_show_hide('id-squelch', cur_mode != 'drm');
 }
@@ -8223,7 +8229,13 @@ function toggle_or_set_compression(set, val)
 
 function set_agc()
 {
-	snd_send('SET agc='+ agc +' hang='+ hang +' thresh='+ thresh +' slope='+ slope +' decay='+ decay +' manGain='+ manGain);
+   var isCW = (cur_mode && cur_mode.substr(0,2) == 'cw');
+   //console.log('isCW='+ isCW +' agc='+ agc);
+   w3_color('label-threshold', (!isCW && agc)? 'orange' : 'white');
+   w3_color('label-threshCW',  ( isCW && agc)? 'orange' : 'white');
+   var thold = isCW? threshCW : thresh;
+   //console.log('AGC SET thresh='+ thold);
+	snd_send('SET agc='+ agc +' hang='+ hang +' thresh='+ thold +' slope='+ slope +' decay='+ decay +' manGain='+ manGain);
 }
 
 var agc = 0;
@@ -8247,7 +8259,8 @@ function agc_over(evt)
 var default_agc = 1;
 var default_hang = 0;
 var default_manGain = 50;
-var default_thresh = -130;
+var default_thresh = -100;
+var default_threshCW = -130;
 var default_slope = 6;
 var default_decay = 1000;
 
@@ -8257,6 +8270,7 @@ function setup_agc(toggle_flags)
 	hang = kiwi_toggle(toggle_flags, default_hang, hang, 'last_hang'); toggle_or_set_hang(hang);
 	manGain = kiwi_toggle(toggle_flags, default_manGain, manGain, 'last_manGain'); setManGain(true, manGain);
 	thresh = kiwi_toggle(toggle_flags, default_thresh, thresh, 'last_thresh'); setThresh(true, thresh);
+	threshCW = kiwi_toggle(toggle_flags, default_threshCW, threshCW, 'last_threshCW'); setThreshCW(true, threshCW);
 	slope = kiwi_toggle(toggle_flags, default_slope, slope, 'last_slope'); setSlope(true, slope);
 	decay = kiwi_toggle(toggle_flags, default_decay, decay, 'last_decay'); setDecay(true, decay);
 }
@@ -8271,10 +8285,10 @@ function toggle_or_set_agc(set)
 	html('id-button-agc').style.color = agc? 'lime':'white';
 	if (agc) {
 		html('id-label-man-gain').style.color = 'white';
-		html('id-button-hang').style.borderColor = html('label-threshold').style.color = html('label-slope').style.color = html('label-decay').style.color = 'orange';
+		html('id-button-hang').style.borderColor = html('label-slope').style.color = html('label-decay').style.color = 'orange';
 	} else {
 		html('id-label-man-gain').style.color = 'orange';
-		html('id-button-hang').style.borderColor = html('label-threshold').style.color = html('label-slope').style.color = html('label-decay').style.color = 'white';
+		html('id-button-hang').style.borderColor = html('label-slope').style.color = html('label-decay').style.color = 'white';
 	}
 	set_agc();
 	writeCookie('last_agc', agc.toString());
@@ -8317,6 +8331,18 @@ function setThresh(done, str)
    html('field-threshold').innerHTML = str;
 	set_agc();
 	writeCookie('last_thresh', thresh.toString());
+   if (done) freqset_select();
+}
+
+var threshCW = 0;
+
+function setThreshCW(done, str)
+{
+   threshCW = parseFloat(str);
+   html('input-threshCW').value = threshCW;
+   html('field-threshCW').innerHTML = str;
+	set_agc();
+	writeCookie('last_threshCW', threshCW.toString());
    if (done) freqset_select();
 }
 
