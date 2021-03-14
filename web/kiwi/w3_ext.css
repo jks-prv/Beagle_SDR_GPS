@@ -311,6 +311,14 @@ input[type=range]::-moz-range-thumb {
     cursor: crosshair;
 }
 
+/* overrides w3-css with "cursor: not-allowed !important" that
+   subsequently overrides openwebrx.css ".class-button: cursor: pointer"*/
+.w3-disabled
+{
+    cursor: not-allowed !important;
+    opacity: 0.3;
+}
+
 .w3-link-color
 {
     color: hsl(212, 100%, 80%);

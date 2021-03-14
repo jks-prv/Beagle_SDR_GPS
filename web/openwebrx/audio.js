@@ -885,7 +885,7 @@ function audio_recv(data)
 
 
    // audio FFT hook
-   if (rx_chan >= wf_chans) {
+   if (wf.audioFFT_active) {
       wf_audio_FFT(audio_data, samps);
    }
 

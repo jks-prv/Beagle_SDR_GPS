@@ -1,16 +1,16 @@
 // Copyright (c) 2016 John Seamons, ZL/KF6VO
 
-var devl = {
+var develop = {
    ext_name: 'devl',    // NB: must match iq.c:iq_display_ext.name
    first_time: true,
 };
 
 function devl_main()
 {
-	ext_switch_to_client(devl.ext_name, devl.first_time, devl_recv);		// tell server to use us (again)
-	if (!devl.first_time)
+	ext_switch_to_client(develop.ext_name, develop.first_time, devl_recv);		// tell server to use us (again)
+	if (!develop.first_time)
 		devl_controls_setup();
-	devl.first_time = false;
+	develop.first_time = false;
 }
 
 function devl_recv(data)

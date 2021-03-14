@@ -3794,9 +3794,6 @@ function waterfall_add(data_raw, audioFFT)
    
 	if (wf.need_autoscale == 1 && !fixup) {
 	   var pwr_dBm = [];
-	   
-	   // FIXME: for audio FFT need to limit autoscale sampling to passband portion of FFT
-	   // (the current algorithm at least)
       var autoscale = wf.audioFFT_active? data.slice(256, 768) : data;
 	   var len = autoscale.length;
 	   
@@ -3805,16 +3802,21 @@ function waterfall_add(data_raw, audioFFT)
 	      pwr_dBm[i] = dB_wire_to_dBm(autoscale[i]);
       }
 	   pwr_dBm.sort(function(a,b) {return a-b});
-	   var noise = pwr_dBm[Math.floor(0.5 * len)];
+	   var noise = pwr_dBm[Math.floor(0.50 * len)];
 	   var signal = pwr_dBm[Math.floor(0.98 * len)];
-	   //console_log_dbgUs('# autoscale min='+ pwr_dBm[0] +' noise='+ noise +' signal='+ signal +' max='+ pwr_dBm[len-1]);
+	   console_log_dbgUs('# autoscale min='+ pwr_dBm[0] +' noise='+ noise +' signal='+ signal +' max='+ pwr_dBm[len-1]);
 
 	   var _10 = pwr_dBm[Math.floor(0.10 * len)];
 	   var _20 = pwr_dBm[Math.floor(0.20 * len)];
-	   //console_log_dbgUs('# autoscale min='+ pwr_dBm[0] +' 5%='+ noise +' 10%='+ _10 +' 20%='+ _20 +' 98%='+ signal +' max='+ pwr_dBm[len-1]);
+	   console_log_dbgUs('# autoscale min='+ pwr_dBm[0] +' 10%='+ _10 +' 20%='+ _20 +' 50%(noise)='+ noise +' 98%(signal)='+ signal +' max='+ pwr_dBm[len-1]);
 	   signal += 30;
 	   if (signal < -80) signal = -80;
       noise -= 10;
+      
+      if (wf.audioFFT_active) {
+         noise = (dbgUs && devl.p4)? Math.round(devl.p4) : -110;
+         console_log_dbgUs('audioFFT_active: force noise = '+ noise.toFixed(0) +' dBm');
+      }
 
       setmaxdb(1, signal);
       setmindb(1, noise);
@@ -4541,6 +4543,10 @@ function wf_audio_FFT(audio_data, samps)
       //afft.scale = 10.0 * 2.0 / (afft.size * afft.size * afft.CUTESDR_MAX_VAL * afft.CUTESDR_MAX_VAL);
       // FIXME: What's the correct value to use here? Adding the third afft.size was just arbitrary.
       afft.scale = 10.0 * 2.0 / (afft.size * afft.size * afft.size * afft.CUTESDR_MAX_VAL * afft.CUTESDR_MAX_VAL);
+      
+      // do initial autoscale in case stored max/min values are unreasonable
+      if (!afft.init && wf.aper != kiwi.aper_e.auto)
+         wf.need_autoscale = 16;
       
       afft.iq = iq;
       afft.comp = audio_compression;
@@ -8430,7 +8436,7 @@ function setup_band_menu()
 		if (b.region == '-') continue;
 		if (!(b.region == 'm' || b.itu == 0 || b.itu == ITU_region)) continue;
 
-		// FIXME: Add prefix to IBP names to differentiate from ham band names.
+		// Add prefix to IBP names to differentiate from ham band names.
 		// A software release can't modify bands[] definition in config.js so do this here.
 		// At some point config.js will be eliminated when admin page gets equivalent UI.
 		if ((b.s == svc.L || b.s == svc.X) && b.region == 'm') {
