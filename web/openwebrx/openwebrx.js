@@ -2122,6 +2122,7 @@ function canvas_start_drag(evt, x, y)
 		var step_Hz = 1000;
 		var fold = canvas_get_dspfreq(x);
 		var b = find_band(fold);
+		//if (b) console.log(b)
 		var cm = cur_mode.substr(0,2);
 		var am_ssb_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'qa' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
 		//console_log('nearest', cm, am_ssb_iq_drm);
@@ -5326,10 +5327,13 @@ function bands_init()
 		// time freqs are really markers
 		if (b.name.startsWith('Time ') && b.region == '*') b.region = 'm';
 
+      // use kiwi_shallow_copy() so changing e.g. b2.itu will be private to b2 copy
+      // but b.s.svc.* and b2.s.svc.* will refer to the same 2nd level svc.* object
+      
 		if (b.region) {
 		   var len = b.region.length;
 		   if (len == 1) {
-            owrx.nbands[j] = kiwi_deep_copy(b);
+            owrx.nbands[j] = kiwi_shallow_copy(b);
             var b2 = owrx.nbands[j];
             j++;
             var c = b2.region.charAt(0);
@@ -5348,7 +5352,7 @@ function bands_init()
             for (k = 0; k < len; k++) {
                var c = b.region.charAt(k);
                if (c == '>') continue;    // '>' alone is detected above in (len == 1)
-               owrx.nbands[j] = kiwi_deep_copy(b);
+               owrx.nbands[j] = kiwi_shallow_copy(b);
                var b2 = owrx.nbands[j];
                j++;
                if (c >= '1' && c <= '3')
@@ -5360,7 +5364,7 @@ function bands_init()
          }
 		} else {
 		   // shouldn't happen but handle anyway
-		   owrx.nbands[j] = kiwi_deep_copy(b);
+		   owrx.nbands[j] = kiwi_shallow_copy(b);
 		   var b2 = owrx.nbands[j];
 		   b2.itu = 0;
 		   j++;
