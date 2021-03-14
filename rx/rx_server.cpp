@@ -699,10 +699,9 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
                 }
             }
 
-	        printf("mon_total=%d monitors_max=%d\n", mon_total, monitors_max);
             if (rx == -1 || force_camp) {
                 if (force_camp) rx = -1;
-                cprintf(c, "rx=%d force_camp=%d\n", rx, force_camp);
+                //cprintf(c, "rx=%d force_camp=%d\n", rx, force_camp);
                 force_camp = false;
                 if (isKiwi_UI && (mon_total < monitors_max)) {
                     // turn first connection when no channels (SND or WF) into MONITOR

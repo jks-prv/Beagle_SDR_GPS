@@ -162,8 +162,8 @@ void c2s_mon(void *param)
 			    continue;
 			}
 
-			cprintf(conn_mon, "c2s_mon: unknown command: sl=%d %d|%d|%d [%s] ip=%s ==================================\n",
-			    strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn_mon->remote_ip);
+			//cprintf(conn_mon, "c2s_mon: unknown command: sl=%d %d|%d|%d [%s] ip=%s ==================================\n",
+			//    strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn_mon->remote_ip);
 
 			continue;
 		}

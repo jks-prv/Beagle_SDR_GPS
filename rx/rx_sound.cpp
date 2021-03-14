@@ -225,7 +225,7 @@ void c2s_sound(void *param)
 	#define N_RSSI 65
 	float rssi_q[N_RSSI];
 	int squelch=0, squelch_on_seq=-1, tail_delay=0;
-	bool sq_init, squelched=false;
+	bool sq_init=false, squelched=false;
 
 	// Overload muting stuff
 	bool mute_overload = true; // activate the muting when overloaded

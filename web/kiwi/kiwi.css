@@ -43,11 +43,11 @@ hr
 {
 	position: relative;
 	float: left;	/* so background width tracks rendered text */
+	color: black;
 	/*background-color: lightSteelBlue;*/
 	background-color: #ccffff;
 	padding: 10px;
 	margin: 15px;
-	color: black;
 	font-size: 15px;
 	border-radius: 15px;
 	-moz-border-radius: 15px;

@@ -2,8 +2,8 @@ See the full copyright information in the individual _COPYRIGHT files in most su
 and also in individual files.
 
 KiwiSDR
-Copyright (c) 2014-2020 John Seamons, ZL/KF6VO
-Copyright (c) 2018-2020 Christoph Mayer, DL1CH
+Copyright (c) 2014-2021 John Seamons, ZL/KF6VO
+Copyright (c) 2018-2021 Christoph Mayer, DL1CH
 
 OpenWebRX, CSDR
 Copyright (c) 2013-2014 Andras Retzler <randras@sdr.hu>
@@ -115,6 +115,9 @@ Pierre Ynard (linkfanel), priyom.org
     Dyatlov map maker
     Pavlova dispatcher
     Added IRC chat room link to stats tab
+
+MaPePeR
+    C-QUAM AM stereo demodulator
 
 Marco Cogoni, IS0KYB
     AGC threshold indicator for S-meter
