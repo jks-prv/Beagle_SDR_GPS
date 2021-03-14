@@ -11,6 +11,7 @@
 //
 
 var monitor = {
+   init: false
 };
 
 function kiwi_queue_cb() {
@@ -88,11 +89,16 @@ function kiwi_monitor()
             var okay = +a[0], rx = +a[1];
             var s;
             if (okay) {
+               if (!monitor.init) {
+                  check_suspended_audio_state();
+                  monitor.init = true;
+               }
+               
                s = w3_inline('w3-margin-T-4/w3-margin-right w3-valign',
                      w3_text('id-queue-pos w3-text-black', 'Camping on RX'+ rx),
                      w3_button('w3-medium w3-padding-smaller w3-red', 'Stop', 'kiwi_camp_stop_cb'),
                      w3_slider('w3-margin-L-16/w3-label-inline w3-label-not-bold/', 'Volume', 'kiwi.volume', kiwi.volume, 0, 200, 1, 'setvolume'),
-                     w3_div('||title="mute"',
+                     w3_div('|background-color: #e0e0e0; padding:2px; border-radius:8px|title="mute"',
                         w3_div('id-mute-no fa-stack|width:28px; color:'+ kiwi.unmuted_color,
                            w3_icon('', 'fa-volume-up fa-stack-2x fa-nudge-up', 24, 'inherit', 'toggle_or_set_mute')
                         ),

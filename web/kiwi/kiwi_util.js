@@ -189,6 +189,11 @@ function arrayBufferToStringLen(buf, len)
 	return output;
 }
 
+function kiwi_shallow_copy(obj)
+{
+   return Object.assign({}, obj);
+}
+
 function kiwi_deep_copy(obj)
 {
    return JSON.parse(JSON.stringify(obj));

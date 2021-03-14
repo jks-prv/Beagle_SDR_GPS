@@ -27,6 +27,7 @@ This file is part of OpenWebRX.
 var audio = {
    d: false,
    last_flags: 0,
+   trim_bufs: false,
    
    lo_cut: 0,
    hi_cut: 0,
@@ -211,6 +212,11 @@ function audio_camp(disconnect, is_local, less_buffering, compression)
    audio_meas_dly_ena = 0;
    audio_initial_connect = false;
    audio_watchdog_restart = false;;
+}
+
+function audio_reset()
+{
+   audio.trim_bufs = true;
 }
 
 function audio_init(is_local, less_buffering, compression)
@@ -885,7 +891,7 @@ function audio_recv(data)
 
 
    // audio FFT hook
-   if (rx_chan >= wf_chans) {
+   if (wf.audioFFT_active) {
       wf_audio_FFT(audio_data, samps);
    }
 
@@ -1104,8 +1110,9 @@ function audio_prepare(data, data_len, seq, flags, smeter)
    }
 
 	// reduce latency during freq or mode change by trimming most recent buffers back to minimum
-   if (flags & audio_flags.SND_FLAG_NEW_FREQ) {
+   if ((flags & audio_flags.SND_FLAG_NEW_FREQ) || audio.trim_bufs) {
       audio_change_freq_latch = true;
+      audio.trim_bufs = false;
       //console.log('NEW_FREQ audio_meas_dly_ena='+ audio_meas_dly_ena +' audio_meas_dly_start='+ audio_meas_dly_start);
       var len = audio_prepared_buffers.length;
       var min = audio_min_nbuf;

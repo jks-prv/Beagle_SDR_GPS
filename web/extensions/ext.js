@@ -23,6 +23,10 @@ var extint = {
    OPT_NOLOCAL: 1,
 };
 
+var devl = {
+   p0: 0, p1: 0, p2: 0, p3: 0, p4: 0, p5: 0, p6: 0, p7: 0
+};
+
 function ext_switch_to_client(ext_name, first_time, recv_func)
 {
 	//console.log('SET ext_switch_to_client='+ ext_name +' first_time='+ first_time +' rx_chan='+ rx_chan);

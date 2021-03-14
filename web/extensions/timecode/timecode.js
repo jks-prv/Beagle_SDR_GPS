@@ -129,13 +129,13 @@ function tc_info(s)
 
 function tc_stat(color, s)
 {
-   w3_el('id-tc-status').style.color = color;
+   w3_color('id-tc-status', color);
    w3_el('id-tc-status').innerHTML = s;
 }
 
 function tc_stat2(color, s)
 {
-   w3_el('id-tc-status2').style.color = color;
+   w3_color('id-tc-status2', color);
    w3_el('id-tc-status2').innerHTML = s;
 }
 
