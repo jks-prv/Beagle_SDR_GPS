@@ -353,7 +353,7 @@ function colormap_aper_algo_cb(path, idx, first)
 
    if (cmap.aper_algo == cmap.aper_algo_e.OFF) {
       w3_hide(w3_el('id-cmap-aper-param').parentElement);
-      w3_set_innerHTML('id-cmap-aper-param-field', 'aperture auto-scale on <br> waterfall pan/zoom only');
+      w3_innerHTML('id-cmap-aper-param-field', 'aperture auto-scale on <br> waterfall pan/zoom only');
       colormap_update();
    } else {
       var f_a = cmap.aper_algo;
@@ -398,7 +398,7 @@ function colormap_aper_param_cb(path, val, done, first)
 
    // needed because called by colormap_aper_algo_cb()
    w3_slider_setup('id-cmap-aper-param-slider', f_p[f_s +'_min'], f_p[f_s +'_max'], f_p[f_s +'_step'], val);
-   w3_set_innerHTML('id-cmap-aper-param-field', (f_a == cmap.aper_algo_e.OFF)? '' : (val +' '+ cmap.aper_param_s[f_a]));
+   w3_innerHTML('id-cmap-aper-param-field', (f_a == cmap.aper_algo_e.OFF)? '' : (val +' '+ cmap.aper_param_s[f_a]));
 
    if (done) {
 	   //console.log('colormap_aper_param_cb DONE WRITE_COOKIE last_aper_param='+ val.toFixed(2));
@@ -412,12 +412,12 @@ function colormap_aper_param_cb(path, val, done, first)
 
 function colormap_maxmin_cb()
 {
-   w3_set_innerHTML('id-cmap-max', maxdb.toString().positiveWithSign());
-   w3_set_innerHTML('id-cmap-max-comp', wf.auto_maxdb.toString().positiveWithSign());
-   w3_set_innerHTML('id-cmap-max-ceil', wf.auto_ceil.val.toString().positiveWithSign());
-   w3_set_innerHTML('id-cmap-min', mindb.toString().positiveWithSign());
-   w3_set_innerHTML('id-cmap-min-comp', wf.auto_mindb.toString().positiveWithSign());
-   w3_set_innerHTML('id-cmap-min-floor', wf.auto_floor.val.toString().positiveWithSign());
+   w3_innerHTML('id-cmap-max', maxdb.toString().positiveWithSign());
+   w3_innerHTML('id-cmap-max-comp', wf.auto_maxdb.toString().positiveWithSign());
+   w3_innerHTML('id-cmap-max-ceil', wf.auto_ceil.val.toString().positiveWithSign());
+   w3_innerHTML('id-cmap-min', mindb.toString().positiveWithSign());
+   w3_innerHTML('id-cmap-min-comp', wf.auto_mindb.toString().positiveWithSign());
+   w3_innerHTML('id-cmap-min-floor', wf.auto_floor.val.toString().positiveWithSign());
 }
 
 function colormap_color_button_cb(path, idx, first, param)
@@ -475,7 +475,7 @@ function colormap_color_gain_cb(path, val, done, first, param, y_new)
    //var gain = (val < 0)? (1+val) : (1 + (9.0 * Math.log10(1+val*9)));
    //console.log('colormap_color_gain_cb: val='+ val +' gain='+ gain +' done='+ done +' rgb='+ rgb);
    var color = cmap.color[rgb];
-   w3_set_innerHTML('id-cmap-gain-'+ color +'-field', 'gain '+ gain.toFixed(2));
+   w3_innerHTML('id-cmap-gain-'+ color +'-field', 'gain '+ gain.toFixed(2));
 
    if (cmap.which == -1) return;
    var cm = cmap.save['cm'+ cmap.which]['rgb'[rgb]];

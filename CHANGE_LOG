@@ -2,6 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.442  March 16, 2021
+    Audio camping improvements & bug fixes:
+        Added S-meter.
+        Highlight channel (RXn) being camped.
+
+    S-meter correctly switches between showing original and new CW AGC threshold.
+    
 v1.441  March 15, 2021
     Audio camping bug fixes:
         URL redirect now respects URL camp parameter. More work needed for other cases.

@@ -540,9 +540,9 @@ function time_display(display_time)
 	if (!el) return;
 
 	var noLatLon = (server_time_local == '' || server_time_tzname == 'null');
-	w3_set_innerHTML('id-time-display-UTC', server_time_utc? server_time_utc : '?');
-	w3_set_innerHTML('id-time-display-local', noLatLon? '?' : server_time_local);
-	w3_set_innerHTML('id-time-display-tzname', noLatLon? 'Lat/lon needed for local time' : server_tz);
+	w3_innerHTML('id-time-display-UTC', server_time_utc? server_time_utc : '?');
+	w3_innerHTML('id-time-display-local', noLatLon? '?' : server_time_local);
+	w3_innerHTML('id-time-display-tzname', noLatLon? 'Lat/lon needed for local time' : server_tz);
 
 	w3_el('id-time-display-logo-inner').style.opacity = display_time? 0:1;
 	w3_el('id-time-display-inner').style.opacity = display_time? 1:0;
@@ -1108,7 +1108,7 @@ function kiwi_output_msg(id, id_scroll, p)
 function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_gps_clk_corrections)
 {
    var s = (acquiring? 'yes':'pause') +', track '+ tracking +', good '+ good +', fixes '+ fixes.toUnits();
-	w3_el_softfail('id-msg-gps').innerHTML = 'GPS: acquire '+ s;
+	w3_innerHTML('id-msg-gps', 'GPS: acquire '+ s);
 	w3_innerHTML('id-status-gps',
 	   w3_text(optbar_prefix_color, 'GPS'),
 	   w3_text('', 'acq '+ s)
@@ -1117,7 +1117,8 @@ function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_gps_clk_c
 	extint_adc_gps_clock_corr = adc_gps_clk_corrections;
 	if (adc_gps_clk_corrections) {
 	   s = adc_clock.toFixed(6) +' ('+ adc_gps_clk_corrections.toUnits() +' avgs)';
-		w3_el_softfail("id-msg-gps").innerHTML += ', ADC clock '+ s;
+	   var el = w3_el('id-msg-gps');
+	   if (el) el.innerHTML += ', ADC clock '+ s;
 		w3_innerHTML('id-status-adc',
 	      w3_text(optbar_prefix_color, 'ADC clock '),
 	      w3_text('', s)
@@ -1465,6 +1466,7 @@ function users_init(called_from)
 
    if (kiwi.called_from_admin || kiwi.called_from_monitor) {
       var id_prefix = kiwi.called_from_admin? 'id-admin-user-' : 'id-monitor-user-';
+      var pad = kiwi.called_from_monitor? ' w3-padding-LR-2' : '';
       var s1 = '', s2;
    
       for (var i=0; i < rx_chans; i++) {
@@ -1473,7 +1475,7 @@ function users_init(called_from)
                'Kick', 'status_user_kick_cb', i);
          }
          s2 = w3_div('id-campers-'+ i +' w3-css-orange w3-padding-LR-8');
-         w3_el('id-users-list').innerHTML += w3_inline('/w3-hspace-8', 'RX'+ i, w3_div(id_prefix + i), s1, s2);
+         w3_el('id-users-list').innerHTML += w3_inline('/w3-hspace-8', w3_div('id-user-'+ i + pad, 'RX'+ i), w3_div(id_prefix + i), s1, s2);
       }
    }
 	

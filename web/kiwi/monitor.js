@@ -94,7 +94,8 @@ function kiwi_monitor()
                   monitor.init = true;
                }
                
-               s = w3_inline('w3-margin-T-4/w3-margin-right w3-valign',
+               s = w3_div('',
+                  w3_inline('w3-margin-T-4/w3-margin-right w3-valign',
                      w3_text('id-queue-pos w3-text-black', 'Camping on RX'+ rx),
                      w3_button('w3-medium w3-padding-smaller w3-red', 'Stop', 'kiwi_camp_stop_cb'),
                      w3_slider('w3-margin-L-16/w3-label-inline w3-label-not-bold/', 'Volume', 'kiwi.volume', kiwi.volume, 0, 200, 1, 'setvolume'),
@@ -107,11 +108,15 @@ function kiwi_monitor()
                            w3_icon('', 'fa-times fa-right', 12, '', 'toggle_or_set_mute')
                         )
                      )
-                  );
+                  ) +
+                  w3_div('id-control-smeter w3-margin-T-4')
+               );
             } else {
                s = 'Too many campers on channel RX'+ rx;
+               rx = -1;
             }
-            w3_innerHTML('id-camp-status', s);
+            kiwi_camp_update(rx, s);
+            if (rx != -1) smeter_init(/* force_no_agc_thresh_smeter */ true);
 	         toggle_or_set_mute(0);
             break;
          
@@ -127,6 +132,17 @@ function kiwi_monitor()
    };
 }
 
+function kiwi_camp_update(rx, s)
+{
+   w3_innerHTML('id-camp-status', s);
+   for (var i = 0; i < rx_chans; i++) {
+      var el = w3_el('id-user-'+ i);
+      w3_remove(el, 'w3-green');
+      if (i == rx)
+         w3_add(el, 'w3-green');
+   }
+}
+
 function camp(ch, freq, mode, zoom)
 {
    console.log('camp ch'+ ch);
@@ -137,6 +153,6 @@ function camp(ch, freq, mode, zoom)
 function kiwi_camp_stop_cb()
 {
    console.log('camp STOP');
-   w3_innerHTML('id-camp-status', '');
+   kiwi_camp_update(-1, '');
    msg_send('SET MON_CAMP=-1');
 }

@@ -699,7 +699,7 @@ function createCookie(name, value, days) {
 		expires = "; expires="+ date.toGMTString();
 	}
 	//console.log('createCookie <'+ name +"="+ value + expires +"; path=/" +'>');
-	document.cookie = name +"="+ value + expires +"; path=/";
+	document.cookie = name +"="+ value + expires +"; path=/; SameSite=Lax;";
 }
 
 function readCookie(name, defaultValue) {

@@ -1521,25 +1521,25 @@ int c2s_sound_camp(rx_chan_t *rxc, conn_t *conn, u1_t flags, char *bp, int bytes
         
         // detect camping connection has gone away
         if (!c->valid || c->type != STREAM_MONITOR || c->remote_port != rxc->camp_id[i]) {
-            cprintf(conn, ">>> CAMPER gone rx%d type=%d id=%d/%d slot=%d/%d\n",
-                rx_chan, c->type, c->remote_port, rxc->camp_id[i], i+1, n_camp);
+            //cprintf(conn, ">>> CAMPER gone rx%d type=%d id=%d/%d slot=%d/%d\n",
+            //    rx_chan, c->type, c->remote_port, rxc->camp_id[i], i+1, n_camp);
             rxc->camp_conn[i] = NULL;
             rxc->n_camp--;
             continue;
         }
 
         if (!c->camp_init) {
-            cprintf(conn, ">>> CAMP init rx%d slot=%d/%d\n", rx_chan, i+1, n_camp);
+            //cprintf(conn, ">>> CAMP init rx%d slot=%d/%d\n", rx_chan, i+1, n_camp);
             double frate = ext_update_get_sample_rateHz(-1);
             send_msg(c, SM_SND_DEBUG, "MSG center_freq=%d bandwidth=%d adc_clk_nom=%.0f", (int) ui_srate/2, (int) ui_srate, ADC_CLOCK_NOM);
             send_msg(c, SM_SND_DEBUG, "MSG audio_camp=0,%d audio_rate=%d sample_rate=%.6f", conn->isLocal, snd_rate, frate);
             send_msg(c, SM_SND_DEBUG, "MSG audio_adpcm_state=%d,%d", snd->adpcm_snd.index, snd->adpcm_snd.previousValue);
-            cprintf(c, "MSG audio_adpcm_state=%d,%d seq=%d\n", snd->adpcm_snd.index, snd->adpcm_snd.previousValue, snd->seq);
+            //cprintf(c, "MSG audio_adpcm_state=%d,%d seq=%d\n", snd->adpcm_snd.index, snd->adpcm_snd.previousValue, snd->seq);
             c->camp_init = c->camp_passband = true;
         } else {
             if (c->camp_passband || (flags & SND_FLAG_LPF)) {
                 send_msg(c, SM_SND_DEBUG, "MSG audio_passband=%.0f,%.0f", snd->locut, snd->hicut);
-                cprintf(c, "MSG audio_passband=%.0f,%.0f\n", snd->locut, snd->hicut);
+                //cprintf(c, "MSG audio_passband=%.0f,%.0f\n", snd->locut, snd->hicut);
                 c->camp_passband = false;
             }
             
