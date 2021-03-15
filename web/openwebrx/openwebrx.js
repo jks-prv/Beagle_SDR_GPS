@@ -34,6 +34,8 @@ var owrx = {
    
    sMeter_dBm_biased: 0,
    sMeter_dBm: 0,
+   smeter_interval: null,
+   force_no_agc_thresh_smeter: false,
    squelched_overload: false,
    prev_squelched_overload: false,
    
@@ -6451,9 +6453,13 @@ function smeter_dBm_biased_to_x(dBm_biased)
 	return Math.round(dBm_biased / SMETER_DISPLAY_RANGE * smeter_width);
 }
 
-function smeter_init()
+function smeter_init(force_no_agc_thresh_smeter)
 {
-	w3_innerHTML('id-control-smeter',
+   owrx.force_no_agc_thresh_smeter = force_no_agc_thresh_smeter;
+	var smeter_control = w3_el('id-control-smeter');
+	if (!smeter_control) return;
+	
+	w3_innerHTML(smeter_control,
 		'<canvas id="id-smeter-scale" class="class-smeter-scale" width="0" height="0"></canvas>',
 		w3_div('id-smeter-ovfl w3-hide', 'OV'),
 		w3_div('id-smeter-dbm-value'),
@@ -6463,10 +6469,14 @@ function smeter_init()
 	var sMeter_canvas = w3_el('id-smeter-scale');
 	smeter_ovfl = w3_el('smeter-ovfl');
 
-	smeter_width = divControl.activeWidth - SMETER_RHS - html_LR_border_pad(sMeter_canvas);   // less our own border/padding
+   var width = divControl? divControl.activeWidth : 350;
+   var canvas_LR_border_pad = html_LR_border_pad(sMeter_canvas);
+	smeter_width = width - SMETER_RHS - canvas_LR_border_pad;   // less our own border/padding
 	
 	var w = smeter_width, h = SMETER_SCALE_HEIGHT, y=h-8;
 	var tw = w + SMETER_RHS;
+	smeter_control.style.width = px(tw + canvas_LR_border_pad);
+	
 	sMeter_ctx = sMeter_canvas.getContext("2d");
 	sMeter_ctx.canvas.width = tw;
 	sMeter_ctx.canvas.height = h;
@@ -6487,7 +6497,8 @@ function smeter_init()
 	}
 
 	line_stroke(sMeter_ctx, 0, 5, "black", 0,y, w,y);
-	setInterval(update_smeter, 100);
+	kiwi_clearInterval(owrx.smeter_interval);
+	owrx.smeter_interval = setInterval(update_smeter, 100);
 }
 
 var sm_px = 0, sm_timeout = 0, sm_interval = 10;
@@ -6502,8 +6513,9 @@ function update_smeter()
 	sMeter_ctx.globalAlpha = 1;
 	line_stroke(sMeter_ctx, 0, 5, "lime", 0,y, x,y);
 
-   if (cfg.agc_thresh_smeter) {
-	   var x_thr = smeter_dBm_biased_to_x(-thresh);
+   if (cfg.agc_thresh_smeter && owrx.force_no_agc_thresh_smeter != true) {
+      var thold = (cur_mode && cur_mode.substr(0,2) == 'cw')? threshCW : thresh;
+	   var x_thr = smeter_dBm_biased_to_x(-thold);
 	   line_stroke(sMeter_ctx, 0, 2, "white", 0,y-3, w-x_thr,y-3);
 	   line_stroke(sMeter_ctx, 0, 2, "black", w-x_thr,y-3, w,y-3);
 	}
@@ -7685,7 +7697,7 @@ function wf_aper_cb(path, idx, first)
    writeCookie('last_aper', idx);
 
    var auto = (wf.aper == kiwi.aper_e.auto);
-   w3_set_innerHTML('id-wf-sliders', auto? wf.floor_ceil_sliders : wf.max_min_sliders);
+   w3_innerHTML('id-wf-sliders', auto? wf.floor_ceil_sliders : wf.max_min_sliders);
    w3_color('id-button-wf-autoscale', null, auto? w3_selection_green : '');
 
    if (auto) {
@@ -7859,7 +7871,7 @@ function setceildb(done, str)
    if (!input_ceil || !field_ceil) return;
 
 	var ceildb = parseFloat(str);
-   w3_set_innerHTML(field_ceil, ceildb.toFixed(0).positiveWithSign() + ' dB');
+   w3_innerHTML(field_ceil, ceildb.toFixed(0).positiveWithSign() + ' dB');
    wf.auto_ceil.val = ceildb;
 	set_ceilfloordb(done);
 }
@@ -7871,7 +7883,7 @@ function setfloordb(done, str)
    if (!input_floor || !field_floor) return;
 
 	var floordb = parseFloat(str);
-   w3_set_innerHTML(field_floor, floordb.toFixed(0).positiveWithSign() + ' dB');
+   w3_innerHTML(field_floor, floordb.toFixed(0).positiveWithSign() + ' dB');
    wf.auto_floor.val = floordb;
 	set_ceilfloordb(done);
 }
@@ -7981,7 +7993,7 @@ function setpan(done, str)
    if (pan > -0.1 && pan < +0.1) pan = 0;    // snap-to-zero interval
    w3_set_value('id-pan-value', pan);
    w3_color('id-pan-value', null, (pan < 0)? 'rgba(255,0,0,0.3)' : (pan? 'rgba(0,255,0,0.2)':''));
-   w3_set_innerHTML('id-pan-field', pan? ((Math.abs(pan)*100).toFixed(0) +' '+ ((pan < 0)? 'L':'R')) : 'L=R');
+   w3_innerHTML('id-pan-field', pan? ((Math.abs(pan)*100).toFixed(0) +' '+ ((pan < 0)? 'L':'R')) : 'L=R');
    audio_set_pan(pan);
    if (done) {
       writeCookie('last_pan', pan.toString());
@@ -8421,7 +8433,7 @@ function users_setup()
             w3_div('id-optbar-user-'+ i +' w3-show-inline-block')
          );
 	}
-	w3_set_innerHTML('id-optbar-users', w3_div('w3-nowrap', s));
+	w3_innerHTML('id-optbar-users', w3_div('w3-nowrap', s));
 }
 
 

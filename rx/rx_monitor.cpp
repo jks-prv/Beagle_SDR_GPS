@@ -149,14 +149,24 @@ void c2s_mon(void *param)
                 } else {
                     chan_avail = (rx_free > 0);
                 }
+                
+                bool redirect = false;
+                if (!chan_avail) {
+                    char *url_redirect = (char *) admcfg_string("url_redirect", NULL, CFG_REQUIRED);
+                    if (url_redirect != NULL && *url_redirect != '\0') {
+                        redirect = true;
+                    }
+                    admcfg_string_free(url_redirect);
+                }
 
 		        static u4_t lockout;
 		        bool locked = (lockout > timer_sec())? 1:0;
 		        
+		        //int reload = (!locked && pos == 1 && (chan_avail || redirect))? 1:0;
 		        int reload = (!locked && pos == 1 && chan_avail)? 1:0;
 		        if (reload) lockout = timer_sec() + 10;
-		        //cprintf(conn_mon, "CAMP: QPOS=%d waiters=%d rx_chans=%d rx_free=%d locked=%d reload=%d\n",
-		        //    pos, waiters, rx_chans, rx_free, locked, reload);
+		        //cprintf(conn_mon, "CAMP: QPOS=%d waiters=%d rx_chans=%d rx_free=%d locked=%d chan_avail=%d redirect=%d reload=%d\n",
+		        //    pos, waiters, rx_chans, rx_free, locked, chan_avail, redirect, reload);
 
                 send_msg(conn_mon, false, "MSG qpos=%d,%d,%d", pos, waiters, reload);
 			    continue;
@@ -173,12 +183,14 @@ void c2s_mon(void *param)
             rx_chan_t *rxc = &rx_channels[camped_rx];
             conn_t *c = rxc->conn;
             if (c == NULL || !c->valid || c->type != STREAM_SOUND) {
+                /*
                 if (c == NULL)
                     cprintf(conn_mon, "CAMP: channel gone rx%d c=NULL id=?/%d slot=%d/%d\n",
                         camped_rx, rxc->camp_id[i], i+1, n_camp);
                 else
                     cprintf(conn_mon, "CAMP: channel gone rx%d type=%d id=%d/%d slot=%d/%d\n",
                         camped_rx, c->type, c->remote_port, rxc->camp_id[i], i+1, n_camp);
+                */
                 send_msg(conn_mon, false, "MSG camp_stop");
                 camped_rx = -1;
             }
