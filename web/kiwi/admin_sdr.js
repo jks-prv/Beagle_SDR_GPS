@@ -489,14 +489,13 @@ function webpage_update_check_grid()
 
 function webpage_input_map(path, val)
 {
-   val = val.replace(/\s+/g, '');
-	webpage_string_cb(path, val);
+	webpage_string_cb(path, val.trim());
 	webpage_update_check_map();
 }
 
 function webpage_update_check_map()
 {
-	var map = ext_get_cfg_param('index_html_params.RX_GMAP');
+	var map = decodeURIComponent(ext_get_cfg_param('index_html_params.RX_GMAP'));
 	w3_el('webpage-map-check').innerHTML = '<a href="https://google.com/maps/place/'+ map +'" target="_blank">check map</a>';
 }
 
@@ -641,18 +640,17 @@ function webpage_int_cb(path, val)
 function kiwi_reg_html()
 {
 	var s1 =
-		w3_div('w3-tspace-16',
-         w3_div('id-need-gps w3-valign w3-hide',
-            '<header class="w3-container w3-yellow"><h5>Warning: GPS location field set to the default, please update</h5></header>'
-         ),
-         
-         w3_div('w3-valign',
+		w3_div('',
+         w3_div('w3-margin-T-10 w3-valign',
             '<header class="w3-container w3-yellow"><h5>' +
-            'More information on <a href="http://kiwisdr.com/quickstart/index.html#id-sdr_hu" target="_blank">kiwisdr.com</a><br><br>' +
+            'More information on <a href="http://kiwisdr.com/quickstart/index.html#id-config-kiwi-reg" target="_blank">kiwisdr.com</a><br><br>' +
 
             'To list your Kiwi on <a href="http://rx.kiwisdr.com" target="_blank">rx.kiwisdr.com</a> ' +
-            'edit the fields below and set the register switch to <b>Yes</b>.<br>' +
-            'Look for a successful status result after a few minutes.<br>' +
+            'edit the fields below and set the "<i>Register</i>" switch to <b>Yes</b>. ' +
+            'Look for a successful status result within a few minutes.<br>' +
+            
+            'The "<i>Location (lat, lon)</i>" field must be set properly for your Kiwi to be listed in the correct location on ' +
+            '<a href="http://map.kiwisdr.com" target="_blank">map.kiwisdr.com</a>' +
 
             '</h5></header>'
          )
@@ -734,7 +732,7 @@ function kiwi_reg_html()
             w3_input('', w3_label('w3-bold', 'Location (lat, lon) ') +
                w3_div('id-public-gps-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large') + ' ' +
                w3_div('id-public-gps-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS'),
-               'rx_gps', '', 'sdr_hu_check_gps'
+               'rx_gps', '', 'public_check_gps_cb'
             ),
 				w3_div('w3-text-black', 'Format: (nn.nnnnnn, nn.nnnnnn)')
 			),
@@ -774,15 +772,18 @@ function kiwisdr_com_register_cb(path, idx)
    var text, color;
    var no_url = (cfg.server_url == '');
    var no_passwordless_channels = (adm.user_password != '' && cfg.chan_no_pwd == 0);
+   var no_rx_gps = (cfg.rx_gps == '' || cfg.rx_gps == '(0.000000, 0.000000)' || cfg.rx_gps == '(0.000000%2C%200.000000)');
    //console.log('kiwisdr_com_register_cb has_u_pwd='+ (adm.user_password != '') +' chan_no_pwd='+ cfg.chan_no_pwd +' no_passwordless_channels='+ no_passwordless_channels);
 
-   if (idx == w3_SWITCH_YES_IDX && (no_url || no_passwordless_channels)) {
+   if (idx == w3_SWITCH_YES_IDX && (no_url || no_passwordless_channels || no_rx_gps)) {
       if (no_url)
          text = 'Error, you must first setup a valid Kiwi connection URL on the admin "connect" tab';
       else
       if (no_passwordless_channels)
          text = 'Error, must have at least one user channel that doesn\'t require a password (see admin "security" tab)';
-
+      else
+      if (no_rx_gps)
+         text = 'Error, you must first set a valid entry in the "<i>Location (lat, lon)</i>" field';
       color = '#ffeb3b';
       w3_switch_set_value(path, w3_SWITCH_NO_IDX);    // force back to 'no'
       idx = w3_SWITCH_NO_IDX;
@@ -793,6 +794,7 @@ function kiwisdr_com_register_cb(path, idx)
    } else {    // w3_SWITCH_NO_IDX
       text = '(registration not enabled)';
       color = 'hsl(180, 100%, 95%)';
+      w3_switch_set_value(path, w3_SWITCH_NO_IDX);    // for benefit of direct callers
    }
    
    w3_innerHTML('id-kiwisdr_com-reg-status', text);
@@ -847,7 +849,7 @@ function sdr_hu_focus()
 	// Detect this and ask user to change it so sdr.hu/map doesn't end up with multiple SDRs
 	// defined at the kiwisdr.com location.
 	var gps = decodeURIComponent(ext_get_cfg_param('rx_gps'));
-	sdr_hu_check_gps('rx_gps', gps, /* first */ true);
+	public_check_gps_cb('rx_gps', gps, /* first */ true);
 	
 	public_update_check_grid();
 	public_update_check_map();
@@ -861,7 +863,7 @@ function sdr_hu_focus()
 	w3_el('id-public-gps-set').onclick = function() {
 		var val = '('+ admin.reg_status.lat +', '+ admin.reg_status.lon +')';
 		w3_set_value('rx_gps', val);
-		w3_input_change('rx_gps', 'sdr_hu_check_gps');
+		w3_input_change('rx_gps', 'public_check_gps_cb');
 	};
 
 	// only get updates while the sdr_hu tab is selected
@@ -885,7 +887,7 @@ function public_update_check_grid()
 	w3_el('id-public-grid-check').innerHTML = '<a href="http://www.levinecentral.com/ham/grid_square.php?Grid='+ grid +'" target="_blank">check grid</a>';
 }
 
-function sdr_hu_check_gps(path, val, first)
+function public_check_gps_cb(path, val, first)
 {
    var lat = 0, lon = 0;
    var re = /([-]?\d*\.?\d+)/g;
@@ -899,11 +901,15 @@ function sdr_hu_check_gps(path, val, first)
    
    val = '('+ lat.toFixed(6) +', '+ lon.toFixed(6) +')';
 
-	if (val == '(-37.631120, 176.172210)' || val == '(-37.631120%2C%20176.172210)') {
-		w3_show_block('id-need-gps');
+	if (val == '(-37.631120, 176.172210)' || val == '(-37.631120%2C%20176.172210)')
+	   val = '(0.000000, 0.000000)';
+
+	if (val == '(0.000000, 0.000000)') {
 		w3_flag('rx_gps');
+
+      // clear registration state
+      kiwisdr_com_register_cb('adm.kiwisdr_com_register', w3_SWITCH_NO_IDX);
 	} else {
-		w3_hide('id-need-gps');
 		w3_unflag('rx_gps');
 	}
 	
