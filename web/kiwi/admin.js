@@ -1859,12 +1859,15 @@ function gps_update_admin_cb()
 			);
 	
 		var sub = '';
+		var has_subframes = false;
 		for (var i = SUBFRAMES-1; i >= 0; i--) {
 			var sub_color;
 			if (ch.sub_renew & (1<<i)) {
 				sub_color = 'w3-grey';
 			} else {
-				sub_color = (ch.sub & (1<<i))? sub_colors[i]:'w3-white';
+			   var subframe = ch.sub & (1<<i);
+				sub_color = subframe? sub_colors[i]:'w3-white';
+				if (subframe) has_subframes = true;
 			}
 			sub += '<span class="w3-tag '+ sub_color +'">'+ (i+1) +'</span>';
 		}
@@ -1881,10 +1884,11 @@ function gps_update_admin_cb()
 
 	   if (adm.rssi_azel_iq == _gps.RSSI) {
          var pct = ((ch.rssi / max_rssi) * 100).toFixed(0);
+         var color = has_subframes? 'w3-light-green' : 'w3-red';
          cells +=
             w3_table_cells('',
                w3_div('w3-progress-container w3-round-xlarge w3-white',
-                  w3_div('w3-progressbar w3-round-xlarge w3-light-green|width:'+ pct +'%',
+                  w3_div('w3-progressbar w3-round-xlarge '+ color +'|width:'+ pct +'%',
                      w3_div('w3-container w3-text-white', ch.rssi)
                   )
                )
