@@ -268,6 +268,9 @@ function colormap_init()
    var aper_canvas = w3_el('id-aper-canvas');
    aper_canvas.width = wf.aper_w;
    wf.aper_ctx = aper_canvas.getContext("2d");
+   
+	if (wf.aper == kiwi.aper_e.man)
+      colormap_aper();
 }
 
 function colormap_select()
