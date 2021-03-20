@@ -630,6 +630,16 @@ void c2s_waterfall(void *param)
 			continue;
 		}
 		
+		// Not normally enabled so periodic internal and external SNR measurement samplers don't show up.
+		// Others like kiwiclient will get logged because they make an audio connection.
+		#if 0
+            // set arrived when "ident_user=" received e.g. in the case of a wf-only connection like SNR-meas
+            if (!conn->arrived && conn->ident) {
+                rx_loguser(conn, LOG_ARRIVED);
+                conn->arrived = TRUE;
+            }
+        #endif
+
 		// Don't process any waterfall data until we've received all necessary commands.
 		// Also, stop waterfall if speed is zero.
 		if (cmd_recv != CMD_ALL || wf->speed == WF_SPEED_OFF) {
@@ -1115,6 +1125,10 @@ void compute_frame(int rx_chan)
 	u1_t comp_in_buf[WF_WIDTH];
 	float pwr[MAX_FFT_USED];
     fft_t *fft = &WF_SHMEM->fft_inst[rx_chan];
+    
+    // don't use compression for zoom level zero because of bad interaction
+    // of narrow strong carriers with compression algorithm
+    bool use_compression = (wf->compression && wf->zoom != 0);
 		
     //TaskStat2(TSTAT_INCR|TSTAT_ZERO, 0, "frm");
 
@@ -1124,7 +1138,7 @@ void compute_frame(int rx_chan)
 	evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: FFT done");
 	//NextTask("FFT2");
 
-	u1_t *buf_p = wf->compression? out->un.buf2 : out->un.buf;
+	u1_t *buf_p = use_compression? out->un.buf2 : out->un.buf;
 	u1_t *bp = buf_p;
 			
 	if (!wf->fft_used_limit) wf->fft_used_limit = wf->fft_used;
@@ -1243,6 +1257,11 @@ void compute_frame(int rx_chan)
 			//p = pwr_out_sum[i];
 
 			dB = 10.0 * log10f(p * wf->fft_scale[i] + 1e-30F) + wf->fft_offset;
+			#if 0
+                if (i == 508) printf("Z%d ", wf->zoom);
+                if (i >= 509 && i <= 513) printf("%d ", (int) dB);
+                if (i == 514) printf("\n");
+            #endif
             #if 0
                 //jks
                 if (i == 506) printf("Z%d ", wf->zoom);
@@ -1333,7 +1352,7 @@ void compute_frame(int rx_chan)
 
 	ima_adpcm_state_t adpcm_wf;
 	
-	if (wf->compression) {
+	if (use_compression) {
 		memset(out->un.adpcm_pad, out->un.buf2[0], sizeof(out->un.adpcm_pad));
 		memset(&adpcm_wf, 0, sizeof(ima_adpcm_state_t));
 		encode_ima_adpcm_u8_e8(out->un.buf, out->un.buf, ADPCM_PAD + WF_WIDTH, &adpcm_wf);
