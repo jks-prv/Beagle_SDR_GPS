@@ -232,7 +232,7 @@ void tod_correction(u4_t week, int sat)
         u4_t weeks = week + rollover_weeks * rollover_count;
 
         gtime_t gpst = gpst2time(weeks, gps_utc_fsecs);   // actually gpst corrected to utc
-        time_t syst; time(&syst);
+        time_t syst = utc_time();
 
         //#define TEST_TIME_CORR
         #ifdef TEST_TIME_CORR
@@ -281,7 +281,7 @@ void tod_correction(u4_t week, int sat)
         UMS hms(gps_utc_fhours);
         // GPS time HH:MM:SS.sss = hms.u, hms.m, hms.s
         
-        time_t t; time(&t); struct tm tm, otm; gmtime_r(&t, &tm);
+        time_t t = utc_time(); struct tm tm, otm; gmtime_r(&t, &tm);
         struct timespec ts; clock_gettime(CLOCK_REALTIME, &ts);
         double tm_fsec = (double) ts.tv_nsec/1e9 + (double) tm.tm_sec;
         double host_utc_fsecs = (double) tm.tm_hour*60*60 + (double) tm.tm_min*60 + tm_fsec;

@@ -35,6 +35,7 @@ Boston, MA  02110-1301, USA.
 #include "non_block.h"
 #include "shmem.h"
 #include "eeprom.h"
+#include "rx_waterfall.h"
 
 #include <string.h>
 #include <time.h>
@@ -70,7 +71,7 @@ static void get_TZ(void *param)
 		if (lat_lon != NULL) {
 			n = sscanf(lat_lon, "%*[^0-9+-]%f%*[^0-9+-]%f)", &lat, &lon);
 			// consider default lat/lon to be the same as unset
-			if (n == 2 && strcmp(lat_lon, "(-37.631120, 176.172210)") != 0) {
+			if (n == 2 && strcmp(lat_lon, "(-37.631120, 176.172210)") != 0 && strcmp(lat_lon, "(0.000000, 0.000000)") != 0) {
 				lprintf("TIMEZONE: lat/lon from admin public config: (%f, %f)\n", lat, lon);
 				haveLatLon = true;
 			}
@@ -102,7 +103,7 @@ static void get_TZ(void *param)
                 lat, lon);
         #else
             #define TZ_SERVER "googleapis.com"
-            time_t utc_sec; time(&utc_sec);
+            time_t utc_sec = utc_time();
             asprintf(&cmd_p, "curl -s --ipv4 \"https://maps.googleapis.com/maps/api/timezone/json?key=&location=%f,%f&timestamp=%lu&sensor=false\" 2>&1",
                 lat, lon, utc_sec);
         #endif
@@ -217,6 +218,8 @@ static void misc_NET(void *param)
 			system("sleep 1; ./pkgs/frp/frpc -c " DIR_CFG "/frpc.ini &");
 	}
 
+    // find and remove known viruses, mostly as a result of Debian root/debian accounts
+    // without passwords on networks with ssh open to the Internet
     u4_t vr = 0, vc = 0;
     struct stat st;
 
@@ -289,7 +292,7 @@ static void misc_NET(void *param)
 
         char *kiwisdr_com = DNS_lookup_result("survey", "kiwisdr.com", &net.ips_kiwisdr_com);
         asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
-            "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&vr=%d&vc=%u&sdr_hu=%s\"",
+            "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&vr=%d&vc=%u&reg=%s\"",
             kiwisdr_com, SURVEY_LAST, net.serno, PRINTF_U64_ARG(net.dna), net.mac, vr, vc, cmd_p2);
 
         kstr_free(non_blocking_cmd(cmd_p, &status));
@@ -297,6 +300,7 @@ static void misc_NET(void *param)
     }
     #endif
 
+    // apply passwords to password-less root/debian accounts
     int root_pwd_unset=0, debian_pwd_default=0;
     bool error;
     bool passwords_checked = admcfg_bool("passwords_checked", &error, CFG_OPTIONAL);
@@ -625,6 +629,7 @@ static void pub_NET(void *param)
     #endif
 }
 
+/*
 static void git_commits(void *param)
 {
 	int i, n, status;
@@ -658,6 +663,7 @@ static void git_commits(void *param)
 
     kstr_free(reply);
 }
+*/
 
 
 /*
@@ -689,35 +695,35 @@ static void git_commits(void *param)
 
 #define RETRYTIME_KIWISDR_COM		30
 //#define RETRYTIME_KIWISDR_COM		1
-#define RETRYTIME_KIWISDR_COM_FAIL		2
+#define RETRYTIME_KIWISDR_COM_FAIL  2
 
-static int _reg_kiwisdr_com(void *param)
+static int _reg_public(void *param)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) param;
 	char *sp = kstr_sp(args->kstr);
 	if (sp == NULL) {
-	    printf("_reg_kiwisdr_com: sp == NULL?\n");
+	    printf("_reg_public: sp == NULL?\n");
 	    return 0;   // we've seen this happen
 	}
-    //printf("_reg_kiwisdr_com <%s>\n", sp);
+    //printf("_reg_public <%s>\n", sp);
 
     int n, status = 0, kod = 0, serno = 0;
     n = sscanf(sp, "status %d %d %d", &status, &kod, &serno);
     if (n == 3 && status == 22 && serno == net.serno) {
-        //printf("_reg_kiwisdr_com status=%d kod=%d serno=%d/%d\n", status, kod, serno, net.serno);
+        //printf("_reg_public status=%d kod=%d serno=%d/%d\n", status, kod, serno, net.serno);
         status = kod;
     } else
     if (status >= 42 && status < 50) {
         status = 0;
     }
-    //printf("_reg_kiwisdr_com status=%d\n", status);
+    //printf("_reg_public status=%d\n", status);
 
 	return status;
 }
 
 int reg_kiwisdr_com_status;
 
-static void reg_kiwisdr_com(void *param)
+static void reg_public(void *param)
 {
 	char *cmd_p;
 	int retrytime_mins;
@@ -727,7 +733,6 @@ static void reg_kiwisdr_com(void *param)
 
 	while (1) {
         const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
-        const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
 
         const char *admin_email = cfg_string("admin_email", NULL, CFG_OPTIONAL);
         char *email = kiwi_str_encode((char *) admin_email);
@@ -745,9 +750,9 @@ static void reg_kiwisdr_com(void *param)
 
 	    // done here because updating timer_sec() is sent
         asprintf(&cmd_p, "wget --timeout=30 --tries=2 --inet4-only -qO- "
-            "\"http://%s/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d"
-            "&dom=%d&dom_stat=%d&serno=%d&dna=%08x%08x&sdr_hu=%d&pvt=%s&pub=%s&up=%d\" 2>&1",
-            kiwisdr_com, server_url, server_port, api_key, net.mac,
+            "\"http://%s/php/update.php?url=http://%s:%d&apikey=x&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d"
+            "&dom=%d&dom_stat=%d&serno=%d&dna=%08x%08x&reg=%d&pvt=%s&pub=%s&up=%d\" 2>&1",
+            kiwisdr_com, server_url, server_port, net.mac,
             email, add_nat, version_maj, version_min, debian_maj, debian_min,
             dom_sel, dom_stat, net.serno, PRINTF_U64_ARG(net.dna), kiwisdr_com_reg? 1:0,
             net.pvt_valid? net.ip_pvt : "not_valid", net.pub_valid? net.ip_pub : "not_valid", timer_sec());
@@ -759,7 +764,7 @@ static void reg_kiwisdr_com(void *param)
                 printf("%s\n", cmd_p);
 
             retrytime_mins = RETRYTIME_KIWISDR_COM;
-		    int status = non_blocking_cmd_func_forall("kiwi.register", cmd_p, _reg_kiwisdr_com, retrytime_mins, POLL_MSEC(1000));
+		    int status = non_blocking_cmd_func_forall("kiwi.register", cmd_p, _reg_public, retrytime_mins, POLL_MSEC(1000));
 		    if (WIFEXITED(status)) {
 		        int exit_status = WEXITSTATUS(status);
                 reg_kiwisdr_com_status = exit_status? exit_status : 1;      // for now just indicate that it completed
@@ -791,7 +796,6 @@ static void reg_kiwisdr_com(void *param)
 		free(cmd_p);
 		//free(server_enc);
         cfg_string_free(server_url);
-        admcfg_string_free(api_key);
         free(email);
         
         if (kiwi_reg_debug) printf("reg_kiwisdr_com TaskSleepSec(min=%d)\n", retrytime_mins);
@@ -812,13 +816,14 @@ void services_start()
 	CreateTask(pub_NET, 0, SERVICES_PRIORITY);
 	CreateTask(get_TZ, 0, SERVICES_PRIORITY);
 	CreateTask(misc_NET, 0, SERVICES_PRIORITY);
+    CreateTask(SNR_meas, 0, SERVICES_PRIORITY);
 	//CreateTask(git_commits, 0, SERVICES_PRIORITY);
 
     if (!disable_led_task)
         CreateTask(led_task, NULL, ADMIN_PRIORITY);
 
 	if (!alt_port) {
-		reg_kiwisdr_com_tid = CreateTask(reg_kiwisdr_com, 0, SERVICES_PRIORITY);
+		reg_kiwisdr_com_tid = CreateTask(reg_public, 0, SERVICES_PRIORITY);
         ip_blacklist_init();
 	}
 }
