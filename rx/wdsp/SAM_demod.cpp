@@ -11,6 +11,7 @@
 
 #include "types.h"
 #include "kiwi.h"
+#include "kiwi_assert.h"
 #include "wdsp.h"
 #include "fir.h"
 
@@ -30,10 +31,12 @@ struct wdsp_SAM_t {
     f32_t dcu;
     f32_t dc_insertu;
 
-    f32_t a[3 * SAM_PLL_HILBERT_STAGES + 3];     // Filter a variables
-    f32_t b[3 * SAM_PLL_HILBERT_STAGES + 3];     // Filter b variables
-    f32_t c[3 * SAM_PLL_HILBERT_STAGES + 3];     // Filter c variables
-    f32_t d[3 * SAM_PLL_HILBERT_STAGES + 3];     // Filter d variables
+    #define SAM_array_dim(d,l) assert_array_dim(d,l)
+    #define ABCD_DIM (3 * SAM_PLL_HILBERT_STAGES + 3)
+    f32_t a[ABCD_DIM];     // Filter a variables
+    f32_t b[ABCD_DIM];     // Filter b variables
+    f32_t c[ABCD_DIM];     // Filter c variables
+    f32_t d[ABCD_DIM];     // Filter d variables
     f32_t dsI;             // delayed sample, I path
     f32_t dsQ;             // delayed sample, Q path
 
@@ -137,7 +140,7 @@ void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *i
     f32_t ai_ps, bi_ps, bq_ps, aq_ps;
     bool isChanNull = (mode == MODE_SAM && chan_null != CHAN_NULL_NONE);
     bool need_ps = ((mode != MODE_SAM && mode != MODE_QAM) || isChanNull);
-    bool stereoMode = (mode == MODE_SAS || mode == MODE_QAM || isChanNull);
+    bool stereoMode_or_nulling = (mode == MODE_SAS || mode == MODE_QAM || isChanNull);
     
     for (u4_t i = 0; i < ns_out; i++) {
           
@@ -158,6 +161,7 @@ void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *i
 
             for (int j = 0; j < SAM_PLL_HILBERT_STAGES; j++) {
               int k = 3 * j;
+              SAM_array_dim(k+5, ABCD_DIM);
               w->a[k + 3] = c0[j] * (w->a[k] - w->a[k + 5]) + w->a[k + 2];
               w->b[k + 3] = c1[j] * (w->b[k] - w->b[k + 5]) + w->b[k + 2];
               w->c[k + 3] = c0[j] * (w->c[k] - w->c[k + 5]) + w->c[k + 2];
@@ -170,6 +174,8 @@ void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *i
             aq_ps = w->d[OUT_IDX];
 
             for (int j = OUT_IDX + 2; j > 0; j--) {
+                SAM_array_dim(j, ABCD_DIM);
+                SAM_array_dim(j-1, ABCD_DIM);
                 w->a[j] = w->a[j - 1];
                 w->b[j] = w->b[j - 1];
                 w->c[j] = w->c[j - 1];
@@ -237,14 +243,14 @@ void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *i
             audio = audio + w->dc_insert - w->dc;
         }
         
-        if (stereoMode) {
+        if (stereoMode_or_nulling) {
             if (FADE_LEVELER) {
                 w->dcu = mtauR * w->dcu + onem_mtauR * audiou;
                 w->dc_insertu = mtauI * w->dc_insertu + onem_mtauI * corr[I];
                 audiou = audiou + w->dc_insertu - w->dcu;
             }
             
-            if (isChanNull) {
+            if (isChanNull) {   // MODE_SAM
                 out[i] = audion;    // lsb or usb nulled
 
                 // also save lsb/usb for display purposes
