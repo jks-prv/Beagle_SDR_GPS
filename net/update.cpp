@@ -296,33 +296,34 @@ void schedule_update(int min)
 	#define UPDATE_START_HOUR	1	// 1 AM local time
 	#define UPDATE_END_HOUR		(UPDATE_START_HOUR + UPDATE_SPREAD_HOURS)
 	
-	// relative to local time if timezone has been determined
-    time_t utc = utc_time();
-    time_t local = utc;
-    if (utc_offset != -1 && dst_offset != -1)
-        local += utc_offset + dst_offset;
+	// relative to local time if timezone has been determined, utc otherwise
     int local_hour;
-    time_hour_min_sec(local, &local_hour);
+    (void) local_hour_min_sec(&local_hour);
 
 	//#define TEST_UPDATE
+	// enables printf()s so when Debian time is changed via "date -u -s hh:mm" action can be observed
 	#ifdef TEST_UPDATE
         int utc_hour;
-        time_hour_min_sec(utc, &utc_hour);
-	    printf("UPDATE: UTC=%02d:%02d Local=%02d:%02d\n", utc_hour, min, local_hour, min);
+        time_hour_min_sec(utc_time(), &utc_hour);
+	    printf("UPDATE: UTC=%02d:%02d Local=%02d:%02d update_window=[%02d:00,%02d:00]\n",
+	        utc_hour, min, local_hour, min, UPDATE_START_HOUR, UPDATE_END_HOUR);
 	#endif
 
 	bool update = (local_hour >= UPDATE_START_HOUR && local_hour < UPDATE_END_HOUR);
 	
 	// don't let Kiwis hit github.com all at once!
 	if (update) {
-		int mins = min + (local_hour - UPDATE_START_HOUR) * 60;
+		int mins_now = min + (local_hour - UPDATE_START_HOUR) * 60;
 		
 		#ifdef TEST_UPDATE
-            printf("UPDATE: %02d:%02d waiting for %d min = %d min(sn=%d)\n", local_hour, min,
-                mins, serial_number % UPDATE_SPREAD_MIN, serial_number);
+		    int mins_trig = serial_number % UPDATE_SPREAD_MIN;
+		    int hr_trig = UPDATE_START_HOUR + mins_trig/60;
+		    int min_trig = mins_trig % 60;
+            printf("UPDATE: %02d:%02d mins_now=%d mins_trig=%d (%02d:%02d sn=%d)\n", local_hour, min,
+                mins_now, mins_trig, hr_trig, min_trig, serial_number);
         #endif
         
-		update = update && (mins == (serial_number % UPDATE_SPREAD_MIN));
+		update = update && (mins_now == (serial_number % UPDATE_SPREAD_MIN));
 		
 		if (update) {
 		    printf("TLIMIT-IP 24hr cache cleared\n");

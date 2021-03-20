@@ -34,6 +34,7 @@ u64_t timer_us64();
 
 time_t utc_time();
 void utc_hour_min_sec(int *hour, int *min = NULL, int *sec = NULL);
+bool local_hour_min_sec(int *hour, int *min = NULL, int *sec = NULL);
 void time_hour_min_sec(time_t t, int *hour, int *min = NULL, int *sec = NULL);
 void utc_year_month_day(int *year, int *month = NULL, int *day = NULL);
 char *var_ctime_static(time_t *t);
