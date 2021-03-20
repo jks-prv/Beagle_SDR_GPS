@@ -115,17 +115,16 @@ struct run_t {
 	int r;
 } run[MAX_TASKS];
 
-// FIXME: 32K is really too big. 8*K causes the W/F thread to exceed the 50% red zone. Need to optimize.
 #if 1
-    #define STACK_SIZE_U64_T	    (16*K)
-    #define STACK_SIZE_REG          1
-    #define STACK_SIZE_MED          2
-    #define STACK_SIZE_LARGE        4
+    #define STACK_SIZE_U64_T	    (8*K)
+    #define STACK_SIZE_REG          1       // 8k   largest is GPS channel with Galileo ~27%
+    #define STACK_SIZE_MED          4       // 32k  WF is ~25%
+    #define STACK_SIZE_LARGE        8       // 64k  DRM
 #else
-    #define STACK_SIZE_U64_T	    (32*K)
-    #define STACK_SIZE_REG          1
-    #define STACK_SIZE_MED          1
-    #define STACK_SIZE_LARGE        2
+    #define STACK_SIZE_U64_T	    (16*K)
+    #define STACK_SIZE_REG          1       // 16k
+    #define STACK_SIZE_MED          2       // 32k
+    #define STACK_SIZE_LARGE        4       // 64k
 #endif
 
 struct task_stack_t {
@@ -827,6 +826,8 @@ void TaskCheckStacks(bool report)
 
 	u64_t magic = 0x8BadF00d00000000ULL;
     bool stk_panic = false;
+    #define STK_PCT_PANIC 75
+    
 	for (i = TID_FIRST; i <= max_task; i++) {
 		t = Tasks + i;
 		if (!t->valid || !t->ctx->init) continue;
@@ -843,9 +844,9 @@ void TaskCheckStacks(bool report)
 		t->stack_hiwat = used;
 		int pct = used*100/t->ctx->stack_size_u64;
 		if (report) {
-            printf("%s stack used %d/%d (%d%%) PEAK %s\n", task_s(t), used, t->ctx->stack_size_u64, pct, (pct >= 50)? "DANGER":"");
+            printf("%s stack used %d/%d (%d%%) PEAK %s\n", task_s(t), used, t->ctx->stack_size_u64, pct, (pct >= STK_PCT_PANIC)? "DANGER":"");
         } else {
-            if (pct >= 50) {
+            if (pct >= STK_PCT_PANIC) {
                 printf("DANGER: %s stack used %d/%d (%d%%) PEAK\n", task_s(t), used, t->ctx->stack_size_u64, pct);
                 stk_panic = true;
             }
