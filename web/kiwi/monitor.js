@@ -34,7 +34,8 @@ function kiwi_monitor()
 	      w3_text('w3-text-black', 'All Kiwi channels busy. Click button to wait in queue for an available channel.'),
          w3_inline('w3-margin-L-8 w3-margin-T-4/w3-margin-right w3-valign',
             w3_button('id-queue-button w3-medium w3-padding-smaller w3-green', 'Enter queue', 'kiwi_queue_cb'),
-            w3_text('id-queue-pos w3-text-black')
+            w3_text('id-queue-pos w3-text-black'),
+            w3_button('id-queue-button w3-medium w3-padding-smaller w3-yellow', 'Reload page', 'kiwi_queue_reload_cb'),
          ),
          w3_text('id-queue-status w3-margin-T-4 w3-text-black', ''),
 
@@ -76,10 +77,7 @@ function kiwi_monitor()
             var pos = a[0], waiters = a[1], reload = +a[2];
             
             // remove any camp url param so the reload doesn't come right back here
-            if (reload) {
-               var url = kiwi_remove_search_param(window.location.href, 'camp');
-               window.location.href = url;
-            }
+            if (reload) kiwi_queue_reload_cb();
             var s = '';
             if (kiwi.queued) s += 'You are '+ pos +' of '+ waiters +' in queue.';
             w3_innerHTML('id-queue-pos', s);
@@ -130,6 +128,12 @@ function kiwi_monitor()
             break;
       }
    };
+}
+
+function kiwi_queue_reload_cb()
+{
+   var url = kiwi_remove_search_param(window.location.href, 'camp');
+   window.location.href = url;
 }
 
 function kiwi_camp_update(rx, s)
