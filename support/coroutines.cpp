@@ -392,11 +392,11 @@ void TaskDump(u4_t flags)
 	lfprintf(printf_type, "TASKS: used %d/%d, spi_retry %d, spi_delay %d\n", tused, MAX_TASKS, spi.retry, spi_delay);
 
 	if (flags & TDUMP_LOG)
-	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxxuu xxx%% cN\n");
-	  lfprintf(printf_type, "     I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2       deadline stk%% ch task______ where___________________\n");
+	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxxuu xxx%% cN\n");
+	  lfprintf(printf_type, "     I # RWSPBLHq   run S    max mS   cpu%%  #runs  cmds   st1       st2       deadline stk%% ch task______ where___________________\n");
 	else
-	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxxuu xxx%% cN\n");
-	  lfprintf(printf_type, "     I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry   deadline stk%% ch task______ where___________________ longest ________________\n");
+	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxxuu xxx%% cN\n");
+	  lfprintf(printf_type, "     I # RWSPBLHq   run S    max mS   cpu%%  #runs  cmds   st1       st2       #wu   nrs retry   deadline stk%% ch task______ where___________________ longest ________________\n");
 
 	for (i=0; i <= max_task; i++) {
 		t = Tasks + i;
@@ -429,24 +429,24 @@ void TaskDump(u4_t flags)
 		int rx_channel = (t->flags & CTF_RX_CHANNEL)? (t->flags & CTF_CHANNEL) : -1;
 
 		if (flags & TDUMP_LOG)
-		lfprintf(printf_type, "%c%03d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f%-2s %3d%c %s%d %-10s %-24s\n",
+		lfprintf(printf_type, "%c%03d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %6s %5d %5d %-3s %5d %-3s %8.3f%-2s %3d%c %s%d %-10s %-24s\n",
 		    (t == ct)? '*':'T', i, (t->flags & CTF_PRIO_INVERSION)? 'I':'P', t->priority, t->lock_marker,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock.wait? 'L':'_', t->lock.hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
-			t->run, t->cmds,
+			toUnits(t->run), t->cmds,
 			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
 			deadline, dunit, t->stack_hiwat*100 / t->ctx->stack_size_u64, (t->flags & CTF_STACK_MED)? 'M' : ((t->flags & CTF_STACK_LARGE)? 'L' : '%'),
 			(rx_channel != -1)? "c":"", rx_channel,
 			t->name, t->where? t->where : "-"
 		);
 		else
-		lfprintf(printf_type, "%c%03d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f%c %3d%%%c %s%d %-10s %-24s %-24s\n",
+		lfprintf(printf_type, "%c%03d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %6s %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f%c %3d%%%c %s%d %-10s %-24s %-24s\n",
 		    (t == ct)? '*':'T', i, (t->flags & CTF_PRIO_INVERSION)? 'I':'P', t->priority, t->lock_marker,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock.wait? 'L':'_', t->lock.hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
-			t->run, t->cmds,
+			toUnits(t->run), t->cmds,
 			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
 			t->wu_count, t->no_run_same, t->spi_retry,
 			deadline, dunit, t->stack_hiwat*100 / t->ctx->stack_size_u64, (t->flags & CTF_STACK_MED)? 'M' : ((t->flags & CTF_STACK_LARGE)? 'L' : '%'),

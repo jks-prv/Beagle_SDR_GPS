@@ -318,19 +318,19 @@ Number.prototype.toUnits = function()
 {
 	var n = Number(this);
 	if (n < 1000) {
-		return n.toString();
+		return n.toString();             // nnn
 	} else
 	if (n < 1e6) {
-		return (n/1e3).toFixed(1)+'k';
+		return (n/1e3).toFixed(1)+'k';   // nnn.fk
 	} else
 	if (n < 1e9) {
-		return (n/1e6).toFixed(1)+'M';
+		return (n/1e6).toFixed(1)+'M';   // nnn.fM
 	} else {
-		return (n/1e9).toFixed(1)+'G';
+		return (n/1e9).toFixed(1)+'G';   // nnn.fG
 	}
 }
 
-// allow 'k' (1e3) and 'm' (1e6) suffix
+// allow 'k' (1e3) and 'M' (1e6) suffix
 String.prototype.parseFloatWithUnits = function(allowed_suffixes, adj) {
 	var s = String(this);
 	var v = parseFloat(s);

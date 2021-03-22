@@ -211,6 +211,13 @@ int main(int argc, char *argv[])
 	lprintf("KiwiSDR v%d.%d --------------------------------------------------------------------\n",
 		version_maj, version_min);
     lprintf("compiled: %s %s on %s\n", __DATE__, __TIME__, COMPILE_HOST);
+
+    #ifdef DEVSYS
+        printf("%6s %6s %6s %6s\n", toUnits(1234), toUnits(999800, 1), toUnits(999800777, 2), toUnits(1800777666, 3));
+        printf("______ ______ ______ ______\n");
+        _exit(0);
+    #endif
+
     if (debian_ver) lprintf("-debian %d\n", debian_ver);
     char *reply = read_file_string_reply("/etc/debian_version");
     if (reply != NULL) {

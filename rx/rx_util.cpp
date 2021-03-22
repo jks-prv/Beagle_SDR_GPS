@@ -618,6 +618,7 @@ int dB_wire_to_dBm(int db_value)
 
 // schedule SNR measurements
 
+int snr_all, snr_HF;
 SNR_meas_t SNR_meas_data[SNR_MEAS_PER_DAY];
 
 void SNR_meas(void *param)
@@ -681,6 +682,7 @@ void SNR_meas(void *param)
             data->pct_95 = 95;
             data->pct_50 = median_i(dB, len, &data->pct_95);
             data->snr = data->pct_95 - data->pct_50;
+            snr_all = data->snr;
             //printf("SNR all: len=%d [%d,%d] noise(50%)=%d signal(95%)=%d snr=%d\n",
             //    len, data->min, data->max, data->pct_50, data->pct_95, data->snr);
 
@@ -698,6 +700,7 @@ void SNR_meas(void *param)
             data->pct_95 = 95;
             data->pct_50 = median_i(dB, len, &data->pct_95);
             data->snr = data->pct_95 - data->pct_50;
+            snr_HF = data->snr;
             //printf("SNR HF: len=%d [%d,%d] noise(50%)=%d signal(95%)=%d snr=%d\n",
             //    len, data->min, data->max, data->pct_50, data->pct_95, data->snr);
 
