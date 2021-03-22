@@ -233,7 +233,7 @@ bool FaxDecoder::DecodeFaxLine()
             // DetectLineType() sometimes returns START during IMAGEs with sparse black text on a white background.
             // If the extension was started in the middle of a fax transmission this can result in a false phasing align.
             // Filter that out by looking at the 10%/90% distribution width of the phasing data.
-            int ten_pct, ninety_pct;
+            int ten_pct = 10, ninety_pct = 90;
             phasingSkipData = median_i(phasingPos, m_phasingLines - phasingSkipLines, &ten_pct, &ninety_pct);
             rcprintf(m_rx_chan, "FAX L%d SET phasingSkipData=%d 10%%=%d 90%%=%d\n", m_imageline, phasingSkipData, ten_pct, ninety_pct);
             if ((ninety_pct - ten_pct) > m_SamplesPerLine/6) {

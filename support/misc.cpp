@@ -214,20 +214,20 @@ int qsort_intcomp(const void *elem1, const void *elem2)
 	return i1 - i2;
 }
 
-float median_f(float *x, int n, float *ten_pct, float *ninety_pct)
+float median_f(float *f, int len, float *pct_1, float *pct_2)
 {
-     qsort(x, n, sizeof *x, qsort_floatcomp);
-     if (ten_pct) *ten_pct    = x[(int) (n*0.1)];
-     if (ninety_pct) *ninety_pct = x[(int) (n*0.9)];
-     return x[n/2];
+     qsort(f, len, sizeof *f, qsort_floatcomp);
+     if (pct_1) *pct_1 = f[(int) (len * (*pct_1 / 100.0))];
+     if (pct_2) *pct_2 = f[(int) (len * (*pct_2 / 100.0))];
+     return f[len/2];
 }
 
-int median_i(int *x, int n, int *ten_pct, int *ninety_pct)
+int median_i(int *i, int len, int *pct_1, int *pct_2)
 {
-     qsort(x, n, sizeof *x, qsort_intcomp);
-     if (ten_pct) *ten_pct    = x[(int) (n*0.1)];
-     if (ninety_pct) *ninety_pct = x[(int) (n*0.9)];
-     return x[n/2];
+     qsort(i, len, sizeof *i, qsort_intcomp);
+     if (pct_1) *pct_1 = i[(int) (len * ((float) *pct_1 / 100.0))];
+     if (pct_2) *pct_2 = i[(int) (len * ((float) *pct_2 / 100.0))];
+     return i[len/2];
 }
 
 static int misc_miso_busy;
@@ -559,7 +559,7 @@ void print_max_min_i(const char *name, int *data, int len)
 		if (s < min) { min = s; min_idx = i; }
 	}
 	
-	printf("min/max %s: %d(%d)..%d(%d)\n", name, min, min_idx, max, max_idx);
+	printf("min/max %s(%d): %d(%d)..%d(%d)\n", name, len, min, min_idx, max, max_idx);
 }
 
 void print_max_min_f(const char *name, float *data, int len)
