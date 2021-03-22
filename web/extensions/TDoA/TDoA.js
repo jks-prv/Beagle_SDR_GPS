@@ -1581,7 +1581,10 @@ function tdoa_sample_status_cb(status)
       var which = 'TDoA';
       if (tdoa.old_algorithm) which += '-old'; else
       if (tdoa.devl) which += '-devl';
-      tdoa_submit_state(tdoa.RUNNING, which +' algorithm running');
+      which += ' algorithm running.';
+      if (tdoa.ngood > 3)
+         which += ' Warning: using > 3 hosts can be slow. See help.';
+      tdoa_submit_state(tdoa.RUNNING, which);
    } else {
       if (0 && retry) {    // fixme: doesn't work yet
          tdoa_set_icon('submit', -1, 'fa-cog fa-spin', 20, 'yellow');
@@ -1811,6 +1814,7 @@ function tdoa_KML_link(url)
 
 function tdoa_protocol_response_cb(json)
 {
+   var obj;
    if (isString(json)) {
       json = json.trim();
       var sl = json.length;
@@ -1820,11 +1824,12 @@ function tdoa_protocol_response_cb(json)
       }
       //console.log(json);
       try {
-         var obj = JSON.parse(json);
+         obj = JSON.parse(json);
       } catch(ex) {
          console.log('JSON parse error');
          console.log(ex);
          console.log(json);
+         return;
       }
    } else
       obj = json;
@@ -2499,54 +2504,65 @@ function TDoA_help(show)
    if (show) {
       var s = 
          w3_text('w3-medium w3-bold w3-text-aqua', 'TDoA Help') +
-         '<br>See the <a href="http://forum.kiwisdr.com/categories/kiwisdr-tdoa-topics" target="_blank">Kiwi forum</a> for more information. ' +
-         'If you are getting errors check these <br> common problems:<ul>' +
-         '<li>Not zoomed-in far enough. The TDoA process will run out of memory or have problems plotting the maps.</li>' +
-         '<li>Not all Kiwis used for sampling have good reception of target signal. ' +
-         'Open a connection to each Kiwi by double clicking on its marker to check the reception ' +
-         'or by clicking on the speaker icon in the sampling station list.</li>' +
-         '<li>Don\'t use Kiwis that are spaced too far apart (i.e. many thousands of km).</li>' +
-         '<li>Use minimum IQ-mode passband. Just enough to capture the signal. ' +
-         'Use the "p" and "P" keys to narrow/widen the passband. ' +
-         'For AM broadcast signals try a narrow passband that only passes the carrier.</li> ' +
-         '</ul>' +
+         w3_div('w3-margin-T-8 w3-scroll-y|height:90%',
+            w3_div('w3-margin-R-8',
+               'See the <a href="http://forum.kiwisdr.com/categories/kiwisdr-tdoa-topics" target="_blank">Kiwi forum</a> for more information. <br><br>' +
+               
+               '<b>Very important:</b> If the TDoA computation cannot converge on a solution within 3 minutes it will timeout. ' +
+               'Start with 2 or 3 sampling stations and if you get reasonable solutions add additional stations one-at-a-time. ' +
+               'If you begin with 4 or more stations that have no correlation of the signal the computation will timeout and ' +
+               'you\'ll be wasting your time as well as the servers time. <br><br>' + 
+               
+               'If you are getting errors check these common problems:<ul>' +
+               '<li>Not zoomed-in far enough. The TDoA process will run out of memory or have problems plotting the maps.</li>' +
+               '<li>Not all Kiwis used for sampling have good reception of target signal. ' +
+               'Open a connection to each Kiwi by double clicking on its marker to check the reception ' +
+               'or by clicking on the speaker icon in the sampling station list.</li>' +
+               '<li>Don\'t use Kiwis that are spaced too far apart (i.e. many thousands of km).</li>' +
+               '<li>Use minimum IQ-mode passband. Just enough to capture the signal. ' +
+               'Use the "p" and "P" keys to narrow/widen the passband. ' +
+               'For AM broadcast signals try a narrow passband that only passes the carrier.</li> ' +
+               '</ul>' +
 
-         'Once you configure this extension, and click the "Submit" button, ' +
-         'information is sent to the kiwisdr.com server. The server then records ' +
-         '30 seconds of IQ data from the two to six sampling Kiwis specified. ' +
-         'The frequency and passband of <b><i>this</i></b> Kiwi will be used for all recording. ' +
-         'So make sure it is set correctly before proceeding. Always use the minimum necessary passband and ' +
-         'make sure it is symmetrical about the carrier. The current mode (e.g. AM) is ignored as all ' +
-         'recording is automatically done in IQ mode. ' +
-         'After sampling, the TDoA process will be run on the server. After it finishes a result map will appear. ' +
-         'Additional maps may be viewed with the TDoA result menu. ' +
-         'You can pan and zoom the resulting maps and click submit again after making any changes. ' +
-         'Or use the rerun button to get new maps without resampling. The checkboxes exclude stations during a rerun.<br><br>' +
+               'Once you configure this extension, and click the "Submit" button, ' +
+               'information is sent to the kiwisdr.com server. The server then records ' +
+               '30 seconds of IQ data from the two to six sampling Kiwis specified. ' +
+               'The frequency and passband of <b><i>this</i></b> Kiwi will be used for all recording. ' +
+               'So make sure it is set correctly before proceeding. Always use the minimum necessary passband and ' +
+               'make sure it is symmetrical about the carrier. The current mode (e.g. AM) is ignored as all ' +
+               'recording is automatically done in IQ mode. ' +
+               'After sampling, the TDoA process will be run on the server. After it finishes a result map will appear. ' +
+               'Additional maps may be viewed with the TDoA result menu. ' +
+               'You can pan and zoom the resulting maps and click submit again after making any changes. ' +
+               'Or use the rerun button to get new maps without resampling. The checkboxes exclude stations during a rerun.<br><br>' +
          
-         'To begin zoom into the general area of interest on the Kiwi map (note the "quick zoom" menu). ' +
-         'Click on the desired blue Kiwi sampling stations. If they are not responding or have ' +
-         'had no recent GPS solutions an error message will appear. ' +
-         '<br><b>Important:</b> the position and zooming of the Kiwi map determines the same for the resulting TDoA maps. ' +
-         'Double click on the blue markers (or speaker icon) to open that Kiwi in a new tab to check if it is receiving the target signal well. ' +
-         'You can also manually edit the sampling station list (white fields). ' +
-         '<br><br>' +
+               'To begin zoom into the general area of interest on the Kiwi map (note the "quick zoom" menu). ' +
+               'Click on the desired blue Kiwi sampling stations. If they are not responding or have ' +
+               'had no recent GPS solutions an error message will appear. ' +
+               '<br><b>Important:</b> the position and zooming of the Kiwi map determines the same for the resulting TDoA maps. ' +
+               'Double click on the blue markers (or speaker icon) to open that Kiwi in a new tab to check if it is receiving the target signal well. ' +
+               'You can also manually edit the sampling station list (white fields). ' +
+               '<br><br>' +
          
-         'You can click on the green map markers to set the frequency/passband of some well-known reference stations. ' +
-         'The known locations of these stations will be shown in the result maps ' +
-         'so you can see how well it agrees with the TDoA solution. ' +
-         'Practice with VLF/LF references stations as their ground-wave signals usually give good results. ' +
-         'Start with only two sampling stations and check the quality of the solution before adding more. ' +
-         'Of course you need three or more stations to generate a localized solution. ' +
-         '<br><br>' +
+               'You can click on the green map markers to set the frequency/passband of some well-known reference stations. ' +
+               'The known locations of these stations will be shown in the result maps ' +
+               'so you can see how well it agrees with the TDoA solution. ' +
+               'Practice with VLF/LF references stations as their ground-wave signals usually give good results. ' +
+               'Start with only two sampling stations and check the quality of the solution before adding more. ' +
+               'Of course you need three or more stations to generate a localized solution. ' +
+               '<br><br>' +
 
-         'URL parameters: <br>' +
-         'lat:<i>num</i> lon:<i>num</i> z|zoom:<i>num</i> (map control) <br>' +
-         'List of sampling stations and/or reference station IDs. Case-insensitive and can be abbreviated ' +
-         '(e.g. "dcf" matches "DCF77", "cyp2" matches "OTHR/CYP2") <br>' +
-         'submit: (start TDoA process) <br>' +
-         'Example: <i>&ext=tdoa,lat:35,lon:35,z:6,cyp2,iu8cri,ur5vib,kuwait,submit:</i> <br>' +
-         '';
-      confirmation_show_content(s, 850, 650);
+               'URL parameters: <br>' +
+               'lat:<i>num</i> lon:<i>num</i> z|zoom:<i>num</i> (map control) <br>' +
+               'List of sampling stations and/or reference station IDs. Case-insensitive and can be abbreviated ' +
+               '(e.g. "dcf" matches "DCF77", "cyp2" matches "OTHR/CYP2") <br>' +
+               'submit: (start TDoA process) <br>' +
+               'Example: <i>&ext=tdoa,lat:35,lon:35,z:6,cyp2,iu8cri,ur5vib,kuwait,submit:</i> <br>' +
+               ''
+            )
+         );
+      confirmation_show_content(s, 610, 350);
+      w3_el('id-confirmation-container').style.height = '100%';   // to get the w3-scroll-y above to work
    }
    return true;
 }

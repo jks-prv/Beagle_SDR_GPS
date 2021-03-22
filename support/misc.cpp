@@ -754,3 +754,29 @@ u4_t pos_wrap_diff(u4_t next, u4_t prev, u4_t size)
 	
 	return diff;
 }
+
+
+static char toUnits_buf[4][8];
+
+char *toUnits(int num, int instance)
+{
+    char *cp = toUnits_buf[instance];
+    float nf;
+    
+    if (num < 1000) {
+        sprintf(cp, "%d", num);
+    } else
+    if (num < 1000000) {
+        nf = num / 1e3;
+        sprintf(cp, "%.1fk", nf);
+    } else
+    if (num < 1000000000) {
+        nf = num / 1e6;
+        sprintf(cp, "%.1fM", nf);
+    } else {
+        nf = num / 1e9;
+        sprintf(cp, "%.1fG", nf);
+    }
+
+    return cp;
+}

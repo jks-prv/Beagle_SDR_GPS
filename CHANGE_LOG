@@ -2,6 +2,16 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.444  March 23, 2021
+    Include two most recent SNR values in /status query. This implies all the SNR values
+        for public Kiwis will be aggregated in the rx.kiwisdr.com/index.html file
+        HTML comments.
+    
+    TDoA extension:
+        Improved help panel contents.
+        Added warning against prematurely using too many sampling stations because of
+            the large number of computation timeouts we see on the server.
+
 v1.443  March 22, 2021
     Added automatic SNR measurement:
         Every 6 hours (4 times daily) a Kiwi will connect to a free channel (if available)

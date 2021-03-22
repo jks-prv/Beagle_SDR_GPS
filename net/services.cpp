@@ -258,7 +258,7 @@ static void misc_NET(void *param)
     
     #define KIWI_SURVEY
     #ifdef KIWI_SURVEY
-    #define SURVEY_LAST 181
+    #define SURVEY_LAST 182
     bool need_survey = admcfg_int("survey", NULL, CFG_REQUIRED) != SURVEY_LAST;
     if (need_survey || (vr && vr != VR_CRONTAB_ROOT) || net.serno == 0) {
         if (need_survey) {
@@ -291,12 +291,16 @@ static void misc_NET(void *param)
         }
 
         char *kiwisdr_com = DNS_lookup_result("survey", "kiwisdr.com", &net.ips_kiwisdr_com);
+        char *cp;
+        asprintf(&cp, "%.70s", (char *) &eeprom + 4);
+        char *e = kiwi_str_encode(cp);
         asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
-            "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&vr=%d&vc=%u&reg=%s\"",
-            kiwisdr_com, SURVEY_LAST, net.serno, PRINTF_U64_ARG(net.dna), net.mac, vr, vc, cmd_p2);
+            "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&e=%s&vr=%d&vc=%u&reg=%s\"",
+            kiwisdr_com, SURVEY_LAST, net.serno, PRINTF_U64_ARG(net.dna), net.mac, e, vr, vc, cmd_p2);
 
         kstr_free(non_blocking_cmd(cmd_p, &status));
         free(cmd_p); free(cmd_p2);
+        free(cp); free(e);
     }
     #endif
 

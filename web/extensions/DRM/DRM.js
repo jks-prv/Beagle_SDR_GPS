@@ -1466,54 +1466,55 @@ function DRM_help(show)
 {
    if (show) {
       var s = 
-         w3_text('w3-medium w3-bold w3-text-aqua', 'Digital Radio Mondiale (DRM30) decoder help') + '<br><br>' +
-         w3_div('w3-scroll-y|height:85%',
-         
-            'Schedules in top panel: Click on green/pink bars to tune a station. <br>' +
-            'Use menu to sort schedules by service, time or frequency. <br>' +
-            'Gray vertical lines are spaced 1 hour apart beginning at 00:00 UTC on the left. <br>' +
-            'Red line shows current UTC time and updates while the extension is running. <br>' +
-            '<span class="w3-text-yellow-highlight">New</span> ' +
-            'A database menu allows selection of the source of schedule information. <br>' +
-            '<br>' +
+         w3_text('w3-medium w3-bold w3-text-aqua', 'Digital Radio Mondiale (DRM30) decoder help') +
+         w3_div('w3-margin-T-8 w3-scroll-y|height:90%',
+            w3_div('w3-margin-R-8',
+               'Schedules in top panel: Click on green/pink bars to tune a station. <br>' +
+               'Use menu to sort schedules by service, time or frequency. <br>' +
+               'Gray vertical lines are spaced 1 hour apart beginning at 00:00 UTC on the left. <br>' +
+               'Red line shows current UTC time and updates while the extension is running. <br>' +
+               '<span class="w3-text-yellow-highlight">New</span> ' +
+               'A database menu allows selection of the source of schedule information. <br>' +
+               '<br>' +
             
-            'With DRM selective fading can prevent even the strongest signals from being received properly. ' +
-            'To see if signal fading is occurring adjust the waterfall "WF max/min" controls carefully so the ' +
-            'waterfall colors are not saturated. The image below shows fading (dark areas) that might cause problems. See the ' +
-            '<a href="http://forum.kiwisdr.com/discussion/1842/v1-360-drm-extension-now-available/p1" target="_blank">' +
-            'Kiwi forum</a> for more information. ' +
-            '<br><br><img src="gfx/DRM.sel.fade.png" /><br><br>' +
+               'With DRM selective fading can prevent even the strongest signals from being received properly. ' +
+               'To see if signal fading is occurring adjust the waterfall "WF max/min" controls carefully so the ' +
+               'waterfall colors are not saturated. The image below shows fading (dark areas) that might cause problems. See the ' +
+               '<a href="http://forum.kiwisdr.com/discussion/1842/v1-360-drm-extension-now-available/p1" target="_blank">' +
+               'Kiwi forum</a> for more information. ' +
+               '<br><br><img src="gfx/DRM.sel.fade.png" /><br><br>' +
             
-            'Custom passbands set before invoking the DRM extension will be respected. <br>' +
-            'For example the passband field of a DX label that has mode DRM, or a passband specification in ' +
-            'the URL e.g. "my_kiwi.com:8073/?pb=0,5k&ext=drm" ' +
-            '<hr>' +
+               'Custom passbands set before invoking the DRM extension will be respected. <br>' +
+               'For example the passband field of a DX label that has mode DRM, or a passband specification in ' +
+               'the URL e.g. "my_kiwi.com:8073/?pb=0,5k&ext=drm" ' +
+               '<hr>' +
 
-            'DRM code from <b>Dream 2.2.1</b> <br>' +
-            'Technische Universitaet Darmstadt, Institut fuer Nachrichtentechnik <br>' +
-            'Copyright (c) 2001-2020 &nbsp;&nbsp;&nbsp;&nbsp;' +
-            '<a href="https://sourceforge.net/projects/drm" target="_blank">sourceforge.net/projects/drm</a> <br>' +
-            'License: GNU General Public License version 2.0 (GPLv2) <br>' +
-            '<hr>' +
+               'DRM code from <b>Dream 2.2.1</b> <br>' +
+               'Technische Universitaet Darmstadt, Institut fuer Nachrichtentechnik <br>' +
+               'Copyright (c) 2001-2020 &nbsp;&nbsp;&nbsp;&nbsp;' +
+               '<a href="https://sourceforge.net/projects/drm" target="_blank">sourceforge.net/projects/drm</a> <br>' +
+               'License: GNU General Public License version 2.0 (GPLv2) <br>' +
+               '<hr>' +
 
-            '<b>Fraunhofer FDK AAC Codec Library for Android</b> <br>' +
-            '© Copyright  1995 - 2018 Fraunhofer-Gesellschaft zur Förderung der angewandten <br>' +
-            'Forschung e.V. All rights reserved. <br>' +
-            'For more information visit <a href="http://www.iis.fraunhofer.de/amm" target="_blank">www.iis.fraunhofer.de/amm</a> <br>' +
-            '<hr>' +
+               '<b>Fraunhofer FDK AAC Codec Library for Android</b> <br>' +
+               '© Copyright  1995 - 2018 Fraunhofer-Gesellschaft zur Förderung der angewandten <br>' +
+               'Forschung e.V. All rights reserved. <br>' +
+               'For more information visit <a href="http://www.iis.fraunhofer.de/amm" target="_blank">www.iis.fraunhofer.de/amm</a> <br>' +
+               '<hr>' +
 
-            '<b>OpenCORE-AMR modifications to Fraunhofer FDK AAC Codec</b> <br>' +
-            'Copyright (C) 2009-2011 Martin Storsjo &nbsp;&nbsp;&nbsp;&nbsp;' +
-            '<a href="https://sourceforge.net/projects/opencore-amr" target="_blank">sourceforge.net/projects/opencore-amr</a> <br>' +
-            'License: Apache License V2.0 <br>' +
-            '<hr>' +
+               '<b>OpenCORE-AMR modifications to Fraunhofer FDK AAC Codec</b> <br>' +
+               'Copyright (C) 2009-2011 Martin Storsjo &nbsp;&nbsp;&nbsp;&nbsp;' +
+               '<a href="https://sourceforge.net/projects/opencore-amr" target="_blank">sourceforge.net/projects/opencore-amr</a> <br>' +
+               'License: Apache License V2.0 <br>' +
+               '<hr>' +
 
-            'Features <b>NewsService Journaline(R)</b> decoder technology by <br>' +
-            'Fraunhofer IIS, Erlangen, Germany. <br>' +
-            'Copyright (c) 2003, 2004 <br>' +
-            'For more information visit <a href="http://www.iis.fhg.de/dab" target="_blank">www.iis.fhg.de/dab</a> <br>' +
-            'License: GNU General Public License version 2.0 (GPLv2) <br>' +
-            '<hr>'
+               'Features <b>NewsService Journaline(R)</b> decoder technology by <br>' +
+               'Fraunhofer IIS, Erlangen, Germany. <br>' +
+               'Copyright (c) 2003, 2004 <br>' +
+               'For more information visit <a href="http://www.iis.fhg.de/dab" target="_blank">www.iis.fhg.de/dab</a> <br>' +
+               'License: GNU General Public License version 2.0 (GPLv2) <br>' +
+               '<hr>'
+            )
          );
       confirmation_show_content(s, 610, 350);
       w3_el('id-confirmation-container').style.height = '100%';   // to get the w3-scroll-y above to work
