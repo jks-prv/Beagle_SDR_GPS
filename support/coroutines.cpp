@@ -193,7 +193,8 @@ struct TASK {
 	void  *wake_param;
 	u64_t tstart_us;
 	#define N_HIST 12
-	u4_t usec, pending_usec, longest, hist[N_HIST];
+	u4_t usec, longest, hist[N_HIST];
+	u64_t pending_usec;
 	const char *long_name;
 	u4_t minrun;
 	u64_t minrun_start_us;
@@ -391,11 +392,11 @@ void TaskDump(u4_t flags)
 	lfprintf(printf_type, "TASKS: used %d/%d, spi_retry %d, spi_delay %d\n", tused, MAX_TASKS, spi.retry, spi_delay);
 
 	if (flags & TDUMP_LOG)
-	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxxu xxx%%t cN\n");
-	  lfprintf(printf_type, "     I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2      deadline stk%%  ch task______ where___________________\n");
+	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxxuu xxx%% cN\n");
+	  lfprintf(printf_type, "     I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2       deadline stk%% ch task______ where___________________\n");
 	else
-	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxxu xxx%%t cN\n");
-	  lfprintf(printf_type, "     I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry  deadline stk%%  ch task______ where___________________ longest ________________\n");
+	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxxuu xxx%% cN\n");
+	  lfprintf(printf_type, "     I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry   deadline stk%% ch task______ where___________________ longest ________________\n");
 
 	for (i=0; i <= max_task; i++) {
 		t = Tasks + i;
@@ -406,32 +407,36 @@ void TaskDump(u4_t flags)
 		float f_longest = ((float) t->longest) / 1e3;
 
 		float deadline=0;
-		char dunit = ' ';
+		const char *dunit = "";
 		if (t->deadline > 0) {
 			deadline = (t->deadline > now_us)? (float) (t->deadline - now_us) : 9999999;
-			deadline /= 1e3;    // mmm.uuu msec
-			dunit = 'm';
-			if (deadline >= 10000) {
-			    deadline /= 60000;      // mmmm.sss min
-			    dunit = 'M';
+			deadline /= 1e3;            // _mmm.uuu msec
+			dunit = "ms";
+			if (deadline >= 3600000) {  // >= 60 min
+			    deadline /= 3600000;    // hhhh.fff hr
+			    dunit = "Hr";
 			} else
-			if (deadline >= 1000) {
-			    deadline /= 1000;       // ssss.mmm sec
-			    dunit = 's';
+			if (deadline >= 60000) {    // >= 60 secs
+			    deadline /= 60000;      // mmmm.fff min
+			    dunit = "Mn";
+			} else
+			if (deadline >= 1000) {     // >= 1 sec
+			    deadline /= 1000;       // ssss.fff sec
+			    dunit = "s";
 			}
 		}
 		
 		int rx_channel = (t->flags & CTF_RX_CHANNEL)? (t->flags & CTF_CHANNEL) : -1;
 
 		if (flags & TDUMP_LOG)
-		lfprintf(printf_type, "%c%03d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f%c %3d%%%c %s%d %-10s %-24s\n",
+		lfprintf(printf_type, "%c%03d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f%-2s %3d%c %s%d %-10s %-24s\n",
 		    (t == ct)? '*':'T', i, (t->flags & CTF_PRIO_INVERSION)? 'I':'P', t->priority, t->lock_marker,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock.wait? 'L':'_', t->lock.hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
 			t->run, t->cmds,
 			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
-			deadline, dunit, t->stack_hiwat*100 / t->ctx->stack_size_u64, (t->flags & CTF_STACK_MED)? 'M' : ((t->flags & CTF_STACK_LARGE)? 'L' : ' '),
+			deadline, dunit, t->stack_hiwat*100 / t->ctx->stack_size_u64, (t->flags & CTF_STACK_MED)? 'M' : ((t->flags & CTF_STACK_LARGE)? 'L' : '%'),
 			(rx_channel != -1)? "c":"", rx_channel,
 			t->name, t->where? t->where : "-"
 		);
@@ -444,7 +449,7 @@ void TaskDump(u4_t flags)
 			t->run, t->cmds,
 			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
 			t->wu_count, t->no_run_same, t->spi_retry,
-			deadline, dunit, t->stack_hiwat*100 / t->ctx->stack_size_u64, (t->flags & CTF_STACK_MED)? 'M' : ((t->flags & CTF_STACK_LARGE)? 'L' : ' '),
+			deadline, dunit, t->stack_hiwat*100 / t->ctx->stack_size_u64, (t->flags & CTF_STACK_MED)? 'M' : ((t->flags & CTF_STACK_LARGE)? 'L' : '%'),
 			(rx_channel != -1)? "c":"", rx_channel,
 			t->name, t->where? t->where : "-",
 			t->long_name? t->long_name : "-"
@@ -1370,7 +1375,7 @@ int _CreateTask(funcP_t funcP, const char *name, void *param, int priority, u4_t
 	return t->id;
 }
 
-static void taskSleepSetup(TASK *t, const char *reason, int usec, u4_t *wakeup_test=NULL)
+static void taskSleepSetup(TASK *t, const char *reason, u64_t usec, u4_t *wakeup_test=NULL)
 {
 	// usec == 0 means sleep until someone does TaskWakeup() on us
 	// usec > 0 is microseconds time in future (added to current time)
@@ -1379,7 +1384,7 @@ static void taskSleepSetup(TASK *t, const char *reason, int usec, u4_t *wakeup_t
     	t->deadline = timer_us64() + usec;
         t->wakeup_test = NULL;
     	sprintf(t->reason, "(%.3f msec) ", (float) usec/1000.0);
-		evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleep", evprintf("sleeping usec %d %s Qrunnable %d", usec, task_ls(t), t->tq->runnable));
+		evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleep", evprintf("sleeping usec %lld %s Qrunnable %d", usec, task_ls(t), t->tq->runnable));
 	} else {
 	    assert(usec == 0);
         t->wakeup_test = wakeup_test;
@@ -1398,7 +1403,7 @@ static void taskSleepSetup(TASK *t, const char *reason, int usec, u4_t *wakeup_t
 	RUNNABLE_NO(t, /* prev_stopped */ t->stopped? 0:-1);
 }
 
-void *_TaskSleep(const char *reason, int usec, u4_t *wakeup_test)
+void *_TaskSleep(const char *reason, u64_t usec, u4_t *wakeup_test)
 {
     TASK *t = cur_task;
 
@@ -1426,15 +1431,15 @@ void *_TaskSleep(const char *reason, int usec, u4_t *wakeup_test)
 	return t->wake_param;
 }
 
-void TaskSleepID(int id, int usec)
+void TaskSleepID(int id, u64_t usec)
 {
     TASK *t = Tasks + id;
     
     if (t == cur_task) return (void) TaskSleepUsec(usec);
 
     if (!t->valid) return;
-	//printf("sleepID %s %d usec %d\n", task_ls(t), usec);
-	evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleepID", evprintf("%s usec %d", task_ls(t), usec));
+	//printf("sleepID %s %d usec %lld\n", task_ls(t), usec);
+	evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleepID", evprintf("%s usec %lld", task_ls(t), usec));
 	assert(cur_task->id != id);
 	
 	// must not force a task to sleep while it is holding or waiting for a lock -- make it pending instead

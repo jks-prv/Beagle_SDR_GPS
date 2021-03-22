@@ -119,15 +119,22 @@ void utc_hour_min_sec(int *hour, int *min, int *sec)
 	time_hour_min_sec(t, hour, min, sec);
 }
 
+time_t local_time(bool *returning_local_time)
+{
+    if (returning_local_time) *returning_local_time = false;
+	time_t local = utc_time();
+    if (utc_offset != -1 && dst_offset != -1) {
+        local += utc_offset + dst_offset;
+        if (returning_local_time) *returning_local_time = true;
+    }
+	return local;
+}
+
 bool local_hour_min_sec(int *hour, int *min, int *sec)
 {
-    bool returning_local_time = false;
-	time_t t = utc_time();
-    if (utc_offset != -1 && dst_offset != -1) {
-        t += utc_offset + dst_offset;
-        returning_local_time = true;
-    }
-	time_hour_min_sec(t, hour, min, sec);
+    bool returning_local_time;
+	time_t local = local_time(&returning_local_time);
+	time_hour_min_sec(local, hour, min, sec);
 	return returning_local_time;
 }
 
@@ -161,6 +168,12 @@ char *utc_ctime_static()
     char *tb = asctime(gmtime(&t));
     tb[CTIME_R_NL] = '\0';      // replace ending \n with \0
     return tb;
+}
+
+void var_ctime_r(time_t *t, char *tb)
+{
+    asctime_r(gmtime(t), tb);
+    tb[CTIME_R_NL] = '\0';      // replace ending \n with \0
 }
 
 void utc_ctime_r(char *tb)

@@ -630,15 +630,12 @@ void c2s_waterfall(void *param)
 			continue;
 		}
 		
-		// Not normally enabled so periodic internal and external SNR measurement samplers don't show up.
-		// Others like kiwiclient will get logged because they make an audio connection.
-		#if 0
-            // set arrived when "ident_user=" received e.g. in the case of a wf-only connection like SNR-meas
-            if (!conn->arrived && conn->ident) {
-                rx_loguser(conn, LOG_ARRIVED);
-                conn->arrived = TRUE;
-            }
-        #endif
+		// Log internal WF-only connections like the SNR measurement sampler.
+		// Others like external SNR measurement samplers won't show up.
+        if (!conn->arrived && conn->internal_connection && conn->ident) {
+            rx_loguser(conn, LOG_ARRIVED);
+            conn->arrived = TRUE;
+        }
 
 		// Don't process any waterfall data until we've received all necessary commands.
 		// Also, stop waterfall if speed is zero.
@@ -1019,23 +1016,15 @@ void sample_wf(int rx_chan)
     wf->mark = timer_ms();
 }
 
-static float dB_wire_to_dBm(int db_value)
-{
-    if (db_value < 0) db_value = 0;
-	if (db_value > 255) db_value = 255;
-	int dBm = -(255 - db_value);
-	return (float) (dBm + waterfall_cal);
-}
-
 static void aperture_auto(wf_inst_t *wf, u1_t *bp)
 {
-    int i, rx_chan = wf->rx_chan;
+    int i, j, rx_chan = wf->rx_chan;
     if (wf->need_autoscale <= wf->done_autoscale) return;
     bool single_shot = (wf->aper_algo == OFF);
 
     // FIXME: for audio FFT needs to be further limited to just passband
-    int start = 0, stop = APER_PWR_LEN, len = APER_PWR_LEN;
-    if (rx_chan >= wf_chans) start = 256, stop = 768, len = stop - start;       // audioFFT
+    int start = 0, stop = APER_PWR_LEN, len;
+    if (rx_chan >= wf_chans) start = 256, stop = 768;   // audioFFT
     
     if (wf->avg_clear) {
         for (i = start; i < stop; i++)
@@ -1088,24 +1077,36 @@ static void aperture_auto(wf_inst_t *wf, u1_t *bp)
 
     #define RESOLUTION_dB 5
     int band[APER_PWR_LEN];
-    for (i = start; i < stop; i++)
-        band[i] = ((int) floorf(wf->avg_pwr[i] / RESOLUTION_dB)) * RESOLUTION_dB;
-    qsort(&band[start], len, sizeof(int), qsort_intcomp);
-    int last = band[start], same = 0, max_count = 0, max_dBm = -999, min_dBm;
+    len = 0;
+    for (i = start; i < stop; i++) {
+        int b = ((int) floorf(wf->avg_pwr[i] / RESOLUTION_dB)) * RESOLUTION_dB;
+        if (b <= -190) continue;    // disregard masked areas
+        band[len] = b;
+        len++;
+    }
+    
+    int max_count = 0, max_dBm = -999, min_dBm;
+    if (len) {
+        qsort(band, len, sizeof(int), qsort_intcomp);
+        int last = band[0], same = 0;
 
-    for (i = start; i <= stop; i++) {
-        if (i == stop || band[i] != last) {
-            #ifdef WF_INFO
-            printf("%4d: %d\n", last, same);
-            #endif
-            if (same > max_count) max_count = same, min_dBm = last;
-            if (last > max_dBm) max_dBm = last;
-            if (i == stop) break;
-            same = 1;
-            last = band[i];
-        } else {
-            same++;
+        for (i = 0; i <= len; i++) {
+            if (i == len || band[i] != last) {
+                #ifdef WF_INFO
+                printf("%4d: %d\n", last, same);
+                #endif
+                if (same > max_count) max_count = same, min_dBm = last;
+                if (last > max_dBm) max_dBm = last;
+                if (i == len) break;
+                same = 1;
+                last = band[i];
+            } else {
+                same++;
+            }
         }
+    } else {
+        max_dBm = -110;
+        min_dBm = -120;
     }
 
     #ifdef WF_INFO

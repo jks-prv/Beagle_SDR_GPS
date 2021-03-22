@@ -238,6 +238,7 @@ void update_vars_from_config()
     max_thr = (float) cfg_default_int("overload_mute", -15, &update_cfg);
     cfg_default_bool("agc_thresh_smeter", true, &update_cfg);
     n_camp = cfg_default_int("n_camp", N_CAMP, &update_cfg);
+    cfg_default_bool("SNR_meas", true, &update_cfg);
 
     if (wspr_update_vars_from_config()) update_cfg = true;
 
@@ -516,189 +517,6 @@ static void geoloc_task(void *param)
     if (!okay) clprintf(conn, "GEOLOC: for %s FAILED for all geo servers\n", ip);
 }
 
-int current_nusers;
-static int last_hour = -1, last_min = -1;
-
-// called periodically (currently every 10 seconds)
-void webserver_collect_print_stats(int print)
-{
-	int i, nusers=0;
-	conn_t *c;
-	
-	// print / log connections
-    rx_chan_t *rx;
-    for (rx = rx_channels; rx < &rx_channels[rx_chans]; rx++) {
-        if (!rx->busy) continue;
-		c = rx->conn;
-		if (c == NULL || !c->valid) continue;
-        //assert(c->type == STREAM_SOUND || c->type == STREAM_WATERFALL);
-		
-		u4_t now = timer_sec();
-		if (c->freqHz != c->last_freqHz || c->mode != c->last_mode || c->zoom != c->last_zoom) {
-			if (print) rx_loguser(c, LOG_UPDATE);
-			c->last_tune_time = now;
-            c->last_freqHz = c->freqHz;
-            c->last_mode = c->mode;
-            c->last_zoom = c->zoom;
-            c->last_log_time = now;
-		} else {
-			u4_t diff = now - c->last_log_time;
-			if (diff > MINUTES_TO_SEC(5)) {
-				if (print) rx_loguser(c, LOG_UPDATE_NC);
-			}
-			
-			//cprintf(c, "TO_MINS=%d exempt=%d\n", inactivity_timeout_mins, c->tlimit_exempt);
-			if (inactivity_timeout_mins != 0 && !c->tlimit_exempt) {
-			    if (c->last_tune_time == 0) c->last_tune_time = now;    // got here before first set in rx_loguser()
-				diff = now - c->last_tune_time;
-			    //cprintf(c, "diff=%d now=%d last=%d TO_SECS=%d\n", diff, now, c->last_tune_time,
-			    //    MINUTES_TO_SEC(inactivity_timeout_mins));
-				if (diff > MINUTES_TO_SEC(inactivity_timeout_mins)) {
-                    cprintf(c, "TLIMIT-INACTIVE for %s\n", c->remote_ip);
-					send_msg(c, false, "MSG inactivity_timeout=%d", inactivity_timeout_mins);
-					c->inactivity_timeout = true;
-				}
-			}
-		}
-		
-		if (ip_limit_mins && !c->tlimit_exempt) {
-		    if (c->tlimit_zombie) {
-                // After the browser displays the "time limit reached" error panel the connection
-                // hangs open until the watchdog goes off. So have to flag as a zombie to keep the
-                // database from getting incorrectly updated.
-                //cprintf(c, "TLIMIT-IP zombie %s\n", c->remote_ip);
-		    } else {
-                int ipl_cur_secs = json_default_int(&cfg_ipl, c->remote_ip, 0, NULL);
-                ipl_cur_secs += STATS_INTERVAL_SECS;
-                //cprintf(c, "TLIMIT-IP setting database sec:%d for %s\n", ipl_cur_secs, c->remote_ip);
-                json_set_int(&cfg_ipl, c->remote_ip, ipl_cur_secs);
-                if (ipl_cur_secs >= MINUTES_TO_SEC(ip_limit_mins)) {
-                    cprintf(c, "TLIMIT-IP connected LIMIT REACHED cur:%d >= lim:%d for %s\n",
-                        SEC_TO_MINUTES(ipl_cur_secs), ip_limit_mins, c->remote_ip);
-                    send_msg_encoded(c, "MSG", "ip_limit", "%d,%s", ip_limit_mins, c->remote_ip);
-                    c->inactivity_timeout = true;
-                    c->tlimit_zombie = true;
-                }
-            }
-		}
-		
-		// FIXME: disable for now -- causes audio glitches for unknown reasons
-		#if 0
-		if (!c->geo && !c->try_geoloc && (now - c->arrival) > 10) {
-		    clprintf(c, "GEOLOC: %s sent no geoloc info, trying from here\n", c->remote_ip);
-		    CreateTask(geoloc_task, (void *) c, SERVICES_PRIORITY);
-		    c->try_geoloc = true;
-		}
-		#endif
-		
-		// SND and/or WF connections that have failed to follow API
-		#define NO_API_TIME 20
-		if (c->auth && (!c->snd_cmd_recv_ok && !c->wf_cmd_recv_ok && (now - c->arrival) >= NO_API_TIME)) {
-            clprintf(c, "\"%s\"%s%s%s%s incomplete connection kicked\n",
-                c->user? c->user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
-                c->geo? " ":"", c->geo? c->geo:"");
-            c->kick = true;
-		}
-		
-		nusers++;
-	}
-	current_nusers = nusers;
-
-	// construct cpu stats response
-	#define NCPU 4
-	int usi[3][NCPU], del_usi[3][NCPU];
-	static int last_usi[3][NCPU];
-
-	u4_t now = timer_ms();
-	static u4_t last_now;
-	float secs = (float)(now - last_now) / 1000;
-	last_now = now;
-
-	char *reply = read_file_string_reply("/proc/stat");
-	
-	if (reply != NULL) {
-		int ncpu;
-		char *cpu_ptr = kstr_sp(reply);
-		for (ncpu = 0; ncpu < NCPU; ncpu++) {
-			char buf[10];
-			sprintf(buf, "cpu%d", ncpu);
-			cpu_ptr = strstr(cpu_ptr, buf);
-			if (cpu_ptr == nullptr)
-				break;
-			sscanf(cpu_ptr + 4, " %d %*d %d %d", &usi[0][ncpu], &usi[1][ncpu], &usi[2][ncpu]);
-		}
-
-		for (i = 0; i < ncpu; i++) {
-            del_usi[0][i] = lroundf((float)(usi[0][i] - last_usi[0][i]) / secs);
-            del_usi[1][i] = lroundf((float)(usi[1][i] - last_usi[1][i]) / secs);
-            del_usi[2][i] = lroundf((float)(usi[2][i] - last_usi[2][i]) / secs);
-            //printf("CPU%d %.1fs u=%d%% s=%d%% i=%d%%\n", i, secs, del_usi[0][i], del_usi[1][i], del_usi[2][i]);
-        }
-		
-		kstr_free(reply);
-	    int cpufreq_kHz = 1000000, temp_deg_mC = 0;
-
-#if defined(CPU_AM5729) || defined(CPU_BCM2837)
-	    reply = read_file_string_reply("/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_cur_freq");
-		sscanf(kstr_sp(reply), "%d", &cpufreq_kHz);
-		kstr_free(reply);
-
-	    reply = read_file_string_reply("/sys/class/thermal/thermal_zone0/temp");
-		sscanf(kstr_sp(reply), "%d", &temp_deg_mC);
-		kstr_free(reply);
-#endif
-
-		// ecpu_use() below can thread block, so cpu_stats_buf must be properly set NULL for reading thread
-		kstr_t *ks;
-		if (cpu_stats_buf) {
-			ks = cpu_stats_buf;
-			cpu_stats_buf = NULL;
-			kstr_free(ks);
-		}
-		ks = kstr_asprintf(NULL, "\"ct\":%d,\"ce\":%.0f,\"cf\":%d,\"cc\":%.0f,",
-			timer_sec(), ecpu_use(), cpufreq_kHz / 1000, (float) temp_deg_mC / 1000);
-
-		ks = kstr_cat(ks, kstr_list_int("\"cu\":[", "%d", "],", &del_usi[0][0], ncpu));
-		ks = kstr_cat(ks, kstr_list_int("\"cs\":[", "%d", "],", &del_usi[1][0], ncpu));
-		ks = kstr_cat(ks, kstr_list_int("\"ci\":[", "%d", "]", &del_usi[2][0], ncpu));
-
-		for (i = 0; i < ncpu; i++) {
-            last_usi[0][i] = usi[0][i];
-            last_usi[1][i] = usi[1][i];
-            last_usi[2][i] = usi[2][i];
-        }
-
-		cpu_stats_buf = ks;
-	}
-
-	// collect network i/o stats
-	static const float k = 1.0/1000.0/10.0;		// kbytes/sec every 10 secs
-	
-	for (i=0; i <= rx_chans; i++) {     // [rx_chans] is total of all channels
-        audio_kbps[i] = audio_bytes[i]*k;
-        waterfall_kbps[i] = waterfall_bytes[i]*k;
-		waterfall_fps[i] = waterfall_frames[i]/10.0;
-		audio_bytes[i] = waterfall_bytes[i] = waterfall_frames[i] = 0;
-	}
-	http_kbps = http_bytes*k;
-	http_bytes = 0;
-
-	// on the hour: report number of connected users & schedule updates
-	int hour, min; utc_hour_min_sec(&hour, &min);
-	
-	if (hour != last_hour) {
-		if (print) lprintf("(%d %s)\n", nusers, (nusers==1)? "user":"users");
-		last_hour = hour;
-	}
-
-	if (min != last_min) {
-		schedule_update(min);
-		last_min = min;
-	}
-	
-	spi_stats();
-}
-
 char *rx_users(bool include_ip)
 {
     int i, n;
@@ -786,4 +604,107 @@ char *rx_users(bool include_ip)
 
     sb = kstr_cat(sb, "]\n");
     return sb;
+}
+
+int dB_wire_to_dBm(int db_value)
+{
+    // (u1_t) 255..55 => 0 .. -200 dBm
+    if (db_value < 0) db_value = 0;
+	if (db_value > 255) db_value = 255;
+	int dBm = -(255 - db_value);
+	return (dBm + waterfall_cal);
+}
+
+
+// schedule SNR measurements
+
+SNR_meas_t SNR_meas_data[SNR_MEAS_PER_DAY];
+
+void SNR_meas(void *param)
+{
+    int i, j, n, len;
+    static internal_conn_t iconn;
+    TaskSleepSec(20);
+
+    do {
+        static int hr_idx;
+	
+	    bool run = cfg_bool("SNR_meas", NULL, CFG_REQUIRED);
+        for (int loop = 0; loop == 0 && run; loop++) {   // so break can be used below
+            if (internal_conn_setup(ICONN_WS_WF, &iconn, 0, PORT_INTERNAL_SNR,
+                NULL, 0, 0, 0,
+                "SNR-measure", "internal%20task", "SNR",
+                WF_ZOOM_MIN, 15000, -110, -10, WF_SELECT_FAST, WF_COMP_OFF) == false) {
+                printf("SNR_meas: all channels busy\n");
+                break;
+            };
+    
+            SNR_meas_t *meas = &SNR_meas_data[hr_idx];
+            SNR_data_t *data;
+            hr_idx = ((hr_idx + 1) % SNR_MEAS_PER_DAY);
+            meas->valid = false;
+	        // relative to local time if timezone has been determined, utc otherwise
+            time_t local = local_time(&meas->is_local_time);
+            var_ctime_r(&local, meas->tstamp);
+            nbuf_t *nb = NULL;
+            #define SNR_NSAMPS 32
+            static int dB_raw[WF_WIDTH], dB[WF_WIDTH];
+            memset(dB_raw, 0, sizeof(dB_raw));
+    
+            for (i = 0; i < SNR_NSAMPS;) {
+                do {
+                    if (nb) web_to_app_done(iconn.cwf, nb);
+                    n = web_to_app(iconn.cwf, &nb, /* internal_connection */ true);
+                    if (n == 0) continue;
+                    wf_pkt_t *wf = (wf_pkt_t *) nb->buf;
+                    //printf("SNR_meas i=%d rcv=%d <%.3s>\n", i, n, wf->id4);
+                    if (strncmp(wf->id4, "W/F", 3) != 0) continue;
+                    for (j = 0; j < WF_WIDTH; j++) {
+                        dB_raw[j] += dB_wire_to_dBm(wf->un.buf[j]);
+                    }
+                    i++;
+                } while (n);
+                TaskSleepMsec(1000 / WF_SPEED_FAST);
+            }
+
+            len = 0;
+            for (i = 0; i < WF_WIDTH; i++) {
+                dB_raw[i] /= SNR_NSAMPS;
+                if (dB_raw[i] <= -190) continue;   // disregard masked areas
+                dB[len] = dB_raw[i];
+                len++;
+            }
+            qsort(dB, len, sizeof(int), qsort_intcomp);
+            data = &meas->data[SNR_MEAS_ALL];
+            data->f_lo = 0; data->f_hi = 30000;
+            data->min = dB[0]; data->max = dB[len-1];
+            data->pct_95 = 95;
+            data->pct_50 = median_i(dB, len, &data->pct_95);
+            data->snr = data->pct_95 - data->pct_50;
+            //printf("SNR all: len=%d [%d,%d] noise(50%)=%d signal(95%)=%d snr=%d\n",
+            //    len, data->min, data->max, data->pct_50, data->pct_95, data->snr);
+
+            len = 0;
+            int start = (float) WF_WIDTH * 1.8 / 30;
+            for (i = (int) start; i < WF_WIDTH; i++) {
+                if (dB_raw[i] <= -190) continue;   // disregard masked areas
+                dB[len] = dB_raw[i];
+                len++;
+            }
+            qsort(dB, len, sizeof(int), qsort_intcomp);
+            data = &meas->data[SNR_MEAS_HF];
+            data->f_lo = 1800; data->f_hi = 30000;
+            data->min = dB[0]; data->max = dB[len-1];
+            data->pct_95 = 95;
+            data->pct_50 = median_i(dB, len, &data->pct_95);
+            data->snr = data->pct_95 - data->pct_50;
+            //printf("SNR HF: len=%d [%d,%d] noise(50%)=%d signal(95%)=%d snr=%d\n",
+            //    len, data->min, data->max, data->pct_50, data->pct_95, data->snr);
+
+            meas->valid = true;
+            rx_server_websocket(WS_MODE_CLOSE, &iconn.wf_mc);
+        }
+        
+        TaskSleepUsec(SEC_TO_USEC((u64_t) SNR_MEAS_INT_HOURS * 60 * 60));
+    } while (1);
 }

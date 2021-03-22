@@ -3800,20 +3800,30 @@ function waterfall_add(data_raw, audioFFT)
 	if (wf.need_autoscale == 1 && !fixup) {
 	   var pwr_dBm = [];
       var autoscale = wf.audioFFT_active? data.slice(256, 768) : data;
-	   var len = autoscale.length;
+	   var alen = autoscale.length;
 	   
 	   // convert from transmitted values to true dBm
-	   for (var i = 0; i < len; i++) {
-	      pwr_dBm[i] = dB_wire_to_dBm(autoscale[i]);
+	   var j = 0;
+	   for (var i = 0; i < alen; i++) {
+	      var pwr = dB_wire_to_dBm(autoscale[i]);
+	      if (pwr <= -190) continue;    // disregard masked areas
+	      pwr_dBm[j] = pwr;
+	      j++
       }
-	   pwr_dBm.sort(function(a,b) {return a-b});
-	   var noise = pwr_dBm[Math.floor(0.50 * len)];
-	   var signal = pwr_dBm[Math.floor(0.98 * len)];
-	   console_log_dbgUs('# autoscale min='+ pwr_dBm[0] +' noise='+ noise +' signal='+ signal +' max='+ pwr_dBm[len-1]);
+      var len = pwr_dBm.length;
+      if (len) {
+         pwr_dBm.sort(function(a,b) {return a-b});
+         var noise = pwr_dBm[Math.floor(0.50 * len)];
+         var signal = pwr_dBm[Math.floor(0.95 * len)];
+         console_log_dbgUs('# autoscale len='+ len +' min='+ pwr_dBm[0] +' noise='+ noise +' signal='+ signal +' max='+ pwr_dBm[len-1]);
 
-	   var _10 = pwr_dBm[Math.floor(0.10 * len)];
-	   var _20 = pwr_dBm[Math.floor(0.20 * len)];
-	   console_log_dbgUs('# autoscale min='+ pwr_dBm[0] +' 10%='+ _10 +' 20%='+ _20 +' 50%(noise)='+ noise +' 98%(signal)='+ signal +' max='+ pwr_dBm[len-1]);
+         var _10 = pwr_dBm[Math.floor(0.10 * len)];
+         var _20 = pwr_dBm[Math.floor(0.20 * len)];
+         console_log_dbgUs('# autoscale min='+ pwr_dBm[0] +' 10%='+ _10 +' 20%='+ _20 +' 50%(noise)='+ noise +' 95%(signal)='+ signal +' max='+ pwr_dBm[len-1]);
+      } else {
+         signal = -110;
+         noise = -120;
+      }
 	   signal += 30;
 	   if (signal < -80) signal = -80;
       noise -= 10;
@@ -4938,6 +4948,8 @@ function modeset_update_ui(mode)
       function(el) {
 	      w3_set_props(el, 'w3-disabled', disabled);
       });
+
+   w3_show_hide('id-chan-null', mode == 'sam');
 }
 
 // delay the UI updates called from the audio path until the waterfall UI setup is done
@@ -8209,11 +8221,7 @@ function squelch_tail_cb(path, val, first)
 function chan_null_cb(path, val, first)
 {
    //console.log('$chan_null_cb path='+ path +' val='+ val +' first='+ first);
-   if (first) {
-      //console.log('$cur_mode='+ cur_mode);
-	   w3_show_hide('id-chan-null', cur_mode == 'sam');
-      return;
-   }
+   if (first) return;   // cur_mode still undefined this early
    owrx.chan_null = +val;
    ext_set_mode(cur_mode);
 }

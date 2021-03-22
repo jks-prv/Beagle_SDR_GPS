@@ -76,6 +76,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		&& st->type != AJAX_VERSION
 		&& st->type != AJAX_STATUS
 		&& st->type != AJAX_USERS
+		&& st->type != AJAX_SNR
 		&& st->type != AJAX_DISCOVERY
 		&& st->type != AJAX_PHOTO
 		) {
@@ -178,6 +179,38 @@ char *rx_server_ajax(struct mg_connection *mc)
 		printf("/users REQUESTED from %s\n", remote_ip);
 		return sb;		// NB: return here because sb is already a kstr_t (don't want to do kstr_wrap() below)
 		break;
+
+	// SECURITY:
+	//	Can be requested by anyone.
+	//	Returns JSON
+	case AJAX_SNR: {
+    	bool need_comma1 = false;
+    	char *sb = (char *) "[", *sb2;
+		for (i = 0; i < SNR_MEAS_PER_DAY; i++) {
+            SNR_meas_t *meas = &SNR_meas_data[i];
+            if (!meas->valid) continue;
+            asprintf(&sb2, "%s{\"ts\":\"%s\",\"utc\":%d,\"ihr\":%d,\"d\":[",
+				need_comma1? ",":"", meas->tstamp, meas->is_local_time? 0:1, SNR_MEAS_INT_HOURS);
+        	need_comma1 = true;
+        	sb = kstr_cat(sb, kstr_wrap(sb2));
+        	
+        	bool need_comma2 = false;
+			for (j = 0; j < SNR_MEAS_NDATA; j++) {
+        		SNR_data_t *data = &meas->data[j];
+				asprintf(&sb2, "%s{\"lo\":%d,\"hi\":%d,\"min\":%d,\"max\":%d,\"p50\":%d,\"p95\":%d,\"snr\":%d}",
+					need_comma2? ",":"", data->f_lo, data->f_hi,
+					data->min, data->max, data->pct_50, data->pct_95, data->snr);
+        		need_comma2 = true;
+				sb = kstr_cat(sb, kstr_wrap(sb2));
+			}
+    		sb = kstr_cat(sb, "]}");
+		}
+		
+    	sb = kstr_cat(sb, "]\n");
+		printf("/snr REQUESTED from %s\n", remote_ip);
+		return sb;		// NB: return here because sb is already a kstr_t (don't want to do kstr_wrap() below)
+		break;
+	}
 
 	// SECURITY:
 	//	OKAY, used by kiwisdr.com and Priyom Pavlova at the moment

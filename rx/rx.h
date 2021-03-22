@@ -41,23 +41,6 @@ extern rx_chan_t rx_channels[];
 extern volatile float audio_kbps[], waterfall_kbps[], waterfall_fps[], http_kbps;
 extern volatile u4_t audio_bytes[], waterfall_bytes[], waterfall_frames[], http_bytes;
 
-
-// waterfall
-
-// Use odd values so periodic signals like radars running at even-Hz rates don't
-// beat against update rate and produce artifacts or blanking.
-
-#define	WF_SPEED_MAX		23
-
-#define WF_SPEED_OFF        0
-#define	WF_SPEED_1FPS		1
-#define	WF_SPEED_SLOW		5
-#define	WF_SPEED_MED		13
-#define	WF_SPEED_FAST		WF_SPEED_MAX
-
-#define	WEB_SERVER_POLL_US	(1000000 / WF_SPEED_MAX / 2)
-
-
 void rx_server_init();
 void rx_server_remove(conn_t *c);
 void rx_server_user_kick(int chan);
@@ -66,6 +49,29 @@ void rx_common_init(conn_t *conn);
 bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd);
 char *rx_users(bool include_ip);
 void show_conn(const char *prefix, conn_t *cd);
+
+#define SNR_MEAS_INT_HOURS  6
+#define SNR_MEAS_PER_DAY    (24 / SNR_MEAS_INT_HOURS)
+
+#define SNR_MEAS_ALL    0
+#define SNR_MEAS_HF     1
+#define SNR_MEAS_NDATA  2
+
+typedef struct {
+    int f_lo, f_hi, min, max, pct_50, pct_95, snr;
+} SNR_data_t;
+
+typedef struct {
+	bool valid;
+    char tstamp[CTIME_R_NL + 1 + SPACE_FOR_NULL];
+    bool is_local_time;
+    SNR_data_t data[SNR_MEAS_NDATA];
+} SNR_meas_t;
+
+extern SNR_meas_t SNR_meas_data[SNR_MEAS_PER_DAY];
+
+int dB_wire_to_dBm(int db_value);
+void SNR_meas(void *param);
 
 enum conn_count_e { EXTERNAL_ONLY, INCLUDE_INTERNAL, TDOA_USERS, EXT_API_USERS, LOCAL_OR_PWD_PROTECTED_USERS };
 int rx_count_server_conns(conn_count_e type, conn_t *our_conn = NULL);

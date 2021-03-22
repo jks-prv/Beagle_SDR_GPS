@@ -464,10 +464,10 @@ void WSPR_Deco(void *param)
 		    if (now - w->arun_last_status_sent > MINUTES_TO_SEC(6)) {
 		        w->arun_last_status_sent = now;
 		        
-		        // in case wspr_c.rgrid has changed
+		        // in case wspr_c.rgrid has changed 
 		        free(w->arun_stat_cmd);
-                asprintf(&w->arun_stat_cmd, "curl 'http://wsprnet.org/post?function=wsprstat&rcall=%s&rgrid=%s&rqrg=%.6f&tpct=0&tqrg=%.6f&dbm=0&version=1.3+Kiwi' >/dev/null 2>&1",
-                    wspr_c.rcall, wspr_c.rgrid, w->arun_cf_MHz, w->arun_cf_MHz);
+		        #define WSPR_STAT "curl 'http://wsprnet.org/post?function=wsprstat&rcall=%s&rgrid=%s&rqrg=%.6f&tpct=0&tqrg=%.6f&dbm=0&version=1.3+Kiwi' >/dev/null 2>&1"
+                asprintf(&w->arun_stat_cmd, WSPR_STAT, wspr_c.rcall, wspr_c.rgrid, w->arun_cf_MHz, w->arun_cf_MHz);
                 //printf("AUTORUN %s\n", w->arun_stat_cmd);
                 non_blocking_cmd_system_child("kiwi.wsprnet.org", w->arun_stat_cmd, NO_WAIT);
 		    }
@@ -720,73 +720,46 @@ static double wspr_cfs[] = {
     50294.5, 70092.5, 144490.5, 432301.5, 1296501.5
 };
 
-static struct mg_connection wspr_snd_mc[MAX_RX_CHANS], wspr_ext_mc[MAX_RX_CHANS];
+static internal_conn_t iconn[MAX_RX_CHANS];
 
-void wspr_autorun(int which, int idx)
+void wspr_autorun(int instance, int band)
 {
 	#define WSPR_BFO 750
 	#define WSPR_FILTER_BW 300
-	double center_freq_kHz = wspr_cfs[idx-1];
+	double center_freq_kHz = wspr_cfs[band];
     double dial_freq_kHz = center_freq_kHz - WSPR_BFO/1e3;
     double if_freq_kHz = dial_freq_kHz - freq_offset;
 	double cfo = roundf((center_freq_kHz - floorf(center_freq_kHz)) * 1e3);
 	
-    struct mg_connection *mc;
-    
-    mc = &wspr_snd_mc[which];
-    mc->connection_param = NULL;
-    asprintf((char **) &mc->uri, "%d/SND", 1138+which);
-    kiwi_strncpy(mc->remote_ip, "127.0.0.1", NET_ADDRSTRLEN);
-    mc->remote_port = mc->local_port = net.port;
-    conn_t *csnd = rx_server_websocket(WS_INTERNAL_CONN, mc);
-    if (csnd == NULL) {
-        printf("WSPR autorun: couldn't get websocket which=%d uri=%s port=%d\n",
-            which, mc->uri, mc->remote_port);
-        return;
-    }
+	double max_freq = freq_offset + ui_srate/1e3;
+	if (dial_freq_kHz < freq_offset || dial_freq_kHz > max_freq) {
+	    lprintf("WSPR autorun: band_id=%d ERROR dial_freq_kHz %.2f is outside rx range %.2f - %.2f\n",
+	        band, dial_freq_kHz, freq_offset, max_freq);
+	    return;
+	}
 
+	if (internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_INTERNAL_WSPR,
+        "usb", WSPR_BFO - WSPR_FILTER_BW/2, WSPR_BFO + WSPR_FILTER_BW/2, if_freq_kHz,
+        "WSPR-autorun", "0%20decoded", "wspr") == false) return;
+
+    conn_t *csnd = iconn[instance].csnd;
     int chan = csnd->rx_channel;
     wspr_t *w = &WSPR_SHMEM->wspr[chan];
     w->arun_csnd = csnd;
     w->arun_cf_MHz = center_freq_kHz / 1e3;
     w->arun_last_decoded = -1;
 
-	clprintf(csnd, "WSPR autorun: which=%d idx=%d off=%.2f if=%.2f df=%.2f cf=%.2f cfo=%.0f\n",
-	    which, idx, freq_offset, if_freq_kHz, dial_freq_kHz, center_freq_kHz, cfo);
+	clprintf(csnd, "WSPR autorun: instance=%d band_id=%d off=%.2f if=%.2f df=%.2f cf=%.2f cfo=%.0f\n",
+	    instance, band, freq_offset, if_freq_kHz, dial_freq_kHz, center_freq_kHz, cfo);
 	
-	double max_freq = freq_offset + ui_srate/1e3;
-	if (dial_freq_kHz < freq_offset || dial_freq_kHz > max_freq) {
-	    clprintf(csnd, "WSPR autorun: ERROR dial_freq_kHz %.2f is outside rx range %.2f - %.2f\n",
-	        dial_freq_kHz, freq_offset, max_freq);
-	    rx_server_websocket(WS_MODE_CLOSE, mc);
-	    return;
-	}
-
-    input_msg_internal(csnd, (char *) "SET auth t=kiwi p=");
-	input_msg_internal(csnd, (char *) "SET AR OK in=12000 out=44100");
-	input_msg_internal(csnd, (char *) "SET agc=1 hang=0 thresh=-100 slope=6 decay=1000 manGain=50");
-    input_msg_internal(csnd, (char *) "SET mod=usb low_cut=%d high_cut=%d freq=%.2f",
-        WSPR_BFO - WSPR_FILTER_BW/2, WSPR_BFO + WSPR_FILTER_BW/2, if_freq_kHz);
-    input_msg_internal(csnd, (char *) "SET ident_user=WSPR-autorun");
-    input_msg_internal(csnd, (char *) "SET geoloc=0%%20decoded");
-
-    mc = &wspr_ext_mc[which];
-    mc->connection_param = NULL;
-    asprintf((char **) &mc->uri, "%d/EXT", 1138+which);
-    kiwi_strncpy(mc->remote_ip, "127.0.0.1", NET_ADDRSTRLEN);
-    mc->remote_port = mc->local_port = net.port;
-    conn_t *cext = rx_server_websocket(WS_INTERNAL_CONN, mc);
-    
-    input_msg_internal(cext, (char *) "SET auth t=kiwi p=");
-    input_msg_internal(cext, (char *) "SET ext_switch_to_client=wspr first_time=1 rx_chan=%d", chan);
+    conn_t *cext = iconn[instance].cext;
     input_msg_internal(cext, (char *) "SET autorun");
     input_msg_internal(cext, (char *) "SET BFO=%d", WSPR_BFO);
     input_msg_internal(cext, (char *) "SET capture=0");
     input_msg_internal(cext, (char *) "SET dialfreq=%.2f cf_offset=%.0f", dial_freq_kHz, cfo);
     input_msg_internal(cext, (char *) "SET capture=1");
 
-    asprintf(&w->arun_stat_cmd, "curl 'http://wsprnet.org/post?function=wsprstat&rcall=%s&rgrid=%s&rqrg=%.6f&tpct=0&tqrg=%.6f&dbm=0&version=1.3+Kiwi' >/dev/null 2>&1",
-        wspr_c.rcall, wspr_c.rgrid, w->arun_cf_MHz, w->arun_cf_MHz);
+    asprintf(&w->arun_stat_cmd, WSPR_STAT, wspr_c.rcall, wspr_c.rgrid, w->arun_cf_MHz, w->arun_cf_MHz);
     //printf("AUTORUN INIT %s\n", w->arun_stat_cmd);
     non_blocking_cmd_system_child("kiwi.wsprnet.org", w->arun_stat_cmd, NO_WAIT);
     w->arun_last_status_sent = timer_sec();
@@ -864,13 +837,13 @@ void wspr_main()
 
     for (int i=0; i < rx_chans; i++) {
         bool err;
-        int idx = cfg_int(stprintf("WSPR.autorun%d", i), &err, CFG_OPTIONAL);
-        if (!err && idx != 0) {
+        int band = cfg_int(stprintf("WSPR.autorun%d", i), &err, CFG_OPTIONAL);
+        if (!err && band != 0) {
             if (!autorun) {
                 printf("WSPR autorun: reporter callsign and grid square fields must be entered on WSPR section of admin page\n");
                 break;
             }
-            wspr_autorun(i, idx);
+            wspr_autorun(i, band-1);
         }
     }
 }

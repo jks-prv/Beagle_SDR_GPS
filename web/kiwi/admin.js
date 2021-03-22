@@ -318,7 +318,16 @@ function control_html()
                'performance problems from too many audio campers.'
             )
          ),
-         '',
+			w3_divs('/w3-center w3-tspace-8',
+				w3_div('', '<b>Enable automatic SNR measurement?</b>'),
+            w3_switch('', 'Yes', 'No', 'cfg.SNR_meas', cfg.SNR_meas, 'admin_radio_YN_cb'),
+				w3_text('w3-text-black w3-center',
+				   'Set "yes" to enable automatic sampling of <br>' +
+				   'signal-to-noise ratio (SNR) every 6 hours. <br>' +
+				   'Access SNR data in JSON format using <br>' +
+				   'URL of the form: <i>my_kiwi:8073/snr</i>'
+				)
+			),
          ''
 		) +
 		'<hr>';

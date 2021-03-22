@@ -134,5 +134,6 @@ typedef struct conn_st {
 #define AJAX_PHOTO			8
 #define AJAX_STATUS			9
 #define AJAX_USERS			10
+#define AJAX_SNR			11
 
 extern conn_t conns[];
