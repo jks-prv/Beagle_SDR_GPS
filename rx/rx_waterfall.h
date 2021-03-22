@@ -86,6 +86,27 @@ struct wf_pkt_t {
 	} un;
 } __attribute__((packed));
 
+
+// Use odd values so periodic signals like radars running at even-Hz rates don't
+// beat against update rate and produce artifacts or blanking.
+
+#define	WF_SPEED_MAX		23
+#define	WEB_SERVER_POLL_US	(1000000 / WF_SPEED_MAX / 2)
+
+#define WF_SPEED_OFF        0
+#define	WF_SPEED_1FPS		1
+#define	WF_SPEED_SLOW		5
+#define	WF_SPEED_MED		13
+#define	WF_SPEED_FAST		WF_SPEED_MAX
+
+enum { WF_SELECT_OFF = 0, WF_SELECT_1FPS = 1, WF_SELECT_SLOW = 2, WF_SELECT_MED = 3, WF_SELECT_FAST = 4 };
+
+#define WF_ZOOM_MIN     0
+#define WF_ZOOM_MAX     15
+
+#define WF_COMP_OFF     0
+#define WF_COMP_ON      1
+
 enum aper_t { MAN=0, AUTO };
 enum aper_algo_t { IIR=0, MMA, EMA, OFF };
 

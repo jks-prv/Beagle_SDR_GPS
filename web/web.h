@@ -65,13 +65,10 @@ typedef struct {
 
 extern rx_stream_t rx_streams[];
 
-#define N_CONN_SND_WF_EXT   3
-#define N_CAMP              4
-#define	N_CONN_ADMIN        8
-#define N_QUEUERS           8
+#define N_CONN_SND_WF_EXT   (MAX_RX_CHANS * (3 + N_CAMP))
 #define	N_CONN_EXTRA        8
 
-#define	N_CONNS	(MAX_RX_CHANS * (N_CONN_SND_WF_EXT + N_CAMP) + N_CONN_ADMIN + N_QUEUERS + N_CONN_EXTRA)
+#define	N_CONNS	(N_CONN_SND_WF_EXT + N_QUEUERS + N_CONN_ADMIN + N_CONN_EXTRA)
 
 extern embedded_files_t edata_embed[];
 extern embedded_files_t edata_always[];
@@ -84,7 +81,7 @@ extern time_t mtime_obj_keep_edata_always2_o;
 void webserver_connection_cleanup(conn_t *c);
 
 // client to server
-int web_to_app(conn_t *c, nbuf_t **nbp);
+int web_to_app(conn_t *c, nbuf_t **nbp, bool internal_connection = false);
 void web_to_app_done(conn_t *c, nbuf_t *nb);
 
 // server to client

@@ -754,3 +754,93 @@ bool check_ip_blacklist(char *remote_ip, bool log)
     }
     return false;
 }
+
+
+// Emulates the client-side (js) of a Kiwi sound/waterfall/extension channel API connection.
+// For use by server-side internal connections, e.g. WSPR autorun, SNR measurement.
+
+bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port_base,
+    const char *mode, int locut, int hicut, float freq_kHz, const char *ident, const char *geoloc,
+    const char *client,
+    int zoom, float cf_kHz, int min_dB, int max_dB, int wf_speed, int wf_comp)
+{
+    struct mg_connection *mc_fail, *mcs = NULL, *mcw = NULL, *mce = NULL;
+    conn_t *csnd, *cwf, *cext;
+    int port = port_base + instance;
+    int chan;
+    bool ident_geo_sent = false;
+    memset(iconn, 0, sizeof(internal_conn_t));
+    
+    if (ws & ICONN_WS_EXT) {
+        mcs = &iconn->snd_mc;
+        mc_fail = mcs;
+        mcs->connection_param = NULL;
+        asprintf((char **) &mcs->uri, "%d/SND", port);
+        kiwi_strncpy(mcs->remote_ip, "127.0.0.1", NET_ADDRSTRLEN);
+        mcs->remote_port = mcs->local_port = net.port;
+        csnd = rx_server_websocket(WS_INTERNAL_CONN, mcs);
+        if (csnd == NULL) goto error;
+        iconn->csnd = csnd;
+        input_msg_internal(csnd, (char *) "SET auth t=kiwi p=");
+        input_msg_internal(csnd, (char *) "SET AR OK in=12000 out=44100");
+        input_msg_internal(csnd, (char *) "SET agc=1 hang=0 thresh=-100 slope=6 decay=1000 manGain=50");
+        input_msg_internal(csnd, (char *) "SET mod=%s low_cut=%d high_cut=%d freq=%.3f",
+            mode, locut, hicut, freq_kHz);
+        input_msg_internal(csnd, (char *) "SET ident_user=%s", ident);
+        if (geoloc) input_msg_internal(csnd, (char *) "SET geoloc=%s", geoloc);
+        ident_geo_sent = true;
+    }
+
+    if (ws & ICONN_WS_WF) {
+        mcw = &iconn->wf_mc;
+        mc_fail = mcw;
+        mcw->connection_param = NULL;
+        asprintf((char **) &mcw->uri, "%d/W/F", port);
+        kiwi_strncpy(mcw->remote_ip, "127.0.0.1", NET_ADDRSTRLEN);
+        mcw->remote_port = mcw->local_port = net.port;
+        cwf = rx_server_websocket(WS_INTERNAL_CONN, mcw);
+        if (cwf == NULL) goto error;
+        iconn->cwf = cwf;
+        input_msg_internal(cwf, (char *) "SET auth t=kiwi p=");
+        input_msg_internal(cwf, (char *) "SET zoom=%d cf=%.3f", zoom, cf_kHz);
+        input_msg_internal(cwf, (char *) "SET maxdb=%d mindb=%d", max_dB, min_dB);
+        input_msg_internal(cwf, (char *) "SET wf_speed=%d", wf_speed);
+        input_msg_internal(cwf, (char *) "SET wf_comp=%d", wf_comp);
+        if (!ident_geo_sent) {
+            input_msg_internal(cwf, (char *) "SET ident_user=%s", ident);
+            if (geoloc) input_msg_internal(cwf, (char *) "SET geoloc=%s", geoloc);
+            ident_geo_sent = true;
+        }
+    }
+
+    if (ws & ICONN_WS_EXT) {
+        chan = csnd->rx_channel;
+        mce = &iconn->ext_mc;
+        mc_fail = mcs;
+        mce->connection_param = NULL;
+        asprintf((char **) &mce->uri, "%d/EXT", port);
+        kiwi_strncpy(mce->remote_ip, "127.0.0.1", NET_ADDRSTRLEN);
+        mce->remote_port = mce->local_port = net.port;
+        cext = rx_server_websocket(WS_INTERNAL_CONN, mce);
+        if (csnd == NULL) goto error;
+        iconn->cext = cext;
+        input_msg_internal(cext, (char *) "SET auth t=kiwi p=");
+        input_msg_internal(cext, (char *) "SET ext_switch_to_client=%s first_time=1 rx_chan=%d",
+            client, chan);
+    }
+
+    return true;
+
+error:
+    printf("internal_conn_setup: couldn't get websocket instance=%d uri=%s port=%d\n",
+        instance, mc_fail->uri, mc_fail->remote_port);
+    internal_conn_shutdown(iconn);
+    return false;
+}
+
+void internal_conn_shutdown(internal_conn_t *iconn)
+{
+    if (iconn->csnd) rx_server_websocket(WS_MODE_CLOSE, &iconn->snd_mc);
+    if (iconn->cwf)  rx_server_websocket(WS_MODE_CLOSE, &iconn->wf_mc);
+    if (iconn->cext) rx_server_websocket(WS_MODE_CLOSE, &iconn->ext_mc);
+}

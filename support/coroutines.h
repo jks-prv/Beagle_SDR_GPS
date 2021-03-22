@@ -56,14 +56,12 @@ extern u4_t task_medium_priority;
 #define	LOWEST_PRIORITY		0
 #define	NUM_PRIORITY		(HIGHEST_PRIORITY+1)
 
-#define	MISC_TASKS			6					// main, stats, spi, data pump, web server, registration
+#define	MISC_TASKS			7					// main, stats, spi pump, data pump, web server, registration, SNR meas
 #define GPS_TASKS			(GPS_CHANS + 3)		// chan*n + search + solve + stat
-#define	SND_TASKS			MAX_RX_CHANS        // SND
-#define	EXT_TASKS			MAX_RX_CHANS        // each extension server-side part runs as a separate task
+#define SND_EXT_TASKS       (MAX_RX_CHANS * (2 + N_CAMP))   // W/F handled below
 #define	EXTRA_TASKS			(MAX_RX_CHANS * 4)  // additional tasks created by extensions etc.
-#define	ADMIN_TASKS			4					// simultaneous admin connections
 
-#define	REG_STACK_TASKS     (MISC_TASKS + GPS_TASKS + SND_TASKS + EXT_TASKS + EXTRA_TASKS + ADMIN_TASKS)
+#define	REG_STACK_TASKS     (MISC_TASKS + GPS_TASKS + SND_EXT_TASKS + N_QUEUERS + N_CONN_ADMIN + EXTRA_TASKS)
 #define MED_STACK_TASKS     (MAX_RX_CHANS + 1)  // WF (+ reload slop)
 #define LARGE_STACK_TASKS   (1 + 1)             // DRM (+ reload slop)
 
@@ -100,7 +98,7 @@ int _CreateTask(funcP_t entry, const char *name, void *param, int priority, u4_t
 
 // usec == 0 means sleep until someone does TaskWakeup() on us
 // usec > 0 is microseconds time in future (added to current time)
-void *_TaskSleep(const char *reason, int usec, u4_t *wakeup_test=NULL);
+void *_TaskSleep(const char *reason, u64_t usec, u4_t *wakeup_test=NULL);
 #define TaskSleep()                 _TaskSleep("TaskSleep", 0)
 #define TaskSleepUsec(us)           _TaskSleep("TaskSleep", us)
 #define TaskSleepMsec(ms)           _TaskSleep("TaskSleep", MSEC_TO_USEC(ms))
@@ -111,7 +109,7 @@ void *_TaskSleep(const char *reason, int usec, u4_t *wakeup_test=NULL);
 #define TaskSleepReasonSec(r, s)    _TaskSleep(r, SEC_TO_USEC(s))
 #define TaskSleepWakeupTest(r, wu)  _TaskSleep(r, 0, wu)
 
-void TaskSleepID(int id, int usec);
+void TaskSleepID(int id, u64_t usec);
 
 #define TWF_NONE                0x0000
 #define TWF_CHECK_WAKING        0x0001

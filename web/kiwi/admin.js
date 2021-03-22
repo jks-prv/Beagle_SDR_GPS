@@ -318,7 +318,16 @@ function control_html()
                'performance problems from too many audio campers.'
             )
          ),
-         '',
+			w3_divs('/w3-center w3-tspace-8',
+				w3_div('', '<b>Enable automatic SNR measurement?</b>'),
+            w3_switch('', 'Yes', 'No', 'cfg.SNR_meas', cfg.SNR_meas, 'admin_radio_YN_cb'),
+				w3_text('w3-text-black w3-center',
+				   'Set "yes" to enable automatic sampling of <br>' +
+				   'signal-to-noise ratio (SNR) every 6 hours. <br>' +
+				   'Access SNR data in JSON format using <br>' +
+				   'URL of the form: <i>my_kiwi:8073/snr</i>'
+				)
+			),
          ''
 		) +
 		'<hr>';
@@ -1859,12 +1868,15 @@ function gps_update_admin_cb()
 			);
 	
 		var sub = '';
+		var has_subframes = false;
 		for (var i = SUBFRAMES-1; i >= 0; i--) {
 			var sub_color;
 			if (ch.sub_renew & (1<<i)) {
 				sub_color = 'w3-grey';
 			} else {
-				sub_color = (ch.sub & (1<<i))? sub_colors[i]:'w3-white';
+			   var subframe = ch.sub & (1<<i);
+				sub_color = subframe? sub_colors[i]:'w3-white';
+				if (subframe) has_subframes = true;
 			}
 			sub += '<span class="w3-tag '+ sub_color +'">'+ (i+1) +'</span>';
 		}
@@ -1881,10 +1893,11 @@ function gps_update_admin_cb()
 
 	   if (adm.rssi_azel_iq == _gps.RSSI) {
          var pct = ((ch.rssi / max_rssi) * 100).toFixed(0);
+         var color = has_subframes? 'w3-light-green' : 'w3-red';
          cells +=
             w3_table_cells('',
                w3_div('w3-progress-container w3-round-xlarge w3-white',
-                  w3_div('w3-progressbar w3-round-xlarge w3-light-green|width:'+ pct +'%',
+                  w3_div('w3-progressbar w3-round-xlarge '+ color +'|width:'+ pct +'%',
                      w3_div('w3-container w3-text-white', ch.rssi)
                   )
                )

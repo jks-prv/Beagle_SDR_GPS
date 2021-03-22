@@ -112,13 +112,13 @@ void webserver_connection_cleanup(conn_t *c)
 //		eliminating most of these in favor of websocket messages so connection auth can be performed
 // 4) HTTP PUT: e.g. kiwi_ajax_send() upload photo file, response returned
 
-int web_to_app(conn_t *c, nbuf_t **nbp)
+int web_to_app(conn_t *c, nbuf_t **nbp, bool internal_connection)
 {
 	nbuf_t *nb;
 	
     *nbp = NULL;
 	if (c->stop_data) return 0;
-	nb = nbuf_dequeue(&c->c2s);
+	nb = nbuf_dequeue(internal_connection? &c->s2c : &c->c2s);
 	if (!nb) return 0;
 	assert(!nb->done && !nb->expecting_done && nb->buf && nb->len);
 	nb->expecting_done = TRUE;
@@ -144,10 +144,11 @@ void web_to_app_done(conn_t *c, nbuf_t *nb)
 void app_to_web(conn_t *c, char *s, int sl)
 {
 	if (c->stop_data) return;
-	if (c->internal_connection) {
-	    //printf("app_to_webinternal_connection sl=%d\n", sl);
+	if (c->internal_connection && c->type != STREAM_WATERFALL) {
+	    //printf("SKIP app_to_webinternal_connection %s sl=%d\n", rx_streams[c->type].uri, sl);
 	    return;
 	}
+    //printf("app_to_webinternal_connection %s sl=%d\n", rx_streams[c->type].uri, sl);
 	nbuf_allocq(&c->s2c, s, sl);
 	//NextTask("s2c");
 }

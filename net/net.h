@@ -31,6 +31,9 @@ Boston, MA  02110-1301, USA.
 #define KIWISDR_COM_PUBLIC_IP   "50.116.2.70"
 #define GITHUB_COM_PUBLIC_IP    "52.64.108.95"      // was "192.30.253.112"
 
+#define PORT_INTERNAL_WSPR      1138    // + 0..MAX_RX_CHANS
+#define PORT_INTERNAL_SNR       1238    // + 0..MAX_RX_CHANS
+
 #define NET_DEBUG
 #ifdef NET_DEBUG
 	#define net_printf(fmt, ...) \
@@ -168,3 +171,18 @@ bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_i
 void ip_blacklist_init();
 void ip_blacklist_add(char *ips);
 bool check_ip_blacklist(char *remote_ip, bool log=false);
+
+
+typedef struct {
+    struct mg_connection snd_mc, wf_mc, ext_mc;
+    conn_t *csnd, *cwf, *cext;
+} internal_conn_t;
+
+const u4_t ICONN_WS_SND = 1, ICONN_WS_WF = 2, ICONN_WS_EXT = 4;
+
+bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port_base,
+    const char *mode, int locut, int hicut, float freq_kHz, const char *ident, const char *geoloc,
+    const char *client = NULL,
+    int zoom = 0, float cf_kHz = 0, int min_dB = 0, int max_dB = 0, int wf_speed = 0, int wf_comp = 0);
+
+void internal_conn_shutdown(internal_conn_t *iconn);

@@ -630,6 +630,13 @@ void c2s_waterfall(void *param)
 			continue;
 		}
 		
+		// Log internal WF-only connections like the SNR measurement sampler.
+		// Others like external SNR measurement samplers won't show up.
+        if (!conn->arrived && conn->internal_connection && conn->ident) {
+            rx_loguser(conn, LOG_ARRIVED);
+            conn->arrived = TRUE;
+        }
+
 		// Don't process any waterfall data until we've received all necessary commands.
 		// Also, stop waterfall if speed is zero.
 		if (cmd_recv != CMD_ALL || wf->speed == WF_SPEED_OFF) {
@@ -1009,23 +1016,15 @@ void sample_wf(int rx_chan)
     wf->mark = timer_ms();
 }
 
-static float dB_wire_to_dBm(int db_value)
-{
-    if (db_value < 0) db_value = 0;
-	if (db_value > 255) db_value = 255;
-	int dBm = -(255 - db_value);
-	return (float) (dBm + waterfall_cal);
-}
-
 static void aperture_auto(wf_inst_t *wf, u1_t *bp)
 {
-    int i, rx_chan = wf->rx_chan;
+    int i, j, rx_chan = wf->rx_chan;
     if (wf->need_autoscale <= wf->done_autoscale) return;
     bool single_shot = (wf->aper_algo == OFF);
 
     // FIXME: for audio FFT needs to be further limited to just passband
-    int start = 0, stop = APER_PWR_LEN, len = APER_PWR_LEN;
-    if (rx_chan >= wf_chans) start = 256, stop = 768, len = stop - start;       // audioFFT
+    int start = 0, stop = APER_PWR_LEN, len;
+    if (rx_chan >= wf_chans) start = 256, stop = 768;   // audioFFT
     
     if (wf->avg_clear) {
         for (i = start; i < stop; i++)
@@ -1078,24 +1077,36 @@ static void aperture_auto(wf_inst_t *wf, u1_t *bp)
 
     #define RESOLUTION_dB 5
     int band[APER_PWR_LEN];
-    for (i = start; i < stop; i++)
-        band[i] = ((int) floorf(wf->avg_pwr[i] / RESOLUTION_dB)) * RESOLUTION_dB;
-    qsort(&band[start], len, sizeof(int), qsort_intcomp);
-    int last = band[start], same = 0, max_count = 0, max_dBm = -999, min_dBm;
+    len = 0;
+    for (i = start; i < stop; i++) {
+        int b = ((int) floorf(wf->avg_pwr[i] / RESOLUTION_dB)) * RESOLUTION_dB;
+        if (b <= -190) continue;    // disregard masked areas
+        band[len] = b;
+        len++;
+    }
+    
+    int max_count = 0, max_dBm = -999, min_dBm;
+    if (len) {
+        qsort(band, len, sizeof(int), qsort_intcomp);
+        int last = band[0], same = 0;
 
-    for (i = start; i <= stop; i++) {
-        if (i == stop || band[i] != last) {
-            #ifdef WF_INFO
-            printf("%4d: %d\n", last, same);
-            #endif
-            if (same > max_count) max_count = same, min_dBm = last;
-            if (last > max_dBm) max_dBm = last;
-            if (i == stop) break;
-            same = 1;
-            last = band[i];
-        } else {
-            same++;
+        for (i = 0; i <= len; i++) {
+            if (i == len || band[i] != last) {
+                #ifdef WF_INFO
+                printf("%4d: %d\n", last, same);
+                #endif
+                if (same > max_count) max_count = same, min_dBm = last;
+                if (last > max_dBm) max_dBm = last;
+                if (i == len) break;
+                same = 1;
+                last = band[i];
+            } else {
+                same++;
+            }
         }
+    } else {
+        max_dBm = -110;
+        min_dBm = -120;
     }
 
     #ifdef WF_INFO
@@ -1115,6 +1126,10 @@ void compute_frame(int rx_chan)
 	u1_t comp_in_buf[WF_WIDTH];
 	float pwr[MAX_FFT_USED];
     fft_t *fft = &WF_SHMEM->fft_inst[rx_chan];
+    
+    // don't use compression for zoom level zero because of bad interaction
+    // of narrow strong carriers with compression algorithm
+    bool use_compression = (wf->compression && wf->zoom != 0);
 		
     //TaskStat2(TSTAT_INCR|TSTAT_ZERO, 0, "frm");
 
@@ -1124,7 +1139,7 @@ void compute_frame(int rx_chan)
 	evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: FFT done");
 	//NextTask("FFT2");
 
-	u1_t *buf_p = wf->compression? out->un.buf2 : out->un.buf;
+	u1_t *buf_p = use_compression? out->un.buf2 : out->un.buf;
 	u1_t *bp = buf_p;
 			
 	if (!wf->fft_used_limit) wf->fft_used_limit = wf->fft_used;
@@ -1243,6 +1258,11 @@ void compute_frame(int rx_chan)
 			//p = pwr_out_sum[i];
 
 			dB = 10.0 * log10f(p * wf->fft_scale[i] + 1e-30F) + wf->fft_offset;
+			#if 0
+                if (i == 508) printf("Z%d ", wf->zoom);
+                if (i >= 509 && i <= 513) printf("%d ", (int) dB);
+                if (i == 514) printf("\n");
+            #endif
             #if 0
                 //jks
                 if (i == 506) printf("Z%d ", wf->zoom);
@@ -1333,7 +1353,7 @@ void compute_frame(int rx_chan)
 
 	ima_adpcm_state_t adpcm_wf;
 	
-	if (wf->compression) {
+	if (use_compression) {
 		memset(out->un.adpcm_pad, out->un.buf2[0], sizeof(out->un.adpcm_pad));
 		memset(&adpcm_wf, 0, sizeof(ima_adpcm_state_t));
 		encode_ima_adpcm_u8_e8(out->un.buf, out->un.buf, ADPCM_PAD + WF_WIDTH, &adpcm_wf);

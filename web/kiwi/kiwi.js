@@ -19,7 +19,7 @@ var kiwi = {
    queued: 0,
    
    // must match rx_cmd.cpp
-   modes_l: [ 'am', 'amn', 'usb', 'lsb', 'cw', 'cwn', 'nbfm', 'iq', 'drm', 'usn', 'lsn', 'sam', 'sal', 'sau', 'sas' ],
+   modes_l: [ 'am', 'amn', 'usb', 'lsb', 'cw', 'cwn', 'nbfm', 'iq', 'drm', 'usn', 'lsn', 'sam', 'sal', 'sau', 'sas', 'qam' ],
    modes_u: [],
    modes_s: {},
    

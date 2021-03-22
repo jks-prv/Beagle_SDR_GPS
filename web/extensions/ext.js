@@ -214,7 +214,6 @@ function ext_set_mode(mode, freq, opt)
 	var no_drm_proc = w3_opt(opt, 'no_drm_proc', false);
 	var drm_active = (typeof(drm) != 'undefined' && drm.active);
 	//console.log('$ new_drm='+ new_drm +' open_ext='+ open_ext);
-	w3_show_hide('id-chan-null', mode == 'sam');
 
    if (!no_drm_proc) {
       if (new_drm && open_ext) {

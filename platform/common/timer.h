@@ -34,9 +34,14 @@ u64_t timer_us64();
 
 time_t utc_time();
 void utc_hour_min_sec(int *hour, int *min = NULL, int *sec = NULL);
+
+time_t local_time(bool *returning_local_time = NULL);
+bool /* returning_local_time */ local_hour_min_sec(int *hour, int *min = NULL, int *sec = NULL);
+
 void time_hour_min_sec(time_t t, int *hour, int *min = NULL, int *sec = NULL);
 void utc_year_month_day(int *year, int *month = NULL, int *day = NULL);
 char *var_ctime_static(time_t *t);
 char *utc_ctime_static();
+void var_ctime_r(time_t *t, char *tb);
 void utc_ctime_r(char *tb);
 int utc_time_since_2018();

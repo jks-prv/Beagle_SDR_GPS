@@ -68,7 +68,6 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
     int         SyncTargetBin;
     int         SampleNum, Length, NumChans;
     int         x = 0, y = 0, tx=0, k=0;
-    SSTV_REAL   Hann[7][1024] = {{0}};
     SSTV_REAL   Freq = 0, InterpFreq = 0;
     //SSTV_REAL   PrevFreq = 0;
     int         NextSNRtime = 0, NextSyncTime = 0;
@@ -88,6 +87,13 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
 
     memset(e->image, 0, sizeof(image_t));
     
+    // too big to keep on stack now that stacks are smaller
+    #define HANN_J 7
+    #define HANN_I 1024
+    #define Hann(j, i) HannA[(j) * HANN_I + (i)]
+    SSTV_REAL *HannA = (SSTV_REAL *) calloc(HANN_J * HANN_I, sizeof(SSTV_REAL));
+    check(HannA != NULL);
+    
     if (!Redraw) {
         ext_send_msg(e->rx_chan, false, "EXT img_width=%d", m->ImgWidth);
         ext_send_msg_encoded(e->rx_chan, false, "EXT", "new_img", "%s", m->ShortName);
@@ -105,7 +111,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
     u2_t HannLens[7] = { 48, 64, 96, 128, 256, 512, 1024 };
     for (j = 0; j < 7; j++) {
         for (i = 0; i < HannLens[j]; i++) {
-            Hann[j][i] = 0.5 * (1 - SSTV_MCOS( (2 * M_PI * i) / (HannLens[j] - 1)) );
+            Hann(j,i) = 0.5 * (1 - SSTV_MCOS( (2 * M_PI * i) / (HannLens[j] - 1)) );
         }
         NextTask("sstv Hann");
     }
@@ -258,7 +264,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
 
     for (SampleNum = 0; SampleNum < Length; SampleNum++) {
     
-    if (e->reset) return false;
+    if (e->reset) { free(HannA); return false; }
 
     if (!Redraw) {
 
@@ -277,7 +283,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
        
             // Hann window
             for (i = 0; i < 64; i++)
-                e->fft.in1k[i] = e->pcm.Buffer[e->pcm.WindowPtr+i-32] / 32768.0 * Hann[1][i];
+                e->fft.in1k[i] = e->pcm.Buffer[e->pcm.WindowPtr+i-32] / 32768.0 * Hann(1,i);
 
             SSTV_FFTW_EXECUTE(e->fft.Plan1024);
             NextTask("sstv FFT sync");
@@ -314,7 +320,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
     
             // Apply Hann window
             for (i = 0; i < FFTLen; i++)
-                e->fft.in1k[i] = e->pcm.Buffer[e->pcm.WindowPtr + i - FFTLen/2] / 32768.0 * Hann[6][i];
+                e->fft.in1k[i] = e->pcm.Buffer[e->pcm.WindowPtr + i - FFTLen/2] / 32768.0 * Hann(6,i);
     
             SSTV_FFTW_EXECUTE(e->fft.Plan1024);
             NextTask("sstv FFT SNR");
@@ -384,7 +390,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
             
             WinLength = HannLens[WinIdx];
             for (i = 0; i < WinLength; i++)
-                e->fft.in1k[i] = e->pcm.Buffer[e->pcm.WindowPtr + i - WinLength/2] / 32768.0 * Hann[WinIdx][i];
+                e->fft.in1k[i] = e->pcm.Buffer[e->pcm.WindowPtr + i - WinLength/2] / 32768.0 * Hann(WinIdx,i);
     
             SSTV_FFTW_EXECUTE(e->fft.Plan1024);
             NextTask("sstv FFT FM");
@@ -509,5 +515,6 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
 
     } // for SampleNum
 
+    free(HannA);
     return true;
 }

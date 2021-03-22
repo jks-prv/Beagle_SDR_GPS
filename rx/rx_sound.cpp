@@ -967,6 +967,7 @@ void c2s_sound(void *param)
                         i_samps[i].re = pulse;
                         i_samps[i].im = 0;
                     }
+                    //real_printf("[CLICK-PRE]"); fflush(stdout);
                 }
             }
 
@@ -1110,7 +1111,7 @@ void c2s_sound(void *param)
 
                 // NB:
                 //      MODE_SAS/QAM stereo mode: output samples put back into a_samps
-                //      chan_null mode: in addition to r_samps output compute FFT of nulled a_samps
+                //      chan_null mode: in addition to r_samps output, compute FFT of nulled a_samps
                 wdsp_SAM_demod(rx_chan, mode, chan_null, ns_out, a_samps, r_samps);
                 if (snd->secondary_filter) {
                     //real_printf("S"); fflush(stdout);
@@ -1177,6 +1178,7 @@ void c2s_sound(void *param)
                     for (int i=0; i < nb_param[NB_CLICK][NB_PULSE_SAMPLES]; i++) {
                         r_samps[i] = pulse;
                     }
+                    //real_printf("[CLICK-POST]"); fflush(stdout);
                 }
             }
 

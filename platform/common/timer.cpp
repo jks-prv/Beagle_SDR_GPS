@@ -19,7 +19,7 @@ static void set_epoch()
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	epoch_sec = ts.tv_sec;
 	
-	time(&server_start_unix_time);
+	server_start_unix_time = utc_time();
 	
 	const char *server = background_mode? "/usr/local/bin/kiwid" : (BUILD_DIR "/kiwi.bin");
 	struct stat st;
@@ -115,8 +115,27 @@ time_t utc_time()
 
 void utc_hour_min_sec(int *hour, int *min, int *sec)
 {
-	time_t t; time(&t);
+	time_t t = utc_time();
 	time_hour_min_sec(t, hour, min, sec);
+}
+
+time_t local_time(bool *returning_local_time)
+{
+    if (returning_local_time) *returning_local_time = false;
+	time_t local = utc_time();
+    if (utc_offset != -1 && dst_offset != -1) {
+        local += utc_offset + dst_offset;
+        if (returning_local_time) *returning_local_time = true;
+    }
+	return local;
+}
+
+bool local_hour_min_sec(int *hour, int *min, int *sec)
+{
+    bool returning_local_time;
+	time_t local = local_time(&returning_local_time);
+	time_hour_min_sec(local, hour, min, sec);
+	return returning_local_time;
 }
 
 void time_hour_min_sec(time_t t, int *hour, int *min, int *sec)
@@ -129,7 +148,7 @@ void time_hour_min_sec(time_t t, int *hour, int *min, int *sec)
 
 void utc_year_month_day(int *year, int *month, int *day)
 {
-	time_t t; time(&t);
+	time_t t = utc_time();
 	struct tm tm; gmtime_r(&t, &tm);
 	if (year) *year = tm.tm_year;
 	if (month) *month = tm.tm_mon + 1;
@@ -145,15 +164,21 @@ char *var_ctime_static(time_t *t)
 
 char *utc_ctime_static()
 {
-    time_t t; time(&t);
+    time_t t = utc_time();
     char *tb = asctime(gmtime(&t));
     tb[CTIME_R_NL] = '\0';      // replace ending \n with \0
     return tb;
 }
 
+void var_ctime_r(time_t *t, char *tb)
+{
+    asctime_r(gmtime(t), tb);
+    tb[CTIME_R_NL] = '\0';      // replace ending \n with \0
+}
+
 void utc_ctime_r(char *tb)
 {
-    time_t t; time(&t);
+    time_t t = utc_time();
     asctime_r(gmtime(&t), tb);
     tb[CTIME_R_NL] = '\0';      // replace ending \n with \0
 }

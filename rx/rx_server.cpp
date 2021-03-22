@@ -68,6 +68,7 @@ rx_stream_t rx_streams[] = {
 	{ AJAX_PHOTO,		"PIX" },
 	{ AJAX_STATUS,		"status" },
 	{ AJAX_USERS,		"users" },
+	{ AJAX_SNR,         "snr" },
 #endif
 	{ 0 }
 };
@@ -240,6 +241,7 @@ void rx_server_init()
 {
 	int i, j;
 	
+	printf("RX N_CONNS %d\n", N_CONNS);
 	conn_t *c = conns;
 	for (i=0; i<N_CONNS; i++) {
 		conn_init(c);
@@ -442,6 +444,14 @@ void rx_stream_tramp(void *param)
 	(conn->task_func)(param);
 }
 
+//#define CONN_PRINTF
+#ifdef CONN_PRINTF
+	#define conn_printf(fmt, ...) \
+		printf(fmt, ## __VA_ARGS__)
+#else
+	#define conn_printf(fmt, ...)
+#endif
+
 // if this connection is new, spawn new receiver channel with sound/waterfall tasks
 conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 {
@@ -455,7 +465,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
         
         if (c->magic != CN_MAGIC || !c->valid || mc != c->mc || mc->remote_port != c->remote_port) {
             if (mode != WS_MODE_ALLOC && !internal) return NULL;
-        #if 0
+        #ifdef CONN_PRINTF
             lprintf("rx_server_websocket(%s): BAD CONN MC PARAM\n", (mode == WS_MODE_LOOKUP)? "lookup" : "alloc");
             lprintf("rx_server_websocket: (mc=%p == mc->c->mc=%p)? mc->c=%p mc->c->valid %d mc->c->magic=0x%x CN_MAGIC=0x%x mc->c->rport=%d\n",
                 mc, c->mc, c, c->valid, c->magic, CN_MAGIC, c->remote_port);
@@ -485,7 +495,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	// new connection needed
 	const char *uri_ts = mc->uri;
 	if (uri_ts[0] == '/') uri_ts++;
-	//printf("#### new connection: %s:%d %s\n", mc->remote_ip, mc->remote_port, uri_ts);
+	conn_printf("#### new connection: %s:%d %s\n", mc->remote_ip, mc->remote_port, uri_ts);
 	
 	bool isKiwi_UI = false, isNo_WF = false, isWF_conn = false;
 	u64_t tstamp;
@@ -541,9 +551,9 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
         return NULL;
     
 	if (down || update_in_progress || backup_in_progress) {
-		//printf("down=%d UIP=%d stream=%s\n", down, update_in_progress, st->uri);
+		conn_printf("down=%d UIP=%d stream=%s\n", down, update_in_progress, st->uri);
 
-        //printf("URL <%s> <%s> %s\n", mc->uri, mc->query_string, remote_ip);
+        conn_printf("URL <%s> <%s> %s\n", mc->uri, mc->query_string, remote_ip);
         if (auth_su && strcmp(remote_ip, auth_su_remote_ip) == 0) {
             struct stat _st;
             if (stat(DIR_CFG "/opt.no_console", &_st) == 0)
@@ -598,7 +608,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 		}
 	}
 	
-	//printf("CONN LOOKING for free conn for type=%d(%s) ip=%s:%d mc=%p\n", st->type, st->uri, remote_ip, mc->remote_port, mc);
+	conn_printf("CONN LOOKING for free conn for type=%d(%s) ip=%s:%d mc=%p\n", st->type, st->uri, remote_ip, mc->remote_port, mc);
 	bool multiple = false;
 	int cn, cnfree;
 	conn_t *cfree = NULL, *cother = NULL;
@@ -621,19 +631,21 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			continue;
 		}
 		
-		//printf("CONN-%d IS %p type=%d(%s) tstamp=%lld ip=%s:%d rx=%d auth=%d other%s%ld mc=%p\n", cn, c, c->type, rx_streams[c->type].uri, c->tstamp,
-		//    c->remote_ip, c->remote_port, c->rx_channel, c->auth, c->other? "=CONN-":"=", c->other? c->other-conns:0, c->mc);
+		conn_printf("CONN-%d IS %p type=%d(%s) tstamp=%lld ip=%s:%d rx=%d auth=%d other%s%ld mc=%p\n", cn, c, c->type, rx_streams[c->type].uri, c->tstamp,
+		    c->remote_ip, c->remote_port, c->rx_channel, c->auth, c->other? "=CONN-":"=", c->other? c->other-conns:0, c->mc);
 		if (c->tstamp == tstamp && (strcmp(remote_ip, c->remote_ip) == 0)) {
 			if (snd_or_wf && c->type == st->type) {
-				//printf("CONN-%d DUPLICATE!\n", cn);
+				conn_printf("CONN-%d DUPLICATE!\n", cn);
 				return NULL;
 			}
 			if (st->type == STREAM_SOUND && (c->type == STREAM_WATERFALL || c->type == STREAM_MONITOR)) {
 				if (!multiple) {
 					cother = c;
 					multiple = true;
-					//printf("NEW SND, OTHER is %s @ CONN-%d\n", rx_streams[c->type].uri, cn);
-					//dump_conn();
+					#ifdef CONN_PRINTF
+					    conn_printf("NEW SND, OTHER is %s @ CONN-%d\n", rx_streams[c->type].uri, cn);
+					    dump_conn();
+					#endif
 				} else {
 					printf("NEW SND, MULTIPLE OTHERS!\n");
 					return NULL;
@@ -643,8 +655,10 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 				if (!multiple) {
 					cother = c;
 					multiple = true;
-					//printf("NEW WF, OTHER is %s @ CONN-%d\n", rx_streams[c->type].uri, cn);
-					//dump_conn();
+					#ifdef CONN_PRINTF
+					    conn_printf("NEW WF, OTHER is %s @ CONN-%d\n", rx_streams[c->type].uri, cn);
+					    dump_conn();
+					#endif
 				} else {
 					printf("NEW WF, MULTIPLE OTHERS!\n");
 					return NULL;
@@ -661,7 +675,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			cn = cnfree;
 			assert(cn >= 0);    // keep static analyzer quiet
 		} else {
-			//printf("(too many network connections open for %s)\n", st->uri);
+			conn_printf("(too many network connections open for %s)\n", st->uri);
 			if (st->type != STREAM_WATERFALL && !internal)
 			    send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
 			return NULL;
@@ -679,9 +693,9 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 		if (!cother) {
 		    rx_free_count_e flags = ((isKiwi_UI || isWF_conn) && !isNo_WF)? RX_COUNT_ALL : RX_COUNT_NO_WF_FIRST;
 			int inuse = rx_chans - rx_chan_free_count(flags, &rx, &heavy);
-            //printf("%s cother=%p isKiwi_UI=%d isWF_conn=%d isNo_WF=%d inuse=%d/%d use_rx=%d heavy=%d locked=%d %s\n",
-            //    st->uri, cother, isKiwi_UI, isWF_conn, isNo_WF, inuse, rx_chans, rx, heavy, is_locked,
-            //    (flags == RX_COUNT_ALL)? "RX_COUNT_ALL" : "RX_COUNT_NO_WF_FIRST");
+            conn_printf("%s cother=%p isKiwi_UI=%d isWF_conn=%d isNo_WF=%d inuse=%d/%d use_rx=%d heavy=%d locked=%d %s\n",
+                st->uri, cother, isKiwi_UI, isWF_conn, isNo_WF, inuse, rx_chans, rx, heavy, is_locked,
+                (flags == RX_COUNT_ALL)? "RX_COUNT_ALL" : "RX_COUNT_NO_WF_FIRST");
             
             if (is_locked) {
                 if (inuse == 0) {
@@ -691,7 +705,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
                     printf("DRM nreg_chans=%d inuse=%d heavy=%d (is_locked=1)\n", drm_nreg_chans, inuse, heavy);
                     if (inuse > drm_nreg_chans) {
                         printf("DRM (locked for exclusive use %s)\n", st->uri);
-                        send_msg_mc(mc, SM_NO_DEBUG, "MSG exclusive_use");
+                        if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG exclusive_use");
                         mc->connection_param = NULL;
                         conn_init(c);
                         return NULL;
@@ -709,8 +723,8 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
                     st = &rx_streams[STREAM_MONITOR];
                     snd_or_wf = false;
                 } else {
-                    //printf("(too many rx channels open for %s)\n", st->uri);
-                    send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
+                    conn_printf("(too many rx channels open for %s)\n", st->uri);
+                    if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
                     mc->connection_param = NULL;
                     conn_init(c);
                     return NULL;
@@ -720,8 +734,8 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
             
                     // Kiwi UI handles no-WF condition differently -- don't send error
                     if (!isKiwi_UI) {
-                        //printf("(case 1: too many wf channels open for %s)\n", st->uri);
-                        send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
+                        conn_printf("(case 1: too many wf channels open for %s)\n", st->uri);
+                        if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
                         mc->connection_param = NULL;
                         conn_init(c);
                         return NULL;
@@ -730,15 +744,15 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
             }
 			
 			if (rx != -1) {
-			    //printf("CONN-%d no other, new alloc rx%d\n", cn, rx);
+			    conn_printf("CONN-%d no other, new alloc rx%d\n", cn, rx);
 			    rx_channels[rx].busy = true;
 			}
 		} else {
-            //printf("### %s cother=%p isKiwi_UI=%d isNo_WF=%d isWF_conn=%d\n",
-            //    st->uri, cother, isKiwi_UI, isNo_WF, isWF_conn);
+            conn_printf("### %s cother=%p isKiwi_UI=%d isNo_WF=%d isWF_conn=%d\n",
+                st->uri, cother, isKiwi_UI, isNo_WF, isWF_conn);
 
             if (cother->type == STREAM_MONITOR) {   // sink second connection
-                //printf("STREAM_MONITOR sink conn-%ld other conn-%d\n", c-conns, cother->self_idx);
+                conn_printf("STREAM_MONITOR sink conn-%ld other conn-%d\n", c-conns, cother->self_idx);
                 mc->connection_param = NULL;
                 conn_init(c);
                 return NULL;
@@ -748,7 +762,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 
 				// Kiwi UI handles no-WF condition differently -- don't send error
 				if (!isKiwi_UI) {
-                    //printf("(case 2: too many wf channels open for %s)\n", st->uri);
+                    conn_printf("(case 2: too many wf channels open for %s)\n", st->uri);
                     mc->connection_param = NULL;
                     conn_init(c);
                     return NULL;
@@ -778,7 +792,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	c->arrival = timer_sec();
 	c->isWF_conn = !isNo_WF;
 	clock_conn_init(c);
-	//printf("NEW channel RX%d\n", c->rx_channel);
+	conn_printf("NEW channel RX%d\n", c->rx_channel);
 	
 	if (st->f != NULL) {
 		c->task_func = st->f;
@@ -793,7 +807,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 		c->task = id;
 	}
 	
-	//printf("CONN-%d <=== USE THIS ONE\n", cn);
+	conn_printf("CONN-%d <=== USE THIS ONE\n", cn);
 	c->valid = true;
 	return c;
 }

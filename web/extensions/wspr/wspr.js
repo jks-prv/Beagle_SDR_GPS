@@ -508,9 +508,9 @@ function wspr_config_html()
                   'If Kiwi has been configured for a mix of channels with and without waterfalls then channels without waterfalls will be used first.<br><br>' +
                   
                   'Spot decodes are available in the Kiwi log (use "Log" tab above) and are listed on <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a><br>' +
-                  'The three fields above must be set to valid values for proper spot entry into the <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a> database.'),
+                  'The "Reporter" fields above must be set to valid values for proper spot entry into the <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a> database.'),
                w3_div('w3-text-red w3-margin-bottom',
-                  'Must restart the KiwiSDR server for changes to have effect. Unaffected by user enable setting above.'),
+                  'Must restart the KiwiSDR server for changes to have effect. Unaffected by "User enabled?" setting above.'),
                w3_div('id-wspr-admin-autorun')
             )
          )

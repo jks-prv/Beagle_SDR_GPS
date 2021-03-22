@@ -121,7 +121,11 @@ alias lt="function _lt () { /bin/ls \$COLOR -lath \$* ; } ; _lt"
 alias ldt="function _ldt () { /bin/ls \$COLOR -ladth \$* ; } ; _ldt"
 
 # grep
-# to grep with embedded spaces on Debian now need: g 'text1[[:space:]]text2'
+sp="[[:space:]]"
+# to grep with embedded spaces on Debian now need:
+#   g 'text1[[:space:]]text2'
+# or
+#   g text1${sp}text2
 #
 d_gr_exclude="--exclude-dir .git --exclude-dir .svn --exclude-dir ./web/pkgs_maps/leaflet ${no_grep}"
 alias grep="grep \$COLOR"
