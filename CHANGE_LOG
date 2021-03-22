@@ -2,6 +2,31 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.443  March 22, 2021
+    Added automatic SNR measurement:
+        Every 6 hours (4 times daily) a Kiwi will connect to a free channel (if available)
+        and measure its own SNR. These results are available in JSON format from the
+        URL: my_kiwi:8073/snr (adjust Kiwi name and port number as required).
+        This URL is publicly accesible. Disable on the admin page, control tab if you
+        don't want to share this information.
+        
+        The measurement details can be easily changed. Suggestions welcome.
+        SNR is currently defined in the same way as used by the sites snr.kiwisdr.com
+        and snr2.kiwisdr.com, i.e. waterfall dBm values, sorted, noise = 50th percentile
+        value (median), signal = 95th percentile value, SNR = signal - noise.
+        Two measurement bands are recorded: 0-30 MHz and 1.8-30 MHz in an attempt to
+        filter out the AM BCB. The JSON data also contains min/max dBm values and a
+        timestamp (local time unless the "UTC" value is set).
+    
+    Added "reload page" button to queueing panel ("camp" parameter is removed from URL)
+        Use to quickly access any Kiwi redirection that might be available.
+
+    Autoscale button and aperture auto mode now disregard masked areas from calculations.
+
+    Admin page UI changes:
+        GPS RSSI now red color for sats not actually acquired (i.e. no subframe decoding)
+        Registration now requires a valid location field (for benefit of map.kiwisdr.com)
+
 v1.442  March 16, 2021
     Audio camping improvements & bug fixes:
         Added S-meter.
