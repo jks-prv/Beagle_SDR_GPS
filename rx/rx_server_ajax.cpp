@@ -197,6 +197,7 @@ char *rx_server_ajax(struct mg_connection *mc)
         	bool need_comma2 = false;
 			for (j = 0; j < SNR_MEAS_NDATA; j++) {
         		SNR_data_t *data = &meas->data[j];
+        		if (data->f_lo == 0 && data->f_hi == 0) continue;
 				asprintf(&sb2, "%s{\"lo\":%d,\"hi\":%d,\"min\":%d,\"max\":%d,\"p50\":%d,\"p95\":%d,\"snr\":%d}",
 					need_comma2? ",":"", data->f_lo, data->f_hi,
 					data->min, data->max, data->pct_50, data->pct_95, data->snr);
