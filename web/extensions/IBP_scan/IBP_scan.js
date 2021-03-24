@@ -148,7 +148,8 @@ function ibp_controls_setup() {
    var cookie = readCookie('mindb_band');
    if ( cookie )
       {
-      mindb_band = JSON.parse(cookie);
+      var obj = kiwi_JSON_parse('ibp_controls_setup', cookie);
+      if (obj) mindb_band = obj;
       }
 
    ibp_run = true;

@@ -935,7 +935,8 @@ function public_update(p)
 	var i;
 	var json = decodeURIComponent(p);
 	//console.log('public_update='+ json);
-	admin.reg_status = JSON.parse(json);
+   var obj = kiwi_JSON_parse('public_update', json);
+	if (obj) admin.reg_status = obj;
 	
 	// rx.kiwisdr.com registration status
 	if (adm.kiwisdr_com_register && admin.reg_status.kiwisdr_com != undefined && admin.reg_status.kiwisdr_com != '') {

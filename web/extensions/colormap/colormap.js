@@ -300,15 +300,18 @@ function colormap_select()
    if (which != -1) {
       //console.log('LOAD '+ s);
       if (s != null) {
-         cmap.save = JSON.parse(s);
-         if (cmap.transfer_canvas) {
-            var cm = cmap.save['cm'+ which];
-            colormap_color_gain_cb('cmap.gain_red', cm.r.gain_slider, 1, false, 0);
-            colormap_color_gain_cb('cmap.gain_green', cm.g.gain_slider, 1, false, 1);
-            colormap_color_gain_cb('cmap.gain_blue', cm.b.gain_slider, 1, false, 2);
-         } else {
-            // if called without colormap ext open only update wf colormap
-            colormap_update_wf_colormap();
+         var obj = kiwi_JSON_parse('colormap_select', s);
+         if (obj) {
+            cmap.save = obj;
+            if (cmap.transfer_canvas) {
+               var cm = cmap.save['cm'+ which];
+               colormap_color_gain_cb('cmap.gain_red', cm.r.gain_slider, 1, false, 0);
+               colormap_color_gain_cb('cmap.gain_green', cm.g.gain_slider, 1, false, 1);
+               colormap_color_gain_cb('cmap.gain_blue', cm.b.gain_slider, 1, false, 2);
+            } else {
+               // if called without colormap ext open only update wf colormap
+               colormap_update_wf_colormap();
+            }
          }
       }
    }

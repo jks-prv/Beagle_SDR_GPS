@@ -500,6 +500,33 @@ function kiwi_UTCdoyToDate(doy, year, hour, min, sec)
    return new Date(Date.UTC(year, 0, doy, hour, min, sec));    // yes, doy = 1..366 really works!
 }
 
+function kiwi_decodeURIComponent(tag, uri)
+{
+   var obj;
+   try {
+      obj = decodeURIComponent(uri);
+   } catch(ex) {
+      console.log('kiwi_decodeURIComponent('+ tag +'): decode URI component fail');
+      console.log(uri);
+      console.log(ex);
+      obj = null;
+   }
+   return obj;
+}
+
+function kiwi_JSON_parse(tag, json)
+{
+   var obj;
+   try {
+      obj = JSON.parse(json);
+   } catch(ex) {
+      console.log('kiwi_JSON_parse('+ tag +'): JSON parse fail');
+      console.log(json);
+      console.log(ex);
+      obj = null;
+   }
+   return obj;
+}
 
 
 ////////////////////////////////

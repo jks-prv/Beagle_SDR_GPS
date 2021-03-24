@@ -248,25 +248,11 @@ function drm_recv(data)
 			   if (!drm.run || !drm.desktop)
 			      break;
 
-			   var deco;
-			   try {
-			      deco = decodeURIComponent(param[1]);
-			   } catch(ex) {
-			      console.log('DRM decodeURIComponent(param) FAIL:');
-			      console.log(ex);
-			      console.log(param[1]);
-			      break;
-			   }
+			   var deco = kiwi_decodeURIComponent('drm_status_cb', param[1]);
+            if (!deco) break;
 
-			   var o;
-			   try {
-			      o = JSON.parse(deco);
-			   } catch(ex) {
-			      console.log('DRM JSON.parse(deco) FAIL:');
-			      console.log(ex);
-			      console.log(deco);
-			      break;
-			   }
+            var o = kiwi_JSON_parse('drm_status_cb', deco);
+            if (!o) break;
 
             drm_all_status(o.io, o.time, o.frame, o.FAC, o.SDC, o.MSC);
 

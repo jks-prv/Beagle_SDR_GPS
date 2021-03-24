@@ -498,7 +498,8 @@ function audio_disconnect()
    }
    if (audio_panner) {
       audio_panner.disconnect();
-      audio_panner = null;
+      // the panner is not a script processor
+      // so it is not recreated and should not be set null here
    }
 }
 

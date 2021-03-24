@@ -546,6 +546,19 @@ function w3_innerHTML(id)
 	return el;
 }
 
+function w3_append_innerHTML(id)
+{
+	var el = w3_el(id);
+	if (!el) return null;
+	var s = '';
+	var narg = arguments.length;
+   for (var i=1; i < narg; i++) {
+      s += arguments[i];
+   }
+	el.innerHTML += s;
+	return el;
+}
+
 function w3_get_innerHTML(id)
 {
 	var el = w3_el(id);
@@ -571,7 +584,7 @@ function w3_iterate_classList(el_id, func)
 	return el;
 }
 
-function w3_appendElement(el_parent, el_type, html)
+function w3_create_appendElement(el_parent, el_type, html)
 {
    var el_child = document.createElement(el_type);
    w3_innerHTML(el_child, html);

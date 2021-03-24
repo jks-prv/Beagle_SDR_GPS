@@ -2,6 +2,14 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.445  March 24, 2021
+    SNR measurement:
+        Take transverter frequency offset into account.
+        Display SNR value(s) on user (top bar) and admin pages (status tab).
+
+    Added SAM PLL loop control to audio tab.
+        Has a slow loop setting "DX" that can be used to better track weak stations.
+
 v1.444  March 23, 2021
     Include two most recent SNR values in /status query. This implies all the SNR values
         for public Kiwis will be aggregated in the rx.kiwisdr.com/index.html file

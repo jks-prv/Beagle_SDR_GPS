@@ -667,6 +667,9 @@ void SNR_meas(void *param)
                 } while (n);
                 TaskSleepMsec(1000 / WF_SPEED_FAST);
             }
+            
+            double ui_srate_kHz = round(ui_srate/1e3);
+            int f_lo = freq_offset, f_hi = freq_offset + ui_srate_kHz;
 
             len = 0;
             for (i = 0; i < WF_WIDTH; i++) {
@@ -677,7 +680,7 @@ void SNR_meas(void *param)
             }
             qsort(dB, len, sizeof(int), qsort_intcomp);
             data = &meas->data[SNR_MEAS_ALL];
-            data->f_lo = 0; data->f_hi = 30000;
+            data->f_lo = f_lo; data->f_hi = f_hi;
             data->min = dB[0]; data->max = dB[len-1];
             data->pct_95 = 95;
             data->pct_50 = median_i(dB, len, &data->pct_95);
@@ -686,23 +689,27 @@ void SNR_meas(void *param)
             //printf("SNR all: len=%d [%d,%d] noise(50%)=%d signal(95%)=%d snr=%d\n",
             //    len, data->min, data->max, data->pct_50, data->pct_95, data->snr);
 
-            len = 0;
-            int start = (float) WF_WIDTH * 1.8 / 30;
-            for (i = (int) start; i < WF_WIDTH; i++) {
-                if (dB_raw[i] <= -190) continue;   // disregard masked areas
-                dB[len] = dB_raw[i];
-                len++;
-            }
-            qsort(dB, len, sizeof(int), qsort_intcomp);
+            // only measure HF if no transverter frequency offset has been set
             data = &meas->data[SNR_MEAS_HF];
-            data->f_lo = 1800; data->f_hi = 30000;
-            data->min = dB[0]; data->max = dB[len-1];
-            data->pct_95 = 95;
-            data->pct_50 = median_i(dB, len, &data->pct_95);
-            data->snr = data->pct_95 - data->pct_50;
-            snr_HF = data->snr;
-            //printf("SNR HF: len=%d [%d,%d] noise(50%)=%d signal(95%)=%d snr=%d\n",
-            //    len, data->min, data->max, data->pct_50, data->pct_95, data->snr);
+            memset(data, 0, sizeof(*data));
+            if (f_lo == 0) {
+                len = 0;
+                int start = (float) WF_WIDTH * 1800.0 / ui_srate_kHz;
+                for (i = (int) start; i < WF_WIDTH; i++) {
+                    if (dB_raw[i] <= -190) continue;   // disregard masked areas
+                    dB[len] = dB_raw[i];
+                    len++;
+                }
+                qsort(dB, len, sizeof(int), qsort_intcomp);
+                data->f_lo = 1800; data->f_hi = ui_srate_kHz;
+                data->min = dB[0]; data->max = dB[len-1];
+                data->pct_95 = 95;
+                data->pct_50 = median_i(dB, len, &data->pct_95);
+                data->snr = data->pct_95 - data->pct_50;
+                snr_HF = data->snr;
+                //printf("SNR HF: len=%d [%d,%d] noise(50%)=%d signal(95%)=%d snr=%d\n",
+                //    len, data->min, data->max, data->pct_50, data->pct_95, data->snr);
+            }
 
             meas->valid = true;
             rx_server_websocket(WS_MODE_CLOSE, &iconn.wf_mc);

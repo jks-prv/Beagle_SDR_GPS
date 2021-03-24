@@ -4,6 +4,7 @@
 
 void wdsp_SAM_demod_init();
 void wdsp_SAM_reset(int rx_chan);
+void wdsp_SAM_PLL(int type);
 f32_t wdsp_SAM_carrier(int rx_chan);
 enum chan_null_e { CHAN_NULL_NONE, CHAN_NULL_LSB, CHAN_NULL_USB };
 void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *in, TYPEMONO16 *out);
