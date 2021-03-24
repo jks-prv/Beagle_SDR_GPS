@@ -834,7 +834,7 @@ var extint_names;
 
 function extint_list_json(param)
 {
-	extint_names = JSON.parse(decodeURIComponent(param));
+   extint_names = kiwi_JSON_parse('extint_list_json', decodeURIComponent(param));
 	//console.log('extint_names=');
 	//console.log(extint_names);
 }

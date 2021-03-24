@@ -1627,14 +1627,13 @@ function tdoa_submit_status_new_cb(no_rerun_files)
                err = 'status file missing';
                okay = 1;
             } else {
-               try {
-                  var nj = j.response;
-                  nj = nj.replace(/\n/g, '');
-                  j = JSON.parse(nj);
+               var nj = j.response.replace(/\n/g, '');
+               j = kiwi_JSON_parse('tdoa_submit_status_new_cb', nj);
+               if (j) {
                   //console.log('JSON re-parse worked');
                   //console.log(j);
                   okay = 0;
-               } catch(ex) {
+               } else {
                   //console.log('JSON re-parse failed');
                   err = 'status JSON parse error';
                   okay = 2;
@@ -1823,14 +1822,8 @@ function tdoa_protocol_response_cb(json)
          json += '}';
       }
       //console.log(json);
-      try {
-         obj = JSON.parse(json);
-      } catch(ex) {
-         console.log('JSON parse error');
-         console.log(ex);
-         console.log(json);
-         return;
-      }
+      obj = kiwi_JSON_parse('tdoa_protocol_response_cb', json);
+      if (!obj) return;
    } else
       obj = json;
    //console.log(obj);

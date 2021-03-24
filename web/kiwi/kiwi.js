@@ -703,11 +703,14 @@ function pref_import_cb(p, ch)
 		pref_status('yellow', 'no preferences previously exported');
 		return;
 	} else {
-		pref = JSON.parse(s);
-		console.log(pref);
-		pref_save();
-		pref_refresh_ui();
-		pref_status('lime', 'preferences successfully imported from RX'+ ch);
+		var obj = kiwi_JSON_parse('pref_import_cb', s);
+		if (obj) {
+		   pref = obj;
+         console.log(pref);
+         pref_save();
+         pref_refresh_ui();
+         pref_status('lime', 'preferences successfully imported from RX'+ ch);
+      }
 	}
 }
 
@@ -720,7 +723,8 @@ function pref_load(cb)
 		if (d.value == null) {
 			pref = pref_default;
 		} else {
-			pref = JSON.parse(d.value);
+         var obj = kiwi_JSON_parse('pref_load', d.value);
+         if (obj) pref = obj;
 		}
 		console.log(pref);
 		if (cb) cb();
@@ -797,7 +801,7 @@ function kiwi_output_msg(id, id_scroll, p)
 	}
 	
    if (!p.init) {
-      p.el = w3_appendElement(parent_el, 'pre', '');
+      p.el = w3_create_appendElement(parent_el, 'pre', '');
       p.esc = { s:'', state:0 };
       p.sgr = { span:0, bright:0, fg:null, bg:null };
       p.init = true;
@@ -832,7 +836,7 @@ function kiwi_output_msg(id, id_scroll, p)
 		   while (parent_el.firstChild) {
 		      parent_el.removeChild(parent_el.firstChild);
 		   }
-         p.el = w3_appendElement(parent_el, 'pre', '');
+         p.el = w3_create_appendElement(parent_el, 'pre', '');
          p.tstr = snew = '';
 			p.col = 0;
 		} else
@@ -1086,7 +1090,7 @@ function kiwi_output_msg(id, id_scroll, p)
                p.el.innerHTML = p.tstr;
                //console.log('TEXT '+ JSON.stringify(p.tstr));
                p.tstr = snew = '';
-               p.el = w3_appendElement(parent_el, 'pre', '');
+               p.el = w3_create_appendElement(parent_el, 'pre', '');
                p.col = 0;
             
                if (w3_contains(el_scroll, 'w3-scroll-down') && (!p.scroll_only_at_bottom || (p.scroll_only_at_bottom && wasScrolledDown)))
@@ -1772,14 +1776,14 @@ function kiwi_msg(param, ws)
 		case "load_cfg":
 			var cfg_json = decodeURIComponent(param[1]);
 			//console.log('### load_cfg '+ ws.stream +' '+ cfg_json.length);
-			cfg = JSON.parse(cfg_json);
+			cfg = kiwi_JSON_parse('load_cfg', cfg_json);
 			owrx_cfg();
 			break;
 
 		case "load_adm":
 			var adm_json = decodeURIComponent(param[1]);
 			//console.log('### load_adm '+ ws.stream +' '+ adm_json.length);
-			adm = JSON.parse(adm_json);
+			adm = kiwi_JSON_parse('load_adm', adm_json);
 			break;
 
 		case "request_dx_update":
@@ -1788,48 +1792,57 @@ function kiwi_msg(param, ws)
 
 		case "mkr":
 			//console.log('MKR '+ param[1]);
-			dx_label_cb(JSON.parse(param[1]));
+			var obj = kiwi_JSON_parse('mkr', param[1]);
+			if (obj) dx_label_cb(obj);
 			break;					
 
 		case "user_cb":
 			//console.log('user_cb='+ param[1]);
-			user_cb(JSON.parse(param[1]));
+			var obj = kiwi_JSON_parse('user_cb', param[1]);
+			if (obj) user_cb(obj);
 			break;					
 
 		case "config_cb":
 			//console.log('config_cb='+ param[1]);
-			var o = JSON.parse(param[1]);
-			config_cb(o.r, o.g, o.s, o.pu, o.pe, o.pv, o.pi, o.n, o.m, o.v1, o.v2, o.ai);
+			var o = kiwi_JSON_parse('config_cb', param[1]);
+			if (o) config_cb(o.r, o.g, o.s, o.pu, o.pe, o.pv, o.pi, o.n, o.m, o.v1, o.v2, o.ai);
 			break;					
 
 		case "update_cb":
 			//console.log('update_cb='+ param[1]);
-			var o = JSON.parse(param[1]);
-			update_cb(o.f, o.p, o.i, o.r, o.g, o.v1, o.v2, o.p1, o.p2,
+			var o = kiwi_JSON_parse('update_cb', param[1]);
+			if (o) update_cb(o.f, o.p, o.i, o.r, o.g, o.v1, o.v2, o.p1, o.p2,
 				decodeURIComponent(o.d), decodeURIComponent(o.t));
 			break;					
 
 		case "stats_cb":
 			//console.log('stats_cb='+ param[1]);
-			try {
-				var o = JSON.parse(param[1]);
+			var o = kiwi_JSON_parse('stats_cb', param[1]);
+			if (o) {
 				//console.log(o);
 				if (o.ce != undefined)
 				   cpu_stats_cb(o, o.ct, o.ce, o.fc);
 				xfer_stats_cb(o.ac, o.wc, o.fc, o.ah, o.as);
 				extint_srate = o.sr;
+
 				gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);
 				if (o.gr) {
 				   kiwi.WSPR_rgrid = decodeURIComponent(o.gr);
 				   kiwi.GPS_fixes = o.gf;
 				   //console.log('stat kiwi.WSPR_rgrid='+ kiwi.WSPR_rgrid);
 				}
+				
+				if (o.sh == -1) {
+				   // only show single SNR when transverter frequency offset
+               w3_innerHTML('id-rx-snr', ', SNR ', o.sa, ' dB');
+               w3_innerHTML('id-msg-snr', 'SNR: All ', o.sa, ' dB');
+				} else {
+               w3_innerHTML('id-rx-snr', ', SNR ', o.sa, ':', o.sh, ' dB');
+               w3_innerHTML('id-msg-snr', 'SNR: All ', o.sa, ' dB, HF ', o.sh, ' dB');
+				}
+
 				admin_stats_cb(o.ad, o.au, o.ae, o.ar, o.an, o.ap, o.an2, o.ai);
 				time_display_cb(o);
-			} catch(ex) {
-				console.log('<'+ param[1] +'>');
-				console.log('kiwi_msg() stats_cb: JSON parse fail');
-				console.log(ex);
 			}
 			break;					
 

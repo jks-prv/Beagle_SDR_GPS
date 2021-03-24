@@ -42,27 +42,23 @@ struct wdsp_SAM_t {
 
     f32_t SAM_carrier;
     f32_t SAM_lowpass;
-    
-    //CFir m_QAM_HPF_FIR[NIQ];
 };
 
 static wdsp_SAM_t wdsp_SAM[MAX_RX_CHANS];
 
-static const f32_t pll_fmax = +22000.0;
-static const int zeta_help = 65;
-static const f32_t zeta = (f32_t) zeta_help / 100.0; // PLL step response: smaller, slower response 1.0 - 0.1
-static const f32_t omegaN = 200.0; // PLL bandwidth 50.0 - 1000.0
-
 // pll
+static const f32_t pll_fmax = +22000.0;
 static f32_t omega_min;
 static f32_t omega_max;
+static f32_t zeta;          // PLL step response: smaller, slower response 1.0 - 0.1
+static f32_t omegaN;        // PLL bandwidth 50.0 - 1000.0
 static f32_t g1;
 static f32_t g2;
 
 // fade leveler
 #define FADE_LEVELER 1
-static const f32_t tauR = 0.02; // original 0.02;
-static const f32_t tauI = 1.4; // original 1.4;
+static const f32_t tauR = 0.02;
+static const f32_t tauI = 1.4;
 static f32_t mtauR;
 static f32_t onem_mtauR;
 static f32_t mtauI;
@@ -91,23 +87,49 @@ static const f32_t c1[SAM_PLL_HILBERT_STAGES] = {
     -0.999282492800792
 };
 
+
+// DX adjustments: zeta = 0.15, omegaN = 100.0
+// very stable, but does not lock very fast
+// standard settings: zeta = 1.0, omegaN = 250.0
+// maybe user can choose between slow (DX), medium, fast SAM PLL
+// zeta / omegaN
+// DX = 0.2, 70
+// medium 0.6, 200
+// fast 1.2, 500
+
+const int PLL_DX = 0, PLL_MED = 1, PLL_FAST = 2;
+
+void wdsp_SAM_PLL(int type)
+{
+    switch (type) {
+    
+    case PLL_DX:
+        zeta = 0.2;
+        omegaN = 70;
+        break;
+    
+    case PLL_MED:
+        zeta = 0.65;
+        omegaN = 200.0;
+        break;
+    
+    case PLL_FAST:
+        zeta = 1.0;
+        omegaN = 500;
+        break;
+    }
+
+    //printf("SAM_PLL zeta=%.2f omegaN=%.0f\n", zeta, omegaN);
+    g1 = 1.0 - expf(-2.0 * omegaN * zeta / snd_rate);
+    g2 = - g1 + 2.0 * (1 - expf(- omegaN * zeta / snd_rate) * cosf(omegaN / snd_rate * sqrtf(1.0 - zeta * zeta)));
+}
+
 void wdsp_SAM_demod_init()
 {
-    // DX adjustments: zeta = 0.15, omegaN = 100.0
-    // very stable, but does not lock very fast
-    // standard settings: zeta = 1.0, omegaN = 250.0
-    // maybe user can choose between slow (DX), medium, fast SAM PLL
-    // zeta / omegaN
-    // DX = 0.2, 70
-    // medium 0.6, 200
-    // fast 1.2, 500
-    //f32_t zeta = 0.8; // PLL step response: smaller, slower response 1.0 - 0.1
-    //f32_t omegaN = 250.0; // PLL bandwidth 50.0 - 1000.0
+    wdsp_SAM_PLL(PLL_MED);
 
     omega_min = K_2PI * (-pll_fmax) / snd_rate;
     omega_max = K_2PI * pll_fmax / snd_rate;
-    g1 = 1.0 - expf(-2.0 * omegaN * zeta / snd_rate);
-    g2 = - g1 + 2.0 * (1 - expf(- omegaN * zeta / snd_rate) * cosf(omegaN / snd_rate * sqrtf(1.0 - zeta * zeta)));
 
     mtauR = expf(-1 / (snd_rate * tauR));
     onem_mtauR = 1.0 - mtauR;
@@ -119,18 +141,13 @@ void wdsp_SAM_reset(int rx_chan)
 {
     wdsp_SAM_t *w = &wdsp_SAM[rx_chan];
     memset(w, 0, sizeof(wdsp_SAM_t));
-
-#if 0
-    float frate = ext_update_get_sample_rateHz(rx_chan);
-    int taps = w->m_QAM_HPF_FIR[I].InitHPFilter(0, 1.0, 50.0, 75.0, 25.0, frate);
-    w->m_QAM_HPF_FIR[Q].InitHPFilter(0, 1.0, 50.0, 75.0, 25.0, frate);
-    printf("QAM_HPF_FIR taps = %d\n", taps);
-#endif
 }
 
 f32_t wdsp_SAM_carrier(int rx_chan)
 {
-    return wdsp_SAM[rx_chan].SAM_carrier;
+    f32_t carrier = wdsp_SAM[rx_chan].SAM_carrier;
+    if (isnan(carrier)) carrier = 0;
+    return carrier;
 }
 
 void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *in, TYPEMONO16 *out)
@@ -292,7 +309,7 @@ void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *i
         static u4_t last;
         u4_t now = timer_sec();
         if (last != now) {
-            printf("car %.1f Hz, err %.3f rad\n", w->SAM_carrier, w->phzerror);
+            printf("car %.1f Hz, err %.3f rad, omega2 %f\n", w->SAM_carrier, w->phzerror, w->omega2);
             last = now;
         }
     #endif

@@ -113,6 +113,7 @@ static str_hashes_t snd_cmd_hashes[] = {
     { "SET unde", CMD_UNDERRUN },
     { "SET seq=", CMD_SEQ },
     { "SET lms_", CMD_LMS_AUTONOTCH },
+    { "SET sam_", CMD_SAM_PLL },
     { 0 }
 };
 
@@ -548,22 +549,34 @@ void c2s_sound(void *param)
                 int _squelch;
                 float _squelch_param;
                 n = sscanf(cmd, "SET squelch=%d param=%f", &_squelch, &_squelch_param);
-                if (n == 2) {
+                if (n == 1 || n == 2) {     // directTDoA still sends old API "squelch=0 max=0"
                     did_cmd = true;
-                    squelch = _squelch;
-                    squelched = false;
-                    //cprintf(conn, "SND SET squelch=%d param=%.2f %s\n", squelch, _squelch_param, mode_s[mode]);
-                    if (mode == MODE_NBFM) {
-                        m_Squelch[rx_chan].SetSquelch(squelch, _squelch_param);
-                    } else {
-                        float squelch_tail = _squelch_param;
-                        tail_delay = roundf(squelch_tail * snd_rate / LOOP_BC);
-                        squelch_on_seq = -1;
-                        sq_init = true;
+                    if (n == 2) {
+                        squelch = _squelch;
+                        squelched = false;
+                        //cprintf(conn, "SND SET squelch=%d param=%.2f %s\n", squelch, _squelch_param, mode_s[mode]);
+                        if (mode == MODE_NBFM) {
+                            m_Squelch[rx_chan].SetSquelch(squelch, _squelch_param);
+                        } else {
+                            float squelch_tail = _squelch_param;
+                            tail_delay = roundf(squelch_tail * snd_rate / LOOP_BC);
+                            squelch_on_seq = -1;
+                            sq_init = true;
+                        }
                     }
                 }
                 break;
             }
+            
+            case CMD_SAM_PLL:
+                int type;
+                n = sscanf(cmd, "SET sam_pll=%d", &type);
+                if (n == 1) {
+                    did_cmd = true;
+                    //cprintf(conn, "sam_pll=%d\n", type);
+                    wdsp_SAM_PLL(type);
+                }
+                break;
 
             case CMD_NB_ALGO:
                 n = sscanf(cmd, "SET nb algo=%d", &nb_algo);

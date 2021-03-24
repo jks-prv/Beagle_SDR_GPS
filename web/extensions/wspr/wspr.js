@@ -565,11 +565,13 @@ function wspr_gps_info_cb(o)
    //console.log('wspr_gps_info_cb');
    if (!cfg.WSPR.GPS_update_grid && !wspr.single_shot_update) return;
    //console.log(o);
-   var wspr_gps = JSON.parse(o);
-   //console.log(wspr_gps);
-   kiwi.WSPR_rgrid = wspr_gps.grid;
-   w3_set_value('WSPR.grid', kiwi.WSPR_rgrid);
-   w3_input_change('WSPR.grid', 'wspr_input_grid_cb');
+   var wspr_gps = kiwi_JSON_parse('wspr_gps_info_cb', o);
+   if (wspr_gps) {
+      //console.log(wspr_gps);
+      kiwi.WSPR_rgrid = wspr_gps.grid;
+      w3_set_value('WSPR.grid', kiwi.WSPR_rgrid);
+      w3_input_change('WSPR.grid', 'wspr_input_grid_cb');
+   }
    wspr.single_shot_update = false;
 }
 

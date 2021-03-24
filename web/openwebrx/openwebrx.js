@@ -19,7 +19,7 @@ This file is part of OpenWebRX.
 
 */
 
-// Copyright (c) 2015 - 2018 John Seamons, ZL/KF6VO
+// Copyright (c) 2015 - 2021 John Seamons, ZL/KF6VO
 
 var owrx = {
    mobile: null,
@@ -43,6 +43,9 @@ var owrx = {
    tuning_locked: 0,
    
    dx_click_gid_last: undefined,
+   
+   sam_pll: 1,
+   sam_pll_s: [ 'DX', 'med', 'fast' ],
    
    chan_null: 0,
    chan_null_s: [ 'normal', 'null LSB', 'null USB' ],
@@ -114,8 +117,11 @@ function kiwi_main()
 	
 	var f_cookie = readCookie('freq_memory');
 	if (f_cookie) {
-	   freq_memory = JSON.parse(f_cookie);
-	   freq_memory_pointer = freq_memory.length-1;
+      var obj = kiwi_JSON_parse('kiwi_main', f_cookie);
+      if (obj) {
+         freq_memory = obj;
+         freq_memory_pointer = freq_memory.length-1;
+      }
    }
 	
 	console.log('LAST f='+ override_freq +' m='+ override_mode +' z='+ override_zoom
@@ -253,6 +259,7 @@ function kiwi_main()
 	kiwi_get_init_settings();
 	if (!no_geoloc) kiwi_geolocate();
 
+	init_top_bar();
 	init_rx_photo();
 	right_click_menu_init();
 	keyboard_shortcut_init();
@@ -526,6 +533,14 @@ function check_top_bar_congestion()
       offsetDiff('RIGHT', 'red', right, p_right);
       p_right = right;
    */
+}
+
+function init_top_bar()
+{
+   w3_append_innerHTML('id-rx-desc',
+      w3_link('', 'https://www.google.com/maps/place/'+ cfg.index_html_params.RX_GMAP, '[map]', '', 'dont_toggle_rx_photo') +
+      w3_div('id-rx-snr w3-show-inline')
+   );
 }
 
 var rx_photo_spacer_height = height_top_bar_parts;
@@ -1216,8 +1231,6 @@ function demodulator_analog_replace(subtype, freq)
 
 	var offset = 0, prev_pbo = 0, low_cut = NaN, high_cut = NaN;
 	var wasCW = false, toCW = false, fromCW = false;
-	var m = subtype.substr(0,2);
-   w3_show_hide('id-sam-carrier-container', m == 'sa' || m == 'qa');
 
 	if (demodulators.length) {
 		wasCW = demodulators[0].isCW;
@@ -2464,7 +2477,7 @@ function right_click_menu_init()
       w3_div('id-tuning-lock-container class-overlay-container w3-hide',
          w3_div('id-tuning-lock', w3_icon('', 'fa-lock', 192) + '<br>Tuning locked')
       );
-   w3_appendElement('id-main-container', 'div', s);
+   w3_create_appendElement('id-main-container', 'div', s);
 }
 
 var right_click_menu_content = [
@@ -4949,6 +4962,7 @@ function modeset_update_ui(mode)
 	      w3_set_props(el, 'w3-disabled', disabled);
       });
 
+   w3_show_hide('id-sam-carrier-container', m == 'sa');  // also QAM
    w3_show_hide('id-chan-null', mode == 'sam');
 }
 
@@ -6956,7 +6970,7 @@ function test_audio_suspended()
                (kiwi_isMobile()? 'Tap to':'Click to') +' start OpenWebRX'
             )
          );
-      w3_appendElement('id-kiwi-body', 'div', s);
+      w3_create_appendElement('id-kiwi-body', 'div', s);
       el = w3_el('id-play-button');
       el.style.marginTop = px(w3_center_in_window(el));
       //alert('state '+ ac_play_button.state);
@@ -7293,11 +7307,17 @@ function panels_setup()
          '&nbsp;', 3, w3_div('id-squelch-field class-slider'), 14,
          w3_select('w3-hide|color:red|title="squelch tail length"', '', 'tail', 'squelch_tail', squelch_tail, squelch_tail_s, 'squelch_tail_cb')
 	   ) +
-      w3_col_percent('id-sam-carrier-container w3-valign w3-hide/class-slider',
-         w3_text(optbar_prefix_color, 'SAM'), 17,
-         w3_text('id-sam-carrier'), 42,
-         '&nbsp;', 8,
-         w3_select('id-chan-null w3-hide|color:red', '', 'channel null', 'owrx.chan_null', owrx.chan_null, owrx.chan_null_s, 'chan_null_cb')
+	   w3_div('id-sam-carrier-container w3-hide',
+         w3_col_percent('w3-valign/class-slider',
+            w3_text(optbar_prefix_color, 'SAM'), 17,
+            w3_text('id-sam-carrier'), 42,
+            '&nbsp;', 23,
+            w3_select('|color:red', '', 'PLL', 'owrx.sam_pll', owrx.sam_pll, owrx.sam_pll_s, 'sam_pll_cb')
+         ),
+         w3_col_percent('w3-margin-T-3 w3-valign/class-slider',
+            '&nbsp;', 68,
+            w3_select('id-chan-null w3-hide|color:red', '', 'channel null', 'owrx.chan_null', owrx.chan_null, owrx.chan_null_s, 'chan_null_cb')
+         )
       );
       
       //w3_button('id-button-test class-button w3-hcenter w3-hide', 'Test', 'toggle_or_set_test')
@@ -7964,6 +7984,7 @@ function setvolume(done, str)
    kiwi.volume = +str;
    kiwi.volume = Math.max(0, Math.min(200, kiwi.volume));
    kiwi.volume_f = kiwi.muted? 0 : kiwi.volume/100;
+   //console.log('vol='+ kiwi.volume +' vol_f='+ (kiwi.volume/100).toFixed(3));
    if (done) {
       w3_set_value('id-input-volume', kiwi.volume);
       freqset_select();
@@ -8216,6 +8237,13 @@ function squelch_tail_cb(path, val, first)
    if (first) return;
    squelch_tail = +val;
    send_squelch();
+}
+
+function sam_pll_cb(path, val, first)
+{
+   //console.log('$sam_pll_cb path='+ path +' val='+ val +' first='+ first);
+   owrx.sam_pll = +val;
+   snd_send('SET sam_pll='+ owrx.sam_pll);
 }
 
 function chan_null_cb(path, val, first)
@@ -8861,7 +8889,7 @@ function add_problem(what, append, sticky, el_id)
 		   }
 		}
 	}
-	var new_span = w3_appendElement(el, "span", what);
+	var new_span = w3_create_appendElement(el, "span", what);
 	if (sticky != true) {
 		window.setTimeout(function(ps, ns) { try { ps.removeChild(ns); } catch(ex) {} }, 1000, el, new_span);
 	}
