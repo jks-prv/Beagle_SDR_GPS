@@ -25,12 +25,13 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "wspr.h"
+#include "types.h"
+#include "config.h"
 #include "net.h"
 #include "rx.h"
 #include "web.h"
 #include "non_block.h"
-#include "shmem.h"
+#include "wspr.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -715,9 +716,11 @@ bool wspr_msgs(char *msg, int rx_chan)
 	return false;
 }
 
+// order matches wspr_autorun_u in wspr.js
+// only add new entries to the end so as not to disturb existing values stored in config
 static double wspr_cfs[] = {
     137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1,
-    50294.5, 70092.5, 144490.5, 432301.5, 1296501.5
+    50294.5, 70092.5, 144490.5, 432301.5, 1296501.5, 6781.5, 13554.5
 };
 
 static internal_conn_t iconn[MAX_RX_CHANS];
@@ -733,7 +736,7 @@ void wspr_autorun(int instance, int band)
 	
 	double max_freq = freq_offset + ui_srate/1e3;
 	if (dial_freq_kHz < freq_offset || dial_freq_kHz > max_freq) {
-	    lprintf("WSPR autorun: band_id=%d ERROR dial_freq_kHz %.2f is outside rx range %.2f - %.2f\n",
+	    lprintf("WSPR autorun: ERROR band_id=%d dial_freq_kHz %.2f is outside rx range %.2f - %.2f\n",
 	        band, dial_freq_kHz, freq_offset, max_freq);
 	    return;
 	}
@@ -763,6 +766,32 @@ void wspr_autorun(int instance, int band)
     //printf("AUTORUN INIT %s\n", w->arun_stat_cmd);
     non_blocking_cmd_system_child("kiwi.wsprnet.org", w->arun_stat_cmd, NO_WAIT);
     w->arun_last_status_sent = timer_sec();
+}
+
+void wspr_autorun_start()
+{
+    if (*wspr_c.rcall == '\0' || wspr_c.rgrid[0] == '\0') {
+        printf("WSPR autorun: reporter callsign and grid square fields must be entered on WSPR section of admin page\n");
+        return;
+    }
+
+    for (int instance = 0; instance < rx_chans; instance++) {
+        bool err;
+        int band = cfg_int(stprintf("WSPR.autorun%d", instance), &err, CFG_OPTIONAL);
+        if (!err && band != 0) {
+            wspr_autorun(instance, band-1);
+        }
+    }
+}
+
+void wspr_autorun_restart()
+{
+    for (int instance = 0; instance < rx_chans; instance++) {
+        internal_conn_shutdown(&iconn[instance]);
+    }
+    TaskSleepReasonSec("wspr_autorun_stop", 3);     // give time to disconnect
+    memset(iconn, 0, sizeof(internal_conn_t));
+    wspr_autorun_start();
 }
 
 void wspr_main();
@@ -832,18 +861,5 @@ void wspr_main()
     wspr_gprintf("WSPR %s decimation: srate=%.6f/%d decim=%.6f/%d sps=%d NFFT=%d nbins_411=%d\n", FRACTIONAL_DECIMATION? "fractional" : "integer",
         frate, snd_rate, fdecimate, int_decimate, SPS, NFFT, nbins_411);
 
-    bool autorun = (*wspr_c.rcall == '\0' || wspr_c.rgrid[0] == '\0')? false : true;
-	//printf("autorun %d rcall <%s> rgrid <%s>\n", autorun, wspr_c.rcall, wspr_c.rgrid);
-
-    for (int i=0; i < rx_chans; i++) {
-        bool err;
-        int band = cfg_int(stprintf("WSPR.autorun%d", i), &err, CFG_OPTIONAL);
-        if (!err && band != 0) {
-            if (!autorun) {
-                printf("WSPR autorun: reporter callsign and grid square fields must be entered on WSPR section of admin page\n");
-                break;
-            }
-            wspr_autorun(i, band-1);
-        }
-    }
+    wspr_autorun_start();
 }
