@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "kiwi.h"
 #include "clk.h"
+#include "mem.h"
 #include "misc.h"
 #include "web.h"
 #include "peri.h"
@@ -130,7 +131,7 @@ void fpga_init() {
 	// FPGA configuration bitstream
     fp = fopen(stprintf("%sKiwiSDR.%s.bit", background_mode? "/usr/local/bin/":"", fpga_file) , "rb");
     if (!fp) panic("fopen config");
-    free(fpga_file);
+    kiwi_ifree(fpga_file);
 
 	// byte-swap config data to match ended-ness of SPI
     while (1) {

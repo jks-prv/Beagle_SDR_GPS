@@ -186,7 +186,7 @@ static bool nbuf_enqueue(ndesc_t *nd, nbuf_t *nb)
 			if (nd->dbug) printf("R%d ", dp->id);
 			if (nd->dbug) nbuf_dumpq(nd);
 			assert(dp->buf);
-			kiwi_ifree("nbuf:buf", dp->buf);
+			kiwi_ifree(dp->buf, "nbuf:buf");
 			*q_head = dp->prev;
 			if (*q == dp) {
 				*q = NULL;
@@ -250,7 +250,7 @@ void nbuf_allocq(ndesc_t *nd, char *s, int sl)
 	
 	check_nbuf(nb);
 	if (ovfl) {
-		kiwi_ifree("nbuf:buf", nb->buf);
+		kiwi_ifree(nb->buf, "nbuf:buf");
 		nbuf_free(nb);
 	}
 }
@@ -320,7 +320,7 @@ void nbuf_cleanup(ndesc_t *nd)
 			if (dp->buf == 0)
 				lprintf("WARNING: dp->buf == NULL\n");
 			else
-			kiwi_ifree("nbuf:buf", dp->buf);
+			kiwi_ifree(dp->buf, "nbuf:buf");
 
 			*q_head = dp->prev;
 			if (dp == *q) *q = NULL;

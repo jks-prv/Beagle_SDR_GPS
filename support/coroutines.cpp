@@ -24,6 +24,7 @@
 #include "kiwi.h"
 #include "config.h"
 #include "valgrind.h"
+#include "mem.h"
 #include "misc.h"
 #include "str.h"
 #include "coroutines.h"
@@ -921,7 +922,7 @@ void TaskRemove(int id)
     collect_needed = TRUE;
     
     if (t->flags & CTF_TNAME_FREE) {
-        free((void *) t->name);
+        kiwi_ifree((void *) t->name);
         t->name = NULL;
     }
 
@@ -1525,7 +1526,7 @@ const char *_TaskName(const char *name, bool free_name)
 	if (!ct) return "main";
 	if (name != NULL) {
         if (ct->flags & CTF_TNAME_FREE) {
-            free((void *) ct->name);
+            kiwi_ifree((void *) ct->name);
             ct->flags &= ~CTF_TNAME_FREE;
         }
 		ct->name = name;

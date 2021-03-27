@@ -227,7 +227,7 @@ int non_blocking_cmd_func_forall(const char *pname, const char *cmd, funcPR_t fu
 	args->func_param = param;
 	int status = child_task(pname, _non_blocking_cmd_forall, poll_msec, (void *) args);
 	if (poll_msec == NO_WAIT) status = 0;
-	kiwi_ifree("non_blocking_cmd_func_forall", args);
+	kiwi_ifree(args, "non_blocking_cmd_func_forall");
     //printf("non_blocking_cmd_child %d\n", status);
 	return status;
 }
@@ -313,7 +313,7 @@ int non_blocking_cmd_func_foreach(const char *pname, const char *cmd, funcPR_t f
 	args->func_param = param;
 	int status = child_task(pname, _non_blocking_cmd_foreach, poll_msec, (void *) args);
 	if (poll_msec == NO_WAIT) status = 0;
-	kiwi_ifree("non_blocking_cmd_func_foreach", args);
+	kiwi_ifree(args, "non_blocking_cmd_func_foreach");
     //printf("non_blocking_cmd_child %d\n", status);
 	return status;
 }

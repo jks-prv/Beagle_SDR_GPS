@@ -796,9 +796,9 @@ void sample_wf(int rx_chan)
         static void *IQi_state;
         static void *IQf_state;
         if (wf->new_map2) {
-            if (IQi_state != NULL) free(IQi_state);
+            if (IQi_state != NULL) kiwi_ifree(IQi_state);
             IQi_state = NULL;
-            if (IQf_state != NULL) free(IQf_state);
+            if (IQf_state != NULL) kiwi_ifree(IQf_state);
             IQf_state = NULL;
         }
     #endif
@@ -1154,13 +1154,13 @@ void compute_frame(int rx_chan)
         static void *dB_state;
         static void *buf_state;
         if (wf->new_map2) {
-            if (FFT_state != NULL) free(FFT_state);
+            if (FFT_state != NULL) kiwi_ifree(FFT_state);
             FFT_state = NULL;
-            if (pwr_state != NULL) free(pwr_state);
+            if (pwr_state != NULL) kiwi_ifree(pwr_state);
             pwr_state = NULL;
-            if (dB_state != NULL) free(dB_state);
+            if (dB_state != NULL) kiwi_ifree(dB_state);
             dB_state = NULL;
-            if (buf_state != NULL) free(buf_state);
+            if (buf_state != NULL) kiwi_ifree(buf_state);
             buf_state = NULL;
             wf->new_map2 = false;
         }

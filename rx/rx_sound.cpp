@@ -453,7 +453,7 @@ void c2s_sound(void *param)
                         //printf("\n");
                     }
                 }
-			    free(mode_m);
+			    kiwi_ifree(mode_m);
 			    break;
 			}
 			

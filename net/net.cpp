@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "types.h"
 #include "config.h"
+#include "mem.h"
 #include "misc.h"
 #include "timer.h"
 #include "web.h"
@@ -629,7 +630,7 @@ int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const cha
 	        printf("LOOKUP: \"%s\" %s\n", domain_name, ip_list[i]);
         }
         
-        free(r_buf);
+        kiwi_ifree(r_buf);
         r_ips->valid = true;
 	} else {
 	    if (ip_backup != NULL) {
@@ -641,7 +642,7 @@ int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const cha
             n = 0;
         }
 	}
-	free(cmd_p);
+	kiwi_ifree(cmd_p);
 	kstr_free(reply);
     ip_list[n] = NULL;
     r_ips->n_ips = n;
@@ -689,7 +690,7 @@ bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_i
         forwarded = true;
     }
     
-    free(ip_r);
+    kiwi_ifree(ip_r);
     return forwarded;
 }
 
@@ -733,10 +734,10 @@ void ip_blacklist_init()
         asprintf(&cmd_p, "iptables -A KIWI -s %s -j DROP", ips[i]);
         lprintf("ip_blacklist_init: \"%s\"\n", cmd_p);
         non_blocking_cmd_system_child("kiwi.iptables", cmd_p, POLL_MSEC(200));
-        free(cmd_p);
+        kiwi_ifree(cmd_p);
     }
     system("iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI");
-    free(r_buf);
+    kiwi_ifree(r_buf);
     admcfg_string_free(bl_s);
 }
 

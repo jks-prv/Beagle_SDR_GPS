@@ -166,7 +166,7 @@ void dx_prep_list(bool need_sort, dx_t *_dx_list, int _dx_list_len, int _dx_list
     for (i = 0, dxp = _dx_list; i < _dx_list_len_new; i++, dxp++) {
         if ((dxp->flags & DX_TYPE) == DX_MK) dx.masked_len++;
     }
-    free(dx.masked_idx); dx.masked_idx = NULL;
+    kiwi_ifree(dx.masked_idx); dx.masked_idx = NULL;
     if (dx.masked_len > 0) dx.masked_idx = (int *) kiwi_imalloc("dx_prep_list", dx.masked_len * sizeof(int));
     for (i = j = 0, dxp = _dx_list; i < _dx_list_len_new; i++, dxp++) {
         dxp->idx = i;
@@ -312,11 +312,11 @@ static void dx_reload_json(cfg_t *cfg)
 		int i;
 		for (i=0, dxp = prev_dx_list; i < prev_dx_list_len; i++, dxp++) {
 			// previous allocators better have used malloc(), strdup() et al for these and not kiwi_malloc()
-			free((void *) dxp->ident_s);
-			free((void *) dxp->ident);
-			free((void *) dxp->notes_s);
-			free((void *) dxp->notes);
-			free((void *) dxp->params);
+			kiwi_ifree((void *) dxp->ident_s);
+			kiwi_ifree((void *) dxp->ident);
+			kiwi_ifree((void *) dxp->notes_s);
+			kiwi_ifree((void *) dxp->notes);
+			kiwi_ifree((void *) dxp->params);
 		}
 	}
 	

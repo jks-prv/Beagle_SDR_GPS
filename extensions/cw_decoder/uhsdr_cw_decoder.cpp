@@ -478,7 +478,7 @@ static void CW_Decode_exe(cw_decoder_t *cw)
         sample_idx++;
         if (sample_idx == 137) {
             print_max_min_stream_f(&sample_state, P_MAX_MIN_DUMP, "cw_samp", 0, 0);
-            free(sample_state);
+            kiwi_ifree(sample_state);
             sample_state = NULL;
             sample_idx = 0;
         }

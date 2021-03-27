@@ -28,12 +28,12 @@ Boston, MA  02110-1301, USA.
     void *kiwi_imalloc(const char *from, size_t size);
     void *kiwi_icalloc(const char *from, size_t nel, size_t size);
     void *kiwi_irealloc(const char *from, void *ptr, size_t size);
-    void kiwi_ifree(const char *from, void *ptr);
+    void kiwi_ifree(void *ptr, const char *from = NULL);
 #else
     #define kiwi_imalloc(from, size) malloc(size)
     #define kiwi_icalloc(from, nel, size) calloc(nel, size)
     #define kiwi_irealloc(from, ptr, size) realloc(ptr, size)
-    #define kiwi_ifree(from, ptr) free(ptr)
+    #define kiwi_ifree(ptr, ...) free(ptr)
 #endif
 
 #define MALLOC_DEBUG

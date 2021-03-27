@@ -27,6 +27,7 @@
 
 #include "types.h"
 #include "config.h"
+#include "mem.h"
 #include "net.h"
 #include "rx.h"
 #include "web.h"
@@ -364,7 +365,7 @@ void wspr_send_decode(wspr_t *w, int seq)
         }
     }
     
-    free(W_s);
+    kiwi_ifree(W_s);
 }
 
 void WSPR_Deco(void *param)
@@ -443,7 +444,7 @@ void WSPR_Deco(void *param)
                     wspr_c.rcall, wspr_c.rgrid, w->arun_cf_MHz, year%100, month, day, dp->hour, dp->min, dp->snr, dp->dt_print, (int) dp->drift1, dp->freq_print, dp->call, dp->grid, dp->pwr);
                 //printf("UPLOAD RX%d %d/%d %s\n", w->rx_chan, i+1, w->uniques, cmd);
                 non_blocking_cmd_system_child("kiwi.wsprnet.org", cmd, NO_WAIT);
-                free(cmd);
+                kiwi_ifree(cmd);
                 w->arun_decoded++;
             } else {
                 ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_UPLOAD",
@@ -466,7 +467,7 @@ void WSPR_Deco(void *param)
 		        w->arun_last_status_sent = now;
 		        
 		        // in case wspr_c.rgrid has changed 
-		        free(w->arun_stat_cmd);
+		        kiwi_ifree(w->arun_stat_cmd);
 		        #define WSPR_STAT "curl 'http://wsprnet.org/post?function=wsprstat&rcall=%s&rgrid=%s&rqrg=%.6f&tpct=0&tqrg=%.6f&dbm=0&version=1.3+Kiwi' >/dev/null 2>&1"
                 asprintf(&w->arun_stat_cmd, WSPR_STAT, wspr_c.rcall, wspr_c.rgrid, w->arun_cf_MHz, w->arun_cf_MHz);
                 //printf("AUTORUN %s\n", w->arun_stat_cmd);

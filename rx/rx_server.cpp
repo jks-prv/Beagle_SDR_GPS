@@ -307,7 +307,7 @@ void rx_loguser(conn_t *c, logtype_e type)
 	}
 	
 	// we don't do anything with LOG_UPDATE and LOG_UPDATE_NC at present
-	free(s);
+	kiwi_ifree(s);
 }
 
 void rx_server_remove(conn_t *c)
@@ -321,11 +321,11 @@ void rx_server_remove(conn_t *c)
 	if (c->arrived) rx_loguser(c, LOG_LEAVING);
 	webserver_connection_cleanup(c);
 	kiwi_free("user", c->user);
-	free(c->geo);
-	free(c->pref_id);
-	free(c->pref);
-	free(c->dx_filter_ident);
-	free(c->dx_filter_notes);
+	kiwi_ifree(c->geo);
+	kiwi_ifree(c->pref_id);
+	kiwi_ifree(c->pref);
+	kiwi_ifree(c->dx_filter_ident);
+	kiwi_ifree(c->dx_filter_notes);
     if (c->dx_has_preg_ident) { regfree(&c->dx_preg_ident); c->dx_has_preg_ident = false; }
     if (c->dx_has_preg_notes) { regfree(&c->dx_preg_notes); c->dx_has_preg_notes = false; }
     
@@ -510,7 +510,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	    // kiwiclient / kiwirecorder
         if (sscanf(uri_ts, "%lld/%256ms", &tstamp, &uri_m) != 2) {
             printf("bad URI_TS format\n");
-            free(uri_m);
+            kiwi_ifree(uri_m);
             return NULL;
         }
     }
@@ -528,10 +528,10 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	
 	if (!rx_streams[i].uri) {
 		lprintf("**** unknown stream type <%s>\n", uri_m);
-        free(uri_m);
+        kiwi_ifree(uri_m);
 		return NULL;
 	}
-    free(uri_m);
+    kiwi_ifree(uri_m);
 
 	// handle case of server initially starting disabled, but then being enabled later by admin
 #ifndef CFG_GPS_ONLY
@@ -596,7 +596,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			//printf("send_msg_mc MSG comp_ctr=%d reason=<%s> down=%d\n", comp_ctr, reason_disabled, type);
 			send_msg_mc(mc, SM_NO_DEBUG, "MSG comp_ctr=%d reason_disabled=%s down=%d", comp_ctr, reason_enc, type);
 			cfg_string_free(reason_disabled);
-			free(reason_enc);
+			kiwi_ifree(reason_enc);
             //printf("DOWN %s %s\n", rx_streams[st->type].uri, remote_ip);
 			return NULL;
 		} else

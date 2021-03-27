@@ -170,7 +170,7 @@ void kstr_free(char *s_kstr_cstr)
 	if (ks) {
 		assert(ks->valid);
 		//printf("%3d  FREE %4d %p {%p} %s\n", ks-kstrings, ks->size, ks, ks->sp, ks->externally_malloced? "EXT":"");
-		kiwi_ifree("kstr_free", (char *) ks->sp);
+		kiwi_ifree((char *) ks->sp, "kstr_free");
 		ks->sp = NULL;
 		ks->size = 0;
 		ks->externally_malloced = false;
@@ -283,7 +283,7 @@ char *kiwi_str_replace(char *s, const char *from, const char *to, bool *caller_m
         do {
             char *ns;
             asprintf(&ns, "%.*s%s%s", (int) (fp-s), s, to, fp+flen);
-            if (!first) kiwi_ifree("kiwi_str_replace", s);
+            if (!first) kiwi_ifree(s, "kiwi_str_replace");
             first = false;
             s = ns;
         } while ((fp = strstr(s, from)) != NULL);

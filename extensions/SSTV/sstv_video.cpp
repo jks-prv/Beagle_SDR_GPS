@@ -43,10 +43,10 @@ void sstv_video_init(sstv_chan_t *e, SSTV_REAL rate, u1_t mode)
 void sstv_video_done(sstv_chan_t *e)
 {
     //printf("SSTV: sstv_video_done\n");
-    kiwi_ifree("sstv_video_done", e->StoredLum); e->StoredLum = NULL;
-    kiwi_ifree("sstv_video_done", e->HasSync); e->HasSync = NULL;
-    kiwi_ifree("sstv_video_done", e->PixelGrid); e->PixelGrid = NULL;
-    kiwi_ifree("sstv_video_done", e->pixels); e->pixels = NULL;
+    kiwi_ifree(e->StoredLum, "sstv_video_done"); e->StoredLum = NULL;
+    kiwi_ifree(e->HasSync, "sstv_video_done"); e->HasSync = NULL;
+    kiwi_ifree(e->PixelGrid, "sstv_video_done"); e->PixelGrid = NULL;
+    kiwi_ifree(e->pixels, "sstv_video_done"); e->pixels = NULL;
 }
 
 
@@ -104,7 +104,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
     }
 
     PixelGrid_t *PixelGrid;
-    kiwi_ifree("sstv_video_get", e->PixelGrid);
+    kiwi_ifree(e->PixelGrid, "sstv_video_get");
     e->PixelGrid_len = m->ImgWidth * m->NumLines * 3;
     PixelGrid = (PixelGrid_t *) kiwi_icalloc("sstv_video_get", e->PixelGrid_len, sizeof(PixelGrid_t));
     e->PixelGrid = PixelGrid;
@@ -247,7 +247,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
     assert_array_dim(PixelIdx, e->PixelGrid_len);
 
     u1_t *pixels, *p;
-    kiwi_ifree("sstv_video_get", e->pixels);
+    kiwi_ifree(e->pixels, "sstv_video_get");
     e->pixels_len = m->ImgWidth * m->NumLines * 3;
     pixels = (u1_t *) kiwi_icalloc("sstv_video_get", e->pixels_len, sizeof(u1_t));
     assert(pixels != NULL);
@@ -266,7 +266,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
 
     for (SampleNum = 0; SampleNum < Length; SampleNum++) {
     
-    if (e->reset) { kiwi_ifree("sstv_video_get", HannA); return false; }
+    if (e->reset) { kiwi_ifree(HannA, "sstv_video_get"); return false; }
 
     if (!Redraw) {
 
@@ -517,6 +517,6 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
 
     } // for SampleNum
 
-    kiwi_ifree("sstv_video_get", HannA);
+    kiwi_ifree(HannA, "sstv_video_get");
     return true;
 }

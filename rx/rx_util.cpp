@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "kiwi.h"
 #include "rx.h"
+#include "mem.h"
 #include "misc.h"
 #include "str.h"
 #include "printf.h"
@@ -321,7 +322,7 @@ void update_vars_from_config()
 	if (nsm) {
 	    nsm = kiwi_str_replace(nsm, "/?top=kiwi", "");  // shrinking, so nsm same memory space
 	    cfg_set_string("status_msg", nsm);
-	    if (caller_must_free) free(nsm);
+	    if (caller_must_free) kiwi_ifree(nsm);
 	    update_cfg = true;
     }
     cfg_string_free(status_msg); status_msg = NULL;
@@ -452,7 +453,7 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
     
     // NB: don't use non_blocking_cmd() here to prevent audio gliches
     int status = non_blocking_cmd_func_forall("kiwi.geolocate", cmd_p, _geo_task, 0, POLL_MSEC(1000));
-    free(cmd_p);
+    kiwi_ifree(cmd_p);
     int exit_status;
     if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
         clprintf(conn, "GEOLOC: failed for %s\n", geo_host_ip_s);
@@ -485,7 +486,7 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
     geo = kstr_cat(geo, country);   // NB: country freed here
 
     clprintf(conn, "GEOLOC: %s <%s>\n", geo_host_ip_s, kstr_sp(geo));
-	free(conn->geo);
+	kiwi_ifree(conn->geo);
     conn->geo = strdup(kstr_sp(geo));
     kstr_free(geo);
 
@@ -589,9 +590,9 @@ char *rx_users(bool include_ip)
                     need_comma? ",":"", i, user? user:"", geo? geo:"", c->freqHz,
                     kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, hr, min, sec,
                     rtype, rn, r_hr, r_min, r_sec, ext? ext:"", ip, wdsp_SAM_carrier(i), freq_offset, rx->n_camp);
-                if (user) free(user);
-                if (geo) free(geo);
-                if (ext) free(ext);
+                if (user) kiwi_ifree(user);
+                if (geo) kiwi_ifree(geo);
+                if (ext) kiwi_ifree(ext);
                 n = 1;
             }
         }
