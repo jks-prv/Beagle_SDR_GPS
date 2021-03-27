@@ -543,6 +543,8 @@ function wspr_autorun_select_cb(path, idx, first)
    admin_select_cb(path, idx, first);
    if (first) return;
    w3_show('id-wspr-restart');
+	var el = w3_el('id-kiwi-container');
+	el.scrollTop = el.scrollHeight;     // keep menus visible
 }
 
 function wspr_config_focus()
