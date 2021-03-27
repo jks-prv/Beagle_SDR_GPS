@@ -148,7 +148,7 @@ typedef struct {
 
 // (net_t) net located in shmem for benefit of e.g. led task
 // #include needs to be below definition of net_t
-#include "shmem.h"
+#include "shmem.h"      // shmem->net_shmem
 #define net shmem->net_shmem
 
 typedef enum { IS_NOT_LOCAL, IS_LOCAL, NO_LOCAL_IF } isLocal_t;

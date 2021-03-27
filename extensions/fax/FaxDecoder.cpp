@@ -26,13 +26,14 @@
 
  // adapted from github.com/seandepagnier/weatherfax_pi
 
+#include "types.h"
 #include "FaxDecoder.h"
 #include "ext.h"
+#include "mem.h"
 #include "misc.h"
 #include "debug.h"
 
 #include <math.h>
-#include <complex>
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -247,7 +248,7 @@ bool FaxDecoder::DecodeFaxLine()
     if (m_bIncludeHeadersInImages || !m_use_phasing || (type == IMAGE && phasingLinesLeft < -phasingSkipLines)) {
         if (m_imageline >= height) {
             height *= 2;
-            m_imgdata = (u1_t*) realloc(m_imgdata, m_imagewidth*height*m_imagecolors);
+            m_imgdata = (u1_t*) kiwi_irealloc("DecodeFaxLine", m_imgdata, m_imagewidth*height*m_imagecolors);
         }
 
         /*
@@ -454,8 +455,8 @@ void FaxDecoder::InitializeImage()
         height = 256;
 
     FreeImage();
-    m_imgdata  = (u1_t*) malloc(m_imagewidth*height*m_imagecolors);
-    m_outImage = (u1_t*) malloc(m_imagewidth*m_imagecolors);
+    m_imgdata  = (u1_t*) kiwi_imalloc("InitializeImage", m_imagewidth*height*m_imagecolors);
+    m_outImage = (u1_t*) kiwi_imalloc("InitializeImage", m_imagewidth*m_imagecolors);
 
     lasttype = IMAGE;
     typecount = 0;
@@ -541,8 +542,8 @@ void FaxDecoder::SetupBuffers()
 
 void FaxDecoder::FreeImage()
 {
-    free(m_imgdata);
-    free(m_outImage);
+    kiwi_ifree(m_imgdata, "FreeImage");
+    kiwi_ifree(m_outImage, "FreeImage");
     m_imageline = 0;
     m_lineIncrAcc = 0;
 }
@@ -588,7 +589,7 @@ void FaxDecoder::FileClose()
     pgm_file_height(m_file, m_offset, m_fax_line);
     fclose(m_file);
     faxprintf("FAX %s wrote %d lines\n", m_fn, m_fax_line);
-    if (m_fn) free(m_fn); m_fn = NULL;
+    if (m_fn) kiwi_ifree(m_fn, "FileClose"); m_fn = NULL;
     m_file = NULL;
     m_fax_line = 0;
 }

@@ -23,6 +23,7 @@ Boston, MA  02110-1301, USA.
 #include "rx.h"
 #include "rx_cmd.h"
 #include "clk.h"
+#include "mem.h"
 #include "misc.h"
 #include "str.h"
 #include "printf.h"
@@ -225,14 +226,14 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             n = sscanf(cmd, "SET auth t=%16ms p=%256ms ipl=%256ms", &type_m, &pwd_m, &ipl_m);
 
             if (pwd_m != NULL && strcmp(pwd_m, "#") == 0) {
-                free(pwd_m);
+                kiwi_ifree(pwd_m);
                 pwd_m = NULL;       // equivalent to NULL so ipl= can be sscanf()'d properly
             }
         
             //cprintf(conn, "n=%d typem=%s pwd=%s ipl=%s <%s>\n", n, type_m, pwd_m, ipl_m, cmd);
             if ((n != 1 && n != 2 && n != 3) || type_m == NULL) {
                 send_msg(conn, false, "MSG badp=1");
-                free(type_m); free(pwd_m); free(ipl_m);     // free(NULL) is okay
+                kiwi_ifree(type_m); kiwi_ifree(pwd_m); kiwi_ifree(ipl_m);     // kiwi_ifree(NULL) is okay
                 return true;
             }
         
@@ -257,7 +258,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             if ((!type_kiwi && !type_prot && !type_admin) || bad_type) {
                 clprintf(conn, "PWD BAD REQ type_m=\"%s\" conn_type=%d from %s\n", type_m, conn->type, conn->remote_ip);
                 send_msg(conn, false, "MSG badp=1");
-                free(type_m); free(pwd_m); free(ipl_m);
+                kiwi_ifree(type_m); kiwi_ifree(pwd_m); kiwi_ifree(ipl_m);
                 return true;
             }
         
@@ -265,7 +266,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             if (stream_admin_or_mfg && !type_admin) {
                 clprintf(conn, "PWD BAD TYPE MIX type_m=\"%s\" conn_type=%d from %s\n", type_m, conn->type, conn->remote_ip);
                 send_msg(conn, false, "MSG badp=1");
-                free(type_m); free(pwd_m); free(ipl_m);
+                kiwi_ifree(type_m); kiwi_ifree(pwd_m); kiwi_ifree(ipl_m);
                 return true;
             }
         
@@ -368,7 +369,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 if (ipl_cur_mins >= ip_limit_mins) {
                     cprintf(conn, "TLIMIT-IP connecting LIMIT EXCEEDED cur:%d >= lim:%d for %s\n", ipl_cur_mins, ip_limit_mins, conn->remote_ip);
                     send_msg_mc_encoded(mc, "MSG", "ip_limit", "%d,%s", ip_limit_mins, conn->remote_ip);
-                    free(type_m); free(pwd_m); free(ipl_m);
+                    kiwi_ifree(type_m); kiwi_ifree(pwd_m); kiwi_ifree(ipl_m);
                     conn->tlimit_zombie = true;
                     return true;
                 } else {
@@ -573,7 +574,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             send_msg(conn, false, "MSG max_camp=%d", N_CAMP);
             send_msg(conn, false, "MSG badp=%d", badp);
 
-            free(pwd_m); free(ipl_m);
+            kiwi_ifree(pwd_m); kiwi_ifree(ipl_m);
             cfg_string_free(pwd_s);
         
             if (badp == 5) conn->kick = true;
@@ -623,7 +624,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             }
             pdbug_cprintf(conn, "PWD %s %s AUTH=%d badp=%d auth_kiwi=%d auth_prot=%d auth_admin=%d\n", type_m, uri,
                  conn->auth, badp, conn->auth_kiwi, conn->auth_prot, conn->auth_admin);
-            free(type_m);
+            kiwi_ifree(type_m);
         
             return true;
 	    }
@@ -641,13 +642,13 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 return true;	// fake that we accepted command so it won't be further processed
             }
 
-            char *json = (char *) malloc(strlen(cmd) + SPACE_FOR_NULL); // a little bigger than necessary
+            char *json = (char *) kiwi_imalloc("CMD_SAVE_CFG", strlen(cmd) + SPACE_FOR_NULL); // a little bigger than necessary
             n = sscanf(cmd, "SET save_cfg=%s", json);
             assert(n == 1);
             //printf("SET save_cfg=...\n");
             kiwi_str_decode_inplace(json);
             cfg_save_json(json);
-            free(json);
+            kiwi_ifree(json);
             update_vars_from_config();      // update C copies of vars
 
             return true;
@@ -666,13 +667,13 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 return true;	// fake that we accepted command so it won't be further processed
             }
 
-            char *json = (char *) malloc(strlen(cmd) + SPACE_FOR_NULL); // a little bigger than necessary
+            char *json = (char *) kiwi_imalloc("CMD_SAVE_ADM", strlen(cmd) + SPACE_FOR_NULL); // a little bigger than necessary
             n = sscanf(cmd, "SET save_adm=%s", json);
             assert(n == 1);
             //printf("SET save_adm=...\n");
             kiwi_str_decode_inplace(json);
             admcfg_save_json(json);
-            free(json);
+            kiwi_ifree(json);
             update_vars_from_config();      // update C copies of vars
         
             return true;
@@ -713,7 +714,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
             if (n != 2 && n != 9) {
                 printf("DX_UPD n=%d ?\n", n);
-                free(text_m); free(notes_m); free(params_m);
+                kiwi_ifree(text_m); kiwi_ifree(notes_m); kiwi_ifree(params_m);
                 return true;
             }
         
@@ -769,12 +770,12 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     notes_m[strlen(notes_m)-1] = '\0';
                     params_m[strlen(params_m)-1] = '\0';
                 
-                    // can't use kiwi_strdup because free() must be used later on
-                    free((void *) dxp->ident); dxp->ident = strdup(text_m);
-                    free((void *) dxp->ident_s); dxp->ident_s = kiwi_str_decode_inplace(strdup(text_m));
-                    free((void *) dxp->notes); dxp->notes = strdup(notes_m);
-                    free((void *) dxp->notes_s); dxp->notes_s = kiwi_str_decode_inplace(strdup(notes_m));
-                    free((void *) dxp->params); dxp->params = strdup(params_m);
+                    // can't use kiwi_strdup because kiwi_ifree() must be used later on
+                    kiwi_ifree((void *) dxp->ident); dxp->ident = strdup(text_m);
+                    kiwi_ifree((void *) dxp->ident_s); dxp->ident_s = kiwi_str_decode_inplace(strdup(text_m));
+                    kiwi_ifree((void *) dxp->notes); dxp->notes = strdup(notes_m);
+                    kiwi_ifree((void *) dxp->notes_s); dxp->notes_s = kiwi_str_decode_inplace(strdup(notes_m));
+                    kiwi_ifree((void *) dxp->params); dxp->params = strdup(params_m);
                 } else {
                     err = true;
                 }
@@ -819,7 +820,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 send_msg(conn, false, "MSG request_dx_update");	// get client to request updated dx list
             }
 
-            free(text_m); free(notes_m); free(params_m);
+            kiwi_ifree(text_m); kiwi_ifree(notes_m); kiwi_ifree(params_m);
             return true;
         }
 	    break;
@@ -833,10 +834,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             // remove trailing 'x' appended to text strings
             filter_ident_m[strlen(filter_ident_m)-1] = '\0';
             filter_notes_m[strlen(filter_notes_m)-1] = '\0';
-            free(conn->dx_filter_ident); conn->dx_filter_ident = kiwi_str_decode_inplace(strdup(filter_ident_m));
-            free(conn->dx_filter_notes); conn->dx_filter_notes = kiwi_str_decode_inplace(strdup(filter_notes_m));
-            free(filter_ident_m);
-            free(filter_notes_m);
+            kiwi_ifree(conn->dx_filter_ident); conn->dx_filter_ident = kiwi_str_decode_inplace(strdup(filter_ident_m));
+            kiwi_ifree(conn->dx_filter_notes); conn->dx_filter_notes = kiwi_str_decode_inplace(strdup(filter_notes_m));
+            kiwi_ifree(filter_ident_m);
+            kiwi_ifree(filter_notes_m);
             conn->dx_err_preg_ident = conn->dx_err_preg_notes = 0;
         
             // compile regexp
@@ -995,7 +996,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             // NB: ident, notes and params are already stored URL encoded
             printf("GET_DX_JSON len=%d\n", strlen(cfg_dx.json));
             send_msg(conn, false, "MSG dx_json=%s", cfg_dx.json);
-            free(sb);
+            kiwi_ifree(sb);
             return true;
         }
 	    break;
@@ -1012,7 +1013,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             asprintf(&sb, "{\"r\":%d,\"g\":%d,\"s\":%d,\"pu\":\"%s\",\"pe\":%d,\"pv\":\"%s\",\"pi\":%d,\"n\":%d,\"m\":\"%s\",\"v1\":%d,\"v2\":%d}",
                 rx_chans, GPS_CHANS, net.serno, net.ip_pub, net.port_ext, net.ip_pvt, net.port, net.nm_bits, net.mac, version_maj, version_min);
             send_msg(conn, false, "MSG config_cb=%s", sb);
-            free(sb);
+            kiwi_ifree(sb);
             return true;
         }
 	    break;
@@ -1153,7 +1154,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 kiwi_str_decode_inplace(ident_user_m);
                 char *esc = kiwi_str_escape_HTML(ident_user_m);
                 if (esc) {
-                    free(ident_user_m);
+                    kiwi_ifree(ident_user_m);
                     ident_user_m = esc;
                 }
                 kiwi_str_redup(&conn->user, "user", ident_user_m);
@@ -1192,7 +1193,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 }
             }
 
-            free(ident_user_m);
+            kiwi_ifree(ident_user_m);
             conn->ident = true;
             return true;
         }
@@ -1217,10 +1218,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             //cprintf(conn, "ch%d recv geoloc from client: %s\n", conn->rx_channel, geo_m);
             char *esc = kiwi_str_escape_HTML(geo_m);
             if (esc) {
-                free(geo_m);
+                kiwi_ifree(geo_m);
                 geo_m = esc;
             }
-            free(conn->geo);
+            kiwi_ifree(conn->geo);
             conn->geo = geo_m;
             return true;
         }
@@ -1233,7 +1234,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         if (n == 1) {
             kiwi_str_decode_inplace(geojson_m);
             //clprintf(conn, "SET geojson<%s>\n", geojson_m);
-            free(geojson_m);
+            kiwi_ifree(geojson_m);
             return true;
         }
 	    break;
@@ -1245,7 +1246,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         if (n == 1) {
             kiwi_str_decode_inplace(browser_m);
             //clprintf(conn, "SET browser=<%s>\n", browser_m);
-            free(browser_m);
+            kiwi_ifree(browser_m);
             return true;
         }
 	    break;
@@ -1280,8 +1281,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
     case CMD_PREF_EXPORT: {
         if (kiwi_str_begins_with(cmd, "SET pref_export")) {
-            free(conn->pref_id);
-            free(conn->pref);
+            kiwi_ifree(conn->pref_id);
+            kiwi_ifree(conn->pref);
             n = sscanf(cmd, "SET pref_export id=%64ms pref=%4096ms", &conn->pref_id, &conn->pref);
             if (n != 2) {
                 cprintf(conn, "pref_export n=%d\n", n);
@@ -1295,8 +1296,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             for (c = conns; c < &conns[N_CONNS]; c++) {
                 if (c == conn) continue;
                 if (c->pref_id && c->pref && strcmp(c->pref_id, conn->pref_id) == 0) {
-                    free(c->pref_id); c->pref_id = NULL;
-                    free(c->pref); c->pref = NULL;
+                    kiwi_ifree(c->pref_id); c->pref_id = NULL;
+                    kiwi_ifree(c->pref); c->pref = NULL;
                 }
             }
         
@@ -1307,7 +1308,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	
     case CMD_PREF_IMPORT: {
         if (kiwi_str_begins_with(cmd, "SET pref_import")) {
-            free(conn->pref_id);
+            kiwi_ifree(conn->pref_id);
             n = sscanf(cmd, "SET pref_import id=%64ms", &conn->pref_id);
             if (n != 1) {
                 cprintf(conn, "pref_import n=%d\n", n);
@@ -1329,7 +1330,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 send_msg(conn, false, "MSG pref_import=null");
             }
 
-            free(conn->pref_id); conn->pref_id = NULL;
+            kiwi_ifree(conn->pref_id); conn->pref_id = NULL;
             return true;
         }
 	    break;
@@ -1419,7 +1420,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             return true;
         }
 
-        free(current_authkey);
+        kiwi_ifree(current_authkey);
         current_authkey = kiwi_authkey();
         send_msg(conn, false, "MSG authkey_cb=%s", current_authkey);
         return true;
@@ -1473,10 +1474,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         cprintf(conn, "recv geoloc from client: %s\n", geo_m);
         char *esc = kiwi_str_escape_HTML(geo_m);
         if (esc) {
-            free(geo_m);
+            kiwi_ifree(geo_m);
             geo_m = esc;
         }
-        free(conn->geo);
+        kiwi_ifree(conn->geo);
         conn->geo = geo_m;
         return true;
     }

@@ -5,7 +5,7 @@
 //		NTP status?
 
 var admin = {
-   rx14_wf0: false,
+   is_multi_core: false,
    reg_status: {}
 };
 
@@ -91,7 +91,7 @@ function mode_html()
                w3_div('w3-flex w3-halign-center w3-margin-B-5', '<img src="gfx/kiwi.73x73.jpg" width="73" height="73" />'),
                w3_div('w3-flex w3-halign-center w3-margin-B-5', '<img src="gfx/cowbelly.73x73.jpg" width="73" height="73" />'),
                w3_div('w3-flex', '<img src="gfx/kiwi.derp.113x73.jpg" width="113" height="73" />'),
-               admin.rx14_wf0? 
+               admin.is_multi_core? 
                   w3_div('w3-flex', '<img src="gfx/kiwi.derp.113x73.jpg" width="113" height="73" />')
                :
                   ''
@@ -100,7 +100,7 @@ function mode_html()
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Kiwi classic', kiwi.RX4_WF4, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX4_WF4)),
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More receivers', kiwi.RX8_WF2, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX8_WF2)),
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More bandwidth', kiwi.RX3_WF3, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX3_WF3)),
-               admin.rx14_wf0? 
+               admin.is_multi_core? 
                   w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'MCORE rx14_wf0', kiwi.RX14_WF0, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX14_WF0))
                :
                   ''
@@ -2875,8 +2875,8 @@ function admin_recv(data)
 				admin_sdr_mode = (+param[1])? 0:1;
 				break;
 
-			case "rx14_wf0":
-				admin.rx14_wf0 = true;
+			case "is_multi_core":
+				admin.is_multi_core = true;
 				break;
 
 			case "init":

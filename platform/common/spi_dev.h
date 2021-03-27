@@ -38,6 +38,7 @@ typedef struct {
 } spi_dev_ipc_t;
 
 typedef struct {
+    spi_dev_ipc_t spi_dev_ipc;
     SPI_MISO dpump_miso;
     SPI_MISO gps_search_miso, gps_channel_miso[GPS_CHANS], gps_clocks_miso, gps_iqdata_miso, gps_glitches_miso[2];
     SPI_MOSI gps_e1b_code_mosi;
@@ -45,14 +46,24 @@ typedef struct {
     SPI_MISO misc_miso;
     SPI_MISO spi_junk_miso, pingx_miso;
     SPI_MOSI spi_tx[7];
-    spi_dev_ipc_t spi_dev_ipc;
+    //char firewall[4096];
 } spi_shmem_t;
 
-#ifdef CPU_AM5729
-    //#define SPI_SHMEM_DISABLE
+#include "shmem_config.h"
+
+#ifdef CPU_AM5729       // NB: not MULTI_CORE
+    //#define SPI_SHMEM_DISABLE_TEST
+    #ifdef SPI_SHMEM_DISABLE_TEST
+        #warning dont forget to remove SPI_SHMEM_DISABLE_TEST
+        //#define SPI_SHMEM_DISABLE
+    #else
+        // shared memory enabled
+    #endif
 #else
     #define SPI_SHMEM_DISABLE
 #endif
+
+#include "shmem.h"
 
 #ifdef SPI_SHMEM_DISABLE
     #define SPI_SHMEM   spi_shmem_p

@@ -36,7 +36,7 @@ Boston, MA  02110-1301, USA.
 #include "net.h"
 #include "ext_int.h"
 #include "sanitizer.h"
-#include "shmem.h"
+#include "shmem.h"      // shmem_init()
 
 #include "debug.h"
 
@@ -85,12 +85,9 @@ int main(int argc, char *argv[])
 	version_maj = VERSION_MAJ;
 	version_min = VERSION_MIN;
 	
-	#ifdef CPU_AM5729
+	#ifdef MULTI_CORE
 	    is_multi_core = true;
 	#endif
-	#ifdef CPU_BCM2837
-            is_multi_core = true;
-        #endif
 	
 	main_argv = argv;
 	

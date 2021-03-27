@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "mem.h"
 #include "misc.h"
 #include "str.h"
 #include "sha256.h"
@@ -84,7 +85,7 @@ static char *kstr_malloc(kstr_malloc_e type, char *s_kstr_cstr, int size)
         assert(ks != NULL);
         assert(ks->sp != NULL);
         assert(size >= 0);
-        ks->sp = (char *) realloc(ks->sp, size);
+        ks->sp = (char *) kiwi_irealloc("kstr_malloc", ks->sp, size);
         ks->size = size;
         return (char *) ks;
 	}
@@ -106,7 +107,7 @@ static char *kstr_malloc(kstr_malloc_e type, char *s_kstr_cstr, int size)
     } else {    // type == KSTR_ALLOC
         assert(s_kstr_cstr == NULL);
         assert(size >= 0);
-        s_kstr_cstr = (char *) malloc(size);
+        s_kstr_cstr = (char *) kiwi_imalloc("kstr_malloc", size);
         s_kstr_cstr[0] = '\0';
         //printf("%3d ALLOC %4d %p {%p}\n", ks-kstrings, size, ks, s_kstr_cstr);
     }
@@ -169,7 +170,7 @@ void kstr_free(char *s_kstr_cstr)
 	if (ks) {
 		assert(ks->valid);
 		//printf("%3d  FREE %4d %p {%p} %s\n", ks-kstrings, ks->size, ks, ks->sp, ks->externally_malloced? "EXT":"");
-		free((char *) ks->sp);
+		kiwi_ifree((char *) ks->sp, "kstr_free");
 		ks->sp = NULL;
 		ks->size = 0;
 		ks->externally_malloced = false;
@@ -248,7 +249,7 @@ int kiwi_split(char *ocp, char **mbuf, const char *delims, char *argv[], int nar
 {
 	int n=0;
 	char **ap, *tp;
-	*mbuf = (char *) malloc(strlen(ocp)+1);
+	*mbuf = (char *) kiwi_imalloc("kiwi_split", strlen(ocp)+1);
 	strcpy(*mbuf, ocp);
 	tp = *mbuf;
 	
@@ -282,7 +283,7 @@ char *kiwi_str_replace(char *s, const char *from, const char *to, bool *caller_m
         do {
             char *ns;
             asprintf(&ns, "%.*s%s%s", (int) (fp-s), s, to, fp+flen);
-            if (!first) free(s);
+            if (!first) kiwi_ifree(s, "kiwi_str_replace");
             first = false;
             s = ns;
         } while ((fp = strstr(s, from)) != NULL);
@@ -338,7 +339,7 @@ char *kiwi_str_escape_HTML(char *str)
     }
     
     if (n == 0) return NULL;
-	sn = (char *) malloc(strlen(str) + n + SPACE_FOR_NULL);
+	sn = (char *) kiwi_imalloc("kiwi_str_escape_HTML", strlen(str) + n + SPACE_FOR_NULL);
 	o = sn;
 
 	for (s = str; *s != '\0'; s++) {
@@ -366,9 +367,9 @@ char *kiwi_str_encode(char *src)
 	size_t slen = (strlen(src) * ENCODE_EXPANSION_FACTOR) + SPACE_FOR_NULL;
 
 	// don't use kiwi_malloc() due to large number of these simultaneously active from dx list
-	// and also because dx list has to use free() due to related allocations via strdup()
+	// and also because dx list has to use kiwi_ifree() due to related allocations via strdup()
 	assert(slen);
-	char *dst = (char *) malloc(slen);
+	char *dst = (char *) kiwi_imalloc("kiwi_str_encode", slen);
 	mg_url_encode(src, dst, slen);
 	return dst;		// NB: caller must free dst
 }
@@ -660,7 +661,7 @@ void str_hash_init(const char *id, str_hash_t *hashp, str_hashes_t *hashes, bool
     hashp->hash_len = hash_len;
     hashp->lookup_table_size = 1 << bits;
     int bsize = hashp->lookup_table_size * sizeof(u2_t);
-    hashp->keys = (u2_t *) malloc(bsize);
+    hashp->keys = (u2_t *) kiwi_imalloc("str_hash_init", bsize);
     memset(hashp->keys, 0, bsize);
     int entries = 0;
     for (str_hashes_t *h = &hashes[1]; h->name; h++, entries++) {
@@ -679,10 +680,16 @@ void str_hash_init(const char *id, str_hash_t *hashp, str_hashes_t *hashes, bool
 u2_t str_hash_lookup(str_hash_t *hashp, char *str, bool debug)
 {
     u2_t hash = 0;
-    for (int i = 0; i < hashp->hash_len; i++) {
-        int cidx = hashp->max_hash_len-1-i;
-        u1_t c = str[cidx];
-        STR_HASH_FUNC(c, cidx);
+    
+    // The max_hash_len from rx_common_cmd() can be larger than commands from routines
+    // that call it. So have to check for strlen(str) >= hashp->max_hash_len here to avoid
+    // buffer read overruns which will be picked up by ASAN.
+    if (strlen(str) >= hashp->max_hash_len) {
+        for (int i = 0; i < hashp->hash_len; i++) {
+            int cidx = hashp->max_hash_len-1-i;
+            u1_t c = str[cidx];
+            STR_HASH_FUNC(c, cidx);
+        }
     }
     hashp->cur_hash = hash;
     u2_t key = hashp->keys[hash];

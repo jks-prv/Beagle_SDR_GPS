@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "types.h"
 #include "config.h"
+#include "mem.h"
 #include "misc.h"
 #include "timer.h"
 #include "web.h"
@@ -371,7 +372,7 @@ void web_server_init(ws_init_t type)
 				kiwi_exit(-1);
 			}
 			lprintf("webserver for \"%s\" on port %s\n", ui->name, mg_get_option(ui->server, "listening_port"));
-			free(s_port);
+			kiwi_ifree(s_port);
 		} else {	// WS_INIT_START
             bool err;
             bool test_webserver_prio = cfg_bool("test_webserver_prio", &err, CFG_OPTIONAL);

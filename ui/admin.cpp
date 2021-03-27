@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "kiwi.h"
 #include "rx.h"
+#include "mem.h"
 #include "misc.h"
 #include "str.h"
 #include "nbuf.h"
@@ -34,7 +35,6 @@ Boston, MA  02110-1301, USA.
 #include "printf.h"
 #include "cfg.h"
 #include "clk.h"
-#include "shmem.h"
 #include "wspr.h"
 
 #ifndef CFG_GPS_ONLY
@@ -73,7 +73,7 @@ void c2s_admin_setup(void *param)
 	// send initial values
 	send_msg(conn, SM_NO_DEBUG, "ADM gps_only_mode=%d", VAL_CFG_GPS_ONLY);
 	#ifdef MULTI_CORE
-	    send_msg(conn, SM_NO_DEBUG, "ADM rx14_wf0=1");
+	    send_msg(conn, SM_NO_DEBUG, "ADM is_multi_core");
 	#endif
 	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", rx_chans);
 }
@@ -160,7 +160,7 @@ static void console(void *param)
     send_msg_encoded(c, "ADM", "console_c2w", "CONSOLE: open connection\n");
     
     #define NBUF 1024
-    char *buf = (char *) malloc(NBUF + SPACE_FOR_NULL);
+    char *buf = (char *) kiwi_imalloc("console", NBUF + SPACE_FOR_NULL);
     int i, n, err;
     
     char *args[] = {(char *) "/bin/bash", (char *) "--login", NULL };
@@ -237,7 +237,7 @@ static void console(void *param)
     }
     if (c->master_pty_fd > 0)
         close(c->master_pty_fd);
-    free(buf);
+    kiwi_ifree(buf);
     c->master_pty_fd = 0;
     c->console_child_pid = 0;
     
@@ -378,12 +378,12 @@ void c2s_admin(void *param)
 				kiwi_str_decode_inplace(args_m);
 				asprintf(&cmd_p, "%s/noip2 -C -c " DIR_CFG "/noip2.conf -k %s -I eth0 2>&1",
 					background_mode? "/usr/local/bin" : (BUILD_DIR "/gen"), args_m);
-				free(args_m);
+				kiwi_ifree(args_m);
 				printf("DUC: %s\n", cmd_p);
 				char *reply;
 				int stat;
 				reply = non_blocking_cmd(cmd_p, &stat);
-				free(cmd_p);
+				kiwi_ifree(cmd_p);
 				if (stat < 0 || n <= 0) {
 					lprintf("DUC: noip2 failed?\n");
 					send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=300");
@@ -428,7 +428,7 @@ void c2s_admin(void *param)
 		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"%s/?u=%s&h=%s\"", proxy_server, user_m, host_m);
                 reply = non_blocking_cmd(cmd_p, &status);
                 printf("proxy register: %s\n", cmd_p);
-                free(cmd_p);
+                kiwi_ifree(cmd_p);
                 if (reply == NULL || status < 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0) {
                     printf("proxy register: ERROR %p 0x%x\n", reply, status);
                     status = 900;
@@ -444,7 +444,7 @@ void c2s_admin(void *param)
 				send_msg(conn, SM_NO_DEBUG, "ADM rev_status=%d", status);
 				net.proxy_status = status;
 				if (status < 0 || status > 99) {
-				    free(user_m); free(host_m);
+				    kiwi_ifree(user_m); kiwi_ifree(host_m);
                     admcfg_string_free(proxy_server);
 				    continue;
 				}
@@ -453,8 +453,8 @@ void c2s_admin(void *param)
 				    proxy_server, user_m, host_m, net.port_ext, DIR_CFG "/frpc.template.ini", DIR_CFG "/frpc.ini");
                 printf("proxy register: %s\n", cmd_p);
 				system(cmd_p);
-                free(cmd_p);
-				free(user_m); free(host_m);
+                kiwi_ifree(cmd_p);
+				kiwi_ifree(user_m); kiwi_ifree(host_m);
                 admcfg_string_free(proxy_server);
 
                 if (background_mode)
@@ -465,7 +465,7 @@ void c2s_admin(void *param)
 				continue;
 			} else
 			if (n == 1)
-                free(user_m);
+                kiwi_ifree(user_m);
 		
 
 ////////////////////////////////
@@ -486,21 +486,21 @@ void c2s_admin(void *param)
 			    if (clone_files == 0) {
 		            asprintf(&cmd_p, CLONE_FILE, &pwd_m[1], host_m, "admin.json");
                     kstr_free(non_blocking_cmd(cmd_p, &status_c));
-                    free(cmd_p);
+                    kiwi_ifree(cmd_p);
                     if (status_c == 0) {
 		                asprintf(&cmd_p, CLONE_FILE, &pwd_m[1], host_m, "kiwi.json");
                         kstr_free(non_blocking_cmd(cmd_p, &status));
-                        free(cmd_p);
+                        kiwi_ifree(cmd_p);
                         status_c += status;
                         if (status_c == 0) {
                             asprintf(&cmd_p, CLONE_FILE, &pwd_m[1], host_m, "dx.json");
                             kstr_free(non_blocking_cmd(cmd_p, &status));
-                            free(cmd_p);
+                            kiwi_ifree(cmd_p);
                             status_c += status;
                             if (status_c == 0) {
                                 asprintf(&cmd_p, CLONE_FILE, &pwd_m[1], host_m, "config.js");
                                 kstr_free(non_blocking_cmd(cmd_p, &status));
-                                free(cmd_p);
+                                kiwi_ifree(cmd_p);
                                 status_c += status;
                             }
                         }
@@ -510,10 +510,10 @@ void c2s_admin(void *param)
                     //printf("config clone: %s\n", cmd_p);
                     kstr_free(non_blocking_cmd(cmd_p, &status_c));
                     //cprintf(conn, "config clone: status=%d\n", status_c);
-                    free(cmd_p);
+                    kiwi_ifree(cmd_p);
 		        }
-				free(host_m);
-				free(pwd_m);
+				kiwi_ifree(host_m);
+				kiwi_ifree(pwd_m);
 				send_msg(conn, SM_NO_DEBUG, "ADM config_clone_status=%d", status_c);
 				continue;
 			}
@@ -670,7 +670,7 @@ void c2s_admin(void *param)
 		            server_url, server_port);
                 reply = non_blocking_cmd(cmd_p, &status);
                 printf("check_port_open: %s\n", cmd_p);
-                free(cmd_p);
+                kiwi_ifree(cmd_p);
                 if (reply == NULL || status < 0 || WEXITSTATUS(status) != 0) {
                     printf("check_port_open: ERROR %p 0x%x\n", reply, status);
                     status = -2;
@@ -710,10 +710,10 @@ void c2s_admin(void *param)
 					fprintf(fp, "    gateway 192.168.7.1\n");
 				fclose(fp);
 				system("cp /tmp/interfaces.kiwi /etc/network/interfaces");
-				free(static_ip_m); free(static_nm_m); free(static_gw_m);
+				kiwi_ifree(static_ip_m); kiwi_ifree(static_nm_m); kiwi_ifree(static_gw_m);
 				continue;
 			}
-			free(static_ip_m); free(static_nm_m); free(static_gw_m);
+			kiwi_ifree(static_ip_m); kiwi_ifree(static_nm_m); kiwi_ifree(static_gw_m);
 
             char *dns1_m = NULL, *dns2_m = NULL;
 			i = strncmp(cmd, "SET dns", 7);
@@ -736,20 +736,20 @@ void c2s_admin(void *param)
         
                         if (!dns1_err) {
                             asprintf(&s, "echo nameserver %s >> /etc/resolv.conf", dns1);
-                            system(s); free(s);
+                            system(s); kiwi_ifree(s);
                         }
                         
                         if (!dns2_err) {
                             asprintf(&s, "echo nameserver %s >> /etc/resolv.conf", dns2);
-                            system(s); free(s);
+                            system(s); kiwi_ifree(s);
                         }
                     }
 
-                    free(dns1_m); free(dns2_m);
+                    kiwi_ifree(dns1_m); kiwi_ifree(dns2_m);
                     continue;
                 }
                 
-                free(dns1_m); free(dns2_m);
+                kiwi_ifree(dns1_m); kiwi_ifree(dns2_m);
 			}
 
             // FIXME: support wlan0
@@ -780,10 +780,10 @@ void c2s_admin(void *param)
                 rv = WEXITSTATUS(rv);
                 cprintf(conn, "\"%s\" rv=%d\n", cmd_p, rv);
                 send_msg_encoded(conn, "ADM", "network_ip_blacklist_status", "%d,%s", rv, ip_m);
-				free(cmd_p);
+				kiwi_ifree(cmd_p);
 
                 ip_blacklist_add(ip_m);
-				free(ip_m);
+				kiwi_ifree(ip_m);
 				continue;
 			}
 
@@ -1018,8 +1018,10 @@ void c2s_admin(void *param)
         
                 sb = kstr_asprintf(sb, gps.ttff? ",\"ttff\":\"%d:%02d\"" : ",\"ttff\":null", gps.ttff / 60, gps.ttff % 60);
         
-                sb = kstr_asprintf(sb, (gps.StatDay != -1)? ",\"gpstime\":\"%s %02d:%02d:%02.0f\"" : ",\"gpstime\":null",
-                    Week[gps.StatDay], hms.u, hms.m, hms.s);
+                if (gps.StatDay != -1)
+                    sb = kstr_asprintf(sb, ",\"gpstime\":\"%s %02d:%02d:%02.0f\"", Week[gps.StatDay], hms.u, hms.m, hms.s);
+                else
+                    sb = kstr_cat(sb, ",\"gpstime\":null");
         
                 sb = kstr_asprintf(sb, gps.tLS_valid?",\"utc_offset\":\"%+d sec\"" : ",\"utc_offset\":null", gps.delta_tLS);
         
@@ -1118,7 +1120,7 @@ void c2s_admin(void *param)
 				    }
 				} else
 				    //clprintf(conn, "CONSOLE: not open for write\n");
-				free(buf_m);
+				kiwi_ifree(buf_m);
 				continue;
 			}
 
@@ -1165,6 +1167,12 @@ void c2s_admin(void *param)
 // extensions
 ////////////////////////////////
 
+			i = strcmp(cmd, "ADM wspr_autorun_restart");
+			if (i == 0) {
+			    wspr_autorun_restart();
+				continue;
+			}
+
             // compute grid from GPS on-demand (similar to "SET public_update")
 			i = strcmp(cmd, "ADM wspr_gps_info");
 			if (i == 0) {
@@ -1207,6 +1215,7 @@ void c2s_admin(void *param)
 				    // leak detector needs exit while running on main() stack
 				    kiwi_restart = true;
 				    TaskWakeup(TID_MAIN, TWF_CANCEL_DEADLINE);
+				    continue;
 				#else
 				    kiwi_exit(0);
 				#endif

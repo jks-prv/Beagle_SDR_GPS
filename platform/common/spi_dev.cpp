@@ -24,11 +24,10 @@
 #include "misc.h"
 #include "cfg.h"
 #include "peri.h"
-#include "spi.h"
-#include "spi_dev.h"
 #include "coroutines.h"
 #include "debug.h"
-#include "shmem.h"
+#include "spi.h"
+#include "spi_dev.h"
 
 #ifdef CPU_AM3359
  #include "spi_pio.h"

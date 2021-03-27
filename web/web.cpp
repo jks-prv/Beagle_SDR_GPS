@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "types.h"
 #include "config.h"
+#include "mem.h"
 #include "misc.h"
 #include "timer.h"
 #include "web.h"
@@ -45,6 +46,8 @@ Boston, MA  02110-1301, USA.
 // This file is compiled twice into two different object files:
 // Once with EDATA_EMBED defined when installed as the production server in /usr/local/bin
 // Once with EDATA_DEVEL defined when compiled into the build directory during development 
+
+#define MTR 0
 
 user_iface_t user_iface[] = {
 	{ "openwebrx" },
@@ -182,6 +185,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, time_t
 #ifdef EDATA_DEVEL
 	if (!absPath) {
 		asprintf(&uri2, "web/%s", uri);
+        if (MTR) real_printf("-> edata() uri2 ASPR %p %d<%s>\n", uri2, strlen(uri2), uri2);
 		free_uri2 = true;
 	}
 #endif
@@ -231,11 +235,11 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, time_t
 
                 if (last_free) {
                     //printf(">FREE %p\n", last_free);
-                    kiwi_free("edata_file", (void *) last_free);
+                    kiwi_ifree((void *) last_free, "edata_file");
                 }
                 
                 evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "malloc..");
-                last_free = last_data = data = (char *) kiwi_malloc("edata_file", *size);
+                last_free = last_data = data = (char *) kiwi_imalloc("edata_file", *size);
                 evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "read..");
                 ssize_t rsize = read(fd, (void *) data, *size);
                 close(fd);
@@ -244,13 +248,13 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, time_t
                     fail = true;
                 } else {
                     //printf(">READ %p %d %s\n", last_data, last_size, uri2);
-                    if (last_uri2_read != NULL) free(last_uri2_read);
+                    if (last_uri2_read != NULL) kiwi_ifree(last_uri2_read);
                     last_uri2_read = strdup(uri2);
                 }
             }
             
             if (fail) {
-                if (last_uri2_read != NULL) free(last_uri2_read);
+                if (last_uri2_read != NULL) kiwi_ifree(last_uri2_read);
                 last_uri2_read = NULL;
                 nofile = true;
             }
@@ -261,7 +265,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, time_t
                 *size = last_size;
     
                 // only use once
-                if (last_uri2_read != NULL) free(last_uri2_read);
+                if (last_uri2_read != NULL) kiwi_ifree(last_uri2_read);
                 last_uri2_read = NULL;
                 last_data = NULL;
                 // but note last_free remains valid until next cache_check
@@ -293,7 +297,10 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, time_t
 	    *is_file = nofile? false:true;
 	}
 
-	if (free_uri2) free(uri2);
+	if (free_uri2) {
+        if (MTR) real_printf("-> edata() uri2 FREE %p %d<%s>\n", uri2, strlen(uri2), uri2);
+	    kiwi_ifree(uri2);
+	}
 	return data;
 }
 
@@ -370,11 +377,17 @@ static const char* edata_with_file_ext(char **o_uri, bool free_o_uri, bool *free
 
         for (char **pre = (char **) prefix_list; *pre != NULL && !edata_data; pre++) {
             for (int i = 0; i < suffix_len && !edata_data; i++) {
-                if (cm)
+                if (cm) {
                     asprintf(&uri2, "%s%.*s.min%s%s", *pre, (int) (strlen(*o_uri) - strlen(sp)), *o_uri, sp, suffix[i]);
-                else
+                    if (MTR) real_printf("-> edata_with_file_ext() uri2-1 ASPR %p %d<%s>\n", uri2, strlen(uri2), uri2);
+                } else {
                     asprintf(&uri2, "%s%s%s", *pre, *o_uri, suffix[i]);
-                if (*free_uri) free(uri);
+                    if (MTR) real_printf("-> edata_with_file_ext() uri2-2 ASPR %p %d<%s>\n", uri2, strlen(uri2), uri2);
+                }
+                if (*free_uri) {
+                    if (MTR) real_printf("-> edata_with_file_ext() uri FREE %p %d<%s>\n", uri, strlen(uri), uri);
+                    kiwi_ifree(uri);
+                }
                 uri = uri2;
                 *free_uri = TRUE;
                 edata_data = edata(uri, cache_check, size, mtime, is_file);
@@ -393,8 +406,10 @@ static const char* edata_with_file_ext(char **o_uri, bool free_o_uri, bool *free
     if (*is_gzip) uri[strlen(uri) - 3] = '\0';      // remove ".gz" suffix
 
     if (cache_check) {
-        free(cached_o_uri);
+        if (MTR && cached_o_uri) real_printf("-> edata_with_file_ext() cached_o_uri FREE %p %d<%s>\n", cached_o_uri, strlen(cached_o_uri), cached_o_uri);
+        kiwi_ifree(cached_o_uri);
         cached_o_uri = strdup(*o_uri);
+        if (MTR) real_printf("-> edata_with_file_ext() cached_o_uri STRDUP %p %d<%s>\n", cached_o_uri, strlen(cached_o_uri), cached_o_uri);
         cached_edata_data = edata_data;
         cached_size = *size;
         cached_mtime = *mtime;
@@ -405,7 +420,10 @@ static const char* edata_with_file_ext(char **o_uri, bool free_o_uri, bool *free
         cached_edata_data = NULL;
     }
 
-    if (free_o_uri) free(*o_uri);
+    if (free_o_uri) {
+        if (MTR) real_printf("-> edata_with_file_ext() o_uri FREE %p %d<%s>\n", *o_uri, strlen(*o_uri), *o_uri);
+        kiwi_ifree(*o_uri);
+    }
     *o_uri = uri;   // final uri considered with corresponding *free_uri = TRUE
     return edata_data;
 }
@@ -427,7 +445,7 @@ void iparams_add(const char *id, char *encoded)
 	asprintf(&ip->id, "%s", (char *) id);
 	asprintf(&ip->encoded, "%s", encoded);
 	int n = strlen(encoded);
-    ip->decoded = (char *) malloc(n + SPACE_FOR_NULL);
+    ip->decoded = (char *) kiwi_imalloc("iparams_add", n + SPACE_FOR_NULL);
     mg_url_decode(ip->encoded, n, ip->decoded, n + SPACE_FOR_NULL, 0);
     //printf("iparams_add: %d %s <%s>\n", n_iparams, ip->id, ip->decoded);
 	n_iparams++;
@@ -446,11 +464,11 @@ bool index_params_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, i
 	char *s = &json[jt->start];
 	int n = jt->end - jt->start;
 	if (JSMN_IS_ID(jt)) {
-		id_last = (char *) malloc(n + SPACE_FOR_NULL);
+		id_last = (char *) kiwi_imalloc("index_params_cb", n + SPACE_FOR_NULL);
 		mg_url_decode(s, n, id_last, n + SPACE_FOR_NULL, 0);
 		//printf("index_params_cb: %d %d/%d/%d/%d ID %d <%s>\n", n_iparams, seq, hit, lvl, rem, n, id_last);
 	} else {
-		char *encoded = (char *) malloc(n + SPACE_FOR_NULL);
+		char *encoded = (char *) kiwi_imalloc("index_params_cb", n + SPACE_FOR_NULL);
 		kiwi_strncpy(encoded, s, n + SPACE_FOR_NULL);
 		//printf("index_params_cb: %d %d/%d/%d/%d VAL %s: <%s>\n", n_iparams, seq, hit, lvl, rem, id_last, encoded);
 		if (strcmp(id_last, "PAGE_TITLE") == 0 && *encoded == '\0') {
@@ -458,8 +476,8 @@ bool index_params_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, i
 		} else {
 		    iparams_add(id_last, encoded);
 		}
-		free(id_last);
-		free(encoded);
+		kiwi_ifree(id_last);
+		kiwi_ifree(encoded);
 	}
 	
 	return false;
@@ -470,7 +488,7 @@ void reload_index_params()
 	int i;
 	char *sb, *sb2;
 	
-	// don't free previous on reload because not all were malloc()'d
+	// don't free previous on reload because not all were kiwi_imalloc()'d
 	// (the memory loss is very small)
 	n_iparams = 0;
 	//cfg_walk("index_html_params", cfg_print_tok, NULL);
@@ -733,11 +751,13 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     } else
     if (strncmp(o_uri, "config/", 7) == 0) {
         asprintf(&uri, "%s/%s", DIR_CFG, &o_uri[7]);
+        if (MTR) real_printf("-> uri-1 ASPR %p %d<%s>\n", uri, strlen(uri), uri);
         free_uri = TRUE;
         has_prefix = TRUE;
     } else
     if (strncmp(o_uri, "kiwi.config/", 12) == 0) {
         asprintf(&uri, "%s/%s", DIR_CFG, &o_uri[12]);
+        if (MTR) real_printf("-> uri-2 ASPR %p %d<%s>\n", uri, strlen(uri), uri);
         free_uri = TRUE;
         has_prefix = TRUE;
     } else {
@@ -746,6 +766,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         // should always find match since we only listen to ports in ui table
         assert(ui);
         asprintf(&uri, "%s/%s", ui->name, o_uri);
+        if (MTR) real_printf("-> uri-3 ASPR %p %d<%s>\n", uri, strlen(uri), uri);
         free_uri = TRUE;
     }
     //printf("---- HTTP: uri %s (orig %s)\n", uri, o_uri);
@@ -754,7 +775,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     if (cache.valid && evt == MG_REQUEST && strcmp(uri, cache.uri) == 0) {
         edata_data = cache.edata_data;
         edata_size = cache.edata_size;
-        if (cache.free_uri) free(cache.uri);
+        if (cache.free_uri) kiwi_ifree(cache.uri);
         cache.valid = FALSE;
     }
     #endif
@@ -765,7 +786,10 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 
     // try looking in "kiwi" subdir as a default if no prefix was used (or only ui subdir as prefix)
     if (!edata_data && !has_prefix) {
-        if (free_uri) free(uri);
+        if (free_uri) {
+            if (MTR) real_printf("-> uri-!edata_data-&&-!has_prefix FREE %p %d<%s>\n", uri, strlen(uri), uri);
+            kiwi_ifree(uri);
+        }
         uri = o_uri;
         const char *prefix_kiwi[] = { "kiwi/", "", NULL };
         edata_data = edata_with_file_ext(&uri, FALSE, &free_uri, prefix_kiwi, evt == MG_CACHE_INFO, &edata_size, &mtime, &is_min, &is_gzip, &is_file);
@@ -816,20 +840,24 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
                     int slen = strlen(mc->query_string);
                     bzero(r_buf, slen);
                     bzero((char *) mc->query_string, slen);
-                    free(su_m);
+                    kiwi_ifree(su_m);
                     break;      // have to stop because query string is now erased
                 }
-                free(su_m);
+                kiwi_ifree(su_m);
             }
         }
-        free(r_buf);
+        kiwi_ifree(r_buf);
     }
 
     // For extensions, try looking in external extension directory (outside this package).
     // SECURITY: But ONLY for extensions! Don't allow any other root-referenced accesses.
     // "o_uri" has been previously protected against "../" directory escape.
     if (!edata_data && is_extension) {
-        if (free_uri) free(uri);
+        if (free_uri) {
+            if (MTR) real_printf("-> uri-is_extension FREE %p %d<%s>\n", uri, strlen(uri), uri);
+            kiwi_ifree(uri);
+            uri = NULL;
+        }
         uri = o_uri;
         const char *prefix_ext[] = { "/root/", NULL };
         edata_data = edata_with_file_ext(&uri, FALSE, &free_uri, prefix_ext, evt == MG_CACHE_INFO, &edata_size, &mtime, &is_min, &is_gzip, &is_file);
@@ -838,7 +866,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     #if 0
     // if we found the file, and this is the cache info phase, cache the result so a subsequent request lookup is faster
     if (evt == MG_CACHE_INFO && edata_data) {
-        free(cache.o_uri);
+        kiwi_ifree(cache.o_uri);
         cache.o_uri = strdup(o_uri);
         cache.edata_data = edata_data;
         cache.edata_size = edata_size;
@@ -853,7 +881,10 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     
         // don't try AJAX during the MG_CACHE_INFO pass
         if (evt == MG_CACHE_INFO) {
-            if (free_uri) free(uri);
+            if (free_uri) {
+                if (MTR) real_printf("-> uri-MG_CACHE_INFO FREE %p %d<%s>\n", uri, strlen(uri), uri);
+                kiwi_ifree(uri);
+            }
             evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "skip AJAX MG_CACHE_INFO");
             return MG_FALSE;
         }
@@ -861,7 +892,10 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         ajax_data = rx_server_ajax(mc);     // mc->uri is o_uri without ui->name prefix
         if (ajax_data) {
             if (FROM_VOID_PARAM(ajax_data) == -1) {
-                if (free_uri) free(uri);
+                if (free_uri) {
+                    if (MTR) real_printf("-> uri-ajax FREE %p %d<%s>\n", uri, strlen(uri), uri);
+                    kiwi_ifree(uri);
+                }
                 evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "NO-REPLY");
                 return MG_FALSE;
             }
@@ -876,7 +910,10 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     // give up
     if (!edata_data) {
         //printf("unknown URL: %s (%s) query=<%s> from %s\n", o_uri, uri, mc->query_string, ip_remote(mc));
-        if (free_uri) free(uri);
+        if (free_uri) {
+            if (MTR) real_printf("-> uri-give-up FREE %p %d<%s>\n", uri, strlen(uri), uri);
+            kiwi_ifree(uri);
+        }
         evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "GIVE UP");
         return MG_FALSE;
     }
@@ -889,7 +926,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     bool dirty = false;		// must never return a 304 if a %[] substitution was made!
     if (!isAJAX && suffix && (strcmp(suffix, ".html") == 0 || strcmp(suffix, ".css") == 0)) {
         int nsize = edata_size;
-        html_data = (char *) kiwi_malloc("html_data", nsize);
+        html_data = (char *) kiwi_imalloc("html_data", nsize);
         free_html_data = true;
         char *cp = (char *) edata_data, *np = html_data, *pp;
         int cl, sl, pl, nl;
@@ -908,7 +945,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
                         sl = strlen(ip->decoded);
 
                         // expand buffer
-                        html_data = (char *) kiwi_realloc("html_data", html_data, nsize+sl);
+                        html_data = (char *) kiwi_irealloc("html_data", html_data, nsize+sl);
                         np = html_data + nl;		// in case buffer moved
                         nsize += sl;
                         //printf("%d %%[%s] %d <%s> %s\n", nsize, ip->id, sl, ip->decoded, uri);
@@ -944,6 +981,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     bool isJS = (suffix && strcmp(suffix, ".js") == 0);
     if (!isAJAX && isJS) {
         asprintf(&ver, "kiwi_check_js_version.push({ VERSION_MAJ:%d, VERSION_MIN:%d, file:'%s' });\n", version_maj, version_min, uri);
+        if (MTR) real_printf("-> ver ASPR %p %d<%s>\n", ver, strlen(ver), ver);
         ver_size = strlen(ver);
     }
 
@@ -1036,10 +1074,16 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         }
     }
     
-    if (ver != NULL) free(ver);
-    if (free_html_data) kiwi_free("html_data", (void *) html_data);
+    if (ver != NULL) {
+        if (MTR) real_printf("-> ver FREE %p %d<%s>\n", ver, strlen(ver), ver);
+        kiwi_ifree(ver);
+    }
+    if (free_html_data) kiwi_ifree((void *) html_data, "html_data");
     if (free_ajax_data) kstr_free((char *) ajax_data);
-    if (free_uri) free(uri);
+    if (free_uri) {
+        if (MTR) real_printf("-> uri-bottom FREE %p %d<%s>\n", uri, strlen(uri), uri);
+        kiwi_ifree(uri);
+    }
     
     if (evt != MG_CACHE_INFO) http_bytes += edata_size;
     evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", evprintf("edata_size %d", edata_size));

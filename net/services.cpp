@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "types.h"
 #include "config.h"
+#include "mem.h"
 #include "misc.h"
 #include "timer.h"
 #include "web.h"
@@ -33,7 +34,6 @@ Boston, MA  02110-1301, USA.
 #include "gps.h"
 #include "leds.h"
 #include "non_block.h"
-#include "shmem.h"
 #include "eeprom.h"
 #include "rx_waterfall.h"
 
@@ -110,7 +110,7 @@ static void get_TZ(void *param)
 
         //printf("TIMEZONE: using %s\n", TZ_SERVER);
 		reply = non_blocking_cmd(cmd_p, &status);
-		free(cmd_p);
+		kiwi_ifree(cmd_p);
 		if (reply == NULL || status < 0 || WEXITSTATUS(status) != 0) {
 			lprintf("TIMEZONE: %s curl error\n", TZ_SERVER);
 		    kstr_free(reply);
@@ -299,8 +299,8 @@ static void misc_NET(void *param)
             kiwisdr_com, SURVEY_LAST, net.serno, PRINTF_U64_ARG(net.dna), net.mac, e, vr, vc, cmd_p2);
 
         kstr_free(non_blocking_cmd(cmd_p, &status));
-        free(cmd_p); free(cmd_p2);
-        free(cp); free(e);
+        kiwi_ifree(cmd_p); kiwi_ifree(cmd_p2);
+        kiwi_ifree(cp); kiwi_ifree(e);
     }
     #endif
 
@@ -351,7 +351,7 @@ static void misc_NET(void *param)
             status = child_task("kiwi.set_pwd", set_pwd_task, POLL_MSEC(250), cmd_p);
             status = WEXITSTATUS(status);
             lprintf("SECURITY: \"root\" password set returned status=%d (%s)\n", status, status? "FAIL":"OK");
-            free(cmd_p);
+            kiwi_ifree(cmd_p);
         }
 
         if (debian_pwd_default) {
@@ -361,10 +361,10 @@ static void misc_NET(void *param)
             status = child_task("kiwi.set_pwd", set_pwd_task, POLL_MSEC(250), cmd_p);
             status = WEXITSTATUS(status);
             lprintf("SECURITY: \"debian\" password set returned status=%d (%s)\n", status, status? "FAIL":"OK");
-            free(cmd_p);
+            kiwi_ifree(cmd_p);
         }
 
-        free(cmd_p2);
+        kiwi_ifree(cmd_p2);
     }
 
     // register for my.kiwisdr.com
@@ -385,7 +385,7 @@ static void misc_NET(void *param)
             kiwisdr_com, net.ip_pub, net.ip_pvt, net.port, net.serno, cmd_p2? cmd_p2:"");
 
         kstr_free(non_blocking_cmd(cmd_p, &status));
-        free(cmd_p); free(cmd_p2);
+        kiwi_ifree(cmd_p); kiwi_ifree(cmd_p2);
         lprintf("MY_KIWI: registered\n");
     }
 }
@@ -402,7 +402,7 @@ static bool ipinfo_json(int https, const char *url, const char *path, const char
     //printf("IPINFO: <%s>\n", cmd_p);
     
     reply = non_blocking_cmd(cmd_p, &stat);
-    free(cmd_p);
+    kiwi_ifree(cmd_p);
 
     int estat = WEXITSTATUS(stat);
     if (stat < 0 || estat != 0) {
@@ -517,7 +517,7 @@ static void UPnP_port_open_task(void *param)
         net_printf2("UPnP_port_open_task net.auto_nat=%d\n", net.auto_nat);
     } else
         net.auto_nat = 4;      // command failed
-    free(cmd_p);
+    kiwi_ifree(cmd_p);
 }
 
 static void pvt_NET(void *param)
@@ -797,10 +797,10 @@ static void reg_public(void *param)
 		    retrytime_mins = RETRYTIME_KIWISDR_COM_FAIL;    // check frequently for registration to be re-enabled
 		}
 
-		free(cmd_p);
-		//free(server_enc);
+		kiwi_ifree(cmd_p);
+		//kiwi_ifree(server_enc);
         cfg_string_free(server_url);
-        free(email);
+        kiwi_ifree(email);
         
         if (kiwi_reg_debug) printf("reg_kiwisdr_com TaskSleepSec(min=%d)\n", retrytime_mins);
 		TaskSleepSec(MINUTES_TO_SEC(retrytime_mins));

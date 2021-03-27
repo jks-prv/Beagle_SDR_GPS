@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "mem.h"
 #include "misc.h"
 #include "str.h"
 #include "web.h"
@@ -29,7 +30,6 @@ Boston, MA  02110-1301, USA.
 #include "net.h"
 #include "debug.h"
 #include "non_block.h"
-#include "shmem.h"
 
 #include <sys/file.h>
 #include <fcntl.h>
@@ -71,7 +71,7 @@ void register_zombie(pid_t child_pid)
     }
     
     if (i == zombies.size) {
-        zombies.list = (pid_t *) realloc(zombies.list, sizeof(pid_t)*(zombies.size + ZEXP));
+        zombies.list = (pid_t *) kiwi_irealloc("register_zombie", zombies.list, sizeof(pid_t)*(zombies.size + ZEXP));
         zombies.list[zombies.size] = child_pid;
         //lprintf("==== add exp ZOMBIE @%d pid=%d\n", zombies.size, child_pid);
         memset(&zombies.list[zombies.size+1], 0, sizeof(pid_t)*(ZEXP-1));
@@ -221,13 +221,13 @@ static void _non_blocking_cmd_forall(void *param)
 // shared memory is used to communicated with main Kiwi process.
 int non_blocking_cmd_func_forall(const char *pname, const char *cmd, funcPR_t func, int param, int poll_msec)
 {
-	nbcmd_args_t *args = (nbcmd_args_t *) malloc(sizeof(nbcmd_args_t));
+	nbcmd_args_t *args = (nbcmd_args_t *) kiwi_imalloc("non_blocking_cmd_func_forall", sizeof(nbcmd_args_t));
 	args->cmd = cmd;
 	args->func = func;
 	args->func_param = param;
 	int status = child_task(pname, _non_blocking_cmd_forall, poll_msec, (void *) args);
 	if (poll_msec == NO_WAIT) status = 0;
-	free(args);
+	kiwi_ifree(args, "non_blocking_cmd_func_forall");
     //printf("non_blocking_cmd_child %d\n", status);
 	return status;
 }
@@ -307,13 +307,13 @@ static void _non_blocking_cmd_foreach(void *param)
 // shared memory is used to communicated with main Kiwi process.
 int non_blocking_cmd_func_foreach(const char *pname, const char *cmd, funcPR_t func, int param, int poll_msec)
 {
-	nbcmd_args_t *args = (nbcmd_args_t *) malloc(sizeof(nbcmd_args_t));
+	nbcmd_args_t *args = (nbcmd_args_t *) kiwi_imalloc("non_blocking_cmd_func_foreach", sizeof(nbcmd_args_t));
 	args->cmd = cmd;
 	args->func = func;
 	args->func_param = param;
 	int status = child_task(pname, _non_blocking_cmd_foreach, poll_msec, (void *) args);
 	if (poll_msec == NO_WAIT) status = 0;
-	free(args);
+	kiwi_ifree(args, "non_blocking_cmd_func_foreach");
     //printf("non_blocking_cmd_child %d\n", status);
 	return status;
 }

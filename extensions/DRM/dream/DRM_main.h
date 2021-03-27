@@ -35,7 +35,6 @@
 #include "coroutines.h"
 #include "data_pump.h"
 #include "timer.h"
-#include "shmem.h"
 
 #ifdef DRM_SHMEM_DISABLE
     void drm_next_task(const char *id);

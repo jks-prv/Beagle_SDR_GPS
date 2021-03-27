@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "types.h"
 #include "config.h"
+#include "mem.h"
 #include "misc.h"
 #include "timer.h"
 #include "web.h"
@@ -31,7 +32,6 @@ Boston, MA  02110-1301, USA.
 #include "str.h"
 #include "jsmn.h"
 #include "gps.h"
-#include "shmem.h"
 #include "leds.h"
 #include "timing.h"
 
@@ -81,7 +81,7 @@ static void led_set_one(int led, int v)
     if (!fd) {
         asprintf(&s, "%s%d/trigger", LED_PATH, led);
         scall("led open trig", (fd = open(s, O_WRONLY)));
-        free(s);
+        kiwi_ifree(s);
         scall("led write trig", write(fd, full_on? "none":"timer", full_on? 4:5));
         close(fd);
         
@@ -91,11 +91,11 @@ static void led_set_one(int led, int v)
         } else {
             asprintf(&s, "%s%d/delay_on", LED_PATH, led);
             scall("led open delay_on", (fd = open(s, O_WRONLY)));
-            free(s);
+            kiwi_ifree(s);
             asprintf(&s, "%s%d/delay_off", LED_PATH, led);
             scall("led open delay_off", (led_fd[led][1] = open(s, O_WRONLY)));
         }
-        free(s);
+        kiwi_ifree(s);
         led_fd[led][0] = fd;
     }
     

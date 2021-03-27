@@ -2,6 +2,7 @@
 #include "config.h"
 #include "kiwi.h"
 #include "rx.h"
+#include "mem.h"
 #include "misc.h"
 #include "str.h"
 #include "web.h"
@@ -56,9 +57,9 @@ void kiwi_backtrace(const char *id, u4_t printf_type)
             syslog(LOG_ERR, "%s", buf);
         }
         lfprintf(printf_type, "%s", buf);
-        free(buf);
+        kiwi_ifree(buf);
 	}
-	free(sptr);    // free just the array, not the individual strings (says the manpage)
+	kiwi_ifree(sptr);    // free just the array, not the individual strings (says the manpage)
 }
 
 void _panic(const char *str, bool coreFile, const char *file, int line)
@@ -94,6 +95,12 @@ void _sys_panic(const char *str, const char *file, int line)
 	kiwi_exit(-1);
 }
 
+void _ll_printf_panic()
+{
+    real_printf("ll_printf log_save CORRUPTION\n");
+    kiwi_exit(-1);
+}
+
 // NB: when debugging use real_printf() to avoid loops!
 static bool need_newline;
 
@@ -109,7 +116,7 @@ void real_printf(const char *fmt, ...)
     #undef printf
         printf("%s", buf);
     #define printf ALT_PRINTF
-    free(buf);
+    kiwi_ifree(buf);
 	va_end(ap);
 }
 
@@ -130,6 +137,7 @@ void printf_init()
         log_save_p->arr[i] = p;
         p += N_LOG_MSG_LEN;
     }
+    log_save_p->magic = LOG_MAGIC;
     log_save_p->init = true;
 }
 
@@ -150,7 +158,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		
 		//evPrintf(EC_EVENT, EV_PRINTF, -1, "printf", buf);
 	
-		free(buf);
+		kiwi_ifree(buf);
 		buf = NULL;
 		return;
 	}
@@ -159,7 +167,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		s = last_s;
 	} else {
 		brem = VBUF;
-		if ((buf = (char*) malloc(VBUF)) == NULL)
+		if ((buf = (char*) kiwi_imalloc("ll_printf", VBUF)) == NULL)
 			panic("log malloc");
 		s = buf;
 		start_s = s;
@@ -257,10 +265,12 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
         // FIXME: synchronization problem
         
         log_save_t *ls = log_save_p;
-        assert(ls->init);
+        if (ls->magic != LOG_MAGIC || !ls->init) {
+            _ll_printf_panic();
+        }
         
         // Add to in-memory log used by admin page, handling printfs from child tasks via shared memory.
-        // Can't use asprintf() because free() can't be done by parent/child process when needed.
+        // Can't use asprintf() because kiwi_ifree() can't be done by parent/child process when needed.
         // Would need a scavenging mechanism.
         
 		if (ls && (DUMP_ORDINARY_PRINTFS || !background_mode || actually_log || log_ordinary_printfs)) {
@@ -306,7 +316,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		}
 	}
 	
-	free(buf);
+	kiwi_ifree(buf);
 	buf = NULL;
 }
 
@@ -447,7 +457,7 @@ int esnprintf(char *str, size_t slen, const char *fmt, ...)
 	// so there is room to return the larger encoded result.
 	check(slen2 <= slen);
 	strcpy(str, str2);
-	free(str2);
+	kiwi_ifree(str2);
 
 	return slen2;
 }

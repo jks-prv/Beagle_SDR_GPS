@@ -27,7 +27,6 @@
 #include "peri.h"
 #include "coroutines.h"
 #include "debug.h"
-#include "shmem.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -136,9 +135,6 @@ void spi_pump(void *param)
 	}
 }
 
-#define BUSY		(0x90 << SPI_SFT)		// previous request not yet serviced by embedded CPU
-#define BUSY_MASK	(0xf0 << SPI_SFT)
-
 // Why is there an SPI lock?
 // The spi_lock allows the local buffers to be held across the NextTask() that occurs if
 // the SPI request has to be retried due to the eCPU being busy.
@@ -157,7 +153,7 @@ void spi_init()
     pingx = &SPI_SHMEM->pingx_miso;
 	junk = &SPI_SHMEM->spi_junk_miso;
 	prev = junk;
-	junk->status = BUSY;
+	junk->status = SPI_BUSY;
 	CreateTaskF(spi_pump, 0, SPIPUMP_PRIORITY, CTF_BUSY_HELPER);
 }
 
@@ -197,29 +193,29 @@ static void spi_scan(int wait, SPI_MOSI *mosi, int tbytes=0, SPI_MISO *miso=junk
 		prev, (prev == junk)? " (junk)":"", prx_xfers));
 
 	// also note in some cases it is possible for: miso == prev == junk on entry
-	miso->status = BUSY;	// for loop in spi_get()
-	prev->status = BUSY;	// for loop below
+	miso->status = SPI_BUSY;	// for loop in spi_get()
+	prev->status = SPI_BUSY;	// for loop below
 
 	int retries=0;
     for (i=0; i < 32; i++) {
         #ifdef EV_MEAS_SPI_CMD
-            u4_t orig = prev->status & BUSY_MASK;
+            u4_t orig = prev->status & SPI_BUSY_MASK;
         #endif
-		assert((prev->status & BUSY_MASK) == BUSY);
+		assert((prev->status & SPI_BUSY_MASK) == SPI_BUSY);
         spi_dev(SPI_HOST,
             mosi, tx_xfers,   // MOSI: new request
             prev, prx_xfers);  // MISO: response to previous caller's request
 
 		// fixme: understand why is this needed (hangs w/o it) [still?]
         #ifdef EV_MEAS_SPI_CMD
-            u4_t before = prev->status & BUSY_MASK;
+            u4_t before = prev->status & SPI_BUSY_MASK;
         #endif
         if (spi_delay > 0) spin_us(spi_delay); else
         if (spi_delay < 0) kiwi_usleep(-spi_delay);
-        u4_t after = prev->status & BUSY_MASK;
-        //if ((prev->status & BUSY_MASK) != BUSY) break; // new request accepted?
+        u4_t after = prev->status & SPI_BUSY_MASK;
+        //if ((prev->status & SPI_BUSY_MASK) != SPI_BUSY) break; // new request accepted?
         
-        if (after != BUSY) break; // new request accepted?
+        if (after != SPI_BUSY) break; // new request accepted?
 
         #ifdef EV_MEAS_SPI_CMD
             int r = TaskStat(TSTAT_SPI_RETRY, 0, "rty");
@@ -429,7 +425,7 @@ void _spi_get(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam, uint32_t lp
     #ifdef EV_MEAS_SPI_CMD
 	    int tid = TaskID();
 	#endif
-    while ((rx->status & BUSY_MASK) == BUSY) {
+    while ((rx->status & SPI_BUSY_MASK) == SPI_BUSY) {
     	busy++;
 		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_get", evprintf(">>>> BUSY WAIT for DONE #%d %s(%d) %s miso %p",
 			busy, cmds[cmd], cmd, Task_s(tid), rx));

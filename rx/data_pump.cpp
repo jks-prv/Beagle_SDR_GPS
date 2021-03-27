@@ -26,10 +26,10 @@ Boston, MA  02110-1301, USA.
 #include "timer.h"
 #include "web.h"
 #include "spi.h"
+#include "spi_dev.h"
 #include "gps.h"
 #include "coroutines.h"
 #include "debug.h"
-#include "shmem.h"
 #include "data_pump.h"
 
 #include <string.h>
@@ -94,7 +94,7 @@ static void snd_service()
         // CTRL_SND_INTR cleared as a side-effect of the CmdGetRX
         spi_get3_noduplex(CmdGetRX, miso, rx_xfer_size, nrx_samps_rem, nrx_samps_loop);
         moved++;
-        dpump.rx_adc_ovfl = miso->status & SPI_ST_ADC_OVFL;
+        dpump.rx_adc_ovfl = miso->status & SPI_ADC_OVFL;
         
         evDPC(EC_EVENT, EV_DPUMP, -1, "snd_svc", "..CmdGetRX");
         

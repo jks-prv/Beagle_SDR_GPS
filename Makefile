@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 445
+VERSION_MIN = 446
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.11
@@ -145,6 +145,8 @@ TOOLS_DIR = $(BUILD_DIR)/tools
 
 ifeq ($(OPT),0)
 	OBJ_DIR_DEFAULT = $(OBJ_DIR)
+else ifeq ($(OPT),1)
+	OBJ_DIR_DEFAULT = $(OBJ_DIR)
 else
 	OBJ_DIR_DEFAULT = $(OBJ_DIR_O3)
 endif
@@ -188,6 +190,9 @@ _DIRS_O3 += . $(PKGS_O3) platform/common $(_DIR_PLATFORMS) $(EXT_DIRS) $(EXT_SUB
 	$(RX) $(GPS) ui init support net web arch/$(ARCH)
 
 ifeq ($(OPT),0)
+	DIRS = $(_DIRS) $(_DIRS_O3)
+	DIRS_O3 =
+else ifeq ($(OPT),1)
 	DIRS = $(_DIRS) $(_DIRS_O3)
 	DIRS_O3 =
 else
@@ -1266,6 +1271,8 @@ copy_from_git:
 # used by gdiff alias
 gitdiff:
 	colordiff -br --exclude=.DS_Store --exclude=.git "--exclude=*.min.*" $(GITAPP)/$(REPO_NAME) . || true
+gitdiff_context:
+	colordiff -br -C 10 --exclude=.DS_Store --exclude=.git "--exclude=*.min.*" $(GITAPP)/$(REPO_NAME) . || true
 gitdiff_brief:
 	colordiff -br --brief --exclude=.DS_Store --exclude=.git $(GITAPP)/$(REPO_NAME) . || true
 

@@ -26,11 +26,11 @@
 #include "misc.h"
 #include "gps.h"
 #include "spi.h"
+#include "spi_dev.h"
 #include "cacode.h"
 #include "e1bcode.h"
 #include "debug.h"
 #include "simd.h"
-#include "shmem.h"
 
 #include <stdio.h>
 #include <sys/file.h>

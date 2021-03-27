@@ -209,8 +209,12 @@ typedef struct {
 	union {
 		SPI_T msg[1];
 		struct {
+            #define SPI_BUSY        (0x90 << SPI_SFT)   // previous request not yet serviced by embedded CPU
+            #define SPI_BUSY_MASK   (0xf0 << SPI_SFT)
+			#define SPI_ADC_OVFL    (0x08 << SPI_SFT)
+			#define SPI_AVAILABLE   (0x07 << SPI_SFT)
 			SPI_ST status;
-			#define SPI_ST_ADC_OVFL (0x08 << SPI_SFT)
+
 			union {
 				char byte[SPIBUF_B];
 				uint16_t word[SPIBUF_W];

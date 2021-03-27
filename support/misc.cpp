@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "kiwi.h"
 #include "valgrind.h"
+#include "mem.h"
 #include "misc.h"
 #include "str.h"
 #include "web.h"
@@ -29,7 +30,6 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "net.h"
 #include "debug.h"
-#include "shmem.h"
 
 #include <sys/file.h>
 #include <fcntl.h>
@@ -44,158 +44,6 @@ Boston, MA  02110-1301, USA.
 #include <stdarg.h>
 #include <time.h>
 #include <sched.h>
-
-#ifdef MALLOC_DEBUG
-
-// bypass if using valgrind so there are no lingering references from here that defeat leak detection
-
-//#define MALLOC_DEBUG_PRF
-#if defined(MALLOC_DEBUG_PRF) && !defined(USE_VALGRIND)
- #define kmprintf(x) printf x;
-#else
- #define kmprintf(x)
-#endif
-
-#define NMT 1024
-struct mtrace_t {
-	int i;
-	const char *from;
-	char *ptr;
-	int size;
-} mtrace[NMT];
-
-static int nmt;
-
-static int mt_enter(const char *from, void *ptr, int size)
-{
-	int i;
-	mtrace_t *mt;
-	
-	#ifdef USE_VALGRIND
-	    return 0;
-	#endif
-	
-	for (i=0; i<NMT; i++) {
-		mt = &mtrace[i];
-		if (mt->ptr == ptr) {
-			kmprintf(("  mt_enter \"%s\" #%d (\"%s\") %d %p\n", from, i, mt->from, size, ptr));
-			panic("mt_enter dup");
-		}
-		if (mt->ptr == NULL) {
-			mt->i = i;
-			mt->from = from;
-			mt->ptr = (char*) ptr;
-			mt->size = size;
-			break;
-		}
-	}
-	
-	if (i == NMT) panic("mt_enter overflow");
-	nmt++;
-	return i+1;
-}
-
-static void mt_remove(const char *from, void *ptr)
-{
-	int i;
-	mtrace_t *mt;
-	
-	#ifdef USE_VALGRIND
-	    return;
-	#endif
-	
-	for (i=0; i<NMT; i++) {
-		mt = &mtrace[i];
-		if (mt->ptr == (char*) ptr) {
-			mt->ptr = NULL;
-			break;
-		}
-	}
-	
-	kmprintf(("  mt_remove \"%s\" #%d %p\n", from, i+1, ptr));
-	if (i == NMT) {
-		printf("mt_remove \"%s\"\n", from);
-		panic("mt_remove not found");
-	}
-	nmt--;
-}
-
-#define	MALLOC_MAX	PHOTO_UPLOAD_MAX_SIZE
-
-void *kiwi_malloc(const char *from, size_t size)
-{
-	//if (size > MALLOC_MAX) panic("malloc > MALLOC_MAX");
-	kmprintf(("kiwi_malloc-1 \"%s\" %d\n", from, size));
-	void *ptr = malloc(size);
-	memset(ptr, 0, size);
-    #ifdef MALLOC_DEBUG_PRF
-        int i = mt_enter(from, ptr, size);
-    #else
-        mt_enter(from, ptr, size);
-    #endif
-	kmprintf(("kiwi_malloc-2 \"%s\" #%d %d %p\n", from, i, size, ptr));
-	return ptr;
-}
-
-void *kiwi_realloc(const char *from, void *ptr, size_t size)
-{
-	//if (size > MALLOC_MAX) panic("malloc > MALLOC_MAX");
-	kmprintf(("kiwi_realloc-1 \"%s\" %d %p\n", from, size, ptr));
-	mt_remove(from, ptr);
-	ptr = realloc(ptr, size);
-    #ifdef MALLOC_DEBUG_PRF
-        int i = mt_enter(from, ptr, size);
-    #else
-        mt_enter(from, ptr, size);
-    #endif
-	kmprintf(("kiwi_realloc-2 \"%s\" #%d %d %p\n", from, i, size, ptr));
-	return ptr;
-}
-
-char *kiwi_strdup(const char *from, const char *s)
-{
-	int sl = strlen(s)+1;
-	if (sl == 0 || sl > 1024) panic("strdup size");
-	char *ptr = strdup(s);
-    #ifdef MALLOC_DEBUG_PRF
-        int i = mt_enter(from, (void*) ptr, sl);
-    #else
-        mt_enter(from, (void*) ptr, sl);
-    #endif
-	kmprintf(("kiwi_strdup \"%s\" #%d %d %p %p\n", from, i, sl, s, ptr));
-	return ptr;
-}
-
-void kiwi_free(const char *from, void *ptr)
-{
-	kmprintf(("kiwi_free \"%s\" %p\n", from, ptr));
-	if (ptr == NULL) return;
-	mt_remove(from, ptr);
-	free(ptr);
-}
-
-int kiwi_malloc_stat()
-{
-	return nmt;
-}
-
-#endif
-
-void kiwi_str_redup(char **ptr, const char *from, const char *s)
-{
-	int sl = strlen(s)+1;
-	if (sl == 0 || sl > 1024) panic("strdup size");
-	if (*ptr) kiwi_free(from, (void*) *ptr);
-	*ptr = strdup(s);
-#ifdef MALLOC_DEBUG
-    #ifdef MALLOC_DEBUG_PRF
-        int i = mt_enter(from, (void*) *ptr, sl);
-    #else
-        mt_enter(from, (void*) *ptr, sl);
-    #endif
-	kmprintf(("kiwi_str_redup \"%s\" #%d %d %p %p\n", from, i, sl, s, *ptr));
-#endif
-}
 
 
 // used by qsort
@@ -322,13 +170,13 @@ void send_msg(conn_t *c, bool debug, const char *msg, ...)
 	va_end(ap);
 	if (debug) cprintf(c, "send_msg: %p <%s>\n", c->mc, s);
 	send_msg_buf(c, s, strlen(s));
-	free(s);
+	kiwi_ifree(s, "send_msg");
 }
 
 void send_msg_data(conn_t *c, bool debug, u1_t cmd, u1_t *bytes, int nbytes)
 {
 	int size = 4 + sizeof(cmd) + nbytes;
-	char *buf = (char *) kiwi_malloc("send_msg_data", size);
+	char *buf = (char *) kiwi_imalloc("send_msg_data", size);
 	char *s = buf;
 	int n = sprintf(s, "DAT ");
 	if (debug) cprintf(c, "send_msg_data: cmd=%d nbytes=%d size=%d\n", cmd, nbytes, size);
@@ -337,13 +185,13 @@ void send_msg_data(conn_t *c, bool debug, u1_t cmd, u1_t *bytes, int nbytes)
 	if (nbytes)
 		memcpy(s, bytes, nbytes);
 	send_msg_buf(c, buf, size);
-	kiwi_free("send_msg_data", buf);
+	kiwi_ifree(buf, "send_msg_data");
 }
 
 void send_msg_data2(conn_t *c, bool debug, u1_t cmd, u1_t data2, u1_t *bytes, int nbytes)
 {
 	int size = 4 + sizeof(cmd)+ sizeof(data2) + nbytes;
-	char *buf = (char *) kiwi_malloc("send_msg_data2", size);
+	char *buf = (char *) kiwi_imalloc("send_msg_data2", size);
 	char *s = buf;
 	int n = sprintf(s, "DAT ");
 	if (debug) cprintf(c, "send_msg_data2: cmd=%d data2=%d nbytes=%d size=%d\n", cmd, data2, nbytes, size);
@@ -353,7 +201,7 @@ void send_msg_data2(conn_t *c, bool debug, u1_t cmd, u1_t data2, u1_t *bytes, in
 	if (nbytes)
 		memcpy(s, bytes, nbytes);
 	send_msg_buf(c, buf, size);
-	kiwi_free("send_msg_data2", buf);
+	kiwi_ifree(buf, "send_msg_data2");
 }
 
 // sent direct to mg_connection -- only directly called in a few places where conn_t isn't available
@@ -369,7 +217,7 @@ void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...)
 	size_t slen = strlen(s);
 	if (debug) printf("send_msg_mc: %d <%s>\n", slen, s);
 	mg_websocket_write(mc, WS_OPCODE_BINARY, s, slen);
-	free(s);
+	kiwi_ifree(s, "send_msg_mc");
 }
 
 void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char *fmt, ...)
@@ -384,9 +232,9 @@ void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char
 	va_end(ap);
 	
 	char *buf = kiwi_str_encode(s);
-	free(s);
+	kiwi_ifree(s, "send_msg_encoded");
 	send_msg(conn, FALSE, "%s %s=%s", dst, cmd, buf);
-	free(buf);
+	kiwi_ifree(buf, "send_msg_encoded");
 }
 
 // sent direct to mg_connection -- only directly called in a few places where conn_t isn't available
@@ -403,9 +251,9 @@ void send_msg_mc_encoded(struct mg_connection *mc, const char *dst, const char *
 	va_end(ap);
 	
 	char *buf = kiwi_str_encode(s);
-	free(s);
+	kiwi_ifree(s, "send_msg_mc_encoded");
 	send_msg_mc(mc, FALSE, "%s %s=%s", dst, cmd, buf);
-	free(buf);
+	kiwi_ifree(buf, "send_msg_mc_encoded");
 }
 
 void input_msg_internal(conn_t *conn, const char *fmt, ...)
@@ -421,7 +269,7 @@ void input_msg_internal(conn_t *conn, const char *fmt, ...)
 	
     assert(conn->internal_connection);
 	nbuf_allocq(&conn->c2s, s, strlen(s));
-	free(s);
+	kiwi_ifree(s, "input_msg_internal");
 }
 
 float ecpu_use()
@@ -465,7 +313,7 @@ static print_max_min_int_t *print_max_min_init(void **state)
 {
 	print_max_min_int_t **pp = (print_max_min_int_t **) state;
 	if (*pp == NULL) {
-		*pp = (print_max_min_int_t *) malloc(sizeof(print_max_min_int_t));
+		*pp = (print_max_min_int_t *) kiwi_imalloc("print_max_min_init", sizeof(print_max_min_int_t));
 		print_max_min_int_t *p = *pp;
 		memset(p, 0, sizeof(*p));
 		p->min_i = 0x7fffffff; p->max_i = 0x80000000;

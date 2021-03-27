@@ -20,8 +20,8 @@
 
 #include "gps.h"
 #include "spi.h"
+#include "spi_dev.h"
 #include "misc.h"
-#include "shmem.h"
 #include "ephemeris.h"
 #include "fec.h"
 #include "gnss_sdrlib.h"

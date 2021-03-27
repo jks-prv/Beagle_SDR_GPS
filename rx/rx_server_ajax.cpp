@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "mem.h"
 #include "misc.h"
 #include "str.h"
 #include "printf.h"
@@ -117,7 +118,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		int key_cmp = -1;
 		if (mc->query_string && current_authkey) {
 			key_cmp = strcmp(mc->query_string, current_authkey);
-			free(current_authkey);
+			kiwi_ifree(current_authkey);
 			current_authkey = NULL;
 		}
 		if (key_cmp != 0)
@@ -254,11 +255,11 @@ char *rx_server_ajax(struct mg_connection *mc)
 				if (strcasestr(name, kwds[i]))
 					break;
 			}
-			free(loc); free(r_loc);
+			kiwi_ifree(loc); kiwi_ifree(r_loc);
 			if (i == n) {
 				char *name2;
 				asprintf(&name2, "%s | %s", name, s5);
-				free(name);
+				kiwi_ifree(name);
 				name = name2;
 				//printf("KW <%s>\n", name);
 			}
@@ -361,8 +362,8 @@ char *rx_server_ajax(struct mg_connection *mc)
 			gps.set_date? 1:0, gps.date_set? 1:0, utc_ctime_static()
 			);
 
-		free(name);
-		free(ipinfo_lat_lon);
+		kiwi_ifree(name);
+		kiwi_ifree(ipinfo_lat_lon);
 		cfg_string_free(s3);
 		cfg_string_free(s4);
 		cfg_string_free(s5);
@@ -381,5 +382,5 @@ char *rx_server_ajax(struct mg_connection *mc)
 
 	sb = kstr_wrap(sb);
 	//printf("AJAX: RTN <%s>\n", kstr_sp(sb));
-	return sb;		// NB: sb is free()'d by caller
+	return sb;		// NB: sb is kiwi_ifree()'d by caller
 }

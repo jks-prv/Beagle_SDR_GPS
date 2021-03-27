@@ -24,13 +24,14 @@
 #include "kiwi.h"
 #include "config.h"
 #include "valgrind.h"
+#include "mem.h"
 #include "misc.h"
 #include "str.h"
 #include "coroutines.h"
 #include "debug.h"
 #include "peri.h"
 #include "spi.h"
-#include "shmem.h"
+#include "shmem.h"      // SIG_SETUP_TRAMP
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -389,7 +390,12 @@ void TaskDump(u4_t flags)
 	ct->flags |= CTF_NO_CHARGE;     // don't charge the current task with the time to print all this
 
 	lfprintf(printf_type, "\n");
-	lfprintf(printf_type, "TASKS: used %d/%d, spi_retry %d, spi_delay %d\n", tused, MAX_TASKS, spi.retry, spi_delay);
+	#ifdef USE_ASAN
+	    const char *asan_used = ", USE_ASAN";
+	#else
+	    const char *asan_used = "";
+	#endif
+	lfprintf(printf_type, "TASKS: used %d/%d, spi_retry %d, spi_delay %d%s\n", tused, MAX_TASKS, spi.retry, spi_delay, asan_used);
 
 	if (flags & TDUMP_LOG)
 	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxxuu xxx%% cN\n");
@@ -624,6 +630,7 @@ static void task_stack(int id)
 		return;
 	}
 #endif
+
 #ifdef USE_ASAN
 	return;
 #endif
@@ -825,6 +832,7 @@ void TaskCheckStacks(bool report)
 	if (RUNNING_ON_VALGRIND)
 		return;
 #endif
+
 #ifdef USE_ASAN
 	return;
 #endif
@@ -914,7 +922,7 @@ void TaskRemove(int id)
     collect_needed = TRUE;
     
     if (t->flags & CTF_TNAME_FREE) {
-        free((void *) t->name);
+        kiwi_ifree((void *) t->name);
         t->name = NULL;
     }
 
@@ -1518,7 +1526,7 @@ const char *_TaskName(const char *name, bool free_name)
 	if (!ct) return "main";
 	if (name != NULL) {
         if (ct->flags & CTF_TNAME_FREE) {
-            free((void *) ct->name);
+            kiwi_ifree((void *) ct->name);
             ct->flags &= ~CTF_TNAME_FREE;
         }
 		ct->name = name;

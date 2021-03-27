@@ -23,19 +23,14 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "str.h"
 #include "printf.h"
-#include "spi.h"
-#include "spi_dev.h"
-#include "data_pump.h"
 #include "net.h"
-#include "rx_waterfall.h"
-#include "wspr.h"
+#include "spi.h"
 
-#ifdef DRM
- #include "DRM.h"
-#else
- #define DRM_SHMEM_DISABLE
- #define DRM_MAX_RX 0
-#endif
+#include "DRM.h"
+#include "data_pump.h"
+#include "wspr.h"
+#include "spi_dev.h"
+#include "rx_waterfall.h"
 
 #include <signal.h>
 
@@ -46,6 +41,8 @@ Boston, MA  02110-1301, USA.
 #define N_LOG_SAVE      256
 
 typedef struct {
+    #define LOG_MAGIC 0xf00dcafe
+    u4_t magic;
     bool init;
 	int idx, not_shown;
 	char *arr[N_LOG_SAVE];
@@ -90,6 +87,16 @@ typedef struct {
     u4_t request[N_SHMEM_WHICH], done[N_SHMEM_WHICH];
     u4_t request_tx, request_rx, request_func[2];
 } shmem_ipc_t;
+
+#ifdef SHMEM_CONFIG_H_INCLUDED
+#else
+    #warning shmem_config.h not included
+    #define DRM_SHMEM_DISABLE
+    #define RX_SHMEM_DISABLE
+    #define WSPR_SHMEM_DISABLE
+    #define SPI_SHMEM_DISABLE
+    #define WF_SHMEM_DISABLE
+#endif
 
 typedef struct {
     net_t net_shmem;

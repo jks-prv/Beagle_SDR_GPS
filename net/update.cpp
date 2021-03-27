@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "mem.h"
 #include "misc.h"
 #include "str.h"
 #include "timer.h"
@@ -67,7 +68,7 @@ static void update_build_ctask(void *param)
 		    "git checkout . >>/root/build.log 2>&1; " \
 		);
 		status = system(cmd_p);
-		free(cmd_p);
+		kiwi_ifree(cmd_p);
         child_status_exit(status);
 
         struct stat st;
@@ -77,7 +78,7 @@ static void update_build_ctask(void *param)
 		    use_git_proto? "git" : "https" \
 		);
 		status = system(cmd_p);
-		free(cmd_p);
+		kiwi_ifree(cmd_p);
         status = child_status_exit(status, NO_ERROR_EXIT);
         
         // try again using github.com well-known public ip address (failure mode when ISP messes with github.com DNS)
@@ -87,7 +88,7 @@ static void update_build_ctask(void *param)
                 "git pull -v git://" GITHUB_COM_PUBLIC_IP "/jks-prv/Beagle_SDR_GPS.git >>/root/build.log 2>&1; "
             );
             status = system(cmd_p);
-            free(cmd_p);
+            kiwi_ifree(cmd_p);
             child_status_exit(status);
         }
 
@@ -123,9 +124,9 @@ static void report_result(conn_t *conn)
 		fs_full, update_pending, update_in_progress, rx_chans, GPS_CHANS, version_maj, version_min, pending_maj, pending_min, date_m, time_m);
 	send_msg(conn, false, "MSG update_cb=%s", sb);
 	//printf("UPDATE: %s\n", sb);
-	free(date_m);
-	free(time_m);
-	free(sb);
+	kiwi_ifree(date_m);
+	kiwi_ifree(time_m);
+	kiwi_ifree(sb);
 }
 
 static bool daily_restart = false;

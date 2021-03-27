@@ -5,11 +5,13 @@
  * Copyright (c) 2007-2013, Oona Räisänen (OH2EIQ [at] sral.fi)
  */
 
+#include "types.h"
+#include "mem.h"
 #include "sstv.h"
 
 void sstv_video_once(sstv_chan_t *e)
 {
-    e->image = (image_t *) malloc(sizeof(image_t));
+    e->image = (image_t *) kiwi_imalloc("sstv_video_once", sizeof(image_t));
     assert(e->image != NULL);
 }
 
@@ -28,23 +30,23 @@ void sstv_video_init(sstv_chan_t *e, SSTV_REAL rate, u1_t mode)
     
     // Allocate space for cached Lum
     e->StoredLum_len = (int) ((m->LineTime * m->NumLines + 1) * sstv.nom_rate);
-    e->StoredLum = (u1_t *) calloc(e->StoredLum_len, sizeof(u1_t));
+    e->StoredLum = (u1_t *) kiwi_icalloc("sstv_video_init", e->StoredLum_len, sizeof(u1_t));
     assert(e->StoredLum != NULL);
 
     // Allocate space for sync signal
     // m->NumLines+1 to handle indicies beyond nominal range due to Rate/nom_rate adjustment in sstv_sync_find()
     e->HasSync_len = (int) (m->LineTime * (m->NumLines+1) / (13.0 / sstv.nom_rate));
-    e->HasSync = (bool *) calloc(e->HasSync_len, sizeof(bool));
+    e->HasSync = (bool *) kiwi_icalloc("sstv_video_init", e->HasSync_len, sizeof(bool));
     assert(e->HasSync != NULL);
 }
 
 void sstv_video_done(sstv_chan_t *e)
 {
     //printf("SSTV: sstv_video_done\n");
-    free(e->StoredLum); e->StoredLum = NULL;
-    free(e->HasSync); e->HasSync = NULL;
-    free(e->PixelGrid); e->PixelGrid = NULL;
-    free(e->pixels); e->pixels = NULL;
+    kiwi_ifree(e->StoredLum, "sstv_video_done"); e->StoredLum = NULL;
+    kiwi_ifree(e->HasSync, "sstv_video_done"); e->HasSync = NULL;
+    kiwi_ifree(e->PixelGrid, "sstv_video_done"); e->PixelGrid = NULL;
+    kiwi_ifree(e->pixels, "sstv_video_done"); e->pixels = NULL;
 }
 
 
@@ -91,7 +93,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
     #define HANN_J 7
     #define HANN_I 1024
     #define Hann(j, i) HannA[(j) * HANN_I + (i)]
-    SSTV_REAL *HannA = (SSTV_REAL *) calloc(HANN_J * HANN_I, sizeof(SSTV_REAL));
+    SSTV_REAL *HannA = (SSTV_REAL *) kiwi_icalloc("sstv_video_get", HANN_J * HANN_I, sizeof(SSTV_REAL));
     check(HannA != NULL);
     
     if (!Redraw) {
@@ -102,9 +104,9 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
     }
 
     PixelGrid_t *PixelGrid;
-    free(e->PixelGrid);
+    kiwi_ifree(e->PixelGrid, "sstv_video_get");
     e->PixelGrid_len = m->ImgWidth * m->NumLines * 3;
-    PixelGrid = (PixelGrid_t *) calloc(e->PixelGrid_len, sizeof(PixelGrid_t));
+    PixelGrid = (PixelGrid_t *) kiwi_icalloc("sstv_video_get", e->PixelGrid_len, sizeof(PixelGrid_t));
     e->PixelGrid = PixelGrid;
 
     // Initialize Hann windows of different lengths
@@ -245,9 +247,9 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
     assert_array_dim(PixelIdx, e->PixelGrid_len);
 
     u1_t *pixels, *p;
-    free(e->pixels);
+    kiwi_ifree(e->pixels, "sstv_video_get");
     e->pixels_len = m->ImgWidth * m->NumLines * 3;
-    pixels = (u1_t *) calloc(e->pixels_len, sizeof(u1_t));
+    pixels = (u1_t *) kiwi_icalloc("sstv_video_get", e->pixels_len, sizeof(u1_t));
     assert(pixels != NULL);
     e->pixels = pixels;
 
@@ -264,7 +266,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
 
     for (SampleNum = 0; SampleNum < Length; SampleNum++) {
     
-    if (e->reset) { free(HannA); return false; }
+    if (e->reset) { kiwi_ifree(HannA, "sstv_video_get"); return false; }
 
     if (!Redraw) {
 
@@ -515,6 +517,6 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
 
     } // for SampleNum
 
-    free(HannA);
+    kiwi_ifree(HannA, "sstv_video_get");
     return true;
 }

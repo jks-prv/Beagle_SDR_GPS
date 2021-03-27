@@ -26,7 +26,7 @@
  */
 
 #include "wspr.h"
-#include "shmem.h"
+#include "mem.h"
 
 static const unsigned char pr3[NSYM_162]=
 {1,1,0,0,0,0,0,0,1,0,0,0,1,1,1,0,0,0,1,0,
@@ -323,12 +323,12 @@ void subtract_signal2(float *id, float *qd, long np,
     
     float *refi, *refq, *ci, *cq, *cfi, *cfq;
 
-    refi = (float *) malloc(sizeof(float)*nc2);
-    refq = (float *) malloc(sizeof(float)*nc2);
-    ci = (float *) malloc(sizeof(float)*nc2);
-    cq = (float *) malloc(sizeof(float)*nc2);
-    cfi = (float *) malloc(sizeof(float)*nc2);
-    cfq = (float *) malloc(sizeof(float)*nc2);
+    refi = (float *) kiwi_imalloc("subtract_signal2", sizeof(float)*nc2);
+    refq = (float *) kiwi_imalloc("subtract_signal2", sizeof(float)*nc2);
+    ci = (float *) kiwi_imalloc("subtract_signal2", sizeof(float)*nc2);
+    cq = (float *) kiwi_imalloc("subtract_signal2", sizeof(float)*nc2);
+    cfi = (float *) kiwi_imalloc("subtract_signal2", sizeof(float)*nc2);
+    cfq = (float *) kiwi_imalloc("subtract_signal2", sizeof(float)*nc2);
     
     memset(refi,0,sizeof(float)*nc2);
     memset(refq,0,sizeof(float)*nc2);
@@ -423,12 +423,12 @@ void subtract_signal2(float *id, float *qd, long np,
         }
     }
     
-    free(refi);
-    free(refq);
-    free(ci);
-    free(cq);
-    free(cfi);
-    free(cfq);
+    kiwi_ifree(refi);
+    kiwi_ifree(refq);
+    kiwi_ifree(ci);
+    kiwi_ifree(cq);
+    kiwi_ifree(cfi);
+    kiwi_ifree(cfq);
 
     return;
 }
@@ -453,7 +453,7 @@ bool wspr_update_vars_from_config()
     
     cfg_default_string("WSPR.callsign", "", &update_cfg);
     s = (char *) cfg_string("WSPR.callsign", NULL, CFG_REQUIRED);
-    free(wspr_c.rcall);
+    kiwi_ifree(wspr_c.rcall);
 	wspr_c.rcall = kiwi_str_encode(s);
 	cfg_string_free(s);
 

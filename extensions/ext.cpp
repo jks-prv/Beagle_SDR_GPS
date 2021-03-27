@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "kiwi.h"
 #include "clk.h"
+#include "mem.h"
 #include "misc.h"
 #include "str.h"
 #include "cfg.h"
@@ -159,7 +160,7 @@ int ext_send_msg(int rx_chan, bool debug, const char *msg, ...)
 	va_end(ap);
 	if (debug) printf("ext_send_msg: RX%d(%p) <%s>\n", rx_chan, conn, s);
 	send_msg_buf(conn, s, strlen(s));
-	free(s);
+	kiwi_ifree(s);
 	return 0;
 }
 
@@ -195,9 +196,9 @@ int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *c
 	va_end(ap);
 	
 	char *buf = kiwi_str_encode(s);
-	free(s);
+	kiwi_ifree(s);
 	ext_send_msg(rx_chan, debug, "%s %s=%s", dst, cmd, buf);
-	free(buf);
+	kiwi_ifree(buf);
 	return 0;
 }
 
@@ -215,7 +216,7 @@ void extint_send_extlist(conn_t *conn)
 {
 	int i;
 	#define	MAX_EXT_NAME 32
-	char *elist = (char *) malloc(N_EXT * MAX_EXT_NAME);
+	char *elist = (char *) kiwi_imalloc("extint_send_extlist", N_EXT * MAX_EXT_NAME);
 
 	if (n_exts == 0) {
 		strcpy(elist, "null");
@@ -231,7 +232,7 @@ void extint_send_extlist(conn_t *conn)
 	}
 	//printf("elist = %s\n", elist);
 	send_msg_encoded(conn, "MSG", "extint_list_json", "%s", elist);
-	free(elist);
+	kiwi_ifree(elist);
 }
 
 // create the <script> tags needed to load all the extension .js and .css files
@@ -349,10 +350,10 @@ void extint_c2s(void *param)
 					SAN_NULL_PTR_CK(ext, ext->receive_msgs((char *) "SET ext_server_init", rx_chan));
 				}
 				
-			    free(client_m);
+			    kiwi_ifree(client_m);
 				continue;
 			}
-			free(client_m);
+			kiwi_ifree(client_m);
 			
 			i = sscanf(cmd, "SET ext_blur=%d", &rx_chan);
 			if (i == 1) {

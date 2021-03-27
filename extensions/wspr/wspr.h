@@ -37,27 +37,6 @@
 #include <time.h>
 #include <fftw3.h>
 
-#ifdef MULTI_CORE
-    //#define BBAI_WSPR_ASAN
-    #ifdef BBAI_WSPR_ASAN
-        #warning dont forget to remove BBAI_WSPR_ASAN
-        #define WSPR_SHMEM_DISABLE
-    #else
-        // shared memory enabled
-    #endif
-#else
-    #define WSPR_SHMEM_DISABLE
-#endif
-
-#define WSPR_YIELD NextTask("wspr")
-
-#ifdef WSPR_SHMEM_DISABLE
-    #define WSPR_SHMEM_YIELD NextTask("wspr")
-#else
-    #define WSPR_SHMEM_YIELD
-#endif
-#define YIELD_EVERY_N_TIMES 64
-
 //#define WSPR_DEBUG_MSG	true
 #define WSPR_DEBUG_MSG	false
 
@@ -315,10 +294,26 @@ typedef struct {
 
 extern wspr_conf_t wspr_c;
 
-struct wspr_shmem_t {
+typedef struct {
     wspr_t wspr[MAX_RX_CHANS];
     wspr_buf_t wspr_buf[MAX_RX_CHANS];
-};
+} wspr_shmem_t;
+
+#include "shmem_config.h"
+
+#ifdef MULTI_CORE
+    //#define WSPR_SHMEM_DISABLE_TEST
+    #ifdef WSPR_SHMEM_DISABLE_TEST
+        #warning dont forget to remove WSPR_SHMEM_DISABLE_TEST
+        #define WSPR_SHMEM_DISABLE
+    #else
+        // shared memory enabled
+    #endif
+#else
+    #define WSPR_SHMEM_DISABLE
+#endif
+
+#include "shmem.h"
 
 #ifdef WSPR_SHMEM_DISABLE
     extern wspr_shmem_t *wspr_shmem_p;
@@ -327,6 +322,15 @@ struct wspr_shmem_t {
     #define WSPR_SHMEM (&shmem->wspr_shmem)
 #endif
 
+#define WSPR_YIELD NextTask("wspr")
+
+#ifdef WSPR_SHMEM_DISABLE
+    #define WSPR_SHMEM_YIELD NextTask("wspr")
+#else
+    #define WSPR_SHMEM_YIELD
+#endif
+#define YIELD_EVERY_N_TIMES 64
+
 void wspr_init();
 bool wspr_update_vars_from_config();
 void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps);
@@ -334,6 +338,7 @@ void wspr_decode(int rx_chan);
 void wspr_send_peaks(wspr_t *w, int start, int stop);
 void wspr_send_decode(wspr_t *w, int seq);
 void wspr_autorun(int which, int idx);
+void wspr_autorun_restart();
 
 typedef enum { FIND_BEST_TIME_LAG, FIND_BEST_FREQ, CALC_SOFT_SYMS } wspr_mode_e;
 

@@ -22,6 +22,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "rx.h"
 #include "clk.h"
+#include "mem.h"
 #include "misc.h"
 #include "str.h"
 #include "timer.h"
@@ -51,7 +52,6 @@ Boston, MA  02110-1301, USA.
 #include "noise_blank.h"
 #include "rx_sound.h"
 #include "rx_waterfall.h"
-#include "shmem.h"
 #include "wdsp.h"
 
 #ifdef DRM
@@ -453,7 +453,7 @@ void c2s_sound(void *param)
                         //printf("\n");
                     }
                 }
-			    free(mode_m);
+			    kiwi_ifree(mode_m);
 			    break;
 			}
 			

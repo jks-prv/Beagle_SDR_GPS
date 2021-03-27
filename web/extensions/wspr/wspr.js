@@ -461,10 +461,12 @@ function wspr_input_grid_cb(path, val, first)
 	kiwi.WSPR_rgrid = val;
 }
 
+// order matches wspr_cfs in wspr_main.cpp
+// only add new entries to the end so as not to disturb existing values stored in config
 var wspr_autorun_u = [
    'regular use', 'LF', 'MF', '160m', '80m_JA', '80m', '60m', '60m_EU',
    '40m', '30m', '20m', '17m', '15m', '12m', '10m',
-   '6m', '4m', '2m', '440', '1296'
+   '6m', '4m', '2m', '440', '1296', 'ISM_6', 'ISM_13'
 ];
 
 function wspr_config_html()
@@ -500,7 +502,7 @@ function wspr_config_html()
                )
          ),
          '<hr>',
-         w3_div('w3-container w3-restart',
+         w3_div('w3-container',
             w3_div('', '<b>Autorun</b>'),
             w3_div('w3-container',
                w3_div('w3-text-black', 'On startup automatically begins running the WSPR decoder on the selected band(s).<br>' +
@@ -509,9 +511,10 @@ function wspr_config_html()
                   
                   'Spot decodes are available in the Kiwi log (use "Log" tab above) and are listed on <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a><br>' +
                   'The "Reporter" fields above must be set to valid values for proper spot entry into the <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a> database.'),
-               w3_div('w3-text-red w3-margin-bottom',
-                  'Must restart the KiwiSDR server for changes to have effect. Unaffected by "User enabled?" setting above.'),
-               w3_div('id-wspr-admin-autorun')
+               
+               w3_button('id-wspr-restart w3-margin-T-16 w3-aqua w3-hide', 'autorun restart', 'wspr_autorun_restart_cb'),
+               
+               w3_div('id-wspr-admin-autorun w3-margin-T-16')
             )
          )
       );
@@ -522,11 +525,26 @@ function wspr_config_html()
 	for (var i=0; i < rx_chans;) {
 	   var s2 = '';
 	   for (var j=0; j < 8 && i < rx_chans; j++, i++) {
-	      s2 += w3_select_get_param('w3-margin-right', 'Autorun '+ i, 'WSPR band', 'WSPR.autorun'+ i, wspr_autorun_u, 'admin_select_cb');
+	      s2 += w3_select_get_param('w3-margin-right', 'Autorun '+ i, 'WSPR band', 'WSPR.autorun'+ i, wspr_autorun_u, 'wspr_autorun_select_cb');
 	   }
 	   s += w3_inline('w3-inline w3-margin-bottom/', s2);
 	}
 	w3_innerHTML('id-wspr-admin-autorun', s);
+}
+
+function wspr_autorun_restart_cb()
+{
+   w3_hide('id-wspr-restart');
+   ext_send("ADM wspr_autorun_restart");  // NB: must be sent as ADM command
+}
+
+function wspr_autorun_select_cb(path, idx, first)
+{
+   admin_select_cb(path, idx, first);
+   if (first) return;
+   w3_show('id-wspr-restart');
+	var el = w3_el('id-kiwi-container');
+	el.scrollTop = el.scrollHeight;     // keep menus visible
 }
 
 function wspr_config_focus()
@@ -749,10 +767,13 @@ function wspr_draw_pie() {
 
 // order matches menu instantiation order
 // see: wsprnet.org/drupal/node/7352
-var wspr_center_freqs = [ 137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1 ];
-var wspr_freqs_s = { 'lf':0, 'mf':1, '160m':2, '80m_ja':3, '80m':4, '60m':5, '60m_eu':6, '40m':7, '30m':8, '20m':9, '17m':10, '15m':11, '12m':12, '10m':13 };
-var wspr_freqs_m = [ 'LF', 'MF', '160m', '80m_JA', '80m', '60m', '60m_EU', '40m', '30m', '20m', '17m', '15m', '12m', '10m' ];
+// dial freq = cf - bfo, cf aka "tx freq"
+// new entries can be added in the middle of this list as long as ordering of next 3 is maintained
+var wspr_center_freqs = [ 137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1, 6781.5, 13554.5 ];
+var wspr_freqs_s = { 'lf':0, 'mf':1, '160m':2, '80m_ja':3, '80m':4, '60m':5, '60m_eu':6, '40m':7, '30m':8, '20m':9, '17m':10, '15m':11, '12m':12, '10m':13, 'ISM_6':14, 'ISM_13':15 };
+var wspr_freqs_m = [ 'LF', 'MF', '160m', '80m_JA', '80m', '60m', '60m_EU', '40m', '30m', '20m', '17m', '15m', '12m', '10m', 'ISM_6', 'ISM_13' ];
 
+// only one of these is chosen given our 30/32 MHz span
 var wspr_xvtr_center_freqs = [ 50294.5, 70092.5, 144490.5, 432301.5, 1296501.5 ];
 var wspr_xvtr_freqs_s = [ '6m', '4m', '2m', '440', '1296' ];
 
