@@ -2,6 +2,16 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.446  March 28, 2021
+    WSPR extension:
+        By request: Added 6 & 13 MHz ISM bands (UK balloon-mobile operation).
+        Can restart autorun decoders via an admin page button instead of server restart.
+    
+    Windows 10 audio "popping" problem:
+        Looked for memory addressing errors and leaks with the Clang address sanitizer.
+        A few minor issues fixed but nothing that changes the audio problem.
+        This was expected, but also had to be ruled out.
+
 v1.445  March 24, 2021
     SNR measurement:
         Take transverter frequency offset into account.
