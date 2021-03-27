@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "kiwi.h"
 #include "rx.h"
+#include "mem.h"
 #include "misc.h"
 #include "str.h"
 #include "nbuf.h"
@@ -34,7 +35,6 @@ Boston, MA  02110-1301, USA.
 #include "printf.h"
 #include "cfg.h"
 #include "clk.h"
-#include "shmem.h"
 #include "wspr.h"
 
 #ifndef CFG_GPS_ONLY
@@ -73,7 +73,7 @@ void c2s_admin_setup(void *param)
 	// send initial values
 	send_msg(conn, SM_NO_DEBUG, "ADM gps_only_mode=%d", VAL_CFG_GPS_ONLY);
 	#ifdef MULTI_CORE
-	    send_msg(conn, SM_NO_DEBUG, "ADM rx14_wf0=1");
+	    send_msg(conn, SM_NO_DEBUG, "ADM is_multi_core");
 	#endif
 	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", rx_chans);
 }
@@ -160,7 +160,7 @@ static void console(void *param)
     send_msg_encoded(c, "ADM", "console_c2w", "CONSOLE: open connection\n");
     
     #define NBUF 1024
-    char *buf = (char *) malloc(NBUF + SPACE_FOR_NULL);
+    char *buf = (char *) kiwi_imalloc("console", NBUF + SPACE_FOR_NULL);
     int i, n, err;
     
     char *args[] = {(char *) "/bin/bash", (char *) "--login", NULL };
@@ -1018,8 +1018,10 @@ void c2s_admin(void *param)
         
                 sb = kstr_asprintf(sb, gps.ttff? ",\"ttff\":\"%d:%02d\"" : ",\"ttff\":null", gps.ttff / 60, gps.ttff % 60);
         
-                sb = kstr_asprintf(sb, (gps.StatDay != -1)? ",\"gpstime\":\"%s %02d:%02d:%02.0f\"" : ",\"gpstime\":null",
-                    Week[gps.StatDay], hms.u, hms.m, hms.s);
+                if (gps.StatDay != -1)
+                    sb = kstr_asprintf(sb, ",\"gpstime\":\"%s %02d:%02d:%02.0f\"", Week[gps.StatDay], hms.u, hms.m, hms.s);
+                else
+                    sb = kstr_cat(sb, ",\"gpstime\":null");
         
                 sb = kstr_asprintf(sb, gps.tLS_valid?",\"utc_offset\":\"%+d sec\"" : ",\"utc_offset\":null", gps.delta_tLS);
         
@@ -1165,6 +1167,12 @@ void c2s_admin(void *param)
 // extensions
 ////////////////////////////////
 
+			i = strcmp(cmd, "ADM wspr_autorun_restart");
+			if (i == 0) {
+			    wspr_autorun_restart();
+				continue;
+			}
+
             // compute grid from GPS on-demand (similar to "SET public_update")
 			i = strcmp(cmd, "ADM wspr_gps_info");
 			if (i == 0) {
@@ -1207,6 +1215,7 @@ void c2s_admin(void *param)
 				    // leak detector needs exit while running on main() stack
 				    kiwi_restart = true;
 				    TaskWakeup(TID_MAIN, TWF_CANCEL_DEADLINE);
+				    continue;
 				#else
 				    kiwi_exit(0);
 				#endif

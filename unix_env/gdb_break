@@ -1,2 +1,3 @@
 break _panic
 break _sys_panic
+break _ll_printf_panic

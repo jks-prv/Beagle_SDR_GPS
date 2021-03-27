@@ -26,7 +26,6 @@
  */
 
 #include "wspr.h"
-#include "shmem.h"
 
 static const unsigned char pr3[NSYM_162]=
 {1,1,0,0,0,0,0,0,1,0,0,0,1,1,1,0,0,0,1,0,

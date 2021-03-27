@@ -27,12 +27,13 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "types.h"
+#include "mem.h"
 #include "wspr.h"
 #include "nhash.h"
 
 #include <stdio.h>
 #include <unistd.h>
-#include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
 #include <strings.h>
@@ -239,7 +240,7 @@ static void hash_update(char *call)
         assert(sizeof(hashtab_t) == WSPR_HASH_ENTRY_SIZE);
         assert(LEN_CALL <= (WSPR_HASH_ENTRY_SIZE - sizeof(u2_t)));
         htsize = 16;
-        ht = (hashtab_t *) calloc(htsize, sizeof(hashtab_t));
+        ht = (hashtab_t *) kiwi_icalloc("hash_update", htsize, sizeof(hashtab_t));
         assert(ht != NULL);
 	    hash_init = true;
 	}
@@ -265,7 +266,7 @@ static void hash_update(char *call)
 	if (i == htsize) {
 		//wspr_gprintf("W-HASH expand %d -> %d\n", htsize, htsize*2);
 		htsize *= 2;
-		SAN_ASSERT(htsize > 0, ht = (hashtab_t *) realloc(ht, sizeof(hashtab_t) * htsize));
+		SAN_ASSERT(htsize > 0, ht = (hashtab_t *) kiwi_irealloc("hash_update", ht, sizeof(hashtab_t) * htsize));
 		memset(ht + htsize/2, 0, sizeof(hashtab_t) * htsize/2);
 		//wspr_gprintf("W-HASH %d 0x%04x exp new %s\n", htsize/2, hash, call);
 		ht[htsize/2].hash = hash;

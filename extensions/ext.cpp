@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "kiwi.h"
 #include "clk.h"
+#include "mem.h"
 #include "misc.h"
 #include "str.h"
 #include "cfg.h"
@@ -215,7 +216,7 @@ void extint_send_extlist(conn_t *conn)
 {
 	int i;
 	#define	MAX_EXT_NAME 32
-	char *elist = (char *) malloc(N_EXT * MAX_EXT_NAME);
+	char *elist = (char *) kiwi_imalloc("extint_send_extlist", N_EXT * MAX_EXT_NAME);
 
 	if (n_exts == 0) {
 		strcpy(elist, "null");

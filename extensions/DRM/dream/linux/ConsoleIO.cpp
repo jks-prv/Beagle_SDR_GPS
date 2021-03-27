@@ -60,17 +60,22 @@ void
 CConsoleIO::Enter(CDRMReceiver* pDRMReceiver)
 {
 	CConsoleIO::pDRMReceiver = pDRMReceiver;
+    //real_printf("--> CConsoleIO::Enter set null\n");
     text_msg_utf8_enc = nullptr;
 }
 
 void
 CConsoleIO::Leave()
 {
+    //real_printf("--> CConsoleIO::Leave free %p\n", text_msg_utf8_enc);
+    free(text_msg_utf8_enc);
+    text_msg_utf8_enc = nullptr;
 }
 
 void
 CConsoleIO::Restart()
 {
+    //real_printf("--> CConsoleIO::Restart free %p\n", text_msg_utf8_enc);
     free(text_msg_utf8_enc);
     text_msg_utf8_enc = nullptr;
 }
@@ -173,6 +178,7 @@ CConsoleIO::Update(drm_t *drm)
         {
             CAudioParam::EAudCod ac = service.AudioParam.eAudioCoding;
             char *strLabel = kiwi_str_encode((char *) service.strLabel.c_str());
+            //real_printf("--> strLabel new %p %d<%s>\n", strLabel, strlen(strLabel), strLabel);
             int ID = service.iServiceID;
             bool audio = (service.eAudDataFlag == CService::SF_AUDIO);
             _REAL rPartABLenRat = Parameters.PartABLenRatio(i);
@@ -184,14 +190,17 @@ CConsoleIO::Update(drm_t *drm)
                 br_audio = false;
             }
             if (i == iCurAudService && service.AudioParam.bTextflag) {
+                //real_printf("--> bTextflag free %p\n", text_msg_utf8_enc);
                 free(text_msg_utf8_enc);
                 text_msg_utf8_enc = kiwi_str_encode((char *) service.AudioParam.strTextMessage.c_str());
+                //real_printf("--> bTextflag new %p %d<%s>\n", text_msg_utf8_enc, strlen(text_msg_utf8_enc), text_msg_utf8_enc);
             }
 
             sb = kstr_asprintf(sb,
                 "\"cur\":%d,\"ac\":%d,\"id\":\"%X\",\"lbl\":\"%s\",\"ep\":%.1f,\"ad\":%d,\"br\":%.2f",
                 (i == iCurAudService)? 1:0, ac, ID, strLabel, rPartABLenRat * 100, br_audio? 1:0, rBitRate
             );
+            //real_printf("--> strLabel free %p\n", strLabel);
             free(strLabel);
         }
         sb = kstr_cat(sb, "}");

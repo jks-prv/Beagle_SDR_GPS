@@ -8,26 +8,6 @@
 #include "str.h"
 #include "ext.h"
 
-#ifdef DRM
-    #ifdef MULTI_CORE
-        //#define BBAI_DRM_ASAN
-        #ifdef BBAI_DRM_ASAN
-            #warning don't forget to remove BBAI_DRM_ASAN
-            #define DRM_SHMEM_DISABLE
-            #define RX_SHMEM_DISABLE
-        #else
-            // shared memory enabled
-        #endif
-    #else
-        // normally shared memory disabled
-        // but could be enabled for testing
-        #define DRM_SHMEM_DISABLE
-        #define RX_SHMEM_DISABLE
-    #endif
-#else
-    #define DRM_SHMEM_DISABLE
-#endif
-
 #define DRM_CHECKING
 #ifdef DRM_CHECKING
     #define drm_array_dim(d,l) assert_array_dim(d,l)
@@ -42,9 +22,6 @@
 #define DRM_TEST_FILE
 
 enum { DRM_DAT_IQ=0 } drm_dat_e;
-
-#define DRM_MAX_RX 4
-#define DRM_NREG_CHANS_DEFAULT 3
 
 typedef struct {
     #define N_DRM_OBUF 32
@@ -107,14 +84,48 @@ typedef struct {
     DRM_CHECK(u4_t magic2;)
 } drm_t;
 
-struct drm_shmem_t {
+#ifdef DRM
+ #define DRM_MAX_RX 4
+ #define DRM_NREG_CHANS_DEFAULT 3
+#else
+ #define DRM_SHMEM_DISABLE
+ #define DRM_MAX_RX 0
+ #define DRM_NREG_CHANS_DEFAULT 0
+#endif
+
+typedef struct {
     drm_t drm[DRM_MAX_RX];
     drm_buf_t drm_buf[DRM_MAX_RX];
-};
+} drm_shmem_t;
+
+#include "shmem_config.h"
+
+#ifdef DRM
+    #ifdef MULTI_CORE
+        //#define DRM_SHMEM_DISABLE_TEST
+        #ifdef DRM_SHMEM_DISABLE_TEST
+            #warning don't forget to remove DRM_SHMEM_DISABLE_TEST
+            #define DRM_SHMEM_DISABLE
+            #define RX_SHMEM_DISABLE
+        #else
+            // shared memory enabled
+        #endif
+    #else
+        // normally shared memory disabled
+        // but could be enabled for testing
+        #define DRM_SHMEM_DISABLE
+        #define RX_SHMEM_DISABLE
+    #endif
+#else
+    #define DRM_SHMEM_DISABLE
+#endif
+
+#include "shmem.h"
 
 #ifdef DRM_SHMEM_DISABLE
     extern drm_shmem_t *drm_shmem_p;
     #define DRM_SHMEM drm_shmem_p
+
     #define DRM_YIELD() NextTask("drm Y");
     #define DRM_YIELD_LOWER_PRIO() TaskSleepReasonUsec("drm YLP", 1000);
 #else

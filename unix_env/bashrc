@@ -83,8 +83,12 @@ alias m0="make OPT=0"
 alias mgdb="make debug GDB=1"
 alias masan="make ASAN=1"
 alias masan0="make ASAN=1 OPT=0"
+alias masan1="make ASAN=1 OPT=1"
 alias miasan="make install ASAN=1"
 alias leaks="export ASAN_OPTIONS='detect_leaks=1'; export LSAN_OPTIONS='verbosity=1:log_threads=1'"
+# "noleaks" needed in some runs with gdb otherwise crash in leak detector at exit
+alias noleaks="export ASAN_OPTIONS='detect_leaks=0'"
+alias qleaks="printenv | grep -e SAN_OPTIONS"
 # NB: SAN is broken, not ASAN
 alias msan="echo (try now w/ clang-6.0) the clang 3.5.0 static analyzer (SAN) used by the Kiwi Debian 8 release gives false positives"
 alias mi="make install"

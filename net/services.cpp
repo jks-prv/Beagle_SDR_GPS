@@ -33,7 +33,6 @@ Boston, MA  02110-1301, USA.
 #include "gps.h"
 #include "leds.h"
 #include "non_block.h"
-#include "shmem.h"
 #include "eeprom.h"
 #include "rx_waterfall.h"
 

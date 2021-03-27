@@ -5,12 +5,14 @@
  * Copyright (c) 2007-2013, Oona Räisänen (OH2EIQ [at] sral.fi)
  */
 
+#include "types.h"
+#include "mem.h"
 #include "sstv.h"
 
 void sstv_pcm_once(sstv_chan_t *e)
 {
     assert((PCM_BUFLEN % FASTFIR_OUTBUF_SIZE) == 0);
-    e->pcm.Buffer = (s2_t *) malloc(PCM_BUFLEN * sizeof(s2_t));
+    e->pcm.Buffer = (s2_t *) kiwi_imalloc("sstv_pcm_once", PCM_BUFLEN * sizeof(s2_t));
 }
 
 void sstv_pcm_init(sstv_chan_t *e)

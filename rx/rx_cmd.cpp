@@ -23,6 +23,7 @@ Boston, MA  02110-1301, USA.
 #include "rx.h"
 #include "rx_cmd.h"
 #include "clk.h"
+#include "mem.h"
 #include "misc.h"
 #include "str.h"
 #include "printf.h"
@@ -641,7 +642,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 return true;	// fake that we accepted command so it won't be further processed
             }
 
-            char *json = (char *) malloc(strlen(cmd) + SPACE_FOR_NULL); // a little bigger than necessary
+            char *json = (char *) kiwi_imalloc("CMD_SAVE_CFG", strlen(cmd) + SPACE_FOR_NULL); // a little bigger than necessary
             n = sscanf(cmd, "SET save_cfg=%s", json);
             assert(n == 1);
             //printf("SET save_cfg=...\n");
@@ -666,7 +667,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 return true;	// fake that we accepted command so it won't be further processed
             }
 
-            char *json = (char *) malloc(strlen(cmd) + SPACE_FOR_NULL); // a little bigger than necessary
+            char *json = (char *) kiwi_imalloc("CMD_SAVE_ADM", strlen(cmd) + SPACE_FOR_NULL); // a little bigger than necessary
             n = sscanf(cmd, "SET save_adm=%s", json);
             assert(n == 1);
             //printf("SET save_adm=...\n");

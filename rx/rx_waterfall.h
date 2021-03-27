@@ -154,11 +154,21 @@ struct wf_shmem_t {
     int n_chunks;
 };     
 
+#include "shmem_config.h"
+
 #ifdef MULTI_CORE
-    //#define WF_SHMEM_DISABLE
+    //#define WF_SHMEM_DISABLE_TEST
+    #ifdef WF_SHMEM_DISABLE_TEST
+        #warning dont forget to remove WF_SHMEM_DISABLE_TEST
+        #define WF_SHMEM_DISABLE
+    #else
+        // shared memory enabled
+    #endif
 #else
     #define WF_SHMEM_DISABLE
 #endif
+
+#include "shmem.h"
 
 #ifdef WF_SHMEM_DISABLE
     extern wf_shmem_t *wf_shmem_p;

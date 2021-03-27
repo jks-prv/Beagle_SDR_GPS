@@ -34,13 +34,12 @@ Boston, MA  02110-1301, USA.
 #include "datatypes.h"
 #include "ext_int.h"
 #include "rx_noise.h"
-#include "rx_waterfall.h"
 #include "noiseproc.h"
 #include "dx.h"
 #include "non_block.h"
-#include "shmem.h"
 #include "noise_blank.h"
 #include "str.h"
+#include "rx_waterfall.h"
 
 #include <string.h>
 #include <stdio.h>

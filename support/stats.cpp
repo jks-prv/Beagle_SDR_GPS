@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "kiwi.h"
 #include "rx.h"
+#include "mem.h"
 #include "misc.h"
 #include "web.h"
 #include "spi.h"

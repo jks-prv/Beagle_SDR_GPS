@@ -22,6 +22,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "rx.h"
 #include "clk.h"
+#include "mem.h"
 #include "misc.h"
 #include "str.h"
 #include "printf.h"
@@ -33,7 +34,6 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "net.h"
 #include "data_pump.h"
-#include "shmem.h"
 
 #ifndef CFG_GPS_ONLY
  #include "ext_int.h"
@@ -241,7 +241,7 @@ void rx_server_init()
 {
 	int i, j;
 	
-	printf("RX N_CONNS %d\n", N_CONNS);
+	printf("RX N_CONNS %d conns %.3f MB\n", N_CONNS, (float) sizeof(conns)/M);
 	conn_t *c = conns;
 	for (i=0; i<N_CONNS; i++) {
 		conn_init(c);

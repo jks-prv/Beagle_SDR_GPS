@@ -69,15 +69,25 @@ typedef struct {
     iq_buf_t iq_buf[MAX_RX_CHANS];
 } rx_shmem_t;
 
+#include "shmem_config.h"
+
 #ifdef DRM
-    #include "DRM.h"
+    // RX_SHMEM_DISABLE defined by DRM.h
 #else
     #ifdef MULTI_CORE
-        //#define RX_SHMEM_DISABLE
+        //#define RX_SHMEM_DISABLE_TEST
+        #ifdef RX_SHMEM_DISABLE_TEST
+            #warning dont forget to remove RX_SHMEM_DISABLE_TEST
+            #define RX_SHMEM_DISABLE
+        #else
+            // shared memory enabled
+        #endif
     #else
         #define RX_SHMEM_DISABLE
     #endif
 #endif
+
+#include "shmem.h"
 
 #ifdef RX_SHMEM_DISABLE
     extern rx_shmem_t *rx_shmem_p;

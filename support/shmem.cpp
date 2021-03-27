@@ -34,17 +34,17 @@ shmem_t *shmem;
 void shmem_init()
 {
     u4_t size = sizeof(shmem_t) + (N_LOG_SAVE * N_LOG_MSG_LEN);
-    size = round_up(size, sysconf(_SC_PAGE_SIZE));
-    shmem = (shmem_t *) mmap((caddr_t) 0, size, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+    u4_t rsize = round_up(size, sysconf(_SC_PAGE_SIZE));
+    shmem = (shmem_t *) mmap((caddr_t) 0, rsize, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
     assert(shmem != MAP_FAILED);
-    scall("mlock", mlock(shmem, size));
-    memset(shmem, 0, size);
-    u1_t *shmem_end = ((u1_t *) shmem) + size;
+    scall("mlock", mlock(shmem, rsize));
+    memset(shmem, 0, rsize);
+    u1_t *shmem_end = ((u1_t *) shmem) + rsize;
     shmem->log_save.endp = (char *) shmem_end;
 
     // printf_init() hasn't been called yet
     real_printf("SHMEM=%.3f MB: ipc=%.3f spi=%.3f rx=%.3f wf=%.3f wspr=%.3f drm=%.3f\n",
-        (float) size/M,
+        (float) rsize/M,
         
         (float) sizeof(shmem->ipc)/M,
 
@@ -83,6 +83,23 @@ void shmem_init()
         real_printf("SIGRTMIN=%d SIGRTMAX=%d\n", SIGRTMIN, SIGRTMAX);
         assert((SIGRTMIN + SIG_MAX_USED) <= SIGRTMAX);
     }
+
+    #if 0
+        for (int i = 0; i < 4096; i++) {
+            shmem->spi_shmem.firewall[i] = i;
+        }
+
+        real_printf(
+            "size=0x%x rsize=0x%x "
+            "spi_shmem=%p spi_tx[0]=%p spi_tx[6]=%p so(spi_tx)=%d "
+            "spi_tx_end=%p so(spi_shmem_t)=%d spi_end=%p "
+            "log_save=%p endp=%p\n",
+            size, rsize,
+            &shmem->spi_shmem, &shmem->spi_shmem.spi_tx[0], &shmem->spi_shmem.spi_tx[6], sizeof(SPI_MOSI),
+            (char *)(&shmem->spi_shmem.spi_tx[6]) + sizeof(SPI_MOSI), sizeof(spi_shmem_t),
+            (char *)(&shmem->spi_shmem) + sizeof(spi_shmem_t),
+            &shmem->log_save, shmem->log_save.endp);
+    #endif
 }
 
 void sig_arm(int signal, funcPI_t handler, int flags)

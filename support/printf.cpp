@@ -2,6 +2,7 @@
 #include "config.h"
 #include "kiwi.h"
 #include "rx.h"
+#include "mem.h"
 #include "misc.h"
 #include "str.h"
 #include "web.h"
@@ -94,6 +95,12 @@ void _sys_panic(const char *str, const char *file, int line)
 	kiwi_exit(-1);
 }
 
+void _ll_printf_panic()
+{
+    real_printf("ll_printf log_save CORRUPTION\n");
+    kiwi_exit(-1);
+}
+
 // NB: when debugging use real_printf() to avoid loops!
 static bool need_newline;
 
@@ -130,6 +137,7 @@ void printf_init()
         log_save_p->arr[i] = p;
         p += N_LOG_MSG_LEN;
     }
+    log_save_p->magic = LOG_MAGIC;
     log_save_p->init = true;
 }
 
@@ -159,7 +167,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		s = last_s;
 	} else {
 		brem = VBUF;
-		if ((buf = (char*) malloc(VBUF)) == NULL)
+		if ((buf = (char*) kiwi_imalloc("ll_printf", VBUF)) == NULL)
 			panic("log malloc");
 		s = buf;
 		start_s = s;
@@ -257,7 +265,9 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
         // FIXME: synchronization problem
         
         log_save_t *ls = log_save_p;
-        assert(ls->init);
+        if (ls->magic != LOG_MAGIC || !ls->init) {
+            _ll_printf_panic();
+        }
         
         // Add to in-memory log used by admin page, handling printfs from child tasks via shared memory.
         // Can't use asprintf() because free() can't be done by parent/child process when needed.

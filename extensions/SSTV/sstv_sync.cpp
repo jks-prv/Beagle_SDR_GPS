@@ -5,14 +5,16 @@
  * Copyright (c) 2007-2013, Oona Räisänen (OH2EIQ [at] sral.fi)
  */
 
+#include "types.h"
+#include "mem.h"
 #include "sstv.h"
 
 void sstv_sync_once(sstv_chan_t *e)
 {
-    e->lines = (lines_t *) malloc(sizeof(lines_t));
+    e->lines = (lines_t *) kiwi_imalloc("sstv_sync_once", sizeof(lines_t));
     assert(e->lines != NULL);
 
-    e->sync_img = (sync_img_t *) malloc(sizeof(sync_img_t));
+    e->sync_img = (sync_img_t *) kiwi_imalloc("sstv_sync_once", sizeof(sync_img_t));
     assert(e->sync_img != NULL);
 }
 

@@ -28,8 +28,8 @@
 #include "clk.h"
 #include "ephemeris.h"
 #include "spi.h"
+#include "spi_dev.h"
 #include "timer.h"
-#include "shmem.h"
 #include "PosSolver.h"
 
 #include <time.h>

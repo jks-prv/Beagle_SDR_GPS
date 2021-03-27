@@ -27,7 +27,6 @@
 #include "peri.h"
 #include "coroutines.h"
 #include "debug.h"
-#include "shmem.h"
 
 #include <stdio.h>
 #include <unistd.h>

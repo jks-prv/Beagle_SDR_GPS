@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "mem.h"
 #include "misc.h"
 #include "timer.h"
 #include "web.h"
@@ -316,7 +317,7 @@ bool _cfg_type_json(cfg_t *cfg, jsmntype_t jt_type, jsmntok_t *jt, const char **
 	char *s = &cfg->json[jt->start];
 	if (jt->type == jt_type) {
 		int n = jt->end - jt->start;
-		*str = (const char *) malloc(n + SPACE_FOR_NULL);
+		*str = (const char *) kiwi_imalloc("_cfg_type_json", n + SPACE_FOR_NULL);
 		mg_url_decode((const char *) s, n, (char *) *str, n + SPACE_FOR_NULL, 0);
 		return true;
 	} else {
