@@ -84,14 +84,8 @@ typedef struct {
     DRM_CHECK(u4_t magic2;)
 } drm_t;
 
-#ifdef DRM
- #define DRM_MAX_RX 4
- #define DRM_NREG_CHANS_DEFAULT 3
-#else
- #define DRM_SHMEM_DISABLE
- #define DRM_MAX_RX 0
- #define DRM_NREG_CHANS_DEFAULT 0
-#endif
+#define DRM_MAX_RX 4
+#define DRM_NREG_CHANS_DEFAULT 3
 
 typedef struct {
     drm_t drm[DRM_MAX_RX];

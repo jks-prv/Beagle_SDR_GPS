@@ -26,11 +26,18 @@ Boston, MA  02110-1301, USA.
 #include "net.h"
 #include "spi.h"
 
-#include "DRM.h"
 #include "data_pump.h"
 #include "wspr.h"
 #include "spi_dev.h"
 #include "rx_waterfall.h"
+
+// needed because Debian 7 configs don't include extensions/DRM in search paths
+#ifdef DRM
+ #include "DRM.h"
+#else
+ #define DRM_SHMEM_DISABLE
+ #define DRM_MAX_RX 0
+#endif
 
 #include <signal.h>
 
