@@ -47,7 +47,7 @@ function config_html()
 				w3_select('', 'Colormap', '', 'init.colormap', init_colormap, kiwi.cmap_s, 'admin_select_cb'),
 				w3_select('', 'Aperture', '', 'init.aperture', init_aperture, kiwi.aper_s, 'admin_select_cb')
 			),
-			w3_input_get('', 'CW offset (Hz)', 'init.cw_offset', 'admin_int_cb')
+			w3_input_get('', 'CW offset (Hz, > 0)', 'init.cw_offset', 'config_cw_offset_cb')
 		) +
 
 		w3_third('w3-text-teal', 'w3-container',
@@ -249,6 +249,13 @@ function config_html()
 		'<hr>';
 
 	return w3_div('id-config w3-hide', s1 + s2 + s3 + s4 + s5 + s6);
+}
+
+function config_cw_offset_cb(path, val, first)
+{
+   val = +val;
+   if (val <= 0) val = Math.NAN;    // make admin_int_cb() return to previous value
+   admin_int_cb(path, val);
 }
 
 function config_wfmin_cb(path, val, first)
