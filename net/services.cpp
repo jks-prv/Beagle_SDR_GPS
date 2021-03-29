@@ -762,8 +762,15 @@ static void reg_public(void *param)
             net.pvt_valid? net.ip_pvt : "not_valid", net.pub_valid? net.ip_pub : "not_valid", timer_sec());
     
 		bool server_enabled = (!down && admcfg_bool("server_enabled", NULL, CFG_REQUIRED) == true);
+        bool send_deregister = false;
+        static bool last_reg;
+        if (last_reg && !kiwisdr_com_reg) {     // reg=1 => reg=0 transition
+            printf("REG deregister\n");
+            send_deregister = true;
+        }
+        last_reg = kiwisdr_com_reg;
 
-        if (server_enabled && kiwisdr_com_reg) {
+        if (send_deregister || (server_enabled && kiwisdr_com_reg)) {
             if (kiwi_reg_debug)
                 printf("%s\n", cmd_p);
 

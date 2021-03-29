@@ -724,6 +724,16 @@ static double wspr_cfs[] = {
     50294.5, 70092.5, 144490.5, 432301.5, 1296501.5, 6781.5, 13554.5
 };
 
+void wspr_reset(wspr_t *w)
+{
+    w->status_resume = IDLE;
+    w->tsync = FALSE;
+    w->capture = 0;
+    w->last_sec = -1;
+    w->abort_decode = false;
+    w->send_error = false;
+}
+
 static internal_conn_t iconn[MAX_RX_CHANS];
 
 void wspr_autorun(int instance, int band)
@@ -749,8 +759,10 @@ void wspr_autorun(int instance, int band)
     conn_t *csnd = iconn[instance].csnd;
     int chan = csnd->rx_channel;
     wspr_t *w = &WSPR_SHMEM->wspr[chan];
+    wspr_reset(w);
     w->arun_csnd = csnd;
     w->arun_cf_MHz = center_freq_kHz / 1e3;
+    w->arun_decoded = 0;
     w->arun_last_decoded = -1;
 
 	clprintf(csnd, "WSPR autorun: instance=%d band_id=%d off=%.2f if=%.2f df=%.2f cf=%.2f cfo=%.0f\n",
@@ -835,13 +847,8 @@ void wspr_main()
 		w->fftin = (WSPR_FFTW_COMPLEX*) WSPR_FFTW_MALLOC(sizeof(WSPR_FFTW_COMPLEX)*NFFT);
 		w->fftout = (WSPR_FFTW_COMPLEX*) WSPR_FFTW_MALLOC(sizeof(WSPR_FFTW_COMPLEX)*NFFT);
 		w->fftplan = WSPR_FFTW_PLAN_DFT_1D(NFFT, w->fftin, w->fftout, FFTW_FORWARD, FFTW_ESTIMATE);
-	
-		w->status_resume = IDLE;
-		w->tsync = FALSE;
-		w->capture = 0;
-		w->last_sec = -1;
-		w->abort_decode = false;
-		w->send_error = false;
+
+	    wspr_reset(w);
 
         #ifdef WSPR_SHMEM_DISABLE
         #else

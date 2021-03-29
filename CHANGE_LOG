@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.447  March 30, 2021
+    WSPR autorun restart now correctly zeros decode counters.
+    Trim trailing newlines from command API (accommodates commands sourced from files).
+
 v1.446  March 28, 2021
     WSPR extension:
         By request: Added 6 & 13 MHz ISM bands (UK balloon-mobile operation).
