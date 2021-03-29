@@ -160,13 +160,20 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	int slen;
 	
 	if (mc == NULL) {
-	    cprintf(conn, "### cmd but mc is null <%s>\n", cmd);
+	    //cprintf(conn, "### cmd but mc is null <%s>\n", cmd);
 	    return false;
 	}
 	
 	NextTask("rx_common_cmd");      // breakup long runs of sequential commands -- sometimes happens at startup
     evLatency(EC_EVENT, EV_RX, 0, "rx_common_cmd", evprintf("%s", cmd));
 	
+	// trim trailing '\n' e.g. for commands coming from files etc.
+    slen = strlen(cmd);
+    if (cmd[slen-1] == '\n') {
+        cmd[slen-1] = '\0';
+        //printf("--> CMD trim \\n %d<%s>\n", slen, cmd);
+    }
+    
 	// SECURITY: we accept no incoming commands besides auth and keepalive until auth is successful
 	if (conn->auth == false &&
 	    strcmp(cmd, "SET keepalive") != 0 &&
@@ -1390,12 +1397,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 	// SECURITY: only used during debugging
     case CMD_DEBUG_MSG: {
-        sb = (char *) "SET dbug_msg=";
-        slen = strlen(sb);
-        n = strncmp(cmd, sb, slen);
-        if (n == 0) {
+        if (kiwi_str_begins_with(cmd, "SET dbug_msg=")) {
             kiwi_str_decode_inplace(cmd);
-            clprintf(conn, "### DEBUG MSG: <%s>\n", &cmd[slen]);
+            clprintf(conn, "### DEBUG MSG: <%s>\n", &cmd[13]);
             return true;
         }
 	    break;
