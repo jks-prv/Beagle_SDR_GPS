@@ -36,7 +36,8 @@ typedef struct conn_st {
 	#define CN_MAGIC 0xcafecafe
 	u4_t magic;
 	int self_idx;
-	bool valid, auth, auth_kiwi, auth_prot, auth_admin, isLocal, force_isLocal;
+	bool valid, auth, auth_kiwi, auth_prot, auth_admin;
+	bool isLocal, force_isLocal, isPassword;
 	int type;
 	struct conn_st *other;
 	int rx_channel;

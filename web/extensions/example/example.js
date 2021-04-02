@@ -97,16 +97,24 @@ function example_blur()
    // anything that needs to be done when extension blurred (closed)
 }
 
+function example_help(show)
+{
+   if (show) {
+      var s = 
+         w3_text('w3-medium w3-bold w3-text-aqua', 'Example help') +
+         w3_div('w3-margin-T-8 w3-scroll-y|height:90%',
+            w3_div('w3-margin-R-8',
+               '...'
+            )
+         );
+      confirmation_show_content(s, 610, 350);
+      w3_el('id-confirmation-container').style.height = '100%';   // to get the w3-scroll-y above to work
+   }
+   return true;
+}
+
 // called to display HTML for configuration parameters in admin interface
 function example_config_html()
 {
-   var s =
-      w3_third('', 'w3-container',
-         w3_divs('w3-margin-bottom',
-            w3_input_get('', 'int1', 'example.int1', 'w3_num_cb'),
-            w3_input_get('', 'int2', 'example.int2', 'w3_num_cb')
-         ), '', ''
-      );
-
    ext_config_html(example, 'example', 'Example', 'Example configuration');
 }

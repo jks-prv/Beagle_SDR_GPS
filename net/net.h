@@ -98,10 +98,6 @@ typedef struct {
     
     int proxy_status, DUC_status;
 	
-	// public.kiwisdr.com servers used to implement user prefs
-	ip_lookup_t pub_ips;
-	bool pub_server;	// this kiwi is one of the public.kiwisdr.com servers
-	
 	// IPv4
 	bool ip4_valid;
 	char *ip4_if_name;

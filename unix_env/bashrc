@@ -6,6 +6,7 @@ alias bargs="function _bargs () { echo arg_one \$1 ; echo arg_two \$2 ; echo all
 
 # shell
 alias al="alias"
+alias alg="alias | grep -i \$COLOR"
 alias soc="pd ~; source ~/.profile; popd"
 alias pe="printenv"
 alias se="export"

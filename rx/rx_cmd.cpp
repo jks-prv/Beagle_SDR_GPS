@@ -251,6 +251,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             bool allow = false, cant_determine = false, cant_login = false, skip_dup_ip_check = false;
             bool type_kiwi = (type_m != NULL && strcmp(type_m, "kiwi") == 0);
             bool type_prot = (type_m != NULL && strcmp(type_m, "prot") == 0);
+            bool type_kiwi_prot = (type_kiwi || type_prot);
             bool type_admin = (type_m != NULL && strcmp(type_m, "admin") == 0);
         
             bool stream_wf = (conn->type == STREAM_WATERFALL);
@@ -282,6 +283,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             bool restricted_ip_match = false;
             isLocal_t isLocal = IS_NOT_LOCAL;
             bool is_local = false;
+            bool is_password = false;
             bool log_auth_attempt, pwd_debug;
 
             #define nwf_cprintf(conn, fmt, ...) \
@@ -396,7 +398,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		    int chan_no_pwd = rx_chan_no_pwd();
             int chan_need_pwd = rx_chans - chan_no_pwd;
 
-            if (type_kiwi || type_prot) {
+            if (type_kiwi_prot) {
                 pwd_s = admcfg_string("user_password", NULL, CFG_REQUIRED);
                 bool no_pwd = (pwd_s == NULL || *pwd_s == '\0');
                 cfg_auto_login = admcfg_bool("user_auto_login", NULL, CFG_REQUIRED);
@@ -543,7 +545,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     badp = strcasecmp(pwd_m, pwd_s)? 1:0;
                     pdbug_cprintf(conn, "PWD %s %s %s:%s from %s\n", type_m, uri, badp? "REJECTED":"ACCEPTED",
                         type_prot? " (protected login)":"", conn->remote_ip);
-                    if (!badp) skip_dup_ip_check = true;    // pwd needed and given correctly so allow dup ip
+                    if (!badp) {
+                        if (type_kiwi_prot) is_password = true;     // password used to get in
+                        skip_dup_ip_check = true;    // pwd needed and given correctly so allow dup ip
+                    }
                 }
             }
         
@@ -592,7 +597,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 // It's possible for both to be set e.g. auth_kiwi set on initial user connection
                 // then correct admin pwd given later for label edit.
             
-                if (type_kiwi || type_prot) conn->auth_kiwi = true;
+                if (type_kiwi_prot) conn->auth_kiwi = true;
                 if (type_prot) conn->auth_prot = true;
 
                 if (type_admin) {
@@ -615,6 +620,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 if (conn->auth == false) {
                     conn->auth = true;
                     conn->isLocal = is_local;
+                    conn->isPassword = is_password;
                 
                     if (stream_snd_or_wf || stream_admin_or_mfg) {
                         send_msg(conn, SM_NO_DEBUG, "MSG version_maj=%d version_min=%d", version_maj, version_min);

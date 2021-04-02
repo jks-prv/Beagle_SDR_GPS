@@ -35,7 +35,10 @@ var kiwi = {
       custom_1:6, custom_2:7, custom_3:8, custom_4:9
    },
    aper_s: [ 'man', 'auto' ],
-   aper_e: { man:0, auto:1 }
+   aper_e: { man:0, auto:1 },
+   
+   xdLocalStorage_ready: false,
+   prefs_import_ch: -1,
 };
 
 kiwi.modes_l.forEach(function(e,i) { kiwi.modes_u.push(e.toUpperCase()); kiwi.modes_s[e] = i});
@@ -349,21 +352,16 @@ function kiwi_init()
 
 function kiwi_xdLocalStorage_init()
 {
-	//jksx XDLS
-	if (!dbgUs) return;
-	
 	var iframeUrls = [];
-	for (var i = 0; i < 5; i++) {
-		if (dbgUs && i == 0)		// jksx XDLS
-			//iframeUrls[i] = 'http://kiwi:8073/pkgs/xdLocalStorage/xdLocalStorage-min.html';
-			iframeUrls[i] = 'http://kiwisdr.com/pkgs/xdLocalStorage/xdLocalStorage-min.html';
-		else
-			iframeUrls[i] = 'http://pub'+ i +'.kiwisdr.com:8073/pkgs/xdLocalStorage/xdLocalStorage-min.html';
+	var N_PUB = 2;
+	for (var i = 0; i < N_PUB; i++) {
+		iframeUrls[i] = 'http://pub'+ i +'.kiwisdr.com/pkgs/xdLocalStorage/xdLocalStorage.php/?key=4e92a0c3194c62b2a067c494e2473e8dfe261138';
 	}
 	
 	xdLocalStorageHA.init({
 		iframeUrls: iframeUrls,
 		initCallback: function() {
+		   kiwi.xdLocalStorage_ready = true;
 			console.log('xdLocalStorageHA READY');
 		}
 	});
@@ -602,155 +600,6 @@ function time_display_width()
 function time_display_html(ext_name)
 {
    return w3_div(ext_name +'-time-display|top:50px; background-color:black; position:relative;');
-}
-
-
-////////////////////////////////
-// user preferences
-////////////////////////////////
-
-var pref = {};
-var pref_default = { p:'default-p' };
-
-function show_pref()
-{
-	pref_load(function() {
-		var s =
-			w3_divs('w3-text-css-yellow/w3-tspace-16',
-				w3_div('w3-medium w3-text-aqua', '<b>User preferences</b>'),
-				w3_col_percent('',
-					w3_input('', 'Pref', 'pref.p', pref.p, 'pref_p_cb', 'something'), 30
-				),
-				
-				w3_div('w3-show-inline-block w3-hspace-16',
-					w3_button('', 'Export', 'pref_export_btn_cb'),
-					w3_button('', 'Import', 'pref_import_btn_cb'),
-					'<b>Status:</b> ' + w3_div('id-pref-status w3-show-inline-block w3-snap-back')
-				)
-			);
-	
-		extint_panel_hide();
-		ext_panel_set_name('show_pref');
-		ext_panel_show(s, null, show_pref_post);
-		//ext_set_controls_width_height(1024, 500);
-		ext_set_controls_width_height(1024, 250);
-		freqset_select();
-	});
-}
-
-function pref_p_cb(path, val)
-{
-	w3_string_cb(path, val);
-	pref_save();
-}
-
-function pref_refresh_ui()
-{
-	w3_set_value('pref.p', pref.p);
-}
-
-var perf_status_anim, perf_status_timeout;
-
-function pref_status(color, msg)
-{
-	var el = w3_el('id-pref-status');
-	
-	if (perf_status_anim) {
-		kiwi_clearTimeout(perf_status_timeout);
-		//el.style.color = 'red';
-		//el.innerHTML = 'CANCEL';
-		w3_remove_then_add(el, 'w3-fade-out', 'w3-snap-back');
-		setTimeout(function() {
-			perf_status_anim = false;
-			pref_status(color, msg);
-		}, 1000);
-		return;
-	}
-	
-	el.style.color = color;
-	el.innerHTML = msg;
-	w3_remove_then_add(el, 'w3-snap-back', 'w3-fade-out');
-	perf_status_anim = true;
-	perf_status_timeout = setTimeout(function() {
-		el.innerHTML = '';
-		w3_remove_then_add(el, 'w3-fade-out', 'w3-snap-back');
-		perf_status_anim = false;
-	}, 1500);
-}
-
-function pref_export_btn_cb(path, val)
-{
-	console.log('pref_export_btn_cb');
-	pref_save(function() {
-		console.log('msg_send pref_export');
-		msg_send('SET pref_export id='+ encodeURIComponent(pref.id) +' pref='+ encodeURIComponent(JSON.stringify(pref)));
-	});
-	pref_status('lime', 'preferences exported');
-}
-
-function pref_import_btn_cb(path, val)
-{
-	console.log('pref_import_btn_cb');
-	var id = ident_user? ident_user : '_blank_';
-	msg_send('SET pref_import id='+ encodeURIComponent(id));
-}
-
-function pref_import_cb(p, ch)
-{
-	var s = decodeURIComponent(p);
-	console.log('pref_import_cb '+ s);
-	if (s == 'null') {
-		pref_status('yellow', 'no preferences previously exported');
-		return;
-	} else {
-		var obj = kiwi_JSON_parse('pref_import_cb', s);
-		if (obj) {
-		   pref = obj;
-         console.log(pref);
-         pref_save();
-         pref_refresh_ui();
-         pref_status('lime', 'preferences successfully imported from RX'+ ch);
-      }
-	}
-}
-
-function pref_load(cb)
-{
-	var id = ident_user? ident_user : '_blank_';
-	xdLocalStorageHA.getItem('pref.'+ id, function(d) {
-		console.log('xdLocalStorage.getItem pref.'+ id);
-		console.log(d);
-		if (d.value == null) {
-			pref = pref_default;
-		} else {
-         var obj = kiwi_JSON_parse('pref_load', d.value);
-         if (obj) pref = obj;
-		}
-		console.log(pref);
-		if (cb) cb();
-	});
-}
-
-function pref_save(cb)
-{
-	var id = ident_user? ident_user : '_blank_';
-	pref.id = id;
-	var val = JSON.stringify(pref);
-	xdLocalStorageHA.setItem('pref.'+ id, val, function(d) {
-		console.log('xdLocalStorage.setItem pref.'+ id);
-		console.log(d);
-		if (cb) cb();
-	});
-}
-
-function show_pref_post()
-{
-	console.log('show_pref_post');
-}
-
-function show_pref_blur()
-{
-	console.log('show_pref_blur');
 }
 
 
@@ -1718,7 +1567,6 @@ var comp_ctr, reason_disabled = '';
 var version_maj = -1, version_min = -1;
 var tflags = { INACTIVITY:1, WF_SM_CAL:2, WF_SM_CAL2:4 };
 var chan_no_pwd, chan_no_pwd_true;
-var pref_import_ch;
 var kiwi_output_msg_p = { scroll_only_at_bottom: true, process_return_alone: false };
 var client_public_ip;
 
@@ -1928,12 +1776,14 @@ function kiwi_msg(param, ws)
 	      extint_srate = parseFloat(param[1]);
 			break;
 		
+		// NB: use of 'pref' vs 'prefs'
 		case 'pref_import_ch':
-			pref_import_ch = +param[1];
+			kiwi.prefs_import_ch = +param[1];
 			break;
 
+		// NB: use of 'pref' vs 'prefs'
 		case 'pref_import':
-			pref_import_cb(param[1], pref_import_ch);
+			prefs_import_cb(param[1], kiwi.prefs_import_ch);
 			break;
 
 		case 'adc_clk_nom':

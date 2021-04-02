@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.448  April 2, 2021
+    Support for antenna switch extension changes.
+
 v1.447  March 30, 2021
     WSPR autorun restart now correctly zeros decode counters.
     Trim trailing newlines from command API (accommodates commands sourced from files).
