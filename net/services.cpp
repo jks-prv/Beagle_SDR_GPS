@@ -618,19 +618,6 @@ static void pub_NET(void *param)
         retry++;
     } while (!okay && retry <= N_IPINFO_RETRY);   // make multiple attempts
     if (!okay) lprintf("IPINFO: ### FAILED for all ipinfo servers ###\n");
-	
-    #ifdef USER_PREFS
-        bool kiwisdr_com_reg = (admcfg_bool("kiwisdr_com_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
-        n = DNS_lookup("public.kiwisdr.com", &net.pub_ips, N_IPS, KIWISDR_COM_PUBLIC_IP);
-        lprintf("SERVER-POOL: %d ip addresses for public.kiwisdr.com\n", n);
-        for (i = 0; i < n; i++) {
-            lprintf("SERVER-POOL: #%d %s\n", i+1, net.pub_ips.ip_list[i]);
-            if (net.pub_valid && strcmp(net.ip_pub, net.pub_ips.ip_list[i]) == 0 && net.port_ext == 8073 && kiwisdr_com_reg)
-                net.pub_server = true;
-        }
-        if (net.pub_server)
-            lprintf("SERVER-POOL: ==> we are a server for public.kiwisdr.com\n");
-    #endif
 }
 
 /*

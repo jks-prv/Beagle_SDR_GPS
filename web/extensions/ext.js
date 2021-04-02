@@ -17,8 +17,8 @@ var extint = {
    
    // extensions not subject to DRM lockout
    // FIXME: allow C-side API to specify
-   no_lockout: [ 'noise_blank', 'noise_filter', 'ant_switch', 'iframe', 'colormap', 'devl' ],
-   excl_devl: [ 'devl', 's4285' ],
+   no_lockout: [ 'noise_blank', 'noise_filter', 'ant_switch', 'iframe', 'colormap', 'devl', 'prefs' ],
+   excl_devl: [ 'devl', 's4285', 'prefs' ],
    
    OPT_NOLOCAL: 1,
 };

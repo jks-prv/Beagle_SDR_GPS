@@ -6682,6 +6682,7 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny', 'o', 25, 'toggle between option bar "off" and "stats" mode,<br>others selected by related shortcut key'),
          w3_inline_percent('w3-padding-tiny', '!', 25, 'toggle aperture manual/auto menu'),
          w3_inline_percent('w3-padding-tiny', '@', 25, 'DX label filter'),
+         //w3_inline_percent('w3-padding-tiny', '#', 25, 'Open user preferences extension'),
          w3_inline_percent('w3-padding-tiny', 'x y', 25, 'toggle visibility of control panels, top bar'),
          w3_inline_percent('w3-padding-tiny', 'esc', 25, 'close/cancel action'),
          w3_inline_percent('w3-padding-tiny', '? h', 25, 'toggle this help list'),
@@ -6723,7 +6724,7 @@ function keyboard_shortcut_url_keys()
 }
 
 // abcdefghijklmnopqrstuvwxyz `~!@#$%^&*()-_=+[]{}\|;:'"<>? 0123456789.,/:kM
-// ..........F.. ............    .                      ... FFFFFFFFFFFFFFFF
+// ..........F.. ............   ...                     ... FFFFFFFFFFFFFFFF
 // .. ..   ..  F  .  .. ..  .                               F: frequency entry keys
 // ABCDEFGHIJKLMNOPQRSTUVWXYZ
 // :space: :tab:
@@ -6789,6 +6790,7 @@ function keyboard_shortcut(key, mod, ctlAlt)
    case '!': keyboard_shortcut_nav('wf'); wf_aper_cb('wf.aper', wf.aper ^ 1, false); break;
 
    // misc
+   case '#': if (dbgUs) extint_open('prefs'); break;
    case 'o': keyboard_shortcut_nav(shortcut.nav_off? 'status':'off'); shortcut.nav_off ^= 1; break;
    case 'r': toggle_or_set_rec(); break;
    case 'x': toggle_or_set_hide_panels(); break;
@@ -7381,10 +7383,6 @@ function panels_setup()
 	//console.log('optbar_setup');
    w3_click_nav(kiwi_toggle(toggle_e.FROM_COOKIE | toggle_e.SET, 'optbar-wf', 'optbar-wf', 'last_optbar'), 'optbar', 'init');
 	
-
-	//jksx XDLS pref button
-	//if (dbgUs) w3_el('id-button-pref').style.visibility = 'visible';
-	//if (dbgUs) toggle_or_set_pref(toggle_e.SET, 1);
 
 	// id-news
 	w3_el('id-news').style.backgroundColor = news_color;

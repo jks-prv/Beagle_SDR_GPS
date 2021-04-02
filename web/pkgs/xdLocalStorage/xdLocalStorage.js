@@ -33,7 +33,7 @@ window.xdLocalStorage = window.xdLocalStorage || (function () {
     if (data && data.namespace === MESSAGE_NAMESPACE) {
       if (data.id === 'iframe-ready') {
         iframeReady = true;
-        if (data.ip) console.log('xdLocalStorage ip='+ data.ip);
+        //if (data.ip) console.log('xdLocalStorage ip='+ data.ip);
         options.initCallback();
       } else {
         applyCallback(data);
@@ -186,8 +186,8 @@ window.xdLocalStorageHA = window.xdLocalStorageHA || (function () {
 
   function applyCallback(data) {
 	//jksx
-	console.log('XDLS result id='+ data.id +' server='+ data.server);
-	console.log(data);
+	//console.log('XDLS result id='+ data.id +' server='+ data.server);
+	//console.log(data);
     if (requests[data.id]) {
       requests[data.id](data);
       delete requests[data.id];
@@ -203,7 +203,7 @@ window.xdLocalStorageHA = window.xdLocalStorageHA || (function () {
     }
     if (data && data.namespace === MESSAGE_NAMESPACE) {
       if (data.id === 'iframe-ready') {
-        if (data.ip) console.log('xdLocalStorage ip='+ data.ip);
+        //if (data.ip) console.log('xdLocalStorage ip='+ data.ip);
       } else
       if (data.action === 'ping') {
       	seen[data.server] = true;
@@ -230,7 +230,7 @@ window.xdLocalStorageHA = window.xdLocalStorageHA || (function () {
 		for (var server = 0; server < iframes.length; server++) {
 			if (action != 'ping' && !seen[server]) continue;
 			//jksx
-			console.log('XDLS request id='+ requestId +' server='+ server +' action='+ action +' etag='+ data.etag);
+			//console.log('XDLS request id='+ requestId +' server='+ server +' action='+ action +' etag='+ data.etag);
 			data.server = server;
 			replies[server] = null;
 			iframes[server].contentWindow.postMessage(JSON.stringify(data), '*');
@@ -249,7 +249,7 @@ window.xdLocalStorageHA = window.xdLocalStorageHA || (function () {
 				if (data == null) continue;
 				var etag = data.etag? data.etag : 0;
 				//jksx
-				console.log('XDLS response id='+ data.id +' server='+ data.server +' etag='+ etag);
+				//console.log('XDLS response id='+ data.id +' server='+ data.server +' etag='+ etag);
 
 				if (etag > mostRecent_etag) {
 					mostRecent_etag = etag;

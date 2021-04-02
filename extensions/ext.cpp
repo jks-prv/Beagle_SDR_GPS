@@ -74,6 +74,14 @@ void ext_adjust_clock_offset(int rx_chan, double offset)
     */
 }
 
+ext_auth_e ext_auth(int rx_chan)
+{
+    conn_t *conn = (&rx_channels[rx_chan])->conn;
+    if (conn->isLocal) return AUTH_LOCAL;
+    if (conn->isPassword) return AUTH_PASSWORD;
+    return AUTH_USER;
+}
+
 void ext_register_receive_iq_samps(ext_receive_iq_samps_t func, int rx_chan)
 {
 	ext_users[rx_chan].receive_iq = func;
