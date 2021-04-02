@@ -187,11 +187,11 @@ char *rx_server_ajax(struct mg_connection *mc)
 	case AJAX_SNR: {
     	bool need_comma1 = false;
     	char *sb = (char *) "[", *sb2;
-		for (i = 0; i < SNR_MEAS_PER_DAY; i++) {
+		for (i = 0; i < SNR_MEAS_MAX; i++) {
             SNR_meas_t *meas = &SNR_meas_data[i];
             if (!meas->valid) continue;
-            asprintf(&sb2, "%s{\"ts\":\"%s\",\"utc\":%d,\"ihr\":%d,\"d\":[",
-				need_comma1? ",":"", meas->tstamp, meas->is_local_time? 0:1, SNR_MEAS_INT_HOURS);
+            asprintf(&sb2, "%s{\"ts\":\"%s\",\"seq\":%u,\"utc\":%d,\"ihr\":%d,\"snr\":[",
+				need_comma1? ",":"", meas->tstamp, meas->seq, meas->is_local_time? 0:1, snr_meas_interval_hrs);
         	need_comma1 = true;
         	sb = kstr_cat(sb, kstr_wrap(sb2));
         	

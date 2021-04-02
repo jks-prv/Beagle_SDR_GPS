@@ -82,6 +82,13 @@ ext_auth_e ext_auth(int rx_chan)
     return AUTH_USER;
 }
 
+void ext_notify_connected(int rx_chan, u4_t seq, char *msg)
+{
+    extint.notify_chan = rx_chan;
+    extint.notify_seq = seq;
+    kiwi_strncpy(extint.notify_msg, msg, N_NOTIFY);
+}
+
 void ext_register_receive_iq_samps(ext_receive_iq_samps_t func, int rx_chan)
 {
 	ext_users[rx_chan].receive_iq = func;
@@ -214,6 +221,8 @@ int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *c
 ////////////////////////////////
 // private
 ////////////////////////////////
+
+extint_t extint;
 
 void extint_setup()
 {

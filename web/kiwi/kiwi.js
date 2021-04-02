@@ -8,8 +8,10 @@ var kiwi = {
    WSPR_rgrid: '',
    GPS_fixes: 0,
    wf_fps: 0,
-   inactivity_panel: false,
    is_multi_core: 0,
+   
+   inactivity_panel: false,
+   notify_seq: 0,
 
    volume: 50,
    volume_f: 0,
@@ -1470,6 +1472,12 @@ function user_cb(obj)
             );
          confirmation_show_content(s, 425, 100);
       }
+
+      if (i == rx_chan && isNumber(obj.nc) && obj.nc != rx_chan && isNumber(obj.ns) && obj.ns != kiwi.notify_seq) {
+         console.log('$ NOTIFY sn='+ obj.ns);
+		   msg_send('SET notify_msg');
+         kiwi.notify_seq = obj.ns;
+      }
 	});
 	
 }
@@ -1788,6 +1796,14 @@ function kiwi_msg(param, ws)
 
 		case 'adc_clk_nom':
 			extint_adc_clock_nom_Hz = +param[1];
+			break;
+
+		case 'notify_msg':
+			console.log('$ notify_msg: '+ decodeURIComponent(param[1]));
+			if (confirmation.displayed) break;
+         var s = w3_div('', decodeURIComponent(param[1]));
+         confirmation_show_content(s, 425, 50);
+         setTimeout(confirmation_panel_close, 3000);
 			break;
 
 		default:

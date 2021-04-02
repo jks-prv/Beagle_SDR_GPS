@@ -808,8 +808,14 @@ function extint_select(value)
 	extint_blur_prev(0);
 	
 	value = +value;
-	w3_select_value('id-select-ext', value);
-	var menu = w3_el('id-select-ext').childNodes;
+	var el = w3_el('id-select-ext');
+	if (!el) {
+	   //console.log('$ extint_select NOT READY v='+ value);
+	   setTimeout(extint_select, 1000, value);
+	   return;
+	}
+	w3_select_value(el, value);
+	var menu = el.childNodes;
 	var name = menu[value+1].innerHTML.toLowerCase();
 	console.log('extint_select val='+ value +' name='+ name);
 	var idx;

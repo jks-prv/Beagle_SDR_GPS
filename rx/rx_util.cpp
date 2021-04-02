@@ -138,6 +138,8 @@ TYPEREAL DC_offset_I, DC_offset_Q;
 #define N_MTU 3
 static int mtu_v[N_MTU] = { 1500, 1440, 1400 };
 
+static int snr_interval[] = { 0, 1, 4, 6, 24 };
+
 void update_vars_from_config()
 {
 	bool update_cfg = false;
@@ -239,7 +241,8 @@ void update_vars_from_config()
     max_thr = (float) cfg_default_int("overload_mute", -15, &update_cfg);
     cfg_default_bool("agc_thresh_smeter", true, &update_cfg);
     n_camp = cfg_default_int("n_camp", N_CAMP, &update_cfg);
-    cfg_default_bool("SNR_meas", true, &update_cfg);
+    snr_meas_interval_hrs = snr_interval[cfg_default_int("snr_meas_interval_hrs", 1, &update_cfg)];
+    snr_local_time = cfg_default_bool("snr_local_time", true, &update_cfg);
 
     if (wspr_update_vars_from_config()) update_cfg = true;
 
@@ -586,10 +589,12 @@ char *rx_users(bool include_ip)
                 char *ext = ext_users[i].ext? kiwi_str_encode((char *) ext_users[i].ext->name) : NULL;
                 const char *ip = include_ip? c->remote_ip : "";
                 asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,\"m\":\"%s\",\"z\":%d,\"t\":\"%d:%02d:%02d\","
-                    "\"rt\":%d,\"rn\":%d,\"rs\":\"%d:%02d:%02d\",\"e\":\"%s\",\"a\":\"%s\",\"c\":%.1f,\"fo\":%.0f,\"ca\":%d}",
+                    "\"rt\":%d,\"rn\":%d,\"rs\":\"%d:%02d:%02d\",\"e\":\"%s\",\"a\":\"%s\",\"c\":%.1f,\"fo\":%.0f,\"ca\":%d,"
+                    "\"nc\":%d,\"ns\":%d}",
                     need_comma? ",":"", i, user? user:"", geo? geo:"", c->freqHz,
                     kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, hr, min, sec,
-                    rtype, rn, r_hr, r_min, r_sec, ext? ext:"", ip, wdsp_SAM_carrier(i), freq_offset, rx->n_camp);
+                    rtype, rn, r_hr, r_min, r_sec, ext? ext:"", ip, wdsp_SAM_carrier(i), freq_offset, rx->n_camp,
+                    extint.notify_chan, extint.notify_seq);
                 if (user) kiwi_ifree(user);
                 if (geo) kiwi_ifree(geo);
                 if (ext) kiwi_ifree(ext);
@@ -619,8 +624,45 @@ int dB_wire_to_dBm(int db_value)
 
 // schedule SNR measurements
 
-int snr_all, snr_HF;
-SNR_meas_t SNR_meas_data[SNR_MEAS_PER_DAY];
+int snr_meas_interval_hrs, snr_all, snr_HF;
+bool snr_local_time;
+SNR_meas_t SNR_meas_data[SNR_MEAS_MAX];
+static int dB_raw[WF_WIDTH];
+
+int SNR_calc(SNR_meas_t *meas, int meas_type, int f_lo, int f_hi)
+{
+    static int dB[WF_WIDTH];
+    int i, rv = 0, len = 0, masked = 0;
+    double ui_srate_kHz = round(ui_srate/1e3);
+    int start = (float) WF_WIDTH * f_lo / ui_srate_kHz;
+    int stop  = (float) WF_WIDTH * f_hi / ui_srate_kHz;
+
+    for (i = (int) start; i < stop; i++) {
+        if (dB_raw[i] <= -190) {
+            masked++;
+            continue;   // disregard masked areas
+        }
+        dB[len] = dB_raw[i];
+        len++;
+    }
+    //printf("SNR_calc-%d %d:%d start/stop=%d/%d len=%d masked=%d\n",
+    //    meas_type, f_lo, f_hi, start, stop, len, masked);
+
+    if (len) {
+        qsort(dB, len, sizeof(int), qsort_intcomp);
+        SNR_data_t *data = &meas->data[meas_type];
+        data->f_lo = f_lo; data->f_hi = f_hi;
+        data->min = dB[0]; data->max = dB[len-1];
+        data->pct_95 = 95;
+        data->pct_50 = median_i(dB, len, &data->pct_95);
+        data->snr = data->pct_95 - data->pct_50;
+        rv = data->snr;
+        //printf("SNR_calc-%d: [%d,%d] noise(50%)=%d signal(95%)=%d snr=%d\n",
+        //    meas_type, data->min, data->max, data->pct_50, data->pct_95, data->snr);
+    }
+    
+    return rv;
+}
 
 void SNR_meas(void *param)
 {
@@ -629,10 +671,9 @@ void SNR_meas(void *param)
     TaskSleepSec(20);
 
     do {
-        static int hr_idx;
+        static int meas_idx;
 	
-	    bool run = cfg_bool("SNR_meas", NULL, CFG_REQUIRED);
-        for (int loop = 0; loop == 0 && run; loop++) {   // so break can be used below
+        for (int loop = 0; loop == 0 && snr_meas_interval_hrs; loop++) {   // so break can be used below
             if (internal_conn_setup(ICONN_WS_WF, &iconn, 0, PORT_INTERNAL_SNR,
                 NULL, 0, 0, 0,
                 "SNR-measure", "internal%20task", "SNR",
@@ -641,18 +682,24 @@ void SNR_meas(void *param)
                 break;
             };
     
-            SNR_meas_t *meas = &SNR_meas_data[hr_idx];
-            SNR_data_t *data;
-            hr_idx = ((hr_idx + 1) % SNR_MEAS_PER_DAY);
-            meas->valid = false;
+            SNR_meas_t *meas = &SNR_meas_data[meas_idx];
+            memset(meas, 0, sizeof(*meas));
+            meas_idx = ((meas_idx + 1) % SNR_MEAS_MAX);
+
 	        // relative to local time if timezone has been determined, utc otherwise
-            time_t local = local_time(&meas->is_local_time);
-            var_ctime_r(&local, meas->tstamp);
-            nbuf_t *nb = NULL;
+	        if (snr_local_time) {
+                time_t local = local_time(&meas->is_local_time);
+                var_ctime_r(&local, meas->tstamp);
+            } else {
+                utc_ctime_r(meas->tstamp);
+            }
+            static u4_t snr_seq;
+            meas->seq = snr_seq++;
+            
             #define SNR_NSAMPS 32
-            static int dB_raw[WF_WIDTH], dB[WF_WIDTH];
             memset(dB_raw, 0, sizeof(dB_raw));
     
+            nbuf_t *nb = NULL;
             for (i = 0; i < SNR_NSAMPS;) {
                 do {
                     if (nb) web_to_app_done(iconn.cwf, nb);
@@ -668,54 +715,32 @@ void SNR_meas(void *param)
                 } while (n);
                 TaskSleepMsec(1000 / WF_SPEED_FAST);
             }
+            for (i = 0; i < WF_WIDTH; i++) {
+                dB_raw[i] /= SNR_NSAMPS;
+            }
             
             double ui_srate_kHz = round(ui_srate/1e3);
             int f_lo = freq_offset, f_hi = freq_offset + ui_srate_kHz;
-
-            len = 0;
-            for (i = 0; i < WF_WIDTH; i++) {
-                dB_raw[i] /= SNR_NSAMPS;
-                if (dB_raw[i] <= -190) continue;   // disregard masked areas
-                dB[len] = dB_raw[i];
-                len++;
-            }
-            qsort(dB, len, sizeof(int), qsort_intcomp);
-            data = &meas->data[SNR_MEAS_ALL];
-            data->f_lo = f_lo; data->f_hi = f_hi;
-            data->min = dB[0]; data->max = dB[len-1];
-            data->pct_95 = 95;
-            data->pct_50 = median_i(dB, len, &data->pct_95);
-            data->snr = data->pct_95 - data->pct_50;
-            snr_all = data->snr;
-            //printf("SNR all: len=%d [%d,%d] noise(50%)=%d signal(95%)=%d snr=%d\n",
-            //    len, data->min, data->max, data->pct_50, data->pct_95, data->snr);
+            
+            snr_all = SNR_calc(meas, SNR_MEAS_ALL, f_lo, f_hi);
 
             // only measure HF if no transverter frequency offset has been set
-            data = &meas->data[SNR_MEAS_HF];
-            memset(data, 0, sizeof(*data));
+            snr_HF = 0;
             if (f_lo == 0) {
-                len = 0;
-                int start = (float) WF_WIDTH * 1800.0 / ui_srate_kHz;
-                for (i = (int) start; i < WF_WIDTH; i++) {
-                    if (dB_raw[i] <= -190) continue;   // disregard masked areas
-                    dB[len] = dB_raw[i];
-                    len++;
-                }
-                qsort(dB, len, sizeof(int), qsort_intcomp);
-                data->f_lo = 1800; data->f_hi = ui_srate_kHz;
-                data->min = dB[0]; data->max = dB[len-1];
-                data->pct_95 = 95;
-                data->pct_50 = median_i(dB, len, &data->pct_95);
-                data->snr = data->pct_95 - data->pct_50;
-                snr_HF = data->snr;
-                //printf("SNR HF: len=%d [%d,%d] noise(50%)=%d signal(95%)=%d snr=%d\n",
-                //    len, data->min, data->max, data->pct_50, data->pct_95, data->snr);
+                snr_HF = SNR_calc(meas, SNR_MEAS_HF, 1800, f_hi);
+                SNR_calc(meas, SNR_MEAS_0_2, 0, 1800);
+                SNR_calc(meas, SNR_MEAS_2_10, 1800, 10000);
+                SNR_calc(meas, SNR_MEAS_10_20, 10000, 20000);
+                SNR_calc(meas, SNR_MEAS_20_MAX, 20000, f_hi);
             }
 
             meas->valid = true;
             rx_server_websocket(WS_MODE_CLOSE, &iconn.wf_mc);
         }
         
-        TaskSleepUsec(SEC_TO_USEC((u64_t) SNR_MEAS_INT_HOURS * 60 * 60));
+        //TaskSleepSec(60);
+        // if disabled check again in an hour to see if re-enabled
+        u64_t hrs = snr_meas_interval_hrs? snr_meas_interval_hrs : 1;
+        TaskSleepSec(hrs * 60 * 60);
     } while (1);
 }

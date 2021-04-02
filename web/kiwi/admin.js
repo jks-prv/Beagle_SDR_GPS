@@ -289,9 +289,11 @@ function control_html()
 	
 	var n_camp = ext_get_cfg_param('n_camp', -1);
 	console.log('rx_chans='+ rx_chans +' n_camp='+ n_camp +' max_camp='+ max_camp);
-   var n_camp_u = { 0:'disable camping' };
+   var n_camp_u = [ 'disable camping' ];
    for (var i = 1; i <= max_camp; i++)
       n_camp_u[i] = i.toFixed(0);
+   var snr_interval_u = [ 'disable', 'hourly', '4 hours', '6 hours', '24 hours' ];
+   var snr_interval = [ 0, 1, 4, 6, 24 ];
 
 	var s3 =
 		'<hr>' +
@@ -319,17 +321,21 @@ function control_html()
                'performance problems from too many audio campers.'
             )
          ),
+         
 			w3_divs('/w3-center w3-tspace-8',
-				w3_div('', '<b>Enable automatic SNR measurement?</b>'),
-            w3_switch('', 'Yes', 'No', 'cfg.SNR_meas', cfg.SNR_meas, 'admin_radio_YN_cb'),
+            w3_select('', 'SNR measurement interval', '', 'cfg.snr_meas_interval_hrs', cfg.snr_meas_interval_hrs, snr_interval_u, 'admin_select_cb'),
 				w3_text('w3-text-black w3-center',
-				   'Set "yes" to enable automatic sampling of <br>' +
-				   'signal-to-noise ratio (SNR) every 6 hours. <br>' +
+				   'Enables automatic sampling of <br>' +
+				   'signal-to-noise ratio (SNR) at the specified interval. <br>' +
 				   'Access SNR data in JSON format using <br>' +
 				   'URL of the form: <i>my_kiwi:8073/snr</i>'
 				)
 			),
-         ''
+			
+			w3_divs('/w3-center w3-tspace-8',
+            w3_div('', '<b>Timestamp SNR with local time?</b>'),
+            w3_switch('', 'Yes', 'No', 'cfg.snr_local_time', cfg.snr_local_time, 'admin_radio_YN_cb')
+         )
 		) +
 		'<hr>';
 

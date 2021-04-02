@@ -50,12 +50,15 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd);
 char *rx_users(bool include_ip);
 void show_conn(const char *prefix, conn_t *cd);
 
-#define SNR_MEAS_INT_HOURS  6
-#define SNR_MEAS_PER_DAY    (24 / SNR_MEAS_INT_HOURS)
+#define SNR_MEAS_MAX    (24 * 7)
 
 #define SNR_MEAS_ALL    0
 #define SNR_MEAS_HF     1
-#define SNR_MEAS_NDATA  2
+#define SNR_MEAS_0_2    2
+#define SNR_MEAS_2_10   3
+#define SNR_MEAS_10_20  4
+#define SNR_MEAS_20_MAX 5
+#define SNR_MEAS_NDATA  6
 
 typedef struct {
     int f_lo, f_hi, min, max, pct_50, pct_95, snr;
@@ -63,12 +66,13 @@ typedef struct {
 
 typedef struct {
 	bool valid;
+    u4_t seq;
     char tstamp[CTIME_R_NL + 1 + SPACE_FOR_NULL];
     bool is_local_time;
     SNR_data_t data[SNR_MEAS_NDATA];
 } SNR_meas_t;
 
-extern SNR_meas_t SNR_meas_data[SNR_MEAS_PER_DAY];
+extern SNR_meas_t SNR_meas_data[SNR_MEAS_MAX];
 
 int dB_wire_to_dBm(int db_value);
 void SNR_meas(void *param);

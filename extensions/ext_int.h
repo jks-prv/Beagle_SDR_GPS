@@ -27,6 +27,15 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "ext.h"
 
+typedef struct {
+    int notify_chan;
+    u4_t notify_seq;
+    #define N_NOTIFY 256
+    char notify_msg[N_NOTIFY];
+} extint_t;
+
+extern extint_t extint;
+
 // extension information when active on a particular RX_CHAN
 typedef struct {
     bool valid;

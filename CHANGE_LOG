@@ -2,6 +2,18 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.449  April 3, 2021
+    SNR measurement adjustments on admin page control tab:
+        Adjust recording interval: 1, 4, 6 or 24 hours per measurement.
+            One week's worth of data is retained in the rolling buffer.
+            New JSON field "seq" (incrementing) to help identify most recent entry.
+        In addition to existing frequency measurement intervals 0-1800 and 1800-max kHz
+            added 0-1800, 1800-10000 10000-20000 and 20000-max
+            These are similar to what Marco uses (sibamanna.duckdns.org/sdr_map).
+        Selectable local/UTC timestamp.
+
+    More support for antenna switch extension changes.
+
 v1.448  April 2, 2021
     Support for antenna switch extension changes.
 
