@@ -126,6 +126,7 @@ static str_hashes_t rx_common_cmd_hashes[] = {
     { "SET browse", CMD_BROWSER },
     { "SET wf_com", CMD_WF_COMP },
     { "SET inacti", CMD_INACTIVITY_ACK },
+    { "SET notify", CMD_NOTIFY_MSG },
     { "SET pref_e", CMD_PREF_EXPORT },
     { "SET pref_i", CMD_PREF_IMPORT },
     { "SET OVERRI", CMD_OVERRIDE },
@@ -1282,6 +1283,14 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
     case CMD_INACTIVITY_ACK: {
         if (strcmp(cmd, "SET inactivity_ack") == 0) {
             conn->last_tune_time = timer_sec();
+            return true;
+        }
+	    break;
+    }
+
+    case CMD_NOTIFY_MSG: {
+        if (strcmp(cmd, "SET notify_msg") == 0) {
+            send_msg_encoded(conn, "MSG", "notify_msg", "%s", extint.notify_msg);
             return true;
         }
 	    break;

@@ -73,12 +73,13 @@ void ext_unregister_receive_real_samps_task(int rx_chan);
 // call to start/stop receiving S-meter data
 void ext_register_receive_S_meter(ext_receive_S_meter_t func, int rx_chan);
 void ext_unregister_receive_S_meter(int rx_chan);
-typedef enum { AUTH_USER = 0, AUTH_LOCAL = 1, AUTH_PASSWORD = 2 } ext_auth_e;
-ext_auth_e ext_auth(int rx_chan);
 
 // general routines
 double ext_update_get_sample_rateHz(int rx_chan);		// return sample rate of audio channel
 void ext_adjust_clock_offset(int rx_chan, double offset);
+typedef enum { AUTH_USER = 0, AUTH_LOCAL = 1, AUTH_PASSWORD = 2 } ext_auth_e;
+ext_auth_e ext_auth(int rx_chan);
+void ext_notify_connected(int rx_chan, u4_t seq, char *msg);
 
 // routines to send messages to extension client-part
 int ext_send_msg(int rx_chan, bool debug, const char *msg, ...);
