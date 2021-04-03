@@ -265,18 +265,20 @@ char *rx_server_ajax(struct mg_connection *mc)
 			}
 		}
 		
-		// if this Kiwi doesn't have any open access (no password required)
-		// prevent it from being listed
+		// If this Kiwi doesn't have any open access (no password required)
+		// prevent it from being listed (no_open_access == true and send "auth=password"
+		// below which will prevent listing.
 		const char *pwd_s = admcfg_string("user_password", NULL, CFG_REQUIRED);
+		bool has_pwd = (pwd_s != NULL && *pwd_s != '\0');
+		cfg_string_free(pwd_s);
 		int chan_no_pwd = rx_chan_no_pwd();
-		int users_max = (pwd_s != NULL && *pwd_s != '\0')? chan_no_pwd : rx_chans;
+		int users_max = has_pwd? chan_no_pwd : rx_chans;
 		int users = MIN(current_nusers, users_max);
-		//printf("STATUS current_nusers=%d users_max=%d users=%d\n", current_nusers, users_max, users);
-
-		bool no_open_access = (pwd_s != NULL && *pwd_s != '\0' && chan_no_pwd == 0);
-		//printf("STATUS user_pwd=%d chan_no_pwd=%d no_open_access=%d\n", *pwd_s != '\0', chan_no_pwd, no_open_access);
-
+		bool no_open_access = (has_pwd && chan_no_pwd == 0);
         bool kiwisdr_com_reg = (admcfg_bool("kiwisdr_com_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
+		//printf("STATUS current_nusers=%d users_max=%d users=%d\n", current_nusers, users_max, users);
+		//printf("STATUS has_pwd=%d chan_no_pwd=%d no_open_access=%d reg=%d\n", has_pwd, chan_no_pwd, no_open_access, kiwisdr_com_reg);
+
 
 		// Advertise whether Kiwi can be publicly listed,
 		// and is available for use
@@ -288,10 +290,12 @@ char *rx_server_ajax(struct mg_connection *mc)
 		bool offline = (down || update_in_progress || backup_in_progress);
 		const char *status;
 
-		if (!kiwisdr_com_reg)
+		if (!kiwisdr_com_reg) {
 			// Make sure to always keep set to private when private
 			status = "private";
-		else
+			users_max = rx_chans;
+			users = current_nusers;
+		} else
 		if (offline)
 			status = "offline";
 		else
@@ -315,16 +319,18 @@ char *rx_server_ajax(struct mg_connection *mc)
 		if (error) DRM_enable = true;
 		bool have_DRM_ext = (DRM_enable && (snd_rate == SND_RATE_4CH));
 		
-		asprintf(&sb, "status=%s\noffline=%s\nname=%s\nsdr_hw=KiwiSDR v%d.%d"
-			"%s%s%s%s%s%s%s%s ⁣\n"
+		asprintf(&sb,
+			"status=%s\n%soffline=%s\n"
+			"name=%s\nsdr_hw=KiwiSDR v%d.%d%s%s%s%s%s%s%s%s ⁣\n"
 			"op_email=%s\nbands=%.0f-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\n"
 			"gps=%s\ngps_good=%d\nfixes=%d\nfixes_min=%d\nfixes_hour=%d\n"
 			"tdoa_id=%s\ntdoa_ch=%d\n"
 			"asl=%d\nloc=%s\n"
 			"sw_version=%s%d.%d\nantenna=%s\nsnr=%d,%d\n"
-			"%suptime=%d\n"
+			"uptime=%d\n"
 			"gps_date=%d,%d\ndate=%s\n",
-			status, offline? "yes":"no", name, version_maj, version_min,
+			status, no_open_access? "auth=password\n" : "", offline? "yes":"no",
+			name, version_maj, version_min,
 
 			// "nbsp;nbsp;" can't be used here because HTML can't be sent.
 			// So a Unicode "invisible separator" #x2063 surrounded by spaces gets the desired double spacing.
@@ -357,7 +363,6 @@ char *rx_server_ajax(struct mg_connection *mc)
 			"KiwiSDR_v", version_maj, version_min,
 			(s6 = cfg_string("rx_antenna", NULL, CFG_OPTIONAL)),
 			snr_all, snr_HF,
-			no_open_access? "auth=password\n" : "",
 			timer_sec(),
 			gps.set_date? 1:0, gps.date_set? 1:0, utc_ctime_static()
 			);
@@ -369,7 +374,6 @@ char *rx_server_ajax(struct mg_connection *mc)
 		cfg_string_free(s5);
 		cfg_string_free(s6);
 		cfg_string_free(s7);
-		cfg_string_free(pwd_s);
 
 		//printf("STATUS REQUESTED from %s: <%s>\n", remote_ip, sb);
 		break;
