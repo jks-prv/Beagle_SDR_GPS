@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.450  April 5, 2021
+    Fixed SNR calculation when downconverter offset in effect (thanks Pierre).
+    A non-public Kiwi will show now correct values for user/user_max in /status.
+
 v1.449  April 3, 2021
     SNR measurement adjustments on admin page control tab:
         Adjust recording interval: 1, 4, 6 or 24 hours per measurement.

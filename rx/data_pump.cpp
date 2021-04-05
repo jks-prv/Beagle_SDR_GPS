@@ -191,6 +191,7 @@ static void snd_service()
                 diff = (rx->wr_pos >= rx->rd_pos)? rx->wr_pos - rx->rd_pos : N_DPBUF - rx->rd_pos + rx->wr_pos;
                 dpump.in_hist[diff]++;
 
+                //#define DATA_PUMP_DEBUG
                 #ifdef DATA_PUMP_DEBUG
                     if (rx->wr_pos == rx->rd_pos) {
                         real_printf("#%d ", ch); fflush(stdout);

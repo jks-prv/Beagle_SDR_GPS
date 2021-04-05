@@ -369,6 +369,7 @@ void c2s_sound(void *param)
 
                         // reset SAM demod on non-SAM to SAM transition
                         if ((_mode >= MODE_SAM && _mode <= MODE_QAM) && !(mode >= MODE_SAM && mode <= MODE_QAM)) {
+                            //cprintf(conn, "wdsp_SAM_reset\n");
                             wdsp_SAM_reset(rx_chan);
                         }
 
@@ -1127,7 +1128,7 @@ void c2s_sound(void *param)
                 //      chan_null mode: in addition to r_samps output, compute FFT of nulled a_samps
                 wdsp_SAM_demod(rx_chan, mode, chan_null, ns_out, a_samps, r_samps);
                 if (snd->secondary_filter) {
-                    //real_printf("S"); fflush(stdout);
+                    //real_printf("2"); fflush(stdout);
                     m_chan_null_FIR[rx_chan].ProcessData(rx_chan, ns_out, a_samps, NULL);
                 }
                 break;
@@ -1286,7 +1287,7 @@ void c2s_sound(void *param)
             ////////////////////////////////
             
             bool send_silence = (masked || squelched || squelched_overload);
-    
+
             // IQ output modes
             if (mode == MODE_IQ || mode == MODE_SAS || mode == MODE_QAM
             #ifdef DRM
