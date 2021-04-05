@@ -24,8 +24,6 @@ Boston, MA  02110-1301, USA.
 #include "spi.h"
 #include "cuteSDR.h"
 
-//#define DATA_PUMP_DEBUG
-
 typedef struct {
 	u2_t i, q;
 	u1_t q3, i3;	// NB: endian swap
@@ -51,6 +49,7 @@ typedef struct {
 
 		TYPEREAL demod_samples[FASTFIR_OUTBUF_SIZE];
 
+        // real mode input buf for cw, sstv, fax decoders etc.
 		u4_t real_wr_pos, real_rd_pos;
 		u4_t real_seq, real_seqnum[N_DPBUF];
 		TYPEMONO16 real_samples[N_DPBUF][FASTFIR_OUTBUF_SIZE];
@@ -60,6 +59,7 @@ typedef struct {
 extern rx_dpump_t rx_dpump[MAX_RX_CHANS];
 
 typedef struct {
+          // IQ mode input buf for DRM etc.
     u4_t iq_wr_pos;     // readers maintain their own private iq_rd_pos
     u4_t iq_seq, iq_seqnum[N_DPBUF];
     TYPECPX iq_samples[N_DPBUF][FASTFIR_OUTBUF_SIZE];

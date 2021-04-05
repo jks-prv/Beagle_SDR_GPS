@@ -634,8 +634,10 @@ int SNR_calc(SNR_meas_t *meas, int meas_type, int f_lo, int f_hi)
     static int dB[WF_WIDTH];
     int i, rv = 0, len = 0, masked = 0;
     double ui_srate_kHz = round(ui_srate/1e3);
-    int start = (float) WF_WIDTH * f_lo / ui_srate_kHz;
-    int stop  = (float) WF_WIDTH * f_hi / ui_srate_kHz;
+    int b_lo = f_lo - freq_offset, b_hi = f_hi - freq_offset;
+    int start = (float) WF_WIDTH * b_lo / ui_srate_kHz;
+    int stop  = (float) WF_WIDTH * b_hi / ui_srate_kHz;
+    //printf("b_lo=%d b_hi=%d fo=%d s/s=%d/%d\n", b_lo, b_hi, (int) freq_offset, start, stop);
 
     for (i = (int) start; i < stop; i++) {
         if (dB_raw[i] <= -190) {
@@ -645,8 +647,8 @@ int SNR_calc(SNR_meas_t *meas, int meas_type, int f_lo, int f_hi)
         dB[len] = dB_raw[i];
         len++;
     }
-    //printf("SNR_calc-%d %d:%d start/stop=%d/%d len=%d masked=%d\n",
-    //    meas_type, f_lo, f_hi, start, stop, len, masked);
+    //printf("SNR_calc-%d base=%d:%d freq=%d:%d start/stop=%d/%d len=%d masked=%d\n",
+    //    meas_type, b_lo, b_hi, f_lo, f_hi, start, stop, len, masked);
 
     if (len) {
         qsort(dB, len, sizeof(int), qsort_intcomp);

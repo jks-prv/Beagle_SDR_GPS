@@ -24,6 +24,8 @@ struct wdsp_SAM_t {
     f32_t phzerror;
     f32_t fil_out;
     f32_t omega2;
+    f32_t SAM_carrier;
+    f32_t SAM_lowpass;
 
     // fade leveler
     f32_t dc;
@@ -39,9 +41,6 @@ struct wdsp_SAM_t {
     f32_t d[ABCD_DIM];     // Filter d variables
     f32_t dsI;             // delayed sample, I path
     f32_t dsQ;             // delayed sample, Q path
-
-    f32_t SAM_carrier;
-    f32_t SAM_lowpass;
 };
 
 static wdsp_SAM_t wdsp_SAM[MAX_RX_CHANS];
