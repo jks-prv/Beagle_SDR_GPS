@@ -156,7 +156,7 @@ bool find_local_IPs(int retry);
 u4_t inet4_d2h(char *inet4_str, bool *error, u4_t *ap, u4_t *bp, u4_t *cp, u4_t *dp);
 bool is_inet4_map_6(u1_t *a);
 int inet_nm_bits(int family, void *netmask);
-bool isLocal_ip(char *ip);
+bool isLocal_ip(char *ip, bool *is_loopback = NULL);
 
 int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const char *ip_backup);
 char *DNS_lookup_result(const char *caller, const char *host, ip_lookup_t *ips);
