@@ -126,6 +126,7 @@ double ui_srate, freq_offset;
 int kiwi_reg_lo_kHz, kiwi_reg_hi_kHz;
 float max_thr;
 int n_camp;
+bool log_local_ip;
 
 #define DC_OFFSET_DEFAULT -0.02F
 #define DC_OFFSET_DEFAULT_PREV 0.05F
@@ -373,6 +374,7 @@ void update_vars_from_config()
     admcfg_default_bool("onetime_password_check", false, &update_admcfg);
     admcfg_default_string("proxy_server", "proxy.kiwisdr.com", &update_admcfg);
     admcfg_default_bool("console_local", true, &update_admcfg);
+    log_local_ip = admcfg_default_bool("log_local_ip", true, &update_admcfg);
 
     // decouple rx.kiwisdr.com and sdr.hu registration
     bool sdr_hu_register = admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED);

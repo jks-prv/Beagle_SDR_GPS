@@ -281,8 +281,14 @@ void rx_server_init()
 
 void rx_loguser(conn_t *c, logtype_e type)
 {
-	char *s;
 	u4_t now = timer_sec();
+	
+	if (!log_local_ip && c->isLocal_ip) {
+	    if (type == LOG_ARRIVED) c->last_tune_time = now;
+	    return;
+	}
+	
+	char *s;
 	u4_t t = now - c->arrival;
 	u4_t sec = t % 60; t /= 60;
 	u4_t min = t % 60; t /= 60;
@@ -784,6 +790,9 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	c->mc = mc;
     kiwi_strncpy(c->remote_ip, remote_ip, NET_ADDRSTRLEN);
 	c->remote_port = mc->remote_port;
+	bool is_loopback;
+	c->isLocal_ip = isLocal_ip(c->remote_ip, &is_loopback);
+	if (is_loopback) c->isLocal_ip = true;
 	c->tstamp = tstamp;
 	ndesc_init(&c->s2c, mc);
 	ndesc_init(&c->c2s, mc);

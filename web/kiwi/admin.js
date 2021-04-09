@@ -2404,10 +2404,16 @@ function log_html()
 	w3_div('id-log w3-text-teal w3-hide',
 		'<hr>'+
 		w3_div('w3-container',
-		   w3_div('',
-            w3_label('w3-show-inline', 'KiwiSDR server log (scrollable list, first and last set of messages)') +
-            w3_button('w3-aqua|margin-left:10px', 'Dump', 'log_dump_cb') +
-            w3_button('w3-blue|margin-left:10px', 'Clear Histogram', 'log_clear_hist_cb')
+		   w3_inline('w3-valign w3-halign-space-between/',
+		      w3_div('',
+               w3_label('w3-show-inline', 'KiwiSDR server log (scrollable list, first and last set of messages)'),
+               w3_button('w3-aqua|margin-left:10px', 'Dump', 'log_dump_cb'),
+               w3_button('w3-blue|margin-left:10px', 'Clear Histogram', 'log_clear_hist_cb')
+            ),
+				w3_div('',
+					'<b>Log connections from local ip addresses?</b> ',
+					w3_switch('', 'Yes', 'No', 'adm.log_local_ip', adm.log_local_ip, 'admin_radio_YN_cb')
+				)
          ),
 			w3_div('id-log-msg w3-margin-T-8 w3-text-output w3-small w3-text-black', '')
 		)
