@@ -2,6 +2,17 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.451  April 13, 2021
+    Admin log tab:
+        By request: add option to not log connections from local ip addresses.
+            Keeps the log cleaner when you have something like FT8Skimmer connecting frequently.
+        Show "L" in log tab for messages that will be sent to syslog.
+            Additional debug messages are always shown in the log tab. This will better
+            explain which ones are actually going to the syslog.
+    
+    On BBAI handle change to .dtb (device tree) file installation first seen in the
+        Beagle release of Debian 9.13
+
 v1.450  April 5, 2021
     Fixed SNR calculation when downconverter offset in effect (thanks Pierre).
     A non-public Kiwi will show now correct values for user/user_max in /status.
