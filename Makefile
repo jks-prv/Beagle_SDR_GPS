@@ -860,9 +860,6 @@ endif
 
 $(DO_ONCE):
 ifeq ($(BBAI),true)
-	@echo "disable window system"
-	-systemctl stop lightdm.service
-	-systemctl disable lightdm.service
 	make install_kiwi_device_tree
 	@touch $(REBOOT)
 endif
@@ -870,14 +867,26 @@ endif
 	@touch $(DO_ONCE)
 
 ifeq ($(BBAI),true)
+ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
+DTB_KIWI = am5729-beagleboneai-kiwisdr-cape.dtb
+DTB_DEB_NEW = am5729-beagleboneai-custom.dtb
+UENV_HAS_DTB_NEW = $(shell grep -qi '^dtb=$(DTB_DEB_NEW)' /boot/uEnv.txt && echo true)
 DIR_DTB = dtb-$(SYS_MAJ).$(SYS_MIN)-ti
+
 install_kiwi_device_tree:
 	@echo "install Kiwi device tree to configure GPIO pins"
 	@echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
 	cp platform/beaglebone_AI/am5729-beagleboneai-kiwisdr-cape.dts /opt/source/$(DIR_DTB)/src/arm
 	(cd /opt/source/$(DIR_DTB); make)
-	cp /opt/source/$(DIR_DTB)/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)
-	cp /opt/source/$(DIR_DTB)/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb
+	cp /opt/source/$(DIR_DTB)/src/arm/$(DTB_KIWI) /boot
+	cp /opt/source/$(DIR_DTB)/src/arm/$(DTB_KIWI) /boot/dtbs/$(SYS)
+	cp /opt/source/$(DIR_DTB)/src/arm/$(DTB_KIWI) /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb
+	@echo "UENV_HAS_DTB_NEW = $(UENV_HAS_DTB_NEW)"
+ifeq ($(UENV_HAS_DTB_NEW),true)
+	-cp --backup=numbered /boot/uEnv.txt /boot/uEnv.txt.save
+	-sed -i -e 's/^dtb=$(DTB_DEB_NEW)/dtb=$(DTB_KIWI)/' /boot/uEnv.txt
+endif
+endif
 endif
 
 V_DIR = ~/shared/shared
