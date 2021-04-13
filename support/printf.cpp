@@ -229,17 +229,10 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
             for (i=0; i < rx_chans; i++) {
                 ch_stat[i] = (c != NULL && i == chan)? ((i > 9)? ('A'+i-10) : ('0'+i)) : ' ';
             }
-            if (!background_mode) {
-                ch_stat[i++] = ' ';
-                ch_stat[i++] = want_logged? 'L':' ';
-            }
             ch_stat[i] = '\0';
             ks = kstr_cat(ks, ch_stat);
         } else {
-            if (background_mode)
-                ks = kstr_asprintf(ks, "%*s", rx_chans, stprintf("[%02d]", c->self_idx));
-            else
-                ks = kstr_asprintf(ks, "%*s", rx_chans + 2, stprintf("[%02d] %c", c->self_idx, want_logged? 'L':' '));
+            ks = kstr_asprintf(ks, "%*s", rx_chans, stprintf("[%02d]", c->self_idx));
         }
         
         char *sp = kstr_sp(ks);
@@ -255,7 +248,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		
 		// remove our override and call the actual underlying printf
 		#undef printf
-            printf("%s%s %s %s", need_newline? "\n":"", tb, sp, buf);
+            printf("%s%s %s %c %s", need_newline? "\n":"", tb, sp, want_logged? 'L':' ', buf);
             need_newline = false;
 		#define printf ALT_PRINTF
 
@@ -281,7 +274,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
                 s = ls->arr[ls->idx++];
                 assert(s != NULL);
                 assert(s < ls->endp);
-                snprintf(s, N_LOG_MSG_LEN, "%s %s %s", tb, sp, buf);
+                snprintf(s, N_LOG_MSG_LEN, "%s %s %c %s", tb, sp, want_logged? 'L':' ', buf);
                 strcpy(&s[N_LOG_MSG_LEN-2], "\n");      // truncate msg
             } else {
                 ls->not_shown++;
@@ -294,7 +287,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
                 ls->arr[N_LOG_SAVE-1] = t_arr;
 
                 s = ls->arr[N_LOG_SAVE-1];
-                snprintf(s, N_LOG_MSG_LEN, "%s %s %s", tb, sp, buf);
+                snprintf(s, N_LOG_MSG_LEN, "%s %s %c %s", tb, sp, want_logged? 'L':' ', buf);
                 strcpy(&s[N_LOG_MSG_LEN-2], "\n");      // truncate msg
             }
 		}

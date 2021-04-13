@@ -48,7 +48,7 @@ extern int version_maj, version_min;
 extern bool background_mode, need_hardware, is_multi_core, kiwi_restart,
 	DUC_enable_start, rev_enable_start, web_nocache, auth_su, kiwi_reg_debug,
 	have_ant_switch_ext, gps_e1b_only, disable_led_task, debug_printfs, force_camp,
-	snr_local_time;
+	snr_local_time, log_local_ip;
 
 extern int wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_start, tone, down, navg,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, meas, monitors_max,

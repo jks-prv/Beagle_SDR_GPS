@@ -38,6 +38,7 @@ typedef struct conn_st {
 	int self_idx;
 	bool valid, auth, auth_kiwi, auth_prot, auth_admin;
 	bool isLocal, force_isLocal, isPassword;
+	bool isLocal_ip;    // is the ip itself a local or loopback address? (different from isLocal above)
 	int type;
 	struct conn_st *other;
 	int rx_channel;

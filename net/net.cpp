@@ -572,12 +572,14 @@ int inet_nm_bits(int family, void *netmask)
 	return nm_bits;
 }
 
-bool isLocal_ip(char *ip_str)
+bool isLocal_ip(char *ip_str, bool *is_loopback)
 {
     bool error;
     u4_t ip = inet4_d2h(ip_str, &error, NULL, NULL, NULL, NULL);
     if (!error) {
         // ipv4
+        if (is_loopback)
+            *is_loopback = (ip == INET4_DTOH(127,0,0,1));
         if (
             (ip >= INET4_DTOH(10,0,0,0) && ip <= INET4_DTOH(10,255,255,255)) ||
             (ip >= INET4_DTOH(172,16,0,0) && ip <= INET4_DTOH(172,31,255,255)) ||
@@ -585,6 +587,8 @@ bool isLocal_ip(char *ip_str)
             return true;
     } else {
         // ipv6
+        if (is_loopback)
+            *is_loopback = (strcmp(ip_str, "::1") == 0 || strcmp(ip_str, ":0:0:0:0:0:0:0:1") == 0);
         if (strncasecmp(ip_str, "fd", 2) == 0)
             return true;
     }
