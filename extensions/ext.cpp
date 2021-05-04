@@ -217,6 +217,12 @@ int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *c
 	return 0;
 }
 
+void ext_kick(int rx_chan)
+{
+	conn_t *conn_ext = ext_users[rx_chan].conn_ext;
+	conn_ext->kick = true;
+}
+
 
 ////////////////////////////////
 // private
@@ -356,16 +362,16 @@ void extint_c2s(void *param)
 				}
 				if (i == n_exts) {
 				    printf("ext_switch_to_client: <%s>\n", client_m);
-				    panic("ext_switch_to_client: unknown ext");
-				}
+				    //panic("ext_switch_to_client: unknown ext");
+				} else {
+                    ext_send_msg(conn_ext->ext_rx_chan, false, "MSG EXT-STOP-FLUSH-INPUT");
 
-				ext_send_msg(conn_ext->ext_rx_chan, false, "MSG EXT-STOP-FLUSH-INPUT");
-
-				// Automatically let extension server-side know the connection has been established and
-				// our stream thread is running. Only called ONCE per client session.
-				if (first_time) {
-					SAN_NULL_PTR_CK(ext, ext->receive_msgs((char *) "SET ext_server_init", rx_chan));
-				}
+                    // Automatically let extension server-side know the connection has been established and
+                    // our stream thread is running. Only called ONCE per client session.
+                    if (first_time) {
+                        SAN_NULL_PTR_CK(ext, ext->receive_msgs((char *) "SET ext_server_init", rx_chan));
+                    }
+                }
 				
 			    kiwi_ifree(client_m);
 				continue;

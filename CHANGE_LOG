@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.452  May 4, 2021
+    Improvements to API to prevent abuse of disabled DRM mode.
+
 v1.451  April 13, 2021
     Admin log tab:
         By request: add option to not log connections from local ip addresses.

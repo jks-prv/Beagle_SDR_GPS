@@ -69,6 +69,10 @@ Boston, MA  02110-1301, USA.
 
 #include <algorithm>
 
+snd_t snd_inst[MAX_RX_CHANS];
+
+#ifdef USE_SDR
+
 //#define TR_SND_CMDS
 #define SM_SND_DEBUG	false
 
@@ -83,8 +87,6 @@ struct gps_timestamp_t {
 };
 
 gps_timestamp_t gps_ts[MAX_RX_CHANS];
-
-snd_t snd_inst[MAX_RX_CHANS];
 
 float g_genfreq, g_genampl, g_mixfreq;
 
@@ -349,6 +351,11 @@ void c2s_sound(void *param)
                         clprintf(conn, "SND bad mode <%s>\n", mode_m);
                         _mode = MODE_AM;
                         change_freq_mode = true;
+                    }
+                    
+                    if (_mode == MODE_DRM && !DRM_enable && !conn->isLocal) {
+                        clprintf(conn, "SND DRM not enabled, forcing mode to IQ\n", mode_m);
+                        _mode = MODE_IQ;
                     }
                 
                     bool new_nbfm = false;
@@ -1583,3 +1590,5 @@ void c2s_sound_shutdown(void *param)
         rx_server_websocket(WS_MODE_CLOSE, c->mc);
     }
 }
+
+#endif

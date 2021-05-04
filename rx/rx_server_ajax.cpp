@@ -313,10 +313,6 @@ char *rx_server_ajax(struct mg_connection *mc)
 		bool has_tlimit = (inactivity_timeout_mins || ip_limit_mins);
 		bool has_masked = (dx.masked_len > 0);
 		bool has_limits = (has_tlimit || has_masked);
-		
-		bool error;
-		bool DRM_enable = cfg_bool("DRM.enable", &error, CFG_OPTIONAL);
-		if (error) DRM_enable = true;
 		bool have_DRM_ext = (DRM_enable && (snd_rate == SND_RATE_4CH));
 		
 		asprintf(&sb,
