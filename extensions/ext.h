@@ -80,6 +80,7 @@ void ext_adjust_clock_offset(int rx_chan, double offset);
 typedef enum { AUTH_USER = 0, AUTH_LOCAL = 1, AUTH_PASSWORD = 2 } ext_auth_e;
 ext_auth_e ext_auth(int rx_chan);
 void ext_notify_connected(int rx_chan, u4_t seq, char *msg);
+void ext_kick(int rx_chan);
 
 // routines to send messages to extension client-part
 int ext_send_msg(int rx_chan, bool debug, const char *msg, ...);

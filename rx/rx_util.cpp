@@ -126,7 +126,7 @@ double ui_srate, freq_offset;
 int kiwi_reg_lo_kHz, kiwi_reg_hi_kHz;
 float max_thr;
 int n_camp;
-bool log_local_ip;
+bool log_local_ip, DRM_enable;
 
 #define DC_OFFSET_DEFAULT -0.02F
 #define DC_OFFSET_DEFAULT_PREV 0.05F
@@ -348,6 +348,9 @@ void update_vars_from_config()
         update_cfg = true;
     }
     cfg_string_free(rx_title); rx_title = NULL;
+
+    DRM_enable = cfg_bool("DRM.enable", &err, CFG_OPTIONAL);
+    if (err) DRM_enable = true;
 
 	if (update_cfg)
 		cfg_save_json(cfg_cfg.json);

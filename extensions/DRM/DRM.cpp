@@ -76,8 +76,6 @@ bool DRM_msgs(char *msg, int rx_chan)
 {
     
     drm_t *d = &DRM_SHMEM->drm[rx_chan];
-	rcprintf(rx_chan, "DRM <%s>\n", msg);
-
     if (strcmp(msg, "SET ext_server_init") == 0) {
 		ext_send_msg(rx_chan, false, "EXT ready");
 		
@@ -89,13 +87,19 @@ bool DRM_msgs(char *msg, int rx_chan)
         return true;
     }
 
+    conn_t *conn = rx_channels[rx_chan].conn;
+	rcprintf(rx_chan, "DRM enable=%d conn=%p isLocal=%d <%s>\n", DRM_enable, conn, conn? conn->isLocal : -1, msg);
+	
+	// stop any non-Kiwi API attempts to run DRM if it's disabled and connection is not local
+	if (!DRM_enable && conn && !conn->isLocal) {
+	    rcprintf(rx_chan, "DRM not enabled, kicked!\n");
+	    ext_kick(rx_chan);
+        return true;
+	}
+
     if (strcmp(msg, "SET lock_set") == 0) {
         int rv, heavy = 0;
         int inuse = rx_chans - rx_chan_free_count(RX_COUNT_ALL, NULL, &heavy);
-        bool err;
-        bool DRM_enable = cfg_bool("DRM.enable", &err, CFG_OPTIONAL);
-		if (err) DRM_enable = true;
-		conn_t *conn = rx_channels[rx_chan].conn;
 
     #if 1
         if (snd_rate != SND_RATE_4CH) {
