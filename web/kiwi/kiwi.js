@@ -1679,7 +1679,8 @@ function kiwi_msg(param, ws)
 				if (o.ce != undefined)
 				   cpu_stats_cb(o, o.ct, o.ce, o.fc);
 				xfer_stats_cb(o.ac, o.wc, o.fc, o.ah, o.as);
-				extint_srate = o.sr;
+				extint.srate = o.sr;
+				extint.nom_srate = o.nsr;
 
 				gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);
 				if (o.gr) {
@@ -1781,7 +1782,7 @@ function kiwi_msg(param, ws)
 			break;
 		
 		case "sample_rate":
-	      extint_srate = parseFloat(param[1]);
+	      extint.srate = parseFloat(param[1]);
 			break;
 		
 		// NB: use of 'pref' vs 'prefs'

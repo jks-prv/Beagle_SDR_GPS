@@ -6,6 +6,14 @@
 
 
 var admin_sdr = {
+   pmi: 0,
+   pbm: 'am',
+   pbl: 0,
+   pbh: 0,
+   pbc: 0,
+   pbw: 0,
+   
+   _last_: 0
 };
 
 ////////////////////////////////
@@ -36,7 +44,7 @@ function config_html()
 	var init_ITU_region = ext_get_cfg_param('init.ITU_region', 0);
 	var max_freq = ext_get_cfg_param('max_freq', 0);
 	var max_freq = ext_get_cfg_param('max_freq', 0);
-	
+
 	var s1 =
 		'<hr>' +
 		w3_text('w3-margin-B-8 w3-text-teal w3-bold', 'Initial values for:') +
@@ -47,7 +55,9 @@ function config_html()
 				w3_select('', 'Colormap', '', 'init.colormap', init_colormap, kiwi.cmap_s, 'admin_select_cb'),
 				w3_select('', 'Aperture', '', 'init.aperture', init_aperture, kiwi.aper_s, 'admin_select_cb')
 			),
-			w3_input_get('', 'CW offset (Hz, > 0)', 'init.cw_offset', 'config_cw_offset_cb')
+			w3_div('w3-center w3-tspace-8',
+				w3_select('', 'AM BCB channel spacing', '', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'admin_select_cb')
+			)
 		) +
 
 		w3_third('w3-text-teal', 'w3-container',
@@ -64,7 +74,42 @@ function config_html()
       
       w3_div('w3-margin-bottom');
 
-   var s2 =
+	var s2 =
+		'<hr>' +
+		w3_text('w3-text-teal w3-bold', 'Default passbands:') +
+		w3_third('w3-text-teal', 'w3-container',
+			w3_divs('/w3-center w3-tspace-8',
+            w3_select('', 'Mode', '', 'admin_sdr.pbm', admin_sdr.pbm, kiwi.modes_u, 'config_pb_mode'),
+			),
+			w3_input('', 'Passband low', 'admin_sdr.pbl', admin_sdr.pbl, 'config_pb_val'),
+			w3_input('', 'Passband high', 'admin_sdr.pbh', admin_sdr.pbh, 'config_pb_val')
+		) +
+      w3_third('', 'w3-container',
+         '',
+         w3_div('id-pbl-error w3-margin-T-8 w3-yellow w3-hide', 'Value creates an invalid passband'),
+         w3_div('id-pbh-error w3-margin-T-8 w3-yellow w3-hide', 'Value creates an invalid passband')
+      ) +
+		w3_third('w3-margin-T-16 w3-text-teal', 'w3-container',
+			w3_divs('/w3-center w3-tspace-8',
+				w3_div('w3-text-black',
+				   'As each field is changed the others are <br>' +
+				   'automatically adjusted. Define CW offset by <br>' +
+				   'setting appropriate passband center frequency <br>' +
+				   'in CW/CWN modes (e.g. 500 or 1000 Hz).'
+				)
+			),
+			w3_input('', 'Passband center', 'admin_sdr.pbc', admin_sdr.pbc, 'config_pb_val'),
+			w3_input('', 'Passband width', 'admin_sdr.pbw', admin_sdr.pbw, 'config_pb_val')
+		) +
+      w3_third('', 'w3-container',
+         '',
+         w3_div('id-pbc-error w3-margin-T-8 w3-yellow w3-hide', 'Value creates an invalid passband'),
+         w3_div('id-pbw-error w3-margin-T-8 w3-yellow w3-hide', 'Value creates an invalid passband')
+      ) +
+      
+      w3_div('w3-margin-bottom');
+
+   var s3 =
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_div('',
@@ -109,12 +154,10 @@ function config_html()
 					'Configures LW/NDB, MW and <br> amateur band allocations, etc.'
 				)
 			),
-			w3_div('w3-center w3-tspace-8',
-				w3_select('', 'Initial AM BCB channel spacing', '', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'admin_select_cb')
-			)
+			''
 		);
 
-	var s3 =
+	var s4 =
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_divs('w3-restart/w3-center w3-tspace-8',
@@ -132,7 +175,7 @@ function config_html()
 			''
 		);
 
-   var s4 =
+   var s5 =
 		'<hr>' +
       w3_div('w3-valign w3-container w3-section',
          '<header class="w3-container w3-yellow"><h6>' +
@@ -157,7 +200,7 @@ function config_html()
 
    // FIXME: this should really be in a tab defined by admin.js
    // but don't move it without leaving an explanation since old forum posts may refer to it as being here
-   var s5 =
+   var s6 =
 		'<hr>' +
       w3_div('w3-valign w3-container w3-section',
          '<header class="w3-container w3-yellow"><h6>' +
@@ -182,7 +225,9 @@ function config_html()
 				   'errors in the ADC clock (internal or external).'
 				)
 			)
-		) +
+		);
+		
+   var s7 =
 		'<hr>' +
 		w3_div('w3-container',
          w3_div('w3-valign',
@@ -217,16 +262,15 @@ function config_html()
                '<li>A full rotation in less than two seconds is good calibration</li>' +
             '</ul>'
          )
-      );
-
-   var s6 = '<hr>';
+      ) +
+      '<hr>';
    
    var mode_20kHz = (adm.firmware_sel == kiwi.RX3_WF3)? 1 : 0;
    console.log('mode_20kHz='+ mode_20kHz);
    var DC_offset_I = 'DC_offset'+ (mode_20kHz? '_20kHz':'') +'_I';
    var DC_offset_Q = 'DC_offset'+ (mode_20kHz? '_20kHz':'') +'_Q';
 
-   if (dbgUs) s6 = s6 +
+   if (dbgUs) s7 = s7 +
 		w3_div('w3-section w3-text-teal w3-bold', 'Development settings') +
 		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
 			w3_input_get('', 'I balance (DC offset)', DC_offset_I, 'admin_float_cb'),
@@ -248,16 +292,123 @@ function config_html()
 		) +
 		'<hr>';
 
-	return w3_div('id-config w3-hide', s1 + s2 + s3 + s4 + s5 + s6);
+	return w3_div('id-config w3-hide', s1 + s2 + s3 + s4 + s5 + s6 + s7);
 }
 
-function config_cw_offset_cb(path, val, first)
+function config_focus()
 {
-   val = +val;
-   if (val <= 0) val = Math.NAN;    // make admin_int_cb() return to previous value
-   admin_int_cb(path, val);
+   console.log('config_focus');
+   config_pb_mode('', admin_sdr.pmi, false);
 }
 
+function config_pb_mode(path, idx, first)
+{
+   if (first) return;      // cfg.passbands not available yet
+   idx = +idx;
+   admin_sdr.pmi = idx;
+   var mode = kiwi.modes_l[idx];
+   admin_sdr.pbm = mode;
+   console.log('config_pb_mode idx='+ idx +' mode='+ mode);
+
+	admin_sdr.pbl = cfg.passbands[mode].lo;
+	admin_sdr.pbh = cfg.passbands[mode].hi;
+	admin_sdr.pbc = (admin_sdr.pbl + admin_sdr.pbh) / 2;
+	admin_sdr.pbw = admin_sdr.pbh - admin_sdr.pbl;
+	
+	config_pb_val('pbl', admin_sdr.pbl, false);
+}
+	
+function config_pb_val(path, val, first, cb)
+{
+   if (first) return;      // cfg.passbands not available yet
+   var which = path.slice(-3);
+   //console.log('config_pb_val path='+ path);
+   val = +val;
+   var srate = ext_nom_sample_rate();
+   //console.log('SR='+ srate);
+	var half_srate = srate? srate/2 : 6000;
+   var min = -half_srate, max = half_srate;
+   var pbl, pbh, pbc, pbw, hbw;
+   var ok;
+   
+   // reset error indicators
+   w3_show_hide('id-pbl-error', false);
+   w3_show_hide('id-pbh-error', false);
+   w3_show_hide('id-pbc-error', false);
+   w3_show_hide('id-pbw-error', false);
+
+   switch (which) {
+   
+   case 'pbl':
+      pbl = val;
+      console.log('pbl='+ pbl);
+      ok = (pbl < admin_sdr.pbh && pbl >= min && pbl <= max);
+      if (ok) {
+         admin_sdr.pbl = pbl;
+         admin_sdr.pbc = (admin_sdr.pbl + admin_sdr.pbh) / 2;
+         admin_sdr.pbw = admin_sdr.pbh - admin_sdr.pbl;
+      }
+      w3_show_hide('id-pbl-error', !ok);
+      break;
+   
+   case 'pbh':
+      pbh = val;
+      console.log('pbh='+ pbh);
+      ok = (pbh > admin_sdr.pbl && pbh >= min && pbh <= max);
+      if (ok) {
+         admin_sdr.pbh = pbh;
+         admin_sdr.pbc = (admin_sdr.pbl + admin_sdr.pbh) / 2;
+         admin_sdr.pbw = admin_sdr.pbh - admin_sdr.pbl;
+      }
+      w3_show_hide('id-pbh-error', !ok);
+      break;
+   
+   case 'pbc':
+      pbc = val;
+      console.log('pbc='+ pbc);
+      hbw = admin_sdr.pbw / 2;
+      pbl = pbc - hbw;
+      pbh = pbc + hbw;
+      ok = (pbl >= min && pbh <= max);
+      if (ok) {
+         admin_sdr.pbc = pbc;
+         admin_sdr.pbl = pbl;
+         admin_sdr.pbh = pbh;
+      }
+      w3_show_hide('id-pbc-error', !ok);
+      break;
+   
+   case 'pbw':
+      pbw = val;
+      console.log('pbw='+ pbw);
+      pbc = admin_sdr.pbc;
+      hbw = pbw / 2;
+      pbl = pbc - hbw;
+      pbh = pbc + hbw;
+      ok = (pbw > 0 && pbl >= min && pbh <= max);
+      if (ok) {
+         admin_sdr.pbw = pbw;
+         admin_sdr.pbl = admin_sdr.pbc - hbw;
+         admin_sdr.pbh = admin_sdr.pbc + hbw;
+      }
+      w3_show_hide('id-pbw-error', !ok);
+      break;
+   }
+   
+   // leave invalid values in fields, but will revert when mode is changed or tab switched etc.
+   if (!ok) return;
+   
+   w3_set_value('admin_sdr.pbl', admin_sdr.pbl);
+   w3_set_value('admin_sdr.pbh', admin_sdr.pbh);
+   w3_set_value('admin_sdr.pbc', admin_sdr.pbc);
+   w3_set_value('admin_sdr.pbw', admin_sdr.pbw);
+   
+   if (ok) {
+      ext_set_cfg_param('cfg.passbands.'+ admin_sdr.pbm +'.lo', admin_sdr.pbl, false);
+      ext_set_cfg_param('cfg.passbands.'+ admin_sdr.pbm +'.hi', admin_sdr.pbh, true);
+   }
+}
+	
 function config_wfmin_cb(path, val, first)
 {
    val = +val;

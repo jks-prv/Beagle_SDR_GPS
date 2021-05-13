@@ -830,6 +830,10 @@ demodulator.draggable_ranges = {
 demodulator_response_time=100; 
 //in ms; if we don't limit the number of SETs sent to the server, audio will underrun (possibly output buffer is cleared on SETs in GNU Radio
 
+/*
+set in configuration now (cfg.passbands)
+see also cfg.cpp::_cfg_load_json()
+
 var passbands = {
 	am:		{ lo: -4900,	hi:  4900 },            // 9.8 kHz instead of 10 to avoid adjacent channel heterodynes in SW BCBs
 	amn:		{ lo: -2500,	hi:  2500 },
@@ -848,10 +852,11 @@ var passbands = {
 	nbfm:		{ lo: -6000,	hi:  6000 },	         // FIXME: set based on current srate?
 	iq:		{ lo: -5000,	hi:  5000 },
 };
+*/
 
 function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 {
-   if (passbands[subtype] == null) subtype = 'am';
+   if (cfg.passbands[subtype] == null) subtype = 'am';
    //console.log('demodulator_default_analog '+ subtype +' locut='+ locut +' hicut='+ hicut);
    
 	//http://stackoverflow.com/questions/4152931/javascript-inheritance-call-super-constructor-or-use-prototype-chain
@@ -874,13 +879,13 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 //jks
 //if (!isNaN(locut)) { console.log('#### demodulator_default_analog locut='+ locut); kiwi_trace(); }
 //if (!isNaN(hicut)) { console.log('#### demodulator_default_analog hicut='+ hicut); kiwi_trace(); }
-	var lo = isNaN(locut)? passbands[subtype].last_lo : locut;
-	var hi = isNaN(hicut)? passbands[subtype].last_hi : hicut;
+	var lo = isNaN(locut)? cfg.passbands[subtype].last_lo : locut;
+	var hi = isNaN(hicut)? cfg.passbands[subtype].last_hi : hicut;
 	if (lo == 'undefined' || lo == null) {
-		lo = passbands[subtype].last_lo = passbands[subtype].lo;
+		lo = cfg.passbands[subtype].last_lo = cfg.passbands[subtype].lo;
 	}
 	if (hi == 'undefined' || hi == null) {
-		hi = passbands[subtype].last_hi = passbands[subtype].hi;
+		hi = cfg.passbands[subtype].last_hi = cfg.passbands[subtype].hi;
 	}
 	
 	if (override_pbw != '') {
@@ -1161,12 +1166,12 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		
 		// make the proposed changes
 		if (do_lo) {
-			passbands[this.parent.server_mode].last_lo = this.parent.low_cut = new_lo;
+			cfg.passbands[this.parent.server_mode].last_lo = this.parent.low_cut = new_lo;
 			//console.log('DRAG-MOVE lo=', new_lo.toFixed(0));
 		}
 		
 		if (do_hi) {
-			passbands[this.parent.server_mode].last_hi = this.parent.high_cut = new_hi;
+			cfg.passbands[this.parent.server_mode].last_hi = this.parent.high_cut = new_hi;
 			//console.log('DRAG-MOVE hi=', new_hi.toFixed(0));
 		}
 		
@@ -1227,7 +1232,7 @@ function demodulator_add(what)
 function demodulator_analog_replace(subtype, freq)
 { //this function should only exist until the multi-demodulator capability is added
    //console.log('demodulator_analog_replace subtype='+ subtype);
-   if (passbands[subtype] == null) subtype = 'am';
+   if (cfg.passbands[subtype] == null) subtype = 'am';
 
 	var offset = 0, prev_pbo = 0, low_cut = NaN, high_cut = NaN;
 	var wasCW = false, toCW = false, fromCW = false;
@@ -1309,12 +1314,6 @@ function demodulator_set_offset_frequency(which, offset)
 
 function owrx_cfg()
 {
-   var cw = passbands.cw;
-   cw.lo = cfg.init.cw_offset - cw.pbw/2;
-   cw.hi = cfg.init.cw_offset + cw.pbw/2;
-   var cwn = passbands.cwn;
-   cwn.lo = cfg.init.cw_offset - cwn.pbw/2;
-   cwn.hi = cfg.init.cw_offset + cwn.pbw/2;
 }
 
 
@@ -4794,7 +4793,7 @@ function freq_passband_center()
 
 function passband_offset_dxlabel(mode)
 {
-	var pb = passbands[mode];
+	var pb = cfg.passbands[mode];
 	var m = mode.substr(0,2);
 	var usePBCenter = (m == 'us' || m == 'ls');
 	var offset = usePBCenter? pb.lo + (pb.hi - pb.lo)/2 : 0;
@@ -5267,7 +5266,7 @@ var freq_step_last_mode, freq_step_last_band;
 
 function freq_step_update_ui(force)
 {
-	if (isUndefined(cur_mode) || passbands[cur_mode] == undefined ) return;
+	if (isUndefined(cur_mode) || cfg.passbands[cur_mode] == undefined ) return;
 	var b = find_band(freq_displayed_Hz);
 	
 	//console.log("freq_step_update_ui: lm="+freq_step_last_mode+' cm='+cur_mode);
@@ -5935,7 +5934,7 @@ function dx_label_cb(arr)
          if (dl.lo != 0 && dl.hi != 0) {
             ext_set_passband(dl.lo, dl.hi);     // label has custom pb
          } else {
-            var dpb = passbands[mode];
+            var dpb = cfg.passbands[mode];
             ext_set_passband(dpb.lo, dpb.hi);   // need to force default pb in case cpb is not default
          }
       } else {
@@ -6178,7 +6177,7 @@ function dx_label_step(dir)
    if (dl.lo != 0 && dl.hi != 0) {
       ext_set_passband(dl.lo, dl.hi);     // label has custom pb
    } else {
-      var dpb = passbands[mode];
+      var dpb = cfg.passbands[mode];
       //console.log(dpb);
       ext_set_passband(dpb.lo, dpb.hi);   // need to force default pb in case cpb is not default
    }
@@ -8569,10 +8568,10 @@ function any_alternate_click_event_except_shift(evt)
 
 function restore_passband(mode)
 {
-   passbands[mode].last_lo = passbands[mode].lo;
-   passbands[mode].last_hi = passbands[mode].hi;
-   //writeCookie('last_locut', passbands[mode].last_lo.toString());
-   //writeCookie('last_hicut', passbands[mode].last_hi.toString());
+   cfg.passbands[mode].last_lo = cfg.passbands[mode].lo;
+   cfg.passbands[mode].last_hi = cfg.passbands[mode].hi;
+   //writeCookie('last_locut', cfg.passbands[mode].last_lo.toString());
+   //writeCookie('last_hicut', cfg.passbands[mode].last_hi.toString());
    //console.log('DEMOD PB reset');
 }
 

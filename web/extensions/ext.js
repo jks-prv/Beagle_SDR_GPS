@@ -3,6 +3,8 @@
 var extint = {
    ws: null,
    extname: null,
+   srate: 0,
+   nom_srate: 0,
    param: null,
    override_pb: false,
    displayed: false,
@@ -266,8 +268,8 @@ function ext_set_passband(low_cut, high_cut, set_mode_pb, freq_dial_Hz)		// spec
 	
 	// set the passband for the current mode as well (sticky)
 	if (isArg(set_mode_pb) && set_mode_pb && okay) {
-		passbands[cur_mode].last_lo = low_cut;
-		passbands[cur_mode].last_hi = high_cut;
+		cfg.passbands[cur_mode].last_lo = low_cut;
+		cfg.passbands[cur_mode].last_hi = high_cut;
 	}
 	
 	if (freq_dial_Hz != undefined && freq_dial_Hz != null) {
@@ -424,12 +426,15 @@ function ext_adc_clock_nom_Hz()
 	return extint_adc_clock_nom_Hz;
 }
 
-// updated from kiwi_msg() "sample_rate="
-var extint_srate = 0;
-
+// updated from kiwi_msg() "sample_rate=" and periodically from "stats_cb="
 function ext_sample_rate()
 {
-	return extint_srate;
+	return extint.srate;
+}
+
+function ext_nom_sample_rate()
+{
+	return extint.nom_srate;
 }
 
 var extint_audio_data_cb = null;
