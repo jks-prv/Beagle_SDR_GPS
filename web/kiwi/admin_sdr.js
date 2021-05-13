@@ -315,6 +315,14 @@ function config_pb_mode(path, idx, first)
 	admin_sdr.pbc = (admin_sdr.pbl + admin_sdr.pbh) / 2;
 	admin_sdr.pbw = admin_sdr.pbh - admin_sdr.pbl;
 	
+	// Handle case of switch from higher b/w mode (e.g. 3-ch 20.25 kHz mode) to lower b/w
+	// mode where values might define an invalid pb. Show invalid values and let call to
+	// config_pb_val() below display error. Clamping in openwebrx will compensate.
+   w3_set_value('admin_sdr.pbl', admin_sdr.pbl);
+   w3_set_value('admin_sdr.pbh', admin_sdr.pbh);
+   w3_set_value('admin_sdr.pbc', admin_sdr.pbc);
+   w3_set_value('admin_sdr.pbw', admin_sdr.pbw);
+
 	config_pb_val('pbl', admin_sdr.pbl, false);
 }
 	
