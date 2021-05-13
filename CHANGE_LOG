@@ -2,6 +2,20 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.453  May 14, 2021
+    Added default passband adjustment to admin page, config tab.
+        As each passband parameter field is changed (low, high, center, width) the other
+            fields will be automatically adjusted. So if you know you want a USB filter
+            with a low frequency of 300 Hz that is 3300 Hz wide just enter those two fields
+            and the high and width values will be derived. An error message will appear if
+            you attempt to define an invalid passband.
+        The former "CW offset" field has been removed. To set your desired CW offset
+            simply set the default passband center frequency of the CW/CWN mode passbands
+            to the offset value. E.g. If you want to hear a 1000 Hz tone in the CW modes
+            set the passbands to have a 1000 HZ center.
+        After the passband is changed on the admin page, existing user connections will have
+            to reload the page to get the new passband values.
+
 v1.452  May 4, 2021
     Improvements to API to prevent abuse of disabled DRM mode.
 

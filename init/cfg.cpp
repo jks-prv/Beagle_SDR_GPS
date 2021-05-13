@@ -1174,6 +1174,32 @@ static bool _cfg_load_json(cfg_t *cfg)
 	if (cfg->json[n-1] == '\n')
 		cfg->json[n-1] = '\0';
 	
+	// hack to add passband configuration (too difficult to do with cfg.h interface)
+	if (cfg == &cfg_cfg && strstr(cfg->json, ",\"passbands\":{") == NULL) {
+	    _cfg_realloc_json(cfg, n + 1024, CFG_COPY);
+	    strcpy(&(cfg->json[n-2]),
+	        ",\"passbands\":{"
+	            "\"am\":  {\"lo\":-4900, \"hi\":4900},"
+	            "\"amn\": {\"lo\":-2500, \"hi\":2500},"
+                "\"sam\": {\"lo\":-4900, \"hi\":4900},"
+                "\"sal\": {\"lo\":-4900, \"hi\":   0},"
+                "\"sau\": {\"lo\":    0, \"hi\":4900},"
+                "\"sas\": {\"lo\":-4900, \"hi\":4900},"
+                "\"qam\": {\"lo\":-4900, \"hi\":4900},"
+                "\"drm\": {\"lo\":-5000, \"hi\":5000},"
+                "\"lsb\": {\"lo\":-2700, \"hi\":-300},"
+                "\"lsn\": {\"lo\":-2400, \"hi\":-300},"
+                "\"usb\": {\"lo\":  300, \"hi\":2700},"
+                "\"usn\": {\"lo\":  300, \"hi\":2400},"
+                "\"cw\":  {\"lo\":  300, \"hi\": 700},"
+                "\"cwn\": {\"lo\":  470, \"hi\": 530},"
+                "\"nbfm\":{\"lo\":-6000, \"hi\":6000},"
+                "\"iq\":  {\"lo\":-5000, \"hi\":5000}"
+	        "}}");
+	    _cfg_save_json(cfg, cfg->json);
+	    return true;
+	}
+	
     TMEAS(printf("cfg_load_json: parse\n");)
 	if (_cfg_parse_json(cfg, false) == false)
 		return false;
