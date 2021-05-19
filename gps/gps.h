@@ -18,8 +18,7 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef	__GPS_H_
-#define	__GPS_H_
+#pragma once
 
 #include "types.h"
 #include "kiwi.h"
@@ -305,5 +304,3 @@ void GPSstat(STAT st, double, int=0, int=0, int=0, int=0, double=0);
 unsigned bin(char *s, int n);
 void StatTask(void *param);
 void GPSstat_init();
-
-#endif

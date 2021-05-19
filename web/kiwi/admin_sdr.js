@@ -13,6 +13,26 @@ var admin_sdr = {
    pbc: 0,
    pbw: 0,
    
+   // defaults for reset button
+   pb: {
+      am:   { c:     0, w:  9800 },
+      amn:  { c:     0, w:  5000 },
+      usb:  { c:  1500, w:  2400 },
+      usn:  { c:  1350, w:  2100 },
+      lsb:  { c: -1500, w:  2400 },
+      lsn:  { c: -1350, w:  2100 },
+      cw:   { c:   500, w:   400 },
+      cwn:  { c:   500, w:    60 },
+      nbfm: { c:     0, w: 12000 },
+      iq:   { c:     0, w: 10000 },
+      drm:  { c:     0, w: 10000 },
+      sam:  { c:     0, w:  9800 },
+      sau:  { c:  2450, w:  9800 },
+      sal:  { c: -2450, w:  9800 },
+      sas:  { c:     0, w:  9800 },
+      qam:  { c:     0, w:  9800 }
+   },
+   
    _last_: 0
 };
 
@@ -77,9 +97,10 @@ function config_html()
 	var s2 =
 		'<hr>' +
 		w3_text('w3-text-teal w3-bold', 'Default passbands:') +
-		w3_third('w3-text-teal', 'w3-container',
-			w3_divs('/w3-center w3-tspace-8',
-            w3_select('', 'Mode', '', 'admin_sdr.pbm', admin_sdr.pbm, kiwi.modes_u, 'config_pb_mode'),
+		w3_third('w3-text-teal w3-valign', 'w3-container',
+			w3_inline('w3-halign-space-around w3-tspace-8/w3-center',
+            w3_button('w3-aqua', 'Reset', 'config_pb_reset'),
+            w3_select('w3-label-inline', 'Mode', '', 'admin_sdr.pbm', admin_sdr.pbm, kiwi.modes_u, 'config_pb_mode'),
 			),
 			w3_input('', 'Passband low', 'admin_sdr.pbl', admin_sdr.pbl, 'config_pb_val'),
 			w3_input('', 'Passband high', 'admin_sdr.pbh', admin_sdr.pbh, 'config_pb_val')
@@ -95,7 +116,7 @@ function config_html()
 				   'As each field is changed the others are <br>' +
 				   'automatically adjusted. Define CW offset by <br>' +
 				   'setting appropriate passband center frequency <br>' +
-				   'in CW/CWN modes (e.g. 500 or 1000 Hz).'
+				   'for CW/CWN modes (typ 500, 800 or 1000 Hz).'
 				)
 			),
 			w3_input('', 'Passband center', 'admin_sdr.pbc', admin_sdr.pbc, 'config_pb_val'),
@@ -299,6 +320,15 @@ function config_focus()
 {
    console.log('config_focus');
    config_pb_mode('', admin_sdr.pmi, false);
+}
+
+function config_pb_reset(id, idx)
+{
+   var mode = admin_sdr.pbm;
+   console.log('config_pb_reset mode='+ mode);
+	admin_sdr.pbc = admin_sdr.pb[mode].c;
+	admin_sdr.pbw = admin_sdr.pb[mode].w;
+	config_pb_val('pbc', admin_sdr.pbc, false);
 }
 
 function config_pb_mode(path, idx, first)

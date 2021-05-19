@@ -37,8 +37,9 @@ Boston, MA  02110-1301, USA.
 #include "ext_int.h"
 #include "sanitizer.h"
 #include "shmem.h"      // shmem_init()
-
 #include "debug.h"
+
+#include "other.gen.h"
 
 #ifdef EV_MEAS
     #warning NB: EV_MEAS is enabled
@@ -76,11 +77,23 @@ bool create_eeprom, need_hardware, kiwi_reg_debug, have_ant_switch_ext, gps_e1b_
 char **main_argv;
 char *fpga_file;
 
+#ifdef USE_OTHER
+void other_task(void *param)
+{
+    void other_main(int test_flag, int p0, int p1, int p2);
+    other_main(test_flag, p0, p1, p2);
+    kiwi_exit(0);
+}
+#endif
+
 int main(int argc, char *argv[])
 {
 	int i;
 	int p_gps=0;
-	bool ext_clk = false;
+	bool ext_clk = false, err;
+	#define FW_CONFIGURED   -2  // -2 because -1 means "other" firmware and 0-N is Kiwi firmware
+	#define FW_OTHER        -1
+	int fw_sel_override = FW_CONFIGURED;   
 	
 	version_maj = VERSION_MAJ;
 	version_min = VERSION_MIN;
@@ -110,98 +123,87 @@ int main(int argc, char *argv[])
 	shmem_init();
 	printf_init();
 
-	for (i=1; i<argc; ) {
-		if (strcmp(argv[i], "-kiwi_reg")==0) kiwi_reg_debug = TRUE;
-		if (strcmp(argv[i], "-bg")==0) { background_mode = TRUE; bg=1; }
-		if (strcmp(argv[i], "-fopt")==0) use_foptim = 1;    // in EDATA_DEVEL mode use foptim version of files
-		if (strcmp(argv[i], "-down")==0) down = 1;
-		if (strcmp(argv[i], "+gps")==0) p_gps = 1;
-		if (strcmp(argv[i], "-gps")==0) p_gps = -1;
-		if (strcmp(argv[i], "+sdr")==0) do_sdr = 1;
-		if (strcmp(argv[i], "-sdr")==0) do_sdr = 0;
-		if (strcmp(argv[i], "+fft")==0) do_fft = 1;
-		if (strcmp(argv[i], "-debug")==0) debug_printfs = true;
-
-		if (strcmp(argv[i], "-gps_debug")==0) {
-		    errno = 0;
-			if (i+1 < argc && (gps_debug = strtol(argv[i+1], 0, 0), errno == 0)) {
-				i++;
-			} else {
-				gps_debug = -1;
-			}
-		}
+    #define ARG(s) (strcmp(argv[ai], s) == 0)
+    #define ARGP() argv[++ai]
+    #define ARGL(v) if (ai+1 < argc) (v) = strtol(argv[++ai], 0, 0);
+    
+	for (int ai = 1; ai < argc; ) {
+		if (ARG("-fw")) { ARGL(fw_sel_override); printf("firmware select override: %d\n", fw_sel_override); }
+		if (ARG("-kiwi_reg")) kiwi_reg_debug = TRUE;
+		if (ARG("-bg")) { background_mode = TRUE; bg=1; }
+		if (ARG("-fopt")) use_foptim = 1;   // in EDATA_DEVEL mode use foptim version of files
+		if (ARG("-down")) down = 1;
+		if (ARG("+gps")) p_gps = 1;
+		if (ARG("-gps")) p_gps = -1;
+		if (ARG("+sdr")) do_sdr = 1;
+		if (ARG("-sdr")) do_sdr = 0;
+		if (ARG("+fft")) do_fft = 1;
+		if (ARG("-debug")) debug_printfs = true;
+		if (ARG("-gps_debug")) { gps_debug = -1; ARGL(gps_debug); }
+		if (ARG("-stats") || ARG("+stats")) { print_stats = STATS_TASK; ARGL(print_stats); }
 		
-		if (strcmp(argv[i], "-stats")==0 || strcmp(argv[i], "+stats")==0) {
-		    errno = 0;
-			if (i+1 < argc && (print_stats = strtol(argv[i+1], 0, 0), errno == 0)) {
-				i++;
-			} else {
-				print_stats = STATS_TASK;
-			}
-		}
-		
-		if (strcmp(argv[i], "-test")==0) { i++; test_flag = strtol(argv[i], 0, 0); printf("test_flag %d(0x%x)\n", test_flag, test_flag); }
-		if (strcmp(argv[i], "-led")==0 || strcmp(argv[i], "-leds")==0) disable_led_task = true;
-		if (strcmp(argv[i], "-gps_e1b")==0) gps_e1b_only = true;
-		if (strcmp(argv[i], "-gps_var")==0) { i++; gps_var = strtol(argv[i], 0, 0); printf("gps_var %d\n", gps_var); }
-		if (strcmp(argv[i], "-e1b_lo_gain")==0) { i++; gps_lo_gain = strtol(argv[i], 0, 0); printf("e1b_lo_gain %d\n", gps_lo_gain); }
-		if (strcmp(argv[i], "-e1b_cg_gain")==0) { i++; gps_cg_gain = strtol(argv[i], 0, 0); printf("e1b_cg_gain %d\n", gps_cg_gain); }
+		if (ARG("-test")) { ARGL(test_flag); printf("test_flag %d(0x%x)\n", test_flag, test_flag); }
+		if (ARG("-led") || ARG("-leds")) disable_led_task = true;
+		if (ARG("-gps_e1b")) gps_e1b_only = true;
+		if (ARG("-gps_var")) { ARGL(gps_var); printf("gps_var %d\n", gps_var); }
+		if (ARG("-e1b_lo_gain")) { ARGL(gps_lo_gain); printf("e1b_lo_gain %d\n", gps_lo_gain); }
+		if (ARG("-e1b_cg_gain")) { ARGL(gps_cg_gain); printf("e1b_cg_gain %d\n", gps_cg_gain); }
 
-		if (strcmp(argv[i], "-debian")==0) { i++; debian_ver = strtol(argv[i], 0, 0); }
-		if (strcmp(argv[i], "-ctrace")==0) { i++; web_caching_debug = strtol(argv[i], 0, 0); }
-		if (strcmp(argv[i], "-ext")==0) ext_clk = true;
-		if (strcmp(argv[i], "-use_spidev")==0) { i++; use_spidev = strtol(argv[i], 0, 0); }
-		if (strcmp(argv[i], "-eeprom")==0) create_eeprom = true;
-		if (strcmp(argv[i], "-sim")==0) wf_sim = 1;
-		if (strcmp(argv[i], "-real")==0) wf_real = 1;
-		if (strcmp(argv[i], "-time")==0) wf_time = 1;
-		if (strcmp(argv[i], "-port")==0) { i++; alt_port = strtol(argv[i], 0, 0); }
-		if (strcmp(argv[i], "-p")==0) { alt_port = 8074; }
-		if (strcmp(argv[i], "-dump")==0 || strcmp(argv[i], "+dump")==0) { i++; ev_dump = strtol(argv[i], 0, 0); }
-		if (strcmp(argv[i], "-flip")==0) wf_flip = 1;
-		if (strcmp(argv[i], "-start")==0) wf_start = 1;
-		if (strcmp(argv[i], "-mult")==0) wf_mult = 1;
-		if (strcmp(argv[i], "-multgen")==0) wf_mult_gen = 1;
-		if (strcmp(argv[i], "-wmax")==0) wf_max = 1;
-		if (strcmp(argv[i], "-olap")==0) wf_olap = 1;
-		if (strcmp(argv[i], "-meas")==0) meas = 1;
+		if (ARG("-debian")) ARGL(debian_ver);
+		if (ARG("-ctrace")) ARGL(web_caching_debug);
+		if (ARG("-ext")) ext_clk = true;
+		if (ARG("-use_spidev")) ARGL(use_spidev);
+		if (ARG("-eeprom")) create_eeprom = true;
+		if (ARG("-sim")) wf_sim = 1;
+		if (ARG("-real")) wf_real = 1;
+		if (ARG("-time")) wf_time = 1;
+		if (ARG("-port")) ARGL(alt_port);
+		if (ARG("-p")) { alt_port = 8074; }
+		if (ARG("-dump") || ARG("+dump")) ARGL(ev_dump);
+		if (ARG("-flip")) wf_flip = 1;
+		if (ARG("-start")) wf_start = 1;
+		if (ARG("-mult")) wf_mult = 1;
+		if (ARG("-multgen")) wf_mult_gen = 1;
+		if (ARG("-wmax")) wf_max = 1;
+		if (ARG("-olap")) wf_olap = 1;
+		if (ARG("-meas")) meas = 1;
 		
 		// do_fft
-		if (strcmp(argv[i], "-none")==0) unwrap = 0;
-		if (strcmp(argv[i], "-norm")==0) unwrap = 1;
-		if (strcmp(argv[i], "-rev")==0) unwrap = 2;
-		if (strcmp(argv[i], "-qi")==0) rev_iq = 1;
-		if (strcmp(argv[i], "-ineg")==0) ineg = 1;
-		if (strcmp(argv[i], "-qneg")==0) qneg = 1;
-		if (strcmp(argv[i], "-file")==0) fft_file = 1;
-		if (strcmp(argv[i], "-fftsize")==0) { i++; fftsize = strtol(argv[i], 0, 0); }
-		if (strcmp(argv[i], "-fftuse")==0) { i++; fftuse = strtol(argv[i], 0, 0); }
-		if (strcmp(argv[i], "-np")==0) { i++; noisePwr = strtol(argv[i], 0, 0); }
+		if (ARG("-none")) unwrap = 0;
+		if (ARG("-norm")) unwrap = 1;
+		if (ARG("-rev")) unwrap = 2;
+		if (ARG("-qi")) rev_iq = 1;
+		if (ARG("-ineg")) ineg = 1;
+		if (ARG("-qneg")) qneg = 1;
+		if (ARG("-file")) fft_file = 1;
+		if (ARG("-fftsize")) ARGL(fftsize);
+		if (ARG("-fftuse")) ARGL(fftuse);
+		if (ARG("-np")) ARGL(noisePwr);
 
-		if (strcmp(argv[i], "-rcordic")==0) rx_cordic = 1;
-		if (strcmp(argv[i], "-rcic")==0) rx_cic = 1;
-		if (strcmp(argv[i], "-rcic2")==0) rx_cic2 = 1;
-		if (strcmp(argv[i], "-rdump")==0) rx_dump = 1;
-		if (strcmp(argv[i], "-wcordic")==0) wf_cordic = 1;
-		if (strcmp(argv[i], "-wcic")==0) wf_cic = 1;
-		if (strcmp(argv[i], "-clkg")==0) spi_clkg = 1;
+		if (ARG("-rcordic")) rx_cordic = 1;
+		if (ARG("-rcic")) rx_cic = 1;
+		if (ARG("-rcic2")) rx_cic2 = 1;
+		if (ARG("-rdump")) rx_dump = 1;
+		if (ARG("-wcordic")) wf_cordic = 1;
+		if (ARG("-wcic")) wf_cic = 1;
+		if (ARG("-clkg")) spi_clkg = 1;
 		
-		if (strcmp(argv[i], "-avg")==0) { i++; navg = strtol(argv[i], 0, 0); }
-		if (strcmp(argv[i], "-tone")==0) { i++; tone = strtol(argv[i], 0, 0); }
-		if (strcmp(argv[i], "-slc")==0) { i++; do_slice = strtol(argv[i], 0, 0); }
-		if (strcmp(argv[i], "-rx")==0) { i++; rx_num = strtol(argv[i], 0, 0); }
-		if (strcmp(argv[i], "-wf")==0) { i++; wf_num = strtol(argv[i], 0, 0); }
-		if (strcmp(argv[i], "-spispeed")==0) { i++; spi_speed = strtol(argv[i], 0, 0); }
-		if (strcmp(argv[i], "-spi")==0) { i++; spi_delay = strtol(argv[i], 0, 0); }
-		if (strcmp(argv[i], "-ch")==0) { i++; gps_chans = strtol(argv[i], 0, 0); }
-		if (strcmp(argv[i], "-y")==0) { i++; rx_yield = strtol(argv[i], 0, 0); }
-		if (strcmp(argv[i], "-p0")==0) { i++; p0 = strtol(argv[i], 0, 0); }
-		if (strcmp(argv[i], "-p1")==0) { i++; p1 = strtol(argv[i], 0, 0); }
-		if (strcmp(argv[i], "-p2")==0) { i++; p2 = strtol(argv[i], 0, 0); }
+		if (ARG("-avg")) ARGL(navg);
+		if (ARG("-tone")) ARGL(tone);
+		if (ARG("-slc")) ARGL(do_slice);
+		if (ARG("-rx")) ARGL(rx_num);
+		if (ARG("-wf")) ARGL(wf_num);
+		if (ARG("-spispeed")) ARGL(spi_speed);
+		if (ARG("-spi")) ARGL(spi_delay);
+		if (ARG("-ch")) ARGL(gps_chans);
+		if (ARG("-y")) ARGL(rx_yield);
+		if (ARG("-p0")) { ARGL(p0); printf("-p0 = %d\n", p0); }
+		if (ARG("-p1")) { ARGL(p1); printf("-p1 = %d\n", p1); }
+		if (ARG("-p2")) { ARGL(p2); printf("-p2 = %d\n", p2); }
 
-		i++;
-		while (i<argc && ((argv[i][0] != '+') && (argv[i][0] != '-'))) {
-			i++;
+		ai++;
+		while (ai < argc && ((argv[ai][0] != '+') && (argv[ai][0] != '-'))) {
+			ai++;
 		}
 	}
 	
@@ -253,9 +255,12 @@ int main(int argc, char *argv[])
     cfg_reload();
     clock_init();
 
-    bool err;
-    fw_sel = admcfg_int("firmware_sel", &err, CFG_OPTIONAL);
-    if (err) fw_sel = FW_SEL_SDR_RX4_WF4;
+    if (fw_sel_override != FW_CONFIGURED) {
+        fw_sel = fw_sel_override;
+    } else {
+        fw_sel = admcfg_int("firmware_sel", &err, CFG_OPTIONAL);
+        if (err) fw_sel = FW_SEL_SDR_RX4_WF4;
+    }
     
     if (fw_sel == FW_SEL_SDR_RX4_WF4) {
         fpga_id = FPGA_ID_RX4_WF4;
@@ -292,40 +297,42 @@ int main(int argc, char *argv[])
         rx_decim = RX_DECIM_14CH;
         nrx_bufs = RXBUF_SIZE_14CH / NRX_SPI;
         lprintf("firmware: SDR_RX14_WF0\n");
-    } else
-    if (VAL_CFG_GPS_ONLY) {
-        fpga_id = FPGA_ID_GPS;
-        lprintf("firmware: GPS_ONLY\n");
-    } else
-        panic("fw_sel");
+    } else {
+        fpga_id = FPGA_ID_OTHER;
+        lprintf("firmware: OTHER\n");
+    }
     
-    asprintf(&fpga_file, "rx%d.wf%d", rx_chans, wf_chans);
+    if (fpga_id == FPGA_ID_OTHER) {
+        fpga_file = strdup((char *) "other");
+    } else {
+        asprintf(&fpga_file, "rx%d.wf%d", rx_chans, wf_chans);
     
-    bool no_wf = cfg_bool("no_wf", &err, CFG_OPTIONAL);
-    if (err) no_wf = false;
-    if (no_wf) wf_chans = 0;
+        bool no_wf = cfg_bool("no_wf", &err, CFG_OPTIONAL);
+        if (err) no_wf = false;
+        if (no_wf) wf_chans = 0;
 
-    lprintf("firmware: rx_chans=%d wf_chans=%d\n", rx_chans, wf_chans);
+        lprintf("firmware: rx_chans=%d wf_chans=%d\n", rx_chans, wf_chans);
 
-    assert(rx_chans <= MAX_RX_CHANS);
-    assert(wf_chans <= MAX_WF_CHANS);
+        assert(rx_chans <= MAX_RX_CHANS);
+        assert(wf_chans <= MAX_WF_CHANS);
 
-    nrx_samps = NRX_SAMPS_CHANS(rx_chans);
-    nrx_samps_loop = nrx_samps * rx_chans / NRX_SAMPS_RPT;
-    nrx_samps_rem = (nrx_samps * rx_chans) - (nrx_samps_loop * NRX_SAMPS_RPT);
-    snd_intr_usec = 1e6 / ((float) snd_rate/nrx_samps);
-    lprintf("firmware: RX bufs=%d samps=%d loop=%d rem=%d intr_usec=%d\n",
-        nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem, snd_intr_usec);
+        nrx_samps = NRX_SAMPS_CHANS(rx_chans);
+        nrx_samps_loop = nrx_samps * rx_chans / NRX_SAMPS_RPT;
+        nrx_samps_rem = (nrx_samps * rx_chans) - (nrx_samps_loop * NRX_SAMPS_RPT);
+        snd_intr_usec = 1e6 / ((float) snd_rate/nrx_samps);
+        lprintf("firmware: RX bufs=%d samps=%d loop=%d rem=%d intr_usec=%d\n",
+            nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem, snd_intr_usec);
 
-    assert(nrx_bufs <= MAX_NRX_BUFS);
-    assert(nrx_samps <= MAX_NRX_SAMPS);
-    assert(nrx_samps < FASTFIR_OUTBUF_SIZE);    // see data_pump.h
+        assert(nrx_bufs <= MAX_NRX_BUFS);
+        assert(nrx_samps <= MAX_NRX_SAMPS);
+        assert(nrx_samps < FASTFIR_OUTBUF_SIZE);    // see data_pump.h
 
-    lprintf("firmware: WF xfer=%d samps=%d rpt=%d loop=%d rem=%d\n",
-        NWF_NXFER, NWF_SAMPS, NWF_SAMPS_RPT, NWF_SAMPS_LOOP, NWF_SAMPS_REM);
+        lprintf("firmware: WF xfer=%d samps=%d rpt=%d loop=%d rem=%d\n",
+            NWF_NXFER, NWF_SAMPS, NWF_SAMPS_RPT, NWF_SAMPS_LOOP, NWF_SAMPS_REM);
 
-    rx_num = rx_chans, wf_num = wf_chans;
-    monitors_max = (rx_chans * N_CAMP) + N_QUEUERS;
+        rx_num = rx_chans, wf_num = wf_chans;
+        monitors_max = (rx_chans * N_CAMP) + N_QUEUERS;
+    }
     
 	TaskInitCfg();
 
@@ -375,19 +382,26 @@ int main(int argc, char *argv[])
 	
 	rx_server_init();
 
-#ifndef CFG_GPS_ONLY
-	extint_setup();
-#endif
+    #ifdef USE_SDR
+        extint_setup();
+    #endif
 
 	web_server_init(WS_INIT_START);
 
 	if (do_gps) {
 		if (!GPS_CHANS) panic("no GPS_CHANS configured");
-		gps_main(argc, argv);
+        #ifdef USE_GPS
+		    gps_main(argc, argv);
+		#endif
 	}
 	
 	CreateTask(stat_task, NULL, MAIN_PRIORITY);
 
+    #ifdef USE_OTHER
+        if (fw_sel == FW_OTHER)
+	        CreateTask(other_task, NULL, MAIN_PRIORITY);
+    #endif
+    
 	// run periodic housekeeping functions
 	while (TRUE) {
 	

@@ -23,6 +23,8 @@ This file is part of OpenWebRX.
 
 var owrx = {
    mobile: null,
+   wf_snap: 0,
+   wf_cursor: 'crosshair',
    
    last_freq: -1,
    last_mode: '',
@@ -876,7 +878,6 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	//Why? As the demodulation is done on the server, difference is mainly on the server side.
 	this.server_mode = subtype;
 
-//jks
 //if (!isNaN(locut)) { console.log('#### demodulator_default_analog locut='+ locut); kiwi_trace(); }
 //if (!isNaN(hicut)) { console.log('#### demodulator_default_analog hicut='+ hicut); kiwi_trace(); }
 	var lo = isNaN(locut)? cfg.passbands[subtype].last_lo : locut;
@@ -2130,7 +2131,7 @@ function canvas_start_drag(evt, x, y)
 	} else
 
 	// select waterfall on nearest appropriate boundary (1, 5 or 9/10 kHz depending on band)
-	if (evt.shiftKey && !(evt.ctrlKey || evt.altKey)) {
+	if ((evt.shiftKey && !(evt.ctrlKey || evt.altKey)) || owrx.wf_snap) {
 		canvas_ignore_mouse_event = true;
 		if (debug_canvas_drag) console.log('CSD-Wboundary IME=set-true');
 		var step_Hz = 1000;
@@ -2327,7 +2328,7 @@ function canvas_touchMove(evt)
 function canvas_end_drag2()
 {
 	if (debug_canvas_drag) canvas_log("C-ED2");
-	canvas_container.style.cursor = "crosshair";
+	canvas_container.style.cursor = owrx.wf_cursor;
 	canvas_mouse_down = false;
 	canvas_ignore_mouse_event = false;
 	if (debug_canvas_drag) { console.log("C-ED2 IME=set-false"); }
@@ -2484,6 +2485,7 @@ var right_click_menu_content = [
    'Utility database lookup',
    'DX Cluster lookup',
    '<hr>',
+   'snap to nearest',
    '🔒 lock tuning',
    'restore passband',
    'save waterfall as JPG',
@@ -2508,9 +2510,10 @@ function right_click_menu(x, y)
       db = 'SWBC';
 
    right_click_menu_content[0] = db + ' database lookup';
+   right_click_menu_content[3+1] = owrx.wf_snap? 'no snap' : 'snap to nearest';
    
    // disable menu item if last label gid is not set
-   right_click_menu_content[7] = (owrx.dx_click_gid_last? '':'!') +'edit last selected DX label';
+   right_click_menu_content[7+1] = (owrx.dx_click_gid_last? '':'!') +'edit last selected DX label';
 
    w3_menu_items('id-right-click-menu', right_click_menu_content);
    w3_menu_popup('id-right-click-menu', x, y);
@@ -2528,29 +2531,33 @@ function right_click_menu_cb(idx, x)
 		freq_database_lookup(canvas_get_dspfreq(x), idx);
       break;
    
-   case 3:  // tuning lock
+   case 3:  // snap to nearest
+      wf_snap();
+      break;
+
+   case 4:  // tuning lock
       owrx.tuning_locked ^= 1;
-      right_click_menu_content[4] = (owrx.tuning_locked? '🔓 unlock' : '🔒 lock') +' tuning';
+      right_click_menu_content[4+1] = (owrx.tuning_locked? '🔓 unlock' : '🔒 lock') +' tuning';
       break;
       
-   case 4:  // restore passband
+   case 5:  // restore passband
       restore_passband(cur_mode);
       demodulator_analog_replace(cur_mode);
       break;
       
-   case 5:  // save waterfall image
+   case 6:  // save waterfall image
       export_waterfall(canvas_get_dspfreq(x));
       break;
    
-   case 6:  // edit last selected dx label
+   case 7:  // edit last selected dx label
       dx_show_edit_panel(null, owrx.dx_click_gid_last);
       break;
    
-   case 7:  // open dx label filter
+   case 8:  // open dx label filter
       dx_filter();
       break;
    
-   case 8:  // cal ADC clock
+   case 9:  // cal ADC clock
       admin_pwd_query(function() {
          var r1k_kHz = Math.round(freq_displayed_Hz / 1e3);     // 1kHz windows on 1 kHz boundaries
          var r1k_Hz = r1k_kHz * 1e3;
@@ -3596,11 +3603,23 @@ function waterfall_init()
 	//console.log('waterfall_dequeue @ '+ waterfall_ms +' msec');
 	
 	if (shortcut.keys != '') setTimeout(keyboard_shortcut_url_keys, 3000);
+	
+	
+	wf_snap(localStorage.getItem('wf_snap'));
 
    if (kiwi_isMobile() || mobile_laptop_test)
       mobile_init();
 
 	waterfall_setup_done=1;
+}
+
+function wf_snap(set)
+{
+   //console.log('wf_snap cur='+ owrx.wf_snap +' set='+ set);
+   owrx.wf_snap = isUndefined(set)? (owrx.wf_snap ^ 1) : (isNull(set)? 0 : +set);
+   //console.log('wf_snap new='+ owrx.wf_snap);
+   w3_el('id-waterfall-container').style.cursor = owrx.wf_cursor = owrx.wf_snap? 'col-resize' : 'crosshair';
+   localStorage.setItem('wf_snap', owrx.wf_snap);
 }
 
 var waterfall_dont_scale=0;
@@ -6748,8 +6767,18 @@ function keyboard_shortcut(key, mod, ctlAlt)
    case 'q': ext_set_mode('iq'); break;
    
    // step
-   case 'j': case 'J': case 'ArrowLeft':  if (mod != shortcut.SHIFT_PLUS_CTL_OR_ALT) freqstep(2-mod); else dx_label_step(-1); break;
-   case 'i': case 'I': case 'ArrowRight': if (mod != shortcut.SHIFT_PLUS_CTL_OR_ALT) freqstep(3+mod); else dx_label_step(+1); break;
+   case 'j': case 'J': case 'ArrowLeft':
+      if (mod != shortcut.SHIFT_PLUS_CTL_OR_ALT)
+         freqstep(owrx.wf_snap? mod : (2-mod));
+      else
+         dx_label_step(-1);
+      break;
+   case 'i': case 'I': case 'ArrowRight':
+      if (mod != shortcut.SHIFT_PLUS_CTL_OR_ALT)
+         freqstep(owrx.wf_snap? (5-mod) : (3+mod));
+      else
+         dx_label_step(+1);
+      break;
    
    // passband
    case 'p': passband_increment(false); break;

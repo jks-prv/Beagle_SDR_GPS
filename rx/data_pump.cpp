@@ -312,7 +312,7 @@ static void data_pump(void *param)
 
 void data_pump_start_stop()
 {
-#ifndef CFG_GPS_ONLY
+#ifdef USE_SDR
 	bool no_users = true;
 	for (int i = 0; i < rx_chans; i++) {
         rx_chan_t *rx = &rx_channels[i];

@@ -50,6 +50,8 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <fftw3.h>
 
+#ifdef USE_SDR
+
 //#define WF_INFO
 //#define TR_WF_CMDS
 #define SM_WF_DEBUG		false
@@ -1375,3 +1377,5 @@ void c2s_waterfall_shutdown(void *param)
     if (c && c->mc)
         rx_server_websocket(WS_MODE_CLOSE, c->mc);
 }
+
+#endif

@@ -22,6 +22,7 @@
 ; Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
 
 #include ../kiwi.config
+#include ../other.config
 
 				MACRO	FreezeTOS
 				 wrEvt2	FREEZE_TOS
@@ -464,6 +465,12 @@ Commands:
 #endif
 
 
+#if USE_OTHER
+#include other.cmds.asm
+                OTHER_CMDS
+#endif
+
+
 ; ============================================================================
 ; pseudo instructions
 ; ============================================================================
@@ -670,7 +677,16 @@ rdBit16z:
 				ENDR
 				ret
 
-// increment a u16 memory location
+// rdBit2 a 16-bit word
+rdBit2_16:
+				push	0
+rdBit2_16z:
+				REPEAT	16
+				 rdBit2
+				ENDR
+				ret
+
+// increment a u16 memory location and keep value on stack
 incr16:										; addr
 				dup							; addr addr
 				fetch16						; addr data
@@ -679,6 +695,17 @@ incr16:										; addr
 				rot							; data+1 data+1 addr
 				store16						; data+1 addr
 				drop.r						; data+1
+
+// decrement a u16 memory location and keep value on stack
+decr16:										; addr
+				dup							; addr addr
+				fetch16						; addr data
+				push    1                   ; addr data 1
+				sub                         ; addr data-1
+				dup							; addr data-1 data-1
+				rot							; data-1 data-1 addr
+				store16						; data-1 addr
+				drop.r						; data-1
 
 
 ; ============================================================================
@@ -758,6 +785,15 @@ CmdGetCPUCtr:
 
 #if USE_GPS
 #include kiwi.gps.asm
+#endif
+
+
+; ============================================================================
+; OTHER
+; ============================================================================
+
+#if USE_OTHER
+#include other.asm
 #endif
 
 

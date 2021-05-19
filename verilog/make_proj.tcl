@@ -150,6 +150,7 @@ set files [ list \
                 "[file normalize ${origin_dir}/kiwi.vh]" \
                 "[file normalize ${origin_dir}/kiwi.cfg.vh]" \
                 "[file normalize ${origin_dir}/kiwi.gen.vh]" \
+                "[file normalize ${origin_dir}/other.gen.vh]" \
                 "[file normalize ${origin_dir}/kiwi.v]" \
                 "[file normalize ${origin_dir}/host.v]" \
                 "[file normalize ${origin_dir}/cpu.v]" \
@@ -200,6 +201,7 @@ proc add_verilog_header_file fn {
 if {[string equal $proj_create "yes"]} {
     add_verilog_header_file "$origin_dir/kiwi.vh"
     add_verilog_header_file "$origin_dir/kiwi.gen.vh"
+    add_verilog_header_file "$origin_dir/other.gen.vh"
     add_verilog_header_file "$origin_dir/rx/cic_rx1_12k.vh"
     add_verilog_header_file "$origin_dir/rx/cic_rx1_20k.vh"
     add_verilog_header_file "$origin_dir/rx/cic_rx2_12k.vh"

@@ -42,7 +42,8 @@ void gps_main(int argc, char *argv[])
     // verilog limitations, see:
     //      gps.v: "cmd_chan"
     //      ipcore_bram_gps_4k_12b
-    assert(GPS_CHANS <= MAX_GPS_CHANS);	
+
+    assert(GPS_CHANS <= MAX_GPS_CHANS);
 
 	printf("GPS starting..\n");
     SearchParams(argc, argv);

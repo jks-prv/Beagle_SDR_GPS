@@ -45,7 +45,7 @@ small rx buffer used by rx/receiver.v:
 	Summary (if anything here is different you configured something incorrectly)
 		#18k:0 #36k:4 B-latency:1 addr-A-width:13 addr-B-width:13
 
-large rx buffer used by rx/receiver.v:
+medium rx buffer used by rx/receiver.v:
     Component Name
         ipcore_bram_16k_16b
 	Basic
@@ -76,6 +76,38 @@ large rx buffer used by rx/receiver.v:
 	    > none
 	Summary (if anything here is different you configured something incorrectly)
 		#18k:1 #36k:7 B-latency:1 addr-A-width:14 addr-B-width:14
+
+large rx buffer used by rx/receiver.v:
+    Component Name
+        ipcore_bram_32k_16b
+	Basic
+		Interface Type
+			> native
+		Memory Type
+			> simple dual port RAM
+		Common Clock
+		    > no
+		Algorithm
+			minimum area
+	Port A Options
+		Width
+			> 16
+		Depth
+			> 32768
+		Operating Mode
+			> no change
+		Enable Port Type
+			> always enabled
+	Port B Options
+		Width
+			> 16
+		Enable Port Type
+			> always enabled
+		> no output registers
+	Other Options
+	    > none
+	Summary (if anything here is different you configured something incorrectly)
+		#18k:0 #36k:15 B-latency:1 addr-A-width:15 addr-B-width:15
 
 used by rx/iq_sampler_8k_32b.v:
     Component Name

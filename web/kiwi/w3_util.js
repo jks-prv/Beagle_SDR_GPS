@@ -546,6 +546,11 @@ function w3_innerHTML(id)
 	return el;
 }
 
+function w3_clearInnerHTML(id)
+{
+   w3_innerHTML(id, '');
+}
+
 function w3_append_innerHTML(id)
 {
 	var el = w3_el(id);
@@ -1172,6 +1177,29 @@ function w3_copy_to_clipboard(val)
 	el.select();
 	document.execCommand("copy");
    document.body.removeChild(el);
+}
+
+// see: https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollHeight
+function w3_isScrolledDown(id)
+{
+   var el = w3_el(id);
+   return el.scrollHeight - el.scrollTop === el.clientHeight;
+}
+
+// id element must have scroll property
+function w3_scrollDown(id, cond)
+{
+   var el = w3_el(id);
+   if (isArg(cond)? cond : true) el.scrollTop = el.scrollHeight;
+   return el;
+}
+
+// id element must have scroll property
+function w3_scrollTop(id, cond)
+{
+   var el = w3_el(id);
+   if (isArg(cond)? cond : true) el.scrollTop = 0;
+   return el;
 }
 
 
@@ -2687,7 +2715,8 @@ function w3_col_percent(psa)
 // the w3-text makes it inline-block, so no surrounding w3_inline() needed
 function w3_text(psa, text)
 {
-	var s = w3_div(w3_psa_mix(psa, 'w3-text', 'padding:0 4px 0 0; background-color:inherit'), text? text:' ');
+   var pad = (psa.includes('w3-padding') || psa.includes('w3-nopad'))? '' : 'padding:0 4px 0 0; ';
+	var s = w3_div(w3_psa_mix(psa, 'w3-text', pad +'background-color:inherit'), text? text:' ');
 	//console.log(s);
 	return s;
 }

@@ -6,7 +6,7 @@
 # When building in batch mode, as opposed to using the Vivado UI, V_SRC_DIR is passed to the tcl script
 # to specify where to place the resulting .bit files.
 #
-# V_SRC_DIR can be set as a global environment variable else it will default to the value below.
+# V_SRC_DIR can be set as a global environment variable otherwise it will default to the value below.
 #
 
 ifeq ($(V_SRC_DIR)x,x)
@@ -51,13 +51,30 @@ cv:
 # command to "copy verilog" from KiwiSDR distribution into our build directory
 # designed to complement the "make cv" command run in the KiwiSDR server build directory
 EXCLUDE_RSYNC = ".DS_Store" "KiwiSDR/" "generated" ".Xil/" "vivado.*"
+V_PROJ = KiwiSDR
 cv2:
-	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) $(V_SRC_DIR)/KiwiSDR/ .
-#	rsync -av --delete --exclude .DS_Store $(V_SRC_DIR)/KiwiSDR.Vivado.2014.4.ip/ ../import_ip
-	rsync -av --delete --exclude .DS_Store $(V_SRC_DIR)/KiwiSDR.Vivado.2017.4.ip/ ../import_ip
+	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) $(V_SRC_DIR)/$(V_PROJ)/ .
+	rsync -av --delete --exclude .DS_Store $(V_SRC_DIR)/$(V_PROJ).Vivado.2017.4.ip/ ../import_ip
+
+RX_CFG = $(shell grep RX_CFG kiwi.cfg.vh | cut -d\  -f 4 | tr -d ';')
+ifeq ($(RX_CFG),4)
+    CFG = rx4.wf4
+else ifeq ($(RX_CFG),8)
+    CFG = rx8.wf2
+else ifeq ($(RX_CFG),3)
+    CFG = rx3.wf3
+else ifeq ($(RX_CFG),14)
+    CFG = rx14.wf0
+else
+    CFG = other
+endif
 
 cb:
-	cp ../*.runs/impl_1/KiwiSDR.bit $(V_SRC_DIR)
+	@echo "CFG =" $(CFG)
+	cp ../*.runs/impl_1/KiwiSDR.bit $(V_SRC_DIR)/KiwiSDR.$(CFG).bit
+
+sum:
+	sum /media/sf_shared/*.bit
 
 ts:
 	-tail -f KiwiSDR/KiwiSDR.runs/synth_1/runme.log

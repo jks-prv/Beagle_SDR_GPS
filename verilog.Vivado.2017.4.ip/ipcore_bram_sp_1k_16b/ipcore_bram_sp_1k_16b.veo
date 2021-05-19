@@ -1,4 +1,4 @@
-// (c) Copyright 1995-2016 Xilinx, Inc. All rights reserved.
+// (c) Copyright 1995-2021 Xilinx, Inc. All rights reserved.
 // 
 // This file contains confidential and proprietary information
 // of Xilinx, Inc. and is protected under U.S. and
@@ -46,24 +46,25 @@
 // 
 // DO NOT MODIFY THIS FILE.
 
-// IP VLNV: xilinx.com:ip:dds_compiler:6.0
-// IP Revision: 7
+// IP VLNV: xilinx.com:ip:blk_mem_gen:8.4
+// IP Revision: 1
 
 // The following must be inserted into your Verilog file for this
 // core to be instantiated. Change the instance name and port connections
 // (in parentheses) to your own signal names.
 
 //----------- Begin Cut here for INSTANTIATION Template ---// INST_TAG
-ipcore_dds_sin_cos_13b_15b your_instance_name (
-  .aclk(aclk),                                // input wire aclk
-  .s_axis_phase_tvalid(s_axis_phase_tvalid),  // input wire s_axis_phase_tvalid
-  .s_axis_phase_tdata(s_axis_phase_tdata),    // input wire [31 : 0] s_axis_phase_tdata
-  .m_axis_data_tvalid(m_axis_data_tvalid),    // output wire m_axis_data_tvalid
-  .m_axis_data_tdata(m_axis_data_tdata)      // output wire [31 : 0] m_axis_data_tdata
+ipcore_bram_sp_1k_16b your_instance_name (
+  .clka(clka),    // input wire clka
+  .ena(ena),      // input wire ena
+  .wea(wea),      // input wire [1 : 0] wea
+  .addra(addra),  // input wire [9 : 0] addra
+  .dina(dina),    // input wire [15 : 0] dina
+  .douta(douta)  // output wire [15 : 0] douta
 );
 // INST_TAG_END ------ End INSTANTIATION Template ---------
 
-// You must compile the wrapper file ipcore_dds_sin_cos_13b_15b.v when simulating
-// the core, ipcore_dds_sin_cos_13b_15b. When compiling the wrapper file, be sure to
+// You must compile the wrapper file ipcore_bram_sp_1k_16b.v when simulating
+// the core, ipcore_bram_sp_1k_16b. When compiling the wrapper file, be sure to
 // reference the Verilog simulation library.
 

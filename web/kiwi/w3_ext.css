@@ -583,19 +583,25 @@ input[type=range]::-moz-range-thumb {
     padding-right: 8px !important;
 }
 
+.w3-padding-LR-16
+{
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+}
+
 .w3-padding-T-1
 {
     padding-top: 1px
 }
 
-.w3-padding-TB-8
-{
-    padding: 8px 0
-}
-
 .w3-padding-TB-7
 {
     padding: 7px 0
+}
+
+.w3-padding-TB-8
+{
+    padding: 8px 0
 }
 
 .w3-padding-TB-24
@@ -818,6 +824,11 @@ input[type=range]::-moz-range-thumb {
 .w3-width-one-sixth
 {
     width: 16.67%;
+}
+
+.w3-width-min
+{
+    width: min-content;
 }
 
 .w3-scroll

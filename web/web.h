@@ -21,10 +21,10 @@ Boston, MA  02110-1301, USA.
 
 #include "embed.h"
 
-#ifdef CFG_GPS_ONLY
- #define N_EXT 0
-#else
+#ifdef USE_SDR
  #define N_EXT 32
+#else
+ #define N_EXT 0
 #endif
 
 #define WEB_PRINTF

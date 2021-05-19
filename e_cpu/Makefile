@@ -13,6 +13,9 @@ ASM = $(TOOLS_DIR)/asm
 all: $(ASM)
 	$(ASM) -o $(GEN_DIR)
 
+gen_other: $(ASM)
+	$(ASM) -o $(GEN_DIR) -g
+
 $(TOOLS_DIR):
 	@mkdir -p $(TOOLS_DIR)
 
@@ -37,6 +40,10 @@ binary: $(ASM)
 
 stat: $(ASM)
 	$(ASM) -n -s -o $(GEN_DIR)
+
+gdb: $(ASM)
+	@echo "gdb: r -o ../../build/gen"
+	gdb $(ASM)
 
 clean:
 	-rm -rf $(TOOLS_DIR)/asm* $(GEN_DIR)

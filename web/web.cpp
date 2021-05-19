@@ -556,7 +556,7 @@ void reload_index_params()
 	kstr_free(sb);
 
 	// add the list of extensions (only used by admin.html)
-#ifndef CFG_GPS_ONLY
+#ifdef USE_SDR
 	sb = extint_list_js();
 	iparams_add("EXT_LIST_JS", kstr_sp(sb));
 	//real_printf("%s\n", kstr_sp(sb));

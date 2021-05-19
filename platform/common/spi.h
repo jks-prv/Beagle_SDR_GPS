@@ -27,7 +27,7 @@
 typedef enum { // Embedded CPU commands, order must match 'Commands:' table in .asm code
 
     // general
-    CmdPing,
+    CmdPing = 0,
     CmdLoad,
     CmdPing2,
     CmdCPUCtrClr,
@@ -80,7 +80,42 @@ typedef enum { // Embedded CPU commands, order must match 'Commands:' table in .
     CmdCheckLast,
     
     // pseudo for debugging
-    CmdPumpFlush
+    CmdPumpFlush,
+
+#ifndef USE_SDR
+    CmdSetRXFreq = 0,
+    CmdSetRXNsamps = 0,
+    CmdSetGenFreq = 0,
+    CmdSetGenAttn = 0,
+    CmdGetRX = 0,
+    CmdClrRXOvfl = 0,
+    CmdSetWFFreq = 0,
+	CmdSetWFDecim = 0,
+    CmdWFReset = 0,
+    CmdGetWFSamples = 0,
+    CmdGetWFContSamps = 0,
+	CmdSetOVMask = 0,
+#endif
+
+#ifndef USE_GPS
+    CmdSample = 0,
+    CmdSetMask = 0,
+    CmdSetRateCG = 0,
+    CmdSetRateLO = 0,
+    CmdSetGainCG = 0,
+    CmdSetGainLO = 0,
+    CmdSetSat = 0,
+    CmdSetE1Bcode = 0,
+    CmdSetPolarity = 0,
+    CmdPause = 0,
+    CmdGetGPSSamples = 0,
+    CmdGetChan = 0,
+    CmdGetClocks = 0,
+    CmdGetGlitches = 0,
+    CmdIQLogReset = 0,
+    CmdIQLogGet = 0,
+#endif
+
 } SPI_CMD;
 
 static const char *cmds[] = {
@@ -142,6 +177,7 @@ static const char *cmds[] = {
     "CmdPumpFlush"
 };
 
+
 typedef struct {
     u4_t xfers, flush, bytes;
     u4_t retry;
@@ -191,12 +227,22 @@ typedef struct {
 } spi_mosi_data_t;
 
 typedef struct {
+	uint16_t cmd;
+	uint16_t wparam;
+	uint16_t w2param;
+	uint16_t w3param;
+	uint16_t w4param;
+	uint8_t _pad_;      // 3 LSBs stay in ha_disr[2:0]
+} spi_mosi_data2_t;
+
+typedef struct {
 	PAD_FRONT;
 	union {
 		SPI_T msg[1];
 		u1_t bytes[SPIBUF_B];		// because tx/rx DMA sizes equal
         u2_t words[SPIBUF_W];
 		spi_mosi_data_t data;
+		spi_mosi_data2_t data2;
 	};
 	PAD_BACK;
 } DMA_ALIGNMENT SPI_MOSI;
@@ -242,6 +288,7 @@ void spi_stats();
 void _spi_set(SPI_CMD cmd, uint16_t wparam=0, uint32_t lparam=0);
 void spi_set3(SPI_CMD cmd, uint16_t wparam, uint32_t lparam, uint16_t w2param);
 void spi_set_noduplex(SPI_CMD cmd, uint16_t wparam=0, uint32_t lparam=0);
+void spi_set4_noduplex(SPI_CMD cmd, uint16_t wparam=0, uint16_t w2param=0, uint16_t w3param=0, uint16_t w4param=0);
 void spi_set_buf_noduplex(SPI_CMD cmd, SPI_MOSI *tx, int bytes);
 
 void _spi_get(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint32_t lparam=0);

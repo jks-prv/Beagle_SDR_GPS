@@ -38,7 +38,7 @@ Boston, MA  02110-1301, USA.
 #include "ext_int.h"
 #include "wspr.h"
 
-#ifndef CFG_GPS_ONLY
+#ifdef USE_SDR
  #include "data_pump.h"
  #include "dx.h"
 #endif
@@ -73,7 +73,7 @@ const int mode_offset[N_MODE] = {
     0, 0, 1500, -1500, 0, 0, 0, 0, 0, 1350, -1350, 0, 0, 0, 0, 0
 };
 
-#ifndef CFG_GPS_ONLY
+#ifdef USE_SDR
 
 static dx_t *dx_list_first, *dx_list_last;
 
@@ -699,7 +699,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 // dx
 ////////////////////////////////
 
-#ifndef CFG_GPS_ONLY
+#ifdef USE_SDR
 
 #define DX_SPACING_ZOOM_THRESHOLD	5
 #define DX_SPACING_THRESHOLD_PX		10
@@ -1063,7 +1063,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             sb = kstr_asprintf(sb, ",\"ga\":%d,\"gt\":%d,\"gg\":%d,\"gf\":%d,\"gc\":%.6f,\"go\":%d",
                 gps.acquiring, gps.tracking, gps.good, gps.fixes, adc_clock_system()/1e6, clk.adc_gps_clk_corrections);
 
-    #ifndef CFG_GPS_ONLY
+    #ifdef USE_SDR
             //printf("ch=%d ug=%d lat=%d\n", ch, wspr_c.GPS_update_grid, (gps.StatLat != 0));
             if (wspr_c.GPS_update_grid && gps.StatLat) {
                 latLon_t loc;
@@ -1118,7 +1118,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         }
 	    break;
 
-#ifndef CFG_GPS_ONLY
+#ifdef USE_SDR
 
     case CMD_GET_USERS:
 	if (strcmp(cmd, "SET GET_USERS") == 0) {
@@ -1266,7 +1266,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	    break;
     }
 	
-#ifndef CFG_GPS_ONLY
+#ifdef USE_SDR
     // used by signal generator etc.
     case CMD_WF_COMP: {
         int wf_comp;

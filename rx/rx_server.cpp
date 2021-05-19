@@ -35,7 +35,7 @@ Boston, MA  02110-1301, USA.
 #include "net.h"
 #include "data_pump.h"
 
-#ifndef CFG_GPS_ONLY
+#ifdef USE_SDR
  #include "ext_int.h"
 #endif
 
@@ -56,10 +56,10 @@ rx_chan_t rx_channels[MAX_RX_CHANS];
 rx_stream_t rx_streams[] = {
 	{ AJAX_VERSION,		"VER" },
 	{ STREAM_ADMIN,		"admin",	&c2s_admin,		&c2s_admin_setup,		&c2s_admin_shutdown,	 TASK_MED_PRIORITY },
-#ifndef CFG_GPS_ONLY
+	{ STREAM_MFG,		"mfg",		&c2s_mfg,		&c2s_mfg_setup,			NULL,                    TASK_MED_PRIORITY },
+#ifdef USE_SDR
 	{ STREAM_SOUND,		"SND",		&c2s_sound,		&c2s_sound_setup,		&c2s_sound_shutdown,	 SND_PRIORITY },
 	{ STREAM_WATERFALL,	"W/F",		&c2s_waterfall,	&c2s_waterfall_setup,	&c2s_waterfall_shutdown, WF_PRIORITY },
-	{ STREAM_MFG,		"mfg",		&c2s_mfg,		&c2s_mfg_setup,			NULL,                    TASK_MED_PRIORITY },
 	{ STREAM_EXT,		"EXT",		&extint_c2s,	&extint_setup_c2s,		NULL,                    TASK_MED_PRIORITY },
 	{ STREAM_MONITOR,   "MON",		&c2s_mon,	    &c2s_mon_setup,         NULL,                    TASK_MED_PRIORITY },
 
@@ -419,7 +419,7 @@ void rx_server_user_kick(int chan)
 		    if (chan == -1 || chan == c->ext_rx_chan) {
                 c->kick = true;
                 if (chan != -1)
-                    printf("rx_server_user_kick KICKING rx=%d EXT %s\n", chan, c->ext->name);
+                    printf("rx_server_user_kick KICKING rx=%d EXT %s\n", chan, c->ext? c->ext->name : "?");
             }
 		}
 	}
@@ -540,7 +540,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
     kiwi_ifree(uri_m);
 
 	// handle case of server initially starting disabled, but then being enabled later by admin
-#ifndef CFG_GPS_ONLY
+#ifdef USE_SDR
 	static bool init_snd_wf;
 	if (!init_snd_wf && !down) {
 		c2s_sound_init();
@@ -565,7 +565,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
             if (stat(DIR_CFG "/opt.no_console", &_st) == 0)
                 return NULL;
             printf("allowed by su %s %s\n", rx_streams[st->type].uri, remote_ip);
-            #ifndef CFG_GPS_ONLY
+            #ifdef USE_SDR
                 if (!init_snd_wf) {
                     c2s_sound_init();
                     c2s_waterfall_init();
@@ -723,12 +723,15 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
                 if (force_camp) rx = -1;
                 //cprintf(c, "rx=%d force_camp=%d\n", rx, force_camp);
                 force_camp = false;
-                if (isKiwi_UI && (mon_total < monitors_max)) {
-                    // turn first connection when no channels (SND or WF) into MONITOR
-                    c->type = STREAM_MONITOR;
-                    st = &rx_streams[STREAM_MONITOR];
-                    snd_or_wf = false;
-                } else {
+                #ifdef USE_SDR
+                    if (isKiwi_UI && (mon_total < monitors_max)) {
+                        // turn first connection when no channels (SND or WF) into MONITOR
+                        c->type = STREAM_MONITOR;
+                        st = &rx_streams[STREAM_MONITOR];
+                        snd_or_wf = false;
+                    } else
+                #endif
+                {
                     conn_printf("(too many rx channels open for %s)\n", st->uri);
                     if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
                     mc->connection_param = NULL;
