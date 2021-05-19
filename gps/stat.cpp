@@ -29,8 +29,6 @@
 #include "spi.h"
 #include "printf.h"
 
-static bool ready = FALSE;
-
 typedef struct {
 	int lo_dop, ca_sft;
 	int lo_dop2, ca_dop2;
@@ -46,6 +44,8 @@ typedef struct {
 stats_t stats[GPS_CHANS];
 
 gps_t gps;
+
+static bool ready = FALSE;
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

@@ -147,6 +147,7 @@ module cic_prune_var (
                   16: in <= in_data << (ACC_WIDTH - ACC_R16);
                   32: in <= in_data << (ACC_WIDTH - ACC_R32);
                   64: in <= in_data << (ACC_WIDTH - ACC_R64);
+             default: in <= in_data;
             endcase
         end
     endgenerate
@@ -169,6 +170,7 @@ module cic_prune_var (
                  512: in <= in_data << (ACC_WIDTH - ACC_R512);
                 1024: in <= in_data << (ACC_WIDTH - ACC_R1K);
                 2048: in <= in_data << (ACC_WIDTH - ACC_R2K);
+             default: in <= in_data;
             endcase
         end
     endgenerate
@@ -192,6 +194,7 @@ module cic_prune_var (
                 1024: in <= in_data << (ACC_WIDTH - ACC_R1K);
                 2048: in <= in_data << (ACC_WIDTH - ACC_R2K);
                 4096: in <= in_data << (ACC_WIDTH - ACC_R4K);
+             default: in <= in_data;
             endcase
         end
     endgenerate
@@ -216,6 +219,7 @@ module cic_prune_var (
                 2048: in <= in_data << (ACC_WIDTH - ACC_R2K);
                 4096: in <= in_data << (ACC_WIDTH - ACC_R4K);
                 8192: in <= in_data << (ACC_WIDTH - ACC_R8K);
+             default: in <= in_data;
             endcase
         end
     endgenerate
@@ -241,6 +245,7 @@ module cic_prune_var (
                 4096: in <= in_data << (ACC_WIDTH - ACC_R4K);
                 8192: in <= in_data << (ACC_WIDTH - ACC_R8K);
                16384: in <= in_data << (ACC_WIDTH - ACC_R16K);
+             default: in <= in_data;
             endcase
         end
     endgenerate

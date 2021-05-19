@@ -127,9 +127,9 @@ typedef struct conn_st {
 // conn_t.type
 #define AJAX_VERSION		0
 #define STREAM_ADMIN		1
-#define STREAM_SOUND		2
-#define STREAM_WATERFALL	3
-#define STREAM_MFG			4
+#define STREAM_MFG			2
+#define STREAM_SOUND		3
+#define STREAM_WATERFALL	4
 #define STREAM_EXT			5
 #define STREAM_MONITOR      6
 #define AJAX_DISCOVERY		7

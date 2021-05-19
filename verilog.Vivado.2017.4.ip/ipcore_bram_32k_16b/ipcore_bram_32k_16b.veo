@@ -1,4 +1,4 @@
-// (c) Copyright 1995-2015 Xilinx, Inc. All rights reserved.
+// (c) Copyright 1995-2019 Xilinx, Inc. All rights reserved.
 // 
 // This file contains confidential and proprietary information
 // of Xilinx, Inc. and is protected under U.S. and
@@ -46,23 +46,26 @@
 // 
 // DO NOT MODIFY THIS FILE.
 
-// IP VLNV: xilinx.com:ip:c_accum:12.0
-// IP Revision: 5
+// IP VLNV: xilinx.com:ip:blk_mem_gen:8.4
+// IP Revision: 1
 
 // The following must be inserted into your Verilog file for this
 // core to be instantiated. Change the instance name and port connections
 // (in parentheses) to your own signal names.
 
 //----------- Begin Cut here for INSTANTIATION Template ---// INST_TAG
-ipcore_acc_u32b your_instance_name (
-  .B(B),        // input wire [31 : 0] B
-  .CLK(CLK),    // input wire CLK
-  .SCLR(SCLR),  // input wire SCLR
-  .Q(Q)        // output wire [31 : 0] Q
+ipcore_bram_32k_16b your_instance_name (
+  .clka(clka),    // input wire clka
+  .wea(wea),      // input wire [0 : 0] wea
+  .addra(addra),  // input wire [14 : 0] addra
+  .dina(dina),    // input wire [15 : 0] dina
+  .clkb(clkb),    // input wire clkb
+  .addrb(addrb),  // input wire [14 : 0] addrb
+  .doutb(doutb)  // output wire [15 : 0] doutb
 );
 // INST_TAG_END ------ End INSTANTIATION Template ---------
 
-// You must compile the wrapper file ipcore_acc_u32b.v when simulating
-// the core, ipcore_acc_u32b. When compiling the wrapper file, be sure to
+// You must compile the wrapper file ipcore_bram_32k_16b.v when simulating
+// the core, ipcore_bram_32k_16b. When compiling the wrapper file, be sure to
 // reference the Verilog simulation library.
 

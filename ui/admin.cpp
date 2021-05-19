@@ -37,7 +37,7 @@ Boston, MA  02110-1301, USA.
 #include "clk.h"
 #include "wspr.h"
 
-#ifndef CFG_GPS_ONLY
+#ifdef USE_SDR
  #include "data_pump.h"
  #include "ext_int.h"
 #endif
@@ -71,7 +71,7 @@ void c2s_admin_setup(void *param)
 	conn_t *conn = (conn_t *) param;
 
 	// send initial values
-	send_msg(conn, SM_NO_DEBUG, "ADM gps_only_mode=%d", VAL_CFG_GPS_ONLY);
+	send_msg(conn, SM_NO_DEBUG, "ADM admin_sdr_mode=%d", VAL_USE_SDR);
 	#ifdef MULTI_CORE
 	    send_msg(conn, SM_NO_DEBUG, "ADM is_multi_core");
 	#endif
@@ -317,7 +317,7 @@ void c2s_admin(void *param)
 // status
 ////////////////////////////////
 
-#ifndef CFG_GPS_ONLY
+#ifdef USE_SDR
 			i = strcmp(cmd, "SET dpump_hist_reset");
 			if (i == 0) {
 			    dpump.force_reset = true;
@@ -1201,7 +1201,7 @@ void c2s_admin(void *param)
 
 			i = strcmp(cmd, "SET extint_load_extension_configs");
 			if (i == 0) {
-#ifndef CFG_GPS_ONLY
+#ifdef USE_SDR
 				extint_load_extension_configs(conn);
 #endif
 				continue;

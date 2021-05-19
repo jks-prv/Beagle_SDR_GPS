@@ -27,7 +27,7 @@ module WATERFALL_1CIC (
 	output wire [15:0] wf_dout_C,
 
     input  wire        cpu_clk,
-    input  wire [31:0] tos,
+    input  wire [15:0] tos_16,
     input  wire [31:0] freeze_tos_A,
 
     input  wire        set_wf_freqH_C,
@@ -44,7 +44,7 @@ module WATERFALL_1CIC (
 	SYNC_PULSE reset_inst (.in_clk(cpu_clk), .in(wf_sel_C && rst_wf_sampler_C), .out_clk(adc_clk), .out(rst_wf_sampler_A));
 	
 	wire rst_wf_samp_wr_A = rst_wf_sampler_A && freeze_tos_A[WF_SAMP_WR_RST];
-	wire rst_wf_samp_rd_C = rst_wf_sampler_C && tos[WF_SAMP_RD_RST];	// qualified with wf_sel_C below
+	wire rst_wf_samp_rd_C = rst_wf_sampler_C && tos_16[WF_SAMP_RD_RST]; // qualified with wf_sel_C below
 
 	reg wf_continuous_A;
     always @ (posedge adc_clk)
@@ -52,7 +52,7 @@ module WATERFALL_1CIC (
     	if (rst_wf_sampler_A) wf_continuous_A <= freeze_tos_A[WF_SAMP_CONTIN];
     end
 
-	wire wf_samp_sync_C = rst_wf_sampler_C && tos[WF_SAMP_SYNC];	// qualified with wf_sel_C below
+	wire wf_samp_sync_C = rst_wf_sampler_C && tos_16[WF_SAMP_SYNC];	// qualified with wf_sel_C below
 
 	reg signed [47:0] wf_phase_inc;
 	wire set_wf_freqH_A, set_wf_freqL_A;

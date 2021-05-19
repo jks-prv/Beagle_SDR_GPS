@@ -392,6 +392,27 @@ void spi_set_noduplex(SPI_CMD cmd, uint16_t wparam, uint32_t lparam) {
     spi_check_wakeup(cmd);		// must be done outside the lock
 }
 
+void spi_set4_noduplex(SPI_CMD cmd, uint16_t wparam, uint16_t w2param, uint16_t w3param, uint16_t w4param) {
+	lock_enter(&spi_lock);		// block other threads
+        int wait = wait_avail("spi_set_noduplex", cmd);
+		SPI_MOSI *tx = &SPI_SHMEM->spi_tx[2];
+		tx->data2.cmd = cmd; tx->data2.wparam = wparam; tx->data2.w2param = w2param; tx->data2.w3param = w3param; tx->data2.w4param = w4param;
+		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_setND", evprintf("ENTER %s(%d) %d %d", cmds[cmd], cmd, wparam, lparam));
+		spi_scan(wait, tx);				// Send request
+		
+#ifdef STACK_CHECK
+        spi_stack_check(wait, tx);
+#else
+		tx->data = _CmdFlush;
+		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_setND", evprintf("CmdNoDuplex self-response"));
+        wait = wait_avail("spi_set_noduplex RESPONSE", cmd);
+		spi_scan(wait, tx);				// Collect response to our own request
+#endif
+		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_setND", "DONE");
+    lock_leave(&spi_lock);		// release block
+    spi_check_wakeup(cmd);		// must be done outside the lock
+}
+
 void spi_set_buf_noduplex(SPI_CMD cmd, SPI_MOSI *tx, int bytes) {
 	lock_enter(&spi_lock);		// block other threads
         int wait = wait_avail("spi_set_buf_noduplex", cmd);

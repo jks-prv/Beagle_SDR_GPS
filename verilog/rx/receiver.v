@@ -36,7 +36,6 @@ module RECEIVER (
     input  wire [31:0] tos,
     input  wire [15:0] op,
     input  wire        rdReg,
-    input  wire        rdBit2,
     input  wire        wrReg2,
     input  wire        wrEvt2,
     
@@ -482,7 +481,7 @@ module RECEIVER (
 		.wf_dout_C			(wfn_dout_C),
 
 		.cpu_clk			(cpu_clk),
-		.tos				(tos),
+		.tos_16				(tos[15:0]),
 		.freeze_tos_A       (freeze_tos_A),
 
 		.set_wf_freqH_C		(set_wf_freqH_C),

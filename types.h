@@ -18,6 +18,7 @@ typedef double              d64_t;
 
 typedef void (*func_t)();
 typedef void (*funcPI_t)(int);
+typedef void (*funcPI2_t)(int, int);
 typedef void (*funcP_t)(void *);
 typedef int (*funcPR_t)(void *);
 
@@ -78,7 +79,8 @@ typedef int (*funcPR_t)(void *);
 
 #define	NOT_FOUND	-1
 
-#define	ARRAY_LEN(x)	((int) (sizeof (x) / sizeof ((x) [0])))
+#define	ARRAY_EL_LEN(x) ((int) sizeof ((x) [0]))
+#define	ARRAY_LEN(x)	((int) (sizeof (x) / ARRAY_EL_LEN(x)))
 #define ARRAY_END(x)    (&(x)[ARRAY_LEN(x)])
 
 #define	K		1024

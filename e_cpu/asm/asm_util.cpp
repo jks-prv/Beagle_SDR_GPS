@@ -91,6 +91,16 @@ void _assert(int cond, const char *str, const char *file, int line)
 }
 
 
+// strings
+
+char *str_ends_with(char *s, const char *cs)
+{
+    int slen = strlen(cs);
+    char *sp = s + strlen(s) - slen;
+    return (strncmp(sp, cs, slen) == 0)? sp : NULL;
+}
+
+
 // string pool
 
 #define NSTRS	8192
@@ -161,6 +171,7 @@ void token_dump(tokens_t *tp)
 	case TT_DATA:	printf("U%d ", tp->num*8); break;
 	case TT_STRUCT:	printf("{%s} ", tp->str); break;
 	case TT_ITER:	printf("<iter> "); break;
+	case TT_FILE:	printf("file:%s ", tp->str); break;
 	default:		printf("UNK ttype??? "); break;
 	}
 }

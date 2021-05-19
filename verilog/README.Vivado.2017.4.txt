@@ -1,5 +1,5 @@
 Steps to creating and building the KiwiSDR project with Vivado 2017.4
-    Updated 6 Apr 2018
+    Updated 15 May 2021
 
 1) You will most likely be running Vivado on a Windows or Linux machine.
 We run Vivado successfully on a MacBook Pro using the VirtualBox application to emulate a PC
@@ -120,16 +120,31 @@ Utilization - Post Implementation:
 
 10) The new .bit file will be in verilog/KiwiSDR/KiwiSDR.runs/impl_1/KiwiSDR.bit
 Copy this to the Beagle_SDR_GPS/ directory where you build the Kiwi server code.
+But see the next step for the correct .bit filename to create.
 
-11) You must actually build two FPGA images with different configurations. This is to accomodate the
-4-channel and 8-channel configuration modes (see admin page, "mode" tab). To do this in the file
-kiwi.config set the value of CFG_SDR_RX4_WF4 to "1" and CFG_SDR_RX8_WF2 to "0". Then build the
-Kiwi code. This will generate a proper verilog/kiwi.gen.vh Verilog include file. Copy this file to
-your Vivado build machine and build the FPGA image file KiwiSDR.bit Copy this file back to your
-development machine and rename it KiwiSDR.rx4wf4.bit Repeat the entire process with
-CFG_SDR_RX4_WF4 set to "0" and CFG_SDR_RX8_WF2 set to "1". Name this FPGA image KiwiSDR.rx8wf2.bit
-See the Makefile for details about how these .bit files are installed in the correct place
-when the "make install" command is used.
+11) You must actually build four FPGA images with different configurations. This is to accomodate
+the 3, 4, 8 and 14-channel (BBAI only) configuration modes (see admin page, "mode" tab).
+
+In the file Beagle_SDR_GPS/kiwi.config uncomment the value of RX_CFG for the configuration you
+want to build. Then run a "make" which will build the Kiwi server code, but also create the
+generated Verilog include files verilog/kiwi.cfg.vh, verilog/kiwi.gen.vh and verilog/other.gen.vh
+Copy the files over the files to the source directory of your Vivado build machine as before.
+
+Then build the Kiwi Verilog code in Vivado as described previously. Copy the resulting
+KiwiSDR.bit file back to your development machine and rename it to a filename of the form
+KiwiSDR.rxA.wfB.bit where A = the number of rx channels in the configuration and 
+B = the number of waterfall channels.
+
+That is, the files:
+    KiwiSDR.rx4.wf4.bit
+    KiwiSDR.rx8.wf2.bit
+    KiwiSDR.rx3.wf3.bit
+    KiwiSDR.rx14.wf0.bit
+
+The make file in Beagle_SDR_GPS/verilog/Makefile shows an example of this process.
+
+It also shows how to use the Vivado tcl script "make_proj.tcl" to run Vivado in batch
+mode to create all four .bit files without manually using the Vivado user interface.
 
 12) Notes:
 The files named *.v.OFF are Verilog files not used in the current configuration. By naming them

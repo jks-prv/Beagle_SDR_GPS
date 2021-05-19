@@ -55,9 +55,9 @@ module CPU (
     //	100p ppppRiiiiiii  addi, imm [6:0] 0-127
     //	100p ppppRCxxxxxx  add, C = carry-in
     //	100p ppppRSxxxxxx  rdBit, S selects 'ser' bit input
-    //	100p ppppRxxxxxxx  others, EXCEPT illegal for: r, r_from, to_r
+    //	100p ppppRxxxxxxx  all others, EXCEPT R=1 illegal for: r, r_from, to_r
 
-	//	bbbb xxxxxxxxxxxb op5 [15:0]
+	//	bbbb -----------b op5 [15:0]
     //	1010 ddddddddddd0 call 11:1 (:1 because of 16-bit insn width)
     //	1010 ddddddddddd1 BR 11:1
     //	1011 ddddddddddd0 BZ 11:1
@@ -113,7 +113,7 @@ module CPU (
 
     wire op_push = ~op[15]; // op[14:0] --> TOS
     
-    wire opt_ret = op[7] && op[15:13]==3'b100;
+    wire opt_ret = op[7] && op[15:13] == 3'b100;
     wire opt_cin = op[6];
     wire ser_sel = op[6];
     wire serial = ser_sel? ser[1] : ser[0];
@@ -127,21 +127,21 @@ module CPU (
 
     wire nz = |tos[15:0];
 
-    wire jump = op5==op_branchNZ && nz || op5==op_branch ||
-                op5==op_branchZ && ~nz || op5==op_call;
+    wire jump = op5 == op_branchNZ && nz || op5 == op_branch ||
+                op5 == op_branchZ && ~nz || op5 == op_call;
 
-    wire inc_sp = op_push || op4==op_rdReg || op8==op_dup  || op8==op_r
-                                           || op8==op_over || op8==op_r_from;
+    wire inc_sp = op_push || op4 == op_rdReg || op8 == op_dup  || op8 == op_r
+                                             || op8 == op_over || op8 == op_r_from;
 
-    wire dec_sp = op4==op_wrReg    || op8==op_drop || op8==op_and || op8==op_mult ||
-                  op5==op_branchZ  || op8==op_add  || op8==op_or  || op8==op_to_r ||
-                  op5==op_branchNZ || op8==op_sub  || op8==op_xor || op8==op_store16;
+    wire dec_sp = op4 == op_wrReg    || op8 == op_drop || op8 == op_and || op8 == op_mult ||
+                  op5 == op_branchZ  || op8 == op_add  || op8 == op_or  || op8 == op_to_r ||
+                  op5 == op_branchNZ || op8 == op_sub  || op8 == op_xor || op8 == op_store16;
 
-    wire inc_rp = op8==op_to_r   || op5==op_call;
-    wire dec_rp = op8==op_r_from || opt_ret;
+    wire inc_rp = op8 == op_to_r   || op5 == op_call;
+    wire dec_rp = op8 == op_r_from || opt_ret;
 
-    wire dstk_wr = op8==op_rot  || inc_sp;
-    wire rstk_wr = op8==op_to_r || op5==op_call;
+    wire dstk_wr = op8 == op_rot  || inc_sp;
+    wire rstk_wr = op8 == op_to_r || op5 == op_call;
 
     //////////////////////////////////////////////////////////////////////////
     // Next on stack
@@ -169,7 +169,7 @@ module CPU (
     wire [39:0] prod40;
     wire [31:0] sum;
     wire co;
-    wire ci = (op8==op_add && opt_cin && carry) || op8==op_sub;
+    wire ci = (op8 == op_add && opt_cin && carry) || op8 == op_sub;
     reg  [31:0] a, b, alu;
     reg         carry;
 
@@ -177,15 +177,15 @@ module CPU (
 	// FIXME: combine adder & multipler into a single DSP slice
     ip_add_u32b cpu_sum (.a(a), .b(b), .s({co, sum}), .c_in(ci));
 
-    always @ (posedge clk) if (op8==op_add) carry <= co;
+    always @ (posedge clk) if (op8 == op_add) carry <= co;
 
     always @*
-        if (op8==op_addi)	a = op[6:0];
+        if (op8 == op_addi)	a = op[6:0];
         else if (mem_rd)	a = 2;
         else				a = nos;
 
     always @*
-        if (op8==op_sub)	b = ~tos;
+        if (op8 == op_sub)	b = ~tos;
         else				b =  tos;
 
     always @*
@@ -208,7 +208,7 @@ module CPU (
         endcase
 
     always @*
-        if (op8==op_mult) begin
+        if (op8 == op_mult) begin
             xa = {{2{nos[15]}}, nos[15:0]};
             xb = {{2{tos[15]}}, tos[15:0]};
         end
@@ -255,14 +255,14 @@ module CPU (
     //////////////////////////////////////////////////////////////////////////
     // I/O
 
-    assign rdBit  = (op8==op_rdBit) && !ser_sel;
-    assign rdBit2 = (op8==op_rdBit) && ser_sel;
-    assign rdReg  = (op4==op_rdReg) && !op[11];
-    assign rdReg2 = (op4==op_rdReg) && op[11];
-    assign wrReg  = (op4==op_wrReg) && !op[11];
-    assign wrReg2 = (op4==op_wrReg) && op[11];
-    assign wrEvt  = (op4==op_wrEvt) && !op[11];
-    assign wrEvt2 = (op4==op_wrEvt) && op[11];
+    assign rdBit  = (op8 == op_rdBit) && !ser_sel;
+    assign rdBit2 = (op8 == op_rdBit) && ser_sel;
+    assign rdReg  = (op4 == op_rdReg) && !op[11];
+    assign rdReg2 = (op4 == op_rdReg) && op[11];
+    assign wrReg  = (op4 == op_wrReg) && !op[11];
+    assign wrReg2 = (op4 == op_wrReg) && op[11];
+    assign wrEvt  = (op4 == op_wrEvt) && !op[11];
+    assign wrEvt2 = (op4 == op_wrEvt) && op[11];
 
     //////////////////////////////////////////////////////////////////////////
     // Program counter and stack pointers
@@ -301,7 +301,7 @@ module CPU (
         .ena    (rst[RUN]),		.enb    (rst[RUN]),
         .addra	(dstk_addr),    .addrb	(rstk_addr),
         .douta	(dstk_dout),    .doutb	(rstk_dout),
-        .dina	(nos),          .dinb	(op5==op_call? pc_plus_2 : tos),
+        .dina	(nos),          .dinb	(op5 == op_call? pc_plus_2 : tos),
         .wea	(dstk_wr),      .web	(rstk_wr)
     );
 
@@ -313,13 +313,14 @@ module CPU (
     // There are just two ports so opcode fetch and data i/o can overlap.
     
     ipcore_bram_cpu_2k_16b cpu_code_data (
-        .clka   (clk),          .clkb   (clk),
-        .rsta	(~rst[RUN]),
-        .ena	(1'b1),         .enb	(rst[RUN]),
-        .addra	(next_pc),    	.addrb	(next_tos[11:1]),
-        .douta	(op),      		.doutb	(mem_dout),
-        .dina	(par),     		.dinb	(nos[15:0]),
-        .wea	(rst[LOAD]),	.web	(op8==op_store16)
+        .clka       (clk),          .clkb       (clk),
+        .rsta	    (~rst[RUN]),
+        .rsta_busy  (),             .rstb_busy  (),
+        .ena	    (1'b1),         .enb	    (rst[RUN]),
+        .addra	    (next_pc),    	.addrb	    (next_tos[11:1]),
+        .douta	    (op),      		.doutb	    (mem_dout),
+        .dina	    (par),     		.dinb	    (nos[15:0]),
+        .wea	    (rst[LOAD]),	.web	    (op8 == op_store16)
     );
 
 endmodule

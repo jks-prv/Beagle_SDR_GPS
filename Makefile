@@ -1,10 +1,11 @@
 VERSION_MAJ = 1
 VERSION_MIN = 454
 
-REPO_NAME = Beagle_SDR_GPS
-DEBIAN_VER = 8.11
-
 # Caution: software update mechanism depends on format of first two lines in this file
+
+REPO_NAME = Beagle_SDR_GPS
+REPO = https://github.com/jks-prv/$(REPO_NAME).git
+DEBIAN_VER = 8.11
 
 #
 # Makefile for KiwiSDR project
@@ -154,7 +155,7 @@ endif
 PKGS = 
 PKGS_O3 = pkgs/mongoose pkgs/jsmn pkgs/sha256 pkgs/TNT_JAMA
 
-# Each (internal) extension can have an optional Makefile:
+# Each extension can have an optional Makefile:
 # The extension can opt-out of being included via EXT_SKIP (e.g. BBAI only, not Debian 7 etc.)
 # EXT_SUBDIRS define any sub-dirs within the extension.
 # EXT_DEFINES set any additional defines for the extension.
@@ -165,7 +166,6 @@ EXT_SUBDIRS =
 EXT_DEFINES =
 LIBS_DEP =
 LIBS =
--include $(wildcard extensions/*/Makefile)
 
 PVT_EXT_DIR = ../extensions
 PVT_EXT_DIRS = $(sort $(dir $(wildcard $(PVT_EXT_DIR)/*/extensions/*/)))
@@ -174,7 +174,9 @@ INT_EXT_DIRS1 = $(sort $(dir $(wildcard extensions/*/)))
 EXT_SKIP1 = $(addsuffix /,$(addprefix extensions/,$(EXT_SKIP)))
 INT_EXT_DIRS = $(subst $(EXT_SKIP1),,$(INT_EXT_DIRS1))
 
+# extension-specific makefiles and makefile for the extension init generator
 EXT_DIRS = $(INT_EXT_DIRS) $(PVT_EXT_DIRS)
+-include $(wildcard $(addsuffix Makefile,$(EXT_DIRS)))
 
 PVT_EXTS = $(subst $(PVT_EXT_DIR)/,,$(wildcard $(PVT_EXT_DIR)/*))
 INT_EXTS = $(subst /,,$(subst extensions/,,$(wildcard $(INT_EXT_DIRS))))
@@ -201,7 +203,7 @@ else
 endif
 
 VPATH = $(DIRS) $(DIRS_O3) $(EXT_SUBDIRS_KEEP)
-I = -I$(GEN_DIR) $(addprefix -I,$(DIRS)) $(addprefix -I,$(DIRS_O3)) $(addprefix -I,$(EXT_SUBDIRS_KEEP)) -I/usr/local/include
+I += -I$(GEN_DIR) $(addprefix -I,$(DIRS)) $(addprefix -I,$(DIRS_O3)) $(addprefix -I,$(EXT_SUBDIRS_KEEP)) -I/usr/local/include
 H = $(wildcard $(addsuffix /*.h,$(DIRS))) $(wildcard $(addsuffix /*.h,$(DIRS_O3)))
 CPP_F = $(wildcard $(addsuffix /*.cpp,$(DIRS)))
 CPP_F_O3 = $(wildcard $(addsuffix /*.cpp,$(DIRS_O3)))
@@ -333,7 +335,7 @@ endif
 
 #SRC_DEPS = Makefile
 SRC_DEPS = 
-BIN_DEPS = KiwiSDR.rx4.wf4.bit KiwiSDR.rx8.wf2.bit KiwiSDR.rx3.wf3.bit KiwiSDR.rx14.wf0.bit
+BIN_DEPS = KiwiSDR.rx4.wf4.bit KiwiSDR.rx8.wf2.bit KiwiSDR.rx3.wf3.bit KiwiSDR.rx14.wf0.bit KiwiSDR.other.bit
 #BIN_DEPS = 
 DEVEL_DEPS = $(OBJ_DIR_DEFAULT)/web_devel.o $(KEEP_DIR)/edata_always.o $(KEEP_DIR)/edata_always2.o
 EMBED_DEPS = $(OBJ_DIR_DEFAULT)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o $(KEEP_DIR)/edata_always2.o
@@ -341,10 +343,11 @@ EXTS_DEPS = $(OBJ_DIR)/ext_init.o
 
 # these MUST be run by single-threaded make before use of -j in sub makes
 GEN_ASM = $(GEN_DIR)/kiwi.gen.h verilog/kiwi.gen.vh
+GEN_OTHER_ASM = $(GEN_DIR)/other.gen.h verilog/other.gen.vh
 OUT_ASM = $(GEN_DIR)/kiwi.aout
 GEN_VERILOG = $(addprefix verilog/rx/,cic_rx1_12k.vh cic_rx1_20k.vh cic_rx2_12k.vh cic_rx2_20k.vh cic_rx3_12k.vh cic_rx3_20k.vh cic_wf1.vh cic_wf2.vh)
 GEN_NOIP2 = $(GEN_DIR)/noip2
-SUB_MAKE_DEPS = $(KEYRING) $(CMD_DEPS) $(LIBS_DEP) $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
+SUB_MAKE_DEPS = $(KEYRING) $(CMD_DEPS) $(LIBS_DEP) $(GEN_ASM) $(GEN_OTHER_ASM) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
 
 
 ################################
@@ -441,19 +444,12 @@ pru/pru_realtime.bin: pas pru/pru_realtime.p pru/pru_realtime.h pru/pru_realtime
 
 
 ################################
-# Verilog generator
-################################
-$(GEN_VERILOG): $(GEN_DIR)/kiwi.gen.h verilog/rx/cic_gen.c
-ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-	(cd verilog/rx; make)
-endif
-
-
-################################
 # FPGA embedded CPU
 ################################
 $(GEN_ASM): kiwi.config $(wildcard e_cpu/asm/*)
 	(cd e_cpu; make)
+$(GEN_OTHER_ASM): other.config $(wildcard e_cpu/asm/*)
+	(cd e_cpu; make gen_other)
 $(OUT_ASM): $(wildcard e_cpu/*.asm)
 	(cd e_cpu; make no_gen)
 
@@ -626,6 +622,7 @@ c_ext_clang_conv_vars:
 	@echo BIN_DEPS = $(BIN_DEPS)
 	@echo SUB_MAKE_DEPS = $(SUB_MAKE_DEPS)
 	@echo GEN_ASM = $(GEN_ASM)
+	@echo GEN_OTHER_ASM = $(GEN_OTHER_ASM)
 	@echo
 	@echo FILES_EMBED = $(FILES_EMBED)
 	@echo FILES_EXT = $(FILES_EXT)
@@ -672,9 +669,6 @@ build_log blog:
 # general build rules
 ################################
 
-# extension init generator and extension-specific makefiles
--include extensions/Makefile
-
 CSRC = $(notdir $(CFILES))
 OBJECTS1 = $(CSRC:%.c=$(OBJ_DIR)/%.o)
 OBJECTS = $(OBJECTS1:%.cpp=$(OBJ_DIR)/%.o)
@@ -704,6 +698,42 @@ C_CTR_DONE = 9999
 .PHONY: c_ctr_reset
 c_ctr_reset:
 	@echo 1 >$(COMP_CTR)
+
+ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
+
+# FIXME: isn't there a better way to do this in GNU make?
+
+EXISTS_RX4_WF4 = $(shell test -f KiwiSDR.rx4.wf4.bit && echo true)
+ifeq ($(EXISTS_RX4_WF4),true)
+else
+KiwiSDR.rx4.wf4.bit:
+endif
+
+EXISTS_RX8_WF2 = $(shell test -f KiwiSDR.rx8.wf2.bit && echo true)
+ifeq ($(EXISTS_RX8_WF2),true)
+else
+KiwiSDR.rx8.wf2.bit:
+endif
+
+EXISTS_RX3_WF3 = $(shell test -f KiwiSDR.rx3.wf3.bit && echo true)
+ifeq ($(EXISTS_RX3_WF3),true)
+else
+KiwiSDR.rx3.wf3.bit:
+endif
+
+EXISTS_RX14_WF0 = $(shell test -f KiwiSDR.rx14.wf0.bit && echo true)
+ifeq ($(EXISTS_RX14_WF0),true)
+else
+KiwiSDR.rx14.wf0.bit:
+endif
+
+EXISTS_OTHER = $(shell test -f KiwiSDR.other.bit && echo true)
+ifeq ($(EXISTS_OTHER),true)
+else
+KiwiSDR.other.bit:
+endif
+
+endif
 
 #
 # IMPORTANT
@@ -889,26 +919,6 @@ endif
 endif
 endif
 
-V_DIR = ~/shared/shared
-
-ifeq ($(XC),) ## do not copy bit streams from $(V_DIR) when cross-compiling
-ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-
-KiwiSDR.rx4.wf4.bit: $(V_DIR)/KiwiSDR.rx4.wf4.bit
-	rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit .
-
-KiwiSDR.rx8.wf2.bit: $(V_DIR)/KiwiSDR.rx8.wf2.bit
-	rsync -av $(V_DIR)/KiwiSDR.rx8.wf2.bit .
-
-KiwiSDR.rx3.wf3.bit: $(V_DIR)/KiwiSDR.rx3.wf3.bit
-	rsync -av $(V_DIR)/KiwiSDR.rx3.wf3.bit .
-
-KiwiSDR.rx14.wf0.bit: $(V_DIR)/KiwiSDR.rx14.wf0.bit
-	rsync -av $(V_DIR)/KiwiSDR.rx14.wf0.bit .
-
-endif
-endif
-
 DEV = kiwi
 CAPE = cape-bone-$(DEV)-00A0
 SPI  = cape-bone-$(DEV)-S-00A0
@@ -978,14 +988,29 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 else
 	@echo $(C_CTR_INSTALL) >$(COMP_CTR)
 # don't strip symbol table while we're debugging daemon crashes
-#	install -D -s -o root -g root $(BUILD_DIR)/kiwid.bin /usr/local/bin/kiwid
+#	install -D -o root -g root $(BUILD_DIR)/kiwid.bin /usr/local/bin/kiwid
 	install -D -o root -g root $(BUILD_DIR)/kiwid.bin /usr/local/bin/kiwid
 	install -D -o root -g root $(GEN_DIR)/kiwi.aout /usr/local/bin/kiwid.aout
-#	install -D -o root -g root $(GEN_DIR)/kiwi_realtime.bin /usr/local/bin/kiwid_realtime.bin
+#
+ifeq ($(EXISTS_RX4_WF4),true)
 	install -D -o root -g root KiwiSDR.rx4.wf4.bit /usr/local/bin/KiwiSDR.rx4.wf4.bit
+endif
+#
+ifeq ($(EXISTS_RX8_WF2),true)
 	install -D -o root -g root KiwiSDR.rx8.wf2.bit /usr/local/bin/KiwiSDR.rx8.wf2.bit
+endif
+#
+ifeq ($(EXISTS_RX3_WF3),true)
 	install -D -o root -g root KiwiSDR.rx3.wf3.bit /usr/local/bin/KiwiSDR.rx3.wf3.bit
+endif
+#
+ifeq ($(EXISTS_RX14_WF0),true)
 	install -D -o root -g root KiwiSDR.rx14.wf0.bit /usr/local/bin/KiwiSDR.rx14.wf0.bit
+endif
+#
+ifeq ($(EXISTS_OTHER),true)
+	install -D -o root -g root KiwiSDR.other.bit /usr/local/bin/KiwiSDR.other.bit
+endif
 #
 	install -o root -g root unix_env/kiwid /etc/init.d
 	install -o root -g root -m 0644 unix_env/kiwid.service /etc/systemd/system
@@ -1187,7 +1212,7 @@ endif
 	@echo BeagleBone EEPROM:
 	-hexdump -C /sys/bus/i2c/devices/0-0050/eeprom
 
-REPO = https://github.com/jks-prv/$(REPO_NAME).git
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 # selectively transfer files to the target so everything isn't compiled each time
 EXCLUDE_RSYNC = ".DS_Store" ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" \
@@ -1202,11 +1227,19 @@ endif
 
 rsync_su:
 	sudo $(RSYNC) $(RSYNC_ARGS)
-rsync_bit:
-	rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit $(V_DIR)/KiwiSDR.rx8.wf2.bit $(V_DIR)/KiwiSDR.rx3.wf3.bit $(V_DIR)/KiwiSDR.rx14.wf0.bit .
-	sudo $(RSYNC) $(RSYNC_ARGS)
 
+endif
+
+
+################################
+# Verilog
+################################
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
+
+V_DIR = ~/shared/shared
+
+$(GEN_VERILOG): $(GEN_DIR)/kiwi.gen.h verilog/rx/cic_gen.c
+	(cd verilog/rx; make)
 
 # generate the files needed to build the Verilog code
 verilog: $(GEN_VERILOG)
@@ -1215,14 +1248,68 @@ verilog: $(GEN_VERILOG)
 
 # command to "copy verilog" from KiwiSDR distribution to the Vivado build location
 # designed to complement the "make cv2" command run on the Vivado build machine
-EXCLUDE_CV = ".DS_Store" "rx/cic_gen" "rx/*.dSYM"
+EXCLUDE_CV = ".DS_Store" "rx/cic_gen" "rx/*.dSYM" "*(original)*"
+ifeq ($(V_PROJ),)
+    V_PROJ = KiwiSDR
+endif
 cv: $(GEN_VERILOG)
-	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog/ $(V_DIR)/KiwiSDR
-	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog.Vivado.2014.4.ip/ $(V_DIR)/KiwiSDR.Vivado.2014.4.ip
-	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog.Vivado.2017.4.ip/ $(V_DIR)/KiwiSDR.Vivado.2017.4.ip
+	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog/ $(V_DIR)/$(V_PROJ)
+	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog.Vivado.2017.4.ip/ $(V_DIR)/$(V_PROJ).Vivado.2017.4.ip
 
 cv2:
 	@echo "you probably want to use \"make cv\" here"
+
+sum:
+	sum *.bit
+
+ifeq ($(XC),) ## do not copy bit streams from $(V_DIR) when cross-compiling
+
+# FIXME: isn't there a better way to do this in GNU make?
+
+EXISTS_V_DIR_RX4_WF4 = $(shell test -f $(V_DIR)/KiwiSDR.rx4.wf4.bit && echo true)
+ifeq ($(EXISTS_V_DIR_RX4_WF4),true)
+KiwiSDR.rx4.wf4.bit: $(V_DIR)/KiwiSDR.rx4.wf4.bit
+	rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit .
+else
+KiwiSDR.rx4.wf4.bit:
+endif
+
+EXISTS_V_DIR_RX8_WF2 = $(shell test -f $(V_DIR)/KiwiSDR.rx8.wf2.bit && echo true)
+ifeq ($(EXISTS_V_DIR_RX8_WF2),true)
+KiwiSDR.rx8.wf2.bit: $(V_DIR)/KiwiSDR.rx8.wf2.bit
+	rsync -av $(V_DIR)/KiwiSDR.rx8.wf2.bit .
+else
+KiwiSDR.rx8.wf2.bit:
+endif
+
+EXISTS_V_DIR_RX3_WF3 = $(shell test -f $(V_DIR)/KiwiSDR.rx3.wf3.bit && echo true)
+ifeq ($(EXISTS_V_DIR_RX3_WF3),true)
+KiwiSDR.rx3.wf3.bit: $(V_DIR)/KiwiSDR.rx3.wf3.bit
+	rsync -av $(V_DIR)/KiwiSDR.rx3.wf3.bit .
+else
+KiwiSDR.rx3.wf3.bit:
+endif
+
+EXISTS_V_DIR_RX14_WF0 = $(shell test -f $(V_DIR)/KiwiSDR.rx14.wf0.bit && echo true)
+ifeq ($(EXISTS_V_DIR_RX14_WF0),true)
+KiwiSDR.rx14.wf0.bit: $(V_DIR)/KiwiSDR.rx14.wf0.bit
+	rsync -av $(V_DIR)/KiwiSDR.rx14.wf0.bit .
+else
+KiwiSDR.rx14.wf0.bit:
+endif
+
+EXISTS_V_DIR_OTHER = $(shell test -f $(V_DIR)/KiwiSDR.other.bit && echo true)
+ifeq ($(EXISTS_V_DIR_OTHER),true)
+KiwiSDR.other.bit: $(V_DIR)/KiwiSDR.other.bit
+	rsync -av $(V_DIR)/KiwiSDR.other.bit .
+else
+KiwiSDR.other.bit:
+endif
+
+endif
+
+rsync_bit: $(BIN_DEPS)
+	sudo $(RSYNC) $(RSYNC_ARGS)
 
 endif
 
@@ -1284,6 +1371,9 @@ gitdiff_context:
 	colordiff -br -C 10 --exclude=.DS_Store --exclude=.git "--exclude=*.min.*" $(GITAPP)/$(REPO_NAME) . || true
 gitdiff_brief:
 	colordiff -br --brief --exclude=.DS_Store --exclude=.git $(GITAPP)/$(REPO_NAME) . || true
+
+gitdiff2:
+	colordiff -br --exclude=.DS_Store --exclude=.git "--exclude=*.min.*" ../../../sdr/KiwiSDR/$(REPO_NAME) . || true
 
 endif
 

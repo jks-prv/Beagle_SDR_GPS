@@ -102,19 +102,22 @@ module KiwiSDR (
     //////////////////////////////////////////////////////////////////////////
     // clocks
 
-    wire adc_clk, gps_clk, cpu_clk;
-    
+    wire gps_tcxo_buf;
+    IBUFG tcxo_ibufg(.I(GPS_TCXO), .O(gps_tcxo_buf));   // 16.368 MHz TCXO
+    wire cpu_clk = gps_tcxo_buf;
+    wire gps_clk = gps_tcxo_buf;
+
+    wire adc_clk;
     IBUFG vcxo_ibufg(.I(ADC_CLKIN), .O(adc_clk));
 	assign ADC_CLKEN = ctrl[CTRL_OSC_EN];
 
-    IBUFG tcxo_ibufg(.I(GPS_TCXO), .O(gps_clk));		// 16.368 MHz TCXO
-    assign cpu_clk = gps_clk;
-
+`ifdef USE_SDR
 	reg signed [ADC_BITS-1:0] reg_adc_data;
     always @ (posedge adc_clk)
     begin
     	reg_adc_data <= ADC_DATA;
     end
+`endif
     
     wire  [2:1] rst;
 
@@ -124,8 +127,8 @@ module KiwiSDR (
     wire [1:0]  ser;
     wire        rdBit, rdBit2, rdReg, rdReg2, wrReg, wrReg2, wrEvt, wrEvt2;
 
-    wire        boot_done, host_srq, mem_rd, gps_rd;
-    wire [15:0] host_dout, mem_dout, gps_dout;
+    wire        boot_done, host_srq, mem_rd, gps_rd, ext_rd;
+    wire [15:0] host_dout, mem_dout, gps_dout, ext_dout;
     
     
     //////////////////////////////////////////////////////////////////////////
@@ -158,11 +161,22 @@ module KiwiSDR (
 	assign P8[8] = ctrl[CTRL_UNUSED_OUT];
 	assign P8[9] = ctrl[CTRL_UNUSED_OUT];
     
-	wire unused_inputs = IF_MAG | P9[2];
+	wire unused_inputs = IF_MAG | P9[2]
+`ifndef USE_SDR
+        | ADC_CLKIN | |ADC_DATA | ADC_OVFL
+`endif
+`ifndef USE_GPS
+        | IF_SGN
+`endif
+        ;
+
+`ifndef USE_SDR
+    assign ADC_CLKEN = 1'b0;
+`endif
 
     wire [15:0] status;
     wire [3:0] stat_user = { 3'b0, dna_data };
-    // when the firmware returns status it replaces stat_replaced with FW_ID
+    // when the eCPU firmware returns status it replaces stat_replaced with FW_ID
     wire [2:0] stat_replaced = { 2'b0, unused_inputs };
     wire [3:0] fpga_id = { FPGA_ID };
     assign status[15:0] = { rx_overflow_C, stat_replaced, FPGA_VER, stat_user, fpga_id };
@@ -180,9 +194,9 @@ module KiwiSDR (
 
 	wire rx_rd, wf_rd;
 	wire [15:0] rx_dout, wf_dout;
-	
 	wire [47:0] ticks_A;
 	
+`ifdef USE_SDR
     RECEIVER receiver (
     	.adc_clk	(adc_clk),
     	.adc_data	(reg_adc_data),
@@ -201,20 +215,11 @@ module KiwiSDR (
         .tos		(tos),
         .op			(op),        
         .rdReg      (rdReg),
-        .rdBit2     (rdBit2),
         .wrReg2     (wrReg2),
         .wrEvt2     (wrEvt2),
         
         .ctrl       (ctrl)
     	);
-
-	wire rx_ovfl_C, rx_orst;
-	reg rx_overflow_C;
-    always @ (posedge cpu_clk)
-    begin
-    	if (rx_orst) rx_overflow_C <= rx_ovfl_C; else
-    	rx_overflow_C <= rx_overflow_C | rx_ovfl_C;
-    end
 
 //`define ADC_OVFL_ON_ONE_SAMPLE
 `ifdef ADC_OVFL_ON_ONE_SAMPLE
@@ -246,13 +251,32 @@ module KiwiSDR (
 	SYNC_PULSE sync_adc_ovfl (.in_clk(adc_clk), .in(adc_ovfl), .out_clk(cpu_clk), .out(rx_ovfl_C));
 `endif
 
+	wire rx_ovfl_C, rx_orst;
+	reg rx_overflow_C;
+    always @ (posedge cpu_clk)
+    begin
+    	if (rx_orst) rx_overflow_C <= rx_ovfl_C; else
+    	rx_overflow_C <= rx_overflow_C | rx_ovfl_C;
+    end
+
+`else
+    assign rx_rd = 0;
+    assign rx_dout = 0;
+    assign wf_rd = 0;
+    assign wf_dout = 0;
+`ifndef USE_OTHER
+	assign ser[1] = 1'b0;
+`endif
+	wire rx_orst;
+	wire rx_overflow_C = 0;
+`endif
+
 
     //////////////////////////////////////////////////////////////////////////
     // CPU parallel port input mux
 	
-wire [31:0] wcnt;
-
     always @*
+    begin
 `ifdef USE_CPU_CTR
 		if (rdReg & op[GET_CPU_CTR0]) par = { cpu_ctr[1][ 7 -:8], cpu_ctr[0][ 7 -:8] }; else
 		if (rdReg & op[GET_CPU_CTR1]) par = { cpu_ctr[1][15 -:8], cpu_ctr[0][15 -:8] }; else
@@ -262,13 +286,14 @@ wire [31:0] wcnt;
 
 		if (rdReg & op[GET_STATUS]) par = status; else
 		par = host_dout;
+	end
 	
 
     //////////////////////////////////////////////////////////////////////////
     // host SPI interface
 
     HOST host (
-        .hb_clk		(gps_clk),
+        .hb_clk		(cpu_clk),
         .rst		(rst),
         .spi_sclk   (BBB_SCLK),
         .spi_cs		(~BBB_CS_N),
@@ -285,6 +310,9 @@ wire [31:0] wcnt;
         .wf_rd		(wf_rd),
         .wf_dout	(wf_dout),
 
+        .ext_rd 	(ext_rd),
+        .ext_dout	(ext_dout),
+
         .hb_ovfl	(rx_overflow_C),
         .hb_orst	(rx_orst),          // NB: hb_clk = gps_clk = cpu_clk
 
@@ -293,7 +321,7 @@ wire [31:0] wcnt;
         .mem_dout   (mem_dout),
         .boot_done  (boot_done),
 
-        .tos        (tos),
+        .tos        (tos[15:0]),
         .op         (op),
         .rdReg      (rdReg),
         .wrReg      (wrReg),
@@ -342,7 +370,7 @@ wire [31:0] wcnt;
         );
 
 
-`ifdef DEF_GPS_CHANS
+`ifdef USE_GPS
     GPS gps (
         .clk        (gps_clk),
         .adc_clk	(adc_clk),
@@ -355,7 +383,7 @@ wire [31:0] wcnt;
         .ticks_A	(ticks_A),
         
         .ser		(ser[0]),        
-        .tos		(tos),			// fixme: cpu_clk?
+        .tos		(tos),      // no clk domain crossing because gps_clk = cpu_clk
         .op			(op),        
         .rdBit      (rdBit),
         .rdReg      (rdReg),
@@ -364,16 +392,25 @@ wire [31:0] wcnt;
         );
 `else
 
-	// if no GPS configured, still need to capture host_srq in the same way as GPS.
+	// if no GPS configured, still need to capture host_srq in the same way as GPS does.
 	assign ser[0] = srq_out;
 	reg srq_noted, srq_out;
 	
     always @ (posedge cpu_clk)
     begin
         if (rdReg & op[GET_SRQ]) srq_noted <= host_srq;
-        else				      srq_noted <= host_srq | srq_noted;
-        if (rdReg & op[GET_SRQ]) srq_out <= srq_noted;
+        else				     srq_noted <= host_srq | srq_noted;
+        if (rdReg & op[GET_SRQ]) srq_out   <= srq_noted;
     end
+    
+    assign gps_rd = 0;
+    assign gps_dout = 0;
+`endif
+
+`ifdef USE_OTHER
+`else
+    assign ext_rd = 0;
+    assign ext_dout = 0;
 `endif
 
 endmodule

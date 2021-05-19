@@ -29,7 +29,7 @@ Boston, MA  02110-1301, USA.
 #include "jsmn.h"
 #include "cfg.h"
 
-#ifndef CFG_GPS_ONLY
+#ifdef USE_SDR
  #include "dx.h"
 #endif
 
@@ -129,7 +129,7 @@ void cfg_reload()
         }
     }
 
-#ifndef CFG_GPS_ONLY
+#ifdef USE_SDR
 	dx_reload();
 #endif
 }

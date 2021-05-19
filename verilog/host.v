@@ -40,6 +40,9 @@ module HOST (
     input  wire        wf_rd,
     input  wire [15:0] wf_dout,
     
+    input  wire        ext_rd,
+    input  wire [15:0] ext_dout,
+    
     input  wire		   hb_ovfl,
     output wire		   hb_orst,
 
@@ -48,7 +51,7 @@ module HOST (
     input  wire [15:0] mem_dout,
     output reg		   boot_done,
     
-    input  wire [31:0] tos,
+    input  wire [15:0] tos,
     input  wire [15:0] op,
     input  wire        rdReg,
     input  wire        wrReg,
@@ -274,7 +277,7 @@ module HOST (
 
     reg [HB_MSB:0] hb_addr, hb_pos;
 
-    wire hb_wr  = host_wr  | gps_rd | rx_rd | wf_rd | mem_rd;
+    wire hb_wr  = host_wr  | gps_rd | rx_rd | wf_rd | ext_rd | mem_rd;
     wire hb_rd  = host_rd  | boot_rd;
     wire hb_rst = host_rst | boot_rst;
 
@@ -303,11 +306,12 @@ module HOST (
     assign mem_rd = wrEvt & op[GET_MEMORY];
 
     always @*
-        if (gps_rd) hb_din = gps_dout; else
-        if (mem_rd) hb_din = mem_dout; else
-        if (rx_rd)  hb_din = rx_dout;  else
-        if (wf_rd)  hb_din = wf_dout;  else
-					hb_din = tos[15:0];	// default: host_wr (HOST_TX)
+        if (gps_rd)  hb_din = gps_dout;  else
+        if (mem_rd)  hb_din = mem_dout;  else
+        if (rx_rd)   hb_din = rx_dout;   else
+        if (wf_rd)   hb_din = wf_dout;   else
+        if (ext_rd)  hb_din = ext_dout; else
+					 hb_din = tos[15:0];	// default: host_wr (HOST_TX)
 
 	// 16'b0 assignment very important because some rdRegs want to push a zero on the stack as a side-effect
     assign host_dout = hb_rd? hb_dout : 16'b0;

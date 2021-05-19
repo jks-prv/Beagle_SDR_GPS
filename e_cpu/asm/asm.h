@@ -39,7 +39,7 @@ int num_strings();
 // tokens
 
 typedef enum {
-	TT_EOL=0, TT_LABEL, TT_SYM, TT_NUM, TT_OPC, TT_PRE, TT_OPR, TT_DATA, TT_STRUCT, TT_ITER, TT_DEF
+	TT_EOL=0, TT_LABEL, TT_SYM, TT_NUM, TT_OPC, TT_PRE, TT_OPR, TT_DATA, TT_STRUCT, TT_ITER, TT_DEF, TT_FILE
 } token_type_e;
 
 #define	TF_RET		0x0001
@@ -125,6 +125,7 @@ typedef struct {
 	// DEF
 	int val, width;
 	int flags;
+	char config_prefix[16];
 	
 	// STRUCT
 	int size;
@@ -159,5 +160,7 @@ void panic(const char *str, tokens_t *t = NULL);
 void syntax(int cond, const char *fmt, ...);
 void _assert(int cond, const char *str, const char *file, int line);
 void errmsg(const char *str, tokens_t *t = NULL);
+
+char *str_ends_with(char *s, const char *cs);
 
 #endif

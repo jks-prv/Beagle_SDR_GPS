@@ -97,8 +97,9 @@ u2_t ctrl_get()
 	SPI_MISO *ctrl = get_misc_miso();
 	
 	spi_get_noduplex(CmdCtrlGet, ctrl, sizeof(ctrl->word[0]));
+	u2_t rv = ctrl->word[0];
 	release_misc_miso();
-	return ctrl->word[0];
+	return rv;
 }
 
 void ctrl_clr_set(u2_t clr, u2_t set)

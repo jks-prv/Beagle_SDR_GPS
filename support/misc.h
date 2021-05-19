@@ -22,10 +22,14 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "kiwi.h"
 #include "printf.h"
+#include "spi.h"
 
 #include <sys/file.h>
 #include <stdarg.h>
 #include <stdlib.h>
+
+SPI_MISO *get_misc_miso();
+void release_misc_miso();
 
 u2_t ctrl_get();
 void ctrl_clr_set(u2_t clr, u2_t set);

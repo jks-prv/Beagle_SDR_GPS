@@ -216,7 +216,10 @@ void CHANNEL::Reset(int sat, int codegen_init) {
                     int prn = c->isE1B? Sats[c->sat].prn : 0;
                     if (dbg && i == 0 && j == 0) printf("%d ", prn);
                     int bit = (prn > 0)? E1B_code1[prn-1][(i*E1B_CODE_LOOP)+j] : 0;
-                    *code = (*code >> 1) | (bit? (1 << (GPS_CHANS-1)): 0);  // ch0 in lsb
+                    #if GPS_CHANS > 0
+                        // this code won't even be reached if GPS_CHANS = 0
+                        *code = (*code >> 1) | (bit? (1 << (GPS_CHANS-1)): 0);  // ch0 in lsb
+                    #endif
                     //if (0 && j == 0) printf("ch%2d busy=%d isE1B=%d prn%02d code 0x%03x\n",
                     //    chan+1, busy? 1:0, busy? c->isE1B:0, prn, *code);
                 }
