@@ -2,6 +2,20 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.455  May 19, 2021
+    Admin page
+        Config tab: Added button to reset passband fields to default values.
+        Connect tab: Improved proxy setup UI.
+
+    Right-click menu: Added "snap to nearest" mode. Setting is remembered/restored per Kiwi
+        visited just like freq/mode etc. Waterfall cursor differs when snap mode active.
+        When snap is active the freq step keys (j/i, left/right arrow keys) are modified so
+        the ctrl/alt-key steps the smallest amount and the unmodified key steps the same
+        amount as the snap (e.g. 9/10 kHz on MW). Usually the unmodified key step the
+        smallest amount.
+
+    Changes to more easily support general (even non-SDR) FPGA development.
+
 v1.453,454  May 14, 2021
     Added default passband adjustment to admin page, config tab.
         As each passband parameter field is changed (low, high, center, width) the other
