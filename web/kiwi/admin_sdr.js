@@ -100,7 +100,7 @@ function config_html()
 		w3_third('w3-text-teal w3-valign', 'w3-container',
 			w3_inline('w3-halign-space-around w3-tspace-8/w3-center',
             w3_button('w3-aqua', 'Reset', 'config_pb_reset'),
-            w3_select('w3-label-inline', 'Mode', '', 'admin_sdr.pbm', admin_sdr.pbm, kiwi.modes_u, 'config_pb_mode'),
+            w3_select('w3-label-inline', 'Mode', '', 'admin_sdr.pbm', admin_sdr.pbm, kiwi.modes_u, 'config_pb_mode')
 			),
 			w3_input('', 'Passband low', 'admin_sdr.pbl', admin_sdr.pbl, 'config_pb_val'),
 			w3_input('', 'Passband high', 'admin_sdr.pbh', admin_sdr.pbh, 'config_pb_val')
