@@ -223,12 +223,12 @@ var fax_europe = {
    
    // dk8ok.org/2017/06/11/6-3285-khz-murmansk-fax/
    "Murmansk": [],
-   "RBW RU":   [ 5336, '6328.5 lsb', 7090.0, 7908.8, 8444.1, 10130 ]
+   "RBW RU":   [ 5336, '6328.5 lsb', 7908.8, 8444.1, 10130 ],
 
-   // not heard
    // mt-utility.blogspot.com/2009/12/so-who-is-gm-11f.html
-   //"Sevastopol": [],
-   //"GM-11F UR":   [ 5103, 7090 ]
+   // forum.kiwisdr.com/index.php?p=/discussion/comment/11883/#Comment_11883
+   "Sevastopol": [],
+   "GM-11F UR":   [ /* 5103, */ 7090.9 ]
 };
 
 var fax_asia_pac = {
