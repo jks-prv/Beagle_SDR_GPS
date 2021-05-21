@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.457  May 21, 2021
+v1.457,458  May 21, 2021
     Waterfall / spectrum:
         Fixed low-level post-FFT artifacts spotted by Marco's SuperSDR app. Thanks Marco!
         Added CIC filter compensation to better level spectrum at top end.
