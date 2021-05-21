@@ -2,6 +2,14 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.457  May 21, 2021
+    Waterfall / spectrum:
+        Fixed low-level post-FFT artifacts spotted by Marco's SuperSDR app. Thanks Marco!
+        Added CIC filter compensation to better level spectrum at top end.
+    
+    FAX extension:
+        Added GM-11F Sevastopol 7090.9 kHz per fabrys on Kiwi forum. Thanks fabrys!
+
 v1.455,456  May 19, 2021
     Admin page
         Config tab: Added button to reset passband fields to default values.

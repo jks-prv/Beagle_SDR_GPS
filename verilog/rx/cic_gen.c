@@ -381,6 +381,7 @@ int main (int argc, char *argv[])
     cic_gen("cic_wf2.vh", INTEG_COMB, WF2_STAGES, WF_2CIC_MAXD, WF2_BITS, WFO_BITS);
 #endif
 
+    //cic_gen("cic_wf1.vh", NO_PRUNE, WF1_STAGES, WF_1CIC_MAXD, WF1_BITS, WFO_BITS);
 	//cic_gen("Hogenauer's paper", INTEG_COMB, 4, 25, 16, 16);
 
 	return(0);

@@ -359,7 +359,7 @@ tokens_t *expr(tokens_t *tp, tokens_t **ep, int *val, int multi, tokens_t *ltp)
 		if (t->flags & TF_1OPR) {
 			switch (t->num) {
 				case OPR_INC: *val += 1; break;
-				case OPR_DEC: *val += 1; break;
+				case OPR_DEC: *val -= 1; break;
 				case OPR_NOT: *val = (~*val) & 0xffff; break;   // NB: currently done postfix
 				default: syntax(0, "unknown expr 1-arg OPR"); break;
 			}

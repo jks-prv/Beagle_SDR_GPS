@@ -548,6 +548,9 @@ add64nc:									; ah al bh bl                   7
                 add							; sh                ; sl
                 r_from						; sh sl
                 ret
+dec:
+                push    1
+                sub.r
 
 sub64:										; ah al bh bl
 				not
@@ -700,8 +703,7 @@ incr16:										; addr
 decr16:										; addr
 				dup							; addr addr
 				fetch16						; addr data
-				push    1                   ; addr data 1
-				sub                         ; addr data-1
+				dec                         ; addr data-1
 				dup							; addr data-1 data-1
 				rot							; data-1 data-1 addr
 				store16						; data-1 addr

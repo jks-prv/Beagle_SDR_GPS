@@ -164,6 +164,23 @@ void c2s_waterfall_init()
     	#endif
     }
     
+    #define WF_CIC_COMP
+    #ifdef WF_CIC_COMP
+        // compensates for small droop at top end of waterfall/spectrum display
+        //real_printf("WF CIC_comp:\n");
+        for (i=0; i < WF_C_NSAMPS; i++) {
+
+            // CIC compensating filter
+            const TYPEREAL f = fabs(fmod(TYPEREAL(i)/WF_C_NSAMPS+0.5f, 1.0f) - 0.5f);
+            const TYPEREAL p1 = -2.969f;
+            const TYPEREAL p2 = 36.26f;
+            const TYPEREAL sincf = f ? MSIN(f*K_PI)/(f*K_PI) : 1.0f;
+            WF_SHMEM->CIC_comp[i] = (pow(sincf, -5) + p1*exp(p2*(f-0.5f))) / 2;     // FIXME: /2 empirical
+            //real_printf("%.1f ", WF_SHMEM->CIC_comp[i]);
+        }
+        //real_printf("\n\n");
+    #endif
+
 	WF_SHMEM->n_chunks = (int) ceilf((float) WF_C_NSAMPS / NWF_SAMPS);
 	
 	assert(WF_C_NSAMPS == WF_C_NFFT);
@@ -183,6 +200,7 @@ void c2s_waterfall_init()
 
 void c2s_waterfall_compression(int rx_chan, bool compression)
 {
+    //printf("WF%d: compression=%d\n", rx_chan, compression);
 	WF_SHMEM->wf_inst[rx_chan].compression = compression;
 }
 
@@ -765,10 +783,12 @@ void c2s_waterfall(void *param)
                         }
                     }
                     wf->fft_scale[i] = scale;
+                    wf->fft_scale_div2[i] = scale / 2;                    
                 }
 			} else {
                 for (i=0; i < wf->plot_width_clamped; i++)
                     wf->fft_scale[i] = fft_scale;
+                    wf->fft_scale_div2[i] = fft_scale / 2;                    
 			}
 
 		    new_scale_mask = false;
@@ -1167,9 +1187,14 @@ void compute_frame(int rx_chan)
             wf->new_map2 = false;
         }
 	#endif
-	
+
+    float *comp = WF_SHMEM->CIC_comp;
 	for (i=2; i < wf->fft_used_limit; i++) {
-		float re = fft->hw_fft[i][I], im = fft->hw_fft[i][Q];
+	    #ifdef WF_CIC_COMP
+		    float re = ((float) fft->hw_fft[i][I]) * comp[i], im = ((float) fft->hw_fft[i][Q]) * comp[i];
+		#else
+		    float re = fft->hw_fft[i][I], im = fft->hw_fft[i][Q];
+		#endif
 		pwr[i] = re*re + im*im;
 
 		#ifdef SHOW_MAX_MIN_PWR
@@ -1203,17 +1228,35 @@ void compute_frame(int rx_chan)
 	#endif
 
 	int bin=0, _bin=-1, bin2pwr[WF_WIDTH];
-	float p, dB, pwr_out_sum[WF_WIDTH], pwr_out_peak[WF_WIDTH];
+	float p, dB;
 
-    //#define WF_CMA
-    #ifndef WF_CMA
+    #define WF_CMA
+    #ifdef WF_CMA
+	    float pwr_out_cma[WF_WIDTH];
+	    memset(pwr_out_cma, 0, sizeof(pwr_out_cma));
+		int cma_avgs[WF_WIDTH];
+	    memset(cma_avgs, 0, sizeof(cma_avgs));
+    #else
+	    float pwr_out_peak[WF_WIDTH];
 	    memset(pwr_out_peak, 0, sizeof(pwr_out_peak));
 	#endif
+	
+	#define LTRIG 0
+	//#define LTRIG 300
+	#if LTRIG
+	    static int dbg_bin;
+	    dbg_bin++;
+        if (dbg_bin == LTRIG) {
+            real_printf("bins:\n");
+            for (i=0; i<wf->fft_used_limit; i++)
+                real_printf("%d ", bin);
+            real_printf("\n");
+        }
+    #endif
 
 	if (wf->fft_used >= wf->plot_width) {
 		// >= FFT than plot
 		
-		int avgs=0;
 		for (i=0; i<wf->fft_used_limit; i++) {
 			p = pwr[i];
 			bin = wf->fft2wf_map[i];
@@ -1230,21 +1273,34 @@ void compute_frame(int rx_chan)
 				break;
 			}
 			
+            #if LTRIG
+                if (dbg_bin == LTRIG)
+                    real_printf("%d:%.0f(%.1e) ", bin, 10.0 * log10f(p * wf->fft_scale[0] + 1e-30F) + wf->fft_offset, p);
+            #endif
+
 			if (bin == _bin) {
 				#ifdef WF_CMA
-					pwr_out_cma[bin] = (pwr_out_cma[bin] * avgs) + p;
-					avgs++;
-					pwr_out_cma[bin] /= avgs;
+					pwr_out_cma[bin] += p;
+					cma_avgs[bin]++;
 				#else
-					if (p > pwr_out_peak[bin]) pwr_out_peak[bin] = p;
-					pwr_out_sum[bin] += p;
+				    #if 0
+				        // Using the max or min value when multiple FFT values per bin gives low-level artifacts!
+                        if (p > pwr_out_peak[bin])    // gives dark lines
+                        //if (p < pwr_out_peak[bin])    // gives bright lines
+                            pwr_out_peak[bin] = p;
+					#else
+					    // Use last value when multiple FFT values per bin.
+					    // Result seems to have no artifacts.
+					    pwr_out_peak[bin] = p;      
+					#endif
 				#endif
 			} else {
 				#ifdef WF_CMA
-					avgs = 1;
+				    pwr_out_cma[bin] = p;
+					cma_avgs[bin] = 1;
+				#else
+                    pwr_out_peak[bin] = p;
 				#endif
-				pwr_out_peak[bin] = p;
-				pwr_out_sum[bin] = p;
 				_bin = bin;
 			}
 		}
@@ -1254,11 +1310,42 @@ void compute_frame(int rx_chan)
             int dBs[WF_WIDTH];
 		#endif
 
-		for (i=0; i<WF_WIDTH; i++) {
-			p = pwr_out_peak[i];
-			//p = pwr_out_sum[i];
+        #if LTRIG
+            if (dbg_bin == LTRIG) {
+                real_printf("\n\navgs:\n");
+                for (i=0; i<WF_WIDTH; i++)
+                    real_printf("%d ", cma_avgs[i]);
+                real_printf("\n\nout:\n");
+            }
+        #endif
 
-			dB = 10.0 * log10f(p * wf->fft_scale[i] + 1e-30F) + wf->fft_offset;
+		for (i=0; i<WF_WIDTH; i++) {
+            #if 0
+                if (dbg_bin == LTRIG)
+                    real_printf("%.6e ", wf->fft_scale[i]);
+            #endif
+
+			#ifdef WF_CMA
+			    // A fft2wf_map[] value causing two FFT values to average into one bin is common.
+			    // So we fold avgs == 2 into wf->fft_scale_div2 computed earlier and save the divide.
+			    int avgs = cma_avgs[i];
+			    float scale = (avgs == 1)? wf->fft_scale[i] : ((avgs == 2)? wf->fft_scale_div2[i] : (wf->fft_scale[i] / avgs));
+                p = pwr_out_cma[i];
+			#else
+			    float scale = wf->fft_scale[i];
+                p = pwr_out_peak[i];
+			#endif
+
+			dB = 10.0 * log10f(p * scale + 1e-30F) + wf->fft_offset;
+
+            #if LTRIG
+                if (dbg_bin == LTRIG)
+                    real_printf("%d:%.0f ", i, dB);
+            #endif
+
+			#if 0
+                if (i >= 300 && i <= 400 && (i%5) == 0) dB = -110;
+            #endif
 			#if 0
                 if (i == 508) printf("Z%d ", wf->zoom);
                 if (i >= 509 && i <= 513) printf("%d ", (int) dB);
@@ -1297,6 +1384,11 @@ void compute_frame(int rx_chan)
 			    print_max_min_stream_i(&buf_state, "buf", i, 1, (int) *(bp-1));
 			#endif
 		}
+
+        #if LTRIG
+            if (dbg_bin == LTRIG)
+                real_printf("\n\n");
+        #endif
 
 		#ifdef SHOW_MAX_MIN_DB
             //jks

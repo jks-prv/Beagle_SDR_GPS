@@ -69,6 +69,7 @@ void simd_multiply_ccc(int len,
     for (; counter<len; ++counter)
         *pc++  = (*pa++)*(*pb++);
 }
+
 // c = a * b
 void simd_multiply_cfc(int len,
                        const fftwf_complex* a,

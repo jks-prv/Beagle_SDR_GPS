@@ -115,7 +115,7 @@ struct wf_inst_t {
 	int rx_chan;
 	int fft_used, plot_width, plot_width_clamped;
 	int maxdb, mindb, send_dB;
-	float fft_scale[WF_WIDTH], fft_offset;
+	float fft_scale[WF_WIDTH], fft_scale_div2[WF_WIDTH], fft_offset;
 	u2_t fft2wf_map[WF_C_NFFT / WF_USING_HALF_FFT];		// map is 1:1 with fft
 	u2_t wf2fft_map[WF_WIDTH];							// map is 1:1 with plot
 	int start, prev_start, zoom, prev_zoom;
@@ -151,6 +151,7 @@ struct wf_shmem_t {
     wf_inst_t wf_inst[MAX_RX_CHANS];        // NB: MAX_RX_CHANS even though there may be fewer MAX_WF_CHANS
     fft_t fft_inst[MAX_WF_CHANS];           // NB: MAX_WF_CHANS not MAX_RX_CHANS
     float window_function[WF_C_NSAMPS];
+    float CIC_comp[WF_C_NSAMPS];
     int n_chunks;
 };     
 
