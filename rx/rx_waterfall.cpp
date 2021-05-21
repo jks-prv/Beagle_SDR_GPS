@@ -783,12 +783,13 @@ void c2s_waterfall(void *param)
                         }
                     }
                     wf->fft_scale[i] = scale;
-                    wf->fft_scale_div2[i] = scale / 2;                    
+                    wf->fft_scale_div2[i] = scale / 2;
                 }
 			} else {
-                for (i=0; i < wf->plot_width_clamped; i++)
+                for (i=0; i < wf->plot_width_clamped; i++) {
                     wf->fft_scale[i] = fft_scale;
-                    wf->fft_scale_div2[i] = fft_scale / 2;                    
+                    wf->fft_scale_div2[i] = fft_scale / 2;
+                }
 			}
 
 		    new_scale_mask = false;
