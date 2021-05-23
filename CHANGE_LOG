@@ -2,6 +2,26 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.459  May 23, 2021
+    Waterfall / spectrum:
+        Fixed the CIC compensation added to the last release.
+
+        Added waterfall interpolation URL parameter "wfi=N" e.g. kiwi:8073/?spec&wfi=13
+        Also available as an API parameter on the waterfall web socket: "SET interp=N"
+        Value N below. Add 10 to enable the CIC filter compensation.
+        
+        The value below answers the question: "What to do when multiple FFT values
+        contribute to a single waterfall/spectrum pixel bin". In most cases the FFT
+        is larger than the 1024 display pixels of the waterfall (or external application).
+        
+        0 take max (old and continuing server default for kiwiclient, external apps etc.)
+        1 take min 
+        2 take last 
+        3 do drop sampling
+        4 take cumulative moving average of values
+        ...
+        13  drop sampling + CIC compensation (new Kiwi browser interface default)
+
 v1.457,458  May 21, 2021
     Waterfall / spectrum:
         Fixed low-level post-FFT artifacts spotted by Marco's SuperSDR app. Thanks Marco!

@@ -110,6 +110,9 @@ enum { WF_SELECT_OFF = 0, WF_SELECT_1FPS = 1, WF_SELECT_SLOW = 2, WF_SELECT_MED 
 enum aper_t { MAN=0, AUTO };
 enum aper_algo_t { IIR=0, MMA, EMA, OFF };
 
+#define WF_CIC_COMP 10
+enum wf_interp_t { WF_MAX=0, WF_MIN, WF_LAST, WF_DROP, WF_CMA };
+
 struct wf_inst_t {
 	conn_t *conn;
 	int rx_chan;
@@ -118,10 +121,13 @@ struct wf_inst_t {
 	float fft_scale[WF_WIDTH], fft_scale_div2[WF_WIDTH], fft_offset;
 	u2_t fft2wf_map[WF_C_NFFT / WF_USING_HALF_FFT];		// map is 1:1 with fft
 	u2_t wf2fft_map[WF_WIDTH];							// map is 1:1 with plot
+	u2_t drop_sample[WF_WIDTH];
 	int start, prev_start, zoom, prev_zoom;
 	int mark, speed, fft_used_limit;
 	bool new_map, new_map2, compression, isWF, isFFT;
 	int flush_wf_pipe;
+	bool cic_comp;
+	wf_interp_t interp;
 
 	// NB: matches rx_noise.h which is not included here to prevent re-compile cascade
     #define NOISE_TYPES 4
@@ -181,5 +187,5 @@ struct wf_shmem_t {
 
 enum wf_cmd_key_e {
     CMD_SET_ZOOM=1, CMD_SET_MAX_MIN_DB, CMD_SET_CMAP, CMD_SET_APER, CMD_SET_BAND,
-    CMD_SET_SCALE, CMD_SET_WF_SPEED, CMD_SEND_DB, CMD_EXT_BLUR
+    CMD_SET_SCALE, CMD_SET_WF_SPEED, CMD_SEND_DB, CMD_EXT_BLUR, CMD_INTERPOLATE
 };
