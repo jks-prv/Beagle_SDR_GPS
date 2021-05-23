@@ -79,6 +79,7 @@ var squelch_threshold = 0;
 var wf_rate = '';
 var wf_mm = '';
 var wf_compression = 1;
+var wf_interp = 13;   // WF_DROP + WF_CIC_COMP by default
 var debug_v = 0;		// a general value settable from the URI to be used during debugging
 var sb_trace = 0;
 var kiwi_gc = 1;
@@ -228,6 +229,7 @@ function kiwi_main()
 	s = 'ncc'; if (q[s]) no_clk_corr = parseInt(q[s]);
 	s = 'wfdly'; if (q[s]) waterfall_delay = parseFloat(q[s]);
 	s = 'wf_comp'; if (q[s]) wf_compression = parseInt(q[s]);
+	s = 'wfi'; if (q[s]) wf_interp = parseInt(q[s]);
 	s = 'gen'; if (q[s]) gen_freq = parseFloat(q[s]);
 	s = 'attn'; if (q[s]) gen_attn = parseInt(q[s]);
 	s = 'blen'; if (q[s]) audio_buffer_min_length_sec = parseFloat(q[s])/1000;
@@ -310,6 +312,7 @@ function kiwi_main()
 	wf_send("SET zoom=0 start=0");
 	wf_send("SET maxdb=0 mindb=-100");
 	if (wf_compression == 0) wf_send('SET wf_comp=0');
+	if (wf_interp != 0) wf_send('SET interp='+ wf_interp);
 	wf_speed = wf_rates[wf_rate];
 	//console.log('wf_rate="'+ wf_rate +'" wf_speed='+ wf_speed);
 	if (wf_speed == undefined) wf_speed = WF_SPEED_FAST;
