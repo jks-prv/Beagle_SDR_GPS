@@ -284,8 +284,18 @@ void update_vars_from_config()
         update_cfg = true;
     }
 
-    /* int dom_sel = */ cfg_default_int("sdr_hu_dom_sel", DOM_SEL_NAM, &update_cfg);
+    int _dom_sel = cfg_default_int("sdr_hu_dom_sel", DOM_SEL_NAM, &update_cfg);
 
+    #if 1
+        // try and get this Kiwi working with the proxy
+        //printf("serno=%d dom_sel=%d\n", serial_number, _dom_sel);
+	    if (serial_number == 3380 && _dom_sel == DOM_SEL_NAM) {
+            cfg_set_int("sdr_hu_dom_sel", DOM_SEL_REV);
+            update_cfg = true;
+            //printf("######## DOM_SEL_REV ########\n");
+	    }
+    #endif
+    
     // remove old kiwisdr.example.com default
     cfg_default_string("server_url", "", &update_cfg);
     const char *server_url = cfg_string("server_url", NULL, CFG_REQUIRED);
@@ -293,6 +303,7 @@ void update_vars_from_config()
 	    cfg_set_string("server_url", "");
 	    update_cfg = true;
     }
+    
     // not sure I want to do this yet..
     #if 0
         // Strange problem where cfg.sdr_hu_dom_sel seems to get changed occasionally between modes
