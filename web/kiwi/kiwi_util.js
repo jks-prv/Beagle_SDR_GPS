@@ -779,6 +779,31 @@ function deleteCookie(cookie)
 	createCookie(cookie, 0, -1);
 }
 
+// appinventor.mit.edu used by KiwiSDR Android app doesn't have localStorage
+function kiwi_localStorage_getItem(s)
+{
+   var rv;
+	try {
+	   if (localStorage == null) return null;
+	   rv = localStorage.getItem(s);
+	} catch(ex) {
+	   rv = null;
+	}
+	return rv;
+}
+
+function kiwi_localStorage_setItem(s, v)
+{
+   var rv;
+	try {
+	   if (localStorage == null) return null;
+	   rv = localStorage.setItem(s, v);
+	} catch(ex) {
+	   rv = null;
+	}
+	return rv;
+}
+
 // Get function from string, with or without scopes (by Nicolas Gauthier)
 // stackoverflow.com/questions/912596/how-to-turn-a-string-into-a-javascript-function-call
 // returns null if var doesn't exist in last scope, throws error if scope level missing

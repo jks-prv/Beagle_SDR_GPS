@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.460  May 24, 2021
+    Fix needed by the KiwiSDR Android app (from the Google Play store).
+    Match frequency step amounts between "snap to nearest" mode and L/R arrow keys.
+
 v1.459  May 23, 2021
     Waterfall / spectrum:
         Fixed the CIC compensation added to the last release.
