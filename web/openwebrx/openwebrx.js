@@ -2133,36 +2133,20 @@ function canvas_start_drag(evt, x, y)
 		dx_show_edit_panel(evt, -1);
 	} else
 
-	// select waterfall on nearest appropriate boundary (1, 5 or 9/10 kHz depending on band)
+	// select waterfall on nearest appropriate boundary (1, 5 or 9/10 kHz depending on band & mode)
 	if ((evt.shiftKey && !(evt.ctrlKey || evt.altKey)) || owrx.wf_snap) {
 		canvas_ignore_mouse_event = true;
 		if (debug_canvas_drag) console.log('CSD-Wboundary IME=set-true');
-		var step_Hz = 1000;
 		var fold = canvas_get_dspfreq(x);
+
 		var b = find_band(fold);
 		//if (b) console.log(b)
-		var cm = cur_mode.substr(0,2);
-		var am_ssb_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'qa' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
-		//console_log('nearest', cm, am_ssb_iq_drm);
-	   var ITU_region = cfg.init.ITU_region + 1;
-	   var ham_80m_swbc_75m_overlap = (ITU_region == 2 && b && b.name == '75m');
-
-		if (b != null && (b.name == 'LW' || b.name == 'MW')) {
-			if (am_ssb_iq_drm) {
-				step_Hz = step_9_10? 9000 : 10000;
-				//console.log('SFT-CLICK 9_10');
-			}
-		} else
-		if (b != null && (b.s == svc.B) && !ham_80m_swbc_75m_overlap) {      // SWBC bands
-			if (am_ssb_iq_drm) {
-				step_Hz = 5000;
-				//console.log('SFT-CLICK SWBC');
-			}
-		}
+      var rv = freq_step_amount(b);
+		var step_Hz = rv.step_Hz;
 		
 		var trunc = fold / step_Hz;
 		var fnew = Math.round(trunc) * step_Hz;
-		//console.log('SFT-CLICK '+cur_mode+' fold='+fold+' step='+step_Hz+' trunc='+trunc+' fnew='+fnew);
+		//console.log('SFT-CLICK '+cur_mode+' fold='+fold+' step='+step_Hz+' trunc='+trunc+' fnew='+fnew +' '+ rv.s);
 		freqmode_set_dsp_kHz(fnew/1000, null);
 	} else
 
@@ -3607,8 +3591,7 @@ function waterfall_init()
 	
 	if (shortcut.keys != '') setTimeout(keyboard_shortcut_url_keys, 3000);
 	
-	
-	wf_snap(localStorage.getItem('wf_snap'));
+	wf_snap(kiwi_localStorage_getItem('wf_snap'));
 
    if (kiwi_isMobile() || mobile_laptop_test)
       mobile_init();
@@ -3619,10 +3602,10 @@ function waterfall_init()
 function wf_snap(set)
 {
    //console.log('wf_snap cur='+ owrx.wf_snap +' set='+ set);
-   owrx.wf_snap = isUndefined(set)? (owrx.wf_snap ^ 1) : (isNull(set)? 0 : +set);
+   owrx.wf_snap = isUndefined(set)? (owrx.wf_snap ^ 1) : (isNull(set)? 0 : (+set));
    //console.log('wf_snap new='+ owrx.wf_snap);
    w3_el('id-waterfall-container').style.cursor = owrx.wf_cursor = owrx.wf_snap? 'col-resize' : 'crosshair';
-   localStorage.setItem('wf_snap', owrx.wf_snap);
+   kiwi_localStorage_setItem('wf_snap', owrx.wf_snap);
 }
 
 var waterfall_dont_scale=0;
@@ -5182,63 +5165,56 @@ var up_down = {
 	iq: [ 0, -1, -0.1, 0.1, 1, 0 ],
 };
 
-var up_down_default = {
-   // only referenced by special step logic, so only max/min values used (that's why others are zero)
-   // NB: abs(values)
-	am: [ 5, 0, 0, 0, 0, 5 ],
-	amn: [ 5, 0, 0, 0, 0, 5 ],
-	sam: [ 5, 0, 0, 0, 0, 5 ],
-	sal: [ 5, 0, 0, 0, 0, 5 ],
-	sau: [ 5, 0, 0, 0, 0, 5 ],
-	sas: [ 5, 0, 0, 0, 0, 5 ],
-	qam: [ 5, 0, 0, 0, 0, 5 ],
-	drm: [ 5, 0, 0, 0, 0, 5 ],
-	usb: [ 5, 0, 0, 0, 0, 5 ],
-	usn: [ 5, 0, 0, 0, 0, 5 ],
-	lsb: [ 5, 0, 0, 0, 0, 5 ],
-	lsn: [ 5, 0, 0, 0, 0, 5 ],
-	cw: [ 1, 0, 0, 0, 0, 1 ],
-	cwn: [ 1, 0, 0, 0, 0, 1 ],
-	// nbfm doesn't have special step
-	iq: [ 5, 0, 0, 0, 0, 5 ],
-};
-
 var NDB_400_1000_mode = 1;		// special 400/1000 step mode for NDB band
+
+// nearest appropriate boundary (1, 5 or 9/10 kHz depending on band & mode)
+function freq_step_amount(b)
+{
+	var step_Hz = 1000;
+	var s = ' 1k default';
+   var cm = cur_mode.substr(0,2);
+	var am_ssb_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'qa' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
+   var ITU_region = cfg.init.ITU_region + 1;
+   var ham_80m_swbc_75m_overlap = (ITU_region == 2 && b && b.name == '75m');
+
+	if (b && b.name == 'NDB') {
+		if (cm == 'cw') {
+			step_Hz = NDB_400_1000_mode;
+		}
+		s = ' NDB';
+	} else
+	if (b && (b.name == 'LW' || b.name == 'MW')) {
+		//console_log('special step', cm, am_ssb_iq_drm);
+		if (am_ssb_iq_drm) {
+			step_Hz = step_9_10? 9000 : 10000;
+		}
+		s = ' LW/MW';
+	} else
+   if (b && (b.s == svc.B) && !ham_80m_swbc_75m_overlap) {      // SWBC bands
+      if (am_ssb_iq_drm) {
+         step_Hz = 5000;
+         s = ' SWBC 5k';
+         //console.log('SFT-CLICK SWBC');
+      }
+	} else
+	if (b && b.chan != 0) {
+		step_Hz = b.chan;
+		s = ' band='+ b.name +' chan='+ b.chan;
+	}
+	
+	return { step_Hz: step_Hz, s:s };
+}
 
 function special_step(b, sel, caller)
 {
 	var s = 'SPECIAL_STEP '+ caller +' sel='+ sel;
-	var step_Hz;
-   var cm = cur_mode.substr(0,2);
 
-	if (b != null && b.name == 'NDB') {
-		if (cm == 'cw') {
-			step_Hz = NDB_400_1000_mode;
-		} else {
-			step_Hz = -1;
-		}
-		s += ' NDB';
-	} else
-	if (b != null && (b.name == 'LW' || b.name == 'MW')) {
-		var am_ssb_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'qa' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
-		//console_log('special step', cm, am_ssb_iq_drm);
-		if (am_ssb_iq_drm) {
-			step_Hz = step_9_10? 9000 : 10000;
-		} else {
-			step_Hz = -1;
-		}
-		s += ' LW/MW';
-	} else
-	if (b != null && b.chan != 0) {
-		step_Hz = b.chan;
-		s += ' band='+ b.name +' ';
-	} else {
-		step_Hz = -1;
-		s += ' no band chan found, use default';
-	}
-	if (step_Hz == -1) step_Hz = up_down_default[cur_mode][sel]*1000;
+   var rv = freq_step_amount(b);
+   var step_Hz = rv.step_Hz;
+   s += rv.s;
+
 	if (sel < num_step_buttons/2) step_Hz = -step_Hz;
-	s += ' '+ step_Hz;
+	s += ' step='+ step_Hz;
 	//console.log(s);
 	return step_Hz;
 }
@@ -5299,7 +5275,7 @@ function freq_step_update_ui(force)
 
    var cm = cur_mode.substr(0,2);
    var am_ssb_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'qa' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
-	var show_9_10 = (b != null && (b.name == 'LW' || b.name == 'MW') && am_ssb_iq_drm)? true:false;
+	var show_9_10 = (b && (b.name == 'LW' || b.name == 'MW') && am_ssb_iq_drm)? true:false;
 	w3_visible('id-9-10-cell', show_9_10);
 
 	for (var i=0; i < num_step_buttons; i++) {
@@ -6676,7 +6652,8 @@ var shortcut = {
    keys: '',
    SHIFT: 1,
    CTL_OR_ALT: 2,
-   SHIFT_PLUS_CTL_OR_ALT: 3
+   SHIFT_PLUS_CTL_OR_ALT: 3,
+   KEYCODE_ALT: 18
 };
 
 function keyboard_shortcut_init()
@@ -6751,7 +6728,7 @@ function keyboard_shortcut_url_keys()
 // :space: :tab:
 //    .
 
-function keyboard_shortcut(key, mod, ctlAlt)
+function keyboard_shortcut(key, mod, ctlAlt, keyCode)
 {
    var action = true;
    var dir = ctlAlt? -1 : 1;
@@ -6832,7 +6809,7 @@ function keyboard_shortcut(key, mod, ctlAlt)
    case '?': case 'h': keyboard_shortcut_help(); break;
 
    default:
-      if (key.length == 1) console.log('no shortcut key <'+ key +'>');
+      if (key.length == 1 && keyCode != shortcut.KEYCODE_ALT) console.log('no shortcut key <'+ key +'>');
       action = false; break;
    
    }
@@ -6907,7 +6884,8 @@ function keyboard_shortcut_event(evt)
             //console.log('shortcut alt k='+ k);
          }
          
-         keyboard_shortcut(k, mod, ctlAlt);
+         //console.log('keyboard_shortcut key=<'+ k +'> keyCode='+ evt.keyCode +' mod='+ mod +' ctlAlt='+ ctlAlt +' alt='+ alt);
+         keyboard_shortcut(k, mod, ctlAlt, evt.keyCode);
          
          /*
          if (k != 'Shift' && k != 'Control' && evt.key != 'Alt') {
