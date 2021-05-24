@@ -286,13 +286,13 @@ void update_vars_from_config()
 
     int _dom_sel = cfg_default_int("sdr_hu_dom_sel", DOM_SEL_NAM, &update_cfg);
 
-    #if 1
+    #if 0
         // try and get this Kiwi working with the proxy
         //printf("serno=%d dom_sel=%d\n", serial_number, _dom_sel);
-	    if (serial_number == 3380 && _dom_sel == DOM_SEL_NAM) {
+	    if (serial_number == 1006 && _dom_sel == DOM_SEL_NAM) {
             cfg_set_int("sdr_hu_dom_sel", DOM_SEL_REV);
             update_cfg = true;
-            //printf("######## DOM_SEL_REV ########\n");
+            lprintf("######## FORCE DOM_SEL_REV serno=%d ########\n", serial_number);
 	    }
     #endif
     
