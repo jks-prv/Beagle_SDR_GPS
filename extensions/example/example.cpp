@@ -69,15 +69,24 @@ void example_close(int rx_chan)
     ext_unregister_receive_iq_samps(e->rx_chan);
 }
 
+
+// NB: To capitalize the name in the extension menu while using lowercase in program code
+// follow the capitalization used below, e.g. EXAMPLE_main()
+// AND capitalize the name of this directory.
+
+//void EXAMPLE_main();
 void example_main();
 
 ext_t example_ext = {
+	//"EXAMPLE",
 	"example",
+	//EXAMPLE_main,
 	example_main,
 	example_close,
 	example_msgs,
 };
 
+//void EXAMPLE_main()
 void example_main()
 {
 	// commented out so extension doesn't actually appear

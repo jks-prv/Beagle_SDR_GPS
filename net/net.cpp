@@ -776,7 +776,7 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
     bool ident_geo_sent = false;
     memset(iconn, 0, sizeof(internal_conn_t));
     
-    if (ws & ICONN_WS_EXT) {
+    if (ws & ICONN_WS_SND) {
         mcs = &iconn->snd_mc;
         mc_fail = mcs;
         mcs->connection_param = NULL;

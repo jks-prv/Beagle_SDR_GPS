@@ -112,7 +112,7 @@ public:
     }
 
     void set_sample_rate(float fs) {
-        _fs       = fs;
+        _fs      = fs;
         _maNsend = fs/4;
         pll_init();
     }

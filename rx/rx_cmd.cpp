@@ -57,8 +57,6 @@ volatile float audio_kbps[MAX_RX_CHANS+1], waterfall_kbps[MAX_RX_CHANS+1], water
 volatile u4_t audio_bytes[MAX_RX_CHANS+1], waterfall_bytes[MAX_RX_CHANS+1], waterfall_frames[MAX_RX_CHANS+1], http_bytes;
 char *current_authkey;
 int debug_v;
-bool auth_su;
-char auth_su_remote_ip[NET_ADDRSTRLEN];
 
 const char *mode_s[N_MODE] = {
     "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq", "drm", "usn", "lsn", "sam", "sau", "sal", "sas", "qam"
@@ -494,21 +492,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             } else {
                 cprintf(conn, "PWD bad type=%s\n", type_m);
                 pwd_s = NULL;
-            }
-        
-            if (type_admin && auth_su && strcmp(conn->remote_ip, auth_su_remote_ip) == 0) {
-                bool no_console = false;
-                struct stat st;
-                if (stat(DIR_CFG "/opt.no_console", &st) == 0)
-                    no_console = true;
-                if (no_console == false) {
-                    printf("PWD %s ALLOWED: by su\n", type_m);
-                    allow = true;
-                    is_local = true;
-                    cant_login = false;
-                }
-                auth_su = false;        // be certain to reset the global immediately
-                memset(auth_su_remote_ip, 0, sizeof(auth_su_remote_ip));
             }
         
             int badp = 1;

@@ -827,23 +827,6 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
             // (a slight race condition if there are multiple simultaneous connections)
             if (strcmp(qs[i], "camp") == 0) {
                 force_camp = true;
-            } else {
-                char *su_m = NULL;
-                if (sscanf(qs[i], "su=%256ms", &su_m) == 1) {
-                    if (kiwi_sha256_strcmp(su_m, "df05611250593c4299da8b3216751552b5a690e44b7e1b63f419e64b5e14ed9c") == 0) {
-                        auth_su = true;     // a little dodgy that we have to use a global -- be sure to reset asap
-                        kiwi_strncpy(auth_su_remote_ip, remote_ip, NET_ADDRSTRLEN);
-                    }
-        
-                    // erase cleartext as much as possible
-                    bzero(su_m, strlen(su_m));
-                    int slen = strlen(mc->query_string);
-                    bzero(r_buf, slen);
-                    bzero((char *) mc->query_string, slen);
-                    kiwi_ifree(su_m);
-                    break;      // have to stop because query string is now erased
-                }
-                kiwi_ifree(su_m);
             }
         }
         kiwi_ifree(r_buf);

@@ -505,13 +505,14 @@ static int _UPnP_port_open(void *param)
 static void UPnP_port_open_task(void *param)
 {
     char *cmd_p;
+    int status, exit_status;
+
     asprintf(&cmd_p, "upnpc %s%s-a %s %d %d TCP 2>&1",
         (debian_ver != 7)? "-e KiwiSDR " : "",
         (net.pvt_valid == IPV6)? "-6 " : "",
         net.ip_pvt, net.port, net.port_ext);
     net_printf2("UPnP: %s\n", cmd_p);
-    int status = non_blocking_cmd_func_forall("kiwi.UPnP", cmd_p, _UPnP_port_open, 0, POLL_MSEC(1000));
-    int exit_status;
+    status = non_blocking_cmd_func_forall("kiwi.UPnP", cmd_p, _UPnP_port_open, 0, POLL_MSEC(1000));
     if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
         net.auto_nat = exit_status;
         net_printf2("UPnP_port_open_task net.auto_nat=%d\n", net.auto_nat);
