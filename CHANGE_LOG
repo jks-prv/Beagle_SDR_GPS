@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.461  July 15, 2021
+    Bug fixes:
+        MW 9/10 kHz step applies up to 1710 kHz regardless of selected ITU mode.
+        Default frequency step restored to 5 kHz.
+        Mode selection allowed during recording except those that would change mono/stereo condition.
+
 v1.460  May 24, 2021
     Fix needed by the KiwiSDR Android app (from the Google Play store).
     Match frequency step amounts between "snap to nearest" mode and L/R arrow keys.

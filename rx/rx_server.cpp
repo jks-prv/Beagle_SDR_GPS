@@ -560,20 +560,6 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 		conn_printf("down=%d UIP=%d stream=%s\n", down, update_in_progress, st->uri);
 
         conn_printf("URL <%s> <%s> %s\n", mc->uri, mc->query_string, remote_ip);
-        if (auth_su && strcmp(remote_ip, auth_su_remote_ip) == 0) {
-            struct stat _st;
-            if (stat(DIR_CFG "/opt.no_console", &_st) == 0)
-                return NULL;
-            printf("allowed by su %s %s\n", rx_streams[st->type].uri, remote_ip);
-            #ifdef USE_SDR
-                if (!init_snd_wf) {
-                    c2s_sound_init();
-                    c2s_waterfall_init();
-                    init_snd_wf = true;
-                }
-            #endif
-        } else
-
 		if (st->type == STREAM_SOUND && !internal) {
 			int type;
 			const char *reason_disabled = NULL;

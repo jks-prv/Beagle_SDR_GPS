@@ -46,7 +46,7 @@ Boston, MA  02110-1301, USA.
 extern int version_maj, version_min;
 
 extern bool background_mode, need_hardware, is_multi_core, kiwi_restart,
-	DUC_enable_start, rev_enable_start, web_nocache, auth_su, kiwi_reg_debug,
+	DUC_enable_start, rev_enable_start, web_nocache, kiwi_reg_debug,
 	have_ant_switch_ext, gps_e1b_only, disable_led_task, debug_printfs, force_camp,
 	snr_local_time, log_local_ip, DRM_enable;
 
@@ -68,7 +68,6 @@ extern double ui_srate, freq_offset;
 extern TYPEREAL DC_offset_I, DC_offset_Q;
 extern kstr_t *cpu_stats_buf;
 extern char *tzone_id, *tzone_name;
-extern char auth_su_remote_ip[NET_ADDRSTRLEN];
 extern cfg_t cfg_ipl;
 extern char *fpga_file;
 extern lock_t spi_lock;

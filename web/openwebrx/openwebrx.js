@@ -2078,7 +2078,7 @@ function canvas_get_carfreq_offset(relativeX, incl_PBO)
    var norm = relativeX/waterfall_width;
    if (wf.audioFFT_active) {
       var cur = center_freq + demodulators[0].offset_frequency;
-      var iq = (ext_is_IQ_or_stereo_curmode());
+      var iq = ext_is_IQ_or_stereo_curmode();
       norm -= iq? 0.5 : 0.25;
       var incr = norm * audio_input_rate * (iq? 2 : 1);
       freq = cur + incr;
@@ -5170,9 +5170,9 @@ var NDB_400_1000_mode = 1;		// special 400/1000 step mode for NDB band
 // nearest appropriate boundary (1, 5 or 9/10 kHz depending on band & mode)
 function freq_step_amount(b)
 {
-	var step_Hz = 1000;
-	var s = ' 1k default';
    var cm = cur_mode.substr(0,2);
+	var step_Hz = (cm == 'cw')? 1000 : 5000;
+	var s = (cm == 'cw')? ' 1k default' : ' 5k default';
 	var am_ssb_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'qa' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
    var ITU_region = cfg.init.ITU_region + 1;
    var ham_80m_swbc_75m_overlap = (ITU_region == 2 && b && b.name == '75m');
@@ -5215,7 +5215,7 @@ function special_step(b, sel, caller)
 
 	if (sel < num_step_buttons/2) step_Hz = -step_Hz;
 	s += ' step='+ step_Hz;
-	//console.log(s);
+	console.log(s);
 	return step_Hz;
 }
 
@@ -5445,6 +5445,9 @@ function bands_init()
 	}
 }
 
+// find_band() is only called by code related to setting the frequency step size.
+// For this purpose always consider the top of the MW band ending at 1710 kHz even if the
+// configured ITU region causes the band bar to display a lower frequency.
 function find_band(freq)
 {
 	var b;
@@ -5454,8 +5457,14 @@ function find_band(freq)
 	for (var i=0; i < bands.length; i++) {
 		b = bands[i];
       if (!(b.itu == 0 || b.itu == ITU_region)) continue;
-		if (freq >= b.min && freq <= b.max) {
-		   //console.log('find_band FOUND itu=R'+ b.itu +' '+ b.min +' '+ freq +' '+ b.max);
+      var max = (b.name == 'MW')? 1710000 : b.max;
+		if (freq >= b.min && freq <= max) {
+		/*
+		   if (b.itu)
+		      console.log('find_band FOUND itu=R'+ b.itu +' '+ b.min +' '+ freq +' '+ b.max);
+		   else
+		      console.log('find_band FOUND '+ b.min +' '+ freq +' '+ b.max);
+		*/
 			return b;
 		}
 	}
@@ -8601,14 +8610,6 @@ function mode_button(evt, el, dir)
    var mode = el.innerHTML.toLowerCase();
    if (isUndefined(dir)) dir = 1;
 
-	// Prevent going between mono and stereo modes while recording
-	// FIXME: do something better like disable ineligible mode buttons and show reason in mouseover tooltip 
-   var c_iq_drm_sas = ext_is_IQ_or_stereo_curmode()? 1:0;
-   var p_iq_drm_sas = ext_is_IQ_or_stereo_mode(wf.audioFFT_prev_mode)? 1:0;
-	if (recording && (c_iq_drm_sas ^ m_iq_drm_sas)) {
-		return;
-	}
-
 	// reset passband to default parameters
 	if (any_alternate_click_event(evt)) {
 	   if (evt.shiftKey || evt.button == mouse.middle) {
@@ -8631,6 +8632,16 @@ function mode_button(evt, el, dir)
    
    if (owrx.last_mode_col != col) {
       //console.log('#### mode_button: col '+ owrx.last_mode_col +'>'+ col +' '+ mode);
+
+      // Prevent going between mono and stereo modes while recording
+      // FIXME: do something better like disable ineligible mode buttons and show reason in mouseover tooltip 
+      if (recording) {
+         var c_iq_or_stereo = ext_is_IQ_or_stereo_curmode()? 1:0;
+         var m_iq_or_stereo = ext_is_IQ_or_stereo_mode(mode)? 1:0;
+         if (c_iq_or_stereo ^ m_iq_or_stereo)
+            return;
+      }
+
       owrx.last_mode_col = col;
    } else {
       var sa = mode_buttons[col].s;
@@ -8639,6 +8650,14 @@ function mode_button(evt, el, dir)
       if (i <= -1) i = sa.length - 1;
       if (i >= sa.length) i = 0;
       mode = sa[i];
+
+      if (recording) {
+         var c_iq_or_stereo = ext_is_IQ_or_stereo_curmode()? 1:0;
+         var m_iq_or_stereo = ext_is_IQ_or_stereo_mode(mode)? 1:0;
+         if (c_iq_or_stereo ^ m_iq_or_stereo)
+		      return;
+	   }
+
       el.innerHTML = mode;
       mode = mode.toLowerCase();
       //console.log('#### mode_button: col '+ col +' '+ mode);

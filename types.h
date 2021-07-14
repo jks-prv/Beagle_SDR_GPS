@@ -1,6 +1,8 @@
 #ifndef _TYPES_H_
 #define _TYPES_H_
 
+#include "bits.h"
+
 #include <stdlib.h>
 
 typedef unsigned long long	u64_t;

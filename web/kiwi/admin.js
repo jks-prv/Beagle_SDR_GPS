@@ -344,7 +344,7 @@ function control_html()
 
 function control_focus()
 {
-	w3_el('id-reason-disabled-preview').innerHTML = admin_preview_status_box(cfg.reason_disabled);
+	w3_innerHTML('id-reason-disabled-preview', admin_preview_status_box(cfg.reason_disabled));
 }
 
 function server_enabled_cb(path, idx, first)

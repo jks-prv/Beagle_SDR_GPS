@@ -75,13 +75,13 @@ bool create_eeprom, need_hardware, kiwi_reg_debug, have_ant_switch_ext, gps_e1b_
     disable_led_task, is_multi_core, kiwi_restart, debug_printfs;
 
 char **main_argv;
-char *fpga_file;
+char *fpga_file, *other_args;
 
 #ifdef USE_OTHER
 void other_task(void *param)
 {
-    void other_main(int test_flag, int p0, int p1, int p2);
-    other_main(test_flag, p0, p1, p2);
+    void other_main(char *other_args, int p0, int p1, int p2);
+    other_main(other_args, p0, p1, p2);
     kiwi_exit(0);
 }
 #endif
@@ -129,6 +129,8 @@ int main(int argc, char *argv[])
     
 	for (int ai = 1; ai < argc; ) {
 		if (ARG("-fw")) { ARGL(fw_sel_override); printf("firmware select override: %d\n", fw_sel_override); }
+		if (ARG("-other")) { other_args = ARGP(); printf("other args: \"%s\"\n", other_args); }
+
 		if (ARG("-kiwi_reg")) kiwi_reg_debug = TRUE;
 		if (ARG("-bg")) { background_mode = TRUE; bg=1; }
 		if (ARG("-fopt")) use_foptim = 1;   // in EDATA_DEVEL mode use foptim version of files
@@ -211,9 +213,15 @@ int main(int argc, char *argv[])
 		version_maj, version_min);
     lprintf("compiled: %s %s on %s\n", __DATE__, __TIME__, COMPILE_HOST);
 
-    #ifdef DEVSYS
+    #if defined(DEVSYS) && 0
         printf("%6s %6s %6s %6s\n", toUnits(1234), toUnits(999800, 1), toUnits(999800777, 2), toUnits(1800777666, 3));
         printf("______ ______ ______ ______\n");
+        _exit(0);
+    #endif
+    
+    #if (defined(DEVSYS) && 0) || (defined(HOST) && 0)
+        void ale_2g_test();
+        ale_2g_test();
         _exit(0);
     #endif
 
