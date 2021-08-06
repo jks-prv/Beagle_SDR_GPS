@@ -23,6 +23,8 @@ KiwiSDR had a successful [Kickstarter](https://www.kickstarter.com/projects/1575
 * [Project webpage](http://www.kiwisdr.com/)
 * [Operating information: installation, operation, FAQ](http://www.kiwisdr.com/quickstart/)
 * Latest [source code commits](https://github.com/jks-prv/Beagle_SDR_GPS/commits/master)
+* [Design review document](https://www.dropbox.com/s/uaf2jwb99l56e98/KiwiSDR.design.review.pdf?dl=1)
+* [Schematic](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.schematic.pdf), [Gerbers](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.gerbers.tar), [Active antenna](http://www.kiwisdr.com/docs/KiwiSDR/ant.pdf), [BOM ODS](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.bom.ods), [BOM XLS](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.bom.xls)
 
 ### Description
 This SDR is a bit different. It has a web interface that can be used by up to four separate listeners. Each one listening and tuning an independent frequency simultaneously. See the screenshots below.
