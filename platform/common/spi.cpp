@@ -395,7 +395,7 @@ void spi_set_noduplex(SPI_CMD cmd, uint16_t wparam, uint32_t lparam) {
 void spi_set4_noduplex(SPI_CMD cmd, uint16_t wparam, uint16_t w2param, uint16_t w3param, uint16_t w4param) {
 	lock_enter(&spi_lock);		// block other threads
         int wait = wait_avail("spi_set_noduplex", cmd);
-		SPI_MOSI *tx = &SPI_SHMEM->spi_tx[2];
+		SPI_MOSI *tx = &SPI_SHMEM->spi_tx[3];
 		tx->data2.cmd = cmd; tx->data2.wparam = wparam; tx->data2.w2param = w2param; tx->data2.w3param = w3param; tx->data2.w4param = w4param;
 		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_setND", evprintf("ENTER %s(%d) %d %d", cmds[cmd], cmd, wparam, lparam));
 		spi_scan(wait, tx);				// Send request
@@ -432,7 +432,7 @@ void spi_set_buf_noduplex(SPI_CMD cmd, SPI_MOSI *tx, int bytes) {
 void _spi_get(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam, uint32_t lparam) {
 	lock_enter(&spi_lock);
         int wait = wait_avail("_spi_get", cmd);
-		SPI_MOSI *tx = &SPI_SHMEM->spi_tx[3];
+		SPI_MOSI *tx = &SPI_SHMEM->spi_tx[4];
 		tx->data.cmd = cmd; tx->data.wparam = wparam;
 		tx->data.lparam_lo = lparam & 0xffff; tx->data.lparam_hi = lparam >> 16;
 		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_get", evprintf("ENTER %s(%d) rx %dB %d %d", cmds[cmd], cmd, bytes, wparam, lparam));
@@ -466,7 +466,7 @@ void _spi_get(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam, uint32_t lp
 void spi_get_pipelined(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam, uint32_t lparam) {
 	lock_enter(&spi_lock);
         int wait = wait_avail("spi_get_pipelined", cmd);
-		SPI_MOSI *tx = &SPI_SHMEM->spi_tx[4];
+		SPI_MOSI *tx = &SPI_SHMEM->spi_tx[5];
 		tx->data.cmd = cmd; tx->data.wparam = wparam;
 		tx->data.lparam_lo = lparam & 0xffff; tx->data.lparam_hi = lparam >> 16;
 		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_getPIPE", evprintf("ENTER %s(%d) rx %dB %d %d", cmds[cmd], cmd, bytes, wparam, lparam));
@@ -481,7 +481,7 @@ void spi_get_pipelined(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam, ui
 void spi_get_noduplex(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam, uint32_t lparam) {
 	lock_enter(&spi_lock);		// block other threads
         int wait = wait_avail("spi_get_noduplex", cmd);
-		SPI_MOSI *tx = &SPI_SHMEM->spi_tx[5];
+		SPI_MOSI *tx = &SPI_SHMEM->spi_tx[6];
 		tx->data.cmd = cmd; tx->data.wparam = wparam;
 		tx->data.lparam_lo = lparam & 0xffff; tx->data.lparam_hi = lparam >> 16;
 		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_getND", evprintf("ENTER %s(%d) rx %dB %d %d", cmds[cmd], cmd, bytes, wparam, lparam));
@@ -504,7 +504,7 @@ void spi_get_noduplex(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam, uin
 void spi_get3_noduplex(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam, uint16_t w2param, uint16_t w3param) {
 	lock_enter(&spi_lock);		// block other threads
         int wait = wait_avail("spi_get3_noduplex", cmd);
-		SPI_MOSI *tx = &SPI_SHMEM->spi_tx[6];
+		SPI_MOSI *tx = &SPI_SHMEM->spi_tx[7];
 		tx->data.cmd = cmd; tx->data.wparam = wparam;
 		tx->data.lparam_lo = w2param; tx->data.lparam_hi = w3param;
 		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_getND", evprintf("ENTER %s(%d) rx %dB %d %d", cmds[cmd], cmd, bytes, wparam, lparam));

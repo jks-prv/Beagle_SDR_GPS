@@ -45,7 +45,7 @@ typedef struct {
     SPI_MISO wf_miso[MAX_RX_CHANS];
     SPI_MISO misc_miso;
     SPI_MISO spi_junk_miso, pingx_miso;
-    SPI_MOSI spi_tx[7];
+    SPI_MOSI spi_tx[N_SPI_TX];
     //char firewall[4096];
 } spi_shmem_t;
 

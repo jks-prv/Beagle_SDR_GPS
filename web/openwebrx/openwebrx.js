@@ -215,6 +215,7 @@ function kiwi_main()
 	s = 'wfm'; if (q[s]) wf_mm = q[s];
 	s = 'cmap'; if (q[s]) wf.cmap_override = w3_clamp(parseInt(q[s]), 0, kiwi.cmap_s.length - 1, 0);
 	s = 'sqrt'; if (q[s]) wf.sqrt = w3_clamp(parseInt(q[s]), 0, 4, 0);
+	s = 'wfts'; if (q[s]) wf.tstamp = w3_clamp(parseInt(q[s]), 2, 60*60, 2);
 	s = 'peak'; if (q[s]) peak_initially = parseInt(q[s]);
 	s = 'no_geo'; if (q[s]) no_geoloc = true;
 	s = 'keys'; if (q[s]) shortcut.keys = q[s];
@@ -2629,6 +2630,7 @@ function export_waterfall(Hz) {
     var PNGcanvas = document.createElement("canvas");
     PNGcanvas.width = wf_fft_size;
     PNGcanvas.height = (old_canvases.length+wf_canvases.length) * wf_canvas_default_height;
+    //confirmation_show_content('export_waterfall: mult='+ wf.scroll_multiple +' #can='+ wf_canvases.length +' #old='+ old_canvases.length +' H='+ PNGcanvas.height);
     PNGcanvas.ctx = PNGcanvas.getContext("2d");
     PNGcanvas.ctx.fillStyle="black";
     PNGcanvas.ctx.fillRect(0, 0, PNGcanvas.width, PNGcanvas.height);
@@ -3599,6 +3601,41 @@ function waterfall_init()
 	waterfall_setup_done=1;
 }
 
+function waterfall_time_annotate()
+{
+	var c = wf_cur_canvas;
+	var cc = c.ctx;
+
+   cc.strokeStyle = "black";
+   cc.miterLimit = 2;
+   cc.lineJoin = "circle";
+   cc.font = "10px Arial";
+   cc.fillStyle = "lime";
+
+   var tstamp = (new Date()).toUTCString().substr(17,8) +' UTC';
+   var al = wf_canvas_actual_line;
+   cc.lineWidth = 3;
+   cc.strokeText(tstamp, 12, al+12);
+   cc.lineWidth = 1;
+   cc.fillText(tstamp, 12, al+12);
+   
+   if (al+10 > c.height)  {     // overlaps end of canvas
+      var x = wf_canvases[1];
+      if (x) {
+         xc = x.getContext("2d");
+         xc.strokeStyle = "black";
+         xc.miterLimit = 2;
+         xc.lineJoin = "circle";
+         xc.font = "10px Arial";
+         xc.fillStyle = "lime";
+         xc.lineWidth = 3;
+         xc.strokeText(tstamp, 12, al-c.height+12);
+         xc.lineWidth = 1;
+         xc.fillText(tstamp, 12, al-c.height+12);
+      }
+   } 
+}
+
 function wf_snap(set)
 {
    //console.log('wf_snap cur='+ owrx.wf_snap +' set='+ set);
@@ -3770,8 +3807,15 @@ function waterfall_add(data_raw, audioFFT)
 
 	canvas.ctx.putImageData(oneline_image, 0, wf_canvas_actual_line);
 	
-	// NB: can't use isDefined() here
+	// NB: can't use isDefined() here because IBP_scan_plot could be undeclared if IBP extension not loaded
 	if (audioFFT == 0 && typeof(IBP_scan_plot) != 'undefined') IBP_scan_plot(oneline_image);
+	
+	var d = new Date();
+	var secs = d.getUTCMinutes() * 60 + d.getUTCSeconds();
+	var new_sec_mark = ((secs % wf.tstamp) == 0);
+	console.log(wf.tstamp +' '+ secs +' '+ new_sec_mark);
+	if (wf.prev_sec_mark == false && new_sec_mark == true) waterfall_time_annotate();
+	wf.prev_sec_mark = new_sec_mark;
 	
 	// If data from server hasn't caught up to our panning or zooming then fix it.
 	// This code is tricky and full of corner-cases.
@@ -4055,7 +4099,7 @@ function resize_waterfall_container(check_init)
 	
 	   // canvas_annotation has to track canvas_container height so as not to generate undesired mouseout events
 		canvas_annotation.style.height = canvas_container.style.height = px(wf_height);
-		waterfall_scrollable_height = wf_height * 3;
+		waterfall_scrollable_height = wf_height * wf.scroll_multiple;
 
       // Don't change the height because that clears the canvas.
       // Instead just pick a large initial height value and depend on the draw clipping.
@@ -7545,6 +7589,8 @@ var wf_speeds = ['off', '1 Hz', 'slow', 'med', 'fast'];
 
 var wf = {
    no_wf: false,
+   
+   scroll_multiple: 3,
    
    cmap: 0,
    cmap_override: -1,
