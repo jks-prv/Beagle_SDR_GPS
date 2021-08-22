@@ -191,6 +191,7 @@ extern spi_t spi;
 #define DMA_ALIGNMENT __attribute__ ((aligned(256)))
 #define	PAD_FRONT u4_t pad_front[256/4]
 #define	PAD_BACK u4_t pad_back[256/4]
+#define N_SPI_TX 8
 
 #ifdef SPI_8
 	#define SPI_T		char
