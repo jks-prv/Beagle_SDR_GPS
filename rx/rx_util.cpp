@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2021 John Seamons, ZL/KF6VO
 
 #include "types.h"
 #include "config.h"
@@ -38,6 +38,7 @@ Boston, MA  02110-1301, USA.
 #include "shmem.h"      // shmem->status_str_large
 #include "rx_noise.h"
 #include "wdsp.h"
+#include "security.h"
 
 #ifdef DRM
  #include "DRM.h"
@@ -141,8 +142,9 @@ static int mtu_v[N_MTU] = { 1500, 1440, 1400 };
 
 static int snr_interval[] = { 0, 1, 4, 6, 24 };
 
-void update_vars_from_config()
+void update_vars_from_config(bool called_at_init)
 {
+    int n;
 	bool update_cfg = false;
 	bool update_admcfg = false;
 	const char *s;
@@ -378,6 +380,7 @@ void update_vars_from_config()
     admcfg_default_string("duc_host", "", &update_admcfg);
     admcfg_default_int("duc_update", 3, &update_admcfg);
     admcfg_default_bool("daily_restart", false, &update_admcfg);
+    admcfg_default_int("restart_update", 0, &update_admcfg);
     admcfg_default_int("update_restart", 0, &update_admcfg);
     admcfg_default_string("ip_address.dns1", "1.1.1.1", &update_admcfg);
     admcfg_default_string("ip_address.dns2", "8.8.8.8", &update_admcfg);
@@ -413,7 +416,6 @@ void update_vars_from_config()
     //real_printf("gps.include_alert_gps=%d\n", gps.include_alert_gps);
     gps.include_E1B = admcfg_default_bool("include_E1B", true, &update_admcfg);
     //real_printf("gps.include_E1B=%d\n", gps.include_E1B);
-    admcfg_default_int("survey", 0, &update_admcfg);
     admcfg_default_int("E1B_offset", 4, &update_admcfg);
 
     gps.acq_Navstar = admcfg_default_bool("acq_Navstar", true, &update_admcfg);
@@ -431,6 +433,86 @@ void update_vars_from_config()
 	    admcfg_set_bool("plot_E1B", true);
         update_admcfg = true;
     }
+    
+    #ifdef CRYPT_PW
+    
+        // Either:
+        // 1) Transitioning on startup from passwords stored in admin.json file from a prior version
+        //      (.eup/.eap files will not exist).
+        // or
+        // 2) In response to a password change from the admin UI (sequence number will increment).
+        //
+        // Generates and saves a new salt/hash in either case.
+        // The old {user,admin}_password fields are kept because other code needs to know when
+        // the password is blank/empty. So it is either set to the empty string or "(encrypted)".
+        // This does not preclude the user from using the string "(encrypted)" as an actual password.
+        
+        bool ok;
+        const char *key;
+        char *encrypted;
+        static u4_t user_pwd_seq, admin_pwd_seq;
+        
+        if (called_at_init) {
+            user_pwd_seq = admcfg_default_int("user_pwd_seq", 0, &update_admcfg);
+            admin_pwd_seq = admcfg_default_int("admin_pwd_seq", 0, &update_admcfg);
+        }
+        u4_t updated_user_pwd_seq = admcfg_int("user_pwd_seq", NULL, CFG_REQUIRED);
+        u4_t updated_admin_pwd_seq = admcfg_int("admin_pwd_seq", NULL, CFG_REQUIRED);
+
+        bool eup_exists = kiwi_file_exists(DIR_CFG "/.eup");
+        bool user_seq_diff = (user_pwd_seq != updated_user_pwd_seq);
+        if (!eup_exists || user_seq_diff) {
+            user_pwd_seq = updated_user_pwd_seq;
+    	    key = admcfg_string("user_password", NULL, CFG_REQUIRED);
+    	    
+    	    if (!eup_exists) {
+    	        // if hash file is missing, but key indicates encryption previously used, make key empty
+    	        if (key && strcmp(key, "(encrypted)") == 0) {
+                    cfg_string_free(key);
+                    key = NULL;
+                }
+    	    }
+
+            encrypted = kiwi_crypt_generate(key, user_pwd_seq);
+            printf("### user crypt ok=%d seq=%d key=<%s> => %s\n", ok, updated_user_pwd_seq, key, encrypted);
+            n = kiwi_file_write("eup", DIR_CFG "/.eup", encrypted, strlen(encrypted), /* add_nl */ true);
+            free(encrypted);
+
+            if (n) {
+                admcfg_set_string("user_password", (key == NULL || *key == '\0')? "" : "(encrypted)");
+                update_admcfg = true;
+            }
+
+            cfg_string_free(key);
+        }
+
+        bool eap_exists = kiwi_file_exists(DIR_CFG "/.eap");
+        bool admin_seq_diff = (admin_pwd_seq != updated_admin_pwd_seq);
+        if (!eap_exists || admin_seq_diff) {
+            admin_pwd_seq = updated_admin_pwd_seq;
+    	    key = admcfg_string("admin_password", NULL, CFG_REQUIRED);
+
+    	    if (!eap_exists) {
+    	        // if hash file is missing, but key indicates encryption previously used, make key empty
+    	        if (key && strcmp(key, "(encrypted)") == 0) {
+                    cfg_string_free(key);
+                    key = NULL;
+                }
+    	    }
+
+            encrypted = kiwi_crypt_generate(key, admin_pwd_seq);
+            printf("### admin crypt ok=%d seq=%d key=<%s> => %s\n", ok, updated_admin_pwd_seq, key, encrypted);
+            n = kiwi_file_write("eap", DIR_CFG "/.eap", encrypted, strlen(encrypted), /* add_nl */ true);
+            free(encrypted);
+
+            if (n) {
+                admcfg_set_string("admin_password", (key == NULL || *key == '\0')? "" : "(encrypted)");
+                update_admcfg = true;
+            }
+
+            cfg_string_free(key);
+        }
+    #endif
     
     // FIXME: resolve problem of ip_address.xxx vs ip_address:{xxx} in .json files
     //admcfg_default_bool("ip_address.use_static", false, &update_admcfg);

@@ -258,7 +258,7 @@ void rx_server_init()
 	    sig_arm(SIG_BACKTRACE, debug_exit_backtrace_handler);
     #endif
 
-	update_vars_from_config();      // add any missing config vars
+	update_vars_from_config(true);      // add any missing config vars
 	
 	// if not overridden in command line, set enable server according to configuration param
 	if (!down) {

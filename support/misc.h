@@ -52,9 +52,6 @@ int qsort_intcomp(const void *elem1, const void *elem2);
 float median_f(float *f, int len, float *pct_1 = NULL, float *pct_2 = NULL);
 int median_i(int *i, int len, int *pct_1 = NULL, int *pct_2 = NULL);
 
-extern char *current_authkey;
-char *kiwi_authkey();
-
 #define SM_DEBUG	true
 #define SM_NO_DEBUG	false
 void send_msg_buf(conn_t *c, char *s, int slen);
@@ -83,6 +80,11 @@ int snd_file_open(const char *fn, int nchans, double srate);
 
 FILE *pgm_file_open(const char *fn, int *offset, int width, int height, int depth);
 void pgm_file_height(FILE *fp, int offset, int height);
+
+off_t kiwi_file_size(const char *fn);
+bool kiwi_file_exists(const char *fn);
+int kiwi_file_read(const char *id, const char *fn, char *s, int len, bool rem_nl = false);
+int kiwi_file_write(const char *id, const char *fn, char *s, int len, bool add_nl = false);
 
 typedef struct {
 	double lat, lon;
