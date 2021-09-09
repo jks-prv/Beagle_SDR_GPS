@@ -8,6 +8,7 @@
 #include "clk.h"
 #include "cuteSDR.h"
 #include "pll.h"
+#include "misc.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -145,13 +146,12 @@ public:
                 #define TIMECODE_FNAME DIR_CFG "/samples/timecode.test.au"
                 printf("timecode: mmap " TIMECODE_FNAME "\n");
                 scall("timecode open", (fd = open(TIMECODE_FNAME, O_RDONLY)));
-                struct stat st;
-                scall("timecode fstat", fstat(fd, &st));
-                printf("timecode: size=%ld\n", st.st_size);
-                file = (char *) mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+                off_t fsize = kiwi_file_size(TIMECODE_FNAME);
+                printf("timecode: size=%ld\n", fsize);
+                file = (char *) mmap(NULL, fsize, PROT_READ, MAP_PRIVATE, fd, 0);
                 if (file == MAP_FAILED) sys_panic("timecode mmap");
                 close(fd);
-                int words = st.st_size / sizeof(s2_t);
+                int words = fsize / sizeof(s2_t);
                 testStart = (s2_t *) file;
                 testEnd = testStart + words;
                 test_init = true;
