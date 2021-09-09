@@ -37,7 +37,7 @@ typedef struct conn_st {
 	u4_t magic;
 	int self_idx;
 	bool valid, auth, auth_kiwi, auth_prot, auth_admin;
-	bool isLocal, force_isLocal, isPassword;
+	bool isLocal, force_notLocal, isPassword;
 	bool isLocal_ip;    // is the ip itself a local or loopback address? (different from isLocal above)
 	int type;
 	struct conn_st *other;
@@ -91,6 +91,9 @@ typedef struct conn_st {
 	// set in STREAM_EXT, STREAM_SOUND
 	int ext_rx_chan;
 	ext_t *ext;
+	
+	// set in STREAM_SOUND and STREAM_WATERFALL
+	ext_receive_cmds_t ext_cmd;
 	
 	// set only in STREAM_MONITOR
 	bool queued;

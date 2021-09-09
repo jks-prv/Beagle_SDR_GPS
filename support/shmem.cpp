@@ -91,12 +91,12 @@ void shmem_init()
 
         real_printf(
             "size=0x%x rsize=0x%x "
-            "spi_shmem=%p spi_tx[0]=%p spi_tx[6]=%p so(spi_tx)=%d "
+            "spi_shmem=%p spi_tx[0]=%p spi_tx[N_SPI_TX-1]=%p so(spi_tx)=%d "
             "spi_tx_end=%p so(spi_shmem_t)=%d spi_end=%p "
             "log_save=%p endp=%p\n",
             size, rsize,
-            &shmem->spi_shmem, &shmem->spi_shmem.spi_tx[0], &shmem->spi_shmem.spi_tx[6], sizeof(SPI_MOSI),
-            (char *)(&shmem->spi_shmem.spi_tx[6]) + sizeof(SPI_MOSI), sizeof(spi_shmem_t),
+            &shmem->spi_shmem, &shmem->spi_shmem.spi_tx[0], &shmem->spi_shmem.spi_tx[N_SPI_TX-1], sizeof(SPI_MOSI),
+            (char *)(&shmem->spi_shmem.spi_tx[N_SPI_TX-1]) + sizeof(SPI_MOSI), sizeof(spi_shmem_t),
             (char *)(&shmem->spi_shmem) + sizeof(spi_shmem_t),
             &shmem->log_save, shmem->log_save.endp);
     #endif

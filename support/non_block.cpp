@@ -106,6 +106,7 @@ int child_status_exit(int status, bool error_exit)
     int exit_status = WEXITSTATUS(status);
     if (error_exit && exit_status != 0)
         child_exit(exit_status);
+
     return exit_status;
 }
 

@@ -86,6 +86,7 @@ alias masan="make ASAN=1"
 alias masan0="make ASAN=1 OPT=0"
 alias masan1="make ASAN=1 OPT=1"
 alias miasan="make install ASAN=1"
+alias miasan1="make install ASAN=1 OPT=1"
 alias leaks="export ASAN_OPTIONS='detect_leaks=1'; export LSAN_OPTIONS='verbosity=1:log_threads=1'"
 # "noleaks" needed in some runs with gdb otherwise crash in leak detector at exit
 alias noleaks="export ASAN_OPTIONS='detect_leaks=0'"
@@ -180,6 +181,7 @@ alias gcoms="git log --pretty=format:'%h %ad %s' --date=short"
 # gco master
 
 # git Kiwi
+alias gsom="git show origin:Makefile"
 alias kvers='git log --pretty=format:"%h %ad %s" --grep="^v[1-9]" --grep="^release v[1-9]" | grep -v "Merge pull request" | head'
 alias kver=kvers
 

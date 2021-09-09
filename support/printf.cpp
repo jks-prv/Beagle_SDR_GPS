@@ -141,12 +141,12 @@ void printf_init()
     log_save_p->init = true;
 }
 
-static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
+static void ll_printf(u4_t type, conn_t *conn, const char *fmt, va_list ap)
 {
 	int i, n, sl;
 	char *s, *cp;
 	#define VBUF 1024
-	
+
 	if ((type & PRINTF_REAL) || !do_sdr) {
 		vasprintf(&buf, fmt, ap);
 
@@ -221,18 +221,18 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		
 		// show rx channel number if message is associated with a particular rx channel
         int chan = -1;
-        if (c && (c->type == STREAM_WATERFALL || c->type == STREAM_SOUND))
-            chan = c->rx_channel;
-        if (c && c->type == STREAM_EXT)
-            chan = c->ext_rx_chan;
-        if (c == NULL || chan != -1) {
+        if (conn && (conn->type == STREAM_WATERFALL || conn->type == STREAM_SOUND))
+            chan = conn->rx_channel;
+        if (conn && conn->type == STREAM_EXT)
+            chan = conn->ext_rx_chan;
+        if (conn == NULL || chan != -1) {
             for (i=0; i < rx_chans; i++) {
-                ch_stat[i] = (c != NULL && i == chan)? ((i > 9)? ('A'+i-10) : ('0'+i)) : ' ';
+                ch_stat[i] = (conn != NULL && i == chan)? ((i > 9)? ('A'+i-10) : ('0'+i)) : ' ';
             }
             ch_stat[i] = '\0';
             ks = kstr_cat(ks, ch_stat);
         } else {
-            ks = kstr_asprintf(ks, "%*s", rx_chans, stprintf("[%02d]", c->self_idx));
+            ks = kstr_asprintf(ks, "%*s", rx_chans, stprintf("[%02d]", conn->self_idx));
         }
         
         char *sp = kstr_sp(ks);
