@@ -9,6 +9,56 @@
 # V_SRC_DIR can be set as a global environment variable otherwise it will default to the value below.
 #
 
+# include any rules from another FPGA project using the KiwiSDR framework (i.e. CFG = other)
+-include $(wildcard */Makefile.inc)
+
+ifeq ($(V_PROJ),)
+    V_PROJ = KiwiSDR
+endif
+
+ifeq ($(DEBIAN_DEVSYS),)
+    DEBIAN_DEVSYS = verilog_host
+endif
+
+
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
+
+################################
+# devsys
+################################
+
+V_DIR = ~/shared/shared
+
+$(GEN_VERILOG): $(GEN_DIR)/kiwi.gen.h verilog/rx/cic_gen.c
+	(cd verilog/rx; make)
+
+# generate the files needed to build the Verilog code
+verilog: $(GEN_VERILOG)
+	@echo verilog/ directory should now contain all necessary generated files:
+	@echo verilog/kiwi.gen.vh, verilog/rx/cic_*.vh
+
+# command to "copy verilog" from KiwiSDR distribution to the Vivado build location
+# designed to complement the "make cv2" command run on the Vivado build machine
+EXCLUDE_CV = ".DS_Store" "rx/cic_gen" "rx/*.dSYM" "*(original)*"
+
+cv cv2: $(GEN_VERILOG)
+	@echo V_PROJ = $(V_PROJ)
+	@echo V_DIR = $(V_DIR)
+	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog/ $(V_DIR)/$(V_PROJ)
+	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog.Vivado.2017.4.ip/ $(V_DIR)/$(V_PROJ).Vivado.2017.4.ip
+
+sum:
+	sum *.bit
+
+endif
+
+
+ifeq ($(DEBIAN_DEVSYS),verilog_host)
+
+################################
+# Vivado build host
+################################
+
 ifeq ($(V_SRC_DIR)x,x)
     V_SRC_DIR = /media/sf_shared
 endif
@@ -45,16 +95,19 @@ rebuild:
 	mkdir -p generated
 	time vivado -mode batch -source make_proj.tcl -tclargs --result_dir $(V_SRC_DIR) --regen_ip
 	
-cv:
-	@echo "you probably want to use \"make cv2\" here"
-
 # command to "copy verilog" from KiwiSDR distribution into our build directory
 # designed to complement the "make cv" command run in the KiwiSDR server build directory
 EXCLUDE_RSYNC = ".DS_Store" "KiwiSDR/" "generated" ".Xil/" "vivado.*"
-V_PROJ = KiwiSDR
-cv2:
+
+# cv22 is a rule that can be defined in */Makefile.inc (i.e. CFG = other) to do additional source installation
+cv22:
+
+cv cv2:
+	@echo V_PROJ = $(V_PROJ)
+	@echo V_SRC_DIR = $(V_SRC_DIR)
 	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) $(V_SRC_DIR)/$(V_PROJ)/ .
 	rsync -av --delete --exclude .DS_Store $(V_SRC_DIR)/$(V_PROJ).Vivado.2017.4.ip/ ../import_ip
+	make cv22 V_SRC_DIR=$(V_SRC_DIR)
 
 RX_CFG = $(shell grep RX_CFG kiwi.cfg.vh | cut -d\  -f 4 | tr -d ';')
 ifeq ($(RX_CFG),4)
@@ -104,3 +157,5 @@ cp:
 
 clean:
 	rm -f kiwi.coe
+
+endif

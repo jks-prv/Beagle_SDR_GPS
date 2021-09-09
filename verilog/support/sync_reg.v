@@ -17,14 +17,12 @@ Boston, MA  02110-1301, USA.
 
 // Copyright (c) 2019 John Seamons, ZL/KF6VO
 
-`include "kiwi.vh"
-
 // Use the synchronized handshake method of arbitrating a register transfer between two clock domains.
 // WIDTH specifies the register width.
 //
 // See: zipcpu.com/blog/2017/10/20/cdc.html
 
-module SYNC_REG #(parameter WIDTH=1) (
+module SYNC_REG (
 	input  wire in_strobe,
 	input  wire [WIDTH-1:0] in_reg,
 	input  wire in_clk,
@@ -33,6 +31,8 @@ module SYNC_REG #(parameter WIDTH=1) (
 	output reg  [WIDTH-1:0] out_reg,
 	input  wire out_clk
 	);
+	
+	parameter WIDTH = 1;
 	
 	reg [WIDTH-1:0] shared_reg;
 	reg valid_data;

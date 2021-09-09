@@ -18,8 +18,6 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-`include "kiwi.vh"
-
 module CPU (
     input  wire        clk,
     input  wire [2:1]  rst,
@@ -41,6 +39,8 @@ module CPU (
     output wire        wrEvt,
     output wire        wrEvt2
 	);
+
+`include "kiwi.gen.vh"
 
     //////////////////////////////////////////////////////////////////////////
     // Instruction set

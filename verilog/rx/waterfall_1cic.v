@@ -17,8 +17,6 @@ Boston, MA  02110-1301, USA.
 
 // Copyright (c) 2014 John Seamons, ZL/KF6VO
 
-`include "kiwi.vh"
-
 module WATERFALL_1CIC (
 	input  wire		   adc_clk,
 	input  wire signed [IN_WIDTH-1:0] adc_data,
@@ -37,6 +35,8 @@ module WATERFALL_1CIC (
     input  wire        get_wf_samp_i_C,
     input  wire        get_wf_samp_q_C
 	);
+
+`include "kiwi.gen.vh"
 
 	parameter IN_WIDTH  = "required";
 
@@ -83,8 +83,8 @@ module WATERFALL_1CIC (
 
 	localparam MD = clog2(WF_1CIC_MAXD) + 1;		// +1 because need to represent WF_1CIC_MAXD, not WF_1CIC_MAXD-1
 	// see freeze_tos_A[] below
-	// assert(WF_1CIC_MAXD <= 32768);
-	// assert(MD <= 16);
+	// assert_cond(WF_1CIC_MAXD <= 32768);
+	// assert_cond(MD <= 16);
 	//wire [MD-1:0] md = 0; how_big(.p(md));
 
 	reg [MD-1:0] decim;

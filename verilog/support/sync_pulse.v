@@ -17,8 +17,6 @@ Boston, MA  02110-1301, USA.
 
 // Copyright (c) 2014 John Seamons, ZL/KF6VO
 
-`include "kiwi.vh"
-
 // Synchronize a single pulse (flag) across a clock domain.
 // from: fpga4fun.com/CrossClockDomain2.html
 

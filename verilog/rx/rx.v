@@ -19,8 +19,6 @@ Boston, MA  02110-1301, USA.
 // Copyright (c) 2013 Phil Harman, VK6APH
 // Copyright (c) 2014 John Seamons, ZL/KF6VO
 
-`include "kiwi.vh"
-
 module RX (
 	input  wire		   adc_clk,
 	input  wire signed [IN_WIDTH-1:0] adc_data,
@@ -39,6 +37,8 @@ module RX (
     input  wire        set_rx_freqL_C
 	);
 	
+`include "kiwi.gen.vh"
+
 	parameter IN_WIDTH  = "required";
 
 	reg signed [47:0] rx_phase_inc;

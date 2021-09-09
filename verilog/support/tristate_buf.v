@@ -17,13 +17,11 @@ Boston, MA  02110-1301, USA.
 
 // Copyright (c) 2021 John Seamons, ZL/KF6VO
 
-`include "kiwi.vh"
-
 // tri-state buffer
 
 module tristate_buf (
 	input  wire in,
-	output wire out,
+	output tri out,
 	input  wire oe
 	);
 

@@ -29,8 +29,6 @@ Boston, MA  02110-1301, USA.
 // Fixed differential delay (D) = 1
 //
 
-`include "kiwi.vh"
-
 module cic_prune_var (
 	input wire clock,
 	input wire reset,
@@ -40,6 +38,8 @@ module cic_prune_var (
 	input wire signed [IN_WIDTH-1:0] in_data,
 	output reg signed [OUT_WIDTH-1:0] out_data
 	);
+
+`include "kiwi.gen.vh"
 
     // design parameters
     parameter INCLUDE = "required";

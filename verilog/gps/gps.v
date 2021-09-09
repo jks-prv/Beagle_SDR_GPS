@@ -18,8 +18,6 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-`include "kiwi.vh"
-
 `default_nettype none
 
 module GPS (
@@ -41,6 +39,8 @@ module GPS (
     input  wire        wrReg,
     input  wire        wrEvt
     );
+
+`include "kiwi.gen.vh"
 
     //////////////////////////////////////////////////////////////////////////
     // Channel select

@@ -1,5 +1,3 @@
-`include "kiwi.vh"
-
 `default_nettype none
 
 // IQ mixer using multiplies as a slice-saving alternative to CORDIC
@@ -26,9 +24,18 @@ module IQ_MIXER (
 
     reg signed [17:0] mx, my_i, my_q;
 
+    // avoid "zero replication count" warning when fill length = 0
+	generate
+		if (ZFILL == 0)
+            always @(posedge clk)
+                mx <= in_data;
+        else
+            always @(posedge clk)
+		        mx <= { in_data, {ZFILL{1'b0}} };
+	endgenerate
+
 	always @(posedge clk)
 	begin
-		mx <= { in_data, {ZFILL{1'b0}} };
 		my_i <= cos;
 		my_q <= sin;
 	end

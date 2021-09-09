@@ -1,11 +1,11 @@
-`include "kiwi.vh"
-
 module ip_dds_sin_cos_13b_15b_48b (
 	input  wire 		clk,
 	input  wire [47:0] 	pinc_in,
 	output wire [14:0]	sine,
 	output wire [14:0]	cosine
 	);
+
+`include "kiwi.gen.vh"
 
 `ifdef USE_ISE
     ipcore_dds_sin_cos_13b_15b_48b dds (
