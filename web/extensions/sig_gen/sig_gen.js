@@ -103,7 +103,7 @@ function gen_controls_setup()
                w3_div(''), 10,
                w3_div('',
 				      w3_div('', 'Offset attenuation by:'),
-                  w3_select('|color:red', '', '', 'gen.attn_offset', gen.attn_offset, gen.attn_offset_s, 'gen_attn_offset_cb')
+                  w3_select('w3-text-red', '', '', 'gen.attn_offset', gen.attn_offset, gen.attn_offset_s, 'gen_attn_offset_cb')
                ), 55
             )
 			)
@@ -146,7 +146,13 @@ function gen_freq_cb(path, val)
 	gen.freq = parseFloat(val);
 	w3_num_cb(path, gen.freq);
 	w3_set_value(path, gen.freq);
+	
+	// to minimize glitch in waterfall peak mode
+	// don't switch NCO frequency unless fully attenuated
+	if (gen.old_freq) gen_set(gen.old_freq, 0);
+	gen_set(gen.freq, 0);
 	gen_set(gen.freq, gen.attn_ampl);
+	gen.old_freq = gen.freq;
 }
 
 function gen_1k_cb(path, val, first)
@@ -209,7 +215,7 @@ function gen_attn_offset_cb(path, idx, first)
 function gen_clear_peak_cb(path, val, first)
 {
    if (first) return;
-   spectrum_peak_clear = true;
+   spec.peak_clear = true;
 }
 
 // hook that is called when controls panel is closed
