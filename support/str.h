@@ -24,7 +24,7 @@ Boston, MA  02110-1301, USA.
 
 // kstr: Kiwi C-string package
 //
-// any kstr_cstr argument = kstr_t|C-string|NULL
+// any s_kstr_cstr argument = kstr_t|C-string|NULL
 // C-string: char array or string constant or NULL
 
 typedef char kstr_t;
@@ -51,6 +51,7 @@ char *kiwi_str_encode(char *s);
 char *kiwi_str_encode_static(char *src);
 char *kiwi_str_decode_inplace(char *src);
 char *kiwi_str_decode_static(char *src);
+char *kiwi_str_decode_selective_inplace(char *src);
 char *kiwi_str_clean(char *s);
 int kiwi_str2enum(const char *s, const char *strs[], int len);
 const char *kiwi_enum2str(int e, const char *strs[], int len);

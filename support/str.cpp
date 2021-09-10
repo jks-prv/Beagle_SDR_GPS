@@ -136,7 +136,7 @@ static char *kstr_what(char *s_kstr_cstr)
 }
 
 // return C-string pointer from kstr object
-// kstr_cstr: kstr|C-string|NULL
+// s_kstr_cstr: kstr|C-string|NULL
 char *kstr_sp(char *s_kstr_cstr)
 {
 	kstring_t *ks = kstr_is(s_kstr_cstr);
@@ -160,7 +160,7 @@ char *kstr_wrap(char *s_malloced)
 // Only frees a kstr object, will not free a malloc()'d C-string unless kstr_wrap()'d.
 // It is normal that this routine might be called with a C-string in code that is freeing
 // a mix of kstr and C-strings (wrapped or not).
-// kstr_cstr: kstr|C-string|NULL
+// s_kstr_cstr: kstr|C-string|NULL
 void kstr_free(char *s_kstr_cstr)
 {
 	if (s_kstr_cstr == NULL) return;
@@ -182,7 +182,7 @@ void kstr_free(char *s_kstr_cstr)
 }
 
 // return C-string length from kstr object
-// kstr_cstr: kstr|C-string|NULL
+// s_kstr_cstr: kstr|C-string|NULL
 int kstr_len(char *s_kstr_cstr)
 {
 	return (s_kstr_cstr != NULL)? ( strlen(kstr_sp(s_kstr_cstr)) ) : 0;
@@ -243,8 +243,9 @@ void kiwi_set_chars(char *field, const char *value, const char fill, size_t size
 	memcpy(field, value, strlen(value));
 }
 
-// makes a copy of ocp since delimiters are turned into NULLs
-// caller must free *mbuf
+// Makes a copy of ocp since delimiters are turned into NULLs.
+// If ocp begins with delimiter a null entry is _not_ made in argv (and reflected in returned count).
+// Caller must free *mbuf
 int kiwi_split(char *ocp, char **mbuf, const char *delims, char *argv[], int nargs)
 {
 	int n=0;
@@ -403,6 +404,72 @@ char *kiwi_str_decode_static(char *src)
 	// yes, mg_url_decode() dst length includes SPACE_FOR_NULL
 	mg_url_decode(src, strlen(src), dst_static, N_DST_STATIC, 0);
 	return dst_static;
+}
+
+static u1_t decode_table[128] = {
+//  (ctrl)
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+//  (ctrl)
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+//    ! " # $ % & ' ( ) * + , - . /
+    1,1,0,1,1,0,0,0,1,1,1,0,1,1,1,1,
+//  0 1 2 3 4 5 6 7 8 9 : ; < = > ?
+    1,1,1,1,1,1,1,1,1,1,1,0,0,1,0,1,
+//  @ (alpha)
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//  (alpha)               [ \ ] ^ _
+    1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,
+//  ` (alpha)
+    0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//  (alpha)               { | } ~ del
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+};
+
+// Like mg_url_decode(), but only decodes chars not likely to cause trouble.
+// Used to enhance readability of the kiwi.config/{admin,kiwi,dx}.json files.
+static int kiwi_url_decode_selective(const char *src, int src_len, char *dst,
+    int dst_len, int is_form_url_encoded)
+{
+    int i, j, a, b;
+    char c;
+    #define HEXTOI(x) (isdigit(x) ? x - '0' : x - 'W')
+
+    for (i = j = 0; i < src_len && j < dst_len - 1; i++, j++) {
+        if (src[i] == '%' && i < src_len - 2 &&
+            isxdigit(* (const unsigned char *) (src + i + 1)) &&
+            isxdigit(* (const unsigned char *) (src + i + 2))) {
+            
+            a = tolower(* (const unsigned char *) (src + i + 1));
+            b = tolower(* (const unsigned char *) (src + i + 2));
+            c = (u1_t) (((HEXTOI(a) << 4) | HEXTOI(b)) & 0x7f);
+            if (decode_table[c]) {
+                dst[j] = c;
+                i += 2;
+            } else
+                dst[j] = '%';
+        } else
+        
+        if (is_form_url_encoded && src[i] == '+') {
+            dst[j] = ' ';
+        } else {
+            dst[j] = src[i];
+        }
+    }
+
+    dst[j] = '\0'; // Null-terminate the destination
+
+    return i >= src_len ? j : -1;
+}
+
+char *kiwi_str_decode_selective_inplace(char *src)
+{
+	if (src == NULL) return NULL;
+	int slen = strlen(src);
+	char *dst = src;
+	// dst = src is okay because length dst always <= src since we are decoding
+	// yes, kiwi_url_decode_selective() dst length includes SPACE_FOR_NULL
+	kiwi_url_decode_selective(src, slen, dst, slen + SPACE_FOR_NULL, 0);
+	return dst;
 }
 
 // FIXME: do something better

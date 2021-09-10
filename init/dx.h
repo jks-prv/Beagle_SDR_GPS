@@ -47,6 +47,7 @@ typedef struct {
 	bool json_up_to_date;
 	int *masked_idx;
 	int masked_len, masked_seq;
+	char *kstr;
 } dxlist_t;
 
 extern dxlist_t dx;

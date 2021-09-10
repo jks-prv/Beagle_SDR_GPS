@@ -49,75 +49,68 @@ void dx_save_as_json()
 	int i, n;
 	cfg_t *cfg = &cfg_dx;
 	dx_t *dxp;
+	char *sb;
 
 	TMEAS(printf("dx_save_as_json: START saving as dx.json, %d entries\n", dx.len);)
 
-	#define DX_JSON_OVERHEAD 128	// gross assumption about size required for everything else
-	n = DX_JSON_OVERHEAD;   // room for "{"dx":[]}" etc.
-	for (i=0, dxp = dx.list; i < dx.len; i++, dxp++) {
-		n += DX_JSON_OVERHEAD;
-		n += strlen(dxp->ident);
-		if (dxp->notes)
-			n += strlen(dxp->notes);
-		if (dxp->params)
-			n += strlen(dxp->params);
-	}
-
-    kiwi_free("dx json buf", cfg->json);
-	cfg->json = (char *) kiwi_malloc("dx json buf", n);
-	cfg->json_buf_size = n;
-	char *cp = cfg->json;
-	n = sprintf(cp, "{\"dx\":["); cp += n;
+	sb = kstr_asprintf(NULL, "{\"dx\":[\n");
 
 	for (i=0, dxp = dx.list; i < dx.len; i++, dxp++) {
-	    assert((cp - cfg->json) < cfg->json_buf_size);
+	    char *ident = kiwi_str_decode_selective_inplace(strdup(dxp->ident));
+	    char *notes = dxp->notes? kiwi_str_decode_selective_inplace(strdup(dxp->notes)) : strdup("");
+	    char *params = (dxp->params && *dxp->params)? kiwi_str_decode_selective_inplace(strdup(dxp->params)) : NULL;
 	    
-		n = sprintf(cp, "%s[%.2f", i? ",":"", dxp->freq); cp += n;
-		n = sprintf(cp, ",\"%s\"", modu_s[dxp->flags & DX_MODE]); cp += n;
-		n = sprintf(cp, ",\"%s\",\"%s\"", dxp->ident, dxp->notes? dxp->notes:""); cp += n;
-		n = sprintf(cp, ",%d", dxp->timestamp); cp += n;
-		n = sprintf(cp, ",%d", dxp->tag); cp += n;
+	    sb = kstr_asprintf(sb, "[%.2f, \"%s\", \"%s\", \"%s\", %d, %d",
+	        dxp->freq, modu_s[dxp->flags & DX_MODE], ident, notes, dxp->timestamp, dxp->tag);
 
 		u4_t type = dxp->flags & DX_TYPE;
-		if (type || dxp->low_cut || dxp->high_cut || dxp->offset || (dxp->params && *dxp->params)) {
-			const char *delim = ",{";
+		if (type || dxp->low_cut || dxp->high_cut || dxp->offset || params) {
+			const char *delim = ", {";
 			const char *type_s = "";
+			
 			if (type == DX_WL) type_s = "WL"; else
 			if (type == DX_SB) type_s = "SB"; else
 			if (type == DX_DG) type_s = "DG"; else
 			if (type == DX_SE) type_s = "SE"; else
 			if (type == DX_XX) type_s = "XX"; else
 			if (type == DX_MK) type_s = "MK";
+			
 			if (type) {
-			    n = sprintf(cp, "%s\"%s\":1", delim, type_s); cp += n;
-			    delim = ",";
+			    sb = kstr_asprintf(sb, "%s\"%s\":1", delim, type_s);
+			    delim = ", ";
 			}
 			if (dxp->low_cut) {
-			    n = sprintf(cp, "%s\"lo\":%d", delim, dxp->low_cut); cp += n;
-			    delim = ",";
+			    sb = kstr_asprintf(sb, "%s\"lo\":%d", delim, dxp->low_cut);
+			    delim = ", ";
 			}
 			if (dxp->high_cut) {
-			    n = sprintf(cp, "%s\"hi\":%d", delim, dxp->high_cut); cp += n;
-			    delim = ",";
+			    sb = kstr_asprintf(sb, "%s\"hi\":%d", delim, dxp->high_cut);
+			    delim = ", ";
 			}
 			if (dxp->offset) {
-			    n = sprintf(cp, "%s\"o\":%d", delim, dxp->offset); cp += n;
-			    delim = ",";
+			    sb = kstr_asprintf(sb, "%s\"o\":%d", delim, dxp->offset);
+			    delim = ", ";
 			}
-			if (dxp->params && *dxp->params) {
-			    n = sprintf(cp, "%s\"p\":\"%s\"", delim, dxp->params); cp += n;
-			    //delim = ",";
+			if (params) {
+			    sb = kstr_asprintf(sb, "%s\"p\":\"%s\"", delim, params);
 			}
-			*cp++ = '}';
+			sb = kstr_cat(sb, "}");
+			free(params);
 		}
-		*cp++ = ']';
-		*cp++ = '\n';
 
+        sb = kstr_asprintf(sb, "]%s\n", (i != dx.len-1)? ",":"");
+        free(ident); free(notes);
 		if ((i&31) == 0) NextTask("dx_save_as_json");
 	}
 	
-	n = sprintf(cp, "]}"); cp += n;
-    assert((cp - cfg->json) < cfg->json_buf_size);
+    sb = kstr_cat(sb, "]}");
+
+
+    kstr_free(dx.kstr);
+    dx.kstr = sb;
+    cfg->json = kstr_sp(sb);
+    cfg->json_buf_size = strlen(cfg->json);
+
 	TMEAS(printf("dx_save_as_json: dx struct -> json string\n");)
 	dxcfg_save_json(cfg->json);
 	TMEAS(printf("dx_save_as_json: DONE\n");)
