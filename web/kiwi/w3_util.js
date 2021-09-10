@@ -1116,6 +1116,17 @@ function w3_fillText_shadow(canvas, text, x, y, font, fontSize, color, strokeWid
    ctx.fillText(text, x, y);
 };
 
+function w3_fillText(ctx, x, y, text, color, font, lineWidth, align, baseline)
+{
+   if (color) ctx.fillStyle = color;
+   if (font) ctx.font = font;
+   if (lineWidth) ctx.lineWidth = lineWidth;
+   if (align) ctx.textAlign = align;
+   if (baseline) ctx.textBaseline = baseline;
+   var tw = ctx.measureText(text).width;
+   ctx.fillText(text, x-tw/2, y);
+}
+
 function w3_check_restart_reboot(el_id)
 {
 	var el = w3_el(el_id);
@@ -1271,16 +1282,6 @@ function w3int_post_action()
 {
    // if it exists, re-select the main page frequency field
    w3_call('freqset_select');
-}
-
-function w3_fillText(ctx, x, y, text, color, font, align, baseline)
-{
-   if (color) ctx.fillStyle = color;
-   if (font) ctx.font = font;
-   if (align) ctx.textAlign = align;
-   if (baseline) ctx.textBaseline = baseline;
-   var tw = ctx.measureText(text).width;
-   ctx.fillText(text, x-tw/2, y);
 }
 
 function w3_copy_to_clipboard(val)
