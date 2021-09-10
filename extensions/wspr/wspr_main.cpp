@@ -62,6 +62,28 @@ int nffts, nbins_411, hbins_205;
 // computed constants
 static float window[NFFT];
 
+
+#define AUTORUN_BFO 750
+#define AUTORUN_FILTER_BW 300
+
+// order matches wspr_autorun_u in wspr.js
+// only add new entries to the end so as not to disturb existing values stored in config
+// WSPR_BAND_IWBP entry for IWBP makes url param &ext=wspr,iwbp work due to freq range check
+#define WSPR_BAND_IWBP 9999
+static double wspr_cfs[] = {
+    137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1,
+    50294.5, 70092.5, 144490.5, 432301.5, 1296501.5, 6781.5, 13554.5, WSPR_BAND_IWBP
+};
+
+// freqs on github.com/HB9VQQ/WSPRBeacon are cf - 1.5 kHz BFO (dial frequencies)
+// so we add 1.5 to those to get our cf values (same as regular WSPR wspr_center_freqs above)
+#define WSPR_HOP_PERIOD 20
+//#define WSPR_HOP_PERIOD 6
+static double wspr_cf_IWBP[] = { 1838.1, 3570.1, 5288.7, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1 };
+//static double wspr_cf_IWBP[] = { 1838.1, 3570.1, 7040.1 };
+//static double wspr_cf_IWBP[] = { 7040.1, 10140.2, 14097.1 };
+
+
 const char *status_str[] = { "none", "idle", "sync", "running", "decoding" };
 
 static void wspr_status(wspr_t *w, int status, int resume)
@@ -103,7 +125,7 @@ void WSPR_FFT(void *param)
 		)
 		w->fft_runs++;
 		if (w->fft_wakeups != w->fft_runs) {
-		    //printf("WSPR-%02d: wakeups=%d runs=%d\n", rx_chan, w->fft_wakeups, w->fft_runs);
+		    //wspr_aprintf("WSPR_FFTtask wakeups=%d runs=%d\n", rx_chan, w->fft_wakeups, w->fft_runs);
 		    w->fft_runs = w->fft_wakeups;
 		}
 		//wspr_printf("WSPR_FFTtask ..wakeup\n");
@@ -115,7 +137,7 @@ void WSPR_FFT(void *param)
 		    wspr_aprintf("FFT pp=%d grp=%d (%d-%d)\n", w->fft_ping_pong, grp, first, last);
 		    #if 0
                 if (w->not_launched) {
-                    printf("WSPR-%02d: decoder missed launch! pgrp=%d/%d plast=%d/%d ============================================\n",
+                    wspr_aprintf("WSPR_FFTtask decoder missed launch! pgrp=%d/%d plast=%d/%d ============================================\n",
                         rx_chan, pgrp, GROUPS, plast, nffts);
                 }
             #endif
@@ -212,6 +234,36 @@ void WSPR_FFT(void *param)
 	
 		//wspr_printf("WSPR_FFTtask group %d:%d %d-%d(%d) %f %f(%d)\n", w->fft_ping_pong, grp, first, last, nffts, maxiq, maxpwr, maxi);
 		//wspr_printf("  %d-%d(%d)\r", first, last, nffts); fflush(stdout);
+		
+		if (w->iwbp && w->autorun) {
+            int min, sec; utc_hour_min_sec(NULL, &min, &sec);
+		    //wspr_dprintf("WSPR_FFTtask %s %02d:%02d deco=%.1f tune=%.1f\n", (last < nffts)? "LOOP" : "DONE",
+		    //    min, sec, w->arun_deco_cf_MHz*1e3, w->arun_cf_MHz*1e3);
+		    int per = ((min&1) * 60) + sec;
+		    static int prev_per;
+		    const int trig = 60 + 50;
+		    if (prev_per < trig && per >= trig) {
+		        wspr_dprintf("WSPR IWBP TRIG %02d:%02d ====\n", min, sec);
+		        
+                int deco_hop = (min % WSPR_HOP_PERIOD) / 2;
+                double deco_cf_kHz = wspr_cf_IWBP[deco_hop];
+		        
+                int tune_hop = ((min+1) % WSPR_HOP_PERIOD) / 2;
+                double tune_cf_kHz = wspr_cf_IWBP[tune_hop];
+                
+	            double cfo = roundf((deco_cf_kHz - floorf(deco_cf_kHz)) * 1e3);
+                input_msg_internal(w->arun_cext, (char *) "SET dialfreq=%.2f centerfreq=%.2f cf_offset=%.0f",
+                    deco_cf_kHz - AUTORUN_BFO/1e3, deco_cf_kHz, cfo);
+
+                double if_freq_kHz = (tune_cf_kHz - AUTORUN_BFO/1e3) - freq_offset;
+                input_msg_internal(w->arun_csnd, (char *) "SET mod=usb low_cut=%d high_cut=%d freq=%.3f",
+                    AUTORUN_BFO - AUTORUN_FILTER_BW/2, AUTORUN_BFO + AUTORUN_FILTER_BW/2, if_freq_kHz);
+
+                w->arun_deco_cf_MHz = deco_cf_kHz / 1e3;
+                w->arun_cf_MHz = tune_cf_kHz / 1e3;
+		    }
+		    prev_per = per;
+		}
 		
 		if (last < nffts) continue;
 	
@@ -434,29 +486,42 @@ void WSPR_Deco(void *param)
 			wspr_aprintf("DECO-P decoder aborted\n");
 	
         // upload spots at the end of the decoding when there is less load on wsprnet.org
-        //printf("UPLOAD %d spots RX%d %.6f START\n", w->uniques, w->rx_chan, w->arun_cf_MHz);
+        // extension: spots uploaded via javascript (see ext_send_msg_encoded() below)
+        // autorun: spots uploaded below via curl
+        //#define TEST_UPLOADS
+
+        double rqrg = w->autorun? w->arun_deco_cf_MHz : w->centerfreq_MHz;
+        wspr_ulprintf("WSPR UPLOAD %d spots RX%d %.4f START%s%s\n", w->uniques, w->rx_chan, rqrg, w->autorun? " AUTORUN" : "", w->iwbp? " IWBP" : "");
         for (int i = 0; i < w->uniques; i++) {
             wspr_decode_t *dp = &w->deco[i];
             if (w->autorun) {
                 int year, month, day; utc_year_month_day(&year, &month, &day);
                 char *cmd;
                 asprintf(&cmd, "curl 'http://wsprnet.org/post?function=wspr&rcall=%s&rgrid=%s&rqrg=%.6f&date=%02d%02d%02d&time=%02d%02d&sig=%.0f&dt=%.1f&drift=%d&tqrg=%.6f&tcall=%s&tgrid=%s&dbm=%s&version=1.3+Kiwi' >/dev/null 2>&1",
-                    wspr_c.rcall, wspr_c.rgrid, w->arun_cf_MHz, year%100, month, day, dp->hour, dp->min, dp->snr, dp->dt_print, (int) dp->drift1, dp->freq_print, dp->call, dp->grid, dp->pwr);
-                //printf("UPLOAD RX%d %d/%d %s\n", w->rx_chan, i+1, w->uniques, cmd);
-                non_blocking_cmd_system_child("kiwi.wsprnet.org", cmd, NO_WAIT);
+                    wspr_c.rcall, wspr_c.rgrid, rqrg, year%100, month, day, dp->hour, dp->min, dp->snr, dp->dt_print, (int) dp->drift1, dp->freq_print, dp->call, dp->grid, dp->pwr);
+                #ifdef TEST_UPLOADS
+                    wspr_printf("WSPR UPLOAD RX%d %d/%d %s\n", w->rx_chan, i+1, w->uniques, cmd);
+                #else
+                    non_blocking_cmd_system_child("kiwi.wsprnet.org", cmd, NO_WAIT);
+                #endif
                 kiwi_ifree(cmd);
                 w->arun_decoded++;
             } else {
-                ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_UPLOAD",
-                    "%02d%02d %3.0f %4.1f %9.6f %2d %s",
-                    dp->hour, dp->min, dp->snr, dp->dt_print, dp->freq_print, (int) dp->drift1, dp->c_l_p);
+                #ifdef TEST_UPLOADS
+                    wspr_printf("WSPR UPLOAD %02d%02d %3.0f %4.1f %9.6f %2d %s\n",
+                        dp->hour, dp->min, dp->snr, dp->dt_print, dp->freq_print, (int) dp->drift1, dp->c_l_p);
+                #else
+                    ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_UPLOAD",
+                        "%02d%02d %3.0f %4.1f %9.6f %2d %s",
+                        dp->hour, dp->min, dp->snr, dp->dt_print, dp->freq_print, (int) dp->drift1, dp->c_l_p);
+                #endif
             }
-            wspr_d1printf("UPLOAD U%d/%d %s"
+            wspr_printf("WSPR UPLOAD U%d/%d %s"
                 "%02d%02d %3.0f %4.1f %9.6f %2d %s" "\n", i, w->uniques, w->autorun? "autorun ":"",
                 dp->hour, dp->min, dp->snr, dp->dt_print, dp->freq_print, (int) dp->drift1, dp->c_l_p);
             TaskSleepMsec(1000);
         }
-        //printf("UPLOAD %d spots RX%d %.6f DONE\n", w->uniques, w->rx_chan, w->arun_cf_MHz);
+        wspr_ulprintf("WSPR UPLOAD %d spots RX%d %.4f DONE\n", w->uniques, w->rx_chan, rqrg);
 
 		wspr_status(w, w->status_resume, NONE);
 		
@@ -677,13 +742,20 @@ bool wspr_msgs(char *msg, int rx_chan)
         return true;
     }
     
-	float f;
+    if (strcmp(msg, "SET IWBP") == 0) {
+        wspr_dprintf("SET IWBP\n");
+        w->iwbp = true;
+        return true;
+    }
+    
+	float df, cf;
 	int d;
-	n = sscanf(msg, "SET dialfreq=%f cf_offset=%d", &f, &d);
-	if (n == 2) {
-		w->dialfreq_MHz = f / kHz;
+	n = sscanf(msg, "SET dialfreq=%f centerfreq=%f cf_offset=%d", &df, &cf, &d);
+	if (n == 3) {
+		w->dialfreq_MHz = df / kHz;
+		w->centerfreq_MHz = cf / kHz;
 		w->cf_offset = (float) d;
-		wspr_printf("dialfreq_MHz %.6f cf_offset %.0f -------------------------------------------\n", w->dialfreq_MHz, w->cf_offset);
+		wspr_printf("dialfreq_MHz=%.6f centerfreq_MHz=%.6f cf_offset=%.0f\n", w->dialfreq_MHz, w->centerfreq_MHz, w->cf_offset);
 		return true;
 	}
 	
@@ -717,13 +789,6 @@ bool wspr_msgs(char *msg, int rx_chan)
 	return false;
 }
 
-// order matches wspr_autorun_u in wspr.js
-// only add new entries to the end so as not to disturb existing values stored in config
-static double wspr_cfs[] = {
-    137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1,
-    50294.5, 70092.5, 144490.5, 432301.5, 1296501.5, 6781.5, 13554.5
-};
-
 void wspr_reset(wspr_t *w)
 {
     w->status_resume = IDLE;
@@ -738,11 +803,20 @@ static internal_conn_t iconn[MAX_RX_CHANS];
 
 void wspr_autorun(int instance, int band)
 {
-	#define WSPR_BFO 750
-	#define WSPR_FILTER_BW 300
-	double center_freq_kHz = wspr_cfs[band];
-    double dial_freq_kHz = center_freq_kHz - WSPR_BFO/1e3;
-    double if_freq_kHz = dial_freq_kHz - freq_offset;
+	double center_freq_kHz, tune_freq_kHz;
+	bool iwbp = (wspr_cfs[band] == WSPR_BAND_IWBP);
+
+    if (iwbp) {
+        int min;
+        utc_hour_min_sec(NULL, &min, NULL);
+        int hop = (min % WSPR_HOP_PERIOD) / 2;
+        tune_freq_kHz = center_freq_kHz = wspr_cf_IWBP[hop];    // decode freq
+    } else {
+        tune_freq_kHz = center_freq_kHz = wspr_cfs[band];
+    }
+
+    double dial_freq_kHz = center_freq_kHz - AUTORUN_BFO/1e3;
+    double if_freq_kHz = (tune_freq_kHz - AUTORUN_BFO/1e3) - freq_offset;
 	double cfo = roundf((center_freq_kHz - floorf(center_freq_kHz)) * 1e3);
 	
 	double max_freq = freq_offset + ui_srate/1e3;
@@ -753,26 +827,33 @@ void wspr_autorun(int instance, int band)
 	}
 
 	if (internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_INTERNAL_WSPR,
-        "usb", WSPR_BFO - WSPR_FILTER_BW/2, WSPR_BFO + WSPR_FILTER_BW/2, if_freq_kHz,
-        "WSPR-autorun", "0%20decoded", "wspr") == false) return;
+        "usb", AUTORUN_BFO - AUTORUN_FILTER_BW/2, AUTORUN_BFO + AUTORUN_FILTER_BW/2, if_freq_kHz,
+        iwbp? "IWBP-autorun" : "WSPR-autorun", "0%20decoded", "wspr") == false) return;
 
     conn_t *csnd = iconn[instance].csnd;
     int chan = csnd->rx_channel;
     wspr_t *w = &WSPR_SHMEM->wspr[chan];
     wspr_reset(w);
     w->arun_csnd = csnd;
-    w->arun_cf_MHz = center_freq_kHz / 1e3;
+    w->arun_deco_cf_MHz = center_freq_kHz / 1e3;
+    w->arun_cf_MHz = tune_freq_kHz / 1e3;
     w->arun_decoded = 0;
     w->arun_last_decoded = -1;
 
-	clprintf(csnd, "WSPR autorun: instance=%d band_id=%d off=%.2f if=%.2f df=%.2f cf=%.2f cfo=%.0f\n",
-	    instance, band, freq_offset, if_freq_kHz, dial_freq_kHz, center_freq_kHz, cfo);
+	clprintf(csnd, "WSPR autorun: instance=%d band_id=%d%s off=%.2f if=%.2f tf=%.2f df=%.2f cf=%.2f cfo=%.0f\n",
+	    instance, band, iwbp? "(IWBP)" : "",
+	    freq_offset, if_freq_kHz, tune_freq_kHz, dial_freq_kHz, center_freq_kHz, cfo);
 	
     conn_t *cext = iconn[instance].cext;
+    w->arun_cext = cext;
     input_msg_internal(cext, (char *) "SET autorun");
-    input_msg_internal(cext, (char *) "SET BFO=%d", WSPR_BFO);
+    input_msg_internal(cext, (char *) "SET BFO=%d", AUTORUN_BFO);
     input_msg_internal(cext, (char *) "SET capture=0");
-    input_msg_internal(cext, (char *) "SET dialfreq=%.2f cf_offset=%.0f", dial_freq_kHz, cfo);
+    if (iwbp) {
+        w->iwbp = true;
+        input_msg_internal(cext, (char *) "SET IWBP");
+    }
+    input_msg_internal(cext, (char *) "SET dialfreq=%.2f centerfreq=%.2f cf_offset=%.0f", dial_freq_kHz, center_freq_kHz, cfo);
     input_msg_internal(cext, (char *) "SET capture=1");
 
     asprintf(&w->arun_stat_cmd, WSPR_STAT, wspr_c.rcall, wspr_c.rgrid, w->arun_cf_MHz, w->arun_cf_MHz);

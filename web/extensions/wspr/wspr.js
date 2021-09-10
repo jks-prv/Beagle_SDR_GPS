@@ -17,10 +17,18 @@ var wspr = {
    ext_name: 'wspr',    // NB: must match wspr.c:wspr_ext.name
    first_time: true,
    focus_interval: null,
+   server_time_ms: 0,
+   local_time_epoch_ms: 0,
    pie_size: 25,
    stack_decoder: 0,
    debug: 0,
-   no_upload: 0
+   no_upload: 0,
+   pie_interval: null,
+   
+   hop_period: 20,
+   //hop_period: 6,
+   SYNC: true,
+   NO_SYNC: false
 };
 
 var wspr_canvas_width = 1024;
@@ -101,7 +109,7 @@ function wspr_recv(data)
 			if ((y_tstamp == aw_ypos) || span) {
 				wccva.ct.fillStyle="white";
 				wccva.ct.font="10px Verdana";
-				var d = new Date(wspr_server_time_ms + (Date.now() - wspr_local_time_epoch_ms));
+				var d = wspr_server_Date();
 				wccva.ct.fillText(d.toUTCString().substr(17,5) +' UTC', wspr_startx+blen*2+over, y_tstamp);
 				if (span) {
 					y_tstamp -= aw_h;
@@ -147,10 +155,10 @@ function wspr_recv(data)
 				break;
 
 			case "WSPR_TIME_MSEC":
-				wspr_server_time_ms = param[1] * 1000 + (+param[2]);
-				wspr_local_time_epoch_ms = Date.now();
-			   //console.log('WSPR_TIME_MSEC server: '+ (new Date(wspr_server_time_ms)).toUTCString() +
-			   //   ' local: '+ (new Date(wspr_local_time_epoch_ms)).toUTCString());
+				wspr.server_time_ms = param[1] * 1000 + (+param[2]);
+				wspr.local_time_epoch_ms = Date.now();
+			   //console.log('WSPR_TIME_MSEC server: '+ (new Date(wspr.server_time_ms)).toUTCString() +
+			   //   ' local: '+ (new Date(wspr.local_time_epoch_ms)).toUTCString());
 				break;
 
 			case "WSPR_SYNC":
@@ -316,7 +324,7 @@ function wspr_controls_setup()
 	var controls_html =
 	w3_div('id-wspr-controls',
 		w3_inline('w3-halign-space-between|width:83%/',
-         w3_select('|color:red', '', 'band', 'wspr_init_band', wspr_init_band, wspr_freqs_m, 'wspr_band_select_cb'),
+         w3_select('w3-text-red', '', 'band', 'wspr_init_band', wspr_init_band, wspr_freqs_m, 'wspr_band_select_cb'),
          w3_button('cl-wspr-button', 'stop', 'wspr_stop_start_cb'),
          w3_button('cl-wspr-button', 'clear', 'wspr_clear_cb'),
          w3_div('id-wspr-upload-bkg cl-upload-checkbox',
@@ -367,7 +375,7 @@ function wspr_controls_setup()
 	wspr_scale_canvas = w3_el('id-wspr-scale-canvas');
 	wspr_scale_canvas.ct = wspr_scale_canvas.getContext("2d");
 
-   wspr_pie_interval = setInterval(wspr_draw_pie, 1000);
+   wspr.pie_interval = setInterval(wspr_draw_pie, 1000);
    wspr_draw_pie();
    wspr_draw_scale(100);
 	
@@ -381,6 +389,7 @@ function wspr_controls_setup()
       p.forEach(function(a, i) {
          if (i == 0 && isDefined(wspr_freqs_s[a])) {
             var sel = wspr_freqs_s[a];
+            console.log('<'+ a +'> '+ i +' sel='+ sel);
             var freq = wspr_center_freqs[sel];
             if (freq >= r.lo_kHz && freq <= r.hi_kHz)
                wspr_band_select_cb('wspr_init_band', sel, false);
@@ -443,7 +452,7 @@ function wspr_blur()
 	//console.log('### wspr_blur');
    ext_send('SET capture=0');
    kiwi_clearTimeout(wspr_upload_timeout);
-   kiwi_clearInterval(wspr_pie_interval);
+   kiwi_clearInterval(wspr.pie_interval);
 }
 
 
@@ -461,12 +470,12 @@ function wspr_input_grid_cb(path, val, first)
 	kiwi.WSPR_rgrid = val;
 }
 
-// order matches wspr_cfs in wspr_main.cpp
+// order matches wspr_main.cpp:wspr_cfs[]
 // only add new entries to the end so as not to disturb existing values stored in config
 var wspr_autorun_u = [
    'regular use', 'LF', 'MF', '160m', '80m_JA', '80m', '60m', '60m_EU',
    '40m', '30m', '20m', '17m', '15m', '12m', '10m',
-   '6m', '4m', '2m', '440', '1296', 'ISM_6', 'ISM_13'
+   '6m', '4m', '2m', '440', '1296', 'ISM_6', 'ISM_13', 'IWBP'
 ];
 
 function wspr_config_html()
@@ -626,7 +635,7 @@ function wspr_clear_cb(path, idx, first)
 	html('id-wspr-peaks-labels').innerHTML = '';
 }
 
-var wspr_upload_timeout, wspr_pie_interval;
+var wspr_upload_timeout;
 
 function wspr_draw_scale(cf)
 {
@@ -728,7 +737,6 @@ function wspr_upload(type, s)
 		kiwi_GETrequest_param(request, "version", version);
 		kiwi_GETrequest_submit(request, { gc: kiwi_gc_wspr } );
 
-		//jksd show how many updates there have been
 		var now = new Date();
 		console.log('WSPR '+ (spot? 'SPOT':'STAT') +' '+ now.toUTCString() + (spot? (' <'+ s +'>'):''));
 	}
@@ -751,27 +759,50 @@ function wspr_set_status(status)
 	wspr_cur_status = status;
 }
 
-var wspr_server_time_ms = 0, wspr_local_time_epoch_ms = 0;
+function wspr_server_Date()
+{
+	return new Date(wspr.server_time_ms + (Date.now() - wspr.local_time_epoch_ms));
+}
 
 function wspr_draw_pie() {
-	var d = new Date(wspr_server_time_ms + (Date.now() - wspr_local_time_epoch_ms));
+	var d = wspr_server_Date();
 	html('id-wspr-time').innerHTML = d.toUTCString().substr(17,8) +' UTC';
-   var wspr_secs = (d.getUTCMinutes()&1)*60 + d.getUTCSeconds() + 1;
+	var min = d.getUTCMinutes();
+   var wspr_secs = (min&1)*60 + d.getUTCSeconds() + 1;
    kiwi_draw_pie('id-wspr-pie', wspr.pie_size, wspr_secs / 120);
 
    // Check for GPS-driven grid updates, i.e. those not coming from admin WSPR config changes.
    // These are delivered with the 10 second status updates if GPS-driven grid updates enabled.
    var rgrid = (kiwi.WSPR_rgrid)? kiwi.WSPR_rgrid : cfg.WSPR.grid;
    w3_innerHTML('id-wspr-rgrid', 'reporter grid<br>'+ rgrid + (cfg.WSPR.GPS_update_grid? ' (GPS)':''));
+   
+   // long-running decode abort happens at 1:40, so should be safe to switch freq at 1:50
+   if (wspr.IWBP && wspr_secs == (60 + 50) /* 1:50 */) {
+      var deco_hop = Math.floor((min % wspr.hop_period) / 2);
+      var deco_cf = wspr_cf_IWBP[deco_hop];
+
+      var hop = Math.floor(((min+1) % wspr.hop_period) / 2);
+      var cf = wspr_cf_IWBP[hop];
+
+      console.log('WSPR IWBP deco: #'+ deco_hop +'/'+ min +'m='+ deco_cf +' capture: #'+ hop +'/'+ ((min+1)%60) +'m='+ cf);
+      wspr_change_freq(cf, deco_cf, wspr.NO_SYNC);
+   }
 };
 
-// order matches menu instantiation order
+// order matches menu instantiation order and autorun wspr_main.cpp:wspr_cfs[]
 // see: wsprnet.org/drupal/node/7352
 // dial freq = cf - bfo, cf aka "tx freq"
-// new entries can be added in the middle of this list as long as ordering of next 3 is maintained
-var wspr_center_freqs = [ 137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1, 6781.5, 13554.5 ];
-var wspr_freqs_s = { 'lf':0, 'mf':1, '160m':2, '80m_ja':3, '80m':4, '60m':5, '60m_eu':6, '40m':7, '30m':8, '20m':9, '17m':10, '15m':11, '12m':12, '10m':13, 'ISM_6':14, 'ISM_13':15 };
-var wspr_freqs_m = [ 'LF', 'MF', '160m', '80m_JA', '80m', '60m', '60m_EU', '40m', '30m', '20m', '17m', '15m', '12m', '10m', 'ISM_6', 'ISM_13' ];
+// new entries can only be added at end due to limitations with autorun's wspr_autorun_u stored config value
+// 9999 entry for IWBP makes url param &ext=wspr,iwbp work due to freq range check
+var wspr_center_freqs = [ 137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1, 6781.5, 13554.5, 9999 ];
+var wspr_freqs_s = { 'lf':0, 'mf':1, '160m':2, '80m_ja':3, '80m':4, '60m':5, '60m_eu':6, '40m':7, '30m':8, '20m':9, '17m':10, '15m':11, '12m':12, '10m':13, 'ism_6':14, 'ism_13':15, 'iwbp':16 };
+var wspr_freqs_m = [ 'LF', 'MF', '160m', '80m_JA', '80m', '60m', '60m_EU', '40m', '30m', '20m', '17m', '15m', '12m', '10m', 'ISM_6', 'ISM_13', 'IWBP' ];
+
+// freqs on github.com/HB9VQQ/WSPRBeacon are cf - 1.5 kHz BFO (dial frequencies)
+// so we add 1.5 to those to get our cf values (same as regular WSPR wspr_center_freqs above)
+var wspr_cf_IWBP = [ 1838.1, 3570.1, 5288.7, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1 ];
+//var wspr_cf_IWBP = [ 1838.1, 3570.1, 7040.1 ];
+//var wspr_cf_IWBP = [ 7040.1, 10140.2, 14097.1 ];
 
 // only one of these is chosen given our 30/32 MHz span
 var wspr_xvtr_center_freqs = [ 50294.5, 70092.5, 144490.5, 432301.5, 1296501.5 ];
@@ -781,34 +812,43 @@ var wspr_rfreq=0, wspr_tfreq=0;
 var wspr_bfo = 750;
 var wspr_filter_bw = 300;
 
-//var wspr_last_freq = -1;
-
 function wspr_freq(b)
 {
-	var cf = wspr_center_freqs[b];
-	var mode = 1;
-	
    wspr_reset();
-	
-	/*
-	if (wspr_last_freq >= 0)
-		w3_el('id-wspr-freq-'+ wspr_last_freq).style.backgroundColor = 'white';
-	w3_el('id-wspr-freq-'+ b).style.backgroundColor = 'lime';
-	wspr_last_freq = b;
-	*/
+
+   var cf;
+   if (wspr_freqs_m[b] == 'IWBP') {
+      wspr.IWBP = true;
+	   min = wspr_server_Date().getUTCMinutes();
+      var hop = Math.floor((min % wspr.hop_period) / 2);
+      cf = wspr_cf_IWBP[hop];
+   } else {
+      wspr.IWBP = false;
+      cf = wspr_center_freqs[b];
+   }
+   wspr_change_freq(cf, cf, wspr.SYNC);
+}
+
+function wspr_change_freq(cf, deco_cf, sync)
+{
+	var dial_freq_kHz = cf - wspr_bfo/1000;
+	var cfo = Math.round((cf - Math.floor(cf)) * 1000);
+
+	var deco_dial_freq_kHz = deco_cf - wspr_bfo/1000;
+	var deco_cfo = Math.round((deco_cf - Math.floor(deco_cf)) * 1000);
 
 	w3_el('id-wspr-cf').innerHTML = 'CF '+ cf.toFixed(1);
-	var cfo = Math.round((cf - Math.floor(cf)) * 1000);
 	wspr_rfreq = wspr_tfreq = cf/1000;
-	var dial_freq_kHz = cf - wspr_bfo/1000;
 	var r = ext_get_freq_range();
 	var fo_kHz = dial_freq_kHz - r.offset_kHz;
 	ext_tune(fo_kHz, 'usb', ext_zoom.MAX_IN);
-	ext_send('SET dialfreq='+ dial_freq_kHz.toFixed(2) +' cf_offset='+ cfo);
 	ext_set_passband(wspr_bfo-wspr_filter_bw/2, wspr_bfo+wspr_filter_bw/2);
 	ext_tune(fo_kHz, 'usb', ext_zoom.MAX_IN);		// FIXME: temp hack so new passband gets re-centered
-	ext_send('SET capture=1');
    wspr_draw_scale(cfo);
+
+   ext_send('SET dialfreq='+ deco_dial_freq_kHz.toFixed(2) +' centerfreq='+ deco_cf.toFixed(2) +' cf_offset='+ deco_cfo);
+
+	if (sync == wspr.SYNC) ext_send('SET capture=1');
    
    // promptly notify band change
    kiwi_clearTimeout(wspr_upload_timeout);
