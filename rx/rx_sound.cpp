@@ -90,7 +90,7 @@ gps_timestamp_t gps_ts[MAX_RX_CHANS];
 
 float g_genfreq, g_genampl, g_mixfreq;
 
-// if entries here are ordered by cmd_key_e then the reverse lookup (str_hash_t *)->hashes[key].name
+// if entries here are ordered by snd_cmd_key_e then the reverse lookup (str_hash_t *)->hashes[key].name
 // will work as a debugging aid
 static str_hashes_t snd_cmd_hashes[] = {
     { "~~~~~~~~~", STR_HASH_MISS },
@@ -108,6 +108,7 @@ static str_hashes_t snd_cmd_hashes[] = {
     { "SET nb t", CMD_NB_TYPE },
     { "SET nr t", CMD_NR_TYPE },
     { "SET mute", CMD_MUTE },
+    { "SET ovld", CMD_OVLD_MUTE },
     { "SET de_e", CMD_DE_EMP },
     { "SET test", CMD_TEST },
     { "SET UAR ", CMD_UAR },
@@ -231,7 +232,7 @@ void c2s_sound(void *param)
 	bool sq_init=false, squelched=false;
 
 	// Overload muting stuff
-	bool mute_overload = true; // activate the muting when overloaded
+	int mute_overload = 0; // activate the muting when overloaded
 	bool squelched_overload = false; // squelch flag specific for the overloading
 	bool overload_before = false; // were we overloaded in the previous instant?
 	bool overload_flag = false; // are we overloaded now?
@@ -315,6 +316,9 @@ void c2s_sound(void *param)
             u2_t key = str_hash_lookup(&snd_cmd_hash, cmd);
             bool did_cmd = false;
             
+            if (conn->ext_cmd != NULL)
+                conn->ext_cmd(key, cmd, rx_chan);
+            
             switch (key) {
 
             case CMD_AUDIO_START:
@@ -344,55 +348,59 @@ void c2s_sound(void *param)
                         change_freq_mode = true;
                     }
                 
-                    _mode = kiwi_str2enum(mode_m, mode_s, ARRAY_LEN(mode_s));
-                    cmd_recv |= CMD_MODE;
+                    bool no_mode_change = (strcmp(mode_m, "x") == 0);
+                    if (!no_mode_change) {
+                        _mode = kiwi_str2enum(mode_m, mode_s, ARRAY_LEN(mode_s));
+                        cmd_recv |= CMD_MODE;
 
-                    if (_mode == NOT_FOUND) {
-                        clprintf(conn, "SND bad mode <%s>\n", mode_m);
-                        _mode = MODE_AM;
-                        change_freq_mode = true;
-                    }
+                        if (_mode == NOT_FOUND) {
+                            clprintf(conn, "SND bad mode <%s>\n", mode_m);
+                            _mode = MODE_AM;
+                            change_freq_mode = true;
+                        }
                     
-                    if (_mode == MODE_DRM && !DRM_enable && !conn->isLocal) {
-                        clprintf(conn, "SND DRM not enabled, forcing mode to IQ\n", mode_m);
-                        _mode = MODE_IQ;
-                    }
+                        if (_mode == MODE_DRM && !DRM_enable && !conn->isLocal) {
+                            clprintf(conn, "SND DRM not enabled, forcing mode to IQ\n", mode_m);
+                            _mode = MODE_IQ;
+                        }
                 
-                    bool new_nbfm = false;
-                    if (mode != _mode || n == 5) {
+                        bool new_nbfm = false;
+                        if (mode != _mode || n == 5) {
 
-                        // when switching out of IQ or DRM modes: reset AGC, compression state
-                        bool IQ_or_DRM_or_stereo = (mode == MODE_IQ || mode == MODE_DRM || mode == MODE_SAS || mode == MODE_QAM);
-                        bool new_IQ_or_DRM_or_stereo = (_mode == MODE_IQ || _mode == MODE_DRM || _mode == MODE_SAS || _mode == MODE_QAM);
-                        if (IQ_or_DRM_or_stereo && !new_IQ_or_DRM_or_stereo && (cmd_recv & CMD_AGC)) {
-                            //cprintf(conn, "SND out IQ mode -> reset AGC, compression\n");
-                            m_Agc[rx_chan].SetParameters(agc, hang, thresh, manGain, slope, decay, frate);
-                            memset(&snd->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
-                        }
+                            // when switching out of IQ or DRM modes: reset AGC, compression state
+                            bool IQ_or_DRM_or_stereo = (mode == MODE_IQ || mode == MODE_DRM || mode == MODE_SAS || mode == MODE_QAM);
+                            bool new_IQ_or_DRM_or_stereo = (_mode == MODE_IQ || _mode == MODE_DRM || _mode == MODE_SAS || _mode == MODE_QAM);
+                            if (IQ_or_DRM_or_stereo && !new_IQ_or_DRM_or_stereo && (cmd_recv & CMD_AGC)) {
+                                //cprintf(conn, "SND out IQ mode -> reset AGC, compression\n");
+                                m_Agc[rx_chan].SetParameters(agc, hang, thresh, manGain, slope, decay, frate);
+                                memset(&snd->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
+                            }
                     
-                        if (_mode == MODE_SAM && n == 5) {
-                            chan_null = mparam;
+                            if (_mode == MODE_SAM && n == 5) {
+                                chan_null = mparam;
+                            }
+
+                            // reset SAM demod on non-SAM to SAM transition
+                            if ((_mode >= MODE_SAM && _mode <= MODE_QAM) && !(mode >= MODE_SAM && mode <= MODE_QAM)) {
+                                //cprintf(conn, "wdsp_SAM_reset\n");
+                                wdsp_SAM_reset(rx_chan);
+                            }
+
+                            mode = _mode;
+                            if (mode == MODE_NBFM)
+                                new_nbfm = true;
+                            change_freq_mode = true;
+                            //cprintf(conn, "SND mode %s\n", mode_m);
                         }
 
-                        // reset SAM demod on non-SAM to SAM transition
-                        if ((_mode >= MODE_SAM && _mode <= MODE_QAM) && !(mode >= MODE_SAM && mode <= MODE_QAM)) {
-                            //cprintf(conn, "wdsp_SAM_reset\n");
-                            wdsp_SAM_reset(rx_chan);
+                        if (mode == MODE_NBFM && (new_freq || new_nbfm)) {
+                            m_Squelch[rx_chan].Reset();
+                            conn->last_sample.re = conn->last_sample.im = 0;
                         }
-
-                        mode = _mode;
-                        if (mode == MODE_NBFM)
-                            new_nbfm = true;
-                        change_freq_mode = true;
-                        //cprintf(conn, "SND mode %s\n", mode_m);
-                    }
-
-                    if (mode == MODE_NBFM && (new_freq || new_nbfm)) {
-                        m_Squelch[rx_chan].Reset();
-                        conn->last_sample.re = conn->last_sample.im = 0;
                     }
             
-                    if (hicut != _hicut || locut != _locut) {
+                    bool no_pb_change = (_hicut == 0 && _locut == 0);
+                    if (!no_pb_change && (hicut != _hicut || locut != _locut)) {
                         hicut = _hicut; locut = _locut;
                     
                         // primary passband filtering
@@ -437,11 +445,11 @@ void c2s_sound(void *param)
                     }
                 
                     double nomfreq = freq;
-                    if ((hicut-locut) < 1000) nomfreq += (hicut+locut)/2/kHz;	// cw filter correction
+                    if (!no_pb_change && (hicut-locut) < 1000) nomfreq += (hicut+locut)/2/kHz;	// cw filter correction
                     nomfreq = round(nomfreq*kHz);
                 
                     conn->freqHz = round(nomfreq/10.0)*10;	// round 10 Hz
-                    conn->mode = snd->mode = mode;
+                    if (!no_mode_change) conn->mode = snd->mode = mode;
                 
                     // apply masked frequencies
                     masked = false;
@@ -660,6 +668,14 @@ void c2s_sound(void *param)
 
             case CMD_MUTE:
                 n = sscanf(cmd, "SET mute=%d", &mute);
+                if (n == 1) {
+                    did_cmd = true;
+                    //printf("mute %d\n", mute);
+                    // FIXME: stop audio stream to save bandwidth?
+                }
+
+            case CMD_OVLD_MUTE:
+                n = sscanf(cmd, "SET ovld_mute=%d", &mute_overload);
                 if (n == 1) {
                     did_cmd = true;
                     //printf("mute %d\n", mute);
@@ -1085,6 +1101,7 @@ void c2s_sound(void *param)
             
             if (!IQ_or_DRM_or_stereo) {
                 r_samps = &rx->real_samples[rx->real_wr_pos][0];
+                rx->freqHz[rx->real_wr_pos] = conn->freqHz;
                 rx->real_seqnum[rx->real_wr_pos] = rx->real_seq;
                 rx->real_seq++;
             }
@@ -1266,6 +1283,10 @@ void c2s_sound(void *param)
             // mute receiver if overload is detected
             // use the same tail_delay parameter used for the squelch
             if (mute_overload) {
+                //#define TEST_OVLD_MUTE
+                #ifdef TEST_OVLD_MUTE
+                    max_thr = -90;
+                #endif
             	overload_flag = (sMeter_dBm >= max_thr)? true:false;
             	if (overload_before && !overload_flag) {
             		if (snd->seq > overload_timer + tail_delay+1) {
@@ -1281,12 +1302,16 @@ void c2s_sound(void *param)
                 	overload_before = true;
                 	overload_timer = snd->seq;
                 }
+            } else {
+                squelched_overload = overload_before = overload_flag = false;
+                overload_timer = -1;
             }
             
             // update UI with admin changes to max_thr
-            if (max_thr != last_max_thr) {
-                send_msg(conn, false, "MSG max_thr=%.0f", roundf(max_thr));
-                last_max_thr = max_thr;
+            float max_thr_t = mute_overload? max_thr : +90;
+            if (max_thr_t != last_max_thr) {
+                send_msg(conn, false, "MSG max_thr=%.0f", roundf(max_thr_t));
+                last_max_thr = max_thr_t;
             }
 
             ////////////////////////////////
@@ -1349,11 +1374,12 @@ void c2s_sound(void *param)
             // all other modes
             if (mode != MODE_DRM) {
                 iq->iq_wr_pos = (iq->iq_wr_pos+1) & (N_DPBUF-1);
+                int freqHz = rx->freqHz[rx->real_wr_pos];
                 rx->real_wr_pos = (rx->real_wr_pos+1) & (N_DPBUF-1);
     
                 // forward real samples if requested
                 if (receive_real != NULL)
-                    receive_real(rx_chan, 0, ns_out, r_samps);
+                    receive_real(rx_chan, 0, ns_out, r_samps, freqHz);
                 
                 if (receive_real_tid != (tid_t) NULL)
                     TaskWakeup(receive_real_tid, TWF_CHECK_WAKING, TO_VOID_PARAM(rx_chan));
