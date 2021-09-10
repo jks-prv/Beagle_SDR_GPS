@@ -73,7 +73,9 @@ struct fft_t {
 struct wf_pkt_t {
 	char id4[4];
 	u4_t x_bin_server;
+	#define WF_FLAGS                0xffff0000
 	#define WF_FLAGS_COMPRESSION    0x00010000
+	#define WF_FLAGS_NO_SYNC        0x00020000
 	u4_t flags_x_zoom_server;
 	u4_t seq;
 	union {
@@ -124,10 +126,11 @@ struct wf_inst_t {
 	u2_t drop_sample[WF_WIDTH];
 	int start, prev_start, zoom, prev_zoom;
 	int mark, speed, fft_used_limit;
-	bool new_map, new_map2, compression, isWF, isFFT;
+	bool new_map, new_map2, compression, no_sync, isWF, isFFT;
 	int flush_wf_pipe;
 	bool cic_comp;
 	wf_interp_t interp;
+	int window_func;
 
 	// NB: matches rx_noise.h which is not included here to prevent re-compile cascade
     #define NOISE_TYPES 4
@@ -153,10 +156,16 @@ struct wf_inst_t {
     int last_noise, last_signal;
 };
 
+#define WIN_HANNING         0
+#define WIN_HAMMING         1
+#define WIN_BLACKMAN_HARRIS 2
+#define WIN_NONE            3
+#define N_WINF              4
+
 struct wf_shmem_t {
     wf_inst_t wf_inst[MAX_RX_CHANS];        // NB: MAX_RX_CHANS even though there may be fewer MAX_WF_CHANS
     fft_t fft_inst[MAX_WF_CHANS];           // NB: MAX_WF_CHANS not MAX_RX_CHANS
-    float window_function[WF_C_NSAMPS];
+    float window_function[N_WINF][WF_C_NSAMPS];
     float CIC_comp[WF_C_NSAMPS];
     int n_chunks;
 };     
@@ -187,5 +196,5 @@ struct wf_shmem_t {
 
 enum wf_cmd_key_e {
     CMD_SET_ZOOM=1, CMD_SET_MAX_MIN_DB, CMD_SET_CMAP, CMD_SET_APER, CMD_SET_BAND,
-    CMD_SET_SCALE, CMD_SET_WF_SPEED, CMD_SEND_DB, CMD_EXT_BLUR, CMD_INTERPOLATE
+    CMD_SET_SCALE, CMD_SET_WF_SPEED, CMD_SEND_DB, CMD_EXT_BLUR, CMD_INTERPOLATE, CMD_WINDOW_FUNC
 };

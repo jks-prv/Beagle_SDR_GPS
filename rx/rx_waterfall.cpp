@@ -95,7 +95,7 @@ struct iq_t {
 #define	WF_OUT_HDR	((int) (sizeof(wf_pkt_t) - sizeof(out->un)))
 #define	WF_OUT_NOM	((int) (WF_OUT_HDR + sizeof(out->un.buf)))
 		
-// if entries here are ordered by cmd_key_e then the reverse lookup (str_hash_t *)->hashes[key].name
+// if entries here are ordered by wf_cmd_key_e then the reverse lookup (str_hash_t *)->hashes[key].name
 // will work as a debugging aid
 static str_hashes_t wf_cmd_hashes[] = {
     { "~~~~~~~~~", STR_HASH_MISS },
@@ -109,6 +109,7 @@ static str_hashes_t wf_cmd_hashes[] = {
     { "SET send_", CMD_SEND_DB },
     { "SET ext_b", CMD_EXT_BLUR },
     { "SET inter", CMD_INTERPOLATE },
+    { "SET windo", CMD_WINDOW_FUNC },
     { 0 }
 };
 
@@ -127,46 +128,44 @@ void c2s_waterfall_init()
 	    fft_t *fft = &WF_SHMEM->fft_inst[i];
 		fft->hw_dft_plan = fftwf_plan_dft_1d(WF_C_NSAMPS, fft->hw_c_samps, fft->hw_fft, FFTW_FORWARD, FFTW_ESTIMATE);
 	}
-
-	float adc_scale_decim = powf(2, -16);		// gives +/- 0.5 float samples
-	//float adc_scale_decim = powf(2, -15);		// gives +/- 1.0 float samples
+	
+	const float adc_scale_decim = powf(2, -16);		// gives +/- 0.5 float samples
+	//const float adc_scale_decim = powf(2, -15);		// gives +/- 1.0 float samples
 
     // window functions (adc_scale is folded in here since it's constant)
 	
 	//#define WINDOW_GAIN		2.0
 	#define WINDOW_GAIN		1.0
 	
-	float *window = WF_SHMEM->window_function;
+	for (int winf = 0; winf < N_WINF; winf++) {
+        float *window = WF_SHMEM->window_function[winf];
 
-	for (i=0; i < WF_C_NSAMPS; i++) {
-    	window[i] = adc_scale_decim;
-    	window[i] *= WINDOW_GAIN *
-    	
-	    // Hanning
-    	#if 1
-    	    (0.5 - 0.5 * cos( (K_2PI*i)/(float)(WF_C_NSAMPS-1) ));
-    	#endif
+        for (i=0; i < WF_C_NSAMPS; i++) {
+            window[i] = adc_scale_decim * WINDOW_GAIN;
+        
+            switch (winf) {
+        
+            case WIN_HANNING:
+                window[i] *= (0.5 - 0.5 * cos( (K_2PI*i)/(float)(WF_C_NSAMPS-1) ));
+                break;
+            
+            case WIN_HAMMING:
+                window[i] *= (0.54 - 0.46 * cos( (K_2PI*i)/(float)(WF_C_NSAMPS-1) ));
+                break;
 
-	    // Hamming
-    	#if 0
-    	    (0.54 - 0.46 * cos( (K_2PI*i)/(float)(WF_C_NSAMPS-1) ));
-    	#endif
+            case WIN_BLACKMAN_HARRIS:
+                window[i] *= (0.35875
+                    - 0.48829 * cos( (K_2PI*i)/(float)(WF_C_NSAMPS-1) )
+                    + 0.14128 * cos( (2.0*K_2PI*i)/(float)(WF_C_NSAMPS-1) )
+                    - 0.01168 * cos( (3.0*K_2PI*i)/(float)(WF_C_NSAMPS-1) ));
+                break;
 
-	    // Blackman-Harris
-    	#if 0
-    	    (0.35875
-    	        - 0.48829 * cos( (K_2PI*i)/(float)(WF_C_NSAMPS-1) )
-    	        + 0.14128 * cos( (2.0*K_2PI*i)/(float)(WF_C_NSAMPS-1) )
-    	        - 0.01168 * cos( (3.0*K_2PI*i)/(float)(WF_C_NSAMPS-1) )
-    	    );
-    	#endif
-
-	    // no window function
-    	#if 0
-    	    1.0;
-    	#endif
+            case WIN_NONE: default:
+                break;
+            }
+        }
     }
-    
+
     // compensates for small droop at top end of waterfall/spectrum display
     //real_printf("WF CIC_comp:\n");
     for (i=0; i < WF_C_NSAMPS; i++) {
@@ -203,6 +202,12 @@ void c2s_waterfall_compression(int rx_chan, bool compression)
 {
     //printf("WF%d: compression=%d\n", rx_chan, compression);
 	WF_SHMEM->wf_inst[rx_chan].compression = compression;
+}
+
+void c2s_waterfall_no_sync(int rx_chan, bool no_sync)
+{
+    //printf("WF%d: no_sync=%d\n", rx_chan, no_sync);
+	WF_SHMEM->wf_inst[rx_chan].no_sync = no_sync;
 }
 
 #define	CMD_ZOOM	0x01
@@ -324,6 +329,9 @@ void c2s_waterfall(void *param)
             u2_t key = str_hash_lookup(&wf_cmd_hash, cmd);
             bool did_cmd = false;
             
+            if (conn->ext_cmd != NULL)
+                conn->ext_cmd(key, cmd, rx_chan);
+
             switch (key) {
 
             case CMD_SET_ZOOM: {
@@ -519,7 +527,17 @@ void c2s_waterfall(void *param)
                     } else {
                         wf->cic_comp = false;
                     }
+                    if (wf->interp < 0 || wf->interp > WF_CMA) wf->interp = WF_MAX;
                     cprintf(conn, "WF interp=%d(%s) cic_comp=%d\n", wf->interp, interp_s[wf->interp], wf->cic_comp);
+                    did_cmd = true;                
+                }
+                break;
+
+            case CMD_WINDOW_FUNC:
+                if (sscanf(cmd, "SET window_func=%d", &i) == 1) {
+                    if (i < 0 || i >= N_WINF) i = 0;
+                    wf->window_func = i;
+                    cprintf(conn, "WF window_func=%d\n", wf->window_func);
                     did_cmd = true;                
                 }
                 break;
@@ -932,7 +950,7 @@ void sample_wf(int rx_chan)
             wf->overlapped_sampling? "OVERLAPPED":"NON-OVERLAPPED", chunk));
         
         iqp = (iq_t*) &(miso->word[0]);
-	    float *window = WF_SHMEM->window_function;
+	    float *window = WF_SHMEM->window_function[wf->window_func];
         
         for (k=0; k<NWF_SAMPS; k++) {
             if (sn >= WF_C_NSAMPS) break;
@@ -1187,8 +1205,9 @@ void compute_frame(int rx_chan)
 
 	// zero-out the DC component in lowest bins (around -90 dBFS)
 	// otherwise when scrolling wf it will move but then not continue at the new location
-	#define BIN_DC_OFFSET 2
-	for (i = 0; i < BIN_DC_OFFSET; i++) pwr[i] = 0;
+	// Blackman-Harris window DC component is a little wider for z=0
+	int bin_dc_offset = (wf->zoom == 0 && wf->window_func == WIN_BLACKMAN_HARRIS)? 4:2;    
+	for (i = 0; i < bin_dc_offset; i++) pwr[i] = 0;
 	
 	#ifdef SHOW_MAX_MIN_PWR
         static void *FFT_state;
@@ -1209,7 +1228,7 @@ void compute_frame(int rx_chan)
 	#endif
 
     if (wf->zoom <= 1) {    // don't apply compensation when CIC not in use
-        for (i = BIN_DC_OFFSET; i < wf->fft_used_limit; i++) {
+        for (i = bin_dc_offset; i < wf->fft_used_limit; i++) {
             float re = fft->hw_fft[i][I], im = fft->hw_fft[i][Q];
             pwr[i] = re*re + im*im;
 
@@ -1220,7 +1239,7 @@ void compute_frame(int rx_chan)
         }
     } else {
         bool no_cic_comp = (wf->overlapped_sampling || !wf->cic_comp);
-        for (i = BIN_DC_OFFSET; i < wf->fft_used_limit; i++) {
+        for (i = bin_dc_offset; i < wf->fft_used_limit; i++) {
             float re, im;
             if (no_cic_comp) {
                 re = fft->hw_fft[i][I]; im = fft->hw_fft[i][Q];
@@ -1491,6 +1510,9 @@ void compute_frame(int rx_chan)
 	//if (out->seq != wf->snd->seq)
 	//{ real_printf("%d ", wf->snd->seq - out->seq); fflush(stdout); }
 	//{ real_printf("ws%d,%d ", out->seq, wf->snd->seq); fflush(stdout); }
+	
+	// v1.462: don't release this yet
+	//if (wf->no_sync) out->flags_x_zoom_server |= WF_FLAGS_NO_SYNC;
 }
 
 void c2s_waterfall_shutdown(void *param)
