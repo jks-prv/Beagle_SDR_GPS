@@ -38,7 +38,7 @@ static void ale_2g_file_data(int rx_chan, int chan, int nsamps, TYPEMONO16 *samp
     // Have ale_2g_task() do 12k => 8k resampling before calling decoder (which requires 8 kHz sampling)
     if (e->test) {
         double tuned_f = ext_get_displayed_freq_kHz(e->rx_chan);
-        bool pushback = (fabs(e->test_f - tuned_f) < 0.001);
+        bool pushback = (e->test_f < 0 || fabs(fabs(e->test_f) - tuned_f) < 0.001);
 
         for (int i = 0; i < nsamps; i++) {
             if (e->s2p < ale_2g.s2p_end && pushback) {
@@ -349,7 +349,7 @@ bool ale_2g_msgs(char *msg, int rx_chan)
         //printf("ALE_2G: test=%d test_f=%.2f\n", e->test, e->test_f);
         if (e->test) {
             e->decode.modem_init(e->rx_chan, e->use_new_resampler, ext_update_get_sample_rateHz(rx_chan), FASTFIR_OUTBUF_SIZE);
-		    e->decode.set_freq(e->test_f);
+		    e->decode.set_freq(fabs(e->test_f));
         } else {
             e->decode.modem_reset();    // in case need to reset active state due to a force cleared test mode
         }

@@ -46,6 +46,7 @@ var ale = {
    scan_timeout: null,
    
    isActive: false,
+   ignore_resume: false,
    testing: false,
    
    record: false,
@@ -159,11 +160,15 @@ function ale_2g_recv(data)
                }
 			   } else
 			   if (!ale.scanning && ale.scan_list && freq == 0) {
-			      if (dbgUs) console.log('#### $active RESUME freq='+ freq.toFixed(2) +' scanning='+ ale.scanning);
+			      if (dbgUs) console.log('#### $active RESUME ignore_resume='+ ale.ignore_resume +' freq='+ freq.toFixed(2) +' scanning='+ ale.scanning);
 			      ale.isActive = false;
-               ale_2g_scanner(ale.RESUME);   // resume scanning where we left off
-			   } else
+			      if (!ale.ignore_resume)
+                  ale_2g_scanner(ale.RESUME);   // resume scanning where we left off
+               ale.ignore_resume = false;
+			   } else {
+			      ale.ignore_resume = true;
 			      if (dbgUs) console.log('#### $active NOP freq='+ freq.toFixed(2) +' scanning='+ ale.scanning +' scanlist='+ ale.scan_list);
+			   }
 				break;
 
 			case "call_est_test":
@@ -844,13 +849,18 @@ function ale_2g_test_cb(path, val, first)
    // won't cause it to resume scanning immediately like it should
    if (val && !ale.scanning && ale.isActive && ale.scan_list) {
       ale.isActive = false;
-      ale_2g_scanner(ale.RESUME);   // resume scanning where we left off
-	   ext_send('SET reset');
-      if (dbgUs) console.log('#### $active FORCED RESUME');
+      if (dbgUs) console.log('#### $active FORCED RESUME ignore_resume='+ ale.ignore_resume);
+      if (!ale.ignore_resume) {
+         ale_2g_scanner(ale.RESUME);   // resume scanning where we left off
+         ext_send('SET reset');
+      }
+      ale.ignore_resume = false;
    }
 
-   //jks var f = (+ext_get_freq_kHz()).toFixed(2);
-   var f = '24000.60';
+   // positive value gates test audio to a specific freq
+   // negative value applies test audio at all times
+   //var f = '24000.60';
+   var f = -(+ext_get_freq_kHz()).toFixed(2);
    if (dbgUs) console.log('ale_2g_test_cb='+ (val? f : 0));
 	ext_send('SET test='+ (val? f : 0));
 }

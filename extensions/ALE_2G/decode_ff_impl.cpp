@@ -714,7 +714,7 @@ namespace ale {
                 
                 if (activity_cnt >= 2 && !active) {
                     ext_send_msg(rx_chan, false, "EXT active=%.2f", frequency);
-                    real_printf("#%d#", slot(frequency)); fflush(stdout);
+                    //real_printf("#%d#", slot(frequency)); fflush(stdout);
                     //ext_send_snd_msg(rx_chan, true, "MSG audio_flags2=active:%.2f", frequency);
                     active = 1;
                 }
@@ -887,7 +887,7 @@ namespace ale {
                 state_count = 0;
                 active = 0;
                 ext_send_msg(rx_chan, false, "EXT active=0");
-                real_printf("///"); fflush(stdout);
+                //real_printf("///"); fflush(stdout);
                 //ext_send_snd_msg(rx_chan, true, "MSG audio_flags2=active:0");
                 
                 #if 0
@@ -999,7 +999,7 @@ namespace ale {
 	    
         #ifdef STANDALONE_TEST
         #else
-	        printf("### modem_init use_new_resampler=%d srate=%f dsp=%d\n", use_new_resampler, f_srate, dsp);
+	        //printf("### modem_init use_new_resampler=%d srate=%f dsp=%d\n", use_new_resampler, f_srate, dsp);
 	    #endif
 
 	    in_cmd = binary = 0;
@@ -1053,8 +1053,8 @@ namespace ale {
             vecTempResBufOut.Init(iMaxOutputSize, (_REAL) 0.0);
 
             ResampleObj->Reset();
-            printf("### using NEW resampler: ratio=%f srate=%f n_samps=%d iOutputBlockSize=%d\n",
-                ratio, f_srate, n_samps, ResampleObj->iOutputBlockSize);
+            //printf("### using NEW resampler: ratio=%f srate=%f n_samps=%d iOutputBlockSize=%d\n",
+            //    ratio, f_srate, n_samps, ResampleObj->iOutputBlockSize);
         } else {
             printf("### using OLD resampler\n");
         }
@@ -1065,7 +1065,7 @@ namespace ale {
 	{
 	    int i,j,k;
 	    
-        printf("### modem_reset\n");
+        //printf("### modem_reset\n");
     
 	    activity_cnt = active = 0;
 
