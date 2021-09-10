@@ -72,7 +72,7 @@ static void update_build_ctask(void *param)
         child_status_exit(status);
 
         struct stat st;
-        bool use_git_proto = (stat(DIR_CFG "/opt.git_no_https", &st) == 0);
+        bool use_git_proto = kiwi_file_exists(DIR_CFG "/opt.git_no_https");
 	    asprintf(&cmd_p, "cd /root/" REPO_NAME "; " \
 	        "git pull -v %s://github.com/jks-prv/Beagle_SDR_GPS.git >>/root/build.log 2>&1; ", \
 		    use_git_proto? "git" : "https" \
@@ -104,11 +104,16 @@ static void update_build_ctask(void *param)
 
 static void curl_makefile_ctask(void *param)
 {
-	int status = system("cd /root/" REPO_NAME " ; echo ======== checking for update >/root/build.log; date >>/root/build.log; " \
-	    "git fetch origin >>/root/build.log 2>&1; " \
-	    "git show origin:Makefile >Makefile.1 2>>/root/build.log");
+    system("cd /root/" REPO_NAME " ; echo ======== checking for update >/root/build.log; date >>/root/build.log");
 
+	int status = system("git fetch origin >>/root/build.log 2>&1");
+    printf("UPDATE: fetch origin status=0x%08x\n", status);
 	child_status_exit(status);
+
+	status = system("git show origin:Makefile >Makefile.1 2>>/root/build.log");
+    printf("UPDATE: show origin:Makefile status=0x%08x\n", status);
+	child_status_exit(status);
+
     system("cd /root/" REPO_NAME " ; diff Makefile Makefile.1 >>/root/build.log");
 	child_exit(EXIT_SUCCESS);
 }
@@ -119,14 +124,11 @@ static void report_result(conn_t *conn)
 	assert(conn != NULL);
 	char *date_m = kiwi_str_encode((char *) __DATE__);
 	char *time_m = kiwi_str_encode((char *) __TIME__);
-	char *sb;
-	asprintf(&sb, "{\"f\":%d,\"p\":%d,\"i\":%d,\"r\":%d,\"g\":%d,\"v1\":%d,\"v2\":%d,\"p1\":%d,\"p2\":%d,\"d\":\"%s\",\"t\":\"%s\"}",
+	send_msg(conn, false, "MSG update_cb="
+	    "{\"f\":%d,\"p\":%d,\"i\":%d,\"r\":%d,\"g\":%d,\"v1\":%d,\"v2\":%d,\"p1\":%d,\"p2\":%d,\"d\":\"%s\",\"t\":\"%s\"}",
 		fs_full, update_pending, update_in_progress, rx_chans, GPS_CHANS, version_maj, version_min, pending_maj, pending_min, date_m, time_m);
-	send_msg(conn, false, "MSG update_cb=%s", sb);
-	//printf("UPDATE: %s\n", sb);
 	kiwi_ifree(date_m);
 	kiwi_ifree(time_m);
-	kiwi_ifree(sb);
 }
 
 static bool daily_restart = false;
@@ -165,6 +167,7 @@ static void update_task(void *param)
 	bool ver_changed, update_install;
 	
 	lprintf("UPDATE: checking for updates\n");
+	if (force_check) update_pending = false;    // don't let pending status override version reporting when a forced check
 	
     #define FS_USE "df . | tail -1 | /usr/bin/tr -s ' ' | cut -d' ' -f 5 | grep '100%'"
     int status = non_blocking_cmd_system_child("kiwi.fs_use", FS_USE, POLL_MSEC(250));
@@ -333,6 +336,11 @@ void schedule_update(int min)
 	}
 	
     daily_restart = update && !update_on_startup && (admcfg_bool("daily_restart", NULL, CFG_REQUIRED) == true);
+    
+    if (update_on_startup && admcfg_int("restart_update", NULL, CFG_REQUIRED) != 0) {
+		lprintf("UPDATE: update on restart delayed until update window\n");
+		update_on_startup = false;
+    }
 
 	if (update || update_on_startup) {
 		lprintf("UPDATE: check scheduled %s\n", update_on_startup? "(startup)":"");
