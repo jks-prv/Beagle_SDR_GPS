@@ -9,6 +9,10 @@ public:
     CAudioResample();
     virtual ~CAudioResample();
 
+    _REAL					rRatio;
+    int						iInputBlockSize;
+    int						iOutputBlockSize;
+
     void Init(int iNewInputBlockSize, _REAL rNewRatio);
     void Init(int iNewOutputBlockSize, int iInputSamplerate, int iOutputSamplerate);
     void Resample(CVector<_REAL>& rInput, CVector<_REAL>& rOutput);
@@ -17,9 +21,6 @@ public:
     void Reset();
 
 protected:
-    _REAL					rRatio;
-    int						iInputBlockSize;
-    int						iOutputBlockSize;
     CShiftRegister<_REAL>	vecrIntBuff;
     int						iHistorySize;
 };

@@ -16,6 +16,7 @@ var extint = {
    default_h: 300,
    prev_mode: null,
    seq: 0,
+   scanning: 0,
    
    // extensions not subject to DRM lockout
    // FIXME: allow C-side API to specify
@@ -134,6 +135,7 @@ var ext_zoom = {
 	OUT: -1,
 	ABS: 2,
 	WHEEL: 3,
+	CUR: 4,
 	NOM_IN: 8,
 	MAX_IN: 9,
 	MAX_OUT: -9
@@ -142,16 +144,19 @@ var ext_zoom = {
 var extint_ext_is_tuning = false;
 
 // mode, zoom and passband are optional
-function ext_tune(freq_dial_kHz, mode, zoom, zoom_level, low_cut, high_cut) {
+function ext_tune(freq_dial_kHz, mode, zoom, zlevel, low_cut, high_cut, opt) {
    var pb_specified = (low_cut != undefined && high_cut != undefined);
-	//console.log('ext_tune: '+ freq_dial_kHz +', '+ mode +', '+ zoom +', '+ zoom_level);
+	//console.log('ext_tune: '+ freq_dial_kHz +', '+ mode +', '+ zoom +', '+ zlevel);
 	
 	extint_ext_is_tuning = true;
-      freqmode_set_dsp_kHz(freq_dial_kHz, mode);
+      freqmode_set_dsp_kHz(freq_dial_kHz, mode, opt);
       if (pb_specified) ext_set_passband(low_cut, high_cut);
       
       if (zoom != undefined) {
-         zoom_step(zoom, zoom_level);
+         if (zoom == ext_zoom.CUR)
+            zoom_step(ext_zoom.ABS, zoom_level);
+         else
+            zoom_step(zoom, zlevel);
       } else {
          zoom_step(ext_zoom.TO_BAND);
       }
@@ -290,6 +295,11 @@ function ext_get_tuning()
 function ext_get_zoom()
 {
 	return zoom_level;
+}
+
+function ext_set_scanning(scanning)
+{
+	extint.scanning = scanning? 1:0;
 }
 
 function ext_agc_delay(set_val)
@@ -542,8 +552,10 @@ function ext_panel_init()
 	      if (evt.key == 'Escape' && extint.displayed && !confirmation.displayed) {
 	         // simulate click in case something other than extint_panel_hide() has been hooked
 	         //extint_panel_hide();
-	         if (w3_call(extint.current_ext_name +'_escape_key_cb') != true)
+	         if (w3_call(extint.current_ext_name +'_escape_key_cb') != true) {
+	            console.log('EXT ESC: no _escape_key_cb() routine, so doing id-ext-controls-close.click()');
 	            w3_el('id-ext-controls-close').click();
+	         }
 	      }
 	   }, true);
 }
@@ -576,7 +588,7 @@ function extint_panel_show(controls_html, data_html, show_func, show_help_button
 	}
 
    // remove previous use of spectrum (if any)
-   ext_hide_spectrum();
+   //jks ext_hide_spectrum();
 
    // remove previous help panel if displayed
    if (extint.help_displayed == true) {
@@ -652,9 +664,9 @@ function extint_panel_hide()
 	w3_select_value('id-select-ext', -1);
 	
 	resize_waterfall_container(true);	// necessary if an ext was present so wf canvas size stays correct
-   freqset_select();
 
-   extint.displayed = false;
+   extint.displayed = false;     // NB: must occur before freqset_select() below so closed_ext_input_still_holding_focus logic works
+   freqset_select();
 }
 
 function extint_help_click_now()

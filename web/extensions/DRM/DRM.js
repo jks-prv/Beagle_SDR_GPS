@@ -712,6 +712,8 @@ function drm_get_stations_done_cb(stations)
          return;
       }
       console.log(stations);
+      
+      // load the default station list from a file embedded with the extension
       var url = kiwi_url_origin() +'/extensions/DRM/stations.cjson';
       console.log('drm_get_stations_done_cb: using default station list '+ url);
       drm.using_default = true;
@@ -729,8 +731,7 @@ function drm_get_stations_done_cb(stations)
       var is_India_MW = false;
       stations.forEach(function(obj, i) {    // each object of outer array
          prefix = '';
-         w3_obj_enum(obj, function(key, i1) {   // each object
-            var ar1 = obj[key];
+         w3_obj_enum(obj, function(key, i1, ar1) {   // each object
             if (i1 == 0) {
                region = key;
                if (region == 'India MW') {
@@ -1055,7 +1056,7 @@ function drm_desktop_controls_setup(w_graph)
          ) +
 
          w3_inline('w3-margin-T-8/w3-margin-between-16',
-            w3_select('|color:red', '', 'database', 'drm.database', drm.database, drm.database_s, 'drm_database_cb'),
+            w3_select('w3-text-red', '', 'database', 'drm.database', drm.database, drm.database_s, 'drm_database_cb'),
             w3_button('id-drm-stop-button w3-padding-smaller w3-pink', 'Stop', 'drm_stop_start_cb'),
             w3_button('w3-padding-smaller w3-pink', 'Monitor IQ', 'drm_monitor_IQ_cb'),
             //w3_button('w3-padding-smaller w3-css-yellow', 'Reset', 'drm_reset_cb'),
@@ -1531,7 +1532,7 @@ function DRM_config_html()
    var s =
       w3_inline_percent('w3-container',
          w3_div('w3-center',
-            w3_select('|color:red', 'Number of non-DRM connections allowed<br>when DRM in use',
+            w3_select('w3-text-red', 'Number of non-DRM connections allowed<br>when DRM in use',
                '', 'DRM.nreg_chans', drm.nreg_chans, drm.nreg_chans_u, 'admin_select_cb')
          ), 40
       );

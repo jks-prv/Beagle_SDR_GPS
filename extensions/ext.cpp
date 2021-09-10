@@ -74,9 +74,16 @@ void ext_adjust_clock_offset(int rx_chan, double offset)
     */
 }
 
+double ext_get_displayed_freq_kHz(int rx_chan)
+{
+    conn_t *conn = rx_channels[rx_chan].conn;
+    if (conn == NULL) return 0;
+    return ((double) conn->freqHz / kHz + freq_offset);
+}
+
 ext_auth_e ext_auth(int rx_chan)
 {
-    conn_t *conn = (&rx_channels[rx_chan])->conn;
+    conn_t *conn = rx_channels[rx_chan].conn;
     if (conn->isLocal) return AUTH_LOCAL;
     if (conn->isPassword) return AUTH_PASSWORD;
     return AUTH_USER;
@@ -150,6 +157,21 @@ void ext_unregister_receive_S_meter(int rx_chan)
 	ext_users[rx_chan].receive_S_meter = NULL;
 }
 
+void ext_register_receive_cmds(ext_receive_cmds_t func, int rx_chan)
+{
+    conn_t *conn = rx_channels[rx_chan].conn;
+	conn->ext_cmd = func;
+	if (conn->other != NULL) conn->other->ext_cmd = func;
+}
+
+void ext_unregister_receive_cmds(int rx_chan)
+{
+    conn_t *conn = rx_channels[rx_chan].conn;
+    if (conn == NULL) return;
+	conn->ext_cmd = NULL;
+	if (conn->other != NULL) conn->other->ext_cmd = NULL;
+}
+
 static int n_exts;
 static ext_t *ext_list[N_EXT];
 
@@ -169,6 +191,24 @@ int ext_send_msg(int rx_chan, bool debug, const char *msg, ...)
 	char *s;
 
 	conn_t *conn = ext_users[rx_chan].conn_ext;
+	if (!conn) return -1;
+	va_start(ap, msg);
+	vasprintf(&s, msg, ap);
+	va_end(ap);
+	if (debug) printf("ext_send_msg: RX%d(%p) <%s>\n", rx_chan, conn, s);
+	send_msg_buf(conn, s, strlen(s));
+	kiwi_ifree(s);
+	return 0;
+}
+
+// send to the SND web socket, NOT the EXT web socket
+// note the conn_t difference below
+int ext_send_snd_msg(int rx_chan, bool debug, const char *msg, ...)
+{
+	va_list ap;
+	char *s;
+
+	conn_t *conn = rx_channels[rx_chan].conn;
 	if (!conn) return -1;
 	va_start(ap, msg);
 	vasprintf(&s, msg, ap);
@@ -289,6 +329,7 @@ void extint_ext_users_init(int rx_chan)
 {
     // so that rx_chan_free_count() doesn't count EXT_FLAGS_HEAVY when extension isn't running
     //printf("extint_ext_users_init rx_chan=%d\n", rx_chan);
+    c2s_waterfall_no_sync(rx_chan, false);      // NB: be certain to disable waterfall no_sync mode
     rx_channels[rx_chan].ext = NULL;
     memset(&ext_users[rx_chan], 0, sizeof(ext_users_t));
 }
@@ -378,7 +419,7 @@ void extint_c2s(void *param)
 			}
 			kiwi_ifree(client_m);
 			
-			i = sscanf(cmd, "SET ext_blur=%d", &rx_chan);
+			i = sscanf(cmd, "SET ext_blur=%d", &rx_chan);   // SECURITY: why do we need to accept rx_chan from client?!?
 			if (i == 1) {
 				extint_ext_users_init(rx_chan);
 				continue;
@@ -429,10 +470,13 @@ void extint_c2s(void *param)
 		bool keepalive_expired = (!conn_ext->internal_connection && conn_ext->keep_alive > KEEPALIVE_SEC);
 		if (keepalive_expired || conn_ext->kick) {
 			//printf("EXT %s RX%d %s\n", conn_ext->kick? "KICKED" : "KEEP-ALIVE EXPIRED", ext_rx_chan, ext? ext->name : "(no ext)");
-			if (ext != NULL && ext->close_conn != NULL)
+			if (ext != NULL && ext->close_conn != NULL) {
 				ext->close_conn(ext_rx_chan);
-			if (ext_rx_chan != -1)
+                c2s_waterfall_no_sync(ext_rx_chan, false);      // NB: be certain to disable waterfall no_sync mode
+			}
+			if (ext_rx_chan != -1) {
 				extint_ext_users_init(ext_rx_chan);
+			}
 			rx_server_remove(conn_ext);
 			panic("shouldn't return");
 		}

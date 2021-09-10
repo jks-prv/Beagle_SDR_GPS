@@ -31,21 +31,27 @@ var audio = {
    
    lo_cut: 0,
    hi_cut: 0,
+   
+   SND_FLAG_LPF:           0x0001,
+   SND_FLAG_ADC_OVFL:      0x0002,
+   SND_FLAG_NEW_FREQ:      0x0004,
+   SND_FLAG_MODE_IQ:       0x0008,
+   SND_FLAG_COMPRESSED:    0x0010,
+   SND_FLAG_RESTART:       0x0020,
+   SND_FLAG_SQUELCH_UI:    0x0040,
+   SND_FLAG_LITTLE_ENDIAN: 0x0080,
+   
+   SND_FLAG_SET_ACTIVE:    0x0100,
+   SND_FLAG_CLR_ACTIVE:    0x0200,
+   SND_FLAG_TUNE_ACK:      0x0400,
+   
+   cur_flags2: 0,
+   
+   _last: 0
 };
 
 // constants
 var audio_periodic_interval_ms = 1000; // the interval in which audio_periodic() is called
-
-var audio_flags = {
-   SND_FLAG_LPF:           0x01,
-   SND_FLAG_ADC_OVFL:      0x02,
-   SND_FLAG_NEW_FREQ:      0x04,
-   SND_FLAG_MODE_IQ:       0x08,
-   SND_FLAG_COMPRESSED:    0x10,
-   SND_FLAG_RESTART:       0x20,
-   SND_FLAG_SQUELCH_UI:    0x40,
-   SND_FLAG_LITTLE_ENDIAN: 0x80
-};
 
 // init only once
 var audio_ext_sequence = 0;
@@ -248,11 +254,11 @@ function audio_init(is_local, less_buffering, compression)
    audio_mode_iq = false;
    audio_compression = compression? true:false;
    audio_stat_input_epoch = -1;
-   audio_prepared_buffers = Array();
-   audio_prepared_buffers2 = Array();
-   audio_prepared_seq = Array();
-   audio_prepared_flags = Array();
-   audio_prepared_smeter = Array();
+   audio_prepared_buffers = [];
+   audio_prepared_buffers2 = [];
+   audio_prepared_seq = [];
+   audio_prepared_flags = [];
+   audio_prepared_smeter = [];
    audio_buffering = false;
    audio_convolver_running = false;
    audio_meas_dly = 0;
@@ -657,20 +663,24 @@ function audio_onprocess(ev)
 	owrx.sMeter_dBm = owrx.sMeter_dBm_biased - SMETER_BIAS;
 	
 	var flags = audio_prepared_flags.shift();
-	audio_ext_adc_ovfl = (flags & audio_flags.SND_FLAG_ADC_OVFL)? true:false;
+	audio_ext_adc_ovfl = (flags & audio.SND_FLAG_ADC_OVFL)? true:false;
 
-	if (flags & audio_flags.SND_FLAG_LPF) {
+	if (flags & audio.SND_FLAG_LPF) {
 		audio_change_LPF_delayed = true;
 	}
 	
 	// synchronize squelch UI changes with delayed time of actual audio squelch
-	var sq = (flags & audio_flags.SND_FLAG_SQUELCH_UI)? true:false;
+	var sq = (flags & audio.SND_FLAG_SQUELCH_UI)? true:false;
 	if (sq != audio_last_sq && isDefined(squelch_action)) {
       setTimeout(function(sq) { squelch_action(sq); }, 1, sq);
 	   audio_last_sq = sq;
 	}
-	
-	if (audio_meas_dly_ena && audio_meas_dly_start && (flags & audio_flags.SND_FLAG_NEW_FREQ)) {
+
+   if (flags & audio.SND_FLAG_TUNE_ACK) {
+      setTimeout(function(tune_freq) { w3_call('ale_2g_tune_ack', tune_freq); }, 10, audio.tune_freq);
+   }
+
+	if (audio_meas_dly_ena && audio_meas_dly_start && (flags & audio.SND_FLAG_NEW_FREQ)) {
 		audio_meas_dly = (new Date()).getTime() - audio_meas_dly_start;
       kiwi_log('AUDIO dly='+ audio_meas_dly);
 		audio_meas_dly_start = 0;
@@ -765,13 +775,13 @@ function audio_recv(data)
 	
    // if camping and compressed have to wait for MSG with adpcm state
    //if (audio_camping)
-   //console.log('camping='+ audio_camping +' comp='+ ((flags & audio_flags.SND_FLAG_COMPRESSED)? 1:0) +' seq='+ seq);
-   if (audio_camping == 1 && (flags & audio_flags.SND_FLAG_COMPRESSED)) return;
+   //console.log('camping='+ audio_camping +' comp='+ ((flags & audio.SND_FLAG_COMPRESSED)? 1:0) +' seq='+ seq);
+   if (audio_camping == 1 && (flags & audio.SND_FLAG_COMPRESSED)) return;
    
 	var sm8 = new Uint8Array(data, 8, 2);
 	var smeter = (sm8[0] << 8) | sm8[1];
 	
-	var isIQ = (flags & audio_flags.SND_FLAG_MODE_IQ);
+	var isIQ = (flags & audio.SND_FLAG_MODE_IQ);
 	var offset = isIQ? 20 : 10;
 	var data_view = new DataView(data, offset);
 	var bytes = data_view.byteLength;
@@ -779,7 +789,7 @@ function audio_recv(data)
 	var i, samps;
 	
 	if (audio_watchdog_restart) {
-	   if (!(flags & audio_flags.SND_FLAG_RESTART)) return;
+	   if (!(flags & audio.SND_FLAG_RESTART)) return;
 	   audio_watchdog_restart = false;
 	   
       audio_prepared_buffers = [];
@@ -825,7 +835,7 @@ function audio_recv(data)
 	   // need to restart audio in two cases:
 	   //    transition from IQ -> !IQ
 	   //    when in !IQ there is a change in compression flag
-	   var compressed = (flags & audio_flags.SND_FLAG_COMPRESSED)? true:false;
+	   var compressed = (flags & audio.SND_FLAG_COMPRESSED)? true:false;
 	   if (audio_mode_iq || (audio_compression != compressed)) {
          audio_prepared_buffers = [];
          audio_prepared_buffers2 = [];
@@ -869,7 +879,7 @@ function audio_recv(data)
 		samps = bytes/2;		// i.e. non-IQ: 1024 8b bytes ->  512 16b real samps,                     1KB -> 1KB, 1:1 no compression
 		                     // i.e.     IQ: 2048 8b bytes -> 1024 16b  I,Q samps (512 IQ samp pairs), 2KB -> 2KB, 1:1 never compression
       for (i=0; i < samps; i++) {
-         audio_data[i] = data_view.getInt16(i*2, (flags & audio_flags.SND_FLAG_LITTLE_ENDIAN)? true:false);   // convert from network byte-order
+         audio_data[i] = data_view.getInt16(i*2, (flags & audio.SND_FLAG_LITTLE_ENDIAN)? true:false);   // convert from network byte-order
       }
 	}
 	
@@ -917,6 +927,27 @@ function audio_recv(data)
 	}
 }
 
+function audio_recv_flags2(p)
+{
+   var ap = p.split(':');
+   
+   switch (ap[0]) {
+   
+   case 'active':
+      var active = +ap[1];
+      console.log('$ active='+ active);
+      audio.cur_flags2 |= active? audio.SND_FLAG_SET_ACTIVE : SND_FLAG_CLR_ACTIVE;
+      break;
+   
+   case 'tune_ack':
+      audio.tune_freq = +ap[1];
+      console.log('$ tune_ack='+ audio.tune_freq);
+      audio.cur_flags2 |= audio.SND_FLAG_TUNE_ACK;
+      break;
+   
+   }
+}
+
 var audio_push_ct = 0;
 
 function audio_prepare(data, data_len, seq, flags, smeter)
@@ -936,22 +967,28 @@ function audio_prepare(data, data_len, seq, flags, smeter)
 		// don't miss any SND_FLAG_LPF flags because dopush() isn't invoked for every call to audio_prepare()
 		if (audio_change_LPF_latch) {
 		   audio_change_LPF_latch = false;
-			flags |= audio_flags.SND_FLAG_LPF;
+			flags |= audio.SND_FLAG_LPF;
 		}
 
 		// don't miss any SND_FLAG_NEW_FREQ flags because dopush() isn't invoked for every call to audio_prepare()
 		if (audio_change_freq_latch) {
 		   audio_change_freq_latch = false;
-			flags |= audio_flags.SND_FLAG_NEW_FREQ;
+			flags |= audio.SND_FLAG_NEW_FREQ;
 		}
 		
 		// don't miss any SND_FLAG_SQUELCH_UI flags because dopush() isn't invoked for every call to audio_prepare()
 		if (audio_change_sq_UI_latch) {
 		   audio_change_sq_UI_latch = false;
-			flags |= audio_flags.SND_FLAG_SQUELCH_UI;
+			flags |= audio.SND_FLAG_SQUELCH_UI;
+		}
+		
+		if (audio.cur_flags2) {
+		   flags |= audio.cur_flags2;
+		   audio.cur_flags2 = 0;
 		}
 		
 		audio_prepared_flags.push(flags);
+
 		audio_prepared_smeter.push(smeter);
 		audio_last_output_offset = 0;
 		audio_last_output_buffer = new Float32Array(audio_buffer_size);
@@ -1106,12 +1143,12 @@ function audio_prepare(data, data_len, seq, flags, smeter)
 		idata_length = data_len;
 	}
 	
-   if (flags & audio_flags.SND_FLAG_LPF) {
+   if (flags & audio.SND_FLAG_LPF) {
       audio_change_LPF_latch = true;
    }
 
 	// reduce latency during freq or mode change by trimming most recent buffers back to minimum
-   if ((flags & audio_flags.SND_FLAG_NEW_FREQ) || audio.trim_bufs) {
+   if ((flags & audio.SND_FLAG_NEW_FREQ) || audio.trim_bufs) {
       audio_change_freq_latch = true;
       audio.trim_bufs = false;
       //console.log('NEW_FREQ audio_meas_dly_ena='+ audio_meas_dly_ena +' audio_meas_dly_start='+ audio_meas_dly_start);
@@ -1129,7 +1166,7 @@ function audio_prepare(data, data_len, seq, flags, smeter)
       }
    }
 	
-   if (flags & audio_flags.SND_FLAG_SQUELCH_UI) {
+   if (flags & audio.SND_FLAG_SQUELCH_UI) {
       audio_change_sq_UI_latch = true;
    }
 
