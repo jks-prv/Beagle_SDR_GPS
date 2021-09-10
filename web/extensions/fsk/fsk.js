@@ -437,7 +437,7 @@ function fsk_controls_setup()
 
 	fsk.jnx = new JNX();
 	fsk.freq = ext_get_freq()/1e3;
-	//w3_console_obj(fsk.jnx, 'fsk.jnx');
+	//w3_console.log(fsk.jnx, 'fsk.jnx');
 	fsk.jnx.set_baud_error_cb(fsk_baud_error);
 	fsk.jnx.set_output_char_cb(fsk_output_char);
 
@@ -522,27 +522,27 @@ function fsk_controls_setup()
 
             w3_inline('/w3-margin-between-16',
                w3_inline('',
-                  w3_select('|color:red', '', 'shift', 'fsk.shift_i', W3_SELECT_SHOW_TITLE, fsk_shift_s, 'fsk_shift_cb'),
+                  w3_select('w3-text-red', '', 'shift', 'fsk.shift_i', W3_SELECT_SHOW_TITLE, fsk_shift_s, 'fsk_shift_cb'),
                   w3_input('id-fsk-shift-custom w3-margin-left w3-hide|padding:0;width:auto|size=4', '', 'fsk.shift_cval', fsk.shift_cval, 'fsk_shift_custom_cb')
                ),
 
                w3_inline('',
-                  w3_select('|color:red', '', 'baud', 'fsk.baud_i', W3_SELECT_SHOW_TITLE, fsk_baud_s, 'fsk_baud_cb'),
+                  w3_select('w3-text-red', '', 'baud', 'fsk.baud_i', W3_SELECT_SHOW_TITLE, fsk_baud_s, 'fsk_baud_cb'),
                   w3_input('id-fsk-baud-custom w3-margin-left w3-hide|padding:0;width:auto|size=4', '', 'fsk.baud_cval', fsk.baud_cval, 'fsk_baud_custom_cb')
                ),
 
-               w3_select('|color:red', '', 'framing', 'fsk.framing', fsk.framing, fsk_framing_s, 'fsk_framing_cb'),
+               w3_select('w3-text-red', '', 'framing', 'fsk.framing', fsk.framing, fsk_framing_s, 'fsk_framing_cb'),
 
-               w3_select('|color:red', '', 'encoding', 'fsk.encoding', fsk.encoding, fsk_encoding_s, 'fsk_encoding_cb'),
+               w3_select('w3-text-red', '', 'encoding', 'fsk.encoding', fsk.encoding, fsk_encoding_s, 'fsk_encoding_cb'),
 
                w3_checkbox('w3-label-inline w3-label-not-bold/', 'inverted', 'fsk.inverted', fsk.inverted, 'fsk_inverted_cb')
             ),
 
             w3_inline('/w3-margin-between-16',
-					w3_button('w3-padding-smaller', 'Next', 'fsk_next_prev_cb', 1),
-					w3_button('w3-padding-smaller', 'Prev', 'fsk_next_prev_cb', -1),
+					w3_button('w3-padding-smaller', 'Next', 'w3_select_next_prev_cb', { dir:w3_MENU_NEXT, id:'fsk.menu', func:'fsk_pre_select_cb' }),
+					w3_button('w3-padding-smaller', 'Prev', 'w3_select_next_prev_cb', { dir:w3_MENU_PREV, id:'fsk.menu', func:'fsk_pre_select_cb' }),
 
-               w3_select('|color:red', '', 'mode', 'fsk.mode', 0, fsk_mode_s, 'fsk_mode_cb'),
+               w3_select('w3-text-red', '', 'mode', 'fsk.mode', 0, fsk_mode_s, 'fsk_mode_cb'),
 
                w3_div('',
                   w3_inline('id-fsk-decode/',
@@ -551,14 +551,14 @@ function fsk_controls_setup()
    
                   w3_inline('id-fsk-framing w3-hide/w3-margin-between-16',
                      w3_button('w3-padding-smaller', 'Sample', 'fsk_sample_cb', 0),
-                     w3_select('|color:red', '', 'bits/word', 'fsk.fr_bpw', 0, '5:15', 'fsk_bpw_cb'),
-                     w3_select('|color:red', '', 'phase', 'fsk.fr_phase', 0, '0:15', 'fsk_phase_cb'),
-                     w3_select('|color:red', '', 'bits/data', 'fsk.fr_bpw', 0, fsk_bpd_s, 'fsk_bpd_cb')
+                     w3_select('w3-text-red', '', 'bits/word', 'fsk.fr_bpw', 0, '5:15', 'fsk_bpw_cb'),
+                     w3_select('w3-text-red', '', 'phase', 'fsk.fr_phase', 0, '0:15', 'fsk_phase_cb'),
+                     w3_select('w3-text-red', '', 'bits/data', 'fsk.fr_bpw', 0, fsk_bpd_s, 'fsk_bpd_cb')
                   ),
    
                   w3_inline('id-fsk-scope w3-hide/w3-margin-between-16',
                      w3_button('w3-padding-smaller', 'Single', 'fsk_single_cb', 0),
-                     w3_select('|color:red', '', 'decim', 'fsk.decim', 3, fsk_decim_s, 'fsk_decim_cb')
+                     w3_select('w3-text-red', '', 'decim', 'fsk.decim', 3, fsk_decim_s, 'fsk_decim_cb')
                   )
                )
             )
@@ -699,9 +699,9 @@ function fsk_pre_select_cb(path, idx, first)
       var j = id[1];
       //console.log('fsk_pre_select_cb i='+ i +' j='+ j);
       var o = w3_obj_seq_el(fsk_menus[menu_n], i);
-      //w3_console_obj(o);
+      //w3_console.log(o);
       o = w3_obj_seq_el(o, j);
-      //w3_console_obj(o);
+      //w3_console.log(o);
    
       if (fsk.header == 'Test mode') {
          fsk.test_mode = true;
@@ -731,15 +731,22 @@ function fsk_pre_select_cb(path, idx, first)
 	});
 
    // reset other frequency menus
+   fsk_clear_menus(menu_n);
+}
+
+function fsk_clear_menus(except)
+{
+   // reset frequency menus
    for (var i = 0; i < fsk.n_menu; i++) {
-      if (i != menu_n)
+      if (!isArg(except) || i != except)
          w3_select_value('fsk.menu'+ i, -1);
    }
 }
 
 function fsk_environment_changed(changed)
 {
-   //w3_console_obj(changed);
+   //w3_console.log(changed, 'fsk_environment_changed');
+   if (!changed.freq && !changed.mode) return;
    fsk_crosshairs(1);
 
    // reset all frequency menus when frequency etc. is changed by some other means (direct entry, WF click, etc.)
@@ -748,9 +755,7 @@ function fsk_environment_changed(changed)
    var mode = ext_get_mode();
    //console.log('FSK ENV fsk.freq='+ fsk.freq +' dsp_freq='+ dsp_freq +' mode='+ mode);
    if (fsk.freq != dsp_freq || mode != 'cw') {
-      for (var i = 0; i < fsk.n_menu; i++) {
-         w3_select_value('fsk.menu'+ i, -1);
-      }
+      fsk_clear_menus();
       fsk.menu_sel = '';
       w3_el('id-fsk-station').innerHTML = '&nbsp;';
    }
@@ -842,46 +847,6 @@ function fsk_inverted_cb(path, checked, first)
    fsk.inverted = checked;
    w3_checkbox_set(path, checked);
    fsk_setup();
-}
-
-function fsk_next_prev_cb(path, np, first)
-{
-	np = +np;
-	//console.log('fsk_next_prev_cb np='+ np);
-	
-   // if any menu has a selection value then select next/prev (if any)
-   var prev = 0, capture_next = 0, captured_next = 0, captured_prev = 0;
-   var menu;
-   
-   for (var i = 0; i < fsk.n_menu; i++) {
-      menu = 'fsk.menu'+ i;
-      var el = w3_el(menu);
-      var val = el.value;
-      //console.log('menu='+ menu +' value='+ val);
-      if (val == -1) continue;
-      
-      w3_select_enum(menu, function(option) {
-	      if (option.disabled) return;
-         if (capture_next) {
-            captured_next = option.value;
-            capture_next = 0;
-         }
-         if (option.value === val) {
-            captured_prev = prev;
-            capture_next = 1;
-         }
-         prev = option.value;
-      });
-      break;
-   }
-
-	//console.log('i='+ i +' captured_prev='+ captured_prev +' captured_next='+ captured_next);
-	val = 0;
-	if (np == 1 && captured_next) val = captured_next;
-	if (np == -1 && captured_prev) val = captured_prev;
-	if (val) {
-      fsk_pre_select_cb(menu, val, false);
-   }
 }
 
 function fsk_mode_cb(path, idx, first)
