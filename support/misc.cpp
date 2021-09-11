@@ -262,7 +262,7 @@ void input_msg_internal(conn_t *conn, const char *fmt, ...)
 	va_list ap;
 	char *s;
 
-	if (conn == NULL || fmt == NULL) return;
+	if (conn == NULL || fmt == NULL || !conn->valid) return;
 	
 	va_start(ap, fmt);
 	vasprintf(&s, fmt, ap);
