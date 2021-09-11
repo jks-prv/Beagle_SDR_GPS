@@ -104,7 +104,7 @@ typedef enum { RX4_WF4=0, RX8_WF2=1, RX3_WF3=2, RX14_WF0=3 } firmware_e;
 
 void fpga_init();
 
-void update_vars_from_config();
+void update_vars_from_config(bool called_at_init = false);
 void cfg_adm_transition();
 void dump();
 
@@ -115,6 +115,7 @@ void c2s_sound_shutdown(void *param);
 
 void c2s_waterfall_init();
 void c2s_waterfall_compression(int rx_chan, bool compression);
+void c2s_waterfall_no_sync(int rx_chan, bool no_sync);
 void c2s_waterfall_setup(void *param);
 void c2s_waterfall(void *param);
 void c2s_waterfall_shutdown(void *param);

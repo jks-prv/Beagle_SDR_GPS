@@ -82,6 +82,7 @@ void other_task(void *param)
 {
     void other_main(char *other_args, int p0, int p1, int p2);
     other_main(other_args, p0, p1, p2);
+    //other_main(int argc, char *argv[]);
     kiwi_exit(0);
 }
 #endif
@@ -91,6 +92,7 @@ int main(int argc, char *argv[])
 	int i;
 	int p_gps=0;
 	bool ext_clk = false, err;
+
 	#define FW_CONFIGURED   -2  // -2 because -1 means "other" firmware and 0-N is Kiwi firmware
 	#define FW_OTHER        -1
 	int fw_sel_override = FW_CONFIGURED;   
@@ -129,7 +131,8 @@ int main(int argc, char *argv[])
     
 	for (int ai = 1; ai < argc; ) {
 		if (ARG("-fw")) { ARGL(fw_sel_override); printf("firmware select override: %d\n", fw_sel_override); }
-		if (ARG("-other")) { other_args = ARGP(); printf("other args: \"%s\"\n", other_args); }
+		if (ARG("-other")) { fw_sel_override = FW_OTHER; other_args = ARGP(); printf("other args: \"%s\"\n", other_args); }
+		//if (ARG("-other")) { fw_sel_override = FW_OTHER; printf("other ai=%d/%d\n", ai+1, argc); break; }
 
 		if (ARG("-kiwi_reg")) kiwi_reg_debug = TRUE;
 		if (ARG("-bg")) { background_mode = TRUE; bg=1; }
@@ -219,7 +222,7 @@ int main(int argc, char *argv[])
         _exit(0);
     #endif
     
-    #if (defined(DEVSYS) && 0) || (defined(HOST) && 0)
+    #if (defined(DEVSYS) && 1) || (defined(HOST) && 0)
         void ale_2g_test();
         ale_2g_test();
         _exit(0);
@@ -248,8 +251,7 @@ int main(int argc, char *argv[])
     assert (NOT_FOUND != TRUE);
     assert (NOT_FOUND != FALSE);
     
-    struct stat st;
-    debug_printfs |= (stat(DIR_CFG "/opt.debug", &st) == 0);
+    debug_printfs |= kiwi_file_exists(DIR_CFG "/opt.debug")? 1:0;
 
     #ifndef PLATFORM_raspberrypi
         // on reboot let ntpd and other stuff settle first
@@ -406,8 +408,9 @@ int main(int argc, char *argv[])
 	CreateTask(stat_task, NULL, MAIN_PRIORITY);
 
     #ifdef USE_OTHER
-        if (fw_sel == FW_OTHER)
+        if (fw_sel == FW_OTHER) {
 	        CreateTask(other_task, NULL, MAIN_PRIORITY);
+	    }
     #endif
     
 	// run periodic housekeeping functions

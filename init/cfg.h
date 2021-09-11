@@ -53,6 +53,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define CFG_NO_DOT		0x0100
 #define CFG_NO_UPDATE   0x0200
 #define CFG_PARSE_VALID 0x0400
+#define CFG_DEBUG       0x0800
 
 #define CFG_LOOKUP_LVL1 ((jsmntok_t *) -1)
 
@@ -151,6 +152,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 
 // process JSON from a buffer
 #define json_init(cfg, json)				_cfg_init(cfg, CFG_NONE, json)
+#define json_init_flags(cfg, f, json)       _cfg_init(cfg, f, json)
 #define json_release(cfg)                   _cfg_release(cfg)
 #define json_walk(cfg, id, cb, param)       _cfg_walk(cfg, id, cb, param)
 

@@ -7,13 +7,14 @@
 function isUndefined(v) { return (typeof(v) === 'undefined'); }
 function isDefined(v) { return (typeof(v) !== 'undefined'); }
 function isNull(v) { return (v === null); }
-function isNumber(v) { return (typeof(v) === 'number'); }
+function isNumber(v) { return (typeof(v) === 'number' && !isNaN(v)); }
 function isBoolean(v) { return (typeof(v) === 'boolean'); }
 function isString(v) { return (typeof(v) === 'string'); }
 function isArray(v) { return (Array.isArray(v)); }
 function isFunction(v) { return (typeof(v) === 'function'); }
 function isObject(v) { return (typeof(v) === 'object'); }
 function isArg(v) { return (isUndefined(v) || isNull(v))? false:true; }
+function kiwi_typeof(v) { return isNull(v)? 'null' : (isArray(v)? 'array' : typeof(v)); }
 
 // browsers have added includes() only relatively recently
 try {
@@ -189,6 +190,11 @@ function arrayBufferToStringLen(buf, len)
 	return output;
 }
 
+function kiwi_dup_array(a)
+{
+   return a.slice();
+}
+
 function kiwi_shallow_copy(obj)
 {
    return Object.assign({}, obj);
@@ -311,6 +317,16 @@ Number.prototype.toHex = function(digits)
 	var s = n.toString(16);
 	while (s.length < digits) s = '0'+ s;
 	if (add_0x) s = '0x'+ s;
+	return s;
+}
+
+Number.prototype.toFixedNZ = function(d)
+{
+	var n = Number(this);
+	var s = n.toFixed(d);
+	while (s.endsWith('0'))
+	   s = s.slice(0, -1);
+	if (s.endsWith('.')) s = s.slice(0, -1);   // nnn.0 => nnn. => nnn
 	return s;
 }
 
@@ -561,6 +577,18 @@ function kiwi_url_origin()
 	return host;
 }
 
+// host{:port}
+function kiwi_host_port()
+{
+   return window.location.host;
+}
+
+// host (no port)
+function kiwi_host()
+{
+   return window.location.hostname;
+}
+
 // pnames can be: 'string' or [ 'string1', 'string2', ... ]
 function kiwi_url_param(pnames, default_val, not_found_val)
 {
@@ -645,6 +673,11 @@ function px(s)
       return '0';
    }
 	return num.toFixed(0) +'px';
+}
+
+function unpx(s)
+{
+   return parseFloat(s);   // parseFloat() because s = "nnnpx"
 }
 
 function css_style(el, prop)
@@ -1084,14 +1117,7 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
                   obj = { AJAX_error:'JSON prefix', response:response };
                } else {
                   try {
-                     // remove comments from JSON consisting of line beginning with '//' in column 1
-                     var decmt = false;
-                     while ((cb = response.indexOf('\n//')) != -1) {
-                        ce = response.indexOf('\n', cb+3);
-                        response = response.slice(0, cb) + response.slice(ce);
-                        decmt = true;
-                     }
-                     //if (decmt) console.log(response);
+                     response = kiwi_remove_cjson_comments(response);
                      obj = JSON.parse(response);		// response can be empty
                      dbug('AJAX JSON response:');
                      dbug(response);
@@ -1121,11 +1147,28 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
 	}
 
    if (timeout >= 0) {     // timeout < 0 is test mode
+      // DANGER: some URLs are relative e.g. /VER
+      //if (!url.startsWith('http://') && !url.startsWith('https://'))
+      //   url = 'http://'+ url;
       ajax.open(method, url, /* async */ true);
       dbug('AJAX SEND id='+ ajax_id +' url='+ url);
       ajax.send(data);
    }
 	return true;
+}
+
+// remove comments from JSON consisting of line beginning with '//' in column 1
+function kiwi_remove_cjson_comments(s)
+{
+   var removed = false;
+   var c_begin, c_end;
+   while ((c_begin = s.indexOf('\n//')) != -1) {
+      c_end = s.indexOf('\n', c_begin+3);
+      s = s.slice(0, c_begin) + s.slice(c_end);
+      removed = true;
+   }
+   //if (removed) console.log(s);
+   return s;
 }
 
 function kiwi_scrollbar_width()

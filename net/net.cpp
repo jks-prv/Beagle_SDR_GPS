@@ -729,6 +729,7 @@ void ip_blacklist_init()
     
     net.ipv4_blacklist_len = 0;
     for (int i=0; i < n; i++) {
+        real_printf("    \"%s\",\n", ips[i]);
         ip_blacklist_add(ips[i]);
     }
 
@@ -765,8 +766,8 @@ bool check_ip_blacklist(char *remote_ip, bool log)
 // For use by server-side internal connections, e.g. WSPR autorun, SNR measurement.
 
 bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port_base,
-    const char *mode, int locut, int hicut, float freq_kHz, const char *ident, const char *geoloc,
-    const char *client,
+    const char *mode, int locut, int hicut, float freq_kHz,
+    const char *ident, const char *geoloc, const char *client,
     int zoom, float cf_kHz, int min_dB, int max_dB, int wf_speed, int wf_comp)
 {
     struct mg_connection *mc_fail, *mcs = NULL, *mcw = NULL, *mce = NULL;

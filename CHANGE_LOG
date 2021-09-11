@@ -2,6 +2,75 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.462  September 10, 2021
+    ALE 2G extension preliminary release:
+        A work-in-progress. Lots of issues no doubt. See KiwiSDR forum for discussion.
+        Features
+            Net/station menus
+                Contents downloaded from kiwisdr.com on extension startup.
+                    Hence menu updates do not require a new software release.
+                "Collapse" mode to shown only scan or single-frequency entries.
+                Admin menu populated with JSON content from Admin > Extensions > ALE_2G page.
+            Variable scan speed and frequency filtering.
+                Net menus contain lots of entries. Filter for time-of-day propagation considerations.
+            Automatically record audio on ALE call establishment.
+            Select different types of ALE messages to display.
+    
+    By request:
+        Waterfall
+            Timestamps
+                When enabled they will appear on the waterfall left edge.
+            New "waterfall" extension
+                Select via "More" button on WFn tab or from the extension list.
+                Set WF timestamp interval here or with the new "wfts=SECS" URL parameter.
+                The aperture auto mode settings have moved here from the colormap extension.
+                Adjustments for the FFT window function, interpolation and CIC filter.
+            Right-click menu "save waterfall as JPG"
+                Also saves frequency scale (Thanks Yuri!) and spectrum if open.
+                Saved waterfall includes any timestamps.
+                Filename format compatible with Kiwi audio recording and kiwirecorder.
+                More waterfall is saved than seen in screen scrollable area.
+                    With 1 Hz waterfall update rate you can capture over an hour of timestamped WF.
+                Original feature was code contributed by Peter, VE3SUN.
+        
+        Audio tab
+            Added option to disable passband overload mute feature. Disabled by default
+            so as not to disturb audio recordings of extremely strong signals.
+
+        International WSPR Beacon Project (IWBP) frequency hop mode
+            For both the WSPR extension and autorun (background) mode there is a new
+            band menu entry called "IWBP". This causes the receive frequency to automatically
+            hop every two minutes according to the schedule here: github.com/HB9VQQ/WSPRBeacon
+    
+        S-meter extension now has timestamp option. UTC/local selected from waterfall extension.
+        
+        Admin > Config page
+            Passband center field now has a "lock" checkbox which holds the pbc constant
+            as the other fields are changed. Makes the passband center field behave like the
+            old CW offset field, i.e. change it and everything moves with it. Also, if an
+            asymmetrical passband is defined with a locked pbc, then changing the passband width
+            maintains the asymmetry.
+        
+        Admin > Network page
+            Added an IP address blacklist file download button. The blacklist file is
+            curated from user contributions. See KiwiSDR forum for details.
+        
+        Admin > Update page
+            Added new menu "after a restart": "install updates", "delay updates until overnight".
+            Can prevent a pending update from being annoyingly installed just because you restarted.
+
+    Bug fixes:
+        Largest frequency step now 1 kHz in SSB modes (incorrectly changed to 5 kHz recently).
+
+        The configuration files kiwi.config/{kiwi,admin,dx}.json are now pretty-printed with
+            fewer URI character escapes. Improves readability and makes manual editing easier.
+
+        IBP_scan extension (VE3SUN contribution) working again using current API.
+
+        Vivado/Verilog (FPGA)
+            Continuing changes to allow Kiwi to be used as a general FPGA development platform.
+            Many fewer warning messages now from Vivado when building the Kiwi Verilog code.
+
 v1.461  July 15, 2021
     Bug fixes:
         MW 9/10 kHz step applies up to 1710 kHz regardless of selected ITU mode.

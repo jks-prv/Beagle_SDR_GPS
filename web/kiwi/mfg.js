@@ -21,8 +21,8 @@ function mfg_draw()
 		);
 	
 	s += ver_maj?
-		w3_div('|color:lime', '<h2>OKAY to make customer SD cards using this.</h2>') :
-		w3_div('|color:red"', '<h2>WARNING: Use for testing only!<br>Do not make customer SD cards with this yet.</h2>');
+		w3_div('w3-text-css-lime', '<h2>OKAY to make customer SD cards using this.</h2>') :
+		w3_div('w3-text-red"', '<h2>WARNING: Use for testing only!<br>Do not make customer SD cards with this yet.</h2>');
 
 	s +=
 		w3_div('',

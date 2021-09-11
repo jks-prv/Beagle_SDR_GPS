@@ -18,8 +18,6 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-`include "kiwi.vh"
-
 `default_nettype none
 
 // E1B code memory gadget
@@ -39,6 +37,9 @@ module E1BCODE (
     input  wire [GPS_CHANS-1:0] full_chip,
     output reg  [GPS_CHANS-1:0] code_o
 );
+
+`include "kiwi.gen.vh"
+
     localparam CH_MSB = clog2(GPS_CHANS) - 1;
     reg [CH_MSB:0] ch_p = 0;
 

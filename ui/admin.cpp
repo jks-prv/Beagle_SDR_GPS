@@ -1128,23 +1128,17 @@ void c2s_admin(void *param)
 			if (i == 0) {
 			    if (conn->console_child_pid == 0) {
 			        bool no_console = false;
-			        struct stat st;
-		            if (stat(DIR_CFG "/opt.no_console", &st) == 0)
+		            if (kiwi_file_exists(DIR_CFG "/opt.no_console"))
 		                no_console = true;
 
-		            //#define TEST_NOT_LOCAL
-		            #ifdef TEST_NOT_LOCAL
-		                bool is_local = false;
-		            #else
-		                bool is_local = conn->isLocal;
-		            #endif
 		            bool console_local = admcfg_bool("console_local", NULL, CFG_REQUIRED);
 
-			        if (no_console == false && ((console_local && is_local) || !console_local)) {
+                    // conn->isLocal can be forced false for testing by using the URL "nolocal" parameter
+			        if (no_console == false && ((console_local && conn->isLocal) || !console_local)) {
 			            CreateTask(console, conn, ADMIN_PRIORITY);
 			        } else
 			        if (no_console) {
-                        send_msg_encoded(conn, "ADM", "console_c2w", "CONSOLE: disabled by kiwi.config/opt.no_console\n");
+                        send_msg_encoded(conn, "ADM", "console_c2w", "CONSOLE: disabled because kiwi.config/opt.no_console file exists\n");
 			        } else {
                         send_msg_encoded(conn, "ADM", "console_c2w", "CONSOLE: only available to local admin connections\n");
 			        }

@@ -17,8 +17,6 @@ Boston, MA  02110-1301, USA.
 
 // Copyright (c) 2014 John Seamons, ZL/KF6VO
 
-`include "kiwi.vh"
-
 module RECEIVER (
 	input wire		   adc_clk,
 	input wire signed [ADC_BITS-1:0] adc_data,
@@ -42,6 +40,8 @@ module RECEIVER (
     input  wire [15:0] ctrl
 	);
 	
+`include "kiwi.gen.vh"
+
 	wire set_rx_chan_C =	wrReg2 & op[SET_RX_CHAN];
 	wire freq_l =           wrReg2 & op[FREQ_L];
 	wire set_rx_freqH_C =   (wrReg2 & op[SET_RX_FREQ]) && !freq_l;

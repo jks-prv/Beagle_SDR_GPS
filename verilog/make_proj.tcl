@@ -347,7 +347,7 @@ current_run -implementation [get_runs impl_1]
 puts "INFO: Project created:$project_name"
 
 proc set_rx_cfg rx_cfg {
-    # the following doesn't seem to work, so do it via kiwi.cfg.vh file included by kiwi.vh
+    # the following doesn't seem to work, so do it via kiwi.cfg.vh file included by kiwi.gen.vh
     #set_property generic {RX_CFG=4} [current_fileset]
     set fdw [open "kiwi.cfg.vh" "w"]
     puts $fdw "parameter RX_CFG = ${rx_cfg};"

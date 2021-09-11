@@ -18,8 +18,6 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-`include "kiwi.vh"
-
 `default_nettype none
 
 module HOST (
@@ -52,19 +50,21 @@ module HOST (
     output reg		   boot_done,
     
     input  wire [15:0] tos,
-    input  wire [15:0] op,
+    input  wire [3:0]  op_03_00,
     input  wire        rdReg,
     input  wire        wrReg,
     input  wire        wrEvt
     );
     
+`include "kiwi.gen.vh"
+
     //////////////////////////////////////////////////////////////////////////
     // Host instruction decoding
 
-    wire host_rd  = rdReg & op[HOST_RX];
-    wire host_wr  = wrReg & op[HOST_TX];
-    wire host_rst = wrEvt & op[HOST_RST];
-    wire host_rdy = wrEvt & op[HOST_RDY];
+    wire host_rd  = rdReg & op_03_00[HOST_RX];
+    wire host_wr  = wrReg & op_03_00[HOST_TX];
+    wire host_rst = wrEvt & op_03_00[HOST_RST];
+    wire host_rdy = wrEvt & op_03_00[HOST_RDY];
 
     //////////////////////////////////////////////////////////////////////////
     // Host interface
@@ -303,7 +303,7 @@ module HOST (
     //////////////////////////////////////////////////////////////////////////
     // Parallel data MUXing
 
-    assign mem_rd = wrEvt & op[GET_MEMORY];
+    assign mem_rd = wrEvt & op_03_00[GET_MEMORY];
 
     always @*
         if (gps_rd)  hb_din = gps_dout;  else

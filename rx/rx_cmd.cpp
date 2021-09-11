@@ -37,6 +37,7 @@ Boston, MA  02110-1301, USA.
 #include "debug.h"
 #include "ext_int.h"
 #include "wspr.h"
+#include "security.h"
 
 #ifdef USE_SDR
  #include "data_pump.h"
@@ -55,7 +56,6 @@ Boston, MA  02110-1301, USA.
 kstr_t *cpu_stats_buf;
 volatile float audio_kbps[MAX_RX_CHANS+1], waterfall_kbps[MAX_RX_CHANS+1], waterfall_fps[MAX_RX_CHANS+1], http_kbps;
 volatile u4_t audio_bytes[MAX_RX_CHANS+1], waterfall_bytes[MAX_RX_CHANS+1], waterfall_frames[MAX_RX_CHANS+1], http_bytes;
-char *current_authkey;
 int debug_v;
 
 const char *mode_s[N_MODE] = {
@@ -101,7 +101,7 @@ int bsearch_freqcomp(const void *key, const void *elem)
 
 #endif
 
-// if entries here are ordered by cmd_key_e then the reverse lookup (str_hash_t *)->hashes[key].name
+// if entries here are ordered by rx_common_cmd_key_e then the reverse lookup (str_hash_t *)->hashes[key].name
 // will work as a debugging aid
 static str_hashes_t rx_common_cmd_hashes[] = {
     { "~~~~~~~~~~", STR_HASH_MISS },
@@ -157,6 +157,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	struct mg_connection *mc = conn->mc;
 	char *sb, *sb2;
 	int slen;
+	bool ok, err;
 	
 	if (mc == NULL) {
 	    //cprintf(conn, "### cmd but mc is null <%s>\n", cmd);
@@ -215,7 +216,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         if (n == 1) {
             //printf("CMD_OPTIONS 0x%x\n", options);
             #define OPT_NOLOCAL 1
-            if (options & OPT_NOLOCAL) conn->force_isLocal = true;
+            if (options & OPT_NOLOCAL) conn->force_notLocal = true;
             return true;
         }
 	    break;
@@ -225,6 +226,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         if (kiwi_str_begins_with(cmd, "SET auth")) {
     
             const char *pwd_s = NULL;
+            bool no_pwd = false;;
             int cfg_auto_login;
             const char *uri = rx_streams[conn->type].uri;
 
@@ -323,7 +325,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 close(fd);
             }
 
-            bool allow_gps_tstamp = admcfg_bool("console_local", NULL, CFG_REQUIRED);
             if (check_ip_against_interfaces) {
             
                 // SECURITY: call isLocal_if_ip() using mc->remote_ip NOT conn->remote_ip because the latter
@@ -332,7 +333,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 // so it will never be considered a local connection.
                 isLocal = isLocal_if_ip(conn, ip_remote(mc), (log_auth_attempt || pwd_debug)? "PWD" : NULL);
 
-                if (conn->force_isLocal) {
+                if (conn->force_notLocal) {
                     isLocal = IS_NOT_LOCAL;
                     pwd_debug = true;
                 }
@@ -347,8 +348,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 check_ip_against_restricted = false;
             }
 
-            pdbug_cprintf(conn, "PWD %s %s conn #%d isLocal=%d is_local=%d auth=%d auth_kiwi=%d auth_prot=%d auth_admin=%d check_ip_against_restricted=%d restricted_ip_match=%d from %s\n",
-                type_m, uri, conn->self_idx, isLocal, is_local,
+            pdbug_cprintf(conn, "PWD %s %s conn #%d force_notLocal=%d isLocal=%d is_local=%d auth=%d auth_kiwi=%d auth_prot=%d auth_admin=%d check_ip_against_restricted=%d restricted_ip_match=%d from %s\n",
+                type_m, uri, conn->self_idx, conn->force_notLocal, isLocal, is_local,
                 conn->auth, conn->auth_kiwi, conn->auth_prot, conn->auth_admin, check_ip_against_restricted, restricted_ip_match, conn->remote_ip);
         
             const char *tlimit_exempt_pwd = admcfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL);
@@ -394,12 +395,25 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 //cprintf(conn, "client_public_ip %s\n", client_public_ip);
             }
 
-		    int chan_no_pwd = rx_chan_no_pwd();
-            int chan_need_pwd = rx_chans - chan_no_pwd;
+            #ifdef CRYPT_PW
+                int seq;
+                char *salt = NULL, *hash = NULL;
+            #endif
 
             if (type_kiwi_prot) {
                 pwd_s = admcfg_string("user_password", NULL, CFG_REQUIRED);
-                bool no_pwd = (pwd_s == NULL || *pwd_s == '\0');
+                no_pwd = (pwd_s == NULL || *pwd_s == '\0');
+
+                #ifdef CRYPT_PW
+                    if (!kiwi_crypt_file_read(DIR_CFG "/.eup", &seq, &salt, &hash)) {
+                        printf("### DANGER: User password file not found or corrupted! Defaulting to no user password set.\n");
+                        admcfg_set_string("user_password", "");
+		                admcfg_save_json(cfg_adm.json);
+		                system("rm -f " DIR_CFG "/.eup");
+                        no_pwd = true;
+                    }
+                #endif
+
                 cfg_auto_login = admcfg_bool("user_auto_login", NULL, CFG_REQUIRED);
             
                 // config pwd set, but auto_login for local subnet is true
@@ -433,13 +447,13 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     // This minimum number is reduced by the number of already privileged connections.
                     // If no password has been set at all we've already allowed access above.
                     int already_privileged_conns = rx_count_server_conns(LOCAL_OR_PWD_PROTECTED_USERS, conn);
-                    chan_need_pwd -= already_privileged_conns;
+                    int chan_need_pwd = rx_chans - rx_chan_no_pwd() - already_privileged_conns;
                     if (chan_need_pwd < 0) chan_need_pwd = 0;
                     
                     // NB: ">=" not ">" because channel already allocated (freed if this check fails)
-                    pdbug_cprintf(conn, "PWD %s %s rx_free=%d >= chan_need_pwd=%d %s already_privileged_conns=%d\n", 
+                    pdbug_cprintf(conn, "PWD %s %s rx_free=%d >= chan_need_pwd=%d %s rx_chans=%d rx_chan_no_pwd()=%d already_privileged_conns=%d stream_mon=%d\n", 
                         type_m, uri, rx_free, chan_need_pwd,
-                        (rx_free >= chan_need_pwd)? "TRUE":"FALSE", already_privileged_conns);
+                        (rx_free >= chan_need_pwd)? "TRUE":"FALSE", rx_chans, rx_chan_no_pwd(), already_privileged_conns, stream_mon);
 
                     // always allow STREAM_MONITOR for the case when channels could become available
                     if (rx_free >= chan_need_pwd || stream_mon) {
@@ -452,8 +466,19 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             } else
         
             if (type_admin) {
-                pwd_s = admcfg_string("admin_password", NULL, CFG_REQUIRED);
-                bool no_pwd = (pwd_s == NULL || *pwd_s == '\0');
+                pwd_s = admcfg_string("admin_password", NULL, CFG_OPTIONAL);
+                no_pwd = (pwd_s == NULL || *pwd_s == '\0');
+
+                #ifdef CRYPT_PW
+                    if (!kiwi_crypt_file_read(DIR_CFG "/.eap", &seq, &salt, &hash)) {
+                        printf("### DANGER: Admin password file not found or corrupted! Defaulting to no admin password set.\n");
+                        admcfg_set_string("admin_password", "");
+		                admcfg_save_json(cfg_adm.json);
+		                system("rm -f " DIR_CFG "/.eap");
+                        no_pwd = true;
+                    }
+                #endif
+
                 bool prior_auth = (conn->auth && conn->auth_admin);
                 cfg_auto_login = admcfg_bool("admin_auto_login", NULL, CFG_REQUIRED);
                 clfprintf(conn, prior_auth? PRINTF_REG : PRINTF_LOG, "PWD %s config pwd set %s, auto-login %s\n",
@@ -496,7 +521,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         
             int badp = 1;
 
-            pdbug_cprintf(conn, "PWD %s %s RESULT allow=%d pwd_s=<%s> pwd_m=<%s> cant_determine=%d is_local=%d isLocal(enum)=%d %s\n",
+            pdbug_cprintf(conn, "PWD %s %s RESULT: allow=%d pwd_s=<%s> pwd_m=<%s> cant_determine=%d is_local=%d isLocal(enum)=%d %s\n",
                 type_m, uri, allow, pwd_s, pwd_m, cant_determine, is_local, isLocal, conn->remote_ip);
 
             if (check_ip_against_restricted && !allow && !restricted_ip_match) {
@@ -526,7 +551,13 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     badp = 1;
                 } else {
                     //cprintf(conn, "PWD CMP %s pwd_s \"%s\" pwd_m \"%s\" from %s\n", type_m, pwd_s, pwd_m, conn->remote_ip);
-                    badp = strcasecmp(pwd_m, pwd_s)? 1:0;
+
+                    #ifdef CRYPT_PW
+                        badp = kiwi_crypt_validate(pwd_m, salt, hash)? 0:1;
+                    #else
+                        badp = strcasecmp(pwd_m, pwd_s)? 1:0;
+                    #endif
+
                     pdbug_cprintf(conn, "PWD %s %s %s:%s from %s\n", type_m, uri, badp? "REJECTED":"ACCEPTED",
                         type_prot? " (protected login)":"", conn->remote_ip);
                     if (!badp) {
@@ -536,6 +567,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 }
             }
         
+            #ifdef CRYPT_PW
+                kiwi_ifree(salt); kiwi_ifree(hash);
+            #endif
+            
             //cprintf(conn, "DUP_IP badp=%d skip_dup_ip_check=%d stream_snd_or_wf=%d\n", badp, skip_dup_ip_check, stream_snd_or_wf);
             //cprintf(conn, "DUP_IP rx%d %s %s\n", conn->rx_channel, uri, conn->remote_ip);
         
@@ -561,7 +596,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             }
 
             send_msg(conn, false, "MSG rx_chans=%d", rx_chans);
-            send_msg(conn, false, "MSG chan_no_pwd=%d", chan_no_pwd);   // potentially corrected from cfg.chan_no_pwd
+            send_msg(conn, false, "MSG chan_no_pwd=%d", rx_chan_no_pwd());  // potentially corrected from cfg.chan_no_pwd
             send_msg(conn, false, "MSG chan_no_pwd_true=%d", rx_chan_no_pwd(PWD_CHECK_YES));
             if (badp == 0 && (stream_snd || conn->type == STREAM_ADMIN)) {
                 send_msg(conn, false, "MSG is_local=%d,%d", conn->rx_channel, is_local? 1:0);
@@ -588,7 +623,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     conn->auth_admin = true;
                     int chan = conn->rx_channel;
 
-                    // give admin auth to all associated conns
+                    // give admin auth to all associated conns of this rx_channel
                     if (!stream_admin_or_mfg && chan != -1) {
                         conn_t *c = conns;
                         for (int i=0; i < N_CONNS; i++, c++) {
@@ -644,6 +679,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             assert(n == 1);
             //printf("SET save_cfg=...\n");
             kiwi_str_decode_inplace(json);
+            kiwi_str_decode_selective_inplace(json);
             cfg_save_json(json);
             kiwi_ifree(json);
             update_vars_from_config();      // update C copies of vars
@@ -669,6 +705,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             assert(n == 1);
             //printf("SET save_adm=...\n");
             kiwi_str_decode_inplace(json);
+            kiwi_str_decode_selective_inplace(json);
             admcfg_save_json(json);
             kiwi_ifree(json);
             update_vars_from_config();      // update C copies of vars
@@ -723,7 +760,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             // dx.len == 0 only applies when adding first entry to empty list
             if (gid != -1 && dx.len == 0) return true;
         
-            bool err = false;
+            err = false;
             dx_t *dxp;
             if (gid >= -1 && gid < dx.len) {
                 if (n == 2 && gid != -1 && freq == -1) {
@@ -993,7 +1030,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             // NB: ident, notes and params are already stored URL encoded
             printf("GET_DX_JSON len=%d\n", strlen(cfg_dx.json));
             send_msg(conn, false, "MSG dx_json=%s", cfg_dx.json);
-            kiwi_ifree(sb);
             return true;
         }
 	    break;

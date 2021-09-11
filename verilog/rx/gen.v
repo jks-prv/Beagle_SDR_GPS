@@ -17,8 +17,6 @@ Boston, MA  02110-1301, USA.
 
 // Copyright (c) 2014 John Seamons, ZL/KF6VO
 
-`include "kiwi.vh"
-
 module GEN (
 	input wire		   			adc_clk,
     output wire signed [17:0]	gen_data,
@@ -29,6 +27,8 @@ module GEN (
     input wire        			wrReg2
 	);
 	
+`include "kiwi.gen.vh"
+
 	//                               33 3
 	//                               54 3
 	// s.m MMMM(18) * s.m MMMM(18) = sc.mm MMMM MMMM(36) => s.m MMMM(18)

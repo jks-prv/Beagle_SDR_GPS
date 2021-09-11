@@ -17,8 +17,6 @@ Boston, MA  02110-1301, USA.
 
 // Copyright (c) 2014 John Seamons, ZL/KF6VO
 
-`include "kiwi.vh"
-
 // useful for WIDTH > 1 cases when Verilog mux notation (wire[sel]) doesn't work
 
 module MUX (
@@ -26,6 +24,8 @@ module MUX (
 	input  wire [NSEL-1:0]		sel,
 	output wire [WIDTH-1:0]		out
 	);
+
+`include "kiwi.gen.vh"
 
 	parameter WIDTH  = "required";
 	parameter SEL  = "required";

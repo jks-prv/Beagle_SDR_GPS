@@ -9,8 +9,10 @@ function graph_init(canvas, opt)
    gr.db_units = 'dB';
    gr.speed = 1;
    gr.marker = -1;
+   gr.x_tick = 0;
    gr.threshold = 0;
    gr.averaging = false;
+   gr.timestamp = false;
    gr.avg_dB = 0;
    gr.divider = false;
    
@@ -41,6 +43,7 @@ function graph_init(canvas, opt)
    gr.dBm = w3_opt(opt, 'dBm', 0);
    gr.speed = w3_opt(opt, 'speed', 1);
    gr.averaging = w3_opt(opt, 'averaging', false);
+   gr.timestamp = w3_opt(opt, 'timestamp', false);
    gr.plot_color = w3_opt(opt, 'color', 'black');
    
    if (gr.dBm) {
@@ -59,6 +62,7 @@ function graph_clear(gr)
 	var ct = gr.ct;
 	ct.fillStyle = gr.clr_color;
 	ct.fillRect(0,0, gr.cv.width - gr.scaleWidth, gr.cv.height);
+	gr.x_tick = 0;
 	gr.xi = gr.cv.width - gr.scaleWidth;
 	graph_rescale(gr);
 }
@@ -102,6 +106,11 @@ function graph_averaging(gr, averaging)
 {
    gr.averaging = averaging;
    gr.avg_dB = 0;
+}
+
+function graph_timestamp(gr, timestamp)
+{
+   gr.timestamp = timestamp;
 }
 
 function graph_plot(gr, val_dB, opt)
@@ -204,7 +213,8 @@ function graph_plot(gr, val_dB, opt)
       // shift entire window left 1px to make room for new line
       ct.drawImage(cv, 1,0,w-1,h, 0,0,w-1,h);
 
-      var secs = new Date().getTime() / 1000;
+      gr.date = new Date();
+      var secs = gr.date.getTime() / 1000;
       var now = Math.floor(secs / gr.marker);
       var then = Math.floor(gr.secs_last / gr.marker);
 
@@ -218,10 +228,25 @@ function graph_plot(gr, val_dB, opt)
          }
       } else {
          // time to draw time marker
+         var color = gr.grid_color;
+         if (gr.timestamp && gr.x_tick == 0) {
+            gr.time_mark = gr.date;
+            gr.x_tick = 1;
+            color = 'blue';
+         }
+
          gr.secs_last = secs;
-         ct.fillStyle = gr.grid_color;
+         ct.fillStyle = color;
          ct.fillRect(w-1,0, 1,h);
       }
+
+      if (gr.x_tick == 75) {
+         var tstamp = (wf.ts_tz == 0)? gr.time_mark.toUTCString().substr(17,8) : gr.time_mark.toString().substr(16,8);
+         var xt = w - 70 + ct.measureText(tstamp).width / 2;
+	      w3_fillText(ct, xt, h-10, tstamp, 'black', '14px Arial', 1);
+      }
+      if (gr.x_tick == 300) gr.x_tick = 0;
+      if (gr.x_tick) gr.x_tick++;
 
       if (gr.divider != false) {
          var save_color = ct.fillStyle;
@@ -234,7 +259,7 @@ function graph_plot(gr, val_dB, opt)
       if (gr.threshold) {
          ct.fillStyle = 'red';
          ct.fillRect(w-1,y_dB(gr.threshold), 1,1);
-      }y
+      }
       
       plot = true;
    }

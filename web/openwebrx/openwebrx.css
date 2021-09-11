@@ -968,7 +968,7 @@ html, body
 	*/
 }
 
-.class-button.class-button-disbled
+.class-button.class-button-disabled
 {
     cursor: not-allowed;
     opacity: 0.3;

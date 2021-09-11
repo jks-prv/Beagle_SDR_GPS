@@ -149,7 +149,7 @@ void send_msg_buf(conn_t *c, char *s, int slen)
         //clprintf(c, "send_msg_buf: internal_connection <%s>\n", s);
     } else {
         if (c->mc == NULL) {
-            #if 1
+            #if 0
                 clprintf(c, "send_msg_buf: c->mc is NULL\n");
                 clprintf(c, "send_msg_buf: CONN-%d %p valid=%d type=%d [%s] auth=%d KA=%d KC=%d mc=%p rx=%d magic=0x%x ip=%s:%d other=%s%d %s\n",
                     c->self_idx, c, c->valid, c->type, rx_streams[c->type].uri, c->auth, c->keep_alive, c->keepalive_count, c->mc, c->rx_channel,
@@ -262,13 +262,13 @@ void input_msg_internal(conn_t *conn, const char *fmt, ...)
 	va_list ap;
 	char *s;
 
-	if (fmt == NULL) return;
+	if (conn == NULL || fmt == NULL || !conn->valid) return;
 	
 	va_start(ap, fmt);
 	vasprintf(&s, fmt, ap);
 	va_end(ap);
 	
-    assert(conn->internal_connection);
+    //assert(conn->internal_connection);
 	nbuf_allocq(&conn->c2s, s, strlen(s));
 	kiwi_ifree(s, "input_msg_internal");
 }
@@ -290,18 +290,8 @@ float ecpu_use()
 	u4_t free_run = (c->f3 << 24) | (c->f2 << 16) | (c->f1 << 8) | c->f0;
 
 	spi_set(CmdCPUCtrClr);
+	if (free_run == 0) return 0;
 	return ((float) gated / (float) free_run * 100);
-}
-
-char *kiwi_authkey()
-{
-	int fd;
-	scall("open /dev/urandom", (fd = open("/dev/urandom", O_RDONLY)));
-	u4_t u[8];
-	assert(read(fd, u, 32) == 32);
-	char *s;
-	asprintf(&s, "%08x%08x%08x%08x%08x%08x%08x%08x", u[0], u[1], u[2], u[3], u[4], u[5], u[6], u[7]);
-	return s;
 }
 
 struct print_max_min_int_t {
@@ -494,6 +484,68 @@ void pgm_file_height(FILE *fp, int offset, int height)
         lprintf("pgm_file_height: height limited to 999999!\n");
     }
     fprintf(fp, "%6d", height);
+}
+
+off_t kiwi_file_size(const char *fn)
+{
+    struct stat st;
+    int n = stat(fn, &st);
+    if (n < 0) return -1;
+    return st.st_size;
+}
+
+bool kiwi_file_exists(const char *fn)
+{
+    return (kiwi_file_size(fn) >= 0);
+}
+
+int kiwi_file_read(const char *id, const char *fn, char *s, int len, bool rem_nl)
+{
+    int fd = open(fn, O_RDONLY);
+    if (fd < 0) {
+        printf("%s kiwi_file_read: \"%s\" open %s\n", id, fn, strerror(errno));
+        return -1;
+    }
+    int n = read(fd, s, len);
+    if (n < 0) {
+        printf("%s kiwi_file_read: \"%s\" read %s\n", id, fn, strerror(errno));
+        close(fd);
+        return -1;
+    }
+    
+    if (rem_nl && s[n-1] == '\n')
+        s[n-1] = '\0';
+    
+    close(fd);
+    return n;
+}
+
+int kiwi_file_write(const char *id, const char *fn, char *s, int len, bool add_nl)
+{
+    int fd = open(fn, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    if (fd < 0) {
+        printf("%s kiwi_file_write: \"%s\" open %s\n", id, fn, strerror(errno));
+        return -1;
+    }
+
+    int n = write(fd, s, len);
+    if (n < 0) {
+        printf("%s kiwi_file_write: \"%s\" write %s\n", id, fn, strerror(errno));
+        close(fd);
+        return -1;
+    }
+
+    if (add_nl) {
+        int nn = write(fd, "\n", 1);
+        if (nn < 0) {
+            printf("%s kiwi_file_write: \"%s\" write %s\n", id, fn, strerror(errno));
+            close(fd);
+            return -1;
+        }
+    }
+
+    close(fd);
+    return n;
 }
 
 static const char *field = "ABCDEFGHIJKLMNOPQR";

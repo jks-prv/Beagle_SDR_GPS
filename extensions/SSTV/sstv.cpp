@@ -10,6 +10,7 @@
 #include "ext.h"	// all calls to the extension interface begin with "ext_", e.g. ext_register()
 #include "kiwi.h"
 #include "web.h"
+#include "misc.h"
 
 #include <sys/mman.h>
 
@@ -22,7 +23,7 @@ sstv_t sstv;
 sstv_chan_t sstv_chan[MAX_RX_CHANS];
 
 #ifdef SSTV_TEST_FILE
-static void sstv_file_data(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps)
+static void sstv_file_data(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps, int freqHz)
 {
     sstv_chan_t *e = &sstv_chan[rx_chan];
     if (!e->test || e->s2p >= sstv.s2p_end) return;
@@ -287,13 +288,12 @@ void SSTV_main() {
     #define SSTV_FNAME      DIR_CFG "/samples/s2.test.pattern.au"
     printf("SSTV: mmap " SSTV_FNAME "\n");
     scall("sstv open", (fd = open(SSTV_FNAME, O_RDONLY)));
-    struct stat st;
-    scall("sstv fstat", fstat(fd, &st));
-    printf("SSTV: size=%d\n", st.st_size);
-    file = (char *) mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    off_t fsize = kiwi_file_size(SSTV_FNAME);
+    printf("SSTV: size=%d\n", fsize);
+    file = (char *) mmap(NULL, fsize, PROT_READ, MAP_PRIVATE, fd, 0);
     if (file == MAP_FAILED) sys_panic("SSTV mmap");
     close(fd);
-    int words = st.st_size/2;
+    int words = fsize/2;
     sstv.s2p_start = (s2_t *) file;
     sstv.s2p_end = sstv.s2p_start + words;
 #endif

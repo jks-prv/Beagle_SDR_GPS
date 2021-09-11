@@ -12,6 +12,7 @@ var admin_sdr = {
    pbh: 0,
    pbc: 0,
    pbw: 0,
+   pbc_lock: false,
    
    // defaults for reset button
    pb: {
@@ -32,6 +33,8 @@ var admin_sdr = {
       sas:  { c:     0, w:  9800 },
       qam:  { c:     0, w:  9800 }
    },
+   
+   dx_enabled: false,
    
    _last_: 0
 };
@@ -119,7 +122,10 @@ function config_html()
 				   'for CW/CWN modes (typ 500, 800 or 1000 Hz).'
 				)
 			),
-			w3_input('', 'Passband center', 'admin_sdr.pbc', admin_sdr.pbc, 'config_pb_val'),
+			w3_half('w3-valign', '',
+			   w3_input('', 'Passband center', 'admin_sdr.pbc', admin_sdr.pbc, 'config_pb_val'),
+            w3_checkbox('w3-halign-center//w3-label-inline', 'Lock', 'admin_sdr.pbc_lock', admin_sdr.pbc_lock, 'config_pbc_lock')
+			),
 			w3_input('', 'Passband width', 'admin_sdr.pbw', admin_sdr.pbw, 'config_pb_val')
 		) +
       w3_third('', 'w3-container',
@@ -215,7 +221,7 @@ function config_html()
 		w3_inline_percent('w3-margin-bottom w3-text-teal/w3-container',
 		   '', 25,
          w3_div('w3-center w3-text-black',
-            'Either the root password you\'ve explicitly set or the same as the Kiwi admin password or device serial number.'
+            'Either the root password you\'ve explicitly set or the Kiwi device serial number.'
          ), 25
 		);
 
@@ -328,6 +334,10 @@ function config_pb_reset(id, idx)
    console.log('config_pb_reset mode='+ mode);
 	admin_sdr.pbc = admin_sdr.pb[mode].c;
 	admin_sdr.pbw = admin_sdr.pb[mode].w;
+	var hbw = admin_sdr.pbw / 2;
+	admin_sdr.pbh = admin_sdr.pbc + hbw;
+	admin_sdr.pbl = admin_sdr.pbc - hbw;
+	admin_sdr.pbc_lock = false;
 	config_pb_val('pbc', admin_sdr.pbc, false);
 }
 
@@ -342,8 +352,11 @@ function config_pb_mode(path, idx, first)
 
 	admin_sdr.pbl = cfg.passbands[mode].lo;
 	admin_sdr.pbh = cfg.passbands[mode].hi;
-	admin_sdr.pbc = (admin_sdr.pbl + admin_sdr.pbh) / 2;
+	var pbc_default = (admin_sdr.pbl + admin_sdr.pbh) / 2;
+	admin_sdr.pbc = ext_get_cfg_param('cfg.passbands.'+ mode +'.c', pbc_default, EXT_SAVE);
 	admin_sdr.pbw = admin_sdr.pbh - admin_sdr.pbl;
+	admin_sdr.pbc_lock = ext_get_cfg_param('cfg.passbands.'+ mode +'.lock', false, EXT_SAVE);
+	console.log('config_pb_mode: admin_sdr.pbc_lock='+ admin_sdr.pbc_lock);
 	
 	// Handle case of switch from higher b/w mode (e.g. 3-ch 20.25 kHz mode) to lower b/w
 	// mode where values might define an invalid pb. Show invalid values and let call to
@@ -352,6 +365,7 @@ function config_pb_mode(path, idx, first)
    w3_set_value('admin_sdr.pbh', admin_sdr.pbh);
    w3_set_value('admin_sdr.pbc', admin_sdr.pbc);
    w3_set_value('admin_sdr.pbw', admin_sdr.pbw);
+   w3_set_value('admin_sdr.pbc_lock', admin_sdr.pbc_lock);
 
 	config_pb_val('pbl', admin_sdr.pbl, false);
 }
@@ -367,6 +381,7 @@ function config_pb_val(path, val, first, cb)
 	var half_srate = srate? srate/2 : 6000;
    var min = -half_srate, max = half_srate;
    var pbl, pbh, pbc, pbw, hbw;
+   var locked = admin_sdr.pbc_lock;
    var ok;
    
    // reset error indicators
@@ -379,72 +394,123 @@ function config_pb_val(path, val, first, cb)
    
    case 'pbl':
       pbl = val;
-      console.log('pbl='+ pbl);
-      ok = (pbl < admin_sdr.pbh && pbl >= min && pbl <= max);
+      if (locked) {     // if pbc locked, leave pdh unchanged to allow asymmetrical filter definition
+         pbc = admin_sdr.pbc;
+         pbw = admin_sdr.pbh - pbl;
+         ok = (pbl <= (admin_sdr.pbc-1) && pbl >= min);
+      } else {          // if not locked adjust pbc/pbw to create a symmetrical pb
+         pbc = (pbl + admin_sdr.pbh) / 2;
+         pbw = admin_sdr.pbh - pbl;
+         ok = (pbl <= (admin_sdr.pbh-2) && pbl >= min);
+      }
+
       if (ok) {
          admin_sdr.pbl = pbl;
-         admin_sdr.pbc = (admin_sdr.pbl + admin_sdr.pbh) / 2;
-         admin_sdr.pbw = admin_sdr.pbh - admin_sdr.pbl;
+         admin_sdr.pbc = pbc;
+         admin_sdr.pbw = pbw;
       }
+      console.log('pbl='+ pbl +' ok='+ ok);
       w3_show_hide('id-pbl-error', !ok);
       break;
    
    case 'pbh':
       pbh = val;
-      console.log('pbh='+ pbh);
-      ok = (pbh > admin_sdr.pbl && pbh >= min && pbh <= max);
+      if (locked) {     // if pbc locked, leave pdl unchanged to allow asymmetrical filter definition
+         pbc = admin_sdr.pbc;
+         pbw = pbh - admin_sdr.pbl;
+         ok = (pbh >= (admin_sdr.pbc+1) && pbh <= max);
+      } else {          // if not locked adjust pbc/pbw to create a symmetrical pb
+         pbc = (admin_sdr.pbl + pbh) / 2;
+         pbw = pbh - admin_sdr.pbl;
+         ok = (pbh >= (admin_sdr.pbl+2) && pbh <= max);
+      }
+
       if (ok) {
          admin_sdr.pbh = pbh;
-         admin_sdr.pbc = (admin_sdr.pbl + admin_sdr.pbh) / 2;
-         admin_sdr.pbw = admin_sdr.pbh - admin_sdr.pbl;
+         admin_sdr.pbc = pbc;
+         admin_sdr.pbw = pbw;
       }
+      console.log('pbh='+ pbh +' ok='+ ok);
       w3_show_hide('id-pbh-error', !ok);
       break;
    
    case 'pbc':
       pbc = val;
-      console.log('pbc='+ pbc);
-      hbw = admin_sdr.pbw / 2;
-      pbl = pbc - hbw;
-      pbh = pbc + hbw;
-      ok = (pbl >= min && pbh <= max);
+      if (locked) {  // if locked maintain possible pbl/pbh asymmetry
+         var delta_l = admin_sdr.pbc - admin_sdr.pbl;
+         var delta_h = admin_sdr.pbh - admin_sdr.pbc;
+         console.log('delta_l='+ delta_l +' delta_h='+ delta_h);
+         pbl = pbc - delta_l;
+         pbh = pbc + delta_h;
+         console.log(admin_sdr.pbl +'|'+ admin_sdr.pbc +'|'+ admin_sdr.pbh +' => '+ pbl +'|'+ pbc +'|'+ pbh);
+         ok = (pbc > pbl && pbc < pbh);
+      } else {    // adjust pbl/pbh to maintain pbc symmetry (same pbw)
+         hbw = admin_sdr.pbw / 2;
+         pbl = pbc - hbw;
+         pbh = pbc + hbw;
+         ok = (pbl >= min && pbh <= max);
+      }
+
       if (ok) {
-         admin_sdr.pbc = pbc;
          admin_sdr.pbl = pbl;
          admin_sdr.pbh = pbh;
+         admin_sdr.pbc = pbc;
       }
+      console.log('pbc='+ pbc +' ok='+ ok);
       w3_show_hide('id-pbc-error', !ok);
       break;
    
    case 'pbw':
       pbw = val;
-      console.log('pbw='+ pbw);
-      pbc = admin_sdr.pbc;
-      hbw = pbw / 2;
-      pbl = pbc - hbw;
-      pbh = pbc + hbw;
-      ok = (pbw > 0 && pbl >= min && pbh <= max);
-      if (ok) {
-         admin_sdr.pbw = pbw;
-         admin_sdr.pbl = admin_sdr.pbc - hbw;
-         admin_sdr.pbh = admin_sdr.pbc + hbw;
+      if (locked) {     // if locked apply change in pbw to possible pbl/pbh asymmetry
+         var delta_w = pbw - admin_sdr.pbw;
+         var ratio_pbh = (admin_sdr.pbh - admin_sdr.pbc) / admin_sdr.pbw;
+         var delta_l = Math.round(delta_w * (1 - ratio_pbh));
+         var delta_h = Math.round(delta_w * ratio_pbh);
+         console.log('delta_w='+ delta_w +' ratio_pbh='+ ratio_pbh.toFixed(4) +' delta_l='+ delta_l +' delta_h='+ delta_h);
+         pbl = admin_sdr.pbl - delta_l;
+         pbh = admin_sdr.pbh + delta_h;
+         console.log(admin_sdr.pbl +'|'+ admin_sdr.pbc +'|'+ admin_sdr.pbh +' => '+ pbl +'|'+ admin_sdr.pbc +'|'+ pbh);
+         ok = (pbw >= 2 && pbl < pbh && pbl < admin_sdr.pbc && pbh > admin_sdr.pbc && pbl >= min && pbh <= max);
+      } else {    // adjust pbl/pbh to maintain pbc symmetry (same pbc)
+         hbw = pbw / 2;
+         pbl = admin_sdr.pbc - hbw;
+         pbh = admin_sdr.pbc + hbw;
+         ok = (pbw >= 2 && pbl >= min && pbh <= max);
       }
+
+      if (ok) {
+         admin_sdr.pbl = pbl;
+         admin_sdr.pbh = pbh;
+         admin_sdr.pbw = pbw;
+      }
+      console.log('pbw='+ pbw +' ok='+ ok);
       w3_show_hide('id-pbw-error', !ok);
       break;
    }
    
    // leave invalid values in fields, but will revert when mode is changed or tab switched etc.
    if (!ok) return;
+   if (locked) console.log('LOCKED');
    
    w3_set_value('admin_sdr.pbl', admin_sdr.pbl);
    w3_set_value('admin_sdr.pbh', admin_sdr.pbh);
    w3_set_value('admin_sdr.pbc', admin_sdr.pbc);
    w3_set_value('admin_sdr.pbw', admin_sdr.pbw);
+   w3_checkbox_set('admin_sdr.pbc_lock', admin_sdr.pbc_lock);
    
-   if (ok) {
-      ext_set_cfg_param('cfg.passbands.'+ admin_sdr.pbm +'.lo', admin_sdr.pbl, false);
-      ext_set_cfg_param('cfg.passbands.'+ admin_sdr.pbm +'.hi', admin_sdr.pbh, true);
-   }
+   ext_set_cfg_param('cfg.passbands.'+ admin_sdr.pbm +'.lo', admin_sdr.pbl, EXT_NO_SAVE);
+   ext_set_cfg_param('cfg.passbands.'+ admin_sdr.pbm +'.hi', admin_sdr.pbh, EXT_NO_SAVE);
+   ext_set_cfg_param('cfg.passbands.'+ admin_sdr.pbm +'.c', admin_sdr.pbc, EXT_NO_SAVE);
+   ext_set_cfg_param('cfg.passbands.'+ admin_sdr.pbm +'.lock', admin_sdr.pbc_lock, EXT_SAVE);
+}
+
+function config_pbc_lock(path, val, first)
+{
+   if (first) return;
+   admin_sdr.pbc_lock = val? true:false;
+   console.log('config_pbc_lock: cfg.passbands.'+ admin_sdr.pbm +'.lock = '+ admin_sdr.pbc_lock +' EXT_SAVE');
+   ext_set_cfg_param('cfg.passbands.'+ admin_sdr.pbm +'.lock', admin_sdr.pbc_lock, EXT_SAVE);
 }
 	
 function config_wfmin_cb(path, val, first)
@@ -639,7 +705,7 @@ function webpage_html()
             ),
             w3_checkbox_get_param('w3-restart w3-label-inline', 'Photo left margin', 'index_html_params.RX_PHOTO_LEFT_MARGIN', 'admin_bool_cb', true)
          ),
-			w3_input('', 'Photo maximum height (pixels)', 'index_html_params.RX_PHOTO_HEIGHT', '', 'webpage_int_cb')
+			w3_input('', 'Photo maximum height (pixels)', 'index_html_params.RX_PHOTO_HEIGHT', '', 'webpage_photo_height_cb')
 		) +
 		w3_half('', 'w3-container',
 			w3_input('', 'Photo title', 'index_html_params.RX_PHOTO_TITLE', '', 'webpage_string_cb'),
@@ -662,7 +728,10 @@ function webpage_html()
 		'<hr>' +
       w3_div('w3-container',
          w3_textarea_get_param('w3-input-any-change|width:100%',
-            w3_label('w3-show-inline-block w3-bold w3-text-teal', 'Additional HTML/Javascript for HTML &lt;head&gt; element (e.g. Google analytics or user customization)'),
+            w3_div('',
+               w3_text('w3-bold w3-text-teal', 'Additional HTML/Javascript for HTML &lt;head&gt; element (e.g. Google analytics or user customization)'),
+               w3_text('w3-text-black', 'Press enter(return) key while positioned at end of text to submit data.')
+            ),
             'index_html_params.HTML_HEAD', 10, 100, 'webpage_string_cb', ''
          )
 		) +
@@ -815,7 +884,7 @@ function webpage_string_cb(path, val)
 	ext_send('SET reload_index_params');
 }
 
-function webpage_int_cb(path, val)
+function webpage_photo_height_cb(path, val)
 {
 	val = parseInt(val);
 	if (isNaN(val)) {
@@ -823,6 +892,8 @@ function webpage_int_cb(path, val)
 	   val = ext_get_cfg_param(path);
 		w3_set_value(path, val);
 	} else {
+	   val = w3_clamp(val, 0, 4000, 0);
+		w3_set_value(path, val);
 	   w3_num_set_cfg_cb(path, val);
 	   ext_send('SET reload_index_params');
 	}
@@ -1161,32 +1232,32 @@ function public_update(p)
 function dx_html()
 {
 	var s =
-	w3_div('id-dx w3-hide',
-	   w3_div('w3-container w3-margin-top', 'TODO..')
-	   /*
-		w3_inline('w3-halign-space-between/w3-margin-top',
-			w3_inline('/w3-margin-between-16',
-				w3_button('w3-yellow', 'Modify', 'dx_modify_cb'),
-				w3_button('w3-green', 'Add', 'dx_add_cb'),
-				w3_button('w3-red', 'Delete', 'dx_delete_cb')
-			),
-		   w3_input('w3-text-teal/w3-label-inline/w3-padding-small|width:300px', 'Filter', 'dxo.filter', '', 'dx_filter_cb')
-		),
-		
-		w3_div('w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
-         w3_div('id-dx-list-legend'),
+	   admin_sdr.dx_enabled?
+	      w3_div('id-dx w3-hide',
+            w3_inline('w3-halign-space-between/w3-margin-top',
+               w3_inline('/w3-margin-between-16',
+                  w3_button('w3-yellow', 'Modify', 'dx_modify_cb'),
+                  w3_button('w3-green', 'Add', 'dx_add_cb'),
+                  w3_button('w3-red', 'Delete', 'dx_delete_cb')
+               ),
+               w3_input('w3-text-teal/w3-label-inline/w3-padding-small|width:300px', 'Filter', 'dxo.filter', '', 'dx_filter_cb')
+            ),
+      
+            w3_div('w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
+               w3_div('id-dx-list-legend'),
          
-         // reminder: "70vh" means 70% of the viewport (browser window) height
-         w3_div('id-dx-list w3-margin-bottom|height:70vh;overflow-x:hidden;overflow-y:hidden')
-      )
-      */
-	);
+               // reminder: "70vh" means 70% of the viewport (browser window) height
+               w3_div('id-dx-list w3-margin-bottom|height:70vh;overflow-x:hidden;overflow-y:hidden')
+            )
+         )
+      :
+	      w3_div('id-dx w3-hide', w3_div('w3-container w3-margin-top', 'TODO..'));
 	return s;
 }
 
 function dx_focus()
 {
-   /*
+   if (!admin_sdr.dx_enabled) return;
    console.log('### dx_focus: SET GET_DX_JSON');
    w3_innerHTML('id-dx-list-legend', '');
    w3_el('id-dx-list').style.overflowY = 'hidden';
@@ -1198,7 +1269,6 @@ function dx_focus()
    );
    
 	ext_send('SET GET_DX_JSON');
-   */
 }
 
 function dx_hide()
@@ -1210,14 +1280,13 @@ var dxo = {
 
 function dx_json(dx)
 {
-   /*
+   if (!admin_sdr.dx_enabled) return;
    var i, len = dx.dx.length;
    console.log('### dx_json: entries='+ len);
    w3_innerHTML('id-dx-list-count', 'loading '+ len +' entries');
    
    // if this isn't delayed the above innerHTML set of id-dx-list-count doesn't render
    setTimeout(function() { dx_json2(dx); }, 100);
-   */
 }
 
 function dx_json2(dx)
@@ -1227,8 +1296,8 @@ function dx_json2(dx)
    
    dxo.tags = [];
 
-   //for (i = -1; i < len; i++) {
-   for (i = -1; i < 4; i++) {
+   for (i = -1; i < len; i++) {
+   //for (i = -1; i < 4; i++) {
       var d = null;
       var fr = '', mo = 0, id = '', no = '';
       var pb = '', ty = 0, os = '', ext = '';
@@ -1287,9 +1356,9 @@ function dx_json2(dx)
                   (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-selection-green', '+', 'dx_add_cb', i), 1,
                   (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-red', '-', 'dx_rem_cb', i), 1,
                   w3_input(h('w3-padding-small||size=8'), l('Freq'), 'dxo.f_'+i, fr, 'dx_num_cb'), 19,
-                  w3_select(h('|color:red'), l('Mode'), '', 'dxo.m_'+i, mo, kiwi.modes_u, 'dx_sel_cb'), 19,
+                  w3_select(h('w3-text-red'), l('Mode'), '', 'dxo.m_'+i, mo, kiwi.modes_u, 'dx_sel_cb'), 19,
                   w3_input(h('w3-padding-small||size=4'), l('Passband'), 'dxo.pb_'+i, pb, 'dx_passband_cb'), 19,
-                  w3_select(h('|color:red'), l('Type'), '', 'dxo.y_'+i, ty, types, 'dx_sel_cb'), 19,
+                  w3_select(h('w3-text-red'), l('Type'), '', 'dxo.y_'+i, ty, types, 'dx_sel_cb'), 19,
                   w3_input(h('w3-padding-small||size=2'), l('Offset'), 'dxo.o_'+i, os, 'dx_num_cb'), 19
                ), 45,
                w3_col_percent('w3-valign/w3-margin-left',

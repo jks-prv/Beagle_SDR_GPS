@@ -420,6 +420,7 @@ Commands:
 				u16		CmdCPUCtrClr
 				u16		CmdGetCPUCtr
 				u16		CmdCtrlClrSet
+				u16     CmdCtrlPulse
 				u16		CmdCtrlGet
 				u16		CmdGetMem
 				u16		CmdGetStatus
@@ -724,8 +725,8 @@ ctrl_update:
 				wrReg   SET_CTRL
 				push	ctrl
 				store16
-				drop
-				ret
+				drop.r
+
 ctrl_set:
 				push	ctrl
 				fetch16
@@ -745,7 +746,33 @@ CmdCtrlClrSet:
 				wrReg   SET_CTRL
 				push	ctrl
 				store16
-				drop
+				drop.r
+
+CmdCtrlPulse:
+                rdReg	HOST_RX             ; bits
+                dup                         ; bits bits
+				not                         ; bits ~bits
+				push	ctrl                ; bits ~bits &ctrl_old
+				fetch16                     ; bits ~bits ctrl_old
+
+                // clear first (if not already)
+				and                         ; bits ctrl_clr
+				dup                         ; bits ctrl_clr ctrl_clr
+				wrReg   SET_CTRL            ; bits ctrl_clr
+				
+				// save cleared value
+				dup                         ; bits ctrl_clr ctrl_clr
+				push	ctrl                ; bits ctrl_clr ctrl_clr &ctrl
+				store16                     ; bits ctrl_clr &ctrl
+				drop                        ; bits ctrl_clr
+
+				dup                         ; bits ctrl_clr ctrl_clr
+				rot                         ; ctrl_clr ctrl_clr bits
+				or                          ; ctrl_clr ctrl_set
+
+                // set & clear in one clock pulse
+				wrReg   SET_CTRL            ; ctrl_clr
+				wrReg   SET_CTRL            ;
 				ret
 
 CmdCtrlGet:		wrEvt	HOST_RST

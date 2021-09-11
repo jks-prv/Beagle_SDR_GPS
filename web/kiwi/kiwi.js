@@ -1,6 +1,6 @@
 // KiwiSDR
 //
-// Copyright (c) 2014-2017 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2021 John Seamons, ZL/KF6VO
 
 var kiwi = {
    is_local: [],
@@ -428,10 +428,10 @@ function cfg_save_json(path, ws)
 		return;
 	var s;
 	if (path.startsWith('adm.')) {
-		s = encodeURIComponent(JSON.stringify(adm));
+		s = encodeURIComponent(JSON.stringify(adm, null, 3));    // pretty-print the JSON
 		ws.send('SET save_adm='+ s);
 	} else {
-		s = encodeURIComponent(JSON.stringify(cfg));
+		s = encodeURIComponent(JSON.stringify(cfg, null, 3));    // pretty-print the JSON
 		ws.send('SET save_cfg='+ s);
 	}
 	console.log('cfg_save_json: DONE');
@@ -1731,7 +1731,7 @@ function kiwi_msg(param, ws)
       // enable DRM mode button
       var el = w3_el('id-button-drm');
       if (el && kiwi.is_multi_core) {
-         w3_remove(el, 'class-button-disbled');
+         w3_remove(el, 'class-button-disabled');
          w3_create_attribute(el, 'onclick', 'mode_button(event, this)');
       }
       */

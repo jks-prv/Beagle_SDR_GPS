@@ -17,14 +17,12 @@ Boston, MA  02110-1301, USA.
 
 // Copyright (c) 2014 John Seamons, ZL/KF6VO
 
-`include "kiwi.vh"
-
 // synchronize the signal 'in' in the clock domain 'out_clk' using TNSYNC flip-flops
 // NB: as a consequence 'out' signal is delayed a few out_clk clocks
 // NSYNC specifies custom synchronizer lengths
 // NOUT specifies the output signal width
 
-module SYNC_WIRE #(parameter NOUT=1, parameter NSYNC=DEFAULT_NSYNC) (
+module SYNC_WIRE #(parameter NOUT=1, parameter NSYNC=2) (
 	input  wire in,
 	input  wire out_clk,
 	output wire [NOUT-1:0] out

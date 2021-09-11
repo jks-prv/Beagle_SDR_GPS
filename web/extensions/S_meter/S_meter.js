@@ -111,8 +111,8 @@ function S_meter_controls_setup()
 			w3_divs('/w3-tspace-8',
 				w3_div('id-S_meter-info w3-medium w3-text-aqua', '<b>S-meter graph</b>'),
             w3_inline('w3-halign-space-between/',
-				   w3_select('|color:red', 'Range', '', 'S_meter.range_i', S_meter.range_i, S_meter.range_s, 'S_meter_range_select_cb'),
-					w3_select('|color:red', 'Marker rate', '', 'S_meter.marker_i', S_meter.marker_i, S_meter.marker_s, 'S_meter_marker_select_cb')
+				   w3_select('w3-text-red', 'Range', '', 'S_meter.range_i', S_meter.range_i, S_meter.range_s, 'S_meter_range_select_cb'),
+					w3_select('w3-text-red', 'Marker rate', '', 'S_meter.marker_i', S_meter.marker_i, S_meter.marker_s, 'S_meter_marker_select_cb')
 				),
 				w3_div('id-S_meter-scale-sliders',
 					w3_slider('', 'Scale max', 'S_meter.maxdb', S_meter.maxdb, -160, 0, 10, 'S_meter_maxdb_cb'),
@@ -124,7 +124,10 @@ function S_meter_controls_setup()
 					w3_button('w3-padding-smaller', 'Mark', 'S_meter_mark_cb'),
 					w3_button('w3-padding-smaller', 'Clear', 'S_meter_clear_cb')
 				),
-            w3_checkbox('w3-tspace-8/w3-label-inline', 'Averaging', 'S_meter.averaging', true, 'S_meter_averaging_cb')
+				w3_inline('w3-halign-space-between/',
+               w3_checkbox('/w3-label-inline', 'Averaging', 'S_meter.averaging', true, 'S_meter_averaging_cb'),
+               w3_checkbox('/w3-label-inline', 'Timestamp', 'S_meter.timestamp', false, 'S_meter_timestamp_cb')
+            )
 			)
 		);
 
@@ -263,6 +266,12 @@ function S_meter_averaging_cb(path, checked, first)
 {
    if (first) return;
 	graph_averaging(S_meter.gr, checked);
+}
+
+function S_meter_timestamp_cb(path, checked, first)
+{
+   if (first) return;
+	graph_timestamp(S_meter.gr, checked);
 }
 
 // detect when frequency or mode has changed and mark graph

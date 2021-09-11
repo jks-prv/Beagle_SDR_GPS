@@ -24,6 +24,7 @@ var fax = {
    data_canvas:   0,
    copy_canvas:   0,
    
+   freq:       0,
    pbL:         800,    // cf - 1100
    black:      1500,
    cf:         1900,
@@ -194,7 +195,7 @@ function fax_recv(data)
 	         break;
 	         
 			case "fax_autostopped":
-			   var STOP  = (param[1] == 1);
+			   var STOP = (param[1] == 1);
             w3_button_text('id-fax-stop-start', STOP? 'Start' : 'Stop');
             w3_visible('id-fax-stopped', STOP);
             fax.stop_start_state ^= 1;
@@ -391,9 +392,9 @@ function fax_controls_setup()
                w3_select_hier('w3-text-red', 'Africa', 'select', 'fax.menu3', fax.menu3, fax_africa, 'fax_pre_select_cb')
             ),
 				w3_inline('/w3-margin-between-16',
-               w3_select('|color:red', '', 'LPM', 'fax.lpm_i', fax.lpm_i, fax.lpm_s, 'fax_lpm_cb'),
-					w3_button('w3-padding-smaller', 'Next', 'fax_next_prev_cb', 1),
-					w3_button('w3-padding-smaller', 'Prev', 'fax_next_prev_cb', -1),
+               w3_select('w3-text-red', '', 'LPM', 'fax.lpm_i', fax.lpm_i, fax.lpm_s, 'fax_lpm_cb'),
+					w3_button('w3-padding-smaller', 'Next', 'w3_select_next_prev_cb', { dir:w3_MENU_NEXT, id:'fax.menu', func:'fax_pre_select_cb' }),
+					w3_button('w3-padding-smaller', 'Prev', 'w3_select_next_prev_cb', { dir:w3_MENU_PREV, id:'fax.menu', func:'fax_pre_select_cb' }),
 					w3_button('id-fax-stop-start w3-padding-smaller', 'Stop', 'fax_stop_start_cb'),
 					w3_button('w3-padding-smaller', 'Clear', 'fax_clear_cb'),
 					w3_inline('',
@@ -502,10 +503,12 @@ function fax_pre_select_cb(path, idx, first)
 	      var inner = option.innerHTML;
 	      console.log('fax_pre_select_cb opt.val='+ option.value +' opt.inner='+ inner);
 	      var lsb = inner.includes('lsb');
-         ext_tune(parseFloat(inner) + (lsb? 1.9 : -1.9), lsb? 'lsb':'usb', ext_zoom.ABS, 11);
+	      var freq = parseFloat(inner);
+         ext_tune(freq + (lsb? 1.9 : -1.9), lsb? 'lsb':'usb', ext_zoom.ABS, 11);
          var lo = lsb? -fax.pbH : fax.pbL;
          var hi = lsb? -fax.pbL : fax.pbH;
          ext_set_passband(lo, hi);
+         fax.freq = ext_get_freq()/1e3;
          w3_el('id-fax-station').innerHTML =
             '<b>Station: '+ fax_prev_disabled.innerHTML +', '+ fax_disabled.innerHTML +'</b>';
          var s = inner.split('/');
@@ -520,49 +523,32 @@ function fax_pre_select_cb(path, idx, first)
 	});
 
    // reset other menus
+   fax_clear_menus(menu_n);
+}
+
+function fax_clear_menus(except)
+{
+   // reset frequency menus
    for (var i = 0; i < fax.n_menu; i++) {
-      if (i != menu_n)
+      if (!isArg(except) || i != except)
          w3_select_value('fax.menu'+ i, -1);
    }
 }
 
-function fax_next_prev_cb(path, np, first)
+function fax_environment_changed(changed)
 {
-	np = +np;
-	//console.log('fax_next_prev_cb np='+ np);
-	
-   // if any menu has a selection value then select next/prev (if any)
-   var prev = 0, capture_next = 0, captured_next = 0, captured_prev = 0;
-   var menu;
-   
-   for (var i = 0; i < fax.n_menu; i++) {
-      menu = 'fax.menu'+ i;
-      var el = w3_el(menu);
-      var val = el.value;
-      //console.log('menu='+ menu +' value='+ val);
-      if (val == -1) continue;
-      
-      w3_select_enum(menu, function(option) {
-	      if (option.disabled) return;
-         if (capture_next) {
-            captured_next = option.value;
-            capture_next = 0;
-         }
-         if (option.value === val) {
-            captured_prev = prev;
-            capture_next = 1;
-         }
-         prev = option.value;
-      });
-      break;
-   }
+   //w3_console.log(changed, 'fax_environment_changed');
+   if (!changed.freq && !changed.mode) return;
 
-	//console.log('i='+ i +' captured_prev='+ captured_prev +' captured_next='+ captured_next);
-	val = 0;
-	if (np == 1 && captured_next) val = captured_next;
-	if (np == -1 && captured_prev) val = captured_prev;
-	if (val) {
-      fax_pre_select_cb(menu, val, false);
+   // reset all frequency menus when frequency etc. is changed by some other means (direct entry, WF click, etc.)
+   // but not for changed.zoom, changed.resize etc.
+   var dsp_freq = ext_get_freq()/1e3;
+   var mode = ext_get_mode();
+   //console.log('FAX ENV fax.freq='+ fax.freq +' dsp_freq='+ dsp_freq +' mode='+ mode);
+	var m = mode.substr(0,2);
+   if (fax.freq != dsp_freq || (m != 'us' && m != 'ls')) {
+      fax_clear_menus();
+      w3_el('id-fax-station').innerHTML = '&nbsp;';
    }
 }
 

@@ -261,7 +261,7 @@ function noise_filter_send(type)
 
 function nr_algo_cb(path, idx, first, init)
 {
-   console.log('nr_algo_cb idx='+ idx +' first='+ first +' init='+ init);
+   //console.log('nr_algo_cb idx='+ idx +' first='+ first +' init='+ init);
    if (first) return;      // because call via openwebrx has zero, not restored value
    idx = +idx;
    w3_select_value(path, idx);

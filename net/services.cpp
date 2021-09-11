@@ -36,6 +36,7 @@ Boston, MA  02110-1301, USA.
 #include "non_block.h"
 #include "eeprom.h"
 #include "rx_waterfall.h"
+#include "security.h"
 
 #include <string.h>
 #include <time.h>
@@ -256,54 +257,6 @@ static void misc_NET(void *param)
     
     printf("vr=0x%x vc=0x%x\n", vr, vc);
     
-    #define KIWI_SURVEY
-    #ifdef KIWI_SURVEY
-    #define SURVEY_LAST 182
-    bool need_survey = admcfg_int("survey", NULL, CFG_REQUIRED) != SURVEY_LAST;
-    if (need_survey || (vr && vr != VR_CRONTAB_ROOT) || net.serno == 0) {
-        if (need_survey) {
-            admcfg_set_int_save("survey", SURVEY_LAST);
-        }
-
-        NET_WAIT_COND("survey", "misc_NET", net.mac_valid);
-    
-        if (net.serno == 0) {
-            if (net.dna == 0x0536c49053782e7fULL && strncmp(net.mac, "b0", 2) == 0) net.serno = 995; else
-            if (net.dna == 0x0536c49053782e7fULL && strncmp(net.mac, "d0", 2) == 0) net.serno = 996; else
-            if (net.dna == 0x0a4a903c68242e7fULL) net.serno = 997;
-            if (net.serno != 0) eeprom_write(SERNO_WRITE, net.serno);
-        }
-
-        bool kiwisdr_com_reg = (admcfg_bool("kiwisdr_com_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
-
-        if (kiwisdr_com_reg) {
-            const char *server_url;
-            server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
-            // proxy always uses port 8073
-            int dom_sel;
-            dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
-            int server_port;
-            server_port = (dom_sel == DOM_SEL_REV)? 8073 : net.port_ext;
-            asprintf(&cmd_p2, "1&url=http://%s:%d", server_url, server_port);
-            cfg_string_free(server_url);
-        } else {
-            cmd_p2 = strdup("0");
-        }
-
-        char *kiwisdr_com = DNS_lookup_result("survey", "kiwisdr.com", &net.ips_kiwisdr_com);
-        char *cp;
-        asprintf(&cp, "%.70s", (char *) &eeprom + 4);
-        char *e = kiwi_str_encode(cp);
-        asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
-            "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&e=%s&vr=%d&vc=%u&reg=%s\"",
-            kiwisdr_com, SURVEY_LAST, net.serno, PRINTF_U64_ARG(net.dna), net.mac, e, vr, vc, cmd_p2);
-
-        kstr_free(non_blocking_cmd(cmd_p, &status));
-        kiwi_ifree(cmd_p); kiwi_ifree(cmd_p2);
-        kiwi_ifree(cp); kiwi_ifree(e);
-    }
-    #endif
-
     // apply passwords to password-less root/debian accounts
     int root_pwd_unset=0, debian_pwd_default=0;
     bool error;
@@ -329,20 +282,30 @@ static void misc_NET(void *param)
         }
 
         const char *which;
-        const char *admin_pwd = admcfg_string("admin_password", &error, CFG_OPTIONAL);
 
-        if (!error && admin_pwd != NULL && *admin_pwd != '\0') {
-            cmd_p2 = strdup(admin_pwd);
-            which = "Kiwi admin password";
-            admcfg_string_free(admin_pwd);
-        } else
-        if (net.serno != 0) {
-            asprintf(&cmd_p2, "%d", net.serno);
-            which = "Kiwi serial number (because Kiwi admin password unset)";
-        } else {
-            asprintf(&cmd_p2, "kiwizero");
-            which = "\"kiwizero\" (because Kiwi admin password unset AND Kiwi serial number is zero!)";
-        }
+        #ifdef CRYPT_PW
+            if (net.serno != 0) {
+                asprintf(&cmd_p2, "%d", net.serno);
+                which = "Kiwi serial number";
+            } else {
+                asprintf(&cmd_p2, "kiwizero");
+                which = "\"kiwizero\" (because Kiwi serial number is zero!)";
+            }
+        #else
+            const char *admin_pwd = admcfg_string("admin_password", &error, CFG_OPTIONAL);
+            if (!error && admin_pwd != NULL && *admin_pwd != '\0') {
+                cmd_p2 = strdup(admin_pwd);
+                which = "Kiwi admin password";
+                admcfg_string_free(admin_pwd);
+            } else
+            if (net.serno != 0) {
+                asprintf(&cmd_p2, "%d", net.serno);
+                which = "Kiwi serial number (because Kiwi admin password unset)";
+            } else {
+                asprintf(&cmd_p2, "kiwizero");
+                which = "\"kiwizero\" (because Kiwi admin password unset AND Kiwi serial number is zero!)";
+            }
+        #endif
 
         if (root_pwd_unset) {
             lprintf("SECURITY: WARNING Linux \"root\" password is unset!\n");
@@ -527,8 +490,8 @@ static void pvt_NET(void *param)
 	char *reply;
 
     // make sure /etc/resolv.conf exists
-    struct stat st;
-    if (stat("/etc/resolv.conf", &st) < 0 || st.st_size == 0) {
+    off_t fsize = kiwi_file_size("/etc/resolv.conf");
+    if (fsize <= 0) {
         lprintf("### /etc/resolv.conf missing or zero length, setting to default nameserver 1.1.1.1\n");
         system("echo nameserver 1.1.1.1 >/etc/resolv.conf");
     } else

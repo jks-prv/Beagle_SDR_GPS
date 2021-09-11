@@ -6,8 +6,10 @@
 	// API summary
 	///////////////////////////////////////
 	
-	                           integrated: L=label, T=text
-	                           3=psa3()
+	                           integrated: L=label T=text 3=psa3()
+	                           |     callback
+	                                 |     first: F=always false, not called on instan
+	                                       |
 	nav navdef
 
 	label set_label
@@ -25,7 +27,7 @@
 	button_text                T
 	icon
 	
-	input                      L3
+	input                      L3    cb    F
 	input_change
 	input_get
 	
@@ -151,6 +153,9 @@
 	   x w3_slider
 	   - w3_menu (no initial selection)
 	
+	general conversion to w3-flex layout
+	w3_col_percent => w3_inline_percent
+	kiwi/{admin,admin_sdr}.js: w3_select('' => w3_select(w3-text-red
 	unify color setting: style.color vs w3-color, w3-text-color
 	uniform default/init control values
 	preface internal routines/vars with w3int_...
@@ -197,18 +202,34 @@ function visible_block() {}      // FIXME: used by OLDER versions of the antenna
 // util
 ////////////////////////////////
 
-function w3_console_obj(obj, prefix)
+var w3_console = {};
+
+// XXX: Made another attempt to get this to work correctly.
+// But is still has lots of corner-case failures compared to "console.log('foo='+ foo +' bar='+ bar)"
+// e.g. wrt undefined, null and object/function values
+w3_console.log = function(obj, prefix)
 {
-   var s = prefix? (prefix + ' ') : '';
-   if (isObject(obj))
-      s += JSON.stringify(obj, null, 1);
-   else
+   var s = prefix? (prefix + ': ') : '';
+   if (isObject(obj)) {
+      var json = 'JSON '+ JSON.stringify(obj, w3int_console_replacer);
+      if (json.includes('\n'))
+         json = JSON.stringify(obj, w3int_console_replacer, 1);   // if json is multi-line, redo using pretty-print
+      s += json;
+   } else
    if (isString(obj))
       s += '"'+ obj.toString() +'"';
    else
       s += obj.toString();
    console.log(s);
-   if (isObject(obj)) console.log(obj);
+   //if (isObject(obj)) console.log(obj);
+};
+
+function w3int_console_replacer(k, v)
+{
+   if (isUndefined(v)) return '<undefined>';
+   if (isNull(v)) return '<null>';
+   if (isFunction(v)) return '<function>';
+   return '<'+ v.toString() +'>';
 }
 
 function w3_strip_quotes(s)
@@ -286,6 +307,22 @@ function w3_first_value(v)
    return rv;
 }
 
+function w3_second_value(v)
+{
+   //console.log('w3_second_value');
+   //console.log(v);
+   var rv = null;
+   
+   if (isArray(v) && v.length > 1) {
+      //console.log('w3_second_value array[1]');
+      if (v.length > 1)
+         rv = v[1];
+   }
+
+   //console.log('w3_second_value rv='+ rv);
+   return rv;
+}
+
 function w3_opt(opt, elem, default_val)
 {
    //console.log('w3_opt opt:');
@@ -320,13 +357,14 @@ function w3_obj_enum(obj, func, opt)
    var value_match = w3_opt(opt, 'value_match', undefined);
 
    Object.keys(obj).forEach(function(key, i) {
+      var o = obj[key];
       if (isDefined(key_match)) {
-         if (key == key_match) func(key, i);
+         if (key == key_match) func(key, i, o);
       } else
       if (isDefined(value_match)) {
-         if (obj[key] == value_match) func(key, i);
+         if (o == value_match) func(key, i, o);
       } else {
-         func(key, i);
+         func(key, i, o);
       }
    });
 }
@@ -369,8 +407,8 @@ function w3_ext_param_array_match_num(arr, n, func)
    return found;
 }
 
-// param:   name[:val]
 // s:       name.startsWith(s)   case-insensitive
+// param:   name[:val]
 // returns: { match:true|false, has_value:true|false, num:parseFloat(val), string:val }
 function w3_ext_param(s, param)
 {
@@ -393,6 +431,8 @@ function w3_ext_param(s, param)
 
 function w3_clamp(v, min, max, clamp_val)
 {
+   if (isNaN(v)) return (isDefined(clamp_val)? clamp_val : Math.NaN);
+   
    if (isObject(min)) {
       var o = min;
       try {
@@ -510,7 +550,7 @@ function w3_els(el_id, func)
       }
 		return els;
 	}
-	return (el_id);
+	return (w3_el(el_id));
 }
 
 // return id of element (i.e. 'id-*') if found
@@ -672,7 +712,8 @@ function w3_boundingBox_children(el_id, debug)
 
 	bbox.w = bbox.x2 - bbox.x1;
 	bbox.h = bbox.y2 - bbox.y1;
-	if (debug) console.log('BBOX x1='+ bbox.x1 +' x2='+ bbox.x2 +' y1='+ bbox.y1 +' y2='+ bbox.y2 +' w='+ bbox.w +' h='+ bbox.h);
+	if (bbox.w == -1e+99) { bbox.w = bbox.h = 0; }
+	if (debug) w3_console.log(bbox, 'w3_boundingBox_children');
 	return bbox;
 }
 
@@ -716,26 +757,45 @@ function w3_field_select(el_id, opts)
 // add, remove or check presence of class properties
 function w3_add(el_id, props)
 {
-	var el = w3_el(el_id);
-	//console.log('w3_add <'+ props +'>');
-	if (!el || !props) return null;
-	props = props.replace(/\s+/g, ' ').split(' ');
-	props.forEach(function(p) {
-	   el.classList.add(p);
-	});
-	return el;
+   if (!el_id) return null;
+   
+   var first_el = null;
+   // FIXME: why doesn't this work?!?
+   //w3_els(el_id, function(el) {
+   var el = w3_el(el_id);
+      if (!el) return null;
+      if (first_el) return;
+      //console.log('$w3_add '+ el_id +' <'+ props +'>');
+      if (!el || !props) return null;
+      props = props.replace(/\s+/g, ' ').split(' ');
+      props.forEach(function(p) {
+         el.classList.add(p);
+      });
+      if (!first_el) first_el = el;
+   //});
+
+	return first_el;
+	//return el;
 }
 
 function w3_remove(el_id, props)
 {
-	var el = w3_el(el_id);
-	//console.log('w3_remove <'+ props +'>');
-	if (!el || !props) return null;
-	props = props.replace(/\s+/g, ' ').split(' ');
-	props.forEach(function(p) {
-	   el.classList.remove(p);
-	});
-	return el;
+   if (!el_id) return null;
+   
+   var first_el = null;
+   //w3_els(el_id, function(el) {
+   var el = w3_el(el_id);
+      if (!el) return null;
+      if (!first_el) first_el = el;
+      //console.log('$w3_remove <'+ props +'>');
+      if (!el || !props) return null;
+      props = props.replace(/\s+/g, ' ').split(' ');
+      props.forEach(function(p) {
+         el.classList.remove(p);
+      });
+   //});
+
+	return first_el;
 }
 
 function w3_remove_wildcard(el_id, prefix)
@@ -750,13 +810,17 @@ function w3_remove_wildcard(el_id, prefix)
 	return el;
 }
 
-function w3_set_props(el_id, props, val)
+function w3_set_props(el_id, props, cond)
 {
-	if (val)
-	   w3_add(el_id, props);
+	var el = w3_el(el_id);
+	if (!el) return el;
+	cond = isArg(cond)? cond : true;
+
+	if (cond)
+	   w3_add(el, props);
 	else
-	   w3_remove(el_id, props);
-	return el_id;
+	   w3_remove(el, props);
+	return el;
 }
 
 function w3_remove_then_add(el_id, r_props, a_props)
@@ -817,6 +881,8 @@ function w3_setAllHref(cname, href)
 function w3_show(el_id, display)
 {
 	var el = w3_el(el_id);
+	if (!el) return el;
+	
 	w3_remove(el, 'w3-hide');
 	w3_add(el, display? display : 'w3-show-inline-block');
 	return el;
@@ -861,9 +927,12 @@ function w3_show_table_cell(el_id)
    return w3_show(el_id, 'w3-show-table-cell');
 }
 
-function w3_hide(el)
+function w3_hide(el_id)
 {
-   //w3_console_obj(el, 'w3_hide BEGIN');
+	var el = w3_el(el_id);
+	if (!el) return el;
+	
+   //w3_console.log(el, 'w3_hide BEGIN');
 	var el = w3_iterate_classList(el, function(className, idx) {
       //console.log('w3_hide CONSIDER '+ className);
 	   if (className.startsWith('w3-show-')) {
@@ -872,20 +941,32 @@ function w3_hide(el)
 	   }
 	});
 	w3_add(el, 'w3-hide');
-   //w3_console_obj(el, 'w3_hide END');
+   //w3_console.log(el, 'w3_hide END');
+	return el;
+}
+
+// if overrides are done correctly shouldn't need to remove any w3-show-*
+// only toggle presence of w3-hide
+function w3_hide2(el_id, cond)
+{
+	var el = w3_el(el_id);
+	if (!el) return el;
+	cond = isArg(cond)? cond : true;
+	
+	w3_set_props(el, 'w3-hide', cond);
 	return el;
 }
 
 function w3_show_hide(el, show, display)
 {
    var rv;
-   //w3_console_obj(el, 'w3_show_hide BEGIN show='+ show);
+   //w3_console.log(el, 'w3_show_hide BEGIN show='+ show);
    if (show) {
       rv = w3_show(el, display? display : 'w3-show-block');
    } else {
       rv = w3_hide(el);
    }
-   //w3_console_obj(el, 'w3_show_hide END');
+   //w3_console.log(el, 'w3_show_hide END');
    return rv;
 }
 
@@ -986,6 +1067,8 @@ function w3_background_color(el_id, color)
 	return prev;
 }
 
+// colors = "bgColor/w3-bg-color, fgColor/w3-fg-color"
+// color '' to revert to default color
 function w3_colors(el_id, colors)
 {
    var el = w3_el(el_id);
@@ -1002,6 +1085,46 @@ function w3_colors(el_id, colors)
       w3_add(el, fg);
    else
       el.style.color = fg;
+}
+
+function w3_flash_fade(el_id, color, dwell_ms, fade_ms, color2)
+{
+   var el = w3_el(el_id);
+   if (!el) return el;
+   el.style.transition = 'background 0s';    // has to be "0s" and not just "0"
+   el.style.background = color;
+   setTimeout(function() {
+      el.style.transition = 'background '+ (fade_ms? (fade_ms/1000) : 0.3) +'s linear';
+      el.style.background = isString(color2)? color2 : 'black';
+   }, dwell_ms? dwell_ms : 50);
+   return el;
+}
+
+function w3_fillText_shadow(canvas, text, x, y, font, fontSize, color, strokeWidth) {
+   strokeWidth = strokeWidth || Math.floor(fontSize / 3);   // rule of thumb for good looking shadow
+   var ctx = canvas.getContext("2d");
+   ctx.font = px(fontSize) +' '+ font;
+   ctx.miterLimit = 2;
+   ctx.lineJoin = "circle";
+
+   ctx.strokeStyle = "black";
+   ctx.lineWidth = strokeWidth;
+   ctx.strokeText(text, x, y);
+
+   ctx.fillStyle = color;
+   ctx.lineWidth = 1;
+   ctx.fillText(text, x, y);
+};
+
+function w3_fillText(ctx, x, y, text, color, font, lineWidth, align, baseline)
+{
+   if (color) ctx.fillStyle = color;
+   if (font) ctx.font = font;
+   if (lineWidth) ctx.lineWidth = lineWidth;
+   if (align) ctx.textAlign = align;
+   if (baseline) ctx.textBaseline = baseline;
+   var tw = ctx.measureText(text).width;
+   ctx.fillText(text, x-tw/2, y);
 }
 
 function w3_check_restart_reboot(el_id)
@@ -1025,14 +1148,17 @@ function w3_check_restart_reboot(el_id)
 function w3_set_value(path, val)
 {
 	var el = w3_el(path);
+/*
+	if (val == '(encrypted)' && w3_contains(el, 'w3-encrypted'))
+	   w3_add(el, 'kiwi-pw');
+*/
 	if (el) el.value = val;
 }
 
 function w3_set_decoded_value(path, val)
 {
 	//console.log('w3_set_decoded_value: path='+ path +' val='+ val);
-	var el = w3_el(path);
-	if (el) el.value = decodeURIComponent(val);
+	w3_set_value(path, decodeURIComponent(val));
 }
 
 function w3_get_value(path)
@@ -1158,16 +1284,6 @@ function w3int_post_action()
    w3_call('freqset_select');
 }
 
-function w3_fillText(ctx, x, y, text, color, font, align, baseline)
-{
-   if (color) ctx.fillStyle = color;
-   if (font) ctx.font = font;
-   if (align) ctx.textAlign = align;
-   if (baseline) ctx.textBaseline = baseline;
-   var tw = ctx.measureText(text).width;
-   ctx.fillText(text, x-tw/2, y);
-}
-
 function w3_copy_to_clipboard(val)
 {
 	var el = document.createElement("input");
@@ -1200,6 +1316,35 @@ function w3_scrollTop(id, cond)
    var el = w3_el(id);
    if (isArg(cond)? cond : true) el.scrollTop = 0;
    return el;
+}
+
+// calls func(arg) when w3_el(id) exists in DOM
+function w3_do_when_rendered(id, func, arg, poll_ms)
+{
+   var el = w3_el(id);
+   poll_ms = isNumber(poll_ms)? poll_ms : 500;
+   if (!isArg(el)) {
+      setTimeout(function () {
+         w3_do_when_rendered(id, func, arg, poll_ms);
+      }, poll_ms);
+      return;
+   }
+   
+   func(el, arg);
+}
+
+// calls func(arg) when cond_func() becomes true
+function w3_do_when_cond(cond_func, func, arg, poll_ms)
+{
+   poll_ms = isNumber(poll_ms)? poll_ms : 500;
+   if (!cond_func()) {
+      setTimeout(function () {
+         w3_do_when_cond(cond_func, func, arg, poll_ms);
+      }, poll_ms);
+      return;
+   }
+   
+   func(arg);
 }
 
 
@@ -1565,11 +1710,50 @@ function w3_btn(text, cb)
    return w3_button('', text, cb);
 }
 
+function w3_cb_param_encode(cbp)
+{
+   if (!isArg(cbp)) {
+      return 0;
+   }
+   
+   if (isObject(cbp)) {
+      return encodeURIComponent(JSON.stringify(cbp));
+   }
+   
+   return cbp;
+}
+
+function w3_cb_param_decode(cbp)
+{
+   if (!isArg(cbp)) {
+      return 0;
+   }
+   
+   if (isString(cbp)) {
+      cbp = decodeURIComponent(cbp);
+      var obj;
+      if (cbp[0] == '{') {
+         try {
+            obj = JSON.parse(cbp);
+         } catch(ex) {
+            return cbp;
+         }
+         return obj;
+      }
+   }
+   
+   return cbp;
+}
+
 function w3_button(psa, text, cb, cb_param)
 {
 	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
 	w3int_btn_grp_uniq++;
-	cb_param = cb_param || 0;
+	
+	//console.log('w3_button cb_param='+ cb_param);
+	cb_param = w3_cb_param_encode(cb_param);
+	//console.log('w3_button cb_param='+ cb_param);
+
 	var onclick = cb? ('onclick="w3int_button_click(event, '+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"') : '';
 	if (cb && psa.includes('w3-momentary')) {
 	   onclick += ' onmousedown="w3int_button_click(event, '+ sq(path) +', '+ sq(cb) +', 0)"';
@@ -1684,40 +1868,74 @@ function w3_icon_cb2(psa, fa_icon, size, color, cb, cb_param)
 
 // Detect empty lines (only \n) because onchange event not fired in that case.
 // Also detect and process control character sequences.
-function w3int_input_key(ev, path, cb)
+function w3int_input_keydown(ev, path, cb)
 {
+   var i, s;
    var k = ev.key.toUpperCase();
    var ctl = ev.ctrlKey;
 	var el = w3_el(path);
    if (!el) return;
-   //console.log('w3int_input_key k='+ k + (ctl? ' CTL ':'') +' val=<'+ el.value +'> cb='+ cb);
+   //w3_remove(el, 'kiwi-pw');
+   //console.log('w3int_input_keydown k='+ k + (ctl? ' CTL ':'') +' val=<'+ el.value +'> cb='+ cb);
    cb = cb.split('|');
 
    if (ctl && 'CD\\'.includes(k) && cb[1]) {
-      //console.log('w3int_input_key ^'+ k +' cb='+ cb[1]);
+      //console.log('w3int_input_keydown ^'+ k +' cb='+ cb[1]);
       w3_call(cb[1], k);
    }
 
    var input_any_change = w3_contains(el, 'w3-input-any-change');
 	if (ev.key == 'Enter') {
       if (input_any_change) {
-         // consider unchanged input value followed by Enter to be an input change
-         //console.log('w3int_input_key: w3-input-any-change + Enter');
-         w3_input_change(path, cb[0]);
+         // consider unchanged input value followed by Enter, at the end of input text, to be an input change
+         //console.log('w3int_input_keydown: w3-input-any-change + Enter');
+
+         // A newline is going to be added to el.value after w3int_input_keydown() returns.
+         // If we are currently positioned somewhere in the potential run of newlines at the end of the text
+         // then remove all the trailing newlines so only a single newline will remain.
+         s = el.value;
+         //console.log('newline strip: ss='+ el.selectionStart +' tl='+ el.textLength);
+         for (i = el.selectionStart; i < el.textLength; i++) {
+            if (s.charAt(i) != '\n')
+               break;
+         }
+         //console.log('newline strip: i='+ i +' tl='+ el.textLength);
+         if (i == el.textLength) {
+            while (s.endsWith('\n'))
+               s = s.slice(0, -1);
+            //console.log('s='+ JSON.stringify(s));
+            w3_set_value(el, s);    // update field so el.selectionStart etc below are also updated
+         }
+
+         //console.log('ss='+ el.selectionStart +' se='+ el.selectionEnd +' tl='+ el.textLength);
+         if (el.selectionStart == el.selectionEnd && el.selectionStart == el.textLength) {
+            //console.log('el.value='+ JSON.stringify(w3_el('id-ale_2g-user-textarea').value));
+            //console.log(el);
+            w3_input_change(path, cb[0]);
+         }
       } else
 	   if (el.value == '') {
          // cause empty input lines followed by Enter to send empty command to shell
-         //console.log('w3int_input_key: empty line + Enter');
+         //console.log('w3int_input_keydown: empty line + Enter');
          w3_input_change(path, cb[0]);
       }
 	}
 
    // if Delete key (Backspace) when entire value is selected then consider it an input change
 	if (ev.key == 'Backspace' && input_any_change && el.selectionStart == 0 && el.selectionEnd == el.value.length) {
-      //console.log('w3int_input_key Delete: len='+ el.value.length +' ss='+ el.selectionStart +' se='+ el.selectionEnd);
+      //console.log('w3int_input_keydown Delete: len='+ el.value.length +' ss='+ el.selectionStart +' se='+ el.selectionEnd);
       el.value = '';
       w3_input_change(path, cb[0]);
 	}
+}
+
+function w3int_input_keyup(ev, path, cb)
+{
+/*
+	var el = w3_el(path);
+	if (ev.key == 'Backspace' && el.value == '')
+      w3_input_change(path, cb[0]);
+*/
 }
 
 function w3_input_change(path, cb, cb_param)
@@ -1726,18 +1944,24 @@ function w3_input_change(path, cb, cb_param)
 	if (el) {
       //console.log('w3_input_change path='+ path);
       w3_check_restart_reboot(el);
-      
       w3_schedule_highlight(el);
-
+      
       // cb is a string because can't pass an object to onclick
       if (cb) {
          cb = cb.split('|');
          //el.select();
          w3_call(cb[0], path, el.value, /* first */ false, cb_param);
       }
+
+/*
+      if (el.value != '' && w3_contains(el, 'w3-encrypted')) {
+         w3_add(el, 'kiwi-pw');
+         el.value = '(encrypted)';
+      }
+*/
    }
 	
-   if (w3_contains(el, 'w3-retain-input-focus'))
+   if (w3_contains(el, 'w3-retain-input-focus') || w3_contains(el, 'w3-ext-retain-input-focus'))
 	   w3_field_select(path, {mobile:1});     // select the field
    else
       w3int_post_action();
@@ -1755,15 +1979,19 @@ function w3_input(psa, label, path, val, cb, placeholder)
 	cb = cb || '';
 	var phold = placeholder? (' placeholder="'+ placeholder +'"') : '';
 	var custom = psa.includes('w3-custom-events');
-	var onchange = (path && !custom)? (' onchange="w3_input_change('+ sq(path) +', '+ sq(cb) +')" onkeydown="w3int_input_key(event, '+ sq(path) +', '+ sq(cb) +')"') : '';
-	var val = ' value='+ dq(w3_esc_dq(val) || '');
+	var onchange = ' onchange="w3_input_change('+ sq(path) +', '+ sq(cb) +')"';
+	var onkeydown = ' onkeydown="w3int_input_keydown(event, '+ sq(path) +', '+ sq(cb) +')"';
+	var onkeyup = ' onkeyup="w3int_input_keyup(event, '+ sq(path) +', '+ sq(cb) +')"';
+	var events = (path && !custom)? (onchange + onkeydown + onkeyup) : '';
+	val = ' value='+ dq(w3_esc_dq(val) || '');
 	var inline = psa.includes('w3-label-inline');
 	var bold = !psa.includes('w3-label-not-bold');
 	label = label || '';
 	var spacing = (label != '' && inline)? ' w3int-margin-input' : '';
 
 	// type="password" is no good because it forces the submit to be https which we don't support
-	var type = 'type='+ (psa.includes('w3-password')? '"password"' : '"text"');
+	//var type = 'type='+ (psa.includes('w3-password')? '"password"' : '"text"');
+	var type = 'type="text"';
 
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
@@ -1775,7 +2003,7 @@ function w3_input(psa, label, path, val, cb, placeholder)
 	   '<div '+ psa_outer +'>' +
          w3_label(psa_label, label, path) +
 		   // NB: include id in an id= for benefit of keyboard shortcut field detection
-         '<input id='+ dq(id) +' '+ psa_inner + val + onchange +'>' +
+         '<input id='+ dq(id) +' '+ psa_inner + val + events +'>' +
       '</div>';
 	//if (path == 'freq-input') console.log(s);
 	//w3int_input_set_id(id);
@@ -1836,16 +2064,20 @@ function w3_textarea(psa, label, path, val, rows, cols, cb)
 {
 	var id = w3_add_id(path);
 	var spacing = (label != '')? ' w3-margin-T-8' : '';
-	var onchange = ' onchange="w3_input_change('+ sq(path) +', '+ sq(cb) +')" onkeydown="w3int_input_key(event, '+ sq(path) +', '+ sq(cb) +')"';
+	var onchange = ' onchange="w3_input_change('+ sq(path) +', '+ sq(cb) +')"';
+	var onkeydown = ' onkeydown="w3int_input_keydown(event, '+ sq(path) +', '+ sq(cb) +')"';
+	var onkeyup = ' onkeyup="w3int_input_keyup(event, '+ sq(path) +', '+ sq(cb) +')"';
 	var val = val || '';
 	var p = w3_psa(psa, 'w3-input w3-border w3-hover-shadow '+ id + spacing, '', 'rows="'+ rows +'" cols="'+ cols +'"');
 
 	var s =
 	   w3_div('',
 	      label,
-		   '<textarea '+ p + onchange +'>'+ val +'</textarea>'
+		   '<textarea '+ p + onchange + onkeydown + onkeyup +'>'+ val +'</textarea>'
 		);
-	//if (label == 'Title') console.log(s);
+	//if (psa.includes('w3-dump')) console.log('label='+ label);
+	//if (psa.includes('w3-dump')) console.log('val='+ val);
+	//if (psa.includes('w3-dump')) console.log('s='+ s);
 	return s;
 }
 
@@ -1854,7 +2086,7 @@ function w3_textarea_get_param(psa, label, path, rows, cols, cb, init_val)
 {
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
 	cur_val = decodeURIComponent(cur_val);
-	//console.log('w3_textarea_get_param: path='+ path +' cur_val="'+ cur_val +'"');
+	//if (psa.includes('w3-dump')) console.log('w3_textarea_get_param: path='+ path +' cur_val="'+ cur_val +'"');
 	return w3_textarea(psa, label, path, cur_val, rows, cols, cb);
 }
 
@@ -1876,7 +2108,7 @@ function w3int_checkbox_change(path, cb, cb_param)
 		w3_call(cb, path, el.checked, /* first */ false, cb_param);
 	}
 
-   if (w3_contains(el, 'w3-retain-input-focus'))
+   if (w3_contains(el, 'w3-retain-input-focus') || w3_contains(el, 'w3-ext-retain-input-focus'))
 	   w3_field_select(path, {mobile:1});     // select the field
    else
       w3int_post_action();
@@ -1965,7 +2197,10 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb, cb_param)
 	var first = '';
 
 	if (title != '') {
-		first = '<option value="-1" '+ ((sel == W3_SELECT_SHOW_TITLE)? 'selected':'') +' disabled>' + title +'</option>';
+      var as = title.split('<br>');
+      as.forEach(function(s,i) {
+         first += '<option value="-1" '+ ((sel == W3_SELECT_SHOW_TITLE && i == 0)? 'selected':'') +' disabled>' + s +'</option>';
+      });
 	} else {
 		if (sel == W3_SELECT_SHOW_TITLE) sel = 0;
 	}
@@ -2039,8 +2274,17 @@ function w3int_select_options(sel, opts)
    // { key0:opt0, key1:opt1 ... }
    // object: enumerate sequentially like an array using keys values as the menu options
    if (isObject(opts)) {
-      w3_obj_enum(opts, function(key, i) {
-         s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ opts[key] +'</option>';
+      w3_obj_enum(opts, function(key, i, o) {
+         var value, text, disabled = false;
+         if (isObject(o)) {
+            value = isDefined(o.value)? o.value : i;
+            text = key;
+            if (isDefined(o.disabled) && o.disabled) disabled = true;
+         } else {
+            value = i;
+            text = o;
+         }
+         s += '<option value='+ dq(value) + ((i == sel)? ' selected':'') + (disabled? ' disabled':'') +'>'+ text +'</option>\n';
       });
    }
    
@@ -2050,6 +2294,7 @@ function w3int_select_options(sel, opts)
 function w3_select(psa, label, title, path, sel, opts, cb, cb_param)
 {
    var s = w3int_select_options(sel, opts);
+	if (psa.includes('w3-dump')) console.log(s);
    return w3int_select(psa, label, title, path, sel, s, cb, cb_param);
 }
 
@@ -2059,23 +2304,27 @@ function w3_select(psa, label, title, path, sel, opts, cb, cb_param)
 //    object keys as the disabled menu entries
 //    arrays as the menu options
 //       array elements are w3_first_value()'s e.g. int, string, first array value etc.
-function w3_select_hier(psa, label, title, path, sel, opts, cb, cb_param)
+function w3int_select_hier(psa, label, title, path, sel, collapse, opts, cb, cb_param)
 {
    var s = '';
    var idx = 0;
    if (!isObject(opts)) return;
 
-   w3_obj_enum(opts, function(key, i) {
-      as = key.split('\\');
+   w3_obj_enum(opts, function(key, i, a) {
+      as = key.split('_');       // '_' => menu header line break
       as.forEach(function(e) {
-         s += '<option value='+ dq(idx++) +' disabled>'+ e +'</option> ';
+         if (!e || e != '')
+            s += '<option value='+ dq(idx++) +' disabled>'+ e +'</option> ';
       });
-      var a = opts[key];
       if (!isArray(a)) return;
 
       a.forEach(function(el, j) {
+         if (collapse && j >= collapse) return;     // only show first collapse number of entries
          var v = w3_first_value(el);
-         s += '<option value='+ dq(idx++) +' id="id-'+ i +'-'+ j +'">'+ v.toString() +'</option> ';
+         if (v == 'null') return;
+         var v2 = w3_second_value(el);
+         var _class = v2? (' class='+ dq(v2)) : '';
+         s += '<option value='+ dq(idx++) +' id="id-'+ i +'-'+ j +'"' + _class +'>'+ v.toString() +'</option> ';
       });
    });
    
@@ -2095,6 +2344,16 @@ function w3_select_hier(psa, label, title, path, sel, opts, cb, cb_param)
    */
    
    return w3int_select(psa, label, title, path, sel, s, cb, cb_param);
+}
+
+function w3_select_hier(psa, label, title, path, sel, opts, cb, cb_param)
+{
+   return w3int_select_hier(psa, label, title, path, sel, 0, opts, cb, cb_param);
+}
+
+function w3_select_hier_collapse(psa, label, title, path, sel, collapse, opts, cb, cb_param)
+{
+   return w3int_select_hier(psa, label, title, path, sel, collapse, opts, cb, cb_param);
 }
 
 // conditional -- individual menu entries can be enabled/disabled
@@ -2459,6 +2718,17 @@ function w3_string_set_cfg_cb(path, val, first)
 	ext_set_cfg_param(path, encodeURIComponent(val.toString()), save);
 }
 
+// unlike w3_string_set_cfg_cb(), saving json doesn't need encodeURIComponent()
+// because JSON.stringify() escapes everything properly
+function w3_json_set_cfg_cb(path, val, first)
+{
+	//console.log('w3_json_set_cfg_cb: path='+ path +' '+ typeof(val) +' "'+ val +'" first='+ first);
+	
+	// if first time don't save, otherwise always save
+	var save = (first != undefined)? (first? false : true) : true;
+	ext_set_cfg_param(path, val, save);
+}
+
 function w3_remove_trailing_index(path, sep)
 {
    sep = sep || '-';    // optional separator, e.g. if negative indicies are used
@@ -2474,6 +2744,55 @@ function w3_remove_trailing_index(path, sep)
 	   el = el[1];
 	}
 	return { el:el, idx:idx };
+}
+
+var w3_MENU_NEXT = 1;
+var w3_MENU_PREV = -1;
+
+// cb_param = { dir:w3_MENU_{NEXT,PREV}, id:'...', func:'...', (optional, to skip non-numeric menu items) isNumeric:true }
+function w3_select_next_prev_cb(path, cb_param, first)
+{
+	console.log('w3_select_next_prev_cb cb_param='+ decodeURIComponent(cb_param));
+   var cbp = w3_cb_param_decode(cb_param);
+   if (!isObject(cbp)) {
+	   console.log('w3_select_next_prev_cb cb_param is not an object');
+	   return;
+   }
+	console.log('w3_select_next_prev_cb dir='+ cbp.dir +' id='+ cbp.id);
+	
+   // if any menu has a selection value then select next/prev (if any)
+   var prev = 0, capture_the_next = 0, captured_next = 0, captured_prev = 0;
+   var menu_s, el;
+   
+   for (var i = 0; (el = w3_el(menu_s = cbp.id + i)) != null; i++) {
+      var val = el.value;
+      console.log('menu_s='+ menu_s +' value='+ val);
+      if (val == -1) continue;
+      
+      w3_select_enum(menu_s, function(option) {
+         var content_check = (isUndefined(cbp.isNumeric) || (cbp.isNumeric == true && isNumber(+option.innerText)));
+	      if (option.disabled || !content_check) return;
+         console.log('consider val='+ option.value +' \"'+ option.innerText +'\" content_check='+ content_check);
+         if (capture_the_next) {
+            captured_next = option.value;
+            capture_the_next = 0;
+         }
+         if (option.value === val) {
+            captured_prev = prev;
+            capture_the_next = 1;
+         }
+         prev = option.value;
+      });
+      break;
+   }
+
+	console.log('i='+ i +' captured_prev='+ captured_prev +' captured_next='+ captured_next);
+	val = 0;
+	if (cbp.dir == w3_MENU_NEXT && captured_next) val = captured_next;
+	if (cbp.dir == w3_MENU_PREV && captured_prev) val = captured_prev;
+	console.log('w3_select_next_prev_cb val='+ val);
+	//if (val)
+	   w3_call(cbp.func, menu_s, val, first);
 }
 
 
@@ -2586,7 +2905,35 @@ function w3_inline(psa, attr)
    }
 }
 
+// see: stackoverflow.com/questions/29885284/how-to-set-a-fixed-width-column-with-css-flexbox
 function w3_inline_percent(psa)
+{
+   var psa3 = w3_psa3(psa);
+   var psa_outer = w3_psa(psa3.middle, 'w3-show-inline-new');
+	var narg = arguments.length;
+	var total = 0;
+	var prop = psa.includes('w3-debug')? 'w3_debug ' : '';
+	var last_halign_end = psa.includes('w3-last-halign-end');
+	var s = '<div w3d-inlpo '+ psa_outer +'>';
+		for (var i = 1; i < narg; i += 2) {
+		   var style;
+		   if (i+1 < narg) {
+		      style = 'flex-basis:'+ arguments[i+1] +'%';
+		      total += arguments[i+1];
+		   } else {
+		      style = 'flex-basis:'+ (100 - total) +'%';
+		   }
+		   if (i == narg-1 && last_halign_end) prop += 'w3-flex w3-halign-end';
+			s += '<div w3d-inlpi-'+ ((i-1)/2) +' '+ w3_psa(psa3.right, prop, style) +'>'+ arguments[i] + '</div>';
+		}
+	s += '</div>';
+	//console.log(s);
+	return s;
+}
+
+/*
+// old version using div width:%
+function w3_inline_percent_old(psa)
 {
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.middle, 'w3-show-inline-new');
@@ -2607,6 +2954,7 @@ function w3_inline_percent(psa)
 	//console.log(s);
 	return s;
 }
+*/
 
 function w3_div(psa)
 {

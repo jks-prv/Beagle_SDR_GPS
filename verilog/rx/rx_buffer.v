@@ -17,8 +17,6 @@ Boston, MA  02110-1301, USA.
 
 // Copyright (c) 2019 John Seamons, ZL/KF6VO
 
-`include "kiwi.vh"
-
 module RX_BUFFER (
 	input  wire clka,
 	input  wire [ADDR_MSB:0] addra,
@@ -29,6 +27,8 @@ module RX_BUFFER (
 	input  wire [ADDR_MSB:0] addrb,
 	output wire [15:0] doutb
 	);
+
+`include "kiwi.gen.vh"
 
 	parameter ADDR_MSB = "required";
 
@@ -63,7 +63,7 @@ module RX_BUFFER (
 	assign doutb = (RXBUF_LARGE == 0)? doutb_8k : ((RXBUF_LARGE == 1)? doutb_16k : doutb_32k);
 
     // All but one of these will be optimized away because RXBUF_LARGE is a constant parameter
-    // set in kiwi.vh that depends on RX_CFG
+    // set in kiwi.gen.vh that depends on RX_CFG
     
     ipcore_bram_8k_16b rx_buf_8k (
         .clka	(clka),         .clkb	(clkb),

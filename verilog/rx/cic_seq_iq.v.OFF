@@ -27,8 +27,6 @@ Boston, MA  02110-1301, USA.
 // Fixed differential delay (D) = 1
 //
 
-`include "kiwi.vh"
-
 module cic_seq_iq (
 	input wire clock,
 	input wire reset,

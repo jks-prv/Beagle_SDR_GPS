@@ -136,7 +136,7 @@ typedef struct {
 
     ip_lookup_t ips_kiwisdr_com;
     
-    #define N_IP_BLACKLIST 64
+    #define N_IP_BLACKLIST 256
     int ipv4_blacklist_len;
     u4_t ipv4_blacklist[N_IP_BLACKLIST];
     u4_t ipv4_blacklist_nm[N_IP_BLACKLIST];
@@ -177,8 +177,8 @@ typedef struct {
 const u4_t ICONN_WS_SND = 1, ICONN_WS_WF = 2, ICONN_WS_EXT = 4;
 
 bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port_base,
-    const char *mode, int locut, int hicut, float freq_kHz, const char *ident, const char *geoloc,
-    const char *client = NULL,
+    const char *mode, int locut, int hicut, float freq_kHz,
+    const char *ident, const char *geoloc, const char *client = NULL,
     int zoom = 0, float cf_kHz = 0, int min_dB = 0, int max_dB = 0, int wf_speed = 0, int wf_comp = 0);
 
 void internal_conn_shutdown(internal_conn_t *iconn);

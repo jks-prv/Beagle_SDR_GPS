@@ -9,6 +9,11 @@ $(GEN_DIR)/ext_init.cpp: $(THIS_DRM)/Makefile
 
 ifeq ($(DRM_SKIP),true)
     EXT_SKIP += DRM
+    
+    # resampler used by other code, so include subdir where it is located for DRM_SKIP case
+    DRM_SUBDIR = resample
+    EXT_SUBDIRS += $(addprefix extensions/DRM/dream/,$(DRM_SUBDIR))
+    EXT_DEFINES += -DHAVE_STDINT_H -DHAVE_INTTYPES_H -DHAVE_STDLIB_H -DHAVE_STRINGS_H -DSTDC_HEADERS
 else
     DRM_SUBDIR = . linux sourcedecoders sound chanest datadecoding datadecoding/journaline drmchannel \
         FAC interleaver matlib MDI MLC MSC OFDMcellmapping resample SDC sync tables util FDK-AAC
@@ -17,7 +22,7 @@ else
     EXT_SUBDIRS_KEEP += $(addprefix extensions/DRM/dream/,$(DRM_SUBDIR))
     
     EXT_DEFINES += -DDRM -DHAVE_DLFCN_H -DHAVE_MEMORY_H -DHAVE_STDINT_H -DHAVE_STDLIB_H -DHAVE_STRINGS_H \
-        -DHAVE_STRING_H -DSTDC_HEADERS -DHAVE_INTTYPES_H -DHAVE_STDINT_H -DHAVE_SYS_STAT_H \
+        -DHAVE_STRING_H -DSTDC_HEADERS -DHAVE_INTTYPES_H -DHAVE_SYS_STAT_H \
         -DHAVE_SYS_TYPES_H -DHAVE_UNISTD_H -DHAVE_LIBZ -DHAVE_LIBSNDFILE \
         -DUSE_CONSOLEIO -DUSE_KIWI -DHAVE_LIBFDK_AAC -DHAVE_USAC
 

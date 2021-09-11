@@ -46,6 +46,7 @@ void CAudioResample::Resample(CVector<_REAL>& rInput, CVector<_REAL>& rOutput)
         }
     }
 }
+
 void CAudioResample::Init(int iNewInputBlockSize, _REAL rNewRatio)
 {
     rRatio = rNewRatio;
@@ -54,6 +55,7 @@ void CAudioResample::Init(int iNewInputBlockSize, _REAL rNewRatio)
     //printf("CAudioResample::Init-1 rRatio=%f iInputBlockSize=%d iOutputBlockSize=%d\n", rRatio, iInputBlockSize, iOutputBlockSize);
     Reset();
 }
+
 void CAudioResample::Init(const int iNewOutputBlockSize, const int iInputSamplerate, const int iOutputSamplerate)
 {
     rRatio = _REAL(iOutputSamplerate) / iInputSamplerate;
@@ -67,10 +69,12 @@ int CAudioResample::GetMaxInputSize() const
 {
     return iInputBlockSize;
 }
+
 int CAudioResample::GetFreeInputSize() const
 {
     return iInputBlockSize;
 }
+
 void CAudioResample::Reset()
 {
     /* Allocate memory for internal buffer, clear sample history */

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 John Seamons, ZL/KF6VO
+// Copyright (c) 2021 John Seamons, ZL/KF6VO
 
 var cmap = {
    ext_name: 'colormap',     // NB: must match colormap.cpp:colormap_ext.name
@@ -27,17 +27,6 @@ var cmap = {
    gain_blue: 0,
    n_custom: 4,
    save: {},
-   aper_algo: 3,
-   aper_algo_s: [ 'IIR', 'MMA', 'EMA', 'off' ],
-   aper_algo_e: { IIR:0, MMA:1, EMA:2, OFF:3 },
-   aper_param: 0,
-   aper_param_s: [ 'gain', 'averages', 'averages', '' ],
-   aper_params: {
-      IIR_min:0, IIR_max:2, IIR_step:0.1, IIR_def:0.8, IIR_val:undefined,
-      MMA_min:1, MMA_max:16, MMA_step:1, MMA_def:2, MMA_val:undefined,
-      EMA_min:1, EMA_max:16, EMA_step:1, EMA_def:2, EMA_val:undefined,
-   },
-
    ef: 0
 };
 
@@ -136,25 +125,9 @@ function colormap_controls_setup()
 		   w3_divs('',
             w3_div('w3-medium w3-text-aqua w3-margin-B-16', '<b>Colormap control</b>'),
 
-            w3_col_percent('w3-valign w3-margin-T-8/',
-               w3_div('w3-text-css-orange', '<b>Aperture<br>auto<br>mode</b>'), 17,
-               w3_select('id-cmap-aper-algo|color:red', 'Averaging', '', 'cmap.aper_algo', cmap.aper_algo, cmap.aper_algo_s, 'colormap_aper_algo_cb'), 20,
-               w3_div('id-cmap-aper-param',
-                  w3_slider('id-cmap-aper-param-slider', 'Parameter', 'cmap.aper_param', cmap.aper_param, 0, 10, 1, 'colormap_aper_param_cb')
-               ), 40,
-               '&nbsp;', 3, w3_div('id-cmap-aper-param-field')
-            ),
-            
-            w3_inline('id-cmap-maxmin w3-margin-T-8 w3-hide w3-text-white w3-small/',
-               'Min/max:&nbsp;', w3_div('id-cmap-min'), '/', w3_div('id-cmap-max'), '&nbsp;=&nbsp;',
-               w3_div('id-cmap-min-comp'), '/', w3_div('id-cmap-max-comp'), '&nbsp;(computed) +&nbsp;',
-               w3_div('id-cmap-min-floor'), '/', w3_div('id-cmap-max-ceil'), '&nbsp;(floor/ceil)'
-            ),
-            w3_div('id-cmap-maxmin-empty w3-margin-T-8 w3-small', '&nbsp;'),
-
-		      w3_col_percent('w3-margin-T-32 w3-margin-B-16 w3-valign/',
+		      w3_col_percent('w3-margin-T-16 w3-margin-B-16 w3-valign/',
                w3_div('w3-text-css-orange', '<b>Colormap<br>designer</b>'), 20,
-               w3_select('|color:red', '', 'colormap', 'wf.cmap', wf.cmap, kiwi.cmap_s, 'wf_cmap_cb'), 27,
+               w3_select('w3-text-red', '', 'colormap', 'wf.cmap', wf.cmap, kiwi.cmap_s, 'wf_cmap_cb'), 27,
                w3_div('w3-text-white', 'select custom colormap<br>then draw in box below'), 40,
                w3_button('w3-btn w3-round-xlarge w3-padding-small w3-aqua', 'clear', 'colormap_clear_button_cb')
             ),
@@ -162,21 +135,21 @@ function colormap_controls_setup()
             w3_divs('',
                w3_col_percent('w3-valign/',
                   w3_radio_button('id-cmap-btn-red w3-btn w3-round-xlarge w3-padding-small', 'red', cmap.button, w3_SELECTED, 'colormap_color_button_cb', 0), 17,
-                  w3_select('|color:red', '', 'draw', 'cmap.draw_r', cmap.draw_r, cmap.draw_s, 'colormap_draw_mode_cb', 0), 20,
+                  w3_select('w3-text-red', '', 'draw', 'cmap.draw_r', cmap.draw_r, cmap.draw_s, 'colormap_draw_mode_cb', 0), 20,
                   w3_slider('id-cmap-gain-red-slider', '', 'cmap.gain_red', cmap.gain_red, -1.04, 1.04, 0.01, 'colormap_color_gain_cb', 0), 40,
                   '&nbsp;', 3, w3_div('id-cmap-gain-red-field')
                ),
                
                w3_col_percent('w3-valign w3-margin-T-8/',
                   w3_radio_button('id-cmap-btn-green w3-btn w3-round-xlarge w3-padding-small', 'green', cmap.button, w3_NOT_SELECTED, 'colormap_color_button_cb', 1), 17,
-                  w3_select('|color:red', '', 'draw', 'cmap.draw_g', cmap.draw_g, cmap.draw_s, 'colormap_draw_mode_cb', 1), 20,
+                  w3_select('w3-text-red', '', 'draw', 'cmap.draw_g', cmap.draw_g, cmap.draw_s, 'colormap_draw_mode_cb', 1), 20,
                   w3_slider('id-cmap-gain-red-slider', '', 'cmap.gain_green', cmap.gain_green, -1.04, 1.04, 0.01, 'colormap_color_gain_cb', 1), 40,
                   '&nbsp;', 3, w3_div('id-cmap-gain-green-field')
                ),
                
                w3_col_percent('w3-valign w3-margin-T-8 w3-margin-B-16/',
                   w3_radio_button('id-cmap-btn-blue w3-btn w3-round-xlarge w3-padding-small', 'blue', cmap.button, w3_NOT_SELECTED, 'colormap_color_button_cb', 2), 17,
-                  w3_select('|color:red', '', 'draw', 'cmap.draw_b', cmap.draw_b, cmap.draw_s, 'colormap_draw_mode_cb', 2), 20,
+                  w3_select('w3-text-red', '', 'draw', 'cmap.draw_b', cmap.draw_b, cmap.draw_s, 'colormap_draw_mode_cb', 2), 20,
                   w3_slider('id-cmap-gain-red-slider', '', 'cmap.gain_blue', cmap.gain_blue, -1.04, 1.04, 0.01, 'colormap_color_gain_cb', 2), 40,
                   '&nbsp;', 3, w3_div('id-cmap-gain-blue-field')
                ),
@@ -205,14 +178,8 @@ function colormap_controls_setup()
 		);
 
 	ext_panel_show(controls_html, null);
-	ext_set_controls_width_height(440, 530);
+	ext_set_controls_width_height(440, 430);
 	
-	if (wf.aper == kiwi.aper_e.auto) {
-      w3_show_inline('id-cmap-maxmin');
-      colormap_maxmin_cb();
-      w3_hide('id-cmap-maxmin-empty');
-   }
-
    w3_set_highlight_color('id-cmap-btn-red', 'w3-red');
    w3_set_highlight_color('id-cmap-btn-green', 'w3-green');
    w3_set_highlight_color('id-cmap-btn-blue', 'w3-blue');
@@ -255,12 +222,6 @@ function colormap_init()
    var last_cmap = readCookie('last_cmap', (init_cmap == -1)? 0 : init_cmap);
    if (wf.cmap_override != -1) last_cmap = wf.cmap_override;
    wf_cmap_cb('wf.cmap', last_cmap, false);     // writes 'last_cmap' cookie
-
-   var init_aper = +ext_get_cfg_param('init.aperture', -1, EXT_NO_SAVE);
-   //console.log('# cmap init_aper='+ init_aper);
-   var last_aper = readCookie('last_aper', (init_aper == -1)? 0 : init_aper);
-   wf_aper_cb('wf.aper', last_aper, false);     // writes 'last_aper' cookie
-   w3_show('id-aper-data');
 
    wf.aper_w = parseFloat(w3_el('id-control').style.width);
    wf.aper_h = 16;
@@ -343,87 +304,6 @@ function colormap_aper()
 		}
 	   last_dBm = dBm;
 	}
-}
-
-function colormap_aper_algo_cb(path, idx, first)
-{
-   if (first) {
-      idx = +readCookie('last_aper_algo', cmap.aper_algo_e.OFF);
-      w3_set_value(path, idx);
-   } else {
-      idx = +idx;
-   }
-   //console.log('colormap_aper_algo_cb ENTER path='+ path +' idx='+ idx +' first='+ first);
-   //kiwi_trace('colormap_aper_algo_cb');
-   wf.aper_algo = cmap.aper_algo = +idx;
-
-   if (cmap.aper_algo == cmap.aper_algo_e.OFF) {
-      w3_hide(w3_el('id-cmap-aper-param').parentElement);
-      w3_innerHTML('id-cmap-aper-param-field', 'aperture auto-scale on <br> waterfall pan/zoom only');
-      colormap_update();
-   } else {
-      var f_a = cmap.aper_algo;
-      var f_s = cmap.aper_algo_s[f_a];
-      var f_p = cmap.aper_params;
-      var val = f_p[f_s +'_val'];
-      //console.log('colormap_aper_algo_cb menu='+ f_a +'('+ f_s +') val='+ val);
-   
-      // update slider to match menu change
-      w3_show(w3_el('id-cmap-aper-param').parentElement);
-      colormap_aper_param_cb('id-cmap-aper-param-slider', val, /* done */ true, /* first */ false);
-      //console.log('colormap_aper_algo_cb EXIT path='+ path +' menu='+ f_a +'('+ f_s +') param='+ cmap.aper_param);
-   }
-   
-	writeCookie('last_aper_algo', cmap.aper_algo.toString());
-   freqset_select();
-}
-
-function colormap_aper_param_cb(path, val, done, first)
-{
-   if (first) return;
-   val = +val;
-   //console.log('colormap_aper_param_cb ENTER path='+ path +' val='+ val +' done='+ done);
-   //kiwi_trace('colormap_aper_param_cb');
-   var f_a = cmap.aper_algo;
-   var f_s = cmap.aper_algo_s[f_a];
-   var f_p = cmap.aper_params;
-
-   if (isUndefined(val) || isNaN(val)) {
-      val = f_p[f_s +'_def'];
-      //console.log('colormap_aper_param_cb using default='+ val +'('+ typeof(val) +')');
-      var lsf = parseFloat(readCookie('last_aper_algo'));
-      var lsfp = parseFloat(readCookie('last_aper_param'));
-      if (lsf == f_a && !isNaN(lsfp)) {
-         //console.log('colormap_aper_param_cb USING READ_COOKIE last_aper_param='+ lsfp);
-         val = lsfp;
-      }
-   }
-
-	wf.aper_param = cmap.aper_param = f_p[f_s +'_val'] = val;
-	//console.log('colormap_aper_param_cb UPDATE slider='+ val +' menu='+ f_a +' done='+ done +' first='+ first);
-
-   // needed because called by colormap_aper_algo_cb()
-   w3_slider_setup('id-cmap-aper-param-slider', f_p[f_s +'_min'], f_p[f_s +'_max'], f_p[f_s +'_step'], val);
-   w3_innerHTML('id-cmap-aper-param-field', (f_a == cmap.aper_algo_e.OFF)? '' : (val +' '+ cmap.aper_param_s[f_a]));
-
-   if (done) {
-	   //console.log('colormap_aper_param_cb DONE WRITE_COOKIE last_aper_param='+ val.toFixed(2));
-	   writeCookie('last_aper_param', val.toFixed(2));
-      colormap_update();
-      freqset_select();
-   }
-
-   //console.log('colormap_aper_param_cb EXIT path='+ path);
-}
-
-function colormap_maxmin_cb()
-{
-   w3_innerHTML('id-cmap-max', maxdb.toString().positiveWithSign());
-   w3_innerHTML('id-cmap-max-comp', wf.auto_maxdb.toString().positiveWithSign());
-   w3_innerHTML('id-cmap-max-ceil', wf.auto_ceil.val.toString().positiveWithSign());
-   w3_innerHTML('id-cmap-min', mindb.toString().positiveWithSign());
-   w3_innerHTML('id-cmap-min-comp', wf.auto_mindb.toString().positiveWithSign());
-   w3_innerHTML('id-cmap-min-floor', wf.auto_floor.val.toString().positiveWithSign());
 }
 
 function colormap_color_button_cb(path, idx, first, param)

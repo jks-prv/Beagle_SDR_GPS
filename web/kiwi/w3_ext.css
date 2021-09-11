@@ -366,6 +366,11 @@ input[type=range]::-moz-range-thumb {
     margin: 8px !important
 }
 
+.w3-margin-10
+{
+    margin: 8px !important
+}
+
 .w3-margin-16
 {
     margin: 16px !important
@@ -405,6 +410,11 @@ input[type=range]::-moz-range-thumb {
 .w3-margin-L-5
 {
     margin-left: 5px
+}
+
+.w3-margin-L-6
+{
+    margin-left: 6px
 }
 
 .w3-margin-L-8
@@ -900,6 +910,12 @@ input[type=range]::-moz-range-thumb {
 
 /* colors */
 
+.w3-background-fade
+{
+	background-color: black;
+	transition: background-color 1s linear 1s;
+}
+
 .w3-red2, .w3-hover-red2:hover {
     color: white;
     background-color: hsl(0, 97%, 57%);
@@ -976,6 +992,12 @@ input[type=range]::-moz-range-thumb {
 .w3-text-css-red
 {
     color: red;
+}
+
+.w3-css-pink
+{
+    color: black;
+    background-color: pink;
 }
 
 .w3-override-yellow

@@ -29,9 +29,10 @@ Boston, MA  02110-1301, USA.
 typedef void (*ext_main_t)();
 typedef void (*ext_close_conn_t)(int rx_chan);
 typedef bool (*ext_receive_msgs_t)(char *msg, int rx_chan);
+typedef bool (*ext_receive_cmds_t)(u2_t key, char *cmd, int rx_chan);
 typedef bool (*ext_receive_FFT_samps_t)(int rx_chan, int ch, int flags, int ratio, int ns_out, TYPECPX *samps);
 typedef void (*ext_receive_iq_samps_t)(int rx_chan, int ch, int ns_out, TYPECPX *samps);
-typedef void (*ext_receive_real_samps_t)(int rx_chan, int ch, int ns_out, TYPEMONO16 *samps);
+typedef void (*ext_receive_real_samps_t)(int rx_chan, int ch, int ns_out, TYPEMONO16 *samps, int freqHz);
 typedef void (*ext_receive_S_meter_t)(int rx_chan, float S_meter_dBm);
 typedef void (*ext_poll_t)(int rx_chan);
 
@@ -74,6 +75,10 @@ void ext_unregister_receive_real_samps_task(int rx_chan);
 void ext_register_receive_S_meter(ext_receive_S_meter_t func, int rx_chan);
 void ext_unregister_receive_S_meter(int rx_chan);
 
+// call to start/stop receiving cmds
+void ext_register_receive_cmds(ext_receive_cmds_t func, int rx_chan);
+void ext_unregister_receive_cmds(int rx_chan);
+
 // general routines
 double ext_update_get_sample_rateHz(int rx_chan);		// return sample rate of audio channel
 void ext_adjust_clock_offset(int rx_chan, double offset);
@@ -81,9 +86,11 @@ typedef enum { AUTH_USER = 0, AUTH_LOCAL = 1, AUTH_PASSWORD = 2 } ext_auth_e;
 ext_auth_e ext_auth(int rx_chan);
 void ext_notify_connected(int rx_chan, u4_t seq, char *msg);
 void ext_kick(int rx_chan);
+double ext_get_displayed_freq_kHz(int rx_chan);
 
 // routines to send messages to extension client-part
 int ext_send_msg(int rx_chan, bool debug, const char *msg, ...);
+int ext_send_snd_msg(int rx_chan, bool debug, const char *msg, ...);
 int ext_send_msg_data(int rx_chan, bool debug, u1_t cmd, u1_t *bytes, int nbytes);
 int ext_send_msg_data2(int rx_chan, bool debug, u1_t cmd, u1_t data2, u1_t *bytes, int nbytes);
 int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *cmd, const char *fmt, ...);

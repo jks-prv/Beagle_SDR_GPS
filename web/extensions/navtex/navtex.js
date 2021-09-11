@@ -19,6 +19,7 @@ var nt = {
    disabled: 0,
 
    decode: 1,
+   freq: 0,
    freq_s: '',
    cf: 500,
    shift: 170,
@@ -298,7 +299,7 @@ function navtex_controls_setup()
 
 	navtex_jnx = new JNX();
 	navtex_jnx.setup_values(ext_sample_rate(), nt.cf, nt.shift, nt.baud, nt.framing, nt.inverted, nt.encoding);
-	//w3_console_obj(navtex_jnx, 'JNX');
+	//w3_console.log(navtex_jnx, 'JNX');
 	navtex_jnx.set_baud_error_cb(navtex_baud_error);
 	navtex_jnx.set_output_char_cb(navtex_output_char);
 
@@ -336,10 +337,10 @@ function navtex_controls_setup()
             ),
 
             w3_inline('',
-					w3_button('w3-padding-smaller', 'Next', 'navtex_next_prev_cb', 1),
-					w3_button('w3-margin-left w3-padding-smaller', 'Prev', 'navtex_next_prev_cb', -1),
+					w3_button('w3-padding-smaller', 'Next', 'w3_select_next_prev_cb', { dir:w3_MENU_NEXT, id:'nt.menu', func:'navtex_pre_select_cb' }),
+					w3_button('w3-margin-left w3-padding-smaller', 'Prev', 'w3_select_next_prev_cb', { dir:w3_MENU_PREV, id:'nt.menu', func:'navtex_pre_select_cb' }),
 
-               w3_select('w3-margin-left|color:red', '', 'mode', 'nt.mode', 0, navtex_mode_s, 'navtex_mode_cb'),
+               w3_select('w3-margin-left w3-text-red', '', 'mode', 'nt.mode', 0, navtex_mode_s, 'navtex_mode_cb'),
 
                w3_inline('id-navtex-decode/',
                   w3_button('w3-margin-left w3-padding-smaller', 'Clear', 'navtex_clear_cb', 0),
@@ -420,65 +421,31 @@ function navtex_pre_select_cb(path, idx, first)
 	});
 
    // reset other menus
+   navtex_clear_menus(menu_n);
+}
+
+function navtex_clear_menus(except)
+{
+   // reset frequency menus
    for (var i = 0; i < nt.n_menu; i++) {
-      if (i != menu_n)
+      if (!isArg(except) || i != except)
          w3_select_value('nt.menu'+ i, -1);
    }
 }
 
 function navtex_environment_changed(changed)
 {
+   //w3_console.log(changed, 'navtex_environment_changed');
+   if (!changed.freq && !changed.mode) return;
+
    // reset all frequency menus when frequency etc. is changed by some other means (direct entry, WF click, etc.)
    // but not for changed.zoom, changed.resize etc.
    var dsp_freq = ext_get_freq()/1e3;
    var mode = ext_get_mode();
    //console.log('Navtex ENV nt.freq='+ nt.freq +' dsp_freq='+ dsp_freq);
    if (nt.freq != dsp_freq || mode != 'cw') {
-      for (var i = 0; i < nt.n_menu; i++) {
-         w3_select_value('nt.menu'+ i, -1);
-      }
-      nt.menu_sel = '';
+      navtex_clear_menus();
       w3_el('id-navtex-area').innerHTML = '&nbsp;';
-   }
-}
-
-function navtex_next_prev_cb(path, np, first)
-{
-	np = +np;
-	//console.log('navtex_next_prev_cb np='+ np);
-	
-   // if any menu has a selection value then select next/prev (if any)
-   var prev = 0, capture_next = 0, captured_next = 0, captured_prev = 0;
-   var menu;
-   
-   for (var i = 0; i < nt.n_menu; i++) {
-      menu = 'nt.menu'+ i;
-      var el = w3_el(menu);
-      var val = el.value;
-      //console.log('menu='+ menu +' value='+ val);
-      if (val == -1) continue;
-      
-      w3_select_enum(menu, function(option) {
-	      if (option.disabled) return;
-         if (capture_next) {
-            captured_next = option.value;
-            capture_next = 0;
-         }
-         if (option.value === val) {
-            captured_prev = prev;
-            capture_next = 1;
-         }
-         prev = option.value;
-      });
-      break;
-   }
-
-	//console.log('i='+ i +' captured_prev='+ captured_prev +' captured_next='+ captured_next);
-	val = 0;
-	if (np == 1 && captured_next) val = captured_next;
-	if (np == -1 && captured_prev) val = captured_prev;
-	if (val) {
-      navtex_pre_select_cb(menu, val, false);
    }
 }
 

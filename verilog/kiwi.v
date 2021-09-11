@@ -23,8 +23,6 @@
 
 `default_nettype none
 
-`include "kiwi.vh"
-
 module KiwiSDR (
 
     input  wire	signed [ADC_BITS-1:0] ADC_DATA,
@@ -62,6 +60,8 @@ module KiwiSDR (
     output wire EWP
     );
     
+`include "kiwi.gen.vh"
+`include "other.gen.vh"
     
     //////////////////////////////////////////////////////////////////////////
     // debug
@@ -143,8 +143,14 @@ module KiwiSDR (
 
 	assign EWP = ctrl[CTRL_EEPROM_WP];
 	assign CMD_READY = ctrl[CTRL_CMD_READY];
-	assign SND_INTR = ctrl[CTRL_SND_INTR];
-	
+
+`ifdef USE_OTHER
+    wire dev_intr;
+`else
+    wire dev_intr = 1'b0;
+`endif
+	assign SND_INTR = ctrl[CTRL_SND_INTR] | dev_intr;
+    
 	// keep Vivado from complaining about unused inputs and outputs
 	assign P9[0] = ctrl[CTRL_UNUSED_OUT];
 	assign P9[1] = ctrl[CTRL_UNUSED_OUT];
@@ -161,7 +167,9 @@ module KiwiSDR (
 	assign P8[8] = ctrl[CTRL_UNUSED_OUT];
 	assign P8[9] = ctrl[CTRL_UNUSED_OUT];
     
-	wire unused_inputs = IF_MAG | P9[2]
+	wire unused_inputs_or_regs = IF_MAG | P9[2]
+	| ctrl[CTRL_0001] | ctrl[CTRL_0002] | ctrl[CTRL_0004] | ctrl[CTRL_0008]
+	| ctrl[CTRL_0010] | ctrl[CTRL_0020] | ctrl[CTRL_0040] | ctrl[CTRL_0080]
 `ifndef USE_SDR
         | ADC_CLKIN | |ADC_DATA | ADC_OVFL
 `endif
@@ -170,16 +178,17 @@ module KiwiSDR (
 `endif
         ;
 
-`ifndef USE_SDR
-    assign ADC_CLKEN = 1'b0;
+`ifdef USE_OTHER
+    wire [2:0] other_flags;
+`else
+    wire [2:0] other_flags = 3'b0;
 `endif
+    wire [3:0] stat_user = { other_flags, dna_data };
 
-    wire [15:0] status;
-    wire [3:0] stat_user = { 3'b0, dna_data };
     // when the eCPU firmware returns status it replaces stat_replaced with FW_ID
-    wire [2:0] stat_replaced = { 2'b0, unused_inputs };
+    wire [2:0] stat_replaced = { 2'b0, unused_inputs_or_regs };
     wire [3:0] fpga_id = { FPGA_ID };
-    assign status[15:0] = { rx_overflow_C, stat_replaced, FPGA_VER, stat_user, fpga_id };
+    wire [15:0] status = { rx_overflow_C, stat_replaced, FPGA_VER, stat_user, fpga_id };
 
 
     //////////////////////////////////////////////////////////////////////////
@@ -322,7 +331,7 @@ module KiwiSDR (
         .boot_done  (boot_done),
 
         .tos        (tos[15:0]),
-        .op         (op),
+        .op_03_00   (op[3:0]),
         .rdReg      (rdReg),
         .wrReg      (wrReg),
         .wrEvt      (wrEvt)

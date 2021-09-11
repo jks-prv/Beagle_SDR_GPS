@@ -43,7 +43,7 @@
 //#define WSPR_APRINTF
 #ifdef WSPR_APRINTF
     #define wspr_aprintf(fmt, ...) \
-        printf("WSPR-%02d: " fmt, rx_chan, ## __VA_ARGS__)
+        rcprintf(rx_chan, fmt, ## __VA_ARGS__)
 #else
     #define wspr_aprintf(fmt, ...)
 #endif
@@ -52,7 +52,7 @@
 #ifdef WSPR_PRINTF
     #if 0
         #define wspr_printf(fmt, ...) \
-            printf("WSPR-%02d: " fmt, rx_chan, ## __VA_ARGS__)
+            rcprintf(rx_chan, fmt, ## __VA_ARGS__)
 	#else
 	    #define wspr_printf(fmt, ...)
     #endif
@@ -60,14 +60,14 @@
     #if 1
         #define wspr_dprintf(fmt, ...) \
             /*printf("%3ds ", timer_sec() - passes_start);*/ \
-            if (w->debug) printf("WSPR-%02d: " fmt, rx_chan, ## __VA_ARGS__)
+            if (w->debug) rcprintf(rx_chan, fmt, ## __VA_ARGS__)
 	#else
 	    #define wspr_dprintf(fmt, ...)
 	#endif
 
     #if 0
 	    #define wspr_d1printf(fmt, ...) \
-	    	printf("WSPR-%02d: " fmt, rx_chan, ## __VA_ARGS__)
+	    	rcprintf(rx_chan, fmt, ## __VA_ARGS__)
 	#else
 	    #define wspr_d1printf(fmt, ...)
 	#endif
@@ -77,6 +77,13 @@
 	    	printf(fmt, ## __VA_ARGS__)
 	#else
 	    #define wspr_d2printf(fmt, ...)
+	#endif
+
+    #if 0
+	    #define wspr_ulprintf(fmt, ...) \
+	    	rcprintf(w->rx_chan, fmt, ## __VA_ARGS__)
+	#else
+	    #define wspr_ulprintf(fmt, ...)
 	#endif
 
 	#define wspr_gprintf(fmt, ...) \
@@ -231,6 +238,7 @@ typedef struct {
 	bool send_error, abort_decode;
 	int WSPR_FFTtask_id, WSPR_DecodeTask_id;
 	int debug;
+	bool iwbp;
 	
 	// options
 	int quickmode, medium_effort, more_candidates, stack_decoder, subtraction;
@@ -240,8 +248,8 @@ typedef struct {
 	
 	// autorun
 	bool autorun;
-	conn_t *arun_csnd;
-	double arun_cf_MHz;
+	conn_t *arun_csnd, *arun_cext;
+	double arun_cf_MHz, arun_deco_cf_MHz;
 	char *arun_stat_cmd;
 	u4_t arun_last_status_sent;
 	int arun_decoded, arun_last_decoded;
@@ -267,7 +275,7 @@ typedef struct {
     int bfo;
 	float min_snr, snr_scaling_factor;
 	struct snode *stack;
-	float dialfreq_MHz, cf_offset;
+	float dialfreq_MHz, centerfreq_MHz, cf_offset;
 	u1_t symbols[NSYM_162], decdata[LEN_DECODE], channel_symbols[NSYM_162];
 	char callsign[LEN_CALL], call_loc_pow[LEN_C_L_P], grid[LEN_GRID];
 	int dBm;

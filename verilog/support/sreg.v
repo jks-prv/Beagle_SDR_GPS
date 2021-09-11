@@ -17,11 +17,9 @@ Boston, MA  02110-1301, USA.
 
 // Copyright (c) 2021 John Seamons, ZL/KF6VO
 
-`include "kiwi.vh"
-
 // variable length left shift register
 
-module sreg #(parameter WIDTH=16) (
+module sreg (
 	input  wire clk,
 	input  wire [WIDTH-1:0] pin,
 	input  wire load,
@@ -29,6 +27,8 @@ module sreg #(parameter WIDTH=16) (
 	input  wire sin,
 	output wire sout
 	);
+	
+	parameter WIDTH = 16;
 
 	reg [WIDTH-1:0] sr;
 	assign sout = sr[WIDTH-1];

@@ -11,7 +11,7 @@ var tdoa = {
    ii:         0,
    leaflet:    true,
    w_data:     1024,
-   h_data:     465,
+   h_data:     445,
    
    pkgs_maps_js: [
       'pkgs_maps/pkgs_maps.js',
