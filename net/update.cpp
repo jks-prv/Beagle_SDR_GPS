@@ -104,13 +104,13 @@ static void update_build_ctask(void *param)
 
 static void curl_makefile_ctask(void *param)
 {
-    system("cd /root/" REPO_NAME " ; echo ======== checking for update >/root/build.log; date >>/root/build.log");
+    system("echo ======== checking for update >/root/build.log; date >>/root/build.log");
 
-	int status = system("git fetch origin >>/root/build.log 2>&1");
+	int status = system("cd /root/" REPO_NAME " ; git fetch origin >>/root/build.log 2>&1");
     printf("UPDATE: fetch origin status=0x%08x\n", status);
 	child_status_exit(status);
 
-	status = system("git show origin:Makefile >Makefile.1 2>>/root/build.log");
+	status = system("cd /root/" REPO_NAME " ; git show origin:Makefile >Makefile.1 2>>/root/build.log");
     printf("UPDATE: show origin:Makefile status=0x%08x\n", status);
 	child_status_exit(status);
 
