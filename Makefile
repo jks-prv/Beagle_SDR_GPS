@@ -215,7 +215,7 @@ CFILES_O3 = $(subst web/web.cpp,,$(CPP_F_O3))
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	ifeq ($(XC),-DXC)
-		LIBS += -lfftw3f -lutil
+		LIBS += -lfftw3f -lutil -lcrypt
 		DIR_CFG = /root/kiwi.config
 		CFG_PREFIX =
 	else
@@ -229,7 +229,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 else
 	# host machine (BBB), only build the FPGA-using version
-	LIBS += -lfftw3f -lutil
+	LIBS += -lfftw3f -lutil -lcrypt
 	LIBS_DEP += /usr/lib/arm-linux-gnueabihf/libfftw3f.a
 	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng /sbin/ethtool /usr/bin/sshpass
 	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget
@@ -446,7 +446,7 @@ pru/pru_realtime.bin: pas pru/pru_realtime.p pru/pru_realtime.h pru/pru_realtime
 ################################
 # FPGA embedded CPU
 ################################
-$(GEN_ASM): kiwi.config $(wildcard e_cpu/asm/*)
+$(GEN_ASM): kiwi.config verilog/kiwi.inline.vh $(wildcard e_cpu/asm/*)
 	(cd e_cpu; make)
 $(GEN_OTHER_ASM): other.config $(wildcard e_cpu/asm/*)
 	(cd e_cpu; make gen_other)
@@ -1234,33 +1234,10 @@ endif
 ################################
 # Verilog
 ################################
+
+-include verilog/Makefile
+
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-
-V_DIR = ~/shared/shared
-
-$(GEN_VERILOG): $(GEN_DIR)/kiwi.gen.h verilog/rx/cic_gen.c
-	(cd verilog/rx; make)
-
-# generate the files needed to build the Verilog code
-verilog: $(GEN_VERILOG)
-	@echo verilog/ directory should now contain all necessary generated files:
-	@echo verilog/kiwi.gen.vh, verilog/rx/cic_*.vh
-
-# command to "copy verilog" from KiwiSDR distribution to the Vivado build location
-# designed to complement the "make cv2" command run on the Vivado build machine
-EXCLUDE_CV = ".DS_Store" "rx/cic_gen" "rx/*.dSYM" "*(original)*"
-ifeq ($(V_PROJ),)
-    V_PROJ = KiwiSDR
-endif
-cv: $(GEN_VERILOG)
-	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog/ $(V_DIR)/$(V_PROJ)
-	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog.Vivado.2017.4.ip/ $(V_DIR)/$(V_PROJ).Vivado.2017.4.ip
-
-cv2:
-	@echo "you probably want to use \"make cv\" here"
-
-sum:
-	sum *.bit
 
 ifeq ($(XC),) ## do not copy bit streams from $(V_DIR) when cross-compiling
 
