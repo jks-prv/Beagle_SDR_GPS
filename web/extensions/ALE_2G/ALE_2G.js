@@ -929,7 +929,7 @@ function ALE_2G_help(show)
          '<br>URL parameters: <br>' +
          'scan:<i>secs</i> &nbsp; <br>' +
          'The first URL parameter can be a frequency entry from one of the menus (i.e. "3596") <br>' +
-         'or the name of a menu scan list (e.g. "MARS" in the Ham menu). <br>' +
+         'or the name of a menu scan list (e.g. "MARS" in the Amateur menu). <br>' +
          'Keywords are case-insensitive and can be abbreviated. <br>' +
          'So for example these are valid: <br>' +
          '<i>&ext=ale,3596</i> &nbsp;&nbsp; ' +
