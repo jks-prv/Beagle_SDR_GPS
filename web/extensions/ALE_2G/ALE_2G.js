@@ -451,7 +451,7 @@ function ale_2g_render_menus()
       new_menu(i, o2, menu_s);
    });
    
-   if (isDefined(cfg.ale_2g.admin_menu)) {
+   if (isDefined(cfg.ale_2g) && isDefined(cfg.ale_2g.admin_menu)) {
       //console.log('ale_2g_render_menus admin_menu:');
       s = kiwi_remove_cjson_comments(decodeURIComponent(cfg.ale_2g.admin_menu));
       //console.log(s);
