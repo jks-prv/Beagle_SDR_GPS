@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.462  September 10, 2021
+v1.462,463  September 10, 2021
     ALE 2G extension preliminary release:
         A work-in-progress. Lots of issues no doubt. See KiwiSDR forum for discussion.
         Features
