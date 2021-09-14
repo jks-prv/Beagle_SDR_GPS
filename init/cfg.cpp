@@ -28,6 +28,7 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "jsmn.h"
 #include "cfg.h"
+#include "utf8.h"
 
 #ifdef USE_SDR
  #include "dx.h"
@@ -899,6 +900,24 @@ void _cfg_default_string(cfg_t *cfg, const char *name, const char *val, bool *er
 		_cfg_set_string(cfg, name, val, CFG_SET, 0);
 		//printf("_cfg_default_string: %s = %s\n", name, val);
 	} else {
+	
+	    // v1.463
+        // Recover from broken UTF-8 sequences stored in cfg.
+	    if (cfg == &cfg_cfg) {
+	        char *uc = strdup(s);
+                void *cp;
+                cp = utf8valid(uc);
+                if (cp) {
+                    lprintf("NOT VALID UTF-8: pos=%d %s=<%s>\n", (char *) cp - uc, name, s);
+                    utf8makevalid(uc, '?');
+                    char *uc2 = kiwi_str_encode(uc);
+                        kiwi_str_decode_selective_inplace(uc2);
+                        _cfg_set_string(cfg, name, uc2, CFG_SET, 0);
+                    kiwi_ifree(uc2);
+                    error = true;
+                }
+	        kiwi_ifree(uc);
+	    }
 		_cfg_free(cfg, s);
 	}
 	if (error_p) *error_p = *error_p | error;
@@ -1209,7 +1228,7 @@ static bool _cfg_load_json(cfg_t *cfg)
 	cfg->json[n] = '\0';
 	if (cfg->json[n-1] == '\n')
 		cfg->json[n-1] = '\0';
-	
+
 	// hack to add passband configuration (too difficult to do with cfg.h interface)
 	if (cfg == &cfg_cfg && strstr(cfg->json, "\"passbands\":") == NULL) {
 	    _cfg_realloc_json(cfg, n + 1024, CFG_COPY);
@@ -1232,8 +1251,8 @@ static bool _cfg_load_json(cfg_t *cfg)
                 "\"nbfm\":{\"lo\":-6000, \"hi\":6000},"
                 "\"iq\":  {\"lo\":-5000, \"hi\":5000}"
 	        "}}");
-	    _cfg_save_json(cfg, cfg->json);
-	    return true;
+        _cfg_save_json(cfg, cfg->json);
+        return true;
 	}
 	
     TMEAS(printf("cfg_load_json: parse\n");)

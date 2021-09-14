@@ -344,7 +344,7 @@ function control_html()
 
 function control_focus()
 {
-	w3_innerHTML('id-reason-disabled-preview', admin_preview_status_box(cfg.reason_disabled));
+	w3_innerHTML('id-reason-disabled-preview', admin_preview_status_box('disabled_preview_1', cfg.reason_disabled));
 }
 
 function server_enabled_cb(path, idx, first)
@@ -368,7 +368,7 @@ function control_user_kick_cb(id, idx)
 function reason_disabled_cb(path, val)
 {
 	w3_string_set_cfg_cb(path, val);
-	w3_el('id-reason-disabled-preview').innerHTML = admin_preview_status_box(cfg.reason_disabled);
+	w3_el('id-reason-disabled-preview').innerHTML = admin_preview_status_box('disabled_preview_2', cfg.reason_disabled);
 }
 
 var pending_restart = false;
@@ -3151,7 +3151,7 @@ function admin_recv(data)
 				if (!el) break;
 				var el2 = w3_el('id-log-msg');
 				var wasScrolledDown = kiwi_isScrolledDown(el2);
-				var s = decodeURIComponent(param[1]).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+				var s = kiwi_decodeURIComponent('log_msg_save', param[1]).replace(/</g, '&lt;').replace(/>/g, '&gt;');
 				el.innerHTML = s;
 
 				// only jump to bottom of updated list if it was already sitting at the bottom
@@ -3353,9 +3353,9 @@ function admin_slider_cb(path, val, done, first)
    ext_set_cfg_param(path, val, true);
 }
 
-function admin_preview_status_box(val)
+function admin_preview_status_box(id, val)
 {
-	var s = decodeURIComponent(val);
+	var s = kiwi_decodeURIComponent('admin_preview_status_box:'+ id, val);
 	if (!s || s == '') s = '&nbsp;';
 	return s;
 }

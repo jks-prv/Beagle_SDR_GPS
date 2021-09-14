@@ -153,7 +153,7 @@ else
 endif
 
 PKGS = 
-PKGS_O3 = pkgs/mongoose pkgs/jsmn pkgs/sha256 pkgs/TNT_JAMA
+PKGS_O3 = pkgs/utf8 pkgs/mongoose pkgs/jsmn pkgs/sha256 pkgs/TNT_JAMA
 
 # Each extension can have an optional Makefile:
 # The extension can opt-out of being included via EXT_SKIP (e.g. BBAI only, not Debian 7 etc.)

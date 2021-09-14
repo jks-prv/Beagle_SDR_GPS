@@ -215,17 +215,30 @@ void update_vars_from_config(bool called_at_init)
     drm_nreg_chans = cfg_int("DRM.nreg_chans", &err, CFG_OPTIONAL);
     if (err) drm_nreg_chans = DRM_NREG_CHANS_DEFAULT;
 
+    // fix any broken UTF-8 sequences via cfg_default_string()
+    cfg_default_string("index_html_params.HTML_HEAD", "", &update_cfg);
+    cfg_default_string("index_html_params.PAGE_TITLE", "", &update_cfg);
+    cfg_default_string("index_html_params.RX_PHOTO_TITLE", "", &update_cfg);
+    cfg_default_string("index_html_params.RX_PHOTO_DESC", "", &update_cfg);
+    cfg_default_string("index_html_params.RX_TITLE", "", &update_cfg);
+    cfg_default_string("index_html_params.RX_LOC", "", &update_cfg);
+    cfg_default_string("status_msg", "", &update_cfg);
+    cfg_default_string("rx_name", "", &update_cfg);
+    cfg_default_string("rx_device", "", &update_cfg);
+    cfg_default_string("rx_location", "", &update_cfg);
+    cfg_default_string("rx_antenna", "", &update_cfg);
+    cfg_default_string("owner_info", "", &update_cfg);
+    cfg_default_string("reason_disabled", "", &update_cfg);
+
     S_meter_cal = cfg_default_int("S_meter_cal", SMETER_CALIBRATION_DEFAULT, &update_cfg);
     waterfall_cal = cfg_default_int("waterfall_cal", WATERFALL_CALIBRATION_DEFAULT, &update_cfg);
     cfg_default_bool("contact_admin", true, &update_cfg);
     cfg_default_int("chan_no_pwd", 0, &update_cfg);
-    cfg_default_string("owner_info", "", &update_cfg);
     cfg_default_int("clk_adj", 0, &update_cfg);
     freq_offset = cfg_default_float("freq_offset", 0, &update_cfg);
     kiwi_reg_lo_kHz = cfg_default_int("sdr_hu_lo_kHz", 0, &update_cfg);
     kiwi_reg_hi_kHz = cfg_default_int("sdr_hu_hi_kHz", 30000, &update_cfg);
     cfg_default_bool("index_html_params.RX_PHOTO_LEFT_MARGIN", true, &update_cfg);
-    cfg_default_string("index_html_params.HTML_HEAD", "", &update_cfg);
     cfg_default_bool("ext_ADC_clk", false, &update_cfg);
     cfg_default_int("ext_ADC_freq", (int) round(ADC_CLOCK_TYP), &update_cfg);
     cfg_default_bool("ADC_clk_corr", true, &update_cfg);

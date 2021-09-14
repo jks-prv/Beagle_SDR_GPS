@@ -248,7 +248,7 @@ function drm_recv(data)
 			   if (!drm.run || !drm.desktop)
 			      break;
 
-			   var deco = kiwi_decodeURIComponent('drm_status_cb', param[1]);
+			   var deco = kiwi_decodeURIComponent('DRM', param[1]);
             if (!deco) break;
 
             var o = kiwi_JSON_parse('drm_status_cb', deco);

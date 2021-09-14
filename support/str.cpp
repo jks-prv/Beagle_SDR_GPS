@@ -372,7 +372,7 @@ char *kiwi_str_encode(char *src)
 	assert(slen);
 	char *dst = (char *) kiwi_imalloc("kiwi_str_encode", slen);
 	mg_url_encode(src, dst, slen);
-	return dst;		// NB: caller must free dst
+	return dst;		// NB: caller must kiwi_ifree(dst)
 }
 
 #define N_DST_STATIC (1023 + SPACE_FOR_NULL)
@@ -411,17 +411,17 @@ static u1_t decode_table[128] = {
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 //  (ctrl)
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-//    ! " # $ % & ' ( ) * + , - . /
+//    ! " # $ % & ' ( ) * + , - . /     still % encoded: "%&'+
     1,1,0,1,1,0,0,0,1,1,1,0,1,1,1,1,
-//  0 1 2 3 4 5 6 7 8 9 : ; < = > ?
+//  0 1 2 3 4 5 6 7 8 9 : ; < = > ?     still % encoded: ;<>
     1,1,1,1,1,1,1,1,1,1,1,0,0,1,0,1,
 //  @ (alpha)
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//  (alpha)               [ \ ] ^ _
+//  (alpha)               [ \ ] ^ _     still % encoded: \
     1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,
-//  ` (alpha)
+//  ` (alpha)                           still % encoded: `
     0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//  (alpha)               { | } ~ del
+//  (alpha)               { | } ~ del   still % encoded: del
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
 };
 
@@ -431,7 +431,7 @@ static int kiwi_url_decode_selective(const char *src, int src_len, char *dst,
     int dst_len, int is_form_url_encoded)
 {
     int i, j, a, b;
-    char c;
+    u1_t c;
     #define HEXTOI(x) (isdigit(x) ? x - '0' : x - 'W')
 
     for (i = j = 0; i < src_len && j < dst_len - 1; i++, j++) {
@@ -441,12 +441,13 @@ static int kiwi_url_decode_selective(const char *src, int src_len, char *dst,
             
             a = tolower(* (const unsigned char *) (src + i + 1));
             b = tolower(* (const unsigned char *) (src + i + 2));
-            c = (u1_t) (((HEXTOI(a) << 4) | HEXTOI(b)) & 0x7f);
-            if (decode_table[c]) {
+            c = (u1_t) (HEXTOI(a) << 4) | HEXTOI(b);
+            if (c < 0x80 && decode_table[c]) {      // preserve UTF-8 encoding values >= 0x80!
                 dst[j] = c;
                 i += 2;
-            } else
+            } else {
                 dst[j] = '%';
+            }
         } else
         
         if (is_form_url_encoded && src[i] == '+') {
@@ -466,9 +467,9 @@ char *kiwi_str_decode_selective_inplace(char *src)
 	if (src == NULL) return NULL;
 	int slen = strlen(src);
 	char *dst = src;
-	// dst = src is okay because length dst always <= src since we are decoding
-	// yes, kiwi_url_decode_selective() dst length includes SPACE_FOR_NULL
-	kiwi_url_decode_selective(src, slen, dst, slen + SPACE_FOR_NULL, 0);
+    // dst = src is okay because length dst always <= src since we are decoding
+    // yes, kiwi_url_decode_selective() dst length includes SPACE_FOR_NULL
+    kiwi_url_decode_selective(src, slen, dst, slen + SPACE_FOR_NULL, 0);
 	return dst;
 }
 
