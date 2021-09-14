@@ -2,6 +2,31 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.464  September 15, 2021
+    v1.463 introduced a bug whereby if a Kiwi has been configured with Unicode UTF-8 character sequences
+    in the various description fields (e.g. receiver name, location, antenna or the additional HTML field)
+    then those UTF-8 sequences became corrupted in the configuration files (kiwi.config/{kiwi,dx}.json)
+    
+    There are several consequences of this bug in v1.463:
+    1) The admin page may only show the title tabs and nothing else (i.e. remainder of page fails to load).
+    2) The Unicode replacement character en.wikipedia.org/wiki/Specials_(Unicode_block)#Replacement_character
+       (the '?' character inside a black diamond) will appear in place of the broken UTF-8 sequences.
+       These replacements will appear on the page when connecting normally to the Kiwi and also on
+       the various listing site (e.g. rx.kiwisdr.com) where the description fields are used.
+    
+    v1.464 has a workaround for this problem. The broken UTF-8 sequences in the configuration files
+    will be replaced with the ASCII '?' character at Kiwi server startup time. This should allow the
+    admin page to load. However, the Kiwi owner/admin will have to manually re-enter the desired Unicode
+    characters as the bug caused the original Unicode to be lost. We apologize for this inconvenience. 
+    
+    If the Kiwi has automatic updates disabled there is obviously going to be a problem since the
+    admin page may not load so that an update may be started. An alternative is to ssh/PuTTY directly into
+    the Kiwi Beagle and update via Debian shell commands. If this is not possible there is also a hack
+    to force an update even from the partially loaded admin page. Please email support@kiwisdr.com or
+    ask on forum.kiwisdr.com for details about this method.
+
+    Use floats instead of doubles in the ALE 2G extension.
+
 v1.462,463  September 10, 2021
     ALE 2G extension preliminary release:
         A work-in-progress. Lots of issues no doubt. See KiwiSDR forum for discussion.
