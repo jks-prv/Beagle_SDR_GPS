@@ -304,6 +304,8 @@ String.prototype.positiveWithSign = function()
 	return (n <= 0)? s : ('+'+ s);
 }
 
+function isHexDigit(c) { return ('0123456789ABCDEFabcdef'.indexOf(c) > -1); }
+
 // pad with left zeros to 'digits' length
 // +digits: add leading '0x'
 // -digits: no leading '0x'
@@ -516,17 +518,53 @@ function kiwi_UTCdoyToDate(doy, year, hour, min, sec)
    return new Date(Date.UTC(year, 0, doy, hour, min, sec));    // yes, doy = 1..366 really works!
 }
 
-function kiwi_decodeURIComponent(tag, uri)
+function kiwi_decodeURIComponent(id, uri)
 {
-   var obj;
-   try {
-      obj = decodeURIComponent(uri);
-   } catch(ex) {
-      console.log('kiwi_decodeURIComponent('+ tag +'): decode URI component fail');
-      console.log(uri);
-      console.log(ex);
-      obj = null;
+   var obj = null, double_fail = false;
+   
+   while (obj == null) {
+      try {
+         obj = decodeURIComponent(uri);
+      } catch(ex) {
+         console.log('$kiwi_decodeURIComponent('+ id +'): decode fail');
+         console.log(uri);
+      
+         if (double_fail) {
+            console.log('kiwi_decodeURIComponent('+ id +'): DOUBLE DECODE FAIL');
+            console.log(uri);
+            console.log(ex);
+            return null;
+         }
+
+	      // v1.464
+         // Recover from broken UTF-8 sequences stored in cfg.
+         // Remove all "%xx" sequences, for xx >= 0x80, whenever decodeURIComponent() fails.
+         // User will have to manually repair UTF-8 sequences since information has been lost.
+         //
+         // NB: If a cfg field contains only valid UTF-8 sequences then the decodeURIComponent() will not fail
+         // and this code will not be triggered. That way corrections made to broken fields will persist in the cfg.
+         // This is why bulk removal of >= %80 sequences cannot be done in _cfg_load_json() on the server side.
+         // Doing that would always eliminate *any* UTF-8 sequence. Even valid ones.
+         for (var i = 0; i < uri.length - 2; i++) {
+            var c1 = uri.charAt(i+1);
+            var c2 = uri.charAt(i+2);
+            if (uri.charAt(i) == '%' && isHexDigit(c1) && isHexDigit(c2)) {
+               //console.log(c1 +' '+ ((c1 >= '8')? 'T':'F'));
+               if (c1 >= '8') {
+                  var x0 = uri.charAt(i-1);
+                  x0 = x0.charCodeAt(0);
+                  uri = uri.substr(0,i) + uri.substr(i+3);
+                  i = 0;
+                  //console.log('FIX <'+ uri +'>');
+                  double_fail = true;
+               }
+            }
+         }
+
+         obj = null;
+      }
    }
+   
    return obj;
 }
 

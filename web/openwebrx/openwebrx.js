@@ -6087,13 +6087,13 @@ function dx_label_cb(arr)
 		var el = w3_el(dx_idx +'-id-dx-label');
 		
 		try {
-			el.innerHTML = decodeURIComponent(ident);
+			el.innerHTML = kiwi_decodeURIComponent('dx_ident', ident);
 		} catch(ex) {
 			el.innerHTML = 'bad URI decode';
 		}
 		
 		try {
-			el.title = decodeURIComponent(notes);
+			el.title = kiwi_decodeURIComponent('dx_notes', notes);
 		} catch(ex) {
 			el.title = 'bad URI decode';
 		}
@@ -6308,19 +6308,19 @@ function dx_show_edit_panel2()
 		dxo.y = ((dx_list[gid].flags & DX_TYPE) >> DX_TYPE_SFT);
 
 		try {
-			dxo.i = decodeURIComponent(dx_list[gid].ident);
+			dxo.i = kiwi_decodeURIComponent('dx_ident', dx_list[gid].ident);
 		} catch(ex) {
 			dxo.i = 'bad URI decode';
 		}
 	
 		try {
-			dxo.n = decodeURIComponent(dx_list[gid].notes);
+			dxo.n = kiwi_decodeURIComponent('dx_notes', dx_list[gid].notes);
 		} catch(ex) {
 			dxo.n = 'bad URI decode';
 		}
 	
 		try {
-			dxo.p = decodeURIComponent(dx_list[gid].params);
+			dxo.p = kiwi_decodeURIComponent('dx_params', dx_list[gid].params);
 		} catch(ex) {
 			dxo.p = 'bad URI decode';
 		}
@@ -6664,7 +6664,7 @@ var need_ident = false;
 
 function ident_init()
 {
-   if (user_url) writeCookie('ident', kiwi_strip_tags(decodeURIComponent(user_url), ''));
+   if (user_url) writeCookie('ident', kiwi_strip_tags(kiwi_decodeURIComponent('user_url', user_url), ''));
 	var ident = initCookie('ident', '');
 	ident = kiwi_strip_tags(ident, '');
 	//console.log('IINIT ident_user=<'+ ident +'>');

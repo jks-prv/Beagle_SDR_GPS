@@ -760,7 +760,7 @@ function webpage_input_map(path, val)
 
 function webpage_update_check_map()
 {
-	var map = decodeURIComponent(ext_get_cfg_param('index_html_params.RX_GMAP'));
+	var map = kiwi_decodeURIComponent('RX_GMAP', ext_get_cfg_param('index_html_params.RX_GMAP'));
 	w3_el('webpage-map-check').innerHTML = '<a href="https://google.com/maps/place/'+ map +'" target="_blank">check map</a>';
 }
 
@@ -838,29 +838,29 @@ function webpage_photo_file_upload2(key)
 function webpage_title_cb(path, val)
 {
 	webpage_string_cb(path, val);
-	w3_el('id-webpage-title-preview').innerHTML = admin_preview_status_box(cfg.index_html_params.RX_TITLE);
+	w3_el('id-webpage-title-preview').innerHTML = admin_preview_status_box('RX_TITLE_2', cfg.index_html_params.RX_TITLE);
 }
 
 function webpage_owner_info_cb(path, val)
 {
 	webpage_string_cb(path, val);
-	w3_el('id-webpage-owner-info-preview').innerHTML = admin_preview_status_box(cfg.owner_info);
+	w3_el('id-webpage-owner-info-preview').innerHTML = admin_preview_status_box('owner_info_2', cfg.owner_info);
 }
 
 function webpage_status_cb(path, val)
 {
 	w3_string_set_cfg_cb(path, val);
-	w3_el('id-webpage-status-preview').innerHTML = admin_preview_status_box(cfg.status_msg);
+	w3_el('id-webpage-status-preview').innerHTML = admin_preview_status_box('webpage_status_2', cfg.status_msg);
 }
 
 // because of the inline quoting issue, set value dynamically
 function webpage_focus()
 {
 	admin_set_decoded_value('index_html_params.RX_TITLE');
-	w3_el('id-webpage-title-preview').innerHTML = admin_preview_status_box(cfg.index_html_params.RX_TITLE);
+	w3_el('id-webpage-title-preview').innerHTML = admin_preview_status_box('RX_TITLE_1', cfg.index_html_params.RX_TITLE);
 
 	admin_set_decoded_value('status_msg');
-	w3_el('id-webpage-status-preview').innerHTML = admin_preview_status_box(cfg.status_msg);
+	w3_el('id-webpage-status-preview').innerHTML = admin_preview_status_box('webpage_status_1', cfg.status_msg);
 
 	admin_set_decoded_value('index_html_params.PAGE_TITLE');
 	admin_set_decoded_value('index_html_params.RX_LOC');
@@ -872,7 +872,7 @@ function webpage_focus()
 	admin_set_decoded_value('index_html_params.RX_PHOTO_DESC');
 
 	admin_set_decoded_value('owner_info');
-	w3_el('id-webpage-owner-info-preview').innerHTML = admin_preview_status_box(cfg.owner_info);
+	w3_el('id-webpage-owner-info-preview').innerHTML = admin_preview_status_box('owner_info_1', cfg.owner_info);
 
 	webpage_update_check_grid();
 	webpage_update_check_map();
@@ -1115,7 +1115,7 @@ function sdr_hu_focus()
 	// The default in the factory-distributed kiwi.json is the kiwisdr.com NZ location.
 	// Detect this and ask user to change it so sdr.hu/map doesn't end up with multiple SDRs
 	// defined at the kiwisdr.com location.
-	var gps = decodeURIComponent(ext_get_cfg_param('rx_gps'));
+	var gps = kiwi_decodeURIComponent('rx_gps', ext_get_cfg_param('rx_gps'));
 	public_check_gps_cb('rx_gps', gps, /* first */ true);
 	
 	public_update_check_grid();
@@ -1187,7 +1187,7 @@ function public_check_gps_cb(path, val, first)
 
 function public_update_check_map()
 {
-	var gps = decodeURIComponent(ext_get_cfg_param('rx_gps'));
+	var gps = kiwi_decodeURIComponent('rx_gps', ext_get_cfg_param('rx_gps'));
 	gps = gps.substring(1, gps.length-1);		// remove parens
 	w3_el('id-public-gps-check').innerHTML = '<a href="https://google.com/maps/place/'+ gps +'" target="_blank">check map</a>';
 }
@@ -1311,8 +1311,8 @@ function dx_json2(dx)
          d = dx.dx[i];
          fr = d[0];
          mo = kiwi.modes_s[d[1].toLowerCase()];
-         id = decodeURIComponent(d[2]);
-         no = decodeURIComponent(d[3]);
+         id = kiwi_decodeURIComponent('dx_id', d[2]);
+         no = kiwi_decodeURIComponent('dx_no', d[3]);
          ts = d[4];
          tag = d[5];
          dxo.tags[i] = tag;

@@ -1158,7 +1158,7 @@ function w3_set_value(path, val)
 function w3_set_decoded_value(path, val)
 {
 	//console.log('w3_set_decoded_value: path='+ path +' val='+ val);
-	w3_set_value(path, decodeURIComponent(val));
+	w3_set_value(path, kiwi_decodeURIComponent('w3_set_decoded_value:'+ path, val));
 }
 
 function w3_get_value(path)
@@ -2041,7 +2041,7 @@ function w3int_input_set_id_timeout(id)
 function w3_input_get(psa, label, path, cb, init_val, placeholder)
 {
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
-	cur_val = decodeURIComponent(cur_val);
+	cur_val = kiwi_decodeURIComponent('w3_input_get:'+ path, cur_val);
 	//console.log('w3_input_get: path='+ path +' cur_val="'+ cur_val +'" placeholder="'+ placeholder +'"');
 	return w3_input(psa, label, path, cur_val, cb, placeholder);
 }
@@ -2050,7 +2050,7 @@ function w3_input_get(psa, label, path, cb, init_val, placeholder)
 function w3_input_get_param(label, path, cb, init_val, placeholder)
 {
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
-	cur_val = decodeURIComponent(cur_val);
+	cur_val = kiwi_decodeURIComponent('w3_input_get_param:'+ path, cur_val);
 	//console.log('w3_input_get_param: path='+ path +' cur_val="'+ cur_val +'" placeholder="'+ placeholder +'"');
 	return w3_input('', label, path, cur_val, cb, placeholder);
 }
@@ -2085,7 +2085,7 @@ function w3_textarea(psa, label, path, val, rows, cols, cb)
 function w3_textarea_get_param(psa, label, path, rows, cols, cb, init_val)
 {
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
-	cur_val = decodeURIComponent(cur_val);
+	cur_val = kiwi_decodeURIComponent('w3_textarea_get_param:'+ path, cur_val);
 	//if (psa.includes('w3-dump')) console.log('w3_textarea_get_param: path='+ path +' cur_val="'+ cur_val +'"');
 	return w3_textarea(psa, label, path, cur_val, rows, cols, cb);
 }

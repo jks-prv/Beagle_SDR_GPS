@@ -581,11 +581,11 @@ namespace ale {
 	void decode_ff_impl::do_modem(float *sample, int length)
 	{
 	    int i,j,k,n, max_offset=0;
-	    double new_sample;
-	    double old_sample;
-	    double temp_real;
-	    double temp_imag;
-	    double max_magnitude = 0;
+	    ALE_REAL new_sample;
+	    ALE_REAL old_sample;
+	    ALE_REAL temp_real;
+	    ALE_REAL temp_imag;
+	    ALE_REAL max_magnitude = 0;
 	    char s1[4], s2[4];
 	    int bestber = 26;
 	    int ito2, itwas2, ifrom2, itis2, irep2, idata2, icmd2;

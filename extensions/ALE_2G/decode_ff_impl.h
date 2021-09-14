@@ -62,11 +62,14 @@ Significant portions of source code were based on the LinuxALE project (under GN
     #include "ext.h"
 #endif
 
+//#define ALE_REAL double
+#define ALE_REAL float
+
 namespace ale {
 
     typedef struct {
-        double real;
-        double imag;
+        ALE_REAL real;
+        ALE_REAL imag;
     } Complex;
 
     typedef struct {
@@ -78,16 +81,16 @@ namespace ale {
     
     class decode_ff_impl {
     private:
-        double  fft_cs_twiddle[FFT_SIZE];   // init
-        double  fft_ss_twiddle[FFT_SIZE];   // init
-        double  fft_history[FFT_SIZE];   // init
+        ALE_REAL  fft_cs_twiddle[FFT_SIZE];   // init
+        ALE_REAL  fft_ss_twiddle[FFT_SIZE];   // init
+        ALE_REAL  fft_history[FFT_SIZE];   // init
         Complex fft_out[FFT_SIZE];   // init
-        double  fft_mag[FFT_SIZE];   // init
+        ALE_REAL  fft_mag[FFT_SIZE];   // init
         int     fft_history_offset;   // init
 
         // sync information
-        double mag_sum[NR][FFT_SIZE];   // init
-        //double mag_history[NR][FFT_SIZE][SYMBOLS_PER_WORD];
+        ALE_REAL mag_sum[NR][FFT_SIZE];   // init
+        //ALE_REAL mag_history[NR][FFT_SIZE][SYMBOLS_PER_WORD];
         int    mag_history_offset;   // init
         int    word_sync[NR];   // init
 
