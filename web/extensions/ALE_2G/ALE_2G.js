@@ -286,8 +286,8 @@ function ale_2g_controls_setup()
          //),
 
          w3_inline('w3-tspace-4 w3-valign/w3-margin-between-12',
-            w3_button('w3-padding-smaller', 'Next', 'w3_select_next_prev_cb', { dir:w3_MENU_NEXT, id:'ale.menu', isNumeric:true, func:'ale_2g_pre_select_cb' }),
-            w3_button('w3-padding-smaller', 'Prev', 'w3_select_next_prev_cb', { dir:w3_MENU_PREV, id:'ale.menu', isNumeric:true, func:'ale_2g_pre_select_cb' }),
+            w3_button('w3-padding-smaller', 'Next', 'w3_select_next_prev_cb', { dir:w3_MENU_NEXT, id:'ale.menu', isNumeric:true, func:'ale_2g_np_pre_select_cb' }),
+            w3_button('w3-padding-smaller', 'Prev', 'w3_select_next_prev_cb', { dir:w3_MENU_PREV, id:'ale.menu', isNumeric:true, func:'ale_2g_np_pre_select_cb' }),
             w3_button('id-ale_2g-scan-button w3-padding-smaller w3-green', 'Scan', 'ale_2g_scan_button_cb'),
             w3_button('id-ale_2g-clear-button w3-padding-smaller w3-css-yellow', 'Clear', 'ale_2g_clear_button_cb'),
             w3_button('id-button-test w3-padding-smaller w3-aqua', 'Test', 'ale_2g_test_cb', 1),
@@ -388,7 +388,7 @@ function ale_2g_get_nets_done_cb(nets)
    ale_2g_render_menus();
 
    ale.url_params = ext_param();
-   console.log('url_params='+ ale.url_params);
+   if (dbgUs) console.log('url_params='+ ale.url_params);
    
 	if (ale.url_params) {
       var p = ale.url_params.split(',');
@@ -396,9 +396,10 @@ function ale_2g_get_nets_done_cb(nets)
 	   // first URL param can be a match in the preset menus
       var m_freq = p[0].parseFloatWithUnits('kM', 1e-3);
       var m_str = kiwi_decodeURIComponent('ale', p[0]).toLowerCase();
-      //console.log('URL freq='+ m_freq);
+      if (dbgUs) console.log('URL freq='+ m_freq);
       var found_scan_param = false;
       var found_menu_match = false;
+      var menu_match_numeric = false;
       var match_menu, match_val;
       var do_test = 0;
       
@@ -418,8 +419,8 @@ function ale_2g_get_nets_done_cb(nets)
          ale.have_user_scan_list = true;
          ale.user_scan_list.unshift(0);   // add 'scan' entry to list
          ale_2g_render_menus();     // must render again before ale_2g_pre_select_cb() below
-         //console.log('user_scan_list=...');
-         //console.log(ale.user_scan_list);
+         if (dbgUs) console.log('user_scan_list=...');
+         if (dbgUs) console.log(ale.user_scan_list);
          // -1 below because ale_2g_render_menus() has added +1 to array for 'scan' entry at front
          for (var i = 0; i < ale.user_scan_list.length-1; i++)
             p.shift();
@@ -442,37 +443,42 @@ function ale_2g_get_nets_done_cb(nets)
 
          for (var i = 0; i < ale.menu_n; i++) {
             var menu = 'ale.menu'+ i;
-            var look_for_scan = false;
+            var look_for_first_entry = false;
             var match = false;
          
-            //console.log('CONSIDER '+ menu +' -----------------------------------------');
+            if (dbgUs) console.log('CONSIDER '+ menu +' -----------------------------------------');
             w3_select_enum(menu, function(option, j) {
                var val = +option.value;
                if (found_menu_match || val == -1) return;
                var menu_f = parseFloat(option.innerHTML);
                var menu_s = option.innerHTML.toLowerCase();
-               //console.log('CONSIDER '+ val +' '+ option.innerHTML);
+               if (dbgUs) console.log('CONSIDER '+ val +' '+ option.innerHTML);
             
-               if (look_for_scan) {
-                  if (menu_s != 'scan') return;
+               if (look_for_first_entry) {
+                  // find first 'scan' or single frequency entry by
+                  // skipping disabled entries from multi-line net name
+                  if (option.disabled) return;
                   match = true;
+                  if (isNumber(menu_f))
+                     menu_match_numeric = true;
                } else {
                   if (isNumber(menu_f)) {
                      if (menu_f == m_freq) {
-                        //console.log('MATCH num: '+ menu_s +'['+ j +']');
+                        if (dbgUs) console.log('MATCH num: '+ menu_s +'['+ j +']');
                         match = true;
+                        menu_match_numeric = true;
                      }
                   } else {
                      if (menu_s.includes(m_str)) {
-                        look_for_scan = true;
-                        //console.log('MATCH str: '+ menu_s +'['+ j +'] BEGIN look_for_scan');
+                        look_for_first_entry = true;
+                        if (dbgUs) console.log('MATCH str: '+ menu_s +'['+ j +'] BEGIN look_for_first_entry');
                         return;
                      }
                   }
                }
             
                if (match) {
-                  //console.log('MATCH '+ val +' '+ option.innerHTML);
+                  if (dbgUs) console.log('MATCH '+ val +' '+ option.innerHTML);
                   // delay call to ale_2g_pre_select_cb(), which might start scanning,
                   // until other params processed below
                   match_menu = menu;
@@ -489,7 +495,7 @@ function ale_2g_get_nets_done_cb(nets)
       }
 
       p.forEach(function(a, i) {
-         //console.log('ALE param2 <'+ a +'>');
+         if (dbgUs) console.log('ALE param2 <'+ a +'>');
          var r;
          if (w3_ext_param('help', a).match) {
             extint_help_click();
@@ -541,14 +547,16 @@ function ale_2g_get_nets_done_cb(nets)
 
       if (found_scan_param && found_menu_match) {
          console.log('found_scan_param && found_menu_match');
-         if (look_for_scan)
+         if (look_for_first_entry)
             ale_2g_scanner(ale.SET, undefined, 1);
-         ale_2g_scanner(ale.RESUME);
+         if (!menu_match_numeric)
+            ale_2g_scanner(ale.RESUME);
       }
    }
 
-   if (found_scan_param && ale.have_user_scan_list) {
-      console.log('found_scan_param && have_user_scan_list');
+   // if a user scan list is present always begin scanning just as for net name matches
+   if (ale.have_user_scan_list) {
+      console.log('have_user_scan_list');
 
       // since first entry in local menu, value should always be = 1 to match 'scan' entry
       ale_2g_pre_select_cb('ale.menu'+ (ale.menu_n-1), 1, false);
@@ -671,17 +679,23 @@ function ale_2g_clear_menus(except)
    }
 }
 
+function ale_2g_np_pre_select_cb(path, val, first)
+{
+   var resume_scanning = (ale.scanning && ale.scan_list);
+   if (resume_scanning) {
+      if (dbgUs) console.log('ale_2g_pre_select_cb path='+ path +' $$$$ BUSY $$$$');
+      return;
+   }
+
+   ale_2g_pre_select_cb(path, val, first);
+}
+
 function ale_2g_pre_select_cb(path, val, first)
 {
    if (first) return;
    val = +val;
    
    if (dbgUs) console.log('ale_2g_pre_select_cb path='+ path +' scanning='+ ale.scanning +' isActive='+ ale.isActive +' scan_list='+ ale.scan_list);
-   var resume_scanning = (ale.scanning && ale.scan_list);
-   if (resume_scanning) {
-      if (dbgUs) console.log('ale_2g_pre_select_cb path='+ path +' $$$$ BUSY $$$$');
-      return;
-   }
    
    if (val == 0) {
       if (dbgUs) console.log('ale_2g_pre_select_cb path='+ path +' $$$$ val=0 $$$$ cur_idx='+ ale.scan_cur_idx);
