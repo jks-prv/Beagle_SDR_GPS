@@ -20,3 +20,6 @@ $(EXT_FILE): extensions/Makefile $(EXT_DIRS) extensions/ext_int.h extensions/ext
 	@sort -bdf -f $(EXT_FILE)1 >> $(EXT_FILE)
 	@rm -f $(EXT_FILE)1
 	@echo "}" >> $(EXT_FILE)
+
+clean_ext:
+	(cd extensions/ALE_2G/standalone_test; make clean)

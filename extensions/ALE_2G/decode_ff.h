@@ -62,7 +62,9 @@ const char * const CMD_types[] = {
 };
 
 
-typedef enum { CALLS, MSGS, CMDS, DBG } dsp_e;
+typedef enum { DX, ALL, CMDS, DBG, SHOW_DX, SHOW_CMD } dsp_e;
+
+const char * const dsp_s[] = { "DX", "ALL", "CMDS", "DBG", "SHOW_DX", "SHOW_CMD" };
 
 
 #define ASCII_128  0

@@ -81,24 +81,24 @@ namespace ale {
     
     class decode_ff_impl {
     private:
-        ALE_REAL  fft_cs_twiddle[FFT_SIZE];   // init
-        ALE_REAL  fft_ss_twiddle[FFT_SIZE];   // init
-        ALE_REAL  fft_history[FFT_SIZE];   // init
-        Complex fft_out[FFT_SIZE];   // init
-        ALE_REAL  fft_mag[FFT_SIZE];   // init
-        int     fft_history_offset;   // init
+        ALE_REAL  fft_cs_twiddle[FFT_SIZE];
+        ALE_REAL  fft_ss_twiddle[FFT_SIZE];
+        ALE_REAL  fft_history[FFT_SIZE];
+        Complex fft_out[FFT_SIZE];
+        ALE_REAL  fft_mag[FFT_SIZE];
+        int     fft_history_offset;
 
         // sync information
-        ALE_REAL mag_sum[NR][FFT_SIZE];   // init
+        ALE_REAL mag_sum[NR][FFT_SIZE];
         //ALE_REAL mag_history[NR][FFT_SIZE][SYMBOLS_PER_WORD];
-        int    mag_history_offset;   // init
-        int    word_sync[NR];   // init
+        int    mag_history_offset;
+        int    word_sync[NR];
 
         // worker data
         //int started[NR];    // if other than DATA has arrived
-        int bits[NR][VOTE_ARRAY_LENGTH];   // init
-        int input_buffer_pos[NR];   // init
-        int word_sync_position[NR];   // init
+        int bits[NR][VOTE_ARRAY_LENGTH];
+        int input_buffer_pos[NR];
+        int word_sync_position[NR];
 
         // protocol data
         char thru[4];
@@ -115,16 +115,16 @@ namespace ale {
         #define N_CUR 256
         char current[N_CUR];
         char current2[N_CUR];
-        int in_cmd, binary;   // init
+        int in_cmd, binary;
         bool ascii_38_ok, ascii_64_ok, ascii_nl_ok;
         
         cmd_t cmds[16];
         int cmd_cnt;
 
-        int ber[NR];   // init
-        int lastber;   // init
-        int bestpos;   // init
-        int inew;       // no init
+        int ber[NR];
+        int lastber;
+        int bestpos;
+        int inew;
 
         int ithru;
         int ito;
@@ -137,20 +137,24 @@ namespace ale {
 
         int icmd;
         
-        int state;   // init
-        int state_count;   // init
-        int stage_num;   // init
+        int state;
+        int state_count;
+        int stage_num;
 
-        int last_symbol[NR];   // init
-        int last_sync_position[NR];   // init
-        int nsym;   // init
-        int sample_count;   // init
+        int last_symbol[NR];
+        int last_sync_position[NR];
+        int nsym;
+        int sample_count;
         int activity_cnt;
         int active;
         int cmd_freq_Hz;
         int secs, timer_samps;
-        int dsp;
         double frequency;
+        
+        int dsp;
+        char log_buf[256];
+        char dpf_buf[256];
+        char locked_msg[256];
 
         #define N_SAMP_BUF 1024
         #ifdef STANDALONE_TEST
@@ -160,13 +164,16 @@ namespace ale {
         
         int rx_chan;
         bool use_UTC;
-
+        bool notify;
+        
         u4_t golay_encode(u4_t data);
         u4_t golay_decode(u4_t code, int *errors);
-        int decode_word (u4_t word, int nr, int berw, int caller);
+        int decode_word(u4_t word, int nr, int berw, int caller);
         u4_t modem_de_interleave_and_fec(int *input, int *errors);
         int modem_new_symbol(int sym, int nr);
         void log(char *current, char *current2, int state, int ber, const char *from);
+        void cprintf_msg(int cond_d);
+        void dprintf_msg();
     
     protected:
         // resampler
@@ -175,6 +182,9 @@ namespace ale {
         CVector<_REAL> vecTempResBufOut;
 
     public:
+        // options
+        bool calc_mag;
+
         decode_ff_impl();
         ~decode_ff_impl();
         void modem_init(int rx_chan, bool use_new_resampler, float f_srate, int n_samps, bool use_UTC = true);

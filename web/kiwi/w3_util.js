@@ -412,13 +412,15 @@ function w3_ext_param_array_match_num(arr, n, func)
 // returns: { match:true|false, has_value:true|false, num:parseFloat(val), string:val }
 function w3_ext_param(s, param)
 {
-   p = param.toLowerCase().split(':');
-   if (s.startsWith(p[0])) {
+   var pu = param.split(':');
+   var pl = param.toLowerCase().split(':');
+   if (s.startsWith(pl[0])) {
       rv = { match: true };
-      if (p.length > 1) {
+      if (pl.length > 1) {
          rv.has_value = true;
-         rv.num = parseFloat(p[1]);
-         rv.string = p[1];
+         rv.num = parseFloat(pl[1]);
+         rv.string = pl[1];
+         rv.string_case = pu[1];
       } else {
          rv.has_value = false;
          rv.num = 0;
@@ -2752,13 +2754,13 @@ var w3_MENU_PREV = -1;
 // cb_param = { dir:w3_MENU_{NEXT,PREV}, id:'...', func:'...', (optional, to skip non-numeric menu items) isNumeric:true }
 function w3_select_next_prev_cb(path, cb_param, first)
 {
-	console.log('w3_select_next_prev_cb cb_param='+ decodeURIComponent(cb_param));
+	if (dbgUs) console.log('w3_select_next_prev_cb cb_param='+ decodeURIComponent(cb_param));
    var cbp = w3_cb_param_decode(cb_param);
    if (!isObject(cbp)) {
 	   console.log('w3_select_next_prev_cb cb_param is not an object');
 	   return;
    }
-	console.log('w3_select_next_prev_cb dir='+ cbp.dir +' id='+ cbp.id);
+	if (dbgUs) console.log('w3_select_next_prev_cb dir='+ cbp.dir +' id='+ cbp.id);
 	
    // if any menu has a selection value then select next/prev (if any)
    var prev = 0, capture_the_next = 0, captured_next = 0, captured_prev = 0;
@@ -2766,13 +2768,13 @@ function w3_select_next_prev_cb(path, cb_param, first)
    
    for (var i = 0; (el = w3_el(menu_s = cbp.id + i)) != null; i++) {
       var val = el.value;
-      console.log('menu_s='+ menu_s +' value='+ val);
+      if (dbgUs) console.log('menu_s='+ menu_s +' value='+ val);
       if (val == -1) continue;
       
       w3_select_enum(menu_s, function(option) {
          var content_check = (isUndefined(cbp.isNumeric) || (cbp.isNumeric == true && isNumber(+option.innerText)));
 	      if (option.disabled || !content_check) return;
-         console.log('consider val='+ option.value +' \"'+ option.innerText +'\" content_check='+ content_check);
+         if (dbgUs) console.log('consider val='+ option.value +' \"'+ option.innerText +'\" content_check='+ content_check);
          if (capture_the_next) {
             captured_next = option.value;
             capture_the_next = 0;
@@ -2786,11 +2788,11 @@ function w3_select_next_prev_cb(path, cb_param, first)
       break;
    }
 
-	console.log('i='+ i +' captured_prev='+ captured_prev +' captured_next='+ captured_next);
+	if (dbgUs) console.log('i='+ i +' captured_prev='+ captured_prev +' captured_next='+ captured_next);
 	val = 0;
 	if (cbp.dir == w3_MENU_NEXT && captured_next) val = captured_next;
 	if (cbp.dir == w3_MENU_PREV && captured_prev) val = captured_prev;
-	console.log('w3_select_next_prev_cb val='+ val);
+	if (dbgUs) console.log('w3_select_next_prev_cb val='+ val);
 	//if (val)
 	   w3_call(cbp.func, menu_s, val, first);
 }

@@ -1296,7 +1296,7 @@ clean_deprecated:
 	-rm -rf obj obj_O3 obj_keep kiwi.bin kiwid.bin *.dSYM web/edata*
 	-rm -rf *.dSYM pas extensions/ext_init.cpp kiwi.gen.h kiwid kiwid.aout kiwid_realtime.bin .comp_ctr
 
-clean: clean_deprecated
+clean: clean_ext clean_deprecated
 	(cd e_cpu; make clean)
 	(cd verilog; make clean)
 	(cd verilog/rx; make clean)
