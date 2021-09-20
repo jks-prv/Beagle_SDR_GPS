@@ -2,6 +2,25 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.465  September 20, 2021
+    ALE 2G extension
+    Improvements:
+        "Menus" setting renamed "Format".
+        Format settings include sorting menu frequencies high-to-low in addition to menu collapse.
+        Display settings improved. "DX" mode that produces fewer output lines per ALE transaction.
+	    An optimized 600-2650 Hz passband is used. Passband restored when ALE extension closed.
+	    Supports LSB mode in net/station database.
+	    URL parameters
+	        A multi-frequency, comma separated user scan list can be specified. See extension help.
+	        Net names can have embedded spaces.
+	    "Admin" menu renamed "Local" given that a user scan list from the URL will be added as the
+	        first menu item (i.e. menu is no longer solely admin entries).
+        Many new URL parameters. See extension help.
+
+    Bug fixes:
+	    Resumption of scanning is now delayed until any recording is finished.
+	    Various problems with next/prev buttons fixed.
+
 v1.464  September 15, 2021
     v1.463 introduced a bug whereby if a Kiwi has been configured with Unicode UTF-8 character sequences
     in the various description fields (e.g. receiver name, location, antenna or the additional HTML field)

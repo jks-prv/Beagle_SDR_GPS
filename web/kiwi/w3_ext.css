@@ -781,6 +781,16 @@ input[type=range]::-moz-range-thumb {
 	margin-left: 8px
 }
 
+.w3-margin-between-10:not(:first-child)
+{
+	margin-left: 10px
+}
+
+.w3-margin-between-12:not(:first-child)
+{
+	margin-left: 12px
+}
+
 .w3-margin-between-16:not(:first-child)
 {
 	margin-left: 16px

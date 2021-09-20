@@ -75,44 +75,37 @@ int gdebug = 0;
 #ifdef KIWI
     #ifdef HOST
         #define cprintf(cond_d, cond_c, color, fmt, ...) \
-            if (dsp >= cond_d) { \
-                rclprintf(rx_chan, fmt "\n", ## __VA_ARGS__); \
-                if (dsp >= cond_c) \
-                    ext_send_msg_encoded(rx_chan, false, "EXT", "chars", "%s" fmt NORM "\n", color, ## __VA_ARGS__); \
-                else \
-                    ext_send_msg_encoded(rx_chan, false, "EXT", "chars", fmt "\n", ## __VA_ARGS__); \
-            }
+            sprintf(log_buf, "%s" fmt NORM "\n", (dsp >= cond_c)? color : "", ## __VA_ARGS__); \
+            cprintf_msg(cond_d);
     #else
         #define cprintf(cond_d, cond_c, color, fmt, ...) \
             if (dsp >= cond_d) { \
-                if (dsp >= cond_c) \
-                    printf("%s" fmt NORM "\n", color, ## __VA_ARGS__); \
-                else \
-                    printf(fmt "\n", ## __VA_ARGS__); \
+                bool use_color = (dsp >= cond_c); \
+                printf("%s" fmt NORM "\n", use_color? color : "", ## __VA_ARGS__); \
             }
     #endif
 #else
     // standalone
-    #define cprintf(cond_d, cond_c, color, fmt, ...) \
-        if (dsp >= cond_d) { \
-            if (dsp >= cond_c) \
-                printf("%s" fmt NORM "\n", color, ## __VA_ARGS__); \
-            else \
-                    printf(fmt "\n", ## __VA_ARGS__); \
+    #if 0
+        #define cprintf(cond_d, cond_c, color, fmt, ...) \
+            if (dsp >= cond_d) { \
+                bool use_color = (dsp >= cond_c); \
+                printf("%s" fmt NORM "\n", use_color? color : "", ## __VA_ARGS__); \
             }
+    #else
+        #define cprintf(cond_d, cond_c, color, fmt, ...) \
+            sprintf(log_buf, "%s" fmt NORM "\n", (dsp >= cond_c)? color : "", ## __VA_ARGS__); \
+            cprintf_msg(cond_d);
+    #endif
 #endif
 
 #define DEBUG_PRINTF
 #ifdef DEBUG_PRINTF
-    #ifdef KIWI
-        #define dprintf(fmt, ...) \
-            /* if (dsp == DBG) real_printf(fmt, ## __VA_ARGS__) */ \
-            if (dsp == DBG) ext_send_msg_encoded(rx_chan, false, "EXT", "chars", fmt, ## __VA_ARGS__);
-    #else
-        // standalone
-        #define dprintf(fmt, ...) \
-            if (dsp == DBG) printf(fmt, ## __VA_ARGS__)
-    #endif
+    #define dprintf(fmt, ...) \
+        if (dsp == DBG) { \
+            sprintf(dpf_buf, fmt, ## __VA_ARGS__); \
+            dprintf_msg(); \
+        }
 #else
     #define dprintf(fmt, ...)
 #endif
@@ -124,7 +117,7 @@ static char *cdeco(int idx, char c)
     return s[idx];
 }
 
-int slot(double freq)
+static int slot(double freq)
 {
     if (fabs(freq - 23982.60) < 0.001) return 0;
     if (fabs(freq - 24000.60) < 0.001) return 1;
@@ -432,12 +425,15 @@ namespace ale {
             }
 	    }
 	    
-	    if (dsp >= DBG || (dsp >= CMDS && icmd))
-            //cprintf(CALLS, CALLS, icmd? YELLOW : "", "%d: ic%d NR%02d %s", zs, in_cmd, nr, message);
-            //cprintf(CALLS, CALLS, icmd? YELLOW : "", "%5d: >icmd%d caller%d ic%d NR%02d %s", nsym, icmd, caller, in_cmd, nr, message);
-            cprintf(CALLS, CALLS, icmd? YELLOW : "", ">icmd%d caller%d ic%d NR%02d %s", icmd, caller, in_cmd, nr, message);
+	    #if 0
+            if (dsp >= DBG || (dsp >= CMDS && icmd)) {
+                //cprintf(ALL, ALL, icmd? YELLOW : "", "%d: ic%d NR%02d %s", zs, in_cmd, nr, message);
+                //cprintf(ALL, ALL, icmd? YELLOW : "", "%5d: >icmd%d caller%d ic%d NR%02d %s", nsym, icmd, caller, in_cmd, nr, message);
+                cprintf(ALL, ALL, icmd? YELLOW : "", ">icmd%d caller%d ic%d NR%02d %s", icmd, caller, in_cmd, nr, message);
+            }
+        #endif
+        
         zs++;
-
 	    return rv;
 	}
 
@@ -466,19 +462,19 @@ namespace ale {
 
 	    switch (state) {
             case S_TWAS:
-                cprintf(CALLS, DBG, CYAN, "[%02d:%02d:%02d] [FRQ %.2f] [Sounding THIS WAS] [From: %s ] [His BER: %d]",
+                cprintf(ALL, DBG, CYAN, "[%02d:%02d:%02d] [FRQ %.2f] [Sounding THIS WAS] [From: %s ] [His BER: %d]",
                     tm->tm_hour, tm->tm_min, tm->tm_sec, frequency, current, ber);
                 event = true;
                 break;
 
             case S_TIS:
-                cprintf(CALLS, DBG, CYAN, "[%02d:%02d:%02d] [FRQ %.2f] [Sounding THIS IS] [From: %s ] [His BER: %d]",
+                cprintf(ALL, DBG, CYAN, "[%02d:%02d:%02d] [FRQ %.2f] [Sounding THIS IS] [From: %s ] [His BER: %d]",
                     tm->tm_hour, tm->tm_min, tm->tm_sec, frequency, current, ber);
                 event = true;
                 break;
 
             case S_TO:
-                cprintf(CALLS, DBG, CYAN, "[%02d:%02d:%02d] [FRQ %.2f] [To: %s ] [His BER: %d]",
+                cprintf(ALL, DBG, CYAN, "[%02d:%02d:%02d] [FRQ %.2f] [To: %s ] [His BER: %d]",
                     tm->tm_hour, tm->tm_min, tm->tm_sec, frequency, current, ber);
                 ext_send_msg(rx_chan, true, "EXT call_est_test");
                 event = true;
@@ -486,15 +482,15 @@ namespace ale {
 
             case S_CALL_EST:
                 if (stage_num == 1) {
-                    cprintf(CALLS, DBG, CYAN, "[%02d:%02d:%02d] [FRQ %.2f] [Call] [From: %s ] [To: %s] [His BER: %d]",
+                    cprintf(ALL, DBG, CYAN, "[%02d:%02d:%02d] [FRQ %.2f] [Call] [From: %s ] [To: %s] [His BER: %d]",
                         tm->tm_hour, tm->tm_min, tm->tm_sec, frequency, current, current2, ber);
                 } else
                 if (stage_num == 2) {
-                    cprintf(CALLS, DBG, CYAN, "[%02d:%02d:%02d] [FRQ %.2f] [Call ACK] [From: %s ] [To: %s] [His BER: %d]",
+                    cprintf(ALL, DBG, CYAN, "[%02d:%02d:%02d] [FRQ %.2f] [Call ACK] [From: %s ] [To: %s] [His BER: %d]",
                         tm->tm_hour, tm->tm_min, tm->tm_sec, frequency, current, current2, ber);
                 } else
                 if (stage_num == 3) {
-                    cprintf(CALLS, DBG, CYAN, "[%02d:%02d:%02d] [FRQ %.2f] [Call EST] [From: %s ] [To: %s] [His BER: %d]",
+                    cprintf(ALL, DBG, CYAN, "[%02d:%02d:%02d] [FRQ %.2f] [Call EST] [From: %s ] [To: %s] [His BER: %d]",
                         tm->tm_hour, tm->tm_min, tm->tm_sec, frequency, current, current2, ber);
 		            ext_send_msg(rx_chan, false, "EXT call_est");
                 }
@@ -525,7 +521,7 @@ namespace ale {
                 while (*e == ' ' || *e == '\r' || *e == '\n') e--;
                 *(e+1) = '"';
                 *(e+2) = '\0';
-                cond_d = MSGS;
+                cond_d = DX;
                 event = true;
             } else
 
@@ -537,7 +533,7 @@ namespace ale {
                 while (*e == ' ' || *e == '\r' || *e == '\n') e--;
                 *(e+1) = '"';
                 *(e+2) = '\0';
-                cond_d = MSGS;
+                cond_d = DX;
                 event = true;
             } else
 
@@ -568,15 +564,65 @@ namespace ale {
                 s += sprintf(s, "other: %s %s %s", cdeco(0,a), cdeco(1,b), cdeco(2,c));
             }
             
-            cprintf(cond_d, CALLS, MAGENTA, "[%02d:%02d:%02d] [FRQ %.2f] [CMD] [%s] [His BER: %d]",
+            cprintf(SHOW_CMD, DX, MAGENTA, "[%02d:%02d:%02d] [FRQ %.2f] [CMD] [%s] [His BER: %d]",
                 tm->tm_hour, tm->tm_min, tm->tm_sec, frequency, message, ber);
 	    }
-
+	    
         if (event) ext_send_msg(rx_chan, false, "EXT event");
         cmd_cnt = 0;
         state = S_START;
         memset(current,'\0', N_CUR);
 	}
+
+    void decode_ff_impl::cprintf_msg(int cond_d)
+    {
+        bool debug = false;
+        bool have_msg = false;
+        
+        if (dsp != DX) {
+            have_msg = true;
+        }
+        
+        if (debug) printf("     cond_d=%s(%d)\n", dsp_s[cond_d], cond_d);
+        if (dsp == DX && cond_d != SHOW_DX && cond_d != SHOW_CMD) {
+            have_msg = true;
+            strcpy(locked_msg, log_buf);
+            if (debug) printf("lock: %s", log_buf);
+        }
+        
+        if ((cond_d == SHOW_CMD) || (cond_d == SHOW_DX) || (have_msg && dsp >= cond_d)) {
+            //rclprintf(rx_chan, "%s", log_buf);
+            #ifdef KIWI
+                #ifdef HOST
+                    ext_send_msg_encoded(rx_chan, false, "EXT", "chars", (cond_d == SHOW_DX)? locked_msg : log_buf);
+                #endif
+            #else
+                printf(">>>>  %s%s%s", GREEN, (cond_d == SHOW_DX)? locked_msg : log_buf, NORM);
+            #endif
+        }
+    }
+
+    void decode_ff_impl::dprintf_msg()
+    {
+        char buf[256];
+	    time_t timestamp;
+	    struct tm *tm;
+	    timestamp = use_UTC? time(NULL) : secs;
+	    tm = gmtime(&timestamp);
+	    
+	    sprintf(buf, "[%02d:%02d:%02d] [FRQ %.2f] debug: %s",
+	        tm->tm_hour, tm->tm_min, tm->tm_sec, frequency, dpf_buf);
+	    
+        #ifdef KIWI
+            #ifdef HOST
+                ext_send_msg_encoded(rx_chan, false, "EXT", "chars", buf);
+            #endif
+        #else
+            int sl = strlen(buf);
+            if (buf[sl-1] == '\n') buf[sl-1] = '\0';
+            printf(">>>>  %s%s%s\n", GREEN, buf, NORM);
+        #endif
+    }
 
 	void decode_ff_impl::do_modem(float *sample, int length)
 	{
@@ -597,8 +643,12 @@ namespace ale {
         //printf("%d ", length); fflush(stdout);
 	    if (length == 0) {
             log(current, current2, state, lastber, "EOF");
+            if (dsp == DX) cprintf_msg(SHOW_DX);
+	        dprintf("--- EOF ---\n");
             return;
         }
+
+        //if (!notify) { dprintf("--- MAG %s ---\n", calc_mag? "SQRT" : "SIMPLE"); notify = true; }
 
 	    for (i=0; i < length; i++) {
 
@@ -613,11 +663,21 @@ namespace ale {
                 temp_imag       = fft_out[n].imag;
                 fft_out[n].real = (temp_real * fft_cs_twiddle[n]) - (temp_imag * fft_ss_twiddle[n]);
                 fft_out[n].imag = (temp_real * fft_ss_twiddle[n]) + (temp_imag * fft_cs_twiddle[n]);
-                fft_mag[n]      = sqrt((fft_out[n].real * fft_out[n].real) + (fft_out[n].imag * fft_out[n].imag)) * 5;
+                
+                #if 1
+                    fft_mag[n] = sqrt((fft_out[n].real * fft_out[n].real) + (fft_out[n].imag * fft_out[n].imag)) * 5;
+                #else
+                    if (calc_mag) {
+                        fft_mag[n] = sqrt((fft_out[n].real * fft_out[n].real) + (fft_out[n].imag * fft_out[n].imag)) * 5;
+                    } else {
+                        // since fft_mag is only used for relative comparisons maybe it doesn't have to be the precise definition of magnitude?
+                        fft_mag[n] = (fft_out[n].real * fft_out[n].real) + (fft_out[n].imag * fft_out[n].imag);
+                    }
+                #endif
             }
 
             max_magnitude = 0;
-            for (n = 1; n <= 27; n++) {
+            for (n = 1; n <= 27; n++) {     // FFT_SIZE/2 = 64/2 = 32 = [0 1..27 28,29,30,31]
                 if ((fft_mag[n] > max_magnitude)) {
                     max_magnitude = fft_mag[n];
                     max_offset    = n;
@@ -646,7 +706,7 @@ namespace ale {
             decode_ff_array_dim(sample_count, FFT_SIZE);
             for (n=0; n < NR; n++) {
                 if (sample_count == last_sync_position[n]) {
-                    last_symbol[n] = g_symbol_lookup[n][max_offset];
+                    last_symbol[n] = g_symbol_lookup[n][max_offset];    // g_symbol_lookup[NR][33]
                 }
             }
 
@@ -801,8 +861,8 @@ namespace ale {
                     dprintf("Data: %s ic%d a64=%d %02x %02x %02x %02x %02x %02x ...\n",
                         data, in_cmd, ascii_64_ok, s[0], s[1], s[2], s[3], s[4], s[5]);
                 } else {
-                    dprintf("Data: %s ic%d a64=%d <%s> %lu\n",
-                        data, in_cmd, ascii_64_ok, s, strlen(s));
+                    dprintf("Data: %s ic%d a64=%d <%s>\n",
+                        data, in_cmd, ascii_64_ok, s);
                 }
                 state_count = 0;
                 lastber = bestber;
@@ -817,8 +877,8 @@ namespace ale {
                     dprintf("Rep: %s ic%d a64=%d %02x %02x %02x %02x %02x %02x ...\n",
                         rep, in_cmd, ascii_64_ok, s[0], s[1], s[2], s[3], s[4], s[5]);
                 } else {
-                    dprintf("Data: %s ic%d a64=%d <%s> %lu\n",
-                        rep, in_cmd, ascii_64_ok, s, strlen(s));
+                    dprintf("Data: %s ic%d a64=%d <%s>\n",
+                        rep, in_cmd, ascii_64_ok, s);
                 }
                 state_count = 0;
                 lastber = bestber;
@@ -882,22 +942,20 @@ namespace ale {
 
             // after 2 seconds of no state changes output log entry
             if ((state_count == 16000) && state) {
-                log(current, current2, state, lastber, "2_SEC");
+                log(current, current2, state, lastber, "QUIET");
+                if (dsp == DX) cprintf_msg(SHOW_DX);
+	            dprintf("--- QUIET ---\n");
                 state = S_START;
                 state_count = 0;
                 active = 0;
                 ext_send_msg(rx_chan, false, "EXT active=0");
                 //real_printf("///"); fflush(stdout);
                 //ext_send_snd_msg(rx_chan, true, "MSG audio_flags2=active:0");
-                
-                #if 0
-                    printf("#### 2 SEC RESET ####\n");
-                    modem_reset();
-                #endif
+                //modem_reset();
             }
 
             fft_history_offset = (fft_history_offset + 1) % FFT_SIZE;
-            sample_count = (sample_count + 1) % MOD_64; 
+            sample_count = (sample_count + 1) % MOD_64;
 
             if (sample_count == 0) {
                 mag_history_offset = (mag_history_offset + 1) % SYMBOLS_PER_WORD;
@@ -940,9 +998,11 @@ namespace ale {
 	        printf("----------------------------------------------------- %d\n", offset);
 	        static FILE *fp;
 	        if (fp == NULL) {
-                printf("file #%d = %s\n", fileno, sa_fn[fileno]);
+                printf("file #%d = %s, calc_mag = %d\n", fileno, sa_fn[fileno], calc_mag);
                 fp = fopen(sa_fn[fileno], "r");
                 if (fp == NULL) { printf("fopen failed: %s\n", sa_fn[fileno]); exit(-1); }
+	            timer_samps = 0;
+	            notify = false;
             } else {
                 rewind(fp);
             }
@@ -969,6 +1029,10 @@ namespace ale {
                 //printf("%d ", n); fflush(stdout);
                 ale::decode_ff_impl::do_modem(fbuf, n);
             } while (n > 0);
+            
+            ale::decode_ff_impl::do_modem(fbuf, 0);
+            fclose(fp);
+            fp = NULL;
         #endif
 	}
 	
@@ -993,6 +1057,8 @@ namespace ale {
 	    
 	    this->rx_chan = rx_chan;
 	    this->use_UTC = use_UTC;
+	    calc_mag = true;
+        notify = false;
 	    timer_samps = 0;
 	    frequency = 0;
 	    activity_cnt = active = 0;
@@ -1128,19 +1194,31 @@ int main(int argc, char *argv[])
     
     #define ARG(s) (strcmp(argv[ai], s) == 0)
     #define ARGP() argv[++ai]
+    #define ARGB(v) (v) = true;
     #define ARGL(v) if (ai+1 < argc) (v) = strtol(argv[++ai], 0, 0);
     
-    int display = CALLS;
-    int fileno = 0, offset = -1, repeat = 1;
+    //int display = CALLS;
+    int display = DX;
+    int fileno = 0, repeat = 1;
+    //int offset = -1;
+    int offset = 0;
     bool use_new_resampler = false;     // there is never a resampler when running standalone (use an 8k file)
+    bool compare_mag = false;
+    bool compare_dsp_all = false;
+
+    ale::decode_ff_impl decode;
+    decode.modem_init(0, use_new_resampler, 0, N_SAMP_BUF, false);   // false = use file realtime instead of current UTC
 
     for (int ai = 1; ai < argc; ) {
         if (ARG("-f") || ARG("--file")) ARGL(fileno);
         if (ARG("-o") || ARG("--offset")) ARGL(offset);
         if (ARG("-r") || ARG("--repeat")) ARGL(repeat);
+        if (ARG("-m") || ARG("--mag")) ARGB(compare_mag);
+        if (ARG("-y")) ARGB(compare_dsp_all);
 
         // display
-        if (ARG("-m") || ARG("--msgs")) display = MSGS;
+        if (ARG("-x") || ARG("--dx")) display = DX;
+        if (ARG("-a") || ARG("--all")) display = ALL;
         if (ARG("-c") || ARG("--cmds")) display = CMDS;
         if (ARG("-d") || ARG("--debug")) display = DBG;
         ai++;
@@ -1152,18 +1230,44 @@ int main(int argc, char *argv[])
         exit(-1);
     }
     
-    ale::decode_ff_impl decode;
-    decode.set_display(display);
-    decode.modem_init(0, use_new_resampler, 0, N_SAMP_BUF, false);   // false = use file realtime instead of current UTC
 
-    if (offset >= 0) {
-	    for (i = 0; i < repeat; i++) {
-            decode.run_standalone(fileno, offset);
-        }
-    } else {
-	    for (offset = 0; offset <= 32; offset += 4) {
-            decode.run_standalone(fileno, offset);
-            //decode.modem_reset();
+    int start = (fileno < 0)? 0 : fileno, stop = (fileno < 0)? (ars-1) : fileno;
+    for (int f = start; f <= stop; f++) {
+        if (offset >= 0) {
+            for (i = 0; i < repeat; i++) {
+                decode.set_display(display);
+
+                decode.calc_mag = true;
+                decode.run_standalone(f, offset);
+                decode.modem_reset();
+
+                if (compare_mag) {
+                    decode.calc_mag = false;
+                    decode.run_standalone(f, offset);
+                    decode.modem_reset();
+                }
+                
+                if (compare_dsp_all) {
+                    decode.set_display(ALL);
+
+                    decode.calc_mag = true;
+                    decode.run_standalone(f, offset);
+                    decode.modem_reset();
+
+                    if (compare_mag) {
+                        decode.calc_mag = false;
+                        decode.run_standalone(f, offset);
+                        decode.modem_reset();
+                    }
+                }
+            }
+        } else {
+            decode.set_display(display);
+
+            for (offset = 0; offset <= 32; offset += 4) {
+                decode.run_standalone(f, offset);
+                decode.modem_reset();
+            }
         }
     }
 }

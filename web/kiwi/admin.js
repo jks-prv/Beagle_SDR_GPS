@@ -1304,7 +1304,7 @@ function network_download_blacklist_cb(bl)
       
       var ip1 = kiwi_inet4_d2h(a[0]);
       var ip = ip1 & nm;
-      if (bl_debug && ip1 != ip)
+      if (ip1 != ip)
          console.log('ip/netmask mismatch: '+ kiwi_ip_str(ip1) +'|'+ ip1.toHex(8) +' '+
             kiwi_ip_str(ip) +'|'+ ip.toHex(8) +' '+ nm.toHex(8) +'/'+ nmd);
 
