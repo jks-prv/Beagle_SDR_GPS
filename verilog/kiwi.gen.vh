@@ -2,9 +2,11 @@
 
 // from assembler DEF directives:
 
-`define USE_SDR    // DEFh 0x1
 	localparam GPS_CHANS = 12;    // DEFp 0xc
 `define DEF_GPS_CHANS
+	localparam NUM_CMDS_OTHER = 0;    // DEFp 0x0
+//`define DEF_NUM_CMDS_OTHER
+`define USE_SDR    // DEFh 0x1
 `define USE_GPS    // DEFh 0x1
 `define ARTIX_7A35    // DEFh 0x1
 //`define ZYNQ_7007    // DEFh 0x0
@@ -17,8 +19,8 @@
 	localparam DEFAULT_NSYNC = 2;    // DEFp 0x2
 `define DEF_DEFAULT_NSYNC
 `define USE_GEN    // DEFh 0x1
-`define USE_LOGGER    // DEFh 0x1
 `define USE_CPU_CTR    // DEFh 0x1
+`define USE_LOGGER    // DEFh 0x1
 `define USE_DEBUG    // DEFh 0x1
 //`define USE_RX_SEQ    // DEFh 0x0
 `define USE_VIVADO    // DEFh 0x1
@@ -43,8 +45,6 @@
 `define DEF_NUM_CMDS_SDR
 	localparam NUM_CMDS_GPS = 16;    // DEFp 0x10
 `define DEF_NUM_CMDS_GPS
-	localparam NUM_CMDS_OTHER = 0;    // DEFp 0x0
-//`define DEF_NUM_CMDS_OTHER
 	localparam NUM_CMDS = 42;    // DEFp 0x2a
 `define DEF_NUM_CMDS
 `define SPI_32    // DEFh 0x1

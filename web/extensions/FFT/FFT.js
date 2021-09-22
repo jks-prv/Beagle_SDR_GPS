@@ -633,8 +633,8 @@ function FFT_help(show)
          'Non-numeric values are those appearing in their respective menus. <br>' +
          'Keywords are case-insensitive and can be abbreviated. <br>' +
          'So for example these are valid: <br>' +
-         '<i>&ext=fft,integ,itime:5</i> &nbsp;&nbsp; ' +
-         '<i>&ext=fft,water,min:-130,max:-40</i> &nbsp;&nbsp; <i>&ext=fft,alpha</i> <br>' +
+         '<i>ext=fft,integ,itime:5</i> &nbsp;&nbsp; ' +
+         '<i>ext=fft,water,min:-130,max:-40</i> &nbsp;&nbsp; <i>ext=fft,alpha</i> <br>' +
          '<br>' +
          'Clicking on integrate display will restart it such that the click-point is <br>' +
          'moved to top of the display (i.e. vertical timing can be realigned).' +

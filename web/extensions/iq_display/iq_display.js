@@ -525,7 +525,7 @@ function iq_display_help(show)
          'cmax:<i>num</i> &nbsp; cmin:<i>num</i> &nbsp; pll_bw:<i>num</i> <br>' +
          'Non-numeric values are those appearing in their respective menus. <br>' +
          'Keywords are case-insensitive and can be abbreviated. <br>' +
-         'So for example this is valid: <i>&ext=iq,g:75,poi,car,q,pll:8</i> <br>' +
+         'So for example this is valid: <i>ext=iq,g:75,poi,car,q,pll:8</i> <br>' +
          '';
       confirmation_show_content(s, 610, 175);
    }

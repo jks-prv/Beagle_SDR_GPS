@@ -32,7 +32,7 @@ void errmsg(const char *str, tokens_t *t)
 
 void sys_panic(const char *str)
 {
-	printf("panic\n");
+	printf("panic: ");
 	perror(str);
 	remove_files();
 	exit(-1);

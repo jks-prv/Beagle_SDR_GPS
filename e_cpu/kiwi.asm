@@ -22,7 +22,6 @@
 ; Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
 
 #include ../kiwi.config
-#include ../other.config
 
 				MACRO	FreezeTOS
 				 wrEvt2	FREEZE_TOS
@@ -466,10 +465,7 @@ Commands:
 #endif
 
 
-#if USE_OTHER
-#include other.cmds.asm
-                OTHER_CMDS
-#endif
+#include_other other.cmds.asm
 
 
 ; ============================================================================
@@ -821,9 +817,7 @@ CmdGetCPUCtr:
 ; OTHER
 ; ============================================================================
 
-#if USE_OTHER
-#include other.asm
-#endif
+#include_other other.asm
 
 
 ; ============================================================================

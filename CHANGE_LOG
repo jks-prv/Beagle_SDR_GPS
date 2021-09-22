@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.466  September 23, 2021
+    ALE 2G extension menu bug fix.
+
 v1.465  September 20, 2021
     ALE 2G extension
     Improvements:

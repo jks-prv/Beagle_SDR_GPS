@@ -582,7 +582,7 @@ function loran_c_help(show)
 
          'URL parameters: <br>' +
          'First and second parameters can optionally be GRIs. <br>' +
-         'Example: <i>&ext=loran,8970,9960</i> <br>' +
+         'Example: <i>ext=loran,8970,9960</i> <br>' +
          '';
       confirmation_show_content(s, 500, 200);
    }

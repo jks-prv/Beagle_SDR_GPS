@@ -175,6 +175,7 @@ int main(int argc, char *argv[])
 	int i, val;
 	
 	char *odir = (char *) ".";
+	char *other_dir = NULL;
 	char *ifs = (char *) FN_PREFIX ".asm";                  // source input
 	char *ofs;                                              
 
@@ -189,7 +190,7 @@ int main(int argc, char *argv[])
 	preproc_t *pp = preproc, *p;
 	strs_t *st;
 	int compare_code=0, stats=0;
-	char tsbuf[256];
+	char fullpath[256], basename[256];
 	bool test = false;
 	
 	for (i=1; i < argc; i++)
@@ -202,6 +203,7 @@ int main(int argc, char *argv[])
             case 'n': gen=0; break;
             case 's': stats=1; break;
             case 'o': i++; odir = argv[i]; break;
+            case 'x': i++; other_dir = argv[i]; break;
         }
 	
 	if (!test) {
@@ -222,8 +224,11 @@ int main(int argc, char *argv[])
 		if ((efp = fopen(efs, "w")) == NULL) sys_panic("fopen efs");
 		fprintf(efp, "; DEPTH = 2048\n; WIDTH = 16\nmemory_initialization_radix=16;\nmemory_initialization_vector=");
 	}
-
-	// pass 0: tokenize	
+	
+	// pass 0: tokenize
+	bool need_other_config = true;
+	strcpy(basename, "./other.config");
+	
 	while (ifn >= 0) {
 
 		while (fgets(lp, LBUF, ifp[ifn])) {
@@ -232,12 +237,38 @@ int main(int argc, char *argv[])
 			if (debug) printf("%s:%03d %s", fn, curline, lp);
 			cp = lp;
 			
-			if (sscanf(cp, "#include %s", tsbuf) == 1) {
+			if (need_other_config || (sscanf(cp, "#include_other %s", basename) == 1)) {
+			    if (!need_other_config && other_dir == NULL) {
+			        printf("#include_other file: (ignored) %s\n", basename);
+			        continue;
+			    }
 				ifn++; ifl++;
 				if (ifn >= NIFILES_NEST) panic("too many nested include files");
-				fn = ifiles[ifn]; strcpy(fn, tsbuf); strcpy(ifiles_list[ifl], tsbuf);
+				fn = ifiles[ifn]; strcpy(fn, basename); strcpy(ifiles_list[ifl], basename);
+                sprintf(fullpath, "%s%s", other_dir? other_dir : "", fn);
+                printf("#include file: %s\n", fullpath);
+                if ((ifp[ifn] = fopen(fullpath, "r")) == NULL) {
+                    sys_panic("fopen include file");
+                }
+
+				if (str_ends_with(fn, ".config")) {
+                    tp->ttype = TT_FILE;
+                    tp->str = ifiles_list[ifl];
+                    tp++;
+                }
+                
+                need_other_config = false;
+                continue;
+			}
+	
+			if (sscanf(cp, "#include %s", basename) == 1) {
+				ifn++; ifl++;
+				if (ifn >= NIFILES_NEST) panic("too many nested include files");
+				fn = ifiles[ifn]; strcpy(fn, basename); strcpy(ifiles_list[ifl], basename);
 				printf("#include file: %s\n", fn);
-				if ((ifp[ifn] = fopen(fn, "r")) == NULL) sys_panic("fopen include file");
+				if ((ifp[ifn] = fopen(fn, "r")) == NULL) {
+				    sys_panic("fopen include file");
+				}
 
 				if (str_ends_with(fn, ".config")) {
                     tp->ttype = TT_FILE;
@@ -835,14 +866,23 @@ int main(int argc, char *argv[])
             cfp = NULL;
         }
         
-        fprintf(hfp, "\n#endif\n");
-        fclose(hfp);
-        hfp = NULL;
+        if (hfp) {
+            fprintf(hfp, "\n#endif\n");
+            fclose(hfp);
+            hfp = NULL;
+        }
 
 		if (vfp) {
-            //fprintf(vfp, "\n`endif\n");
             fclose(vfp);
             vfp = NULL;
+
+            // append inline file onto end of ../verilog/kiwi.gen.vh
+            if (vfs && strstr(vfs, "kiwi.gen.vh")) {
+                char *cmd_p;
+                asprintf(&cmd_p, "cat ../verilog/kiwi.gen.vh ../verilog/kiwi.inline.vh >/tmp/kiwi.gen.vh; mv /tmp/kiwi.gen.vh ../verilog");
+                system(cmd_p);
+                free(cmd_p);
+            }
         }
 	} else {
 	    if (debug) {

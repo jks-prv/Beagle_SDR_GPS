@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 465
+VERSION_MIN = 466
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -446,12 +446,26 @@ pru/pru_realtime.bin: pas pru/pru_realtime.p pru/pru_realtime.h pru/pru_realtime
 ################################
 # FPGA embedded CPU
 ################################
+
+# OTHER_DIR set in Makefile of an extension wanting USE_OTHER FPGA framework
+ifneq ($(OTHER_DIR),)
+    OTHER_DIR2 = -x $(OTHER_DIR)
+    OTHER_CONFIG = $(subst ../../,../,$(OTHER_DIR)/other.config)
+endif
+
 $(GEN_ASM): kiwi.config verilog/kiwi.inline.vh $(wildcard e_cpu/asm/*)
-	(cd e_cpu; make)
-$(GEN_OTHER_ASM): other.config $(wildcard e_cpu/asm/*)
-	(cd e_cpu; make gen_other)
+	(cd e_cpu; make OTHER_DIR="$(OTHER_DIR2)")
+$(GEN_OTHER_ASM): $(OTHER_CONFIG) e_cpu/other.config $(wildcard e_cpu/asm/*)
+	(cd e_cpu; make gen_other OTHER_DIR="$(OTHER_DIR2)")
 $(OUT_ASM): $(wildcard e_cpu/*.asm)
-	(cd e_cpu; make no_gen)
+	(cd e_cpu; make no_gen OTHER_DIR="$(OTHER_DIR2)")
+asm_binary:
+	(cd e_cpu; make binary OTHER_DIR="$(OTHER_DIR2)")
+asm_debug:
+	(cd e_cpu; make debug OTHER_DIR="$(OTHER_DIR2)")
+asm_stat:
+	(cd e_cpu; make stat OTHER_DIR="$(OTHER_DIR2)")
+
 
 
 ################################
@@ -1275,17 +1289,25 @@ else
 KiwiSDR.rx14.wf0.bit:
 endif
 
-EXISTS_V_DIR_OTHER = $(shell test -f $(V_DIR)/KiwiSDR.other.bit && echo true)
-ifeq ($(EXISTS_V_DIR_OTHER),true)
-KiwiSDR.other.bit: $(V_DIR)/KiwiSDR.other.bit
-	rsync -av $(V_DIR)/KiwiSDR.other.bit .
+EXISTS_OTHER_BITFILE = $(shell test -f $(V_DIR)/KiwiSDR.other.bit && echo true)
+ifneq ($(OTHER_DIR),)
+    ifeq ($(EXISTS_OTHER_BITFILE),true)
+    KiwiSDR.other.bit: $(V_DIR)/KiwiSDR.other.bit
+		rsync -av $(V_DIR)/KiwiSDR.other.bit .
+    else
+    KiwiSDR.other.bit:
+    endif
 else
 KiwiSDR.other.bit:
 endif
 
 endif
 
-rsync_bit: $(BIN_DEPS)
+
+# other_rsync is a rule that can be defined in an extension Makefile (i.e. CFG = other) to do additional source installation
+other_rsync:
+
+rsync_bit: $(BIN_DEPS) other_rsync
 	sudo $(RSYNC) $(RSYNC_ARGS)
 
 endif

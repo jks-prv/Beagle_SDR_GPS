@@ -975,7 +975,7 @@ function fsk_help(show)
          'Values are those appearing in their respective menus. <br>' +
          'Any number for shift and baud can be used. Not just the preset values in the menus. <br>' +
          'Keywords are case-insensitive and can be abbreviated. <br>' +
-         'So for example this is valid: <i>&ext=fsk,147.3,s:425,b:200,a,i:0</i> <br>' +
+         'So for example this is valid: <i>ext=fsk,147.3,s:425,b:200,a,i:0</i> <br>' +
          '';
       confirmation_show_content(s, 610, 300);
    }

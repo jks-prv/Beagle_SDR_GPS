@@ -716,7 +716,7 @@ function fax_help(show)
          'URL parameters: <br>' +
          'First parameter can be a frequency matching an entry in station menus. <br>' +
          'align<i>[:0|1]</i> &nbsp; stop<i>[:0|1]</i> &nbsp; lpm:<i>value</i> <br>' +
-         'So for example this is valid: <i>&ext=fax,3855,auto,stop</i> <br>' +
+         'So for example this is valid: <i>ext=fax,3855,auto,stop</i> <br>' +
          '';
       confirmation_show_content(s, 620, 325);
    }

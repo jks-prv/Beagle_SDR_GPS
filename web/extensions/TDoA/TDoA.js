@@ -2550,7 +2550,7 @@ function TDoA_help(show)
                'List of sampling stations and/or reference station IDs. Case-insensitive and can be abbreviated ' +
                '(e.g. "dcf" matches "DCF77", "cyp2" matches "OTHR/CYP2") <br>' +
                'submit: (start TDoA process) <br>' +
-               'Example: <i>&ext=tdoa,lat:35,lon:35,z:6,cyp2,iu8cri,ur5vib,kuwait,submit:</i> <br>' +
+               'Example: <i>ext=tdoa,lat:35,lon:35,z:6,cyp2,iu8cri,ur5vib,kuwait,submit:</i> <br>' +
                ''
             )
          );

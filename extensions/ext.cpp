@@ -329,7 +329,7 @@ void extint_ext_users_init(int rx_chan)
 {
     // so that rx_chan_free_count() doesn't count EXT_FLAGS_HEAVY when extension isn't running
     //printf("extint_ext_users_init rx_chan=%d\n", rx_chan);
-    c2s_waterfall_no_sync(rx_chan, false);      // NB: be certain to disable waterfall no_sync mode
+    //c2s_waterfall_no_sync(rx_chan, false);      // NB: be certain to disable waterfall no_sync mode
     rx_channels[rx_chan].ext = NULL;
     memset(&ext_users[rx_chan], 0, sizeof(ext_users_t));
 }
@@ -472,7 +472,7 @@ void extint_c2s(void *param)
 			//printf("EXT %s RX%d %s\n", conn_ext->kick? "KICKED" : "KEEP-ALIVE EXPIRED", ext_rx_chan, ext? ext->name : "(no ext)");
 			if (ext != NULL && ext->close_conn != NULL) {
 				ext->close_conn(ext_rx_chan);
-                c2s_waterfall_no_sync(ext_rx_chan, false);      // NB: be certain to disable waterfall no_sync mode
+                //c2s_waterfall_no_sync(ext_rx_chan, false);      // NB: be certain to disable waterfall no_sync mode
 			}
 			if (ext_rx_chan != -1) {
 				extint_ext_users_init(ext_rx_chan);

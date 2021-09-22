@@ -21,6 +21,11 @@
 #pragma once
 
 #include "kiwi.h"
+#include "other.gen.h"
+
+#ifdef USE_OTHER
+    #include "spi.other.h"
+#endif
 
 #include <inttypes.h>
 
@@ -78,6 +83,10 @@ typedef enum { // Embedded CPU commands, order must match 'Commands:' table in .
     CmdIQLogGet,
 #endif
     
+#ifdef USE_OTHER
+    SPI_OTHER_ENUM
+#endif
+
     CmdCheckLast,
     
     // pseudo for debugging
@@ -171,6 +180,10 @@ static const char *cmds[] = {
     "CmdGetGlitches",
     "CmdIQLogReset",
     "CmdIQLogGet",
+#endif
+
+#ifdef USE_OTHER
+    SPI_OTHER_ENUM_STR
 #endif
 
     // pseudo for debugging
