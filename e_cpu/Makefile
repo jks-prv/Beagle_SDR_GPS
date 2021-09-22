@@ -11,10 +11,10 @@ GEN_DIR = $(BUILD_DIR)/gen
 ASM = $(TOOLS_DIR)/asm
 
 all: $(ASM)
-	$(ASM) -o $(GEN_DIR)
+	$(ASM) -o $(GEN_DIR) $(OTHER_DIR)
 
 gen_other: $(ASM)
-	$(ASM) -o $(GEN_DIR) -g
+	$(ASM) -o $(GEN_DIR) -g $(OTHER_DIR)
 
 $(TOOLS_DIR):
 	@mkdir -p $(TOOLS_DIR)
@@ -30,16 +30,16 @@ $(ASM): $(TOOLS_DIR) $(GEN_DIR) $(ASM_INCLUDES) $(ASM_SOURCE) Makefile
 
 # don't regenerate the .h/.vh files
 no_gen: $(ASM)
-	$(ASM) -n -o $(GEN_DIR)
+	$(ASM) -n -o $(GEN_DIR) $(OTHER_DIR)
 
 debug: $(ASM)
-	$(ASM) -n -d -o $(GEN_DIR)
+	$(ASM) -n -d -o $(GEN_DIR) $(OTHER_DIR)
 
 binary: $(ASM)
-	$(ASM) -n -b -o $(GEN_DIR)
+	$(ASM) -n -b -o $(GEN_DIR) $(OTHER_DIR)
 
 stat: $(ASM)
-	$(ASM) -n -s -o $(GEN_DIR)
+	$(ASM) -n -s -o $(GEN_DIR) $(OTHER_DIR)
 
 gdb: $(ASM)
 	@echo "gdb: r -o ../../build/gen"

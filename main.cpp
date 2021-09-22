@@ -131,8 +131,12 @@ int main(int argc, char *argv[])
     
 	for (int ai = 1; ai < argc; ) {
 		if (ARG("-fw")) { ARGL(fw_sel_override); printf("firmware select override: %d\n", fw_sel_override); }
-		if (ARG("-other")) { fw_sel_override = FW_OTHER; other_args = ARGP(); printf("other args: \"%s\"\n", other_args); }
-		//if (ARG("-other")) { fw_sel_override = FW_OTHER; printf("other ai=%d/%d\n", ai+1, argc); break; }
+		if (ARG("-other")) {
+		    fw_sel_override = FW_OTHER;
+		    other_args = ARGP();
+		    if (other_args == NULL) panic ("-other has no param?");
+		    printf("other args: \"%s\"\n", other_args);
+		}
 
 		if (ARG("-kiwi_reg")) kiwi_reg_debug = TRUE;
 		if (ARG("-bg")) { background_mode = TRUE; bg=1; }
