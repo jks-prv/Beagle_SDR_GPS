@@ -113,7 +113,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 		CC = gcc
 		CPP = g++
 		CFLAGS += -DKIWI_DEBIAN7
-		CFLAGS += -mtune=cortex-a8 -mcpu=cortex-a8
+		CFLAGS += -mtune=cortex-a8 -mcpu=cortex-a8 -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS
 		VIS_OPT = -O3
 		# needed for iq_display.cpp et al (-std=gnu++11 isn't available on Debian 7.9)
 		CPP_FLAGS += -std=gnu++0x
