@@ -1165,9 +1165,9 @@ function ALE_2G_help(show)
                '<i>Local</i> menu for subsequent selection. Frequencies can use the suffixes \'k\' and \'M\'.' +
                '<br><br>' +
                'Keywords are case-insensitive and can be abbreviated. So for example these are valid: <br>' +
-               '<i>&ext=ale,3596</i> &nbsp;&nbsp; ' +
-               '<i>&ext=ale,mars,scan</i> &nbsp;&nbsp; <i>&ext=ale,cothen,s:0.75</i> <br>' +
-               '<i>&ext=ale,7102,14.1M,18106,s</i> &nbsp;&nbsp; <i>&ext=ale,ham,s,disp:1,limit_le:10M,rec,rec_t:10</i> <br>' +
+               '<i>ext=ale,3596</i> &nbsp;&nbsp; ' +
+               '<i>ext=ale,mars,scan</i> &nbsp;&nbsp; <i>ext=ale,cothen,s:0.75</i> <br>' +
+               '<i>ext=ale,7102,14.1M,18106,s</i> &nbsp;&nbsp; <i>ext=ale,ham,s,disp:1,limit_le:10M,rec,rec_t:10</i> <br>' +
                ''
             )
          );
