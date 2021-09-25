@@ -5,6 +5,7 @@ var ale = {
    ext_name: 'ALE_2G',     // NB: must match ALE_2G.cpp:ale_2g_ext.name
    first_time: true,
    dataH: 300,
+   ctrlW: 610,
    //ctrlH: 215,
    ctrlH: 185,
    freq: 0,
@@ -38,7 +39,7 @@ var ale = {
    format_s: [ 'expand', 'exp H>L', 'collapse', 'col H>L' ],
    
    dsp: 0,
-   dsp_s: [ 'DX', 'all', '+cmds', '+debug' ],
+   dsp_s: [ 'DX', '+cmds', 'all', '+debug' ],
    
    scan_t_ms: 1000,
    scan_t_m: 1,
@@ -58,10 +59,17 @@ var ale = {
    ignore_resume: false,
    testing: false,
    
-   record: false,
+   REC: 0x1,
+   LOG: 0x2,
+   record_m: 0,
+   record_s: [ 'off', 'rec', 'log', 'r+l' ],
    recording: false,
    record_secs: 30,
    record_timeout: null,
+
+   log_mins: 10,
+   log_interval: null,
+   log_txt: '',
    
    f_limit: 0,
    f_sign: 1,
@@ -192,12 +200,12 @@ function ale_2g_recv(data)
 			   
 			case "call_est":
 			   var rtime = ale.record_secs;
-			   console.log(param[0] +' rec='+ ale.record +' rtime='+ rtime);
-			   if (ale.record && rtime) {
+			   console.log(param[0] +' rec_log='+ ale.record_m +' rtime='+ rtime);
+			   if ((ale.record_m & ale.REC) && rtime) {
 			      if (ale.recording) {
 				      console.log('call_est: already recording');
 			      } else {
-				      console.log('call_est: record='+ ale.record +' rtime '+ rtime);
+				      console.log('call_est: rec_log='+ ale.record_m +' rtime '+ rtime);
 				      ale_2g_decoder_output_chars('--- call established --- recording ---\n');
                   ale.recording = true;
                   toggle_or_set_rec(1);
@@ -238,6 +246,8 @@ function ale_2g_recording_stop()
 function ale_2g_decoder_output_chars(c)
 {
    ale.console_status_msg_p.s = c;     // NB: already encoded on C-side
+   ale.log_txt += kiwi_remove_ANSI_escape_sequences(kiwi_decodeURIComponent('ALE_2G', c));
+
    // kiwi_output_msg() does decodeURIComponent()
    kiwi_output_msg('id-ale_2g-console-msgs', 'id-ale_2g-console-msg', ale.console_status_msg_p);
 }
@@ -291,16 +301,18 @@ function ale_2g_controls_setup()
             w3_button('id-ale_2g-scan-button w3-padding-smaller w3-green', 'Scan', 'ale_2g_scan_button_cb'),
             w3_button('id-ale_2g-clear-button w3-padding-smaller w3-css-yellow', 'Clear', 'ale_2g_clear_button_cb'),
             w3_button('id-button-test w3-padding-smaller w3-aqua', 'Test', 'ale_2g_test_cb', 1),
-            w3_div('id-ale_2g-bar-container w3-progress-container w3-round-large w3-white w3-hide|width:80px; height:16px',
+            w3_div('id-ale_2g-bar-container w3-progress-container w3-round-large w3-white w3-hide|width:50px; height:16px',
                w3_div('id-ale_2g-bar w3-progressbar w3-round-large w3-light-green|width:0%', '&nbsp;')
             ),
             
-            w3_checkbox('w3-label-inline w3-label-not-bold', 'record call<br>established', 'ale.record', false, 'ale_2g_record_cb'),
-            w3_input('id-ale_2g-record-secs/w3-label-not-bold/w3-ext-retain-input-focus|padding:0;width:auto|size=5',
-               'rec secs', 'ale.record_secs', ale.record_secs, 'ale_2g_record_secs_cb'),
+            w3_select(ale.sfmt, '', 'record', 'ale.record_m', ale.record_m, ale.record_s, 'ale_2g_record_cb'),
+            w3_input('id-ale_2g-record-secs/w3-label-not-bold/w3-ext-retain-input-focus|padding:0;width:auto|size=4',
+               'rec sec', 'ale.record_secs', ale.record_secs, 'ale_2g_record_secs_cb'),
             w3_div('fa-stack||title="record"',
                w3_icon('id-rec2', 'fa-repeat fa-stack-1x w3-text-pink', 22, '', 'ale_2g_toggle_recording_cb')
             ),
+            w3_input('id-ale_2g-log-mins/w3-label-not-bold/w3-ext-retain-input-focus|padding:0;width:auto|size=4',
+               'log min', 'ale.log_mins', ale.log_mins, 'ale_2g_log_mins_cb'),
 
             (0 && dbgUs)? w3_select(ale.sfmt, '', 'resampler', 'ale.resamp_m', ale.resamp_m, ale.resamp_s, 'ale_2g_resamp_cb') : ''
          )
@@ -308,7 +320,7 @@ function ale_2g_controls_setup()
 
 	ext_panel_show(controls_html, data_html, null);
    ext_set_data_height(ale.dataH);
-	ext_set_controls_width_height(600, ale.ctrlH);
+	ext_set_controls_width_height(ale.ctrlW, ale.ctrlH);
 	time_display_setup('ale_2g');
 	ale_2g_msg('w3-text-css-yellow', '&nbsp;');
 	ale_2g_set_scan(ale.SHOW_SCAN);
@@ -527,12 +539,22 @@ function ale_2g_get_nets_done_cb(nets)
                ale_2g_f_limit_cb('id-ale_2g-f-limit', ale.f_limit_ge_custom_i);
             }
          } else
-         if (w3_ext_param('rec', a).match) {
-            ale_2g_record_cb('id-ale.record', true);
+         if ((r = w3_ext_param('rec', a)).match) {
+            var num = r.has_value? r.num : 1;
+            if (isNumber(num)) {
+               var idx = w3_clamp(num, 0, ale.record_s.length-1, 0);
+               console.log('record '+ num +' '+ idx);
+               ale_2g_record_cb('id-ale.record_m', idx);
+            }
          } else
          if ((r = w3_ext_param('rec_time', a)).match) {
             if (isNumber(r.num)) {
                ale_2g_record_secs_cb('id-ale.record_secs', r.num);
+            }
+         } else
+         if ((r = w3_ext_param('log_time', a)).match) {
+            if (isNumber(r.num)) {
+               ale_2g_log_mins_cb('id-ale.log_mins', r.num);
             }
          } else
          if (w3_ext_param('test', a).match) {
@@ -979,6 +1001,7 @@ function ale_2g_clear_button_cb(path, val, first)
    //console.log('ale_2g_clear_button_cb'); 
    ale.console_status_msg_p.s = encodeURIComponent('\f');
    kiwi_output_msg('id-ale_2g-console-msgs', 'id-ale_2g-console-msg', ale.console_status_msg_p);
+   ale.log_txt = '';
    ale_2g_test_cb('', 0);
 }
 
@@ -1038,13 +1061,6 @@ function ale_2g_f_limit_custom_cb(path, val)
    console.log('CUSTOM f_limit='+ ale.f_limit);
 }
 
-function ale_2g_record_secs_cb(path, val)
-{
-   ale.record_secs = w3_clamp(+val, 1, 24*60*60, 1);
-   console.log('ale_2g_record_secs_cb path='+ path +' val='+ val +' record_secs='+ ale.record_secs);
-	w3_set_value(path, ale.record_secs);
-}
-
 function ale_2g_display_cb(path, idx, first)
 {
    idx = +idx;
@@ -1087,11 +1103,47 @@ function ale_2g_test_cb(path, val, first)
 	ext_send('SET test='+ (val? f : 0));
 }
 
-function ale_2g_record_cb(path, checked, first)
+function ale_2g_record_cb(path, idx, first)
 {
    if (first) return;
-   ale.record = checked;
-   w3_checkbox_set(path, checked);
+   idx = +idx;
+   console.log('ale_2g_record_cb idx='+ idx);
+   ale.record_m = idx;
+	w3_set_value(path, idx);
+	ale_2g_log_mins_cb('', ale.log_mins);
+}
+
+function ale_2g_record_secs_cb(path, val)
+{
+   ale.record_secs = w3_clamp(+val, 1, 24*60*60, 1);
+   console.log('ale_2g_record_secs_cb path='+ path +' val='+ val +' record_secs='+ ale.record_secs);
+	w3_set_value(path, ale.record_secs);
+}
+
+function ale_2g_log_mins_cb(path, val)
+{
+   ale.log_mins = w3_clamp(+val, 1, 24*60, 1);
+   console.log('ale_2g_log_mins_cb path='+ path +' val='+ val +' log_mins='+ ale.log_mins);
+	w3_set_value(path, ale.log_mins);
+
+   kiwi_clearInterval(ale.log_interval);
+   if (ale.record_m & ale.LOG) ale.log_interval = setInterval(function() { ale_2g_log(); }, ale.log_mins * 60000);
+}
+
+function ale_2g_log()
+{
+   if (!dbgUs) return;
+   var ts = kiwi_host() +'_'+ new Date().toISOString().replace(/:/g, '_').replace(/\.[0-9]+Z$/, 'Z') +'_'+ w3_el('id-freq-input').value +'_'+ cur_mode;
+   var txt = new Blob([ale.log_txt], { type: 'text/plain' });
+   var a = document.createElement('a');
+   a.style = 'display: none';
+   a.href = window.URL.createObjectURL(txt);
+   a.download = 'ALE_2G.'+ ts +'.log.txt';
+   document.body.appendChild(a);
+   console.log('ale_2g_log: '+ a.download);
+   a.click();
+   window.URL.revokeObjectURL(a.href);
+   document.body.removeChild(a);
 }
 
 // automatically called on changes in the environment
@@ -1149,7 +1201,9 @@ function ALE_2G_help(show)
                'This is useful when the scan list covers a wide range of HF frequencies but propagation ' +
                'makes scanning some of them pointless (e.g. > 12 MHz at night).' +
                '<br><br>' +
-               'Automatic audio recording can be setup when an ALE call between two stations is established.' +
+               '<i>record</i> settings: Automatic audio recording can be setup when an ALE call between two stations is established. ' +
+               'Also periodic downloading of the ALE message log to a file. Adjust your browser settings so these files are downloaded ' +
+               'and saved automatically without causing a browser popup window for each download.' +
                '<br><br>' +
                'The Kiwi owner/admin can define the contents of the <i>Local</i> menu on the <br>' +
                '<i>Admin > Extensions > ALE_2G</i> page. JSON format is used. Users cannot currently define '+
@@ -1157,17 +1211,19 @@ function ALE_2G_help(show)
          
                '<br><br>URL parameters: <br>' +
                '<i>(menu match or frequency list)</i> &nbsp; format:[0123] &nbsp; display:[0123] &nbsp; scan[:<i>secs</i>] &nbsp; <br>' +
-               'limit_le:<i>freq</i> &nbsp; limit_ge:<i>freq</i> &nbsp; rec &nbsp; rec_time:<i>secs</i> &nbsp; test' +
+               'limit_le:<i>freq</i> &nbsp; limit_ge:<i>freq</i> &nbsp; rec:[0123] &nbsp; rec_time:<i>secs</i> &nbsp; log_time:<i>mins</i> &nbsp; test' +
                '<br><br>' +
                'The <i>first</i> URL parameter can be a frequency entry from one of the menus (i.e. "3596") ' +
                'or the name of a menu scan list (e.g. "MARS" in the Amateur menu). ' +
                'Or it can be a list of frequencies separated by commas. Such a list will appear as the first entry in the ' +
-               '<i>Local</i> menu for subsequent selection. Frequencies can use the suffixes \'k\' and \'M\'.' +
+               '<i>Local</i> menu for subsequent selection. Frequencies can use the suffixes \'k\' and \'M\'. <br>' +
+               '[0123] refers to selections in the corresponding menu.' +
                '<br><br>' +
                'Keywords are case-insensitive and can be abbreviated. So for example these are valid: <br>' +
                '<i>ext=ale,3596</i> &nbsp;&nbsp; ' +
                '<i>ext=ale,mars,scan</i> &nbsp;&nbsp; <i>ext=ale,cothen,s:0.75</i> <br>' +
                '<i>ext=ale,7102,14.1M,18106,s</i> &nbsp;&nbsp; <i>ext=ale,ham,s,disp:1,limit_le:10M,rec,rec_t:10</i> <br>' +
+               '<i>ext=ale,mars,scan,rec:3,rec_t:60,log_t:10</i> &nbsp; (i.e. <i>rec:3</i> is the "r+l" record menu entry)<br>' +
                ''
             )
          );

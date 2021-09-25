@@ -2,6 +2,19 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.467  September ?, 2021
+    ALE 2G extension improvements:
+        Date, time and frequency condensed in message log.
+        Periodic browser download of message log added. "record" checkbox becomes a menu containing
+            audio and log recording settings. See extension help. Should help prevent losing log info
+            on Kiwis that have connection timeouts. Note that ALE scanning resets any "inactivity"
+            timeout but does not effect the per 24 hour connection limit (if present).
+        Display menu order changed: DX all +cmds +debug => DX +cmds all +debug
+            This allows commands in the data stream to be added to the abbreviated messages of DX mode.
+            If present, messages (i.e. AMD, DTM) are now included in DX mode.
+        Some errors in the construction of greater than 3 character to/from calls were fixed.
+        Significant performance improvements.
+
 v1.466  September 23, 2021
     ALE 2G extension menu bug fix.
 

@@ -32,28 +32,33 @@ Significant portions of source code were based on the LinuxALE project (under GN
 
 #pragma once
 
-#define NR                          17
+#define NSYM                        33
+#define NR                          17      // ceil(NSYM/2)
+#define NR_POW2                     32      // for double indexed array addressing efficiency
+
 #define FFT_SIZE                    64
-#define MOD_64                      64
+#define HALF_FFT_SIZE               (FFT_SIZE/2)
+
 #define SYMBOLS_PER_WORD            49
 #define VOTE_BUFFER_LENGTH          48
 #define NOT_WORD_SYNC               0
 #define WORD_SYNC                   1
 #define BITS_PER_SYMBOL             3
 #define VOTE_ARRAY_LENGTH           (SYMBOLS_PER_WORD * BITS_PER_SYMBOL)
-#define PI                          M_PI
 #define BAD_VOTE_THRESHOLD          25
 #define SYNC_ERROR_THRESHOLD        1
 
-// FFT_SIZE depends on audio sample rate
-#define SAMP_RATE_SPS               8000
+#define SAMP_RATE_SPS               8000    // FFT_SIZE depends on audio sample rate
 #define SYMBOL_PERIOD_MS            8       // per the ALE spec
 #define SYMBOLS_PER_SEC             125     // 1 / SEC(SYMBOL_PERIOD_MS)
 #define SAMPS_PER_SYMBOL            (SAMP_RATE_SPS / SYMBOLS_PER_SEC)
-//assert(SAMPS_PER_SYMBOL == FFT_SIZE);
+
+#define PI                          M_PI
 
 #include "decode_ff.h"
 #include "caudioresample.h"     // from DRM/dream/resample
+
+#include <fftw3.h>
 
 #ifdef STANDALONE_TEST
     double ext_update_get_sample_rateHz(int rx_chan) { return 0; }
@@ -80,19 +85,28 @@ namespace ale {
     
     
     class decode_ff_impl {
+
     private:
-        ALE_REAL  fft_cs_twiddle[FFT_SIZE];
-        ALE_REAL  fft_ss_twiddle[FFT_SIZE];
-        ALE_REAL  fft_history[FFT_SIZE];
-        Complex fft_out[FFT_SIZE];
-        ALE_REAL  fft_mag[FFT_SIZE];
-        int     fft_history_offset;
+        int         inbuf_i;
+        ALE_REAL    inbuf[HALF_FFT_SIZE];
+        
+        ALE_REAL    fft_cs_twiddle[FFT_SIZE];
+        ALE_REAL    fft_ss_twiddle[FFT_SIZE];
+        Complex     fft_out[HALF_FFT_SIZE];
+        ALE_REAL    fft_mag[HALF_FFT_SIZE];
+        
+        fftwf_plan    dft_plan;
+        fftwf_complex dft_in[sizeof(fftwf_complex) * FFT_SIZE];
+        fftwf_complex dft_out[sizeof(fftwf_complex) * FFT_SIZE];
+
+        ALE_REAL    fft_history[FFT_SIZE];
+        int         fft_history_offset;
 
         // sync information
-        ALE_REAL mag_sum[NR][FFT_SIZE];
-        //ALE_REAL mag_history[NR][FFT_SIZE][SYMBOLS_PER_WORD];
-        int    mag_history_offset;
-        int    word_sync[NR];
+        ALE_REAL    mag_sum[NR_POW2][FFT_SIZE];
+        //ALE_REAL    mag_history[NR_POW2][FFT_SIZE][SYMBOLS_PER_WORD];
+        int         mag_history_offset;
+        int         word_sync[NR];
 
         // worker data
         //int started[NR];    // if other than DATA has arrived
@@ -108,6 +122,7 @@ namespace ale {
         char tis[4];
 
         char data[4];
+        char prev_data2[4];
         char rep[4];
 
         char cmd[4];
@@ -137,6 +152,11 @@ namespace ale {
 
         int icmd;
         
+	    char s1[4], s2[4];
+	    int ito2, itwas2, ifrom2, itis2, idata2, irep2, icmd2;
+	    char to2[4], twas2[4], from2[4], tis2[4], data2[4], rep2[4], cmd2[4];
+	    int bestber;
+
         int state;
         int state_count;
         int stage_num;
@@ -152,6 +172,7 @@ namespace ale {
         double frequency;
         
         int dsp;
+        bool log_buf_empty;
         char log_buf[256];
         char dpf_buf[256];
         char locked_msg[256];
@@ -174,6 +195,8 @@ namespace ale {
         void log(char *current, char *current2, int state, int ber, const char *from);
         void cprintf_msg(int cond_d);
         void dprintf_msg();
+        void do_modem1(bool eof = false);
+        void do_modem2();
     
     protected:
         // resampler

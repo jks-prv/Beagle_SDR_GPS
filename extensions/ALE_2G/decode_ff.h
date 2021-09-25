@@ -54,17 +54,24 @@ const char * const state_s[] = {
 
 
 // commands
-typedef enum { AMD, DTM, LQA, FRQ, CRC, OTH } cmd_e;
+typedef enum {
+    AMD, DTM, LQA, FRQ, CRC, OTH,
+    ALQA, DBA, CHAN, MODE_SEL, NOISE_RPT,
+    DATA_BLK, PWR_CTRL, LQA_RPT, SCHED,
+    VERS_CAP, USER_FUNC, TIME_EXCH
+} cmd_e;
 
 const char * const CMD_types[] = {
     "[AMD]", "[DTM]", "[LQA]", "[Freq]", "[CRC]", "[OTH]",
-    "[Advanced LQA]", "[DBA]", "[Channels]", "[Mode selection]", "[Noise report]"
+    "[Advanced LQA]", "[DBA]", "[Channels]", "[Mode selection]", "[Noise report]",
+    "[Data Block Analysis]", "[Power control]", "[LQA report]", "[Scheduling]",
+    "[Versions/capabilities]", "[User functions]", "[Time exchange]"
 };
 
 
-typedef enum { DX, ALL, CMDS, DBG, SHOW_DX, SHOW_CMD } dsp_e;
+typedef enum { DX, CMDS, ALL, DBG, SHOW_DX, SHOW_CMD } dsp_e;
 
-const char * const dsp_s[] = { "DX", "ALL", "CMDS", "DBG", "SHOW_DX", "SHOW_CMD" };
+const char * const dsp_s[] = { "DX", "CMDS", "ALL", "DBG", "SHOW_DX", "SHOW_CMD" };
 
 
 #define ASCII_128  0
@@ -102,7 +109,7 @@ const char ASCII_Set[128] = {                       // 654 3210
      78  x    79  y    7a  z    7b  {    7c  |    7d  }    7e  ~    7f del
 */
 
-const int g_symbol_lookup[NR][33] = {
+const int g_symbol_lookup[NR][NSYM] = {
     {0,0,1,1,3,3,2,2,6,6,7,7,5,5,4,4,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8},
     {8,0,0,1,1,3,3,2,2,6,6,7,7,5,5,4,4,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8},
     {8,8,0,0,1,1,3,3,2,2,6,6,7,7,5,5,4,4,8,8,8,8,8,8,8,8,8,8,8,8,8,8},

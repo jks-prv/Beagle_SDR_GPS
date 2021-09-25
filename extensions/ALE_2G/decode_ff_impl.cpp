@@ -75,13 +75,13 @@ int gdebug = 0;
 #ifdef KIWI
     #ifdef HOST
         #define cprintf(cond_d, cond_c, color, fmt, ...) \
-            sprintf(log_buf, "%s" fmt NORM "\n", (dsp >= cond_c)? color : "", ## __VA_ARGS__); \
+            sprintf(log_buf, "%s" fmt "%s\n", (dsp >= cond_c)? color : "", ## __VA_ARGS__, (dsp >= cond_c)? NORM : ""); \
             cprintf_msg(cond_d);
     #else
         #define cprintf(cond_d, cond_c, color, fmt, ...) \
             if (dsp >= cond_d) { \
                 bool use_color = (dsp >= cond_c); \
-                printf("%s" fmt NORM "\n", use_color? color : "", ## __VA_ARGS__); \
+                printf("%s" fmt "%s\n", use_color? color : "", ## __VA_ARGS__, (dsp >= cond_c)? NORM : ""); \
             }
     #endif
 #else
@@ -127,7 +127,13 @@ static int slot(double freq)
 
 namespace ale {
 
-	decode_ff_impl::decode_ff_impl(): ResampleObj(nullptr) { }
+	decode_ff_impl::decode_ff_impl(): ResampleObj(nullptr)
+	{
+        if (SAMPS_PER_SYMBOL != FFT_SIZE) { printf("SAMPS_PER_SYMBOL != FFT_SIZE\n"); exit(-1); }
+        if (NSYM <= HALF_FFT_SIZE) { printf("NSYM <= HALF_FFT_SIZE\n"); exit(-1); }
+
+        dft_plan = fftwf_plan_dft_1d(FFT_SIZE, dft_in, dft_out, FFTW_FORWARD, FFTW_ESTIMATE);
+	}
 
 	decode_ff_impl::~decode_ff_impl() { }
 
@@ -170,9 +176,9 @@ namespace ale {
 
 	    for (i = 0; i < VOTE_BUFFER_LENGTH; ) {
 	        decode_ff_array_dim(i, VOTE_BUFFER_LENGTH);
-            worda = input[i++]? (worda << 1) +1 : worda << 1 ;
+            worda = input[i++]? (worda << 1) +1 : worda << 1;
 	        decode_ff_array_dim(i, VOTE_BUFFER_LENGTH);
-            wordb = input[i++]? (wordb << 1) +1 : wordb << 1 ; 
+            wordb = input[i++]? (wordb << 1) +1 : wordb << 1; 
 	    }
 	    
 	    wordb = wordb ^ 0x000FFF;
@@ -267,17 +273,11 @@ namespace ale {
 	    u1_t a, b, c, preamble;
 	    int rv = 1;
 	    
-	    time_t timestamp;
-	    struct tm *tm;
 	    char message[256];
 	    char *s = message;
 	    *s = '\0';
 	    int n;
         cmd_t *cp = &cmds[cmd_cnt];
-
-	    timestamp = use_UTC? time(NULL) : secs;
-	    tm = gmtime(&timestamp);
-	    s += sprintf(s, "[%02d:%02d:%02d] ", tm->tm_hour, tm->tm_min, tm->tm_sec);
 
         // 24-bit word
         // ppp aaaaaaa bbbbbbb ccccccc
@@ -439,17 +439,15 @@ namespace ale {
 
 	void decode_ff_impl::log(char *current, char *current2, int state, int ber, const char *from)
 	{
-	    struct tm *tm;
-	    time_t timestamp;
 	    int i;
 	    char message[256];
         zs=0;
         bool event = false;
         
-	    timestamp = use_UTC? time(NULL) : secs;
-	    tm = gmtime(&timestamp);
 	    dprintf("LOG from state=%s stage_num=%d from=%s ic%d\n",
 	        state_s[state], stage_num, from, in_cmd);
+        prev_data2[0] = '\0';
+
 	    if (in_cmd) {
 	        cmd_cnt++;
 	        in_cmd = binary = 0;
@@ -462,43 +460,37 @@ namespace ale {
 
 	    switch (state) {
             case S_TWAS:
-                cprintf(ALL, DBG, CYAN, "[%02d:%02d:%02d] [FRQ %.2f] [Sounding THIS WAS] [From: %s ] [His BER: %d]",
-                    tm->tm_hour, tm->tm_min, tm->tm_sec, frequency, current, ber);
+                cprintf(ALL, DBG, CYAN, "[Sounding THIS WAS] [From: %s] [His BER: %d]", current, ber);
                 event = true;
                 break;
 
             case S_TIS:
-                cprintf(ALL, DBG, CYAN, "[%02d:%02d:%02d] [FRQ %.2f] [Sounding THIS IS] [From: %s ] [His BER: %d]",
-                    tm->tm_hour, tm->tm_min, tm->tm_sec, frequency, current, ber);
+                cprintf(ALL, DBG, CYAN, "[Sounding THIS IS] [From: %s] [His BER: %d]", current, ber);
                 event = true;
                 break;
 
             case S_TO:
-                cprintf(ALL, DBG, CYAN, "[%02d:%02d:%02d] [FRQ %.2f] [To: %s ] [His BER: %d]",
-                    tm->tm_hour, tm->tm_min, tm->tm_sec, frequency, current, ber);
+                cprintf(ALL, DBG, CYAN, "[To: %s] [His BER: %d]", current, ber);
                 ext_send_msg(rx_chan, true, "EXT call_est_test");
                 event = true;
                 break;
 
             case S_CALL_EST:
                 if (stage_num == 1) {
-                    cprintf(ALL, DBG, CYAN, "[%02d:%02d:%02d] [FRQ %.2f] [Call] [From: %s ] [To: %s] [His BER: %d]",
-                        tm->tm_hour, tm->tm_min, tm->tm_sec, frequency, current, current2, ber);
+                    cprintf(ALL, DBG, CYAN, "[Call] [From: %s] [To: %s] [His BER: %d]", current, current2, ber);
                 } else
                 if (stage_num == 2) {
-                    cprintf(ALL, DBG, CYAN, "[%02d:%02d:%02d] [FRQ %.2f] [Call ACK] [From: %s ] [To: %s] [His BER: %d]",
-                        tm->tm_hour, tm->tm_min, tm->tm_sec, frequency, current, current2, ber);
+                    cprintf(ALL, DBG, CYAN, "[Call ACK] [From: %s] [To: %s] [His BER: %d]", current, current2, ber);
                 } else
                 if (stage_num == 3) {
-                    cprintf(ALL, DBG, CYAN, "[%02d:%02d:%02d] [FRQ %.2f] [Call EST] [From: %s ] [To: %s] [His BER: %d]",
-                        tm->tm_hour, tm->tm_min, tm->tm_sec, frequency, current, current2, ber);
+                    cprintf(ALL, DBG, CYAN, "[Call EST] [From: %s] [To: %s] [His BER: %d]", current, current2, ber);
 		            ext_send_msg(rx_chan, false, "EXT call_est");
                 }
                 event = true;
 		        break;
 
 		    default:
-		        dprintf("LOG #### called from unhandled state %s?\n", state_s[state]);
+		        dprintf("LOG called from unhandled state %s?\n", state_s[state]);
 		        break;
 	    }
 	    
@@ -512,6 +504,7 @@ namespace ale {
             char *s = message;
             *s = '\0';
             int cond_d = CMDS;
+            const char *cmd_type = "CMD";
 
             if (cp->cmd == AMD) {
                 // AMD - automatic message display
@@ -521,6 +514,7 @@ namespace ale {
                 while (*e == ' ' || *e == '\r' || *e == '\n') e--;
                 *(e+1) = '"';
                 *(e+2) = '\0';
+                cmd_type = "MSG";
                 cond_d = DX;
                 event = true;
             } else
@@ -533,6 +527,7 @@ namespace ale {
                 while (*e == ' ' || *e == '\r' || *e == '\n') e--;
                 *(e+1) = '"';
                 *(e+2) = '\0';
+                cmd_type = "MSG";
                 cond_d = DX;
                 event = true;
             } else
@@ -544,7 +539,7 @@ namespace ale {
             } else
 
             if (cp->cmd == FRQ) {
-                s += sprintf(s, "freq: con=%d b4(0)=%d %d_%d_%d_%d_%d.%d_%d",
+                s += sprintf(s, "Freq: con=%d b4(0)=%d %d_%d_%d_%d_%d.%d_%d",
                     bf(w,13,8), b20(w2), bf(w2,19,16), bf(w2,15,12), bf(w2,11,8), bf(w2,7,4), bf(w2,3,0), bf(w,7,4), bf(w,3,0));
                 event = true;
             } else
@@ -552,7 +547,7 @@ namespace ale {
             if (a == 'd') {     // data text message
                 u1_t kd = bf(w,13,10);
                 u2_t dc = bf(w,9,0);
-                s += sprintf(s, "DTM kd=0x%x dc=0x%x", kd, dc); 
+                s += sprintf(s, "DTM: kd=0x%x dc=0x%x", kd, dc); 
                 event = true;
             } else
 
@@ -561,11 +556,10 @@ namespace ale {
             } else
 
             {   // OTH
-                s += sprintf(s, "other: %s %s %s", cdeco(0,a), cdeco(1,b), cdeco(2,c));
+                s += sprintf(s, "Other: %s %s %s", cdeco(0,a), cdeco(1,b), cdeco(2,c));
             }
             
-            cprintf(SHOW_CMD, DX, MAGENTA, "[%02d:%02d:%02d] [FRQ %.2f] [CMD] [%s] [His BER: %d]",
-                tm->tm_hour, tm->tm_min, tm->tm_sec, frequency, message, ber);
+            cprintf(cond_d, DX, MAGENTA, "[%s] [%s] [His BER: %d]", cmd_type, message, ber);
 	    }
 	    
         if (event) ext_send_msg(rx_chan, false, "EXT event");
@@ -578,27 +572,42 @@ namespace ale {
     {
         bool debug = false;
         bool have_msg = false;
+	    time_t timestamp;
+	    struct tm *tm;
+	    timestamp = use_UTC? time(NULL) : secs;
+	    tm = gmtime(&timestamp);
+        char buf[256];
         
-        if (dsp != DX) {
-            have_msg = true;
-        }
+        if (cond_d != SHOW_DX) log_buf_empty = false;
+        if (dsp != DX) have_msg = true;
         
-        if (debug) printf("     cond_d=%s(%d)\n", dsp_s[cond_d], cond_d);
-        if (dsp == DX && cond_d != SHOW_DX && cond_d != SHOW_CMD) {
+        if (debug) printf("     dsp=%s(%d) cond_d=%s(%d) log_buf_empty=%d\n", dsp_s[dsp], dsp, dsp_s[cond_d], cond_d, log_buf_empty);
+        if (cond_d != SHOW_DX && cond_d != CMDS && (dsp == DX || dsp == CMDS)) {
             have_msg = true;
             strcpy(locked_msg, log_buf);
             if (debug) printf("lock: %s", log_buf);
         }
         
-        if ((cond_d == SHOW_CMD) || (cond_d == SHOW_DX) || (have_msg && dsp >= cond_d)) {
-            //rclprintf(rx_chan, "%s", log_buf);
+        bool show_locked = (cond_d == SHOW_DX && !log_buf_empty);
+        if (show_locked || (have_msg && dsp >= cond_d)) {
+            if (use_UTC)
+                sprintf(buf, "[%d-%02d-%02d %02d:%02d:%02d %.2f] %s",
+                    1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec,
+                    frequency, show_locked? locked_msg : log_buf);
+            else
+                sprintf(buf, "[%02d:%02d:%02d] %s", tm->tm_hour, tm->tm_min, tm->tm_sec,
+                    show_locked? locked_msg : log_buf);
+	    
             #ifdef KIWI
                 #ifdef HOST
-                    ext_send_msg_encoded(rx_chan, false, "EXT", "chars", (cond_d == SHOW_DX)? locked_msg : log_buf);
+                    ext_send_msg_encoded(rx_chan, false, "EXT", "chars", buf);
                 #endif
             #else
-                printf(">>>>  %s%s%s", GREEN, (cond_d == SHOW_DX)? locked_msg : log_buf, NORM);
+                printf(">>>>  %s", buf);
             #endif
+            
+            log_buf_empty = true;
+            if (debug) printf("     log_buf_empty=%d\n", log_buf_empty);
         }
     }
 
@@ -610,8 +619,13 @@ namespace ale {
 	    timestamp = use_UTC? time(NULL) : secs;
 	    tm = gmtime(&timestamp);
 	    
-	    sprintf(buf, "[%02d:%02d:%02d] [FRQ %.2f] debug: %s",
-	        tm->tm_hour, tm->tm_min, tm->tm_sec, frequency, dpf_buf);
+        if (use_UTC)
+            sprintf(buf, "[%d-%02d-%02d %02d:%02d:%02d %.2f] debug: %s %s",
+                1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec,
+                frequency, state_s[state], dpf_buf);
+        else
+            sprintf(buf, "[%02d:%02d:%02d] debug: %s %s", tm->tm_hour, tm->tm_min, tm->tm_sec,
+                state_s[state], dpf_buf);
 	    
         #ifdef KIWI
             #ifdef HOST
@@ -620,104 +634,336 @@ namespace ale {
         #else
             int sl = strlen(buf);
             if (buf[sl-1] == '\n') buf[sl-1] = '\0';
-            printf(">>>>  %s%s%s\n", GREEN, buf, NORM);
+            printf(">>>>  %s\n", buf);
         #endif
     }
 
-	void decode_ff_impl::do_modem(float *sample, int length)
+	void decode_ff_impl::do_modem2()
 	{
-	    int i,j,k,n, max_offset=0;
+        if (ito2) {
+            if ((state != S_START) && (state != S_TO)) log(current, current2, state, lastber, "S_TO");
+            if (in_cmd) cmd_cnt++;
+            in_cmd = binary = 0;
+            strcpy(current, to2);
+            dprintf("To: %s <%s>\n", to, current);
+            state = S_TO;
+            state_count = 0;
+            lastber = bestber;
+        }
+
+        if (itwas2) {
+            if ((state != S_START) /*&& (state != S_TWAS)*/) log(current, current2, state, lastber, "S_TWAS");
+            if (in_cmd) cmd_cnt++;
+            in_cmd = binary = 0;
+            strcpy(current, twas2);
+            dprintf("TWAS: %s <%s>\n", twas, current);
+            state = S_TWAS;
+            state_count = 0;
+            lastber = bestber;
+        }
+
+        if (itis2) {
+            if ((state != S_START) && (state != S_TO) && (state != S_TIS) && (state != S_CALL_EST)) log(current, current2, state, lastber, "S_TIS");
+            if (in_cmd) cmd_cnt++;
+            in_cmd = binary = 0;
+            dprintf("TIS: %s\n", tis);
+            if (state == S_TO) {
+                memset(s1,0,4);
+                memset(s2,0,4);
+                strncpy(s1, current, 3);
+                strncpy(s2, current2, 3);
+                strcpy(current2, current);
+                state = S_CALL_EST;
+                if ((stage_num == 0) || (stage_num > 3)) stage_num = 0;
+                if (stage_num > 0) {
+                    dprintf("stage=%d tis=%s, s2=%s, current=%s, s1=%s\n", stage_num, tis, s2, current, s1);
+                    if ((strncmp(tis2, s2, 3) == 0) && (strncmp(current, s1, 3) == 0)) {
+                        stage_num++;
+                    } else {
+                        stage_num = 1;
+                    }
+                } else {
+                    stage_num = 1;
+                }
+                state_count = 0;
+            } else {
+              state = S_TIS;
+              state_count = 0;
+            }
+            strcpy(current, tis2);
+            lastber = bestber;
+        }
+
+        if (ifrom2) {
+            if ((state != S_START) && (state != S_FROM)) log(current, current2, state, lastber, "S_FROM");
+            if (in_cmd) cmd_cnt++;
+            in_cmd = binary = 0;
+            strcpy(current, from2);
+            dprintf("From: %s <%s>\n", from, current);
+            state = S_FROM;
+            state_count = 0;
+            lastber = bestber;
+        }
+
+        if (icmd2 && in_cmd) cmd_cnt++;     // multiple cmds back-to-back in one frame are possible
+        cmd_t *cp = &cmds[cmd_cnt];
+
+        if (idata2) {
+            char *s = in_cmd? cmds[cmd_cnt].cmd_s : current;
+            if ((state > S_START) && (state < S_END)) {
+                dprintf("%sidata2: CMP prev_data2=<%s> data2=<%s>%s\n", YELLOW, prev_data2, data2, NORM);
+                if (strcmp(data2, prev_data2) == 0) {
+                    dprintf("%sidata2: SKIP DUP%s\n", YELLOW, NORM);
+                } else {
+                    strcat(s, data2);
+                    dprintf("%sidata2: ADD DATA%s\n", YELLOW, NORM);
+                }
+                strcpy(prev_data2, data2);
+            }
+            if (in_cmd && binary) {
+                dprintf("Data: %s ic%d a64=%d %02x %02x %02x %02x %02x %02x ...\n",
+                    data, in_cmd, ascii_64_ok, s[0], s[1], s[2], s[3], s[4], s[5]);
+            } else {
+                dprintf("Data: %s ic%d a64=%d <%s>\n",
+                    data, in_cmd, ascii_64_ok, s);
+            }
+            state_count = 0;
+            lastber = bestber;
+        }
+
+        if (irep2) {
+            char *s = in_cmd? cmds[cmd_cnt].cmd_s : current;
+            if ((state > S_START) && (state < S_END)) {
+                strcat(s, rep2);
+            }
+            if (in_cmd && binary) {
+                dprintf("Rep: %s ic%d a64=%d %02x %02x %02x %02x %02x %02x ...\n",
+                    rep, in_cmd, ascii_64_ok, s[0], s[1], s[2], s[3], s[4], s[5]);
+            } else {
+                dprintf("Data: %s ic%d a64=%d <%s>\n",
+                    rep, in_cmd, ascii_64_ok, s);
+            }
+            state_count = 0;
+            lastber = bestber;
+        }
+
+        if (icmd2) {
+            in_cmd = 1;
+            dprintf("CMD: state=%s\n", state_s[state]);
+            //if ((state != S_START) && (state != S_CMD)) log(current, current2, state, lastber, "S_CMD");
+            u1_t a = cmd[0], b = cmd[1], c = cmd[2];
+            u4_t w = (a << 14) | (b << 7) | c;
+            strcpy(cp->cmd_s, cmd);
+            
+            if (ascii_64_ok) {
+                cp->cmd = AMD;
+                // ascii_64_ok means all 3 chars are part of message
+            } else {
+                cp->data = w;
+                binary = 1;
+
+                switch (a) {
+                
+                    case '\"':
+                        cp->cmd = ALQA;
+                        break;
+                
+                    case 'a':
+                        cp->cmd = LQA;
+                        break;
+                
+                    case 'b':
+                        cp->cmd = DATA_BLK;
+                        break;
+                
+                    case 'c':
+                        cp->cmd = CHAN;
+                        break;
+                
+                    case 'd':
+                        cp->cmd = DTM;
+                        cp->cmd_s[0] = '\0';    // prepare for subsequent appending by data/rep
+                        binary = 0;
+                        break;
+                
+                    case 'f':
+                        cp->cmd = FRQ;
+                        break;
+                
+                    case 'm':
+                        cp->cmd = MODE_SEL;
+                        break;
+                
+                    case 'n':
+                        cp->cmd = NOISE_RPT;
+                        break;
+                
+                    case 'p':
+                        cp->cmd = PWR_CTRL;
+                        break;
+                
+                    case 'r':
+                        cp->cmd = LQA_RPT;
+                        break;
+                
+                    case 't':
+                        cp->cmd = SCHED;
+                        break;
+                
+                    case 'v':
+                        cp->cmd = VERS_CAP;
+                        break;
+                
+                    case 'x':
+                    case 'y':
+                    case 'z':
+                    case '{':
+                        cp->cmd = CRC;
+                        break;
+                
+                    case '|':
+                        cp->cmd = USER_FUNC;
+                        break;
+                
+                    case '~':
+                        cp->cmd = TIME_EXCH;
+                        break;
+                
+                    default:
+                        cp->cmd = OTH;
+                        break;
+                }
+            }
+            
+            if (cp->cmd == AMD) {
+                dprintf("CMD: %s %s %s %s\n", CMD_types[cp->cmd], cdeco(0,a), cdeco(1,b), cdeco(2,c));
+            } else {
+                dprintf("CMD: %s\n", CMD_types[cp->cmd]);
+            }
+
+            state_count = 0;
+            lastber = bestber;
+        }
+	}
+
+	void decode_ff_impl::do_modem1(bool eof)
+	{
+	    int i,j,k,n;
 	    ALE_REAL new_sample;
 	    ALE_REAL old_sample;
 	    ALE_REAL temp_real;
 	    ALE_REAL temp_imag;
-	    ALE_REAL max_magnitude = 0;
-	    char s1[4], s2[4];
-	    int bestber = 26;
-	    int ito2, itwas2, ifrom2, itis2, irep2, idata2, icmd2;
-	    char to2[4] = {0,0,0,0}, twas2[4] = {0,0,0,0}, from2[4] = {0,0,0,0}, tis2[4] = {0,0,0,0};
-	    char data2[4] = {0,0,0,0}, rep2[4] = {0,0,0,0};
-	    char cmd2[4] = {0,0,0,0};
+	    int length = HALF_FFT_SIZE;
 	    int temppos = 0;
+	    
+	    memset(to2, 0, sizeof(to2));
+	    memset(from2, 0, sizeof(from2));
+	    memset(tis2, 0, sizeof(tis2));
+	    memset(data2, 0, sizeof(data2));
+	    memset(rep2, 0, sizeof(rep2));
+	    memset(cmd2, 0, sizeof(cmd2));
 
-        //printf("%d ", length); fflush(stdout);
-	    if (length == 0) {
+	    if (eof) {
             log(current, current2, state, lastber, "EOF");
-            if (dsp == DX) cprintf_msg(SHOW_DX);
+            if (dsp == DX || dsp == CMDS) cprintf_msg(SHOW_DX);
 	        dprintf("--- EOF ---\n");
             return;
         }
 
         //if (!notify) { dprintf("--- MAG %s ---\n", calc_mag? "SQRT" : "SIMPLE"); notify = true; }
 
-	    for (i=0; i < length; i++) {
+        //#define ALE_2G_USE_FFTW
 
-            new_sample = sample[i];
+	    for (int ipos = 0; ipos < length; ipos++) {
+
+            new_sample = inbuf[ipos];
 
             decode_ff_array_dim(fft_history_offset, FFT_SIZE);
             old_sample = fft_history[fft_history_offset];
             fft_history[fft_history_offset] = new_sample;
 
-            for (n=0; n < FFT_SIZE/2; n++) {
-                temp_real       = fft_out[n].real - old_sample + new_sample;
-                temp_imag       = fft_out[n].imag;
-                fft_out[n].real = (temp_real * fft_cs_twiddle[n]) - (temp_imag * fft_ss_twiddle[n]);
-                fft_out[n].imag = (temp_real * fft_ss_twiddle[n]) + (temp_imag * fft_cs_twiddle[n]);
+            #ifdef ALE_2G_USE_FFTW
+                for (n=0; n < HALF_FFT_SIZE; n++) {
+                    ...
+                }
+                fftwf_execute(dft_plan);
+                for (n=0; n < HALF_FFT_SIZE; n++) {
+                    ...
+                }
+            #else
+                for (n=0; n < HALF_FFT_SIZE; n++) {
+                    temp_real       = fft_out[n].real - old_sample + new_sample;
+                    temp_imag       = fft_out[n].imag;
+                    fft_out[n].real = (temp_real * fft_cs_twiddle[n]) - (temp_imag * fft_ss_twiddle[n]);
+                    fft_out[n].imag = (temp_real * fft_ss_twiddle[n]) + (temp_imag * fft_cs_twiddle[n]);
                 
-                #if 1
-                    fft_mag[n] = sqrt((fft_out[n].real * fft_out[n].real) + (fft_out[n].imag * fft_out[n].imag)) * 5;
-                #else
-                    if (calc_mag) {
+                    #if 1
                         fft_mag[n] = sqrt((fft_out[n].real * fft_out[n].real) + (fft_out[n].imag * fft_out[n].imag)) * 5;
-                    } else {
-                        // since fft_mag is only used for relative comparisons maybe it doesn't have to be the precise definition of magnitude?
-                        fft_mag[n] = (fft_out[n].real * fft_out[n].real) + (fft_out[n].imag * fft_out[n].imag);
-                    }
-                #endif
-            }
+                    #else
+                        if (calc_mag) {
+                            fft_mag[n] = sqrt((fft_out[n].real * fft_out[n].real) + (fft_out[n].imag * fft_out[n].imag)) * 5;
+                        } else {
+                            // since fft_mag is only used for relative comparisons maybe it doesn't have to be the precise definition of magnitude?
+                            fft_mag[n] = (fft_out[n].real * fft_out[n].real) + (fft_out[n].imag * fft_out[n].imag);
+                        }
+                    #endif
+                    // drop fft_out
+                }
+            #endif
 
-            max_magnitude = 0;
-            for (n = 1; n <= 27; n++) {     // FFT_SIZE/2 = 64/2 = 32 = [0 1..27 28,29,30,31]
+            ALE_REAL max_magnitude = 0;
+            int max_offset = 0;
+            // window FFT result: HALF_FFT_SIZE = FFT_SIZE/2 = 32 => [0 (1..27) 28,29,30,31]
+            for (n = 1; n <= HALF_FFT_SIZE - 5; n++) {
                 if ((fft_mag[n] > max_magnitude)) {
                     max_magnitude = fft_mag[n];
-                    max_offset    = n;
+                    max_offset = n;
                 }
             }
+            // drop fft_mag
 
             decode_ff_array_dim(sample_count, FFT_SIZE);
             for (n=0; n < NR; n++) {
                 mag_sum[n][sample_count] += max_magnitude;
                 //mag_history[n][sample_count[n]][mag_history_offset[n]] = max_magnitude;
             }
+            // drop max_magnitude (first use)
 
-            for (j=0; j < NR; j++) {
-                if (word_sync[j] == NOT_WORD_SYNC) {
-                    max_magnitude = 0;
-                    for (n=0; n < FFT_SIZE; n++) {
-                        if (mag_sum[j][n] > max_magnitude) {
-                            max_magnitude = mag_sum[j][n];
-                            last_sync_position[j] = n;
+            #define ORIGINAL_VERY_SLOW_CODE
+            #ifdef ORIGINAL_VERY_SLOW_CODE
+                for (n=0; n < NR; n++) {
+                    if (word_sync[n] == NOT_WORD_SYNC) {
+                        max_magnitude = 0;
+                        for (j=0; j < FFT_SIZE; j++) {
+                            if (mag_sum[n][j] > max_magnitude) {
+                                max_magnitude = mag_sum[n][j];
+                                last_sync_position[n] = j;
+                            }
                         }
                     }
                 }
-            }
+            #else
+                // Made-up code for testing that eliminates the excessive overhead of the above
+                // while hopefully not causing the optimizer to throw it all away.
+                j = (ipos % NR) >> 1;
+                if (mag_sum[j][ipos] && word_sync[j]) last_sync_position[j] = ipos >> 1;
+            #endif
+            // drop max_magnitude (second use)
 
-            decode_ff_array_dim(max_offset, 33);
-            decode_ff_array_dim(sample_count, FFT_SIZE);
+            decode_ff_array_dim(max_offset, NSYM);
             for (n=0; n < NR; n++) {
                 if (sample_count == last_sync_position[n]) {
-                    last_symbol[n] = g_symbol_lookup[n][max_offset];    // g_symbol_lookup[NR][33]
+                    last_symbol[n] = g_symbol_lookup[n][max_offset];    // g_symbol_lookup[NR][NSYM]
                 }
             }
+            // drop last_sync_position max_offset
 
-            ito = ifrom = itis = itwas = irep = idata = icmd = 0;
-            bestber = 26;
-            ito2 = ifrom2 = itis2 = itwas2 = irep2 = idata2 = icmd2 = 0;
-
-            if ((length & 0xf) == 0)
-                NextTask("ale_2g_task");
-
+            // done once per FFT effectively
             if (sample_count == 0) {
+                ito = ifrom = itis = itwas = irep = idata = icmd = 0;
+                ito2 = ifrom2 = itis2 = itwas2 = irep2 = idata2 = icmd2 = 0;
+                bestber = 26;
+
                 int sym_rv0_cnt = 0;
                 activity_cnt = 0;
 
@@ -731,12 +977,12 @@ namespace ale {
                     bool word = (ito || ifrom || itis || itwas || irep || idata || icmd);
 
                     if (gdebug >= 2)
-                    printf("%5d: SYM%d NR%2d sym_rv%d // ber[n]|%2d < bestber|%2d %s // bestpos=%2d|0|%2d %s // %s %s\n",
-                        nsym, last_symbol[n], n, sym_rv,
-                        ber[n], bestber, isBestBER? (CYAN "Y" NORM) : "N",
-                        bestpos, n, isBestPosition? (CYAN "Y" NORM) : "N",
-                        (sym_rv)? (GREEN "WORD" NORM) : "",
-                        best? (MAGENTA "BEST" NORM) : "");
+                        printf("%5d: SYM%d NR%2d sym_rv%d // ber[n]|%2d < bestber|%2d %s // bestpos=%2d|0|%2d %s // %s %s\n",
+                            nsym, last_symbol[n], n, sym_rv,
+                            ber[n], bestber, isBestBER? (CYAN "Y" NORM) : "N",
+                            bestpos, n, isBestPosition? (CYAN "Y" NORM) : "N",
+                            (sym_rv)? (GREEN "WORD" NORM) : "",
+                            best? (MAGENTA "BEST" NORM) : "");
 
                     #define ORIG_BEST_BER
                     #ifdef ORIG_BEST_BER
@@ -759,7 +1005,6 @@ namespace ale {
                 }
                 
                 // KiwiSDR fix: require two good symbols in NR loop before advancing iXXX state
-                
                 if (sym_rv0_cnt >= 2) {
                     ito2 = ito;     memcpy(to2, to, 3);
                     ifrom2 = ifrom; memcpy(from2, from, 3);
@@ -767,7 +1012,6 @@ namespace ale {
                     itwas2 = itwas; memcpy(twas2, twas, 3);
                     irep2 = irep;   memcpy(rep2, rep, 3);
                     idata2 = idata; memcpy(data2, data, 3);
-                    
                     icmd2 = icmd;   memcpy(cmd2, cmd, 3);
                     if (gdebug >= 1 && icmd) printf("%sicmd2=%d icmd=%d cmd2=%s cmd=%s%s\n", RED, icmd2, icmd, cmd2, cmd, NORM);
                 }
@@ -778,202 +1022,62 @@ namespace ale {
                     //ext_send_snd_msg(rx_chan, true, "MSG audio_flags2=active:%.2f", frequency);
                     active = 1;
                 }
-            }
         
-            if (temppos != 0) bestpos = temppos;
-            inew = bestpos;
-            decode_ff_array_dim(inew, NR);
+                if (temppos != 0) bestpos = temppos;
+                inew = bestpos;
+                decode_ff_array_dim(inew, NR);
+            
+                ale::decode_ff_impl::do_modem2();
 
-            if (ito2) {
-                if ((state != S_START) && (state != S_TO)) log(current, current2, state, lastber, "S_TO");
-                if (in_cmd) cmd_cnt++;
-	            in_cmd = binary = 0;
-                strcpy(current, to2);
-                dprintf("To: %s <%s>\n", to, current);
-                state = S_TO;
-                state_count = 0;
-                lastber = bestber;
-            }
-
-            if (itwas2) {
-                if ((state != S_START) /*&& (state != S_TWAS)*/) log(current, current2, state, lastber, "S_TWAS");
-                if (in_cmd) cmd_cnt++;
-	            in_cmd = binary = 0;
-                strcpy(current, twas2);
-                dprintf("TWAS: %s <%s>\n", twas, current);
-                state = S_TWAS;
-                state_count = 0;
-                lastber = bestber;
-            }
-
-            if (itis2) {
-                if ((state != S_START) && (state != S_TO) && (state != S_TIS) && (state != S_CALL_EST)) log(current, current2, state, lastber, "S_TIS");
-                if (in_cmd) cmd_cnt++;
-	            in_cmd = binary = 0;
-                dprintf("TIS: %s\n", tis);
-                if (state == S_TO) {
-                    memset(s1,0,4);
-                    memset(s2,0,4);
-                    strncpy(s1, current, 3);
-                    strncpy(s2, current2, 3);
-                    strcpy(current2, current);
-                    state = S_CALL_EST;
-                    if ((stage_num == 0) || (stage_num > 3)) stage_num = 0;
-                    if (stage_num > 0) {
-                        dprintf("stage=%d tis=%s, s2=%s, current=%s, s1=%s\n", stage_num, tis, s2, current, s1);
-                        if ((strncmp(tis2, s2, 3) == 0) && (strncmp(current, s1, 3) == 0)) {
-                            stage_num++;
-                        } else {
-                            stage_num = 1;
-                        }
-                    } else {
-                        stage_num = 1;
-                    }
+                // after 2 seconds of no state changes output log entry
+                state_count += FFT_SIZE;
+                if ((state_count >= (2 * SAMP_RATE_SPS)) && state) {
+                    log(current, current2, state, lastber, "QUIET");
+                    if (dsp == DX || dsp == CMDS) cprintf_msg(SHOW_DX);
+                    dprintf("--- QUIET ---\n");
+                    state = S_START;
                     state_count = 0;
-                } else {
-                  state = S_TIS;
-                  state_count = 0;
+                    active = 0;
+                    ext_send_msg(rx_chan, false, "EXT active=0");
+                    //real_printf("///"); fflush(stdout);
+                    //ext_send_snd_msg(rx_chan, true, "MSG audio_flags2=active:0");
+                    //modem_reset();
                 }
-                strcpy(current, tis2);
-                lastber = bestber;
-            }
 
-            if (ifrom2) {
-                if ((state != S_START) && (state != S_FROM)) log(current, current2, state, lastber, "S_FROM");
-                if (in_cmd) cmd_cnt++;
-	            in_cmd = binary = 0;
-                strcpy(current, from2);
-                dprintf("From: %s <%s>\n", from, current);
-                state = S_FROM;
-                state_count = 0;
-                lastber = bestber;
-            }
-
-            if (icmd2 && in_cmd) cmd_cnt++;     // multiple cmds back-to-back in one frame are possible
-            cmd_t *cp = &cmds[cmd_cnt];
-
-            if (idata2) {
-                char *s = in_cmd? cmds[cmd_cnt].cmd_s : current;
-                if ((state > S_START) && (state < S_END)) {
-                    strcat(s, data2);
-                }
-                if (in_cmd && binary) {
-                    dprintf("Data: %s ic%d a64=%d %02x %02x %02x %02x %02x %02x ...\n",
-                        data, in_cmd, ascii_64_ok, s[0], s[1], s[2], s[3], s[4], s[5]);
-                } else {
-                    dprintf("Data: %s ic%d a64=%d <%s>\n",
-                        data, in_cmd, ascii_64_ok, s);
-                }
-                state_count = 0;
-                lastber = bestber;
-            }
-
-            if (irep2) {
-                char *s = in_cmd? cmds[cmd_cnt].cmd_s : current;
-                if ((state > S_START) && (state < S_END)) {
-                    strcat(s, rep2);
-                }
-                if (in_cmd && binary) {
-                    dprintf("Rep: %s ic%d a64=%d %02x %02x %02x %02x %02x %02x ...\n",
-                        rep, in_cmd, ascii_64_ok, s[0], s[1], s[2], s[3], s[4], s[5]);
-                } else {
-                    dprintf("Data: %s ic%d a64=%d <%s>\n",
-                        rep, in_cmd, ascii_64_ok, s);
-                }
-                state_count = 0;
-                lastber = bestber;
-            }
-
-            if (icmd2) {
-                in_cmd = 1;
-                dprintf("CMD: state=%s\n", state_s[state]);
-                //if ((state != S_START) && (state != S_CMD)) log(current, current2, state, lastber, "S_CMD");
-                u1_t a = cmd[0], b = cmd[1], c = cmd[2];
-                u4_t w = (a << 14) | (b << 7) | c;
-                strcpy(cp->cmd_s, cmd);
-                
-                if (ascii_64_ok) {
-                    cp->cmd = AMD;
-                    // ascii_64_ok means all 3 chars are part of message
-                } else {
-                    switch (a) {
-                    
-                        case 'd':
-                            cp->cmd = DTM;
-                            cp->cmd_s[0] = '\0';    // prepare for subsequent appending by data/rep
-                            break;
-                    
-                        case 'a':
-                            cp->cmd = LQA;
-                            cp->data = w;
-                            binary = 1;
-                            break;
-                    
-                        case 'f':
-                            cp->cmd = FRQ;
-                            cp->data = w;
-                            binary = 1;
-                            break;
-                    
-                        case 'x':
-                            cp->cmd = CRC;
-                            cp->data = w;
-                            binary = 1;
-                            break;
-                    
-                        default:
-                            #if 1
-                                cp->cmd = AMD;      // assume noise during AMD
-                            #else
-                                cp->cmd = OTH;
-                                cp->data = w;
-                                binary = 1;
-                            #endif
-                            break;
-                    }
-                }
-                
-                dprintf("CMD: %s\n", CMD_types[cp->cmd]);
-                state_count = 0;
-                lastber = bestber;
-            }
-
-            state_count++;
-
-            // after 2 seconds of no state changes output log entry
-            if ((state_count == 16000) && state) {
-                log(current, current2, state, lastber, "QUIET");
-                if (dsp == DX) cprintf_msg(SHOW_DX);
-	            dprintf("--- QUIET ---\n");
-                state = S_START;
-                state_count = 0;
-                active = 0;
-                ext_send_msg(rx_chan, false, "EXT active=0");
-                //real_printf("///"); fflush(stdout);
-                //ext_send_snd_msg(rx_chan, true, "MSG audio_flags2=active:0");
-                //modem_reset();
-            }
+            }   // sample_count == 0
 
             fft_history_offset = (fft_history_offset + 1) % FFT_SIZE;
-            sample_count = (sample_count + 1) % MOD_64;
+            sample_count = (sample_count + 1) % FFT_SIZE;
 
             if (sample_count == 0) {
                 mag_history_offset = (mag_history_offset + 1) % SYMBOLS_PER_WORD;
 
                 if (mag_history_offset == 0) {
-                    for (n=0; n < NR; n++) {
-                        for (j=0; j < FFT_SIZE; j++) {
-                            mag_sum[n][j] = 0;
-                        }
-                    }
+                    memset(mag_sum, 0, sizeof(mag_sum));
                 }
             }
 	    }
 
         timer_samps += length;
-        secs = timer_samps / SAMP_RATE_SPS;   // keep track of realtime in file (in seconds)
+        secs = timer_samps / SAMP_RATE_SPS;     // keep track of realtime in file (in seconds)
 	}
 
+	void decode_ff_impl::do_modem(float *sample, int length)
+	{
+	    if (length == 0) {
+            ale::decode_ff_impl::do_modem1(true);
+	        return;
+	    }
+	    
+	    for (int i = 0; i < length; i++) {
+	        inbuf[inbuf_i++] = sample[i];
+	        if (inbuf_i == HALF_FFT_SIZE) {
+                ale::decode_ff_impl::do_modem1();
+                inbuf_i = 0;
+	        }
+	    }
+	}
+	
     void decode_ff_impl::do_modem_resampled(short *sample, int length)
     {
         int i;
@@ -986,6 +1090,7 @@ namespace ale {
             for (i = 0; i < length; i++) {
                 vecTempResBufIn[i] = sample[i];
             }
+        
             ResampleObj->Resample(vecTempResBufIn, vecTempResBufOut);
             //printf("."); fflush(stdout);
             ale::decode_ff_impl::do_modem(&vecTempResBufOut[0], iOutputBlockSize);
@@ -1053,7 +1158,7 @@ namespace ale {
 
 	void decode_ff_impl::modem_init(int rx_chan, bool use_new_resampler, float f_srate, int n_samps, bool use_UTC)
 	{
-	    int i,j,k;
+	    int i;
 	    
 	    this->rx_chan = rx_chan;
 	    this->use_UTC = use_UTC;
@@ -1062,6 +1167,8 @@ namespace ale {
 	    timer_samps = 0;
 	    frequency = 0;
 	    activity_cnt = active = 0;
+        log_buf_empty = true;
+        inbuf_i = 0;
 	    
         #ifdef STANDALONE_TEST
         #else
@@ -1086,18 +1193,16 @@ namespace ale {
 	    nsym = 0;
 	    mag_history_offset = 0;
 
+        memset(fft_out, 0, sizeof(fft_out));
+        memset(fft_mag, 0, sizeof(fft_mag));
+        memset(mag_sum, 0, sizeof(mag_sum));
+        memset(bits, 0, sizeof(bits));
+
 	    for (i=0; i < NR; i++) {
             word_sync[i] = NOT_WORD_SYNC;
             last_symbol[i] = 0;
             last_sync_position[i] = 0;
             ber[i] = 26;
-
-            for (j=0; j < FFT_SIZE; j++) {
-                mag_sum[i][j] = 0;
-                fft_mag[j] = fft_out[j].real = fft_out[j].imag = 0;
-                //for (k=0; k < SYMBOLS_PER_WORD; k++) mag_history[i][j][k] = 0;
-            }
-            for (k=0; k < VOTE_ARRAY_LENGTH; k++) bits[i][k] = 0;
             input_buffer_pos[i] = 0;
             word_sync_position[i] = 0;
 	    }
@@ -1129,10 +1234,10 @@ namespace ale {
 
 	void decode_ff_impl::modem_reset()
 	{
-	    int i,j,k;
+	    int i;
 	    
         //printf("### modem_reset\n");
-    
+        inbuf_i = 0;
 	    activity_cnt = active = 0;
 
     // no diff at all
@@ -1164,18 +1269,16 @@ namespace ale {
 
     // no msg at all!
     #if 1
+        memset(fft_out, 0, sizeof(fft_out));
+        memset(fft_mag, 0, sizeof(fft_mag));
+        memset(mag_sum, 0, sizeof(mag_sum));
+        memset(bits, 0, sizeof(bits));
+
 	    for (i=0; i < NR; i++) {
             word_sync[i] = NOT_WORD_SYNC;
             last_symbol[i] = 0;
             last_sync_position[i] = 0;
             ber[i] = 26;
-
-            for (j=0; j < FFT_SIZE; j++) {
-                mag_sum[i][j] = 0;
-                fft_mag[j] = fft_out[j].real = fft_out[j].imag = 0;
-                //for (k=0; k < SYMBOLS_PER_WORD; k++) mag_history[i][j][k] = 0;
-            }
-            for (k=0; k < VOTE_ARRAY_LENGTH; k++) bits[i][k] = 0;
             input_buffer_pos[i] = 0;
             word_sync_position[i] = 0;
 	    }
@@ -1197,8 +1300,9 @@ int main(int argc, char *argv[])
     #define ARGB(v) (v) = true;
     #define ARGL(v) if (ai+1 < argc) (v) = strtol(argv[++ai], 0, 0);
     
-    //int display = CALLS;
     int display = DX;
+    //int display = CMDS;
+    //int display = ALL;
     int fileno = 0, repeat = 1;
     //int offset = -1;
     int offset = 0;
@@ -1218,8 +1322,8 @@ int main(int argc, char *argv[])
 
         // display
         if (ARG("-x") || ARG("--dx")) display = DX;
-        if (ARG("-a") || ARG("--all")) display = ALL;
         if (ARG("-c") || ARG("--cmds")) display = CMDS;
+        if (ARG("-a") || ARG("--all")) display = ALL;
         if (ARG("-d") || ARG("--debug")) display = DBG;
         ai++;
     }
