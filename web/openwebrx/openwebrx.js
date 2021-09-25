@@ -8204,7 +8204,7 @@ function toggle_or_set_rec(set)
          data: null,          // DataView for the current buffer
          offset: 0,           // Current offset within the current ArrayBuffer
          total_size: 0,       // Total size of all recorded data in bytes
-         filename: kiwi_host() +'_'+ new Date().toISOString().replace(/:/g, '_').replace(/\.[0-9]+Z$/, 'Z') +'_'+ w3_el('id-freq-input').value +'_'+ cur_mode + '.wav'
+         filename: kiwi_host() +'_'+ new Date().toISOString().replace(/:/g, '_').replace(/\.[0-9]+Z$/, 'Z') +'_'+ w3_el('id-freq-input').value +'_'+ cur_mode +'.wav'
       };
       window.recording_meta.buffers.push(new ArrayBuffer(65536));
       window.recording_meta.data = new DataView(window.recording_meta.buffers[0]);

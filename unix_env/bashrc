@@ -308,7 +308,7 @@ alias hbeat="echo heartbeat >${led}0/trigger; echo heartbeat >${led}1/trigger; e
 # CAUTION: on the BBAI everything is on mmcblk[01]p1 (i.e. no sep /boot & / anymore)
 alias mmc="lsblk"
 # shows UUID
-alias mmcfs="lsblk -fs"
+alias mmcfs="lsblk --fs"
 alias mosd0="mkdir -p /media/sd_boot; mount /dev/mmcblk0p1 /media/sd_boot"
 alias mosd1="mkdir -p /media/sd_boot; mount /dev/mmcblk1p1 /media/sd_boot"
 alias umsd="umount /media/sd_boot"
