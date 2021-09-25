@@ -1441,8 +1441,12 @@ function user_cb(obj)
 		// inactivity timeout warning panel
 		if (i == rx_chan && obj.rn) {
 		   if (obj.rn <= 55 && !kiwi.inactivity_panel) {
-            var s = 'Inactivity timeout in one minute.<br>Close this panel to avoid disconnection.';
-            confirmation_show_content(s, 350, 55,
+            var s =
+               (obj.rt == 1)?
+                  'Inactivity timeout in one minute.<br>Close this panel to avoid disconnection.'
+               :
+                  'Per 24-hour connection timeout in one minute.';
+            confirmation_show_content(s, 360, 55,
                function() {
                   msg_send('SET inactivity_ack');
                   confirmation_panel_close();
