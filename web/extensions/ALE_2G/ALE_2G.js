@@ -1136,7 +1136,6 @@ function ale_2g_log_mins_cb(path, val)
 
 function ale_2g_log_cb()
 {
-   if (!dbgUs) return;
    var ts = kiwi_host() +'_'+ new Date().toISOString().replace(/:/g, '_').replace(/\.[0-9]+Z$/, 'Z') +'_'+ w3_el('id-freq-input').value +'_'+ cur_mode;
    var txt = new Blob([ale.log_txt], { type: 'text/plain' });
    var a = document.createElement('a');
