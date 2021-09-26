@@ -5,7 +5,7 @@ var ale = {
    ext_name: 'ALE_2G',     // NB: must match ALE_2G.cpp:ale_2g_ext.name
    first_time: true,
    dataH: 300,
-   ctrlW: 610,
+   ctrlW: 600,
    //ctrlH: 215,
    ctrlH: 185,
    freq: 0,
@@ -148,8 +148,10 @@ function ale_2g_recv(data)
 			   break;
 
 			case "test_done":
-            if (ale.testing)
+            if (ale.testing) {
                w3_hide('id-ale_2g-bar-container');
+               w3_show('id-ale_2g-record');
+            }
 			   break;
 
 			case "chars":
@@ -300,12 +302,13 @@ function ale_2g_controls_setup()
             w3_button('w3-padding-smaller', 'Prev', 'w3_select_next_prev_cb', { dir:w3_MENU_PREV, id:'ale.menu', isNumeric:true, func:'ale_2g_np_pre_select_cb' }),
             w3_button('id-ale_2g-scan-button w3-padding-smaller w3-green', 'Scan', 'ale_2g_scan_button_cb'),
             w3_button('id-ale_2g-clear-button w3-padding-smaller w3-css-yellow', 'Clear', 'ale_2g_clear_button_cb'),
+            w3_button('id-button-log w3-padding-smaller w3-purple', 'Log', 'ale_2g_log_cb'),
             w3_button('id-button-test w3-padding-smaller w3-aqua', 'Test', 'ale_2g_test_cb', 1),
-            w3_div('id-ale_2g-bar-container w3-progress-container w3-round-large w3-white w3-hide|width:50px; height:16px',
+            w3_div('id-ale_2g-bar-container w3-progress-container w3-round-large w3-white w3-hide|width:70px; height:16px',
                w3_div('id-ale_2g-bar w3-progressbar w3-round-large w3-light-green|width:0%', '&nbsp;')
             ),
             
-            w3_select(ale.sfmt, '', 'record', 'ale.record_m', ale.record_m, ale.record_s, 'ale_2g_record_cb'),
+            w3_select('id-ale_2g-record '+ ale.sfmt, '', 'record', 'ale.record_m', ale.record_m, ale.record_s, 'ale_2g_record_cb'),
             w3_input('id-ale_2g-record-secs/w3-label-not-bold/w3-ext-retain-input-focus|padding:0;width:auto|size=4',
                'rec sec', 'ale.record_secs', ale.record_secs, 'ale_2g_record_secs_cb'),
             w3_div('fa-stack||title="record"',
@@ -1082,6 +1085,7 @@ function ale_2g_test_cb(path, val, first)
    ale.testing = val;
 	w3_el('id-ale_2g-bar').style.width = '0%';
    w3_show_hide('id-ale_2g-bar-container', ale.testing);
+   w3_show_hide('id-ale_2g-record', !ale.testing);
    
    // pushing the test button in the middle of a scan activity stop
    // won't cause it to resume scanning immediately like it should
@@ -1127,10 +1131,10 @@ function ale_2g_log_mins_cb(path, val)
 	w3_set_value(path, ale.log_mins);
 
    kiwi_clearInterval(ale.log_interval);
-   if (ale.record_m & ale.LOG) ale.log_interval = setInterval(function() { ale_2g_log(); }, ale.log_mins * 60000);
+   if (ale.record_m & ale.LOG) ale.log_interval = setInterval(function() { ale_2g_log_cb(); }, ale.log_mins * 60000);
 }
 
-function ale_2g_log()
+function ale_2g_log_cb()
 {
    if (!dbgUs) return;
    var ts = kiwi_host() +'_'+ new Date().toISOString().replace(/:/g, '_').replace(/\.[0-9]+Z$/, 'Z') +'_'+ w3_el('id-freq-input').value +'_'+ cur_mode;
