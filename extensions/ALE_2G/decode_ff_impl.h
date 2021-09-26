@@ -32,28 +32,47 @@ Significant portions of source code were based on the LinuxALE project (under GN
 
 #pragma once
 
-#define NR                          17
+/*
+
+Each transmitted symbol is one of eight 8 msec duration, phase-continuous tones sent
+orthogonally, one at a time:
+    750, 1000, 1250, 1500, 1750, 2000, 2250, 2500 Hz (250 Hz spacing, passband 600-2650 Hz = 2050 Hz)
+Each transmitted symbol encodes 3-bits.
+Each 24-bit baseband word is Golay FEC encoded to 49-bits (48 + 1 stuff bit).
+16.333 symbols are required to transmit these 49-bits (49/3 = 16.333).
+
+*/
+
+// decode_ff.h:g_symbol_lookup[NTIME][NFREQ] shows how these values define the 2-dimensional
+// time/freq symbol search space
+#define NFREQ                       33
+#define NTIME                       17
+#define NTIME_POW2                  32      // for double indexed array addressing efficiency
+
 #define FFT_SIZE                    64
-#define MOD_64                      64
-#define SYMBOLS_PER_WORD            49
+#define HALF_FFT_SIZE               (FFT_SIZE/2)
+
+#define NSYMBOLS                    8
+#define SYMBOLS_PER_WORD            49      // after encoding, i.e. 24b baseband => 49b Golay FEC encoded
 #define VOTE_BUFFER_LENGTH          48
 #define NOT_WORD_SYNC               0
-#define WORD_SYNC                   1
+#define IS_WORD_SYNC                1
 #define BITS_PER_SYMBOL             3
 #define VOTE_ARRAY_LENGTH           (SYMBOLS_PER_WORD * BITS_PER_SYMBOL)
-#define PI                          M_PI
 #define BAD_VOTE_THRESHOLD          25
 #define SYNC_ERROR_THRESHOLD        1
 
-// FFT_SIZE depends on audio sample rate
-#define SAMP_RATE_SPS               8000
+#define SAMP_RATE_SPS               8000    // FFT_SIZE depends on audio sample rate
 #define SYMBOL_PERIOD_MS            8       // per the ALE spec
 #define SYMBOLS_PER_SEC             125     // 1 / SEC(SYMBOL_PERIOD_MS)
-#define SAMPS_PER_SYMBOL            (SAMP_RATE_SPS / SYMBOLS_PER_SEC)
-//assert(SAMPS_PER_SYMBOL == FFT_SIZE);
+#define SAMPS_PER_SYMBOL            (SAMP_RATE_SPS / SYMBOLS_PER_SEC)   // = 64 = FFT_SIZE
+
+#define PI                          M_PI
 
 #include "decode_ff.h"
 #include "caudioresample.h"     // from DRM/dream/resample
+
+#include <fftw3.h>
 
 #ifdef STANDALONE_TEST
     double ext_update_get_sample_rateHz(int rx_chan) { return 0; }
@@ -64,6 +83,13 @@ Significant portions of source code were based on the LinuxALE project (under GN
 
 //#define ALE_REAL double
 #define ALE_REAL float
+
+#define ALE_MAG_INT
+#ifdef ALE_MAG_INT
+    #define ALE_MAG int
+#else
+    #define ALE_MAG ALE_REAL
+#endif
 
 namespace ale {
 
@@ -80,78 +106,77 @@ namespace ale {
     
     
     class decode_ff_impl {
+
     private:
-        ALE_REAL  fft_cs_twiddle[FFT_SIZE];
-        ALE_REAL  fft_ss_twiddle[FFT_SIZE];
-        ALE_REAL  fft_history[FFT_SIZE];
-        Complex fft_out[FFT_SIZE];
-        ALE_REAL  fft_mag[FFT_SIZE];
-        int     fft_history_offset;
+        int         inbuf_i;
+        ALE_REAL    inbuf[HALF_FFT_SIZE];
+        
+        ALE_REAL    fft_cs_twiddle[FFT_SIZE];
+        ALE_REAL    fft_ss_twiddle[FFT_SIZE];
+        Complex     fft_out[HALF_FFT_SIZE];
+        ALE_MAG     fft_mag[HALF_FFT_SIZE];
+        
+        fftwf_plan    dft_plan;
+        fftwf_complex dft_in[sizeof(fftwf_complex) * FFT_SIZE];
+        fftwf_complex dft_out[sizeof(fftwf_complex) * FFT_SIZE];
+
+        ALE_REAL    fft_history[FFT_SIZE];
+        int         fft_history_offset;
 
         // sync information
-        ALE_REAL mag_sum[NR][FFT_SIZE];
-        //ALE_REAL mag_history[NR][FFT_SIZE][SYMBOLS_PER_WORD];
-        int    mag_history_offset;
-        int    word_sync[NR];
+        ALE_MAG     mag_sum[NTIME_POW2][FFT_SIZE];
+        //ALE_REAL    mag_history[NTIME_POW2][FFT_SIZE][SYMBOLS_PER_WORD];
+        int         mag_hist_offset_per_word;
+        int         word_sync[NTIME];
 
         // worker data
-        //int started[NR];    // if other than DATA has arrived
-        int bits[NR][VOTE_ARRAY_LENGTH];
-        int input_buffer_pos[NR];
-        int word_sync_position[NR];
+        //int started[NTIME];   // if other than DATA has arrived
+        int bits[NTIME][VOTE_ARRAY_LENGTH];
+        int input_buffer_pos[NTIME];
+        int word_sync_position[NTIME];
 
         // protocol data
-        char thru[4];
-        char to[4];
-        char twas[4];
-        char from[4];
-        char tis[4];
+	    int ito, ifrom, itis, itwas, idata, irep, icmd;
+	    int ito2, ifrom2, itis2, itwas2, idata2, irep2, icmd2;
+        char to[4], from[4], tis[4], twas[4], data[4], rep[4], cmd[4];
+	    char to2[4], from2[4], tis2[4], twas2[4], data2[4], rep2[4], cmd2[4];
 
-        char data[4];
-        char rep[4];
-
-        char cmd[4];
+        char prev_data2[4];
 
         #define N_CUR 256
         char current[N_CUR];
         char current2[N_CUR];
-        int in_cmd, binary;
+        int in_cmd, binary, current_word;
         bool ascii_38_ok, ascii_64_ok, ascii_nl_ok;
         
         cmd_t cmds[16];
         int cmd_cnt;
 
-        int ber[NR];
+        #define HIGH_BER 26
+        int ber[NTIME];
         int lastber;
         int bestpos;
-        int inew;
+        int nt_new;
 
-        int ithru;
-        int ito;
-        int itwas;
-        int ifrom;
-        int itis;
+	    char s1[4], s2[4];
+	    int bestber;
 
-        int idata;
-        int irep;
-
-        int icmd;
-        
         int state;
         int state_count;
         int stage_num;
 
-        int last_symbol[NR];
-        int last_sync_position[NR];
+        int last_symbol[NTIME];
+        int last_sync_position[NTIME];
         int nsym;
-        int sample_count;
+        int samp_count_per_symbol;
         int activity_cnt;
         int active;
         int cmd_freq_Hz;
         int secs, timer_samps;
         double frequency;
         
-        int dsp;
+        int dsp, gdebug;
+        bool log_buf_empty;
         char log_buf[256];
         char dpf_buf[256];
         char locked_msg[256];
@@ -168,12 +193,14 @@ namespace ale {
         
         u4_t golay_encode(u4_t data);
         u4_t golay_decode(u4_t code, int *errors);
-        int decode_word(u4_t word, int nr, int berw, int caller);
+        int decode_word(u4_t word, int nt, int berw, int caller);
         u4_t modem_de_interleave_and_fec(int *input, int *errors);
-        int modem_new_symbol(int sym, int nr);
+        int modem_new_symbol(int sym, int nt);
         void log(char *current, char *current2, int state, int ber, const char *from);
         void cprintf_msg(int cond_d);
         void dprintf_msg();
+        void do_modem1(bool eof = false);
+        void do_modem2();
     
     protected:
         // resampler

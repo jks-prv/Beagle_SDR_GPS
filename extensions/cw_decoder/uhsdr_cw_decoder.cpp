@@ -42,6 +42,7 @@
 #include "config.h"
 #include "coroutines.h"
 #include "misc.h"
+#include "mem.h"
 #include "uhsdr_cw_decoder.h"
 
 #include <limits.h>
@@ -477,7 +478,7 @@ static void CW_Decode_exe(cw_decoder_t *cw)
         print_max_min_stream_f(&sample_state, P_MAX_MIN_DEMAND, "cw_samp", sample_idx, 1, siglevel);
         sample_idx++;
         if (sample_idx == 137) {
-            print_max_min_stream_f(&sample_state, P_MAX_MIN_DUMP, "cw_samp", 0, 0);
+            print_max_min_stream_f(&sample_state, P_MAX_MIN_DUMP, "cw_samp");
             kiwi_ifree(sample_state);
             sample_state = NULL;
             sample_idx = 0;

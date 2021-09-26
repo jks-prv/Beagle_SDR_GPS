@@ -582,6 +582,28 @@ function kiwi_JSON_parse(tag, json)
    return obj;
 }
 
+// remove ANSI "ESC[ ... m" sequences
+function kiwi_remove_ANSI_escape_sequences(s)
+{
+   var a1 = s.split('');
+   var a2 = [];
+   var inANSI = false;
+   for (var i = 0; i < a1.length; i++) {
+      if (inANSI) {
+         if (a1[i] == 'm') inANSI = false;
+      } else {
+         if (a1[i] == '\u001b' && (i+1) < a1.length && a1[i+1] == '[') {
+            i++;
+            inANSI = true;
+         } else {
+            a2.push(a1[i]);
+         }
+      }
+   }
+   
+   return a2.join('');
+}
+
 
 ////////////////////////////////
 // HTML helpers

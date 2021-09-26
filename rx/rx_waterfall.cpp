@@ -962,8 +962,8 @@ void sample_wf(int rx_chan)
             float fq = ((float) qq) * window[sn];
             
             #ifdef SHOW_MAX_MIN_IQ
-                print_max_min_stream_i(&IQi_state, "IQi", k, 2, ii, qq);
-                print_max_min_stream_f(&IQf_state, "IQf", k, 2, (double) fi, (double) fq);
+                print_max_min_stream_i(&IQi_state, P_MAX_MIN_DEMAND, "IQi", k, 2, ii, qq);
+                print_max_min_stream_f(&IQf_state, P_MAX_MIN_DEMAND, "IQf", k, 2, (double) fi, (double) fq);
             #endif
             
             fft->hw_c_samps[sn][I] = fi;
@@ -1233,8 +1233,8 @@ void compute_frame(int rx_chan)
             pwr[i] = re*re + im*im;
 
             #ifdef SHOW_MAX_MIN_PWR
-                //print_max_min_stream_f(&FFT_state, "FFT", i, 2, (double) re, (double) im);
-                //print_max_min_stream_f(&pwr_state, "pwr", i, 1, (double) pwr[i]);
+                //print_max_min_stream_f(&FFT_state, P_MAX_MIN_DEMAND, "FFT", i, 2, (double) re, (double) im);
+                //print_max_min_stream_f(&pwr_state, P_MAX_MIN_DEMAND, "pwr", i, 1, (double) pwr[i]);
             #endif
         }
     } else {
@@ -1250,8 +1250,8 @@ void compute_frame(int rx_chan)
             pwr[i] = re*re + im*im;
 
             #ifdef SHOW_MAX_MIN_PWR
-                //print_max_min_stream_f(&FFT_state, "FFT", i, 2, (double) re, (double) im);
-                //print_max_min_stream_f(&pwr_state, "pwr", i, 1, (double) pwr[i]);
+                //print_max_min_stream_f(&FFT_state, P_MAX_MIN_DEMAND, "FFT", i, 2, (double) re, (double) im);
+                //print_max_min_stream_f(&pwr_state, P_MAX_MIN_DEMAND, "pwr", i, 1, (double) pwr[i]);
             #endif
         }
     }
@@ -1414,7 +1414,7 @@ void compute_frame(int rx_chan)
 			    dBs_f[i] = dB;
 			#endif
 			#ifdef SHOW_MAX_MIN_PWR
-			    print_max_min_stream_f(&dB_state, "dB", i, 1, (double) dB);
+			    print_max_min_stream_f(&dB_state, P_MAX_MIN_DEMAND, "dB", i, 1, (double) dB);
 			#endif
 
 			// We map 0..-200 dBm to (u1_t) 255..55
@@ -1430,7 +1430,7 @@ void compute_frame(int rx_chan)
 			    dBs[i] = *(bp-1);
 			#endif
 			#ifdef SHOW_MAX_MIN_PWR
-			    print_max_min_stream_i(&buf_state, "buf", i, 1, (int) *(bp-1));
+			    print_max_min_stream_i(&buf_state, P_MAX_MIN_DEMAND, "buf", i, 1, (int) *(bp-1));
 			#endif
 		}
 
