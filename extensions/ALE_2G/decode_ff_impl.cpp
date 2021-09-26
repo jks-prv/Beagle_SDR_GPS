@@ -34,13 +34,71 @@ Significant portions of source code were based on the LinuxALE project (under GN
 #ifdef KIWI
 #else
     #include "types.h"
+    #include <stdlib.h>
     #define STANDALONE_TEST
 #endif
 
 // this is here before Kiwi includes to prevent our "#define printf ALT_PRINTF" mechanism being disturbed
 #include "decode_ff_impl.h"
 
-int gdebug = 0;
+#ifdef STANDALONE_TEST
+
+#define P_MAX_MIN_DEMAND    0x00
+#define P_MAX_MIN_RANGE     0x01
+#define P_MAX_MIN_DUMP      0x02
+
+typedef struct {
+	int min_i, max_i;
+	double min_f, max_f;
+	int min_idx, max_idx;
+} print_max_min_int_t;
+
+static void *mag_state;
+
+static print_max_min_int_t *print_max_min_init(void **state)
+{
+	print_max_min_int_t **pp = (print_max_min_int_t **) state;
+	if (*pp == NULL) {
+		*pp = (print_max_min_int_t *) malloc(sizeof(print_max_min_int_t));
+		print_max_min_int_t *p = *pp;
+		memset(p, 0, sizeof(*p));
+		p->min_i = 0x7fffffff; p->max_i = 0x80000000;
+		p->min_f = 1e38; p->max_f = -1e38;
+		p->min_idx = p->max_idx = -1;
+	}
+	return *pp;
+}
+
+void print_max_min_stream_f(void **state, int flags, const char *name, int index=0, int nargs=0, ...)
+{
+	va_list ap;
+	va_start(ap, nargs);
+	print_max_min_int_t *p = print_max_min_init(state);
+	bool dump = (flags & P_MAX_MIN_DUMP);
+	bool update = false;
+
+	if (!dump) for (int i=0; i < nargs; i++) {
+		double arg_f = va_arg(ap, double);
+		if (arg_f > p->max_f) {
+			p->max_f = arg_f;
+			p->max_idx = index;
+			update = true;
+		}
+		if (arg_f < p->min_f) {
+			p->min_f = arg_f;
+			p->min_idx = index;
+			update = true;
+		}
+	}
+	
+	if (dump || ((flags & P_MAX_MIN_RANGE) && update)) {
+		//printf("min/max %s: %e(%d)..%e(%d)\n", name, p->min_f, p->min_idx, p->max_f, p->max_idx);
+		printf("min/max %s: %f(%d)..%f(%d)\n", name, p->min_f, p->min_idx, p->max_f, p->max_idx);
+	}
+
+	va_end(ap);
+}
+#endif
 
 #ifdef KIWI
     #include "types.h"
@@ -113,7 +171,7 @@ int gdebug = 0;
 static char *cdeco(int idx, char c)
 {
     static char s[16][16];
-    sprintf(s[idx], "%c(%02x)", (c >= ' ' && c < 0x7f)? c : '?', c);
+    sprintf(s[idx], "%c(%02x)", (c >= ' ' && c < 0x7f)? c : '?', (c & 0xff));
     return s[idx];
 }
 
@@ -130,7 +188,12 @@ namespace ale {
 	decode_ff_impl::decode_ff_impl(): ResampleObj(nullptr)
 	{
         if (SAMPS_PER_SYMBOL != FFT_SIZE) { printf("SAMPS_PER_SYMBOL != FFT_SIZE\n"); exit(-1); }
-        if (NSYM <= HALF_FFT_SIZE) { printf("NSYM <= HALF_FFT_SIZE\n"); exit(-1); }
+        if (NFREQ <= HALF_FFT_SIZE) { printf("NFREQ <= HALF_FFT_SIZE\n"); exit(-1); }
+
+	    for (int i=0; i < FFT_SIZE; i++) {
+            fft_cs_twiddle[i] = cos((-2.0*PI * i) / FFT_SIZE);
+            fft_ss_twiddle[i] = sin((-2.0*PI * i) / FFT_SIZE);
+        }
 
         dft_plan = fftwf_plan_dft_1d(FFT_SIZE, dft_in, dft_out, FFTW_FORWARD, FFTW_ESTIMATE);
 	}
@@ -194,72 +257,72 @@ namespace ale {
 	    return (worda);
 	}
 
-	int decode_ff_impl::modem_new_symbol(int sym, int nr)
+	int decode_ff_impl::modem_new_symbol(int sym, int nt)
 	{
+	    int i, j, rv;
 	    int majority_vote_array[VOTE_BUFFER_LENGTH];
-	    int bad_votes, sum, errors, i;
+	    int bad_votes, sum, errors;
 	    u4_t word = 0;
-	    int j, rv;
 
-	    inew = nr;
+	    nt_new = nt;
 
-        decode_ff_array_dim(sym, 8+1);
-        decode_ff_array_dim(nr, NR);
+        decode_ff_array_dim(sym, NSYMBOLS+1);
+        decode_ff_array_dim(nt, NTIME);
 
-        j = input_buffer_pos[nr];
+        j = input_buffer_pos[nt];
         decode_ff_array_dim(j, VOTE_ARRAY_LENGTH);
-	    bits[nr][j] = (sym & 4) ? 1 : 0;
-	    input_buffer_pos[nr] = (input_buffer_pos[nr]+1) % VOTE_ARRAY_LENGTH;
+	    bits[nt][j] = (sym & 4) ? 1 : 0;
+	    input_buffer_pos[nt] = (input_buffer_pos[nt]+1) % VOTE_ARRAY_LENGTH;
 
-        j = input_buffer_pos[nr];
+        j = input_buffer_pos[nt];
         decode_ff_array_dim(j, VOTE_ARRAY_LENGTH);
-	    bits[nr][j] = (sym & 2) ? 1 : 0;
-	    input_buffer_pos[nr] = (input_buffer_pos[nr]+1) % VOTE_ARRAY_LENGTH;
+	    bits[nt][j] = (sym & 2) ? 1 : 0;
+	    input_buffer_pos[nt] = (input_buffer_pos[nt]+1) % VOTE_ARRAY_LENGTH;
 
-        j = input_buffer_pos[nr];
+        j = input_buffer_pos[nt];
         decode_ff_array_dim(j, VOTE_ARRAY_LENGTH);
-	    bits[nr][j] = (sym & 1) ? 1 : 0;
-	    input_buffer_pos[nr] = (input_buffer_pos[nr]+1) % VOTE_ARRAY_LENGTH;
+	    bits[nt][j] = (sym & 1) ? 1 : 0;
+	    input_buffer_pos[nt] = (input_buffer_pos[nt]+1) % VOTE_ARRAY_LENGTH;
 
 	    bad_votes = 0;
 	    for (i=0; i < VOTE_BUFFER_LENGTH; i++) {
-	        j = (i + input_buffer_pos[nr]) % VOTE_ARRAY_LENGTH;
+	        j = (i + input_buffer_pos[nt]) % VOTE_ARRAY_LENGTH;
             decode_ff_array_dim(j, VOTE_ARRAY_LENGTH);
-            sum  = bits[nr][j];
+            sum  = bits[nt][j];
 
-            j = (i + input_buffer_pos[nr] + SYMBOLS_PER_WORD) % VOTE_ARRAY_LENGTH;
+            j = (i + input_buffer_pos[nt] + SYMBOLS_PER_WORD) % VOTE_ARRAY_LENGTH;
             decode_ff_array_dim(j, VOTE_ARRAY_LENGTH);
-            sum += bits[nr][j];
+            sum += bits[nt][j];
 
-            j = (i + input_buffer_pos[nr] + (2*SYMBOLS_PER_WORD)) % VOTE_ARRAY_LENGTH;
+            j = (i + input_buffer_pos[nt] + (2*SYMBOLS_PER_WORD)) % VOTE_ARRAY_LENGTH;
             decode_ff_array_dim(j, VOTE_ARRAY_LENGTH);
-            sum += bits[nr][j];
+            sum += bits[nt][j];
 
             if ((sum == 1) || (sum == 2)) bad_votes++; 
             decode_ff_array_dim(sum, 4);
             majority_vote_array[i] = vote_lookup[sum];
 	    }
 
-	    ber[nr] = 26;
+	    ber[nt] = HIGH_BER;
 	    rv = 0;
 
-	    if (word_sync[nr] == NOT_WORD_SYNC) {
+	    if (word_sync[nt] == NOT_WORD_SYNC) {
             if (bad_votes <= BAD_VOTE_THRESHOLD) {
                 word = modem_de_interleave_and_fec(majority_vote_array, &errors);
                 if (errors <= SYNC_ERROR_THRESHOLD) {
-                    /*int err = */ decode_word(word, nr, bad_votes, 0);
-                    word_sync[nr] = WORD_SYNC;
-                    word_sync_position[nr] = input_buffer_pos[nr];
+                    /* int err = */ decode_word(word, nt, bad_votes, 0);
+                    word_sync[nt] = IS_WORD_SYNC;
+                    word_sync_position[nt] = input_buffer_pos[nt];
                     rv = 1;
                 }
             }
 	    } else {
-            if (input_buffer_pos[nr] == word_sync_position[nr]) {
+            if (input_buffer_pos[nt] == word_sync_position[nt]) {
                 word = modem_de_interleave_and_fec(majority_vote_array, &errors);
-                decode_word(word, nr, bad_votes, 1);
+                decode_word(word, nt, bad_votes, 1);
                 rv = 2;
             } else {
-                word_sync[nr] = NOT_WORD_SYNC;
+                word_sync[nt] = NOT_WORD_SYNC;
             }
 	    }
 	    
@@ -268,7 +331,7 @@ namespace ale {
 
     static int zs, zz;
     
-	int decode_ff_impl::decode_word(u4_t w, int nr, int berw, int caller)
+	int decode_ff_impl::decode_word(u4_t w, int nt, int berw, int caller)
 	{
 	    u1_t a, b, c, preamble;
 	    int rv = 1;
@@ -278,6 +341,7 @@ namespace ale {
 	    *s = '\0';
 	    int n;
         cmd_t *cp = &cmds[cmd_cnt];
+        current_word = w;
 
         // 24-bit word
         // ppp aaaaaaa bbbbbbb ccccccc
@@ -307,13 +371,13 @@ namespace ale {
         );
 
 	    if (preamble == CMD) {
-            ber[nr] = berw;
+            ber[nt] = berw;
             s += sprintf(s, "CMD a38=%d a64=%d %s %s %s 0x%04x %d %2x %2x %2x", ascii_38_ok, ascii_64_ok,
                 cdeco(0,a), cdeco(1,b), cdeco(2,c),
                 w, bf(w,23,21), bf(w,20,14), bf(w,13,7), bf(w,6,0));
             sprintf(cmd, "%c%c%c", a,b,c);
 	        icmd = 1;
-	        if (gdebug >= 1) printf("%scmd=1 %s%s\n", GREEN, cmd, NORM);
+	        if (gdebug & 1) printf("%scmd=1 %s%s\n", GREEN, cmd, NORM);
 	    } else
 	    
 	    if (preamble == DATA) {
@@ -321,7 +385,7 @@ namespace ale {
                 cdeco(0,a), cdeco(1,b), cdeco(2,c),
                 w, bf(w,23,21), bf(w,20,14), bf(w,13,7), bf(w,6,0));
             if (ascii_38_ok || (ascii_nl_ok && in_cmd && (cp->cmd == AMD || cp->cmd == DTM))) {
-                ber[nr] = berw;
+                ber[nt] = berw;
                 sprintf(data, "%c%c%c", a,b,c);
                 idata = 1;
             } else {
@@ -335,7 +399,7 @@ namespace ale {
                 cdeco(0,a), cdeco(1,b), cdeco(2,c),
                 w, bf(w,23,21), bf(w,20,14), bf(w,13,7), bf(w,6,0));
             if (ascii_38_ok || (ascii_nl_ok && in_cmd && (cp->cmd == AMD || cp->cmd == DTM))) {
-                ber[nr] = berw;
+                ber[nt] = berw;
                 sprintf(rep, "%c%c%c", a,b,c);
                 irep = 1;
             } else {
@@ -347,7 +411,7 @@ namespace ale {
 	    {
 	        // not AQC-ALE protocol
 		    if (ascii_38_ok) {
-                ber[nr] = berw;
+                ber[nt] = berw;
                 s += sprintf(s, "%s %c%c%c 0x%04x %d %2x %2x %2x",
                     preamble_types[preamble], a,b,c, w, bf(w,23,21), bf(w,20,14), bf(w,13,7), bf(w,6,0));
 
@@ -374,6 +438,7 @@ namespace ale {
             } else {
 	            // AQC-ALE protocol
 
+                ber[nt] = berw;
                 int adf = b20(w);
                 u2_t p = bf(w,19,4);
                 u2_t dx = bf(w,3,0);
@@ -405,7 +470,7 @@ namespace ale {
                 // 44  X    49  Y    50  Z    51  [    52  \    53  ]    54  ^    55  _
 
 
-// 128: ic0 hc0 NR05 [00:00:28] $AQC [TWAS] 0x63a895 p=3 [adf=0 adf_ok=1] [14985(0x3a89) dx=5] 9='8' 14='B' 25='M' regen=14985(0x3a89)
+// 128: ic0 hc0 NTIME05 [00:00:28] $AQC [TWAS] 0x63a895 p=3 [adf=0 adf_ok=1] [14985(0x3a89) dx=5] 9='8' 14='B' 25='M' regen=14985(0x3a89)
 
                 int ci = p % 40;
                 char c = packed_2_ascii[ci];
@@ -427,9 +492,9 @@ namespace ale {
 	    
 	    #if 0
             if (dsp >= DBG || (dsp >= CMDS && icmd)) {
-                //cprintf(ALL, ALL, icmd? YELLOW : "", "%d: ic%d NR%02d %s", zs, in_cmd, nr, message);
-                //cprintf(ALL, ALL, icmd? YELLOW : "", "%5d: >icmd%d caller%d ic%d NR%02d %s", nsym, icmd, caller, in_cmd, nr, message);
-                cprintf(ALL, ALL, icmd? YELLOW : "", ">icmd%d caller%d ic%d NR%02d %s", icmd, caller, in_cmd, nr, message);
+                //cprintf(ALL, ALL, icmd? YELLOW : "", "%d: ic%d NTIME%02d %s", zs, in_cmd, nt, message);
+                //cprintf(ALL, ALL, icmd? YELLOW : "", "%5d: >icmd%d caller%d ic%d NTIME%02d %s", nsym, icmd, caller, in_cmd, nt, message);
+                cprintf(ALL, ALL, icmd? YELLOW : "", ">icmd%d caller%d ic%d NTIME%02d %s", icmd, caller, in_cmd, nt, message);
             }
         #endif
         
@@ -437,7 +502,7 @@ namespace ale {
 	    return rv;
 	}
 
-	void decode_ff_impl::log(char *current, char *current2, int state, int ber, const char *from)
+	void decode_ff_impl::log(char *cur, char *cur2, int state, int ber, const char *from)
 	{
 	    int i;
 	    char message[256];
@@ -454,36 +519,36 @@ namespace ale {
 	    }
 
 	    if (state != S_CMD) {
-            for (i=0; i < N_CUR; i++) if (current [i] =='@') current [i] = 0;
-            for (i=0; i < N_CUR; i++) if (current2[i] =='@') current2[i] = 0;
+            for (i=0; i < N_CUR; i++) if (cur [i] =='@') cur [i] = 0;
+            for (i=0; i < N_CUR; i++) if (cur2[i] =='@') cur2[i] = 0;
         }
 
 	    switch (state) {
             case S_TWAS:
-                cprintf(ALL, DBG, CYAN, "[Sounding THIS WAS] [From: %s] [His BER: %d]", current, ber);
+                cprintf(ALL, DBG, CYAN, "[Sounding THIS WAS] [From: %s] [His BER: %d]", cur, ber);
                 event = true;
                 break;
 
             case S_TIS:
-                cprintf(ALL, DBG, CYAN, "[Sounding THIS IS] [From: %s] [His BER: %d]", current, ber);
+                cprintf(ALL, DBG, CYAN, "[Sounding THIS IS] [From: %s] [His BER: %d]", cur, ber);
                 event = true;
                 break;
 
             case S_TO:
-                cprintf(ALL, DBG, CYAN, "[To: %s] [His BER: %d]", current, ber);
+                cprintf(ALL, DBG, CYAN, "[To: %s] [His BER: %d]", cur, ber);
                 ext_send_msg(rx_chan, true, "EXT call_est_test");
                 event = true;
                 break;
 
             case S_CALL_EST:
                 if (stage_num == 1) {
-                    cprintf(ALL, DBG, CYAN, "[Call] [From: %s] [To: %s] [His BER: %d]", current, current2, ber);
+                    cprintf(ALL, DBG, CYAN, "[Call] [From: %s] [To: %s] [His BER: %d]", cur, cur2, ber);
                 } else
                 if (stage_num == 2) {
-                    cprintf(ALL, DBG, CYAN, "[Call ACK] [From: %s] [To: %s] [His BER: %d]", current, current2, ber);
+                    cprintf(ALL, DBG, CYAN, "[Call ACK] [From: %s] [To: %s] [His BER: %d]", cur, cur2, ber);
                 } else
                 if (stage_num == 3) {
-                    cprintf(ALL, DBG, CYAN, "[Call EST] [From: %s] [To: %s] [His BER: %d]", current, current2, ber);
+                    cprintf(ALL, DBG, CYAN, "[Call EST] [From: %s] [To: %s] [His BER: %d]", cur, cur2, ber);
 		            ext_send_msg(rx_chan, false, "EXT call_est");
                 }
                 event = true;
@@ -565,7 +630,7 @@ namespace ale {
         if (event) ext_send_msg(rx_chan, false, "EXT event");
         cmd_cnt = 0;
         state = S_START;
-        memset(current,'\0', N_CUR);
+        memset(cur,'\0', N_CUR);
 	}
 
     void decode_ff_impl::cprintf_msg(int cond_d)
@@ -655,7 +720,11 @@ namespace ale {
             if ((state != S_START) /*&& (state != S_TWAS)*/) log(current, current2, state, lastber, "S_TWAS");
             if (in_cmd) cmd_cnt++;
             in_cmd = binary = 0;
+            //dprintf("TWAS: twas2= <%s> %d %s %s %s %s\n", twas2, (int) strlen(twas2),
+            //    cdeco(0,twas2[0]), cdeco(1,twas2[1]), cdeco(2,twas2[2]), cdeco(3,twas2[3]));
             strcpy(current, twas2);
+            //dprintf("TWAS: %s %d current= <%s> %d %s %s %s %s %s %s\n", twas, (int) strlen(twas), current, (int) strlen(current),
+            //    cdeco(0,current[0]), cdeco(1,current[1]), cdeco(2,current[2]), cdeco(3,current[3]), cdeco(4,current[4]), cdeco(5,current[5]));
             dprintf("TWAS: %s <%s>\n", twas, current);
             state = S_TWAS;
             state_count = 0;
@@ -848,17 +917,20 @@ namespace ale {
 
 	void decode_ff_impl::do_modem1(bool eof)
 	{
-	    int i,j,k,n;
+	    int i,n;
+	    
 	    ALE_REAL new_sample;
 	    ALE_REAL old_sample;
 	    ALE_REAL temp_real;
 	    ALE_REAL temp_imag;
+	    
 	    int length = HALF_FFT_SIZE;
 	    int temppos = 0;
 	    
 	    memset(to2, 0, sizeof(to2));
 	    memset(from2, 0, sizeof(from2));
 	    memset(tis2, 0, sizeof(tis2));
+	    memset(twas2, 0, sizeof(twas2));
 	    memset(data2, 0, sizeof(data2));
 	    memset(rep2, 0, sizeof(rep2));
 	    memset(cmd2, 0, sizeof(cmd2));
@@ -898,46 +970,60 @@ namespace ale {
                     fft_out[n].imag = (temp_real * fft_ss_twiddle[n]) + (temp_imag * fft_cs_twiddle[n]);
                 
                     #if 1
-                        fft_mag[n] = sqrt((fft_out[n].real * fft_out[n].real) + (fft_out[n].imag * fft_out[n].imag)) * 5;
+                        #ifdef ALG_MAG_INT
+                            fft_mag[n] = (int) roundf(sqrt((fft_out[n].real * fft_out[n].real) + (fft_out[n].imag * fft_out[n].imag)) * 5);
+                        #else
+                            fft_mag[n] = sqrt((fft_out[n].real * fft_out[n].real) + (fft_out[n].imag * fft_out[n].imag)) * 5;
+                        #endif
+                        #ifdef STANDALONE_TEST
+                            //print_max_min_stream_f(&mag_state, P_MAX_MIN_DEMAND, "mag", n, 1, (double) fft_mag[n]);
+                        #endif
                     #else
                         if (calc_mag) {
-                            fft_mag[n] = sqrt((fft_out[n].real * fft_out[n].real) + (fft_out[n].imag * fft_out[n].imag)) * 5;
+                            fft_mag[n] = sqrtf((fft_out[n].real * fft_out[n].real) + (fft_out[n].imag * fft_out[n].imag)) * 5;
                         } else {
                             // since fft_mag is only used for relative comparisons maybe it doesn't have to be the precise definition of magnitude?
                             fft_mag[n] = (fft_out[n].real * fft_out[n].real) + (fft_out[n].imag * fft_out[n].imag);
                         }
                     #endif
-                    // drop fft_out
+                    // drop fft_out[]
                 }
             #endif
 
-            ALE_REAL max_magnitude = 0;
-            int max_offset = 0;
+	        int nt, nf;
+            ALE_MAG max_magnitude = 0;
+            int max_freq_offset = 0;
             // window FFT result: HALF_FFT_SIZE = FFT_SIZE/2 = 32 => [0 (1..27) 28,29,30,31]
-            for (n = 1; n <= HALF_FFT_SIZE - 5; n++) {
-                if ((fft_mag[n] > max_magnitude)) {
-                    max_magnitude = fft_mag[n];
-                    max_offset = n;
+            for (nf = 1; nf <= HALF_FFT_SIZE - 5; nf++) {
+                if ((fft_mag[nf] > max_magnitude)) {
+                    max_magnitude = fft_mag[nf];
+                    max_freq_offset = nf;
                 }
             }
-            // drop fft_mag
+            #ifdef STANDALONE_TEST
+                //print_max_min_stream_f(&mag_state, P_MAX_MIN_DUMP, "mag");
+            #endif
+            // drop fft_mag[]
 
-            decode_ff_array_dim(sample_count, FFT_SIZE);
-            for (n=0; n < NR; n++) {
-                mag_sum[n][sample_count] += max_magnitude;
-                //mag_history[n][sample_count[n]][mag_history_offset[n]] = max_magnitude;
+            decode_ff_array_dim(samp_count_per_symbol, FFT_SIZE);
+            for (nt = 0; nt < NTIME; nt++) {
+                mag_sum[nt][samp_count_per_symbol] += max_magnitude;
+                #ifdef STANDALONE_TEST
+                    //print_max_min_stream_f(&mag_state, P_MAX_MIN_DEMAND, "mag_sum", (n * NTIME) + samp_count_per_symbol, 1, (double) mag_sum[nt][samp_count_per_symbol]);
+                #endif
+                //mag_history[nt][samp_count_per_symbol][mag_hist_offset_per_word] = max_magnitude;
             }
             // drop max_magnitude (first use)
 
             #define ORIGINAL_VERY_SLOW_CODE
             #ifdef ORIGINAL_VERY_SLOW_CODE
-                for (n=0; n < NR; n++) {
-                    if (word_sync[n] == NOT_WORD_SYNC) {
+                for (nt = 0; nt < NTIME; nt++) {
+                    if (word_sync[nt] == NOT_WORD_SYNC) {
                         max_magnitude = 0;
-                        for (j=0; j < FFT_SIZE; j++) {
-                            if (mag_sum[n][j] > max_magnitude) {
-                                max_magnitude = mag_sum[n][j];
-                                last_sync_position[n] = j;
+                        for (nf = 0; nf < FFT_SIZE; nf++) {
+                            if (mag_sum[nt][nf] > max_magnitude) {
+                                max_magnitude = mag_sum[nt][nf];
+                                last_sync_position[nt] = nf;
                             }
                         }
                     }
@@ -945,66 +1031,76 @@ namespace ale {
             #else
                 // Made-up code for testing that eliminates the excessive overhead of the above
                 // while hopefully not causing the optimizer to throw it all away.
-                j = (ipos % NR) >> 1;
-                if (mag_sum[j][ipos] && word_sync[j]) last_sync_position[j] = ipos >> 1;
+                nt = (ipos % NTIME) >> 1;
+                if (mag_sum[nt][ipos] && word_sync[nt]) last_sync_position[nt] = ipos >> 1;
             #endif
             // drop max_magnitude (second use)
+            // last use of mag_sum[][] until zeroed at end of SYMBOLS_PER_WORD
 
-            decode_ff_array_dim(max_offset, NSYM);
-            for (n=0; n < NR; n++) {
-                if (sample_count == last_sync_position[n]) {
-                    last_symbol[n] = g_symbol_lookup[n][max_offset];    // g_symbol_lookup[NR][NSYM]
+            decode_ff_array_dim(max_freq_offset, NFREQ);
+            for (nt = 0; nt < NTIME; nt++) {
+                if (samp_count_per_symbol == last_sync_position[nt]) {
+                    last_symbol[nt] = g_symbol_lookup[nt][max_freq_offset];  // g_symbol_lookup[NTIME][NFREQ]
                 }
             }
-            // drop last_sync_position max_offset
+            // drop last_sync_position[] max_freq_offset
 
             // done once per FFT effectively
-            if (sample_count == 0) {
+            if (samp_count_per_symbol == 0) {
                 ito = ifrom = itis = itwas = irep = idata = icmd = 0;
                 ito2 = ifrom2 = itis2 = itwas2 = irep2 = idata2 = icmd2 = 0;
-                bestber = 26;
+                bestber = HIGH_BER;
 
                 int sym_rv0_cnt = 0;
                 activity_cnt = 0;
 
-                for (n=0; n < NR; n++) {
-                    int sym_rv = modem_new_symbol(last_symbol[n], n);
+                for (nt = 0; nt < NTIME; nt++) {
+                    int sym_rv = modem_new_symbol(last_symbol[nt], nt);
                     if (sym_rv) { sym_rv0_cnt++; activity_cnt++; }
 
-                    bool isBestBER = (ber[n] < bestber);
-                    bool isBestPosition = ((bestpos == 0) || (bestpos == n));
+                    bool isBestBER = (ber[nt] < bestber);
+                    bool isBestPosition = ((bestpos == 0) || (bestpos == nt));
                     bool best = (isBestBER && isBestPosition);
                     bool word = (ito || ifrom || itis || itwas || irep || idata || icmd);
 
-                    if (gdebug >= 2)
-                        printf("%5d: SYM%d NR%2d sym_rv%d // ber[n]|%2d < bestber|%2d %s // bestpos=%2d|0|%2d %s // %s %s\n",
-                            nsym, last_symbol[n], n, sym_rv,
-                            ber[n], bestber, isBestBER? (CYAN "Y" NORM) : "N",
-                            bestpos, n, isBestPosition? (CYAN "Y" NORM) : "N",
+                    if (gdebug & 2
+                        && sym_rv
+                    ) {
+                        u4_t w = current_word;
+                        u1_t preamble = bf(w,23,21);
+                        u1_t a = bf(w,20,14);
+                        u1_t b = bf(w,13,7);
+                        u1_t c = bf(w,6,0);
+                        printf("%5d: LSYM%d NTIME%2d %ssym_rv%d%s // ber[n]|%2d < bestber|%2d %s // bestpos=%2d|0|%2d %s // w=%06x %-6s %s %s %s // %s %s\n",
+                            nsym, last_symbol[nt], nt, sym_rv? YELLOW : "", sym_rv, NORM,
+                            ber[nt], bestber, isBestBER? (CYAN "Y" NORM) : "N",
+                            bestpos, nt, isBestPosition? (CYAN "Y" NORM) : "N",
+                            w, preamble_types[preamble], cdeco(0,a), cdeco(1,b), cdeco(2,c),
                             (sym_rv)? (GREEN "WORD" NORM) : "",
                             best? (MAGENTA "BEST" NORM) : "");
+                    }
 
                     #define ORIG_BEST_BER
                     #ifdef ORIG_BEST_BER
                         if (best) {
-                            decode_ff_array_dim(inew, NR);
-                            bestber = ber[inew];
-                            temppos = n;
+                            decode_ff_array_dim(nt_new, NTIME);
+                            bestber = ber[nt_new];
+                            temppos = nt;
                         }
                     #else
                         if (isBestBER) {
-                            decode_ff_array_dim(inew, NR);
-                            bestber = ber[inew];
+                            decode_ff_array_dim(nt_new, NTIME);
+                            bestber = ber[nt_new];
                         }
                         if (best) {
-                            temppos = n;
+                            temppos = nt;
                         }
                     #endif
                     
                     nsym++;
                 }
                 
-                // KiwiSDR fix: require two good symbols in NR loop before advancing iXXX state
+                // KiwiSDR fix: require two good symbols in NTIME loop before advancing iXXX state
                 if (sym_rv0_cnt >= 2) {
                     ito2 = ito;     memcpy(to2, to, 3);
                     ifrom2 = ifrom; memcpy(from2, from, 3);
@@ -1013,7 +1109,7 @@ namespace ale {
                     irep2 = irep;   memcpy(rep2, rep, 3);
                     idata2 = idata; memcpy(data2, data, 3);
                     icmd2 = icmd;   memcpy(cmd2, cmd, 3);
-                    if (gdebug >= 1 && icmd) printf("%sicmd2=%d icmd=%d cmd2=%s cmd=%s%s\n", RED, icmd2, icmd, cmd2, cmd, NORM);
+                    if (gdebug & 1 && icmd) printf("%sicmd2=%d icmd=%d cmd2=%s cmd=%s%s\n", RED, icmd2, icmd, cmd2, cmd, NORM);
                 }
                 
                 if (activity_cnt >= 2 && !active) {
@@ -1024,8 +1120,8 @@ namespace ale {
                 }
         
                 if (temppos != 0) bestpos = temppos;
-                inew = bestpos;
-                decode_ff_array_dim(inew, NR);
+                nt_new = bestpos;
+                decode_ff_array_dim(nt_new, NTIME);
             
                 ale::decode_ff_impl::do_modem2();
 
@@ -1044,15 +1140,18 @@ namespace ale {
                     //modem_reset();
                 }
 
-            }   // sample_count == 0
+            }   // samp_count_per_symbol == 0
 
             fft_history_offset = (fft_history_offset + 1) % FFT_SIZE;
-            sample_count = (sample_count + 1) % FFT_SIZE;
 
-            if (sample_count == 0) {
-                mag_history_offset = (mag_history_offset + 1) % SYMBOLS_PER_WORD;
+            samp_count_per_symbol = (samp_count_per_symbol + 1) % FFT_SIZE;   // same as % SAMPS_PER_SYMBOL
+            if (samp_count_per_symbol == 0) {
+                mag_hist_offset_per_word = (mag_hist_offset_per_word + 1) % SYMBOLS_PER_WORD;
 
-                if (mag_history_offset == 0) {
+                if (mag_hist_offset_per_word == 0) {
+                    #ifdef STANDALONE_TEST
+                        //print_max_min_stream_f(&mag_state, P_MAX_MIN_DUMP, "mag_sum");
+                    #endif
                     memset(mag_sum, 0, sizeof(mag_sum));
                 }
             }
@@ -1101,6 +1200,12 @@ namespace ale {
 	{
 	    #ifdef STANDALONE_TEST
 	        printf("----------------------------------------------------- %d\n", offset);
+	        #ifdef ALE_MAG_INT
+	            printf("ALE_MAG_INT\n");
+	        #else
+	            printf("ALE_MAG_REAL\n");
+	        #endif
+	        
 	        static FILE *fp;
 	        if (fp == NULL) {
                 printf("file #%d = %s, calc_mag = %d\n", fileno, sa_fn[fileno], calc_mag);
@@ -1154,6 +1259,36 @@ namespace ale {
 	void decode_ff_impl::set_display(int display)
 	{
 	    dsp = display;
+	    if (dsp == DBG)
+	        gdebug = 0;
+	        //gdebug = 7;
+	}
+
+	void decode_ff_impl::modem_reset()
+	{
+        inbuf_i = 0;
+	    activity_cnt = active = 0;
+	    in_cmd = binary = 0;
+	    cmd_cnt = 0;
+	    bestpos = 0;
+	    lastber = HIGH_BER;
+	    fft_history_offset = 0;
+	    stage_num = 0; state_count = 0; state = S_START;
+	    samp_count_per_symbol = 0;
+	    nsym = 0;
+	    mag_hist_offset_per_word = 0;
+
+        memset(fft_out, 0, sizeof(fft_out));
+        memset(fft_mag, 0, sizeof(fft_mag));
+        memset(fft_history, 0, sizeof(fft_history));
+        memset(mag_sum, 0, sizeof(mag_sum));
+        memset(bits, 0, sizeof(bits));
+        memset(word_sync, NOT_WORD_SYNC, sizeof(word_sync));
+        memset(last_symbol, 0, sizeof(last_symbol));
+        memset(last_sync_position, 0, sizeof(last_sync_position));
+        memset(ber, HIGH_BER, sizeof(ber));
+        memset(input_buffer_pos, 0, sizeof(input_buffer_pos));
+        memset(word_sync_position, 0, sizeof(word_sync_position));
 	}
 
 	void decode_ff_impl::modem_init(int rx_chan, bool use_new_resampler, float f_srate, int n_samps, bool use_UTC)
@@ -1166,123 +1301,33 @@ namespace ale {
         notify = false;
 	    timer_samps = 0;
 	    frequency = 0;
-	    activity_cnt = active = 0;
         log_buf_empty = true;
-        inbuf_i = 0;
-	    
-        #ifdef STANDALONE_TEST
-        #else
-	        //printf("### modem_init use_new_resampler=%d srate=%f dsp=%d\n", use_new_resampler, f_srate, dsp);
-	    #endif
 
-	    in_cmd = binary = 0;
-	    cmd_cnt = 0;
+        ale::decode_ff_impl::modem_reset();
 
-	    bestpos = 0;
-	    lastber = 26;
-
-	    for (i=0; i < FFT_SIZE; i++) {
-            fft_cs_twiddle[i] = cos((-2.0*PI * i) / FFT_SIZE);
-            fft_ss_twiddle[i] = sin((-2.0*PI * i) / FFT_SIZE);
-            fft_history[i]    = 0;
-	    }
-	    fft_history_offset = 0;
-	    
-	    stage_num = 0; state_count = 0; state = S_START;
-	    sample_count = 0;
-	    nsym = 0;
-	    mag_history_offset = 0;
-
-        memset(fft_out, 0, sizeof(fft_out));
-        memset(fft_mag, 0, sizeof(fft_mag));
-        memset(mag_sum, 0, sizeof(mag_sum));
-        memset(bits, 0, sizeof(bits));
-
-	    for (i=0; i < NR; i++) {
-            word_sync[i] = NOT_WORD_SYNC;
-            last_symbol[i] = 0;
-            last_sync_position[i] = 0;
-            ber[i] = 26;
-            input_buffer_pos[i] = 0;
-            word_sync_position[i] = 0;
-	    }
-	    
         #ifdef STANDALONE_TEST
             // there is never a resampler when running standalone (use an 8k file)
         #else
-        if (use_new_resampler) {
-            // resampler
-            ResampleObj = new CAudioResample();
-            float ratio = SAMP_RATE_SPS / f_srate;
+            if (use_new_resampler) {
+                // resampler
+                ResampleObj = new CAudioResample();
+                float ratio = SAMP_RATE_SPS / f_srate;
             
-            const int fixedInputSize = n_samps;
-            ResampleObj->Init(fixedInputSize, ratio);
-            const int iMaxInputSize = ResampleObj->GetMaxInputSize();
-            vecTempResBufIn.Init(iMaxInputSize, (_REAL) 0.0);
+                const int fixedInputSize = n_samps;
+                ResampleObj->Init(fixedInputSize, ratio);
+                const int iMaxInputSize = ResampleObj->GetMaxInputSize();
+                vecTempResBufIn.Init(iMaxInputSize, (_REAL) 0.0);
 
-            const int iMaxOutputSize = ResampleObj->iOutputBlockSize;
-            vecTempResBufOut.Init(iMaxOutputSize, (_REAL) 0.0);
+                const int iMaxOutputSize = ResampleObj->iOutputBlockSize;
+                vecTempResBufOut.Init(iMaxOutputSize, (_REAL) 0.0);
 
-            ResampleObj->Reset();
-            //printf("### using NEW resampler: ratio=%f srate=%f n_samps=%d iOutputBlockSize=%d\n",
-            //    ratio, f_srate, n_samps, ResampleObj->iOutputBlockSize);
-        } else {
-            printf("### using OLD resampler\n");
-        }
+                ResampleObj->Reset();
+                //printf("### using NEW resampler: ratio=%f srate=%f n_samps=%d iOutputBlockSize=%d\n",
+                //    ratio, f_srate, n_samps, ResampleObj->iOutputBlockSize);
+            } else {
+                printf("### using OLD resampler\n");
+            }
         #endif
-	}
-
-	void decode_ff_impl::modem_reset()
-	{
-	    int i;
-	    
-        //printf("### modem_reset\n");
-        inbuf_i = 0;
-	    activity_cnt = active = 0;
-
-    // no diff at all
-    #if 1
-	    in_cmd = binary = 0;
-	    cmd_cnt = 0;
-
-	    bestpos = 0;
-	    lastber = 26;
-	#endif
-
-    // ber diff, diff again when comb w/ above
-    #if 1
-	    for (i=0; i < FFT_SIZE; i++) {
-            fft_cs_twiddle[i] = cos((-2.0*PI * i) / FFT_SIZE);
-            fft_ss_twiddle[i] = sin((-2.0*PI * i) / FFT_SIZE);
-            fft_history[i]    = 0;
-	    }
-	    fft_history_offset = 0;
-	#endif
-	
-	// msg errs!
-    #if 1
-	    stage_num = 0; state_count = 0; state = S_START;
-	    sample_count = 0;
-	    nsym = 0;
-	    mag_history_offset = 0;
-	#endif
-
-    // no msg at all!
-    #if 1
-        memset(fft_out, 0, sizeof(fft_out));
-        memset(fft_mag, 0, sizeof(fft_mag));
-        memset(mag_sum, 0, sizeof(mag_sum));
-        memset(bits, 0, sizeof(bits));
-
-	    for (i=0; i < NR; i++) {
-            word_sync[i] = NOT_WORD_SYNC;
-            last_symbol[i] = 0;
-            last_sync_position[i] = 0;
-            ber[i] = 26;
-            input_buffer_pos[i] = 0;
-            word_sync_position[i] = 0;
-	    }
-	#endif
 	}
 
 } /* namespace ale */
