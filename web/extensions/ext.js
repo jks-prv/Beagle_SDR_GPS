@@ -690,6 +690,9 @@ function extint_environment_changed(changed)
 {
    // have to wait a bit since extint_environment_changed({freq:1}) is called before
    // e.g. ext_get_freq_kHz() has been updated with latest value
+   //
+   // Possible values of "changed":
+   //    freq, mode, passband, zoom, waterfall_pan, resize
    
    setTimeout(
       function() {

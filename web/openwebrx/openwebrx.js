@@ -458,7 +458,7 @@ function openwebrx_resize(a)
    a = (isString(a) && a.startsWith('orient'))? a : 'event';
 	resize_canvases();
 	resize_waterfall_container(true);
-   extint_environment_changed( { resize:1 } );
+   extint_environment_changed( { resize:1, passband_screen_location:1 } );
 	resize_scale(a);
 	check_top_bar_congestion();
 }
@@ -1053,7 +1053,10 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
          changed.passband = 1;
          owrx.last_locut = locut; owrx.last_hicut = hicut;
       }
-      if (changed != null) extint_environment_changed(changed);
+      if (changed != null) {
+         changed.passband_screen_location = 1;
+         extint_environment_changed(changed);
+      }
 
 		if (muted_until_freq_set) {
 		   toggle_or_set_mute(muted_initially);
@@ -2720,7 +2723,7 @@ function zoom_finally()
 {
 	w3_innerHTML('id-nav-optbar-wf', 'WF'+ zoom_level.toFixed(0));
 	wf_gnd_value = wf_gnd_value_base - zoomCorrection();
-   extint_environment_changed( { zoom:1 } );
+   extint_environment_changed( { zoom:1, passband_screen_location:1 } );
 	freqset_select();
 }
 
@@ -3983,7 +3986,7 @@ function waterfall_pan_canvases(bins)
 	mkscale();
 	need_clear_wf_sp_avg = true;
 	dx_schedule_update();
-   extint_environment_changed( { waterfall_pan:1 } );
+   extint_environment_changed( { waterfall_pan:1, passband_screen_location:1 } );
 
 	// reset "select band" menu if freq is no longer inside band
 	//console.log('page_scroll PBV='+ passband_visible() +' freq_car_Hz='+ freq_car_Hz);

@@ -295,7 +295,7 @@ var navtex_mode_s = [ 'decode', 'DX', 'scope' ];
 
 function navtex_controls_setup()
 {
-	nt.saved_passband = ext_get_passband();
+	nt.saved_mode = ext_get_mode();
 
 	navtex_jnx = new JNX();
 	navtex_jnx.setup_values(ext_sample_rate(), nt.cf, nt.shift, nt.baud, nt.framing, nt.inverted, nt.encoding);
@@ -506,7 +506,7 @@ function navtex_single_cb(path, idx, first)
 function navtex_blur()
 {
 	ext_unregister_audio_data_cb();
-   ext_set_passband(nt.saved_passband.low, nt.saved_passband.high);
+	ext_set_mode(nt.saved_mode);
 }
 
 // called to display HTML for configuration parameters in admin interface

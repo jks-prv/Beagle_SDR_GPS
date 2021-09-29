@@ -433,7 +433,7 @@ var fsk_decim_s = [ 1, 2, 4, 8, 16, 32 ];
 
 function fsk_controls_setup()
 {
-	fsk.saved_passband = ext_get_passband();
+	fsk.saved_mode = ext_get_mode();
 
 	fsk.jnx = new JNX();
 	fsk.freq = ext_get_freq()/1e3;
@@ -657,6 +657,7 @@ function fsk_crosshairs(vis)
    if (vis && ext_get_zoom() >= 10) {
       var f = ext_get_freq();
       var f_range = get_visible_freq_range();
+      //console.log(f_range);
       var Lpx = scale_px_from_freq(f - fsk.shift/2, f_range);
       var Rpx = scale_px_from_freq(f + fsk.shift/2, f_range);
       //console.log('FSK crosshairs f='+ f +' Lpx='+ Lpx +' Rpx='+ Rpx);
@@ -745,12 +746,13 @@ function fsk_clear_menus(except)
 
 function fsk_environment_changed(changed)
 {
-   //w3_console.log(changed, 'fsk_environment_changed');
-   if (!changed.freq && !changed.mode) return;
+   //console.log(changed);
+   if (!changed.passband_screen_location) return;
    fsk_crosshairs(1);
 
    // reset all frequency menus when frequency etc. is changed by some other means (direct entry, WF click, etc.)
    // but not for changed.zoom, changed.resize etc.
+   if (!changed.freq && !changed.mode) return;
    var dsp_freq = ext_get_freq()/1e3;
    var mode = ext_get_mode();
    //console.log('FSK ENV fsk.freq='+ fsk.freq +' dsp_freq='+ dsp_freq +' mode='+ mode);
@@ -946,7 +948,7 @@ function fsk_bpd_cb(path, idx, first)
 function fsk_blur()
 {
 	ext_unregister_audio_data_cb();
-   ext_set_passband(fsk.saved_passband.low, fsk.saved_passband.high);
+	ext_set_mode(fsk.saved_mode);
    fsk_crosshairs(0);
 }
 
