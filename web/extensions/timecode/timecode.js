@@ -416,7 +416,6 @@ function tc_controls_setup()
 		);
 	
    tc.save_mode = ext_get_mode();
-   tc.save_pb = ext_get_passband();
    tc.save_agc_delay = ext_agc_delay(5000);
 	tc.config = tc.sig.WWVBp;
    tc.pll_bw = tc.pll_bw_i[tc.config];
@@ -667,7 +666,7 @@ function timecode_blur()
 {
 	ext_send('SET run=0');
 	kiwi_clearInterval(tc.interval);
-   ext_set_passband(tc.save_pb.low, tc.save_pb.high);
+   ext_set_mode(tc.save_mode);
    ext_agc_delay(tc.save_agc_delay);
 }
 
