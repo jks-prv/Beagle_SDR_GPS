@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 467
+VERSION_MIN = 468
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -1292,13 +1292,13 @@ endif
 EXISTS_OTHER_BITFILE = $(shell test -f $(V_DIR)/KiwiSDR.other.bit && echo true)
 ifneq ($(OTHER_DIR),)
     ifeq ($(EXISTS_OTHER_BITFILE),true)
-    KiwiSDR.other.bit: $(V_DIR)/KiwiSDR.other.bit
-		rsync -av $(V_DIR)/KiwiSDR.other.bit .
+        KiwiSDR.other.bit: $(V_DIR)/KiwiSDR.other.bit
+			rsync -av $(V_DIR)/KiwiSDR.other.bit .
     else
-    KiwiSDR.other.bit:
+        KiwiSDR.other.bit:
     endif
 else
-KiwiSDR.other.bit:
+    KiwiSDR.other.bit:
 endif
 
 endif

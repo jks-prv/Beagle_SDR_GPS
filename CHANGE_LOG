@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.468  October 2, 2021
+    ALE 2G extension: added "lsb" URL argument that applies to URL scan list (if any).
+    FSK extension: Get update of shift position crosshairs working again.
+
 v1.467  September 27, 2021
     ALE 2G extension improvements:
         Significant performance improvements. It's now possible to run the ALE extension on
