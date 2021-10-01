@@ -272,7 +272,7 @@ int main(int argc, char *argv[])
     
     // minify and (potentially) gzip them, but don't merge them.
     if (flags & MF_JS) for (i=0; i < fidx[F_JS]; i++) {
-        minify("js ", MF_JS|mflags, "javascript-minifier.com/raw", ".js", files[i][F_JS]);
+        minify("js ", MF_JS|mflags, "www.toptal.com/developers/javascript-minifier/raw", ".js", files[i][F_JS]);
     }
     if (flags & MF_CSS) for (i=0; i < fidx[F_CSS]; i++) {
         minify("css", MF_CSS|mflags, "cssminifier.com/raw", ".css", files[i][F_CSS]);
