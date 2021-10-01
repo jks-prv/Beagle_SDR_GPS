@@ -432,16 +432,24 @@ function ale_2g_get_nets_done_cb(nets)
       // found user scan list
       if (ale.user_scan_list.length >= 2) {
          ale.have_user_scan_list = true;
-         ale.user_scan_list.unshift(0);   // add 'scan' entry to list
-         ale_2g_render_menus();     // must render again before ale_2g_pre_select_cb() below
+
+         var lsb = false;
+         p.forEach(function(a, i) {
+            if (w3_ext_param('lsb', a).match)
+               lsb = true;
+         });
+
+         if (lsb) ale.user_scan_list.unshift("lsb");
+         ale.user_scan_list.unshift(0);   // add 'scan' entry to front of list
          if (dbgUs) console.log('user_scan_list=...');
          if (dbgUs) console.log(ale.user_scan_list);
+         ale_2g_render_menus();     // must render again before ale_2g_pre_select_cb() below
          // -1 below because ale_2g_render_menus() has added +1 to array for 'scan' entry at front
          for (var i = 0; i < ale.user_scan_list.length-1; i++)
             p.shift();
       }
 
-      // process any menus:N param before matching menu items in case menu re-sorted or collapsed
+      // process any format:N param before matching menu items in case menu re-sorted or collapsed
       p.forEach(function(a, i) {
          var r;
          if ((r = w3_ext_param('format', a)).match) {
@@ -1213,19 +1221,20 @@ function ALE_2G_help(show)
                'their own menus (except via URL parameters, see below) but suggestions for the downloaded menus on extension startup can be made on the Kiwi forum.' +
          
                '<br><br>URL parameters: <br>' +
-               '<i>(menu match or frequency list)</i> &nbsp; format:[0123] &nbsp; display:[0123] &nbsp; scan[:<i>secs</i>] &nbsp; <br>' +
+               '<i>(menu match or frequency list)</i> &nbsp; lsb &nbsp; format:[0123] &nbsp; display:[0123] &nbsp; scan[:<i>secs</i>] &nbsp; <br>' +
                'limit_le:<i>freq</i> &nbsp; limit_ge:<i>freq</i> &nbsp; rec:[0123] &nbsp; rec_time:<i>secs</i> &nbsp; log_time:<i>mins</i> &nbsp; test' +
                '<br><br>' +
-               'The <i>first</i> URL parameter can be a frequency entry from one of the menus (i.e. "3596") ' +
+               'The first URL parameter can be a frequency entry from one of the menus (e.g. "3596") ' +
                'or the name of a menu scan list (e.g. "MARS" in the Amateur menu). ' +
                'Or it can be a list of frequencies separated by commas. Such a list will appear as the first entry in the ' +
-               '<i>Local</i> menu for subsequent selection. Frequencies can use the suffixes \'k\' and \'M\'. <br>' +
-               '[0123] refers to selections in the corresponding menu.' +
+               '<i>Local</i> menu for subsequent selection. The parameter <i>lsb</i> will make this list use lsb mode.' +
+               '<br><br>' +
+               'Frequencies can use the suffixes \'k\' and \'M\'. [0123] refers to selections in the corresponding menu.' +
                '<br><br>' +
                'Keywords are case-insensitive and can be abbreviated. So for example these are valid: <br>' +
                '<i>ext=ale,3596</i> &nbsp;&nbsp; ' +
-               '<i>ext=ale,mars,scan</i> &nbsp;&nbsp; <i>ext=ale,cothen,s:0.75</i> <br>' +
-               '<i>ext=ale,7102,14.1M,18106,s</i> &nbsp;&nbsp; <i>ext=ale,ham,s,disp:1,limit_le:10M,rec,rec_t:10</i> <br>' +
+               '<i>ext=ale,mars,scan</i> &nbsp;&nbsp; <i>ext=ale,cothen,s:0.75</i> &nbsp;&nbsp; <i>ext=ale,4M,5M,6M,lsb</i> <br>' +
+               '<i>ext=ale,7102,14.1M,18106,s</i> &nbsp;&nbsp; <i>ext=ale,ham,s,disp:1,limit_le:10M,rec,rec_t:10</i><br>' +
                '<i>ext=ale,mars,scan,rec:3,rec_t:60,log_t:10</i> &nbsp; (i.e. <i>rec:3</i> is the "r+l" record menu entry)<br>' +
                ''
             )
