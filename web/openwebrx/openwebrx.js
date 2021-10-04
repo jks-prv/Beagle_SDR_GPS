@@ -22,6 +22,9 @@ This file is part of OpenWebRX.
 // Copyright (c) 2015 - 2021 John Seamons, ZL/KF6VO
 
 var owrx = {
+   height_top_bar_parts: 67,
+   
+   cfg_loaded: false,
    mobile: null,
    wf_snap: 0,
    wf_cursor: 'crosshair',
@@ -53,7 +56,22 @@ var owrx = {
    chan_null_s: [ 'normal', 'null LSB', 'null USB' ],
    
    ovld_mute: 0,
-   ovld_mute_s: [ 'off', 'on' ]
+   ovld_mute_s: [ 'off', 'on' ],
+   
+   scale_canvas: {
+	   mouse_out: false,
+      target: null,
+      restore_visibility: [],
+      restore_visibility_delay: 500
+   },
+   
+   canvas: {
+      target: null,
+      restore_visibility: [],
+      restore_visibility_delay: 500
+   },
+   
+   __last: 0
 };
 
 // key freq concepts:
@@ -67,10 +85,6 @@ var bandwidth;
 var center_freq;
 var wf_fft_size;
 
-// UI geometry
-var height_top_bar_parts = 67;
-var height_spectrum_canvas = 200;
-
 var cur_mode;
 var wf_fps, wf_fps_max;
 
@@ -83,7 +97,7 @@ var wf_rate = '';
 var wf_mm = '';
 var wf_compression = 1;
 var wf_interp = 13;  // WF_DROP + WF_CIC_COMP by default
-var wf_winf = 0;     // WIN_HANNING
+var wf_winf = 2;     // WIN_BLACKMAN_HARRIS
 var debug_v = 0;		// a general value settable from the URI to be used during debugging
 var sb_trace = 0;
 var kiwi_gc = 1;
@@ -188,7 +202,7 @@ function kiwi_main()
 	//console.log('this window/tab:');
 	//console.log(q);
 	
-	s = 'f'; if (q[s]) {
+	var s = 'f'; if (q[s]) {
 		var p = new RegExp('([0-9.,kM]*)([\/:][-0-9.,k]*)?([^z]*)?z?([0-9]*)').exec(q[s]);
       // 'k' suffix is simply ignored since default frequencies are in kHz
       if (p[1]) override_freq = p[1].replace(',', '.').parseFloatWithUnits('M', 1e-3);
@@ -236,8 +250,8 @@ function kiwi_main()
 	s = 'wf_comp'; if (q[s]) wf_compression = parseInt(q[s]);
 	s = 'wfi'; if (q[s]) wf_interp = parseInt(q[s]);
 	s = 'wfw'; if (q[s]) wf_winf = parseInt(q[s]);
-	s = 'gen'; if (q[s]) gen_freq = parseFloat(q[s]);
-	s = 'attn'; if (q[s]) gen_attn = parseInt(q[s]);
+	s = 'gen'; if (q[s]) gen_freq = q[s].parseFloatWithUnits('kM', 1e-3);
+	s = 'attn'; if (q[s]) gen_attn = Math.abs(parseInt(q[s]));
 	s = 'blen'; if (q[s]) audio_buffer_min_length_sec = parseFloat(q[s])/1000;
 	s = 'audio'; if (q[s]) audio_meas_dly_ena = parseFloat(q[s]);
 	s = 'gc'; if (q[s]) kiwi_gc = parseInt(q[s]);
@@ -298,15 +312,20 @@ function kiwi_main()
 	snd_send("SERVER DE CLIENT openwebrx.js SND");
 	snd_send("SET dbug_v="+ debug_v);
 
-   if (gen_attn != 0) {
-      var dB = gen_attn;
-      var ampl_gain = Math.pow(10, -dB/20);		// use the amplitude form since we are multipling a signal
-      gen_attn = 0x01ffff * ampl_gain;
-      console.log('### GEN dB='+ dB +' ampl_gain='+ ampl_gain +' attn='+ gen_attn +' / '+ gen_attn.toHex());
-   }
+   w3_do_when_cond(function() { return (isArg(rx_chan) && owrx.cfg_loaded); }, function() {
+      if (rx_chan != 0) return;
+
+      if (gen_attn != 0) {
+         var dB = gen_attn + cfg.waterfall_cal;
+         var ampl_gain = Math.pow(10, -dB/20);		// use the amplitude form since we are multipling a signal
+         gen_attn = 0x01ffff * ampl_gain;
+         //console.log('### GEN dB='+ dB +' ampl_gain='+ ampl_gain +' attn='+ gen_attn +' / '+ gen_attn.toHex() +' offset='+ cfg.waterfall_cal);
+      }
    
-   if (gen_freq || gen_attn)
-	   set_gen(gen_freq, gen_attn);
+      // always setup gen so it will get disables (attn=0) if an rx0 page reloads using a URL where no gen is
+      // specified, but it was previously enabled by the URL (i.e. so the gen doesn't continue to run).
+      set_gen(gen_freq, gen_attn);
+   }, 0, 500);
 
 	snd_send("SET mod=am low_cut=-4000 high_cut=4000 freq=1000");
 	set_agc();
@@ -317,6 +336,7 @@ function kiwi_main()
 	// fixme: okay to remove this now?
 	wf_send("SET zoom=0 start=0");
 	wf_send("SET maxdb=0 mindb=-100");
+
 	if (wf_compression == 0) wf_send('SET wf_comp=0');
 	if (wf_interp != 0) wf_send('SET interp='+ wf_interp);
 	if (wf_winf != 0) wf_send('SET window_func='+ wf_winf);
@@ -325,6 +345,11 @@ function kiwi_main()
 	if (wf_speed == undefined) wf_speed = WF_SPEED_FAST;
 	wf_send('SET wf_speed='+ wf_speed);
 }
+
+
+////////////////////////////////
+// panel support
+////////////////////////////////
 
 var ptype = { HIDE:0, POPUP:1, TOGGLE:2 };
 var popt = { CLOSE:-1, PERSIST:0 };
@@ -456,7 +481,7 @@ function toggle_panel(panel, set)
 function openwebrx_resize(a)
 {
    a = (isString(a) && a.startsWith('orient'))? a : 'event';
-	resize_canvases();
+	resize_wf_canvases();
 	resize_waterfall_container(true);
    extint_environment_changed( { resize:1, passband_screen_location:1 } );
 	resize_scale(a);
@@ -555,7 +580,7 @@ function init_top_bar()
    );
 }
 
-var rx_photo_spacer_height = height_top_bar_parts;
+var rx_photo_spacer_height = owrx.height_top_bar_parts;
 
 function init_rx_photo()
 {
@@ -608,10 +633,6 @@ function toggle_rx_photo()
 	freqset_select();
 }
 
-
-////////////////////////////////
-// =================  >ANIMATION ROUTINES  ================
-////////////////////////////////
 
 function animate(object, style_name, unit, from, to, accel, time_ms, fps, to_exec)
 {
@@ -680,18 +701,18 @@ function style_value(of_what, which)
 
 
 ////////////////////////////////
-// ================  >DEMODULATOR ROUTINES  ===============
+// demodulator
 ////////////////////////////////
 
-demodulators=[]
+demodulators = []
 
-demodulator_color_index=0;
-demodulator_colors=["#ffff00", "#00ff00", "#00ffff", "#058cff", "#ff9600", "#a1ff39", "#ff4e39", "#ff5dbd"]
+demodulator_color_index = 0;
+demodulator_colors = ["#ffff00", "#00ff00", "#00ffff", "#058cff", "#ff9600", "#a1ff39", "#ff4e39", "#ff5dbd"]
 
 function demodulators_get_next_color()
 {
-	if (demodulator_color_index>=demodulator_colors.length) demodulator_color_index=0;
-	return(demodulator_colors[demodulator_color_index++]);
+	if (demodulator_color_index >= demodulator_colors.length) demodulator_color_index = 0;
+	return (demodulator_colors[demodulator_color_index++]);
 }
 
 function demod_envelope_draw(range, from, to, color, line)
@@ -701,113 +722,117 @@ function demod_envelope_draw(range, from, to, color, line)
    // Envelope is drawn on the scale canvas.
 	// A "drag range" object is returned, containing information about the draggable areas of the envelope
 	// (beginning, ending and the line showing the offset frequency).
-	if (isUndefined(color)) color="#ffff00"; //yellow
+	if (isUndefined(color)) color = 'lime';
 	
-	env_bounding_line_w=5;   //    
-	env_att_w=5;             //     _______   ___env_h2 in px   ___|_____
-	env_h1=17;               //   _/|      \_ ___env_h1 in px _/   |_    \_
-	env_h2=5;                //   |||env_att_w                     |_env_lineplus
-	env_lineplus=1;          //   ||env_bounding_line_w
-	env_line_click_area=8;
-	env_slop=5;
+	var env_bounding_line_w = 5;   //    
+	var env_att_w = 5;             //     _______   ___env_h2 in px   ___|_____
+	var env_h1 = 17;               //   _/|      \_ ___env_h1 in px _/   |_    \_
+	var env_h2 = 5;                //   |||env_att_w                     |_env_lineplus
+	var env_lineplus = 1;          //   ||env_bounding_line_w
+	var env_line_click_area = 8;
+	var env_slop = 5;
 	
-	//range=get_visible_freq_range();
-	from_px = scale_px_from_freq(from,range);
-	to_px = scale_px_from_freq(to,range);
-	if (to_px < from_px) /* swap'em */ { temp_px=to_px; to_px=from_px; from_px=temp_px; }
+	//range = get_visible_freq_range();
+	var from_px = scale_px_from_freq(from, range);
+	var to_px = scale_px_from_freq(to, range);
+	if (to_px < from_px) /* swap'em */ { var temp_px = to_px; to_px = from_px; from_px = temp_px; }
 	
-	pb_adj_cf.style.left = (from_px) +'px';
-	pb_adj_cf.style.width = (to_px-from_px) +'px';
+	pb_adj_cf.style.left = px(from_px);
+	pb_adj_cf.style.width = px(to_px - from_px);
 
-	pb_adj_lo.style.left = (from_px-env_bounding_line_w-2*env_slop) +'px';
-	pb_adj_lo.style.width = (env_bounding_line_w+env_att_w+2*env_slop) +'px';
+	pb_adj_lo.style.left = px(from_px - env_bounding_line_w - 2*env_slop);
+	pb_adj_lo.style.width = px(env_bounding_line_w + env_att_w + 2*env_slop);
 
-	pb_adj_hi.style.left = (to_px-env_bounding_line_w) +'px';
-	pb_adj_hi.style.width = (env_bounding_line_w+env_att_w+2*env_slop) +'px';
+	pb_adj_hi.style.left = px(to_px - env_bounding_line_w);
+	pb_adj_hi.style.width = px(env_bounding_line_w + env_att_w + 2*env_slop);
 	
-	/*from_px-=env_bounding_line_w/2;
-	to_px += env_bounding_line_w/2;*/
-	from_px -= (env_att_w+env_bounding_line_w);
-	to_px += (env_att_w+env_bounding_line_w);
+	/* from_px -= env_bounding_line_w/2;
+	to_px += env_bounding_line_w/2; */
+	from_px -= (env_att_w + env_bounding_line_w);
+	to_px += (env_att_w + env_bounding_line_w);
 	
 	// do drawing:
 	scale_ctx.lineWidth = 3;
 	scale_ctx.strokeStyle = color;
 	scale_ctx.fillStyle = color;
-	var drag_ranges = { envelope_on_screen: false, line_on_screen: false };
+	var drag_ranges = { envelope_on_screen: false, line_on_screen: false, allow_pb_adj: false };
 	
-	if (!(to_px<0 || from_px>window.innerWidth)) // out of screen?
-	{
-		drag_ranges.beginning={x1:from_px, x2: from_px+env_bounding_line_w+env_att_w+env_slop};
-		drag_ranges.ending={x1:to_px-env_bounding_line_w-env_att_w-env_slop, x2: to_px};
-		drag_ranges.whole_envelope={x1:from_px, x2: to_px};
-		drag_ranges.envelope_on_screen=true;
+	if (!(to_px < 0 || from_px > window.innerWidth)) {    // out of screen?
+		drag_ranges.beginning = {x1: from_px, x2: from_px + env_bounding_line_w + env_att_w + env_slop};
+		drag_ranges.ending = {x1: to_px - env_bounding_line_w - env_att_w - env_slop, x2: to_px};
+		drag_ranges.whole_envelope = {x1: from_px, x2: to_px};
+		drag_ranges.envelope_on_screen = true;
+		drag_ranges.allow_pb_adj = ((to_px - from_px) >= (dbgUs? 100:30));
 		
-		scale_ctx.beginPath();
-		scale_ctx.moveTo(from_px,env_h1);
-		scale_ctx.lineTo(from_px+env_bounding_line_w, env_h1);
-		scale_ctx.lineTo(from_px+env_bounding_line_w+env_att_w, env_h2);
-		scale_ctx.lineTo(to_px-env_bounding_line_w-env_att_w, env_h2);
-		scale_ctx.lineTo(to_px-env_bounding_line_w, env_h1);
-		scale_ctx.lineTo(to_px, env_h1);
-		scale_ctx.globalAlpha = 0.3;
-		scale_ctx.fill();
-		scale_ctx.globalAlpha = 1;
-		scale_ctx.stroke();
+		if (!drag_ranges.allow_pb_adj)
+		   scale_ctx.strokeStyle = scale_ctx.fillStyle = 'yellow';
+		
+      scale_ctx.beginPath();
+      scale_ctx.moveTo(from_px, env_h1);
+      scale_ctx.lineTo(from_px + env_bounding_line_w, env_h1);
+      scale_ctx.lineTo(from_px + env_bounding_line_w + env_att_w, env_h2);
+      scale_ctx.lineTo(to_px - env_bounding_line_w - env_att_w, env_h2);
+      scale_ctx.lineTo(to_px - env_bounding_line_w, env_h1);
+      scale_ctx.lineTo(to_px, env_h1);
+      scale_ctx.globalAlpha = 0.3;
+      scale_ctx.fill();
+      scale_ctx.globalAlpha = 1;
+      scale_ctx.stroke();
 	}
 	
-	if (isDefined(line)) // out of screen? 
-	{
-		line_px = scale_px_from_freq(line,range);
-		if (!(line_px<0 || line_px>window.innerWidth))
-		{
-			drag_ranges.line={x1:line_px-env_line_click_area/2, x2: line_px+env_line_click_area/2};
-			drag_ranges.line_on_screen=true;
-			scale_ctx.moveTo(line_px,env_h1+env_lineplus);
-			scale_ctx.lineTo(line_px,env_h2-env_lineplus);
+	if (isDefined(line)) {     // out of screen? 
+		line_px = scale_px_from_freq(line, range);
+		if (!(line_px < 0 || line_px > window.innerWidth)) {
+			drag_ranges.line = {x1: line_px - env_line_click_area/2, x2: line_px + env_line_click_area/2};
+			drag_ranges.line_on_screen = true;
+			scale_ctx.moveTo(line_px, env_h1 + env_lineplus);
+			scale_ctx.lineTo(line_px, env_h2 - env_lineplus);
 			scale_ctx.stroke();
 
-			pb_adj_car.style.left = drag_ranges.line.x1 +'px';
-			pb_adj_car.style.width = env_line_click_area +'px';
+			pb_adj_car.style.left = px(drag_ranges.line.x1);
+			pb_adj_car.style.width = px(env_line_click_area);
 
 		}
 	}
+
 	return drag_ranges;
 }
 
-function demod_envelope_where_clicked(x, drag_ranges, key_modifiers)
+function demod_envelope_where_clicked(x, y, drag_ranges, key_modifiers)
 {
 	// Check exactly what the user has clicked based on ranges returned by demod_envelope_draw().
-	in_range = function(x, g_range) { return g_range.x1 <= x && g_range.x2 >= x; }
+	in_range = function(x, g_range) { return g_range.x1 <= x && g_range.x2 >= x && y < scale_canvas_h/2; }
 	dr = demodulator.draggable_ranges;
-	//console.log('demod_envelope_where_clicked x='+ x);
+	//console.log('demod_envelope_where_clicked x='+ x +' y='+ y +' in_pb='+ ((y < scale_canvas_h/2)? 1:0) +' allow_pb_adj='+ drag_ranges.allow_pb_adj);
 	//console.log(drag_ranges);
 	//console.log(key_modifiers);
 
-	if (key_modifiers.shiftKey)
-	{
-		//Check first: shift + center drag emulates BFO knob
-		if (drag_ranges.line_on_screen && in_range(x,drag_ranges.line)) return dr.bfo;
+	if (key_modifiers.shiftKey) {
+		// Check first: shift + center drag emulates BFO knob
+		if (drag_ranges.line_on_screen && in_range(x, drag_ranges.line)) return dr.bfo;
 		
-		//Check second: shift + envelope drag emulates PBS knob
-		if (drag_ranges.envelope_on_screen && in_range(x,drag_ranges.whole_envelope)) return dr.pbs;
+		// Check second: shift + envelope drag emulates PBS/PBT knob
+		if (drag_ranges.envelope_on_screen && in_range(x, drag_ranges.whole_envelope)) return dr.pbs;
 	}
 	
-	if (key_modifiers.altKey)
-	{
-		if (drag_ranges.envelope_on_screen && in_range(x,drag_ranges.beginning)) return dr.bwlo;
-		if (drag_ranges.envelope_on_screen && in_range(x,drag_ranges.ending)) return dr.bwhi;
+	if (key_modifiers.altKey) {
+		if (drag_ranges.envelope_on_screen && in_range(x, drag_ranges.beginning)) return dr.bwlo;
+		if (drag_ranges.envelope_on_screen && in_range(x, drag_ranges.ending)) return dr.bwhi;
 	}
 	
-	if (drag_ranges.envelope_on_screen)
-	{ 
+	if (drag_ranges.envelope_on_screen) { 
 		// For low and high cut:
-		if (in_range(x,drag_ranges.beginning)) return dr.beginning;
-		if (in_range(x,drag_ranges.ending)) return dr.ending;
+		if (drag_ranges.allow_pb_adj) {
+		   if (in_range(x, drag_ranges.beginning)) return dr.beginning;
+		   if (in_range(x, drag_ranges.ending)) return dr.ending;
+		}
+		//else { console.log('drag pb hi/lo ignored'); canvas_log('ign pb_adj'); }
+
 		// Last priority: having clicked anything else on the envelope, without holding the shift key
-		if (in_range(x,drag_ranges.whole_envelope)) return dr.anything_else; 
+		if (in_range(x, drag_ranges.whole_envelope)) return dr.anything_else; 
 	}
-	return dr.none; //User doesn't drag the envelope for this demodulator
+
+	return dr.none;   // User doesn't drag the envelope for this demodulator
 }
 
 //******* class demodulator *******
@@ -823,7 +848,7 @@ demodulator = function(offset_frequency)
 	this.stop = function(){};
 }
 
-//ranges on filter envelope that can be dragged:
+// ranges on filter envelope that can be dragged:
 demodulator.draggable_ranges = {
 	none: 0,
 	beginning: 1,	// from
@@ -833,13 +858,13 @@ demodulator.draggable_ranges = {
 	pbs: 5,			// passband (while holding shift)
 	bwlo: 6,			// bandwidth (while holding alt in envelope beginning)
 	bwhi: 7,			// bandwidth (while holding alt in envelope ending)
-} //to which parameter these correspond in demod_envelope_draw()
+} // to which parameter these correspond in demod_envelope_draw()
 
 //******* class demodulator_default_analog *******
 // This can be used as a base for basic audio demodulators.
 // It already supports most basic modulations used for ham radio and commercial services: AM/FM/LSB/USB
 
-demodulator_response_time=100; 
+demodulator_response_time = 100; 
 //in ms; if we don't limit the number of SETs sent to the server, audio will underrun (possibly output buffer is cleared on SETs in GNU Radio
 
 /*
@@ -1090,12 +1115,12 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	};
 
 	// event handlers
-	this.envelope.drag_start = function(x, key_modifiers)
+	this.envelope.env_drag_start = function(x, y, key_modifiers)
 	{
 		this.key_modifiers = key_modifiers;
-		this.dragged_range = demod_envelope_where_clicked(x, this.drag_ranges, key_modifiers);
+		this.dragged_range = demod_envelope_where_clicked(x, y, this.drag_ranges, key_modifiers);
 		//console.log("DRAG-START dr="+ this.dragged_range.toString());
-		this.drag_origin={
+		this.drag_origin = {
 			x: x,
 			low_cut: this.parent.low_cut,
 			high_cut: this.parent.high_cut,
@@ -1328,6 +1353,7 @@ function demodulator_set_offset_frequency(which, offset)
 
 function owrx_cfg()
 {
+   owrx.cfg_loaded = true;
 }
 
 
@@ -1439,6 +1465,8 @@ function scale_canvas_touchStart(evt)
 		}
 	   scale_canvas_start_drag(evt, 0);
 	}
+	
+	touch_restore_tooltip_visibility(owrx.scale_canvas);
 	evt.preventDefault();
 }
 
@@ -1448,14 +1476,14 @@ function scale_canvas_start_drag(evt, isMouse)
 {
 	// Distinguish ctrl-click right-button meta event from actual right-button on mouse (or touchpad two-finger tap).
 	if (evt.button == mouse.right && !evt.ctrlKey) {
-		//dump_event = true;
 		right_click_menu(scale_canvas_drag_params.start_x, scale_canvas_drag_params.start_y);
-      scale_canvas_drag_params.mouse_down = false;
+      scale_canvas_drag_params.mouse_down = owrx.scale_canvas.mouse_out = false;
 		scale_canvas_ignore_mouse_event = true;
 		return;
 	}
 
    scale_canvas_drag_params.mouse_down = true;
+   owrx.scale_canvas.target = evt.target;
    if (isMouse) scale_canvas_mousemove(evt);
 }
 
@@ -1463,12 +1491,12 @@ function scale_offset_carfreq_from_px(x, visible_range)
 {
 	if (isUndefined(visible_range)) visible_range = get_visible_freq_range();
 	var offset = passband_offset();
-	var f = visible_range.start + visible_range.bw*(x/canvas_container.clientWidth);
+	var f = visible_range.start + visible_range.bw*(x/wf_container.clientWidth);
 	//console.log("SOCFFPX f="+f+" off="+offset+" f-o="+(f-offset)+" rtn="+(f - center_freq - offset));
 	return f - center_freq - offset;
 }
 
-function scale_canvas_drag(evt, x)
+function scale_canvas_drag(evt, x, y)
 {
    if (scale_canvas_ignore_mouse_event) return;
    
@@ -1477,11 +1505,11 @@ function scale_canvas_drag(evt, x)
 	var relX = Math.abs(x - scale_canvas_drag_params.start_x);
 
 	if (scale_canvas_drag_params.mouse_down && !scale_canvas_drag_params.drag /* && relX > canvas_drag_min_delta */ ) {
-		//we can use the main drag_min_delta thing of the main canvas
+		// we can use the main drag_min_delta thing of the main canvas
 		scale_canvas_drag_params.drag = true;
-		//call the drag_start for all demodulators (and they will decide if they're dragged, based on X coordinate)
-		for (var i=0; i<demodulators.length; i++)
-			event_handled |= demodulators[i].envelope.drag_start(x, scale_canvas_drag_params.key_modifiers);
+		// call env_drag_start() for all demodulators (and they will decide if they're dragged, based on X coordinate)
+		for (var i=0; i < demodulators.length; i++)
+			event_handled |= demodulators[i].envelope.env_drag_start(x, y, scale_canvas_drag_params.key_modifiers);
 		//console.log("MOV1 evh? "+event_handled);
 		evt.target.style.cursor = "move";
 		//console.log('sc cursor');
@@ -1489,8 +1517,8 @@ function scale_canvas_drag(evt, x)
 	}     // scale is different from waterfall: mousedown alone immediately changes frequency
 
 	if (scale_canvas_drag_params.drag) {
-		//call the drag_move for all demodulators (and they will decide if they're dragged)
-		for (var i=0; i<demodulators.length; i++)
+		// call the drag_move for all demodulators (and they will decide if they're dragged)
+		for (var i=0; i < demodulators.length; i++)
 			event_handled |= demodulators[i].envelope.drag_move(x);
 		//console.log("MOV2 evh? "+event_handled);
 		if (!event_handled)
@@ -1501,22 +1529,38 @@ function scale_canvas_drag(evt, x)
 
 function scale_canvas_mousemove(evt)
 {
-	//event_dump(evt, 'SC-MM', 1);
-	scale_canvas_drag(evt, evt.pageX);
+	//event_dump(evt, 'SC-MM');
+	//canvas_log('$'+ evt.pageY +' '+ evt.offsetY +' '+ (evt.pageY - owrx.scale_offsetY));
+	scale_canvas_drag(evt, evt.pageX, evt.offsetY);
 }
 
 function scale_canvas_touchMove(evt)
 {
+   //canvas_log('TM');
 	for (var i=0; i < evt.touches.length; i++) {
-		scale_canvas_drag(evt, evt.touches[i].pageX);
+	   // no evt.touches[].offsetY in touch API, so do it ourselves
+	   var offsetY = evt.touches[i].pageY - owrx.scale_offsetY;
+		scale_canvas_drag(evt, evt.touches[i].pageX, offsetY);
+	   //canvas_log('$'+ evt.touches[i].pageY +'-'+ owrx.scale_offsetY +'='+ offsetY);
 	}
 	evt.preventDefault();
 }
 
-function scale_canvas_end_drag(evt, x)
+function scale_canvas_end_drag(evt, x, canvas_mouse_up)
 {
+   //if (canvas_mouse_up == true)
+   //   console.log('IME='+ scale_canvas_ignore_mouse_event +' SCMD='+ scale_canvas_drag_params.mouse_down +' ET='+ evt.type);
+   
    if (scale_canvas_ignore_mouse_event) {
       scale_canvas_ignore_mouse_event = false;
+      return;
+   }
+
+
+   // mouse was down when it went out -- let dragging continue in adjacent canvas
+   // which will call us again when canvas_mouse_up occurs
+   if (scale_canvas_drag_params.mouse_down == true && evt.type == "mouseout") {
+      owrx.scale_canvas.mouse_out = true;
       return;
    }
 
@@ -1524,13 +1568,18 @@ function scale_canvas_end_drag(evt, x)
 	var event_handled = false;
 	
 	if (scale_canvas_drag_params.mouse_down == true) {
-      for (var i=0; i<demodulators.length; i++) event_handled |= demodulators[i].envelope.drag_end(x);
+      for (var i=0; i < demodulators.length; i++) event_handled |= demodulators[i].envelope.drag_end(x);
       //console.log("MED evh? "+event_handled);
       if (!event_handled) demodulator_set_offset_frequency(0, scale_offset_carfreq_from_px(x));
    }
 
 	scale_canvas_drag_params.mouse_down = false;
-	evt.target.style.cursor = null;		// re-enable default mouseover cursor in .css (if any)
+	var target = owrx.scale_canvas.target;
+	if (target && target.style) {
+	   target.style.cursor = null;      // re-enable default mouseover cursor in .css (if any)
+      //console.log('SCED cursor restore');
+      //console.log(target);
+	}
 }
 
 function scale_canvas_mouseup(evt)
@@ -1539,9 +1588,48 @@ function scale_canvas_mouseup(evt)
 	scale_canvas_end_drag(evt, evt.pageX);
 }
 
+
+// Solves this problem: Using a mouse, the tooltip will eventually disappear when the mouse wanders
+// outside of the tooltip, because mouse-move events still occur even though the mouse button is up.
+// But for touch events a touch-end *may* occur while still positioned over the tooltip or its
+// container. When there are no more touches the tooltip remains displayed until the next touch-start.
+//
+// This is (maybe) not so desirable. What we do is force-hide tooltip on touch-end after a delay and
+// then re-enable them on the next touch-start.
+
+function touch_hide_tooltip(evt, state)
+{
+	var unHover = '';
+   var pe = state.target;     // parent is the pb adjust elem detected at the touchStart
+
+   if (w3_contains(pe, 'class-tooltip')) {
+      var ce = pe.childNodes[0];    // child is the tooltip itself
+      if (w3_contains(ce, 'class-tooltip-text')) {
+         unHover += '-T';
+         state.restore_visibility_timeout = setTimeout(function() {
+            ce.style.visibility = 'hidden';
+            state.restore_visibility.push(ce);
+         }, state.restore_visibility_delay);
+      }
+   }
+
+	//canvas_log('TTE'+ unHover);
+}
+
+function touch_restore_tooltip_visibility(state)
+{
+   kiwi_clearTimeout(state.restore_visibility_timeout);
+	state.restore_visibility.forEach(function(el) {
+	   el.style.visibility = '';
+	});
+	state.restore_visibility = [];
+   //canvas_log('TTS');
+}
+
 function scale_canvas_touchEnd(evt)
 {
 	scale_canvas_end_drag(evt, scale_canvas_drag_params.last_x);
+	touch_hide_tooltip(evt, owrx.scale_canvas);
 	evt.preventDefault();
 }
 
@@ -1557,7 +1645,7 @@ function scale_container_mouseout(evt)
    scale_canvas_mouseup(evt);
 }
 
-function scale_px_from_freq(f,range) { return Math.round(((f-range.start)/range.bw)*canvas_container.clientWidth); }
+function scale_px_from_freq(f, range) { return Math.round(((f-range.start) / range.bw) * wf_container.clientWidth); }
 
 function get_visible_freq_range()
 {
@@ -1738,7 +1826,7 @@ function get_scale_mark_spacing(range)
 	out = {};
 	fcalc = function(mkr_spacing) { 
 		out.numlarge = (range.bw/mkr_spacing);
-		out.pxlarge = canvas_container.clientWidth/out.numlarge; 	//distance between large markers (these have text)
+		out.pxlarge = wf_container.clientWidth/out.numlarge; 	//distance between large markers (these have text)
 		out.ratio = 5; 															//(ratio-1) small markers exist per large marker
 		out.pxsmall = out.pxlarge/out.ratio; 								//distance between small markers
 		if (out.pxsmall < scale_min_space_btwn_small_markers) return false; 
@@ -1756,7 +1844,7 @@ function get_scale_mark_spacing(range)
 	}
 	
 	//console.log("using");
-	//console.log(canvas_container);
+	//console.log(wf_container);
 	//console.log(range);
 	//console.log(mp);
 	//console.log(out);
@@ -1801,7 +1889,7 @@ function mk_freq_scale()
 	for (;;) {
       conv_ct++;
       if (conv_ct > 1000) break;
-		var x = scale_px_from_freq(marker_hz,g_range);
+		var x = scale_px_from_freq(marker_hz, g_range);
 		if (x > window.innerWidth) break;
 		scale_ctx.beginPath();		
 		scale_ctx.moveTo(x, 22);
@@ -1825,7 +1913,7 @@ function mk_freq_scale()
 				//console.log('case 1');
 				if (x < text_measured.width/2) {
 				   //and if it would be clipped off the screen
-					if (scale_px_from_freq(marker_hz+spacing.smallbw*spacing.ratio,g_range)-text_measured.width >= scale_min_space_btwn_texts) {
+					if (scale_px_from_freq(marker_hz+spacing.smallbw*spacing.ratio, g_range)-text_measured.width >= scale_min_space_btwn_texts) {
 					   //and if we have enough space to draw it correctly without clipping
 						scale_ctx.textAlign = "left";
 						scale_ctx.fillText(text_to_draw, 0, text_y_pos); 
@@ -1839,7 +1927,7 @@ function mk_freq_scale()
 				//console.log('case 2');
 				if (x > window.innerWidth-text_measured.width/2) {
 				   //and if it would be clipped off the screen
-					if (window.innerWidth-text_measured.width-scale_px_from_freq(marker_hz-spacing.smallbw*spacing.ratio,g_range) >= scale_min_space_btwn_texts) {
+					if (window.innerWidth-text_measured.width-scale_px_from_freq(marker_hz-spacing.smallbw*spacing.ratio, g_range) >= scale_min_space_btwn_texts) {
 					   //and if we have enough space to draw it correctly without clipping
 						scale_ctx.textAlign = "right";
 						scale_ctx.fillText(text_to_draw, window.innerWidth, text_y_pos); 
@@ -1870,14 +1958,14 @@ function mk_freq_scale()
 		// on the left side
 		scale_ctx.textAlign = "center";
 		var f = first_large-spacing.smallbw*spacing.ratio;
-		var x = scale_px_from_freq(f,g_range);
+		var x = scale_px_from_freq(f, g_range);
 		ftext(f);
 		var w = scale_ctx.measureText(text_to_draw).width;
 		if (x+w/2 > 0) scale_ctx.fillText(text_to_draw, x, 22+10);
 
 		// on the right side
 		f = last_large+spacing.smallbw*spacing.ratio;
-		x = scale_px_from_freq(f,g_range);
+		x = scale_px_from_freq(f, g_range);
 		ftext(f);
 		w = scale_ctx.measureText(text_to_draw).width;
 		if (x-w/2 < window.innerWidth) scale_ctx.fillText(text_to_draw, x, 22+10);
@@ -1894,11 +1982,11 @@ function resize_scale(a)
 	band_ctx.canvas.width  = window.innerWidth;
 	band_ctx.canvas.height = band_canvas_h;
 
-	dx_div.style.width = window.innerWidth+'px';
+	dx_div.style.width = px(window.innerWidth);
 
 	dx_ctx.canvas.width = dx_car_w;
 	dx_ctx.canvas.height = dx_car_h;
-	dx_canvas.style.top = (scale_canvas_top - dx_car_h)+'px';
+	dx_canvas.style.top = px(scale_canvas_top - dx_car_h);
 	dx_canvas.style.left = 0;
 	dx_canvas.style.zIndex = 99;
 	
@@ -2041,12 +2129,122 @@ function passband_visible()
 
 var debug_canvas_drag = false;
 
+var window_width;
+var waterfall_width;
+
+var main_container;
+var wf_container;
+var canvas_annotation;
+var canvas_phantom;
+
+var annotation_div;
+
+// NB: canvas data width is wf_fft_size, but displayed style width is waterfall_width (likely different),
+// so image is stretched to fit when rendered by browser.
+
+function create_canvas(id, w, h, style_w, style_h)
+{	
+	var new_canvas = document.createElement('canvas');
+	new_canvas.id = id;
+	new_canvas.width = w;
+	new_canvas.height = h;
+	if (style_w) new_canvas.style.width = px(style_w);	
+	if (style_h) new_canvas.style.height = px(style_h);	
+	new_canvas.ctx = new_canvas.getContext("2d");
+	return new_canvas;
+}
+
+function init_wf_container()
+{
+	window_width = window.innerWidth;		// window width minus any scrollbar
+
+	wf_container = w3_el("id-waterfall-container");
+	waterfall_width = wf_container.clientWidth;
+	//console.log("init_wf_container ww="+waterfall_width);
+
+	// annotation canvas for FSK shift markers etc.
+   canvas_annotation = create_canvas('id-annotation-canvas', wf_fft_size, wf_canvas_default_height, waterfall_width, wf_canvas_default_height);
+   canvas_annotation.style.zIndex = 1;    // make on top of waterfall
+	wf_container.appendChild(canvas_annotation);
+	add_canvas_listner(canvas_annotation);
+	
+	// annotation div for text containing links etc.
+	annotation_div = w3_el('id-annotation-div');
+	add_canvas_listner(annotation_div);
+	annotation_div.style.pointerEvents = 'none';    // prevent premature end of canvas dragging
+
+	// a phantom one at the end
+	// not an actual canvas but a <div> spacer
+	canvas_phantom = html("id-phantom-canvas");
+	add_canvas_listner(canvas_phantom);
+	canvas_phantom.style.width = px(wf_container.clientWidth);
+
+	// the first one to get started
+	add_wf_canvas();
+
+   spec.canvas = create_canvas('id-spectrum-canvas', wf_fft_size, spec.height_spectrum_canvas, waterfall_width, spec.height_spectrum_canvas);
+	html("id-spectrum-container").appendChild(spec.canvas);
+	spec.ctx = spec.canvas.ctx;
+	add_canvas_listner(spec.canvas);
+	spec.ctx.font = "10px sans-serif";
+	spec.ctx.textBaseline = "middle";
+	spec.ctx.textAlign = "left";
+
+	spec.dB = html("id-spectrum-dB");
+	spec.dB.style.height = px(spec.height_spectrum_canvas);
+	spec.dB.style.width = px(waterfall_width);
+	spec.dB.innerHTML = '<span id="id-spectrum-dB-ttip" class="class-spectrum-dB-tooltip class-tooltip-text"></span>';
+	add_canvas_listner(spec.dB);
+	spec.dB_ttip = html("id-spectrum-dB-ttip");
+}
+
+function add_canvas_listner(obj)
+{
+	obj.addEventListener("mouseover", canvas_mouseover, false);
+	obj.addEventListener("mouseout", canvas_mouseout, false);
+	obj.addEventListener("mousedown", canvas_mousedown, false);
+	obj.addEventListener("mousemove", canvas_mousemove, false);
+	obj.addEventListener("mouseup", canvas_mouseup, false);
+	obj.addEventListener("contextmenu", canvas_contextmenu, false);
+	obj.addEventListener("wheel", canvas_mousewheel, false);
+
+	if (kiwi_isMobile()) {
+		obj.addEventListener('touchstart', canvas_touchStart, false);
+		obj.addEventListener('touchmove', canvas_touchMove, false);
+		obj.addEventListener('touchend', canvas_touchEnd, false);
+	}
+}
+
+function remove_canvas_listner(obj)
+{
+	obj.removeEventListener("mouseover", canvas_mouseover, false);
+	obj.removeEventListener("mouseout", canvas_mouseout, false);
+	obj.removeEventListener("mousedown", canvas_mousedown, false);
+	obj.removeEventListener("mousemove", canvas_mousemove, false);
+	obj.removeEventListener("mouseup", canvas_mouseup, false);
+	obj.removeEventListener("contextmenu", canvas_contextmenu, false);
+	obj.removeEventListener("wheel", canvas_mousewheel, false);
+
+	if (kiwi_isMobile()) {
+		obj.removeEventListener('touchstart', canvas_touchStart, false);
+		obj.removeEventListener('touchmove', canvas_touchMove, false);
+		obj.removeEventListener('touchend', canvas_touchEnd, false);
+	}
+}
+
 function canvas_log(s)
 {
-   if (s.charAt(0) == '$')
+   if (isUndefined(owrx.news_acc_s)) owrx.news_acc_s = '';
+
+   if (s == '\f') {
+      owrx.news_acc_s = '';
+   } else
+   if (s.charAt(0) == '$') {
       owrx.news_acc_s = '<br><br>'+ s;
-   else
+   } else {
       owrx.news_acc_s += ((owrx.news_acc_s != '')? ' | ' : '') + s;
+   }
+
    extint_news(owrx.news_acc_s);
 }
 
@@ -2080,6 +2278,12 @@ function canvas_mouseout(evt)
 	if (!waterfall_setup_done) return;
 	if (debug_canvas_drag) event_dump(evt, 'canvas_mouseout', 1);
 	//html("id-freq-show").style.visibility="hidden";
+
+   // must also end dragging when mouse leaves canvas while still down
+	if (canvas_dragging) {
+      if (debug_canvas_drag) canvas_log("C-MOUT");
+      canvas_end_drag2();
+   }
 }
 
 function canvas_get_carfreq_offset(relativeX, incl_PBO)
@@ -2119,12 +2323,10 @@ var mouse = { 'left':0, 'middle':1, 'right':2 };
 
 function canvas_start_drag(evt, x, y)
 {
-	var dump_event = false;
 	if (debug_canvas_drag) canvas_log('CSD');
 	
 	// Distinguish ctrl-click right-button meta event from actual right-button on mouse (or touchpad two-finger tap).
 	if (evt.button == mouse.right && !evt.ctrlKey) {
-		//dump_event = true;
 		canvas_ignore_mouse_event = true;
 		if (debug_canvas_drag) console.log('CSD-Rclick IME=set-true');
 		if (debug_canvas_drag) canvas_log('ordinary-RCM');
@@ -2135,7 +2337,11 @@ function canvas_start_drag(evt, x, y)
 		return;
 	}
 	
-	if (dump_event) event_dump(evt, "MDN");
+	if (owrx.scale_canvas.mouse_out) {
+	   event_dump(evt, "CSD-scale");
+	   console.log('SHOULD NOT OCCUR');
+	   return;
+	}
 
 	if (evt.shiftKey && evt.target.id == 'id-dx-container') {
 		canvas_ignore_mouse_event = true;
@@ -2183,8 +2389,9 @@ function canvas_start_drag(evt, x, y)
 	owrx.drag_count = 0;
 	canvas_mouse_down = true;
 	canvas_dragging = false;
-	owrx.canvas_drag_last_x = owrx.canvas_drag_start_x = x;
-	owrx.canvas_drag_last_y = owrx.canvas_drag_start_y = y;
+	owrx.canvas.drag_last_x = owrx.canvas.drag_start_x = x;
+	owrx.canvas.drag_last_y = owrx.canvas.drag_start_y = y;
+   owrx.canvas.target = evt.target;
 }
 
 function canvas_mousedown(evt)
@@ -2234,7 +2441,8 @@ function canvas_touchStart(evt)
       owrx.pinch_distance_last = owrx.pinch_distance_first;
 		owrx.double_touch_start = true;
 	}
-	
+
+	touch_restore_tooltip_visibility(owrx.canvas);
 	evt.preventDefault();	// don't show text selection mouse pointer
 }
 
@@ -2247,22 +2455,28 @@ function canvas_drag(evt, x, y, clientX, clientY)
 	spectrum_tooltip_update(evt, clientX, clientY);
 	owrx.drag_count++;
 
+	if (owrx.scale_canvas.mouse_out) {
+	   event_dump(evt, "CD", 1);
+	   scale_canvas_drag(evt, x, y);    // continue scale dragging even though positioned on other canvases
+	   return;
+	}
+	   
    if (debug_canvas_drag)
       canvas_log('CD#'+ owrx.drag_count +' x'+ x +' y'+ y +' CMD'+ (canvas_mouse_down? 1:0) +' IME'+ (canvas_ignore_mouse_event? 1:0) +' DG'+ (canvas_dragging? 1:0));
 
    // drag_count > 10 was required on Lenovo TB-7104F / Android 8.1.0 to differentiate double-touch from true drag.
    // I.e. an excessive number of touch events seem to be sent by browser for a single double-touch.
 	if (canvas_mouse_down && (!canvas_ignore_mouse_event || owrx.double_touch_start)) {
-		if (!canvas_dragging && owrx.drag_count > 10 && Math.abs(x - owrx.canvas_drag_start_x) > canvas_drag_min_delta) {
+		if (!canvas_dragging && owrx.drag_count > 10 && Math.abs(x - owrx.canvas.drag_start_x) > canvas_drag_min_delta) {
 			canvas_dragging = true;
-			canvas_container.style.cursor = "move";
+			wf_container.style.cursor = "move";
 		}
 		if (canvas_dragging) {
-			var deltaX = owrx.canvas_drag_last_x - x;
-			var deltaY = owrx.canvas_drag_last_y - y;
+			var deltaX = owrx.canvas.drag_last_x - x;
+			var deltaY = owrx.canvas.drag_last_y - y;
 
          if (owrx.double_touch_start) {
-            var dist = Math.round(Math.hypot(owrx.canvas_drag_last_x - x, owrx.canvas_drag_last_y - y));
+            var dist = Math.round(Math.hypot(owrx.canvas.drag_last_x - x, owrx.canvas.drag_last_y - y));
             var delta = Math.abs(dist - owrx.pinch_distance_last);
             if (debug_canvas_drag) canvas_log(dist.toFixed(0) +' '+ delta.toFixed(0));
             if (delta > 25) {
@@ -2277,8 +2491,8 @@ function canvas_drag(evt, x, y, clientX, clientY)
             waterfall_pan_canvases(dbins);
          }
 
-			owrx.canvas_drag_last_x = x;
-			owrx.canvas_drag_last_y = y;
+			owrx.canvas.drag_last_x = x;
+			owrx.canvas.drag_last_y = y;
 		}
 	} else {
 		w3_innerHTML('id-mouse-unit', format_frequency("{x}", canvas_get_dspfreq(relativeX) + cfg.freq_offset*1e3, 1e3, 2));
@@ -2325,23 +2539,20 @@ function canvas_touchMove(evt)
 function canvas_end_drag2()
 {
 	if (debug_canvas_drag) canvas_log("C-ED2");
-	canvas_container.style.cursor = owrx.wf_cursor;
+	wf_container.style.cursor = owrx.wf_cursor;
 	canvas_mouse_down = false;
 	canvas_ignore_mouse_event = false;
 	if (debug_canvas_drag) { console.log("C-ED2 IME=set-false"); }
 }
 
-// When mouseup occurs outside our original canvas canvas_mouseup() doesn't occur terminating the drag.
-// So have to detect canvas crossing and terminate that way.
-function canvas_container_mouseout(evt)
-{
-	if (debug_canvas_drag) event_dump(evt, "canvas_container_mouseout", 1);
-	if (debug_canvas_drag) canvas_log("C-MOUT");
-	canvas_end_drag2();
-}
-
 function canvas_end_drag(evt, x)
 {
+	if (owrx.scale_canvas.mouse_out) {
+	   //event_dump(evt, "CED");
+	   owrx.scale_canvas.mouse_out = false;
+	   scale_canvas_end_drag(evt, x, /* canvas_mouse_up */ true);
+	}
+
 	if (debug_canvas_drag) canvas_log('C-ED IME'+ (canvas_ignore_mouse_event? 1:0) +' CD'+ (canvas_dragging? 1:0));
 
 	if (!waterfall_setup_done) return;
@@ -2402,7 +2613,7 @@ function canvas_mouseup(evt)
 
 function canvas_touchEnd(evt)
 {
-	var x = owrx.canvas_drag_last_x, y = owrx.canvas_drag_last_y;
+	var x = owrx.canvas.drag_last_x, y = owrx.canvas.drag_last_y;
 	if (debug_canvas_drag) canvas_log('C-TE-x'+ x +'-DTS'+ (owrx.double_touch_start? 1:0) +'-DRAG'+ (canvas_dragging? 1:0));
 	canvas_end_drag(evt, x);
 /*
@@ -2432,6 +2643,7 @@ function canvas_touchEnd(evt)
 		owrx.double_touch_start = false;
 	}
 	
+	touch_hide_tooltip(evt, owrx.canvas);
 	evt.preventDefault();
 }
 
@@ -2576,6 +2788,11 @@ function right_click_menu_cb(idx, x)
    owrx.right_click_menu_active = false;
 }
 
+
+////////////////////////////////
+// database lookup
+////////////////////////////////
+
 function freq_database_lookup(Hz, utility)
 {
    var kHz = Hz/1000;
@@ -2630,6 +2847,11 @@ function freq_database_lookup(Hz, utility)
    var win = window.open(url, '_blank');
    if (win) win.focus();
 }
+
+
+////////////////////////////////
+// export waterfall
+////////////////////////////////
 
 // this also works if displaying audio FFT instead of waterfall
 function export_waterfall() {
@@ -2958,274 +3180,6 @@ function zoom_over(evt)
 	}
 }
 
-var page_scroll_amount = 0.8;
-
-function page_scroll(norm_dir)
-{
-   if (!wf.audioFFT_active) {
-      var dbins = norm_to_bins(norm_dir);
-      waterfall_pan_canvases(dbins);		// < 0 = pan left (toward lower freqs)
-   }
-   freqset_select();
-}
-
-function page_scroll_icon_click(evt, norm_dir)
-{
-   if (any_alternate_click_event(evt)) {
-      dx_label_step((norm_dir < 0)? -1:1);
-   } else {
-      page_scroll(norm_dir);
-   }
-}
-
-
-var window_width;
-var waterfall_width;
-var waterfall_scrollable_height;
-
-var canvas_container;
-var canvas_annotation;
-var canvas_phantom;
-
-var annotation_div;
-
-var wf_canvases = [];
-var old_canvases = [];
-var wf_cur_canvas = null;
-var wf_canvas_default_height = 200;
-var wf_canvas_actual_line;
-var wf_canvas_id_seq = 1;
-
-// NB: canvas data width is wf_fft_size, but displayed style width is waterfall_width (likely different),
-// so image is stretched to fit when rendered by browser.
-
-function create_canvas(id, w, h, style_w, style_h)
-{	
-	var new_canvas = document.createElement('canvas');
-	new_canvas.id = id;
-	new_canvas.width = w;
-	new_canvas.height = h;
-	if (style_w) new_canvas.style.width = px(style_w);	
-	if (style_h) new_canvas.style.height = px(style_h);	
-	new_canvas.ctx = new_canvas.getContext("2d");
-	return new_canvas;
-}
-
-function add_canvas()
-{
-   var new_canvas = create_canvas('id-wf-canvas', wf_fft_size, wf_canvas_default_height, waterfall_width, wf_canvas_default_height);
-	new_canvas.id_seq = wf_canvas_id_seq++;
-	wf_canvas_actual_line = wf_canvas_default_height-1;
-	new_canvas.style.left = 0;
-	new_canvas.openwebrx_height = wf_canvas_default_height;	
-
-	// initially the canvas is one line "above" the top of the container
-	new_canvas.openwebrx_top = (-wf_canvas_default_height+1);	
-	new_canvas.style.top = px(new_canvas.openwebrx_top);
-
-	new_canvas.oneline_image = new_canvas.ctx.createImageData(wf_fft_size, 1);
-
-	canvas_container.appendChild(new_canvas);
-	add_canvas_listner(new_canvas);
-	wf_canvases.unshift(new_canvas);		// add to front of array which is top of waterfall
-
-	wf_cur_canvas = new_canvas;
-	if (kiwi_gc_wf) new_canvas = null;	// gc
-}
-
-function init_canvas_container()
-{
-	window_width = window.innerWidth;		// window width minus any scrollbar
-	canvas_container = html("id-waterfall-container");
-	waterfall_width = canvas_container.clientWidth;
-	//console.log("init_canvas_container ww="+waterfall_width);
-	canvas_container.addEventListener("mouseout", canvas_container_mouseout, false);
-
-	// annotation canvas for FSK shift markers etc.
-   canvas_annotation = create_canvas('id-annotation-canvas', wf_fft_size, wf_canvas_default_height, waterfall_width, wf_canvas_default_height);
-   canvas_annotation.style.zIndex = 1;    // make on top of waterfall
-	canvas_container.appendChild(canvas_annotation);
-	add_canvas_listner(canvas_annotation);
-	
-	// annotation div for text containing links etc.
-	annotation_div = w3_el('id-annotation-div');
-	add_canvas_listner(annotation_div);
-	annotation_div.style.pointerEvents = 'none';    // prevent premature end of canvas dragging
-
-	// a phantom one at the end
-	// not an actual canvas but a <div> spacer
-	canvas_phantom = html("id-phantom-canvas");
-	add_canvas_listner(canvas_phantom);
-	canvas_phantom.style.width = px(canvas_container.clientWidth);
-
-	// the first one to get started
-	add_canvas();
-
-   spec.canvas = create_canvas('id-spectrum-canvas', wf_fft_size, height_spectrum_canvas, waterfall_width, height_spectrum_canvas);
-	html("id-spectrum-container").appendChild(spec.canvas);
-	spec.ctx = spec.canvas.ctx;
-	add_canvas_listner(spec.canvas);
-	spec.ctx.font = "10px sans-serif";
-	spec.ctx.textBaseline = "middle";
-	spec.ctx.textAlign = "left";
-
-	spec.dB = html("id-spectrum-dB");
-	spec.dB.style.height = px(height_spectrum_canvas);
-	spec.dB.style.width = px(waterfall_width);
-	spec.dB.innerHTML = '<span id="id-spectrum-dB-ttip" class="class-spectrum-dB-tooltip class-tooltip-text"></span>';
-	add_canvas_listner(spec.dB);
-	spec.dB_ttip = html("id-spectrum-dB-ttip");
-}
-
-function add_canvas_listner(obj)
-{
-	obj.addEventListener("mouseover", canvas_mouseover, false);
-	obj.addEventListener("mouseout", canvas_mouseout, false);
-	obj.addEventListener("mousedown", canvas_mousedown, false);
-	obj.addEventListener("mousemove", canvas_mousemove, false);
-	obj.addEventListener("mouseup", canvas_mouseup, false);
-	obj.addEventListener("contextmenu", canvas_contextmenu, false);
-	obj.addEventListener("wheel", canvas_mousewheel, false);
-
-	if (kiwi_isMobile()) {
-		obj.addEventListener('touchstart', canvas_touchStart, false);
-		obj.addEventListener('touchmove', canvas_touchMove, false);
-		obj.addEventListener('touchend', canvas_touchEnd, false);
-	}
-}
-
-function remove_canvas_listner(obj)
-{
-	obj.removeEventListener("mouseover", canvas_mouseover, false);
-	obj.removeEventListener("mouseout", canvas_mouseout, false);
-	obj.removeEventListener("mousedown", canvas_mousedown, false);
-	obj.removeEventListener("mousemove", canvas_mousemove, false);
-	obj.removeEventListener("mouseup", canvas_mouseup, false);
-	obj.removeEventListener("contextmenu", canvas_contextmenu, false);
-	obj.removeEventListener("wheel", canvas_mousewheel, false);
-
-	if (kiwi_isMobile()) {
-		obj.removeEventListener('touchstart', canvas_touchStart, false);
-		obj.removeEventListener('touchmove', canvas_touchMove, false);
-		obj.removeEventListener('touchend', canvas_touchEnd, false);
-	}
-}
-
-wf_canvas_maxshift = 0;
-
-function wf_shift_canvases()
-{
-	// shift the canvases downward by increasing their individual top offsets
-	wf_canvases.forEach(function(p) {
-		p.style.top = px(p.openwebrx_top++);
-	});
-	
-	// retire canvases beyond bottom of scroll-back window
-	while (wf_canvases.length) {
-		var p = wf_canvases[wf_canvases.length-1];	// oldest
-		
-		if (p == null || p.openwebrx_top < waterfall_scrollable_height) {
-			if (kiwi_gc_wf) p = null;	// gc
-			break;
-		}
-		var pp = wf_canvases[wf_canvases.length-2];
-		if (pp) old_canvases.unshift(pp);
-		if (old_canvases.length > 15) old_canvases.pop();  // save up to 10*wf_fps seconds 
-		//p.style.display = "none";
-		if (kiwi_gc_wf) remove_canvas_listner(p);	// gc
-		canvas_container.removeChild(p);
-		if (kiwi_gc_wf) p = wf_canvases[wf_canvases.length-1] = null;	// gc
-		wf_canvases.pop();
-	}
-	
-	// set the height of the phantom to fill the unused space
-	wf_canvas_maxshift++;
-	if (wf_canvas_maxshift < canvas_container.clientHeight) {
-		canvas_phantom.style.top = px(wf_canvas_maxshift);
-		canvas_phantom.style.height = px(canvas_container.clientHeight - wf_canvas_maxshift);
-		w3_show_block(canvas_phantom);
-	} else
-	if (!canvas_phantom.hidden) {
-		w3_hide(canvas_phantom);
-		canvas_phantom.hidden = true;
-	}
-	
-	//canvas_container.style.height = px(((wf_canvases.length-1)*wf_canvas_default_height)+(wf_canvas_default_height-wf_canvas_actual_line));
-	//canvas_container.style.height = "100%";
-}
-
-function resize_canvases(zoom)
-{
-	window_width = canvas_container.innerWidth;
-	waterfall_width = canvas_container.clientWidth;
-	//console.log("RESIZE winW="+window_width+" wfW="+waterfall_width);
-
-	new_width = px(waterfall_width);
-	var zoom_value = 0;
-	//console.log("RESIZE z"+zoom_level+" nw="+new_width+" zv="+zoom_value);
-
-	wf_canvases.forEach(function(p) {
-		p.style.width = new_width;
-		p.style.left = zoom_value;
-	});
-
-	canvas_annotation.width = waterfall_width;
-	canvas_annotation.style.width = new_width;
-
-	canvas_phantom.style.width = new_width;
-	canvas_phantom.style.left = zoom_value;
-
-	spec.canvas.style.width = new_width;
-
-   // above width change clears canvas, so redraw
-   if (wf.audioFFT_active) {
-      w3_innerHTML('id-annotation-div',
-         w3_div('w3-section w3-container',
-            w3_text('w3-large|color:cyan', 'Audio FFT<br>'),
-            w3_text('w3-small|color:cyan',
-                  'Zoom waterfall not available<br>' +
-                  (wf.no_wf?
-                     'when \"no_wf\" URL option used.<br>'
-                  :
-                     ('on channels '+ wf_chans_real +'-'+ (rx_chans-1) +' of Kiwis<br>' +
-                     'configured for '+ rx_chans +' channels.<br>')
-                  )
-            ),
-            w3_text('w3-small|color:cyan',
-               'For details see the Kiwi forum.'
-            )
-         )
-      );
-   }
-
-/*
-   if (rx_chan >= wf_chans) {
-		var sw = canvas_annotation.width;
-		var sh = canvas_annotation.height;
-      var ctx = canvas_annotation.ctx;
-		ctx.clearRect(0,0,sw,sh);
-	   ctx.font = "18px sans-serif";
-	   ctx.textBaseline = "middle";
-	   ctx.textAlign = "left";
-	   if (wf.audioFFT_active) {
-	      var x = sw/8;
-         var y = sh/2;
-         var text = 'AudioFFT';
-         w3_fillText(ctx, x, y, 'AudioFFT', 'cyan');
-         y += 18;
-         w3_fillText(ctx, x, y, '(zoom waterfall not available)', null, '14px sans-serif');
-	   } else {
-         var text =
-            wf_chans?
-               ('Waterfall not available for rx'+ rx_chan)
-            :
-               'Waterfall not allowed on this Kiwi';
-         w3_fillText(ctx, sw/2, sh/2, text, 'black');
-      }
-   }
-*/
-}
-
 
 ////////////////////////////////
 // mobile
@@ -3299,6 +3253,9 @@ function mobile_init()
 ////////////////////////////////
 
 var spec = {
+   height_spectrum_canvas: 200,
+   tooltip_offset: 100,
+   
    source_wf: 0,
    source_audio: 0,
    
@@ -3430,10 +3387,10 @@ function spectrum_tooltip_update(evt, clientX, clientY)
 		// doesn't go away unless the mouse is moved quickly. So to stop this we need to manually detect when the mouse is out of the
 		// tooltip container and stop updating the tooltip text position so the hover will end.
 		
-		if (clientY >= 0 && clientY < height_spectrum_canvas) {
-			spec.dB_ttip.style.left = px(clientX);
-			spec.dB_ttip.style.bottom = px(200 + 10 - clientY);
-			var dB = (((height_spectrum_canvas - clientY) / height_spectrum_canvas) * full_scale) + mindb;
+		if (clientY >= 0 && clientY < spec.height_spectrum_canvas) {
+			spec.dB_ttip.style.left = px(clientX - (kiwi_isMobile()? spec.tooltip_offset : 0));
+			spec.dB_ttip.style.bottom = px(spec.height_spectrum_canvas + 10 - clientY);
+			var dB = (((spec.height_spectrum_canvas - clientY) / spec.height_spectrum_canvas) * full_scale) + mindb;
 			spec.dB_ttip.innerHTML = dB.toFixed(0) +' dBm';
 		}
 	}
@@ -3574,9 +3531,19 @@ function spectrum_update(data)
 // waterfall
 ////////////////////////////////
 
-var waterfall_setup_done=0;
+var waterfall_setup_done = 0;
 var waterfall_timer;
 var waterfall_ms;
+
+var waterfall_scrollable_height;
+
+var wf_canvases = [];
+var old_canvases = [];
+var wf_cur_canvas = null;
+var wf_canvas_default_height = 200;
+var wf_canvas_actual_line;
+var wf_canvas_id_seq = 1;
+var wf_canvas_maxshift = 0;
 
 function wf_init()
 {
@@ -3584,11 +3551,11 @@ function wf_init()
       return;
    }
    
-	init_canvas_container();
+	init_wf_container();
 
    wf.audioFFT_active = (rx_chan >= wf_chans);
 	resize_waterfall_container(false);
-	resize_canvases();
+	resize_wf_canvases();
 	bands_init();
 	panels_setup();
 	ident_init();
@@ -3618,6 +3585,141 @@ function wf_init()
 	waterfall_setup_done=1;
 }
 
+function add_wf_canvas()
+{
+   var new_canvas = create_canvas('id-wf-canvas', wf_fft_size, wf_canvas_default_height, waterfall_width, wf_canvas_default_height);
+	new_canvas.id_seq = wf_canvas_id_seq++;
+	wf_canvas_actual_line = wf_canvas_default_height-1;
+	new_canvas.style.left = 0;
+	new_canvas.openwebrx_height = wf_canvas_default_height;	
+
+	// initially the canvas is one line "above" the top of the container
+	new_canvas.openwebrx_top = (-wf_canvas_default_height+1);	
+	new_canvas.style.top = px(new_canvas.openwebrx_top);
+
+	new_canvas.oneline_image = new_canvas.ctx.createImageData(wf_fft_size, 1);
+
+	wf_container.appendChild(new_canvas);
+	add_canvas_listner(new_canvas);
+	wf_canvases.unshift(new_canvas);		// add to front of array which is top of waterfall
+
+	wf_cur_canvas = new_canvas;
+	if (kiwi_gc_wf) new_canvas = null;	// gc
+}
+
+function wf_shift_canvases()
+{
+	// shift the canvases downward by increasing their individual top offsets
+	wf_canvases.forEach(function(p) {
+		p.style.top = px(p.openwebrx_top++);
+	});
+	
+	// retire canvases beyond bottom of scroll-back window
+	while (wf_canvases.length) {
+		var p = wf_canvases[wf_canvases.length-1];	// oldest
+		
+		if (p == null || p.openwebrx_top < waterfall_scrollable_height) {
+			if (kiwi_gc_wf) p = null;	// gc
+			break;
+		}
+		var pp = wf_canvases[wf_canvases.length-2];
+		if (pp) old_canvases.unshift(pp);
+		if (old_canvases.length > 15) old_canvases.pop();  // save up to 10*wf_fps seconds 
+		//p.style.display = "none";
+		if (kiwi_gc_wf) remove_canvas_listner(p);	// gc
+		wf_container.removeChild(p);
+		if (kiwi_gc_wf) p = wf_canvases[wf_canvases.length-1] = null;	// gc
+		wf_canvases.pop();
+	}
+	
+	// set the height of the phantom to fill the unused space
+	wf_canvas_maxshift++;
+	if (wf_canvas_maxshift < wf_container.clientHeight) {
+		canvas_phantom.style.top = px(wf_canvas_maxshift);
+		canvas_phantom.style.height = px(wf_container.clientHeight - wf_canvas_maxshift);
+		w3_show_block(canvas_phantom);
+	} else
+	if (!canvas_phantom.hidden) {
+		w3_hide(canvas_phantom);
+		canvas_phantom.hidden = true;
+	}
+	
+	//wf_container.style.height = px(((wf_canvases.length-1)*wf_canvas_default_height)+(wf_canvas_default_height-wf_canvas_actual_line));
+	//wf_container.style.height = "100%";
+}
+
+function resize_wf_canvases(zoom)
+{
+	window_width = wf_container.innerWidth;
+	waterfall_width = wf_container.clientWidth;
+	//console.log("RESIZE winW="+window_width+" wfW="+waterfall_width);
+
+	new_width = px(waterfall_width);
+	var zoom_value = 0;
+	//console.log("RESIZE z"+zoom_level+" nw="+new_width+" zv="+zoom_value);
+
+	wf_canvases.forEach(function(p) {
+		p.style.width = new_width;
+		p.style.left = zoom_value;
+	});
+
+	canvas_annotation.width = waterfall_width;
+	canvas_annotation.style.width = new_width;
+
+	canvas_phantom.style.width = new_width;
+	canvas_phantom.style.left = zoom_value;
+
+	spec.canvas.style.width = new_width;
+
+   // above width change clears canvas, so redraw
+   if (wf.audioFFT_active) {
+      w3_innerHTML('id-annotation-div',
+         w3_div('w3-section w3-container',
+            w3_text('w3-large|color:cyan', 'Audio FFT<br>'),
+            w3_text('w3-small|color:cyan',
+                  'Zoom waterfall not available<br>' +
+                  (wf.no_wf?
+                     'when \"no_wf\" URL option used.<br>'
+                  :
+                     ('on channels '+ wf_chans_real +'-'+ (rx_chans-1) +' of Kiwis<br>' +
+                     'configured for '+ rx_chans +' channels.<br>')
+                  )
+            ),
+            w3_text('w3-small|color:cyan',
+               'For details see the Kiwi forum.'
+            )
+         )
+      );
+   }
+
+/*
+   if (rx_chan >= wf_chans) {
+		var sw = canvas_annotation.width;
+		var sh = canvas_annotation.height;
+      var ctx = canvas_annotation.ctx;
+		ctx.clearRect(0,0,sw,sh);
+	   ctx.font = "18px sans-serif";
+	   ctx.textBaseline = "middle";
+	   ctx.textAlign = "left";
+	   if (wf.audioFFT_active) {
+	      var x = sw/8;
+         var y = sh/2;
+         var text = 'AudioFFT';
+         w3_fillText(ctx, x, y, 'AudioFFT', 'cyan');
+         y += 18;
+         w3_fillText(ctx, x, y, '(zoom waterfall not available)', null, '14px sans-serif');
+	   } else {
+         var text =
+            wf_chans?
+               ('Waterfall not available for rx'+ rx_chan)
+            :
+               'Waterfall not allowed on this Kiwi';
+         w3_fillText(ctx, sw/2, sh/2, text, 'black');
+      }
+   }
+*/
+}
+
 function waterfall_timestamp()
 {
    var tstamp = (wf.ts_tz == 0)? (new Date()).toUTCString().substr(17,8) : (new Date()).toString().substr(16,8);
@@ -3640,6 +3742,26 @@ function wf_snap(set)
    //console.log('wf_snap new='+ owrx.wf_snap);
    w3_el('id-waterfall-container').style.cursor = owrx.wf_cursor = owrx.wf_snap? 'col-resize' : 'crosshair';
    kiwi_localStorage_setItem('wf_snap', owrx.wf_snap);
+}
+
+var page_scroll_amount = 0.8;
+
+function page_scroll(norm_dir)
+{
+   if (!wf.audioFFT_active) {
+      var dbins = norm_to_bins(norm_dir);
+      waterfall_pan_canvases(dbins);		// < 0 = pan left (toward lower freqs)
+   }
+   freqset_select();
+}
+
+function page_scroll_icon_click(evt, norm_dir)
+{
+   if (any_alternate_click_event(evt)) {
+      dx_label_step((norm_dir < 0)? -1:1);
+   } else {
+      page_scroll(norm_dir);
+   }
 }
 
 var waterfall_dont_scale=0;
@@ -3905,7 +4027,7 @@ function waterfall_add(data_raw, audioFFT)
 
 	wf_canvas_actual_line--;
 	wf_shift_canvases();
-	if (wf_canvas_actual_line < 0) add_canvas();
+	if (wf_canvas_actual_line < 0) add_wf_canvas();
 	
 	if (kiwi_gc_wf) canvas = data_raw = data_arr_u8 = decomp_data = data = null;	// gc
 }
@@ -4083,8 +4205,12 @@ function waterfall_height()
 {
 	var top_height = html("id-top-container").clientHeight;
 	var non_waterfall_height = html("id-non-waterfall-container").clientHeight;
+	var scale_height = html("id-scale-container").clientHeight;
+	owrx.scale_offsetY = top_height + non_waterfall_height - scale_height;
+
 	var wf_height = window.innerHeight - top_height - non_waterfall_height;
 	//console.log('## waterfall_height: wf_height='+ wf_height +' winh='+ window.innerHeight +' th='+ top_height +' nh='+ non_waterfall_height);
+	//console.log('## waterfall_height: scale_offsetY='+ owrx.scale_offsetY);
 	return wf_height;
 }
 
@@ -4100,8 +4226,8 @@ function resize_waterfall_container(check_init)
 
 	if (wf_height >= 0) {
 	
-	   // canvas_annotation has to track canvas_container height so as not to generate undesired mouseout events
-		canvas_annotation.style.height = canvas_container.style.height = px(wf_height);
+	   // canvas_annotation has to track wf_container height so as not to generate undesired mouseout events
+		canvas_annotation.style.height = wf_container.style.height = px(wf_height);
 		waterfall_scrollable_height = wf_height * wf.scroll_multiple;
 
       // Don't change the height because that clears the canvas.
@@ -6511,7 +6637,7 @@ function dx_enter(dx, cmkr_x, ev)
 	dx_line.style.width = '3px';
 	
 	if (cmkr_x) {
-		dx_canvas.style.left = (cmkr_x-dx_car_w/2)+'px';
+		dx_canvas.style.left = px(cmkr_x-dx_car_w/2);
 		dx_canvas.style.zIndex = 100;
 	}
 }
@@ -8598,7 +8724,6 @@ function freq_up_down_cb(path, up)
 function toggle_or_set_spec(set, val)
 {
    console.log('toggle_or_set_spec set='+ set +' val='+ val);
-   //jks kiwi_trace();
    
 	if (isNumber(set) && (set & toggle_e.SET)) {
 		spec.source_wf = val;
@@ -8966,11 +9091,18 @@ function event_dump(evt, id, oneline)
    } else {
       console.log('================================');
       console.log('EVENT_DUMP: '+ id +' type='+ evt.type);
-      console.log((evt.shiftKey? 'SFT ':'') + (evt.ctrlKey? 'CTL ':'') + (evt.altKey? 'ALT ':'') + (evt.metaKey? 'META ':'') +'key='+evt.key);
+      console.log((evt.shiftKey? 'SFT ':'') + (evt.ctrlKey? 'CTL ':'') + (evt.altKey? 'ALT ':'') + (evt.metaKey? 'META ':'') +'key='+ evt.key);
       console.log('this.id='+ this.id +' tgt.name='+ evt.target.nodeName +' tgt.id='+ evt.target.id +' ctgt.id='+ evt.currentTarget.id);
-      console.log('button='+evt.button+' buttons='+evt.buttons+' detail='+evt.detail+' which='+evt.which);
-      console.log('offX='+evt.offsetX+' pageX='+evt.pageX+' clientX='+evt.clientX+' layerX='+evt.layerX );
-      console.log('offY='+evt.offsetY+' pageY='+evt.pageY+' clientY='+evt.clientY+' layerY='+evt.layerY );
+      console.log('button='+ evt.button +' buttons='+ evt.buttons +' detail='+ evt.detail +' which='+ evt.which);
+      
+      if (evt.type.startsWith('touch')) {
+         console.log('pageX='+ evt.pageX +' clientX='+ evt.clientX +' screenX='+ evt.screenX);
+         console.log('pageY='+ evt.pageY +' clientY='+ evt.clientY +' screenY='+ evt.screenY);
+      } else {
+         console.log('pageX='+ evt.pageX +' clientX='+ evt.clientX +' screenX='+ evt.screenX +' offX(EXP)='+ evt.offsetX +' layerX(DEPR)='+ evt.layerX);
+         console.log('pageY='+ evt.pageY +' clientY='+ evt.clientY +' screenY='+ evt.screenY +' offY(EXP)='+ evt.offsetY +' layerY(DEPR)='+ evt.layerY);
+      }
+      
       console.log('evt, evt.target, evt.currentTarget, evt.relatedTarget:');
       console.log(evt);
       console.log(evt.target);

@@ -50,8 +50,9 @@ kiwi.modes_l.forEach(function(e,i) { kiwi.modes_u.push(e.toUpperCase()); kiwi.mo
 var WATERFALL_CALIBRATION_DEFAULT = -13;
 var SMETER_CALIBRATION_DEFAULT = -13;
 
-var rx_chans, wf_chans, wf_chans_real, rx_chan, max_camp;
-var try_again="";
+var rx_chans, wf_chans, wf_chans_real, max_camp;
+var rx_chan = null;     // null important: used by a w3_do_when_cond(isArg(rx_chan))
+var try_again = "";
 var conn_type;
 var seriousError = false;
 
@@ -1627,6 +1628,7 @@ function kiwi_msg(param, ws)
 
 		case "rx_chan":
 			rx_chan = parseInt(param[1]);
+			//console.log('rx_chan='+ rx_chan);
 			break;
 
 		case "max_camp":
