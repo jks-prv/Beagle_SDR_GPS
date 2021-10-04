@@ -25,7 +25,7 @@ var wfext = {    // "wf" is already in openwebrx.js
 
    tstamp_tz_s: [ 'UTC', 'local' ],
    
-   winf_i: 0,
+   winf_i: 2,
    winf_s: [ 'Hanning', 'Hamming', 'Blackman-Harris', 'none' ],
    
    interp_i: 3,
@@ -277,7 +277,7 @@ function wfext_tstamp_custom_cb(path, val)
 
 function wfext_winf_cb(path, idx, first)
 {
-   if (first) return;
+   //if (first) return;    // NB: commented out so default from wfext.winf_i will be sent to server
    w3_num_cb(path, idx, first);
 	wf_send('SET window_func='+ +idx);
 }
