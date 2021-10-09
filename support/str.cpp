@@ -39,27 +39,43 @@ Boston, MA  02110-1301, USA.
 // any kstr_cstr argument = kstr_t|C-string|NULL
 // C-string: char array or string constant or NULL
 
+//#define kdebug(x) check(x)
+#define kdebug(x) assert(x)
+
+#if defined(HOST)
+    #define KSTRINGS	1024
+#else
+    #define KSTRINGS	0xfffe
+#endif
+
 typedef struct kstring_st {
-	struct kstring_st *next_free;
+	#define KS_LAST (KSTRINGS + 1)
+    #if KS_LAST > 0xffff
+        #error KS_LAST doesn't fit in u2_t!
+    #endif
+	u2_t next_free;
+	#define KS_VALID 1
+	#define KS_EXT_MALLOCED 2
+	u2_t flags;
 	char *sp;
 	int size;
-	bool valid, externally_malloced;
 } kstring_t;
 
-#define KSTRINGS	1024
-static kstring_t kstrings[KSTRINGS], *kstr_next_free;
-int kstr_nused;
+static kstring_t kstrings[KSTRINGS];
+u2_t kstr_next_free;
+int kstr_nused, kstr_hiwat;
 
 void kstr_init()
 {
+    int i;
     kstring_t *ks;
     
-	for (ks = kstrings; ks < &kstrings[KSTRINGS-1]; ks++) {
-	    ks->next_free = ks+1;
+	for (i = 0, ks = kstrings; ks < &kstrings[KSTRINGS-1]; i++, ks++) {
+	    ks->next_free = i+1;
 	}
 	
-	ks->next_free = NULL;
-	kstr_next_free = kstrings;
+	ks->next_free = KS_LAST;
+	kstr_next_free = 0;
 }
 
 static kstring_t *kstr_is(char *s_kstr_cstr)
@@ -67,7 +83,7 @@ static kstring_t *kstr_is(char *s_kstr_cstr)
     // implicit: if (s_kstr_cstr == NULL) return NULL
 	kstring_t *ks = (kstring_t *) s_kstr_cstr;
 	if (ks >= kstrings && ks < &kstrings[KSTRINGS]) {
-	    assert(ks->valid);
+	    kdebug(ks->flags & KS_VALID);
 		return ks;
 	} else {
 		return NULL;
@@ -82,31 +98,37 @@ static char *kstr_malloc(kstr_malloc_e type, char *s_kstr_cstr, int size)
     
 	if (type == KSTR_REALLOC) {
 	    ks = kstr_is(s_kstr_cstr);
-        assert(ks != NULL);
-        assert(ks->sp != NULL);
-        assert(size >= 0);
+        kdebug(ks != NULL);
+        kdebug(ks->sp != NULL);
+        kdebug(size >= 0);
         ks->sp = (char *) kiwi_irealloc("kstr_malloc", ks->sp, size);
         ks->size = size;
         return (char *) ks;
 	}
 	
-	ks = kstr_next_free;
-	assert(ks != NULL);
+	ks = &kstrings[kstr_next_free];
 	kstr_next_free = ks->next_free;
+	if (kstr_next_free == KS_LAST) {
+	    printf("out of kstrs: KSTRINGS=%d(0x%x) increase?\n", KSTRINGS, KSTRINGS);
+	    panic("kstr_malloc");
+	}
 	kstr_nused++;
+	if (kstr_nused > kstr_hiwat) {
+	    kstr_hiwat = kstr_nused;
+	    //real_printf("kstr: hiwat=%d\n", kstr_hiwat);
+	}
+    ks->flags = KS_VALID;
 	
-    bool externally_malloced = false;
-
     if (type == KSTR_EXT_MALLOC) {
-        assert(s_kstr_cstr != NULL);
-        assert(!kstr_is(s_kstr_cstr));
-        assert(size == 0);
+        kdebug(s_kstr_cstr != NULL);
+        kdebug(!kstr_is(s_kstr_cstr));
+        kdebug(size == 0);
         size = strlen(s_kstr_cstr) + SPACE_FOR_NULL;
         //printf("%3d ALLOC %4d %p {%p} EXT <%s>\n", ks-kstrings, size, ks, s_kstr_cstr, s_kstr_cstr);
-        externally_malloced = true;
+        ks->flags |= KS_EXT_MALLOCED;
     } else {    // type == KSTR_ALLOC
-        assert(s_kstr_cstr == NULL);
-        assert(size >= 0);
+        kdebug(s_kstr_cstr == NULL);
+        kdebug(size >= 0);
         s_kstr_cstr = (char *) kiwi_imalloc("kstr_malloc", size);
         s_kstr_cstr[0] = '\0';
         //printf("%3d ALLOC %4d %p {%p}\n", ks-kstrings, size, ks, s_kstr_cstr);
@@ -114,8 +136,6 @@ static char *kstr_malloc(kstr_malloc_e type, char *s_kstr_cstr, int size)
 
     ks->sp = s_kstr_cstr;
     ks->size = size;
-    ks->externally_malloced = externally_malloced;
-    ks->valid = true;
     return (char *) ks;
 }
 
@@ -128,7 +148,7 @@ static char *kstr_what(char *s_kstr_cstr)
 	kstring_t *ks = kstr_is(s_kstr_cstr);
 	if (ks) {
 		asprintf(&p, "#%d:%d/%d|%p|{%p}%s",
-			(int) (ks-kstrings), ks->size, (int) strlen(ks->sp), ks, ks->sp, ks->externally_malloced? "-EXT":"");
+			(int) (ks-kstrings), ks->size, (int) strlen(ks->sp), ks, ks->sp, (ks->flags & KS_EXT_MALLOCED)? "-EXT":"");
 	} else {
 		asprintf(&p, "%p", s_kstr_cstr);
 	}
@@ -142,7 +162,7 @@ char *kstr_sp(char *s_kstr_cstr)
 	kstring_t *ks = kstr_is(s_kstr_cstr);
 	
 	if (ks) {
-		assert(ks->valid);
+	    kdebug(ks->flags & KS_VALID);
 		return ks->sp;
 	} else {
 		return s_kstr_cstr;
@@ -153,7 +173,7 @@ char *kstr_sp(char *s_kstr_cstr)
 char *kstr_wrap(char *s_malloced)
 {
 	if (s_malloced == NULL) return NULL;
-	assert (!kstr_is(s_malloced));
+	kdebug (!kstr_is(s_malloced));
 	return kstr_malloc(KSTR_EXT_MALLOC, s_malloced, 0);
 }
 
@@ -161,31 +181,57 @@ char *kstr_wrap(char *s_malloced)
 // It is normal that this routine might be called with a C-string in code that is freeing
 // a mix of kstr and C-strings (wrapped or not).
 // s_kstr_cstr: kstr|C-string|NULL
-void kstr_free(char *s_kstr_cstr)
+typedef enum { KSTR_FREE_NORM, KSTR_FREE_RTN_MALLOC } kstr_free_e;
+
+static char *_kstr_free(char *s_kstr_cstr, kstr_free_e mode)
 {
-	if (s_kstr_cstr == NULL) return;
+	if (s_kstr_cstr == NULL) return NULL;
+	char *rv = NULL;
 	
 	kstring_t *ks = kstr_is(s_kstr_cstr);
 	
 	if (ks) {
-		assert(ks->valid);
-		//printf("%3d  FREE %4d %p {%p} %s\n", ks-kstrings, ks->size, ks, ks->sp, ks->externally_malloced? "EXT":"");
-		kiwi_ifree((char *) ks->sp, "kstr_free");
+	    kdebug(ks->flags & KS_VALID);
+		//printf("%3d  FREE %4d %p {%p} %s\n", ks-kstrings, ks->size, ks, ks->sp, (ks->flags & KS_EXT_MALLOCED)? "EXT":"");
+		if (mode == KSTR_FREE_RTN_MALLOC) {
+		    rv = ks->sp;
+		} else {
+		    kiwi_ifree((char *) ks->sp, "kstr_free");
+		}
 		ks->sp = NULL;
 		ks->size = 0;
-		ks->externally_malloced = false;
-		ks->valid = false;
+		ks->flags = 0;
 		ks->next_free = kstr_next_free;
-		kstr_next_free = ks;
+		kstr_next_free = ks - kstrings;
 		kstr_nused--;
 	}
+	
+	return rv;
 }
+
+void  kstr_free(char *s_kstr_cstr) { _kstr_free(s_kstr_cstr, KSTR_FREE_NORM); }
+char *kstr_free_return_malloced(char *s_kstr_cstr) { return _kstr_free(s_kstr_cstr, KSTR_FREE_RTN_MALLOC); }
 
 // return C-string length from kstr object
 // s_kstr_cstr: kstr|C-string|NULL
 int kstr_len(char *s_kstr_cstr)
 {
-	return (s_kstr_cstr != NULL)? ( strlen(kstr_sp(s_kstr_cstr)) ) : 0;
+    if (s_kstr_cstr == NULL) return 0;
+    
+	kstring_t *ks = kstr_is(s_kstr_cstr);
+    if (ks) {
+        int size = ks->size - SPACE_FOR_NULL;
+        #ifdef DEBUG
+            int check_size = strlen(ks->sp);
+            if (size != check_size) {
+                printf("#### DANGER kstr_len: size(%d) != check_size(%d)\n", size, check_size);
+                return check_size;
+            }
+        #endif
+        return size;
+    } else {
+	    return strlen(s_kstr_cstr);
+	}
 }
 
 // will kstr_free() cs2 argument
@@ -238,7 +284,7 @@ void kiwi_get_chars(char *field, char *value, size_t size)
 void kiwi_set_chars(char *field, const char *value, const char fill, size_t size)
 {
 	int slen = strlen(value);
-	assert(slen <= size);
+	kdebug(slen <= size);
 	memset(field, (int) fill, size);
 	memcpy(field, value, strlen(value));
 }
@@ -369,7 +415,7 @@ char *kiwi_str_encode(char *src)
 
 	// don't use kiwi_malloc() due to large number of these simultaneously active from dx list
 	// and also because dx list has to use kiwi_ifree() due to related allocations via strdup()
-	assert(slen);
+	check(slen);
 	char *dst = (char *) kiwi_imalloc("kiwi_str_encode", slen);
 	mg_url_encode(src, dst, slen);
 	return dst;		// NB: caller must kiwi_ifree(dst)
@@ -505,7 +551,7 @@ int kiwi_str2enum(const char *s, const char *strs[], int len)
 const char *kiwi_enum2str(int e, const char *strs[], int len)
 {
 	if (e < 0 || e >= len) return NULL;
-	assert(strs[e] != NULL);
+	check(strs[e] != NULL);
 	return (strs[e]);
 }
 

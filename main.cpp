@@ -220,13 +220,19 @@ int main(int argc, char *argv[])
 		version_maj, version_min);
     lprintf("compiled: %s %s on %s\n", __DATE__, __TIME__, COMPILE_HOST);
 
-    #if defined(DEVSYS) && 0
+    #if (defined(DEVSYS) && 0)
         printf("%6s %6s %6s %6s\n", toUnits(1234), toUnits(999800, 1), toUnits(999800777, 2), toUnits(1800777666, 3));
         printf("______ ______ ______ ______\n");
         _exit(0);
     #endif
     
-    #if (defined(DEVSYS) && 1) || (defined(HOST) && 0)
+    #if (defined(DEVSYS) && 0)
+        for (int i = 0; i < 0xfffd; i++) kstr_wrap((char *) malloc(1));
+        printf("kstr_wrap() test WORKED\n");
+        _exit(0);
+    #endif
+    
+    #if (defined(DEVSYS) && 1)
         void ale_2g_test();
         ale_2g_test();
         _exit(0);
