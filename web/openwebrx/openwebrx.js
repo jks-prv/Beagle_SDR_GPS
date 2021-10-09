@@ -2459,7 +2459,7 @@ function canvas_drag(evt, x, y, clientX, clientY)
 	owrx.drag_count++;
 
 	if (owrx.scale_canvas.mouse_out) {
-	   event_dump(evt, "CD", 1);
+	   //event_dump(evt, "CD", 1);
 	   scale_canvas_drag(evt, x, y);    // continue scale dragging even though positioned on other canvases
 	   return;
 	}
