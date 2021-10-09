@@ -350,7 +350,14 @@ int main(int argc, char *argv[])
     
 	TaskInitCfg();
 
-    do_gps = admcfg_bool("enable_gps", NULL, CFG_REQUIRED);
+    // force enable_gps true because there is no longer an option switch in the admin interface (now uses acquisition checkboxes)
+    do_gps = admcfg_default_bool("enable_gps", true, NULL);
+    if (!do_gps) {
+	    admcfg_set_bool("enable_gps", true);
+		admcfg_save_json(cfg_adm.json);
+		do_gps = 1;
+    }
+    
     if (p_gps != 0) do_gps = (p_gps == 1)? 1:0;
     
 	if (down) do_sdr = do_gps = 0;
