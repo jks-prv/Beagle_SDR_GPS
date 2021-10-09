@@ -2,6 +2,28 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.469  October 10, 2021
+    Yellow passband symbol in the frequency scale -- usability improvements:
+        * Dragging in the frequency scale will no longer stop if the mouse moves outside of the scale
+        area (e.g. tracks below into the waterfall). Thus, mouse movement needs to be less precise.
+        * When zoomed out, and the yellow passband symbol is small (narrow), the passband low/high
+        adjustment "hotspots" (sloped regions on each end of the symbol) are disabled. This prevents
+        accidental passband adjustment when all you really intended was to change the frequency.
+        When the symbol is small it's impossible to see any passband adjustment anyway and there
+        are several other ways of adjusting the passband via the keyboard.
+        * To distinguish when the hotspots are enabled (i.e. when zoomed in sufficiently) the passband
+        symbol is drawn in green instead of yellow.
+
+    The default waterfall window function is now Blackman-Harris (thanks Martin)
+        See here: http://forum.kiwisdr.com/index.php?p=/discussion/2386/waterfall-settings#p1
+        
+    DX labels: When saving changes large lists no longer stall the user interface.
+    S-Meter extension: Shows ADC overflow as red markers in graph.
+
+    "Utility database lookup" in the right-click menu has been removed because it seems the
+        globaltuners.com frequency database is gone or hacked. Work is in progress to integrate the
+        EiBi database as a selectable, second source of information for the DX/tag labels bar.
+    
 v1.468  October 2, 2021
     ALE 2G extension: added "lsb" URL argument that applies to URL scan list (if any).
     FSK extension: Get update of shift position crosshairs working again.

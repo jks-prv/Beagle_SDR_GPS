@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 468
+VERSION_MIN = 469
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -1324,6 +1324,7 @@ clean: clean_ext clean_deprecated
 	(cd verilog/rx; make clean)
 	(cd tools; make clean)
 	(cd pkgs/noip2; make clean)
+#	(cd pkgs/EiBi; make clean)
 	-rm -rf $(addprefix pru/pru_realtime.,bin lst txt) $(TOOLS_DIR)/file_optim
 	# but not $(KEEP_DIR)
 	-rm -rf $(LOG_FILE) $(BUILD_DIR)/kiwi* $(GEN_DIR) $(OBJ_DIR) $(OBJ_DIR_O3)
