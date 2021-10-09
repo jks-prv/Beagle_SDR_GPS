@@ -1372,7 +1372,7 @@ function scale_setup()
 {
 	w3_el('id-scale-container').addEventListener("mouseout", scale_container_mouseout, false);
    
-	scale_canvas = html("id-scale-canvas");	
+	scale_canvas = html("id-scale-canvas");
 	scale_ctx = scale_canvas.getContext("2d");
 	add_scale_listner(scale_canvas);
 
@@ -1396,14 +1396,14 @@ function scale_setup()
 	pb_adj_cf_ttip = html("id-pb-adj-cf-ttip");
 	add_scale_listner(pb_adj_cf);
 
-	band_canvas = html("id-band-canvas");	
+	band_canvas = html("id-band-canvas");
 	band_ctx = band_canvas.getContext("2d");
 	add_canvas_listner(band_canvas);
 	
 	dx_div = html('id-dx-container');
 	add_canvas_listner(dx_div);
 
-	dx_canvas = html("id-dx-canvas");	
+	dx_canvas = html("id-dx-canvas");
 	dx_ctx = dx_canvas.getContext("2d");
 	add_canvas_listner(dx_canvas);
 	
@@ -6994,16 +6994,18 @@ function update_smeter()
 	}
 	
 	//audio_ext_adc_ovfl_test++;
-	//audio_ext_adc_ovfl = ((audio_ext_adc_ovfl_test % 16) == 15);
+	//audio_ext_adc_ovfl = ((audio_ext_adc_ovfl_test % 32) < 16);
 	
 	if (audio_ext_adc_ovfl && !sm_ovfl_showing) {
 	   w3_hide('id-smeter-dbm-units');
 	   w3_show('id-smeter-ovfl');
+	   w3_call('S_meter_adc_ovfl', true);
 	   sm_ovfl_showing = true;
 	} else
 	if (!audio_ext_adc_ovfl && sm_ovfl_showing) {
 	   w3_hide('id-smeter-ovfl');
 	   w3_show('id-smeter-dbm-units');
+	   w3_call('S_meter_adc_ovfl', false);
 	   sm_ovfl_showing = false;
 	}
 	

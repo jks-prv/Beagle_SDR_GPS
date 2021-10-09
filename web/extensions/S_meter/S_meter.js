@@ -5,6 +5,8 @@ var S_meter = {
    first_time:    true,
    stop_start_state: 0,
    update_interval:  null,
+   show_adc_ovfl: true,
+   have_adc_ovfl: 0,
    
    maxdb_init:    -30,
    mindb_init:    -130,
@@ -87,6 +89,8 @@ function S_meter_recv(data)
 			   if (S_meter.stop_start_state == 0) {
 			      S_meter.last_plot = parseFloat(param[1]);
 				   graph_plot(S_meter.gr, S_meter.last_plot);
+				   if (S_meter.show_adc_ovfl && S_meter.have_adc_ovfl)
+                  graph_annotate(S_meter.gr, 'red');
 				}
 				break;
 
@@ -127,8 +131,9 @@ function S_meter_controls_setup()
 				w3_inline('w3-halign-space-between/',
                w3_checkbox('/w3-label-inline', 'Averaging', 'S_meter.averaging', true, 'S_meter_averaging_cb'),
                w3_checkbox('/w3-label-inline', 'Timestamp', 'S_meter.timestamp', false, 'S_meter_timestamp_cb')
-            )
-			)
+            ),
+            w3_checkbox('/w3-label-inline', 'Show ADC overflow', 'S_meter.show_adc_ovfl', true, 'w3_bool_cb')
+	)
 		);
 
 	ext_panel_show(controls_html, data_html, null);
@@ -139,15 +144,20 @@ function S_meter_controls_setup()
 	S_meter.data_canvas.ctx = S_meter.data_canvas.getContext("2d");
 
    S_meter.gr = graph_init(S_meter.data_canvas, { dBm:1, averaging:true });
-	graph_mode(S_meter.gr, (S_meter.range_i == S_meter.range_AUTO)? 'auto' : 'fixed', S_meter.maxdb, S_meter.mindb);
+   S_meter_auto_man();
 
 	S_meter_environment_changed( {resize:1} );
-	ext_set_controls_width_height(250);
 
 	ext_send('SET run=1');
 
 	S_meter.update_interval = setInterval(function() {S_meter_update(0);}, 1000);
 	S_meter_update(1);
+}
+
+function S_meter_auto_man()
+{
+	ext_set_controls_width_height(250, (S_meter.range_i == S_meter.range_AUTO)? 245 : 335);
+	graph_mode(S_meter.gr, (S_meter.range_i == S_meter.range_AUTO)? 'auto' : 'fixed', S_meter.maxdb, S_meter.mindb);
 }
 
 function S_meter_environment_changed(changed)
@@ -200,12 +210,15 @@ function S_meter_range_select_cb(path, idx, first)
 	if (first) return;
 
 	S_meter.range_i = +idx;
+	w3_show_hide('id-S_meter-scale-sliders', S_meter.range_i == S_meter.range_MANUAL);
+	/*
 	if (S_meter.range_i == S_meter.range_MANUAL) {
 		w3_show_block('id-S_meter-scale-sliders');
 	} else {
 		w3_hide('id-S_meter-scale-sliders');
 	}
-	graph_mode(S_meter.gr, (S_meter.range_i == S_meter.range_AUTO)? 'auto' : 'fixed', S_meter.maxdb, S_meter.mindb);
+	*/
+   S_meter_auto_man();
 }
 
 function S_meter_maxdb_cb(path, val, complete)
@@ -214,7 +227,7 @@ function S_meter_maxdb_cb(path, val, complete)
    maxdb = Math.max(S_meter.mindb, maxdb);		// don't let min & max cross
 	w3_num_cb(path, maxdb.toString());
 	w3_set_label('Scale max '+ maxdb.toString() +' dBm', path);
-	graph_mode(S_meter.gr, (S_meter.range_i == S_meter.range_AUTO)? 'auto' : 'fixed', S_meter.maxdb, S_meter.mindb);
+   S_meter_auto_man();
 }
 
 function S_meter_mindb_cb(path, val, complete)
@@ -223,7 +236,7 @@ function S_meter_mindb_cb(path, val, complete)
    mindb = Math.min(mindb, S_meter.maxdb);		// don't let min & max cross
 	w3_num_cb(path, mindb.toString());
 	w3_set_label('Scale min '+ mindb.toString() +' dBm', path);
-	graph_mode(S_meter.gr, (S_meter.range_i == S_meter.range_AUTO)? 'auto' : 'fixed', S_meter.maxdb, S_meter.mindb);
+   S_meter_auto_man();
 }
 
 function S_meter_speed_cb(path, val, complete)
@@ -284,12 +297,17 @@ function S_meter_update(init)
 
 	if (init || freq_chg || mode_chg) {
 	   if (!init) {
-         if (freq_chg) graph_annotate(S_meter.gr, 'red');
-         if (mode_chg) graph_annotate(S_meter.gr, 'lime');
+         if (freq_chg) graph_annotate(S_meter.gr, 'lime');
+         if (mode_chg) graph_annotate(S_meter.gr, 'cyan');
       }
 		S_meter.sm_last_freq = freq;
 		S_meter.sm_last_mode = mode;
 	}
+}
+
+function S_meter_adc_ovfl(show)
+{
+   S_meter.have_adc_ovfl = show;
 }
 
 // hook that is called when controls panel is closed
