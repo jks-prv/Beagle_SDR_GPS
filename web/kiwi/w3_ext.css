@@ -614,6 +614,11 @@ input[type=range]::-moz-range-thumb {
     padding: 8px 0
 }
 
+.w3-padding-TB-10
+{
+    padding: 10px 0
+}
+
 .w3-padding-TB-24
 {
     padding: 24px 0
@@ -658,6 +663,9 @@ input[type=range]::-moz-range-thumb {
 .w3-calign-space-around { align-content: space-around }
 .w3-calign-space-between { align-content: space-between }
 
+.w3-gap-8 { gap: 8px }
+.w3-gap-10 { gap: 10px }
+
 .w3-perfect-center, .w3-perfect-centering, .w3-perfectly-centered
 {
     justify-content: center;
@@ -668,6 +676,12 @@ input[type=range]::-moz-range-thumb {
 {
 	display: flex;
 	align-items: center;
+}
+
+.w3-valign-col
+{
+	display: flex;
+	flex-direction: column;
 }
 
 .w3-inline-default

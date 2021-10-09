@@ -787,7 +787,8 @@ void c2s_waterfall(void *param)
 		}
 		
 		if (masked_seq != dx.masked_seq) {
-            send_msg(conn, false, "MSG request_dx_update");     // get client to request updated dx list
+            // get client to request updated dx list because admin edited masked list
+            send_msg(conn, false, "MSG request_dx_update");
 		    masked_seq = dx.masked_seq;
 		    new_scale_mask = true;
 		}
@@ -814,8 +815,8 @@ void c2s_waterfall(void *param)
                     float scale = fft_scale;
                     int f = roundf((wf->start + (i << (MAX_ZOOM - zoom))) * HZperStart);
                     for (j=0; j < dx.masked_len; j++) {
-                        dx_t *dxp = &dx.list[dx.masked_idx[j]];
-                        if (f >= dxp->masked_lo && f <= dxp->masked_hi) {
+                        dx_mask_t *dmp = &dx.masked_list[j];
+                        if (f >= dmp->masked_lo && f <= dmp->masked_hi) {
                             scale = 0;
                             break;
                         }

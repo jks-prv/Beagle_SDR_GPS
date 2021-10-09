@@ -511,7 +511,9 @@ function ext_mobile_info(last)
 function extint_news(s)
 {
    var el = w3_el('id-news');
-   el.style.width = '400px';
+   el.style.right = '';
+   el.style.left = '0';
+   el.style.width = '350px';
    el.style.height = '300px';
    el.style.visibility = 'visible';
    el.style.zIndex = 9999;
@@ -614,7 +616,7 @@ function extint_panel_show(controls_html, data_html, show_func, show_help_button
 	
 	el = w3_el('id-ext-controls');
 	el.style.zIndex = 150;
-	//el.style.top = px((extint.using_data_container? height_spectrum_canvas : height_top_bar_parts) +157+10);
+	//el.style.top = px((extint.using_data_container? spec.height_spectrum_canvas : owrx.height_top_bar_parts) +157+10);
 	w3_visible(el, true);
 	el.panelShown = 1;
    toggle_or_set_hide_panels(0);    // cancel panel hide mode
@@ -892,7 +894,7 @@ function extint_select_build_menu()
 	if (extint_names && isArray(extint_names)) {
 	   extint_names_enum(function(i, value, id, id_en) {
          var enable = ext_get_cfg_param(id_en +'.enable');
-         console.log('extint_select_menu id_en='+ id_en +' en='+ enable);
+         //console.log('extint_select_menu id_en='+ id_en +' en='+ enable);
          if (enable == null || kiwi.is_local[rx_chan]) enable = true;   // enable if no cfg param or local connection
          if (id == 'DRM') kiwi.DRM_enable = enable;
 		   s += '<option value='+ dq(value) +' kiwi_idx='+ dq(i) +' '+ (enable? '':'disabled') +'>'+ id +'</option>';

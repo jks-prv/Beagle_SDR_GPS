@@ -459,8 +459,8 @@ void c2s_sound(void *param)
                         int pb_hi = f + hicut;
                         //printf("SND f=%d lo=%.0f|%d hi=%.0f|%d ", f, locut, pb_lo, hicut, pb_hi);
                         for (j=0; j < dx.masked_len; j++) {
-                            dx_t *dxp = &dx.list[dx.masked_idx[j]];
-                            if (!((pb_hi < dxp->masked_lo || pb_lo > dxp->masked_hi))) {
+                            dx_mask_t *dmp = &dx.masked_list[j];
+                            if (!((pb_hi < dmp->masked_lo || pb_lo > dmp->masked_hi))) {
                                 masked = true;
                                 //printf("MASKED");
                                 break;
@@ -525,7 +525,7 @@ void c2s_sound(void *param)
                         if (rx_chan == 0) g_genfreq = gen * kHz / ui_srate;
                     }
                     if (rx_chan == 0) g_mixfreq = mix;
-                    conn->ext_api = true;
+                    //conn->ext_api = true;
                 }
                 break;
 
@@ -539,7 +539,7 @@ void c2s_sound(void *param)
                         //printf("===> CmdSetGenAttn %d 0x%x\n", genattn, genattn);
                         if (rx_chan == 0) g_genampl = genattn / (float)((1<<17)-1);
                     }
-                    conn->ext_api = true;
+                    //conn->ext_api = true;
                 }
                 break;
 

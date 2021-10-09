@@ -6,13 +6,6 @@
 		SECURITY: can eval arbitrary code input?
 */
 
-var DX_MODE = 0xf;
-
-var DX_TYPE = 0xf0;
-var DX_TYPE_SFT = 4;
-
-var DX_FLAG = 0xff00;
-
 var dxo = { };
 
 function dx_update_check(idx)
@@ -31,7 +24,7 @@ function dx_update_check(idx)
    console.log(dxo);
    
 	var mode = dxo.m;
-	var type = dxo.y << DX_TYPE_SFT;
+	var type = dxo.y << dx.DX_TYPE_SFT;
 	mode |= type;
 	dxo.f -= cfg.freq_offset;
 	if (dxo.f < 0) dxo.f = 0;

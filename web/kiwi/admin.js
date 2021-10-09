@@ -719,11 +719,11 @@ function connect_dom_ip_cb(path, val, first)
 
 function connect_remove_port(el, s, first)
 {
-	var sl = s.length;
 	var state = { bad:0, number:1, alpha:2, remove:3 };
 	var st = state.bad;
 	
 	s = s.replace('http://', '');
+	var sl = s.length;
 	
 	for (var i = sl-1; i >= 0; i--) {
 		var c = s.charAt(i);

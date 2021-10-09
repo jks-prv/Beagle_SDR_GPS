@@ -31,7 +31,8 @@ typedef char kstr_t;
 
 void kstr_init();
 char *kstr_sp(kstr_t *s_kstr_cstr);     // return C-string pointer from kstr object
-void kstr_free(kstr_t *s_kstr_cstr);    // only frees a kstr object, will not free a malloc()'d c-string unless kstr_wrap()'d
+void kstr_free(kstr_t *s_kstr_cstr);   // only frees a kstr object, will not free a malloc()'d c-string unless kstr_wrap()'d
+char *kstr_free_return_malloced(kstr_t *s_kstr_cstr);   // frees kstr object, but returns underlying memory malloced for string
 int kstr_len(kstr_t *s_kstr_cstr);      // return C-string length from kstr object
 kstr_t *kstr_wrap(char *s_malloc);      // wrap a malloc()'d C-string in a kstr object so it is auto-freed later on
 kstr_t *kstr_cat(kstr_t *s1_kstr_cstr, const kstr_t *s2_kstr_cstr);     // will kstr_free() s2_kstr_cstr argument

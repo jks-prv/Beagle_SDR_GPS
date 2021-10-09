@@ -41,6 +41,10 @@ Boston, MA  02110-1301, USA.
 //#define TMEAS(x) x
 #define TMEAS(x)
 
+#ifdef DEVL_EiBi
+    #include "EiBi.h"
+#endif
+
 dxlist_t dx;
 
 // create JSON string from dx_t struct representation
@@ -51,17 +55,21 @@ void dx_save_as_json()
 	dx_t *dxp;
 	char *sb;
 
-	TMEAS(printf("dx_save_as_json: START saving as dx.json, %d entries\n", dx.len);)
+	TMEAS(u4_t start = timer_ms();)
+	TMEAS(printf("DX_UPD dx_save_as_json: START saving as dx.json, %d entries\n", dx.stored_len);)
+	
+	typedef struct { char *sp; int sl; } dx_a_t;
+	dx_a_t *dx_a = (dx_a_t *) kiwi_imalloc("dx_a", dx.stored_len * sizeof(dx_a_t));
+	int sb_len = 0;
 
-	sb = kstr_asprintf(NULL, "{\"dx\":[\n");
-
-	for (i=0, dxp = dx.list; i < dx.len; i++, dxp++) {
+	for (i=0, dxp = dx.stored_list; i < dx.stored_len; i++, dxp++) {
 	    char *ident = kiwi_str_decode_selective_inplace(strdup(dxp->ident));
 	    char *notes = dxp->notes? kiwi_str_decode_selective_inplace(strdup(dxp->notes)) : strdup("");
 	    char *params = (dxp->params && *dxp->params)? kiwi_str_decode_selective_inplace(strdup(dxp->params)) : NULL;
 	    
-	    sb = kstr_asprintf(sb, "[%.2f, \"%s\", \"%s\", \"%s\", %d, %d",
+	    sb = kstr_asprintf(NULL, "[%.2f, \"%s\", \"%s\", \"%s\", %d, %d",
 	        dxp->freq, modu_s[dxp->flags & DX_MODE], ident, notes, dxp->timestamp, dxp->tag);
+        free(ident); free(notes);   // not kiwi_ifree() because from strdup()
 
 		u4_t type = dxp->flags & DX_TYPE;
 		if (type || dxp->low_cut || dxp->high_cut || dxp->offset || params) {
@@ -95,25 +103,50 @@ void dx_save_as_json()
 			    sb = kstr_asprintf(sb, "%s\"p\":\"%s\"", delim, params);
 			}
 			sb = kstr_cat(sb, "}");
-			free(params);
+			free(params);   // not kiwi_ifree() because from strdup()
 		}
 
-        sb = kstr_asprintf(sb, "]%s\n", (i != dx.len-1)? ",":"");
-        free(ident); free(notes);
-		if ((i&31) == 0) NextTask("dx_save_as_json");
+        sb = kstr_asprintf(sb, "]%s\n", (i != dx.stored_len-1)? ",":"");
+        n = kstr_len(sb);
+        sb_len += n;
+        dx_a[i].sl = n;
+        dx_a[i].sp = kstr_free_return_malloced(sb);
+
+		if ((i & 0x1f) == 0) {
+		    NextTask("dx_save_as_json");
+		}
 	}
 	
-    sb = kstr_cat(sb, "]}");
+	kiwi_ifree(dx.json);
+	TMEAS(u4_t split = timer_ms(); printf("DX_UPD sb_len=%d %.3f sec\n", sb_len, TIME_DIFF_MS(split, start));)
+	dx.json = (char *) kiwi_imalloc("dx.json", sb_len + 32);     // 32 is for '{"dx":[...]}' below
+	char *cp = dx.json;
+	int tsize = 0;
+	n = sprintf(cp, "{\"dx\":[\n");
+	cp += n;
+	tsize += n;
 
+	for (i = 0; i < dx.stored_len; i++) {
+	    strcpy(cp, dx_a[i].sp);
+	    kiwi_ifree(dx_a[i].sp);
+	    n = dx_a[i].sl;
+	    cp += n;
+	    tsize += n;
+		if ((i & 0x1f) == 0) {
+		    NextTask("dx_save_as_json");
+		}
+	}
 
-    kstr_free(dx.kstr);
-    dx.kstr = sb;
-    cfg->json = kstr_sp(sb);
-    cfg->json_buf_size = strlen(cfg->json);
+	kiwi_ifree(dx_a);
+	n = sprintf(cp, "]}\n");
+    tsize += n;
+	TMEAS(printf("DX_UPD tsize=%d\n", tsize);)
+    cfg->json = dx.json;
+    cfg->json_buf_size = tsize;
 
-	TMEAS(printf("dx_save_as_json: dx struct -> json string\n");)
+	TMEAS(u4_t split2 = timer_ms(); printf("DX_UPD dx_save_as_json: dx struct -> json string %.3f sec\n", TIME_DIFF_MS(split2, split));)
 	dxcfg_save_json(cfg->json);
-	TMEAS(printf("dx_save_as_json: DONE\n");)
+	TMEAS(u4_t now = timer_ms(); printf("DX_UPD dx_save_as_json: DONE %.3f/%.3f sec\n", TIME_DIFF_MS(now, split2), TIME_DIFF_MS(now, start));)
 }
 
 static void dx_mode(dx_t *dxp, const char *s)
@@ -157,32 +190,31 @@ void dx_prep_list(bool need_sort, dx_t *_dx_list, int _dx_list_len, int _dx_list
     // have to sort first before rebuilding masked list in case an entry is being deleted
     dx.masked_len = 0;
     for (i = 0, dxp = _dx_list; i < _dx_list_len_new; i++, dxp++) {
+        dxp->idx = i;   // init self index
         if ((dxp->flags & DX_TYPE) == DX_MK) dx.masked_len++;
     }
-    kiwi_ifree(dx.masked_idx); dx.masked_idx = NULL;
-    if (dx.masked_len > 0) dx.masked_idx = (int *) kiwi_imalloc("dx_prep_list", dx.masked_len * sizeof(int));
+    kiwi_ifree(dx.masked_list); dx.masked_list = NULL;
+    if (dx.masked_len > 0) dx.masked_list = (dx_mask_t *) kiwi_imalloc("dx_prep_list", dx.masked_len * sizeof(dx_mask_t));
+
     for (i = j = 0, dxp = _dx_list; i < _dx_list_len_new; i++, dxp++) {
-        dxp->idx = i;
-        if ((dxp->flags & DX_TYPE) == DX_MK)
-            dx.masked_idx[j++] = i;
+        if ((dxp->flags & DX_TYPE) == DX_MK) {
+            dx_mask_t *dmp = &dx.masked_list[j++];
+            int mode = dxp->flags & DX_MODE;
+            int masked_f = roundf(dxp->freq * kHz);
+            int hbw = mode_hbw[mode];
+            int offset = mode_offset[mode];
+            dmp->masked_lo = masked_f + offset + (dxp->low_cut? dxp->low_cut : -hbw);
+            dmp->masked_hi = masked_f + offset + (dxp->high_cut? dxp->high_cut : hbw);
+            //printf("masked %.3f %d-%d %s hbw=%d off=%d lc=%d hc=%d\n",
+            //    dxp->freq, dmp->masked_lo, dmp->masked_hi, modu_s[mode], hbw, offset, dxp->low_cut, dxp->high_cut);
+        }
     }
 
-    for (i = 0; i < dx.masked_len; i++) {
-        dxp = &_dx_list[dx.masked_idx[i]];
-        int mode = dxp->flags & DX_MODE;
-        int masked_f = roundf(dxp->freq * kHz);
-        int hbw = mode_hbw[mode];
-        int offset = mode_offset[mode];
-        dxp->masked_lo = masked_f + offset + (dxp->low_cut? dxp->low_cut : -hbw);
-        dxp->masked_hi = masked_f + offset + (dxp->high_cut? dxp->high_cut : hbw);
-        //printf("masked %.3f %d-%d %s hbw=%d off=%d lc=%d hc=%d\n",
-        //    dxp->freq, dxp->masked_lo, dxp->masked_hi, modu_s[mode], hbw, offset, dxp->low_cut, dxp->high_cut);
-    }
     dx.masked_seq++;
 }
 	
 // create and switch to new dx_t struct from JSON token list representation
-static void dx_reload_json(cfg_t *cfg)
+static void _dx_reload_json(cfg_t *cfg)
 {
 	const char *s;
 	jsmntok_t *end_tok = &(cfg->tokens[cfg->ntok]);
@@ -293,10 +325,19 @@ static void dx_reload_json(cfg_t *cfg)
     dx_prep_list(true, _dx_list, _dx_list_len, _dx_list_len);
 
 	// switch to new list
-	dx_t *prev_dx_list = dx.list;
-	int prev_dx_list_len = dx.len;
-	dx.list = _dx_list;
-	dx.len = _dx_list_len;
+	dx_t *prev_dx_list = dx.stored_list;
+	int prev_dx_list_len = dx.stored_len;
+
+	dx.stored_list = _dx_list;
+	dx.stored_len = _dx_list_len;
+	
+	for (i = 0; i < MAX_RX_CHANS; i++) {
+        dx_rx_t *drx = &dx.dx_rx[i];
+	    drx->db = DB_STORED;
+	    drx->cur_list = dx.stored_list;
+	    drx->cur_len = dx.stored_len;
+	}
+
 	dx.hidden_used = false;
 	dx.json_up_to_date = true;
 	
@@ -330,6 +371,33 @@ void dx_reload()
 	
 	//dxcfg_walk(NULL, cfg_print_tok, NULL);
 	TMEAS(u4_t split = timer_ms(); printf("DX_RELOAD json file read and json struct %.3f sec\n", TIME_DIFF_MS(split, start));)
-	dx_reload_json(cfg);
+	_dx_reload_json(cfg);
 	TMEAS(u4_t now = timer_ms(); printf("DX_RELOAD DONE json struct -> dx struct %.3f/%.3f sec\n", TIME_DIFF_MS(now, split), TIME_DIFF_MS(now, start));)
+}
+
+void dx_eibi_init()
+{
+#ifdef DEVL_EiBi
+    int i, n = 0;
+    dx_t *dxp;
+    float f = 0;
+    
+    for (i = 0, dxp = eibi_db; dxp->freq; i++, dxp++) {
+        //if (dxp->freq == f) continue;   // temp: only take first per freq
+        n++;
+        f = dxp->freq;
+        dxp->ident_s = eibi_ident[dxp->ident_idx];
+		dxp->ident = kiwi_str_encode((char *) dxp->ident_s);
+        //asprintf(&(dxp->notes_s), "%04d-%04d %s", dxp->time_begin, dxp->time_end, eibi_notes[dxp->notes_idx]);
+        //dxp->notes_s = (char *) eibi_notes[dxp->notes_idx];
+        dxp->notes_s = (char *) "";
+		dxp->notes = kiwi_str_encode((char *) dxp->notes_s);
+		dxp->params = "";
+		dxp->idx = i;
+    }
+    printf("DX_UPD dx_eibi_init: %d/%d EiBi entries\n", n, i);
+
+    dx.eibi_list = eibi_db;
+    dx.eibi_len = n;
+#endif
 }

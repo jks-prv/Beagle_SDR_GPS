@@ -1143,7 +1143,7 @@ static bool _cfg_parse_json(cfg_t *cfg, bool doPanic)
 		if (cfg->tokens)
 			kiwi_free("cfg tokens", cfg->tokens);
 		
-		TMEAS(printf("cfg_parse_json: file=%s tok_size=%d\n", cfg->filename, cfg->tok_size);)
+		TMEAS(printf("cfg_parse_json: file=%s tok_size=%d tok_mem=%d\n", cfg->filename, cfg->tok_size, sizeof(jsmntok_t) * cfg->tok_size);)
 		cfg->tokens = (jsmntok_t *) kiwi_malloc("cfg tokens", sizeof(jsmntok_t) * cfg->tok_size);
 
 		jsmn_init(&parser);

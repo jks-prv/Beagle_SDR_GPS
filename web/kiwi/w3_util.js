@@ -2572,7 +2572,8 @@ function w3_menu_items(id, arr)
    for (var i=0; i < items.length; i++) {
       if (items[i] == '<hr>') {
          prop = 'w3-menu-item-hr';
-         attr = '';
+         attr = 'id='+ dq(idx);
+         idx++;
       } else
       if (items[i].charAt(0) == '!') {    // first char == '!' hack to disable menu item
          prop = 'w3-menu-item-disabled';

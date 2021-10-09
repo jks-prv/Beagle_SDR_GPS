@@ -349,6 +349,7 @@ Number.prototype.toUnits = function()
 }
 
 // allow 'k' (1e3) and 'M' (1e6) suffix
+// use "adj" param to convert returned result in kHz (=1e-3), MHz (=1e-6) etc.
 String.prototype.parseFloatWithUnits = function(allowed_suffixes, adj) {
 	var s = String(this);
 	var v = parseFloat(s);

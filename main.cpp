@@ -220,13 +220,19 @@ int main(int argc, char *argv[])
 		version_maj, version_min);
     lprintf("compiled: %s %s on %s\n", __DATE__, __TIME__, COMPILE_HOST);
 
-    #if defined(DEVSYS) && 0
+    #if (defined(DEVSYS) && 0)
         printf("%6s %6s %6s %6s\n", toUnits(1234), toUnits(999800, 1), toUnits(999800777, 2), toUnits(1800777666, 3));
         printf("______ ______ ______ ______\n");
         _exit(0);
     #endif
     
-    #if (defined(DEVSYS) && 1) || (defined(HOST) && 0)
+    #if (defined(DEVSYS) && 0)
+        for (int i = 0; i < 0xfffd; i++) kstr_wrap((char *) malloc(1));
+        printf("kstr_wrap() test WORKED\n");
+        _exit(0);
+    #endif
+    
+    #if (defined(DEVSYS) && 1)
         void ale_2g_test();
         ale_2g_test();
         _exit(0);
@@ -350,7 +356,14 @@ int main(int argc, char *argv[])
     
 	TaskInitCfg();
 
-    do_gps = admcfg_bool("enable_gps", NULL, CFG_REQUIRED);
+    // force enable_gps true because there is no longer an option switch in the admin interface (now uses acquisition checkboxes)
+    do_gps = admcfg_default_bool("enable_gps", true, NULL);
+    if (!do_gps) {
+	    admcfg_set_bool("enable_gps", true);
+		admcfg_save_json(cfg_adm.json);
+		do_gps = 1;
+    }
+    
     if (p_gps != 0) do_gps = (p_gps == 1)? 1:0;
     
 	if (down) do_sdr = do_gps = 0;
