@@ -57,9 +57,16 @@ var conn_type;
 var seriousError = false;
 
 
-var types = [ 'active', 'watch-list', 'sub-band', 'DGPS', 'special event', 'interference', 'masked' ];
-var types_s = { active:0, watch_list:1, sub_band:2, DGPS:3, special_event:4, interference:5, masked:6 };
-var type_colors = { 0:'cyan', 0x10:'lightPink', 0x20:'aquamarine', 0x30:'lavender', 0x40:'violet', 0x50:'violet', 0x60:'lightGrey' };
+var types = [
+   'active', 'watch-list', 'sub-band', 'DGPS', 'special event', 'interference', 'masked'
+];
+var types_s = {
+   active:0, watch_list:1, sub_band:2, DGPS:3, special_event:4, interference:5, masked:6
+};
+var type_colors = [
+   'cyan', 'lightPink', 'aquamarine', 'lavender', 'lightSkyBlue', 'violet', 'lightGrey', 'paleGreen',
+   'peachPuff', 'powderBlue', 'cornsilk', 'honeyDew'
+];
 
 var timestamp;
 
@@ -1656,8 +1663,9 @@ function kiwi_msg(param, ws)
 			break;					
 
 		case "mkr":
-			//console.log('MKR '+ param[1]);
-			var obj = kiwi_JSON_parse('mkr', param[1]);
+			var mkr = param[1];
+			//console.log('MKR '+ mkr);
+			var obj = kiwi_JSON_parse('mkr', mkr);
 			if (obj) dx_label_cb(obj);
 			break;					
 

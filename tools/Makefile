@@ -1,7 +1,7 @@
 include ../Makefile.comp.inc
 
-UTIL = multiply2
-UTILS = audio integrate hog multiply ext64 decimate security wspr e1b_fec viterbi27_test e1b_code multiply2
+UTIL = dx_huge
+UTILS = audio integrate hog multiply ext64 decimate security wspr e1b_fec viterbi27_test e1b_code multiply2 dx_huge
 
 CMD =
 
@@ -16,6 +16,10 @@ endif
 
 ifeq ($(UTIL),decimate)
     CMD = /Applications/baudline.app/Contents/Resources/baudline -quadrature -overlays 2 /Users/jks/new.dec2.au
+endif
+
+ifeq ($(UTIL),dx_huge)
+    CLEAN = dx_huge.json
 endif
 
 ifeq ($(UTIL),wspr)
@@ -49,4 +53,4 @@ run: $(UTIL)
 	$(CMD)
 
 clean:
-	rm -f $(UTILS) *.o *.d *.dat *.xz
+	rm -f $(UTILS) *.o *.d *.dat *.xz $(CLEAN)
