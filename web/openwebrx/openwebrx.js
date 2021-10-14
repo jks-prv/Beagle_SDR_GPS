@@ -58,8 +58,6 @@ var owrx = {
    ovld_mute: 0,
    ovld_mute_s: [ 'off', 'on' ],
    
-   dx_devl: 0,
-   
    scale_canvas: {
 	   mouse_out: false,
       target: null,
@@ -228,6 +226,7 @@ function kiwi_main()
 	s = 'pb'; if (q[s]) override_pbw = q[s];
 	s = 'pbc'; if (q[s]) override_pbc = q[s];
 	s = 'sp'; if (q[s]) spectrum_show = q[s];
+	s = 'spec'; if (q[s]) spectrum_show = q[s];
 	s = 'spp'; if (q[s]) spectrum_param = parseFloat(q[s]);
 	s = 'vol'; if (q[s]) { kiwi.volume = parseInt(q[s]); kiwi.volume = Math.max(0, Math.min(400, kiwi.volume)); }
 	s = 'mute'; if (q[s]) muted_initially = parseInt(q[s]);
@@ -263,7 +262,6 @@ function kiwi_main()
 	s = 'gc_wspr'; if (q[s]) kiwi_gc_wspr = parseInt(q[s]);
 	s = 'ctrace'; if (q[s]) { param_ctrace = true; ctrace = parseInt(q[s]); }
 	s = 'mobile'; if (q[s]) mobile_laptop_test = true;
-	s = 'dx'; if (q[s]) { owrx.dx_devl = 1; }
 	s = 'v'; if (q[s]) console.log('URL: debug_v = '+ (debug_v = q[s]));
 
 	if (kiwi_gc_snd == -1) kiwi_gc_snd = kiwi_gc;
@@ -297,6 +295,7 @@ function kiwi_main()
    okay_wf_init = true;
 	confirmation_panel_init2();
 	smeter_init();
+	dx_color_init();
 	time_display_setup('id-topbar-right-container');
 	
 	window.setInterval(send_keepalive, 5000);
@@ -422,7 +421,7 @@ function init_panel_toggle(type, panel, scrollable, timeo, color)
 
 	if (timeo != undefined) {
       //console.log(panel +' timeo='+ timeo);
-		if (timeo) {
+		if (timeo > 0) {
 			setTimeout(function() {toggle_panel(panel);}, timeo);
 		} else
 		if (timeo == popt.CLOSE) {
@@ -432,10 +431,13 @@ function init_panel_toggle(type, panel, scrollable, timeo, color)
 			divPanel.style.visibility = "visible";
 		}
 	}
+	
 	if (color != undefined) {
 		var divShow = w3_el(panel+'-show');
 		if (divShow != undefined) divShow.style.backgroundColor = divShow.style.borderColor = color;
 	}
+	
+	divPanel.init = true;
 }
 
 function toggle_panel(panel, set)
@@ -1989,18 +1991,20 @@ function resize_scale(a)
 
 	dx_ctx.canvas.width = dx_car_w;
 	dx_ctx.canvas.height = dx_car_h;
-	dx_canvas.style.top = px(scale_canvas_top - dx_car_h);
+	dx_canvas.style.top = px(scale_canvas_top - dx_car_h + 2);
 	dx_canvas.style.left = 0;
 	dx_canvas.style.zIndex = 99;
 	
 	// the dx canvas is used to form the "carrier" marker symbol (yellow triangle) seen when
 	// an NDB dx label is entered by the mouse
+   dx_ctx.miterLimit = 2;
+   dx_ctx.lineJoin = "round";
 	dx_ctx.beginPath();
 	dx_ctx.lineWidth = dx_car_border-1;
 	dx_ctx.strokeStyle='black';
 	var o = dx_car_border;
 	var x = dx_car_size;
-	dx_ctx.moveTo(o,o);
+	dx_ctx.moveTo(o-1,o);
 	dx_ctx.lineTo(o+x,o);
 	dx_ctx.lineTo(o+x/2,o+x);
 	dx_ctx.lineTo(o,o);
@@ -2684,6 +2688,11 @@ function right_click_menu_init()
 {
    var i = 0;
    var m = [];
+   m.push('DX stored database'); owrx.rcm_stored = i; i++;
+   m.push('DX EiBi database'); owrx.rcm_eibi = i; i++;
+   m.push('edit last selected DX label'); owrx.rcm_edit = i; i++;
+   m.push('DX label filter'); owrx.rcm_filter = i; i++;
+   m.push('<hr>'); i++;
 
    m.push('database lookup'); owrx.rcm_db = i; i++;
    //m.push('Utility database lookup'); owrx.rcm_util = i; i++;
@@ -2694,8 +2703,6 @@ function right_click_menu_init()
    m.push('🔒 lock tuning'); owrx.rcm_lock = i; i++;
    m.push('restore passband'); owrx.rcm_pb = i; i++;
    m.push('save waterfall as JPG'); owrx.rcm_save = i; i++;
-   m.push('edit last selected DX label'); owrx.rcm_edit = i; i++;
-   m.push('DX label filter'); owrx.rcm_filter = i; i++;
    m.push('<hr>'); i++;
 
    m.push('<i>cal ADC clock (admin)</i>'); owrx.rcm_cal = i; i++;
@@ -2729,8 +2736,8 @@ function right_click_menu(x, y)
    owrx.right_click_menu_content[owrx.rcm_snap] = owrx.wf_snap? 'no snap' : 'snap to nearest';
    
    // disable menu item if last label gid is not set
-   var edit = isDefined(owrx.dx_click_gid_last);
-   owrx.right_click_menu_content[owrx.rcm_edit] = (edit? '':'!') +'edit last selected DX label';
+   var edit = (dx.db == dx.DB_STORED && isDefined(owrx.dx_click_gid_last));
+   owrx.right_click_menu_content[owrx.rcm_edit] = edit? 'edit last selected DX label' : 'open DX label edit panel';
 
    w3_menu_items('id-right-click-menu', owrx.right_click_menu_content);
    w3_menu_popup('id-right-click-menu', x, y);
@@ -2742,7 +2749,12 @@ function right_click_menu_cb(idx, x)
    
    switch (idx) {
    
-   case owrx.rcm_db:    // database lookups
+   case owrx.rcm_stored:
+   case owrx.rcm_eibi:
+      dx_database_cb('', (idx == owrx.rcm_stored)? dx.DB_STORED : dx.DB_EiBi);
+      break;
+
+   case owrx.rcm_db:  // database lookups
    case owrx.rcm_cluster:
 		freq_database_lookup(canvas_get_dspfreq(x), idx);
       break;
@@ -2766,7 +2778,12 @@ function right_click_menu_cb(idx, x)
       break;
    
    case owrx.rcm_edit:  // edit last selected dx label
-      dx_show_edit_panel(null, owrx.dx_click_gid_last);
+      var gid = -1;
+      if (dx.db == dx.DB_STORED && isDefined(owrx.dx_click_gid_last))
+         gid = owrx.dx_click_gid_last;
+      console.log('RCM rcm_edit: gid='+ gid +' db='+ dx.db);
+      dx_show_edit_panel(null, gid);
+	   dx_schedule_update();
       break;
    
    case owrx.rcm_filter:  // open dx label filter
@@ -3590,10 +3607,7 @@ function wf_init()
    if (kiwi_isMobile() || mobile_laptop_test)
       mobile_init();
    
-   if (0 && owrx.dx_devl) {
-      dx.db = dx.DB_EiBi;
-      dx_show_edit_panel(null, -1);
-   }
+   dx_init();
 
 	waterfall_setup_done=1;
 }
@@ -5131,7 +5145,7 @@ function freqset_select()
    // extensions use w3-ext-retain-input-focus instead of w3-retain-input-focus so we can handle the following situation:
    var closed_ext_input_still_holding_focus = (ae && w3_contains(ae, 'w3-ext-retain-input-focus') && !extint.displayed);
    if (closed_ext_input_still_holding_focus) {
-      console.log('#### closed_ext_input_still_holding_focus');
+      //console.log('#### closed_ext_input_still_holding_focus');
    }
 
    var retain_input_focus = (ae && (w3_contains(ae, 'w3-retain-input-focus') || w3_contains(ae, 'w3-ext-retain-input-focus')));
@@ -6082,36 +6096,73 @@ var dx = {
    DB_EiBi: 1,
    db: 0,
    db_s: [ 'stored (writable)', 'EiBi (read-only)' ],
+   url_p: null,
+   help: false,
    
-   eibi_svc: [],
-   eibi_svc_s: [
-      'Bcast', 'HFDL', 'CW', 'FSK', 'Time', 'Utility',
-      'ALE', 'Spy', 'Modem', 'FAX', 'Aero', 'Maritime'
+   stored_types: [ 'active', 'watch-list', 'sub-band', 'DGPS', 'special event', 'interference', 'masked' ],
+   stored_types_s: { active:0, watch_list:1, sub_band:2, DGPS:3, special_event:4, interference:5, masked:6 },
+   stored_colors: [ 'cyan', 'lightPink', 'aquamarine', 'lavender', 'violet', 'violet', 'lightGrey' ],
+
+   type_colors: [],
+   h: [
+         'cyan',                 /* magenta */ 300,      'deepSkyBlue',
+         'silver',               /* gold */ 50,          'peachPuff',
+         'mediumAquaMarine',     /* violet */ 270,       /* blue */ 180,
+         /* olive */ 70,         'springGreen',          /* red */ 0
    ],
-   types_mask: -1,
+   l: [
+         0,                      /* magenta */ 80,       0,
+         0,                      /* gold */ 70,          0,
+         0,                      /* violet */ 80,        80,
+         /* olive */ 45,         0,                      75
+   ],
+   type_colors_light: [],
+
+   eibi_svc_s: [
+      'Bcast',    'Utility',  'Time',
+      'ALE',      'HFDL',     'Milcom',
+      'CW',       'FSK',      'Fax',
+      'Aero',     'Maritime', 'Spy'
+   ],
+   eibi_ext: [
+      '',         '',         'time',
+      'ale',      '',         '',
+      'cw',       'fsk',      'fax',
+      '',         '',         ''
+   ],
+   types_mask: 0xffffffff,
    filter_tod: 1,
+   lightness: 0.90,
 
-   DX_MODE:    0x000f,
+   DX_MODE:       0x0000000f,
 
-   DX_TYPE:    0x01f0,
+   DX_TYPE:       0x000001f0,
    DX_TYPE_SFT: 4,
 
-   DX_FIRST:   0x0080,
-   DX_BCAST:   0x0080,
-   DX_HFDL:	   0x0090,
-   DX_CW:	   0x00a0,
-   DX_FSK:	   0x00b0,
-   DX_TIME:	   0x00c0,
-   DX_UTIL:	   0x00d0,
-   DX_ALE:	   0x00e0,
-   DX_SPY:     0x00f0,
-   DX_MODEM:   0x0100,
-   DX_FAX:     0x0110,
-   DX_AERO:    0x0120,
-   DX_MARINE:  0x0130,
-   DX_LAST:    0x0130,
+   DX_FIRST:      0x00000080,
+   DX_BCAST:      0x00000080,
+   DX_UTIL:	      0x00000090,
+   DX_TIME:	      0x000000a0,
+   DX_ALE:	      0x000000b0,
+   DX_HFDL:	      0x000000c0,
+   DX_MILCOM:     0x000000d0,
+   DX_CW:	      0x000000e0,
+   DX_FSK:        0x000000f0,
+   DX_FAX:        0x00000100,
+   DX_AERO:       0x00000110,
+   DX_MARINE:     0x00000120,
+   DX_SPY:        0x00000130,
+   DX_LAST:       0x00000130,
 
-   DX_DOW:     0xfe00,
+   DX_DOW:        0x0000fe00,
+   DX_MON:        0x00008000,
+   
+   DX_FLAGS:      0xffff0000,
+   DX_FILTERED:   0x00010000,
+   DX_HAS_EXT:    0x00020000,
+   
+   list: [],
+   displayed: [],
 
    filter_ident: '',
    filter_notes: '',
@@ -6119,8 +6170,67 @@ var dx = {
    filter_wild: 0,
    filter_grep: 0,
    ctrl_click: false,
-   displayed: [],
 };
+
+function dx_init()
+{
+   if ((dx.url_p = kiwi_url_param('dx', '', null)) != null) {
+      dx.db = dx.DB_EiBi;
+      //dx.types_mask = (1 << dx_type2idx(dx.DX_BCAST)) | (1 << dx_type2idx(dx.DX_UTIL));
+      //dx.filter_tod = 0;
+      
+      // wait for panel init to occur
+      w3_do_when_cond(function() { var el = w3_el('id-ext-controls'); return el? el.init : false; }, function() {
+         console.log('DX url_p="'+ dx.url_p +'"');
+         if (dx.url_p != '') {
+            var r, p = dx.url_p.split(',');
+            p.forEach(function(a, i) {
+               console.log('DX url_p=<'+ a +'>');
+               if (w3_ext_param('help', a).match) {
+                  dx.help = true;
+               } else
+               if (w3_ext_param('none', a).match) {
+                  dx.types_mask = 0;
+                  console.log('SET none dx.types_mask='+ dx.types_mask);
+               } else
+               if ((r = w3_ext_param('filter', a)).match) {
+                  dx.filter_tod = r.has_value? r.num : 1;
+                  console.log('SET filter_tod='+ dx.filter_tod +' r.has_value='+ r.has_value +' r.num='+ r.num);
+               } else
+               w3_ext_param_array_match_str(dx.eibi_svc_s, a, function(i,a) {
+                  var v = dx.types_mask & (1 << i);
+                  if (v)
+                     dx.types_mask &= ~(1 << i);
+                  else
+                     dx.types_mask |= 1 << i;
+                  console.log('MATCH '+ a +' v='+ v.toHex(8) +'('+ i +') dx.types_mask='+ dx.types_mask.toHex(8));
+               });
+            });
+         }
+         
+         console.log('FINAL dx.types_mask='+ dx.types_mask.toHex(8) +' dx.help='+ dx.help);
+         dx_show_edit_panel(null, -1);
+	      dx_schedule_update();
+      }, 0, 500);
+   }
+}
+
+function dx_color_init()
+{
+   dx.h.forEach(function(hue,i) {
+      if (isString(hue)) {
+         dx.type_colors[i] = hue;
+      } else {
+         dx.type_colors[i] = 'hsl('+ hue +',100%,'+ dx.l[i] +'%)';
+      }
+      
+      var color = w3color(dx.type_colors[i]);
+      color.lightness = dx.lightness;
+      dx.type_colors_light[i] = color.toHslString();
+   });
+   for (var i = dx_type2idx(dx.DX_FIRST); i <= dx_type2idx(dx.DX_LAST); i++)
+      w3_color('eibi-cbox'+ i +'-label', 'black', dx.type_colors[i]);
+}
 
 var dx_update_delay = 350;
 var dx_update_timeout, dx_seq=0;
@@ -6136,16 +6246,16 @@ function dx_update()
 {
 	dx_seq++;
 	//g_range = get_visible_freq_range();
-	//console.log("DX min="+(g_range.start/1000)+" max="+(g_range.end/1000));
+	//if (dbgUs) console.log("DX min="+(g_range.start/1000)+" max="+(g_range.end/1000));
 	wf_send('SET MARKER db='+ dx.db +' min='+ (g_range.start/1000).toFixed(3) +' max='+ (g_range.end/1000).toFixed(3) +
 	   ' zoom='+ zoom_level +' width='+ waterfall_width +' types_mask='+ dx.types_mask.toHex() +' filter_tod='+ dx.filter_tod);
 
 	// refresh EiBi every 5 minutes to catch schedule changes
    kiwi_clearInterval(dx.eibi_refresh_interval);
 	if (dx.db == dx.DB_EiBi && dx.filter_tod) {
-	   //console.log('$ SET eibi_refresh_interval');
+	   //if (dbgUs) console.log('$ SET eibi_refresh_interval');
 	   dx.eibi_refresh_interval = setInterval(function() {
-	      //console.log('$ GO eibi_refresh_interval');
+	      //if (dbgUs) console.log('$ GO eibi_refresh_interval');
 	      dx_schedule_update();
 	   }, 5*60000);
 	}
@@ -6179,20 +6289,21 @@ var dx_ibp_stations = {
 	'YV5B':		{ value:17, text: 'Venezuela' }
 };
 
-var dx_list = [];
-
 function dx_label_cb(arr)
 {
 	var i, j, k;
 	var obj = arr[0];
    var eibi = (dx.db == dx.DB_EiBi);
+   var gap = eibi? 40 : 35;
+   
+   dx_color_init();
 
 	// reply to label step request
 	if (obj.t == 2) {
 	   var dl = arr[1];
 	   if (dl) {
 	      //console_log_dbgUs('dx_label_cb: type=2 f='+ dl.f);
-	      //console.log(dl);
+	      //if (dbgUs) console.log(dl);
 	      var mode = kiwi.modes_l[dl.x & dx.DX_MODE];
          freqmode_set_dsp_kHz(dl.f, mode);
          if (dl.lo != 0 && dl.hi != 0) {
@@ -6213,7 +6324,9 @@ function dx_label_cb(arr)
 	dx_ibp_local_time_epoch_ms = Date.now();
 	
 	if (eibi) for (i = 0; i <= dx_type2idx(dx.DX_LAST); i++) {
-	   w3_innerHTML('eibi-cbox'+ i +'-label', dx.eibi_svc_s[i] +' ('+ obj['c'+ i] +')');
+	   var ct = obj['c'+ i];
+	   if (isDefined(ct))
+	      w3_innerHTML('eibi-cbox'+ i +'-label', dx.eibi_svc_s[i] +' ('+ ct +')');
 	}
 	
 	dx_filter_field_err(+obj.f);
@@ -6223,36 +6336,94 @@ function dx_label_cb(arr)
 	dx.displayed = [];
 	dx.last_ident = '';
 	dx.last_freq = -1;
-	dx.top = [];
+	dx.post_render = [];
+	dx.color_fixup = [];
 	dx.f_same = [];
+   var same_x, lock_z = 0;
 	var s_a = [];
 
-	var optimize_label_layout = function(f) {
-      console_log_dbgUs('$f_same '+ dx.f_same.length);
-      for (j = 1, k = dx.f_same.length - 1; j <= dx.f_same.length; j++, k--) {
-		   dx.top[dx_idx - j] = { top: dx_label_top + (5 * k), f: f };
+	var optimize_label_layout = function(x, z, f) {
+	   var i, j, k;
+	   var spacing = 6;
+	   var n = Math.ceil(gap / spacing);
+
+      // postpone text width sorting until first label render establishes dx.font info for use by getTextWidth()
+      if (dx.font) {
+         dx.f_same.forEach(function(idx,i) {
+            idx++;
+            var o = arr[idx];
+            o.di = kiwi_decodeURIComponent('', o.i);
+            o.tw = getTextWidth(o.di, dx.font);
+         });
+
+         //console_log_dbgUs('$f_same '+ dx.f_same.length +' f='+ f +' x='+ x);
+         dx.f_same.sort(
+            function(i1, i2) {
+               var o1 = arr[i1+1];
+               var o2 = arr[i2+1];
+               //if (f == 5935) console.log(o1.tw.toFixed(2) +' '+ o1.di +'    '+ o2.tw.toFixed(2) +' '+ o2.di);
+               return o2.tw - o1.tw;
+            }
+         );
+
+         /*
+         if (f == 5935) dx.f_same.forEach(function(idx,i) {
+            var o = arr[idx+1];
+            console.log(o.f +' #'+ idx +' c.len='+ o.di.length +' f.len='+ o.tw.toFixed(2) +' '+ o.di);
+         });
+         */
+      }
+      
+      for (i = 0; i <= dx.f_same.length; i++) {
+         var idx = dx.f_same[i];
+         j = i % (n+1);
+		   dx.post_render[idx] = {
+		      top: dx_label_top + (j * spacing),
+		      ltop: dx_label_top,
+		      x: x + j * (spacing - 1),
+		      z: z + i
+		      //f: f
+		      //ident: '???'
+		   };
+		   if (j == n) {
+		      x += gap;
+		   }
       }
 	};
 	
-	console_log_dbgUs('######## dx_label_cb db='+ dx.db +' arr.len='+ arr.length);
+	//console_log_dbgUs('######## dx_label_cb db='+ dx.db +' arr.len='+ arr.length);
+
+	// first pass
 	for (i = 1; i < arr.length; i++) {
 		dx_idx = i-1;
 		obj = arr[i];
-      //if (obj.f == 10000) console.log(obj);
+      //if (obj.f == 10000) if (dbgUs) console.log(obj);
+		var flags = obj.x;
+
+		var type = flags & dx.DX_TYPE;
+		var color = type;
+		if (color >= dx.DX_FIRST) color -= dx.DX_FIRST;
+		color >>= dx.DX_TYPE_SFT;
+
+		var filtered = flags & dx.DX_FILTERED;
 		var ident = obj.i;
 		if (eibi && ident == dx.last_ident) {
-         //console_log_dbgUs('1111 dx_idx='+ dx_idx +' '+ obj.f +' SAME AS LAST '+ ident);
+         //console_log_dbgUs('1111 dx_idx='+ dx_idx +' '+ obj.f +' SAME AS LAST filtered='+ (filtered? 1:0) + ident);
+         if (filtered == 0) dx.color_fixup[dx.last_idx] = dx.type_colors[color];
          continue;
 		}
+
+		dx.last_idx = dx_idx;
 		dx.last_ident = ident;
-      //console_log_dbgUs('1111 dx_idx='+ dx_idx +' '+ obj.f +' OK '+ ident);
+      //console_log_dbgUs('1111 dx_idx='+ dx_idx +' '+ obj.f +' OK filtered='+ (filtered? 1:0) + ident);
 		
 		var gid = obj.g;
 		var freq = obj.f;
 		var moff = obj.o;
-		var flags = obj.x;
 		var notes = isDefined(obj.n)? obj.n : '';
 		var params = isDefined(obj.p)? obj.p : '';
+		
+		if (eibi && (flags & dx.DX_HAS_EXT)) params = dx.eibi_ext[dx_type2idx(type)];
 
 		var freqHz = freq * 1000;
 		var freq_label_Hz = freqHz + passband_offset_dxlabel(kiwi.modes_l[flags & dx.DX_MODE]);	// always place label at center of passband
@@ -6263,31 +6434,30 @@ function dx_label_cb(arr)
 	
 		if (eibi && freq_label_Hz == dx.last_freq) {
 		   dx.f_same.push(dx_idx);
-		   dx.top[dx_idx] = { top: dx_label_top + (35 * (dx_idx&1)), f: freq_label_Hz/1e3 };   // stagger the labels vertically
+		   same_x = x;
+		   if (lock_z == 0) lock_z = dx_z;
 		} else {
 		   if (eibi) {
-            if (dx.f_same.length > 2) optimize_label_layout(freq_label_Hz/1e3);
+            if (dx.f_same.length > 2) optimize_label_layout(same_x, lock_z, dx.last_freq/1e3);
             dx.f_same = [];
             dx.f_same.push(dx_idx);
+            lock_z = 0;
          }
-		   dx.top[dx_idx] = { top: dx_label_top + (35 * (dx_idx&1)), f: freq_label_Hz/1e3 };   // stagger the labels vertically
 		}
+		var top = dx_label_top + (gap * (dx_idx & 1));    // stagger the labels vertically
+      dx.post_render[dx_idx] = { top: top, ltop: top, x: x /*, f: freq_label_Hz/1e3, ident: ident*/ };
 		dx.last_freq = freq_label_Hz;
 
-      //dx.top = (dx.top + 1) % 6;
-		//var t = 5 * (dx.top + 1);     // 0..6 => 5 * 1:7 = 5:35
-		var color = flags & dx.DX_TYPE;
-		if (color >= dx.DX_FIRST) color -= dx.DX_FIRST;
-		color >>= dx.DX_TYPE_SFT;
-		color = type_colors[color];
-		if (ident == 'IBP' || ident == 'IARU%2fNCDXF') color = type_colors[types_s.sub_band];  // FIXME: hack for now
+		color = filtered? dx.type_colors_light[color] : ((dx.db == dx.DB_STORED)? dx.stored_colors[color] : dx.type_colors[color]);
+
+		if (ident == 'IBP' || ident == 'IARU%2fNCDXF') color = dx.stored_colors[dx.stored_types_s.sub_band];  // FIXME: hack for now
 		//console_log_dbgUs("DX "+dx_seq+':'+dx_idx+" f="+freq+" o="+loff+" k="+moff+" F="+flags+" m="+kiwi.modes_u[flags & dx.DX_MODE]+" <"+ident+"> <"+notes+'>');
 		
 		carrier /= 1000;
-		dx_list[gid] = { "gid":gid, "carrier":carrier, "lo":obj.lo, "hi":obj.hi, "freq":freq, "moff":moff, "flags":flags, "ident":ident, "notes":notes, "params":params };
-	   console_log_dbgUs('######## dx_label_cb db='+ dx.db +' '+ (i-1) +'/'+ arr.length +' gid='+ gid +' dx_list.len='+ dx_list.length +' '+ freq.toFixed(2));
-      dx.displayed[dx_idx] = dx_list[gid];
-		//console.log(dx_list[gid]);
+		dx.list[gid] = { "gid":gid, "carrier":carrier, "lo":obj.lo, "hi":obj.hi, "freq":freq, "moff":moff, "flags":flags, "ident":ident, "notes":notes, "params":params };
+	   //console_log_dbgUs('dx_label_cb db='+ dx.db +' dx_idx='+ dx_idx +'/'+ arr.length +' gid='+ gid +' dx.list.len='+ dx.list.length +' '+ freq.toFixed(2) +' x='+ x);
+      dx.displayed[dx_idx] = dx.list[gid];
+		//if (dbgUs) console.log(dx.list[gid]);
 		
 		s_a[dx_idx] =
 			'<div id="'+ dx_idx +'-id-dx-label" class="class-dx-label '+ gid +'-id-dx-gid'+ ((params != '')? ' id-has-ext':'') +'" ' +
@@ -6303,19 +6473,42 @@ function dx_label_cb(arr)
 		
 		dx_z++;
 	}
-   if (eibi && dx.f_same.length > 2) optimize_label_layout(-1);
-	if (dbgUs) console.log(dx_list);
+   if (eibi && dx.f_same.length > 2) optimize_label_layout(same_x, lock_z, -1);
+	//if (dbgUs) console.log(dx.list);
 	//if (dbgUs) console.log(dx.displayed);
 	
 	var s = '';
-	for (i = 1; i < arr.length; i++)
-	   s += s_a[i-1];
+	for (i = 0; i < arr.length-1; i++)
+	   if (isDefined(s_a[i]))
+	      s += s_a[i];
 	dx_div.innerHTML = s;
 	dx.last_ident = '';
-	var title = function(obj) {
-	   return (obj.b.leadingZeros(4) +'-'+ obj.e.leadingZeros(4) +' lang: '+ obj.l +' target: '+ obj.t);
+
+	if (!dx.font) {
+	   var el = w3_el('0-id-dx-label');
+	   if (el) {
+	      dx.font = css_style(el, 'font-size') +' '+ css_style(el, 'font-family');
+	      console_log_dbgUs('dx.font=<'+ dx.font +'>');
+	   }
+	}
+
+	var dx_title = function(obj) {
+	   var dow_s = '';
+	   var dow = obj.x & dx.DX_DOW;
+	   if (dow) for (var i = 0; i < 7; i++) {
+	      var bit = dx.DX_MON >> i;
+	      var match = bit & dow;
+	      var c = match? 'MTWTFSS'[i] : '_';
+	      //console.log('m='+ dow.toHex(4) +' b='+ bit.toHex(4) + (match? ' T ':' F ') + c +' '+ obj.f.toFixed(2) +' '+ obj.i);
+	      dow_s += c;
+	   } else
+	      dow_s = '7-days';
+	   var lang = '';
+	   if (obj.l != '' && obj.l.charAt(0) != '-') lang = ' lang: '+ obj.l;
+	   return (obj.b.leadingZeros(4) +'-'+ obj.e.leadingZeros(4) +' '+ dow_s + lang +' target: '+ obj.t);
 	};
 
+	// second pass
 	for (i = 1; i < arr.length; i++) {
 		dx_idx = i-1;
 		obj = arr[i];
@@ -6326,7 +6519,7 @@ function dx_label_cb(arr)
 		   if (ident == dx.last_ident) {
 		      //console_log_dbgUs('2222 dx_idx='+ dx_idx +' last_dx_idx='+ dx.last_dx_idx +' '+ obj.f +' SAME AS LAST '+ ident);
 		      el = w3_el(dx.last_dx_idx +'-id-dx-label');
-		      el.title += '\n'+ title(obj);
+		      el.title += '\n'+ dx_title(obj);
 		      continue;
 		   }
 		}
@@ -6337,20 +6530,40 @@ function dx_label_cb(arr)
 		var notes = (isDefined(obj.n))? obj.n : '';
 		//var params = (isDefined(obj.p))? obj.p : '';
 		el = w3_el(dx_idx +'-id-dx-label');
-		el.innerHTML = kiwi_decodeURIComponent('dx_ident', ident);
-		el.title = eibi? ('loc: '+ obj.c +'\n'+ title(obj)) : kiwi_decodeURIComponent('dx_notes', notes);
+		if (!el) continue;
+		el.innerHTML = kiwi_decodeURIComponent('dx_ident2', ident);
+		var type = dx_type2idx(obj.x);
+		el.title = eibi? (dx.eibi_svc_s[type] +' // home country: '+ obj.c +'\n'+ dx_title(obj)) : kiwi_decodeURIComponent('dx_notes', notes);
 
-      if (dx_idx < dx.top.length) {
-         var top = dx.top[dx_idx].top;
-         var f = dx.top[dx_idx].f;
-         console_log_dbgUs(dx_idx +' len='+ dx.top.length +' top='+ top +' dx_idx='+ dx_idx +' '+ f.toFixed(2));
-         el.style.top = px(top);
+      if (dx_idx < dx.post_render.length) {
+         var sparse = dx.post_render[dx_idx];
+         if (sparse) {
+            var top = sparse.top;
+            var left = sparse.x - 10;
+            //var f = sparse.f;
+            //console_log_dbgUs('dx.post_render: dx_idx='+ dx_idx +' post_render.len='+ dx.post_render.length +
+            //   ' top='+ top +' left='+ left +' '+ f.toFixed(2) +' '+ sparse.ident);
+            //console.log(el);
+            el.style.top = px(top);
+            el.style.left = px(left);
+            if (isDefined(sparse.z)) el.style.zIndex = sparse.z;
 
-         el = w3_el(dx_idx +'-id-dx-line');
-         el.style.top = px(top);
-         el.style.height = px(dx_container_h - top);
+            var el_line = w3_el(dx_idx +'-id-dx-line');
+            top = sparse.ltop;
+            el_line.style.top = px(top);
+            el_line.style.height = px(dx_container_h - top);
+         }
       }
 		
+      if (dx_idx < dx.color_fixup.length) {
+         var sparse = dx.color_fixup[dx_idx];
+         if (sparse) {
+            el.style.backgroundColor = sparse;
+            //console.log('COLOR FIXUP dx_idx='+ dx_idx +' '+ sparse);
+            //console.log(el);
+         }
+      }
+      
 		// FIXME: merge this with the concept of labels that are TOD sensitive (e.g. SW BCB schedules)	
 		if (!eibi && (ident == 'IBP' || ident == 'IARU%2fNCDXF')) {
 			var off = dx_ibp_freqs[Math.trunc(freq / 1000)];
@@ -6417,11 +6630,11 @@ function dx_filter()
 // active element at close time. This is due to how the w3-retain-input-focus logic works to keep
 function dx_filter_panel_close()
 {
-   //console.log('dx_filter_panel_close');
+   //if (dbgUs) console.log('dx_filter_panel_close');
    var ae = document.activeElement;
-   //console.log(ae);
+   //if (dbgUs) console.log(ae);
    if (ae && ae.id && (ae.id.startsWith('id-dx-filter') || ae.id.startsWith('id-dx.filter'))) {
-      //console.log('### activeElement='+ ae.id);
+      //if (dbgUs) console.log('### activeElement='+ ae.id);
       ae.blur();
    }
 
@@ -6479,6 +6692,7 @@ function dx_label_step(dir)
    if (dir == 1) {
       for (i = 0; i < dx.displayed.length; i++) {
          dl = dx.displayed[i];
+         if (!dl) continue;
          var f = Math.round(dl.freq * 1e3);
          //console.log('consider #'+ i +' '+ f);
          if (f > freq_displayed_Hz) break;
@@ -6490,6 +6704,7 @@ function dx_label_step(dir)
    } else {
       for (i = dx.displayed.length - 1; i >= 0 ; i--) {
          dl = dx.displayed[i];
+         if (!dl) continue;
          var f = Math.round(dl.freq * 1e3);
          //console.log('consider #'+ i +' '+ f);
          if (f < freq_displayed_Hz) break;
@@ -6514,24 +6729,58 @@ function dx_label_step(dir)
    }
 }
 
-var dx_panel_customize = false;
 var dx_keys;
 
+function dx_admin_pwd_cb(path, val)
+{
+   //console.log('dx_admin_pwd_cb path='+ path +' val='+ val);
+   w3_string_cb(path, val);
+	ext_valpwd('admin', val, ws_wf);
+	// calls ext_hasCredential() cb func again with new badp value
+}
+
 // note that an entry can be cloned by selecting it, but then using the "add" button instead of "modify"
-function dx_show_edit_panel(ev, gid)
+function dx_show_edit_panel(ev, gid, from_shortcut)
 {
 	dx_keys = ev? { shift:ev.shiftKey, alt:ev.altKey, ctrl:ev.ctrlKey, meta:ev.metaKey } : { shift:0, alt:0, ctrl:0, meta:0 };
 	dxo.gid = gid;
 	
-	if (!dx_panel_customize) {
-		html('id-ext-controls').className = 'class-panel class-dx-panel';
-		dx_panel_customize = true;
-	}
-	
 	//console.log('dx_show_edit_panel ws='+ ws_wf.stream);
-	admin_pwd_query(function() {
+   // must validate admin for write access to DB_STORED
+	if (dx.db == dx.DB_STORED) {
+	   dx.badp = -1;
+	   
+      ext_hasCredential('admin',
+         function(badp) {
+            dx.badp = badp;
+            if (badp) {
+               // show pwd entry panel
+               // , 'dx_admin_pwd_cb')
+               extint_panel_hide();    // committed to displaying edit panel, so remove any ext panel
+               var s =
+                  w3_inline('',
+                     w3_div('w3-medium w3-text-aqua w3-bold', 'DX label edit'),
+                     w3_select('w3-margin-L-64/w3-label-inline w3-text-white /w3-text-red', 'database', '', 'dx.db', dx.db, dx.db_s, 'dx_database_cb')
+                  ) +
+                  w3_div('',
+			            w3_input('w3-margin-T-16//w3-margin-T-8 w3-padding-small w3-width-80pct', 'Admin password', 'dx.pwd', '', 'dx_admin_pwd_cb'),
+			            w3_text('w3-margin-T-4', 'editing the stored DX labels of this Kiwi requires admin privileges')
+			         );
+	            ext_panel_set_name('dx');
+               ext_panel_show(s, null, null, null, true);   // true: show help button
+               ext_set_controls_width_height(550, 260);
+               // put the cursor in (i.e. select) the password field
+               if (from_shortcut != true)
+                  w3_field_select('id-dx.pwd', {mobile:1});
+            } else {
+               dx_show_edit_panel2();
+            }
+         }, null, ws_wf);
+
+      if (dx.badp != 0) return;
+   } else {
       dx_show_edit_panel2();
-	});
+   }
 }
 
 /*
@@ -6547,7 +6796,7 @@ function dx_type2idx(type)
 function dx_show_edit_panel2()
 {
 	var gid = dxo.gid;
-	console.log('dx_show_edit_panel2 gid='+ gid +' db='+ dx.db);
+	//console_log_dbgUs('dx_show_edit_panel2 gid='+ gid +' db='+ dx.db);
 	
 	if (gid == -1) {
 		//console.log('DX EDIT new entry');
@@ -6555,45 +6804,30 @@ function dx_show_edit_panel2()
 		dxo.f = freq_displayed_kHz_str;
 		dxo.lo = dxo.hi = dxo.o = 0;
 		dxo.m = kiwi.modes_s[cur_mode];
-		dxo.y = types_s.active;
+		dxo.y = dx.stored_types_s.active;
 		dxo.i = dxo.n = dxo.p = '';
 	} else {
-		//console.log('DX EDIT entry #'+ gid +' prev: f='+ dx_list[gid].freq +' flags='+ dx_list[gid].flags.toHex() +' i='+ dx_list[gid].ident +' n='+ dx_list[gid].notes);
-		dxo.f = dx_list[gid].carrier.toFixed(2);		// starts as a string, validated to be a number
-      dxo.lo = dx_list[gid].lo;
-      dxo.hi = dx_list[gid].hi;
-		dxo.o = dx_list[gid].moff;
-		dxo.m = (dx_list[gid].flags & dx.DX_MODE);
-		dxo.y = ((dx_list[gid].flags & dx.DX_TYPE) >> dx.DX_TYPE_SFT);
-
-		try {
-			dxo.i = kiwi_decodeURIComponent('dx_ident', dx_list[gid].ident);
-		} catch(ex) {
-			dxo.i = 'bad URI decode';
-		}
-	
-		try {
-			dxo.n = kiwi_decodeURIComponent('dx_notes', dx_list[gid].notes);
-		} catch(ex) {
-			dxo.n = 'bad URI decode';
-		}
-	
-		try {
-			dxo.p = kiwi_decodeURIComponent('dx_params', dx_list[gid].params);
-		} catch(ex) {
-			dxo.p = 'bad URI decode';
-		}
-	
+      var label = dx.list[gid];
+		//console.log('DX EDIT entry #'+ gid +' prev: f='+ label.freq +' flags='+ label.flags.toHex() +' i='+ label.ident +' n='+ label.notes);
+		dxo.f = label.carrier.toFixed(2);		// starts as a string, validated to be a number
+      dxo.lo = label.lo;
+      dxo.hi = label.hi;
+		dxo.o = label.moff;
+		dxo.m = (label.flags & dx.DX_MODE);
+		dxo.y = ((label.flags & dx.DX_TYPE) >> dx.DX_TYPE_SFT);
+		dxo.i = kiwi_decodeURIComponent('dx_ident', label.ident);
+		dxo.n = kiwi_decodeURIComponent('dx_notes', label.notes);
+		dxo.p = kiwi_decodeURIComponent('dx_params', label.params);
 		//console.log('dxo.i='+ dxo.i +' len='+ dxo.i.length);
 	}
-	//console.log(dxo);
+	//if (dbgUs) console.log(dxo);
 	
 	// quick key combo to toggle 'active' mode without bringing up panel
-	if (gid != -1 && dx_keys.shift && dx_keys.alt) {
+	if (dx.db == dx.DB_STORED && gid != -1 && dx_keys.shift && dx_keys.alt) {
 		//console.log('DX COMMIT quick-active entry #'+ dxo.gid +' f='+ dxo.f);
 		//console.log(dxo);
 		var type = dxo.y;
-		type = (type == types_s.active)? types_s.watch_list : types_s.active;
+		type = (type == dx.stored_types_s.active)? dx.stored_types_s.watch_list : dx.stored_types_s.active;
 		dxo.y = type;
 		var mode = dxo.m;
 		mode |= (type << dx.DX_TYPE_SFT);
@@ -6602,7 +6836,9 @@ function dx_show_edit_panel2()
 		return;
 	}
 
-	extint_panel_hide();		// committed to displaying edit panel, so remove any ext panel
+   // Committed to displaying edit panel, so remove any extension panel that might be showing (and clear ext menu).
+   // Important to do this here. Couldn't figure out reasonable way to do this in extint_panel_show()
+	extint_panel_hide();		
 	
 	dxo.f = (parseFloat(dxo.f) + cfg.freq_offset).toFixed(2);
 	
@@ -6617,11 +6853,8 @@ function dx_show_edit_panel2()
 
 	var s1 =
 	   w3_inline('',
-		   w3_div('w3-medium w3-text-aqua w3-bold', 'DX label edit')
-		   /*
-		   ,
-		   w3_select('w3-margin-L-64/w3-label-inline w3-text-white /w3-text-red', 'database', '', 'dx.db', dx.db, dx.db_s, 'dx_database_cb')
-		   */
+		   w3_div('w3-medium w3-text-aqua w3-bold', 'DX label edit'),
+		   w3_select('w3-margin-L-64/w3-label-inline w3-text-white /w3-text-red', 'database', '', 'dx.db', dx.db, dx.db_s, 'dx_database_cb', 0)
 		);
 	
 	var s2;
@@ -6632,11 +6865,11 @@ function dx_show_edit_panel2()
                w3_input('w3-padding-small||size=8', 'Freq', 'dxo.f', dxo.f, 'dx_num_cb'),
                w3_select('w3-text-red', 'Mode', '', 'dxo.m', dxo.m, kiwi.modes_u, 'dx_sel_cb'),
                w3_input('w3-padding-small||size=10', 'Passband', 'dxo.pb', dxo.pb, 'dx_passband_cb'),
-               w3_select('w3-text-red', 'Type', '', 'dxo.y', dxo.y, types, 'dx_sel_cb'),
+               w3_select('w3-text-red', 'Type', '', 'dxo.y', dxo.y, dx.stored_types, 'dx_sel_cb'),
                w3_input('w3-padding-small||size=8', 'Offset', 'dxo.o', dxo.o, 'dx_num_cb')
             ),
       
-            w3_input('w3-label-inline/w3-padding-small w3-retain-input-focus', 'Ident', 'dxo.i', '', 'dx_string_cb'),
+            w3_input('w3-label-inline/w3-padding-small', 'Ident', 'dxo.i', '', 'dx_string_cb'),
             w3_input('w3-label-inline/w3-padding-small', 'Notes', 'dxo.n', '', 'dx_string_cb'),
             w3_input('w3-label-inline/w3-padding-small', 'Extension', 'dxo.p', '', 'dx_string_cb'),
       
@@ -6650,21 +6883,20 @@ function dx_show_edit_panel2()
    } else {
       var cbox_container = 'w3-halign-space-around/|flex-basis:130px';
       var cbox = '/w3-label-inline w3-label-not-bold w3-round w3-padding-small/';
-      dx.types_mask = 0;
       var checkbox = function(type) {
          var idx = dx_type2idx(type);
-         dx.eibi_svc[idx] = 1;
-         dx.types_mask |= 1 << idx;
-         return w3_checkbox(cbox, dx.eibi_svc_s[idx], 'eibi-cbox'+ idx, dx.eibi_svc[idx], 'dx_eibi_svc_cb', idx);
+         var svc = (dx.types_mask & (1 << idx))? 1:0;
+         //console.log('svc='+ svc +' m='+ dx.types_mask.toHex(8) +' type='+ type.toHex(4) +' idx='+ idx +' '+ dx.eibi_svc_s[idx]);
+         return w3_checkbox(cbox, dx.eibi_svc_s[idx], 'eibi-cbox'+ idx, svc, 'dx_eibi_svc_cb', idx);
       };
 
 	   s2 =
 	      w3_inline('',
             //w3_div('w3-css-text-css-yellow w3-margin-TB-16', 'The EiBi database is read-only'),
             w3_checkbox('w3-margin-TB-16/w3-label-inline w3-label-not-bold w3-text-white/w3-hspace-32',
-               'select all', 'eibi-all', true, 'dx_eibi_all_cb'),
+               'select all', 'eibi-all', dx.types_mask == 0xffffffff, 'dx_eibi_all_cb'),
             w3_checkbox('/w3-label-inline w3-label-not-bold w3-text-white/w3-margin-L-32',
-               'filter by time-of-day', 'eibi-time', true, 'dx_eibi_time_cb')
+               'filter by time/day-of-week', 'eibi-time-dow', dx.filter_tod, 'dx_eibi_time_dow_cb')
          ) +
          
          w3_div('w3-valign-col w3-round w3-padding-TB-10 w3-gap-10|background:whiteSmoke',
@@ -6676,7 +6908,7 @@ function dx_show_edit_panel2()
             w3_inline(cbox_container,
                checkbox(dx.DX_ALE),
                checkbox(dx.DX_HFDL),
-               checkbox(dx.DX_MODEM)
+               checkbox(dx.DX_MILCOM)
             ),
             w3_inline(cbox_container,
                checkbox(dx.DX_CW),
@@ -6692,33 +6924,48 @@ function dx_show_edit_panel2()
    }
 	
 	// can't do this as initial val passed to w3_input above when string contains quoting
-	ext_panel_show(s1 + s2, null, function() {
-	   if (dx.db == dx.DB_STORED) {
-         var el = w3_el('dxo.i');
-         el.value = dxo.i;
-         w3_el('dxo.n').value = dxo.n;
-         w3_el('dxo.p').value = dxo.p;
+	ext_panel_set_name('dx');
+	ext_panel_show(s1 + s2, null,
+	   function() {
+         if (dx.db == dx.DB_STORED) {
+            var el = w3_el('dxo.i');
+            el.value = dxo.i;
+            w3_el('dxo.n').value = dxo.n;
+            w3_el('dxo.p').value = dxo.p;
       
-         // change focus to input field
-         // FIXME: why doesn't field select work?
-         //console.log('dxo.i='+ el.value);
-         w3_field_select(el, {mobile:1});
-      } else {
-         for (var i = dx_type2idx(dx.DX_FIRST); i <= dx_type2idx(dx.DX_LAST); i++) {
-            w3_color('eibi-cbox'+ i +'-label', 'black', type_colors[i]);
+            // change focus to input field
+            // FIXME: why doesn't field select work?
+            //console.log('dxo.i='+ el.value);
+            //w3_field_select(el, {mobile:1});
+         } else {
+            for (var i = dx_type2idx(dx.DX_FIRST); i <= dx_type2idx(dx.DX_LAST); i++) {
+               w3_color('eibi-cbox'+ i +'-label', 'black', dx.type_colors[i]);
+            }
          }
-      }
-	});
+      },
+	   function() {
+	      //console.log('dx_show_edit_panel2 HIDE_FUNC');
+	   },
+	   true     // show help button
+   );
 	ext_set_controls_width_height(550, 260);
+	if (dx.help) {
+	   extint_help_click_now();
+	   dx.help = false;
+	}
 }
 
-function dx_database_cb(path, idx, first)
+function dx_database_cb(path, idx, first, ctrlAlt, from_shortcut)
 {
+   console.log('first='+ first +' ctrlAlt='+ ctrlAlt);
    if (first) return;
    dx.db = +idx;
-   dx_list = []; //jks
-   console.log('######## DB-SWITCHED db='+ dx.db +' s/o dx_list='+ dx_list.length);
-   dx_show_edit_panel2();
+   dx.list = [];
+   console_log_dbgUs('DX DB-SWITCHED db='+ dx.db);
+   if (ctrlAlt)
+      dx_show_edit_panel(null, -1, from_shortcut);
+   else
+      dx_close_edit_panel();
 	dx_schedule_update();
 }
 
@@ -6730,7 +6977,7 @@ function dx_eibi_all_cb(path, checked, first)
       dx_eibi_svc_cb('eibi-cbox'+ i, v, false, i);
 }
 
-function dx_eibi_time_cb(path, checked, first)
+function dx_eibi_time_dow_cb(path, checked, first)
 {
    if (first) return;
    dx.filter_tod = checked? 1:0;
@@ -6743,7 +6990,6 @@ function dx_eibi_svc_cb(path, checked, first, cbp)
    var idx = +cbp;
    var v = checked? 1:0;
    w3_checkbox_set(path, checked);
-   dx.eibi_svc[idx] = v;
    if (v)
       dx.types_mask |= 1 << idx;
    else
@@ -6753,7 +6999,7 @@ function dx_eibi_svc_cb(path, checked, first, cbp)
 
 function dx_close_edit_panel(id)
 {
-	w3_radio_unhighlight(id);
+	if (id) w3_radio_unhighlight(id);
 	extint_panel_hide();
 	
 	// NB: Can't simply do a dx_schedule_update() here as there is a race for the server to
@@ -6763,8 +7009,8 @@ function dx_close_edit_panel(id)
 
 function dx_modify_cb(id, val)
 {
-	console.log('DX COMMIT modify entry #'+ dxo.gid +' f='+ dxo.f);
-	console.log(dxo);
+	console_log_dbgUs('DX COMMIT modify entry #'+ dxo.gid +' f='+ dxo.f);
+	if (dbgUs) console.log(dxo);
 	if (dxo.gid == -1) return;
 	var mode = dxo.m;
 	var type = dxo.y << dx.DX_TYPE_SFT;
@@ -6804,17 +7050,17 @@ function dx_delete_cb(id, val)
 function dx_click(ev, gid)
 {
    //event_dump(ev, 'dx_click');
-	if (ev.shiftKey) {
+	if (ev.shiftKey && dx.db == dx.DB_STORED) {
 		dx_show_edit_panel(ev, gid);
 	} else {
 	   owrx.dx_click_gid_last = (dx.db == dx.DB_STORED)? gid : undefined;
-	   var freq = dx_list[gid].freq;
-		var mode = kiwi.modes_l[dx_list[gid].flags & dx.DX_MODE];
-		var lo = dx_list[gid].lo;
-		var hi = dx_list[gid].hi;
-		var params = dx_list[gid].params;
-		console.log('### dx_click f='+ dx_list[gid].freq +' mode='+ mode +' cur_mode='+ cur_mode +' lo='+ lo +' hi='+ hi +' params='+ params);
-
+	   var label = dx.list[gid];
+	   var freq = label.freq;
+		var mode = kiwi.modes_l[label.flags & dx.DX_MODE];
+		var lo = label.lo;
+		var hi = label.hi;
+		var params = label.params;
+		
       extint.extname = extint.param = null;
       if (isArg(params)) {
          var ext = (params == '')? [] : decodeURIComponent(params).split(',');
@@ -6828,7 +7074,13 @@ function dx_click(ev, gid)
             extint.param = ext.slice(1).join(',');
          }
       }
-      console.log('### dx_click extname='+ extint.extname +' param=<'+ extint.param +'>');
+      var extname = extint.extname? extint.extname : '';
+		console_log_dbgUs('dx_click f='+ label.freq +' mode='+ mode +' cur_mode='+ cur_mode +' lo='+ lo +' hi='+ hi +' params='+ params +' extname=<'+ extname +'> param=<'+ extint.param +'>');
+
+      // EiBi database frequencies are dial/carrier (i.e. not pbc)
+      if (dx.db == dx.DB_EiBi) {
+         
+      }
 
 		freqmode_set_dsp_kHz(freq, mode, { open_ext:true });
 		if (lo || hi) {
@@ -6837,8 +7089,10 @@ function dx_click(ev, gid)
 		
 		// open specified extension
 		// setting DRM mode above opens DRM extension
-		if (mode != 'drm' && !any_alternate_click_event(ev) && !dx.ctrl_click && dx_list[gid].params) {
-		   console.log('### dx_click ext='+ extint.extname +' <'+ extint.param +'>');
+		var qual = (dx.db == dx.DB_STORED)? !any_alternate_click_event(ev) : ev.shiftKey;
+		//var alt_click = any_alternate_click_event(ev);
+		if (mode != 'drm' && qual && !dx.ctrl_click && params) {
+		   console_log_dbgUs('dx_click ext='+ extint.extname +' <'+ extint.param +'>');
 			extint_open(extint.extname, 250);
 		}
 		
@@ -6858,7 +7112,7 @@ function dx_enter(dx, cmkr_x, ev)
 	dx_z_save = dx.style.zIndex;
 	dx.style.zIndex = 999;
 	dx_bg_color_save = dx.style.backgroundColor;
-	dx.style.backgroundColor = (w3_contains(dx, 'id-has-ext') && !any_alternate_click_event(ev))? 'magenta':'yellow';
+	dx.style.backgroundColor = w3_contains(dx, 'id-has-ext')? 'magenta':'yellow';
 
 	var dx_line = w3_el(parseInt(dx.id)+'-id-dx-line');
 	dx_line.zIndex = 998;
@@ -6882,6 +7136,72 @@ function dx_leave(dx, cmkr_x)
 	if (cmkr_x) {
 		dx_canvas.style.zIndex = 99;
 	}
+}
+
+function dx_help(show)
+{
+   if (show) {
+      var s = 
+         w3_text('w3-medium w3-bold w3-text-aqua', 'DX label edit help') +
+         w3_div('w3-margin-T-8 w3-scroll-y|height:90%',
+            w3_div('w3-margin-R-8',
+               'There are two types of DX labels seen in the area above the frequency scale: <br>' +
+               '1) Labels from a stored database, editable by the Kiwi owner/admin. <br>'+
+               '2) Labels from a read-only copy of the <a href="http://www.eibispace.de" target="_blank">EiBi database</a> that cannot be modified.' +
+               '<br><br>' +
+               
+               'The DX label edit control panel has a <i>database</i> menu to select between the two. ' +
+               'Similarly, there are two selection entries in the right-click menu (double-finger tap on mobile devices). ' +
+               'The keyboard shortcut keys "\\" and "|" also switch between the two databases with the later also opening the control panel.' +
+               '<br><br>' +
+               
+               'When zoomed out the number of labels shown is limited to prevent overwhelming the display. ' +
+               'This is why some labels will only appear as you zoom in. The same is true if too many categories ' +
+               'are selected enabling a large number of labels.' +
+               '<br><br>' +
+               
+               'Because there are so many EiBi labels (about 17000) they are organized into 12 categories with visibility ' +
+               'selected by checkboxes on the control panel. In addition labels can be filtered by their schedule (UTC time & day-of-week) ' +
+               'specified in the database. If filtering is disabled labels outside their scheduled time appear in a lighter category color. ' +
+               'When filtering is enabled the label display will refresh every 5 minutes so it reflects the current schedule.' +
+               '<br><br>' +
+               
+               'Labels that have an extension specified turn magenta when moused-over as opposed to the usual yellow. ' +
+               'For stored labels the extension is set per-label in the label edit panel and the extension opened when the label is clicked ' +
+               '(a shift-click opens that label in the edit pabel). ' +
+               'For EiBi labels an extension is automatically assumed for the ALE, CW, FSK, Fax and Time categories, ' +
+               'but is only opened if the label is shift-clicked (note difference from stored label behavior, ' +
+               'a non-shift click simply selects the frequency/mode).' +
+               '<br><br>' +
+               
+               'When a label is moused-over a popup is shown with optional information (stored labels) or database information (EiBi labels). ' +
+               'On Safari the popups take a few second to appear. EiBi information includes the station\'s home country, transmission schedule, ' +
+               'language and target area (if any). ' +
+               'Information about the EiBi database, including descriptions of the language and target codes seen in the mouse-over popups, ' +
+               '<a href="http://kiwisdr.com/files/EiBi/README.txt" target="_blank">can be found here.</a>' +
+               '<br><br>' +
+         
+               'EiBi URL parameters: (use "dx=..." in the browser URL)<br>' +
+               w3_text('|color:orange',
+               'none bcast utility time ale hfdl milcom cw fsk fax aero maritime spy filter[:0]') + '<br>' +
+               'By default all the category checkboxes and "<i>filter by time/day-of-week</i>" are checked. <br>' +
+               'Specifying <i>none</i> will uncheck all the categories. Specifying the individual category names will then ' +
+               'toggle the checkbox state.' +
+               '<br><br>' +
+
+               'For example, to select only the ALE and Fax categories: <i>dx=none,ale,fax</i> <br>' +
+               'To select all except the CW and Time categories: <i>dx=cw,time</i> <br>' +
+               'To just bring up the EiBi control panel: <i>dx</i> (e.g. <i>my_kiwi:8073/?spec&dx</i>)<br>' +
+               'Keywords are case-insensitive and can be abbreviated. For example: <br>' +
+               '<i>dx=n,bc,f:0</i> (show all broadcast stations without time/day filtering) <br>' +
+               ''
+            )
+         );
+
+      confirmation_show_content(s, 610, 375);
+      w3_el('id-confirmation-container').style.height = '100%';   // to get the w3-scroll-y above to work
+   }
+   return true;
 }
 
 
@@ -7119,6 +7439,7 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny', 'o', 25, 'toggle between option bar "off" and "stats" mode,<br>others selected by related shortcut key'),
          w3_inline_percent('w3-padding-tiny', '!', 25, 'toggle aperture manual/auto menu'),
          w3_inline_percent('w3-padding-tiny', '@', 25, 'DX label filter'),
+         w3_inline_percent('w3-padding-tiny', '\\ |', 25, 'toggle (toggle & open) DX stored/EiBi database'),
          //w3_inline_percent('w3-padding-tiny', '#', 25, 'Open user preferences extension'),
          w3_inline_percent('w3-padding-tiny', 'x y', 25, 'toggle visibility of control panels, top bar'),
          w3_inline_percent('w3-padding-tiny', 'esc', 25, 'close/cancel action'),
@@ -7132,7 +7453,7 @@ function keyboard_shortcut_init()
 
 function keyboard_shortcut_help()
 {
-   confirmation_show_content(shortcut.help, 550, 545);   // height +15 per added line
+   confirmation_show_content(shortcut.help, 550, 565);   // height +15 per added line
 }
 
 // FIXME: animate (light up) control panel icons?
@@ -7160,8 +7481,8 @@ function keyboard_shortcut_url_keys()
    keyboard_shortcut_key_proc();
 }
 
-// abcdefghijklmnopqrstuvwxyz `~!@#$%^&*()-_=+[]{}\|;:'"<>? 0123456789.,/:kM
-// ..........F.. ............   ...                     ... FFFFFFFFFFFFFFFF
+// abcdefghijklmnopqrstuvwxyz `~!@#$%^&*()-_=+[]{}\|;:'"<>? 0123456789.,/kM
+// ..........F.. ............   ...       F .     .. F  ... FFFFFFFFFFFFFFF
 // .. ..   ..  F  .  .. ..  .                               F: frequency entry keys
 // ABCDEFGHIJKLMNOPQRSTUVWXYZ
 // :space: :tab:
@@ -7245,6 +7566,7 @@ function keyboard_shortcut(key, mod, ctlAlt, keyCode)
    case '@': dx_filter(); shortcut.nav_click = true; break;
    case 'e': extension_scroll(1); break;
    case 'E': extension_scroll(-1); break;
+   case '\\': case '|': dx_database_cb('', (dx.db == dx.DB_STORED)? dx.DB_EiBi : dx.DB_STORED, false, key == '|', /* from_shortcut */ true); break;
    case '?': case 'h': keyboard_shortcut_help(); break;
 
    default:
@@ -7284,6 +7606,7 @@ function keyboard_shortcut_event(evt)
       }
       
       //{ event_dump(evt, 'shortcut'); return; }
+      //event_dump(evt, 'shortcut');
 
       var sft = evt.shiftKey;
       var ctl = evt.ctrlKey;

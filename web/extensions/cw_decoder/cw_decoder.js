@@ -66,6 +66,7 @@ function cw_decoder_recv(data)
 
 			case "cw_train":
 			   var el = w3_el('id-cw-train');
+			   if (!el) break;
 			   var p = +param[1];
 			   if (p < 0)
 			      w3_innerHTML(el, 'error '+ (-p) +'/4');

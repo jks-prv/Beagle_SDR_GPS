@@ -12,6 +12,7 @@ var extint = {
    spectrum_used: false,
    current_ext_name: null,
    using_data_container: false,
+   hide_func: null,
    default_w: 525,
    default_h: 300,
    prev_mode: null,
@@ -53,9 +54,9 @@ function ext_send(msg, ws)
 	}
 }
 
-function ext_panel_show(controls_html, data_html, show_func)
+function ext_panel_show(controls_html, data_html, show_func, hide_func)
 {
-	extint_panel_show(controls_html, data_html, show_func);
+	extint_panel_show(controls_html, data_html, show_func, hide_func);
 }
 
 function ext_set_data_height(height)
@@ -574,8 +575,10 @@ function ext_hide_spectrum()
    extint.spectrum_used = false;
 }
 
-function extint_panel_show(controls_html, data_html, show_func, show_help_button)
+function extint_panel_show(controls_html, data_html, show_func, hide_func, show_help_button)
 {
+   //console.log('extint_panel_show: extint.displayed='+ extint.displayed);
+   
 	extint.using_data_container = (data_html? true:false);
 	//console.log('extint_panel_show using_data_container='+ extint.using_data_container);
 
@@ -613,6 +616,7 @@ function extint_panel_show(controls_html, data_html, show_func, show_help_button
 	//console.log(controls_html);
 	
 	if (show_func) show_func();
+	extint.hide_func = hide_func;
 	
 	el = w3_el('id-ext-controls');
 	el.style.zIndex = 150;
@@ -661,6 +665,7 @@ function extint_panel_hide()
 	//w3_visible('id-msgs', true);
 	
 	extint_blur_prev(1);
+	w3_call(extint.hide_func);
 	
 	// on close, reset extension menu
 	w3_select_value('id-select-ext', -1);
@@ -793,7 +798,7 @@ function extint_focus(is_locked)
          w3_text('w3-medium w3-text-css-yellow',
             'Cannot use extensions while <br> another channel is in DRM mode.'
          );
-      extint_panel_show(s, null, null, 'off');
+      extint_panel_show(s, null, null, null, 'off');
       ext_set_controls_width_height(300, 75);
       return;
 	}
@@ -813,7 +818,7 @@ function extint_focus(is_locked)
          console.log('extint_focus: '+ ext +' loaded='+ loaded);
          if (loaded) {
             var s = 'loading extension...';
-            extint_panel_show(s, null, null, 'off');
+            extint_panel_show(s, null, null, null, 'off');
             ext_set_controls_width_height(325, 45);
             if (kiwi.is_locked)
                console.log('==== IS_LOCKED =================================================');
@@ -828,6 +833,8 @@ var extint_first_ext_load = true;
 function extint_select(value)
 {
 	extint_blur_prev(0);
+	w3_call(extint.hide_func);
+   freqset_select();
 	
 	value = +value;
 	var el = w3_el('id-select-ext');

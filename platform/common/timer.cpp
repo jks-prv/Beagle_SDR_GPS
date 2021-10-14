@@ -146,13 +146,15 @@ void time_hour_min_sec(time_t t, int *hour, int *min, int *sec)
 	if (sec) *sec = tm.tm_sec;
 }
 
-void utc_year_month_day(int *year, int *month, int *day)
+void utc_year_month_day(int *year, int *month, int *day, int *dow, int *doy)
 {
 	time_t t = utc_time();
 	struct tm tm; gmtime_r(&t, &tm);
 	if (year) *year = tm.tm_year;
 	if (month) *month = tm.tm_mon + 1;
 	if (day) *day = tm.tm_mday;
+	if (dow) *dow = tm.tm_wday;
+	if (doy) *doy = tm.tm_yday;
 }
     
 char *var_ctime_static(time_t *t)

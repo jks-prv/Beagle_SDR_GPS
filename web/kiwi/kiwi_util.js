@@ -523,6 +523,12 @@ function kiwi_decodeURIComponent(id, uri)
 {
    var obj = null, double_fail = false;
    
+   if (dbgUs && arguments.length != 2) {
+      alert('kiwi_decodeURIComponent: requires exactly two args');
+      kiwi_trace();
+      return null;
+   }
+   
    while (obj == null) {
       try {
          obj = decodeURIComponent(uri);
@@ -654,8 +660,8 @@ function kiwi_host()
 function kiwi_url_param(pnames, default_val, not_found_val)
 {
    var pn_isArray = isArray(pnames);
-	if (default_val == undefined) default_val = true;
-	if (not_found_val == undefined) not_found_val = null;
+	if (isUndefined(default_val)) default_val = true;
+	if (isUndefined(not_found_val)) not_found_val = null;
 
    // skip initial '?'
 	var params = (window.location && window.location.search && window.location.search.substr(1));
@@ -743,6 +749,8 @@ function unpx(s)
 
 function css_style(el, prop)
 {
+   el = w3_el(el);
+   if (!el) return null;
 	var style = getComputedStyle(el, null);
 	//console.log('css_style id='+ el.id);
 	//console.log(style);
@@ -752,6 +760,8 @@ function css_style(el, prop)
 
 function css_style_num(el, prop)
 {
+   el = w3_el(el);
+   if (!el) return null;
 	var v = parseInt(css_style(el, prop));
 	if (isNaN(v)) v = 0;
 	//console.log('css_style_num '+ prop +'='+ v);
@@ -954,6 +964,16 @@ function kiwi_parseQuery ( query ) {
       Params[key] = val;
    }
    return Params;
+}
+
+// see: stackoverflow.com/questions/118241/calculate-text-width-with-javascript
+function getTextWidth(text, font) {
+  // re-use canvas object for better performance
+  var canvas = getTextWidth.canvas || (getTextWidth.canvas = document.createElement("canvas"));
+  var context = canvas.getContext("2d");
+  context.font = font;
+  var metrics = context.measureText(text);
+  return metrics.width;
 }
 
 

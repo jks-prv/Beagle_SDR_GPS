@@ -924,7 +924,8 @@ html, body
 .class-dx-label
 {
 	position: absolute;
-	font-size: 8pt;
+	/*font-family: Courier;*/
+	font-size: 11px;
 	/*font-weight: bold;*/
 	padding: 3px;
 	border-style: solid;

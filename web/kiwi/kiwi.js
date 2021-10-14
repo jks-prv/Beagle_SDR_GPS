@@ -56,18 +56,6 @@ var try_again = "";
 var conn_type;
 var seriousError = false;
 
-
-var types = [
-   'active', 'watch-list', 'sub-band', 'DGPS', 'special event', 'interference', 'masked'
-];
-var types_s = {
-   active:0, watch_list:1, sub_band:2, DGPS:3, special_event:4, interference:5, masked:6
-};
-var type_colors = [
-   'cyan', 'lightPink', 'aquamarine', 'lavender', 'lightSkyBlue', 'violet', 'lightGrey', 'paleGreen',
-   'peachPuff', 'powderBlue', 'cornsilk', 'honeyDew'
-];
-
 var timestamp;
 
 //var optbar_prefix_color = 'w3-text-css-lime';
@@ -1609,7 +1597,7 @@ function kiwi_msg(param, ws)
 			break;
 
 		case "badp":
-			console.log('badp='+ param[1]);
+			//console.log('badp='+ param[1]);
 			extint_valpwd_cb(parseInt(param[1]));
 			break;					
 

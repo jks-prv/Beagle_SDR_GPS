@@ -1320,13 +1320,13 @@ function dx_json2(dx)
          var lo = 0, hi = 0;
          var opt = d[6];
          if (opt) {
-            if (opt.WL == 1) ty = types_s.watch_list; else
-            if (opt.SB == 1) ty = types_s.sub_band; else
-            if (opt.DG == 1) ty = types_s.DGPS; else
-            if (opt.NoN == 1) ty = types_s.special_event; else    // deprecated
-            if (opt.SE == 1) ty = types_s.special_event; else
-            if (opt.XX == 1) ty = types_s.interference; else
-            if (opt.MK == 1) ty = types_s.masked; else
+            if (opt.WL == 1) ty = dx.types_s.watch_list; else
+            if (opt.SB == 1) ty = dx.types_s.sub_band; else
+            if (opt.DG == 1) ty = dx.types_s.DGPS; else
+            if (opt.NoN == 1) ty = dx.types_s.special_event; else    // deprecated
+            if (opt.SE == 1) ty = dx.types_s.special_event; else
+            if (opt.XX == 1) ty = dx.types_s.interference; else
+            if (opt.MK == 1) ty = dx.types_s.masked; else
             ty = 0;
 
             if (opt.lo) lo = +opt.lo;
@@ -1358,7 +1358,7 @@ function dx_json2(dx)
                   w3_input(h('w3-padding-small||size=8'), l('Freq'), 'dxo.f_'+i, fr, 'dx_num_cb'), 19,
                   w3_select(h('w3-text-red'), l('Mode'), '', 'dxo.m_'+i, mo, kiwi.modes_u, 'dx_sel_cb'), 19,
                   w3_input(h('w3-padding-small||size=4'), l('Passband'), 'dxo.pb_'+i, pb, 'dx_passband_cb'), 19,
-                  w3_select(h('w3-text-red'), l('Type'), '', 'dxo.y_'+i, ty, types, 'dx_sel_cb'), 19,
+                  w3_select(h('w3-text-red'), l('Type'), '', 'dxo.y_'+i, ty, dx.types_s, 'dx_sel_cb'), 19,
                   w3_input(h('w3-padding-small||size=2'), l('Offset'), 'dxo.o_'+i, os, 'dx_num_cb'), 19
                ), 45,
                w3_col_percent('w3-valign/w3-margin-left',

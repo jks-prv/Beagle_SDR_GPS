@@ -21,7 +21,7 @@ Boston, MA  02110-1301, USA.
 
 #include "types.h"
 
-//#define DEVL_EiBi
+#define DEVL_EiBi
 
 // DX list
 
@@ -73,43 +73,47 @@ extern dxlist_t dx;
 
 extern const int eibi_counts[];
 
-#define	DX_MODE	    0x000f
+#define	DX_MODE	    0x0000000f
 
-#define	DX_TYPE	    0x01f0  // 32 types
+#define	DX_TYPE	    0x000001f0  // 32 types
 #define DX_TYPE_SFT 4
 #define DX_T2I(type) ( (((type) & DX_TYPE) - DX_FIRST) >> DX_TYPE_SFT )
 
-#define	DX_ACTIVE   0x0000
-#define	DX_WL		0x0010	// on watchlist, i.e. not actually heard yet, marked as a signal to watch for
-#define	DX_SB		0x0020	// a sub-band, not a station
-#define	DX_DG		0x0030	// DGPS
-#define	DX_SE		0x0040	// special event
-#define	DX_XX		0x0050	// interference
-#define	DX_MK		0x0060	// masked
+#define	DX_ACTIVE   0x00000000
+#define	DX_WL		0x00000010	// on watchlist, i.e. not actually heard yet, marked as a signal to watch for
+#define	DX_SB		0x00000020	// a sub-band, not a station
+#define	DX_DG		0x00000030	// DGPS
+#define	DX_SE		0x00000040	// special event
+#define	DX_XX		0x00000050	// interference
+#define	DX_MK		0x00000060	// masked
 
-#define	DX_FIRST	0x0080
-#define	DX_BCAST	0x0080
-#define	DX_HFDL		0x0090
-#define	DX_CW		0x00a0
-#define	DX_FSK		0x00b0
-#define	DX_TIME		0x00c0
-#define	DX_UTIL		0x00d0
-#define	DX_ALE		0x00e0
-#define	DX_SPY      0x00f0
-#define	DX_MODEM    0x0100
-#define	DX_FAX		0x0110
-#define	DX_AERO		0x0120
-#define	DX_MARINE   0x0130
-#define	DX_LAST 	0x0130
+#define	DX_FIRST	0x00000080
+#define	DX_BCAST	0x00000080
+#define	DX_UTIL		0x00000090
+#define	DX_TIME		0x000000a0
+#define	DX_ALE		0x000000b0
+#define	DX_HFDL		0x000000c0
+#define	DX_MILCOM   0x000000d0
+#define	DX_CW		0x000000e0
+#define	DX_FSK      0x000000f0
+#define	DX_FAX      0x00000100
+#define	DX_AERO		0x00000110
+#define	DX_MARINE   0x00000120
+#define	DX_SPY      0x00000130
+#define	DX_LAST 	0x00000130
 
-#define	DX_DOW      0xfe00
-#define DX_SUN      0x8000
-#define DX_MON      0x4000
-#define DX_TUE      0x2000
-#define DX_WED      0x1000
-#define DX_THU      0x0800
-#define DX_FRI      0x0400
-#define DX_SAT      0x0200
+#define	DX_DOW      0x0000fe00
+#define DX_MON      0x00008000
+#define DX_TUE      0x00004000
+#define DX_WED      0x00002000
+#define DX_THU      0x00001000
+#define DX_FRI      0x00000800
+#define DX_SAT      0x00000400
+#define DX_SUN      0x00000200
+
+#define DX_FLAGS    0xffff0000
+#define DX_FILTERED 0x00010000
+#define DX_HAS_EXT  0x00020000
 
 void dx_reload();
 void dx_save_as_json();
