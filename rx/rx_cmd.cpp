@@ -745,8 +745,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             n = sscanf(cmd, "SET DX_UPD g=%d f=%f lo=%d hi=%d o=%d m=%d i=%1024ms n=%1024ms p=%1024ms",
                 &gid, &freq, &low_cut, &high_cut, &mkr_off, &flags, &text_m, &notes_m, &params_m);
             enum { DX_MOD_ADD = 9, DX_DEL = 2 };
-            printf("DX_UPD [%s]\n", cmd);
-            printf("DX_UPD n=%d #%d %8.2f %d 0x%x text=<%s> notes=<%s> params=<%s>\n", n, gid, freq, mkr_off, flags, text_m, notes_m, params_m);
+            //printf("DX_UPD [%s]\n", cmd);
+            //printf("DX_UPD n=%d #%d %8.2f %d 0x%x text=<%s> notes=<%s> params=<%s>\n", n, gid, freq, mkr_off, flags, text_m, notes_m, params_m);
 
             if (n != DX_MOD_ADD && n != DX_DEL) {
                 printf("DX_UPD n=%d ?\n", n);
@@ -927,7 +927,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             int db, zoom, width, dir = 1, filter_tod;
             u4_t types_mask;
             bool db_changed = false;
-            if (drx->db == DB_EiBi) printf("DX_MKR [%s]\n", cmd);
+            //if (drx->db == DB_EiBi) printf("DX_MKR [%s]\n", cmd);
             int n = sscanf(cmd, "SET MARKER db=%d min=%f max=%f zoom=%d width=%d types_mask=0x%x filter_tod=%d",
                 &db, &min, &max, &zoom, &width, &types_mask, &filter_tod);
             enum { DX_MKRS = 4, DX_STEP = 2 };      // values for compatibility with client side
@@ -955,7 +955,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 drx->cur_list = (db == DB_STORED)? dx.stored_list : dx.eibi_list;
                 drx->cur_len = (db == DB_STORED)? dx.stored_len : dx.eibi_len;
                 first = true;
-                printf("DX_MKR: db SWITCHED cur_list=%p\n", drx->cur_list);
+                //printf("DX_MKR: db SWITCHED cur_list=%p\n", drx->cur_list);
             }
             //printf("DX_MKR: SET MARKER db=%s\n", (db == DB_STORED)? "stored" : "EiBi");
         
@@ -967,6 +967,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             int _hr, _min;
             utc_hour_min_sec(&_hr, &_min);
             int hr_min = _hr*100 + _min;
+            int dow_Su_0;
+            utc_year_month_day(NULL, NULL, NULL, &dow_Su_0);
+            int dow_Mo_0 = (dow_Su_0 == 0)? 6 : (dow_Su_0 - 1);
             struct timespec ts;
             clock_gettime(CLOCK_REALTIME, &ts);
             u4_t msec = ts.tv_nsec/1000000;
@@ -1008,6 +1011,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         
             //if (drx->db == DB_EiBi) printf("EiBi BSEARCH len=%d %.2f\n", drx->cur_len, dp->freq);
             for (; dp < &drx->cur_list[drx->cur_len] && dp >= drx->cur_list; dp += dir) {
+                u4_t flags = 0;
                 float freq = dp->freq + ((float) dp->offset / 1000.0);		// carrier plus offset
                 //if (drx->db == DB_EiBi) printf("DX_MKR EiBi CONSIDER %.2f\n", freq);
 
@@ -1016,7 +1020,29 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 if (drx->db == DB_EiBi) {
                     u4_t type_bit = 1 << (((dp->flags & DX_TYPE) - DX_BCAST) >> 4);
                     if ((type_bit & types_mask) == 0) continue;
-                    if (filter_tod && !(dp->time_begin <= hr_min && dp->time_end >= hr_min)) continue;
+                    
+                    u4_t dow_mask = dp->flags & DX_DOW;
+                    if (dow_mask == 0) dow_mask = DX_DOW;
+                    u4_t dow_bit =  DX_MON >> dow_Mo_0;
+                    if ((dow_mask & dow_bit) == 0) {
+                        //printf("!DOW dow_Mo_0=%d m=%04x b=%04x %.2f %s\n", dow_Mo_0, dow_mask, dow_bit, freq, dp->ident);
+                        if (filter_tod)
+                            continue;
+                        else
+                            flags = DX_FILTERED;
+                    }
+                    bool rev = (dp->time_begin > dp->time_end);
+                    bool within = (hr_min >= dp->time_begin && hr_min <= dp->time_end);
+                    bool within_rev = (hr_min >= dp->time_end && hr_min <= dp->time_begin);
+                    if ((!rev && within) || (rev && !within_rev)) {
+                        // TOD okay
+                    } else {
+                        //printf("!TOD %04d|%04d|%04d %.2f %s\n", dp->time_begin, hr_min, dp->time_end, freq, dp->ident);
+                        if (filter_tod)
+                            continue;
+                        else
+                            flags = DX_FILTERED;
+                    }
                 }
             
                 if (dx_filter) {
@@ -1062,7 +1088,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     sb = kstr_asprintf(sb, ",{\"g\":%d,\"f\":%.3f,\"lo\":%d,\"hi\":%d,\"o\":%d,\"x\":%d,"
                         "\"b\":%d,\"e\":%d,\"c\":\"%s\",\"l\":\"%s\",\"t\":\"%s\","
                         "\"i\":\"%s\"%s%s%s%s%s%s}",
-                        dp->idx, freq, dp->low_cut, dp->high_cut, dp->offset, dp->flags,
+                        dp->idx, freq, dp->low_cut, dp->high_cut, dp->offset, dp->flags | flags,
                         dp->time_begin, dp->time_end, dp->country, dp->lang, dp->target,
                         dp->ident,
                         dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"",
@@ -1079,7 +1105,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             send_msg(conn, false, "MSG mkr=%s", kstr_sp(sb));
             //printf("DX_MKR send=%d\n", send);
             if (drx->db == DB_EiBi) {
-                printf("DX_MKR EiBi send=%d\n", send);
+                //printf("DX_MKR EiBi send=%d\n", send);
                 //real_printf("%s\n", kstr_sp(sb));
             }
             kstr_free(sb);

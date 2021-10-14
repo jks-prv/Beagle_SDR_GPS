@@ -1229,7 +1229,7 @@ function ALE_2G_help(show)
                'Or it can be a list of frequencies separated by commas. Such a list will appear as the first entry in the ' +
                '<i>Local</i> menu for subsequent selection. The parameter <i>lsb</i> will make this list use lsb mode.' +
                '<br><br>' +
-               'Frequencies can use the suffixes \'k\' and \'M\'. [0123] refers to selections in the corresponding menu.' +
+               'Frequencies can use the suffixes \'k\' and \'M\'. [0123] refers to the order of selections in the corresponding menu.' +
                '<br><br>' +
                'Keywords are case-insensitive and can be abbreviated. So for example these are valid: <br>' +
                '<i>ext=ale,3596</i> &nbsp;&nbsp; ' +

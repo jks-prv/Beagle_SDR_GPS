@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.470  October 15, 2021
+    EiBi database now used as a second source of (read-only) DX labels.
+        For details shift-click in an empty spot of the DX label area above the frequency scale.
+        Or use the first few entries in the right-click menu (or the keyboard shortcut "|").
+        Then click the help button at upper right of the DX label edit panel.
+
 v1.469  October 10, 2021
     Yellow passband symbol in the frequency scale -- usability improvements:
         * Dragging in the frequency scale will no longer stop if the mouse moves outside of the scale

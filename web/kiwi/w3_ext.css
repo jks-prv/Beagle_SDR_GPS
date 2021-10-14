@@ -850,6 +850,11 @@ input[type=range]::-moz-range-thumb {
 	width: 50%;
 }
 
+.w3-width-80pct
+{
+	width: 80%;
+}
+
 .w3-width-full
 {
 	width: 100%;

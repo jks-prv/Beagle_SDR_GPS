@@ -528,12 +528,13 @@ void reload_index_params()
 	iparams_add("GEN_LIST_CSS", kstr_sp(sb));
 	kstr_free(sb);
 	
-	const char *gen_list_js[2][12] = {
+	const char *gen_list_js[2][13] = {
 	    {
 		    "kiwi/kiwi_util.js",
 		    "kiwi/kiwi.js",
 		    "kiwi/kiwi_ui.js",
 		    "kiwi/w3_util.js",
+		    "pkgs/w3color.js",
 		    "kiwi/monitor.js",
 		    "openwebrx.js",
 		    "ima_adpcm.js",
