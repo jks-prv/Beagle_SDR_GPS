@@ -34,7 +34,7 @@ var admin_sdr = {
       qam:  { c:     0, w:  9800 }
    },
    
-   dx_enabled: false,
+   dx_enabled: true,
    
    _last_: 0
 };
@@ -1236,11 +1236,11 @@ function dx_html()
 	      w3_div('id-dx w3-hide',
             w3_inline('w3-halign-space-between/w3-margin-top',
                w3_inline('/w3-margin-between-16',
-                  w3_button('w3-yellow', 'Modify', 'dx_modify_cb'),
-                  w3_button('w3-green', 'Add', 'dx_add_cb'),
-                  w3_button('w3-red', 'Delete', 'dx_delete_cb')
+                  w3_button('w3-yellow', 'Modify', 'dx_admin_mod_cb'),
+                  w3_button('w3-green', 'Add', 'dx_admin_add_cb'),
+                  w3_button('w3-red', 'Delete', 'dx_admin_del_cb')
                ),
-               w3_input('w3-text-teal/w3-label-inline/w3-padding-small|width:300px', 'Filter', 'dxo.filter', '', 'dx_filter_cb')
+               w3_input('w3-text-teal/w3-label-inline/w3-padding-small|width:300px', 'Filter', 'dx.o.filter', '', 'dx_filter_cb')
             ),
       
             w3_div('w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
@@ -1275,58 +1275,55 @@ function dx_hide()
 {
 }
 
-var dxo = {
-};
-
-function dx_json(dx)
+function dx_json(_dx)
 {
    if (!admin_sdr.dx_enabled) return;
-   var i, len = dx.dx.length;
+   var i, len = _dx.dx.length;
    console.log('### dx_json: entries='+ len);
    w3_innerHTML('id-dx-list-count', 'loading '+ len +' entries');
    
    // if this isn't delayed the above innerHTML set of id-dx-list-count doesn't render
-   setTimeout(function() { dx_json2(dx); }, 100);
+   setTimeout(function() { dx_json2(_dx); }, 100);
 }
 
-function dx_json2(dx)
+function dx_json2(_dx)
 {
-   var i, len = dx.dx.length;
-   var s = '';
+   var i, len = _dx.dx.length;
+   var s_a = [];
    
-   dxo.tags = [];
+   dx.o.tags = [];
 
-   for (i = -1; i < len; i++) {
-   //for (i = -1; i < 4; i++) {
+   //for (i = -1; i < len; i++) {
+   for (i = -1; i < 4; i++) {
       var d = null;
       var fr = '', mo = 0, id = '', no = '';
       var pb = '', ty = 0, os = '', ext = '';
       var ts = 0, tag = '';
       var hide = (i == -1)? 'w3-hide ':'';
       
-      // this is so all the s_new code can be reused to construct the legend
+      // done this way so all the s_new code can be reused to construct the legend
       var h = function(psa) { return (i == -1)? 'w3-hide' : psa; }
       var l = function(label) { return (i == -1)? label : ''; }
       if (i != -1) {
-         d = dx.dx[i];
+         d = _dx.dx[i];
          fr = d[0];
          mo = kiwi.modes_s[d[1].toLowerCase()];
          id = kiwi_decodeURIComponent('dx_id', d[2]);
          no = kiwi_decodeURIComponent('dx_no', d[3]);
          ts = d[4];
          tag = d[5];
-         dxo.tags[i] = tag;
+         dx.o.tags[i] = tag;
          
          var lo = 0, hi = 0;
          var opt = d[6];
          if (opt) {
-            if (opt.WL == 1) ty = dx.types_s.watch_list; else
-            if (opt.SB == 1) ty = dx.types_s.sub_band; else
-            if (opt.DG == 1) ty = dx.types_s.DGPS; else
-            if (opt.NoN == 1) ty = dx.types_s.special_event; else    // deprecated
-            if (opt.SE == 1) ty = dx.types_s.special_event; else
-            if (opt.XX == 1) ty = dx.types_s.interference; else
-            if (opt.MK == 1) ty = dx.types_s.masked; else
+            if (opt.WL == 1) ty = dx.stored_types.watch_list; else
+            if (opt.SB == 1) ty = dx.stored_types.sub_band; else
+            if (opt.DG == 1) ty = dx.stored_types.DGPS; else
+            if (opt.NoN == 1) ty = dx.stored_types.special_event; else    // deprecated
+            if (opt.SE == 1) ty = dx.stored_types.special_event; else
+            if (opt.XX == 1) ty = dx.stored_types.interference; else
+            if (opt.MK == 1) ty = dx.stored_types.masked; else
             ty = 0;
 
             if (opt.lo) lo = +opt.lo;
@@ -1346,25 +1343,25 @@ function dx_json2(dx)
       }
       
       // 'path'+i so path id is unique for field highlight
-      console.log('i='+ i +' mo='+ mo +' ty='+ ty);
-      console.log(d);
+      //console.log('i='+ i +' mo='+ mo +' ty='+ ty);
+      //console.log(d);
       var s_new =
          w3_divs('w3-text-teal/w3-margin-T-8',
             w3_col_percent('',
                w3_col_percent('w3-valign/w3-hspace-16',
                   //w3_text('w3-text-black w3-tiny', tag), 5,
-                  (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-selection-green', '+', 'dx_add_cb', i), 1,
-                  (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-red', '-', 'dx_rem_cb', i), 1,
-                  w3_input(h('w3-padding-small||size=8'), l('Freq'), 'dxo.f_'+i, fr, 'dx_num_cb'), 19,
-                  w3_select(h('w3-text-red'), l('Mode'), '', 'dxo.m_'+i, mo, kiwi.modes_u, 'dx_sel_cb'), 19,
-                  w3_input(h('w3-padding-small||size=4'), l('Passband'), 'dxo.pb_'+i, pb, 'dx_passband_cb'), 19,
-                  w3_select(h('w3-text-red'), l('Type'), '', 'dxo.y_'+i, ty, dx.types_s, 'dx_sel_cb'), 19,
-                  w3_input(h('w3-padding-small||size=2'), l('Offset'), 'dxo.o_'+i, os, 'dx_num_cb'), 19
+                  (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-selection-green', '+', 'dx_admin_add_cb', i), 1,
+                  (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-red', '-', 'dx_admin_del_cb', i), 1,
+                  w3_input(h('w3-padding-small||size=8'), l('Freq'), 'dx.o.f_'+i, fr, 'dx_num_cb'), 19,
+                  w3_select(h('w3-text-red'), l('Mode'), '', 'dx.o.m_'+i, mo, kiwi.modes_u, 'dx_sel_cb'), 19,
+                  w3_input(h('w3-padding-small||size=4'), l('Passband'), 'dx.o.pb_'+i, pb, 'dx_passband_cb'), 19,
+                  w3_select(h('w3-text-red'), l('Type'), '', 'dx.o.y_'+i, ty, dx.stored_types, 'dx_sel_cb'), 19,
+                  w3_input(h('w3-padding-small||size=2'), l('Offset'), 'dx.o.o_'+i, os, 'dx_num_cb'), 19
                ), 45,
                w3_col_percent('w3-valign/w3-margin-left',
-                  w3_input(h('w3-padding-small'), l('Ident'), 'dxo.i_'+i, id, 'dx_string_cb'), 40,
-                  w3_input(h('w3-padding-small'), l('Notes'), 'dxo.n_'+i, no, 'dx_string_cb'), 40,
-                  w3_input(h('w3-padding-small'), l('Extension'), 'dxo.p_'+i, ext, 'dx_string_cb'), 20
+                  w3_input(h('w3-padding-small'), l('Ident'), 'dx.o.i_'+i, id, 'dx_string_cb'), 40,
+                  w3_input(h('w3-padding-small'), l('Notes'), 'dx.o.n_'+i, no, 'dx_string_cb'), 40,
+                  w3_input(h('w3-padding-small'), l('Extension'), 'dx.o.p_'+i, ext, 'dx_string_cb'), 20
                ), 54
             )
          );
@@ -1372,12 +1369,13 @@ function dx_json2(dx)
       if (i == -1) {
          w3_innerHTML('id-dx-list-legend', s_new);
       } else {
-         s += s_new;
+         s_a[i] = s_new;
       }
    }
    w3_el('id-dx-list').style.overflowY = 'scroll';
-   //console.log('render =====================');
-   w3_innerHTML('id-dx-list', s);
+   console.log('DX render START');
+   w3_innerHTML('id-dx-list', s_a.join(''));
+   console.log('DX render RETURN');
 }
 
 function dx_filter_cb(path, p)
@@ -1385,14 +1383,19 @@ function dx_filter_cb(path, p)
    console.log('dx_filter_cb p='+ p);
 }
 
-function dx_add_cb(path, p)
+function dx_admin_mod_cb(path, p)
 {
-   console.log('dx_add p='+ p);
+   console.log('dx_admin_mod_cb p='+ p);
 }
 
-function dx_rem_cb(path, p)
+function dx_admin_add_cb(path, p)
 {
-   console.log('dx_rem p='+ p);
+   console.log('dx_admin_add_cb p='+ p);
+}
+
+function dx_admin_del_cb(path, p)
+{
+   console.log('dx_admin_del_cb p='+ p);
 }
 
 

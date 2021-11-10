@@ -3045,7 +3045,7 @@ function admin_msg(param)
 
 		case "dx_json":
 			console.log('dx_json len='+ param[1].length);
-         var obj = kiwi_JSON_parse('dx_json', param[1]);
+         var obj = kiwi_JSON_parse('dx_json', kiwi_decodeURIComponent('dx_json', param[1]));
 			if (obj) dx_json(obj);
 			break;
 		

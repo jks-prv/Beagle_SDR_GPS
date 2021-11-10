@@ -6098,6 +6098,7 @@ var dx = {
    db_s: [ 'stored (writable)', 'EiBi (read-only)' ],
    url_p: null,
    help: false,
+   o: {},      // current edit object
    
    stored_types: [ 'active', 'watch-list', 'sub-band', 'DGPS', 'special event', 'interference', 'masked' ],
    stored_types_s: { active:0, watch_list:1, sub_band:2, DGPS:3, special_event:4, interference:5, masked:6 },
@@ -6743,7 +6744,7 @@ function dx_admin_pwd_cb(path, val)
 function dx_show_edit_panel(ev, gid, from_shortcut)
 {
 	dx_keys = ev? { shift:ev.shiftKey, alt:ev.altKey, ctrl:ev.ctrlKey, meta:ev.metaKey } : { shift:0, alt:0, ctrl:0, meta:0 };
-	dxo.gid = gid;
+	dx.o.gid = gid;
 	
 	//console.log('dx_show_edit_panel ws='+ ws_wf.stream);
    // must validate admin for write access to DB_STORED
@@ -6795,44 +6796,44 @@ function dx_type2idx(type)
 
 function dx_show_edit_panel2()
 {
-	var gid = dxo.gid;
+	var gid = dx.o.gid;
 	//console_log_dbgUs('dx_show_edit_panel2 gid='+ gid +' db='+ dx.db);
 	
 	if (gid == -1) {
 		//console.log('DX EDIT new entry');
 		//console.log('DX EDIT new f='+ freq_car_Hz +'/'+ freq_displayed_Hz +' m='+ cur_mode);
-		dxo.f = freq_displayed_kHz_str;
-		dxo.lo = dxo.hi = dxo.o = 0;
-		dxo.m = kiwi.modes_s[cur_mode];
-		dxo.y = dx.stored_types_s.active;
-		dxo.i = dxo.n = dxo.p = '';
+		dx.o.f = freq_displayed_kHz_str;
+		dx.o.lo = dx.o.hi = dx.o.o = 0;
+		dx.o.m = kiwi.modes_s[cur_mode];
+		dx.o.y = dx.stored_types_s.active;
+		dx.o.i = dx.o.n = dx.o.p = '';
 	} else {
       var label = dx.list[gid];
 		//console.log('DX EDIT entry #'+ gid +' prev: f='+ label.freq +' flags='+ label.flags.toHex() +' i='+ label.ident +' n='+ label.notes);
-		dxo.f = label.carrier.toFixed(2);		// starts as a string, validated to be a number
-      dxo.lo = label.lo;
-      dxo.hi = label.hi;
-		dxo.o = label.moff;
-		dxo.m = (label.flags & dx.DX_MODE);
-		dxo.y = ((label.flags & dx.DX_TYPE) >> dx.DX_TYPE_SFT);
-		dxo.i = kiwi_decodeURIComponent('dx_ident', label.ident);
-		dxo.n = kiwi_decodeURIComponent('dx_notes', label.notes);
-		dxo.p = kiwi_decodeURIComponent('dx_params', label.params);
-		//console.log('dxo.i='+ dxo.i +' len='+ dxo.i.length);
+		dx.o.f = label.carrier.toFixed(2);		// starts as a string, validated to be a number
+      dx.o.lo = label.lo;
+      dx.o.hi = label.hi;
+		dx.o.o = label.moff;
+		dx.o.m = (label.flags & dx.DX_MODE);
+		dx.o.y = ((label.flags & dx.DX_TYPE) >> dx.DX_TYPE_SFT);
+		dx.o.i = kiwi_decodeURIComponent('dx_ident', label.ident);
+		dx.o.n = kiwi_decodeURIComponent('dx_notes', label.notes);
+		dx.o.p = kiwi_decodeURIComponent('dx_params', label.params);
+		//console.log('dx.o.i='+ dx.o.i +' len='+ dx.o.i.length);
 	}
-	//if (dbgUs) console.log(dxo);
+	//if (dbgUs) console.log(dx.o);
 	
 	// quick key combo to toggle 'active' mode without bringing up panel
 	if (dx.db == dx.DB_STORED && gid != -1 && dx_keys.shift && dx_keys.alt) {
-		//console.log('DX COMMIT quick-active entry #'+ dxo.gid +' f='+ dxo.f);
-		//console.log(dxo);
-		var type = dxo.y;
+		//console.log('DX COMMIT quick-active entry #'+ dx.o.gid +' f='+ dx.o.f);
+		//console.log(dx.o);
+		var type = dx.o.y;
 		type = (type == dx.stored_types_s.active)? dx.stored_types_s.watch_list : dx.stored_types_s.active;
-		dxo.y = type;
-		var mode = dxo.m;
+		dx.o.y = type;
+		var mode = dx.o.m;
 		mode |= (type << dx.DX_TYPE_SFT);
-		wf_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' lo='+ dxo.lo.toFixed(0) +' hi='+ dxo.hi.toFixed(0) +' o='+ dxo.o.toFixed(0) +' m='+ mode +
-			' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x') +' p='+ encodeURIComponent(dxo.p +'x'));
+		wf_send('SET DX_UPD g='+ dx.o.gid +' f='+ dx.o.f +' lo='+ dx.o.lo.toFixed(0) +' hi='+ dx.o.hi.toFixed(0) +' o='+ dx.o.o.toFixed(0) +' m='+ mode +
+			' i='+ encodeURIComponent(dx.o.i +'x') +' n='+ encodeURIComponent(dx.o.n +'x') +' p='+ encodeURIComponent(dx.o.p +'x'));
 		return;
 	}
 
@@ -6840,14 +6841,14 @@ function dx_show_edit_panel2()
    // Important to do this here. Couldn't figure out reasonable way to do this in extint_panel_show()
 	extint_panel_hide();		
 	
-	dxo.f = (parseFloat(dxo.f) + cfg.freq_offset).toFixed(2);
+	dx.o.f = (parseFloat(dx.o.f) + cfg.freq_offset).toFixed(2);
 	
-	dxo.pb = '';
-	if (dxo.lo || dxo.hi) {
-      if (dxo.lo == -dxo.hi) {
-         dxo.pb = (Math.abs(dxo.hi)*2).toFixed(0);
+	dx.o.pb = '';
+	if (dx.o.lo || dx.o.hi) {
+      if (dx.o.lo == -dx.o.hi) {
+         dx.o.pb = (Math.abs(dx.o.hi)*2).toFixed(0);
       } else {
-         dxo.pb = dxo.lo.toFixed(0) +', '+ dxo.hi.toFixed(0);
+         dx.o.pb = dx.o.lo.toFixed(0) +', '+ dx.o.hi.toFixed(0);
       }
 	}
 
@@ -6862,16 +6863,16 @@ function dx_show_edit_panel2()
 	   s2 =
          w3_divs('w3-text-white/w3-margin-T-8',
             w3_inline('w3-halign-space-between/',
-               w3_input('w3-padding-small||size=8', 'Freq', 'dxo.f', dxo.f, 'dx_num_cb'),
-               w3_select('w3-text-red', 'Mode', '', 'dxo.m', dxo.m, kiwi.modes_u, 'dx_sel_cb'),
-               w3_input('w3-padding-small||size=10', 'Passband', 'dxo.pb', dxo.pb, 'dx_passband_cb'),
-               w3_select('w3-text-red', 'Type', '', 'dxo.y', dxo.y, dx.stored_types, 'dx_sel_cb'),
-               w3_input('w3-padding-small||size=8', 'Offset', 'dxo.o', dxo.o, 'dx_num_cb')
+               w3_input('w3-padding-small||size=8', 'Freq', 'dx.o.f', dx.o.f, 'dx_num_cb'),
+               w3_select('w3-text-red', 'Mode', '', 'dx.o.m', dx.o.m, kiwi.modes_u, 'dx_sel_cb'),
+               w3_input('w3-padding-small||size=10', 'Passband', 'dx.o.pb', dx.o.pb, 'dx_passband_cb'),
+               w3_select('w3-text-red', 'Type', '', 'dx.o.y', dx.o.y, dx.stored_types, 'dx_sel_cb'),
+               w3_input('w3-padding-small||size=8', 'Offset', 'dx.o.o', dx.o.o, 'dx_num_cb')
             ),
       
-            w3_input('w3-label-inline/w3-padding-small', 'Ident', 'dxo.i', '', 'dx_string_cb'),
-            w3_input('w3-label-inline/w3-padding-small', 'Notes', 'dxo.n', '', 'dx_string_cb'),
-            w3_input('w3-label-inline/w3-padding-small', 'Extension', 'dxo.p', '', 'dx_string_cb'),
+            w3_input('w3-label-inline/w3-padding-small', 'Ident', 'dx.o.i', '', 'dx_string_cb'),
+            w3_input('w3-label-inline/w3-padding-small', 'Notes', 'dx.o.n', '', 'dx_string_cb'),
+            w3_input('w3-label-inline/w3-padding-small', 'Extension', 'dx.o.p', '', 'dx_string_cb'),
       
             w3_inline('w3-hspace-16',
                w3_button('w3-yellow', 'Modify', 'dx_modify_cb'),
@@ -6928,14 +6929,14 @@ function dx_show_edit_panel2()
 	ext_panel_show(s1 + s2, null,
 	   function() {
          if (dx.db == dx.DB_STORED) {
-            var el = w3_el('dxo.i');
-            el.value = dxo.i;
-            w3_el('dxo.n').value = dxo.n;
-            w3_el('dxo.p').value = dxo.p;
+            var el = w3_el('dx.o.i');
+            el.value = dx.o.i;
+            w3_el('dx.o.n').value = dx.o.n;
+            w3_el('dx.o.p').value = dx.o.p;
       
             // change focus to input field
             // FIXME: why doesn't field select work?
-            //console.log('dxo.i='+ el.value);
+            //console.log('dx.o.i='+ el.value);
             //w3_field_select(el, {mobile:1});
          } else {
             for (var i = dx_type2idx(dx.DX_FIRST); i <= dx_type2idx(dx.DX_LAST); i++) {
@@ -7009,40 +7010,40 @@ function dx_close_edit_panel(id)
 
 function dx_modify_cb(id, val)
 {
-	console_log_dbgUs('DX COMMIT modify entry #'+ dxo.gid +' f='+ dxo.f);
-	if (dbgUs) console.log(dxo);
-	if (dxo.gid == -1) return;
-	var mode = dxo.m;
-	var type = dxo.y << dx.DX_TYPE_SFT;
+	console_log_dbgUs('DX COMMIT modify entry #'+ dx.o.gid +' f='+ dx.o.f);
+	if (dbgUs) console.log(dx.o);
+	if (dx.o.gid == -1) return;
+	var mode = dx.o.m;
+	var type = dx.o.y << dx.DX_TYPE_SFT;
 	mode |= type;
-	dxo.f -= cfg.freq_offset;
-	if (dxo.f < 0) dxo.f = 0;
-	wf_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' lo='+ dxo.lo.toFixed(0) +' hi='+ dxo.hi.toFixed(0) +' o='+ dxo.o.toFixed(0) +' m='+ mode +
-		' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x') +' p='+ encodeURIComponent(dxo.p +'x'));
+	dx.o.f -= cfg.freq_offset;
+	if (dx.o.f < 0) dx.o.f = 0;
+	wf_send('SET DX_UPD g='+ dx.o.gid +' f='+ dx.o.f +' lo='+ dx.o.lo.toFixed(0) +' hi='+ dx.o.hi.toFixed(0) +' o='+ dx.o.o.toFixed(0) +' m='+ mode +
+		' i='+ encodeURIComponent(dx.o.i +'x') +' n='+ encodeURIComponent(dx.o.n +'x') +' p='+ encodeURIComponent(dx.o.p +'x'));
 	setTimeout(function() {dx_close_edit_panel(id);}, 250);
 }
 
 function dx_add_cb(id, val)
 {
 	//console.log('DX COMMIT new entry');
-	//console.log(dxo);
-	var mode = dxo.m;
-	var type = dxo.y << dx.DX_TYPE_SFT;
+	//console.log(dx.o);
+	var mode = dx.o.m;
+	var type = dx.o.y << dx.DX_TYPE_SFT;
 	mode |= type;
-	dxo.f -= cfg.freq_offset;
-	if (dxo.f < 0) dxo.f = 0;
-	wf_send('SET DX_UPD g=-1 f='+ dxo.f +' lo='+ dxo.lo.toFixed(0) +' hi='+ dxo.hi.toFixed(0) +' o='+ dxo.o.toFixed(0) +' m='+ mode +
-		' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x') +' p='+ encodeURIComponent(dxo.p +'x'));
+	dx.o.f -= cfg.freq_offset;
+	if (dx.o.f < 0) dx.o.f = 0;
+	wf_send('SET DX_UPD g=-1 f='+ dx.o.f +' lo='+ dx.o.lo.toFixed(0) +' hi='+ dx.o.hi.toFixed(0) +' o='+ dx.o.o.toFixed(0) +' m='+ mode +
+		' i='+ encodeURIComponent(dx.o.i +'x') +' n='+ encodeURIComponent(dx.o.n +'x') +' p='+ encodeURIComponent(dx.o.p +'x'));
 	setTimeout(function() {dx_close_edit_panel(id);}, 250);
 	owrx.dx_click_gid_last = undefined;    // because gid's may get renumbered
 }
 
 function dx_delete_cb(id, val)
 {
-	//console.log('DX COMMIT delete entry #'+ dxo.gid);
-	//console.log(dxo);
-	if (dxo.gid == -1) return;
-	wf_send('SET DX_UPD g='+ dxo.gid +' f=-1');
+	//console.log('DX COMMIT delete entry #'+ dx.o.gid);
+	//console.log(dx.o);
+	if (dx.o.gid == -1) return;
+	wf_send('SET DX_UPD g='+ dx.o.gid +' f=-1');
 	setTimeout(function() {dx_close_edit_panel(id);}, 250);
 	owrx.dx_click_gid_last = undefined;    // because gid's may get renumbered
 }
