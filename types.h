@@ -118,4 +118,15 @@ static __inline__ u4_t round_up(u4_t val, u4_t size) {
 // documentation assistance
 #define SPACE_FOR_NULL 1
 
+#ifdef __cplusplus
+    // separately compiled .c files (e.g. HFDL) need c, not c++, function names to link properly
+    #define C_LINKAGE(x) extern "C" { x; }
+    #define DEF_0 =0
+    #define DEF_NULL =NULL
+#else
+    #define C_LINKAGE(x) x;
+    #define DEF_0
+    #define DEF_NULL
+#endif
+
 #endif

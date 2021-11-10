@@ -435,6 +435,19 @@ char *stprintf(const char *fmt, ...)
 	return dst_static;
 }
 
+// asprintf(), but return value is pointer to allocated buffer.
+// Easier to use in an arg list, but more difficult to free()
+const char *aspf(const char *fmt, ...)
+{
+	char *s;
+	va_list ap;
+	va_start(ap, fmt);
+    int vasprintf(char **strp, const char *fmt, va_list ap);    // #include def isn't found?
+    vasprintf(&s, fmt, ap);
+    va_end(ap);
+	return (const char *) s;
+}
+
 // encoded snprintf()
 int esnprintf(char *str, size_t slen, const char *fmt, ...)
 {

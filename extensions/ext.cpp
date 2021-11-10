@@ -96,24 +96,32 @@ void ext_notify_connected(int rx_chan, u4_t seq, char *msg)
     kiwi_strncpy(extint.notify_msg, msg, N_NOTIFY);
 }
 
-void ext_register_receive_iq_samps(ext_receive_iq_samps_t func, int rx_chan)
+void ext_register_receive_iq_samps(ext_receive_iq_samps_t func, int rx_chan, int flags)
 {
-	ext_users[rx_chan].receive_iq = func;
+    if (flags == PRE_AGC)
+	    ext_users[rx_chan].receive_iq_pre_agc = func;
+	else
+	    ext_users[rx_chan].receive_iq_post_agc = func;
 }
 
-void ext_register_receive_iq_samps_task(tid_t tid, int rx_chan)
+void ext_register_receive_iq_samps_task(tid_t tid, int rx_chan, int flags)
 {
-	ext_users[rx_chan].receive_iq_tid = tid;
+    if (flags == PRE_AGC)
+	    ext_users[rx_chan].receive_iq_pre_agc_tid = tid;
+	else
+	    ext_users[rx_chan].receive_iq_post_agc_tid = tid;
 }
 
 void ext_unregister_receive_iq_samps(int rx_chan)
 {
-	ext_users[rx_chan].receive_iq = NULL;
+	ext_users[rx_chan].receive_iq_pre_agc = NULL;
+	ext_users[rx_chan].receive_iq_post_agc = NULL;
 }
 
 void ext_unregister_receive_iq_samps_task(int rx_chan)
 {
-	ext_users[rx_chan].receive_iq_tid = (tid_t) NULL;
+	ext_users[rx_chan].receive_iq_pre_agc_tid = (tid_t) NULL;
+	ext_users[rx_chan].receive_iq_post_agc_tid = (tid_t) NULL;
 }
 
 void ext_register_receive_real_samps(ext_receive_real_samps_t func, int rx_chan)

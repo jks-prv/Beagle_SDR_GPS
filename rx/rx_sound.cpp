@@ -908,11 +908,13 @@ void c2s_sound(void *param)
 
 		u2_t bc = 0;
 
-		ext_receive_S_meter_t receive_S_meter   = ext_users[rx_chan].receive_S_meter;
-		ext_receive_iq_samps_t receive_iq       = isNBFM? NULL : ext_users[rx_chan].receive_iq;
-		tid_t receive_iq_tid                    = isNBFM? (tid_t) NULL : ext_users[rx_chan].receive_iq_tid;
-		ext_receive_real_samps_t receive_real   = ext_users[rx_chan].receive_real;
-		tid_t receive_real_tid                  = ext_users[rx_chan].receive_real_tid;
+		ext_receive_S_meter_t receive_S_meter       = ext_users[rx_chan].receive_S_meter;
+		ext_receive_iq_samps_t receive_iq_pre_agc   = isNBFM? NULL : ext_users[rx_chan].receive_iq_pre_agc;
+		tid_t receive_iq_pre_agc_tid                = isNBFM? (tid_t) NULL : ext_users[rx_chan].receive_iq_pre_agc_tid;
+		ext_receive_iq_samps_t receive_iq_post_agc  = isNBFM? NULL : ext_users[rx_chan].receive_iq_post_agc;
+		tid_t receive_iq_post_agc_tid               = isNBFM? (tid_t) NULL : ext_users[rx_chan].receive_iq_post_agc_tid;
+		ext_receive_real_samps_t receive_real       = ext_users[rx_chan].receive_real;
+		tid_t receive_real_tid                      = ext_users[rx_chan].receive_real_tid;
 		
 		int ns_out;
 		int fir_pos;
@@ -991,10 +993,6 @@ void c2s_sound(void *param)
 			f_samps = &iq->iq_samples[iq->iq_wr_pos][0];
 			const int ns_in = nrx_samps;
 			
-			// update as soon as possible so waterfall sequence matching stays current
-			iq->iq_seqnum[iq->iq_wr_pos] = iq->iq_seq;
-			iq->iq_seq++;
-
             if (nb_enable[NB_CLICK] == NB_PRE_FILTER) {
                 u4_t now = timer_sec();
                 if (now != noise_pulse_last) {
@@ -1065,13 +1063,16 @@ void c2s_sound(void *param)
             snd->out_pkt_iq.h.dummy = 0;
             gps_tsp->last_gpssec = gps_tsp->gpssec;
     
+			iq->iq_seqnum[iq->iq_wr_pos] = iq->iq_seq;
+			iq->iq_seq++;
+
             // Forward IQ samples if requested.
             // Remember that receive_iq() is used to pushback test data in some cases, e.g. DRM
-            if (receive_iq != NULL)
-                receive_iq(rx_chan, 0, ns_out, f_samps);
+            if (receive_iq_pre_agc != NULL)
+                receive_iq_pre_agc(rx_chan, 0, ns_out, f_samps);
             
-            if (receive_iq_tid != (tid_t) NULL)
-                TaskWakeup(receive_iq_tid, TWF_CHECK_WAKING, TO_VOID_PARAM(rx_chan));
+            if (receive_iq_pre_agc_tid != (tid_t) NULL)
+                TaskWakeupFP(receive_iq_pre_agc_tid, TWF_CHECK_WAKING, TO_VOID_PARAM(rx_chan));
     
             // delay updating iq_wr_pos until after AGC applied below
             
@@ -1320,7 +1321,7 @@ void c2s_sound(void *param)
             
             bool send_silence = (masked || squelched || squelched_overload);
 
-            // IQ output modes
+            // IQ output modes (except non-monitor mode DRM)
             if (mode == MODE_IQ || mode == MODE_SAS || mode == MODE_QAM
             #ifdef DRM
                 // DRM monitor mode is effectively the same as MODE_IQ
@@ -1334,6 +1335,15 @@ void c2s_sound(void *param)
                     cp = f_samps;
                     if (!send_silence)
                         m_Agc[rx_chan].ProcessData(ns_out, cp, cp);
+
+                    // Forward IQ samples if requested.
+                    // Remember that receive_iq() is used to pushback test data in some cases, e.g. DRM
+                    if (receive_iq_post_agc != NULL)
+                        receive_iq_post_agc(rx_chan, 0, ns_out, cp);
+            
+                    if (receive_iq_post_agc_tid != (tid_t) NULL)
+                        TaskWakeupFP(receive_iq_post_agc_tid, TWF_CHECK_WAKING, TO_VOID_PARAM(rx_chan));
+
                     iq->iq_wr_pos = (iq->iq_wr_pos+1) & (N_DPBUF-1);    // after AGC above
                 }
 
@@ -1382,7 +1392,7 @@ void c2s_sound(void *param)
                     receive_real(rx_chan, 0, ns_out, r_samps, freqHz);
                 
                 if (receive_real_tid != (tid_t) NULL)
-                    TaskWakeup(receive_real_tid, TWF_CHECK_WAKING, TO_VOID_PARAM(rx_chan));
+                    TaskWakeupFP(receive_real_tid, TWF_CHECK_WAKING, TO_VOID_PARAM(rx_chan));
     
                 if (send_silence) {
                     TYPEMONO16 *rs = r_samps;
