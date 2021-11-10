@@ -535,6 +535,7 @@ function kiwi_decodeURIComponent(id, uri)
       } catch(ex) {
          console.log('$kiwi_decodeURIComponent('+ id +'): decode fail');
          console.log(uri);
+         //console.log(ex);
       
          if (double_fail) {
             console.log('kiwi_decodeURIComponent('+ id +'): DOUBLE DECODE FAIL');

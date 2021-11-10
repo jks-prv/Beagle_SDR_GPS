@@ -642,6 +642,6 @@ void SearchTaskRun()
 		//printf("SearchTaskRun: $wakeup\n");
 		gps_acquire = 1;
 		GPSstat(STAT_ACQUIRE, 0, gps_acquire);
-		TaskWakeup(searchTaskID, TWF_NONE, 0);
+		TaskWakeup(searchTaskID);
 	}
 }

@@ -314,7 +314,7 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
     TaskSleepMsec(3);
     // ... enabling embedded PI controllers
     spi_set(CmdSetMask, BusyFlags |= 1<<ch);
-    TaskWakeup(id, TWF_CHECK_WAKING, 0);
+    TaskWakeupF(id, TWF_CHECK_WAKING);
 
 	GPSstat(STAT_DEBUG, secs, ch, ca_shift, code_creep, ca_pause);
 

@@ -160,7 +160,7 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
             	
             	// run kiwisdr.com registration so kiwi.gps.json gets updated
             	if (reg_kiwisdr_com_tid)
-            	    TaskWakeup(reg_kiwisdr_com_tid, TWF_CANCEL_DEADLINE, NULL);
+            	    TaskWakeupF(reg_kiwisdr_com_tid, TWF_CANCEL_DEADLINE);
             }
             break;
         case STAT_LON:

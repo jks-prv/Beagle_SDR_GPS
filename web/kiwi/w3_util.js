@@ -210,16 +210,18 @@ var w3_console = {};
 w3_console.log = function(obj, prefix)
 {
    var s = prefix? (prefix + ': ') : '';
+   if (isString(obj)) {
+      s += '"'+ obj.toString() +'"';
+   } else
    if (isObject(obj)) {
+      console.log(obj);
       var json = 'JSON '+ JSON.stringify(obj, w3int_console_replacer);
       if (json.includes('\n'))
          json = JSON.stringify(obj, w3int_console_replacer, 1);   // if json is multi-line, redo using pretty-print
       s += json;
-   } else
-   if (isString(obj))
-      s += '"'+ obj.toString() +'"';
-   else
+   } else {
       s += obj.toString();
+   }
    console.log(s);
    //if (isObject(obj)) console.log(obj);
 };
@@ -2773,7 +2775,7 @@ function w3_select_next_prev_cb(path, cb_param, first)
       if (val == -1) continue;
       
       w3_select_enum(menu_s, function(option) {
-         var content_check = (isUndefined(cbp.isNumeric) || (cbp.isNumeric == true && isNumber(+option.innerText)));
+         var content_check = (isUndefined(cbp.isNumeric) || (cbp.isNumeric == true && isNumber(parseInt(option.innerText))));
 	      if (option.disabled || !content_check) return;
          if (dbgUs) console.log('consider val='+ option.value +' \"'+ option.innerText +'\" content_check='+ content_check);
          if (capture_the_next) {

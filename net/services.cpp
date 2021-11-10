@@ -739,7 +739,7 @@ static void reg_public(void *param)
                     #ifdef USE_ASAN
                         // leak detector needs exit while running on main() stack
                         kiwi_restart = true;
-                        TaskWakeup(TID_MAIN, TWF_CANCEL_DEADLINE);
+                        TaskWakeupF(TID_MAIN, TWF_CANCEL_DEADLINE);
                     #else
                         kiwi_exit(0);
                     #endif

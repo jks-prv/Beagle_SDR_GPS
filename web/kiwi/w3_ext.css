@@ -631,6 +631,7 @@ input[type=range]::-moz-range-thumb {
 
 
 /* flex container */
+/* css-tricks.com/snippets/css/a-guide-to-flexbox */
 
 .w3-flex { display: flex }
 
@@ -665,6 +666,7 @@ input[type=range]::-moz-range-thumb {
 
 .w3-gap-8 { gap: 8px }
 .w3-gap-10 { gap: 10px }
+.w3-gap-16 { gap: 16px }
 
 .w3-perfect-center, .w3-perfect-centering, .w3-perfectly-centered
 {

@@ -640,7 +640,7 @@ function kiwi_output_msg(id, id_scroll, p)
 
 	var s;
 	try {
-	   s = decodeURIComponent(p.s);
+	   s = kiwi_decodeURIComponent('kiwi_output_msg', p.s);
 	} catch(ex) {
 	   console.log('decodeURIComponent FAIL:');
 	   console.log(p.s);
