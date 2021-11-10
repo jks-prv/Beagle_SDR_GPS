@@ -79,6 +79,7 @@ alias ansi3='for c in $(seq 0 255) ; do printf "\e[48;5;%sm %3s \e[97m %3s \e[0m
 
 # make
 alias m="make"
+alias masm="make ASM_OUT=1"
 alias mh="make help"
 alias m0="make OPT=0"
 alias mgdb="make debug GDB=1"
@@ -206,7 +207,7 @@ alias pksh="apt show"
 alias pkver="apt-cache showpkg"
 alias pkvers="apt-cache madison"
 alias pkpol="apt-cache policy"
-alias pkup="apt-get -y install debian-archive-keyring; apt-get update"
+alias pkup="apt-get -y install debian-archive-keyring; apt-get update; apt-get -y install ca-certificates; apt-get update"
 # update(upgrade) single package
 alias pkupp="apt-get install --only-upgrade"
 alias pkug="apt-get -y dist-upgrade"
