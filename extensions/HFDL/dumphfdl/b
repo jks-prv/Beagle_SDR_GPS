@@ -1,0 +1,3 @@
+#! /bin/bash
+set -x
+rm -rf build; mkdir build; cd build; cmake -DSOAPYSDR=FALSE -DETSY_STATSD=FALSE -DZMQ=FALSE ../; make; cd ..

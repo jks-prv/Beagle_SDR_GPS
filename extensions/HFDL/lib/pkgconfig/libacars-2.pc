@@ -1,0 +1,15 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include/libacars-2
+
+Name: libacars
+Description: ACARS message decoding library
+URL: https://github.com/szpajder/libacars
+Version: 2.1.3
+Requires:
+Requires.private:
+Conflicts:
+Cflags: -I${includedir}
+Libs: -L${libdir} -lacars-2
+Libs.private:
