@@ -12,7 +12,7 @@
 #include <string.h>                 // memcpy
 #include <sys/time.h>               // struct timeval
 #include <liquid/liquid.h>
-#include "config.h"                 // *_DEBUG
+#include "hfdl_config.h"                 // *_DEBUG
 #ifndef HAVE_PTHREAD_BARRIERS
 #include "pthread_barrier.h"
 #endif

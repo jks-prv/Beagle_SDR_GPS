@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include "config.h"         // WITH_SQLITE
+#include "hfdl_config.h"         // WITH_SQLITE
 #include "ac_data.h"        // struct ac_data_entry
 #include "util.h"           // UNUSED
 

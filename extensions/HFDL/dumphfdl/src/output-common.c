@@ -2,7 +2,7 @@
 #include <string.h>             // memset, strcmp, strdup
 #include <glib.h>               // g_async_queue_new
 #include <libacars/dict.h>      // la_dict
-#include "config.h"             // WITH_*
+#include "hfdl_config.h"             // WITH_*
 #include "util.h"               // NEW, ASSERT
 #include "options.h"            // describe_option
 #include "metadata.h"           // struct metadata, metadata_copy, metadata_destroy

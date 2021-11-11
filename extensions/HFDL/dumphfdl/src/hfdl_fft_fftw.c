@@ -3,7 +3,7 @@
 #include <fftw3.h>
 #include "hfdl_fft.h"
 #include "util.h"           // NEW
-#include "config.h"         // WITH_FFTW3F_THREADS
+#include "hfdl_config.h"         // WITH_FFTW3F_THREADS
 
 #define FFT_THREAD_CNT 4
 

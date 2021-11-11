@@ -8,7 +8,7 @@
 #include <libacars/libacars.h>      // la_proto_node, la_type_descriptor
 #include <libacars/vstring.h>       // la_vstring
 #include "globals.h"                // Config
-#include "config.h"
+#include "hfdl_config.h"
 #ifndef HAVE_PTHREAD_BARRIERS
 #include "pthread_barrier.h"
 #endif

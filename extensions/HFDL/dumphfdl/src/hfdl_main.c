@@ -15,7 +15,7 @@
 #ifdef PROFILING
 #include <gperftools/profiler.h>
 #endif
-#include "config.h"
+#include "hfdl_config.h"
 #include "options.h"            // IND(), describe_option
 #include "globals.h"            // do_exit, Systable
 #include "block.h"              // block_*

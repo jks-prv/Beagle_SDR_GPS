@@ -4,7 +4,7 @@
 #include <string.h>                     // strdup, strerror
 #include <errno.h>                      // errno
 #include <zmq.h>                        // zmq_*
-#include "config.h"                     // LIBZMQ_VER_*
+#include "hfdl_config.h"                     // LIBZMQ_VER_*
 #include "output-common.h"              // output_descriptor_t, output_qentry_t, output_queue_drain
 #include "kvargs.h"                     // kvargs
 #include "options.h"                    // option_descr_t

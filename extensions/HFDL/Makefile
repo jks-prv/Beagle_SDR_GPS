@@ -12,7 +12,6 @@ EXT_EXCLUDE_RSYNC += $(THIS_HFDL)/dumphfdl/build $(THIS_HFDL)/libacars-2.1.3/bui
 ifeq ($(HFDL_SKIP),true)
     EXT_SKIP += HFDL
 else
-    #EXT_SUBDIRS += extensions/HFDL/src extensions/HFDL/src/libfec
     EXT_SUBDIRS += extensions/HFDL/dumphfdl/src extensions/HFDL/dumphfdl/src/libfec
 
     EXT_DEFINES += -DHFDL -DHFDL_KIWI -DDUMPHFDL_VERSION=STRINGIFY\(1.1.0\)

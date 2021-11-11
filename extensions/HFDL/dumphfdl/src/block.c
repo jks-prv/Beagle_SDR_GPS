@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include "pthr.h"               // pthr_*
 #include <liquid/liquid.h>      // cbuffercf_*
-#include "config.h"
+#include "hfdl_config.h"
 #ifndef HAVE_PTHREAD_BARRIERS
 #include "pthread_barrier.h"
 #endif

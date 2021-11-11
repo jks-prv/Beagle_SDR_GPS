@@ -202,8 +202,8 @@ message(STATUS "  - Profiling:\t\trequested: ${PROFILING}, enabled: ${WITH_PROFI
 message(STATUS "  - Multithreaded FFT:\t${WITH_FFTW3F_THREADS}")
 
 configure_file(
-	"${CMAKE_CURRENT_SOURCE_DIR}/config.h.in"
-	"${CMAKE_CURRENT_SOURCE_DIR}/config.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/hfdl_config.h.in"
+	"${CMAKE_CURRENT_SOURCE_DIR}/hfdl_config.h"
 	@ONLY
 )
 

@@ -5,7 +5,7 @@
 #include <complex.h>
 #include "pthr.h"
 #include <liquid/liquid.h>
-#include "config.h"
+#include "hfdl_config.h"
 #ifndef HAVE_PTHREAD_BARRIERS
 #include "pthread_barrier.h"
 #endif

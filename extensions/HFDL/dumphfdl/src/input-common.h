@@ -2,7 +2,7 @@
 #pragma once
 #include <stdint.h>
 #include <stddef.h>         // size_t
-#include "config.h"
+#include "hfdl_config.h"
 #include "block.h"          // struct block, struct producer
 
 typedef enum {

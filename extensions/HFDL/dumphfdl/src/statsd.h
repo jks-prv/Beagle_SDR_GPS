@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <sys/time.h>           // struct timeval
 #include <libacars/libacars.h>  // la_msg_dir
-#include "config.h"             // WITH_STATSD
+#include "hfdl_config.h"             // WITH_STATSD
 #include "util.h"               // nop()
 
 #ifdef WITH_STATSD

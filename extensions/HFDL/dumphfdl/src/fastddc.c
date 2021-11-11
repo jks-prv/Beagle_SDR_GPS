@@ -34,7 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>             // memset
 #include <complex.h>
 #include "complex2.h"
-#include "config.h"             // FASTDDC_DEBUG
+#include "hfdl_config.h"             // FASTDDC_DEBUG
 #include "fastddc.h"
 #include "hfdl_fft.h"
 #include "libcsdr.h"

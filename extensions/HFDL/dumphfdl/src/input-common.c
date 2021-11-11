@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 #include <stdint.h>
 #include <stdio.h>              // fprintf
-#include "config.h"
+#include "hfdl_config.h"
 #include "util.h"               // ASSERT, XCALLOC, NEW, container_of
 #include "input-common.h"
 #include "input-helpers.h"      // get_sample_converter
