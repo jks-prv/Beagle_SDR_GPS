@@ -6127,7 +6127,7 @@ var dx = {
    ],
    eibi_ext: [
       '',         '',         'time',
-      'ale',      '',         '',
+      'ale',      'hfdl',     '',
       'cw',       'fsk',      'fax',
       '',         '',         ''
    ],
@@ -7076,7 +7076,7 @@ function dx_click(ev, gid)
          }
       }
       var extname = extint.extname? extint.extname : '';
-		console_log_dbgUs('dx_click f='+ label.freq +' mode='+ mode +' cur_mode='+ cur_mode +' lo='+ lo +' hi='+ hi +' params='+ params +' extname=<'+ extname +'> param=<'+ extint.param +'>');
+		console_log_dbgUs('dx_click f='+ label.freq +' mode='+ mode +' cur_mode='+ cur_mode +' lo='+ lo +' hi='+ hi +' params=<'+ params +'> extname=<'+ extname +'> param=<'+ extint.param +'>');
 
       // EiBi database frequencies are dial/carrier (i.e. not pbc)
       if (dx.db == dx.DB_EiBi) {
