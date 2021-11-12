@@ -53,7 +53,7 @@ static int hfdl_input(int rx_chan, TYPECPX **samps_c = NULL)
                     e->seq_init = true;
                 } else {
                     u4_t got = rx->iq_seqnum[e->rd_pos], expecting = e->seq;
-                    rcprintf(rx_chan, "HFDL rx%d SEQ: @%d got %d expecting %d (%d)\n", rx_chan, e->rd_pos, got, expecting, got - expecting);
+                    rcprintf(rx_chan, "HFDL SEQ: @%d got %d expecting %d (%d)\n", e->rd_pos, got, expecting, got - expecting);
                 }
                 e->seq = rx->iq_seqnum[e->rd_pos];
             }

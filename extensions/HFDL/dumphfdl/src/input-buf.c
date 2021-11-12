@@ -42,7 +42,10 @@ void *buf_input_thread(void *ctx) {
 	struct circ_buffer *circ_buffer = &block->producer.out->circ_buffer;
 
     //printf("buf_input_thread tid=%d\n", TaskID());
-	hfdl_msgs((char *) aspf("SET input_tid=%d rx_chan=%d", TaskID(), hfdl->rx_chan), hfdl->rx_chan);
+    char *s;
+    asprintf(&s, "SET input_tid=%d rx_chan=%d", TaskID(), hfdl->rx_chan);
+	hfdl_msgs(s, hfdl->rx_chan);
+	free(s);
 
 	float complex *outbuf = XCALLOC(buf_BUFSIZE / input->bytes_per_sample,
 			sizeof(float complex));

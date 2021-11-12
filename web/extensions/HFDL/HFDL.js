@@ -6,7 +6,7 @@ var hfdl = {
    first_time: true,
    dataH: 300,
    ctrlW: 600,
-   ctrlH: 185,
+   ctrlH: 165,
    freq: 0,
    sfmt: 'w3-text-red w3-ext-retain-input-focus',
    pb: { lo: 300, hi: 2600 },
@@ -196,6 +196,7 @@ function hfdl_controls_setup()
 	time_display_setup('hfdl');
 	hfdl_msg('w3-text-css-yellow', '&nbsp;');
 	HFDL_environment_changed( {resize:1, freq:1} );
+   hfdl.save_agc_delay = ext_agc_delay(100);
 	ext_send('SET start');
 	
 	hfdl.saved_mode = ext_get_mode();
@@ -661,6 +662,7 @@ function HFDL_blur()
 {
    // anything that needs to be done when extension blurred (closed)
 	ext_set_mode(hfdl.saved_mode);
+   ext_agc_delay(hfdl.save_agc_delay);
 }
 
 function HFDL_help(show)
@@ -670,11 +672,24 @@ function HFDL_help(show)
          w3_text('w3-medium w3-bold w3-text-aqua', 'HFDL decoder help') +
          w3_div('w3-margin-T-8 w3-scroll-y|height:90%',
             w3_div('w3-margin-R-8',
+               'Periodic downloading of the HFDL message log to a file can be specified. Adjust your browser settings so these files are downloaded ' +
+               'and saved automatically without causing a browser popup window for each download.' +
+
+               '<br><br>URL parameters: <br>' +
+               '<i>(menu match)</i> &nbsp; display:[012] &nbsp; scan[:<i>secs</i>] &nbsp; ' +
+               'log_time:<i>mins</i> &nbsp; test' +
+               '<br><br>' +
+               'The first URL parameter can be a frequency entry from the "Bands" menu (e.g. "8977"). <br>' +
+               '[012] refers to the order of selections in the corresponding menu.' +
+               '<br><br>' +
+               'Keywords are case-insensitive and can be abbreviated. So for example these are valid: <br>' +
+               '<i>ext=hfdl,8977</i> &nbsp;&nbsp; ' +
+               '<i>ext=hfdl,8977,d:1</i> &nbsp;&nbsp; <i>ext=hfdl,8977,l:10</i><br>' +
                ''
             )
          );
 
-      confirmation_show_content(s, 610, 375);
+      confirmation_show_content(s, 610, 280);
       w3_el('id-confirmation-container').style.height = '100%';   // to get the w3-scroll-y above to work
    }
    return true;
