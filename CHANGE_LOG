@@ -2,11 +2,22 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.471  November 12, 2021
+    HFDL extension preliminary release.
+        Because the decoding happens entirely on the Beagle, and due to the buffering delay of
+        delivering audio and waterfall to the browser, you will see the decoded text before the
+        audio/waterfall occur.
+    
+    BBAI performance improvement. Specify correct compiler cpu type (cortex-a15) and
+        vector floating point version (vfpv4) for the TI AM5729 cpu chip used by the BBAI.
+        This causes the fused multiply-add instructions available in vfpv4 to be used.
+        By comparison the BBG (TI AM3359 cpu chip) uses cortex-a8 and vfpv3.
+
 v1.470  October 15, 2021
     EiBi database now used as a second source of (read-only) DX labels.
         For details shift-click in an empty spot of the DX label area above the frequency scale.
-        Or use the first few entries in the right-click menu (or the keyboard shortcut "|").
-        Then click the help button at upper right of the DX label edit panel.
+        Or use the first few entries in the right-click menu (two-finger tap on mobile) or use the
+        keyboard shortcut "|". Then click the help button at upper right of the DX label edit panel.
 
 v1.469  October 10, 2021
     Yellow passband symbol in the frequency scale -- usability improvements:

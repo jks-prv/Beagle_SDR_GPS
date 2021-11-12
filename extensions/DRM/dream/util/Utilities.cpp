@@ -37,6 +37,7 @@
 #  include <setupapi.h>
 # endif
 #elif defined(__APPLE__)
+#undef __BLOCKS__
 #include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/IOKitLib.h>
 #include <IOKit/serial/IOSerialKeys.h>

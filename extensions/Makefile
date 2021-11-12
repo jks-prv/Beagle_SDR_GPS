@@ -23,3 +23,4 @@ $(EXT_FILE): extensions/Makefile $(EXT_DIRS) extensions/ext_int.h extensions/ext
 
 clean_ext:
 	(cd extensions/ALE_2G/standalone_test; make clean)
+	(cd extensions/HFDL; make hfdl_clean)

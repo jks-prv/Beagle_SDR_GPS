@@ -41,13 +41,21 @@ typedef struct {
     bool valid;
 	ext_t *ext;
 	conn_t *conn_ext;                       // used by ext_send_* routines
-	ext_receive_FFT_samps_t receive_FFT;	// server-side routine for receiving FFT data
+
+    // server-side routine for receiving FFT data
 	int FFT_flags;
-	ext_receive_iq_samps_t receive_iq;		// server-side routine for receiving IQ data
-	tid_t receive_iq_tid;
-	ext_receive_real_samps_t receive_real;	// server-side routine for receiving real data
+	ext_receive_FFT_samps_t receive_FFT;
+
+    // server-side routine for receiving IQ data
+	ext_receive_iq_samps_t receive_iq_pre_agc, receive_iq_post_agc;
+	tid_t receive_iq_pre_agc_tid, receive_iq_post_agc_tid;
+
+	// server-side routine for receiving real data
+    ext_receive_real_samps_t receive_real;
 	tid_t receive_real_tid;
-	ext_receive_S_meter_t receive_S_meter;	// server-side routine for receiving S-meter data
+
+	// server-side routine for receiving S-meter data
+	ext_receive_S_meter_t receive_S_meter;
 } ext_users_t;
 
 extern ext_users_t ext_users[MAX_RX_CHANS];

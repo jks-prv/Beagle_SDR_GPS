@@ -1,16 +1,16 @@
 VERSION_MAJ = 1
-VERSION_MIN = 470
+VERSION_MIN = 471
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
-REPO_NAME = Beagle_SDR_GPS
-REPO = https://github.com/jks-prv/$(REPO_NAME).git
-DEBIAN_VER = 8.11
+REPO_NAME := Beagle_SDR_GPS
+REPO := https://github.com/jks-prv/$(REPO_NAME).git
+DEBIAN_VER := 8.11
 
 #
 # Makefile for KiwiSDR project
 #
-# Copyright (c) 2014-2020 John Seamons, ZL/KF6VO
+# Copyright (c) 2014-2021 John Seamons, ZL/KF6VO
 #
 # This Makefile can be run on both a build machine (I use a MacBook Pro) and the
 # BeagleBone Black target (Debian release).
@@ -42,45 +42,29 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	# enough parallel make jobs to overcome core stalls from filesystem or nfs delays
 	ifeq ($(BBAI),true)
 		# currently even 2 parallel compiles can run out of memory on BBAI
-		#MAKE_ARGS = -j 2
-		MAKE_ARGS =
+		#MAKE_ARGS := -j 2
+		MAKE_ARGS :=
 	else ifeq ($(RPI),true)
 		# fixme: test, but presumably the 1GB (min) of DRAM on RPi 3B & 4 would support this many
-		MAKE_ARGS = -j 4
+		MAKE_ARGS := -j 4
 	else
 		ifeq ($(DEBIAN_7),true)
 			# Debian 7 gcc runs out of memory compiling edata_always*.cpp in parallel
-			MAKE_ARGS =
+			MAKE_ARGS :=
 		else
-			MAKE_ARGS =
+			MAKE_ARGS :=
 		endif
 	endif
 else
 	# choices when building on development machine
 	ifeq ($(XC),-DXC)
 		# BBAI, DEBIAN_7 are taken from the mounted KiwiSDR root file system
-		MAKE_ARGS = -j 7
+		MAKE_ARGS := -j 7
 	else
-		BBAI = true
-		#RPI = true
-		MAKE_ARGS = -j
+		BBAI := true
+		#RPI := true
+		MAKE_ARGS := -j
 	endif
-endif
-
-ifeq ($(BBAI),true)
-	ARCH = sitara
-	CPU = AM5729
-	PLATFORMS = beaglebone beaglebone_ai
-	CFLAGS += -DMULTI_CORE
-else ifeq ($(RPI),true)
-	ARCH = omap
-	CPU = BCM2837
-	PLATFORMS = raspberrypi
-	CFLAGS += -DMULTI_CORE
-else
-	ARCH = sitara
-	CPU = AM3359
-	PLATFORMS = beaglebone beaglebone_black
 endif
 
 # uncomment when using debugger so variables are not always optimized away
@@ -137,12 +121,12 @@ endif
 # be file overwrites on one machine when you built on the other (and lots of unnecessary NFS copying
 # back and forth. See the nfs and nfsup aliases in /root/.bashrc for NFS setup details.
 
-BUILD_DIR = ../build
-OBJ_DIR = $(BUILD_DIR)/obj
-OBJ_DIR_O3 = $(BUILD_DIR)/obj_O3
-KEEP_DIR = $(BUILD_DIR)/obj_keep
-GEN_DIR = $(BUILD_DIR)/gen
-TOOLS_DIR = $(BUILD_DIR)/tools
+BUILD_DIR := ../build
+OBJ_DIR := $(BUILD_DIR)/obj
+OBJ_DIR_O3 := $(BUILD_DIR)/obj_O3
+KEEP_DIR := $(BUILD_DIR)/obj_keep
+GEN_DIR := $(BUILD_DIR)/gen
+TOOLS_DIR := $(BUILD_DIR)/tools
 
 ifeq ($(OPT),0)
 	OBJ_DIR_DEFAULT = $(OBJ_DIR)
@@ -203,10 +187,10 @@ else
 endif
 
 VPATH = $(DIRS) $(DIRS_O3) $(EXT_SUBDIRS_KEEP)
-I += -I$(GEN_DIR) $(addprefix -I,$(DIRS)) $(addprefix -I,$(DIRS_O3)) $(addprefix -I,$(EXT_SUBDIRS_KEEP)) -I/usr/local/include
+I += -I$(GEN_DIR) $(addprefix -I,$(DIRS)) $(addprefix -I,$(DIRS_O3)) $(addprefix -I,$(EXT_SUBDIRS_KEEP)) -I/usr/local/include $(EXT_I)
 H = $(wildcard $(addsuffix /*.h,$(DIRS))) $(wildcard $(addsuffix /*.h,$(DIRS_O3)))
-CPP_F = $(wildcard $(addsuffix /*.cpp,$(DIRS)))
-CPP_F_O3 = $(wildcard $(addsuffix /*.cpp,$(DIRS_O3)))
+CPP_F = $(wildcard $(addsuffix /*.cpp,$(DIRS))) $(wildcard $(addsuffix /*.c,$(DIRS)))
+CPP_F_O3 = $(wildcard $(addsuffix /*.cpp,$(DIRS_O3))) $(wildcard $(addsuffix /*.c,$(DIRS_O3)))
 CFILES_KEEP = $(wildcard $(addsuffix /*.cpp,$(EXT_SUBDIRS_KEEP)))
 
 # remove generated files
@@ -258,7 +242,7 @@ endif
 # some of these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
-KEYRING = $(DIR_CFG)/.keyring.dep
+KEYRING := $(DIR_CFG)/.keyring.dep
 $(KEYRING):
 	@echo "KEYRING.."
 ifeq ($(DEBIAN_7),true)
@@ -271,6 +255,12 @@ endif
 	-apt-get -y update
 	@mkdir -p $(DIR_CFG)
 	touch $(KEYRING)
+
+.PHONY: INSTALL_CERTIFICATES
+INSTALL_CERTIFICATES:
+	make $(KEYRING)
+	-apt-get -y install ca-certificates
+	-apt-get -y update
 
 /usr/lib/arm-linux-gnueabihf/libfftw3f.a:
 	apt-get -y install libfftw3-dev
@@ -354,7 +344,7 @@ SUB_MAKE_DEPS = $(KEYRING) $(CMD_DEPS) $(LIBS_DEP) $(GEN_ASM) $(GEN_OTHER_ASM) $
 # flags
 ################################
 
-MF_INC = $(GEN_DIR)/Makefile.inc
+MF_INC := $(GEN_DIR)/Makefile.inc
 START_MF_INC = | tee $(MF_INC) 2>&1
 APPEND_MF_INC = | tee -a $(MF_INC) 2>&1
 
@@ -393,6 +383,8 @@ build_makefile_inc:
 	@echo "----------------"
 	@echo "building" $(MF_INC)
 	@echo $(VER)
+	@echo ARCH = $(ARCH)
+	@echo CPU = $(CPU)
 	@echo PLATFORMS = $(PLATFORMS)
 	@echo DEBUG = $(DEBUG)
 	@echo GDB = $(GDB)
@@ -403,9 +395,6 @@ build_makefile_inc:
 #
 	@echo $(APPEND_MF_INC)
 	@echo $(CFLAGS) $(APPEND_MF_INC)
-#
-	@echo $(APPEND_MF_INC)
-	@echo $(CPP_FLAGS) $(APPEND_MF_INC)
 #
 	@echo $(APPEND_MF_INC)
 	@echo $(EXT_DEFINES) $(APPEND_MF_INC)
@@ -632,40 +621,75 @@ c_ext_clang_conv_vars:
 	@echo CPP_FLAGS = $(CPP_FLAGS)
 	@echo
 	@echo DEPS = $(OBJECTS:.o=.d)
+	@echo
 	@echo SRC_DEPS = $(SRC_DEPS)
+	@echo
 	@echo BIN_DEPS = $(BIN_DEPS)
+	@echo
+	@echo LIBS_DEP = $(LIBS_DEP)
+	@echo
 	@echo SUB_MAKE_DEPS = $(SUB_MAKE_DEPS)
+	@echo
 	@echo GEN_ASM = $(GEN_ASM)
+	@echo
 	@echo GEN_OTHER_ASM = $(GEN_OTHER_ASM)
 	@echo
 	@echo FILES_EMBED = $(FILES_EMBED)
+	@echo
 	@echo FILES_EXT = $(FILES_EXT)
+	@echo
 	@echo FILES_ALWAYS = $(FILES_ALWAYS)
+	@echo
 	@echo FILES_ALWAYS2 = $(FILES_ALWAYS2)
 	@echo
 	@echo EXT_SKIP = $(EXT_SKIP)
+	@echo
 	@echo EXT_SKIP1 = $(EXT_SKIP1)
+	@echo
 	@echo INT_EXT_DIRS1 = $(INT_EXT_DIRS1)
+	@echo
 	@echo INT_EXT_DIRS = $(INT_EXT_DIRS)
+	@echo
 	@echo PVT_EXT_DIRS = $(PVT_EXT_DIRS)
+	@echo
 	@echo EXT_SUBDIRS = $(EXT_SUBDIRS)
+	@echo
 	@echo EXT_DIRS = $(EXT_DIRS)
+	@echo
 	@echo PVT_EXTS = $(PVT_EXTS)
+	@echo
 	@echo INT_EXTS = $(INT_EXTS)
+	@echo
 	@echo EXTS = $(EXTS)
 	@echo
 	@echo DIRS = $(DIRS)
+	@echo
 	@echo DIRS_O3 = $(DIRS_O3)
+	@echo
 	@echo VPATH = $(VPATH)
+	@echo
+	@echo I = $(I)
+	@echo
 	@echo CFILES = $(CFILES)
+	@echo
 	@echo CFILES_O3 = $(CFILES_O3)
+	@echo
 	@echo CFILES_KEEP = $(CFILES_KEEP)
+	@echo
 	@echo OBJECTS = $(OBJECTS)
+	@echo
 	@echo O3_OBJECTS = $(O3_OBJECTS)
+	@echo
 	@echo KEEP_OBJECTS = $(KEEP_OBJECTS)
+	@echo
+	@echo EXT_OBJECTS = $(EXT_OBJECTS)
+	@echo
 	@echo MF_FILES = $(MF_FILES)
+	@echo
 	@echo MF_OBJ = $(MF_OBJ)
+	@echo
 	@echo MF_O3 = $(MF_O3)
+	@echo
 	@echo PKGS = $(PKGS)
 
 .PHONY: makefiles
@@ -695,6 +719,8 @@ CSRC_KEEP = $(notdir $(CFILES_KEEP))
 KEEP_OBJECTS1 = $(CSRC_KEEP:%.c=$(KEEP_DIR)/%.o)
 KEEP_OBJECTS = $(KEEP_OBJECTS1:%.cpp=$(KEEP_DIR)/%.o)
 
+ALL_OBJECTS = $(OBJECTS) $(O3_OBJECTS) $(KEEP_OBJECTS)
+
 
 # pull in dependency info for *existing* .o files
 -include $(OBJECTS:.o=.d)
@@ -717,31 +743,31 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 # FIXME: isn't there a better way to do this in GNU make?
 
-EXISTS_RX4_WF4 = $(shell test -f KiwiSDR.rx4.wf4.bit && echo true)
+EXISTS_RX4_WF4 := $(shell test -f KiwiSDR.rx4.wf4.bit && echo true)
 ifeq ($(EXISTS_RX4_WF4),true)
 else
 KiwiSDR.rx4.wf4.bit:
 endif
 
-EXISTS_RX8_WF2 = $(shell test -f KiwiSDR.rx8.wf2.bit && echo true)
+EXISTS_RX8_WF2 := $(shell test -f KiwiSDR.rx8.wf2.bit && echo true)
 ifeq ($(EXISTS_RX8_WF2),true)
 else
 KiwiSDR.rx8.wf2.bit:
 endif
 
-EXISTS_RX3_WF3 = $(shell test -f KiwiSDR.rx3.wf3.bit && echo true)
+EXISTS_RX3_WF3 := $(shell test -f KiwiSDR.rx3.wf3.bit && echo true)
 ifeq ($(EXISTS_RX3_WF3),true)
 else
 KiwiSDR.rx3.wf3.bit:
 endif
 
-EXISTS_RX14_WF0 = $(shell test -f KiwiSDR.rx14.wf0.bit && echo true)
+EXISTS_RX14_WF0 := $(shell test -f KiwiSDR.rx14.wf0.bit && echo true)
 ifeq ($(EXISTS_RX14_WF0),true)
 else
 KiwiSDR.rx14.wf0.bit:
 endif
 
-EXISTS_OTHER = $(shell test -f KiwiSDR.other.bit && echo true)
+EXISTS_OTHER := $(shell test -f KiwiSDR.other.bit && echo true)
 ifeq ($(EXISTS_OTHER),true)
 else
 KiwiSDR.other.bit:
@@ -761,18 +787,18 @@ endif
 # Previously doing a "make install" on the development machine made no sense and was flagged as an error.
 #
 
-$(BUILD_DIR)/kiwi.bin: c_ctr_reset $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(KEEP_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(EXTS_DEPS)
+$(BUILD_DIR)/kiwi.bin: c_ctr_reset $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(ALL_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(EXTS_DEPS)
 	@echo $(C_CTR_LINK) >$(COMP_CTR)
 ifneq ($(SAN),1)
-	$(CPP) $(LDFLAGS) $(OBJECTS) $(O3_OBJECTS) $(KEEP_OBJECTS) $(DEVEL_DEPS) $(EXTS_DEPS) $(LIBS) -o $(BUILD_OBJ)
+	$(CPP) $(LDFLAGS) $(ALL_OBJECTS) $(DEVEL_DEPS) $(EXTS_DEPS) $(LIBS) -o $(BUILD_OBJ)
 else
 	@echo loader skipped for static analysis
 endif
 
-$(BUILD_DIR)/kiwid.bin: c_ctr_reset foptim_gen $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(KEEP_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS) $(EXTS_DEPS)
+$(BUILD_DIR)/kiwid.bin: c_ctr_reset foptim_gen $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(ALL_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS) $(EXTS_DEPS)
 	@echo $(C_CTR_LINK) >$(COMP_CTR)
 ifneq ($(SAN),1)
-	$(CPP) $(LDFLAGS) $(OBJECTS) $(O3_OBJECTS) $(KEEP_OBJECTS) $(EMBED_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
+	$(CPP) $(LDFLAGS) $(ALL_OBJECTS) $(EMBED_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
 else
 	@echo loader skipped for static analysis
 endif
@@ -794,53 +820,65 @@ OPTS_VIS_UNOPT = $(strip $(V) $(DEBUG) $(XC) $(VIS_UNOPT))
 OPTS_VIS_OPT = $(strip $(V) $(DEBUG) $(XC) $(VIS_OPT))
 
 $(OBJ_DIR_DEFAULT)/web_devel.o: web/web.cpp config.h
-	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) -DEDATA_DEVEL -c -o $@ $<
+	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) $(CPP_FLAGS) -DEDATA_DEVEL -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_DEFAULT)/web_embed.o: web/web.cpp config.h
-	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) -DEDATA_EMBED -c -o $@ $<
+	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) $(CPP_FLAGS) -DEDATA_EMBED -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/edata_embed.o: $(EDATA_EMBED)
-	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) $(CPP_FLAGS) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR)/edata_always.o: $(EDATA_ALWAYS)
-	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) $(CPP_FLAGS) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR)/edata_always2.o: $(EDATA_ALWAYS2)
-	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) $(CPP_FLAGS) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/ext_init.o: $(GEN_DIR)/ext_init.cpp
-	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) $(CPP_FLAGS) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 
 # .c
 
-#$(OBJ_DIR)/%.o: %.c $(SRC_DEPS)
+$(OBJ_DIR)/%.o: %.c $(SRC_DEPS)
+    ifeq ($(ASM_OUT),1)
+	    $(CC) $(OPTS_VIS_OPT) @$(MF_INC) -S -o $(subst .o,.S,$@) $<
+    endif
 #	$(CC) -x c $(OPTS_VIS_UNOPT) @$(MF_INC) -c -o $@ $<
-#	$(CC) $(OPTS_VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+	$(CC) $(OPTS_VIS_UNOPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
-#	$(POST_PROCESS_DEPS)
+	$(POST_PROCESS_DEPS)
 
-#$(OBJ_DIR_O3)/%.o: %.c $(SRC_DEPS)
-#	$(CC) $(OPTS_VIS_OPT) @$(MF_INC) -c -o $@ $<
+$(OBJ_DIR_O3)/%.o: %.c $(SRC_DEPS)
+    ifeq ($(ASM_OUT),1)
+	    $(CC) $(OPTS_VIS_OPT) @$(MF_INC) -S -o $(subst .o,.S,$@) $<
+    endif
+	$(CC) $(OPTS_VIS_OPT) @$(MF_INC) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
-#	$(POST_PROCESS_DEPS)
+	$(POST_PROCESS_DEPS)
 
 
 # .cpp $(CFLAGS_UNSAFE_OPT)
 
 $(OBJ_DIR_O3)/search.o: search.cpp $(SRC_DEPS)
-	$(CPP) $(OPTS_VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) -c -o $@ $<
+    ifeq ($(ASM_OUT),1)
+	    $(CPP) $(OPTS_VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) $(CPP_FLAGS) -S -o $(subst .o,.S,$@) $<
+    endif
+	$(CPP) $(OPTS_VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) $(CPP_FLAGS) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/simd.o: simd.cpp $(SRC_DEPS)
-	$(CPP) $(OPTS_VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) -c -o $@ $<
+    ifeq ($(ASM_OUT),1)
+	    $(CPP) $(OPTS_VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) $(CPP_FLAGS) -S -o $(subst .o,.S,$@) $<
+    endif
+	$(CPP) $(OPTS_VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) $(CPP_FLAGS) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
@@ -848,17 +886,23 @@ $(OBJ_DIR_O3)/simd.o: simd.cpp $(SRC_DEPS)
 # .cpp
 
 $(OBJ_DIR)/%.o: %.cpp $(SRC_DEPS)
-	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) -c -o $@ $<
+    ifeq ($(ASM_OUT),1)
+	    $(CPP) $(OPTS_VIS_OPT) @$(MF_INC) $(CPP_FLAGS) -S -o $(subst .o,.S,$@) $<
+    endif
+	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) $(CPP_FLAGS) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR)/%.o: %.cpp $(SRC_DEPS)
-	$(CPP) $(OPTS_VIS_OPT) @$(MF_INC) -c -o $@ $<
+	$(CPP) $(OPTS_VIS_OPT) @$(MF_INC) $(CPP_FLAGS) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/%.o: %.cpp $(SRC_DEPS)
-	$(CPP) $(OPTS_VIS_OPT) @$(MF_INC) -c -o $@ $<
+    ifeq ($(ASM_OUT),1)
+	    $(CPP) $(OPTS_VIS_OPT) @$(MF_INC) $(CPP_FLAGS) -S -o $(subst .o,.S,$@) $<
+    endif
+	$(CPP) $(OPTS_VIS_OPT) @$(MF_INC) $(CPP_FLAGS) -c -o $@ $<
 #	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
@@ -914,7 +958,7 @@ ifeq ($(BBAI),true)
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 DTB_KIWI = am5729-beagleboneai-kiwisdr-cape.dtb
 DTB_DEB_NEW = am5729-beagleboneai-custom.dtb
-UENV_HAS_DTB_NEW = $(shell grep -qi '^dtb=$(DTB_DEB_NEW)' /boot/uEnv.txt && echo true)
+UENV_HAS_DTB_NEW := $(shell grep -qi '^dtb=$(DTB_DEB_NEW)' /boot/uEnv.txt && echo true)
 DIR_DTB = dtb-$(SYS_MAJ).$(SYS_MIN)-ti
 
 install_kiwi_device_tree:
@@ -940,27 +984,27 @@ PRU  = cape-bone-$(DEV)-P-00A0
 
 DIR_CFG_SRC = unix_env/kiwi.config
 
-EXISTS_BASHRC_LOCAL = $(shell test -f ~root/.bashrc.local && echo true)
+EXISTS_BASHRC_LOCAL := $(shell test -f ~root/.bashrc.local && echo true)
 
 CFG_KIWI = kiwi.json
-EXISTS_KIWI = $(shell test -f $(DIR_CFG)/$(CFG_KIWI) && echo true)
+EXISTS_KIWI := $(shell test -f $(DIR_CFG)/$(CFG_KIWI) && echo true)
 
 CFG_ADMIN = admin.json
-EXISTS_ADMIN = $(shell test -f $(DIR_CFG)/$(CFG_ADMIN) && echo true)
+EXISTS_ADMIN := $(shell test -f $(DIR_CFG)/$(CFG_ADMIN) && echo true)
 
 CFG_CONFIG = config.js
-EXISTS_CONFIG = $(shell test -f $(DIR_CFG)/$(CFG_CONFIG) && echo true)
+EXISTS_CONFIG := $(shell test -f $(DIR_CFG)/$(CFG_CONFIG) && echo true)
 
 CFG_DX = dx.json
-EXISTS_DX = $(shell test -f $(DIR_CFG)/$(CFG_DX) && echo true)
+EXISTS_DX := $(shell test -f $(DIR_CFG)/$(CFG_DX) && echo true)
 
 CFG_DX_MIN = dx.min.json
-EXISTS_DX_MIN = $(shell test -f $(DIR_CFG)/$(CFG_DX_MIN) && echo true)
+EXISTS_DX_MIN := $(shell test -f $(DIR_CFG)/$(CFG_DX_MIN) && echo true)
 
-ETC_HOSTS_HAS_KIWI = $(shell grep -qi kiwisdr /etc/hosts && echo true)
+ETC_HOSTS_HAS_KIWI := $(shell grep -qi kiwisdr /etc/hosts && echo true)
 
 SSH_KEYS = /root/.ssh/authorized_keys
-EXISTS_SSH_KEYS = $(shell test -f $(SSH_KEYS) && echo true)
+EXISTS_SSH_KEYS := $(shell test -f $(SSH_KEYS) && echo true)
 
 # Doing a 'make install' on the development machine is only used to build the optimized files.
 # For the Beagle this installs the device tree files in the right place and other misc stuff.
@@ -1173,7 +1217,7 @@ v ver version:
 	@echo "you are running version" $(VER)
 
 # workaround for sites having problems with git using https (even when curl with https works fine)
-OPT_GIT_NO_HTTPS = $(shell test -f /root/kiwi.config/opt.git_no_https && echo true)
+OPT_GIT_NO_HTTPS := $(shell test -f /root/kiwi.config/opt.git_no_https && echo true)
 ifeq ($(OPT_GIT_NO_HTTPS),true)
 	GIT_PROTO = git
 else
@@ -1231,7 +1275,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 # selectively transfer files to the target so everything isn't compiled each time
 EXCLUDE_RSYNC = ".DS_Store" ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" \
 	"verilog/kiwi.gen.vh" "web/edata*" "node_modules" "morse-pro-compiled.js"
-RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) . root@$(HOST):~root/$(REPO_NAME)
+RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) $(addprefix --exclude , $(EXT_EXCLUDE_RSYNC)) . root@$(HOST):~root/$(REPO_NAME)
 PORT ?= 22
 ifeq ($(PORT),22)
 	RSYNC = rsync
@@ -1257,7 +1301,7 @@ ifeq ($(XC),) ## do not copy bit streams from $(V_DIR) when cross-compiling
 
 # FIXME: isn't there a better way to do this in GNU make?
 
-EXISTS_V_DIR_RX4_WF4 = $(shell test -f $(V_DIR)/KiwiSDR.rx4.wf4.bit && echo true)
+EXISTS_V_DIR_RX4_WF4 := $(shell test -f $(V_DIR)/KiwiSDR.rx4.wf4.bit && echo true)
 ifeq ($(EXISTS_V_DIR_RX4_WF4),true)
 KiwiSDR.rx4.wf4.bit: $(V_DIR)/KiwiSDR.rx4.wf4.bit
 	rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit .
@@ -1265,7 +1309,7 @@ else
 KiwiSDR.rx4.wf4.bit:
 endif
 
-EXISTS_V_DIR_RX8_WF2 = $(shell test -f $(V_DIR)/KiwiSDR.rx8.wf2.bit && echo true)
+EXISTS_V_DIR_RX8_WF2 := $(shell test -f $(V_DIR)/KiwiSDR.rx8.wf2.bit && echo true)
 ifeq ($(EXISTS_V_DIR_RX8_WF2),true)
 KiwiSDR.rx8.wf2.bit: $(V_DIR)/KiwiSDR.rx8.wf2.bit
 	rsync -av $(V_DIR)/KiwiSDR.rx8.wf2.bit .
@@ -1273,7 +1317,7 @@ else
 KiwiSDR.rx8.wf2.bit:
 endif
 
-EXISTS_V_DIR_RX3_WF3 = $(shell test -f $(V_DIR)/KiwiSDR.rx3.wf3.bit && echo true)
+EXISTS_V_DIR_RX3_WF3 := $(shell test -f $(V_DIR)/KiwiSDR.rx3.wf3.bit && echo true)
 ifeq ($(EXISTS_V_DIR_RX3_WF3),true)
 KiwiSDR.rx3.wf3.bit: $(V_DIR)/KiwiSDR.rx3.wf3.bit
 	rsync -av $(V_DIR)/KiwiSDR.rx3.wf3.bit .
@@ -1281,7 +1325,7 @@ else
 KiwiSDR.rx3.wf3.bit:
 endif
 
-EXISTS_V_DIR_RX14_WF0 = $(shell test -f $(V_DIR)/KiwiSDR.rx14.wf0.bit && echo true)
+EXISTS_V_DIR_RX14_WF0 := $(shell test -f $(V_DIR)/KiwiSDR.rx14.wf0.bit && echo true)
 ifeq ($(EXISTS_V_DIR_RX14_WF0),true)
 KiwiSDR.rx14.wf0.bit: $(V_DIR)/KiwiSDR.rx14.wf0.bit
 	rsync -av $(V_DIR)/KiwiSDR.rx14.wf0.bit .
@@ -1289,7 +1333,7 @@ else
 KiwiSDR.rx14.wf0.bit:
 endif
 
-EXISTS_OTHER_BITFILE = $(shell test -f $(V_DIR)/KiwiSDR.other.bit && echo true)
+EXISTS_OTHER_BITFILE := $(shell test -f $(V_DIR)/KiwiSDR.other.bit && echo true)
 ifneq ($(OTHER_DIR),)
     ifeq ($(EXISTS_OTHER_BITFILE),true)
         KiwiSDR.other.bit: $(V_DIR)/KiwiSDR.other.bit
@@ -1320,7 +1364,6 @@ clean_deprecated:
 
 clean: clean_ext clean_deprecated
 	(cd e_cpu; make clean)
-	(cd verilog; make clean)
 	(cd verilog/rx; make clean)
 	(cd tools; make clean)
 	(cd pkgs/noip2; make clean)

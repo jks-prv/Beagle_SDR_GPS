@@ -42,6 +42,7 @@ void mprintf_ff(const char *fmt, ...);
 void mlprintf(const char *fmt, ...);
 void mlprintf_ff(const char *fmt, ...);
 char *stprintf(const char *fmt, ...);
+C_LINKAGE(const char *aspf(const char *fmt, ...));
 int esnprintf(char *str, size_t slen, const char *fmt, ...);
 
 void kiwi_backtrace(const char *id, u4_t printf_type=0);

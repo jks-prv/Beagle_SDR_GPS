@@ -1124,7 +1124,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
             // NB: ident, notes and params are already stored URL encoded
             printf("GET_DX_JSON len=%d\n", strlen(cfg_dx.json));
-            send_msg(conn, false, "MSG dx_json=%s", cfg_dx.json);
+            send_msg_encoded(conn, "MSG", "dx_json", "%s", cfg_dx.json);
             return true;
         }
 	    break;

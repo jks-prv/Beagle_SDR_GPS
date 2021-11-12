@@ -32,6 +32,7 @@
 #include "rx.h"
 #include "web.h"
 #include "non_block.h"
+#include "coroutines.h"
 #include "wspr.h"
 
 #include <stdio.h>
@@ -271,7 +272,7 @@ void WSPR_FFT(void *param)
 		wspr_aprintf("FFT ---DECODE -> %d\n", w->decode_ping_pong);
 		wspr_printf("\n");
 		w->not_launched = 0;
-		TaskWakeup(w->WSPR_DecodeTask_id, TWF_CHECK_WAKING, TO_VOID_PARAM(w->rx_chan));
+		TaskWakeupFP(w->WSPR_DecodeTask_id, TWF_CHECK_WAKING, TO_VOID_PARAM(w->rx_chan));
     }
 }
 
@@ -651,7 +652,7 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
                 w->fft_ping_pong = w->ping_pong;
                 w->FFTtask_group = w->group-1;
                 if (w->group)	// skip first to pipeline
-                    TaskWakeup(w->WSPR_FFTtask_id, TWF_CHECK_WAKING, w->rx_chan);
+                    TaskWakeupFP(w->WSPR_FFTtask_id, TWF_CHECK_WAKING, w->rx_chan);
                 w->group++;
             }
             w->didx++;
@@ -685,7 +686,7 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 				w->FFTtask_group = w->group-1;
 				if (w->group) {     // skip first to pipeline
 				    w->fft_wakeups++;
-				    TaskWakeup(w->WSPR_FFTtask_id, TWF_CHECK_WAKING, TO_VOID_PARAM(w->rx_chan));
+				    TaskWakeupFP(w->WSPR_FFTtask_id, TWF_CHECK_WAKING, TO_VOID_PARAM(w->rx_chan));
 				}
 				w->group++;
 			}

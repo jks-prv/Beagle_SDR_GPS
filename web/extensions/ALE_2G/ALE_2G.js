@@ -603,7 +603,7 @@ function ale_2g_get_nets_done_cb(nets)
 
 function ale_2g_render_menus()
 {
-   var new_menu = function(i, oo, menu_s) {
+   var new_menu = function(el, i, oo, menu_s) {
       var o = kiwi_deep_copy(oo);
       ale.menu_n++;
       ale['menu'+i] = -1;
@@ -649,7 +649,7 @@ function ale_2g_render_menus()
       
       //console.log(menu_s +'.'+ i +' NEW:');
       //console.log(o2);
-      new_menu(i, o2, menu_s);
+      new_menu(el, i, o2, menu_s);
    });
    
    var pvt_menu = {};
@@ -681,7 +681,7 @@ function ale_2g_render_menus()
    
    if (have_pvt_menu) {
       if (dbgUs) console.log(pvt_menu);
-      new_menu(ale.menu_n, pvt_menu, 'Local');
+      new_menu(el, ale.menu_n, pvt_menu, 'Local');
    }
    //console.log('ale_2g_render_menus ale.menu_n='+ ale.menu_n);
 }

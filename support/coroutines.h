@@ -90,23 +90,23 @@ void TaskCollect();
 #define CTF_STACK_MED		0x1000
 #define CTF_STACK_LARGE		0x2000
 
-int _CreateTask(funcP_t entry, const char *name, void *param, int priority, u4_t flags=0, int f_arg=0);
-#define CreateTask(f, param, priority)				    _CreateTask(f, #f, param, priority)
-#define CreateTaskF(f, param, priority, flags)          _CreateTask(f, #f, param, priority, flags)
+C_LINKAGE(int _CreateTask(funcP_t entry, const char *name, void *param, int priority, u4_t flags, int f_arg));
+#define CreateTask(f, param, priority)				    _CreateTask(f, #f, param, priority, 0, 0)
+#define CreateTaskF(f, param, priority, flags)          _CreateTask(f, #f, param, priority, flags, 0)
 #define CreateTaskFA(f, param, priority, flags, fa)     _CreateTask(f, #f, param, priority, flags, fa)
 #define CreateTaskSF(f, s, param, priority, flags, fa)	_CreateTask(f, s, param, priority, flags, fa)
 
 // usec == 0 means sleep until someone does TaskWakeup() on us
 // usec > 0 is microseconds time in future (added to current time)
-void *_TaskSleep(const char *reason, u64_t usec, u4_t *wakeup_test=NULL);
-#define TaskSleep()                 _TaskSleep("TaskSleep", 0)
-#define TaskSleepUsec(us)           _TaskSleep("TaskSleep", us)
-#define TaskSleepMsec(ms)           _TaskSleep("TaskSleep", MSEC_TO_USEC(ms))
-#define TaskSleepSec(s)             _TaskSleep("TaskSleep", SEC_TO_USEC(s))
-#define TaskSleepReason(r)          _TaskSleep(r, 0)
-#define TaskSleepReasonUsec(r, us)  _TaskSleep(r, us)
-#define TaskSleepReasonMsec(r, ms)  _TaskSleep(r, MSEC_TO_USEC(ms))
-#define TaskSleepReasonSec(r, s)    _TaskSleep(r, SEC_TO_USEC(s))
+C_LINKAGE(void *_TaskSleep(const char *reason, u64_t usec, u4_t *wakeup_test));
+#define TaskSleep()                 _TaskSleep("TaskSleep", 0, NULL)
+#define TaskSleepUsec(us)           _TaskSleep("TaskSleep", us, NULL)
+#define TaskSleepMsec(ms)           _TaskSleep("TaskSleep", MSEC_TO_USEC(ms), NULL)
+#define TaskSleepSec(s)             _TaskSleep("TaskSleep", SEC_TO_USEC(s), NULL)
+#define TaskSleepReason(r)          _TaskSleep(r, 0, NULL)
+#define TaskSleepReasonUsec(r, us)  _TaskSleep(r, us, NULL)
+#define TaskSleepReasonMsec(r, ms)  _TaskSleep(r, MSEC_TO_USEC(ms), NULL)
+#define TaskSleepReasonSec(r, s)    _TaskSleep(r, SEC_TO_USEC(s), NULL)
 #define TaskSleepWakeupTest(r, wu)  _TaskSleep(r, 0, wu)
 
 void TaskSleepID(int id, u64_t usec);
@@ -115,7 +115,10 @@ void TaskSleepID(int id, u64_t usec);
 #define TWF_CHECK_WAKING        0x0001
 #define TWF_CANCEL_DEADLINE     0x0002
 
-void TaskWakeup(int id, u4_t flags=0, void *wake_param=NULL);
+C_LINKAGE(void _TaskWakeup(int id, u4_t flags, void *wake_param));
+#define TaskWakeup(id)          _TaskWakeup(id, TWF_NONE, 0);
+#define TaskWakeupF(id,f)       _TaskWakeup(id, f, 0);
+#define TaskWakeupFP(id,f,p)    _TaskWakeup(id, f, p);
 
 typedef enum {
 	CALLED_FROM_INIT,
@@ -140,9 +143,9 @@ u64_t TaskStartTime();
 void TaskForkChild();
 bool TaskIsChild();
 
-u4_t TaskID();
-void *TaskGetUserParam();
-void TaskSetUserParam(void *param);
+C_LINKAGE(u4_t TaskID());
+C_LINKAGE(void *TaskGetUserParam());
+C_LINKAGE(void TaskSetUserParam(void *param));
 
 // don't collide with PRINTF_FLAGS
 #define	TDUMP_PRINTF    0x00ff
@@ -157,8 +160,8 @@ const char *_TaskName(const char *name, bool free_name);
 #define TaskNameS(name)     _TaskName(name, false)
 #define TaskNameSFree(name) _TaskName(name, true)
 
-char *Task_s(int id);
-char *Task_ls(int id);
+C_LINKAGE(char *Task_s(int id));
+C_LINKAGE(char *Task_ls(int id));
 
 #define	TSTAT_MASK		0x00ff
 #define	TSTAT_NC		0
@@ -173,7 +176,7 @@ char *Task_ls(int id);
 
 #define TSTAT_SPI_RETRY	0x1000
 
-int TaskStat(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func=0, int s2_val=0, const char *s2_units=NULL);
+int TaskStat(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func DEF_0, int s2_val DEF_0, const char *s2_units DEF_NULL);
 #define TaskStat2(f, v, u) TaskStat(0, 0, NULL, f, v, u);
 
 #define	NT_NONE			0
@@ -181,7 +184,7 @@ int TaskStat(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func=0, int
 #define	NT_LONG_RUN		2
 #define NT_FAST_CHECK   3
 
-void _NextTask(const char *s, u4_t param, u_int64_t pc);
+C_LINKAGE(void _NextTask(const char *s, u4_t param, u_int64_t pc));
 #define NextTaskW(s,p)  _NextTask(s, p, 0);
 #define NextTask(s)		NextTaskW(s, NT_NONE);
 #define NextTaskP(s,p)  NextTaskW(s, p);
@@ -204,14 +207,15 @@ typedef struct {
 	u4_t magic_e;
 } lock_t;
 
-void _lock_init(lock_t *lock, const char *name);
 #define lock_init(lock) _lock_init(lock, #lock)
 #define lock_initS(lock, name) _lock_init(lock, name)
 
-void lock_register(lock_t *lock);
-void lock_dump();
-bool lock_check();
-void lock_enter(lock_t *lock);
-void lock_leave(lock_t *lock);
+C_LINKAGE(void _lock_init(lock_t *lock, const char *name));
+C_LINKAGE(void lock_register(lock_t *lock));
+C_LINKAGE(void lock_unregister(lock_t *lock));
+C_LINKAGE(void lock_dump());
+C_LINKAGE(bool lock_check());
+C_LINKAGE(void lock_enter(lock_t *lock));
+C_LINKAGE(void lock_leave(lock_t *lock));
 
 #endif

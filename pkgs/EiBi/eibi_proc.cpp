@@ -284,7 +284,7 @@ int main(int argc, char *argv[])
             // Use classifications from lang field if provided.
             // Done after above since e.g. "spy" entries can be flagged -CW or -TY 
             if (strcmp(lang, "-MX") == 0) type = DX_BCAST | MODE_AM; else
-            if (strcmp(lang, "-HF") == 0) type = DX_HFDL | MODE_USB; else
+            if (strcmp(lang, "-HF") == 0) type = DX_HFDL | DX_HAS_EXT | MODE_USB; else
             if (strcmp(lang, "-CW") == 0) type = DX_CW | DX_HAS_EXT | MODE_CW; else
             if (strcmp(lang, "-TY") == 0) type = DX_FSK | DX_HAS_EXT | MODE_CW; else
             if (strcmp(lang, "-TS") == 0) type = DX_TIME | DX_HAS_EXT | MODE_AMN; else

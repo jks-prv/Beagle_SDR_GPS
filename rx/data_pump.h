@@ -61,7 +61,7 @@ typedef struct {
 extern rx_dpump_t rx_dpump[MAX_RX_CHANS];
 
 typedef struct {
-          // IQ mode input buf for DRM etc.
+    // IQ mode input buf for DRM etc.
     u4_t iq_wr_pos;     // readers maintain their own private iq_rd_pos
     u4_t iq_seq, iq_seqnum[N_DPBUF];
     TYPECPX iq_samples[N_DPBUF][FASTFIR_OUTBUF_SIZE];

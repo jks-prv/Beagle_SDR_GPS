@@ -232,7 +232,7 @@ int main(int argc, char *argv[])
         _exit(0);
     #endif
     
-    #if (defined(DEVSYS) && 1)
+    #if (defined(DEVSYS) && 0)
         void ale_2g_test();
         ale_2g_test();
         _exit(0);

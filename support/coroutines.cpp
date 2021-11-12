@@ -46,6 +46,10 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
+// override
+#undef D_STMT
+#define D_STMT(x) x;
+
 /*
 
 	For our private thread implementation there are two methods for setting the initial sp & pc
@@ -244,6 +248,7 @@ static char *_task_s(TASK *tp, char *bp)
 
 char *Task_s(int id)
 {
+    if (id == -1) id = cur_task->id;
     TASK *t = Tasks + id;
     return task_s(t);
 }
@@ -262,6 +267,7 @@ static char *_task_ls(TASK *tp, char *bp)
 
 char *Task_ls(int id)
 {
+    if (id == -1) id = cur_task->id;
     TASK *t = Tasks + id;
     return task_ls(t);
 }
@@ -889,7 +895,7 @@ void TaskPollForInterrupt(ipoll_from_e from)
             itask->wake_param = TO_VOID_PARAM(itask->last_run_time);  // return how long task ran last time
 			evNT(EC_EVENT, EV_NEXTTASK, -1, "PollIntr", evprintf("from %s, return from CALLED_WITHIN_NEXTTASK of itask, wake_param=%d", poll_from[from], itask->wake_param));
 		} else {
-			TaskWakeup(itask_tid, TWF_NONE, 0);
+			TaskWakeup(itask_tid);
 			evNT(EC_EVENT, EV_NEXTTASK, -1, "PollIntr", evprintf("from %s, return from TaskWakeup of itask", poll_from[from]));
 		}
 	} else {
@@ -1460,9 +1466,9 @@ void TaskSleepID(int id, u64_t usec)
     }
 }
 
-void TaskWakeup(int id, u4_t flags, void *wake_param)
+void _TaskWakeup(tid_t tid, u4_t flags, void *wake_param)
 {
-    TASK *t = Tasks + id;
+    TASK *t = Tasks + tid;
     
     if (!t->valid) return;
 
@@ -1628,9 +1634,29 @@ static lock_t *locks[N_LOCK_LIST];
 
 void lock_register(lock_t *lock)
 {
-	locks[n_lock_list] = lock;
-	n_lock_list++;
+    int i;
+    for (i = 0; i < n_lock_list; i++) {
+        if (locks[i] == NULL) {
+	        locks[i] = lock;
+	        break;
+        }
+    }
+    if (i == n_lock_list) {
+        locks[n_lock_list] = lock;
+        n_lock_list++;
+    }
 	check(n_lock_list < N_LOCK_LIST);
+	//printf("lock_register %d\n", n_lock_list);
+}
+
+void lock_unregister(lock_t *lock)
+{
+    int i;
+    for (i = 0; i < n_lock_list; i++) {
+        if (lock == locks[i])
+            locks[i] = NULL;
+    }
+	//printf("lock_unregister %d\n", n_lock_list);
 }
 
 void lock_dump()
@@ -1640,7 +1666,7 @@ void lock_dump()
 
 	for (i=0; i < n_lock_list; i++) {
 		l = locks[i];
-		if (l->init) nlocks++;
+		if (l && l->init) nlocks++;
 	}
 	lprintf("\n");
 	lprintf("LOCKS: used %d/%d previous_prio_inversion=%d LINUX_CHILD_PROCESS=%d %s %s\n",
@@ -1651,7 +1677,7 @@ void lock_dump()
 	u4_t now = timer_sec();
 	for (i=0; i < n_lock_list; i++) {
 		l = locks[i];
-		if (!l->init) continue;
+		if (!l || !l->init) continue;
         TASK *owner = (TASK *) l->owner;
         int n_users = l->enter - l->leave;
         lprintf("L%d L%d|E%d (%d) prio_swap=%d prio_inversion=%d time_no_owner=%d \"%s\" \"%s\"",
@@ -1693,7 +1719,7 @@ bool lock_check()
 	bool lock_panic = false;
 	for (i=0; i < n_lock_list; i++) {
 		lock_t *l = locks[i];
-		if (!l->init) continue;
+		if (!l || !l->init) continue;
 		if (l->timer_since_no_owner == 0) continue;
 		u4_t time_since_no_owner = timer_sec() - l->timer_since_no_owner;
 		if (time_since_no_owner <= LOCK_HUNG_TIME) continue;

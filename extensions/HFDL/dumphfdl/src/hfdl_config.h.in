@@ -1,0 +1,27 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+#pragma once
+
+#cmakedefine WITH_SOAPYSDR
+#cmakedefine WITH_PROFILING
+#cmakedefine WITH_STATSD
+#cmakedefine WITH_SQLITE
+#cmakedefine WITH_FFTW3F_THREADS
+#cmakedefine HAVE_PTHREAD_BARRIERS
+#cmakedefine WITH_ZMQ
+#cmakedefine DATADUMPS
+#ifdef DATADUMPS
+#define COSTAS_DEBUG
+#define SYMSYNC_DEBUG
+#define CHAN_DEBUG
+#define MF_DEBUG
+#define AGC_DEBUG
+#define EQ_DEBUG
+#define CORR_DEBUG
+#define DUMP_CONST
+#undef DUMP_FFT
+#undef FASTDDC_DEBUG
+#endif
+
+#define LIBZMQ_VER_MAJOR_MIN @LIBZMQ_VER_MAJOR_MIN@
+#define LIBZMQ_VER_MINOR_MIN @LIBZMQ_VER_MINOR_MIN@
+#define LIBZMQ_VER_PATCH_MIN @LIBZMQ_VER_PATCH_MIN@

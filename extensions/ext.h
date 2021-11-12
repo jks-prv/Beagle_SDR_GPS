@@ -60,8 +60,9 @@ void ext_register_receive_FFT_samps(ext_receive_FFT_samps_t func, int rx_chan, i
 void ext_unregister_receive_FFT_samps(int rx_chan);
 
 // call to start/stop receiving audio channel IQ samples, post-FIR filter, but pre- detector & AGC
-void ext_register_receive_iq_samps(ext_receive_iq_samps_t func, int rx_chan);
-void ext_register_receive_iq_samps_task(tid_t tid, int rx_chan);
+typedef enum { PRE_AGC = 0, POST_AGC = 1 } ext_IQ_flags_e;
+void ext_register_receive_iq_samps(ext_receive_iq_samps_t func, int rx_chan, int flags = PRE_AGC);
+void ext_register_receive_iq_samps_task(tid_t tid, int rx_chan, int flags = PRE_AGC);
 void ext_unregister_receive_iq_samps(int rx_chan);
 void ext_unregister_receive_iq_samps_task(int rx_chan);
 
@@ -89,8 +90,8 @@ void ext_kick(int rx_chan);
 double ext_get_displayed_freq_kHz(int rx_chan);
 
 // routines to send messages to extension client-part
-int ext_send_msg(int rx_chan, bool debug, const char *msg, ...);
+C_LINKAGE(int ext_send_msg(int rx_chan, bool debug, const char *msg, ...));
 int ext_send_snd_msg(int rx_chan, bool debug, const char *msg, ...);
 int ext_send_msg_data(int rx_chan, bool debug, u1_t cmd, u1_t *bytes, int nbytes);
 int ext_send_msg_data2(int rx_chan, bool debug, u1_t cmd, u1_t data2, u1_t *bytes, int nbytes);
-int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *cmd, const char *fmt, ...);
+C_LINKAGE(int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *cmd, const char *fmt, ...));

@@ -304,7 +304,7 @@ static void data_pump(void *param)
 			assert(c != NULL);
 			assert(c->type == STREAM_SOUND);
 			if (c->task) {
-				TaskWakeup(c->task, TWF_NONE, 0);
+				TaskWakeup(c->task);
 			}
 		}
 	}

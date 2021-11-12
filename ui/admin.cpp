@@ -61,7 +61,8 @@ Boston, MA  02110-1301, USA.
 #endif
 
 #ifdef DEVSYS
-    #include <util.h>
+    //#include <util.h>
+    #define forkpty(master_pty_fd, x, y, z) 0
 #else
     #include <pty.h>
 #endif
@@ -556,7 +557,7 @@ void c2s_admin(void *param)
                 if (admcfg_bool("kiwisdr_com_register", NULL, CFG_REQUIRED) == false) {
 		            // force switch to short sleep cycle so we get status returned sooner
 		            if (reg_kiwisdr_com_status && reg_kiwisdr_com_tid) {
-                        TaskWakeup(reg_kiwisdr_com_tid, TWF_CANCEL_DEADLINE);
+                        TaskWakeupF(reg_kiwisdr_com_tid, TWF_CANCEL_DEADLINE);
                     }
 		            reg_kiwisdr_com_status = 0;
                 }
@@ -1208,7 +1209,7 @@ void c2s_admin(void *param)
 				#ifdef USE_ASAN
 				    // leak detector needs exit while running on main() stack
 				    kiwi_restart = true;
-				    TaskWakeup(TID_MAIN, TWF_CANCEL_DEADLINE);
+				    TaskWakeupF(TID_MAIN, TWF_CANCEL_DEADLINE);
 				    continue;
 				#else
 				    kiwi_exit(0);
