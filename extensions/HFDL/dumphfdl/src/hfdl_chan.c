@@ -245,7 +245,7 @@ struct costas {
 static costas costas_cccf_create() {
 	NEW(struct costas, c);
 	c->alpha = 0.1f;
-	c->beta = 0.1f * c->alpha * c->alpha;
+	c->beta = 0.047f * c->alpha * c->alpha;
 	return c;
 }
 
