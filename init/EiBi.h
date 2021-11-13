@@ -2119,9 +2119,9 @@ dx_t eibi_db[] = {
   {  2899.00,    0, 2400, 0x00112,  332, "CAN", "E",   "NAO" },  //   -aero Gander Radio B
   {  2899.00, 1800,  900, 0x00092,  333, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio B
   {  2899.00,    0, 2400, 0x00112,  334, "ISL", "E",   "NAO" },  //   -aero Iceland Radio B
-  {  2902.00,    0, 2400, 0x200c2,  335, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
-  {  2932.00,    0, 2400, 0x00112,  336, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
-  {  2941.00,    0, 2400, 0x00112,  337, "RUS", "R",   "CIS" },  //   -aero Rostov Volmet x25,55
+  {  2932.00,    0, 2400, 0x00112,  335, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
+  {  2941.00,    0, 2400, 0x00112,  336, "RUS", "R",   "CIS" },  //   -aero Rostov Volmet x25,55
+  {  2941.00,    0, 2400, 0x200c2,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
   {  2944.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   {  2944.00,    0, 2400, 0x00092,  323, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
   {  2962.00,    0, 2400, 0x00112,  339, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio E
@@ -3840,6 +3840,7 @@ dx_t eibi_db[] = {
   {  5491.00,    0, 2400, 0x200b2,  475, "BIH", "",    "BIH" },  //    -ale Bosnian Emergency ALE
   {  5493.00,    0, 2400, 0x200b2,  694, "CLM", "",    "CLM" },  //    -ale Colombian Navy ALE
   {  5499.00,    0, 2400, 0x00112,  695, "MDG", "E",   "EAf" },  //   -aero Antanan.Volmet x25,x50
+  {  5502.00,    0, 2400, 0x200c2,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
   {  5505.00,    0, 2400, 0x00112,  414, "IRL", "E",   "Eu"  },  //   -aero Shannon Volmet
   {  5508.00,    0, 2400, 0x200c2,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
   {  5509.00,    0, 2400, 0x200b2,  587, "USA", "",    "ENA" },  //    -ale Washington GasLight ALE
@@ -3884,7 +3885,7 @@ dx_t eibi_db[] = {
   {  5581.00,    0, 2400, 0x200b2,  465, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
   {  5583.00,    0, 2400, 0x00092,  343, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio H
   {  5583.00,    0, 2400, 0x200c2,  705, "NZL", "-HF", "SOc" },  //   -hfdl Auckland HFDL (ID5)
-  {  5589.00,    0, 2400, 0x200c2,  335, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
+  {  5589.00,    0, 2400, 0x200c2,  706, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
   {  5590.00,    0, 2400, 0x200e4,  375, "UZB", "-CW", "CAs" },  //     -cw Channel Marker V
   {  5598.00,    0, 2400, 0x00112,  350, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio A
   {  5598.00,    0, 2400, 0x00112,  351, "CAN", "E",   "NAO" },  //   -aero Gander Radio A
@@ -3893,25 +3894,25 @@ dx_t eibi_db[] = {
   {  5616.00,    0, 2400, 0x00112,  332, "CAN", "E",   "NAO" },  //   -aero Gander Radio B
   {  5616.00,    0, 2400, 0x00092,  333, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio B
   {  5616.00,    0, 2400, 0x00112,  334, "ISL", "E",   "NAO" },  //   -aero Iceland Radio B
-  {  5617.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
-  {  5617.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  {  5617.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  {  5617.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
   {  5620.00,    0, 2400, 0x200b2,  694, "CLM", "",    "CLM" },  //    -ale Colombian Navy ALE
   {  5620.00,    0, 2400, 0x200b2,  555, "AZE", "",    "Cau" },  //    -ale Azeri Emergency ALE
-  {  5620.00,    0, 2400, 0x200e4,  707, "RUS", "-CW", "FE"  },  //     -cw Channel Marker G
-  {  5620.00,    0, 2400, 0x200e4,  708, "RUS", "-CW", "EEu" },  //     -cw Channel Marker W
-  {  5620.00,    0, 2400, 0x000d2,  706, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
-  {  5622.00,    0, 2400, 0x200c2,  709, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
-  {  5628.00,    0, 2400, 0x00112,  710, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
-  {  5628.00,    0, 2400, 0x00112,  710, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
-  {  5637.00, 1400, 1500, 0x00132,  711, "CUB", "S",   "Am"  },  //    -spy Cuban Babbler Numbers
-  {  5637.00,    0, 2400, 0x00112,  712, "ROU", "RO",  "Eu"  },  //   -aero Bucuresti Aero
+  {  5620.00,    0, 2400, 0x200e4,  708, "RUS", "-CW", "FE"  },  //     -cw Channel Marker G
+  {  5620.00,    0, 2400, 0x200e4,  709, "RUS", "-CW", "EEu" },  //     -cw Channel Marker W
+  {  5620.00,    0, 2400, 0x000d2,  707, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
+  {  5622.00,    0, 2400, 0x200c2,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
+  {  5628.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
+  {  5628.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
+  {  5637.00, 1400, 1500, 0x00132,  712, "CUB", "S",   "Am"  },  //    -spy Cuban Babbler Numbers
+  {  5637.00,    0, 2400, 0x00112,  713, "ROU", "RO",  "Eu"  },  //   -aero Bucuresti Aero
   {  5640.00,    0, 2400, 0x200b2,  555, "AZE", "",    "Cau" },  //    -ale Azeri Emergency ALE
   {  5643.00,    0, 2400, 0x00112,  430, "AUS", "E",   "Oc"  },  //   -aero Brisbane Radio
   {  5643.00,    0, 2400, 0x00112,  431, "FJI", "E",   "Oc"  },  //   -aero Nadi Radio
-  {  5643.00,    0, 2400, 0x00112,  713, "MAU", "E",   "EAf" },  //   -aero Mauritius Radio
+  {  5643.00,    0, 2400, 0x00112,  714, "MAU", "E",   "EAf" },  //   -aero Mauritius Radio
   {  5643.00,    0, 2400, 0x00112,  432, "NZL", "E",   "Oc"  },  //   -aero Auckland Radio
   {  5643.00,    0, 2400, 0x00112,  433, "OCE", "E",   "Oc"  },  //   -aero Tahiti Radio
-  {  5643.00,    0, 2400, 0x00112,  714, "PAQ", "E",   "Oc"  },  //   -aero Isla de Pascua Radio
+  {  5643.00,    0, 2400, 0x00112,  715, "PAQ", "E",   "Oc"  },  //   -aero Isla de Pascua Radio
   {  5643.00,    0, 2400, 0x00112,  434, "USA", "E",   "Oc"  },  //   -aero San Francisco Radio
   {  5643.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
   {  5649.00,    0, 2400, 0x00112,  328, "CAN", "E",   "NAO" },  //   -aero Gander Radio C
@@ -3920,13 +3921,13 @@ dx_t eibi_db[] = {
   {  5650.00,    0, 2400, 0x200b2,  555, "AZE", "",    "Cau" },  //    -ale Azeri Emergency ALE
   {  5650.00,    0, 2400, 0x200b2,  549, "GEO", "",    "GEO" },  //    -ale Georgia Coast Guard ALE
   {  5650.00,  400, 1430, 0x00112,  426, "RUS", "E,R", "RUS" },  //   -aero Khanty-Mansiysk Volmet
-  {  5652.00,    0, 2400, 0x200c2,  715, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
+  {  5652.00,    0, 2400, 0x200c2,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
   {  5652.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
   {  5652.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
-  {  5655.00,    0, 2400, 0x200c2,  716, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
+  {  5655.00,    0, 2400, 0x200c2,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
   {  5660.00, 1010, 1020, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  5660.00, 1010, 1020, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
-  {  5667.00,    0, 2400, 0x00112,  336, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
+  {  5667.00,    0, 2400, 0x00112,  335, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
   {  5673.00,  815, 1600, 0x00112,  428, "CHN", "E",   "FE"  },  //   -aero Beijing Volmet x15,x45
   {  5673.00,  800, 2345, 0x00112,  429, "CHN", "E",   "FE"  },  //   -aero Guangzhou Volmet x00,30
   {  5680.00,    0, 2400, 0x00092,  354, "XUU", "E",   ""    },  //   -util Search and Rescue Coord
@@ -3949,7 +3950,7 @@ dx_t eibi_db[] = {
   {  5715.00, 1500, 1510, 0x00132,  636, "KOR", "K",   "Oc"  },  //    -spy V24 Numbers Station
   {  5715.00, 1500, 1510, 0x00132,  636, "KOR", "K",   "Oc"  },  //    -spy V24 Numbers Station
   {  5715.00,    0, 2400, 0x000d2,  651, "PTR", "",    "NAm" },  // -milcom NAU US Navy STANAG
-  {  5716.00,    0, 2400, 0x200f4,  717, "USA", "",    "NAm" },  //    -fsk NSS US Navy RTTY
+  {  5716.00,    0, 2400, 0x200f4,  718, "USA", "",    "NAm" },  //    -fsk NSS US Navy RTTY
   {  5717.00,    0, 2400, 0x000d2,  362, "GER", "E",   "Eu"  },  // -milcom DHM91 German Air Force
   {  5720.50,    0, 2400, 0x200b2,  694, "CLM", "",    "CLM" },  //    -ale Colombian Navy ALE
   {  5720.00,    0, 2400, 0x200c2,  468, "ISL", "-HF", "NAO" },  //   -hfdl Reykjavik HFDL (ID3)
@@ -3969,13 +3970,13 @@ dx_t eibi_db[] = {
   {  5744.00,  900,  910, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  5747.00,    0, 2400, 0x200b2,  469, "FRA", "",    "Eu"  },  //    -ale Fr. Air Force E-3F ALE
   {  5747.00,    0, 2400, 0x200b2,  566, "SVK", "",    "SVK" },  //    -ale Slovak Military ALE
-  {  5748.60,    0, 2400, 0x200b2,  718, "USA", "",    "Glo" },  //    -ale US Embassies ALE
+  {  5748.60,    0, 2400, 0x200b2,  719, "USA", "",    "Glo" },  //    -ale US Embassies ALE
   {  5750.00,    0, 2400, 0x200b2,  475, "BIH", "",    "BIH" },  //    -ale Bosnian Emergency ALE
   {  5750.00,    0, 2400, 0x200b2,  570, "JOR", "",    "JOR" },  //    -ale Jordan Address ALE Net
   {  5754.50,    0, 2400, 0x200b2,  367, "UKR", "",    "UKR" },  //    -ale Ukrainian Military ALE
-  {  5755.00, 1100, 1730, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  {  5755.00, 1800, 1845, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  {  5755.00, 1915, 2045, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  {  5755.00, 1100, 1730, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  {  5755.00, 1800, 1845, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  {  5755.00, 1915, 2045, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
   {  5758.60,    0, 2400, 0x000d2,  243, "FRA", "F",   "Eu"  },  // -milcom FUO French Navy STANAG
   {  5760.00,    0, 2400, 0x200b2,  566, "SVK", "",    "SVK" },  //    -ale Slovak Military ALE
   {  5760.00,  700,  710, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
@@ -4001,10 +4002,10 @@ dx_t eibi_db[] = {
   {  5781.00,    0, 2400, 0x200b2,  643, "KGZ", "",    "KGZ" },  //    -ale Kyrgyz Military ALE
   {  5782.00,    0, 2400, 0x200b2,  681, "GEO", "",    "GEO" },  //    -ale Georgia Borderguard ALE
   {  5782.00,    0, 2400, 0x200b2,  561, "USA", "",    "USA" },  //    -ale US National Guard ALE
-  {  5783.00,    0, 2400, 0x200b2,  720, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
+  {  5783.00,    0, 2400, 0x200b2,  721, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
   {  5784.00,    0, 2400, 0x200b2,  578, "CHN", "",    "CHN" },  //    -ale Chinese Military ALE
   {  5784.20,    0, 2400, 0x200b2,  681, "GEO", "",    "GEO" },  //    -ale Georgia Borderguard ALE
-  {  5785.00,    0, 2400, 0x200b2,  721, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
+  {  5785.00,    0, 2400, 0x200b2,  722, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
   {  5786.00,    0, 2400, 0x200b2,  237, "AUT", "",    "AUT" },  //    -ale Austrian Military ALE
   {  5788.00,    0, 2400, 0x200b2,  463, "SWE", "",    "S"   },  //    -ale Swedish Military ALE
   {  5790.00, 1552, 2005, 0x00112,  472, "HOL", "E",   "Eu"  },  //   -aero Free Radio Serv.Holland
@@ -4013,10 +4014,10 @@ dx_t eibi_db[] = {
   {  5796.00,  515,  525, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
   {  5798.00,    0, 2400, 0x000d2,  580, "AUS", "",    "AUS" },  // -milcom Humpty Doo STANAG
   {  5800.00,    0, 2400, 0x200b2,  456, "ALG", "",    "ALG" },  //    -ale Algerian Military ALE
-  {  5800.00,  200,  300, 0x00092,  722, "ARG", "E",   "LAm" },  //   -util R.Argentina al Exterior
-  {  5800.00,  200,  300, 0x00092,  722, "ARG", "F",   "LAm" },  //   -util R.Argentina al Exterior
-  {  5800.00,  200,  300, 0x00092,  722, "ARG", "P",   "LAm" },  //   -util R.Argentina al Exterior
-  {  5800.00,  200,  300, 0x04492,  722, "ARG", "S",   "LAm" },  //   -util R.Argentina al Exterior
+  {  5800.00,  200,  300, 0x00092,  723, "ARG", "E",   "LAm" },  //   -util R.Argentina al Exterior
+  {  5800.00,  200,  300, 0x00092,  723, "ARG", "F",   "LAm" },  //   -util R.Argentina al Exterior
+  {  5800.00,  200,  300, 0x00092,  723, "ARG", "P",   "LAm" },  //   -util R.Argentina al Exterior
+  {  5800.00,  200,  300, 0x04492,  723, "ARG", "S",   "LAm" },  //   -util R.Argentina al Exterior
   {  5800.00,  130,  200, 0x07c92,   65, "CZE", "E",   "LAm" },  //   -util Radio Prague
   {  5800.00,  400,  430, 0x00092,   65, "CZE", "E",   "LAm" },  //   -util Radio Prague
   {  5800.00,  600, 2400, 0x00c92,  634, "HOL", "NL",  "WEu" },  //   -util Radio Mike
@@ -4033,10 +4034,10 @@ dx_t eibi_db[] = {
   {  5802.00,    0, 2400, 0x200b2,  463, "SWE", "",    "S"   },  //    -ale Swedish Military ALE
   {  5803.00,  115,  200, 0x00112,  234, "CAN", "E",   "NAm" },  //   -aero VFF Iqaluit Radio
   {  5803.00, 1315, 1400, 0x00112,  234, "CAN", "E",   "NAm" },  //   -aero VFF Iqaluit Radio
-  {  5803.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
-  {  5803.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
-  {  5803.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
-  {  5806.00,    0, 2400, 0x200b2,  724, "SVN", "",    "SVN" },  //    -ale Slovenian Military ALE
+  {  5803.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  {  5803.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  {  5803.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  {  5806.00,    0, 2400, 0x200b2,  725, "SVN", "",    "SVN" },  //    -ale Slovenian Military ALE
   {  5807.00,    0,   15, 0x20102,  379, "NZL", "",    "Oc"  },  //    -fax ZKLF Wellington Met Fax
   {  5807.00,  100,  115, 0x20102,  379, "NZL", "",    "Oc"  },  //    -fax ZKLF Wellington Met Fax
   {  5807.00,  200,  215, 0x20102,  379, "NZL", "",    "Oc"  },  //    -fax ZKLF Wellington Met Fax
@@ -4066,25 +4067,25 @@ dx_t eibi_db[] = {
   {  5815.00,  505,  510, 0x00b32,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
   {  5815.00,  505,  510, 0x00b32,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
   {  5815.00, 1955, 2005, 0x00132,  530, "POL", "R",   ""    },  //    -spy S11a Polish Spy Numbers
-  {  5820.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  {  5820.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   {  5823.00,    0, 2400, 0x200b2,  461, "MRC", "",    "MRC" },  //    -ale Protection Civile ALE
   {  5823.00, 2020, 2030, 0x0a132,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   {  5823.00, 1940, 1950, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
-  {  5825.00, 2200,  100, 0x00092,  725, "CHL", "S",   "CHL" },  //   -util R.Triunfal Evangélica
+  {  5825.00, 2200,  100, 0x00092,  726, "CHL", "S",   "CHL" },  //   -util R.Triunfal Evangélica
   {  5825.00,  820,  830, 0x00132,  569, "RUS", "-TY", "As"  },  //    -spy F06 Russian Spy Numbers
-  {  5827.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
-  {  5827.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  {  5827.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  {  5827.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
   {  5830.00, 1100,  430, 0x00092,   76, "GBR", "FS",  "IRN" },  //   -util Iran International
   {  5830.00,    0, 1400, 0x00092,  671, "USA", "E",   "NAm" },  //   -util WTWW Lebanon, TN
   {  5832.00, 1650, 1700, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
   {  5832.00, 2200, 2210, 0x00d32,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  5832.00, 2200, 2210, 0x00d32,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
-  {  5833.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
-  {  5833.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  {  5833.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  {  5833.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
   {  5835.50,    0, 2400, 0x200b2,  293, "HOL", "",    "HOL" },  //    -ale Dutch Military ALE
-  {  5835.00,    0, 2400, 0x200e4,  707, "RUS", "-CW", "FE"  },  //     -cw Channel Marker G
-  {  5835.00,    0, 2400, 0x200e4,  708, "RUS", "-CW", "EEu" },  //     -cw Channel Marker W
-  {  5835.00,    0, 2400, 0x000d2,  706, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
+  {  5835.00,    0, 2400, 0x200e4,  708, "RUS", "-CW", "FE"  },  //     -cw Channel Marker G
+  {  5835.00,    0, 2400, 0x200e4,  709, "RUS", "-CW", "EEu" },  //     -cw Channel Marker W
+  {  5835.00,    0, 2400, 0x000d2,  707, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
   {  5837.00,    0, 2400, 0x200b2,  283, "USA", "",    "USA" },  //    -ale FEMA Emergency ALE
   {  5838.00,    0, 2400, 0x200b2,  685, "MRC", "",    "MRC" },  //    -ale Moroccan Military ALE
   {  5839.00, 1950, 2000, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
@@ -4095,20 +4096,20 @@ dx_t eibi_db[] = {
   {  5844.00,  430,  435, 0x03132,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
   {  5844.00,  430,  435, 0x03132,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
   {  5844.00,  455,  505, 0x00132,  530, "POL", "R",   ""    },  //    -spy S11a Polish Spy Numbers
-  {  5845.00, 1730, 1800, 0x00092,  726, "CLA", "J",   "KRE" },  //   -util Furusato no Kaze
-  {  5845.00, 1800, 1830, 0x00092,  726, "CLA", "J",   "KRE" },  //   -util Furusato no Kaze
-  {  5845.00, 1730, 1800, 0x00092,  727, "CLA", "K",   "KRE" },  //   -util Nippon no Kaze
-  {  5845.00, 1800, 1830, 0x00092,  727, "CLA", "K",   "KRE" },  //   -util Nippon no Kaze
+  {  5845.00, 1730, 1800, 0x00092,  727, "CLA", "J",   "KRE" },  //   -util Furusato no Kaze
+  {  5845.00, 1800, 1830, 0x00092,  727, "CLA", "J",   "KRE" },  //   -util Furusato no Kaze
+  {  5845.00, 1730, 1800, 0x00092,  728, "CLA", "K",   "KRE" },  //   -util Nippon no Kaze
+  {  5845.00, 1800, 1830, 0x00092,  728, "CLA", "K",   "KRE" },  //   -util Nippon no Kaze
   {  5845.00,  400,  410, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
   {  5846.00, 2230, 2240, 0x00132,  672, "RUS", "R",   "RUS" },  //    -spy S06 Russian Spy Numbers
-  {  5847.50,    0, 2400, 0x200b2,  728, "GRC", "",    "GRC" },  //    -ale Greek Air Force ALE
+  {  5847.50,    0, 2400, 0x200b2,  729, "GRC", "",    "GRC" },  //    -ale Greek Air Force ALE
   {  5848.20,    0, 2400, 0x000d2,  226, "SPN", "",    "SEu" },  // -milcom EBA Navy Madrid STANAG
   {  5850.00, 2300, 2330, 0x0f880,  489, "ALB", "E",   "WNA" },  //  -bcast Radio Tirana
   {  5850.00, 1000, 1100, 0x00080,  656, "ARG", "S",   "WNA" },  //  -bcast La Rosa de Tokio
   {  5850.00,  830,  900, 0x00080,  371, "AUS", "E",   "WNA" },  //  -bcast Hobart Radio Int.
   {  5850.00, 2330, 2400, 0x00080,   65, "CZE", "E",   "WNA" },  //  -bcast Radio Prague
-  {  5850.00,  130,  200, 0x00080,  729, "ITL", "I",   "WNA" },  //  -bcast Studio DX
-  {  5850.00, 1030, 1100, 0x00080,  729, "ITL", "I",   "WNA" },  //  -bcast Studio DX
+  {  5850.00,  130,  200, 0x00080,  730, "ITL", "I",   "WNA" },  //  -bcast Studio DX
+  {  5850.00, 1030, 1100, 0x00080,  730, "ITL", "I",   "WNA" },  //  -bcast Studio DX
   {  5850.00,    0,   30, 0x00080,  494, "SVK", "SK",  "WNA" },  //  -bcast Radio Slovakia Int.
   {  5850.00,   30,  100, 0x00080,  494, "SVK", "E",   "WNA" },  //  -bcast Radio Slovakia Int.
   {  5850.00,  130,  200, 0x00080,  137, "USA", "E",   "WNA" },  //  -bcast Adventist World Radio
@@ -4119,13 +4120,13 @@ dx_t eibi_db[] = {
   {  5850.00,  100,  130, 0x08880,  658, "USA", "E",   "WNA" },  //  -bcast Alameda Bible Fellowsh.
   {  5850.00,  100,  130, 0x04480,  658, "USA", "S",   "WNA" },  //  -bcast Alameda Bible Fellowsh.
   {  5850.00,  830,  900, 0x08480,  658, "USA", "E",   "WNA" },  //  -bcast Alameda Bible Fellowsh.
-  {  5850.00, 1000, 1030, 0x00080,  730, "USA", "E",   "ENA" },  //  -bcast Blues Radio Int.
+  {  5850.00, 1000, 1030, 0x00080,  731, "USA", "E",   "ENA" },  //  -bcast Blues Radio Int.
   {  5850.00,  300,  800, 0x00080,  373, "USA", "E",   "WNA" },  //  -bcast Brother Stair
   {  5850.00,  900, 1000, 0x00080,  373, "USA", "E",   "WNA" },  //  -bcast Brother Stair
   {  5850.00, 1100, 1400, 0x00080,  373, "USA", "E",   "WNA" },  //  -bcast Brother Stair
   {  5850.00, 1400, 1600, 0x00080,  373, "USA", "E",   "WNA" },  //  -bcast Brother Stair
   {  5850.00, 1400, 1600, 0x00080,  373, "USA", "E",   "WNA" },  //  -bcast Brother Stair
-  {  5850.00, 1030, 1100, 0x00080,  731, "USA", "S",   "WNA" },  //  -bcast Frecuencia al Día
+  {  5850.00, 1030, 1100, 0x00080,  732, "USA", "S",   "WNA" },  //  -bcast Frecuencia al Día
   {  5850.00,  200,  300, 0x08e80,  629, "USA", "E",   "WNA" },  //  -bcast V.o.Report of the Week
   {  5850.00,  800,  900, 0x00080,  629, "USA", "E",   "WNA" },  //  -bcast V.o.Report of the Week
   {  5850.00, 1000, 1100, 0x00080,  629, "USA", "E",   "WNA" },  //  -bcast V.o.Report of the Week
@@ -4143,10 +4144,10 @@ dx_t eibi_db[] = {
   {  5851.00,  415,  425, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
   {  5853.00,    0, 2400, 0x200b2,  456, "ALG", "",    "ALG" },  //    -ale Algerian Military ALE
   {  5853.00, 1000, 2200, 0x200e4,  295, "RUS", "-CW", "NAs" },  //     -cw REA4 AirForce Meteo x40
-  {  5857.50,    0, 2400, 0x00080,  732, "KOR", "K,E", "FE"  },  //  -bcast HLL Seoul Meteo
+  {  5857.50,    0, 2400, 0x00080,  733, "KOR", "K,E", "FE"  },  //  -bcast HLL Seoul Meteo
   {  5858.00, 2020, 2030, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
-  {  5860.00,    0, 2400, 0x200b2,  733, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
-  {  5860.00,    0, 2400, 0x00080,  734, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
+  {  5860.00,    0, 2400, 0x200b2,  734, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
+  {  5860.00,    0, 2400, 0x00080,  735, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
   {  5861.00, 2140, 2150, 0x00d32,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  5863.00, 1820, 1830, 0x02332,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   {  5863.00,   30,   40, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
@@ -4180,7 +4181,7 @@ dx_t eibi_db[] = {
   {  5880.00,  230,  330, 0x00080,   51, "USA", "BR",  "SEA" },  //  -bcast Voice of America
   {  5880.00, 1730, 1800, 0x00080,   51, "USA", "BR",  "SEA" },  //  -bcast Voice of America
   {  5881.00, 2030, 2040, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
-  {  5884.00,    0, 2400, 0x200b2,  735, "FRA", "",    "F"   },  //    -ale French Navy ALE
+  {  5884.00,    0, 2400, 0x200b2,  736, "FRA", "",    "F"   },  //    -ale French Navy ALE
   {  5884.00, 1620, 1630, 0x08532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   {  5885.00,    0, 2400, 0x200b2,  644, "HNG", "",    "HNG" },  //    -ale Hungarian Military ALE
   {  5885.00, 1430, 1600, 0x00080,   51, "USA", "BR",  "SEA" },  //  -bcast Voice of America
@@ -4197,19 +4198,19 @@ dx_t eibi_db[] = {
   {  5890.00,  200,  400, 0x08280,  373, "USA", "E",   "NAm" },  //  -bcast Brother Stair
   {  5890.00,  400, 1200, 0x00080,  373, "USA", "E",   "NAm" },  //  -bcast Brother Stair
   {  5890.00, 1700, 1900, 0x00080,   62, "USA", "PS",  "AFG" },  //  -bcast VoA Deewa Radio
-  {  5890.00,  200,  400, 0x07c80,  736, "USA", "E",   "NAm" },  //  -bcast WWCR 4 Nashville, TN
+  {  5890.00,  200,  400, 0x07c80,  737, "USA", "E",   "NAm" },  //  -bcast WWCR 4 Nashville, TN
   {  5892.00,    0, 2400, 0x200b2,  237, "AUT", "",    "AUT" },  //    -ale Austrian Military ALE
   {  5892.00,    0, 2400, 0x200b2,  573, "SPN", "",    "E"   },  //    -ale Guardia Civil ALE
-  {  5895.00, 1330, 1400, 0x00080,  726, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
-  {  5895.00, 1430, 1500, 0x00080,  726, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
-  {  5895.00, 1300, 1330, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
+  {  5895.00, 1330, 1400, 0x00080,  727, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
+  {  5895.00, 1430, 1500, 0x00080,  727, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
+  {  5895.00, 1300, 1330, 0x00080,  728, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
   {  5895.00,  329,  800, 0x00080,  125, "NOR", "NO",  "NEu" },  //  -bcast Radio Northern Star
   {  5895.00,  800, 1459, 0x00080,  125, "NOR", "NO",  "NEu" },  //  -bcast Radio Northern Star
   {  5895.00, 1459, 2207, 0x00080,  125, "NOR", "NO",  "NEu" },  //  -bcast Radio Northern Star
   {  5896.30,    0, 2400, 0x200b2,  690, "IRQ", "",    "IRQ" },  //    -ale Iraqi Security Fcs. ALE
-  {  5900.00, 1000,  200, 0x00080,  737, "BRA", "P",   "SAm" },  //  -bcast Rádio Casa AM
-  {  5900.00, 1930, 1945, 0x00080,  738, "CAN", "A",   "ME"  },  //  -bcast Bible Voice Dardasha-7
-  {  5900.00, 1945, 2000, 0x00080,  738, "CAN", "A",   "ME"  },  //  -bcast Bible Voice Dardasha-7
+  {  5900.00, 1000,  200, 0x00080,  738, "BRA", "P",   "SAm" },  //  -bcast Rádio Casa AM
+  {  5900.00, 1930, 1945, 0x00080,  739, "CAN", "A",   "ME"  },  //  -bcast Bible Voice Dardasha-7
+  {  5900.00, 1945, 2000, 0x00080,  739, "CAN", "A",   "ME"  },  //  -bcast Bible Voice Dardasha-7
   {  5900.00, 1200, 1400, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   {  5900.00, 1600, 1610, 0x00132,  636, "KOR", "K",   "Oc"  },  //    -spy V24 Numbers Station
   {  5900.00, 1600, 1610, 0x00132,  636, "KOR", "K",   "Oc"  },  //    -spy V24 Numbers Station
@@ -4224,10 +4225,10 @@ dx_t eibi_db[] = {
   {  5905.00, 1400, 1500, 0x00080,   52, "CHN", "R",   "CAs" },  //  -bcast China Radio Int.
   {  5905.00, 1500, 1600, 0x00080,   52, "CHN", "R",   "CAs" },  //  -bcast China Radio Int.
   {  5905.00, 1600, 1700, 0x00080,   52, "CHN", "R",   "CAs" },  //  -bcast China Radio Int.
-  {  5905.00,  555,  635, 0x00080,  739, "GER", "D",   "Eu"  },  //  -bcast DWD Pinneberg
-  {  5905.00, 1155, 1235, 0x00080,  739, "GER", "D",   "Eu"  },  //  -bcast DWD Pinneberg
-  {  5905.00, 1555, 1635, 0x00080,  739, "GER", "D",   "Eu"  },  //  -bcast DWD Pinneberg
-  {  5905.00, 1955, 2035, 0x00080,  739, "GER", "D",   "Eu"  },  //  -bcast DWD Pinneberg
+  {  5905.00,  555,  635, 0x00080,  740, "GER", "D",   "Eu"  },  //  -bcast DWD Pinneberg
+  {  5905.00, 1155, 1235, 0x00080,  740, "GER", "D",   "Eu"  },  //  -bcast DWD Pinneberg
+  {  5905.00, 1555, 1635, 0x00080,  740, "GER", "D",   "Eu"  },  //  -bcast DWD Pinneberg
+  {  5905.00, 1955, 2035, 0x00080,  740, "GER", "D",   "Eu"  },  //  -bcast DWD Pinneberg
   {  5905.00,  400,  600, 0x00080,  478, "KRE", "K",   "KOR" },  //  -bcast Echo of Unification
   {  5905.00, 1152, 1400, 0x00080,  478, "KRE", "K",   "KOR" },  //  -bcast Echo of Unification
   {  5905.00, 2200, 2400, 0x00080,  478, "KRE", "K",   "KOR" },  //  -bcast Echo of Unification
@@ -4235,17 +4236,17 @@ dx_t eibi_db[] = {
   {  5910.00, 1130, 1200, 0x00080,   52, "CHN", "TAG", "PHL" },  //  -bcast China Radio Int.
   {  5910.00, 1130, 1200, 0x00080,   53, "CHN", "TAG", "PHL" },  //  -bcast CRI Music
   {  5910.00, 1500, 1600, 0x00080,   52, "CHN", "M",   "SEA" },  //  -bcast China Radio Int.
-  {  5910.00, 1430, 1500, 0x00080,  740, "ROU", "ARO", "SEu" },  //  -bcast Radio Romania Int.
-  {  5910.00, 1500, 1530, 0x00080,  740, "ROU", "UK",  "UKR" },  //  -bcast Radio Romania Int.
-  {  5910.00, 1530, 1600, 0x00080,  740, "ROU", "SR",  "SEE" },  //  -bcast Radio Romania Int.
-  {  5910.00, 1600, 1630, 0x00080,  740, "ROU", "I",   "SEu" },  //  -bcast Radio Romania Int.
-  {  5910.00, 1630, 1700, 0x00080,  740, "ROU", "ARO", "SEu" },  //  -bcast Radio Romania Int.
-  {  5910.00, 1700, 1730, 0x00080,  740, "ROU", "UK",  "UKR" },  //  -bcast Radio Romania Int.
-  {  5910.00, 1730, 1800, 0x00080,  740, "ROU", "SR",  "SEE" },  //  -bcast Radio Romania Int.
-  {  5910.00, 1800, 1830, 0x00080,  741, "ROU", "I",   "SEu" },  //  -bcast Radio Romania DIGITAL
-  {  5910.00, 1830, 1900, 0x00080,  740, "ROU", "ARO", "SEu" },  //  -bcast Radio Romania Int.
-  {  5910.00, 1900, 1930, 0x00080,  740, "ROU", "UK",  "UKR" },  //  -bcast Radio Romania Int.
-  {  5910.00, 1930, 2000, 0x00080,  740, "ROU", "SR",  "SEE" },  //  -bcast Radio Romania Int.
+  {  5910.00, 1430, 1500, 0x00080,  741, "ROU", "ARO", "SEu" },  //  -bcast Radio Romania Int.
+  {  5910.00, 1500, 1530, 0x00080,  741, "ROU", "UK",  "UKR" },  //  -bcast Radio Romania Int.
+  {  5910.00, 1530, 1600, 0x00080,  741, "ROU", "SR",  "SEE" },  //  -bcast Radio Romania Int.
+  {  5910.00, 1600, 1630, 0x00080,  741, "ROU", "I",   "SEu" },  //  -bcast Radio Romania Int.
+  {  5910.00, 1630, 1700, 0x00080,  741, "ROU", "ARO", "SEu" },  //  -bcast Radio Romania Int.
+  {  5910.00, 1700, 1730, 0x00080,  741, "ROU", "UK",  "UKR" },  //  -bcast Radio Romania Int.
+  {  5910.00, 1730, 1800, 0x00080,  741, "ROU", "SR",  "SEE" },  //  -bcast Radio Romania Int.
+  {  5910.00, 1800, 1830, 0x00080,  742, "ROU", "I",   "SEu" },  //  -bcast Radio Romania DIGITAL
+  {  5910.00, 1830, 1900, 0x00080,  741, "ROU", "ARO", "SEu" },  //  -bcast Radio Romania Int.
+  {  5910.00, 1900, 1930, 0x00080,  741, "ROU", "UK",  "UKR" },  //  -bcast Radio Romania Int.
+  {  5910.00, 1930, 2000, 0x00080,  741, "ROU", "SR",  "SEE" },  //  -bcast Radio Romania Int.
   {  5915.00, 1200, 1300, 0x00080,   52, "CHN", "MO",  "MNG" },  //  -bcast China Radio Int.
   {  5915.00, 1300, 1400, 0x00080,   52, "CHN", "R",   "Sib" },  //  -bcast China Radio Int.
   {  5915.00, 1400, 1500, 0x00080,   52, "CHN", "MO",  "MNG" },  //  -bcast China Radio Int.
@@ -4257,10 +4258,10 @@ dx_t eibi_db[] = {
   {  5915.00, 1330, 1400, 0x00080,   45, "MYA", "E",   "SEA" },  //  -bcast Myanma Radio
   {  5915.00, 1400, 1700, 0x00080,   45, "MYA", "BR",  "SEA" },  //  -bcast Myanma Radio
   {  5915.00, 2330,  230, 0x00080,   45, "MYA", "BR",  "SEA" },  //  -bcast Myanma Radio
-  {  5915.00,    0,  412, 0x00080,  742, "ZMB", "",    "SAf" },  //  -bcast Zambia NBC Radio 1
-  {  5915.00,  412, 2400, 0x00080,  742, "ZMB", "",    "SAf" },  //  -bcast Zambia NBC Radio 1
-  {  5915.00,  500,  520, 0x00080,  742, "ZMB", "E",   "SAf" },  //  -bcast Zambia NBC Radio 1
-  {  5915.00, 1800, 1820, 0x00080,  742, "ZMB", "E",   "SAf" },  //  -bcast Zambia NBC Radio 1
+  {  5915.00,    0,  412, 0x00080,  743, "ZMB", "",    "SAf" },  //  -bcast Zambia NBC Radio 1
+  {  5915.00,  412, 2400, 0x00080,  743, "ZMB", "",    "SAf" },  //  -bcast Zambia NBC Radio 1
+  {  5915.00,  500,  520, 0x00080,  743, "ZMB", "E",   "SAf" },  //  -bcast Zambia NBC Radio 1
+  {  5915.00, 1800, 1820, 0x00080,  743, "ZMB", "E",   "SAf" },  //  -bcast Zambia NBC Radio 1
   {  5916.50,    0, 2400, 0x200b2,  258, "POL", "",    "POL" },  //    -ale Polish Army ALE
   {  5916.00, 1800, 1810, 0x00132,  452, "RUS", "D",   "RUS" },  //    -spy G06 Russian Spy Numbers
   {  5916.00,    0, 2400, 0x200e4,  314, "RUS", "-CW", "SEE" },  //     -cw RCV Russian Navy
@@ -4271,28 +4272,28 @@ dx_t eibi_db[] = {
   {  5920.00,  500,  630, 0x00080,   55, "EQA", "D",   "CEu" },  //  -bcast HCJB Voice of Andes
   {  5920.00,  630,  700, 0x00080,   55, "EQA", "D-P", "CEu" },  //  -bcast HCJB Voice of Andes
   {  5920.00,  700, 1600, 0x00080,   55, "EQA", "D",   "CEu" },  //  -bcast HCJB Voice of Andes
-  {  5920.00, 1405, 1435, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5920.00, 1600, 1630, 0x0a280,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5920.00, 1600, 1630, 0x00c80,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5920.00, 1600, 1630, 0x00080,  743, "JPN", "M",   "KRE" },  //  -bcast Shiokaze
-  {  5920.00, 1600, 1700, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  5920.00, 1630, 1700, 0x0a480,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5920.00, 1630, 1700, 0x04a80,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5920.00,  700,  752, 0x00080,  744, "KOR", "-EC", "KRE" },  //  -bcast Voice of Freedom
-  {  5920.00,  752,  400, 0x00080,  744, "KOR", "K",   "KRE" },  //  -bcast Voice of Freedom
-  {  5920.00,  700,  752, 0x00080,  744, "KOR", "-EC", "KRE" },  //  -bcast Voice of Freedom
-  {  5920.00,  752,  400, 0x00080,  744, "KOR", "K",   "KRE" },  //  -bcast Voice of Freedom
-  {  5920.00,  700,  752, 0x00080,  744, "KOR", "-EC", "KRE" },  //  -bcast Voice of Freedom
-  {  5920.00,  752,  400, 0x00080,  744, "KOR", "K",   "KRE" },  //  -bcast Voice of Freedom
-  {  5920.00,  800, 1100, 0x00080,  745, "KRE", "",    "KRE" },  //  -bcast Pulsating Jammer
-  {  5920.00,    0,  100, 0x00080,  746, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
-  {  5920.00,  100,  200, 0x07c80,  746, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
-  {  5920.00,  200,  300, 0x00080,  746, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
-  {  5920.00,  300,  400, 0x0f880,  746, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
-  {  5920.00,  400,  430, 0x00080,  746, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
-  {  5920.00,  430,  530, 0x00080,  746, "USA", "E",   "Car" },  //  -bcast World Harvest Radio
-  {  5920.00,  530, 1100, 0x00080,  746, "USA", "E",   "WNA" },  //  -bcast World Harvest Radio
-  {  5920.00, 1100, 1200, 0x00080,  746, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
+  {  5920.00, 1405, 1435, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5920.00, 1600, 1630, 0x0a280,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5920.00, 1600, 1630, 0x00c80,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5920.00, 1600, 1630, 0x00080,  744, "JPN", "M",   "KRE" },  //  -bcast Shiokaze
+  {  5920.00, 1600, 1700, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  5920.00, 1630, 1700, 0x0a480,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5920.00, 1630, 1700, 0x04a80,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5920.00,  700,  752, 0x00080,  745, "KOR", "-EC", "KRE" },  //  -bcast Voice of Freedom
+  {  5920.00,  752,  400, 0x00080,  745, "KOR", "K",   "KRE" },  //  -bcast Voice of Freedom
+  {  5920.00,  700,  752, 0x00080,  745, "KOR", "-EC", "KRE" },  //  -bcast Voice of Freedom
+  {  5920.00,  752,  400, 0x00080,  745, "KOR", "K",   "KRE" },  //  -bcast Voice of Freedom
+  {  5920.00,  700,  752, 0x00080,  745, "KOR", "-EC", "KRE" },  //  -bcast Voice of Freedom
+  {  5920.00,  752,  400, 0x00080,  745, "KOR", "K",   "KRE" },  //  -bcast Voice of Freedom
+  {  5920.00,  800, 1100, 0x00080,  746, "KRE", "",    "KRE" },  //  -bcast Pulsating Jammer
+  {  5920.00,    0,  100, 0x00080,  747, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
+  {  5920.00,  100,  200, 0x07c80,  747, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
+  {  5920.00,  200,  300, 0x00080,  747, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
+  {  5920.00,  300,  400, 0x0f880,  747, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
+  {  5920.00,  400,  430, 0x00080,  747, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
+  {  5920.00,  430,  530, 0x00080,  747, "USA", "E",   "Car" },  //  -bcast World Harvest Radio
+  {  5920.00,  530, 1100, 0x00080,  747, "USA", "E",   "WNA" },  //  -bcast World Harvest Radio
+  {  5920.00, 1100, 1200, 0x00080,  747, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
   {  5925.00, 1000, 1705, 0x00080,   39, "CHN", "M",   "TWN" },  //  -bcast CNR5 Cross-Strait Radio
   {  5925.00, 2055, 2300, 0x00080,   39, "CHN", "M",   "TWN" },  //  -bcast CNR5 Cross-Strait Radio
   {  5925.00, 2300, 2400, 0x00080,   39, "CHN", "M",   "TWN" },  //  -bcast CNR5 Cross-Strait Radio
@@ -4306,8 +4307,8 @@ dx_t eibi_db[] = {
   {  5925.00, 2145,  100, 0x00080,   40, "VTN", "VN",  "VTN" },  //  -bcast Voice of Vietnam 2
   {  5928.00, 1930, 1940, 0x00132,  452, "RUS", "D",   "RUS" },  //    -spy G06 Russian Spy Numbers
   {  5929.00,  520,  530, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
-  {  5930.00, 2100, 2200, 0x00080,  747, "ALG", "A",   "WAf" },  //  -bcast Radio Algerienne
-  {  5930.00, 2200, 2300, 0x00080,  747, "ALG", "A",   "WAf" },  //  -bcast Radio Algerienne
+  {  5930.00, 2100, 2200, 0x00080,  748, "ALG", "A",   "WAf" },  //  -bcast Radio Algerienne
+  {  5930.00, 2200, 2300, 0x00080,  748, "ALG", "A",   "WAf" },  //  -bcast Radio Algerienne
   {  5930.00,    0, 2400, 0x00080,   92, "DNK", "E",   "Eu"  },  //  -bcast World Music Radio
   {  5930.00, 1400, 1600, 0x00080,   51, "USA", "E",   "CAf" },  //  -bcast Voice of America
   {  5930.00, 1600, 1630, 0x00080,   51, "USA", "E",   "SAf" },  //  -bcast Voice of America
@@ -4315,8 +4316,8 @@ dx_t eibi_db[] = {
   {  5930.00, 1700, 1800, 0x00080,   51, "USA", "E",   "WAf" },  //  -bcast Voice of America
   {  5934.00, 1830, 1840, 0x00132,  452, "RUS", "D",   "RUS" },  //    -spy G06 Russian Spy Numbers
   {  5934.00, 1830, 1840, 0x00132,  452, "RUS", "D",   "RUS" },  //    -spy G06 Russian Spy Numbers
-  {  5935.00,  920, 1300, 0x00080,  748, "BOL", "S,Q", "BOL" },  //  -bcast Radio Yura, LV Ayllus
-  {  5935.00, 2240,  210, 0x00080,  748, "BOL", "S,Q", "BOL" },  //  -bcast Radio Yura, LV Ayllus
+  {  5935.00,  920, 1300, 0x00080,  749, "BOL", "S,Q", "BOL" },  //  -bcast Radio Yura, LV Ayllus
+  {  5935.00, 2240,  210, 0x00080,  749, "BOL", "S,Q", "BOL" },  //  -bcast Radio Yura, LV Ayllus
   {  5935.00,    0,   30, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  5935.00, 2230, 2300, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  5935.00,   30,  300, 0x00080,  127, "CHN", "M",   "CHN" },  //  -bcast PBS Xizang
@@ -4327,35 +4328,35 @@ dx_t eibi_db[] = {
   {  5935.00, 2000, 2100, 0x0be80,  127, "CHN", "M",   "CHN" },  //  -bcast PBS Xizang
   {  5935.00, 2100, 2230, 0x00080,  127, "CHN", "M",   "CHN" },  //  -bcast PBS Xizang
   {  5935.00, 2300, 2400, 0x00080,  127, "CHN", "M",   "CHN" },  //  -bcast PBS Xizang
-  {  5935.00,    0, 2400, 0x00080,  749, "HOL", "NL",  "WEu" },  //  -bcast Radio Europe
-  {  5935.00, 1300, 1330, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5935.00, 1300, 1400, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  5935.00, 1300, 1400, 0x0c080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5935.00, 1300, 1400, 0x02880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5935.00, 1330, 1400, 0x00080,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5935.00, 1300, 1330, 0x04680,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5935.00, 1300, 1400, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  5935.00, 1300, 1400, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  5935.00, 1300, 1400, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5935.00, 1300, 1400, 0x02880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5935.00, 1300, 1400, 0x01880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5935.00, 1330, 1400, 0x04680,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5935.00, 1300, 1330, 0x04680,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5935.00, 1300, 1400, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  5935.00, 1300, 1400, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5935.00, 1300, 1400, 0x01880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5935.00, 1330, 1400, 0x04680,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5935.00,    0, 2400, 0x00080,  750, "HOL", "NL",  "WEu" },  //  -bcast Radio Europe
+  {  5935.00, 1300, 1330, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5935.00, 1300, 1400, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  5935.00, 1300, 1400, 0x0c080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5935.00, 1300, 1400, 0x02880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5935.00, 1330, 1400, 0x00080,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5935.00, 1300, 1330, 0x04680,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5935.00, 1300, 1400, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  5935.00, 1300, 1400, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  5935.00, 1300, 1400, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5935.00, 1300, 1400, 0x02880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5935.00, 1300, 1400, 0x01880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5935.00, 1330, 1400, 0x04680,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5935.00, 1300, 1330, 0x04680,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5935.00, 1300, 1400, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  5935.00, 1300, 1400, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5935.00, 1300, 1400, 0x01880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5935.00, 1330, 1400, 0x04680,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
   {  5935.00, 2300, 2400, 0x0f880,  373, "USA", "E",   "NAm" },  //  -bcast Brother Stair
-  {  5935.00,    0, 1200, 0x00080,  750, "USA", "E",   "NAm" },  //  -bcast Dr.Gene Scott
-  {  5935.00,    0,  100, 0x00080,  751, "USA", "E",   "NAm" },  //  -bcast WWCR 2 Nashville, TN
-  {  5935.00, 2300, 2400, 0x00080,  751, "USA", "E",   "NAm" },  //  -bcast WWCR 2 Nashville, TN
+  {  5935.00,    0, 1200, 0x00080,  751, "USA", "E",   "NAm" },  //  -bcast Dr.Gene Scott
+  {  5935.00,    0,  100, 0x00080,  752, "USA", "E",   "NAm" },  //  -bcast WWCR 2 Nashville, TN
+  {  5935.00, 2300, 2400, 0x00080,  752, "USA", "E",   "NAm" },  //  -bcast WWCR 2 Nashville, TN
   {  5936.00, 2030, 2040, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   {  5937.00, 1930, 1940, 0x00132,  452, "RUS", "D",   "RUS" },  //    -spy G06 Russian Spy Numbers
   {  5938.00, 1830, 1840, 0x00132,  452, "RUS", "D",   "RUS" },  //    -spy G06 Russian Spy Numbers
   {  5938.00, 1830, 1840, 0x00132,  452, "RUS", "D",   "RUS" },  //    -spy G06 Russian Spy Numbers
-  {  5939.30,    0, 2400, 0x00080,  752, "BRA", "P",   "B"   },  //  -bcast Rádio Voz Missionária
-  {  5940.00, 2100, 2200, 0x00080,  747, "ALG", "A",   "CAf" },  //  -bcast Radio Algerienne
-  {  5940.00,    0, 2400, 0x00080,  749, "HOL", "NL",  "WEu" },  //  -bcast Radio Europe
+  {  5939.30,    0, 2400, 0x00080,  753, "BRA", "P",   "B"   },  //  -bcast Rádio Voz Missionária
+  {  5940.00, 2100, 2200, 0x00080,  748, "ALG", "A",   "CAf" },  //  -bcast Radio Algerienne
+  {  5940.00,    0, 2400, 0x00080,  750, "HOL", "NL",  "WEu" },  //  -bcast Radio Europe
   {  5940.00, 1600, 2400, 0x00e80,  135, "HOL", "NL",  "HOL" },  //  -bcast Radio Piepzender
   {  5940.00, 1400, 1600, 0x00080,   51, "USA", "E",   "CAf" },  //  -bcast Voice of America
   {  5940.00, 1600, 1630, 0x00080,   51, "USA", "E",   "SAf" },  //  -bcast Voice of America
@@ -4368,13 +4369,13 @@ dx_t eibi_db[] = {
   {  5945.00, 1300, 1805, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  5945.00, 2023, 2300, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  5945.00, 2023,  100, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
-  {  5945.00, 1600, 1630, 0x00080,  726, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
-  {  5945.00, 1500, 1530, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
-  {  5945.00, 1530, 1600, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
+  {  5945.00, 1600, 1630, 0x00080,  727, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
+  {  5945.00, 1500, 1530, 0x00080,  728, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
+  {  5945.00, 1530, 1600, 0x00080,  728, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
   {  5945.00,    0,  100, 0x00080,   31, "GBR", "E",   "SAs" },  //  -bcast BBC
-  {  5945.00, 2200, 2300, 0x00080,  740, "ROU", "E",   "WEu" },  //  -bcast Radio Romania Int.
-  {  5945.00, 1830, 1930, 0x00080,  753, "TUR", "E",   "Eu"  },  //  -bcast Voice of Turkey
-  {  5946.00,  915,  920, 0x03132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  {  5945.00, 2200, 2300, 0x00080,  741, "ROU", "E",   "WEu" },  //  -bcast Radio Romania Int.
+  {  5945.00, 1830, 1930, 0x00080,  754, "TUR", "E",   "Eu"  },  //  -bcast Voice of Turkey
+  {  5946.00,  915,  920, 0x03132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   {  5947.00,    0, 2400, 0x200b2,  404, "USA", "",    "WNA" },  //    -ale Bonneville PowerAdm.ALE
   {  5950.00,    0, 2400, 0x200b2,  555, "AZE", "",    "Cau" },  //    -ale Azeri Emergency ALE
   {  5950.00,  254, 1730, 0x00080,  126, "ETH", "TIG", "EAf" },  //  -bcast V.o.Tigray Revolution
@@ -4385,58 +4386,58 @@ dx_t eibi_db[] = {
   {  5950.00,   30,  100, 0x00080,   91, "USA", "E",   "ENA" },  //  -bcast World of Radio
   {  5950.00,    0,  400, 0x00080,  661, "USA", "E",   "ENA" },  //  -bcast WRMI Radio Miami Int.
   {  5950.00, 2100, 2400, 0x00080,  661, "USA", "E",   "ENA" },  //  -bcast WRMI Radio Miami Int.
-  {  5952.40,  100,  200, 0x00080,  755, "BOL", "AY",  "BOL" },  //  -bcast Emisora Pio XII
-  {  5952.40,  200,  237, 0x00080,  755, "BOL", "S,Q", "BOL" },  //  -bcast Emisora Pio XII
-  {  5952.40,  237,  500, 0x00080,  755, "BOL", "S,Q", "BOL" },  //  -bcast Emisora Pio XII
-  {  5952.40,  955, 1400, 0x00080,  755, "BOL", "S,Q", "BOL" },  //  -bcast Emisora Pio XII
-  {  5952.40, 2100,  100, 0x00080,  755, "BOL", "S,Q", "BOL" },  //  -bcast Emisora Pio XII
+  {  5952.40,  100,  200, 0x00080,  756, "BOL", "AY",  "BOL" },  //  -bcast Emisora Pio XII
+  {  5952.40,  200,  237, 0x00080,  756, "BOL", "S,Q", "BOL" },  //  -bcast Emisora Pio XII
+  {  5952.40,  237,  500, 0x00080,  756, "BOL", "S,Q", "BOL" },  //  -bcast Emisora Pio XII
+  {  5952.40,  955, 1400, 0x00080,  756, "BOL", "S,Q", "BOL" },  //  -bcast Emisora Pio XII
+  {  5952.40, 2100,  100, 0x00080,  756, "BOL", "S,Q", "BOL" },  //  -bcast Emisora Pio XII
   {  5955.00, 1100, 1300, 0x00080,   52, "CHN", "E",   "FE"  },  //  -bcast China Radio Int.
   {  5955.00, 1300, 1400, 0x00080,   52, "CHN", "E",   "FE"  },  //  -bcast China Radio Int.
   {  5955.00, 1400, 1500, 0x00080,   52, "CHN", "E",   "FE"  },  //  -bcast China Radio Int.
   {  5955.00, 1500, 1600, 0x00080,   52, "CHN", "E",   "FE"  },  //  -bcast China Radio Int.
   {  5955.00, 2200, 2300, 0x00080,   31, "GBR", "E",   "SEA" },  //  -bcast BBC
-  {  5955.00, 1600, 1630, 0x0a280,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5955.00, 1600, 1630, 0x00c80,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5955.00, 1600, 1630, 0x00080,  743, "JPN", "M",   "KRE" },  //  -bcast Shiokaze
-  {  5955.00, 1600, 1700, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  5955.00, 1630, 1700, 0x0a480,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5955.00, 1630, 1700, 0x04a80,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5955.00, 1600, 1630, 0x04680,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5955.00, 1600, 1700, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  5955.00, 1600, 1700, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  5955.00, 1600, 1700, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5955.00, 1600, 1700, 0x02880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5955.00, 1600, 1700, 0x01880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5955.00, 1630, 1700, 0x04680,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5955.00, 1600, 1630, 0x04680,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5955.00, 1600, 1700, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  5955.00, 1600, 1700, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5955.00, 1600, 1700, 0x01880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5955.00, 1630, 1700, 0x04680,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5955.00, 1600, 1630, 0x0a280,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5955.00, 1600, 1630, 0x00c80,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5955.00, 1600, 1630, 0x00080,  744, "JPN", "M",   "KRE" },  //  -bcast Shiokaze
+  {  5955.00, 1600, 1700, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  5955.00, 1630, 1700, 0x0a480,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5955.00, 1630, 1700, 0x04a80,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5955.00, 1600, 1630, 0x04680,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5955.00, 1600, 1700, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  5955.00, 1600, 1700, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  5955.00, 1600, 1700, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5955.00, 1600, 1700, 0x02880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5955.00, 1600, 1700, 0x01880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5955.00, 1630, 1700, 0x04680,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5955.00, 1600, 1630, 0x04680,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5955.00, 1600, 1700, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  5955.00, 1600, 1700, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5955.00, 1600, 1700, 0x01880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5955.00, 1630, 1700, 0x04680,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
   {  5960.00,  300,  800, 0x00080,  480, "CHN", "M",   "CHN" },  //  -bcast PBS Xinjiang
   {  5960.00,  800, 1100, 0x0be80,  480, "CHN", "M",   "CHN" },  //  -bcast PBS Xinjiang
   {  5960.00, 1100, 1200, 0x00080,  480, "CHN", "M",   "CHN" },  //  -bcast PBS Xinjiang
   {  5960.00, 1200, 1800, 0x00080,  480, "CHN", "M",   "CHN" },  //  -bcast PBS Xinjiang
   {  5960.00, 2300,  300, 0x00080,  480, "CHN", "M",   "CHN" },  //  -bcast PBS Xinjiang
   {  5960.00, 2310,  300, 0x00080,  480, "CHN", "M",   "CHN" },  //  -bcast PBS Xinjiang
-  {  5960.00,    0,  200, 0x00080,  756, "HOL", "E",   "NAm" },  //  -bcast Mighty KBC
-  {  5960.00,    0,  200, 0x00080,  756, "HOL", "E",   "NAm" },  //  -bcast Mighty KBC
-  {  5960.00,  325,  749, 0x00080,  757, "KWT", "A",   "ME"  },  //  -bcast Radio Kuwait
-  {  5960.00,  500,  600, 0x00080,  758, "TCD", "KNU", "TCD" },  //  -bcast Radio Ndarason Int.
-  {  5960.00, 1600, 2100, 0x00080,  753, "TUR", "TU",  "ME"  },  //  -bcast Voice of Turkey
+  {  5960.00,    0,  200, 0x00080,  757, "HOL", "E",   "NAm" },  //  -bcast Mighty KBC
+  {  5960.00,    0,  200, 0x00080,  757, "HOL", "E",   "NAm" },  //  -bcast Mighty KBC
+  {  5960.00,  325,  749, 0x00080,  758, "KWT", "A",   "ME"  },  //  -bcast Radio Kuwait
+  {  5960.00,  500,  600, 0x00080,  759, "TCD", "KNU", "TCD" },  //  -bcast Radio Ndarason Int.
+  {  5960.00, 1600, 2100, 0x00080,  754, "TUR", "TU",  "ME"  },  //  -bcast Voice of Turkey
   {  5965.00, 1400, 1500, 0x00080,   52, "CHN", "K",   "FE"  },  //  -bcast China Radio Int.
   {  5965.00, 1500, 1600, 0x00080,   52, "CHN", "R",   "Sib" },  //  -bcast China Radio Int.
   {  5965.00, 2300, 2400, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  {  5965.00, 1300, 1330, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5965.00, 1300, 1400, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  5965.00, 1300, 1400, 0x0c080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5965.00, 1300, 1400, 0x02880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5965.00, 1330, 1400, 0x00080,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5965.00, 1300, 1330, 0x04680,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5965.00, 1300, 1400, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  5965.00, 1300, 1400, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5965.00, 1300, 1400, 0x01880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5965.00, 1330, 1400, 0x04680,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5965.00, 1300, 1330, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5965.00, 1300, 1400, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  5965.00, 1300, 1400, 0x0c080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5965.00, 1300, 1400, 0x02880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5965.00, 1330, 1400, 0x00080,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5965.00, 1300, 1330, 0x04680,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5965.00, 1300, 1400, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  5965.00, 1300, 1400, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5965.00, 1300, 1400, 0x01880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5965.00, 1330, 1400, 0x04680,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
   {  5965.00, 2300, 2400, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
   {  5965.00, 2200, 2230, 0x00080,   51, "USA", "KH",  "SEA" },  //  -bcast Voice of America
   {  5970.00, 1400, 1500, 0x00080,  109, "CHN", "TB",  "CHN" },  //  -bcast China National Radio 11
@@ -4457,33 +4458,33 @@ dx_t eibi_db[] = {
   {  5970.00, 2000, 2030, 0x00080,   51, "USA", "F",   "Af"  },  //  -bcast Voice of America
   {  5970.00, 2030, 2100, 0x00080,   51, "USA", "HA",  "WAf" },  //  -bcast Voice of America
   {  5970.00, 2100, 2130, 0x0f880,   51, "USA", "F",   "Af"  },  //  -bcast Voice of America
-  {  5970.00,    0, 1400, 0x00080,  759, "USA", "S",   "LAm" },  //  -bcast WEWN EWTN Catholic R.
+  {  5970.00,    0, 1400, 0x00080,  760, "USA", "S",   "LAm" },  //  -bcast WEWN EWTN Catholic R.
   {  5971.00,    0, 2400, 0x200b2,  442, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
   {  5975.00,  600,  900, 0x0de80,   98, "CHN", "K",   "CHN" },  //  -bcast China National Radio 8
   {  5975.00,  900, 1000, 0x00080,   98, "CHN", "K",   "CHN" },  //  -bcast China National Radio 8
   {  5975.00, 1000, 1100, 0x00080,   98, "CHN", "K",   "CHN" },  //  -bcast China National Radio 8
   {  5975.00, 1100, 1505, 0x00080,   98, "CHN", "K",   "CHN" },  //  -bcast China National Radio 8
   {  5975.00, 2200, 2300, 0x00080,   52, "CHN", "M",   "SAf" },  //  -bcast China Radio Int.
-  {  5975.00,    0, 2400, 0x00080,  749, "HOL", "NL",  "WEu" },  //  -bcast Radio Europe
+  {  5975.00,    0, 2400, 0x00080,  750, "HOL", "NL",  "WEu" },  //  -bcast Radio Europe
   {  5975.00, 1110, 1120, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  5976.50,  400,  600, 0x00080,   67, "VTN", "VN",  "VTN" },  //  -bcast Voice of Vietnam 1
   {  5976.50, 1100, 1500, 0x00080,   67, "VTN", "VN",  "VTN" },  //  -bcast Voice of Vietnam 1
   {  5976.50, 2145,  100, 0x00080,   67, "VTN", "VN",  "VTN" },  //  -bcast Voice of Vietnam 1
-  {  5980.00, 1100, 1300, 0x00080,  760, "DNK", "",    "Eu"  },  //  -bcast Radio OZ-Viola
-  {  5980.00, 2100, 2200, 0x00080,  760, "DNK", "",    "Eu"  },  //  -bcast Radio OZ-Viola
+  {  5980.00, 1100, 1300, 0x00080,  761, "DNK", "",    "Eu"  },  //  -bcast Radio OZ-Viola
+  {  5980.00, 2100, 2200, 0x00080,  761, "DNK", "",    "Eu"  },  //  -bcast Radio OZ-Viola
   {  5980.00,  600,  900, 0x00080,  141, "FIN", "FI",  "Eu"  },  //  -bcast Scandinavian Weekend R.
   {  5980.00, 1300, 1600, 0x00080,  141, "FIN", "FI",  "Eu"  },  //  -bcast Scandinavian Weekend R.
   {  5980.00, 1500, 1900, 0x00080,  141, "FIN", "FI",  "Eu"  },  //  -bcast Scandinavian Weekend R.
-  {  5980.00, 1405, 1435, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5980.00, 1405, 1435, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5980.00, 1405, 1435, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5980.00, 1259, 1650, 0x00080,  761, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
-  {  5980.00, 1650, 1858, 0x00080,  761, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
-  {  5980.00, 1858, 2000, 0x00080,  761, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
-  {  5980.00, 1100, 1630, 0x00080,  762, "PRU", "Q",   "PRU" },  //  -bcast R.Chaski Red Integridad
-  {  5980.00, 1730, 2352, 0x00080,  762, "PRU", "S,Q", "PRU" },  //  -bcast R.Chaski Red Integridad
-  {  5980.00,    0,  300, 0x07c80,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
-  {  5980.00, 2200, 2400, 0x0f880,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  {  5980.00, 1405, 1435, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5980.00, 1405, 1435, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5980.00, 1405, 1435, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5980.00, 1259, 1650, 0x00080,  762, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
+  {  5980.00, 1650, 1858, 0x00080,  762, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
+  {  5980.00, 1858, 2000, 0x00080,  762, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
+  {  5980.00, 1100, 1630, 0x00080,  763, "PRU", "Q",   "PRU" },  //  -bcast R.Chaski Red Integridad
+  {  5980.00, 1730, 2352, 0x00080,  763, "PRU", "S,Q", "PRU" },  //  -bcast R.Chaski Red Integridad
+  {  5980.00,    0,  300, 0x07c80,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  {  5980.00, 2200, 2400, 0x0f880,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
   {  5985.00, 1600, 1700, 0x00080,   52, "CHN", "SWA", "EAf" },  //  -bcast China Radio Int.
   {  5985.00, 1700, 1800, 0x00080,   52, "CHN", "SWA", "EAf" },  //  -bcast China Radio Int.
   {  5985.00, 1900, 2000, 0x00080,   53, "CHN", "P",   "SAf" },  //  -bcast CRI Music
@@ -4491,35 +4492,35 @@ dx_t eibi_db[] = {
   {  5985.00, 2200, 2230, 0x00080,  492, "CVA", "M",   "FE"  },  //  -bcast Radio Vaticana
   {  5985.00,  230,  330, 0x00080,   31, "GBR", "FS",  "IRN" },  //  -bcast BBC
   {  5985.00,  400,  430, 0x00080,   93, "JPN", "S",   "CAm" },  //  -bcast NHK Radio Japan
-  {  5985.00, 1600, 1630, 0x0a280,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5985.00, 1600, 1630, 0x00c80,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5985.00, 1600, 1630, 0x00080,  743, "JPN", "M",   "KRE" },  //  -bcast Shiokaze
-  {  5985.00, 1600, 1700, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  5985.00, 1630, 1700, 0x0a480,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5985.00, 1630, 1700, 0x04a80,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5985.00, 1600, 1630, 0x04680,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5985.00, 1600, 1700, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  5985.00, 1600, 1700, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  5985.00, 1600, 1700, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5985.00, 1600, 1700, 0x02880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5985.00, 1600, 1700, 0x01880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5985.00, 1630, 1700, 0x04680,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5985.00, 1600, 1630, 0x04680,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5985.00, 1600, 1700, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  5985.00, 1600, 1700, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  5985.00, 1600, 1700, 0x01880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  5985.00, 1630, 1700, 0x04680,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5985.00, 1600, 1630, 0x0a280,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5985.00, 1600, 1630, 0x00c80,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5985.00, 1600, 1630, 0x00080,  744, "JPN", "M",   "KRE" },  //  -bcast Shiokaze
+  {  5985.00, 1600, 1700, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  5985.00, 1630, 1700, 0x0a480,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5985.00, 1630, 1700, 0x04a80,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5985.00, 1600, 1630, 0x04680,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5985.00, 1600, 1700, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  5985.00, 1600, 1700, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  5985.00, 1600, 1700, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5985.00, 1600, 1700, 0x02880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5985.00, 1600, 1700, 0x01880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5985.00, 1630, 1700, 0x04680,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5985.00, 1600, 1630, 0x04680,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5985.00, 1600, 1700, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  5985.00, 1600, 1700, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  5985.00, 1600, 1700, 0x01880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  5985.00, 1630, 1700, 0x04680,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
   {  5985.00, 1100, 1530, 0x00080,   45, "MYA", "BR",  "SEA" },  //  -bcast Myanma Radio
   {  5985.00, 1147, 1530, 0x00080,   45, "MYA", "BR",  "SEA" },  //  -bcast Myanma Radio
   {  5985.00, 1220, 1230, 0x00080,   45, "MYA", "E",   "SEA" },  //  -bcast Myanma Radio
-  {  5985.00, 1233, 1310, 0x02880,  764, "MYA", "E",   "SEA" },  //  -bcast Myanma R. (10 mins)
-  {  5985.00, 1440, 1450, 0x00080,  765, "MYA", "E",   "SEA" },  //  -bcast Myanma Radio (BBC)
+  {  5985.00, 1233, 1310, 0x02880,  765, "MYA", "E",   "SEA" },  //  -bcast Myanma R. (10 mins)
+  {  5985.00, 1440, 1450, 0x00080,  766, "MYA", "E",   "SEA" },  //  -bcast Myanma Radio (BBC)
   {  5985.00, 1445, 1505, 0x02480,   46, "MYA", "BR",  "SEA" },  //  -bcast Myanma Radio (NHK)
   {  5985.00, 1530, 1630, 0x00080,   45, "MYA", "E",   "SEA" },  //  -bcast Myanma Radio
-  {  5985.00, 1550, 1620, 0x00080,  766, "MYA", "E",   "SEA" },  //  -bcast Myanma Radio (VoA)
+  {  5985.00, 1550, 1620, 0x00080,  767, "MYA", "E",   "SEA" },  //  -bcast Myanma Radio (VoA)
   {  5985.00, 2300,  130, 0x00080,   45, "MYA", "BR",  "SEA" },  //  -bcast Myanma Radio
   {  5985.00,  330,  400, 0x00080,  137, "USA", "E",   "CAm" },  //  -bcast Adventist World Radio
-  {  5985.00,  330,  400, 0x00080,  731, "USA", "S",   "CAm" },  //  -bcast Frecuencia al Día
+  {  5985.00,  330,  400, 0x00080,  732, "USA", "S",   "CAm" },  //  -bcast Frecuencia al Día
   {  5985.00,  330,  400, 0x02480,  661, "USA", "E",   "CAm" },  //  -bcast WRMI Radio Miami Int.
   {  5985.00,  330,  400, 0x05280,  658, "USA", "S",   "CAm" },  //  -bcast Alameda Bible Fellowsh.
   {  5985.00,  430,  500, 0x00080,  661, "USA", "E",   "CAm" },  //  -bcast WRMI Radio Miami Int.
@@ -4530,9 +4531,9 @@ dx_t eibi_db[] = {
   {  5990.00, 1400, 1500, 0x00080,   52, "CHN", "MO",  "MNG" },  //  -bcast China Radio Int.
   {  5990.00, 1500, 1600, 0x00080,   52, "CHN", "R",   "Sib" },  //  -bcast China Radio Int.
   {  5990.00, 2300, 2400, 0x00080,   52, "CHN", "E",   "CAm" },  //  -bcast China Radio Int.
-  {  5990.00,  600,  855, 0x0be80,  767, "CHN", "TB",  "CHN" },  //  -bcast PBS Qinghai
-  {  5990.00,  855, 1600, 0x00080,  767, "CHN", "TB",  "CHN" },  //  -bcast PBS Qinghai
-  {  5990.00, 2250,  600, 0x00080,  767, "CHN", "TB",  "CHN" },  //  -bcast PBS Qinghai
+  {  5990.00,  600,  855, 0x0be80,  768, "CHN", "TB",  "CHN" },  //  -bcast PBS Qinghai
+  {  5990.00,  855, 1600, 0x00080,  768, "CHN", "TB",  "CHN" },  //  -bcast PBS Qinghai
+  {  5990.00, 2250,  600, 0x00080,  768, "CHN", "TB",  "CHN" },  //  -bcast PBS Qinghai
   {  5990.00,  500,  800, 0x00080,  487, "CLA", "K",   "KRE" },  //  -bcast Echo of Hope VOH
   {  5990.00,  800,  100, 0x00080,  487, "CLA", "K",   "KRE" },  //  -bcast Echo of Hope VOH
   {  5990.00,  930,  950, 0x00080,  487, "CLA", "E",   "KRE" },  //  -bcast Echo of Hope VOH
@@ -4558,11 +4559,11 @@ dx_t eibi_db[] = {
   {  5995.00, 1450, 1500, 0x0f880,  488, "CLA", "E",   "KRE" },  //  -bcast Echo of Hope VOH (EBS)
   {  5995.00, 1850, 1900, 0x0f880,  488, "CLA", "E",   "KRE" },  //  -bcast Echo of Hope VOH (EBS)
   {  5995.00, 2250, 2300, 0x0f880,  488, "CLA", "E",   "KRE" },  //  -bcast Echo of Hope VOH (EBS)
-  {  5995.00,    2,  234, 0x00080,  768, "MLI", "BM",  "WAf" },  //  -bcast RTV du Mali
-  {  5995.00,  530,  555, 0x00080,  768, "MLI", "BM",  "WAf" },  //  -bcast RTV du Mali
-  {  5995.00,  555,  800, 0x00080,  768, "MLI", "BM",  "WAf" },  //  -bcast RTV du Mali
-  {  5995.00, 1800,    2, 0x00080,  768, "MLI", "BM",  "WAf" },  //  -bcast RTV du Mali
-  {  5995.00, 1850, 1905, 0x00080,  768, "MLI", "E",   "WAf" },  //  -bcast RTV du Mali
+  {  5995.00,    2,  234, 0x00080,  769, "MLI", "BM",  "WAf" },  //  -bcast RTV du Mali
+  {  5995.00,  530,  555, 0x00080,  769, "MLI", "BM",  "WAf" },  //  -bcast RTV du Mali
+  {  5995.00,  555,  800, 0x00080,  769, "MLI", "BM",  "WAf" },  //  -bcast RTV du Mali
+  {  5995.00, 1800,    2, 0x00080,  769, "MLI", "BM",  "WAf" },  //  -bcast RTV du Mali
+  {  5995.00, 1850, 1905, 0x00080,  769, "MLI", "E",   "WAf" },  //  -bcast RTV du Mali
   {  6000.00,  830,  850, 0x0be80,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  6000.00,  850, 1805, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  6000.00, 1100, 1805, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
@@ -4592,8 +4593,8 @@ dx_t eibi_db[] = {
   {  6000.00,  335,  700, 0x00080,  100, "IND", "LAD", "SAs" },  //  -bcast AIR Leh
   {  6000.00,  700,  930, 0x00080,  100, "IND", "LAD", "SAs" },  //  -bcast AIR Leh
   {  6000.00,   50,  220, 0x00080,   44, "IRN", "TJ",  "CAs" },  //  -bcast IRIB Voice of I.R.Iran
-  {  6000.00, 1800, 1900, 0x08880,  769, "RUS", "AD",  "Cau" },  //  -bcast Adygeyskoye Radio
-  {  6000.00, 1900, 2000, 0x00080,  769, "RUS", "AD",  "Cau" },  //  -bcast Adygeyskoye Radio
+  {  6000.00, 1800, 1900, 0x08880,  770, "RUS", "AD",  "Cau" },  //  -bcast Adygeyskoye Radio
+  {  6000.00, 1900, 2000, 0x00080,  770, "RUS", "AD",  "Cau" },  //  -bcast Adygeyskoye Radio
   {  6005.00, 1230, 1300, 0x0fc80,  489, "ALB", "E",   "CEu" },  //  -bcast Radio Tirana
   {  6005.00, 1230, 1300, 0x0fc80,  489, "ALB", "E",   "CEu" },  //  -bcast Radio Tirana
   {  6005.00, 1700, 1800, 0x00080,  490, "BLR", "E",   "CEu" },  //  -bcast Radio Belarus
@@ -4603,12 +4604,12 @@ dx_t eibi_db[] = {
   {  6005.00,  930, 1000, 0x00080,   65, "CZE", "D",   "CEu" },  //  -bcast Radio Prague
   {  6005.00,  500,  600, 0x00080,   31, "GBR", "E",   "WAf" },  //  -bcast BBC
   {  6005.00,  600,  700, 0x00080,   31, "GBR", "E",   "WAf" },  //  -bcast BBC
-  {  6005.00, 1200, 1300, 0x00080,  770, "HOL", "NL",  "CEu" },  //  -bcast Radio Amathusia
-  {  6005.00, 1200, 1300, 0x00080,  770, "HOL", "NL",  "CEu" },  //  -bcast Radio Amathusia
-  {  6005.00,    0,  200, 0x00080,  771, "HOL", "NL",  "WEu" },  //  -bcast Radio Delta Int.
-  {  6005.00, 2000, 2400, 0x00e80,  771, "HOL", "NL",  "WEu" },  //  -bcast Radio Delta Int.
-  {  6005.00, 1200, 1230, 0x0fc80,  772, "MNG", "E",   "CEu" },  //  -bcast Voice of Mongolia
-  {  6005.00, 1200, 1230, 0x0fc80,  772, "MNG", "E",   "CEu" },  //  -bcast Voice of Mongolia
+  {  6005.00, 1200, 1300, 0x00080,  771, "HOL", "NL",  "CEu" },  //  -bcast Radio Amathusia
+  {  6005.00, 1200, 1300, 0x00080,  771, "HOL", "NL",  "CEu" },  //  -bcast Radio Amathusia
+  {  6005.00,    0,  200, 0x00080,  772, "HOL", "NL",  "WEu" },  //  -bcast Radio Delta Int.
+  {  6005.00, 2000, 2400, 0x00e80,  772, "HOL", "NL",  "WEu" },  //  -bcast Radio Delta Int.
+  {  6005.00, 1200, 1230, 0x0fc80,  773, "MNG", "E",   "CEu" },  //  -bcast Voice of Mongolia
+  {  6005.00, 1200, 1230, 0x0fc80,  773, "MNG", "E",   "CEu" },  //  -bcast Voice of Mongolia
   {  6005.00, 1500, 1530, 0x00080,   32, "POL", "D",   "CEu" },  //  -bcast Polskie Radio
   {  6005.00, 1500, 1530, 0x00080,   32, "POL", "D",   "CEu" },  //  -bcast Polskie Radio
   {  6005.00, 1030, 1100, 0x00080,  493, "SUI", "D",   "CEu" },  //  -bcast SRF
@@ -4635,9 +4636,9 @@ dx_t eibi_db[] = {
   {  6005.00, 1800, 1830, 0x00080,  494, "SVK", "D",   "CEu" },  //  -bcast Radio Slovakia Int.
   {  6005.00, 1830, 1900, 0x00080,  494, "SVK", "F",   "CEu" },  //  -bcast Radio Slovakia Int.
   {  6005.00, 1900, 1930, 0x00080,  111, "TWN", "F",   "Eu"  },  //  -bcast Radio Taiwan Int.
-  {  6005.00,  800,  900, 0x00080,  773, "UKR", "D",   "CEu" },  //  -bcast Radio Ukraine Int.
-  {  6005.00,  800,  900, 0x00080,  773, "UKR", "D",   "CEu" },  //  -bcast Radio Ukraine Int.
-  {  6006.60, 2200, 1530, 0x00080,  774, "VTN", "Vn",  "VTN" },  //  -bcast VoV Spur from 6020
+  {  6005.00,  800,  900, 0x00080,  774, "UKR", "D",   "CEu" },  //  -bcast Radio Ukraine Int.
+  {  6005.00,  800,  900, 0x00080,  774, "UKR", "D",   "CEu" },  //  -bcast Radio Ukraine Int.
+  {  6006.60, 2200, 1530, 0x00080,  775, "VTN", "Vn",  "VTN" },  //  -bcast VoV Spur from 6020
   {  6010.00,    0, 2400, 0x00080,   87, "BRA", "P",   "B"   },  //  -bcast Rádio Inconfidência
   {  6010.00, 1030, 1300, 0x00080,  109, "CHN", "TB",  "CHN" },  //  -bcast China National Radio 11
   {  6010.00, 1300, 1400, 0x00080,  109, "CHN", "TB",  "CHN" },  //  -bcast China National Radio 11
@@ -4651,20 +4652,20 @@ dx_t eibi_db[] = {
   {  6015.00, 2340,  330, 0x00080,  480, "CHN", "KZ",  "CHN" },  //  -bcast PBS Xinjiang
   {  6015.00,  350, 1400, 0x00080,   96, "KOR", "K",   "FE"  },  //  -bcast KBS Hanminjok
   {  6015.00, 1400, 2400, 0x00080,   96, "KOR", "K",   "FE"  },  //  -bcast KBS Hanminjok
-  {  6015.00,  400,  500, 0x00080,  740, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
-  {  6015.00,  530,  600, 0x00080,  740, "ROU", "E",   "WEu" },  //  -bcast Radio Romania Int.
+  {  6015.00,  400,  500, 0x00080,  741, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
+  {  6015.00,  530,  600, 0x00080,  741, "ROU", "E",   "WEu" },  //  -bcast Radio Romania Int.
   {  6015.00,  327,  600, 0x00080,   47, "TZA", "SWA", "EAf" },  //  -bcast ZBC Radio
-  {  6016.40, 2300,  200, 0x00080,  775, "CLM", "S",   "CLM" },  //  -bcast Organ.Radial El Prado
+  {  6016.40, 2300,  200, 0x00080,  776, "CLM", "S",   "CLM" },  //  -bcast Organ.Radial El Prado
   {  6020.00, 1830, 1900, 0x00080,   52, "CHN", "BU",  "SEE" },  //  -bcast China Radio Int.
   {  6020.00, 1900, 2000, 0x00080,   52, "CHN", "AL",  "SEE" },  //  -bcast China Radio Int.
   {  6020.00, 2000, 2100, 0x00080,   52, "CHN", "PO",  "Eu"  },  //  -bcast China Radio Int.
   {  6020.00, 1830, 1900, 0x00080,   53, "CHN", "BU",  "SEE" },  //  -bcast CRI Music
   {  6020.00, 1900, 2000, 0x00080,   53, "CHN", "AL",  "SEE" },  //  -bcast CRI Music
   {  6020.00, 2000, 2100, 0x00080,   53, "CHN", "PO",  "Eu"  },  //  -bcast CRI Music
-  {  6020.00,  530, 1700, 0x00080,  771, "HOL", "NL",  "WEu" },  //  -bcast Radio Delta Int.
-  {  6020.00,  600, 1700, 0x00080,  771, "HOL", "NL",  "WEu" },  //  -bcast Radio Delta Int.
-  {  6020.00,  600, 1700, 0x00080,  771, "HOL", "NL",  "WEu" },  //  -bcast Radio Delta Int.
-  {  6020.00,  900, 1300, 0x00080,  771, "HOL", "NL",  "WEu" },  //  -bcast Radio Delta Int.
+  {  6020.00,  530, 1700, 0x00080,  772, "HOL", "NL",  "WEu" },  //  -bcast Radio Delta Int.
+  {  6020.00,  600, 1700, 0x00080,  772, "HOL", "NL",  "WEu" },  //  -bcast Radio Delta Int.
+  {  6020.00,  600, 1700, 0x00080,  772, "HOL", "NL",  "WEu" },  //  -bcast Radio Delta Int.
+  {  6020.00,  900, 1300, 0x00080,  772, "HOL", "NL",  "WEu" },  //  -bcast Radio Delta Int.
   {  6020.00,    0, 2400, 0x200b2,  406, "USA", "",    "USA" },  //    -ale Corps of Engineers ALE
   {  6020.00, 2200, 1530, 0x00080,   78, "VTN", "VN",  "VTN" },  //  -bcast Voice of Vietnam 4
   {  6025.00, 2300, 2400, 0x00080,  109, "CHN", "TB",  "CHN" },  //  -bcast China National Radio 11
@@ -4676,18 +4677,18 @@ dx_t eibi_db[] = {
   {  6025.00, 1600, 1700, 0x00080,  127, "CHN", "E",   "CHN" },  //  -bcast PBS Xizang
   {  6025.00, 1700, 1805, 0x00080,  127, "CHN", "TB",  "CHN" },  //  -bcast PBS Xizang
   {  6025.00, 2050, 2300, 0x00080,  127, "CHN", "TB",  "CHN" },  //  -bcast PBS Xizang
-  {  6030.00,  600, 1100, 0x0f880,  776, "CAF", "Vn",  "CAF" },  //  -bcast Radio Water for Good
-  {  6030.00, 1300, 1700, 0x00080,  776, "CAF", "Vn",  "CAF" },  //  -bcast Radio Water for Good
-  {  6030.00, 1730, 1800, 0x00080,  777, "CAN", "E",   "EEu" },  //  -bcast Bible Voice
+  {  6030.00,  600, 1100, 0x0f880,  777, "CAF", "Vn",  "CAF" },  //  -bcast Radio Water for Good
+  {  6030.00, 1300, 1700, 0x00080,  777, "CAF", "Vn",  "CAF" },  //  -bcast Radio Water for Good
+  {  6030.00, 1730, 1800, 0x00080,  778, "CAN", "E",   "EEu" },  //  -bcast Bible Voice
   {  6030.00,    0, 2400, 0x00080,  102, "CAN", "E",   "WNA" },  //  -bcast CFVP Calgary Funny 1060
   {  6030.00, 1300, 2400, 0x00080,  102, "CAN", "E",   "WNA" },  //  -bcast CFVP Calgary Funny 1060
-  {  6030.00,  600,  850, 0x0be80,  778, "CHN", "M",   "CHN" },  //  -bcast CNR1 DIGITAL
-  {  6030.00,  850, 1805, 0x00080,  778, "CHN", "M",   "CHN" },  //  -bcast CNR1 DIGITAL
-  {  6030.00, 2025,  600, 0x00080,  778, "CHN", "M",   "CHN" },  //  -bcast CNR1 DIGITAL
-  {  6030.00,  230,  310, 0x00080,  779, "CLA", "KS",  "SAs" },  //  -bcast Radio Sedaye Kashmir
-  {  6030.00,  310,  330, 0x00080,  779, "CLA", "DO",  "SAs" },  //  -bcast Radio Sedaye Kashmir
-  {  6030.00, 1430, 1510, 0x00080,  779, "CLA", "KS",  "SAs" },  //  -bcast Radio Sedaye Kashmir
-  {  6030.00, 1510, 1530, 0x00080,  779, "CLA", "DO",  "SAs" },  //  -bcast Radio Sedaye Kashmir
+  {  6030.00,  600,  850, 0x0be80,  779, "CHN", "M",   "CHN" },  //  -bcast CNR1 DIGITAL
+  {  6030.00,  850, 1805, 0x00080,  779, "CHN", "M",   "CHN" },  //  -bcast CNR1 DIGITAL
+  {  6030.00, 2025,  600, 0x00080,  779, "CHN", "M",   "CHN" },  //  -bcast CNR1 DIGITAL
+  {  6030.00,  230,  310, 0x00080,  780, "CLA", "KS",  "SAs" },  //  -bcast Radio Sedaye Kashmir
+  {  6030.00,  310,  330, 0x00080,  780, "CLA", "DO",  "SAs" },  //  -bcast Radio Sedaye Kashmir
+  {  6030.00, 1430, 1510, 0x00080,  780, "CLA", "KS",  "SAs" },  //  -bcast Radio Sedaye Kashmir
+  {  6030.00, 1510, 1530, 0x00080,  780, "CLA", "DO",  "SAs" },  //  -bcast Radio Sedaye Kashmir
   {  6030.00,  253,  600, 0x00080,   79, "ETH", "OO",  "EAf" },  //  -bcast Radio Oromiya
   {  6030.00,  600,  900, 0x00080,   79, "ETH", "OO",  "EAf" },  //  -bcast Radio Oromiya
   {  6030.00,  900, 1100, 0x00080,   79, "ETH", "OO",  "EAf" },  //  -bcast Radio Oromiya
@@ -4695,23 +4696,23 @@ dx_t eibi_db[] = {
   {  6030.00, 1530, 2000, 0x00080,   79, "ETH", "OO",  "EAf" },  //  -bcast Radio Oromiya
   {  6030.00,  130,  200, 0x00080,   66, "MYA", "E",   "SEA" },  //  -bcast Thazin Radio
   {  6030.00, 2330,  130, 0x00080,   66, "MYA", "BR",  "SEA" },  //  -bcast Thazin Radio
-  {  6030.00,    0,  400, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
-  {  6030.00,  400,  500, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
-  {  6030.00,  400, 1000, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
-  {  6030.00, 1000, 1200, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
-  {  6033.40, 2200, 1530, 0x00080,  774, "VTN", "Vn",  "VTN" },  //  -bcast VoV Spur from 6020
-  {  6035.00,   55,  400, 0x00080,  780, "BTN", "SHC", "BTN" },  //  -bcast Bhutan BS
-  {  6035.00,  400,  800, 0x00080,  780, "BTN", "NE",  "BTN" },  //  -bcast Bhutan BS
-  {  6035.00,  800, 1000, 0x00080,  780, "BTN", "DZ",  "BTN" },  //  -bcast Bhutan BS
-  {  6035.00, 1000, 1045, 0x00080,  780, "BTN", "E",   "BTN" },  //  -bcast Bhutan BS
-  {  6035.00,  946, 1000, 0x00080,  781, "CHN", "-MX", "CHN" },  //  -bcast Yunnan Radio Int.
-  {  6035.00, 1000, 1030, 0x00080,  781, "CHN", "VN",  "CHN" },  //  -bcast Yunnan Radio Int.
-  {  6035.00, 1030, 1200, 0x00080,  781, "CHN", "M",   "CHN" },  //  -bcast Yunnan Radio Int.
-  {  6035.00, 1200, 1700, 0x00080,  781, "CHN", "M",   "CHN" },  //  -bcast Yunnan Radio Int.
-  {  6035.00, 2200, 2400, 0x00080,  781, "CHN", "M",   "CHN" },  //  -bcast Yunnan Radio Int.
+  {  6030.00,    0,  400, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  {  6030.00,  400,  500, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  {  6030.00,  400, 1000, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  {  6030.00, 1000, 1200, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  {  6033.40, 2200, 1530, 0x00080,  775, "VTN", "Vn",  "VTN" },  //  -bcast VoV Spur from 6020
+  {  6035.00,   55,  400, 0x00080,  781, "BTN", "SHC", "BTN" },  //  -bcast Bhutan BS
+  {  6035.00,  400,  800, 0x00080,  781, "BTN", "NE",  "BTN" },  //  -bcast Bhutan BS
+  {  6035.00,  800, 1000, 0x00080,  781, "BTN", "DZ",  "BTN" },  //  -bcast Bhutan BS
+  {  6035.00, 1000, 1045, 0x00080,  781, "BTN", "E",   "BTN" },  //  -bcast Bhutan BS
+  {  6035.00,  946, 1000, 0x00080,  782, "CHN", "-MX", "CHN" },  //  -bcast Yunnan Radio Int.
+  {  6035.00, 1000, 1030, 0x00080,  782, "CHN", "VN",  "CHN" },  //  -bcast Yunnan Radio Int.
+  {  6035.00, 1030, 1200, 0x00080,  782, "CHN", "M",   "CHN" },  //  -bcast Yunnan Radio Int.
+  {  6035.00, 1200, 1700, 0x00080,  782, "CHN", "M",   "CHN" },  //  -bcast Yunnan Radio Int.
+  {  6035.00, 2200, 2400, 0x00080,  782, "CHN", "M",   "CHN" },  //  -bcast Yunnan Radio Int.
   {  6035.00, 2130, 2145, 0x00080,   31, "GBR", "E",   "ATA" },  //  -bcast BBC
   {  6035.00, 2130, 2200, 0x00080,   31, "GBR", "E",   "ATA" },  //  -bcast BBC
-  {  6035.00,  700, 1900, 0x00080,  782, "SWE", "SWE", "NEu" },  //  -bcast Radio Nord Revival
+  {  6035.00,  700, 1900, 0x00080,  783, "SWE", "SWE", "NEu" },  //  -bcast Radio Nord Revival
   {  6035.00, 1230, 1430, 0x00080,  648, "XUU", "",    "CEu" },  //  -bcast Unknown Station
   {  6035.00, 1600, 1700, 0x00080,  648, "XUU", "",    "CEu" },  //  -bcast Unknown Station
   {  6040.00,  300,  400, 0x00080,   98, "CHN", "MO",  "CHN" },  //  -bcast China National Radio 8
@@ -4723,40 +4724,40 @@ dx_t eibi_db[] = {
   {  6040.00,  950, 1605, 0x00080,  110, "CHN", "MO",  "CHN" },  //  -bcast PBS Nei Menggu
   {  6040.00, 2150,  300, 0x00080,  110, "CHN", "MO",  "CHN" },  //  -bcast PBS Nei Menggu
   {  6040.00,  230,  330, 0x00080,   31, "GBR", "FS",  "IRN" },  //  -bcast BBC
-  {  6040.00, 1300, 1330, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  6040.00, 1300, 1400, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  6040.00, 1300, 1400, 0x0c080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  6040.00, 1300, 1400, 0x02880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  6040.00, 1330, 1400, 0x00080,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  6040.00, 1300, 1330, 0x04680,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  6040.00, 1300, 1400, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  6040.00, 1300, 1400, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  6040.00, 1300, 1400, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  6040.00, 1300, 1400, 0x02880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  6040.00, 1300, 1400, 0x01880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  6040.00, 1330, 1400, 0x04680,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  6040.00, 1300, 1330, 0x04680,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  6040.00, 1300, 1400, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  6040.00, 1300, 1400, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  6040.00, 1300, 1400, 0x01880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  6040.00, 1330, 1400, 0x04680,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  6040.00,  400,  600, 0x00080,  753, "TUR", "TU",  "ME"  },  //  -bcast Voice of Turkey
+  {  6040.00, 1300, 1330, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  6040.00, 1300, 1400, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  6040.00, 1300, 1400, 0x0c080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  6040.00, 1300, 1400, 0x02880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  6040.00, 1330, 1400, 0x00080,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  6040.00, 1300, 1330, 0x04680,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  6040.00, 1300, 1400, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  6040.00, 1300, 1400, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  6040.00, 1300, 1400, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  6040.00, 1300, 1400, 0x02880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  6040.00, 1300, 1400, 0x01880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  6040.00, 1330, 1400, 0x04680,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  6040.00, 1300, 1330, 0x04680,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  6040.00, 1300, 1400, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  6040.00, 1300, 1400, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  6040.00, 1300, 1400, 0x01880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  6040.00, 1330, 1400, 0x04680,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  6040.00,  400,  600, 0x00080,  754, "TUR", "TU",  "ME"  },  //  -bcast Voice of Turkey
   {  6040.00, 1700, 1800, 0x00080,   51, "USA", "ZWE", "ZWE" },  //  -bcast Voice of America
   {  6040.00, 1800, 1900, 0x0f880,   51, "USA", "ZWE", "ZWE" },  //  -bcast Voice of America
   {  6040.00, 1930, 2000, 0x0f880,   51, "USA", "KNK", "EAf" },  //  -bcast Voice of America
   {  6040.00, 2000, 2030, 0x00080,   51, "USA", "F",   "WAf" },  //  -bcast Voice of America
-  {  6045.00, 1600, 1630, 0x00080,  726, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
-  {  6045.00, 1100, 1400, 0x00080,  783, "HOL", "NL",  "Eu"  },  //  -bcast Telstar Radio Int.
-  {  6045.00, 1100, 1400, 0x00080,  783, "HOL", "NL",  "Eu"  },  //  -bcast Telstar Radio Int.
-  {  6045.00, 1100, 1400, 0x00080,  783, "HOL", "NL",  "Eu"  },  //  -bcast Telstar Radio Int.
-  {  6045.00,  800,  400, 0x00080,  744, "KOR", "K",   "KRE" },  //  -bcast Voice of Freedom
-  {  6045.00,  700,  752, 0x00080,  744, "KOR", "-EC", "KRE" },  //  -bcast Voice of Freedom
-  {  6045.00,  752,  400, 0x00080,  744, "KOR", "K",   "KRE" },  //  -bcast Voice of Freedom
-  {  6045.00,  700,  752, 0x00080,  744, "KOR", "-EC", "KRE" },  //  -bcast Voice of Freedom
-  {  6045.00,  752,  400, 0x00080,  744, "KOR", "K",   "KRE" },  //  -bcast Voice of Freedom
-  {  6045.00,  800, 1100, 0x00080,  745, "KRE", "",    "KRE" },  //  -bcast Pulsating Jammer
-  {  6045.00,  752,  400, 0x00080,  784, "KRE", "",    "KRE" },  //  -bcast White Noise Jammer
-  {  6050.00,  400,  500, 0x00080,  747, "ALG", "A",   "CAf" },  //  -bcast Radio Algerienne
+  {  6045.00, 1600, 1630, 0x00080,  727, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
+  {  6045.00, 1100, 1400, 0x00080,  784, "HOL", "NL",  "Eu"  },  //  -bcast Telstar Radio Int.
+  {  6045.00, 1100, 1400, 0x00080,  784, "HOL", "NL",  "Eu"  },  //  -bcast Telstar Radio Int.
+  {  6045.00, 1100, 1400, 0x00080,  784, "HOL", "NL",  "Eu"  },  //  -bcast Telstar Radio Int.
+  {  6045.00,  800,  400, 0x00080,  745, "KOR", "K",   "KRE" },  //  -bcast Voice of Freedom
+  {  6045.00,  700,  752, 0x00080,  745, "KOR", "-EC", "KRE" },  //  -bcast Voice of Freedom
+  {  6045.00,  752,  400, 0x00080,  745, "KOR", "K",   "KRE" },  //  -bcast Voice of Freedom
+  {  6045.00,  700,  752, 0x00080,  745, "KOR", "-EC", "KRE" },  //  -bcast Voice of Freedom
+  {  6045.00,  752,  400, 0x00080,  745, "KOR", "K",   "KRE" },  //  -bcast Voice of Freedom
+  {  6045.00,  800, 1100, 0x00080,  746, "KRE", "",    "KRE" },  //  -bcast Pulsating Jammer
+  {  6045.00,  752,  400, 0x00080,  785, "KRE", "",    "KRE" },  //  -bcast White Noise Jammer
+  {  6050.00,  400,  500, 0x00080,  748, "ALG", "A",   "CAf" },  //  -bcast Radio Algerienne
   {  6050.00,    0,   30, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  6050.00, 2230, 2300, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  6050.00,   30,  300, 0x00080,  127, "CHN", "M",   "CHN" },  //  -bcast PBS Xizang
@@ -4790,13 +4791,13 @@ dx_t eibi_db[] = {
   {  6050.00, 2315, 2330, 0x07e80,   55, "EQA", "Q",   "SAm" },  //  -bcast HCJB Voice of Andes
   {  6050.00, 2315, 2330, 0x00080,   55, "EQA", "S",   "SAm" },  //  -bcast HCJB Voice of Andes
   {  6050.00, 2330, 2400, 0x00080,   55, "EQA", "SUA", "SAm" },  //  -bcast HCJB Voice of Andes
-  {  6050.00, 1600, 2100, 0x00080,  757, "KWT", "A",   "ME"  },  //  -bcast Radio Kuwait
-  {  6050.00,  525, 1000, 0x00080,  785, "LBR", "E",   "WAf" },  //  -bcast ELWA Radio
-  {  6050.00, 1700, 2232, 0x00080,  785, "LBR", "E",   "WAf" },  //  -bcast ELWA Radio
+  {  6050.00, 1600, 2100, 0x00080,  758, "KWT", "A",   "ME"  },  //  -bcast Radio Kuwait
+  {  6050.00,  525, 1000, 0x00080,  786, "LBR", "E",   "WAf" },  //  -bcast ELWA Radio
+  {  6050.00, 1700, 2232, 0x00080,  786, "LBR", "E",   "WAf" },  //  -bcast ELWA Radio
   {  6055.00, 1400, 1500, 0x00080,   52, "CHN", "KH",  "SEA" },  //  -bcast China Radio Int.
   {  6055.00, 1400, 1500, 0x00080,   53, "CHN", "KH",  "SEA" },  //  -bcast CRI Music
-  {  6055.00, 1030, 1100, 0x00080,  786, "GER", "D",   "Eu"  },  //  -bcast Evang.Missionsgemeinden
-  {  6055.00, 1100, 1300, 0x00080,  760, "DNK", "",    "Eu"  },  //  -bcast Radio OZ-Viola
+  {  6055.00, 1030, 1100, 0x00080,  787, "GER", "D",   "Eu"  },  //  -bcast Evang.Missionsgemeinden
+  {  6055.00, 1100, 1300, 0x00080,  761, "DNK", "",    "Eu"  },  //  -bcast Radio OZ-Viola
   {  6055.00,    0, 1055, 0x00080,  473, "JPN", "J",   "FE"  },  //  -bcast Radio Nikkei 1
   {  6055.00,  830,  900, 0x00080,  473, "JPN", "E",   "FE"  },  //  -bcast Radio Nikkei 1
   {  6055.00, 1055, 1200, 0x0fa80,  473, "JPN", "J",   "FE"  },  //  -bcast Radio Nikkei 1
@@ -4809,12 +4810,12 @@ dx_t eibi_db[] = {
   {  6055.00, 1400, 1500, 0x00080,  137, "USA", "MSY", "EAf" },  //  -bcast Adventist World Radio
   {  6060.00, 1600, 1700, 0x00080,   52, "CHN", "E",   "SEA" },  //  -bcast China Radio Int.
   {  6060.00, 1700, 1800, 0x00080,   52, "CHN", "E",   "SEA" },  //  -bcast China Radio Int.
-  {  6060.00,    0,  100, 0x00080,  787, "CHN", "TB",  "CHN" },  //  -bcast PBS Sichuan 2
-  {  6060.00,  100,  135, 0x00080,  787, "CHN", "YI",  "CHN" },  //  -bcast PBS Sichuan 2
-  {  6060.00, 1000, 1400, 0x00080,  787, "CHN", "TB",  "CHN" },  //  -bcast PBS Sichuan 2
-  {  6060.00, 1400, 1515, 0x00080,  787, "CHN", "YI",  "CHN" },  //  -bcast PBS Sichuan 2
-  {  6060.00, 2155, 2210, 0x00080,  787, "CHN", "TB",  "CHN" },  //  -bcast PBS Sichuan 2
-  {  6060.00, 2210, 2400, 0x00080,  787, "CHN", "M",   "CHN" },  //  -bcast PBS Sichuan 2
+  {  6060.00,    0,  100, 0x00080,  788, "CHN", "TB",  "CHN" },  //  -bcast PBS Sichuan 2
+  {  6060.00,  100,  135, 0x00080,  788, "CHN", "YI",  "CHN" },  //  -bcast PBS Sichuan 2
+  {  6060.00, 1000, 1400, 0x00080,  788, "CHN", "TB",  "CHN" },  //  -bcast PBS Sichuan 2
+  {  6060.00, 1400, 1515, 0x00080,  788, "CHN", "YI",  "CHN" },  //  -bcast PBS Sichuan 2
+  {  6060.00, 2155, 2210, 0x00080,  788, "CHN", "TB",  "CHN" },  //  -bcast PBS Sichuan 2
+  {  6060.00, 2210, 2400, 0x00080,  788, "CHN", "M",   "CHN" },  //  -bcast PBS Sichuan 2
   {  6060.00,    0,  100, 0x00080,  664, "CUB", "S",   "ENA" },  //  -bcast Radio Habana Cuba
   {  6060.00,  100,  200, 0x00080,  664, "CUB", "S",   "ENA" },  //  -bcast Radio Habana Cuba
   {  6060.00,  200,  300, 0x01080,  664, "CUB", "S",   "ENA" },  //  -bcast Radio Habana Cuba
@@ -4843,8 +4844,8 @@ dx_t eibi_db[] = {
   {  6070.00, 2200, 2400, 0x00080,  481, "GER", "D,E", "Eu"  },  //  -bcast Channel 292
   {  6070.00,  900, 1000, 0x00080,  482, "GER", "D",   "Eu"  },  //  -bcast Radio DARC
   {  6070.00, 1500, 1600, 0x00080,  482, "GER", "D",   "Eu"  },  //  -bcast Radio DARC
-  {  6070.00, 1405, 1435, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  6070.00, 1405, 1435, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  6070.00, 1405, 1435, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  6070.00, 1405, 1435, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
   {  6070.00,  900, 1300, 0x00080,   58, "KRE", "J",   "J"   },  //  -bcast Voice of Korea
   {  6070.00,  200,  230, 0x0f680,   72, "PHL", "UR",  "SAs" },  //  -bcast FEBC Manila
   {  6070.00,  200,  300, 0x00080,   72, "PHL", "UR",  "SAs" },  //  -bcast FEBC Manila
@@ -4855,8 +4856,8 @@ dx_t eibi_db[] = {
   {  6075.00, 1400, 1700, 0x00080,  111, "TWN", "M",   "CHN" },  //  -bcast Radio Taiwan Int.
   {  6075.00, 1700, 1730, 0x00080,  111, "TWN", "M",   "CHN" },  //  -bcast Radio Taiwan Int.
   {  6075.00, 2200, 2400, 0x00080,  111, "TWN", "M",   "CHN" },  //  -bcast Radio Taiwan Int.
-  {  6080.00,    0,  800, 0x00080,  788, "BRA", "P",   "SAm" },  //  -bcast Rádio Marumby
-  {  6080.00, 1000, 2400, 0x00080,  788, "BRA", "P",   "SAm" },  //  -bcast Rádio Marumby
+  {  6080.00,    0,  800, 0x00080,  789, "BRA", "P",   "SAm" },  //  -bcast Rádio Marumby
+  {  6080.00, 1000, 2400, 0x00080,  789, "BRA", "P",   "SAm" },  //  -bcast Rádio Marumby
   {  6080.00, 1100, 1805, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  6080.00, 1200, 1805, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  6080.00, 2023, 2400, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
@@ -4870,37 +4871,37 @@ dx_t eibi_db[] = {
   {  6080.00,  400,  700, 0x00080,   51, "USA", "E",   "CAf" },  //  -bcast Voice of America
   {  6080.00, 1800, 2000, 0x00080,   51, "USA", "E",   "Af"  },  //  -bcast Voice of America
   {  6085.00, 1230, 1315, 0x00080,  492, "CVA", "M",   "FE"  },  //  -bcast Radio Vaticana
-  {  6085.00,  700,  900, 0x00080,  789, "SPN", "-MX", "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00,  700, 1100, 0x00080,  789, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00,  700, 1200, 0x00080,  789, "SPN", "NL",  "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00,  700, 1200, 0x0f080,  789, "SPN", "-MX", "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00,  900, 1000, 0x00080,  789, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1000, 1100, 0x00080,  789, "SPN", "D",   "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1100, 1200, 0x00080,  789, "SPN", "F",   "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1100, 1600, 0x00080,  789, "SPN", "NL",  "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1200, 1300, 0x06c80,  789, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1200, 1300, 0x00080,  789, "SPN", "F,E", "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1200, 1300, 0x00080,  789, "SPN", "NL",  "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1300, 1400, 0x08c80,  789, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1300, 1400, 0x07280,  789, "SPN", "-MX", "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1400, 1600, 0x00c80,  789, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1400, 1600, 0x0f280,  789, "SPN", "-MX", "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00,  700,  900, 0x00080,  789, "SPN", "-MX", "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00,  700, 1100, 0x00080,  789, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00,  700, 1200, 0x00080,  789, "SPN", "NL",  "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00,  700, 1200, 0x0f080,  789, "SPN", "-MX", "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00,  900, 1000, 0x00080,  789, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1000, 1100, 0x00080,  789, "SPN", "D",   "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1100, 1200, 0x00080,  789, "SPN", "F",   "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1100, 1600, 0x00080,  789, "SPN", "NL",  "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1200, 1300, 0x06c80,  789, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1200, 1300, 0x00080,  789, "SPN", "F,E", "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1200, 1300, 0x00080,  789, "SPN", "NL",  "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1300, 1400, 0x08c80,  789, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1300, 1400, 0x07280,  789, "SPN", "-MX", "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1400, 1600, 0x00c80,  789, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1400, 1600, 0x0f280,  789, "SPN", "-MX", "CEu" },  //  -bcast Radio MiAmigo
-  {  6085.00, 1600,  700, 0x00080,  789, "SPN", "-MX", "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00,  700,  900, 0x00080,  790, "SPN", "-MX", "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00,  700, 1100, 0x00080,  790, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00,  700, 1200, 0x00080,  790, "SPN", "NL",  "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00,  700, 1200, 0x0f080,  790, "SPN", "-MX", "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00,  900, 1000, 0x00080,  790, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1000, 1100, 0x00080,  790, "SPN", "D",   "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1100, 1200, 0x00080,  790, "SPN", "F",   "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1100, 1600, 0x00080,  790, "SPN", "NL",  "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1200, 1300, 0x06c80,  790, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1200, 1300, 0x00080,  790, "SPN", "F,E", "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1200, 1300, 0x00080,  790, "SPN", "NL",  "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1300, 1400, 0x08c80,  790, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1300, 1400, 0x07280,  790, "SPN", "-MX", "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1400, 1600, 0x00c80,  790, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1400, 1600, 0x0f280,  790, "SPN", "-MX", "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00,  700,  900, 0x00080,  790, "SPN", "-MX", "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00,  700, 1100, 0x00080,  790, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00,  700, 1200, 0x00080,  790, "SPN", "NL",  "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00,  700, 1200, 0x0f080,  790, "SPN", "-MX", "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00,  900, 1000, 0x00080,  790, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1000, 1100, 0x00080,  790, "SPN", "D",   "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1100, 1200, 0x00080,  790, "SPN", "F",   "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1100, 1600, 0x00080,  790, "SPN", "NL",  "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1200, 1300, 0x06c80,  790, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1200, 1300, 0x00080,  790, "SPN", "F,E", "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1200, 1300, 0x00080,  790, "SPN", "NL",  "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1300, 1400, 0x08c80,  790, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1300, 1400, 0x07280,  790, "SPN", "-MX", "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1400, 1600, 0x00c80,  790, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1400, 1600, 0x0f280,  790, "SPN", "-MX", "CEu" },  //  -bcast Radio MiAmigo
+  {  6085.00, 1600,  700, 0x00080,  790, "SPN", "-MX", "CEu" },  //  -bcast Radio MiAmigo
   {  6085.00, 2200, 2230, 0x00080,  111, "TWN", "K",   "FE"  },  //  -bcast Radio Taiwan Int.
   {  6087.00,  800, 2400, 0x200e4,  295, "RUS", "-CW", "NAs" },  //     -cw REA4 AirForce Meteo x40
   {  6090.00, 1900, 1930, 0x00080,   52, "CHN", "RO",  "EEu" },  //  -bcast China Radio Int.
@@ -4914,24 +4915,24 @@ dx_t eibi_db[] = {
   {  6090.00,  258,  600, 0x00080,   75, "ETH", "AH",  "EAf" },  //  -bcast Amhara State Radio
   {  6090.00,  900, 1100, 0x00080,   75, "ETH", "AH",  "EAf" },  //  -bcast Amhara State Radio
   {  6090.00, 1400, 2100, 0x00080,   75, "ETH", "AH",  "EAf" },  //  -bcast Amhara State Radio
-  {  6090.00,  830,  852, 0x00080,  790, "GBR", "E",   "Eu"  },  //  -bcast Woofferton Test
+  {  6090.00,  830,  852, 0x00080,  791, "GBR", "E",   "Eu"  },  //  -bcast Woofferton Test
   {  6090.00, 1100, 1130, 0x00080,   93, "JPN", "K",   "FE"  },  //  -bcast NHK Radio Japan
   {  6090.00, 1130, 1200, 0x00080,   93, "JPN", "M",   "FE"  },  //  -bcast NHK Radio Japan
   {  6090.00, 1200, 1230, 0x00080,   93, "JPN", "K",   "FE"  },  //  -bcast NHK Radio Japan
-  {  6090.00, 1405, 1435, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  6090.00, 1405, 1435, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  6090.00, 1405, 1435, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  6090.00, 1405, 1435, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  6090.00, 1405, 1435, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  6090.00, 1405, 1435, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
   {  6090.00, 2000, 2100, 0x00080,  116, "KOR", "A",   "NAf" },  //  -bcast KBS World Radio
-  {  6095.00, 1000, 1100, 0x00080,  791, "GER", "D",   "Eu"  },  //  -bcast SE-TA2
-  {  6095.00, 1000, 1100, 0x00080,  791, "GER", "D",   "Eu"  },  //  -bcast SE-TA2
-  {  6095.00, 1000, 1100, 0x00080,  791, "GER", "D",   "Eu"  },  //  -bcast SE-TA2
+  {  6095.00, 1000, 1100, 0x00080,  792, "GER", "D",   "Eu"  },  //  -bcast SE-TA2
+  {  6095.00, 1000, 1100, 0x00080,  792, "GER", "D",   "Eu"  },  //  -bcast SE-TA2
+  {  6095.00, 1000, 1100, 0x00080,  792, "GER", "D",   "Eu"  },  //  -bcast SE-TA2
   {  6095.00, 1130, 1230, 0x00080,  116, "KOR", "M",   "CHN" },  //  -bcast KBS World Radio
   {  6100.00, 1200, 1300, 0x00080,   52, "CHN", "R",   "Sib" },  //  -bcast China Radio Int.
   {  6100.00, 1300, 1400, 0x00080,   52, "CHN", "MO",  "MNG" },  //  -bcast China Radio Int.
   {  6100.00, 2000, 2200, 0x00080,   52, "CHN", "A",   "ME"  },  //  -bcast China Radio Int.
   {  6100.00, 2200, 2300, 0x00080,   52, "CHN", "M",   "SEA" },  //  -bcast China Radio Int.
-  {  6100.00,  730,  810, 0x00080,  779, "CLA", "KS",  "SAs" },  //  -bcast Radio Sedaye Kashmir
-  {  6100.00,  810,  830, 0x00080,  779, "CLA", "DO",  "SAs" },  //  -bcast Radio Sedaye Kashmir
+  {  6100.00,  730,  810, 0x00080,  780, "CLA", "KS",  "SAs" },  //  -bcast Radio Sedaye Kashmir
+  {  6100.00,  810,  830, 0x00080,  780, "CLA", "DO",  "SAs" },  //  -bcast Radio Sedaye Kashmir
   {  6100.00,  500,  600, 0x00080,  664, "CUB", "E",   "WNA" },  //  -bcast Radio Habana Cuba
   {  6100.00,  600,  700, 0x00080,  664, "CUB", "E",   "WNA" },  //  -bcast Radio Habana Cuba
   {  6100.00,  700,  730, 0x00080,  664, "CUB", "EO",  "WNA" },  //  -bcast Radio Habana Cuba
@@ -4943,7 +4944,7 @@ dx_t eibi_db[] = {
   {  6100.00, 1830, 1930, 0x00080,   31, "GBR", "FS",  "IRN" },  //  -bcast BBC
   {  6100.00, 1950, 1800, 0x00080,  220, "KRE", "K",   "KRE" },  //  -bcast KCBS Pyongyang
   {  6100.00, 1700, 1730, 0x00080,   56, "SWZ", "YAO", "MOZ" },  //  -bcast Trans World Radio
-  {  6105.40, 1050,  300, 0x0fc80,  792, "BOL", "S",   "BOL" },  //  -bcast Radio Panamericana
+  {  6105.40, 1050,  300, 0x0fc80,  793, "BOL", "S",   "BOL" },  //  -bcast Radio Panamericana
   {  6105.00, 1000, 1230, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  6105.00, 1300, 1400, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  6105.00, 2200, 2400, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
@@ -4964,11 +4965,11 @@ dx_t eibi_db[] = {
   {  6110.00, 1600, 1700, 0x00080,  127, "CHN", "E",   "CHN" },  //  -bcast PBS Xizang
   {  6110.00, 1700, 1805, 0x00080,  127, "CHN", "TB",  "CHN" },  //  -bcast PBS Xizang
   {  6110.00, 2050, 2300, 0x00080,  127, "CHN", "TB",  "CHN" },  //  -bcast PBS Xizang
-  {  6110.00, 1600, 1630, 0x00080,  726, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
-  {  6110.00, 1700, 1730, 0x00080,  726, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
-  {  6110.00, 1500, 1530, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
-  {  6110.00, 1530, 1600, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
-  {  6110.00, 1630, 1700, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
+  {  6110.00, 1600, 1630, 0x00080,  727, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
+  {  6110.00, 1700, 1730, 0x00080,  727, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
+  {  6110.00, 1500, 1530, 0x00080,  728, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
+  {  6110.00, 1530, 1600, 0x00080,  728, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
+  {  6110.00, 1630, 1700, 0x00080,  728, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
   {  6110.00,  255, 2101, 0x00080,  107, "ETH", "AH",  "EAf" },  //  -bcast Radio Fana
   {  6110.00,  245,  300, 0x00080,   49, "IND", "E",   "SAs" },  //  -bcast AIR Delhi
   {  6110.00,  130,  225, 0x00080,  113, "IND", "HI",  "SAs" },  //  -bcast AIR Srinagar
@@ -4976,22 +4977,22 @@ dx_t eibi_db[] = {
   {  6110.00,  505, 1115, 0x00080,  113, "IND", "KS",  "SAs" },  //  -bcast AIR Srinagar
   {  6110.00, 2120, 2250, 0x00080,   44, "IRN", "TJ",  "CAs" },  //  -bcast IRIB Voice of I.R.Iran
   {  6115.00, 1300, 1500, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  {  6115.00,  515,  600, 0x00080,  793, "COG", "F",   "CAf" },  //  -bcast Radio Congo
-  {  6115.00,  600,  830, 0x00080,  793, "COG", "F",   "CAf" },  //  -bcast Radio Congo
-  {  6115.00, 1600, 1800, 0x00080,  793, "COG", "KT",  "CAf" },  //  -bcast Radio Congo
-  {  6115.00, 1800, 1840, 0x00080,  793, "COG", "F",   "CAf" },  //  -bcast Radio Congo
+  {  6115.00,  515,  600, 0x00080,  794, "COG", "F",   "CAf" },  //  -bcast Radio Congo
+  {  6115.00,  600,  830, 0x00080,  794, "COG", "F",   "CAf" },  //  -bcast Radio Congo
+  {  6115.00, 1600, 1800, 0x00080,  794, "COG", "KT",  "CAf" },  //  -bcast Radio Congo
+  {  6115.00, 1800, 1840, 0x00080,  794, "COG", "F",   "CAf" },  //  -bcast Radio Congo
   {  6115.00, 2200, 2230, 0x00080,  492, "CVA", "M",   "FE"  },  //  -bcast Radio Vaticana
-  {  6115.00,  800, 1200, 0x00080,  794, "GER", "D",   "Eu"  },  //  -bcast Radio SE-TA 2
-  {  6115.00, 1100, 1200, 0x00080,  794, "GER", "D",   "Eu"  },  //  -bcast Radio SE-TA 2
-  {  6115.00, 1400, 2300, 0x00080,  749, "HOL", "NL",  "WEu" },  //  -bcast Radio Europe
+  {  6115.00,  800, 1200, 0x00080,  795, "GER", "D",   "Eu"  },  //  -bcast Radio SE-TA 2
+  {  6115.00, 1100, 1200, 0x00080,  795, "GER", "D",   "Eu"  },  //  -bcast Radio SE-TA 2
+  {  6115.00, 1400, 2300, 0x00080,  750, "HOL", "NL",  "WEu" },  //  -bcast Radio Europe
   {  6115.00,    0,  800, 0x00080,  477, "JPN", "J",   "FE"  },  //  -bcast Radio Nikkei 2
   {  6115.00,  800, 1000, 0x0f880,  477, "JPN", "J",   "FE"  },  //  -bcast Radio Nikkei 2
   {  6115.00, 2330, 2400, 0x0f880,  477, "JPN", "J",   "FE"  },  //  -bcast Radio Nikkei 2
-  {  6115.00, 1651, 1835, 0x0fa80,  795, "NZL", "E",   "SOc" },  //  -bcast RNZI DIGITAL
-  {  6115.00, 1710, 1720, 0x0f880,  795, "NZL", "COK", "SOc" },  //  -bcast RNZI DIGITAL
-  {  6115.00, 1720, 1730, 0x00080,  795, "NZL", "F",   "SOc" },  //  -bcast RNZI DIGITAL
+  {  6115.00, 1651, 1835, 0x0fa80,  796, "NZL", "E",   "SOc" },  //  -bcast RNZI DIGITAL
+  {  6115.00, 1710, 1720, 0x0f880,  796, "NZL", "COK", "SOc" },  //  -bcast RNZI DIGITAL
+  {  6115.00, 1720, 1730, 0x00080,  796, "NZL", "F",   "SOc" },  //  -bcast RNZI DIGITAL
   {  6115.00, 2200, 2300, 0x0f880,  373, "USA", "E",   "NAm" },  //  -bcast Brother Stair
-  {  6115.00, 2200, 2230, 0x08880,  731, "USA", "S",   "NAm" },  //  -bcast Frecuencia al Día
+  {  6115.00, 2200, 2230, 0x08880,  732, "USA", "S",   "NAm" },  //  -bcast Frecuencia al Día
   {  6115.00, 1300, 1500, 0x00080,   51, "USA", "M",   "FE"  },  //  -bcast Voice of America
   {  6115.00, 2200, 2300, 0x00080,  629, "USA", "E",   "NAm" },  //  -bcast V.o.Report of the Week
   {  6115.00,    0,  200, 0x00080,  374, "USA", "E",   "NAm" },  //  -bcast WWCR 1 Nashville, TN
@@ -5046,26 +5047,26 @@ dx_t eibi_db[] = {
   {  6130.00, 1935, 2001, 0x00080,   56, "SWZ", "P",   "AGL" },  //  -bcast Trans World Radio
   {  6130.00, 2001, 2005, 0x00080,   56, "SWZ", "P",   "AGL" },  //  -bcast Trans World Radio
   {  6130.00, 1730, 1800, 0x00080,  648, "XUU", "",    "EEu" },  //  -bcast Unknown Station
-  {  6135.10,    0, 2400, 0x00080,  796, "BRA", "P",   "B"   },  //  -bcast Rádio Aparecida
-  {  6135.00, 2000, 2309, 0x00080,  797, "BOL", "S",   "BOL" },  //  -bcast Radio Santa Cruz
+  {  6135.10,    0, 2400, 0x00080,  797, "BRA", "P",   "B"   },  //  -bcast Rádio Aparecida
+  {  6135.00, 2000, 2309, 0x00080,  798, "BOL", "S",   "BOL" },  //  -bcast Radio Santa Cruz
   {  6135.00, 2100, 2200, 0x00080,   52, "CHN", "HR",  "SEu" },  //  -bcast China Radio Int.
   {  6135.00, 2100, 2200, 0x00080,   53, "CHN", "HR",  "SEu" },  //  -bcast CRI Music
   {  6135.00,  458, 1505, 0x00080,  657, "MDG", "MSY", "MDG" },  //  -bcast Radio Madagasikara
-  {  6140.00,  700, 2000, 0x00080,  798, "BEL", "",    "Eu"  },  //  -bcast Radio Onda
-  {  6140.00,  700, 2000, 0x00080,  798, "BEL", "",    "Eu"  },  //  -bcast Radio Onda
+  {  6140.00,  700, 2000, 0x00080,  799, "BEL", "",    "Eu"  },  //  -bcast Radio Onda
+  {  6140.00,  700, 2000, 0x00080,  799, "BEL", "",    "Eu"  },  //  -bcast Radio Onda
   {  6140.00, 1700, 1800, 0x00080,   52, "CHN", "E",   "SAs" },  //  -bcast China Radio Int.
   {  6140.00, 2200, 2300, 0x00080,   52, "CHN", "M",   "SEA" },  //  -bcast China Radio Int.
   {  6140.00, 2300, 2400, 0x00080,   52, "CHN", "CA",  "SEA" },  //  -bcast China Radio Int.
   {  6140.00, 2300, 2400, 0x00080,   53, "CHN", "CA",  "SEA" },  //  -bcast CRI Music
-  {  6140.00,  800,  900, 0x00080,  799, "GER", "D",   "Eu"  },  //  -bcast Welle 370
+  {  6140.00,  800,  900, 0x00080,  800, "GER", "D",   "Eu"  },  //  -bcast Welle 370
   {  6140.00,  400,  500, 0x0f880,   51, "USA", "ZWE", "ZWE" },  //  -bcast Voice of America
   {  6145.00, 1400, 1700, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
-  {  6145.00, 1500, 1805, 0x00080,  800, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
-  {  6145.00, 1520, 1530, 0x0f880,  800, "CHN", "E,R", "CHN" },  //  -bcast China National Radio 17
-  {  6145.00, 1720, 1730, 0x0f880,  800, "CHN", "E,R", "CHN" },  //  -bcast China National Radio 17
-  {  6145.00,  600,  900, 0x0be80,  767, "CHN", "M",   "CHN" },  //  -bcast PBS Qinghai
-  {  6145.00,  900, 1600, 0x00080,  767, "CHN", "M",   "CHN" },  //  -bcast PBS Qinghai
-  {  6145.00, 2140,  600, 0x00080,  767, "CHN", "M",   "CHN" },  //  -bcast PBS Qinghai
+  {  6145.00, 1500, 1805, 0x00080,  801, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
+  {  6145.00, 1520, 1530, 0x0f880,  801, "CHN", "E,R", "CHN" },  //  -bcast China National Radio 17
+  {  6145.00, 1720, 1730, 0x0f880,  801, "CHN", "E,R", "CHN" },  //  -bcast China National Radio 17
+  {  6145.00,  600,  900, 0x0be80,  768, "CHN", "M",   "CHN" },  //  -bcast PBS Qinghai
+  {  6145.00,  900, 1600, 0x00080,  768, "CHN", "M",   "CHN" },  //  -bcast PBS Qinghai
+  {  6145.00, 2140,  600, 0x00080,  768, "CHN", "M",   "CHN" },  //  -bcast PBS Qinghai
   {  6145.00,    0,  100, 0x00080,  664, "CUB", "E",   "CNA" },  //  -bcast Radio Habana Cuba
   {  6145.00,  100,  500, 0x00080,  664, "CUB", "E",   "CNA" },  //  -bcast Radio Habana Cuba
   {  6145.00,  500,  600, 0x00080,  664, "CUB", "E",   "CNA" },  //  -bcast Radio Habana Cuba
@@ -5074,19 +5075,19 @@ dx_t eibi_db[] = {
   {  6145.00, 1900, 2000, 0x00080,  116, "KOR", "F",   "WEu" },  //  -bcast KBS World Radio
   {  6145.00, 1400, 1700, 0x00080,  111, "TWN", "M",   "CHN" },  //  -bcast Radio Taiwan Int.
   {  6150.00, 2200, 2400, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  {  6150.00,  800, 1600, 0x00080,  801, "GER", "D",   "Eu"  },  //  -bcast Europa24
+  {  6150.00,  800, 1600, 0x00080,  802, "GER", "D",   "Eu"  },  //  -bcast Europa24
   {  6150.00,   20,  120, 0x00080,   44, "IRN", "TU",  "ME"  },  //  -bcast IRIB Voice of I.R.Iran
   {  6150.00, 1800, 1830, 0x00080,   72, "PHL", "TIG", "EAf" },  //  -bcast FEBC Manila
   {  6150.00, 1730, 1800, 0x00080,   51, "USA", "BR",  "SEA" },  //  -bcast Voice of America
-  {  6155.00, 1430, 1445, 0x08880,  802, "AUS", "K",   "FE"  },  //  -bcast Reach Beyond Australia
-  {  6155.00, 1430, 1500, 0x07680,  802, "AUS", "K",   "FE"  },  //  -bcast Reach Beyond Australia
-  {  6155.00, 1445, 1500, 0x08880,  802, "AUS", "E",   "FE"  },  //  -bcast Reach Beyond Australia
-  {  6155.00,  500,  610, 0x00080,  803, "AUT", "D",   "Eu"  },  //  -bcast Radio Austria Int.
-  {  6155.00,  610,  620, 0x0f880,  803, "AUT", "D",   "Eu"  },  //  -bcast Radio Austria Int.
+  {  6155.00, 1430, 1445, 0x08880,  803, "AUS", "K",   "FE"  },  //  -bcast Reach Beyond Australia
+  {  6155.00, 1430, 1500, 0x07680,  803, "AUS", "K",   "FE"  },  //  -bcast Reach Beyond Australia
+  {  6155.00, 1445, 1500, 0x08880,  803, "AUS", "E",   "FE"  },  //  -bcast Reach Beyond Australia
+  {  6155.00,  500,  610, 0x00080,  804, "AUT", "D",   "Eu"  },  //  -bcast Radio Austria Int.
+  {  6155.00,  610,  620, 0x0f880,  804, "AUT", "D",   "Eu"  },  //  -bcast Radio Austria Int.
   {  6155.00, 1000, 1605, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   {  6155.00, 2055,  100, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
-  {  6155.00, 1700, 1730, 0x00080,  726, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
-  {  6155.00, 1630, 1700, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
+  {  6155.00, 1700, 1730, 0x00080,  727, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
+  {  6155.00, 1630, 1700, 0x00080,  728, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
   {  6155.00,    0,  100, 0x00080,   31, "GBR", "E",   "SAs" },  //  -bcast BBC
   {  6155.00, 1900, 2000, 0x00080,   31, "GBR", "E",   "SAf" },  //  -bcast BBC
   {  6155.00, 2000, 2100, 0x06480,   31, "GBR", "E",   "SAf" },  //  -bcast BBC
@@ -5094,12 +5095,12 @@ dx_t eibi_db[] = {
   {  6155.00,  800,  900, 0x00080,  116, "KOR", "J",   "FE"  },  //  -bcast KBS World Radio
   {  6155.00,  900, 1000, 0x00080,  116, "KOR", "J",   "FE"  },  //  -bcast KBS World Radio
   {  6155.00,  430,  500, 0x00080,  137, "USA", "F",   "NAf" },  //  -bcast Adventist World Radio
-  {  6155.00, 1630, 1730, 0x00080,  804, "USA", "E",   "SAs" },  //  -bcast PanAmerican Broadc.
+  {  6155.00, 1630, 1730, 0x00080,  805, "USA", "E",   "SAs" },  //  -bcast PanAmerican Broadc.
   {  6155.00,  330,  430, 0x00080,   51, "USA", "KNK", "EAf" },  //  -bcast Voice of America
   {  6160.00, 2230, 2300, 0x00080,  371, "AUS", "E",   "NAm" },  //  -bcast Hobart Radio Int.
-  {  6160.10,  900, 1400, 0x00080,  805, "BRA", "P",   "SAm" },  //  -bcast Rádio Rio Mar
-  {  6160.30, 1015, 1040, 0x00080,  806, "BRA", "P",   "B"   },  //  -bcast R.Boa Vontade, P.Alegre
-  {  6160.30, 1040, 2300, 0x00080,  806, "BRA", "P",   "B"   },  //  -bcast R.Boa Vontade, P.Alegre
+  {  6160.10,  900, 1400, 0x00080,  806, "BRA", "P",   "SAm" },  //  -bcast Rádio Rio Mar
+  {  6160.30, 1015, 1040, 0x00080,  807, "BRA", "P",   "B"   },  //  -bcast R.Boa Vontade, P.Alegre
+  {  6160.30, 1040, 2300, 0x00080,  807, "BRA", "P",   "B"   },  //  -bcast R.Boa Vontade, P.Alegre
   {  6160.00,  700, 1500, 0x00080,  485, "GER", "E",   "WEu" },  //  -bcast Shortwave Radio
   {  6160.00,  800,  900, 0x00080,  485, "GER", "I",   "WEu" },  //  -bcast Shortwave Radio
   {  6160.00, 1400, 1500, 0x00080,  485, "GER", "I",   "WEu" },  //  -bcast Shortwave Radio
@@ -5134,19 +5135,19 @@ dx_t eibi_db[] = {
   {  6165.00,  100,  500, 0x00080,  664, "CUB", "E",   "CNA" },  //  -bcast Radio Habana Cuba
   {  6165.00,  500,  600, 0x00080,  664, "CUB", "E",   "CNA" },  //  -bcast Radio Habana Cuba
   {  6165.00,  600,  700, 0x00080,  664, "CUB", "E",   "CNA" },  //  -bcast Radio Habana Cuba
-  {  6165.00, 1000, 1100, 0x00080,  791, "GER", "D",   "Eu"  },  //  -bcast SE-TA2
+  {  6165.00, 1000, 1100, 0x00080,  792, "GER", "D",   "Eu"  },  //  -bcast SE-TA2
   {  6165.00,  430,  500, 0x00080,   93, "JPN", "R",   "EEu" },  //  -bcast NHK Radio Japan
-  {  6165.00, 1600, 1630, 0x0a280,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  6165.00, 1600, 1630, 0x00c80,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  6165.00, 1600, 1630, 0x00080,  743, "JPN", "M",   "KRE" },  //  -bcast Shiokaze
-  {  6165.00, 1600, 1700, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  6165.00, 1630, 1700, 0x0a480,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  6165.00, 1630, 1700, 0x04a80,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  6165.00, 1600, 1630, 0x04680,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  6165.00, 1600, 1700, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  6165.00, 1600, 1700, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  6165.00, 1600, 1700, 0x01880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  6165.00, 1630, 1700, 0x04680,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  6165.00, 1600, 1630, 0x0a280,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  6165.00, 1600, 1630, 0x00c80,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  6165.00, 1600, 1630, 0x00080,  744, "JPN", "M",   "KRE" },  //  -bcast Shiokaze
+  {  6165.00, 1600, 1700, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  6165.00, 1630, 1700, 0x0a480,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  6165.00, 1630, 1700, 0x04a80,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  6165.00, 1600, 1630, 0x04680,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  6165.00, 1600, 1700, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  6165.00, 1600, 1700, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  6165.00, 1600, 1700, 0x01880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  6165.00, 1630, 1700, 0x04680,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
   {  6165.00,   30,  130, 0x00080,   66, "MYA", "KC",  "SEA" },  //  -bcast Thazin Radio
   {  6165.00,  230,  330, 0x00080,   66, "MYA", "MON", "SEA" },  //  -bcast Thazin Radio
   {  6165.00,  930, 1430, 0x00080,   66, "MYA", "BR",  "SEA" },  //  -bcast Thazin Radio
@@ -5157,7 +5158,7 @@ dx_t eibi_db[] = {
   {  6165.00, 1830, 1900, 0x00080,   56, "SWZ", "KUN", "ERI" },  //  -bcast Trans World Radio
   {  6165.00, 1830, 1900, 0x00080,   56, "SWZ", "TIG", "ERI" },  //  -bcast Trans World Radio
   {  6165.00, 1845, 1900, 0x00080,   56, "SWZ", "TIG", "ERI" },  //  -bcast Trans World Radio
-  {  6165.00,  300,  400, 0x00080,  753, "TUR", "E",   "ME"  },  //  -bcast Voice of Turkey
+  {  6165.00,  300,  400, 0x00080,  754, "TUR", "E",   "ME"  },  //  -bcast Voice of Turkey
   {  6165.00,  130,  200, 0x00080,   78, "VTN", "DAO", "VTN" },  //  -bcast Voice of Vietnam 4
   {  6165.00, 1145, 1200, 0x00080,   78, "VTN", "VN",  "SEA" },  //  -bcast Voice of Vietnam 4
   {  6165.00, 1230, 1330, 0x00080,   78, "VTN", "HM",  "VTN" },  //  -bcast Voice of Vietnam 4
@@ -5175,8 +5176,8 @@ dx_t eibi_db[] = {
   {  6170.00, 1900, 2200, 0x00080,  141, "FIN", "FI",  "Eu"  },  //  -bcast Scandinavian Weekend R.
   {  6170.00, 2130, 2145, 0x00080,   31, "GBR", "E",   "ATA" },  //  -bcast BBC
   {  6170.00, 2130, 2200, 0x00080,   31, "GBR", "E",   "ATA" },  //  -bcast BBC
-  {  6170.00,    0, 2400, 0x00080,  749, "HOL", "NL",  "WEu" },  //  -bcast Radio Europe
-  {  6170.00, 1500, 2300, 0x00080,  749, "HOL", "NL",  "WEu" },  //  -bcast Radio Europe
+  {  6170.00,    0, 2400, 0x00080,  750, "HOL", "NL",  "WEu" },  //  -bcast Radio Europe
+  {  6170.00, 1500, 2300, 0x00080,  750, "HOL", "NL",  "WEu" },  //  -bcast Radio Europe
   {  6170.00, 1000, 1100, 0x00080,   58, "KRE", "E",   "LAm" },  //  -bcast Voice of Korea
   {  6170.00, 1100, 1200, 0x00080,   58, "KRE", "F",   "LAm" },  //  -bcast Voice of Korea
   {  6170.00, 1200, 1300, 0x00080,   59, "KRE", "K",   "LAm" },  //  -bcast Voice of Korea KCBS
@@ -5187,39 +5188,39 @@ dx_t eibi_db[] = {
   {  6170.00, 1800, 1900, 0x00080,   58, "KRE", "D",   "Eu"  },  //  -bcast Voice of Korea
   {  6170.00, 1900, 2000, 0x00080,   58, "KRE", "D",   "Eu"  },  //  -bcast Voice of Korea
   {  6170.00, 2000, 2100, 0x00080,   59, "KRE", "K",   "Eu"  },  //  -bcast Voice of Korea KCBS
-  {  6170.00, 1259, 1650, 0x00080,  761, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
-  {  6170.00, 1650, 1858, 0x00080,  761, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
+  {  6170.00, 1259, 1650, 0x00080,  762, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
+  {  6170.00, 1650, 1858, 0x00080,  762, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
   {  6170.00,  400,  500, 0x0f880,   51, "USA", "ZWE", "ZWE" },  //  -bcast Voice of America
   {  6170.00, 1900, 2000, 0x00080,   51, "USA", "KU",  "ME"  },  //  -bcast Voice of America
-  {  6173.90, 1040,  300, 0x00080,  807, "PRU", "S,Q", "PRU" },  //  -bcast Radio Tawantinsuyo
+  {  6173.90, 1040,  300, 0x00080,  808, "PRU", "S,Q", "PRU" },  //  -bcast Radio Tawantinsuyo
   {  6175.00,  900, 1805, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  6175.00, 2023, 2400, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  6175.00, 1600, 1700, 0x00080,   52, "CHN", "E",   "SEA" },  //  -bcast China Radio Int.
   {  6175.00, 1700, 1800, 0x00080,   52, "CHN", "E",   "SEA" },  //  -bcast China Radio Int.
   {  6175.00, 2200, 2300, 0x00080,   53, "CHN", "P",   "Eu"  },  //  -bcast CRI Music
   {  6175.00, 1520, 1620, 0x00080,   44, "IRN", "UR",  "SAs" },  //  -bcast IRIB Voice of I.R.Iran
-  {  6180.00, 1000, 1400, 0x00080,  808, "BRA", "P",   "B"   },  //  -bcast Rádio Nacional Amazônia
-  {  6180.00, 1900,  305, 0x00080,  808, "BRA", "P",   "B"   },  //  -bcast Rádio Nacional Amazônia
-  {  6180.00, 1200, 1500, 0x00080,  800, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
-  {  6180.00, 1220, 1232, 0x00080,  800, "CHN", "E,R", "CHN" },  //  -bcast China National Radio 17
+  {  6180.00, 1000, 1400, 0x00080,  809, "BRA", "P",   "B"   },  //  -bcast Rádio Nacional Amazônia
+  {  6180.00, 1900,  305, 0x00080,  809, "BRA", "P",   "B"   },  //  -bcast Rádio Nacional Amazônia
+  {  6180.00, 1200, 1500, 0x00080,  801, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
+  {  6180.00, 1220, 1232, 0x00080,  801, "CHN", "E,R", "CHN" },  //  -bcast China National Radio 17
   {  6180.00,    0,  100, 0x00080,   52, "CHN", "E",   "SAs" },  //  -bcast China Radio Int.
   {  6180.00,  100,  200, 0x00080,   52, "CHN", "E",   "SAs" },  //  -bcast China Radio Int.
   {  6180.00, 2300, 2400, 0x00080,   52, "CHN", "E",   "SAs" },  //  -bcast China Radio Int.
   {  6180.00, 1000, 1600, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  {  6180.00,  555,  635, 0x00080,  739, "GER", "D",   "Eu"  },  //  -bcast DWD Pinneberg
-  {  6180.00, 1155, 1235, 0x00080,  739, "GER", "D",   "Eu"  },  //  -bcast DWD Pinneberg
-  {  6180.00, 1555, 1635, 0x00080,  739, "GER", "D",   "Eu"  },  //  -bcast DWD Pinneberg
-  {  6180.00, 1955, 2035, 0x00080,  739, "GER", "D",   "Eu"  },  //  -bcast DWD Pinneberg
-  {  6180.00, 1700, 2045, 0x00080,  809, "FRA", "F",   "WEu" },  //  -bcast Radio Andorra Tribute
-  {  6180.00, 1700, 2000, 0x00080,  809, "FRA", "F",   "WEu" },  //  -bcast Radio Andorra Tribute
-  {  6180.00,  300,  400, 0x00080,  810, "MDG", "S",   "SAm" },  //  -bcast MWV La Voz Alegre
+  {  6180.00,  555,  635, 0x00080,  740, "GER", "D",   "Eu"  },  //  -bcast DWD Pinneberg
+  {  6180.00, 1155, 1235, 0x00080,  740, "GER", "D",   "Eu"  },  //  -bcast DWD Pinneberg
+  {  6180.00, 1555, 1635, 0x00080,  740, "GER", "D",   "Eu"  },  //  -bcast DWD Pinneberg
+  {  6180.00, 1955, 2035, 0x00080,  740, "GER", "D",   "Eu"  },  //  -bcast DWD Pinneberg
+  {  6180.00, 1700, 2045, 0x00080,  810, "FRA", "F",   "WEu" },  //  -bcast Radio Andorra Tribute
+  {  6180.00, 1700, 2000, 0x00080,  810, "FRA", "F",   "WEu" },  //  -bcast Radio Andorra Tribute
+  {  6180.00,  300,  400, 0x00080,  811, "MDG", "S",   "SAm" },  //  -bcast MWV La Voz Alegre
   {  6180.00, 1000, 1100, 0x00080,  111, "TWN", "M",   "CHN" },  //  -bcast Radio Taiwan Int.
   {  6180.00, 1100, 1200, 0x00080,  111, "TWN", "M",   "CHN" },  //  -bcast Radio Taiwan Int.
   {  6180.00, 1200, 1300, 0x00080,  111, "TWN", "M",   "CHN" },  //  -bcast Radio Taiwan Int.
   {  6180.00, 1300, 1400, 0x00080,  111, "TWN", "M",   "CHN" },  //  -bcast Radio Taiwan Int.
   {  6180.00, 1400, 1500, 0x00080,  111, "TWN", "M",   "CHN" },  //  -bcast Radio Taiwan Int.
   {  6180.00, 1500, 1600, 0x00080,  111, "TWN", "M",   "CHN" },  //  -bcast Radio Taiwan Int.
-  {  6180.00, 1830, 1900, 0x00080,  811, "USA", "A",   "ME"  },  //  -bcast Follow the Bible Min.
+  {  6180.00, 1830, 1900, 0x00080,  812, "USA", "A",   "ME"  },  //  -bcast Follow the Bible Min.
   {  6180.00,  500,  530, 0x00080,   51, "USA", "HA",  "WAf" },  //  -bcast Voice of America
   {  6180.00,  530,  630, 0x0f880,   51, "USA", "F",   "WAf" },  //  -bcast Voice of America
   {  6180.00, 1830, 1900, 0x00080,   51, "USA", "F",   "Af"  },  //  -bcast Voice of America
@@ -5245,7 +5246,7 @@ dx_t eibi_db[] = {
   {  6190.00, 1330, 1400, 0x00080,   93, "JPN", "M",   "FE"  },  //  -bcast NHK Radio Japan
   {  6190.00, 1400, 1430, 0x00080,   93, "JPN", "K",   "FE"  },  //  -bcast NHK Radio Japan
   {  6190.00, 1430, 1500, 0x00080,   93, "JPN", "M",   "FE"  },  //  -bcast NHK Radio Japan
-  {  6190.00,  430,  500, 0x00080,  740, "ROU", "R",   "EEu" },  //  -bcast Radio Romania Int.
+  {  6190.00,  430,  500, 0x00080,  741, "ROU", "R",   "EEu" },  //  -bcast Radio Romania Int.
   {  6190.00, 1100, 1110, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  6190.00, 1100, 1110, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  6195.00,   30,  100, 0x00080,   31, "GBR", "DR",  "AFG" },  //  -bcast BBC
@@ -5277,12 +5278,12 @@ dx_t eibi_db[] = {
   {  6200.00, 1600, 1700, 0x00080,  127, "CHN", "E",   "CHN" },  //  -bcast PBS Xizang
   {  6200.00, 1700, 1805, 0x00080,  127, "CHN", "TB",  "CHN" },  //  -bcast PBS Xizang
   {  6200.00, 2050, 2300, 0x00080,  127, "CHN", "TB",  "CHN" },  //  -bcast PBS Xizang
-  {  6200.00, 1228, 1228, 0x00080,  812, "CHN", "C",   "TWN" },  //  -bcast Voice of Jinling
-  {  6200.00, 1230, 1505, 0x00080,  812, "CHN", "C",   "TWN" },  //  -bcast Voice of Jinling
-  {  6205.00,    0, 2400, 0x00080,  813, "IRL", "E",   "Eu"  },  //  -bcast Laser Hot Hits
-  {  6205.00,    0, 2400, 0x00080,  814, "VEN", "S",   "Am"  },  //  -bcast ROCV LV del Tigre 980
-  {  6205.00,    0, 2400, 0x00080,  814, "VEN", "S",   "Am"  },  //  -bcast ROCV LV del Tigre 980
-  {  6210.00, 2300, 2400, 0x00080,  815, "CHL", "S",   "SAm" },  //  -bcast RCI Radio Chile
+  {  6200.00, 1228, 1228, 0x00080,  813, "CHN", "C",   "TWN" },  //  -bcast Voice of Jinling
+  {  6200.00, 1230, 1505, 0x00080,  813, "CHN", "C",   "TWN" },  //  -bcast Voice of Jinling
+  {  6205.00,    0, 2400, 0x00080,  814, "IRL", "E",   "Eu"  },  //  -bcast Laser Hot Hits
+  {  6205.00,    0, 2400, 0x00080,  815, "VEN", "S",   "Am"  },  //  -bcast ROCV LV del Tigre 980
+  {  6205.00,    0, 2400, 0x00080,  815, "VEN", "S",   "Am"  },  //  -bcast ROCV LV del Tigre 980
+  {  6210.00, 2300, 2400, 0x00080,  816, "CHL", "S",   "SAm" },  //  -bcast RCI Radio Chile
   {  6210.00, 2200, 2300, 0x00080,  103, "FRA", "P",   "B"   },  //  -bcast Radio France Int.
   {  6210.20,    0, 2400, 0x000d2,  194, "ITL", "",    "SEu" },  // -milcom IDN Ital.Navy STANAG
   {  6215.00,    0, 2400, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
@@ -5291,21 +5292,21 @@ dx_t eibi_db[] = {
   {  6215.00, 1500, 1510, 0x00132,  636, "KOR", "K",   "Oc"  },  //    -spy V24 Numbers Station
   {  6215.00, 1500, 1510, 0x00132,  636, "KOR", "K",   "Oc"  },  //    -spy V24 Numbers Station
   {  6215.00,    0, 2400, 0x00112,  200, "TON", "E",   "SOc" },  //   -aero A3A Nukualofa Radio
-  {  6215.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6215.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6215.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6215.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6215.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6215.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6215.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6215.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6215.00, 1700, 2000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6215.00, 2000, 2100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6215.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6215.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6215.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6215.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6216.00,    0, 2400, 0x00092,  814, "VEN", "S",   "Am"  },  //   -util ROCV LV del Tigre 980
+  {  6215.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6215.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6215.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6215.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6215.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6215.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6215.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6215.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6215.00, 1700, 2000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6215.00, 2000, 2100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6215.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6215.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6215.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6215.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6216.00,    0, 2400, 0x00092,  815, "VEN", "S",   "Am"  },  //   -util ROCV LV del Tigre 980
   {  6218.60,  235,  300, 0x00112,  234, "CAN", "E",   "NAm" },  //   -aero VFF Iqaluit Radio
   {  6218.60, 1435, 1500, 0x00112,  234, "CAN", "E",   "NAm" },  //   -aero VFF Iqaluit Radio
   {  6218.60, 1705, 1745, 0x00112,  234, "CAN", "E",   "NAm" },  //   -aero VFF Iqaluit Radio
@@ -5334,26 +5335,26 @@ dx_t eibi_db[] = {
   {  6227.00, 2145, 2200, 0x00112,  235, "AUS", "E",   "Tas" },  //   -aero VMT Hobart Radio Wx
   {  6227.00, 2303, 2318, 0x00112,  235, "AUS", "E",   "Tas" },  //   -aero VMT Hobart Radio Wx
   {  6227.60,    0, 2400, 0x000d2,  261, "FRA", "F",   "NAO" },  // -milcom FUE French Navy STANAG
-  {  6230.00,    0, 2400, 0x200b2,  817, "AUS", "",    "AUS" },  //    -ale Australian MHFCS ALE
+  {  6230.00,    0, 2400, 0x200b2,  818, "AUS", "",    "AUS" },  //    -ale Australian MHFCS ALE
   {  6230.00, 1000, 2300, 0x00092,  195, "AUS", "E",   "AUS" },  //   -util VMW Wiluna WA
   {  6230.00,    0, 2400, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
   {  6230.00,  705,  720, 0x00122,  514, "NZL", "E",   "SOc" },  // -marine Pacific Maritime Radio
-  {  6230.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6230.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6230.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6230.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6230.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6230.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6230.00, 1500, 1600, 0x00092,  816, "TWN", "CA",  "FE"  },  //   -util Sound of Hope
-  {  6230.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6230.00, 1700, 2000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6230.00, 2000, 2100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6230.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6230.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6230.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6230.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6230.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6230.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6230.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6230.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6230.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6230.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6230.00, 1500, 1600, 0x00092,  817, "TWN", "CA",  "FE"  },  //   -util Sound of Hope
+  {  6230.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6230.00, 1700, 2000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6230.00, 2000, 2100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6230.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6230.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6230.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6230.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  6233.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
-  {  6240.00, 1200, 1300, 0x00092,  777, "CAN", "UR",  "PAK" },  //   -util Bible Voice
+  {  6240.00, 1200, 1300, 0x00092,  778, "CAN", "UR",  "PAK" },  //   -util Bible Voice
   {  6240.00,    0, 2400, 0x200b2,  570, "JOR", "",    "JOR" },  //    -ale Jordan Address ALE Net
   {  6240.00,    0, 2400, 0x00112,  385, "TKM", "E",   "CAs" },  //   -aero Ashgabat Aero
   {  6240.00,    0, 2400, 0x00112,  612, "TKM", "E",   "CAs" },  //   -aero Dashoguz Aero
@@ -5367,7 +5368,7 @@ dx_t eibi_db[] = {
   {  6245.00, 1450, 1500, 0x0f892,  488, "CLA", "E",   "KRE" },  //   -util Echo of Hope VOH (EBS)
   {  6245.00, 1850, 1900, 0x0f892,  488, "CLA", "E",   "KRE" },  //   -util Echo of Hope VOH (EBS)
   {  6245.00, 2250, 2300, 0x0f892,  488, "CLA", "E",   "KRE" },  //   -util Echo of Hope VOH (EBS)
-  {  6248.00,    0, 2400, 0x00092,  818, "VEN", "S",   "VEN" },  //   -util Venezuela Navy
+  {  6248.00,    0, 2400, 0x00092,  819, "VEN", "S",   "VEN" },  //   -util Venezuela Navy
   {  6250.00,  800,  100, 0x00092,  487, "CLA", "K",   "KRE" },  //   -util Echo of Hope VOH
   {  6250.00,  930,  950, 0x00092,  487, "CLA", "E",   "KRE" },  //   -util Echo of Hope VOH
   {  6250.00, 1330, 1350, 0x00092,  487, "CLA", "E",   "KRE" },  //   -util Echo of Hope VOH
@@ -5398,67 +5399,67 @@ dx_t eibi_db[] = {
   {  6278.00,    0, 2400, 0x200e4,  282, "ISR", "-CW", ""    },  //     -cw 4XZ Israeli Navy Haifa
   {  6280.00,    0, 2400, 0x200b2,  475, "BIH", "",    "BIH" },  //    -ale Bosnian Emergency ALE
   {  6280.00,    0, 2400, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  {  6280.00,    0, 2400, 0x00092,  813, "IRL", "E",   "Eu"  },  //   -util Laser Hot Hits
+  {  6280.00,    0, 2400, 0x00092,  814, "IRL", "E",   "Eu"  },  //   -util Laser Hot Hits
   {  6280.00,  435,  445, 0x00b32,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  6280.00, 1700, 1710, 0x05132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  6280.00, 1100, 1105, 0x06132,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
-  {  6280.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6280.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6280.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6280.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6280.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6280.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6280.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6280.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6280.00, 1700, 2000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6280.00, 2000, 2100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6280.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6280.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6280.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6280.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6280.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6280.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6280.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6280.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6280.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6280.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6280.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6280.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6280.00, 1700, 2000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6280.00, 2000, 2100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6280.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6280.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6280.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6280.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  6295.20,    0, 2400, 0x000d2,  219, "ITL", "I",   "SEu" },  // -milcom IDR Ny Roma STANAG
-  {  6295.00,    0, 2400, 0x00092,  819, "IRL", "E",   "Eu"  },  //   -util Reflections Europe
-  {  6300.00,    0, 2400, 0x200b2,  820, "GHA", "",    "GHA" },  //    -ale Ghana Navy ALE
+  {  6295.00,    0, 2400, 0x00092,  820, "IRL", "E",   "Eu"  },  //   -util Reflections Europe
+  {  6300.00,    0, 2400, 0x200b2,  821, "GHA", "",    "GHA" },  //    -ale Ghana Navy ALE
   {  6304.00, 1205, 1215, 0x06132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
-  {  6304.00,  915,  920, 0x03132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  {  6304.00,  915,  920, 0x03132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   {  6304.00, 1830, 1835, 0x09132,  639, "POL", "-TY", ""    },  //    -spy F03l Polish Spy Numbers
   {  6304.00,  500,  505, 0x00132,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
   {  6310.00, 1530, 1540, 0x00132,  636, "KOR", "K",   "Oc"  },  //    -spy V24 Numbers Station
   {  6310.00, 1530, 1540, 0x00132,  636, "KOR", "K",   "Oc"  },  //    -spy V24 Numbers Station
   {  6310.00, 1530, 1540, 0x00132,  636, "KOR", "K",   "Oc"  },  //    -spy V24 Numbers Station
-  {  6314.00,  140,  150, 0x00092,  821, "USA", "",    "ENA" },  //   -util NMF NAVTEX Boston MA
+  {  6314.00,  140,  150, 0x00092,  822, "USA", "",    "ENA" },  //   -util NMF NAVTEX Boston MA
   {  6315.00,  910,  920, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
-  {  6316.20,    0, 2400, 0x000d2,  822, "ITL", "I",   "SEu" },  // -milcom IDR Ny Roma
+  {  6316.20,    0, 2400, 0x000d2,  823, "ITL", "I",   "SEu" },  // -milcom IDR Ny Roma
   {  6320.00,    0, 2400, 0x200b2,  566, "SVK", "",    "SVK" },  //    -ale Slovak Military ALE
   {  6320.00,  710,  720, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
-  {  6321.50,    0, 2400, 0x00112,  823, "GRC", "-CW", "SEu" },  //   -aero SVO Olimpia Radio
+  {  6321.50,    0, 2400, 0x00112,  824, "GRC", "-CW", "SEu" },  //   -aero SVO Olimpia Radio
   {  6324.00,    0, 2400, 0x200b2,  555, "AZE", "",    "Cau" },  //    -ale Azeri Emergency ALE
   {  6326.00,    0, 2400, 0x00112,  523, "CHN", "-TY", "FE"  },  //   -aero XSG Shanghai Radio
-  {  6328.50,  330,  500, 0x20102,  824, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
+  {  6328.50,  330,  500, 0x20102,  825, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
   {  6329.00,    0, 2400, 0x00112,  521, "CHN", "-TY", "FE"  },  //   -aero XSQ Guangzhou Radio
   {  6330.00,    0, 2400, 0x200b2,  465, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
   {  6332.00,    0, 2400, 0x000d2,  219, "ITL", "",    "SEu" },  // -milcom IDR Ny Roma STANAG
   {  6335.20,    0, 2400, 0x000d2,  251, "FRA", "F",   "Eu"  },  // -milcom FUG French Navy STANAG
   {  6337.00,    0, 2400, 0x200b2,  643, "KGZ", "",    "KGZ" },  //    -ale Kyrgyz Military ALE
-  {  6340.20,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6340.20,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6340.20,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6340.20, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6340.20, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6340.20, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6340.20, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6340.20, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6340.20, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6340.20, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6340.20, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6340.20, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6340.20,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6340.20,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6340.20,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6340.20, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6340.20, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6340.20, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6340.20, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6340.20, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6340.20, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6340.20, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6340.20, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6340.20, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  6340.50,  230,  505, 0x20102,  527, "USA", "",    "ENA" },  //    -fax NMF Fax Boston MA
   {  6340.50,  745, 1040, 0x20102,  527, "USA", "",    "ENA" },  //    -fax NMF Fax Boston MA
   {  6340.50, 1400, 1600, 0x20102,  527, "USA", "",    "ENA" },  //    -fax NMF Fax Boston MA
   {  6340.50, 1720, 2251, 0x20102,  527, "USA", "",    "ENA" },  //    -fax NMF Fax Boston MA
   {  6342.00,    0, 2400, 0x200e4,    1, "RUS", "-CW", "RUS" },  //     -cw RDL Russian Navy
   {  6343.20,    0, 2400, 0x000d2,  194, "ITL", "",    "SEu" },  // -milcom IDN Ital.Navy STANAG
-  {  6346.00,    0, 2400, 0x200e4,  825, "RUS", "-CW", "RUS" },  //     -cw RIT Russian Navy
+  {  6346.00,    0, 2400, 0x200e4,  826, "RUS", "-CW", "RUS" },  //     -cw RIT Russian Navy
   {  6348.00,  500,  800, 0x00092,  487, "CLA", "K",   "KRE" },  //   -util Echo of Hope VOH
   {  6348.00,  800,  100, 0x00092,  487, "CLA", "K",   "KRE" },  //   -util Echo of Hope VOH
   {  6348.00,  930,  950, 0x00092,  487, "CLA", "E",   "KRE" },  //   -util Echo of Hope VOH
@@ -5480,7 +5481,7 @@ dx_t eibi_db[] = {
   {  6350.00, 1450, 1500, 0x0f892,  488, "CLA", "E",   "KRE" },  //   -util Echo of Hope VOH (EBS)
   {  6350.00, 1850, 1900, 0x0f892,  488, "CLA", "E",   "KRE" },  //   -util Echo of Hope VOH (EBS)
   {  6350.00, 2250, 2300, 0x0f892,  488, "CLA", "E",   "KRE" },  //   -util Echo of Hope VOH (EBS)
-  {  6351.00,    0, 2400, 0x200e4,  826, "USA", "-CW", "Car" },  //     -cw WHL St Augustine, FL
+  {  6351.00,    0, 2400, 0x200e4,  827, "USA", "-CW", "Car" },  //     -cw WHL St Augustine, FL
   {  6355.00,  500,  800, 0x00092,  487, "CLA", "K",   "KRE" },  //   -util Echo of Hope VOH
   {  6355.00,  800,  100, 0x00092,  487, "CLA", "K",   "KRE" },  //   -util Echo of Hope VOH
   {  6355.00,  930,  950, 0x00092,  487, "CLA", "E",   "KRE" },  //   -util Echo of Hope VOH
@@ -5495,32 +5496,32 @@ dx_t eibi_db[] = {
   {  6358.50,    0, 2400, 0x200f4,  228, "HOL", "-TY", "Eu"  },  //    -fsk PBB Navy Den Helder
   {  6358.00, 1000, 2200, 0x200e4,  295, "RUS", "-CW", "NAs" },  //     -cw REA4 AirForce Meteo x40
   {  6360.60,    0, 2400, 0x000d2,  545, "REU", "F",   "EAf" },  // -milcom FUX French Navy STANAG
-  {  6363.50,    0, 2400, 0x200e4,  827, "JPN", "-CW", "FE"  },  //     -cw JFG Shizuokaken Fishery
-  {  6365.00,    0, 2400, 0x00092,  828, "BRA", "P",   "B"   },  //   -util Rádio Cidade Oldies
+  {  6363.50,    0, 2400, 0x200e4,  828, "JPN", "-CW", "FE"  },  //     -cw JFG Shizuokaken Fishery
+  {  6365.00,    0, 2400, 0x00092,  829, "BRA", "P",   "B"   },  //   -util Rádio Cidade Oldies
   {  6365.30,  600, 1800, 0x00092,  196, "FRA", "F",   "Eu"  },  //   -util FUG French Navy FSK
-  {  6365.00,    0, 2400, 0x200e4,  829, "INS", "-CW", ""    },  //     -cw P5O Indonesian Navy
+  {  6365.00,    0, 2400, 0x200e4,  830, "INS", "-CW", ""    },  //     -cw P5O Indonesian Navy
   {  6369.20,    0, 2400, 0x000d2,  203, "GBR", "",    "WEu" },  // -milcom UK DHFCS STANAG
   {  6370.00,    0, 2400, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  {  6370.10,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6370.10,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6370.10,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6370.10, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6370.10, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6370.10, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6370.10, 1500, 1600, 0x00092,  816, "TWN", "CA",  "FE"  },  //   -util Sound of Hope
-  {  6370.10, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6370.10, 1700, 2000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6370.10, 2000, 2100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6370.10, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6370.10, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6370.10, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6370.10, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6370.10,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6370.10,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6370.10,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6370.10, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6370.10, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6370.10, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6370.10, 1500, 1600, 0x00092,  817, "TWN", "CA",  "FE"  },  //   -util Sound of Hope
+  {  6370.10, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6370.10, 1700, 2000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6370.10, 2000, 2100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6370.10, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6370.10, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6370.10, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6370.10, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  6374.40,    0, 2400, 0x000d2,  580, "AUS", "",    "AUS" },  // -milcom Humpty Doo STANAG
   {  6377.00,    0, 2400, 0x000d2,  580, "AUS", "",    "AUS" },  // -milcom Humpty Doo STANAG
   {  6380.00,    0, 2400, 0x200b2,  475, "BIH", "",    "BIH" },  //    -ale Bosnian Emergency ALE
   {  6384.70,    0, 2400, 0x000d2,  243, "FRA", "F",   "Eu"  },  // -milcom FUO French Navy STANAG
   {  6385.00,    0, 2400, 0x000d2,  319, "CAN", "",    "NAm" },  // -milcom CFH Halifax STANAG
-  {  6391.00,    0, 2400, 0x200e4,  830, "PAK", "-CW", "SAs" },  //     -cw AQP Pakistan Navy
+  {  6391.00,    0, 2400, 0x200e4,  831, "PAK", "-CW", "SAs" },  //     -cw AQP Pakistan Navy
   {  6403.20,    0, 2400, 0x000d2,  285, "MRT", "F",   "Car" },  // -milcom FUF French Navy STANAG
   {  6405.20,    0, 2400, 0x000d2,  518, "HOL", "",    "WEu" },  // -milcom PBB Ny DenHelder STANAG
   {  6405.00,    0, 2400, 0x00112,  616, "RUS", "R",   "CAs" },  //   -aero Kazan Aero Melodia Dwa
@@ -5529,15 +5530,15 @@ dx_t eibi_db[] = {
   {  6410.00, 1000, 1010, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  6410.00, 1000, 1010, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  6412.70,    0, 2400, 0x000d2,  203, "GBR", "",    "WEu" },  // -milcom UK DHFCS STANAG
-  {  6414.00, 1005, 1020, 0x20102,  831, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
+  {  6414.00, 1005, 1020, 0x20102,  832, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
   {  6416.50,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
-  {  6421.50,    0, 2400, 0x200e4,  832, "JPN", "-CW", "FE"  },  //     -cw JFX Kagoshima Fishery
-  {  6423.20,    0, 2400, 0x00092,  833, "CAN", "E",   "NAm" },  //   -util CFH Halifax Stanag
-  {  6424.50,    0, 2400, 0x000d2,  822, "ITL", "I",   "SEu" },  // -milcom IDR Ny Roma
+  {  6421.50,    0, 2400, 0x200e4,  833, "JPN", "-CW", "FE"  },  //     -cw JFX Kagoshima Fishery
+  {  6423.20,    0, 2400, 0x00092,  834, "CAN", "E",   "NAm" },  //   -util CFH Halifax Stanag
+  {  6424.50,    0, 2400, 0x000d2,  823, "ITL", "I",   "SEu" },  // -milcom IDR Ny Roma
   {  6428.20,    0, 2400, 0x000d2,  319, "CAN", "",    "NAm" },  // -milcom CFH Halifax STANAG
   {  6429.80, 1800,  600, 0x00092,  196, "FRA", "F",   "Eu"  },  //   -util FUG French Navy FSK
   {  6433.00, 1205, 1215, 0x06132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
-  {  6433.00, 1100, 1105, 0x06132,  834, "POL", "-TY", ""    },  //    -spy F03i Polish Spy Numbers
+  {  6433.00, 1100, 1105, 0x06132,  835, "POL", "-TY", ""    },  //    -spy F03i Polish Spy Numbers
   {  6433.00, 1100, 1110, 0x02932,  530, "POL", "R",   ""    },  //    -spy S11a Polish Spy Numbers
   {  6433.00, 1100, 1110, 0x02932,  530, "POL", "R",   ""    },  //    -spy S11a Polish Spy Numbers
   {  6435.00, 1500, 1510, 0x00132,  638, "RUS", "-CW", "RUS" },  //    -spy M01 Spy Numbers 025
@@ -5546,12 +5547,12 @@ dx_t eibi_db[] = {
   {  6439.40,    0, 2400, 0x000d2,  580, "AUS", "",    "AUS" },  // -milcom Humpty Doo STANAG
   {  6443.00,    0, 2400, 0x000d2,  580, "AUS", "",    "AUS" },  // -milcom Humpty Doo STANAG
   {  6440.00, 1000, 1010, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
-  {  6445.50,  700,  721, 0x20102,  824, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
-  {  6445.50,  800,  821, 0x20102,  824, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
-  {  6445.50, 1400, 1500, 0x20102,  824, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
-  {  6445.50, 1850, 1905, 0x20102,  824, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
-  {  6445.50, 2000, 2021, 0x20102,  824, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
-  {  6447.70,    0, 2400, 0x00092,  833, "CAN", "E",   "NAm" },  //   -util CFH Halifax Stanag
+  {  6445.50,  700,  721, 0x20102,  825, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
+  {  6445.50,  800,  821, 0x20102,  825, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
+  {  6445.50, 1400, 1500, 0x20102,  825, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
+  {  6445.50, 1850, 1905, 0x20102,  825, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
+  {  6445.50, 2000, 2021, 0x20102,  825, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
+  {  6447.70,    0, 2400, 0x00092,  834, "CAN", "E",   "NAm" },  //   -util CFH Halifax Stanag
   {  6448.00,  230,  245, 0x00092,  532, "BRA", "P",   "B"   },  //   -util PWZ33 Rio d.J.Naval Wx
   {  6448.00,  318,  330, 0x00092,  532, "BRA", "P",   "B"   },  //   -util PWZ33 Rio d.J.Naval Wx
   {  6448.00,  400,  415, 0x00092,  532, "BRA", "P",   "B"   },  //   -util PWZ33 Rio d.J.Naval Wx
@@ -5561,14 +5562,14 @@ dx_t eibi_db[] = {
   {  6448.00, 2130, 2145, 0x00092,  532, "BRA", "P",   "B"   },  //   -util PWZ33 Rio d.J.Naval Wx
   {  6448.20,    0, 2400, 0x000d2,  219, "ITL", "",    "SEu" },  // -milcom IDR Ny Roma STANAG
   {  6450.00,    0, 2400, 0x00092,  459, "ARM", "AR",  "Cau" },  //   -util Armenian Military Net
-  {  6450.00,    0, 2400, 0x200b2,  721, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
-  {  6454.20,    0, 2400, 0x000d2,  835, "CAN", "",    "WNA" },  // -milcom CKN Aldergrove STANAG
+  {  6450.00,    0, 2400, 0x200b2,  722, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
+  {  6454.20,    0, 2400, 0x000d2,  836, "CAN", "",    "WNA" },  // -milcom CKN Aldergrove STANAG
   {  6456.20,    0, 2400, 0x000d2,  226, "SPN", "",    "SEu" },  // -milcom EBA Navy Madrid STANAG
   {  6461.50,    0, 2400, 0x200e4,  202, "RUS", "-CW", "RUS" },  //     -cw RMP Russian Navy
-  {  6462.00,    0, 2400, 0x000d2,  836, "OCE", "F",   "Oc"  },  // -milcom FUM French Navy STANAG
+  {  6462.00,    0, 2400, 0x000d2,  837, "OCE", "F",   "Oc"  },  // -milcom FUM French Navy STANAG
   {  6464.00, 1500, 1510, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  6464.00, 1500, 1510, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
-  {  6467.50,    0, 2400, 0x200b2,  735, "FRA", "",    "F"   },  //    -ale French Navy ALE
+  {  6467.50,    0, 2400, 0x200b2,  736, "FRA", "",    "F"   },  //    -ale French Navy ALE
   {  6477.50, 1700, 2300, 0x200e4,   34, "USA", "-CW", "WNA" },  //     -cw KPH Point Reyes, CA
   {  6479.40,    0, 2400, 0x000d2,  580, "AUS", "",    "AUS" },  // -milcom Humpty Doo STANAG
   {  6480.00,  705,  715, 0x00132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
@@ -5581,21 +5582,21 @@ dx_t eibi_db[] = {
   {  6487.00,    0, 2400, 0x000d2,  497, "USA", "",    "NAm" },  // -milcom NSS US Navy RTTY/STANAG
   {  6491.60,    0, 2400, 0x000d2,  226, "SPN", "",    "SEu" },  // -milcom EBA Navy Madrid STANAG
   {  6498.10,    0, 2400, 0x000d2,  518, "HOL", "",    "WEu" },  // -milcom PBB Ny DenHelder STANAG
-  {  6500.00,    0, 2400, 0x200b2,  837, "ALG", "",    "ALG" },  //    -ale Algeria Gendarmerie ALE
+  {  6500.00,    0, 2400, 0x200b2,  838, "ALG", "",    "ALG" },  //    -ale Algeria Gendarmerie ALE
   {  6500.60,    0, 2400, 0x000d2,  143, "GER", "",    "Eu"  },  // -milcom DHJ58 Marine STANAG
   {  6500.00,    0, 2400, 0x200b2,  461, "MRC", "",    "MRC" },  //    -ale Protection Civile ALE
-  {  6501.00,  203,  300, 0x00092,  838, "ALS", "E",   "WNA" },  //   -util NOJ USCG Kodiak
-  {  6501.00, 1645, 1745, 0x00092,  838, "ALS", "E",   "WNA" },  //   -util NOJ USCG Kodiak
-  {  6501.00,   10,   20, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  {  6501.00,  210,  220, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  {  6501.00,  410,  420, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  {  6501.00, 1810, 1820, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  {  6501.00, 2010, 2020, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  {  6501.00, 2210, 2220, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  {  6501.00,  930, 1015, 0x00092,  840, "GUM", "E",   "WOc" },  //   -util NRV USCG Guam
-  {  6501.00, 1530, 1615, 0x00092,  840, "GUM", "E",   "WOc" },  //   -util NRV USCG Guam
-  {  6501.00,  600,  635, 0x00092,  841, "HWA", "E",   "Oc"  },  //   -util NMO USCG Honolulu
-  {  6501.00, 1200, 1235, 0x00092,  841, "HWA", "E",   "Oc"  },  //   -util NMO USCG Honolulu
+  {  6501.00,  203,  300, 0x00092,  839, "ALS", "E",   "WNA" },  //   -util NOJ USCG Kodiak
+  {  6501.00, 1645, 1745, 0x00092,  839, "ALS", "E",   "WNA" },  //   -util NOJ USCG Kodiak
+  {  6501.00,   10,   20, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  {  6501.00,  210,  220, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  {  6501.00,  410,  420, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  {  6501.00, 1810, 1820, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  {  6501.00, 2010, 2020, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  {  6501.00, 2210, 2220, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  {  6501.00,  930, 1015, 0x00092,  841, "GUM", "E",   "WOc" },  //   -util NRV USCG Guam
+  {  6501.00, 1530, 1615, 0x00092,  841, "GUM", "E",   "WOc" },  //   -util NRV USCG Guam
+  {  6501.00,  600,  635, 0x00092,  842, "HWA", "E",   "Oc"  },  //   -util NMO USCG Honolulu
+  {  6501.00, 1200, 1235, 0x00092,  842, "HWA", "E",   "Oc"  },  //   -util NMO USCG Honolulu
   {  6501.00,  330,  430, 0x00092,  560, "USA", "E",   "NAm" },  //   -util NMN USCG Chesapeake
   {  6501.00,  515,  615, 0x00092,  560, "USA", "E",   "NAm" },  //   -util NMN USCG Chesapeake
   {  6501.00,  930, 1030, 0x00092,  560, "USA", "E",   "NAm" },  //   -util NMN USCG Chesapeake
@@ -5652,22 +5653,22 @@ dx_t eibi_db[] = {
   {  6522.00, 2305, 2315, 0x00112,  201, "GRL", "E",   "GRL" },  //   -aero OYR Aasiaat Radio
   {  6524.00,  910,  920, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  6524.00,  910,  920, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
-  {  6529.00,    0, 2400, 0x200c2,  842, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
+  {  6529.00,    0, 2400, 0x200c2,  843, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
   {  6532.00,    0, 2400, 0x200c2,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
   {  6532.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
   {  6532.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
-  {  6535.00,    0, 2400, 0x00112,  843, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio
-  {  6535.00,    0, 2400, 0x00112,  844, "CPV", "E",   "WAf" },  //   -aero Sal Radio
+  {  6535.00,    0, 2400, 0x00112,  844, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio
+  {  6535.00,    0, 2400, 0x00112,  845, "CPV", "E",   "WAf" },  //   -aero Sal Radio
   {  6535.00,    0, 2400, 0x200c2,  705, "NZL", "-HF", "SOc" },  //   -hfdl Auckland HFDL (ID5)
   {  6535.00,    0, 2400, 0x00112,  704, "SEN", "E",   "WAf" },  //   -aero Dakar Radio
-  {  6535.00,    0, 2400, 0x200c2,  716, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
+  {  6535.00,    0, 2400, 0x200c2,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
   {  6547.00,    0, 2400, 0x00092,  323, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
   {  6550.00,    0, 2400, 0x00092,  320, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio I
-  {  6550.00,    0, 2400, 0x200b2,  845, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
-  {  6556.00,    0, 2400, 0x00112,  846, "BGD", "E",   "SAs" },  //   -aero Dhaka Radio
-  {  6556.00,    0, 2400, 0x00112,  847, "IND", "E",   "SAs" },  //   -aero Kolkata Radio
+  {  6550.00,    0, 2400, 0x200b2,  846, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
+  {  6556.00,    0, 2400, 0x00112,  847, "BGD", "E",   "SAs" },  //   -aero Dhaka Radio
+  {  6556.00,    0, 2400, 0x00112,  848, "IND", "E",   "SAs" },  //   -aero Kolkata Radio
   {  6556.00,    0, 2400, 0x00092,  343, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio H
-  {  6556.00,    0, 2400, 0x00112,  848, "MYA", "E",   "SEA" },  //   -aero Yangon Radio
+  {  6556.00,    0, 2400, 0x00112,  849, "MYA", "E",   "SEA" },  //   -aero Yangon Radio
   {  6556.00,    0, 2400, 0x00112,  284, "INS", "E",   "SEA" },  //   -aero Jakarta Radio
   {  6556.00,    0, 2400, 0x00112,  593, "SNG", "E",   "SEA" },  //   -aero Singapore Radio
   {  6559.00,    0, 2400, 0x200c2,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
@@ -5675,23 +5676,23 @@ dx_t eibi_db[] = {
   {  6565.00,    0, 2400, 0x200b2,  681, "GEO", "",    "GEO" },  //    -ale Georgia Borderguard ALE
   {  6565.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
   {  6566.00,    0, 2400, 0x200b2,  643, "KGZ", "",    "KGZ" },  //    -ale Kyrgyz Military ALE
-  {  6566.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  {  6566.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   {  6577.00,    0, 2400, 0x00112,  702, "TRD", "E",   "Car" },  //   -aero Piarco Radio CAR-B
   {  6577.00,    0, 2400, 0x00112,  331, "USA", "E",   "Car" },  //   -aero New York Radio CAR-A
   {  6580.00,    0, 2400, 0x200b2,  570, "JOR", "",    "JOR" },  //    -ale Jordan Address ALE Net
   {  6586.00,    0, 2400, 0x00112,  699, "USA", "E",   "Car" },  //   -aero New York Radio CAR-B
   {  6589.00,    0, 2400, 0x200b2,  690, "IRQ", "",    "IRQ" },  //    -ale Iraqi Security Fcs. ALE
-  {  6589.00,    0, 2400, 0x200c2,  335, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
-  {  6592.00,    0, 2400, 0x00112,  849, "RUS", "R",   "EEu" },  //   -aero Moscow Aero
+  {  6589.00,    0, 2400, 0x200c2,  706, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
+  {  6592.00,    0, 2400, 0x00112,  850, "RUS", "R",   "EEu" },  //   -aero Moscow Aero
   {  6595.00,    0, 2400, 0x00092,  320, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio I
-  {  6596.00,    0, 2400, 0x200c2,  709, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
+  {  6596.00,    0, 2400, 0x200c2,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
   {  6600.00,    0, 2400, 0x00080,  438, "CLA", "K",   "KRE" },  //  -bcast Voice of the People
-  {  6600.00,    0, 2400, 0x200b2,  721, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
+  {  6600.00,    0, 2400, 0x200b2,  722, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
   {  6604.00,    0, 2400, 0x00112,  439, "CAN", "E",   "NAm" },  //   -aero Gander Volmet x20,x50
   {  6607.00,    0, 2400, 0x200e4,  282, "ISR", "-CW", ""    },  //     -cw 4XZ Israeli Navy Haifa
-  {  6617.00,    0, 2400, 0x00112,  337, "RUS", "R",   "CIS" },  //   -aero Rostov Volmet x25,55
-  {  6617.00,    0, 2400, 0x00112,  850, "RUS", "R",   "CIS" },  //   -aero StPeterbg Volmet x05,35
-  {  6619.00,    0, 2400, 0x200c2,  851, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
+  {  6617.00,    0, 2400, 0x00112,  336, "RUS", "R",   "CIS" },  //   -aero Rostov Volmet x25,55
+  {  6617.00,    0, 2400, 0x00112,  851, "RUS", "R",   "CIS" },  //   -aero StPeterbg Volmet x05,35
+  {  6619.00,    0, 2400, 0x200c2,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
   {  6622.00,    0, 2400, 0x00112,  436, "CAN", "E",   "NAO" },  //   -aero Gander Radio F
   {  6622.00, 1000, 1800, 0x00092,  437, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio F
   {  6628.00,    0, 2400, 0x00112,  339, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio E
@@ -5700,16 +5701,16 @@ dx_t eibi_db[] = {
   {  6636.00,    0, 2400, 0x200b2,  549, "GEO", "",    "GEO" },  //    -ale Georgia Coast Guard ALE
   {  6640.00,    0, 2400, 0x00112,  852, "USA", "E",   "NAO" },  //   -aero New York Radio LDOC
   {  6640.00,    0, 2400, 0x00092,  853, "USA", "E",   "EOc" },  //   -util San Francisco R. LDOC
-  {  6642.00,    0, 2400, 0x000d2,  706, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
+  {  6642.00,    0, 2400, 0x000d2,  707, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
   {  6646.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   {  6649.00,    0, 1200, 0x00092,  854, "HND", "S",   "CAm" },  //   -util COCESNA Cenamer Control
   {  6652.00,    0, 2400, 0x200c2,  693, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
-  {  6655.00,    0, 2400, 0x00112,  710, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
-  {  6655.00,    0, 2400, 0x00112,  710, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
-  {  6655.00,    0, 2400, 0x00112,  336, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
+  {  6655.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
+  {  6655.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
+  {  6655.00,    0, 2400, 0x00112,  335, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
   {  6660.00,    0, 2400, 0x200a1,  403, "CAN", "-TS", "NAm" },  //   -time CHU Ottawa
   {  6661.00,    0, 2400, 0x00112,  855, "IND", "E",   "SAs" },  //   -aero Mumbai Radio
-  {  6661.00,    0, 2400, 0x200c2,  715, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
+  {  6661.00,    0, 2400, 0x200c2,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
   {  6667.00,    0, 2400, 0x00112,  440, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio H
   {  6667.00,    0, 2400, 0x00092,  343, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio H
   {  6668.70,    0, 2400, 0x200b2,  681, "GEO", "",    "GEO" },  //    -ale Georgia Borderguard ALE
@@ -5720,14 +5721,14 @@ dx_t eibi_db[] = {
   {  6676.00,    0, 2400, 0x00112,  344, "PAK", "E",   "SAs" },  //   -aero Karachi Volmet x15,x45
   {  6676.00, 1250, 2225, 0x00112,  857, "SNG", "E",   "SAs" },  //   -aero SingaporeVolmet x20,x50
   {  6676.00,    0, 2400, 0x00112,  345, "THA", "E",   "SAs" },  //   -aero Bangkok Volmet x10,x40
-  {  6678.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  {  6678.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   {  6679.00,    0, 2400, 0x00112,  858, "HKG", "E",   "FE"  },  //   -aero Hongkong Volmet x15,x45
   {  6679.00,    0, 2400, 0x00112,  321, "HWA", "E",   "Oc"  },  //   -aero Honolulu Volmet x25,x55
   {  6679.00,    0, 2400, 0x00112,  322, "JPN", "E",   "FE"  },  //   -aero Tokyo Volmet x10,x40
   {  6679.00,    0, 2400, 0x00112,  859, "NZL", "E",   "FE"  },  //   -aero Auckland Volmet x20,x50
-  {  6685.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  {  6685.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
   {  6688.00,    0, 2400, 0x000d2,  860, "FRA", "F",   "Eu"  },  // -milcom Fr. Air Force CAPITOLE
-  {  6690.00,    0, 2400, 0x200b2,  720, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
+  {  6690.00,    0, 2400, 0x200b2,  721, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
   {  6691.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   {  6693.00,    0, 2400, 0x00112,  324, "RUS", "R",   "CIS" },  //   -aero Novosibir Volmet x10,40
   {  6693.00,    0, 2400, 0x00112,  325, "RUS", "R",   "CIS" },  //   -aero Samara Volmet x15,45
@@ -5745,20 +5746,20 @@ dx_t eibi_db[] = {
   {  6718.00,    0, 2400, 0x00092,  358, "FRA", "F",   "NAO" },  //   -util FUE French Navy USB/FSK
   {  6721.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
   {  6722.20,    0, 2400, 0x000d2,  206, "NOR", "",    "NEu" },  // -milcom Norway Navy STANAG
-  {  6730.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6730.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6730.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6730.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6730.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6730.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6730.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6730.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6730.00, 1700, 2000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6730.00, 2000, 2100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6730.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6730.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6730.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6730.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6730.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6730.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6730.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6730.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6730.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6730.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6730.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6730.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6730.00, 1700, 2000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6730.00, 2000, 2100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6730.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6730.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6730.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6730.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  6737.00,    0, 2400, 0x000d2,  203, "GBR", "",    "WEu" },  // -milcom UK DHFCS STANAG
   {  6743.00,    0, 2400, 0x200b2,  572, "CHN", "",    "FE"  },  //    -ale China Military ALE
   {  6745.00,    0, 2400, 0x200b2,  469, "FRA", "",    "Eu"  },  //    -ale Fr. Air Force E-3F ALE
@@ -5792,7 +5793,7 @@ dx_t eibi_db[] = {
   {  6775.00,    0, 2400, 0x200e4,  412, "JPN", "-CW", "FE"  },  //     -cw JJT88 Jap.Self Defense
   {  6776.20,    0, 2400, 0x000d2,  226, "SPN", "",    "SEu" },  // -milcom EBA Navy Madrid STANAG
   {  6776.00, 2000, 2010, 0x0a132,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
-  {  6777.50,    0, 2400, 0x200b2,  728, "GRC", "",    "GRC" },  //    -ale Greek Air Force ALE
+  {  6777.50,    0, 2400, 0x200b2,  729, "GRC", "",    "GRC" },  //    -ale Greek Air Force ALE
   {  6778.00, 2220, 2230, 0x00d32,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  6778.00,    0, 2400, 0x200b2,  675, "TUR", "",    "TUR" },  //    -ale Red Crescent ALE
   {  6779.00,  700,  715, 0x2f8f4,  680, "BUL", "-TY", "XUU" },  //    -fsk Bulgaria Diplo
@@ -5820,13 +5821,13 @@ dx_t eibi_db[] = {
   {  6794.00, 2120, 2130, 0x00d32,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  6795.00,    0, 2400, 0x200b2,  442, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
   {  6797.00,  400,  410, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
-  {  6799.00,    0, 2400, 0x200b2,  817, "AUS", "",    "AUS" },  //    -ale Australian MHFCS ALE
+  {  6799.00,    0, 2400, 0x200b2,  818, "AUS", "",    "AUS" },  //    -ale Australian MHFCS ALE
   {  6801.00,    0, 2400, 0x200b2,  411, "HRV", "",    "HRV" },  //    -ale Croatian NRPD ALE
   {  6803.00,    0, 2400, 0x200b2,  216, "USA", "",    "USA" },  //    -ale NTA Emergency ALE Net
   {  6804.00,  700,  710, 0x04932,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  6805.20,    0, 2400, 0x000d2,  868, "GBR", "",    "ME"  },  // -milcom UK MoD DHFCS STANAG
   {  6806.00,    0, 2400, 0x200b2,  411, "HRV", "",    "HRV" },  //    -ale Croatian NRPD ALE
-  {  6807.00,    0, 2400, 0x200b2,  720, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
+  {  6807.00,    0, 2400, 0x200b2,  721, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
   {  6809.00,    0, 2400, 0x200b2,  237, "AUT", "",    "AUT" },  //    -ale Austrian Military ALE
   {  6809.00,    0, 2400, 0x200e4,  375, "UZB", "-CW", "CAs" },  //     -cw Channel Marker V
   {  6810.00,  800,  810, 0x00132,  452, "RUS", "D",   ""    },  //    -spy G06 Russian Spy Numbers
@@ -5842,7 +5843,7 @@ dx_t eibi_db[] = {
   {  6825.00,    0, 2400, 0x00092,  466, "FRA", "",    "Eu"  },  //   -util FAV22 Morse Training
   {  6826.00, 2240, 2250, 0x00d32,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  6826.00, 1620, 1630, 0x08532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
-  {  6828.00,    0, 2400, 0x200b2,  735, "FRA", "",    "F"   },  //    -ale French Navy ALE
+  {  6828.00,    0, 2400, 0x200b2,  736, "FRA", "",    "F"   },  //    -ale French Navy ALE
   {  6830.50,    0, 2400, 0x200b2,  293, "HOL", "",    "HOL" },  //    -ale Dutch Military ALE
   {  6831.00,    0, 2400, 0x200b2,  411, "HRV", "",    "HRV" },  //    -ale Croatian NRPD ALE
   {  6831.00,    0, 2400, 0x000d2,  651, "PTR", "",    "NAm" },  // -milcom NAU US Navy STANAG
@@ -5859,7 +5860,7 @@ dx_t eibi_db[] = {
   {  6837.00,   30,   40, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  6838.00, 1650, 1700, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
   {  6839.00,  720,  730, 0x0f932,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
-  {  6840.00,    0, 2400, 0x200b2,  733, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
+  {  6840.00,    0, 2400, 0x200b2,  734, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
   {  6842.60,    0, 2400, 0x000d2,  533, "NCL", "F",   "Oc"  },  // -milcom FUJ French Navy STANAG
   {  6844.50,    0, 2400, 0x200b2,  293, "HOL", "",    "HOL" },  //    -ale Dutch Military ALE
   {  6844.00, 1950, 2000, 0x00132,  500, "RUS", "-TY", "RUS" },  //    -spy F01 Russian Spy Numbers
@@ -5879,25 +5880,25 @@ dx_t eibi_db[] = {
   {  6849.00, 1900, 1910, 0x09132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  6849.00,  430,  435, 0x03132,  639, "POL", "-TY", ""    },  //    -spy F03l Polish Spy Numbers
   {  6849.00,  900,  905, 0x04932,  639, "POL", "-TY", ""    },  //    -spy F03l Polish Spy Numbers
-  {  6849.00,  915,  920, 0x03132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
-  {  6849.00,  915,  920, 0x03132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  {  6849.00,  915,  920, 0x03132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  {  6849.00,  915,  920, 0x03132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   {  6849.00, 1100, 1105, 0x06132,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
   {  6849.00, 1100, 1105, 0x06132,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
   {  6850.00,    0, 2400, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  {  6850.10,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6850.10,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6850.10,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6850.10, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6850.10, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6850.10, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6850.10, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6850.10, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6850.10, 1700, 2000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6850.10, 2000, 2100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6850.10, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6850.10, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6850.10, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6850.10, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6850.10,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6850.10,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6850.10,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6850.10, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6850.10, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6850.10, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6850.10, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6850.10, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6850.10, 1700, 2000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6850.10, 2000, 2100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6850.10, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6850.10, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6850.10, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6850.10, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  6854.00,   30,   40, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  6855.00,  415,  425, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
   {  6855.50,    0, 2400, 0x200e4,  558, "USA", "-CW", "NAm" },  //     -cw CruiseEmail
@@ -5910,22 +5911,22 @@ dx_t eibi_db[] = {
   {  6864.00, 2050, 2100, 0x02932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  6865.00,    0, 2400, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
   {  6865.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
-  {  6865.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6865.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6865.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6865.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6865.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6865.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6865.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6865.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6865.00, 1700, 2000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6865.00, 2000, 2100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6865.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6865.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6865.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6865.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6865.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6865.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6865.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6865.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6865.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6865.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6865.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6865.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6865.00, 1700, 2000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6865.00, 2000, 2100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6865.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6865.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6865.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6865.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  6866.00,  500,  510, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
-  {  6870.00,    0, 2400, 0x200b2,  733, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
+  {  6870.00,    0, 2400, 0x200b2,  734, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
   {  6873.50,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   {  6874.00,   30,   40, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  6876.00, 2020, 2030, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
@@ -5947,23 +5948,23 @@ dx_t eibi_db[] = {
   {  6900.00,    0, 2400, 0x200b2,  376, "CHL", "",    "CHL" },  //    -ale Gendarmeria Chile ALE
   {  6900.00,    0, 2400, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
   {  6900.00,    0, 2400, 0x200b2,  871, "FRA", "",    "F"   },  //    -ale French Diplo ALE
-  {  6900.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
-  {  6900.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6900.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6900.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6900.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6900.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6900.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6900.00, 1500, 1600, 0x00092,  816, "TWN", "CA",  "FE"  },  //   -util Sound of Hope
-  {  6900.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6900.00, 1700, 2000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6900.00, 2000, 2100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6900.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6900.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6900.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6900.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6902.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
-  {  6902.20,    0, 2400, 0x200b2,  718, "USA", "",    "Glo" },  //    -ale US Embassies ALE
+  {  6900.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  {  6900.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6900.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6900.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6900.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6900.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6900.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6900.00, 1500, 1600, 0x00092,  817, "TWN", "CA",  "FE"  },  //   -util Sound of Hope
+  {  6900.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6900.00, 1700, 2000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6900.00, 2000, 2100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6900.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6900.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6900.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6900.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6902.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  {  6902.20,    0, 2400, 0x200b2,  719, "USA", "",    "Glo" },  //    -ale US Embassies ALE
   {  6906.00, 1830, 1835, 0x09132,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
   {  6908.00, 2050, 2100, 0x02932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  6909.00,  500,  510, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
@@ -5975,7 +5976,7 @@ dx_t eibi_db[] = {
   {  6916.00,  400,  410, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
   {  6917.50,    0, 2400, 0x200e4,  365, "RUS", "-CW", "RUS" },  //     -cw Channel Marker L
   {  6921.00,    0, 2400, 0x200b2,  442, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
-  {  6922.00,    0, 2400, 0x200b2,  720, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
+  {  6922.00,    0, 2400, 0x200b2,  721, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
   {  6922.00,  530,  540, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
   {  6923.00,  930,  940, 0x03132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  6923.00, 1205, 1215, 0x06132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
@@ -6000,8 +6001,8 @@ dx_t eibi_db[] = {
   {  6939.00, 1940, 1950, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   {  6940.00,  930,  940, 0x03132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  6940.00,  930,  940, 0x03132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
-  {  6940.00,  945,  950, 0x04932,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
-  {  6940.00,  945,  950, 0x04932,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  {  6940.00,  945,  950, 0x04932,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  {  6940.00,  945,  950, 0x04932,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   {  6940.00,  505,  510, 0x00b32,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
   {  6941.00, 2050, 2100, 0x02932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  6942.00, 2305,    5, 0x20102,  525, "CHL", "",    "SAm" },  //    -fax CBV Valparaiso Met Fax
@@ -6021,20 +6022,20 @@ dx_t eibi_db[] = {
   {  6964.00, 2230, 2240, 0x09132,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  6964.00, 2020, 2030, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   {  6965.00,    0, 2400, 0x200b2,  873, "MEX", "",    "MEX" },  //    -ale Mexican Military ALE
-  {  6970.10,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6970.10,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6970.10,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6970.10, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6970.10, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6970.10, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6970.10, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6970.10, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6970.10, 1700, 2000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6970.10, 2000, 2100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6970.10, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6970.10, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6970.10, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  6970.10, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6970.10,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6970.10,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6970.10,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6970.10, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6970.10, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6970.10, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6970.10, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6970.10, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6970.10, 1700, 2000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6970.10, 2000, 2100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6970.10, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6970.10, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6970.10, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  6970.10, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  6974.00, 1035, 1045, 0x0f932,  500, "RUS", "-TY", "EEu" },  //    -spy F01 Russian Spy Numbers
   {  6977.00, 1020, 1030, 0x04932,  530, "POL", "R",   ""    },  //    -spy S11a Polish Spy Numbers
   {  6979.00,    0, 2400, 0x200b2,  293, "HOL", "",    "HOL" },  //    -ale Dutch Military ALE
@@ -6050,7 +6051,7 @@ dx_t eibi_db[] = {
   {  6991.50, 1500, 1600, 0x0fc92,  460, "SPN", "S",   "SEu" },  //   -util REMER Protección Civil
   {  6992.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   {  6994.00,    0, 2400, 0x000d2,  580, "AUS", "",    "AUS" },  // -milcom Humpty Doo STANAG
-  {  7014.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  {  7014.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   {  7027.50,    0, 2400, 0x200e4,  375, "UZB", "-CW", "CAs" },  //     -cw Channel Marker V
   {  7038.70,    0, 2400, 0x200e4,  444, "RUS", "-CW", "EEu" },  //     -cw Channel Marker D
   {  7038.80,    0, 2400, 0x200e4,  445, "RUS", "-CW", "RUS" },  //     -cw Channel Marker P
@@ -6107,21 +6108,21 @@ dx_t eibi_db[] = {
   {  7210.00, 1800, 1900, 0x00080,   58, "KRE", "F",   "SAf" },  //  -bcast Voice of Korea
   {  7210.00, 1900, 2000, 0x00080,   58, "KRE", "E",   "SAf" },  //  -bcast Voice of Korea
   {  7210.00, 2000, 2100, 0x00080,   59, "KRE", "K",   "SAf" },  //  -bcast Voice of Korea KCBS
-  {  7210.00, 1100, 1130, 0x00080,  753, "TUR", "BU",  "SEE" },  //  -bcast Voice of Turkey
-  {  7210.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7210.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7210.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7210.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7210.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7210.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7210.00, 1500, 1600, 0x00080,  816, "TWN", "CA",  "FE"  },  //  -bcast Sound of Hope
-  {  7210.00, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7210.00, 1700, 2000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7210.00, 2000, 2100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7210.00, 2100, 2130, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7210.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7210.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7210.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7210.00, 1100, 1130, 0x00080,  754, "TUR", "BU",  "SEE" },  //  -bcast Voice of Turkey
+  {  7210.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7210.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7210.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7210.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7210.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7210.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7210.00, 1500, 1600, 0x00080,  817, "TWN", "CA",  "FE"  },  //  -bcast Sound of Hope
+  {  7210.00, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7210.00, 1700, 2000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7210.00, 2000, 2100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7210.00, 2100, 2130, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7210.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7210.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7210.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   {  7210.00, 2145, 1700, 0x00080,   67, "VTN", "VN",  "VTN" },  //  -bcast Voice of Vietnam 1
   {  7215.00, 2023, 2400, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  7215.00, 1300, 1400, 0x00080,   52, "CHN", "M",   "SEA" },  //  -bcast China Radio Int.
@@ -6161,13 +6162,13 @@ dx_t eibi_db[] = {
   {  7225.00, 1500, 1600, 0x00080,   52, "CHN", "HI",  "PAK" },  //  -bcast China Radio Int.
   {  7225.00, 2100, 2200, 0x00080,   52, "CHN", "HR",  "SEu" },  //  -bcast China Radio Int.
   {  7225.00, 2100, 2200, 0x00080,   53, "CHN", "HR",  "SEu" },  //  -bcast CRI Music
-  {  7225.00,    0,  100, 0x00080,  787, "CHN", "TB",  "CHN" },  //  -bcast PBS Sichuan 2
-  {  7225.00,  100,  135, 0x00080,  787, "CHN", "YI",  "CHN" },  //  -bcast PBS Sichuan 2
-  {  7225.00,  900, 1000, 0x00080,  787, "CHN", "TB",  "CHN" },  //  -bcast PBS Sichuan 2
-  {  7225.00, 1000, 1400, 0x00080,  787, "CHN", "TB",  "CHN" },  //  -bcast PBS Sichuan 2
-  {  7225.00, 1400, 1515, 0x00080,  787, "CHN", "YI",  "CHN" },  //  -bcast PBS Sichuan 2
-  {  7225.00, 2155, 2210, 0x00080,  787, "CHN", "TB",  "CHN" },  //  -bcast PBS Sichuan 2
-  {  7225.00, 2210, 2400, 0x00080,  787, "CHN", "M",   "CHN" },  //  -bcast PBS Sichuan 2
+  {  7225.00,    0,  100, 0x00080,  788, "CHN", "TB",  "CHN" },  //  -bcast PBS Sichuan 2
+  {  7225.00,  100,  135, 0x00080,  788, "CHN", "YI",  "CHN" },  //  -bcast PBS Sichuan 2
+  {  7225.00,  900, 1000, 0x00080,  788, "CHN", "TB",  "CHN" },  //  -bcast PBS Sichuan 2
+  {  7225.00, 1000, 1400, 0x00080,  788, "CHN", "TB",  "CHN" },  //  -bcast PBS Sichuan 2
+  {  7225.00, 1400, 1515, 0x00080,  788, "CHN", "YI",  "CHN" },  //  -bcast PBS Sichuan 2
+  {  7225.00, 2155, 2210, 0x00080,  788, "CHN", "TB",  "CHN" },  //  -bcast PBS Sichuan 2
+  {  7225.00, 2210, 2400, 0x00080,  788, "CHN", "M",   "CHN" },  //  -bcast PBS Sichuan 2
   {  7225.00, 1725, 1920, 0x00080,  492, "CVA", "M",   "FE"  },  //  -bcast Radio Vaticana
   {  7225.00, 1600, 1900, 0x00080,   31, "GBR", "SO",  "EAf" },  //  -bcast BBC
   {  7225.00, 2250,   20, 0x00080,   44, "IRN", "A",   "ME"  },  //  -bcast IRIB Voice of I.R.Iran
@@ -6222,14 +6223,14 @@ dx_t eibi_db[] = {
   {  7245.00, 2055, 1300, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   {  7245.00,  430,  500, 0x0f880,   93, "JPN", "E",   "WAf" },  //  -bcast NHK Radio Japan
   {  7245.00,  500,  530, 0x00080,   93, "JPN", "E",   "WAf" },  //  -bcast NHK Radio Japan
-  {  7245.00,  559,  958, 0x00080,  761, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
-  {  7245.00,  659,  958, 0x00080,  761, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
-  {  7245.00,  728,  738, 0x0f880,  761, "NZL", "BSL", "Oc"  },  //  -bcast Radio New Zealand Int.
-  {  7245.00,  759,  958, 0x00080,  761, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
-  {  7245.00,  958, 1258, 0x00080,  761, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
-  {  7245.00,  959, 1258, 0x0f880,  761, "NZL", "E",   "WOc" },  //  -bcast Radio New Zealand Int.
-  {  7245.00, 1128, 1133, 0x0f880,  761, "NZL", "SLM", "WOc" },  //  -bcast Radio New Zealand Int.
-  {  7245.00, 1800, 1900, 0x00080,  741, "ROU", "D",   "WEu" },  //  -bcast Radio Romania DIGITAL
+  {  7245.00,  559,  958, 0x00080,  762, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
+  {  7245.00,  659,  958, 0x00080,  762, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
+  {  7245.00,  728,  738, 0x0f880,  762, "NZL", "BSL", "Oc"  },  //  -bcast Radio New Zealand Int.
+  {  7245.00,  759,  958, 0x00080,  762, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
+  {  7245.00,  958, 1258, 0x00080,  762, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
+  {  7245.00,  959, 1258, 0x0f880,  762, "NZL", "E",   "WOc" },  //  -bcast Radio New Zealand Int.
+  {  7245.00, 1128, 1133, 0x0f880,  762, "NZL", "SLM", "WOc" },  //  -bcast Radio New Zealand Int.
+  {  7245.00, 1800, 1900, 0x00080,  742, "ROU", "D",   "WEu" },  //  -bcast Radio Romania DIGITAL
   {  7245.00,  200,  400, 0x00080,  115, "TJK", "TJ",  "As"  },  //  -bcast Voice of Tajik
   {  7245.00,  400,  600, 0x00080,  115, "TJK", "FS",  "As"  },  //  -bcast Voice of Tajik
   {  7245.00,  600,  800, 0x00080,  115, "TJK", "DR",  "As"  },  //  -bcast Voice of Tajik
@@ -6277,7 +6278,7 @@ dx_t eibi_db[] = {
   {  7260.00,  100,  200, 0x0e880,  886, "MNG", "E",   "As"  },  //  -bcast Mongolian Radio 3
   {  7260.00,  658, 1400, 0x00080,  886, "MNG", "MO",  "As"  },  //  -bcast Mongolian Radio 3
   {  7260.00, 2300,  500, 0x00080,  886, "MNG", "MO",  "As"  },  //  -bcast Mongolian Radio 3
-  {  7260.00,  100,  200, 0x00080,  753, "TUR", "S",   "SAm" },  //  -bcast Voice of Turkey
+  {  7260.00,  100,  200, 0x00080,  754, "TUR", "S",   "SAm" },  //  -bcast Voice of Turkey
   {  7260.00,  330,  400, 0x00080,   51, "USA", "SO",  "EAf" },  //  -bcast Voice of America
   {  7260.00,    0,  559, 0x00080,  479, "VUT", "BSL", "VUT" },  //  -bcast Radio Vanuatu
   {  7260.00,    0,  559, 0x00080,  479, "VUT", "BSL", "VUT" },  //  -bcast Radio Vanuatu
@@ -6297,7 +6298,7 @@ dx_t eibi_db[] = {
   {  7265.00, 1900, 2000, 0x00080,   31, "GBR", "E",   "SAf" },  //  -bcast BBC
   {  7265.00, 2000, 2100, 0x06480,   31, "GBR", "E",   "SAf" },  //  -bcast BBC
   {  7265.00, 2100, 2200, 0x06480,   31, "GBR", "E",   "SAf" },  //  -bcast BBC
-  {  7265.00, 1600, 1700, 0x00080,  740, "ROU", "HB",  "ISR" },  //  -bcast Radio Romania Int.
+  {  7265.00, 1600, 1700, 0x00080,  741, "ROU", "HB",  "ISR" },  //  -bcast Radio Romania Int.
   {  7265.00,  530,  630, 0x0f880,   51, "USA", "F",   "WAf" },  //  -bcast Voice of America
   {  7270.00, 1400, 1500, 0x00080,  626, "CHN", "M",   "CHN" },  //  -bcast CNR1 Jammer/Firedrake
   {  7270.00, 2300, 2400, 0x00080,  626, "CHN", "M",   "CHN" },  //  -bcast CNR1 Jammer/Firedrake
@@ -6324,22 +6325,22 @@ dx_t eibi_db[] = {
   {  7275.00, 1300, 1400, 0x00080,  116, "KOR", "M",   "FE"  },  //  -bcast KBS World Radio
   {  7275.00, 1600, 1800, 0x00080,  116, "KOR", "K",   "Eu"  },  //  -bcast KBS World Radio
   {  7275.00, 2300, 2330, 0x00080,  116, "KOR", "VN",  "SEA" },  //  -bcast KBS World Radio
-  {  7275.00,  300,  400, 0x00080,  753, "TUR", "E",   "NAm" },  //  -bcast Voice of Turkey
+  {  7275.00,  300,  400, 0x00080,  754, "TUR", "E",   "NAm" },  //  -bcast Voice of Turkey
   {  7280.00,    0, 2400, 0x00080,  626, "CHN", "M",   "CHN" },  //  -bcast CNR1 Jammer/Firedrake
-  {  7280.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7280.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7280.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7280.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7280.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7280.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7280.00, 1500, 1600, 0x00080,  816, "TWN", "CA",  "FE"  },  //  -bcast Sound of Hope
-  {  7280.00, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7280.00, 1700, 2000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7280.00, 2000, 2100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7280.00, 2100, 2130, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7280.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7280.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7280.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7280.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7280.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7280.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7280.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7280.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7280.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7280.00, 1500, 1600, 0x00080,  817, "TWN", "CA",  "FE"  },  //  -bcast Sound of Hope
+  {  7280.00, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7280.00, 1700, 2000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7280.00, 2000, 2100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7280.00, 2100, 2130, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7280.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7280.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7280.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   {  7280.00,   30,  130, 0x00080,  117, "USA", "BR",  "SEA" },  //  -bcast Radio Free Asia
   {  7285.00, 1300, 1400, 0x00080,   52, "CHN", "MO",  "MNG" },  //  -bcast China Radio Int.
   {  7285.00, 1500, 1600, 0x00080,   52, "CHN", "UR",  "SAs" },  //  -bcast China Radio Int.
@@ -6356,34 +6357,34 @@ dx_t eibi_db[] = {
   {  7290.00, 2023,  100, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  7290.00, 2100, 2200, 0x00080,   52, "CHN", "K",   "FE"  },  //  -bcast China Radio Int.
   {  7290.00, 2200, 2300, 0x00080,   52, "CHN", "K",   "FE"  },  //  -bcast China Radio Int.
-  {  7290.00, 1430, 1500, 0x00080,  726, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
-  {  7290.00, 1500, 1530, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
-  {  7290.00, 1530, 1600, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
+  {  7290.00, 1430, 1500, 0x00080,  727, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
+  {  7290.00, 1500, 1530, 0x00080,  728, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
+  {  7290.00, 1530, 1600, 0x00080,  728, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
   {  7290.00, 1800, 1900, 0x00080,   48, "ITL", "D",   "Eu"  },  //  -bcast IRRS Milano
   {  7290.00, 1800, 1900, 0x0f680,   48, "ITL", "E",   "Eu"  },  //  -bcast IRRS Milano
   {  7290.00, 1650, 1750, 0x00080,   44, "IRN", "R",   "EEu" },  //  -bcast IRIB Voice of I.R.Iran
   {  7290.00, 1830, 1900, 0x00080,  137, "USA", "E",   "Eu"  },  //  -bcast Adventist World Radio
   {  7290.00, 1800, 1830, 0x00080,   91, "USA", "E",   "Eu"  },  //  -bcast World of Radio
-  {  7295.00,  500,  600, 0x00080,  747, "ALG", "A",   "WAf" },  //  -bcast Radio Algerienne
+  {  7295.00,  500,  600, 0x00080,  748, "ALG", "A",   "WAf" },  //  -bcast Radio Algerienne
   {  7295.00, 1900, 2000, 0x00080,   52, "CHN", "E",   "WAf" },  //  -bcast China Radio Int.
   {  7295.00, 2000, 2100, 0x00080,   52, "CHN", "E",   "WAf" },  //  -bcast China Radio Int.
   {  7295.00,  310,  530, 0x00080,  480, "CHN", "KG",  "CHN" },  //  -bcast PBS Xinjiang
   {  7295.00, 1010, 1230, 0x00080,  480, "CHN", "KG",  "CHN" },  //  -bcast PBS Xinjiang
-  {  7295.00, 1330, 1400, 0x00080,  726, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
-  {  7295.00, 1300, 1330, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
+  {  7295.00, 1330, 1400, 0x00080,  727, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
+  {  7295.00, 1300, 1330, 0x00080,  728, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
   {  7295.00,   30,  100, 0x00080,   31, "GBR", "DR",  "AFG" },  //  -bcast BBC
   {  7295.00,  100,  130, 0x00080,   31, "GBR", "PS",  "AFG" },  //  -bcast BBC
   {  7295.00,  130,  200, 0x00080,   31, "GBR", "DR",  "AFG" },  //  -bcast BBC
-  {  7295.00, 1300, 1330, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  7295.00, 1300, 1400, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  7295.00, 1300, 1400, 0x0c080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  7295.00, 1300, 1400, 0x02880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  7295.00, 1330, 1400, 0x00080,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  7295.00, 1300, 1330, 0x04680,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  7295.00, 1300, 1400, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  7295.00, 1300, 1400, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  7295.00, 1300, 1400, 0x01880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  7295.00, 1330, 1400, 0x04680,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  7295.00, 1300, 1330, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  7295.00, 1300, 1400, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  7295.00, 1300, 1400, 0x0c080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  7295.00, 1300, 1400, 0x02880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  7295.00, 1330, 1400, 0x00080,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  7295.00, 1300, 1330, 0x04680,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  7295.00, 1300, 1400, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  7295.00, 1300, 1400, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  7295.00, 1300, 1400, 0x01880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  7295.00, 1330, 1400, 0x04680,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
   {  7300.00, 1000, 1100, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  7300.00, 1500, 1700, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  7300.00, 2200, 2300, 0x00080,   52, "CHN", "EO",  "SAm" },  //  -bcast China Radio Int.
@@ -6409,8 +6410,8 @@ dx_t eibi_db[] = {
   {  7305.00, 2130, 2145, 0x00080,   31, "GBR", "E",   "ATA" },  //  -bcast BBC
   {  7305.00, 2130, 2200, 0x00080,   31, "GBR", "E",   "ATA" },  //  -bcast BBC
   {  7305.00, 1620, 1650, 0x00080,   44, "IRN", "BE",  "SAs" },  //  -bcast IRIB Voice of I.R.Iran
-  {  7305.00,  430,  500, 0x00080,  741, "ROU", "R",   "EEu" },  //  -bcast Radio Romania DIGITAL
-  {  7305.00, 1900, 1930, 0x00080,  811, "USA", "E",   "SAf" },  //  -bcast Follow the Bible Min.
+  {  7305.00,  430,  500, 0x00080,  742, "ROU", "R",   "EEu" },  //  -bcast Radio Romania DIGITAL
+  {  7305.00, 1900, 1930, 0x00080,  812, "USA", "E",   "SAf" },  //  -bcast Follow the Bible Min.
   {  7305.00,  130,  230, 0x00080,   51, "USA", "BR",  "SEA" },  //  -bcast Voice of America
   {  7309.00, 1955, 2005, 0x00132,  530, "POL", "R",   ""    },  //    -spy S11a Polish Spy Numbers
   {  7309.00, 2000, 2010, 0x00132,  672, "RUS", "R",   "RUS" },  //    -spy S06 Russian Spy Numbers
@@ -6419,25 +6420,25 @@ dx_t eibi_db[] = {
   {  7310.00, 1400, 1800, 0x00080,  480, "CHN", "M",   "CHN" },  //  -bcast PBS Xinjiang
   {  7310.00, 2300,  300, 0x00080,  480, "CHN", "M",   "CHN" },  //  -bcast PBS Xinjiang
   {  7310.00, 2310,  300, 0x00080,  480, "CHN", "M",   "CHN" },  //  -bcast PBS Xinjiang
-  {  7310.00, 1000, 1200, 0x00080,  789, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
-  {  7310.00, 1000, 1200, 0x00080,  789, "SPN", "NL",  "CEu" },  //  -bcast Radio MiAmigo
-  {  7310.00, 1200, 1400, 0x00080,  789, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
-  {  7310.00, 1200, 1400, 0x00080,  789, "SPN", "NL",  "CEu" },  //  -bcast Radio MiAmigo
-  {  7310.00, 2200, 2300, 0x00080,  740, "ROU", "E",   "WEu" },  //  -bcast Radio Romania Int.
-  {  7310.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7310.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7310.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7310.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7310.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7310.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7310.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7310.00, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7310.00, 1700, 2000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7310.00, 2000, 2100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7310.00, 2100, 2130, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7310.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7310.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7310.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7310.00, 1000, 1200, 0x00080,  790, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
+  {  7310.00, 1000, 1200, 0x00080,  790, "SPN", "NL",  "CEu" },  //  -bcast Radio MiAmigo
+  {  7310.00, 1200, 1400, 0x00080,  790, "SPN", "E",   "CEu" },  //  -bcast Radio MiAmigo
+  {  7310.00, 1200, 1400, 0x00080,  790, "SPN", "NL",  "CEu" },  //  -bcast Radio MiAmigo
+  {  7310.00, 2200, 2300, 0x00080,  741, "ROU", "E",   "WEu" },  //  -bcast Radio Romania Int.
+  {  7310.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7310.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7310.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7310.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7310.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7310.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7310.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7310.00, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7310.00, 1700, 2000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7310.00, 2000, 2100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7310.00, 2100, 2130, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7310.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7310.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7310.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   {  7310.00,    0, 2400, 0x200b2,  561, "USA", "",    "USA" },  //    -ale US National Guard ALE
   {  7312.00, 2130, 2140, 0x00132,  672, "RUS", "R",   "RUS" },  //    -spy S06 Russian Spy Numbers
   {  7313.00, 1710, 1720, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
@@ -6453,20 +6454,20 @@ dx_t eibi_db[] = {
   {  7315.00,  430,  500, 0x00080,  888, "HOL", "SUD", "SDN" },  //  -bcast Radio Dabanga
   {  7315.00,  330,  430, 0x00080,  889, "HOL", "SUD", "SSD" },  //  -bcast Radio Tamazuj
   {  7315.00,  415,  425, 0x02480,  889, "HOL", "E",   "SSD" },  //  -bcast Radio Tamazuj
-  {  7315.00, 2000, 2030, 0x00080,  741, "ROU", "F",   "WEu" },  //  -bcast Radio Romania DIGITAL
-  {  7315.00, 2030, 2100, 0x00080,  741, "ROU", "E",   "WEu" },  //  -bcast Radio Romania DIGITAL
-  {  7315.00,    0,  200, 0x00080,  746, "USA", "E",   "Car" },  //  -bcast World Harvest Radio
-  {  7315.00,  200,  300, 0x00080,  746, "USA", "E,S", "SAm" },  //  -bcast World Harvest Radio
-  {  7315.00,  200,  300, 0x0f880,  746, "USA", "E",   "Car" },  //  -bcast World Harvest Radio
-  {  7315.00,  300,  400, 0x00080,  746, "USA", "E",   "SAm" },  //  -bcast World Harvest Radio
-  {  7315.00,  300,  400, 0x07c80,  746, "USA", "E",   "Car" },  //  -bcast World Harvest Radio
-  {  7315.00,  300,  400, 0x00080,  746, "USA", "E",   "CAm" },  //  -bcast World Harvest Radio
-  {  7315.00,  530,  900, 0x00080,  746, "USA", "E",   "SAm" },  //  -bcast World Harvest Radio
-  {  7315.00, 1000, 1300, 0x00080,  746, "USA", "E",   "Car" },  //  -bcast World Harvest Radio
-  {  7315.00, 2000, 2100, 0x00080,  746, "USA", "E",   "Car" },  //  -bcast World Harvest Radio
-  {  7315.00, 2100, 2130, 0x0fc80,  746, "USA", "E",   "Car" },  //  -bcast World Harvest Radio
-  {  7315.00, 2200, 2400, 0x0fc80,  746, "USA", "E",   "Car" },  //  -bcast World Harvest Radio
-  {  7315.00, 2300, 2400, 0x00080,  746, "USA", "E",   "Car" },  //  -bcast World Harvest Radio
+  {  7315.00, 2000, 2030, 0x00080,  742, "ROU", "F",   "WEu" },  //  -bcast Radio Romania DIGITAL
+  {  7315.00, 2030, 2100, 0x00080,  742, "ROU", "E",   "WEu" },  //  -bcast Radio Romania DIGITAL
+  {  7315.00,    0,  200, 0x00080,  747, "USA", "E",   "Car" },  //  -bcast World Harvest Radio
+  {  7315.00,  200,  300, 0x00080,  747, "USA", "E,S", "SAm" },  //  -bcast World Harvest Radio
+  {  7315.00,  200,  300, 0x0f880,  747, "USA", "E",   "Car" },  //  -bcast World Harvest Radio
+  {  7315.00,  300,  400, 0x00080,  747, "USA", "E",   "SAm" },  //  -bcast World Harvest Radio
+  {  7315.00,  300,  400, 0x07c80,  747, "USA", "E",   "Car" },  //  -bcast World Harvest Radio
+  {  7315.00,  300,  400, 0x00080,  747, "USA", "E",   "CAm" },  //  -bcast World Harvest Radio
+  {  7315.00,  530,  900, 0x00080,  747, "USA", "E",   "SAm" },  //  -bcast World Harvest Radio
+  {  7315.00, 1000, 1300, 0x00080,  747, "USA", "E",   "Car" },  //  -bcast World Harvest Radio
+  {  7315.00, 2000, 2100, 0x00080,  747, "USA", "E",   "Car" },  //  -bcast World Harvest Radio
+  {  7315.00, 2100, 2130, 0x0fc80,  747, "USA", "E",   "Car" },  //  -bcast World Harvest Radio
+  {  7315.00, 2200, 2400, 0x0fc80,  747, "USA", "E",   "Car" },  //  -bcast World Harvest Radio
+  {  7315.00, 2300, 2400, 0x00080,  747, "USA", "E",   "Car" },  //  -bcast World Harvest Radio
   {  7316.00, 1035, 1045, 0x0f932,  500, "RUS", "-TY", "EEu" },  //    -spy F01 Russian Spy Numbers
   {  7316.00,  510,  520, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   {  7317.00, 1000, 1010, 0x04932,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
@@ -6503,12 +6504,12 @@ dx_t eibi_db[] = {
   {  7325.00, 1820, 1920, 0x00080,   44, "IRN", "AL",  "Eu"  },  //  -bcast IRIB Voice of I.R.Iran
   {  7325.00, 2320,   20, 0x00080,   44, "IRN", "KU",  "ME"  },  //  -bcast IRIB Voice of I.R.Iran
   {  7325.00,  700,  900, 0x00080,   93, "JPN", "J",   "SAm" },  //  -bcast NHK Radio Japan
-  {  7325.00, 1405, 1435, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  7325.00, 1600, 1630, 0x04680,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  7325.00, 1600, 1700, 0x00080,  743, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
-  {  7325.00, 1600, 1700, 0x00080,  743, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
-  {  7325.00, 1600, 1700, 0x01880,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
-  {  7325.00, 1630, 1700, 0x04680,  743, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  7325.00, 1405, 1435, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  7325.00, 1600, 1630, 0x04680,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  7325.00, 1600, 1700, 0x00080,  744, "JPN", "E",   "KRE" },  //  -bcast Shiokaze
+  {  7325.00, 1600, 1700, 0x00080,  744, "JPN", "J",   "KRE" },  //  -bcast Shiokaze
+  {  7325.00, 1600, 1700, 0x01880,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
+  {  7325.00, 1630, 1700, 0x04680,  744, "JPN", "K",   "KRE" },  //  -bcast Shiokaze
   {  7325.00,  200,  215, 0x00080,  891, "PAK", "UR",  "SAs" },  //  -bcast FEBA Pakistan
   {  7325.00,  215,  230, 0x00080,  891, "PAK", "PJ",  "SAs" },  //  -bcast FEBA Pakistan
   {  7325.00,  215,  230, 0x07080,  891, "PAK", "SD",  "SAs" },  //  -bcast FEBA Pakistan
@@ -6516,11 +6517,11 @@ dx_t eibi_db[] = {
   {  7325.00,  230,  300, 0x00080,  891, "PAK", "PS",  "SAs" },  //  -bcast FEBA Pakistan
   {  7325.00,  845,  910, 0x00080,  388, "PNG", "E",   "PNG" },  //  -bcast NBC Port Moresby
   {  7325.00,    0, 2400, 0x00080,  892, "PNG", "E",   "PNG" },  //  -bcast Wantok Radio Light
-  {  7325.00,  400,  500, 0x00080,  740, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
-  {  7325.00,  500,  530, 0x00080,  741, "ROU", "F",   "WEu" },  //  -bcast Radio Romania DIGITAL
-  {  7325.00,  530,  600, 0x00080,  741, "ROU", "E",   "WEu" },  //  -bcast Radio Romania DIGITAL
-  {  7325.00,  600,  630, 0x00080,  741, "ROU", "D",   "WEu" },  //  -bcast Radio Romania DIGITAL
-  {  7325.00, 2200, 2300, 0x00080,  740, "ROU", "E",   "J"   },  //  -bcast Radio Romania Int.
+  {  7325.00,  400,  500, 0x00080,  741, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
+  {  7325.00,  500,  530, 0x00080,  742, "ROU", "F",   "WEu" },  //  -bcast Radio Romania DIGITAL
+  {  7325.00,  530,  600, 0x00080,  742, "ROU", "E",   "WEu" },  //  -bcast Radio Romania DIGITAL
+  {  7325.00,  600,  630, 0x00080,  742, "ROU", "D",   "WEu" },  //  -bcast Radio Romania DIGITAL
+  {  7325.00, 2200, 2300, 0x00080,  741, "ROU", "E",   "J"   },  //  -bcast Radio Romania Int.
   {  7325.00, 2030, 2100, 0x00080,   51, "USA", "HA",  "WAf" },  //  -bcast Voice of America
   {  7327.50,    0, 2400, 0x200e4,  558, "USA", "-CW", "Car" },  //     -cw CruiseEmail
   {  7330.00, 1700, 1800, 0x00080,   52, "CHN", "E",   "EAf" },  //  -bcast China Radio Int.
@@ -6532,18 +6533,18 @@ dx_t eibi_db[] = {
   {  7335.00, 1000, 1300, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   {  7335.00, 1300, 1605, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   {  7335.00, 2055,   30, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
-  {  7335.00, 1600, 1630, 0x00080,  726, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
-  {  7335.00, 1500, 1530, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
-  {  7335.00, 1530, 1600, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
+  {  7335.00, 1600, 1630, 0x00080,  727, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
+  {  7335.00, 1500, 1530, 0x00080,  728, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
+  {  7335.00, 1530, 1600, 0x00080,  728, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
   {  7335.00,  430,  500, 0x0f880,   93, "JPN", "E",   "SAf" },  //  -bcast NHK Radio Japan
   {  7335.00,  500,  530, 0x00080,   93, "JPN", "E",   "SAf" },  //  -bcast NHK Radio Japan
-  {  7335.00,    0, 2400, 0x200b2,  720, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
-  {  7335.00,    0,  400, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
-  {  7335.00,  400,  500, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
-  {  7335.00,  400, 1000, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
-  {  7335.00, 1000, 1400, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
-  {  7335.00, 2200, 2400, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
-  {  7340.00, 1600, 1700, 0x00080,  800, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
+  {  7335.00,    0, 2400, 0x200b2,  721, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
+  {  7335.00,    0,  400, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  {  7335.00,  400,  500, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  {  7335.00,  400, 1000, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  {  7335.00, 1000, 1400, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  {  7335.00, 2200, 2400, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  {  7340.00, 1600, 1700, 0x00080,  801, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
   {  7340.00, 1800, 1900, 0x00080,   52, "CHN", "I",   "SEu" },  //  -bcast China Radio Int.
   {  7340.00, 1800, 1900, 0x00080,   53, "CHN", "I",   "SEu" },  //  -bcast CRI Music
   {  7340.00,  330,  350, 0x00080,  480, "CHN", "KZ",  "CHN" },  //  -bcast PBS Xinjiang
@@ -6601,7 +6602,7 @@ dx_t eibi_db[] = {
   {  7360.00, 1230, 1330, 0x00080,   52, "CHN", "LAO", "SEA" },  //  -bcast China Radio Int.
   {  7360.00, 1330, 1430, 0x00080,   52, "CHN", "T",   "SEA" },  //  -bcast China Radio Int.
   {  7360.00, 1430, 1530, 0x00080,   52, "CHN", "LAO", "SEA" },  //  -bcast China Radio Int.
-  {  7360.00,  400, 1000, 0x00080,  778, "CHN", "M",   "CHN" },  //  -bcast CNR1 DIGITAL
+  {  7360.00,  400, 1000, 0x00080,  779, "CHN", "M",   "CHN" },  //  -bcast CNR1 DIGITAL
   {  7360.00, 1600, 1620, 0x00080,  492, "CVA", "AR",  "Cau" },  //  -bcast Radio Vaticana
   {  7360.00, 1620, 1640, 0x00080,  492, "CVA", "R",   "CAs" },  //  -bcast Radio Vaticana
   {  7360.00, 1740, 1800, 0x00080,  492, "CVA", "UK",  "UKR" },  //  -bcast Radio Vaticana
@@ -6618,16 +6619,16 @@ dx_t eibi_db[] = {
   {  7360.00, 2100, 2130, 0x00080,  492, "CVA", "P",   "WAf" },  //  -bcast Radio Vaticana
   {  7360.00, 2110, 2140, 0x00080,  492, "CVA", "P",   "WAf" },  //  -bcast Radio Vaticana
   {  7360.00,  230,  330, 0x00080,   31, "GBR", "FS",  "IRN" },  //  -bcast BBC
-  {  7360.00,    0,  200, 0x00080,  753, "TUR", "TU",  "FE"  },  //  -bcast Voice of Turkey
-  {  7360.00, 1730, 1830, 0x00080,  753, "TUR", "F",   "CAf" },  //  -bcast Voice of Turkey
+  {  7360.00,    0,  200, 0x00080,  754, "TUR", "TU",  "FE"  },  //  -bcast Voice of Turkey
+  {  7360.00, 1730, 1830, 0x00080,  754, "TUR", "F",   "CAf" },  //  -bcast Voice of Turkey
   {  7360.00, 2130, 2200, 0x0f880,   51, "USA", "BM",  "WAf" },  //  -bcast Voice of America
   {  7363.00, 1035, 1045, 0x0f932,  500, "RUS", "-TY", "EEu" },  //    -spy F01 Russian Spy Numbers
   {  7365.00, 1000, 1805, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  7365.00, 1200, 1805, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  7365.00,  800, 1400, 0x00080,   55, "EQA", "D",   "CEu" },  //  -bcast HCJB Voice of Andes
   {  7365.00,  730,  740, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
-  {  7365.00,    0,  300, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
-  {  7365.00, 1200, 1400, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  {  7365.00,    0,  300, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  {  7365.00, 1200, 1400, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
   {  7365.00, 1900, 2100, 0x00080,   51, "USA", "K",   "FE"  },  //  -bcast Voice of America
   {  7367.00,   50,  100, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   {  7370.00, 1100, 1200, 0x00080,   52, "CHN", "CA",  "SEA" },  //  -bcast China Radio Int.
@@ -6640,15 +6641,15 @@ dx_t eibi_db[] = {
   {  7370.00, 1720, 1820, 0x00080,   44, "IRN", "BOS", "Eu"  },  //  -bcast IRIB Voice of I.R.Iran
   {  7375.00, 1030, 1200, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   {  7375.00, 1200, 1605, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
-  {  7375.00,    0,  100, 0x00080,  740, "ROU", "E",   "ENA" },  //  -bcast Radio Romania Int.
-  {  7375.00,  100,  200, 0x00080,  740, "ROU", "F",   "ENA" },  //  -bcast Radio Romania Int.
-  {  7375.00,  300,  400, 0x00080,  740, "ROU", "E",   "WNA" },  //  -bcast Radio Romania Int.
+  {  7375.00,    0,  100, 0x00080,  741, "ROU", "E",   "ENA" },  //  -bcast Radio Romania Int.
+  {  7375.00,  100,  200, 0x00080,  741, "ROU", "F",   "ENA" },  //  -bcast Radio Romania Int.
+  {  7375.00,  300,  400, 0x00080,  741, "ROU", "E",   "WNA" },  //  -bcast Radio Romania Int.
   {  7375.00, 1100, 1200, 0x00080,  137, "USA", "M",   "FE"  },  //  -bcast Adventist World Radio
   {  7375.00,  400,  500, 0x00080,   51, "USA", "E",   "EAf" },  //  -bcast Voice of America
   {  7375.00, 2200, 2230, 0x00080,   51, "USA", "KH",  "SEA" },  //  -bcast Voice of America
   {  7377.00,  730,  740, 0x00132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
-  {  7377.00, 1030, 1035, 0x0a132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
-  {  7377.00, 1030, 1035, 0x0a132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  {  7377.00, 1030, 1035, 0x0a132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  {  7377.00, 1030, 1035, 0x0a132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   {  7377.00,  400,  410, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
   {  7379.00,  500,  510, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   {  7380.00, 1600, 1800, 0x00080,   52, "CHN", "D",   "Eu"  },  //  -bcast China Radio Int.
@@ -6673,19 +6674,19 @@ dx_t eibi_db[] = {
   {  7385.00, 2050, 2300, 0x00080,  127, "CHN", "TB",  "CHN" },  //  -bcast PBS Xizang
   {  7385.00,  200,  230, 0x00080,  137, "USA", "UR",  "PAK" },  //  -bcast Adventist World Radio
   {  7385.00,  230,  300, 0x00080,  137, "USA", "PJ",  "PAK" },  //  -bcast Adventist World Radio
-  {  7385.00,    0,  100, 0x00080,  746, "USA", "E",   "WNA" },  //  -bcast World Harvest Radio
-  {  7385.00,  100,  200, 0x08280,  746, "USA", "E",   "WNA" },  //  -bcast World Harvest Radio
-  {  7385.00,  200,  300, 0x00080,  746, "USA", "E",   "WNA" },  //  -bcast World Harvest Radio
-  {  7385.00,  300,  400, 0x00080,  746, "USA", "E",   "EEu" },  //  -bcast World Harvest Radio
-  {  7385.00,  300,  400, 0x0f880,  746, "USA", "E",   "WNA" },  //  -bcast World Harvest Radio
-  {  7385.00,  400,  530, 0x00080,  746, "USA", "E",   "WNA" },  //  -bcast World Harvest Radio
-  {  7385.00,  800,  900, 0x00080,  746, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
-  {  7385.00,  900, 1000, 0x00080,  746, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
-  {  7385.00, 1000, 1030, 0x0fc80,  746, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
-  {  7385.00, 1030, 1200, 0x00080,  746, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
-  {  7385.00, 1200, 1300, 0x00080,  746, "USA", "E",   "WNA" },  //  -bcast World Harvest Radio
-  {  7385.00, 1300, 1400, 0x00080,  746, "USA", "E",   "WNA" },  //  -bcast World Harvest Radio
-  {  7385.00, 2300, 2400, 0x0f880,  746, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
+  {  7385.00,    0,  100, 0x00080,  747, "USA", "E",   "WNA" },  //  -bcast World Harvest Radio
+  {  7385.00,  100,  200, 0x08280,  747, "USA", "E",   "WNA" },  //  -bcast World Harvest Radio
+  {  7385.00,  200,  300, 0x00080,  747, "USA", "E",   "WNA" },  //  -bcast World Harvest Radio
+  {  7385.00,  300,  400, 0x00080,  747, "USA", "E",   "EEu" },  //  -bcast World Harvest Radio
+  {  7385.00,  300,  400, 0x0f880,  747, "USA", "E",   "WNA" },  //  -bcast World Harvest Radio
+  {  7385.00,  400,  530, 0x00080,  747, "USA", "E",   "WNA" },  //  -bcast World Harvest Radio
+  {  7385.00,  800,  900, 0x00080,  747, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
+  {  7385.00,  900, 1000, 0x00080,  747, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
+  {  7385.00, 1000, 1030, 0x0fc80,  747, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
+  {  7385.00, 1030, 1200, 0x00080,  747, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
+  {  7385.00, 1200, 1300, 0x00080,  747, "USA", "E",   "WNA" },  //  -bcast World Harvest Radio
+  {  7385.00, 1300, 1400, 0x00080,  747, "USA", "E",   "WNA" },  //  -bcast World Harvest Radio
+  {  7385.00, 2300, 2400, 0x0f880,  747, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
   {  7390.00, 1000, 1100, 0x00080,   52, "CHN", "R",   "Sib" },  //  -bcast China Radio Int.
   {  7390.00, 1100, 1200, 0x00080,   52, "CHN", "MO",  "MNG" },  //  -bcast China Radio Int.
   {  7390.00, 2000, 2030, 0x00080,   52, "CHN", "SR",  "Eu"  },  //  -bcast China Radio Int.
@@ -6759,10 +6760,10 @@ dx_t eibi_db[] = {
   {  7420.00,  600,  950, 0x0be80,  110, "CHN", "M",   "CHN" },  //  -bcast PBS Nei Menggu
   {  7420.00,  950, 1605, 0x00080,  110, "CHN", "M",   "CHN" },  //  -bcast PBS Nei Menggu
   {  7420.00, 2150,  600, 0x00080,  110, "CHN", "M",   "CHN" },  //  -bcast PBS Nei Menggu
-  {  7420.00,    0,  200, 0x00080,  740, "ROU", "RO",  "ENA" },  //  -bcast Radio Romania Int.
+  {  7420.00,    0,  200, 0x00080,  741, "ROU", "RO",  "ENA" },  //  -bcast Radio Romania Int.
   {  7420.00,    0, 2400, 0x200b2,  561, "USA", "",    "USA" },  //    -ale US National Guard ALE
   {  7420.00, 1730, 1830, 0x00080,  899, "XUU", "E",   "Eu"  },  //  -bcast R.Northern Europe Int.
-  {  7421.50,    0, 2400, 0x200b2,  728, "GRC", "",    "GRC" },  //    -ale Greek Air Force ALE
+  {  7421.50,    0, 2400, 0x200b2,  729, "GRC", "",    "GRC" },  //    -ale Greek Air Force ALE
   {  7423.00, 1400, 1410, 0x00132,  452, "RUS", "D",   "RUS" },  //    -spy G06 Russian Spy Numbers
   {  7425.00,    0, 2400, 0x200b2,  571, "AUS", "",    "AUS" },  //    -ale Australian Police ALE
   {  7425.00,    0,  100, 0x00080,   52, "CHN", "E",   "SAs" },  //  -bcast China Radio Int.
@@ -6774,7 +6775,7 @@ dx_t eibi_db[] = {
   {  7425.00,  400,  410, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
   {  7425.00,  730,  740, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  7425.00,  730,  740, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
-  {  7425.00, 1630, 1730, 0x00080,  804, "USA", "E",   "FE"  },  //  -bcast PanAmerican Broadc.
+  {  7425.00, 1630, 1730, 0x00080,  805, "USA", "E",   "FE"  },  //  -bcast PanAmerican Broadc.
   {  7428.00,    0, 2400, 0x200b2,  404, "USA", "",    "WNA" },  //    -ale Bonneville PowerAdm.ALE
   {  7430.00,    0,  100, 0x00080,   52, "CHN", "R",   "Sib" },  //  -bcast China Radio Int.
   {  7430.00,  900, 1000, 0x00080,   52, "CHN", "M",   "FE"  },  //  -bcast China Radio Int.
@@ -6802,11 +6803,11 @@ dx_t eibi_db[] = {
   {  7435.00, 1930, 2000, 0x00080,   53, "CHN", "RO",  "EEu" },  //  -bcast CRI Music
   {  7435.00, 2100, 2200, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   {  7435.00,    0, 2400, 0x200b2,  900, "USA", "E",   "WNA" },  //    -ale NMN USCG Chesapeake ALE
-  {  7435.00, 1100, 1400, 0x00080,  734, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
+  {  7435.00, 1100, 1400, 0x00080,  735, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
   {  7435.00, 2100, 2200, 0x00080,  117, "USA", "M",   "FE"  },  //  -bcast Radio Free Asia
-  {  7435.00,  300,  400, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
-  {  7435.00,  400,  500, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
-  {  7435.00,  400, 1000, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  {  7435.00,  300,  400, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  {  7435.00,  400,  500, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  {  7435.00,  400, 1000, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
   {  7435.00, 1700, 1800, 0x00080,   51, "USA", "KU",  "ME"  },  //  -bcast Voice of America
   {  7435.00, 2145, 1700, 0x00080,   67, "VTN", "VN",  "Oc"  },  //  -bcast Voice of Vietnam 1
   {  7438.00, 1550, 1600, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
@@ -6837,7 +6838,7 @@ dx_t eibi_db[] = {
   {  7450.00, 2300, 2400, 0x00080,  127, "CHN", "M",   "CHN" },  //  -bcast PBS Xizang
   {  7450.00,    0, 2400, 0x200b2,  689, "IRQ", "",    "IRQ" },  //    -ale Iraqi Navy ALE
   {  7450.00,  410,  420, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
-  {  7455.00, 1000,  200, 0x00080,  737, "BRA", "P",   "SAm" },  //  -bcast Rádio Casa AM
+  {  7455.00, 1000,  200, 0x00080,  738, "BRA", "P",   "SAm" },  //  -bcast Rádio Casa AM
   {  7455.00,    0, 2400, 0x200b2,  694, "CLM", "",    "CLM" },  //    -ale Colombian Navy ALE
   {  7455.00,    0, 2400, 0x000d2,  651, "PTR", "",    "NAm" },  // -milcom NAU US Navy STANAG
   {  7458.00,    0, 2400, 0x000d2,  580, "AUS", "",    "AUS" },  // -milcom Humpty Doo STANAG
@@ -6845,18 +6846,18 @@ dx_t eibi_db[] = {
   {  7460.00, 2100, 1700, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   {  7460.00, 2200, 2300, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   {  7460.50,    0, 2400, 0x200b2,  293, "HOL", "",    "HOL" },  //    -ale Dutch Military ALE
-  {  7460.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7460.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7460.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7460.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7460.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7460.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7460.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7460.00, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7460.00, 2100, 2130, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7460.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7460.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7460.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7460.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7460.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7460.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7460.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7460.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7460.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7460.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7460.00, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7460.00, 2100, 2130, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7460.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7460.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7460.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   {  7460.00, 2200, 2300, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
   {  7460.00,  330,  430, 0x00080,   51, "USA", "KNK", "EAf" },  //  -bcast Voice of America
   {  7460.00,  430,  530, 0x0f880,   51, "USA", "KNK", "EAf" },  //  -bcast Voice of America
@@ -6877,7 +6878,7 @@ dx_t eibi_db[] = {
   {  7465.00,   45,  100, 0x0fa80,   56, "IND", "HI",  "SAs" },  //  -bcast Trans World Radio
   {  7465.00,  100,  115, 0x0f880,   56, "IND", "HI",  "SAs" },  //  -bcast Trans World Radio
   {  7465.00, 2200, 2300, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
-  {  7467.00,    0, 2400, 0x200e4,  825, "RUS", "-CW", "RUS" },  //     -cw RIT Russian Navy
+  {  7467.00,    0, 2400, 0x200e4,  826, "RUS", "-CW", "RUS" },  //     -cw RIT Russian Navy
   {  7469.00,  450,  500, 0x00132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  7469.00,  930,  940, 0x03132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  7469.00,  950,  955, 0x0a132,  639, "POL", "-TY", ""    },  //    -spy F03l Polish Spy Numbers
@@ -6893,7 +6894,7 @@ dx_t eibi_db[] = {
   {  7471.00, 2010, 2020, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   {  7475.00, 2300, 2335, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   {  7475.00,   30,   40, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
-  {  7475.00,    0, 2400, 0x200b2,  733, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
+  {  7475.00,    0, 2400, 0x200b2,  734, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
   {  7475.00, 1600, 1700, 0x00080,   86, "USA", "TJ",  "CAs" },  //  -bcast Radio Liberty
   {  7475.00,  200,  500, 0x00080,  902, "USA", "E",   "WNA" },  //  -bcast Radio YHWH
   {  7475.00,    0, 2400, 0x200b2,  587, "USA", "",    "ENA" },  //    -ale Washington GasLight ALE
@@ -6919,7 +6920,7 @@ dx_t eibi_db[] = {
   {  7485.00, 1600, 1700, 0x00080,   31, "GBR", "E",   "ME"  },  //  -bcast BBC
   {  7485.00, 1700, 1800, 0x00080,   31, "GBR", "E",   "ME"  },  //  -bcast BBC
   {  7485.00, 1800, 1900, 0x00080,   31, "GBR", "E",   "ME"  },  //  -bcast BBC
-  {  7485.00,    0, 2400, 0x200b2,  820, "GHA", "",    "GHA" },  //    -ale Ghana Navy ALE
+  {  7485.00,    0, 2400, 0x200b2,  821, "GHA", "",    "GHA" },  //    -ale Ghana Navy ALE
   {  7485.00, 1900, 2100, 0x00080,   51, "USA", "K",   "FE"  },  //  -bcast Voice of America
   {  7486.00, 2335, 2400, 0x00080,  903, "CLA", "TB",  "FE"  },  //  -bcast Voice of Tibet
   {  7486.00,  110,  120, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
@@ -6944,8 +6945,8 @@ dx_t eibi_db[] = {
   {  7490.00, 2100, 2300, 0x00080,  391, "USA", "E",   "NAm" },  //  -bcast WBCQ The Planet
   {  7490.00, 2300, 2400, 0x00080,  391, "USA", "E",   "NAm" },  //  -bcast WBCQ The Planet
   {  7490.00, 2100, 2130, 0x00080,   91, "USA", "E",   "NAm" },  //  -bcast World of Radio
-  {  7490.00, 1200, 1400, 0x00080,  751, "USA", "E",   "NAm" },  //  -bcast WWCR 2 Nashville, TN
-  {  7490.00, 1400, 1500, 0x0fc80,  751, "USA", "E",   "NAm" },  //  -bcast WWCR 2 Nashville, TN
+  {  7490.00, 1200, 1400, 0x00080,  752, "USA", "E",   "NAm" },  //  -bcast WWCR 2 Nashville, TN
+  {  7490.00, 1400, 1500, 0x0fc80,  752, "USA", "E",   "NAm" },  //  -bcast WWCR 2 Nashville, TN
   {  7491.00, 2335, 2400, 0x00080,  903, "CLA", "TB",  "FE"  },  //  -bcast Voice of Tibet
   {  7492.50,    0, 2400, 0x200b2,  221, "POL", "",    "POL" },  //    -ale Internal Ministry ALE
   {  7494.00,    0, 2400, 0x200b2,  573, "SPN", "",    "E"   },  //    -ale Guardia Civil ALE
@@ -6995,14 +6996,14 @@ dx_t eibi_db[] = {
   {  7515.00, 1515, 1615, 0x07880,  912, "USA", "K",   "FE"  },  //  -bcast Living Water Ministry
   {  7515.00, 1545, 1615, 0x00080,  912, "USA", "K",   "FE"  },  //  -bcast Living Water Ministry
   {  7517.00, 1640, 1650, 0x08532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
-  {  7520.00, 1830, 1845, 0x00080,  777, "CAN", "K",   "KRE" },  //  -bcast Bible Voice
+  {  7520.00, 1830, 1845, 0x00080,  778, "CAN", "K",   "KRE" },  //  -bcast Bible Voice
   {  7520.00, 2200, 2300, 0x02280,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   {  7520.00,    0,  300, 0x00080,  373, "USA", "E",   "NAm" },  //  -bcast Brother Stair
   {  7520.00, 2300,  200, 0x00080,  373, "USA", "E",   "NAm" },  //  -bcast Brother Stair
   {  7520.00, 2200, 2300, 0x02280,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
   {  7523.00,    0, 2400, 0x200b2,  566, "SVK", "",    "SVK" },  //    -ale Slovak Military ALE
   {  7525.00, 1430, 1730, 0x00080,   44, "IRN", "A",   "ME"  },  //  -bcast IRIB Voice of I.R.Iran
-  {  7525.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  {  7525.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   {  7525.00, 1200, 1210, 0x00132,  452, "RUS", "D",   "RUS" },  //    -spy G06 Russian Spy Numbers
   {  7526.00, 2220, 2230, 0x00d32,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  7527.00,    0, 2400, 0x200b2,  408, "USA", "",    "USA" },  //    -ale COTHEN ALE
@@ -7014,14 +7015,14 @@ dx_t eibi_db[] = {
   {  7530.00, 1400, 1430, 0x00080,  117, "USA", "BR",  "SEA" },  //  -bcast Radio Free Asia
   {  7532.00,   50,  100, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  7534.00, 2340, 2350, 0x09132,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
-  {  7535.00,   15,  215, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  {  7535.00,  245,  330, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  {  7535.00,  400,  945, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  {  7535.00, 1015, 1100, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  {  7535.00, 1100, 1715, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  {  7535.00, 1800, 1845, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  {  7535.00, 1915, 2045, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  {  7535.00, 2215, 2400, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  {  7535.00,   15,  215, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  {  7535.00,  245,  330, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  {  7535.00,  400,  945, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  {  7535.00, 1015, 1100, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  {  7535.00, 1100, 1715, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  {  7535.00, 1800, 1845, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  {  7535.00, 1915, 2045, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  {  7535.00, 2215, 2400, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
   {  7535.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   {  7536.00, 2050, 2100, 0x02932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  7538.00, 1630, 1640, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
@@ -7081,7 +7082,7 @@ dx_t eibi_db[] = {
   {  7580.00,  700,  900, 0x00080,   58, "KRE", "J",   "J"   },  //  -bcast Voice of Korea
   {  7580.00,  900, 1300, 0x00080,   58, "KRE", "J",   "J"   },  //  -bcast Voice of Korea
   {  7580.00, 2100, 2400, 0x00080,   58, "KRE", "J",   "J"   },  //  -bcast Voice of Korea
-  {  7582.00,    0, 2400, 0x200b2,  735, "FRA", "",    "F"   },  //    -ale French Navy ALE
+  {  7582.00,    0, 2400, 0x200b2,  736, "FRA", "",    "F"   },  //    -ale French Navy ALE
   {  7582.00, 1800, 1810, 0x02332,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   {  7584.00, 2250, 2300, 0x02532,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  7590.00,  630, 1400, 0x00080,  917, "GBR", "AFG", "AFG" },  //  -bcast Afghanistan Int. TV
@@ -7100,27 +7101,27 @@ dx_t eibi_db[] = {
   {  7600.00, 1430,  230, 0x00080,  917, "GBR", "AFG", "AFG" },  //  -bcast Afghanistan Int. TV
   {  7600.00, 1900, 1910, 0x09132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  7600.00, 1020, 1030, 0x04932,  530, "POL", "R",   ""    },  //    -spy S11a Polish Spy Numbers
-  {  7600.20,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7600.20,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7600.20, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7600.20, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7600.20, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7600.20, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7600.20, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7600.20, 1700, 2000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7600.20, 2000, 2100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7600.20, 2100, 2130, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7600.20, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7600.20, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7600.20, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7600.20,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7600.20,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7600.20, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7600.20, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7600.20, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7600.20, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7600.20, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7600.20, 1700, 2000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7600.20, 2000, 2100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7600.20, 2100, 2130, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7600.20, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7600.20, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7600.20, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   {  7603.00,    0, 2400, 0x200b2,  919, "CHN", "",    "CHN" },  //    -ale Chinese Navy ALE
   {  7605.00, 1630, 1700, 0x00080,  920, "CLA", "FS",  "IRN" },  //  -bcast Radio Ranginkaman
   {  7610.00, 2000,  100, 0x00080,  470, "CHL", "S",   "CHL" },  //  -bcast RCW Compañía Worldwide
-  {  7610.00,    0, 2400, 0x200b2,  720, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
+  {  7610.00,    0, 2400, 0x200b2,  721, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
   {  7610.00,    0, 2400, 0x200b2,  566, "SVK", "",    "SVK" },  //    -ale Slovak Military ALE
   {  7610.00, 1630, 1700, 0x00080,  920, "USA", "FS",  "IRN" },  //  -bcast Radio Ranginkaman
   {  7611.00,    0, 2400, 0x200e4,  375, "UZB", "-CW", "CAs" },  //     -cw Channel Marker V
-  {  7611.00,    0, 2400, 0x200b2,  733, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
+  {  7611.00,    0, 2400, 0x200b2,  734, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
   {  7615.00, 1400, 1500, 0x00080,  921, "CLA", "K",   "KRE" },  //  -bcast CMI Voice of Wilderness
   {  7615.00, 1500, 1530, 0x00080,  921, "CLA", "K",   "KRE" },  //  -bcast CMI Voice of Wilderness
   {  7616.00, 2000, 2010, 0x0a132,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
@@ -7143,19 +7144,19 @@ dx_t eibi_db[] = {
   {  7639.00,    0, 2400, 0x200b2,  463, "SWE", "",    "S"   },  //    -ale Swedish Military ALE
   {  7639.50,    0, 2400, 0x200b2,  397, "USA", "",    "USA" },  //    -ale US Army MARS ALE
   {  7643.00, 1440, 1450, 0x00132,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
-  {  7645.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7645.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7645.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7645.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7645.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7645.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7645.00, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7645.00, 1700, 2000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7645.00, 2000, 2100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7645.00, 2100, 2130, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7645.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7645.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7645.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7645.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7645.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7645.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7645.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7645.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7645.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7645.00, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7645.00, 1700, 2000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7645.00, 2000, 2100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7645.00, 2100, 2130, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7645.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7645.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7645.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   {  7646.00,    0, 2400, 0x200f4,  576, "GER", "E",   "Eu"  },  //    -fsk DWD 1 Pinneberg RTTY
   {  7648.00,    0, 2400, 0x200b2,  456, "ALG", "",    "ALG" },  //    -ale Algerian Military ALE
   {  7650.00,    0, 2400, 0x200b2,  867, "LTU", "",    "LTU" },  //    -ale Lithuanian Navy ALE
@@ -7164,7 +7165,7 @@ dx_t eibi_db[] = {
   {  7655.00,    0, 2400, 0x200b2,  465, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
   {  7660.00,    0, 2400, 0x200b2,  571, "AUS", "",    "AUS" },  //    -ale Australian Police ALE
   {  7661.30,    0, 2400, 0x200b2,  409, "USA", "",    "USA" },  //    -ale Fish and Wildlife ALE
-  {  7663.00,  945,  950, 0x04932,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  {  7663.00,  945,  950, 0x04932,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   {  7665.00,  300, 1700, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   {  7665.00, 1140, 1150, 0x04932,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   {  7665.00,  300, 1700, 0x00080,  922, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope-RFA
@@ -7176,7 +7177,7 @@ dx_t eibi_db[] = {
   {  7684.00, 1940, 1950, 0x00132,  500, "RUS", "-TY", "RUS" },  //    -spy F01 Russian Spy Numbers
   {  7684.00, 1620, 1630, 0x05132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   {  7689.00,    0, 2400, 0x200b2,  404, "USA", "",    "WNA" },  //    -ale Bonneville PowerAdm.ALE
-  {  7692.00,    0, 2400, 0x200b2,  720, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
+  {  7692.00,    0, 2400, 0x200b2,  721, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
   {  7697.00,    0, 2400, 0x200b2,  676, "USA", "",    "USA" },  //    -ale American Red Cross ALE
   {  7697.00,    0, 2400, 0x200b2,  216, "USA", "",    "USA" },  //    -ale NTA Emergency ALE Net
   {  7700.00, 1552, 2005, 0x00080,  472, "HOL", "E",   "Eu"  },  //  -bcast Free Radio Serv.Holland
@@ -7189,7 +7190,7 @@ dx_t eibi_db[] = {
   {  7710.00, 2100, 2130, 0x20102,  380, "CAN", "",    "ENA" },  //    -fax VFF Iqaluit Meteo Fax
   {  7710.00, 2200, 2230, 0x20102,  380, "CAN", "",    "ENA" },  //    -fax VFF Iqaluit Meteo Fax
   {  7718.50,    0, 2400, 0x200b2,  503, "USA", "",    "CNA" },  //    -ale Missouri Nat.Guard ALE
-  {  7720.00,    0, 2400, 0x200b2,  735, "FRA", "",    "F"   },  //    -ale French Navy ALE
+  {  7720.00,    0, 2400, 0x200b2,  736, "FRA", "",    "F"   },  //    -ale French Navy ALE
   {  7720.00,    0, 2400, 0x200b2,  561, "USA", "",    "USA" },  //    -ale US National Guard ALE
   {  7723.00, 1900, 1910, 0x00132,  500, "RUS", "-TY", "RUS" },  //    -spy F01 Russian Spy Numbers
   {  7723.00, 1920, 1930, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
@@ -7197,20 +7198,20 @@ dx_t eibi_db[] = {
   {  7730.00,    0,  100, 0x00080,  656, "ARG", "S",   "WNA" },  //  -bcast La Rosa de Tokio
   {  7730.00,  830,  900, 0x00080,  371, "AUS", "E",   "WNA" },  //  -bcast Hobart Radio Int.
   {  7730.00,    0, 2400, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  {  7730.10,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7730.10,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7730.10,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7730.10, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7730.10, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7730.10, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7730.10, 1500, 1600, 0x00080,  816, "TWN", "CA",  "FE"  },  //  -bcast Sound of Hope
-  {  7730.10, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7730.10, 1700, 2000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7730.10, 2000, 2100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7730.10, 2100, 2130, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7730.10, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7730.10, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  7730.10, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7730.10,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7730.10,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7730.10,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7730.10, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7730.10, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7730.10, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7730.10, 1500, 1600, 0x00080,  817, "TWN", "CA",  "FE"  },  //  -bcast Sound of Hope
+  {  7730.10, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7730.10, 1700, 2000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7730.10, 2000, 2100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7730.10, 2100, 2130, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7730.10, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7730.10, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  7730.10, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   {  7730.00,   30,  100, 0x05080,  137, "USA", "E",   "WNA" },  //  -bcast Adventist World Radio
   {  7730.00,  800,  830, 0x00080,  137, "USA", "E",   "WNA" },  //  -bcast Adventist World Radio
   {  7730.00,  830,  900, 0x00080,  137, "USA", "E",   "WNA" },  //  -bcast Adventist World Radio
@@ -7221,7 +7222,7 @@ dx_t eibi_db[] = {
   {  7730.00,  900, 1100, 0x00080,  373, "USA", "E",   "WNA" },  //  -bcast Brother Stair
   {  7730.00, 1000, 1400, 0x00080,  373, "USA", "E",   "WNA" },  //  -bcast Brother Stair
   {  7730.00, 1400, 1600, 0x00080,  373, "USA", "E",   "WNA" },  //  -bcast Brother Stair
-  {  7730.00,    0,   30, 0x00080,  731, "USA", "S",   "WNA" },  //  -bcast Frecuencia al Día
+  {  7730.00,    0,   30, 0x00080,  732, "USA", "S",   "WNA" },  //  -bcast Frecuencia al Día
   {  7730.00,  800,  900, 0x00080,  629, "USA", "E",   "WNA" },  //  -bcast V.o.Report of the Week
   {  7730.00,   30,  100, 0x00080,   91, "USA", "E",   "WNA" },  //  -bcast World of Radio
   {  7730.00,    0,   30, 0x00080,  661, "USA", "E",   "WNA" },  //  -bcast WRMI Radio Miami Int.
@@ -7250,15 +7251,15 @@ dx_t eibi_db[] = {
   {  7777.00,    0, 2400, 0x200b2,  643, "KGZ", "",    "KGZ" },  //    -ale Kyrgyz Military ALE
   {  7778.50,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   {  7780.00, 2230, 2300, 0x0f480,  489, "ALB", "E",   "ENA" },  //  -bcast Radio Tirana
-  {  7780.00,  200,  300, 0x00080,  722, "ARG", "E",   "ENA" },  //  -bcast R.Argentina al Exterior
-  {  7780.00,  200,  300, 0x00080,  722, "ARG", "F",   "ENA" },  //  -bcast R.Argentina al Exterior
-  {  7780.00,  200,  300, 0x00080,  722, "ARG", "P",   "ENA" },  //  -bcast R.Argentina al Exterior
-  {  7780.00,  200,  300, 0x04480,  722, "ARG", "S",   "ENA" },  //  -bcast R.Argentina al Exterior
-  {  7780.00, 1600, 1700, 0x0f080,  722, "ARG", "D",   "Eu"  },  //  -bcast R.Argentina al Exterior
-  {  7780.00, 2330, 2400, 0x0f880,  722, "ARG", "F",   "Eu"  },  //  -bcast R.Argentina al Exterior
+  {  7780.00,  200,  300, 0x00080,  723, "ARG", "E",   "ENA" },  //  -bcast R.Argentina al Exterior
+  {  7780.00,  200,  300, 0x00080,  723, "ARG", "F",   "ENA" },  //  -bcast R.Argentina al Exterior
+  {  7780.00,  200,  300, 0x00080,  723, "ARG", "P",   "ENA" },  //  -bcast R.Argentina al Exterior
+  {  7780.00,  200,  300, 0x04480,  723, "ARG", "S",   "ENA" },  //  -bcast R.Argentina al Exterior
+  {  7780.00, 1600, 1700, 0x0f080,  723, "ARG", "D",   "Eu"  },  //  -bcast R.Argentina al Exterior
+  {  7780.00, 2330, 2400, 0x0f880,  723, "ARG", "F",   "Eu"  },  //  -bcast R.Argentina al Exterior
   {  7780.00, 2330, 2400, 0x00080,  371, "AUS", "E",   "Eu"  },  //  -bcast Hobart Radio Int.
   {  7780.00, 2300, 2330, 0x0fc80,   65, "CZE", "F",   "ENA" },  //  -bcast Radio Prague
-  {  7780.00,  130,  200, 0x00080,  729, "ITL", "I",   "ENA" },  //  -bcast Studio DX
+  {  7780.00,  130,  200, 0x00080,  730, "ITL", "I",   "ENA" },  //  -bcast Studio DX
   {  7780.00, 2000, 2030, 0x00080,  924, "RUS", "R",   "ENA" },  //  -bcast Radiopanorama
   {  7780.00,    0,   30, 0x00080,  494, "SVK", "SK",  "ENA" },  //  -bcast Radio Slovakia Int.
   {  7780.00,   30,  100, 0x00080,  494, "SVK", "E",   "ENA" },  //  -bcast Radio Slovakia Int.
@@ -7276,7 +7277,7 @@ dx_t eibi_db[] = {
   {  7780.00,  400, 1500, 0x00080,  373, "USA", "E",   "ENA" },  //  -bcast Brother Stair
   {  7780.00, 1400, 1500, 0x00080,  373, "USA", "E",   "ENA" },  //  -bcast Brother Stair
   {  7780.00, 1700, 2000, 0x00080,  373, "USA", "E",   "ENA" },  //  -bcast Brother Stair
-  {  7780.00, 2130, 2200, 0x00080,  731, "USA", "S",   "ENA" },  //  -bcast Frecuencia al Día
+  {  7780.00, 2130, 2200, 0x00080,  732, "USA", "S",   "ENA" },  //  -bcast Frecuencia al Día
   {  7780.00, 2100, 2200, 0x01280,  629, "USA", "E",   "ENA" },  //  -bcast V.o.Report of the Week
   {  7780.00,  130,  200, 0x00080,   91, "USA", "E",   "ENA" },  //  -bcast World of Radio
   {  7780.00,  230,  300, 0x00080,   91, "USA", "E",   "ENA" },  //  -bcast World of Radio
@@ -7317,20 +7318,20 @@ dx_t eibi_db[] = {
   {  7810.00,    0, 2400, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
   {  7810.00,    0, 2400, 0x200b2,  643, "KGZ", "",    "KGZ" },  //    -ale Kyrgyz Military ALE
   {  7810.00,    0, 2400, 0x200b2,  675, "TUR", "",    "TUR" },  //    -ale Red Crescent ALE
-  {  7810.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  7810.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  7810.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  7810.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  7810.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  7810.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  7810.00, 1500, 1600, 0x00092,  816, "TWN", "CA",  "FE"  },  //   -util Sound of Hope
-  {  7810.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  7810.00, 1700, 2000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  7810.00, 2000, 2100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  7810.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  7810.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  7810.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  7810.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  7810.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  7810.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  7810.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  7810.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  7810.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  7810.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  7810.00, 1500, 1600, 0x00092,  817, "TWN", "CA",  "FE"  },  //   -util Sound of Hope
+  {  7810.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  7810.00, 1700, 2000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  7810.00, 2000, 2100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  7810.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  7810.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  7810.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  7810.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  7813.50,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   {  7813.00,    0, 2400, 0x200b2,  685, "MRC", "",    "MRC" },  //    -ale Moroccan Military ALE
   {  7816.00,    0, 2400, 0x200e4,    1, "RUS", "-CW", "RUS" },  //     -cw RDL Russian Navy
@@ -7340,7 +7341,7 @@ dx_t eibi_db[] = {
   {  7830.00,    0, 2400, 0x000d2,  651, "PTR", "",    "NAm" },  // -milcom NAU US Navy STANAG
   {  7833.00,    0, 2400, 0x200b2,  469, "FRA", "",    "Eu"  },  //    -ale Fr. Air Force E-3F ALE
   {  7836.00, 1540, 1550, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
-  {  7837.00, 1030, 1035, 0x0a132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  {  7837.00, 1030, 1035, 0x0a132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   {  7840.00,  645,  655, 0x05132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  7840.00, 1000, 1010, 0x04932,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  7840.00, 1000, 1010, 0x04932,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
@@ -7420,7 +7421,7 @@ dx_t eibi_db[] = {
   {  7906.00,   20,   30, 0x00112,  940, "VTN", "VN",  "SEA" },  //   -aero Vung Tau Radio
   {  7906.00, 1220, 1225, 0x00112,  940, "VTN", "VN",  "SEA" },  //   -aero Vung Tau Radio
   {  7907.50,    0, 2400, 0x200b2,  456, "ALG", "",    "ALG" },  //    -ale Algerian Military ALE
-  {  7907.00, 2000, 2021, 0x20102,  824, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
+  {  7907.00, 2000, 2021, 0x20102,  825, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
   {  7910.00,    0, 2400, 0x200b2,  643, "KGZ", "",    "KGZ" },  //    -ale Kyrgyz Military ALE
   {  7915.00,    0, 2400, 0x200b2,  376, "CHL", "",    "CHL" },  //    -ale Gendarmeria Chile ALE
   {  7920.30,    0, 2400, 0x000d2,  868, "GBR", "",    "ME"  },  // -milcom UK MoD DHFCS STANAG
@@ -7436,7 +7437,7 @@ dx_t eibi_db[] = {
   {  7937.00,    0, 2400, 0x000d2,  203, "GBR", "",    "WEu" },  // -milcom UK DHFCS STANAG
   {  7939.00,    0, 2400, 0x200b2,  463, "SWE", "",    "S"   },  //    -ale Swedish Military ALE
   {  7940.00,    0, 2400, 0x200b2,  643, "KGZ", "",    "KGZ" },  //    -ale Kyrgyz Military ALE
-  {  7940.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  {  7940.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   {  7946.00, 2340, 2350, 0x09132,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  7954.00,    0, 2400, 0x200b2,  502, "TUN", "",    "TUN" },  //    -ale Tunisian Police ALE
   {  7959.00, 2240, 2250, 0x00d32,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
@@ -7445,13 +7446,13 @@ dx_t eibi_db[] = {
   {  7963.00, 1350, 1400, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   {  7964.00, 2010, 2020, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   {  7970.00,    0, 2400, 0x200b2,  643, "KGZ", "",    "KGZ" },  //    -ale Kyrgyz Military ALE
-  {  7980.00,    0, 2400, 0x200b2,  735, "FRA", "",    "F"   },  //    -ale French Navy ALE
+  {  7980.00,    0, 2400, 0x200b2,  736, "FRA", "",    "F"   },  //    -ale French Navy ALE
   {  7984.00,  230,  240, 0x0a132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  7984.00,  230,  240, 0x0a132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  7984.00, 1045, 1055, 0x0a132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  7984.00, 1730, 1740, 0x02532,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
-  {  7984.00,  950,  955, 0x0a132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
-  {  7984.00,  950,  955, 0x0a132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  {  7984.00,  950,  955, 0x0a132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  {  7984.00,  950,  955, 0x0a132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   {  7984.00, 1120, 1125, 0x02332,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
   {  7984.00, 1120, 1125, 0x02332,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
   {  7988.50,    0, 2400, 0x200b2,  867, "LTU", "",    "LTU" },  //    -ale Lithuanian Navy ALE
@@ -7476,11 +7477,11 @@ dx_t eibi_db[] = {
   {  8024.00, 1035, 1045, 0x0f932,  500, "RUS", "-TY", "EEu" },  //    -spy F01 Russian Spy Numbers
   {  8025.00,    0, 2400, 0x200b2,  573, "SPN", "",    "E"   },  //    -ale Guardia Civil ALE
   {  8026.00, 1220, 1230, 0x0f132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
-  {  8029.00,    0, 2400, 0x200e4,  707, "RUS", "-CW", "FE"  },  //     -cw Channel Marker G
-  {  8029.00,    0, 2400, 0x200e4,  708, "RUS", "-CW", "EEu" },  //     -cw Channel Marker W
-  {  8029.00,    0, 2400, 0x000d2,  706, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
-  {  8033.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
-  {  8033.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  {  8029.00,    0, 2400, 0x200e4,  708, "RUS", "-CW", "FE"  },  //     -cw Channel Marker G
+  {  8029.00,    0, 2400, 0x200e4,  709, "RUS", "-CW", "EEu" },  //     -cw Channel Marker W
+  {  8029.00,    0, 2400, 0x000d2,  707, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
+  {  8033.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  {  8033.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
   {  8037.00,   50,  100, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  8038.00,  800,  810, 0x00132,  569, "RUS", "-TY", "As"  },  //    -spy F06 Russian Spy Numbers
   {  8042.00,    0, 2400, 0x200b2,  869, "CHL", "",    "CHL" },  //    -ale Chile Navy ALE
@@ -7489,7 +7490,7 @@ dx_t eibi_db[] = {
   {  8045.00,    0, 2400, 0x200b2,  561, "USA", "",    "USA" },  //    -ale US National Guard ALE
   {  8052.00, 2230, 2240, 0x02532,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  8053.00,    0, 2400, 0x200b2,  404, "USA", "",    "WNA" },  //    -ale Bonneville PowerAdm.ALE
-  {  8055.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  {  8055.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   {  8056.00, 1740, 1750, 0x02332,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   {  8056.00, 2130, 2140, 0x00132,  672, "RUS", "R",   "RUS" },  //    -spy S06 Russian Spy Numbers
   {  8056.50,    0, 2400, 0x200b2,  442, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
@@ -7499,7 +7500,7 @@ dx_t eibi_db[] = {
   {  8057.00,  830,  840, 0x00132,  628, "UKR", "R",   "FE"  },  //    -spy S06s Spy Numbers
   {  8058.00,    0, 2400, 0x200b2,  578, "CHN", "",    "CHN" },  //    -ale Chinese Military ALE
   {  8058.00, 2000, 2010, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
-  {  8058.60,    0, 2400, 0x200b2,  718, "USA", "",    "Glo" },  //    -ale US Embassies ALE
+  {  8058.60,    0, 2400, 0x200b2,  719, "USA", "",    "Glo" },  //    -ale US Embassies ALE
   {  8060.00,    0, 2400, 0x200b2,  456, "ALG", "",    "ALG" },  //    -ale Algerian Military ALE
   {  8060.00,    0, 2400, 0x200b2,  694, "CLM", "",    "CLM" },  //    -ale Colombian Navy ALE
   {  8061.00,    0, 2400, 0x000d2,  868, "GBR", "",    "ME"  },  // -milcom UK MoD DHFCS STANAG
@@ -7511,7 +7512,7 @@ dx_t eibi_db[] = {
   {  8065.00,    0, 2400, 0x200b2,  503, "USA", "",    "CNA" },  //    -ale Missouri Nat.Guard ALE
   {  8067.00,  150,  200, 0x01332,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  8068.00,  720,  730, 0x0f932,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
-  {  8072.00,    0, 2400, 0x200b2,  721, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
+  {  8072.00,    0, 2400, 0x200b2,  722, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
   {  8074.00,   50,  100, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  8075.00,   50,  100, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  8076.00, 1025, 1035, 0x0f932,  500, "RUS", "-TY", "EEu" },  //    -spy F01 Russian Spy Numbers
@@ -7527,8 +7528,8 @@ dx_t eibi_db[] = {
   {  8084.00, 2230, 2240, 0x02532,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  8085.50,    0, 2400, 0x200b2,  293, "HOL", "",    "HOL" },  //    -ale Dutch Military ALE
   {  8088.00, 1730, 1740, 0x00132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
-  {  8090.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
-  {  8090.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  {  8090.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  {  8090.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
   {  8092.00,    0, 2400, 0x200b2,  442, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
   {  8093.00,    0, 2400, 0x000d2,  944, "BIO", "",    "SAs" },  // -milcom US Navy RTTY/STANAG
   {  8093.00,  720,  730, 0x0f932,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
@@ -7545,9 +7546,9 @@ dx_t eibi_db[] = {
   {  8107.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   {  8107.00,  410,  420, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   {  8111.20,    0, 2400, 0x000d2,  143, "GER", "",    "Eu"  },  // -milcom DHJ58 Marine STANAG
-  {  8112.00,    0, 2400, 0x200e4,  707, "RUS", "-CW", "FE"  },  //     -cw Channel Marker G
-  {  8112.00,    0, 2400, 0x200e4,  708, "RUS", "-CW", "EEu" },  //     -cw Channel Marker W
-  {  8112.00,    0, 2400, 0x000d2,  706, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
+  {  8112.00,    0, 2400, 0x200e4,  708, "RUS", "-CW", "FE"  },  //     -cw Channel Marker G
+  {  8112.00,    0, 2400, 0x200e4,  709, "RUS", "-CW", "EEu" },  //     -cw Channel Marker W
+  {  8112.00,    0, 2400, 0x000d2,  707, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
   {  8112.00, 1900, 1910, 0x00132,  500, "RUS", "-TY", "RUS" },  //    -spy F01 Russian Spy Numbers
   {  8113.00,    0, 2400, 0x00092,  195, "AUS", "E",   "AUS" },  //   -util VMW Wiluna WA
   {  8113.00,  720,  730, 0x0f932,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
@@ -7564,15 +7565,15 @@ dx_t eibi_db[] = {
   {  8124.00, 1550, 1600, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
   {  8125.00,    0, 2400, 0x200b2,  869, "CHL", "",    "CHL" },  //    -ale Chile Navy ALE
   {  8125.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
-  {  8125.00,    0, 2400, 0x200b2,  733, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
+  {  8125.00,    0, 2400, 0x200b2,  734, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
   {  8126.00, 1450, 1500, 0x01532,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   {  8126.00,  410,  420, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   {  8126.00, 2200, 2210, 0x00d32,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  8126.00, 1600, 1610, 0x08532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   {  8129.00, 1220, 1230, 0x0f132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   {  8130.00,    0, 2400, 0x200b2,  566, "SVK", "",    "SVK" },  //    -ale Slovak Military ALE
-  {  8131.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
-  {  8131.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  {  8131.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  {  8131.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
   {  8131.00, 1140, 1150, 0x04932,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   {  8132.00,    0, 2400, 0x200b2,  199, "GER", "",    "D"   },  //    -ale German Fed.Police ALE
   {  8132.00,  110,  120, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
@@ -7629,9 +7630,9 @@ dx_t eibi_db[] = {
   {  8161.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   {  8161.00,   30,   40, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  8162.00,    0, 2400, 0x200b2,  644, "HNG", "",    "HNG" },  //    -ale Hungarian Military ALE
-  {  8162.00,    0, 2400, 0x200e4,  707, "RUS", "-CW", "FE"  },  //     -cw Channel Marker G
-  {  8162.00,    0, 2400, 0x200e4,  708, "RUS", "-CW", "EEu" },  //     -cw Channel Marker W
-  {  8162.00,    0, 2400, 0x000d2,  706, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
+  {  8162.00,    0, 2400, 0x200e4,  708, "RUS", "-CW", "FE"  },  //     -cw Channel Marker G
+  {  8162.00,    0, 2400, 0x200e4,  709, "RUS", "-CW", "EEu" },  //     -cw Channel Marker W
+  {  8162.00,    0, 2400, 0x000d2,  707, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
   {  8163.00,  400,  410, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   {  8163.00,  110,  120, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  8164.00, 2110, 2120, 0x09132,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
@@ -7641,7 +7642,7 @@ dx_t eibi_db[] = {
   {  8167.00, 1830, 1840, 0x00132,  672, "RUS", "R",   "RUS" },  //    -spy S06 Russian Spy Numbers
   {  8170.00,    0, 2400, 0x000d2,  868, "GBR", "",    "ME"  },  // -milcom UK MoD DHFCS STANAG
   {  8170.20,    0, 2400, 0x000d2,  206, "NOR", "",    "NEu" },  // -milcom Norway Navy STANAG
-  {  8170.00,    0, 2400, 0x000d2,  706, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
+  {  8170.00,    0, 2400, 0x000d2,  707, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
   {  8172.00, 1940, 1950, 0x00132,  500, "RUS", "-TY", "RUS" },  //    -spy F01 Russian Spy Numbers
   {  8172.00, 2150, 2200, 0x09132,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  8174.00,  500,  510, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
@@ -7673,7 +7674,7 @@ dx_t eibi_db[] = {
   {  8180.00,  900,  910, 0x0a132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  8180.00,  900,  910, 0x0a132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  8180.00, 1000, 1010, 0x04932,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
-  {  8180.00,  950,  955, 0x0a132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  {  8180.00,  950,  955, 0x0a132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   {  8180.00,    0, 2400, 0x200b2,  502, "TUN", "",    "TUN" },  //    -ale Tunisian Police ALE
   {  8182.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   {  8183.00, 1550, 1600, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
@@ -7685,7 +7686,7 @@ dx_t eibi_db[] = {
   {  8188.00,  510,  520, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
   {  8188.00,  510,  520, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
   {  8189.00,  720,  730, 0x0f932,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
-  {  8190.00,    0, 2400, 0x200b2,  721, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
+  {  8190.00,    0, 2400, 0x200b2,  722, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
   {  8191.00, 1220, 1230, 0x0f132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   {  8191.00, 1900, 1910, 0x00132,  672, "RUS", "R",   "RUS" },  //    -spy S06 Russian Spy Numbers
   {  8195.00,    0, 2400, 0x200b2,  955, "ROU", "",    "ROU" },  //    -ale Romanian Police ALE
@@ -7698,7 +7699,7 @@ dx_t eibi_db[] = {
   {  8270.00,  840,  850, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  8270.00,  840,  850, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  8275.00,    0, 2400, 0x200b2,  549, "GEO", "",    "GEO" },  //    -ale Georgia Coast Guard ALE
-  {  8276.00,    0, 2400, 0x200b2,  735, "FRA", "",    "F"   },  //    -ale French Navy ALE
+  {  8276.00,    0, 2400, 0x200b2,  736, "FRA", "",    "F"   },  //    -ale French Navy ALE
   {  8291.00,    0, 2400, 0x00112,  956, "SPN", "S",   "SEu" },  //   -aero Madrid Radio
   {  8291.00,    0, 2400, 0x00122,  513, "HKG", "E",   "FE"  },  // -marine VRC Marine Rescue Radio
   {  8291.00, 1330, 1345, 0x00092,  957, "JMC", "E",   "Car" },  //   -util Jamaica Coast Guard Wx
@@ -7736,14 +7737,14 @@ dx_t eibi_db[] = {
   {  8300.00,    0, 2400, 0x000d2,  577, "SEN", "F",   "WAf" },  // -milcom 6WW French Navy STANAG
   {  8300.00, 1300, 1330, 0x00092,  907, "TWN", "M",   "CHN" },  //   -util Star-Star Bc.Station
   {  8302.00,    0, 2400, 0x20102,  515, "CHN", "M",   "FE"  },  //    -fax XSG Shanghai Radio Fax
-  {  8305.00,  615,  620, 0x05132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
-  {  8305.00,  615,  620, 0x05132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  {  8305.00,  615,  620, 0x05132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  {  8305.00,  615,  620, 0x05132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   {  8308.00,    0, 2400, 0x200b2,  943, "AGL", "",    "AGL" },  //    -ale Angolan Police ALE
   {  8316.20,    0, 2400, 0x000d2,  219, "ITL", "",    "SEu" },  // -milcom IDR Ny Roma STANAG
   {  8319.00,    0, 2400, 0x200e4,  282, "ISR", "-CW", ""    },  //     -cw 4XZ Israeli Navy Haifa
   {  8325.50,    0, 2400, 0x000d2,  868, "GBR", "",    "SAO" },  // -milcom UK MoD DHFCS STANAG
   {  8335.00,    0, 2400, 0x000d2,  203, "GBR", "",    "WEu" },  // -milcom UK DHFCS STANAG
-  {  8356.50,    0, 2400, 0x200e4,  832, "JPN", "-CW", "FE"  },  //     -cw JFX Kagoshima Fishery
+  {  8356.50,    0, 2400, 0x200e4,  833, "JPN", "-CW", "FE"  },  //     -cw JFX Kagoshima Fishery
   {  8412.50,    0, 2400, 0x200b2,  442, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
   {  8415.00,    0, 2400, 0x200e4,  568, "XUU", "-CW", ""    },  //     -cw Channel Marker T
   {  8416.50,  300,  310, 0x00112,  520, "ARG", "S",   "SAm" },  //   -aero L2C Buenos Aires Radio
@@ -7760,13 +7761,13 @@ dx_t eibi_db[] = {
   {  8416.50, 1130, 1140, 0x00112,  284, "INS", "E",   "SEA" },  //   -aero Jakarta Radio
   {  8416.50,   15,   25, 0x00092,  961, "USA", "",    "WNA" },  //   -util NMC NAVTEX Pt Reyes CA
   {  8416.50, 1730, 1740, 0x00092,  961, "USA", "",    "WNA" },  //   -util NMC NAVTEX Pt Reyes CA
-  {  8416.50,  140,  150, 0x00092,  821, "USA", "",    "ENA" },  //   -util NMF NAVTEX Boston MA
-  {  8416.50, 1630, 1640, 0x00092,  821, "USA", "",    "ENA" },  //   -util NMF NAVTEX Boston MA
+  {  8416.50,  140,  150, 0x00092,  822, "USA", "",    "ENA" },  //   -util NMF NAVTEX Boston MA
+  {  8416.50, 1630, 1640, 0x00092,  822, "USA", "",    "ENA" },  //   -util NMF NAVTEX Boston MA
   {  8417.50,    0, 2400, 0x00112,  522, "CHN", "-TY", "FE"  },  //   -aero XSV Tianjin Radio
   {  8420.00,    0, 2400, 0x200b2,  962, "BRA", "",    "SAm" },  //    -ale Brazilian Navy ALE
   {  8420.00, 1300, 1310, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
-  {  8423.00, 1030, 1035, 0x0a132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
-  {  8424.00,    0, 2400, 0x00112,  823, "GRC", "-CW", "SEu" },  //   -aero SVO Olimpia Radio
+  {  8423.00, 1030, 1035, 0x0a132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  {  8424.00,    0, 2400, 0x00112,  824, "GRC", "-CW", "SEu" },  //   -aero SVO Olimpia Radio
   {  8425.50,    0, 2400, 0x00112,  523, "CHN", "-TY", "FE"  },  //   -aero XSG Shanghai Radio
   {  8425.60,    0, 2400, 0x200b2,  690, "IRQ", "",    "IRQ" },  //    -ale Iraqi Security Fcs. ALE
   {  8431.00,    0, 2400, 0x00112,  521, "CHN", "-TY", "FE"  },  //   -aero XSQ Guangzhou Radio
@@ -7775,12 +7776,12 @@ dx_t eibi_db[] = {
   {  8434.00,    0, 2400, 0x00112,  519, "TUR", "-CW", "ME"  },  //   -aero TAH Turk Radio Istanbul
   {  8435.00,    0, 2400, 0x00112,  521, "CHN", "-TY", "FE"  },  //   -aero XSQ Guangzhou Radio
   {  8439.00,    0, 2400, 0x000d2,  963, "HOL", "-TY", "WEu" },  // -milcom PBB Ny DenHelder
-  {  8440.00,  700,  721, 0x20102,  824, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
-  {  8440.00,  800,  821, 0x20102,  824, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
-  {  8440.00, 1400, 1500, 0x20102,  824, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
-  {  8440.00, 1850, 1905, 0x20102,  824, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
-  {  8440.00, 2000, 2021, 0x20102,  824, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
-  {  8444.00, 1030, 1043, 0x20102,  824, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
+  {  8440.00,  700,  721, 0x20102,  825, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
+  {  8440.00,  800,  821, 0x20102,  825, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
+  {  8440.00, 1400, 1500, 0x20102,  825, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
+  {  8440.00, 1850, 1905, 0x20102,  825, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
+  {  8440.00, 2000, 2021, 0x20102,  825, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
+  {  8444.00, 1030, 1043, 0x20102,  825, "RUS", "",    "NEu" },  //    -fax RBW Murmansk Meteo Fax
   {  8453.00,    0, 2400, 0x000d2,  251, "FRA", "F",   "Eu"  },  // -milcom FUG French Navy STANAG
   {  8454.00, 1000, 1015, 0x00112,  526, "RUS", "-TY", "EEu" },  //   -aero Kaliningrad Radio UIW23
   {  8454.00, 1620, 1635, 0x00112,  526, "RUS", "-TY", "EEu" },  //   -aero Kaliningrad Radio UIW23
@@ -7813,9 +7814,9 @@ dx_t eibi_db[] = {
   {  8478.50,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   {  8484.00,  900, 2400, 0x00112,  965, "KOR", "-CW", "FE"  },  //   -aero HLG Seoul Radio
   {  8484.50,    0, 2400, 0x200e4,  445, "RUS", "-CW", "RUS" },  //     -cw Channel Marker P
-  {  8488.20,    0, 2400, 0x000d2,  835, "CAN", "",    "WNA" },  // -milcom CKN Aldergrove STANAG
+  {  8488.20,    0, 2400, 0x000d2,  836, "CAN", "",    "WNA" },  // -milcom CKN Aldergrove STANAG
   {  8488.10,    0, 2400, 0x000d2,  239, "POR", "",    "SEu" },  // -milcom CTA NATO STANAG
-  {  8491.00,    0, 2400, 0x200e4,  830, "PAK", "-CW", "SAs" },  //     -cw AQP Pakistan Navy
+  {  8491.00,    0, 2400, 0x200e4,  831, "PAK", "-CW", "SAs" },  //     -cw AQP Pakistan Navy
   {  8492.20,    0, 2400, 0x000d2,  226, "SPN", "",    "SEu" },  // -milcom EBA Navy Madrid STANAG
   {  8494.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   {  8494.70,    0, 2400, 0x200e4,  444, "RUS", "-CW", "EEu" },  //     -cw Channel Marker D
@@ -7851,7 +7852,7 @@ dx_t eibi_db[] = {
   {  8503.90,  600,  855, 0x20102,  542, "USA", "",    "Car" },  //    -fax NMG Fax New Orleans
   {  8503.90, 1200, 1505, 0x20102,  542, "USA", "",    "Car" },  //    -fax NMG Fax New Orleans
   {  8503.90, 1800, 2105, 0x20102,  542, "USA", "",    "Car" },  //    -fax NMG Fax New Orleans
-  {  8508.00,    0, 2400, 0x200e4,  827, "JPN", "-CW", "FE"  },  //     -cw JFG Shizuokaken Fishery
+  {  8508.00,    0, 2400, 0x200e4,  828, "JPN", "-CW", "FE"  },  //     -cw JFG Shizuokaken Fishery
   {  8508.00,    0, 2400, 0x200e4,  966, "JPN", "-CW", "FE"  },  //     -cw JFM Muroto Fishery
   {  8508.00,    0, 2400, 0x200e4,  967, "JPN", "-CW", "FE"  },  //     -cw JFQ Makurazaki Fishery
   {  8512.20,    0, 2400, 0x000d2,  518, "HOL", "",    "Eu"  },  // -milcom PBB Ny DenHelder STANAG
@@ -7901,8 +7902,8 @@ dx_t eibi_db[] = {
   {  8600.00,    0, 2400, 0x200b2,  461, "MRC", "",    "MRC" },  //    -ale Protection Civile ALE
   {  8604.00,    0, 2400, 0x000d2,  580, "AUS", "",    "AUS" },  // -milcom Humpty Doo STANAG
   {  8612.20,    0, 2400, 0x000d2,  203, "GBR", "",    "WEu" },  // -milcom UK DHFCS STANAG
-  {  8616.00,    0, 2400, 0x20102,  831, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
-  {  8625.00,    0, 2400, 0x000d2,  836, "OCE", "F",   "Oc"  },  // -milcom FUM French Navy STANAG
+  {  8616.00,    0, 2400, 0x20102,  832, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
+  {  8625.00,    0, 2400, 0x000d2,  837, "OCE", "F",   "Oc"  },  // -milcom FUM French Navy STANAG
   {  8627.00,    0, 2400, 0x200e4,  202, "RUS", "-CW", "RUS" },  //     -cw RMP Russian Navy
   {  8632.60,    0, 2400, 0x000d2,  243, "FRA", "F",   "Eu"  },  // -milcom FUO French Navy STANAG
   {  8634.00, 1240, 1310, 0x200e4,  971, "IND", "-CW", "SAs" },  //     -cw VTG6 Indian Navy Wx
@@ -7910,10 +7911,10 @@ dx_t eibi_db[] = {
   {  8642.00, 1700, 2300, 0x200e4,   34, "USA", "-CW", "WNA" },  //     -cw KPH Point Reyes, CA
   {  8646.00,    0, 2400, 0x000d2,  533, "NCL", "F",   "Oc"  },  // -milcom FUJ French Navy STANAG
   {  8656.00,    0, 2400, 0x200b2,  442, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
-  {  8658.00,  615,  630, 0x2c502,  831, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
-  {  8658.00,  650,  705, 0x2fd02,  831, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
-  {  8658.00, 1800, 1813, 0x20102,  831, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
-  {  8658.00, 2300, 2313, 0x20102,  831, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
+  {  8658.00,  615,  630, 0x2c502,  832, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
+  {  8658.00,  650,  705, 0x2fd02,  832, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
+  {  8658.00, 1800, 1813, 0x20102,  832, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
+  {  8658.00, 2300, 2313, 0x20102,  832, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
   {  8660.20,    0, 2400, 0x000d2,  319, "CAN", "",    "NAm" },  // -milcom CFH Halifax STANAG
   {  8665.00,    0, 2400, 0x00112,  523, "CHN", "-TY", "FE"  },  //   -aero XSG Shanghai Radio
   {  8672.20,    0, 2400, 0x000d2,  203, "GBR", "",    "WEu" },  // -milcom UK DHFCS STANAG
@@ -7936,7 +7937,7 @@ dx_t eibi_db[] = {
   {  8682.00, 1820, 1840, 0x20102,  546, "USA", "",    "WNA" },  //    -fax NMC Fax Pt Reyes CA
   {  8682.00, 1840, 2220, 0x20102,  546, "USA", "",    "WNA" },  //    -fax NMC Fax Pt Reyes CA
   {  8682.00, 2320, 2400, 0x20102,  546, "USA", "",    "WNA" },  //    -fax NMC Fax Pt Reyes CA
-  {  8686.00,    0, 2400, 0x200e4,  826, "USA", "-CW", "Car" },  //     -cw WHL St Augustine, FL
+  {  8686.00,    0, 2400, 0x200e4,  827, "USA", "-CW", "Car" },  //     -cw WHL St Augustine, FL
   {  8694.00,    0, 2400, 0x00112,   36, "CHN", "M",   "FE"  },  //   -aero XSZ Dalian Radio (x05)
   {  8694.00,    0, 2400, 0x000d2,  609, "USA", "",    "WNA" },  // -milcom NPG US Navy STANAG
   {  8695.00,    0, 2400, 0x200b2,  690, "IRQ", "",    "IRQ" },  //    -ale Iraqi Security Fcs. ALE
@@ -7946,7 +7947,7 @@ dx_t eibi_db[] = {
   {  8696.00, 2005, 2035, 0x20102,  543, "CHL", "S",   "CHL" },  //    -fax CBM Magallanes Fax
   {  8696.00, 2240, 2325, 0x20102,  543, "CHL", "S",   "CHL" },  //    -fax CBM Magallanes Fax
   {  8698.20,    0, 2400, 0x000d2,  206, "NOR", "",    "NEu" },  // -milcom Norway Navy STANAG
-  {  8700.00,    0, 2400, 0x200b2,  724, "SVN", "",    "SVN" },  //    -ale Slovenian Military ALE
+  {  8700.00,    0, 2400, 0x200b2,  725, "SVN", "",    "SVN" },  //    -ale Slovenian Military ALE
   {  8701.00,    0, 2400, 0x000d2,  239, "POR", "",    "SEu" },  // -milcom CTA NATO STANAG
   {  8716.00,  900, 1600, 0x00112,  547, "CHN", "M",   "FE"  },  //   -aero XSZ Dalian Radio (x40)
   {  8716.00, 2200,  900, 0x00112,  547, "CHN", "M",   "FE"  },  //   -aero XSZ Dalian Radio (x40)
@@ -7978,18 +7979,18 @@ dx_t eibi_db[] = {
   {  8746.00,    0, 2400, 0x00112,  519, "TUR", "E",   "ME"  },  //   -aero TAH Turk Radio Istanbul
   {  8749.00,    0, 2400, 0x00112,  519, "TUR", "E",   "ME"  },  //   -aero TAH Turk Radio Istanbul
   {  8750.00,    0, 2400, 0x200b2,  867, "LTU", "",    "LTU" },  //    -ale Lithuanian Navy ALE
-  {  8755.00,   10,   20, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  {  8755.00,  210,  220, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  {  8755.00,  410,  420, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  {  8755.00,  610,  620, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  {  8755.00,  810,  820, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  {  8755.00, 1010, 1020, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  {  8755.00, 1210, 1220, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  {  8755.00, 1410, 1420, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  {  8755.00, 1610, 1620, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  {  8755.00, 1810, 1820, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  {  8755.00, 2010, 2020, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  {  8755.00, 2210, 2220, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  {  8755.00,   10,   20, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  {  8755.00,  210,  220, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  {  8755.00,  410,  420, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  {  8755.00,  610,  620, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  {  8755.00,  810,  820, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  {  8755.00, 1010, 1020, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  {  8755.00, 1210, 1220, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  {  8755.00, 1410, 1420, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  {  8755.00, 1610, 1620, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  {  8755.00, 1810, 1820, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  {  8755.00, 2010, 2020, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  {  8755.00, 2210, 2220, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
   {  8755.00,   20,   40, 0x00112,  522, "CHN", "M",   "FE"  },  //   -aero XSV Tianjin Radio
   {  8755.00,  220,  240, 0x00112,  522, "CHN", "M",   "FE"  },  //   -aero XSV Tianjin Radio
   {  8755.00,  420,  440, 0x00112,  522, "CHN", "M",   "FE"  },  //   -aero XSV Tianjin Radio
@@ -8007,10 +8008,10 @@ dx_t eibi_db[] = {
   {  8761.00, 1200, 1210, 0x00112,  974, "JPN", "J",   "FE"  },  //   -aero Okinawa Fishery Radio
   {  8761.00, 2100, 2120, 0x00112,  974, "JPN", "J",   "FE"  },  //   -aero Okinawa Fishery Radio
   {  8764.00,  600, 1800, 0x00112,  252, "CHN", "M",   "FE"  },  //   -aero Haikou Radio (x20)
-  {  8764.00,    5,   40, 0x00092,  841, "HWA", "E",   "Oc"  },  //   -util NMO USCG Honolulu
-  {  8764.00,  600,  635, 0x00092,  841, "HWA", "E",   "Oc"  },  //   -util NMO USCG Honolulu
-  {  8764.00, 1200, 1235, 0x00092,  841, "HWA", "E",   "Oc"  },  //   -util NMO USCG Honolulu
-  {  8764.00, 1800, 1835, 0x00092,  841, "HWA", "E",   "Oc"  },  //   -util NMO USCG Honolulu
+  {  8764.00,    5,   40, 0x00092,  842, "HWA", "E",   "Oc"  },  //   -util NMO USCG Honolulu
+  {  8764.00,  600,  635, 0x00092,  842, "HWA", "E",   "Oc"  },  //   -util NMO USCG Honolulu
+  {  8764.00, 1200, 1235, 0x00092,  842, "HWA", "E",   "Oc"  },  //   -util NMO USCG Honolulu
+  {  8764.00, 1800, 1835, 0x00092,  842, "HWA", "E",   "Oc"  },  //   -util NMO USCG Honolulu
   {  8764.00,  430,  505, 0x00092,  559, "USA", "E",   "NAm" },  //   -util NMC USCG Point Reyes
   {  8764.00, 1030, 1105, 0x00092,  559, "USA", "E",   "NAm" },  //   -util NMC USCG Point Reyes
   {  8764.00, 1630, 1705, 0x00092,  559, "USA", "E",   "NAm" },  //   -util NMC USCG Point Reyes
@@ -8027,8 +8028,8 @@ dx_t eibi_db[] = {
   {  8770.00,  518,  528, 0x00122,  975, "SEY", "E",   "SEY" },  // -marine Seychelles Marine Wx
   {  8770.00, 1548, 1558, 0x00122,  975, "SEY", "E",   "SEY" },  // -marine Seychelles Marine Wx
   {  8773.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
-  {  8776.00, 1200, 1300, 0x00112,  823, "GRC", "GR",  "SEu" },  //   -aero SVO Olimpia Radio
-  {  8776.00, 1945, 2000, 0x00112,  823, "GRC", "GR",  "SEu" },  //   -aero SVO Olimpia Radio
+  {  8776.00, 1200, 1300, 0x00112,  824, "GRC", "GR",  "SEu" },  //   -aero SVO Olimpia Radio
+  {  8776.00, 1945, 2000, 0x00112,  824, "GRC", "GR",  "SEu" },  //   -aero SVO Olimpia Radio
   {  8779.00,    0, 2400, 0x00092,  178, "ITL", "I",   "SEu" },  //   -util Romaradio IAR
   {  8782.00, 1910, 1920, 0x00112,  521, "CHN", "M",   "FE"  },  //   -aero XSQ Guangzhou Radio
   {  8782.00, 2010, 2020, 0x00112,  521, "CHN", "M",   "FE"  },  //   -aero XSQ Guangzhou Radio
@@ -8044,7 +8045,7 @@ dx_t eibi_db[] = {
   {  8800.00,  735,  740, 0x09132,  977, "POL", "-TY", ""    },  //    -spy F03f Polish Spy Numbers
   {  8803.00,  230,  245, 0x00092,  978, "OCE", "F",   "OCE" },  //   -util MRCC Papeete
   {  8803.00, 1730, 1745, 0x00092,  978, "OCE", "F",   "OCE" },  //   -util MRCC Papeete
-  {  8803.00,  615,  620, 0x05132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  {  8803.00,  615,  620, 0x05132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   {  8806.00,  900,  908, 0x00112,  523, "CHN", "M",   "FE"  },  //   -aero XSG Shanghai Radio
   {  8806.00, 1000, 1006, 0x00112,  523, "CHN", "M",   "FE"  },  //   -aero XSG Shanghai Radio
   {  8806.00, 1700, 1706, 0x00112,  523, "CHN", "M",   "FE"  },  //   -aero XSG Shanghai Radio
@@ -8064,11 +8065,11 @@ dx_t eibi_db[] = {
   {  8812.00, 1246, 1248, 0x00092,  925, "VTN", "VN",  "SEA" },  //   -util Ho Chi Minh City R.XVS
   {  8812.00, 1248, 1250, 0x00092,  925, "VTN", "E",   "SEA" },  //   -util Ho Chi Minh City R.XVS
   {  8812.00, 2030, 2040, 0x00092,  925, "VTN", "E",   "SEA" },  //   -util Ho Chi Minh City R.XVS
-  {  8815.00,    0, 2400, 0x200b2,  845, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
+  {  8815.00,    0, 2400, 0x200b2,  846, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
   {  8816.00,    0, 2400, 0x200e4,  979, "RUS", "-CW", "RUS" },  //     -cw Russian Naval Air
   {  8819.00,    0, 2400, 0x00112,  413, "UZB", "R",   "CAs" },  //   -aero Tashkent Volmet x20,x50
   {  8825.00,    0, 2400, 0x00112,  339, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio E
-  {  8825.00,    0, 2400, 0x200c2,  716, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
+  {  8825.00,    0, 2400, 0x200c2,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
   {  8825.00,    0, 2400, 0x00112,  340, "USA", "E",   "NAO" },  //   -aero New York Radio E
   {  8828.00,    0, 2400, 0x00112,  858, "HKG", "E",   "FE"  },  //   -aero Hongkong Volmet x15,x45
   {  8828.00,    0, 2400, 0x00112,  321, "HWA", "E",   "Oc"  },  //   -aero Honolulu Volmet x25,x55
@@ -8078,20 +8079,21 @@ dx_t eibi_db[] = {
   {  8831.00,    0, 2400, 0x00112,  436, "CAN", "E",   "NAO" },  //   -aero Gander Radio F
   {  8831.00, 1000, 1800, 0x00092,  437, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio F
   {  8834.00,    0, 2400, 0x200c2,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
+  {  8939.00,    0, 2400, 0x200c2,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
   {  8841.00,    0, 2400, 0x200b2,  465, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
   {  8843.00,    0, 2400, 0x200c2,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
   {  8843.00,    0, 2400, 0x00112,  415, "USA", "E",   "EOc" },  //   -aero San Francisco Radio 1
   {  8846.00,    0, 2400, 0x00112,  331, "USA", "E",   "Car" },  //   -aero New York Radio CAR-A
   {  8847.00,    0, 2400, 0x200b2,  465, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
-  {  8847.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  {  8847.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
   {  8849.00,   15,  800, 0x00112,  428, "CHN", "E",   "FE"  },  //   -aero Beijing Volmet x15,x45
   {  8849.00,    0,  745, 0x00112,  429, "CHN", "E",   "FE"  },  //   -aero Guangzhou Volmet x00,30
-  {  8850.00,    0, 2400, 0x200b2,  845, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
+  {  8850.00,    0, 2400, 0x200b2,  846, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
   {  8855.00,    0, 2400, 0x00112,  980, "GUF", "E",   "SAm" },  //   -aero Cayenne Radio
   {  8857.00,    0, 2400, 0x200b2,  943, "AGL", "",    "AGL" },  //    -ale Angolan Police ALE
   {  8859.00,    0, 2400, 0x200b2,  943, "AGL", "",    "AGL" },  //    -ale Angolan Police ALE
   {  8861.00,    0, 2400, 0x00112,  146, "CNR", "E",   "WAf" },  //   -aero Las Palmas Radio
-  {  8861.00,    0, 2400, 0x00112,  844, "CPV", "E",   "WAf" },  //   -aero Sal Radio
+  {  8861.00,    0, 2400, 0x00112,  845, "CPV", "E",   "WAf" },  //   -aero Sal Radio
   {  8861.00,    0, 2400, 0x00112,  981, "IND", "E",   "SAs" },  //   -aero Chennai Radio
   {  8861.00,    0, 2400, 0x00112,  704, "SEN", "E",   "WAf" },  //   -aero Dakar Radio
   {  8864.00,    0, 2400, 0x00112,  332, "CAN", "E",   "NAO" },  //   -aero Gander Radio B
@@ -8108,13 +8110,13 @@ dx_t eibi_db[] = {
   {  8876.80,  630,  640, 0x00112,  982, "PHL", "E",   "PHL" },  //   -aero DZS4 Manila Radio
   {  8876.80,  930,  940, 0x00112,  982, "PHL", "E",   "PHL" },  //   -aero DZS4 Manila Radio
   {  8876.80, 1230, 1240, 0x00112,  982, "PHL", "E",   "PHL" },  //   -aero DZS4 Manila Radio
-  {  8878.00,    0, 2400, 0x00112,  712, "ROU", "RO",  "Eu"  },  //   -aero Bucuresti Aero
+  {  8878.00,    0, 2400, 0x00112,  713, "ROU", "RO",  "Eu"  },  //   -aero Bucuresti Aero
   {  8879.00,    0, 2400, 0x00112,  328, "CAN", "E",   "NAO" },  //   -aero Gander Radio C
   {  8879.00,    0, 2400, 0x00112,  855, "IND", "E",   "SAs" },  //   -aero Mumbai Radio
   {  8879.00,  900, 2100, 0x00092,  329, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio C
   {  8879.00,    0, 2400, 0x00112,  330, "ISL", "E",   "NAO" },  //   -aero Iceland Radio C
   {  8885.00,    0, 2400, 0x200c2,  701, "BHR", "-HF", "ME"  },  //   -hfdl Al Muharraq HFDL (ID15)
-  {  8886.00,    0, 2400, 0x200c2,  709, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
+  {  8886.00,    0, 2400, 0x200c2,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
   {  8888.00,    0, 2400, 0x200b2,  873, "MEX", "",    "MEX" },  //    -ale Mexican Military ALE
   {  8888.00,    0, 2400, 0x00112,  324, "RUS", "R",   "CIS" },  //   -aero Novosibir Volmet x10,40
   {  8888.00,    0, 2400, 0x00112,  325, "RUS", "R",   "CIS" },  //   -aero Samara Volmet x15,45
@@ -8126,10 +8128,10 @@ dx_t eibi_db[] = {
   {  8894.00,    0, 2400, 0x00112,  984, "ALG", "E",   "NAf" },  //   -aero Algiers Radio
   {  8894.00,    0, 2400, 0x00112,  985, "MTN", "E",   "WAf" },  //   -aero Nouakchott Radio
   {  8894.00,    0, 2400, 0x00112,  986, "NGR", "E",   "CAf" },  //   -aero Niamey Radio
-  {  8894.00,    0, 2400, 0x200c2,  335, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
-  {  8895.00,    0, 2400, 0x200e4,  707, "RUS", "-CW", "FE"  },  //     -cw Channel Marker G
-  {  8895.00,    0, 2400, 0x200e4,  708, "RUS", "-CW", "EEu" },  //     -cw Channel Marker W
-  {  8895.00,    0, 2400, 0x000d2,  706, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
+  {  8894.00,    0, 2400, 0x200c2,  706, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
+  {  8895.00,    0, 2400, 0x200e4,  708, "RUS", "-CW", "FE"  },  //     -cw Channel Marker G
+  {  8895.00,    0, 2400, 0x200e4,  709, "RUS", "-CW", "EEu" },  //     -cw Channel Marker W
+  {  8895.00,    0, 2400, 0x000d2,  707, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
   {  8896.60,    0, 2400, 0x200b2,  690, "IRQ", "",    "IRQ" },  //    -ale Iraqi Security Fcs. ALE
   {  8903.00,    0, 2400, 0x00112,  987, "COD", "E",   "CAf" },  //   -aero Kinshasa Radio
   {  8903.00,    0, 2400, 0x00112,  988, "COG", "E",   "CAf" },  //   -aero Brazzaville Radio
@@ -8139,19 +8141,19 @@ dx_t eibi_db[] = {
   {  8903.00,    0, 2400, 0x00112,  991, "TCD", "E",   "CAf" },  //   -aero N'Djamena Radio
   {  8903.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
   {  8903.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
-  {  8905.00,    0, 2400, 0x200b2,  845, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
+  {  8905.00,    0, 2400, 0x200b2,  846, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
   {  8906.00,    0, 2400, 0x00112,  350, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio A
   {  8906.00,    0, 2400, 0x00112,  351, "CAN", "E",   "NAO" },  //   -aero Gander Radio A
   {  8906.00,  900, 2100, 0x00092,  352, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio A
   {  8906.00,    0, 2400, 0x00112,  353, "USA", "E",   "NAO" },  //   -aero New York Radio A
   {  8907.00,    0, 2400, 0x200b2,  572, "CHN", "",    "FE"  },  //    -ale China Military ALE
-  {  8909.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
-  {  8909.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  {  8909.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  {  8909.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
   {  8912.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
   {  8912.00,    0, 2400, 0x200b2,  408, "USA", "",    "USA" },  //    -ale COTHEN ALE
-  {  8912.00,    0, 2400, 0x200c2,  715, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
-  {  8915.00,    0, 2400, 0x00112,  710, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
-  {  8915.00,    0, 2400, 0x00112,  710, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
+  {  8912.00,    0, 2400, 0x200c2,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
+  {  8915.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
+  {  8915.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
   {  8917.00,    0, 2400, 0x200b2,  465, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
   {  8918.00,    0, 2400, 0x00112,  596, "CAN", "E",   "NAO" },  //   -aero Gander Radio
   {  8918.00,    0, 2400, 0x00112,  702, "TRD", "E",   "Car" },  //   -aero Piarco Radio CAR-B
@@ -8164,34 +8166,34 @@ dx_t eibi_db[] = {
   {  8930.00, 1800,  600, 0x00112,  160, "SWE", "E",   "Eu"  },  //   -aero Stockholm Radio
   {  8933.00,    0, 2400, 0x00112,  852, "USA", "E",   "NAO" },  //   -aero New York Radio LDOC
   {  8933.00,    0, 2400, 0x00092,  853, "USA", "E",   "NAO" },  //   -util San Francisco R. LDOC
-  {  8935.00,    0, 2400, 0x200b2,  845, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
+  {  8935.00,    0, 2400, 0x200b2,  846, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
   {  8936.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   {  8936.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
-  {  8939.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
-  {  8939.00,    0, 2400, 0x00112,  337, "RUS", "R",   "CIS" },  //   -aero Rostov Volmet x25,55
-  {  8939.00,    0, 2400, 0x00112,  850, "RUS", "R",   "CIS" },  //   -aero StPeterbg Volmet x05,35
+  {  8939.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  {  8939.00,    0, 2400, 0x00112,  336, "RUS", "R",   "CIS" },  //   -aero Rostov Volmet x25,55
+  {  8939.00,    0, 2400, 0x00112,  851, "RUS", "R",   "CIS" },  //   -aero StPeterbg Volmet x05,35
   {  8941.00,    0, 2400, 0x200b2,  572, "CHN", "",    "FE"  },  //    -ale China Military ALE
   {  8942.00,    0, 2400, 0x200c2,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
   {  8942.00,    0, 2400, 0x00112,  990, "PHL", "E",   "WOc" },  //   -aero Manila Radio
   {  8942.00,    0, 2400, 0x00112,  593, "SNG", "E",   "SEA" },  //   -aero Singapore Radio
-  {  8948.00,    0, 2400, 0x200c2,  842, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
+  {  8948.00,    0, 2400, 0x200c2,  843, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
   {  8948.00,    0, 2400, 0x00112,  855, "IND", "E",   "SAs" },  //   -aero Mumbai Radio
   {  8950.00,    0, 2400, 0x00112,  992, "RUS", "",    "NEu" },  //   -aero Murmansk Radio
   {  8950.00,    0, 2400, 0x200b2,  442, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
-  {  8951.00,    0, 2400, 0x00112,  336, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
+  {  8951.00,    0, 2400, 0x00112,  335, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
   {  8952.00,    0, 2400, 0x00112,  993, "ARG", "S",   "SAm" },  //   -aero Córdoba Volmet x25, x35
   {  8954.00,    0, 2400, 0x00092,  323, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
   {  8957.00,    0, 2400, 0x200c2,  591, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
   {  8957.00,    0, 2400, 0x00112,  414, "IRL", "E",   "Eu"  },  //   -aero Shannon Volmet
   {  8965.00,    0, 2400, 0x000d2,  362, "GER", "E",   "Eu"  },  // -milcom DHM91 German Air Force
-  {  8965.00,    0, 2400, 0x200b2,  845, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
+  {  8965.00,    0, 2400, 0x200b2,  846, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
   {  8965.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
   {  8968.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
   {  8977.00,    0, 2400, 0x200c2,  468, "ISL", "-HF", "NAO" },  //   -hfdl Reykjavik HFDL (ID3)
   {  8980.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   {  8989.00, 2130, 2400, 0x00092,  994, "NCG", "S",   "CAm" },  //   -util Pescador Preacher
-  {  8990.00,    0, 2400, 0x200b2,  837, "ALG", "",    "ALG" },  //    -ale Algeria Gendarmerie ALE
-  {  8990.00,    0, 2400, 0x000d2,  706, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
+  {  8990.00,    0, 2400, 0x200b2,  838, "ALG", "",    "ALG" },  //    -ale Algeria Gendarmerie ALE
+  {  8990.00,    0, 2400, 0x000d2,  707, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
   {  8992.00,    0, 2400, 0x000d2,  862, "FRA", "F",   "Af"  },  // -milcom French Air Force CIRCUS
   {  8992.00,    0, 2400, 0x000d2,  862, "FRA", "F",   "Af"  },  // -milcom French Air Force CIRCUS
   {  8992.00,    0, 2400, 0x000d2,  862, "FRA", "F",   "Af"  },  // -milcom French Air Force CIRCUS
@@ -8200,7 +8202,7 @@ dx_t eibi_db[] = {
   {  8992.00,    0, 2400, 0x000d2,  608, "USA", "E",   "NAm" },  // -milcom US Air Force Messages
   {  8995.00,    0, 2400, 0x200b2,  867, "LTU", "",    "LTU" },  //    -ale Lithuanian Navy ALE
   {  9004.00,    0, 2400, 0x200b2,  213, "GER", "",    "D"   },  //    -ale German Red Cross ALE
-  {  9005.00,    0, 2400, 0x200b2,  845, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
+  {  9005.00,    0, 2400, 0x200b2,  846, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
   {  9009.00,    0, 2400, 0x000d2,  651, "PTR", "",    "NAm" },  // -milcom NAU US Navy STANAG
   {  9018.30,    0, 2400, 0x200b2,  689, "IRQ", "",    "IRQ" },  //    -ale Iraqi Navy ALE
   {  9019.00,    0, 2400, 0x200b2,  469, "FRA", "",    "Eu"  },  //    -ale Fr. Air Force E-3F ALE
@@ -8210,10 +8212,10 @@ dx_t eibi_db[] = {
   {  9022.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   {  9025.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   {  9025.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
-  {  9027.00,    0, 2400, 0x000d2,  706, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
+  {  9027.00,    0, 2400, 0x000d2,  707, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
   {  9028.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   {  9030.00,    0, 2400, 0x000d2,  651, "PTR", "",    "NAm" },  // -milcom NAU US Navy STANAG
-  {  9038.00,    0, 2400, 0x200b2,  845, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
+  {  9038.00,    0, 2400, 0x200b2,  846, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
   {  9040.00,    0, 2400, 0x200b2,  456, "ALG", "",    "ALG" },  //    -ale Algerian Military ALE
   {  9040.00,    0, 2400, 0x200b2,  442, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
   {  9041.00,    0, 2400, 0x200b2,  578, "CHN", "",    "CHN" },  //    -ale Chinese Military ALE
@@ -8248,7 +8250,7 @@ dx_t eibi_db[] = {
   {  9065.00,  754,  850, 0x0ab32,  996, "CUB", "S",   "Am"  },  //    -spy Cuban Spy Numbers
   {  9065.00,  720,  730, 0x0f932,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   {  9072.00, 2110, 2120, 0x02932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
-  {  9073.00,    0, 2400, 0x200b2,  735, "FRA", "",    "F"   },  //    -ale French Navy ALE
+  {  9073.00,    0, 2400, 0x200b2,  736, "FRA", "",    "F"   },  //    -ale French Navy ALE
   {  9074.50,    0, 2400, 0x000d2,  194, "ITL", "",    "SEu" },  // -milcom IDN Ital.Navy STANAG
   {  9074.00, 1850, 1900, 0x00132,  500, "RUS", "-TY", "RUS" },  //    -spy F01 Russian Spy Numbers
   {  9079.00,  530,  535, 0x0a132,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
@@ -8259,10 +8261,10 @@ dx_t eibi_db[] = {
   {  9082.00,  830,  840, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  9082.00,  830,  840, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  9083.00, 2230, 2240, 0x02532,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
-  {  9085.00,    0, 2400, 0x200b2,  721, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
+  {  9085.00,    0, 2400, 0x200b2,  722, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
   {  9085.00,    0, 2400, 0x200b2,  566, "SVK", "",    "SVK" },  //    -ale Slovak Military ALE
   {  9090.00,    0, 2400, 0x200b2,  694, "CLM", "",    "CLM" },  //    -ale Colombian Navy ALE
-  {  9090.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  {  9090.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   {  9094.00,    0, 2400, 0x000d2,  243, "FRA", "F",   "Eu"  },  // -milcom FUO French Navy STANAG
   {  9095.00,  800,  100, 0x00092,  487, "CLA", "K",   "KRE" },  //   -util Echo of Hope VOH
   {  9095.00,  930,  950, 0x00092,  487, "CLA", "E",   "KRE" },  //   -util Echo of Hope VOH
@@ -8308,7 +8310,7 @@ dx_t eibi_db[] = {
   {  9110.00, 1720, 2251, 0x20102,  527, "USA", "",    "ENA" },  //    -fax NMF Fax Boston MA
   {  9112.00,    0, 2400, 0x000d2,  973, "HWA", "",    "Oc"  },  // -milcom NPM US Navy RTTY/STANAG
   {  9114.00, 2120, 2130, 0x00d32,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
-  {  9114.00,    0, 2400, 0x200b2,  733, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
+  {  9114.00,    0, 2400, 0x200b2,  734, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
   {  9115.00,    0, 2400, 0x200b2,  411, "HRV", "",    "HRV" },  //    -ale Croatian NRPD ALE
   {  9116.80,    0, 2400, 0x200e4,  451, "RUS", "-CW", "FE"  },  //     -cw Channel Marker M
   {  9118.00,    0, 2400, 0x200b2,  995, "BRA", "",    "SAm" },  //    -ale Brazilian Army ALE
@@ -8317,18 +8319,18 @@ dx_t eibi_db[] = {
   {  9120.00,    0, 2400, 0x200b2,  998, "BRA", "",    "B"   },  //    -ale Amazon Military ALE
   {  9120.00, 2100, 1600, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
   {  9120.00,    0, 2400, 0x200b2,  873, "MEX", "",    "MEX" },  //    -ale Mexican Military ALE
-  {  9120.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
-  {  9120.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9120.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9120.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9120.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9120.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9120.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9120.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9120.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9120.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9120.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9120.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9120.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  {  9120.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9120.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9120.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9120.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9120.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9120.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9120.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9120.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9120.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9120.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9120.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  9121.00, 1820, 1830, 0x02332,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   {  9121.00,    0, 2400, 0x200b2,  561, "USA", "",    "USA" },  //    -ale US National Guard ALE
   {  9122.50,    0, 2400, 0x200b2,  406, "USA", "",    "USA" },  //    -ale Corps of Engineers ALE
@@ -8336,7 +8338,7 @@ dx_t eibi_db[] = {
   {  9123.00, 1420, 1430, 0x00132,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   {  9123.00, 2130, 2140, 0x00132,  672, "RUS", "R",   "RUS" },  //    -spy S06 Russian Spy Numbers
   {  9128.00, 1015, 1025, 0x0f932,  500, "RUS", "-TY", "EEu" },  //    -spy F01 Russian Spy Numbers
-  {  9128.00,    0, 2400, 0x000d2,  706, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
+  {  9128.00,    0, 2400, 0x000d2,  707, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
   {  9129.00, 1550, 1600, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   {  9130.00,  715,  725, 0x04932,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  9130.00, 1500, 1505, 0x00b32,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
@@ -8360,20 +8362,20 @@ dx_t eibi_db[] = {
   {  9153.00,  600, 1600, 0x00132,  536, "CHN", "M",   "FE"  },  //    -spy V26 Numbers Station
   {  9155.00,    0, 2400, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
   {  9155.00,  954, 1050, 0x0ab32,  996, "CUB", "S",   "Am"  },  //    -spy Cuban Spy Numbers
-  {  9155.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9155.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9155.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9155.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9155.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9155.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9155.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9155.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9155.00, 1700, 2000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9155.00, 2000, 2100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9155.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9155.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9155.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9155.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9155.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9155.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9155.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9155.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9155.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9155.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9155.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9155.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9155.00, 1700, 2000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9155.00, 2000, 2100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9155.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9155.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9155.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9155.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  9157.00,   50,  100, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  9161.00,   50,  100, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  9161.00, 1640, 1650, 0x08532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
@@ -8394,61 +8396,61 @@ dx_t eibi_db[] = {
   {  9179.00, 2340, 2350, 0x09132,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  9180.00, 2130, 1700, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
   {  9180.00,    0, 2400, 0x200b2,  442, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
-  {  9180.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9180.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9180.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9180.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9180.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9180.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9180.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9180.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9180.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9180.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9180.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9180.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9180.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9180.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9180.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9180.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9180.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9180.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9180.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9180.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9180.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9180.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  9180.00,    0, 2400, 0x200e4,  558, "USA", "-CW", "NAO" },  //     -cw CruiseEmail
   {  9181.00, 2000, 2010, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   {  9182.00,    0, 2400, 0x200b2,  869, "CHL", "",    "CHL" },  //    -ale Chile Navy ALE
   {  9184.00,    0, 2400, 0x200b2,  404, "USA", "",    "WNA" },  //    -ale Bonneville PowerAdm.ALE
   {  9188.00,  720,  730, 0x0f932,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   {  9188.00, 1210, 1220, 0x0f132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
-  {  9190.00,    0, 2400, 0x200b2,  735, "FRA", "",    "F"   },  //    -ale French Navy ALE
+  {  9190.00,    0, 2400, 0x200b2,  736, "FRA", "",    "F"   },  //    -ale French Navy ALE
   {  9191.00,   30,   40, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   {  9192.00, 1025, 1035, 0x0f932,  500, "RUS", "-TY", "EEu" },  //    -spy F01 Russian Spy Numbers
   {  9198.00,    0, 2400, 0x200b2,  869, "CHL", "",    "CHL" },  //    -ale Chile Navy ALE
   {  9198.50,    0, 2400, 0x200b2,  681, "GEO", "",    "GEO" },  //    -ale Georgia Borderguard ALE
-  {  9198.00,    0, 2400, 0x200b2,  721, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
+  {  9198.00,    0, 2400, 0x200b2,  722, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
   {  9200.00, 2200, 1600, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  {  9200.00,    0, 2400, 0x200b2,  720, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
+  {  9200.00,    0, 2400, 0x200b2,  721, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
   {  9200.00,    0, 2400, 0x200b2,  461, "MRC", "",    "MRC" },  //    -ale Protection Civile ALE
-  {  9200.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9200.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9200.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9200.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9200.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9200.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9200.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9200.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9200.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9200.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9200.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9200.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9200.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9200.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9200.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9200.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9200.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9200.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  9200.00,    0, 2400, 0x200b2,  587, "USA", "",    "ENA" },  //    -ale Washington GasLight ALE
   {  9207.00,  740,  750, 0x05132,  567, "RUS", "-CW", "As"  },  //    -spy M12 Spy Numbers
   {  9209.00, 2040, 2050, 0x09132,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  9215.00,    0, 2400, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
   {  9215.00,   35,   45, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   {  9215.00,  135,  145, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
-  {  9215.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9215.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9215.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9215.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9215.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9215.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9215.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9215.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9215.00, 1700, 2000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9215.00, 2000, 2100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9215.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9215.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9215.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9215.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9215.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9215.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9215.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9215.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9215.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9215.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9215.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9215.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9215.00, 1700, 2000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9215.00, 2000, 2100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9215.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9215.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9215.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9215.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  9218.00, 2020, 2030, 0x09132,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  9219.00,    0, 2400, 0x200b2,  578, "CHN", "",    "CHN" },  //    -ale Chinese Military ALE
   {  9219.00,    0, 2400, 0x200b2,  465, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
@@ -8458,16 +8460,16 @@ dx_t eibi_db[] = {
   {  9223.00, 1620, 1630, 0x05132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   {  9226.00, 1430, 1440, 0x01532,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   {  9230.00, 2130, 1600, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  {  9230.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9230.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9230.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9230.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9230.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9230.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9230.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9230.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9230.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9230.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9230.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9230.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9230.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9230.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9230.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9230.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9230.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9230.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9230.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9230.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  9234.00,  720,  730, 0x0f932,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   {  9235.50,    0, 2400, 0x200b2,  561, "USA", "",    "USA" },  //    -ale US National Guard ALE
   {  9237.00,  110,  120, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
@@ -8487,16 +8489,16 @@ dx_t eibi_db[] = {
   {  9252.00, 1950, 2000, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   {  9254.00,  150,  200, 0x01332,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  9255.00,  930,  940, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
-  {  9255.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9255.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9255.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9255.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9255.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9255.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9255.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9255.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9255.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9255.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9255.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9255.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9255.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9255.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9255.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9255.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9255.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9255.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9255.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9255.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  9261.00,  600,  610, 0x00132,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   {  9261.00,  600,  610, 0x00132,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   {  9264.00,    0, 2400, 0x200b2,  942, "NIG", "",    "NIG" },  //    -ale Nigerian Police ALE
@@ -8530,17 +8532,17 @@ dx_t eibi_db[] = {
   {  9276.00,  300,  330, 0x00092,  907, "TWN", "M",   "CHN" },  //   -util Star-Star Bc.Station
   {  9276.00, 1200, 1230, 0x00092,  907, "TWN", "M",   "CHN" },  //   -util Star-Star Bc.Station
   {  9280.00, 2130, 1700, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  {  9280.10,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9280.10,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9280.10,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9280.10, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9280.10, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9280.10, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9280.10, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9280.10, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9280.10, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9280.10, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9280.10, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9280.10,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9280.10,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9280.10,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9280.10, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9280.10, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9280.10, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9280.10, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9280.10, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9280.10, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9280.10, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9280.10, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  9284.00,  110,  120, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  9284.00, 2210, 2220, 0x02532,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  9286.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
@@ -8548,17 +8550,17 @@ dx_t eibi_db[] = {
   {  9293.00, 1450, 1500, 0x01532,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   {  9295.00,    0, 2400, 0x200b2,  503, "USA", "",    "CNA" },  //    -ale Missouri Nat.Guard ALE
   {  9300.00, 2130, 1700, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  {  9300.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9300.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9300.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9300.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9300.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9300.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9300.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9300.00, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9300.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9300.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9300.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9300.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9300.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9300.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9300.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9300.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9300.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9300.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9300.00, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9300.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9300.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9300.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   {  9304.00,  740,  750, 0x05132,  567, "RUS", "-CW", "As"  },  //    -spy M12 Spy Numbers
   {  9310.00, 1300, 1700, 0x00080,   62, "USA", "PS",  "AFG" },  //  -bcast VoA Deewa Radio
   {  9310.00, 1700, 1900, 0x00080,   62, "USA", "PS",  "AFG" },  //  -bcast VoA Deewa Radio
@@ -8630,23 +8632,23 @@ dx_t eibi_db[] = {
   {  9335.00, 1630, 1700, 0x0f880,   31, "GBR", "PS",  "AFG" },  //  -bcast BBC
   {  9336.00, 2230, 2240, 0x02532,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  9339.00,  808,  813, 0x00132,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
-  {  9339.00,  843,  848, 0x00132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  {  9339.00,  843,  848, 0x00132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   {  9339.00,  700,  710, 0x09132,  530, "POL", "R",   ""    },  //    -spy S11a Polish Spy Numbers
   {  9339.00, 1920, 1930, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   {  9340.00, 2100, 1600, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  {  9340.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9340.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9340.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9340.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9340.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9340.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9340.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9340.00, 2100, 2130, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9340.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9340.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9340.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9340.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9340.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9340.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9340.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9340.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9340.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9340.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9340.00, 2100, 2130, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9340.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9340.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9340.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   {  9342.00,  110,  120, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
-  {  9344.00,    0, 2400, 0x200b2,  820, "GHA", "",    "GHA" },  //    -ale Ghana Navy ALE
+  {  9344.00,    0, 2400, 0x200b2,  821, "GHA", "",    "GHA" },  //    -ale Ghana Navy ALE
   {  9344.00, 2140, 2150, 0x00d32,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  9345.00, 1400, 1600, 0x00080, 1004, "HKG", "M",   "FE"  },  //  -bcast FEBC Radio Liangyou 1
   {  9345.00, 1630, 1730, 0x00080,   51, "USA", "BR",  "SEA" },  //  -bcast Voice of America
@@ -8660,10 +8662,10 @@ dx_t eibi_db[] = {
   {  9350.00, 1130, 1200, 0x0f880,   51, "USA", "BE",  "SEA" },  //  -bcast Voice of America
   {  9350.00, 1130, 1200, 0x00080,   51, "USA", "E",   "SEA" },  //  -bcast Voice of America
   {  9350.00, 1200, 1400, 0x00080,   51, "USA", "K",   "FE"  },  //  -bcast Voice of America
-  {  9350.00, 2000, 2100, 0x00080,  751, "USA", "E",   "NAm" },  //  -bcast WWCR 2 Nashville, TN
-  {  9350.00, 2100, 2200, 0x0fa80,  751, "USA", "E",   "NAm" },  //  -bcast WWCR 2 Nashville, TN
-  {  9350.00, 2200, 2300, 0x00080,  751, "USA", "E",   "NAm" },  //  -bcast WWCR 2 Nashville, TN
-  {  9350.00, 2300, 2400, 0x00080,  751, "USA", "E",   "NAm" },  //  -bcast WWCR 2 Nashville, TN
+  {  9350.00, 2000, 2100, 0x00080,  752, "USA", "E",   "NAm" },  //  -bcast WWCR 2 Nashville, TN
+  {  9350.00, 2100, 2200, 0x0fa80,  752, "USA", "E",   "NAm" },  //  -bcast WWCR 2 Nashville, TN
+  {  9350.00, 2200, 2300, 0x00080,  752, "USA", "E",   "NAm" },  //  -bcast WWCR 2 Nashville, TN
+  {  9350.00, 2300, 2400, 0x00080,  752, "USA", "E",   "NAm" },  //  -bcast WWCR 2 Nashville, TN
   {  9353.00, 1120, 1130, 0x04932,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   {  9353.00,  840,  850, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  9354.00, 1340, 1350, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
@@ -8687,9 +8689,9 @@ dx_t eibi_db[] = {
   {  9363.00, 1640, 1650, 0x08532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   {  9370.00,  100,  200, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   {  9370.00,  200,  300, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  {  9370.00,  300,  630, 0x00080,  734, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
-  {  9370.00,  630, 1100, 0x00080,  734, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
-  {  9370.00, 1100, 1230, 0x00080,  734, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
+  {  9370.00,  300,  630, 0x00080,  735, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
+  {  9370.00,  630, 1100, 0x00080,  735, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
+  {  9370.00, 1100, 1230, 0x00080,  735, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
   {  9370.00, 1230, 1330, 0x00080,  117, "USA", "BR",  "SEA" },  //  -bcast Radio Free Asia
   {  9370.00,  100,  200, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
   {  9370.00,  200,  300, 0x00080,  117, "USA", "TB",  "IRN" },  //  -bcast Radio Free Asia
@@ -8701,7 +8703,7 @@ dx_t eibi_db[] = {
   {  9374.00,  110,  120, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  9376.00, 1025, 1035, 0x0f932,  500, "RUS", "-TY", "EEu" },  //    -spy F01 Russian Spy Numbers
   {  9377.00,    0, 2400, 0x200e4,  282, "ISR", "-CW", ""    },  //     -cw 4XZ Israeli Navy Haifa
-  {  9377.00,    0, 2400, 0x200b2,  724, "SVN", "",    "SVN" },  //    -ale Slovenian Military ALE
+  {  9377.00,    0, 2400, 0x200b2,  725, "SVN", "",    "SVN" },  //    -ale Slovenian Military ALE
   {  9379.00,  110,  120, 0x01332,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   {  9380.00, 2200, 2300, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   {  9380.00,    0, 2400, 0x000d2, 1005, "GUM", "",    "WOc" },  // -milcom NPN STANAG
@@ -8716,11 +8718,11 @@ dx_t eibi_db[] = {
   {  9382.00,  210,  220, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   {  9383.00, 1530, 1540, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
   {  9384.00, 2010, 2020, 0x02932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
-  {  9385.00,    0,  900, 0x00080,  759, "USA", "E",   "WAf" },  //  -bcast WEWN EWTN Catholic R.
-  {  9385.00, 1900, 2400, 0x00080,  759, "USA", "E",   "Af"  },  //  -bcast WEWN EWTN Catholic R.
+  {  9385.00,    0,  900, 0x00080,  760, "USA", "E",   "WAf" },  //  -bcast WEWN EWTN Catholic R.
+  {  9385.00, 1900, 2400, 0x00080,  760, "USA", "E",   "Af"  },  //  -bcast WEWN EWTN Catholic R.
   {  9389.00, 1200, 1210, 0x02932,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   {  9390.00, 1530, 1830, 0x00080,   31, "GBR", "K",   "FE"  },  //  -bcast BBC
-  {  9390.00,  800,  806, 0x00080,  790, "GBR", "E",   "Eu"  },  //  -bcast Woofferton Test
+  {  9390.00,  800,  806, 0x00080,  791, "GBR", "E",   "Eu"  },  //  -bcast Woofferton Test
   {  9390.00, 1500, 1530, 0x00080, 1006, "SWE", "BE",  "SAs" },  //  -bcast IBRA Radio
   {  9390.00, 1200, 1215, 0x00080,  667, "THA", "ML",  "INS" },  //  -bcast Radio Thailand
   {  9390.00, 1230, 1300, 0x00080,  667, "THA", "E",   "Oc"  },  //  -bcast Radio Thailand
@@ -8729,7 +8731,7 @@ dx_t eibi_db[] = {
   {  9390.00, 1330, 1400, 0x00080,  667, "THA", "T",   "SEA" },  //  -bcast Radio Thailand
   {  9390.00, 1400, 1430, 0x00080,  667, "THA", "E",   "Oc"  },  //  -bcast Radio Thailand
   {  9394.60,    0, 2400, 0x200b2,  409, "USA", "",    "USA" },  //    -ale Fish and Wildlife ALE
-  {  9395.00,  100,  130, 0x07c80,  722, "ARG", "E",   "ENA" },  //  -bcast R.Argentina al Exterior
+  {  9395.00,  100,  130, 0x07c80,  723, "ARG", "E",   "ENA" },  //  -bcast R.Argentina al Exterior
   {  9395.00,   30,  100, 0x00080,  137, "USA", "E",   "ENA" },  //  -bcast Adventist World Radio
   {  9395.00,  200,  230, 0x08280,  137, "USA", "E",   "ENA" },  //  -bcast Adventist World Radio
   {  9395.00, 2330, 2400, 0x00080,  137, "USA", "E",   "ENA" },  //  -bcast Adventist World Radio
@@ -8754,7 +8756,7 @@ dx_t eibi_db[] = {
   {  9395.00, 2330, 2400, 0x05680,  661, "USA", "E",   "ENA" },  //  -bcast WRMI Radio Miami Int.
   {  9399.00,  900,  910, 0x0a132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  9399.00,  900,  910, 0x0a132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
-  {  9400.00, 1945, 2000, 0x00080,  738, "CAN", "A",   "NAf" },  //  -bcast Bible Voice Dardasha-7
+  {  9400.00, 1945, 2000, 0x00080,  739, "CAN", "A",   "NAf" },  //  -bcast Bible Voice Dardasha-7
   {  9400.00,  800, 1100, 0x00080,  648, "EGY", "-MX", "ME"  },  //  -bcast Unknown Station
   {  9400.00, 2130, 2200, 0x00080,  484, "FRA", "F",   "SAs" },  //  -bcast Radio France DIGITAL
   {  9400.00, 1000, 1030, 0x00080,  140, "HKG", "HUI", "FE"  },  //  -bcast FEBC Radio Liangyou
@@ -8791,13 +8793,13 @@ dx_t eibi_db[] = {
   {  9410.00,  900, 1000, 0x0f880, 1009, "TWN", "HK",  "FE"  },  //  -bcast Fu Hsing Bc.Sta.
   {  9410.00, 1100, 1300, 0x0f880, 1009, "TWN", "M",   "FE"  },  //  -bcast Fu Hsing Bc.Sta.
   {  9410.00, 2300,  100, 0x0f880, 1009, "TWN", "M",   "FE"  },  //  -bcast Fu Hsing Bc.Sta.
-  {  9410.00, 2000, 2030, 0x00080,  811, "USA", "A",   "ME"  },  //  -bcast Follow the Bible Min.
+  {  9410.00, 2000, 2030, 0x00080,  812, "USA", "A",   "ME"  },  //  -bcast Follow the Bible Min.
   {  9410.00,  830,  900, 0x02480,   51, "USA", "F",   "Af"  },  //  -bcast Voice of America
   {  9410.00, 1400, 1500, 0x00080,   51, "USA", "K",   "FE"  },  //  -bcast Voice of America
   {  9410.00, 2100, 2130, 0x0f880,   51, "USA", "F",   "Af"  },  //  -bcast Voice of America
   {  9415.00, 1400, 1500, 0x00080,  111, "TWN", "T",   "SEA" },  //  -bcast Radio Taiwan Int.
   {  9416.00, 1530, 1540, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
-  {  9420.00,    0,  400, 0x00080,  778, "CHN", "M",   "CHN" },  //  -bcast CNR1 DIGITAL
+  {  9420.00,    0,  400, 0x00080,  779, "CHN", "M",   "CHN" },  //  -bcast CNR1 DIGITAL
   {  9420.00,  900, 1100, 0x00080,   68, "CHN", "HK",  "TWN" },  //  -bcast China National Radio 6
   {  9420.00, 1100, 1605, 0x00080,   68, "CHN", "M",   "TWN" },  //  -bcast China National Radio 6
   {  9420.00, 2155,  100, 0x00080,   68, "CHN", "AM",  "TWN" },  //  -bcast China National Radio 6
@@ -8846,7 +8848,7 @@ dx_t eibi_db[] = {
   {  9440.00,  700,  729, 0x00080,   31, "GBR", "F",   "WAf" },  //  -bcast BBC
   {  9440.00, 2250,   20, 0x00080,   44, "IRN", "A",   "ME"  },  //  -bcast IRIB Voice of I.R.Iran
   {  9440.00,  400,  430, 0x00080,   93, "JPN", "FS",  "IRN" },  //  -bcast NHK Radio Japan
-  {  9440.00,  200,  300, 0x00080,  740, "ROU", "S",   "SAm" },  //  -bcast Radio Romania Int.
+  {  9440.00,  200,  300, 0x00080,  741, "ROU", "S",   "SAm" },  //  -bcast Radio Romania Int.
   {  9443.00, 1705, 1715, 0x02532,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  9445.00,    0,  100, 0x00080,   52, "CHN", "R",   "Sib" },  //  -bcast China Radio Int.
   {  9445.00, 2300, 2400, 0x00080,   52, "CHN", "R",   "Sib" },  //  -bcast China Radio Int.
@@ -8870,14 +8872,14 @@ dx_t eibi_db[] = {
   {  9450.00,  300,  400, 0x00080,   52, "CHN", "M",   "SAs" },  //  -bcast China Radio Int.
   {  9450.00, 1300, 1400, 0x00080,   52, "CHN", "HI",  "SAs" },  //  -bcast China Radio Int.
   {  9450.00, 1730, 1830, 0x00080,   52, "CHN", "HA",  "NIG" },  //  -bcast China Radio Int.
-  {  9450.00, 1430, 1500, 0x00080,  726, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
+  {  9450.00, 1430, 1500, 0x00080,  727, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
   {  9450.00, 1400, 1430, 0x00080,   93, "JPN", "E",   "SAs" },  //  -bcast NHK Radio Japan
   {  9450.00, 2300, 2330, 0x00080,   72, "PHL", "MIE", "SEA" },  //  -bcast FEBC Manila
-  {  9455.00,  800,  900, 0x07c80,  722, "ARG", "J",   "CAm" },  //  -bcast R.Argentina al Exterior
-  {  9455.00,  900, 1000, 0x07c80,  722, "ARG", "M",   "CAm" },  //  -bcast R.Argentina al Exterior
+  {  9455.00,  800,  900, 0x07c80,  723, "ARG", "J",   "CAm" },  //  -bcast R.Argentina al Exterior
+  {  9455.00,  900, 1000, 0x07c80,  723, "ARG", "M",   "CAm" },  //  -bcast R.Argentina al Exterior
   {  9455.00, 1500, 1600, 0x00080,   52, "CHN", "M",   "SEA" },  //  -bcast China Radio Int.
-  {  9455.00, 1330, 1400, 0x00080,  726, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
-  {  9455.00, 1300, 1330, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
+  {  9455.00, 1330, 1400, 0x00080,  727, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
+  {  9455.00, 1300, 1330, 0x00080,  728, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
   {  9455.00,   30,  100, 0x00080,  137, "USA", "E",   "CAm" },  //  -bcast Adventist World Radio
   {  9455.00,  930, 1000, 0x00080,  137, "USA", "E",   "CAm" },  //  -bcast Adventist World Radio
   {  9455.00,  800,  900, 0x00080,  373, "USA", "E",   "CAm" },  //  -bcast Brother Stair
@@ -8917,12 +8919,12 @@ dx_t eibi_db[] = {
   {  9460.00, 1100, 1200, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   {  9460.00,  430,  630, 0x00080,   66, "MYA", "BR",  "SEA" },  //  -bcast Thazin Radio
   {  9460.00,  630,  800, 0x00080,   66, "MYA", "E",   "SEA" },  //  -bcast Thazin Radio
-  {  9460.00, 1600, 2100, 0x00080,  753, "TUR", "TU",  "Eu"  },  //  -bcast Voice of Turkey
+  {  9460.00, 1600, 2100, 0x00080,  754, "TUR", "TU",  "Eu"  },  //  -bcast Voice of Turkey
   {  9460.00, 1100, 1200, 0x00080,   51, "USA", "M",   "FE"  },  //  -bcast Voice of America
   {  9462.00,    0, 2400, 0x200b2,  283, "USA", "",    "USA" },  //    -ale FEMA Emergency ALE
   {  9465.00, 1400, 1500, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   {  9465.00, 1330, 1400, 0x00080,  140, "HKG", "YUN", "SEA" },  //  -bcast FEBC Radio Liangyou
-  {  9465.00,  200,  300, 0x00080,  753, "TUR", "UI",  "FE"  },  //  -bcast Voice of Turkey
+  {  9465.00,  200,  300, 0x00080,  754, "TUR", "UI",  "FE"  },  //  -bcast Voice of Turkey
   {  9465.00, 1400, 1500, 0x00080,   51, "USA", "M",   "FE"  },  //  -bcast Voice of America
   {  9470.00, 1200, 1300, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  9470.00, 2023, 2400, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
@@ -8933,19 +8935,19 @@ dx_t eibi_db[] = {
   {  9470.00,  350,  800, 0x00080,  480, "CHN", "KZ",  "CHN" },  //  -bcast PBS Xinjiang
   {  9470.00,  800, 1100, 0x0be80,  480, "CHN", "KZ",  "CHN" },  //  -bcast PBS Xinjiang
   {  9470.00, 1100, 1155, 0x00080,  480, "CHN", "KZ",  "CHN" },  //  -bcast PBS Xinjiang
-  {  9470.00, 1600, 1630, 0x00080,  726, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
+  {  9470.00, 1600, 1630, 0x00080,  727, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
   {  9470.00, 1830, 1850, 0x0f880,   31, "GBR", "AH",  "EAf" },  //  -bcast BBC
   {  9470.00, 1850, 1910, 0x0f880,   31, "GBR", "OO",  "EAf" },  //  -bcast BBC
   {  9470.00, 1910, 1930, 0x0f880,   31, "GBR", "TIG", "EAf" },  //  -bcast BBC
   {  9470.00, 1420, 1520, 0x00080,   44, "IRN", "HI",  "SAs" },  //  -bcast IRIB Voice of I.R.Iran
   {  9470.00, 1300, 1400, 0x00080,   93, "JPN", "J",   "SAs" },  //  -bcast NHK Radio Japan
   {  9470.00, 1530, 1600, 0x00080,  137, "USA", "OR",  "SAs" },  //  -bcast Adventist World Radio
-  {  9470.00, 1830, 1900, 0x00080,  811, "USA", "A",   "ME"  },  //  -bcast Follow the Bible Min.
+  {  9470.00, 1830, 1900, 0x00080,  812, "USA", "A",   "ME"  },  //  -bcast Follow the Bible Min.
   {  9470.00, 1930, 2000, 0x0f880,   51, "USA", "KNK", "EAf" },  //  -bcast Voice of America
   {  9470.00, 2000, 2030, 0x00080,   51, "USA", "F",   "Af"  },  //  -bcast Voice of America
   {  9470.00, 2030, 2100, 0x00080,   51, "USA", "HA",  "WAf" },  //  -bcast Voice of America
   {  9470.00, 2100, 2130, 0x0f880,   51, "USA", "F",   "Af"  },  //  -bcast Voice of America
-  {  9470.00,  900, 1300, 0x00080,  759, "USA", "E",   "SEA" },  //  -bcast WEWN EWTN Catholic R.
+  {  9470.00,  900, 1300, 0x00080,  760, "USA", "E",   "SEA" },  //  -bcast WEWN EWTN Catholic R.
   {  9473.00,  400,  410, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   {  9475.00, 1200, 1500, 0x00080,  877, "CLA", "K",   "KRE" },  //  -bcast National Unity Bc.Sta.
   {  9475.00, 1244, 1245, 0x0f880,  877, "CLA", "M",   "KRE" },  //  -bcast National Unity Bc.Sta.
@@ -8972,8 +8974,8 @@ dx_t eibi_db[] = {
   {  9480.00,  100,  130, 0x00080,  904, "USA", "DR",  "IRN" },  //  -bcast VoA Radio Ashna
   {  9480.00,  130,  200, 0x00080,  904, "USA", "PS",  "IRN" },  //  -bcast VoA Radio Ashna
   {  9480.00,  200,  230, 0x00080,  904, "USA", "DR",  "IRN" },  //  -bcast VoA Radio Ashna
-  {  9490.00, 1710, 1730, 0x0a080,  777, "CAN", "A",   "ME"  },  //  -bcast Bible Voice
-  {  9490.00, 1730, 1745, 0x00080,  738, "CAN", "A",   "ME"  },  //  -bcast Bible Voice Dardasha-7
+  {  9490.00, 1710, 1730, 0x0a080,  778, "CAN", "A",   "ME"  },  //  -bcast Bible Voice
+  {  9490.00, 1730, 1745, 0x00080,  739, "CAN", "A",   "ME"  },  //  -bcast Bible Voice Dardasha-7
   {  9490.00, 1030, 1130, 0x00080,   52, "CHN", "KH",  "SEA" },  //  -bcast China Radio Int.
   {  9490.00, 1300, 1400, 0x00080,   52, "CHN", "BE",  "SAs" },  //  -bcast China Radio Int.
   {  9490.00, 1400, 1500, 0x00080,   52, "CHN", "BE",  "SAs" },  //  -bcast China Radio Int.
@@ -8990,7 +8992,7 @@ dx_t eibi_db[] = {
   {  9490.00,  100,  200, 0x00080, 1011, "CLA", "S",   "CUB" },  //  -bcast Radio Republica
   {  9490.00,  200,  300, 0x08e80, 1011, "CLA", "S",   "CUB" },  //  -bcast Radio Republica
   {  9490.00,  300,  500, 0x00080,   93, "JPN", "J",   "ME"  },  //  -bcast NHK Radio Japan
-  {  9490.00, 1200, 1300, 0x00080,  740, "ROU", "RO",  "WEu" },  //  -bcast Radio Romania Int.
+  {  9490.00, 1200, 1300, 0x00080,  741, "ROU", "RO",  "WEu" },  //  -bcast Radio Romania Int.
   {  9490.00,    0,  100, 0x00080,  111, "TWN", "M",   "FE"  },  //  -bcast Radio Taiwan Int.
   {  9490.00, 1100, 1200, 0x00080,  111, "TWN", "R",   "Sib" },  //  -bcast Radio Taiwan Int.
   {  9490.00, 2200, 2230, 0x00080,  111, "TWN", "K",   "FE"  },  //  -bcast Radio Taiwan Int.
@@ -9015,10 +9017,10 @@ dx_t eibi_db[] = {
   {  9500.00, 1530, 1600, 0x00080,   55, "EQA", "CHE", "Cau" },  //  -bcast HCJB Voice of Andes
   {  9500.00, 1600, 1630, 0x00080,   55, "EQA", "R",   "Cau" },  //  -bcast HCJB Voice of Andes
   {  9500.00, 1430, 1500, 0x03e80,   72, "PHL", "HI",  "SAs" },  //  -bcast FEBC Manila
-  {  9500.00, 1600, 1700, 0x00080,  740, "ROU", "F",   "WEu" },  //  -bcast Radio Romania Int.
-  {  9500.00, 1700, 1800, 0x00080,  740, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
-  {  9500.00, 1800, 1900, 0x00080,  740, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
-  {  9500.00, 1900, 2000, 0x00080,  740, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
+  {  9500.00, 1600, 1700, 0x00080,  741, "ROU", "F",   "WEu" },  //  -bcast Radio Romania Int.
+  {  9500.00, 1700, 1800, 0x00080,  741, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
+  {  9500.00, 1800, 1900, 0x00080,  741, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
+  {  9500.00, 1900, 2000, 0x00080,  741, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
   {  9500.00, 1630, 1645, 0x00080,   56, "SWZ", "AH",  "ETH" },  //  -bcast Trans World Radio
   {  9500.00, 1630, 1645, 0x00c80,   56, "SWZ", "KAM", "ETH" },  //  -bcast Trans World Radio
   {  9500.00, 1630, 1645, 0x04280,   56, "SWZ", "OO",  "ETH" },  //  -bcast Trans World Radio
@@ -9033,11 +9035,11 @@ dx_t eibi_db[] = {
   {  9505.00, 1630, 1715, 0x00080,  878, "SDN", "F",   "CAf" },  //  -bcast Voice of Africa
   {  9505.00, 1715, 1800, 0x00080,  878, "SDN", "E",   "CAf" },  //  -bcast Voice of Africa
   {  9505.00, 1800, 1830, 0x00080,  878, "SDN", "HA",  "CAf" },  //  -bcast Voice of Africa
-  {  9505.00, 1530, 1630, 0x00080,  753, "TUR", "AZ",  "Cau" },  //  -bcast Voice of Turkey
-  {  9505.00,  300,  400, 0x00080,  746, "USA", "E",   "EEu" },  //  -bcast World Harvest Radio
-  {  9505.00, 2200, 2400, 0x00080,  746, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
-  {  9510.00, 2000, 2005, 0x00080,  747, "ALG", "F",   "WAf" },  //  -bcast Radio Algerienne
-  {  9510.00, 2005, 2100, 0x00080,  747, "ALG", "A",   "WAf" },  //  -bcast Radio Algerienne
+  {  9505.00, 1530, 1630, 0x00080,  754, "TUR", "AZ",  "Cau" },  //  -bcast Voice of Turkey
+  {  9505.00,  300,  400, 0x00080,  747, "USA", "E",   "EEu" },  //  -bcast World Harvest Radio
+  {  9505.00, 2200, 2400, 0x00080,  747, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
+  {  9510.00, 2000, 2005, 0x00080,  748, "ALG", "F",   "WAf" },  //  -bcast Radio Algerienne
+  {  9510.00, 2005, 2100, 0x00080,  748, "ALG", "A",   "WAf" },  //  -bcast Radio Algerienne
   {  9510.00,  100,  200, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   {  9510.00,  510,  800, 0x00080,  480, "CHN", "MO",  "CHN" },  //  -bcast PBS Xinjiang
   {  9510.00,  800, 1050, 0x0be80,  480, "CHN", "MO",  "CHN" },  //  -bcast PBS Xinjiang
@@ -9048,7 +9050,7 @@ dx_t eibi_db[] = {
   {  9510.00, 1420, 1520, 0x00080,   44, "IRN", "HI",  "SAs" },  //  -bcast IRIB Voice of I.R.Iran
   {  9510.00, 1100, 1130, 0x00080,  137, "USA", "E",   "Eu"  },  //  -bcast Adventist World Radio
   {  9510.00,  100,  200, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
-  {  9515.00,  800, 2400, 0x00080,  788, "BRA", "P",   "SAm" },  //  -bcast Rádio Marumby
+  {  9515.00,  800, 2400, 0x00080,  789, "BRA", "P",   "SAm" },  //  -bcast Rádio Marumby
   {  9515.00, 1900, 1930, 0x00080,   52, "CHN", "CZ",  "WEu" },  //  -bcast China Radio Int.
   {  9515.00, 1900, 1930, 0x00080,   53, "CHN", "CZ",  "WEu" },  //  -bcast CRI Music
   {  9515.00,  855, 1605, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
@@ -9058,7 +9060,7 @@ dx_t eibi_db[] = {
   {  9520.00,  600,  950, 0x0be80,  110, "CHN", "M",   "CHN" },  //  -bcast PBS Nei Menggu
   {  9520.00,  950, 1605, 0x00080,  110, "CHN", "M",   "CHN" },  //  -bcast PBS Nei Menggu
   {  9520.00, 2150,  600, 0x00080,  110, "CHN", "M",   "CHN" },  //  -bcast PBS Nei Menggu
-  {  9520.00, 1400, 1430, 0x00080,  740, "ROU", "I",   "SEu" },  //  -bcast Radio Romania Int.
+  {  9520.00, 1400, 1430, 0x00080,  741, "ROU", "I",   "SEu" },  //  -bcast Radio Romania Int.
   {  9525.00, 1900, 2000, 0x00080,   52, "CHN", "R",   "CAs" },  //  -bcast China Radio Int.
   {  9525.00, 2000, 2100, 0x00080,   52, "CHN", "R",   "CAs" },  //  -bcast China Radio Int.
   {  9525.00,  230,  530, 0x00080,  896, "CLA", "KU",  "ME"  },  //  -bcast Dengê Welat
@@ -9066,14 +9068,14 @@ dx_t eibi_db[] = {
   {  9525.00, 1800, 2100, 0x00080,  896, "CLA", "KU",  "ME"  },  //  -bcast Dengê Welat
   {  9525.00,  230,  530, 0x00080, 1012, "TUR", "TU",  "ME"  },  //  -bcast Turkish Jammer
   {  9525.00, 1800, 2100, 0x00080, 1012, "TUR", "TU",  "ME"  },  //  -bcast Turkish Jammer
-  {  9525.00,  500,  555, 0x00080,  753, "TUR", "HA",  "ME"  },  //  -bcast Voice of Turkey
-  {  9525.00, 1800, 1825, 0x00080,  753, "TUR", "D",   "ME"  },  //  -bcast Voice of Turkey
-  {  9525.00, 1830, 1925, 0x00080,  753, "TUR", "E",   "ME"  },  //  -bcast Voice of Turkey
-  {  9525.00, 1930, 2025, 0x00080,  753, "TUR", "F",   "ME"  },  //  -bcast Voice of Turkey
-  {  9525.00, 2030, 2125, 0x00080,  753, "TUR", "E",   "ME"  },  //  -bcast Voice of Turkey
+  {  9525.00,  500,  555, 0x00080,  754, "TUR", "HA",  "ME"  },  //  -bcast Voice of Turkey
+  {  9525.00, 1800, 1825, 0x00080,  754, "TUR", "D",   "ME"  },  //  -bcast Voice of Turkey
+  {  9525.00, 1830, 1925, 0x00080,  754, "TUR", "E",   "ME"  },  //  -bcast Voice of Turkey
+  {  9525.00, 1930, 2025, 0x00080,  754, "TUR", "F",   "ME"  },  //  -bcast Voice of Turkey
+  {  9525.00, 2030, 2125, 0x00080,  754, "TUR", "E",   "ME"  },  //  -bcast Voice of Turkey
   {  9525.00, 1300, 1400, 0x00080,  111, "TWN", "T",   "SEA" },  //  -bcast Radio Taiwan Int.
   {  9525.00, 1500, 1600, 0x00080,   86, "USA", "TK",  "CAs" },  //  -bcast Radio Liberty
-  {  9530.00,  700, 2000, 0x00080,  798, "BEL", "",    "Eu"  },  //  -bcast Radio Onda
+  {  9530.00,  700, 2000, 0x00080,  799, "BEL", "",    "Eu"  },  //  -bcast Radio Onda
   {  9530.00,    0,  200, 0x00080,  109, "CHN", "TB",  "CHN" },  //  -bcast China National Radio 11
   {  9530.00,  200,  300, 0x00080,  109, "CHN", "AMD", "CHN" },  //  -bcast China National Radio 11
   {  9530.00,  300,  400, 0x00080,  109, "CHN", "KHA", "CHN" },  //  -bcast China National Radio 11
@@ -9083,7 +9085,7 @@ dx_t eibi_db[] = {
   {  9530.00,  900, 1100, 0x00080,  109, "CHN", "TB",  "CHN" },  //  -bcast China National Radio 11
   {  9530.00, 1100, 1300, 0x00080,  109, "CHN", "TB",  "CHN" },  //  -bcast China National Radio 11
   {  9530.00, 1500, 1600, 0x00080,   86, "USA", "TK",  "CAs" },  //  -bcast Radio Liberty
-  {  9535.00,  500,  600, 0x00080,  747, "ALG", "A",   "CAf" },  //  -bcast Radio Algerienne
+  {  9535.00,  500,  600, 0x00080,  748, "ALG", "A",   "CAf" },  //  -bcast Radio Algerienne
   {  9535.00,  100,  200, 0x00080,   52, "CHN", "E",   "SAs" },  //  -bcast China Radio Int.
   {  9535.00, 1330, 1430, 0x00080,   52, "CHN", "IN",  "INS" },  //  -bcast China Radio Int.
   {  9535.00, 1500, 1600, 0x00080,   52, "CHN", "UR",  "SAs" },  //  -bcast China Radio Int.
@@ -9117,17 +9119,17 @@ dx_t eibi_db[] = {
   {  9540.00, 1615, 1630, 0x01e80, 1006, "SWE", "AH",  "EAf" },  //  -bcast IBRA Radio
   {  9540.00, 1615, 1630, 0x0e080, 1006, "SWE", "GUR", "EAf" },  //  -bcast IBRA Radio
   {  9540.00, 1630, 1700, 0x00080, 1006, "SWE", "AH",  "EAf" },  //  -bcast IBRA Radio
-  {  9540.00, 1400, 1500, 0x00080,  753, "TUR", "A",   "ME"  },  //  -bcast Voice of Turkey
+  {  9540.00, 1400, 1500, 0x00080,  754, "TUR", "A",   "ME"  },  //  -bcast Voice of Turkey
   {  9540.00, 1700, 1800, 0x00080,  111, "TWN", "D",   "Eu"  },  //  -bcast Radio Taiwan Int.
   {  9540.00, 1820, 1830, 0x00080,  111, "TWN", "D",   "Eu"  },  //  -bcast Radio Taiwan Int.
-  {  9540.10,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9540.10,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9540.10,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9540.10, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9540.10, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9540.10, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9540.10, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9540.10, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9540.10,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9540.10,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9540.10,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9540.10, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9540.10, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9540.10, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9540.10, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9540.10, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   {  9540.00,  940,  950, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  9540.00, 2100, 2200, 0x00080,  117, "USA", "K",   "FE"  },  //  -bcast Radio Free Asia
   {  9545.00, 1500, 1530, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
@@ -9137,7 +9139,7 @@ dx_t eibi_db[] = {
   {  9545.00, 1500, 1530, 0x00080,  111, "TWN", "CA",  "CHN" },  //  -bcast Radio Taiwan Int.
   {  9545.00, 1530, 1600, 0x00080,  111, "TWN", "HK",  "CHN" },  //  -bcast Radio Taiwan Int.
   {  9545.00, 1800, 1900, 0x00e80,  111, "TWN", "D",   "Eu"  },  //  -bcast Radio Taiwan Int.
-  {  9550.10, 1040, 2300, 0x00080,  806, "BRA", "P",   "B"   },  //  -bcast R.Boa Vontade, P.Alegre
+  {  9550.10, 1040, 2300, 0x00080,  807, "BRA", "P",   "B"   },  //  -bcast R.Boa Vontade, P.Alegre
   {  9550.00,    0,  100, 0x00080,   52, "CHN", "HK",  "INS" },  //  -bcast China Radio Int.
   {  9550.00,  100,  200, 0x00080,   52, "CHN", "AM",  "SEA" },  //  -bcast China Radio Int.
   {  9550.00,    0,  100, 0x00080,   53, "CHN", "HK",  "INS" },  //  -bcast CRI Music
@@ -9149,8 +9151,8 @@ dx_t eibi_db[] = {
   {  9550.00, 1500, 1600, 0x00080,   52, "CHN", "VN",  "SEA" },  //  -bcast China Radio Int.
   {  9550.00, 1600, 1700, 0x00080,   52, "CHN", "VN",  "SEA" },  //  -bcast China Radio Int.
   {  9550.00,  800, 1100, 0x00080,  648, "EGY", "-MX", "ME"  },  //  -bcast Unknown Station
-  {  9550.00,    0,  100, 0x00080,  740, "ROU", "E",   "ENA" },  //  -bcast Radio Romania Int.
-  {  9550.00,  100,  200, 0x00080,  740, "ROU", "F",   "ENA" },  //  -bcast Radio Romania Int.
+  {  9550.00,    0,  100, 0x00080,  741, "ROU", "E",   "ENA" },  //  -bcast Radio Romania Int.
+  {  9550.00,  100,  200, 0x00080,  741, "ROU", "F",   "ENA" },  //  -bcast Radio Romania Int.
   {  9550.00, 1500, 1600, 0x00080,  121, "VTN", "VN",  "NAf" },  //  -bcast Voice of Vietnam
   {  9550.00, 1600, 1630, 0x00080,  121, "VTN", "E",   "NAf" },  //  -bcast Voice of Vietnam
   {  9550.00, 1630, 1700, 0x00080,  121, "VTN", "F",   "NAf" },  //  -bcast Voice of Vietnam
@@ -9179,7 +9181,7 @@ dx_t eibi_db[] = {
   {  9560.00, 2230, 2250, 0x00080,   93, "JPN", "M",   "FE"  },  //  -bcast NHK Radio Japan
   {  9560.00, 1300, 1400, 0x00080,  117, "USA", "K",   "FE"  },  //  -bcast Radio Free Asia
   {  9565.00, 1500, 1600, 0x00080,   52, "CHN", "TU",  "ME"  },  //  -bcast China Radio Int.
-  {  9565.00, 2000, 2400, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  {  9565.00, 2000, 2400, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
   {  9570.00, 1100, 1200, 0x00080,   52, "CHN", "CA",  "Oc"  },  //  -bcast China Radio Int.
   {  9570.00, 1200, 1255, 0x00080,   52, "CHN", "CA",  "ENA" },  //  -bcast China Radio Int.
   {  9570.00, 1100, 1200, 0x00080,   53, "CHN", "CA",  "Oc"  },  //  -bcast CRI Music
@@ -9202,11 +9204,11 @@ dx_t eibi_db[] = {
   {  9570.00, 1200, 1300, 0x00080,  116, "KOR", "IN",  "SEA" },  //  -bcast KBS World Radio
   {  9570.00, 1300, 1400, 0x00080,  116, "KOR", "E",   "SEA" },  //  -bcast KBS World Radio
   {  9570.00, 1400, 1500, 0x00080,  116, "KOR", "IN",  "SEA" },  //  -bcast KBS World Radio
-  {  9570.00, 1800, 1900, 0x00080,  740, "ROU", "D",   "WEu" },  //  -bcast Radio Romania Int.
+  {  9570.00, 1800, 1900, 0x00080,  741, "ROU", "D",   "WEu" },  //  -bcast Radio Romania Int.
   {  9570.00, 1030, 1100, 0x00080,  111, "TWN", "K",   "FE"  },  //  -bcast Radio Taiwan Int.
   {  9570.00, 2300, 2400, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
   {  9575.00,    0,  100, 0x00080,   31, "GBR", "E",   "SAs" },  //  -bcast BBC
-  {  9575.00, 2000, 2030, 0x00080,  740, "ROU", "F",   "WEu" },  //  -bcast Radio Romania Int.
+  {  9575.00, 2000, 2030, 0x00080,  741, "ROU", "F",   "WEu" },  //  -bcast Radio Romania Int.
   {  9575.00, 1802, 1902, 0x0f880,   56, "SWZ", "A",   "EAf" },  //  -bcast Trans World Radio
   {  9580.00, 1000, 1100, 0x00080,  897, "ALS", "E",   "FE"  },  //  -bcast KNLS New Life Station
   {  9580.00, 1100, 1200, 0x00080,  897, "ALS", "R",   "FE"  },  //  -bcast KNLS New Life Station
@@ -9219,7 +9221,7 @@ dx_t eibi_db[] = {
   {  9580.00, 2200, 2300, 0x00080,   31, "GBR", "E",   "FE"  },  //  -bcast BBC
   {  9580.00,  100,  200, 0x00080,  116, "KOR", "J",   "J"   },  //  -bcast KBS World Radio
   {  9580.00,  200,  300, 0x00080,  116, "KOR", "E",   "SAm" },  //  -bcast KBS World Radio
-  {  9580.00, 1500, 1530, 0x00080,  741, "ROU", "R",   "EEu" },  //  -bcast Radio Romania DIGITAL
+  {  9580.00, 1500, 1530, 0x00080,  742, "ROU", "R",   "EEu" },  //  -bcast Radio Romania DIGITAL
   {  9580.00, 2100, 2200, 0x00080,  137, "USA", "K",   "FE"  },  //  -bcast Adventist World Radio
   {  9580.00, 1200, 1300, 0x00080,  117, "USA", "K",   "FE"  },  //  -bcast Radio Free Asia
   {  9585.00, 1500, 1600, 0x00080,   52, "CHN", "J",   "FE"  },  //  -bcast China Radio Int.
@@ -9233,7 +9235,7 @@ dx_t eibi_db[] = {
   {  9585.00, 1420, 1450, 0x00080,   56, "SWZ", "MKU", "MOZ" },  //  -bcast Trans World Radio
   {  9585.00, 1453, 1525, 0x00080,   56, "SWZ", "F",   "MDG" },  //  -bcast Trans World Radio
   {  9585.00, 1453, 1525, 0x0f880,   56, "SWZ", "MSY", "MDG" },  //  -bcast Trans World Radio
-  {  9590.00, 1200, 1259, 0x00080,  802, "AUS", "HI",  "NIn" },  //  -bcast Reach Beyond Australia
+  {  9590.00, 1200, 1259, 0x00080,  803, "AUS", "HI",  "NIn" },  //  -bcast Reach Beyond Australia
   {  9590.00,  100,  300, 0x00080,   52, "CHN", "S",   "SAm" },  //  -bcast China Radio Int.
   {  9590.00, 1100, 1200, 0x00080,   52, "CHN", "CA",  "SEA" },  //  -bcast China Radio Int.
   {  9590.00, 1100, 1200, 0x00080,   53, "CHN", "CA",  "SEA" },  //  -bcast CRI Music
@@ -9245,7 +9247,7 @@ dx_t eibi_db[] = {
   {  9590.00,  530,  630, 0x00080,   66, "MYA", "POR", "SEA" },  //  -bcast Thazin Radio
   {  9590.00,  630,  730, 0x00080,   66, "MYA", "KYH", "SEA" },  //  -bcast Thazin Radio
   {  9590.00,  730,  830, 0x00080,   66, "MYA", "SHA", "SEA" },  //  -bcast Thazin Radio
-  {  9590.00, 1600, 1700, 0x00080,  740, "ROU", "HB",  "ISR" },  //  -bcast Radio Romania Int.
+  {  9590.00, 1600, 1700, 0x00080,  741, "ROU", "HB",  "ISR" },  //  -bcast Radio Romania Int.
   {  9600.00, 1200, 1300, 0x00080,   52, "CHN", "E",   "SEA" },  //  -bcast China Radio Int.
   {  9600.00, 1300, 1400, 0x00080,   52, "CHN", "BE",  "SAs" },  //  -bcast China Radio Int.
   {  9600.00, 1300, 1400, 0x00080,   53, "CHN", "BE",  "SAs" },  //  -bcast CRI Music
@@ -9259,29 +9261,29 @@ dx_t eibi_db[] = {
   {  9600.00, 1100, 1200, 0x00080,  480, "CHN", "M",   "CHN" },  //  -bcast PBS Xinjiang
   {  9600.00,  800, 1000, 0x00080,  648, "EGY", "-MX", "ME"  },  //  -bcast Unknown Station
   {  9600.00, 1530, 1600, 0x00080,   93, "JPN", "HI",  "SAs" },  //  -bcast NHK Radio Japan
-  {  9600.00, 1400, 1500, 0x00080,  740, "ROU", "D",   "WEu" },  //  -bcast Radio Romania Int.
+  {  9600.00, 1400, 1500, 0x00080,  741, "ROU", "D",   "WEu" },  //  -bcast Radio Romania Int.
   {  9600.00,  500,  600, 0x00080,  894, "SSD", "E",   "EAf" },  //  -bcast Eye Radio
   {  9600.00,    0,  100, 0x00080,   51, "USA", "M",   "FE"  },  //  -bcast Voice of America
   {  9605.00, 1600, 1700, 0x00080,   52, "CHN", "R",   "EEu" },  //  -bcast China Radio Int.
   {  9605.00, 1700, 1800, 0x00080,   52, "CHN", "R",   "EEu" },  //  -bcast China Radio Int.
-  {  9605.00, 1300, 1400, 0x00080,  746, "USA", "E",   "CAm" },  //  -bcast World Harvest Radio
-  {  9610.00, 1200, 1300, 0x00080,  802, "AUS", "HI",  "NIn" },  //  -bcast Reach Beyond Australia
-  {  9610.00, 1300, 1315, 0x00080,  802, "AUS", "BJ",  "NIn" },  //  -bcast Reach Beyond Australia
-  {  9610.00, 1300, 1315, 0x00080,  802, "AUS", "CHG", "NIn" },  //  -bcast Reach Beyond Australia
-  {  9610.00, 1300, 1315, 0x00080,  802, "AUS", "HIM", "NIn" },  //  -bcast Reach Beyond Australia
-  {  9610.00, 1300, 1315, 0x00080,  802, "AUS", "KUR", "NIn" },  //  -bcast Reach Beyond Australia
-  {  9610.00, 1300, 1315, 0x00080,  802, "AUS", "MAR", "NIn" },  //  -bcast Reach Beyond Australia
-  {  9610.00, 1300, 1315, 0x00080,  802, "AUS", "PJ",  "NIn" },  //  -bcast Reach Beyond Australia
-  {  9610.00, 1315, 1330, 0x00080,  802, "AUS", "BE",  "NIn" },  //  -bcast Reach Beyond Australia
-  {  9610.00, 1315, 1330, 0x00080,  802, "AUS", "HI",  "NIn" },  //  -bcast Reach Beyond Australia
-  {  9610.00, 1315, 1330, 0x00080,  802, "AUS", "MAR", "NIn" },  //  -bcast Reach Beyond Australia
-  {  9610.00, 1315, 1330, 0x00080,  802, "AUS", "OR",  "NIn" },  //  -bcast Reach Beyond Australia
-  {  9610.00, 1315, 1330, 0x00080,  802, "AUS", "PJ",  "NIn" },  //  -bcast Reach Beyond Australia
-  {  9610.00, 1315, 1330, 0x00080,  802, "AUS", "TAM", "NIn" },  //  -bcast Reach Beyond Australia
-  {  9610.00, 1315, 1330, 0x00080,  802, "AUS", "TEL", "NIn" },  //  -bcast Reach Beyond Australia
-  {  9610.00, 1800, 1830, 0x00080,  777, "CAN", "FS",  "IRN" },  //  -bcast Bible Voice
-  {  9610.00, 1800, 1900, 0x00080,  777, "CAN", "FS",  "IRN" },  //  -bcast Bible Voice
-  {  9610.00, 1830, 1900, 0x04280,  777, "CAN", "FS",  "IRN" },  //  -bcast Bible Voice
+  {  9605.00, 1300, 1400, 0x00080,  747, "USA", "E",   "CAm" },  //  -bcast World Harvest Radio
+  {  9610.00, 1200, 1300, 0x00080,  803, "AUS", "HI",  "NIn" },  //  -bcast Reach Beyond Australia
+  {  9610.00, 1300, 1315, 0x00080,  803, "AUS", "BJ",  "NIn" },  //  -bcast Reach Beyond Australia
+  {  9610.00, 1300, 1315, 0x00080,  803, "AUS", "CHG", "NIn" },  //  -bcast Reach Beyond Australia
+  {  9610.00, 1300, 1315, 0x00080,  803, "AUS", "HIM", "NIn" },  //  -bcast Reach Beyond Australia
+  {  9610.00, 1300, 1315, 0x00080,  803, "AUS", "KUR", "NIn" },  //  -bcast Reach Beyond Australia
+  {  9610.00, 1300, 1315, 0x00080,  803, "AUS", "MAR", "NIn" },  //  -bcast Reach Beyond Australia
+  {  9610.00, 1300, 1315, 0x00080,  803, "AUS", "PJ",  "NIn" },  //  -bcast Reach Beyond Australia
+  {  9610.00, 1315, 1330, 0x00080,  803, "AUS", "BE",  "NIn" },  //  -bcast Reach Beyond Australia
+  {  9610.00, 1315, 1330, 0x00080,  803, "AUS", "HI",  "NIn" },  //  -bcast Reach Beyond Australia
+  {  9610.00, 1315, 1330, 0x00080,  803, "AUS", "MAR", "NIn" },  //  -bcast Reach Beyond Australia
+  {  9610.00, 1315, 1330, 0x00080,  803, "AUS", "OR",  "NIn" },  //  -bcast Reach Beyond Australia
+  {  9610.00, 1315, 1330, 0x00080,  803, "AUS", "PJ",  "NIn" },  //  -bcast Reach Beyond Australia
+  {  9610.00, 1315, 1330, 0x00080,  803, "AUS", "TAM", "NIn" },  //  -bcast Reach Beyond Australia
+  {  9610.00, 1315, 1330, 0x00080,  803, "AUS", "TEL", "NIn" },  //  -bcast Reach Beyond Australia
+  {  9610.00, 1800, 1830, 0x00080,  778, "CAN", "FS",  "IRN" },  //  -bcast Bible Voice
+  {  9610.00, 1800, 1900, 0x00080,  778, "CAN", "FS",  "IRN" },  //  -bcast Bible Voice
+  {  9610.00, 1830, 1900, 0x04280,  778, "CAN", "FS",  "IRN" },  //  -bcast Bible Voice
   {  9610.00,  300,  400, 0x00080,   98, "CHN", "MO",  "CHN" },  //  -bcast China National Radio 8
   {  9610.00,  400,  600, 0x00080,   98, "CHN", "MO",  "CHN" },  //  -bcast China National Radio 8
   {  9610.00, 2055,  300, 0x00080,   98, "CHN", "MO",  "CHN" },  //  -bcast China National Radio 8
@@ -9298,14 +9300,14 @@ dx_t eibi_db[] = {
   {  9610.00, 1230, 1250, 0x00080,  492, "CVA", "R",   "Sib" },  //  -bcast Radio Vaticana
   {  9610.00,  745,  755, 0x00132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   {  9610.00, 1910, 1920, 0x00b32,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
-  {  9610.00, 1900, 2000, 0x00080,  740, "ROU", "S",   "E"   },  //  -bcast Radio Romania Int.
-  {  9610.00, 1400, 1430, 0x00080,  753, "TUR", "I",   "SEu" },  //  -bcast Voice of Turkey
+  {  9610.00, 1900, 2000, 0x00080,  741, "ROU", "S",   "E"   },  //  -bcast Radio Romania Int.
+  {  9610.00, 1400, 1430, 0x00080,  754, "TUR", "I",   "SEu" },  //  -bcast Voice of Turkey
   {  9610.00, 1000, 1100, 0x00080,  111, "TWN", "M",   "FE"  },  //  -bcast Radio Taiwan Int.
   {  9610.00,  900, 1000, 0x00080,  137, "USA", "I",   "Eu"  },  //  -bcast Adventist World Radio
   {  9610.00, 2000, 2030, 0x00080,  137, "USA", "DY",  "WAf" },  //  -bcast Adventist World Radio
   {  9615.00, 1530, 1830, 0x00080,   31, "GBR", "K",   "FE"  },  //  -bcast BBC
   {  9615.00, 1330, 1430, 0x00080,   51, "USA", "KH",  "SEA" },  //  -bcast Voice of America
-  {  9620.00,  600,  700, 0x00080,  747, "ALG", "A",   "WAf" },  //  -bcast Radio Algerienne
+  {  9620.00,  600,  700, 0x00080,  748, "ALG", "A",   "WAf" },  //  -bcast Radio Algerienne
   {  9620.00,    0,  600, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   {  9620.00,  100,  600, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   {  9620.00,  600,  855, 0x0de80,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
@@ -9317,7 +9319,7 @@ dx_t eibi_db[] = {
   {  9620.00, 1920, 1930, 0x00080,   49, "IND", "E",   "Eu"  },  //  -bcast AIR Delhi
   {  9620.00, 1930, 2030, 0x00080,   50, "IND", "F",   "Eu"  },  //  -bcast All India Radio Ext.Sce
   {  9620.00, 1930, 2030, 0x00080,  106, "IND", "F",   "Eu"  },  //  -bcast AIR DIGITAL
-  {  9620.00, 2100, 2200, 0x00080,  741, "ROU", "S",   "SAm" },  //  -bcast Radio Romania DIGITAL
+  {  9620.00, 2100, 2200, 0x00080,  742, "ROU", "S",   "SAm" },  //  -bcast Radio Romania DIGITAL
   {  9625.00, 2200, 2300, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   {  9625.00, 1420, 1520, 0x00080,   44, "IRN", "BE",  "SAs" },  //  -bcast IRIB Voice of I.R.Iran
   {  9625.00, 1400, 1500, 0x00080,  111, "TWN", "VN",  "SEA" },  //  -bcast Radio Taiwan Int.
@@ -9327,30 +9329,30 @@ dx_t eibi_db[] = {
   {  9630.00,  600,  850, 0x0be80,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  9630.00,  850, 1100, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  9630.00,  850, 1200, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
-  {  9630.00, 1200, 1500, 0x00080,  800, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
-  {  9630.00, 1500, 1805, 0x00080,  800, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
-  {  9630.00, 1520, 1530, 0x0f880,  800, "CHN", "E,R", "CHN" },  //  -bcast China National Radio 17
-  {  9630.00, 1720, 1730, 0x0f880,  800, "CHN", "E,R", "CHN" },  //  -bcast China National Radio 17
+  {  9630.00, 1200, 1500, 0x00080,  801, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
+  {  9630.00, 1500, 1805, 0x00080,  801, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
+  {  9630.00, 1520, 1530, 0x0f880,  801, "CHN", "E,R", "CHN" },  //  -bcast China National Radio 17
+  {  9630.00, 1720, 1730, 0x0f880,  801, "CHN", "E,R", "CHN" },  //  -bcast China National Radio 17
   {  9630.00, 1400, 1600, 0x00080,  116, "KOR", "E",   "SAs" },  //  -bcast KBS World Radio
   {  9630.00, 1700, 1730, 0x00080, 1006, "SWE", "OO",  "EAf" },  //  -bcast IBRA Radio
   {  9630.00, 1730, 1800, 0x00080, 1006, "SWE", "TIG", "EAf" },  //  -bcast IBRA Radio
   {  9630.00,  500,  530, 0x00080,  137, "USA", "HA",  "NIG" },  //  -bcast Adventist World Radio
   {  9630.00, 1500, 1930, 0x00080,  902, "USA", "E",   "WNA" },  //  -bcast Radio YHWH
-  {  9635.00, 1815, 1830, 0x00080,  777, "CAN", "E",   "ME"  },  //  -bcast Bible Voice
-  {  9635.00, 1830, 1915, 0x00080,  777, "CAN", "E",   "ME"  },  //  -bcast Bible Voice
+  {  9635.00, 1815, 1830, 0x00080,  778, "CAN", "E",   "ME"  },  //  -bcast Bible Voice
+  {  9635.00, 1830, 1915, 0x00080,  778, "CAN", "E",   "ME"  },  //  -bcast Bible Voice
   {  9635.00, 2130, 1600, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  {  9635.00,  800, 1800, 0x00080,  768, "MLI", "BM",  "WAf" },  //  -bcast RTV du Mali
-  {  9635.00, 1930, 2030, 0x00080,  753, "TUR", "F",   "SEu" },  //  -bcast Voice of Turkey
-  {  9635.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9635.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9635.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9635.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9635.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9635.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9635.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9635.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9635.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9635.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9635.00,  800, 1800, 0x00080,  769, "MLI", "BM",  "WAf" },  //  -bcast RTV du Mali
+  {  9635.00, 1930, 2030, 0x00080,  754, "TUR", "F",   "SEu" },  //  -bcast Voice of Turkey
+  {  9635.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9635.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9635.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9635.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9635.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9635.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9635.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9635.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9635.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9635.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   {  9635.00, 2145, 1700, 0x00080,   67, "VTN", "VN",  "Oc"  },  //  -bcast Voice of Vietnam 1
   {  9640.00, 2100, 2300, 0x00080,   52, "CHN", "S",   "SEu" },  //  -bcast China Radio Int.
   {  9640.00,    0,  100, 0x00080,  664, "CUB", "S",   "Car" },  //  -bcast Radio Habana Cuba
@@ -9399,22 +9401,22 @@ dx_t eibi_db[] = {
   {  9650.00,  700,  900, 0x00080,   58, "KRE", "J",   "J"   },  //  -bcast Voice of Korea
   {  9650.00,  900, 1300, 0x00080,   58, "KRE", "J",   "J"   },  //  -bcast Voice of Korea
   {  9650.00, 2100, 2400, 0x00080,   58, "KRE", "J",   "J"   },  //  -bcast Voice of Korea
-  {  9655.00, 2000, 2005, 0x00080,  747, "ALG", "F",   "CAf" },  //  -bcast Radio Algerienne
-  {  9655.00, 2005, 2100, 0x00080,  747, "ALG", "A",   "CAf" },  //  -bcast Radio Algerienne
+  {  9655.00, 2000, 2005, 0x00080,  748, "ALG", "F",   "CAf" },  //  -bcast Radio Algerienne
+  {  9655.00, 2005, 2100, 0x00080,  748, "ALG", "A",   "CAf" },  //  -bcast Radio Algerienne
   {  9655.00,  100,  200, 0x00080,   52, "CHN", "M",   "SEA" },  //  -bcast China Radio Int.
   {  9655.00,  200,  300, 0x00080,   52, "CHN", "BE",  "SAs" },  //  -bcast China Radio Int.
   {  9655.00, 1400, 1500, 0x00080,   52, "CHN", "AM",  "SEA" },  //  -bcast China Radio Int.
   {  9655.00,  200,  300, 0x00080,   53, "CHN", "BE",  "SAs" },  //  -bcast CRI Music
   {  9655.00, 1400, 1500, 0x00080,   53, "CHN", "AM",  "SEA" },  //  -bcast CRI Music
   {  9655.00, 1900, 2000, 0x00080,   52, "CHN", "TU",  "ME"  },  //  -bcast China Radio Int.
-  {  9655.00,  800, 1200, 0x00080,  778, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
-  {  9655.00, 2200,  100, 0x00080,  778, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
+  {  9655.00,  800, 1200, 0x00080,  779, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
+  {  9655.00, 2200,  100, 0x00080,  779, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
   {  9655.00, 2200, 2300, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   {  9655.00,  430,  500, 0x00080,  103, "FRA", "SWA", "EAf" },  //  -bcast Radio France Int.
   {  9655.00,  330,  345, 0x08280,   56, "SWZ", "AH",  "ETH" },  //  -bcast Trans World Radio
   {  9655.00,  330,  345, 0x00080,   56, "SWZ", "OO",  "ETH" },  //  -bcast Trans World Radio
   {  9655.00,  330,  345, 0x00080,   56, "SWZ", "SID", "ETH" },  //  -bcast Trans World Radio
-  {  9655.00, 1000, 1100, 0x00080,  753, "TUR", "GE",  "Cau" },  //  -bcast Voice of Turkey
+  {  9655.00, 1000, 1100, 0x00080,  754, "TUR", "GE",  "Cau" },  //  -bcast Voice of Turkey
   {  9655.00,  640,  650, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  9655.00,  840,  850, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  9655.00, 2200, 2300, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
@@ -9423,15 +9425,15 @@ dx_t eibi_db[] = {
   {  9655.00,  330,  345, 0x00080,   56, "USA", "SID", "EAf" },  //  -bcast Trans World Radio
   {  9660.00, 1000, 1600, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   {  9660.00, 1600, 1900, 0x00080,   31, "GBR", "SO",  "EAf" },  //  -bcast BBC
-  {  9660.00,  500,  530, 0x00080,  740, "ROU", "F",   "SEu" },  //  -bcast Radio Romania Int.
-  {  9660.00,  630,  700, 0x00080,  740, "ROU", "A",   "ME"  },  //  -bcast Radio Romania Int.
+  {  9660.00,  500,  530, 0x00080,  741, "ROU", "F",   "SEu" },  //  -bcast Radio Romania Int.
+  {  9660.00,  630,  700, 0x00080,  741, "ROU", "A",   "ME"  },  //  -bcast Radio Romania Int.
   {  9660.00, 1000, 1100, 0x00080,  111, "TWN", "M",   "FE"  },  //  -bcast Radio Taiwan Int.
   {  9660.00, 1100, 1200, 0x00080,  111, "TWN", "M",   "FE"  },  //  -bcast Radio Taiwan Int.
   {  9660.00, 1200, 1300, 0x00080,  111, "TWN", "M",   "FE"  },  //  -bcast Radio Taiwan Int.
   {  9660.00, 1300, 1400, 0x00080,  111, "TWN", "M",   "FE"  },  //  -bcast Radio Taiwan Int.
   {  9660.00, 1400, 1500, 0x00080,  111, "TWN", "M",   "FE"  },  //  -bcast Radio Taiwan Int.
   {  9660.00, 1500, 1600, 0x00080,  111, "TWN", "M",   "FE"  },  //  -bcast Radio Taiwan Int.
-  {  9665.20,    0, 2400, 0x00080,  752, "BRA", "P",   "B"   },  //  -bcast Rádio Voz Missionária
+  {  9665.20,    0, 2400, 0x00080,  753, "BRA", "P",   "B"   },  //  -bcast Rádio Voz Missionária
   {  9665.00, 1000, 1705, 0x00080,   39, "CHN", "M",   "TWN" },  //  -bcast CNR5 Cross-Strait Radio
   {  9665.00, 2055, 2300, 0x00080,   39, "CHN", "M",   "TWN" },  //  -bcast CNR5 Cross-Strait Radio
   {  9665.00, 2300, 2400, 0x00080,   39, "CHN", "M",   "TWN" },  //  -bcast CNR5 Cross-Strait Radio
@@ -9477,14 +9479,14 @@ dx_t eibi_db[] = {
   {  9685.00,    0,  900, 0x00080,   39, "CHN", "M",   "TWN" },  //  -bcast CNR5 Cross-Strait Radio
   {  9685.00,  900, 1000, 0x00080,   39, "CHN", "M",   "TWN" },  //  -bcast CNR5 Cross-Strait Radio
   {  9685.00,    0, 2400, 0x200b2,  578, "CHN", "",    "CHN" },  //    -ale Chinese Military ALE
-  {  9685.00, 1500, 1530, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
-  {  9685.00, 1530, 1600, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
+  {  9685.00, 1500, 1530, 0x00080,  728, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
+  {  9685.00, 1530, 1600, 0x00080,  728, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
   {  9685.00, 1830, 1850, 0x0f880,   31, "GBR", "AH",  "EAf" },  //  -bcast BBC
   {  9685.00, 1850, 1910, 0x0f880,   31, "GBR", "OO",  "EAf" },  //  -bcast BBC
   {  9685.00, 1910, 1930, 0x0f880,   31, "GBR", "TIG", "EAf" },  //  -bcast BBC
   {  9685.00, 2100, 2200, 0x00080,  117, "USA", "M",   "FE"  },  //  -bcast Radio Free Asia
   {  9690.00, 1500, 1600, 0x00080,   52, "CHN", "TAM", "SAs" },  //  -bcast China Radio Int.
-  {  9690.00, 1600, 1630, 0x00080,  726, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
+  {  9690.00, 1600, 1630, 0x00080,  727, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
   {  9690.00, 2000, 2030, 0x00080,  103, "FRA", "HA",  "WAf" },  //  -bcast Radio France Int.
   {  9695.00,  800,  900, 0x00080,  897, "ALS", "E",   "FE"  },  //  -bcast KNLS New Life Station
   {  9695.00,  900, 1000, 0x00080,  897, "ALS", "R",   "FE"  },  //  -bcast KNLS New Life Station
@@ -9504,17 +9506,17 @@ dx_t eibi_db[] = {
   {  9700.00, 2100, 2200, 0x00080,  664, "CUB", "S",   "Car" },  //  -bcast Radio Habana Cuba
   {  9700.00, 2200, 2400, 0x00080,  664, "CUB", "S",   "Car" },  //  -bcast Radio Habana Cuba
   {  9700.00,    0,   27, 0x00080, 1019, "PHL", "KC",  "SEA" },  //  -bcast Radio Veritas Asia
-  {  9700.00,  200,  300, 0x00080,  740, "ROU", "S",   "CAm" },  //  -bcast Radio Romania Int.
-  {  9700.00,  600,  630, 0x00080,  740, "ROU", "D",   "WEu" },  //  -bcast Radio Romania Int.
-  {  9700.00, 2300, 2400, 0x00080,  740, "ROU", "S",   "SAm" },  //  -bcast Radio Romania Int.
+  {  9700.00,  200,  300, 0x00080,  741, "ROU", "S",   "CAm" },  //  -bcast Radio Romania Int.
+  {  9700.00,  600,  630, 0x00080,  741, "ROU", "D",   "WEu" },  //  -bcast Radio Romania Int.
+  {  9700.00, 2300, 2400, 0x00080,  741, "ROU", "S",   "SAm" },  //  -bcast Radio Romania Int.
   {  9700.00, 1230, 1330, 0x00080,  117, "USA", "KH",  "SEA" },  //  -bcast Radio Free Asia
   {  9700.00, 1500, 1930, 0x00080,  902, "USA", "E",   "WNA" },  //  -bcast Radio YHWH
   {  9705.00,  100,  200, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   {  9705.00,  310,  530, 0x00080,  480, "CHN", "KG",  "CHN" },  //  -bcast PBS Xinjiang
   {  9705.00, 1010, 1230, 0x00080,  480, "CHN", "KG",  "CHN" },  //  -bcast PBS Xinjiang
-  {  9705.00, 1330, 1400, 0x00080,  726, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
-  {  9705.00, 1430, 1500, 0x00080,  726, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
-  {  9705.00, 1300, 1330, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
+  {  9705.00, 1330, 1400, 0x00080,  727, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
+  {  9705.00, 1430, 1500, 0x00080,  727, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
+  {  9705.00, 1300, 1330, 0x00080,  728, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
   {  9705.00, 1600, 1620, 0x00080,  492, "CVA", "AR",  "Cau" },  //  -bcast Radio Vaticana
   {  9705.00, 1620, 1640, 0x00080,  492, "CVA", "R",   "EEu" },  //  -bcast Radio Vaticana
   {  9705.00, 1640, 1700, 0x00080,  492, "CVA", "UK",  "EEu" },  //  -bcast Radio Vaticana
@@ -9542,17 +9544,17 @@ dx_t eibi_db[] = {
   {  9710.00, 2100, 2200, 0x00080,  664, "CUB", "S",   "Car" },  //  -bcast Radio Habana Cuba
   {  9710.00, 2200, 2400, 0x00080,  664, "CUB", "S",   "Car" },  //  -bcast Radio Habana Cuba
   {  9710.00, 1250, 1420, 0x00080,   44, "IRN", "UR",  "SAs" },  //  -bcast IRIB Voice of I.R.Iran
-  {  9710.00,  900, 1000, 0x0fa80,  746, "USA", "E",   "Oc"  },  //  -bcast World Harvest Radio
-  {  9710.00, 1000, 1030, 0x00080,  746, "USA", "E",   "Oc"  },  //  -bcast World Harvest Radio
+  {  9710.00,  900, 1000, 0x0fa80,  747, "USA", "E",   "Oc"  },  //  -bcast World Harvest Radio
+  {  9710.00, 1000, 1030, 0x00080,  747, "USA", "E",   "Oc"  },  //  -bcast World Harvest Radio
   {  9715.00,  500,  530, 0x00080,   51, "USA", "HA",  "WAf" },  //  -bcast Voice of America
-  {  9720.00, 1330, 1345, 0x0f880,  802, "AUS", "NE",  "NIn" },  //  -bcast Reach Beyond Australia
-  {  9720.00, 1330, 1345, 0x00080,  802, "AUS", "TB",  "NIn" },  //  -bcast Reach Beyond Australia
-  {  9720.00, 1345, 1400, 0x00080,  802, "AUS", "BE",  "NIn" },  //  -bcast Reach Beyond Australia
-  {  9720.00, 1345, 1400, 0x00080,  802, "AUS", "BJ",  "NIn" },  //  -bcast Reach Beyond Australia
-  {  9720.00, 1345, 1400, 0x00080,  802, "AUS", "CHG", "NIn" },  //  -bcast Reach Beyond Australia
-  {  9720.00, 1345, 1400, 0x00080,  802, "AUS", "NE",  "NIn" },  //  -bcast Reach Beyond Australia
-  {  9720.00, 1345, 1400, 0x00080,  802, "AUS", "PJ",  "NIn" },  //  -bcast Reach Beyond Australia
-  {  9720.00, 1345, 1400, 0x00080,  802, "AUS", "UR",  "NIn" },  //  -bcast Reach Beyond Australia
+  {  9720.00, 1330, 1345, 0x0f880,  803, "AUS", "NE",  "NIn" },  //  -bcast Reach Beyond Australia
+  {  9720.00, 1330, 1345, 0x00080,  803, "AUS", "TB",  "NIn" },  //  -bcast Reach Beyond Australia
+  {  9720.00, 1345, 1400, 0x00080,  803, "AUS", "BE",  "NIn" },  //  -bcast Reach Beyond Australia
+  {  9720.00, 1345, 1400, 0x00080,  803, "AUS", "BJ",  "NIn" },  //  -bcast Reach Beyond Australia
+  {  9720.00, 1345, 1400, 0x00080,  803, "AUS", "CHG", "NIn" },  //  -bcast Reach Beyond Australia
+  {  9720.00, 1345, 1400, 0x00080,  803, "AUS", "NE",  "NIn" },  //  -bcast Reach Beyond Australia
+  {  9720.00, 1345, 1400, 0x00080,  803, "AUS", "PJ",  "NIn" },  //  -bcast Reach Beyond Australia
+  {  9720.00, 1345, 1400, 0x00080,  803, "AUS", "UR",  "NIn" },  //  -bcast Reach Beyond Australia
   {  9720.00, 1500, 1600, 0x00080,   52, "CHN", "E",   "ME"  },  //  -bcast China Radio Int.
   {  9720.00, 2030, 2100, 0x00080,   52, "CHN", "BU",  "SEE" },  //  -bcast China Radio Int.
   {  9720.00, 2030, 2100, 0x00080,   53, "CHN", "BU",  "SEE" },  //  -bcast CRI Music
@@ -9588,18 +9590,18 @@ dx_t eibi_db[] = {
   {  9730.00,  330,  700, 0x00080,   45, "MYA", "BR",  "SEA" },  //  -bcast Myanma Radio
   {  9730.00,  700,  730, 0x00080,   45, "MYA", "E",   "SEA" },  //  -bcast Myanma Radio
   {  9730.00,  730, 1200, 0x00080,   45, "MYA", "BR",  "SEA" },  //  -bcast Myanma Radio
-  {  9730.00,    0,  200, 0x00080,  740, "ROU", "RO",  "ENA" },  //  -bcast Radio Romania Int.
-  {  9730.10,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9730.10,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9730.10,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9730.10, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9730.10, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9730.10, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9730.10, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9730.10, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9730.10, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9730.10, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9730.10, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9730.00,    0,  200, 0x00080,  741, "ROU", "RO",  "ENA" },  //  -bcast Radio Romania Int.
+  {  9730.10,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9730.10,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9730.10,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9730.10, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9730.10, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9730.10, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9730.10, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9730.10, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9730.10, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9730.10, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9730.10, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   {  9730.00, 1430, 1500, 0x00080,  121, "VTN", "R",   "Eu"  },  //  -bcast Voice of Vietnam
   {  9730.00, 1600, 1630, 0x00080,  121, "VTN", "E",   "Eu"  },  //  -bcast Voice of Vietnam
   {  9730.00, 1630, 1700, 0x00080,  121, "VTN", "R",   "Eu"  },  //  -bcast Voice of Vietnam
@@ -9613,7 +9615,7 @@ dx_t eibi_db[] = {
   {  9730.00, 2100, 2130, 0x00080,  121, "VTN", "S",   "Eu"  },  //  -bcast Voice of Vietnam
   {  9730.00, 2130, 2200, 0x00080,  121, "VTN", "E",   "Eu"  },  //  -bcast Voice of Vietnam
   {  9735.00, 1100, 1200, 0x00080,  897, "ALS", "M",   "FE"  },  //  -bcast KNLS New Life Station
-  {  9735.00,  500,  515, 0x00080,  777, "CAN", "A",   "ME"  },  //  -bcast Bible Voice
+  {  9735.00,  500,  515, 0x00080,  778, "CAN", "A",   "ME"  },  //  -bcast Bible Voice
   {  9735.00, 1000, 1030, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  9735.00, 1200, 1230, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  9735.00, 2200, 2230, 0x00080,  492, "CVA", "M",   "FE"  },  //  -bcast Radio Vaticana
@@ -9625,8 +9627,8 @@ dx_t eibi_db[] = {
   {  9740.00, 1400, 1500, 0x00080,   52, "CHN", "SI",  "CLN" },  //  -bcast China Radio Int.
   {  9740.00, 1600, 1800, 0x00080,  116, "KOR", "K",   "ME"  },  //  -bcast KBS World Radio
   {  9740.00, 1800, 1900, 0x00080,  116, "KOR", "S",   "Eu"  },  //  -bcast KBS World Radio
-  {  9740.00,  630,  700, 0x00080,  740, "ROU", "A",   "NAf" },  //  -bcast Radio Romania Int.
-  {  9740.00, 2030, 2100, 0x00080,  740, "ROU", "E",   "WEu" },  //  -bcast Radio Romania Int.
+  {  9740.00,  630,  700, 0x00080,  741, "ROU", "A",   "NAf" },  //  -bcast Radio Romania Int.
+  {  9740.00, 2030, 2100, 0x00080,  741, "ROU", "E",   "WEu" },  //  -bcast Radio Romania Int.
   {  9740.00, 1100, 1200, 0x00080,  111, "TWN", "J",   "J"   },  //  -bcast Radio Taiwan Int.
   {  9740.00, 1500, 1530, 0x00080,  137, "USA", "NE",  "NPL" },  //  -bcast Adventist World Radio
   {  9740.00, 2100, 2130, 0x0f880,   51, "USA", "F",   "Af"  },  //  -bcast Voice of America
@@ -9645,7 +9647,7 @@ dx_t eibi_db[] = {
   {  9750.00, 2150,  300, 0x00080,  110, "CHN", "MO",  "CHN" },  //  -bcast PBS Nei Menggu
   {  9750.00, 1800, 1830, 0x00080,   31, "GBR", "F",   "MDG" },  //  -bcast BBC
   {  9750.00,  800, 1600, 0x00080,   93, "JPN", "J",   "FE"  },  //  -bcast NHK Radio Japan
-  {  9750.00, 1100, 1600, 0x00080,  757, "KWT", "A",   "NAf" },  //  -bcast Radio Kuwait
+  {  9750.00, 1100, 1600, 0x00080,  758, "KWT", "A",   "NAf" },  //  -bcast Radio Kuwait
   {  9755.00, 1000, 1605, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   {  9755.00, 2055, 2400, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   {  9755.00, 2055,  200, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
@@ -9653,13 +9655,13 @@ dx_t eibi_db[] = {
   {  9760.00, 1200, 1300, 0x00080,   52, "CHN", "E",   "Oc"  },  //  -bcast China Radio Int.
   {  9760.00, 1600, 1700, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   {  9760.00,  400,  500, 0x00080, 1022, "ETH", "TIG", "EAf" },  //  -bcast Dimtse Woyane
-  {  9760.00, 1836, 1958, 0x0fa80,  795, "NZL", "E",   "SOc" },  //  -bcast RNZI DIGITAL
-  {  9760.00, 1836, 2058, 0x0fa80,  795, "NZL", "E",   "SOc" },  //  -bcast RNZI DIGITAL
-  {  9760.00, 1840, 1850, 0x0f280,  795, "NZL", "SM",  "SOc" },  //  -bcast RNZI DIGITAL
-  {  9760.00, 1852, 1859, 0x0f880,  795, "NZL", "NIU", "SOc" },  //  -bcast RNZI DIGITAL
-  {  9760.00, 1940, 1950, 0x0f280,  795, "NZL", "TO",  "SOc" },  //  -bcast RNZI DIGITAL
-  {  9760.00, 1700, 1800, 0x00080,  741, "ROU", "E",   "WEu" },  //  -bcast Radio Romania DIGITAL
-  {  9760.00, 2300, 2400, 0x00080,  740, "ROU", "S",   "CAm" },  //  -bcast Radio Romania Int.
+  {  9760.00, 1836, 1958, 0x0fa80,  796, "NZL", "E",   "SOc" },  //  -bcast RNZI DIGITAL
+  {  9760.00, 1836, 2058, 0x0fa80,  796, "NZL", "E",   "SOc" },  //  -bcast RNZI DIGITAL
+  {  9760.00, 1840, 1850, 0x0f280,  796, "NZL", "SM",  "SOc" },  //  -bcast RNZI DIGITAL
+  {  9760.00, 1852, 1859, 0x0f880,  796, "NZL", "NIU", "SOc" },  //  -bcast RNZI DIGITAL
+  {  9760.00, 1940, 1950, 0x0f280,  796, "NZL", "TO",  "SOc" },  //  -bcast RNZI DIGITAL
+  {  9760.00, 1700, 1800, 0x00080,  742, "ROU", "E",   "WEu" },  //  -bcast Radio Romania DIGITAL
+  {  9760.00, 2300, 2400, 0x00080,  741, "ROU", "S",   "CAm" },  //  -bcast Radio Romania Int.
   {  9760.00, 2000, 2030, 0x00080,  137, "USA", "F",   "CAf" },  //  -bcast Adventist World Radio
   {  9760.00, 1600, 1700, 0x00080,   51, "USA", "TB",  "FE"  },  //  -bcast Voice of America
   {  9765.00,    0,  100, 0x00080,   52, "CHN", "KH",  "SEA" },  //  -bcast China Radio Int.
@@ -9672,7 +9674,7 @@ dx_t eibi_db[] = {
   {  9765.00, 2300, 2400, 0x00080,   52, "CHN", "KH",  "SEA" },  //  -bcast China Radio Int.
   {  9765.00, 2300, 2400, 0x00080,   53, "CHN", "KH",  "SEA" },  //  -bcast CRI Music
   {  9765.00, 2100, 2200, 0x00080, 1023, "MDG", "P",   "SAm" },  //  -bcast MWV World Christian Bc.
-  {  9765.00, 1500, 1600, 0x00080,  753, "TUR", "FS",  "IRN" },  //  -bcast Voice of Turkey
+  {  9765.00, 1500, 1600, 0x00080,  754, "TUR", "FS",  "IRN" },  //  -bcast Voice of Turkey
   {  9770.00, 1600, 1700, 0x00080,   52, "CHN", "HK",  "SAf" },  //  -bcast China Radio Int.
   {  9770.00, 1700, 1800, 0x00080,   52, "CHN", "CA",  "SAf" },  //  -bcast China Radio Int.
   {  9770.00, 1600, 1700, 0x00080,   53, "CHN", "HK",  "SAf" },  //  -bcast CRI Music
@@ -9680,7 +9682,7 @@ dx_t eibi_db[] = {
   {  9770.00,  800, 1030, 0x00080,  116, "KOR", "E",   "SEA" },  //  -bcast KBS World Radio
   {  9770.00, 1030, 1100, 0x00080,  116, "KOR", "VN",  "SEA" },  //  -bcast KBS World Radio
   {  9770.00, 1130, 1230, 0x00080,  116, "KOR", "M",   "SEA" },  //  -bcast KBS World Radio
-  {  9770.00,  400,  600, 0x00080,  753, "TUR", "TU",  "CEu" },  //  -bcast Voice of Turkey
+  {  9770.00,  400,  600, 0x00080,  754, "TUR", "TU",  "CEu" },  //  -bcast Voice of Turkey
   {  9770.00, 2000, 2030, 0x00080,  137, "USA", "MOO", "BFA" },  //  -bcast Adventist World Radio
   {  9774.00,  400,  700, 0x0f880, 1009, "TWN", "M",   "FE"  },  //  -bcast Fu Hsing Bc.Sta.
   {  9774.00,  700,  900, 0x00080, 1009, "TWN", "M",   "FE"  },  //  -bcast Fu Hsing Bc.Sta.
@@ -9688,11 +9690,11 @@ dx_t eibi_db[] = {
   {  9775.00,  100,  200, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   {  9775.00,  855, 1605, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   {  9775.00, 2055,  100, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
-  {  9775.00, 1800, 1900, 0x00080,  758, "TCD", "KNU", "TCD" },  //  -bcast Radio Ndarason Int.
+  {  9775.00, 1800, 1900, 0x00080,  759, "TCD", "KNU", "TCD" },  //  -bcast Radio Ndarason Int.
   {  9780.00,  100,  200, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  {  9780.00,  600,  900, 0x0be80,  767, "CHN", "M",   "CHN" },  //  -bcast PBS Qinghai
-  {  9780.00,  900, 1600, 0x00080,  767, "CHN", "M",   "CHN" },  //  -bcast PBS Qinghai
-  {  9780.00, 2140,  600, 0x00080,  767, "CHN", "M",   "CHN" },  //  -bcast PBS Qinghai
+  {  9780.00,  600,  900, 0x0be80,  768, "CHN", "M",   "CHN" },  //  -bcast PBS Qinghai
+  {  9780.00,  900, 1600, 0x00080,  768, "CHN", "M",   "CHN" },  //  -bcast PBS Qinghai
+  {  9780.00, 2140,  600, 0x00080,  768, "CHN", "M",   "CHN" },  //  -bcast PBS Qinghai
   {  9780.00, 1700, 1900, 0x00080,   93, "JPN", "J",   "ME"  },  //  -bcast NHK Radio Japan
   {  9780.00, 2000, 2030, 0x00080,  137, "USA", "F",   "NAf" },  //  -bcast Adventist World Radio
   {  9780.00,  100,  200, 0x00080,  117, "USA", "UI",  "FE"  },  //  -bcast Radio Free Asia
@@ -9715,7 +9717,7 @@ dx_t eibi_db[] = {
   {  9790.00,  600,  700, 0x00080,  103, "FRA", "F",   "WAf" },  //  -bcast Radio France Int.
   {  9790.00, 2000, 2100, 0x00080,  103, "FRA", "F",   "WAf" },  //  -bcast Radio France Int.
   {  9790.00, 2100, 2200, 0x00080,  103, "FRA", "F",   "WAf" },  //  -bcast Radio France Int.
-  {  9790.00, 2200, 2300, 0x00080,  740, "ROU", "E",   "J"   },  //  -bcast Radio Romania Int.
+  {  9790.00, 2200, 2300, 0x00080,  741, "ROU", "E",   "J"   },  //  -bcast Radio Romania Int.
   {  9795.00, 1200, 1300, 0x00080,  897, "ALS", "E",   "FE"  },  //  -bcast KNLS New Life Station
   {  9795.00,    0,   15, 0x00080,   72, "PHL", "KHM", "SEA" },  //  -bcast FEBC Manila
   {  9795.00, 1100, 1200, 0x00080,   72, "PHL", "VN",  "SEA" },  //  -bcast FEBC Manila
@@ -9728,8 +9730,8 @@ dx_t eibi_db[] = {
   {  9800.00, 1700, 1800, 0x00080,   53, "CHN", "CA",  "SAf" },  //  -bcast CRI Music
   {  9800.00, 2300,  100, 0x00080,   52, "CHN", "S",   "SAm" },  //  -bcast China Radio Int.
   {  9800.00,  100,  200, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  {  9800.00, 1500, 1530, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
-  {  9800.00, 1530, 1600, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
+  {  9800.00, 1500, 1530, 0x00080,  728, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
+  {  9800.00, 1530, 1600, 0x00080,  728, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
   {  9800.00, 1400, 1500, 0x00080,  137, "USA", "K",   "FE"  },  //  -bcast Adventist World Radio
   {  9800.00, 2100, 2130, 0x00080,  137, "USA", "NIG", "NIG" },  //  -bcast Adventist World Radio
   {  9800.00, 2130, 2200, 0x00080,  137, "USA", "TWI", "WAf" },  //  -bcast Adventist World Radio
@@ -9739,26 +9741,26 @@ dx_t eibi_db[] = {
   {  9805.00, 1600, 1700, 0x00080,  116, "KOR", "IN",  "INS" },  //  -bcast KBS World Radio
   {  9805.00, 2200, 2300, 0x00080,  116, "KOR", "IN",  "INS" },  //  -bcast KBS World Radio
   {  9805.00, 2300, 2400, 0x00080,  116, "KOR", "M",   "INS" },  //  -bcast KBS World Radio
-  {  9805.00, 1000, 1300, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  {  9805.00, 1000, 1300, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
   {  9808.50,    0, 2400, 0x200b2,  397, "USA", "",    "USA" },  //    -ale US Army MARS ALE
-  {  9810.00, 1700, 1715, 0x00080,  777, "CAN", "E",   "ME"  },  //  -bcast Bible Voice
-  {  9810.00, 1700, 1730, 0x00080,  777, "CAN", "E",   "ME"  },  //  -bcast Bible Voice
-  {  9810.00, 1700, 1900, 0x00080,  777, "CAN", "E",   "ME"  },  //  -bcast Bible Voice
-  {  9810.00, 1730, 1900, 0x00080,  777, "CAN", "E",   "ME"  },  //  -bcast Bible Voice
+  {  9810.00, 1700, 1715, 0x00080,  778, "CAN", "E",   "ME"  },  //  -bcast Bible Voice
+  {  9810.00, 1700, 1730, 0x00080,  778, "CAN", "E",   "ME"  },  //  -bcast Bible Voice
+  {  9810.00, 1700, 1900, 0x00080,  778, "CAN", "E",   "ME"  },  //  -bcast Bible Voice
+  {  9810.00, 1730, 1900, 0x00080,  778, "CAN", "E",   "ME"  },  //  -bcast Bible Voice
   {  9810.00, 1300, 1805, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  9810.00, 2023, 2300, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  9810.00,  100,  600, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   {  9810.00,  600,  855, 0x0de80,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   {  9810.00,  855, 1230, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   {  9810.00, 1420, 1520, 0x00080,   44, "IRN", "BE",  "SAs" },  //  -bcast IRIB Voice of I.R.Iran
-  {  9810.00, 1530, 1600, 0x00080,  740, "ROU", "A",   "ME"  },  //  -bcast Radio Romania Int.
+  {  9810.00, 1530, 1600, 0x00080,  741, "ROU", "A",   "ME"  },  //  -bcast Radio Romania Int.
   {  9810.00,    0,   30, 0x00080,  137, "USA", "T",   "SEA" },  //  -bcast Adventist World Radio
   {  9815.00,  200,  300, 0x00080,   52, "CHN", "M",   "SAm" },  //  -bcast China Radio Int.
   {  9815.00,  330,  430, 0x00080,   51, "USA", "KNK", "EAf" },  //  -bcast Voice of America
   {  9815.00,  430,  530, 0x0f880,   51, "USA", "KNK", "EAf" },  //  -bcast Voice of America
   {  9819.20,  800,  100, 0x00080, 1025, "BRA", "P",   "SAm" },  //  -bcast Rádio 9 de Julho
-  {  9819.20,  100,  800, 0x00080,  796, "BRA", "P",   "SAm" },  //  -bcast Rádio Aparecida
-  {  9819.20, 1000, 1030, 0x0fc80,  796, "BRA", "P",   "SAm" },  //  -bcast Rádio Aparecida
+  {  9819.20,  100,  800, 0x00080,  797, "BRA", "P",   "SAm" },  //  -bcast Rádio Aparecida
+  {  9819.20, 1000, 1030, 0x0fc80,  797, "BRA", "P",   "SAm" },  //  -bcast Rádio Aparecida
   {  9820.00,  100,  102, 0x00080,  666, "CHN", "BR",  "FE"  },  //  -bcast Beibu Bay Radio
   {  9820.00,  100,  102, 0x00080,  666, "CHN", "KH",  "FE"  },  //  -bcast Beibu Bay Radio
   {  9820.00,  100,  102, 0x00080,  666, "CHN", "LAO", "FE"  },  //  -bcast Beibu Bay Radio
@@ -9798,8 +9800,8 @@ dx_t eibi_db[] = {
   {  9820.00, 1700, 1800, 0x00080,   51, "USA", "KU",  "ME"  },  //  -bcast Voice of America
   {  9820.00, 1900, 2000, 0x00080,   51, "USA", "KU",  "ME"  },  //  -bcast Voice of America
   {  9825.00,  200,  300, 0x00080,   52, "CHN", "M",   "SAs" },  //  -bcast China Radio Int.
-  {  9825.00,    0, 2400, 0x200b2,  720, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
-  {  9825.00,  430,  600, 0x00080,  746, "USA", "E",   "ME"  },  //  -bcast World Harvest Radio
+  {  9825.00,    0, 2400, 0x200b2,  721, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
+  {  9825.00,  430,  600, 0x00080,  747, "USA", "E",   "ME"  },  //  -bcast World Harvest Radio
   {  9830.00,  730,  850, 0x0be80,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  9830.00,  850, 1805, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  9830.00, 2023,  100, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
@@ -9808,21 +9810,21 @@ dx_t eibi_db[] = {
   {  9830.00, 1300, 1400, 0x00080,  881, "GER", "HA",  "WAf" },  //  -bcast Deutsche Welle
   {  9830.00, 1800, 1900, 0x00080,  881, "GER", "HA",  "WAf" },  //  -bcast Deutsche Welle
   {  9830.00,    0, 2400, 0x200f4, 1027, "PTR", "",    "Car" },  //    -fsk NAU US Navy RTTY
-  {  9830.00,    0,  100, 0x00080,  753, "TUR", "P",   "ENA" },  //  -bcast Voice of Turkey
-  {  9830.00, 2200, 2300, 0x00080,  753, "TUR", "E",   "ENA" },  //  -bcast Voice of Turkey
-  {  9830.00, 2300, 2400, 0x00080,  753, "TUR", "D",   "ENA" },  //  -bcast Voice of Turkey
-  {  9830.00,    0, 2400, 0x200f4,  717, "USA", "",    "NAm" },  //    -fsk NSS US Navy RTTY
+  {  9830.00,    0,  100, 0x00080,  754, "TUR", "P",   "ENA" },  //  -bcast Voice of Turkey
+  {  9830.00, 2200, 2300, 0x00080,  754, "TUR", "E",   "ENA" },  //  -bcast Voice of Turkey
+  {  9830.00, 2300, 2400, 0x00080,  754, "TUR", "D",   "ENA" },  //  -bcast Voice of Turkey
+  {  9830.00,    0, 2400, 0x200f4,  718, "USA", "",    "NAm" },  //    -fsk NSS US Navy RTTY
   {  9830.00, 1430, 1530, 0x00080,   51, "USA", "BR",  "SEA" },  //  -bcast Voice of America
   {  9835.00, 1630, 1730, 0x0a480, 1028, "CAN", "OO",  "EAf" },  //  -bcast Oromia National Media
   {  9835.00, 1920, 2020, 0x00080,   44, "IRN", "E",   "SAf" },  //  -bcast IRIB Voice of I.R.Iran
   {  9835.00, 2230, 1405, 0x00080, 1029, "MLA", "ML",  "MLA" },  //  -bcast RTM Sarawak FM
   {  9836.00, 1330, 1400, 0x00080,  903, "CLA", "TB",  "FE"  },  //  -bcast Voice of Tibet
-  {  9840.00, 1300, 1600, 0x00080,  753, "TUR", "TU",  "Eu"  },  //  -bcast Voice of Turkey
-  {  9840.00, 1730, 1830, 0x00080,  753, "TUR", "D",   "CEu" },  //  -bcast Voice of Turkey
+  {  9840.00, 1300, 1600, 0x00080,  754, "TUR", "TU",  "Eu"  },  //  -bcast Voice of Turkey
+  {  9840.00, 1730, 1830, 0x00080,  754, "TUR", "D",   "CEu" },  //  -bcast Voice of Turkey
   {  9840.00,  100,  300, 0x00080,   62, "USA", "PS",  "AFG" },  //  -bcast VoA Deewa Radio
   {  9840.00,  300,  400, 0x00080,   62, "USA", "PS",  "AFG" },  //  -bcast VoA Deewa Radio
-  {  9840.00, 1200, 2300, 0x00080,  746, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
-  {  9840.00, 1400, 1505, 0x00080,  746, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
+  {  9840.00, 1200, 2300, 0x00080,  747, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
+  {  9840.00, 1400, 1505, 0x00080,  747, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
   {  9840.00, 1000, 1030, 0x00080,  121, "VTN", "E",   "INS" },  //  -bcast Voice of Vietnam
   {  9840.00, 1030, 1100, 0x00080,  121, "VTN", "IN",  "INS" },  //  -bcast Voice of Vietnam
   {  9840.00, 1100, 1130, 0x00080,  121, "VTN", "J",   "FE"  },  //  -bcast Voice of Vietnam
@@ -9842,27 +9844,27 @@ dx_t eibi_db[] = {
   {  9845.00, 2023,  100, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   {  9845.00, 1900, 2000, 0x00080, 1030, "MDG", "R",   "EEu" },  //  -bcast MWV New Life Station
   {  9850.00, 2130, 1600, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  {  9850.00,  600,  855, 0x0be80,  767, "CHN", "TB",  "CHN" },  //  -bcast PBS Qinghai
-  {  9850.00,  855, 1600, 0x00080,  767, "CHN", "TB",  "CHN" },  //  -bcast PBS Qinghai
-  {  9850.00, 2250,  600, 0x00080,  767, "CHN", "TB",  "CHN" },  //  -bcast PBS Qinghai
+  {  9850.00,  600,  855, 0x0be80,  768, "CHN", "TB",  "CHN" },  //  -bcast PBS Qinghai
+  {  9850.00,  855, 1600, 0x00080,  768, "CHN", "TB",  "CHN" },  //  -bcast PBS Qinghai
+  {  9850.00, 2250,  600, 0x00080,  768, "CHN", "TB",  "CHN" },  //  -bcast PBS Qinghai
   {  9850.00, 1000, 1100, 0x00080,   58, "KRE", "E",   "SEA" },  //  -bcast Voice of Korea
   {  9850.00, 1100, 1200, 0x00080,   58, "KRE", "F",   "SEA" },  //  -bcast Voice of Korea
   {  9850.00, 1200, 1300, 0x00080,   59, "KRE", "K",   "SEA" },  //  -bcast Voice of Korea KCBS
   {  9850.00, 1300, 1400, 0x00080,   58, "KRE", "M",   "SEA" },  //  -bcast Voice of Korea
   {  9850.00, 1400, 1500, 0x00080,   59, "KRE", "K",   "SEA" },  //  -bcast Voice of Korea KCBS
-  {  9850.00,  300,  400, 0x00080,  740, "ROU", "E",   "WNA" },  //  -bcast Radio Romania Int.
+  {  9850.00,  300,  400, 0x00080,  741, "ROU", "E",   "WNA" },  //  -bcast Radio Romania Int.
   {  9850.00, 2000, 2300, 0x00080, 1031, "RUS", "R",   "FE"  },  //  -bcast Radio Purga DIGITAL
-  {  9850.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9850.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9850.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9850.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9850.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9850.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9850.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9850.00, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9850.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9850.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  {  9850.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9850.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9850.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9850.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9850.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9850.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9850.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9850.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9850.00, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9850.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9850.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  {  9850.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   {  9850.00,  400,  500, 0x00080,   78, "VTN", "DAO", "VTN" },  //  -bcast Voice of Vietnam 4
   {  9850.00,  500,  530, 0x00080,   78, "VTN", "HM",  "VTN" },  //  -bcast Voice of Vietnam 4
   {  9855.00, 1200, 1400, 0x00080,   52, "CHN", "M",   "SEA" },  //  -bcast China Radio Int.
@@ -9884,11 +9886,11 @@ dx_t eibi_db[] = {
   {  9870.00, 1300, 1400, 0x00080,   52, "CHN", "E",   "SEA" },  //  -bcast China Radio Int.
   {  9870.00, 1400, 1500, 0x00080,   52, "CHN", "E",   "SEA" },  //  -bcast China Radio Int.
   {  9870.00, 1500, 1600, 0x00080,   52, "CHN", "E",   "SEA" },  //  -bcast China Radio Int.
-  {  9870.00, 1000, 1200, 0x00080,  778, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
+  {  9870.00, 1000, 1200, 0x00080,  779, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
   {  9870.00, 1420, 1520, 0x00080,   44, "IRN", "BE",  "ME"  },  //  -bcast IRIB Voice of I.R.Iran
   {  9870.00, 1550, 1720, 0x00080,   44, "IRN", "TU",  "ME"  },  //  -bcast IRIB Voice of I.R.Iran
   {  9870.00,    0, 2400, 0x200b2,  570, "JOR", "",    "JOR" },  //    -ale Jordan Address ALE Net
-  {  9870.00,  100,  200, 0x00080,  753, "TUR", "S",   "SAm" },  //  -bcast Voice of Turkey
+  {  9870.00,  100,  200, 0x00080,  754, "TUR", "S",   "SAm" },  //  -bcast Voice of Turkey
   {  9875.00, 1300, 1330, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   {  9875.00, 1330, 1400, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   {  9875.00,  700,  900, 0x00080,   58, "KRE", "R",   "FE"  },  //  -bcast Voice of Korea
@@ -9900,7 +9902,7 @@ dx_t eibi_db[] = {
   {  9875.00, 2200, 2300, 0x00080,   58, "KRE", "M",   "FE"  },  //  -bcast Voice of Korea
   {  9875.00, 2300, 2400, 0x00080,   59, "KRE", "K",   "FE"  },  //  -bcast Voice of Korea KCBS
   {  9875.00, 2300, 2330, 0x00080,   72, "PHL", "MIE", "SEA" },  //  -bcast FEBC Manila
-  {  9875.00, 2030, 2130, 0x00080,  753, "TUR", "E",   "Oc"  },  //  -bcast Voice of Turkey
+  {  9875.00, 2030, 2130, 0x00080,  754, "TUR", "E",   "Oc"  },  //  -bcast Voice of Turkey
   {  9875.00, 1200, 1230, 0x0f280,  137, "USA", "AM",  "FE"  },  //  -bcast Adventist World Radio
   {  9875.00, 1200, 1230, 0x00c80,  137, "USA", "M",   "FE"  },  //  -bcast Adventist World Radio
   {  9875.00, 1230, 1300, 0x0f680,  137, "USA", "CA",  "FE"  },  //  -bcast Adventist World Radio
@@ -9926,7 +9928,7 @@ dx_t eibi_db[] = {
   {  9880.00,  330,  430, 0x00080,   31, "GBR", "FS",  "IRN" },  //  -bcast BBC
   {  9880.00,  430,  530, 0x00080,   31, "GBR", "FS",  "IRN" },  //  -bcast BBC
   {  9880.00, 1800, 1900, 0x00080, 1030, "MDG", "R",   "EEu" },  //  -bcast MWV New Life Station
-  {  9880.00, 1930, 2030, 0x00080,  753, "TUR", "F",   "WAf" },  //  -bcast Voice of Turkey
+  {  9880.00, 1930, 2030, 0x00080,  754, "TUR", "F",   "WAf" },  //  -bcast Voice of Turkey
   {  9884.00, 1330, 1400, 0x00080,  903, "CLA", "TB",  "FE"  },  //  -bcast Voice of Tibet
   {  9885.00, 1600, 1700, 0x00080,  882, "ARS", "UZ",  "CAs" },  //  -bcast SBA Saudi Radio Int.
   {  9885.00, 1700, 1800, 0x00080,  882, "ARS", "TK",  "CAs" },  //  -bcast SBA Saudi Radio Int.
@@ -9987,7 +9989,7 @@ dx_t eibi_db[] = {
   {  9910.00, 1330, 1400, 0x01512,  137, "USA", "LAO", "SEA" },  //   -aero Adventist World Radio
   {  9910.00, 1500, 1700, 0x00092,  117, "USA", "K",   "FE"  },  //   -util Radio Free Asia
   {  9914.00, 2150, 2200, 0x09132,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
-  {  9914.00,    0, 2400, 0x200b2,  733, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
+  {  9914.00,    0, 2400, 0x200b2,  734, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
   {  9915.00,  400,  500, 0x00092,   31, "GBR", "E",   "EAf" },  //   -util BBC
   {  9915.00, 1340, 1350, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   {  9917.00, 1350, 1400, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
@@ -10007,28 +10009,28 @@ dx_t eibi_db[] = {
   {  9920.00, 2000, 2015, 0x00092,  667, "THA", "D",   "Eu"  },  //   -util Radio Thailand
   {  9920.00, 2030, 2045, 0x00092,  667, "THA", "E",   "Eu"  },  //   -util Radio Thailand
   {  9920.00, 2045, 2115, 0x00092,  667, "THA", "T",   "Eu"  },  //   -util Radio Thailand
-  {  9920.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9920.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9920.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9920.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9920.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9920.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9920.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9920.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9920.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9920.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9920.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9920.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9920.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9920.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9920.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9920.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9920.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9920.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9920.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9920.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9920.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9920.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9920.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9920.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  9920.00, 2200, 2300, 0x00092,  117, "USA", "TB",  "FE"  },  //   -util Radio Free Asia
   {  9920.00, 1600, 1700, 0x00092,   86, "USA", "UZ",  "CAs" },  //   -util Radio Liberty
   {  9920.00, 1400, 1500, 0x00080,   51, "USA", "TB",  "FE"  },  //  -bcast Voice of America
-  {  9925.00,    0,  200, 0x00092,  756, "HOL", "E",   "NAm" },  //   -util Mighty KBC
+  {  9925.00,    0,  200, 0x00092,  757, "HOL", "E",   "NAm" },  //   -util Mighty KBC
   {  9925.00, 1350, 1400, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   {  9930.00, 1200, 1230, 0x00080,  913, "CLA", "K",   "KRE" },  //  -bcast Voice of Martyrs
   {  9930.00, 1600,  230, 0x00092,   76, "GBR", "FS",  "IRN" },  //   -util Iran International
   {  9940.00, 1430, 1500, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
   {  9940.00, 1500, 1600, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  {  9940.00, 1300, 1330, 0x00092,  727, "CLA", "K",   "KRE" },  //   -util Nippon no Kaze
+  {  9940.00, 1300, 1330, 0x00092,  728, "CLA", "K",   "KRE" },  //   -util Nippon no Kaze
   {  9940.00, 1430, 1500, 0x00112,  140, "HKG", "UI",  "FE"  },  //   -aero FEBC Radio Liangyou
   {  9940.00, 1800, 1815, 0x0f112,   56, "SWZ", "TIG", "ERI" },  //   -aero Trans World Radio
   {  9940.00, 1800, 1830, 0x00112,   56, "SWZ", "KUN", "ERI" },  //   -aero Trans World Radio
@@ -10052,7 +10054,7 @@ dx_t eibi_db[] = {
   {  9955.00,  300,  330, 0x00092,   65, "CZE", "E",   "LAm" },  //   -util Radio Prague
   {  9955.00,  330,  400, 0x00092,   65, "CZE", "F",   "LAm" },  //   -util Radio Prague
   {  9955.00, 1200, 1230, 0x0fc92,   65, "CZE", "E",   "LAm" },  //   -util Radio Prague
-  {  9955.00,  100,  130, 0x00092,  729, "ITL", "I",   "LAm" },  //   -util Studio DX
+  {  9955.00,  100,  130, 0x00092,  730, "ITL", "I",   "LAm" },  //   -util Studio DX
   {  9955.00, 1300, 1330, 0x00092, 1034, "PNR", "S",   "LAm" },  //   -util Antena DX
   {  9955.00,  230,  300, 0x00092,  494, "SVK", "S",   "LAm" },  //   -util Radio Slovakia Int.
   {  9955.00, 1700, 1800, 0x00092,  111, "TWN", "D",   "Eu"  },  //   -util Radio Taiwan Int.
@@ -10062,8 +10064,8 @@ dx_t eibi_db[] = {
   {  9955.00, 2230, 2300, 0x02512,  137, "USA", "E",   "LAm" },  //   -aero Adventist World Radio
   {  9955.00,   30,  100, 0x04492,  658, "USA", "",    "LAm" },  //   -util Alameda Bible Fellowsh.
   {  9955.00, 2230, 2300, 0x08892,  658, "USA", "S",   "LAm" },  //   -util Alameda Bible Fellowsh.
-  {  9955.00,  100,  130, 0x00112,  730, "USA", "E",   "LAm" },  //   -aero Blues Radio Int.
-  {  9955.00,  130,  200, 0x00112,  730, "USA", "E",   "LAm" },  //   -aero Blues Radio Int.
+  {  9955.00,  100,  130, 0x00112,  731, "USA", "E",   "LAm" },  //   -aero Blues Radio Int.
+  {  9955.00,  130,  200, 0x00112,  731, "USA", "E",   "LAm" },  //   -aero Blues Radio Int.
   {  9955.00,  400, 1000, 0x00092,  373, "USA", "E",   "LAm" },  //   -util Brother Stair
   {  9955.00, 1000, 1100, 0x0fc92,  373, "USA", "E",   "LAm" },  //   -util Brother Stair
   {  9955.00, 1100, 1200, 0x0f892,  373, "USA", "E",   "LAm" },  //   -util Brother Stair
@@ -10071,9 +10073,9 @@ dx_t eibi_db[] = {
   {  9955.00, 1430, 1500, 0x00092,  373, "USA", "E",   "LAm" },  //   -util Brother Stair
   {  9955.00, 1430, 1600, 0x00092,  373, "USA", "E",   "LAm" },  //   -util Brother Stair
   {  9955.00, 1500, 2100, 0x00092,  373, "USA", "E",   "LAm" },  //   -util Brother Stair
-  {  9955.00,  130,  200, 0x00092,  731, "USA", "S",   "LAm" },  //   -util Frecuencia al Día
-  {  9955.00, 1300, 1330, 0x00092,  731, "USA", "S",   "LAm" },  //   -util Frecuencia al Día
-  {  9955.00, 2200, 2230, 0x00092,  731, "USA", "S",   "LAm" },  //   -util Frecuencia al Día
+  {  9955.00,  130,  200, 0x00092,  732, "USA", "S",   "LAm" },  //   -util Frecuencia al Día
+  {  9955.00, 1300, 1330, 0x00092,  732, "USA", "S",   "LAm" },  //   -util Frecuencia al Día
+  {  9955.00, 2200, 2230, 0x00092,  732, "USA", "S",   "LAm" },  //   -util Frecuencia al Día
   {  9955.00,    0,  100, 0x07c92, 1035, "USA", "S",   "LAm" },  //   -util Radio Libertad
   {  9955.00, 2300, 2400, 0x0f892, 1035, "USA", "S",   "LAm" },  //   -util Radio Libertad
   {  9955.00, 2100, 2200, 0x00092,  629, "USA", "E",   "LAm" },  //   -util V.o.Report of the Week
@@ -10116,7 +10118,7 @@ dx_t eibi_db[] = {
   {  9955.00, 2300, 2330, 0x00112,  661, "USA", "S",   "LAm" },  //   -aero WRMI Radio Miami Int.
   {  9955.00, 2300, 2400, 0x00112,  661, "USA", "E",   "LAm" },  //   -aero WRMI Radio Miami Int.
   {  9955.00, 2330, 2400, 0x00112,  661, "USA", "E",   "LAm" },  //   -aero WRMI Radio Miami Int.
-  {  9959.00,    0, 2400, 0x200b2,  735, "FRA", "",    "F"   },  //    -ale French Navy ALE
+  {  9959.00,    0, 2400, 0x200b2,  736, "FRA", "",    "F"   },  //    -ale French Navy ALE
   {  9960.00, 1730, 1930, 0x00092, 1036, "PHL", "TAG", "ME"  },  //   -util Radyo Pilipinas
   {  9960.00, 1230, 1330, 0x00092,  117, "USA", "KH",  "SEA" },  //   -util Radio Free Asia
   {  9963.00,  715,  725, 0x04932,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
@@ -10129,17 +10131,17 @@ dx_t eibi_db[] = {
   {  9970.00,    0, 2400, 0x200b2,  376, "CHL", "",    "CHL" },  //    -ale Gendarmeria Chile ALE
   {  9970.00, 1700, 1900, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
   {  9970.00, 2130, 1700, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  {  9970.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9970.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9970.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9970.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9970.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9970.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9970.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9970.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9970.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9970.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9970.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9970.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9970.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9970.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9970.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9970.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9970.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9970.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9970.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9970.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9970.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9970.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  9970.00, 1700, 1800, 0x00092,  117, "USA", "M",   "FE"  },  //   -util Radio Free Asia
   {  9970.00, 1800, 1900, 0x00092,  117, "USA", "M",   "FE"  },  //   -util Radio Free Asia
   {  9975.00, 1100, 1115, 0x00112,  905, "GUM", "MO",  "MNG" },  //   -aero KTWR Trans World Radio
@@ -10154,29 +10156,29 @@ dx_t eibi_db[] = {
   {  9975.00, 1335, 1345, 0x0f912,  905, "GUM", "CA",  "FE"  },  //   -aero KTWR Trans World Radio
   {  9975.00, 1500, 1600, 0x07d12,  905, "GUM", "K",   "FE"  },  //   -aero KTWR Trans World Radio
   {  9975.00,  200,  230, 0x04312,  137, "USA", "E",   "CAm" },  //   -aero Adventist World Radio
-  {  9975.00,    0,   30, 0x00092,  731, "USA", "S",   "CAm" },  //   -util Frecuencia al Día
+  {  9975.00,    0,   30, 0x00092,  732, "USA", "S",   "CAm" },  //   -util Frecuencia al Día
   {  9975.00,    0,  100, 0x07e80, 1038, "USA", "S",   "CAm" },  //  -bcast KVOH Voice of Hope
   {  9975.00,  100,  600, 0x07e80, 1038, "USA", "E",   "CAm" },  //  -bcast KVOH Voice of Hope
   {  9975.00,  600,  720, 0x00080, 1038, "USA", "E",   "CAm" },  //  -bcast KVOH Voice of Hope
-  {  9980.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9980.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9980.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9980.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  9980.00, 1200, 2000, 0x00092,  373, "USA", "E",   "NAm" },  //   -util Brother Stair
   {  9980.00, 2000, 2100, 0x00092,  373, "USA", "E",   "NAm" },  //   -util Brother Stair
   {  9980.00, 2100, 2300, 0x00092,  373, "USA", "E",   "NAm" },  //   -util Brother Stair
-  {  9980.00, 2000, 2100, 0x0f892,  736, "USA", "E",   "NAm" },  //   -util WWCR 4 Nashville, TN
+  {  9980.00, 2000, 2100, 0x0f892,  737, "USA", "E",   "NAm" },  //   -util WWCR 4 Nashville, TN
   {  9981.00, 1350, 1400, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   {  9982.50,  519, 1600, 0x20102, 1039, "HWA", "",    "Oc"  },  //    -fax KVM70 Fax Honolulu
   {  9982.00,    0, 2400, 0x200b2,  408, "USA", "",    "USA" },  //    -ale COTHEN ALE
   {  9990.00, 2200, 1600, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  {  9990.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9990.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9990.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9990.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9990.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9990.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9990.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9990.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  {  9990.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9990.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9990.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9990.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9990.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9990.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9990.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9990.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9990.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  {  9990.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   {  9990.00, 1500, 1700, 0x00092,  117, "USA", "K",   "FE"  },  //   -util Radio Free Asia
   {  9990.00, 1700, 1900, 0x00092,  117, "USA", "K",   "FE"  },  //   -util Radio Free Asia
   {  9996.00,    0, 2400, 0x200a1,  653, "RUS", "-TS", "RUS" },  //   -time RWM Moscow
@@ -10187,40 +10189,40 @@ dx_t eibi_db[] = {
   { 10000.00,    0, 2400, 0x200a1, 1042, "ITL", "-TS", "SEu" },  //   -time ItalCable
   { 10000.00,    0, 2400, 0x200a1,  231, "USA", "-TS", "USA" },  //   -time WWV Colorado (m.ann.)
   { 10004.00,    0, 2400, 0x200b2,  465, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
-  { 10015.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  { 10015.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   { 10018.00,    0, 2400, 0x00112,  855, "IND", "E",   "SAs" },  //   -aero Mumbai Radio
   { 10021.00,    0, 2400, 0x00092,  343, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio H
-  { 10021.00,    0, 2400, 0x00112,  712, "ROU", "RO",  "Eu"  },  //   -aero Bucuresti Aero
+  { 10021.00,    0, 2400, 0x00112,  713, "ROU", "RO",  "Eu"  },  //   -aero Bucuresti Aero
   { 10024.00, 1200, 2400, 0x00092,  854, "HND", "S",   "CAm" },  //   -util COCESNA Cenamer Control
   { 10024.00,    0, 2400, 0x00112, 1043, "PRU", "S",   "SAm" },  //   -aero Lima Radio
   { 10027.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   { 10027.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
-  { 10033.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  { 10033.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   { 10036.00,    0, 2400, 0x00092,  343, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio H
   { 10048.00,    0, 2400, 0x00112,  592, "JPN", "E",   "FE"  },  //   -aero Tokyo Radio
-  { 10048.00,    0, 2400, 0x00112,  710, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
-  { 10048.00,    0, 2400, 0x00112,  710, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
+  { 10048.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
+  { 10048.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
   { 10051.00,    0, 2400, 0x00112,  439, "CAN", "E",   "NAm" },  //   -aero Gander Volmet x20,x50
   { 10057.00,    0, 2400, 0x00112,  695, "MDG", "E",   "EAf" },  //   -aero Antanan.Volmet x25,x50
   { 10057.00,    0, 2400, 0x00112,  427, "USA", "E",   "EOc" },  //   -aero San Francisco Radio 3
-  { 10060.00,    0, 2400, 0x200c2,  851, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
-  { 10063.00,    0, 2400, 0x200c2,  335, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
-  { 10066.00,    0, 2400, 0x00112,  846, "BGD", "E",   "SAs" },  //   -aero Dhaka Radio
-  { 10066.00,    0, 2400, 0x00112,  847, "IND", "E",   "SAs" },  //   -aero Kolkata Radio
+  { 10060.00,    0, 2400, 0x200c2,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
+  { 10063.00,    0, 2400, 0x200c2,  706, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
+  { 10066.00,    0, 2400, 0x00112,  847, "BGD", "E",   "SAs" },  //   -aero Dhaka Radio
+  { 10066.00,    0, 2400, 0x00112,  848, "IND", "E",   "SAs" },  //   -aero Kolkata Radio
   { 10066.00,    0, 2400, 0x00092,  320, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio I
-  { 10066.00,    0, 2400, 0x00112,  848, "MYA", "E",   "SEA" },  //   -aero Yangon Radio
-  { 10066.00,    0, 2400, 0x200c2,  716, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
+  { 10066.00,    0, 2400, 0x00112,  849, "MYA", "E",   "SEA" },  //   -aero Yangon Radio
+  { 10066.00,    0, 2400, 0x200c2,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
   { 10075.00,    0, 2400, 0x200c2,  701, "BHR", "-HF", "ME"  },  //   -hfdl Al Muharraq HFDL (ID15)
   { 10081.00,    0, 2400, 0x200c2,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
   { 10081.00,    0, 2400, 0x200c2,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
   { 10084.00,    0, 2400, 0x00112, 1044, "IND", "E",   "SAs" },  //   -aero Delhi Radio
   { 10084.00,    0, 2400, 0x00112,  855, "IND", "E",   "SAs" },  //   -aero Mumbai Radio
   { 10084.00,    0, 2400, 0x200c2,  705, "NZL", "-HF", "SOc" },  //   -hfdl Auckland HFDL (ID5)
-  { 10087.00,    0, 2400, 0x200c2,  709, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
+  { 10087.00,    0, 2400, 0x200c2,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
   { 10093.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   { 10098.50,    0, 2400, 0x200b2,  549, "GEO", "",    "GEO" },  //    -ale Georgia Coast Guard ALE
   { 10100.80,    0, 2400, 0x200f4,  576, "GER", "E",   "Eu"  },  //    -fsk DWD 1 Pinneberg RTTY
-  { 10108.50,    0, 2400, 0x200b2,  728, "GRC", "",    "GRC" },  //    -ale Greek Air Force ALE
+  { 10108.50,    0, 2400, 0x200b2,  729, "GRC", "",    "GRC" },  //    -ale Greek Air Force ALE
   { 10113.00, 1550, 1600, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
   { 10113.00,    0, 2400, 0x200b2,  502, "TUN", "",    "TUN" },  //    -ale Tunisian Police ALE
   { 10115.00,    0, 2400, 0x20102,  700, "CHN", "",    "FE"  },  //    -fax BAF Beijing Meteo Fax
@@ -10237,18 +10239,18 @@ dx_t eibi_db[] = {
   { 10158.00, 1210, 1220, 0x0f132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 10160.00, 2100, 1700, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
   { 10160.00,    0, 2400, 0x200b2,  675, "TUR", "",    "TUR" },  //    -ale Red Crescent ALE
-  { 10160.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10160.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10160.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10160.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10160.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10160.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10160.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10160.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10160.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10160.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10160.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10160.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10160.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10160.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10160.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10160.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10160.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10160.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10160.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10160.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10160.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10160.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10160.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10160.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 10164.00, 1350, 1400, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 10165.00,    0, 2400, 0x200b2,  442, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
   { 10166.00,   30,   40, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
@@ -10326,7 +10328,7 @@ dx_t eibi_db[] = {
   { 10290.00,  630,  640, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 10293.00, 1430, 1440, 0x01532,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 10294.00,  710,  720, 0x0f932,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
-  { 10295.00,    0, 2400, 0x200b2,  721, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
+  { 10295.00,    0, 2400, 0x200b2,  722, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
   { 10302.00, 1300, 1310, 0x01532,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 10302.00, 1300, 1310, 0x01532,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 10302.00, 1500, 1505, 0x00b32,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
@@ -10367,11 +10369,11 @@ dx_t eibi_db[] = {
   { 10383.00, 1650, 1700, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 10388.00, 1210, 1220, 0x0f132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 10389.60,    0, 2400, 0x200b2,  191, "USA", "",    "USA" },  //    -ale Veterans Health Adm.ALE
-  { 10390.00,    0, 2400, 0x200b2,  721, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
+  { 10390.00,    0, 2400, 0x200b2,  722, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
   { 10390.00,    0, 2400, 0x200b2,  685, "MRC", "",    "MRC" },  //    -ale Moroccan Military ALE
-  { 10390.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  { 10390.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   { 10394.00, 1210, 1220, 0x0f132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
-  { 10400.00,    0, 2400, 0x200b2,  721, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
+  { 10400.00,    0, 2400, 0x200b2,  722, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
   { 10410.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 10417.50,    0, 2400, 0x200b2,  367, "UKR", "",    "UKR" },  //    -ale Ukrainian Military ALE
   { 10418.00,  340,  350, 0x00132, 1045, "RUS", "S",   "As"  },  //    -spy V07 Russian Spy Numbers
@@ -10384,7 +10386,7 @@ dx_t eibi_db[] = {
   { 10426.00, 1550, 1600, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 10428.00,  710,  720, 0x05132, 1046, "RUS", "-TY", "RUS" },  //    -spy XPA Russian Spy Numbers
   { 10429.00,  715,  725, 0x04932,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
-  { 10430.00,    0, 2400, 0x200b2,  837, "ALG", "",    "ALG" },  //    -ale Algeria Gendarmerie ALE
+  { 10430.00,    0, 2400, 0x200b2,  838, "ALG", "",    "ALG" },  //    -ale Algeria Gendarmerie ALE
   { 10430.00,    0, 2400, 0x000d2,  609, "USA", "",    "WNA" },  // -milcom NPG US Navy STANAG
   { 10442.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 10443.00, 1440, 1450, 0x00132,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
@@ -10409,7 +10411,7 @@ dx_t eibi_db[] = {
   { 10489.00,    0, 2400, 0x200b2,  872, "CLM", "",    "CLM" },  //    -ale Colombian Army ALE
   { 10494.00, 1150, 1200, 0x08532,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 10496.00,    0, 2400, 0x200b2,  694, "CLM", "",    "CLM" },  //    -ale Colombian Navy ALE
-  { 10498.00,    0, 2400, 0x200b2,  735, "FRA", "",    "F"   },  //    -ale French Navy ALE
+  { 10498.00,    0, 2400, 0x200b2,  736, "FRA", "",    "F"   },  //    -ale French Navy ALE
   { 10505.00,    0, 2400, 0x200b2,  376, "CHL", "",    "CHL" },  //    -ale Gendarmeria Chile ALE
   { 10514.00,  940,  950, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 10514.00,  940,  950, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
@@ -10425,14 +10427,14 @@ dx_t eibi_db[] = {
   { 10541.00,  710,  720, 0x0f932,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 10544.00, 2120, 2130, 0x00d32,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   { 10554.00,    0, 2400, 0x200b2,  404, "USA", "",    "WNA" },  //    -ale Bonneville PowerAdm.ALE
-  { 10555.00,   15,  215, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  { 10555.00,  245,  330, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  { 10555.00,  400,  945, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  { 10555.00, 1015, 1100, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  { 10555.00, 1100, 1715, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  { 10555.00, 1800, 1845, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  { 10555.00, 1915, 2045, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  { 10555.00, 2215, 2400, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 10555.00,   15,  215, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 10555.00,  245,  330, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 10555.00,  400,  945, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 10555.00, 1015, 1100, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 10555.00, 1100, 1715, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 10555.00, 1800, 1845, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 10555.00, 1915, 2045, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 10555.00, 2215, 2400, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
   { 10559.20,    0, 2400, 0x000d2,  143, "GER", "",    "Eu"  },  // -milcom DHJ58 Marine STANAG
   { 10559.00, 2140, 2150, 0x04332,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 10561.00,  110,  120, 0x04932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
@@ -10458,7 +10460,7 @@ dx_t eibi_db[] = {
   { 10644.00, 1530, 1540, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 10648.00,  720,  730, 0x05132,  567, "RUS", "-CW", "As"  },  //    -spy M12 Spy Numbers
   { 10648.00, 2020, 2030, 0x09132,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
-  { 10650.00,    0, 2400, 0x00092,  818, "VEN", "S",   "VEN" },  //   -util Venezuela Navy
+  { 10650.00,    0, 2400, 0x00092,  819, "VEN", "S",   "VEN" },  //   -util Venezuela Navy
   { 10651.00, 2000, 2010, 0x0a132,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 10653.00, 2200, 1000, 0x200e4,  295, "RUS", "-CW", "NAs" },  //     -cw REA4 AirForce Meteo x40
   { 10653.00, 1100, 1110, 0x04932,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
@@ -10476,7 +10478,7 @@ dx_t eibi_db[] = {
   { 10719.00,  950, 1000, 0x01532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 10726.00, 1200, 1210, 0x02932,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 10728.00, 1540, 1550, 0x02532,  530, "POL", "R",   ""    },  //    -spy S11a Polish Spy Numbers
-  { 10733.60,    0, 2400, 0x200b2,  718, "USA", "",    "Glo" },  //    -ale US Embassies ALE
+  { 10733.60,    0, 2400, 0x200b2,  719, "USA", "",    "Glo" },  //    -ale US Embassies ALE
   { 10734.00, 1540, 1550, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 10735.00, 2200, 1000, 0x200e4,  295, "RUS", "-CW", "NAs" },  //     -cw REA4 AirForce Meteo x40
   { 10737.00, 1140, 1150, 0x04932,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
@@ -10508,17 +10510,17 @@ dx_t eibi_db[] = {
   { 10814.00, 1700, 1710, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 10816.50,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
   { 10817.00, 2020, 2030, 0x09132,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
-  { 10819.90,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10819.90,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10819.90,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10819.90, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10819.90, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10819.90, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10819.90, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10819.90, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10819.90, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10819.90, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10819.90, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10819.90,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10819.90,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10819.90,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10819.90, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10819.90, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10819.90, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10819.90, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10819.90, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10819.90, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10819.90, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10819.90, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 10820.00, 2130, 1700, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
   { 10825.00,    0, 2400, 0x200b2,  871, "FRA", "",    "F"   },  //    -ale French Diplo ALE
   { 10827.00, 2140, 2150, 0x04332,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
@@ -10531,18 +10533,18 @@ dx_t eibi_db[] = {
   { 10862.00,    0, 2400, 0x200b2,  572, "CHN", "",    "FE"  },  //    -ale China Military ALE
   { 10863.00, 1620, 1630, 0x08532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 10870.00, 2100, 1700, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  { 10870.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10870.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10870.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10870.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10870.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10870.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10870.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10870.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10870.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10870.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10870.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10870.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10870.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10870.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10870.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10870.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10870.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10870.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10870.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10870.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10870.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10870.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10870.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10870.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 10871.70,    0, 2400, 0x200e4,  444, "RUS", "-CW", "EEu" },  //     -cw Channel Marker D
   { 10871.80,    0, 2400, 0x200e4,  445, "RUS", "-CW", "RUS" },  //     -cw Channel Marker P
   { 10871.90,    0, 2400, 0x200e4,  446, "RUS", "-CW", "RUS" },  //     -cw Channel Marker S
@@ -10556,21 +10558,21 @@ dx_t eibi_db[] = {
   { 10884.00,   25,   35, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 10884.00,  125,  135, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 10893.50,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
-  { 10900.00,    0, 2400, 0x200b2,  720, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
+  { 10900.00,    0, 2400, 0x200b2,  721, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
   { 10904.00,  700,  710, 0x05132,  567, "RUS", "-CW", "As"  },  //    -spy M12 Spy Numbers
   { 10906.00, 1540, 1550, 0x08532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 10920.00, 2130, 1700, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  { 10920.10,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10920.10,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10920.10,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10920.10, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10920.10, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10920.10, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10920.10, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10920.10, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10920.10, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10920.10, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10920.10, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10920.10,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10920.10,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10920.10,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10920.10, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10920.10, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10920.10, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10920.10, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10920.10, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10920.10, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10920.10, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10920.10, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 10920.00, 1210, 1220, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 10921.00, 1200, 1210, 0x04332,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 10928.00,    0, 2400, 0x200b2,  283, "USA", "",    "USA" },  //    -ale FEMA Emergency ALE
@@ -10580,15 +10582,15 @@ dx_t eibi_db[] = {
   { 10939.00, 1910, 1920, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 10943.20,    0, 2400, 0x000d2,  319, "CAN", "",    "NAm" },  // -milcom CFH Halifax STANAG
   { 10943.00,  410,  420, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
-  { 10945.00,    0, 2400, 0x200b2,  720, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
+  { 10945.00,    0, 2400, 0x200b2,  721, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
   { 10946.00,    0, 2400, 0x000d2,  860, "FRA", "F",   "Eu"  },  // -milcom Fr. Air Force CAPITOLE
-  { 10959.70,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10959.70,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10959.70,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10959.70, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10959.70, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10959.70, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 10959.70, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10959.70,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10959.70,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10959.70,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10959.70, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10959.70, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10959.70, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 10959.70, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 10960.00, 2300, 1500, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
   { 10962.00, 1250, 1300, 0x08532,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 10965.00,    0, 2400, 0x200b2,  469, "FRA", "",    "Eu"  },  //    -ale Fr. Air Force E-3F ALE
@@ -10645,18 +10647,18 @@ dx_t eibi_db[] = {
   { 11068.00,  720,  730, 0x00132,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 11068.00,  720,  730, 0x00132,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 11070.00, 2200, 1700, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  { 11070.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11070.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11070.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11070.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11070.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11070.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11070.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11070.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11070.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11070.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11070.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11070.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11070.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11070.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11070.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11070.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11070.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11070.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11070.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11070.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 11074.00, 1530, 1540, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
-  { 11075.00,    0, 2400, 0x200b2,  735, "FRA", "",    "WEu" },  //    -ale French Navy ALE
+  { 11075.00,    0, 2400, 0x200b2,  736, "FRA", "",    "WEu" },  //    -ale French Navy ALE
   { 11076.00, 1015, 1025, 0x0f932,  500, "RUS", "-TY", "EEu" },  //    -spy F01 Russian Spy Numbers
   { 11076.00,  710,  720, 0x0f932,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 11079.00, 1015, 1025, 0x0f932,  500, "RUS", "-TY", "EEu" },  //    -spy F01 Russian Spy Numbers
@@ -10671,16 +10673,16 @@ dx_t eibi_db[] = {
   { 11094.00, 1140, 1150, 0x08532,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 11100.00, 2200, 1600, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
   { 11100.00,    0, 2400, 0x200b2,  873, "MEX", "",    "MEX" },  //    -ale Mexican Military ALE
-  { 11100.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11100.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11100.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11100.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11100.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11100.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11100.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11100.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11100.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11104.50,    0, 2400, 0x200b2,  728, "GRC", "",    "GRC" },  //    -ale Greek Air Force ALE
+  { 11100.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11100.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11100.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11100.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11100.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11100.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11100.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11100.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11100.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11104.50,    0, 2400, 0x200b2,  729, "GRC", "",    "GRC" },  //    -ale Greek Air Force ALE
   { 11105.00,    0, 2400, 0x200b2,  397, "USA", "",    "USA" },  //    -ale US Army MARS ALE
   { 11106.00,   35,   45, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 11106.00,  135,  145, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
@@ -10701,16 +10703,16 @@ dx_t eibi_db[] = {
   { 11118.00, 2230, 2240, 0x02532,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   { 11118.00, 1930, 1940, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 11120.00, 2200, 1700, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  { 11120.10,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11120.10,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11120.10,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11120.10, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11120.10, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11120.10, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11120.10, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11120.10, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11120.10, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11120.10, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11120.10,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11120.10,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11120.10,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11120.10, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11120.10, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11120.10, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11120.10, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11120.10, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11120.10, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11120.10, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 11121.00,  900,  910, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
   { 11121.00,  100,  120, 0x00092,  890, "USA", "E",   "NAm" },  //   -util 1AFMSOG Chief AF MARS
   { 11121.00, 2300, 2320, 0x00092,  890, "USA", "E",   "NAm" },  //   -util 1AFMSOG Chief AF MARS
@@ -10738,13 +10740,13 @@ dx_t eibi_db[] = {
   { 11146.00, 1350, 1400, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 11148.00,  700,  710, 0x05132,  567, "RUS", "-CW", "As"  },  //    -spy M12 Spy Numbers
   { 11150.00, 2300, 1500, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  { 11150.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11150.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11150.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11150.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11150.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11150.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11150.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11150.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11150.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11150.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11150.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11150.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11150.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11150.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 11152.00, 1930, 1940, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 11153.00,  800,  810, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
   { 11153.00,    0, 2400, 0x200b2,  367, "UKR", "",    "UKR" },  //    -ale Ukrainian Military ALE
@@ -10761,22 +10763,22 @@ dx_t eibi_db[] = {
   { 11165.00, 1700, 1710, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 11168.00, 1450, 1500, 0x01532,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 11168.00,  500,  510, 0x0c132,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
-  { 11168.60,    0, 2400, 0x200b2,  718, "USA", "",    "Glo" },  //    -ale US Embassies ALE
+  { 11168.60,    0, 2400, 0x200b2,  719, "USA", "",    "Glo" },  //    -ale US Embassies ALE
   { 11169.00,  710,  720, 0x05132, 1046, "RUS", "-TY", "RUS" },  //    -spy XPA Russian Spy Numbers
   { 11169.00, 1150, 1200, 0x08532,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 11170.00, 2100, 1700, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  { 11170.10,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11170.10,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11170.10,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11170.10, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11170.10, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11170.10, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11170.10, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11170.10, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11170.10, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11170.10, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11170.10, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11170.10, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11170.10,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11170.10,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11170.10,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11170.10, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11170.10, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11170.10, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11170.10, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11170.10, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11170.10, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11170.10, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11170.10, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11170.10, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 11170.00,  800,  810, 0x00132, 1026, "UKR", "E",   "UKR" },  //    -spy E17z Spy Numbers
   { 11173.00, 1210, 1220, 0x0f132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 11175.00,    0, 2400, 0x000d2,  608, "USA", "E",   "NAm" },  // -milcom US Air Force Messages
@@ -10785,18 +10787,18 @@ dx_t eibi_db[] = {
   { 11181.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
   { 11184.00,    0, 2400, 0x200c2,  468, "ISL", "-HF", "NAO" },  //   -hfdl Reykjavik HFDL (ID3)
   { 11187.00,    0, 2400, 0x200b2,  909, "FRA", "",    "F"   },  //    -ale French Military ALE
-  { 11193.00,    0, 2400, 0x00112,  849, "RUS", "R",   "EEu" },  //   -aero Moscow Aero
+  { 11193.00,    0, 2400, 0x00112,  850, "RUS", "R",   "EEu" },  //   -aero Moscow Aero
   { 11199.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
   { 11200.00,    0, 2400, 0x200b2,  873, "MEX", "",    "MEX" },  //    -ale Mexican Military ALE
   { 11208.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 11214.00,    0, 2400, 0x200b2,  909, "FRA", "",    "F"   },  //    -ale French Military ALE
-  { 11215.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  { 11215.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   { 11217.00,    0, 2400, 0x000d2,  362, "GER", "E",   "Eu"  },  // -milcom DHM91 German Air Force
   { 11217.00,    0, 2400, 0x200b2,  909, "FRA", "",    "F"   },  //    -ale French Military ALE
   { 11217.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 11223.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
-  { 11223.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
-  { 11223.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  { 11223.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  { 11223.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
   { 11226.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
   { 11228.00,    0, 2400, 0x200b2,  919, "CHN", "",    "CHN" },  //    -ale Chinese Navy ALE
   { 11232.00,    0, 2400, 0x00092, 1049, "CAN", "E",   "NAm" },  //   -util Trenton Military
@@ -10816,52 +10818,52 @@ dx_t eibi_db[] = {
   { 11282.00,    0, 2400, 0x00112,  327, "USA", "E",   "EOc" },  //   -aero San Francisco Radio 2
   { 11285.00,    0, 2400, 0x00112,  435, "CLN", "E",   "SAs" },  //   -aero Colombo Radio
   { 11285.00,    0, 2400, 0x00112,  981, "IND", "E",   "SAs" },  //   -aero Chennai Radio
-  { 11297.00,    0, 2400, 0x00112,  337, "RUS", "R",   "CIS" },  //   -aero Rostov Volmet x25,55
+  { 11297.00,    0, 2400, 0x00112,  336, "RUS", "R",   "CIS" },  //   -aero Rostov Volmet x25,55
   { 11300.00,    0, 2400, 0x00112, 1050, "LBY", "E",   "EAf" },  //   -aero Tripoli Radio
   { 11300.00,    0, 2400, 0x00112, 1051, "SDN", "E",   "EAf" },  //   -aero Khartoum Radio
   { 11300.00,    0, 2400, 0x00112, 1052, "SEY", "E",   "EAf" },  //   -aero Seychelles Radio
   { 11300.00,    0, 2400, 0x00112,  698, "SOM", "E",   "EAf" },  //   -aero Mogadishu Radio
-  { 11300.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11300.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11300.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11300.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11300.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11300.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11300.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11300.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11300.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11300.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11300.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11300.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11300.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11300.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11300.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11300.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11300.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11300.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11300.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11300.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11300.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11300.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11300.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11300.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 11306.00,    0, 2400, 0x200c2,  693, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
   { 11306.00,    0, 2400, 0x00092, 1053, "USA", "E",   "WNA" },  //   -util Boeing Seattle
   { 11309.00,    0, 2400, 0x00112,  339, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio E
   { 11309.00,    0, 2400, 0x00112,  340, "USA", "E",   "NAO" },  //   -aero New York Radio E
   { 11312.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
-  { 11315.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  { 11315.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   { 11318.00,    0, 2400, 0x200c2,  591, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
   { 11318.00,    0, 2400, 0x00112,  324, "RUS", "R",   "CIS" },  //   -aero Novosibir Volmet x10,40
-  { 11318.00,    0, 2400, 0x200e4,  707, "RUS", "-CW", "FE"  },  //     -cw Channel Marker G
-  { 11318.00,    0, 2400, 0x200e4,  708, "RUS", "-CW", "EEu" },  //     -cw Channel Marker W
-  { 11318.00,    0, 2400, 0x000d2,  706, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
+  { 11318.00,    0, 2400, 0x200e4,  708, "RUS", "-CW", "FE"  },  //     -cw Channel Marker G
+  { 11318.00,    0, 2400, 0x200e4,  709, "RUS", "-CW", "EEu" },  //     -cw Channel Marker W
+  { 11318.00,    0, 2400, 0x000d2,  707, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
   { 11318.00,    0, 2400, 0x00112,  325, "RUS", "R",   "CIS" },  //   -aero Samara Volmet x15,45
   { 11318.00,    0, 2400, 0x00112,  326, "RUS", "R",   "CIS" },  //   -aero Syktyvkar Volmet x00,30
-  { 11320.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
-  { 11320.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  { 11320.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  { 11320.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
   { 11321.00,    0, 2400, 0x200c2,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
   { 11327.00,    0, 2400, 0x200c2,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
   { 11330.00,    0, 2400, 0x00112,  699, "USA", "E",   "Car" },  //   -aero New York Radio CAR-B
-  { 11330.00,    0, 2400, 0x00112,  336, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
+  { 11330.00,    0, 2400, 0x00112,  335, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
   { 11336.00,    0, 2400, 0x00112,  328, "CAN", "E",   "NAO" },  //   -aero Gander Radio C
   { 11336.00,    0, 2400, 0x00092,  329, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio C
   { 11336.00,    0, 2400, 0x00112,  330, "ISL", "E",   "NAO" },  //   -aero Iceland Radio C
-  { 11340.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  { 11340.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   { 11345.00,  600, 1800, 0x00112,  160, "SWE", "E",   "Eu"  },  //   -aero Stockholm Radio
   { 11345.00, 1800,  600, 0x00112,  160, "SWE", "E",   "Eu"  },  //   -aero Stockholm Radio
-  { 11348.00,    0, 2400, 0x200c2,  842, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
+  { 11348.00,    0, 2400, 0x200c2,  843, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
   { 11348.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
   { 11354.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
-  { 11360.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  { 11360.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
   { 11363.00,    0, 2400, 0x00092,  343, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio H
   { 11384.00,    0, 2400, 0x200c2,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
   { 11384.00,    0, 2400, 0x00112, 1054, "JPN", "E",   "WOc" },  //   -aero Naha Radio CWP
@@ -10873,25 +10875,25 @@ dx_t eibi_db[] = {
   { 11387.00,  145, 1450, 0x00112,  344, "PAK", "E",   "SAs" },  //   -aero Karachi Volmet x15,x45
   { 11387.00, 2250, 1225, 0x00112,  857, "SNG", "E",   "SAs" },  //   -aero SingaporeVolmet x20,x50
   { 11387.00,   10, 1045, 0x00112,  345, "THA", "E",   "SAs" },  //   -aero Bangkok Volmet x10,x40
-  { 11387.00,    0, 2400, 0x200c2,  715, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
+  { 11387.00,    0, 2400, 0x200c2,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
   { 11390.00,  900, 1030, 0x00112, 1055, "ITL", "I",   "Eu"  },  //   -aero Marconi Radio Int.
   { 11390.00, 1600, 1730, 0x00112, 1055, "ITL", "I",   "Eu"  },  //   -aero Marconi Radio Int.
   { 11396.00,    0, 2400, 0x00112,  331, "USA", "E",   "Car" },  //   -aero New York Radio CAR-A
   { 11404.00,  210,  220, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   { 11409.00,  700,  710, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 11410.00, 2100, 1700, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  { 11410.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11410.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11410.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11410.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11410.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11410.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11410.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11410.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11410.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11410.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11410.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11410.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11410.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11410.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11410.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11410.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11410.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11410.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11410.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11410.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11410.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11410.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11410.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11410.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 11413.00, 1530, 1540, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
   { 11414.00, 1015, 1025, 0x0f932,  500, "RUS", "-TY", "EEu" },  //    -spy F01 Russian Spy Numbers
   { 11418.50,    0, 2400, 0x200b2,  237, "AUT", "",    "AUT" },  //    -ale Austrian Military ALE
@@ -10919,18 +10921,18 @@ dx_t eibi_db[] = {
   { 11439.00,  110,  120, 0x01332,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   { 11439.00,    0, 2400, 0x200b2,  561, "USA", "",    "USA" },  //    -ale US National Guard ALE
   { 11440.00, 2100, 1700, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  { 11440.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11440.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11440.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11440.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11440.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11440.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11440.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11440.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11440.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11440.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11440.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11440.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11440.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11440.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11440.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11440.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11440.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11440.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11440.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11440.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11440.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11440.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11440.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11440.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 11442.00, 1640, 1650, 0x05132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 11448.00,    0, 2400, 0x200b2,  283, "USA", "",    "USA" },  //    -ale FEMA Emergency ALE
   { 11450.00,    0, 2400, 0x200b2,  694, "CLM", "",    "CLM" },  //    -ale Colombian Navy ALE
@@ -10940,24 +10942,24 @@ dx_t eibi_db[] = {
   { 11454.00,    0, 2400, 0x200b2,  919, "CHN", "",    "CHN" },  //    -ale Chinese Navy ALE
   { 11454.00,  210,  220, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   { 11454.00, 1540, 1550, 0x08532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
-  { 11455.00,    0, 2400, 0x200b2,  837, "ALG", "",    "ALG" },  //    -ale Algeria Gendarmerie ALE
+  { 11455.00,    0, 2400, 0x200b2,  838, "ALG", "",    "ALG" },  //    -ale Algeria Gendarmerie ALE
   { 11455.00,    0, 2400, 0x200b2,  694, "CLM", "",    "CLM" },  //    -ale Colombian Navy ALE
   { 11455.20,    0, 2400, 0x000d2,  206, "NOR", "",    "NEu" },  // -milcom Norway Navy STANAG
   { 11460.00, 2100, 1700, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
   { 11460.00, 1210, 1220, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 11460.00, 1210, 1220, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
-  { 11460.10,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11460.10,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11460.10,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11460.10, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11460.10, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11460.10, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11460.10, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11460.10, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11460.10, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11460.10, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11460.10, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11460.10, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11460.10,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11460.10,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11460.10,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11460.10, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11460.10, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11460.10, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11460.10, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11460.10, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11460.10, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11460.10, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11460.10, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11460.10, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 11461.00,  640,  650, 0x00132,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 11461.00,  640,  650, 0x00132,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 11461.00, 1600, 1610, 0x08532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
@@ -10983,26 +10985,26 @@ dx_t eibi_db[] = {
   { 11486.00, 1850, 1900, 0x02532,  530, "POL", "R",   ""    },  //    -spy S11a Polish Spy Numbers
   { 11487.00, 1015, 1025, 0x0f932,  500, "RUS", "-TY", "EEu" },  //    -spy F01 Russian Spy Numbers
   { 11488.00, 1200, 1210, 0x0f132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
-  { 11489.00,    0, 2400, 0x200b2,  720, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
+  { 11489.00,    0, 2400, 0x200b2,  721, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
   { 11493.00,  800,  810, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 11494.00, 1130, 1140, 0x08532,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 11494.00,    0, 2400, 0x200b2,  408, "USA", "",    "USA" },  //    -ale COTHEN ALE
   { 11500.00, 2000, 1700, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
   { 11500.00,    0, 2400, 0x200b2,  675, "TUR", "",    "TUR" },  //    -ale Red Crescent ALE
   { 11500.00,    0, 2400, 0x200b2,  442, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
-  { 11500.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11500.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11500.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11500.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11500.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11500.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11500.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11500.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11500.00, 2000, 2100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11500.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11500.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11500.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11500.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11500.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11500.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11500.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11500.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11500.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11500.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11500.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11500.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11500.00, 2000, 2100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11500.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11500.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11500.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11500.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 11510.00, 2100,  300, 0x00092, 1057, "BRA", "P",   "B"   },  //   -util Rádio Cidade SW
   { 11510.00, 1300, 1400, 0x00092,  914, "CLA", "K",   "KRE" },  //   -util Radio Free North Korea
   { 11511.00,  730,  740, 0x05132, 1046, "RUS", "-TY", "RUS" },  //    -spy XPA Russian Spy Numbers
@@ -11011,39 +11013,39 @@ dx_t eibi_db[] = {
   { 11519.00,  930,  940, 0x01532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 11520.00, 2000, 1600, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
   { 11520.00, 1300, 1600, 0x00092,  896, "CLA", "KU",  "ME"  },  //   -util Dengê Welat
-  { 11520.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11520.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11520.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11520.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11520.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11520.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11520.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11520.00, 2000, 2100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11520.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11520.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11520.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11520.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11520.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11520.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11520.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11520.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11520.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11520.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11520.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11520.00, 2000, 2100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11520.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11520.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11520.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 11520.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 11521.00,  400,  410, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   { 11523.00, 1710, 1720, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 11526.00,  740,  750, 0x00132,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 11526.00, 2040, 2050, 0x09132,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   { 11528.00,  210,  220, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   { 11529.00,  800,  810, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
-  { 11530.00, 1000, 1400, 0x00092,  808, "BRA", "P",   "B"   },  //   -util Rádio Nacional Amazônia
-  { 11530.00, 1400, 1900, 0x00092,  808, "BRA", "P",   "B"   },  //   -util Rádio Nacional Amazônia
-  { 11530.00, 1900,  305, 0x00092,  808, "BRA", "P",   "B"   },  //   -util Rádio Nacional Amazônia
+  { 11530.00, 1000, 1400, 0x00092,  809, "BRA", "P",   "B"   },  //   -util Rádio Nacional Amazônia
+  { 11530.00, 1400, 1900, 0x00092,  809, "BRA", "P",   "B"   },  //   -util Rádio Nacional Amazônia
+  { 11530.00, 1900,  305, 0x00092,  809, "BRA", "P",   "B"   },  //   -util Rádio Nacional Amazônia
   { 11530.00,  530, 1600, 0x00092,  896, "CLA", "KU",  "ME"  },  //   -util Dengê Welat
   { 11530.00, 1600, 1800, 0x00092,  896, "CLA", "KU",  "ME"  },  //   -util Dengê Welat
   { 11530.00, 1654, 1750, 0x00132,  996, "CUB", "S",   "Am"  },  //    -spy Cuban Spy Numbers
   { 11530.00, 1754, 1850, 0x00132,  996, "CUB", "S",   "Am"  },  //    -spy Cuban Spy Numbers
   { 11530.00,  530, 1800, 0x00092, 1012, "TUR", "TU",  "ME"  },  //   -util Turkish Jammer
-  { 11530.00,  600,  655, 0x00080,  753, "TUR", "SWA", "ME"  },  //  -bcast Voice of Turkey
-  { 11530.00,  700,  755, 0x00080,  753, "TUR", "AL",  "ME"  },  //  -bcast Voice of Turkey
-  { 11530.00,  800,  825, 0x00080,  753, "TUR", "MC",  "ME"  },  //  -bcast Voice of Turkey
-  { 11530.00,  830,  925, 0x00080,  753, "TUR", "AR",  "ME"  },  //  -bcast Voice of Turkey
-  { 11530.00, 1600, 1625, 0x00080,  753, "TUR", "BU",  "ME"  },  //  -bcast Voice of Turkey
-  { 11530.00, 1630, 1725, 0x00080,  753, "TUR", "S",   "ME"  },  //  -bcast Voice of Turkey
-  { 11530.00, 1730, 1800, 0x00080,  753, "TUR", "D",   "ME"  },  //  -bcast Voice of Turkey
+  { 11530.00,  600,  655, 0x00080,  754, "TUR", "SWA", "ME"  },  //  -bcast Voice of Turkey
+  { 11530.00,  700,  755, 0x00080,  754, "TUR", "AL",  "ME"  },  //  -bcast Voice of Turkey
+  { 11530.00,  800,  825, 0x00080,  754, "TUR", "MC",  "ME"  },  //  -bcast Voice of Turkey
+  { 11530.00,  830,  925, 0x00080,  754, "TUR", "AR",  "ME"  },  //  -bcast Voice of Turkey
+  { 11530.00, 1600, 1625, 0x00080,  754, "TUR", "BU",  "ME"  },  //  -bcast Voice of Turkey
+  { 11530.00, 1630, 1725, 0x00080,  754, "TUR", "S",   "ME"  },  //  -bcast Voice of Turkey
+  { 11530.00, 1730, 1800, 0x00080,  754, "TUR", "D",   "ME"  },  //  -bcast Voice of Turkey
   { 11530.00,  730,  740, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 11530.00,  730,  740, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 11530.00,  830,  840, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
@@ -11060,16 +11062,16 @@ dx_t eibi_db[] = {
   { 11550.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 11550.00,  430, 1100, 0x00080,   76, "GBR", "FS",  "IRN" },  //  -bcast Iran International
   { 11550.00, 1600, 1700, 0x00080,  111, "TWN", "D",   "Eu"  },  //  -bcast Radio Taiwan Int.
-  { 11550.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11550.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11550.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11550.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11550.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11550.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11550.00, 2100, 2130, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11550.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11550.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11550.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11550.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11550.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11550.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11550.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11550.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11550.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11550.00, 2100, 2130, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11550.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11550.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11550.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 11551.00,    0, 2400, 0x200b2, 1059, "MLI", "",    "WAf" },  //    -ale UN MINUSMA ALE
   { 11552.00,  610,  620, 0x00132,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   { 11552.00, 1350, 1400, 0x02932, 1046, "RUS", "-TY", "RUS" },  //    -spy XPA Russian Spy Numbers
@@ -11124,17 +11126,17 @@ dx_t eibi_db[] = {
   { 11579.50,  530, 1600, 0x00080,  896, "CLA", "KU",  "ME"  },  //  -bcast Dengê Welat
   { 11579.00, 1100, 1110, 0x03132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 11580.00, 2100, 1600, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  { 11580.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11580.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11580.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11580.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11580.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11580.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11580.00, 1500, 1600, 0x00080,  816, "TWN", "CA",  "FE"  },  //  -bcast Sound of Hope
-  { 11580.00, 2100, 2130, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11580.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11580.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11580.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11580.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11580.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11580.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11580.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11580.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11580.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11580.00, 1500, 1600, 0x00080,  817, "TWN", "CA",  "FE"  },  //  -bcast Sound of Hope
+  { 11580.00, 2100, 2130, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11580.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11580.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11580.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 11581.00, 1300, 1310, 0x01532,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 11583.00,    0, 2400, 0x200b2,  919, "CHN", "",    "CHN" },  //    -ale Chinese Navy ALE
   { 11583.00,  930,  940, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
@@ -11142,10 +11144,10 @@ dx_t eibi_db[] = {
   { 11584.00, 1940, 1950, 0x0a132,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 11587.00, 1640, 1650, 0x05132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 11589.00, 1240, 1250, 0x02932,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
-  { 11590.00, 1300, 1315, 0x00080,  777, "CAN", "E",   "FE"  },  //  -bcast Bible Voice
-  { 11590.00, 1300, 1330, 0x0f080,  777, "CAN", "E",   "FE"  },  //  -bcast Bible Voice
-  { 11590.00, 1300, 1330, 0x00080,  777, "CAN", "K",   "FE"  },  //  -bcast Bible Voice
-  { 11590.00, 1315, 1330, 0x00080,  777, "CAN", "K",   "FE"  },  //  -bcast Bible Voice
+  { 11590.00, 1300, 1315, 0x00080,  778, "CAN", "E",   "FE"  },  //  -bcast Bible Voice
+  { 11590.00, 1300, 1330, 0x0f080,  778, "CAN", "E",   "FE"  },  //  -bcast Bible Voice
+  { 11590.00, 1300, 1330, 0x00080,  778, "CAN", "K",   "FE"  },  //  -bcast Bible Voice
+  { 11590.00, 1315, 1330, 0x00080,  778, "CAN", "K",   "FE"  },  //  -bcast Bible Voice
   { 11590.00, 1245, 1300, 0x0e280,   83, "IND", "E",   "SAs" },  //  -bcast FEBA India
   { 11590.00, 1245, 1300, 0x01c80,   83, "IND", "MAL", "SAs" },  //  -bcast FEBA India
   { 11590.00, 1315, 1330, 0x00080,   56, "IND", "BHT", "SAs" },  //  -bcast Trans World Radio
@@ -11158,7 +11160,7 @@ dx_t eibi_db[] = {
   { 11593.00, 1410, 1420, 0x01532,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 11594.00,  100,  110, 0x00132, 1045, "RUS", "S",   "As"  },  //    -spy V07 Russian Spy Numbers
   { 11597.60,    0, 2400, 0x200b2,  409, "USA", "",    "USA" },  //    -ale Fish and Wildlife ALE
-  { 11600.00, 1500, 1515, 0x00080,  738, "CAN", "A",   "ME"  },  //  -bcast Bible Voice Dardasha-7
+  { 11600.00, 1500, 1515, 0x00080,  739, "CAN", "A",   "ME"  },  //  -bcast Bible Voice Dardasha-7
   { 11600.00,    0,  600, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   { 11600.00,  600,  855, 0x0de80,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   { 11600.00,  855, 1100, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
@@ -11166,15 +11168,15 @@ dx_t eibi_db[] = {
   { 11600.00, 1420, 1520, 0x00080,   44, "IRN", "BE",  "SAs" },  //  -bcast IRIB Voice of I.R.Iran
   { 11600.00, 1300, 1400, 0x00080,   72, "PHL", "",    "FE"  },  //  -bcast FEBC Manila
   { 11600.00, 1700, 1800, 0x00080,  111, "TWN", "D",   "Eu"  },  //  -bcast Radio Taiwan Int.
-  { 11600.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11600.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11600.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11600.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11600.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11600.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11600.00, 1500, 1600, 0x00080,  816, "TWN", "CA",  "FE"  },  //  -bcast Sound of Hope
-  { 11600.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11600.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11600.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11600.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11600.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11600.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11600.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11600.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11600.00, 1500, 1600, 0x00080,  817, "TWN", "CA",  "FE"  },  //  -bcast Sound of Hope
+  { 11600.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11600.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 11600.00,  700, 1000, 0x00080,  373, "USA", "E",   "Eu"  },  //  -bcast Brother Stair
   { 11600.00, 1515, 1655, 0x00080,  373, "USA", "E",   "Eu"  },  //  -bcast Brother Stair
   { 11605.00, 1500, 1530, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
@@ -11214,15 +11216,15 @@ dx_t eibi_db[] = {
   { 11620.00, 1530, 1600, 0x00080,  492, "CVA", "A",   "ME"  },  //  -bcast Radio Vaticana
   { 11620.00, 1600, 1615, 0x00080,  492, "CVA", "F",   "ME"  },  //  -bcast Radio Vaticana
   { 11620.00, 1615, 1630, 0x00080,  492, "CVA", "E",   "ME"  },  //  -bcast Radio Vaticana
-  { 11630.00,  320,  330, 0x00080,  800, "CHN", "R",   "CHN" },  //  -bcast China National Radio 17
-  { 11630.00,  600,  900, 0x0be80,  800, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
-  { 11630.00,  720,  730, 0x0b880,  800, "CHN", "E,R", "CHN" },  //  -bcast China National Radio 17
-  { 11630.00,  900, 1200, 0x00080,  800, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
-  { 11630.00, 1200, 1805, 0x00080,  800, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
-  { 11630.00, 1520, 1530, 0x0f880,  800, "CHN", "E,R", "CHN" },  //  -bcast China National Radio 17
-  { 11630.00, 2355,  600, 0x00080,  800, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
-  { 11630.00,  930, 1300, 0x00080,  757, "KWT", "A",   "EAf" },  //  -bcast Radio Kuwait
-  { 11630.00, 1300, 1600, 0x00080,  757, "KWT", "A",   "EAf" },  //  -bcast Radio Kuwait
+  { 11630.00,  320,  330, 0x00080,  801, "CHN", "R",   "CHN" },  //  -bcast China National Radio 17
+  { 11630.00,  600,  900, 0x0be80,  801, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
+  { 11630.00,  720,  730, 0x0b880,  801, "CHN", "E,R", "CHN" },  //  -bcast China National Radio 17
+  { 11630.00,  900, 1200, 0x00080,  801, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
+  { 11630.00, 1200, 1805, 0x00080,  801, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
+  { 11630.00, 1520, 1530, 0x0f880,  801, "CHN", "E,R", "CHN" },  //  -bcast China National Radio 17
+  { 11630.00, 2355,  600, 0x00080,  801, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
+  { 11630.00,  930, 1300, 0x00080,  758, "KWT", "A",   "EAf" },  //  -bcast Radio Kuwait
+  { 11630.00, 1300, 1600, 0x00080,  758, "KWT", "A",   "EAf" },  //  -bcast Radio Kuwait
   { 11632.00,  210,  220, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   { 11635.00, 1000, 1100, 0x00080,   52, "CHN", "E",   "Sib" },  //  -bcast China Radio Int.
   { 11635.00, 1100, 1200, 0x00080,   52, "CHN", "EO",  "FE"  },  //  -bcast China Radio Int.
@@ -11237,7 +11239,7 @@ dx_t eibi_db[] = {
   { 11635.00, 2300, 2400, 0x00080,   59, "KRE", "K",   "FE"  },  //  -bcast Voice of Korea KCBS
   { 11635.00,  800,  810, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 11635.00,  800,  810, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
-  { 11637.00,    0, 2400, 0x200b2,  733, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
+  { 11637.00,    0, 2400, 0x200b2,  734, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
   { 11638.00,    0, 2400, 0x200f4, 1062, "GER", "",    "Eu"  },  //    -fsk DWD Polarstern Fax/RTTY
   { 11640.00,  400,  600, 0x00080, 1063, "CHN", "M",   "CHN" },  //  -bcast China National Radio
   { 11640.00, 1000, 1200, 0x00080, 1063, "CHN", "M",   "CHN" },  //  -bcast China National Radio
@@ -11280,12 +11282,12 @@ dx_t eibi_db[] = {
   { 11650.00,  430,  500, 0x00080,  888, "HOL", "SUD", "SDN" },  //  -bcast Radio Dabanga
   { 11650.00,  330,  430, 0x00080,  889, "HOL", "SUD", "SSD" },  //  -bcast Radio Tamazuj
   { 11650.00,  415,  425, 0x02480,  889, "HOL", "E",   "SSD" },  //  -bcast Radio Tamazuj
-  { 11650.00,  800,  900, 0x00080,  740, "ROU", "RO",  "EGY" },  //  -bcast Radio Romania Int.
-  { 11650.00,  900, 1000, 0x00080,  740, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
-  { 11650.00, 1000, 1100, 0x00080,  740, "ROU", "F",   "WEu" },  //  -bcast Radio Romania Int.
-  { 11650.00, 2100, 2200, 0x00080,  740, "ROU", "S",   "SAm" },  //  -bcast Radio Romania Int.
-  { 11650.00, 2300, 2400, 0x00080,  740, "ROU", "S",   "SAm" },  //  -bcast Radio Romania Int.
-  { 11655.00,  600,  615, 0x00080,  777, "CAN", "A",   "NAf" },  //  -bcast Bible Voice
+  { 11650.00,  800,  900, 0x00080,  741, "ROU", "RO",  "EGY" },  //  -bcast Radio Romania Int.
+  { 11650.00,  900, 1000, 0x00080,  741, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
+  { 11650.00, 1000, 1100, 0x00080,  741, "ROU", "F",   "WEu" },  //  -bcast Radio Romania Int.
+  { 11650.00, 2100, 2200, 0x00080,  741, "ROU", "S",   "SAm" },  //  -bcast Radio Romania Int.
+  { 11650.00, 2300, 2400, 0x00080,  741, "ROU", "S",   "SAm" },  //  -bcast Radio Romania Int.
+  { 11655.00,  600,  615, 0x00080,  778, "CAN", "A",   "NAf" },  //  -bcast Bible Voice
   { 11655.00, 1600, 1630, 0x00080, 1006, "SWE", "AFA", "EAf" },  //  -bcast IBRA Radio
   { 11655.00,  740,  750, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 11660.00, 1400, 1500, 0x00080,   52, "CHN", "UR",  "SAs" },  //  -bcast China Radio Int.
@@ -11308,10 +11310,10 @@ dx_t eibi_db[] = {
   { 11660.00, 1700, 1730, 0x00080,   56, "SWZ", "AH",  "ETH" },  //  -bcast Trans World Radio
   { 11660.00, 1730, 1800, 0x00080,   56, "SWZ", "AH",  "ETH" },  //  -bcast Trans World Radio
   { 11660.00, 1730, 1800, 0x0fc80,   56, "SWZ", "OO",  "ETH" },  //  -bcast Trans World Radio
-  { 11660.00, 1830, 1900, 0x00080,  811, "USA", "A",   "ME"  },  //  -bcast Follow the Bible Min.
-  { 11660.00, 1830, 1900, 0x00080,  811, "USA", "A",   "ME"  },  //  -bcast Follow the Bible Min.
-  { 11660.00, 1900, 1930, 0x00080,  811, "USA", "E",   "WAf" },  //  -bcast Follow the Bible Min.
-  { 11660.00, 1900, 1930, 0x00080,  811, "USA", "E",   "WAf" },  //  -bcast Follow the Bible Min.
+  { 11660.00, 1830, 1900, 0x00080,  812, "USA", "A",   "ME"  },  //  -bcast Follow the Bible Min.
+  { 11660.00, 1830, 1900, 0x00080,  812, "USA", "A",   "ME"  },  //  -bcast Follow the Bible Min.
+  { 11660.00, 1900, 1930, 0x00080,  812, "USA", "E",   "WAf" },  //  -bcast Follow the Bible Min.
+  { 11660.00, 1900, 1930, 0x00080,  812, "USA", "E",   "WAf" },  //  -bcast Follow the Bible Min.
   { 11660.00,    0,  100, 0x00080,   51, "USA", "M",   "FE"  },  //  -bcast Voice of America
   { 11665.00, 1500, 1530, 0x00080,   52, "CHN", "PS",  "AFG" },  //  -bcast China Radio Int.
   { 11665.00, 1530, 1600, 0x00080,   52, "CHN", "PS",  "AFG" },  //  -bcast China Radio Int.
@@ -11338,7 +11340,7 @@ dx_t eibi_db[] = {
   { 11675.00, 1400, 1500, 0x00080,   52, "CHN", "E",   "PAK" },  //  -bcast China Radio Int.
   { 11675.00, 1500, 1600, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 11675.00, 1600, 1700, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  { 11675.00,  600, 1200, 0x00080,  753, "TUR", "TU",  "ME"  },  //  -bcast Voice of Turkey
+  { 11675.00,  600, 1200, 0x00080,  754, "TUR", "TU",  "ME"  },  //  -bcast Voice of Turkey
   { 11675.00, 1500, 1600, 0x00080,  117, "USA", "M",   "FE"  },  //  -bcast Radio Free Asia
   { 11675.00, 1600, 1700, 0x00080,  117, "USA", "UI",  "FE"  },  //  -bcast Radio Free Asia
   { 11680.00, 1200, 1300, 0x00080,   52, "CHN", "KH",  "SEA" },  //  -bcast China Radio Int.
@@ -11379,7 +11381,7 @@ dx_t eibi_db[] = {
   { 11690.00, 1900, 2200, 0x00080,  141, "FIN", "FI",  "Eu"  },  //  -bcast Scandinavian Weekend R.
   { 11693.50,    0, 2400, 0x200b2,  406, "USA", "",    "USA" },  //    -ale Corps of Engineers ALE
   { 11695.00, 1800, 2000, 0x00080,   52, "CHN", "F",   "NAf" },  //  -bcast China Radio Int.
-  { 11695.00,   55,  900, 0x00080,  778, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
+  { 11695.00,   55,  900, 0x00080,  779, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
   { 11695.00, 1330, 1430, 0x00080,   51, "USA", "KH",  "SEA" },  //  -bcast Voice of America
   { 11697.50,    0, 2400, 0x200b2,  561, "USA", "",    "USA" },  //    -ale US National Guard ALE
   { 11700.00, 2300, 2400, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
@@ -11389,7 +11391,7 @@ dx_t eibi_db[] = {
   { 11700.00,  700,  800, 0x00080,  103, "FRA", "F",   "WAf" },  //  -bcast Radio France Int.
   { 11700.00,    0,   30, 0x00080,   31, "GBR", "BR",  "SEA" },  //  -bcast BBC
   { 11700.00, 1250, 1320, 0x00080,   44, "IRN", "KZ",  "CAs" },  //  -bcast IRIB Voice of I.R.Iran
-  { 11700.00, 1200, 1230, 0x00080,  740, "ROU", "A",   "ME"  },  //  -bcast Radio Romania Int.
+  { 11700.00, 1200, 1230, 0x00080,  741, "ROU", "A",   "ME"  },  //  -bcast Radio Romania Int.
   { 11700.00, 1600, 1800, 0x00080,  373, "USA", "E",   "Eu"  },  //  -bcast Brother Stair
   { 11700.00, 2300, 2400, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
   { 11700.00, 1130, 1200, 0x0f880,   51, "USA", "BE",  "SEA" },  //  -bcast Voice of America
@@ -11416,18 +11418,18 @@ dx_t eibi_db[] = {
   { 11710.00, 1600, 1700, 0x00080,   58, "KRE", "F",   "NAm" },  //  -bcast Voice of Korea
   { 11710.00, 1700, 1800, 0x00080,   59, "KRE", "K",   "NAm" },  //  -bcast Voice of Korea KCBS
   { 11715.00, 2100, 1700, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  { 11715.10,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11715.10,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11715.10,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11715.10, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11715.10, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11715.10, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11715.10, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11715.10, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11715.10, 2100, 2130, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11715.10, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11715.10, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11715.10, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11715.10,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11715.10,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11715.10,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11715.10, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11715.10, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11715.10, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11715.10, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11715.10, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11715.10, 2100, 2130, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11715.10, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11715.10, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11715.10, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 11720.00,  600,  850, 0x0be80,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   { 11720.00,  850, 1100, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   { 11720.00, 2330,  600, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
@@ -11445,17 +11447,17 @@ dx_t eibi_db[] = {
   { 11725.00, 1600, 1800, 0x00080,   53, "CHN", "D",   "Eu"  },  //  -bcast CRI Music
   { 11725.00, 1400, 1500, 0x00080,   31, "GBR", "DR",  "AFG" },  //  -bcast BBC
   { 11725.00, 1800, 1900, 0x00080,  116, "KOR", "R",   "EEu" },  //  -bcast KBS World Radio
-  { 11725.00,  459,  558, 0x00080,  761, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
-  { 11725.00,  459,  658, 0x00080,  761, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
-  { 11725.00,  559,  758, 0x00080,  761, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
-  { 11725.00,  728,  738, 0x0f880,  761, "NZL", "BSL", "Oc"  },  //  -bcast Radio New Zealand Int.
-  { 11725.00, 1859, 1958, 0x00080,  761, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
-  { 11725.00, 1859, 2058, 0x00080,  761, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
+  { 11725.00,  459,  558, 0x00080,  762, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
+  { 11725.00,  459,  658, 0x00080,  762, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
+  { 11725.00,  559,  758, 0x00080,  762, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
+  { 11725.00,  728,  738, 0x0f880,  762, "NZL", "BSL", "Oc"  },  //  -bcast Radio New Zealand Int.
+  { 11725.00, 1859, 1958, 0x00080,  762, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
+  { 11725.00, 1859, 2058, 0x00080,  762, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
   { 11730.00,  230,  330, 0x00080,   52, "CHN", "NE",  "FE"  },  //  -bcast China Radio Int.
   { 11730.00,  530,  600, 0x00080,   93, "JPN", "F",   "WAf" },  //  -bcast NHK Radio Japan
   { 11730.00,  600,  630, 0x00080,   93, "JPN", "A",   "ME"  },  //  -bcast NHK Radio Japan
-  { 11730.00, 2300, 2400, 0x00080,  740, "ROU", "S",   "CAm" },  //  -bcast Radio Romania Int.
-  { 11730.00,  700,  800, 0x00080,  753, "TUR", "AZ",  "Cau" },  //  -bcast Voice of Turkey
+  { 11730.00, 2300, 2400, 0x00080,  741, "ROU", "S",   "CAm" },  //  -bcast Radio Romania Int.
+  { 11730.00,  700,  800, 0x00080,  754, "TUR", "AZ",  "Cau" },  //  -bcast Voice of Turkey
   { 11735.00,  300,  400, 0x00080,   58, "KRE", "S",   "LAm" },  //  -bcast Voice of Korea
   { 11735.00,  400,  500, 0x00080,   58, "KRE", "E",   "LAm" },  //  -bcast Voice of Korea
   { 11735.00,  500,  600, 0x00080,   58, "KRE", "S",   "LAm" },  //  -bcast Voice of Korea
@@ -11474,7 +11476,7 @@ dx_t eibi_db[] = {
   { 11740.00,  500,  600, 0x00080,   52, "CHN", "M",   "FE"  },  //  -bcast China Radio Int.
   { 11740.00, 1100, 1605, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   { 11740.00, 2055,  100, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
-  { 11740.00, 1000, 1030, 0x00080,  753, "TUR", "TT",  "EEu" },  //  -bcast Voice of Turkey
+  { 11740.00, 1000, 1030, 0x00080,  754, "TUR", "TT",  "EEu" },  //  -bcast Voice of Turkey
   { 11745.00,    0, 2400, 0x00080,   38, "ARS", "A",   "YEM" },  //  -bcast SBA Al-Azm Radio
   { 11745.00,  300,  700, 0x00080,   38, "ARS", "A",   "YEM" },  //  -bcast SBA Al-Azm Radio
   { 11745.00,  900, 2200, 0x00080,   38, "ARS", "A",   "YEM" },  //  -bcast SBA Al-Azm Radio
@@ -11493,13 +11495,13 @@ dx_t eibi_db[] = {
   { 11750.00, 1730, 1835, 0x00080, 1066, "CLN", "SI",  "ME"  },  //  -bcast SLBC City FM
   { 11750.00, 1330, 1400, 0x00080,   31, "GBR", "BE",  "SAs" },  //  -bcast BBC
   { 11750.50, 1400, 1430, 0x00080,   72, "PHL", "LAH", "SEA" },  //  -bcast FEBC Manila
-  { 11750.00,  600,  900, 0x00080,  753, "TUR", "TU",  "IRN" },  //  -bcast Voice of Turkey
-  { 11750.00,  900, 1000, 0x00080,  753, "TUR", "A",   "ME"  },  //  -bcast Voice of Turkey
+  { 11750.00,  600,  900, 0x00080,  754, "TUR", "TU",  "IRN" },  //  -bcast Voice of Turkey
+  { 11750.00,  900, 1000, 0x00080,  754, "TUR", "A",   "ME"  },  //  -bcast Voice of Turkey
   { 11750.00, 2100, 2200, 0x00080,  137, "USA", "M",   "FE"  },  //  -bcast Adventist World Radio
   { 11750.00, 1500, 1530, 0x00080,   51, "USA", "HA",  "WAf" },  //  -bcast Voice of America
   { 11750.00, 1530, 1600, 0x0f880,   51, "USA", "HA",  "WAf" },  //  -bcast Voice of America
-  { 11750.00, 2000, 2200, 0x00080,  746, "USA", "E",   "Eu"  },  //  -bcast World Harvest Radio
-  { 11750.00, 2200, 2400, 0x00080,  746, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
+  { 11750.00, 2000, 2200, 0x00080,  747, "USA", "E",   "Eu"  },  //  -bcast World Harvest Radio
+  { 11750.00, 2200, 2400, 0x00080,  747, "USA", "E",   "ENA" },  //  -bcast World Harvest Radio
   { 11755.00, 1600, 1630, 0x00080,  137, "USA", "UR",  "NIn" },  //  -bcast Adventist World Radio
   { 11760.00,    0,  600, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   { 11760.00,  600,  850, 0x0be80,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
@@ -11523,16 +11525,16 @@ dx_t eibi_db[] = {
   { 11760.00, 1030, 1100, 0x00080,   51, "USA", "SO",  "EAf" },  //  -bcast Voice of America
   { 11760.00, 1700, 1800, 0x00080,   51, "USA", "KU",  "ME"  },  //  -bcast Voice of America
   { 11765.00, 1400, 1500, 0x00080,   52, "CHN", "E",   "PAK" },  //  -bcast China Radio Int.
-  { 11765.00, 1500, 1630, 0x00080,  753, "TUR", "AFG", "AFG" },  //  -bcast Voice of Turkey
-  { 11765.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11765.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11765.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11765.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11765.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11765.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11765.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11765.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11765.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11765.00, 1500, 1630, 0x00080,  754, "TUR", "AFG", "AFG" },  //  -bcast Voice of Turkey
+  { 11765.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11765.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11765.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11765.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11765.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11765.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11765.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11765.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11765.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 11770.00,    0,  100, 0x00080,   52, "CHN", "VN",  "SEA" },  //  -bcast China Radio Int.
   { 11770.00,  100,  200, 0x00080,   52, "CHN", "E",   "SAs" },  //  -bcast China Radio Int.
   { 11770.00,  100,  200, 0x00080,   52, "CHN", "M",   "SEA" },  //  -bcast China Radio Int.
@@ -11559,24 +11561,24 @@ dx_t eibi_db[] = {
   { 11775.00, 1800, 2000, 0x00080,   53, "CHN", "D",   "WEu" },  //  -bcast CRI Music
   { 11775.00, 2130, 1700, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 11775.00, 1515, 1545, 0x00080,   93, "JPN", "UR",  "SAs" },  //  -bcast NHK Radio Japan
-  { 11775.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11775.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11775.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11775.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11775.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11775.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11775.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11775.00, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11775.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11775.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11775.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11780.00, 1000, 1400, 0x00080,  808, "BRA", "P",   "B"   },  //  -bcast Rádio Nacional Amazônia
-  { 11780.00, 1400, 1900, 0x00080,  808, "BRA", "P",   "B"   },  //  -bcast Rádio Nacional Amazônia
-  { 11780.00, 1900,  305, 0x00080,  808, "BRA", "P",   "B"   },  //  -bcast Rádio Nacional Amazônia
+  { 11775.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11775.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11775.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11775.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11775.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11775.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11775.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11775.00, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11775.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11775.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11775.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11780.00, 1000, 1400, 0x00080,  809, "BRA", "P",   "B"   },  //  -bcast Rádio Nacional Amazônia
+  { 11780.00, 1400, 1900, 0x00080,  809, "BRA", "P",   "B"   },  //  -bcast Rádio Nacional Amazônia
+  { 11780.00, 1900,  305, 0x00080,  809, "BRA", "P",   "B"   },  //  -bcast Rádio Nacional Amazônia
   { 11780.00,    0,  100, 0x00080,   52, "CHN", "M",   "FE"  },  //  -bcast China Radio Int.
   { 11780.00, 1300, 1400, 0x00080,   52, "CHN", "BR",  "SEA" },  //  -bcast China Radio Int.
   { 11780.00, 1400, 1500, 0x00080,   52, "CHN", "BR",  "SEA" },  //  -bcast China Radio Int.
-  { 11780.00,  200,  300, 0x00080,  740, "ROU", "S",   "CAm" },  //  -bcast Radio Romania Int.
+  { 11780.00,  200,  300, 0x00080,  741, "ROU", "S",   "CAm" },  //  -bcast Radio Romania Int.
   { 11780.00, 1500, 1530, 0x00080,   56, "SWZ", "SO",  "EAf" },  //  -bcast Trans World Radio
   { 11780.00, 1530, 1545, 0x00080,   56, "SWZ", "SO",  "EAf" },  //  -bcast Trans World Radio
   { 11780.00,  630,  640, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
@@ -11592,8 +11594,8 @@ dx_t eibi_db[] = {
   { 11790.00, 1800, 1830, 0x00080,   31, "GBR", "F",   "CAf" },  //  -bcast BBC
   { 11790.00,  200,  300, 0x00080,   93, "JPN", "J",   "FE"  },  //  -bcast NHK Radio Japan
   { 11790.00,  530,  600, 0x00080,   93, "JPN", "R",   "FE"  },  //  -bcast NHK Radio Japan
-  { 11790.00,  630,  700, 0x00080,  740, "ROU", "A",   "ME"  },  //  -bcast Radio Romania Int.
-  { 11790.00,  700,  800, 0x00080,  740, "ROU", "RO",  "ME"  },  //  -bcast Radio Romania Int.
+  { 11790.00,  630,  700, 0x00080,  741, "ROU", "A",   "ME"  },  //  -bcast Radio Romania Int.
+  { 11790.00,  700,  800, 0x00080,  741, "ROU", "RO",  "ME"  },  //  -bcast Radio Romania Int.
   { 11790.00, 1700, 1728, 0x00080,  137, "USA", "SWA", "EAf" },  //  -bcast Adventist World Radio
   { 11790.00, 2030, 2100, 0x00080,  137, "USA", "YO",  "NIG" },  //  -bcast Adventist World Radio
   { 11790.00,  100,  200, 0x00080,  117, "USA", "UI",  "FE"  },  //  -bcast Radio Free Asia
@@ -11601,7 +11603,7 @@ dx_t eibi_db[] = {
   { 11790.00, 1600, 1700, 0x00080,   86, "USA", "UZ",  "CAs" },  //  -bcast Radio Liberty
   { 11795.00, 1100, 1200, 0x00080,   52, "CHN", "E",   "SAs" },  //  -bcast China Radio Int.
   { 11795.00, 1100, 1200, 0x00080,  116, "KOR", "S",   "SAm" },  //  -bcast KBS World Radio
-  { 11795.00,  830, 1000, 0x00080,  753, "TUR", "FS",  "IRN" },  //  -bcast Voice of Turkey
+  { 11795.00,  830, 1000, 0x00080,  754, "TUR", "FS",  "IRN" },  //  -bcast Voice of Turkey
   { 11800.00,   30,  600, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   { 11800.00,  600,  855, 0x0de80,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   { 11800.00,  855, 1030, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
@@ -11617,7 +11619,7 @@ dx_t eibi_db[] = {
   { 11800.00, 1730, 1800, 0x00080,  484, "FRA", "F",   "SAs" },  //  -bcast Radio France DIGITAL
   { 11800.00, 1600, 1630, 0x00080,  137, "USA", "UR",  "PAK" },  //  -bcast Adventist World Radio
   { 11800.00, 1900, 2000, 0x00080,  137, "USA", "A",   "NAf" },  //  -bcast Adventist World Radio
-  { 11800.00, 1430, 1445, 0x00080,  804, "USA", "E",   "SAs" },  //  -bcast PanAmerican Broadc.
+  { 11800.00, 1430, 1445, 0x00080,  805, "USA", "E",   "SAs" },  //  -bcast PanAmerican Broadc.
   { 11805.00, 1300, 1400, 0x00080,   31, "GBR", "E",   "SAs" },  //  -bcast BBC
   { 11805.00, 1545, 1600, 0x00080,   56, "IND", "KZ",  "CAs" },  //  -bcast Trans World Radio
   { 11805.00, 1430, 1500, 0x03e80,  911, "IND", "HI",  "SAs" },  //  -bcast FEBA Radio
@@ -11637,7 +11639,7 @@ dx_t eibi_db[] = {
   { 11810.00,  200,  300, 0x00080,  116, "KOR", "J",   "J"   },  //  -bcast KBS World Radio
   { 11810.00,  300,  400, 0x00080,  116, "KOR", "K",   "SAm" },  //  -bcast KBS World Radio
   { 11810.00, 2200, 2300, 0x00080,  116, "KOR", "E",   "Eu"  },  //  -bcast KBS World Radio
-  { 11810.00, 1500, 1530, 0x00080,  740, "ROU", "R",   "EEu" },  //  -bcast Radio Romania Int.
+  { 11810.00, 1500, 1530, 0x00080,  741, "ROU", "R",   "EEu" },  //  -bcast Radio Romania Int.
   { 11815.00,    0, 2400, 0x00080,  650, "BRA", "P",   "B"   },  //  -bcast Rádio Brasil Central
   { 11815.00, 1400, 1500, 0x00080,   52, "CHN", "E",   "CAs" },  //  -bcast China Radio Int.
   { 11815.00,  605,  700, 0x00080,  492, "CVA", "UK",  "Cau" },  //  -bcast Radio Vaticana
@@ -11653,7 +11655,7 @@ dx_t eibi_db[] = {
   { 11820.00,  200,  300, 0x05080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 11820.00,  100,  200, 0x00080,  137, "USA", "VN",  "VTN" },  //  -bcast Adventist World Radio
   { 11820.00,  200,  300, 0x05080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
-  { 11825.00, 1500, 1530, 0x00080,  802, "AUS", "BR",  "MYA" },  //  -bcast Reach Beyond Australia
+  { 11825.00, 1500, 1530, 0x00080,  803, "AUS", "BR",  "MYA" },  //  -bcast Reach Beyond Australia
   { 11825.00, 1700, 1800, 0x00080,   52, "CHN", "HR",  "SEu" },  //  -bcast China Radio Int.
   { 11825.00, 1700, 1800, 0x00080,   53, "CHN", "HR",  "SEu" },  //  -bcast CRI Music
   { 11825.00,  900, 1200, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
@@ -11662,15 +11664,15 @@ dx_t eibi_db[] = {
   { 11825.00,  400,  430, 0x00080,   93, "JPN", "M",   "FE"  },  //  -bcast NHK Radio Japan
   { 11825.00,  700,  800, 0x00080,   93, "JPN", "J",   "FE"  },  //  -bcast NHK Radio Japan
   { 11825.00,  400,  500, 0x00080, 1069, "MDG", "E",   "CAf" },  //  -bcast MWV African Pathways R.
-  { 11825.00,  300,  400, 0x00080,  740, "ROU", "E",   "SAs" },  //  -bcast Radio Romania Int.
-  { 11825.00, 1330, 1400, 0x00080,  753, "TUR", "KZ",  "CAs" },  //  -bcast Voice of Turkey
+  { 11825.00,  300,  400, 0x00080,  741, "ROU", "E",   "SAs" },  //  -bcast Radio Romania Int.
+  { 11825.00, 1330, 1400, 0x00080,  754, "TUR", "KZ",  "CAs" },  //  -bcast Voice of Turkey
   { 11825.00,  900, 1200, 0x00080,   51, "USA", "M",   "FE"  },  //  -bcast Voice of America
   { 11825.00, 1200, 1300, 0x00080,   51, "USA", "M",   "FE"  },  //  -bcast Voice of America
   { 11830.00, 1400, 1430, 0x00080,   93, "JPN", "E",   "SEA" },  //  -bcast NHK Radio Japan
   { 11830.00, 1800, 1830, 0x00080, 1070, "NIG", "KNU", "NIG" },  //  -bcast Dandal Kura
-  { 11830.00, 1530, 1600, 0x00080,  740, "ROU", "A",   "NAf" },  //  -bcast Radio Romania Int.
+  { 11830.00, 1530, 1600, 0x00080,  741, "ROU", "A",   "NAf" },  //  -bcast Radio Romania Int.
   { 11830.00,  840,  850, 0x03132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
-  { 11830.00, 1600, 1700, 0x00080,  804, "USA", "E",   "ME"  },  //  -bcast PanAmerican Broadc.
+  { 11830.00, 1600, 1700, 0x00080,  805, "USA", "E",   "ME"  },  //  -bcast PanAmerican Broadc.
   { 11835.00,    0,  600, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   { 11835.00,  600,  855, 0x0de80,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   { 11835.00,  855, 1100, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
@@ -11711,16 +11713,16 @@ dx_t eibi_db[] = {
   { 11850.00,  630,  700, 0x00080,  881, "GER", "HA",  "WAf" },  //  -bcast Deutsche Welle
   { 11850.00, 1300, 1400, 0x00080,  881, "GER", "HA",  "WAf" },  //  -bcast Deutsche Welle
   { 11850.00, 1800, 1900, 0x00080,  881, "GER", "HA",  "WAf" },  //  -bcast Deutsche Welle
-  { 11850.00, 1700, 1800, 0x00080,  740, "ROU", "E",   "WEu" },  //  -bcast Radio Romania Int.
-  { 11850.00, 1900, 2000, 0x00080,  740, "ROU", "S",   "E"   },  //  -bcast Radio Romania Int.
-  { 11850.00, 2030, 2100, 0x00080,  740, "ROU", "E",   "ENA" },  //  -bcast Radio Romania Int.
+  { 11850.00, 1700, 1800, 0x00080,  741, "ROU", "E",   "WEu" },  //  -bcast Radio Romania Int.
+  { 11850.00, 1900, 2000, 0x00080,  741, "ROU", "S",   "E"   },  //  -bcast Radio Romania Int.
+  { 11850.00, 2030, 2100, 0x00080,  741, "ROU", "E",   "ENA" },  //  -bcast Radio Romania Int.
   { 11850.00, 1400, 1600, 0x00080,   86, "USA", "TJ",  "CAs" },  //  -bcast Radio Liberty
   { 11850.00, 1600, 1700, 0x00080,   86, "USA", "TJ",  "CAs" },  //  -bcast Radio Liberty
   { 11855.00, 1100, 1200, 0x00080,  137, "USA", "M",   "FE"  },  //  -bcast Adventist World Radio
   { 11860.00,  130,  230, 0x00080,   52, "CHN", "NE",  "FE"  },  //  -bcast China Radio Int.
   { 11860.00,  300,  600, 0x00080,  127, "CHN", "M",   "CHN" },  //  -bcast PBS Xizang
   { 11860.00,  600,  900, 0x0be80,  127, "CHN", "M",   "CHN" },  //  -bcast PBS Xizang
-  { 11860.00, 1400, 2200, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  { 11860.00, 1400, 2200, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
   { 11860.00,    0, 2400, 0x00080, 1071, "YEM", "A",   "YEM" },  //  -bcast Rep.Yemen Radio Sana'a
   { 11860.00,  200, 2200, 0x00080, 1071, "YEM", "A",   "YEM" },  //  -bcast Rep.Yemen Radio Sana'a
   { 11865.00,  700,  900, 0x00080,   58, "KRE", "J",   "J"   },  //  -bcast Voice of Korea
@@ -11734,8 +11736,8 @@ dx_t eibi_db[] = {
   { 11870.00, 1830, 1900, 0x0f880,   51, "USA", "KNK", "EAf" },  //  -bcast Voice of America
   { 11870.00, 1930, 2000, 0x0f880,   51, "USA", "KNK", "EAf" },  //  -bcast Voice of America
   { 11875.00,  800, 1000, 0x00080,  897, "ALS", "M",   "FE"  },  //  -bcast KNLS New Life Station
-  { 11875.00, 1200, 1230, 0x0d880,  802, "AUS", "BR",  "MYA" },  //  -bcast Reach Beyond Australia
-  { 11875.00, 1200, 1230, 0x02680,  802, "AUS", "NLA", "MYA" },  //  -bcast Reach Beyond Australia
+  { 11875.00, 1200, 1230, 0x0d880,  803, "AUS", "BR",  "MYA" },  //  -bcast Reach Beyond Australia
+  { 11875.00, 1200, 1230, 0x02680,  803, "AUS", "NLA", "MYA" },  //  -bcast Reach Beyond Australia
   { 11875.00,    0,  100, 0x00080,   52, "CHN", "MO",  "MNG" },  //  -bcast China Radio Int.
   { 11875.00,  700,  800, 0x00080,   52, "CHN", "M",   "SEA" },  //  -bcast China Radio Int.
   { 11875.00, 1000, 1100, 0x00080,   52, "CHN", "CA",  "Oc"  },  //  -bcast China Radio Int.
@@ -11744,8 +11746,8 @@ dx_t eibi_db[] = {
   { 11875.00, 1100, 1200, 0x00080,   53, "CHN", "AM",  "SEA" },  //  -bcast CRI Music
   { 11875.00, 1600, 1700, 0x00080,   52, "CHN", "R",   "EEu" },  //  -bcast China Radio Int.
   { 11875.00, 1700, 1800, 0x00080,   52, "CHN", "R",   "EEu" },  //  -bcast China Radio Int.
-  { 11875.00, 1330, 1400, 0x00080,  726, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
-  { 11875.00, 1300, 1330, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
+  { 11875.00, 1330, 1400, 0x00080,  727, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
+  { 11875.00, 1300, 1330, 0x00080,  728, "CLA", "K",   "KRE" },  //  -bcast Nippon no Kaze
   { 11875.00, 1530, 1600, 0x00080,  137, "USA", "KAN", "SIn" },  //  -bcast Adventist World Radio
   { 11875.00, 2200, 2300, 0x00080,  137, "USA", "M",   "FE"  },  //  -bcast Adventist World Radio
   { 11880.00, 1500, 1600, 0x00080,   52, "CHN", "E",   "WNA" },  //  -bcast China Radio Int.
@@ -11756,7 +11758,7 @@ dx_t eibi_db[] = {
   { 11880.00, 2300, 2400, 0x00080,  664, "CUB", "E",   "Af"  },  //  -bcast Radio Habana Cuba
   { 11880.00, 2300, 2400, 0x00080,  664, "CUB", "CR",  "Af"  },  //  -bcast Radio Habana Cuba
   { 11880.00,  100,  200, 0x00080,  116, "KOR", "S",   "SAm" },  //  -bcast KBS World Radio
-  { 11880.00, 1400, 1500, 0x00080,  740, "ROU", "D",   "WEu" },  //  -bcast Radio Romania Int.
+  { 11880.00, 1400, 1500, 0x00080,  741, "ROU", "D",   "WEu" },  //  -bcast Radio Romania Int.
   { 11880.00,  600,  700, 0x00080,  137, "USA", "A",   "LBY" },  //  -bcast Adventist World Radio
   { 11880.00,  700,  730, 0x00080,  137, "USA", "F",   "WAf" },  //  -bcast Adventist World Radio
   { 11880.00, 1900, 2000, 0x00080,  137, "USA", "A",   "ME"  },  //  -bcast Adventist World Radio
@@ -11784,9 +11786,9 @@ dx_t eibi_db[] = {
   { 11885.00, 2100, 2130, 0x00080,  121, "VTN", "S",   "Eu"  },  //  -bcast Voice of Vietnam
   { 11885.00, 2130, 2200, 0x00080,  121, "VTN", "E",   "Eu"  },  //  -bcast Voice of Vietnam
   { 11890.00, 1600, 1700, 0x05680,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  { 11890.00, 1200, 1340, 0x00080,  727, "CLA", "J",   "KRE" },  //  -bcast Nippon no Kaze
+  { 11890.00, 1200, 1340, 0x00080,  728, "CLA", "J",   "KRE" },  //  -bcast Nippon no Kaze
   { 11890.00, 1600, 1700, 0x05680,   51, "USA", "TB",  "FE"  },  //  -bcast Voice of America
-  { 11895.20, 1000, 2300, 0x00080,  806, "BRA", "P",   "B"   },  //  -bcast R.Boa Vontade, P.Alegre
+  { 11895.20, 1000, 2300, 0x00080,  807, "BRA", "P",   "B"   },  //  -bcast R.Boa Vontade, P.Alegre
   { 11895.00,  500,  600, 0x00080,   52, "CHN", "E",   "SAs" },  //  -bcast China Radio Int.
   { 11895.00,  600,  700, 0x00080,   52, "CHN", "E",   "SAs" },  //  -bcast China Radio Int.
   { 11895.00,  700,  900, 0x00080,   52, "CHN", "E",   "SAs" },  //  -bcast China Radio Int.
@@ -11804,40 +11806,40 @@ dx_t eibi_db[] = {
   { 11895.00,  400,  500, 0x00080,  117, "USA", "M",   "FE"  },  //  -bcast Radio Free Asia
   { 11895.00,  500,  600, 0x00080,  117, "USA", "M",   "FE"  },  //  -bcast Radio Free Asia
   { 11895.00,  600,  700, 0x00080,  117, "USA", "M",   "FE"  },  //  -bcast Radio Free Asia
-  { 11900.00, 1200, 1215, 0x0f880,  802, "AUS", "KOR", "SIn" },  //  -bcast Reach Beyond Australia
-  { 11900.00, 1200, 1230, 0x00080,  802, "AUS", "E",   "SIn" },  //  -bcast Reach Beyond Australia
-  { 11900.00, 1200, 1230, 0x00080,  802, "AUS", "TAM", "SIn" },  //  -bcast Reach Beyond Australia
-  { 11900.00, 1215, 1230, 0x0f880,  802, "AUS", "HI",  "SIn" },  //  -bcast Reach Beyond Australia
-  { 11900.00, 1230, 1245, 0x0f680,  802, "AUS", "HI",  "SIn" },  //  -bcast Reach Beyond Australia
-  { 11900.00, 1230, 1245, 0x00080,  802, "AUS", "PJ",  "SIn" },  //  -bcast Reach Beyond Australia
-  { 11900.00, 1245, 1300, 0x00080,  802, "AUS", "BE",  "SIn" },  //  -bcast Reach Beyond Australia
-  { 11900.00, 1245, 1300, 0x00080,  802, "AUS", "GU",  "SIn" },  //  -bcast Reach Beyond Australia
-  { 11900.00, 1245, 1300, 0x00080,  802, "AUS", "HI",  "SIn" },  //  -bcast Reach Beyond Australia
-  { 11900.00, 1245, 1300, 0x00080,  802, "AUS", "KUR", "SIn" },  //  -bcast Reach Beyond Australia
-  { 11900.00, 1245, 1300, 0x00080,  802, "AUS", "MW",  "SIn" },  //  -bcast Reach Beyond Australia
-  { 11900.00, 1245, 1300, 0x00080,  802, "AUS", "TEL", "SIn" },  //  -bcast Reach Beyond Australia
-  { 11900.00, 1245, 1300, 0x00080,  802, "AUS", "UR",  "SIn" },  //  -bcast Reach Beyond Australia
-  { 11900.00, 1300, 1315, 0x0fa80,  802, "AUS", "TAM", "SIn" },  //  -bcast Reach Beyond Australia
-  { 11900.00, 1300, 1315, 0x00080,  802, "AUS", "TEL", "SIn" },  //  -bcast Reach Beyond Australia
-  { 11900.00, 1315, 1330, 0x0a880,  802, "AUS", "E",   "SIn" },  //  -bcast Reach Beyond Australia
-  { 11900.00, 1315, 1330, 0x00080,  802, "AUS", "MAL", "SIn" },  //  -bcast Reach Beyond Australia
-  { 11900.00, 1315, 1330, 0x00080,  802, "AUS", "NE",  "SIn" },  //  -bcast Reach Beyond Australia
-  { 11900.00, 1315, 1330, 0x04480,  802, "AUS", "TAM", "SIn" },  //  -bcast Reach Beyond Australia
-  { 11900.00, 1330, 1400, 0x00080,  802, "AUS", "E",   "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1200, 1215, 0x0f880,  803, "AUS", "KOR", "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1200, 1230, 0x00080,  803, "AUS", "E",   "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1200, 1230, 0x00080,  803, "AUS", "TAM", "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1215, 1230, 0x0f880,  803, "AUS", "HI",  "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1230, 1245, 0x0f680,  803, "AUS", "HI",  "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1230, 1245, 0x00080,  803, "AUS", "PJ",  "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1245, 1300, 0x00080,  803, "AUS", "BE",  "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1245, 1300, 0x00080,  803, "AUS", "GU",  "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1245, 1300, 0x00080,  803, "AUS", "HI",  "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1245, 1300, 0x00080,  803, "AUS", "KUR", "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1245, 1300, 0x00080,  803, "AUS", "MW",  "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1245, 1300, 0x00080,  803, "AUS", "TEL", "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1245, 1300, 0x00080,  803, "AUS", "UR",  "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1300, 1315, 0x0fa80,  803, "AUS", "TAM", "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1300, 1315, 0x00080,  803, "AUS", "TEL", "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1315, 1330, 0x0a880,  803, "AUS", "E",   "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1315, 1330, 0x00080,  803, "AUS", "MAL", "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1315, 1330, 0x00080,  803, "AUS", "NE",  "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1315, 1330, 0x04480,  803, "AUS", "TAM", "SIn" },  //  -bcast Reach Beyond Australia
+  { 11900.00, 1330, 1400, 0x00080,  803, "AUS", "E",   "SIn" },  //  -bcast Reach Beyond Australia
   { 11900.00,    0,  100, 0x00080,   52, "CHN", "M",   "FE"  },  //  -bcast China Radio Int.
   { 11900.00, 1600, 1700, 0x00080,   52, "CHN", "E",   "EAf" },  //  -bcast China Radio Int.
   { 11900.00, 2300, 2400, 0x00080,   52, "CHN", "M",   "FE"  },  //  -bcast China Radio Int.
   { 11900.00, 1400, 1500, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 11900.00, 2315, 2350, 0x00080,  492, "CVA", "VN",  "SEA" },  //  -bcast Radio Vaticana
   { 11900.00,    0, 2400, 0x200b2,  873, "MEX", "",    "MEX" },  //    -ale Mexican Military ALE
-  { 11900.00, 1530, 1600, 0x00080,  740, "ROU", "A",   "ME"  },  //  -bcast Radio Romania Int.
+  { 11900.00, 1530, 1600, 0x00080,  741, "ROU", "A",   "ME"  },  //  -bcast Radio Romania Int.
   { 11900.00, 1400, 1500, 0x00080,   51, "USA", "M",   "FE"  },  //  -bcast Voice of America
   { 11900.00, 2000, 2030, 0x00080,   51, "USA", "F",   "Af"  },  //  -bcast Voice of America
   { 11900.00, 2030, 2100, 0x00080,   51, "USA", "F",   "Af"  },  //  -bcast Voice of America
   { 11900.00, 2100, 2130, 0x0f880,   51, "USA", "F",   "Af"  },  //  -bcast Voice of America
   { 11900.00, 2130, 2200, 0x0f880,   51, "USA", "BM",  "WAf" },  //  -bcast Voice of America
-  { 11905.00, 1125, 1140, 0x00080,  802, "AUS", "ROH", "MYA" },  //  -bcast Reach Beyond Australia
-  { 11905.00, 1140, 1155, 0x00080,  802, "AUS", "BR",  "MYA" },  //  -bcast Reach Beyond Australia
+  { 11905.00, 1125, 1140, 0x00080,  803, "AUS", "ROH", "MYA" },  //  -bcast Reach Beyond Australia
+  { 11905.00, 1140, 1155, 0x00080,  803, "AUS", "BR",  "MYA" },  //  -bcast Reach Beyond Australia
   { 11905.00,  100,  500, 0x00080,   68, "CHN", "AM",  "TWN" },  //  -bcast China National Radio 6
   { 11905.00,  500,  600, 0x00080,   68, "CHN", "HK",  "TWN" },  //  -bcast China National Radio 6
   { 11905.00,  600,  900, 0x0de80,   68, "CHN", "HK",  "TWN" },  //  -bcast China National Radio 6
@@ -11878,9 +11880,9 @@ dx_t eibi_db[] = {
   { 11925.00,  130,  200, 0x0fa80,  137, "USA", "CA",  "FE"  },  //  -bcast Adventist World Radio
   { 11925.00,  200,  300, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
   { 11930.00,  600,  629, 0x00080,   31, "GBR", "F",   "NAf" },  //  -bcast BBC
-  { 11930.00, 1630, 1730, 0x00080,  753, "TUR", "S",   "SEu" },  //  -bcast Voice of Turkey
-  { 11930.00, 1400, 2000, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
-  { 11930.00, 2000, 2400, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  { 11930.00, 1630, 1730, 0x00080,  754, "TUR", "S",   "SEu" },  //  -bcast Voice of Turkey
+  { 11930.00, 1400, 2000, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  { 11930.00, 2000, 2400, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
   { 11935.00,  900, 1200, 0x00080, 1068, "ARS", "A",   "ME"  },  //  -bcast SBA Holy Quran Radio
   { 11935.00, 1000, 1100, 0x00080,   52, "CHN", "R",   "FE"  },  //  -bcast China Radio Int.
   { 11935.00, 1100, 1200, 0x00080,   52, "CHN", "R",   "FE"  },  //  -bcast China Radio Int.
@@ -11899,9 +11901,9 @@ dx_t eibi_db[] = {
   { 11940.00, 2200, 2230, 0x00080, 1065, "SPN", "SEF", "SAm" },  //  -bcast Radio Exterior España
   { 11940.00, 2230, 2300, 0x0a880, 1065, "SPN", "F",   "SAm" },  //  -bcast Radio Exterior España
   { 11940.00, 2300, 2330, 0x0f880, 1065, "SPN", "P",   "SAm" },  //  -bcast Radio Exterior España
-  { 11940.00, 1300, 1400, 0x00080,  740, "ROU", "R",   "FE"  },  //  -bcast Radio Romania Int.
+  { 11940.00, 1300, 1400, 0x00080,  741, "ROU", "R",   "FE"  },  //  -bcast Radio Romania Int.
   { 11940.00, 1430, 1500, 0x00080,  137, "USA", "BR",  "MYA" },  //  -bcast Adventist World Radio
-  { 11945.00,  200,  230, 0x01280,  777, "CAN", "E",   "SAs" },  //  -bcast Bible Voice
+  { 11945.00,  200,  230, 0x01280,  778, "CAN", "E",   "SAs" },  //  -bcast Bible Voice
   { 11945.00,  100,  200, 0x00080,   52, "CHN", "AM",  "SEA" },  //  -bcast China Radio Int.
   { 11945.00, 2300, 2400, 0x00080,   52, "CHN", "CA",  "SEA" },  //  -bcast China Radio Int.
   { 11945.00,  100,  200, 0x00080,   53, "CHN", "AM",  "SEA" },  //  -bcast CRI Music
@@ -11911,7 +11913,7 @@ dx_t eibi_db[] = {
   { 11945.00,  600,  830, 0x00080,   44, "IRN", "A",   "ME"  },  //  -bcast IRIB Voice of I.R.Iran
   { 11945.00,  930, 1130, 0x00080,   44, "IRN", "A",   "ME"  },  //  -bcast IRIB Voice of I.R.Iran
   { 11945.00, 1700, 1900, 0x00080,   93, "JPN", "J",   "SAf" },  //  -bcast NHK Radio Japan
-  { 11945.00,  200,  300, 0x00080,  740, "ROU", "S",   "SAm" },  //  -bcast Radio Romania Int.
+  { 11945.00,  200,  300, 0x00080,  741, "ROU", "S",   "SAm" },  //  -bcast Radio Romania Int.
   { 11945.00,  800,  810, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 11945.00, 2100, 2200, 0x00080,  117, "USA", "K",   "FE"  },  //  -bcast Radio Free Asia
   { 11945.00,  200,  230, 0x00080,  648, "XUU", "",    "SAs" },  //  -bcast Unknown Station
@@ -11919,7 +11921,7 @@ dx_t eibi_db[] = {
   { 11950.00,  600,  900, 0x0be80,  127, "CHN", "M",   "CHN" },  //  -bcast PBS Xizang
   { 11950.00,    0,  100, 0x07880,  664, "CUB", "S",   "CNA" },  //  -bcast Radio Habana Cuba
   { 11950.00, 2300, 2400, 0x0f080,  664, "CUB", "S",   "CNA" },  //  -bcast Radio Habana Cuba
-  { 11950.00, 1300, 1500, 0x00080,  740, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
+  { 11950.00, 1300, 1500, 0x00080,  741, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
   { 11955.00, 1130, 1200, 0x00080,   52, "CHN", "TAG", "PHL" },  //  -bcast China Radio Int.
   { 11955.00, 1200, 1230, 0x00080,   52, "CHN", "TAG", "PHL" },  //  -bcast China Radio Int.
   { 11955.00, 1130, 1200, 0x00080,   53, "CHN", "TAG", "PHL" },  //  -bcast CRI Music
@@ -11927,7 +11929,7 @@ dx_t eibi_db[] = {
   { 11955.00, 1230, 1330, 0x00080,   52, "CHN", "ML",  "INS" },  //  -bcast China Radio Int.
   { 11955.00, 1330, 1430, 0x00080,   52, "CHN", "IN",  "INS" },  //  -bcast China Radio Int.
   { 11955.00, 2300, 2400, 0x00080,   52, "CHN", "E",   "PHL" },  //  -bcast China Radio Int.
-  { 11955.00,  600, 1200, 0x00080,  753, "TUR", "TU",  "ME"  },  //  -bcast Voice of Turkey
+  { 11955.00,  600, 1200, 0x00080,  754, "TUR", "TU",  "ME"  },  //  -bcast Voice of Turkey
   { 11955.00, 1500, 1530, 0x00080,  137, "USA", "TU",  "TUR" },  //  -bcast Adventist World Radio
   { 11955.00, 1630, 1700, 0x00080,  137, "USA", "FS",  "IRN" },  //  -bcast Adventist World Radio
   { 11955.00, 1800, 1858, 0x00080,  137, "USA", "A",   "LBY" },  //  -bcast Adventist World Radio
@@ -11954,7 +11956,7 @@ dx_t eibi_db[] = {
   { 11965.00, 1100, 1130, 0x00080,  905, "GUM", "E",   "SEA" },  //  -bcast KTWR Trans World Radio
   { 11965.00, 1100, 1140, 0x0f880,  905, "GUM", "E",   "SEA" },  //  -bcast KTWR Trans World Radio
   { 11965.00, 2000, 2100, 0x00080, 1069, "MDG", "E",   "CAf" },  //  -bcast MWV African Pathways R.
-  { 11965.00, 1300, 1400, 0x00080,  753, "TUR", "R",   "EEu" },  //  -bcast Voice of Turkey
+  { 11965.00, 1300, 1400, 0x00080,  754, "TUR", "R",   "EEu" },  //  -bcast Voice of Turkey
   { 11965.00, 1400, 1430, 0x00080,  137, "USA", "C-A", "MYA" },  //  -bcast Adventist World Radio
   { 11965.00, 1200, 1230, 0x00080,   51, "USA", "BR",  "SEA" },  //  -bcast Voice of America
   { 11970.00,  100,  200, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
@@ -11968,21 +11970,21 @@ dx_t eibi_db[] = {
   { 11975.00,  310,  530, 0x00080,  480, "CHN", "KG",  "CHN" },  //  -bcast PBS Xinjiang
   { 11975.00, 1010, 1230, 0x00080,  480, "CHN", "KG",  "CHN" },  //  -bcast PBS Xinjiang
   { 11975.00,  600,  630, 0x00080,   93, "JPN", "A",   "ME"  },  //  -bcast NHK Radio Japan
-  { 11975.00, 1600, 1700, 0x00080,  740, "ROU", "F",   "WEu" },  //  -bcast Radio Romania Int.
-  { 11975.00, 1700, 1800, 0x00080,  740, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
-  { 11975.00, 1800, 1900, 0x00080,  740, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
-  { 11975.00, 1900, 2000, 0x00080,  740, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
-  { 11975.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11975.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11975.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11975.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11975.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11975.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11975.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11975.00, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11975.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11975.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11975.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11975.00, 1600, 1700, 0x00080,  741, "ROU", "F",   "WEu" },  //  -bcast Radio Romania Int.
+  { 11975.00, 1700, 1800, 0x00080,  741, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
+  { 11975.00, 1800, 1900, 0x00080,  741, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
+  { 11975.00, 1900, 2000, 0x00080,  741, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
+  { 11975.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11975.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11975.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11975.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11975.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11975.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11975.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11975.00, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11975.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11975.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11975.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 11980.00,    0,  100, 0x00080,   52, "CHN", "S",   "Car" },  //  -bcast China Radio Int.
   { 11980.00,  100,  200, 0x00080,   52, "CHN", "AM",  "INS" },  //  -bcast China Radio Int.
   { 11980.00,  100,  200, 0x00080,   53, "CHN", "AM",  "INS" },  //  -bcast CRI Music
@@ -11991,18 +11993,18 @@ dx_t eibi_db[] = {
   { 11980.00, 1300, 1400, 0x00080,   52, "CHN", "E",   "SEA" },  //  -bcast China Radio Int.
   { 11980.00, 2300, 2400, 0x00080,   52, "CHN", "E",   "CAm" },  //  -bcast China Radio Int.
   { 11980.70, 2200, 1000, 0x000d2,  651, "PTR", "",    "NAm" },  // -milcom NAU US Navy STANAG
-  { 11980.00,  630,  700, 0x00080,  740, "ROU", "A",   "NAf" },  //  -bcast Radio Romania Int.
-  { 11985.00, 1900, 2000, 0x00080,  747, "ALG", "A",   "CAf" },  //  -bcast Radio Algerienne
+  { 11980.00,  630,  700, 0x00080,  741, "ROU", "A",   "NAf" },  //  -bcast Radio Romania Int.
+  { 11985.00, 1900, 2000, 0x00080,  748, "ALG", "A",   "CAf" },  //  -bcast Radio Algerienne
   { 11985.00, 1630, 1730, 0x0a480, 1028, "CAN", "OO",  "EAf" },  //  -bcast Oromia National Media
   { 11985.00, 1100, 1200, 0x00080,   52, "CHN", "MO",  "MNG" },  //  -bcast China Radio Int.
   { 11985.00,  300,  400, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  { 11985.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11985.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11985.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11985.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11985.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11985.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 11985.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11985.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11985.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11985.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11985.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11985.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11985.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 11985.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 11985.00,  300,  400, 0x00080,  117, "USA", "M",   "FE"  },  //  -bcast Radio Free Asia
   { 11985.00, 1500, 1700, 0x00080,  117, "USA", "K",   "FE"  },  //  -bcast Radio Free Asia
   { 11985.00, 1700, 1900, 0x00080,  117, "USA", "K",   "FE"  },  //  -bcast Radio Free Asia
@@ -12010,10 +12012,10 @@ dx_t eibi_db[] = {
   { 11985.00, 1400, 1500, 0x00080,   51, "USA", "KU",  "ME"  },  //  -bcast Voice of America
   { 11990.00,    0,  100, 0x00080,   52, "CHN", "KH",  "SEA" },  //  -bcast China Radio Int.
   { 11990.00,    0,  100, 0x00080,   53, "CHN", "KH",  "SEA" },  //  -bcast CRI Music
-  { 11990.00,  800,  900, 0x00080,  740, "ROU", "RO",  "ME"  },  //  -bcast Radio Romania Int.
+  { 11990.00,  800,  900, 0x00080,  741, "ROU", "RO",  "ME"  },  //  -bcast Radio Romania Int.
   { 11990.00, 1700, 1800, 0x00080,  111, "TWN", "D",   "Eu"  },  //  -bcast Radio Taiwan Int.
-  { 11995.00, 1200, 1340, 0x00080,  726, "CLA", "K",   "KRE" },  //  -bcast Furusato no Kaze
-  { 11995.00, 1430, 1500, 0x00080,  726, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
+  { 11995.00, 1200, 1340, 0x00080,  727, "CLA", "K",   "KRE" },  //  -bcast Furusato no Kaze
+  { 11995.00, 1430, 1500, 0x00080,  727, "CLA", "J",   "KRE" },  //  -bcast Furusato no Kaze
   { 11995.00, 1600, 1700, 0x00080,  881, "GER", "AH",  "EAf" },  //  -bcast Deutsche Welle
   { 11995.00,  600,  630, 0x00080,  103, "FRA", "HA",  "WAf" },  //  -bcast Radio France Int.
   { 11995.00, 1900, 2000, 0x00080,  103, "FRA", "F",   "WAf" },  //  -bcast Radio France Int.
@@ -12054,13 +12056,13 @@ dx_t eibi_db[] = {
   { 12005.00,  900, 1000, 0x00080,  111, "TWN", "AM",  "INS" },  //  -bcast Radio Taiwan Int.
   { 12005.00, 1000, 1030, 0x00080,  111, "TWN", "CA",  "INS" },  //  -bcast Radio Taiwan Int.
   { 12005.00, 1030, 1100, 0x00080,  111, "TWN", "HK",  "INS" },  //  -bcast Radio Taiwan Int.
-  { 12005.00, 1900, 1930, 0x00080,  811, "USA", "E",   "SAf" },  //  -bcast Follow the Bible Min.
-  { 12005.00, 1100, 1300, 0x00080,  734, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
-  { 12005.00, 1300, 1800, 0x00080,  734, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
-  { 12010.00, 1130, 1145, 0x07080,  802, "AUS", "DZ",  "BTN" },  //  -bcast Reach Beyond Australia
-  { 12010.00, 1130, 1200, 0x00080,  802, "AUS", "DZ",  "BTN" },  //  -bcast Reach Beyond Australia
-  { 12010.00, 1130, 1200, 0x08880,  802, "AUS", "NE",  "BTN" },  //  -bcast Reach Beyond Australia
-  { 12010.00, 1145, 1200, 0x07080,  802, "AUS", "SHC", "BTN" },  //  -bcast Reach Beyond Australia
+  { 12005.00, 1900, 1930, 0x00080,  812, "USA", "E",   "SAf" },  //  -bcast Follow the Bible Min.
+  { 12005.00, 1100, 1300, 0x00080,  735, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
+  { 12005.00, 1300, 1800, 0x00080,  735, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
+  { 12010.00, 1130, 1145, 0x07080,  803, "AUS", "DZ",  "BTN" },  //  -bcast Reach Beyond Australia
+  { 12010.00, 1130, 1200, 0x00080,  803, "AUS", "DZ",  "BTN" },  //  -bcast Reach Beyond Australia
+  { 12010.00, 1130, 1200, 0x08880,  803, "AUS", "NE",  "BTN" },  //  -bcast Reach Beyond Australia
+  { 12010.00, 1145, 1200, 0x07080,  803, "AUS", "SHC", "BTN" },  //  -bcast Reach Beyond Australia
   { 12010.00, 1400, 1500, 0x00080,   52, "CHN", "VN",  "SEA" },  //  -bcast China Radio Int.
   { 12010.00,  200,  330, 0x00080, 1036, "PHL", "E",   "ME"  },  //  -bcast Radyo Pilipinas
   { 12015.00, 1700, 1800, 0x00080,   52, "CHN", "E",   "Eu"  },  //  -bcast China Radio Int.
@@ -12087,13 +12089,13 @@ dx_t eibi_db[] = {
   { 12015.00, 1800, 1900, 0x00080,   58, "KRE", "D",   "Eu"  },  //  -bcast Voice of Korea
   { 12015.00, 1900, 2000, 0x00080,   58, "KRE", "D",   "Eu"  },  //  -bcast Voice of Korea
   { 12015.00, 2000, 2100, 0x00080,   59, "KRE", "K",   "Eu"  },  //  -bcast Voice of Korea KCBS
-  { 12015.00, 1400, 1430, 0x00080,  772, "MNG", "M",   "As"  },  //  -bcast Voice of Mongolia
-  { 12015.00, 1430, 1500, 0x00080,  772, "MNG", "MO",  "As"  },  //  -bcast Voice of Mongolia
-  { 12015.00, 1500, 1530, 0x00080,  772, "MNG", "J",   "As"  },  //  -bcast Voice of Mongolia
-  { 12015.00, 1530, 1600, 0x00080,  772, "MNG", "E",   "As"  },  //  -bcast Voice of Mongolia
+  { 12015.00, 1400, 1430, 0x00080,  773, "MNG", "M",   "As"  },  //  -bcast Voice of Mongolia
+  { 12015.00, 1430, 1500, 0x00080,  773, "MNG", "MO",  "As"  },  //  -bcast Voice of Mongolia
+  { 12015.00, 1500, 1530, 0x00080,  773, "MNG", "J",   "As"  },  //  -bcast Voice of Mongolia
+  { 12015.00, 1530, 1600, 0x00080,  773, "MNG", "E",   "As"  },  //  -bcast Voice of Mongolia
   { 12015.00,    0, 2400, 0x000d2,  497, "USA", "",    "NAm" },  // -milcom NSS US Navy RTTY/STANAG
-  { 12015.00,  900, 1000, 0x0fa80,  746, "USA", "E",   "Oc"  },  //  -bcast World Harvest Radio
-  { 12015.00, 1000, 1100, 0x00080,  746, "USA", "E",   "Oc"  },  //  -bcast World Harvest Radio
+  { 12015.00,  900, 1000, 0x0fa80,  747, "USA", "E",   "Oc"  },  //  -bcast World Harvest Radio
+  { 12015.00, 1000, 1100, 0x00080,  747, "USA", "E",   "Oc"  },  //  -bcast World Harvest Radio
   { 12019.00, 1000, 1030, 0x00080,  121, "VTN", "E",   "INS" },  //  -bcast Voice of Vietnam
   { 12019.00, 1030, 1100, 0x00080,  121, "VTN", "IN",  "INS" },  //  -bcast Voice of Vietnam
   { 12019.00, 1100, 1130, 0x00080,  121, "VTN", "J",   "FE"  },  //  -bcast Voice of Vietnam
@@ -12130,9 +12132,9 @@ dx_t eibi_db[] = {
   { 12025.00,  200,  400, 0x00080,   93, "JPN", "J",   "SAs" },  //  -bcast NHK Radio Japan
   { 12025.00,  200,  500, 0x00080, 1031, "RUS", "R",   "FE"  },  //  -bcast Radio Purga DIGITAL
   { 12025.00, 1600, 1700, 0x00080,  111, "TWN", "D",   "Eu"  },  //  -bcast Radio Taiwan Int.
-  { 12030.00, 1000, 1400, 0x00080,  808, "BRA", "P",   "B"   },  //  -bcast Rádio Nacional Amazônia
-  { 12030.00, 1400, 1900, 0x00080,  808, "BRA", "P",   "B"   },  //  -bcast Rádio Nacional Amazônia
-  { 12030.00, 1900,  305, 0x00080,  808, "BRA", "P",   "B"   },  //  -bcast Rádio Nacional Amazônia
+  { 12030.00, 1000, 1400, 0x00080,  809, "BRA", "P",   "B"   },  //  -bcast Rádio Nacional Amazônia
+  { 12030.00, 1400, 1900, 0x00080,  809, "BRA", "P",   "B"   },  //  -bcast Rádio Nacional Amazônia
+  { 12030.00, 1900,  305, 0x00080,  809, "BRA", "P",   "B"   },  //  -bcast Rádio Nacional Amazônia
   { 12030.00,  700,  800, 0x00080, 1021, "CHN", "M",   "Oc"  },  //  -bcast China Radio Int.DIGITAL
   { 12030.00,  800,  900, 0x00080, 1021, "CHN", "M",   "Oc"  },  //  -bcast China Radio Int.DIGITAL
   { 12030.00,  600,  629, 0x00080,   31, "GBR", "F",   "CAf" },  //  -bcast BBC
@@ -12152,25 +12154,25 @@ dx_t eibi_db[] = {
   { 12040.00, 1250, 1255, 0x0f880,  905, "GUM", "E",   "SAs" },  //  -bcast KTWR Trans World Radio
   { 12040.00, 2200, 2230, 0x05280,  137, "USA", "E",   "INS" },  //  -bcast Adventist World Radio
   { 12040.00, 2200, 2230, 0x0ac80,  137, "USA", "SUN", "INS" },  //  -bcast Adventist World Radio
-  { 12040.00, 1400, 2400, 0x00080,  759, "USA", "S",   "LAm" },  //  -bcast WEWN EWTN Catholic R.
+  { 12040.00, 1400, 2400, 0x00080,  760, "USA", "S",   "LAm" },  //  -bcast WEWN EWTN Catholic R.
   { 12045.00,    0,  600, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   { 12045.00,  600,  850, 0x0be80,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   { 12045.00,  850, 1100, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   { 12045.00,  850, 1200, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   { 12045.00, 2300,  600, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   { 12045.00, 1300, 1500, 0x00080,   51, "USA", "K",   "FE"  },  //  -bcast Voice of America
-  { 12050.00,  600,  700, 0x00080,  758, "TCD", "KNU", "TCD" },  //  -bcast Radio Ndarason Int.
-  { 12050.00,  615,  625, 0x00080,  758, "TCD", "F",   "TCD" },  //  -bcast Radio Ndarason Int.
-  { 12050.00,  700,  800, 0x00080,  758, "TCD", "KNU", "TCD" },  //  -bcast Radio Ndarason Int.
-  { 12050.00, 1900, 2100, 0x00080,  758, "TCD", "KNU", "TCD" },  //  -bcast Radio Ndarason Int.
-  { 12050.00, 1915, 1925, 0x00080,  758, "TCD", "F",   "TCD" },  //  -bcast Radio Ndarason Int.
-  { 12050.00, 1400, 2400, 0x00080,  759, "USA", "S",   "LAm" },  //  -bcast WEWN EWTN Catholic R.
-  { 12050.00, 1400, 2400, 0x00080,  759, "USA", "S",   "LAm" },  //  -bcast WEWN EWTN Catholic R.
-  { 12055.00,  320,  330, 0x00080,  800, "CHN", "R",   "CHN" },  //  -bcast China National Radio 17
-  { 12055.00,  600,  900, 0x0be80,  800, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
-  { 12055.00,  720,  730, 0x0b880,  800, "CHN", "E,R", "CHN" },  //  -bcast China National Radio 17
-  { 12055.00,  900, 1200, 0x00080,  800, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
-  { 12055.00, 2355,  600, 0x00080,  800, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
+  { 12050.00,  600,  700, 0x00080,  759, "TCD", "KNU", "TCD" },  //  -bcast Radio Ndarason Int.
+  { 12050.00,  615,  625, 0x00080,  759, "TCD", "F",   "TCD" },  //  -bcast Radio Ndarason Int.
+  { 12050.00,  700,  800, 0x00080,  759, "TCD", "KNU", "TCD" },  //  -bcast Radio Ndarason Int.
+  { 12050.00, 1900, 2100, 0x00080,  759, "TCD", "KNU", "TCD" },  //  -bcast Radio Ndarason Int.
+  { 12050.00, 1915, 1925, 0x00080,  759, "TCD", "F",   "TCD" },  //  -bcast Radio Ndarason Int.
+  { 12050.00, 1400, 2400, 0x00080,  760, "USA", "S",   "LAm" },  //  -bcast WEWN EWTN Catholic R.
+  { 12050.00, 1400, 2400, 0x00080,  760, "USA", "S",   "LAm" },  //  -bcast WEWN EWTN Catholic R.
+  { 12055.00,  320,  330, 0x00080,  801, "CHN", "R",   "CHN" },  //  -bcast China National Radio 17
+  { 12055.00,  600,  900, 0x0be80,  801, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
+  { 12055.00,  720,  730, 0x0b880,  801, "CHN", "E,R", "CHN" },  //  -bcast China National Radio 17
+  { 12055.00,  900, 1200, 0x00080,  801, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
+  { 12055.00, 2355,  600, 0x00080,  801, "CHN", "KZ",  "CHN" },  //  -bcast China National Radio 17
   { 12055.00,   15,   45, 0x00080,   72, "PHL", "LAH", "SEA" },  //  -bcast FEBC Manila
   { 12055.00,   45,  100, 0x00080,   72, "PHL", "WA",  "SEA" },  //  -bcast FEBC Manila
   { 12055.00, 2330, 2345, 0x00080,   72, "PHL", "PAL", "SEA" },  //  -bcast FEBC Manila
@@ -12179,14 +12181,14 @@ dx_t eibi_db[] = {
   { 12055.00, 1330, 1400, 0x00080,  137, "USA", "KHS", "BGD" },  //  -bcast Adventist World Radio
   { 12055.00, 1400, 1500, 0x00080,   86, "USA", "TK",  "CAs" },  //  -bcast Radio Liberty
   { 12055.00, 1600, 1800, 0x00080,   51, "USA", "SO",  "EAf" },  //  -bcast Voice of America
-  { 12060.00, 1900, 2000, 0x00080,  747, "ALG", "A",   "WAf" },  //  -bcast Radio Algerienne
+  { 12060.00, 1900, 2000, 0x00080,  748, "ALG", "A",   "WAf" },  //  -bcast Radio Algerienne
   { 12060.00, 1500, 1530, 0x00080,  137, "USA", "KAN", "SIn" },  //  -bcast Adventist World Radio
   { 12060.00, 1530, 1600, 0x00080,  137, "USA", "HI",  "NIn" },  //  -bcast Adventist World Radio
   { 12065.00,  100,  200, 0x00080,   31, "GBR", "E",   "SAs" },  //  -bcast BBC
   { 12065.00, 1200, 1300, 0x00080,   31, "GBR", "E",   "SAs" },  //  -bcast BBC
   { 12065.00, 1300, 1400, 0x00080,   31, "GBR", "E",   "SAs" },  //  -bcast BBC
   { 12065.00, 1600, 1700, 0x00080,   31, "GBR", "E",   "SAf" },  //  -bcast BBC
-  { 12065.00,    0, 2400, 0x200b2,  720, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
+  { 12065.00,    0, 2400, 0x200b2,  721, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
   { 12065.00,    0, 2400, 0x200b2,  461, "MRC", "",    "MRC" },  //    -ale Protection Civile ALE
   { 12065.00, 1540, 1550, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 12067.00, 1925, 1935, 0x00132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
@@ -12211,7 +12213,7 @@ dx_t eibi_db[] = {
   { 12070.00, 1900, 1930, 0x00080,   51, "USA", "TIG", "EAf" },  //  -bcast Voice of America
   { 12070.00, 2030, 2100, 0x00080,   51, "USA", "HA",  "WAf" },  //  -bcast Voice of America
   { 12074.50,    0, 2400, 0x200b2,  549, "GEO", "",    "GEO" },  //    -ale Georgia Coast Guard ALE
-  { 12076.00,    0, 2400, 0x200b2,  735, "FRA", "",    "F"   },  //    -ale French Navy ALE
+  { 12076.00,    0, 2400, 0x200b2,  736, "FRA", "",    "F"   },  //    -ale French Navy ALE
   { 12076.00,    0, 2400, 0x200b2,  561, "USA", "",    "USA" },  //    -ale US National Guard ALE
   { 12080.00,    0,  600, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   { 12080.00,  200,  600, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
@@ -12224,18 +12226,18 @@ dx_t eibi_db[] = {
   { 12084.00,  400,  410, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   { 12085.00, 2300, 2400, 0x00080,   52, "CHN", "MO",  "MNG" },  //  -bcast China Radio Int.
   { 12085.00, 1500, 1600, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  { 12085.00,  900,  930, 0x00080,  772, "MNG", "E",   "As"  },  //  -bcast Voice of Mongolia
-  { 12085.00,  930, 1000, 0x00080,  772, "MNG", "MO",  "As"  },  //  -bcast Voice of Mongolia
-  { 12085.00, 1000, 1030, 0x00080,  772, "MNG", "M",   "As"  },  //  -bcast Voice of Mongolia
-  { 12085.00, 1030, 1100, 0x00080,  772, "MNG", "J",   "As"  },  //  -bcast Voice of Mongolia
+  { 12085.00,  900,  930, 0x00080,  773, "MNG", "E",   "As"  },  //  -bcast Voice of Mongolia
+  { 12085.00,  930, 1000, 0x00080,  773, "MNG", "MO",  "As"  },  //  -bcast Voice of Mongolia
+  { 12085.00, 1000, 1030, 0x00080,  773, "MNG", "M",   "As"  },  //  -bcast Voice of Mongolia
+  { 12085.00, 1030, 1100, 0x00080,  773, "MNG", "J",   "As"  },  //  -bcast Voice of Mongolia
   { 12085.00, 1500, 1600, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
   { 12089.00,  600,  610, 0x00132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 12089.00,  600,  610, 0x00132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 12089.00,  845,  855, 0x05132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
-  { 12089.00,  810,  815, 0x08932,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  { 12089.00,  810,  815, 0x08932,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   { 12089.00, 1735, 1740, 0x00132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 12089.00, 1735, 1740, 0x00132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
-  { 12090.00,    0,  500, 0x00080,  778, "CHN", "M",   "Oc"  },  //  -bcast CNR1 DIGITAL
+  { 12090.00,    0,  500, 0x00080,  779, "CHN", "M",   "Oc"  },  //  -bcast CNR1 DIGITAL
   { 12090.00, 1100, 1130, 0x00080,  137, "USA", "R",   "FE"  },  //  -bcast Adventist World Radio
   { 12095.00,  300,  400, 0x00080,   31, "GBR", "E",   "ME"  },  //  -bcast BBC
   { 12095.00,  400,  500, 0x00080,   31, "GBR", "E",   "ME"  },  //  -bcast BBC
@@ -12373,17 +12375,17 @@ dx_t eibi_db[] = {
   { 12148.00,  700,  710, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 12150.00,    0, 2400, 0x200b2,  456, "ALG", "",    "ALG" },  //    -ale Algerian Military ALE
   { 12150.00, 2130, 1700, 0x00080,  626, "CHN", "M",   "CHN" },  //  -bcast CNR1 Jammer/Firedrake
-  { 12150.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 12150.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 12150.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 12150.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 12150.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 12150.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 12150.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 12150.00, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 12150.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 12150.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 12150.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 12150.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 12150.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 12150.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 12150.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 12150.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 12150.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 12150.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 12150.00, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 12150.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 12150.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 12150.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 12151.00,  730,  740, 0x05132, 1046, "RUS", "-TY", "RUS" },  //    -spy XPA Russian Spy Numbers
   { 12152.00,  700,  710, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 12152.00, 1920, 1930, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
@@ -12406,23 +12408,23 @@ dx_t eibi_db[] = {
   { 12159.00,  510,  520, 0x0c132,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 12159.00,  510,  520, 0x0c132,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 12160.00,    0, 2400, 0x200b2,  685, "MRC", "",    "MRC" },  //    -ale Moroccan Military ALE
-  { 12160.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12160.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12160.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12160.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12160.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12160.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12160.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12160.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12160.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12160.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12160.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12160.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12160.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12160.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12160.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12160.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12160.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12160.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12160.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12160.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12160.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12160.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 12160.00, 1700, 1800, 0x00092,  373, "USA", "E",   "NAm" },  //   -util Brother Stair
   { 12160.00, 1900, 2000, 0x00092,  373, "USA", "E",   "NAm" },  //   -util Brother Stair
-  { 12160.00, 1500, 1700, 0x00092,  751, "USA", "E",   "NAm" },  //   -util WWCR 2 Nashville, TN
-  { 12160.00, 1700, 1800, 0x0fc92,  751, "USA", "E",   "NAm" },  //   -util WWCR 2 Nashville, TN
-  { 12160.00, 1800, 1900, 0x00092,  751, "USA", "E",   "NAm" },  //   -util WWCR 2 Nashville, TN
-  { 12160.00, 1900, 2000, 0x0fa92,  751, "USA", "E",   "NAm" },  //   -util WWCR 2 Nashville, TN
+  { 12160.00, 1500, 1700, 0x00092,  752, "USA", "E",   "NAm" },  //   -util WWCR 2 Nashville, TN
+  { 12160.00, 1700, 1800, 0x0fc92,  752, "USA", "E",   "NAm" },  //   -util WWCR 2 Nashville, TN
+  { 12160.00, 1800, 1900, 0x00092,  752, "USA", "E",   "NAm" },  //   -util WWCR 2 Nashville, TN
+  { 12160.00, 1900, 2000, 0x0fa92,  752, "USA", "E",   "NAm" },  //   -util WWCR 2 Nashville, TN
   { 12162.00, 1700, 1710, 0x00132,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   { 12162.00, 1710, 1720, 0x00132,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   { 12162.00, 1800, 1810, 0x00132,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
@@ -12434,7 +12436,7 @@ dx_t eibi_db[] = {
   { 12164.00, 1015, 1025, 0x0f932,  500, "RUS", "-TY", "EEu" },  //    -spy F01 Russian Spy Numbers
   { 12164.00,  320,  330, 0x00132, 1045, "RUS", "S",   "As"  },  //    -spy V07 Russian Spy Numbers
   { 12165.00,    0, 2400, 0x200b2,  578, "CHN", "",    "CHN" },  //    -ale Chinese Military ALE
-  { 12165.00,    0, 2400, 0x200b2,  721, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
+  { 12165.00,    0, 2400, 0x200b2,  722, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
   { 12165.00, 1330, 1340, 0x02932, 1046, "RUS", "-TY", "RUS" },  //    -spy XPA Russian Spy Numbers
   { 12165.00, 1210, 1220, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 12166.00, 2000, 2010, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
@@ -12454,7 +12456,7 @@ dx_t eibi_db[] = {
   { 12173.00,  800,  810, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
   { 12173.00, 1600, 1610, 0x05132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 12174.00, 1510, 1520, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
-  { 12175.00,    0, 2400, 0x200b2,  721, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
+  { 12175.00,    0, 2400, 0x200b2,  722, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
   { 12175.00,  750,  800, 0x05132, 1046, "RUS", "-TY", "RUS" },  //    -spy XPA Russian Spy Numbers
   { 12176.00, 1300, 1310, 0x00132,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 12176.00, 1250, 1300, 0x08532,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
@@ -12490,15 +12492,15 @@ dx_t eibi_db[] = {
   { 12189.00, 1850, 1900, 0x00132,  500, "RUS", "-TY", "RUS" },  //    -spy F01 Russian Spy Numbers
   { 12189.00, 1530, 1540, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 12190.00, 2200, 1600, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 12190.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12190.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12190.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12190.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12190.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12190.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12190.00, 1500, 1600, 0x00092,  816, "TWN", "CA",  "FE"  },  //   -util Sound of Hope
-  { 12190.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12190.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12190.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12190.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12190.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12190.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12190.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12190.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12190.00, 1500, 1600, 0x00092,  817, "TWN", "CA",  "FE"  },  //   -util Sound of Hope
+  { 12190.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12190.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 12192.00, 1540, 1550, 0x08532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 12193.00, 2150, 2200, 0x09132,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   { 12193.00, 1120, 1130, 0x03132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
@@ -12529,14 +12531,14 @@ dx_t eibi_db[] = {
   { 12209.00,  720,  730, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 12209.00,    0, 2400, 0x200b2,  442, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
   { 12210.00, 2200, 1500, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 12210.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12210.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12210.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12210.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12210.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12210.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12210.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12210.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12210.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12210.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12210.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12210.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12210.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12210.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12210.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12210.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 12212.00,  400,  410, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   { 12212.00,    0, 2400, 0x200b2,  561, "USA", "",    "USA" },  //    -ale US National Guard ALE
   { 12213.00, 1510, 1520, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
@@ -12586,22 +12588,22 @@ dx_t eibi_db[] = {
   { 12229.00, 1650, 1700, 0x00b32,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 12230.00, 2130, 1700, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
   { 12230.00,    0, 2400, 0x200b2,  208, "GBR", "",    "ME"  },  //    -ale DHFCS Forest Moor ALE
-  { 12230.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12230.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12230.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12230.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12230.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12230.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12230.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12230.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12230.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12230.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12230.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12230.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12230.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12230.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12230.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12230.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12230.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12230.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12230.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12230.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12230.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12230.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 12235.00,  920,  930, 0x00112, 1077, "INS", "-CW", "INS" },  //   -aero P50 Belawan Radio Met
   { 12245.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 12248.00,    0, 2400, 0x200b2,  549, "GEO", "",    "GEO" },  //    -ale Georgia Coast Guard ALE
   { 12251.00,    0, 2400, 0x200b2,  465, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
-  { 12255.00,    0, 2400, 0x00092,  819, "IRL", "E",   "Eu"  },  //   -util Reflections Europe
+  { 12255.00,    0, 2400, 0x00092,  820, "IRL", "E",   "Eu"  },  //   -util Reflections Europe
   { 12267.00,    0, 2400, 0x200b2,  406, "USA", "",    "USA" },  //    -ale Corps of Engineers ALE
   { 12271.60,    0, 2400, 0x000d2,  194, "ITL", "",    "SEu" },  // -milcom IDN Ital.Navy STANAG
   { 12290.00,    0, 2400, 0x00112,  956, "SPN", "S",   "SEu" },  //   -aero Madrid Radio
@@ -12609,18 +12611,18 @@ dx_t eibi_db[] = {
   { 12311.00,    0, 2400, 0x200b2,  469, "FRA", "",    "Eu"  },  //    -ale Fr. Air Force E-3F ALE
   { 12313.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 12313.20,    0, 2400, 0x000d2,  194, "ITL", "",    "SEu" },  // -milcom IDN Ital.Navy STANAG
-  { 12313.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  { 12313.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   { 12332.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 12337.00, 2100, 1200, 0x200e4,  295, "RUS", "-CW", "NAs" },  //     -cw REA4 AirForce Meteo x40
-  { 12345.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12345.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12345.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12345.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12345.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12345.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12345.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12345.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12345.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12345.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12345.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12345.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12345.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12345.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12345.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12345.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12345.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12345.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 12350.00, 1130, 1200, 0x00122,  504, "USA", "E",   "ENA" },  // -marine WCY Marine Weather Ctr
   { 12350.00, 1230, 1300, 0x00122,  504, "USA", "E",   "Car" },  // -marine WCY Marine Weather Ctr
   { 12350.00, 1300, 1330, 0x00122,  504, "USA", "E",   "CAm" },  // -marine WCY Marine Weather Ctr
@@ -12643,26 +12645,26 @@ dx_t eibi_db[] = {
   { 12362.00,    0, 2400, 0x00092,  195, "AUS", "E",   "AUS" },  //   -util VMW Wiluna WA
   { 12365.00,  800, 2100, 0x00092,  204, "AUS", "E",   "AUS" },  //   -util VMC Charleville QL
   { 12365.00, 2100,  800, 0x00092,  204, "AUS", "E",   "AUS" },  //   -util VMC Charleville QL
-  { 12365.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12365.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12365.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12365.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12365.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12365.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12365.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12365.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12365.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12365.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12365.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12365.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12365.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12365.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12365.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12365.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12365.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12365.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12365.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12365.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12365.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12365.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 12365.00, 1000, 1010, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 12367.00,    0, 2400, 0x000d2,  577, "SEN", "F",   "WAf" },  // -milcom 6WW French Navy STANAG
   { 12382.00,    0, 2400, 0x20102,  515, "CHN", "M",   "FE"  },  //    -fax XSG Shanghai Radio Fax
   { 12382.80,    0, 2400, 0x000d2,  194, "ITL", "",    "SEu" },  // -milcom IDN Ital.Navy STANAG
   { 12383.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
-  { 12385.00,  835,  840, 0x05132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  { 12385.00,  835,  840, 0x05132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   { 12385.00, 1800, 1805, 0x05132,  639, "POL", "-TY", ""    },  //    -spy F03l Polish Spy Numbers
   { 12385.00, 1410, 1415, 0x08332,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
-  { 12397.00,  810,  815, 0x08932,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  { 12397.00,  810,  815, 0x08932,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   { 12410.60,    0, 2400, 0x000d2,  868, "GBR", "",    "ME"  },  // -milcom UK MoD DHFCS STANAG
   { 12412.50,  340,  610, 0x20102,  192, "ALS", "",    "WNA" },  //    -fax NOJ Fax Kodiak
   { 12412.50,  950, 1210, 0x20102,  192, "ALS", "",    "WNA" },  //    -fax NOJ Fax Kodiak
@@ -12671,47 +12673,47 @@ dx_t eibi_db[] = {
   { 12415.00, 1200, 1210, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 12415.00, 1200, 1210, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 12430.00, 2100, 1700, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 12430.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12430.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12430.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12430.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12430.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12430.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12430.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12430.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12430.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12430.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12430.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12430.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12431.00,    0, 2400, 0x200b2,  721, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
-  { 12436.50,    0, 2400, 0x200e4,  832, "JPN", "-CW", "FE"  },  //     -cw JFX Kagoshima Fishery
+  { 12430.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12430.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12430.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12430.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12430.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12430.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12430.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12430.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12430.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12430.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12430.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12430.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12431.00,    0, 2400, 0x200b2,  722, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
+  { 12436.50,    0, 2400, 0x200e4,  833, "JPN", "-CW", "FE"  },  //     -cw JFX Kagoshima Fishery
   { 12457.00, 1850, 1900, 0x02532,  530, "POL", "R",   ""    },  //    -spy S11a Polish Spy Numbers
   { 12459.00,    0, 2400, 0x200b2,  442, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
   { 12460.00,  800,  810, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 12500.00, 2130, 1700, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 12500.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12500.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12500.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12500.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12500.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12500.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12500.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12500.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12500.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12500.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12500.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12500.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12500.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12500.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12500.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12500.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12500.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12500.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12500.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12500.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12500.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12500.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 12550.00, 2130, 1700, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 12550.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12550.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12550.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12550.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12550.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12550.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12550.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12550.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12550.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12550.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12550.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12550.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12550.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12550.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12550.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12550.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12550.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12550.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12550.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12550.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12550.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12550.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 12557.00,    0, 2400, 0x00112,  519, "TUR", "-TY", "ME"  },  //   -aero TAH Turk Radio Istanbul
   { 12560.00,  840,  850, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 12570.00,  640,  650, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
@@ -12728,12 +12730,12 @@ dx_t eibi_db[] = {
   { 12579.00,  730,  740, 0x00092,  960, "HWA", "E",   "Oc"  },  //   -util NMO NAVTEX Honolulu
   { 12579.00, 1330, 1340, 0x00092,  960, "HWA", "E",   "Oc"  },  //   -util NMO NAVTEX Honolulu
   { 12579.00, 2030, 2040, 0x00092,  960, "HWA", "E",   "Oc"  },  //   -util NMO NAVTEX Honolulu
-  { 12579.00,  140,  150, 0x00092,  821, "USA", "",    "ENA" },  //   -util NMF NAVTEX Boston MA
-  { 12579.00, 1630, 1640, 0x00092,  821, "USA", "",    "ENA" },  //   -util NMF NAVTEX Boston MA
+  { 12579.00,  140,  150, 0x00092,  822, "USA", "",    "ENA" },  //   -util NMF NAVTEX Boston MA
+  { 12579.00, 1630, 1640, 0x00092,  822, "USA", "",    "ENA" },  //   -util NMF NAVTEX Boston MA
   { 12581.50,    0, 2400, 0x00112,  522, "CHN", "-TY", "FE"  },  //   -aero XSV Tianjin Radio
   { 12586.00,  700,  715, 0x200f4, 1079, "RUS", "-TY", "EEu" },  //    -fsk Murmansk R. UDK (MTK-2)
   { 12587.00,    0, 2400, 0x000d2,  970, "DJI", "F",   "EAf" },  // -milcom FUV French Navy STANAG
-  { 12603.50,    0, 2400, 0x00112,  823, "GRC", "-TY", "SEu" },  //   -aero SVO Olimpia Radio
+  { 12603.50,    0, 2400, 0x00112,  824, "GRC", "-TY", "SEu" },  //   -aero SVO Olimpia Radio
   { 12615.00,    0, 2400, 0x200b2,  376, "CHL", "",    "CHL" },  //    -ale Gendarmeria Chile ALE
   { 12622.50,    0, 2400, 0x00112,  521, "CHN", "-TY", "FE"  },  //   -aero XSQ Guangzhou Radio
   { 12624.00,    0, 2400, 0x00112,  519, "TUR", "-CW", "ME"  },  //   -aero TAH Turk Radio Istanbul
@@ -12743,16 +12745,16 @@ dx_t eibi_db[] = {
   { 12654.00,    0, 2400, 0x00112,  519, "TUR", "-CW", "ME"  },  //   -aero TAH Turk Radio Istanbul
   { 12655.00,    0, 2400, 0x000d2,  577, "SEN", "F",   "WAf" },  // -milcom 6WW French Navy STANAG
   { 12661.20,    0, 2400, 0x000d2,  143, "GER", "",    "Eu"  },  // -milcom DHJ58 Marine STANAG
-  { 12664.50,    0, 2400, 0x000d2,  836, "OCE", "F",   "Oc"  },  // -milcom FUM French Navy STANAG
+  { 12664.50,    0, 2400, 0x000d2,  837, "OCE", "F",   "Oc"  },  // -milcom FUM French Navy STANAG
   { 12665.00,  745,  910, 0x20102, 1080, "BRA", "",    "SAm" },  //    -fax PWZ33 Rio dJ Meteo Fax
   { 12665.00, 1630, 1755, 0x20102, 1080, "BRA", "",    "SAm" },  //    -fax PWZ33 Rio dJ Meteo Fax
   { 12666.50,    0, 2400, 0x000d2,  251, "FRA", "F",   "Eu"  },  // -milcom FUG French Navy STANAG
-  { 12678.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  { 12678.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   { 12681.00,    0, 2400, 0x00092, 1081, "BRA", "P",   "SAO" },  //   -util Brazilian Navy
   { 12691.50,    0, 2400, 0x000d2,  545, "REU", "F",   "EAf" },  // -milcom FUX French Navy STANAG
   { 12695.50, 1700, 2300, 0x200e4, 1082, "USA", "-CW", "WNA" },  //     -cw KFS Point Reyes, CA
   { 12700.00,    0, 2400, 0x00112,   35, "CHN", "M",   "FE"  },  //   -aero XSQ Guangzhou Radio x30
-  { 12704.50,    0, 2400, 0x200e4,  832, "JPN", "-CW", "FE"  },  //     -cw JFX Kagoshima Fishery
+  { 12704.50,    0, 2400, 0x200e4,  833, "JPN", "-CW", "FE"  },  //     -cw JFX Kagoshima Fishery
   { 12704.50,    0, 2400, 0x000d2,  239, "POR", "",    "SEu" },  // -milcom CTA NATO STANAG
   { 12709.00,  230,  245, 0x00092,  532, "BRA", "P",   "B"   },  //   -util PWZ33 Rio d.J.Naval Wx
   { 12709.00,  400,  415, 0x00092,  532, "BRA", "P",   "B"   },  //   -util PWZ33 Rio d.J.Naval Wx
@@ -12761,7 +12763,7 @@ dx_t eibi_db[] = {
   { 12709.00, 1845, 1900, 0x00092,  532, "BRA", "P",   "B"   },  //   -util PWZ33 Rio d.J.Naval Wx
   { 12709.00, 2130, 2145, 0x00092,  532, "BRA", "P",   "B"   },  //   -util PWZ33 Rio d.J.Naval Wx
   { 12713.00,    0, 2400, 0x000d2,  970, "DJI", "F",   "EAf" },  // -milcom FUV French Navy STANAG
-  { 12724.00,    0, 2400, 0x000d2,  836, "OCE", "F",   "Oc"  },  // -milcom FUM French Navy STANAG
+  { 12724.00,    0, 2400, 0x000d2,  837, "OCE", "F",   "Oc"  },  // -milcom FUM French Navy STANAG
   { 12730.00,    0, 2400, 0x000d2,  251, "FRA", "F",   "Eu"  },  // -milcom FUG French Navy STANAG
   { 12735.00,    0, 2400, 0x000d2,  239, "POR", "",    "SEu" },  // -milcom CTA NATO STANAG
   { 12736.00,    0, 2400, 0x000d2,  203, "GBR", "",    "WEu" },  // -milcom UK DHFCS STANAG
@@ -12774,14 +12776,14 @@ dx_t eibi_db[] = {
   { 12750.00, 1400, 1600, 0x20102,  527, "USA", "",    "ENA" },  //    -fax NMF Fax Boston MA
   { 12750.00, 1720, 2251, 0x20102,  527, "USA", "",    "ENA" },  //    -fax NMF Fax Boston MA
   { 12752.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
-  { 12775.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12775.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12775.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12775.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12775.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12775.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12775.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12775.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12775.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12775.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12775.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12775.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12775.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12775.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12775.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12775.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 12786.00,  140,  415, 0x20102,  546, "USA", "",    "WNA" },  //    -fax NMC Fax Pt Reyes CA
   { 12786.00,  655, 1015, 0x20102,  546, "USA", "",    "WNA" },  //    -fax NMC Fax Pt Reyes CA
   { 12786.00, 1120, 1235, 0x20102,  546, "USA", "",    "WNA" },  //    -fax NMC Fax Pt Reyes CA
@@ -12802,42 +12804,42 @@ dx_t eibi_db[] = {
   { 12789.90, 1200, 1505, 0x20102,  542, "USA", "",    "Car" },  //    -fax NMG Fax New Orleans
   { 12789.90, 1800, 2105, 0x20102,  542, "USA", "",    "Car" },  //    -fax NMG Fax New Orleans
   { 12795.00, 2130, 1600, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 12795.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12795.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12795.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12795.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12795.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12795.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12795.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12795.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12795.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12795.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12804.20,    0, 2400, 0x000d2,  835, "CAN", "",    "WNA" },  // -milcom CKN Aldergrove STANAG
+  { 12795.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12795.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12795.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12795.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12795.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12795.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12795.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12795.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12795.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12795.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12804.20,    0, 2400, 0x000d2,  836, "CAN", "",    "WNA" },  // -milcom CKN Aldergrove STANAG
   { 12808.40,    0, 2400, 0x000d2,  580, "AUS", "",    "AUS" },  // -milcom Humpty Doo STANAG
   { 12808.50, 1700, 2300, 0x200e4,   34, "USA", "-CW", "WNA" },  //     -cw KPH Point Reyes, CA
   { 12811.20,    0, 2400, 0x000d2,  319, "CAN", "",    "NAm" },  // -milcom CFH Halifax STANAG
-  { 12811.50,    0, 2400, 0x200e4,  827, "JPN", "-CW", "FE"  },  //     -cw JFG Shizuokaken Fishery
+  { 12811.50,    0, 2400, 0x200e4,  828, "JPN", "-CW", "FE"  },  //     -cw JFG Shizuokaken Fishery
   { 12812.00,    0, 2400, 0x000d2,  580, "AUS", "",    "AUS" },  // -milcom Humpty Doo STANAG
   { 12820.00, 2130, 1600, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 12820.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12820.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12820.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12820.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12820.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12820.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12820.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12820.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12820.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12820.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12829.20,    0, 2400, 0x000d2,  835, "CAN", "",    "WNA" },  // -milcom CKN Aldergrove STANAG
+  { 12820.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12820.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12820.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12820.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12820.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12820.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12820.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12820.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12820.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12820.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12829.20,    0, 2400, 0x000d2,  836, "CAN", "",    "WNA" },  // -milcom CKN Aldergrove STANAG
   { 12830.00,  755,  815, 0x20102,  964, "CHN", "",    "FE"  },  //    -fax 3SD Beijing Meteo Fax
   { 12830.00, 1130, 1150, 0x20102,  964, "CHN", "",    "FE"  },  //    -fax 3SD Beijing Meteo Fax
   { 12830.00,  910,  920, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 12832.00,    0, 2400, 0x200e4,    1, "RUS", "-CW", "RUS" },  //     -cw RDL Russian Navy
-  { 12835.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12835.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12835.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12835.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12835.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12835.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12835.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12835.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 12840.00,    0, 2400, 0x200f4,  228, "HOL", "-TY", "Eu"  },  //    -fsk PBB Navy Den Helder
   { 12843.00,    0,  900, 0x00112, 1083, "KOR", "-CW", "FE"  },  //   -aero HLO Seoul Radio
   { 12843.00,  900, 2400, 0x00112, 1083, "KOR", "-CW", "FE"  },  //   -aero HLO Seoul Radio
@@ -12848,29 +12850,29 @@ dx_t eibi_db[] = {
   { 12857.00, 1740, 1745, 0x00132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 12857.00,    0, 2400, 0x000d2,  577, "SEN", "F",   "WAf" },  // -milcom 6WW French Navy STANAG
   { 12870.00, 2130, 1600, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 12870.20,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12870.20,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12870.20,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12870.20, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12870.20, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12870.20, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12870.20, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12870.20, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12870.20, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12870.20, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12870.20,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12870.20,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12870.20,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12870.20, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12870.20, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12870.20, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12870.20, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12870.20, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12870.20, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12870.20, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 12873.60,    0, 2400, 0x000d2,  251, "FRA", "F",   "Eu"  },  // -milcom FUG French Navy STANAG
   { 12880.00, 2130, 1700, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 12880.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12880.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12880.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12880.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12880.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12880.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12880.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12880.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12880.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12880.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12880.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12880.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12880.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12880.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12880.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12880.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12880.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12880.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12880.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12880.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12880.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12880.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 12883.60,    0, 2400, 0x000d2,  243, "FRA", "F",   "Eu"  },  // -milcom FUO French Navy STANAG
   { 12896.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 12916.50,    0,  900, 0x00112, 1084, "KOR", "-CW", "FE"  },  //   -aero HLF Seoul Radio
@@ -12885,63 +12887,63 @@ dx_t eibi_db[] = {
   { 12935.00,  900, 2400, 0x00112,  965, "KOR", "-CW", "FE"  },  //   -aero HLG Seoul Radio
   { 12936.00,  810,  820, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 12950.00, 2130, 1500, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 12950.20,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12950.20,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12950.20,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12950.20, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12950.20, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12950.20, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12950.20, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12950.20, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 12950.20, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12950.20,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12950.20,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12950.20,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12950.20, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12950.20, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12950.20, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12950.20, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12950.20, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 12950.20, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 12969.00,  600, 1800, 0x00112,  537, "CHN", "M",   "FE"  },  //   -aero XSV Tianjin Radio (x00)
   { 12969.00, 1800,  600, 0x00112,  537, "CHN", "M",   "FE"  },  //   -aero XSV Tianjin Radio (x00)
   { 12982.10,    0, 2400, 0x000d2,  319, "CAN", "",    "NAm" },  // -milcom CFH Halifax STANAG
   { 12984.00, 1345, 1355, 0x04532,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
-  { 13012.00,    0, 2400, 0x200e4,  830, "PAK", "-CW", "SAs" },  //     -cw AQP Pakistan Navy
+  { 13012.00,    0, 2400, 0x200e4,  831, "PAK", "-CW", "SAs" },  //     -cw AQP Pakistan Navy
   { 13020.00, 2100, 1700, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 13020.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13020.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13020.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13020.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13020.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13020.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13020.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13020.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13020.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13020.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13020.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13020.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13026.00,    0, 2400, 0x200e4,  826, "USA", "-CW", "Car" },  //     -cw WHL St Augustine, FL
+  { 13020.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13020.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13020.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13020.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13020.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13020.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13020.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13020.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13020.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13020.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13020.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13020.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13026.00,    0, 2400, 0x200e4,  827, "USA", "-CW", "Car" },  //     -cw WHL St Augustine, FL
   { 13031.20,    0, 2400, 0x000d2,  285, "MRT", "F",   "Car" },  // -milcom FUF French Navy STANAG
   { 13042.50,    0, 2400, 0x000d2,  970, "DJI", "F",   "EAf" },  // -milcom FUV French Navy STANAG
   { 13042.50,    0, 2400, 0x000d2,  577, "SEN", "F",   "WAf" },  // -milcom 6WW French Navy STANAG
-  { 13046.00,  835,  840, 0x05132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
-  { 13046.00,  835,  840, 0x05132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  { 13046.00,  835,  840, 0x05132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  { 13046.00,  835,  840, 0x05132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   { 13046.00, 1330, 1335, 0x02932,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
-  { 13054.00,    0, 2400, 0x200b2,  721, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
+  { 13054.00,    0, 2400, 0x200b2,  722, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
   { 13057.60,    0, 2400, 0x000d2,  226, "SPN", "",    "SEu" },  // -milcom EBA Navy Madrid STANAG
   { 13070.00, 2200, 1700, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 13070.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13070.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13070.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13070.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13070.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13070.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13070.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13070.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13070.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13070.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13070.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13070.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13070.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13070.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13070.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13070.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13070.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13070.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13070.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13070.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 13072.20,    0, 2400, 0x000d2,  285, "MRT", "F",   "Car" },  // -milcom FUF French Navy STANAG
-  { 13074.00,  615,  645, 0x20102,  831, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
-  { 13074.00,  830,  900, 0x20102,  831, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
-  { 13074.00, 2300, 2330, 0x20102,  831, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
-  { 13077.00,  610,  620, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  { 13077.00,  810,  820, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  { 13077.00, 1010, 1020, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  { 13077.00, 1210, 1220, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  { 13077.00, 1410, 1420, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
-  { 13077.00, 1610, 1620, 0x00112,  839, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  { 13074.00,  615,  645, 0x20102,  832, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
+  { 13074.00,  830,  900, 0x20102,  832, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
+  { 13074.00, 2300, 2330, 0x20102,  832, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
+  { 13077.00,  610,  620, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  { 13077.00,  810,  820, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  { 13077.00, 1010, 1020, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  { 13077.00, 1210, 1220, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  { 13077.00, 1410, 1420, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
+  { 13077.00, 1610, 1620, 0x00112,  840, "CHN", "M",   "FE"  },  //   -aero XSL Fuzhou Radio
   { 13077.00,  900, 1600, 0x00112,  547, "CHN", "M",   "FE"  },  //   -aero XSZ Dalian Radio (x40)
   { 13077.00, 1600, 2200, 0x00112,  547, "CHN", "M",   "FE"  },  //   -aero XSZ Dalian Radio (x40)
   { 13077.00, 2200,  900, 0x00112,  547, "CHN", "M",   "FE"  },  //   -aero XSZ Dalian Radio (x40)
@@ -12951,10 +12953,10 @@ dx_t eibi_db[] = {
   { 13077.00, 1235, 1245, 0x00112,  548, "NMB", "E",   "NMB" },  //   -aero V5W Walvis Bay Radio
   { 13077.00, 1605, 1615, 0x00112,  548, "NMB", "E",   "NMB" },  //   -aero V5W Walvis Bay Radio
   { 13077.00, 1635, 1645, 0x00112,  548, "NMB", "E",   "NMB" },  //   -aero V5W Walvis Bay Radio
-  { 13089.00,  330,  415, 0x00092,  840, "GUM", "E",   "WOc" },  //   -util NRV USCG Guam
-  { 13089.00, 2130, 2215, 0x00092,  840, "GUM", "E",   "WOc" },  //   -util NRV USCG Guam
-  { 13089.00,    5,   40, 0x00092,  841, "HWA", "E",   "Oc"  },  //   -util NMO USCG Honolulu
-  { 13089.00, 1800, 1835, 0x00092,  841, "HWA", "E",   "Oc"  },  //   -util NMO USCG Honolulu
+  { 13089.00,  330,  415, 0x00092,  841, "GUM", "E",   "WOc" },  //   -util NRV USCG Guam
+  { 13089.00, 2130, 2215, 0x00092,  841, "GUM", "E",   "WOc" },  //   -util NRV USCG Guam
+  { 13089.00,    5,   40, 0x00092,  842, "HWA", "E",   "Oc"  },  //   -util NMO USCG Honolulu
+  { 13089.00, 1800, 1835, 0x00092,  842, "HWA", "E",   "Oc"  },  //   -util NMO USCG Honolulu
   { 13089.00,  430,  505, 0x00092,  559, "USA", "E",   "NAm" },  //   -util NMC USCG Point Reyes
   { 13089.00, 1030, 1105, 0x00092,  559, "USA", "E",   "NAm" },  //   -util NMC USCG Point Reyes
   { 13089.00, 1630, 1705, 0x00092,  559, "USA", "E",   "NAm" },  //   -util NMC USCG Point Reyes
@@ -12991,16 +12993,16 @@ dx_t eibi_db[] = {
   { 13128.70, 1403, 1413, 0x00112,  313, "URG", "S",   "URG" },  //   -aero Punta Carretas Radio Wx
   { 13128.70, 2103, 2113, 0x00112,  313, "URG", "S",   "URG" },  //   -aero Punta Carretas Radio Wx
   { 13130.00, 2130, 1500, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 13130.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13130.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13130.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13130.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13130.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13130.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13130.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13130.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13130.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13134.00, 1100, 1200, 0x00112,  823, "GRC", "GR",  "SEu" },  //   -aero SVO Olimpia Radio
+  { 13130.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13130.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13130.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13130.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13130.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13130.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13130.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13130.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13130.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13134.00, 1100, 1200, 0x00112,  824, "GRC", "GR",  "SEu" },  //   -aero SVO Olimpia Radio
   { 13137.00,    0, 2400, 0x00092,  178, "ITL", "I",   "SEu" },  //   -util Romaradio IAR
   { 13140.00,    0, 2400, 0x00112,  519, "TUR", "E",   "ME"  },  //   -aero TAH Turk Radio Istanbul
   { 13145.00, 1200, 1210, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
@@ -13015,16 +13017,16 @@ dx_t eibi_db[] = {
   { 13149.00, 2110, 2120, 0x00112,  521, "CHN", "M",   "FE"  },  //   -aero XSQ Guangzhou Radio
   { 13149.00, 2210, 2220, 0x00112,  521, "CHN", "M",   "FE"  },  //   -aero XSQ Guangzhou Radio
   { 13160.00, 2200, 1700, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 13160.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13160.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13160.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13160.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13160.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13160.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13160.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13160.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13160.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13160.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13160.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13160.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13160.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13160.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13160.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13160.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13160.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13160.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13160.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13160.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 13165.00,  910,  920, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 13165.00,  910,  920, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 13173.00,    0, 2400, 0x00112,  519, "TUR", "E",   "ME"  },  //   -aero TAH Turk Radio Istanbul
@@ -13034,16 +13036,16 @@ dx_t eibi_db[] = {
   { 13182.00, 2210, 2220, 0x00112,  521, "CHN", "M",   "FE"  },  //   -aero XSQ Guangzhou Radio
   { 13191.00,    0, 2400, 0x00112,  519, "TUR", "E",   "ME"  },  //   -aero TAH Turk Radio Istanbul
   { 13195.00,  810,  820, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
-  { 13200.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13200.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13200.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13200.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13200.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13200.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13200.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13200.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13200.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13200.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13200.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13200.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13200.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13200.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13200.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13200.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13200.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13200.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13200.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13200.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 13215.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
   { 13227.00, 1000, 2200, 0x000d2,  651, "PTR", "",    "NAm" },  // -milcom NAU US Navy STANAG
   { 13229.00,    0, 2400, 0x000d2,  651, "PTR", "",    "NAm" },  // -milcom NAU US Navy STANAG
@@ -13056,14 +13058,14 @@ dx_t eibi_db[] = {
   { 13261.00,    0, 2400, 0x00112,  434, "USA", "E",   "Oc"  },  //   -aero San Francisco Radio
   { 13264.00,    0, 2400, 0x00112,  414, "IRL", "E",   "Eu"  },  //   -aero Shannon Volmet
   { 13264.00, 1200, 2100, 0x00112,  414, "IRL", "E",   "Eu"  },  //   -aero Shannon Volmet
-  { 13264.00,    0, 2400, 0x200c2,  335, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
+  { 13264.00,    0, 2400, 0x200c2,  706, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
   { 13267.00,    0, 2400, 0x00112,  361, "RUS", "R",   "Sib" },  //   -aero Irkutsk Volmet x25,x55
   { 13270.00,    0, 2400, 0x00112,  439, "CAN", "E",   "NAm" },  //   -aero Gander Volmet x20,x50
-  { 13270.00,    0, 2400, 0x200c2,  716, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
+  { 13270.00,    0, 2400, 0x200c2,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
   { 13270.00,    0, 2400, 0x200b2,  442, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
-  { 13273.00,    0, 2400, 0x00112,  336, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
+  { 13273.00,    0, 2400, 0x00112,  335, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
   { 13276.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
-  { 13276.00,    0, 2400, 0x200c2,  715, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
+  { 13276.00,    0, 2400, 0x200c2,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
   { 13276.00,    0, 2400, 0x200c2,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
   { 13282.00,    0, 2400, 0x00112,  858, "HKG", "E",   "FE"  },  //   -aero Hongkong Volmet x15,x45
   { 13282.00,    0, 2400, 0x00112,  321, "HWA", "E",   "Oc"  },  //   -aero Honolulu Volmet x25,x55
@@ -13079,7 +13081,7 @@ dx_t eibi_db[] = {
   { 13297.00,    0, 2400, 0x00112,  702, "TRD", "E",   "Car" },  //   -aero Piarco Radio CAR-B
   { 13297.00,    0, 2400, 0x00112,  699, "USA", "E",   "Car" },  //   -aero New York Radio CAR-B
   { 13300.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
-  { 13303.00,    0, 2400, 0x200c2,  842, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
+  { 13303.00,    0, 2400, 0x200c2,  843, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
   { 13306.00, 1000, 2100, 0x00112,  350, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio A
   { 13306.00,    0, 2400, 0x00112,  351, "CAN", "E",   "NAO" },  //   -aero Gander Radio A
   { 13306.00,    0, 2400, 0x00092,  352, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio A
@@ -13089,16 +13091,16 @@ dx_t eibi_db[] = {
   { 13312.00,    0, 2400, 0x200c2,  693, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
   { 13312.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
   { 13312.00,    0, 2400, 0x200b2,  408, "USA", "",    "USA" },  //    -ale COTHEN ALE
-  { 13312.00,    0, 2400, 0x200b2,  733, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
+  { 13312.00,    0, 2400, 0x200b2,  734, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
   { 13315.00,    0, 2400, 0x200c2,  591, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
-  { 13315.00,    0, 2400, 0x200b2,  845, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
+  { 13315.00,    0, 2400, 0x200b2,  846, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
   { 13321.00,    0, 2400, 0x200c2,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
-  { 13321.00,    0, 2400, 0x200c2,  709, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
+  { 13321.00,    0, 2400, 0x200c2,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
   { 13324.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
-  { 13339.00,    0, 2400, 0x00112,  710, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
-  { 13339.00,    0, 2400, 0x00112,  710, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
+  { 13339.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
+  { 13339.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
   { 13341.20,    0, 2400, 0x000d2,  143, "GER", "",    "Eu"  },  // -milcom DHJ58 Marine STANAG
-  { 13342.00,    0, 2400, 0x200c2,  851, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
+  { 13342.00,    0, 2400, 0x200c2,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
   { 13342.00,  600, 1800, 0x00112,  160, "SWE", "E",   "Eu"  },  //   -aero Stockholm Radio
   { 13342.00, 1800,  600, 0x00112,  160, "SWE", "E",   "Eu"  },  //   -aero Stockholm Radio
   { 13351.00,    0, 2400, 0x200c2,  705, "NZL", "-HF", "SOc" },  //   -hfdl Auckland HFDL (ID5)
@@ -13217,7 +13219,7 @@ dx_t eibi_db[] = {
   { 13448.00,  720,  730, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 13449.00, 1450, 1500, 0x01532,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 13452.00, 1200, 1210, 0x02932,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
-  { 13457.00,    0, 2400, 0x200b2,  733, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
+  { 13457.00,    0, 2400, 0x200b2,  734, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
   { 13452.00,   25,   35, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 13452.00,  125,  135, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 13453.00,  840,  850, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
@@ -13267,7 +13269,7 @@ dx_t eibi_db[] = {
   { 13503.00,  610,  620, 0x00132,  569, "RUS", "-TY", "As"  },  //    -spy F06 Russian Spy Numbers
   { 13503.00,  620,  630, 0x00132,  569, "RUS", "-TY", "As"  },  //    -spy F06 Russian Spy Numbers
   { 13503.50,    0, 2400, 0x200b2,  397, "USA", "",    "USA" },  //    -ale US Army MARS ALE
-  { 13503.60,    0, 2400, 0x200b2,  718, "USA", "",    "Glo" },  //    -ale US Embassies ALE
+  { 13503.60,    0, 2400, 0x200b2,  719, "USA", "",    "Glo" },  //    -ale US Embassies ALE
   { 13507.00, 1240, 1250, 0x04332,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 13509.00,  700,  710, 0x0f932,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 13510.00,    0, 2400, 0x200b2,  456, "ALG", "",    "ALG" },  //    -ale Algerian Military ALE
@@ -13294,17 +13296,17 @@ dx_t eibi_db[] = {
   { 13528.40,    0, 2400, 0x200e4,  451, "RUS", "-CW", "FE"  },  //     -cw Channel Marker M
   { 13529.00, 1250, 1300, 0x08532,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 13530.00, 2100, 1600, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  { 13530.20,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13530.20,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13530.20,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13530.20, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13530.20, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13530.20, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13530.20, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13530.20, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13530.20, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13530.20, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13530.20, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13530.20,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13530.20,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13530.20,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13530.20, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13530.20, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13530.20, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13530.20, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13530.20, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13530.20, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13530.20, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13530.20, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 13535.00,  100,  110, 0x00132, 1045, "RUS", "S",   "As"  },  //    -spy V07 Russian Spy Numbers
   { 13536.00,    0, 2400, 0x200b2,  376, "CHL", "",    "CHL" },  //    -ale Gendarmeria Chile ALE
   { 13536.00, 1450, 1500, 0x01532,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
@@ -13330,17 +13332,17 @@ dx_t eibi_db[] = {
   { 13546.00, 1550, 1600, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 13547.00, 1900, 1910, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 13550.00, 2100, 1600, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  { 13550.10,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13550.10,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13550.10,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13550.10, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13550.10, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13550.10, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13550.10, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13550.10, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13550.10, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13550.10, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13550.10, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13550.10,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13550.10,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13550.10,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13550.10, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13550.10, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13550.10, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13550.10, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13550.10, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13550.10, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13550.10, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13550.10, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 13550.50,   30,   45, 0x20102,  379, "NZL", "",    "Oc"  },  //    -fax ZKLF Wellington Met Fax
   { 13550.50,  130,  145, 0x20102,  379, "NZL", "",    "Oc"  },  //    -fax ZKLF Wellington Met Fax
   { 13550.50,  230,  245, 0x20102,  379, "NZL", "",    "Oc"  },  //    -fax ZKLF Wellington Met Fax
@@ -13393,7 +13395,7 @@ dx_t eibi_db[] = {
   { 13580.00, 1530, 1545, 0x0f880,   56, "SWZ", "JU",  "EAf" },  //  -bcast Trans World Radio
   { 13580.00, 1557, 1612, 0x00080,   56, "SWZ", "KiR", "EAf" },  //  -bcast Trans World Radio
   { 13580.00, 1557, 1627, 0x0fc80,   56, "SWZ", "KiR", "EAf" },  //  -bcast Trans World Radio
-  { 13580.00, 1300, 1400, 0x00080,  804, "USA", "J",   "J"   },  //  -bcast PanAmerican Broadc.
+  { 13580.00, 1300, 1400, 0x00080,  805, "USA", "J",   "J"   },  //  -bcast PanAmerican Broadc.
   { 13580.00, 1100, 1200, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
   { 13580.00, 1200, 1300, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
   { 13584.00,  310,  320, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
@@ -13406,16 +13408,16 @@ dx_t eibi_db[] = {
   { 13590.00,  530,  730, 0x00080,   44, "IRN", "A",   "ME"  },  //  -bcast IRIB Voice of I.R.Iran
   { 13590.00,  830, 1030, 0x00080,   44, "IRN", "A",   "ME"  },  //  -bcast IRIB Voice of I.R.Iran
   { 13590.00, 1030, 1430, 0x00080,   44, "IRN", "A",   "ME"  },  //  -bcast IRIB Voice of I.R.Iran
-  { 13590.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13590.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13590.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13590.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13590.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13590.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13590.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13590.00, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13590.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13590.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13590.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13590.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13590.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13590.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13590.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13590.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13590.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13590.00, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13590.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13590.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 13590.00, 1630, 1700, 0x0f880,   51, "USA", "E",   "EAf" },  //  -bcast Voice of America
   { 13590.00, 1700, 1800, 0x00080,   51, "USA", "E",   "Af"  },  //  -bcast Voice of America
   { 13596.00,  810,  820, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
@@ -13425,7 +13427,7 @@ dx_t eibi_db[] = {
   { 13600.00, 1200, 1300, 0x00080,   52, "CHN", "R",   "CAs" },  //  -bcast China Radio Int.
   { 13600.00, 1300, 1400, 0x00080,   52, "CHN", "R",   "CAs" },  //  -bcast China Radio Int.
   { 13600.00, 1400, 1500, 0x00080,   52, "CHN", "TAM", "SAs" },  //  -bcast China Radio Int.
-  { 13605.00, 1300, 2000, 0x00080,  763, "USA", "S",   "CUB" },  //  -bcast Radio Marti
+  { 13605.00, 1300, 2000, 0x00080,  764, "USA", "S",   "CUB" },  //  -bcast Radio Marti
   { 13610.00,  500,  600, 0x00080, 1013, "ARS", "A",   "YEM" },  //  -bcast SBA Radio Riyadh
   { 13610.00,  600,  900, 0x00080, 1013, "ARS", "A",   "YEM" },  //  -bcast SBA Radio Riyadh
   { 13610.00,  900, 1100, 0x00080, 1013, "ARS", "A",   "YEM" },  //  -bcast SBA Radio Riyadh
@@ -13438,7 +13440,7 @@ dx_t eibi_db[] = {
   { 13610.00, 1200, 1300, 0x00080,   52, "CHN", "M",   "SAs" },  //  -bcast China Radio Int.
   { 13610.00, 1430, 1500, 0x00080,   93, "JPN", "BR",  "SEA" },  //  -bcast NHK Radio Japan
   { 13610.00, 1500, 1700, 0x00080,   93, "JPN", "J",   "SEA" },  //  -bcast NHK Radio Japan
-  { 13610.00, 1300, 1400, 0x00080,  740, "ROU", "R",   "FE"  },  //  -bcast Radio Romania Int.
+  { 13610.00, 1300, 1400, 0x00080,  741, "ROU", "R",   "FE"  },  //  -bcast Radio Romania Int.
   { 13630.00, 1930, 2000, 0x00080,   53, "CHN", "P",   "SAf" },  //  -bcast CRI Music
   { 13630.00, 2000, 2100, 0x00080,   52, "CHN", "E",   "EAf" },  //  -bcast China Radio Int.
   { 13630.00, 2100, 2130, 0x00080,   52, "CHN", "E",   "EAf" },  //  -bcast China Radio Int.
@@ -13448,25 +13450,25 @@ dx_t eibi_db[] = {
   { 13630.00, 1130, 1200, 0x00080,   31, "GBR", "DR",  "AFG" },  //  -bcast BBC
   { 13630.00, 1200, 1400, 0x00080,   31, "GBR", "PS",  "AFG" },  //  -bcast BBC
   { 13630.00,  550,  820, 0x00080,   44, "IRN", "DR",  "CAs" },  //  -bcast IRIB Voice of I.R.Iran
-  { 13630.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13630.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13630.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13630.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13630.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13630.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13630.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13630.00, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13630.00, 2100, 2130, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13630.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13630.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13630.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13630.00,    0, 2400, 0x200b2,  733, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
+  { 13630.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13630.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13630.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13630.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13630.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13630.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13630.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13630.00, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13630.00, 2100, 2130, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13630.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13630.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13630.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13630.00,    0, 2400, 0x200b2,  734, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
   { 13630.00,    0,  100, 0x00080,   51, "USA", "TB",  "FE"  },  //  -bcast Voice of America
   { 13630.00, 1600, 1630, 0x00080,   51, "USA", "KNK", "EAf" },  //  -bcast Voice of America
   { 13630.00, 1630, 1700, 0x00080,   51, "USA", "P",   "SAf" },  //  -bcast Voice of America
   { 13630.00, 1700, 1800, 0x00080,   51, "USA", "P",   "SAf" },  //  -bcast Voice of America
   { 13630.00, 1800, 1830, 0x0f880,   51, "USA", "P",   "Af"  },  //  -bcast Voice of America
-  { 13635.00,  600, 1300, 0x00080,  753, "TUR", "TU",  "Eu"  },  //  -bcast Voice of Turkey
+  { 13635.00,  600, 1300, 0x00080,  754, "TUR", "TU",  "Eu"  },  //  -bcast Voice of Turkey
   { 13640.00,  200,  300, 0x00080,   52, "CHN", "E",   "SAs" },  //  -bcast China Radio Int.
   { 13640.00,  400,  500, 0x00080,   52, "CHN", "M",   "SAs" },  //  -bcast China Radio Int.
   { 13640.00, 1500, 1600, 0x00080,   52, "CHN", "E",   "Eu"  },  //  -bcast China Radio Int.
@@ -13474,13 +13476,13 @@ dx_t eibi_db[] = {
   { 13640.00, 2300, 2400, 0x00080,   52, "CHN", "J",   "FE"  },  //  -bcast China Radio Int.
   { 13640.00,    0,  100, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 13640.00, 2300, 1500, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  { 13640.10,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13640.10,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13640.10,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13640.10, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13640.10, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13640.10, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13640.10, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13640.10,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13640.10,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13640.10,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13640.10, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13640.10, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13640.10, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13640.10, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 13640.00,    0,  100, 0x00080,   51, "USA", "TB",  "FE"  },  //  -bcast Voice of America
   { 13645.00,  600,  700, 0x00080,   52, "CHN", "E",   "SEA" },  //  -bcast China Radio Int.
   { 13645.00, 1700, 1800, 0x00080,   52, "CHN", "SWA", "EAf" },  //  -bcast China Radio Int.
@@ -13502,7 +13504,7 @@ dx_t eibi_db[] = {
   { 13650.00, 1300, 1400, 0x00080,   58, "KRE", "M",   "SEA" },  //  -bcast Voice of Korea
   { 13650.00, 1400, 1500, 0x00080,   59, "KRE", "K",   "SEA" },  //  -bcast Voice of Korea KCBS
   { 13650.00, 1700, 2000, 0x00080,  884, "KWT", "A",   "NAm" },  //  -bcast Radio Kuwait DIGITAL
-  { 13650.00, 2030, 2100, 0x00080,  740, "ROU", "E",   "ENA" },  //  -bcast Radio Romania Int.
+  { 13650.00, 2030, 2100, 0x00080,  741, "ROU", "E",   "ENA" },  //  -bcast Radio Romania Int.
   { 13655.00,    0,  100, 0x00080,   52, "CHN", "M",   "FE"  },  //  -bcast China Radio Int.
   { 13655.00,  100,  200, 0x00080,   52, "CHN", "M",   "FE"  },  //  -bcast China Radio Int.
   { 13655.00,  200,  300, 0x00080,   52, "CHN", "M",   "FE"  },  //  -bcast China Radio Int.
@@ -13513,7 +13515,7 @@ dx_t eibi_db[] = {
   { 13660.00,  730,  800, 0x00080,  103, "FRA", "FU",  "WAf" },  //  -bcast Radio France Int.
   { 13660.00,  600,  700, 0x00080,   31, "GBR", "E",   "CAf" },  //  -bcast BBC
   { 13660.00, 1800, 1900, 0x00080,   31, "GBR", "E",   "WAf" },  //  -bcast BBC
-  { 13660.00, 1530, 1600, 0x00080,  740, "ROU", "A",   "NAf" },  //  -bcast Radio Romania Int.
+  { 13660.00, 1530, 1600, 0x00080,  741, "ROU", "A",   "NAf" },  //  -bcast Radio Romania Int.
   { 13670.00, 1300, 1400, 0x00080,   52, "CHN", "E",   "Eu"  },  //  -bcast China Radio Int.
   { 13670.00,    0,  100, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 13670.00, 2130, 1300, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
@@ -13525,13 +13527,13 @@ dx_t eibi_db[] = {
   { 13670.00, 1200, 1400, 0x00080,  480, "CHN", "UI",  "CHN" },  //  -bcast PBS Xinjiang
   { 13670.00, 1800, 1900, 0x00080, 1069, "MDG", "E",   "WAf" },  //  -bcast MWV African Pathways R.
   { 13670.00, 1900, 2000, 0x00080, 1086, "MDG", "A",   "ME"  },  //  -bcast MWV Radio Feda
-  { 13670.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13670.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13670.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13670.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13670.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13670.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13670.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13670.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13670.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13670.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13670.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13670.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13670.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13670.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 13670.00,    0,  100, 0x00080,   51, "USA", "TB",  "FE"  },  //  -bcast Voice of America
   { 13670.00, 2130, 2200, 0x0f880,   51, "USA", "BM",  "WAf" },  //  -bcast Voice of America
   { 13680.00, 1500, 1600, 0x00080,   52, "CHN", "M",   "Eu"  },  //  -bcast China Radio Int.
@@ -13609,7 +13611,7 @@ dx_t eibi_db[] = {
   { 13710.00, 2345,  115, 0x00080,   50, "IND", "M",   "FE"  },  //  -bcast All India Radio Ext.Sce
   { 13710.00, 2000, 2100, 0x00080, 1086, "MDG", "A",   "ME"  },  //  -bcast MWV Radio Feda
   { 13710.00,  700,  800, 0x00080, 1087, "NIG", "HA",  "WAf" },  //  -bcast Manara Radio Int.
-  { 13715.00,  500,  700, 0x00080,  778, "CHN", "M",   "Oc"  },  //  -bcast CNR1 DIGITAL
+  { 13715.00,  500,  700, 0x00080,  779, "CHN", "M",   "Oc"  },  //  -bcast CNR1 DIGITAL
   { 13720.00,  700,  855, 0x00080,  882, "ARS", "SO",  "EAf" },  //  -bcast SBA Saudi Radio Int.
   { 13720.00,  300,  400, 0x00080,   52, "CHN", "HI",  "SAs" },  //  -bcast China Radio Int.
   { 13720.00, 1000, 1100, 0x00080,   52, "CHN", "E",   "SEA" },  //  -bcast China Radio Int.
@@ -13623,15 +13625,15 @@ dx_t eibi_db[] = {
   { 13730.00,  300,  400, 0x00080,   52, "CHN", "TAM", "SAs" },  //  -bcast China Radio Int.
   { 13730.00,  900, 1000, 0x00080,   52, "CHN", "M",   "Oc"  },  //  -bcast China Radio Int.
   { 13730.00, 1730, 1800, 0x00080,   93, "JPN", "SWA", "EAf" },  //  -bcast NHK Radio Japan
-  { 13730.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13730.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13730.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13730.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13730.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13730.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13730.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13730.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13730.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13730.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13730.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13730.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13730.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13730.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13730.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13730.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13730.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13730.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 13740.00,    0,  100, 0x00080,  664, "CUB", "S",   "SAm" },  //  -bcast Radio Habana Cuba
   { 13740.00,  100,  200, 0x00080,  664, "CUB", "S",   "SAm" },  //  -bcast Radio Habana Cuba
   { 13740.00,  200,  300, 0x00080,  664, "CUB", "S",   "SAm" },  //  -bcast Radio Habana Cuba
@@ -13738,11 +13740,11 @@ dx_t eibi_db[] = {
   { 13745.00,  300,  400, 0x00080,   62, "USA", "PS",  "AFG" },  //  -bcast VoA Deewa Radio
   { 13750.00,    0,  100, 0x00080,   52, "CHN", "E",   "FE"  },  //  -bcast China Radio Int.
   { 13750.00,  400,  500, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  { 13750.00,  700,  800, 0x00080,  740, "ROU", "RO",  "ME"  },  //  -bcast Radio Romania Int.
-  { 13750.00, 1100, 1200, 0x00080,  740, "ROU", "E",   "WEu" },  //  -bcast Radio Romania Int.
-  { 13750.00, 1200, 1230, 0x00080,  740, "ROU", "A",   "NAf" },  //  -bcast Radio Romania Int.
-  { 13750.00, 2100, 2200, 0x00080,  741, "ROU", "S",   "SAm" },  //  -bcast Radio Romania DIGITAL
-  { 13750.00, 2300, 2400, 0x00080,  740, "ROU", "S",   "SAm" },  //  -bcast Radio Romania Int.
+  { 13750.00,  700,  800, 0x00080,  741, "ROU", "RO",  "ME"  },  //  -bcast Radio Romania Int.
+  { 13750.00, 1100, 1200, 0x00080,  741, "ROU", "E",   "WEu" },  //  -bcast Radio Romania Int.
+  { 13750.00, 1200, 1230, 0x00080,  741, "ROU", "A",   "NAf" },  //  -bcast Radio Romania Int.
+  { 13750.00, 2100, 2200, 0x00080,  742, "ROU", "S",   "SAm" },  //  -bcast Radio Romania DIGITAL
+  { 13750.00, 2300, 2400, 0x00080,  741, "ROU", "S",   "SAm" },  //  -bcast Radio Romania Int.
   { 13750.00,  400,  500, 0x00080,  117, "USA", "M",   "FE"  },  //  -bcast Radio Free Asia
   { 13753.50,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 13755.00, 1100, 1200, 0x00080,   52, "CHN", "M",   "SAs" },  //  -bcast China Radio Int.
@@ -13775,7 +13777,7 @@ dx_t eibi_db[] = {
   { 13760.00, 2200, 2300, 0x00080,   58, "KRE", "S",   "Eu"  },  //  -bcast Voice of Korea
   { 13760.00, 2300, 2400, 0x00080,   59, "KRE", "K",   "Eu"  },  //  -bcast Voice of Korea KCBS
   { 13760.00,  300,  400, 0x00080, 1069, "MDG", "E",   "SAs" },  //  -bcast MWV African Pathways R.
-  { 13760.00, 1130, 1230, 0x00080,  753, "TUR", "D",   "Eu"  },  //  -bcast Voice of Turkey
+  { 13760.00, 1130, 1230, 0x00080,  754, "TUR", "D",   "Eu"  },  //  -bcast Voice of Turkey
   { 13760.00,    0,  100, 0x00080,   51, "USA", "TB",  "FE"  },  //  -bcast Voice of America
   { 13765.00, 1600, 1615, 0x00080,  492, "CVA", "SWA", "EAf" },  //  -bcast Radio Vaticana
   { 13765.00, 1600, 1630, 0x0fa80,  492, "CVA", "SWA", "EAf" },  //  -bcast Radio Vaticana
@@ -13783,7 +13785,7 @@ dx_t eibi_db[] = {
   { 13765.00, 1630, 1700, 0x00080,  492, "CVA", "E",   "EAf" },  //  -bcast Radio Vaticana
   { 13765.00, 1700, 1730, 0x00080,  492, "CVA", "F",   "CAf" },  //  -bcast Radio Vaticana
   { 13765.00, 1130, 1430, 0x00080,   44, "IRN", "A",   "ME"  },  //  -bcast IRIB Voice of I.R.Iran
-  { 13765.00,  500,  700, 0x00080,  753, "TUR", "HA",  "NIG" },  //  -bcast Voice of Turkey
+  { 13765.00,  500,  700, 0x00080,  754, "TUR", "HA",  "NIG" },  //  -bcast Voice of Turkey
   { 13770.00,    0,  100, 0x00080,   52, "CHN", "VN",  "SEA" },  //  -bcast China Radio Int.
   { 13770.00,  100, 1100, 0x00080,  120, "CHN", "CA",  "CHN" },  //  -bcast CNR 7 Greater Bay Area
   { 13770.00, 1100, 1805, 0x00080,  120, "CHN", "CA",  "CHN" },  //  -bcast CNR 7 Greater Bay Area
@@ -13793,20 +13795,20 @@ dx_t eibi_db[] = {
   { 13775.00,  800,  900, 0x00080, 1021, "CHN", "M",   "Oc"  },  //  -bcast China Radio Int.DIGITAL
   { 13775.00, 2130, 1400, 0x00080,  626, "CHN", "M",   "CHN" },  //  -bcast CNR1 Jammer/Firedrake
   { 13775.00, 1600, 1700, 0x00080,  881, "GER", "AH",  "EAf" },  //  -bcast Deutsche Welle
-  { 13775.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13775.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13775.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13775.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13775.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13775.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13775.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13775.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13775.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13775.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13775.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13775.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13775.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13775.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13775.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13775.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 13780.00,  500,  600, 0x00080, 1013, "ARS", "A",   "ME"  },  //  -bcast SBA Radio Riyadh
   { 13780.00,  600,  900, 0x00080, 1013, "ARS", "A",   "ME"  },  //  -bcast SBA Radio Riyadh
   { 13780.00,  900, 1100, 0x00080, 1013, "ARS", "A",   "ME"  },  //  -bcast SBA Radio Riyadh
   { 13780.00,  130,  230, 0x00080,   52, "CHN", "NE",  "FE"  },  //  -bcast China Radio Int.
   { 13780.00,  230,  330, 0x00080,   52, "CHN", "NE",  "FE"  },  //  -bcast China Radio Int.
-  { 13785.00, 2000, 2200, 0x00080,  746, "USA", "E",   "Eu"  },  //  -bcast World Harvest Radio
+  { 13785.00, 2000, 2200, 0x00080,  747, "USA", "E",   "Eu"  },  //  -bcast World Harvest Radio
   { 13790.00, 1600, 1800, 0x00080,   52, "CHN", "A",   "NAf" },  //  -bcast China Radio Int.
   { 13790.00,  600,  700, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 13790.00, 1500, 1600, 0x0a880,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
@@ -13824,17 +13826,17 @@ dx_t eibi_db[] = {
   { 13790.00, 1100, 1130, 0x00080,   31, "GBR", "SO",  "EAf" },  //  -bcast BBC
   { 13790.00, 1200, 1230, 0x00080,   31, "GBR", "F",   "NAf" },  //  -bcast BBC
   { 13790.00, 1800, 1830, 0x00080,   31, "GBR", "F",   "WAf" },  //  -bcast BBC
-  { 13790.00,  800,  900, 0x00080,  740, "ROU", "RO",  "ME"  },  //  -bcast Radio Romania Int.
-  { 13790.00,  900, 1000, 0x00080,  740, "ROU", "RO",  "NAf" },  //  -bcast Radio Romania Int.
-  { 13790.00, 1000, 1100, 0x00080,  740, "ROU", "F",   "NAf" },  //  -bcast Radio Romania Int.
-  { 13790.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13790.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13790.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13790.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13790.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13790.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13790.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13790.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13790.00,  800,  900, 0x00080,  741, "ROU", "RO",  "ME"  },  //  -bcast Radio Romania Int.
+  { 13790.00,  900, 1000, 0x00080,  741, "ROU", "RO",  "NAf" },  //  -bcast Radio Romania Int.
+  { 13790.00, 1000, 1100, 0x00080,  741, "ROU", "F",   "NAf" },  //  -bcast Radio Romania Int.
+  { 13790.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13790.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13790.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13790.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13790.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13790.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13790.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13790.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 13790.00,  600,  700, 0x00080,  117, "USA", "M",   "FE"  },  //  -bcast Radio Free Asia
   { 13790.00, 1500, 1600, 0x0a880,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
   { 13795.00, 1230, 1330, 0x00080,   52, "CHN", "ML",  "INS" },  //  -bcast China Radio Int.
@@ -13850,7 +13852,7 @@ dx_t eibi_db[] = {
   { 13805.00,    0,  100, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 13805.00,    0,  100, 0x00080,   51, "USA", "TB",  "FE"  },  //  -bcast Voice of America
   { 13810.00, 1200, 1400, 0x00080, 1063, "CHN", "M",   "CHN" },  //  -bcast China National Radio
-  { 13810.00,  400, 1100, 0x00080,  778, "CHN", "M",   "CHN" },  //  -bcast CNR1 DIGITAL
+  { 13810.00,  400, 1100, 0x00080,  779, "CHN", "M",   "CHN" },  //  -bcast CNR1 DIGITAL
   { 13810.00,    0,  100, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 13810.00, 1500, 1700, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 13810.00,  100, 1805, 0x00080,  120, "CHN", "CA",  "CHN" },  //  -bcast CNR 7 Greater Bay Area
@@ -13861,16 +13863,16 @@ dx_t eibi_db[] = {
   { 13810.00, 1600, 1700, 0x00080,  117, "USA", "M",   "FE"  },  //  -bcast Radio Free Asia
   { 13810.00,    0,  100, 0x00080,   51, "USA", "TB",  "FE"  },  //  -bcast Voice of America
   { 13814.00, 1330, 1340, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
-  { 13815.00, 1800, 1900, 0x00080,  747, "ALG", "A",   "CAf" },  //  -bcast Radio Algerienne
-  { 13820.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13820.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13820.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13820.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13820.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13820.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13820.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13815.00, 1800, 1900, 0x00080,  748, "ALG", "A",   "CAf" },  //  -bcast Radio Algerienne
+  { 13820.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13820.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13820.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13820.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13820.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13820.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13820.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 13820.00, 1300, 1700, 0x00080,   62, "USA", "PS",  "AFG" },  //  -bcast VoA Deewa Radio
-  { 13825.00,   55,  900, 0x00080,  778, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
+  { 13825.00,   55,  900, 0x00080,  779, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
   { 13825.00,  330,  430, 0x00080,   31, "GBR", "FS",  "IRN" },  //  -bcast BBC
   { 13825.00,  430,  530, 0x00080,   31, "GBR", "FS",  "IRN" },  //  -bcast BBC
   { 13825.00,  500,  510, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
@@ -13892,31 +13894,31 @@ dx_t eibi_db[] = {
   { 13836.00,  700,  710, 0x0f932,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 13840.00, 2210, 2240, 0x0f280,  883, "AUS", "TP",  "Oc"  },  //  -bcast ABC Wantok
   { 13840.00,  530,  600, 0x00080,   93, "JPN", "F",   "CAf" },  //  -bcast NHK Radio Japan
-  { 13840.00, 1958, 2258, 0x00080,  761, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
-  { 13840.00, 2058,  458, 0x00080,  761, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
-  { 13840.00, 2135, 2145, 0x00080,  761, "NZL", "F",   "Oc"  },  //  -bcast Radio New Zealand Int.
-  { 13840.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13840.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13840.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13840.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13840.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13840.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13840.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 13840.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13840.00, 1958, 2258, 0x00080,  762, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
+  { 13840.00, 2058,  458, 0x00080,  762, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
+  { 13840.00, 2135, 2145, 0x00080,  762, "NZL", "F",   "Oc"  },  //  -bcast Radio New Zealand Int.
+  { 13840.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13840.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13840.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13840.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13840.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13840.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13840.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 13840.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 13840.00,  700, 1000, 0x00080, 1024, "USA", "A",   "ME"  },  //  -bcast World's Last Chance
   { 13845.00, 1300, 1400, 0x00080,  373, "USA", "E",   "NAm" },  //  -bcast Brother Stair
   { 13845.00, 1400, 1900, 0x0fc80,  373, "USA", "E",   "NAm" },  //  -bcast Brother Stair
-  { 13845.00, 1700, 1900, 0x00080,  750, "USA", "E",   "NAm" },  //  -bcast Dr.Gene Scott
-  { 13845.00, 1900, 2000, 0x00080,  750, "USA", "E",   "NAm" },  //  -bcast Dr.Gene Scott
-  { 13845.00, 2000, 2400, 0x00080,  750, "USA", "E",   "NAm" },  //  -bcast Dr.Gene Scott
-  { 13845.00, 2000,  100, 0x00080,  750, "USA", "E",   "NAm" },  //  -bcast Dr.Gene Scott
+  { 13845.00, 1700, 1900, 0x00080,  751, "USA", "E",   "NAm" },  //  -bcast Dr.Gene Scott
+  { 13845.00, 1900, 2000, 0x00080,  751, "USA", "E",   "NAm" },  //  -bcast Dr.Gene Scott
+  { 13845.00, 2000, 2400, 0x00080,  751, "USA", "E",   "NAm" },  //  -bcast Dr.Gene Scott
+  { 13845.00, 2000,  100, 0x00080,  751, "USA", "E",   "NAm" },  //  -bcast Dr.Gene Scott
   { 13845.00, 1200, 1300, 0x00080,  630, "USA", "E",   "NAm" },  //  -bcast WWCR 3 Nashville, TN
   { 13845.00, 1300, 1400, 0x0fa80,  630, "USA", "E",   "NAm" },  //  -bcast WWCR 3 Nashville, TN
   { 13845.00, 1400, 1700, 0x00080,  630, "USA", "E",   "NAm" },  //  -bcast WWCR 3 Nashville, TN
   { 13845.00, 1900, 2000, 0x0f880,  630, "USA", "E",   "NAm" },  //  -bcast WWCR 3 Nashville, TN
   { 13849.00,  810,  820, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 13850.00,  900, 1100, 0x00080,   52, "CHN", "M",   "SEA" },  //  -bcast China Radio Int.
-  { 13850.00,    0,  400, 0x00080,  778, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
+  { 13850.00,    0,  400, 0x00080,  779, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
   { 13850.00,  500,  530, 0x00080,   31, "GBR", "PS",  "AFG" },  //  -bcast BBC
   { 13850.00,  530,  600, 0x00080,   31, "GBR", "DR",  "AFG" },  //  -bcast BBC
   { 13850.00,  600,  630, 0x00080,   31, "GBR", "PS",  "AFG" },  //  -bcast BBC
@@ -13925,26 +13927,26 @@ dx_t eibi_db[] = {
   { 13855.00, 1300, 1400, 0x00080,   52, "CHN", "M",   "Eu"  },  //  -bcast China Radio Int.
   { 13855.00, 1400, 1500, 0x00080,   52, "CHN", "M",   "Eu"  },  //  -bcast China Radio Int.
   { 13860.00, 1500, 1600, 0x00080,   52, "CHN", "R",   "EEu" },  //  -bcast China Radio Int.
-  { 13860.00,  230,  930, 0x00080,  734, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
+  { 13860.00,  230,  930, 0x00080,  735, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
   { 13863.00,  400,  410, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   { 13865.00, 1315, 1345, 0x00080,   93, "JPN", "IN",  "INS" },  //  -bcast NHK Radio Japan
   { 13870.00, 1630, 1730, 0x00080,   52, "CHN", "HA",  "NIG" },  //  -bcast China Radio Int.
   { 13870.00, 2000, 1400, 0x00080,  626, "CHN", "M",   "CHN" },  //  -bcast CNR1 Jammer/Firedrake
   { 13870.00, 1030, 1100, 0x0f880,   72, "PHL", "MIE", "SEA" },  //  -bcast FEBC Manila
   { 13870.00, 1100, 1300, 0x00080,   72, "PHL", "KH",  "SEA" },  //  -bcast FEBC Manila
-  { 13870.20,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13870.20,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13870.20,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13870.20, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13870.20, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13870.20, 2000, 2100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13870.20, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13870.20, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13870.20, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13870.20, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13870.20,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13870.20,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13870.20,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13870.20, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13870.20, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13870.20, 2000, 2100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13870.20, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13870.20, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13870.20, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13870.20, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 13870.00,    0, 2400, 0x000d2,  609, "USA", "",    "WNA" },  // -milcom NPG US Navy STANAG
-  { 13873.00,  725,  730, 0x05132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
-  { 13873.00,  725,  730, 0x05132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  { 13873.00,  725,  730, 0x05132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  { 13873.00,  725,  730, 0x05132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   { 13873.00, 1140, 1145, 0x04532,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
   { 13873.00, 1410, 1415, 0x08332,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
   { 13873.00, 1410, 1415, 0x08332,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
@@ -13968,16 +13970,16 @@ dx_t eibi_db[] = {
   { 13887.00, 1600, 1610, 0x05132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 13887.00,  620,  630, 0x0c132,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 13890.00, 2200, 1700, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 13890.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13890.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13890.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13890.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13890.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13890.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13890.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13890.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13890.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13890.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13890.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13890.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13890.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13890.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13890.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13890.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13890.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13890.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13890.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13890.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 13892.00,   35,   45, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 13892.00,  135,  145, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 13892.00, 2000, 2010, 0x09132,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
@@ -13990,7 +13992,7 @@ dx_t eibi_db[] = {
   { 13908.00,  745,  755, 0x05132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 13908.00, 1130, 1135, 0x04932,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 13908.00, 1130, 1135, 0x04932,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
-  { 13911.00,  810,  815, 0x08932,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  { 13911.00,  810,  815, 0x08932,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   { 13911.00,  530,  535, 0x0a132,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
   { 13911.00,  530,  535, 0x0a132,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
   { 13914.00, 1200, 1210, 0x04332,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
@@ -14011,13 +14013,13 @@ dx_t eibi_db[] = {
   { 13920.00, 1915, 2045, 0x20102,  259, "AUS", "",    "Oc"  },  //    -fax VMC Charleville Met Fax
   { 13920.00, 2215, 2400, 0x20102,  259, "AUS", "",    "Oc"  },  //    -fax VMC Charleville Met Fax
   { 13920.00, 2200, 1400, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 13920.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13920.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13920.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13920.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13920.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13920.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13920.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13920.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13920.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13920.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13920.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13920.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13920.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13920.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 13924.00,  700,  710, 0x0f932,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 13925.00,  930,  940, 0x00132,  672, "RUS", "R",   "RUS" },  //    -spy S06 Russian Spy Numbers
   { 13925.60,    0, 2400, 0x200b2,  406, "USA", "",    "USA" },  //    -ale Corps of Engineers ALE
@@ -14050,15 +14052,15 @@ dx_t eibi_db[] = {
   { 13955.00, 1710, 1720, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 13959.00,  530,  540, 0x0c132,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 13959.00,  530,  540, 0x0c132,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
-  { 13960.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13960.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13960.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13960.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13960.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13960.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13960.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13960.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13960.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13960.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13960.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13960.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13960.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13960.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13960.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13960.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13960.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13960.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 13962.00, 1210, 1220, 0x08532,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 13963.00, 1920, 1930, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 13963.50,    0, 2400, 0x200b2,  397, "USA", "",    "USA" },  //    -ale US Army MARS ALE
@@ -14074,13 +14076,13 @@ dx_t eibi_db[] = {
   { 13978.00,  810,  820, 0x05132, 1046, "RUS", "-TY", "RUS" },  //    -spy XPA Russian Spy Numbers
   { 13979.00, 1600, 1610, 0x02332,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   { 13980.00, 2300, 1500, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 13980.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13980.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13980.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13980.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13980.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13980.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 13980.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13980.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13980.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13980.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13980.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13980.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13980.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 13980.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 13983.00, 1110, 1120, 0x08532,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 13984.00, 1220, 1230, 0x04332,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 13985.00,  500,  510, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
@@ -14115,13 +14117,13 @@ dx_t eibi_db[] = {
   { 14369.00, 1200, 1210, 0x0f132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 14369.00, 1110, 1120, 0x08532,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 14370.00, 2300, 1500, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 14370.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14370.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14370.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14370.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14370.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14370.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14370.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14370.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14370.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14370.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14370.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14370.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14370.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14370.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 14372.00, 1940, 1950, 0x0a132,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 14372.00,  910,  920, 0x01532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 14373.00,  820,  830, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
@@ -14154,7 +14156,7 @@ dx_t eibi_db[] = {
   { 14413.00,  830,  840, 0x05132, 1046, "RUS", "-TY", "RUS" },  //    -spy XPA Russian Spy Numbers
   { 14414.00, 1120, 1130, 0x08532,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 14415.00,  600,  610, 0x00132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
-  { 14415.00,  835,  840, 0x05132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  { 14415.00,  835,  840, 0x05132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   { 14415.00, 1140, 1145, 0x04532,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
   { 14415.00, 1440, 1445, 0x00b32,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
   { 14418.00,  840,  850, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
@@ -14165,18 +14167,18 @@ dx_t eibi_db[] = {
   { 14429.00, 1230, 1240, 0x08532,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 14430.00,    0, 2400, 0x200b2,  456, "ALG", "",    "ALG" },  //    -ale Algerian Military ALE
   { 14430.00, 2100, 1700, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 14430.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14430.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14430.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14430.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14430.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14430.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14430.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14430.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14430.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14430.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14430.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14430.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14430.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14430.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14430.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14430.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14430.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14430.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14430.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14430.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14430.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14430.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14430.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14430.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 14431.00,  120,  130, 0x05132,  567, "RUS", "-CW", "As"  },  //    -spy M12 Spy Numbers
   { 14434.00,    0, 2400, 0x000d2,  973, "HWA", "",    "Oc"  },  // -milcom NPM US Navy RTTY/STANAG
   { 14434.00,   25,   35, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
@@ -14211,15 +14213,15 @@ dx_t eibi_db[] = {
   { 14469.00, 1200, 1210, 0x04332,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 14472.00,  700,  710, 0x04932,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 14475.00,    0, 2400, 0x000d2,  285, "MRT", "F",   "Car" },  // -milcom FUF French Navy STANAG
-  { 14474.90,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14474.90,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14474.90,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14474.90, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14474.90, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14474.90, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14474.90, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14474.90, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14474.90, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14474.90,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14474.90,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14474.90,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14474.90, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14474.90, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14474.90, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14474.90, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14474.90, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14474.90, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 14477.00,  310,  320, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   { 14478.00,    0, 2400, 0x200b2,  442, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
   { 14481.00, 1520, 1530, 0x08532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
@@ -14231,15 +14233,15 @@ dx_t eibi_db[] = {
   { 14493.00, 1530, 1540, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
   { 14493.00, 2110, 2120, 0x09132,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   { 14500.00, 2200, 1600, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 14500.10,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14500.10,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14500.10,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14500.10, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14500.10, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14500.10, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14500.10, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14500.10, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14500.10, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14500.10,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14500.10,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14500.10,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14500.10, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14500.10, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14500.10, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14500.10, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14500.10, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14500.10, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 14504.00,  950, 1000, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 14505.00, 1010, 1020, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 14505.00, 1010, 1020, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
@@ -14252,24 +14254,24 @@ dx_t eibi_db[] = {
   { 14538.00, 1520, 1530, 0x08532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 14541.00, 2130, 2140, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
   { 14548.20,    0, 2400, 0x000d2,  868, "GBR", "",    "ME"  },  // -milcom UK MoD DHFCS STANAG
-  { 14550.00,    0, 2400, 0x200b2,  837, "ALG", "",    "ALG" },  //    -ale Algeria Gendarmerie ALE
+  { 14550.00,    0, 2400, 0x200b2,  838, "ALG", "",    "ALG" },  //    -ale Algeria Gendarmerie ALE
   { 14550.00,    0, 2400, 0x200b2,  685, "MRC", "",    "MRC" },  //    -ale Moroccan Military ALE
   { 14555.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 14560.00, 2200, 1500, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 14560.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14560.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14560.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14560.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14560.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14560.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14560.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14560.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14560.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14560.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14560.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14560.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14560.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14560.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14560.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14560.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 14563.00, 1240, 1250, 0x04332,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 14565.00,  500,  510, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   { 14565.00, 1330, 1340, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 14568.00,  310,  320, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   { 14569.00,  550,  600, 0x0c132,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
-  { 14570.00,    0, 2400, 0x200b2,  735, "FRA", "",    "F"   },  //    -ale French Navy ALE
+  { 14570.00,    0, 2400, 0x200b2,  736, "FRA", "",    "F"   },  //    -ale French Navy ALE
   { 14575.00, 1645, 1655, 0x05132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 14575.00,  600,  610, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   { 14576.00,  850,  900, 0x05132, 1046, "RUS", "-TY", "RUS" },  //    -spy XPA Russian Spy Numbers
@@ -14284,30 +14286,30 @@ dx_t eibi_db[] = {
   { 14591.50,    0, 2400, 0x200b2,  469, "FRA", "",    "Eu"  },  //    -ale Fr. Air Force E-3F ALE
   { 14600.00,    0, 2400, 0x200b2,  456, "ALG", "",    "ALG" },  //    -ale Algerian Military ALE
   { 14600.00, 2200, 1500, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 14600.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14600.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14600.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14600.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14600.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14600.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14600.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14600.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14600.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14600.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14600.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14600.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14600.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14600.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14600.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14600.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 14605.00,    0, 2400, 0x200b2,  442, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
   { 14609.50,    0, 2400, 0x200b2,  237, "AUT", "",    "AUT" },  //    -ale Austrian Military ALE
-  { 14610.00,    0, 2400, 0x200b2,  837, "ALG", "",    "ALG" },  //    -ale Algeria Gendarmerie ALE
+  { 14610.00,    0, 2400, 0x200b2,  838, "ALG", "",    "ALG" },  //    -ale Algeria Gendarmerie ALE
   { 14611.00,  820,  830, 0x06132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 14613.00,  310,  320, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   { 14621.00, 1840, 1850, 0x00132,  500, "RUS", "-TY", "RUS" },  //    -spy F01 Russian Spy Numbers
   { 14631.00,    0, 2400, 0x000d2,  239, "POR", "",    "SEu" },  // -milcom CTA NATO STANAG
   { 14635.00, 2200, 1500, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  { 14635.10,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14635.10,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14635.10,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14635.10, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14635.10, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14635.10, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14635.10, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14635.10, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14635.10,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14635.10,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14635.10,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14635.10, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14635.10, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14635.10, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14635.10, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14635.10, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 14639.00, 1240, 1250, 0x02932,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 14642.90,    0, 2400, 0x000d2, 1088, "GUM", "",    "WOc" },  // -milcom NPN Guam STANAG
   { 14644.00, 1900, 1910, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
@@ -14329,20 +14331,20 @@ dx_t eibi_db[] = {
   { 14681.00, 1600, 1610, 0x02332,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   { 14684.00, 1220, 1230, 0x02932,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 14690.00, 2200, 1500, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  { 14690.10,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14690.10,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14690.10,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14690.10, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14690.10, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14690.10, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14690.10, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14690.10, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14690.10,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14690.10,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14690.10,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14690.10, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14690.10, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14690.10, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14690.10, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14690.10, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 14693.00,  120,  130, 0x00132, 1045, "RUS", "S",   "As"  },  //    -spy V07 Russian Spy Numbers
   { 14693.00,  120,  130, 0x00132, 1045, "RUS", "S",   "As"  },  //    -spy V07 Russian Spy Numbers
   { 14700.00,    0, 2400, 0x200b2,  502, "TUN", "",    "TUN" },  //    -ale Tunisian Police ALE
   { 14707.00,    0, 2400, 0x200b2,  995, "BRA", "",    "SAm" },  //    -ale Brazilian Army ALE
   { 14713.00,  920,  930, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
-  { 14716.60,    0, 2400, 0x200b2,  735, "FRA", "",    "F"   },  //    -ale French Navy ALE
+  { 14716.60,    0, 2400, 0x200b2,  736, "FRA", "",    "F"   },  //    -ale French Navy ALE
   { 14717.00, 1430, 1440, 0x01532,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 14717.00,    0, 2400, 0x200b2,  561, "USA", "",    "USA" },  //    -ale US National Guard ALE
   { 14719.00, 1220, 1230, 0x02932,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
@@ -14352,15 +14354,15 @@ dx_t eibi_db[] = {
   { 14724.00,  610,  620, 0x00132,  569, "RUS", "-TY", "As"  },  //    -spy F06 Russian Spy Numbers
   { 14724.30,    0, 2400, 0x200b2,  502, "TUN", "",    "TUN" },  //    -ale Tunisian Police ALE
   { 14725.00,  120,  130, 0x00132, 1045, "RUS", "S",   "As"  },  //    -spy V07 Russian Spy Numbers
-  { 14725.30,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14725.30,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14725.30,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14725.30, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14725.30, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14725.30, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14725.30, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14725.30, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14725.30, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14725.30,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14725.30,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14725.30,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14725.30, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14725.30, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14725.30, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14725.30, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14725.30, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14725.30, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 14736.00,  930,  940, 0x00132,  672, "RUS", "R",   "RUS" },  //    -spy S06 Russian Spy Numbers
   { 14738.50,    0, 2400, 0x200b2,  561, "USA", "",    "USA" },  //    -ale US National Guard ALE
   { 14747.00, 1140, 1150, 0x03132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
@@ -14372,14 +14374,14 @@ dx_t eibi_db[] = {
   { 14769.00, 1100, 1110, 0x08532,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 14771.00,  510,  520, 0x0c132,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 14774.00,  120,  130, 0x00132, 1045, "RUS", "S",   "As"  },  //    -spy V07 Russian Spy Numbers
-  { 14774.70,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14774.70,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14774.70,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14774.70, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14774.70, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14774.70, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14774.70, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14774.70, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14774.70,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14774.70,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14774.70,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14774.70, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14774.70, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14774.70, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14774.70, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14774.70, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 14775.00, 2200, 1500, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
   { 14776.00, 1230, 1245, 0x2f8f4,  680, "BUL", "-TY", "BUL" },  //    -fsk Bulgaria Diplo
   { 14776.00,    0, 2400, 0x200b2,  283, "USA", "",    "USA" },  //    -ale FEMA Emergency ALE
@@ -14394,16 +14396,16 @@ dx_t eibi_db[] = {
   { 14794.00,  910,  920, 0x01532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 14794.00,  910,  920, 0x01532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 14796.00, 1030, 1045, 0x2f8f4,  680, "BUL", "-TY", "BUL" },  //    -fsk Bulgaria Diplo
-  { 14800.00,    0, 2400, 0x200b2,  735, "FRA", "",    "F"   },  //    -ale French Navy ALE
-  { 14800.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14800.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14800.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14800.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14800.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14800.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14800.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14800.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14800.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14800.00,    0, 2400, 0x200b2,  736, "FRA", "",    "F"   },  //    -ale French Navy ALE
+  { 14800.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14800.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14800.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14800.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14800.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14800.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14800.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14800.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14800.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 14813.00, 1640, 1650, 0x02332,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   { 14814.00, 1110, 1120, 0x08532,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 14817.00, 2010, 2020, 0x02932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
@@ -14411,16 +14413,16 @@ dx_t eibi_db[] = {
   { 14818.00,  230,  240, 0x08932,  567, "RUS", "-CW", "As"  },  //    -spy M12 Spy Numbers
   { 14819.00, 1430, 1440, 0x01532,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 14820.00, 2100, 1500, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 14820.10,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14820.10,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14820.10,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14820.10, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14820.10, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14820.10, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14820.10, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14820.10, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14820.10, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14820.10, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14820.10,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14820.10,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14820.10,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14820.10, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14820.10, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14820.10, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14820.10, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14820.10, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14820.10, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14820.10, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 14822.50,    0, 2400, 0x200b2,  867, "LTU", "",    "LTU" },  //    -ale Lithuanian Navy ALE
   { 14828.00, 1920, 1930, 0x0a132,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 14828.00, 1650, 1700, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
@@ -14440,15 +14442,15 @@ dx_t eibi_db[] = {
   { 14846.50,    0, 2400, 0x200b2,  397, "USA", "",    "USA" },  //    -ale US Army MARS ALE
   { 14847.00,  610,  620, 0x00132,  569, "RUS", "-TY", "As"  },  //    -spy F06 Russian Spy Numbers
   { 14849.00, 1430, 1440, 0x01532,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
-  { 14849.90,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14849.90,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14849.90,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14849.90, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14849.90, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14849.90, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14849.90, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14849.90, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14849.90, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14849.90,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14849.90,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14849.90,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14849.90, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14849.90, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14849.90, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14849.90, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14849.90, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14849.90, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 14852.00, 1310, 1320, 0x02932, 1046, "RUS", "-TY", "RUS" },  //    -spy XPA Russian Spy Numbers
   { 14852.00, 1900, 1910, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 14854.00, 1430, 1440, 0x01532,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
@@ -14461,15 +14463,15 @@ dx_t eibi_db[] = {
   { 14865.00,  635,  640, 0x05132,  639, "POL", "-TY", ""    },  //    -spy F03l Polish Spy Numbers
   { 14865.00, 1600, 1605, 0x02532,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
   { 14865.00, 1600, 1605, 0x02532,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
-  { 14870.10,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14870.10,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14870.10,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14870.10, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14870.10, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14870.10, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14870.10, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14870.10, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14870.10, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14870.10,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14870.10,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14870.10,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14870.10, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14870.10, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14870.10, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14870.10, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14870.10, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14870.10, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 14873.00,  840,  850, 0x00132,  575, "RUS", "E",   "RUS" },  //    -spy E07a Russian Spy Numbers
   { 14874.00,  950, 1000, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 14875.00,    0, 2400, 0x200b2,  208, "GBR", "",    "ME"  },  //    -ale DHFCS Forest Moor ALE
@@ -14490,31 +14492,31 @@ dx_t eibi_db[] = {
   { 14887.40,    0, 2400, 0x000d2,  944, "GUM", "",    "WOc" },  // -milcom US Navy RTTY/STANAG
   { 14892.00, 1500, 1510, 0x08532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 14900.00, 2200, 1500, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 14900.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14900.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14900.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14900.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14900.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14900.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14900.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14900.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14900.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14900.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14900.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14900.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14900.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14900.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14900.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14900.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 14917.00, 1120, 1130, 0x03132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 14918.00,  300,  310, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   { 14918.00,  640,  650, 0x0c132,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 14918.00, 1900, 1910, 0x04332,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 14919.00, 1620, 1630, 0x05132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 14920.00, 2130, 1500, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 14920.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14920.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14920.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14920.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14920.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14920.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14920.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14920.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14920.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14920.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14920.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14920.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14920.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14920.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14920.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14920.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14920.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14920.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 14923.00, 2010, 2020, 0x02932,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
-  { 14924.00,    0, 2400, 0x000d2,  836, "OCE", "F",   "Oc"  },  // -milcom FUM French Navy STANAG
+  { 14924.00,    0, 2400, 0x000d2,  837, "OCE", "F",   "Oc"  },  // -milcom FUM French Navy STANAG
   { 14925.50,    0, 2400, 0x200b2,  578, "CHN", "",    "CHN" },  //    -ale Chinese Military ALE
   { 14926.00, 1600, 1610, 0x02332,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   { 14927.00, 1600, 1610, 0x02332,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
@@ -14528,15 +14530,15 @@ dx_t eibi_db[] = {
   { 14940.00, 1135, 1140, 0x04932,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 14940.00, 1135, 1140, 0x04932,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 14940.00, 1650, 1700, 0x04332,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
-  { 14940.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14940.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14940.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14940.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14940.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14940.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14940.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14940.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14940.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14940.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14940.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14940.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14940.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14940.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14940.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14940.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14940.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14940.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 14941.00,   25,   35, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 14941.00,  125,  135, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 14942.00,  700,  710, 0x04932,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
@@ -14566,14 +14568,14 @@ dx_t eibi_db[] = {
   { 14977.00,  740,  750, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 14978.00, 1330, 1340, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 14980.00, 2200, 1500, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 14980.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14980.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14980.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14980.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14980.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14980.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14980.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 14980.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14980.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14980.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14980.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14980.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14980.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14980.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14980.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 14980.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 14981.00,  930,  940, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 14982.00, 1120, 1130, 0x03132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 14983.00, 1330, 1340, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
@@ -14584,7 +14586,7 @@ dx_t eibi_db[] = {
   { 15000.00,  100,  900, 0x200a1,  229, "CHN", "-TS", "CHN" },  //   -time BPM Xian
   { 15000.00,    0, 2400, 0x200a1,  230, "HWA", "-TS", "USA" },  //   -time WWVH Hawaii (f.ann.)
   { 15000.00,    0, 2400, 0x200a1, 1042, "ITL", "-TS", "SEu" },  //   -time ItalCable
-  { 15000.00,    0, 2400, 0x200b2,  720, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
+  { 15000.00,    0, 2400, 0x200b2,  721, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
   { 15000.00,    0, 2400, 0x200a1,  231, "USA", "-TS", "USA" },  //   -time WWV Colorado (m.ann.)
   { 15016.00,    0, 2400, 0x000d2,  608, "USA", "E",   "NAm" },  // -milcom US Air Force Messages
   { 15025.00,    0, 2400, 0x200c2,  468, "ISL", "-HF", "NAO" },  //   -hfdl Reykjavik HFDL (ID3)
@@ -14648,10 +14650,10 @@ dx_t eibi_db[] = {
   { 15125.00, 1700, 1800, 0x00080,   52, "CHN", "SWA", "EAf" },  //  -bcast China Radio Int.
   { 15130.00, 1300, 1400, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 15130.00, 1900, 2100, 0x00080,   93, "JPN", "J",   "CAf" },  //  -bcast NHK Radio Japan
-  { 15130.00,  900, 1000, 0x00080,  740, "ROU", "RO",  "NAf" },  //  -bcast Radio Romania Int.
-  { 15130.00, 1000, 1100, 0x00080,  740, "ROU", "F",   "NAf" },  //  -bcast Radio Romania Int.
-  { 15130.00, 1100, 1200, 0x00080,  740, "ROU", "E",   "WEu" },  //  -bcast Radio Romania Int.
-  { 15130.00, 1200, 1230, 0x00080,  740, "ROU", "A",   "ME"  },  //  -bcast Radio Romania Int.
+  { 15130.00,  900, 1000, 0x00080,  741, "ROU", "RO",  "NAf" },  //  -bcast Radio Romania Int.
+  { 15130.00, 1000, 1100, 0x00080,  741, "ROU", "F",   "NAf" },  //  -bcast Radio Romania Int.
+  { 15130.00, 1100, 1200, 0x00080,  741, "ROU", "E",   "WEu" },  //  -bcast Radio Romania Int.
+  { 15130.00, 1200, 1230, 0x00080,  741, "ROU", "A",   "ME"  },  //  -bcast Radio Romania Int.
   { 15130.00, 1300, 1400, 0x00080,   51, "USA", "M",   "FE"  },  //  -bcast Voice of America
   { 15135.00,  830,  930, 0x00080,   52, "CHN", "IN",  "INS" },  //  -bcast China Radio Int.
   { 15135.00,  930, 1030, 0x00080,   52, "CHN", "ML",  "INS" },  //  -bcast China Radio Int.
@@ -14684,8 +14686,8 @@ dx_t eibi_db[] = {
   { 15150.00,  400,  500, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 15150.00, 1500, 1600, 0x00080,  889, "HOL", "SUD", "SSD" },  //  -bcast Radio Tamazuj
   { 15150.00, 1545, 1555, 0x04880,  889, "HOL", "E",   "SSD" },  //  -bcast Radio Tamazuj
-  { 15150.00,  900, 1000, 0x00080,  740, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
-  { 15150.00, 1000, 1100, 0x00080,  740, "ROU", "F",   "WEu" },  //  -bcast Radio Romania Int.
+  { 15150.00,  900, 1000, 0x00080,  741, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
+  { 15150.00, 1000, 1100, 0x00080,  741, "ROU", "F",   "WEu" },  //  -bcast Radio Romania Int.
   { 15150.00,  400,  500, 0x00080,   51, "USA", "TB",  "FE"  },  //  -bcast Voice of America
   { 15160.00,  100,  200, 0x00080,   52, "CHN", "M",   "FE"  },  //  -bcast China Radio Int.
   { 15160.00,  200,  300, 0x00080,   52, "CHN", "M",   "FE"  },  //  -bcast China Radio Int.
@@ -14700,7 +14702,7 @@ dx_t eibi_db[] = {
   { 15160.00, 1500, 1600, 0x00080, 1091, "ETH", "TIG", "EAf" },  //  -bcast DimtseTigray MediaHouse
   { 15160.00, 1600, 1700, 0x00080, 1022, "ETH", "TIG", "EAf" },  //  -bcast Dimtse Woyane
   { 15160.00,  900, 1000, 0x00080,  116, "KOR", "K",   "ME"  },  //  -bcast KBS World Radio
-  { 15160.00, 1230, 1300, 0x00080,  740, "ROU", "M",   "FE"  },  //  -bcast Radio Romania Int.
+  { 15160.00, 1230, 1300, 0x00080,  741, "ROU", "M",   "FE"  },  //  -bcast Radio Romania Int.
   { 15165.00, 1300, 1400, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 15165.00, 1300, 1400, 0x00080,   51, "USA", "M",   "FE"  },  //  -bcast Voice of America
   { 15165.00, 1700, 1800, 0x00080,   51, "USA", "E",   "Af"  },  //  -bcast Voice of America
@@ -14713,8 +14715,8 @@ dx_t eibi_db[] = {
   { 15180.00, 1100, 1200, 0x00080,   52, "CHN", "BU",  "Eu"  },  //  -bcast China Radio Int.
   { 15180.00, 1100, 1200, 0x00080,   53, "CHN", "BU",  "Eu"  },  //  -bcast CRI Music
   { 15180.00, 1200, 1300, 0x00080,   52, "CHN", "SR",  "Eu"  },  //  -bcast China Radio Int.
-  { 15180.00,  100,  400, 0x00080,  778, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
-  { 15180.00,  800, 1100, 0x00080,  778, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
+  { 15180.00,  100,  400, 0x00080,  779, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
+  { 15180.00,  800, 1100, 0x00080,  779, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
   { 15180.00,  300,  400, 0x00080,   58, "KRE", "S",   "LAm" },  //  -bcast Voice of Korea
   { 15180.00,  400,  500, 0x00080,   58, "KRE", "E",   "LAm" },  //  -bcast Voice of Korea
   { 15180.00,  500,  600, 0x00080,   58, "KRE", "S",   "LAm" },  //  -bcast Voice of Korea
@@ -14734,10 +14736,10 @@ dx_t eibi_db[] = {
   { 15195.00, 1100, 1200, 0x00080,  117, "USA", "LAO", "SEA" },  //  -bcast Radio Free Asia
   { 15200.00, 1014, 1026, 0x00080,  906, "GUM", "TAM", "SAs" },  //  -bcast KTWR DIGITAL
   { 15200.00, 1026, 1056, 0x00080,  906, "GUM", "E",   "SAs" },  //  -bcast KTWR DIGITAL
-  { 15200.00,  700,  800, 0x00080,  740, "ROU", "RO",  "SAs" },  //  -bcast Radio Romania Int.
-  { 15200.00,  800,  900, 0x00080,  740, "ROU", "RO",  "EGY" },  //  -bcast Radio Romania Int.
+  { 15200.00,  700,  800, 0x00080,  741, "ROU", "RO",  "SAs" },  //  -bcast Radio Romania Int.
+  { 15200.00,  800,  900, 0x00080,  741, "ROU", "RO",  "EGY" },  //  -bcast Radio Romania Int.
   { 15205.00, 1600, 1800, 0x00080, 1068, "ARS", "A",   "Eu"  },  //  -bcast SBA Holy Quran Radio
-  { 15205.00, 1430, 1445, 0x00080,  804, "USA", "E",   "SAs" },  //  -bcast PanAmerican Broadc.
+  { 15205.00, 1430, 1445, 0x00080,  805, "USA", "E",   "SAs" },  //  -bcast PanAmerican Broadc.
   { 15210.00,  300,  400, 0x00080,   52, "CHN", "HI",  "SAs" },  //  -bcast China Radio Int.
   { 15210.00, 1100, 1200, 0x00080,  137, "USA", "M",   "FE"  },  //  -bcast Adventist World Radio
   { 15210.00,    0,  100, 0x00080,  117, "USA", "LAO", "SEA" },  //  -bcast Radio Free Asia
@@ -14750,8 +14752,8 @@ dx_t eibi_db[] = {
   { 15220.00, 1000, 1100, 0x00080,   52, "CHN", "HU",  "Eu"  },  //  -bcast China Radio Int.
   { 15220.00, 1100, 1200, 0x00080,   52, "CHN", "CZ",  "WEu" },  //  -bcast China Radio Int.
   { 15220.00, 1100, 1200, 0x00080,   53, "CHN", "CZ",  "WEu" },  //  -bcast CRI Music
-  { 15220.00,  400,  430, 0x00080,  740, "ROU", "M",   "FE"  },  //  -bcast Radio Romania Int.
-  { 15220.00,  400,  430, 0x00080,  741, "ROU", "M",   "FE"  },  //  -bcast Radio Romania DIGITAL
+  { 15220.00,  400,  430, 0x00080,  741, "ROU", "M",   "FE"  },  //  -bcast Radio Romania Int.
+  { 15220.00,  400,  430, 0x00080,  742, "ROU", "M",   "FE"  },  //  -bcast Radio Romania DIGITAL
   { 15220.00,  700,  800, 0x00080,  137, "USA", "A",   "NAf" },  //  -bcast Adventist World Radio
   { 15220.00,  830,  900, 0x00080,  137, "USA", "TAH", "NAf" },  //  -bcast Adventist World Radio
   { 15220.00,  600,  630, 0x09e80,  648, "XUU", "E,F", "UGA" },  //  -bcast Unknown Station
@@ -14779,7 +14781,7 @@ dx_t eibi_db[] = {
   { 15230.00, 1400, 1430, 0x00080,  881, "GER", "DR",  "AFG" },  //  -bcast Deutsche Welle
   { 15230.00, 1430, 1500, 0x00080,  881, "GER", "PS",  "AFG" },  //  -bcast Deutsche Welle
   { 15230.00, 1230, 1330, 0x00080,  117, "USA", "BR",  "SEA" },  //  -bcast Radio Free Asia
-  { 15235.00, 1030, 1100, 0x00080,  753, "TUR", "UZ",  "CAs" },  //  -bcast Voice of Turkey
+  { 15235.00, 1030, 1100, 0x00080,  754, "TUR", "UZ",  "CAs" },  //  -bcast Voice of Turkey
   { 15245.00, 1500, 1600, 0x00080,   52, "CHN", "E",   "Eu"  },  //  -bcast China Radio Int.
   { 15245.00,  700,  900, 0x00080,   58, "KRE", "R",   "Eu"  },  //  -bcast Voice of Korea
   { 15245.00,  900, 1000, 0x00080,   58, "KRE", "K",   "Eu"  },  //  -bcast Voice of Korea
@@ -14809,8 +14811,8 @@ dx_t eibi_db[] = {
   { 15260.00,  700,  800, 0x00080, 1070, "NIG", "KNU", "NIG" },  //  -bcast Dandal Kura
   { 15260.00,  800,  830, 0x00080, 1006, "SWE", "A",   "ME"  },  //  -bcast IBRA Radio
   { 15260.00, 1630, 1700, 0x00080,   51, "USA", "SWA", "EAf" },  //  -bcast Voice of America
-  { 15265.00, 1400, 1430, 0x00080,  777, "CAN", "E",   "SAs" },  //  -bcast Bible Voice
-  { 15265.00, 1430, 1500, 0x00080,  777, "CAN", "E",   "SAs" },  //  -bcast Bible Voice
+  { 15265.00, 1400, 1430, 0x00080,  778, "CAN", "E",   "SAs" },  //  -bcast Bible Voice
+  { 15265.00, 1430, 1500, 0x00080,  778, "CAN", "E",   "SAs" },  //  -bcast Bible Voice
   { 15265.00, 1100, 1200, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 15265.00, 1530, 1600, 0x00080,  137, "USA", "PJ",  "PAK" },  //  -bcast Adventist World Radio
   { 15265.00, 1100, 1200, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
@@ -14826,39 +14828,39 @@ dx_t eibi_db[] = {
   { 15275.00, 1300, 1400, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
   { 15275.00, 1400, 1500, 0x00080,  103, "FRA", "F",   ""    },  //  -bcast Radio France Int.
   { 15280.00,  700, 1000, 0x00080,   93, "JPN", "J",   "SEA" },  //  -bcast NHK Radio Japan
-  { 15280.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15280.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15280.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15280.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15280.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15280.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15280.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15280.00, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15280.00, 2100, 2130, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15280.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15280.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15280.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15280.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15280.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15280.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15280.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15280.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15280.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15280.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15280.00, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15280.00, 2100, 2130, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15280.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15280.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15280.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 15280.00, 1100, 1130, 0x00080,   51, "USA", "F",   "Af"  },  //  -bcast Voice of America
   { 15284.00,    0, 2400, 0x200b2,  502, "TUN", "",    "TUN" },  //    -ale Tunisian Police ALE
   { 15285.00,  400,  700, 0x00080,  882, "ARS", "SWA", "EAf" },  //  -bcast SBA Saudi Radio Int.
   { 15285.00, 1600, 1700, 0x00080, 1087, "NIG", "HA",  "WAf" },  //  -bcast Manara Radio Int.
-  { 15285.00, 1200, 1230, 0x00080,  753, "TUR", "TK",  "CAs" },  //  -bcast Voice of Turkey
+  { 15285.00, 1200, 1230, 0x00080,  754, "TUR", "TK",  "CAs" },  //  -bcast Voice of Turkey
   { 15285.00,  230,  330, 0x00080,   51, "USA", "BR",  "SEA" },  //  -bcast Voice of America
   { 15290.00,  800, 1000, 0x00080,   93, "JPN", "J",   "WAf" },  //  -bcast NHK Radio Japan
   { 15295.00, 2100, 1700, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  { 15295.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15295.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15295.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15295.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15295.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15295.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15295.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15295.00, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15295.00, 2100, 2130, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15295.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15295.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15295.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15300.00, 1430, 1500, 0x00080,  777, "CAN", "NU",  "SDN" },  //  -bcast Bible Voice
+  { 15295.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15295.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15295.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15295.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15295.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15295.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15295.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15295.00, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15295.00, 2100, 2130, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15295.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15295.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15295.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15300.00, 1430, 1500, 0x00080,  778, "CAN", "NU",  "SDN" },  //  -bcast Bible Voice
   { 15300.00, 1330, 1400, 0x00080, 1076, "CLA", "BR",  "MYA" },  //  -bcast Radio NUG
   { 15300.00,  600,  700, 0x00080,  103, "FRA", "F",   "CAf" },  //  -bcast Radio France Int.
   { 15300.00,  700,  800, 0x00080,  103, "FRA", "F",   "CAf" },  //  -bcast Radio France Int.
@@ -14873,15 +14875,15 @@ dx_t eibi_db[] = {
   { 15300.00, 1800, 1900, 0x00080,  103, "FRA", "F",   "WAf" },  //  -bcast Radio France Int.
   { 15300.00, 1900, 2000, 0x00080,  103, "FRA", "F",   "CAf" },  //  -bcast Radio France Int.
   { 15305.00,  300,  330, 0x00080,  137, "USA", "TIG", "ERI" },  //  -bcast Adventist World Radio
-  { 15310.00, 1600, 1630, 0x0c280,  777, "CAN", "OO",  "EAf" },  //  -bcast Bible Voice
-  { 15310.00, 1630, 1700, 0x00080,  777, "CAN", "SO",  "EAf" },  //  -bcast Bible Voice
-  { 15310.00, 1630, 1730, 0x00080,  777, "CAN", "AH",  "EAf" },  //  -bcast Bible Voice
-  { 15310.00, 1645, 1730, 0x03080,  777, "CAN", "AH",  "EAf" },  //  -bcast Bible Voice
-  { 15310.00, 1700, 1730, 0x00080,  777, "CAN", "AH",  "EAf" },  //  -bcast Bible Voice
-  { 15310.00, 1700, 1730, 0x00080,  777, "CAN", "TIG", "EAf" },  //  -bcast Bible Voice
-  { 15310.00, 1730, 1800, 0x00080,  777, "CAN", "AH",  "EAf" },  //  -bcast Bible Voice
-  { 15310.00, 1730, 1800, 0x00080,  777, "CAN", "OO",  "EAf" },  //  -bcast Bible Voice
-  { 15310.00, 1730, 1800, 0x06080,  777, "CAN", "TIG", "EAf" },  //  -bcast Bible Voice
+  { 15310.00, 1600, 1630, 0x0c280,  778, "CAN", "OO",  "EAf" },  //  -bcast Bible Voice
+  { 15310.00, 1630, 1700, 0x00080,  778, "CAN", "SO",  "EAf" },  //  -bcast Bible Voice
+  { 15310.00, 1630, 1730, 0x00080,  778, "CAN", "AH",  "EAf" },  //  -bcast Bible Voice
+  { 15310.00, 1645, 1730, 0x03080,  778, "CAN", "AH",  "EAf" },  //  -bcast Bible Voice
+  { 15310.00, 1700, 1730, 0x00080,  778, "CAN", "AH",  "EAf" },  //  -bcast Bible Voice
+  { 15310.00, 1700, 1730, 0x00080,  778, "CAN", "TIG", "EAf" },  //  -bcast Bible Voice
+  { 15310.00, 1730, 1800, 0x00080,  778, "CAN", "AH",  "EAf" },  //  -bcast Bible Voice
+  { 15310.00, 1730, 1800, 0x00080,  778, "CAN", "OO",  "EAf" },  //  -bcast Bible Voice
+  { 15310.00, 1730, 1800, 0x06080,  778, "CAN", "TIG", "EAf" },  //  -bcast Bible Voice
   { 15310.00,    0,   30, 0x00080,   31, "GBR", "BR",  "SEA" },  //  -bcast BBC
   { 15310.00,  430,  530, 0x00080,   31, "GBR", "FS",  "IRN" },  //  -bcast BBC
   { 15310.00,  730,  800, 0x00080,   31, "GBR", "DR",  "AFG" },  //  -bcast BBC
@@ -14900,8 +14902,8 @@ dx_t eibi_db[] = {
   { 15320.00,  800,  900, 0x00080,  103, "FRA", "F",   "CAf" },  //  -bcast Radio France Int.
   { 15320.00,  900, 1000, 0x00080,  103, "FRA", "F",   "CAf" },  //  -bcast Radio France Int.
   { 15320.00, 1000, 1100, 0x00080,  103, "FRA", "F",   "CAf" },  //  -bcast Radio France Int.
-  { 15320.00, 1100, 1200, 0x00080,  740, "ROU", "E",   "EAf" },  //  -bcast Radio Romania Int.
-  { 15320.00, 1200, 1230, 0x00080,  740, "ROU", "A",   "NAf" },  //  -bcast Radio Romania Int.
+  { 15320.00, 1100, 1200, 0x00080,  741, "ROU", "E",   "EAf" },  //  -bcast Radio Romania Int.
+  { 15320.00, 1200, 1230, 0x00080,  741, "ROU", "A",   "NAf" },  //  -bcast Radio Romania Int.
   { 15320.00,  300,  400, 0x00080,  111, "TWN", "E",   "SEA" },  //  -bcast Radio Taiwan Int.
   { 15320.00,  400,  430, 0x00080,  111, "TWN", "CA",  "SEA" },  //  -bcast Radio Taiwan Int.
   { 15320.00,  430,  500, 0x00080,  111, "TWN", "HK",  "SEA" },  //  -bcast Radio Taiwan Int.
@@ -14913,8 +14915,8 @@ dx_t eibi_db[] = {
   { 15330.00, 1530, 1600, 0x00080,  484, "FRA", "F",   "SAs" },  //  -bcast Radio France DIGITAL
   { 15330.00, 1115, 1145, 0x00080,   72, "PHL", "MON", "SEA" },  //  -bcast FEBC Manila
   { 15330.00, 1145, 1200, 0x00080,   72, "PHL", "K-P", "SEA" },  //  -bcast FEBC Manila
-  { 15330.00,  200,  300, 0x00080,  740, "ROU", "S",   "SAm" },  //  -bcast Radio Romania Int.
-  { 15330.00,  300,  400, 0x00080,  741, "ROU", "E",   "SAs" },  //  -bcast Radio Romania DIGITAL
+  { 15330.00,  200,  300, 0x00080,  741, "ROU", "S",   "SAm" },  //  -bcast Radio Romania Int.
+  { 15330.00,  300,  400, 0x00080,  742, "ROU", "E",   "SAs" },  //  -bcast Radio Romania DIGITAL
   { 15330.00, 1000, 1100, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
   { 15335.00,  800,  900, 0x00080,   52, "CHN", "R",   "EEu" },  //  -bcast China Radio Int.
   { 15335.00,  900, 1000, 0x00080,   52, "CHN", "R",   "EEu" },  //  -bcast China Radio Int.
@@ -14924,22 +14926,22 @@ dx_t eibi_db[] = {
   { 15340.00, 2100, 1700, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 15340.00, 1700, 1800, 0x00080, 1099, "ETH", "TIG", "EAf" },  //  -bcast Dimtse Wegahta Tigray
   { 15340.00, 1700, 1800, 0x00080, 1060, "ETH", "",    "EAf" },  //  -bcast Noise Jammer
-  { 15340.00,  500,  530, 0x00080,  740, "ROU", "F",   "CAf" },  //  -bcast Radio Romania Int.
-  { 15340.00, 1300, 1500, 0x00080,  740, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
-  { 15340.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15340.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15340.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15340.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15340.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15340.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15340.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15340.00, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15340.00, 1700, 2000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15340.00, 2000, 2100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15340.00, 2100, 2130, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15340.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15340.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15340.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15340.00,  500,  530, 0x00080,  741, "ROU", "F",   "CAf" },  //  -bcast Radio Romania Int.
+  { 15340.00, 1300, 1500, 0x00080,  741, "ROU", "RO",  "SEu" },  //  -bcast Radio Romania Int.
+  { 15340.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15340.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15340.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15340.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15340.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15340.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15340.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15340.00, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15340.00, 1700, 2000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15340.00, 2000, 2100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15340.00, 2100, 2130, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15340.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15340.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15340.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 15340.00,    0,  100, 0x00080,   51, "USA", "M",   "FE"  },  //  -bcast Voice of America
   { 15350.00,  300,  400, 0x00080,   52, "CHN", "HI",  "SAs" },  //  -bcast China Radio Int.
   { 15350.00,  400,  500, 0x00080,   52, "CHN", "HK",  "SAs" },  //  -bcast China Radio Int.
@@ -14953,14 +14955,14 @@ dx_t eibi_db[] = {
   { 15350.00, 1325, 1530, 0x00080,  881, "GER", "HA",  "WAf" },  //  -bcast Deutsche Welle
   { 15355.00, 1500, 1800, 0x00080,  373, "USA", "E",   "ME"  },  //  -bcast Brother Stair
   { 15360.00, 2200, 1500, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  { 15360.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15360.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15360.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15360.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15360.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15360.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15360.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15360.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15360.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15360.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15360.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15360.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15360.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15360.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15360.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15360.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 15360.00,  400,  700, 0x00080,   61, "USA", "PS",  "PAK" },  //  -bcast Radio Mashaal
   { 15360.00,  700, 1000, 0x00080,   61, "USA", "PS",  "PAK" },  //  -bcast Radio Mashaal
   { 15360.00, 1000, 1200, 0x00080,   61, "USA", "PS",  "PAK" },  //  -bcast Radio Mashaal
@@ -14993,7 +14995,7 @@ dx_t eibi_db[] = {
   { 15380.00,  600,  850, 0x0be80,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   { 15380.00,  850, 1100, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   { 15380.00, 2300,  600, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
-  { 15380.00, 1200, 1300, 0x00080,  753, "TUR", "UR",  "PAK" },  //  -bcast Voice of Turkey
+  { 15380.00, 1200, 1300, 0x00080,  754, "TUR", "UR",  "PAK" },  //  -bcast Voice of Turkey
   { 15390.00,  100,  200, 0x00080,  132, "CHN", "UI",  "CHN" },  //  -bcast China National Radio 13
   { 15390.00,  200,  600, 0x00080,  132, "CHN", "UI",  "CHN" },  //  -bcast China National Radio 13
   { 15390.00,  600,  900, 0x0be80,  132, "CHN", "UI",  "CHN" },  //  -bcast China National Radio 13
@@ -15010,16 +15012,16 @@ dx_t eibi_db[] = {
   { 15400.00, 1800, 1900, 0x00080,   31, "GBR", "E",   "WAf" },  //  -bcast BBC
   { 15400.00, 1500, 1600, 0x00080,  889, "HOL", "SUD", "SSD" },  //  -bcast Radio Tamazuj
   { 15400.00, 1545, 1555, 0x04880,  889, "HOL", "E",   "SSD" },  //  -bcast Radio Tamazuj
-  { 15410.00, 2230, 2300, 0x00080,  802, "AUS", "J",   "J"   },  //  -bcast Reach Beyond Australia
+  { 15410.00, 2230, 2300, 0x00080,  803, "AUS", "J",   "J"   },  //  -bcast Reach Beyond Australia
   { 15410.00, 1400, 1500, 0x00080,   52, "CHN", "M",   "Eu"  },  //  -bcast China Radio Int.
   { 15410.00, 2300, 1000, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 15410.00, 1600, 1700, 0x0f880,  894, "SSD", "A,E", "EAf" },  //  -bcast Eye Radio
   { 15410.00, 1700, 1800, 0x0f880,  894, "SSD", "A,E", "EAf" },  //  -bcast Eye Radio
-  { 15410.00, 1230, 1330, 0x00080,  753, "TUR", "UI",  "FE"  },  //  -bcast Voice of Turkey
-  { 15410.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15410.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15410.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15410.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15410.00, 1230, 1330, 0x00080,  754, "TUR", "UI",  "FE"  },  //  -bcast Voice of Turkey
+  { 15410.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15410.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15410.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15410.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 15410.00,  230,  300, 0x00080,  137, "USA", "DR",  "AFG" },  //  -bcast Adventist World Radio
   { 15410.00,  300,  330, 0x00080,  137, "USA", "OO",  "ETH" },  //  -bcast Adventist World Radio
   { 15415.00, 1600, 1630, 0x00080, 1100, "CLA", "SO",  "EAf" },  //  -bcast Radiyoni Dirree Shaggar
@@ -15065,7 +15067,7 @@ dx_t eibi_db[] = {
   { 15445.00,  720,  740, 0x00080,   44, "IRN", "S",   "SEu" },  //  -bcast IRIB Voice of I.R.Iran
   { 15450.00,  900,  930, 0x00080,   72, "PHL", "KHA", "SEA" },  //  -bcast FEBC Manila
   { 15450.00,  930, 1000, 0x00080,   72, "PHL", "MO",  "FE"  },  //  -bcast FEBC Manila
-  { 15450.00, 1230, 1330, 0x00080,  753, "TUR", "E",   "Eu"  },  //  -bcast Voice of Turkey
+  { 15450.00, 1230, 1330, 0x00080,  754, "TUR", "E",   "Eu"  },  //  -bcast Voice of Turkey
   { 15450.00, 1000, 1100, 0x00080,  137, "USA", "M",   "FE"  },  //  -bcast Adventist World Radio
   { 15450.00, 1400, 1600, 0x00080,   86, "USA", "TJ",  "CAs" },  //  -bcast Radio Liberty
   { 15455.00,  800,  830, 0x00080,  103, "FRA", "MAN", "WAf" },  //  -bcast Radio France Int.
@@ -15108,14 +15110,14 @@ dx_t eibi_db[] = {
   { 15500.00, 1100, 1130, 0x00080,  137, "USA", "IN",  "INS" },  //  -bcast Adventist World Radio
   { 15500.00, 1130, 1200, 0x0a880,  137, "USA", "JV",  "INS" },  //  -bcast Adventist World Radio
   { 15500.00, 1130, 1200, 0x05680,  137, "USA", "SUN", "INS" },  //  -bcast Adventist World Radio
-  { 15510.00, 1400, 1500, 0x00080,  790, "GBR", "E",   "Eu"  },  //  -bcast Woofferton Test
+  { 15510.00, 1400, 1500, 0x00080,  791, "GBR", "E",   "Eu"  },  //  -bcast Woofferton Test
   { 15510.00, 1500, 1556, 0x00080, 1104, "GBR", "E",   "Glo" },  //  -bcast Transmission Test
   { 15510.00, 1730, 1800, 0x00080, 1098, "GBR", "TGR", "EAf" },  //  -bcast FEBA Radio Sama
   { 15510.00, 1800, 1830, 0x00080, 1098, "GBR", "FUR", "EAf" },  //  -bcast FEBA Radio Sama
   { 15510.00, 1830, 1900, 0x00080, 1098, "GBR", "A",   "EAf" },  //  -bcast FEBA Radio Sama
-  { 15515.00,  500,  800, 0x00080,  757, "KWT", "A",   "FE"  },  //  -bcast Radio Kuwait
-  { 15515.00,  500,  800, 0x00080,  757, "KWT", "E",   "FE"  },  //  -bcast Radio Kuwait
-  { 15515.00,  800,  902, 0x00080,  757, "KWT", "A",   "FE"  },  //  -bcast Radio Kuwait
+  { 15515.00,  500,  800, 0x00080,  758, "KWT", "A",   "FE"  },  //  -bcast Radio Kuwait
+  { 15515.00,  500,  800, 0x00080,  758, "KWT", "E",   "FE"  },  //  -bcast Radio Kuwait
+  { 15515.00,  800,  902, 0x00080,  758, "KWT", "A",   "FE"  },  //  -bcast Radio Kuwait
   { 15515.00,  200,  300, 0x00080,  137, "USA", "E",   "BGD" },  //  -bcast Adventist World Radio
   { 15515.00, 1400, 1500, 0x00080,  137, "USA", "E",   "BGD" },  //  -bcast Adventist World Radio
   { 15520.00, 1400, 2200, 0x00080, 1065, "SPN", "S",   "ME"  },  //  -bcast Radio Exterior España
@@ -15128,22 +15130,22 @@ dx_t eibi_db[] = {
   { 15520.00, 2200, 2230, 0x0a880, 1065, "SPN", "E",   "ME"  },  //  -bcast Radio Exterior España
   { 15520.00, 2200, 2230, 0x00080, 1065, "SPN", "SEF", "ME"  },  //  -bcast Radio Exterior España
   { 15520.00, 2230, 2300, 0x0a880, 1065, "SPN", "F",   "ME"  },  //  -bcast Radio Exterior España
-  { 15520.00, 1630, 1730, 0x00080,  753, "TUR", "E",   "SAs" },  //  -bcast Voice of Turkey
+  { 15520.00, 1630, 1730, 0x00080,  754, "TUR", "E",   "SAs" },  //  -bcast Voice of Turkey
   { 15520.00,  400,  430, 0x00080,  137, "USA", "AH",  "ETH" },  //  -bcast Adventist World Radio
   { 15525.00,  900, 1100, 0x00080,   52, "CHN", "M",   "PAK" },  //  -bcast China Radio Int.
   { 15530.00, 1330, 1400, 0x00080, 1076, "CLA", "BR",  "MYA" },  //  -bcast Radio NUG
   { 15530.00, 1530, 1600, 0x00080, 1076, "CLA", "BR",  "MYA" },  //  -bcast Radio NUG
-  { 15530.00,  450,  500, 0x00080,  757, "KWT", "A",   "Eu"  },  //  -bcast Radio Kuwait
-  { 15530.00,  500,  800, 0x00080,  757, "KWT", "E",   "Eu"  },  //  -bcast Radio Kuwait
-  { 15530.00, 1749, 1755, 0x00080,  757, "KWT", "UR",  "SAs" },  //  -bcast Radio Kuwait
+  { 15530.00,  450,  500, 0x00080,  758, "KWT", "A",   "Eu"  },  //  -bcast Radio Kuwait
+  { 15530.00,  500,  800, 0x00080,  758, "KWT", "E",   "Eu"  },  //  -bcast Radio Kuwait
+  { 15530.00, 1749, 1755, 0x00080,  758, "KWT", "UR",  "SAs" },  //  -bcast Radio Kuwait
   { 15530.00, 1400, 1430, 0x00080,  137, "USA", "SI",  "CLN" },  //  -bcast Adventist World Radio
   { 15530.00, 1500, 1530, 0x00080,  137, "USA", "KA",  "SEA" },  //  -bcast Adventist World Radio
   { 15530.00, 1530, 1600, 0x00080,  137, "USA", "KA",  "SEA" },  //  -bcast Adventist World Radio
   { 15540.00,  100,  600, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   { 15540.00,  600,  855, 0x0be80,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   { 15540.00,  855, 1100, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
-  { 15540.00, 1600, 1800, 0x00080,  757, "KWT", "UR",  "SAs" },  //  -bcast Radio Kuwait
-  { 15540.00, 1800, 2100, 0x00080,  757, "KWT", "E",   "SAs" },  //  -bcast Radio Kuwait
+  { 15540.00, 1600, 1800, 0x00080,  758, "KWT", "UR",  "SAs" },  //  -bcast Radio Kuwait
+  { 15540.00, 1800, 2100, 0x00080,  758, "KWT", "E",   "SAs" },  //  -bcast Radio Kuwait
   { 15550.00,    0,  100, 0x00080,  120, "CHN", "CA",  "CHN" },  //  -bcast CNR 7 Greater Bay Area
   { 15550.00,  100, 1100, 0x00080,  120, "CHN", "CA",  "CHN" },  //  -bcast CNR 7 Greater Bay Area
   { 15550.00, 1530, 1630, 0x00080,  888, "HOL", "SUD", "SDN" },  //  -bcast Radio Dabanga
@@ -15157,7 +15159,7 @@ dx_t eibi_db[] = {
   { 15560.00,  800,  900, 0x00080,   52, "CHN", "M",   "CAs" },  //  -bcast China Radio Int.
   { 15560.00,  900, 1000, 0x00080,   52, "CHN", "M",   "CAs" },  //  -bcast China Radio Int.
   { 15560.00,  100,  130, 0x00080,   72, "PHL", "JV",  "INS" },  //  -bcast FEBC Manila
-  { 15565.00, 1100, 1130, 0x00080,  802, "AUS", "J",   "J"   },  //  -bcast Reach Beyond Australia
+  { 15565.00, 1100, 1130, 0x00080,  803, "AUS", "J",   "J"   },  //  -bcast Reach Beyond Australia
   { 15565.00, 1530, 1600, 0x00080,  492, "CVA", "AH",  "EAf" },  //  -bcast Radio Vaticana
   { 15565.00, 1600, 1615, 0x00080,  492, "CVA", "SWA", "EAf" },  //  -bcast Radio Vaticana
   { 15565.00, 1600, 1630, 0x0fa80,  492, "CVA", "SWA", "EAf" },  //  -bcast Radio Vaticana
@@ -15184,16 +15186,16 @@ dx_t eibi_db[] = {
   { 15580.50,  930, 1000, 0x00080,   72, "PHL", "BUG", "INS" },  //  -bcast FEBC Manila
   { 15580.50, 1000, 1030, 0x00080,   72, "PHL", "SUN", "INS" },  //  -bcast FEBC Manila
   { 15580.50, 1030, 1058, 0x00080,   72, "PHL", "SAS", "INS" },  //  -bcast FEBC Manila
-  { 15580.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15580.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15580.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15580.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15580.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15580.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15580.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15580.00, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15580.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15580.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15580.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15580.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15580.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15580.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15580.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15580.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15580.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15580.00, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15580.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15580.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 15580.00,  500,  700, 0x00080,   51, "USA", "E",   "Af"  },  //  -bcast Voice of America
   { 15580.00, 1400, 1630, 0x00080,   51, "USA", "E",   "EAf" },  //  -bcast Voice of America
   { 15580.00, 1630, 1730, 0x00080,   51, "USA", "E",   "EAf" },  //  -bcast Voice of America
@@ -15234,17 +15236,17 @@ dx_t eibi_db[] = {
   { 15610.00, 1130, 1200, 0x00080,  137, "USA", "SHA", "MYA" },  //  -bcast Adventist World Radio
   { 15610.00, 1200, 1230, 0x00080,  137, "USA", "MON", "MYA" },  //  -bcast Adventist World Radio
   { 15610.00, 1400, 1500, 0x00080,   51, "USA", "KU",  "ME"  },  //  -bcast Voice of America
-  { 15610.00, 1900, 2400, 0x00080,  759, "USA", "E",   "Af"  },  //  -bcast WEWN EWTN Catholic R.
+  { 15610.00, 1900, 2400, 0x00080,  760, "USA", "E",   "Af"  },  //  -bcast WEWN EWTN Catholic R.
   { 15613.00, 1700, 1710, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 15614.00,  930,  940, 0x00132,  672, "RUS", "R",   "RUS" },  //    -spy S06 Russian Spy Numbers
-  { 15615.00,   15,  215, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  { 15615.00,  245,  330, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  { 15615.00,  400,  945, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  { 15615.00, 1015, 1100, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  { 15615.00, 1100, 1715, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  { 15615.00, 1800, 1845, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  { 15615.00, 1915, 2045, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  { 15615.00, 2215, 2400, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 15615.00,   15,  215, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 15615.00,  245,  330, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 15615.00,  400,  945, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 15615.00, 1015, 1100, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 15615.00, 1100, 1715, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 15615.00, 1800, 1845, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 15615.00, 1915, 2045, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 15615.00, 2215, 2400, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
   { 15615.00,  500,  600, 0x00080, 1021, "CHN", "M",   "Oc"  },  //  -bcast China Radio Int.DIGITAL
   { 15615.00,  600,  700, 0x00080, 1021, "CHN", "M",   "Oc"  },  //  -bcast China Radio Int.DIGITAL
   { 15615.00,  600,  610, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
@@ -15303,8 +15305,8 @@ dx_t eibi_db[] = {
   { 15690.00, 1430, 1435, 0x00132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 15690.00, 1430, 1435, 0x00132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 15690.00,  500,  510, 0x00132,  530, "POL", "R",   ""    },  //    -spy S11a Polish Spy Numbers
-  { 15690.00,  230,  530, 0x00080,  734, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
-  { 15690.00,  530, 1600, 0x00080,  734, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
+  { 15690.00,  230,  530, 0x00080,  735, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
+  { 15690.00,  530, 1600, 0x00080,  735, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
   { 15700.00, 1600, 1700, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 15700.00,  700, 1000, 0x00080,  373, "USA", "E",   "ME"  },  //  -bcast Brother Stair
   { 15700.00,   30,  130, 0x00080,  117, "USA", "BR",  "SEA" },  //  -bcast Radio Free Asia
@@ -15326,8 +15328,8 @@ dx_t eibi_db[] = {
   { 15715.00, 1330, 1400, 0x00080,  137, "USA", "M",   "FE"  },  //  -bcast Adventist World Radio
   { 15720.00,  600,  700, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 15720.00,  200,  300, 0x0f880,   31, "GBR", "E",   "Oc"  },  //  -bcast BBC
-  { 15720.00,  559,  758, 0x00080,  761, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
-  { 15720.00, 2259,  558, 0x00080,  761, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
+  { 15720.00,  559,  758, 0x00080,  762, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
+  { 15720.00, 2259,  558, 0x00080,  762, "NZL", "E",   "Oc"  },  //  -bcast Radio New Zealand Int.
   { 15720.00,  745,  755, 0x02932,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 15720.00,  830,  840, 0x08932,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 15720.00,  600,  700, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
@@ -15348,30 +15350,30 @@ dx_t eibi_db[] = {
   { 15730.00, 2030, 2100, 0x00080,   51, "USA", "HA",  "Af"  },  //  -bcast Voice of America
   { 15735.00,  400, 1000, 0x00080, 1031, "RUS", "R",   "FE"  },  //  -bcast Radio Purga DIGITAL
   { 15740.00, 2130, 1600, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  { 15740.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15740.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15740.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15740.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15740.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15740.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15740.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15740.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15740.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15740.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15740.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15740.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15740.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15740.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15740.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15740.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15740.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15740.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15740.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15740.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 15741.40,    0, 2400, 0x000d2,  580, "AUS", "",    "AUS" },  // -milcom Humpty Doo STANAG
   { 15745.00,    0, 2400, 0x000d2,  580, "AUS", "",    "AUS" },  // -milcom Humpty Doo STANAG
   { 15745.00, 2130, 1600, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 15745.00, 1430, 1500, 0x00080,   93, "JPN", "HI",  "SAs" },  //  -bcast NHK Radio Japan
-  { 15745.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15745.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15745.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15745.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15745.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15745.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15745.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15745.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15745.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15745.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15745.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15745.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15745.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15745.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15745.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15745.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15745.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15745.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15745.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15745.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 15747.00, 1530, 1540, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
   { 15750.00,  400,  700, 0x00080,   61, "USA", "PS",  "PAK" },  //  -bcast Radio Mashaal
   { 15750.00,  700, 1000, 0x00080,   61, "USA", "PS",  "PAK" },  //  -bcast Radio Mashaal
@@ -15382,19 +15384,19 @@ dx_t eibi_db[] = {
   { 15755.00,  700, 1200, 0x00080,   61, "USA", "PS",  "PAK" },  //  -bcast Radio Mashaal
   { 15755.00, 1200, 1300, 0x00080,   61, "USA", "PS",  "PAK" },  //  -bcast Radio Mashaal
   { 15760.00, 2200, 1500, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  { 15760.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15760.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15760.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15760.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15760.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15760.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15760.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15760.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15760.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15760.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15760.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15760.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15760.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15760.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15760.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15760.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 15763.00, 2115, 2125, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
   { 15765.00, 2240, 2250, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 15765.00, 2340, 2350, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 15766.00, 1530, 1540, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
-  { 15770.00, 1300, 1330, 0x00080,  722, "ARG", "F",   "ENA" },  //  -bcast R.Argentina al Exterior
+  { 15770.00, 1300, 1330, 0x00080,  723, "ARG", "F",   "ENA" },  //  -bcast R.Argentina al Exterior
   { 15770.00, 2100, 2130, 0x00080,   65, "CZE", "E",   "ENA" },  //  -bcast Radio Prague
   { 15770.00, 2130, 2200, 0x00080,   65, "CZE", "F",   "ENA" },  //  -bcast Radio Prague
   { 15770.00, 1130, 1200, 0x00080,  137, "USA", "E",   "ENA" },  //  -bcast Adventist World Radio
@@ -15414,16 +15416,16 @@ dx_t eibi_db[] = {
   { 15770.00, 1400, 2000, 0x00080,  661, "USA", "E",   "ENA" },  //  -bcast WRMI Radio Miami Int.
   { 15770.00, 2000, 2100, 0x00080,  661, "USA", "E",   "ENA" },  //  -bcast WRMI Radio Miami Int.
   { 15775.00, 2130, 1600, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  { 15775.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15775.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15775.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15775.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15775.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15775.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15775.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15775.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15775.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15775.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15775.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15775.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15775.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15775.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15775.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15775.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15775.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15775.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15775.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15775.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 15777.50,    0, 2400, 0x200b2,  397, "USA", "",    "USA" },  //    -ale US Army MARS ALE
   { 15779.00,  620,  630, 0x00132,  569, "RUS", "-TY", "As"  },  //    -spy F06 Russian Spy Numbers
   { 15780.00,    0, 1105, 0x00080,  479, "VUT", "BSL", "VUT" },  //  -bcast Radio Vanuatu
@@ -15451,13 +15453,13 @@ dx_t eibi_db[] = {
   { 15795.00, 1625, 1635, 0x02532,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 15800.00,    0, 1600, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 15800.00,  640,  650, 0x0a132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
-  { 15800.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15800.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15800.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15800.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15800.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15800.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 15800.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15800.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15800.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15800.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15800.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15800.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15800.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 15800.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 15803.00,   25,   35, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 15803.00,  125,  135, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 15810.00,    0, 2400, 0x00092,  671, "USA", "E",   "NAm" },  //   -util WTWW Lebanon, TN
@@ -15476,7 +15478,7 @@ dx_t eibi_db[] = {
   { 15824.00,  950, 1000, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 15825.00, 1345, 1355, 0x06532,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 15825.00, 1700, 1800, 0x0f892,  373, "USA", "E",   "NAm" },  //   -util Brother Stair
-  { 15825.00, 2100, 2130, 0x08892,  731, "USA", "S",   "NAm" },  //   -util Frecuencia al Día
+  { 15825.00, 2100, 2130, 0x08892,  732, "USA", "S",   "NAm" },  //   -util Frecuencia al Día
   { 15825.00, 1100, 2100, 0x00092,  374, "USA", "E",   "NAm" },  //   -util WWCR 1 Nashville, TN
   { 15825.00, 1600, 1630, 0x00092,  374, "USA", "L",   "NAm" },  //   -util WWCR 1 Nashville, TN
   { 15825.00, 2100, 2200, 0x00092,  374, "USA", "E",   "NAm" },  //   -util WWCR 1 Nashville, TN
@@ -15488,13 +15490,13 @@ dx_t eibi_db[] = {
   { 15832.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 15836.00, 1410, 1420, 0x01532,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 15840.00, 2200, 1400, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  { 15840.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15840.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15840.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15840.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15840.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15840.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15840.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15840.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15840.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15840.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15840.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15840.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15840.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15840.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 15841.00,  930,  940, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 15842.00, 1220, 1230, 0x04332,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 15843.00,  640,  650, 0x0c132,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
@@ -15504,7 +15506,7 @@ dx_t eibi_db[] = {
   { 15848.00,  800,  810, 0x02332,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   { 15849.00, 1410, 1420, 0x01532,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 15851.00,  140,  150, 0x05132,  567, "RUS", "-CW", "As"  },  //    -spy M12 Spy Numbers
-  { 15851.00,    0, 2400, 0x200b2,  733, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
+  { 15851.00,    0, 2400, 0x200b2,  734, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
   { 15852.00,  930,  940, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 15852.00, 1240, 1250, 0x02932,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 15854.00, 1840, 1850, 0x00132,  500, "RUS", "-TY", "RUS" },  //    -spy F01 Russian Spy Numbers
@@ -15518,18 +15520,18 @@ dx_t eibi_db[] = {
   { 15864.00, 1120, 1130, 0x03132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 15867.00,    0, 2400, 0x200b2,  408, "USA", "",    "USA" },  //    -ale COTHEN ALE
   { 15870.00, 2100, 1700, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  { 15870.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15870.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15870.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15870.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15870.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15870.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15870.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15870.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15870.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15870.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15870.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15870.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15870.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15870.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15870.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15870.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15870.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15870.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15870.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15870.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15870.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15870.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15870.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15870.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 15871.00,  850,  900, 0x05132, 1046, "RUS", "-TY", "RUS" },  //    -spy XPA Russian Spy Numbers
   { 15871.00,  520,  530, 0x0c132,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 15872.00, 1920, 1930, 0x0a132,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
@@ -15541,10 +15543,10 @@ dx_t eibi_db[] = {
   { 15881.00, 1500, 1510, 0x08532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 15887.00,  650,  700, 0x0c132,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 15890.00,    0, 1300, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  { 15890.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15890.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15890.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15890.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15890.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15890.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15890.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15890.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 15890.00, 1200, 1230, 0x00092,  907, "TWN", "M",   "CHN" },  //   -util Star-Star Bc.Station
   { 15893.00,  100,  110, 0x00132, 1045, "RUS", "S",   "As"  },  //    -spy V07 Russian Spy Numbers
   { 15893.00,  100,  110, 0x00132, 1045, "RUS", "S",   "As"  },  //    -spy V07 Russian Spy Numbers
@@ -15559,15 +15561,15 @@ dx_t eibi_db[] = {
   { 15918.00,  650,  700, 0x0c132,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 15919.00, 1450, 1500, 0x01532,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 15920.00, 2100, 1400, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  { 15920.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15920.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15920.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15920.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15920.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15920.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15920.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15920.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15920.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15920.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15920.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15920.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15920.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15920.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15920.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15920.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15920.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15920.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 15921.00,    0, 2400, 0x200b2,  871, "FRA", "",    "F"   },  //    -ale French Diplo ALE
   { 15925.00,  100,  110, 0x00132, 1045, "RUS", "S",   "As"  },  //    -spy V07 Russian Spy Numbers
   { 15928.00, 1430, 1440, 0x01532,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
@@ -15581,13 +15583,13 @@ dx_t eibi_db[] = {
   { 15938.00, 1500, 1510, 0x08532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 15940.00, 2200, 1400, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
   { 15940.00,    0, 2400, 0x200b2,  465, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
-  { 15940.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15940.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15940.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15940.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15940.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15940.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15940.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15940.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15940.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15940.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15940.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15940.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15940.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15940.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 15945.00,  600,  610, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 15946.00,  100,  110, 0x00132, 1045, "RUS", "S",   "As"  },  //    -spy V07 Russian Spy Numbers
   { 15953.00,   30,   40, 0x08932,  567, "RUS", "-CW", "As"  },  //    -spy M12 Spy Numbers
@@ -15601,18 +15603,18 @@ dx_t eibi_db[] = {
   { 15962.00,  700,  710, 0x04932,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 15964.00,  740,  750, 0x04932,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 15970.00, 2100, 1700, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  { 15970.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15970.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15970.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15970.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15970.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15970.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15970.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15970.00, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15970.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15970.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15970.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 15970.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15970.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15970.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15970.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15970.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15970.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15970.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15970.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15970.00, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15970.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15970.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15970.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 15970.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 15972.00,  140,  150, 0x05132,  567, "RUS", "-CW", "As"  },  //    -spy M12 Spy Numbers
   { 15972.00,  850,  900, 0x05132, 1046, "RUS", "-TY", "RUS" },  //    -spy XPA Russian Spy Numbers
   { 15974.00, 1220, 1230, 0x08532,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
@@ -15650,20 +15652,20 @@ dx_t eibi_db[] = {
   { 16071.00,  620,  630, 0x00132,  569, "RUS", "-TY", "As"  },  //    -spy F06 Russian Spy Numbers
   { 16077.00,    0, 2400, 0x200b2,  406, "USA", "",    "USA" },  //    -ale Corps of Engineers ALE
   { 16093.00,  930,  940, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
-  { 16096.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  { 16096.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   { 16100.00, 2100, 1500, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 16100.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16100.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16100.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16100.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16100.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16100.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16100.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16100.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16100.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16100.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16100.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16100.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16100.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16100.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16100.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16100.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16100.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16100.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16100.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16100.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 16102.00,  910,  920, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
-  { 16112.00,    0, 2400, 0x200b2,  723, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
+  { 16112.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   { 16112.00,    0, 2400, 0x200e4,    1, "RUS", "-CW", "RUS" },  //     -cw RDL Russian Navy
   { 16113.00, 1600, 1610, 0x02332,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   { 16115.00,  600,  610, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
@@ -15692,15 +15694,15 @@ dx_t eibi_db[] = {
   { 16156.00,  620,  630, 0x00132,  569, "RUS", "-TY", "As"  },  //    -spy F06 Russian Spy Numbers
   { 16160.00, 2130, 1500, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
   { 16160.00,    0, 2400, 0x200b2,  469, "FRA", "",    "Eu"  },  //    -ale Fr. Air Force E-3F ALE
-  { 16160.10,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16160.10,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16160.10,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16160.10, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16160.10, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16160.10, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16160.10, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16160.10, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16160.10, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16160.10,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16160.10,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16160.10,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16160.10, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16160.10, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16160.10, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16160.10, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16160.10, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16160.10, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 16161.00,   30,   40, 0x08932,  567, "RUS", "-CW", "As"  },  //    -spy M12 Spy Numbers
   { 16162.00, 1450, 1500, 0x01532,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 16163.00,  300,  310, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
@@ -15739,19 +15741,19 @@ dx_t eibi_db[] = {
   { 16246.00,  700,  710, 0x04932,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 16246.00,  700,  710, 0x04932,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 16248.00, 1515, 1525, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
-  { 16249.70,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16249.70,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16249.70,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16249.70, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16249.70, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16249.70, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16249.70, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16249.70, 1600, 1700, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16249.70, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16249.70, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16249.70, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16249.70,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16249.70,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16249.70,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16249.70, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16249.70, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16249.70, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16249.70, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16249.70, 1600, 1700, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16249.70, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16249.70, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16249.70, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 16250.00, 2130, 1700, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 16250.00,    0, 2400, 0x200b2,  820, "GHA", "",    "GHA" },  //    -ale Ghana Navy ALE
+  { 16250.00,    0, 2400, 0x200b2,  821, "GHA", "",    "GHA" },  //    -ale Ghana Navy ALE
   { 16251.00, 1530, 1540, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
   { 16253.00,  920,  930, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 16253.00,   10,   20, 0x08932,  567, "RUS", "-CW", "As"  },  //    -spy M12 Spy Numbers
@@ -15769,7 +15771,7 @@ dx_t eibi_db[] = {
   { 16272.00,  120,  130, 0x05132,  567, "RUS", "-CW", "As"  },  //    -spy M12 Spy Numbers
   { 16274.00, 1210, 1220, 0x08532,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 16275.00,   10,   20, 0x08932,  567, "RUS", "-CW", "As"  },  //    -spy M12 Spy Numbers
-  { 16283.60,    0, 2400, 0x200b2,  718, "USA", "",    "Glo" },  //    -ale US Embassies ALE
+  { 16283.60,    0, 2400, 0x200b2,  719, "USA", "",    "Glo" },  //    -ale US Embassies ALE
   { 16284.00, 1410, 1420, 0x01532,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 16284.00,   10,   20, 0x08932,  567, "RUS", "-CW", "As"  },  //    -spy M12 Spy Numbers
   { 16285.00,    0, 2400, 0x200b2,  502, "TUN", "",    "TUN" },  //    -ale Tunisian Police ALE
@@ -15780,14 +15782,14 @@ dx_t eibi_db[] = {
   { 16296.00,  910,  920, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 16297.00, 1000, 1015, 0x2f8f4,  680, "BUL", "-TY", "IRN" },  //    -fsk Bulgaria Diplo
   { 16300.00, 2200, 1500, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 16300.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16300.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16300.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16300.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16300.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16300.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16300.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16300.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16300.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16300.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16300.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16300.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16300.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16300.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16300.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16300.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 16314.00, 1240, 1250, 0x04332,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 16318.00,  930,  940, 0x00132,  672, "RUS", "R",   "RUS" },  //    -spy S06 Russian Spy Numbers
   { 16320.00,    0, 2400, 0x200b2,  871, "FRA", "",    "F"   },  //    -ale French Diplo ALE
@@ -15833,7 +15835,7 @@ dx_t eibi_db[] = {
   { 16347.00,  930,  940, 0x00132, 1089, "RUS", "-CW", "RUS" },  //    -spy M14 Spy Numbers 617
   { 16347.00,  930,  940, 0x00132, 1089, "RUS", "-CW", "RUS" },  //    -spy M14 Spy Numbers 617
   { 16348.00, 1700, 1710, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
-  { 16348.00,    0, 2400, 0x200b2,  733, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
+  { 16348.00,    0, 2400, 0x200b2,  734, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
   { 16350.00,  700,  710, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   { 16351.00, 1330, 1340, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 16354.00,  700,  710, 0x04932,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
@@ -15849,7 +15851,7 @@ dx_t eibi_db[] = {
   { 16448.10,    0, 2400, 0x000d2,  194, "ITL", "",    "SEu" },  // -milcom IDN Ital.Navy STANAG
   { 16485.00,  610,  620, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 16485.00,  610,  620, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
-  { 16490.00,    0, 2400, 0x200b2,  837, "ALG", "",    "ALG" },  //    -ale Algeria Gendarmerie ALE
+  { 16490.00,    0, 2400, 0x200b2,  838, "ALG", "",    "ALG" },  //    -ale Algeria Gendarmerie ALE
   { 16515.00,  640,  650, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 16528.00, 2300, 1000, 0x00092,  195, "AUS", "E",   "AUS" },  //   -util VMW Wiluna WA
   { 16528.00, 1115, 1130, 0x00092, 1109, "SWE", "SWE", "NEu" },  //   -util Oceansseglingsklubben
@@ -15869,40 +15871,40 @@ dx_t eibi_db[] = {
   { 16557.00,    0, 2400, 0x000d2,  261, "FRA", "F",   "NAO" },  // -milcom FUE French Navy STANAG
   { 16559.00,    0, 2400, 0x20102,  515, "CHN", "M",   "FE"  },  //    -fax XSG Shanghai Radio Fax
   { 16600.00, 2200, 1500, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 16600.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16600.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16600.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16600.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16600.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16600.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16600.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16600.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16600.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16600.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16600.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16600.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16600.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16600.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16600.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16600.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 16607.00,    0, 2400, 0x200b2,  962, "BRA", "",    "SAm" },  //    -ale Brazilian Navy ALE
   { 16680.00, 2100, 1500, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 16680.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16680.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16680.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16680.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16680.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16680.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16680.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16680.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16680.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16680.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16680.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16680.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16680.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16680.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16680.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16680.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16680.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16680.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16680.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16680.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 16730.00,    0, 2400, 0x200b2,  465, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
   { 16764.00,    0, 2400, 0x200b2,  685, "MRC", "",    "MRC" },  //    -ale Moroccan Military ALE
   { 16780.00,  800,  810, 0x00132, 1026, "UKR", "E",   "UKR" },  //    -spy E17z Spy Numbers
   { 16790.00, 2100, 1500, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 16790.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16790.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16790.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16790.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16790.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16790.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16790.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16790.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16790.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16790.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16790.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16790.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16790.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16790.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16790.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16790.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16790.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16790.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16790.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16790.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 16806.50, 1100, 1110, 0x00112,  520, "ARG", "-TY", "SAm" },  //   -aero L2C Buenos Aires Radio
   { 16806.50, 1900, 1910, 0x00112,  520, "ARG", "S",   "SAm" },  //   -aero L2C Buenos Aires Radio
   { 16806.50, 2100, 2110, 0x00112,  520, "ARG", "-TY", "SAm" },  //   -aero L2C Buenos Aires Radio
@@ -15916,9 +15918,9 @@ dx_t eibi_db[] = {
   { 16806.50, 1200, 1210, 0x00112,  284, "INS", "E",   "SEA" },  //   -aero Jakarta Radio
   { 16806.50,   15,   25, 0x00092,  961, "USA", "",    "WNA" },  //   -util NMC NAVTEX Pt Reyes CA
   { 16806.50, 1730, 1740, 0x00092,  961, "USA", "",    "WNA" },  //   -util NMC NAVTEX Pt Reyes CA
-  { 16806.50, 1630, 1640, 0x00092,  821, "USA", "",    "ENA" },  //   -util NMF NAVTEX Boston MA
+  { 16806.50, 1630, 1640, 0x00092,  822, "USA", "",    "ENA" },  //   -util NMF NAVTEX Boston MA
   { 16808.00,    0, 2400, 0x00112,  522, "CHN", "-TY", "FE"  },  //   -aero XSV Tianjin Radio
-  { 16830.50,    0, 2400, 0x00112,  823, "GRC", "-CW", "SEu" },  //   -aero SVO Olimpia Radio
+  { 16830.50,    0, 2400, 0x00112,  824, "GRC", "-CW", "SEu" },  //   -aero SVO Olimpia Radio
   { 16854.00,    0, 2400, 0x00112,  521, "CHN", "-TY", "FE"  },  //   -aero XSQ Guangzhou Radio
   { 16880.00,    0, 2400, 0x00112,  521, "CHN", "-TY", "FE"  },  //   -aero XSQ Guangzhou Radio
   { 16886.00,    0, 2400, 0x00112,  519, "TUR", "-CW", "ME"  },  //   -aero TAH Turk Radio Istanbul
@@ -15927,7 +15929,7 @@ dx_t eibi_db[] = {
   { 16902.00, 1130, 1150, 0x20102,  964, "CHN", "",    "FE"  },  //    -fax 3SD Beijing Meteo Fax
   { 16902.50,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 16904.90,    0, 2400, 0x000d2,  970, "DJI", "F",   "EAf" },  // -milcom FUV French Navy STANAG
-  { 16907.50,  435,  450, 0x2fd02,  831, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
+  { 16907.50,  435,  450, 0x2fd02,  832, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
   { 16910.50,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 16910.00,    0,  900, 0x00112, 1110, "KOR", "-CW", "FE"  },  //   -aero HLJ Seoul Radio
   { 16915.50,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
@@ -15936,10 +15938,10 @@ dx_t eibi_db[] = {
   { 16948.50,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 16951.50,    0, 2400, 0x000d2,  577, "SEN", "F",   "WAf" },  // -milcom 6WW French Navy STANAG
   { 16957.80,    0, 2400, 0x000d2,  533, "NCL", "F",   "Oc"  },  // -milcom FUJ French Navy STANAG
-  { 16959.20,    0, 2400, 0x000d2,  836, "OCE", "F",   "Oc"  },  // -milcom FUM French Navy STANAG
+  { 16959.20,    0, 2400, 0x000d2,  837, "OCE", "F",   "Oc"  },  // -milcom FUM French Navy STANAG
   { 16961.50,    0, 2400, 0x000d2,  285, "MRT", "F",   "Car" },  // -milcom FUF French Navy STANAG
   { 16966.00,    0, 2400, 0x000d2,  251, "FRA", "F",   "Eu"  },  // -milcom FUG French Navy STANAG
-  { 16971.00, 2300, 2330, 0x20102,  831, "JPN", "",    "FE"  },  //    -fax JFC Misaki Fisheries Fax
+  { 16971.00, 2300, 2330, 0x20102,  832, "JPN", "",    "FE"  },  //    -fax JFC Misaki Fisheries Fax
   { 16971.00,    0,  300, 0x20102,  540, "JPN", "",    "FE"  },  //    -fax JJC Kyodo News Agcy Fax
   { 16971.00,  430,  800, 0x20102,  540, "JPN", "",    "FE"  },  //    -fax JJC Kyodo News Agcy Fax
   { 16971.00, 1100, 1230, 0x20102,  540, "JPN", "",    "FE"  },  //    -fax JJC Kyodo News Agcy Fax
@@ -15952,24 +15954,24 @@ dx_t eibi_db[] = {
   { 16974.00, 1430, 1445, 0x00092,  532, "BRA", "P",   "B"   },  //   -util PWZ33 Rio d.J.Naval Wx
   { 16974.00, 1845, 1900, 0x00092,  532, "BRA", "P",   "B"   },  //   -util PWZ33 Rio d.J.Naval Wx
   { 16974.00, 2130, 2145, 0x00092,  532, "BRA", "P",   "B"   },  //   -util PWZ33 Rio d.J.Naval Wx
-  { 16976.80,    0, 2400, 0x200e4,  827, "JPN", "-CW", "FE"  },  //     -cw JFG Shizuokaken Fishery
+  { 16976.80,    0, 2400, 0x200e4,  828, "JPN", "-CW", "FE"  },  //     -cw JFG Shizuokaken Fishery
   { 16978.00,  745,  910, 0x20102, 1080, "BRA", "",    "SAm" },  //    -fax PWZ33 Rio dJ Meteo Fax
   { 16978.00, 1630, 1755, 0x20102, 1080, "BRA", "",    "SAm" },  //    -fax PWZ33 Rio dJ Meteo Fax
   { 16978.60,    0, 2400, 0x000d2,  143, "GER", "",    "Eu"  },  // -milcom DHJ58 Marine STANAG
   { 16980.00, 2130, 1600, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 16980.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16980.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16980.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16980.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16980.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16980.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16980.00, 1500, 1600, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16980.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16980.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 16980.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16980.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16980.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16980.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16980.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16980.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16980.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16980.00, 1500, 1600, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16980.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16980.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 16980.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 16990.00,    0,  900, 0x00112, 1083, "KOR", "-CW", "FE"  },  //   -aero HLO Seoul Radio
   { 16993.40,    0, 2400, 0x000d2,  319, "CAN", "",    "NAm" },  // -milcom CFH Halifax STANAG
-  { 17014.00,    0, 2400, 0x200e4,  832, "JPN", "-CW", "FE"  },  //     -cw JFX Kagoshima Fishery
+  { 17014.00,    0, 2400, 0x200e4,  833, "JPN", "-CW", "FE"  },  //     -cw JFX Kagoshima Fishery
   { 17016.80, 1700, 2300, 0x200e4,   34, "USA", "-CW", "WNA" },  //     -cw KPH Point Reyes, CA
   { 17060.60,    0, 2400, 0x000d2,  545, "REU", "F",   "EAf" },  // -milcom FUX French Navy STANAG
   { 17063.40,    0, 2400, 0x000d2,  251, "FRA", "F",   "Eu"  },  // -milcom FUG French Navy STANAG
@@ -15980,9 +15982,9 @@ dx_t eibi_db[] = {
   { 17069.60, 1645, 2000, 0x20102,  540, "JPN", "",    "FE"  },  //    -fax JJC Kyodo News Agcy Fax
   { 17069.60, 2215, 2245, 0x20102,  540, "JPN", "",    "FE"  },  //    -fax JJC Kyodo News Agcy Fax
   { 17082.20,    0, 2400, 0x000d2,  319, "CAN", "",    "NAm" },  // -milcom CFH Halifax STANAG
-  { 17094.00,    0, 2400, 0x200e4,  826, "USA", "-CW", "Car" },  //     -cw WHL St Augustine, FL
+  { 17094.00,    0, 2400, 0x200e4,  827, "USA", "-CW", "Car" },  //     -cw WHL St Augustine, FL
   { 17097.60,    0, 2400, 0x000d2,  203, "GBR", "",    "WEu" },  // -milcom UK DHFCS STANAG
-  { 17097.60,    0, 2400, 0x000d2,  836, "OCE", "F",   "Oc"  },  // -milcom FUM French Navy STANAG
+  { 17097.60,    0, 2400, 0x000d2,  837, "OCE", "F",   "Oc"  },  // -milcom FUM French Navy STANAG
   { 17106.60,    0, 2400, 0x000d2,  285, "MRT", "F",   "Car" },  // -milcom FUF French Navy STANAG
   { 17120.00, 1440, 1445, 0x00132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 17120.00, 1440, 1445, 0x00132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
@@ -16001,16 +16003,16 @@ dx_t eibi_db[] = {
   { 17146.40, 1200, 1505, 0x20102,  542, "USA", "",    "Car" },  //    -fax NMG Fax New Orleans
   { 17146.40, 1800, 2105, 0x20102,  542, "USA", "",    "Car" },  //    -fax NMG Fax New Orleans
   { 17150.00, 2100, 1500, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 17150.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17150.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17150.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17150.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17150.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17150.00, 1400, 1500, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17150.00, 2100, 2130, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17150.00, 2130, 2200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17150.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17150.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17150.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17150.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17150.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17150.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17150.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17150.00, 1400, 1500, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17150.00, 2100, 2130, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17150.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17150.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17150.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 17151.20,  140,  415, 0x20102,  546, "USA", "",    "WNA" },  //    -fax NMC Fax Pt Reyes CA
   { 17151.20,  655, 1015, 0x20102,  546, "USA", "",    "WNA" },  //    -fax NMC Fax Pt Reyes CA
   { 17151.20, 1120, 1235, 0x20102,  546, "USA", "",    "WNA" },  //    -fax NMC Fax Pt Reyes CA
@@ -16019,22 +16021,22 @@ dx_t eibi_db[] = {
   { 17151.20, 1840, 2215, 0x20102,  546, "USA", "",    "WNA" },  //    -fax NMC Fax Pt Reyes CA
   { 17151.20, 2320, 2400, 0x20102,  546, "USA", "",    "WNA" },  //    -fax NMC Fax Pt Reyes CA
   { 17170.00, 2300, 1400, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 17170.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17170.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17170.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17170.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17170.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17170.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17170.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17170.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17170.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17170.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17170.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17170.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 17180.00,    0, 2400, 0x000d2,  251, "FRA", "F",   "Eu"  },  // -milcom FUG French Navy STANAG
   { 17200.00, 2200, 1400, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 17200.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17200.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17200.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17200.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17200.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17200.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17200.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17231.00,    0, 2400, 0x20102,  831, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
+  { 17200.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17200.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17200.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17200.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17200.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17200.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17200.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17231.00,    0, 2400, 0x20102,  832, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
   { 17237.70,    0, 2400, 0x000d2,  226, "SPN", "",    "SEu" },  // -milcom EBA Navy Madrid STANAG
   { 17257.00,    0, 2400, 0x00112,  519, "TUR", "E",   "ME"  },  //   -aero TAH Turk Radio Istanbul
   { 17260.80,    3,   13, 0x00112,  313, "URG", "S",   "URG" },  //   -aero Punta Carretas Radio Wx
@@ -16077,16 +16079,16 @@ dx_t eibi_db[] = {
   { 17398.00, 2110, 2120, 0x00112,  521, "CHN", "M",   "FE"  },  //   -aero XSQ Guangzhou Radio
   { 17398.00, 2210, 2220, 0x00112,  521, "CHN", "M",   "FE"  },  //   -aero XSQ Guangzhou Radio
   { 17400.00, 2200, 1400, 0x00092,  626, "CHN", "M",   "CHN" },  //   -util CNR1 Jammer/Firedrake
-  { 17400.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17400.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17400.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17400.00, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17400.00, 1300, 1400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17400.00, 2200, 2300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17400.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17400.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17400.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17400.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17400.00, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17400.00, 1300, 1400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17400.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17400.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 17410.00,  745,  755, 0x02932,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 17410.00,  745,  755, 0x02932,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
-  { 17410.00,  725,  730, 0x05132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  { 17410.00,  725,  730, 0x05132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   { 17410.00,  630,  635, 0x0a132,  529, "POL", "-TY", ""    },  //    -spy P03 Polish Spy Numbers
   { 17411.00, 2230, 2240, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 17411.00, 2330, 2340, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
@@ -16111,11 +16113,11 @@ dx_t eibi_db[] = {
   { 17438.00,  910,  920, 0x01532,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
   { 17440.00, 2300, 1300, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
   { 17440.00,  830,  840, 0x00132,  672, "RUS", "R",   "RUS" },  //    -spy S06 Russian Spy Numbers
-  { 17440.30,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17440.30,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17440.30,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17440.30, 1000, 1300, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 17440.30, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17440.30,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17440.30,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17440.30,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17440.30, 1000, 1300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 17440.30, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 17441.00,  800,  810, 0x02332,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   { 17446.00,  650,  700, 0x0c132,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 17448.00,  820,  830, 0x02332,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
@@ -16166,7 +16168,7 @@ dx_t eibi_db[] = {
   { 17491.00, 2340, 2350, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 17492.60,    0, 2400, 0x200b2,  191, "USA", "",    "USA" },  //    -ale Veterans Health Adm.ALE
   { 17500.00,    0, 2400, 0x200b2,  397, "USA", "",    "USA" },  //    -ale US Army MARS ALE
-  { 17501.00,    0, 2400, 0x200b2,  820, "GHA", "",    "GHA" },  //    -ale Ghana Navy ALE
+  { 17501.00,    0, 2400, 0x200b2,  821, "GHA", "",    "GHA" },  //    -ale Ghana Navy ALE
   { 17501.50,    0, 2400, 0x200b2,  561, "USA", "",    "USA" },  //    -ale US National Guard ALE
   { 17503.00, 2100, 2110, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
   { 17510.00,  400,  500, 0x00080,   52, "CHN", "HK",  "SEA" },  //  -bcast China Radio Int.
@@ -16176,13 +16178,13 @@ dx_t eibi_db[] = {
   { 17510.00, 1200, 1230, 0x00080,   52, "CHN", "TAG", "PHL" },  //  -bcast China Radio Int.
   { 17510.00, 1200, 1230, 0x00080,   53, "CHN", "TAG", "PHL" },  //  -bcast CRI Music
   { 17510.00,  700, 1000, 0x00080,  373, "USA", "E",   "ME"  },  //  -bcast Brother Stair
-  { 17510.00, 2200, 2300, 0x00080,  746, "USA", "E",   "SAm" },  //  -bcast World Harvest Radio
+  { 17510.00, 2200, 2300, 0x00080,  747, "USA", "E",   "SAm" },  //  -bcast World Harvest Radio
   { 17511.00, 1515, 1525, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
   { 17512.00,  600,  610, 0x00132,  569, "RUS", "-TY", "As"  },  //    -spy F06 Russian Spy Numbers
   { 17513.00, 1515, 1525, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
   { 17520.00,  600,  700, 0x00080,   52, "CHN", "I",   "SEu" },  //  -bcast China Radio Int.
   { 17520.00,  600,  700, 0x00080,   53, "CHN", "I",   "SEu" },  //  -bcast CRI Music
-  { 17520.00,  500,  530, 0x00080,  740, "ROU", "F",   "CAf" },  //  -bcast Radio Romania Int.
+  { 17520.00,  500,  530, 0x00080,  741, "ROU", "F",   "CAf" },  //  -bcast Radio Romania Int.
   { 17520.00,   50,  605, 0x20102,  898, "THA", "",    "SEA" },  //    -fax HSW64 Bangkok Meteo Fax
   { 17520.00,  700,  755, 0x20102,  898, "THA", "",    "SEA" },  //    -fax HSW64 Bangkok Meteo Fax
   { 17520.00,  800,  805, 0x20102,  898, "THA", "",    "SEA" },  //    -fax HSW64 Bangkok Meteo Fax
@@ -16227,7 +16229,7 @@ dx_t eibi_db[] = {
   { 17550.00,  600,  850, 0x0be80,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   { 17550.00,  850, 1030, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   { 17550.00,  850, 1200, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
-  { 17550.00, 2000, 2400, 0x00080,  757, "KWT", "A",   "NAm" },  //  -bcast Radio Kuwait
+  { 17550.00, 2000, 2400, 0x00080,  758, "KWT", "A",   "NAm" },  //  -bcast Radio Kuwait
   { 17550.00, 1430, 1445, 0x00080,  648, "XUU", "",    "SAs" },  //  -bcast Unknown Station
   { 17560.00, 1600, 1800, 0x00080, 1068, "ARS", "A",   "WAf" },  //  -bcast SBA Holy Quran Radio
   { 17560.00,  800,  900, 0x00080,   52, "CHN", "M",   "CAs" },  //  -bcast China Radio Int.
@@ -16243,7 +16245,7 @@ dx_t eibi_db[] = {
   { 17570.00, 1000, 1100, 0x00080,   52, "CHN", "HU",  "Eu"  },  //  -bcast China Radio Int.
   { 17570.00, 1100, 1200, 0x00080,   52, "CHN", "CZ",  "WEu" },  //  -bcast China Radio Int.
   { 17570.00, 1100, 1200, 0x00080,   53, "CHN", "CZ",  "WEu" },  //  -bcast CRI Music
-  { 17570.00, 1230, 1300, 0x00080,  740, "ROU", "M",   "FE"  },  //  -bcast Radio Romania Int.
+  { 17570.00, 1230, 1300, 0x00080,  741, "ROU", "M",   "FE"  },  //  -bcast Radio Romania Int.
   { 17570.00, 1630, 1700, 0x00080,  137, "USA", "SO",  "SOM" },  //  -bcast Adventist World Radio
   { 17570.00, 1700, 1730, 0x00080,  137, "USA", "SWA", "EAf" },  //  -bcast Adventist World Radio
   { 17570.00, 1730, 1800, 0x00080,  137, "USA", "MAS", "EAf" },  //  -bcast Adventist World Radio
@@ -16259,7 +16261,7 @@ dx_t eibi_db[] = {
   { 17595.00,  850, 1000, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   { 17595.00,  850, 1100, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   { 17595.00, 2300,  600, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
-  { 17604.00,  955, 1200, 0x00080,  757, "KWT", "FP",  "PHL" },  //  -bcast Radio Kuwait
+  { 17604.00,  955, 1200, 0x00080,  758, "KWT", "FP",  "PHL" },  //  -bcast Radio Kuwait
   { 17605.00,   30,  600, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   { 17605.00,  130,  600, 0x00080,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
   { 17605.00,  600,  850, 0x0be80,  114, "CHN", "M",   "CHN" },  //  -bcast China National Radio 1
@@ -16278,7 +16280,7 @@ dx_t eibi_db[] = {
   { 17615.00,  400,  500, 0x00080,   51, "USA", "TB",  "FE"  },  //  -bcast Voice of America
   { 17620.00, 1200, 1300, 0x00080,  103, "FRA", "F",   "WAf" },  //  -bcast Radio France Int.
   { 17620.00, 1200, 1300, 0x00080,  103, "FRA", "F",   "CAf" },  //  -bcast Radio France Int.
-  { 17620.00, 1100, 1200, 0x00080,  753, "TUR", "M",   "FE"  },  //  -bcast Voice of Turkey
+  { 17620.00, 1100, 1200, 0x00080,  754, "TUR", "M",   "FE"  },  //  -bcast Voice of Turkey
   { 17625.00,    0,  600, 0x00080,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   { 17625.00,  600,  855, 0x0de80,  491, "CHN", "M",   "CHN" },  //  -bcast CNR 2 China Business R.
   { 17630.00, 1400, 1500, 0x00080,   52, "CHN", "E",   "EAf" },  //  -bcast China Radio Int.
@@ -16293,7 +16295,7 @@ dx_t eibi_db[] = {
   { 17640.00, 1220, 1250, 0x00080,   44, "IRN", "HA",  "WAf" },  //  -bcast IRIB Voice of I.R.Iran
   { 17640.00,  530,  600, 0x00080,  667, "THA", "E",   "Eu"  },  //  -bcast Radio Thailand
   { 17640.00, 1100, 1200, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
-  { 17650.00, 1200, 1230, 0x00080,  777, "CAN", "E",   "CHN" },  //  -bcast Bible Voice
+  { 17650.00, 1200, 1230, 0x00080,  778, "CAN", "E",   "CHN" },  //  -bcast Bible Voice
   { 17650.00,  600,  700, 0x00080,   52, "CHN", "M",   "Eu"  },  //  -bcast China Radio Int.
   { 17650.00,  700,  800, 0x00080,   52, "CHN", "M",   "Eu"  },  //  -bcast China Radio Int.
   { 17650.00,  800,  900, 0x00080,   52, "CHN", "M",   "Eu"  },  //  -bcast China Radio Int.
@@ -16315,7 +16317,7 @@ dx_t eibi_db[] = {
   { 17660.00,  500,  600, 0x00080,   51, "USA", "TB",  "FE"  },  //  -bcast Voice of America
   { 17670.00,  700,  900, 0x00080,   52, "CHN", "E",   "NAf" },  //  -bcast China Radio Int.
   { 17670.00,  100,  300, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  { 17670.00, 1100, 1200, 0x00080,  740, "ROU", "E",   "EAf" },  //  -bcast Radio Romania Int.
+  { 17670.00, 1100, 1200, 0x00080,  741, "ROU", "E",   "EAf" },  //  -bcast Radio Romania Int.
   { 17670.00,  100,  200, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
   { 17670.00,  200,  300, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
   { 17675.00, 1400, 1600, 0x00080,   31, "GBR", "SO",  "EAf" },  //  -bcast BBC
@@ -16361,7 +16363,7 @@ dx_t eibi_db[] = {
   { 17720.00,  500,  700, 0x00080,   52, "CHN", "D",   "WEu" },  //  -bcast China Radio Int.
   { 17720.00,  500,  700, 0x00080,   53, "CHN", "D",   "WEu" },  //  -bcast CRI Music
   { 17720.00, 1200, 1300, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
-  { 17720.00,  400,  500, 0x00080,  753, "TUR", "ML",  "SEA" },  //  -bcast Voice of Turkey
+  { 17720.00,  400,  500, 0x00080,  754, "TUR", "ML",  "SEA" },  //  -bcast Voice of Turkey
   { 17720.00,    0,   30, 0x00080,  137, "USA", "BR",  "SEA" },  //  -bcast Adventist World Radio
   { 17720.00,   30,  100, 0x00080,  137, "USA", "KA",  "SEA" },  //  -bcast Adventist World Radio
   { 17720.00, 1730, 1800, 0x00080,  137, "USA", "OO",  "ETH" },  //  -bcast Adventist World Radio
@@ -16390,22 +16392,22 @@ dx_t eibi_db[] = {
   { 17750.00, 1500, 1600, 0x00080, 1091, "ETH", "TIG", "EAf" },  //  -bcast DimtseTigray MediaHouse
   { 17750.00, 1600, 1700, 0x00080, 1022, "ETH", "TIG", "EAf" },  //  -bcast Dimtse Woyane
   { 17750.00, 1500, 1700, 0x00080, 1060, "ETH", "",    "EAf" },  //  -bcast Noise Jammer
-  { 17760.00,  955, 1200, 0x00080,  757, "KWT", "FP",  "PHL" },  //  -bcast Radio Kuwait
-  { 17760.00,  400,  430, 0x00080,  741, "ROU", "M",   "FE"  },  //  -bcast Radio Romania DIGITAL
-  { 17760.00,  400,  430, 0x00080,  740, "ROU", "M",   "FE"  },  //  -bcast Radio Romania Int.
-  { 17760.00,  530,  600, 0x00080,  740, "ROU", "E",   "AUS" },  //  -bcast Radio Romania Int.
-  { 17760.00, 1230, 1300, 0x00080,  740, "ROU", "M",   "FE"  },  //  -bcast Radio Romania Int.
-  { 17760.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 17760.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 17760.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 17760.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 17760.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 17760.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 17770.00,   55,  900, 0x00080,  778, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
+  { 17760.00,  955, 1200, 0x00080,  758, "KWT", "FP",  "PHL" },  //  -bcast Radio Kuwait
+  { 17760.00,  400,  430, 0x00080,  742, "ROU", "M",   "FE"  },  //  -bcast Radio Romania DIGITAL
+  { 17760.00,  400,  430, 0x00080,  741, "ROU", "M",   "FE"  },  //  -bcast Radio Romania Int.
+  { 17760.00,  530,  600, 0x00080,  741, "ROU", "E",   "AUS" },  //  -bcast Radio Romania Int.
+  { 17760.00, 1230, 1300, 0x00080,  741, "ROU", "M",   "FE"  },  //  -bcast Radio Romania Int.
+  { 17760.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 17760.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 17760.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 17760.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 17760.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 17760.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 17770.00,   55,  900, 0x00080,  779, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
   { 17770.00, 1600, 1630, 0x04480, 1074, "CLA", "SO",  "EAf" },  //  -bcast Radio Xoriyo
-  { 17770.00, 1400, 1500, 0x00080,  753, "TUR", "A",   "WAf" },  //  -bcast Voice of Turkey
+  { 17770.00, 1400, 1500, 0x00080,  754, "TUR", "A",   "WAf" },  //  -bcast Voice of Turkey
   { 17775.00, 1500, 1530, 0x00080,  137, "USA", "E",   "CAm" },  //  -bcast Adventist World Radio
-  { 17775.00, 1500, 1530, 0x08880,  731, "USA", "S",   "CAm" },  //  -bcast Frecuencia al Día
+  { 17775.00, 1500, 1530, 0x08880,  732, "USA", "S",   "CAm" },  //  -bcast Frecuencia al Día
   { 17775.00, 1355, 1900, 0x0f880, 1038, "USA", "S",   "CAm" },  //  -bcast KVOH Voice of Hope
   { 17775.00, 1530, 2000, 0x00080, 1038, "USA", "E",   "CAm" },  //  -bcast KVOH Voice of Hope
   { 17775.00, 1900, 1905, 0x00080, 1038, "USA", "S",   "CAm" },  //  -bcast KVOH Voice of Hope
@@ -16419,12 +16421,12 @@ dx_t eibi_db[] = {
   { 17780.00, 1700, 1800, 0x0f880,   31, "GBR", "E",   "WAf" },  //  -bcast BBC
   { 17780.00, 1700, 1800, 0x0f880,   31, "GBR", "E",   "WAf" },  //  -bcast BBC
   { 17780.00, 1700, 1800, 0x00080,   31, "GBR", "E",   "WAf" },  //  -bcast BBC
-  { 17780.00,  700,  800, 0x00080,  740, "ROU", "RO",  "SAs" },  //  -bcast Radio Romania Int.
-  { 17780.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 17780.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 17780.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 17780.00, 1000, 1200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 17780.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 17780.00,  700,  800, 0x00080,  741, "ROU", "RO",  "SAs" },  //  -bcast Radio Romania Int.
+  { 17780.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 17780.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 17780.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 17780.00, 1000, 1200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 17780.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 17785.00,  400,  500, 0x0a880,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 17785.00,  400,  500, 0x0a880,   51, "USA", "TB",  "FE"  },  //  -bcast Voice of America
   { 17790.00,  830,  950, 0x00080,  492, "CVA", "LTO", "Cau" },  //  -bcast Radio Vaticana
@@ -16446,7 +16448,7 @@ dx_t eibi_db[] = {
   { 17810.00,  200,  500, 0x00080,   93, "JPN", "J",   "SEA" },  //  -bcast NHK Radio Japan
   { 17810.00,  600,  700, 0x00080,  117, "USA", "M",   "FE"  },  //  -bcast Radio Free Asia
   { 17815.00, 1200, 1230, 0x00080,  103, "FRA", "MAN", "WAf" },  //  -bcast Radio France Int.
-  { 17815.00, 1400, 2100, 0x00080,  746, "USA", "E",   "Af"  },  //  -bcast World Harvest Radio
+  { 17815.00, 1400, 2100, 0x00080,  747, "USA", "E",   "Af"  },  //  -bcast World Harvest Radio
   { 17820.00,  755,  920, 0x00080,  492, "CVA", "E",   "Af"  },  //  -bcast Radio Vaticana
   { 17820.00,  955, 1020, 0x00080,  492, "CVA", "E",   "Af"  },  //  -bcast Radio Vaticana
   { 17820.00, 1115, 1145, 0x00080,   93, "JPN", "IN",  "INS" },  //  -bcast NHK Radio Japan
@@ -16457,11 +16459,11 @@ dx_t eibi_db[] = {
   { 17820.00, 1115, 1145, 0x00080,   93, "JPN", "IN",  "INS" },  //  -bcast NHK Radio Japan
   { 17820.00, 1115, 1145, 0x00080,   93, "JPN", "IN",  "INS" },  //  -bcast NHK Radio Japan
   { 17820.00,  200,  330, 0x00080, 1036, "PHL", "E",   "ME"  },  //  -bcast Radyo Pilipinas
-  { 17830.00,  100,  800, 0x00080,  778, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
+  { 17830.00,  100,  800, 0x00080,  779, "CHN", "M",   "FE"  },  //  -bcast CNR1 DIGITAL
   { 17830.00, 1600, 1700, 0x00080,   31, "GBR", "E",   "CAf" },  //  -bcast BBC
   { 17830.00, 1700, 1800, 0x00080,   31, "GBR", "E",   "CAf" },  //  -bcast BBC
   { 17830.00,  845,  930, 0x00080,   50, "IND", "PS",  "AFG" },  //  -bcast All India Radio Ext.Sce
-  { 17830.00,  830, 1530, 0x00080,  734, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
+  { 17830.00,  830, 1530, 0x00080,  735, "USA", "FS",  "IRN" },  //  -bcast Radio Farda
   { 17840.00,  700,  800, 0x00080,   52, "CHN", "M",   "SAs" },  //  -bcast China Radio Int.
   { 17840.00,  800,  900, 0x00080,   52, "CHN", "M",   "SAs" },  //  -bcast China Radio Int.
   { 17840.00,  900, 1100, 0x00080,   52, "CHN", "M",   "SAs" },  //  -bcast China Radio Int.
@@ -16489,7 +16491,7 @@ dx_t eibi_db[] = {
   { 17855.00, 2200, 2230, 0x00080, 1065, "SPN", "SEF", "NAm" },  //  -bcast Radio Exterior España
   { 17855.00, 2230, 2300, 0x0a880, 1065, "SPN", "F",   "NAm" },  //  -bcast Radio Exterior España
   { 17855.00, 2300, 2330, 0x0f880, 1065, "SPN", "P",   "NAm" },  //  -bcast Radio Exterior España
-  { 17860.00,  500,  700, 0x00080,  778, "CHN", "M",   "Oc"  },  //  -bcast CNR1 DIGITAL
+  { 17860.00,  500,  700, 0x00080,  779, "CHN", "M",   "Oc"  },  //  -bcast CNR1 DIGITAL
   { 17860.00, 1300, 1400, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 17860.00, 1300, 1400, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
   { 17865.00,  600,  700, 0x00080,   52, "CHN", "F",   "SEu" },  //  -bcast China Radio Int.
@@ -16524,7 +16526,7 @@ dx_t eibi_db[] = {
   { 17895.00, 1200, 1300, 0x00080, 1068, "ARS", "A",   "NAf" },  //  -bcast SBA Holy Quran Radio
   { 17895.00, 1300, 1400, 0x00080, 1068, "ARS", "A",   "NAf" },  //  -bcast SBA Holy Quran Radio
   { 17895.00, 1400, 1500, 0x00080, 1068, "ARS", "A",   "NAf" },  //  -bcast SBA Holy Quran Radio
-  { 17901.00,    0, 2400, 0x200c2,  335, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
+  { 17901.00,    0, 2400, 0x200c2,  706, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
   { 17904.00,    0, 2400, 0x00112,  430, "AUS", "E",   "Oc"  },  //   -aero Brisbane Radio
   { 17904.00,    0, 2400, 0x00112,  431, "FJI", "E",   "Oc"  },  //   -aero Nadi Radio
   { 17904.00,    0, 2400, 0x00112,  432, "NZL", "E",   "Oc"  },  //   -aero Auckland Radio
@@ -16533,7 +16535,7 @@ dx_t eibi_db[] = {
   { 17904.00,    0, 2400, 0x00112,  434, "USA", "E",   "Oc"  },  //   -aero San Francisco Radio
   { 17907.00,    0, 2400, 0x00112,  702, "TRD", "E",   "Car" },  //   -aero Piarco Radio CAR-B
   { 17907.00,    0, 2400, 0x00112,  699, "USA", "E",   "Car" },  //   -aero New York Radio CAR-B
-  { 17912.00,    0, 2400, 0x200c2,  709, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
+  { 17912.00,    0, 2400, 0x200c2,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
   { 17916.00,    0, 2400, 0x200c2,  591, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
   { 17916.00,    0, 2400, 0x00112,  432, "NZL", "E",   "Oc"  },  //   -aero Auckland Radio
   { 17916.00,    0, 2400, 0x200c2,  705, "NZL", "-HF", "SOc" },  //   -hfdl Auckland HFDL (ID5)
@@ -16542,20 +16544,20 @@ dx_t eibi_db[] = {
   { 17919.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   { 17919.00,    0, 2400, 0x200c2,  693, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
   { 17919.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
-  { 17919.00,    0, 2400, 0x200c2,  715, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
+  { 17919.00,    0, 2400, 0x200c2,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
   { 17919.00,    0, 2400, 0x200c2,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
   { 17922.00,    0, 2400, 0x200c2,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
-  { 17928.00,    0, 2400, 0x200c2,  842, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
-  { 17928.00,    0, 2400, 0x200c2,  716, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
+  { 17928.00,    0, 2400, 0x200c2,  843, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
+  { 17928.00,    0, 2400, 0x200c2,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
   { 17934.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   { 17946.00, 1200, 1800, 0x00112,  350, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio A
   { 17946.00,    0, 2400, 0x00092,  437, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio F
-  { 17946.00,    0, 2400, 0x00112,  710, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
-  { 17946.00,    0, 2400, 0x00112,  710, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
-  { 17946.00,    0, 2400, 0x00112,  336, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
-  { 17958.00,    0, 2400, 0x200c2,  851, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
+  { 17946.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
+  { 17946.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
+  { 17946.00,    0, 2400, 0x00112,  335, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
+  { 17958.00,    0, 2400, 0x200c2,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
   { 17967.00,    0, 2400, 0x200c2,  701, "BHR", "-HF", "ME"  },  //   -hfdl Al Muharraq HFDL (ID15)
-  { 17970.00,    0, 2400, 0x200b2,  721, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
+  { 17970.00,    0, 2400, 0x200b2,  722, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
   { 17973.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
   { 17976.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
   { 17985.00,    0, 2400, 0x200c2,  468, "ISL", "-HF", "NAO" },  //   -hfdl Reykjavik HFDL (ID3)
@@ -16567,8 +16569,8 @@ dx_t eibi_db[] = {
   { 18012.00,    0, 2400, 0x000d2,  862, "FRA", "F",   "Af"  },  // -milcom French Air Force CIRCUS
   { 18012.00,    0, 2400, 0x000d2,  862, "FRA", "F",   "Af"  },  // -milcom French Air Force CIRCUS
   { 18012.00,    0, 2400, 0x000d2,  862, "FRA", "F",   "Af"  },  // -milcom French Air Force CIRCUS
-  { 18030.00,  800,  805, 0x06132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
-  { 18030.00,    0, 2400, 0x000d2,  706, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
+  { 18030.00,  800,  805, 0x06132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  { 18030.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
   { 18031.00, 2240, 2250, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 18031.00, 2340, 2350, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 18038.00,  910,  920, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
@@ -16576,20 +16578,20 @@ dx_t eibi_db[] = {
   { 18048.00, 2240, 2250, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 18048.00, 2340, 2350, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 18059.00,  910,  920, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
-  { 18060.00,   15,  215, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  { 18060.00,  245,  330, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  { 18060.00,  400,  945, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  { 18060.00, 1015, 1100, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
-  { 18060.00, 2215, 2400, 0x20102,  719, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 18060.00,   15,  215, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 18060.00,  245,  330, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 18060.00,  400,  945, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 18060.00, 1015, 1100, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
+  { 18060.00, 2215, 2400, 0x20102,  720, "AUS", "",    "Oc"  },  //    -fax VMW Wiluna Met Fax
   { 18063.00,    0, 2400, 0x200b2,  572, "CHN", "",    "FE"  },  //    -ale China Military ALE
   { 18169.00, 2230, 2240, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 18169.00, 2330, 2340, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 18180.00, 2300, 1200, 0x00092,  626, "CHN", "M",   "FE"  },  //   -util CNR1 Jammer/Firedrake
-  { 18180.00,    0,  100, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 18180.00,  100,  200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 18180.00,  200, 1000, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 18180.00, 1000, 1200, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 18180.00, 2300, 2400, 0x00092,  816, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 18180.00,    0,  100, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 18180.00,  100,  200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 18180.00,  200, 1000, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 18180.00, 1000, 1200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
+  { 18180.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 18180.00,    0, 2400, 0x200b2,  561, "USA", "",    "USA" },  //    -ale US National Guard ALE
   { 18189.00,  600,  610, 0x00132,  569, "RUS", "-TY", "As"  },  //    -spy F06 Russian Spy Numbers
   { 18206.00,  910,  920, 0x0a132,  625, "RUS", "-TY", "RUS" },  //    -spy XPA2 Russian Spy Numbers
@@ -16604,10 +16606,10 @@ dx_t eibi_db[] = {
   { 18238.00, 1530, 1600, 0x20102,  499, "AFS", "",    "SAf" },  //    -fax ZSJ CapeNaval Meteo Fax
   { 18241.00,  610,  620, 0x00132,  569, "RUS", "-TY", "As"  },  //    -spy F06 Russian Spy Numbers
   { 18246.00,  720,  730, 0x04932,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
-  { 18248.60,    0, 2400, 0x200b2,  718, "USA", "",    "Glo" },  //    -ale US Embassies ALE
+  { 18248.60,    0, 2400, 0x200b2,  719, "USA", "",    "Glo" },  //    -ale US Embassies ALE
   { 18253.00, 1100, 1110, 0x08532,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
   { 18271.00,  550,  600, 0x0c132,  562, "RUS", "-TY", "RUS" },  //    -spy XPB Russian Spy Numbers
-  { 18275.00,    0, 2400, 0x200b2,  720, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
+  { 18275.00,    0, 2400, 0x200b2,  721, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
   { 18276.00, 1500, 1510, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
   { 18285.00,  600,  610, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   { 18291.00,  610,  620, 0x00132,  569, "RUS", "-TY", "As"  },  //    -spy F06 Russian Spy Numbers
@@ -16628,7 +16630,7 @@ dx_t eibi_db[] = {
   { 18425.00,  600,  610, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   { 18446.00,  720,  730, 0x04932,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 18453.00,  720,  730, 0x04932,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
-  { 18470.00,    0, 2400, 0x200b2,  817, "AUS", "",    "AUS" },  //    -ale Australian MHFCS ALE
+  { 18470.00,    0, 2400, 0x200b2,  818, "AUS", "",    "AUS" },  //    -ale Australian MHFCS ALE
   { 18493.50,    0, 2400, 0x000d2,  970, "DJI", "F",   "EAf" },  // -milcom FUV French Navy STANAG
   { 18502.60,    0, 2400, 0x200b2,  409, "USA", "",    "USA" },  //    -ale Fish and Wildlife ALE
   { 18515.00,  600,  615, 0x2f8f4,  680, "BUL", "-TY", "CHN" },  //    -fsk Bulgaria Diplo
@@ -16637,7 +16639,7 @@ dx_t eibi_db[] = {
   { 18532.00,  820,  830, 0x02332,  567, "RUS", "-CW", "RUS" },  //    -spy M12 Spy Numbers
   { 18542.00,  740,  750, 0x04932,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   { 18542.00,  740,  750, 0x04932,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
-  { 18555.00,    0, 2400, 0x200b2,  837, "ALG", "",    "ALG" },  //    -ale Algeria Gendarmerie ALE
+  { 18555.00,    0, 2400, 0x200b2,  838, "ALG", "",    "ALG" },  //    -ale Algeria Gendarmerie ALE
   { 18555.00,    0, 2400, 0x200b2,  685, "MRC", "",    "MRC" },  //    -ale Moroccan Military ALE
   { 18558.00,    0, 2400, 0x000d2,  973, "HWA", "",    "Oc"  },  // -milcom NPM US Navy RTTY/STANAG
   { 18562.00, 2230, 2240, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
@@ -16661,33 +16663,33 @@ dx_t eibi_db[] = {
   { 18726.00, 1650, 1700, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 18726.00, 1515, 1525, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
   { 18731.00,  720,  730, 0x04932,  574, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
-  { 18765.00,    0, 2400, 0x200b2,  720, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
+  { 18765.00,    0, 2400, 0x200b2,  721, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
   { 18765.00,    0, 2400, 0x200b2,  461, "MRC", "",    "MRC" },  //    -ale Protection Civile ALE
   { 18875.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 18900.00, 2200, 1000, 0x00080,  626, "CHN", "M",   "CHN" },  //  -bcast CNR1 Jammer/Firedrake
-  { 18900.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 18900.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 18900.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 18900.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 18900.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 18900.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 18900.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 18900.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 18900.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 18900.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 18954.00, 2240, 2250, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 18954.00, 2340, 2350, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 18969.00,  900,  910, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 18970.00, 2300, 1000, 0x00080,  626, "CHN", "M",   "CHN" },  //  -bcast CNR1 Jammer/Firedrake
-  { 18970.00,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 18970.00,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 18970.00,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 18970.00, 1000, 1300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 18970.00, 1300, 1400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 18970.00, 1400, 1500, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 18970.00, 1500, 1600, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 18970.00, 1600, 1700, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 18970.00, 1700, 2000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 18970.00, 2000, 2100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 18970.00, 2100, 2130, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 18970.00, 2130, 2200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 18970.00, 2200, 2300, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 18970.00, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 18970.00,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 18970.00,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 18970.00,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 18970.00, 1000, 1300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 18970.00, 1300, 1400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 18970.00, 1400, 1500, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 18970.00, 1500, 1600, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 18970.00, 1600, 1700, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 18970.00, 1700, 2000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 18970.00, 2000, 2100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 18970.00, 2100, 2130, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 18970.00, 2130, 2200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 18970.00, 2200, 2300, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 18970.00, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 18980.00,  920,  930, 0x200e4, 1077, "INS", "-CW", "INS" },  //     -cw P50 Belawan Radio Met
   { 19035.00,  830,  840, 0x00132,  672, "RUS", "R",   "RUS" },  //    -spy S06 Russian Spy Numbers
   { 19051.70,    0, 2400, 0x000d2,  203, "GBR", "",    "ME"  },  // -milcom UK DHFCS STANAG
@@ -16705,7 +16707,7 @@ dx_t eibi_db[] = {
   { 19184.00,  820,  830, 0x06132,  516, "POL", "E",   ""    },  //    -spy E11 Polish Spy Numbers
   { 19210.00,    0, 2400, 0x200e4,    1, "RUS", "-CW", "RUS" },  //     -cw RDL Russian Navy
   { 19214.00, 1650, 1700, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
-  { 19215.00,    0, 2400, 0x200b2,  735, "FRA", "",    "F"   },  //    -ale French Navy ALE
+  { 19215.00,    0, 2400, 0x200b2,  736, "FRA", "",    "F"   },  //    -ale French Navy ALE
   { 19224.00, 2230, 2240, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 19224.00, 2330, 2340, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 19235.00,    0, 2400, 0x200b2,  561, "USA", "",    "USA" },  //    -ale US National Guard ALE
@@ -16724,8 +16726,8 @@ dx_t eibi_db[] = {
   { 19415.00,  830,  840, 0x00132,  672, "RUS", "R",   "RUS" },  //    -spy S06 Russian Spy Numbers
   { 19417.00, 2100, 2110, 0x00132,  455, "RUS", "-TY", "RUS" },  //    -spy F06a Russian Spy Numbers
   { 19466.00, 1530, 1540, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
-  { 19515.00,  630,  635, 0x0a132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
-  { 19515.00,  630,  635, 0x0a132,  754, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  { 19515.00,  630,  635, 0x0a132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
+  { 19515.00,  630,  635, 0x0a132,  755, "POL", "-TY", ""    },  //    -spy F03j Polish Spy Numbers
   { 19535.00, 1650, 1700, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
   { 19580.00,  300,  400, 0x00112,   52, "CHN", "E",   "WNA" },  //   -aero China Radio Int.
   { 19580.00,  400,  455, 0x00112,   52, "CHN", "CA",  "WNA" },  //   -aero China Radio Int.
@@ -16807,7 +16809,7 @@ dx_t eibi_db[] = {
   { 20469.00,  600,  900, 0x20102,  259, "AUS", "",    "Oc"  },  //    -fax VMC Charleville Met Fax
   { 20469.00, 1915, 2045, 0x20102,  259, "AUS", "",    "Oc"  },  //    -fax VMC Charleville Met Fax
   { 20469.00, 2215, 2400, 0x20102,  259, "AUS", "",    "Oc"  },  //    -fax VMC Charleville Met Fax
-  { 20550.00,    0, 2400, 0x200b2,  721, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
+  { 20550.00,    0, 2400, 0x200b2,  722, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
   { 20550.00,    0, 2400, 0x200b2,  685, "MRC", "",    "MRC" },  //    -ale Moroccan Military ALE
   { 20616.00,    0, 2400, 0x200b2,  871, "FRA", "",    "F"   },  //    -ale French Diplo ALE
   { 20618.00, 2230, 2240, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
@@ -16820,7 +16822,7 @@ dx_t eibi_db[] = {
   { 20741.00, 2330, 2340, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 20741.00, 2230, 2240, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 20741.00, 2330, 2340, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
-  { 20810.60,    0, 2400, 0x200b2,  718, "USA", "",    "Glo" },  //    -ale US Embassies ALE
+  { 20810.60,    0, 2400, 0x200b2,  719, "USA", "",    "Glo" },  //    -ale US Embassies ALE
   { 20823.00, 2230, 2240, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 20823.00, 2330, 2340, 0x00132,  500, "RUS", "-TY", "Am"  },  //    -spy F01 Russian Spy Numbers
   { 20868.00,  900,  910, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
@@ -16838,8 +16840,8 @@ dx_t eibi_db[] = {
   { 21465.00, 1000, 1100, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
   { 21475.00, 1000, 1100, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 21475.00, 1000, 1100, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
-  { 21480.00, 1200, 1230, 0x00080,  777, "CAN", "E",   "CHN" },  //  -bcast Bible Voice
-  { 21480.00, 1230, 1245, 0x00080,  777, "CAN", "IN",  "INS" },  //  -bcast Bible Voice
+  { 21480.00, 1200, 1230, 0x00080,  778, "CAN", "E",   "CHN" },  //  -bcast Bible Voice
+  { 21480.00, 1230, 1245, 0x00080,  778, "CAN", "IN",  "INS" },  //  -bcast Bible Voice
   { 21485.00, 1130, 1200, 0x00080,  648, "XUU", "BR",  "SEA" },  //  -bcast Unknown Station
   { 21505.00, 1200, 1400, 0x00080, 1013, "ARS", "A",   "NAf" },  //  -bcast SBA Radio Riyadh
   { 21505.00, 1400, 1500, 0x00080, 1013, "ARS", "A",   "NAf" },  //  -bcast SBA Radio Riyadh
@@ -16853,7 +16855,7 @@ dx_t eibi_db[] = {
   { 21525.00, 1400, 2100, 0x00080, 1114, "USA", "E",   "Af"  },  //  -bcast PAB Radio Africa
   { 21540.00, 1000, 1100, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 21540.00, 1000, 1100, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
-  { 21550.00,  530,  600, 0x00080,  740, "ROU", "E",   "AUS" },  //  -bcast Radio Romania Int.
+  { 21550.00,  530,  600, 0x00080,  741, "ROU", "E",   "AUS" },  //  -bcast Radio Romania Int.
   { 21565.00, 1000, 1100, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 21565.00, 1000, 1100, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
   { 21580.00,  500,  600, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
@@ -16867,7 +16869,7 @@ dx_t eibi_db[] = {
   { 21610.00,  500,  600, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 21610.00,  300,  400, 0x00080,   51, "USA", "TB",  "FE"  },  //  -bcast Voice of America
   { 21610.00,  500,  600, 0x00080,   51, "USA", "TB",  "FE"  },  //  -bcast Voice of America
-  { 21610.00, 1400, 2100, 0x00080,  746, "USA", "E",   "Af"  },  //  -bcast World Harvest Radio
+  { 21610.00, 1400, 2100, 0x00080,  747, "USA", "E",   "Af"  },  //  -bcast World Harvest Radio
   { 21620.00,  300,  400, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 21620.00,  500,  600, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 21620.00,  300,  400, 0x00080,   51, "USA", "TB",  "FE"  },  //  -bcast Voice of America
@@ -16897,29 +16899,29 @@ dx_t eibi_db[] = {
   { 21690.00,  600,  700, 0x00080,  117, "USA", "TB",  "FE"  },  //  -bcast Radio Free Asia
   { 21695.00,  900, 1100, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 21695.00,  900, 1100, 0x00080,   51, "USA", "M",   "FE"  },  //  -bcast Voice of America
-  { 21799.60,    0,  100, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 21799.60,  100,  200, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 21799.60,  200, 1000, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
-  { 21799.60, 2300, 2400, 0x00080,  816, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 21799.60,    0,  100, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 21799.60,  100,  200, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 21799.60,  200, 1000, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
+  { 21799.60, 2300, 2400, 0x00080,  817, "TWN", "M",   "FE"  },  //  -bcast Sound of Hope
   { 21800.00, 2300, 1000, 0x00080,  626, "CHN", "M",   "FE"  },  //  -bcast CNR1 Jammer/Firedrake
   { 21866.00,    0, 2400, 0x200b2,  283, "USA", "",    "USA" },  //    -ale FEMA Emergency ALE
-  { 21925.00,    0, 2400, 0x00112,  710, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
-  { 21925.00,    0, 2400, 0x00112,  710, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
+  { 21925.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
+  { 21925.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
   { 21928.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   { 21928.00,    0, 2400, 0x200c2,  693, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
-  { 21931.00,    0, 2400, 0x200c2,  851, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
-  { 21931.00,    0, 2400, 0x200c2,  715, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
+  { 21931.00,    0, 2400, 0x200c2,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
+  { 21931.00,    0, 2400, 0x200c2,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
   { 21934.00,    0, 2400, 0x200c2,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
   { 21937.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   { 21937.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
   { 21949.00,    0, 2400, 0x200c2,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
-  { 21949.00,    0, 2400, 0x200c2,  716, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
-  { 21955.00,    0, 2400, 0x200c2,  842, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
+  { 21949.00,    0, 2400, 0x200c2,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
+  { 21955.00,    0, 2400, 0x200c2,  843, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
   { 21964.00,    0, 2400, 0x00112,  852, "USA", "E",   "NAO" },  //   -aero New York Radio LDOC
   { 21964.00,    0, 2400, 0x00112,  327, "USA", "E",   "EOc" },  //   -aero San Francisco Radio 2
   { 21982.00,    0, 2400, 0x200c2,  701, "BHR", "-HF", "ME"  },  //   -hfdl Al Muharraq HFDL (ID15)
   { 21985.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
-  { 21990.00,    0, 2400, 0x200c2,  709, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
+  { 21990.00,    0, 2400, 0x200c2,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
   { 21997.00,    0, 2400, 0x200c2,  591, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
   { 22177.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 22185.00,  630,  640, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
@@ -16933,7 +16935,7 @@ dx_t eibi_db[] = {
   { 22376.00, 2315, 2325, 0x00092, 1078, "GUM", "E",   "WOc" },  //   -util NRV NAVTEX Guam
   { 22376.00,  130,  140, 0x00092,  960, "HWA", "E",   "Oc"  },  //   -util NMO NAVTEX Honolulu
   { 22376.00, 2030, 2040, 0x00092,  960, "HWA", "E",   "Oc"  },  //   -util NMO NAVTEX Honolulu
-  { 22426.00,    0, 2400, 0x200e4,  830, "PAK", "-CW", "SAs" },  //     -cw AQP Pakistan Navy
+  { 22426.00,    0, 2400, 0x200e4,  831, "PAK", "-CW", "SAs" },  //     -cw AQP Pakistan Navy
   { 22447.00,    0, 2400, 0x000d2,  970, "DJI", "F",   "EAf" },  // -milcom FUV French Navy STANAG
   { 22461.20,    0, 2400, 0x000d2,  533, "NCL", "F",   "Oc"  },  // -milcom FUJ French Navy STANAG
   { 22471.00,    0, 2400, 0x000d2,  944, "BIO", "",    "SAs" },  // -milcom US Navy RTTY/STANAG
@@ -16946,7 +16948,7 @@ dx_t eibi_db[] = {
   { 22542.00, 1335, 1530, 0x20102,  540, "JPN", "",    "FE"  },  //    -fax JJC Kyodo News Agcy Fax
   { 22542.00, 1645, 2000, 0x20102,  540, "JPN", "",    "FE"  },  //    -fax JJC Kyodo News Agcy Fax
   { 22542.00, 2215, 2245, 0x20102,  540, "JPN", "",    "FE"  },  //    -fax JJC Kyodo News Agcy Fax
-  { 22559.60,  335,  350, 0x26d02,  831, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
+  { 22559.60,  335,  350, 0x26d02,  832, "JPN", "",    "WOc" },  //    -fax JFC Misaki Fisheries Fax
   { 22571.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 22611.50,    0,  900, 0x00112, 1084, "KOR", "-CW", "FE"  },  //   -aero HLF Seoul Radio
   { 22636.30,    3,   13, 0x00112,  313, "URG", "S",   "URG" },  //   -aero Punta Carretas Radio Wx
@@ -16977,7 +16979,7 @@ dx_t eibi_db[] = {
   { 23337.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
   { 23374.50,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 23760.00, 1500, 1600, 0x00112,   52, "CHN", "E",   "WNA" },  //   -aero China Radio Int.
-  { 24550.00,    0, 2400, 0x200b2,  733, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
+  { 24550.00,    0, 2400, 0x200b2,  734, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
   { 24838.50,    0, 2400, 0x200b2,  408, "USA", "",    "USA" },  //    -ale COTHEN ALE
   { 25000.00,    0, 2400, 0x200a1,  231, "USA", "-TS", "USA" },  //   -time WWV Colorado (m.ann.)
   { 25120.00,    0, 2400, 0x200b2,  685, "MRC", "",    "MRC" },  //    -ale Moroccan Military ALE
@@ -16985,16 +16987,16 @@ dx_t eibi_db[] = {
   { 25301.00,    0, 2400, 0x200b2,  871, "FRA", "",    "F"   },  //    -ale French Diplo ALE
   { 25775.00, 1500, 1600, 0x00080,  103, "FRA", "SWA", "EAf" },  //  -bcast Radio France Int.
   { 25800.00,    0, 2400, 0x00080,   92, "DNK", "E",   "Eu"  },  //  -bcast World Music Radio
-  { 25930.00,    0, 2400, 0x200b2,  721, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
+  { 25930.00,    0, 2400, 0x200b2,  722, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
   { 26060.00,    0, 2400, 0x00080, 1115, "HNG", "HU",  "HNG" },  //  -bcast Budapest UniversityTech
-  { 26163.00,    0, 2400, 0x00112,  823, "GRC", "-TY", "SEu" },  //   -aero SVO Olimpia Radio
+  { 26163.00,    0, 2400, 0x00112,  824, "GRC", "-TY", "SEu" },  //   -aero SVO Olimpia Radio
   { 26172.00,    0, 2400, 0x00092,  178, "ITL", "I",   "SEu" },  //   -util Romaradio IAR
   { 26871.60,    0, 2400, 0x200b2,  191, "USA", "",    "USA" },  //    -ale Veterans Health Adm.ALE
   { 27035.00,    0, 2400, 0x00092, 1116, "GER", "E",   "WEu" },  //   -util Radio 101
   { 27185.00,    0, 2400, 0x00112, 1117, "RUS", "R",   "RUS" },  //   -aero IRiT Weather Radio
   { 27300.00, 2300, 2400, 0x00092,   53, "CHN", "P",   "SAm" },  //   -util CRI Music
   { 27870.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
-  {}  // 16995 entries
+  {}  // 16997 entries
 };
 
 const char *eibi_ident[] = {
@@ -17333,9 +17335,9 @@ const char *eibi_ident[] = {
   /*  332 */ "Gander Radio B",
   /*  333 */ "Shannon Aeradio B",
   /*  334 */ "Iceland Radio B",
-  /*  335 */ "Albrook HFDL (ID11)",
-  /*  336 */ "San Francisco Radio NP2",
-  /*  337 */ "Rostov Volmet x25,55",
+  /*  335 */ "San Francisco Radio NP2",
+  /*  336 */ "Rostov Volmet x25,55",
+  /*  337 */ "Seoul Muan HFDL (ID10)",
   /*  338 */ "Barrow HFDL (ID9)",
   /*  339 */ "Santa Maria Radio E",
   /*  340 */ "New York Radio E",
@@ -17704,152 +17706,152 @@ const char *eibi_ident[] = {
   /*  703 */ "Lae Aero",
   /*  704 */ "Dakar Radio",
   /*  705 */ "Auckland HFDL (ID5)",
-  /*  706 */ "Russian Air Force",
-  /*  707 */ "Channel Marker G",
-  /*  708 */ "Channel Marker W",
-  /*  709 */ "Krasnoyarsk HFDL (ID14)",
-  /*  710 */ "San Francisco Radio NP1",
-  /*  711 */ "Cuban Babbler Numbers",
-  /*  712 */ "Bucuresti Aero",
-  /*  713 */ "Mauritius Radio",
-  /*  714 */ "Isla de Pascua Radio",
-  /*  715 */ "Riverhead HFDL (ID4)",
-  /*  716 */ "Hat Yai HFDL (ID6)",
-  /*  717 */ "NSS US Navy RTTY",
-  /*  718 */ "US Embassies ALE",
-  /*  719 */ "VMW Wiluna Met Fax",
-  /*  720 */ "Moroccan Police ALE",
-  /*  721 */ "Guardia di Finanza ALE",
-  /*  722 */ "R.Argentina al Exterior",
-  /*  723 */ "Mauritania Military ALE",
-  /*  724 */ "Slovenian Military ALE",
-  /*  725 */ "R.Triunfal Evangélica",
-  /*  726 */ "Furusato no Kaze",
-  /*  727 */ "Nippon no Kaze",
-  /*  728 */ "Greek Air Force ALE",
-  /*  729 */ "Studio DX",
-  /*  730 */ "Blues Radio Int.",
-  /*  731 */ "Frecuencia al Día",
-  /*  732 */ "HLL Seoul Meteo",
-  /*  733 */ "Fed.Aviation Admin. ALE",
-  /*  734 */ "Radio Farda",
-  /*  735 */ "French Navy ALE",
-  /*  736 */ "WWCR 4 Nashville, TN",
-  /*  737 */ "Rádio Casa AM",
-  /*  738 */ "Bible Voice Dardasha-7",
-  /*  739 */ "DWD Pinneberg",
-  /*  740 */ "Radio Romania Int.",
-  /*  741 */ "Radio Romania DIGITAL",
-  /*  742 */ "Zambia NBC Radio 1",
-  /*  743 */ "Shiokaze",
-  /*  744 */ "Voice of Freedom",
-  /*  745 */ "Pulsating Jammer",
-  /*  746 */ "World Harvest Radio",
-  /*  747 */ "Radio Algerienne",
-  /*  748 */ "Radio Yura, LV Ayllus",
-  /*  749 */ "Radio Europe",
-  /*  750 */ "Dr.Gene Scott",
-  /*  751 */ "WWCR 2 Nashville, TN",
-  /*  752 */ "Rádio Voz Missionária",
-  /*  753 */ "Voice of Turkey",
-  /*  754 */ "F03j Polish Spy Numbers",
-  /*  755 */ "Emisora Pio XII",
-  /*  756 */ "Mighty KBC",
-  /*  757 */ "Radio Kuwait",
-  /*  758 */ "Radio Ndarason Int.",
-  /*  759 */ "WEWN EWTN Catholic R.",
-  /*  760 */ "Radio OZ-Viola",
-  /*  761 */ "Radio New Zealand Int.",
-  /*  762 */ "R.Chaski Red Integridad",
-  /*  763 */ "Radio Marti",
-  /*  764 */ "Myanma R. (10 mins)",
-  /*  765 */ "Myanma Radio (BBC)",
-  /*  766 */ "Myanma Radio (VoA)",
-  /*  767 */ "PBS Qinghai",
-  /*  768 */ "RTV du Mali",
-  /*  769 */ "Adygeyskoye Radio",
-  /*  770 */ "Radio Amathusia",
-  /*  771 */ "Radio Delta Int.",
-  /*  772 */ "Voice of Mongolia",
-  /*  773 */ "Radio Ukraine Int.",
-  /*  774 */ "VoV Spur from 6020",
-  /*  775 */ "Organ.Radial El Prado",
-  /*  776 */ "Radio Water for Good",
-  /*  777 */ "Bible Voice",
-  /*  778 */ "CNR1 DIGITAL",
-  /*  779 */ "Radio Sedaye Kashmir",
-  /*  780 */ "Bhutan BS",
-  /*  781 */ "Yunnan Radio Int.",
-  /*  782 */ "Radio Nord Revival",
-  /*  783 */ "Telstar Radio Int.",
-  /*  784 */ "White Noise Jammer",
-  /*  785 */ "ELWA Radio",
-  /*  786 */ "Evang.Missionsgemeinden",
-  /*  787 */ "PBS Sichuan 2",
-  /*  788 */ "Rádio Marumby",
-  /*  789 */ "Radio MiAmigo",
-  /*  790 */ "Woofferton Test",
-  /*  791 */ "SE-TA2",
-  /*  792 */ "Radio Panamericana",
-  /*  793 */ "Radio Congo",
-  /*  794 */ "Radio SE-TA 2",
-  /*  795 */ "RNZI DIGITAL",
-  /*  796 */ "Rádio Aparecida",
-  /*  797 */ "Radio Santa Cruz",
-  /*  798 */ "Radio Onda",
-  /*  799 */ "Welle 370",
-  /*  800 */ "China National Radio 17",
-  /*  801 */ "Europa24",
-  /*  802 */ "Reach Beyond Australia",
-  /*  803 */ "Radio Austria Int.",
-  /*  804 */ "PanAmerican Broadc.",
-  /*  805 */ "Rádio Rio Mar",
-  /*  806 */ "R.Boa Vontade, P.Alegre",
-  /*  807 */ "Radio Tawantinsuyo",
-  /*  808 */ "Rádio Nacional Amazônia",
-  /*  809 */ "Radio Andorra Tribute",
-  /*  810 */ "MWV La Voz Alegre",
-  /*  811 */ "Follow the Bible Min.",
-  /*  812 */ "Voice of Jinling",
-  /*  813 */ "Laser Hot Hits",
-  /*  814 */ "ROCV LV del Tigre 980",
-  /*  815 */ "RCI Radio Chile",
-  /*  816 */ "Sound of Hope",
-  /*  817 */ "Australian MHFCS ALE",
-  /*  818 */ "Venezuela Navy",
-  /*  819 */ "Reflections Europe",
-  /*  820 */ "Ghana Navy ALE",
-  /*  821 */ "NMF NAVTEX Boston MA",
-  /*  822 */ "IDR Ny Roma",
-  /*  823 */ "SVO Olimpia Radio",
-  /*  824 */ "RBW Murmansk Meteo Fax",
-  /*  825 */ "RIT Russian Navy",
-  /*  826 */ "WHL St Augustine, FL",
-  /*  827 */ "JFG Shizuokaken Fishery",
-  /*  828 */ "Rádio Cidade Oldies",
-  /*  829 */ "P5O Indonesian Navy",
-  /*  830 */ "AQP Pakistan Navy",
-  /*  831 */ "JFC Misaki Fisheries Fax",
-  /*  832 */ "JFX Kagoshima Fishery",
-  /*  833 */ "CFH Halifax Stanag",
-  /*  834 */ "F03i Polish Spy Numbers",
-  /*  835 */ "CKN Aldergrove STANAG",
-  /*  836 */ "FUM French Navy STANAG",
-  /*  837 */ "Algeria Gendarmerie ALE",
-  /*  838 */ "NOJ USCG Kodiak",
-  /*  839 */ "XSL Fuzhou Radio",
-  /*  840 */ "NRV USCG Guam",
-  /*  841 */ "NMO USCG Honolulu",
-  /*  842 */ "Canarias HFDL (ID17)",
-  /*  843 */ "Santa Maria Radio",
-  /*  844 */ "Sal Radio",
-  /*  845 */ "ArmyAviation SCPTOC ALE",
-  /*  846 */ "Dhaka Radio",
-  /*  847 */ "Kolkata Radio",
-  /*  848 */ "Yangon Radio",
-  /*  849 */ "Moscow Aero",
-  /*  850 */ "StPeterbg Volmet x05,35",
-  /*  851 */ "Seoul Muan HFDL (ID10)",
+  /*  706 */ "Albrook HFDL (ID11)",
+  /*  707 */ "Russian Air Force",
+  /*  708 */ "Channel Marker G",
+  /*  709 */ "Channel Marker W",
+  /*  710 */ "Krasnoyarsk HFDL (ID14)",
+  /*  711 */ "San Francisco Radio NP1",
+  /*  712 */ "Cuban Babbler Numbers",
+  /*  713 */ "Bucuresti Aero",
+  /*  714 */ "Mauritius Radio",
+  /*  715 */ "Isla de Pascua Radio",
+  /*  716 */ "Riverhead HFDL (ID4)",
+  /*  717 */ "Hat Yai HFDL (ID6)",
+  /*  718 */ "NSS US Navy RTTY",
+  /*  719 */ "US Embassies ALE",
+  /*  720 */ "VMW Wiluna Met Fax",
+  /*  721 */ "Moroccan Police ALE",
+  /*  722 */ "Guardia di Finanza ALE",
+  /*  723 */ "R.Argentina al Exterior",
+  /*  724 */ "Mauritania Military ALE",
+  /*  725 */ "Slovenian Military ALE",
+  /*  726 */ "R.Triunfal Evangélica",
+  /*  727 */ "Furusato no Kaze",
+  /*  728 */ "Nippon no Kaze",
+  /*  729 */ "Greek Air Force ALE",
+  /*  730 */ "Studio DX",
+  /*  731 */ "Blues Radio Int.",
+  /*  732 */ "Frecuencia al Día",
+  /*  733 */ "HLL Seoul Meteo",
+  /*  734 */ "Fed.Aviation Admin. ALE",
+  /*  735 */ "Radio Farda",
+  /*  736 */ "French Navy ALE",
+  /*  737 */ "WWCR 4 Nashville, TN",
+  /*  738 */ "Rádio Casa AM",
+  /*  739 */ "Bible Voice Dardasha-7",
+  /*  740 */ "DWD Pinneberg",
+  /*  741 */ "Radio Romania Int.",
+  /*  742 */ "Radio Romania DIGITAL",
+  /*  743 */ "Zambia NBC Radio 1",
+  /*  744 */ "Shiokaze",
+  /*  745 */ "Voice of Freedom",
+  /*  746 */ "Pulsating Jammer",
+  /*  747 */ "World Harvest Radio",
+  /*  748 */ "Radio Algerienne",
+  /*  749 */ "Radio Yura, LV Ayllus",
+  /*  750 */ "Radio Europe",
+  /*  751 */ "Dr.Gene Scott",
+  /*  752 */ "WWCR 2 Nashville, TN",
+  /*  753 */ "Rádio Voz Missionária",
+  /*  754 */ "Voice of Turkey",
+  /*  755 */ "F03j Polish Spy Numbers",
+  /*  756 */ "Emisora Pio XII",
+  /*  757 */ "Mighty KBC",
+  /*  758 */ "Radio Kuwait",
+  /*  759 */ "Radio Ndarason Int.",
+  /*  760 */ "WEWN EWTN Catholic R.",
+  /*  761 */ "Radio OZ-Viola",
+  /*  762 */ "Radio New Zealand Int.",
+  /*  763 */ "R.Chaski Red Integridad",
+  /*  764 */ "Radio Marti",
+  /*  765 */ "Myanma R. (10 mins)",
+  /*  766 */ "Myanma Radio (BBC)",
+  /*  767 */ "Myanma Radio (VoA)",
+  /*  768 */ "PBS Qinghai",
+  /*  769 */ "RTV du Mali",
+  /*  770 */ "Adygeyskoye Radio",
+  /*  771 */ "Radio Amathusia",
+  /*  772 */ "Radio Delta Int.",
+  /*  773 */ "Voice of Mongolia",
+  /*  774 */ "Radio Ukraine Int.",
+  /*  775 */ "VoV Spur from 6020",
+  /*  776 */ "Organ.Radial El Prado",
+  /*  777 */ "Radio Water for Good",
+  /*  778 */ "Bible Voice",
+  /*  779 */ "CNR1 DIGITAL",
+  /*  780 */ "Radio Sedaye Kashmir",
+  /*  781 */ "Bhutan BS",
+  /*  782 */ "Yunnan Radio Int.",
+  /*  783 */ "Radio Nord Revival",
+  /*  784 */ "Telstar Radio Int.",
+  /*  785 */ "White Noise Jammer",
+  /*  786 */ "ELWA Radio",
+  /*  787 */ "Evang.Missionsgemeinden",
+  /*  788 */ "PBS Sichuan 2",
+  /*  789 */ "Rádio Marumby",
+  /*  790 */ "Radio MiAmigo",
+  /*  791 */ "Woofferton Test",
+  /*  792 */ "SE-TA2",
+  /*  793 */ "Radio Panamericana",
+  /*  794 */ "Radio Congo",
+  /*  795 */ "Radio SE-TA 2",
+  /*  796 */ "RNZI DIGITAL",
+  /*  797 */ "Rádio Aparecida",
+  /*  798 */ "Radio Santa Cruz",
+  /*  799 */ "Radio Onda",
+  /*  800 */ "Welle 370",
+  /*  801 */ "China National Radio 17",
+  /*  802 */ "Europa24",
+  /*  803 */ "Reach Beyond Australia",
+  /*  804 */ "Radio Austria Int.",
+  /*  805 */ "PanAmerican Broadc.",
+  /*  806 */ "Rádio Rio Mar",
+  /*  807 */ "R.Boa Vontade, P.Alegre",
+  /*  808 */ "Radio Tawantinsuyo",
+  /*  809 */ "Rádio Nacional Amazônia",
+  /*  810 */ "Radio Andorra Tribute",
+  /*  811 */ "MWV La Voz Alegre",
+  /*  812 */ "Follow the Bible Min.",
+  /*  813 */ "Voice of Jinling",
+  /*  814 */ "Laser Hot Hits",
+  /*  815 */ "ROCV LV del Tigre 980",
+  /*  816 */ "RCI Radio Chile",
+  /*  817 */ "Sound of Hope",
+  /*  818 */ "Australian MHFCS ALE",
+  /*  819 */ "Venezuela Navy",
+  /*  820 */ "Reflections Europe",
+  /*  821 */ "Ghana Navy ALE",
+  /*  822 */ "NMF NAVTEX Boston MA",
+  /*  823 */ "IDR Ny Roma",
+  /*  824 */ "SVO Olimpia Radio",
+  /*  825 */ "RBW Murmansk Meteo Fax",
+  /*  826 */ "RIT Russian Navy",
+  /*  827 */ "WHL St Augustine, FL",
+  /*  828 */ "JFG Shizuokaken Fishery",
+  /*  829 */ "Rádio Cidade Oldies",
+  /*  830 */ "P5O Indonesian Navy",
+  /*  831 */ "AQP Pakistan Navy",
+  /*  832 */ "JFC Misaki Fisheries Fax",
+  /*  833 */ "JFX Kagoshima Fishery",
+  /*  834 */ "CFH Halifax Stanag",
+  /*  835 */ "F03i Polish Spy Numbers",
+  /*  836 */ "CKN Aldergrove STANAG",
+  /*  837 */ "FUM French Navy STANAG",
+  /*  838 */ "Algeria Gendarmerie ALE",
+  /*  839 */ "NOJ USCG Kodiak",
+  /*  840 */ "XSL Fuzhou Radio",
+  /*  841 */ "NRV USCG Guam",
+  /*  842 */ "NMO USCG Honolulu",
+  /*  843 */ "Canarias HFDL (ID17)",
+  /*  844 */ "Santa Maria Radio",
+  /*  845 */ "Sal Radio",
+  /*  846 */ "ArmyAviation SCPTOC ALE",
+  /*  847 */ "Dhaka Radio",
+  /*  848 */ "Kolkata Radio",
+  /*  849 */ "Yangon Radio",
+  /*  850 */ "Moscow Aero",
+  /*  851 */ "StPeterbg Volmet x05,35",
   /*  852 */ "New York Radio LDOC",
   /*  853 */ "San Francisco R. LDOC",
   /*  854 */ "COCESNA Cenamer Control",
@@ -18123,7 +18125,7 @@ const int eibi_counts[] = {
    2000,  // util
      76,  // time
    1167,  // ale
-    127,  // hfdl
+    129,  // hfdl
     482,  // milcom
     264,  // cw
      72,  // fsk
