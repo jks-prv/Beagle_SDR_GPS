@@ -373,12 +373,13 @@ function hfdl_get_systable_done_cb(stations)
 function hfdl_render_menus()
 {
    var i;
-   var bf = [ 4, 5, 6, 8, 10, 11, 13, 15, 17, 21 ];
+   var bf =   [  4,     5,     6,     8,  10,     11,   13,     15,     17,   21,   23  ];
    var bf_s = [ '3', '4.6', '5.5', '6.5', '8.9', '10', '11.3', '13.3', '15', '18', '22' ];
    var b = [];
    for (i = 0; i < bf.length; i++) b[i] = [];
    
    var add_bands_menu = function(f) {
+      //console.log(f);
       var f_n = parseInt(f);
       for (i = 0; i < bf.length; i++) {
          if (f_n < bf[i] * 1e3) {

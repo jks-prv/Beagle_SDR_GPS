@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.471  November 12, 2021
+v1.471,472  November 12, 2021
     HFDL extension preliminary release.
         Because the decoding happens entirely on the Beagle, and due to the buffering delay of
         delivering audio and waterfall to the browser, you will see the decoded text before the
