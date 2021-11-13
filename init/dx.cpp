@@ -380,12 +380,12 @@ void dx_eibi_init()
 #ifdef DEVL_EiBi
     int i, n = 0;
     dx_t *dxp;
-    float f = 0;
+    //float f = 0;
     
     for (i = 0, dxp = eibi_db; dxp->freq; i++, dxp++) {
         //if (dxp->freq == f) continue;   // temp: only take first per freq
         n++;
-        f = dxp->freq;
+        //f = dxp->freq;
         dxp->ident_s = eibi_ident[dxp->ident_idx];
 		dxp->ident = kiwi_str_encode((char *) dxp->ident_s);
         //asprintf(&(dxp->notes_s), "%04d-%04d %s", dxp->time_begin, dxp->time_end, eibi_notes[dxp->notes_idx]);
@@ -394,6 +394,13 @@ void dx_eibi_init()
 		dxp->notes = kiwi_str_encode((char *) dxp->notes_s);
 		dxp->params = "";
 		dxp->idx = i;
+		
+		// setup special mode-specific passbands
+		int type = dxp->flags & DX_TYPE;
+		if (type == DX_ALE)  { dxp->low_cut = 600; dxp->high_cut = 2650; } else
+		if (type == DX_HFDL) { dxp->low_cut = 300; dxp->high_cut = 2600; } else
+		if (type == DX_FAX)  { dxp->low_cut = 800; dxp->high_cut = 3000; } else
+		    ;
     }
     printf("DX_UPD dx_eibi_init: %d/%d EiBi entries\n", n, i);
 

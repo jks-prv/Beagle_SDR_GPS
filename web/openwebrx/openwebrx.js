@@ -6529,12 +6529,13 @@ function dx_label_cb(arr)
       //if (eibi) console_log_dbgUs('2222 dx_idx='+ dx_idx +' '+ obj.f +' OK '+ ident);
 
 		var notes = (isDefined(obj.n))? obj.n : '';
-		//var params = (isDefined(obj.p))? obj.p : '';
 		el = w3_el(dx_idx +'-id-dx-label');
 		if (!el) continue;
 		el.innerHTML = kiwi_decodeURIComponent('dx_ident2', ident);
-		var type = dx_type2idx(obj.x);
-		el.title = eibi? (dx.eibi_svc_s[type] +' // home country: '+ obj.c +'\n'+ dx_title(obj)) : kiwi_decodeURIComponent('dx_notes', notes);
+		var idx = dx_type2idx(obj.x & dx.DX_TYPE);
+		var ex = (eibi && dx.eibi_ext[idx] != '')? '\nshift-click to open extension' : '';
+		//if (eibi) console.log(obj.i +' '+ idx +' '+ dx.eibi_ext[idx] +' '+ ex);
+		el.title = eibi? (dx.eibi_svc_s[idx] +' // home country: '+ obj.c + ex +'\n'+ dx_title(obj)) : kiwi_decodeURIComponent('dx_notes', notes);
 
       if (dx_idx < dx.post_render.length) {
          var sparse = dx.post_render[dx_idx];
