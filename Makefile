@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 470
+VERSION_MIN = 472
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -256,11 +256,13 @@ endif
 	@mkdir -p $(DIR_CFG)
 	touch $(KEYRING)
 
-.PHONY: INSTALL_CERTIFICATES
-INSTALL_CERTIFICATES:
+INSTALL_CERTIFICATES := /tmp/.kiwi-ca-certs
+$(INSTALL_CERTIFICATES):
+	@echo "INSTALL_CERTIFICATES.."
 	make $(KEYRING)
 	-apt-get -y install ca-certificates
 	-apt-get -y update
+	touch $(INSTALL_CERTIFICATES)
 
 /usr/lib/arm-linux-gnueabihf/libfftw3f.a:
 	apt-get -y install libfftw3-dev
@@ -337,7 +339,7 @@ GEN_OTHER_ASM = $(GEN_DIR)/other.gen.h verilog/other.gen.vh
 OUT_ASM = $(GEN_DIR)/kiwi.aout
 GEN_VERILOG = $(addprefix verilog/rx/,cic_rx1_12k.vh cic_rx1_20k.vh cic_rx2_12k.vh cic_rx2_20k.vh cic_rx3_12k.vh cic_rx3_20k.vh cic_wf1.vh cic_wf2.vh)
 GEN_NOIP2 = $(GEN_DIR)/noip2
-SUB_MAKE_DEPS = $(KEYRING) $(CMD_DEPS) $(LIBS_DEP) $(GEN_ASM) $(GEN_OTHER_ASM) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
+SUB_MAKE_DEPS = $(INSTALL_CERTIFICATES) $(CMD_DEPS) $(LIBS_DEP) $(GEN_ASM) $(GEN_OTHER_ASM) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
 
 
 ################################
@@ -1422,7 +1424,7 @@ endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
-/usr/bin/xz: $(KEYRING)
+/usr/bin/xz: $(INSTALL_CERTIFICATES)
 	apt-get -y install xz-utils
 
 #
