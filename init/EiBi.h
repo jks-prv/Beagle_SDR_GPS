@@ -2121,8 +2121,8 @@ dx_t eibi_db[] = {
   {  2899.00,    0, 2400, 0x00112,  334, "ISL", "E",   "NAO" },  //   -aero Iceland Radio B
   {  2932.00,    0, 2400, 0x00112,  335, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
   {  2941.00,    0, 2400, 0x00112,  336, "RUS", "R",   "CIS" },  //   -aero Rostov Volmet x25,55
-  {  2941.00,    0, 2400, 0x200c2,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
-  {  2944.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
+  {  2941.00,    0, 2400, 0x200c7,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
+  {  2944.00,    0, 2400, 0x200c7,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   {  2944.00,    0, 2400, 0x00092,  323, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
   {  2962.00,    0, 2400, 0x00112,  339, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio E
   {  2962.00,    0, 2400, 0x00112,  340, "USA", "E",   "NAO" },  //   -aero New York Radio E
@@ -2132,13 +2132,13 @@ dx_t eibi_db[] = {
   {  2965.00, 1515,  120, 0x00112,  344, "PAK", "E",   "SAs" },  //   -aero Karachi Volmet x15,x45
   {  2965.00, 1210, 2245, 0x00112,  345, "THA", "E",   "SAs" },  //   -aero Bangkok Volmet x10,x40
   {  2971.00,  100,  800, 0x00092,  346, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio D
-  {  2992.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
+  {  2992.00,    0, 2400, 0x200c7,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   {  2992.00,    0, 2400, 0x00092,  323, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
-  {  2998.00,    0, 2400, 0x200c2,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
+  {  2998.00,    0, 2400, 0x200c7,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
   {  2998.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
   {  2998.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
-  {  3007.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
-  {  3016.00,    0, 2400, 0x200c2,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
+  {  3007.00,    0, 2400, 0x200c7,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
+  {  3016.00,    0, 2400, 0x200c7,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
   {  3016.00, 2100,  800, 0x00112,  350, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio A
   {  3016.00,    0, 2400, 0x00112,  351, "CAN", "E",   "NAO" },  //   -aero Gander Radio A
   {  3016.00,  100,  900, 0x00092,  352, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio A
@@ -2399,7 +2399,7 @@ dx_t eibi_db[] = {
   {  3446.00,    0, 2400, 0x00092,  323, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
   {  3450.00, 1430,  400, 0x00112,  426, "RUS", "E,R", "RUS" },  //   -aero Khanty-Mansiysk Volmet
   {  3452.00,    0, 2400, 0x00112,  427, "USA", "E",   "EOc" },  //   -aero San Francisco Radio 3
-  {  3455.00,    0, 2400, 0x200c2,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
+  {  3455.00,    0, 2400, 0x200c7,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
   {  3455.00,    0, 2400, 0x00112,  353, "USA", "E",   "NAO" },  //   -aero New York Radio A
   {  3455.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
   {  3455.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
@@ -2422,7 +2422,7 @@ dx_t eibi_db[] = {
   {  3491.00,    0, 2400, 0x00112,  440, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio H
   {  3491.00,    0, 2400, 0x00092,  343, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio H
   {  3494.00, 1800,  600, 0x00112,  160, "SWE", "E",   "Eu"  },  //   -aero Stockholm Radio
-  {  3497.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
+  {  3497.00,    0, 2400, 0x200c7,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   {  3500.50,    0, 2400, 0x200e4,  364, "RUS", "-CW", "RUS" },  //     -cw RJD Russian Navy
   {  3503.50,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   {  3510.00,    0, 2400, 0x00092,  441, "RUS", "",    "RUS" },  //   -util Air Horn Channel Marker
@@ -2500,7 +2500,7 @@ dx_t eibi_db[] = {
   {  3900.00,  210,  700, 0x0be80,  467, "CHN", "M",   "CHN" },  //  -bcast PBS Hulun Buir
   {  3900.00,  900, 1440, 0x00080,  467, "CHN", "M",   "CHN" },  //  -bcast PBS Hulun Buir
   {  3900.00, 2130,  210, 0x00080,  467, "CHN", "M",   "CHN" },  //  -bcast PBS Hulun Buir
-  {  3900.00,    0, 2400, 0x200c2,  468, "ISL", "-HF", "NAO" },  //   -hfdl Reykjavik HFDL (ID3)
+  {  3900.00,    0, 2400, 0x200c7,  468, "ISL", "-HF", "NAO" },  //   -hfdl Reykjavik HFDL (ID3)
   {  3903.00,    0, 2400, 0x000d2,  362, "GER", "E",   "Eu"  },  // -milcom DHM91 German Air Force
   {  3903.00,    0, 2400, 0x200b2,  469, "FRA", "",    "Eu"  },  //    -ale Fr. Air Force E-3F ALE
   {  3909.00,    0, 2400, 0x00080,  358, "FRA", "F",   "NAO" },  //  -bcast FUE French Navy USB/FSK
@@ -3065,11 +3065,11 @@ dx_t eibi_db[] = {
   {  4649.00,  500, 1300, 0x200e4,  295, "RUS", "-CW", "EEu" },  //     -cw REA4 AirForce Meteo x40
   {  4650.00,    0, 2400, 0x200b2,  587, "USA", "",    "ENA" },  //    -ale Washington GasLight ALE
   {  4651.00,    0, 2400, 0x00092,  323, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
-  {  4654.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
+  {  4654.00,    0, 2400, 0x200c7,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   {  4656.00,    0, 2400, 0x00112,  588, "RUS", "R",   "RUS" },  //   -aero Nadym Aero
   {  4656.00,    0, 2400, 0x00112,  589, "RUS", "R",   "RUS" },  //   -aero Novy Urengoy Aero
   {  4656.00,    0, 2400, 0x00112,  590, "RUS", "R",   "RUS" },  //   -aero Salekhard Aero
-  {  4660.00,    0, 2400, 0x200c2,  591, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
+  {  4660.00,    0, 2400, 0x200c7,  591, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
   {  4666.00,    0, 2400, 0x00092,  323, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
   {  4666.00,    0, 2400, 0x00112,  592, "JPN", "E",   "FE"  },  //   -aero Tokyo Radio
   {  4666.00,    0, 2400, 0x00112,  593, "SNG", "E",   "SEA" },  //   -aero Singapore Radio
@@ -3082,10 +3082,10 @@ dx_t eibi_db[] = {
   {  4675.00,  100,  800, 0x00092,  346, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio D
   {  4675.00, 1100, 1800, 0x00092,  346, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio D
   {  4675.00,    0, 2400, 0x00112,  597, "ISL", "E",   "NAO" },  //   -aero Iceland Radio
-  {  4681.00,    0, 2400, 0x200c2,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
+  {  4681.00,    0, 2400, 0x200c7,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
   {  4684.00,    0, 2400, 0x00092,  323, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
   {  4686.00,    0, 2400, 0x000d2,  203, "GBR", "",    "WEu" },  // -milcom UK DHFCS STANAG
-  {  4687.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
+  {  4687.00,    0, 2400, 0x200c7,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   {  4700.00,    0, 2400, 0x200b2,  587, "USA", "",    "ENA" },  //    -ale Washington GasLight ALE
   {  4703.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   {  4703.00,    0, 2400, 0x200b2,  283, "USA", "",    "USA" },  //    -ale FEMA Emergency ALE
@@ -3820,7 +3820,7 @@ dx_t eibi_db[] = {
   {  5448.00,  430, 1630, 0x200a1,  458, "RUS", "-TS", "EEu" },  //   -time The Pip (Kaplya) Rostov
   {  5448.00,  530, 1400, 0x200a1,  458, "RUS", "-TS", "EEu" },  //   -time The Pip (Kaplya) Rostov
   {  5450.00,    0, 2400, 0x00112,  692, "GBR", "E",   "Eu"  },  //   -aero RAF Volmet Military 1
-  {  5451.00,    0, 2400, 0x200c2,  693, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
+  {  5451.00,    0, 2400, 0x200c7,  693, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
   {  5460.00,    0, 2400, 0x200b2,  555, "AZE", "",    "Cau" },  //    -ale Azeri Emergency ALE
   {  5460.00,    0, 2400, 0x00092,  323, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
   {  5463.00,  520,  530, 0x00132,  569, "RUS", "-TY", "RUS" },  //    -spy F06 Russian Spy Numbers
@@ -3840,22 +3840,22 @@ dx_t eibi_db[] = {
   {  5491.00,    0, 2400, 0x200b2,  475, "BIH", "",    "BIH" },  //    -ale Bosnian Emergency ALE
   {  5493.00,    0, 2400, 0x200b2,  694, "CLM", "",    "CLM" },  //    -ale Colombian Navy ALE
   {  5499.00,    0, 2400, 0x00112,  695, "MDG", "E",   "EAf" },  //   -aero Antanan.Volmet x25,x50
-  {  5502.00,    0, 2400, 0x200c2,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
+  {  5502.00,    0, 2400, 0x200c7,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
   {  5505.00,    0, 2400, 0x00112,  414, "IRL", "E",   "Eu"  },  //   -aero Shannon Volmet
-  {  5508.00,    0, 2400, 0x200c2,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
+  {  5508.00,    0, 2400, 0x200c7,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
   {  5509.00,    0, 2400, 0x200b2,  587, "USA", "",    "ENA" },  //    -ale Washington GasLight ALE
-  {  5514.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
+  {  5514.00,    0, 2400, 0x200c7,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
   {  5517.00,    0, 2400, 0x00112,  698, "SOM", "E",   "EAf" },  //   -aero Mogadishu Radio
   {  5520.00,    0, 2400, 0x00112,  699, "USA", "E",   "Car" },  //   -aero New York Radio CAR-B
   {  5525.00,    0, 2400, 0x20102,  700, "CHN", "",    "FE"  },  //    -fax BAF Beijing Meteo Fax
-  {  5529.00,    0, 2400, 0x200c2,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
-  {  5529.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
-  {  5538.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
+  {  5529.00,    0, 2400, 0x200c7,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
+  {  5529.00,    0, 2400, 0x200c7,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
+  {  5538.00,    0, 2400, 0x200c7,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   {  5541.00,  600, 1800, 0x00112,  160, "SWE", "E",   "NEu" },  //   -aero Stockholm Radio
   {  5541.00, 1800,  600, 0x00112,  160, "SWE", "E",   "Eu"  },  //   -aero Stockholm Radio
-  {  5544.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
-  {  5544.00,    0, 2400, 0x200c2,  701, "BHR", "-HF", "ME"  },  //   -hfdl Al Muharraq HFDL (ID15)
-  {  5547.00,    0, 2400, 0x200c2,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
+  {  5544.00,    0, 2400, 0x200c7,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
+  {  5544.00,    0, 2400, 0x200c7,  701, "BHR", "-HF", "ME"  },  //   -hfdl Al Muharraq HFDL (ID15)
+  {  5547.00,    0, 2400, 0x200c7,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
   {  5547.00,    0, 2400, 0x00112,  327, "USA", "E",   "EOc" },  //   -aero San Francisco Radio 2
   {  5550.00,    0, 2400, 0x00112,  702, "TRD", "E",   "Car" },  //   -aero Piarco Radio CAR-B
   {  5550.00,    0, 2400, 0x00112,  331, "USA", "E",   "Car" },  //   -aero New York Radio CAR-A
@@ -3884,8 +3884,8 @@ dx_t eibi_db[] = {
   {  5577.00,    0, 2400, 0x00092,  323, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
   {  5581.00,    0, 2400, 0x200b2,  465, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
   {  5583.00,    0, 2400, 0x00092,  343, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio H
-  {  5583.00,    0, 2400, 0x200c2,  705, "NZL", "-HF", "SOc" },  //   -hfdl Auckland HFDL (ID5)
-  {  5589.00,    0, 2400, 0x200c2,  706, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
+  {  5583.00,    0, 2400, 0x200c7,  705, "NZL", "-HF", "SOc" },  //   -hfdl Auckland HFDL (ID5)
+  {  5589.00,    0, 2400, 0x200c7,  706, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
   {  5590.00,    0, 2400, 0x200e4,  375, "UZB", "-CW", "CAs" },  //     -cw Channel Marker V
   {  5598.00,    0, 2400, 0x00112,  350, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio A
   {  5598.00,    0, 2400, 0x00112,  351, "CAN", "E",   "NAO" },  //   -aero Gander Radio A
@@ -3901,7 +3901,7 @@ dx_t eibi_db[] = {
   {  5620.00,    0, 2400, 0x200e4,  708, "RUS", "-CW", "FE"  },  //     -cw Channel Marker G
   {  5620.00,    0, 2400, 0x200e4,  709, "RUS", "-CW", "EEu" },  //     -cw Channel Marker W
   {  5620.00,    0, 2400, 0x000d2,  707, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
-  {  5622.00,    0, 2400, 0x200c2,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
+  {  5622.00,    0, 2400, 0x200c7,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
   {  5628.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
   {  5628.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
   {  5637.00, 1400, 1500, 0x00132,  712, "CUB", "S",   "Am"  },  //    -spy Cuban Babbler Numbers
@@ -3921,10 +3921,10 @@ dx_t eibi_db[] = {
   {  5650.00,    0, 2400, 0x200b2,  555, "AZE", "",    "Cau" },  //    -ale Azeri Emergency ALE
   {  5650.00,    0, 2400, 0x200b2,  549, "GEO", "",    "GEO" },  //    -ale Georgia Coast Guard ALE
   {  5650.00,  400, 1430, 0x00112,  426, "RUS", "E,R", "RUS" },  //   -aero Khanty-Mansiysk Volmet
-  {  5652.00,    0, 2400, 0x200c2,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
+  {  5652.00,    0, 2400, 0x200c7,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
   {  5652.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
   {  5652.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
-  {  5655.00,    0, 2400, 0x200c2,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
+  {  5655.00,    0, 2400, 0x200c7,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
   {  5660.00, 1010, 1020, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  5660.00, 1010, 1020, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  5667.00,    0, 2400, 0x00112,  335, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
@@ -3953,7 +3953,7 @@ dx_t eibi_db[] = {
   {  5716.00,    0, 2400, 0x200f4,  718, "USA", "",    "NAm" },  //    -fsk NSS US Navy RTTY
   {  5717.00,    0, 2400, 0x000d2,  362, "GER", "E",   "Eu"  },  // -milcom DHM91 German Air Force
   {  5720.50,    0, 2400, 0x200b2,  694, "CLM", "",    "CLM" },  //    -ale Colombian Navy ALE
-  {  5720.00,    0, 2400, 0x200c2,  468, "ISL", "-HF", "NAO" },  //   -hfdl Reykjavik HFDL (ID3)
+  {  5720.00,    0, 2400, 0x200c7,  468, "ISL", "-HF", "NAO" },  //   -hfdl Reykjavik HFDL (ID3)
   {  5722.00,    0, 2400, 0x200b2,  690, "IRQ", "",    "IRQ" },  //    -ale Iraqi Security Fcs. ALE
   {  5731.00, 2130, 2140, 0x00132,  619, "RUS", "E",   "RUS" },  //    -spy E06 Russian Spy Numbers
   {  5732.00,    0, 2400, 0x200b2,  408, "USA", "",    "USA" },  //    -ale COTHEN ALE
@@ -5653,15 +5653,15 @@ dx_t eibi_db[] = {
   {  6522.00, 2305, 2315, 0x00112,  201, "GRL", "E",   "GRL" },  //   -aero OYR Aasiaat Radio
   {  6524.00,  910,  920, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   {  6524.00,  910,  920, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
-  {  6529.00,    0, 2400, 0x200c2,  843, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
-  {  6532.00,    0, 2400, 0x200c2,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
+  {  6529.00,    0, 2400, 0x200c7,  843, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
+  {  6532.00,    0, 2400, 0x200c7,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
   {  6532.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
   {  6532.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
   {  6535.00,    0, 2400, 0x00112,  844, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio
   {  6535.00,    0, 2400, 0x00112,  845, "CPV", "E",   "WAf" },  //   -aero Sal Radio
-  {  6535.00,    0, 2400, 0x200c2,  705, "NZL", "-HF", "SOc" },  //   -hfdl Auckland HFDL (ID5)
+  {  6535.00,    0, 2400, 0x200c7,  705, "NZL", "-HF", "SOc" },  //   -hfdl Auckland HFDL (ID5)
   {  6535.00,    0, 2400, 0x00112,  704, "SEN", "E",   "WAf" },  //   -aero Dakar Radio
-  {  6535.00,    0, 2400, 0x200c2,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
+  {  6535.00,    0, 2400, 0x200c7,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
   {  6547.00,    0, 2400, 0x00092,  323, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
   {  6550.00,    0, 2400, 0x00092,  320, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio I
   {  6550.00,    0, 2400, 0x200b2,  846, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
@@ -5671,10 +5671,10 @@ dx_t eibi_db[] = {
   {  6556.00,    0, 2400, 0x00112,  849, "MYA", "E",   "SEA" },  //   -aero Yangon Radio
   {  6556.00,    0, 2400, 0x00112,  284, "INS", "E",   "SEA" },  //   -aero Jakarta Radio
   {  6556.00,    0, 2400, 0x00112,  593, "SNG", "E",   "SEA" },  //   -aero Singapore Radio
-  {  6559.00,    0, 2400, 0x200c2,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
+  {  6559.00,    0, 2400, 0x200c7,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
   {  6562.00,    0, 2400, 0x200b2,  685, "MRC", "",    "MRC" },  //    -ale Moroccan Military ALE
   {  6565.00,    0, 2400, 0x200b2,  681, "GEO", "",    "GEO" },  //    -ale Georgia Borderguard ALE
-  {  6565.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
+  {  6565.00,    0, 2400, 0x200c7,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
   {  6566.00,    0, 2400, 0x200b2,  643, "KGZ", "",    "KGZ" },  //    -ale Kyrgyz Military ALE
   {  6566.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   {  6577.00,    0, 2400, 0x00112,  702, "TRD", "E",   "Car" },  //   -aero Piarco Radio CAR-B
@@ -5682,35 +5682,35 @@ dx_t eibi_db[] = {
   {  6580.00,    0, 2400, 0x200b2,  570, "JOR", "",    "JOR" },  //    -ale Jordan Address ALE Net
   {  6586.00,    0, 2400, 0x00112,  699, "USA", "E",   "Car" },  //   -aero New York Radio CAR-B
   {  6589.00,    0, 2400, 0x200b2,  690, "IRQ", "",    "IRQ" },  //    -ale Iraqi Security Fcs. ALE
-  {  6589.00,    0, 2400, 0x200c2,  706, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
+  {  6589.00,    0, 2400, 0x200c7,  706, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
   {  6592.00,    0, 2400, 0x00112,  850, "RUS", "R",   "EEu" },  //   -aero Moscow Aero
   {  6595.00,    0, 2400, 0x00092,  320, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio I
-  {  6596.00,    0, 2400, 0x200c2,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
+  {  6596.00,    0, 2400, 0x200c7,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
   {  6600.00,    0, 2400, 0x00080,  438, "CLA", "K",   "KRE" },  //  -bcast Voice of the People
   {  6600.00,    0, 2400, 0x200b2,  722, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
   {  6604.00,    0, 2400, 0x00112,  439, "CAN", "E",   "NAm" },  //   -aero Gander Volmet x20,x50
   {  6607.00,    0, 2400, 0x200e4,  282, "ISR", "-CW", ""    },  //     -cw 4XZ Israeli Navy Haifa
   {  6617.00,    0, 2400, 0x00112,  336, "RUS", "R",   "CIS" },  //   -aero Rostov Volmet x25,55
   {  6617.00,    0, 2400, 0x00112,  851, "RUS", "R",   "CIS" },  //   -aero StPeterbg Volmet x05,35
-  {  6619.00,    0, 2400, 0x200c2,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
+  {  6619.00,    0, 2400, 0x200c7,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
   {  6622.00,    0, 2400, 0x00112,  436, "CAN", "E",   "NAO" },  //   -aero Gander Radio F
   {  6622.00, 1000, 1800, 0x00092,  437, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio F
   {  6628.00,    0, 2400, 0x00112,  339, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio E
-  {  6628.00,    0, 2400, 0x200c2,  591, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
+  {  6628.00,    0, 2400, 0x200c7,  591, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
   {  6628.00,    0, 2400, 0x00112,  340, "USA", "E",   "NAO" },  //   -aero New York Radio E
   {  6636.00,    0, 2400, 0x200b2,  549, "GEO", "",    "GEO" },  //    -ale Georgia Coast Guard ALE
   {  6640.00,    0, 2400, 0x00112,  852, "USA", "E",   "NAO" },  //   -aero New York Radio LDOC
   {  6640.00,    0, 2400, 0x00092,  853, "USA", "E",   "EOc" },  //   -util San Francisco R. LDOC
   {  6642.00,    0, 2400, 0x000d2,  707, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
-  {  6646.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
+  {  6646.00,    0, 2400, 0x200c7,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   {  6649.00,    0, 1200, 0x00092,  854, "HND", "S",   "CAm" },  //   -util COCESNA Cenamer Control
-  {  6652.00,    0, 2400, 0x200c2,  693, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
+  {  6652.00,    0, 2400, 0x200c7,  693, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
   {  6655.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
   {  6655.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
   {  6655.00,    0, 2400, 0x00112,  335, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
   {  6660.00,    0, 2400, 0x200a1,  403, "CAN", "-TS", "NAm" },  //   -time CHU Ottawa
   {  6661.00,    0, 2400, 0x00112,  855, "IND", "E",   "SAs" },  //   -aero Mumbai Radio
-  {  6661.00,    0, 2400, 0x200c2,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
+  {  6661.00,    0, 2400, 0x200c7,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
   {  6667.00,    0, 2400, 0x00112,  440, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio H
   {  6667.00,    0, 2400, 0x00092,  343, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio H
   {  6668.70,    0, 2400, 0x200b2,  681, "GEO", "",    "GEO" },  //    -ale Georgia Borderguard ALE
@@ -5741,7 +5741,7 @@ dx_t eibi_db[] = {
   {  6712.00,    0, 2400, 0x000d2,  862, "FRA", "F",   "Af"  },  // -milcom French Air Force CIRCUS
   {  6712.00,    0, 2400, 0x000d2,  862, "FRA", "F",   "Af"  },  // -milcom French Air Force CIRCUS
   {  6712.00,    0, 2400, 0x000d2,  862, "FRA", "F",   "Af"  },  // -milcom French Air Force CIRCUS
-  {  6712.00,    0, 2400, 0x200c2,  468, "ISL", "-HF", "NAO" },  //   -hfdl Reykjavik HFDL (ID3)
+  {  6712.00,    0, 2400, 0x200c7,  468, "ISL", "-HF", "NAO" },  //   -hfdl Reykjavik HFDL (ID3)
   {  6715.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
   {  6718.00,    0, 2400, 0x00092,  358, "FRA", "F",   "NAO" },  //   -util FUE French Navy USB/FSK
   {  6721.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
@@ -8069,7 +8069,7 @@ dx_t eibi_db[] = {
   {  8816.00,    0, 2400, 0x200e4,  979, "RUS", "-CW", "RUS" },  //     -cw Russian Naval Air
   {  8819.00,    0, 2400, 0x00112,  413, "UZB", "R",   "CAs" },  //   -aero Tashkent Volmet x20,x50
   {  8825.00,    0, 2400, 0x00112,  339, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio E
-  {  8825.00,    0, 2400, 0x200c2,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
+  {  8825.00,    0, 2400, 0x200c7,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
   {  8825.00,    0, 2400, 0x00112,  340, "USA", "E",   "NAO" },  //   -aero New York Radio E
   {  8828.00,    0, 2400, 0x00112,  858, "HKG", "E",   "FE"  },  //   -aero Hongkong Volmet x15,x45
   {  8828.00,    0, 2400, 0x00112,  321, "HWA", "E",   "Oc"  },  //   -aero Honolulu Volmet x25,x55
@@ -8078,10 +8078,9 @@ dx_t eibi_db[] = {
   {  8831.00,    0, 2400, 0x00112,  430, "AUS", "E",   "AUS" },  //   -aero Brisbane Radio
   {  8831.00,    0, 2400, 0x00112,  436, "CAN", "E",   "NAO" },  //   -aero Gander Radio F
   {  8831.00, 1000, 1800, 0x00092,  437, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio F
-  {  8834.00,    0, 2400, 0x200c2,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
-  {  8939.00,    0, 2400, 0x200c2,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
+  {  8834.00,    0, 2400, 0x200c7,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
   {  8841.00,    0, 2400, 0x200b2,  465, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
-  {  8843.00,    0, 2400, 0x200c2,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
+  {  8843.00,    0, 2400, 0x200c7,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
   {  8843.00,    0, 2400, 0x00112,  415, "USA", "E",   "EOc" },  //   -aero San Francisco Radio 1
   {  8846.00,    0, 2400, 0x00112,  331, "USA", "E",   "Car" },  //   -aero New York Radio CAR-A
   {  8847.00,    0, 2400, 0x200b2,  465, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
@@ -8115,8 +8114,8 @@ dx_t eibi_db[] = {
   {  8879.00,    0, 2400, 0x00112,  855, "IND", "E",   "SAs" },  //   -aero Mumbai Radio
   {  8879.00,  900, 2100, 0x00092,  329, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio C
   {  8879.00,    0, 2400, 0x00112,  330, "ISL", "E",   "NAO" },  //   -aero Iceland Radio C
-  {  8885.00,    0, 2400, 0x200c2,  701, "BHR", "-HF", "ME"  },  //   -hfdl Al Muharraq HFDL (ID15)
-  {  8886.00,    0, 2400, 0x200c2,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
+  {  8885.00,    0, 2400, 0x200c7,  701, "BHR", "-HF", "ME"  },  //   -hfdl Al Muharraq HFDL (ID15)
+  {  8886.00,    0, 2400, 0x200c7,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
   {  8888.00,    0, 2400, 0x200b2,  873, "MEX", "",    "MEX" },  //    -ale Mexican Military ALE
   {  8888.00,    0, 2400, 0x00112,  324, "RUS", "R",   "CIS" },  //   -aero Novosibir Volmet x10,40
   {  8888.00,    0, 2400, 0x00112,  325, "RUS", "R",   "CIS" },  //   -aero Samara Volmet x15,45
@@ -8128,7 +8127,7 @@ dx_t eibi_db[] = {
   {  8894.00,    0, 2400, 0x00112,  984, "ALG", "E",   "NAf" },  //   -aero Algiers Radio
   {  8894.00,    0, 2400, 0x00112,  985, "MTN", "E",   "WAf" },  //   -aero Nouakchott Radio
   {  8894.00,    0, 2400, 0x00112,  986, "NGR", "E",   "CAf" },  //   -aero Niamey Radio
-  {  8894.00,    0, 2400, 0x200c2,  706, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
+  {  8894.00,    0, 2400, 0x200c7,  706, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
   {  8895.00,    0, 2400, 0x200e4,  708, "RUS", "-CW", "FE"  },  //     -cw Channel Marker G
   {  8895.00,    0, 2400, 0x200e4,  709, "RUS", "-CW", "EEu" },  //     -cw Channel Marker W
   {  8895.00,    0, 2400, 0x000d2,  707, "RUS", "-CW", "RUS" },  // -milcom Russian Air Force
@@ -8149,47 +8148,48 @@ dx_t eibi_db[] = {
   {  8907.00,    0, 2400, 0x200b2,  572, "CHN", "",    "FE"  },  //    -ale China Military ALE
   {  8909.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
   {  8909.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
-  {  8912.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
+  {  8912.00,    0, 2400, 0x200c7,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
   {  8912.00,    0, 2400, 0x200b2,  408, "USA", "",    "USA" },  //    -ale COTHEN ALE
-  {  8912.00,    0, 2400, 0x200c2,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
+  {  8912.00,    0, 2400, 0x200c7,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
   {  8915.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
   {  8915.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
   {  8917.00,    0, 2400, 0x200b2,  465, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
   {  8918.00,    0, 2400, 0x00112,  596, "CAN", "E",   "NAO" },  //   -aero Gander Radio
   {  8918.00,    0, 2400, 0x00112,  702, "TRD", "E",   "Car" },  //   -aero Piarco Radio CAR-B
   {  8918.00,    0, 2400, 0x00112,  699, "USA", "E",   "Car" },  //   -aero New York Radio CAR-B
-  {  8921.00,    0, 2400, 0x200c2,  705, "NZL", "-HF", "SOc" },  //   -hfdl Auckland HFDL (ID5)
-  {  8927.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
-  {  8927.00,    0, 2400, 0x200c2,  693, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
-  {  8927.00,    0, 2400, 0x200c2,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
+  {  8921.00,    0, 2400, 0x200c7,  705, "NZL", "-HF", "SOc" },  //   -hfdl Auckland HFDL (ID5)
+  {  8927.00,    0, 2400, 0x200c7,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
+  {  8927.00,    0, 2400, 0x200c7,  693, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
+  {  8927.00,    0, 2400, 0x200c7,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
   {  8930.00,  600, 1800, 0x00112,  160, "SWE", "E",   "Eu"  },  //   -aero Stockholm Radio
   {  8930.00, 1800,  600, 0x00112,  160, "SWE", "E",   "Eu"  },  //   -aero Stockholm Radio
   {  8933.00,    0, 2400, 0x00112,  852, "USA", "E",   "NAO" },  //   -aero New York Radio LDOC
   {  8933.00,    0, 2400, 0x00092,  853, "USA", "E",   "NAO" },  //   -util San Francisco R. LDOC
   {  8935.00,    0, 2400, 0x200b2,  846, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
-  {  8936.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
-  {  8936.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
+  {  8936.00,    0, 2400, 0x200c7,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
+  {  8936.00,    0, 2400, 0x200c7,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
   {  8939.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   {  8939.00,    0, 2400, 0x00112,  336, "RUS", "R",   "CIS" },  //   -aero Rostov Volmet x25,55
   {  8939.00,    0, 2400, 0x00112,  851, "RUS", "R",   "CIS" },  //   -aero StPeterbg Volmet x05,35
+  {  8939.00,    0, 2400, 0x200c7,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
   {  8941.00,    0, 2400, 0x200b2,  572, "CHN", "",    "FE"  },  //    -ale China Military ALE
-  {  8942.00,    0, 2400, 0x200c2,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
+  {  8942.00,    0, 2400, 0x200c7,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
   {  8942.00,    0, 2400, 0x00112,  990, "PHL", "E",   "WOc" },  //   -aero Manila Radio
   {  8942.00,    0, 2400, 0x00112,  593, "SNG", "E",   "SEA" },  //   -aero Singapore Radio
-  {  8948.00,    0, 2400, 0x200c2,  843, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
+  {  8948.00,    0, 2400, 0x200c7,  843, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
   {  8948.00,    0, 2400, 0x00112,  855, "IND", "E",   "SAs" },  //   -aero Mumbai Radio
   {  8950.00,    0, 2400, 0x00112,  992, "RUS", "",    "NEu" },  //   -aero Murmansk Radio
   {  8950.00,    0, 2400, 0x200b2,  442, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
   {  8951.00,    0, 2400, 0x00112,  335, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
   {  8952.00,    0, 2400, 0x00112,  993, "ARG", "S",   "SAm" },  //   -aero Córdoba Volmet x25, x35
   {  8954.00,    0, 2400, 0x00092,  323, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
-  {  8957.00,    0, 2400, 0x200c2,  591, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
+  {  8957.00,    0, 2400, 0x200c7,  591, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
   {  8957.00,    0, 2400, 0x00112,  414, "IRL", "E",   "Eu"  },  //   -aero Shannon Volmet
   {  8965.00,    0, 2400, 0x000d2,  362, "GER", "E",   "Eu"  },  // -milcom DHM91 German Air Force
   {  8965.00,    0, 2400, 0x200b2,  846, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
   {  8965.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
   {  8968.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
-  {  8977.00,    0, 2400, 0x200c2,  468, "ISL", "-HF", "NAO" },  //   -hfdl Reykjavik HFDL (ID3)
+  {  8977.00,    0, 2400, 0x200c7,  468, "ISL", "-HF", "NAO" },  //   -hfdl Reykjavik HFDL (ID3)
   {  8980.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   {  8989.00, 2130, 2400, 0x00092,  994, "NCG", "S",   "CAm" },  //   -util Pescador Preacher
   {  8990.00,    0, 2400, 0x200b2,  838, "ALG", "",    "ALG" },  //    -ale Algeria Gendarmerie ALE
@@ -10195,8 +10195,8 @@ dx_t eibi_db[] = {
   { 10021.00,    0, 2400, 0x00112,  713, "ROU", "RO",  "Eu"  },  //   -aero Bucuresti Aero
   { 10024.00, 1200, 2400, 0x00092,  854, "HND", "S",   "CAm" },  //   -util COCESNA Cenamer Control
   { 10024.00,    0, 2400, 0x00112, 1043, "PRU", "S",   "SAm" },  //   -aero Lima Radio
-  { 10027.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
-  { 10027.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
+  { 10027.00,    0, 2400, 0x200c7,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
+  { 10027.00,    0, 2400, 0x200c7,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
   { 10033.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   { 10036.00,    0, 2400, 0x00092,  343, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio H
   { 10048.00,    0, 2400, 0x00112,  592, "JPN", "E",   "FE"  },  //   -aero Tokyo Radio
@@ -10205,21 +10205,21 @@ dx_t eibi_db[] = {
   { 10051.00,    0, 2400, 0x00112,  439, "CAN", "E",   "NAm" },  //   -aero Gander Volmet x20,x50
   { 10057.00,    0, 2400, 0x00112,  695, "MDG", "E",   "EAf" },  //   -aero Antanan.Volmet x25,x50
   { 10057.00,    0, 2400, 0x00112,  427, "USA", "E",   "EOc" },  //   -aero San Francisco Radio 3
-  { 10060.00,    0, 2400, 0x200c2,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
-  { 10063.00,    0, 2400, 0x200c2,  706, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
+  { 10060.00,    0, 2400, 0x200c7,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
+  { 10063.00,    0, 2400, 0x200c7,  706, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
   { 10066.00,    0, 2400, 0x00112,  847, "BGD", "E",   "SAs" },  //   -aero Dhaka Radio
   { 10066.00,    0, 2400, 0x00112,  848, "IND", "E",   "SAs" },  //   -aero Kolkata Radio
   { 10066.00,    0, 2400, 0x00092,  320, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio I
   { 10066.00,    0, 2400, 0x00112,  849, "MYA", "E",   "SEA" },  //   -aero Yangon Radio
-  { 10066.00,    0, 2400, 0x200c2,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
-  { 10075.00,    0, 2400, 0x200c2,  701, "BHR", "-HF", "ME"  },  //   -hfdl Al Muharraq HFDL (ID15)
-  { 10081.00,    0, 2400, 0x200c2,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
-  { 10081.00,    0, 2400, 0x200c2,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
+  { 10066.00,    0, 2400, 0x200c7,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
+  { 10075.00,    0, 2400, 0x200c7,  701, "BHR", "-HF", "ME"  },  //   -hfdl Al Muharraq HFDL (ID15)
+  { 10081.00,    0, 2400, 0x200c7,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
+  { 10081.00,    0, 2400, 0x200c7,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
   { 10084.00,    0, 2400, 0x00112, 1044, "IND", "E",   "SAs" },  //   -aero Delhi Radio
   { 10084.00,    0, 2400, 0x00112,  855, "IND", "E",   "SAs" },  //   -aero Mumbai Radio
-  { 10084.00,    0, 2400, 0x200c2,  705, "NZL", "-HF", "SOc" },  //   -hfdl Auckland HFDL (ID5)
-  { 10087.00,    0, 2400, 0x200c2,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
-  { 10093.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
+  { 10084.00,    0, 2400, 0x200c7,  705, "NZL", "-HF", "SOc" },  //   -hfdl Auckland HFDL (ID5)
+  { 10087.00,    0, 2400, 0x200c7,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
+  { 10093.00,    0, 2400, 0x200c7,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   { 10098.50,    0, 2400, 0x200b2,  549, "GEO", "",    "GEO" },  //    -ale Georgia Coast Guard ALE
   { 10100.80,    0, 2400, 0x200f4,  576, "GER", "E",   "Eu"  },  //    -fsk DWD 1 Pinneberg RTTY
   { 10108.50,    0, 2400, 0x200b2,  729, "GRC", "",    "GRC" },  //    -ale Greek Air Force ALE
@@ -10785,7 +10785,7 @@ dx_t eibi_db[] = {
   { 11177.00,    0, 2400, 0x000d2,  973, "HWA", "",    "Oc"  },  // -milcom NPM US Navy RTTY/STANAG
   { 11181.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 11181.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
-  { 11184.00,    0, 2400, 0x200c2,  468, "ISL", "-HF", "NAO" },  //   -hfdl Reykjavik HFDL (ID3)
+  { 11184.00,    0, 2400, 0x200c7,  468, "ISL", "-HF", "NAO" },  //   -hfdl Reykjavik HFDL (ID3)
   { 11187.00,    0, 2400, 0x200b2,  909, "FRA", "",    "F"   },  //    -ale French Military ALE
   { 11193.00,    0, 2400, 0x00112,  850, "RUS", "R",   "EEu" },  //   -aero Moscow Aero
   { 11199.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
@@ -10835,13 +10835,13 @@ dx_t eibi_db[] = {
   { 11300.00, 2130, 2200, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 11300.00, 2200, 2300, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
   { 11300.00, 2300, 2400, 0x00092,  817, "TWN", "M",   "FE"  },  //   -util Sound of Hope
-  { 11306.00,    0, 2400, 0x200c2,  693, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
+  { 11306.00,    0, 2400, 0x200c7,  693, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
   { 11306.00,    0, 2400, 0x00092, 1053, "USA", "E",   "WNA" },  //   -util Boeing Seattle
   { 11309.00,    0, 2400, 0x00112,  339, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio E
   { 11309.00,    0, 2400, 0x00112,  340, "USA", "E",   "NAO" },  //   -aero New York Radio E
-  { 11312.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
+  { 11312.00,    0, 2400, 0x200c7,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
   { 11315.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
-  { 11318.00,    0, 2400, 0x200c2,  591, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
+  { 11318.00,    0, 2400, 0x200c7,  591, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
   { 11318.00,    0, 2400, 0x00112,  324, "RUS", "R",   "CIS" },  //   -aero Novosibir Volmet x10,40
   { 11318.00,    0, 2400, 0x200e4,  708, "RUS", "-CW", "FE"  },  //     -cw Channel Marker G
   { 11318.00,    0, 2400, 0x200e4,  709, "RUS", "-CW", "EEu" },  //     -cw Channel Marker W
@@ -10850,8 +10850,8 @@ dx_t eibi_db[] = {
   { 11318.00,    0, 2400, 0x00112,  326, "RUS", "R",   "CIS" },  //   -aero Syktyvkar Volmet x00,30
   { 11320.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
   { 11320.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
-  { 11321.00,    0, 2400, 0x200c2,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
-  { 11327.00,    0, 2400, 0x200c2,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
+  { 11321.00,    0, 2400, 0x200c7,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
+  { 11327.00,    0, 2400, 0x200c7,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
   { 11330.00,    0, 2400, 0x00112,  699, "USA", "E",   "Car" },  //   -aero New York Radio CAR-B
   { 11330.00,    0, 2400, 0x00112,  335, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
   { 11336.00,    0, 2400, 0x00112,  328, "CAN", "E",   "NAO" },  //   -aero Gander Radio C
@@ -10860,12 +10860,12 @@ dx_t eibi_db[] = {
   { 11340.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   { 11345.00,  600, 1800, 0x00112,  160, "SWE", "E",   "Eu"  },  //   -aero Stockholm Radio
   { 11345.00, 1800,  600, 0x00112,  160, "SWE", "E",   "Eu"  },  //   -aero Stockholm Radio
-  { 11348.00,    0, 2400, 0x200c2,  843, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
-  { 11348.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
-  { 11354.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
+  { 11348.00,    0, 2400, 0x200c7,  843, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
+  { 11348.00,    0, 2400, 0x200c7,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
+  { 11354.00,    0, 2400, 0x200c7,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   { 11360.00,    0, 2400, 0x000d2,  707, "RUS", "R",   "RUS" },  // -milcom Russian Air Force
   { 11363.00,    0, 2400, 0x00092,  343, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio H
-  { 11384.00,    0, 2400, 0x200c2,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
+  { 11384.00,    0, 2400, 0x200c7,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
   { 11384.00,    0, 2400, 0x00112, 1054, "JPN", "E",   "WOc" },  //   -aero Naha Radio CWP
   { 11384.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
   { 11384.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
@@ -10875,7 +10875,7 @@ dx_t eibi_db[] = {
   { 11387.00,  145, 1450, 0x00112,  344, "PAK", "E",   "SAs" },  //   -aero Karachi Volmet x15,x45
   { 11387.00, 2250, 1225, 0x00112,  857, "SNG", "E",   "SAs" },  //   -aero SingaporeVolmet x20,x50
   { 11387.00,   10, 1045, 0x00112,  345, "THA", "E",   "SAs" },  //   -aero Bangkok Volmet x10,x40
-  { 11387.00,    0, 2400, 0x200c2,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
+  { 11387.00,    0, 2400, 0x200c7,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
   { 11390.00,  900, 1030, 0x00112, 1055, "ITL", "I",   "Eu"  },  //   -aero Marconi Radio Int.
   { 11390.00, 1600, 1730, 0x00112, 1055, "ITL", "I",   "Eu"  },  //   -aero Marconi Radio Int.
   { 11396.00,    0, 2400, 0x00112,  331, "USA", "E",   "Car" },  //   -aero New York Radio CAR-A
@@ -13058,15 +13058,15 @@ dx_t eibi_db[] = {
   { 13261.00,    0, 2400, 0x00112,  434, "USA", "E",   "Oc"  },  //   -aero San Francisco Radio
   { 13264.00,    0, 2400, 0x00112,  414, "IRL", "E",   "Eu"  },  //   -aero Shannon Volmet
   { 13264.00, 1200, 2100, 0x00112,  414, "IRL", "E",   "Eu"  },  //   -aero Shannon Volmet
-  { 13264.00,    0, 2400, 0x200c2,  706, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
+  { 13264.00,    0, 2400, 0x200c7,  706, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
   { 13267.00,    0, 2400, 0x00112,  361, "RUS", "R",   "Sib" },  //   -aero Irkutsk Volmet x25,x55
   { 13270.00,    0, 2400, 0x00112,  439, "CAN", "E",   "NAm" },  //   -aero Gander Volmet x20,x50
-  { 13270.00,    0, 2400, 0x200c2,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
+  { 13270.00,    0, 2400, 0x200c7,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
   { 13270.00,    0, 2400, 0x200b2,  442, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
   { 13273.00,    0, 2400, 0x00112,  335, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
-  { 13276.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
-  { 13276.00,    0, 2400, 0x200c2,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
-  { 13276.00,    0, 2400, 0x200c2,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
+  { 13276.00,    0, 2400, 0x200c7,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
+  { 13276.00,    0, 2400, 0x200c7,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
+  { 13276.00,    0, 2400, 0x200c7,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
   { 13282.00,    0, 2400, 0x00112,  858, "HKG", "E",   "FE"  },  //   -aero Hongkong Volmet x15,x45
   { 13282.00,    0, 2400, 0x00112,  321, "HWA", "E",   "Oc"  },  //   -aero Honolulu Volmet x25,x55
   { 13282.00,    0, 2400, 0x00112,  322, "JPN", "E",   "FE"  },  //   -aero Tokyo Volmet x10,x40
@@ -13081,31 +13081,31 @@ dx_t eibi_db[] = {
   { 13297.00,    0, 2400, 0x00112,  702, "TRD", "E",   "Car" },  //   -aero Piarco Radio CAR-B
   { 13297.00,    0, 2400, 0x00112,  699, "USA", "E",   "Car" },  //   -aero New York Radio CAR-B
   { 13300.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
-  { 13303.00,    0, 2400, 0x200c2,  843, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
+  { 13303.00,    0, 2400, 0x200c7,  843, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
   { 13306.00, 1000, 2100, 0x00112,  350, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio A
   { 13306.00,    0, 2400, 0x00112,  351, "CAN", "E",   "NAO" },  //   -aero Gander Radio A
   { 13306.00,    0, 2400, 0x00092,  352, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio A
   { 13306.00,    0, 2400, 0x00092,  329, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio C
   { 13306.00,    0, 2400, 0x00112,  330, "ISL", "E",   "NAO" },  //   -aero Iceland Radio C
   { 13306.00,    0, 2400, 0x00112,  353, "USA", "E",   "NAO" },  //   -aero New York Radio A
-  { 13312.00,    0, 2400, 0x200c2,  693, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
-  { 13312.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
+  { 13312.00,    0, 2400, 0x200c7,  693, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
+  { 13312.00,    0, 2400, 0x200c7,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
   { 13312.00,    0, 2400, 0x200b2,  408, "USA", "",    "USA" },  //    -ale COTHEN ALE
   { 13312.00,    0, 2400, 0x200b2,  734, "USA", "",    "USA" },  //    -ale Fed.Aviation Admin. ALE
-  { 13315.00,    0, 2400, 0x200c2,  591, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
+  { 13315.00,    0, 2400, 0x200c7,  591, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
   { 13315.00,    0, 2400, 0x200b2,  846, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
-  { 13321.00,    0, 2400, 0x200c2,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
-  { 13321.00,    0, 2400, 0x200c2,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
-  { 13324.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
+  { 13321.00,    0, 2400, 0x200c7,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
+  { 13321.00,    0, 2400, 0x200c7,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
+  { 13324.00,    0, 2400, 0x200c7,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
   { 13339.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
   { 13339.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
   { 13341.20,    0, 2400, 0x000d2,  143, "GER", "",    "Eu"  },  // -milcom DHJ58 Marine STANAG
-  { 13342.00,    0, 2400, 0x200c2,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
+  { 13342.00,    0, 2400, 0x200c7,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
   { 13342.00,  600, 1800, 0x00112,  160, "SWE", "E",   "Eu"  },  //   -aero Stockholm Radio
   { 13342.00, 1800,  600, 0x00112,  160, "SWE", "E",   "Eu"  },  //   -aero Stockholm Radio
-  { 13351.00,    0, 2400, 0x200c2,  705, "NZL", "-HF", "SOc" },  //   -hfdl Auckland HFDL (ID5)
+  { 13351.00,    0, 2400, 0x200c7,  705, "NZL", "-HF", "SOc" },  //   -hfdl Auckland HFDL (ID5)
   { 13354.00,    0, 2400, 0x00112,  339, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio E
-  { 13354.00,    0, 2400, 0x200c2,  701, "BHR", "-HF", "ME"  },  //   -hfdl Al Muharraq HFDL (ID15)
+  { 13354.00,    0, 2400, 0x200c7,  701, "BHR", "-HF", "ME"  },  //   -hfdl Al Muharraq HFDL (ID15)
   { 13354.00,    0, 2400, 0x00112,  340, "USA", "E",   "NAO" },  //   -aero New York Radio E
   { 13354.00,    0, 2400, 0x00112,  415, "USA", "E",   "EOc" },  //   -aero San Francisco Radio 1
   { 13357.00,    0, 2400, 0x00112,  704, "SEN", "E",   "WAf" },  //   -aero Dakar Radio
@@ -14589,7 +14589,7 @@ dx_t eibi_db[] = {
   { 15000.00,    0, 2400, 0x200b2,  721, "MRC", "",    "MRC" },  //    -ale Moroccan Police ALE
   { 15000.00,    0, 2400, 0x200a1,  231, "USA", "-TS", "USA" },  //   -time WWV Colorado (m.ann.)
   { 15016.00,    0, 2400, 0x000d2,  608, "USA", "E",   "NAm" },  // -milcom US Air Force Messages
-  { 15025.00,    0, 2400, 0x200c2,  468, "ISL", "-HF", "NAO" },  //   -hfdl Reykjavik HFDL (ID3)
+  { 15025.00,    0, 2400, 0x200c7,  468, "ISL", "-HF", "NAO" },  //   -hfdl Reykjavik HFDL (ID3)
   { 15030.00,  245,  345, 0x00080,   50, "IND", "BR",  "MYA" },  //  -bcast All India Radio Ext.Sce
   { 15030.00,  400,  500, 0x00080,   50, "IND", "NE",  "NPL" },  //  -bcast All India Radio Ext.Sce
   { 15030.00,  500,  600, 0x00080,   50, "IND", "A",   "ME"  },  //  -bcast All India Radio Ext.Sce
@@ -16526,7 +16526,7 @@ dx_t eibi_db[] = {
   { 17895.00, 1200, 1300, 0x00080, 1068, "ARS", "A",   "NAf" },  //  -bcast SBA Holy Quran Radio
   { 17895.00, 1300, 1400, 0x00080, 1068, "ARS", "A",   "NAf" },  //  -bcast SBA Holy Quran Radio
   { 17895.00, 1400, 1500, 0x00080, 1068, "ARS", "A",   "NAf" },  //  -bcast SBA Holy Quran Radio
-  { 17901.00,    0, 2400, 0x200c2,  706, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
+  { 17901.00,    0, 2400, 0x200c7,  706, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
   { 17904.00,    0, 2400, 0x00112,  430, "AUS", "E",   "Oc"  },  //   -aero Brisbane Radio
   { 17904.00,    0, 2400, 0x00112,  431, "FJI", "E",   "Oc"  },  //   -aero Nadi Radio
   { 17904.00,    0, 2400, 0x00112,  432, "NZL", "E",   "Oc"  },  //   -aero Auckland Radio
@@ -16535,32 +16535,32 @@ dx_t eibi_db[] = {
   { 17904.00,    0, 2400, 0x00112,  434, "USA", "E",   "Oc"  },  //   -aero San Francisco Radio
   { 17907.00,    0, 2400, 0x00112,  702, "TRD", "E",   "Car" },  //   -aero Piarco Radio CAR-B
   { 17907.00,    0, 2400, 0x00112,  699, "USA", "E",   "Car" },  //   -aero New York Radio CAR-B
-  { 17912.00,    0, 2400, 0x200c2,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
-  { 17916.00,    0, 2400, 0x200c2,  591, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
+  { 17912.00,    0, 2400, 0x200c7,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
+  { 17916.00,    0, 2400, 0x200c7,  591, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
   { 17916.00,    0, 2400, 0x00112,  432, "NZL", "E",   "Oc"  },  //   -aero Auckland Radio
-  { 17916.00,    0, 2400, 0x200c2,  705, "NZL", "-HF", "SOc" },  //   -hfdl Auckland HFDL (ID5)
+  { 17916.00,    0, 2400, 0x200c7,  705, "NZL", "-HF", "SOc" },  //   -hfdl Auckland HFDL (ID5)
   { 17916.00,  600, 1800, 0x00112,  160, "SWE", "E",   "Eu"  },  //   -aero Stockholm Radio
   { 17916.00, 1800,  600, 0x00112,  160, "SWE", "E",   "Eu"  },  //   -aero Stockholm Radio
-  { 17919.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
-  { 17919.00,    0, 2400, 0x200c2,  693, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
-  { 17919.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
-  { 17919.00,    0, 2400, 0x200c2,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
-  { 17919.00,    0, 2400, 0x200c2,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
-  { 17922.00,    0, 2400, 0x200c2,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
-  { 17928.00,    0, 2400, 0x200c2,  843, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
-  { 17928.00,    0, 2400, 0x200c2,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
-  { 17934.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
+  { 17919.00,    0, 2400, 0x200c7,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
+  { 17919.00,    0, 2400, 0x200c7,  693, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
+  { 17919.00,    0, 2400, 0x200c7,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
+  { 17919.00,    0, 2400, 0x200c7,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
+  { 17919.00,    0, 2400, 0x200c7,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
+  { 17922.00,    0, 2400, 0x200c7,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
+  { 17928.00,    0, 2400, 0x200c7,  843, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
+  { 17928.00,    0, 2400, 0x200c7,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
+  { 17934.00,    0, 2400, 0x200c7,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   { 17946.00, 1200, 1800, 0x00112,  350, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio A
   { 17946.00,    0, 2400, 0x00092,  437, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio F
   { 17946.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
   { 17946.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
   { 17946.00,    0, 2400, 0x00112,  335, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP2
-  { 17958.00,    0, 2400, 0x200c2,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
-  { 17967.00,    0, 2400, 0x200c2,  701, "BHR", "-HF", "ME"  },  //   -hfdl Al Muharraq HFDL (ID15)
+  { 17958.00,    0, 2400, 0x200c7,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
+  { 17967.00,    0, 2400, 0x200c7,  701, "BHR", "-HF", "ME"  },  //   -hfdl Al Muharraq HFDL (ID15)
   { 17970.00,    0, 2400, 0x200b2,  722, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
   { 17973.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
   { 17976.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
-  { 17985.00,    0, 2400, 0x200c2,  468, "ISL", "-HF", "NAO" },  //   -hfdl Reykjavik HFDL (ID3)
+  { 17985.00,    0, 2400, 0x200c7,  468, "ISL", "-HF", "NAO" },  //   -hfdl Reykjavik HFDL (ID3)
   { 17994.00,    0, 2400, 0x000d2,  362, "GER", "E",   "Eu"  },  // -milcom DHM91 German Air Force
   { 18003.00,    0, 2400, 0x200b2,  316, "USA", "",    "Glo" },  //    -ale US Air Force ALE
   { 18009.00,    0, 2400, 0x000d2,  860, "FRA", "F",   "Eu"  },  // -milcom Fr. Air Force CAPITOLE
@@ -16907,22 +16907,22 @@ dx_t eibi_db[] = {
   { 21866.00,    0, 2400, 0x200b2,  283, "USA", "",    "USA" },  //    -ale FEMA Emergency ALE
   { 21925.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
   { 21925.00,    0, 2400, 0x00112,  711, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP1
-  { 21928.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
-  { 21928.00,    0, 2400, 0x200c2,  693, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
-  { 21931.00,    0, 2400, 0x200c2,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
-  { 21931.00,    0, 2400, 0x200c2,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
-  { 21934.00,    0, 2400, 0x200c2,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
-  { 21937.00,    0, 2400, 0x200c2,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
-  { 21937.00,    0, 2400, 0x200c2,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
-  { 21949.00,    0, 2400, 0x200c2,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
-  { 21949.00,    0, 2400, 0x200c2,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
-  { 21955.00,    0, 2400, 0x200c2,  843, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
+  { 21928.00,    0, 2400, 0x200c7,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
+  { 21928.00,    0, 2400, 0x200c7,  693, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
+  { 21931.00,    0, 2400, 0x200c7,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
+  { 21931.00,    0, 2400, 0x200c7,  716, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
+  { 21934.00,    0, 2400, 0x200c7,  696, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
+  { 21937.00,    0, 2400, 0x200c7,  338, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
+  { 21937.00,    0, 2400, 0x200c7,  697, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
+  { 21949.00,    0, 2400, 0x200c7,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
+  { 21949.00,    0, 2400, 0x200c7,  717, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
+  { 21955.00,    0, 2400, 0x200c7,  843, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
   { 21964.00,    0, 2400, 0x00112,  852, "USA", "E",   "NAO" },  //   -aero New York Radio LDOC
   { 21964.00,    0, 2400, 0x00112,  327, "USA", "E",   "EOc" },  //   -aero San Francisco Radio 2
-  { 21982.00,    0, 2400, 0x200c2,  701, "BHR", "-HF", "ME"  },  //   -hfdl Al Muharraq HFDL (ID15)
+  { 21982.00,    0, 2400, 0x200c7,  701, "BHR", "-HF", "ME"  },  //   -hfdl Al Muharraq HFDL (ID15)
   { 21985.00,    0, 2400, 0x00112,  348, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
-  { 21990.00,    0, 2400, 0x200c2,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
-  { 21997.00,    0, 2400, 0x200c2,  591, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
+  { 21990.00,    0, 2400, 0x200c7,  710, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
+  { 21997.00,    0, 2400, 0x200c7,  591, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
   { 22177.00,    0, 2400, 0x200b2,  208, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
   { 22185.00,  630,  640, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers
   { 22185.00,  630,  640, 0x00132,  628, "UKR", "R",   "UKR" },  //    -spy S06s Spy Numbers

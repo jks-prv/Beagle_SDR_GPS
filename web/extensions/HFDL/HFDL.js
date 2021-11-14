@@ -6,7 +6,7 @@ var hfdl = {
    first_time: true,
    dataH: 300,
    ctrlW: 600,
-   ctrlH: 165,
+   ctrlH: 185,
    freq: 0,
    sfmt: 'w3-text-red w3-ext-retain-input-focus',
    pb: { lo: 300, hi: 2600 },
@@ -21,6 +21,8 @@ var hfdl = {
    SQUITTER: 2,
    dsp: 0,
    dsp_s: [ 'all', 'DX', 'squitter' ],
+   uplink: true,
+   downlink: true,
    
    testing: false,
    
@@ -100,19 +102,57 @@ function hfdl_recv(data)
 
 			case "chars":
 			   var s = param[1];
+            var x = kiwi_decodeURIComponent('', param[1]).split('\n');
+            //console.log(x);
+            if (!hfdl.uplink && x[1].startsWith('Uplink')) break;
+            if (!hfdl.downlink && x[1].startsWith('Downlink')) break;
 
 			   if (hfdl.dsp != hfdl.ALL) {
-               var x = kiwi_decodeURIComponent('', param[1]).split('\n');
                x.forEach(function(a, i) { x[i] = a.trim(); });
-               //console.log(x);
 
                switch (hfdl.dsp) {
                
                   case hfdl.DX:
-                     s = x[0] +'\n'+ x[1].slice(0,-1) +' | '+ x[2] +' | '+ x[3];
-                     if (!x[3].startsWith('Squitter')) {
-                        s += ' | '+ x[4];
+                     s = x[0] +'\n'+ x[1].slice(0,-1) +' | '+ x[2];
+
+                     if (x[3].startsWith('Squitter')) {
+                        s += ' | Squitter: ';
+                        var first = true;
+                        x.forEach(function(s1, i) {
+                           if (i <= 3 || !s1.startsWith('ID:')) return;
+                           var a = s1.split(', ');
+                           if (a.length < 2 || a[1] == '') return;
+                           s += (first? '' : ', ') + a[1];
+                           first = false;
+                        });
+                        s += '\n';
+                        break;
                      }
+
+                     s += ' | '+ x[3];
+
+                     var found = false;
+                     var type_s = [ 'Logon request', 'Logon resume', 'Unnumbered data', 'Unnumbered ack\'ed' ];
+                     type_s.forEach(function(type, i) {
+                        if (found || !x[4].includes(type)) return;
+                        found = true;
+                        s += ' | '+ type;
+                        x.forEach(function(s1, j) {
+                           //console.log(j +': '+ s1);
+                           if (j <= 4) return;
+                           var a = s1.split(':');
+                           var p0 = a[0];
+                           var p1 = (a[1] && a[1] != '')? a[1].slice(1) : null;
+                           if (p0 == 'ICAO' && p1) s += ' | ICAO '+ p1; else
+                           if (p0 == 'Flight ID' && p1) s += ' | Flight '+ p1; else
+                           if (p0 == 'Lat' && p1) s += ' | Lat '+ ((+p1).toFixed(4)); else
+                           if (p0 == 'Lon' && p1) s += ' | Lon '+ ((+p1).toFixed(4)); else
+                           if (p0 == 'ACARS') s += ' | ACARS...'; else
+                              ;
+                        });
+                     });
+
+                     if (!found) s += ' | '+ x[4];
                      s += '\n';
                      break;
             
@@ -121,10 +161,14 @@ function hfdl_recv(data)
                         s = '';
                         break;
                      }
-                     s = x[0] +'\n'+ x[2] +'\n';
+                     s = x[0] +'\nSquitter | '+ x[2] +'\n';
+                     var id = '';
                      x.forEach(function(a, i) {
-                        if (a.startsWith('ID:') || a.startsWith('Frequencies in use:'))
-                           s += x[i] +'\n';
+                        if (a.startsWith('ID:')) {
+                           id = a.split(': ')[1];
+                        } else
+                        if (a.startsWith('Frequencies in use:'))
+                           s += id +': '+ a.split(': ')[1] +'\n';
                      });
                      break;
                }
@@ -171,8 +215,14 @@ function hfdl_controls_setup()
             w3_div('id-hfdl-msg')
          ),
          
-         w3_inline('w3-tspace-8/w3-margin-between-16',
-            w3_select(hfdl.sfmt, 'Display', '', 'hfdl.dsp', hfdl.dsp, hfdl.dsp_s, 'hfdl_display_cb'),
+         w3_inline('w3-margin-T-16/w3-margin-between-16',
+            w3_inline('w3-valign-end w3-round-large w3-padding-small w3-text-white w3-grey/',
+               w3_select(hfdl.sfmt, 'Display', '', 'hfdl.dsp', hfdl.dsp, hfdl.dsp_s, 'hfdl_display_cb'),
+               w3_div('w3-margin-L-16',
+                  w3_checkbox('/w3-label-inline w3-label-not-bold', 'Uplink', 'hfdl.uplink', hfdl.uplink, 'w3_bool_cb'),
+                  w3_checkbox('/w3-label-inline w3-label-not-bold', 'Downlink', 'hfdl.downlink', hfdl.downlink, 'w3_bool_cb')
+               )
+            ),
             w3_inline('id-hfdl-menus w3-tspace-6 w3-gap-16/')
          ),
 
@@ -223,6 +273,53 @@ function hfdl_controls_setup()
 function hfdl_watchdog()
 {
    //console.log('hfdl tick');
+}
+
+function hfdl_menu_match(m_freq, m_str)
+{
+   var rv = { found_menu_match: false, match_menu: 0, match_val: 0 };
+   var menu = 'hfdl.menu1';   // limit matching to "Bands" menu
+   var look_for_first_entry = false;
+   var match = false;
+
+   if (dbgUs) console.log('CONSIDER '+ menu +' -----------------------------------------');
+   w3_select_enum(menu, function(option, j) {
+      var val = +option.value;
+      if (rv.found_menu_match || val == -1) return;
+      var menu_f = parseFloat(option.innerHTML);
+      var menu_s = option.innerHTML.toLowerCase();
+      if (dbgUs) console.log('CONSIDER '+ val +' '+ option.innerHTML);
+
+      if (look_for_first_entry) {
+         // find first single frequency entry by
+         // skipping disabled entries from multi-line net name
+         if (option.disabled) return;
+         match = true;
+      } else {
+         if (isNumber(menu_f)) {
+            if (menu_f == m_freq) {
+               if (dbgUs) console.log('MATCH num: '+ menu_s +'['+ j +']');
+               match = true;
+            }
+         } else {
+            if (menu_s.includes(m_str)) {
+               look_for_first_entry = true;
+               if (dbgUs) console.log('MATCH str: '+ menu_s +'['+ j +'] BEGIN look_for_first_entry');
+               return;
+            }
+         }
+      }
+
+      if (match) {
+         if (dbgUs) console.log('MATCH '+ val +' '+ option.innerHTML);
+         // delay call to hfdl_pre_select_cb() until other params processed below
+         rv.match_menu = menu;
+         rv.match_val = val;
+         rv.found_menu_match = true;
+      }
+   });
+   
+   return rv;
 }
 
 function hfdl_get_systable_done_cb(stations)
@@ -280,62 +377,13 @@ function hfdl_get_systable_done_cb(stations)
       var m_freq = p[0].parseFloatWithUnits('kM', 1e-3);
       var m_str = kiwi_decodeURIComponent('hfdl', p[0]).toLowerCase();
       if (dbgUs) console.log('URL freq='+ m_freq);
-      var found_menu_match = false;
-      var menu_match_numeric = false;
-      var match_menu, match_val;
       var do_test = 0;
 
       // select matching menu item frequency
-      for (var i = 1; i < 2; i++) {    // limit matching to "Bands" menu
-         var menu = 'hfdl.menu'+ i;
-         var look_for_first_entry = false;
-         var match = false;
-   
-         if (dbgUs) console.log('CONSIDER '+ menu +' -----------------------------------------');
-         w3_select_enum(menu, function(option, j) {
-            var val = +option.value;
-            if (found_menu_match || val == -1) return;
-            var menu_f = parseFloat(option.innerHTML);
-            var menu_s = option.innerHTML.toLowerCase();
-            if (dbgUs) console.log('CONSIDER '+ val +' '+ option.innerHTML);
-      
-            if (look_for_first_entry) {
-               // find first single frequency entry by
-               // skipping disabled entries from multi-line net name
-               if (option.disabled) return;
-               match = true;
-               if (isNumber(menu_f))
-                  menu_match_numeric = true;
-            } else {
-               if (isNumber(menu_f)) {
-                  if (menu_f == m_freq) {
-                     if (dbgUs) console.log('MATCH num: '+ menu_s +'['+ j +']');
-                     match = true;
-                     menu_match_numeric = true;
-                  }
-               } else {
-                  if (menu_s.includes(m_str)) {
-                     look_for_first_entry = true;
-                     if (dbgUs) console.log('MATCH str: '+ menu_s +'['+ j +'] BEGIN look_for_first_entry');
-                     return;
-                  }
-               }
-            }
-      
-            if (match) {
-               if (dbgUs) console.log('MATCH '+ val +' '+ option.innerHTML);
-               // delay call to hfdl_pre_select_cb() until other params processed below
-               match_menu = menu;
-               match_val = val;
-               found_menu_match = true;
-            }
-         });
-      
-         if (found_menu_match) {
-            p.shift();
-            break;
-         }
-      }
+      var rv = hfdl_menu_match(m_freq, m_str);
+
+      if (rv.found_menu_match)
+         p.shift();
 
       p.forEach(function(a, i) {
          if (dbgUs) console.log('HFDL param2 <'+ a +'>');
@@ -361,8 +409,8 @@ function hfdl_get_systable_done_cb(stations)
             console.log('HFDL: unknown URL param "'+ a +'"');
       });
       
-      if (found_menu_match) {
-         hfdl_pre_select_cb(match_menu, match_val, false);
+      if (rv.found_menu_match) {
+         hfdl_pre_select_cb(rv.match_menu, rv.match_val, false);
       }
    }
 
@@ -643,13 +691,21 @@ function HFDL_environment_changed(changed)
    //w3_console.log(changed, 'HFDL_environment_changed');
 
    if (changed.freq || changed.mode) {
-      var f_kHz = ext_get_freq_kHz();
+      var f_kHz = (+ext_get_freq_kHz()).toFixed(0);
+      var hfdl_f_kHz = (+hfdl.freq).toFixed(0);
       var mode = ext_get_mode();
-      //console.log('HFDL_environment_changed freq='+ hfdl.freq +' f_kHz='+ f_kHz);
-	   if (hfdl.freq != f_kHz || mode != 'iq') {
-	      console.log('hfdl_clear_menus()');
+      //console.log('HFDL_environment_changed: freq='+ hfdl_f_kHz +' f_kHz='+ f_kHz +' mode='+ mode);
+	   if (mode != 'iq') {
+	      //console.log('hfdl_clear_menus()');
 	      hfdl_clear_menus();
-	   }
+	   } else
+	   if (hfdl_f_kHz != f_kHz && mode == 'iq') {
+	      // try and match new freq to one of the menu entries
+	      //console.log('HFDL_environment_changed: f='+ f_kHz);
+	      var rv = hfdl_menu_match(+f_kHz, f_kHz);
+         if (rv.found_menu_match)
+            hfdl_pre_select_cb(rv.match_menu, rv.match_val, false);
+      }
    }
 
    if (changed.resize) {

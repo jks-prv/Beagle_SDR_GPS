@@ -2,11 +2,26 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.473  November 13, 2021
+    HFDL extension improvements:
+        Additional processing of the messages appearing in the text window. The abbreviated 'DX'
+        display now contain aircraft info. The 'squitter' display is more compact.
+        Separate upload/download checkboxes to limit the message direction ('up' is transmitted
+        messages from the ground station). Thanks Martin.
+    
+    EiBi label database:
+        Clicking HFDL labels now selects IQ mode and the special USB passband used by HFDL.
+        Labels which automatically open an extension on shift-click now mention this fact in the
+        mouse-over popup (as a reminder). Currently ALE, HFDL, Time, CW, FSK and Fax.
+        Clicking ALE, HFDL and Fax labels set the special passbands used by the associated extensions.
+        Clicking an HFDL label should also select the corresponding menu entry of the HFDL extension.
+
 v1.471,472  November 12, 2021
     HFDL extension preliminary release.
         Because the decoding happens entirely on the Beagle, and due to the buffering delay of
         delivering audio and waterfall to the browser, you will see the decoded text before the
-        audio/waterfall occur.
+        audio/waterfall occur. See:
+        forum.kiwisdr.com/index.php?p=/discussion/2424/v1-472-hfdl-extension-preliminary-release/p1
     
     BBAI performance improvement. Specify correct compiler cpu type (cortex-a15) and
         vector floating point version (vfpv4) for the TI AM5729 cpu chip used by the BBAI.
