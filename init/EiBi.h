@@ -8079,7 +8079,6 @@ dx_t eibi_db[] = {
   {  8831.00,    0, 2400, 0x00112,  436, "CAN", "E",   "NAO" },  //   -aero Gander Radio F
   {  8831.00, 1000, 1800, 0x00092,  437, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio F
   {  8834.00,    0, 2400, 0x200c7,  349, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
-  {  8939.00,    0, 2400, 0x200c7,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
   {  8841.00,    0, 2400, 0x200b2,  465, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
   {  8843.00,    0, 2400, 0x200c7,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
   {  8843.00,    0, 2400, 0x00112,  415, "USA", "E",   "EOc" },  //   -aero San Francisco Radio 1
@@ -8172,6 +8171,7 @@ dx_t eibi_db[] = {
   {  8939.00,    0, 2400, 0x200b2,  724, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   {  8939.00,    0, 2400, 0x00112,  336, "RUS", "R",   "CIS" },  //   -aero Rostov Volmet x25,55
   {  8939.00,    0, 2400, 0x00112,  851, "RUS", "R",   "CIS" },  //   -aero StPeterbg Volmet x05,35
+  {  8939.00,    0, 2400, 0x200c7,  337, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
   {  8941.00,    0, 2400, 0x200b2,  572, "CHN", "",    "FE"  },  //    -ale China Military ALE
   {  8942.00,    0, 2400, 0x200c7,  347, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
   {  8942.00,    0, 2400, 0x00112,  990, "PHL", "E",   "WOc" },  //   -aero Manila Radio
