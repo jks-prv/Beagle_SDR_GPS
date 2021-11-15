@@ -1,0 +1,1167 @@
+2025.6;0000-2400;;USA;Veterans Health Adm.ALE;;USA;;1;;
+2070.4;0000-2400;;D;German Fed.Police ALE;;D;;1;;[1219]
+2142.5;0000-2400;;D;German Fed.Police ALE;;D;;1;;
+2216;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;[1019]
+2233.5;0000-2400;;D;German Red Cross ALE;;D;;1;;
+2234.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+2250;0000-2400;;DNK;Danish Military ALE;;NEu;;1;;
+2289;0000-2400;;USA;NTA Emergency ALE Net;;USA;;1;;
+2358;0000-2400;;POL;Internal Ministry ALE;;POL;;1;;
+2379.6;0000-2400;;HOL;Dutch Navy ALE;;HOL;o;1;;[0120]
+2505;0000-2400;;D;German Fed.Police ALE;;D;;1;;[1219]
+2553;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+2559;0000-2400;;D;German Fed.Police ALE;;D;;1;;[1219]
+2627;0000-2400;;POL;Polish Army ALE;;POL;;1;;[1119]
+2638.6;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[1219]
+2649;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+2658;0000-2400;;DNK;Danish Navy ALE;;NEu;f;1;;[1219]
+2673;0000-2400;;D;German Coast Guard ALE;;D;;1;;
+2673;0000-2400;;D;German Fed.Police ALE;;D;;1;;
+2685;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;
+2726;0000-2400;;USA;Veterans Health Adm.ALE;;USA;;1;;[0120]
+2732;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+2766;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[1219]
+2784;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;[1119]
+2805;0000-2400;;USA;US Air Force ALE;;Glo;;1;;
+3059;0000-2400;;USA;US Air Force ALE;;Glo;;1;;
+3086;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[1219]
+3095;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[1219]
+3137;0000-2400;;USA;US Air Force ALE;;Glo;;1;;
+3170;0000-2400;;USA;NTA Emergency ALE Net;;USA;;1;;
+3173;0000-2400;;UKR;Ukrainian Military ALE;;UKR;;1;;[1119]
+3188.5;0000-2400;;POL;Internal Ministry ALE;;POL;;1;;
+3216;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+3224;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+3226;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+3239;0000-2400;;CHL;Gendarmeria Chile ALE;;CHL;;1;;
+3254.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+3286;0000-2400;;USA;US Army MARS ALE;;USA;;1;;[0120]
+3318.3;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+3326;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[1219]
+3341;0000-2400;;USA;Bonneville PowerAdm.ALE;;WNA;;1;;
+3341;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;[0120]
+3345;0000-2400;;USA;Corps of Engineers ALE;;USA;;1;;
+3351.1;0000-2400;;USA;Veterans Health Adm.ALE;;USA;;1;;[1219]
+3369;0000-2400;;USA;COTHEN ALE;;USA;;1;;
+3371.6;0000-2400;;USA;Fish and Wildlife ALE;;USA;;1;;
+3374;0000-2400;;D;German Coast Guard ALE;;D;;1;;
+3390;0000-2400;;HRV;Croatian NRPD ALE;;HRV;;1;;
+3393.6;0000-2400;;USA;Veterans Health Adm.ALE;;USA;;1;;
+3428;0000-2400;;USA;COTHEN ALE;;USA;;1;;[1219]
+3503.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+3558;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1219]
+3595;0000-2400;;D;German Fed.Police ALE;;D;;1;;
+3640;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[1219]
+3735;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[0120]
+3795;0000-2400;;POL;Polish Army ALE;;POL;;1;;[1119]
+3801.5;0000-2400;;D;German Red Cross ALE;;D;;1;;
+3805;0000-2400;;MRC;Protection Civile ALE;;MRC;;1;;
+3814;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;
+3818;0000-2400;;D;German Red Cross ALE;;D;;1;;[1119]
+3825;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+3825;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1219]
+3831;0000-2400;;D;German Coast Guard ALE;;D;;1;;
+3844;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1119]
+3848;0000-2400;;S;Swedish Military ALE;;S;;1;;[1119]
+3850;0000-2400;;D;German Fed.Police ALE;;D;;1;;[1219]
+3865;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+3903;0000-2400;;F;Fr. Air Force E-3F ALE;;Eu;av;1;;
+3928;0000-2400;;BIH;Bosnian Emergency ALE;;BIH;;1;;
+4005.5;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+4013;0000-2400;;D;German Red Cross ALE;;D;;1;;
+4035;0000-2400;;TUN;Tunisian Police ALE;;TUN;;1;;
+4036.5;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+4036.5;0000-2400;;USA;Missouri Nat.Guard ALE;;CNA;;1;;
+4039;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[0120]
+4040;0000-2400;;MRC;Protection Civile ALE;;MRC;;1;;
+4046;0000-2400;;S;Swedish Military ALE;;S;;1;;[1119]
+4239.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ev;1;;[1219]
+4258.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+4347.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+4360;0000-2400;;GEO;Georgia Coast Guard ALE;;GEO;;1;;
+4386;0000-2400;;S;Swedish Military ALE;;S;;1;;[1119]
+4396;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1219]
+4410;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1119]
+4438;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+4438.5;0000-2400;;USA;US Army MARS ALE;;USA;;1;;
+4443;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+4450;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+4459;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;
+4492.5;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+4494;0000-2400;;S;Swedish Military ALE;;S;;1;;[1119]
+4495;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;
+4503;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;[1219]
+4510;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;[0120]
+4537.5;0000-2400;;D;German Fed.Police ALE;;D;;1;;
+4537.5;0000-2400;;USA;Missouri Nat.Guard ALE;;CNA;;1;;
+4540;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+4550;0000-2400;;JOR;Jordan Address ALE Net;;JOR;;1;;
+4553.5;0000-2400;;D;German Coast Guard ALE;;D;;1;;
+4555.2;0000-2400;;D;German Fed.Police ALE;;D;;1;;
+4560;0000-2400;;AUS;Australian Police ALE;;AUS;;1;;[1119]
+4560;0000-2400;;CHN;China Military ALE;;FE;;1;;[1119]
+4561;0000-2400;;E;Guardia Civil ALE;;E;;1;;
+4588;0000-2400;;D;German Red Cross ALE;;D;;1;;[1119]
+4600;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[0819]
+4603;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;[0120]
+4604;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+4610;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;[1219]
+4610;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;
+4610.5;0000-2400;;USA;NTA Emergency ALE Net;;USA;;1;;
+4618;0000-2400;;D;German Fed.Police ALE;;D;;1;;[0120]
+4621.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+4627;0000-2400;;S;Swedish Military ALE;;S;;1;;
+4648;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+4650;0000-2400;;USA;Washington GasLight ALE;;ENA;;1;;
+4700;0000-2400;;USA;Washington GasLight ALE;;ENA;;1;;
+4703;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[1219]
+4703;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;[1219]
+4706;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[1219]
+4706;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;[1219]
+4715;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+4721;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[0120]
+4733;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+4745;0000-2400;;F;Fr. Air Force E-3F ALE;;Eu;av;1;;
+4745;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[1219]
+4751.5;0000-2400;;UKR;Ukrainian Military ALE;;UKR;;1;;
+4756;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;
+4765.5;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+4788.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+4790;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1119]
+4820;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+4830;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1119]
+4830;0000-2400;;USA;Missouri Nat.Guard ALE;;CNA;;1;;
+4845;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;[0120]
+4853;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+4855;0000-2400;;MRC;Protection Civile ALE;;MRC;;1;;
+4870;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1219]
+4874;0000-2400;;E;Guardia Civil ALE;;E;;1;;
+4876;0000-2400;;S;Swedish Military ALE;;S;;1;;
+4881;0000-2400;;BIH;Bosnian Emergency ALE;;BIH;;1;;
+4895;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;
+4906;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+4907.5;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1119]
+4914;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;
+4920.5;0000-2400;;POL;Internal Ministry ALE;;POL;;1;;
+4930;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+4930;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;
+4932.5;0000-2400;;D;German Red Cross ALE;;D;;1;;
+4935;0000-2400;;POL;Polish Army ALE;;POL;;1;;[1219]
+4942;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1119]
+4945;0000-2400;;USA;Bonneville PowerAdm.ALE;;WNA;;1;;
+4950;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1119]
+4950;0000-2400;;KGZ;Kyrgyz Military ALE;;KGZ;;1;;
+4952;0000-2400;;HNG;Hungarian Military ALE;;HNG;;1;;
+4971;0000-2400;;HNG;Hungarian Military ALE;;HNG;;1;;[1119]
+4976;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;[1219]
+4977;0000-2400;;D;German Red Cross ALE;;D;;1;;[1219]
+4979;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;
+4982;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+4988;0000-2400;;E;Guardia Civil ALE;;E;;1;;
+4993.5;0000-2400;;D;German Coast Guard ALE;;D;;1;;
+5007;0000-2400;;E;Guardia Civil ALE;;E;;1;;
+5015;0000-2400;;USA;Corps of Engineers ALE;;USA;;1;;
+5019;0000-2400;;POL;Internal Ministry ALE;;POL;;1;;
+5022;0000-2400;;D;German Fed.Police ALE;;D;;1;;
+5033;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;
+5035;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;
+5038.5;0000-2400;;USA;Veterans Health Adm.ALE;;USA;;1;;
+5040;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1119]
+5047;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+5067.6;0000-2400;;USA;NTA Emergency ALE Net;;USA;;1;;
+5071;0000-2400;;S;Swedish Military ALE;;S;;1;;[1119]
+5075;0000-2400;;ALB;Albanian Government ALE;;ALB;;1;;
+5080;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1219]
+5080;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+5085;0000-2400;;MRC;Protection Civile ALE;;MRC;;1;;
+5091;0000-2400;;TUN;Tunisian Police ALE;;TUN;;1;;
+5094;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1219]
+5098;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[0120]
+5120;0000-2400;;BIH;Bosnian Emergency ALE;;BIH;;1;;
+5123;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+5130;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;
+5131;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1219]
+5132;0000-2400;;TUR;Red Crescent ALE;;TUR;;1;;[1119]
+5135;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1119]
+5135;0000-2400;;USA;American Red Cross ALE;;USA;;1;;
+5135;0000-2400;;USA;Illinois Emergency ALE;;CNA;;1;;
+5140;0000-2400;;USA;American Red Cross ALE;;USA;;1;;
+5140;0000-2400;;USA;Calif.Emergency Sce.ALE;;WNA;;1;;
+5140;0000-2400;;USA;Illinois Emergency ALE;;CNA;;1;;
+5146.7;0000-2400;;GEO;Georgia Borderguard ALE;;GEO;;1;;
+5180;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[0120]
+5182;0000-2400;;S;Swedish Military ALE;;S;;1;;
+5187;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+5192;0000-2400;;USA;Illinois Emergency ALE;;CNA;;1;;
+5194;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+5195;0000-2400;;USA;Calif.Emergency Sce.ALE;;WNA;;1;;
+5206;0000-2400;;USA;US National Guard ALE;;USA;;1;;[1119]
+5210;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1219]
+5219;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[0120]
+5233.5;0000-2400;;USA;Missouri Nat.Guard ALE;;CNA;;1;;
+5242;0000-2400;;TUR;Red Crescent ALE;;TUR;;1;;[1219]
+5242;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;
+5250;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1019]
+5251;0000-2400;;ALB;Albanian Government ALE;;ALB;;1;;
+5258;0000-2400;;D;German Fed.Police ALE;;D;;1;;[0120]
+5258;0000-2400;;MRC;Moroccan Military ALE;;MRC;;1;;
+5268;0000-2400;;TUR;Red Crescent ALE;;TUR;;1;;
+5268;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;
+5270;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1219]
+5280;0000-2400;;BIH;Bosnian Emergency ALE;;BIH;;1;;
+5281;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;
+5286;0000-2400;;E;Guardia Civil ALE;;E;;1;;
+5287;0000-2400;;S;Swedish Military ALE;;S;;1;;
+5295;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;[1219]
+5295;0000-2400;;KGZ;Kyrgyz Military ALE;;KGZ;;1;;
+5298;0000-2400;;HRV;Croatian NRPD ALE;;HRV;;1;;
+5300;0000-2400;;BIH;Bosnian Emergency ALE;;BIH;;1;;
+5308;0000-2400;;USA;Bonneville PowerAdm.ALE;;WNA;;1;;
+5313.6;0000-2400;;USA;NTA Emergency ALE Net;;USA;;1;;
+5315;0000-2400;;USA;Washington GasLight ALE;;ENA;;1;;
+5316;0000-2400;;HRV;Croatian NRPD ALE;;HRV;;1;;[1019]
+5317.5;0000-2400;;POL;Internal Ministry ALE;;POL;;1;;
+5321.5;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+5324.5;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+5327.5;0000-2400;;USA;Corps of Engineers ALE;;USA;;1;;
+5330;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1219]
+5330;0000-2400;;TUR;Red Crescent ALE;;TUR;;1;;[1119]
+5333.5;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+5334;0000-2400;;HNG;Hungarian Military ALE;;HNG;;1;;[1119]
+5340;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+5347.5;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+5352;0000-2400;;E;Guardia Civil ALE;;E;;1;;
+5358;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+5361;0000-2400;;IRQ;Iraqi Navy ALE;;IRQ;;1;;[1219]
+5365;0000-2400;;BIH;Bosnian Emergency ALE;;BIH;;1;;
+5369;0000-2400;;GEO;Georgia Borderguard ALE;;GEO;;1;;
+5370;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+5370;0000-2400;;BIH;Bosnian Emergency ALE;;BIH;;1;;
+5372.2;0000-2400;;IRQ;Iraqi Security Fcs. ALE;;IRQ;;1;;[1119]
+5374;0000-2400;;S;Swedish Military ALE;;S;;1;;[1219]
+5377;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+5379;0000-2400;;ALB;Albanian Government ALE;;ALB;;1;;
+5379;0000-2400;;E;Guardia Civil ALE;;E;;1;;
+5380;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1219]
+5387.5;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+5390;0000-2400;;BIH;Bosnian Emergency ALE;;BIH;;1;;
+5400;0000-2400;;USA;Corps of Engineers ALE;;USA;;1;;
+5407;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1219]
+5410;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[0120]
+5413;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;[1219]
+5418;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+5421;0000-2400;;BIH;Bosnian Emergency ALE;;BIH;;1;;
+5425;0000-2400;;D;German Fed.Police ALE;;D;;1;;
+5430;0000-2400;;IRQ;Iraqi Navy ALE;;IRQ;;1;;[1219]
+5435.5;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[0120]
+5436.7;0000-2400;;GEO;Georgia Borderguard ALE;;GEO;;1;;[1219]
+5437;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;[1119]
+5437.5;0000-2400;;USA;Corps of Engineers ALE;;USA;;1;;
+5460;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1219]
+5466;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;[1219]
+5491;0000-2400;;BIH;Bosnian Emergency ALE;;BIH;;1;;
+5493;0000-2400;;CLM;Colombian Navy ALE;;CLM;;1;;
+5509;0000-2400;;USA;Washington GasLight ALE;;ENA;;1;;
+5555;0000-2400;;GEO;Georgia Borderguard ALE;;GEO;;1;;
+5570;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1119]
+5581;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+5620;0000-2400;;CLM;Colombian Navy ALE;;CLM;;1;;
+5620;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1119]
+5640;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1119]
+5650;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1119]
+5650;0000-2400;;GEO;Georgia Coast Guard ALE;;GEO;;1;;
+5684;0000-2400;;F;Fr. Air Force E-3F ALE;;Eu;av;1;;
+5684;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[1119]
+5690;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1219]
+5702;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[0120]
+5708;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[0120]
+5710;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1119]
+5720.5;0000-2400;;CLM;Colombian Navy ALE;;CLM;;1;;
+5722;0000-2400;;IRQ;Iraqi Security Fcs. ALE;;IRQ;;1;;[1119]
+5732;0000-2400;;USA;COTHEN ALE;;USA;;1;;[0120]
+5747;0000-2400;;F;Fr. Air Force E-3F ALE;;Eu;av;1;;
+5747;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;
+5748.6;0000-2400;;USA;US Embassies ALE;;Glo;;1;;[1219]
+5750;0000-2400;;BIH;Bosnian Emergency ALE;;BIH;;1;;
+5750;0000-2400;;JOR;Jordan Address ALE Net;;JOR;;1;;[1119]
+5754.5;0000-2400;;UKR;Ukrainian Military ALE;;UKR;;1;;[1119]
+5760;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;[1219]
+5762;0000-2400;;HNG;Hungarian Military ALE;;HNG;;1;;
+5768;0000-2400;;HNG;Hungarian Military ALE;;HNG;;1;;
+5770;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+5781;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1119]
+5781;0000-2400;;KGZ;Kyrgyz Military ALE;;KGZ;;1;;
+5782;0000-2400;;GEO;Georgia Borderguard ALE;;GEO;;1;;
+5782;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+5783;0000-2400;;MRC;Moroccan Police ALE;;MRC;;1;;
+5784;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+5784.2;0000-2400;;GEO;Georgia Borderguard ALE;;GEO;;1;;
+5785;0000-2400;;I;Guardia di Finanza ALE;;I;;1;;[1119]
+5786;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+5788;0000-2400;;S;Swedish Military ALE;;S;;1;;[1119]
+5792;0000-2400;;MRC;Protection Civile ALE;;MRC;;1;;[0120]
+5800;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+5802;0000-2400;;S;Swedish Military ALE;;S;;1;;[1219]
+5803;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;[1219]
+5806;0000-2400;;SVN;Slovenian Military ALE;;SVN;;1;;
+5808;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;[1219]
+5814.3;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+5815.5;0000-2400;;CLM;Colombian Navy ALE;;CLM;;1;;
+5820;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;[1219]
+5823;0000-2400;;MRC;Protection Civile ALE;;MRC;;1;;[0120]
+5835.5;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+5837;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;
+5838;0000-2400;;MRC;Moroccan Military ALE;;MRC;;1;;[1119]
+5843;0000-2400;;UKR;Ukrainian Military ALE;;UKR;;1;;[1219]
+5847.5;0000-2400;;GRC;Greek Air Force ALE;;GRC;;1;;
+5853;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1119]
+5860;0000-2400;;USA;Fed.Aviation Admin. ALE;;USA;;1;;
+5865;0000-2400;;E;Guardia Civil ALE;;E;;1;;
+5875;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+5877;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+5884;0000-2400;;F;French Navy ALE;;F;;1;;
+5885;0000-2400;;HNG;Hungarian Military ALE;;HNG;;1;;[1219]
+5892;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+5892;0000-2400;;E;Guardia Civil ALE;;E;;1;;
+5896.3;0000-2400;;IRQ;Iraqi Security Fcs. ALE;;IRQ;;1;;[1119]
+5909.5;0000-2400;;USA;COTHEN ALE;;USA;;1;;[0120]
+5916.5;0000-2400;;POL;Polish Army ALE;;POL;;1;;[1119]
+5947;0000-2400;;USA;Bonneville PowerAdm.ALE;;WNA;;1;;
+5950;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1119]
+5971;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1219]
+6020;0000-2400;;USA;Corps of Engineers ALE;;USA;;1;;
+6123;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;
+6224;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+6230;0000-2400;;AUS;Australian MHFCS ALE;;AUS;;1;;
+6233;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+6240;0000-2400;;JOR;Jordan Address ALE Net;;JOR;;1;;[0120]
+6251;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ev;1;;[1219]
+6265;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+6280;0000-2400;;BIH;Bosnian Emergency ALE;;BIH;;1;;
+6300;0000-2400;;GHA;Ghana Navy ALE;;GHA;;1;;
+6320;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;[1119]
+6324;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1119]
+6330;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+6337;0000-2400;;KGZ;Kyrgyz Military ALE;;KGZ;;1;;
+6380;0000-2400;;BIH;Bosnian Emergency ALE;;BIH;;1;;
+6416.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;[1119]
+6450;0000-2400;;I;Guardia di Finanza ALE;;I;;1;;[1119]
+6467.5;0000-2400;;F;French Navy ALE;;F;;1;;
+6482;0000-2400;;CHN;China Military ALE;;FE;;1;;[1119]
+6500;0000-2400;;ALG;Algeria Gendarmerie ALE;;ALG;;1;;
+6500;0000-2400;;MRC;Protection Civile ALE;;MRC;;1;;
+6510;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;
+6550;0000-2400;;USA;ArmyAviation SCPTOC ALE;;SEE;/KOS-b;1;;
+6562;0000-2400;;MRC;Moroccan Military ALE;;MRC;;1;;[1219]
+6565;0000-2400;;GEO;Georgia Borderguard ALE;;GEO;;1;;
+6566;0000-2400;;KGZ;Kyrgyz Military ALE;;KGZ;;1;;
+6566;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+6580;0000-2400;;JOR;Jordan Address ALE Net;;JOR;;1;;[1119]
+6589;0000-2400;;IRQ;Iraqi Security Fcs. ALE;;IRQ;;1;;[1119]
+6600;0000-2400;;I;Guardia di Finanza ALE;;I;;1;;
+6636;0000-2400;;GEO;Georgia Coast Guard ALE;;GEO;;1;;
+6668.7;0000-2400;;GEO;Georgia Borderguard ALE;;GEO;;1;;[0120]
+6678;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+6690;0000-2400;;MRC;Moroccan Police ALE;;MRC;;1;;
+6691;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[1219]
+6694;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+6706;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[1219]
+6708;0000-2400;;IRQ;Iraqi Security Fcs. ALE;;IRQ;;1;;[1119]
+6715;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[0120]
+6721;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[0120]
+6743;0000-2400;;CHN;China Military ALE;;FE;;1;;[1119]
+6745;0000-2400;;F;Fr. Air Force E-3F ALE;;Eu;av;1;;
+6748;0000-2400;;I;Italian Air Force ALE;;SEu;;1;;
+6769;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+6770;0000-2400;;AZE;Azeri Emergency ALE;;Cau;;1;;[1119]
+6771;0000-2400;;LTU;Lithuanian Navy ALE;;LTU;;1;;
+6774;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+6775;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+6777.5;0000-2400;;GRC;Greek Air Force ALE;;GRC;;1;;
+6778;0000-2400;;TUR;Red Crescent ALE;;TUR;;1;;[1019]
+6785;0000-2400;;USA;Corps of Engineers ALE;;USA;;1;;
+6785;0000-2400;;USA;Washington GasLight ALE;;ENA;;1;;
+6790;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[0120]
+6795;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1219]
+6799;0000-2400;;AUS;Australian MHFCS ALE;;AUS;;1;;
+6801;0000-2400;;HRV;Croatian NRPD ALE;;HRV;;1;;[1019]
+6803;0000-2400;;USA;NTA Emergency ALE Net;;USA;;1;;
+6806;0000-2400;;HRV;Croatian NRPD ALE;;HRV;;1;;
+6807;0000-2400;;MRC;Moroccan Police ALE;;MRC;;1;;[1119]
+6809;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+6820;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+6821;0000-2400;;TUR;Red Crescent ALE;;TUR;;1;;
+6821;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;
+6828;0000-2400;;F;French Navy ALE;;F;;1;;
+6830.5;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+6831;0000-2400;;HRV;Croatian NRPD ALE;;HRV;;1;;
+6831;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1219]
+6836.5;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+6840;0000-2400;;USA;Fed.Aviation Admin. ALE;;USA;;1;;
+6844.5;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+6845;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[0219]
+6848;0000-2400;;CHL;Chile Navy ALE;;CHL;;1;;
+6848;0000-2400;;D;German Fed.Police ALE;;D;;1;;
+6848;0000-2400;;HRV;Croatian NRPD ALE;;HRV;;1;;
+6848;0000-2400;;LVA;Latvian Military ALE;;LVA;;1;;
+6858;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+6858;0000-2400;;USA;American Red Cross ALE;;USA;;1;;
+6861;0000-2400;;USA;NTA Emergency ALE Net;;USA;;1;;
+6865;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+6870;0000-2400;;USA;Fed.Aviation Admin. ALE;;USA;;1;;
+6873.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;
+6877;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1119]
+6884;0000-2400;;POL;Internal Ministry ALE;;POL;;1;;
+6885;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+6890;0000-2400;;D;German Coast Guard ALE;;D;;1;;
+6890;0000-2400;;D;German Fed.Police ALE;;D;;1;;
+6895;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[0120]
+6900;0000-2400;;CHL;Gendarmeria Chile ALE;;CHL;;1;;
+6900;0000-2400;;F;French Diplo ALE;;F;;1;;
+6900;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+6902;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+6902.2;0000-2400;;USA;US Embassies ALE;;Glo;;1;;[1219]
+6909;0000-2400;;UKR;Ukrainian Military ALE;;UKR;;1;;[1219]
+6910;0000-2400;;USA;US Army MARS ALE;;USA;;1;;[1119]
+6921;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;
+6922;0000-2400;;MRC;Moroccan Police ALE;;MRC;;1;;
+6928;0000-2400;;UKR;Ukrainian Military ALE;;UKR;;1;;[1219]
+6929;0000-2400;;USA;Bonneville PowerAdm.ALE;;WNA;;1;;
+6930;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+6930;0000-2400;;UKR;Ukrainian Military ALE;;UKR;;1;;[1219]
+6933;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+6942.5;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+6942;0000-2400;;S;Swedish Military ALE;;S;;1;;
+6948;0000-2400;;S;Swedish Military ALE;;S;;1;;
+6953;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+6955;0000-2400;;CLM;Colombian Army ALE;;CLM;;1;;
+6957;0000-2400;;D;German Red Cross ALE;;D;;1;;
+6965;0000-2400;;MEX;Mexican Military ALE;;MEX;;1;;
+6979;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+6980;0000-2400;;KGZ;Kyrgyz Military ALE;;KGZ;;1;;
+6981.1;0000-2400;;USA;Veterans Health Adm.ALE;;USA;;1;;
+6985.5;0000-2400;;USA;US National Guard ALE;;USA;;1;;[1019]
+6992;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;[1219]
+7014;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+7055.5;0000-2400;;GEO;Georgia Coast Guard ALE;;GEO;;1;;
+7197;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1219]
+7310;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+7335;0000-2400;;MRC;Moroccan Police ALE;;MRC;;1;;[1119]
+7348;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;[1019]
+7360;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+7401;0000-2400;;D;German Coast Guard ALE;;D;;1;;
+7420;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+7421.5;0000-2400;;GRC;Greek Air Force ALE;;GRC;;1;;
+7425;0000-2400;;AUS;Australian Police ALE;;AUS;;1;;[1119]
+7428;0000-2400;;USA;Bonneville PowerAdm.ALE;;WNA;;1;;
+7431.5;0000-2400;;USA;US Army MARS ALE;;USA;;1;;
+7435;0000-2400;;USA;NMN USCG Chesapeake ALE;E;WNA;pr;1;;[0517]
+7438;0000-2400;;S;Swedish Military ALE;;S;;1;;
+7450;0000-2400;;IRQ;Iraqi Navy ALE;;IRQ;;1;;[0919]
+7455;0000-2400;;CLM;Colombian Navy ALE;;CLM;;1;;
+7460.5;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+7475;0000-2400;;USA;Fed.Aviation Admin. ALE;;USA;;1;;
+7475;0000-2400;;USA;Washington GasLight ALE;;ENA;;1;;
+7477;0000-2400;;USA;Illinois Emergency ALE;;CNA;;1;;[1019]
+7480;0000-2400;;USA;American Red Cross ALE;;USA;;1;;
+7480;0000-2400;;USA;Calif.Emergency Sce.ALE;;WNA;;1;;
+7480;0000-2400;;USA;NTA Emergency ALE Net;;USA;;1;;
+7480;0000-2400;;USA;Veterans Health Adm.ALE;;USA;;1;;
+7485;0000-2400;;GHA;Ghana Navy ALE;;GHA;;1;;
+7492.5;0000-2400;;POL;Internal Ministry ALE;;POL;;1;;
+7494;0000-2400;;E;Guardia Civil ALE;;E;;1;;
+7499;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[0120]
+7503;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+7505.8;0000-2400;;F;French Military ALE;;F;;1;;
+7513.5;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+7523;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;
+7525;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+7527;0000-2400;;USA;COTHEN ALE;;USA;;1;;[0120]
+7535;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+7549;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+7550;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1119]
+7550;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;
+7552;0000-2400;;USA;NTA Emergency ALE Net;;USA;;1;;
+7558;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[0120]
+7567.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ev;1;;
+7579;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[0120]
+7582;0000-2400;;F;French Navy ALE;;F;;1;;
+7594.5;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1119]
+7600;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+7603;0000-2400;;CHN;Chinese Navy ALE;;CHN;;1;;
+7610;0000-2400;;MRC;Moroccan Police ALE;;MRC;;1;;[1119]
+7610;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;
+7611;0000-2400;;USA;Fed.Aviation Admin. ALE;;USA;;1;;
+7617;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[0120]
+7620;0000-2400;;KGZ;Kyrgyz Military ALE;;KGZ;;1;;
+7620;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;
+7622;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[0120]
+7624;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;
+7627.5;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+7629;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;
+7630;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+7632;0000-2400;;USA;US Air Force ALE;;Glo;;1;;
+7637;0000-2400;;CLM;Colombian Army ALE;;CLM;;1;;
+7638;0000-2400;;E;Guardia Civil ALE;;E;;1;;
+7639;0000-2400;;S;Swedish Military ALE;;S;;1;;[1119]
+7639.5;0000-2400;;USA;US Army MARS ALE;;USA;;1;;
+7648;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[0120]
+7650;0000-2400;;LTU;Lithuanian Navy ALE;;LTU;;1;;
+7651;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;[1219]
+7655;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+7660;0000-2400;;AUS;Australian Police ALE;;AUS;;1;;[0120]
+7661.3;0000-2400;;USA;Fish and Wildlife ALE;;USA;;1;;
+7671;0000-2400;;IRQ;Iraqi Security Fcs. ALE;;IRQ;;1;;[0120]
+7689;0000-2400;;USA;Bonneville PowerAdm.ALE;;WNA;;1;;
+7692;0000-2400;;MRC;Moroccan Police ALE;;MRC;;1;;
+7697;0000-2400;;USA;American Red Cross ALE;;USA;;1;;
+7697;0000-2400;;USA;NTA Emergency ALE Net;;USA;;1;;
+7718.5;0000-2400;;USA;Missouri Nat.Guard ALE;;CNA;;1;;
+7720;0000-2400;;F;French Navy ALE;;F;;1;;
+7720;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+7739;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+7740;0000-2400;;F;French Diplo ALE;;F;;1;;
+7745;0000-2400;;JOR;Jordan Address ALE Net;;JOR;;1;;[1019]
+7766.5;0000-2400;;UKR;Ukrainian Military ALE;;UKR;;1;;[0120]
+7772;0000-2400;;LVA;Latvian Military ALE;;LVA;;1;;
+7777;0000-2400;;KGZ;Kyrgyz Military ALE;;KGZ;;1;;
+7778.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[0219]
+7791.5;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1219]
+7795;0000-2400;;USA;Washington GasLight ALE;;ENA;;1;;
+7802;0000-2400;;USA;Illinois Emergency ALE;;CNA;;1;;
+7803;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;
+7805;0000-2400;;UKR;Ukrainian Military ALE;;UKR;;1;;[0120]
+7805;0000-2400;;USA;Calif.Emergency Sce.ALE;;WNA;;1;;
+7805;0000-2400;;USA;NTA Emergency ALE Net;;USA;;1;;
+7810;0000-2400;;KGZ;Kyrgyz Military ALE;;KGZ;;1;;
+7810;0000-2400;;TUR;Red Crescent ALE;;TUR;;1;;[1019]
+7813.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+7813;0000-2400;;MRC;Moroccan Military ALE;;MRC;;1;;
+7819;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+7825;0000-2400;;LTU;Lithuanian Navy ALE;;LTU;;1;;
+7833;0000-2400;;F;Fr. Air Force E-3F ALE;;Eu;av;1;;
+7844;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;
+7860;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;[1119]
+7861;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+7862;0000-2400;;CHN;Chinese Navy ALE;;CHN;;1;;
+7868;0000-2400;;TUR;Red Crescent ALE;;TUR;;1;;
+7879;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;
+7892;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[0120]
+7898;0000-2400;;D;German Red Cross ALE;;D;;1;;
+7900;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[0120]
+7900;0000-2400;;BIH;Bosnian Emergency ALE;;BIH;;1;;
+7900;0000-2400;;CLM;Colombian Navy ALE;;CLM;;1;;[1119]
+7902;0000-2400;;POL;Internal Ministry ALE;;POL;;1;;
+7903.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[0219]
+7906;0000-2400;;CHN;China Military ALE;;FE;;1;;[1119]
+7907.5;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[0919]
+7910;0000-2400;;KGZ;Kyrgyz Military ALE;;KGZ;;1;;
+7915;0000-2400;;CHL;Gendarmeria Chile ALE;;CHL;;1;;
+7922;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+7932;0000-2400;;USA;American Red Cross ALE;;USA;;1;;
+7932;0000-2400;;USA;Illinois Emergency ALE;;CNA;;1;;
+7935;0000-2400;;USA;American Red Cross ALE;;USA;;1;;
+7935;0000-2400;;USA;Illinois Emergency ALE;;CNA;;1;;
+7939;0000-2400;;S;Swedish Military ALE;;S;;1;;[1119]
+7940;0000-2400;;KGZ;Kyrgyz Military ALE;;KGZ;;1;;
+7940;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+7954;0000-2400;;TUN;Tunisian Police ALE;;TUN;;1;;[0120]
+7961;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+7970;0000-2400;;KGZ;Kyrgyz Military ALE;;KGZ;;1;;
+7980;0000-2400;;F;French Navy ALE;;F;;1;;[1119]
+7988.5;0000-2400;;LTU;Lithuanian Navy ALE;;LTU;;1;;
+7991;0000-2400;;USA;American Red Cross ALE;;USA;;1;;
+7993.5;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1219]
+8001;0000-2400;;NIG;Nigerian Police ALE;;NIG;;1;;
+8010;0000-2400;;CLM;Colombian Navy ALE;;CLM;;1;;
+8014;0000-2400;;TUN;Tunisian Police ALE;;TUN;;1;;[0120]
+8016;0000-2400;;HRV;Croatian NRPD ALE;;HRV;;1;;
+8020;0000-2400;;I;Italian Air Force ALE;;SEu;;1;;
+8025;0000-2400;;E;Guardia Civil ALE;;E;;1;;
+8042;0000-2400;;CHL;Chile Navy ALE;;CHL;;1;;
+8042;0000-2400;;CHN;Chinese Navy ALE;;CHN;;1;;
+8045;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+8045;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+8053;0000-2400;;USA;Bonneville PowerAdm.ALE;;WNA;;1;;[0120]
+8055;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+8056.5;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;
+8057;0000-2400;;AGL;Angolan Police ALE;;AGL;;1;;
+8058;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+8058.6;0000-2400;;USA;US Embassies ALE;;Glo;;1;;[1219]
+8060;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1119]
+8060;0000-2400;;CLM;Colombian Navy ALE;;CLM;;1;;
+8063;0000-2400;;CLM;Colombian Navy ALE;;CLM;;1;;
+8063;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+8065;0000-2400;;USA;Missouri Nat.Guard ALE;;CNA;;1;;
+8072;0000-2400;;I;Guardia di Finanza ALE;;I;;1;;
+8080;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+8083;0000-2400;;GEO;Georgia Borderguard ALE;;GEO;;1;;[0120]
+8085.5;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+8092;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1219]
+8096;0000-2400;;CHL;Chile Navy ALE;;CHL;;1;;
+8107;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[0120]
+8120;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+8125;0000-2400;;CHL;Chile Navy ALE;;CHL;;1;;
+8125;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[1219]
+8125;0000-2400;;USA;Fed.Aviation Admin. ALE;;USA;;1;;
+8130;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;
+8132;0000-2400;;D;German Fed.Police ALE;;D;;1;;[1119]
+8136;0000-2400;;USA;US National Guard ALE;;USA;;1;;[0120]
+8140;0000-2400;;CHL;Chile Navy ALE;;CHL;;1;;
+8150;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1219]
+8151;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+8151;0000-2400;;E;Guardia Civil ALE;;E;;1;;
+8151;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[0919]
+8153.5;0000-2400;;HOL;Dutch Military ALE;;HOL;;1;;
+8160;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+8161;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;[1119]
+8162;0000-2400;;HNG;Hungarian Military ALE;;HNG;;1;;
+8167;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;
+8180;0000-2400;;TUN;Tunisian Police ALE;;TUN;;1;;[0120]
+8182;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;[1219]
+8190;0000-2400;;I;Guardia di Finanza ALE;;I;;1;;[1219]
+8195;0000-2400;;ROU;Romanian Police ALE;;ROU;;1;;[1019]
+8202;0000-2400;;CHN;Chinese Navy ALE;;CHN;;1;;
+8234;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+8250;0000-2400;;CLM;Colombian Navy ALE;;CLM;;1;;
+8275;0000-2400;;GEO;Georgia Coast Guard ALE;;GEO;;1;;[1019]
+8276;0000-2400;;F;French Navy ALE;;F;;1;;
+8308;0000-2400;;AGL;Angolan Police ALE;;AGL;;1;;
+8412.5;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;
+8420;0000-2400;;B;Brazilian Navy ALE;;SAm;;1;;
+8425.6;0000-2400;;IRQ;Iraqi Security Fcs. ALE;;IRQ;;1;;[1219]
+8459;0000-2400;;CHN;China Military ALE;;FE;;1;;[1219]
+8473;0000-2400;;CHN;Chinese Navy ALE;;CHN;;1;;
+8478.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+8494;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+8532.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ev;1;;[1119]
+8532;0000-2400;;NIG;Nigerian Police ALE;;NIG;;1;;
+8560;0000-2400;;CLM;Colombian Army ALE;;CLM;;1;;
+8560;0000-2400;;MRC;Moroccan Military ALE;;MRC;;1;;
+8600;0000-2400;;MRC;Protection Civile ALE;;MRC;;1;;
+8656;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;
+8695;0000-2400;;IRQ;Iraqi Security Fcs. ALE;;IRQ;;1;;[1219]
+8700;0000-2400;;SVN;Slovenian Military ALE;;SVN;;1;;
+8725;0000-2400;;ALB;Albanian Government ALE;;ALB;;1;;
+8750;0000-2400;;LTU;Lithuanian Navy ALE;;LTU;;1;;
+8765;0000-2400;;LTU;Lithuanian Navy ALE;;LTU;;1;;
+8773;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;[1019]
+8783;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+8789.4;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[0120]
+8794;0000-2400;;CHN;Chinese Navy ALE;;CHN;;1;;
+8797;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+8800;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1119]
+8809;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[1116]
+8815;0000-2400;;USA;ArmyAviation SCPTOC ALE;;SEE;/KOS-b;1;;
+8841;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+8847;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+8850;0000-2400;;USA;ArmyAviation SCPTOC ALE;;SEE;/KOS-b;1;;
+8857;0000-2400;;AGL;Angolan Police ALE;;AGL;;1;;
+8859;0000-2400;;AGL;Angolan Police ALE;;AGL;;1;;
+8875;0000-2400;;MRC;Moroccan Military ALE;;MRC;;1;;[1119]
+8888;0000-2400;;MEX;Mexican Military ALE;;MEX;;1;;
+8896.6;0000-2400;;IRQ;Iraqi Security Fcs. ALE;;IRQ;;1;;[1219]
+8905;0000-2400;;USA;ArmyAviation SCPTOC ALE;;SEE;/KOS-b;1;;
+8907;0000-2400;;CHN;China Military ALE;;FE;;1;;[1119]
+8912;0000-2400;;USA;COTHEN ALE;;USA;;1;;[0120]
+8917;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+8935;0000-2400;;USA;ArmyAviation SCPTOC ALE;;SEE;/KOS-b;1;;
+8939;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+8941;0000-2400;;CHN;China Military ALE;;FE;;1;;[1119]
+8950;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[0120]
+8965;0000-2400;;USA;ArmyAviation SCPTOC ALE;;SEE;/KOS-b;1;;
+8965;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[1219]
+8968;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[0120]
+8980;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+8990;0000-2400;;ALG;Algeria Gendarmerie ALE;;ALG;;1;;
+8995;0000-2400;;LTU;Lithuanian Navy ALE;;LTU;;1;;
+9004;0000-2400;;D;German Red Cross ALE;;D;;1;;
+9005;0000-2400;;USA;ArmyAviation SCPTOC ALE;;SEE;/KOS-b;1;;
+9018.3;0000-2400;;IRQ;Iraqi Navy ALE;;IRQ;;1;;[1219]
+9019;0000-2400;;F;Fr. Air Force E-3F ALE;;Eu;av;1;;
+9019;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+9022;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[1119]
+9025;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[1119]
+9025;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[0120]
+9028;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[0120]
+9038;0000-2400;;USA;ArmyAviation SCPTOC ALE;;SEE;/KOS-b;1;;
+9040;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[0120]
+9040;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;
+9041;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+9045;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1119]
+9045;0000-2400;;TUR;Red Crescent ALE;;TUR;;1;;[1219]
+9045;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1019]
+9050;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+9052;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+9052;0000-2400;;F;French Diplo ALE;;F;;1;;
+9057;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+9064;0000-2400;;B;Brazilian Army ALE;;SAm;;1;;[1219]
+9073;0000-2400;;F;French Navy ALE;;F;;1;;
+9085;0000-2400;;I;Guardia di Finanza ALE;;I;;1;;
+9085;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;
+9090;0000-2400;;CLM;Colombian Navy ALE;;CLM;;1;;
+9090;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+9097;0000-2400;;E;Guardia Civil ALE;;E;;1;;
+9097;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[0919]
+9100;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+9105;0000-2400;;AUS;Australian AirForce ALE;;AUS;;1;;
+9106;0000-2400;;USA;American Red Cross ALE;;USA;;1;;
+9110;0000-2400;;NIG;Nigerian Police ALE;;NIG;;1;;
+9114;0000-2400;;USA;Fed.Aviation Admin. ALE;;USA;;1;;
+9115;0000-2400;;HRV;Croatian NRPD ALE;;HRV;;1;;[0120]
+9118;0000-2400;;B;Brazilian Army ALE;;SAm;;1;;[1219]
+9119;0000-2400;;HRV;Croatian NRPD ALE;;HRV;;1;;
+9120;0000-2400;;B;Amazon Military ALE;;B;;1;;[1119]
+9120;0000-2400;;MEX;Mexican Military ALE;;MEX;;1;;
+9120;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+9121;0000-2400;;USA;US National Guard ALE;;USA;;1;;[1119]
+9122.5;0000-2400;;USA;Corps of Engineers ALE;;USA;;1;;
+9131;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1119]
+9136;0000-2400;;S;Swedish Military ALE;;S;;1;;
+9142;0000-2400;;NIG;Nigerian Police ALE;;NIG;;1;;
+9150;0000-2400;;HRV;Croatian NRPD ALE;;HRV;;1;;
+9150;0000-2400;;LTU;Lithuanian Navy ALE;;LTU;;1;;
+9164;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;
+9166;0000-2400;;SVK;Slovak Military ALE;;SVK;;1;;[1019]
+9180;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1019]
+9182;0000-2400;;CHL;Chile Navy ALE;;CHL;;1;;
+9184;0000-2400;;USA;Bonneville PowerAdm.ALE;;WNA;;1;;[1019]
+9190;0000-2400;;F;French Navy ALE;;F;;1;;
+9198;0000-2400;;CHL;Chile Navy ALE;;CHL;;1;;
+9198.5;0000-2400;;GEO;Georgia Borderguard ALE;;GEO;;1;;
+9198;0000-2400;;I;Guardia di Finanza ALE;;I;;1;;
+9200;0000-2400;;MRC;Moroccan Police ALE;;MRC;;1;;[1219]
+9200;0000-2400;;MRC;Protection Civile ALE;;MRC;;1;;[1219]
+9200;0000-2400;;USA;Washington GasLight ALE;;ENA;;1;;
+9219;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+9219;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+9235.5;0000-2400;;USA;US National Guard ALE;;USA;;1;;[1019]
+9240;0000-2400;;LTU;Lithuanian Navy ALE;;LTU;;1;;
+9240;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[0120]
+9241;0000-2400;;ALB;Albanian Government ALE;;ALB;;1;;
+9245;0000-2400;;NIG;Nigerian Police ALE;;NIG;;1;;
+9264;0000-2400;;NIG;Nigerian Police ALE;;NIG;;1;;
+9286;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ev;1;;
+9290;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1119]
+9295;0000-2400;;USA;Missouri Nat.Guard ALE;;CNA;;1;;
+9311;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+9313;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+9315;0000-2400;;LTU;Lithuanian Navy ALE;;LTU;;1;;
+9325;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+9325;0000-2400;;GEO;Georgia Coast Guard ALE;;GEO;;1;;
+9344;0000-2400;;GHA;Ghana Navy ALE;;GHA;;1;;
+9360;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;
+9377;0000-2400;;SVN;Slovenian Military ALE;;SVN;;1;;
+9394.6;0000-2400;;USA;Fish and Wildlife ALE;;USA;;1;;
+9423.5;0000-2400;;F;Fr. Air Force E-3F ALE;;Eu;av;1;;
+9425;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+9462;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;
+9496;0000-2400;;USA;NTA Emergency ALE Net;;USA;;1;;
+9685;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+9808.5;0000-2400;;USA;US Army MARS ALE;;USA;;1;;
+9825;0000-2400;;MRC;Moroccan Police ALE;;MRC;;1;;
+9870;0000-2400;;JOR;Jordan Address ALE Net;;JOR;;1;;[1019]
+9895;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+9905;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;
+9914;0000-2400;;USA;Fed.Aviation Admin. ALE;;USA;;1;;
+9941;0000-2400;;GEO;Georgia Borderguard ALE;;GEO;;1;;[1219]
+9959;0000-2400;;F;French Navy ALE;;F;;1;;
+9970;0000-2400;;CHL;Gendarmeria Chile ALE;;CHL;;1;;
+9982;0000-2400;;USA;COTHEN ALE;;USA;;1;;
+10004;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+10015;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+10033;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+10098.5;0000-2400;;GEO;Georgia Coast Guard ALE;;GEO;;1;;
+10108.5;0000-2400;;GRC;Greek Air Force ALE;;GRC;;1;;[1219]
+10113;0000-2400;;TUN;Tunisian Police ALE;;TUN;;1;;[0120]
+10130;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+10150;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+10155;0000-2400;;USA;NTA Emergency ALE Net;;USA;;1;;
+10156.5;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1219]
+10160;0000-2400;;TUR;Red Crescent ALE;;TUR;;1;;
+10165;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;
+10168;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+10175;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+10175;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1219]
+10176;0000-2400;;TUN;Tunisian Police ALE;;TUN;;1;;[1119]
+10176;0000-2400;;USA;US Air Force ALE;;Glo;;1;;
+10182;0000-2400;;E;Guardia Civil ALE;;E;;1;;
+10185;0000-2400;;MRC;Moroccan Military ALE;;MRC;;1;;[1019]
+10194;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;[0120]
+10216;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+10218.5;0000-2400;;USA;US Air Force ALE;;Glo;;1;;
+10235;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+10242;0000-2400;;USA;COTHEN ALE;;USA;;1;;[1119]
+10250;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+10272.5;0000-2400;;D;German Red Cross ALE;;D;;1;;[1119]
+10295;0000-2400;;I;Guardia di Finanza ALE;;I;;1;;
+10312;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+10321;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+10326;0000-2400;;CLM;Colombian Army ALE;;CLM;;1;;
+10333;0000-2400;;KGZ;Kyrgyz Military ALE;;KGZ;;1;;
+10344.5;0000-2400;;G;DHFCS Forest Moor ALE;;ME;/CYP-a;1;;[1119]
+10358;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;
+10389.6;0000-2400;;USA;Veterans Health Adm.ALE;;USA;;1;;
+10390;0000-2400;;I;Guardia di Finanza ALE;;I;;1;;
+10390;0000-2400;;MRC;Moroccan Military ALE;;MRC;;1;;[1219]
+10390;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;[1219]
+10400;0000-2400;;I;Guardia di Finanza ALE;;I;;1;;
+10410;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ev;1;;
+10417.5;0000-2400;;UKR;Ukrainian Military ALE;;UKR;;1;;[1219]
+10420;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[1119]
+10424;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;
+10430;0000-2400;;ALG;Algeria Gendarmerie ALE;;ALG;;1;;
+10442;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[1119]
+10489;0000-2400;;CLM;Colombian Army ALE;;CLM;;1;;
+10496;0000-2400;;CLM;Colombian Navy ALE;;CLM;;1;;
+10498;0000-2400;;F;French Navy ALE;;F;;1;;
+10505;0000-2400;;CHL;Gendarmeria Chile ALE;;CHL;;1;;[1119]
+10540;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1119]
+10554;0000-2400;;USA;Bonneville PowerAdm.ALE;;WNA;;1;;
+10585;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+10588;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1119]
+10588;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;[1219]
+10594;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1119]
+10600;0000-2400;;USA;US Air Force ALE;;Glo;;1;;
+10608;0000-2400;;CLM;Colombian Navy ALE;;CLM;;1;;
+10642;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+10697;0000-2400;;KGZ;Kyrgyz Military ALE;;KGZ;;1;;
+10733.6;0000-2400;;USA;US Embassies ALE;;Glo;;1;;[1219]
+10740;0000-2400;;USA;Missouri Nat.Guard ALE;;CNA;;1;;
+10740;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+10765;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+10790;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+10816.5;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[0919]
+10825;0000-2400;;F;French Diplo ALE;;F;;1;;
+10830;0000-2400;;USA;US Air Force ALE;;Glo;;1;;
+10836;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+10862;0000-2400;;CHN;China Military ALE;;FE;;1;;[1119]
+10876;0000-2400;;CLM;Colombian Navy ALE;;CLM;;1;;
+10893.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;
+10900;0000-2400;;MRC;Moroccan Police ALE;;MRC;;1;;
+10928;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;
+10945;0000-2400;;MRC;Moroccan Police ALE;;MRC;;1;;
+10965;0000-2400;;F;Fr. Air Force E-3F ALE;;Eu;av;1;;
+10981;0000-2400;;B;Brazilian Army ALE;;SAm;;1;;[1019]
+11010;0000-2400;;B;Brazilian Navy ALE;;SAm;;1;;[1119]
+11018;0000-2400;;CLM;Colombian Army ALE;;CLM;;1;;
+11020;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+11035;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;
+11059.5;0000-2400;;UKR;Ukrainian Military ALE;;UKR;;1;;[1119]
+11075;0000-2400;;F;French Navy ALE;;WEu;;1;;[1019]
+11080;0000-2400;;LTU;Lithuanian Navy ALE;;LTU;;1;;
+11100;0000-2400;;MEX;Mexican Military ALE;;MEX;;1;;
+11104.5;0000-2400;;GRC;Greek Air Force ALE;;GRC;;1;;[1021]
+11105;0000-2400;;USA;US Army MARS ALE;;USA;;1;;
+11111;0000-2400;;TUN;Tunisian Police ALE;;TUN;;1;;[0120]
+11125;0000-2400;;USA;Bonneville PowerAdm.ALE;;WNA;;1;;
+11128;0000-2400;;CHN;Chinese Navy ALE;;CHN;;1;;
+11128;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+11130;0000-2400;;MRC;Moroccan Military ALE;;MRC;;1;;[1019]
+11135;0000-2400;;EGY;Egyptian ALE;;EGY;;1;;[1219]
+11143;0000-2400;;CHN;Chinese Navy ALE;;CHN;;1;;
+11153;0000-2400;;UKR;Ukrainian Military ALE;;UKR;;1;;[1019]
+11165;0000-2400;;AUS;Australian AirForce ALE;;AUS;;1;;
+11168.6;0000-2400;;USA;US Embassies ALE;;Glo;;1;;[1219]
+11181;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+11181;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[0120]
+11187;0000-2400;;F;French Military ALE;;F;;1;;
+11199;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[0919]
+11200;0000-2400;;MEX;Mexican Military ALE;;MEX;;1;;
+11208;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+11214;0000-2400;;F;French Military ALE;;F;;1;;
+11215;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+11217;0000-2400;;F;French Military ALE;;F;;1;;
+11217;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[1019]
+11223;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+11226;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[0120]
+11228;0000-2400;;CHN;Chinese Navy ALE;;CHN;;1;;
+11235;0000-2400;;F;French Military ALE;;F;;1;;
+11235;0000-2400;;I;Italian Air Force ALE;;SEu;;1;;
+11241;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[0120]
+11246;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+11250;0000-2400;;F;French Military ALE;;F;;1;;
+11250;0000-2400;;USA;Bonneville PowerAdm.ALE;;WNA;;1;;
+11250;0000-2400;;USA;US Air Force ALE;;Glo;;1;;
+11253;0000-2400;;F;French Military ALE;;F;;1;;
+11315;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+11340;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+11418.5;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;[1019]
+11420;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+11429;0000-2400;;CHL;Chile Navy ALE;;CHL;;1;;
+11430;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1119]
+11434;0000-2400;;I;Italian Air Force ALE;;SEu;;1;;
+11439;0000-2400;;USA;US National Guard ALE;;USA;;1;;[1019]
+11448;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;
+11450;0000-2400;;CLM;Colombian Navy ALE;;CLM;;1;;
+11451;0000-2400;;USA;NTA Emergency ALE Net;;USA;;1;;
+11454;0000-2400;;CHN;Chinese Navy ALE;;CHN;;1;;
+11455;0000-2400;;ALG;Algeria Gendarmerie ALE;;ALG;;1;;
+11455;0000-2400;;CLM;Colombian Navy ALE;;CLM;;1;;
+11470;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+11480;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+11489;0000-2400;;MRC;Moroccan Police ALE;;MRC;;1;;
+11494;0000-2400;;USA;COTHEN ALE;;USA;;1;;[0621]
+11500;0000-2400;;TUR;Red Crescent ALE;;TUR;;1;;
+11500;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;
+11550;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;
+11551;0000-2400;;MLI;UN MINUSMA ALE;;WAf;;1;;[1219]
+11583;0000-2400;;CHN;Chinese Navy ALE;;CHN;;1;;
+11597.6;0000-2400;;USA;Fish and Wildlife ALE;;USA;;1;;
+11637;0000-2400;;USA;Fed.Aviation Admin. ALE;;USA;;1;;
+11693.5;0000-2400;;USA;Corps of Engineers ALE;;USA;;1;;
+11697.5;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+11900;0000-2400;;MEX;Mexican Military ALE;;MEX;;1;;
+12065;0000-2400;;MRC;Moroccan Police ALE;;MRC;;1;;[1219]
+12065;0000-2400;;MRC;Protection Civile ALE;;MRC;;1;;
+12070;0000-2400;;USA;Corps of Engineers ALE;;USA;;1;;
+12070.5;0000-2400;;USA;US Army MARS ALE;;USA;;1;;
+12070.5;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+12074.5;0000-2400;;GEO;Georgia Coast Guard ALE;;GEO;;1;;
+12076;0000-2400;;F;French Navy ALE;;F;;1;;[1019]
+12076;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+12109;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;[1219]
+12110;0000-2400;;TUR;Red Crescent ALE;;TUR;;1;;
+12116;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;
+12122;0000-2400;;USA;Corps of Engineers ALE;;USA;;1;;
+12140;0000-2400;;TUN;Tunisian Police ALE;;TUN;;1;;[1219]
+12142;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+12147;0000-2400;;USA;US Army MARS ALE;;USA;;1;;
+12150;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+12160;0000-2400;;MRC;Moroccan Military ALE;;MRC;;1;;[0120]
+12165;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+12165;0000-2400;;I;Guardia di Finanza ALE;;I;;1;;
+12170;0000-2400;;F;French Diplo ALE;;F;;1;;
+12175;0000-2400;;I;Guardia di Finanza ALE;;I;;1;;
+12177;0000-2400;;LTU;Lithuanian Navy ALE;;LTU;;1;;
+12180;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+12185;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+12209;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1119]
+12212;0000-2400;;USA;US National Guard ALE;;USA;;1;;[0120]
+12216;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;[1219]
+12222;0000-2400;;USA;COTHEN ALE;;USA;;1;;[0120]
+12225;0000-2400;;USA;NTA Emergency ALE Net;;USA;;1;;
+12230;0000-2400;;G;DHFCS Forest Moor ALE;;ME;/CYP-a;1;;
+12245;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;
+12248;0000-2400;;GEO;Georgia Coast Guard ALE;;GEO;;1;;
+12251;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+12267;0000-2400;;USA;Corps of Engineers ALE;;USA;;1;;
+12311;0000-2400;;F;Fr. Air Force E-3F ALE;;Eu;av;1;;
+12313;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ev;1;;
+12313;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+12332;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+12352;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;
+12383;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+12431;0000-2400;;I;Guardia di Finanza ALE;;I;;1;;
+12459;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;
+12615;0000-2400;;CHL;Gendarmeria Chile ALE;;CHL;;1;;
+12678;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+12752;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;
+12896;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+13054;0000-2400;;I;Guardia di Finanza ALE;;I;;1;;
+13215;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[0120]
+13242;0000-2400;;USA;US Air Force ALE;;Glo;;1;;
+13270;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1219]
+13312;0000-2400;;USA;COTHEN ALE;;USA;;1;;[1019]
+13312;0000-2400;;USA;Fed.Aviation Admin. ALE;;USA;;1;;
+13315;0000-2400;;USA;ArmyAviation SCPTOC ALE;;SEE;/KOS-b;1;;
+13367;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+13423.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ev;1;;
+13437;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;
+13446;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;[1119]
+13457;0000-2400;;USA;Fed.Aviation Admin. ALE;;USA;;1;;
+13499;0000-2400;;MRC;Moroccan Military ALE;;MRC;;1;;[1219]
+13503.5;0000-2400;;USA;US Army MARS ALE;;USA;;1;;
+13503.6;0000-2400;;USA;US Embassies ALE;;Glo;;1;;[1219]
+13510;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1119]
+13520;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+13522;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+13536;0000-2400;;CHL;Gendarmeria Chile ALE;;CHL;;1;;
+13537;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+13540;0000-2400;;CLM;Colombian Navy ALE;;CLM;;1;;
+13540;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+13552;0000-2400;;G;DHFCS Forest Moor ALE;;ME;/CYP-a;1;;[1119]
+13569.5;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+13630;0000-2400;;USA;Fed.Aviation Admin. ALE;;USA;;1;;
+13753.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+13877;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ev;1;;
+13907;0000-2400;;USA;COTHEN ALE;;USA;;1;;[0120]
+13907;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[0919]
+13925.6;0000-2400;;USA;Corps of Engineers ALE;;USA;;1;;
+13945;0000-2400;;TUN;Tunisian Police ALE;;TUN;;1;;[0120]
+13950;0000-2400;;LTU;Lithuanian Navy ALE;;LTU;;1;;
+13950;0000-2400;;USA;US Air Force ALE;;Glo;;1;;
+13963.5;0000-2400;;USA;US Army MARS ALE;;USA;;1;;[1019]
+14060;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+14360;0000-2400;;USA;NTA Emergency ALE Net;;USA;;1;;
+14401.5;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;
+14410;0000-2400;;TUN;Tunisian Police ALE;;TUN;;1;;[1119]
+14420;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+14430;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+14441.6;0000-2400;;USA;Veterans Health Adm.ALE;;USA;;1;;[0120]
+14453;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+14447;0000-2400;;LTU;Lithuanian Navy ALE;;LTU;;1;;
+14450;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;
+14455;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[1019]
+14460;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+14478;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1019]
+14483.5;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+14485.5;0000-2400;;G;DHFCS Forest Moor ALE;;ME;/CYP-a;1;;
+14487;0000-2400;;USA;US Army MARS ALE;;USA;;1;;
+14508.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+14550;0000-2400;;ALG;Algeria Gendarmerie ALE;;ALG;;1;;
+14550;0000-2400;;MRC;Moroccan Military ALE;;MRC;;1;;
+14555;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;
+14570;0000-2400;;F;French Navy ALE;;F;;1;;
+14582;0000-2400;;USA;COTHEN ALE;;USA;;1;;[1219]
+14591.5;0000-2400;;F;Fr. Air Force E-3F ALE;;Eu;av;1;;
+14600;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+14605;0000-2400;;TUR;Turk.AFAD Emergency ALE;;TUR;;1;;[1219]
+14609.5;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;
+14610;0000-2400;;ALG;Algeria Gendarmerie ALE;;ALG;;1;;
+14654.5;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+14671;0000-2400;;F;French Diplo ALE;;F;;1;;
+14700;0000-2400;;TUN;Tunisian Police ALE;;TUN;;1;;[1219]
+14707;0000-2400;;B;Brazilian Army ALE;;SAm;;1;;[1219]
+14716.6;0000-2400;;F;French Navy ALE;;F;;1;;
+14717;0000-2400;;USA;US National Guard ALE;;USA;;1;;[1219]
+14724.3;0000-2400;;TUN;Tunisian Police ALE;;TUN;;1;;[1219]
+14738.5;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+14776;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;[1219]
+14780;0000-2400;;B;Brazilian Navy ALE;;SAm;;1;;[1119]
+14800;0000-2400;;F;French Navy ALE;;F;;1;;
+14822.5;0000-2400;;LTU;Lithuanian Navy ALE;;LTU;;1;;
+14833.5;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+14836;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;[1119]
+14846.5;0000-2400;;USA;US Army MARS ALE;;USA;;1;;
+14875;0000-2400;;G;DHFCS Forest Moor ALE;;ME;/CYP-a;1;;
+14885;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;
+14885;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+14925.5;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+14968;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ev;1;;
+15000;0000-2400;;MRC;Moroccan Police ALE;;MRC;;1;;
+15040;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+15043;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[0120]
+15091;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[1219]
+15284;0000-2400;;TUN;Tunisian Police ALE;;TUN;;1;;
+15603;0000-2400;;USA;NTA Emergency ALE Net;;USA;;1;;
+15628.6;0000-2400;;USA;Veterans Health Adm.ALE;;USA;;1;;
+15630;0000-2400;;CHL;Gendarmeria Chile ALE;;CHL;;1;;
+15708;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;[1219]
+15777.5;0000-2400;;USA;US Army MARS ALE;;USA;;1;;
+15830;0000-2400;;ALG;Algerian Military ALE;;ALG;;1;;[1219]
+15832;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+15851;0000-2400;;USA;Fed.Aviation Admin. ALE;;USA;;1;;
+15867;0000-2400;;USA;COTHEN ALE;;USA;;1;;[1219]
+15921;0000-2400;;F;French Diplo ALE;;F;;1;;
+15940;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+15974.6;0000-2400;;USA;Fish and Wildlife ALE;;USA;;1;;
+16015;0000-2400;;CHL;Gendarmeria Chile ALE;;CHL;;1;;
+16030;0000-2400;;AUS;Australian AirForce ALE;;AUS;;1;;
+16039.5;0000-2400;;USA;US Army MARS ALE;;USA;;1;;
+16077;0000-2400;;USA;Corps of Engineers ALE;;USA;;1;;
+16096;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+16112;0000-2400;;MTN;Mauritania Military ALE;;MTN;;1;;
+16125;0000-2400;;TUN;Tunisian Police ALE;;TUN;;1;;[0120]
+16132;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;[1119]
+16148;0000-2400;;G;DHFCS Forest Moor ALE;;ME;/CYP-a;1;;
+16160;0000-2400;;F;Fr. Air Force E-3F ALE;;Eu;av;1;;
+16201;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;
+16240;0000-2400;;MRC;Protection Civile ALE;;MRC;;1;;[1219]
+16250;0000-2400;;GHA;Ghana Navy ALE;;GHA;;1;;
+16283.6;0000-2400;;USA;US Embassies ALE;;Glo;;1;;[1219]
+16285;0000-2400;;TUN;Tunisian Police ALE;;TUN;;1;;[1119]
+16320;0000-2400;;F;French Diplo ALE;;F;;1;;
+16321;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ev;1;;
+16326;0000-2400;;USA;Corps of Engineers ALE;;USA;;1;;
+16348;0000-2400;;USA;Fed.Aviation Admin. ALE;;USA;;1;;
+16357;0000-2400;;G;DHFCS Forest Moor ALE;;ME;/CYP-a;1;;
+16358;0000-2400;;USA;Corps of Engineers ALE;;USA;;1;;
+16382;0000-2400;;USA;Corps of Engineers ALE;;USA;;1;;
+16490;0000-2400;;ALG;Algeria Gendarmerie ALE;;ALG;;1;;
+16544;0000-2400;;CLM;Colombian Navy ALE;;CLM;;1;;
+16547;0000-2400;;CLM;Colombian Navy ALE;;CLM;;1;;
+16607;0000-2400;;B;Brazilian Navy ALE;;SAm;;1;;[1219]
+16730;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+16764;0000-2400;;MRC;Moroccan Military ALE;;MRC;;1;;
+16902.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+16910.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+16915.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+16948.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+17435;0000-2400;;MRC;Protection Civile ALE;;MRC;;1;;[1119]
+17457.5;0000-2400;;USA;US Army MARS ALE;;USA;;1;;
+17466;0000-2400;;CHL;Chile Navy ALE;;CHL;;1;;
+17467;0000-2400;;TUN;Tunisian Police ALE;;TUN;;1;;[1119]
+17477;0000-2400;;F;French Diplo ALE;;F;;1;;
+17478.5;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+17492.6;0000-2400;;USA;Veterans Health Adm.ALE;;USA;;1;;
+17500;0000-2400;;USA;US Army MARS ALE;;USA;;1;;
+17501;0000-2400;;GHA;Ghana Navy ALE;;GHA;;1;;
+17501.5;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+17970;0000-2400;;I;Guardia di Finanza ALE;;I;;1;;
+17973;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[1219]
+17976;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[0120]
+18003;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[0120]
+18063;0000-2400;;CHN;China Military ALE;;FE;;1;;[1219]
+18180;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+18210;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;in;1;;
+18223.5;0000-2400;;AUT;Austrian Military ALE;;AUT;;1;;
+18248.6;0000-2400;;USA;US Embassies ALE;;Glo;;1;;[0120]
+18275;0000-2400;;MRC;Moroccan Police ALE;;MRC;;1;;
+18293.5;0000-2400;;USA;US Army MARS ALE;;USA;;1;;
+18396;0000-2400;;F;French Diplo ALE;;F;;1;;
+18403.5;0000-2400;;G;DHFCS Forest Moor ALE;;ME;/CYP-a;1;;
+18407;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+18470;0000-2400;;AUS;Australian MHFCS ALE;;AUS;;1;;
+18502.6;0000-2400;;USA;Fish and Wildlife ALE;;USA;;1;;
+18555;0000-2400;;ALG;Algeria Gendarmerie ALE;;ALG;;1;;
+18555;0000-2400;;MRC;Moroccan Military ALE;;MRC;;1;;
+18594;0000-2400;;USA;COTHEN ALE;;USA;;1;;
+18765;0000-2400;;MRC;Moroccan Police ALE;;MRC;;1;;[1119]
+18765;0000-2400;;MRC;Protection Civile ALE;;MRC;;1;;
+18875;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+19079.5;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+19128;0000-2400;;LTU;Lithuanian Navy ALE;;LTU;;1;;
+19215;0000-2400;;F;French Navy ALE;;F;;1;;
+19235;0000-2400;;USA;US National Guard ALE;;USA;;1;;
+19250;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+19602;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+19636;0000-2400;;F;French Diplo ALE;;F;;1;;
+19933;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+19969;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;
+20104;0000-2400;;USA;US Army MARS ALE;;USA;;1;;
+20125;0000-2400;;USA;US Air Force ALE;;Glo;;1;;
+20168;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+20200.1;0000-2400;;USA;Veterans Health Adm.ALE;;USA;;1;;
+20228;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+20328.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+20391;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+20400;0000-2400;;CHL;Chile Navy ALE;;CHL;;1;;
+20400;0000-2400;;CHN;Chinese Military ALE;;CHN;;1;;
+20550;0000-2400;;I;Guardia di Finanza ALE;;I;;1;;
+20550;0000-2400;;MRC;Moroccan Military ALE;;MRC;;1;;
+20616;0000-2400;;F;French Diplo ALE;;F;;1;;
+20631;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[1119]
+20659;0000-2400;;USA;Corps of Engineers ALE;;USA;;1;;
+20810.6;0000-2400;;USA;US Embassies ALE;;Glo;;1;;[0120]
+20890;0000-2400;;USA;COTHEN ALE;;USA;;1;;[1119]
+20982;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+21145;0000-2400;;MRC;Moroccan Military ALE;;MRC;;1;;
+21866;0000-2400;;USA;FEMA Emergency ALE;;USA;;1;;[0919]
+22177;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+22334.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+22571;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+22850;0000-2400;;ISR;Israeli Air Force ALE;;ME;;1;;
+22860;0000-2400;;MRC;Moroccan Military ALE;;MRC;;1;;
+22921.6;0000-2400;;USA;Veterans Health Adm.ALE;;USA;;1;;
+23214;0000-2400;;USA;COTHEN ALE;;USA;;1;;
+23337;0000-2400;;USA;US Air Force ALE;;Glo;;1;;[1119]
+23374.5;0000-2400;;G;DHFCS Forest Moor ALE;;WEu;ic;1;;
+24550;0000-2400;;USA;Fed.Aviation Admin. ALE;;USA;;1;;
+24838.5;0000-2400;;USA;COTHEN ALE;;USA;;1;;
+25120;0000-2400;;MRC;Moroccan Military ALE;;MRC;;1;;
+25210;0000-2400;;MRC;Moroccan Military ALE;;MRC;;1;;
+25301;0000-2400;;F;French Diplo ALE;;F;;1;;
+25930;0000-2400;;I;Guardia di Finanza ALE;;I;;1;;
+26871.6;0000-2400;;USA;Veterans Health Adm.ALE;;USA;;1;;
+27870;0000-2400;;USA;US Air Force ALE;;Glo;;1;;
