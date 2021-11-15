@@ -921,7 +921,7 @@ html, body
 	height: 100%;
 }
 
-.class-dx-label
+.cl-dx-label
 {
 	position: absolute;
 	/*font-family: Courier;*/
@@ -930,6 +930,7 @@ html, body
 	padding: 3px;
 	border-style: solid;
 	border-width: 1px;
+	border-color: black;
 	border-radius: 3px;
 	cursor: pointer;
 	-moz-border-radius: 3px;
@@ -937,14 +938,20 @@ html, body
 	z-index: 120;
 }
 
+.cl-dx-label.cl-dx-label-active
+{
+	border-width: 1px 1px 1px 4px;
+	border-color: black black black red;
+}
+
 /*
-.class-dx-label:hover
+.cl-dx-label:hover
 {
 	background-color: yellow;
 }
 */
 
-.class-dx-line
+.cl-dx-line
 {
 	width: 1px;
 	position: absolute;

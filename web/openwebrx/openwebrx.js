@@ -6095,7 +6095,7 @@ var dx = {
    DB_STORED: 0,
    DB_EiBi: 1,
    db: 0,
-   db_s: [ 'stored (writable)', 'EiBi (read-only)' ],
+   db_s: [ 'stored (writable)', 'EiBi-B21 (read-only)' ],
    url_p: null,
    help: false,
    o: {},      // current edit object
@@ -6177,7 +6177,7 @@ function dx_init()
 {
    if ((dx.url_p = kiwi_url_param('dx', '', null)) != null) {
       dx.db = dx.DB_EiBi;
-      //dx.types_mask = (1 << dx_type2idx(dx.DX_BCAST)) | (1 << dx_type2idx(dx.DX_UTIL));
+      //dx.types_mask = dx_type2mask(dx.DX_BCAST) | dx_type2mask(dx.DX_UTIL);
       //dx.filter_tod = 0;
       
       // wait for panel init to occur
@@ -6248,8 +6248,12 @@ function dx_update()
 	dx_seq++;
 	//g_range = get_visible_freq_range();
 	//if (dbgUs) console.log("DX min="+(g_range.start/1000)+" max="+(g_range.end/1000));
+	
+	// turn off anti-clutter for HDFL band mode
+	var anti_clutter = (ext_panel_displayed('HFDL') && dx_is_single_type(dx.DX_HFDL) && zoom_level >= 4)? 0 : 1;
 	wf_send('SET MARKER db='+ dx.db +' min='+ (g_range.start/1000).toFixed(3) +' max='+ (g_range.end/1000).toFixed(3) +
-	   ' zoom='+ zoom_level +' width='+ waterfall_width +' types_mask='+ dx.types_mask.toHex() +' filter_tod='+ dx.filter_tod);
+	   ' zoom='+ zoom_level +' width='+ waterfall_width +' types_mask='+ dx.types_mask.toHex() +' filter_tod='+ dx.filter_tod +
+	   ' anti_clutter='+ anti_clutter);
 
 	// refresh EiBi every 5 minutes to catch schedule changes
    kiwi_clearInterval(dx.eibi_refresh_interval);
@@ -6461,7 +6465,7 @@ function dx_label_cb(arr)
 		//if (dbgUs) console.log(dx.list[gid]);
 		
 		s_a[dx_idx] =
-			'<div id="'+ dx_idx +'-id-dx-label" class="class-dx-label '+ gid +'-id-dx-gid'+ ((params != '')? ' id-has-ext':'') +'" ' +
+			'<div id="'+ dx_idx +'-id-dx-label" class="cl-dx-label '+ gid +'-id-dx-gid'+ ((params != '')? ' id-has-ext':'') +'" ' +
 			   'style="left:'+ (x-10) +'px; z-index:'+ dx_z +'; ' +
 				'background-color:'+ color +';" ' +
 				
@@ -6470,7 +6474,7 @@ function dx_label_cb(arr)
 				'onmousedown="ignore(event)" onmousemove="ignore(event)" onmouseup="ignore(event)" ontouchmove="ignore(event)" ontouchend="ignore(event)" ' +
 				'onclick="dx_click(event,'+ gid +')" ontouchstart="dx_click(event,'+ gid +')" name="'+ ((params == '')? 0:1) +'">' +
 			'</div>' +
-			'<div class="class-dx-line" id="'+ dx_idx +'-id-dx-line" style="left:'+ x +'px; z-index:110"></div>';
+			'<div class="cl-dx-line" id="'+ dx_idx +'-id-dx-line" style="left:'+ x +'px; z-index:110"></div>';
 		
 		dx_z++;
 	}
@@ -6795,6 +6799,21 @@ function dx_type2idx(type)
    return (((type & dx.DX_TYPE) - dx.DX_FIRST) >> dx.DX_TYPE_SFT)
 }
 
+function dx_type2mask(type)
+{
+   return (1 << dx_type2idx(type))
+}
+
+function dx_set_type(type)
+{
+   dx.types_mask = dx_type2mask(type);
+}
+
+function dx_is_single_type(type)
+{
+   return (dx.db == dx.DB_EiBi && dx.types_mask == dx_type2mask(type));
+}
+
 function dx_show_edit_panel2()
 {
 	var gid = dx.o.gid;
@@ -6959,15 +6978,17 @@ function dx_show_edit_panel2()
 
 function dx_database_cb(path, idx, first, ctrlAlt, from_shortcut)
 {
-   console.log('first='+ first +' ctrlAlt='+ ctrlAlt);
+   //console.log('first='+ first +' ctrlAlt='+ ctrlAlt);
    if (first) return;
    dx.db = +idx;
    dx.list = [];
    console_log_dbgUs('DX DB-SWITCHED db='+ dx.db);
    if (ctrlAlt)
       dx_show_edit_panel(null, -1, from_shortcut);
-   else
-      dx_close_edit_panel();
+   else {
+      if (ext_panel_displayed('dx'))
+         dx_close_edit_panel();
+   }
 	dx_schedule_update();
 }
 
