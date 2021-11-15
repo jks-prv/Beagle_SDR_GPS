@@ -640,6 +640,7 @@ function extint_panel_show(controls_html, data_html, show_func, hide_func, show_
 }
 
 function ext_panel_displayed(ext_name) {
+   //console.log('ext_panel_displayed displayed='+ extint.displayed +' current_ext_name='+ extint.current_ext_name);
    return (extint.displayed && (ext_name? (ext_name == extint.current_ext_name) : true));
 }
 

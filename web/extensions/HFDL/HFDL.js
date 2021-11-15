@@ -15,6 +15,11 @@ var hfdl = {
    url: 'http://kiwisdr.com/hfdl/systable.cjson',
    using_default: false,
    double_fault: false,
+
+   bf:   [    4,     5,     6,     8,    10,    11,     13,     15,    17,    21,    23 ],
+   bf_s: [  '3', '4.6', '5.5', '6.5', '8.9',  '10', '11.3', '13.3',  '15',  '18',  '22' ],
+   bf_z: [    4,     9,     6,     7,     7,     8,      7,      8,     8,     8,     8 ],
+   bf_c: [ 3500,  4670,  5600,  6625,  8900, 10065,  11290,  13310, 15020, 17945, 21965 ],
    
    ALL: 0,
    DX: 1,
@@ -132,7 +137,7 @@ function hfdl_recv(data)
                      s += ' | '+ x[3];
 
                      var found = false;
-                     var type_s = [ 'Logon request', 'Logon resume', 'Unnumbered data', 'Unnumbered ack\'ed' ];
+                     var type_s = [ 'Logon request', 'Logon resume', 'Logon confirm', 'Unnumbered data', 'Unnumbered ack\'ed' ];
                      type_s.forEach(function(type, i) {
                         if (found || !x[4].includes(type)) return;
                         found = true;
@@ -421,17 +426,15 @@ function hfdl_get_systable_done_cb(stations)
 function hfdl_render_menus()
 {
    var i;
-   var bf =   [  4,     5,     6,     8,  10,     11,   13,     15,     17,   21,   23  ];
-   var bf_s = [ '3', '4.6', '5.5', '6.5', '8.9', '10', '11.3', '13.3', '15', '18', '22' ];
-   var b = [];
-   for (i = 0; i < bf.length; i++) b[i] = [];
+   var band = [];
+   for (i = 0; i < hfdl.bf.length; i++) band[i] = [];
    
    var add_bands_menu = function(f) {
       //console.log(f);
       var f_n = parseInt(f);
-      for (i = 0; i < bf.length; i++) {
-         if (f_n < bf[i] * 1e3) {
-            b[i].push(f);
+      for (i = 0; i < hfdl.bf.length; i++) {
+         if (f_n < hfdl.bf[i] * 1e3) {
+            band[i].push(f);
             break;
          }
       }
@@ -449,13 +452,21 @@ function hfdl_render_menus()
          //console.log(menu_s +'.'+ i +'.'+ key_s +'.'+ j +':');
          //console.log(o2);
          var name_s = o2.name.split(', ')[1];
-         o2.frequencies.sort(function(a,b) { return a - b; });
+         o2.frequencies.sort(function(a,b) { return parseInt(a) - parseInt(b); });
          var freq_a = [];
          o2.frequencies.forEach(function(f) {
-            freq_a.push(f);
-            add_bands_menu(f +' '+ name_s);
+            if (f < hfdl.bf.length) {
+               var a = [ name_s, 'w3-bold w3-text-blue' ];
+               freq_a.push(a);
+            } else {
+               freq_a.push(f);
+            }
+            if (i == 0 && f != 0) add_bands_menu(f +' '+ name_s);
          });
-         m[name_s] = freq_a;
+         if (i == 0)
+            m[name_s] = freq_a;
+         else
+            m.push(freq_a);
       });
 
       //console.log('m=...');
@@ -470,6 +481,7 @@ function hfdl_render_menus()
    el.innerHTML = '';
    hfdl.menu_n = 0;
 
+   // "Stations" menu
    w3_obj_enum(hfdl.stations, function(key_s, i, o2) {
       //console.log(key_s +'.'+ i +':');
       //console.log(o2);
@@ -477,17 +489,18 @@ function hfdl_render_menus()
       new_menu(el, 0, o2, 'Stations');
    });
 
-   var b2 = [];
-   for (i = 0; i < bf.length; i++) {
-      b[i].sort(function(a,b) { return parseInt(b) - parseInt(a); });
+   // "Bands" menu
+   var bands = [];
+   for (i = 0; i < hfdl.bf.length; i++) {
+      band[i].sort(function(a,b) { return parseInt(b) - parseInt(a); });
       var o = {};
-      o.name = 'x, '+ bf_s[i] + ' MHz';
-      o.frequencies = [];
-      b[i].forEach(function(f) { o.frequencies.push(f); });
-      b2[i.toString()] = o;
+      o.name = 'x, '+ hfdl.bf_s[i] + ' MHz';
+      o.frequencies = [ i ];
+      band[i].forEach(function(f) { o.frequencies.push(f); });
+      bands[i.toString()] = o;
    }
-   //console.log(b2);
-   new_menu(el, 1, b2, 'Bands');
+   //console.log(bands);
+   new_menu(el, 1, bands, 'Bands');
    //console.log('hfdl_render_menus hfdl.menu_n='+ hfdl.menu_n);
 }
 
@@ -526,49 +539,37 @@ function hfdl_pre_select_cb(path, val, first)
 {
    if (first) return;
    val = +val;
-   
-   if (dbgUs) console.log('hfdl_pre_select_cb path='+ path);
-   
-   if (val == 0) {
-      if (dbgUs) console.log('hfdl_pre_select_cb path='+ path +' $$$$ val=0 $$$$');
-      return;
-   }
+   if (dbgUs) console.log('hfdl_pre_select_cb path='+ path +' val='+ val);
 
 	var menu_n = parseInt(path.split('hfdl.menu')[1]);
    if (dbgUs) console.log('hfdl_pre_select_cb path='+ path +' val='+ val +' menu_n='+ menu_n);
 
    // find matching object entry in hfdl.menus[] hierarchy and set hfdl.* parameters from it
-   var lsb = false;
-   var header;
+   var header = '';
    var cont = 0;
    var found = false;
 
 	w3_select_enum(path, function(option) {
 	   if (found) return;
-	   if (dbgUs) console.log('hfdl_pre_select_cb opt.val='+ option.value +' opt.disabled='+ option.disabled +' opt.inner='+ option.innerHTML);
+	   if (dbgUs) console.log('hfdl_pre_select_cb menu_n='+ menu_n +' opt.val='+ option.value +' opt.disabled='+ option.disabled +' opt.inner='+ option.innerHTML +' opt.id='+ option.id);
 	   
-	   if (option.disabled && option.value != -1) {
+	   var menu0_hdr = (menu_n == 0 && option.disabled && option.value != -1);
+	   var menu1_hdr = (menu_n == 1 && option.id && option.id.split('-')[2] == 0);
+	   if (dbgUs) console.log('menu0_hdr='+ menu0_hdr +' menu1_hdr='+ menu1_hdr);
+	   if (menu0_hdr || menu1_hdr) {
 	      if (cont)
 	         header = header +' '+ option.innerHTML;
 	      else
 	         header = option.innerHTML;
 	      cont = 1;
-	      lsb = false;
-	      //console.log('lsb = false');
 	   } else {
 	      cont = 0;
 	   }
 	   
-	   if (w3_contains(option, 'id-hfdl-lsb')) {
-	      //console.log('lsb = true');
-	      lsb = true;
-	   }
 	   if (option.value != val) return;
 	   found = true;
       hfdl.cur_menu = menu_n;
       hfdl.cur_header = header;
-      hfdl.lsb = lsb;
-      //console.log('hfdl.lsb='+ lsb);
 	   
       hfdl.menu_sel = option.innerHTML +' ';
       if (dbgUs) console.log('hfdl_pre_select_cb opt.val='+ option.value +' menu_sel='+ hfdl.menu_sel +' opt.id='+ option.id);
@@ -594,17 +595,32 @@ function hfdl_pre_select_cb(path, val, first)
       //console.log(o2);
       if (dbgUs) w3_console.log(o2, 'o2');
    
-      var s, show_msg = 0;
+      var s = null, show_msg = 0;
       o2 = parseInt(o2);
       if (isNumber(o2)) {
          if (dbgUs) console.log(o2);
-         hfdl_tune(o2);
-         s = (+o2).toFixedNZ(1) +' kHz';
-         show_msg = 1;
+         
+         if (o2 < hfdl.bf.length) {
+            var znew = hfdl.bf_z[o2];
+            var cf = hfdl.bf_c[o2];
+            //console.log('$show band '+ o2 +' cf='+ cf +' z='+ znew);
+            if (zoom_level == znew)
+               zoom_step(ext_zoom.OUT);   // force ext_tune() to re-center waterfall on cf
+            ext_tune(cf, 'iq', ext_zoom.ABS, znew);
+            if (dx.db != dx.DB_EiBi || !dx_is_single_type(dx.DX_HFDL)) {
+               dx_set_type(dx.DX_HFDL);
+               dx_database_cb('', dx.DB_EiBi);
+            }
+            show_msg = 1;
+         } else {
+            hfdl_tune(o2);
+            s = (+o2).toFixedNZ(1) +' kHz';
+            show_msg = 1;
+         }
       }
 
       if (show_msg) {
-         hfdl_msg('w3-text-css-yellow', hfdl.menu_s[menu_n] +', '+ hfdl.cur_header +': '+ s);
+         hfdl_msg('w3-text-css-yellow', hfdl.menu_s[menu_n] +', '+ hfdl.cur_header + (s? (': '+ s) : ''));
       }
 
       // if called directly instead of from menu callback, select menu item
@@ -736,12 +752,13 @@ function HFDL_help(show)
                '<i>(menu match)</i> &nbsp; display:[012] &nbsp; scan[:<i>secs</i>] &nbsp; ' +
                'log_time:<i>mins</i> &nbsp; test' +
                '<br><br>' +
-               'The first URL parameter can be a frequency entry from the "Bands" menu (e.g. "8977"). <br>' +
+               'The first URL parameter can be a frequency entry from the "Bands" menu (e.g. "8977") or the ' +
+               'numeric part of the blue "full band" entry (e.g. "5.5" part of "5.5 MHz" entry). <br>' +
                '[012] refers to the order of selections in the corresponding menu.' +
                '<br><br>' +
                'Keywords are case-insensitive and can be abbreviated. So for example these are valid: <br>' +
                '<i>ext=hfdl,8977</i> &nbsp;&nbsp; ' +
-               '<i>ext=hfdl,8977,d:1</i> &nbsp;&nbsp; <i>ext=hfdl,8977,l:10</i><br>' +
+               '<i>ext=hfdl,8977,d:1</i> &nbsp;&nbsp; <i>ext=hfdl,8977,l:10</i> &nbsp;&nbsp; <i>ext=hfdl,3</i> &nbsp;&nbsp; <i>ext=hfdl,5.5</i><br>' +
                ''
             )
          );

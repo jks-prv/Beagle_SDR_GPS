@@ -924,15 +924,15 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         if (kiwi_str_begins_with(cmd, "SET MARKER")) {
             dx_rx_t *drx = &dx.dx_rx[conn->rx_channel];
             float min, max, bw;
-            int db, zoom, width, dir = 1, filter_tod;
+            int db, zoom, width, dir = 1, filter_tod, anti_clutter;
             u4_t types_mask;
             bool db_changed = false;
             //if (drx->db == DB_EiBi) printf("DX_MKR [%s]\n", cmd);
-            int n = sscanf(cmd, "SET MARKER db=%d min=%f max=%f zoom=%d width=%d types_mask=0x%x filter_tod=%d",
-                &db, &min, &max, &zoom, &width, &types_mask, &filter_tod);
+            int n = sscanf(cmd, "SET MARKER db=%d min=%f max=%f zoom=%d width=%d types_mask=0x%x filter_tod=%d anti_clutter=%d",
+                &db, &min, &max, &zoom, &width, &types_mask, &filter_tod, &anti_clutter);
             enum { DX_MKRS = 4, DX_STEP = 2 };      // values for compatibility with client side
             int func;
-            if (n != 7) {
+            if (n != 8) {
                 n = sscanf(cmd, "SET MARKER db=%d dir=%d freq=%f", &db, &dir, &min);
                 if (n != 3) return true;
                 func = DX_STEP;
@@ -941,23 +941,25 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 func = DX_MKRS;
             }
             
+            bool db_stored = (db == DB_STORED);
+            bool db_eibi = (db == DB_EiBi);
             static bool first = true;
             int dx_lastx;
             dx_lastx = 0;
         
             if (db != drx->db) {
-                dx_db_e new_db = (db == DB_STORED)? DB_STORED : ((db == DB_EiBi)? DB_EiBi : DB_STORED);
+                dx_db_e new_db = db_stored? DB_STORED : (db_eibi? DB_EiBi : DB_STORED);
                 drx->db = new_db;
                 if (drx->db == DB_EiBi && !dx.eibi_init) {
                     dx_eibi_init();
                     dx.eibi_init = true;
                 }
-                drx->cur_list = (db == DB_STORED)? dx.stored_list : dx.eibi_list;
-                drx->cur_len = (db == DB_STORED)? dx.stored_len : dx.eibi_len;
+                drx->cur_list = db_stored? dx.stored_list : dx.eibi_list;
+                drx->cur_len = db_stored? dx.stored_len : dx.eibi_len;
                 first = true;
                 //printf("DX_MKR: db SWITCHED cur_list=%p\n", drx->cur_list);
             }
-            //printf("DX_MKR: SET MARKER db=%s\n", (db == DB_STORED)? "stored" : "EiBi");
+            //printf("DX_MKR: SET MARKER db=%s\n", db_stored? "stored" : "EiBi");
         
             if (drx->cur_len == 0) {
                 send_msg(conn, false, "MSG mkr=[{\"t\":%d}]", DX_MKRS);     // otherwise last marker won't get cleared
@@ -1010,6 +1012,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             }
         
             //if (drx->db == DB_EiBi) printf("EiBi BSEARCH len=%d %.2f\n", drx->cur_len, dp->freq);
+            int clutter_filtered = 0;
             for (; dp < &drx->cur_list[drx->cur_len] && dp >= drx->cur_list; dp += dir) {
                 u4_t flags = 0;
                 float freq = dp->freq + ((float) dp->offset / 1000.0);		// carrier plus offset
@@ -1074,11 +1077,14 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 }
             
                 // reduce dx label clutter
-                if (func == DX_MKRS && zoom <= DX_SPACING_ZOOM_THRESHOLD) {
+                if (func == DX_MKRS && anti_clutter && zoom <= DX_SPACING_ZOOM_THRESHOLD) {
                     int x = ((dp->freq - min) / bw) * width;
                     int diff = x - dx_lastx;
                     //printf("DX_MKR spacing %d %d %d %s\n", dx_lastx, x, diff, dp->ident);
-                    if (!first && diff < DX_SPACING_THRESHOLD_PX) continue;
+                    if (!first && diff < DX_SPACING_THRESHOLD_PX) {
+                        clutter_filtered++;
+                        continue;
+                    }
                     dx_lastx = x;
                     first = false;
                 }
@@ -1103,7 +1109,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         
             sb = kstr_cat(sb, "]");
             send_msg(conn, false, "MSG mkr=%s", kstr_sp(sb));
-            //printf("DX_MKR send=%d\n", send);
+            //printf("DX_MKR send=%d anti_clutter=%d clutter_filtered=%d\n", send, anti_clutter, clutter_filtered);
             if (drx->db == DB_EiBi) {
                 //printf("DX_MKR EiBi send=%d\n", send);
                 //real_printf("%s\n", kstr_sp(sb));

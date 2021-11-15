@@ -2303,9 +2303,9 @@ function w3_select(psa, label, title, path, sel, opts, cb, cb_param)
 }
 
 // hierarchical -- menu entries interspersed with disabled (non-selectable) headers
-// { key0:[fv0, fv1 ...], key1:[fv0, fv1 ...] ... }
+// { "key0":[fv0, fv1 ...], "key1":[fv0, fv1 ...] ... }
 // object: enumerate sequentially like an array using:
-//    object keys as the disabled menu entries
+//    object keys as the disabled menu entries (string only, numeric keys ignored)
 //    arrays as the menu options
 //       array elements are w3_first_value()'s e.g. int, string, first array value etc.
 function w3int_select_hier(psa, label, title, path, sel, collapse, opts, cb, cb_param)
@@ -2315,11 +2315,13 @@ function w3int_select_hier(psa, label, title, path, sel, collapse, opts, cb, cb_
    if (!isObject(opts)) return;
 
    w3_obj_enum(opts, function(key, i, a) {
-      as = key.split('_');       // '_' => menu header line break
-      as.forEach(function(e) {
-         if (!e || e != '')
-            s += '<option value='+ dq(idx++) +' disabled>'+ e +'</option> ';
-      });
+      if (!isNumber(+key)) {
+         as = key.split('_');       // '_' => menu header line break
+         as.forEach(function(e) {
+            if (!e || e != '')
+               s += '<option value='+ dq(idx++) +' disabled>'+ e +'</option> ';
+         });
+      }
       if (!isArray(a)) return;
 
       a.forEach(function(el, j) {

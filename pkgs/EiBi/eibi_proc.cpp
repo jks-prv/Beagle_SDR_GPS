@@ -26,6 +26,17 @@ void _panic(const char *str, bool x, const char *file, int line)
 	exit(-1);
 }
 
+void eibi_fgets(u1_t *bp, int size, FILE *fp)
+{
+    int c;
+    do {
+        c = fgetc(fp);
+        if (c != EOF)
+            *bp++ = c;
+    } while (c != EOF && c != '\n');
+    *bp = '\0';
+}
+
 // Makes a copy of ocp since delimiters are turned into NULLs.
 // If ocp begins with delimiter a null entry is _not_ made in argv (and reflected in returned count).
 // Caller must free *mbuf
@@ -124,6 +135,7 @@ int day(char *s)
     return i;
 }
 
+//#define OPT_DEBUG_UTF_8
 //#define OPT_NOTES
 #define OPT_LONGEST_RUN
 //#define OPT_DOW
@@ -136,18 +148,19 @@ int main(int argc, char *argv[])
     int max_ident = 0;
     
     FILE *fi, *fo;
-    fi = fopen("freq-current.csv", "r");
+    fi = fopen("sked-current.csv", "rb");
     if (!fi) sys_panic("fi");
-    fo = fopen("../../init/EiBi.h", "w");
+    fo = fopen("../../init/EiBi.h", "wb");
     if (!fo) sys_panic("fo");
     
     char lbuf[256];
+    u1_t *lp = (u1_t *) lbuf;
     int line = 2;
-    fgets(lbuf, sizeof(lbuf), fi);      // skip first line
+    eibi_fgets(lp, sizeof(lbuf), fi);     // skip first line
     
     int same_freq_diff_ident = 0, max_same_freq_diff_ident = 0;
     double last_freq, max_same_freq_diff_ident_freq;
-    char last_ident[32];
+    char last_ident[256];
 
     int entries = 0;
     fprintf(fo, "dx_t eibi_db[] = {\n");
@@ -160,7 +173,7 @@ int main(int argc, char *argv[])
         n = fscanf(fi, "%lf;%d-%d;", &freq, &begin, &end);
         if (n == EOF) break;
 
-        fgets(lbuf, sizeof(lbuf), fi);
+        eibi_fgets(lp, sizeof(lbuf), fi);
         int sl = strlen(lbuf);
         lbuf[sl-1] = '\0';      // remove \n
         sl = strlen(lbuf);
@@ -173,8 +186,26 @@ int main(int argc, char *argv[])
         char *ident = fields[2];
         char *lang = fields[3];
         char *target = fields[4];
-
         int sl_iden = strlen(ident);
+
+        // debug UTF-8 in ident field
+        #if OPT_DEBUG_UTF_8
+            char ident2[256];
+            u1_t *ip, *ip2;
+            bool dump_ident = false;
+            for (ip = (u1_t *) ident, ip2 = (u1_t *) ident2; *ip != '\0'; ip++) {
+                if (*ip < 0x80) {
+                    *ip2++ = *ip;
+                } else {
+                    j = sprintf((char *) ip2, "[%02x]", *ip);
+                    ip2 += j;
+                    dump_ident = true;
+                }
+            }
+            *ip2 = '\0';
+            if (dump_ident) printf("%d \"%s\" %lu \"%s\"\n", sl_iden, ident, strlen(ident2), ident2);
+        #endif
+
         if (sl_iden > max_ident) max_ident = sl_iden;
     
     
