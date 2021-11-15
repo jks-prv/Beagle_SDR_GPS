@@ -752,12 +752,13 @@ function HFDL_help(show)
                '<i>(menu match)</i> &nbsp; display:[012] &nbsp; scan[:<i>secs</i>] &nbsp; ' +
                'log_time:<i>mins</i> &nbsp; test' +
                '<br><br>' +
-               'The first URL parameter can be a frequency entry from the "Bands" menu (e.g. "8977"). <br>' +
+               'The first URL parameter can be a frequency entry from the "Bands" menu (e.g. "8977") or the ' +
+               'numeric part of the blue "full band" entry (e.g. "5.5" part of "5.5 MHz" entry). <br>' +
                '[012] refers to the order of selections in the corresponding menu.' +
                '<br><br>' +
                'Keywords are case-insensitive and can be abbreviated. So for example these are valid: <br>' +
                '<i>ext=hfdl,8977</i> &nbsp;&nbsp; ' +
-               '<i>ext=hfdl,8977,d:1</i> &nbsp;&nbsp; <i>ext=hfdl,8977,l:10</i><br>' +
+               '<i>ext=hfdl,8977,d:1</i> &nbsp;&nbsp; <i>ext=hfdl,8977,l:10</i> &nbsp;&nbsp; <i>ext=hfdl,3</i> &nbsp;&nbsp; <i>ext=hfdl,5.5</i><br>' +
                ''
             )
          );
