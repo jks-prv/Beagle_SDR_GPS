@@ -2,19 +2,30 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.474  November 15, 2021
+    HFDL extension improvements:
+        New entries in the "Bands" menu that select an entire HFDL frequency band.
+        Automatically sets the center frequency, zoom and switches to displaying only
+        the EiBi database HFDL labels. Eliminates tedious manual setup. Can be set
+        via URL parameter (see HFDL help panel).
+    
+    EiBi label database:
+        Updated to B21 published 14 Nov 21 on eibispace.de
+
 v1.473  November 13, 2021
     HFDL extension improvements:
         Additional processing of the messages appearing in the text window. The abbreviated 'DX'
-        display now contain aircraft info. The 'squitter' display is more compact.
-        Separate upload/download checkboxes to limit the message direction ('up' is transmitted
-        messages from the ground station). Thanks Martin.
+        display now contains aircraft info. The 'squitter' display is more compact.
+        Separate upload/download checkboxes to limit the message direction ('upload' are messages
+        transmitted from the ground stations). Thanks Martin.
     
     EiBi label database:
         Clicking HFDL labels now selects IQ mode and the special USB passband used by HFDL.
         Labels which automatically open an extension on shift-click now mention this fact in the
-        mouse-over popup (as a reminder). Currently ALE, HFDL, Time, CW, FSK and Fax.
+        mouse-over popup (as a reminder). These are currently ALE, HFDL, Time, CW, FSK and Fax.
         Clicking ALE, HFDL and Fax labels set the special passbands used by the associated extensions.
         Clicking an HFDL label should also select the corresponding menu entry of the HFDL extension.
+        Corrections from the HFDL version 51 system table were applied to the EiBi database.
 
 v1.471,472  November 12, 2021
     HFDL extension preliminary release.
