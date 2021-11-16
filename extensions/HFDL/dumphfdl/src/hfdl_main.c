@@ -317,7 +317,7 @@ void dumphfdl_init()
 	hfdl_init_globals();
 }
 
-int32_t dumphfdl_main(int32_t argc, char **argv, int rx_chan) {
+int32_t dumphfdl_main(int32_t argc, char **argv, int rx_chan, int outputBlockSize) {
 
 #define OPT_VERSION 1
 #define OPT_HELP 2
@@ -410,7 +410,7 @@ int32_t dumphfdl_main(int32_t argc, char **argv, int rx_chan) {
 		{ 0,                    0,                  0,      0 }
 	};
 	
-	instance_init(rx_chan);
+	instance_init(rx_chan, outputBlockSize);
 	
 	pthr_mutex_init("Systable_lock", &hfdl->Systable_lock, NULL);
 	pthr_mutex_init("AC_cache_lock", &hfdl->AC_cache_lock, NULL);

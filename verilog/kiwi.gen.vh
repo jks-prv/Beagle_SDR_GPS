@@ -64,6 +64,8 @@
 `define DEF_RX2_STD_DECIM
 	localparam MAX_SND_RATE = 20250;    // DEFp 0x4f1a
 `define DEF_MAX_SND_RATE
+	localparam MIN_SND_RATE = 12000;    // DEFp 0x2ee0
+`define DEF_MIN_SND_RATE
 	localparam SND_RATE_3CH = 20250;    // DEFp 0x4f1a
 `define DEF_SND_RATE_3CH
 	localparam SND_RATE_4CH = 12000;    // DEFp 0x2ee0

@@ -15,10 +15,9 @@
 
 #include <sys/mman.h>
 
-#define HFDL_TEST_FILE_RATE 12000
+// use of MIN_SND_RATE here gives the largest possible buffer needed
 #define HFDL_OUTBUF_SIZE    FASTFIR_OUTBUF_SIZE
-#define HFDL_RESAMPLE_RATIO (HFDL_MIN_SRATE / HFDL_TEST_FILE_RATE)
-#define HFDL_N_SAMPS        (HFDL_OUTBUF_SIZE * HFDL_RESAMPLE_RATIO * NIQ)
+#define HFDL_N_SAMPS        ((((HFDL_OUTBUF_SIZE * HFDL_MIN_SRATE) / MIN_SND_RATE) + 1) * NIQ)
 
 typedef struct {
 	u4_t nom_rate;
@@ -54,7 +53,7 @@ typedef struct {
 
 // server => dumphfdl
 C_LINKAGE(void dumphfdl_init());
-C_LINKAGE(int dumphfdl_main(int argc, char **argv, int rx_chan));
+C_LINKAGE(int dumphfdl_main(int argc, char **argv, int rx_chan, int outputBlockSize));
 C_LINKAGE(void dumphfdl_set_freq(int rx_chan, double freq_kHz));
 
 // dumphfdl => server

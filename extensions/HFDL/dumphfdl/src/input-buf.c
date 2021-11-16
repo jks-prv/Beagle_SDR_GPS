@@ -14,8 +14,8 @@
 #include <fcntl.h>
 #include "kiwi-hfdl.h"
 
-#define buf_BUFSIZE (HFDL_N_SAMPS * sizeof(float))
-//#define buf_BUFSIZE (HFDL_N_SAMPS * sizeof(uint16_t))
+#define buf_BUFSIZE (hfdl->outputBlockSize * sizeof(float))
+//#define buf_BUFSIZE (hfdl->outputBlockSize * sizeof(uint16_t))
 
 struct buf_input {
 	struct input input;
