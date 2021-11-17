@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.475  November 17, 2021
+    HFDL extension improvements:
+        Now works for Kiwis using 3-channel/20.25 kHz mode.
+
 v1.474  November 15, 2021
     HFDL extension improvements:
         New entries in the "Bands" menu that select an entire HFDL frequency band.
