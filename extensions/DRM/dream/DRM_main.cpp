@@ -44,6 +44,10 @@
 #ifdef DRM_SHMEM_DISABLE
     static u4_t drm_last_start;
     
+    // NB v1.470: Because of the C_LINKAGE(void _NextTask(...)) change
+    // we need to touch this file so that ../build/obj_keep/DRM_main.o
+    // gets rebuilt and doesn't end up with a link time error.
+
     void drm_next_task(const char *id)
     {
         #if 0

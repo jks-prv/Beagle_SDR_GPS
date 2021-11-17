@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.476  November 18, 2021
+    HFDL extension improvements:
+        From dumphfdl: Added RSSI, noise floor, SNR estimate to message header.
+    
+    Fix bug that prevented some Kiwis from updating past v1.470
+
 v1.475  November 17, 2021
     HFDL extension improvements:
         Now works for Kiwis using 3-channel/20.25 kHz mode.

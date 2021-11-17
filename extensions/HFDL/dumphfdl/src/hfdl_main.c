@@ -258,6 +258,9 @@ static void usage() {
 #ifdef DEBUG
 	describe_option("--debug <filter_spec>", "Debug message classes to display (default: none) (\"--debug help\" for details)", 1);
 #endif
+#ifdef DATADUMPS
+	describe_option("--datadumps", "Dump sample data to cf32/cr32 files in current directory (one channel only!)", 1);
+#endif
 	fprintf(stderr, "common options:\n");
 	describe_option("<freq_1> [<freq_2> [...]]", "HFDL channel frequencies, in kHz, as floating point numbers", 1);
 #ifdef WITH_SOAPYSDR
@@ -324,6 +327,9 @@ int32_t dumphfdl_main(int32_t argc, char **argv, int rx_chan, int outputBlockSiz
 #ifdef DEBUG
 #define OPT_DEBUG 3
 #endif
+#ifdef DATADUMPS
+#define OPT_DATADUMPS 4
+#endif
 
 #define OPT_IQ_FILE 10
 #define OPT_IQ_SWAP 11
@@ -372,6 +378,9 @@ int32_t dumphfdl_main(int32_t argc, char **argv, int rx_chan, int outputBlockSiz
 		{ "help",               no_argument,        NULL,   OPT_HELP },
 #ifdef DEBUG
 		{ "debug",              required_argument,  NULL,   OPT_DEBUG },
+#endif
+#ifdef DATADUMPS
+		{ "datadumps",          no_argument,        NULL,   OPT_DATADUMPS },
 #endif
 		{ "iq-file",            required_argument,  NULL,   OPT_IQ_FILE },
 		{ "iq-swap",            no_argument,        NULL,   OPT_IQ_SWAP },
@@ -571,6 +580,11 @@ int32_t dumphfdl_main(int32_t argc, char **argv, int rx_chan, int outputBlockSiz
 			case OPT_DEBUG:
 				hfdl->Config.debug_filter = parse_msg_filterspec(debug_filters, debug_filter_usage, optarg);
 				debug_print(D_MISC, "debug filtermask: 0x%x\n", hfdl->Config.debug_filter);
+				break;
+#endif
+#ifdef DATADUMPS
+			case OPT_DATADUMPS:
+				Config.datadumps = true;
 				break;
 #endif
 			case OPT_VERSION:

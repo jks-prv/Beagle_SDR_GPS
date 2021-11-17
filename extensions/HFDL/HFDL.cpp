@@ -86,17 +86,23 @@ static void hfdl_task(void *param)
         if (e->input_tid) {
             e->CHFDLResample.run((float *) e->samps_c, n, &e->resamp);
 
-            #if 1
+            #define SAMPLES_CF32
+            #ifdef SAMPLES_CF32
+                // needed so hfdl_channel_create() "c->noise_floor = 1.0f" works
+                // i.e. float samples need to be restricted to (+1,-1)
+                const float f_scale = 32768.0f;      
                 static float out[HFDL_N_SAMPS];
                 for (int i=0; i < e->outputBlockSize; i++) {
-                    out[i*2]   = e->resamp.out_I[i];
-                    out[i*2+1] = e->resamp.out_Q[i];
+                    out[i*2]   = e->resamp.out_I[i] / f_scale;
+                    out[i*2+1] = e->resamp.out_Q[i] / f_scale;
                 }
             #endif
 
-            #if 0
-                static s2_t out[HFDL_N_SAMPS];
+            // FIXME: doesn't seem to work?
+            //#define SAMPLES_CS16
+            #ifdef SAMPLES_CS16
                 const s2_t s2_scale = 2;
+                static s2_t out[HFDL_N_SAMPS];
                 for (int i=0; i < e->outputBlockSize; i++) {
                     out[i*2]   = (s2_t) (e->resamp.out_I[i] / s2_scale);
                     out[i*2+1] = (s2_t) (e->resamp.out_Q[i] / s2_scale);
@@ -161,9 +167,15 @@ bool hfdl_receive_cmds(u2_t key, char *cmd, int rx_chan)
 
 static const char *hfdl_argv[] = {
     "dumphfdl", "--system-table", DIR_CFG "/samples/HFDL_systable.conf",
+    "--in-buf",
 
-    "--in-buf", "--sample-format", "CF32",
-    //"--in-buf", "--sample-format", "CS16",
+    #ifdef SAMPLES_CF32
+        "--sample-format", "CF32",
+    #endif
+
+    #ifdef SAMPLES_CS16
+        "--sample-format", "CS16",
+    #endif
 
     "--sample-rate", "36000", "--centerfreq", "0", "0"
 };
