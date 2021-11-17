@@ -12,6 +12,8 @@ struct hfdl_pdu_metadata {
 	int32_t freq;
 	int32_t bit_rate;
 	float freq_err_hz;
+	float rssi;
+	float noise_floor;
 	char slot;                      // 'S' - single slot frame, 'D' - double slot frame
 };
 

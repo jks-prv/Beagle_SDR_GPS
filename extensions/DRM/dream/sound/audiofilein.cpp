@@ -386,6 +386,11 @@ CAudioFileIn::Read(CVector<short>& psData)
                         }
                     #endif
                 } else {
+                
+                    // NB v1.470: Because of the C_LINKAGE(void *_TaskSleep(...)) change
+                    // we need to touch this file so that ../build/obj_keep/audiofilein.o
+                    // gets rebuilt and doesn't end up with a link time error.
+
                     //real_printf("[wait%d] ", iq->iq_wr_pos); fflush(stdout);
                     drm->iq_rd_pos = (drm->iq_rd_pos+1) & (N_DPBUF-1);
                     int trig = 0;

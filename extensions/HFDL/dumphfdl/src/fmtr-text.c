@@ -48,11 +48,14 @@ static struct octet_string *fmtr_text_format_decoded_msg(struct metadata *metada
 	la_vstring *timestamp = format_timestamp(metadata->rx_timestamp);
 	la_vstring *vstr = la_vstring_new();
 
-	la_vstring_append_sprintf(vstr, YELLOW "[%s] [%.1f kHz] [%.1f Hz] [%d bps] [%c]" NORM,
+	la_vstring_append_sprintf(vstr, YELLOW "[%s] [%.1f kHz] [%.1f Hz] [%.1f/%.1f dBFS] [%.1f dB] [%d bps] [%c]" NORM,
 			timestamp->str,
 			//(float)hm->freq / 1000.f,
 			hfdl->freq_kHz,
 			hm->freq_err_hz,
+			hm->rssi,
+			hm->noise_floor,
+			hm->rssi - hm->noise_floor,
 			hm->bit_rate,
 			hm->slot
 			);

@@ -4,11 +4,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "pthr.h"
+#include "config.h"         // DATADUMPS
 #include "systable.h"
 #include "ac_cache.h"
 #include "ac_data.h"
 #include "kiwi-hfdl.h"
-#include <glib.h>                   // GAsyncQueue, g_async_queue_*
+#include <glib.h>           // GAsyncQueue, g_async_queue_*
 
 enum ac_data_details {
 	AC_DETAILS_NORMAL = 0,
@@ -29,6 +30,9 @@ struct dumphfdl_config {
 	bool output_mpdus;
 	bool output_corrupted_pdus;
 	bool ac_data_available;
+#ifdef DATADUMPS
+	bool datadumps;
+#endif
 };
 
 #define STATION_ID_LEN_MAX 255
