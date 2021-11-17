@@ -45,13 +45,14 @@ struct dumphfdl_config {
 #define AC_cache_lock() do { pthr_mutex_lock(&hfdl->AC_cache_lock); } while(0)
 #define AC_cache_unlock() do { pthr_mutex_unlock(&hfdl->AC_cache_lock); } while(0)
 
-void instance_init(uint32_t rx_chan);
+void instance_init(uint32_t rx_chan, int outputBlockSize);
 
 
 // reentrancy
 
 typedef struct {
     int32_t rx_chan;
+	int outputBlockSize;
     double freq_kHz;
     
     struct dumphfdl_config Config;

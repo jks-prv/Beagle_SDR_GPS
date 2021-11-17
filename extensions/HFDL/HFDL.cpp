@@ -173,9 +173,7 @@ static void dumphfdl_task(void *param)
     int rx_chan = (int) FROM_VOID_PARAM(param);
     hfdl_chan_t *e = &hfdl_chan[rx_chan];
 
-    //real_printf("dumphfdl_task START ----------------------------------------------\n");
-    dumphfdl_main(ARRAY_LEN(hfdl_argv), (char **) hfdl_argv, rx_chan);
-    //real_printf("dumphfdl_task EXIT ==============================================\n");
+    dumphfdl_main(ARRAY_LEN(hfdl_argv), (char **) hfdl_argv, rx_chan, e->outputBlockSize * NIQ);
     e->dumphfdl_tid = 0;
 }
     
@@ -206,7 +204,7 @@ bool hfdl_msgs(char *msg, int rx_chan)
 		
 		ext_register_receive_iq_samps_task(e->tid, rx_chan, POST_AGC);
 
-        e->outputBlockSize = e->CHFDLResample.setup(HFDL_TEST_FILE_RATE, HFDL_OUTBUF_SIZE);
+        e->outputBlockSize = e->CHFDLResample.setup(snd_rate, HFDL_OUTBUF_SIZE);
         if (!e->dumphfdl_tid)
             e->dumphfdl_tid = CreateTaskF(dumphfdl_task, TO_VOID_PARAM(rx_chan), EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL));
 
@@ -261,10 +259,6 @@ bool hfdl_msgs(char *msg, int rx_chan)
         if (test) {
             // misuse ext_register_receive_iq_samps() to pushback audio samples from the test file
             ext_register_receive_iq_samps(hfdl_pushback_file_data, rx_chan, PRE_AGC);
-
-            //e->outputBlockSize = e->CHFDLResample.setup(HFDL_TEST_FILE_RATE, HFDL_OUTBUF_SIZE);
-            //if (!e->dumphfdl_tid)
-			//    e->dumphfdl_tid = CreateTaskF(dumphfdl_task, TO_VOID_PARAM(rx_chan), EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL));
             e->test = true;
         } else {
             e->test = false;

@@ -302,8 +302,8 @@ function ale_2g_controls_setup()
             w3_button('w3-padding-smaller', 'Prev', 'w3_select_next_prev_cb', { dir:w3_MENU_PREV, id:'ale.menu', isNumeric:true, func:'ale_2g_np_pre_select_cb' }),
             w3_button('id-ale_2g-scan-button w3-padding-smaller w3-green', 'Scan', 'ale_2g_scan_button_cb'),
             w3_button('id-ale_2g-clear-button w3-padding-smaller w3-css-yellow', 'Clear', 'ale_2g_clear_button_cb'),
-            w3_button('id-button-log w3-padding-smaller w3-purple', 'Log', 'ale_2g_log_cb'),
-            w3_button('id-button-test w3-padding-smaller w3-aqua', 'Test', 'ale_2g_test_cb', 1),
+            w3_button('id-ale_2g-log w3-padding-smaller w3-purple', 'Log', 'ale_2g_log_cb'),
+            w3_button('id-ale_2g-test w3-padding-smaller w3-aqua', 'Test', 'ale_2g_test_cb', 1),
             w3_div('id-ale_2g-bar-container w3-progress-container w3-round-large w3-white w3-hide|width:70px; height:16px',
                w3_div('id-ale_2g-bar w3-progressbar w3-round-large w3-light-green|width:0%', '&nbsp;')
             ),
@@ -337,7 +337,7 @@ function ale_2g_controls_setup()
 	
 	// our sample file is 12k only
 	if (ext_nom_sample_rate() != 12000)
-	   w3_add('id-button-test', 'w3-disabled');
+	   w3_add('id-ale_2g-test', 'w3-disabled');
 	
 	w3_do_when_rendered('id-ale_2g-menus', function() {
       ext_send('SET reset');
