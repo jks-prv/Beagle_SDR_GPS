@@ -357,7 +357,7 @@ function tdoa_controls_setup()
       m.on('moveend', function(e) { tdoa_pan_end(e); });
       m.on('zoomend', function(e) { tdoa_zoom_end(e); });
       
-      L.control.zoom_TDoA().addTo(m);
+      L.control.zoom_Kiwi().addTo(m);
       
       sat_map.addTo(m);
 
@@ -379,13 +379,13 @@ function tdoa_controls_setup()
       tdoa.cur_map = tdoa.kiwi_map = m;
       if (dbgUs) sat_map.getPane()._jks = 'MAP';
 
-   var scale = L.control.scale()
-   scale.addTo(m);
-   scale.setPosition('bottomright');
+      var scale = L.control.scale()
+      scale.addTo(m);
+      scale.setPosition('bottomright');
    
-   L.control.ruler({ position: 'bottomright' }).addTo(m);
+      L.control.ruler({ position: 'bottomright' }).addTo(m);
 
-   var terminator = new Terminator();
+      var terminator = new Terminator();
       terminator.setStyle({ fillOpacity: 0.35 });
       terminator.addTo(m);
       setInterval(function() {

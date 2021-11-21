@@ -262,6 +262,9 @@ typedef struct {
     // lat/lon returned by ipinfo lookup
 	bool ipinfo_ll_valid;
 	float ipinfo_lat, ipinfo_lon;
+	
+	// low-res lat/lon from timezone process
+	int lowres_lat, lowres_lon;
 
     // E1B_plot_separately == false
     #define MAP_ALL 0           // green map pin

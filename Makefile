@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 476
+VERSION_MIN = 477
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -1253,6 +1253,7 @@ force_update:
 ################################
 # development
 ################################
+
 dump_eeprom:
 	@echo KiwiSDR cape EEPROM:
 ifeq ($(DEBIAN_7),true)
@@ -1277,12 +1278,14 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 # selectively transfer files to the target so everything isn't compiled each time
 EXCLUDE_RSYNC = ".DS_Store" ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" \
 	"verilog/kiwi.gen.vh" "web/edata*" "node_modules" "morse-pro-compiled.js"
-RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) $(addprefix --exclude , $(EXT_EXCLUDE_RSYNC)) . root@$(HOST):~root/$(REPO_NAME)
+RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) $(addprefix --exclude , $(EXT_EXCLUDE_RSYNC)) . $(RSYNC_USER)@$(HOST):~root/$(REPO_NAME)
+
+RSYNC_USER ?= root
 PORT ?= 22
 ifeq ($(PORT),22)
 	RSYNC = rsync
 else
-	RSYNC = rsync -e "ssh -p $(PORT) -l root"
+	RSYNC = rsync -e "ssh -p $(PORT) -l $(RSYNC_USER)"
 endif
 
 rsync_su:

@@ -31,7 +31,7 @@ function iframe_recv(data)
       return;
    }
    
-   // process command sent from server/C by ext_send_msg() or ext_send_encoded_msg()
+   // process command sent from server/C by ext_send_msg() or ext_send_msg_encoded()
    var stringData = arrayBufferToString(data);
    var params = stringData.substring(4).split(" ");
 

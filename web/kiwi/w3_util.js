@@ -802,6 +802,21 @@ function w3_remove(el_id, props)
 	return first_el;
 }
 
+function w3_match_wildcard(el_id, prefix)
+{
+	var el = w3_el(el_id);
+	//console.log('w3_match_wildcard <'+ prefix +'>');
+	if (!el) return null;
+	var match = false;
+	for (var i = 0; i < el.classList.length; i++) {    // el.classList is a collection, can't use forEach()
+	   if (match != false) return;
+	   var cl = el.classList.item(i);
+	   //console.log('w3_match_wildcard CONSIDER <'+ cl +'>');
+	   if (cl.startsWith(prefix)) match = cl;
+	}
+	return match;
+}
+
 function w3_remove_wildcard(el_id, prefix)
 {
 	var el = w3_el(el_id);
