@@ -1,14 +1,14 @@
 /*
- * @class Control.Zoom
- * @aka L.Control.Zoom
+ * @class Control.Zoom_Kiwi
+ * @aka L.Control.Zoom_Kiwi
  * @inherits Control
  *
  * A basic zoom control with two buttons (zoom in and zoom out). It is put on the map by default unless you set its [`zoomControl` option](#map-zoomcontrol) to `false`. Extends `Control`.
  */
 
-L.Zoom_TDoA = L.Control.extend({
+L.Zoom_Kiwi = L.Control.extend({
 	// @section
-	// @aka Control.Zoom options
+	// @aka Control.Zoom_Kiwi options
 	options: {
 		position: 'topleft',
 
@@ -25,6 +25,8 @@ L.Zoom_TDoA = L.Control.extend({
 
 		// The title set on the 'zoom in' button.
 		zoomNomTitle: 'Zoom nomimal',
+		
+		zoomNomLatLon: null,
 
 		// @option zoomOutText: String = '&#x2212;'
 		// The text set on the 'zoom out' button.
@@ -77,7 +79,10 @@ L.Zoom_TDoA = L.Control.extend({
 
 	_zoomNom: function (e) {
 		if (!this._disabled) {
-			this._map.setZoom(4);
+		   if (this.options.zoomNomLatLon)
+		      this._map.setView(this.options.zoomNomLatLon, +this.options.zoomNomText);
+		   else
+		      this._map.setZoom(+this.options.zoomNomText);
 		}
 	},
 
@@ -123,9 +128,9 @@ L.Zoom_TDoA = L.Control.extend({
 	}
 });
 
-// @namespace Control.Zoom
-// @factory L.control.zoom(options: Control.Zoom options)
+// @namespace Control.Zoom_Kiwi
+// @factory L.control.Zoom_Kiwi(options: Control.Zoom_Kiwi options)
 // Creates a zoom control
-L.control.zoom_TDoA = function (options) {
-	return new L.Zoom_TDoA(options);
+L.control.zoom_Kiwi = function (options) {
+	return new L.Zoom_Kiwi(options);
 };

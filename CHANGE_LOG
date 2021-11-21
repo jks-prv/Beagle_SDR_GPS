@@ -2,6 +2,28 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.477  November 21, 2021
+    HFDL extension improvements:
+        Added map of ground stations with active frequency table (AFT) icons sourced from
+        decoded squitter messages. It can takes a number of minutes before sufficient squitter
+        meesages are received to populate all the ground station icons.
+        
+        Small screens (laptops): because the area available for the waterfall is smaller than
+        ever use the 'x' and 'y' keys to hide the various control panels and label bars.
+        Click the "2" button at upper right to restore the map zoom/positioning.
+        The "split" show menu option lets you view the map ans a small message window simultaneously.
+        When you specify a band or frequency as an HFDL extension URL parameter EiBi labels
+        and band zooming are automatically selected. No need to specify "dx=none,hfdl" anymore.
+        
+        The Kiwi icon shown when the "Show Kiwi" button is pressed does NOT reveal the precise
+        location of the Kiwi. The lat/lon is rounded to the nearest 2 degrees which is approx.
+        200 km of latitude and 100 - 200 km of longitude depending on the latitude location
+        (recall that latitude lines converge at the poles). The purpose of showing the Kiwi
+        location is to help understand what propagation might be in effect given the time-of-day
+        at the Kiwi and transmission frequencies of the ground stations.
+        
+        No aircraft flight plotting on the map yet.
+
 v1.476  November 18, 2021
     HFDL extension improvements:
         From dumphfdl: Added RSSI, noise floor, SNR estimate to message header.

@@ -38,7 +38,7 @@
 #   // from https://github.com/windycom/leaflet-kml
 #   'pkgs_maps/leaflet/js/L.KML.js',
 #
-#   'pkgs_maps/leaflet/js/Zoom_TDoA.js',
+#   'pkgs_maps/leaflet/js/Zoom_Kiwi.js',
 # ],
 #
 #

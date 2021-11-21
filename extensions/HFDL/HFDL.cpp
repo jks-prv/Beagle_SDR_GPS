@@ -239,6 +239,12 @@ bool hfdl_msgs(char *msg, int rx_chan)
 		return true;
 	}
 	
+	if (strcmp(msg, "SET send_lowres_latlon") == 0) {
+	    if (gps.lowres_lat != 0 || gps.lowres_lon != 0)
+            ext_send_msg_encoded(rx_chan, false, "EXT", "lowres_latlon", "[%d,%d]", gps.lowres_lat, gps.lowres_lon);
+		return true;
+	}
+	
 	tid_t tid;
 	if (sscanf(msg, "SET input_tid=%d", &tid) == 1) {
 	    e->input_tid = tid;

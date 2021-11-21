@@ -590,6 +590,11 @@ function time_display_setup(ext_name_or_id)
 	time_display(time_display_current);
 }
 
+function time_display_height()
+{
+   return 80;
+}
+
 function time_display_width()
 {
    return 200;

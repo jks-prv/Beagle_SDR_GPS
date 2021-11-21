@@ -4,7 +4,8 @@
 var hfdl = {
    ext_name: 'HFDL',    // NB: must match HFDL.cpp:hfdl_ext.name
    first_time: true,
-   dataH: 300,
+   dataH: 445,
+   dataW: 1024,
    ctrlW: 600,
    ctrlH: 185,
    freq: 0,
@@ -16,11 +17,20 @@ var hfdl = {
    using_default: false,
    double_fault: false,
 
-   bf:   [    4,     5,     6,     8,    10,    11,     13,     15,    17,    21,    23 ],
-   bf_s: [  '3', '4.6', '5.5', '6.5', '8.9',  '10', '11.3', '13.3',  '15',  '18',  '22' ],
-   bf_z: [    4,     9,     6,     7,     7,     8,      7,      8,     8,     8,     8 ],
-   bf_c: [ 3500,  4670,  5600,  6625,  8900, 10065,  11290,  13310, 15020, 17945, 21965 ],
+   bf_cf:  [ 3500,  4670,  5600,  6625,  8900, 10065,  11290,  13310, 15020, 17945, 21965 ],
+   bf_z:   [    4,     9,     6,     7,     7,     8,      7,      8,     8,     8,     8 ],
+   bf:     [],
+   bf_gs:  {},
+   bf_color: [
+      'pink', 'lightCoral', 'lightSalmon', 'gold', 'yellow', 'yellowGreen', 'lime', 'cyan', 'deepSkyBlue', 'lavender', 'violet'
+   ],
    
+   MSGS: 0,
+   MAP: 1,
+   SPLIT: 2,
+   show: 0,
+   show_s: [ 'messages', 'map', 'split' ],
+
    ALL: 0,
    DX: 1,
    SQUITTER: 2,
@@ -39,6 +49,19 @@ var hfdl = {
    menu_s: [ ],
    menus: [ ],
    menu_sel: '',
+   
+   // map
+   cur_map: null,
+   map_layers: [],
+   hosts_dither: [],
+   init_latlon: [28, 15],
+   init_zoom: 2,
+   mapZoom_nom: 17,
+   hosts_clusterer: null,
+   refs_clusterer: null,
+   heatmap_visible: true,
+   show_hosts: true,
+   show_refs: true,
 
    // must set "remove_returns" so output lines with \r\n (instead of \n alone) don't produce double spacing
    console_status_msg_p: { scroll_only_at_bottom: true, process_return_alone: false, remove_returns: true, ncol: 135 }
@@ -81,8 +104,27 @@ function hfdl_recv(data)
 		switch (param[0]) {
 
 			case "ready":
-				hfdl_controls_setup();
+				kiwi_load_js(['pkgs/js/sprintf/sprintf.js']);
+				kiwi_load_js_dir('pkgs_maps/', ['pkgs_maps.js', 'pkgs_maps.css'], 'hfdl_controls_setup');
 				break;
+
+			case "lowres_latlon":
+			   var latlon = kiwi_decodeURIComponent('', param[1]);
+			   if (dbgUs) console.log('lowres_latlon='+ latlon);
+			   latlon = JSON.parse(latlon);
+
+            var kiwi_icon =
+               L.icon({
+                  iconUrl: 'kiwi/gfx/kiwi-with-headphones.51x67.png',
+                  iconAnchor: [25, 33]
+               });
+
+            var kiwi_mkr = L.marker(latlon, { 'icon':kiwi_icon, 'opacity':1.0 });
+            //console.log(kiwi_mkr);
+            kiwi_mkr.addTo(hfdl.cur_map);
+            w3_add(kiwi_mkr._icon, 'id-hfdl-kiwi-icon w3-hide');
+            kiwi_mkr._icon.style.zIndex = 99999;
+			   break;
 
 			case "bar_pct":
 			   if (hfdl.testing) {
@@ -112,71 +154,89 @@ function hfdl_recv(data)
             if (!hfdl.uplink && x[1].startsWith('Uplink')) break;
             if (!hfdl.downlink && x[1].startsWith('Downlink')) break;
 
-			   if (hfdl.dsp != hfdl.ALL) {
-               x.forEach(function(a, i) { x[i] = a.trim(); });
+            x.forEach(function(a, i) { x[i] = a.trim(); });
 
-               switch (hfdl.dsp) {
-               
-                  case hfdl.DX:
-                     s = x[0] +'\n'+ x[1].slice(0,-1) +' | '+ x[2];
+            if (x[3].startsWith('Squitter')) {
+               x.forEach(function(a, i) {
+                  if (a.startsWith('ID:')) {
+                     id = a.split(': ')[1];
+                  } else
+                  if (a.startsWith('Frequencies in use:')) {
+                     a = a.split(': ')[1];
+                     if (hfdl.dsp == hfdl.SQUITTER) s += id +': '+ a +'\n';
+                     var f = a.split(', ');
+                     hfdl_update_AFT(id.split(', ')[1], f);
+                  }
+               });
+               //hfdl_update_AFT('New Zealand', [ '6535.0', '5583.0' ]);
+               //hfdl_update_AFT('Alaska', [ '5529.0' ]);
+               //hfdl_update_AFT('South Africa', [ '5529.0' ]);
+               hfdl_update_AFT('Ireland', [ '10081.0' ]);
+            }
 
-                     if (x[3].startsWith('Squitter')) {
-                        s += ' | Squitter: ';
-                        var first = true;
-                        x.forEach(function(s1, i) {
-                           if (i <= 3 || !s1.startsWith('ID:')) return;
-                           var a = s1.split(', ');
-                           if (a.length < 2 || a[1] == '') return;
-                           s += (first? '' : ', ') + a[1];
-                           first = false;
-                        });
-                        s += '\n';
-                        break;
-                     }
+            switch (hfdl.dsp) {
+            
+               case hfdl.ALL:
+                  break;
+            
+               case hfdl.DX:
+                  s = x[0] +'\n'+ x[1].slice(0,-1) +' | '+ x[2];
 
-                     s += ' | '+ x[3];
-
-                     var found = false;
-                     var type_s = [ 'Logon request', 'Logon resume', 'Logon confirm', 'Unnumbered data', 'Unnumbered ack\'ed' ];
-                     type_s.forEach(function(type, i) {
-                        if (found || !x[4].includes(type)) return;
-                        found = true;
-                        s += ' | '+ type;
-                        x.forEach(function(s1, j) {
-                           //console.log(j +': '+ s1);
-                           if (j <= 4) return;
-                           var a = s1.split(':');
-                           var p0 = a[0];
-                           var p1 = (a[1] && a[1] != '')? a[1].slice(1) : null;
-                           if (p0 == 'ICAO' && p1) s += ' | ICAO '+ p1; else
-                           if (p0 == 'Flight ID' && p1) s += ' | Flight '+ p1; else
-                           if (p0 == 'Lat' && p1) s += ' | Lat '+ ((+p1).toFixed(4)); else
-                           if (p0 == 'Lon' && p1) s += ' | Lon '+ ((+p1).toFixed(4)); else
-                           if (p0 == 'ACARS') s += ' | ACARS...'; else
-                              ;
-                        });
+                  if (x[3].startsWith('Squitter')) {
+                     s += ' | Squitter: ';
+                     var first = true;
+                     x.forEach(function(s1, i) {
+                        if (i <= 3 || !s1.startsWith('ID:')) return;
+                        var a = s1.split(', ');
+                        if (a.length < 2 || a[1] == '') return;
+                        s += (first? '' : ', ') + a[1];
+                        first = false;
                      });
-
-                     if (!found) s += ' | '+ x[4];
                      s += '\n';
                      break;
-            
-                  case hfdl.SQUITTER:
-                     if (!x[3].startsWith('Squitter')) {
-                        s = '';
-                        break;
-                     }
-                     s = x[0] +'\nSquitter | '+ x[2] +'\n';
-                     var id = '';
-                     x.forEach(function(a, i) {
-                        if (a.startsWith('ID:')) {
-                           id = a.split(': ')[1];
-                        } else
-                        if (a.startsWith('Frequencies in use:'))
-                           s += id +': '+ a.split(': ')[1] +'\n';
+                  }
+
+                  s += ' | '+ x[3];
+
+                  var found = false;
+                  var type_s = [ 'Logon request', 'Logon resume', 'Logon confirm', 'Unnumbered data', 'Unnumbered ack\'ed' ];
+                  type_s.forEach(function(type, i) {
+                     if (found || !x[4].includes(type)) return;
+                     found = true;
+                     s += ' | '+ type;
+                     x.forEach(function(s1, j) {
+                        //console.log(j +': '+ s1);
+                        if (j <= 4) return;
+                        var a = s1.split(':');
+                        var p0 = a[0];
+                        var p1 = (a[1] && a[1] != '')? a[1].slice(1) : null;
+                        if (p0 == 'ICAO' && p1) s += ' | ICAO '+ p1; else
+                        if (p0 == 'Flight ID' && p1) s += ' | Flight '+ p1; else
+                        if (p0 == 'Lat' && p1) s += ' | Lat '+ ((+p1).toFixed(4)); else
+                        if (p0 == 'Lon' && p1) s += ' | Lon '+ ((+p1).toFixed(4)); else
+                        if (p0 == 'ACARS') s += ' | ACARS...'; else
+                           ;
                      });
-                     break;
-               }
+                  });
+
+                  if (!found) s += ' | '+ x[4];
+                  s += '\n';
+                  break;
+         
+               case hfdl.SQUITTER:
+                  if (!x[3].startsWith('Squitter')) { s = ''; break; }
+                  s = x[0] +'\nSquitter | '+ x[2] +'\n';
+                  var id = '';
+                  x.forEach(function(a, i) {
+                     if (a.startsWith('ID:')) {
+                        id = a.split(': ')[1];
+                     } else
+                     if (a.startsWith('Frequencies in use:')) {
+                        a = a.split(': ')[1];
+                        s += id +': '+ a +'\n';
+                     }
+                  });
+                  break;
             }
 
 				if (s != '') hfdl_decoder_output_chars(s);
@@ -200,13 +260,40 @@ function hfdl_decoder_output_chars(c)
 
 function hfdl_controls_setup()
 {
+   for (i = 0; i < hfdl.bf_cf.length; i++) {
+      hfdl.bf[i] = Math.floor(hfdl.bf_cf[i]/1000);
+   }
+
+   var wh = sprintf('width:%dpx; height:%dpx;', hfdl.dataW, hfdl.dataH);
+   var cbox = 'w3-label-inline w3-label-not-bold';
+   var cbox2 = 'w3-margin-left//'+ cbox;
+   
    var data_html =
       time_display_html('hfdl') +
 
-      w3_div('id-hfdl-data|left:150px; width:1044px; height:'+ px(hfdl.dataH) +'; overflow:hidden; position:relative; background-color:mediumBlue;',
-			w3_div('id-hfdl-console-msg w3-text-output w3-scroll-down w3-small w3-text-black|left: 10px; width:1024px; position:absolute; overflow-x:hidden;',
-			   '<pre><code id="id-hfdl-console-msgs"></code></pre>'
-			)
+      w3_div('id-hfdl-data w3-display-container|left:0px; '+ wh,
+
+         // re w3-hide: for map to initialize properly it must be initially selected, then it will be hidden if
+         // the 'map' URL param was not given.
+         w3_div('id-hfdl-msgs w3-hide|width:1024px; height:'+ px(hfdl.dataH) +';  z-index:1; overflow:hidden; position:absolute;',
+            w3_div(sprintf('id-hfdl-console-msg w3-text-output w3-scroll-down w3-small w3-text-black|width:%dpx; position:absolute; overflow-x:hidden;', 1024),
+               '<pre><code id="id-hfdl-console-msgs"></code></pre>'
+            )
+         ),
+         w3_div('|'+ wh +' position:absolute; z-index:0|id="id-hfdl-map"')
+      ) +
+      
+      w3_div('id-hfdl-options w3-display-right w3-text-white|top:230px; right:0px; width:200px; height:200px',
+         w3_text('w3-text-aqua w3-bold', 'HFDL options'),
+         w3_select('w3-margin-T-4 '+ hfdl.sfmt, '', 'show', 'hfdl.show', hfdl.show, hfdl.show_s, 'hfdl_show_cb'),
+         
+         w3_button('id-hfdl-show-kiwi w3-margin-T-10 class-button w3-grey w3-momentary', 'Show Kiwi', 'hfdl_show_kiwi_cb', 1),
+
+         w3_checkbox('w3-margin-T-10//'+ cbox, 'Show day/night', 'hfdl.day_night_visible', true, 'hfdl_day_night_visible_cb'),
+         w3_checkbox(cbox, 'Show graticule', 'hfdl.graticule_visible', true, 'hfdl_graticule_visible_cb'),
+
+         w3_checkbox('w3-margin-T-10 w3-disabled//'+ cbox, 'Show flights', 'hfdl.flights_visible', true, 'hfdl_flights_visible_cb'),
+         w3_checkbox(cbox, 'Show ground stations', 'hfdl.gs_visible', true, 'hfdl_gs_visible_cb')
       );
 
 	var controls_html =
@@ -248,7 +335,11 @@ function hfdl_controls_setup()
 	ext_panel_show(controls_html, data_html, null);
    ext_set_data_height(hfdl.dataH);
 	ext_set_controls_width_height(hfdl.ctrlW, hfdl.ctrlH);
+
 	time_display_setup('hfdl');
+	var el = w3_el('hfdl-time-display');
+	el.style.top = px(10);
+
 	hfdl_msg('w3-text-css-yellow', '&nbsp;');
 	HFDL_environment_changed( {resize:1, freq:1} );
    hfdl.save_agc_delay = ext_agc_delay(100);
@@ -262,6 +353,8 @@ function hfdl_controls_setup()
 	if (ext_nom_sample_rate() != 12000)
 	   w3_add('id-hfdl-test', 'w3-disabled');
 	
+	hfdl_map_init();
+
 	w3_do_when_rendered('id-hfdl-menus', function() {
       ext_send('SET reset');
 	   hfdl.double_fault = false;
@@ -270,56 +363,626 @@ function hfdl_controls_setup()
 	   } else {
          kiwi_ajax(hfdl.url, 'hfdl_get_systable_done_cb', 0, 10000);
       }
-      
-      //hfdl.watchdog = setInterval(function() { hfdl_watchdog(); }, 1000);
    });
 }
 
-function hfdl_watchdog()
+
+////////////////////////////////
+// map
+////////////////////////////////
+
+function hfdl_map_init()
 {
-   //console.log('hfdl tick');
+   var map_tiles;
+   var maxZoom = 19;
+	
+   // OSM raster tiles
+   map_tiles = function() {
+      maxZoom = 18;
+      return L.tileLayer(
+         'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+         tileSize: 256,
+         zoomOffset: 0,
+         attribution: '<a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
+         crossOrigin: true
+      });
+   }
+
+   var map = map_tiles('hybrid');
+   var m = L.map('id-hfdl-map',
+      {
+         maxZoom: maxZoom,
+         minZoom: 1,
+         doubleClickZoom: false,    // don't interfere with double-click of host/ref markers
+         zoomControl: false
+      }
+   ).setView(hfdl.init_latlon, hfdl.init_zoom);
+   
+   // NB: hack! jog map slightly to prevent grey, unfilled tiles after basemap change
+   m.on('baselayerchange', function(e) {
+      var map = e.target;
+      var center = map.getCenter();
+      hfdl_pan_zoom(map, [center.lat + 0.1, center.lng], -1);
+      hfdl_pan_zoom(map, [center.lat, center.lng], -1);
+   });
+
+   m.on('click', hfdl_click_info_cb);
+   m.on('moveend', function(e) { hfdl_pan_end(e); });
+   m.on('zoomend', function(e) { hfdl_zoom_end(e); });
+   
+   L.control.zoom_Kiwi( { position: 'topright', zoomNomText: '2', zoomNomLatLon: hfdl.init_latlon } ).addTo(m);
+   
+   map.addTo(m);
+   hfdl.cur_map = m;
+
+   var scale = L.control.scale()
+   scale.addTo(m);
+   scale.setPosition('bottomleft');
+
+   var terminator = new Terminator();
+   terminator.setStyle({ fillOpacity: 0.35 });
+   terminator.addTo(m);
+   setInterval(function() {
+      var t2 = new Terminator();
+      terminator.setLatLngs(t2.getLatLngs());
+      terminator.redraw();
+   }, 60000);
+   hfdl.day_night = terminator;
+   if (dbgUs) terminator.getPane()._jks = 'Terminator';
+
+   hfdl.graticule = L.latlngGraticule();
+   hfdl.graticule.addTo(m);
+   hfdl.map_layers.push(hfdl.graticule);
+
+   m.on('zoom', hfdl_info_cb);
+   m.on('move', hfdl_info_cb);
 }
+
+function hfdl_place_gs_marker(gs_n, map)
+{
+   var i;
+   var r = hfdl.refs[gs_n];
+   r.idx = gs_n;
+   r.id = r.name.split(', ')[1];
+   r.title = r.name;
+   
+   hfdl.bf_gs[r.id] = gs_n;
+   
+   var icon =
+      L.divIcon({
+         className: '',
+         iconAnchor: [12, 12],
+         tooltipAnchor: [0, 0],
+         html: ''
+      });
+   var marker = L.marker([r.lat, r.lon], { 'icon':icon, 'opacity':1.0 });
+
+   // when not using MarkerCluster add marker to map here
+   if (map) {
+      marker.kiwi_mkr_2_ref_or_host = r;     // needed before call to hfdl_style_marker()
+      //console.log(r);
+      var left = (r.id == 'New Zealand');
+      hfdl_style_marker(marker, r.idx, r.id, 'gs', map, left);
+   
+      var sign = left? 1:-1;
+      for (i = 0; i < hfdl.bf.length; i++) {
+         var xo = sign*19*i;
+         var icon =
+            L.divIcon({
+               className: 'id-hfdl-AFT id-hfdl-AFT-'+ gs_n +'-'+ i +' w3-hide',
+               iconAnchor: [sign* (left? 26:6) + xo, left? 33 : -13]
+               //, html: '&nbsp;'
+            });
+         var AFT_mkr = L.marker([r.lat, r.lon], { 'icon':icon, 'opacity':1.0 });
+         //console.log(AFT_mkr);
+         //console.log(AFT_mkr);
+         AFT_mkr.addTo(map);
+
+         var el = w3_el('id-hfdl-AFT-'+ gs_n +'-'+ i);
+         el.addEventListener('click', function(ev) {
+         
+            // match on freq and gs name both to distinguish multiple gs on same freq
+            //console.log('*click*');
+            //console.log(ev);
+            var mkr = ev.target;
+            //var cf = parseInt(mkr.textContent);
+            var cf = w3_match_wildcard(mkr, 'id-hfdl-AFT-f-');
+            if (cf == false) return;
+            cf = cf.split('f-')[1];
+            cf = cf.toLowerCase().replace(/_/g, ' ');
+            //console.log('cf='+ dq(cf));
+            var rv = hfdl_menu_match(null, cf);
+            if (rv.found_menu_match)
+               hfdl_pre_select_cb(rv.match_menu, rv.match_val, false);
+         });
+
+         //jks test
+         el.innerHTML = ((hfdl.bf[i].toString().length < 2)? '&nbsp;' : '') + hfdl.bf[i];
+         el.style.background = hfdl.bf_color[i];
+
+      }
+
+   }
+   
+   r.type_host = false;
+   r.click = hfdl_marker_click;
+   r.dblclick = hfdl_marker_dblclick;
+   marker.kiwi_mkr_2_ref_or_host = r;
+   return marker;
+}
+
+function hfdl_style_marker(marker, idx, name, type, map, left)
+{
+   marker.bindTooltip(name,
+      {
+         className:  'id-hfdl-'+ type +' id-hfdl-'+ type +'-'+ idx,
+         permanent:  true, 
+         direction:  left? 'left' : 'right'
+      }
+   );
+   
+   // Can only access element to add title via an indexed id.
+   // But element only exists as marker emerges from cluster.
+   // Fortunately we can use 'add' event to trigger insertion of title.
+   //console.log('style');
+   //console.log(marker);
+   marker.on('add', function(ev) {
+      var rh = ev.sourceTarget.kiwi_mkr_2_ref_or_host;
+      //console.log('.on '+ type +' '+ rh.idx);
+      //console.log(ev);
+      //console.log('ADD '+ (rh.selected? 1:0) +' #'+ rh.idx +' '+ rh.id +' host='+ rh.type_host);
+      
+      // sometimes multiple instances exist, so iterate to catch them all
+      w3_iterate_classname('id-hfdl-'+ type +'-'+ rh.idx,
+         function(el) {
+            if (el) {
+               //console.log(el);
+               if (rh.type_host) {
+                  if (rh.selected) w3_color(el, 'black', 'yellow'); else w3_color(el, 'white', 'blue');
+               }
+               el.title = rh.title;
+               el.kiwi_mkr_2_ref_or_host = rh;
+               
+            /*
+               el.addEventListener('click', function(ev) {
+                  //console.log('*click*');
+                  //console.log(ev.target);
+                  hfdl_marker_click(ev.target);
+               });
+               el.addEventListener('dblclick', function(ev) {
+                  hfdl_marker_dblclick(ev.target);
+               });
+               el.addEventListener('mouseenter', function(ev) {
+                  //console.log('tooltip mouseenter');
+                  //console.log(ev);
+                  if (!rh.selected) w3_color(el, 'black', 'yellow')
+               });
+               el.addEventListener('mouseleave', function(ev) {
+                  //console.log('tooltip mouseleave');
+                  //console.log(ev);
+                  if (!rh.selected) rh.type_host? w3_color(el, 'white', 'blue') : w3_color(el, 'black', 'lime');
+               });
+            */
+            }
+         }
+      );
+   });
+   
+   // only add to map in cases where L.markerClusterGroup() is not used
+   if (map) {
+      //console.log(marker);
+      marker.addTo(map);
+      hfdl.map_layers.push(marker);
+      //console.log('marker '+ name +' x,y='+ map.latLngToLayerPoint(marker.getLatLng()));
+   }
+}
+
+function hfdl_freq_2_band(f)
+{
+   var b = Math.floor((+f)/1000);
+   if (b == 2) b = 3;
+   return b;
+}
+
+function hfdl_update_AFT(gs, freqs)
+{
+   var i;
+   if (dbgUs) console.log('AFT: '+ gs);
+   var left = (gs == 'New Zealand');
+   if (!left) freqs.sort(function(a,b) { return parseFloat(a) - parseFloat(b); });
+   if (dbgUs) console.log(freqs);
+   var gs_n = hfdl.bf_gs[gs];
+   var hi = 0;
+   freqs.forEach(function(s, i) {
+      var el = w3_el('id-hfdl-AFT-'+ gs_n +'-'+ i);
+      var b = hfdl_freq_2_band(s);
+      el.innerHTML = ((b.toString().length < 2)? '&nbsp;' : '') + b;
+      w3_remove_wildcard(el, 'id-hfdl-AFT-f-');
+      //console.log(gs +'-'+ i +' <'+ s +'> '+ typeof(s));
+      w3_add(el, 'id-hfdl-AFT-f-'+ (+s).toFixed(0) +'_'+ gs.replace(/ /g, '_'));
+
+      w3_obj_enum(hfdl.bf,
+         function(key, i, o){
+            //console.log('AFT: key='+ key +' i='+ i);
+            //console.log(o);
+            el.style.background = hfdl.bf_color[i];
+         },
+         { value_match: b }
+      );
+      w3_remove(el, 'w3-hide');
+      hi = i+1;
+   });
+   for (i = hi; i < hfdl.bf_cf.length; i++) w3_add('id-hfdl-AFT-'+ gs_n +'-'+ i, 'w3-hide');
+}
+
+function hfdl_show_kiwi_cb(path, idx, first)
+{
+   //console.log('hfdl_show_kiwi_cb idx='+ idx +' first='+ first);
+   idx = +idx;
+   var show = !idx;
+   w3_color(path, show? 'lime':'white');
+   
+   //console.log('hfdl_show_kiwi_cb gs_visible='+ hfdl.gs_visible +' show='+ show);
+   if (hfdl.gs_visible) {
+      // due to what seems to be a z-index bug, hide all tooltips so kiwi icon is on top
+      w3_hide2('leaflet-tooltip-pane', show);
+   } else {
+      // if gs are set not visible then must temp make markers visible since kiwi icon is a marker
+      w3_hide2('leaflet-marker-pane', !show);
+   }
+   w3_hide2('id-hfdl-kiwi-icon', !show);
+}
+
+function hfdl_day_night_visible_cb(path, checked, first)
+{
+   if (first) return;
+   if (!hfdl.day_night) return;
+   var checked = w3_checkbox_get(path);
+   if (checked) {
+      hfdl.day_night.addTo(hfdl.cur_map);
+      hfdl.map_layers.push(hfdl.day_night);
+   } else {
+      hfdl.day_night.remove();
+   }
+}
+
+function hfdl_graticule_visible_cb(path, checked, first)
+{
+   //console.log('hfdl_graticule_visible_cb checked='+ checked +' first='+ first);
+   if (first) return;
+   if (!hfdl.graticule) return;
+   checked = w3_checkbox_get(path);
+   if (checked) {
+      hfdl.graticule.addTo(hfdl.cur_map);
+      hfdl.map_layers.push(hfdl.graticule);
+   } else {
+      hfdl.graticule.remove();
+   }
+}
+
+function hfdl_flights_visible_cb(path, checked, first)
+{
+   //console.log('hfdl_flights_visible_cb checked='+ checked +' first='+ first);
+   if (first) return;
+return;
+   if (!hfdl.graticule) return;
+   checked = w3_checkbox_get(path);
+   if (checked) {
+      hfdl.graticule.addTo(hfdl.cur_map);
+      hfdl.map_layers.push(hfdl.graticule);
+   } else {
+      hfdl.graticule.remove();
+   }
+}
+
+function hfdl_gs_visible_cb(path, checked, first)
+{
+   //console.log('hfdl_gs_visible_cb checked='+ checked +' first='+ first);
+   //if (first) return;
+   hfdl.gs_visible = checked;
+	w3_hide2('leaflet-marker-pane', !checked);
+	w3_hide2('leaflet-tooltip-pane', !checked);
+}
+
+function hfdl_reset_spiderfied()
+{
+   //console.log('hfdl_reset_spiderfied '+ (hfdl.ii++) +' spiderfied='+ hfdl.spiderfied);
+   if (hfdl.spiderfied) hfdl.spiderfied.unspiderfy();
+   hfdl.spiderfied = false;
+}
+
+function hfdl_click_info_cb(ev)
+{
+   hfdl_reset_spiderfied();
+}
+
+function hfdl_zoom_end(e)
+{
+   hfdl_reset_spiderfied();
+
+   var m = hfdl.cur_map;
+
+   for (var i = 0; i < hfdl.hosts_dither.length; i++) {
+      var h = hfdl.hosts_dither[i];
+      var pt = m.latLngToLayerPoint(L.latLng(h.lat, h.lon));
+      pt.y -= h.dither_idx * 20;
+      h.mkr.setLatLng(m.layerPointToLatLng(pt));
+   }
+
+   hfdl_ref_marker_offset(true);
+}
+
+function hfdl_pan_end(e)
+{
+   hfdl_reset_spiderfied();
+}
+
+function hfdl_lat(c)
+{
+   return c.lat;
+}
+
+function hfdl_lon(c)
+{
+   return c.lng;
+}
+
+function hfdl_update_link()
+{
+}
+
+function hfdl_info_cb()
+{
+   var m = hfdl.cur_map;
+   var c = m.getCenter();
+   w3_innerHTML('id-hfdl-info', 'map center: '+ hfdl_lat(c).toFixed(2) +', '+ hfdl_lon(c).toFixed(2) +' z'+ m.getZoom());
+   hfdl_update_link();
+}
+
+function hfdl_pan_zoom(map, latlon, zoom)
+{
+   //console.log('hfdl_pan_zoom z='+ zoom);
+   //console.log(map);
+   //console.log(latlon);
+   //console.log(zoom);
+   if (latlon == null) latlon = map.getCenter();
+   if (zoom == -1) zoom = map.getZoom();
+   map.setView(latlon, zoom, { duration: 0, animate: false });
+}
+
+function hfdl_quick_zoom_cb(path, idx, first)
+{
+   if (first) return;
+   var q = hfdl.quick_zoom[+idx];
+
+   // NB: hack! jog map slightly to prevent grey, unfilled tiles (doesn't always work?)
+   hfdl_pan_zoom(hfdl.cur_map, [q.lat + 0.1, q.lon], q.z);
+   hfdl_pan_zoom(hfdl.cur_map, [q.lat, q.lon], -1);
+}
+
+function hfdl_ref_marker_offset(doOffset)
+{
+   if (!hfdl.known_location_idx) return;
+   var r = hfdl.refs[hfdl.known_location_idx];
+
+   //if (doOffset) {
+   if (false) {   // don't like the way this makes the selected ref marker inaccurate until zoom gets close-in
+      // offset selected reference so it doesn't cover solo (unclustered) nearby reference
+      var m = hfdl.cur_map;
+      var pt = m.latLngToLayerPoint(L.latLng(r.lat, r.lon));
+      pt.x += 20;    // offset in x & y to better avoid overlapping
+      pt.y -= 20;
+      r.mkr.setLatLng(m.layerPointToLatLng(pt));
+   } else {
+      // reset the offset
+      r.mkr.setLatLng([r.lat, r.lon]);
+   }
+}
+
+function hfdl_marker_click(mkr)
+{
+   //console.log('hfdl_marker_click');
+
+   var r = mkr.kiwi_mkr_2_ref_or_host;
+   var t = r.title.replace('\n', ' ');
+   var loc = r.lat.toFixed(2) +' '+ r.lon.toFixed(2) +' '+ r.id +' '+ t + (r.f? (' '+ r.f +' kHz'):'');
+   w3_set_value('id-hfdl-known-location', loc);
+   if (hfdl.known_location_idx) {
+      var rp = hfdl.refs[hfdl.known_location_idx];
+      rp.selected = false;
+      console.log('ref_click: deselect ref '+ rp.id);
+      hfdl_ref_marker_offset(false);
+   }
+   hfdl.known_location_idx = r.idx;
+   r.selected = true;
+   console.log('ref_click: select ref '+ r.id);
+   hfdl_rebuild_stations();
+   if (r.f)
+      ext_tune(r.f, 'iq', ext_zoom.ABS, r.z, -r.p/2, r.p/2);
+   hfdl_update_link();
+   hfdl_ref_marker_offset(true);
+}
+
+// double-click ref marker on any map to zoom in/out
+function hfdl_marker_dblclick(mkr)
+{
+   //console.log('hfdl_marker_dblclick');
+   var r = mkr.kiwi_mkr_2_ref_or_host;
+   var map = hfdl.cur_map;
+   if (map.getZoom() >= (r.mz || hfdl.mapZoom_nom)) {
+      if (hfdl.last_center && hfdl.last_zoom) {
+         //console.log('hfdl_marker_dblclick LAST l/l='+ hfdl_lat(hfdl.last_center) +'/'+ hfdl_lon(hfdl.last_center) +' z='+ hfdl.last_zoom);
+         hfdl_pan_zoom(map, hfdl.last_center, hfdl.last_zoom);
+      } else {
+         hfdl_pan_zoom(map, hfdl.init_latlon, hfdl.init_zoom);
+      }
+   } else {
+      hfdl.last_center = map.getCenter();
+      hfdl.last_zoom = map.getZoom();
+      var zoom = r.mz || hfdl.mapZoom_nom;
+      //console.log('hfdl_marker_dblclick REF l/l='+ r.lat +'/'+ r.lon +' mz='+ r.mz +' z='+ zoom);
+      hfdl_pan_zoom(map, [r.lat, r.lon], zoom);
+   }
+}
+
+function hfdl_map_stations()
+{
+   hfdl.refs = kiwi_deep_copy(hfdl.stations.stations);    // FIXME refs => stations
+   var markers = [];
+   hfdl.refs.forEach(function(r, i) {
+      //r.id_lcase = r.id.toLowerCase();
+      var mkr = hfdl_place_gs_marker(i, hfdl.cur_map);
+      markers.push(mkr);
+      r.mkr = mkr;
+   });
+   hfdl.gs_markers = markers;
+   ext_send('SET send_lowres_latlon');
+
+   hfdl_rebuild_stations();
+}
+
+function hfdl_rebuild_stations(opts)
+{
+//jks
+return;
+   if (!hfdl.refs) return;
+   
+   // remove previous
+   if (hfdl.cur_ref_markers) {
+      hfdl.gs_markers.forEach(function(m) {
+         m.unbindTooltip(); m.remove(); m.off();
+      });
+      if (hfdl.refs_clusterer) hfdl.refs_clusterer.clearLayers();
+   }
+
+   // build new list
+//jks
+/*
+   var ids = [];
+   hfdl.ref_ids.forEach(function(id) {
+      if (w3_checkbox_get('hfdl.refs_'+ id))
+         ids.push(id);
+   });
+*/
+   //console.log('hfdl_rebuild_stations REFS <'+ ids +'> show_refs='+ hfdl.show_refs +' opts=...');
+   //console.log(opts);
+
+   // make ref clusters contain only un-selected ref markers
+   hfdl.cur_ref_markers = [];
+   var show_refs = (opts == undefined)? hfdl.show_refs : opts.show;
+   if (show_refs) {
+      for (var i = hfdl.FIRST_REF; i < hfdl.refs.length-1; i++) {
+         var r = hfdl.refs[i];
+         var done = false;
+         //console.log(r.r +' '+ r.id);
+      if (1) {
+         hfdl_style_marker(r.mkr, r.idx, r.id, 'ref', hfdl.cur_map);
+      } else {
+         ids.forEach(function(id) {
+            if (r.r.includes(id) && !done) {
+               //jks
+               //if (r.selected) {
+               if (1 || r.selected) {
+                  //console.log('selected marker: '+ r.id);
+                  hfdl_style_marker(r.mkr, r.idx, r.id, 'ref', hfdl.cur_map);
+               } else {
+                  hfdl_style_marker(r.mkr, r.idx, r.id, 'ref');
+                  hfdl.cur_ref_markers.push(r.mkr);
+               }
+               done = true;
+            }
+         });
+      }
+      }
+   }
+   //console.log('hfdl_rebuild_stations cur_ref_markers='+ hfdl.cur_ref_markers.length);
+//jks
+return;
+
+   var mc = L.markerClusterGroup({
+      maxClusterRadius: hfdl.prev_ui? 30:80,
+      spiderLegPolylineOptions: { weight: 1.5, color: 'white', opacity: 1.0 },
+      iconCreateFunction: function(mc) {
+         return new L.DivIcon({
+            html: '<div><span>' + mc.getChildCount() + '</span></div>',
+            className: 'marker-cluster id-hfdl-marker-cluster-refs',
+            iconSize: new L.Point(40, 40)
+         });
+      }
+   });
+   mc.addLayers(hfdl.cur_ref_markers);
+   if (hfdl.prev_ui) {
+      mc.on('clustermouseover', function(a) { hfdl_create_cluster_list(a.layer); });
+   } else {
+      mc.on('clustermouseover', function (a) {
+         //console.log('REFS clustermouseover '+ (hfdl.ii++) +' spiderfied='+ hfdl.spiderfied);
+         if (hfdl.spiderfied) {
+            if (hfdl.spiderfied == a.layer) {
+               //console.log('REFS clustermouseover '+ (hfdl.ii++) +' SAME');
+               return;
+            }
+            hfdl.spiderfied.unspiderfy();
+            hfdl.spiderfy_deferred = a.layer;
+         } else {
+            a.layer.spiderfy();
+            hfdl.spiderfied = a.layer;
+         }
+      });
+      mc.on('unspiderfied', function(a) {
+         //console.log('REFS unspiderfied '+ (hfdl.ii++) +' deferred='+ hfdl.spiderfy_deferred);
+         if (hfdl.spiderfy_deferred) {
+            hfdl.spiderfy_deferred.spiderfy();
+            hfdl.spiderfied = hfdl.spiderfy_deferred;
+            hfdl.spiderfy_deferred = false;
+         } else {
+            hfdl.spiderfied = false;
+         }
+      });
+      //mc.on('clustermouseout', function(a) { console.log('REFS mouse out '+ (hfdl.ii++)); });
+   }
+   hfdl.cur_map.addLayer(mc);
+   hfdl.refs_clusterer = mc;
+}
+
+////////////////////////////////
+// end map
+////////////////////////////////
+
 
 function hfdl_menu_match(m_freq, m_str)
 {
    var rv = { found_menu_match: false, match_menu: 0, match_val: 0 };
    var menu = 'hfdl.menu1';   // limit matching to "Bands" menu
-   var look_for_first_entry = false;
    var match = false;
 
-   if (dbgUs) console.log('CONSIDER '+ menu +' -----------------------------------------');
+   if (dbgUs) console.log('CONSIDER '+ menu +' '+ dq(m_str) +' -----------------------------------------');
    w3_select_enum(menu, function(option, j) {
+      if (option.disabled) return;
       var val = +option.value;
       if (rv.found_menu_match || val == -1) return;
       var menu_f = parseFloat(option.innerHTML);
       var menu_s = option.innerHTML.toLowerCase();
-      if (dbgUs) console.log('CONSIDER '+ val +' '+ option.innerHTML);
+      if (dbgUs) console.log('CONSIDER '+ val +' '+ dq(option.innerHTML));
 
-      if (look_for_first_entry) {
-         // find first single frequency entry by
-         // skipping disabled entries from multi-line net name
-         if (option.disabled) return;
-         match = true;
+      if (isNumber(m_freq) && isNumber(menu_f)) {
+         if (menu_f == m_freq) {
+            if (dbgUs) console.log('MATCH num: '+ dq(menu_s) +'['+ j +']');
+            match = true;
+         }
       } else {
-         if (isNumber(menu_f)) {
-            if (menu_f == m_freq) {
-               if (dbgUs) console.log('MATCH num: '+ menu_s +'['+ j +']');
-               match = true;
-            }
-         } else {
-            if (menu_s.includes(m_str)) {
-               look_for_first_entry = true;
-               if (dbgUs) console.log('MATCH str: '+ menu_s +'['+ j +'] BEGIN look_for_first_entry');
-               return;
-            }
+         if (dbgUs) console.log('menu_s '+ dq(menu_s) +' m_str '+ dq(m_str) +' '+ (menu_s.includes(m_str)? 'T':'F'));
+         if (menu_s.includes(m_str)) {
+            if (dbgUs) console.log('MATCH str: '+ dq(menu_s) +'['+ j +']');
+            match = true;
          }
       }
 
       if (match) {
-         if (dbgUs) console.log('MATCH '+ val +' '+ option.innerHTML);
+         if (dbgUs) console.log('MATCH rv menu='+ menu +' val='+ val +' '+ dq(option.innerHTML));
          // delay call to hfdl_pre_select_cb() until other params processed below
          rv.match_menu = menu;
          rv.match_val = val;
+         rv.match_entry = option.innerHTML;
          rv.found_menu_match = true;
       }
    });
@@ -356,7 +1019,7 @@ function hfdl_get_systable_done_cb(stations)
       console.log(stations);
       
       // load the default station list from a file embedded with the extension (should always succeed)
-      var url = kiwi_url_origin() + '/extensions/HFDL/systable.cjson';
+      var url = kiwi_url_origin() + '/extensions/HFDL/systable.backup.cjson';
       console.log('hfdl_get_systable_done_cb: using default station list '+ url);
       hfdl.using_default = true;
       hfdl.double_fault = true;
@@ -370,6 +1033,7 @@ function hfdl_get_systable_done_cb(stations)
       return;
    }
    hfdl.stations = stations;
+   hfdl_map_stations();
    hfdl_render_menus();
 
    hfdl.url_params = ext_param();
@@ -396,10 +1060,16 @@ function hfdl_get_systable_done_cb(stations)
          if (w3_ext_param('help', a).match) {
             extint_help_click();
          } else
+         if (w3_ext_param('map', a).match) {
+            hfdl.show = hfdl.MAP;
+         } else
+         if (w3_ext_param('split', a).match) {
+            hfdl.show = hfdl.SPLIT;
+         } else
          if ((r = w3_ext_param('display', a)).match) {
             if (isNumber(r.num)) {
                var idx = w3_clamp(r.num, 0, hfdl.dsp_s.length-1, 0);
-               console.log('display '+ r.num +' '+ idx);
+               //console.log('display '+ r.num +' '+ idx);
                hfdl_display_cb('id-hfdl.dsp', idx);
             }
          } else
@@ -415,9 +1085,19 @@ function hfdl_get_systable_done_cb(stations)
       });
       
       if (rv.found_menu_match) {
+         // select band first if freq is not already a band specifier
+         var f = rv.match_entry.split(' ')[0];
+         if (f.length > 2) {
+            var b = hfdl_freq_2_band(f);
+            var rv2 = hfdl_menu_match(b, b.toString());
+            hfdl_pre_select_cb(rv2.match_menu, rv2.match_val, false);
+         }
+         
          hfdl_pre_select_cb(rv.match_menu, rv.match_val, false);
       }
    }
+
+   setTimeout(function() { hfdl_show_cb('id-hfdl.show', hfdl.show); }, 1000);
 
    if (do_test) hfdl_test_cb('', 1);
    if (dbgUs) console.log(hfdl.stations);
@@ -433,7 +1113,7 @@ function hfdl_render_menus()
       //console.log(f);
       var f_n = parseInt(f);
       for (i = 0; i < hfdl.bf.length; i++) {
-         if (f_n < hfdl.bf[i] * 1e3) {
+         if (f_n < (hfdl.bf[i] + 1) * 1000) {
             band[i].push(f);
             break;
          }
@@ -494,7 +1174,7 @@ function hfdl_render_menus()
    for (i = 0; i < hfdl.bf.length; i++) {
       band[i].sort(function(a,b) { return parseInt(b) - parseInt(a); });
       var o = {};
-      o.name = 'x, '+ hfdl.bf_s[i] + ' MHz';
+      o.name = 'x, '+ hfdl.bf[i] + ' MHz';
       o.frequencies = [ i ];
       band[i].forEach(function(f) { o.frequencies.push(f); });
       bands[i.toString()] = o;
@@ -602,7 +1282,7 @@ function hfdl_pre_select_cb(path, val, first)
          
          if (o2 < hfdl.bf.length) {
             var znew = hfdl.bf_z[o2];
-            var cf = hfdl.bf_c[o2];
+            var cf = hfdl.bf_cf[o2];
             //console.log('$show band '+ o2 +' cf='+ cf +' z='+ znew);
             if (zoom_level == znew)
                zoom_step(ext_zoom.OUT);   // force ext_tune() to re-center waterfall on cf
@@ -648,6 +1328,22 @@ function hfdl_clear_button_cb(path, val, first)
    kiwi_output_msg('id-hfdl-console-msgs', 'id-hfdl-console-msg', hfdl.console_status_msg_p);
    hfdl.log_txt = '';
    hfdl_test_cb('', 0);
+}
+
+function hfdl_show_cb(path, idx, first)
+{
+	//console.log('hfdl_show_cb: idx='+ idx +' first='+ first);
+	if (first) return;
+   idx = +idx;
+   hfdl.show = idx;
+	w3_set_value(path, idx);
+	w3_hide2('id-hfdl-msgs', idx == hfdl.MAP);
+	w3_hide2('id-hfdl-map', idx == hfdl.MSGS);
+	var splitH = 150;
+	w3_el('id-hfdl-msgs').style.top = px((idx == hfdl.SPLIT)? (hfdl.dataH - splitH) : 0);
+	w3_el('id-hfdl-msgs').style.height = px((idx == hfdl.SPLIT)? splitH : hfdl.dataH);
+	if (idx == hfdl.SPLIT)
+	   w3_scrollDown('id-hfdl-console-msg');
 }
 
 function hfdl_display_cb(path, idx, first)
@@ -726,9 +1422,20 @@ function HFDL_environment_changed(changed)
 
    if (changed.resize) {
       var el = w3_el('id-hfdl-data');
-      var left = (window.innerWidth - 1024 - time_display_width()) / 2;
+      if (!el) return;
+      var left = Math.max(0, (window.innerWidth - hfdl.dataW - time_display_width()) / 2);
+      //console.log('hfdl_resize wiw='+ window.innerWidth +' hfdl.dataW='+ hfdl.dataW +' time_display_width='+ time_display_width() +' left='+ left);
       el.style.left = px(left);
+      return;
    }
+
+   /*
+      if (changed.resize) {
+         var el = w3_el('id-hfdl-data');
+         var left = (window.innerWidth - 1024 - time_display_width()) / 2;
+         el.style.left = px(left);
+      }
+   */
 }
 
 function HFDL_blur()
@@ -745,25 +1452,28 @@ function HFDL_help(show)
          w3_text('w3-medium w3-bold w3-text-aqua', 'HFDL decoder help') +
          w3_div('w3-margin-T-8 w3-scroll-y|height:90%',
             w3_div('w3-margin-R-8',
-               'Periodic downloading of the HFDL message log to a file can be specified. Adjust your browser settings so these files are downloaded ' +
+               'Periodic downloading of the HFDL message log to a file can be specified via the <i>log min</i> value. ' +
+               'Adjust your browser settings so these files are downloaded ' +
                'and saved automatically without causing a browser popup window for each download.' +
 
                '<br><br>URL parameters: <br>' +
-               '<i>(menu match)</i> &nbsp; display:[012] &nbsp; scan[:<i>secs</i>] &nbsp; ' +
+               '<i>(menu match)</i> &nbsp; map|split &nbsp; display:[012] &nbsp; &nbsp; ' +
                'log_time:<i>mins</i> &nbsp; test' +
                '<br><br>' +
                'The first URL parameter can be a frequency entry from the "Bands" menu (e.g. "8977") or the ' +
-               'numeric part of the blue "full band" entry (e.g. "5.5" part of "5.5 MHz" entry). <br>' +
+               'numeric part of the blue "full band" entry (e.g. "5" part of "5 MHz" entry). <br>' +
+               '<i>map</i> will initially show the map instead of the message panel. ' +
+               '<i>split</i> will show both. <br>' +
                '[012] refers to the order of selections in the corresponding menu.' +
                '<br><br>' +
                'Keywords are case-insensitive and can be abbreviated. So for example these are valid: <br>' +
                '<i>ext=hfdl,8977</i> &nbsp;&nbsp; ' +
-               '<i>ext=hfdl,8977,d:1</i> &nbsp;&nbsp; <i>ext=hfdl,8977,l:10</i> &nbsp;&nbsp; <i>ext=hfdl,3</i> &nbsp;&nbsp; <i>ext=hfdl,5.5</i><br>' +
+               '<i>ext=hfdl,8977,d:1</i> &nbsp;&nbsp; <i>ext=hfdl,8977,l:10</i> &nbsp;&nbsp; <i>ext=hfdl,5,map</i><br>' +
                ''
             )
          );
 
-      confirmation_show_content(s, 610, 280);
+      confirmation_show_content(s, 610, 300);
       w3_el('id-confirmation-container').style.height = '100%';   // to get the w3-scroll-y above to work
    }
    return true;

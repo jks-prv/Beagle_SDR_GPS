@@ -96,6 +96,9 @@ static void get_TZ(void *param)
 			if (report) lprintf("TIMEZONE: no lat/lon available from admin public config, ipinfo or GPS\n");
 			goto retry;
 		}
+		
+		gps.lowres_lat = ((int) roundf(lat)) & ~1;
+		gps.lowres_lon = ((int) roundf(lon)) & ~1;
 	
 		#define TIMEZONE_DB_COM
 		#ifdef TIMEZONE_DB_COM
