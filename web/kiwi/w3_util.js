@@ -2617,8 +2617,23 @@ function w3_menu_popup(id, x, y)
    var el = w3_el(id);
 	if (x == -1) x = window.innerWidth/2;
 	if (y == -1) y = window.innerHeight/2;
-   el.style.top = px(y);
+
+	var slop = 16;
+	el.w3_realigned = false;
+	
+	if (x + el.clientWidth + slop > window.innerWidth) {
+	   x = window.innerWidth - el.clientWidth - slop;
+	   el.w3_realigned = true;
+	}
    el.style.left = px(x);
+
+	if (y + el.clientHeight + slop > window.innerHeight) {
+	   y = window.innerHeight - el.clientHeight - slop;
+	   el.w3_realigned = true;
+	}
+   el.style.top = px(y);
+   //console.log('w3_menu_popup NEW id='+ id +' x='+ x +' y='+ y);
+
    el.style.visibility = 'visible';
    el.w3_menu_x = x;
 
@@ -2631,10 +2646,16 @@ function w3_menu_popup(id, x, y)
 function w3int_menu_onclick(ev, id, cb)
 {
    //console.log('w3int_menu_onclick id='+ id +' cb='+ cb);
-   //if (ev != null) event_dump(ev, "MENU");
+   if (ev != null) event_dump(ev, "MENU");
    var el = w3_el(id);
-   el.style.visibility = 'hidden';
+   //console.log('w3int_menu_onclick realigned='+ el.w3_realigned);
+   if (el.w3_realigned) {
+      // ignore false click from menu re-alignment
+      el.w3_realigned = false;
+      return cancelEvent(ev);
+   }
 
+   el.style.visibility = 'hidden';
    window.removeEventListener("keyup", w3int_menu_close, false);
    window.removeEventListener("click", w3int_menu_close, false);
 
@@ -2644,6 +2665,7 @@ function w3int_menu_onclick(ev, id, cb)
       if (_id == '' || isNaN(idx)) _id = ev.target.parentNode.id;
       idx = +_id;
       if (_id == '' || isNaN(idx)) idx = -1;
+      //console.log('w3int_menu_onclick CALL idx='+ idx);
       w3_call(cb, idx, el.w3_menu_x);
    }
 
