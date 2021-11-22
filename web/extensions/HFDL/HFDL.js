@@ -22,7 +22,7 @@ var hfdl = {
    bf:     [],
    bf_gs:  {},
    bf_color: [
-      'pink', 'lightCoral', 'lightSalmon', 'gold', 'yellow', 'yellowGreen', 'lime', 'cyan', 'deepSkyBlue', 'lavender', 'violet'
+      'pink', 'lightCoral', 'lightSalmon', 'khaki', 'gold', 'yellowGreen', 'lime', 'cyan', 'deepSkyBlue', 'lavender', 'violet'
    ],
    
    MSGS: 0,
@@ -33,9 +33,10 @@ var hfdl = {
 
    ALL: 0,
    DX: 1,
-   SQUITTER: 2,
+   ACARS: 2,
+   SQUITTER: 3,
    dsp: 0,
-   dsp_s: [ 'all', 'DX', 'squitter' ],
+   dsp_s: [ 'all', 'DX', 'ACARS', 'squitter' ],
    uplink: true,
    downlink: true,
    
@@ -151,8 +152,10 @@ function hfdl_recv(data)
 			   var s = param[1];
             var x = kiwi_decodeURIComponent('', param[1]).split('\n');
             //console.log(x);
-            if (!hfdl.uplink && x[1].startsWith('Uplink')) break;
-            if (!hfdl.downlink && x[1].startsWith('Downlink')) break;
+            var uplink = x[1].startsWith('Uplink');
+            var downlink = x[1].startsWith('Downlink');
+            if (!hfdl.uplink && uplink) break;
+            if (!hfdl.downlink && downlink) break;
 
             x.forEach(function(a, i) { x[i] = a.trim(); });
 
@@ -171,7 +174,7 @@ function hfdl_recv(data)
                //hfdl_update_AFT('New Zealand', [ '6535.0', '5583.0' ]);
                //hfdl_update_AFT('Alaska', [ '5529.0' ]);
                //hfdl_update_AFT('South Africa', [ '5529.0' ]);
-               hfdl_update_AFT('Ireland', [ '10081.0' ]);
+               //hfdl_update_AFT('Ireland', [ '21949.0', '17922.0', '15025.0', '13321.0', '11384.0', '10081.0', '8942.0', '6532.0', '5547.0', '3455.0' ]);
             }
 
             switch (hfdl.dsp) {
@@ -198,29 +201,59 @@ function hfdl_recv(data)
 
                   s += ' | '+ x[3];
 
-                  var found = false;
+                  var found = false, acars = false;
+                  var ss = '', _type;
+                  var src = '';
                   var type_s = [ 'Logon request', 'Logon resume', 'Logon confirm', 'Unnumbered data', 'Unnumbered ack\'ed' ];
                   type_s.forEach(function(type, i) {
                      if (found || !x[4].includes(type)) return;
                      found = true;
-                     s += ' | '+ type;
+                     _type = type;
                      x.forEach(function(s1, j) {
                         //console.log(j +': '+ s1);
                         if (j <= 4) return;
                         var a = s1.split(':');
                         var p0 = a[0];
                         var p1 = (a[1] && a[1] != '')? a[1].slice(1) : null;
-                        if (p0 == 'ICAO' && p1) s += ' | ICAO '+ p1; else
-                        if (p0 == 'Flight ID' && p1) s += ' | Flight '+ p1; else
-                        if (p0 == 'Lat' && p1) s += ' | Lat '+ ((+p1).toFixed(4)); else
-                        if (p0 == 'Lon' && p1) s += ' | Lon '+ ((+p1).toFixed(4)); else
-                        if (p0 == 'ACARS') s += ' | ACARS...'; else
+                        var p2 = (a[2] && a[2] != '')? a[2].slice(1) : null;
+
+                        //if (p0 == 'ICAO' && p1) ss += ' | ICAO '+ p1; else
+                        if (p0 == 'Flight ID' && p1) ss += ' | Flight '+ p1; else
+                        if (p0 == 'Lat' && p1) ss += ' | Lat '+ ((+p1).toFixed(4)); else
+                        if (p0 == 'Lon' && p1) ss += ' | Lon '+ ((+p1).toFixed(4)); else
+                        if (p0 == 'ACARS') acars = 'ACARS data'; else
+                        if (p0 == 'Message') acars = 'ACARS message'; else
+                        if (uplink && p0 == 'Src GS') src = ' | '+ p1; else    // src is gs for uplinks
+                        if (downlink && p1 && p1.endsWith('Flight')) src = ' | Flight '+ p2; else
                            ;
                      });
                   });
 
-                  if (!found) s += ' | '+ x[4];
+                  if (found) s += ' | '+ (acars? (acars + src + ss) : (_type + ss)); else s += ' | '+ x[4];
                   s += '\n';
+                  break;
+         
+               case hfdl.ACARS:
+                  var s = '';
+                  var src = '';
+                  var accum_acars_msgs = false;
+                  var acars = '';
+                  x.forEach(function(s1, j) {
+                     //console.log('ACARS-'+ j +': '+ s1);
+                     var a = s1.split(':');
+                     var p0 = a[0];
+                     var p1 = (a[1] && a[1] != '')? a[1].slice(1) : null;
+                     var p2 = (a[2] && a[2] != '')? a[2].slice(1) : null;
+
+                     if (uplink && p0 == 'Src GS') src = p1; else    // src is gs for uplinks
+                     if (downlink && p1 && p1.endsWith('Flight')) src = 'Flight '+ p2; else
+                     if (p0 == 'Message') { s = x[0] +'\nACARS message from '+ src +'\n'; accum_acars_msgs = true; return; } else
+                     if (p0.startsWith('Media Advisory')) accum_acars_msgs = false;
+                     
+                     if (accum_acars_msgs && s1 != '')
+                        acars += ' '+ s1 +'\n';
+                  });
+                  if (acars != '') s += acars;
                   break;
          
                case hfdl.SQUITTER:
@@ -427,6 +460,7 @@ function hfdl_map_init()
       terminator.setLatLngs(t2.getLatLngs());
       terminator.redraw();
    }, 60000);
+   terminator._path.style.cursor = 'grab';
    hfdl.day_night = terminator;
    if (dbgUs) terminator.getPane()._jks = 'Terminator';
 
@@ -479,6 +513,15 @@ function hfdl_place_gs_marker(gs_n, map)
          AFT_mkr.addTo(map);
 
          var el = w3_el('id-hfdl-AFT-'+ gs_n +'-'+ i);
+         el.addEventListener('mouseenter', function(ev) {
+            var mkr = ev.target;
+            hfdl.saved_color = mkr.style.background;
+            mkr.style.background = 'yellow';
+         });
+         el.addEventListener('mouseleave', function(ev) {
+            var mkr = ev.target;
+            mkr.style.background = hfdl.saved_color;
+         });
          el.addEventListener('click', function(ev) {
          
             // match on freq and gs name both to distinguish multiple gs on same freq
@@ -492,8 +535,13 @@ function hfdl_place_gs_marker(gs_n, map)
             cf = cf.toLowerCase().replace(/_/g, ' ');
             //console.log('cf='+ dq(cf));
             var rv = hfdl_menu_match(null, cf);
-            if (rv.found_menu_match)
+            if (rv.found_menu_match) {
+               var b = hfdl_freq_2_band(parseInt(cf));
+               var rv2 = hfdl_menu_match(b, b.toString());
+               //console.log('BAND cf='+ dq(cf) +' b='+ b +' '+ dq(rv2.match_menu) +' '+ dq(rv2.match_val));
+               hfdl_pre_select_cb(rv2.match_menu, rv2.match_val, false);
                hfdl_pre_select_cb(rv.match_menu, rv.match_val, false);
+            }
          });
 
          //jks test
@@ -641,6 +689,7 @@ function hfdl_day_night_visible_cb(path, checked, first)
    if (checked) {
       hfdl.day_night.addTo(hfdl.cur_map);
       hfdl.map_layers.push(hfdl.day_night);
+      hfdl.day_night._path.style.cursor = 'grab';
    } else {
       hfdl.day_night.remove();
    }
@@ -1087,9 +1136,11 @@ function hfdl_get_systable_done_cb(stations)
       if (rv.found_menu_match) {
          // select band first if freq is not already a band specifier
          var f = rv.match_entry.split(' ')[0];
+
          if (f.length > 2) {
             var b = hfdl_freq_2_band(f);
             var rv2 = hfdl_menu_match(b, b.toString());
+            console.log('BAND b='+ b +' '+ dq(rv2.match_menu) +' '+ dq(rv2.match_val));
             hfdl_pre_select_cb(rv2.match_menu, rv2.match_val, false);
          }
          
