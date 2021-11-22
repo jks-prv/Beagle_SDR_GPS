@@ -2,6 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.478  November 22, 2021
+    HFDL extension improvements:
+        Added ACARS display menu option (does not show ACARS data without message content).
+        Map AFT icons: highlight yellow on mouseover. Auto EiBi label / band zooming when clicked.
+        
+    Kiwi right-click menu no longer clips when positioned near screen bottom or right edges.
+
 v1.477  November 21, 2021
     HFDL extension improvements:
         Added map of ground stations with active frequency table (AFT) icons sourced from
