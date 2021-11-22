@@ -83,10 +83,10 @@ Setup instructions:
 2. Set environment variables described below if default values are not suitable.
 
 3. Run these commands on development machine:
-    make clean_dist     // removes all previous binary files that would othersize conflict
+    make clean_dist     // removes all previous binary files that would otherwise conflict
     make xc             // make in cross-compile mode (xc)
     make install_xc     // copies kiwi.bin and *.o files to Kiwi build directory
-                        // optionally copies source files as well
+                        // optionally copies source files as well (if KIWI_XC_COPY_SOURCES = true)
     
 4. Now test and deploy by entering these commands on the Kiwi:
     Test on Kiwi by doing:
