@@ -8,10 +8,6 @@
     left: 0;
 }
 
-.id-hfdl-marker-cluster-refs div {
-	background-color: rgba(181, 226, 140, 0.8);
-}
-
 .id-hfdl-AFT {
     height: auto !important;
     width: 17px !important;
@@ -40,15 +36,11 @@
     z-index: 9000;
 }
 
-.id-hfdl-marker-cluster-hosts div {
-	background-color: hsla(220, 85%, 80%, 0.8);
-}
-
-.leaflet-tooltip.id-hfdl-host {
+.leaflet-tooltip.id-hfdl-flight {
     background-color: blue;
     color: white;
     padding: 0 2px;
-    cursor: pointer;
-    pointer-events: auto;
+    /* cursor: pointer;
+    pointer-events: auto; */
     z-index: 9000;
 }
