@@ -83,9 +83,13 @@ double ext_get_displayed_freq_kHz(int rx_chan)
 
 ext_auth_e ext_auth(int rx_chan)
 {
-    conn_t *conn = rx_channels[rx_chan].conn;
+    rx_chan_t *rx = &rx_channels[rx_chan];
+    if (!rx->chan_enabled) return AUTH_USER;
+    conn_t *conn = rx->conn;
+    if (!conn) return AUTH_USER;
+
     if (conn->isLocal) return AUTH_LOCAL;
-    if (conn->isPassword) return AUTH_PASSWORD;
+    if (conn->tlimit_exempt_by_pwd) return AUTH_PASSWORD;
     return AUTH_USER;
 }
 
