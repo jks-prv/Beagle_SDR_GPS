@@ -480,7 +480,6 @@ function hfdl_map_init()
       var t2 = new Terminator();
       terminator.setLatLngs(t2.getLatLngs());
       terminator.redraw();
-      hfdl_flights_age();
    }, 60000);
    terminator._path.style.cursor = 'grab';
    hfdl.day_night = terminator;
@@ -490,31 +489,19 @@ function hfdl_map_init()
    hfdl.graticule.addTo(m);
    hfdl.map_layers.push(hfdl.graticule);
 
-   /*
-      var icon =
-         L.icon({
-            iconUrl: 'extensions/HFDL/icon_plane.png',
-            iconAnchor: [16, 16]
-         });
-
-      var mkr = L.marker([5,110], { 'icon':icon, 'opacity':1.0 });
-      //console.log(mkr);
-      mkr.addTo(m);
-      w3_add(mkr._icon, 'id-hfdl-plane-icon w3-hidex');
-      mkr._icon.style.zIndex = 99999;
-   */
-
    m.on('zoom', hfdl_info_cb);
    m.on('move', hfdl_info_cb);
+
+   setInterval(function() {
+      hfdl_flights_age();
+   }, 60000);
 }
 
 function hfdl_flights_age()
 {
    var old = Date.now() - hfdl.too_old_min*60*1000;
    w3_obj_enum(hfdl.flights, function(key, i, o) {
-      if (o.upd > old) {
-         o.el.style.background = 'blue';     // might have re-appeared after going grey
-      } else {
+      if (o.upd < old) {
          console.log('FL-OLD '+ o.flight +' > '+ hfdl.too_old_min +'m');
          o.el.style.background = 'grey';
       }
@@ -567,8 +554,11 @@ function hfdl_flight_update(flight, lat, lon)
       var marker = o.mkr;
       marker.setLatLng([lat, lon]);
       var n = o.pos.push([lat, lon]);
+      o.el.style.background = 'blue';     // might have re-appeared after previously going grey
+
       var now = Date.now();
       var dt = Math.floor(((now - o.upd) / 60000) % 60);
+      o.upd = now;
       console.log('FL-UPD '+ flight +' '+ lat.toFixed(4) +' '+ lon.toFixed(4) +' #'+ n +' '+ dt +'m');
    }
 }
