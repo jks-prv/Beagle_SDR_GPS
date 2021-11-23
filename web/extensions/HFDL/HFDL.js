@@ -51,6 +51,11 @@ var hfdl = {
    menus: [ ],
    menu_sel: '',
    
+   flights: {},
+   too_old_min: 10,
+   flights_visible: true,
+   gs_visible: true,
+   
    // map
    cur_map: null,
    map_layers: [],
@@ -156,8 +161,21 @@ function hfdl_recv(data)
             var downlink = x[1].startsWith('Downlink');
             if (!hfdl.uplink && uplink) break;
             if (!hfdl.downlink && downlink) break;
+            var flight = null, lat = null, lon = null;
 
-            x.forEach(function(a, i) { x[i] = a.trim(); });
+            x.forEach(function(s, i) {
+               x[i] = s.trim();
+               if (uplink) return;
+               var a = x[i].split(':');
+               var p0 = a[0];
+               var p1 = (a[1] && a[1] != '')? a[1].slice(1) : null;
+               if (p0 == 'Flight ID' && p1) flight = p1; else
+               if (p0 == 'Lat' && p1) lat = +p1; else
+               if (p0 == 'Lon' && p1) lon = +p1;
+            });
+            if (flight && lat && lon && (lat != 180 || lon != 180)) {
+               hfdl_flight_update(flight, lat, lon);
+            }
 
             if (x[3].startsWith('Squitter')) {
                x.forEach(function(a, i) {
@@ -316,16 +334,19 @@ function hfdl_controls_setup()
          w3_div('|'+ wh +' position:absolute; z-index:0|id="id-hfdl-map"')
       ) +
       
-      w3_div('id-hfdl-options w3-display-right w3-text-white|top:230px; right:0px; width:200px; height:200px',
+      w3_div('id-hfdl-options w3-display-right w3-text-white|top:230px; right:0px; width:250px; height:200px',
          w3_text('w3-text-aqua w3-bold', 'HFDL options'),
          w3_select('w3-margin-T-4 '+ hfdl.sfmt, '', 'show', 'hfdl.show', hfdl.show, hfdl.show_s, 'hfdl_show_cb'),
          
-         w3_button('id-hfdl-show-kiwi w3-margin-T-10 class-button w3-grey w3-momentary', 'Show Kiwi', 'hfdl_show_kiwi_cb', 1),
+         w3_button('id-hfdl-show-kiwi w3-margin-T-10 class-button w3-cyan w3-momentary', 'Show Kiwi', 'hfdl_show_kiwi_cb', 1),
 
          w3_checkbox('w3-margin-T-10//'+ cbox, 'Show day/night', 'hfdl.day_night_visible', true, 'hfdl_day_night_visible_cb'),
          w3_checkbox(cbox, 'Show graticule', 'hfdl.graticule_visible', true, 'hfdl_graticule_visible_cb'),
 
-         w3_checkbox('w3-margin-T-10 w3-disabled//'+ cbox, 'Show flights', 'hfdl.flights_visible', true, 'hfdl_flights_visible_cb'),
+         w3_inline('w3-margin-T-10 w3-valign/', 
+            w3_checkbox('//'+ cbox, 'Show flights', 'hfdl.flights_visible', true, 'hfdl_flights_visible_cb'),
+            w3_button('id-hfdl-show-kiwi w3-margin-left class-button w3-small w3-grey w3-momentary', 'Clear old', 'hfdl_clear_old_cb', 1)
+         ),
          w3_checkbox(cbox, 'Show ground stations', 'hfdl.gs_visible', true, 'hfdl_gs_visible_cb')
       );
 
@@ -459,6 +480,7 @@ function hfdl_map_init()
       var t2 = new Terminator();
       terminator.setLatLngs(t2.getLatLngs());
       terminator.redraw();
+      hfdl_flights_age();
    }, 60000);
    terminator._path.style.cursor = 'grab';
    hfdl.day_night = terminator;
@@ -468,8 +490,87 @@ function hfdl_map_init()
    hfdl.graticule.addTo(m);
    hfdl.map_layers.push(hfdl.graticule);
 
+   /*
+      var icon =
+         L.icon({
+            iconUrl: 'extensions/HFDL/icon_plane.png',
+            iconAnchor: [16, 16]
+         });
+
+      var mkr = L.marker([5,110], { 'icon':icon, 'opacity':1.0 });
+      //console.log(mkr);
+      mkr.addTo(m);
+      w3_add(mkr._icon, 'id-hfdl-plane-icon w3-hidex');
+      mkr._icon.style.zIndex = 99999;
+   */
+
    m.on('zoom', hfdl_info_cb);
    m.on('move', hfdl_info_cb);
+}
+
+function hfdl_flights_age()
+{
+   var old = Date.now() - hfdl.too_old_min*60*1000;
+   w3_obj_enum(hfdl.flights, function(key, i, o) {
+      if (o.upd > old) {
+         o.el.style.background = 'blue';     // might have re-appeared after going grey
+      } else {
+         console.log('FL-OLD '+ o.flight +' > '+ hfdl.too_old_min +'m');
+         o.el.style.background = 'grey';
+      }
+   });
+}
+
+function hfdl_flight_update(flight, lat, lon)
+{
+   
+   if (!hfdl.flights[flight]) {
+      console.log('FL-NEW '+ flight +' '+ lat.toFixed(4) +' '+ lon.toFixed(4));
+      
+      var icon =
+         L.divIcon({
+            className: '',
+            iconAnchor: [12, 12],
+            tooltipAnchor: [0, 0],
+            html: ''
+         });
+      var marker = L.marker([lat, lon], { 'icon':icon, 'opacity':1.0 });
+      var o = { flight: flight, mkr: marker, upd: Date.now(), pos: [] };
+      o.pos.push([lat, lon]);
+      hfdl.flights[flight] = o;
+
+      marker.bindTooltip(flight,
+         {
+            className:  'id-hfdl-flight id-hfdl-flight-'+ flight + (hfdl.flights_visible? '' : ' w3-hide'),
+            permanent:  true, 
+            direction:  'right'
+         }
+      );
+
+      marker.on('add', function(ev) {
+      
+         // sometimes multiple instances exist, so iterate to catch them all
+         w3_iterate_classname('id-hfdl-flight-'+ flight,
+            function(el) {
+               if (el) {
+                  //console.log(el);
+                  w3_color(el, 'white', 'blue');
+                  o.el = el;
+               }
+            }
+         );
+      });
+
+      marker.addTo(hfdl.cur_map);
+   } else {
+      var o = hfdl.flights[flight];
+      var marker = o.mkr;
+      marker.setLatLng([lat, lon]);
+      var n = o.pos.push([lat, lon]);
+      var now = Date.now();
+      var dt = Math.floor(((now - o.upd) / 60000) % 60);
+      console.log('FL-UPD '+ flight +' '+ lat.toFixed(4) +' '+ lon.toFixed(4) +' #'+ n +' '+ dt +'m');
+   }
 }
 
 function hfdl_place_gs_marker(gs_n, map)
@@ -498,6 +599,7 @@ function hfdl_place_gs_marker(gs_n, map)
       var left = (r.id == 'New Zealand');
       hfdl_style_marker(marker, r.idx, r.id, 'gs', map, left);
    
+      // band icons
       var sign = left? 1:-1;
       for (i = 0; i < hfdl.bf.length; i++) {
          var xo = sign*19*i;
@@ -525,20 +627,21 @@ function hfdl_place_gs_marker(gs_n, map)
          el.addEventListener('click', function(ev) {
          
             // match on freq and gs name both to distinguish multiple gs on same freq
-            //console.log('*click*');
-            //console.log(ev);
+            console.log('*click*');
+            console.log(ev);
             var mkr = ev.target;
             //var cf = parseInt(mkr.textContent);
             var cf = w3_match_wildcard(mkr, 'id-hfdl-AFT-f-');
             if (cf == false) return;
+            console.log('click cf1='+ dq(cf));
             cf = cf.split('f-')[1];
             cf = cf.toLowerCase().replace(/_/g, ' ');
-            //console.log('cf='+ dq(cf));
+            console.log('click cf2='+ dq(cf));
             var rv = hfdl_menu_match(null, cf);
             if (rv.found_menu_match) {
                var b = hfdl_freq_2_band(parseInt(cf));
                var rv2 = hfdl_menu_match(b, b.toString());
-               //console.log('BAND cf='+ dq(cf) +' b='+ b +' '+ dq(rv2.match_menu) +' '+ dq(rv2.match_val));
+               console.log('click BAND cf='+ dq(cf) +' b='+ b +' '+ dq(rv2.match_menu) +' '+ dq(rv2.match_val));
                hfdl_pre_select_cb(rv2.match_menu, rv2.match_val, false);
                hfdl_pre_select_cb(rv.match_menu, rv.match_val, false);
             }
@@ -635,10 +738,10 @@ function hfdl_freq_2_band(f)
 function hfdl_update_AFT(gs, freqs)
 {
    var i;
-   if (dbgUs) console.log('AFT: '+ gs);
+   //if (dbgUs) console.log('AFT: '+ gs);
    var left = (gs == 'New Zealand');
    if (!left) freqs.sort(function(a,b) { return parseFloat(a) - parseFloat(b); });
-   if (dbgUs) console.log(freqs);
+   //if (dbgUs) console.log(freqs);
    var gs_n = hfdl.bf_gs[gs];
    var hi = 0;
    freqs.forEach(function(s, i) {
@@ -657,28 +760,15 @@ function hfdl_update_AFT(gs, freqs)
          },
          { value_match: b }
       );
-      w3_remove(el, 'w3-hide');
+      if (hfdl.gs_visible) w3_remove(el, 'w3-hide');
+      w3_add(el, 'id-hfdl-AFT-active');
       hi = i+1;
    });
-   for (i = hi; i < hfdl.bf_cf.length; i++) w3_add('id-hfdl-AFT-'+ gs_n +'-'+ i, 'w3-hide');
-}
-
-function hfdl_show_kiwi_cb(path, idx, first)
-{
-   //console.log('hfdl_show_kiwi_cb idx='+ idx +' first='+ first);
-   idx = +idx;
-   var show = !idx;
-   w3_color(path, show? 'lime':'white');
-   
-   //console.log('hfdl_show_kiwi_cb gs_visible='+ hfdl.gs_visible +' show='+ show);
-   if (hfdl.gs_visible) {
-      // due to what seems to be a z-index bug, hide all tooltips so kiwi icon is on top
-      w3_hide2('leaflet-tooltip-pane', show);
-   } else {
-      // if gs are set not visible then must temp make markers visible since kiwi icon is a marker
-      w3_hide2('leaflet-marker-pane', !show);
+   for (i = hi; i < hfdl.bf_cf.length; i++) {
+      var el = w3_el('id-hfdl-AFT-'+ gs_n +'-'+ i);
+      w3_add(el, 'w3-hide');
+      w3_remove(el, 'id-hfdl-AFT-active');
    }
-   w3_hide2('id-hfdl-kiwi-icon', !show);
 }
 
 function hfdl_day_night_visible_cb(path, checked, first)
@@ -709,28 +799,66 @@ function hfdl_graticule_visible_cb(path, checked, first)
    }
 }
 
+function hfdl_map_markers_visible(el, id, vis)
+{
+	w3_iterate_children(el,
+	   function(el, i) {
+	      if (el.className.includes(id)) {
+	         w3_hide2(el, !vis);
+	      }
+	   }
+	);
+}
+
+function hfdl_show_kiwi_cb(path, idx, first)
+{
+   //console.log('hfdl_show_kiwi_cb idx='+ idx +' first='+ first);
+   idx = +idx;
+   var show = !idx;
+   w3_color(path, show? 'lime':'white');
+   
+   //console.log('hfdl_show_kiwi_cb gs_visible='+ hfdl.gs_visible +' show='+ show);
+   if (hfdl.flights_visible)
+	   hfdl_map_markers_visible('leaflet-tooltip-pane', 'id-hfdl-flight', !show);
+   if (hfdl.gs_visible)
+      hfdl_gs_visible(!show);
+   w3_hide2('id-hfdl-kiwi-icon', !show);
+}
+
+function hfdl_clear_old_cb(path, idx, first)
+{
+   //console.log('hfdl_clear_old_cb idx='+ idx +' first='+ first);
+   if (!(+idx)) return;
+   var old = Date.now() - hfdl.too_old_min*60*1000;
+   w3_obj_enum(hfdl.flights, function(key, i, o) {
+      if (o.upd > old) return;
+      console.log('FL-CLR '+ o.flight);
+      o.mkr.remove();
+      delete hfdl.flights[o.flight];
+   });
+}
+
 function hfdl_flights_visible_cb(path, checked, first)
 {
    //console.log('hfdl_flights_visible_cb checked='+ checked +' first='+ first);
    if (first) return;
-return;
-   if (!hfdl.graticule) return;
-   checked = w3_checkbox_get(path);
-   if (checked) {
-      hfdl.graticule.addTo(hfdl.cur_map);
-      hfdl.map_layers.push(hfdl.graticule);
-   } else {
-      hfdl.graticule.remove();
-   }
+   hfdl.flights_visible = checked;
+	hfdl_map_markers_visible('leaflet-tooltip-pane', 'id-hfdl-flight', checked);
+}
+
+function hfdl_gs_visible(vis)
+{
+	hfdl_map_markers_visible('leaflet-marker-pane', 'id-hfdl-AFT-active', vis);
+	hfdl_map_markers_visible('leaflet-tooltip-pane', 'id-hfdl-gs', vis);
 }
 
 function hfdl_gs_visible_cb(path, checked, first)
 {
    //console.log('hfdl_gs_visible_cb checked='+ checked +' first='+ first);
-   //if (first) return;
+   if (first) return;
    hfdl.gs_visible = checked;
-	w3_hide2('leaflet-marker-pane', !checked);
-	w3_hide2('leaflet-tooltip-pane', !checked);
+   w3_checkbox_set(path, checked);     // for benefit of direct callers
+   hfdl_gs_visible(checked);
 }
 
 function hfdl_reset_spiderfied()
@@ -1127,6 +1255,11 @@ function hfdl_get_systable_done_cb(stations)
                hfdl_log_mins_cb('id-hfdl.log_mins', r.num);
             }
          } else
+         if ((r = w3_ext_param('gs', a)).match) {
+            if (isNumber(r.num) && r.num == 0) {
+               hfdl_gs_visible_cb('id-hfdl.gs_visible', false);
+            }
+         } else
          if (w3_ext_param('test', a).match) {
             do_test = 1;
          } else
@@ -1508,14 +1641,15 @@ function HFDL_help(show)
                'and saved automatically without causing a browser popup window for each download.' +
 
                '<br><br>URL parameters: <br>' +
-               '<i>(menu match)</i> &nbsp; map|split &nbsp; display:[012] &nbsp; &nbsp; ' +
-               'log_time:<i>mins</i> &nbsp; test' +
+               '<i>(menu match)</i> &nbsp; map|split &nbsp; display:[012] &nbsp; ' +
+               'log_time:<i>mins</i> &nbsp; gs:0 &nbsp; test' +
                '<br><br>' +
                'The first URL parameter can be a frequency entry from the "Bands" menu (e.g. "8977") or the ' +
                'numeric part of the blue "full band" entry (e.g. "5" part of "5 MHz" entry). <br>' +
                '<i>map</i> will initially show the map instead of the message panel. ' +
                '<i>split</i> will show both. <br>' +
-               '[012] refers to the order of selections in the corresponding menu.' +
+               '[012] refers to the order of selections in the corresponding menu. <br>' +
+               '<i>gs:0</i> initially disables display of the ground stations.' +
                '<br><br>' +
                'Keywords are case-insensitive and can be abbreviated. So for example these are valid: <br>' +
                '<i>ext=hfdl,8977</i> &nbsp;&nbsp; ' +

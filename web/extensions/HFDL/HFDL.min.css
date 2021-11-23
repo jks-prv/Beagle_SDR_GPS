@@ -1,6 +1,6 @@
 
 
 /* web/extensions/HFDL/HFDL.min.css */
-#id-hfdl-map-kiwi{position:absolute;top:0;right:0;bottom:0;left:0}.id-hfdl-marker-cluster-refs div{background-color:rgba(181,226,140,.8)}.id-hfdl-AFT{height:auto!important;width:17px!important;background-color:#0ff;color:#000;padding-left:1px;padding-right:1px;border:1px solid grey;border-radius:3px;cursor:pointer;pointer-events:auto;z-index:9000}.leaflet-tooltip.id-hfdl-gs{background-color:#0f0;color:#000;padding:0 2px;z-index:9000}.id-hfdl-marker-cluster-hosts div{background-color:hsla(220,85%,80%,.8)}.leaflet-tooltip.id-hfdl-host{background-color:#00f;color:#fff;padding:0 2px;cursor:pointer;pointer-events:auto;z-index:9000}
+#id-hfdl-map-kiwi{position:absolute;top:0;right:0;bottom:0;left:0}.id-hfdl-AFT{height:auto!important;width:17px!important;background-color:#0ff;color:#000;padding-left:1px;padding-right:1px;border:1px solid grey;border-radius:3px;cursor:pointer;pointer-events:auto;z-index:9000}.leaflet-tooltip.id-hfdl-gs{background-color:#0f0;color:#000;padding:0 2px;z-index:9000}.leaflet-tooltip.id-hfdl-flight{background-color:#00f;color:#fff;padding:0 2px;z-index:9000}
 
 

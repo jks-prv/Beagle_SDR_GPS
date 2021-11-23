@@ -2,6 +2,14 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.479  November 23, 2021
+    HFDL extension improvements:
+        Preliminary flight markers added. After 10 minutes without an update the marker is
+        considered "old" and color changed to grey. Will change back to blue if a further
+        update received. Use "clear old" button to remove grey markers.
+        
+        Use URL parameter "gs:0" to initially hide the ground station / AFT icons.
+
 v1.478  November 22, 2021
     HFDL extension improvements:
         Added ACARS display menu option (does not show ACARS data without message content).
