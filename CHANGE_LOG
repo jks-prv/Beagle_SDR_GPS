@@ -2,12 +2,14 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.480  November 24, 2021
+v1.480,481  November 24, 2021
     HFDL extension: fixed bug preventing flight markers receiving an update turning blue again
     if they had already turned grey due to exceeding 10 minutes of inactivity.
     
     Antenna switch extension: Changed definition of what "user password only" means:
-
+    Note: you don't have to re-install the antenna switch extension, but you must be running
+    a version from April 2021 or later.
+  
     On the admin page, "extensions" tab, "Antenna switch" entry is an option menu called
     "Allow antenna switching by". The last entry says "local connection or user password only".
     In this case user password has been changed to mean the time limit exemption password
