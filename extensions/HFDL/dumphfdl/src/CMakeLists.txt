@@ -40,11 +40,12 @@ endif()
 
 # Kiwi
 if(TRUE)
-    set(HAVE_PTHREAD_BARRIERS FALSE)
+	set(HAVE_PTHREAD_BARRIERS FALSE)
 	list(APPEND dumphfdl_extra_sources pthr.c)
 	list(APPEND dumphfdl_extra_sources pthread_barrier.c)
 else()
 set(CMAKE_REQUIRED_FLAGS_ORIG ${CMAKE_REQUIRED_FLAGS})
+endif()
 if(CC_HAS_PTHREAD)
 	set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -pthread")
 endif()
