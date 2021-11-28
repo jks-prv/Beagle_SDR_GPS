@@ -113,18 +113,18 @@ Ready:
 NoCmd:
 				// poll for srqs
 				rdReg	GET_SRQ						; 0
-				rdBit								; host_srq
+				rdBit0								; host_srq
 
 #if USE_GPS
 				REPEAT	GPS_CHANS
 				 push	0
-				 rdBit
+				 rdBit0
 				ENDR								; host_srq gps_srq(GPS_CHANS-1) ... (0)
 #endif
 
 #if USE_SDR
 				rdReg	GET_RX_SRQ					; host_srq gps_srq(GPS_CHANS-1) ... (0) 0
-				rdBit2								; host_srq gps_srq(GPS_CHANS-1) ... (0) rx_srq
+				rdBit1								; host_srq gps_srq(GPS_CHANS-1) ... (0) rx_srq
 				
 				brZ		no_rx_svc
 			wrEvt2	CPU_CTR_ENA
@@ -668,12 +668,21 @@ abs64:
 				neg64						; -i64H L
 abs64_1:		ret
 
-// rdBit a 16-bit word
-rdBit16:
+// rdBit0 a 16-bit word
+rdBit0_16:
 				push	0
-rdBit16z:
+rdBit0_16z:
 				REPEAT	16
-				 rdBit
+				 rdBit0
+				ENDR
+				ret
+
+// rdBit1 a 16-bit word
+rdBit1_16:
+				push	0
+rdBit1_16z:
+				REPEAT	16
+				 rdBit1
 				ENDR
 				ret
 

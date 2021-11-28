@@ -31,6 +31,9 @@ Boston, MA  02110-1301, USA.
 SPI_MISO *get_misc_miso();
 void release_misc_miso();
 
+SPI_MOSI *get_misc_mosi();
+void release_misc_mosi();
+
 u2_t ctrl_get();
 void ctrl_clr_set(u2_t clr, u2_t set);
 void ctrl_positive_pulse(u2_t bits);

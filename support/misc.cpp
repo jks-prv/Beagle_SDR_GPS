@@ -92,6 +92,20 @@ void release_misc_miso()
     misc_miso_busy--;
 }
 
+static int misc_mosi_busy;
+
+SPI_MOSI *get_misc_mosi()
+{
+    assert(misc_mosi_busy == 0);
+    misc_mosi_busy++;
+    return &SPI_SHMEM->misc_mosi;
+}
+
+void release_misc_mosi()
+{
+    misc_mosi_busy--;
+}
+
 u2_t ctrl_get()
 {
 	SPI_MISO *ctrl = get_misc_miso();

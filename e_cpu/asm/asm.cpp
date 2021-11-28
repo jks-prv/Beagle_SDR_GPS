@@ -87,7 +87,8 @@ dict_t dict[] = {
 	{ "shl64",		TT_OPC,		OC_SHL64 },
 	{ "shl",		TT_OPC,		OC_SHL },
 	{ "shr",		TT_OPC,		OC_SHR },
-	{ "rdBit",		TT_OPC,		OC_RDBIT },
+	{ "rdBit0",		TT_OPC,		OC_RDBIT0 },
+	{ "rdBit1",		TT_OPC,		OC_RDBIT1 },
 	{ "rdBit2",		TT_OPC,		OC_RDBIT2 },
 	{ "fetch16",	TT_OPC,		OC_FETCH16 },
 	{ "store16",	TT_OPC,		OC_STORE16 },
@@ -164,9 +165,12 @@ int lineno[NIFILES_NEST];
 u4_t ocstat[256];
 
 const char *ocname[256] = {
+    // 0..31
 	"nop", "dup", "swap", "swap16", "over", "pop", "rot", "addi", "add", "sub", "mult", "and", "or", "xor", "not", "0x8F",
-	"shl64", "shl", "shr", "rdbit", "fetch16", "store16", "SP", "RP", "0x98", "0x99", "0x9A", "0x9B", "r", "r_from", "to_r", "0x9F",
-	"push", "add_cin", "rdbit2", "call", "br", "brz", "brnz",
+	"shl64", "shl", "shr", "rdbit0", "fetch16", "store16", "SP", "RP", "0x98", "0x99", "0x9A", "0x9B", "r", "r_from", "to_r", "0x9F",
+
+    // 32..(N_OCS-1)
+	"push", "add_cin", "rdbit1", "rdbit2", "call", "br", "brz", "brnz",
 	"rdreg", "rdreg2", "wrreg", "wrreg2", "wrevt", "wrevt2"
 };
 
@@ -1048,13 +1052,14 @@ int main(int argc, char *argv[])
 			if (stats) {
 				#define OCS_PUSH		32
 				#define OCS_ADD_CIN		33
-				#define OCS_RDBIT2		34
-				#define OCS_CALL		35
-				#define OCS_BR			36
-				#define OCS_BRZ			37
-				#define OCS_BRNZ		38
-				#define OCS_REG_EVT		39	// 39..44
-				#define N_OCS			45
+				#define OCS_RDBIT1		34
+				#define OCS_RDBIT2		35
+				#define OCS_CALL		36
+				#define OCS_BR			37
+				#define OCS_BRZ			38
+				#define OCS_BRNZ		39
+				#define OCS_REG_EVT		40	// 40..45
+				#define N_OCS			46
 				
 				if (oc == OC_PUSH) {
 					ocstat[OCS_PUSH]++;
@@ -1062,6 +1067,10 @@ int main(int argc, char *argv[])
 				
 				if (op == (OC_ADD | OPT_CIN)) {		// note op, not oc
 					ocstat[OCS_ADD_CIN]++;
+				} else
+				
+				if (oc == OC_RDBIT1) {
+					ocstat[OCS_RDBIT1]++;
 				} else
 				
 				if (oc == OC_RDBIT2) {

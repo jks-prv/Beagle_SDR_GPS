@@ -46,7 +46,7 @@ typedef struct {
     SPI_MISO misc_miso;
     SPI_MISO spi_junk_miso, pingx_miso;
     SPI_MOSI spi_tx[N_SPI_TX];
-    //char firewall[4096];
+    SPI_MOSI misc_mosi;
 } spi_shmem_t;
 
 #include "shmem_config.h"

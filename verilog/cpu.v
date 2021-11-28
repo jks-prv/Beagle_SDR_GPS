@@ -23,14 +23,15 @@ module CPU (
     input  wire [2:1]  rst,
     
     input  wire [15:0] par,
-    input  wire [1:0]  ser,
+    input  wire [2:0]  ser,
     input  wire        mem_rd,      // current insn is a mem read which should ++ the mem addr in TOS
     output wire [15:0] mem_dout,
     input  wire        boot_done,
     
     output reg  [31:0] tos,
     output wire [15:0] op,
-    output wire        rdBit,
+    output wire        rdBit0,
+    output wire        rdBit1,
     output wire        rdBit2,
     output wire        rdReg,
     output wire        rdReg2,
@@ -54,7 +55,7 @@ module CPU (
     //	100p ppppR....... alu insns, R = rtn
     //	100p ppppRiiiiiii  addi, imm [6:0] 0-127
     //	100p ppppRCxxxxxx  add, C = carry-in
-    //	100p ppppRSxxxxxx  rdBit, S selects 'ser' bit input
+    //	100p ppppRSSxxxxx  rdBit, SS selects 'ser' bit input
     //	100p ppppRxxxxxxx  all others, EXCEPT R=1 illegal for: r, r_from, to_r
 
 	//	bbbb -----------b op5 [15:0]
@@ -113,10 +114,12 @@ module CPU (
 
     wire op_push = ~op[15]; // op[14:0] --> TOS
     
-    wire opt_ret = op[7] && op[15:13] == 3'b100;
-    wire opt_cin = op[6];
-    wire ser_sel = op[6];
-    wire serial = ser_sel? ser[1] : ser[0];
+    wire opt_ret  = op[7] && op[15:13] == 3'b100;
+    wire opt_cin  = op[6];
+    wire ser_sel0 = (op[6:5] == 2'b00);
+    wire ser_sel1 = (op[6:5] == 2'b01);
+    wire ser_sel2 = (op[6:5] == 2'b10);
+    wire serial = ser_sel0? ser[0] : (ser_sel1? ser[1] : ser[2]);
 
     //////////////////////////////////////////////////////////////////////////
     // Instruction decode
@@ -255,8 +258,9 @@ module CPU (
     //////////////////////////////////////////////////////////////////////////
     // I/O
 
-    assign rdBit  = (op8 == op_rdBit) && !ser_sel;
-    assign rdBit2 = (op8 == op_rdBit) && ser_sel;
+    assign rdBit0 = (op8 == op_rdBit) && ser_sel0;
+    assign rdBit1 = (op8 == op_rdBit) && ser_sel1;
+    assign rdBit2 = (op8 == op_rdBit) && ser_sel2;
     assign rdReg  = (op4 == op_rdReg) && !op[11];
     assign rdReg2 = (op4 == op_rdReg) && op[11];
     assign wrReg  = (op4 == op_wrReg) && !op[11];
