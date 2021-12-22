@@ -364,6 +364,14 @@ static bool ipinfo_json(int https, const char *url, const char *path, const char
 	int stat;
 	char *cmd_p, *reply;
 	
+	//#define TEST_NO_IPINFO_SERVERS
+	#ifdef TEST_NO_IPINFO_SERVERS
+	    if (https) {
+            TaskSleepSec(5);
+	        return false;
+	    }
+	#endif
+	
     asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 5 \"http%s://%s/%s\" 2>&1", https? "s":"", url, path);
     //printf("IPINFO: <%s>\n", cmd_p);
     

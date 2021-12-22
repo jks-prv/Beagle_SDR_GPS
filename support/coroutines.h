@@ -84,11 +84,13 @@ void TaskCollect();
 #define CTF_NO_CHARGE		0x0200
 #define CTF_TNAME_FREE		0x0400
 #define CTF_NO_PRIO_INV		0x0800
-#define CTF_STACK_SIZE		0x3000
 
+#define CTF_STACK_SIZE		0x3000
 #define CTF_STACK_REG		0x0000
 #define CTF_STACK_MED		0x1000
 #define CTF_STACK_LARGE		0x2000
+
+#define CTF_SOFT_FAIL		0x4000
 
 C_LINKAGE(int _CreateTask(funcP_t entry, const char *name, void *param, int priority, u4_t flags, int f_arg));
 #define CreateTask(f, param, priority)				    _CreateTask(f, #f, param, priority, 0, 0)

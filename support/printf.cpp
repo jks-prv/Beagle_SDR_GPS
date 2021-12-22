@@ -223,6 +223,7 @@ static void ll_printf(u4_t type, conn_t *conn, const char *fmt, va_list ap)
         int chan = -1;
         if (conn && (conn->type == STREAM_WATERFALL || conn->type == STREAM_SOUND))
             chan = conn->rx_channel;
+        else
         if (conn && conn->type == STREAM_EXT)
             chan = conn->ext_rx_chan;
         if (conn == NULL || chan != -1) {

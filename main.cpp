@@ -72,7 +72,7 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 u4_t ov_mask, snd_intr_usec;
 
 bool create_eeprom, need_hardware, kiwi_reg_debug, have_ant_switch_ext, gps_e1b_only,
-    disable_led_task, is_multi_core, kiwi_restart, debug_printfs;
+    disable_led_task, is_multi_core, kiwi_restart, debug_printfs, cmd_debug;
 
 int main_argc;
 char **main_argv;
@@ -141,6 +141,7 @@ int main(int argc, char *argv[])
 		if (ARG("-fw")) { ARGL(fw_sel_override); printf("firmware select override: %d\n", fw_sel_override); }
 
 		if (ARG("-kiwi_reg")) kiwi_reg_debug = TRUE;
+		if (ARG("-cmd_debug")) cmd_debug = TRUE;
 		if (ARG("-bg")) { background_mode = TRUE; bg=1; }
 		if (ARG("-fopt")) use_foptim = 1;   // in EDATA_DEVEL mode use foptim version of files
 		if (ARG("-down")) down = 1;

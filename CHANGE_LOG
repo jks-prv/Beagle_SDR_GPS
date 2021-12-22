@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.482  December 22, 2021
+    Better resistance to abusive connections.
+
 v1.480,481  November 24, 2021
     HFDL extension: fixed bug preventing flight markers receiving an update turning blue again
     if they had already turned grey due to exceeding 10 minutes of inactivity.

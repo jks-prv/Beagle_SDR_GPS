@@ -33,6 +33,7 @@ Boston, MA  02110-1301, USA.
 #include "rx.h"
 #include "clk.h"
 #include "ext_int.h"
+#include "printf.h"
 #include "debug.h"
 
 #include <string.h>
@@ -124,6 +125,12 @@ int web_to_app(conn_t *c, nbuf_t **nbp, bool internal_connection)
 	assert(!nb->done && !nb->expecting_done && nb->buf && nb->len);
 	nb->expecting_done = TRUE;
 	*nbp = nb;
+
+    if (cmd_debug) {
+        char *cmd = nb->buf;
+        cmd[nb->len] = '\0';    // okay to do this -- see nbuf.c:nbuf_allocq()
+        cmd_debug_print(c, cmd, nb->len, false);
+    }
 	
 	return nb->len;
 }
@@ -138,8 +145,8 @@ void web_to_app_done(conn_t *c, nbuf_t *nb)
 
 // s2c
 // server to client
-// 1) websocket: {SND, W/F} data streams received by .js via (ws).onmessage()
-// 2) websocket: {MSG, ADM, MFG, EXT, DAT} messages sent by send_msg*(), received via open_websocket() msg_cb/recv_cb routines
+// 1) websocket: {SND, W/F} data streams, sent by app_to_web(), received by .js via (ws).onmessage()
+// 2) websocket: {MSG, ADM, MFG, EXT, DAT} messages sent by send_msg*()/mg_websocket_write(), received via open_websocket() msg_cb/recv_cb routines
 // 3) 
 
 void app_to_web(conn_t *c, char *s, int sl)

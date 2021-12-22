@@ -157,6 +157,20 @@ void printmem(const char *str, u2_t addr)
 	printf("%s %04x: %04x\n", str, addr, (int) getmem(addr));
 }
 
+void cmd_debug_print(conn_t *c, char *s, int slen, bool tx)
+{
+    int sl = slen - 4;
+    printf("%c %s %.3s %.4s%s%d ", tx? 'T':'<', Task_s(-1), c? rx_streams[c->type].uri : "nil",
+        s, (s[3] != ' ')? " " : "", sl);
+    if (sl > 0) {
+        char *s2 = kiwi_str_encode_static(&s[4], true);
+        sl = strlen(s2);
+        cprintf(c, "\"%.100s\" %s\n", s2, (sl > 100)? "..." : "");
+    } else {
+        cprintf(c, "\n");
+    }
+}
+
 void send_msg_buf(conn_t *c, char *s, int slen)
 {
     if (c->internal_connection) {
@@ -171,6 +185,8 @@ void send_msg_buf(conn_t *c, char *s, int slen)
             #endif
             return;
         }
+
+        if (cmd_debug) cmd_debug_print(c, s, slen, true);
         mg_websocket_write(c->mc, WS_OPCODE_BINARY, s, slen);
     }
 }

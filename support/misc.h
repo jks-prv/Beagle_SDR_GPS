@@ -66,6 +66,8 @@ void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char
 void send_msg_mc_encoded(struct mg_connection *mc, const char *dst, const char *cmd, const char *fmt, ...);
 void input_msg_internal(conn_t *conn, const char *fmt, ...);
 
+void cmd_debug_print(conn_t *c, char *s, int slen, bool tx);
+
 #define P_MAX_MIN_DEMAND    0x00
 #define P_MAX_MIN_RANGE     0x01
 #define P_MAX_MIN_DUMP      0x02
