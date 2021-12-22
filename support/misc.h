@@ -31,6 +31,9 @@ Boston, MA  02110-1301, USA.
 SPI_MISO *get_misc_miso();
 void release_misc_miso();
 
+SPI_MOSI *get_misc_mosi();
+void release_misc_mosi();
+
 u2_t ctrl_get();
 void ctrl_clr_set(u2_t clr, u2_t set);
 void ctrl_positive_pulse(u2_t bits);
@@ -62,6 +65,8 @@ void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...);
 void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char *fmt, ...);
 void send_msg_mc_encoded(struct mg_connection *mc, const char *dst, const char *cmd, const char *fmt, ...);
 void input_msg_internal(conn_t *conn, const char *fmt, ...);
+
+void cmd_debug_print(conn_t *c, char *s, int slen, bool tx);
 
 #define P_MAX_MIN_DEMAND    0x00
 #define P_MAX_MIN_RANGE     0x01

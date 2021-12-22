@@ -364,6 +364,8 @@ static void TdeQ(TASK *t)
 // Print per-task accumulated usec runtime since last dump.
 // NB: all these prints take so long that the "max mS" of the current task (usually the web server)
 // will appear to go into the LRUN state.
+static int soft_fail;
+
 void TaskDump(u4_t flags)
 {
 	int i, j;
@@ -379,8 +381,8 @@ void TaskDump(u4_t flags)
 	
 	TASK *ct = cur_task;
 
-	int tused = 0;
-	for (i=0; i <= max_task; i++) {
+	int tused = 1;      // count main() because it doesn't have a ctx[].init set
+	for (i = TID_FIRST; i <= max_task; i++) {
 		t = Tasks + i;
 		if (t->valid && ctx[i].init) tused++;
 		if (flags & TDUMP_CLR_HIST)
@@ -401,7 +403,9 @@ void TaskDump(u4_t flags)
 	#else
 	    const char *asan_used = "";
 	#endif
-	lfprintf(printf_type, "TASKS: used %d/%d, spi_retry %d, spi_delay %d%s\n", tused, MAX_TASKS, spi.retry, spi_delay, asan_used);
+	lfprintf(printf_type, "TASKS: used %d/%d(%d|%d|%d), soft_fail %d, spi_retry %d, spi_delay %d%s\n",
+	    tused, MAX_TASKS, REG_STACK_TASKS, MED_STACK_TASKS, LARGE_STACK_TASKS,
+	    soft_fail, spi.retry, spi_delay, asan_used);
 
 	if (flags & TDUMP_LOG)
 	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxxuu xxx%% cN\n");
@@ -775,7 +779,10 @@ void TaskInit()
     //setpriority(PRIO_PROCESS, getpid(), -20);
 
 	kiwi_server_pid = getpid();
-	printf("TASK MAX_TASKS %d, stack memory %.1f MB, stack size %d k so(u64_t)\n", MAX_TASKS, ((float) sizeof(task_stacks))/M, STACK_SIZE_U64_T/K);
+	printf("TASK MAX_TASKS %d(%d|%d|%d), stack memory %.1f MB, stack size %d|%d|%d k so(u64_t)\n",
+	    MAX_TASKS, REG_STACK_TASKS, MED_STACK_TASKS, LARGE_STACK_TASKS,
+	    ((float) sizeof(task_stacks))/M,
+	    STACK_SIZE_REG * STACK_SIZE_U64_T / K, STACK_SIZE_MED * STACK_SIZE_U64_T / K, STACK_SIZE_LARGE * STACK_SIZE_U64_T / K);
 
 	t = Tasks;
 	cur_task = t;
@@ -1377,9 +1384,15 @@ int _CreateTask(funcP_t funcP, const char *name, void *param, int priority, u4_t
         if (!t->valid && ctx[i].init && t_stack_size == stack_size) break;
     }
     if (i == MAX_TASKS) {
-        dump();
-        lprintf("create_task: stack_size=%04x\n", stack_size);
-        panic("create_task: no tasks available");
+        if (flags & CTF_SOFT_FAIL) {
+            soft_fail++;
+            return -1;
+        } else {
+            dump();
+            lprintf("create_task: stack_size=%s\n",
+                (stack_size == CTF_STACK_REG)? "REG" : ((stack_size == CTF_STACK_MED)? "MED" : "LARGE"));
+            panic("create_task: no tasks available");
+        }
     }
     
 	if (i > max_task) max_task = i;

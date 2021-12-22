@@ -59,7 +59,6 @@ var hfdl = {
    // map
    cur_map: null,
    map_layers: [],
-   hosts_dither: [],
    init_latlon: [28, 15],
    init_zoom: 2,
    mapZoom_nom: 17,
@@ -646,8 +645,6 @@ function hfdl_place_gs_marker(gs_n, map)
    }
    
    r.type_host = false;
-   r.click = hfdl_marker_click;
-   r.dblclick = hfdl_marker_dblclick;
    marker.kiwi_mkr_2_ref_or_host = r;
    return marker;
 }
@@ -683,27 +680,6 @@ function hfdl_style_marker(marker, idx, name, type, map, left)
                }
                el.title = rh.title;
                el.kiwi_mkr_2_ref_or_host = rh;
-               
-            /*
-               el.addEventListener('click', function(ev) {
-                  //console.log('*click*');
-                  //console.log(ev.target);
-                  hfdl_marker_click(ev.target);
-               });
-               el.addEventListener('dblclick', function(ev) {
-                  hfdl_marker_dblclick(ev.target);
-               });
-               el.addEventListener('mouseenter', function(ev) {
-                  //console.log('tooltip mouseenter');
-                  //console.log(ev);
-                  if (!rh.selected) w3_color(el, 'black', 'yellow')
-               });
-               el.addEventListener('mouseleave', function(ev) {
-                  //console.log('tooltip mouseleave');
-                  //console.log(ev);
-                  if (!rh.selected) rh.type_host? w3_color(el, 'white', 'blue') : w3_color(el, 'black', 'lime');
-               });
-            */
             }
          }
       );
@@ -851,59 +827,24 @@ function hfdl_gs_visible_cb(path, checked, first)
    hfdl_gs_visible(checked);
 }
 
-function hfdl_reset_spiderfied()
-{
-   //console.log('hfdl_reset_spiderfied '+ (hfdl.ii++) +' spiderfied='+ hfdl.spiderfied);
-   if (hfdl.spiderfied) hfdl.spiderfied.unspiderfy();
-   hfdl.spiderfied = false;
-}
-
 function hfdl_click_info_cb(ev)
 {
-   hfdl_reset_spiderfied();
+   //console.log('hfdl_click_info_cb');
 }
 
 function hfdl_zoom_end(e)
 {
-   hfdl_reset_spiderfied();
-
-   var m = hfdl.cur_map;
-
-   for (var i = 0; i < hfdl.hosts_dither.length; i++) {
-      var h = hfdl.hosts_dither[i];
-      var pt = m.latLngToLayerPoint(L.latLng(h.lat, h.lon));
-      pt.y -= h.dither_idx * 20;
-      h.mkr.setLatLng(m.layerPointToLatLng(pt));
-   }
-
-   hfdl_ref_marker_offset(true);
 }
 
 function hfdl_pan_end(e)
-{
-   hfdl_reset_spiderfied();
-}
-
-function hfdl_lat(c)
-{
-   return c.lat;
-}
-
-function hfdl_lon(c)
-{
-   return c.lng;
-}
-
-function hfdl_update_link()
 {
 }
 
 function hfdl_info_cb()
 {
-   var m = hfdl.cur_map;
-   var c = m.getCenter();
-   w3_innerHTML('id-hfdl-info', 'map center: '+ hfdl_lat(c).toFixed(2) +', '+ hfdl_lon(c).toFixed(2) +' z'+ m.getZoom());
-   hfdl_update_link();
+   //var m = hfdl.cur_map;
+   //var c = m.getCenter();
+   //w3_innerHTML('id-hfdl-info', 'map center: '+ c.lat.toFixed(2) +', '+ c.lng.toFixed(2) +' z'+ m.getZoom());
 }
 
 function hfdl_pan_zoom(map, latlon, zoom)
@@ -968,28 +909,6 @@ function hfdl_marker_click(mkr)
       ext_tune(r.f, 'iq', ext_zoom.ABS, r.z, -r.p/2, r.p/2);
    hfdl_update_link();
    hfdl_ref_marker_offset(true);
-}
-
-// double-click ref marker on any map to zoom in/out
-function hfdl_marker_dblclick(mkr)
-{
-   //console.log('hfdl_marker_dblclick');
-   var r = mkr.kiwi_mkr_2_ref_or_host;
-   var map = hfdl.cur_map;
-   if (map.getZoom() >= (r.mz || hfdl.mapZoom_nom)) {
-      if (hfdl.last_center && hfdl.last_zoom) {
-         //console.log('hfdl_marker_dblclick LAST l/l='+ hfdl_lat(hfdl.last_center) +'/'+ hfdl_lon(hfdl.last_center) +' z='+ hfdl.last_zoom);
-         hfdl_pan_zoom(map, hfdl.last_center, hfdl.last_zoom);
-      } else {
-         hfdl_pan_zoom(map, hfdl.init_latlon, hfdl.init_zoom);
-      }
-   } else {
-      hfdl.last_center = map.getCenter();
-      hfdl.last_zoom = map.getZoom();
-      var zoom = r.mz || hfdl.mapZoom_nom;
-      //console.log('hfdl_marker_dblclick REF l/l='+ r.lat +'/'+ r.lon +' mz='+ r.mz +' z='+ zoom);
-      hfdl_pan_zoom(map, [r.lat, r.lon], zoom);
-   }
 }
 
 function hfdl_map_stations()

@@ -25,7 +25,8 @@
 #define	OC_SHL64 		0x9000
 #define	OC_SHL			0x9100
 #define	OC_SHR			0x9200
-#define	OC_RDBIT 		0x9300
+#define	OC_RDBIT0 		0x9300
+#define	OC_RDBIT1 		0x9320
 #define	OC_RDBIT2 		0x9340
 #define	OC_FETCH16		0x9400
 #define	OC_STORE16		0x9500		/* leaves address ( d a --> a ) */

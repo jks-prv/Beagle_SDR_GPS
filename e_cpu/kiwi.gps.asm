@@ -105,10 +105,10 @@ GetGPSchanPtr:									; chan#
 #if GPS_INTEG_BITS == 18
 // get 18-bit I/Q data
 GetCount:		push	0						; 0
-				rdBit							; [17]
+				rdBit0							; [17]
 GetCount2:
 				REPEAT 17
-				 rdBit							; 
+				 rdBit0							; 
 				ENDR
 				ret								; [17:0]
 
@@ -125,10 +125,10 @@ GetPower:		call	GetCount				; i[17:0]
 #if GPS_INTEG_BITS == 20
 // get 20-bit I/Q data
 GetCount:		push	0						; 0
-				rdBit							; [19]
+				rdBit0							; [19]
 GetCount2:
 				REPEAT 19
-				 rdBit							; 
+				 rdBit0							; 
 				ENDR
 				ret								; [19:0]
 
@@ -165,7 +165,7 @@ GPS_Method:									; this ch#
                 brNZ    g_method_reg        ;               log only iq_ch channel
 
                 rdReg	GET_CHAN_IQ			; 0
-                rdBit						; Inav			keep msb of I as nav data
+                rdBit0						; Inav			keep msb of I as nav data
                 dup							; Inav ip[MSB]
 
                 call	GetCount2			; Inav ip
@@ -193,7 +193,7 @@ GPS_Method:									; this ch#
 
 g_method_reg:
                 rdReg	GET_CHAN_IQ			; 0
-                rdBit						; Inav			keep msb of I as nav data
+                rdBit0						; Inav			keep msb of I as nav data
                 dup							; Inav bit
                 call	GetCount2			; Inav ip
                 call	GetCount   		    ; Inav ip qp
@@ -505,18 +505,18 @@ UploadClock:									; &GPS_channels + ch_NAV_MS
 				wrEvt	GET_MEMORY				; GPS_channels++ -> ch_NAV_BITS
 
 #if GPS_REPL_BITS == 16
-				rdBit16							; 16-bit clock replica
+				rdBit0_16						; 16-bit clock replica
 				wrReg	HOST_TX
 				push    0                       ; to simplify code always return 2 words
 				wrReg	HOST_TX
 #endif
 
 #if GPS_REPL_BITS == 18
-				rdBit16							; 18-bit clock replica sent across 2 words
+				rdBit0_16						; 18-bit clock replica sent across 2 words
 				wrReg	HOST_TX
 				push    0
-				rdBit
-				rdBit
+				rdBit0
+				rdBit0
 				wrReg	HOST_TX
 #endif
 				addi.r	sizeof GPS_CHAN - 4		; &GPS_channels++
@@ -638,16 +638,16 @@ CmdGetChan:     rdReg	HOST_RX				; chan#
 
 CmdGetClocks:   wrEvt	HOST_RST
                 rdReg	GET_SNAPSHOT		; 0
-                rdBit16z					; 48-bit system clock
+                rdBit0_16z					; 48-bit system clock
                 wrReg	HOST_TX
-                rdBit16						; "
+                rdBit0_16					; "
                 wrReg	HOST_TX
-                rdBit16						; "
+                rdBit0_16					; "
                 wrReg	HOST_TX
                 
                 push	0
                 REPEAT	GPS_CHANS
-                 rdBit						; chan srq
+                 rdBit0						; chan srq
                 ENDR
                 wrReg	HOST_TX
                 

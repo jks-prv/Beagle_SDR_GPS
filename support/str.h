@@ -48,8 +48,8 @@ int kiwi_split(char *ocp, char **mbuf, const char *delims, char *argv[], int nar
 char *kiwi_str_replace(char *s, const char *from, const char *to, bool *caller_must_free=NULL);
 void kiwi_str_unescape_quotes(char *str);
 char *kiwi_str_escape_HTML(char *str);
-char *kiwi_str_encode(char *s);
-char *kiwi_str_encode_static(char *src);
+char *kiwi_str_encode(char *s, bool alt=FALSE);
+char *kiwi_str_encode_static(char *src, bool alt=FALSE);
 char *kiwi_str_decode_inplace(char *src);
 char *kiwi_str_decode_static(char *src);
 char *kiwi_str_decode_selective_inplace(char *src);

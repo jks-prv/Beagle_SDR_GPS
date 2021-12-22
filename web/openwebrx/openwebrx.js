@@ -2860,7 +2860,7 @@ function freq_database_lookup(Hz, utility)
       {
          // HF: short-wave.info is only >= 2 MHz
          f = Math.round(kHz_r1k/5) * 5;	// 5kHz windows on 5 kHz boundaries -- intended for SWBC
-         url += "www.short-wave.info/index.php?freq="+f.toFixed(0)+"&timbus=NOW&ip="+client_public_ip+"&porm=4";
+         url += "www.short-wave.info/index.php?freq="+ f.toFixed(0) +"&timbus=NOW&ip="+ client_public_ip +"&porm=4";
       }
    }
    if (utility == owrx.rcm_cluster) {

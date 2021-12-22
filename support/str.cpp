@@ -406,7 +406,26 @@ char *kiwi_str_escape_HTML(char *str)
 	return sn;
 }
 
-char *kiwi_str_encode(char *src)
+static void kiwi_alt_encode(const char *src, char *dst, size_t dst_len) {
+  static const char *hex = "0123456789abcdef";
+  const char *end = dst + dst_len - 1;
+
+  for (; *src != '\0' && dst < end; src++, dst++) {
+    if (*src >= ' ' && *src <= '~') {
+      *dst = *src;
+    } else if (dst + 3 < end) {
+      dst[0] = '<';
+      dst[1] = hex[(* (const unsigned char *) src) >> 4];
+      dst[2] = hex[(* (const unsigned char *) src) & 0xf];
+      dst[3] = '>';
+      dst += 3;
+    } else break;	// KiwiSDR: for valgrind, don't leave uninitialized bytes in string
+  }
+
+  *dst = '\0';
+}
+
+char *kiwi_str_encode(char *src, bool alt)
 {
 	if (src == NULL) src = (char *) "null";		// JSON compatibility
 	
@@ -417,7 +436,10 @@ char *kiwi_str_encode(char *src)
 	// and also because dx list has to use kiwi_ifree() due to related allocations via strdup()
 	check(slen);
 	char *dst = (char *) kiwi_imalloc("kiwi_str_encode", slen);
-	mg_url_encode(src, dst, slen);
+	if (alt)
+	    kiwi_alt_encode(src, dst, slen);
+	else
+	    mg_url_encode(src, dst, slen);
 	return dst;		// NB: caller must kiwi_ifree(dst)
 }
 
@@ -425,10 +447,13 @@ char *kiwi_str_encode(char *src)
 static char dst_static[N_DST_STATIC];
 
 // for use with e.g. an immediate printf argument
-char *kiwi_str_encode_static(char *src)
+char *kiwi_str_encode_static(char *src, bool alt)
 {
 	if (src == NULL) src = (char *) "null";		// JSON compatibility
-	mg_url_encode(src, dst_static, N_DST_STATIC);
+	if (alt)
+	    kiwi_alt_encode(src, dst_static, N_DST_STATIC);
+	else
+	    mg_url_encode(src, dst_static, N_DST_STATIC);
 	return dst_static;
 }
 

@@ -47,6 +47,14 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <signal.h>
 
+//#define CONN_PRINTF
+#ifdef CONN_PRINTF
+	#define conn_printf(fmt, ...) \
+		printf(fmt, ## __VA_ARGS__)
+#else
+	#define conn_printf(fmt, ...)
+#endif
+
 conn_t conns[N_CONNS];
 bool force_camp;
 
@@ -84,6 +92,7 @@ static void conn_init(conn_t *c)
 
 void rx_enable(int chan, rx_chan_action_e action)
 {
+    if (chan < 0) return;
 	rx_chan_t *rx = &rx_channels[chan];
 	
 	switch (action) {
@@ -142,12 +151,12 @@ void show_conn(const char *prefix, conn_t *cd)
         return;
     }
     
-    lprintf("%sCONN-%02d %s%s rx=%d auth%d kiwi%d prot%d admin%d local%d isP%d tle%d%d KA=%02d/60 KC=%05d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s%s\n",
-        prefix, cd->self_idx, rx_streams[cd->type].uri, cd->internal_connection? "(INT)":"",
+    lprintf("%sCONN-%02d %p %s%s rx=%d auth%d kiwi%d prot%d admin%d local%d isP%d tle%d%d KA=%02d/60 KC=%05d mc=%9p ip=%s:%d other=%s%d %s%s%s\n",
+        prefix, cd->self_idx, cd, rx_streams[cd->type].uri, cd->internal_connection? "(INT)":"",
         (cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel,
         cd->auth, cd->auth_kiwi, cd->auth_prot, cd->auth_admin, cd->isLocal,
         cd->isPassword, cd->tlimit_exempt, cd->tlimit_exempt_by_pwd,
-        cd->keep_alive, cd->keepalive_count, cd->mc, cd->magic,
+        cd->keep_alive, cd->keepalive_count, cd->mc,
         cd->remote_ip, cd->remote_port, cd->other? "CONN-":"", cd->other? cd->other-conns:-1,
         (cd->type == STREAM_EXT)? (cd->ext? cd->ext->name : "?") : "",
         cd->stop_data? " STOP_DATA":"",
@@ -164,7 +173,7 @@ void dump()
 	lprintf("dump --------\n");
 	for (i=0; i < rx_chans; i++) {
 		rx_chan_t *rx = &rx_channels[i];
-		lprintf("RX%d en%d busy%d conn%d-%p\n", i, rx->chan_enabled, rx->busy,
+		lprintf("RX%d en%d busy%d conn-%02d %p\n", i, rx->chan_enabled, rx->busy,
 			rx->conn? rx->conn->self_idx : 9999, rx->conn? rx->conn : 0);
 	}
 
@@ -343,9 +352,10 @@ void rx_server_remove(conn_t *c)
     }
 	
 	int task = c->task;
+	int cn = c->self_idx;
 	conn_init(c);
 	check_for_update(WAIT_UNTIL_NO_USERS, NULL);
-	//printf("### rx_server_remove %s\n", Task_ls(task));
+	conn_printf("CONN-%02d rx_server_remove %p %s\n", cn, c, Task_ls(task));
 	TaskRemove(task);
 }
 
@@ -450,14 +460,6 @@ void rx_stream_tramp(void *param)
 	conn_t *conn = (conn_t *) param;
 	(conn->task_func)(param);
 }
-
-//#define CONN_PRINTF
-#ifdef CONN_PRINTF
-	#define conn_printf(fmt, ...) \
-		printf(fmt, ## __VA_ARGS__)
-#else
-	#define conn_printf(fmt, ...)
-#endif
 
 // if this connection is new, spawn new receiver channel with sound/waterfall tasks
 conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
@@ -624,11 +626,11 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			continue;
 		}
 		
-		conn_printf("CONN-%d IS %p type=%d(%s) tstamp=%lld ip=%s:%d rx=%d auth=%d other%s%ld mc=%p\n", cn, c, c->type, rx_streams[c->type].uri, c->tstamp,
+		conn_printf("CONN-%02d IS %p type=%d(%s) tstamp=%lld ip=%s:%d rx=%d auth=%d other%s%ld mc=%p\n", cn, c, c->type, rx_streams[c->type].uri, c->tstamp,
 		    c->remote_ip, c->remote_port, c->rx_channel, c->auth, c->other? "=CONN-":"=", c->other? c->other-conns:0, c->mc);
 		if (c->tstamp == tstamp && (strcmp(remote_ip, c->remote_ip) == 0)) {
 			if (snd_or_wf && c->type == st->type) {
-				conn_printf("CONN-%d DUPLICATE!\n", cn);
+				conn_printf("CONN-%02d DUPLICATE!\n", cn);
 				return NULL;
 			}
 			if (st->type == STREAM_SOUND && (c->type == STREAM_WATERFALL || c->type == STREAM_MONITOR)) {
@@ -636,7 +638,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 					cother = c;
 					multiple = true;
 					#ifdef CONN_PRINTF
-					    conn_printf("NEW SND, OTHER is %s @ CONN-%d\n", rx_streams[c->type].uri, cn);
+					    conn_printf("NEW SND, OTHER is %s @ CONN-%02d\n", rx_streams[c->type].uri, cn);
 					    dump_conn();
 					#endif
 				} else {
@@ -649,7 +651,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 					cother = c;
 					multiple = true;
 					#ifdef CONN_PRINTF
-					    conn_printf("NEW WF, OTHER is %s @ CONN-%d\n", rx_streams[c->type].uri, cn);
+					    conn_printf("NEW WF, OTHER is %s @ CONN-%02d\n", rx_streams[c->type].uri, cn);
 					    dump_conn();
 					#endif
 				} else {
@@ -740,7 +742,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
             }
 			
 			if (rx != -1) {
-			    conn_printf("CONN-%d no other, new alloc rx%d\n", cn, rx);
+			    conn_printf("CONN-%02d no other, new alloc rx%d\n", cn, rx);
 			    rx_channels[rx].busy = true;
 			}
 		} else {
@@ -770,10 +772,10 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 		}
 		
 		c->rx_channel = cother? cother->rx_channel : rx;
-		if (st->type == STREAM_SOUND) rx_channels[c->rx_channel].conn = c;
+		if (st->type == STREAM_SOUND && c->rx_channel != -1) rx_channels[c->rx_channel].conn = c;
 		
 		// e.g. for WF-only kiwirecorder connections (won't override above)
-		if (st->type == STREAM_WATERFALL && rx_channels[c->rx_channel].conn == NULL)
+		if (st->type == STREAM_WATERFALL && c->rx_channel != -1 && rx_channels[c->rx_channel].conn == NULL)
 		    rx_channels[c->rx_channel].conn = c;
 	}
   
@@ -802,11 +804,23 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
     	u4_t flags = CTF_TNAME_FREE;    // ask TaskRemove to free name so debugging has longer access to it
     	if (c->rx_channel != -1) flags |= CTF_RX_CHANNEL | (c->rx_channel & CTF_CHANNEL);
     	if (isWF_conn) flags |= CTF_STACK_MED;
+    	flags |= CTF_SOFT_FAIL;
 		int id = CreateTaskSF(rx_stream_tramp, c->tname, c, (st->priority == TASK_MED_PRIORITY)? task_medium_priority : st->priority, flags, 0);
+		
+		if (id < 0) {
+	        conn_printf("CONN-%02d %p NO TASKS AVAILABLE\n", cn, c);
+            kiwi_ifree((void *) c->tname);
+            mc->connection_param = NULL;
+			rx_enable(c->rx_channel, RX_CHAN_FREE);
+            conn_init(c);
+		    return NULL;
+		}
+		
+	    conn_printf("CONN-%02d %p CreateTask %s\n", cn, c, Task_ls(id));
 		c->task = id;
 	}
 	
-	conn_printf("CONN-%d <=== USE THIS ONE\n", cn);
+	conn_printf("CONN-%02d %p <=== USE THIS ONE\n", cn, c);
 	c->valid = true;
 	return c;
 }

@@ -179,8 +179,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	    strcmp(cmd, "SET keepalive") != 0 &&
 	    kiwi_str_begins_with(cmd, "SET options") == false &&    // options needed before CMD_AUTH
 	    kiwi_str_begins_with(cmd, "SET auth") == false) {
-		clprintf(conn, "### SECURITY: NO AUTH YET: %s %d %s <%s>\n", stream_name, conn->type, conn->remote_ip, cmd);
-		return true;	// fake that we accepted command so it won't be further processed
+		    clprintf(conn, "### SECURITY: NO AUTH YET: %s %s %s %d <%.64s>\n",
+		        stream_name, rx_streams[conn->type].uri, conn->remote_ip, strlen(cmd), cmd);
+            conn->kick = true;
+		    return true;	// fake that we accepted command so it won't be further processed
 	}
 
     // CAUTION: because rx_common_cmd() can pass cmds it doesn't match there can be false hash matches

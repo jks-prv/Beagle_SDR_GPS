@@ -124,8 +124,8 @@ module KiwiSDR (
 	wire [15:0] op;
     wire [31:0] nos, tos;
     reg  [15:0] par;
-    wire [1:0]  ser;
-    wire        rdBit, rdBit2, rdReg, rdReg2, wrReg, wrReg2, wrEvt, wrEvt2;
+    wire [2:0]  ser;
+    wire        rdBit0, rdBit1, rdBit2, rdReg, rdReg2, wrReg, wrReg2, wrEvt, wrEvt2;
 
     wire        boot_done, host_srq, mem_rd, gps_rd, ext_rd;
     wire [15:0] host_dout, mem_dout, gps_dout, ext_dout;
@@ -275,6 +275,7 @@ module KiwiSDR (
     assign wf_dout = 0;
 `ifndef USE_OTHER
 	assign ser[1] = 1'b0;
+	assign ser[2] = 1'b0;
 `endif
 	wire rx_orst;
 	wire rx_overflow_C = 0;
@@ -368,7 +369,8 @@ module KiwiSDR (
         
         .tos        (tos),
         .op         (op),
-        .rdBit      (rdBit),
+        .rdBit0     (rdBit0),
+        .rdBit1     (rdBit1),
         .rdBit2     (rdBit2),
         .rdReg      (rdReg),
         .rdReg2     (rdReg2),
@@ -394,7 +396,7 @@ module KiwiSDR (
         .ser		(ser[0]),        
         .tos		(tos),      // no clk domain crossing because gps_clk = cpu_clk
         .op			(op),        
-        .rdBit      (rdBit),
+        .rdBit      (rdBit0),
         .rdReg      (rdReg),
         .wrReg      (wrReg),
         .wrEvt      (wrEvt)

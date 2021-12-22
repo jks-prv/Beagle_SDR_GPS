@@ -72,17 +72,17 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 u4_t ov_mask, snd_intr_usec;
 
 bool create_eeprom, need_hardware, kiwi_reg_debug, have_ant_switch_ext, gps_e1b_only,
-    disable_led_task, is_multi_core, kiwi_restart, debug_printfs;
+    disable_led_task, is_multi_core, kiwi_restart, debug_printfs, cmd_debug;
 
+int main_argc;
 char **main_argv;
-char *fpga_file, *other_args;
+char *fpga_file;
 
 #ifdef USE_OTHER
 void other_task(void *param)
 {
-    void other_main(char *other_args, int p0, int p1, int p2);
-    other_main(other_args, p0, p1, p2);
-    //other_main(int argc, char *argv[]);
+    void other_main(int argc, char *argv[]);
+    other_main(main_argc, main_argv);
     kiwi_exit(0);
 }
 #endif
@@ -104,6 +104,7 @@ int main(int argc, char *argv[])
 	    is_multi_core = true;
 	#endif
 	
+	main_argc = argc;
 	main_argv = argv;
 	
 	#ifdef DEVSYS
@@ -130,15 +131,17 @@ int main(int argc, char *argv[])
     #define ARGL(v) if (ai+1 < argc) (v) = strtol(argv[++ai], 0, 0);
     
 	for (int ai = 1; ai < argc; ) {
+	    if (strncmp(argv[ai], "-o_", 3) == 0) {
+	        fw_sel_override = FW_OTHER;
+	        ai++;
+		    while (ai < argc && ((argv[ai][0] != '+') && (argv[ai][0] != '-'))) ai++;
+	        continue;
+	    }
+	
 		if (ARG("-fw")) { ARGL(fw_sel_override); printf("firmware select override: %d\n", fw_sel_override); }
-		if (ARG("-other")) {
-		    fw_sel_override = FW_OTHER;
-		    other_args = ARGP();
-		    if (other_args == NULL) panic ("-other has no param?");
-		    printf("other args: \"%s\"\n", other_args);
-		}
 
 		if (ARG("-kiwi_reg")) kiwi_reg_debug = TRUE;
+		if (ARG("-cmd_debug")) cmd_debug = TRUE;
 		if (ARG("-bg")) { background_mode = TRUE; bg=1; }
 		if (ARG("-fopt")) use_foptim = 1;   // in EDATA_DEVEL mode use foptim version of files
 		if (ARG("-down")) down = 1;
@@ -211,9 +214,7 @@ int main(int argc, char *argv[])
 		if (ARG("-p2")) { ARGL(p2); printf("-p2 = %d\n", p2); }
 
 		ai++;
-		while (ai < argc && ((argv[ai][0] != '+') && (argv[ai][0] != '-'))) {
-			ai++;
-		}
+		while (ai < argc && ((argv[ai][0] != '+') && (argv[ai][0] != '-'))) ai++;
 	}
 	
 	lprintf("KiwiSDR v%d.%d --------------------------------------------------------------------\n",
@@ -235,6 +236,11 @@ int main(int argc, char *argv[])
     #if (defined(DEVSYS) && 0)
         void ale_2g_test();
         ale_2g_test();
+        _exit(0);
+    #endif
+
+    #if (defined(DEVSYS))
+        printf("DEVSYS: nothing to do, exiting..\n");
         _exit(0);
     #endif
 
