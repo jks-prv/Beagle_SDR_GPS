@@ -84,15 +84,15 @@ SATELLITE Sats[] = {
 */
 
     // QZSS (Japan) prn(saif) = 183++, prn(std) = 193++
-    // last checked: 9-Sep-2020
+    // last checked: 28-Dec-2021
     // sys.qzss.go.jp/dod/en/constellation.html [PNT L1 C/A entries]
     {193, 339, 01050, QZSS},   // J01, QZS-1
     {194, 208, 01607, QZSS},   // J02, QZS-2
-    {195, 711, 01747, QZSS},   // J04, QZS-4
-//  {196, 189, 01305, QZSS},   // (not scheduled until 2023)
+    {195, 711, 01747, QZSS},   // J03, QZS-4
+    {196, 189, 01305, QZSS},   // J04, QZS-1R
 //  {197, 263, 00540, QZSS},   //
 //  {198, 537, 01363, QZSS},   //
-    {199, 663, 00727, QZSS},   // J03, QZS-3
+    {199, 663, 00727, QZSS},   // J07, QZS-3
 //  {200, 942, 00147},
 //  {201, 173, 01206},
 //  {202, 900, 01045},
