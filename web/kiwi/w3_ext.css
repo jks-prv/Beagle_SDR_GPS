@@ -508,6 +508,16 @@ input[type=range]::-moz-range-thumb {
     margin-top: 16px !important
 }
 
+.w3-margin-T-20
+{
+    margin-top: 20px !important
+}
+
+.w3-margin-T-24
+{
+    margin-top: 24px !important
+}
+
 .w3-margin-T-32
 {
     margin-top: 32px
@@ -536,6 +546,16 @@ input[type=range]::-moz-range-thumb {
 .w3-margin-B-16
 {
     margin-bottom: 16px !important
+}
+
+.w3-margin-B-20
+{
+    margin-bottom: 20px !important
+}
+
+.w3-margin-B-24
+{
+    margin-bottom: 24px !important
 }
 
 .w3-margin-B-32
