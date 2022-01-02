@@ -635,8 +635,11 @@ var ansi = {
             ]
 };
 
+// NB: doesn't yet handle XY screen addressing so apps like nano editor can be used in admin console
 function kiwi_output_msg(id, id_scroll, p)
 {
+   var dbg = (1 && dbgUs);
+   
 	var parent_el = w3_el(id);
 	if (!parent_el) {
 	   console.log('kiwi_output_msg NOT_FOUND id='+ id);
@@ -656,6 +659,7 @@ function kiwi_output_msg(id, id_scroll, p)
       p.el = w3_create_appendElement(parent_el, 'pre', '');
       p.esc = { s:'', state:0 };
       p.sgr = { span:0, bright:0, fg:null, bg:null };
+      p.return_pending = false;
       p.init = true;
    }
 
@@ -677,12 +681,29 @@ function kiwi_output_msg(id, id_scroll, p)
       p.col = 0;
    }
 
+   if (dbg) console.log('kiwi_output_msg:');
+   if (dbg) console.log(JSON.stringify(p));
+   if (dbg) console.log(JSON.stringify(s));
    if (p.remove_returns) s = s.replace(/\r/g, '');
+   if (p.inline_returns) {
+      // done twice to handle case observed with "pkup":
+      // \r\r\n => \r\n => \n
+      // that would otherwise result in spurious blank lines
+      s = s.replace(/\r\n/g, '\n');
+      s = s.replace(/\r\n/g, '\n');
+   }
+   if (dbg) console.log(JSON.stringify(s));
       
 	for (var i=0; i < s.length; i++) {
 
 		var c = s.charAt(i);
       //console.log('c='+ JSON.stringify(c));
+
+		if (p.inline_returns && p.return_pending && c != '\r') {
+         p.tstr = snew = '';
+			p.col = 0;
+         p.return_pending = false;
+		}
 
 		if (c == '\f') {		// form-feed is how we clear accumulated pre elements (screen clear)
 		   while (parent_el.firstChild) {
@@ -693,6 +714,11 @@ function kiwi_output_msg(id, id_scroll, p)
 			p.col = 0;
 		} else
 		
+		if (p.inline_returns && c == '\r') {
+         if (dbg) console.log('\\r inline:');
+         p.return_pending = true;
+      } else
+      
 		// tab-8
 		if (c == '\t') {
          snew += '&nbsp;';
@@ -718,7 +744,7 @@ function kiwi_output_msg(id, id_scroll, p)
             //console.log('process ESC '+ JSON.stringify(p.esc.s));
 		      var first = p.esc.s.charAt(0);
 		      var second = p.esc.s.charAt(1);
-            var result = 0;
+            var n = 0, result = 0;
 		      
 		      if (first == '[') {
 
@@ -726,7 +752,7 @@ function kiwi_output_msg(id, id_scroll, p)
                if (c == 'm') {
                   var sgr, saw_reset = 0, saw_color = 0;
                   var sa = p.esc.s.substr(1).split(';');
-                  var sl = sa.length
+                  var sl = sa.length;
                   //console.log('SGR '+ JSON.stringify(p.esc.s) +' sl='+ sl);
                   //console.log(sa);
          
@@ -856,11 +882,14 @@ function kiwi_output_msg(id, id_scroll, p)
                } else
                
                if (c == 'K') {
-                  result = 'erase in line';
+                  if (second.match(/[012]/)) n = second - '0';
+                  result = 'erase in line '+ ["#0: cur to EOL","#1: cur to BOL","#2: full line"][n];
                } else
                
+               // not on Wikipedia, see: docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
                if (c == 'P') {
-                  result = 'del # chars';
+                  n = second - '0';
+                  result = 'del #'+ n +' chars';
                } else
                
                if (second == '?') {    // set/reset mode
@@ -878,8 +907,9 @@ function kiwi_output_msg(id, id_scroll, p)
                } else
 		      
                if (c == 'J') {
-                  if (second == '2' || second == '3') result = 'erase whole display'; else
-                  if (second == '1') result = 'erase start to cursor'; else
+                  if (second == '0' || second == 'J') result = 'erase cur to EOS'; else
+                  if (second == '2' || second == '3') result = 'erase full screen'; else
+                  if (second == '1') result = 'erase BOS to cur'; else
                      result = 2;
                } else
                
@@ -909,13 +939,13 @@ function kiwi_output_msg(id, id_scroll, p)
             }
             
             if (result === 1) {
-                  console.log('ESC '+ JSON.stringify(p.esc.s) +' IGNORED');
+                  if (dbg) console.log('ESC '+ JSON.stringify(p.esc.s) +' IGNORED');
             } else
             if (result === 2) {
-                  console.log('ESC '+ JSON.stringify(p.esc.s) +' UNKNOWN');
+                  if (dbg) console.log('ESC '+ JSON.stringify(p.esc.s) +' UNKNOWN');
             } else
             if (isString(result)) {
-               console.log('ESC '+ JSON.stringify(p.esc.s) +' '+ result);
+               if (dbg) console.log('ESC '+ JSON.stringify(p.esc.s) +' '+ result);
             }
    
             p.esc.state = 0;
@@ -1327,8 +1357,14 @@ function users_init(called_from)
    
       for (var i=0; i < rx_chans; i++) {
          if (kiwi.called_from_admin) {
-            s1 = w3_button('id-user-kick-'+ i +' w3-small w3-white w3-border w3-border-red w3-round-large w3-padding-0 w3-padding-LR-8',
+            s1 = w3_button('id-user-kick-'+ i +' w3-hide w3-small w3-white w3-border w3-border-red w3-round-large w3-padding-0 w3-padding-LR-8',
                'Kick', 'status_user_kick_cb', i);
+            /*
+            s1 += w3_button('id-user-bl32-'+ i +' w3-hide w3-margin-L-8 w3-small w3-white w3-border w3-border-red w3-round-large w3-padding-0 w3-padding-LR-8',
+               'IP blacklist /32', 'network_user_blacklist_cb', i);
+            s1 += w3_button('id-user-bl24-'+ i +' w3-hide w3-margin-L-8 w3-small w3-white w3-border w3-border-red w3-round-large w3-padding-0 w3-padding-LR-8',
+               'IP blacklist /24', 'network_user_blacklist_cb', i+100);
+            */
          }
          s2 = w3_div('id-campers-'+ i +' w3-css-orange w3-padding-LR-8');
          w3_el('id-users-list').innerHTML += w3_inline('/w3-hspace-8', w3_div('id-user-'+ i + pad, 'RX'+ i), w3_div(id_prefix + i), s1, s2);
@@ -1421,13 +1457,9 @@ function user_cb(obj)
          
 		      // status display used by admin & monitor page
             w3_innerHTML(id_prefix + i, s1 + s2 + s3);
-            var kick = 'id-user-kick-'+ i;
-            if (w3_el(kick)) {
-               if (s1 != '')
-                  w3_show_inline_block(kick);
-               else
-                  w3_hide(kick);
-            }
+            w3_hide2('id-user-kick-'+ i, s1 == '');
+            w3_hide2('id-user-bl32-'+ i, s1 == '');
+            w3_hide2('id-user-bl24-'+ i, s1 == '');
          }
 		}
 		
