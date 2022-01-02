@@ -34,7 +34,7 @@ var admin_sdr = {
       qam:  { c:     0, w:  9800 }
    },
    
-   dx_enabled: true,
+   dx_enabled: false,
    
    _last_: 0
 };
