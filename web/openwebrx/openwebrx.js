@@ -9430,35 +9430,38 @@ function mode_button(evt, el, dir)
    }
    
    if (owrx.last_mode_col != col) {
-      //console.log('#### mode_button: col '+ owrx.last_mode_col +'>'+ col +' '+ mode);
+      //console.log('#### mode_button1: col '+ owrx.last_mode_col +'>'+ col +' '+ mode);
 
       // Prevent going between mono and stereo modes while recording
       // FIXME: do something better like disable ineligible mode buttons and show reason in mouseover tooltip 
       if (recording) {
          var c_iq_or_stereo = ext_is_IQ_or_stereo_curmode()? 1:0;
          var m_iq_or_stereo = ext_is_IQ_or_stereo_mode(mode)? 1:0;
-         if (c_iq_or_stereo ^ m_iq_or_stereo)
+         //console.log('#### mode_button1: c_iq_or_stereo='+ c_iq_or_stereo +' m_iq_or_stereo='+ m_iq_or_stereo +' rtn='+ (c_iq_or_stereo ^ m_iq_or_stereo));
+         if (c_iq_or_stereo ^ m_iq_or_stereo || mode == 'drm')
             return;
       }
 
       owrx.last_mode_col = col;
    } else {
       var sa = mode_buttons[col].s;
-      mode = mode.toUpperCase();
-      var i = sa.indexOf(mode) + dir;
+      var mode_uc = mode.toUpperCase();
+      var i = sa.indexOf(mode_uc) + dir;
       if (i <= -1) i = sa.length - 1;
       if (i >= sa.length) i = 0;
-      mode = sa[i];
+      mode_uc = sa[i];
+      mode = mode_uc.toLowerCase();
+      //console.log('#### mode_button2: col '+ col +' '+ mode);
 
       if (recording) {
          var c_iq_or_stereo = ext_is_IQ_or_stereo_curmode()? 1:0;
          var m_iq_or_stereo = ext_is_IQ_or_stereo_mode(mode)? 1:0;
-         if (c_iq_or_stereo ^ m_iq_or_stereo)
+         //console.log('#### mode_button2: c_iq_or_stereo='+ c_iq_or_stereo +' m_iq_or_stereo='+ m_iq_or_stereo +' rtn='+ (c_iq_or_stereo ^ m_iq_or_stereo));
+         if (c_iq_or_stereo ^ m_iq_or_stereo || mode == 'drm')
 		      return;
 	   }
 
-      el.innerHTML = mode;
-      mode = mode.toLowerCase();
+      el.innerHTML = mode_uc;
       //console.log('#### mode_button: col '+ col +' '+ mode);
    }
 
