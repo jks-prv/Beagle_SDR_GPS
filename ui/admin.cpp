@@ -728,8 +728,8 @@ void c2s_admin(void *param)
                     clprintf(conn, "SET dns1=%s dns2=%s\n", dns1, dns2);
     
                     bool dns1_err, dns2_err;
-                    inet4_d2h(dns1, &dns1_err, NULL, NULL, NULL, NULL);
-                    inet4_d2h(dns2, &dns2_err, NULL, NULL, NULL, NULL);
+                    inet4_d2h(dns1, &dns1_err);
+                    inet4_d2h(dns2, &dns2_err);
     
                     if (!dns1_err || !dns2_err) {
                         char *s;
@@ -767,7 +767,7 @@ void c2s_admin(void *param)
                 cprintf(conn, "\"iptables -D INPUT -j KIWI; iptables -N KIWI; iptables -F KIWI\"\n");
 				system("iptables -D INPUT -j KIWI; iptables -N KIWI; iptables -F KIWI");
 
-                net.ipv4_blacklist_len = 0;
+                net.ip_blacklist_len = 0;
 				continue;
 			}
 
@@ -776,14 +776,8 @@ void c2s_admin(void *param)
 			if (i == 1) {
 				kiwi_str_decode_inplace(ip_m);
 				//printf("network_ip_blacklist %s\n", ip_m);
-				asprintf(&cmd_p, "iptables -A KIWI -s %s -j DROP", ip_m);
-                rv = non_blocking_cmd_system_child("kiwi.iptables", cmd_p, POLL_MSEC(200));
-                rv = WEXITSTATUS(rv);
-                cprintf(conn, "\"%s\" rv=%d\n", cmd_p, rv);
+				rv = ip_blacklist_add_iptables(ip_m);
                 send_msg_encoded(conn, "ADM", "network_ip_blacklist_status", "%d,%s", rv, ip_m);
-				kiwi_ifree(cmd_p);
-
-                ip_blacklist_add(ip_m);
 				kiwi_ifree(ip_m);
 				continue;
 			}
@@ -792,6 +786,7 @@ void c2s_admin(void *param)
 			if (i == 0) {
                 cprintf(conn, "\"iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI\"\n");
 				system("iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI");
+				send_msg(conn, SM_NO_DEBUG, "ADM network_ip_blacklist_enabled");
 				continue;
 			}
 
