@@ -2,6 +2,14 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.483  January 2, 2022
+    Admin page, log tab, "dump" button will show attempted blacklist connections for proxied Kiwis.
+        Each individual connection attempt will no longer be shown in the log.
+    Show ADC overflow count in /status URL ("adc_ov=NNN" parameter)
+    When recording, prevent switching from mono to stereo modes (and vice versa).
+    GPS: activate QZS-1R sat (contributed change, see: github.com/jks-prv/Beagle_SDR_GPS/pull/569)
+    Admin console: process "remain on current line" (\r) sequences properly.
+
 v1.482  December 22, 2021
     Better resistance to abusive connections.
 
