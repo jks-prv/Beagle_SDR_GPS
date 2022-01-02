@@ -103,6 +103,7 @@ typedef struct {
     bool force_reset;
     u4_t in_hist[N_DPBUF];
     int rx_adc_ovfl;
+    u4_t rx_adc_ovfl_cnt;
     int audio_dropped;
 } dpump_t;
 

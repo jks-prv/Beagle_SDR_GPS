@@ -323,7 +323,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			"gps=%s\ngps_good=%d\nfixes=%d\nfixes_min=%d\nfixes_hour=%d\n"
 			"tdoa_id=%s\ntdoa_ch=%d\n"
 			"asl=%d\nloc=%s\n"
-			"sw_version=%s%d.%d\nantenna=%s\nsnr=%d,%d\n"
+			"sw_version=%s%d.%d\nantenna=%s\nsnr=%d,%d\nadc_ov=%u\n"
 			"uptime=%d\n"
 			"gps_date=%d,%d\ndate=%s\n",
 			status, no_open_access? "auth=password\n" : "", offline? "yes":"no",
@@ -360,6 +360,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			"KiwiSDR_v", version_maj, version_min,
 			(s6 = cfg_string("rx_antenna", NULL, CFG_OPTIONAL)),
 			snr_all, snr_HF,
+			dpump.rx_adc_ovfl_cnt,
 			timer_sec(),
 			gps.set_date? 1:0, gps.date_set? 1:0, utc_ctime_static()
 			);

@@ -95,6 +95,7 @@ static void snd_service()
         spi_get3_noduplex(CmdGetRX, miso, rx_xfer_size, nrx_samps_rem, nrx_samps_loop);
         moved++;
         dpump.rx_adc_ovfl = miso->status & SPI_ADC_OVFL;
+        if (dpump.rx_adc_ovfl) dpump.rx_adc_ovfl_cnt++;
         
         evDPC(EC_EVENT, EV_DPUMP, -1, "snd_svc", "..CmdGetRX");
         
