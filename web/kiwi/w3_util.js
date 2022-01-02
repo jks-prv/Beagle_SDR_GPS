@@ -2086,13 +2086,19 @@ function w3_textarea(psa, label, path, val, rows, cols, cb)
 	var onkeydown = ' onkeydown="w3int_input_keydown(event, '+ sq(path) +', '+ sq(cb) +')"';
 	var onkeyup = ' onkeyup="w3int_input_keyup(event, '+ sq(path) +', '+ sq(cb) +')"';
 	var val = val || '';
-	var p = w3_psa(psa, 'w3-input w3-border w3-hover-shadow '+ id + spacing, '', 'rows="'+ rows +'" cols="'+ cols +'"');
+	var bold = !psa.includes('w3-label-not-bold');
+   var psa3 = w3_psa3(psa);
+   var psa_label = w3_psa_mix(psa3.middle, (label != '' && bold)? 'w3-bold':'');
+	var psa_inner = w3_psa(psa3.right, 'w3-input w3-border w3-hover-shadow '+ id + spacing, '', 'rows='+ dq(rows) +' cols='+ dq(cols));
 
 	var s =
-	   w3_div('',
-	      label,
-		   '<textarea '+ p + onchange + onkeydown + onkeyup +'>'+ val +'</textarea>'
+	   w3_div(psa3.left,
+         w3_label(psa_label, label, path) +
+		   '<textarea '+ psa_inner + onchange + onkeydown + onkeyup +'>'+ val +'</textarea>'
 		);
+	//if (psa.includes('w3-dump')) console.log('$');
+	//if (psa.includes('w3-dump')) console.log(psa3);
+	//if (psa.includes('w3-dump')) console.log(psa_inner);
 	//if (psa.includes('w3-dump')) console.log('label='+ label);
 	//if (psa.includes('w3-dump')) console.log('val='+ val);
 	//if (psa.includes('w3-dump')) console.log('s='+ s);
