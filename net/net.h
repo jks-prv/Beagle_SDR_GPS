@@ -75,6 +75,14 @@ typedef struct {
 } ip_lookup_t;
 
 typedef struct {
+    u4_t dropped;
+    u4_t ip;        // ipv4
+    u1_t a,b,c,d;   // ipv4
+    u4_t nm;        // ipv4
+    u1_t cidr;
+} ip_blacklist_t;
+
+typedef struct {
     // set by init_NET()
 	ipv46_e pvt_valid;
 
@@ -136,10 +144,10 @@ typedef struct {
 
     ip_lookup_t ips_kiwisdr_com;
     
-    #define N_IP_BLACKLIST 256
-    int ipv4_blacklist_len;
-    u4_t ipv4_blacklist[N_IP_BLACKLIST];
-    u4_t ipv4_blacklist_nm[N_IP_BLACKLIST];
+    bool ip_blacklist_inuse;
+    int ip_blacklist_len;
+    #define N_IP_BLACKLIST 512
+    ip_blacklist_t ip_blacklist[N_IP_BLACKLIST];
 } net_t;
 
 // (net_t) net located in shmem for benefit of e.g. led task
@@ -153,7 +161,7 @@ struct conn_st;
 isLocal_t isLocal_if_ip(struct conn_st *conn, char *ip_addr, const char *log_prefix);
 
 bool find_local_IPs(int retry);
-u4_t inet4_d2h(char *inet4_str, bool *error, u4_t *ap, u4_t *bp, u4_t *cp, u4_t *dp);
+u4_t inet4_d2h(char *inet4_str, bool *error, u1_t *ap=NULL, u1_t *bp=NULL, u1_t *cp=NULL, u1_t *dp=NULL);
 bool is_inet4_map_6(u1_t *a);
 int inet_nm_bits(int family, void *netmask);
 bool isLocal_ip(char *ip, bool *is_loopback = NULL);
@@ -166,7 +174,9 @@ char *ip_remote(struct mg_connection *mc);
 bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_ip);
 void ip_blacklist_init();
 void ip_blacklist_add(char *ips);
+int ip_blacklist_add_iptables(char *ip_s);
 bool check_ip_blacklist(char *remote_ip, bool log=false);
+void ip_blacklist_dump();
 
 
 typedef struct {

@@ -202,7 +202,7 @@ static void led_reporter(void *param)
 
     bool error;
     int ip_error;
-    u4_t a, b, c, d;
+    u1_t a, b, c, d;
 
     while (1) {
     

@@ -102,7 +102,7 @@ static void update_build_ctask(void *param)
 	child_exit(EXIT_SUCCESS);
 }
 
-static void curl_makefile_ctask(void *param)
+static void fetch_makefile_ctask(void *param)
 {
     system("echo ======== checking for update >/root/build.log; date >>/root/build.log");
 
@@ -136,7 +136,7 @@ static bool daily_restart = false;
 /*
     // task
     update_task()
-        status = child_task(curl_makefile_ctask)
+        status = child_task(fetch_makefile_ctask)
 	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
 	        error ...
         status = child_task(update_build_ctask)
@@ -146,7 +146,7 @@ static bool daily_restart = false;
     child_task(func)
         if (fork())
             // child
-            func() -> curl_makefile_ctask() / update_build_ctask()
+            func() -> fetch_makefile_ctask() / update_build_ctask()
                 status = system(...)
                 if (status < 0)
                     child_exit(EXIT_FAILURE);
@@ -178,9 +178,9 @@ static void update_task(void *param)
 		goto common_return;
     }
 
-	// Run curl in a Linux child process otherwise this thread will block and cause trouble
+	// Run fetch in a Linux child process otherwise this thread will block and cause trouble
 	// if the check is invoked from the admin page while there are active user connections.
-	status = child_task("kiwi.update", curl_makefile_ctask, POLL_MSEC(1000));
+	status = child_task("kiwi.update", fetch_makefile_ctask, POLL_MSEC(1000));
 
 	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
 		lprintf("UPDATE: Makefile fetch error, no Internet access? status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",

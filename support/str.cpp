@@ -480,19 +480,26 @@ char *kiwi_str_decode_static(char *src)
 static u1_t decode_table[128] = {
 //  (ctrl)
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+
 //  (ctrl)
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-//    ! " # $ % & ' ( ) * + , - . /     still % encoded: "%&'+
+
+//    ! " # $ % & ' ( ) * + , - . /     still % encoded: "22 %25 &26 '27 +2b
     1,1,0,1,1,0,0,0,1,1,1,0,1,1,1,1,
-//  0 1 2 3 4 5 6 7 8 9 : ; < = > ?     still % encoded: ;<>
+
+//  0 1 2 3 4 5 6 7 8 9 : ; < = > ?     still % encoded: ;3b <3c >3e
     1,1,1,1,1,1,1,1,1,1,1,0,0,1,0,1,
+
 //  @ (alpha)
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//  (alpha)               [ \ ] ^ _     still % encoded: \
+
+//  (alpha)               [ \ ] ^ _     still % encoded: \5c
     1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,
-//  ` (alpha)                           still % encoded: `
+
+//  ` (alpha)                           still % encoded: `60
     0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//  (alpha)               { | } ~ del   still % encoded: del
+
+//  (alpha)               { | } ~ del   still % encoded: del 7f
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
 };
 

@@ -1134,6 +1134,15 @@ static bool _cfg_parse_json(cfg_t *cfg, bool doPanic)
 	if (cfg->tok_size == 0)
 		cfg->tok_size = 64;
 	
+	// remove any cjson comment lines
+	char *cp = cfg->json, *cp2;
+	while ((cp = strstr(cfg->json, "\n//")) != NULL) {
+	    cp2 = strstr(cp+1, "\n");
+	    if (cp2) {
+	        strcpy(cp+1, cp2+1);
+	    }
+	}
+	
 	int slen = strlen(cfg->json);
 	assert(cfg->json_buf_size >= slen + SPACE_FOR_NULL);
 	jsmn_parser parser;

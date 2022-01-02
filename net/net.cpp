@@ -493,7 +493,7 @@ isLocal_t isLocal_if_ip(conn_t *conn, char *remote_ip_s, const char *log_prefix)
 	return isLocal;
 }
 
-u4_t inet4_d2h(char *inet4_str, bool *error, u4_t *ap, u4_t *bp, u4_t *cp, u4_t *dp)
+u4_t inet4_d2h(char *inet4_str, bool *error, u1_t *ap, u1_t *bp, u1_t *cp, u1_t *dp)
 {
     if (error != NULL) *error = false;
 	int n;
@@ -511,11 +511,12 @@ u4_t inet4_d2h(char *inet4_str, bool *error, u4_t *ap, u4_t *bp, u4_t *cp, u4_t 
 	if (a > 255 || b > 255 || c > 255 || d > 255)
 	    goto err;
 
-    if (ap != NULL) *ap = a;
-    if (bp != NULL) *bp = b;
-    if (cp != NULL) *cp = c;
-    if (dp != NULL) *dp = d;
+    if (ap != NULL) *ap = a & 255;
+    if (bp != NULL) *bp = b & 255;
+    if (cp != NULL) *cp = c & 255;
+    if (dp != NULL) *dp = d & 255;
 	return INET4_DTOH(a, b, c, d);
+
 err:
     if (error != NULL) *error = true;
     return 0;
@@ -575,7 +576,7 @@ int inet_nm_bits(int family, void *netmask)
 bool isLocal_ip(char *ip_str, bool *is_loopback)
 {
     bool error;
-    u4_t ip = inet4_d2h(ip_str, &error, NULL, NULL, NULL, NULL);
+    u4_t ip = inet4_d2h(ip_str, &error);
     if (!error) {
         // ipv4
         if (is_loopback)
@@ -674,14 +675,12 @@ bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_i
     char *ip_r = NULL;
     
     if (x_real_ip != NULL) {
-        if (id != NULL)
-            printf("%s: %s X-Real-IP %s\n", id, remote_ip, x_real_ip);
+        //if (id != NULL) printf("%s: %s X-Real-IP %s\n", id, remote_ip, x_real_ip);
         n = sscanf(x_real_ip, "%" NET_ADDRSTRLEN_S "ms", &ip_r);
     }
     
     if (x_forwarded_for != NULL) {
-        if (id != NULL)
-            printf("%s: %s X-Forwarded-For %s\n", id, remote_ip, x_forwarded_for);
+        //if (id != NULL) printf("%s: %s X-Forwarded-For %s\n", id, remote_ip, x_forwarded_for);
         if (x_real_ip == NULL || n != 1) {
             // take only client ip in case "X-Forwarded-For: client, proxy1, proxy2 ..."
             n = sscanf(x_forwarded_for, "%" NET_ADDRSTRLEN_S "m[^, ]", &ip_r);
@@ -698,23 +697,50 @@ bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_i
     return forwarded;
 }
 
+
 void ip_blacklist_add(char *ips)
 {
     char ip_str[NET_ADDRSTRLEN];
-    u4_t nm;
-    int n = sscanf(ips, "%[^/]/%d", ip_str, &nm);
+    u4_t cidr;
+    int n = sscanf(ips, "%[^/]/%d", ip_str, &cidr);
     if (n == 0 || n > 2) return;
-    if (n == 1) nm = 32;
+    if (n == 1) cidr = 32;
     bool error;
     
-    int i = net.ipv4_blacklist_len;
-    u4_t a,b,c,d;
-    net.ipv4_blacklist[i] = inet4_d2h(ip_str, &error, &a, &b, &c, &d);
-    if (error || nm < 1 || nm > 32) return;
-    net.ipv4_blacklist_nm[i] = ~( (1 << (32-nm)) -1 );
-    net.ipv4_blacklist[i] &= net.ipv4_blacklist_nm[i];      // make consistent with netmask
-    //printf("ip_blacklist_add[%d] %s %d.%d.%d.%d 0x%08x\n", net.ipv4_blacklist_len, ips, a,b,c,d, net.ipv4_blacklist_nm[i]);
-    net.ipv4_blacklist_len++;
+    int i = net.ip_blacklist_len;
+    if (i >= N_IP_BLACKLIST) {
+        printf("ip_blacklist_add: >= N_IP_BLACKLIST\n");
+        return;
+    }
+    ip_blacklist_t *bl = &net.ip_blacklist[i];
+    bl->ip = inet4_d2h(ip_str, &error, &bl->a, &bl->b, &bl->c, &bl->d);
+    if (error || cidr < 1 || cidr > 32) return;
+    bl->cidr = cidr;
+    bl->nm = ~( (1 << (32-cidr)) -1 );
+    bl->ip &= bl->nm;   // make consistent with netmask
+    //printf("ip_blacklist_add[%d] %s %d.%d.%d.%d 0x%08x\n", net.ip_blacklist_len, ips,
+        //bl->a, bl->b, bl->c, bl->d, bl->nm);
+    net.ip_blacklist_len++;
+}
+
+int ip_blacklist_add_iptables(char *ip_s)
+{
+    //real_printf("    \"%s\",\n", ip_s);
+    bool is_loopback;
+    if (isLocal_ip(ip_s, &is_loopback) || is_loopback) {
+        lprintf("ip_blacklist_add_iptables: DANGER! local ip ignored: %s\n", ip_s);
+        return -1;
+    }
+    
+    ip_blacklist_add(ip_s);
+
+    char *cmd_p;
+    asprintf(&cmd_p, "iptables -A KIWI -s %s -j DROP", ip_s);
+    int rv = non_blocking_cmd_system_child("kiwi.iptables", cmd_p, POLL_MSEC(200));
+    rv = WEXITSTATUS(rv);
+    lprintf("ip_blacklist_add_iptables: \"%s\" rv=%d\n", cmd_p, rv);
+    kiwi_ifree(cmd_p);
+    return rv;
 }
 
 void ip_blacklist_init()
@@ -727,20 +753,13 @@ void ip_blacklist_init()
     //printf("ip_blacklist_init n=%d bl_s=\"%s\"\n", n, bl_s);
     if (n == 0) return;
     
-    net.ipv4_blacklist_len = 0;
+    net.ip_blacklist_len = 0;
+    system("iptables -D INPUT -j KIWI; iptables -N KIWI; iptables -F KIWI");
+
     for (int i=0; i < n; i++) {
-        real_printf("    \"%s\",\n", ips[i]);
-        ip_blacklist_add(ips[i]);
+        ip_blacklist_add_iptables(ips[i]);
     }
 
-    system("iptables -D INPUT -j KIWI; iptables -N KIWI; iptables -F KIWI");
-    for (int i=0; i < n; i++) {
-        char *cmd_p;
-        asprintf(&cmd_p, "iptables -A KIWI -s %s -j DROP", ips[i]);
-        lprintf("ip_blacklist_init: \"%s\"\n", cmd_p);
-        non_blocking_cmd_system_child("kiwi.iptables", cmd_p, POLL_MSEC(200));
-        kiwi_ifree(cmd_p);
-    }
     system("iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI");
     kiwi_ifree(r_buf);
     admcfg_string_free(bl_s);
@@ -749,16 +768,34 @@ void ip_blacklist_init()
 bool check_ip_blacklist(char *remote_ip, bool log)
 {
     bool error;
-    u4_t ip = inet4_d2h(remote_ip, &error, NULL, NULL, NULL, NULL);
+    u4_t ip = inet4_d2h(remote_ip, &error);
     if (error) return false;
-    for (int i=0; i < net.ipv4_blacklist_len; i++) {
-        u4_t nm = net.ipv4_blacklist_nm[i];
-        if ((ip & nm) == net.ipv4_blacklist[i]) {   // netmask previously applied to net.ipv4_blacklist[i]
+    for (int i=0; i < net.ip_blacklist_len; i++) {
+        ip_blacklist_t *bl = &net.ip_blacklist[i];
+        u4_t nm = bl->nm;
+        if ((ip & nm) == bl->ip) {      // netmask previously applied to bl->ip
+            net.ip_blacklist_inuse = true;
+            bl->dropped++;
             if (log) lprintf("IP BLACKLISTED: %s\n", remote_ip);
             return true;
         }
     }
     return false;
+}
+
+void ip_blacklist_dump()
+{
+    if (!net.ip_blacklist_inuse) return;
+	lprintf("\n");
+	lprintf("PROXY IP BLACKLIST:\n");
+	lprintf("  dropped  ip\n");
+	
+	for (int i = 0; i < net.ip_blacklist_len; i++) {
+	    ip_blacklist_t *bl = &net.ip_blacklist[i];
+	    if (bl->dropped == 0) continue;
+	    lprintf("%9d  %d.%d.%d.%d/%d\n", bl->dropped, bl->a, bl->b, bl->c, bl->d, bl->cidr);
+	}
+	lprintf("\n");
 }
 
 

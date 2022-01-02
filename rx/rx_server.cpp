@@ -192,6 +192,7 @@ void dump()
 	
 	TaskDump(TDUMP_LOG | TDUMP_HIST | PRINTF_LOG);
 	lock_dump();
+	ip_blacklist_dump();
 }
 
 static void dump_conn()
@@ -556,7 +557,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	// But when proxied we need to check the forwarded ip address.
 	// Note that this code always sets remote_ip[] as a side-effect for later use (the real client ip).
 	char remote_ip[NET_ADDRSTRLEN];
-    if (check_if_forwarded("CONN", mc, remote_ip) && check_ip_blacklist(remote_ip, true))
+    if (check_if_forwarded("CONN", mc, remote_ip) && check_ip_blacklist(remote_ip))
         return NULL;
     
 	if (down || update_in_progress || backup_in_progress) {

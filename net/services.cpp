@@ -347,7 +347,7 @@ static void misc_NET(void *param)
 
         char *kiwisdr_com = DNS_lookup_result("my_kiwi", "kiwisdr.com", &net.ips_kiwisdr_com);
         asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 5 "
-            "\"http://%s/php/my_kiwi.php?auth=308bb2580afb041e0514cd0d4f21919c&pub=%s&pvt=%s&port=%d&serno=%d%s\"",
+            "\"%s/php/my_kiwi.php?auth=308bb2580afb041e0514cd0d4f21919c&pub=%s&pvt=%s&port=%d&serno=%d%s\"",
             kiwisdr_com, net.ip_pub, net.ip_pvt, net.port, net.serno, cmd_p2? cmd_p2:"");
 
         kstr_free(non_blocking_cmd(cmd_p, &status));
@@ -355,6 +355,91 @@ static void misc_NET(void *param)
         lprintf("MY_KIWI: registered\n");
     }
 }
+
+#if 0
+static void bl_GET(void *param)
+{
+	int status;
+	char *cmd_p, *reply, *dl_sp, st_sp;
+	jsmntok_t *jt, *end_tok;
+	const char *bl_s;
+	int slen, dlen, diff;
+	cfg_t cfg = {0};
+	kstr_t *sb = NULL;
+	
+    char *kiwisdr_com = DNS_lookup_result("bl_GET", "kiwisdr.com", &net.ips_kiwisdr_com);
+    #define BLACKLIST_FILE "ip_blacklist/ip_blacklist.cjson"
+
+    asprintf(&cmd_p, "curl -s -f --ipv4 \"%s/%s\" 2>&1", kiwisdr_com, BLACKLIST_FILE);
+    //printf("bl_GET: <%s>\n" cmd_p);
+    
+    reply = non_blocking_cmd(cmd_p, &status);
+    kiwi_ifree(cmd_p);
+
+    int exit_status = WEXITSTATUS(status);
+    if (WIFEXITED(status) && exit_status != 0) {
+        lprintf("bl_GET: failed for %s exit_status=%d\n", BLACKLIST_FILE, exit_status);
+        goto fail;
+    }
+
+    dl_sp = kstr_sp(reply);
+    //real_printf("bl_GET: returned <%s>\n", dl_sp);
+    if (json_init(&cfg, dl_sp) == false) {
+        lprintf("bl_GET: JSON parse failed for %s\n", BLACKLIST_FILE);
+        goto fail;
+    }
+
+	end_tok = &(cfg.tokens[cfg.ntok]);
+	jt = cfg.tokens;
+	if (jt == NULL || !JSMN_IS_ARRAY(jt)) {
+        lprintf("bl_GET: JSON token error for %s\n", BLACKLIST_FILE);
+        goto fail;
+	}
+
+    bl_s = admcfg_string("ip_blacklist", NULL, CFG_REQUIRED);
+    slen = strlen(bl_s);
+    
+    
+	for (jt = cfg.tokens + 1; jt != end_tok; jt++) {
+		const char *ip_s;
+		if (_cfg_type_json(&cfg, JSMN_STRING, jt, &ip_s)) {
+		    sb = kstr_cat(sb, (char *) ip_s);
+            json_string_free(&cfg, ip_s);
+        }
+	}
+	
+    dlen = strlen(kstr_sp(sb));
+
+    diff = strcmp(bl_s, kstr_sp(sb));
+    printf("bl_GET: stored=%d downloaded=%d diff=%d\n", slen, dlen, diff);
+    admcfg_string_free(bl_s);
+
+    net.ip_blacklist_len = 0;
+    system("iptables -D INPUT -j KIWI; iptables -N KIWI; iptables -F KIWI");
+
+	for (jt = cfg.tokens + 1; jt != end_tok; jt++) {
+		const char *ip_s;
+		if (_cfg_type_json(&cfg, JSMN_STRING, jt, &ip_s)) {
+            ip_blacklist_add_iptables((char *) ip_s);
+            //real_printf("IP: %s\n", ip_s);
+            json_string_free(&cfg, ip_s);
+        }
+	}
+
+    system("iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI");
+    kstr_free(reply);
+    lprintf("bl_GET: successfully downloaded blacklist from %s\n", BLACKLIST_FILE);
+#warning update stored bl
+    return;
+
+    // if downloading fails just use previously stored blacklist
+fail:
+    json_release(&cfg);
+    kstr_free(reply);
+    lprintf("bl_GET: FAILED to download blacklist from %s -- using previously stored blacklist\n", BLACKLIST_FILE);
+    ip_blacklist_init();
+}
+#endif
 
 static bool ipinfo_json(int https, const char *url, const char *path, const char *ip_s, const char *lat_s = NULL, const char *lon_s = NULL)
 {
@@ -716,7 +801,7 @@ static void reg_public(void *param)
 
 	    // done here because updating timer_sec() is sent
         asprintf(&cmd_p, "wget --timeout=30 --tries=2 --inet4-only -qO- "
-            "\"http://%s/php/update.php?url=http://%s:%d&apikey=x&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d"
+            "\"%s/php/update.php?url=http://%s:%d&apikey=x&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d"
             "&dom=%d&dom_stat=%d&serno=%d&dna=%08x%08x&reg=%d&pvt=%s&pub=%s&up=%d\" 2>&1",
             kiwisdr_com, server_url, server_port, net.mac,
             email, add_nat, version_maj, version_min, debian_maj, debian_min,
@@ -797,6 +882,15 @@ void services_start()
 
 	if (!alt_port) {
 		reg_kiwisdr_com_tid = CreateTask(reg_public, 0, SERVICES_PRIORITY);
-        ip_blacklist_init();
+
+        #if 0
+            if (admcfg_bool("ip_blacklist_download", NULL, CFG_REQUIRED) == true) {
+                CreateTask(bl_GET, 0, SERVICES_PRIORITY);
+            } else {
+                ip_blacklist_init();
+            }
+        #else
+            ip_blacklist_init();
+        #endif
 	}
 }

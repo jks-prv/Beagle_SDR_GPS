@@ -1189,38 +1189,79 @@ function network_html()
    var s3 =
 		'<hr>' +
       w3_div('w3-container w3-text-teal',
-         w3_textarea_get_param('w3-input-any-change|width:100%',
-            w3_inline('w3-valign w3-halign-space-between/',
-               w3_div('',
-                  w3_text('w3-bold w3-text-teal', 'IP address blacklist'),
-                  w3_text('w3-text-black w3-show-block',
-                     'IP addresses/ranges listed here are blocked <br>' +
-                     'from accessing your Kiwi (via Linux iptables). <br>' +
-                     'Use CIDR notation for ranges, e.g. CIDR "ip/24" <br>' +
-                     'is equivalent to netmask "255.255.255.0"'
-                  )
-               ),
-               
-               w3_divs('/w3-center w3-tspace-8',
-                  w3_div('', '<b>Download IP address blacklist?</b>'),
-                  w3_button('w3-aqua', 'Download', 'network_download_button_cb'),
-                  w3_text('w3-text-black w3-center',
-                     'WARNING: will overwrite anything you have entered in <br>' +
-                     'the blacklist text area below. Downloads a standard <br>' +
-                     'blacklist definition from kiwisdr.com'
-                  )
-               ),
-               
-               w3_div('w3-center',
-                  '<b>Prevent multiple connections from<br>the same IP address?</b><br>',
-                  w3_switch('w3-margin-T-8 w3-margin-B-8', 'Yes', 'No', 'adm.no_dup_ip', adm.no_dup_ip, 'admin_radio_YN_cb')
+         w3_inline('w3-valign w3-halign-space-between/',
+            w3_div('',
+               w3_text('w3-bold w3-text-teal', 'IP address blacklist'),
+               w3_text('w3-text-black w3-show-block',
+                  'IP addresses/ranges listed here are blocked <br>' +
+                  'from accessing your Kiwi (via Linux iptables). <br>' +
+                  'Use CIDR notation for ranges, e.g. CIDR "ip/24" <br>' +
+                  'is equivalent to netmask "255.255.255.0" <br>' +
+                  'More information at the ' +
+                  w3_link('w3-link-darker-color', 'http://forum.kiwisdr.com/index.php?p=/discussion/2352/call-for-ip-address-blacklist-contributions/p1', 'Kiwi forum') +'.'
                )
             ),
-            'adm.ip_blacklist', 3, 100, 'network_ip_blacklist_cb', ''
+            
+            /*
+            w3_divs('/w3-center w3-tspace-8',
+               w3_div('', '<b>Download IP address blacklist?</b>'),
+               w3_button('w3-aqua', 'Download', 'network_download_button_cb'),
+               w3_text('w3-text-black w3-center',
+               / *
+                  'WARNING: will overwrite anything you have entered in <br>' +
+                  'the blacklist text area below.' +
+               * /
+                  'Downloads a standard blacklist definition from kiwisdr.com'
+               )
+            ),
+            */
+            
+            w3_divs('/w3-center w3-tspace-8',
+               //w3_inline('w3-valign w3-halign-space-between/',
+                  /*
+                  w3_div('',
+                     w3_div('', '<b>Automatic download of <br> IP address blacklist?</b>'),
+                     w3_switch('w3-margin-T-8', 'Yes', 'No', 'adm.ip_blacklist_download', adm.ip_blacklist_download, 'admin_radio_YN_cb')
+                  ), */
+                  
+                  w3_div('',
+                     //w3_div('w3-margin-T-16', '<b>Manual download</b>'),
+                     w3_div('w3-margin-T-16', '<b>Download IP address blacklist?</b>'),
+                     w3_button('w3-aqua w3-margin-T-10', 'Download', 'network_download_button_cb')
+                  )
+               //),
+               ,
+               w3_text('w3-text-black w3-center',
+                  //'Downloads a standard blacklist definition from ' +
+                  //w3_link('w3-link-darker-color', 'http://kiwisdr.com/ip_blacklist/ip_blacklist.cjson', 'kiwisdr.com')
+                  'WARNING: will overwrite anything you have entered in <br>' +
+                  'the blacklist text area below. Downloads a standard <br>' +
+                  'blacklist definition from kiwisdr.com'
+               )
+            ),
+            
+            w3_div('w3-center w3-margin-B-24',
+               '<b>Prevent multiple connections from<br>the same IP address?</b><br>',
+               w3_switch('w3-margin-T-8 w3-margin-B-8', 'Yes', 'No', 'adm.no_dup_ip', adm.no_dup_ip, 'admin_radio_YN_cb')
+            )
          ),
          
+         //w3_textarea_get_param('w3-margin-T-32//w3-light-grey|width:100%|readonly',
+         w3_textarea_get_param('w3-margin-T-32//w3-input-any-change|width:100%',
+            //'Downloaded blacklist (read-only)',
+            '',
+            'adm.ip_blacklist', 8, 100, 'network_ip_blacklist_cb', ''
+         ),
+         
+         /*
+         w3_textarea_get_param('w3-margin-T-32//w3-input-any-change|width:100%',
+            'Local blacklist (writeable)',
+            'adm.ip_blacklist_local', 8, 100, 'network_ip_blacklist_cb', ''
+         ),
+         */
+         
          w3_inline('w3-valign w3-margin-top/', 
-            w3_text('w3-text-teal', 'Status:'),
+            w3_text('w3-text-teal', 'Blacklist status:'),
             w3_div('id-ip-blacklist-status w3-margin-left w3-text-black w3-background-pale-aqua', '')
          )
       ) +
@@ -1245,6 +1286,11 @@ function network_download_button_cb(id, idx, first)
 {
    if (first) return;
    kiwi_ajax('http://kiwisdr.com/ip_blacklist/ip_blacklist.cjson', 'network_download_blacklist_cb', 0, 10000);
+}
+
+function network_user_blacklist_cb(id, idx)
+{
+   console.log('network_user_blacklist_cb='+ idx);
 }
 
 function network_download_blacklist_cb(bl)
@@ -1336,11 +1382,11 @@ function network_download_blacklist_cb(bl)
       });
    });
    
-   if (bl_debug) console.log('blacklist pre dup #'+ nn.length);
+   if (bl_debug) console.log('blacklist pre dup entries: #'+ nn.length);
    var nnn = [];
    nn.forEach(function(o, i) { if (!o.del) nnn.push(o); });
    
-   console.log('blacklist post dup #'+ nnn.length);
+   console.log('blacklist post dup entries: #'+ nnn.length);
    if (bl_debug) nnn.forEach(function(o, i) {
       console.log('final: #'+ i +' '+ kiwi_ip_str(o.ip) +'|'+ o.ip.toHex(8) +' '+ o.nm.toHex(8) +'/'+ o.nmd + (o.del? ' DELETE':''));
    });
@@ -1382,11 +1428,13 @@ function network_ip_blacklist_cb(path, val)
 
    network.ip_blacklist_input_prev = s;
    ext_send('SET network_ip_blacklist_clear');
-   w3_innerHTML('id-ip-blacklist-status', 'updated');
+   //w3_innerHTML('id-ip-blacklist-status', 'downloading..'+ w3_icon('w3-margin-left', 'fa-refresh fa-spin', 20));
+   w3_innerHTML('id-ip-blacklist-status', 'updating..'+ w3_icon('w3-margin-left', 'fa-refresh fa-spin', 20));
    w3_set_value(path, s);
    w3_string_set_cfg_cb(path, s);
    
    network.seq = 0;
+	network.ip_address_error = false;
    ar.forEach(function(v) {
       ext_send('SET network_ip_blacklist='+ encodeURIComponent(v));
    });
@@ -1398,6 +1446,7 @@ function network_ip_blacklist_status(status, ip)
 	console.log('network_ip_blacklist_status #'+ network.seq +' status='+ status +' ip='+ ip);
 	network.seq++;
 	if (status == 0) return;
+	network.ip_address_error = true;
    w3_innerHTML('id-ip-blacklist-status', 'ip address error: '+ dq(ip));
 }
 
@@ -2640,7 +2689,7 @@ function log_update()
 
 // must set "remove_returns" since pty output lines are terminated with \r\n instead of \n alone
 // otherwise the \r overwrite logic in kiwi_output_msg() will be triggered
-var console_status_msg_p = { scroll_only_at_bottom: true, process_return_alone: true, remove_returns: true, ncol: 160 };
+var console_status_msg_p = { scroll_only_at_bottom: true, inline_returns: true, process_return_alone: false, remove_returns: false, ncol: 160 };
 
 function console_html()
 {
@@ -2825,7 +2874,7 @@ function security_html()
 				'However we expect most Kiwi owners will want to participate and we encourage ' +
 				'you to do so. Your precise GPS location is not revealed by the timestamp information. ' +
 				'For more discussion please see the ' +
-				w3_link('w3-link-darker-color', 'http://http://forum.kiwisdr.com/discussion/1218/participation-of-kiwis-in-the-tdoa-process/p1', 'Kiwi forums') +'.'
+				w3_link('w3-link-darker-color', 'http://forum.kiwisdr.com/discussion/1218/participation-of-kiwis-in-the-tdoa-process/p1', 'Kiwi forum') +'.'
 			), 33
 		) +
 
@@ -3197,6 +3246,11 @@ function admin_recv(data)
 			case "network_ip_blacklist_status":
 			   p = decodeURIComponent(param[1]).split(',')
 				network_ip_blacklist_status(parseInt(p[0]), p[1]);
+				break;
+				
+			case "network_ip_blacklist_enabled":
+            if (!network.ip_address_error)
+               w3_innerHTML('id-ip-blacklist-status', 'updated');
 				break;
 				
 			default:

@@ -196,6 +196,7 @@ function ext_get_mode()
 
 function ext_is_IQ_or_stereo_mode(mode)
 {
+   mode = mode.toLowerCase(mode);
    return (mode == 'drm' || mode == 'iq' || mode == 'sas' || mode == 'qam');
 }
 
