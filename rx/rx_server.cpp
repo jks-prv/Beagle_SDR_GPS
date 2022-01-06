@@ -562,14 +562,17 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
     
 	if (down || update_in_progress || backup_in_progress) {
 		conn_printf("down=%d UIP=%d stream=%s\n", down, update_in_progress, st->uri);
-
         conn_printf("URL <%s> <%s> %s\n", mc->uri, mc->query_string, remote_ip);
+
+        // internal STREAM_SOUND connections don't understand "reason_disabled" API,
+        // so just close connection in non-STREAM_ADMIN case below.
 		if (st->type == STREAM_SOUND && !internal) {
 			int type;
 			const char *reason_disabled = NULL;
 
 			int comp_ctr = 0;
 			if (!down && update_in_progress) {
+			    /*
 				FILE *fp;
 				fp = fopen("/root/" REPO_NAME "/.comp_ctr", "r");
 				if (fp != NULL) {
@@ -577,6 +580,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 					//printf(".comp_ctr %d\n", comp_ctr);
 					fclose(fp);
 				}
+				*/
 				type = 1;
 			} else
 			if (!down && backup_in_progress) {
@@ -589,7 +593,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			}
 			
 			char *reason_enc = kiwi_str_encode((char *) reason_disabled);
-			//printf("send_msg_mc MSG comp_ctr=%d reason=<%s> down=%d\n", comp_ctr, reason_disabled, type);
+			conn_printf("send_msg_mc MSG comp_ctr=%d reason=<%s> down=%d\n", comp_ctr, reason_disabled, type);
 			send_msg_mc(mc, SM_NO_DEBUG, "MSG comp_ctr=%d reason_disabled=%s down=%d", comp_ctr, reason_enc, type);
 			cfg_string_free(reason_disabled);
 			kiwi_ifree(reason_enc);

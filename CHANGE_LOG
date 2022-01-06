@@ -2,6 +2,14 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.484  January 7, 2022
+    ALE_2G extension:
+        display:N URL parameter works again.
+        Admin page, extensions tab: added example of how to set USB mode.
+    Fixed bug where starting a forced software build ("build now" button on update tab) would
+        hang all connections, including admin connections, if user connections were present.
+        User connections are now correctly kicked prior to the build (original behavior).
+
 v1.483  January 2, 2022
     Admin page, log tab, "dump" button will show attempted blacklist connections for proxied Kiwis.
         Each individual connection attempt will no longer be shown in the log.

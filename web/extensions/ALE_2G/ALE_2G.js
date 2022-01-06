@@ -1074,7 +1074,10 @@ function ale_2g_f_limit_custom_cb(path, val)
 
 function ale_2g_display_cb(path, idx, first)
 {
+   if (first) return;
    idx = +idx;
+   //console.log('ale_2g_display_cb path='+ path +' idx='+ idx);
+   ale.dsp = idx;
 	ext_send('SET display='+ idx);
 	w3_set_value(path, idx);
 }
@@ -1291,10 +1294,12 @@ function ALE_2G_config_html()
             '// Double-slash comments MUST start in column one!\n' +
             '// Underscores in net/station names are converted to line breaks in menu entries\n' +
             '// A zero as the first element of the frequency array converts to a "scan" menu entry\n' +
+            '// "lsb" as the second element of the frequency array selects LSB mode for all entries\n' +
             '\n' +
             '    "Admin-1": [1111],\n' +
             '    "Admin-2": [0, 2222, 3333, 4444],\n' +
-            '    "Admin-3_Test": [0, 5555.5, 6666.6]\n' +
+            '    "Admin-3_Test": [0, 5555.5, 6666.6],\n' +
+            '    "Admin-LSB": [0, "lsb", 7777.7, 8888.8]\n' +
             '}\n'
          ),
          

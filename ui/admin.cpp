@@ -610,11 +610,11 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET microSD_write");
 			if (i == 0) {
 				mprintf_ff("ADMIN: received microSD_write\n");
-				backup_in_progress = true;
-				rx_server_user_kick(-1);		// kick everyone off to speed up copy
+				backup_in_progress = true;  // NB: must be before rx_server_user_kick(-1) to prevent new connections
+				rx_server_user_kick(-1);    // kick everyone off to speed up copy
 				// if this delay isn't here the subsequent non_blocking_cmd_popen() hangs for
 				// MINUTES, if there is a user connection open, for reasons we do not understand
-				TaskSleepReasonSec("kick delay", 2);
+				TaskSleepReasonSec("kick delay", 5);
 				
 				#define NBUF 256
 				char *buf = (char *) kiwi_malloc("c2s_admin", NBUF);
