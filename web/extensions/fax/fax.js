@@ -262,6 +262,7 @@ var fax_asia_pac = {
    "JMH JP":   [ 3622.5, 7795, 13988.5 ],
    
    // mt-utility.blogspot.com/2010/02/1800-utc-8658-utc-fax-confirmed-jfx.html
+   // goughlui.com/2019/02/10/radiofax-jfx-kagoshima-japan-fisheries
    "JFC/JFW/JFX": [],
    "JP":       [ 6414.5, 8658, 13074, 16907.5, 22559.6 ],
    

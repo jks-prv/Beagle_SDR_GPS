@@ -222,9 +222,9 @@ static void update_task(void *param)
 		lprintf("UPDATE: building new version..\n");
 
         #ifndef PLATFORM_raspberrypi
-            update_in_progress = true;
-            rx_server_user_kick(-1);        // kick everyone off to speed up build
-            sleep(5);
+            update_in_progress = true;  // NB: must be before rx_server_user_kick(-1) to prevent new connections
+            rx_server_user_kick(-1);    // kick everyone off to speed up build
+            TaskSleepReasonSec("kick delay", 5);
         #endif
 
 		// Run build in a Linux child process so the server can continue to respond to connection requests

@@ -423,41 +423,46 @@ void TaskDump(u4_t flags)
 		float f_longest = ((float) t->longest) / 1e3;
 
 		float deadline=0;
-		const char *dunit = "";
+		const char *dline = "", *dunit = "";
 		if (t->deadline > 0) {
-			deadline = (t->deadline > now_us)? (float) (t->deadline - now_us) : 9999999;
-			deadline /= 1e3;            // _mmm.uuu msec
-			dunit = "ms";
-			if (deadline >= 3600000) {  // >= 60 min
-			    deadline /= 3600000;    // hhhh.fff hr
-			    dunit = "Hr";
-			} else
-			if (deadline >= 60000) {    // >= 60 secs
-			    deadline /= 60000;      // mmmm.fff min
-			    dunit = "Mn";
-			} else
-			if (deadline >= 1000) {     // >= 1 sec
-			    deadline /= 1000;       // ssss.fff sec
-			    dunit = "s";
-			}
+		    if (t->deadline < now_us) {
+		        dline = "has past";
+		    } else {
+                deadline = (float) (t->deadline - now_us);
+                deadline /= 1e3;            // _mmm.uuu msec
+                dunit = "ms";
+                if (deadline >= 3600000) {  // >= 60 min
+                    deadline /= 3600000;    // hhhh.fff hr
+                    dunit = "Hr";
+                } else
+                if (deadline >= 60000) {    // >= 60 secs
+                    deadline /= 60000;      // mmmm.fff min
+                    dunit = "Mn";
+                } else
+                if (deadline >= 1000) {     // >= 1 sec
+                    deadline /= 1000;       // ssss.fff sec
+                    dunit = "s";
+                }
+                dline = stprintf("%8.3f%-2s", deadline, dunit);
+            }
 		}
 		
 		int rx_channel = (t->flags & CTF_RX_CHANNEL)? (t->flags & CTF_CHANNEL) : -1;
 
 		if (flags & TDUMP_LOG)
-		lfprintf(printf_type, "%c%03d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %6s %5d %5d %-3s %5d %-3s %8.3f%-2s %3d%c %s%d %-10s %-24s\n",
+		lfprintf(printf_type, "%c%03d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %6s %5d %5d %-3s %5d %-3s %10s %3d%c %s%d %-10s %-24s\n",
 		    (t == ct)? '*':'T', i, (t->flags & CTF_PRIO_INVERSION)? 'I':'P', t->priority, t->lock_marker,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock.wait? 'L':'_', t->lock.hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
 			toUnits(t->run), t->cmds,
 			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
-			deadline, dunit, t->stack_hiwat*100 / t->ctx->stack_size_u64, (t->flags & CTF_STACK_MED)? 'M' : ((t->flags & CTF_STACK_LARGE)? 'L' : '%'),
+			dline, t->stack_hiwat*100 / t->ctx->stack_size_u64, (t->flags & CTF_STACK_MED)? 'M' : ((t->flags & CTF_STACK_LARGE)? 'L' : '%'),
 			(rx_channel != -1)? "c":"", rx_channel,
 			t->name, t->where? t->where : "-"
 		);
 		else
-		lfprintf(printf_type, "%c%03d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %6s %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f%c %3d%%%c %s%d %-10s %-24s %-24s\n",
+		lfprintf(printf_type, "%c%03d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %6s %5d %5d %-3s %5d %-3s %5d %5d %5d %10s %3d%c %s%d %-10s %-24s %-24s\n",
 		    (t == ct)? '*':'T', i, (t->flags & CTF_PRIO_INVERSION)? 'I':'P', t->priority, t->lock_marker,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock.wait? 'L':'_', t->lock.hold? 'H':'_', t->minrun? 'q':'_',
@@ -465,7 +470,7 @@ void TaskDump(u4_t flags)
 			toUnits(t->run), t->cmds,
 			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
 			t->wu_count, t->no_run_same, t->spi_retry,
-			deadline, dunit, t->stack_hiwat*100 / t->ctx->stack_size_u64, (t->flags & CTF_STACK_MED)? 'M' : ((t->flags & CTF_STACK_LARGE)? 'L' : '%'),
+			dline, t->stack_hiwat*100 / t->ctx->stack_size_u64, (t->flags & CTF_STACK_MED)? 'M' : ((t->flags & CTF_STACK_LARGE)? 'L' : '%'),
 			(rx_channel != -1)? "c":"", rx_channel,
 			t->name, t->where? t->where : "-",
 			t->long_name? t->long_name : "-"
@@ -1314,7 +1319,10 @@ void _NextTask(const char *where, u4_t param, u_int64_t pc)
         #endif
     } while (p < LOWEST_PRIORITY);		// if no eligible tasks keep looking
     
-	if (!need_hardware || update_in_progress || sd_copy_in_progress || LINUX_CHILD_PROCESS()) {
+    // DANGER: Critical to have "!have_snd_users" test. Otherwise deadlock situation can occur:
+    // Data pump is still running, interrupting faster than kiwi_usleep() rate below. This keeps
+    // the scheduler hung at the data pump priority level, never running anything else!
+	if (!need_hardware || (update_in_progress && !have_snd_users) || sd_copy_in_progress || LINUX_CHILD_PROCESS()) {
 		kiwi_usleep(100000);		// pause so we don't hog the machine
 	}
 
