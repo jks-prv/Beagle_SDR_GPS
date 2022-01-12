@@ -36,7 +36,10 @@ Boston, MA  02110-1301, USA.
  #include "DRM.h"
 #else
  #define DRM_SHMEM_DISABLE
- #define DRM_MAX_RX 0
+ 
+ #ifndef DRM_MAX_RX
+    #define DRM_MAX_RX 0
+ #endif
 #endif
 
 #include <signal.h>

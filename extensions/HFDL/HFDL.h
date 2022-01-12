@@ -34,7 +34,7 @@ typedef struct {
 	bool seq_init;
 	u4_t seq;
 	
-	CHFDLResample CHFDLResample;
+	CHFDLResample HFDLResample;
     HFDL_resamp_t resamp; 
 
 	double freq;

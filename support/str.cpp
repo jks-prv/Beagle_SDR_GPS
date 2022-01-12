@@ -51,7 +51,7 @@ Boston, MA  02110-1301, USA.
 typedef struct kstring_st {
 	#define KS_LAST (KSTRINGS + 1)
     #if KS_LAST > 0xffff
-        #error KS_LAST doesn't fit in u2_t!
+        #error KS_LAST does not fit in u2_t!
     #endif
 	u2_t next_free;
 	#define KS_VALID 1
