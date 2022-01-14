@@ -84,7 +84,10 @@ typedef struct {
     DRM_CHECK(u4_t magic2;)
 } drm_t;
 
-#define DRM_MAX_RX 4
+#ifndef DRM_MAX_RX
+    #define DRM_MAX_RX 4
+#endif
+
 #define DRM_NREG_CHANS_DEFAULT 3
 
 typedef struct {
@@ -98,7 +101,7 @@ typedef struct {
     #ifdef MULTI_CORE
         //#define DRM_SHMEM_DISABLE_TEST
         #ifdef DRM_SHMEM_DISABLE_TEST
-            #warning don't forget to remove DRM_SHMEM_DISABLE_TEST
+            #warning do not forget to remove DRM_SHMEM_DISABLE_TEST
             #define DRM_SHMEM_DISABLE
             #define RX_SHMEM_DISABLE
         #else

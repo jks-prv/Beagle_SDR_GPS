@@ -84,7 +84,7 @@ static void hfdl_task(void *param)
 
         //if (e->test && e->input_tid) {
         if (e->input_tid) {
-            e->CHFDLResample.run((float *) e->samps_c, n, &e->resamp);
+            e->HFDLResample.run((float *) e->samps_c, n, &e->resamp);
 
             #define SAMPLES_CF32
             #ifdef SAMPLES_CF32
@@ -185,7 +185,9 @@ static void dumphfdl_task(void *param)
     int rx_chan = (int) FROM_VOID_PARAM(param);
     hfdl_chan_t *e = &hfdl_chan[rx_chan];
 
-    dumphfdl_main(ARRAY_LEN(hfdl_argv), (char **) hfdl_argv, rx_chan, e->outputBlockSize * NIQ);
+    #ifdef HFDL
+        dumphfdl_main(ARRAY_LEN(hfdl_argv), (char **) hfdl_argv, rx_chan, e->outputBlockSize * NIQ);
+    #endif
     e->dumphfdl_tid = 0;
 }
     
@@ -216,7 +218,7 @@ bool hfdl_msgs(char *msg, int rx_chan)
 		
 		ext_register_receive_iq_samps_task(e->tid, rx_chan, POST_AGC);
 
-        e->outputBlockSize = e->CHFDLResample.setup(snd_rate, HFDL_OUTBUF_SIZE);
+        e->outputBlockSize = e->HFDLResample.setup(snd_rate, HFDL_OUTBUF_SIZE);
         if (!e->dumphfdl_tid)
             e->dumphfdl_tid = CreateTaskF(dumphfdl_task, TO_VOID_PARAM(rx_chan), EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL));
 
@@ -255,7 +257,9 @@ bool hfdl_msgs(char *msg, int rx_chan)
 	double freq;
 	if (sscanf(msg, "SET display_freq=%lf", &freq) == 1) {
 		//rcprintf(rx_chan, "HFDL: display_freq=%.2lf\n", freq);
-		dumphfdl_set_freq(rx_chan, freq);
+        #ifdef HFDL
+		    dumphfdl_set_freq(rx_chan, freq);
+		#endif
 		return true;
 	}
 
@@ -299,9 +303,15 @@ ext_t hfdl_ext = {
 
 void HFDL_main()
 {
-	ext_register(&hfdl_ext);
     hfdl.nom_rate = snd_rate;
-    dumphfdl_init();
+
+    #ifdef HFDL
+	    ext_register(&hfdl_ext);
+        dumphfdl_init();
+	#else
+        printf("ext_register: \"HFDL\" not configured\n");
+	    return;
+	#endif
 
     int n;
     char *file;

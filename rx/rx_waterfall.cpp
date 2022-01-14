@@ -788,6 +788,7 @@ void c2s_waterfall(void *param)
 		
 		if (masked_seq != dx.masked_seq) {
             // get client to request updated dx list because admin edited masked list
+            // or made any other change to dx label list
             send_msg(conn, false, "MSG request_dx_update");
 		    masked_seq = dx.masked_seq;
 		    new_scale_mask = true;

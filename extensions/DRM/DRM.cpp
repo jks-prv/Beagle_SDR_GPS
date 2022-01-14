@@ -3,7 +3,12 @@
 #include "ext.h"	// all calls to the extension interface begin with "ext_", e.g. ext_register()
 
 #include "DRM.h"
-#include "DRM_main.h"
+
+#ifdef DRM
+    #include "DRM_main.h"
+#else
+    static void DRM_loop(int rx_chan) {}
+#endif
 
 #include <stdio.h>
 #include <unistd.h>
@@ -285,28 +290,33 @@ void DRM_main()
     drm_t *d;
     drm_info.drm_chan = DRM_MAX_RX;
     
-	for (int i=0; i < DRM_MAX_RX; i++) {
-        d = &DRM_SHMEM->drm[i];
-		memset(d, 0, sizeof(drm_t));
-		d->init = true;
-		
-		DRM_CHECK(d->magic1 = 0xcafe; d->magic2 = 0xbabe;)
-		d->rx_chan = i;
-		d->info = &drm_info;
+    #ifdef DRM
+        for (int i=0; i < DRM_MAX_RX; i++) {
+            d = &DRM_SHMEM->drm[i];
+            memset(d, 0, sizeof(drm_t));
+            d->init = true;
+        
+            DRM_CHECK(d->magic1 = 0xcafe; d->magic2 = 0xbabe;)
+            d->rx_chan = i;
+            d->info = &drm_info;
 
-        #ifdef DRM_SHMEM_DISABLE
-        #else
-            // Needs to be done as separate Linux process per channel because DRM_loop() is
-            // long-running and there would be no time-slicing otherwise, i.e. no NextTask() equivalent.
-            shmem_ipc_setup(stprintf("kiwi.drm-%02d", i), SIG_IPC_DRM + i, DRM_loop);
-        #endif
+            #ifdef DRM_SHMEM_DISABLE
+            #else
+                // Needs to be done as separate Linux process per channel because DRM_loop() is
+                // long-running and there would be no time-slicing otherwise, i.e. no NextTask() equivalent.
+                shmem_ipc_setup(stprintf("kiwi.drm-%02d", i), SIG_IPC_DRM + i, DRM_loop);
+            #endif
 
-        #ifdef DRM_TEST_FILE
-            d->tsamp = 0;
-        #endif
-    }
+            #ifdef DRM_TEST_FILE
+                d->tsamp = 0;
+            #endif
+        }
     
-	ext_register(&DRM_ext);
+        ext_register(&DRM_ext);
+    #else
+        printf("ext_register: \"DRM\" not configured\n");
+        return;
+    #endif
 
 #ifdef DRM_TEST_FILE
     int words;

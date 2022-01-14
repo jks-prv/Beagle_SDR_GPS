@@ -747,23 +747,18 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             n = sscanf(cmd, "SET DX_UPD g=%d f=%f lo=%d hi=%d o=%d m=%d i=%1024ms n=%1024ms p=%1024ms",
                 &gid, &freq, &low_cut, &high_cut, &mkr_off, &flags, &text_m, &notes_m, &params_m);
             enum { DX_MOD_ADD = 9, DX_DEL = 2 };
-            //printf("DX_UPD [%s]\n", cmd);
-            //printf("DX_UPD n=%d #%d %8.2f %d 0x%x text=<%s> notes=<%s> params=<%s>\n", n, gid, freq, mkr_off, flags, text_m, notes_m, params_m);
+            //cprintf(conn, "DX_UPD [%s]\n", cmd);
+            //cprintf(conn, "DX_UPD n=%d #%d %8.2f %d 0x%x text=<%s> notes=<%s> params=<%s>\n", n, gid, freq, mkr_off, flags, text_m, notes_m, params_m);
 
             if (n != DX_MOD_ADD && n != DX_DEL) {
-                printf("DX_UPD n=%d ?\n", n);
+                cprintf(conn, "DX_UPD n=%d ?\n", n);
                 kiwi_ifree(text_m); kiwi_ifree(notes_m); kiwi_ifree(params_m);
                 return true;
             }
             int func = n;
             
             if (drx->db != DB_STORED) {
-                printf("#### DANGER: CMD_DX_UPD with drx->db != DB_STORED, IGNORED!!!\n");
-                return true;
-            }
-            if (drx->cur_list != dx.stored_list) {
-                printf("#### DANGER: CMD_DX_UPD with drx->cur_list(%p) != dx.stored_list(%p), IGNORED!!!\n",
-                    drx->cur_list, dx.stored_list);
+                cprintf(conn, "#### DANGER: CMD_DX_UPD with drx->db != DB_STORED, IGNORED!!!\n");
                 return true;
             }
         
@@ -794,7 +789,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                         dxp = &dx.stored_list[dx.stored_len];
                         dx.hidden_used = true;
                         dx.stored_len++;
-                        drx->cur_len++;
                         new_len = dx.stored_len;
                         need_sort = true;
                     } else {
@@ -805,7 +799,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                         if (dxp->freq != freq) {
                             need_sort = true;
                         }
-                        else printf("DX_UPD modify but no freq change, so no sort required %f\n", freq);
+                        else cprintf(conn, "DX_UPD modify but no freq change, so no sort required %f\n", freq);
 
                     }
                     dxp->freq = freq;
@@ -830,7 +824,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     err = true;
                 }
             } else {
-                printf("DX_UPD: gid %d <> dx.stored_len %d ?\n", gid, dx.stored_len);
+                cprintf(conn, "DX_UPD: gid %d <> dx.stored_len %d ?\n", gid, dx.stored_len);
                 err = true;
             }
         
@@ -840,13 +834,13 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             if (!err) {
                 // NB: difference between dx.stored_len and new_len
                 dx_prep_list(need_sort, dx.stored_list, dx.stored_len, new_len);
-                //printf("DX_UPD after qsort dx.stored_len %d new_len %d top elem f=%.2f\n",
+                //cprintf(conn, "DX_UPD after qsort dx.stored_len %d new_len %d top elem f=%.2f\n",
                 //	dx.stored_len, new_len, dx.stored_list[dx.stored_len - DX_HIDDEN_SLOT].freq);
                         
-                drx->cur_len = dx.stored_len = new_len;
-                TMEAS(u4_t start = timer_ms(); printf("DX_UPD START\n");)
+                dx.stored_len = new_len;
+                TMEAS(u4_t start = timer_ms(); cprintf(conn, "DX_UPD START\n");)
                 dx_save_as_json();		// FIXME need better serialization
-                TMEAS(u4_t split = timer_ms(); printf("DX_UPD struct -> json, file write in %.3f sec\n", TIME_DIFF_MS(split, start));)
+                TMEAS(u4_t split = timer_ms(); cprintf(conn, "DX_UPD struct -> json, file write in %.3f sec\n", TIME_DIFF_MS(split, start));)
 
                 #if 1
                     // NB: Don't need to do the time consuming json re-parse since there are no dxcfg_* write routines that
@@ -856,7 +850,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     // But do need to grow to include a new hidden slot if it was just used by an add.
                     //dx_reload();
                     if (dx.hidden_used) {
-                        drx->cur_list = dx.stored_list = (dx_t *) kiwi_realloc("dx_list", dx.stored_list, (dx.stored_len + DX_HIDDEN_SLOT) * sizeof(dx_t));
+                        dx.stored_list = (dx_t *) kiwi_realloc("dx_list", dx.stored_list, (dx.stored_len + DX_HIDDEN_SLOT) * sizeof(dx_t));
                         memset(&dx.stored_list[dx.stored_len], 0, sizeof(dx_t));
                         dx.hidden_used = false;
                     }
@@ -866,7 +860,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     dx_reload();
                 #endif
 
-                TMEAS(u4_t now = timer_ms(); printf("DX_UPD DONE reloaded in %.3f/%.3f sec\n", TIME_DIFF_MS(now, split), TIME_DIFF_MS(now, start));)
+                TMEAS(u4_t now = timer_ms(); cprintf(conn, "DX_UPD DONE reloaded in %.3f/%.3f sec\n", TIME_DIFF_MS(now, split), TIME_DIFF_MS(now, start));)
                 send_msg(conn, false, "MSG request_dx_update");	// get client to request updated dx list
             }
 
@@ -899,16 +893,16 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 if (conn->dx_filter_ident && conn->dx_filter_ident[0] != '\0') {
                     conn->dx_err_preg_ident = regcomp(&conn->dx_preg_ident, conn->dx_filter_ident, cflags);
                     conn->dx_has_preg_ident = !conn->dx_err_preg_ident;
-                    if (conn->dx_err_preg_ident) printf("regcomp ident %d\n", conn->dx_err_preg_ident);
+                    if (conn->dx_err_preg_ident) cprintf(conn, "regcomp ident %d\n", conn->dx_err_preg_ident);
                 }
                 if (conn->dx_filter_notes && conn->dx_filter_notes[0] != '\0') {
                     conn->dx_err_preg_notes = regcomp(&conn->dx_preg_notes, conn->dx_filter_notes, cflags);
                     conn->dx_has_preg_notes = !conn->dx_err_preg_notes;
-                    if (conn->dx_err_preg_notes) printf("regcomp notes %d\n", conn->dx_err_preg_notes);
+                    if (conn->dx_err_preg_notes) cprintf(conn, "regcomp notes %d\n", conn->dx_err_preg_notes);
                 }
             }
         
-            //printf("DX_FILTER setup <%s> <%s> case=%d wild=%d grep=%d\n",
+            //cprintf(conn, "DX_FILTER setup <%s> <%s> case=%d wild=%d grep=%d\n",
             //    conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_wild, conn->dx_filter_grep);
             //show_conn("DX FILTER ", conn);
             send_msg(conn, false, "MSG request_dx_update");	// get client to request updated dx list
@@ -929,7 +923,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             int db, zoom, width, dir = 1, filter_tod, anti_clutter;
             u4_t types_mask;
             bool db_changed = false;
-            //if (drx->db == DB_EiBi) printf("DX_MKR [%s]\n", cmd);
+            //if (drx->db == DB_EiBi) cprintf(conn, "DX_MKR [%s]\n", cmd);
             int n = sscanf(cmd, "SET MARKER db=%d min=%f max=%f zoom=%d width=%d types_mask=0x%x filter_tod=%d anti_clutter=%d",
                 &db, &min, &max, &zoom, &width, &types_mask, &filter_tod, &anti_clutter);
             enum { DX_MKRS = 4, DX_STEP = 2 };      // values for compatibility with client side
@@ -956,14 +950,12 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     dx_eibi_init();
                     dx.eibi_init = true;
                 }
-                drx->cur_list = db_stored? dx.stored_list : dx.eibi_list;
-                drx->cur_len = db_stored? dx.stored_len : dx.eibi_len;
                 first = true;
-                //printf("DX_MKR: db SWITCHED cur_list=%p\n", drx->cur_list);
+                //cprintf(conn, "DX_MKR: db SWITCHED to %s\n", db_stored? "stored" : "EiBi");
             }
-            //printf("DX_MKR: SET MARKER db=%s\n", db_stored? "stored" : "EiBi");
+            //cprintf(conn, "DX_MKR: SET MARKER db=%s\n", db_stored? "stored" : "EiBi");
         
-            if (drx->cur_len == 0) {
+            if (db_stored && dx.stored_len == 0) {
                 send_msg(conn, false, "MSG mkr=[{\"t\":%d}]", DX_MKRS);     // otherwise last marker won't get cleared
                 return true;
             }
@@ -996,29 +988,31 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             // DX_SEARCH_WINDOW: when zoomed far-in need to look at wider window since we don't know PB center here
             #define DX_SEARCH_WINDOW 10.0
             dx_min.freq = min + ((func == DX_STEP && dir == 1)? DX_SEARCH_WINDOW : -DX_SEARCH_WINDOW);
-            dx_list_first = &drx->cur_list[0];
-            dx_list_last = &drx->cur_list[drx->cur_len - DX_HIDDEN_SLOT];   // NB: addr of LAST in list
+            dx_t *cur_list = db_stored? dx.stored_list : dx.eibi_list;
+            int cur_len = db_stored? dx.stored_len : dx.eibi_len;
+            dx_list_first = &cur_list[0];
+            dx_list_last = &cur_list[cur_len - DX_HIDDEN_SLOT];     // NB: addr of LAST in list
 
-            dx_t *dp = (dx_t *) bsearch(&dx_min, drx->cur_list, drx->cur_len, sizeof(dx_t), bsearch_freqcomp);
+            dx_t *dp = (dx_t *) bsearch(&dx_min, cur_list, cur_len, sizeof(dx_t), bsearch_freqcomp);
             if (dp == NULL) panic("DX bsearch");
-            //printf("DX_MKR key=%.2f bsearch=%.2f(%d/%d) min=%.2f max=%.2f\n",
-            //    dx_min.freq, dp->freq + ((float) dp->offset / 1000.0), dp->idx, drx->cur_len, min, max);
+            //cprintf(conn, "DX_MKR key=%.2f bsearch=%.2f(%d/%d) min=%.2f max=%.2f\n",
+            //    dx_min.freq, dp->freq + ((float) dp->offset / 1000.0), dp->idx, cur_len, min, max);
         
             int dx_filter = 0, fn_flags = 0;
             if (conn->dx_filter_ident || conn->dx_filter_notes) {
                 dx_filter = 1;
                 fn_flags = conn->dx_filter_case? 0 : FNM_CASEFOLD;
-                //printf("DX_MKR FILTERING on <%s> <%s> case=%d wild=%d grep=%d\n",
+                //cprintf(conn, "DX_MKR FILTERING on <%s> <%s> case=%d wild=%d grep=%d\n",
                 //    conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_wild, conn->dx_filter_grep);
                 //show_conn("DX FILTER ", conn);
             }
         
-            //if (drx->db == DB_EiBi) printf("EiBi BSEARCH len=%d %.2f\n", drx->cur_len, dp->freq);
+            //if (drx->db == DB_EiBi) cprintf(conn, "EiBi BSEARCH len=%d %.2f\n", cur_len, dp->freq);
             int clutter_filtered = 0;
-            for (; dp < &drx->cur_list[drx->cur_len] && dp >= drx->cur_list; dp += dir) {
+            for (; dp < &cur_list[cur_len] && dp >= cur_list; dp += dir) {
                 u4_t flags = 0;
                 float freq = dp->freq + ((float) dp->offset / 1000.0);		// carrier plus offset
-                //if (drx->db == DB_EiBi) printf("DX_MKR EiBi CONSIDER %.2f\n", freq);
+                //if (drx->db == DB_EiBi) cprintf(conn, "DX_MKR EiBi CONSIDER %.2f\n", freq);
 
                 if (func == DX_MKRS && freq > max + DX_SEARCH_WINDOW) break;    // get extra one above for label stepping
                 
@@ -1030,7 +1024,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     if (dow_mask == 0) dow_mask = DX_DOW;
                     u4_t dow_bit =  DX_MON >> dow_Mo_0;
                     if ((dow_mask & dow_bit) == 0) {
-                        //printf("!DOW dow_Mo_0=%d m=%04x b=%04x %.2f %s\n", dow_Mo_0, dow_mask, dow_bit, freq, dp->ident);
+                        //cprintf(conn, "!DOW dow_Mo_0=%d m=%04x b=%04x %.2f %s\n", dow_Mo_0, dow_mask, dow_bit, freq, dp->ident);
                         if (filter_tod)
                             continue;
                         else
@@ -1042,7 +1036,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     if ((!rev && within) || (rev && !within_rev)) {
                         // TOD okay
                     } else {
-                        //printf("!TOD %04d|%04d|%04d %.2f %s\n", dp->time_begin, hr_min, dp->time_end, freq, dp->ident);
+                        //cprintf(conn, "!TOD %04d|%04d|%04d %.2f %s\n", dp->time_begin, hr_min, dp->time_end, freq, dp->ident);
                         if (filter_tod)
                             continue;
                         else
@@ -1058,14 +1052,14 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                         if (conn->dx_has_preg_notes) {
                             if (regexec(&conn->dx_preg_notes, dp->notes_s, 0, NULL, 0) == REG_NOMATCH) continue;
                         }
-                        //printf("DX_MKR FILTER MATCHED-grep %s<%s> %s<%s>\n",
+                        //cprintf(conn, "DX_MKR FILTER MATCHED-grep %s<%s> %s<%s>\n",
                         //    conn->dx_has_preg_ident? "*":"", dp->ident_s, conn->dx_has_preg_notes? "*":"", dp->notes_s);
                     } else
                     if (conn->dx_filter_wild) {
                         if (fnmatch(conn->dx_filter_ident, dp->ident_s, fn_flags) != 0) continue;
                         if (conn->dx_filter_notes && conn->dx_filter_notes[0] != '\0' &&
                             fnmatch(conn->dx_filter_notes, dp->notes_s, fn_flags) != 0) continue;
-                        //printf("DX_MKR FILTER MATCHED-wild <%s> <%s>\n", dp->ident_s, dp->notes_s);
+                        //cprintf(conn, "DX_MKR FILTER MATCHED-wild <%s> <%s>\n", dp->ident_s, dp->notes_s);
                     } else {
                         if (conn->dx_filter_case) {
                             if (strstr(dp->ident_s, conn->dx_filter_ident) == NULL) continue;
@@ -1074,7 +1068,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                             if (strcasestr(dp->ident_s, conn->dx_filter_ident) == NULL) continue;
                             if (conn->dx_filter_notes && strcasestr(dp->notes_s, conn->dx_filter_notes) == NULL) continue;
                         }
-                        //printf("DX_MKR FILTER MATCHED-no-grep <%s> <%s>\n", dp->ident_s, dp->notes_s);
+                        //cprintf(conn, "DX_MKR FILTER MATCHED-no-grep <%s> <%s>\n", dp->ident_s, dp->notes_s);
                     }
                 }
             
@@ -1082,7 +1076,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 if (func == DX_MKRS && anti_clutter && zoom <= DX_SPACING_ZOOM_THRESHOLD) {
                     int x = ((dp->freq - min) / bw) * width;
                     int diff = x - dx_lastx;
-                    //printf("DX_MKR spacing %d %d %d %s\n", dx_lastx, x, diff, dp->ident);
+                    //cprintf(conn, "DX_MKR spacing %d %d %d %s\n", dx_lastx, x, diff, dp->ident);
                     if (!first && diff < DX_SPACING_THRESHOLD_PX) {
                         clutter_filtered++;
                         continue;
@@ -1093,16 +1087,64 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             
                 // NB: ident, notes and params are already stored URL encoded
                 if (func == DX_MKRS || dp->freq != min) {
-                    sb = kstr_asprintf(sb, ",{\"g\":%d,\"f\":%.3f,\"lo\":%d,\"hi\":%d,\"o\":%d,\"x\":%d,"
-                        "\"b\":%d,\"e\":%d,\"c\":\"%s\",\"l\":\"%s\",\"t\":\"%s\","
-                        "\"i\":\"%s\"%s%s%s%s%s%s}",
-                        dp->idx, freq, dp->low_cut, dp->high_cut, dp->offset, dp->flags | flags,
-                        dp->time_begin, dp->time_end, dp->country, dp->lang, dp->target,
-                        dp->ident,
-                        dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"",
-                        dp->params? ",\"p\":\"":"", dp->params? dp->params:"", dp->params? "\"":"");
-                    //if (drx->db == DB_EiBi) printf("DX_MKR EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident);
-                    send++;
+                    //#define DEBUG_DX_MKRS
+                    #ifdef DEBUG_DX_MKRS
+                        int fail = 0;
+                        char *c;
+                        c = dp->country;
+                        if (kiwi_strnlen(c, 3) > 3) {
+                            lprintf("country %02x %02x %02x %02x\n", c[0], c[1], c[2], c[3]);
+                            c[3] = '\0';
+                            fail = 1;
+                        }
+                        c = dp->lang;
+                        if (kiwi_strnlen(c, 3) > 3) {
+                            lprintf("lang %02x %02x %02x %02x\n", c[0], c[1], c[2], c[3]);
+                            c[3] = '\0';
+                            fail = 1;
+                        }
+                        c = dp->target;
+                        if (kiwi_strnlen(c, 3) > 3) {
+                            lprintf("target %02x %02x %02x %02x\n", c[0], c[1], c[2], c[3]);
+                            c[3] = '\0';
+                            fail = 1;
+                        }
+                        c = (char *) dp->ident;
+                        if (kiwi_strnlen(c, 255) > 255) {
+                            c[255] = '\0';
+                            lprintf("ident <%s>\n", c);
+                            fail = 1;
+                        }
+                        c = dp->notes;
+                        if (kiwi_strnlen(c, 255) > 255) {
+                            c[255] = '\0';
+                            lprintf("notes <%s>\n", c);
+                            fail = 1;
+                        }
+                        c = (char *) dp->params;
+                        if (kiwi_strnlen(c, 255) > 255) {
+                            c[255] = '\0';
+                            lprintf("params <%s>\n", c);
+                            fail = 1;
+                        }
+                        
+                        if (fail) {
+                            lprintf("$$$$$$$$ DEBUG_DX_MKRS: ERROR freq=%.3f db=%s\n", freq, (drx->db == DB_EiBi)? "EiBi" : "stored");
+                        } else
+                    #endif
+                    
+                    {
+                        sb = kstr_asprintf(sb, ",{\"g\":%d,\"f\":%.3f,\"lo\":%d,\"hi\":%d,\"o\":%d,\"x\":%d,"
+                            "\"b\":%d,\"e\":%d,\"c\":\"%s\",\"l\":\"%s\",\"t\":\"%s\","
+                            "\"i\":\"%s\"%s%s%s%s%s%s}",
+                            dp->idx, freq, dp->low_cut, dp->high_cut, dp->offset, dp->flags | flags,
+                            dp->time_begin, dp->time_end, dp->country, dp->lang, dp->target,
+                            dp->ident,
+                            dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"",
+                            dp->params? ",\"p\":\"":"", dp->params? dp->params:"", dp->params? "\"":"");
+                        //if (drx->db == DB_EiBi) cprintf(conn, "DX_MKR EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident);
+                        send++;
+                    }
                 }
             
                 // return the very first we hit that passed the filtering criteria above
@@ -1111,9 +1153,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         
             sb = kstr_cat(sb, "]");
             send_msg(conn, false, "MSG mkr=%s", kstr_sp(sb));
-            //printf("DX_MKR send=%d anti_clutter=%d clutter_filtered=%d\n", send, anti_clutter, clutter_filtered);
+            //cprintf(conn, "DX_MKR send=%d anti_clutter=%d clutter_filtered=%d\n", send, anti_clutter, clutter_filtered);
             if (drx->db == DB_EiBi) {
-                //printf("DX_MKR EiBi send=%d\n", send);
+                //cprintf(conn, "DX_MKR EiBi send=%d\n", send);
                 //real_printf("%s\n", kstr_sp(sb));
             }
             kstr_free(sb);

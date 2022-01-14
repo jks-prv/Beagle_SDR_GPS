@@ -51,7 +51,7 @@ Boston, MA  02110-1301, USA.
 typedef struct kstring_st {
 	#define KS_LAST (KSTRINGS + 1)
     #if KS_LAST > 0xffff
-        #error KS_LAST doesn't fit in u2_t!
+        #error KS_LAST does not fit in u2_t!
     #endif
 	u2_t next_free;
 	#define KS_VALID 1
@@ -624,6 +624,16 @@ char *kiwi_overlap_strcpy(char *dst, const char *src)
         *d++ = c;
     } while (c != '\0');
     return dst;
+}
+
+
+// version of strlen() with limit to handle a corrupt string without proper null-termination
+int kiwi_strnlen(const char *s, int limit)
+{
+    int i;
+    for (i = 0; s && *s && i <= limit; i++)
+        s++;
+    return i;
 }
 
 

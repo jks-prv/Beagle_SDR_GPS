@@ -1,4 +1,7 @@
 
+// See Makefile for instructions about how to properly download .csv file from eibispace.de
+// and also add-back ALE entries.
+
 #include "types.h"
 #include "kiwi_assert.h"
 #include "printf.h"
@@ -172,14 +175,21 @@ int main(int argc, char *argv[])
 
         n = fscanf(fi, "%lf;%d-%d;", &freq, &begin, &end);
         if (n == EOF) break;
+        if (n != 3) {
+            printf("n=%d\n", n);
+            panic("fscanf");
+        }
 
         eibi_fgets(lp, sizeof(lbuf), fi);
         int sl = strlen(lbuf);
         lbuf[sl-1] = '\0';      // remove \n
         sl = strlen(lbuf);
-        #define N_FIELDS 8
-        char *fields[N_FIELDS], *rbuf;
-        int n2 = kiwi_split(lbuf, &rbuf, ";", fields, N_FIELDS-1);
+        #define N_FIELDS 5
+        char *fields[N_FIELDS+1], *rbuf;
+        const char *fields_s[N_FIELDS] = {
+            "dow", "country", "ident", "lang", "target" /*, "tx", "persist", "date-S", "date-E"*/
+        };
+        int n2 = kiwi_split(lbuf, &rbuf, ";", fields, N_FIELDS);
 
         char *dow = fields[0];
         const char *country = fields[1];
@@ -187,6 +197,15 @@ int main(int argc, char *argv[])
         char *lang = fields[3];
         char *target = fields[4];
         int sl_iden = strlen(ident);
+        
+        if (strlen(country) > 3 || strlen(lang) > 3 || strlen(target) > 3) {
+            printf("%.2f %04d-%04d n2=%d BAD STRLEN:", freq, begin, end, n2);
+            for (i = 0; i < n2; i++) {
+                printf(" %d:%s{%s}", i-1, fields_s[i], fields[i]);
+            }
+            printf("\n");
+            panic("strlen");
+        }
 
         // debug UTF-8 in ident field
         #if OPT_DEBUG_UTF_8
@@ -245,9 +264,10 @@ int main(int argc, char *argv[])
         //if (n2 != 7) {
         //if (r >= 0.00001) {
         //if (begin >= end) {
-            printf("%7.1f %04d-%04d n2=%d \"%s\"", f, begin, end, n2, lbuf);
+            //printf("%7.1f %04d-%04d n2=%d \"%s\"", f, begin, end, n2, lbuf);
+            printf("%8.2f %04d-%04d n2=%d", f, begin, end, n2);
             for (i = 0; i < n2; i++) {
-                printf(" %d{%s}", i, fields[i]);
+                printf(" %d:%s{%s}", i-1, fields_s[i], fields[i]);
             }
             printf("\n");
         }
@@ -341,7 +361,7 @@ int main(int argc, char *argv[])
         u2_t dow_mask = 0;
         assert(dow[0] != '\0');
         c = dow[0];
-        bool isRange = (dow[2] == '-');
+        bool isRange = (dow[2] == '-' && !isdigit(c));
         bool isPair = (dow[2] == ',');
         for (i = 0; (c = dow[i]) != '\0'; i++) {
             if (!isdigit(c)) break;
