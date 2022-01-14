@@ -239,6 +239,12 @@ int main(int argc, char *argv[])
         _exit(0);
     #endif
 
+    #if (defined(DEVSYS) && 0)
+        printf("kiwi_strnlen(\"sss\"(n),3): 0:%d 1:%d 2:%d 3:%d 4:%d 5:%d\n", kiwi_strnlen(NULL, 3), kiwi_strnlen("a", 3),
+            kiwi_strnlen("ab", 3), kiwi_strnlen("abc", 3), kiwi_strnlen("abcd", 3), kiwi_strnlen("abcde", 3));
+        _exit(0);
+    #endif
+
     #if (defined(DEVSYS))
         printf("DEVSYS: nothing to do, exiting..\n");
         _exit(0);

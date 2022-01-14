@@ -627,6 +627,16 @@ char *kiwi_overlap_strcpy(char *dst, const char *src)
 }
 
 
+// version of strlen() with limit to handle a corrupt string without proper null-termination
+int kiwi_strnlen(const char *s, int limit)
+{
+    int i;
+    for (i = 0; s && *s && i <= limit; i++)
+        s++;
+    return i;
+}
+
+
 // versions of strncpy/strncat that guarantee string terminated when max size reached
 // assumes n has included SPACE_FOR_NULL
 // assume that truncated s2 does no harm (e.g. is not interpreted as an unintended cmd or something)
