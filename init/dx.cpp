@@ -334,8 +334,6 @@ static void _dx_reload_json(cfg_t *cfg)
 	for (i = 0; i < MAX_RX_CHANS; i++) {
         dx_rx_t *drx = &dx.dx_rx[i];
 	    drx->db = DB_STORED;
-	    drx->cur_list = dx.stored_list;
-	    drx->cur_len = dx.stored_len;
 	}
 
 	dx.hidden_used = false;

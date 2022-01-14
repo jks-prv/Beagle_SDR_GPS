@@ -49,8 +49,6 @@ typedef enum { DB_STORED = 0, DB_EiBi } dx_db_e;
 
 typedef struct {
     dx_db_e db;
-    dx_t *cur_list;
-    int cur_len;    // malloc'd length is always len + DX_HIDDEN_SLOT
 } dx_rx_t;
 
 typedef struct {
