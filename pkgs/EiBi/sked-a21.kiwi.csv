@@ -14641,8 +14641,8 @@ kHz:75;Time(UTC):93;Days:59;ITU:49;Station:201;Lng:49;Target:62;Remarks:135;P:35
 15120;0400-0500;;CHN;China Radio Int.;E;Sib;b;0;;
 15120;0500-0600;;CHN;China Radio Int.;M;Sib;b;0;;
 15120;0600-0700;;CHN;China Radio Int.;M;Sib;b;0;;
-15120;0900-1100;irr;NIG;Voice ofNigeria DIGITAL;E;Eu;;8;;[0219]
-15120;1630-1900;irr;NIG;Voice ofNigeria DIGITAL;E;Eu;;8;;[0520]
+15120;0900-1100;irr;NIG;Voice of Nigeria DIGITAL;E;Eu;;8;;[0219]
+15120;1630-1900;irr;NIG;Voice of Nigeria DIGITAL;E;Eu;;8;;[0520]
 15120;2130-2200;Mo-Fr;USA;Voice of America;BM;WAf;g;0;;
 15125;0000-0100;;CHN;China Radio Int.;E;SEA;b;0;;
 15125;0100-0200;;CHN;China Radio Int.;E;SEA;b;0;;
