@@ -972,6 +972,10 @@ ifeq ($(BBAI),true)
 	make install_kiwi_device_tree
 	@touch $(REBOOT)
 endif
+ifeq ($(DEBIAN_10),true)
+	make install_kiwi_device_tree
+	@touch $(REBOOT)
+endif
 	@mkdir -p $(DIR_CFG)
 	@touch $(DO_ONCE)
 
@@ -983,7 +987,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
         DIR_DTB = dtb-$(SYS_MAJ).$(SYS_MIN)-ti
 
         install_kiwi_device_tree:
-	        @echo "install Kiwi device tree to configure GPIO pins"
+	        @echo "BBAI: install Kiwi device tree to configure GPIO pins"
 	        @echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
 	        cp platform/beaglebone_AI/am5729-beagleboneai-kiwisdr-cape.dts /opt/source/$(DIR_DTB)/src/arm
 	        (cd /opt/source/$(DIR_DTB); make)
@@ -998,7 +1002,10 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
     endif
 
     ifeq ($(DEBIAN_10),true)
-	    @echo "Debian 10"
+        install_kiwi_device_tree:
+	        @echo "Debian 10: install Kiwi device tree to configure GPIO pins"
+	        -cp --backup=numbered /boot/uEnv.txt /boot/uEnv.txt.save
+	        -sed -i -e 's/^#uboot_overlay_addr4=\/lib\/firmware\/<file4>.dtbo/uboot_overlay_addr4=\/lib\/firmware\/cape-bone-kiwi-00A0.dtbo/' /boot/uEnv.txt
     endif
 endif
 
