@@ -9,9 +9,7 @@
 # Description: run kiwi daemon
 ### END INIT INFO
 
-# set false when controlling SPI hardware directly (PIO mode):
-USE_SPIDEV=false
-
+DEV=kiwi
 KIWID=kiwid
 KIWID_EXEC=/usr/local/bin/$KIWID
 KIWID_ARGS="-bg"
@@ -20,73 +18,85 @@ KIWID_ARGS="-bg"
 
 RPI=$(cat /proc/device-tree/model | grep -q -s "Raspberry Pi 3" && echo true)
 BBAI=$(cat /proc/device-tree/model | grep -q -s "BeagleBone AI" && echo true)
+
 if [ "x${BBAI}" = "xtrue" ] ; then
-	echo "BBAI USE_SPIDEV"
+    SBC="BBAI"
 	DEBIAN=9
 	USE_SPIDEV=1
+    USE_SPI="USE_SPIDEV"
 elif [ "x${RPI}" = "xtrue" ] ; then
-	echo "RPI USE_SPIDEV"
+    SBC="RPI"
 	DEBIAN=10
 	USE_SPIDEV=1
+    USE_SPI="USE_SPIDEV"
 else
+    # BBG/BBB
+    # Debian 7, PIO: load our cape-bone-S overlay via echo > slots
+    # Debian 7, SPIDEV: BB-SPIDEV0 loaded via echo > slots
+    # Debian 8, PIO: load our cape-bone-S overlay via echo > slots
+    # Debian 8, SPIDEV: Bug: BB-SPIDEV0 must be loaded via /boot/uEnv.txt to config pmux properly
 
-# Debian 7, PIO: load our cape-bone-S overlay via echo > slots
-# Debian 7, SPIDEV: BB-SPIDEV0 loaded via echo > slots
-# Debian 8, PIO: load our cape-bone-S overlay via echo > slots
-# Debian 8, SPIDEV: Bug: BB-SPIDEV0 must be loaded via /boot/uEnv.txt to config pmux properly
+    SBC="BBG/BBB"
+    SLOTS7_FN="/sys/devices/bone_capemgr.*/slots"
+    SLOTS8_FN="/sys/devices/platform/bone_capemgr/slots"
 
-USE_SPIDEV=1
+    if ls ${SLOTS7_FN} > /dev/null 2>&1 ; then
+        DEBIAN=7
+        # do not use USE_SPIDEV on Debian 7
+        USE_SPIDEV=0
+        LOAD_SPIDEV=yes
+        LOAD_SPIPIO=yes
+        SLOTS_FN=${SLOTS7_FN}
+        UBOOT_OVERLAY=false
+    elif test \( -f ${SLOTS8_FN} \) ; then
+        DEBIAN=8
+        USE_SPIDEV=1
+        LOAD_SPIDEV=no
+        LOAD_SPIPIO=no
+        SLOTS_FN=${SLOTS8_FN}
+        UBOOT_OVERLAY=false
+    else
+        DEBIAN=10
+        USE_SPIDEV=1
+        LOAD_SPIDEV=no
+        LOAD_SPIPIO=no
+        SLOTS_FN=
+        UBOOT_OVERLAY=true
+    fi
 
-SLOTS="/sys/devices/platform/bone_capemgr/slots"
-if test ! -f ${SLOTS} ; then
-	echo DEBIAN 7
-	DEBIAN=7
-	# do not use USE_SPIDEV on Debian 7
-	USE_SPIDEV=0
-	LOAD_SPIDEV=yes
-	LOAD_SPIPIO=yes
-	SLOTS=`ls /sys/devices/bone_capemgr.*/slots`
-else
-	echo DEBIAN 8
-	DEBIAN=8
-	LOAD_SPIDEV=no
-	LOAD_SPIPIO=no
+    DEVID=cape-bone-${DEV}
+
+    if [ "x${USE_SPIDEV}" = "x1" ] ; then
+        # use SPIDEV driver (with built-in DMA) for SPI:
+        USE_SPI="USE_SPIDEV"
+        DEV_SPI=SPIDEV0
+        DEVID_SPI=BB-${DEV_SPI}
+        LOAD_SPI=${LOAD_SPIDEV}
+    else
+        USE_SPI="USE_SPIPIO"
+        DEV_SPI=${DEV}-S
+        DEVID_SPI=cape-bone-${DEV_SPI}
+        LOAD_SPI=${LOAD_SPIPIO}
+    fi
+
+    DEV_PRU=${DEV}-P
+    DEVID_PRU=cape-bone-${DEV_PRU}
+
+    CAPE=${DEVID}-00A0
+    SPI=${DEVID_SPI}-00A0
+    PRU=${DEVID_PRU}-00A0
 fi
 
-DEV=kiwi
-DEVID=cape-bone-${DEV}
-
-if [ "x${USE_SPIDEV}" = "x1" ] ; then
-	# use SPIDEV driver (with built-in DMA) for SPI:
-	echo USE_SPIDEV
-	DEV_SPI=SPIDEV0
-	DEVID_SPI=BB-${DEV_SPI}
-	LOAD_SPI=${LOAD_SPIDEV}
-else
-	echo USE_SPIPIO
-	DEV_SPI=${DEV}-S
-	DEVID_SPI=cape-bone-${DEV_SPI}
-	LOAD_SPI=${LOAD_SPIPIO}
-fi
-
-echo LOAD_SPI = ${LOAD_SPI}
-
-DEV_PRU=${DEV}-P
-DEVID_PRU=cape-bone-${DEV_PRU}
-
-CAPE=${DEVID}-00A0
-SPI=${DEVID_SPI}-00A0
-PRU=${DEVID_PRU}-00A0
-
-fi
+echo ${SBC} "DEBIAN-"${DEBIAN} ${USE_SPI}
 
 case "$1" in
 
   start)
     echo "Starting kiwid"
 
-# cape
+    # cape
     if [ "x${BBAI}" = "xtrue" ] ; then
+        echo "BBAI uses custom Kiwi device tree loaded via U-boot"
         sleep 1
     elif [ "x${RPI}" = "xtrue" ] ; then
         modprobe i2c-dev
@@ -100,37 +110,49 @@ case "$1" in
             # don't unload old slot because this is known to cause panics; must reboot
         fi
     
-        if ! grep -q ${DEVID} ${SLOTS} ; then
-            echo load ${DEV} device tree;
-            echo ${DEVID} > ${SLOTS};
-            sleep 2;
-        fi
+        if [ "x${UBOOT_OVERLAY}" = "xtrue" ] ; then
+            echo "Kiwi device tree loaded via U-boot overlay"
+        
+            # easier to do this way than via U-boot
+            config-pin p9.17 spi_cs
+            config-pin p9.18 spi
+            config-pin p9.21 spi
+            config-pin p9.22 spi_sclk
+        else
+            echo "Kiwi and SPI device tree loaded via capemgr"
 
-# SPI
-        if test \( -f /lib/firmware/${SPI}.dts \) -a \( \( ! -f /lib/firmware/${SPI}.dtbo \) -o \( /lib/firmware/${SPI}.dts -nt /lib/firmware/${SPI}.dtbo \) \) ; then
-            echo compile ${DEV_SPI} device tree;
-            dtc -O dtb -o /lib/firmware/${SPI}.dtbo -b 0 -@ /lib/firmware/${SPI}.dts;
-            # don't unload old slot because this is known to cause panics; must reboot
-        fi
-    
-        if [ "x${LOAD_SPI}" = "xyes" ] ; then
-            if ! grep -q ${DEVID_SPI} ${SLOTS} ; then
-                echo load ${DEV_SPI} device tree;
-                echo ${DEVID_SPI} > ${SLOTS};
+            if ! grep -q ${DEVID} ${SLOTS_FN} ; then
+                echo load ${DEV} device tree;
+                echo ${DEVID} > ${SLOTS_FN};
                 sleep 2;
             fi
-        fi
 
-# PRU (future)
-        if test \( ! -f /lib/firmware/${PRU}.dtbo \) -o \( /lib/firmware/${PRU}.dts -nt /lib/firmware/${PRU}.dtbo \) ; then
-            echo compile ${DEV_PRU} device tree;
-            dtc -O dtb -o /lib/firmware/${PRU}.dtbo -b 0 -@ /lib/firmware/${PRU}.dts;
-            # don't unload old slot because this is known to cause panics; must reboot
-        fi
+            # SPI
+            if test \( -f /lib/firmware/${SPI}.dts \) -a \( \( ! -f /lib/firmware/${SPI}.dtbo \) -o \( /lib/firmware/${SPI}.dts -nt /lib/firmware/${SPI}.dtbo \) \) ; then
+                echo compile ${DEV_SPI} device tree;
+                dtc -O dtb -o /lib/firmware/${SPI}.dtbo -b 0 -@ /lib/firmware/${SPI}.dts;
+                # don't unload old slot because this is known to cause panics; must reboot
+            fi
+    
+            if [ "x${LOAD_SPI}" = "xyes" ] ; then
+                if ! grep -q ${DEVID_SPI} ${SLOTS_FN} ; then
+                    echo load ${DEV_SPI} device tree;
+                    echo ${DEVID_SPI} > ${SLOTS_FN};
+                    sleep 2;
+                fi
+            fi
+
+            # PRU (future)
+            if test \( ! -f /lib/firmware/${PRU}.dtbo \) -o \( /lib/firmware/${PRU}.dts -nt /lib/firmware/${PRU}.dtbo \) ; then
+                echo compile ${DEV_PRU} device tree;
+                dtc -O dtb -o /lib/firmware/${PRU}.dtbo -b 0 -@ /lib/firmware/${PRU}.dts;
+                # don't unload old slot because this is known to cause panics; must reboot
+            fi
         
-        if ! grep -q ${DEVID_PRU} ${SLOTS} ; then
-            echo load ${DEV_PRU} device tree;
-            echo ${DEVID_PRU} > ${SLOTS};
+            if ! grep -q ${DEVID_PRU} ${SLOTS_FN} ; then
+                echo load ${DEV_PRU} device tree;
+                echo ${DEVID_PRU} > ${SLOTS_FN};
+            fi
         fi
     fi
 

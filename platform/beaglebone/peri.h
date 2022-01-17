@@ -31,9 +31,9 @@ extern gpio_t CMD_READY, SND_INTR;
 extern gpio_t P911, P913, P915, P926;
 extern gpio_t P811, P812, P813, P814, P815, P816, P817, P818, P819, P826;
 
-#define devio_setup(gpio, dir, pmux_val) \
-	_devio_setup(#gpio, gpio, dir, pmux_val);
-void _devio_setup(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_val);
+#define devio_check(gpio, dir, pmux_val1, pmux_val2) \
+	_devio_check(#gpio, gpio, dir, pmux_val1, pmux_val2);
+void _devio_check(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_val1, u4_t pmux_val2);
 
 #define gpio_setup(gpio, dir, initial, pmux_val1, pmux_val2) \
 	_gpio_setup(#gpio, gpio, dir, initial, pmux_val1, pmux_val2);

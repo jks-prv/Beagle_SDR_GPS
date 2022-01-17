@@ -1,21 +1,28 @@
 #!/bin/bash -e
-# Copyright (c) 2016-2019 John Seamons, ZL/KF6VO
+# Copyright (c) 2016-2022 John Seamons, ZL/KF6VO
 
-# NB: untested final Debian 8 image (8.10)
+# Debian 10.3
+# NB: this distro image is a flasher
+OPT="--no-check-certificate"
+HOST="debian.beagleboard.org/images"
+DISTRO="bone-eMMC-flasher-debian-10.3-iot-armhf-2020-04-06-4gb.img.xz"
+CKSUM="e339459077b83f6458cb3432494954582aedad897b9f3b62fa390dfdb010a9df"
+
+# Debian 8.10
+# NB: this distro image is a flasher
+# untested final Debian 8 image (8.10)
 # see rcn-ee.net/rootfs/bb.org/testing/keepers file
+#OPT=
 #HOST="rcn-ee.net/rootfs/bb.org/testing/2018-02-01/console"
 #DISTRO="bone-debian-8.10-console-armhf-2018-02-01-1gb.img.xz"
 #CKSUM="992cedbdb180b83ca42729449c8490632071dcd24a7e14b3983e6a46135de099"
 
+# Debian 8.6
 # NB: this distro image is a flasher
-HOST="debian.beagleboard.org/images/rcn-ee.net/rootfs/bb.org/testing/2016-11-03/console"
-DISTRO="BBB-blank-debian-8.6-console-armhf-2016-11-03-2gb.img.xz"
-CKSUM="9230693f2aeccbdce6dfb6fa32febe592d53a64c564e505aa90cc04bd20ac509"
-
-# NB: this distro image is a flasher
-#HOST="debian.beagleboard.org/images/rcn-ee.net/rootfs/bb.org/testing/2016-06-19/console"
-#DISTRO="BBB-blank-debian-8.5-console-armhf-2016-06-19-2gb.img.xz"
-#CKSUM="c68fd66873a5922d8746879f78eba6989be2e05103fb0979f9a95ba63545e957"
+#OPT=
+#HOST="debian.beagleboard.org/images/rcn-ee.net/rootfs/bb.org/testing/2016-11-03/console"
+#DISTRO="BBB-blank-debian-8.6-console-armhf-2016-11-03-2gb.img.xz"
+#CKSUM="9230693f2aeccbdce6dfb6fa32febe592d53a64c564e505aa90cc04bd20ac509"
 
 echo "--- get Debian distro image from net and create micro-SD flasher"
 echo -n "--- hit enter when ready: "; read not_used
@@ -30,7 +37,7 @@ fi
 
 if test ! -f ${DISTRO} ; then
 	echo "--- getting distro"
-	wget https://${HOST}/${DISTRO}
+	wget ${OPT} https://${HOST}/${DISTRO}
 else
 	echo "--- already seem to have the distro file, verify checksum below to be sure"
 fi
@@ -68,7 +75,8 @@ echo "--- will now copy to ${destination} which should be the micro-SD card"
 echo "--- CHECK lsblk ABOVE THAT ${destination} IS THE CORRECT DEVICE BEFORE PROCEEDING!"
 echo -n "--- hit enter when ready: "; read not_used
 
-echo "--- copying to micro-SD card, will take about 10 minutes"
+echo "--- copying to micro-SD card"
+echo "--- will take about 20 minutes for a 4GB card, longer for higher capacity cards"
 xzcat -v ${DISTRO} | dd of=${destination}
 
 echo "--- when next booted with micro-SD installed, KiwiSDR image should be copied to Beagle eMMC flash"

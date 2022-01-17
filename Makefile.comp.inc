@@ -73,12 +73,19 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
         LDFLAGS += -L$(KIWI_XC_REMOTE_FS)/usr/local/lib/
 
         ifeq ($(BBAI),true)
+            # BBAI
 			CFLAGS += -mtune=cortex-a15 -mcpu=cortex-a15
 	        CFLAGS += -mfpu=neon-vfpv4 -mfloat-abi=hard
         else ifeq ($(RPI),true)
+            # RPI
 			CFLAGS += -mtune=cortex-a53 -mcpu=cortex-a53
 	        CFLAGS += -mfpu=neon -mfloat-abi=hard
         else ifeq ($(DEBIAN_7),true)
+            # BBG/BBB
+			CFLAGS += -mtune=cortex-a8 -mcpu=cortex-a8
+	        CFLAGS += -mfpu=neon-vfpv3 -mfloat-abi=hard
+        else ifeq ($(DEBIAN_10),true)
+            # BBG/BBB
 			CFLAGS += -mtune=cortex-a8 -mcpu=cortex-a8
 	        CFLAGS += -mfpu=neon-vfpv3 -mfloat-abi=hard
 		else
@@ -114,8 +121,10 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	BBAI := $(shell cat /proc/device-tree/model | grep -q -s "BeagleBone AI" && echo true)
 	RPI := $(shell cat /proc/device-tree/model | grep -q -s "Raspberry Pi 3" && echo true)
 	DEBIAN_7 := $(shell cat /etc/debian_version | grep -q -s "7\." && echo true)
+	DEBIAN_10 := $(shell cat /etc/debian_version | grep -q -s "10\." && echo true)
 
 	ifeq ($(BBAI),true)
+	    DEBIAN_BUILD_VER = "Debian 9"
 	    #PROFILING = true
 	    PROFILING = false
 	    ifeq ($(PROFILING),true)
@@ -139,6 +148,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 		# clang still used by other things (e_cpu etc)
 		CMD_DEPS_DEBIAN := /usr/bin/clang-7
 	else ifeq ($(RPI),true)
+	    DEBIAN_BUILD_VER = "Debian 10"
 		CMD_DEPS_DEBIAN := /usr/bin/clang-7
 		CC = clang-7
 		CPP = clang++-7
@@ -150,6 +160,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 		# needed for iq_display.cpp et al
 		CPP_FLAGS += -std=gnu++11
 	else ifeq ($(DEBIAN_7),true)
+	    DEBIAN_BUILD_VER = "Debian 7"
 		# clang 3.0 available on Debian 7.9 doesn't work
 		CC = gcc
 		CPP = g++
@@ -162,8 +173,24 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 		# needed for iq_display.cpp et al (-std=gnu++11 isn't available on Debian 7.9)
 		CPP_FLAGS += -std=gnu++0x
+	else ifeq ($(DEBIAN_10),true)
+	    # BBG/BBB Debian 10
+	    DEBIAN_BUILD_VER = "Debian 10"
+		CC = clang-8
+		CPP = clang++-8
+		#CC = clang
+		#CPP = clang++
+		CMD_DEPS_DEBIAN := /usr/bin/clang-8
+
+        VIS_OPT = -Ofast
+		CFLAGS += -mtune=cortex-a8 -mcpu=cortex-a8
+	    CFLAGS += -mfpu=neon-vfpv3 -mfloat-abi=hard
+
+		# needed for iq_display.cpp et al
+		CPP_FLAGS += -std=gnu++11
 	else
-	    # BBG/BBB
+	    # BBG/BBB Debian 8
+	    DEBIAN_BUILD_VER = "Debian 8"
 		CC = clang-6.0
 		CPP = clang++-6.0
 		#CC = clang
