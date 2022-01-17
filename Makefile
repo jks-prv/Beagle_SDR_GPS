@@ -5,7 +5,6 @@ VERSION_MIN = 485
 
 REPO_NAME := Beagle_SDR_GPS
 REPO := https://github.com/jks-prv/$(REPO_NAME).git
-DEBIAN_VER := 8.11
 
 #
 # Makefile for KiwiSDR project
@@ -278,6 +277,10 @@ $(INSTALL_CERTIFICATES):
 	-apt-get -y update
 	apt-get -y install clang-7
 
+/usr/bin/clang-8:
+	-apt-get -y update
+	apt-get -y install clang-8
+
 /usr/bin/curl:
 	-apt-get -y install curl
 
@@ -354,7 +357,8 @@ VERSION = -DVERSION_MAJ=$(VERSION_MAJ) -DVERSION_MIN=$(VERSION_MIN)
 VER = v$(VERSION_MAJ).$(VERSION_MIN)
 V = -Dv$(VERSION_MAJ)_$(VERSION_MIN)
 
-INT_FLAGS += $(VERSION) -DKIWI -DKIWISDR -DARCH_$(ARCH) -DCPU_$(CPU) -DARCH_CPU=$(CPU) $(addprefix -DPLATFORM_,$(PLATFORMS))
+INT_FLAGS += $(VERSION) -DKIWI -DKIWISDR
+INT_FLAGS += -DARCH_$(ARCH) -DCPU_$(CPU) -DARCH_CPU=$(CPU) -DARCH_CPU_S=STRINGIFY\($(CPU)\) $(addprefix -DPLATFORM_,$(PLATFORMS))
 INT_FLAGS += -DDIR_CFG=STRINGIFY\($(DIR_CFG)\) -DCFG_PREFIX=STRINGIFY\($(CFG_PREFIX)\)
 INT_FLAGS += -DBUILD_DIR=STRINGIFY\($(BUILD_DIR)\) -DREPO=STRINGIFY\($(REPO)\) -DREPO_NAME=STRINGIFY\($(REPO_NAME)\)
 
@@ -385,6 +389,7 @@ build_makefile_inc:
 	@echo "----------------"
 	@echo "building" $(MF_INC)
 	@echo $(VER)
+	@echo $(DEBIAN_BUILD_VER)
 	@echo ARCH = $(ARCH)
 	@echo CPU = $(CPU)
 	@echo PLATFORMS = $(PLATFORMS)
@@ -930,14 +935,28 @@ $(TOOLS_DIR):
 ################################
 
 # on BBAI incremental update/upgrade can cause the window system to be re-enabled
+CHECK_DISABLE_WS=false
+ifeq ($(BBAI),true)
+    CHECK_DISABLE_WS=true
+endif
+ifeq ($(DEBIAN_10),true)
+    CHECK_DISABLE_WS=true
+endif
+
 .PHONY: DISABLE_WS
 DISABLE_WS:
-ifeq ($(BBAI),true)
+ifeq ($(CHECK_DISABLE_WS),true)
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 else
-	@echo "disable window system"
+	@echo "disable: window system (lightdm), web server (nginx), bonescript"
+ifeq ($(BBAI),true)
 	-@systemctl stop lightdm.service >/dev/null 2>&1
 	-@systemctl disable lightdm.service >/dev/null 2>&1
+endif
+	-@systemctl stop nginx.service >/dev/null 2>&1
+	-@systemctl disable nginx.service >/dev/null 2>&1
+	-@systemctl stop bonescript-autorun.service >/dev/null 2>&1
+	-@systemctl disable bonescript-autorun.service >/dev/null 2>&1
 endif
 endif
 
@@ -956,27 +975,31 @@ endif
 	@mkdir -p $(DIR_CFG)
 	@touch $(DO_ONCE)
 
-ifeq ($(BBAI),true)
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
-DTB_KIWI = am5729-beagleboneai-kiwisdr-cape.dtb
-DTB_DEB_NEW = am5729-beagleboneai-custom.dtb
-UENV_HAS_DTB_NEW := $(shell grep -qi '^dtb=$(DTB_DEB_NEW)' /boot/uEnv.txt && echo true)
-DIR_DTB = dtb-$(SYS_MAJ).$(SYS_MIN)-ti
+    ifeq ($(BBAI),true)
+        DTB_KIWI = am5729-beagleboneai-kiwisdr-cape.dtb
+        DTB_DEB_NEW = am5729-beagleboneai-custom.dtb
+        UENV_HAS_DTB_NEW := $(shell grep -qi '^dtb=$(DTB_DEB_NEW)' /boot/uEnv.txt && echo true)
+        DIR_DTB = dtb-$(SYS_MAJ).$(SYS_MIN)-ti
 
-install_kiwi_device_tree:
-	@echo "install Kiwi device tree to configure GPIO pins"
-	@echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
-	cp platform/beaglebone_AI/am5729-beagleboneai-kiwisdr-cape.dts /opt/source/$(DIR_DTB)/src/arm
-	(cd /opt/source/$(DIR_DTB); make)
-	cp /opt/source/$(DIR_DTB)/src/arm/$(DTB_KIWI) /boot
-	cp /opt/source/$(DIR_DTB)/src/arm/$(DTB_KIWI) /boot/dtbs/$(SYS)
-	cp /opt/source/$(DIR_DTB)/src/arm/$(DTB_KIWI) /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb
-	@echo "UENV_HAS_DTB_NEW = $(UENV_HAS_DTB_NEW)"
-ifeq ($(UENV_HAS_DTB_NEW),true)
-	-cp --backup=numbered /boot/uEnv.txt /boot/uEnv.txt.save
-	-sed -i -e 's/^dtb=$(DTB_DEB_NEW)/dtb=$(DTB_KIWI)/' /boot/uEnv.txt
-endif
-endif
+        install_kiwi_device_tree:
+	        @echo "install Kiwi device tree to configure GPIO pins"
+	        @echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
+	        cp platform/beaglebone_AI/am5729-beagleboneai-kiwisdr-cape.dts /opt/source/$(DIR_DTB)/src/arm
+	        (cd /opt/source/$(DIR_DTB); make)
+	        cp /opt/source/$(DIR_DTB)/src/arm/$(DTB_KIWI) /boot
+	        cp /opt/source/$(DIR_DTB)/src/arm/$(DTB_KIWI) /boot/dtbs/$(SYS)
+	        cp /opt/source/$(DIR_DTB)/src/arm/$(DTB_KIWI) /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb
+	        @echo "UENV_HAS_DTB_NEW = $(UENV_HAS_DTB_NEW)"
+        ifeq ($(UENV_HAS_DTB_NEW),true)
+	        -cp --backup=numbered /boot/uEnv.txt /boot/uEnv.txt.save
+	        -sed -i -e 's/^dtb=$(DTB_DEB_NEW)/dtb=$(DTB_KIWI)/' /boot/uEnv.txt
+        endif
+    endif
+
+    ifeq ($(DEBIAN_10),true)
+	    @echo "Debian 10"
+    endif
 endif
 
 DEV = kiwi
@@ -1431,16 +1454,21 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	apt-get -y install xz-utils
 
 #
-# DANGER: "count=1600M" below (i.e. 1.6 GB) must be larger than the partition size (currently ~1.4 GB)
+# DANGER: "count=2400M" below (i.e. 1.6 GB) must be larger than the partition size (currently ~2.1 GB)
 # computed by the tools/kiwiSDR-make-microSD-flasher-from-eMMC.sh script.
 # Otherwise the image file will have strange effects like /boot/uEnv.txt being the correct size but
 # filled with zeroed bytes (which of course is a disaster).
 #
+DEBIAN_VER := 10.11
+USE_MMC := 0
 create_img_from_sd: /usr/bin/xz
 	@echo "--- this takes about an hour"
 	@echo "--- KiwiSDR server will be stopped to maximize write speed"
 	make stop
-	dd if=/dev/mmcblk1 bs=1M iflag=count_bytes count=1600M | xz --verbose > ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER).img.xz
+	date
+	echo "CAUTION: USE_MMC = $(USE_MMC) -- VERIFY THIS"
+	dd if=/dev/mmcblk$(USE_MMC) bs=1M iflag=count_bytes count=2400M | xz --verbose > ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER).img.xz
 	sha256sum ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER).img.xz
+	date
 
 endif

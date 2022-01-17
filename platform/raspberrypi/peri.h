@@ -55,9 +55,9 @@ extern gpio_t FPGA_INIT, FPGA_PGM;
 extern gpio_t SPIn_CS0, SPIn_CS1;
 extern gpio_t CMD_READY, SND_INTR;
 
-#define devio_setup(gpio, dir, pmux_val) \
-	_devio_setup(#gpio, gpio, dir, pmux_val);
-void _devio_setup(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_val);
+#define devio_check(gpio, dir, pmux_val) \
+	_devio_check(#gpio, gpio, dir, pmux_val);
+void _devio_check(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_val);
 
 #define gpio_setup(gpio, dir, initial, pmux_val1, pmux_val2) \
 	_gpio_setup(#gpio, gpio, dir, initial, pmux_val1, pmux_val2);

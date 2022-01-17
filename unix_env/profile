@@ -10,9 +10,6 @@ if [ "x${TERM}" == "xdumb" ]; then
   stty cols 160
 fi
 
-export COLOR='--color=auto'
-export LS_OPTIONS='--color=auto'
-
 if [ -f ~/.bashrc ]; then
   . ~/.bashrc
 fi

@@ -312,10 +312,10 @@ static bool check_pmux(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_
 
 const char *dir_name[] = { "INPUT", "OUTPUT", "BIDIR" };
 
-void _devio_setup(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_val)
+void _devio_check(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_val1, u4_t pmux_val2)
 {
 	//printf("DEVIO setup %s %d_%-2d %s\n", name, GPIO_BANK(gpio), gpio.bit, dir_name[dir]);
-	check_pmux(name, gpio, dir, pmux_val, PMUX_NONE);
+	check_pmux(name, gpio, dir, pmux_val1, pmux_val2);
 }
 
 void _gpio_setup(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t initial, u4_t pmux_val1, u4_t pmux_val2)
@@ -392,7 +392,7 @@ void peri_init()
     if (pmux_m == MAP_FAILED) sys_panic("mmap pmux");
 
 #ifdef CPU_AM3359
-	if (!use_spidev) {
+	if (!use_spidev || debian_ver >= 9) {
 #endif
 #ifdef CPU_AM5729
     if (1) {
@@ -451,19 +451,22 @@ void peri_init()
 	
 	// P9 connector
 #ifdef CPU_AM3359
-	if (!use_spidev) {
-		devio_setup(SPIn_SCLK, GPIO_DIR_OUT, PMUX_IO_PU | PMUX_M0);
-		devio_setup(SPIn_MISO, GPIO_DIR_IN, PMUX_IN_PU | PMUX_M0);
-		devio_setup(SPIn_MOSI, GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_M0);
-		devio_setup(SPIn_CS0, GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_M0);
+    // like BBAI, SPI pmux must be setup for Debian >= 9
+	if (!use_spidev || debian_ver >= 9) {
+	    printf("checking SPI pmux settings..\n");
+		devio_check(SPIn_SCLK, GPIO_DIR_OUT, PMUX_IO_PU  | PMUX_M0, PMUX_NONE);
+		devio_check(SPIn_MISO, GPIO_DIR_IN,  PMUX_IN_PU  | PMUX_M0, PMUX_NONE);
+		devio_check(SPIn_MOSI, GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_M0, PMUX_IO_PU | PMUX_M0);
+		devio_check(SPIn_CS0,  GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_M0, PMUX_IO_PU | PMUX_M0);
 	}
 #endif
 	
 #ifdef CPU_AM5729
-    devio_setup(SPIn_SCLK, GPIO_DIR_OUT, PMUX_IO_PU | PMUX_M0);
-    devio_setup(SPIn_MISO, GPIO_DIR_IN, PMUX_IN_PD | PMUX_M0);
-    devio_setup(SPIn_MOSI, GPIO_DIR_OUT, PMUX_OUT_PD | PMUX_M0);
-    devio_setup(SPIn_CS0, GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_M0);
+    // BBAI has always used Debian >= 9
+    devio_check(SPIn_SCLK, GPIO_DIR_OUT, PMUX_IO_PU  | PMUX_M0, PMUX_NONE);
+    devio_check(SPIn_MISO, GPIO_DIR_IN,  PMUX_IN_PD  | PMUX_M0, PMUX_NONE);
+    devio_check(SPIn_MOSI, GPIO_DIR_OUT, PMUX_OUT_PD | PMUX_M0, PMUX_NONE);
+    devio_check(SPIn_CS0,  GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_M0, PMUX_NONE);
 #endif
 
 	gpio_setup(SPIn_CS1, GPIO_DIR_OUT, 1, PMUX_OUT_PU, PMUX_IO_PD);

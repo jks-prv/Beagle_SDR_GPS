@@ -54,11 +54,6 @@
     spi_shmem_t *spi_shmem_p = &spi_shmem;
 #endif
 
-#if defined(CPU_BCM2837)
-    #define	SPI_DEVNAME	"/dev/spidev0.0"
-#else
-    #define	SPI_DEVNAME	"/dev/spidev1.0"
-#endif
 #define	NOT(bit)	0	// documentation aid
 
 static int spi_fd = -1;
@@ -76,7 +71,7 @@ static int use_async;
     #define SPI_INLINE_BUF_SIZE 2048
 #endif
 
-void _spi_dev(SPI_SEL sel, SPI_MOSI *mosi, int tx_xfers, SPI_MISO *miso, int rx_xfers)
+static void _spi_dev(SPI_SEL sel, SPI_MOSI *mosi, int tx_xfers, SPI_MISO *miso, int rx_xfers)
 {
 #if defined(CPU_BCM2837)
     SPI_T tx_buffer[SPI_INLINE_BUF_SIZE];
@@ -118,6 +113,7 @@ void _spi_dev(SPI_SEL sel, SPI_MOSI *mosi, int tx_xfers, SPI_MISO *miso, int rx_
 		spi_tr.speed_hz = speed;
 		spi_tr.bits_per_word = SPI_BPW;		// zero also means 8-bits?
 		spi_tr.cs_change = 0;
+		spi_tr.rx_nbits = spi_tr.tx_nbits = 0;
 	
 		int actual_rxbytes;
 		if ((actual_rxbytes = ioctl(spi_fd, SPI_IOC_MESSAGE(1), &spi_tr)) < 0) sys_panic("SPI_IOC_MESSAGE");
@@ -188,11 +184,20 @@ static void _spi_dev_init(int spi_clkg, int spi_speed)
 	}
     
 	if (use_spidev) {
-		lprintf("### using SPI_DEV\n");
-	
 		if (spi_fd != -1) close(spi_fd);
 	
-		if ((spi_fd = open(SPI_DEVNAME, O_RDWR)) < 0) sys_panic("open spidev");
+	    const char *spi_devname;
+        #if defined(CPU_BCM2837)
+            spi_devname = "/dev/spidev0.0";
+        #else
+            if (debian_ver <= 9)
+                spi_devname = "/dev/spidev1.0";
+            else
+                spi_devname = "/dev/spidev0.0";
+        #endif
+		lprintf("### using SPI_DEV %s\n", spi_devname);
+	
+		if ((spi_fd = open(spi_devname, O_RDWR)) < 0) sys_panic("open spidev");
 	
 		u4_t max_speed = 0, check_speed;
 		if (spi_speed == SPI_48M) max_speed = 48000000; else
@@ -231,6 +236,7 @@ static void _spi_dev_init(int spi_clkg, int spi_speed)
 void spi_dev_init(int spi_clkg, int spi_speed)
 {
 #ifdef SPI_SHMEM_DISABLE
+    printf("SPI: CPU_%s SPI_SHMEM_DISABLE\n", ARCH_CPU_S);
 #else
     #ifdef CPU_AM3359
         if (use_spidev) {

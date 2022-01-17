@@ -12,6 +12,7 @@ alias pe="printenv"
 alias se="export"
 alias un="unset"
 alias h="history"
+alias hclr="history -c; history -w"
 alias z="suspend"
 alias x="exit"
 alias j="jobs -l"
@@ -200,7 +201,7 @@ alias scen="function _sys () { systemctl --lines=100 enable \${*}.service ; } ; 
 alias sa="service --status-all"
 
 # packages
-alias pk="echo pk: s=search_available ls=list_installed ver,vers,show,pol=versions i=install rm=remove ar=autoremove; echo pk: up=update upp=single_pkg ug=dist-upgrade uug=upgrade fug=full-upgrade; echo pk: c=clean sz=sizes f,f2=which_pkg_has_file fu=file_update fi=files_installed co=cape_overlays"
+alias pk="echo pk: s=search_available ls=list_installed ver,vers,show,pol=versions i=install rm=remove ar=autoremove; echo pk: up=update upp=single_pkg ug=dist-upgrade; echo pk: c=clean sz=sizes f,f2=which_pkg_has_file fu=file_update fi=files_installed co=cape_overlays"
 alias pks="echo available pkgs:; apt-cache search"
 alias pkls="echo installed pkgs:; dpkg -l | gr"
 alias pksh="apt show"
@@ -227,21 +228,23 @@ alias pkar="apt-get autoremove"
 alias pkco="apt-get upgrade bb-cape-overlays"
 
 # BBAI
+# NB: /opt/source/dtb-* must match kernel version, hence based on "uname -r"
 d_sys=`uname -r`
+# following gives e.g. 4.19.94-ti-r42 => 4.19-ti
+d_ver=`uname -r | sed "s/\([0-9]*\.[0-9]*\)\..*/\1-ti/"`
 alias ai="echo cd: cdbo cdbdt; echo dt: cddt cpdt m cpdt2 \(cpdtr2\); echo gpio: pmux wdt cdsdt cdpm ver"
 # cd
 alias cdbo="cd /boot"
 alias cdbdt="cd /boot/dtbs/${d_sys}"
 # dt
 # procedure: cddt; cpdt; m; cpdt2; reboot
-# NB: /opt/source/dtb-4.14-ti is the version of dtb that must be used.
-# It matches the kernel version, e.g. uname -r => 4.14.108-ti-r123
-d_dt="/opt/source/dtb-4.14-ti"
-d_dt2="/opt/source/dtb-4.14-ti/src/arm"
+d_dt="/opt/source/dtb-${d_ver}"
+d_dt2="/opt/source/dtb-${d_ver}/src/arm"
 d_ai="~/Beagle_SDR_GPS/platform/beaglebone_AI"
 f_dts="am5729-beagleboneai.dts"
 f_dtb="am5729-beagleboneai.dtb"
 f_cape="am5729-beagleboneai-kiwisdr-cape"
+alias cdov="cd /proc/device-tree/chosen/overlays"
 alias cddt="cd ${d_dt}"
 alias cddt2="cd ${d_dt2}"
 #alias cpdt="pd ${d_ai}; echo *kiwisdr*[dts,dtsi] ; cp *kiwisdr*[dts,dtsi] ${d_dt2}; echo *allmem*; cp *allmem* ${d_dt2}/${f_dts}; popd"

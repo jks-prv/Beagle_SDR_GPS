@@ -608,6 +608,7 @@ partition_drive () {
 				sfdisk_options="--force"
 			fi
 			sfdisk_boot_startmb="${sfdisk_boot_startmb}M"
+			sfdisk_boot_endmb="${sfdisk_boot_endmb}M"
 		fi
 
 		message="sfdisk: [$(LC_ALL=C sfdisk --version)]" ; broadcast
