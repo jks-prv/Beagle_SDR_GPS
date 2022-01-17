@@ -2,11 +2,14 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.486  January 18, 2022
+    Support for Debian 10 (Buster) on BBG/BBB.
+
 v1.485  January 15, 2022
     IP address blacklist: auto detect when new blacklist available for download.
-        Check is made when admin page loaded and is a message displayed on network tab.
+        Check is made when admin page loaded and a message displayed on network tab.
     Update EiBi B21 database to 5 January 2022 version.
-    Bug fix: When multiple connections present prevent editing of DX list from crashing server.
+    Bug fix: When multiple connections present prevent DX list editing from crashing server.
 
 v1.484  January 7, 2022
     ALE_2G extension:
