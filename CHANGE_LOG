@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.487  January 27, 2022
+    Debian 10: Use connmanctl to change Ethernet ip address mode instead of editing the file
+        /etc/network/interfaces and rebooting as is done with Debian 8 & 9.
+
 v1.486  January 18, 2022
     Support for Debian 10 (Buster) on BBG/BBB.
 

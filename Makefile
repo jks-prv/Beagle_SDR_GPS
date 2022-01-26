@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 486
+VERSION_MIN = 487
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -1471,9 +1471,12 @@ USE_MMC := 0
 create_img_from_sd: /usr/bin/xz
 	@echo "--- this takes about an hour"
 	@echo "--- KiwiSDR server will be stopped to maximize write speed"
+	lsblk
+	@echo "CAUTION: USE_MMC = $(USE_MMC) -- VERIFY THIS ABOVE"
+	@echo -n 'ARE YOU SURE? '
+	@read not_used
 	make stop
 	date
-	echo "CAUTION: USE_MMC = $(USE_MMC) -- VERIFY THIS"
 	dd if=/dev/mmcblk$(USE_MMC) bs=1M iflag=count_bytes count=2400M | xz --verbose > ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER).img.xz
 	sha256sum ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER).img.xz
 	date

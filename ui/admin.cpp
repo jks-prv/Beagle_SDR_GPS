@@ -694,23 +694,30 @@ void c2s_admin(void *param)
 			if (i == 3) {
 				clprintf(conn, "eth0: USE STATIC ip=%s nm=%s gw=%s\n", static_ip_m, static_nm_m, static_gw_m);
 
-				system("cp /etc/network/interfaces /etc/network/interfaces.bak");
-				FILE *fp;
-				scallz("/tmp/interfaces.kiwi fopen", (fp = fopen("/tmp/interfaces.kiwi", "w")));
-					fprintf(fp, "auto lo\n");
-					fprintf(fp, "iface lo inet loopback\n");
-					fprintf(fp, "auto eth0\n");
-					fprintf(fp, "iface eth0 inet static\n");
-					fprintf(fp, "    address %s\n", static_ip_m);
-					fprintf(fp, "    netmask %s\n", static_nm_m);
-					fprintf(fp, "    gateway %s\n", static_gw_m);
-					fprintf(fp, "iface usb0 inet static\n");
-					fprintf(fp, "    address 192.168.7.2\n");
-					fprintf(fp, "    netmask 255.255.255.252\n");
-					fprintf(fp, "    network 192.168.7.0\n");
-					fprintf(fp, "    gateway 192.168.7.1\n");
-				fclose(fp);
-				system("cp /tmp/interfaces.kiwi /etc/network/interfaces");
+                if (debian_ver > 9) {
+                    asprintf(&sb, "connmanctl config ethernet_%s_cable --ipv4 manual %s %s %s", net.mac_no_delim,
+                        static_ip_m, static_nm_m, static_gw_m);
+                    system(sb); kiwi_ifree(sb);
+                } else {
+                    system("cp /etc/network/interfaces /etc/network/interfaces.bak");
+                    FILE *fp;
+                    scallz("/tmp/interfaces.kiwi fopen", (fp = fopen("/tmp/interfaces.kiwi", "w")));
+                        fprintf(fp, "auto lo\n");
+                        fprintf(fp, "iface lo inet loopback\n");
+                        fprintf(fp, "auto eth0\n");
+                        fprintf(fp, "iface eth0 inet static\n");
+                        fprintf(fp, "    address %s\n", static_ip_m);
+                        fprintf(fp, "    netmask %s\n", static_nm_m);
+                        fprintf(fp, "    gateway %s\n", static_gw_m);
+                        fprintf(fp, "iface usb0 inet static\n");
+                        fprintf(fp, "    address 192.168.7.2\n");
+                        fprintf(fp, "    netmask 255.255.255.252\n");
+                        fprintf(fp, "    network 192.168.7.0\n");
+                        fprintf(fp, "    gateway 192.168.7.1\n");
+                    fclose(fp);
+                    system("cp /tmp/interfaces.kiwi /etc/network/interfaces");
+                }
+                
 				kiwi_ifree(static_ip_m); kiwi_ifree(static_nm_m); kiwi_ifree(static_gw_m);
 				continue;
 			}
@@ -732,17 +739,22 @@ void c2s_admin(void *param)
                     inet4_d2h(dns2, &dns2_err);
     
                     if (!dns1_err || !dns2_err) {
-                        char *s;
-                        system("rm -f /etc/resolv.conf; touch /etc/resolv.conf");
+                        if (debian_ver > 9) {
+                            asprintf(&sb, "connmanctl config ethernet_%s_cable --nameservers %s %s",
+                                net.mac_no_delim, dns1_err? "" : dns1, dns2_err? "" : dns2);
+                            system(sb); kiwi_ifree(sb);
+                        } else {
+                            system("rm -f /etc/resolv.conf; touch /etc/resolv.conf");
         
-                        if (!dns1_err) {
-                            asprintf(&s, "echo nameserver %s >> /etc/resolv.conf", dns1);
-                            system(s); kiwi_ifree(s);
-                        }
+                            if (!dns1_err) {
+                                asprintf(&sb, "echo nameserver %s >> /etc/resolv.conf", dns1);
+                                system(sb); kiwi_ifree(sb);
+                            }
                         
-                        if (!dns2_err) {
-                            asprintf(&s, "echo nameserver %s >> /etc/resolv.conf", dns2);
-                            system(s); kiwi_ifree(s);
+                            if (!dns2_err) {
+                                asprintf(&sb, "echo nameserver %s >> /etc/resolv.conf", dns2);
+                                system(sb); kiwi_ifree(sb);
+                            }
                         }
                     }
 
@@ -757,8 +769,14 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET use_DHCP");
 			if (i == 0) {
 				clprintf(conn, "eth0: USE DHCP\n");
-				system("cp /etc/network/interfaces /etc/network/interfaces.bak");
-				system("cp /root/" REPO_NAME "/unix_env/interfaces.DHCP /etc/network/interfaces");
+
+                if (debian_ver > 9) {
+                    asprintf(&sb, "connmanctl config ethernet_%s_cable --ipv4 dhcp", net.mac_no_delim);
+                    system(sb); kiwi_ifree(sb);
+                } else {
+                    system("cp /etc/network/interfaces /etc/network/interfaces.bak");
+                    system("cp /root/" REPO_NAME "/unix_env/interfaces.DHCP /etc/network/interfaces");
+                }
 				continue;
 			}
 
