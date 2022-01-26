@@ -1609,7 +1609,7 @@ function kiwi_mapPinSymbol(fillColor, strokeColor) {
 ////////////////////////////////
 
 var comp_ctr, reason_disabled = '';
-var version_maj = -1, version_min = -1;
+var version_maj = -1, version_min = -1, debian_ver = -1;
 var tflags = { INACTIVITY:1, WF_SM_CAL:2, WF_SM_CAL2:4 };
 var chan_no_pwd, chan_no_pwd_true;
 var kiwi_output_msg_p = { scroll_only_at_bottom: true, process_return_alone: false };
@@ -1626,6 +1626,10 @@ function kiwi_msg(param, ws)
 			
 		case "version_min":
 			version_min = parseInt(param[1]);
+			break;
+
+		case "debian_ver":
+			debian_ver = parseInt(param[1]);
 			break;
 
 		case "client_public_ip":
