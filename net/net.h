@@ -96,7 +96,7 @@ typedef struct {
 	int port, port_ext;
 
     bool mac_valid;
-	char mac[64];
+	char mac[32], mac_no_delim[16];
 	
 	bool auto_nat_valid;
 	int auto_nat;
