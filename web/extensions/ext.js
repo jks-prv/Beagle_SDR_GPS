@@ -885,11 +885,12 @@ function extint_names_enum(func)
       if (id == 'sig_gen' && (rx_chan != 0 || rx_chans >= 14)) continue;   // sig gen only visible to chan 0
       if (id == 'wspr') id = 'WSPR';      // FIXME: workaround
 
-      // workaround mistake that config enable ids don't match ext names
-      var id_en = id;
+      // workaround mistake that stored config enable ids don't match ext names
+      var id_en = id.toLowerCase();
       if (id_en == 'cw_decoder') id_en = 'cw';
-      if (id_en == 'SSTV') id_en = 'sstv';   // don't .toLowerCase() because e.g. 'DRM' is valid
-      if (id_en == 'TDoA') id_en = 'tdoa';
+      if (id_en == 'drm') id_en = 'DRM';
+      if (id_en == 's_meter') id_en = 'S_meter';
+      if (id_en == 'wspr') id_en = 'WSPR';
       
       func(i, value, id, id_en);
       value++;
