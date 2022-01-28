@@ -10,6 +10,7 @@
 // I.e. if a net consists of a single frequency the zero would be left out as there is nothing to scan.
 //
 // Updates:
+// 28 jan 22 Bob W  Added US DEA.
 // 18 sep 21 Ben    Added LSB nets, and various other nets (DIPL, MIL, RedCross, USCG). 
 //                  Note: frequencies aggregated from various sources and could possibly be incorrect,incomplete or obsolete.
 // 15 sep 21 Ben    Duplicates removed, additional scan files added, some re-arrangements, countries iso 3166 alpha-2 coded.
@@ -31,6 +32,9 @@
 // Brendan_W forum 9/13/21
         "US COTHEN": [0, 5250, 5732, 5909.5, 7527, 8912, 10242, 11494, 12222, 13312, 13907, 14582, 15867, 18594, 20890, 24838.5],
         "US COTHEN_NOJ": [0, 3053, 4730, 6709, 9034, 11196, 13221, 15082, 17988, 20135.6, 23072.6],
+
+// Bob W email 1/28/22
+        "US DEA":  [0, 2808.5, 4991, 5277, 5781, 5841, 5912, 6721, 6855, 6912, 7657, 7808, 8965, 9238.5, 9497, 9972, 10683, 11073.5, 11076, 11175, 11202, 12138, 12138.5, 13200, 14350, 14686, 14690, 15593.5, 18171, 19131, 20348.5, 23803.5, 25385, 26946, 27573.5, 27583.5],
 
 // ShaneBrook forum 9/13/21
         "US FEMA": [0, 2658.0, 3341.0, 3388.0, 4442.0, 4603.0, 4780.0, 5135.0, 5211.0, 5402.0, 5711.0, 5821.0, 6049.0, 6809.0, 7348.0, 7428.0, 7806.4, 7870.0, 8023.0, 8050.0, 9414.5, 9462.0, 10194.0, 10202.0, 10493.0, 10588.0, 10899.0, 11108.0, 11130.0, 11448.0, 11801.0, 11957.0, 12112.0, 12129.0, 12216.0, 12270.0, 13437.0, 13446.0, 13488.0, 13894.0, 13935.0, 14450.0, 14567.0, 14776.0, 14836.0, 14885.0, 15094.0, 15658.0, 15708.0, 16201.0, 17487.0, 17519.0, 19969.0, 20361.0, 21866.0, 22983.0, 24526.0],
