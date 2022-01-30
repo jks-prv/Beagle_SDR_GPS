@@ -113,7 +113,6 @@ static void _spi_dev(SPI_SEL sel, SPI_MOSI *mosi, int tx_xfers, SPI_MISO *miso, 
 		spi_tr.speed_hz = speed;
 		spi_tr.bits_per_word = SPI_BPW;		// zero also means 8-bits?
 		spi_tr.cs_change = 0;
-		spi_tr.rx_nbits = spi_tr.tx_nbits = 0;
 	
 		int actual_rxbytes;
 		if ((actual_rxbytes = ioctl(spi_fd, SPI_IOC_MESSAGE(1), &spi_tr)) < 0) sys_panic("SPI_IOC_MESSAGE");
