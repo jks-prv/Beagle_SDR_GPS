@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.489  February 1, 2022
+    GPS: update Galileo sat table.
+    Clean up default waterfalls by changing auto floor value from -10 to 0 dB.
+    Fix MW band label bug found with really old config.js files.
+
 v1.488  January 29, 2022
     Admin > Extensions > {ALE_2G, HFDL} "user enable" switch now works.
     Added US DEA to ALE 2G scan list (thanks Bob W).
