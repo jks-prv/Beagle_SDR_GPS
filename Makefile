@@ -737,15 +737,6 @@ ALL_OBJECTS = $(OBJECTS) $(O3_OBJECTS) $(KEEP_OBJECTS)
 -include $(EMBED_DEPS:.o=.d)
 -include $(EXTS_DEPS:.o=.d)
 
-COMP_CTR = $(BUILD_DIR)/.comp_ctr
-C_CTR_LINK = 9997
-C_CTR_INSTALL = 9998
-C_CTR_DONE = 9999
-
-.PHONY: c_ctr_reset
-c_ctr_reset:
-	@echo 1 >$(COMP_CTR)
-
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 # FIXME: isn't there a better way to do this in GNU make?
@@ -794,16 +785,14 @@ endif
 # Previously doing a "make install" on the development machine made no sense and was flagged as an error.
 #
 
-$(BUILD_DIR)/kiwi.bin: c_ctr_reset $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(ALL_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(EXTS_DEPS)
-	@echo $(C_CTR_LINK) >$(COMP_CTR)
+$(BUILD_DIR)/kiwi.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(ALL_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(EXTS_DEPS)
 ifneq ($(SAN),1)
 	$(CPP) $(LDFLAGS) $(ALL_OBJECTS) $(DEVEL_DEPS) $(EXTS_DEPS) $(LIBS) -o $(BUILD_OBJ)
 else
 	@echo loader skipped for static analysis
 endif
 
-$(BUILD_DIR)/kiwid.bin: c_ctr_reset foptim_gen $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(ALL_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS) $(EXTS_DEPS)
-	@echo $(C_CTR_LINK) >$(COMP_CTR)
+$(BUILD_DIR)/kiwid.bin: foptim_gen $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(ALL_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS) $(EXTS_DEPS)
 ifneq ($(SAN),1)
 	$(CPP) $(LDFLAGS) $(ALL_OBJECTS) $(EMBED_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
 else
@@ -859,7 +848,6 @@ $(OBJ_DIR)/%.o: %.c $(SRC_DEPS)
     endif
 #	$(CC) -x c $(OPTS_VIS_UNOPT) @$(MF_INC) -c -o $@ $<
 	$(CC) $(OPTS_VIS_UNOPT) @$(MF_INC) -c -o $@ $<
-#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/%.o: %.c $(SRC_DEPS)
@@ -867,7 +855,6 @@ $(OBJ_DIR_O3)/%.o: %.c $(SRC_DEPS)
 	    $(CC) $(OPTS_VIS_OPT) @$(MF_INC) -S -o $(subst .o,.S,$@) $<
     endif
 	$(CC) $(OPTS_VIS_OPT) @$(MF_INC) -c -o $@ $<
-#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 
@@ -878,7 +865,6 @@ $(OBJ_DIR_O3)/search.o: search.cpp $(SRC_DEPS)
 	    $(CPP) $(OPTS_VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) $(CPP_FLAGS) -S -o $(subst .o,.S,$@) $<
     endif
 	$(CPP) $(OPTS_VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) $(CPP_FLAGS) -c -o $@ $<
-#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/simd.o: simd.cpp $(SRC_DEPS)
@@ -886,7 +872,6 @@ $(OBJ_DIR_O3)/simd.o: simd.cpp $(SRC_DEPS)
 	    $(CPP) $(OPTS_VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) $(CPP_FLAGS) -S -o $(subst .o,.S,$@) $<
     endif
 	$(CPP) $(OPTS_VIS_OPT) $(CFLAGS_UNSAFE_OPT) @$(MF_INC) $(CPP_FLAGS) -c -o $@ $<
-#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 
@@ -897,12 +882,10 @@ $(OBJ_DIR)/%.o: %.cpp $(SRC_DEPS)
 	    $(CPP) $(OPTS_VIS_OPT) @$(MF_INC) $(CPP_FLAGS) -S -o $(subst .o,.S,$@) $<
     endif
 	$(CPP) $(OPTS_VIS_UNOPT) @$(MF_INC) $(CPP_FLAGS) -c -o $@ $<
-#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR)/%.o: %.cpp $(SRC_DEPS)
 	$(CPP) $(OPTS_VIS_OPT) @$(MF_INC) $(CPP_FLAGS) -c -o $@ $<
-#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/%.o: %.cpp $(SRC_DEPS)
@@ -910,7 +893,6 @@ $(OBJ_DIR_O3)/%.o: %.cpp $(SRC_DEPS)
 	    $(CPP) $(OPTS_VIS_OPT) @$(MF_INC) $(CPP_FLAGS) -S -o $(subst .o,.S,$@) $<
     endif
 	$(CPP) $(OPTS_VIS_OPT) @$(MF_INC) $(CPP_FLAGS) -c -o $@ $<
-#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 
@@ -1076,7 +1058,6 @@ c_ext_clang_conv_install: $(DO_ONCE) $(BUILD_DIR)/kiwid.bin
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	# remainder of "make install" only makes sense to run on target
 else
-	@echo $(C_CTR_INSTALL) >$(COMP_CTR)
 # don't strip symbol table while we're debugging daemon crashes
 #	install -D -o root -g root $(BUILD_DIR)/kiwid.bin /usr/local/bin/kiwid
 	install -D -o root -g root $(BUILD_DIR)/kiwid.bin /usr/local/bin/kiwid
@@ -1167,7 +1148,6 @@ ifneq ($(ETC_HOSTS_HAS_KIWI),true)
 endif
 
 	systemctl enable kiwid.service
-	@echo $(C_CTR_DONE) >$(COMP_CTR)
 
 # remove public keys leftover from development
 ifeq ($(EXISTS_SSH_KEYS),true)

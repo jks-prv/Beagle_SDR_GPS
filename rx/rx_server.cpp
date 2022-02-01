@@ -570,17 +570,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			int type;
 			const char *reason_disabled = NULL;
 
-			int comp_ctr = 0;
 			if (!down && update_in_progress) {
-			    /*
-				FILE *fp;
-				fp = fopen("/root/" REPO_NAME "/.comp_ctr", "r");
-				if (fp != NULL) {
-					fscanf(fp, "%d\n", &comp_ctr);
-					//printf(".comp_ctr %d\n", comp_ctr);
-					fclose(fp);
-				}
-				*/
 				type = 1;
 			} else
 			if (!down && backup_in_progress) {
@@ -593,8 +583,8 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			}
 			
 			char *reason_enc = kiwi_str_encode((char *) reason_disabled);
-			conn_printf("send_msg_mc MSG comp_ctr=%d reason=<%s> down=%d\n", comp_ctr, reason_disabled, type);
-			send_msg_mc(mc, SM_NO_DEBUG, "MSG comp_ctr=%d reason_disabled=%s down=%d", comp_ctr, reason_enc, type);
+			conn_printf("send_msg_mc MSG reason=<%s> down=%d\n", reason_disabled, type);
+			send_msg_mc(mc, SM_NO_DEBUG, "MSG reason_disabled=%s down=%d", reason_enc, type);
 			cfg_string_free(reason_disabled);
 			kiwi_ifree(reason_enc);
             //printf("DOWN %s %s\n", rx_streams[st->type].uri, remote_ip);
@@ -620,7 +610,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 
 		// cull conns stuck in STOP_DATA state (Novosibirsk problem)
 		if (c->valid && c->stop_data && c->mc == NULL) {
-			clprintf(c, "STOP_DATA cull conn-%02d %s rx_chan=%d\n", c->self_idx, rx_streams[c->type].uri, c->rx_channel);
+			//clprintf(c, "STOP_DATA cull conn-%02d %s rx_chan=%d\n", c->self_idx, rx_streams[c->type].uri, c->rx_channel);
 			rx_enable(c->rx_channel, RX_CHAN_FREE);
 			rx_server_remove(c);
 		}

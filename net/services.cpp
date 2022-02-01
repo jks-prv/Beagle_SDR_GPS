@@ -804,7 +804,7 @@ static void reg_public(void *param)
 
 	    // done here because updating timer_sec() is sent
         asprintf(&cmd_p, "wget --timeout=30 --tries=2 --inet4-only -qO- "
-            "\"%s/php/update.php?url=http://%s:%d&apikey=x&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d"
+            "\"%s/php/update.php?url=http://%s:%d&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d"
             "&dom=%d&dom_stat=%d&serno=%d&dna=%08x%08x&reg=%d&pvt=%s&pub=%s&up=%d\" 2>&1",
             kiwisdr_com, server_url, server_port, net.mac,
             email, add_nat, version_maj, version_min, debian_maj, debian_min,
