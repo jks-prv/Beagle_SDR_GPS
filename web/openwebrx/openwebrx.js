@@ -5564,7 +5564,7 @@ function bands_init()
 		if (b.name == 'LW' && b.region == '>') b.region = '23';
 
       // not too important as LW/NDB/MW details are all custom fixed below
-		if (b.name == 'MW' && b.region == '3') b.region = '13';
+		if (b.name == 'MW' && (b.region == '3' || b.region == '>3')) b.region = '13';
 
 		if (b.name == 'NDB' && b.region == 'E') b.region = '1';
 		if (b.name == 'NDB' && b.region == 'U') b.region = '2';
@@ -8341,7 +8341,7 @@ var wf = {
    need_autoscale: 0,
    
    auto_ceil: { min:0, val:5, max:30, def:5 },
-   auto_floor: { min:-30, val:-10, max:0, def:-10 },
+   auto_floor: { min:-30, val:0, max:0, def:0 },
    auto_maxdb: 0,
    auto_mindb: 0,
    
