@@ -1113,27 +1113,14 @@ function kiwi_up(up)
 	}
 }
 
-function kiwi_down(type, comp_ctr, reason)
+function kiwi_down(type, reason)
 {
-	//console.log("kiwi_down comp_ctr="+ comp_ctr);
 	var s;
 	type = +type;
 
 	if (type == 1) {
 		s = 'Sorry, software update in progress. Please check back in a few minutes.<br>' +
 			'Or check <a href="http://rx.kiwisdr.com" target="_self">rx.kiwisdr.com</a> for more KiwiSDR receivers available world-wide.';
-		
-		if (comp_ctr > 0 && comp_ctr < 9000)
-			s += '<br>Build: compiling file #'+ comp_ctr;
-		else
-		if (comp_ctr == 9997)
-			s += '<br>Build: linking';
-		else
-		if (comp_ctr == 9998)
-			s += '<br>Build: installing';
-		else
-		if (comp_ctr == 9999)
-			s += '<br>Build: done';
 	} else
 	if (type == 2) {
 		s = "Backup in progress.";
@@ -1608,7 +1595,7 @@ function kiwi_mapPinSymbol(fillColor, strokeColor) {
 // control messages
 ////////////////////////////////
 
-var comp_ctr, reason_disabled = '';
+var reason_disabled = '';
 var version_maj = -1, version_min = -1, debian_ver = -1;
 var tflags = { INACTIVITY:1, WF_SM_CAL:2, WF_SM_CAL2:4 };
 var chan_no_pwd, chan_no_pwd_true;
@@ -1790,7 +1777,7 @@ function kiwi_msg(param, ws)
 			break;
 
 		case "down":
-			kiwi_down(param[1], comp_ctr, reason_disabled);
+			kiwi_down(param[1], reason_disabled);
 			break;
 
 		case "too_busy":
@@ -1818,10 +1805,6 @@ function kiwi_msg(param, ws)
 			kiwi_password_entry_timeout();
 			break;
 
-		case "comp_ctr":
-			comp_ctr = param[1];
-			break;
-		
 		// can't simply come from 'cfg.*' because config isn't available without a web socket
 		case "reason_disabled":
 			reason_disabled = kiwi_decodeURIComponent('reason_disabled', param[1]);
