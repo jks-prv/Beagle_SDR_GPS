@@ -98,41 +98,45 @@ SATELLITE Sats[] = {
 //  {202, 900, 01045},
 
     // Galileo E1B
-    // last checked: 9-Sep-2020
+    // last checked: 1-Feb-2022
     // www.gsc-europa.eu/system-status/Constellation-Information
     // en.wikipedia.org/wiki/List_of_Galileo_satellites
-    { 1, 0, 0, E1B},    // gsat0210 "Galileo 13"
-    { 2, 0, 0, E1B},    // gsat0211 "Galileo 14"
-    { 3, 0, 0, E1B},    // gsat0212 "Galileo 16"
-    { 4, 0, 0, E1B},    // gsat0213 "Galileo 17"
-    { 5, 0, 0, E1B},    // gsat0214 "Galileo 18"
-
-    { 7, 0, 0, E1B},    // gsat0207 "Galileo 15"
-    { 8, 0, 0, E1B},    // gsat0208 "Galileo 11"
-    { 9, 0, 0, E1B},    // gsat0209 "Galileo 12"
-
-    {11, 0, 0, E1B},    // gsat0101 "Galileo 1, IOV PFM"
-    {12, 0, 0, E1B},    // gsat0102 "Galileo 2, IOV FM2"
-
-    {19, 0, 0, E1B},    // gsat0103 "Galileo 3, IOV FM3"
-    {24, 0, 0, E1B},    // gsat0205 "Galileo 9"
-    {26, 0, 0, E1B},    // gsat0203 "Galileo 7"
-    {30, 0, 0, E1B},    // gsat0206 "Galileo 10"
-
-    {14, 0, 0, E1B},    // gsat0202 "Galileo 6", testing
-    {18, 0, 0, E1B},    // gsat0201 "Galileo 5", testing
-    {21, 0, 0, E1B},    // gsat0215 "Galileo 19"
-    {25, 0, 0, E1B},    // gsat0216 "Galileo 20"
-    {27, 0, 0, E1B},    // gsat0217 "Galileo 21"
-    {31, 0, 0, E1B},    // gsat0218 "Galileo 22"
-
-    {36, 0, 0, E1B},    // gsat0219 "Galileo 23"
-    {13, 0, 0, E1B},    // gsat0220 "Galileo 24"
-    {15, 0, 0, E1B},    // gsat0221 "Galileo 25"
-    {33, 0, 0, E1B},    // gsat0222 "Galileo 26"
-
-//  {20, 0, 0, E1B},    // gsat0104 "Galileo 4", not available
-//  {22, 0, 0, E1B},    // gsat0224 "Galileo 8", not usable
+    { 1, 0, 0, E1B},    // gsat0210
+    { 2, 0, 0, E1B},    // gsat0211
+    { 3, 0, 0, E1B},    // gsat0212
+    { 4, 0, 0, E1B},    // gsat0213
+    { 5, 0, 0, E1B},    // gsat0214
+//  { 6, 0, 0, E1B},    // 
+    { 7, 0, 0, E1B},    // gsat0207
+    { 8, 0, 0, E1B},    // gsat0208
+    { 9, 0, 0, E1B},    // gsat0209
+//  {10, 0, 0, E1B},    // gsat0224 under commissioning
+    {11, 0, 0, E1B},    // gsat0101
+    {12, 0, 0, E1B},    // gsat0102
+    {13, 0, 0, E1B},    // gsat0220
+//  {14, 0, 0, E1B},    // gsat0202 not usable
+    {15, 0, 0, E1B},    // gsat0221
+//  {16, 0, 0, E1B},    // 
+//  {17, 0, 0, E1B},    // 
+//  {18, 0, 0, E1B},    // gsat0201 not usable
+    {19, 0, 0, E1B},    // gsat0103
+//  {20, 0, 0, E1B},    // gsat0104 not available
+    {21, 0, 0, E1B},    // gsat0215
+//  {22, 0, 0, E1B},    // gsat0224 not usable
+//  {23, 0, 0, E1B},    // 
+    {24, 0, 0, E1B},    // gsat0205
+    {25, 0, 0, E1B},    // gsat0216
+    {26, 0, 0, E1B},    // gsat0203
+    {27, 0, 0, E1B},    // gsat0217
+//  {28, 0, 0, E1B},    // 
+//  {29, 0, 0, E1B},    // 
+    {30, 0, 0, E1B},    // gsat0206
+    {31, 0, 0, E1B},    // gsat0218
+//  {32, 0, 0, E1B},    // 
+    {33, 0, 0, E1B},    // gsat0222
+//  {34, 0, 0, E1B},    // gsat0223 under commissioning
+//  {35, 0, 0, E1B},    // 
+    {36, 0, 0, E1B},    // gsat0219
     
     {-1}
 };
