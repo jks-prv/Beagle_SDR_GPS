@@ -1306,13 +1306,14 @@ function network_html()
 	return w3_div('id-network w3-hide', s1 + s2 + s3);
 }
 
-function network_ssl_container_init(use_ssl)
+function network_ssl_container_init()
 {
+   var use_ssl = dbgUs && adm.use_ssl && (debian_ver >= 10);
    var s = '';
-   if (adm.use_ssl) s = ' (HTTPS)';
+   if (use_ssl) s = ' (HTTPS)';
    w3_innerHTML('id-adm.port-label', 'Internal port'+ s);
    w3_innerHTML('id-adm.port_ext-label', 'External port'+ s);
-   w3_hide2('id-net-ssl-container', !use_ssl || !dbgUs);
+   w3_hide2('id-net-ssl-container', !use_ssl);
 }
 
 function network_use_ssl_cb(path, idx, first)
@@ -1321,7 +1322,7 @@ function network_use_ssl_cb(path, idx, first)
 	var use_ssl = (+idx == 0);
 	console.log('network_use_ssl_cb use_ssl='+ use_ssl);
    admin_bool_cb(path, use_ssl);
-   network_ssl_container_init(use_ssl);
+   network_ssl_container_init();
 }
 
 function network_download_button_cb(id, idx, first)
@@ -1588,7 +1589,7 @@ function network_focus()
    w3_hide2('id-net-ssl-vis', !dbgUs);
    network_static_init();
 	network_port_open_init();
-	network_ssl_container_init(adm.use_ssl);
+	network_ssl_container_init();
 	network.status_interval = setInterval(network_auto_nat_status_poll, 1000);
 }
 
