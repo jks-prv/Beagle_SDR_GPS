@@ -1677,6 +1677,8 @@ function w3_switch_get_param(psa, text_0, text_1, path, text_0_selected_if_val, 
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
 
 	// set default selection of button based on current value
+	//if (w3_contains(psa, 'id-net-ssl'))
+	//   console.log('w3_switch_get_param cur_val='+ cur_val +' text_0_selected_if_val='+ text_0_selected_if_val);
 	var text_0_selected = (cur_val == text_0_selected_if_val)? w3_SELECTED : w3_NOT_SELECTED;
 	var s =
 		w3_radio_button(w3_psa_mix(psa, 'w3int-switch-0'), text_0, path, text_0_selected? 1:0, cb, cb_param) +
@@ -2651,7 +2653,7 @@ function w3_menu_popup(id, x, y)
 function w3int_menu_onclick(ev, id, cb)
 {
    //console.log('w3int_menu_onclick id='+ id +' cb='+ cb);
-   if (ev != null) event_dump(ev, "MENU");
+   //if (ev != null) event_dump(ev, "MENU");
    var el = w3_el(id);
    //console.log('w3int_menu_onclick realigned='+ el.w3_realigned);
    if (el.w3_realigned) {

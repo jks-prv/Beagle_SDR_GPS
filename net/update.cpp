@@ -32,6 +32,7 @@ Boston, MA  02110-1301, USA.
 
 #include <types.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 bool update_pending = false, update_task_running = false, update_in_progress = false, fs_full = false;
 int pending_maj = -1, pending_min = -1;

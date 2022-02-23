@@ -45,7 +45,7 @@ else
 	        -apt-get -y install libsqlite3-dev
     else
         EXT_I += -I/opt/local/include/glib-2.0 -I/usr/local/include/libacars-2
-        EXT_I += -I/usr/local/Cellar/glib/2.64.3/lib/glib-2.0/include
+        EXT_I += -I/usr/local/Cellar/glib/2.70.0_1/lib/glib-2.0/include
 
         LIBS += -L/usr/local/lib -L/opt/local/lib -L /usr/local/MacGPG2/lib
     endif

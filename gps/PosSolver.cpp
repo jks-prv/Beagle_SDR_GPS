@@ -9,7 +9,7 @@
 class PosSolverImpl : public PosSolver {
 public:
 
-#ifdef KIWI_DEBIAN7
+#ifdef KIWI_DEBIAN_7
     virtual bool pos_valid()  { return _pos_valid; }
     virtual bool spp_valid()  { return _state_spp[0]; }
     virtual bool ekf_valid()  { return _ekf_running >= 1; }
@@ -37,7 +37,7 @@ public:
         }
     }
 
-#ifdef KIWI_DEBIAN7
+#ifdef KIWI_DEBIAN_7
     virtual std::vector<ElevAzim> elev_azim(mat_type sv) {
 #else
     virtual std::vector<ElevAzim> elev_azim(mat_type sv) final {
@@ -58,7 +58,7 @@ public:
         return elevAzim;
     }
 
-#ifdef KIWI_DEBIAN7
+#ifdef KIWI_DEBIAN_7
     virtual bool solve(mat_type sv, vec_type weight, uint64_t adc_ticks) {
 #else
     virtual bool solve(mat_type sv, vec_type weight, uint64_t adc_ticks) final {

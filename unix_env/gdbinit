@@ -68,6 +68,11 @@ define ngai
     run -debian 9 -use_spidev 1 -gps -leds
 end
 
+define ng10
+    bload
+    run -debian 10 -use_spidev 1 -gps -leds
+end
+
 define ng7
     bload
     run -debian 7 -use_spidev 0 -gps -leds
@@ -85,6 +90,11 @@ end
 define kai
     bload
     run -debian 9 -use_spidev 1 -leds
+end
+
+define k10
+    bload
+    run -debian 10 -use_spidev 1 -leds
 end
 
 define k7

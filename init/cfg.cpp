@@ -43,9 +43,9 @@ Boston, MA  02110-1301, USA.
 #include <signal.h>
 #include <ctype.h>
 
-#define CFG_FN	DIR_CFG "/" CFG_PREFIX "kiwi.json";
+#define CFG_FN	DIR_CFG "/" CFG_PREFIX "kiwi.json"
 #define ADM_FN	DIR_CFG "/" CFG_PREFIX "admin.json"
-#define DX_FN	DIR_CFG "/" CFG_PREFIX "dx.json";
+#define DX_FN	DIR_CFG "/" CFG_PREFIX "dx.json"
 
 #define SPACE_FOR_CLOSE_BRACE       1
 #define SPACE_FOR_POSSIBLE_COMMA    1

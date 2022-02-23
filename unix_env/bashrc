@@ -204,13 +204,14 @@ alias scen="function _sys () { systemctl --lines=100 enable \${*}.service ; } ; 
 alias sa="service --status-all"
 
 # packages
-alias pk="echo pk: s=search_available ls=list_installed ver,vers,show,pol=versions i=install rm=remove ar=autoremove; echo pk: up=update upp=single_pkg ug=dist-upgrade; echo pk: c=clean sz=sizes f,f2=which_pkg_has_file fu=file_update fi=files_installed co=cape_overlays"
+alias pk="echo pk: s=search_available ls=list_installed ver,vers,show,pol=versions i=install rm=remove ar=autoremove; echo pk: ch=allow-rel-info-chg up=update upp=single_pkg ug=dist-upgrade; echo pk: c=clean sz=sizes f,f2=which_pkg_has_file fu=file_update fi=files_installed co=cape_overlays"
 alias pks="echo available pkgs:; apt-cache search"
 alias pkls="echo installed pkgs:; dpkg -l | gr"
 alias pksh="apt show"
 alias pkver="apt-cache showpkg"
 alias pkvers="apt-cache madison"
 alias pkpol="apt-cache policy"
+alias pkch="apt-get update --allow-releaseinfo-change"
 alias pkup="apt-get -y install debian-archive-keyring; apt-get update; apt-get -y install ca-certificates; apt-get update"
 # update(upgrade) single package
 alias pkupp="apt-get install --only-upgrade"
@@ -269,7 +270,7 @@ alias ver="/opt/scripts/tools/version.sh"
 alias ht="htop"
 alias it="iotop"
 alias io="iotop -obtqqq"
-alias kai="function _kai () { ../build/kiwi.bin -debian 8 -use_spidev 1 \$* ; } ; _kai"
+#alias kai="function _kai () { ../build/kiwi.bin -debian 8 -use_spidev 1 \$* ; } ; _kai"
 alias reb="shutdown -r now"
 # cpu
 alias ct="cat /sys/class/thermal/t*/temp"
@@ -355,6 +356,9 @@ alias mdu="killall -q -s USR1 kiwid; killall -q -s USR1 kiwi.bin"
 alias whilek="while true; do ./k; done"
 alias whiled="while true; do ./d; done"
 
+# SSL
+alias certs="certbot certificates"
+
 # sharing KiwiSDR sources from a development machine to Beagle via NFS
 # download NFS with command: "pki nfs-common"
 alias nfs="mount -l -t nfs"
@@ -388,8 +392,8 @@ alias gk="gdb ../build/kiwi.bin"
 # aliases added to ~/.gdbinit
 # to detect leaks type "leaks" before gk and use asan
 # gdb> asan // sets ASAN breakpoint
-# gdb> ng   // no gps, leds
-# gdb> k    // normal run
+# gdb> {ng,ng10,ngai,ng7}   // no gps, leds
+# gdb> {k,k10,kai,k7}       // normal run
 
 # KiwiSDR valgrind with gdb (deprecated, use clang ASAN)
 #   'vgh' alias below is a reminder of the sequence of commands

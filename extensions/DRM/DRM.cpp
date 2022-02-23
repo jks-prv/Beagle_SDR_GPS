@@ -16,6 +16,7 @@
 #include <math.h>
 #include <strings.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 
 #ifdef DRM_SHMEM_DISABLE
     static drm_shmem_t drm_shmem;

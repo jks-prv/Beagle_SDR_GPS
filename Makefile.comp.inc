@@ -164,7 +164,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 		# clang 3.0 available on Debian 7.9 doesn't work
 		CC = gcc
 		CPP = g++
-		CFLAGS += -DKIWI_DEBIAN7
+		CFLAGS += -DKIWI_DEBIAN_7
 		CFLAGS += -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS
 
 		VIS_OPT = -O3
@@ -225,9 +225,11 @@ else
 endif
 
 
-# To use clang address sanitizer build with "make ASAN=1 [OPT=0]" on target.
-# There are shell aliases "masan" and "masan0" for these.
-# Use gdb "asan" alias to set breakpoint necessary to backtrace address errors.
+# To use clang address sanitizer build with "make ASAN=1 [OPT=0] [OPT=1]" on target.
+# There are shell aliases "masan", "masan0" and "masan1" for these.
+# Generally, masan/masan0 results in code that is too slow, but masan1 is not over-optimized
+# to the point gdb variable inspection becomes useless. So try masan1 for best results.
+# Use gdb "asan" alias to set breakpoint necessary to backtrace address sanitizer errors.
 ifeq ($(ASAN),1)
     ifeq ($(OPT),0)
         VIS_OPT = -fsanitize=address
