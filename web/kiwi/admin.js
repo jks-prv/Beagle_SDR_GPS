@@ -1308,7 +1308,10 @@ function network_html()
 
 function network_ssl_container_init()
 {
-   var use_ssl = dbgUs && adm.use_ssl && (debian_ver >= 10);
+   var show = dbgUs && (debian_ver >= 10);
+   w3_hide2('id-net-ssl-vis', !show);
+
+   var use_ssl = show && adm.use_ssl;
    var s = '';
    if (use_ssl) s = ' (HTTPS)';
    w3_innerHTML('id-adm.port-label', 'Internal port'+ s);
@@ -1586,7 +1589,6 @@ function network_port_open_init()
 
 function network_focus()
 {
-   w3_hide2('id-net-ssl-vis', !dbgUs);
    network_static_init();
 	network_port_open_init();
 	network_ssl_container_init();
