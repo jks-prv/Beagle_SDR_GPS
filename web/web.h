@@ -46,13 +46,7 @@ Boston, MA  02110-1301, USA.
 	#define web_printf_all(fmt, ...)
 #endif
 
-#define	WS_OPCODE_TEXT		1
-#define	WS_OPCODE_BINARY	2
-#define	WS_OPCODE_CLOSE     8
-
 #define NREQ_BUF (16*1024)		// the dx list can easily get longer than 1K
-
-user_iface_t *find_ui(int port);
 
 typedef struct {
 	int type;

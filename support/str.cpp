@@ -406,6 +406,7 @@ char *kiwi_str_escape_HTML(char *str)
 	return sn;
 }
 
+// unlike mg_url_encode, never encodes any chars between [' ', '~']
 static void kiwi_alt_encode(const char *src, char *dst, size_t dst_len) {
   static const char *hex = "0123456789abcdef";
   const char *end = dst + dst_len - 1;
@@ -428,18 +429,19 @@ static void kiwi_alt_encode(const char *src, char *dst, size_t dst_len) {
 char *kiwi_str_encode(char *src, bool alt)
 {
 	if (src == NULL) src = (char *) "null";		// JSON compatibility
+	size_t slen = strlen(src);
 	
 	#define ENCODE_EXPANSION_FACTOR 3		// c -> %xx
-	size_t slen = (strlen(src) * ENCODE_EXPANSION_FACTOR) + SPACE_FOR_NULL;
+	size_t dlen = (slen * ENCODE_EXPANSION_FACTOR) + SPACE_FOR_NULL;
 
 	// don't use kiwi_malloc() due to large number of these simultaneously active from dx list
 	// and also because dx list has to use kiwi_ifree() due to related allocations via strdup()
-	check(slen);
-	char *dst = (char *) kiwi_imalloc("kiwi_str_encode", slen);
+	check(dlen);
+	char *dst = (char *) kiwi_imalloc("kiwi_str_encode", dlen);
 	if (alt)
-	    kiwi_alt_encode(src, dst, slen);
+	    kiwi_alt_encode(src, dst, dlen);
 	else
-	    mg_url_encode(src, dst, slen);
+	    mg_url_encode(src, slen, dst, dlen);
 	return dst;		// NB: caller must kiwi_ifree(dst)
 }
 
@@ -450,10 +452,12 @@ static char dst_static[N_DST_STATIC];
 char *kiwi_str_encode_static(char *src, bool alt)
 {
 	if (src == NULL) src = (char *) "null";		// JSON compatibility
+	size_t slen = strlen(src);
+
 	if (alt)
 	    kiwi_alt_encode(src, dst_static, N_DST_STATIC);
 	else
-	    mg_url_encode(src, dst_static, N_DST_STATIC);
+	    mg_url_encode(src, slen, dst_static, N_DST_STATIC);
 	return dst_static;
 }
 

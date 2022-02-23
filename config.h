@@ -58,13 +58,3 @@ extern int fw_sel, fpga_id, rx_chans, wf_chans, nrx_bufs, nrx_samps, nrx_samps_l
 typedef struct {
 	const char *param, *value;
 } index_html_params_t;
-
-#include "mongoose.h"
-
-typedef struct {
-	 const char *name;
-	 int port, port_ext;
-	 struct mg_server *server;
-} user_iface_t;
-
-extern user_iface_t user_iface[];

@@ -30,6 +30,7 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "net.h"
 #include "debug.h"
+#include "mongoose.h"
 
 #include <sys/file.h>
 #include <fcntl.h>
@@ -44,6 +45,7 @@ Boston, MA  02110-1301, USA.
 #include <stdarg.h>
 #include <time.h>
 #include <sched.h>
+#include <sys/stat.h>
 
 
 // used by qsort
@@ -187,7 +189,7 @@ void send_msg_buf(conn_t *c, char *s, int slen)
         }
 
         if (cmd_debug) cmd_debug_print(c, s, slen, true);
-        mg_websocket_write(c->mc, WS_OPCODE_BINARY, s, slen);
+        mg_websocket_write(c->mc, WEBSOCKET_OPCODE_BINARY, s, slen);
     }
 }
 
@@ -247,7 +249,7 @@ void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...)
 	va_end(ap);
 	size_t slen = strlen(s);
 	if (debug) printf("send_msg_mc: %d <%s>\n", slen, s);
-	mg_websocket_write(mc, WS_OPCODE_BINARY, s, slen);
+	mg_websocket_write(mc, WEBSOCKET_OPCODE_BINARY, s, slen);
 	kiwi_ifree(s, "send_msg_mc");
 }
 

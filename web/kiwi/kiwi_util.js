@@ -633,25 +633,25 @@ function kiwi_isScrolledDown(el)
    return el.scrollHeight - el.scrollTop === el.clientHeight;
 }
 
-function kiwi_url_origin()
+// returns "http://" or "https://" depending if connection to Kiwi is using SSL or not
+function kiwi_SSL()
 {
-	var host;
-	try {
-		host = window.location.origin;
-	} catch(ex) {
-		host = this.location.href;
-		host = host.split('?')[0];
-	}
-	return host;
+   return window.location.protocol +'//';
 }
 
-// host{:port}
+// returns http[s]://host[:port]
+function kiwi_url_origin()
+{
+   return window.location.origin;
+}
+
+// returns host[:port]
 function kiwi_host_port()
 {
    return window.location.host;
 }
 
-// host (no port)
+// returns host (no :port)
 function kiwi_host()
 {
    return window.location.hostname;
@@ -1399,7 +1399,7 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	// evaluate ws protocol
 	var ws_protocol = 'ws://';
 
-	if(window.location.protocol === "https:"){
+	if (window.location.protocol === "https:") {
 		ws_protocol = 'wss://';
 	}
 	

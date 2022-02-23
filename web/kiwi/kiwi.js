@@ -461,7 +461,7 @@ function kiwi_geolocate(which)
    
    kiwi_ajax('https://'+ server, 
       function(json) {
-         if (json.AJAX_error === undefined) {
+         if (isUndefined(json.AJAX_error)) {
             console.log('GEOLOC '+ server);
             console.log(json);
             geoloc_json(json);
@@ -475,7 +475,7 @@ function kiwi_geolocate(which)
 
 function geoloc_json(json)
 {
-	if (json.AJAX_error != undefined)
+	if (isDefined(json.AJAX_error))
 		return;
 	
 	if (window.JSON && window.JSON.stringify)

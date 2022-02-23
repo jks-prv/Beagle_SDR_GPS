@@ -3,7 +3,6 @@
 var tdoa = {
    ext_name:   'TDoA',  // NB: must match tdoa.cpp:tdoa_ext.name
    first_time: true,
-   hostname:  'tdoa.kiwisdr.com',
    old_algorithm: false,
    prev_ui:    false,
    spiderfied: false,
@@ -125,10 +124,10 @@ var tdoa = {
    select: undefined,
 };
 
-tdoa.url_base =   'http://'+ tdoa.hostname +'/';
+tdoa.url_base =   'http://tdoa.kiwisdr.com/';
 tdoa.url =        tdoa.url_base +'tdoa/';
 tdoa.url_files =  tdoa.url +'files/';
-tdoa.rep_files =  tdoa.hostname +'/tdoa/files';    // NB: not full URL, and no trailing /
+tdoa.rep_files =  'tdoa.kiwisdr.com/tdoa/files';   // NB: not full URL, and no trailing /
 
 function TDoA_main()
 {

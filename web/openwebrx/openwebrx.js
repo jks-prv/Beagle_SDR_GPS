@@ -136,6 +136,8 @@ function kiwi_main()
 	override_max_dB = parseFloat(readCookie('last_max_dB'));
 	override_min_dB = parseFloat(readCookie('last_min_dB'));
 	
+	setvolume(true, readCookie('last_volume'));
+	
 	var f_cookie = readCookie('freq_memory');
 	if (f_cookie) {
       var obj = kiwi_JSON_parse('kiwi_main', f_cookie);
@@ -228,7 +230,7 @@ function kiwi_main()
 	s = 'sp'; if (q[s]) spectrum_show = q[s];
 	s = 'spec'; if (q[s]) spectrum_show = q[s];
 	s = 'spp'; if (q[s]) spectrum_param = parseFloat(q[s]);
-	s = 'vol'; if (q[s]) { kiwi.volume = parseInt(q[s]); kiwi.volume = Math.max(0, Math.min(400, kiwi.volume)); }
+	s = 'vol'; if (q[s]) { setvolume(true, parseInt(q[s])); }
 	s = 'mute'; if (q[s]) muted_initially = parseInt(q[s]);
 	s = 'wf'; if (q[s]) wf_rate = q[s];
 	s = 'wfm'; if (q[s]) wf_mm = q[s];
@@ -2824,11 +2826,12 @@ function freq_database_lookup(Hz, utility)
    var kHz_r1k = Math.round(Hz/1000);
    //console.log('### Hz='+ Hz +' kHz='+ kHz +' kHz_r10='+ kHz_r10 +' kHz_r1k='+ kHz_r1k);
    var f;
-   var url = "http://";
+   var url = "https://";
 
    var b = band_info();
 
    /*
+   // expired cert!
    if (utility == owrx.rcm_util) {
       f = Math.floor(Hz/100) / 10000;	// round down to nearest 100 Hz, and express in MHz, for GlobalTuners
       url += "qrg.globaltuners.com/?q="+f.toFixed(4);
@@ -2865,7 +2868,7 @@ function freq_database_lookup(Hz, utility)
    }
    if (utility == owrx.rcm_cluster) {
       f = Math.floor(Hz) / 1000;	// kHz for ve3sun dx cluster lookup
-      url += 've3sun.com/KiwiSDR/DX.php?Search='+f.toFixed(1);
+      url = 'http://ve3sun.com/KiwiSDR/DX.php?Search='+f.toFixed(1);
    }
    
    console.log('LOOKUP '+ kHz +' -> '+ f +' '+ url);
@@ -5906,8 +5909,8 @@ function init_scale_dB()
 
    wf.save_maxdb = maxdb;
    wf.save_mindb_un = mindb_un;
-   wf.auto_ceil.val = +initCookie('last_ceil_dB', wf.auto_ceil.def);
-   wf.auto_floor.val = +initCookie('last_floor_dB', wf.auto_floor.def);
+   wf.auto_ceil.val = +initCookie('last_ceil_dB', cfg.init.ceil_dB);
+   wf.auto_floor.val = +initCookie('last_floor_dB', cfg.init.floor_dB);
 }
 
 
@@ -6519,6 +6522,7 @@ function dx_label_cb(arr)
 		obj = arr[i];
 		var el;
 		var ident = obj.i;
+		var freq = obj.f;
 		
 		if (eibi) {
 		   if (ident == dx.last_ident) {
@@ -8340,8 +8344,8 @@ var wf = {
    last_zoom: -1,
    need_autoscale: 0,
    
-   auto_ceil: { min:0, val:5, max:30, def:5 },
-   auto_floor: { min:-30, val:0, max:0, def:0 },
+   auto_ceil: { min:0, val:5, max:30 },
+   auto_floor: { min:-30, val:0, max:0 },
    auto_maxdb: 0,
    auto_mindb: 0,
    
@@ -8779,11 +8783,12 @@ var recording = false;
 function setvolume(done, str)
 {
    kiwi.volume = +str;
-   kiwi.volume = Math.max(0, Math.min(200, kiwi.volume));
-   kiwi.volume_f = kiwi.muted? 0 : kiwi.volume/100;
-   //console.log('vol='+ kiwi.volume +' vol_f='+ (kiwi.volume/100).toFixed(3));
+   kiwi.volume = w3_clamp(kiwi.volume, 1, 200);    // don't set to zero because that triggers FF audio silence bug
+   kiwi.volume_f = kiwi.muted? 0 : kiwi.volume/100;   // volume_f is the [0,2] value actually used by audio.js
+   console.log('vol='+ kiwi.volume +' vol_f='+ (kiwi.volume/100).toFixed(3));
    if (done) {
       w3_set_value('id-input-volume', kiwi.volume);
+      writeCookie('last_volume', kiwi.volume);
       freqset_select();
    }
 }

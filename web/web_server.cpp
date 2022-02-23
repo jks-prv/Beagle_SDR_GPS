@@ -243,7 +243,7 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event evt)
 				#endif
 
 				//printf("s2c %d WEBSOCKET: %d %p\n", mc->remote_port, nb->len, nb->buf);
-				ret = mg_websocket_write(mc, WS_OPCODE_BINARY, nb->buf, nb->len);
+				ret = mg_websocket_write(mc, WEBSOCKET_OPCODE_BINARY, nb->buf, nb->len);
 				if (ret<=0) printf("$$$$$$$$ socket write ret %d\n", ret);
 				nb->done = TRUE;
 			} else {
@@ -262,13 +262,20 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event evt)
 
 void web_server(void *param)
 {
-	user_iface_t *ui = (user_iface_t *) param;
-	struct mg_server *server = ui->server;
+	struct mg_server *server = (struct mg_server *) param;
 	const char *err;
 	
 	while (1) {
 		mg_poll_server(server, 0);		// passing 0 effects a poll
-		mg_iterate_over_connections(server, iterate_callback);
+		
+		#ifdef MONGOOSE_5_3
+		    mg_iterate_over_connections(server, iterate_callback);
+		#else
+            struct mg_connection *mc;
+            for (mc = mg_next(server, NULL); mc != NULL; mc = mg_next(server, mc)) {
+                iterate_callback(mc, MG_POLL);
+            }
+		#endif
 		
 		//#define MEAS_WEB_SERVER
 		#ifdef MEAS_WEB_SERVER
@@ -313,7 +320,6 @@ char *web_server_hdr;
 void web_server_init(ws_init_t type)
 {
 	int i;
-	user_iface_t *ui = user_iface;
 	static bool init;
 	
 	if (!init) {
@@ -321,13 +327,17 @@ void web_server_init(ws_init_t type)
 
 		// add the new "port_ext" config param if needed
 		// done here because web_server_init(WS_INIT_CREATE) called earlier than rx_server_init() in main.c
-		int port = admcfg_int("port", NULL, CFG_REQUIRED);
-		bool error;
-		admcfg_int("port_ext", &error, CFG_OPTIONAL);
-		if (error) {
-			admcfg_set_int_save("port_ext", port);
-		}
-		
+        bool update_admcfg = false;
+		net.port = admcfg_int("port", NULL, CFG_REQUIRED);
+        net.port_ext = admcfg_default_int("port_ext", net.port, &update_admcfg);
+
+        #if defined(USE_SSL) && defined(MONGOOSE_5_6)
+            net.use_ssl = admcfg_default_bool("use_ssl", false, &update_admcfg);
+            net.port_http_local = admcfg_default_int("port_http_local", net.port + 100, &update_admcfg);
+        #endif
+
+        if (update_admcfg) admcfg_save_json(cfg_adm.json);
+
         if (!background_mode) {
             struct stat st;
             scall("stat edata_always", stat(BUILD_DIR "/obj_keep/edata_always.o", &st));
@@ -341,17 +351,15 @@ void web_server_init(ws_init_t type)
 	}
 	
 	if (type == WS_INIT_CREATE) {
-		// if specified, override the default port number
-		if (alt_port) {
-			net.port = net.port_ext = alt_port;
-		} else {
-			net.port = admcfg_int("port", NULL, CFG_REQUIRED);
-			net.port_ext = admcfg_int("port_ext", NULL, CFG_REQUIRED);
-		}
-		lprintf("listening on %s port %d/%d for \"%s\"\n", alt_port? "alt":"default",
-			net.port, net.port_ext, ui->name);
-		ui->port = net.port;
-		ui->port_ext = net.port_ext;
+		lprintf("webserver: listening on port %d/%d for HTTP%s connections\n",
+		    net.port, net.port_ext, net.use_ssl? "S (SSL)" : "");
+
+        #if defined(USE_SSL) && defined(MONGOOSE_5_6)
+            if (net.use_ssl) {
+                lprintf("webserver: listening on port %d for local HTTP connections\n", net.port_http_local);
+                lprintf("webserver: listening on port 80 for ACME challenge requests\n");
+            }
+        #endif
 	} else
 
 	if (type == WS_INIT_START) {
@@ -360,35 +368,34 @@ void web_server_init(ws_init_t type)
 	}
 
 	// create webserver port(s)
-	for (i = 0; ui->port; i++) {
-	
-		if (type == WS_INIT_CREATE) {
-			// FIXME: stopgap until admin page supports config of multiple UIs
-			if (i != 0) {
-				ui->port = net.port + i;
-				ui->port_ext = net.port_ext + i;
-			}
-			
-			ui->server = mg_create_server(NULL, ev_handler);
-			//mg_set_option(ui->server, "document_root", "./");		// if serving from file system
-			char *s_port;
-			asprintf(&s_port, "[::]:%d", ui->port);
-			if (mg_set_option(ui->server, "listening_port", s_port) != NULL) {
-				lprintf("network port %s for \"%s\" in use\n", s_port, ui->name);
-				lprintf("app already running in background?\ntry \"make stop\" (or \"m stop\") first\n");
-				kiwi_exit(-1);
-			}
-			lprintf("webserver for \"%s\" on port %s\n", ui->name, mg_get_option(ui->server, "listening_port"));
-			kiwi_ifree(s_port);
-		} else {	// WS_INIT_START
-            bool err;
-            bool test_webserver_prio = cfg_bool("test_webserver_prio", &err, CFG_OPTIONAL);
-            printf("test_webserver_prio=%d err=%d\n", test_webserver_prio, err);
-            if (err) test_webserver_prio = false;
-			CreateTask(web_server, ui, test_webserver_prio? SND_PRIORITY : WEBSERVER_PRIORITY);
-		}
-		
-		ui++;
-		if (down) break;
-	}
+    static struct mg_server *server;
+    if (type == WS_INIT_CREATE) {
+        server = mg_create_server(NULL, ev_handler);
+        //mg_set_option(server, "document_root", "./");		// if serving from file system
+
+        #define SSL_CERT DIR_CFG "/cert.pem"
+
+        char *s_port;
+        if (net.use_ssl)
+            asprintf(&s_port, "ssl://[::]:%d:%s,[::]:%d,[::]:80", net.port, SSL_CERT, net.port_http_local);
+        else
+            asprintf(&s_port, "[::]:%d", net.port);
+
+        if (mg_set_option(server, "listening_port", s_port) != NULL) {
+            lprintf("network port(s) %s in use\n", s_port);
+            lprintf("app already running in background?\ntry \"make stop\" (or \"m stop\") first\n");
+            kiwi_exit(-1);
+        }
+        kiwi_ifree(s_port);
+        
+        #ifdef MONGOOSE_5_3
+            lprintf("webserver: using port(s) %s\n", mg_get_option(server, "listening_port"));
+        #endif
+    } else {	// WS_INIT_START
+        bool err;
+        bool test_webserver_prio = cfg_bool("test_webserver_prio", &err, CFG_OPTIONAL);
+        printf("test_webserver_prio=%d err=%d\n", test_webserver_prio, err);
+        if (err) test_webserver_prio = false;
+        CreateTask(web_server, server, test_webserver_prio? SND_PRIORITY : WEBSERVER_PRIORITY);
+    }
 }

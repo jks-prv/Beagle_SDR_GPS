@@ -18,7 +18,7 @@ var ale = {
    pb: { lo: 600, hi: 2650 },
    
    nets: null,
-   url: 'http://kiwisdr.com/ale/ALE_nets.cjson',
+   url: kiwi_SSL() +'files.kiwisdr.com/ale/ALE_nets.cjson',
    using_default: false,
    double_fault: false,
    
@@ -342,7 +342,7 @@ function ale_2g_controls_setup()
 	w3_do_when_rendered('id-ale_2g-menus', function() {
       ext_send('SET reset');
 	   ale.double_fault = false;
-	   if (1 && dbgUs) {
+	   if (0 && dbgUs) {
          kiwi_ajax(ale.url +'.xxx', 'ale_2g_get_nets_done_cb', 0, -500);
 	   } else {
          kiwi_ajax(ale.url, 'ale_2g_get_nets_done_cb', 0, 10000);
@@ -369,6 +369,11 @@ function ale_2g_get_nets_done_cb(nets)
    
    if (nets.AJAX_error && nets.AJAX_error == 'timeout') {
       console.log('ale_2g_get_nets_done_cb: TIMEOUT');
+      ale.using_default = true;
+      fault = true;
+   } else
+   if (nets.AJAX_error && nets.AJAX_error == 'status') {
+      console.log('ale_2g_get_nets_done_cb: status='+ nets.status);
       ale.using_default = true;
       fault = true;
    } else

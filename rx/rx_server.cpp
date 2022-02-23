@@ -34,6 +34,7 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "net.h"
 #include "data_pump.h"
+#include "mongoose.h"
 
 #ifdef USE_SDR
  #include "ext_int.h"
@@ -489,7 +490,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
         if (mode == WS_MODE_CLOSE) {
             //cprintf(c, "WS_MODE_CLOSE %s KICK KA=%02d/60 KC=%05d\n", rx_streams[c->type].uri, c->keep_alive, c->keepalive_count);
             if (!c->internal_connection)
-                mg_websocket_write(mc, WS_OPCODE_CLOSE, "", 0);
+                mg_websocket_write(mc, WEBSOCKET_OPCODE_CONNECTION_CLOSE, "", 0);
             c->mc = NULL;
             c->kick = true;
             return NULL;
@@ -783,8 +784,6 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	c->tstamp = tstamp;
 	ndesc_init(&c->s2c, mc);
 	ndesc_init(&c->c2s, mc);
-	c->ui = find_ui(mc->local_port);
-	assert(c->ui);
 	c->arrival = timer_sec();
 	c->isWF_conn = !isNo_WF;
 	clock_conn_init(c);
