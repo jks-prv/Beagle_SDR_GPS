@@ -1642,7 +1642,7 @@ function network_dhcp_static_update_cb(path, idx)
    if (debian_ver <= 9)    // Debian 10 and above use connmanctl which has immediate effect (no reboot required)
       w3_reboot_cb();      // show reboot button after confirm button pressed
    else
-		window.location.reload(true);
+		admin_wait_then_reload(10, 'Waiting for configuration change');
 }
 
 function network_static_init()
