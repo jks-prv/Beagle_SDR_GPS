@@ -2,6 +2,16 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.490  February 28, 2022
+    Admin page:
+        When auto aperture is selected the waterfall floor/ceil defaults can be set.
+        Added adjustment for name/callsign input field max length (16-64 chars, defaults to 16).
+        Debian 10: Fixed bug when switching between DHCP/static IP mode.
+    Last set volume is saved in a browser cookie and used for subsequent connects to the same Kiwi.
+    Fixed automatic updating of the five IBP station labels (e.g. 14100 kHz).
+    SSTV extension: Update frequencies in menu, add URL parameters to help panel.
+    Misc bug fixes.
+
 v1.489  February 1, 2022
     GPS: update Galileo sat table.
     Clean up default waterfalls by changing auto floor value from -10 to 0 dB.
