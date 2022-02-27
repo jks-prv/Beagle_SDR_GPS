@@ -23,7 +23,7 @@ var sstv = {
    img_width: 0,
    
    //en.wikipedia.org/wiki/Slow-scan_television#Frequencies
-   freqs_s: [ 3845, 3730, 6925, 7165, 7170, 14230, 21340, 27700, 28680 ]
+   freqs_s: [ '3630_ANZ', '3730_EU', '3845_NA', 7171, 14230, 14233, 21340, 28680 ]
 };
 
 function SSTV_main()
@@ -204,7 +204,7 @@ function sstv_controls_setup()
 					w3_div('', 'From <b><a href="http://windytan.github.io/slowrx" target="_blank">slowrx</a></b> by Oona Räisänen, OH2EIQ')
 				),
 				w3_inline('',
-               w3_select('id-sstv-freq-menu w3-text-red', '', 'band', 'sstv.band', W3_SELECT_SHOW_TITLE, sstv.freqs_s, 'sstv_band_cb'),
+               w3_select('id-sstv-freq-menu w3-text-red', '', 'freq', 'sstv.freq', W3_SELECT_SHOW_TITLE, sstv.freqs_s, 'sstv_freq_cb'),
                w3_checkbox('id-sstv-cbox-auto w3-margin-left w3-label-inline w3-label-not-bold', 'auto adjust', 'sstv.auto', true, 'sstv_auto_cbox_cb'),
 				   w3_button('id-sstv-btn-auto w3-margin-left w3-padding-smaller', 'Undo adjust', 'sstv_auto_cb'),
 				   w3_button('w3-margin-left w3-padding-smaller w3-css-yellow', 'Reset', 'sstv_reset_cb'),
@@ -253,10 +253,13 @@ function sstv_controls_setup()
       for (var i=0, len = p.length; i < len; i++) {
          var a = p[i];
          //console.log('SSTV: param <'+ a +'>');
-         if (a == 'test') {
+         if (w3_ext_param('help', a).match) {
+            extint_help_click();
+         } else
+         if (w3_ext_param('test', a).match) {
             sstv_test_cb();
          } else
-         if (a == 'noadj') {
+         if (w3_ext_param('noadj', a).match) {
             sstv.auto = 1;    // gets inverted by sstv_auto_cbox_cb()
             sstv_auto_cbox_cb('id-sstv-cbox-auto', false);
          } else {
@@ -264,7 +267,7 @@ function sstv_controls_setup()
                //console.log('CONSIDER idx='+ idx +' <'+ option.innerHTML +'>');
                if (!found && option.innerHTML.startsWith(a)) {
                   w3_select_value('id-sstv-freq-menu', idx-1);
-                  sstv_band_cb('', idx-1, false);
+                  sstv_freq_cb('', idx-1, false);
                   found = true;
                }
             });
@@ -288,7 +291,7 @@ function sstv_auto_cb(path, val, first)
    ext_send('SET '+ (sstv.auto? 'undo':'auto'));
 }
 
-function sstv_band_cb(path, idx, first)
+function sstv_freq_cb(path, idx, first)
 {
    if (first) return;
    idx = +idx;
@@ -385,23 +388,36 @@ function SSTV_help(show)
 {
    if (show) {
       var s = 
-         w3_text('w3-medium w3-bold w3-text-aqua', 'SSTV decoder help') + '<br><br>' +
-         'Select an entry from the SSTV band menu and wait for a signal to begin decoding.<br>' +
-         'Sometimes activity is +/- the given frequencies. Try the "test image" button.<br>' +
-         '<br>Supported modes:' +
-         '<ul>' +
-            '<li>Martin: M1 M2 M3 M4</li>' +
-            '<li>Scottie: S1 S2 SDX</li>' +
-            '<li>Robot: R72 R36 R24 R24-BW R12-BW R8-BW</li>' +
-            '<li>Wraase: SC-2-120 SC-2-180</li>' +
-            '<li>PD: PD-50 PD-90</li>' +
-         '</ul>' +
-         'If the image is still slanted or offset after auto adjustment you can make a manual<br>' +
-         'correction. If you see what looks like an edge in the image then click in two places along<br>' +
-         'the edge. The image will then auto adjust. You can repeat this procedure multiple times<br>' +
-         'if necessary.<br>' +
-         '';
-      confirmation_show_content(s, 610, 320);
+         w3_text('w3-medium w3-bold w3-text-aqua', 'SSTV decoder help') +
+         w3_div('w3-margin-T-8 w3-scroll-y|height:90%',
+            w3_div('w3-margin-R-8',
+               'Select an entry from the SSTV freq menu and wait for a signal to begin decoding.<br>' +
+               'Sometimes activity is +/- the given frequencies. Try the "test image" button.<br>' +
+               '<br>Supported modes:' +
+               '<ul>' +
+                  '<li>Martin: M1 M2 M3 M4</li>' +
+                  '<li>Scottie: S1 S2 SDX</li>' +
+                  '<li>Robot: R72 R36 R24 R24-BW R12-BW R8-BW</li>' +
+                  '<li>Wraase: SC-2-120 SC-2-180</li>' +
+                  '<li>PD: PD-50 PD-90</li>' +
+               '</ul>' +
+               'If the image is still slanted or offset after auto adjustment you can make a manual<br>' +
+               'correction. If you see what looks like an edge in the image then click in two places along<br>' +
+               'the edge. The image will then auto adjust. You can repeat this procedure multiple times<br>' +
+               'if necessary.' +
+               '<br><br>URL parameters: <br>' +
+               '<i>(freq menu match)</i> &nbsp; noadj &nbsp; test' +
+               '<br><br>' +
+               'The first URL parameter can be the number from an entry of the freq menu (e.g. "3730"). ' +
+               '<i>noadj</i> un-checks the <i>auto adjust</i> box. <br>' +
+               '<br>Keywords are case-insensitive and can be abbreviated. So for example these are valid: <br>' +
+               '<i>ext=sstv,14230</i> &nbsp;&nbsp; <i>ext=sstv,7171,no &nbsp;&nbsp; <i>ext=sstv,t</i>' +
+               ''
+            )
+         );
+
+      confirmation_show_content(s, 610, 380);
+      w3_el('id-confirmation-container').style.height = '100%';   // to get the w3-scroll-y above to work
    }
    return true;
 }
