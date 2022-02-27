@@ -102,6 +102,8 @@ typedef enum { RX4_WF4=0, RX8_WF2=1, RX3_WF3=2, RX14_WF0=3 } firmware_e;
 #define STATS_GPS_SOLN  0x02
 #define STATS_TASK      0x04
 
+#define IDENT_LEN_MIN   16
+
 void fpga_init();
 
 void update_vars_from_config(bool called_at_init = false);

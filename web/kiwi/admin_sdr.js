@@ -187,7 +187,12 @@ function config_html()
 					'Configures LW/NDB, MW and <br> amateur band allocations, etc.'
 				)
 			),
-			''
+			w3_div('w3-center w3-tspace-8',
+			   w3_input_get('', 'Name/callsign input field max length (16-64)', 'ident_len', 'config_ident_len_cb'),
+				w3_div('w3-text-black',
+					'Used to limit the number of characters a user can enter into the name/callsign field at the top-right of the page.'
+				)
+			)
 		);
 
 	var s4 =
@@ -558,6 +563,14 @@ function config_zoom_cb(path, val, first)
    var ok = (val >= 0 && val <= 14);
    if (ok) admin_int_cb(path, val, first);
    w3_show_hide('id-zoom-error', !ok);
+}
+
+function config_ident_len_cb(path, val, first)
+{
+   val = +val;
+   if (val < 16) val = 16;
+   if (val > 64) val = 64;
+   admin_int_cb(path, val, first);
 }
 
 function config_OV_counts_cb(path, val, complete, first)

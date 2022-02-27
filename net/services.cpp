@@ -708,9 +708,9 @@ static void pub_NET(void *param)
 
         if (i == 0) okay = ipinfo_json(1, "ipapi.co", "json", "ip", "latitude", "longitude");
         else
-        if (i == 1) okay = ipinfo_json(1, "extreme-ip-lookup.com", "json", "query", "lat", "lon");
+        if (i == 1) okay = ipinfo_json(1, "get.geojs.io", "v1/ip/geo.json", "ip", "latitude", "longitude");
         else
-        if (i == 2) okay = ipinfo_json(1, "get.geojs.io", "v1/ip/geo.json", "ip", "latitude", "longitude");
+        if (i == 2) okay = ipinfo_json(0, "ip-api.com", "json", "query", "lat", "lon");
         else
         // must be last
         if (i == 3) okay = ipinfo_json(0, kiwisdr_com, "php/update.php/?pubip=94e2473e8df4e92a0c31944ec62b2a067c26b8d0", "ip");

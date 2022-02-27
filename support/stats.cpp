@@ -100,12 +100,12 @@ void webserver_collect_print_stats(int print)
 		}
 		
 		// FIXME: disable for now -- causes audio glitches for unknown reasons
-		#if 0
-		if (!c->geo && !c->try_geoloc && (now - c->arrival) > 10) {
-		    clprintf(c, "GEOLOC: %s sent no geoloc info, trying from here\n", c->remote_ip);
-		    CreateTask(geoloc_task, (void *) c, SERVICES_PRIORITY);
-		    c->try_geoloc = true;
-		}
+		#if 1
+            if (!c->geo && !c->try_geoloc && (now - c->arrival) > 10) {
+                //clprintf(c, "GEOLOC: %s sent no geoloc info, trying from here\n", c->remote_ip);
+                CreateTask(geoloc_task, (void *) c, SERVICES_PRIORITY);
+                c->try_geoloc = true;
+            }
 		#endif
 		
 		// SND and/or WF connections that have failed to follow API
