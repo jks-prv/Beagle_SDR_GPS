@@ -1110,13 +1110,9 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
 		   var id = ajax.kiwi_id;
 			ajax_requests[id].didTimeout = true;
 			ajax_requests[id].timer = -1;
-	      dbug('AJAX TIMEOUT occurred, recovered id='+ id +' url='+ url);
+	      console.log('$AJAX TIMEOUT url='+ url);
 	      var obj = { AJAX_error:'timeout' };
-         if (isFunction(callback))
-            callback(obj, cb_param);
-         else
-         if (isString(callback))
-            w3_call(callback, obj, cb_param);
+         w3_call(callback, obj, cb_param);
 			ajax.abort();
 		   delete ajax_requests[id];
 		}, Math.abs(timeout));
@@ -1127,11 +1123,7 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
 	   ajax.onprogress = function() {
 	      var response = ajax.responseText.toString() || '';
          dbug('XHR.onprogress='+ response);
-         if (isFunction(progress_cb))
-            progress_cb(response, progress_cb_param);
-         else
-         if (isString(progress_cb))
-            w3_call(progress_cb, response, progress_cb_param);
+         w3_call(progress_cb, response, progress_cb_param);
 	   };
 	}
 	
@@ -1183,7 +1175,7 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
          if (debug) console.log(ajax);
 
          if (ajax.status != 200) {
-            dbug('AJAX bad status='+ ajax.status +' url='+ url);
+            console.log('$AJAX BAD STATUS='+ ajax.status +' url='+ url);
             obj = { AJAX_error:'status', status:ajax.status };
          } else {
             var response = ajax.responseText.toString();
@@ -1214,11 +1206,7 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
          }
    
 		   dbug('AJAX ORSC CALLBACK recovered id='+ id +' callback='+ typeof(callback));
-         if (isFunction(callback))
-            callback(obj, cb_param);
-         else
-         if (isString(callback))
-            w3_call(callback, obj, cb_param);
+         w3_call(callback, obj, cb_param);
       } else {
 		   dbug('AJAX ORSC TIMED_OUT recovered id='+ id);
       }
