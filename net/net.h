@@ -94,6 +94,8 @@ typedef struct {
 	bool pub_valid;
 	char ip_pub[NET_ADDRSTRLEN];
 	int port, port_ext;
+	int port_http_local;
+	bool use_ssl;
 
     bool mac_valid;
 	char mac[32], mac_no_delim[16];

@@ -136,6 +136,8 @@ function kiwi_main()
 	override_max_dB = parseFloat(readCookie('last_max_dB'));
 	override_min_dB = parseFloat(readCookie('last_min_dB'));
 	
+	setvolume(true, readCookie('last_volume'));
+	
 	var f_cookie = readCookie('freq_memory');
 	if (f_cookie) {
       var obj = kiwi_JSON_parse('kiwi_main', f_cookie);
@@ -228,7 +230,7 @@ function kiwi_main()
 	s = 'sp'; if (q[s]) spectrum_show = q[s];
 	s = 'spec'; if (q[s]) spectrum_show = q[s];
 	s = 'spp'; if (q[s]) spectrum_param = parseFloat(q[s]);
-	s = 'vol'; if (q[s]) { kiwi.volume = parseInt(q[s]); kiwi.volume = Math.max(0, Math.min(400, kiwi.volume)); }
+	s = 'vol'; if (q[s]) { setvolume(true, parseInt(q[s])); }
 	s = 'mute'; if (q[s]) muted_initially = parseInt(q[s]);
 	s = 'wf'; if (q[s]) wf_rate = q[s];
 	s = 'wfm'; if (q[s]) wf_mm = q[s];
@@ -1861,9 +1863,9 @@ var g_range;
 
 function mk_freq_scale()
 {
-	//clear the lower part of the canvas (where frequency scale resides; the upper part is used by filter envelopes):
+	// clear the lower part of the canvas (where frequency scale resides; the upper part is used by filter envelopes):
 	g_range = get_visible_freq_range();
-	mkenvelopes(g_range); //when scale changes we will always have to redraw filter envelopes, too
+	mkenvelopes(g_range);   // when scale changes we will always have to redraw filter envelopes, too
 
 	scale_ctx.clearRect(0,22,scale_ctx.canvas.width,scale_ctx.canvas.height-22);
 	scale_ctx.strokeStyle = "#fff";
@@ -1873,7 +1875,8 @@ function mk_freq_scale()
 	
 	var spacing = get_scale_mark_spacing(g_range);
 	//console.log(spacing);
-	marker_hz = Math.ceil(g_range.start/spacing.smallbw) * spacing.smallbw;
+	var marker_hz = Math.ceil(g_range.start/spacing.smallbw) * spacing.smallbw;
+	//console.log('mk_freq_scale: marker_hz='+ marker_hz +' zoom_level='+ zoom_level);
 	text_y_pos = 22+10 + (kiwi_isFirefox()? 3:0);
 	var text_to_draw;
 	
@@ -2824,11 +2827,12 @@ function freq_database_lookup(Hz, utility)
    var kHz_r1k = Math.round(Hz/1000);
    //console.log('### Hz='+ Hz +' kHz='+ kHz +' kHz_r10='+ kHz_r10 +' kHz_r1k='+ kHz_r1k);
    var f;
-   var url = "http://";
+   var url = "https://";
 
    var b = band_info();
 
    /*
+   // expired cert!
    if (utility == owrx.rcm_util) {
       f = Math.floor(Hz/100) / 10000;	// round down to nearest 100 Hz, and express in MHz, for GlobalTuners
       url += "qrg.globaltuners.com/?q="+f.toFixed(4);
@@ -2865,7 +2869,7 @@ function freq_database_lookup(Hz, utility)
    }
    if (utility == owrx.rcm_cluster) {
       f = Math.floor(Hz) / 1000;	// kHz for ve3sun dx cluster lookup
-      url += 've3sun.com/KiwiSDR/DX.php?Search='+f.toFixed(1);
+      url = 'http://ve3sun.com/KiwiSDR/DX.php?Search='+f.toFixed(1);
    }
    
    console.log('LOOKUP '+ kHz +' -> '+ f +' '+ url);
@@ -5906,8 +5910,8 @@ function init_scale_dB()
 
    wf.save_maxdb = maxdb;
    wf.save_mindb_un = mindb_un;
-   wf.auto_ceil.val = +initCookie('last_ceil_dB', wf.auto_ceil.def);
-   wf.auto_floor.val = +initCookie('last_floor_dB', wf.auto_floor.def);
+   wf.auto_ceil.val = +initCookie('last_ceil_dB', cfg.init.ceil_dB);
+   wf.auto_floor.val = +initCookie('last_floor_dB', cfg.init.floor_dB);
 }
 
 
@@ -6519,6 +6523,7 @@ function dx_label_cb(arr)
 		obj = arr[i];
 		var el;
 		var ident = obj.i;
+		var freq = obj.f;
 		
 		if (eibi) {
 		   if (ident == dx.last_ident) {
@@ -7362,18 +7367,26 @@ function update_smeter()
 
 var ident_tout;
 var ident_user = '';
-var need_ident = false;
+var send_ident = false;
 
 function ident_init()
 {
-   if (user_url) writeCookie('ident', kiwi_strip_tags(kiwi_decodeURIComponent('user_url', user_url), ''));
+	var len = Math.max(cfg.ident_len, kiwi.ident_min);
+   if (user_url) {
+      user_url = kiwi_decodeURIComponent('user_url', user_url);
+      user_url = kiwi_strip_tags(user_url, '').substring(0, len);
+      writeCookie('ident', user_url);
+   }
 	var ident = initCookie('ident', '');
-	ident = kiwi_strip_tags(ident, '');
-	//console.log('IINIT ident_user=<'+ ident +'>');
+   ident = kiwi_strip_tags(ident, '').substring(0, len);
+	//console.log('ident PRE ident_user=<'+ ident +'> ident_len='+ len);
+	ident = kiwi_strip_tags(ident, '').substring(0, len);
+	//console.log('ident POST ident_user=<'+ ident +'> ident_len='+ len);
 	var el = w3_el('id-ident-input');
+	w3_attribute(el, 'maxlength', len);
 	el.value = ident;
 	ident_user = ident;
-	need_ident = true;
+	send_ident = true;
 	//console.log('ident_init: SET ident='+ ident_user);
 }
 
@@ -7381,21 +7394,22 @@ function ident_complete(from)
 {
 	var el = w3_el('id-ident-input');
 	var ident = el.value;
-	ident = kiwi_strip_tags(ident, '');
+	var len = Math.max(cfg.ident_len, kiwi.ident_min);
+   ident = kiwi_strip_tags(ident, '').substring(0, len);
 	//console.log('ICMPL from='+ from +' ident='+ ident);
 	el.value = ident;
 	//console.log('ICMPL el='+ typeof(el) +' ident_user=<'+ ident +'>');
 	kiwi_clearTimeout(ident_tout);
 
 	// okay for ident='' to erase it
-	// SECURITY: size limited by <input size=...> but guard against binary data injection?
+	// SECURITY: input value length limited by "maxlength" attribute, but also guard against binary data injection?
 	//w3_field_select(el, {mobile:1});
 	w3_schedule_highlight(el);
 	freqset_select();    // don't keep ident field selected
 
 	writeCookie('ident', ident);
 	ident_user = ident;
-	need_ident = true;
+	send_ident = true;
 	//console.log('ident_complete: SET ident_user='+ ident_user);
 }
 
@@ -8340,8 +8354,8 @@ var wf = {
    last_zoom: -1,
    need_autoscale: 0,
    
-   auto_ceil: { min:0, val:5, max:30, def:5 },
-   auto_floor: { min:-30, val:0, max:0, def:0 },
+   auto_ceil: { min:0, val:5, max:30 },
+   auto_floor: { min:-30, val:0, max:0 },
    auto_maxdb: 0,
    auto_mindb: 0,
    
@@ -8779,11 +8793,12 @@ var recording = false;
 function setvolume(done, str)
 {
    kiwi.volume = +str;
-   kiwi.volume = Math.max(0, Math.min(200, kiwi.volume));
-   kiwi.volume_f = kiwi.muted? 0 : kiwi.volume/100;
-   //console.log('vol='+ kiwi.volume +' vol_f='+ (kiwi.volume/100).toFixed(3));
+   kiwi.volume = w3_clamp(kiwi.volume, 1, 200);    // don't set to zero because that triggers FF audio silence bug
+   kiwi.volume_f = kiwi.muted? 0 : kiwi.volume/100;   // volume_f is the [0,2] value actually used by audio.js
+   console.log('vol='+ kiwi.volume +' vol_f='+ (kiwi.volume/100).toFixed(3));
    if (done) {
       w3_set_value('id-input-volume', kiwi.volume);
+      writeCookie('last_volume', kiwi.volume);
       freqset_select();
    }
 }
@@ -9906,12 +9921,12 @@ function send_keepalive()
 			need_geo = false;
 		}
 		
-		if (need_ident) {
-			//console.log('need_ident: SET ident_user='+ ident_user);
+		if (send_ident) {
+			//console.log('send_ident: SET ident_user='+ ident_user);
 			if (!ident_user) ident_user = '';
 			if (snd_send("SET ident_user="+ encodeURIComponent(ident_user)) < 0)
 				break;
-			need_ident = false;
+			send_ident = false;
 		}
 	
 		if (need_status) {

@@ -259,6 +259,7 @@ void update_vars_from_config(bool called_at_init)
     n_camp = cfg_default_int("n_camp", N_CAMP, &update_cfg);
     snr_meas_interval_hrs = snr_interval[cfg_default_int("snr_meas_interval_hrs", 1, &update_cfg)];
     snr_local_time = cfg_default_bool("snr_local_time", true, &update_cfg);
+    cfg_default_int("ident_len", IDENT_LEN_MIN, &update_cfg);
 
     if (wspr_update_vars_from_config()) update_cfg = true;
 
@@ -298,6 +299,8 @@ void update_vars_from_config(bool called_at_init)
         cfg_set_int("init.max_dB", -10);
         update_cfg = true;
     }
+    cfg_default_int("init.floor_dB", 0, &update_cfg);
+    cfg_default_int("init.ceil_dB", 5, &update_cfg);
 
     int _dom_sel = cfg_default_int("sdr_hu_dom_sel", DOM_SEL_NAM, &update_cfg);
 
@@ -565,15 +568,15 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
 {
 	char *cmd_p;
 	
-    asprintf(&cmd_p, "curl -s --ipv4 \"https://%s\" 2>&1", geo_host_ip_s);
+    asprintf(&cmd_p, "curl -s --ipv4 \"%s\" 2>&1", geo_host_ip_s);
     //cprintf(conn, "GEOLOC: <%s>\n", cmd_p);
     
     // NB: don't use non_blocking_cmd() here to prevent audio gliches
-    int status = non_blocking_cmd_func_forall("kiwi.geolocate", cmd_p, _geo_task, 0, POLL_MSEC(1000));
+    int status = non_blocking_cmd_func_forall("kiwi.geo", cmd_p, _geo_task, 0, POLL_MSEC(1000));
     kiwi_ifree(cmd_p);
     int exit_status;
     if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
-        clprintf(conn, "GEOLOC: failed for %s\n", geo_host_ip_s);
+        clprintf(conn, "GEOLOC: curl(%d) failed for %s\n", exit_status, geo_host_ip_s);
         return false;
     }
     //cprintf(conn, "GEOLOC: returned <%s>\n", shmem->status_str_large);
@@ -587,6 +590,7 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
     char *country_name = (char *) json_string(&cfg_geo, country_s, NULL, CFG_OPTIONAL);
     char *region_name = (char *) json_string(&cfg_geo, region_s, NULL, CFG_OPTIONAL);
     char *city = (char *) json_string(&cfg_geo, "city", NULL, CFG_OPTIONAL);
+    //cprintf(conn, "GEOLOC: %s=<%s> %s=<%s> city=<%s> \n", country_s, country_name, region_s, region_name, city);
     
     char *country;
 	if (country_name && strcmp(country_name, "United States") == 0 && region_name && *region_name) {
@@ -602,7 +606,7 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
 	}
     geo = kstr_cat(geo, country);   // NB: country freed here
 
-    clprintf(conn, "GEOLOC: %s <%s>\n", geo_host_ip_s, kstr_sp(geo));
+    //clprintf(conn, "GEOLOC: %s <%s>\n", geo_host_ip_s, kstr_sp(geo));
 	kiwi_ifree(conn->geo);
     conn->geo = strdup(kstr_sp(geo));
     kstr_free(geo);
@@ -615,24 +619,36 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
     return true;
 }
 
-static void geoloc_task(void *param)
+void geoloc_task(void *param)
 {
 	conn_t *conn = (conn_t *) param;
 	char *ip = (isLocal_ip(conn->remote_ip) && net.pub_valid)? net.ip_pub : conn->remote_ip;
 
+    char *geo_host_ip_s = (char *) kiwi_imalloc("geoloc_task", 128);
     u4_t i = timer_sec();   // mix it up a bit
     int retry = 0;
     bool okay = false;
     do {
         i = (i+1) % 3;
-        if (i == 0) okay = geoloc_json(conn, stprintf("ipapi.co/%s/json", ip), "country_name", "region");
-        else
-        if (i == 1) okay = geoloc_json(conn, stprintf("extreme-ip-lookup.com/json/%s", ip), "country", "region");
-        else
-        if (i == 2) okay = geoloc_json(conn, stprintf("get.geojs.io/v1/ip/geo/%s.json", ip), "country", "region");
+        if (i == 0) {
+            sprintf(geo_host_ip_s, "https://ipapi.co/%s/json", ip);
+            okay = geoloc_json(conn, geo_host_ip_s, "country_name", "region");
+        } else
+        if (i == 1) {
+            sprintf(geo_host_ip_s, "https://get.geojs.io/v1/ip/geo/%s.json", ip);
+            okay = geoloc_json(conn, geo_host_ip_s, "country", "region");
+        } else
+        if (i == 2) {
+            sprintf(geo_host_ip_s, "http://ip-api.com/json/%s?fields=49177", ip);
+            okay = geoloc_json(conn, geo_host_ip_s, "country", "regionName");
+        }
         retry++;
     } while (!okay && retry < 10);
-    if (!okay) clprintf(conn, "GEOLOC: for %s FAILED for all geo servers\n", ip);
+    kiwi_ifree(geo_host_ip_s);
+    if (okay)
+        clprintf(conn, "GEOLOC: %s sent no geoloc info, we got \"%s\"\n", conn->remote_ip, conn->geo);
+    else
+        clprintf(conn, "GEOLOC: for %s FAILED for all geo servers\n", ip);
 }
 
 char *rx_users(bool include_ip)

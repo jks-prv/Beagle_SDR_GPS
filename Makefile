@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 489
+VERSION_MIN = 490
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -198,11 +198,22 @@ CFILES_O3 = $(subst web/web.cpp,,$(CPP_F_O3))
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	ifeq ($(XC),-DXC)
-		LIBS += -lfftw3f -lutil -lcrypt
+		LIBS += -lfftw3f -lutil
 		DIR_CFG = /root/kiwi.config
 		CFG_PREFIX =
+
+        ifeq ($(DEBIAN_10),true)
+#		    INT_FLAGS += -DUSE_CRYPT
+#	        LIBS += -lcrypt
+            INT_FLAGS += -DMONGOOSE_5_6 -DUSE_SSL
+            LIBS += -lssl
+        else
+            INT_FLAGS += -DMONGOOSE_5_6 -DUSE_CRYPT
+            LIBS += -lcrypt
+        endif
 	else
 		# development machine, compile simulation version
+		INT_FLAGS += -DMONGOOSE_5_6
 		LIBS += -L/usr/local/lib -lfftw3f
 		LIBS_DEP += /usr/local/lib/libfftw3f.a
 		CMD_DEPS =
@@ -212,12 +223,24 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 else
 	# host machine (BBB), only build the FPGA-using version
-	LIBS += -lfftw3f -lutil -lcrypt
+	LIBS += -lfftw3f -lutil
 	LIBS_DEP += /usr/lib/arm-linux-gnueabihf/libfftw3f.a
 	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng /sbin/ethtool /usr/bin/sshpass
 	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
+
+# currently a bug where -lcrypt and -lssl can't be used together for some reason (crash at startup)
+	ifeq ($(DEBIAN_10),true)
+#		INT_FLAGS += -DUSE_CRYPT
+#	    LIBS += -lcrypt
+		INT_FLAGS += -DMONGOOSE_5_6 -DUSE_SSL
+	    LIBS += -lssl
+		CMD_DEPS += /usr/include/openssl/ssl.h
+	else
+		INT_FLAGS += -DMONGOOSE_5_6 -DUSE_CRYPT
+	    LIBS += -lcrypt
+	endif
 
 	ifeq ($(BBAI),true)
 		CMD_DEPS += /usr/bin/cpufreq-info
@@ -310,6 +333,11 @@ $(INSTALL_CERTIFICATES):
 
 /usr/bin/dtc:
 	-apt-get -y install device-tree-compiler
+
+ifeq ($(DEBIAN_10),true)
+/usr/include/openssl/ssl.h:
+	-apt-get -y install openssl libssl1.1 libssl-dev
+endif
 
 ifeq ($(BBAI),true)
 /usr/bin/cpufreq-info:

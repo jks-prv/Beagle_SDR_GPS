@@ -70,8 +70,8 @@ var drm = {
    database: 0,
    database_s: [ 'drmrx.org', 'kiwisdr.com' ],
    database_url: [
-      'http://DRM.kiwisdr.com/drm/drmrx.cjson',
-      'http://DRM.kiwisdr.com/drm/stations2.cjson'
+      kiwi_SSL() +'drm.kiwisdr.com/drm/drmrx.cjson',
+      kiwi_SSL() +'drm.kiwisdr.com/drm/stations2.cjson'
    ],
    
    last_occ: -1,
@@ -698,6 +698,11 @@ function drm_get_stations_done_cb(stations)
    
    if (stations.AJAX_error && stations.AJAX_error == 'timeout') {
       console.log('drm_get_stations_done_cb: TIMEOUT');
+      drm.using_default = true;
+      fault = true;
+   } else
+   if (stations.AJAX_error && stations.AJAX_error == 'status') {
+      console.log('drm_get_stations_done_cb: status='+ stations.status);
       drm.using_default = true;
       fault = true;
    } else

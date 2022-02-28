@@ -76,7 +76,7 @@ function config_html()
 			w3_inline('/w3-halign-space-around/w3-center',
 				w3_select('', 'Mode', '', 'init.mode', init_mode, kiwi.modes_u, 'admin_select_cb'),
 				w3_select('', 'Colormap', '', 'init.colormap', init_colormap, kiwi.cmap_s, 'admin_select_cb'),
-				w3_select('', 'Aperture', '', 'init.aperture', init_aperture, kiwi.aper_s, 'admin_select_cb')
+				w3_select('', 'Aperture', '', 'init.aperture', init_aperture, kiwi.aper_s, 'config_aperture_cb')
 			),
 			w3_div('w3-center w3-tspace-8',
 				w3_select('', 'AM BCB channel spacing', '', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'admin_select_cb')
@@ -84,15 +84,21 @@ function config_html()
 		) +
 
 		w3_third('w3-text-teal', 'w3-container',
-			w3_input_get('', 'Waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'config_wfmin_cb'),
-			w3_input_get('', 'Waterfall max (dBFS)', 'init.max_dB', 'config_wfmax_cb'),
-			w3_input_get('', 'Zoom (0-13)', 'init.zoom', 'config_zoom_cb')
+		   w3_div('',
+            w3_input_get('id-wf-show-min//', 'Waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'config_wfmin_cb'),
+            w3_input_get('id-wf-show-floor//', 'Waterfall floor (dB)', 'init.floor_dB', 'admin_int_cb')
+         ),
+		   w3_div('',
+            w3_input_get('id-wf-show-max//', 'Waterfall max (dBFS)', 'init.max_dB', 'config_wfmax_cb'),
+            w3_input_get('id-wf-show-ceil//', 'Waterfall ceil (dB)', 'init.ceil_dB', 'admin_int_cb')
+         ),
+			w3_input_get('', 'Zoom (0-14)', 'init.zoom', 'config_zoom_cb')
 		) +
 		
       w3_third('', 'w3-container',
          w3_div('id-wfmin-error w3-margin-T-8 w3-red w3-hide', 'Waterfall min must be < max'),
          w3_div('id-wfmax-error w3-margin-T-8 w3-red w3-hide', 'Waterfall max must be > min'),
-         w3_div('id-zoom-error w3-margin-T-8 w3-red w3-hide', 'Zoom must be 0 to 13')
+         w3_div('id-zoom-error w3-margin-T-8 w3-red w3-hide', 'Zoom must be 0 to 14')
       ) +
       
       w3_div('w3-margin-bottom');
@@ -181,7 +187,12 @@ function config_html()
 					'Configures LW/NDB, MW and <br> amateur band allocations, etc.'
 				)
 			),
-			''
+			w3_div('w3-center w3-tspace-8',
+			   w3_input_get('', 'Name/callsign input field max length (16-64)', 'ident_len', 'config_ident_len_cb'),
+				w3_div('w3-text-black',
+					'Used to limit the number of characters a user can enter into the name/callsign field at the top-right of the page.'
+				)
+			)
 		);
 
 	var s4 =
@@ -326,6 +337,23 @@ function config_focus()
 {
    console.log('config_focus');
    config_pb_mode('', admin_sdr.pmi, false);
+   config_wf_show();
+}
+
+function config_wf_show()
+{
+   w3_hide2('id-wf-show-min', cfg.init.aperture != 0);
+   w3_hide2('id-wf-show-max', cfg.init.aperture != 0);
+   w3_hide2('id-wf-show-floor', cfg.init.aperture != 1);
+   w3_hide2('id-wf-show-ceil', cfg.init.aperture != 1);
+}
+
+function config_aperture_cb(path, idx, first)
+{
+   if (first) return;
+   i = +idx;
+   admin_select_cb(path, idx);
+   config_wf_show();
 }
 
 function config_pb_reset(id, idx)
@@ -532,9 +560,17 @@ function config_wfmax_cb(path, val, first)
 function config_zoom_cb(path, val, first)
 {
    val = +val;
-   var ok = (val >= 0 && val <= 13);
+   var ok = (val >= 0 && val <= 14);
    if (ok) admin_int_cb(path, val, first);
    w3_show_hide('id-zoom-error', !ok);
+}
+
+function config_ident_len_cb(path, val, first)
+{
+   val = +val;
+   if (val < 16) val = 16;
+   if (val > 64) val = 64;
+   admin_int_cb(path, val, first);
 }
 
 function config_OV_counts_cb(path, val, complete, first)

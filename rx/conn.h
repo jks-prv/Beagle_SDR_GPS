@@ -21,7 +21,7 @@ Boston, MA  02110-1301, USA.
 
 // mongoose.h struct mg_connection *
 // types.h funcP_t
-// config.h user_iface_t
+
 #include "nbuf.h"           // ndesc_t
 #include "ext.h"            // ext_t
 #include "non_block.h"      // non_blocking_cmd_t
@@ -58,7 +58,6 @@ typedef struct conn_st {
 	// set in both STREAM_SOUND & STREAM_WATERFALL
 	int task;
 	bool stop_data, kick;
-	user_iface_t *ui;
 
 	// set in STREAM_SOUND or STREAM_WATERFALL (WF-only connections)
 	bool ident, arrived;

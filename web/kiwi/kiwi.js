@@ -12,6 +12,7 @@ var kiwi = {
    
    inactivity_panel: false,
    notify_seq: 0,
+   ident_min: 16,    // e.g. "wsprdaemon_v3.0a" is 16 chars
 
    volume: 50,
    volume_f: 0,
@@ -383,7 +384,7 @@ function kiwi_get_init_settings()
 
 	var init_z = (init_zoom == undefined)? 0 : init_zoom;
 	init_z = ext_get_cfg_param('init.zoom', init_z, EXT_NO_SAVE);
-	init_zoom = override_zoom? override_zoom : init_z;
+	init_zoom = isNumber(override_zoom)? override_zoom : init_z;
 
 	var init_max = (init_max_dB == undefined)? -10 : init_max_dB;
 	init_max = ext_get_cfg_param('init.max_dB', init_max, EXT_NO_SAVE);
@@ -453,15 +454,15 @@ function kiwi_geolocate(which)
    var server;
 
    switch (which) {
-      case 0: server = 'ipapi.co/json'; break;
-      case 1: server = 'extreme-ip-lookup.com/json'; break;
-      case 2: server = 'get.geojs.io/v1/ip/geo.json'; break;
+      case 0: server = 'https://ipapi.co/json'; break;
+      case 1: server = 'https://get.geojs.io/v1/ip/geo.json'; break;
+      case 2: server = 'http://ip-api.com/json?fields=49177'; break;
       default: break;
    }
    
-   kiwi_ajax('https://'+ server, 
+   kiwi_ajax(server, 
       function(json) {
-         if (json.AJAX_error === undefined) {
+         if (isUndefined(json.AJAX_error)) {
             console.log('GEOLOC '+ server);
             console.log(json);
             geoloc_json(json);
@@ -475,7 +476,7 @@ function kiwi_geolocate(which)
 
 function geoloc_json(json)
 {
-	if (json.AJAX_error != undefined)
+	if (isDefined(json.AJAX_error))
 		return;
 	
 	if (window.JSON && window.JSON.stringify)
@@ -484,9 +485,11 @@ function geoloc_json(json)
       geo.json = json.toString();
    
    var country = json.country_name || json.country;
+   
+   var region = json.regionName || json.region;
 	
-	if (country == "United States" && json.region) {
-		country = json.region +', USA';
+	if (country == "United States" && region) {
+		country = region +', USA';
 	}
 	
 	geo.geo = '';

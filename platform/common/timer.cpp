@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 
 static bool epoch_init = false;
 static u4_t epoch_sec;

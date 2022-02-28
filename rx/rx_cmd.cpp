@@ -1336,6 +1336,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     ident_user_m = esc;
                 }
                 kiwi_str_redup(&conn->user, "user", ident_user_m);
+                int len = cfg_int("ident_len", NULL, CFG_REQUIRED);
+                len = MAX(len, IDENT_LEN_MIN);      // e.g. "wsprdaemon_v3.0a" is 16 chars
+                if (strlen(conn->user) > len)
+                    conn->user[len] = '\0';
+                //printf("ident <%s> len=%d\n", conn->user, len);
                 conn->isUserIP = FALSE;
                 // printf(">>> isUserIP FALSE: %s:%05d setUserIP=%d noname=%d user=%s <%s>\n",
                 // 	conn->remote_ip, conn->remote_port, setUserIP, noname, conn->user, cmd);
@@ -1391,9 +1396,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
     case CMD_GEO_LOC: {
         char *geo_m = NULL;
         n = sscanf(cmd, "SET geoloc=%127ms", &geo_m);
+        //cprintf(conn, "GEOLOC: n=%d cmd=<%s> geo_m=%p <%s>\n", n, cmd, geo_m, geo_m);
         if (n == 1) {
             kiwi_str_decode_inplace(geo_m);
-            //cprintf(conn, "ch%d recv geoloc from client: %s\n", conn->rx_channel, geo_m);
+            //cprintf(conn, "GEOLOC: recv geoloc from client: %p <%s>\n", geo_m, geo_m);
             char *esc = kiwi_str_escape_HTML(geo_m);
             if (esc) {
                 kiwi_ifree(geo_m);

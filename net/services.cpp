@@ -348,7 +348,8 @@ static void misc_NET(void *param)
         char *kiwisdr_com = DNS_lookup_result("my_kiwi", "kiwisdr.com", &net.ips_kiwisdr_com);
         asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 5 "
             "\"%s/php/my_kiwi.php?auth=308bb2580afb041e0514cd0d4f21919c&pub=%s&pvt=%s&port=%d&serno=%d%s\"",
-            kiwisdr_com, net.ip_pub, net.ip_pvt, net.port, net.serno, cmd_p2? cmd_p2:"");
+            kiwisdr_com, net.ip_pub, net.ip_pvt, net.use_ssl? net.port_http_local : net.port,
+            net.serno, cmd_p2? cmd_p2:"");
 
         kstr_free(non_blocking_cmd(cmd_p, &status));
         kiwi_ifree(cmd_p); kiwi_ifree(cmd_p2);
@@ -574,10 +575,46 @@ static void UPnP_port_open_task(void *param)
     status = non_blocking_cmd_func_forall("kiwi.UPnP", cmd_p, _UPnP_port_open, 0, POLL_MSEC(1000));
     if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
         net.auto_nat = exit_status;
-        net_printf2("UPnP_port_open_task net.auto_nat=%d\n", net.auto_nat);
-    } else
+        net_printf2("UPnP_port_open_task: net.auto_nat=%d\n", net.auto_nat);
+    } else {
         net.auto_nat = 4;      // command failed
+    }
     kiwi_ifree(cmd_p);
+    
+    #if defined(USE_SSL) && defined(MONGOOSE_5_6)
+        if (net.use_ssl && net.port_ext != 80) {
+            asprintf(&cmd_p, "upnpc %s%s-a %s 80 80 TCP 2>&1",
+                (debian_ver != 7)? "-e KiwiSDR " : "",
+                (net.pvt_valid == IPV6)? "-6 " : "",
+                net.ip_pvt);
+            printf("UPnP: %s\n", cmd_p);
+            status = non_blocking_cmd_func_forall("kiwi.UPnP", cmd_p, _UPnP_port_open, 0, POLL_MSEC(1000));
+            if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
+                printf("UPnP_port_open_task: ACME HTTP-01 port exit_status=%d\n", exit_status);
+            } else {
+                printf("UPnP_port_open_task: ACME HTTP-01 port status=%d\n", status);
+            }
+            kiwi_ifree(cmd_p);
+        }
+
+        //#define TEST_HTTP_LOCAL
+        #ifdef TEST_HTTP_LOCAL
+            if (net.use_ssl) {
+                asprintf(&cmd_p, "upnpc %s%s-a %s %d %d TCP 2>&1",
+                    (debian_ver != 7)? "-e KiwiSDR " : "",
+                    (net.pvt_valid == IPV6)? "-6 " : "",
+                    net.ip_pvt, net.port_http_local, net.port_http_local);
+                printf("UPnP: %s\n", cmd_p);
+                status = non_blocking_cmd_func_forall("kiwi.UPnP", cmd_p, _UPnP_port_open, 0, POLL_MSEC(1000));
+                if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
+                    printf("UPnP_port_open_task: local HTTP port %d exit_status=%d\n", exit_status);
+                } else {
+                    printf("UPnP_port_open_task: local HTTP port %d status=%d\n", status);
+                }
+                kiwi_ifree(cmd_p);
+            }
+        #endif
+    #endif
 }
 
 static void pvt_NET(void *param)
@@ -671,9 +708,9 @@ static void pub_NET(void *param)
 
         if (i == 0) okay = ipinfo_json(1, "ipapi.co", "json", "ip", "latitude", "longitude");
         else
-        if (i == 1) okay = ipinfo_json(1, "extreme-ip-lookup.com", "json", "query", "lat", "lon");
+        if (i == 1) okay = ipinfo_json(1, "get.geojs.io", "v1/ip/geo.json", "ip", "latitude", "longitude");
         else
-        if (i == 2) okay = ipinfo_json(1, "get.geojs.io", "v1/ip/geo.json", "ip", "latitude", "longitude");
+        if (i == 2) okay = ipinfo_json(0, "ip-api.com", "json", "query", "lat", "lon");
         else
         // must be last
         if (i == 3) okay = ipinfo_json(0, kiwisdr_com, "php/update.php/?pubip=94e2473e8df4e92a0c31944ec62b2a067c26b8d0", "ip");
@@ -883,17 +920,15 @@ void services_start()
     if (!disable_led_task)
         CreateTask(led_task, NULL, ADMIN_PRIORITY);
 
-	if (!alt_port) {
-		reg_kiwisdr_com_tid = CreateTask(reg_public, 0, SERVICES_PRIORITY);
+    reg_kiwisdr_com_tid = CreateTask(reg_public, 0, SERVICES_PRIORITY);
 
-        #if 0
-            if (admcfg_bool("ip_blacklist_download", NULL, CFG_REQUIRED) == true) {
-                CreateTask(bl_GET, 0, SERVICES_PRIORITY);
-            } else {
-                ip_blacklist_init();
-            }
-        #else
+    #if 0
+        if (admcfg_bool("ip_blacklist_download", NULL, CFG_REQUIRED) == true) {
+            CreateTask(bl_GET, 0, SERVICES_PRIORITY);
+        } else {
             ip_blacklist_init();
-        #endif
-	}
+        }
+    #else
+        ip_blacklist_init();
+    #endif
 }

@@ -49,22 +49,6 @@ Boston, MA  02110-1301, USA.
 
 #define MTR 0
 
-user_iface_t user_iface[] = {
-	{ "openwebrx" },
-	{0}
-};
-
-user_iface_t *find_ui(int port)
-{
-	user_iface_t *ui = user_iface;
-	while (ui->port) {
-		if (ui->port == port)
-			return ui;
-		ui++;
-	}
-	return NULL;
-}
-
 static int bsearch_edatacomp(const void *key, const void *elem)
 {
 	embedded_files_t *ef_elem = (embedded_files_t *) elem;
@@ -581,8 +565,20 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 	int i, n;
 	size_t edata_size = 0;
 	const char *edata_data;
+	bool isPort80 = (net.port_ext != 80 && mc->local_port == 80);
 
     //if (web_caching_debug == 0) web_caching_debug = bg? 3:1;
+
+    // access to the local HTTP port should only come from local ip addresses
+    if (mc->local_port == net.port_http_local && !isLocal_ip(mc->remote_ip)) {
+        if (evt == MG_REQUEST) {
+            printf("webserver: HTTP but not local ip evt=%d %s:%d <%s>\n", evt, mc->remote_ip, mc->local_port, mc->uri);
+            mg_send_status(mc, 403);    // 403 = "forbidden"
+            mg_send_data(mc, NULL, 0);
+            return MG_TRUE;
+        } else
+            return MG_FALSE;
+    }
 
 
     ////////////////////////////////
@@ -592,11 +588,13 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 	if (mc->is_websocket) {
 		// This handler is called for each incoming websocket frame, one or more
 		// times for connection lifetime.
+		
+		if (isPort80) return MG_FALSE;
 
-        if ((mc->wsbits & 0x0F) == WS_OPCODE_CLOSE) { // close request from client
+        if ((mc->wsbits & 0x0F) == WEBSOCKET_OPCODE_CONNECTION_CLOSE) { // close request from client
             // respond with a close request to the client
             // after this close request, the connection is scheduled to be closed
-            mg_websocket_write(mc, WS_OPCODE_CLOSE, mc->content, mc->content_len);
+            mg_websocket_write(mc, WEBSOCKET_OPCODE_CONNECTION_CLOSE, mc->content, mc->content_len);
             return MG_TRUE;
         }
 
@@ -684,13 +682,24 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 	
     char *o_uri = (char *) mc->uri;      // o_uri = original uri
     char *uri;
-    bool free_uri = FALSE, has_prefix = FALSE, is_extension = FALSE;
+    bool free_uri = FALSE, has_prefix = FALSE, is_extension = FALSE, is_config = FALSE;
     time_t mtime = 0;
 
     if (evt == MG_CACHE_INFO) web_printf_all("----\n");
     web_printf_all("%-16s %s %s\n", "URL", o_uri, mc->query_string);
     evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", evprintf("URL <%s> <%s> %s", o_uri, mc->query_string,
         (evt == MG_CACHE_INFO)? "MG_CACHE_INFO" : "MG_REQUEST"));
+    
+    // Only ACME requests can be on port 80 (if port 80 not configured as main Kiwi port).
+    // Only port 80 can be used for ACME requests.
+    bool acme = (strncmp(o_uri, "/.well-known/", 13) == 0);
+    if ((isPort80 || acme) && evt == MG_CACHE_INFO) return MG_FALSE;
+    if ((isPort80 && !acme) || (acme && !isPort80)) {
+        printf("webserver: bad ACME request evt=%d %s:%d <%s>\n", evt, remote_ip, mc->local_port, o_uri);
+        mg_send_status(mc, 403);    // 403 = "forbidden"
+        mg_send_data(mc, NULL, 0);
+        return MG_TRUE;
+    }
 
     while (*o_uri == '/') o_uri++;
     if (*o_uri == '\0' || strcmp(o_uri, "index") == 0 || strcmp(o_uri, "index.html") == 0 || strcmp(o_uri, "index.htm") == 0) {
@@ -726,10 +735,19 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 
     char *suffix = strrchr(o_uri, '.');
     
-    if (suffix && (strcmp(suffix, ".json") == 0 || strcmp(suffix, ".json/") == 0)) {
-        lprintf("attempt to fetch config file: %s query=<%s> from %s\n", o_uri, mc->query_string, ip_remote(mc));
-        evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "BAD fetch config file");
-        return MG_FALSE;
+    // disallow certain suffixes in *any* directory
+    // NB: legitimate json files use .cjson suffix, e.g. web/extensions/ALE_2G/ALE_nets.cjson
+    if (suffix) {
+        //printf("SUFFIX <%s>\n", suffix);
+        int last = strlen(suffix) - 1;
+        if (last >= 0 && suffix[last] == '/')
+            suffix[last] = '\0';
+        if (strcmp(suffix, ".json") == 0) {
+            if (evt == MG_REQUEST)
+                lprintf("webserver: attempt to fetch config file: %s query=<%s> from %s\n", o_uri, mc->query_string, remote_ip);
+            evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "BAD fetch config file");
+            return MG_FALSE;
+        }
     }
     
     // if uri uses a subdir we know about just use the absolute path
@@ -755,22 +773,34 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         if (MTR) real_printf("-> uri-1 ASPR %p %d<%s>\n", uri, strlen(uri), uri);
         free_uri = TRUE;
         has_prefix = TRUE;
+        is_config = TRUE;
     } else
     if (strncmp(o_uri, "kiwi.config/", 12) == 0) {
         asprintf(&uri, "%s/%s", DIR_CFG, &o_uri[12]);
         if (MTR) real_printf("-> uri-2 ASPR %p %d<%s>\n", uri, strlen(uri), uri);
         free_uri = TRUE;
         has_prefix = TRUE;
+        is_config = TRUE;
+    } else
+    // handle HTTP-01 authenticator challenges for ACME clients like certbot
+    if (strncmp(o_uri, ".well-known/", 12) == 0) {
+        asprintf(&uri, "%s/%s", DIR_CFG, o_uri);
+        if (MTR) real_printf("-> ACME <%s>\n", uri);
+        free_uri = TRUE;
+        has_prefix = TRUE;
     } else {
-        // use name of active ui as subdir
-        user_iface_t *ui = find_ui(mc->local_port);
-        // should always find match since we only listen to ports in ui table
-        assert(ui);
-        asprintf(&uri, "%s/%s", ui->name, o_uri);
+        asprintf(&uri, "openwebrx/%s", o_uri);
         if (MTR) real_printf("-> uri-3 ASPR %p %d<%s>\n", uri, strlen(uri), uri);
         free_uri = TRUE;
     }
     //printf("---- HTTP: uri %s (orig %s)\n", uri, o_uri);
+    
+    // in config dir *only* allow .js files
+    if (is_config && (!suffix || (suffix && strcmp(suffix, ".js") != 0))) {
+        if (evt == MG_REQUEST)
+            lprintf("webserver: attempt to fetch non .js file in config dir: %s query=<%s> from %s\n", o_uri, mc->query_string, remote_ip);
+        return MG_FALSE;
+    }
     
     #if 0
     if (cache.valid && evt == MG_REQUEST && strcmp(uri, cache.uri) == 0) {
@@ -873,7 +903,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
             return MG_FALSE;
         }
         //printf("rx_server_ajax: %s\n", mc->uri);
-        ajax_data = rx_server_ajax(mc);     // mc->uri is o_uri without ui->name prefix
+        ajax_data = rx_server_ajax(mc);     // mc->uri is o_uri without "openwebrx" prefix
         if (ajax_data) {
             if (FROM_VOID_PARAM(ajax_data) == -1) {
                 if (free_uri) {
@@ -893,7 +923,8 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 
     // give up
     if (!edata_data) {
-        //printf("unknown URL: %s (%s) query=<%s> from %s\n", o_uri, uri, mc->query_string, ip_remote(mc));
+        //printf("unknown URL: %s (%s) query=<%s> from %s\n", o_uri, uri, mc->query_string, remote_ip);
+        web_printf_sent("%-16s %50s %15s %s\n", "webserver:", "NOT FOUND", remote_ip, isAJAX? mc->uri : uri);
         if (free_uri) {
             if (MTR) real_printf("-> uri-give-up FREE %p %d<%s>\n", uri, strlen(uri), uri);
             kiwi_ifree(uri);
@@ -993,12 +1024,13 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     int rtn = MG_TRUE;
     if (evt == MG_CACHE_INFO) {
         if (dirty || isAJAX || web_nocache || !webserver_caching) {
-            //web_printf_all("%-16s NO CACHE %s\n", "MG_CACHE_INFO", uri);
+            //web_printf_all("%-16s NO CACHE %s\n", "MG_CACHE_INFO", isAJAX? mc->uri : uri);
             web_printf_all("%-16s NO CACHE %s%s%s\n", "MG_CACHE_INFO",
-                dirty? "dirty-%[] " : "", isAJAX? "AJAX " : "", uri);
+                dirty? "dirty-%[] " : "", isAJAX? "AJAX " : "", isAJAX? mc->uri : uri);
             rtn = MG_FALSE;		// returning false here will prevent any 304 decision based on the mtime set above
         }
     } else {
+        // evt == MG_REQUEST
         const char *hdr_type;
     
         // NB: prevent AJAX responses from getting cached by not sending standard headers which include etag etc!
@@ -1019,7 +1051,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
             mg_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"));
             hdr_type = "NO-CACHE";
         } else {
-            mg_send_standard_headers(mc, uri, &mc->cache_info.st, "OK", (char *) "", true);
+            mg_send_standard_headers(mc, uri, &mc->cache_info.st, "OK", NULL, NULL);
             // Cache image files for a fixed amount of time to keep, e.g.,
             // GPS az/el img from flashing on periodic re-render with Safari.
             //mg_send_header(mc, "Cache-Control", "max-age=0");
@@ -1032,10 +1064,11 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         
         web_printf_all("%-16s %11s %s%s\n", "sending", hdr_type, is_min? "MIN ":"", is_gzip? "GZIP":"");
 
-        web_printf_sent("%-16s %6d %11s %4s %3s %4s %c%c|%c%c ", "webserver", edata_size, hdr_type,
+        web_printf_sent("%-16s %7d %11s %4s %3s %4s %c%c|%c%c %5d%5s ", "webserver:", edata_size, hdr_type,
             is_file? "FILE":"", is_min? "MIN":"", is_gzip? "GZIP":"",
             mc->cache_info.if_none_match? 'T':'F', mc->cache_info.etag_match? 'T':'F',
-            mc->cache_info.if_mod_since? 'T':'F', mc->cache_info.not_mod_since? 'T':'F');
+            mc->cache_info.if_mod_since? 'T':'F', mc->cache_info.not_mod_since? 'T':'F',
+            mc->local_port, mc->is_ssl? "(SSL)" : "");
         if (web_caching_debug & WEB_CACHING_DEBUG_SENT) {
             if (mc->cache_info.if_none_match && !mc->cache_info.etag_match)
                 web_printf_sent("%s %s ", mc->cache_info.etag_server, mc->cache_info.etag_client);
@@ -1045,7 +1078,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
                 web_printf_sent("%s ", var_ctime_static(&mc->cache_info.client_mtime));
             }
         }
-        web_printf_sent("%s\n", uri);
+        web_printf_sent("%15s %s\n", remote_ip, isAJAX? mc->uri : uri);
         
         mg_send_header(mc, "Server", web_server_hdr);
         

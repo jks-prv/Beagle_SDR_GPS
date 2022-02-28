@@ -18,7 +18,7 @@ var ale = {
    pb: { lo: 600, hi: 2650 },
    
    nets: null,
-   url: 'http://kiwisdr.com/ale/ALE_nets.cjson',
+   url: kiwi_SSL() +'files.kiwisdr.com/ale/ALE_nets.cjson',
    using_default: false,
    double_fault: false,
    
@@ -279,7 +279,7 @@ function ale_2g_controls_setup()
          w3_inline('id-ale_2g-menus w3-tspace-6 w3-halign-space-between/'),
 
          w3_inline('w3-tspace-8/w3-margin-between-16',
-            w3_select(ale.sfmt, '', 'menus', 'ale.format_m', ale.format_m, ale.format_s, 'ale_2g_format_cb'),
+            w3_select(ale.sfmt, '', 'format', 'ale.format_m', ale.format_m, ale.format_s, 'ale_2g_format_cb'),
             w3_select(ale.sfmt, '', 'display', 'ale.dsp', ale.dsp, ale.dsp_s, 'ale_2g_display_cb'),
             w3_inline('',
                w3_select('id-ale_2g-scan-t '+ ale.sfmt, '', 'scan T', 'ale.scan_t_m', ale.scan_t_m, ale.scan_t_s, 'ale_2g_scan_t_cb'),
@@ -292,10 +292,6 @@ function ale_2g_controls_setup()
                   '', 'ale.f_limit_f', ale.f_limit_f, 'ale_2g_f_limit_custom_cb')
             )
          ),
-
-         //w3_inline('w3-tspace-8/w3-margin-between-16',
-         //   w3_select(ale.sfmt, '', 'menus', 'ale.format_m', ale.format_m, ale.format_s, 'ale_2g_format_cb')
-         //),
 
          w3_inline('w3-tspace-4 w3-valign/w3-margin-between-12',
             w3_button('w3-padding-smaller', 'Next', 'w3_select_next_prev_cb', { dir:w3_MENU_NEXT, id:'ale.menu', isNumeric:true, func:'ale_2g_np_pre_select_cb' }),
@@ -342,7 +338,7 @@ function ale_2g_controls_setup()
 	w3_do_when_rendered('id-ale_2g-menus', function() {
       ext_send('SET reset');
 	   ale.double_fault = false;
-	   if (1 && dbgUs) {
+	   if (0 && dbgUs) {
          kiwi_ajax(ale.url +'.xxx', 'ale_2g_get_nets_done_cb', 0, -500);
 	   } else {
          kiwi_ajax(ale.url, 'ale_2g_get_nets_done_cb', 0, 10000);
@@ -369,6 +365,11 @@ function ale_2g_get_nets_done_cb(nets)
    
    if (nets.AJAX_error && nets.AJAX_error == 'timeout') {
       console.log('ale_2g_get_nets_done_cb: TIMEOUT');
+      ale.using_default = true;
+      fault = true;
+   } else
+   if (nets.AJAX_error && nets.AJAX_error == 'status') {
+      console.log('ale_2g_get_nets_done_cb: status='+ nets.status);
       ale.using_default = true;
       fault = true;
    } else
@@ -570,6 +571,9 @@ function ale_2g_get_nets_done_cb(nets)
          } else
          if (w3_ext_param('test', a).match) {
             do_test = 1;
+         } else
+         if (w3_ext_param('format', a).match) {
+            ;     // processed above
          } else
             console.log('ALE 2G: unknown URL param "'+ a +'"');
       });
