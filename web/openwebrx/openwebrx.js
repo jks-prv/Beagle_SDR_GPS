@@ -8793,7 +8793,7 @@ var recording = false;
 function setvolume(done, str)
 {
    kiwi.volume = +str;
-   kiwi.volume = w3_clamp(kiwi.volume, 1, 200);    // don't set to zero because that triggers FF audio silence bug
+   kiwi.volume = w3_clamp(kiwi.volume, 1, 200, 50);   // don't set to zero because that triggers FF audio silence bug
    kiwi.volume_f = kiwi.muted? 0 : kiwi.volume/100;   // volume_f is the [0,2] value actually used by audio.js
    console.log('vol='+ kiwi.volume +' vol_f='+ (kiwi.volume/100).toFixed(3));
    if (done) {
