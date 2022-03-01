@@ -2,7 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.490  February 28, 2022
+v1.492  March 2, 2022
+    Photo shown when connecting works again.
+    Fix to allow more than 64 ip blacklist entries.
+
+v1.490,491  February 28, 2022
     Admin page:
         When auto aperture is selected the waterfall floor/ceil defaults can be set.
         Added adjustment for name/callsign input field max length (16-64 chars, defaults to 16).

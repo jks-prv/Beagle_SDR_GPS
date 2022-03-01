@@ -1098,8 +1098,8 @@ function network_html()
    // check once per admin page load
    if (network.ip_blacklist_check_mtime) {
       network.ip_blacklist_double_fault = false;
-      //kiwi_ajax(kiwi_SSL() +'kiwisdr.com/ip_blacklist/ip_blacklist.cjson.mtime', 'network_blacklist_mtime_cb', 0, -2000);
-      kiwi_ajax(kiwi_SSL() +'kiwisdr.com/ip_blacklist/ip_blacklist.cjson.mtime', 'network_blacklist_mtime_cb', 0, 10000);
+      //kiwi_ajax(kiwi_SSL() +'kiwisdr.com/ip_blacklist/ip_blacklist2.cjson.mtime', 'network_blacklist_mtime_cb', 0, -2000);
+      kiwi_ajax(kiwi_SSL() +'kiwisdr.com/ip_blacklist/ip_blacklist2.cjson.mtime', 'network_blacklist_mtime_cb', 0, 10000);
       network.ip_blacklist_check_mtime = false;
    }
    
@@ -1257,7 +1257,7 @@ function network_html()
                ,
                w3_text('w3-text-black w3-center',
                   //'Downloads a standard blacklist definition from ' +
-                  //w3_link('w3-link-darker-color', 'http://kiwisdr.com/ip_blacklist/ip_blacklist.cjson', 'kiwisdr.com')
+                  //w3_link('w3-link-darker-color', 'http://kiwisdr.com/ip_blacklist/ip_blacklist2.cjson', 'kiwisdr.com')
                   'WARNING: Download will overwrite anything you have manually entered <br>' +
                   'in the blacklist text area below. Re-enter any changes afterwards. <br>' +
                   'Downloads a standard blacklist definition from kiwisdr.com'
@@ -1332,8 +1332,8 @@ function network_download_button_cb(id, idx, first)
 {
    if (first) return;
    w3_innerHTML('id-ip-blacklist-status', 'updating..'+ w3_icon('w3-margin-left', 'fa-refresh fa-spin', 20));
-   //kiwi_ajax(kiwi_SSL() +'kiwisdr.com/ip_blacklist/ip_blacklist.cjson', 'network_download_blacklist_cb', 0, -2000);
-   kiwi_ajax(kiwi_SSL() +'kiwisdr.com/ip_blacklist/ip_blacklist.cjson', 'network_download_blacklist_cb', 0, 10000);
+   //kiwi_ajax(kiwi_SSL() +'kiwisdr.com/ip_blacklist/ip_blacklist2.cjson', 'network_download_blacklist_cb', 0, -2000);
+   kiwi_ajax(kiwi_SSL() +'kiwisdr.com/ip_blacklist/ip_blacklist2.cjson', 'network_download_blacklist_cb', 0, 10000);
 }
 
 function network_user_blacklist_cb(id, idx)
@@ -1450,8 +1450,8 @@ function network_download_blacklist_cb(bl)
    network.show_updating = true;
 
    // silently fail if kiwisdr.com can't be contacted for the mtime check
-   //kiwi_ajax('http://kiwisdr.com/ip_blacklist/ip_blacklist.cjson.mtime', 'network_blacklist_mtime_cb', 1, -2000);
-   kiwi_ajax('http://kiwisdr.com/ip_blacklist/ip_blacklist.cjson.mtime', 'network_blacklist_mtime_cb', 1, 10000);
+   //kiwi_ajax('http://kiwisdr.com/ip_blacklist/ip_blacklist2.cjson.mtime', 'network_blacklist_mtime_cb', 1, -2000);
+   kiwi_ajax('http://kiwisdr.com/ip_blacklist/ip_blacklist2.cjson.mtime', 'network_blacklist_mtime_cb', 1, 10000);
 }
 
 function network_blacklist_mtime_cb(mt, update)
@@ -1516,6 +1516,7 @@ function network_ip_blacklist_cb(path, val)
    ar.forEach(function(v) {
       s += v +' ';
    });
+	network.ip_blacklist = ar;
    //console.log('network_ip_blacklist_cb s='+ dq(s) + ' prev='+ dq(network.ip_blacklist_input_prev));
    if (s == network.ip_blacklist_input_prev) {
       console.log('blacklist unchanged');
@@ -1534,10 +1535,17 @@ function network_ip_blacklist_cb(path, val)
    
    network.seq = 0;
 	network.ip_address_error = false;
-   ar.forEach(function(v) {
-      ext_send('SET network_ip_blacklist='+ encodeURIComponent(v));
-   });
-   ext_send('SET network_ip_blacklist_enable');
+	network_ip_blacklist_send(0);
+}
+
+function network_ip_blacklist_send(idx)
+{
+   if (idx == network.ip_blacklist.length) {
+      ext_send('SET network_ip_blacklist_enable');
+   } else {
+      ext_send('SET network_ip_blacklist='+ encodeURIComponent(network.ip_blacklist[idx]));
+      setTimeout(function() { network_ip_blacklist_send(idx+1); }, 250);   // rate limit
+   }
 }
 
 function network_ip_blacklist_status(status, ip)

@@ -6,8 +6,8 @@
 //
 // Updates:
 //
-//  1 mar 22 DANGER: DON'T ADD ANY MORE HERE DUE TO UPLOAD RATE BUG.
-//                   ADD TO ip_blacklist2.default.cjson used by Kiwis running v1.492 or later
+//  1 mar 22 forum: added 114.249.0.0/18 China bots
+// 26 feb 22 forum: added 208.85.16.0/21 constant.com (Vultr)
 // 16 feb 22 forum: added 3.0.0.0/9 Amazon EC2
 // 15 feb 22 forum: added 52.0.0.0/10 52.64.0.0/12 replaces 52.79.0.0/16 Amazon EC2
 // 14 feb 22 forum: added 67.219.96.0/20 constant.com (Vultr)
@@ -59,6 +59,7 @@
     "104.196.0.0/14",
     "107.150.0.0/16",
     "110.87.0.0/16",
+    "114.249.0.0/18",
     "117.30.0.0/16",
     "118.143.0.0/16",
     "120.36.244.0/22",
@@ -82,6 +83,7 @@
     "185.237.0.0/16",
     "193.38.0.0/16",
     "207.246.104.0/23",
+    "208.85.16.0/21",
     "210.152.84.111/32",
     "216.128.128.0/18",
 

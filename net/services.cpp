@@ -369,7 +369,7 @@ static void bl_GET(void *param)
 	kstr_t *sb = NULL;
 	
     char *kiwisdr_com = DNS_lookup_result("bl_GET", "kiwisdr.com", &net.ips_kiwisdr_com);
-    #define BLACKLIST_FILE "ip_blacklist/ip_blacklist.cjson"
+    #define BLACKLIST_FILE "ip_blacklist/ip_blacklist2.cjson"
 
     asprintf(&cmd_p, "curl -s -f --ipv4 \"%s/%s\" 2>&1", kiwisdr_com, BLACKLIST_FILE);
     //printf("bl_GET: <%s>\n" cmd_p);

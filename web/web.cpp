@@ -682,7 +682,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 	
     char *o_uri = (char *) mc->uri;      // o_uri = original uri
     char *uri;
-    bool free_uri = FALSE, has_prefix = FALSE, is_extension = FALSE, is_config = FALSE;
+    bool free_uri = FALSE, has_prefix = FALSE, is_extension = FALSE;
     time_t mtime = 0;
 
     if (evt == MG_CACHE_INFO) web_printf_all("----\n");
@@ -742,7 +742,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         int last = strlen(suffix) - 1;
         if (last >= 0 && suffix[last] == '/')
             suffix[last] = '\0';
-        if (strcmp(suffix, ".json") == 0) {
+        if (strcmp(suffix, ".json") == 0 || strcmp(suffix, ".ini") == 0 || strcmp(suffix, ".conf") == 0) {
             if (evt == MG_REQUEST)
                 lprintf("webserver: attempt to fetch config file: %s query=<%s> from %s\n", o_uri, mc->query_string, remote_ip);
             evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "BAD fetch config file");
@@ -773,14 +773,12 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         if (MTR) real_printf("-> uri-1 ASPR %p %d<%s>\n", uri, strlen(uri), uri);
         free_uri = TRUE;
         has_prefix = TRUE;
-        is_config = TRUE;
     } else
     if (strncmp(o_uri, "kiwi.config/", 12) == 0) {
         asprintf(&uri, "%s/%s", DIR_CFG, &o_uri[12]);
         if (MTR) real_printf("-> uri-2 ASPR %p %d<%s>\n", uri, strlen(uri), uri);
         free_uri = TRUE;
         has_prefix = TRUE;
-        is_config = TRUE;
     } else
     // handle HTTP-01 authenticator challenges for ACME clients like certbot
     if (strncmp(o_uri, ".well-known/", 12) == 0) {
@@ -794,13 +792,6 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         free_uri = TRUE;
     }
     //printf("---- HTTP: uri %s (orig %s)\n", uri, o_uri);
-    
-    // in config dir *only* allow .js files
-    if (is_config && (!suffix || (suffix && strcmp(suffix, ".js") != 0))) {
-        if (evt == MG_REQUEST)
-            lprintf("webserver: attempt to fetch non .js file in config dir: %s query=<%s> from %s\n", o_uri, mc->query_string, remote_ip);
-        return MG_FALSE;
-    }
     
     #if 0
     if (cache.valid && evt == MG_REQUEST && strcmp(uri, cache.uri) == 0) {
