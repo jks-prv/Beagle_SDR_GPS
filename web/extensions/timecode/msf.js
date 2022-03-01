@@ -14,6 +14,7 @@ var msf = {
    msec: 0,
    dcnt: 0,
    line: 0,
+   phase: 0,
    
    end: null
 };
@@ -51,6 +52,7 @@ function msf_clr()
    var m = msf;
    
    m.cur = m.cnt = m.one_width = m.zero_width = 0;
+   m.phase ^= 1;
    m.arm = m.no_modulation = m.dcnt = m.modct = m.line = m.sec = m.msec = 0;
 }
 
@@ -61,7 +63,7 @@ function msf_ampl(ampl)
 	var m = msf;
 	tc.trig++; if (tc.trig >= 100) tc.trig = 0;
 	ampl = (ampl > 0.5)? 1:0;
-	if (!tc.ref) { tc.data = ampl; tc.ref = 1; }
+	if (!tc.ref) { tc.data = ampl ^ m.phase; tc.ref = 1; }
 	
 	// de-noise signal
    if (ampl == m.cur) {

@@ -28,6 +28,7 @@ var tc = {
    
    state:      0,
    ACQ_SYNC:   0,
+   SYNCED:     1,
    MIN_MARK:   1,
    ACQ_DATA:   2,
    ACQ_DATA2:  3,

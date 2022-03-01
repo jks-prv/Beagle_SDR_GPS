@@ -736,7 +736,7 @@ function webpage_html()
 			w3_half('', '',
             w3_div('',
                w3_label('w3-bold', 'Photo file'),
-               '<input id="id-photo-file" type="file" accept="image/*" onchange="webpage_photo_file_upload()"/>',
+               '<input id="id-photo-file" type="file" accept="image/*" onchange="webpage_photo_file_upload()">',
                w3_div('id-photo-error', '')
             ),
             w3_checkbox_get_param('w3-restart w3-label-inline', 'Photo left margin', 'index_html_params.RX_PHOTO_LEFT_MARGIN', 'admin_bool_cb', true)
