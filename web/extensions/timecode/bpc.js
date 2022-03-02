@@ -33,7 +33,7 @@ function bpc_legend()
 {
    if ((bpc.line & 3) == 0) {
       //tc_dmsg('         ');
-      tc_dmsg('ss hhhhhh mmmmmm ????Pp dddddd mmmm yyyyyy ?? <br>');
+      tc_dmsg('ss hhhhhh mmmmmm ?????? dddddd mmmm yyyyyy ?? <br>');
    }
 }
 
@@ -62,17 +62,24 @@ function bpc_decode(b)
 
    var yr = b[15]*16 + b[16]*4 + b[17] + 2000;
    
-   // odd-parity bit is b[9] & 1
-   var odd_parity = 0;
-   for (var i = 0; i < 19; i++) {
-      odd_parity += [0,1,1,2][b[i]];
-   }
-   var parity_error = (odd_parity & 1)? false : true;
-
    var s = day +' '+ mo +' '+ yr +' '+ hour +':'+ min +':'+ sec +' CST';
+
+/*
+   var parity_check = (b[8] & 1) ^ 1;
+   var parity_sum = 0;
+   for (var i = 0; i < 19; i++) {
+      parity_sum += [0,1,1,2][b[i]];
+   }
+   var parity_error = ((parity_sum & 1) != parity_check)? false : true;
+
    var p = parity_error? 'PARITY ERROR' : '';
-   tc_dmsg('   '+ s +'  '+ p +'<br>');
+   var p2 = parity_error? '<span style="color:orange">PARITY ERROR</span>' : '';
+   tc_dmsg('   '+ s +'  '+ p2 +'<br>');
    tc_stat('lime', 'Time decoded: '+ (parity_error? p : s));
+*/
+
+   tc_dmsg('   '+ s +'<br>');
+   tc_stat('lime', 'Time decoded: '+ s);
 }
 
 function bpc_clr()

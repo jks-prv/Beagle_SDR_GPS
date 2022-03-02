@@ -403,7 +403,7 @@ void update_vars_from_config(bool called_at_init)
     admcfg_default_string("url_redirect", "", &update_admcfg);
     //admcfg_default_bool("ip_blacklist_download", false, &update_admcfg);
     admcfg_default_string("ip_blacklist", "47.88.219.24/24", &update_admcfg);
-    //admcfg_default_string("ip_blacklist_local", "", &update_admcfg);
+    admcfg_default_string("ip_blacklist_local", "", &update_admcfg);
     admcfg_default_int("ip_blacklist_mtime", 0, &update_admcfg);
     admcfg_default_bool("no_dup_ip", false, &update_admcfg);
     admcfg_default_bool("my_kiwi", true, &update_admcfg);

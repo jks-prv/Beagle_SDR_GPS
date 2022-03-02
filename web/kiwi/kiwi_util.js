@@ -1186,8 +1186,8 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
             } else {
                var firstChar = response.charAt(0);
          
-               if (firstChar != '{' && firstChar != '[') {
-                  dbug("AJAX: response didn't begin with JSON '{' or '[' ? "+ response);
+               if (firstChar != '{' && firstChar != '[' && !(firstChar >= '0' && firstChar <= '9')) {
+                  dbug("AJAX: response didn't begin with JSON '{', '[' or digit? "+ response);
                   obj = { AJAX_error:'JSON prefix', response:response };
                } else {
                   try {

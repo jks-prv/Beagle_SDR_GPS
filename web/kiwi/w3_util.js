@@ -1958,7 +1958,7 @@ function w3int_input_keyup(ev, path, cb)
 */
 }
 
-function w3_input_change(path, cb, cb_param)
+function w3_input_change(path, cb)
 {
 	var el = w3_el(path);
 	if (el) {
@@ -1970,7 +1970,7 @@ function w3_input_change(path, cb, cb_param)
       if (cb) {
          cb = cb.split('|');
          //el.select();
-         w3_call(cb[0], path, el.value, /* first */ false, cb_param);
+         w3_call(cb[0], path, el.value, /* first */ false);
       }
 
 /*
@@ -2080,11 +2080,19 @@ function w3_input_get_param(label, path, cb, init_val, placeholder)
 // textarea
 ////////////////////////////////
 
+// The test for 'w3-input-any-change' that suppresses inclusion of the 'onchange=' event handler
+// fixes a strange problem we noticed: With the 'onchange=' the actual onchange event is long-delayed
+// until the first unrelated click completely outside the textarea! This ends up causing double calls
+// to w3_input_change(). The first from w3int_input_keydown() due to w3-input-any-change and the second
+// from the delayed change event.
+//
+// The problem doesn't seem to occur when w3-input-any-change is used with w3_input()
+
 function w3_textarea(psa, label, path, val, rows, cols, cb)
 {
 	var id = w3_add_id(path);
 	var spacing = (label != '')? ' w3-margin-T-8' : '';
-	var onchange = ' onchange="w3_input_change('+ sq(path) +', '+ sq(cb) +')"';
+	var onchange = psa.includes('w3-input-any-change')? '' : (' onchange="w3_input_change('+ sq(path) +', '+ sq(cb) +')"');
 	var onkeydown = ' onkeydown="w3int_input_keydown(event, '+ sq(path) +', '+ sq(cb) +')"';
 	var onkeyup = ' onkeyup="w3int_input_keyup(event, '+ sq(path) +', '+ sq(cb) +')"';
 	var val = val || '';

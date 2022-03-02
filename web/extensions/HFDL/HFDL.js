@@ -930,7 +930,7 @@ function hfdl_map_stations()
 function hfdl_rebuild_stations(opts)
 {
 //jks
-return;
+if (1) return;
    if (!hfdl.refs) return;
    
    // remove previous
@@ -983,7 +983,7 @@ return;
    }
    //console.log('hfdl_rebuild_stations cur_ref_markers='+ hfdl.cur_ref_markers.length);
 //jks
-return;
+if (1) return;
 
    var mc = L.markerClusterGroup({
       maxClusterRadius: hfdl.prev_ui? 30:80,
