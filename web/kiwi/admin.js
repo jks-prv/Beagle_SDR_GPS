@@ -1080,7 +1080,6 @@ var network = {
    auto_nat_color:   null,
    show_updating: true,
    ip_blacklist_check_mtime: true,
-   ip_blacklist_input_prev: null,
    ethernet_speed_s: [ '100 Mbps', '10 Mbps' ],
    ethernet_mtu_s: [ '1500 (default)', '1440', '1400' ]
 };
@@ -1223,44 +1222,20 @@ function network_html()
                )
             ),
             
-            /*
             w3_divs('/w3-center w3-tspace-8',
-               w3_div('', '<b>Download IP address blacklist?</b>'),
-               w3_button('w3-aqua', 'Download', 'network_download_button_cb'),
-               w3_text('w3-text-black w3-center',
-               / *
-                  'WARNING: will overwrite anything you have entered in <br>' +
-                  'the blacklist text area below.' +
-               * /
-                  'Downloads a standard blacklist definition from kiwisdr.com'
-               )
-            ),
-            */
-            
-            w3_divs('/w3-center w3-tspace-8',
-               //w3_inline('w3-valign w3-halign-space-between/',
-                  /*
                   w3_div('',
-                     w3_div('', '<b>Automatic download of <br> IP address blacklist?</b>'),
-                     w3_switch('w3-margin-T-8', 'Yes', 'No', 'adm.ip_blacklist_download', adm.ip_blacklist_download, 'admin_radio_YN_cb')
-                  ), */
-                  
-                  w3_div('',
-                     //w3_div('w3-margin-T-16', '<b>Manual download</b>'),
                      w3_div('w3-margin-T-16', '<b>Download IP address blacklist?</b>'),
                      w3_inline('w3-valign w3-halign-space-evenly w3-margin-T-10/',
                         w3_button('id-ip-blacklist-download w3-aqua', 'Download', 'network_download_button_cb'),
-                        w3_text('id-ip-blacklist-new w3-text-red w3-hide', 'New blacklist available')
+                        w3_text('id-ip-blacklist-new w3-text-red w3-hide', 'New blacklist available'),
+                        w3_button('w3-aqua', 'Clear', 'network_download_clear_cb')
                      )
                   )
-               //),
                ,
                w3_text('w3-text-black w3-center',
-                  //'Downloads a standard blacklist definition from ' +
-                  //w3_link('w3-link-darker-color', 'http://kiwisdr.com/ip_blacklist/ip_blacklist2.cjson', 'kiwisdr.com')
-                  'WARNING: Download will overwrite anything you have manually entered <br>' +
-                  'in the blacklist text area below. Re-enter any changes afterwards. <br>' +
-                  'Downloads a standard blacklist definition from kiwisdr.com'
+                  'Downloads a standard blacklist definition from ' +
+                  w3_link('w3-link-darker-color', 'http://kiwisdr.com/ip_blacklist/ip_blacklist2.cjson', 'kiwisdr.com') +
+                  '<br>A local, writeable blacklist can be entered below.'
                )
             ),
             
@@ -1276,18 +1251,15 @@ function network_html()
             w3_div('id-ip-blacklist-status w3-margin-left w3-text-black w3-background-pale-aqua', '')
          ),
          
-         //w3_textarea_get_param('w3-margin-T-16//w3-light-grey|width:100%|readonly',
-         w3_textarea_get_param('w3-margin-T-16//w3-input-any-change|width:100%',
-            //'Downloaded blacklist (read-only)',
-            '',
-            'adm.ip_blacklist', 8, 100, 'network_ip_blacklist_cb', ''
-         ) /*,
+         w3_textarea_get_param('w3-margin-T-16//w3-light-grey|width:100%|readonly',
+            'Downloaded blacklist (read-only)',
+            'adm.ip_blacklist', 8, 100, '', ''
+         ),
          
-         w3_textarea_get_param('w3-margin-T-32//w3-input-any-change|width:100%',
+         w3_textarea_get_param('w3-margin-T-32//w3-input-any-change w3-no-change-events|width:100%',
             'Local blacklist (writeable)',
-            'adm.ip_blacklist_local', 8, 100, 'network_ip_blacklist_cb', ''
+            'adm.ip_blacklist_local', 8, 100, 'network_user_blacklist_cb', ''
          )
-         */
       ) +
 
       '<hr>' +
@@ -1336,9 +1308,16 @@ function network_download_button_cb(id, idx, first)
    kiwi_ajax(kiwi_SSL() +'kiwisdr.com/ip_blacklist/ip_blacklist2.cjson', 'network_download_blacklist_cb', 0, 10000);
 }
 
-function network_user_blacklist_cb(id, idx)
+function network_download_clear_cb(id, idx, first)
 {
-   console.log('network_user_blacklist_cb='+ idx);
+   network_ip_blacklist_cb('adm.ip_blacklist', '');
+   w3_int_set_cfg_cb('adm.ip_blacklist_mtime', 0);
+}
+
+function network_user_blacklist_cb(path, val)
+{
+   //console.log('network_user_blacklist_cb val='+ val);
+   network_ip_blacklist_cb('adm.ip_blacklist_local', val);
 }
 
 function network_download_blacklist_cb(bl)
@@ -1458,12 +1437,12 @@ function network_blacklist_mtime_cb(mt, update)
 {
    var fault = false;
    
-   if (!mt) {
+   if (!isArg(mt)) {
       console.log('network_blacklist_mtime_cb: mt='+ mt);
       fault = true;
    } else
    
-   if (mt.AJAX_error && mt.AJAX_error == 'timeout') {
+   if (isObject(mt) && mt.AJAX_error && mt.AJAX_error == 'timeout') {
       console.log('network_blacklist_mtime_cb: TIMEOUT');
       fault = true;
    }
@@ -1474,11 +1453,9 @@ function network_blacklist_mtime_cb(mt, update)
    }
    //console.log(mt);
    
-   // since the JSON data is just a number (not an object or array)
-   // mt will be the object: { AJAX_error: "JSON prefix", response: "(number)\n" }
-   if (1||dbgUs) console.log(mt);
-   var mtime = parseInt(mt.response);
-   if (1||dbgUs) console.log('network_blacklist_mtime_cb: '+ (update? 'UPDATE' : 'AVAIL') +
+   if (dbgUs) console.log(mt);
+   var mtime = parseInt(mt);
+   if (dbgUs) console.log('network_blacklist_mtime_cb: '+ (update? 'UPDATE' : 'AVAIL') +
       ' mtime='+ mtime +' adm.ip_blacklist_mtime='+ adm.ip_blacklist_mtime);
    
    if (update) {
@@ -1507,6 +1484,8 @@ function network_proxy_server_cb(path, val)
 
 function network_ip_blacklist_cb(path, val)
 {
+   //console.log('network_ip_blacklist_cb path='+ path +' val='+ val);
+   
 	var re = /([^,;\s]+)/gm;
 	var ar = val.match(re);
 	//console.log(ar);
@@ -1516,35 +1495,53 @@ function network_ip_blacklist_cb(path, val)
    ar.forEach(function(v) {
       s += v +' ';
    });
-	network.ip_blacklist = ar;
-   //console.log('network_ip_blacklist_cb s='+ dq(s) + ' prev='+ dq(network.ip_blacklist_input_prev));
-   if (s == network.ip_blacklist_input_prev) {
-      console.log('blacklist unchanged');
-      w3_innerHTML('id-ip-blacklist-status', 'blacklist up-to-date');
-      return;     // detect multiple callbacks with same input
-   }
-
-   network.ip_blacklist_input_prev = s;
-   ext_send('SET network_ip_blacklist_clear');
-   if (network.show_updating) {
-      //w3_innerHTML('id-ip-blacklist-status', 'downloading..'+ w3_icon('w3-margin-left', 'fa-refresh fa-spin', 20));
-      w3_innerHTML('id-ip-blacklist-status', 'updating..'+ w3_icon('w3-margin-left', 'fa-refresh fa-spin', 20));
-   }
    w3_set_value(path, s);
    w3_string_set_cfg_cb(path, s);
+
+   if (path.endsWith('ip_blacklist_local')) {
+	   network.ip_blacklist_local = ar;
+	   
+	   // make sure network.ip_blacklist is valid
+	   ar = decodeURIComponent(adm.ip_blacklist).match(re);
+	   if (ar == null) ar = [];
+	   network.ip_blacklist = ar;
+	} else {
+	   network.ip_blacklist = ar;
+
+	   // make sure network.ip_blacklist_local is valid
+	   ar = decodeURIComponent(adm.ip_blacklist_local).match(re);
+	   if (ar == null) ar = [];
+	   network.ip_blacklist_local = ar;
+	}
+
+   ext_send('SET network_ip_blacklist_clear');
+   if (network.show_updating) {
+      w3_innerHTML('id-ip-blacklist-status', 'updating..'+ w3_icon('w3-margin-left', 'fa-refresh fa-spin', 20));
+   }
    
    network.seq = 0;
 	network.ip_address_error = false;
-	network_ip_blacklist_send(0);
+	console.log(network.ip_blacklist);
+	console.log(network.ip_blacklist_local);
+	network_ip_blacklist_send( {idx:0, type:0} );
 }
 
-function network_ip_blacklist_send(idx)
+function network_ip_blacklist_send(p)
 {
-   if (idx == network.ip_blacklist.length) {
-      ext_send('SET network_ip_blacklist_enable');
+   if (p.type == 0) {
+      if (p.idx == network.ip_blacklist.length) {
+         network_ip_blacklist_send( {idx:0, type:1} );
+      } else {
+         ext_send('SET network_ip_blacklist='+ encodeURIComponent(network.ip_blacklist[p.idx]));
+         setTimeout(function() { network_ip_blacklist_send( {idx:p.idx+1, type:0} ); }, 250);   // rate limit
+      }
    } else {
-      ext_send('SET network_ip_blacklist='+ encodeURIComponent(network.ip_blacklist[idx]));
-      setTimeout(function() { network_ip_blacklist_send(idx+1); }, 250);   // rate limit
+      if (p.idx == network.ip_blacklist_local.length) {
+         ext_send('SET network_ip_blacklist_enable');
+      } else {
+         ext_send('SET network_ip_blacklist='+ encodeURIComponent(network.ip_blacklist_local[p.idx]));
+         setTimeout(function() { network_ip_blacklist_send( {idx:p.idx+1, type:1} ); }, 250);   // rate limit
+      }
    }
 }
 

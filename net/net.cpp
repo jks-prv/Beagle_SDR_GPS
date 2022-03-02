@@ -709,7 +709,7 @@ void ip_blacklist_add(char *ips)
     
     int i = net.ip_blacklist_len;
     if (i >= N_IP_BLACKLIST) {
-        printf("ip_blacklist_add: >= N_IP_BLACKLIST\n");
+        lprintf("ip_blacklist_add: >= N_IP_BLACKLIST(%d)\n", N_IP_BLACKLIST);
         return;
     }
     ip_blacklist_t *bl = &net.ip_blacklist[i];
@@ -743,26 +743,32 @@ int ip_blacklist_add_iptables(char *ip_s)
     return rv;
 }
 
-void ip_blacklist_init()
+void ip_blacklist_init_list(const char *list)
 {
-    const char *bl_s = admcfg_string("ip_blacklist", NULL, CFG_REQUIRED);
+    const char *bl_s = admcfg_string(list, NULL, CFG_REQUIRED);
     if (bl_s == NULL) return;
 
     char *r_buf, *ips[N_IP_BLACKLIST+1];
     int n = kiwi_split((char *) bl_s, &r_buf, " ", ips, N_IP_BLACKLIST);
     //printf("ip_blacklist_init n=%d bl_s=\"%s\"\n", n, bl_s);
+    lprintf("ip_blacklist_init_list: %d entries: %s\n", n, list);
     if (n == 0) return;
     
-    net.ip_blacklist_len = 0;
-    system("iptables -D INPUT -j KIWI; iptables -N KIWI; iptables -F KIWI");
-
     for (int i=0; i < n; i++) {
         ip_blacklist_add_iptables(ips[i]);
     }
 
-    system("iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI");
     kiwi_ifree(r_buf);
     admcfg_string_free(bl_s);
+}
+
+void ip_blacklist_init()
+{
+    net.ip_blacklist_len = 0;
+    system("iptables -D INPUT -j KIWI; iptables -N KIWI; iptables -F KIWI");
+    ip_blacklist_init_list("ip_blacklist");
+    ip_blacklist_init_list("ip_blacklist_local");
+    system("iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI");
 }
 
 bool check_ip_blacklist(char *remote_ip, bool log)
