@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.493  March 3, 2022
+    Admin page, network tab: In addition to the downloadable ip blacklist, add a separate, local,
+        writeable list that won't get overwritten by the download.
+
 v1.492  March 2, 2022
     Photo shown when connecting works again.
     Fix to allow more than 64 ip blacklist entries.
