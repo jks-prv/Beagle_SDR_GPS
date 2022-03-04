@@ -1120,9 +1120,9 @@ function network_html()
 					'<b>Enable HTTPS/SSL on<br>network connections?</b><br>',
 					w3_switch_get_param('id-net-ssl w3-margin-T-8', 'Yes', 'No', 'adm.use_ssl', true, false, 'network_use_ssl_cb')
 				),
-				w3_divs('w3-center w3-restart',
+				w3_divs('w3-center',
 					'<b>Auto add NAT rule<br>on firewall / router?</b><br>',
-					w3_switch('w3-margin-T-8', 'Yes', 'No', 'adm.auto_add_nat', adm.auto_add_nat, 'admin_radio_YN_cb')
+					w3_switch('w3-margin-T-8', 'Yes', 'No', 'adm.auto_add_nat', adm.auto_add_nat, 'network_auto_nat_cb')
 				),
 				w3_div('w3-center',
 						'<b>IP address<br>(only static IPv4 for now)</b><br> ' +
@@ -1597,7 +1597,7 @@ function network_focus()
    network_static_init();
 	network_port_open_init();
 	network_ssl_container_init();
-	network.status_interval = setInterval(network_auto_nat_status_poll, 1000);
+	network.status_interval = kiwi_setInterval(network_auto_nat_status_poll, 1000);
 }
 
 function network_blur()
@@ -1608,6 +1608,17 @@ function network_blur()
 function network_auto_nat_status_poll()
 {
 	ext_send('SET auto_nat_status_poll');
+}
+
+function network_auto_nat_cb(path, idx, first)
+{
+   if (first) return;
+   idx = +idx;
+	var auto_nat = (idx == 0)? 1:0;
+	//console.log('network_auto_nat_cb: path='+ path +' auto_nat='+ auto_nat);
+
+   admin_radio_YN_cb(path, idx);
+   ext_send('SET auto_nat_set');    // server inspects adm.auto_add_nat to add or delete NAT
 }
 
 function network_check_port_status_cb(status)
@@ -3267,8 +3278,9 @@ function admin_recv(data)
 
 			case "auto_nat":
 				var p = +param[1];
+				//console.log('auto_nat='+ p);
 				var el = w3_el('id-net-auto-nat-msg');
-				var msg, color;
+				var msg, color, type = 'add';
 				
 				switch (p) {
 					case 0: break;
@@ -3277,11 +3289,13 @@ function admin_recv(data)
 					case 3: msg = 'rule already exists'; color = 'w3-yellow'; break;
 					case 4: msg = 'command failed'; color = 'w3-red'; break;
 					case 5: msg = 'pending'; color = 'w3-yellow'; break;
+					case 6: msg = 'pending'; color = 'w3-yellow'; type = 'delete'; break;
+					case 7: msg = 'succeeded'; color = 'w3-green'; type = 'delete'; break;
 					default: break;
 				}
 				
 				if (p && el) {
-					el.innerHTML = '<header class="w3-container"><h5>Automatic add of NAT rule on firewall / router: '+ msg +'</h5></header>';
+					el.innerHTML = '<header class="w3-container"><h5>Automatic '+ type +' of NAT rule on firewall / router: '+ msg +'</h5></header>';
 					w3_remove_then_add(el, network.auto_nat_color, color);
 					network.auto_nat_color = color;
 					w3_show_block(el);

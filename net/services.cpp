@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "types.h"
 #include "config.h"
+#include "services.h"
 #include "mem.h"
 #include "misc.h"
 #include "timer.h"
@@ -549,6 +550,10 @@ static int _UPnP_port_open(void *param)
         if (strstr(rp, "is redirected to")) {
             lprintf("UPnP: NAT port mapping in local network firewall/router created\n");
             rtn = 1;
+        } else
+        if (strstr(rp, "UPNP_DeletePortMapping() returned :")) {
+            lprintf("UPnP: NAT port mapping in local network firewall/router deleted\n");
+            rtn = 7;
         } else {
             lprintf("UPnP: No IGD UPnP local network firewall/router found\n");
             lprintf("UPnP: See kiwisdr.com for help manually adding a NAT rule on your firewall/router\n");
@@ -566,12 +571,21 @@ static void UPnP_port_open_task(void *param)
 {
     char *cmd_p;
     int status, exit_status;
+    int delete_nat = (int) FROM_VOID_PARAM(param);
+    //printf("UPnP_port_open_task: delete_nat=%d\n", delete_nat);
 
-    asprintf(&cmd_p, "upnpc %s%s-a %s %d %d TCP 2>&1",
-        (debian_ver != 7)? "-e KiwiSDR " : "",
-        (net.pvt_valid == IPV6)? "-6 " : "",
-        net.ip_pvt, net.port, net.port_ext);
+    if (delete_nat) {
+        asprintf(&cmd_p, "upnpc %s-d %d TCP 2>&1",
+            (net.pvt_valid == IPV6)? "-6 " : "",
+            net.port_ext);
+    } else {
+        asprintf(&cmd_p, "upnpc %s%s-a %s %d %d TCP 2>&1",
+            (debian_ver != 7)? "-e KiwiSDR " : "",
+            (net.pvt_valid == IPV6)? "-6 " : "",
+            net.ip_pvt, net.port, net.port_ext);
+    }
     net_printf2("UPnP: %s\n", cmd_p);
+
     status = non_blocking_cmd_func_forall("kiwi.UPnP", cmd_p, _UPnP_port_open, 0, POLL_MSEC(1000));
     if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
         net.auto_nat = exit_status;
@@ -582,6 +596,8 @@ static void UPnP_port_open_task(void *param)
     kiwi_ifree(cmd_p);
     
     #if defined(USE_SSL) && defined(MONGOOSE_5_6)
+        if (delete_nat) return;
+
         if (net.use_ssl && net.port_ext != 80) {
             asprintf(&cmd_p, "upnpc %s%s-a %s 80 80 TCP 2>&1",
                 (debian_ver != 7)? "-e KiwiSDR " : "",
@@ -615,6 +631,26 @@ static void UPnP_port_open_task(void *param)
             }
         #endif
     #endif
+}
+
+void UPnP_port(nat_delete_e nat_delete)
+{
+    // Requires net.ip_pvt
+    // Attempt to open NAT port in local network router using UPnP (if router supports IGD).
+    // Saves Kiwi admin the hassle of figuring out how to do this manually on their router.
+    net.auto_nat = 0;
+    bool add_nat = admcfg_bool("auto_add_nat", NULL, CFG_REQUIRED);
+    if (debian_ver == 7 && net.pvt_valid == IPV6) {
+        lprintf("auto NAT: not with Debian 7 and IPV6\n");
+    } else {
+        if (!add_nat && nat_delete == NAT_NO_DELETE) {
+            lprintf("auto NAT: is set false\n");
+        } else {
+            net.auto_nat = add_nat? 5:6;    // mark pending
+            int delete_nat = add_nat? 0:1;
+            CreateTask(UPnP_port_open_task, TO_VOID_PARAM(delete_nat), SERVICES_PRIORITY);
+        }
+    }
 }
 
 static void pvt_NET(void *param)
@@ -668,20 +704,7 @@ static void pvt_NET(void *param)
 	    
 	    // FIXME: is this strategy with ipv6 desirable when ipv4 is long delayed?
 	    if (!net.auto_nat_valid && net.pvt_valid != IPV_NONE) {
-            // Requires net.ip_pvt
-            // Attempt to open NAT port in local network router using UPnP (if router supports IGD).
-            // Saves Kiwi admin the hassle of figuring out how to do this manually on their router.
-            net.auto_nat = 0;
-            if (admcfg_bool("auto_add_nat", NULL, CFG_REQUIRED) == true) {
-                if (debian_ver == 7 && net.pvt_valid == IPV6) {
-                    lprintf("auto NAT: not with Debian 7 and IPV6\n");
-                } else {
-                    net.auto_nat = 5;      // mark pending
-                    CreateTask(UPnP_port_open_task, 0, SERVICES_PRIORITY);
-                }
-            } else {
-                lprintf("auto NAT is set false\n");
-            }
+	        UPnP_port(NAT_NO_DELETE);
             net.auto_nat_valid = true;
 	    }
 
