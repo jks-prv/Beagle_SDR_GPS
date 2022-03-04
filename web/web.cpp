@@ -565,7 +565,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 	int i, n;
 	size_t edata_size = 0;
 	const char *edata_data;
-	bool isPort80 = (net.port_ext != 80 && mc->local_port == 80);
+	bool isPort80 = (net.port != 80 && mc->local_port == 80);
 
     //if (web_caching_debug == 0) web_caching_debug = bg? 3:1;
 
