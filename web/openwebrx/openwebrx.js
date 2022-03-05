@@ -213,7 +213,7 @@ function kiwi_main()
 		if (p[2] && p[2].charAt(0) == '/') override_pbw = p[2].substr(1);     // remove leading '/'
 		if (p[2] && p[2].charAt(0) == ':') override_pbc = p[2].substr(1);     // remove leading ':'
 		if (p[3]) override_mode = p[3].toLowerCase();
-		if (p[4]) override_zoom = p[4];
+		if (p[4]) override_zoom = +p[4];
 		//console.log('### f=['+ q[s] +'] len='+ p.length +' f=['+ p[1] +'] p=['+ p[2] +'] m=['+ p[3] +'] z=['+ p[4] +']');
 	}
 
