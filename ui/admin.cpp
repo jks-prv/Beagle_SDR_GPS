@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "services.h"
 #include "rx.h"
 #include "mem.h"
 #include "misc.h"
@@ -656,6 +657,13 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET auto_nat_status_poll");
 			if (i == 0) {
 				send_msg(conn, SM_NO_DEBUG, "ADM auto_nat=%d", net.auto_nat);
+				continue;
+			}
+
+			i = strcmp(cmd, "SET auto_nat_set");
+			if (i == 0) {
+				cprintf(conn, "auto NAT: auto_nat_set\n");
+	            UPnP_port(NAT_DELETE);
 				continue;
 			}
 

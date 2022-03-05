@@ -368,9 +368,23 @@ Number.prototype.withSign = function()
 	return (n < 0)? s : ('+'+ s);
 }
 
+// like setTimeout() except also calls once immediately
+function kiwi_setTimeout(func, msec, param)
+{
+   func(param);
+   return setTimeout(func, msec, param);
+}
+
 function kiwi_clearTimeout(timeout)
 {
    try { clearTimeout(timeout); } catch(e) {};
+}
+
+// like setInterval() except also calls once immediately
+function kiwi_setInterval(func, msec, param)
+{
+   func(param);
+   return setInterval(func, msec, param);
 }
 
 function kiwi_clearInterval(interval)
