@@ -2,6 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.494  March 5, 2022
+    Enhancements:
+        Admin network tab: "Auto add NAT rule" should now remove rule from router
+            when set to "no". (thanks magestic)
+
+    Bug fixes:
+        Zoom level specifier in URL working again, e.g. my_kiwi:8073/?f=7020cwz5 (thanks G4DYA)
+        Connections when internal port = 80 configured working again. (thanks DL2SBA)
+
 v1.493  March 3, 2022
     Admin page, network tab: In addition to the downloadable ip blacklist, add a separate, local,
         writeable list that won't get overwritten by the download.
