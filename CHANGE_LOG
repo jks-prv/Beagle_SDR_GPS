@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.495  March 6, 2022
+v1.495  March 7, 2022
     Enhancements:
         Admin config tab:
             Based on the work of studentkra (thanks!) "frequency scale offset" values with 1 Hz
@@ -13,6 +13,11 @@ v1.495  March 6, 2022
             bands.push({ s:svc.A, min:144000, max:148000, region:'*', name:"2 meters" });
             The "select band" menu on the main control panel now only shows entries appropriate to
             the frequency scale.
+        
+        Admin config tab:
+            Added option "Show user geolocation info". If unchecked shows "no location" in place
+            of geolocation in connection list of main control panel and camp panel. Admin status
+            tab and /users JSON query still shows geolocation.
 
 v1.494  March 5, 2022
     Enhancements:
