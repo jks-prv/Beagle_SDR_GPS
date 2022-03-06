@@ -260,6 +260,7 @@ void update_vars_from_config(bool called_at_init)
     snr_meas_interval_hrs = snr_interval[cfg_default_int("snr_meas_interval_hrs", 1, &update_cfg)];
     snr_local_time = cfg_default_bool("snr_local_time", true, &update_cfg);
     cfg_default_int("ident_len", IDENT_LEN_MIN, &update_cfg);
+    cfg_default_bool("show_geo", true, &update_cfg);
 
     if (wspr_update_vars_from_config()) update_cfg = true;
 
@@ -655,6 +656,7 @@ char *rx_users(bool include_ip)
 {
     int i, n;
     rx_chan_t *rx;
+    bool show_geo = include_ip || cfg_bool("show_geo", NULL, CFG_REQUIRED);
     bool need_comma = false;
     char *sb = (char *) "[", *sb2;
     
@@ -715,7 +717,7 @@ char *rx_users(bool include_ip)
                 u4_t r_hr = t;
 
                 char *user = (c->isUserIP || !c->user)? NULL : kiwi_str_encode(c->user);
-                char *geo = c->geo? kiwi_str_encode(c->geo) : NULL;
+                char *geo = !show_geo? kiwi_str_encode((char *) "no location") : (c->geo? kiwi_str_encode(c->geo) : NULL);
                 char *ext = ext_users[i].ext? kiwi_str_encode((char *) ext_users[i].ext->name) : NULL;
                 const char *ip = include_ip? c->remote_ip : "";
                 asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,\"m\":\"%s\",\"z\":%d,\"t\":\"%d:%02d:%02d\","
