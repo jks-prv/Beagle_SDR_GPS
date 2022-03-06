@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.495  March 7, 2022
+v1.495,496  March 7, 2022
     Enhancements:
         Admin config tab:
             Based on the work of studentkra (thanks!) "frequency scale offset" values with 1 Hz
