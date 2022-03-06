@@ -368,6 +368,8 @@ Number.prototype.withSign = function()
 	return (n < 0)? s : ('+'+ s);
 }
 
+var kHz = function(f) { return (f / 1e3).toFixed(3) +'k'; }
+
 // like setTimeout() except also calls once immediately
 function kiwi_setTimeout(func, msec, param)
 {

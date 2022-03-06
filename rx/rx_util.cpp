@@ -719,7 +719,7 @@ char *rx_users(bool include_ip)
                 char *ext = ext_users[i].ext? kiwi_str_encode((char *) ext_users[i].ext->name) : NULL;
                 const char *ip = include_ip? c->remote_ip : "";
                 asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,\"m\":\"%s\",\"z\":%d,\"t\":\"%d:%02d:%02d\","
-                    "\"rt\":%d,\"rn\":%d,\"rs\":\"%d:%02d:%02d\",\"e\":\"%s\",\"a\":\"%s\",\"c\":%.1f,\"fo\":%.0f,\"ca\":%d,"
+                    "\"rt\":%d,\"rn\":%d,\"rs\":\"%d:%02d:%02d\",\"e\":\"%s\",\"a\":\"%s\",\"c\":%.1f,\"fo\":%.3f,\"ca\":%d,"
                     "\"nc\":%d,\"ns\":%d}",
                     need_comma? ",":"", i, user? user:"", geo? geo:"", c->freqHz,
                     kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, hr, min, sec,

@@ -72,7 +72,7 @@ function config_html()
 		'<hr>' +
 		w3_text('w3-margin-B-8 w3-text-teal w3-bold', 'Initial values for:') +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
-			w3_input_get('', 'Frequency (kHz)', 'init.freq', 'admin_float_cb'),
+			w3_input_get('', 'Frequency (kHz)', 'init.freq', 'admin_float_cb|3'),
 			w3_inline('/w3-halign-space-around/w3-center',
 				w3_select('', 'Mode', '', 'init.mode', init_mode, kiwi.modes_u, 'admin_select_cb'),
 				w3_select('', 'Colormap', '', 'init.colormap', init_colormap, kiwi.cmap_s, 'admin_select_cb'),
@@ -146,7 +146,7 @@ function config_html()
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_div('',
-				w3_input_get('', 'Frequency scale offset (kHz)', 'freq_offset', 'admin_int_cb'),
+				w3_input_get('', 'Frequency scale offset (kHz, 1 Hz resolution)', 'freq_offset', 'admin_float_cb|3'),
 				w3_div('w3-text-black',
 					'Adds offset to frequency scale. <br> Useful when using a downconverter, e.g. set to <br>' +
 					'116000 kHz when 144-148 maps to 28-32 MHz.'

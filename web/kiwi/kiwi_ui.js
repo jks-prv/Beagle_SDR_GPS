@@ -24,7 +24,7 @@ function dx_update_check(idx)
 	var mode = dx.o.m;
 	var type = dx.o.y << dx.DX_TYPE_SFT;
 	mode |= type;
-	dx.o.f -= cfg.freq_offset;
+	dx.o.f -= kiwi.freq_offset_kHz;
 	if (dx.o.f < 0) dx.o.f = 0;
 	
 	console.log('SET DX_UPD g='+ dx.o.gid +' f='+ dx.o.f +' lo='+ dx.o.lo.toFixed(0) +' hi='+ dx.o.hi.toFixed(0) +' o='+ dx.o.o.toFixed(0) +' m='+ mode +' t='+ tag +
