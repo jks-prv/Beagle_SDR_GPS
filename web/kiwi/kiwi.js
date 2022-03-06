@@ -3,6 +3,7 @@
 // Copyright (c) 2014-2021 John Seamons, ZL/KF6VO
 
 var kiwi = {
+   isOffset: false,
    is_local: [],
    loaded_files: {},
    WSPR_rgrid: '',
@@ -1419,7 +1420,7 @@ function user_cb(obj)
 			var g = (geoloc == '(null)' || geoloc == '')? 'unknown location' : decodeURIComponent(geoloc);
 			ip = ip.replace(/::ffff:/, '');		// remove IPv4-mapped IPv6 if any
 			g = '('+ ip + g +') ';
-			var f = freq + cfg.freq_offset*1e3;
+			var f = freq + kiwi.freq_offset_Hz;
 			var f = (f/1000).toFixed((f > 100e6)? 1:2);
 			var f_s = f + ' kHz ';
 			var fo = (freq/1000).toFixed(2);
@@ -1488,8 +1489,8 @@ function user_cb(obj)
       }
       
       // detect change in frequency scale offset
-      //if (i == rx_chan) console.log('obj.fo='+ obj.fo +' freq_offset='+ cfg.freq_offset);
-      if (i == rx_chan && isNumber(obj.fo) && obj.fo != cfg.freq_offset && !confirmation.displayed) {
+      //if (i == rx_chan) console.log('$obj.fo='+ obj.fo +' freq_offset_kHz='+ kiwi.freq_offset_kHz);
+      if (i == rx_chan && isNumber(obj.fo) && obj.fo != kiwi.freq_offset_kHz && !confirmation.displayed) {
          var s =
             w3_div('',
                'Frequency scale offset changed. Page must be reloaded.',
@@ -1668,6 +1669,10 @@ function kiwi_msg(param, ws)
 			var cfg_json = decodeURIComponent(param[1]);
 			//console.log('### load_cfg '+ ws.stream +' '+ cfg_json.length);
 			cfg = kiwi_JSON_parse('load_cfg', cfg_json);
+			kiwi.isOffset = (cfg.freq_offset != 0);
+         kiwi.freq_offset_kHz = cfg.freq_offset;
+         kiwi.freq_offset_Hz  = cfg.freq_offset * 1000;
+	      kiwi.offset_frac = (cfg.freq_offset % 1000) * 1000;
 			owrx_cfg();
 			break;
 

@@ -1118,7 +1118,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		pb_adj_lo_ttip.innerHTML = 'lo '+ this.parent.low_cut.toString() +', bw '+ bw.toString();
 		pb_adj_hi_ttip.innerHTML = 'hi '+ this.parent.high_cut.toString() +', bw '+ bw.toString();
 		pb_adj_cf_ttip.innerHTML = 'cf '+ (this.parent.low_cut + Math.abs(this.parent.high_cut - this.parent.low_cut)/2).toString();
-		pb_adj_car_ttip.innerHTML = ((center_freq + this.parent.offset_frequency)/1000 + cfg.freq_offset).toFixed(2) +' kHz';
+		pb_adj_car_ttip.innerHTML = ((center_freq + this.parent.offset_frequency)/1000 + kiwi.freq_offset_kHz).toFixed(2) +' kHz';
 	};
 
 	// event handlers
@@ -1289,9 +1289,9 @@ function demodulator_analog_replace(subtype, freq)
 		prev_pbo = passband_offset();
 		demodulator_remove(0);
 	} else {
-		var i_freqHz = Math.round((init_frequency - cfg.freq_offset) * 1000);
+		var i_freqHz = Math.round((init_frequency - kiwi.freq_offset_kHz) * 1000);
       offset = (i_freqHz <= 0 || i_freqHz > bandwidth)? 0 : (i_freqHz - center_freq);
-		//console.log('### init_freq='+ init_frequency +' cfg.freq_offset='+ cfg.freq_offset +' i_freqHz='+ i_freqHz +' offset='+ offset +' init_mode='+ init_mode);
+		//console.log('### init_freq='+ init_frequency +' freq_offset_kHz='+ kiwi.freq_offset_kHz +' i_freqHz='+ i_freqHz +' offset='+ offset +' init_mode='+ init_mode);
 		subtype = init_mode;
 	}
 	
@@ -1652,7 +1652,8 @@ function scale_container_mouseout(evt)
    scale_canvas_mouseup(evt);
 }
 
-function scale_px_from_freq(f, range) { return Math.round(((f-range.start) / range.bw) * wf_container.clientWidth); }
+function scale_px_from_freq(f, range) { return Math.round(((f - range.start) / range.bw) * wf_container.clientWidth); }
+function scale_px_from_freq_offset(f, range) { return Math.round(((f - range.start_offset) / range.bw) * wf_container.clientWidth); }
 
 function get_visible_freq_range()
 {
@@ -1688,6 +1689,8 @@ function get_visible_freq_range()
       out.hpp = out.bw / scale_canvas.clientWidth;
 	   //console.log("GVFR z="+zoom_level+" xb="+x_bin+" BACZ="+bins+" s="+out.start+" c="+out.center+" e="+out.end+" bw="+out.bw+" hpp="+out.hpp+" cw="+scale_canvas.clientWidth);
 	}
+	
+	out.start_offset = out.start + kiwi.offset_frac;
 	return out;
 }
 
@@ -1757,74 +1760,6 @@ var scale_markers_levels = [
 	}
 ];
 
-/*
-var scale_markers_levels = [
-	{
-		"hz_per_large_marker":10000000, //large
-		"estimated_text_width":70,
-		"format":"{x}a ",
-		"pre_divide":1000000,
-		"decimals":0
-	},
-	{
-		"hz_per_large_marker":5000000,
-		"estimated_text_width":70,
-		"format":"{x}b ",
-		"pre_divide":1000000,
-		"decimals":0
-	},
-	{
-		"hz_per_large_marker":1000000,
-		"estimated_text_width":70,
-		"format":"{x}c ",
-		"pre_divide":1000000,
-		"decimals":0
-	},
-	{
-		"hz_per_large_marker":500000,
-		"estimated_text_width":70,
-		"format":"{x}d ",
-		"pre_divide":1000000,
-		"decimals":1
-	},
-	{
-		"hz_per_large_marker":100000,
-		"estimated_text_width":70,
-		"format":"{x}e ",
-		"pre_divide":1000000,
-		"decimals":1
-	},
-	{
-		"hz_per_large_marker":50000,
-		"estimated_text_width":70,
-		"format":"{x}f ",
-		"pre_divide":1000000,
-		"decimals":2
-	},
-	{
-		"hz_per_large_marker":10000,
-		"estimated_text_width":70,
-		"format":"{x}g ",
-		"pre_divide":1000000,
-		"decimals":2
-	},
-	{
-		"hz_per_large_marker":5000,
-		"estimated_text_width":70,
-		"format":"{x}h ",
-		"pre_divide":1000000,
-		"decimals":3
-	},
-	{
-		"hz_per_large_marker":1000,
-		"estimated_text_width":70,
-		"format":"{x}i ",
-		"pre_divide":1000000,
-		"decimals":3
-	}
-];
-*/
-
 var scale_min_space_btwn_texts = 50;
 var scale_min_space_btwn_small_markers = 7;
 
@@ -1838,10 +1773,11 @@ function get_scale_mark_spacing(range)
 		out.pxsmall = out.pxlarge/out.ratio; 								//distance between small markers
 		if (out.pxsmall < scale_min_space_btwn_small_markers) return false; 
 		if (out.pxsmall/2 >= scale_min_space_btwn_small_markers && mkr_spacing.toString()[0] != "5") { out.pxsmall/=2; out.ratio*=2; }
+      //w3_innerHTML('id-owner-info', 'mkr_spacing='+ kHz(mkr_spacing));
 		out.smallbw = mkr_spacing/out.ratio;
 		return true;
 	}
-	
+
 	for (var i=scale_markers_levels.length-1; i>=0; i--) {
 		mp = scale_markers_levels[i];
 		if (!fcalc(mp.hz_per_large_marker)) continue;
@@ -1875,20 +1811,23 @@ function mk_freq_scale()
 	
 	var spacing = get_scale_mark_spacing(g_range);
 	//console.log(spacing);
-	var marker_hz = Math.ceil(g_range.start/spacing.smallbw) * spacing.smallbw;
-	//console.log('mk_freq_scale: marker_hz='+ marker_hz +' zoom_level='+ zoom_level);
+	var marker_hz = Math.ceil(g_range.start_offset / spacing.smallbw) * spacing.smallbw;
+	var marker_hz_offset = marker_hz + kiwi.freq_offset_Hz - kiwi.offset_frac;
+   //console.log('mkfs z'+ zoom_level +' kiwi.freq_offset_kHz='+ kiwi.freq_offset_kHz +' offset_frac='+ kHz(kiwi.offset_frac) +' marker_hz='+ kHz(marker_hz) +'|'+ kHz(marker_hz_offset));
 	text_y_pos = 22+10 + (kiwi_isFirefox()? 3:0);
 	var text_to_draw;
 	
-	var ftext = function(f) {
+	var ftext = function(fo) {
+	   var f = fo;
 		var pre_divide = spacing.params.pre_divide;
 		var decimals = spacing.params.decimals;
-		f += cfg.freq_offset*1e3;
+		f += kiwi.freq_offset_Hz - kiwi.offset_frac;
 		if (f < 1e6) {
 			pre_divide /= 1000;
 			decimals = 0;
 		}
 		text_to_draw = format_frequency(spacing.params.format+((f < 1e6)? 'kHz':'MHz'), f, pre_divide, decimals);
+      //console.log('ftext-mkfs z'+ zoom_level +' '+ spacing.params.hz_per_large_marker +' marker_hz='+ kHz(marker_hz) +'|'+ kHz(marker_hz_offset) +' fo|f='+ kHz(fo) +'|'+ kHz(f) +' "'+ text_to_draw +'"');
 	}
 	
 	var last_large;
@@ -1897,12 +1836,13 @@ function mk_freq_scale()
 	for (;;) {
       conv_ct++;
       if (conv_ct > 1000) break;
-		var x = scale_px_from_freq(marker_hz, g_range);
+		var x = scale_px_from_freq_offset(marker_hz, g_range);
+      //console.log('mkfs marker_hz|HPLM|0?='+ kHz(marker_hz) +'|'+ kHz(marker_hz_offset) +' '+ kHz(spacing.params.hz_per_large_marker) +' '+ (marker_hz_offset % spacing.params.hz_per_large_marker) +' x='+ x);
 		if (x > window.innerWidth) break;
 		scale_ctx.beginPath();		
 		scale_ctx.moveTo(x, 22);
 
-		if (marker_hz % spacing.params.hz_per_large_marker == 0) {
+		if (marker_hz_offset % spacing.params.hz_per_large_marker == 0) {
 
 			//large marker
 			if (isUndefined(first_large)) var first_large = marker_hz; 
@@ -1915,33 +1855,42 @@ function mk_freq_scale()
 
 			//advanced text drawing begins
 			//console.log('text_to_draw='+ text_to_draw);
-			if (zoom_level==0 && g_range.start+spacing.smallbw*spacing.ratio > marker_hz) {
+			//console.log('adv draw: '+ (g_range.start_offset + spacing.smallbw * spacing.ratio) +' >? marker_hz='+ marker_hz);
+			if (zoom_level == 0 && g_range.start + spacing.smallbw * spacing.ratio > marker_hz) {
 
 				//if this is the first overall marker when zoomed all the way out
-				//console.log('case 1');
-				if (x < text_measured.width/2) {
+				//console.log('case 1 x='+ x +' twh='+ text_measured.width/2);
+				if (x <= text_measured.width/2) {
 				   //and if it would be clipped off the screen
-					if (scale_px_from_freq(marker_hz+spacing.smallbw*spacing.ratio, g_range)-text_measured.width >= scale_min_space_btwn_texts) {
+				   //console.log('case 1.1');
+					if (scale_px_from_freq_offset(marker_hz + spacing.smallbw * spacing.ratio, g_range) - text_measured.width >= scale_min_space_btwn_texts) {
 					   //and if we have enough space to draw it correctly without clipping
+				      //console.log('case 1.2');
 						scale_ctx.textAlign = "left";
 						scale_ctx.fillText(text_to_draw, 0, text_y_pos); 
 					}
+				} else {
+			      //draw text normally
+               //console.log('case 1.3');
+               scale_ctx.fillText(text_to_draw, x, text_y_pos);
 				}
 			} else
 			
-			if (zoom_level==0 && g_range.end-spacing.smallbw*spacing.ratio < marker_hz) {
+			if (zoom_level == 0 && g_range.end - spacing.smallbw * spacing.ratio < marker_hz) {
 
 			   //if this is the last overall marker when zoomed all the way out
 				//console.log('case 2');
-				if (x > window.innerWidth-text_measured.width/2) {
+				if (x > window.innerWidth - text_measured.width/2) {
 				   //and if it would be clipped off the screen
-					if (window.innerWidth-text_measured.width-scale_px_from_freq(marker_hz-spacing.smallbw*spacing.ratio, g_range) >= scale_min_space_btwn_texts) {
+					if (window.innerWidth-text_measured.width-scale_px_from_freq_offset(marker_hz-spacing.smallbw*spacing.ratio, g_range) >= scale_min_space_btwn_texts) {
 					   //and if we have enough space to draw it correctly without clipping
+				      //console.log('case 2.1');
 						scale_ctx.textAlign = "right";
 						scale_ctx.fillText(text_to_draw, window.innerWidth, text_y_pos); 
 					}	
 				} else {
 					// last large marker is not the last marker, so draw normally
+				   //console.log('case 2.2');
 					scale_ctx.fillText(text_to_draw, x, text_y_pos);
 				}
 			} else {
@@ -1957,6 +1906,7 @@ function mk_freq_scale()
 		}
 		
 		marker_hz += spacing.smallbw;
+		marker_hz_offset += spacing.smallbw;
 		scale_ctx.stroke();
 	}
 
@@ -1965,15 +1915,15 @@ function mk_freq_scale()
 	if (zoom_level != 0) {	// if zoomed, we don't want the texts to disappear because their markers can't be seen
 		// on the left side
 		scale_ctx.textAlign = "center";
-		var f = first_large-spacing.smallbw*spacing.ratio;
-		var x = scale_px_from_freq(f, g_range);
+		var f = first_large - spacing.smallbw * spacing.ratio;
+		var x = scale_px_from_freq_offset(f, g_range);
 		ftext(f);
 		var w = scale_ctx.measureText(text_to_draw).width;
 		if (x+w/2 > 0) scale_ctx.fillText(text_to_draw, x, 22+10);
 
 		// on the right side
-		f = last_large+spacing.smallbw*spacing.ratio;
-		x = scale_px_from_freq(f, g_range);
+		f = last_large + spacing.smallbw * spacing.ratio;
+		x = scale_px_from_freq_offset(f, g_range);
 		ftext(f);
 		w = scale_ctx.measureText(text_to_draw).width;
 		if (x-w/2 < window.innerWidth) scale_ctx.fillText(text_to_draw, x, 22+10);
@@ -2505,7 +2455,7 @@ function canvas_drag(evt, x, y, clientX, clientY)
 			owrx.canvas.drag_last_y = y;
 		}
 	} else {
-		w3_innerHTML('id-mouse-unit', format_frequency("{x}", canvas_get_dspfreq(relativeX) + cfg.freq_offset*1e3, 1e3, 2));
+		w3_innerHTML('id-mouse-unit', format_frequency("{x}", canvas_get_dspfreq(relativeX) + kiwi.freq_offset_Hz, 1e3, 2));
 		//console.log("MOU rX="+relativeX.toFixed(1)+" f="+canvas_get_dspfreq(relativeX).toFixed(1));
 	}
 }
@@ -5061,7 +5011,7 @@ function freqset_update_ui()
 	var obj = w3_el('id-freq-input');
 	if (isUndefined(obj) || obj == null) return;		// can happen if SND comes up long before W/F
 
-   var f_with_freq_offset = freq_displayed_Hz + cfg.freq_offset*1e3;
+   var f_with_freq_offset = freq_displayed_Hz + kiwi.freq_offset_Hz;
    var freq_displayed_kHz_str_with_freq_offset = (f_with_freq_offset/1000).toFixed((f_with_freq_offset > 100e6)? 1:2);
    obj.value = freq_displayed_kHz_str_with_freq_offset;
 
@@ -5265,7 +5215,7 @@ function freqset_complete(from)
       return;
    } else
 	if (f > 0 && !isNaN(f)) {
-	   f -= cfg.freq_offset;
+	   f -= kiwi.freq_offset_kHz;
 	   if (f > 0 && !isNaN(f)) {
          freqmode_set_dsp_kHz(f, null);
 	      w3_field_select(obj, {mobile:1});
@@ -5631,6 +5581,7 @@ function bands_init()
 	}
 
 	var bi = band_info();
+   var offset = kiwi.freq_offset_kHz;
 
 	for (i=j=0; i < bands.length; i++) {
 		var b = bands[i];
@@ -5648,6 +5599,18 @@ function bands_init()
 		if (b.name == 'MW') {
 			b.min = bi.NDB_hi; b.max = bi.MW_hi; b.chan = bi._9_10;
 		}
+		
+		// If Kiwi has an offset, re-bias min/max back to 0-30 MHz and set isOffset flag.
+		// This minimizes code changes elsewhere to handle offset mode.
+		if (offset && b.min >= offset) {
+		   b.min -= offset;
+		   b.max -= offset;
+		   b.isOffset = true;
+		} else
+		if (b.min > 32000)
+		   b.isOffset = true;
+		else
+		   b.isOffset = false;
 		
 		b.min *= 1000; b.max *= 1000; b.chan *= 1000;
 		var bw = b.max - b.min;
@@ -5717,13 +5680,16 @@ scale_container_h = band_canvas_h + dx_container_h + scale_canvas_h;
 
 function mk_bands_scale()
 {
+   //console.log('mk_bands_scale');
 	var r = g_range;
 	
 	// band bars & station labels
 	var tw = band_ctx.canvas.width;
-	var i, x, y=band_scale_top, w, h=band_scale_h, ty=y+band_scale_text_top, foff=cfg.freq_offset * 1000;
-	//console.log("BB fftw="+wf_fft_size+" tw="+tw+" rs="+r.start+" re="+r.end+" bw="+(r.end-r.start));
-	//console.log("BB pixS="+scale_px_from_freq(r.start, g_range)+" pixE="+scale_px_from_freq(r.end, g_range));
+	var i, x, y = band_scale_top, w, h = band_scale_h, ty = y + band_scale_text_top;
+	var start = r.start;
+	var end = r.end;
+	//console.log('BB fftw='+ wf_fft_size +' tw='+ tw +' start='+ start +' end='+ end +' bw='+ (end - start));
+	//console.log('BB pixS='+ scale_px_from_freq(r.start, g_range) +' pixE='+ scale_px_from_freq(r.end, g_range));
 	band_ctx.globalAlpha = 1;
 	band_ctx.fillStyle = "White";
 	band_ctx.fillRect(0,band_canvas_top,tw,band_canvas_h);
@@ -5731,25 +5697,31 @@ function mk_bands_scale()
 
 	for (i=0; i < bands.length; i++) {
 		var b = bands[i];
-		if (!(b.itu == 0 || b.itu == ITU_region)) continue;
-		//console.log('mk_bands_scale CONSIDER '+ b.name +' R'+ b.itu);
-		
-		// if bands[] hasn't been updated for freq offset then don't display
-		if (b.min < foff) break;
 
-		var x1=0, x2;
-		var min_inside = (b.min >= r.start && b.min <= r.end)? 1:0;
-		var max_inside = (b.max >= r.start && b.max <= r.end)? 1:0;
-		if (min_inside && max_inside) { x1 = b.min; x2 = b.max; } else
-		if (!min_inside && max_inside) { x1 = r.start; x2 = b.max; } else
-		if (min_inside && !max_inside) { x1 = b.min; x2 = r.end; } else
-		if (b.min < r.start && b.max > r.end) { x1 = r.start; x2 = r.end; }
+		// filter bands based on offset mode
+		if (kiwi.isOffset) {
+		   if (!b.isOffset) continue;
+		} else {
+		   if (b.isOffset) continue;
+		}
+
+		if (!(b.itu == 0 || b.itu == ITU_region)) continue;
+		//console.log('mk_bands_scale CONSIDER '+ b.name +' R'+ b.itu +' b.min='+ b.min);
+		
+		var x1 = 0, x2;
+		var bmin = b.min, bmax = b.max;
+		var min_inside = (bmin >= start && bmin <= end)? 1:0;
+		var max_inside = (bmax >= start && bmax <= end)? 1:0;
+		if (min_inside && max_inside) { x1 = bmin; x2 = bmax; } else
+		if (!min_inside && max_inside) { x1 = start; x2 = bmax; } else
+		if (min_inside && !max_inside) { x1 = bmin; x2 = end; } else
+		if (bmin < start && bmax > end) { x1 = start; x2 = end; }
 
 		if (x1 == 0) continue;
  
       x = scale_px_from_freq(x1, g_range); var xx = scale_px_from_freq(x2, g_range);
       w = xx - x;
-      //console.log("BANDS x="+x1+'/'+x+" y="+x2+'/'+xx+" w="+w);
+      //console.log("BANDS x="+ x1 +'/'+ x +" y="+ x2 +'/'+ xx +" w="+ w);
       if (w < 3) continue;
 
       band_ctx.fillStyle = b.s.color;
@@ -6866,7 +6838,7 @@ function dx_show_edit_panel2()
    // Important to do this here. Couldn't figure out reasonable way to do this in extint_panel_show()
 	extint_panel_hide();		
 	
-	dx.o.f = (parseFloat(dx.o.f) + cfg.freq_offset).toFixed(2);
+	dx.o.f = (parseFloat(dx.o.f) + kiwi.freq_offset_kHz).toFixed(2);
 	
 	dx.o.pb = '';
 	if (dx.o.lo || dx.o.hi) {
@@ -7043,7 +7015,7 @@ function dx_modify_cb(id, val)
 	var mode = dx.o.m;
 	var type = dx.o.y << dx.DX_TYPE_SFT;
 	mode |= type;
-	dx.o.f -= cfg.freq_offset;
+	dx.o.f -= kiwi.freq_offset_kHz;
 	if (dx.o.f < 0) dx.o.f = 0;
 	wf_send('SET DX_UPD g='+ dx.o.gid +' f='+ dx.o.f +' lo='+ dx.o.lo.toFixed(0) +' hi='+ dx.o.hi.toFixed(0) +' o='+ dx.o.o.toFixed(0) +' m='+ mode +
 		' i='+ encodeURIComponent(dx.o.i +'x') +' n='+ encodeURIComponent(dx.o.n +'x') +' p='+ encodeURIComponent(dx.o.p +'x'));
@@ -7057,7 +7029,7 @@ function dx_add_cb(id, val)
 	var mode = dx.o.m;
 	var type = dx.o.y << dx.DX_TYPE_SFT;
 	mode |= type;
-	dx.o.f -= cfg.freq_offset;
+	dx.o.f -= kiwi.freq_offset_kHz;
 	if (dx.o.f < 0) dx.o.f = 0;
 	wf_send('SET DX_UPD g=-1 f='+ dx.o.f +' lo='+ dx.o.lo.toFixed(0) +' hi='+ dx.o.hi.toFixed(0) +' o='+ dx.o.o.toFixed(0) +' m='+ mode +
 		' i='+ encodeURIComponent(dx.o.i +'x') +' n='+ encodeURIComponent(dx.o.n +'x') +' p='+ encodeURIComponent(dx.o.p +'x'));
@@ -9346,6 +9318,14 @@ function setup_band_menu()
 
 	for (i=0; i < bands.length; i++) {
 		var b = bands[i];
+
+		// filter bands based on offset mode
+		if (kiwi.isOffset) {
+		   if (!b.isOffset) continue;
+		} else {
+		   if (b.isOffset) continue;
+		}
+
 		//if (b.region != "*" && b.region.charAt(0) != '>' && b.region != 'm') continue;
 		if (b.region == '-') continue;
 		if (!(b.region == 'm' || b.itu == 0 || b.itu == ITU_region)) continue;
