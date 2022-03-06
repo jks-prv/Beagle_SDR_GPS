@@ -2,6 +2,18 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.495  March 6, 2022
+    Enhancements:
+        Admin config tab:
+            Based on the work of studentkra (thanks!) "frequency scale offset" values with 1 Hz
+            resolution (admin config tab) are now supported. Previously were multiples of 1 MHz. 
+
+        Band definitions when in "frequency scale offset" mode now works.
+            So you can have e.g. an entry in kiwi.config/config.js like this:
+            bands.push({ s:svc.A, min:144000, max:148000, region:'*', name:"2 meters" });
+            The "select band" menu on the main control panel now only shows entries appropriate to
+            the frequency scale.
+
 v1.494  March 5, 2022
     Enhancements:
         Admin network tab: "Auto add NAT rule" should now remove rule from router
