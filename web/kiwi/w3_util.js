@@ -1897,11 +1897,11 @@ function w3int_input_keydown(ev, path, cb)
    if (!el) return;
    //w3_remove(el, 'kiwi-pw');
    //console.log('w3int_input_keydown k='+ k + (ctl? ' CTL ':'') +' val=<'+ el.value +'> cb='+ cb);
-   cb = cb.split('|');
+   var cb_a = cb.split('|');
 
-   if (ctl && 'CD\\'.includes(k) && cb[1]) {
-      //console.log('w3int_input_keydown ^'+ k +' cb='+ cb[1]);
-      w3_call(cb[1], k);
+   if (ctl && 'CD\\'.includes(k) && cb_a[1]) {
+      //console.log('w3int_input_keydown ^'+ k +' cb_a[1]='+ cb_a[1]);
+      w3_call(cb_a[1], k);
    }
 
    var input_any_change = w3_contains(el, 'w3-input-any-change');
@@ -1931,13 +1931,13 @@ function w3int_input_keydown(ev, path, cb)
          if (el.selectionStart == el.selectionEnd && el.selectionStart == el.textLength) {
             //console.log('el.value='+ JSON.stringify(w3_el('id-ale_2g-user-textarea').value));
             //console.log(el);
-            w3_input_change(path, cb[0]);
+            w3_input_change(path, cb);
          }
       } else
 	   if (el.value == '') {
          // cause empty input lines followed by Enter to send empty command to shell
          //console.log('w3int_input_keydown: empty line + Enter');
-         w3_input_change(path, cb[0]);
+         w3_input_change(path, cb);
       }
 	}
 
@@ -1945,7 +1945,7 @@ function w3int_input_keydown(ev, path, cb)
 	if (ev.key == 'Backspace' && input_any_change && el.selectionStart == 0 && el.selectionEnd == el.value.length) {
       //console.log('w3int_input_keydown Delete: len='+ el.value.length +' ss='+ el.selectionStart +' se='+ el.selectionEnd);
       el.value = '';
-      w3_input_change(path, cb[0]);
+      w3_input_change(path, cb);
 	}
 }
 
@@ -1954,7 +1954,7 @@ function w3int_input_keyup(ev, path, cb)
 /*
 	var el = w3_el(path);
 	if (ev.key == 'Backspace' && el.value == '')
-      w3_input_change(path, cb[0]);
+      w3_input_change(path, cb);
 */
 }
 
@@ -1968,9 +1968,9 @@ function w3_input_change(path, cb)
       
       // cb is a string because can't pass an object to onclick
       if (cb) {
-         cb = cb.split('|');
+         var cb_a = cb.split('|');
          //el.select();
-         w3_call(cb[0], path, el.value, /* first */ false);
+         w3_call(cb_a[0], path, el.value, /* first */ false, cb_a);
       }
 
 /*
