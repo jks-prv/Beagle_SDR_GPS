@@ -382,8 +382,11 @@ int rx_count_server_conns(conn_count_e type, conn_t *our_conn)
 	
 	conn_t *c = conns;
 	for (int i=0; i < N_CONNS; i++, c++) {
+	    if (!c->valid)
+	        continue;
+	    
         // if type == EXTERNAL_ONLY don't count internal connections so e.g. WSPR autorun won't prevent updates
-        bool sound = (c->valid && c->type == STREAM_SOUND && ((type == EXTERNAL_ONLY)? !c->internal_connection : true));
+        bool sound = (c->type == STREAM_SOUND && ((type == EXTERNAL_ONLY)? !c->internal_connection : true));
 
 	    if (type == TDOA_USERS) {
 	        if (sound && c->user && kiwi_str_begins_with(c->user, "TDoA_service"))
@@ -401,10 +404,14 @@ int rx_count_server_conns(conn_count_e type, conn_t *our_conn)
                 //show_conn("LOCAL_OR_PWD_PROTECTED_USERS ", c);
 	            users++;
 	        }
+	    } else
+	    if (type == ADMIN_USERS) {
+	        if (c->type == STREAM_ADMIN || c->type == STREAM_MFG)
+                users++;
 	    } else {
             if (sound) users++;
             // will return 1 if there are no sound connections but at least one waterfall connection
-            if (sound || (c->valid && c->type == STREAM_WATERFALL)) any = 1;
+            if (sound || c->type == STREAM_WATERFALL) any = 1;
         }
 	}
 	

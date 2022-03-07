@@ -2756,6 +2756,31 @@ function w3_int_set_cfg_cb(path, val, first)
 	ext_set_cfg_param(path, v, save);
 }
 
+// limit precision using callback spec: 'admin_float_cb|prec'
+function w3_float_set_cfg_cb(path, val, first, cb_a)
+{
+   var prec = -1;    // default to no precision limiting applied
+	//console.log('admin_float_cb '+ path +'='+ val +' cb_a.len='+ cb_a.length);
+	if (cb_a && cb_a.length >= 2) {
+	   prec = +(cb_a[1]);
+	   if (isNaN(prec)) prec = -1;
+	   //console.log('admin_float_cb prec='+ prec);
+	}
+	val = parseFloat(val);
+	if (isNaN(val)) {
+	   // put old value back
+	   val = ext_get_cfg_param(path);
+	} else {
+	   if (prec != -1) {
+         var s = val.toFixed(prec);    // NB: .toFixed() does rounding
+         //console.log('admin_float_cb val('+ prec +')='+ s);
+         val = +s;
+      }
+	   ext_set_cfg_param(path, val, true);
+	}
+   w3_set_value(path, val);   // remove any non-numeric part from field
+}
+
 function w3_bool_set_cfg_cb(path, val, first)
 {
 	var v;
