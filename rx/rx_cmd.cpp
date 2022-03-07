@@ -675,6 +675,15 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 lprintf("** attempt to save kiwi config with auth_admin == FALSE! IP %s\n", conn->remote_ip);
                 return true;	// fake that we accepted command so it won't be further processed
             }
+            
+            // To prevent cfg database multi-writer data loss, enforce no admin connections (a source of writes)
+            // on any non-admin/mfg (i.e. user) connection cfg save.
+            if (conn->type != STREAM_ADMIN && conn->type != STREAM_MFG && (n = rx_count_server_conns(ADMIN_USERS)) != 0) {
+                //cprintf(conn, "CMD_SAVE_CFG: abort because admin_users=%d\n", n);
+                send_msg(conn, false, "MSG no_admin_conns");    // tell user their cfg save was rejected
+                rx_server_send_config(conn);    // and reload last saved config to flush bad values
+                return true;
+            }
 
             char *json = (char *) kiwi_imalloc("CMD_SAVE_CFG", strlen(cmd) + SPACE_FOR_NULL); // a little bigger than necessary
             n = sscanf(cmd, "SET save_cfg=%s", json);

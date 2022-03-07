@@ -458,15 +458,16 @@ function iq_display_IQ_balance_cb(path, val)
 
 function iq_balance_default()
 {
+   confirmation_panel_close();
    console.log('mode_20kHz='+ iq.mode_20kHz +' iq_balance_default='+ iq.DC_offset_default[iq.mode_20kHz]);
    cfg[iq.DC_offset_I] = cfg[iq.DC_offset_Q] = iq.DC_offset_default[iq.mode_20kHz];
    ext_set_cfg_param('cfg.'+ iq.DC_offset_I, cfg[iq.DC_offset_I], true);
    ext_set_cfg_param('cfg.'+ iq.DC_offset_Q, cfg[iq.DC_offset_Q], true);
-   confirmation_panel_close();
 }
 
 function iq_balance_confirm()
 {
+   confirmation_panel_close();
    console.log('iq_balance_confirm: PREV I='+ cfg[iq.DC_offset_I].toFixed(6) +' Q='+ cfg[iq.DC_offset_Q].toFixed(6));
    console.log('iq_balance_confirm: INCR ADJ I='+ (-iq.cmaI) +' Q='+ (-iq.cmaQ));
    cfg[iq.DC_offset_I] += -iq.cmaI;
@@ -474,7 +475,6 @@ function iq_balance_confirm()
    cfg[iq.DC_offset_Q] += -iq.cmaQ;
    ext_set_cfg_param('cfg.'+ iq.DC_offset_Q, cfg[iq.DC_offset_Q], true);
    console.log('iq_balance_confirm: NEW I='+ cfg[iq.DC_offset_I].toFixed(6) +' Q='+ cfg[iq.DC_offset_Q].toFixed(6));
-   confirmation_panel_close();
 }
 
 function iq_display_IQ_cal_jog_cb(path, val)

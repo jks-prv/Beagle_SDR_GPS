@@ -1990,7 +1990,6 @@ function mkscale()
 {
 	mk_freq_scale();
 	mk_bands_scale();
-	//mk_spurs();
 }
 
 
@@ -2659,6 +2658,7 @@ function right_click_menu_init()
    m.push('<hr>'); i++;
 
    m.push('<i>cal ADC clock (admin)</i>'); owrx.rcm_cal = i; i++;
+   m.push('<i>set freq offset (admin)</i>'); owrx.rcm_foff = i; i++;
    owrx.right_click_menu_content = m;
    
    w3_menu('id-right-click-menu', 'right_click_menu_cb');
@@ -2754,6 +2754,12 @@ function right_click_menu_cb(idx, x)
          var ppm = new_adj * 1e6 / ext_adc_clock_Hz();
          console.log('cal ADC clock: prev_adj='+ cfg.clk_adj +' new_adj='+ new_adj +' ppm='+ ppm.toFixed(1));
          cal_adc_dialog(new_adj, clk_diff, r1k_kHz, ppm);
+      });
+      break;
+   
+   case owrx.rcm_foff:  // set freq offset
+      admin_pwd_query(function() {
+         set_freq_offset_dialog();
       });
       break;
    
@@ -5480,6 +5486,15 @@ function freq_step_update_ui(force)
 	freq_step_last_band = b;
 }
 
+
+////////////////////////////////
+// band scale/bars
+////////////////////////////////
+
+// deprecated config.js has:
+// var svc = { ... }
+// var bands = [ {} ... {} ]
+
 function band_info()
 {
 	var _9_10 = (+cfg.init.AM_BCB_chan)? 10:9;
@@ -5534,6 +5549,8 @@ function bands_init()
       // but b.s.svc.* and b2.s.svc.* will refer to the same 2nd level svc.* object
       
 		if (b.region) {
+		
+		   // give nbands[] separate entry per region of a single band[] entry
 		   var len = b.region.length;
 		   if (len == 1) {
             owrx.nbands[j] = kiwi_shallow_copy(b);
@@ -5583,7 +5600,7 @@ function bands_init()
 	var bi = band_info();
    var offset = kiwi.freq_offset_kHz;
 
-	for (i=j=0; i < bands.length; i++) {
+	for (i=0; i < bands.length; i++) {
 		var b = bands[i];
 		
 		bands[i].chan = isUndefined(b.chan)? 0 : b.chan;
@@ -5600,17 +5617,17 @@ function bands_init()
 			b.min = bi.NDB_hi; b.max = bi.MW_hi; b.chan = bi._9_10;
 		}
 		
-		// If Kiwi has an offset, re-bias min/max back to 0-30 MHz and set isOffset flag.
+		// If Kiwi has an offset, re-bias band bar min/max back to 0-30 MHz and set isOffset flag.
 		// This minimizes code changes elsewhere to handle offset mode.
 		if (offset && b.min >= offset) {
 		   b.min -= offset;
 		   b.max -= offset;
 		   b.isOffset = true;
 		} else
-		if (b.min > 32000)
+		if (b.min > 32000)         // an offset band bar when not in offset mode
 		   b.isOffset = true;
 		else
-		   b.isOffset = false;
+		   b.isOffset = false;     // a 0-30 MHz band bar
 		
 		b.min *= 1000; b.max *= 1000; b.chan *= 1000;
 		var bw = b.max - b.min;
@@ -5754,22 +5771,6 @@ function mk_bands_scale()
 	}
 }
 
-function mk_spurs()
-{
-	scale_ctx.fillStyle = "red";
-	var h = 12;
-	var y = scale_canvas_h - h;
-	for (var z=0; z <= zoom_level && z < spurs.length; z++) {
-		for (var i=0; i < spurs[z].length; i++) {
-			var x = scale_px_from_freq(spurs[z][i]*1000, g_range);
-			//console.log("SPUR "+spurs[z][i]+" @"+x);
-			if (x > window.innerWidth) break;
-			if (x < 0) continue;
-			scale_ctx.fillRect(x-1,y,2,h);
-		}
-	}
-}
-
 function parse_freq_mode(freq_mode)
 {
    var s = new RegExp("([0-9.]*)([^&#]*)").exec(freq_mode);
@@ -5861,7 +5862,10 @@ function check_band(reset)
 		}
 	}
 }
-	
+
+
+////////////////////////////////
+
 function tune(fdsp, mode, zoom, zarg)
 {
 	ext_tune(fdsp, mode, ext_zoom.ABS, zoom, zarg);
@@ -5976,6 +5980,23 @@ function confirmation_panel_close()
    }
 }
 
+
+////////////////////////////////
+// set freq offset confirmation panel
+////////////////////////////////
+
+
+function set_freq_offset_dialog()
+{
+	var s =
+		w3_col_percent('/w3-text-aqua',
+			w3_input_get('', 'Frequency scale offset (kHz, 1 Hz resolution)', 'cfg.freq_offset', 'w3_float_set_cfg_cb|3'), 80
+		);
+   confirmation_show_content(s, 525, 80);
+
+	// put the cursor in (i.e. select) the password field
+	w3_field_select('id-cfg.freq_offset', {mobile:1});
+}
 
 ////////////////////////////////
 // cal ADC clock confirmation panel

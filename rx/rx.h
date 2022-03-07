@@ -78,7 +78,7 @@ extern SNR_meas_t SNR_meas_data[SNR_MEAS_MAX];
 int dB_wire_to_dBm(int db_value);
 void SNR_meas(void *param);
 
-enum conn_count_e { EXTERNAL_ONLY, INCLUDE_INTERNAL, TDOA_USERS, EXT_API_USERS, LOCAL_OR_PWD_PROTECTED_USERS };
+enum conn_count_e { EXTERNAL_ONLY, INCLUDE_INTERNAL, TDOA_USERS, EXT_API_USERS, LOCAL_OR_PWD_PROTECTED_USERS, ADMIN_USERS };
 int rx_count_server_conns(conn_count_e type, conn_t *our_conn = NULL);
 
 typedef enum { WS_MODE_ALLOC, WS_MODE_LOOKUP, WS_MODE_CLOSE, WS_INTERNAL_CONN } websocket_mode_e;

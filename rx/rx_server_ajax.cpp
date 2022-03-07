@@ -319,7 +319,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		asprintf(&sb,
 			"status=%s\n%soffline=%s\n"
 			"name=%s\nsdr_hw=KiwiSDR v%d.%d%s%s%s%s%s%s%s%s ⁣\n"
-			"op_email=%s\nbands=%.0f-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\n"
+			"op_email=%s\nbands=%.0f-%.0f\nfreq_offset=%.3f\nusers=%d\nusers_max=%d\navatar_ctime=%u\n"
 			"gps=%s\ngps_good=%d\nfixes=%d\nfixes_min=%d\nfixes_hour=%d\n"
 			"tdoa_id=%s\ntdoa_ch=%d\n"
 			"asl=%d\nloc=%s\n"
@@ -351,7 +351,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			have_ant_switch_ext?			" ⁣ 📶 ANT-SWITCH" : "",
 
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
-			(float) kiwi_reg_lo_kHz * kHz, (float) kiwi_reg_hi_kHz * kHz,
+			(float) kiwi_reg_lo_kHz * kHz, (float) kiwi_reg_hi_kHz * kHz, freq_offset,
 			users, users_max, avatar_ctime,
 			gps_loc, gps.good, gps.fixes, gps.fixes_min, gps.fixes_hour,
 			(s7 = cfg_string("tdoa_id", NULL, CFG_OPTIONAL)), tdoa_ch,

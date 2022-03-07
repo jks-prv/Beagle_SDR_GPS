@@ -116,7 +116,7 @@ var tdoa = {
    ],
    
    //result_menu
-   KIWI_MAP: 0, TDOA_MAP: 1, COMBINED_MAP: 2, SINGLE_MAPS: 3,
+   KIWI_MAP: 0, TDOA_MAP_NO_HOSTS: 1, TDOA_MAP_WITH_HOSTS: 2, COMBINED_MAP: 3, SINGLE_MAPS: 4,
    
    state: 0, READY_SAMPLE: 0, READY_COMPUTE: 1, RUNNING: 2, RETRY: 3, RESULT: 4, ERROR: 5,
    
@@ -1759,14 +1759,18 @@ function tdoa_submit_status_old_cb(status, info)
       tdoa.results[0] = {};
       tdoa.results[1] = {};
       tdoa.results[2] = {};
+      tdoa.results[3] = {};
       tdoa.results[0].menu = 'Kiwi map';
-      tdoa.results[1].menu = 'TDoA map';
-      tdoa.results[2].menu = 'TDoA combined';
+      tdoa.results[1].menu = 'TDoA map no hosts';
+      tdoa.results[2].menu = 'TDoA map with hosts';
+      tdoa.results[3].menu = 'TDoA combined';
       tdoa.results[0].file = 'Kiwi map';
       tdoa.results[1].file = 'TDoA map';
-      tdoa.results[2].file = 'TDoA combined';
+      tdoa.results[2].file = 'TDoA map';
+      tdoa.results[3].file = 'TDoA combined';
       tdoa.results[1].ids = 'TDoA map';
-      tdoa.results[2].ids = 'TDoA combined';
+      tdoa.results[2].ids = 'TDoA map';
+      tdoa.results[3].ids = 'TDoA combined';
       var ri = tdoa.SINGLE_MAPS;
       var npairs = tdoa.ngood * (tdoa.ngood-1) / 2;
 
@@ -1793,8 +1797,8 @@ function tdoa_submit_status_old_cb(status, info)
       w3_show('id-tdoa-results-select');
       w3_show('id-tdoa-results-options');
 
-      tdoa_result_menu_click_cb('', tdoa.TDOA_MAP);
-      w3_select_value('tdoa.result_select', tdoa.TDOA_MAP);
+      tdoa_result_menu_click_cb('', tdoa.TDOA_MAP_NO_HOSTS);
+      w3_select_value('tdoa.result_select', tdoa.TDOA_MAP_NO_HOSTS);
       var which = 'TDoA';
       if (tdoa.old_algorithm) which += '-old'; else
       if (tdoa.devl) which += '-devl';
@@ -2062,7 +2066,7 @@ function tdoa_result_menu_click_cb(path, idx, first)
 
          // figure out which markers to show on the result maps
          var show_mkrs = [];
-         if (idx == tdoa.TDOA_MAP || idx == tdoa.COMBINED_MAP) {
+         if (idx == tdoa.TDOA_MAP_NO_HOSTS || idx == tdoa.TDOA_MAP_WITH_HOSTS || idx == tdoa.COMBINED_MAP) {
             // TDoA and combined map get all host markers
             ms = tdoa.SINGLE_MAPS; me = tdoa.SINGLE_MAPS + npairs;
          } else {
@@ -2084,9 +2088,16 @@ function tdoa_result_menu_click_cb(path, idx, first)
             if (field_idx == undefined) continue;
             var f = tdoa.field[field_idx];
             //console.log(f);
-            
-            // if field was set via marker show marker on result map
-            if (f.mkr && f.host) tdoa_place_host_marker(f.host, tdoa.result_map);
+         
+            // if field was set via marker show marker on result map (unless TDOA_MAP_NO_HOSTS)
+            if (f.mkr && f.host) {
+               if (idx == tdoa.TDOA_MAP_NO_HOSTS) {      // remove host marker
+                  var mkr = f.host.mkr;   // NB: can't use f.mkr above as sometime a <div> instead of object
+                  if (tdoa.leaflet) { mkr.unbindTooltip(); mkr.remove(); mkr.off(); } else mkr.setMap(null);
+               } else {
+                  tdoa_place_host_marker(f.host, tdoa.result_map);
+               }
+            }
          }
 
          if (tdoa.known_location_idx != undefined) {

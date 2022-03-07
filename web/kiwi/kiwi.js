@@ -12,6 +12,7 @@ var kiwi = {
    is_multi_core: 0,
    
    inactivity_panel: false,
+   no_admin_conns_pend: 0,
    notify_seq: 0,
    ident_min: 16,    // e.g. "wsprdaemon_v3.0a" is 16 chars
 
@@ -1631,15 +1632,15 @@ function kiwi_msg(param, ws)
 		case "badp":
 			//console.log('badp='+ param[1]);
 			extint_valpwd_cb(parseInt(param[1]));
-			break;					
+			break;
 
 		case "chan_no_pwd":
 			chan_no_pwd = parseInt(param[1]);
-			break;					
+			break;
 
 		case "chan_no_pwd_true":
 			chan_no_pwd_true = parseInt(param[1]);
-			break;					
+			break;
 
 		case "rx_chans":
 			rx_chans = parseInt(param[1]);
@@ -1667,7 +1668,7 @@ function kiwi_msg(param, ws)
       // E.g. ext_get_cfg_param_string(): kiwi_decodeURIComponent(ext_get_cfg_param(...))
 		case "load_cfg":
 			var cfg_json = decodeURIComponent(param[1]);
-			//console.log('### load_cfg '+ ws.stream +' '+ cfg_json.length);
+			console.log('### load_cfg '+ ws.stream +' '+ cfg_json.length);
 			cfg = kiwi_JSON_parse('load_cfg', cfg_json);
 			kiwi.isOffset = (cfg.freq_offset != 0);
          kiwi.freq_offset_kHz = cfg.freq_offset;
@@ -1678,39 +1679,57 @@ function kiwi_msg(param, ws)
 
 		case "load_adm":
 			var adm_json = decodeURIComponent(param[1]);
-			//console.log('### load_adm '+ ws.stream +' '+ adm_json.length);
+			console.log('### load_adm '+ ws.stream +' '+ adm_json.length);
 			adm = kiwi_JSON_parse('load_adm', adm_json);
 			break;
-
+		
+		case "no_admin_conns":
+		   kiwi.no_admin_conns_pend++;
+		   //console.log('$$$$ no_admin_conns '+ kiwi.no_admin_conns_pend);
+		   if (kiwi.no_admin_conns_pend == 1) {
+            //console.log('$$$$ confirmation_show_content');
+            confirmation_panel_close();
+            confirmation_show_content(
+               'Must close all admin connections before attempting this operation.',
+               500, 55,
+               function() {
+                  confirmation_panel_close();
+                  kiwi.no_admin_conns_pend = 0;
+                  //console.log('$$$$ confirmation_panel_close');
+               },
+               'red');
+         }
+         break;
+      
 		case "request_dx_update":
 			dx_update();
-			break;					
+			break;
 
 		case "mkr":
 			var mkr = param[1];
 			//console.log('MKR '+ mkr);
 			var obj = kiwi_JSON_parse('mkr', mkr);
 			if (obj) dx_label_cb(obj);
-			break;					
+			break;
 
 		case "user_cb":
 			//console.log('user_cb='+ param[1]);
 			var obj = kiwi_JSON_parse('user_cb', param[1]);
 			if (obj) user_cb(obj);
-			break;					
+			break;
 
 		case "config_cb":
 			//console.log('config_cb='+ param[1]);
 			var o = kiwi_JSON_parse('config_cb', param[1]);
 			if (o) config_cb(o.r, o.g, o.s, o.pu, o.pe, o.pv, o.pi, o.n, o.m, o.v1, o.v2, o.ai);
-			break;					
+			break;
 
 		case "update_cb":
 			//console.log('update_cb='+ param[1]);
 			var o = kiwi_JSON_parse('update_cb', param[1]);
 			if (o) update_cb(o.f, o.p, o.i, o.r, o.g, o.v1, o.v2, o.p1, o.p2,
 				decodeURIComponent(o.d), decodeURIComponent(o.t));
-			break;					
+			break;
 
 		case "stats_cb":
 			//console.log('stats_cb='+ param[1]);
@@ -1742,7 +1761,7 @@ function kiwi_msg(param, ws)
 				admin_stats_cb(o.ad, o.au, o.ae, o.ar, o.an, o.ap, o.an2, o.ai);
 				time_display_cb(o);
 			}
-			break;					
+			break;
 
 		case "status_msg_text":
 		   // kiwi_output_msg() does decodeURIComponent()
