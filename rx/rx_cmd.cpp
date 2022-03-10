@@ -756,8 +756,23 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             n = sscanf(cmd, "SET DX_UPD g=%d f=%f lo=%d hi=%d o=%d m=%d i=%1024ms n=%1024ms p=%1024ms",
                 &gid, &freq, &low_cut, &high_cut, &mkr_off, &flags, &text_m, &notes_m, &params_m);
             enum { DX_MOD_ADD = 9, DX_DEL = 2 };
-            //cprintf(conn, "DX_UPD [%s]\n", cmd);
-            //cprintf(conn, "DX_UPD n=%d #%d %8.2f %d 0x%x text=<%s> notes=<%s> params=<%s>\n", n, gid, freq, mkr_off, flags, text_m, notes_m, params_m);
+            
+            #if 0
+                cprintf(conn, "DX_UPD [%s]\n", cmd);
+                int type;
+                if (n == DX_MOD_ADD) {
+                    const char * dx_mod_add_s[] = { "MOD", "ADD", "???" };
+                    if (gid != -1 && freq != -1) type = 0;
+                    else
+                    if (gid == -1) type = 1; else type = 2;
+                    cprintf(conn, "DX_UPD %s: n=%d #%d %8.2f %s lo=%d hi=%d off=%d flags=0x%x text=<%s> notes=<%s> params=<%s>\n",
+                        dx_mod_add_s[type], n, gid, freq, mode_s[flags & DX_MODE], low_cut, high_cut, mkr_off, flags, text_m, notes_m, params_m);
+                } else {
+                    const char * dx_del_s[] = { "DEL", "???" };
+                    if (gid != -1 && freq == -1) type = 0; else type = 1;
+                    cprintf(conn, "DX_UPD %s: n=%d #%d\n", dx_del_s[type], n, gid);
+                }
+            #endif
 
             if (n != DX_MOD_ADD && n != DX_DEL) {
                 cprintf(conn, "DX_UPD n=%d ?\n", n);

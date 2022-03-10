@@ -1270,34 +1270,64 @@ function public_update(p)
 
 function dx_html()
 {
+   var i;
+   //admin_sdr.dx_enabled = dbgUs;
+
+	if (!admin_sdr.dx_enabled)
+	   return w3_div('id-dx w3-hide', w3_div('w3-container w3-margin-top', 'TODO..'));
+	
+	// one-time conversion of kiwi.config/config.js bands[] to kiwi.json configuration file
+	if (isUndefined(cfg.bands)) {
+      bandwidth = [30, 32][cfg.max_freq] * 1e6;
+      zoom_nom = ZOOM_NOMINAL;
+      bands_init();
+	   console.log('BANDS: saving new cfg.bands');
+      cfg_save_json('cfg.bands');
+   } else {
+	   console.log('BANDS: using stored cfg.bands');
+      bands_addl_info();
+   }
+	
+   // reminder: "Nvh" means N% of the viewport (browser window) height
 	var s =
-	   admin_sdr.dx_enabled?
-	      w3_div('id-dx w3-hide',
-            w3_inline('w3-halign-space-between/w3-margin-top',
-               w3_inline('/w3-margin-between-16',
-                  w3_button('w3-yellow', 'Modify', 'dx_admin_mod_cb'),
-                  w3_button('w3-green', 'Add', 'dx_admin_add_cb'),
-                  w3_button('w3-red', 'Delete', 'dx_admin_del_cb')
-               ),
-               w3_input('w3-text-teal/w3-label-inline/w3-padding-small|width:300px', 'Filter', 'dx.o.filter', '', 'dx_filter_cb')
-            ),
-      
-            w3_div('w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
-               w3_div('id-dx-list-legend'),
+      w3_div('id-dx w3-hide',
+         w3_inline('w3-margin-T-16/w3-margin-between-16',
+            w3_text('w3-text-teal w3-bold', 'Band bars')
+         ),
          
-               // reminder: "70vh" means 70% of the viewport (browser window) height
-               w3_div('id-dx-list w3-margin-bottom|height:70vh;overflow-x:hidden;overflow-y:hidden')
-            )
+         w3_div('w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
+            w3_div('id-band_bar-list-legend'),
+            w3_div('id-band_bar-list w3-margin-bottom|height:30vh;overflow-x:hidden;overflow-y:hidden')
+         ),
+
+	      w3_hr('w3-margin-16'),
+
+         w3_inline('w3-halign-space-between/',
+            w3_inline('/w3-margin-between-16',
+               w3_text('w3-text-teal w3-bold', 'DX labels'),
+               w3_button('w3-yellow', 'Modify', 'dx_admin_mod_cb'),
+               w3_button('w3-green', 'Add', 'dx_admin_add_cb'),
+               w3_button('w3-red', 'Delete', 'dx_admin_del_cb')
+            ),
+            w3_input('w3-text-teal/w3-label-inline/w3-padding-small|width:300px', 'Filter', 'dx.o.filter', '', 'dx_filter_cb')
+         ),
+   
+         w3_div('w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
+            w3_div('id-dx-list-legend'),
+            w3_div('id-dx-list w3-margin-bottom|height:30vh;overflow-x:hidden;overflow-y:hidden')
          )
-      :
-	      w3_div('id-dx w3-hide', w3_div('w3-container w3-margin-top', 'TODO..'));
-	return s;
+      );
+   //console.log(s);
+   return s;
 }
 
 function dx_focus()
 {
    if (!admin_sdr.dx_enabled) return;
-   console.log('### dx_focus: SET GET_DX_JSON');
+   w3_innerHTML('id-band_bar-list-legend', '');
+   w3_el('id-band_bar-list').style.overflowY = 'hidden';
+   w3_innerHTML('id-band_bar-list', '');
+
    w3_innerHTML('id-dx-list-legend', '');
    w3_el('id-dx-list').style.overflowY = 'hidden';
    w3_innerHTML('id-dx-list',
@@ -1307,11 +1337,103 @@ function dx_focus()
       )
    );
    
+   console.log('### dx_focus: SET GET_DX_JSON');
 	ext_send('SET GET_DX_JSON');
 }
 
 function dx_hide()
 {
+}
+
+function dx_band_bar_json(_band_bar)
+{
+   var i, len = _band_bar.band_bar.length;
+   var s_a = [];
+   
+   dx.o.tags = [];
+
+   for (i = -1; i < len; i++) {
+      var d = null;
+      var fr = '', mo = 0, id = '', no = '';
+      var pb = '', ty = 0, os = '', ext = '';
+      var ts = 0, tag = '';
+      var hide = (i == -1)? 'w3-hide ':'';
+      
+      // done this way so all the s_new code can be reused to construct the legend
+      var h = function(psa) { return (i == -1)? 'w3-hide' : psa; }
+      var l = function(label) { return (i == -1)? label : ''; }
+      if (i != -1) {
+         d = _band_bar.band_bar[i];
+         fr = d[0];
+         mo = kiwi.modes_s[d[1].toLowerCase()];
+         id = kiwi_decodeURIComponent('dx_id', d[2]);
+         no = kiwi_decodeURIComponent('dx_no', d[3]);
+         ts = d[4];
+         tag = d[5];
+         dx.o.tags[i] = tag;
+         
+         var lo = 0, hi = 0;
+         var opt = d[6];
+         if (opt) {
+            if (opt.WL == 1) ty = dx.stored_types.watch_list; else
+            if (opt.SB == 1) ty = dx.stored_types.sub_band; else
+            if (opt.DG == 1) ty = dx.stored_types.DGPS; else
+            if (opt.NoN == 1) ty = dx.stored_types.special_event; else    // deprecated
+            if (opt.SE == 1) ty = dx.stored_types.special_event; else
+            if (opt.XX == 1) ty = dx.stored_types.interference; else
+            if (opt.MK == 1) ty = dx.stored_types.masked; else
+            ty = 0;
+
+            if (opt.lo) lo = +opt.lo;
+            if (opt.hi) hi = +opt.hi;
+            if (opt.o) os = opt.o;
+            if (opt.p) ext = opt.p;
+         }
+
+         if (lo || hi) {
+            if (lo == -hi) {
+               pb = (Math.abs(hi)*2).toFixed(0);
+            } else {
+               pb = lo.toFixed(0) +', '+ hi.toFixed(0);
+            }
+         }
+
+      }
+      
+      // 'path'+i so path id is unique for field highlight
+      //console.log('i='+ i +' mo='+ mo +' ty='+ ty);
+      //console.log(d);
+      var s_new =
+         w3_divs('w3-text-teal/w3-margin-T-8',
+            w3_col_percent('',
+               w3_col_percent('w3-valign/w3-hspace-16',
+                  //w3_text('w3-text-black w3-tiny', tag), 5,
+                  (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-selection-green', '+', 'dx_admin_add_cb', i), 1,
+                  (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-red', '-', 'dx_admin_del_cb', i), 1,
+                  w3_input(h('w3-padding-small||size=8'), l('Freq'), 'dx.o.f_'+i, fr, 'dx_num_cb'), 19,
+                  w3_select(h('w3-text-red'), l('Mode'), '', 'dx.o.m_'+i, mo, kiwi.modes_u, 'dx_sel_cb'), 19,
+                  w3_input(h('w3-padding-small||size=4'), l('Passband'), 'dx.o.pb_'+i, pb, 'dx_passband_cb'), 19,
+                  w3_select(h('w3-text-red'), l('Type'), '', 'dx.o.y_'+i, ty, dx.stored_types, 'dx_sel_cb'), 19,
+                  w3_input(h('w3-padding-small||size=2'), l('Offset'), 'dx.o.o_'+i, os, 'dx_num_cb'), 19
+               ), 45,
+               w3_col_percent('w3-valign/w3-margin-left',
+                  w3_input(h('w3-padding-small'), l('Ident'), 'dx.o.i_'+i, id, 'dx_string_cb'), 40,
+                  w3_input(h('w3-padding-small'), l('Notes'), 'dx.o.n_'+i, no, 'dx_string_cb'), 40,
+                  w3_input(h('w3-padding-small'), l('Extension'), 'dx.o.p_'+i, ext, 'dx_string_cb'), 20
+               ), 54
+            )
+         );
+      
+      if (i == -1) {
+         w3_innerHTML('id-band_bar-list-legend', s_new);
+      } else {
+         s_a[i] = s_new;
+      }
+   }
+   w3_el('id-band_bar-list').style.overflowY = 'scroll';
+   console.log('BAND BAR render START');
+   w3_innerHTML('id-band_bar-list', s_a.join(''));
+   console.log('BAND BAR render RETURN');
 }
 
 function dx_json(_dx)
@@ -1321,8 +1443,9 @@ function dx_json(_dx)
    console.log('### dx_json: entries='+ len);
    w3_innerHTML('id-dx-list-count', 'loading '+ len +' entries');
    
-   // if this isn't delayed the above innerHTML set of id-dx-list-count doesn't render
-   setTimeout(function() { dx_json2(_dx); }, 100);
+   // if this isn't delayed the above innerHTML set of id-dx-list-count doesn't
+   // have enough time to render and be seen
+   setTimeout(function() { dx_json2(_dx); }, 500);
 }
 
 function dx_json2(_dx)
@@ -1333,7 +1456,7 @@ function dx_json2(_dx)
    dx.o.tags = [];
 
    //for (i = -1; i < len; i++) {
-   for (i = -1; i < 4; i++) {
+   for (i = -1; i < 44; i++) {
       var d = null;
       var fr = '', mo = 0, id = '', no = '';
       var pb = '', ty = 0, os = '', ext = '';

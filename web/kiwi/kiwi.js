@@ -28,6 +28,21 @@ var kiwi = {
    modes_u: [],
    modes_s: {},
    
+   svc: {
+      B: { name:'Broadcast',  color:'red' },
+      U: { name:'Utility',    color:'green' },
+      A: { name:'Amateur',    color:'blue' },
+      L: { name:'Beacons',    color:'blue' },
+      I: { name:'ISM',        color:'orange',   longName:'Industrial/Scientific' },
+      M: { name:'Markers',    color:'purple' },
+      X: { name:'QRN',        color:'red' },
+      N: { name:'Event',      color:'yellow' }
+   },
+   
+   ITU_ANY: 0,
+   BAND_SCALE_ONLY: -1,
+   BAND_MENU_ONLY: -2,
+   
    RX4_WF4:0, RX8_WF2:1, RX3_WF3:2, RX14_WF0:3,
    
    // colormap definitions needed by admin config
@@ -418,20 +433,18 @@ function kiwi_get_init_settings()
 var cfg = { };
 var adm = { };
 
-function cfg_save_json(path, ws)
+function cfg_save_json(path)
 {
 	//console.log('cfg_save_json: path='+ path);
 	//kiwi_trace();
 
-	if (ws == undefined || ws == null)
-		return;
 	var s;
 	if (path.startsWith('adm.')) {
 		s = encodeURIComponent(JSON.stringify(adm, null, 3));    // pretty-print the JSON
-		ws.send('SET save_adm='+ s);
+		extint.ws.send('SET save_adm='+ s);
 	} else {
 		s = encodeURIComponent(JSON.stringify(cfg, null, 3));    // pretty-print the JSON
-		ws.send('SET save_cfg='+ s);
+		extint.ws.send('SET save_cfg='+ s);
 	}
 	console.log('cfg_save_json: DONE');
 }
