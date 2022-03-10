@@ -260,7 +260,7 @@ function control_html()
          ),
 
          w3_divs('/w3-center w3-tspace-8',
-            w3_select('', 'Number of simultaneous channels available<br>for connection by non-Kiwi apps',
+            w3_select('w3-width-auto', 'Number of simultaneous channels available<br>for connection by non-Kiwi apps',
                '', 'ext_api_nchans', ext_api_nchans, ext_api_chans_u, 'admin_select_cb'),
             w3_div('w3-text-black',
                'If you want to limit incoming connections from <br> non-Kiwi apps like kiwirecorder set this value. <br>' +
@@ -315,7 +315,7 @@ function control_html()
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
          w3_divs('w3-restart/w3-center w3-tspace-8',
-            w3_select('', 'Number of audio campers per channel', '', 'n_camp', n_camp, n_camp_u, 'admin_select_cb'),
+            w3_select('w3-width-auto', 'Number of audio campers per channel', '', 'n_camp', n_camp, n_camp_u, 'admin_select_cb'),
             w3_div('w3-text-black',
                'Reduce this value if your Kiwi is experiencing <br>' +
                'performance problems from too many audio campers.'
@@ -323,7 +323,7 @@ function control_html()
          ),
          
 			w3_divs('/w3-center w3-tspace-8',
-            w3_select('', 'SNR measurement interval', '', 'cfg.snr_meas_interval_hrs', cfg.snr_meas_interval_hrs, snr_interval_u, 'admin_select_cb'),
+            w3_select('w3-width-auto', 'SNR measurement interval', '', 'cfg.snr_meas_interval_hrs', cfg.snr_meas_interval_hrs, snr_interval_u, 'admin_select_cb'),
 				w3_text('w3-text-black w3-center',
 				   'Enables automatic sampling of <br>' +
 				   'signal-to-noise ratio (SNR) at the specified interval. <br>' +
@@ -530,7 +530,7 @@ function connect_html()
 				), 20,
 				
 				w3_div('w3-center',
-				   w3_select('', 'Update', '', 'adm.duc_update', adm.duc_update, duc_update_i, 'admin_select_cb')
+				   w3_select('w3-width-auto', 'Update', '', 'adm.duc_update', adm.duc_update, duc_update_i, 'admin_select_cb')
 				), 10,
 				
 				w3_div('w3-center w3-tspace-8',
@@ -924,10 +924,10 @@ function update_html()
          ),
          w3_half('w3-container w3-tspace-16', 'w3-text-teal',
             w3_div('',
-               w3_select('w3-label-inline', 'After a restart', '', 'adm.restart_update', adm.restart_update, restart_update_u, 'admin_select_cb')
+               w3_select('/w3-label-inline/w3-width-auto', 'After a restart', '', 'adm.restart_update', adm.restart_update, restart_update_u, 'admin_select_cb')
             ),
             w3_div('',
-               w3_select('w3-label-inline', 'After an update', '', 'adm.update_restart', adm.update_restart, update_restart_u, 'admin_select_cb')
+               w3_select('/w3-label-inline/w3-width-auto', 'After an update', '', 'adm.update_restart', adm.update_restart, update_restart_u, 'admin_select_cb')
             )
          )
 		) +
@@ -1129,12 +1129,12 @@ function network_html()
 						w3_switch_get_param('w3-margin-T-8', 'DHCP', 'Static', 'adm.ip_address.use_static', 0, false, 'network_use_static_cb')
 				),
             w3_divs('w3-center/',
-               w3_select('', 'Ethernet interface speed', '', 'ethernet_speed', cfg.ethernet_speed, network.ethernet_speed_s, 'network_ethernet_speed'),
+               w3_select('w3-width-auto', 'Ethernet interface speed', '', 'ethernet_speed', cfg.ethernet_speed, network.ethernet_speed_s, 'network_ethernet_speed'),
                w3_div('w3-text-black',
                   'Select 10 Mbps to reduce <br> Ethernet spurs. Try changing <br> while looking at waterfall.')
             ),
             w3_divs('w3-center/',
-               w3_select('', 'Ethernet interface MTU', '', 'ethernet_mtu', cfg.ethernet_mtu, network.ethernet_mtu_s, 'network_ethernet_mtu'),
+               w3_select('w3-width-auto', 'Ethernet interface MTU', '', 'ethernet_mtu', cfg.ethernet_mtu, network.ethernet_mtu_s, 'network_ethernet_mtu'),
                w3_div('w3-text-black',
                   'Select 1440 when having <br> connection problems <br> using 4G networks.')
             )
@@ -1899,14 +1899,14 @@ function gps_html()
          /*
          w3_div('w3-valign w3-text-teal',
             w3_div('w3-show-inline w3-margin-right w3-small', '<b>E1B<br>offset</b>') +
-				w3_select('w3-text-red', '', 'chips', 'adm.E1B_offset', adm.E1B_offset, E1B_offset_i, 'gps_E1B_offset_cb')
+				w3_select('w3-text-red w3-width-auto', '', 'chips', 'adm.E1B_offset', adm.E1B_offset, E1B_offset_i, 'gps_E1B_offset_cb')
          ),
          */
 
          /*
          w3_div('w3-valign w3-text-teal',
             w3_div('w3-show-inline w3-margin-right w3-small', '<b>E1B<br>gain</b>') +
-            w3_select('w3-margin-L-5 w3-text-red', '', '', '_gps.gain', 0, '1:12', 'gps_gain_cb')
+            w3_select('w3-margin-L-5 w3-text-red w3-width-auto', '', '', '_gps.gain', 0, '1:12', 'gps_gain_cb')
          ),
          */
 
@@ -2913,7 +2913,7 @@ function security_html()
 			), 25,
 
 			w3_div('w3-center',
-				w3_select('', 'Number of channels<br>not requiring a password<br>even if password set',
+				w3_select('w3-width-auto', 'Number of channels<br>not requiring a password<br>even if password set',
 					'', 'chan_no_pwd', chan_no_pwd, chan_no_pwd_u, 'admin_select_cb'),
 				w3_div('w3-margin-T-8 w3-text-black',
 					'Set this and a password to create two sets of channels. ' +

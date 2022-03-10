@@ -79,7 +79,7 @@ function config_html()
 				w3_select('', 'Aperture', '', 'init.aperture', init_aperture, kiwi.aper_s, 'config_aperture_cb')
 			),
 			w3_div('w3-center w3-tspace-8',
-				w3_select('', 'AM BCB channel spacing', '', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'admin_select_cb')
+				w3_select('w3-width-auto', 'AM BCB channel spacing', '', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'admin_select_cb')
 			)
 		) +
 
@@ -153,7 +153,7 @@ function config_html()
 				)
 			),
 			w3_divs('w3-restart/w3-center w3-tspace-8',
-				w3_select('', 'Max receiver frequency', '', 'max_freq', max_freq, max_freq_i, 'admin_select_cb'),
+				w3_select('w3-width-auto', 'Max receiver frequency', '', 'max_freq', max_freq, max_freq_i, 'admin_select_cb'),
 				w3_div('w3-text-black',
 				   '32 MHz necessary for some downconverters. But note <br>' +
 				   'there will be more spurs in the 30-32 MHz range.'
@@ -185,7 +185,7 @@ function config_html()
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_input_get('', 'Waterfall calibration (dB)', 'waterfall_cal', 'admin_int_cb'),
 			w3_div('w3-center w3-tspace-8',
-				w3_select('', 'ITU region', '', 'init.ITU_region', init_ITU_region, ITU_region_i, 'admin_select_cb'),
+				w3_select('w3-width-auto', 'ITU region', '', 'init.ITU_region', init_ITU_region, ITU_region_i, 'admin_select_cb'),
 				w3_div('w3-text-black',
 					'Configures LW/NDB, MW and <br> amateur band allocations, etc.'
 				)
@@ -202,13 +202,13 @@ function config_html()
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_divs('w3-restart/w3-center w3-tspace-8',
-				w3_select_get_param('', 'SPI clock', '', 'SPI_clock', SPI_clock_i, 'admin_select_cb', 0),
+				w3_select_get_param('w3-width-auto', 'SPI clock', '', 'SPI_clock', SPI_clock_i, 'admin_select_cb', 0),
 				w3_div('w3-text-black',
 					'Set to 24 MHz to reduce interference <br> on 2 meters (144-148 MHz).'
 				)
 			),
 			w3_divs('w3-restart/w3-center w3-tspace-8',
-				w3_select_get_param('', 'Status LED brightness', '', 'led_brightness', led_brightness_i, 'admin_select_cb', 0),
+				w3_select_get_param('w3-width-auto', 'Status LED brightness', '', 'led_brightness', led_brightness_i, 'admin_select_cb', 0),
 				w3_div('w3-text-black',
 					'Sets brightness of the 4 LEDs <br> that show status info.'
 				)

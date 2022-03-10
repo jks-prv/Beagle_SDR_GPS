@@ -211,7 +211,7 @@ input[type=range]::-moz-range-thumb {
 @supports not (-moz-appearance:none) {
     .w3-select-menu
     {
-        width: 100%;
+        width: auto;
         cursor: pointer;
     }
 }
