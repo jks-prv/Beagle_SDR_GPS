@@ -7181,6 +7181,10 @@ function dx_help(show)
                'are selected enabling a large number of labels.' +
                '<br><br>' +
                
+               'Information about using the editing controls for the stored labels can be found ' +
+               '<a href="http://kiwisdr.com/quickstart/index.html#id-user-marker" target="_blank">here</a>.' +
+               '<br><br>' +
+               
                'Because there are so many EiBi labels (about 17000) they are organized into 12 categories with visibility ' +
                'selected by checkboxes on the control panel. In addition labels can be filtered by their schedule (UTC time & day-of-week) ' +
                'specified in the database. If filtering is disabled labels outside their scheduled time appear in a lighter category color. ' +
@@ -7817,33 +7821,37 @@ function panels_setup()
 	
 	w3_el("id-control-freq1").innerHTML =
 	   w3_inline('',
-         w3_div('id-freq-cell',
-            // NB: DO NOT remove the following <form> (3/2021)
-            // The CATSync app depends on this API by using the following javascript injection:
-            // Dim jsFreqKiwiSDR As String = "targetForm = document.forms['form_freq'];targetForm.elements[0].value = '" + frequency + "';freqset_complete(0); false"
-            // Form1.browser.ExecuteScriptAsync(jsFreqKiwiSDR)
-            '<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
-               w3_input('w3-custom-events|padding:0 4px;max-width:74px|size=8 onkeydown="freqset_keydown(event)" onkeyup="freqset_keyup(this, event)"', '', 'freq-input') +
-            '</form>'
+	      w3_inline('',
+            w3_div('id-freq-cell',
+               // NB: DO NOT remove the following <form> (3/2021)
+               // The CATSync app depends on this API by using the following javascript injection:
+               // Dim jsFreqKiwiSDR As String = "targetForm = document.forms['form_freq']; targetForm.elements[0].value = '" + frequency + "'; freqset_complete(0); false"
+               // Form1.browser.ExecuteScriptAsync(jsFreqKiwiSDR)
+               '<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
+                  w3_input('w3-custom-events|padding:0 4px|size=9 onkeydown="freqset_keydown(event)" onkeyup="freqset_keyup(this, event)"', '', 'freq-input') +
+               '</form>'
+            ),
+
+            w3_div('|padding:0 0 0 3px',
+               w3_icon('w3-show-block w3-text-orange||title="prev"', 'fa-arrow-circle-up', 15, '', 'freq_up_down_cb', 1),
+               w3_icon('w3-show-block w3-text-aqua||title="next"', 'fa-arrow-circle-down', 15, '', 'freq_up_down_cb', 0)
+            )
          ),
 
-         w3_div('|padding:0 0 0 3px',
-            w3_icon('w3-show-block w3-text-orange||title="prev"', 'fa-arrow-circle-up', 15, '', 'freq_up_down_cb', 1) +
-            w3_icon('w3-show-block w3-text-aqua||title="next"', 'fa-arrow-circle-down', 15, '', 'freq_up_down_cb', 0)
-         ),
+	      w3_inline('w3-halign-space-around/',
+            w3_div('id-select-band-cell|padding:0 4px',
+               '<select id="id-select-band" class="w3-pointer w3-select-menu" onchange="select_band(this.value)">' +
+                  '<option value="0" selected disabled>select band</option>' +
+                  setup_band_menu() +
+               '</select>'
+            ),
 
-         w3_div('id-select-band-cell|padding:0 4px',
-            '<select id="id-select-band" class="w3-pointer" onchange="select_band(this.value)">' +
-               '<option value="0" selected disabled>select band</option>' +
-               setup_band_menu() +
-            '</select>'
-         ),
-
-         w3_div('id-select-ext-cell|padding:0',
-            '<select id="id-select-ext" class="w3-pointer" onchange="freqset_select(); extint_select(this.value)">' +
-               '<option value="-1" selected disabled>extension</option>' +
-               extint_select_build_menu() +
-            '</select>'
+            w3_div('id-select-ext-cell|padding:0',
+               '<select id="id-select-ext" class="w3-pointer w3-select-menu" onchange="freqset_select(); extint_select(this.value)">' +
+                  '<option value="-1" selected disabled>extension</option>' +
+                  extint_select_build_menu() +
+               '</select>'
+            )
          )
       );
 
@@ -8120,7 +8128,7 @@ function panels_setup()
       ) +
       w3_inline('w3-margin-T-2 w3-valign w3-halign-end/class-slider',
          w3_select('id-chan-null w3-text-red w3-hide', '', 'channel<br>null', 'owrx.chan_null', owrx.chan_null, owrx.chan_null_s, 'chan_null_cb'),
-         w3_select('id-ovld-mute w3-text-red w3-margin-L-6', '', 'ovld<br>mute', 'owrx.ovld_mute', owrx.ovld_mute, owrx.ovld_mute_s, 'ovld_mute_cb')
+         w3_select('id-ovld-mute w3-text-red', '', 'ovld<br>mute', 'owrx.ovld_mute', owrx.ovld_mute, owrx.ovld_mute_s, 'ovld_mute_cb')
       );
       
       //w3_button('id-button-test class-button w3-hcenter w3-hide', 'Test', 'toggle_or_set_test')

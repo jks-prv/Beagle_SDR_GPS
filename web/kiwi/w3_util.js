@@ -2249,7 +2249,7 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb, cb_param)
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
    var psa_label = w3_psa_mix(psa3.middle, (label != '' && bold)? 'w3-bold':'');
-	var psa_inner = w3_psa(psa3.right, id +' w3-pointer'+ spacing, '', onchange);
+	var psa_inner = w3_psa(psa3.right, id +' w3-select-menu'+ spacing, '', onchange);
 
 	var s =
 	   '<div '+ psa_outer +'>' +
@@ -2305,8 +2305,9 @@ function w3int_select_options(sel, opts)
       });
    } else
 
-   // { key0:opt0, key1:opt1 ... }
-   // object: enumerate sequentially like an array using keys values as the menu options
+   // { key0:opt0, key1:opt1, opt2:{} ... }
+   // object: enumerate sequentially like an array using key values,
+   // or key itself if key value is an object, as the menu options
    if (isObject(opts)) {
       w3_obj_enum(opts, function(key, i, o) {
          var value, text, disabled = false;

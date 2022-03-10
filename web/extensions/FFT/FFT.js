@@ -348,7 +348,7 @@ function fft_controls_setup()
                   w3_select('w3-text-red', 'Function', '', 'fft.func', fft.func, fft.func_s, 'fft_func_cb'),
                   w3_input('w3-width-64 w3-padding-smaller', 'Integrate time', 'fft.itime', fft.itime, 'fft_itime_cb')
                ),
-					w3_select('w3-margin-T-8//w3-text-red', 'Integrate presets', 'select', 'fft.pre', W3_SELECT_SHOW_TITLE, fft.pre_s, 'fft_pre_select_cb'),
+					w3_select('w3-margin-T-8//w3-text-red w3-width-auto', 'Integrate presets', 'select', 'fft.pre', W3_SELECT_SHOW_TITLE, fft.pre_s, 'fft_pre_select_cb'),
 					w3_div('id-fft-msg-fft w3-margin-T-8',
                   w3_slider('', 'max', 'fft.maxdb', fft.maxdb, -170, -10, 1, 'fft_maxdb_cb'),
                   w3_slider('', 'min', 'fft.mindb', fft.mindb, -190, -30, 1, 'fft_mindb_cb')

@@ -207,6 +207,24 @@ input[type=range]::-moz-range-thumb {
     margin: 0;
 }
 
+/* not Firefox */
+@supports not (-moz-appearance:none) {
+    .w3-select-menu
+    {
+        width: auto;
+        cursor: pointer;
+    }
+}
+
+/* Firefox: due to change in <select> menu width and added scrollbar, 10-mar-22 */
+@supports (-moz-appearance:none) {
+    .w3-select-menu
+    {
+        width: 90%;
+        cursor: pointer;
+    }
+}
+
 .w3-menu {
     display: inline-block;
     visibility: hidden;
@@ -451,6 +469,11 @@ input[type=range]::-moz-range-thumb {
 .w3-margin-R-5
 {
     margin-right: 5px
+}
+
+.w3-margin-R-6
+{
+    margin-right: 6px
 }
 
 .w3-margin-R-8

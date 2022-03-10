@@ -103,7 +103,7 @@ function gen_controls_setup()
                w3_div(''), 10,
                w3_div('',
 				      w3_div('', 'Offset attenuation by:'),
-                  w3_select('w3-text-red', '', '', 'gen.attn_offset', gen.attn_offset, gen.attn_offset_s, 'gen_attn_offset_cb')
+                  w3_select('w3-text-red w3-width-auto', '', '', 'gen.attn_offset', gen.attn_offset, gen.attn_offset_s, 'gen_attn_offset_cb')
                ), 55
             )
 			)

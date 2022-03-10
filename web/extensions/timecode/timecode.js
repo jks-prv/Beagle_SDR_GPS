@@ -430,7 +430,7 @@ function tc_controls_setup()
 				), 60
 			),
 			w3_inline('w3-margin-T-8/w3-margin-right',
-			   w3_select_conditional('w3-text-red', '', '', 'tc.config', tc.config, tc.sig_s, 'tc_signal_menu_cb'),
+			   w3_select_conditional('w3-text-red w3-width-auto', '', '', 'tc.config', tc.config, tc.sig_s, 'tc_signal_menu_cb'),
             w3_button('w3-padding-small w3-css-yellow', 'Re-sync', 'timecode_resync_cb'),
             w3_button('w3-padding-small w3-aqua', 'Reset PLL', 'timecode_reset_pll_cb'),
             //w3_checkbox('w3-label-inline w3-label-not-bold/', 'update Kiwi<br>date &amp; time', 'tc.update', tc.update, 'w3_bool_cb'),
