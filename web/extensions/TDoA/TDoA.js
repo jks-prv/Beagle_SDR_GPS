@@ -2627,7 +2627,7 @@ function TDoA_config_html()
    var s =
       w3_inline_percent('w3-container',
          w3_div('w3-center',
-            w3_select('', 'Number of simultaneous channels available<br>for connection by the TDoA service',
+            w3_select('w3-width-auto', 'Number of simultaneous channels available<br>for connection by the TDoA service',
                '', 'tdoa_nchans', tdoa.nchans, tdoa.chans_u, 'admin_select_cb'),
             w3_div('w3-margin-T-8 w3-text-black',
                'If you want to limit incoming connections from the <br> kiwisdr.com TDoA service set this value.<br>' +

@@ -1537,7 +1537,7 @@ function DRM_config_html()
    var s =
       w3_inline_percent('w3-container',
          w3_div('w3-center',
-            w3_select('w3-text-red', 'Number of non-DRM connections allowed<br>when DRM in use',
+            w3_select('w3-width-auto', 'Number of non-DRM connections allowed<br>when DRM in use',
                '', 'DRM.nreg_chans', drm.nreg_chans, drm.nreg_chans_u, 'admin_select_cb')
          ), 40
       );
