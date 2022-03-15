@@ -449,7 +449,7 @@ function fax_controls_setup()
    fax.data_canvas.height = fax_h.toString();
    fax.copy_canvas.height = fax_h.toString();
    ext_set_data_height(fax.winH);
-   w3_el('id-fax-data').scrollTop = 0;
+   w3_scrollTop('id-fax-data');
    fax_clear_display();
 	w3_attribute(fax.data_canvas, 'title', 'shift-click/touch to align horizontally');
    
@@ -668,8 +668,9 @@ function fax_clear_cb()
 
 function fax_file_cb(path, param, first)
 {
+   if (first) return;
    fax.file ^= 1;
-   //console.log('flip fax.file='+ fax.file);
+   //console.log('flip fax.file='+ fax.file +' param='+ param);
    var el1 = w3_el('id-fax-file-icon');
    
    if (fax.file) {

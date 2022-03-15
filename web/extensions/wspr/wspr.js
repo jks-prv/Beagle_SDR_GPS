@@ -174,12 +174,12 @@ function wspr_recv(data)
 			case "WSPR_DECODED":
 				var s = decodeURIComponent(param[1]);
 				//console.log('WSPR: '+ s);
-				var o = html('id-wspr-decode');
-				var wasScrolledDown = kiwi_isScrolledDown(o);
-				o.innerHTML += s +'<br>';
+				var el = w3_el('id-wspr-decode');
+				var wasScrolledDown = w3_isScrolledDown(el);
+				el.innerHTML += s +'<br>';
 				
 				// only jump to bottom of updated list if it was already sitting at the bottom
-				if (wasScrolledDown) o.scrollTop = o.scrollHeight;
+				if (wasScrolledDown) w3_scrollDown(el);
 				break;
 			
 			case "WSPR_UPLOAD":
@@ -553,7 +553,7 @@ function wspr_autorun_select_cb(path, idx, first)
    if (first) return;
    w3_show('id-wspr-restart');
 	var el = w3_el('id-kiwi-container');
-	el.scrollTop = el.scrollHeight;     // keep menus visible
+	w3_scrollDown(el);   // keep menus visible
 }
 
 function wspr_config_focus()

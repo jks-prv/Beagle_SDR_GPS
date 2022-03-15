@@ -1839,7 +1839,7 @@ var _gps = {
    legend_all: w3_inline('', pin.green, 'all sats (Navstar/QZSS/Galileo)')
 };
 
-var E1B_offset_i = { 0:'-1', 1:'-3/4', 2:'-1/2', 3:'-1/4', 4:'0', 5:'+1/4', 6:'+1/2', 7:'+3/4', 8:'+1' };
+//var E1B_offset_i = [ '-1', '-3/4', '-1/2', '-1/4', '0', '+1/4', '+1/2', '+3/4', '+1' ];
 
 function gps_html()
 {
@@ -3214,6 +3214,12 @@ function admin_msg(param)
 			if (obj) dx_json(obj);
 			break;
 		
+		case "admin_mkr":
+			var mkr = param[1];
+			var obj = kiwi_JSON_parse('admin_mkr', mkr);
+			if (obj) dx_json_render(obj);
+			break;
+
 		default:
 		   return false;
    }
@@ -3318,7 +3324,7 @@ function admin_recv(data)
 				var el = w3_el('id-log-'+ log_msg_idx);
 				if (!el) break;
 				var el2 = w3_el('id-log-msg');
-				var wasScrolledDown = kiwi_isScrolledDown(el2);
+				var wasScrolledDown = w3_isScrolledDown(el2);
 				var s = kiwi_decodeURIComponent('log_msg_save', param[1]).replace(/</g, '&lt;').replace(/>/g, '&gt;');
 				el.innerHTML = s;
 

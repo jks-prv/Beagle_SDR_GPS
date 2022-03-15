@@ -643,12 +643,6 @@ function kiwi_clean_newline(s)
    return s.replace(/[\r\n\f\v]/g, '').replace(/\t/g, ' ');
 }
 
-// see: https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollHeight
-function kiwi_isScrolledDown(el)
-{
-   return el.scrollHeight - el.scrollTop === el.clientHeight;
-}
-
 // returns "http://" or "https://" depending if connection to Kiwi is using SSL or not
 function kiwi_SSL()
 {
@@ -1389,7 +1383,7 @@ function msg_send(s)
    return -1;
 }
 
-function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_cb)
+function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_cb, close_cb)
 {
 	if (!("WebSocket" in window) || !("CLOSING" in WebSocket)) {
 		console.log('WEBSOCKET TEST');
@@ -1422,6 +1416,7 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	ws.msg_cb = msg_cb;
 	ws.recv_cb = recv_cb;
 	ws.error_cb = error_cb;
+	ws.close_cb = close_cb;
 
 	// There is a delay between a "new WebSocket()" and it being able to perform a ws.send(),
 	// so must wait for the ws.onopen() to occur before sending any init commands.
@@ -1447,6 +1442,12 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	ws.onclose = function(evt) {
 	   ws.up = false;
 		console.log('WS-CLOSE: '+ ws.stream);
+
+		if (ws.close_cb) {
+	      try {
+			   ws.close_cb(ws);
+         } catch(ex) { console.log(ex); }
+		}
 	};
 	
 	ws.binaryType = "arraybuffer";
