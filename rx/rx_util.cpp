@@ -647,7 +647,8 @@ void geoloc_task(void *param)
     } while (!okay && retry < 10);
     kiwi_ifree(geo_host_ip_s);
     if (okay)
-        clprintf(conn, "GEOLOC: %s sent no geoloc info, we got \"%s\"\n", conn->remote_ip, conn->geo);
+        clprintf(conn, "GEOLOC: %s sent no geoloc info, we got \"%s\" from geo host #%d\n",
+            conn->remote_ip, conn->geo, i);
     else
         clprintf(conn, "GEOLOC: for %s FAILED for all geo servers\n", ip);
 }
@@ -663,6 +664,8 @@ char *rx_users(bool include_ip)
     for (rx = rx_channels, i=0; rx < &rx_channels[rx_chans]; rx++, i++) {
         n = 0;
         if (rx->busy) {
+            // rx->conn is always STREAM_SOUND for regular SND+WF connections and
+            // always STREAM_WATERFALL for WF-only connections
             conn_t *c = rx->conn;
             if (c && c->valid && c->arrived) {
                 assert(c->type == STREAM_SOUND || c->type == STREAM_WATERFALL);

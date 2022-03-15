@@ -152,17 +152,18 @@ void show_conn(const char *prefix, conn_t *cd)
         return;
     }
     
-    lprintf("%sCONN-%02d %p %s%s rx=%d auth%d kiwi%d prot%d admin%d local%d isP%d tle%d%d KA=%02d/60 KC=%05d mc=%9p ip=%s:%d other=%s%d %s%s%s\n",
+    lprintf("%sCONN-%02d %p %s%s rx=%d master%d auth%d kiwi%d prot%d admin%d local%d isP%d tle%d%d KA=%02d/60 KC=%05d mc=%9p ip=%s:%d other=%s%d %s%s%s\n",
         prefix, cd->self_idx, cd, rx_streams[cd->type].uri, cd->internal_connection? "(INT)":"",
         (cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel,
-        cd->auth, cd->auth_kiwi, cd->auth_prot, cd->auth_admin, cd->isLocal,
+        cd->isMaster? 1:0, cd->auth, cd->auth_kiwi, cd->auth_prot, cd->auth_admin, cd->isLocal,
         cd->isPassword, cd->tlimit_exempt, cd->tlimit_exempt_by_pwd,
         cd->keep_alive, cd->keepalive_count, cd->mc,
         cd->remote_ip, cd->remote_port, cd->other? "CONN-":"", cd->other? cd->other-conns:-1,
         (cd->type == STREAM_EXT)? (cd->ext? cd->ext->name : "?") : "",
         cd->stop_data? " STOP_DATA":"",
         cd->is_locked? " LOCKED":"");
-    if (cd->arrived)
+
+    if (cd->isMaster && cd->arrived)
         lprintf("       user=<%s> isUserIP=%d geo=<%s>\n", cd->user, cd->isUserIP, cd->geo);
 }
 
@@ -336,7 +337,7 @@ void rx_server_remove(conn_t *c)
 	c->stop_data = TRUE;
 	c->mc = NULL;
 
-	if (c->arrived) rx_loguser(c, LOG_LEAVING);
+    if (c->isMaster && c->arrived) rx_loguser(c, LOG_LEAVING);
 	webserver_connection_cleanup(c);
 	kiwi_free("user", c->user);
 	kiwi_ifree(c->geo);
@@ -775,11 +776,17 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 		}
 		
 		c->rx_channel = cother? cother->rx_channel : rx;
-		if (st->type == STREAM_SOUND && c->rx_channel != -1) rx_channels[c->rx_channel].conn = c;
+		if (st->type == STREAM_SOUND && c->rx_channel != -1) {
+		    rx_channels[c->rx_channel].conn = c;
+		    c->isMaster = true;
+		    if (cother) cother->isMaster = false;
+		}
 		
 		// e.g. for WF-only kiwirecorder connections (won't override above)
-		if (st->type == STREAM_WATERFALL && c->rx_channel != -1 && rx_channels[c->rx_channel].conn == NULL)
+		if (st->type == STREAM_WATERFALL && c->rx_channel != -1 && rx_channels[c->rx_channel].conn == NULL) {
 		    rx_channels[c->rx_channel].conn = c;
+		    c->isMaster = true;
+		}
 	}
   
 	c->mc = mc;
