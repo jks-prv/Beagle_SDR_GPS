@@ -324,19 +324,13 @@ hr
     opacity: 1;
 }
 
-.kiwi-dbg
+/* mt:8 bt:0.5 pt:4.5 f:19.5 pb:4.5 bb:0.5 = 37.5 */
+.cl-dx
 {
-	border: 1px solid red;		/* debug */
-}
-
-.kiwi-dbg2
-{
-	border: 1px solid blue;		/* debug */
-}
-
-.kiwi-dbg3
-{
-	border: 1px solid lime;		/* debug */
+    margin-top: 8px;
+    padding: 4.5px 0;
+    color: black;
+	border: 0.5px solid red;
 }
 
 

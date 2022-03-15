@@ -347,10 +347,28 @@ function w3_obj_num(o)
    return o;
 }
 
-function w3_obj_seq_el(o, idx)
+function w3_obj_seq_el(obj, idx)
 {
-   var keys = Object.keys(o);
-   return o[keys[idx]];
+   var keys = Object.keys(obj);
+   return obj[keys[idx]];
+}
+
+function w3_obj_key_seq(obj, key)
+{
+   var seq = null;
+   Object.keys(obj).forEach(function(_key, i) {
+      if (_key == key) seq = i;
+   });
+   return seq;
+}
+
+function w3_array_el_seq(arr, el)
+{
+   var seq = null;
+   arr.forEach(function(a_el, i) {
+      if (a_el == el) seq = i;
+   });
+   return seq;
 }
 
 function w3_obj_enum(obj, func, opt)
@@ -457,6 +475,14 @@ function w3_clamp(v, min, max, clamp_val)
          if (v < min || v > max) v = clamp_val;
    }
    
+   return v;
+}
+
+function w3_clamp3(v, min, max, clamp_min, clamp_max, clamp_NaN)
+{
+   if (isNaN(v)) return clamp_NaN;
+   if (v < min) return clamp_min;
+   if (v > max) return clamp_max;
    return v;
 }
 
@@ -1313,11 +1339,17 @@ function w3_copy_to_clipboard(val)
    document.body.removeChild(el);
 }
 
-// see: https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollHeight
+// see: developer.mozilla.org/en-US/docs/Web/API/Element/scrollHeight#determine_if_an_element_has_been_totally_scrolled
 function w3_isScrolledDown(id)
 {
    var el = w3_el(id);
-   return el.scrollHeight - el.scrollTop === el.clientHeight;
+   return (Math.abs(el.scrollHeight - el.clientHeight - el.scrollTop) < 1)
+}
+
+function w3_scrolledPosition(id)
+{
+   var el = w3_el(id);
+   return el.scrollTop / (el.scrollHeight - el.clientHeight);
 }
 
 // id element must have scroll property
@@ -1781,7 +1813,7 @@ function w3_button(psa, text, cb, cb_param)
 	}
 	
 	// w3-round-large listed first so its '!important' can be overriden by subsequent '!important's
-	var default_style = psa.includes('w3-round-')? '' : ' w3-round-large';
+	var default_style = (psa.includes('w3-round-') || psa.includes('w3-circle'))? '' : ' w3-round-large';
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left);
 	var psa_inner = w3_psa(psa3.right, path +' w3-btn w3-ext-btn'+ default_style, '', onclick);
@@ -2306,14 +2338,19 @@ function w3int_select_options(sel, opts)
    } else
 
    // { key0:opt0, key1:opt1, opt2:{} ... }
-   // object: enumerate sequentially like an array using key values,
-   // or key itself if key value is an object, as the menu options
+   // object: enumerate sequentially like an array.
+   // object elements
+   //    non-object: (number, string, etc.)
+   //       use element value as menu option text
+   //    object:
+   //       key itself is menu option text
+   //       *unless* value obj.menu_text exists, then obj.menu_text is menu option text
    if (isObject(opts)) {
       w3_obj_enum(opts, function(key, i, o) {
          var value, text, disabled = false;
          if (isObject(o)) {
             value = isDefined(o.value)? o.value : i;
-            text = key;
+            text = isDefined(o.menu_text)? o.menu_text : key;
             if (isDefined(o.disabled) && o.disabled) disabled = true;
          } else {
             value = i;
@@ -2814,6 +2851,8 @@ function w3_json_set_cfg_cb(path, val, first)
 	ext_set_cfg_param(path, val, save);
 }
 
+// path is structured to be: [el_name][sep][idx]
+// e.g. [id-dx.o.y][_][123]
 function w3_remove_trailing_index(path, sep)
 {
    sep = sep || '-';    // optional separator, e.g. if negative indicies are used

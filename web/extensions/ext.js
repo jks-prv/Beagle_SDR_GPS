@@ -101,7 +101,7 @@ function ext_get_cfg_param(path, init_val, save)
 		// save newly initialized value in configuration unless EXT_NO_SAVE specified
 		//console.log('ext_get_cfg_param: SAVE path='+ path +' init_val='+ init_val);
 		if (save == undefined || save == EXT_SAVE)
-			cfg_save_json(path);
+			cfg_save_json('ext_get_cfg_param', path);
 	}
 	
 	return cur_val;
@@ -120,7 +120,7 @@ function ext_set_cfg_param(path, val, save)
 	// save unless EXT_NO_SAVE specified
 	if (save != undefined && save == EXT_SAVE) {
 		//console.log('ext_set_cfg_param: SAVE path='+ path +' val='+ val);
-		cfg_save_json(path);
+		cfg_save_json('ext_set_cfg_param', path);
 	}
 }
 
