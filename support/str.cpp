@@ -355,6 +355,26 @@ void kiwi_str_unescape_quotes(char *str)
 	*o = '\0';
 }
 
+// inplace is okay because we are only ever shortening the string
+static void remove_unprintable_chars_inplace(char *str, int *printable, int *UTF)
+{
+	if (printable) *printable = 0;
+	if (UTF) *UTF = 0;
+
+    char *o = str;
+	for (char *s = str; *s != '\0'; s++) {
+	    int c = *((u1_t *) s);
+	    bool ok = ((isprint(c) && (!isspace(c) || c == ' ')) || c >= 0x80);
+        //printf("<%c>%02x ok=%d isspace=%d\n", c, c, ok, isspace(*s));
+	    if (ok) *o++ = c;
+	    
+        if (printable && ok) *printable = *printable + 1;
+        else
+        if (UTF && c >= 0x80) *UTF = *UTF + 1;
+	}
+	*o = '\0';
+}
+
 typedef struct {
     const char c;
     const char *rep;
@@ -369,12 +389,12 @@ static esc_HTML_t esc_HTML[] = {
 };
 
 // slow, but doesn't matter given who the current users are
-char *kiwi_str_escape_HTML(char *str)
+char *kiwi_str_escape_HTML(char *str, int *printable, int *UTF)
 {
     int i, n;
-	char *s, *o, *sn;
+	char *s;
 	esc_HTML_t *esc;
-	
+
 	n = 0;
 	for (s = str; *s != '\0'; s++) {
 	    for (esc = esc_HTML; esc < ARRAY_END(esc_HTML); esc++) {
@@ -385,9 +405,13 @@ char *kiwi_str_escape_HTML(char *str)
         }
     }
     
-    if (n == 0) return NULL;
-	sn = (char *) kiwi_imalloc("kiwi_str_escape_HTML", strlen(str) + n + SPACE_FOR_NULL);
-	o = sn;
+    if (n == 0) {
+        remove_unprintable_chars_inplace(str, printable, UTF);
+        return NULL;
+    }
+    
+	char *sn = (char *) kiwi_imalloc("kiwi_str_escape_HTML", strlen(str) + n + SPACE_FOR_NULL);
+	char *o = sn;
 
 	for (s = str; *s != '\0'; s++) {
 	    for (esc = esc_HTML; esc < ARRAY_END(esc_HTML); esc++) {
@@ -396,13 +420,12 @@ char *kiwi_str_escape_HTML(char *str)
                 break;
             }
         }
-        if (esc == ARRAY_END(esc_HTML)) {
-            if (isprint(*s))
-                *o++ = *s;
-        }
+        if (esc == ARRAY_END(esc_HTML))
+            *o++ = *s;
     }
 	
 	*o = '\0';
+    remove_unprintable_chars_inplace(sn, printable, UTF);
 	return sn;
 }
 
@@ -445,8 +468,9 @@ char *kiwi_str_encode(char *src, bool alt)
 	return dst;		// NB: caller must kiwi_ifree(dst)
 }
 
-#define N_DST_STATIC (1023 + SPACE_FOR_NULL)
-static char dst_static[N_DST_STATIC];
+#define N_DST_STATIC 4
+#define N_DST_STATIC_BUF (512 + SPACE_FOR_NULL)
+static char dst_static[N_DST_STATIC][N_DST_STATIC_BUF];
 
 // for use with e.g. an immediate printf argument
 char *kiwi_str_encode_static(char *src, bool alt)
@@ -455,10 +479,10 @@ char *kiwi_str_encode_static(char *src, bool alt)
 	size_t slen = strlen(src);
 
 	if (alt)
-	    kiwi_alt_encode(src, dst_static, N_DST_STATIC);
+	    kiwi_alt_encode(src, dst_static[0], N_DST_STATIC_BUF);
 	else
-	    mg_url_encode(src, slen, dst_static, N_DST_STATIC);
-	return dst_static;
+	    mg_url_encode(src, slen, dst_static[0], N_DST_STATIC_BUF);
+	return dst_static[0];
 }
 
 char *kiwi_str_decode_inplace(char *src)
@@ -473,12 +497,13 @@ char *kiwi_str_decode_inplace(char *src)
 }
 
 // for use with e.g. an immediate printf argument
-char *kiwi_str_decode_static(char *src)
+char *kiwi_str_decode_static(char *src, int which)
 {
 	if (src == NULL) return NULL;
+	check(which < N_DST_STATIC);
 	// yes, mg_url_decode() dst length includes SPACE_FOR_NULL
-	mg_url_decode(src, strlen(src), dst_static, N_DST_STATIC, 0);
-	return dst_static;
+	mg_url_decode(src, strlen(src), dst_static[which], N_DST_STATIC_BUF, 0);
+	return dst_static[which];
 }
 
 static u1_t decode_table[128] = {

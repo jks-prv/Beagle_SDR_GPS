@@ -269,6 +269,7 @@ input[type=range]::-moz-range-thumb {
 .w3-debug2 { border: 0.1px solid lime }
 .w3-debug3 { border: 0.1px solid cyan }
 .w3-debug4 { border: 0.1px solid yellow }
+.w3-debug5, .w3-black-box { border: 0.1px solid black }
 
 
 /* overrides above and use of display in general */
@@ -327,6 +328,11 @@ input[type=range]::-moz-range-thumb {
 .w3-crosshair
 {
     cursor: crosshair;
+}
+
+.w3-help
+{
+    cursor: help;
 }
 
 /* overrides w3-css with "cursor: not-allowed !important" that
@@ -484,6 +490,11 @@ input[type=range]::-moz-range-thumb {
 .w3-margin-R-10
 {
     margin-right: 10px
+}
+
+.w3-margin-R-15
+{
+    margin-right: 15px
 }
 
 .w3-margin-R-16
@@ -672,6 +683,16 @@ input[type=range]::-moz-range-thumb {
     padding: 0 0 8px 0
 }
 
+.w3-circle-pad
+{
+    padding: 2px 8px
+}
+
+.w3-circle-pad-small
+{
+    padding: 0 6px
+}
+
 
 /* flex container */
 /* css-tricks.com/snippets/css/a-guide-to-flexbox */
@@ -813,6 +834,11 @@ input[type=range]::-moz-range-thumb {
 .w3-hspace-16:not(:first-child)
 {
 	margin-left: 16px !important
+}
+
+.w3-margin-RE-16:last-child
+{
+	margin-right: 16px !important
 }
 
 .w3-hspace-32:not(:first-child)

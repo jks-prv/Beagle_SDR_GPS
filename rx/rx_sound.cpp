@@ -859,7 +859,7 @@ void c2s_sound(void *param)
 		}
 
         // set arrived when "ident_user=" received or if too much time has passed without it being received
-        if (!conn->arrived && (((cmd_recv & CMD_FREQ) && timer_sec() > (conn->arrival + 15)) || conn->ident)) {
+        if (!conn->arrived && (conn->ident || ((cmd_recv & CMD_FREQ) && timer_sec() > (conn->arrival + 15)))) {
             if (!conn->ident)
 			    kiwi_str_redup(&conn->user, "user", (char *) "(no identity)");
             rx_loguser(conn, LOG_ARRIVED);

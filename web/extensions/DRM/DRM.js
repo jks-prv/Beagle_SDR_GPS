@@ -1037,7 +1037,7 @@ function drm_desktop_controls_setup(w_graph)
          ) +
 
          w3_div('id-drm-options w3-display-right w3-text-white|top:230px; right:0px; width:200px; height:200px',
-            w3_select_hier('w3-text-red', '', '', 'drm.display_idx', drm.display_idx, drm.display_s, 'drm_display_cb'),
+            w3_select_hier('w3-text-red w3-width-auto', '', '', 'drm.display_idx', drm.display_idx, drm.display_s, 'drm_display_cb'),
             w3_div('w3-margin-T-8',
                w3_divs('id-drm-options-by-svc id-drm-options-by-time id-drm-options-by-freq/w3-tspace-4',
                   w3_div('cl-drm-sched-options-time w3-light-green', 'verified'),

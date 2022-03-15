@@ -56,7 +56,7 @@ typedef struct {
 } dx_mask_t;
 
 typedef struct {
-    dx_rx_t dx_rx[MAX_RX_CHANS];
+    dx_rx_t dx_rx[MAX_RX_CHANS + 1];    // +1 for STREAM_ADMIN use at end
 	dx_t *stored_list, *eibi_list;
 	int stored_len, eibi_len;
 	bool eibi_init;

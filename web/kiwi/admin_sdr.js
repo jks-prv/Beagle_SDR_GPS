@@ -43,15 +43,15 @@ var admin_sdr = {
 // config
 ////////////////////////////////
 
-var ITU_region_i = { 0:'R1: Europe, Africa', 1:'R2: North & South America', 2:'R3: Asia / Pacific' };
+var ITU_region_i = [ 'R1: Europe, Africa', 'R2: North & South America', 'R3: Asia / Pacific' ];
 
-var AM_BCB_chan_i = { 0:'9 kHz', 1:'10 kHz' };
+var AM_BCB_chan_i = [ '9 kHz', '10 kHz' ];
 
-var max_freq_i = { 0:'30 MHz', 1:'32 MHz' };
+var max_freq_i = [ '30 MHz', '32 MHz' ];
 
-var SPI_clock_i = { 0:'48 MHz', 1:'24 MHz' };
+var SPI_clock_i = [ '48 MHz', '24 MHz' ];
 
-var led_brightness_i = { 0:'brighest', 1:'medium', 2:'dimmer', 3:'dimmest', 4:'off' };
+var led_brightness_i = [ 'brighest', 'medium', 'dimmer', 'dimmest', 'off' ];
 
 var clone_host = '', clone_pwd = '';
 var clone_files_s = [ 'complete config', 'dx labels only' ];
@@ -1282,282 +1282,400 @@ function dx_html()
       zoom_nom = ZOOM_NOMINAL;
       bands_init();
 	   console.log('BANDS: saving new cfg.bands');
-      cfg_save_json('cfg.bands');
+      cfg_save_json('config.js', 'cfg.bands');
    } else {
 	   console.log('BANDS: using stored cfg.bands');
       bands_addl_info();
    }
-	
+   
    // reminder: "Nvh" means N% of the viewport (browser window) height
+   // 63vh gives exactly 12 entries in each of the band-bar/dx containers
+   //var vh = '63vh';
+   var vh = '32vh';
 	var s =
       w3_div('id-dx w3-hide',
-         w3_inline('w3-margin-T-16/w3-margin-between-16',
-            w3_text('w3-text-teal w3-bold', 'Band bars')
+         w3_inline('w3-margin-T-16 w3-halign-space-between/',
+            w3_inline('/w3-margin-between-16',
+               w3_button('w3-font-fixed w3-aqua w3-circle w3-circle-pad', '+', 'dx_expand_cb', 0),
+               w3_text('w3-text-teal w3-bold', 'Band bars'),
+               w3_text('id-band_bar-saved w3-margin-left w3-padding-medium w3-text-black w3-hide', 'Changes saved')
+            ),
+            w3_inline('',
+               w3_text('w3-margin-left w3-text-black', 'Hover over'),
+               w3_icon('w3-link-darker-color', 'fa-info-circle', 20),
+               w3_text('w3-text-black', '&nbsp;for info')
+            )
          ),
          
-         w3_div('w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
-            w3_div('id-band_bar-list-legend'),
-            w3_div('id-band_bar-list w3-margin-bottom|height:30vh;overflow-x:hidden;overflow-y:hidden')
+         w3_div('id-band_bar-container w3-container w3-hide w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
+            w3_div('id-band_bar-list-legend w3-margin-R-15'),
+            w3_div('id-band_bar-list w3-margin-bottom w3-black-box w3-scroll-y|height:'+ vh)
          ),
 
-	      w3_hr('w3-margin-16'),
-
-         w3_inline('w3-halign-space-between/',
+         w3_inline('w3-margin-T-24 w3-halign-space-between/',
             w3_inline('/w3-margin-between-16',
+               w3_button('w3-font-fixed w3-aqua w3-circle w3-circle-pad', '-', 'dx_expand_cb', 1),
                w3_text('w3-text-teal w3-bold', 'DX labels'),
-               w3_button('w3-yellow', 'Modify', 'dx_admin_mod_cb'),
-               w3_button('w3-green', 'Add', 'dx_admin_add_cb'),
-               w3_button('w3-red', 'Delete', 'dx_admin_del_cb')
+               w3_text('id-dx-saved w3-margin-left w3-padding-medium w3-text-black w3-hide', 'Changes saved')
             ),
             w3_input('w3-text-teal/w3-label-inline/w3-padding-small|width:300px', 'Filter', 'dx.o.filter', '', 'dx_filter_cb')
          ),
    
-         w3_div('w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
-            w3_div('id-dx-list-legend'),
-            w3_div('id-dx-list w3-margin-bottom|height:30vh;overflow-x:hidden;overflow-y:hidden')
+         w3_div('id-dx-list-container w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
+            w3_div('id-dx-list-legend w3-margin-R-15'),
+            w3_div('id-dx-list w3-margin-bottom w3-black-box w3-scroll-y|height:'+ vh +'|onscroll="dx_list_scroll();"')
          )
       );
    //console.log(s);
    return s;
 }
 
+function dx_expand_cb(path, which)
+{
+   which = +which;
+   //console.log('dx_expand_cb path='+ path +' which='+ which);
+   var el = w3_el(path);
+   var hide = (el.innerText == '-');
+   w3_hide2(which? 'id-dx-list-container' : 'id-band_bar-container', hide);
+   el.innerText = hide? '+' : '-';
+}
+
 function dx_focus()
 {
    if (!admin_sdr.dx_enabled) return;
    w3_innerHTML('id-band_bar-list-legend', '');
-   w3_el('id-band_bar-list').style.overflowY = 'hidden';
    w3_innerHTML('id-band_bar-list', '');
 
    w3_innerHTML('id-dx-list-legend', '');
-   w3_el('id-dx-list').style.overflowY = 'hidden';
    w3_innerHTML('id-dx-list',
       w3_div('w3-show-inline-block w3-relative|top:45%;left:45%',
-         w3_icon('', 'fa-refresh fa-spin', 48, 'teal'),
+         w3_icon('', 'fa-refresh fa-spin', 48, 'black'),
          w3_div('id-dx-list-count w3_text_black')
       )
    );
    
    console.log('### dx_focus: SET GET_DX_JSON');
 	ext_send('SET GET_DX_JSON');
+	// calls dx_json() below on callback
 }
 
-function dx_hide()
+function dx_json(len)
 {
-}
-
-function dx_band_bar_json(_band_bar)
-{
-   var i, len = _band_bar.band_bar.length;
-   var s_a = [];
+   if (!admin_sdr.dx_enabled) return;
+   var i;
+   console.log('### dx_json: entries='+ len);
+   w3_innerHTML('id-dx-list-count', 'loading '+ len +' entries');
    
-   dx.o.tags = [];
+   band_bar_json_cb();
+   
+   // if this isn't delayed the above innerHTML set of id-dx-list-count doesn't
+   // have enough time to render and be seen
+   setTimeout(function() { dx_json_cb(len); }, 500);
+}
 
-   for (i = -1; i < len; i++) {
-      var d = null;
-      var fr = '', mo = 0, id = '', no = '';
-      var pb = '', ty = 0, os = '', ext = '';
-      var ts = 0, tag = '';
-      var hide = (i == -1)? 'w3-hide ':'';
-      
+function dx_blur()
+{
+   console.log('dx_blur');
+   band_bar_save();
+}
+
+
+function dx_btn(c) { return 'w3-font-fixed w3-circle w3-circle-pad-small '+ c; }
+	
+function dx_spacer() { return w3_div('w3-font-fixed w3-circle-pad-small w3-pale-blue', '&nbsp;'); }
+
+function band_bar_json_cb()
+{
+   var i, b1, b2;
+   var s_a = [];
+   var LEGEND = -1;
+   var icon = 'w3-link-darker-color w3-help';
+   var band_i = 'typ bar baz\none two xxx';
+   var band_l = 'Band name '+ w3_icon(icon +'||title='+ dq(band_i), 'fa-info-circle', 20);
+   var type_i = 'typ bar baz\none two xxx';
+   var type_l = 'Type '+ w3_icon(icon +'||title='+ dq(type_i), 'fa-info-circle', 20);
+   var itu_i = 'itu bar baz\none two xxx';
+   var itu_l = 'ITU / Visibility '+ w3_icon(icon +'||title='+ dq(itu_i), 'fa-info-circle', 20);
+   var chan_i = 'itu bar baz\none two xxx';
+   var chan_l = 'Chan '+ w3_icon(icon +'||title='+ dq(chan_i), 'fa-info-circle', 20);
+   var sel_i = 'itu bar baz\none two xxx';
+   var sel_l = 'Select freq/mode '+ w3_icon(icon +'||title='+ dq(sel_i), 'fa-info-circle', 20);
+   
+   for (i = LEGEND; i < cfg.bands.length; i++) {
+      b1 = (i != LEGEND)? cfg.bands[i] : {};
+
       // done this way so all the s_new code can be reused to construct the legend
-      var h = function(psa) { return (i == -1)? 'w3-hide' : psa; }
-      var l = function(label) { return (i == -1)? label : ''; }
-      if (i != -1) {
-         d = _band_bar.band_bar[i];
-         fr = d[0];
-         mo = kiwi.modes_s[d[1].toLowerCase()];
-         id = kiwi_decodeURIComponent('dx_id', d[2]);
-         no = kiwi_decodeURIComponent('dx_no', d[3]);
-         ts = d[4];
-         tag = d[5];
-         dx.o.tags[i] = tag;
-         
-         var lo = 0, hi = 0;
-         var opt = d[6];
-         if (opt) {
-            if (opt.WL == 1) ty = dx.stored_types.watch_list; else
-            if (opt.SB == 1) ty = dx.stored_types.sub_band; else
-            if (opt.DG == 1) ty = dx.stored_types.DGPS; else
-            if (opt.NoN == 1) ty = dx.stored_types.special_event; else    // deprecated
-            if (opt.SE == 1) ty = dx.stored_types.special_event; else
-            if (opt.XX == 1) ty = dx.stored_types.interference; else
-            if (opt.MK == 1) ty = dx.stored_types.masked; else
-            ty = 0;
-
-            if (opt.lo) lo = +opt.lo;
-            if (opt.hi) hi = +opt.hi;
-            if (opt.o) os = opt.o;
-            if (opt.p) ext = opt.p;
-         }
-
-         if (lo || hi) {
-            if (lo == -hi) {
-               pb = (Math.abs(hi)*2).toFixed(0);
-            } else {
-               pb = lo.toFixed(0) +', '+ hi.toFixed(0);
-            }
-         }
-
-      }
+      var h = function(psa) { return (i == LEGEND)? 'w3-hide' : psa; }
+      var l = function(label) { return (i == LEGEND)? label : ''; }
       
-      // 'path'+i so path id is unique for field highlight
-      //console.log('i='+ i +' mo='+ mo +' ty='+ ty);
-      //console.log(d);
+      var cbf = 'band_bar_float_cb|';
+      var type = w3_obj_key_seq(kiwi.svc, b1.svc);    // remember, b1.svc is a letter e.g. 'B' = bcast
+      var itu = (b1.itu > 0)? b1.itu : 0;
+      
       var s_new =
-         w3_divs('w3-text-teal/w3-margin-T-8',
-            w3_col_percent('',
-               w3_col_percent('w3-valign/w3-hspace-16',
-                  //w3_text('w3-text-black w3-tiny', tag), 5,
-                  (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-selection-green', '+', 'dx_admin_add_cb', i), 1,
-                  (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-red', '-', 'dx_admin_del_cb', i), 1,
-                  w3_input(h('w3-padding-small||size=8'), l('Freq'), 'dx.o.f_'+i, fr, 'dx_num_cb'), 19,
-                  w3_select(h('w3-text-red'), l('Mode'), '', 'dx.o.m_'+i, mo, kiwi.modes_u, 'dx_sel_cb'), 19,
-                  w3_input(h('w3-padding-small||size=4'), l('Passband'), 'dx.o.pb_'+i, pb, 'dx_passband_cb'), 19,
-                  w3_select(h('w3-text-red'), l('Type'), '', 'dx.o.y_'+i, ty, dx.stored_types, 'dx_sel_cb'), 19,
-                  w3_input(h('w3-padding-small||size=2'), l('Offset'), 'dx.o.o_'+i, os, 'dx_num_cb'), 19
-               ), 45,
-               w3_col_percent('w3-valign/w3-margin-left',
-                  w3_input(h('w3-padding-small'), l('Ident'), 'dx.o.i_'+i, id, 'dx_string_cb'), 40,
-                  w3_input(h('w3-padding-small'), l('Notes'), 'dx.o.n_'+i, no, 'dx_string_cb'), 40,
-                  w3_input(h('w3-padding-small'), l('Extension'), 'dx.o.p_'+i, ext, 'dx_string_cb'), 20
-               ), 54
-            )
+         w3_inline_percent('w3-valign w3-text-black/w3-margin-T-8 w3-hspace-16 w3-margin-RE-16',
+            w3_inline('w3-margin-L-8',
+               (i == LEGEND)? dx_spacer() : w3_button(dx_btn('w3-css-lime'), '+', 'band_bar_add_cb', i),
+               (i == LEGEND)? dx_spacer() : w3_button(dx_btn('w3-css-red'), '-', 'band_bar_del_cb', i)
+            ), 2,
+            w3_input(h('w3-padding-small||size=8'), l('Min kHz'), i+'_bands.min', b1.min, cbf +'0'), 10,
+            w3_input(h('w3-padding-small||size=8'), l('Max kHz'), i+'_bands.max', b1.max, cbf +'1'), 10,
+            w3_input(h('w3-padding-small'), l(band_l), i+'_bands.n', b1.name, 'band_bar_name_cb'), 25,
+            w3_select(h('w3-text-red'), l(type_l), '', i+'_bands.t', type, kiwi.svc, 'band_bar_select_cb', 't'), 10,
+            w3_select(h('w3-text-red'), l(itu_l), '', i+'_bands.i', itu, kiwi.ITU_s, 'band_bar_select_cb', 'i'), 25,
+            w3_input(h('w3-padding-small||size=6'), l(chan_l), i+'_bands.c', b1.chan, cbf +'2'), 7,
+            w3_input(h('w3-padding-small||size=8'), l(sel_l), i+'_bands.s', b1.sel, 'band_bar_sel_cb'), 15
          );
       
-      if (i == -1) {
+      if (i == LEGEND) {
          w3_innerHTML('id-band_bar-list-legend', s_new);
       } else {
          s_a[i] = s_new;
       }
    }
-   w3_el('id-band_bar-list').style.overflowY = 'scroll';
-   console.log('BAND BAR render START');
    w3_innerHTML('id-band_bar-list', s_a.join(''));
-   console.log('BAND BAR render RETURN');
 }
 
-function dx_json(_dx)
+function band_bar_sched_save()
 {
-   if (!admin_sdr.dx_enabled) return;
-   var i, len = _dx.dx.length;
-   console.log('### dx_json: entries='+ len);
-   w3_innerHTML('id-dx-list-count', 'loading '+ len +' entries');
-   
-   // if this isn't delayed the above innerHTML set of id-dx-list-count doesn't
-   // have enough time to render and be seen
-   setTimeout(function() { dx_json2(_dx); }, 500);
+   kiwi_clearTimeout(admin_sdr.cfg_save_timeout);
+   admin_sdr.cfg_save_timeout = setTimeout(function() { band_bar_save(); }, 2000);
+   admin_sdr.cfg_save_sched = true;
 }
 
-function dx_json2(_dx)
+function band_bar_save(now)
 {
-   var i, len = _dx.dx.length;
-   var s_a = [];
-   
-   dx.o.tags = [];
+   kiwi_clearTimeout(admin_sdr.cfg_save_timeout);
+   if (now || admin_sdr.cfg_save_sched == true) {
+      admin_sdr.cfg_save_sched = false;
+	   console.log('BANDS: saving cfg.bands');
+	   w3_hide2('id-band_bar-saved', false);
+	   var fade = 1000;
+      w3_flash_fade('id-band_bar-saved', 'cyan', 50, fade, 'white');
+	   setTimeout(function() {
+	      w3_hide2('id-band_bar-saved');
+	   }, fade + 250);
+      cfg_save_json('band_bar_save', 'cfg.bands');
+   }
+}
 
-   //for (i = -1; i < len; i++) {
-   for (i = -1; i < 44; i++) {
+function band_bar_add_cb(path, val, first)
+{
+   if (first) return;
+   var i = +val;
+   console.log('band_bar_add_cb path='+ path +' i='+ i);
+   if (i < 0 || i >= cfg.bands.length) return;
+   var n = { min:0, max:0, name:'', svc:'B', itu:kiwi.ITU_ANY, sel:'', chan:0 };
+   // jksx FIXME: how to insert before first?
+   cfg.bands.splice(i+1, 0, n);
+   band_bar_save(true);
+   bands_addl_info();
+   band_bar_json_cb();
+}
+
+function band_bar_del_cb(path, val, first)
+{
+   if (first) return;
+   var i = +val;
+   console.log('band_bar_del_cb path='+ path +' i='+ i);
+   if (i < 0 || i >= cfg.bands.length) return;
+   cfg.bands.splice(i, 1);
+   band_bar_save(true);
+   bands_addl_info();
+   band_bar_json_cb();
+}
+
+function band_bar_float_cb(path, val, first, a_cb)
+{
+   if (first) return;
+   var i = parseInt(path);
+   if (i < 0 || i >= cfg.bands.length) return;
+   var which = +(a_cb[1])
+   var prior = cfg.bands[i][kiwi.cfg_fields[which]];
+
+   val = parseFloat(val);
+   console.log('band_bar_float_cb path='+ path +' val='+ val +' i='+ i +' which='+ which +' prior='+ prior);
+   val = +(val.toFixed(3));   // NB: .toFixed() does rounding
+   if (!isNumber(val)) val = prior;
+   w3_set_value(path, val? val : '');  // remove any non-numeric part from field, blank zero value
+   
+   if (which == 0) {
+      console.log('cfg.bands['+ i +'].min='+ val);
+      cfg.bands[i].min = val;
+   } else
+   if (which == 1) {
+      console.log('cfg.bands['+ i +'].max='+ val);
+      cfg.bands[i].max = val;
+   } else
+   if (which == 2) {
+      console.log('cfg.bands['+ i +'].chan='+ val);
+      cfg.bands[i].chan = val;
+   }
+   
+   band_bar_sched_save();
+}
+
+function band_bar_name_cb(path, val, first)
+{
+   if (first) return;
+   var i = parseInt(path);
+   console.log('band_bar_name_cb path='+ path +' val='+ val +' i='+ i);
+   if (i < 0 || i >= cfg.bands.length) return;
+   cfg.bands[i].name = val;
+   band_bar_sched_save();
+}
+
+function band_bar_sel_cb(path, val, first)
+{
+   if (first) return;
+   var i = parseInt(path);
+   console.log('band_bar_sel_cb path='+ path +' val='+ val +' i='+ i);
+   if (i < 0 || i >= cfg.bands.length) return;
+   cfg.bands[i].sel = val;
+   band_bar_sched_save();
+}
+
+function band_bar_select_cb(path, val, first, which)
+{
+   if (first) return;
+   var i = parseInt(path);
+   val = +val;
+   console.log('band_bar_select_cb path='+ path +' val='+ val +' i='+ i +' which='+ which);
+   if (i < 0 || i >= cfg.bands.length) return;
+
+   if (which == 't') {
+      console.log('cfg.bands['+ i +'].svc='+ kiwi.svc_s[val]);
+      cfg.bands[i].svc = kiwi.svc_s[val];
+   } else
+   if (which == 'i') {
+      console.log('cfg.bands['+ i +'].itu='+ val);
+      cfg.bands[i].itu = val;
+   }
+
+   band_bar_sched_save();
+}
+
+
+function dx_json_render(obj)
+{
+   var i, j;
+   //console.log(obj);
+
+   var s_a = dx.o.arr;
+   for (i = dx.o.last_start; i <= dx.o.last_end; i++) {
+      s_a[i] = w3_div('cl-dx', i);
+   }
+
+   dx.o.last_pb = [];
+
+   // obj[0] is the header object, but we use its slot for the i = -1 legend hack
+   var LEGEND = -1;
+   for (j = 0; j < obj.length; j++) {
+      i = j? obj[j].g : LEGEND;
+      //console.log('j='+ j +' i='+i);
+
       var d = null;
-      var fr = '', mo = 0, id = '', no = '';
-      var pb = '', ty = 0, os = '', ext = '';
-      var ts = 0, tag = '';
-      var hide = (i == -1)? 'w3-hide ':'';
-      
+      var fr, mo, id, no = '';
+      var pb = '', ty = 0, os, ext = '';
+   
       // done this way so all the s_new code can be reused to construct the legend
-      var h = function(psa) { return (i == -1)? 'w3-hide' : psa; }
-      var l = function(label) { return (i == -1)? label : ''; }
-      if (i != -1) {
-         d = _dx.dx[i];
-         fr = d[0];
-         mo = kiwi.modes_s[d[1].toLowerCase()];
-         id = kiwi_decodeURIComponent('dx_id', d[2]);
-         no = kiwi_decodeURIComponent('dx_no', d[3]);
-         ts = d[4];
-         tag = d[5];
-         dx.o.tags[i] = tag;
-         
-         var lo = 0, hi = 0;
-         var opt = d[6];
-         if (opt) {
-            if (opt.WL == 1) ty = dx.stored_types.watch_list; else
-            if (opt.SB == 1) ty = dx.stored_types.sub_band; else
-            if (opt.DG == 1) ty = dx.stored_types.DGPS; else
-            if (opt.NoN == 1) ty = dx.stored_types.special_event; else    // deprecated
-            if (opt.SE == 1) ty = dx.stored_types.special_event; else
-            if (opt.XX == 1) ty = dx.stored_types.interference; else
-            if (opt.MK == 1) ty = dx.stored_types.masked; else
-            ty = 0;
+      var h = function(psa) { return (i == LEGEND)? 'w3-hide' : psa; }
+      var l = function(label) { return (i == LEGEND)? label : ''; }
+      if (i != LEGEND) {
+         d = obj[j];
+         fr = d.f;
+         mo = d.x & dx.DX_MODE;
+         ty = (d.x & dx.DX_TYPE) >> dx.DX_TYPE_SFT;
+         id = kiwi_decodeURIComponent('dx_id', d.i);
+         if (d.n) no = kiwi_decodeURIComponent('dx_no', d.n);
+         if (d.p) ext = kiwi_decodeURIComponent('dx_ext', d.p);
+         os = d.o;
 
-            if (opt.lo) lo = +opt.lo;
-            if (opt.hi) hi = +opt.hi;
-            if (opt.o) os = opt.o;
-            if (opt.p) ext = opt.p;
-         }
-
+         var lo = d.lo, hi = d.hi;
          if (lo || hi) {
             if (lo == -hi) {
                pb = (Math.abs(hi)*2).toFixed(0);
             } else {
                pb = lo.toFixed(0) +', '+ hi.toFixed(0);
             }
+         
+            dx.o.last_pb[i] = [lo, hi];
          }
 
       }
-      
-      // 'path'+i so path id is unique for field highlight
+   
+      // 'path'+ '_'+i for compatibility with w3_remove_trailing_index(path, '_')
+
       //console.log('i='+ i +' mo='+ mo +' ty='+ ty);
       //console.log(d);
       var s_new =
-         w3_divs('w3-text-teal/w3-margin-T-8',
-            w3_col_percent('',
-               w3_col_percent('w3-valign/w3-hspace-16',
-                  //w3_text('w3-text-black w3-tiny', tag), 5,
-                  (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-selection-green', '+', 'dx_admin_add_cb', i), 1,
-                  (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-red', '-', 'dx_admin_del_cb', i), 1,
-                  w3_input(h('w3-padding-small||size=8'), l('Freq'), 'dx.o.f_'+i, fr, 'dx_num_cb'), 19,
-                  w3_select(h('w3-text-red'), l('Mode'), '', 'dx.o.m_'+i, mo, kiwi.modes_u, 'dx_sel_cb'), 19,
-                  w3_input(h('w3-padding-small||size=4'), l('Passband'), 'dx.o.pb_'+i, pb, 'dx_passband_cb'), 19,
-                  w3_select(h('w3-text-red'), l('Type'), '', 'dx.o.y_'+i, ty, dx.stored_types, 'dx_sel_cb'), 19,
-                  w3_input(h('w3-padding-small||size=2'), l('Offset'), 'dx.o.o_'+i, os, 'dx_num_cb'), 19
-               ), 45,
-               w3_col_percent('w3-valign/w3-margin-left',
-                  w3_input(h('w3-padding-small'), l('Ident'), 'dx.o.i_'+i, id, 'dx_string_cb'), 40,
-                  w3_input(h('w3-padding-small'), l('Notes'), 'dx.o.n_'+i, no, 'dx_string_cb'), 40,
-                  w3_input(h('w3-padding-small'), l('Extension'), 'dx.o.p_'+i, ext, 'dx_string_cb'), 20
-               ), 54
-            )
+         w3_inline_percent('w3-valign w3-text-black/w3-margin-T-8 w3-hspace-16 w3-margin-RE-16',
+            w3_inline('w3-margin-L-8',
+               (i == LEGEND)? dx_spacer() : w3_button(dx_btn('w3-css-lime'), '+', 'dx_admin_add_cb', i),
+               (i == LEGEND)? dx_spacer() : w3_button(dx_btn('w3-css-red'), '-', 'dx_admin_del_cb', i)
+            ), 4,
+            w3_input(h('w3-padding-small||size=8'), l('Freq kHz'), 'dx.o.f_'+i, fr, 'dx_num_cb'), 19,
+            w3_select(h('w3-text-red'), l('Mode'), '', 'dx.o.m_'+i, mo, kiwi.modes_u, 'dx_sel_cb'), 15,
+            w3_input(h('w3-padding-small||size=4'), l('Passband Hz'), 'dx.o.pb_'+i, pb, 'dx_passband_cb'), 25,
+            w3_select(h('w3-text-red'), l('Type'), '', 'dx.o.y_'+i, ty, dx.stored_types, 'dx_sel_cb'), 25,
+            w3_input(h('w3-padding-small||size=2'), l('Offset Hz'), 'dx.o.o_'+i, os, 'dx_num_cb'), 18,
+            w3_input(h('w3-padding-small'), l('Ident'), 'dx.o.i_'+i, id, 'dx_string_cb'), 40,
+            w3_input(h('w3-padding-small'), l('Notes'), 'dx.o.n_'+i, no, 'dx_string_cb'), 40,
+            w3_input(h('w3-padding-small'), l('Extension'), 'dx.o.p_'+i, ext, 'dx_string_cb'), 25
          );
-      
-      if (i == -1) {
+   
+      if (i == LEGEND) {
          w3_innerHTML('id-dx-list-legend', s_new);
       } else {
          s_a[i] = s_new;
       }
    }
-   w3_el('id-dx-list').style.overflowY = 'scroll';
-   console.log('DX render START');
+
    w3_innerHTML('id-dx-list', s_a.join(''));
-   console.log('DX render RETURN');
+   dx.o.last_start = obj[1].g;
+   dx.o.last_end = obj[obj.length-1].g;
+}
+
+function dx_json_cb(len)
+{
+   var s_a = [];
+   dx.o.len = len;
+   dx.o.arr = s_a;
+   dx.o.last_start = dx.o.last_end = 0;
+   for (var i = 0; i < len; i++) {
+      s_a[i] = w3_div('cl-dx', i);
+   }
+
+   w3_innerHTML('id-dx-list', s_a.join(''));
+	dx_list_scroll();
+}
+
+function dx_list_scroll()
+{
+   // quantize scroll events a bit
+   var pos = w3_scrolledPosition('id-dx-list');
+   kiwi_clearTimeout(dx.scroll_timeout);
+   dx.scroll_timeout = setTimeout(function() { dx_list_scroll_done(pos); }, 100);
+}
+
+function dx_list_scroll_done(pos)
+{
+   //console.log('dx_list_scroll '+ Math.round(pos * 100) +'%');
+   var el = w3_el('id-dx-list');
+   var entries_visible = Math.round(el.clientHeight / 37.5);
+   var slop = 1;
+   var start = Math.round(pos * (dx.o.len - entries_visible));
+   start = Math.max(0, start - slop);
+   var end = start + entries_visible;
+   end = Math.min(end + slop, dx.o.len);
+   //console.log('dx_list_scroll '+ pos.toFixed(2) +' '+ start +'|'+ end +' ent='+ entries_visible);
+   
+	ext_send('SET MARKER idx1='+ start +' idx2='+ end);
 }
 
 function dx_filter_cb(path, p)
 {
    console.log('dx_filter_cb p='+ p);
-}
-
-function dx_admin_mod_cb(path, p)
-{
-   console.log('dx_admin_mod_cb p='+ p);
-}
-
-function dx_admin_add_cb(path, p)
-{
-   console.log('dx_admin_add_cb p='+ p);
-}
-
-function dx_admin_del_cb(path, p)
-{
-   console.log('dx_admin_del_cb p='+ p);
 }
 
 

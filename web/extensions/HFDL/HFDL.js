@@ -335,7 +335,7 @@ function hfdl_controls_setup()
       
       w3_div('id-hfdl-options w3-display-right w3-text-white|top:230px; right:0px; width:250px; height:200px',
          w3_text('w3-text-aqua w3-bold', 'HFDL options'),
-         w3_select('w3-margin-T-4 '+ hfdl.sfmt, '', 'show', 'hfdl.show', hfdl.show, hfdl.show_s, 'hfdl_show_cb'),
+         w3_select('w3-margin-T-4 w3-width-auto '+ hfdl.sfmt, '', 'show', 'hfdl.show', hfdl.show, hfdl.show_s, 'hfdl_show_cb'),
          
          w3_button('id-hfdl-show-kiwi w3-margin-T-10 class-button w3-cyan w3-momentary', 'Show Kiwi', 'hfdl_show_kiwi_cb', 1),
 

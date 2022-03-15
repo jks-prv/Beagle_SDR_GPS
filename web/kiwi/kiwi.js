@@ -27,21 +27,37 @@ var kiwi = {
    modes_l: [ 'am', 'amn', 'usb', 'lsb', 'cw', 'cwn', 'nbfm', 'iq', 'drm', 'usn', 'lsn', 'sam', 'sal', 'sau', 'sas', 'qam' ],
    modes_u: [],
    modes_s: {},
+
+   
+   // cfg.bands
+
+   cfg_fields: [ 'min', 'max', 'chan' ],
    
    svc: {
-      B: { name:'Broadcast',  color:'red' },
-      U: { name:'Utility',    color:'green' },
-      A: { name:'Amateur',    color:'blue' },
-      L: { name:'Beacons',    color:'blue' },
-      I: { name:'ISM',        color:'orange',   longName:'Industrial/Scientific' },
-      M: { name:'Markers',    color:'purple' },
-      X: { name:'QRN',        color:'red' },
-      N: { name:'Event',      color:'yellow' }
+      B: { menu_text:'Broadcast',   color:'red' },
+      U: { menu_text:'Utility',     color:'green' },
+      A: { menu_text:'Amateur',     color:'blue' },
+      L: { menu_text:'Beacons',     color:'blue' },
+      I: { menu_text:'ISM',         color:'orange',   longName:'Industrial/Scientific' },
+      M: { menu_text:'Markers',     color:'purple' },
+      X: { menu_text:'QRN',         color:'magenta' },
+      N: { menu_text:'Event',       color:'deepPink' }
    },
+   svc_s: "BUALIMXN",
+   
+   ITU_s: [
+      'any',
+      'R1: Europe, Africa',
+      'R2: North & South America',
+      'R3: Asia / Pacific',
+      'show on band scale only',
+      'show on band menu only'
+   ],
    
    ITU_ANY: 0,
-   BAND_SCALE_ONLY: -1,
-   BAND_MENU_ONLY: -2,
+   BAND_SCALE_ONLY: 4,
+   BAND_MENU_ONLY: 5,
+
    
    RX4_WF4:0, RX8_WF2:1, RX3_WF3:2, RX14_WF0:3,
    
@@ -433,7 +449,7 @@ function kiwi_get_init_settings()
 var cfg = { };
 var adm = { };
 
-function cfg_save_json(path)
+function cfg_save_json(id, path)
 {
 	//console.log('cfg_save_json: path='+ path);
 	//kiwi_trace();
@@ -446,7 +462,7 @@ function cfg_save_json(path)
 		s = encodeURIComponent(JSON.stringify(cfg, null, 3));    // pretty-print the JSON
 		extint.ws.send('SET save_cfg='+ s);
 	}
-	console.log('cfg_save_json: DONE');
+	console.log('cfg_save_json: from='+ id +' path='+ path +' DONE');
 }
 
 ////////////////////////////////
@@ -984,7 +1000,7 @@ function kiwi_output_msg(id, id_scroll, p)
                p.col++;
             }
             if (c == '\n' || p.col == p.ncol) {
-               wasScrolledDown = kiwi_isScrolledDown(el_scroll);
+               wasScrolledDown = w3_isScrolledDown(el_scroll);
                p.tstr += snew;
                if (p.tstr == '') p.tstr = '&nbsp;';
                p.el.innerHTML = p.tstr;
@@ -994,19 +1010,19 @@ function kiwi_output_msg(id, id_scroll, p)
                p.col = 0;
             
                if (w3_contains(el_scroll, 'w3-scroll-down') && (!p.scroll_only_at_bottom || (p.scroll_only_at_bottom && wasScrolledDown)))
-                  el_scroll.scrollTop = el_scroll.scrollHeight;
+                  w3_scrollDown(el_scroll);
             }
          }
 		}  // ignore any other chars
 	}
 
-   wasScrolledDown = kiwi_isScrolledDown(el_scroll);
+   wasScrolledDown = w3_isScrolledDown(el_scroll);
    p.tstr += snew;
    //console.log('TEXT '+ JSON.stringify(p.tstr));
    p.el.innerHTML = p.tstr;
 
 	if (w3_contains(el_scroll, 'w3-scroll-down') && (!p.scroll_only_at_bottom || (p.scroll_only_at_bottom && wasScrolledDown)))
-		el_scroll.scrollTop = el_scroll.scrollHeight;
+      w3_scrollDown(el_scroll);
 }
 
 function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_gps_clk_corrections)
@@ -1430,6 +1446,7 @@ function user_cb(obj)
          } while (!okay);
 		   
 			var id = kiwi_strip_tags(deco, '');
+			if (!kiwi.called_from_admin && id == '') id = '(no identity)';
 			if (id != '') id = '"'+ id + '" ';
 			var g = (geoloc == '(null)' || geoloc == '')? 'unknown location' : decodeURIComponent(geoloc);
 			ip = ip.replace(/::ffff:/, '');		// remove IPv4-mapped IPv6 if any
@@ -1496,7 +1513,7 @@ function user_cb(obj)
          }
 		}
 		
-		// another action like a frequency change reset timer
+		// another action like a frequency change resets timer
       if (i == rx_chan && obj.rn > 55 && kiwi.inactivity_panel) {
          confirmation_panel_close();
          kiwi.inactivity_panel = false;
@@ -1608,6 +1625,12 @@ function kiwi_mapPinSymbol(fillColor, strokeColor) {
    };
 }
 
+// not the same as ext_isAdmin() which asks the server for current admin status confirmation
+function isAdmin()
+{
+   return (Object.keys(adm).length != 0);
+}
+
 
 ////////////////////////////////
 // control messages
@@ -1715,7 +1738,10 @@ function kiwi_msg(param, ws)
          break;
       
 		case "request_dx_update":
-			dx_update();
+		   if (isAdmin())
+		      console.log('SET DX_UPD done');
+		   else
+			   dx_update();
 			break;
 
 		case "mkr":

@@ -6,37 +6,55 @@
 		SECURITY: can eval arbitrary code input?
 */
 
-function dx_update_check(idx)
+function dx_update_check(idx, isPassband)
 {
    idx = +idx;
    if (idx == -1) return;     // called from user connection label edit panel, not admin edit tab
 
-	console.log('### dx_update_check idx='+ idx);
    dx.o.gid = idx;
-   var tag = dx.o.tags[idx];
-   dx.o.tag = tag;
-   var value = function(v) { return w3_get_value('dx.o.'+ v +'_'+ idx); }
-   dx.o.f = +value('f');
-   dx.o.o = +value('o');
-   console.log('dx.o:');
-   console.log(dx.o);
+	console.log('### dx_update_check gid(idx)='+ idx);
+
+   var get_value = function(v) { return w3_get_value('dx.o.'+ v +'_'+ idx); }
+   dx.o.f = +get_value('f');
+   dx.o.m = +get_value('m');
+   dx.o.y = +get_value('y');
+   dx.o.o = +get_value('o');
+   dx.o.i = get_value('i');
+   dx.o.n = get_value('n');
+   dx.o.p = get_value('p');
    
+   // dx.o.{lo,hi} handled in dx_passband_cb() if isPassband
+   if (!isPassband) {
+      if (dx.o.last_pb[idx]) {
+         dx.o.lo = dx.o.last_pb[idx][0];
+         dx.o.hi = dx.o.last_pb[idx][1];
+      } else {
+         dx.o.lo = dx.o.hi = 0;
+      }
+   }
+
 	var mode = dx.o.m;
-	var type = dx.o.y << dx.DX_TYPE_SFT;
-	mode |= type;
+	var type = dx.o.y;
+	var type_mode = (type << dx.DX_TYPE_SFT) | mode;
 	dx.o.f -= kiwi.freq_offset_kHz;
 	if (dx.o.f < 0) dx.o.f = 0;
 	
-	console.log('SET DX_UPD g='+ dx.o.gid +' f='+ dx.o.f +' lo='+ dx.o.lo.toFixed(0) +' hi='+ dx.o.hi.toFixed(0) +' o='+ dx.o.o.toFixed(0) +' m='+ mode +' t='+ tag +
-		' i='+ dx.o.i +' n='+ dx.o.n +' p='+ dx.o.p);
-	//wf_send('SET DX_UPD g='+ dx.o.gid +' f='+ dx.o.f +' lo='+ dx.o.lo.toFixed(0) +' hi='+ dx.o.hi.toFixed(0) +' o='+ dx.o.o.toFixed(0) +' m='+ mode +
-	//	' i='+ encodeURIComponent(dx.o.i +'x') +' n='+ encodeURIComponent(dx.o.n +'x') +' p='+ encodeURIComponent(dx.o.p +'x'));
+   console.log('dx.o:');
+   console.log(dx.o);
+	console.log('SET DX_UPD g='+ dx.o.gid +' f='+ dx.o.f +' lo='+ dx.o.lo.toFixed(0) +' hi='+ dx.o.hi.toFixed(0) +
+	   ' o='+ dx.o.o.toFixed(0) +' m='+ type_mode +'('+ type +'|'+ mode +') i='+ dx.o.i +' n='+ dx.o.n +' p='+ dx.o.p);
+	ext_send('SET DX_UPD g='+ dx.o.gid +' f='+ dx.o.f +' lo='+ dx.o.lo.toFixed(0) +' hi='+ dx.o.hi.toFixed(0) +
+      ' o='+ dx.o.o.toFixed(0) +' m='+ type_mode +
+      ' i='+ encodeURIComponent(dx.o.i +'x') +' n='+ encodeURIComponent(dx.o.n +'x') +' p='+ encodeURIComponent(dx.o.p +'x'));
 }
+
+// CAUTION: the following routines are called from both user and admin code
 
 function dx_num_cb(path, val, first)
 {
    if (first) return;
 	var o = w3_remove_trailing_index(path, '_');
+	console.log('dx_num_cb path='+ path +' val='+ val +' o.idx='+ o.idx);
 	w3_num_cb(o.el, val);
 	dx_update_check(o.idx);
 }
@@ -44,8 +62,8 @@ function dx_num_cb(path, val, first)
 function dx_sel_cb(path, val, first)
 {
    if (first) return;
-	console.log('dx_sel_cb path='+ path +' val='+ val +' first='+ first);
 	var o = w3_remove_trailing_index(path, '_');
+	console.log('dx_sel_cb path='+ path +' val='+ val +' o.idx='+ o.idx);
 	w3_string_cb(o.el, val);
 	dx_update_check(o.idx);
 }
@@ -54,6 +72,7 @@ function dx_string_cb(path, val, first)
 {
    if (first) return;
 	var o = w3_remove_trailing_index(path, '_');
+	console.log('dx_string_cb path='+ path +' val='+ val +' o.idx='+ o.idx);
 	w3_string_cb(o.el, val);
 	dx_update_check(o.idx);
 }
@@ -81,8 +100,8 @@ function dx_passband_cb(path, val, first)
    } else {
       dx.o.lo = dx.o.hi = 0;
    }
-	console.log('dx_passband_cb lo='+ dx.o.lo +' hi='+ dx.o.hi);
 
 	var o = w3_remove_trailing_index(path, '_');
-	dx_update_check(o.idx);
+	console.log('dx_passband_cb lo='+ dx.o.lo +' hi='+ dx.o.hi +' o.idx='+ o.idx);
+	dx_update_check(o.idx, true);
 }

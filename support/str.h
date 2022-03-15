@@ -47,11 +47,11 @@ void kiwi_set_chars(char *field, const char *value, const char fill, size_t size
 int kiwi_split(char *ocp, char **mbuf, const char *delims, char *argv[], int nargs);
 char *kiwi_str_replace(char *s, const char *from, const char *to, bool *caller_must_free=NULL);
 void kiwi_str_unescape_quotes(char *str);
-char *kiwi_str_escape_HTML(char *str);
+char *kiwi_str_escape_HTML(char *str, int *printable=NULL, int *UTF=NULL);
 char *kiwi_str_encode(char *s, bool alt=FALSE);
 char *kiwi_str_encode_static(char *src, bool alt=FALSE);
 char *kiwi_str_decode_inplace(char *src);
-char *kiwi_str_decode_static(char *src);
+char *kiwi_str_decode_static(char *src, int which=0);
 char *kiwi_str_decode_selective_inplace(char *src);
 char *kiwi_str_clean(char *s);
 int kiwi_str2enum(const char *s, const char *strs[], int len);

@@ -52,6 +52,7 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <limits.h>
 #include <signal.h>
+#include <ctype.h>
 
 kstr_t *cpu_stats_buf;
 volatile float audio_kbps[MAX_RX_CHANS+1], waterfall_kbps[MAX_RX_CHANS+1], waterfall_fps[MAX_RX_CHANS+1], http_kbps;
@@ -688,7 +689,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             char *json = (char *) kiwi_imalloc("CMD_SAVE_CFG", strlen(cmd) + SPACE_FOR_NULL); // a little bigger than necessary
             n = sscanf(cmd, "SET save_cfg=%s", json);
             assert(n == 1);
-            //printf("SET save_cfg=...\n");
+            //cprintf(conn, "SET save_cfg=...\n");
             kiwi_str_decode_inplace(json);
             kiwi_str_decode_selective_inplace(json);
             cfg_save_json(json);
@@ -786,6 +787,15 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 return true;
             }
         
+            // To prevent dx database multi-writer data loss, enforce no admin connections (a source of writes)
+            // on any user connection (with admin pwd given) dx save.
+            if (conn->type != STREAM_ADMIN && conn->type != STREAM_MFG && (n = rx_count_server_conns(ADMIN_USERS)) != 0) {
+                //cprintf(conn, "CMD_DX_UPD: abort because admin_users=%d\n", n);
+                send_msg(conn, false, "MSG no_admin_conns");    // tell user their dx save was rejected
+                send_msg(conn, false, "MSG request_dx_update");	// get client to request updated dx list to flush bad values
+                return true;
+            }
+
             //  gid freq    action
             //  !-1 -1      delete
             //  !-1 !-1     modify
@@ -866,13 +876,13 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 dx_save_as_json();		// FIXME need better serialization
                 TMEAS(u4_t split = timer_ms(); cprintf(conn, "DX_UPD struct -> json, file write in %.3f sec\n", TIME_DIFF_MS(split, start));)
 
-                #if 1
+                #define DX_NO_REPARSE_JSON
+                #ifdef DX_NO_REPARSE_JSON
                     // NB: Don't need to do the time consuming json re-parse since there are no dxcfg_* write routines that
                     // incrementally alter the json struct. The DX_UPD code modifies the dx struct and then regenerates the entire json string
                     // and writes it to the file. In this way the dx struct is acting as a proxy for the json struct, except at server start-up
                     // when the json struct is walked to construct the initial dx struct.
                     // But do need to grow to include a new hidden slot if it was just used by an add.
-                    //dx_reload();
                     if (dx.hidden_used) {
                         dx.stored_list = (dx_t *) kiwi_realloc("dx_list", dx.stored_list, (dx.stored_len + DX_HIDDEN_SLOT) * sizeof(dx_t));
                         memset(&dx.stored_list[dx.stored_len], 0, sizeof(dx_t));
@@ -884,7 +894,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     dx_reload();
                 #endif
 
-                TMEAS(u4_t now = timer_ms(); cprintf(conn, "DX_UPD DONE reloaded in %.3f/%.3f sec\n", TIME_DIFF_MS(now, split), TIME_DIFF_MS(now, start));)
+                TMEAS(u4_t now = timer_ms(); cprintf(conn, "DX_UPD DONE reloaded in %.3f(%.3f total) sec\n", TIME_DIFF_MS(now, split), TIME_DIFF_MS(now, start));)
                 send_msg(conn, false, "MSG request_dx_update");	// get client to request updated dx list
             }
 
@@ -935,27 +945,35 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	    break;
 
 
-    // Called in two different ways:
-    // With 4 params to search for and return labels in the visible area defined by max/min.
-    // With 2 params to search for the next label above or below the visible area when label stepping.
+    // Called in three different ways:
+    // With 8 params to search for and return labels in the visible area defined by max/min freq.
+    // With 3 params to search for the next label above or below the visible area when label stepping.
     // The search criteria applies in both cases.
     
     case CMD_MARKER:
         if (kiwi_str_begins_with(cmd, "SET MARKER")) {
-            dx_rx_t *drx = &dx.dx_rx[conn->rx_channel];
+            int chan = (conn->type == STREAM_ADMIN)? MAX_RX_CHANS : conn->rx_channel;
+            dx_rx_t *drx = &dx.dx_rx[chan];
             float min, max, bw;
             int db, zoom, width, dir = 1, filter_tod, anti_clutter;
+            int idx1, idx2;
             u4_t types_mask;
             bool db_changed = false;
             //if (drx->db == DB_EiBi) cprintf(conn, "DX_MKR [%s]\n", cmd);
             int n = sscanf(cmd, "SET MARKER db=%d min=%f max=%f zoom=%d width=%d types_mask=0x%x filter_tod=%d anti_clutter=%d",
                 &db, &min, &max, &zoom, &width, &types_mask, &filter_tod, &anti_clutter);
-            enum { DX_MKRS = 4, DX_STEP = 2 };      // values for compatibility with client side
+            enum { DX_MKRS = 4, DX_MKRS_IDX = 0, DX_STEP = 2 };     // values for compatibility with client side
             int func;
             if (n != 8) {
                 n = sscanf(cmd, "SET MARKER db=%d dir=%d freq=%f", &db, &dir, &min);
-                if (n != 3) return true;
-                func = DX_STEP;
+                if (n != 3) {
+                    n = sscanf(cmd, "SET MARKER idx1=%d idx2=%d", &idx1, &idx2);
+                    if (n != 2) return true;
+                    func = DX_MKRS_IDX;
+                    db = DB_STORED;
+                } else {
+                    func = DX_STEP;
+                }
             } else {
                 bw = max - min;
                 func = DX_MKRS;
@@ -977,9 +995,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 first = true;
                 //cprintf(conn, "DX_MKR: db SWITCHED to %s\n", db_stored? "stored" : "EiBi");
             }
-            //cprintf(conn, "DX_MKR: SET MARKER db=%s\n", db_stored? "stored" : "EiBi");
+            //cprintf(conn, "DX_MKR: SET MARKER db=%s func=%d admin=%d\n",
+            //    db_stored? "stored" : "EiBi", func, conn->type == STREAM_ADMIN);
         
-            if (db_stored && dx.stored_len == 0) {
+            if (db_stored && dx.stored_len == 0 && func != DX_MKRS_IDX) {
                 send_msg(conn, false, "MSG mkr=[{\"t\":%d}]", DX_MKRS);     // otherwise last marker won't get cleared
                 return true;
             }
@@ -1005,174 +1024,199 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             }
             sb = kstr_cat(sb, "}");
             int send = 0;
-        
-            // bsearch the lower bound for speed with large lists
-            dx_t dx_min;
-
-            // DX_SEARCH_WINDOW: when zoomed far-in need to look at wider window since we don't know PB center here
-            #define DX_SEARCH_WINDOW 10.0
-            dx_min.freq = min + ((func == DX_STEP && dir == 1)? DX_SEARCH_WINDOW : -DX_SEARCH_WINDOW);
-            dx_t *cur_list = db_stored? dx.stored_list : dx.eibi_list;
-            int cur_len = db_stored? dx.stored_len : dx.eibi_len;
-            dx_list_first = &cur_list[0];
-            dx_list_last = &cur_list[cur_len - DX_HIDDEN_SLOT];     // NB: addr of LAST in list
-
-            dx_t *dp = (dx_t *) bsearch(&dx_min, cur_list, cur_len, sizeof(dx_t), bsearch_freqcomp);
-            if (dp == NULL) panic("DX bsearch");
-            //cprintf(conn, "DX_MKR key=%.2f bsearch=%.2f(%d/%d) min=%.2f max=%.2f\n",
-            //    dx_min.freq, dp->freq + ((float) dp->offset / 1000.0), dp->idx, cur_len, min, max);
-        
-            int dx_filter = 0, fn_flags = 0;
-            if (conn->dx_filter_ident || conn->dx_filter_notes) {
-                dx_filter = 1;
-                fn_flags = conn->dx_filter_case? 0 : FNM_CASEFOLD;
-                //cprintf(conn, "DX_MKR FILTERING on <%s> <%s> case=%d wild=%d grep=%d\n",
-                //    conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_wild, conn->dx_filter_grep);
-                //show_conn("DX FILTER ", conn);
-            }
-        
-            //if (drx->db == DB_EiBi) cprintf(conn, "EiBi BSEARCH len=%d %.2f\n", cur_len, dp->freq);
-            int clutter_filtered = 0;
-            for (; dp < &cur_list[cur_len] && dp >= cur_list; dp += dir) {
-                u4_t flags = 0;
-                float freq = dp->freq + ((float) dp->offset / 1000.0);		// carrier plus offset
-                //if (drx->db == DB_EiBi) cprintf(conn, "DX_MKR EiBi CONSIDER %.2f\n", freq);
-
-                if (func == DX_MKRS && freq > max + DX_SEARCH_WINDOW) break;    // get extra one above for label stepping
+            
+            if (func == DX_MKRS_IDX) {
+                dx_t *cur_list = dx.stored_list;
+                int cur_len = dx.stored_len;
+                dx_t *dp = &cur_list[idx1];
+                for (i = idx1; i <= idx2 && dp < &cur_list[cur_len]; i++, dp++) {
+                    //float freq = dp->freq + ((float) dp->offset / 1000.0);		// carrier plus offset
+                    sb = kstr_asprintf(sb, ",{\"g\":%d,\"f\":%.3f,\"lo\":%d,\"hi\":%d,\"o\":%d,\"x\":%d,"
+                        "\"i\":\"%s\"%s%s%s%s%s%s}",
+                        dp->idx, dp->freq, dp->low_cut, dp->high_cut, dp->offset, dp->flags,
+                        dp->ident,
+                        dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"",
+                        dp->params? ",\"p\":\"":"", dp->params? dp->params:"", dp->params? "\"":"");
+                    cprintf(conn, "DX_MKRS_IDX %d|#%d %.2f(%d) %s\n", i, dp->idx, dp->freq, dp->offset, dp->ident);
+                }
+                sb = kstr_cat(sb, "]");
+                send_msg(conn, false, "MSG admin_mkr=%s", kstr_sp(sb));
+                kstr_free(sb);
+                return true;
+            } else {
+                // func == DX_MKRS, DX_STEP
                 
-                if (drx->db == DB_EiBi) {
-                    u4_t type_bit = 1 << (((dp->flags & DX_TYPE) - DX_BCAST) >> 4);
-                    if ((type_bit & types_mask) == 0) continue;
-                    
-                    u4_t dow_mask = dp->flags & DX_DOW;
-                    if (dow_mask == 0) dow_mask = DX_DOW;
-                    u4_t dow_bit =  DX_MON >> dow_Mo_0;
-                    if ((dow_mask & dow_bit) == 0) {
-                        //cprintf(conn, "!DOW dow_Mo_0=%d m=%04x b=%04x %.2f %s\n", dow_Mo_0, dow_mask, dow_bit, freq, dp->ident);
-                        if (filter_tod)
-                            continue;
-                        else
-                            flags = DX_FILTERED;
-                    }
-                    bool rev = (dp->time_begin > dp->time_end);
-                    bool within = (hr_min >= dp->time_begin && hr_min <= dp->time_end);
-                    bool within_rev = (hr_min >= dp->time_end && hr_min <= dp->time_begin);
-                    if ((!rev && within) || (rev && !within_rev)) {
-                        // TOD okay
-                    } else {
-                        //cprintf(conn, "!TOD %04d|%04d|%04d %.2f %s\n", dp->time_begin, hr_min, dp->time_end, freq, dp->ident);
-                        if (filter_tod)
-                            continue;
-                        else
-                            flags = DX_FILTERED;
-                    }
+                // bsearch the lower bound for speed with large lists
+                dx_t dx_min;
+
+                // DX_SEARCH_WINDOW: when zoomed far-in need to look at wider window since we don't know PB center here
+                #define DX_SEARCH_WINDOW 10.0
+                dx_min.freq = min + ((func == DX_STEP && dir == 1)? DX_SEARCH_WINDOW : -DX_SEARCH_WINDOW);
+                dx_t *cur_list = db_stored? dx.stored_list : dx.eibi_list;
+                int cur_len = db_stored? dx.stored_len : dx.eibi_len;
+                dx_list_first = &cur_list[0];
+                dx_list_last = &cur_list[cur_len - DX_HIDDEN_SLOT];     // NB: addr of LAST in list
+
+                dx_t *dp = (dx_t *) bsearch(&dx_min, cur_list, cur_len, sizeof(dx_t), bsearch_freqcomp);
+                if (dp == NULL) panic("DX bsearch");
+                //cprintf(conn, "DX_MKR key=%.2f bsearch=%.2f(%d/%d) min=%.2f max=%.2f\n",
+                //    dx_min.freq, dp->freq + ((float) dp->offset / 1000.0), dp->idx, cur_len, min, max);
+        
+                int dx_filter = 0, fn_flags = 0;
+                if (conn->dx_filter_ident || conn->dx_filter_notes) {
+                    dx_filter = 1;
+                    fn_flags = conn->dx_filter_case? 0 : FNM_CASEFOLD;
+                    //cprintf(conn, "DX_MKR FILTERING on <%s> <%s> case=%d wild=%d grep=%d\n",
+                    //    conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_wild, conn->dx_filter_grep);
+                    //show_conn("DX FILTER ", conn);
                 }
-            
-                if (dx_filter) {
-                    if (conn->dx_filter_grep) {
-                        if (conn->dx_has_preg_ident) {
-                            if (regexec(&conn->dx_preg_ident, dp->ident_s, 0, NULL, 0) == REG_NOMATCH) continue;
+        
+                //if (drx->db == DB_EiBi) cprintf(conn, "EiBi BSEARCH len=%d %.2f\n", cur_len, dp->freq);
+                int clutter_filtered = 0;
+                for (; dp < &cur_list[cur_len] && dp >= cur_list; dp += dir) {
+                    u4_t flags = 0;
+                    float freq = dp->freq + ((float) dp->offset / 1000.0);		// carrier plus offset
+                    //if (drx->db == DB_EiBi) cprintf(conn, "DX_MKR EiBi CONSIDER %.2f\n", freq);
+
+                    if (func == DX_MKRS && freq > max + DX_SEARCH_WINDOW) break;    // get extra one above for label stepping
+                
+                    if (drx->db == DB_EiBi) {
+                        u4_t type_bit = 1 << (((dp->flags & DX_TYPE) - DX_BCAST) >> 4);
+                        if ((type_bit & types_mask) == 0) continue;
+                    
+                        u4_t dow_mask = dp->flags & DX_DOW;
+                        if (dow_mask == 0) dow_mask = DX_DOW;
+                        u4_t dow_bit =  DX_MON >> dow_Mo_0;
+                        if ((dow_mask & dow_bit) == 0) {
+                            //cprintf(conn, "!DOW dow_Mo_0=%d m=%04x b=%04x %.2f %s\n", dow_Mo_0, dow_mask, dow_bit, freq, dp->ident);
+                            if (filter_tod)
+                                continue;
+                            else
+                                flags = DX_FILTERED;
                         }
-                        if (conn->dx_has_preg_notes) {
-                            if (regexec(&conn->dx_preg_notes, dp->notes_s, 0, NULL, 0) == REG_NOMATCH) continue;
-                        }
-                        //cprintf(conn, "DX_MKR FILTER MATCHED-grep %s<%s> %s<%s>\n",
-                        //    conn->dx_has_preg_ident? "*":"", dp->ident_s, conn->dx_has_preg_notes? "*":"", dp->notes_s);
-                    } else
-                    if (conn->dx_filter_wild) {
-                        if (fnmatch(conn->dx_filter_ident, dp->ident_s, fn_flags) != 0) continue;
-                        if (conn->dx_filter_notes && conn->dx_filter_notes[0] != '\0' &&
-                            fnmatch(conn->dx_filter_notes, dp->notes_s, fn_flags) != 0) continue;
-                        //cprintf(conn, "DX_MKR FILTER MATCHED-wild <%s> <%s>\n", dp->ident_s, dp->notes_s);
-                    } else {
-                        if (conn->dx_filter_case) {
-                            if (strstr(dp->ident_s, conn->dx_filter_ident) == NULL) continue;
-                            if (conn->dx_filter_notes && strstr(dp->notes_s, conn->dx_filter_notes) == NULL) continue;
+                        bool rev = (dp->time_begin > dp->time_end);
+                        bool within = (hr_min >= dp->time_begin && hr_min <= dp->time_end);
+                        bool within_rev = (hr_min >= dp->time_end && hr_min <= dp->time_begin);
+                        if ((!rev && within) || (rev && !within_rev)) {
+                            // TOD okay
                         } else {
-                            if (strcasestr(dp->ident_s, conn->dx_filter_ident) == NULL) continue;
-                            if (conn->dx_filter_notes && strcasestr(dp->notes_s, conn->dx_filter_notes) == NULL) continue;
+                            //cprintf(conn, "!TOD %04d|%04d|%04d %.2f %s\n", dp->time_begin, hr_min, dp->time_end, freq, dp->ident);
+                            if (filter_tod)
+                                continue;
+                            else
+                                flags = DX_FILTERED;
                         }
-                        //cprintf(conn, "DX_MKR FILTER MATCHED-no-grep <%s> <%s>\n", dp->ident_s, dp->notes_s);
                     }
-                }
             
-                // reduce dx label clutter
-                if (func == DX_MKRS && anti_clutter && zoom <= DX_SPACING_ZOOM_THRESHOLD) {
-                    int x = ((dp->freq - min) / bw) * width;
-                    int diff = x - dx_lastx;
-                    //cprintf(conn, "DX_MKR spacing %d %d %d %s\n", dx_lastx, x, diff, dp->ident);
-                    if (!first && diff < DX_SPACING_THRESHOLD_PX) {
-                        clutter_filtered++;
-                        continue;
-                    }
-                    dx_lastx = x;
-                    first = false;
-                }
-            
-                // NB: ident, notes and params are already stored URL encoded
-                if (func == DX_MKRS || dp->freq != min) {
-                    //#define DEBUG_DX_MKRS
-                    #ifdef DEBUG_DX_MKRS
-                        int fail = 0;
-                        char *c;
-                        c = dp->country;
-                        if (kiwi_strnlen(c, 3) > 3) {
-                            lprintf("country %02x %02x %02x %02x\n", c[0], c[1], c[2], c[3]);
-                            c[3] = '\0';
-                            fail = 1;
-                        }
-                        c = dp->lang;
-                        if (kiwi_strnlen(c, 3) > 3) {
-                            lprintf("lang %02x %02x %02x %02x\n", c[0], c[1], c[2], c[3]);
-                            c[3] = '\0';
-                            fail = 1;
-                        }
-                        c = dp->target;
-                        if (kiwi_strnlen(c, 3) > 3) {
-                            lprintf("target %02x %02x %02x %02x\n", c[0], c[1], c[2], c[3]);
-                            c[3] = '\0';
-                            fail = 1;
-                        }
-                        c = (char *) dp->ident;
-                        if (kiwi_strnlen(c, 255) > 255) {
-                            c[255] = '\0';
-                            lprintf("ident <%s>\n", c);
-                            fail = 1;
-                        }
-                        c = dp->notes;
-                        if (kiwi_strnlen(c, 255) > 255) {
-                            c[255] = '\0';
-                            lprintf("notes <%s>\n", c);
-                            fail = 1;
-                        }
-                        c = (char *) dp->params;
-                        if (kiwi_strnlen(c, 255) > 255) {
-                            c[255] = '\0';
-                            lprintf("params <%s>\n", c);
-                            fail = 1;
-                        }
-                        
-                        if (fail) {
-                            lprintf("$$$$$$$$ DEBUG_DX_MKRS: ERROR freq=%.3f db=%s\n", freq, (drx->db == DB_EiBi)? "EiBi" : "stored");
+                    if (dx_filter) {
+                        if (conn->dx_filter_grep) {
+                            if (conn->dx_has_preg_ident) {
+                                if (regexec(&conn->dx_preg_ident, dp->ident_s, 0, NULL, 0) == REG_NOMATCH) continue;
+                            }
+                            if (conn->dx_has_preg_notes) {
+                                if (regexec(&conn->dx_preg_notes, dp->notes_s, 0, NULL, 0) == REG_NOMATCH) continue;
+                            }
+                            //cprintf(conn, "DX_MKR FILTER MATCHED-grep %s<%s> %s<%s>\n",
+                            //    conn->dx_has_preg_ident? "*":"", dp->ident_s, conn->dx_has_preg_notes? "*":"", dp->notes_s);
                         } else
-                    #endif
-                    
-                    {
-                        sb = kstr_asprintf(sb, ",{\"g\":%d,\"f\":%.3f,\"lo\":%d,\"hi\":%d,\"o\":%d,\"x\":%d,"
-                            "\"b\":%d,\"e\":%d,\"c\":\"%s\",\"l\":\"%s\",\"t\":\"%s\","
-                            "\"i\":\"%s\"%s%s%s%s%s%s}",
-                            dp->idx, freq, dp->low_cut, dp->high_cut, dp->offset, dp->flags | flags,
-                            dp->time_begin, dp->time_end, dp->country, dp->lang, dp->target,
-                            dp->ident,
-                            dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"",
-                            dp->params? ",\"p\":\"":"", dp->params? dp->params:"", dp->params? "\"":"");
-                        //if (drx->db == DB_EiBi) cprintf(conn, "DX_MKR EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident);
-                        send++;
+                        if (conn->dx_filter_wild) {
+                            if (fnmatch(conn->dx_filter_ident, dp->ident_s, fn_flags) != 0) continue;
+                            if (conn->dx_filter_notes && conn->dx_filter_notes[0] != '\0' &&
+                                fnmatch(conn->dx_filter_notes, dp->notes_s, fn_flags) != 0) continue;
+                            //cprintf(conn, "DX_MKR FILTER MATCHED-wild <%s> <%s>\n", dp->ident_s, dp->notes_s);
+                        } else {
+                            if (conn->dx_filter_case) {
+                                if (strstr(dp->ident_s, conn->dx_filter_ident) == NULL) continue;
+                                if (conn->dx_filter_notes && strstr(dp->notes_s, conn->dx_filter_notes) == NULL) continue;
+                            } else {
+                                if (strcasestr(dp->ident_s, conn->dx_filter_ident) == NULL) continue;
+                                if (conn->dx_filter_notes && strcasestr(dp->notes_s, conn->dx_filter_notes) == NULL) continue;
+                            }
+                            //cprintf(conn, "DX_MKR FILTER MATCHED-no-grep <%s> <%s>\n", dp->ident_s, dp->notes_s);
+                        }
                     }
-                }
             
-                // return the very first we hit that passed the filtering criteria above
-                if (func == DX_STEP && send) break;
+                    // reduce dx label clutter
+                    if (func == DX_MKRS && anti_clutter && zoom <= DX_SPACING_ZOOM_THRESHOLD) {
+                        int x = ((dp->freq - min) / bw) * width;
+                        int diff = x - dx_lastx;
+                        //cprintf(conn, "DX_MKR spacing %d %d %d %s\n", dx_lastx, x, diff, dp->ident);
+                        if (!first && diff < DX_SPACING_THRESHOLD_PX) {
+                            clutter_filtered++;
+                            continue;
+                        }
+                        dx_lastx = x;
+                        first = false;
+                    }
+            
+                    // NB: ident, notes and params are already stored URL encoded
+                    if (func == DX_MKRS || dp->freq != min) {
+                        //#define DEBUG_DX_MKRS
+                        #ifdef DEBUG_DX_MKRS
+                            int fail = 0;
+                            char *c;
+                            c = dp->country;
+                            if (kiwi_strnlen(c, 3) > 3) {
+                                lprintf("country %02x %02x %02x %02x\n", c[0], c[1], c[2], c[3]);
+                                c[3] = '\0';
+                                fail = 1;
+                            }
+                            c = dp->lang;
+                            if (kiwi_strnlen(c, 3) > 3) {
+                                lprintf("lang %02x %02x %02x %02x\n", c[0], c[1], c[2], c[3]);
+                                c[3] = '\0';
+                                fail = 1;
+                            }
+                            c = dp->target;
+                            if (kiwi_strnlen(c, 3) > 3) {
+                                lprintf("target %02x %02x %02x %02x\n", c[0], c[1], c[2], c[3]);
+                                c[3] = '\0';
+                                fail = 1;
+                            }
+                            c = (char *) dp->ident;
+                            if (kiwi_strnlen(c, 255) > 255) {
+                                c[255] = '\0';
+                                lprintf("ident <%s>\n", c);
+                                fail = 1;
+                            }
+                            c = dp->notes;
+                            if (kiwi_strnlen(c, 255) > 255) {
+                                c[255] = '\0';
+                                lprintf("notes <%s>\n", c);
+                                fail = 1;
+                            }
+                            c = (char *) dp->params;
+                            if (kiwi_strnlen(c, 255) > 255) {
+                                c[255] = '\0';
+                                lprintf("params <%s>\n", c);
+                                fail = 1;
+                            }
+                        
+                            if (fail) {
+                                lprintf("$$$$$$$$ DEBUG_DX_MKRS: ERROR freq=%.3f db=%s\n", freq, (drx->db == DB_EiBi)? "EiBi" : "stored");
+                            } else
+                        #endif
+                    
+                        {
+                            sb = kstr_asprintf(sb, ",{\"g\":%d,\"f\":%.3f,\"lo\":%d,\"hi\":%d,\"o\":%d,\"x\":%d,"
+                                "\"b\":%d,\"e\":%d,\"c\":\"%s\",\"l\":\"%s\",\"t\":\"%s\","
+                                "\"i\":\"%s\"%s%s%s%s%s%s}",
+                                dp->idx, freq, dp->low_cut, dp->high_cut, dp->offset, dp->flags | flags,
+                                dp->time_begin, dp->time_end, dp->country, dp->lang, dp->target,
+                                dp->ident,
+                                dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"",
+                                dp->params? ",\"p\":\"":"", dp->params? dp->params:"", dp->params? "\"":"");
+                            //if (drx->db == DB_EiBi) cprintf(conn, "DX_MKR EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident);
+                            if (drx->db == DB_STORED && test_flag)
+                                cprintf(conn, "DX_MKR #%d %.2f o=%d %s\n", dp->idx, freq, dp->offset,
+                                    kiwi_str_decode_static((char *) dp->ident));
+                            send++;
+                        }
+                    }
+            
+                    // return the very first we hit that passed the filtering criteria above
+                    if (func == DX_STEP && send) break;
+                }
             }
         
             sb = kstr_cat(sb, "]");
@@ -1191,14 +1235,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         }
 	    break;
 	
-	// send the whole database as json
     case CMD_GET_DX_JSON:
         if (strcmp(cmd, "SET GET_DX_JSON") == 0) {
             dxcfg_update_json();    // update (re-parse) json if necessary
-
-            // NB: ident, notes and params are already stored URL encoded
-            printf("GET_DX_JSON len=%d\n", strlen(cfg_dx.json));
-            send_msg_encoded(conn, "MSG", "dx_json", "%s", cfg_dx.json);
+            // send just the database entry count, as entries will be incrementally read
+            send_msg(conn, false, "MSG dx_json=%d", dx.stored_len);
             return true;
         }
 	    break;
@@ -1331,7 +1372,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             sscanf(cmd, "SET ident_user=%256ms", &ident_user_m);
             bool noname = (ident_user_m == NULL || ident_user_m[0] == '\0');
             bool setUserIP = false;
-        
+
             if (conn->mc == NULL) return true;	// we've seen this
 
             // no name sent, no previous name set: use ip as name
@@ -1354,14 +1395,26 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             // name sent: save new, replace previous (if any)
             if (!noname) {
                 kiwi_str_decode_inplace(ident_user_m);
-                char *esc = kiwi_str_escape_HTML(ident_user_m);
+                int printable, UTF;
+                char *esc = kiwi_str_escape_HTML(ident_user_m, &printable, &UTF);
                 if (esc) {
                     kiwi_ifree(ident_user_m);
                     ident_user_m = esc;
                 }
+                if (!(printable || UTF)) {
+                    clprintf(conn, "API: ident has no printable chars! ");
+                    int sl = strlen(ident_user_m);
+                    for (i = 0; i < sl; i++) {
+                        clprintf(conn, "%02x ", ident_user_m[i]);
+                    }
+                    clprintf(conn, "(%d) %s\n", sl, conn->remote_ip);
+                    kiwi_ifree(ident_user_m);
+                    ident_user_m = strdup("(bad identity)");
+                }
+
                 kiwi_str_redup(&conn->user, "user", ident_user_m);
                 int len = cfg_int("ident_len", NULL, CFG_REQUIRED);
-                len = MAX(len, IDENT_LEN_MIN);      // e.g. "wsprdaemon_v3.0a" is 16 chars
+                len = MAX(len, IDENT_LEN_MIN);
                 if (strlen(conn->user) > len)
                     conn->user[len] = '\0';
                 //printf("ident <%s> len=%d\n", conn->user, len);

@@ -93,6 +93,7 @@ typedef struct conn_st {
 	
 	// set in STREAM_SOUND and STREAM_WATERFALL
 	ext_receive_cmds_t ext_cmd;
+	bool isMaster;
 	
 	// set only in STREAM_MONITOR
 	bool queued;
