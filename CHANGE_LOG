@@ -2,6 +2,23 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.499  March 16, 2022
+    Fixed bug that allowed maliciously crafted waterfall-only connections to not appear in any of
+    the connection lists.
+    
+    Better guarding against maliciously crafted "name/callsign" field having no printable characters.
+
+    DX label edit panel on user page:
+        In addition to the existing HTML '<br>' sequence, entering '\n' into the ident field of a
+        label will cause a line break.
+    
+        Entering the sequence '\n' into the notes field of a label will cause a line break in
+        the popup text displayed on a mouse-over of the label. Previously it just displayed '\n'
+        which wasn't helpful. HTML '<br>' also works.
+    
+    When an inactivity or connection timeout occurs any active audio recording is saved before
+    the connection is closed. This fix does not also apply to FAX image recording.
+
 v1.498  March 10, 2022
     Fix for menu rendering changes starting with Firefox 98.
 
