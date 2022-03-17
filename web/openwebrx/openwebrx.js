@@ -136,7 +136,7 @@ function kiwi_main()
 	override_max_dB = parseFloat(readCookie('last_max_dB'));
 	override_min_dB = parseFloat(readCookie('last_min_dB'));
 	
-	setvolume(true, readCookie('last_volume'));
+	setvolume(true, readCookie('last_volume', 50));
 	
 	var f_cookie = readCookie('freq_memory');
 	if (f_cookie) {
@@ -8887,6 +8887,8 @@ var recording = false;
 
 function setvolume(done, str)
 {
+   //console.log('setvolume str='+ str);
+   str = +str | 50;     // in case str = null, NaN etc
    kiwi.volume = +str;
    
    // when 'v' shortcut key, or URL param, attempts to set < 0 clamp to 0
@@ -8895,7 +8897,7 @@ function setvolume(done, str)
    // volume_f is the [0,2] value actually used by audio.js
    // don't set to zero because that triggers FF audio silence bug
    kiwi.volume_f = (kiwi.muted || kiwi.volume == 0)? 1e-6 : (kiwi.volume/100);
-   //console.log('vol='+ kiwi.volume +' muted='+ kiwi.muted +' vol_f='+ kiwi.volume_f.toFixed(6));
+   //console.log('setvolume vol='+ kiwi.volume +' muted='+ kiwi.muted +' vol_f='+ kiwi.volume_f.toFixed(6));
    if (done) {
       w3_set_value('id-input-volume', kiwi.volume);
       writeCookie('last_volume', kiwi.volume);

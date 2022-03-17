@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.501  March 18, 2022
+    Fixed bug that sets volume to zero when volume cookie is not present.
+
 v1.500  March 17, 2022
     Better indication of waterfall-only connections on the various connection status panels, 
         logs and the /users URL. See Kiwi forum for details.

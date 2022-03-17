@@ -369,7 +369,6 @@ static void remove_unprintable_chars_inplace(char *str, int *printable, int *UTF
 	    if (ok) *o++ = c;
 	    
         if (printable && ok) *printable = *printable + 1;
-        else
         if (UTF && c >= 0x80) *UTF = *UTF + 1;
 	}
 	*o = '\0';
