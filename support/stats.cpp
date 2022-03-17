@@ -56,7 +56,7 @@ void webserver_collect_print_stats(int print)
 			if (print) rx_loguser(c, LOG_UPDATE);
 			
             #ifdef OPTION_LOG_WF_ONLY_UPDATES
-			    if (c->type == STREAM_WATERFALL) {
+			    if (c->type == STREAM_WATERFALL && c->last_log_time != 0) {
                     rx_loguser(c, LOG_UPDATE);
                 }
             #endif
