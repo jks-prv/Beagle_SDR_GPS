@@ -1467,7 +1467,7 @@ function user_cb(obj)
 
 			if (ext != '') ext = decodeURIComponent(ext) +' ';
 			s1 = id + g;
-			s2 = w3_link('w3-link-darker-color', link, f_s + mode +' z'+ zoom) +' '+ ext + connected + remaining;
+			s2 = w3_link('w3-link-darker-color', link, f_s + (obj.wf? 'WF' : mode) +' z'+ zoom) +' '+ ext + connected + remaining;
 		}
 		
 		//if (s1 != '') console.log('user'+ i +'='+ s1 + s2);

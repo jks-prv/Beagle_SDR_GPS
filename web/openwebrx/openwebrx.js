@@ -5894,9 +5894,11 @@ function select_band(v, mode)
 	
 	var b1 = b.b1;
 	var b2 = b.b2;
-	console.log(b);
-	console.log(b1);
-	console.log(b2);
+	if (dbgUs) {
+      console.log(b);
+      console.log(b1);
+      console.log(b2);
+   }
 	var freq;
 
 	if (b1.sel != '') {
@@ -8219,7 +8221,7 @@ function panels_setup()
          w3_select('w3-text-red', '', 'PLL', 'owrx.sam_pll', owrx.sam_pll, owrx.sam_pll_s, 'sam_pll_cb')
       ) +
       w3_inline('w3-margin-T-2 w3-valign w3-halign-end/class-slider',
-         w3_select('id-chan-null w3-text-red  w3-hide', '', 'channel<br>null', 'owrx.chan_null', owrx.chan_null, owrx.chan_null_s, 'chan_null_cb'),
+         w3_select('id-chan-null w3-text-red w3-hide', '', 'channel<br>null', 'owrx.chan_null', owrx.chan_null, owrx.chan_null_s, 'chan_null_cb'),
          w3_select('id-ovld-mute w3-text-red', '', 'ovld<br>mute', 'owrx.ovld_mute', owrx.ovld_mute, owrx.ovld_mute_s, 'ovld_mute_cb')
       );
       

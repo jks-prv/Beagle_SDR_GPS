@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.500  March 17, 2022
+    Better indication of waterfall-only connections on the various connection status panels, 
+        logs and the /users URL. See Kiwi forum for details.
+
 v1.499  March 16, 2022
     Fixed bug that allowed maliciously crafted waterfall-only connections to not appear in any of
     the connection lists.
