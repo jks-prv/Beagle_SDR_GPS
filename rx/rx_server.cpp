@@ -19,6 +19,7 @@ Boston, MA  02110-1301, USA.
 
 #include "types.h"
 #include "config.h"
+#include "options.h"
 #include "kiwi.h"
 #include "rx.h"
 #include "clk.h"
@@ -317,13 +318,27 @@ void rx_loguser(conn_t *c, logtype_e type)
 		asprintf(&s, "%d:%02d:%02d%s", hr, min, sec, (type == LOG_UPDATE_NC)? " n/c":"");
 	}
 	
+	const char *mode = "";
+	if (c->type == STREAM_WATERFALL)
+	    mode = "WF";
+	else
+	    mode = kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s));
+	
 	if (type == LOG_ARRIVED || type == LOG_LEAVING) {
 		clprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq_offset,
-			kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom,
-			c->ext? c->ext->name : "", c->ext? " ":"",
+			mode, c->zoom, c->ext? c->ext->name : "", c->ext? " ":"",
 			c->user? c->user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
 			c->geo? " ":"", c->geo? c->geo:"", s);
 	}
+
+    #ifdef OPTION_LOG_WF_ONLY_UPDATES
+        if (c->type == STREAM_WATERFALL && type == LOG_UPDATE) {
+            cprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq_offset,
+			    mode, c->zoom, c->ext? c->ext->name : "", c->ext? " ":"",
+                c->user? c->user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
+                c->geo? " ":"", c->geo? c->geo:"", s);
+        }
+    #endif
 	
 	// we don't do anything with LOG_UPDATE and LOG_UPDATE_NC at present
 	kiwi_ifree(s);

@@ -347,15 +347,20 @@ void c2s_waterfall(void *param)
                     if (sscanf(cmd, "SET zoom=%d start=%f", &_zoom, &_start) == 2) {
                         //cprintf(conn, "WF: zoom=%d/%d start=%.3f(%.1f)\n", _zoom, zoom, _start, _start * HZperStart / kHz);
                         _zoom = CLAMP(_zoom, 0, MAX_ZOOM);
+                        float halfSpan_Hz = (ui_srate / (1 << _zoom)) / 2;
+                        cf = (_start * HZperStart) + halfSpan_Hz;
                         zoom_start_chg = true;
                     } else
                     if (sscanf(cmd, "SET zoom=%d cf=%f", &_zoom, &cf) == 2) {
                         _zoom = CLAMP(_zoom, 0, MAX_ZOOM);
                         float halfSpan_Hz = (ui_srate / (1 << _zoom)) / 2;
-                        _start = (cf * kHz - halfSpan_Hz) / HZperStart;
-                        //cprintf(conn, "WF: zoom=%d cf=%.3f start=%.3f halfSpan=%.3f\n", _zoom, cf, _start * HZperStart / kHz, halfSpan_Hz/kHz);
+                        cf *= kHz;
+                        _start = (cf - halfSpan_Hz) / HZperStart;
+                        //cprintf(conn, "WF: zoom=%d cf=%.3f start=%.3f halfSpan=%.3f\n", _zoom, cf/kHz, _start * HZperStart / kHz, halfSpan_Hz/kHz);
                         zoom_start_chg = true;
                     }
+                    
+                    conn->freqHz = cf;      // for logging purposes
                 }
             
                 if (zoom_start_chg) {
@@ -437,6 +442,7 @@ void c2s_waterfall(void *param)
                         if (csnd && csnd->type == STREAM_SOUND && csnd->rx_channel == conn->rx_channel) {
                             csnd->zoom = zoom;		// set in the AUDIO conn
                         }
+                        conn->zoom = zoom;      // for logging purposes
                     
                         //jksd
                         //printf("ZOOM z=%d ->z=%d\n", zoom, wf->zoom);

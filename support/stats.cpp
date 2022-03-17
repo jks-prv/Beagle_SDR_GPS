@@ -19,6 +19,7 @@ Boston, MA  02110-1301, USA.
 
 #include "types.h"
 #include "config.h"
+#include "options.h"
 #include "kiwi.h"
 #include "rx.h"
 #include "mem.h"
@@ -53,6 +54,13 @@ void webserver_collect_print_stats(int print)
 		u4_t now = timer_sec();
 		if (c->freqHz != c->last_freqHz || c->mode != c->last_mode || c->zoom != c->last_zoom) {
 			if (print) rx_loguser(c, LOG_UPDATE);
+			
+            #ifdef OPTION_LOG_WF_ONLY_UPDATES
+			    if (c->type == STREAM_WATERFALL) {
+                    rx_loguser(c, LOG_UPDATE);
+                }
+            #endif
+            
 			c->last_tune_time = now;
             c->last_freqHz = c->freqHz;
             c->last_mode = c->mode;
@@ -100,7 +108,7 @@ void webserver_collect_print_stats(int print)
 		}
 		
 		// FIXME: disable for now -- causes audio glitches for unknown reasons
-		#if 1
+		#ifdef OPTION_SERVER_GEOLOC
             if (!c->geo && !c->try_geoloc && (now - c->arrival) > 10) {
                 //clprintf(c, "GEOLOC: %s sent no geoloc info, trying from here\n", c->remote_ip);
                 CreateTask(geoloc_task, (void *) c, SERVICES_PRIORITY);

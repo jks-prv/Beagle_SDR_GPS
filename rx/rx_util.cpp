@@ -723,12 +723,14 @@ char *rx_users(bool include_ip)
                 char *geo = !show_geo? kiwi_str_encode((char *) "no location") : (c->geo? kiwi_str_encode(c->geo) : NULL);
                 char *ext = ext_users[i].ext? kiwi_str_encode((char *) ext_users[i].ext->name) : NULL;
                 const char *ip = include_ip? c->remote_ip : "";
-                asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,\"m\":\"%s\",\"z\":%d,\"t\":\"%d:%02d:%02d\","
+                asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,\"m\":\"%s\",\"z\":%d,\"wf\":%d,\"t\":\"%d:%02d:%02d\","
                     "\"rt\":%d,\"rn\":%d,\"rs\":\"%d:%02d:%02d\",\"e\":\"%s\",\"a\":\"%s\",\"c\":%.1f,\"fo\":%.3f,\"ca\":%d,"
                     "\"nc\":%d,\"ns\":%d}",
                     need_comma? ",":"", i, user? user:"", geo? geo:"", c->freqHz,
-                    kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, hr, min, sec,
-                    rtype, rn, r_hr, r_min, r_sec, ext? ext:"", ip, wdsp_SAM_carrier(i), freq_offset, rx->n_camp,
+                    kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom,
+                    (c->type == STREAM_WATERFALL)? 1:0,
+                    hr, min, sec, rtype, rn, r_hr, r_min, r_sec,
+                    ext? ext:"", ip, wdsp_SAM_carrier(i), freq_offset, rx->n_camp,
                     extint.notify_chan, extint.notify_seq);
                 if (user) kiwi_ifree(user);
                 if (geo) kiwi_ifree(geo);
