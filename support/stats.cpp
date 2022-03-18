@@ -38,7 +38,7 @@ int current_nusers;
 static int last_hour = -1, last_min = -1;
 
 // called periodically (currently every 10 seconds)
-void webserver_collect_print_stats(int print)
+static void webserver_collect_print_stats(int print)
 {
 	int i, nusers=0;
 	conn_t *c;
@@ -107,7 +107,6 @@ void webserver_collect_print_stats(int print)
             }
 		}
 		
-		// FIXME: disable for now -- causes audio glitches for unknown reasons
 		#ifdef OPTION_SERVER_GEOLOC
             if (!c->geo && !c->try_geoloc && (now - c->arrival) > 10) {
                 //clprintf(c, "GEOLOC: %s sent no geoloc info, trying from here\n", c->remote_ip);
@@ -121,7 +120,7 @@ void webserver_collect_print_stats(int print)
 		bool both_no_api = (!c->snd_cmd_recv_ok && !c->wf_cmd_recv_ok);
 		if (c->auth && both_no_api && (now - c->arrival) >= NO_API_TIME) {
             clprintf(c, "\"%s\"%s%s%s%s incomplete connection kicked\n",
-                c->user? c->user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
+                c->ident_user? c->ident_user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
                 c->geo? " ":"", c->geo? c->geo:"");
             c->kick = true;
 		}
@@ -225,12 +224,86 @@ void webserver_collect_print_stats(int print)
 	spi_stats();
 }
 
+static void called_every_second()
+{
+	int i;
+	conn_t *c;
+	u4_t now = timer_sec();
+	
+	int ch;
+    rx_chan_t *rx;
+    for (rx = rx_channels, ch = 0; rx < &rx_channels[rx_chans]; rx++, ch++) {
+        if (!rx->busy) continue;
+		c = rx->conn;
+		if (c == NULL || !c->valid || c->ext_api_determined) continue;
+		
+		#if 0
+            cprintf(c, "API: rx%d arrival=%d served=%d type=%s ext_api%d isLocal%d internal%d\n",
+                ch, now - c->arrival, c->served, rx_streams[c->type].uri,
+                c->ext_api, c->isLocal, c->internal_connection);
+        #endif
+        
+		if (c->isLocal || c->internal_connection ||
+		    (c->type != STREAM_SOUND && c->type != STREAM_WATERFALL)) {
+            c->ext_api = false;
+            c->ext_api_determined = true;
+		    //cprintf(c, "API: connection is exempt\n");
+            continue;
+		}
+
+		#define EXT_API_DECISION_SECS 5
+		if ((now - c->arrival) < EXT_API_DECISION_SECS) continue;
+
+		#define EXT_API_DECISION_SERVED 5
+		if (c->served >= EXT_API_DECISION_SERVED) {
+            c->ext_api = false;
+            c->ext_api_determined = true;
+		    cprintf(c, "API: decided connection is OKAY (%d)\n", c->served);
+		    continue;
+		}
+		
+		c->ext_api = c->ext_api_determined = true;
+		cprintf(c, "API: decided connection is non-Kiwi app (%d)\n", c->served);
+		//dump();
+
+        // ext_api_nchans, if exceeded, overrides tdoa_nchans
+        if (!c->kick) {
+            int ext_api_ch = cfg_int("ext_api_nchans", NULL, CFG_REQUIRED);
+            if (ext_api_ch == -1) ext_api_ch = rx_chans;      // has never been set
+            int ext_api_users = rx_count_server_conns(EXT_API_USERS);
+            cprintf(c, "API: ext_api_users=%d >? ext_api_ch=%d %s\n", ext_api_users, ext_api_ch,
+                (ext_api_users > ext_api_ch)? "T(DENY)":"F(OKAY)");
+            if (ext_api_users > ext_api_ch) {
+                clprintf(c, "API: non-Kiwi app was denied connection: %d/%d %s \"%s\"\n",
+                    ext_api_users, ext_api_ch, c->remote_ip, c->ident_user);
+                send_msg(c, SM_NO_DEBUG, "MSG too_busy=%d", ext_api_ch);
+                c->kick = true;
+            }
+        }
+
+        // Can only distinguish the TDoA service at the time the kiwirecorder identifies itself.
+        // If a match and the limit is exceeded then kick the connection off immediately.
+        // This identification is typically sent right after initial connection is made.
+        if (!c->kick && c->ident_user && kiwi_str_begins_with(c->ident_user, "TDoA_service")) {
+            int tdoa_ch = cfg_int("tdoa_nchans", NULL, CFG_REQUIRED);
+            if (tdoa_ch == -1) tdoa_ch = rx_chans;      // has never been set
+            int tdoa_users = rx_count_server_conns(TDOA_USERS);
+            cprintf(c, "TDoA_service tdoa_users=%d >? tdoa_ch=%d %s\n", tdoa_users, tdoa_ch, (tdoa_users > tdoa_ch)? "T":"F");
+            if (tdoa_users > tdoa_ch) {
+                send_msg(c, SM_NO_DEBUG, "MSG too_busy=%d", tdoa_ch);
+                c->kick = true;
+            }
+        }
+	}
+}
+
 void stat_task(void *param)
 {
 	u64_t stats_deadline = timer_us64() + SEC_TO_USEC(1);
 	u64_t secs = 0;
 	
 	while (TRUE) {
+	    called_every_second();
 
 		if ((secs % STATS_INTERVAL_SECS) == 0) {
 			if (do_sdr) {

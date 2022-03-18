@@ -137,5 +137,4 @@ extern int pending_maj, pending_min;
 
 extern bool sd_copy_in_progress;
 
-void webserver_collect_print_stats(int print);
 void stat_task(void *param);

@@ -697,7 +697,7 @@ void c2s_waterfall(void *param)
         // handle LOG_ARRIVED and missing ident for WF-only connections
         if (conn->isMaster && !conn->arrived && (conn->ident || ((cmd_recv & CMD_SET_ZOOM) && timer_sec() > (conn->arrival + 15)))) {
             if (!conn->ident)
-			    kiwi_str_redup(&conn->user, "user", (char *) "(no identity)");
+			    kiwi_str_redup(&conn->ident_user, "user", (char *) "(no identity)");
             rx_loguser(conn, LOG_ARRIVED);
             conn->arrived = TRUE;
         }

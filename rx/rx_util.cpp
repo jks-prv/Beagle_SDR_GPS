@@ -719,7 +719,7 @@ char *rx_users(bool include_ip)
                 u4_t r_min = t % 60; t /= 60;
                 u4_t r_hr = t;
 
-                char *user = (c->isUserIP || !c->user)? NULL : kiwi_str_encode(c->user);
+                char *user = (c->isUserIP || !c->ident_user)? NULL : kiwi_str_encode(c->ident_user);
                 char *geo = !show_geo? kiwi_str_encode((char *) "no location") : (c->geo? kiwi_str_encode(c->geo) : NULL);
                 char *ext = ext_users[i].ext? kiwi_str_encode((char *) ext_users[i].ext->name) : NULL;
                 const char *ip = include_ip? c->remote_ip : "";
