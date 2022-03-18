@@ -1601,7 +1601,7 @@ function w3_link(psa, url, inner, title, cb, cb_param)
    if (url.startsWith('javascript:')) {
       target = '';
    } else {
-      if (!url.startsWith('http://') && !url.startsWith('https://'))
+      if (url != '' && !url.startsWith('http://') && !url.startsWith('https://'))
          qual_url = 'http://'+ url;
       target = ' target="_blank"';
    }
@@ -1618,6 +1618,18 @@ function w3_link(psa, url, inner, title, cb, cb_param)
 	var s = '<a '+ p +'>'+ inner +'</a>';
 	//console.log(s);
 	return s;
+}
+
+function w3_link_set(path, url)
+{
+   var el = w3_el(path);
+   //console.log('w3_link_set: path='+ path +' url='+ url);
+   //console.log(el);
+   if (el && url != '') {
+      if (!url.startsWith('http://') && !url.startsWith('https://'))
+         url = 'http://'+ url;
+      w3_attribute(el, 'href', url);
+   }
 }
 
 
