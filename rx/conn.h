@@ -52,6 +52,9 @@ typedef struct conn_st {
 	funcP_t task_func;
 	char *tname;
 
+	bool ext_api, ext_api_determined;
+	u4_t served;
+
 	// set in STREAM_{SOUND, WATERFALL, EXT, ADMIN}
 	u4_t keepalive_time, keep_alive, keepalive_count;
 
@@ -61,7 +64,7 @@ typedef struct conn_st {
 
 	// set in STREAM_SOUND or STREAM_WATERFALL (WF-only connections)
 	bool ident, arrived;
-	char *user;
+	char *ident_user;
 	bool isUserIP;
 
 	// set only in STREAM_SOUND
@@ -76,7 +79,6 @@ typedef struct conn_st {
 	TYPECPX last_sample;
 	char *pref_id, *pref;
 	bool is_locked;
-	bool ext_api;
 	
 	// set only in STREAM_WATERFALL
 	bool wf_cmd_recv_ok;

@@ -573,10 +573,12 @@ int inet_nm_bits(int family, void *netmask)
 	return nm_bits;
 }
 
-bool isLocal_ip(char *ip_str, bool *is_loopback)
+bool isLocal_ip(char *ip_str, bool *is_loopback, u4_t *ipv4)
 {
     bool error;
     u4_t ip = inet4_d2h(ip_str, &error);
+    if (ipv4) *ipv4 = 0;
+    
     if (!error) {
         // ipv4
         if (is_loopback)
@@ -584,8 +586,10 @@ bool isLocal_ip(char *ip_str, bool *is_loopback)
         if (
             (ip >= INET4_DTOH(10,0,0,0) && ip <= INET4_DTOH(10,255,255,255)) ||
             (ip >= INET4_DTOH(172,16,0,0) && ip <= INET4_DTOH(172,31,255,255)) ||
-            (ip >= INET4_DTOH(192,168,0,0) && ip <= INET4_DTOH(192,168,255,255)) )
+            (ip >= INET4_DTOH(192,168,0,0) && ip <= INET4_DTOH(192,168,255,255)) ) {
+            if (ipv4) *ipv4 = ip;
             return true;
+        }
     } else {
         // ipv6
         if (is_loopback)
@@ -810,7 +814,7 @@ void ip_blacklist_dump()
 
 bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port_base,
     const char *mode, int locut, int hicut, float freq_kHz,
-    const char *ident, const char *geoloc, const char *client,
+    const char *ident_user, const char *geoloc, const char *client,
     int zoom, float cf_kHz, int min_dB, int max_dB, int wf_speed, int wf_comp)
 {
     struct mg_connection *mc_fail, *mcs = NULL, *mcw = NULL, *mce = NULL;
@@ -835,7 +839,7 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
         input_msg_internal(csnd, (char *) "SET agc=1 hang=0 thresh=-100 slope=6 decay=1000 manGain=50");
         input_msg_internal(csnd, (char *) "SET mod=%s low_cut=%d high_cut=%d freq=%.3f",
             mode, locut, hicut, freq_kHz);
-        input_msg_internal(csnd, (char *) "SET ident_user=%s", ident);
+        input_msg_internal(csnd, (char *) "SET ident_user=%s", ident_user);
         if (geoloc) input_msg_internal(csnd, (char *) "SET geoloc=%s", geoloc);
         ident_geo_sent = true;
     }
@@ -856,7 +860,7 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
         input_msg_internal(cwf, (char *) "SET wf_speed=%d", wf_speed);
         input_msg_internal(cwf, (char *) "SET wf_comp=%d", wf_comp);
         if (!ident_geo_sent) {
-            input_msg_internal(cwf, (char *) "SET ident_user=%s", ident);
+            input_msg_internal(cwf, (char *) "SET ident_user=%s", ident_user);
             if (geoloc) input_msg_internal(cwf, (char *) "SET geoloc=%s", geoloc);
             ident_geo_sent = true;
         }

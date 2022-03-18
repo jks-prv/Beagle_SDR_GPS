@@ -5380,7 +5380,7 @@ function freq_step_amount(b)
 		}
 		s = ' LW/MW';
 	} else
-   if (b && (b.svc == 'B') && !ham_80m_swbc_75m_overlap) {      // SWBC bands
+   if (b && kiwi.svc[b.svc].menu_text.includes('Broadcast') && !ham_80m_swbc_75m_overlap) {      // SWBC bands
       if (am_sax_iq_drm) {
          step_Hz = 5000;
          s = ' SWBC 5k';
@@ -5545,6 +5545,12 @@ function bands_init()
 		// apply some fixes to known deficiencies in the bands[] from the default config.js,
 		// but in a way that hopefully won't upset any customizations to config.js
 		// a user might have made (e.g. adjustment to freq ranges)
+		//
+		// old config.js files:
+		//    Beacons (IBP)
+		//       svc 'X' instead of newer 'L'
+		//       prepend name with "IBP "
+		//       cw => cwn
 		
 		if (b.name == 'LW' && b.region == 'E') b.region = '1';
 		if (b.name == 'LW' && b.region == '>') b.region = '23';
@@ -5723,6 +5729,42 @@ function bands_addl_info()
 		b2.longName = b1.name +' '+ longName;
 		//console.log("BAND "+b1.name+" bw="+bw+" z="+z);
 	}
+}
+
+var band_menu = [];
+
+function setup_band_menu()
+{
+	var i, op = 0, service = null;
+	var s = '';
+	band_menu[op++] = null;		// menu title
+	var ITU_region = cfg.init.ITU_region + 1;    // cfg.init.ITU_region = 0:R1, 1:R2, 2:R3
+
+	for (i = 0; i < cfg.bands.length; i++) {
+		var b1 = cfg.bands[i];
+		var b2 = kiwi.bands[i];
+
+		// filter bands based on offset mode
+		if (kiwi.isOffset) {
+		   if (!b2.isOffset) continue;
+		} else {
+		   if (b2.isOffset) continue;
+		}
+
+		if (!(b1.itu == kiwi.BAND_MENU_ONLY || b1.itu == kiwi.ITU_ANY || b1.itu == ITU_region)) continue;
+
+		if (service != b1.svc) {
+			service = b1.svc; s += '<option value='+ dq(op) +' disabled>'+ kiwi.svc[b1.svc].menu_text.toUpperCase() +'</option>';
+			band_menu[op++] = null;		// section title
+		}
+		s += '<option value='+ dq(op) +'>'+ b1.name +'</option>';
+		//console.log("BAND-MENU"+ op +" i="+ i +' '+ b1.min +'/'+ b1.max);
+		band_menu[op] = {};
+		band_menu[op].b1 = b1;
+		band_menu[op].b2 = b2;
+		op++;
+	}
+	return s;
 }
 
 // find_band() is only called by code related to setting the frequency step size.
@@ -9440,42 +9482,6 @@ function toggle_or_set_spec(set, val)
 	w3_show_hide('id-spectrum-container', spec.source_wf);
 	w3_show_hide('id-top-container', !spec.source_wf);
    freqset_select();
-}
-
-var band_menu = [];
-
-function setup_band_menu()
-{
-	var i, op = 0, service = null;
-	var s = '';
-	band_menu[op++] = null;		// menu title
-	var ITU_region = cfg.init.ITU_region + 1;    // cfg.init.ITU_region = 0:R1, 1:R2, 2:R3
-
-	for (i = 0; i < cfg.bands.length; i++) {
-		var b1 = cfg.bands[i];
-		var b2 = kiwi.bands[i];
-
-		// filter bands based on offset mode
-		if (kiwi.isOffset) {
-		   if (!b2.isOffset) continue;
-		} else {
-		   if (b2.isOffset) continue;
-		}
-
-		if (!(b1.itu == kiwi.BAND_MENU_ONLY || b1.itu == kiwi.ITU_ANY || b1.itu == ITU_region)) continue;
-
-		if (service != b1.svc) {
-			service = b1.svc; s += '<option value='+ dq(op) +' disabled>'+ kiwi.svc[b1.svc].menu_text.toUpperCase() +'</option>';
-			band_menu[op++] = null;		// section title
-		}
-		s += '<option value='+ dq(op) +'>'+ b1.name +'</option>';
-		//console.log("BAND-MENU"+ op +" i="+ i +' '+ b1.min +'/'+ b1.max);
-		band_menu[op] = {};
-		band_menu[op].b1 = b1;
-		band_menu[op].b2 = b2;
-		op++;
-	}
-	return s;
 }
 
 function mode_over(evt, el)

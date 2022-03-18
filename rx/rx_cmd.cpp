@@ -1275,7 +1275,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             for (rx = rx_channels, i=0; rx < &rx_channels[rx_chans]; rx++, i++) {
                 if (rx->busy) {
                     conn_t *c = rx->conn;
-                    if (c && c->valid && c->arrived && c->type == STREAM_SOUND && c->user != NULL) {
+                    if (c && c->valid && c->arrived && c->type == STREAM_SOUND && c->ident_user != NULL) {
                         underruns += c->audio_underrun;
                         seq_errors += c->sequence_errors;
                     }
@@ -1368,6 +1368,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
     case CMD_IDENT_USER:
         if (kiwi_str_begins_with(cmd, "SET ident_user=")) {
+            
+            // if it's nothing but spaces the scanf fails and ident_user_m = NULL
             char *ident_user_m = NULL;
             sscanf(cmd, "SET ident_user=%256ms", &ident_user_m);
             bool noname = (ident_user_m == NULL || ident_user_m[0] == '\0');
@@ -1376,20 +1378,20 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             if (conn->mc == NULL) return true;	// we've seen this
 
             // no name sent, no previous name set: use ip as name
-            if (noname && !conn->user) setUserIP = true;
+            if (noname && !conn->ident_user) setUserIP = true;
 
             // no name sent, but ip changed: use ip as name
-            if (noname && conn->user && strcmp(conn->user, conn->remote_ip)) setUserIP = true;
+            if (noname && conn->ident_user && strcmp(conn->ident_user, conn->remote_ip)) setUserIP = true;
         
             // else no name sent, but ip didn't change: do nothing
         
             //cprintf(conn, "SET ident_user=<%s> noname=%d setUserIP=%d\n", ident_user_m, noname, setUserIP);
         
             if (setUserIP) {
-                kiwi_str_redup(&conn->user, "user", conn->remote_ip);
+                kiwi_str_redup(&conn->ident_user, "ident_user", conn->remote_ip);
                 conn->isUserIP = TRUE;
                 // printf(">>> isUserIP TRUE: %s:%05d setUserIP=%d noname=%d user=%s <%s>\n",
-                // 	conn->remote_ip, conn->remote_port, setUserIP, noname, conn->user, cmd);
+                // 	conn->remote_ip, conn->remote_port, setUserIP, noname, conn->ident_user, cmd);
             }
 
             // name sent: save new, replace previous (if any)
@@ -1412,47 +1414,17 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     ident_user_m = strdup("(bad identity)");
                 }
 
-                kiwi_str_redup(&conn->user, "user", ident_user_m);
+                kiwi_str_redup(&conn->ident_user, "ident_user", ident_user_m);
                 int len = cfg_int("ident_len", NULL, CFG_REQUIRED);
                 len = MAX(len, IDENT_LEN_MIN);
-                if (strlen(conn->user) > len)
-                    conn->user[len] = '\0';
-                //printf("ident <%s> len=%d\n", conn->user, len);
+                if (strlen(conn->ident_user) > len)
+                    conn->ident_user[len] = '\0';
+                //printf("ident <%s> len=%d\n", conn->ident_user, len);
                 conn->isUserIP = FALSE;
                 // printf(">>> isUserIP FALSE: %s:%05d setUserIP=%d noname=%d user=%s <%s>\n",
-                // 	conn->remote_ip, conn->remote_port, setUserIP, noname, conn->user, cmd);
+                // 	conn->remote_ip, conn->remote_port, setUserIP, noname, conn->ident_user, cmd);
             }
         
-            // ext_api_nchans, if exceeded, overrides tdoa_nchans
-            if (conn->ext_api) {
-                int ext_api_ch = cfg_int("ext_api_nchans", NULL, CFG_REQUIRED);
-                if (ext_api_ch == -1) ext_api_ch = rx_chans;      // has never been set
-                int ext_api_users = rx_count_server_conns(EXT_API_USERS);
-                //cprintf(conn, "EXT_API ext_api_users=%d >? ext_api_ch=%d\n", ext_api_users, ext_api_ch);
-                if (ext_api_users > ext_api_ch) {
-                    //cprintf(conn, "EXT_API TOO_BUSY %s\n", conn->remote_ip);
-                    clprintf(conn, "Non-Kiwi API denied connection: %d/%d %s \"%s\"\n",
-                        ext_api_users, ext_api_ch, conn->remote_ip, conn->user);
-                    send_msg(conn, SM_NO_DEBUG, "MSG too_busy=%d", ext_api_ch);
-                    conn->kick = true;
-                }
-            }
-
-            // Can only distinguish the TDoA service at the time the kiwirecorder identifies itself.
-            // If a match and the limit is exceeded then kick the connection off immediately.
-            // This identification is typically sent right after initial connection is made.
-            if (!conn->kick && kiwi_str_begins_with(conn->user, "TDoA_service")) {
-                int tdoa_ch = cfg_int("tdoa_nchans", NULL, CFG_REQUIRED);
-                if (tdoa_ch == -1) tdoa_ch = rx_chans;      // has never been set
-                int tdoa_users = rx_count_server_conns(TDOA_USERS);
-                //cprintf(conn, "TDoA_service tdoa_users=%d >? tdoa_ch=%d\n", tdoa_users, tdoa_ch);
-                if (tdoa_users > tdoa_ch) {
-                    //cprintf(conn, "TDoA_service TOO_BUSY\n");
-                    send_msg(conn, SM_NO_DEBUG, "MSG too_busy=%d", tdoa_ch);
-                    conn->kick = true;
-                }
-            }
-
             kiwi_ifree(ident_user_m);
             conn->ident = true;
             return true;

@@ -166,7 +166,7 @@ bool find_local_IPs(int retry);
 u4_t inet4_d2h(char *inet4_str, bool *error, u1_t *ap=NULL, u1_t *bp=NULL, u1_t *cp=NULL, u1_t *dp=NULL);
 bool is_inet4_map_6(u1_t *a);
 int inet_nm_bits(int family, void *netmask);
-bool isLocal_ip(char *ip, bool *is_loopback = NULL);
+bool isLocal_ip(char *ip, bool *is_loopback = NULL, u4_t *ipv4 = NULL);
 
 int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const char *ip_backup);
 char *DNS_lookup_result(const char *caller, const char *host, ip_lookup_t *ips);
@@ -190,7 +190,7 @@ const u4_t ICONN_WS_SND = 1, ICONN_WS_WF = 2, ICONN_WS_EXT = 4;
 
 bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port_base,
     const char *mode, int locut, int hicut, float freq_kHz,
-    const char *ident, const char *geoloc, const char *client = NULL,
+    const char *ident_user, const char *geoloc, const char *client = NULL,
     int zoom = 0, float cf_kHz = 0, int min_dB = 0, int max_dB = 0, int wf_speed = 0, int wf_comp = 0);
 
 void internal_conn_shutdown(internal_conn_t *iconn);

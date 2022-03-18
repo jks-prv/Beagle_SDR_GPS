@@ -551,6 +551,26 @@ void reload_index_params()
 #endif
 }
 
+void web_served(const char *from, char *ip_s, const char *fn_s)
+{
+	conn_t *c;
+	
+	// print / log connections
+	int ch;
+    rx_chan_t *rx;
+    for (rx = rx_channels, ch = 0; rx < &rx_channels[rx_chans]; rx++, ch++) {
+        if (!rx->busy) continue;
+		c = rx->conn;
+		if (c == NULL || !c->valid) continue;
+		if (c->type != STREAM_SOUND || c->other == NULL) continue;
+		if (c->isLocal || c->internal_connection || c->ext_api_determined) continue;
+		if (strcmp(ip_s, c->remote_ip) == 0) {
+		    c->served++;
+		    //printf("SERVED: %6s RX%d #%d %s %s\n", from, ch, c->served, ip_s, fn_s);
+		}
+	}
+}
+
 
 // event requests _from_ web server:
 // (prompted by data coming into web server)
@@ -649,6 +669,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     #endif
 		
 	if (evt == MG_CACHE_RESULT) {
+	    web_served("CACHED", remote_ip, mc->uri);
 	    if (web_caching_debug == 0) return MG_TRUE;
 	    
 	    if (mc->cache_info.cached)
@@ -1070,6 +1091,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
             }
         }
         web_printf_sent("%15s %s\n", remote_ip, isAJAX? mc->uri : uri);
+	    web_served("SENT", remote_ip, mc->uri);
         
         mg_send_header(mc, "Server", web_server_hdr);
         

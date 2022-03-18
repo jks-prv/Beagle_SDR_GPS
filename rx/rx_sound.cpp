@@ -748,7 +748,7 @@ void c2s_sound(void *param)
                     did_cmd = true;
                     conn->audio_underrun++;
                     cprintf(conn, "SND: audio underrun %d %s -------------------------\n",
-                        conn->audio_underrun, conn->user);
+                        conn->audio_underrun, conn->ident_user);
                     //if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "NextTask", evprintf("DUMP IN %.3f SEC",
                     //	ev_dump/1000.0));
                 }
@@ -762,7 +762,7 @@ void c2s_sound(void *param)
                     did_cmd = true;
 					conn->sequence_errors++;
 					printf("SND%d: audio.js SEQ got %d, expecting %d, %s -------------------------\n",
-						rx_chan, _seq, _sequence, conn->user);
+						rx_chan, _seq, _sequence, conn->ident_user);
 				}
 			}
 		#endif
@@ -861,7 +861,7 @@ void c2s_sound(void *param)
         // set arrived when "ident_user=" received or if too much time has passed without it being received
         if (!conn->arrived && (conn->ident || ((cmd_recv & CMD_FREQ) && timer_sec() > (conn->arrival + 15)))) {
             if (!conn->ident)
-			    kiwi_str_redup(&conn->user, "user", (char *) "(no identity)");
+			    kiwi_str_redup(&conn->ident_user, "user", (char *) "(no identity)");
             rx_loguser(conn, LOG_ARRIVED);
             conn->arrived = TRUE;
         }

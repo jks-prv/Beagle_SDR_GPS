@@ -234,7 +234,7 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event evt)
 					c->sum2 += diff2;
 					if (out->h.seq != c->audio_sequence) {
 						printf("SND%d SEQ expecting %d got %d, %s -------------------------\n",
-							c->rx_channel, c->audio_sequence, out->h.seq, c->user);
+							c->rx_channel, c->audio_sequence, out->h.seq, c->ident_user);
 						c->audio_sequence = out->h.seq;
 					}
 					c->audio_sequence++;
