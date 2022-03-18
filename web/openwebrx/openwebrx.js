@@ -584,7 +584,7 @@ function check_top_bar_congestion()
 function init_top_bar()
 {
    w3_append_innerHTML('id-rx-desc',
-      w3_link('', 'https://www.google.com/maps/place/'+ cfg.index_html_params.RX_GMAP, '[map]', '', 'dont_toggle_rx_photo') +
+      w3_link('id-rx-gmap', '', '[map]', '', 'dont_toggle_rx_photo') +
       w3_div('id-rx-snr w3-show-inline')
    );
 }
@@ -1362,6 +1362,12 @@ function demodulator_set_offset_frequency(which, offset)
 
 function owrx_cfg()
 {
+   w3_do_when_rendered('id-rx-gmap',
+      function() {
+         w3_link_set('id-rx-gmap', 'https://www.google.com/maps/place/'+ cfg.index_html_params.RX_GMAP);
+      }
+   );
+   
    owrx.cfg_loaded = true;
 }
 
