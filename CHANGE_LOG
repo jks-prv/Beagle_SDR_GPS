@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.504  March 20, 2022
+    Fix for Kiwis using customized kiwi.config/config.js files (band bars and "select band" menu).
+
 v1.502,503  March 19, 2022
     Fixes to better support admin page, control tab, "non-Kiwi apps" menu setting.
 

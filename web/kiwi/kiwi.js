@@ -33,18 +33,6 @@ var kiwi = {
 
    cfg_fields: [ 'min', 'max', 'chan' ],
    
-   svc: {
-      B: { menu_text:'Broadcast',   color:'red' },
-      U: { menu_text:'Utility',     color:'green' },
-      A: { menu_text:'Amateur',     color:'blue' },
-      L: { menu_text:'Beacons',     color:'blue' },
-      I: { menu_text:'ISM',         color:'orange',   longName:'Industrial/Scientific' },
-      M: { menu_text:'Markers',     color:'purple' },
-      X: { menu_text:'QRN',         color:'magenta' },
-      N: { menu_text:'Event',       color:'deepPink' }
-   },
-   svc_s: "BUALIMXN",
-   
    ITU_s: [
       'any',
       'R1: Europe, Africa',
