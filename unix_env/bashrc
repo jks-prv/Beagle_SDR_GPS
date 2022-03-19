@@ -356,6 +356,8 @@ alias iptunban="function _iptunban () { iptables -D KIWI -s \$1 -j DROP ; } ; _i
 alias mdu="killall -q -s USR1 kiwid; killall -q -s USR1 kiwi.bin"
 alias whilek="while true; do ./k; done"
 alias whiled="while true; do ./d; done"
+alias bbpp="ping -c 1 proxy.kiwisdr.com"
+alias bbfp="ping -c 1 forum.kiwisdr.com"
 
 # SSL
 alias certs="certbot certificates"

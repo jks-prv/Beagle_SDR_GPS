@@ -229,9 +229,9 @@ static void called_every_second()
 	int i;
 	conn_t *c;
 	u4_t now = timer_sec();
-	
 	int ch;
     rx_chan_t *rx;
+
     for (rx = rx_channels, ch = 0; rx < &rx_channels[rx_chans]; rx++, ch++) {
         if (!rx->busy) continue;
 		c = rx->conn;
@@ -251,10 +251,10 @@ static void called_every_second()
             continue;
 		}
 
-		#define EXT_API_DECISION_SECS 5
+		#define EXT_API_DECISION_SECS 10
 		if ((now - c->arrival) < EXT_API_DECISION_SECS) continue;
 
-		#define EXT_API_DECISION_SERVED 5
+		#define EXT_API_DECISION_SERVED 3
 		if (c->served >= EXT_API_DECISION_SERVED) {
             c->ext_api = false;
             c->ext_api_determined = true;

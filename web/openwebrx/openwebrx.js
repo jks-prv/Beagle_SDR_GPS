@@ -5542,6 +5542,28 @@ function bands_init()
 	}
 	
    console.log('BANDS: using old config.js::bands');
+
+
+   // config.js::svc{} may have been modified
+   kiwi.svc = {};
+   w3_obj_enum(svc, function(key, i, o) {
+      if (key == 'X' && o.name == 'Beacons') {
+         svc.L = svc.X;
+         key = 'L';
+         delete svc.X;
+      }
+      console.log('key='+ key);
+      svc[key].key = key;     // to assist in conversion of bands[] later on
+      
+      kiwi.svc[key] = { menu_text: o.name, color: o.color };
+      if (o.name == 'Industrial/Scientific') {
+         kiwi.svc[key].menu_text = 'ISM';
+         kiwi.svc[key].longName = 'Industrial/Scientific';
+      }
+   });
+   //console.log(kiwi.svc);
+   
+   
 	kiwi.cfg_bands_new = [];
 
    // NB: the only place "bands" (from config.js) should be referenced
@@ -5632,7 +5654,7 @@ function bands_init()
 		// Change IBP passband from CW to CWN.
 		// A software release can't modify bands[] definition in config.js so do this here.
 		// At some point config.js will be eliminated when admin page gets equivalent UI.
-		if ((bnew.s == svc.L || bnew.s == svc.X) && bnew.sel.includes('cw') && bnew.region == 'm') {
+		if ((bnew.s.key == 'L' || bnew.s.key == 'X') && bnew.sel.includes('cw') && bnew.region == 'm') {
 		   if (!bnew.name.includes('IBP'))
 		      bnew.name = 'IBP '+ bnew.name;
 		   if (!bnew.sel.includes('cwn'))
@@ -5646,16 +5668,14 @@ function bands_init()
 	for (i = 0; i < kiwi.cfg_bands_new.length; i++) {
 		bnew = kiwi.cfg_bands_new[i];
 
-		if (isString(bnew.s)) bnew.svc = bnew.s; else
-		if (bnew.s == svc.B) bnew.svc = 'B'; else
-		if (bnew.s == svc.U) bnew.svc = 'U'; else
-		if (bnew.s == svc.A) bnew.svc = 'A'; else
-		if (bnew.s == svc.L) bnew.svc = 'L'; else
-		if (bnew.s == svc.I) bnew.svc = 'I'; else
-		if (bnew.s == svc.M) bnew.svc = 'M'; else
-		if (bnew.s == svc.X) bnew.svc = 'X'; else
-		   bnew.svc = 'N';
-
+		if (isString(bnew.s)) bnew.svc = bnew.s;
+		else
+		if (isObject(bnew.s))
+		   bnew.svc = bnew.s.key;
+		else {
+		   console.log('$$$ t/o(bnew.svc)='+ typeof(bnew.s));
+		}
+		
 		delete bnew.s;
 		delete bnew.region;
 	}
@@ -5691,21 +5711,6 @@ function bands_addl_info()
 
 		cfg.bands[i].chan = isUndefined(b1.chan)? 0 : b1.chan;
 
-/* jksx
-		b1.min -= b1.chan/2; b1.max += b1.chan/2;
-		
-		// fix LW/NDB/MW band definitions based on ITU region and MW channel spacing configuration settings
-		if (b1.name == 'LW') {
-			b1.min = bi.LW_lo; b1.max = bi.NDB_lo; b1.chan = 9;
-		}
-		if (b1.name == 'NDB') {
-			b1.min = bi.NDB_lo; b1.max = bi.NDB_hi; b1.chan = 0;
-		}
-		if (b1.name == 'MW') {
-			b1.min = bi.NDB_hi; b1.max = bi.MW_hi; b1.chan = bi._9_10;
-		}
-*/
-		
 		// If Kiwi has an offset, re-bias band bar min/max back to 0-30 MHz and set isOffset flag.
 		// This minimizes code changes elsewhere to handle offset mode.
 		var min = b1.min, max = b1.max;
