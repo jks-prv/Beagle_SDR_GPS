@@ -226,7 +226,8 @@ bool _cfg_init(cfg_t *cfg, int flags, char *buf)
 	    cfg->init_load = false;
 	}
 	
-	lprintf("reading configuration from file %s: %d tokens\n", cfg->filename, cfg->ntok);
+	lprintf("reading configuration from file %s: %d tokens (%s bytes)\n",
+	    cfg->filename, cfg->ntok, toUnits(cfg->json_buf_size, 0));
 
 	if (cfg == &cfg_cfg) {
 		struct stat st;
@@ -1226,6 +1227,9 @@ static bool _cfg_load_json(cfg_t *cfg)
 
 	off_t fsize = kiwi_file_size(cfg->filename);
 	_cfg_realloc_json(cfg, fsize + SPACE_FOR_NULL, CFG_NONE);
+	
+	if (fsize > 128*K)
+	    lprintf("CAUTION: large configuration file, will take time to parse: %s ...\n", cfg->filename);
 	
     FILE *fp;
     scallz("_cfg_load_json fopen", (fp = fopen(cfg->filename, "r")));

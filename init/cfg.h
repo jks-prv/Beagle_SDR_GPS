@@ -134,7 +134,6 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define dxcfg_init()						_cfg_init(&cfg_dx, CFG_NO_UPDATE, NULL)
 #define	dxcfg_get_json(size)				_cfg_get_json(&cfg_dx, size)
 #define dxcfg_save_json(json)				_cfg_save_json(&cfg_dx, json)
-#define dxcfg_update_json()                 _cfg_update_json(&cfg_dx)
 #define dxcfg_walk(id, cb, param)			_cfg_walk(&cfg_dx, id, cb, param)
 
 #define dxcfg_int(name, err, flags)			_cfg_int(&cfg_dx, name, err, flags)

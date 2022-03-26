@@ -67,8 +67,8 @@ void dx_save_as_json()
 	    char *notes = dxp->notes? kiwi_str_decode_selective_inplace(strdup(dxp->notes)) : strdup("");
 	    char *params = (dxp->params && *dxp->params)? kiwi_str_decode_selective_inplace(strdup(dxp->params)) : NULL;
 	    
-	    sb = kstr_asprintf(NULL, "[%.2f, \"%s\", \"%s\", \"%s\", %d, %d",
-	        dxp->freq, modu_s[dxp->flags & DX_MODE], ident, notes, dxp->timestamp, dxp->tag);
+	    sb = kstr_asprintf(NULL, "[%.2f, \"%s\", \"%s\", \"%s\"",
+	        dxp->freq, modu_s[dxp->flags & DX_MODE], ident, notes);
         free(ident); free(notes);   // not kiwi_ifree() because from strdup()
 
 		u4_t type = dxp->flags & DX_TYPE;
@@ -87,21 +87,39 @@ void dx_save_as_json()
 			    sb = kstr_asprintf(sb, "%s\"%s\":1", delim, type_s);
 			    delim = ", ";
 			}
+			
 			if (dxp->low_cut) {
 			    sb = kstr_asprintf(sb, "%s\"lo\":%d", delim, dxp->low_cut);
 			    delim = ", ";
 			}
+			
 			if (dxp->high_cut) {
 			    sb = kstr_asprintf(sb, "%s\"hi\":%d", delim, dxp->high_cut);
 			    delim = ", ";
 			}
+			
 			if (dxp->offset) {
 			    sb = kstr_asprintf(sb, "%s\"o\":%d", delim, dxp->offset);
 			    delim = ", ";
 			}
+			
+			u2_t dow = dxp->flags & DX_DOW;
+			if (dow != 0 && dow != DX_DOW) {
+			    sb = kstr_asprintf(sb, "%s\"d0\":%d", delim, dow >> DX_DOW_SFT);
+			    delim = ", ";
+			}
+			
+            u2_t time_begin = dxp->time_begin, time_end = dxp->time_end;
+            if (time_begin == 0 && time_end == 2400) time_end = 0;
+			if (time_begin != 0 || time_end != 0) {
+			    sb = kstr_asprintf(sb, "%s\"b0\":%d, \"e0\":%d", delim, time_begin, time_end);
+			    delim = ", ";
+			}
+			
 			if (params) {
 			    sb = kstr_asprintf(sb, "%s\"p\":\"%s\"", delim, params);
 			}
+			
 			sb = kstr_cat(sb, "}");
 			free(params);   // not kiwi_ifree() because from strdup()
 		}
@@ -226,12 +244,15 @@ static void _dx_reload_json(cfg_t *cfg)
 	
 	lprintf("%d dx entries\n", _dx_list_len);
 	
+	// NB: kiwi_malloc() zeros mem
 	dx_t *_dx_list = (dx_t *) kiwi_malloc("dx_list", (_dx_list_len + DX_HIDDEN_SLOT) * sizeof(dx_t));
 	
 	dx_t *dxp = _dx_list;
 	int i = 0;
 
 	for (; jt != end_tok; dxp++, i++) {
+        u4_t dow = DX_DOW;
+        
 		check(i < _dx_list_len);
 		check(JSMN_IS_ARRAY(jt));
 		jt++;
@@ -269,14 +290,14 @@ static void _dx_reload_json(cfg_t *cfg)
 		    jt++;
 		} else {
 		    //printf("### DX #%d missing timestamp\n", i);
-		    dxp->timestamp = utc_time_since_2018() / 60;
+		    //dxp->timestamp = utc_time_since_2018() / 60;
 		}
 		
 		if (dxcfg_int_json(jt, &dxp->tag)) {
 		    jt++;
 		} else {
 		    //printf("### DX #%d missing tag\n", i);
-		    dxp->tag = random() % 10000;
+		    //dxp->tag = random() % 10000;
 		}
 		
 		//printf("dx.json %d %.2f 0x%x \"%s\" \"%s\"\n", i, dxp->freq, dxp->flags, dxp->ident, dxp->notes);
@@ -294,12 +315,27 @@ static void _dx_reload_json(cfg_t *cfg)
                     if (strcmp(id, "lo") == 0) {
                         dxp->low_cut = num;
                     } else
+                    
                     if (strcmp(id, "hi") == 0) {
                         dxp->high_cut = num;
                     } else
+                    
                     if (strcmp(id, "o") == 0) {
                         dxp->offset = num;
                         //printf("dx.json %d offset %s %d\n", i, id, num);
+                    } else
+                    
+                    if (strcmp(id, "d0") == 0) {
+                        dow = (num << DX_DOW_SFT) & DX_DOW;
+                        if (dow == 0) dow = DX_DOW;
+                    } else
+                    
+                    if (strcmp(id, "b0") == 0) {
+                        dxp->time_begin = num;
+                    } else
+                    
+                    if (strcmp(id, "e0") == 0) {
+                        dxp->time_end = num;
                     } else {
                         if (num) {
                             dx_flag(dxp, id);
@@ -320,6 +356,9 @@ static void _dx_reload_json(cfg_t *cfg)
 				jt++;
 			}
 		}
+		
+        dxp->flags |= dow;
+		if (dxp->time_begin == 0 && dxp->time_end == 0) dxp->time_end = 2400;
 	}
 	
     dx_prep_list(true, _dx_list, _dx_list_len, _dx_list_len);

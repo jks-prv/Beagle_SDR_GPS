@@ -100,6 +100,7 @@ extern const int eibi_counts[];
 #define	DX_SPY      0x00000130
 #define	DX_LAST 	0x00000130
 
+#define DX_DOW_SFT  9
 #define	DX_DOW      0x0000fe00
 #define DX_MON      0x00008000
 #define DX_TUE      0x00004000
