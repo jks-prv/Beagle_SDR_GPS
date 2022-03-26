@@ -468,7 +468,7 @@ char *kiwi_str_encode(char *src, bool alt)
 }
 
 #define N_DST_STATIC 4
-#define N_DST_STATIC_BUF (512 + SPACE_FOR_NULL)
+#define N_DST_STATIC_BUF (511 + SPACE_FOR_NULL)
 static char dst_static[N_DST_STATIC][N_DST_STATIC_BUF];
 
 // for use with e.g. an immediate printf argument

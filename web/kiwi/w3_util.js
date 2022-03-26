@@ -347,12 +347,15 @@ function w3_obj_num(o)
    return o;
 }
 
+// given a sequential position in an object's keys, return the corresponding object element for that key
 function w3_obj_seq_el(obj, idx)
 {
-   var keys = Object.keys(obj);
-   return obj[keys[idx]];
+   var keys_a = Object.keys(obj);
+   if (!isNumber(idx) || idx < 0 || idx >= keys_a.length) return null;
+   return obj[keys_a[idx]];
 }
 
+// given an object key, return its sequential position in that object
 function w3_obj_key_seq(obj, key)
 {
    var seq = null;
@@ -1809,11 +1812,8 @@ function w3_cb_param_decode(cbp)
    return cbp;
 }
 
-function w3_button(psa, text, cb, cb_param)
+function w3int_button(psa, path, text, cb, cb_param)
 {
-	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
-	w3int_btn_grp_uniq++;
-	
 	//console.log('w3_button cb_param='+ cb_param);
 	cb_param = w3_cb_param_encode(cb_param);
 	//console.log('w3_button cb_param='+ cb_param);
@@ -1825,14 +1825,26 @@ function w3_button(psa, text, cb, cb_param)
 	}
 	
 	// w3-round-large listed first so its '!important' can be overriden by subsequent '!important's
-	var default_style = (psa.includes('w3-round-') || psa.includes('w3-circle'))? '' : ' w3-round-large';
+	var default_style = (psa.includes('w3-round') || psa.includes('w3-circle'))? '' : ' w3-round-large';
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left);
 	var psa_inner = w3_psa(psa3.right, path +' w3-btn w3-ext-btn'+ default_style, '', onclick);
 	var s = '<button '+ psa_inner +'>'+ text +'</button>';
 	if (psa_outer != '') s = '<div '+ psa_outer +'>'+ s +'</div>';
-	//console.log(s);
+	if (psa_outer.includes('w3-dump')) console.log(s);
 	return s;
+}
+
+function w3_button(psa, text, cb, cb_param)
+{
+	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
+	w3int_btn_grp_uniq++;
+   return w3int_button(psa, path, text, cb, cb_param);
+}
+
+function w3_button_path(psa, path, text, cb, cb_param)
+{
+   return w3int_button(psa, path, text, cb, cb_param);
 }
 
 function w3_button_text(path, text, color_or_add_color, remove_color)
@@ -2031,7 +2043,8 @@ function w3_input_change(path, cb)
       w3int_post_action();
 }
 
-// no cb_param here because w3_input_change() passes the input value as the callback parameter
+// No cb_param here because w3_input_change() passes the input value as the callback parameter.
+// But can specify a composite callback name (i.e. "cb|param0|param1") that is passed to callback routine.
 //
 // NB: using w3_esc_dq(val) below eliminates the need to call admin_set_decoded_value() via
 // admin tab *_focus() routines solely to work around the escaping of double quotes in the
@@ -2335,34 +2348,38 @@ function w3int_select_options(sel, opts)
 
    // [ n, n ... ]
    // [ 's', 's', n, 's' ... ]
-   // [ 's', n, { first_key:x, key:x ... }, n ... ]
-   // mixed array of strings, numbers or take first object key as menu option
+   // [ 's', n, { first_key:text, [name:text,] key:x ... }, n ... ]
+   // mixed array of strings, numbers or objects
+   // if object, take first object element's value as menu option text
+   //    *unless* value obj.name exists, then obj.name is menu option text
    if (isArray(opts)) {
-      //for (var i=0; i < opts.length; i++) {
-      //   var obj = opts[i];
       opts.forEach(function(obj, i) {
          if (isObject(obj)) {
-            var keys = Object.keys(obj);
-            obj = obj[keys[0]];
+            //var keys = Object.keys(obj);
+            //obj = obj[keys[0]];
+            obj = isDefined(obj.name)? obj.name : w3_obj_seq_el(obj, 0);
          }
          s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ obj +'</option>';
       });
    } else
 
-   // { key0:opt0, key1:opt1, opt2:{} ... }
+   // { key0:text0, key1:text1, obj_text:{ [name:text] [value:i] } ... }
    // object: enumerate sequentially like an array.
    // object elements
    //    non-object: (number, string, etc.)
    //       use element value as menu option text
+   //       option value is element's sequential position
    //    object:
    //       key itself is menu option text
-   //       *unless* value obj.menu_text exists, then obj.menu_text is menu option text
+   //          *unless* value obj.name exists, then obj.name is menu option text
+   //       option value is elements's sequential position
+   //          *unless* value obj.value exists, then obj.value is option value
    if (isObject(opts)) {
       w3_obj_enum(opts, function(key, i, o) {
          var value, text, disabled = false;
          if (isObject(o)) {
             value = isDefined(o.value)? o.value : i;
-            text = isDefined(o.menu_text)? o.menu_text : key;
+            text = isDefined(o.name)? o.name : key;
             if (isDefined(o.disabled) && o.disabled) disabled = true;
          } else {
             value = i;
@@ -2370,6 +2387,12 @@ function w3int_select_options(sel, opts)
          }
          s += '<option value='+ dq(value) + ((i == sel)? ' selected':'') + (disabled? ' disabled':'') +'>'+ text +'</option>\n';
       });
+   }
+   
+   // If sel is null, e.g. as a result of a failing match from w3_obj_key_seq(),
+   // set menu to a disabled entry named "UNKNOWN".
+   if (sel == null) {
+      s += '<option value=-1 selected disabled>(unknown)</option>\n';
    }
    
    return s;
@@ -2864,7 +2887,7 @@ function w3_json_set_cfg_cb(path, val, first)
 }
 
 // path is structured to be: [el_name][sep][idx]
-// e.g. [id-dx.o.y][_][123]
+// e.g. [id-dx.o.ty][_][123]
 function w3_remove_trailing_index(path, sep)
 {
    sep = sep || '-';    // optional separator, e.g. if negative indicies are used
@@ -2873,7 +2896,7 @@ function w3_remove_trailing_index(path, sep)
    //console.log('w3_remove_trailing_index path='+ path +' el='+ el);
 	var idx;
 	if (!el) {
-	   idx = -1;
+	   idx = null;
 	   el = path;
 	} else {
 	   idx = el[2];
@@ -3013,6 +3036,7 @@ function w3_inline(psa, attr)
       for (var i = 1; i < narg; i++) {
          var psa;
          var a = arguments[i];
+         //console.log('w3_inline i='+ i +' a='+ a);
          
          // merge a pseudo psa specifier into the next argument
          // i.e. 'w3-*', w3_*('w3-psa') => w3_*('w3-* w3-psa')

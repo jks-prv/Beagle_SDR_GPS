@@ -161,6 +161,14 @@ function kiwi_version_continue_cb()
 	kiwi_bodyonload('');
 }
 
+function ord(c, base)
+{
+   if (isString(base))
+      return c.charCodeAt(0) - base.charCodeAt(0);
+   else
+      return c.charCodeAt(0);
+}
+
 function sq(s)
 {
 	return '\''+ s +'\'';
@@ -177,8 +185,25 @@ function plural(num, word)
 }
 
 function arrayBufferToString(buf) {
-	//http://stackoverflow.com/questions/6965107/converting-between-strings-and-arraybuffers
-	return String.fromCharCode.apply(null, new Uint8Array(buf));
+	// stackoverflow.com/questions/6965107/converting-between-strings-and-arraybuffers
+	var s;
+	try {
+	   // with Safari, the following gets a "RangeError: Maximum call stack size exceeded"
+	   // for large transfers like "MSG dx_json=..." (which is now deprecated)
+	   if (0) {
+	      s = String.fromCharCode.apply(null, new Uint8Array(buf));
+	   } else {
+         var u8buf = new Uint8Array(buf);
+         s = '';
+         for (var i = 0; i < u8buf.length; i++) s += String.fromCharCode(u8buf[i]);
+      }
+	} catch (ex) {
+	   console.log(buf);
+	   console.log(ex);
+	   kiwi_trace('arrayBufferToString');
+	   s = null;
+	}
+	return s;
 }
 
 function arrayBufferToStringLen(buf, len)
@@ -186,7 +211,7 @@ function arrayBufferToStringLen(buf, len)
 	var u8buf = new Uint8Array(buf);
 	var output = String();
 	len = Math.min(len, u8buf.length);
-	for (i=0; i<len; i++) output += String.fromCharCode(u8buf[i]);
+	for (var i = 0; i < len; i++) output += String.fromCharCode(u8buf[i]);
 	return output;
 }
 
