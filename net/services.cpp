@@ -595,7 +595,7 @@ static void UPnP_port_open_task(void *param)
     }
     kiwi_ifree(cmd_p);
     
-    #if defined(USE_SSL) && defined(MONGOOSE_5_6)
+    #ifdef USE_SSL
         if (delete_nat) return;
 
         if (net.use_ssl && net.port_ext != 80) {
