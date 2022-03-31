@@ -5534,11 +5534,12 @@ function band_info()
 function bands_init()
 {
 	var i, j, k, z, b, bnew;
-	
+
 	if (cfg.bands) {     // already converted to saving in the configuration file
-	   console.log('BANDS: using stored cfg.bands');
-	   bands_addl_info();
-	   return;
+	   console.log('BANDS: stored cfg.bands exists, but ignoring due to v1.504 bug');
+	   //console.log('BANDS: using stored cfg.bands');
+	   //bands_addl_info();
+	   //return;
 	}
 	
    console.log('BANDS: using old config.js::bands');
