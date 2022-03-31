@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.505  March 31, 2022
+v1.505,506  March 31, 2022
     Fix bug with configuration file.
 
 v1.504  March 20, 2022
