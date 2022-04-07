@@ -44,7 +44,6 @@ kstr_t *kstr_list_int(const char *head, const char *fmt, const char *tail, int *
 void kiwi_get_chars(char *field, char *value, size_t size);
 #define SET_CHARS(field, value, fill) kiwi_set_chars(field, value, fill, sizeof(field));
 void kiwi_set_chars(char *field, const char *value, const char fill, size_t size);
-int kiwi_split(char *ocp, char **mbuf, const char *delims, char *argv[], int nargs);
 char *kiwi_str_replace(char *s, const char *from, const char *to, bool *caller_must_free=NULL);
 void kiwi_str_unescape_quotes(char *str);
 char *kiwi_str_escape_HTML(char *str, int *printable=NULL, int *UTF=NULL);
@@ -65,6 +64,9 @@ int kiwi_strnlen(const char *s, int limit);
 char *kiwi_strncpy(char *dst, const char *src, size_t n);
 char *kiwi_strncat(char *dst, const char *src, size_t n);
 bool kiwi_sha256_strcmp(char *str, const char *key);
+
+enum { KSPLIT_NO_SKIP_EMPTY_FIELDS = 0x1, KSPLIT_HANDLE_EMBEDDED_DELIMITERS = 0x2 };
+int kiwi_split(char *ocp, char **mbuf, const char *delims, char *argv[], int nargs, int flags = 0);
 
 
 #define STR_HASH_MISS 0
