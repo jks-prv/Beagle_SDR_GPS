@@ -5,8 +5,13 @@
 //		NTP status?
 
 var admin = {
+   long_running: false,
    is_multi_core: false,
-   reg_status: {}
+   reg_status: {},
+   
+   pie_size: 25,
+   
+   _last_: 0
 };
 
 
@@ -932,7 +937,6 @@ function update_html()
          )
 		) +
 
-		'<hr>' +
 		w3_half('w3-container', 'w3-text-teal',
 			w3_div('w3-valign',
 				'<b>Check for software update </b> ' +
@@ -945,7 +949,7 @@ function update_html()
 		) +
 
 		'<hr>' +
-		w3_half('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
+		w3_inline('w3-halign-space-between w3-margin-bottom w3-text-teal w3-restart/w3-container',
          w3_divs('w3-tspace-8',
                w3_div('', '<b>Disable recent changes?</b>'),
                w3_switch('', 'Yes', 'No', 'disable_recent_changes', cfg.disable_recent_changes, 'admin_radio_YN_cb'),
@@ -1256,8 +1260,11 @@ function network_html()
             'adm.ip_blacklist', 8, 100, '', ''
          ),
          
-         w3_textarea_get_param('w3-margin-T-32//w3-input-any-change w3-no-change-events|width:100%',
-            'Local blacklist (writeable)',
+         w3_textarea_get_param('w3-margin-T-32//w3-input-any-change|width:100%',
+            w3_div('',
+               w3_text('w3-bold  w3-text-teal', 'Local blacklist (writeable)'),
+               w3_text('w3-text-black w3-margin-left', 'Press enter(return) key while positioned at end of text to submit data.')
+            ),
             'adm.ip_blacklist_local', 8, 100, 'network_user_blacklist_cb', ''
          )
       ) +
@@ -1453,7 +1460,7 @@ function network_blacklist_mtime_cb(mt, update)
    }
    //console.log(mt);
    
-   if (dbgUs) console.log(mt);
+   //if (dbgUs) console.log(mt);
    var mtime = parseInt(mt);
    if (dbgUs) console.log('network_blacklist_mtime_cb: '+ (update? 'UPDATE' : 'AVAIL') +
       ' mtime='+ mtime +' adm.ip_blacklist_mtime='+ adm.ip_blacklist_mtime);
@@ -3057,7 +3064,7 @@ function admin_resize()
 
 function kiwi_ws_open(conn_type, cb, cbp)
 {
-	return open_websocket(conn_type, cb, cbp, admin_msg, admin_recv);
+	return open_websocket(conn_type, cb, cbp, admin_msg, admin_recv, null, admin_close);
 }
 
 function admin_draw(sdr_mode)
@@ -3157,7 +3164,10 @@ function admin_draw(sdr_mode)
 
 	w3_show_block('id-admin');
 	var nav_def = sdr_mode? 'status' : 'gps';
-   w3_click_nav(kiwi_toggle(toggle_e.FROM_COOKIE | toggle_e.SET, nav_def, nav_def, 'last_admin_navbar'), 'admin_nav');
+	
+	admin.init = true;
+      w3_click_nav(kiwi_toggle(toggle_e.FROM_COOKIE | toggle_e.SET, nav_def, nav_def, 'last_admin_navbar'), 'admin_nav');
+	admin.init = false;
 	
 	setTimeout(function() { setInterval(status_periodic, 5000); }, 1000);
 }
@@ -3173,6 +3183,13 @@ function admin_nav_blur(id, cb_arg)
 {
    //console.log('admin_nav_blur id='+ id);
    w3_call(id +'_blur');
+}
+
+function admin_close()
+{
+   // don't show message if reload countdown running
+   if (!admin.reload_rem && !admin.long_running)
+      kiwi_show_msg('Server has closed connection.');
 }
 
 // Process replies to our messages sent via ext_send('SET ...')
@@ -3208,17 +3225,26 @@ function admin_msg(param)
          if (gps_az_el) w3_call('gps_az_el_history_cb', gps_az_el);
          break;
 
-		case "dx_json":
-			console.log('dx_json len='+ param[1].length);
-         var obj = kiwi_JSON_parse('dx_json', kiwi_decodeURIComponent('dx_json', param[1]));
-			if (obj) dx_json(obj);
+		case "dx_size":
+			dx_size(param[1]);
 			break;
 		
 		case "admin_mkr":
 			var mkr = param[1];
 			var obj = kiwi_JSON_parse('admin_mkr', mkr);
-			if (obj) dx_json_render(obj);
+			if (obj) dx_render(obj);
 			break;
+		
+		case "mkr_search_pos":
+		   dx_search_pos_cb(param[1]);
+		   break;
+
+		case "keepalive":
+		   kiwi_clearTimeout(admin.keepalive_timeoout);
+		   admin.keepalive_timeoout = setTimeout(function() {
+		      admin_close();
+		   }, 30000);
+		   break;
 
 		default:
 		   return false;
@@ -3398,14 +3424,11 @@ function w3_reboot_cb()
 	w3_scrollTop('id-kiwi-container');
 }
 
-var admin_pie_size = 25;
-var admin_reload_secs, admin_reload_rem;
-
 function admin_draw_pie() {
-	w3_el('id-admin-reload-secs').innerHTML = 'Admin page reload in '+ admin_reload_rem + ' secs';
-	if (admin_reload_rem > 0) {
-		admin_reload_rem--;
-		kiwi_draw_pie('id-admin-pie', admin_pie_size, (admin_reload_secs - admin_reload_rem) / admin_reload_secs);
+	w3_el('id-admin-reload-secs').innerHTML = 'Admin page reload in '+ admin.reload_rem + ' secs';
+	if (admin.reload_rem > 0) {
+		admin.reload_rem--;
+		kiwi_draw_pie('id-admin-pie', admin.pie_size, (admin.reload_secs - admin.reload_rem) / admin.reload_secs);
 	} else {
 		window.location.reload(true);
 	}
@@ -3419,7 +3442,7 @@ function admin_wait_then_reload(secs, msg)
 	if (secs) {
 		s2 =
 			w3_divs('w3-valign w3-margin-T-8/w3-container',
-				w3_div('w3-show-inline-block', kiwi_pie('id-admin-pie', admin_pie_size, '#eeeeee', 'deepSkyBlue')),
+				w3_div('w3-show-inline-block', kiwi_pie('id-admin-pie', admin.pie_size, '#eeeeee', 'deepSkyBlue')),
 				w3_div('w3-show-inline-block',
 					w3_div('id-admin-reload-msg'),
 					w3_div('id-admin-reload-secs')
@@ -3439,7 +3462,7 @@ function admin_wait_then_reload(secs, msg)
 	if (msg) w3_el("id-admin-reload-msg").innerHTML = msg;
 	
 	if (secs) {
-		admin_reload_rem = admin_reload_secs = secs;
+		admin.reload_rem = admin.reload_secs = secs;
 		setInterval(admin_draw_pie, 1000);
 		admin_draw_pie();
 	}
