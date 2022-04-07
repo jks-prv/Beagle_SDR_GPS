@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "options.h"
 #include "mem.h"
 #include "misc.h"
 #include "timer.h"
@@ -208,26 +209,35 @@ bool _cfg_init(cfg_t *cfg, int flags, char *buf)
 	} else
 	if (cfg == &cfg_dx) {
 		cfg->filename = DX_FN;
+		flags |= CFG_INT_BASE10;
+        #ifdef OPTION_DX_INCREMENTAL_PARSE
+            flags |= CFG_NO_PARSE;
+        #endif
 	} else {
 		panic("cfg_init cfg");
 	}
 	
 	if (!cfg->init) {
         cfg->flags = flags;
-	    cfg->init_load = true;
-		if (_cfg_load_json(cfg) == false) {
-			if (cfg == &cfg_dx) {
-				lprintf("DX configuration file %s: JSON parse failed\n", cfg->filename);
-				return false;
-			}
-			panic("cfg_init json");
-		}
+        
+        if (!(flags & CFG_NO_PARSE)) {
+            cfg->init_load = true;
+            if (_cfg_load_json(cfg) == false) {
+                if (cfg == &cfg_dx) {
+                    lprintf("DX configuration file %s: JSON parse failed\n", cfg->filename);
+                    return false;
+                }
+                panic("cfg_init json");
+            }
+        }
+        
 		cfg->init = true;
 	    cfg->init_load = false;
 	}
 	
-	lprintf("reading configuration from file %s: %d tokens (%s bytes)\n",
-	    cfg->filename, cfg->ntok, toUnits(cfg->json_buf_size, 0));
+    if (!(flags & CFG_NO_PARSE))
+        lprintf("reading configuration from file %s: %d tokens (%s bytes)\n",
+            cfg->filename, cfg->ntok, toUnits(cfg->json_buf_size, 0));
 
 	if (cfg == &cfg_cfg) {
 		struct stat st;
@@ -457,7 +467,10 @@ bool _cfg_int_json(cfg_t *cfg, jsmntok_t *jt, int *num)
 	assert(jt != NULL);
 	char *s = &cfg->json[jt->start];
 	if (JSMN_IS_PRIMITIVE(jt) && (*s == '-' || isdigit(*s))) {
-		*num = strtol(s, 0, 0);
+	    if (cfg->flags & CFG_INT_BASE10)
+		    *num = strtol(s, 0, 10);
+		else
+		    *num = strtol(s, 0, 0);
 		return true;
 	} else {
 		return false;
@@ -1164,13 +1177,11 @@ static bool _cfg_parse_json(cfg_t *cfg, bool doPanic)
 			//printf("not enough tokens (%d) were provided\n", cfg->tok_size);
 			cfg->tok_size *= 4;		// keep going until we hit safety limit in kiwi_malloc()
 		} else {
-			lprintf("cfg_parse_json: file %s line=%d pos=%d tok=%d\n",
-				cfg->filename, parser.line, parser.pos, parser.toknext);
-			if (rc == JSMN_ERROR_INVAL)
-				lprintf("invalid character inside JSON string\n");
-			else
-			if (rc == JSMN_ERROR_PART)
-				lprintf("the string is not a full JSON packet, more bytes expected\n");
+		    const char *err = "(unknown error)";
+		    if (rc == JSMN_ERROR_INVAL) err = "invalid character inside JSON string"; else
+		    if (rc == JSMN_ERROR_PART) err = "the string is not a full JSON packet, more bytes expected";
+			lprintf("cfg_parse_json: file %s line=%d position=%d token=%d %s\n",
+				cfg->filename, parser.line, parser.pos, parser.toknext, err);
 
 			// show INDENT chars before error, but handle case where there aren't that many available
 			#define INDENT 4
@@ -1313,7 +1324,8 @@ void _cfg_save_json(cfg_t *cfg, char *json)
 
     // This takes forever for a large file. But we fixed it by putting a NextTask() in jsmn_parse().
     TMEAS(u4_t split = timer_ms(); printf("cfg_save_json json string -> file save %.3f msec\n", TIME_DIFF_MS(split, start));)
-    #if 1
+    #define CFG_NO_REPARSE_JSON
+    #ifdef CFG_NO_REPARSE_JSON
         if ((cfg->flags & CFG_NO_UPDATE) == 0) {
             _cfg_parse_json(cfg, true);
         } else {

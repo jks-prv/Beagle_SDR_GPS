@@ -31,6 +31,7 @@ typedef struct {
 	lock_t lock;    // FIXME: now that parsing the dx list is yielding probably need to lock
 	int flags;
 	const char *filename;
+	u4_t update_seq;
 
 	char *json, *json_write;
 	int json_buf_size;		// includes terminating null
@@ -54,6 +55,8 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define CFG_NO_UPDATE   0x0200
 #define CFG_PARSE_VALID 0x0400
 #define CFG_DEBUG       0x0800
+#define CFG_NO_PARSE    0x1000
+#define CFG_INT_BASE10  0x2000
 
 #define CFG_LOOKUP_LVL1 ((jsmntok_t *) -1)
 
