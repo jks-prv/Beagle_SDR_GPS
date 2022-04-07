@@ -46,7 +46,7 @@ double ext_update_get_sample_rateHz(int rx_chan)
     if (rx_chan == -2) {
         adc_clk = ADC_CLOCK_TYP;
     } else {
-        // jksx FIXME XXX WRONG-WRONG-WRONG
+        // FIXME XXX WRONG-WRONG-WRONG
         //conn_t *c = ext_users[rx_chan].conn_ext;
         //srate = c->adc_clock_corrected;
         //c->srate = srate;   // update stored sample rate since we're using a new clock value
@@ -63,7 +63,7 @@ void ext_adjust_clock_offset(int rx_chan, double offset)
 	if (offset > -1000.0 && offset < 1000.0)
 	    return;
 	
-    /* jksx FIXME XXX WRONG-WRONG-WRONG
+    /* FIXME XXX WRONG-WRONG-WRONG
 	conn_t *c = ext_users[rx_chan].conn_ext;
     c->adc_clock_corrected -= c->manual_offset;		// remove old offset first
     c->manual_offset = offset;

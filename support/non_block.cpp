@@ -344,8 +344,12 @@ int non_blocking_cmd_system_child(const char *pname, const char *cmd, int poll_m
 	return status;
 }
 
-// DEPRECATED
-// the popen read can block, so do non-blocking i/o with an interspersed TaskSleep()
+// Deprecated for use during normal running when realtime requirements apply
+// because pclose() can block for an unpredictable length of time. Use one of the routines above.
+// But still useful during init because e.g. non_blocking_cmd() can return an arbitrarily large buffer
+// from reading a file as opposed to the above routines which can't due to various limitations.
+//
+// The popen read can block, so do non-blocking i/o with an interspersed TaskSleep()
 // NB: assumes the reply is a string (kstr_t *), not binary with embedded NULLs
 kstr_t *non_blocking_cmd(const char *cmd, int *status)
 {

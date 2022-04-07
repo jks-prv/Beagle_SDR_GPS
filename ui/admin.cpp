@@ -588,8 +588,6 @@ void c2s_admin(void *param)
 // dx
 ////////////////////////////////
 
-            // "SET GET_DX_JSON" is processed in rx_common_cmd() since it is called from multiple places
-
 
 ////////////////////////////////
 // update

@@ -150,10 +150,10 @@ void update_vars_from_config(bool called_at_init)
 	const char *s;
     bool err;
 
-    // When called by "SET save_cfg/save_adm=":
+    // When called by client-side "SET save_cfg/save_adm=":
 	//  Makes C copies of vars that must be updated when configuration saved from js.
 	//
-	// When called by rx_server_init():
+	// When called by server-side rx_server_init():
 	//  Makes C copies of vars that must be updated when configuration loaded from cfg files.
 	//  Creates configuration parameters with default values that must exist for client connections.
 
@@ -402,7 +402,7 @@ void update_vars_from_config(bool called_at_init)
     admcfg_default_string("ip_address.dns1", "1.1.1.1", &update_admcfg);
     admcfg_default_string("ip_address.dns2", "8.8.8.8", &update_admcfg);
     admcfg_default_string("url_redirect", "", &update_admcfg);
-    //admcfg_default_bool("ip_blacklist_download", false, &update_admcfg);
+    //admcfg_default_bool("ip_blacklist_auto_download", false, &update_admcfg);
     admcfg_default_string("ip_blacklist", "47.88.219.24/24", &update_admcfg);
     admcfg_default_string("ip_blacklist_local", "", &update_admcfg);
     admcfg_default_int("ip_blacklist_mtime", 0, &update_admcfg);
@@ -556,7 +556,9 @@ void update_vars_from_config(bool called_at_init)
     }
 }
 
-// pass result json back to main process via shmem->status_str_large
+// Pass result json back to main process via shmem->status_str_large
+// since _geo_task runs in context of child_task()'s child process.
+// This presumes the returned JSON size is < N_SHMEM_STATUS_STR_LARGE.
 static int _geo_task(void *param)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) param;
