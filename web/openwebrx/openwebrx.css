@@ -928,9 +928,7 @@ html, body
 	font-size: 11px;
 	/*font-weight: bold;*/
 	padding: 3px;
-	border-style: solid;
-	border-width: 1px;
-	border-color: black;
+	border: 1px solid black;
 	border-radius: 3px;
 	cursor: pointer;
 	-moz-border-radius: 3px;
@@ -938,6 +936,12 @@ html, body
 	z-index: 120;
 }
 
+.cl-dx-label.cl-dx-label-filtered
+{
+    border: 1px dashed black;
+}
+
+/* an experiment not currently used */
 .cl-dx-label.cl-dx-label-active
 {
 	border-width: 1px 1px 1px 4px;

@@ -343,6 +343,11 @@ input[type=range]::-moz-range-thumb {
     opacity: 0.3;
 }
 
+.w3-cursor-not-allowed
+{
+    cursor: not-allowed !important;
+}
+
 .w3-link-color
 {
     color: hsl(212, 100%, 80%);
@@ -612,6 +617,11 @@ input[type=range]::-moz-range-thumb {
     margin: 16px 0
 }
 
+.w3-margin-TB-24
+{
+    margin: 24px 0
+}
+
 
 .w3-padding-smaller
 {
@@ -651,6 +661,11 @@ input[type=range]::-moz-range-thumb {
 {
     padding-left: 16px !important;
     padding-right: 16px !important;
+}
+
+.w3-padding-R-0
+{
+    padding-right: 0 !important;
 }
 
 .w3-padding-T-1
@@ -699,10 +714,10 @@ input[type=range]::-moz-range-thumb {
 
 .w3-flex { display: flex }
 
-.w3-flex-col, w3-flex-ttb { flex-direction: column }
-.w3-flex-col-rev, w3-flex-btt { flex-direction: column-reverse }
-.w3-flex-row, w3-flex-ltr { flex-direction: row }
-.w3-flex-row-rev, w3-flex-rtl { flex-direction: row-reverse }
+.w3-flex-col, w3-flex-ttb { display: flex; flex-direction: column }
+.w3-flex-col-rev, w3-flex-btt { display: flex; flex-direction: column-reverse }
+.w3-flex-row, w3-flex-ltr { display: flex; flex-direction: row }
+.w3-flex-row-rev, w3-flex-rtl { display: flex; flex-direction: row-reverse }
 
 .w3-flex-wrap { flex-wrap: wrap }
 .w3-flex-nowrap { flex-wrap: nowrap }
@@ -1098,6 +1113,12 @@ input[type=range]::-moz-range-thumb {
 {
     color: black;
     background-color: pink;
+}
+
+.w3-css-lavender
+{
+    color: black;
+    background-color: lavender;
 }
 
 .w3-override-yellow

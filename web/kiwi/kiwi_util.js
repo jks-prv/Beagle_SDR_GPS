@@ -179,6 +179,12 @@ function dq(s)
 	return '\"'+ s +'\"';
 }
 
+// "xyz":  -- found frequently in JSON
+function dqc(s)
+{
+	return '"'+ s +'":';
+}
+
 function plural(num, word)
 {
    if (num == 1) return word; else return word +'s';
@@ -189,7 +195,7 @@ function arrayBufferToString(buf) {
 	var s;
 	try {
 	   // with Safari, the following gets a "RangeError: Maximum call stack size exceeded"
-	   // for large transfers like "MSG dx_json=..." (which is now deprecated)
+	   // for large transfers like "MSG dx_json=..."
 	   if (0) {
 	      s = String.fromCharCode.apply(null, new Uint8Array(buf));
 	   } else {
@@ -616,6 +622,36 @@ function kiwi_decodeURIComponent(id, uri)
    
    return obj;
 }
+
+// Equivalent of server side kiwi_url_decode_selective() except
+// that it works in the opposite direction, i.e. encoding un-encoded strings.
+// Encodes a more limited set of characters than encodeURIComponent()
+// to help with readability of the various configuration files.
+
+kiwi_util.str_encode_lookup = [];
+var e = function(c) { kiwi_util.str_encode_lookup[ord(c)] = 1; }
+e('"'); e('%'); e('&'); e("'"); e('+'); e(';'); e('<'); e('>'); e('\\'); e('`');
+var ev = function(v1, v2) {
+   v2 = v2 || v1;
+   for (var i = v1; i <= v2; i++)
+      kiwi_util.str_encode_lookup[i] = 1;
+}
+ev(0x00, 0x1f); ev(0x7f);
+//console.log(kiwi_util.str_encode_lookup);
+
+function kiwi_str_encode_selective(s)
+{
+   var d = '';
+   
+   for (var i = 0; i < s.length; i++) {
+      var c = s[i];
+      var n = ord(c);
+      if (kiwi_util.str_encode_lookup[n]) d += '%'+ n.toHex(-2); else d += c;
+   }
+   
+   return d;
+}
+//console.log(kiwi_str_encode_selective('ABC!@#$^*()_-={}[]|:,./?~   "%&\'+;<>\\`XYZ'+ String.fromCharCode(0, 1, 0x1f, 0x7f)));
 
 function kiwi_JSON_parse(tag, json)
 {

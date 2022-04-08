@@ -76,6 +76,7 @@ rx_stream_t rx_streams[] = {
 	// AJAX requests
 	{ AJAX_DISCOVERY,	"DIS" },
 	{ AJAX_PHOTO,		"PIX" },
+	{ AJAX_DX,		    "DX" },
 	{ AJAX_STATUS,		"status" },
 	{ AJAX_USERS,		"users" },
 	{ AJAX_SNR,         "snr" },
@@ -161,7 +162,7 @@ void show_conn(const char *prefix, conn_t *cd)
     lprintf("%sCONN-%02d %p %3s %-3s %s%s%s%s%s%s auth%d kiwi%d admin%d isP%d tle%d%d sv=%02d KA=%02d/60 KC=%05d mc=%9p %s:%d %s%s%s%s\n",
         prefix, cd->self_idx, cd, type_s, rx_s,
         cd->isMaster? "M":"_", cd->internal_connection? "I":(cd->ext_api? "E":"_"), cd->ext_api_determined? "D":"_",
-        cd->isLocal? "L":"_", cd->auth_prot? "P":"_", cd->awaitingPassword? "A":"_",
+        cd->isLocal? "L":(cd->force_notLocal? "F":"_"), cd->auth_prot? "P":"_", cd->awaitingPassword? "A":"_",
         cd->auth, cd->auth_kiwi, cd->auth_admin,
         cd->isPassword, cd->tlimit_exempt, cd->tlimit_exempt_by_pwd,
         cd->served,
@@ -193,7 +194,7 @@ void dump()
 		if (cd->valid) nconn++;
 	}
 	lprintf("\n");
-	lprintf("CONNS: used %d/%d is_locked=%d (______ => Master, Internal/ExtAPI, DetAPI, Local, ProtAuth, AwaitPwd)\n",
+	lprintf("CONNS: used %d/%d is_locked=%d (______ => Master, Internal/ExtAPI, DetAPI, Local/ForceNotLocal, ProtAuth, AwaitPwd)\n",
 	    nconn, N_CONNS, is_locked);
 
 	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
@@ -588,9 +589,14 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	// iptables will stop regular connection attempts from a blacklisted ip.
 	// But when proxied we need to check the forwarded ip address.
 	// Note that this code always sets remote_ip[] as a side-effect for later use (the real client ip).
+	//
+	// check_ip_blacklist() is always called (not just for proxied connections as done previously)
+	// since the internal blacklist is now used by the 24hr auto ban mechanism.
 	char remote_ip[NET_ADDRSTRLEN];
-    if (check_if_forwarded("CONN", mc, remote_ip) && check_ip_blacklist(remote_ip))
-        return NULL;
+    check_if_forwarded("CONN", mc, remote_ip);
+	char *ip_unforwarded = ip_remote(mc);
+    
+    if (check_ip_blacklist(remote_ip) || check_ip_blacklist(ip_unforwarded)) return NULL;
     
 	if (down || update_in_progress || backup_in_progress) {
 		conn_printf("down=%d UIP=%d stream=%s\n", down, update_in_progress, st->uri);
