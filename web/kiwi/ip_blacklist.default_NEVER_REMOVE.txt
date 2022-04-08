@@ -1,0 +1,4 @@
+CAUTION:
+    Never remove any of the ip_blacklist*.default.cjson files from this directory as the
+    Makefile that updates kiwisdr.com copies them from here. And Kiwis running older releases
+    need to be able to fetch older versions of the files.

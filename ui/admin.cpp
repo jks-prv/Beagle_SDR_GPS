@@ -788,8 +788,8 @@ void c2s_admin(void *param)
 
 			i = strcmp(cmd, "SET network_ip_blacklist_clear");
 			if (i == 0) {
-                cprintf(conn, "\"iptables -D INPUT -j KIWI; iptables -N KIWI; iptables -F KIWI\"\n");
-				system("iptables -D INPUT -j KIWI; iptables -N KIWI; iptables -F KIWI");
+			    cprintf(conn, "\"iptables -D INPUT -j KIWI; iptables -F KIWI; iptables -X KIWI; iptables -N KIWI\"\n");
+				system("iptables -D INPUT -j KIWI; iptables -F KIWI; iptables -X KIWI; iptables -N KIWI");
 
                 net.ip_blacklist_len = 0;
 				continue;

@@ -80,6 +80,7 @@ typedef struct {
     u1_t a,b,c,d;   // ipv4
     u4_t nm;        // ipv4
     u1_t cidr;
+    bool whitelist;
 } ip_blacklist_t;
 
 typedef struct {
@@ -175,7 +176,6 @@ bool ip_match(const char *ip, ip_lookup_t *ips);
 char *ip_remote(struct mg_connection *mc);
 bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_ip);
 void ip_blacklist_init();
-void ip_blacklist_add(char *ips);
 int ip_blacklist_add_iptables(char *ip_s);
 bool check_ip_blacklist(char *remote_ip, bool log=false);
 void ip_blacklist_dump();
