@@ -367,7 +367,8 @@ char *kiwi_str_replace(char *s, const char *from, const char *to, bool *caller_m
     if (tlen <= flen) {
         do {
             strncpy((char *) fp, to, tlen);
-            strcpy((char *) fp+tlen, fp+flen);
+            int rlen = strlen(fp+flen) + 1;
+            memmove((char *) fp+tlen, fp+flen, rlen);
         } while ((fp = strstr(s, from)) != NULL);
         if (caller_must_free) *caller_must_free = false;
     } else {

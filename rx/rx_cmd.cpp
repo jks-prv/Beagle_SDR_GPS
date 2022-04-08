@@ -730,6 +730,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             char *json = (char *) kiwi_imalloc("CMD_SAVE_CFG", strlen(cmd) + SPACE_FOR_NULL); // a little bigger than necessary
             n = sscanf(cmd, "SET save_cfg=%s", json);
             assert(n == 1);
+            
+            // For cfg strings double URI encoding is effectively used since they are stored encoded and
+            // another encoding is done for transmission.
+            // So decode the transmission encoding with kiwi_str_decode_inplace()
+            // and then decode the cfg string encoding with kiwi_str_decode_selective_inplace().
             //cprintf(conn, "SET save_cfg=...\n");
             kiwi_str_decode_inplace(json);
             kiwi_str_decode_selective_inplace(json);
@@ -756,6 +761,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             char *json = (char *) kiwi_imalloc("CMD_SAVE_ADM", strlen(cmd) + SPACE_FOR_NULL); // a little bigger than necessary
             n = sscanf(cmd, "SET save_adm=%s", json);
             assert(n == 1);
+
+            // For cfg strings double URI encoding is effectively used since they are stored encoded and
+            // another encoding is done for transmission.
+            // So decode the transmission encoding with kiwi_str_decode_inplace()
+            // and then decode the cfg string encoding with kiwi_str_decode_selective_inplace().
             //printf("SET save_adm=...\n");
             kiwi_str_decode_inplace(json);
             kiwi_str_decode_selective_inplace(json);
