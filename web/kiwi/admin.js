@@ -1418,6 +1418,7 @@ function network_download_blacklist_cb(bl)
    
    // remove duplicates
    var nn = kiwi_dup_array(n);
+   if (bl_debug) console.log('blacklist: #'+ nn.length +' entries pre duplicate check');
    n.forEach(function(oi, i) {
       var stop = false;
       nn.forEach(function(oj, j) {
@@ -1432,11 +1433,10 @@ function network_download_blacklist_cb(bl)
       });
    });
    
-   if (bl_debug) console.log('blacklist pre dup entries: #'+ nn.length);
    var nnn = [];
    nn.forEach(function(o, i) { if (!o.del) nnn.push(o); });
    
-   console.log('blacklist post dup entries: #'+ nnn.length);
+   console.log('blacklist: #'+ nnn.length +' entries post duplicate check');
    if (bl_debug) nnn.forEach(function(o, i) {
       console.log('final: #'+ i +' '+ (o.whitelist? '+':'') +
          kiwi_ip_str(o.ip) +'|'+ o.ip.toHex(8) +' '+ o.nm.toHex(8) +'/'+ o.nmd + (o.del? ' DELETE':''));
@@ -1543,7 +1543,9 @@ function network_ip_blacklist_cb(path, val)
    
    network.seq = 0;
 	network.ip_address_error = false;
+	console.log('ip_blacklist:');
 	console.log(network.ip_blacklist);
+	console.log('ip_blacklist_local:');
 	console.log(network.ip_blacklist_local);
 	network_ip_blacklist_send( {idx:0, type:0} );
 }
@@ -3055,7 +3057,7 @@ var admin_colors = [
 	'w3-hover-aqua',
 	'w3-hover-pink',
 	'w3-hover-yellow',
-	'w3-hover-khaki',
+	'w3-hover-amber',
 	'w3-hover-green',
 	'w3-hover-orange',
 	'w3-hover-grey',

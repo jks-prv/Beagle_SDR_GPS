@@ -776,7 +776,6 @@ static void ip_blacklist_init_list(const char *list)
     int n = kiwi_split((char *) bl_s, &r_buf, " ", ips, N_IP_BLACKLIST);
     //printf("ip_blacklist_init n=%d bl_s=\"%s\"\n", n, bl_s);
     lprintf("ip_blacklist_init_list: %d entries: %s\n", n, list);
-    if (n == 0) return;
     
     for (int i=0; i < n; i++) {
         ip_blacklist_add_iptables(ips[i]);

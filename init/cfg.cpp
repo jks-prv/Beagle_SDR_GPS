@@ -919,10 +919,10 @@ void _cfg_default_string(cfg_t *cfg, const char *name, const char *val, bool *er
         // Recover from broken UTF-8 sequences stored in cfg.
 	    if (cfg == &cfg_cfg) {
 	        char *uc = strdup(s);
-                void *cp;
-                cp = utf8valid(uc);
-                if (cp) {
-                    lprintf("NOT VALID UTF-8: pos=%d %s=<%s>\n", (char *) cp - uc, name, s);
+                void *invalid_cp;
+                invalid_cp = utf8valid(uc);
+                if (invalid_cp) {
+                    lprintf("NOT VALID UTF-8: pos=%d %s=<%s>\n", (char *) invalid_cp - uc, name, s);
                     utf8makevalid(uc, '?');
                     char *uc2 = kiwi_str_encode(uc);
                         kiwi_str_decode_selective_inplace(uc2);

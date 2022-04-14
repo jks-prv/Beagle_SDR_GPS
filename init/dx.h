@@ -76,7 +76,8 @@ extern dxlist_t dx;
 
 #define	DX_TYPE	    0x000001f0  // 32 types
 #define DX_TYPE_SFT 4
-#define DX_EiBi_TYPE2IDX(type)  ( (((type) & DX_TYPE) - DX_EiBi) >> DX_TYPE_SFT )
+#define DX_STORED_TYPE2IDX(type)    (  ((type) & DX_TYPE)            >> DX_TYPE_SFT )
+#define DX_EiBi_TYPE2IDX(type)      ( (((type) & DX_TYPE) - DX_EiBi) >> DX_TYPE_SFT )
 
 #define DX_N_STORED 16
 #define DX_STORED   0x00000000  // stored: 0x000, 0x010, ... 0x0f0 (16)

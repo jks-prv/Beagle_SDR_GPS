@@ -282,12 +282,12 @@ input[type=range]::-moz-range-thumb {
     vertical-align: bottom;
 }
 
-.w3-show-inline
+.w3-show-inline, .w3-inline
 {
 	display: inline;
 }
 
-.w3-show-span
+.w3-show-span, .w3-span
 {
 	display: inline;
 }
@@ -623,6 +623,16 @@ input[type=range]::-moz-range-thumb {
 }
 
 
+// w3.css:
+//  w3-padding-jumbo    32px 64px
+//  w3-padding-xxlarge  24px 48px
+//  w3-padding-xlarge   16px 32px
+//  w3-padding-large    12px 24px
+//  w3-padding-medium   8px 16px    (w3-padding)`
+//  w3-padding-small    4px 8px
+//  w3-padding-tiny     2px 4px
+//  w3-padding-{4,8,12,16,24,32,48,64,128, top,bottom,left,right}
+
 .w3-padding-smaller
 {
     padding: 3px 6px
@@ -703,9 +713,19 @@ input[type=range]::-moz-range-thumb {
     padding: 2px 8px
 }
 
+.w3-circle-pad2
+{
+    padding: 3.5px 8px
+}
+
 .w3-circle-pad-small
 {
     padding: 0 6px
+}
+
+.w3-circle-pad-small2
+{
+    padding: 1.5px 6px
 }
 
 
@@ -1155,7 +1175,7 @@ input[type=range]::-moz-range-thumb {
 
 .w3-grey-white, .w3-hover-grey:hover {
     color: #fff !important;
-    background-color: hsl(0, 0%, 62%) !important
+    background-color: hsl(0, 0%, 62%) !important;
 }
 
 .w3-background-pale-aqua
@@ -1173,14 +1193,34 @@ input[type=range]::-moz-range-thumb {
     font-size: 18px;
 }
 
-.w3-font-12px {
-    font-size: 12px;
+.w3-font-11px {
+    font-size: 11px;
 }
 
 .w3-font-11_25px {
     font-size: 11.25px;
 }
 
-.w3-font-11px {
-    font-size: 11px;
+.w3-font-12px {
+    font-size: 12px;
+}
+
+.w3-font-13px {
+    font-size: 13px;
+}
+
+.w3-font-14px {
+    font-size: 14px;
+}
+
+.w3-font-20px {
+    font-size: 20px !important;
+}
+
+.w3-font-22px {
+    font-size: 22px !important;
+}
+
+.w3-font-24px {
+    font-size: 24px !important;
 }
