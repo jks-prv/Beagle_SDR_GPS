@@ -98,7 +98,7 @@ static void webserver_collect_print_stats(int print)
                 //cprintf(c, "TLIMIT-IP setting database sec:%d for %s\n", ipl_cur_secs, c->remote_ip);
                 json_set_int(&cfg_ipl, c->remote_ip, ipl_cur_secs);
                 if (ipl_cur_secs >= MINUTES_TO_SEC(ip_limit_mins)) {
-                    cprintf(c, "TLIMIT-IP connected LIMIT REACHED cur:%d >= lim:%d for %s\n",
+                    cprintf(c, "TLIMIT-IP connected 24hr LIMIT REACHED cur:%d >= lim:%d for %s\n",
                         SEC_TO_MINUTES(ipl_cur_secs), ip_limit_mins, c->remote_ip);
                     send_msg_encoded(c, "MSG", "ip_limit", "%d,%s", ip_limit_mins, c->remote_ip);
                     c->inactivity_timeout = true;
@@ -236,14 +236,15 @@ static void called_every_second()
         if (!rx->busy) continue;
 		c = rx->conn;
 		if (c == NULL || !c->valid || c->ext_api_determined) continue;
+		int served = web_served(c);
 		
 		#if 0
             cprintf(c, "API: rx%d arrival=%d served=%d type=%s ext_api%d isLocal%d internal%d\n",
-                ch, now - c->arrival, c->served, rx_streams[c->type].uri,
+                ch, now - c->arrival, served, rx_streams[c->type].uri,
                 c->ext_api, c->isLocal, c->internal_connection);
         #endif
         
-		if (c->isLocal || c->internal_connection ||
+		if (c->isLocal || c->internal_connection || c->awaitingPassword ||
 		    (c->type != STREAM_SOUND && c->type != STREAM_WATERFALL)) {
             c->ext_api = false;
             c->ext_api_determined = true;
@@ -251,23 +252,27 @@ static void called_every_second()
             continue;
 		}
 
+        // can't be too short because of slow network connections delaying the served counter
 		#define EXT_API_DECISION_SECS 10
 		if ((now - c->arrival) < EXT_API_DECISION_SECS) continue;
 
+        // can't be too many due to browser caching (lowest limit currently seen with iOS caching)
 		#define EXT_API_DECISION_SERVED 3
-		if (c->served >= EXT_API_DECISION_SERVED) {
+		if (served >= EXT_API_DECISION_SERVED) {
             c->ext_api = false;
             c->ext_api_determined = true;
-		    cprintf(c, "API: decided connection is OKAY (%d)\n", c->served);
+		    web_served_clear_cache(c);
+		    cprintf(c, "API: decided connection is OKAY (%d)\n", served);
 		    continue;
 		}
 		
 		c->ext_api = c->ext_api_determined = true;
-		cprintf(c, "API: decided connection is non-Kiwi app (%d)\n", c->served);
+		web_served_clear_cache(c);
+		cprintf(c, "API: decided connection is non-Kiwi app (%d)\n", served);
 		//dump();
 
         // ext_api_nchans, if exceeded, overrides tdoa_nchans
-        if (!c->kick) {
+        if (!c->kick && !c->awaitingPassword) {
             int ext_api_ch = cfg_int("ext_api_nchans", NULL, CFG_REQUIRED);
             if (ext_api_ch == -1) ext_api_ch = rx_chans;      // has never been set
             int ext_api_users = rx_count_server_conns(EXT_API_USERS);

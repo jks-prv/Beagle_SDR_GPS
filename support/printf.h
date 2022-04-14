@@ -41,7 +41,8 @@ void mprintf(const char *fmt, ...);
 void mprintf_ff(const char *fmt, ...);
 void mlprintf(const char *fmt, ...);
 void mlprintf_ff(const char *fmt, ...);
-char *stprintf(const char *fmt, ...);
+char *stnprintf(int which, const char *fmt, ...);
+char *stprintf(const char *fmt, ...);   // extension API compatibility
 C_LINKAGE(const char *aspf(const char *fmt, ...));
 int esnprintf(char *str, size_t slen, const char *fmt, ...);
 

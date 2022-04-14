@@ -66,7 +66,7 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num, wf_num,
 	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, debian_ver, monitors_max,
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg,
-	print_stats, ecpu_cmds, ecpu_tcmds, use_spidev, debian_maj, debian_min, test_flag,
+	print_stats, ecpu_cmds, ecpu_tcmds, use_spidev, debian_maj, debian_min, test_flag, dx_print,
 	gps_debug, gps_var, gps_lo_gain, gps_cg_gain, use_foptim, is_locked, drm_nreg_chans;
 
 u4_t ov_mask, snd_intr_usec;
@@ -155,6 +155,7 @@ int main(int argc, char *argv[])
 		if (ARG("-stats") || ARG("+stats")) { print_stats = STATS_TASK; ARGL(print_stats); }
 		
 		if (ARG("-test")) { ARGL(test_flag); printf("test_flag %d(0x%x)\n", test_flag, test_flag); }
+		if (ARG("-dx")) { ARGL(dx_print); printf("dx %d(0x%x)\n", dx_print, dx_print); }
 		if (ARG("-led") || ARG("-leds")) disable_led_task = true;
 		if (ARG("-gps_e1b")) gps_e1b_only = true;
 		if (ARG("-gps_var")) { ARGL(gps_var); printf("gps_var %d\n", gps_var); }
@@ -370,7 +371,7 @@ int main(int argc, char *argv[])
     do_gps = admcfg_default_bool("enable_gps", true, NULL);
     if (!do_gps) {
 	    admcfg_set_bool("enable_gps", true);
-		admcfg_save_json(cfg_adm.json);
+		admcfg_save_json(cfg_adm.json);     // because during init doesn't conflict with admin cfg
 		do_gps = 1;
     }
     

@@ -324,13 +324,41 @@ hr
     opacity: 1;
 }
 
-/* mt:8 bt:0.5 pt:4.5 f:19.5 pb:4.5 bb:0.5 = 37.5 */
+/* cl-dx is for the placeholder entries in id-dx-list */
+/* They are 37.5px high to match the height of active elements in id-dx-list */
+/* This makes the scrolling work properly */
+/* mt:8 bt:0.5 pt:4.5 f:19.5 pb:4.5 bb:0.5 mb:0 = 37.5 */
 .cl-dx
 {
     margin-top: 8px;
+    margin-left: 16px;
     padding: 4.5px 0;
     color: black;
 	border: 0.5px solid red;
+}
+
+.cl-dx-type-test
+{
+	font-size: 11px;
+    border: 1px solid black;
+	border-radius: 3px;
+    padding: 4.5px 3px;
+    color: black;
+    background: white;
+    text-align: center;
+}
+
+.cl-dx-type-test.cl-dx-type-filtered-test
+{
+    border: 1px dashed black;
+}
+
+.cl-band-bar-test
+{
+    font: bold 12px sans-serif;
+    padding: 4.5px 0;
+    background: white;
+    text-align: center;
 }
 
 

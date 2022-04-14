@@ -370,7 +370,7 @@ static void bl_GET(void *param)
 	kstr_t *sb = NULL;
 	
     char *kiwisdr_com = DNS_lookup_result("bl_GET", "kiwisdr.com", &net.ips_kiwisdr_com);
-    #define BLACKLIST_FILE "ip_blacklist/ip_blacklist2.cjson"
+    #define BLACKLIST_FILE "ip_blacklist/ip_blacklist3.cjson"
 
     asprintf(&cmd_p, "curl -s -f --ipv4 \"%s/%s\" 2>&1", kiwisdr_com, BLACKLIST_FILE);
     //printf("bl_GET: <%s>\n" cmd_p);
@@ -595,7 +595,7 @@ static void UPnP_port_open_task(void *param)
     }
     kiwi_ifree(cmd_p);
     
-    #if defined(USE_SSL) && defined(MONGOOSE_5_6)
+    #ifdef USE_SSL
         if (delete_nat) return;
 
         if (net.use_ssl && net.port_ext != 80) {
@@ -946,7 +946,7 @@ void services_start()
     reg_kiwisdr_com_tid = CreateTask(reg_public, 0, SERVICES_PRIORITY);
 
     #if 0
-        if (admcfg_bool("ip_blacklist_download", NULL, CFG_REQUIRED) == true) {
+        if (admcfg_bool("ip_blacklist_auto_download", NULL, CFG_REQUIRED) == true) {
             CreateTask(bl_GET, 0, SERVICES_PRIORITY);
         } else {
             ip_blacklist_init();

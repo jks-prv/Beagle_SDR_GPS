@@ -185,7 +185,6 @@ window.xdLocalStorageHA = window.xdLocalStorageHA || (function () {
 	}, 5000);
 
   function applyCallback(data) {
-	//jksx
 	//console.log('XDLS result id='+ data.id +' server='+ data.server);
 	//console.log(data);
     if (requests[data.id]) {
@@ -229,7 +228,6 @@ window.xdLocalStorageHA = window.xdLocalStorageHA || (function () {
 		
 		for (var server = 0; server < iframes.length; server++) {
 			if (action != 'ping' && !seen[server]) continue;
-			//jksx
 			//console.log('XDLS request id='+ requestId +' server='+ server +' action='+ action +' etag='+ data.etag);
 			data.server = server;
 			replies[server] = null;
@@ -248,7 +246,6 @@ window.xdLocalStorageHA = window.xdLocalStorageHA || (function () {
 				var data = replies[server];
 				if (data == null) continue;
 				var etag = data.etag? data.etag : 0;
-				//jksx
 				//console.log('XDLS response id='+ data.id +' server='+ data.server +' etag='+ etag);
 
 				if (etag > mostRecent_etag) {

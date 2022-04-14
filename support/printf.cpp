@@ -421,19 +421,31 @@ void mlprintf_ff(const char *fmt, ...)
 	va_end(ap);
 }
 
-#define N_DST_STATIC (255 + SPACE_FOR_NULL)
-static char dst_static[N_DST_STATIC];
+#define N_DST_STATIC 4
+#define N_DST_STATIC_BUF (255 + SPACE_FOR_NULL)
+static char dst_static[N_DST_STATIC][N_DST_STATIC_BUF];
 
 // result in a static buffer for use with e.g. a short-term immediate printf argument
 // NB: not thread-safe
+char *stnprintf(int which, const char *fmt, ...)
+{
+	if (fmt == NULL) return NULL;
+	check(which < N_DST_STATIC);
+	va_list ap;
+	va_start(ap, fmt);
+    vsnprintf(dst_static[which], N_DST_STATIC_BUF, fmt, ap);
+    va_end(ap);
+	return dst_static[which];
+}
+
 char *stprintf(const char *fmt, ...)
 {
 	if (fmt == NULL) return NULL;
 	va_list ap;
 	va_start(ap, fmt);
-    vsnprintf(dst_static, N_DST_STATIC, fmt, ap);
+    vsnprintf(dst_static[0], N_DST_STATIC_BUF, fmt, ap);
     va_end(ap);
-	return dst_static;
+	return dst_static[0];
 }
 
 // asprintf(), but return value is pointer to allocated buffer.

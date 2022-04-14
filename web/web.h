@@ -80,7 +80,7 @@ void web_to_app_done(conn_t *c, nbuf_t *nb);
 
 // server to client
 void app_to_web(conn_t *c, char *s, int sl);
-char *rx_server_ajax(struct mg_connection *mc);
+char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded);
 int web_request(struct mg_connection *mc, enum mg_event ev);
 void reload_index_params();
 void iparams_add(const char *id, char *val);
@@ -88,3 +88,5 @@ void iparams_add(const char *id, char *val);
 typedef enum {WS_INIT_CREATE, WS_INIT_START} ws_init_t;
 void web_server_init(ws_init_t type);
 void services_start();
+int web_served(conn_t *c);
+void web_served_clear_cache(conn_t *c);

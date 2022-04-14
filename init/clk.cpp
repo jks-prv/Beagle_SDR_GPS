@@ -174,7 +174,7 @@ void clock_correction(double t_rx, u64_t ticks)
     clk.manual_adj = 0;     // remove any manual adjustment now that we're automatically correcting
     clk.adc_clock_base = adc_clock_mma;
     
-    /*  jksx FIXME XXX WRONG-WRONG-WRONG
+    /*  FIXME XXX WRONG-WRONG-WRONG
     // even if !adjust_clock mode is set adjust for first_time_temp_correction
     conn_t *c;
     for (c = conns; c < &conns[N_CONNS]; c++) {

@@ -1385,6 +1385,8 @@ function hfdl_pre_select_cb(path, val, first)
             if (zoom_level == znew)
                zoom_step(ext_zoom.OUT);   // force ext_tune() to re-center waterfall on cf
             ext_tune(cf, 'iq', ext_zoom.ABS, znew);
+            
+            // switch to EiBi database displaying only HFDL labels
             if (dx.db != dx.DB_EiBi || !dx_is_single_type(dx.DX_HFDL)) {
                dx_set_type(dx.DX_HFDL);
                dx_database_cb('', dx.DB_EiBi);

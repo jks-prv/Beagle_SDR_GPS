@@ -205,15 +205,14 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
         ifeq ($(DEBIAN_10),true)
 #		    INT_FLAGS += -DUSE_CRYPT
 #	        LIBS += -lcrypt
-            INT_FLAGS += -DMONGOOSE_5_6 -DUSE_SSL
+            INT_FLAGS += -DUSE_SSL
             LIBS += -lssl
         else
-            INT_FLAGS += -DMONGOOSE_5_6 -DUSE_CRYPT
+            INT_FLAGS += -DUSE_CRYPT
             LIBS += -lcrypt
         endif
 	else
 		# development machine, compile simulation version
-		INT_FLAGS += -DMONGOOSE_5_6
 		LIBS += -L/usr/local/lib -lfftw3f
 		LIBS_DEP += /usr/local/lib/libfftw3f.a
 		CMD_DEPS =
@@ -234,11 +233,11 @@ else
 	ifeq ($(DEBIAN_10),true)
 #		INT_FLAGS += -DUSE_CRYPT
 #	    LIBS += -lcrypt
-		INT_FLAGS += -DMONGOOSE_5_6 -DUSE_SSL
+		INT_FLAGS += -DUSE_SSL
 	    LIBS += -lssl
 		CMD_DEPS += /usr/include/openssl/ssl.h
 	else
-		INT_FLAGS += -DMONGOOSE_5_6 -DUSE_CRYPT
+		INT_FLAGS += -DUSE_CRYPT
 	    LIBS += -lcrypt
 	endif
 

@@ -1631,6 +1631,7 @@ var chan_no_pwd, chan_no_pwd_true;
 var kiwi_output_msg_p = { scroll_only_at_bottom: true, process_return_alone: false };
 var client_public_ip;
 
+// includes msgs relevant for both user and admin modes
 function kiwi_msg(param, ws)
 {
 	var rtn = true;
@@ -1726,10 +1727,20 @@ function kiwi_msg(param, ws)
          break;
       
 		case "request_dx_update":
-		   if (isAdmin())
-		      console.log('SET DX_UPD done');
-		   else
+		   if (isAdmin()) {
+		      // NB: tabbing between fields won't work if field select undone by list re-render
+		      if (dx.ignore_dx_update) {
+		         //console.log('request_dx_update: ignore_dx_update');
+		         dx.ignore_dx_update = false;
+		      } else {
+			      dx_update_admin();
+			   }
+		   } else {
 			   dx_update();
+			   bands_init();
+			   mk_bands_scale();
+			   mk_band_menu();
+			}
 			break;
 
 		case "mkr":

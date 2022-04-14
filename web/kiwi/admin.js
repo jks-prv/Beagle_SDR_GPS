@@ -5,8 +5,13 @@
 //		NTP status?
 
 var admin = {
+   long_running: false,
    is_multi_core: false,
-   reg_status: {}
+   reg_status: {},
+   
+   pie_size: 25,
+   
+   _last_: 0
 };
 
 
@@ -932,7 +937,6 @@ function update_html()
          )
 		) +
 
-		'<hr>' +
 		w3_half('w3-container', 'w3-text-teal',
 			w3_div('w3-valign',
 				'<b>Check for software update </b> ' +
@@ -945,7 +949,7 @@ function update_html()
 		) +
 
 		'<hr>' +
-		w3_half('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
+		w3_inline('w3-halign-space-between w3-margin-bottom w3-text-teal w3-restart/w3-container',
          w3_divs('w3-tspace-8',
                w3_div('', '<b>Disable recent changes?</b>'),
                w3_switch('', 'Yes', 'No', 'disable_recent_changes', cfg.disable_recent_changes, 'admin_radio_YN_cb'),
@@ -1079,13 +1083,20 @@ function backup_sd_write_done(err)
 var network = {
    auto_nat_color:   null,
    show_updating: true,
+   
+   ip_blacklist_file_base: 'kiwisdr.com/ip_blacklist/ip_blacklist3.cjson',
    ip_blacklist_check_mtime: true,
+   
    ethernet_speed_s: [ '100 Mbps', '10 Mbps' ],
    ethernet_mtu_s: [ '1500 (default)', '1440', '1400' ]
 };
 
 function network_html()
 {
+   network.ip_blacklist_file = 'http://'+ network.ip_blacklist_file_base;
+   network.ip_blacklist_file_SSL = kiwi_SSL() + network.ip_blacklist_file_base;
+   network.ip_blacklist_file_SSL_mtime = kiwi_SSL() + network.ip_blacklist_file_base +'.mtime';
+
    var commit_use_static = ext_get_cfg_param('adm.ip_address.commit_use_static');
    console.log('commit_use_static='+ commit_use_static);
    
@@ -1097,8 +1108,8 @@ function network_html()
    // check once per admin page load
    if (network.ip_blacklist_check_mtime) {
       network.ip_blacklist_double_fault = false;
-      //kiwi_ajax(kiwi_SSL() +'kiwisdr.com/ip_blacklist/ip_blacklist2.cjson.mtime', 'network_blacklist_mtime_cb', 0, -2000);
-      kiwi_ajax(kiwi_SSL() +'kiwisdr.com/ip_blacklist/ip_blacklist2.cjson.mtime', 'network_blacklist_mtime_cb', 0, 10000);
+      //kiwi_ajax(network.ip_blacklist_file_SSL_mtime, 'network_blacklist_mtime_cb', 0, -2000);
+      kiwi_ajax(network.ip_blacklist_file_SSL_mtime, 'network_blacklist_mtime_cb', 0, 10000);
       network.ip_blacklist_check_mtime = false;
    }
    
@@ -1234,7 +1245,7 @@ function network_html()
                ,
                w3_text('w3-text-black w3-center',
                   'Downloads a standard blacklist definition from ' +
-                  w3_link('w3-link-darker-color', 'http://kiwisdr.com/ip_blacklist/ip_blacklist2.cjson', 'kiwisdr.com') +
+                  w3_link('w3-link-darker-color', network.ip_blacklist_file, 'kiwisdr.com') +
                   '<br>A local, writeable blacklist can be entered below.'
                )
             ),
@@ -1256,8 +1267,15 @@ function network_html()
             'adm.ip_blacklist', 8, 100, '', ''
          ),
          
-         w3_textarea_get_param('w3-margin-T-32//w3-input-any-change w3-no-change-events|width:100%',
-            'Local blacklist (writeable)',
+         w3_textarea_get_param('w3-margin-T-32//w3-input-any-change|width:100%',
+            w3_div('w3-flex',
+               w3_text('w3-bold  w3-text-teal', 'Local blacklist (writeable)'),
+               w3_text('w3-text-black w3-margin-left',
+                  'Press enter(return) key while positioned at end of text to submit data.<br>' +
+                  'Always add whitelist entries ("+" character before ip address) after corresponding ip range, ' +
+                  'e.g. 1.2.3.0/24 +1.2.3.22'
+               )
+            ),
             'adm.ip_blacklist_local', 8, 100, 'network_user_blacklist_cb', ''
          )
       ) +
@@ -1304,8 +1322,8 @@ function network_download_button_cb(id, idx, first)
 {
    if (first) return;
    w3_innerHTML('id-ip-blacklist-status', 'updating..'+ w3_icon('w3-margin-left', 'fa-refresh fa-spin', 20));
-   //kiwi_ajax(kiwi_SSL() +'kiwisdr.com/ip_blacklist/ip_blacklist2.cjson', 'network_download_blacklist_cb', 0, -2000);
-   kiwi_ajax(kiwi_SSL() +'kiwisdr.com/ip_blacklist/ip_blacklist2.cjson', 'network_download_blacklist_cb', 0, 10000);
+   //kiwi_ajax(network.ip_blacklist_file_SSL, 'network_download_blacklist_cb', 0, -2000);
+   kiwi_ajax(network.ip_blacklist_file_SSL, 'network_download_blacklist_cb', 0, 10000);
 }
 
 function network_download_clear_cb(id, idx, first)
@@ -1375,15 +1393,18 @@ function network_download_blacklist_cb(bl)
       else
          nmd = +a[1];
       var nm = (~((1<<(32-nmd))-1)) & 0xffffffff;
+      //console.log(a[0]);
       //console.log('nm '+ nmd +' '+ nm.toHex(8));
       
+      // NB: if a[0] begins with '+' due to being a whitelist entry, kiwi_inet4_d2h() still works
+      // because the first component of the ip address string is just treated as a positive number
       var ip1 = kiwi_inet4_d2h(a[0]);
       var ip = ip1 & nm;
       if (ip1 != ip)
          console.log('ip/netmask mismatch: '+ kiwi_ip_str(ip1) +'|'+ ip1.toHex(8) +' '+
             kiwi_ip_str(ip) +'|'+ ip.toHex(8) +' '+ nm.toHex(8) +'/'+ nmd);
 
-      n.push( { ip: ip, nm: nm, nmd: nmd, del:0 } );
+      n.push( { ip: ip, nm: nm, nmd: nmd, whitelist: (a[0][0] == '+')? 1:0, del: 0 } );
    });
    
    // sort largest netmask first
@@ -1392,16 +1413,17 @@ function network_download_blacklist_cb(bl)
    });
    
    if (bl_debug) n.forEach(function(o, i) {
-      console.log('sorted: #'+ i +' '+ kiwi_ip_str(o.ip) +'|'+ o.ip.toHex(8) +' '+ o.nm.toHex(8) +'/'+ o.nmd);
+      console.log('sorted: #'+ i +' '+ (o.whitelist? '+':'') + kiwi_ip_str(o.ip) +'|'+ o.ip.toHex(8) +' '+ o.nm.toHex(8) +'/'+ o.nmd);
    });
    
    // remove duplicates
    var nn = kiwi_dup_array(n);
+   if (bl_debug) console.log('blacklist: #'+ nn.length +' entries pre duplicate check');
    n.forEach(function(oi, i) {
       var stop = false;
       nn.forEach(function(oj, j) {
          if (stop || j <= i || oj.ip == 0) return;
-         if ((oj.ip & oi.nm) == oi.ip) {
+         if ((oj.ip & oi.nm) == oi.ip && (!oj.whitelist && !oi.whitelist)) {
             console.log('blacklist: #'+ j +' '+ kiwi_ip_str(oj.ip) +'|'+ oj.ip.toHex(8) +' '+ oj.nm.toHex(8) +'/'+ oj.nmd +
                ' is a subset of #'+
                i +' '+ kiwi_ip_str(oi.ip) +'|'+ oi.ip.toHex(8) +' '+ oi.nm.toHex(8) +'/'+ oi.nmd);
@@ -1411,26 +1433,26 @@ function network_download_blacklist_cb(bl)
       });
    });
    
-   if (bl_debug) console.log('blacklist pre dup entries: #'+ nn.length);
    var nnn = [];
    nn.forEach(function(o, i) { if (!o.del) nnn.push(o); });
    
-   console.log('blacklist post dup entries: #'+ nnn.length);
+   console.log('blacklist: #'+ nnn.length +' entries post duplicate check');
    if (bl_debug) nnn.forEach(function(o, i) {
-      console.log('final: #'+ i +' '+ kiwi_ip_str(o.ip) +'|'+ o.ip.toHex(8) +' '+ o.nm.toHex(8) +'/'+ o.nmd + (o.del? ' DELETE':''));
+      console.log('final: #'+ i +' '+ (o.whitelist? '+':'') +
+         kiwi_ip_str(o.ip) +'|'+ o.ip.toHex(8) +' '+ o.nm.toHex(8) +'/'+ o.nmd + (o.del? ' DELETE':''));
    });
 
    var ip_bl_s = '';
    nnn.forEach(function(o, i) {
-      ip_bl_s = ip_bl_s +' '+ kiwi_ip_str(o.ip) +'/'+ o.nmd;
+      ip_bl_s = ip_bl_s +' '+ (o.whitelist? '+':'') + kiwi_ip_str(o.ip) +'/'+ o.nmd;
    });
    
    network_ip_blacklist_cb('adm.ip_blacklist', ip_bl_s);
    network.show_updating = true;
 
    // silently fail if kiwisdr.com can't be contacted for the mtime check
-   //kiwi_ajax('http://kiwisdr.com/ip_blacklist/ip_blacklist2.cjson.mtime', 'network_blacklist_mtime_cb', 1, -2000);
-   kiwi_ajax('http://kiwisdr.com/ip_blacklist/ip_blacklist2.cjson.mtime', 'network_blacklist_mtime_cb', 1, 10000);
+   //kiwi_ajax(network.ip_blacklist_file_SSL_mtime, 'network_blacklist_mtime_cb', 1, -2000);
+   kiwi_ajax(network.ip_blacklist_file_SSL_mtime, 'network_blacklist_mtime_cb', 1, 10000);
 }
 
 function network_blacklist_mtime_cb(mt, update)
@@ -1453,7 +1475,7 @@ function network_blacklist_mtime_cb(mt, update)
    }
    //console.log(mt);
    
-   if (dbgUs) console.log(mt);
+   //if (dbgUs) console.log(mt);
    var mtime = parseInt(mt);
    if (dbgUs) console.log('network_blacklist_mtime_cb: '+ (update? 'UPDATE' : 'AVAIL') +
       ' mtime='+ mtime +' adm.ip_blacklist_mtime='+ adm.ip_blacklist_mtime);
@@ -1521,7 +1543,9 @@ function network_ip_blacklist_cb(path, val)
    
    network.seq = 0;
 	network.ip_address_error = false;
+	console.log('ip_blacklist:');
 	console.log(network.ip_blacklist);
+	console.log('ip_blacklist_local:');
 	console.log(network.ip_blacklist_local);
 	network_ip_blacklist_send( {idx:0, type:0} );
 }
@@ -3033,7 +3057,7 @@ var admin_colors = [
 	'w3-hover-aqua',
 	'w3-hover-pink',
 	'w3-hover-yellow',
-	'w3-hover-khaki',
+	'w3-hover-amber',
 	'w3-hover-green',
 	'w3-hover-orange',
 	'w3-hover-grey',
@@ -3057,7 +3081,7 @@ function admin_resize()
 
 function kiwi_ws_open(conn_type, cb, cbp)
 {
-	return open_websocket(conn_type, cb, cbp, admin_msg, admin_recv);
+	return open_websocket(conn_type, cb, cbp, admin_msg, admin_recv, null, admin_close);
 }
 
 function admin_draw(sdr_mode)
@@ -3157,7 +3181,10 @@ function admin_draw(sdr_mode)
 
 	w3_show_block('id-admin');
 	var nav_def = sdr_mode? 'status' : 'gps';
-   w3_click_nav(kiwi_toggle(toggle_e.FROM_COOKIE | toggle_e.SET, nav_def, nav_def, 'last_admin_navbar'), 'admin_nav');
+	
+	admin.init = true;
+      w3_click_nav(kiwi_toggle(toggle_e.FROM_COOKIE | toggle_e.SET, nav_def, nav_def, 'last_admin_navbar'), 'admin_nav');
+	admin.init = false;
 	
 	setTimeout(function() { setInterval(status_periodic, 5000); }, 1000);
 }
@@ -3173,6 +3200,13 @@ function admin_nav_blur(id, cb_arg)
 {
    //console.log('admin_nav_blur id='+ id);
    w3_call(id +'_blur');
+}
+
+function admin_close()
+{
+   // don't show message if reload countdown running
+   if (!admin.reload_rem && !admin.long_running)
+      kiwi_show_msg('Server has closed connection.');
 }
 
 // Process replies to our messages sent via ext_send('SET ...')
@@ -3208,17 +3242,26 @@ function admin_msg(param)
          if (gps_az_el) w3_call('gps_az_el_history_cb', gps_az_el);
          break;
 
-		case "dx_json":
-			console.log('dx_json len='+ param[1].length);
-         var obj = kiwi_JSON_parse('dx_json', kiwi_decodeURIComponent('dx_json', param[1]));
-			if (obj) dx_json(obj);
+		case "dx_size":
+			dx_size(param[1]);
 			break;
 		
 		case "admin_mkr":
 			var mkr = param[1];
 			var obj = kiwi_JSON_parse('admin_mkr', mkr);
-			if (obj) dx_json_render(obj);
+			if (obj) dx_render(obj);
 			break;
+		
+		case "mkr_search_pos":
+		   dx_search_pos_cb(param[1]);
+		   break;
+
+		case "keepalive":
+		   kiwi_clearTimeout(admin.keepalive_timeoout);
+		   admin.keepalive_timeoout = setTimeout(function() {
+		      admin_close();
+		   }, 30000);
+		   break;
 
 		default:
 		   return false;
@@ -3398,14 +3441,11 @@ function w3_reboot_cb()
 	w3_scrollTop('id-kiwi-container');
 }
 
-var admin_pie_size = 25;
-var admin_reload_secs, admin_reload_rem;
-
 function admin_draw_pie() {
-	w3_el('id-admin-reload-secs').innerHTML = 'Admin page reload in '+ admin_reload_rem + ' secs';
-	if (admin_reload_rem > 0) {
-		admin_reload_rem--;
-		kiwi_draw_pie('id-admin-pie', admin_pie_size, (admin_reload_secs - admin_reload_rem) / admin_reload_secs);
+	w3_el('id-admin-reload-secs').innerHTML = 'Admin page reload in '+ admin.reload_rem + ' secs';
+	if (admin.reload_rem > 0) {
+		admin.reload_rem--;
+		kiwi_draw_pie('id-admin-pie', admin.pie_size, (admin.reload_secs - admin.reload_rem) / admin.reload_secs);
 	} else {
 		window.location.reload(true);
 	}
@@ -3419,7 +3459,7 @@ function admin_wait_then_reload(secs, msg)
 	if (secs) {
 		s2 =
 			w3_divs('w3-valign w3-margin-T-8/w3-container',
-				w3_div('w3-show-inline-block', kiwi_pie('id-admin-pie', admin_pie_size, '#eeeeee', 'deepSkyBlue')),
+				w3_div('w3-show-inline-block', kiwi_pie('id-admin-pie', admin.pie_size, '#eeeeee', 'deepSkyBlue')),
 				w3_div('w3-show-inline-block',
 					w3_div('id-admin-reload-msg'),
 					w3_div('id-admin-reload-secs')
@@ -3439,7 +3479,7 @@ function admin_wait_then_reload(secs, msg)
 	if (msg) w3_el("id-admin-reload-msg").innerHTML = msg;
 	
 	if (secs) {
-		admin_reload_rem = admin_reload_secs = secs;
+		admin.reload_rem = admin.reload_secs = secs;
 		setInterval(admin_draw_pie, 1000);
 		admin_draw_pie();
 	}

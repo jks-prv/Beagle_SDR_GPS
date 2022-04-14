@@ -58,7 +58,8 @@ alias sha256sum="shasum -a 256"
 alias sha="sha256sum"
 alias sha256="sha256sum"
 alias col1="awk -- '{print \$1}'"
-alias json="function _json () { \$* | jq '.' ; } ; _json"
+alias jsonc="function _json () { \$* | jq '.' ; } ; _json"
+alias jsonf="function _json () { cat \$* | jq '.' ; } ; _json"
 
 # pki colordiff
 p_diff_exclude="--exclude=.DS_Store --exclude=.git --exclude=.svn ${no_diff}"

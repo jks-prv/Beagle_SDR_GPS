@@ -43,7 +43,7 @@ void eibi_fgets(u1_t *bp, int size, FILE *fp)
 // Makes a copy of ocp since delimiters are turned into NULLs.
 // If ocp begins with delimiter a null entry is _not_ made in argv (and reflected in returned count).
 // Caller must free *mbuf
-int kiwi_split(char *ocp, char **mbuf, const char *delims, char *argv[], int nargs)
+int _kiwi_split(char *ocp, char **mbuf, const char *delims, char *argv[], int nargs)
 {
 	int n=0;
 	char **ap, *tp;
@@ -189,7 +189,7 @@ int main(int argc, char *argv[])
         const char *fields_s[N_FIELDS] = {
             "dow", "country", "ident", "lang", "target" /*, "tx", "persist", "date-S", "date-E"*/
         };
-        int n2 = kiwi_split(lbuf, &rbuf, ";", fields, N_FIELDS);
+        int n2 = _kiwi_split(lbuf, &rbuf, ";", fields, N_FIELDS);
 
         char *dow = fields[0];
         const char *country = fields[1];
@@ -352,7 +352,7 @@ int main(int argc, char *argv[])
             { type = DX_UTIL | MODE_USB; }
         }
 
-        types_n[DX_T2I(type)]++;
+        types_n[DX_EiBi_TYPE2IDX(type)]++;
 
 
         // DOW decoding
@@ -384,6 +384,7 @@ int main(int argc, char *argv[])
             dow_mask |= DX_MON >> day(&dow[0]);
             dow_mask |= DX_MON >> day(&dow[3]);
         }
+        if (dow_mask == 0) dow_mask = DX_DOW;
         
     #ifdef OPT_DOW
         int trig = 0;
@@ -453,7 +454,7 @@ int main(int argc, char *argv[])
         fprintf(fo, "  { %8.2f, %4d, %4d, 0x%05x, %4d, \"%3s\", %-6s %-5s },  // %7s %s\n",
             freq, begin, end, type | dow_mask, ident_i, country,
             qs(0, "\"%s\",", lang), qs(1, "\"%s\"", target),
-            qs(2, "-%s", (char *) types_s[DX_T2I(type)]), ident);
+            qs(2, "-%s", (char *) types_s[DX_EiBi_TYPE2IDX(type)]), ident);
 
         kiwi_ifree(rbuf);
         line++;
@@ -491,11 +492,10 @@ int main(int argc, char *argv[])
 
     
     // counts that are added to service checkboxes in control panel
-    fprintf(fo, "\nconst int eibi_counts[] = {\n");
-    const char **sp;
-    for (i = 0, sp = &types_s[0]; *sp != NULL; i++, sp++) {
-        fprintf(fo, "  %5d,  // %s\n", types_n[i], *sp);
-        printf("%5d %s\n", types_n[i], *sp);
+    fprintf(fo, "\nconst int eibi_counts[DX_N_EiBi] = {\n");
+    for (i = 0; i < DX_N_EiBi; i++) {
+        fprintf(fo, "  %5d%s  // %s\n", types_n[i], (i == DX_N_EiBi-1)? " " : ",", types_s[i]);
+        printf("%5d %s\n", types_n[i], types_s[i]);
     }
     fprintf(fo, "};\n");
 

@@ -31,6 +31,7 @@ Boston, MA  02110-1301, USA.
 #include "gps.h"
 #include "cfg.h"
 #include "coroutines.h"
+#include "non_block.h"
 #include "net.h"
 #include "dx.h"
 #include "rx.h"
@@ -46,13 +47,109 @@ Boston, MA  02110-1301, USA.
 #include <stdlib.h>
 #include <sys/time.h>
 
+
+#define CSV_FLT 0
+#define CSV_STR 1
+#define CSV_DEC 2
+
+static bool _dx_parse_csv_field(int type, char *field, void *val, bool *empty = NULL)
+{
+    bool fail = false;
+    if (empty != NULL) *empty = false;
+    
+    if (type == CSV_FLT) {
+        int sl = kiwi_strnlen(field, 256);
+        if (sl == 0) {
+            *((float *) val) = 0;               // empty number field becomes zero
+            if (empty != NULL) *empty = true;
+        } else {
+            if (field[0] == '\'') field++;      // allow for leading zero escape e.g. '0123
+            char *endp;
+            *((float *) val) = strtof(field, &endp);
+            if (endp == field) { fail = true; }
+        }
+    } else
+
+    if (type == CSV_STR || type == CSV_DEC) {
+        char *s = field;
+        int sl = kiwi_strnlen(s, 1024);
+
+        if (sl == 0) {
+            *((char **) val) = (type == CSV_DEC)? strdup("\"\"") : (char *) "\"\"";     // empty string field becomes ""
+            if (empty != NULL) *empty = true;
+        } else
+
+        if (s[0] == '"' && s[sl-1] == '"') {
+            // remove the doubled-up double-quotes (if any)
+            if (sl > 2) {
+                kiwi_str_replace(s, "\"\"", "\"");      // shrinking, so same mem space
+                sl = kiwi_strnlen(s, 1024);
+            }
+
+            // decode if requested
+            if (type == CSV_DEC) {
+                // replace beginning and ending " into something that won't get encoded (restore below)
+                s[0] = 'x';
+                s[sl-1] = 'x';
+                s = kiwi_str_decode_selective_inplace(kiwi_str_encode(s), FEWER_ENCODED);
+                sl = strlen(s);
+                s[0] = '"';
+                s[sl-1] = '"';
+            }
+            *((char **) val) = s;       // if type == CSV_DEC caller must kiwi_ifree() val
+        } else { fail = true; }
+    } else
+        panic("_dx_parse_csv_field");
+    
+    return fail;
+}
+
+#define TYPE_JSON 0
+#define TYPE_CSV 1
+
+typedef struct {
+    int type;
+    const char *data;
+    int data_len;
+    char **s_a;
+    int idx;
+} dx_param_t;
+
+static void _dx_write_file(void *param)
+{
+    dx_param_t *dxp = (dx_param_t *) FROM_VOID_PARAM(param);
+    int i, n, rc = 0;
+
+    FILE *fp = fopen(DIR_CFG "/upload.dx.json", "w");
+    if (fp == NULL) { rc = 3; goto fail; }
+
+    if (dxp->type == TYPE_JSON) {
+        n = fwrite(dxp->data, 1, dxp->data_len, fp);
+        if (n != dxp->data_len) { rc = 3; goto fail; }
+    }
+
+    if (dxp->type == TYPE_CSV) {
+        for (i = 0; i < dxp->idx; i++) {
+            if (fputs(dxp->s_a[i], fp) < 0) { rc = 3; goto fail; }
+        }
+    }
+
+fail:
+    if (fp != NULL) fclose(fp);
+	child_exit(rc);
+}
+
+
 // process non-websocket connections
-char *rx_server_ajax(struct mg_connection *mc)
+// check_ip_blacklist() done by caller
+char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
 {
 	int i, j, n;
-	char *sb, *sb2;
+	char *sb, *sb2, *sb3;
 	rx_stream_t *st;
 	char *uri = (char *) mc->uri;
+	char *ip_unforwarded = ip_remote(mc);
+	bool isLocalIP = isLocal_ip(ip_unforwarded);
 	
 	if (*uri == '/') uri++;
 	
@@ -73,28 +170,12 @@ char *rx_server_ajax(struct mg_connection *mc)
 
 	//printf("rx_server_ajax: uri=<%s> qs=<%s>\n", uri, mc->query_string);
 	
-	// these don't require a query string
-	if (mc->query_string == NULL
-		&& st->type != AJAX_VERSION
-		&& st->type != AJAX_STATUS
-		&& st->type != AJAX_USERS
-		&& st->type != AJAX_SNR
-		&& st->type != AJAX_DISCOVERY
-		&& st->type != AJAX_PHOTO
-		) {
+	// these require a query string
+	if (mc->query_string == NULL && (st->type == AJAX_PHOTO || st->type == AJAX_DX)) {
 		lprintf("rx_server_ajax: missing query string! uri=<%s>\n", uri);
 		return NULL;
 	}
 	
-	// iptables will stop regular connection attempts from a blacklisted ip.
-	// But when proxied we need to check the forwarded ip address.
-	// Note that this code always sets remote_ip[] as a side-effect for later use (the real client ip).
-	char remote_ip[NET_ADDRSTRLEN];
-    if (check_if_forwarded("AJAX", mc, remote_ip) && check_ip_blacklist(remote_ip)) {
-		lprintf("AJAX: IP BLACKLISTED: url=<%s> qs=<%s>\n", uri, mc->query_string);
-    	return NULL;
-    }
-
 	switch (st->type) {
 	
 	// SECURITY:
@@ -106,6 +187,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 
 	// SECURITY:
 	//	Okay, requires a matching auth key generated from a previously authenticated admin web socket connection
+	//  Also, request restricted to the local network.
 	//	MITM vulnerable
 	//	Returns JSON
 	case AJAX_PHOTO: {
@@ -113,9 +195,11 @@ char *rx_server_ajax(struct mg_connection *mc)
 		const char *data;
 		int data_len, rc = 0;
 		
-		printf("PHOTO UPLOAD REQUESTED from %s len=%d\n", remote_ip, mc->content_len);
+		printf("PHOTO UPLOAD REQUESTED from %s len=%d\n", ip_unforwarded, mc->content_len);
 		//printf("PHOTO UPLOAD REQUESTED key=%s ckey=%s\n", mc->query_string, current_authkey);
 		
+		if (!isLocalIP) return (char *) -1;
+
 		int key_cmp = -1;
 		if (mc->query_string && current_authkey) {
 			key_cmp = strcmp(mc->query_string, current_authkey);
@@ -160,25 +244,213 @@ char *rx_server_ajax(struct mg_connection *mc)
 		break;
 	}
 
+    // Import JSON or CSV (converted to JSON), and store to dx.json file.
+    //
+	// SECURITY:
+	//	Okay, requires a matching auth key generated from a previously authenticated admin web socket connection
+	//  Also, request restricted to the local network.
+	//	MITM vulnerable
+	//	Returns JSON
+	case AJAX_DX: {
+		char vname[64], fname[64];		// mg_parse_multipart() checks size of these
+		const char *data;
+		int type, idx, rc = 0, line, status, key_cmp, data_len;
+        char **s_a = NULL;
+        int s_size = 0;
+		char *r_buf = NULL;
+		
+		if (!isLocalIP) {
+		    printf("DX UPLOAD: !isLocalIP %s content_len=%d\n", ip_unforwarded, mc->content_len);
+		    return (char *) -1;
+		}
+		
+        #define TMEAS(x) x
+        //#define TMEAS(x)
+        TMEAS(u4_t start = timer_ms();)
+        TMEAS(printf("DX UPLOAD: START saving to dx.json\n");)
+
+		key_cmp = -1;
+		if (mc->query_string && current_authkey) {
+			key_cmp = strcmp(mc->query_string, current_authkey);
+            //printf("DX UPLOAD: AUTH key=%s ckey=%s %s\n", mc->query_string, current_authkey, key_cmp? "FAIL" : "OK");
+		}
+        kiwi_ifree(current_authkey);
+        current_authkey = NULL;
+		if (key_cmp) { rc = 1; goto fail; }
+		
+        mg_parse_multipart(mc->content, mc->content_len,
+            vname, sizeof(vname), fname, sizeof(fname), &data, &data_len);
+		//printf("DX UPLOAD: vname=%s fname=%s\n", vname, fname);
+        
+        if (data_len >= DX_UPLOAD_MAX_SIZE) { rc = 2; goto fail; }
+        
+        if (strcmp(vname, "json") == 0) {
+            type = TYPE_JSON;
+        } else
+
+        // convert CSV data to JSON before writing dx.json file
+        // Freq kHz;Mode;Ident;Notes;Extension;Type;Passband low;Passband high;Offset;DOW;Begin;End
+        if (strcmp(vname, "csv") == 0) {
+            type = TYPE_CSV;
+            #define NS_SIZE 256
+            sb = (char *) data;
+            int rem = data + data_len - sb;
+
+            for (line = idx = 0; rem > 0; line++) {
+                if (idx >= s_size) {
+                    s_a = (char **) kiwi_table_realloc("dx_csv", s_a, s_size, NS_SIZE, sizeof(char *));
+                    s_size = s_size + NS_SIZE;
+                    NextTask("dx_csv");
+                }
+                
+                if (idx == 0) {
+                    asprintf(&s_a[idx], "{\"dx\":[\n");
+                    line--;
+                    idx++;
+                    continue;
+                }
+
+                #define NQS 15
+                char *qs[NQS+1];
+                
+                sb2 = index(sb, '\n');
+                *sb2 = '\0';
+                n = kiwi_split(sb, &r_buf, ";", qs, NQS,
+                    KSPLIT_NO_SKIP_EMPTY_FIELDS | KSPLIT_HANDLE_EMBEDDED_DELIMITERS);
+                sb = sb2+1;
+                rem = data + data_len - sb;
+                //printf("rem=%d\n", rem);
+
+                #if 0
+                    for (i=0; i < n; i++) {
+                        printf("%d.%d <%s>\n", line, i, qs[i]);
+                    }
+                #endif
+
+                if (n != 12) { rc = 10; goto fail; }
+                
+                // skip what looks like a CSV field legend
+                if (line != 0 || strncasecmp(qs[0], "freq", 4) != 0) {
+                    sb3 = NULL;
+                    bool empty, ext_empty;
+
+                    float freq;
+                    if (_dx_parse_csv_field(CSV_FLT, qs[0], &freq)) { rc = 11; goto fail; }
+                    //printf("freq=%.2f\n", rem, freq);
+                
+                    char *mode, *ident, *notes, *ext;
+                    if (_dx_parse_csv_field(CSV_STR, qs[1], &mode)) { rc = 12; goto fail; }
+                    if (_dx_parse_csv_field(CSV_DEC, qs[2], &ident)) { rc = 13; goto fail; }
+                    if (_dx_parse_csv_field(CSV_DEC, qs[3], &notes)) { rc = 14; goto fail; }
+                    if (_dx_parse_csv_field(CSV_DEC, qs[4], &ext, &ext_empty)) { rc = 15; goto fail; }
+
+                    char *type;
+                    if (_dx_parse_csv_field(CSV_STR, qs[5], &type, &empty)) { rc = 16; goto fail; }
+                    else { if (!empty) sb3 = kstr_asprintf(sb3, "%s:1", type); };
+
+                    float pb_lo, pb_hi;
+                    if (_dx_parse_csv_field(CSV_FLT, qs[6], &pb_lo)) { rc = 17; goto fail; }
+                    if (_dx_parse_csv_field(CSV_FLT, qs[7], &pb_hi)) { rc = 18; goto fail; }
+                    if (pb_lo != 0 || pb_hi != 0)
+                        sb3 = kstr_asprintf(sb3, "%s\"lo\":%.0f, \"hi\":%.0f", sb3? ", " : "", pb_lo, pb_hi);
+
+                    float offset;
+                    if (_dx_parse_csv_field(CSV_FLT, qs[8], &offset)) { rc = 19; goto fail; }
+                    if (offset != 0)
+                        sb3 = kstr_asprintf(sb3, "%s\"o\":%.0f", sb3? ", " : "", offset);
+
+                    char *dow_s;
+                    if (_dx_parse_csv_field(CSV_STR, qs[9], &dow_s, &empty)) { rc = 20; goto fail; }
+                    else
+                    if (!empty) {
+                        int dow = 0;
+                        int sl = kiwi_strnlen(dow_s, 256);
+                        if (sl != 7+2) { rc = 21; goto fail; }      // +2 is for surrounding quotes
+                        dow_s++;
+                        for (i = 0; i < 7; i++) {
+                            if (dow_s[i] != '_') dow |= 1 << (6-i);     // doesn't check dow letters specifically
+                        }
+                        if (dow != 0)
+                            sb3 = kstr_asprintf(sb3, "%s\"d0\":%d", sb3? ", " : "", dow);
+                    };
+
+                    float begin, end;
+                    if (_dx_parse_csv_field(CSV_FLT, qs[10], &begin)) { rc = 22; goto fail; }
+                    if (_dx_parse_csv_field(CSV_FLT, qs[11], &end)) { rc = 23; goto fail; }
+                    if ((begin != 0 || end != 0) && (begin != 0 && end != 2400))
+                        sb3 = kstr_asprintf(sb3, "%s\"b0\":%.0f, \"e0\":%.0f", sb3? ", " : "", begin, end);
+                    
+                    if (!ext_empty) {
+                        sb3 = kstr_asprintf(sb3, "%s\"p\":%s", sb3? ", " : "", ext);
+                    }
+                    kiwi_ifree(ext);
+
+                    char *opt_s = kstr_sp(sb3);
+                    bool opt = (kstr_len(sb3) != 0);
+                    asprintf(&s_a[idx], "[%.2f, %s, %s, %s%s%s%s]%s\n",
+                        freq, mode, ident, notes,
+                        opt? ", {" : "", opt? opt_s : "", opt? "}" : "",
+                        rem? ",":"");
+                    kstr_free(sb3);
+                    kiwi_ifree(ident);
+                    kiwi_ifree(notes);
+                    
+                    idx++;
+                }
+            }
+
+            asprintf(&s_a[idx], "]}\n");
+            idx++;
+        } else { rc = 4; goto fail; }
+		
+		dx_param_t dxp;
+		dxp.type = type;
+		dxp.data = data;
+		dxp.data_len = data_len;
+		dxp.s_a = s_a;
+		dxp.idx = idx;
+        status = child_task("kiwi.dx", _dx_write_file, POLL_MSEC(250), TO_VOID_PARAM(&dxp));
+        rc = WEXITSTATUS(status);
+        if (rc) goto fail;
+
+        // commit to using new file
+        system("mv " DIR_CFG "/upload.dx.json " DIR_CFG "/dx.json");
+
+fail:
+        if (type == TYPE_CSV) {
+            for (i = 0; i < s_size; i++)
+                kiwi_ifree(s_a[i]);
+            kiwi_ifree(r_buf);
+            kiwi_free("dx_csv", s_a);
+        }
+
+        line++;     // make 1-based
+		printf("DX UPLOAD: \"%s\" \"%s\" data_len=%d %s %s rc=%d line=%d nfields=%d\n",
+		    vname, fname, data_len, ip_unforwarded, rc? "ERROR" : "OK", rc, line, n);
+		asprintf(&sb, "{\"rc\":%d, \"line\":%d, \"nfields\":%d}", rc, line, n);
+	    TMEAS(u4_t now = timer_ms(); printf("DX UPLOAD: DONE %.3f sec\n", TIME_DIFF_MS(now, start));)
+		break;
+	}
+
 	// SECURITY:
 	//	Delivery restricted to the local network.
 	//	Used by kiwisdr.com/scan -- the KiwiSDR auto-discovery scanner.
 	case AJAX_DISCOVERY:
-		if (!isLocal_ip(remote_ip)) return (char *) -1;
+		if (!isLocalIP) return (char *) -1;
 		asprintf(&sb, "%d %s %s %d %d %s",
 			net.serno, net.ip_pub, net.ip_pvt, net.port, net.nm_bits, net.mac);
-		printf("/DIS REQUESTED from %s: <%s>\n", remote_ip, sb);
+		printf("/DIS REQUESTED from %s: <%s>\n", ip_unforwarded, sb);
 		break;
 
 	// SECURITY:
 	//	Delivery restricted to the local network.
 	case AJAX_USERS:
-		if (!isLocal_ip(remote_ip)) {
-			printf("/users NON_LOCAL FETCH ATTEMPT from %s\n", remote_ip);
+		if (!isLocalIP) {
+			printf("/users NON_LOCAL FETCH ATTEMPT from %s\n", ip_unforwarded);
 			return (char *) -1;
 		}
 		sb = rx_users(true);
-		printf("/users REQUESTED from %s\n", remote_ip);
+		printf("/users REQUESTED from %s\n", ip_unforwarded);
 		return sb;		// NB: return here because sb is already a kstr_t (don't want to do kstr_wrap() below)
 		break;
 
@@ -210,7 +482,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		}
 		
     	sb = kstr_cat(sb, "]\n");
-		printf("/snr REQUESTED from %s\n", remote_ip);
+		printf("/snr REQUESTED from %s\n", ip_forwarded);
 		return sb;		// NB: return here because sb is already a kstr_t (don't want to do kstr_wrap() below)
 		break;
 	}
@@ -373,7 +645,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		cfg_string_free(s6);
 		cfg_string_free(s7);
 
-		//printf("STATUS REQUESTED from %s: <%s>\n", remote_ip, sb);
+		//printf("STATUS REQUESTED from %s: <%s>\n", ip_forwarded, sb);
 		break;
 	}
 

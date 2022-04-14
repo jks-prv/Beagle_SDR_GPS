@@ -29,14 +29,23 @@ int main()
     fprintf(fo, "{\"dx\":[\n");
     bool first = true;
     
-    for (float f = 5; f < 30000; f += 3) {
-        fprintf(fo, "%s[%.2f,\"AM\",\"%.2f %s\",\"%s\",{\"WL\":1}]\n",
-            first? "":",", f, f, IDENT, NOTES);
+    int i;
+    float f;
+    int start_f = 5, end_i = 9999, step_f = 3;
+    //int start_f = 10000, end_i = 255, step_f = 1;
+
+    for (i = 0, f = start_f; i < end_i; i++, f += step_f) {
+        bool last = (i == (end_i - 1));
+        if (i & 1)
+            fprintf(fo, "[%.2f,\"AM\",\"%.2f %s\",\"%s\",{\"WL\":1, \"b0\":2300, \"e0\":0200}]%s\n",
+                f, f, IDENT, NOTES, !last? ",":"");
+        else
+            fprintf(fo, "[%.2f,\"AM\",\"%.2f %s\",\"%s\",{\"WL\":1}]%s\n",
+                f, f, IDENT, NOTES, !last? ",":"");
         first = false;
     }
     
     fprintf(fo, "]}\n");
-    
 
     fclose(fo);
 	return 0;

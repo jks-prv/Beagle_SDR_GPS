@@ -268,14 +268,10 @@ void web_server(void *param)
 	while (1) {
 		mg_poll_server(server, 0);		// passing 0 effects a poll
 		
-		#ifdef MONGOOSE_5_3
-		    mg_iterate_over_connections(server, iterate_callback);
-		#else
-            struct mg_connection *mc;
-            for (mc = mg_next(server, NULL); mc != NULL; mc = mg_next(server, mc)) {
-                iterate_callback(mc, MG_POLL);
-            }
-		#endif
+        struct mg_connection *mc;
+        for (mc = mg_next(server, NULL); mc != NULL; mc = mg_next(server, mc)) {
+            iterate_callback(mc, MG_POLL);
+        }
 		
 		//#define MEAS_WEB_SERVER
 		#ifdef MEAS_WEB_SERVER
@@ -331,12 +327,12 @@ void web_server_init(ws_init_t type)
 		net.port = admcfg_int("port", NULL, CFG_REQUIRED);
         net.port_ext = admcfg_default_int("port_ext", net.port, &update_admcfg);
 
-        #if defined(USE_SSL) && defined(MONGOOSE_5_6)
+        #ifdef USE_SSL
             net.use_ssl = admcfg_default_bool("use_ssl", false, &update_admcfg);
             net.port_http_local = admcfg_default_int("port_http_local", net.port + 100, &update_admcfg);
         #endif
 
-        if (update_admcfg) admcfg_save_json(cfg_adm.json);
+        if (update_admcfg) admcfg_save_json(cfg_adm.json);  // because during init doesn't conflict with admin cfg
 
         if (!background_mode) {
             struct stat st;
@@ -354,7 +350,7 @@ void web_server_init(ws_init_t type)
 		lprintf("webserver: listening on port %d/%d for HTTP%s connections\n",
 		    net.port, net.port_ext, net.use_ssl? "S (SSL)" : "");
 
-        #if defined(USE_SSL) && defined(MONGOOSE_5_6)
+        #ifdef USE_SSL
             if (net.use_ssl) {
                 lprintf("webserver: listening on port %d for local HTTP connections\n", net.port_http_local);
                 lprintf("webserver: listening on port 80 for ACME challenge requests\n");
@@ -388,9 +384,6 @@ void web_server_init(ws_init_t type)
         }
         kiwi_ifree(s_port);
         
-        #ifdef MONGOOSE_5_3
-            lprintf("webserver: using port(s) %s\n", mg_get_option(server, "listening_port"));
-        #endif
     } else {	// WS_INIT_START
         bool err;
         bool test_webserver_prio = cfg_bool("test_webserver_prio", &err, CFG_OPTIONAL);

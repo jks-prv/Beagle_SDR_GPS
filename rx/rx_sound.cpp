@@ -302,9 +302,14 @@ void c2s_sound(void *param)
             #endif
 
 			// SECURITY: this must be first for auth check
-			if (rx_common_cmd("SND", conn, cmd))
+			if (rx_common_cmd("SND", conn, cmd)) {
+                #ifdef TR_SND_CMDS
+                    if (tr_cmds++ < 32)
+                        clprintf(conn, "SND #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
+                #endif
 				continue;
-			
+			}
+
 			#ifdef TR_SND_CMDS
 				if (tr_cmds++ < 32) {
 					clprintf(conn, "SND #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);

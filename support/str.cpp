@@ -289,19 +289,64 @@ void kiwi_set_chars(char *field, const char *value, const char fill, size_t size
 	memcpy(field, value, strlen(value));
 }
 
+// Version of strsep() that handles delimiters embedded inside double-quotes.
+// Also recognizes the spreadsheet standard of escaping quoted double-quotes by doubling them up.
+static char *ed_strsep(char **sp, const char *delim)
+{
+    char *osp;
+    if (sp == NULL || *sp == NULL || delim == NULL) return NULL;
+    osp = *sp;
+    
+    if (strlen(delim) == 1) {
+        char *cp = osp, c;
+        int quoted = 0;
+        do {
+            c = *cp;
+            if (c == '"') {
+                if (*(cp+1) == '"') {
+                    cp++;           // skip over doubled double-quote escapes
+                } else {
+                    quoted ^= 1;
+                    //printf("ed_strsep FLIP quoted=%d\n", quoted);
+                }
+            } else
+
+            if (c == *delim) {
+                //printf("ed_strsep DELIM quoted=%d\n", quoted);
+                if (!quoted) {      // only perform the delimiter action if not quoted
+                    *cp = '\0';
+                    *sp = cp+1;
+                    c = '\0';       // terminate loop
+                }
+            } else
+
+            if (c == '\0') {
+                *sp = NULL;
+            }
+            cp++;
+        } while (c != '\0');
+    } else {
+        osp = strsep(sp, delim);
+    }
+    
+    return osp;
+}
+
 // Makes a copy of ocp since delimiters are turned into NULLs.
-// If ocp begins with delimiter a null entry is _not_ made in argv (and reflected in returned count).
+// If ocp begins (or ends) with delimiter(s) null entries are _not_ made in argv
+// (and reflected in returned count), *unless* the KSPLIT_NO_SKIP_EMPTY_FIELDS flag is given.
 // Caller must free *mbuf
-int kiwi_split(char *ocp, char **mbuf, const char *delims, char *argv[], int nargs)
+int kiwi_split(char *ocp, char **mbuf, const char *delims, char *argv[], int nargs, int flags)
 {
 	int n=0;
+	bool ed = ((flags & KSPLIT_HANDLE_EMBEDDED_DELIMITERS) != 0);
 	char **ap, *tp;
-	*mbuf = (char *) kiwi_imalloc("kiwi_split", strlen(ocp)+1);
+	*mbuf = (char *) kiwi_imalloc("kiwi_split", strlen(ocp) + SPACE_FOR_NULL);
 	strcpy(*mbuf, ocp);
 	tp = *mbuf;
 	
-	for (ap = argv; (*ap = strsep(&tp, delims)) != NULL;) {
-		if (**ap != '\0') {
+	for (ap = argv; (*ap = (ed? ed_strsep(&tp, delims) : strsep(&tp, delims))) != NULL;) {
+		if ((flags & KSPLIT_NO_SKIP_EMPTY_FIELDS) || **ap != '\0') {
 			n++;
 			if (++ap >= &argv[nargs])
 				break;
@@ -322,7 +367,8 @@ char *kiwi_str_replace(char *s, const char *from, const char *to, bool *caller_m
     if (tlen <= flen) {
         do {
             strncpy((char *) fp, to, tlen);
-            strcpy((char *) fp+tlen, fp+flen);
+            int rlen = strlen(fp+flen) + 1;
+            memmove((char *) fp+tlen, fp+flen, rlen);
         } while ((fp = strstr(s, from)) != NULL);
         if (caller_must_free) *caller_must_free = false;
     } else {
@@ -468,7 +514,7 @@ char *kiwi_str_encode(char *src, bool alt)
 }
 
 #define N_DST_STATIC 4
-#define N_DST_STATIC_BUF (512 + SPACE_FOR_NULL)
+#define N_DST_STATIC_BUF (511 + SPACE_FOR_NULL)
 static char dst_static[N_DST_STATIC][N_DST_STATIC_BUF];
 
 // for use with e.g. an immediate printf argument
@@ -505,77 +551,84 @@ char *kiwi_str_decode_static(char *src, int which)
 	return dst_static[which];
 }
 
+// = 1 encode only if fewer_encoded == false
+// = 2 always encode
 static u1_t decode_table[128] = {
-//  (ctrl)
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+//  (ctrl)                              always % encoded: 00 - 1f
+    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
 
 //  (ctrl)
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
 
 //    ! " # $ % & ' ( ) * + , - . /     still % encoded: "22 %25 &26 '27 +2b
-    1,1,0,1,1,0,0,0,1,1,1,0,1,1,1,1,
+    0,0,2,0,0,2,1,1,0,0,0,1,0,0,0,0,
 
 //  0 1 2 3 4 5 6 7 8 9 : ; < = > ?     still % encoded: ;3b <3c >3e
-    1,1,1,1,1,1,1,1,1,1,1,0,0,1,0,1,
+    0,0,0,0,0,0,0,0,0,0,0,1,1,0,1,0,
 
 //  @ (alpha)
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 
 //  (alpha)               [ \ ] ^ _     still % encoded: \5c
-    1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,
+    0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,
 
 //  ` (alpha)                           still % encoded: `60
-    0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 
 //  (alpha)               { | } ~ del   still % encoded: del 7f
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,
 };
 
 // Like mg_url_decode(), but only decodes chars not likely to cause trouble.
 // Used to enhance readability of the kiwi.config/{admin,kiwi,dx}.json files.
-static int kiwi_url_decode_selective(const char *src, int src_len, char *dst,
-    int dst_len, int is_form_url_encoded)
+//
+// This is typically called on a fully-encoded string (via encodeURIComponent() or mg_url_encode())
+// before it is saved in one of the .json files.
+static void kiwi_url_decode_selective(const char *src, int src_len, char *dst,
+    int dst_len, bool fewer_encoded = false)
 {
     int i, j, a, b;
     u1_t c;
     #define HEXTOI(x) (isdigit(x) ? x - '0' : x - 'W')
 
+    //if (fewer_encoded) printf("%s\n", src);
     for (i = j = 0; i < src_len && j < dst_len - 1; i++, j++) {
-        if (src[i] == '%' && i < src_len - 2 &&
+        //if (fewer_encoded)
+            //printf("i%d j%d sl%d dl%d '%c'0x%02x\n", i, j, src_len, dst_len, src[i], src[i]);
+        if (src[i] == '%' && i + 2 < src_len &&
             isxdigit(* (const unsigned char *) (src + i + 1)) &&
             isxdigit(* (const unsigned char *) (src + i + 2))) {
             
             a = tolower(* (const unsigned char *) (src + i + 1));
             b = tolower(* (const unsigned char *) (src + i + 2));
+            
+             // preserve UTF-8 encoding values >= 0x80!
             c = (u1_t) (HEXTOI(a) << 4) | HEXTOI(b);
-            if (c < 0x80 && decode_table[c]) {      // preserve UTF-8 encoding values >= 0x80!
+            if (c < 0x80 && (decode_table[c] == 0 || (fewer_encoded && decode_table[c] == 1))) {
                 dst[j] = c;
                 i += 2;
+                //if (fewer_encoded) printf("replace %%xx with: '%c'0x%02x\n", c, c);
             } else {
                 dst[j] = '%';
+                //if (fewer_encoded && c < 0x80 && decode_table[c] == 2)
+                    //printf("=> keeping %% encoding for '%c'0x%02x\n", c, c);
             }
-        } else
-        
-        if (is_form_url_encoded && src[i] == '+') {
-            dst[j] = ' ';
         } else {
             dst[j] = src[i];
         }
     }
 
     dst[j] = '\0'; // Null-terminate the destination
-
-    return i >= src_len ? j : -1;
 }
 
-char *kiwi_str_decode_selective_inplace(char *src)
+char *kiwi_str_decode_selective_inplace(char *src, bool fewer_encoded)
 {
 	if (src == NULL) return NULL;
 	int slen = strlen(src);
 	char *dst = src;
     // dst = src is okay because length dst always <= src since we are decoding
     // yes, kiwi_url_decode_selective() dst length includes SPACE_FOR_NULL
-    kiwi_url_decode_selective(src, slen, dst, slen + SPACE_FOR_NULL, 0);
+    kiwi_url_decode_selective(src, slen, dst, slen + SPACE_FOR_NULL, fewer_encoded);
 	return dst;
 }
 
@@ -774,9 +827,9 @@ void str_hash_init(const char *id, str_hash_t *hashp, str_hashes_t *hashes, bool
     
     // skip hashes[0] entry because that contains key = HASH_MISS = 0
     
-    // increase hash length (#chars summed from end of strings) until hashes become unique
+    // increase hash length (#chars hashed from end of strings) until hashes become unique
     for (hash_len = 1; hash_len <= hashp->max_hash_len; hash_len++) {
-        int hash_start = hashp->max_hash_len-hash_len;
+        int hash_start = hashp->max_hash_len - hash_len;
         for (str_hashes_t *h1 = &hashes[1]; h1->name; h1++) {
             u4_t hash = 0;
             for (cidx = hashp->max_hash_len-1; cidx >= hash_start; cidx--) {
@@ -799,12 +852,14 @@ void str_hash_init(const char *id, str_hash_t *hashp, str_hashes_t *hashes, bool
         if (okay) break;
     }
     
-    if (!okay) {
-        printf("str_hash_init(%s): hash failure information follows\n", id);
+    #define SHOW_HASH_INFO 0
+    if (!okay || SHOW_HASH_INFO) {
+        printf("str_hash_init(%s): hash %sinformation follows\n", id, !okay? "failure " : "");
         
         for (hash_len = 1; hash_len <= hashp->max_hash_len; hash_len++) {
-            int hash_start = hashp->max_hash_len-hash_len;
-            printf("str_hash_init(%s): hash_len=%d --------------------------------\n", id, hash_len);
+            int hash_start = hashp->max_hash_len - hash_len;
+            printf("str_hash_init(%s): --- hash_len=%d/%d --------------------------------\n",
+                id, hash_len, hashp->max_hash_len);
             for (str_hashes_t *h1 = &hashes[1]; h1->name; h1++) {
                 u4_t hash = 0;
                 for (cidx = hashp->max_hash_len-1; cidx >= hash_start; cidx--) {
@@ -827,16 +882,22 @@ void str_hash_init(const char *id, str_hash_t *hashp, str_hashes_t *hashes, bool
             }
 
             for (str_hashes_t *h = &hashes[1]; h->name; h++) {
-                printf("str_hash_init(%s): key=%d hash=0x%04x \"%s\"\n", id, h->key, h->hash, h->name);
+                printf("str_hash_init(%s): key=%02d hash \"%s\"(0x%04x) [\"%s\"]\n",
+                    id, h->key, h->name + hash_start, h->hash, h->name);
             }
 
             printf("str_hash_init(%s): for hash_len=%d collisions=%d maxval=%d bits_required=%d\n",
                 id, hash_len, collisions, maxval, bits_required(maxval));
+            
+            if (!collisions)
+                break;
         }
 
-        printf("str_hash_init(%s): no unique hashes within max_hash_len=%d limit\n",
-            id, hashp->max_hash_len);
-        panic("str_hash_init");
+        if (!okay) {
+            printf("str_hash_init(%s): no unique hashes within max_hash_len=%d limit\n",
+                id, hashp->max_hash_len);
+            panic("str_hash_init");
+        }
     }
     
     // the maximum hash value determines how large the lookup table must be

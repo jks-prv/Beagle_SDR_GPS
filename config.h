@@ -53,7 +53,8 @@ extern int fw_sel, fpga_id, rx_chans, wf_chans, nrx_bufs, nrx_samps, nrx_samps_l
 
 #define	STATS_INTERVAL_SECS			10
 
-#define PHOTO_UPLOAD_MAX_SIZE (2*M)
+#define PHOTO_UPLOAD_MAX_SIZE   (2*M)
+#define DX_UPLOAD_MAX_SIZE      (2*M)
 
 typedef struct {
 	const char *param, *value;
