@@ -1276,6 +1276,9 @@ function dx_html()
 	if (!dx.enabled)
 	   return w3_div('id-dx w3-hide', w3_div('w3-container w3-margin-top', 'TODO..'));
 	
+	if (kiwi_isMobile())
+	   return w3_div('id-dx w3-hide', w3_div('w3-container w3-margin-top', 'Not available on mobile devices.'));
+	
 	// one-time conversion of kiwi.config/config.js bands[] to kiwi.json configuration file
 	if (isUndefined(cfg.bands) || isUndefined(cfg.band_svc) || isUndefined(cfg.dx_type)) {
       bandwidth = [30, 32][cfg.max_freq] * 1e6;
