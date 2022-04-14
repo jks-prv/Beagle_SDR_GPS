@@ -63,9 +63,9 @@ void dx_save_as_json()
 	int sb_len = 0;
 
 	for (i=0, dxp = dx.stored_list; i < dx.stored_len; i++, dxp++) {
-	    char *ident = kiwi_str_decode_selective_inplace(strdup(dxp->ident));
-	    char *notes = dxp->notes? kiwi_str_decode_selective_inplace(strdup(dxp->notes)) : strdup("");
-	    char *params = (dxp->params && *dxp->params)? kiwi_str_decode_selective_inplace(strdup(dxp->params)) : NULL;
+	    char *ident = kiwi_str_decode_selective_inplace(strdup(dxp->ident), FEWER_ENCODED);
+	    char *notes = dxp->notes? kiwi_str_decode_selective_inplace(strdup(dxp->notes), FEWER_ENCODED) : strdup("");
+	    char *params = (dxp->params && *dxp->params)? kiwi_str_decode_selective_inplace(strdup(dxp->params), FEWER_ENCODED) : NULL;
 	    
 	    sb = kstr_asprintf(NULL, "[%.2f, \"%s\", \"%s\", \"%s\"",
 	        dxp->freq, modu_s[dxp->flags & DX_MODE], ident, notes);
@@ -92,7 +92,7 @@ void dx_save_as_json()
 			*/
 			
 			if (type) {
-			    sb = kstr_asprintf(sb, "%s\"T%d\":1", delim, (type & DX_TYPE) >> DX_TYPE_SFT);
+			    sb = kstr_asprintf(sb, "%s\"T%d\":1", delim, DX_STORED_TYPE2IDX(type));
 			    delim = ", ";
 			}
 

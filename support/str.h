@@ -51,7 +51,6 @@ char *kiwi_str_encode(char *s, bool alt=FALSE);
 char *kiwi_str_encode_static(char *src, bool alt=FALSE);
 char *kiwi_str_decode_inplace(char *src);
 char *kiwi_str_decode_static(char *src, int which=0);
-char *kiwi_str_decode_selective_inplace(char *src);
 char *kiwi_str_clean(char *s);
 int kiwi_str2enum(const char *s, const char *strs[], int len);
 const char *kiwi_enum2str(int e, const char *strs[], int len);
@@ -64,6 +63,9 @@ int kiwi_strnlen(const char *s, int limit);
 char *kiwi_strncpy(char *dst, const char *src, size_t n);
 char *kiwi_strncat(char *dst, const char *src, size_t n);
 bool kiwi_sha256_strcmp(char *str, const char *key);
+
+enum { FEWER_ENCODED = true };
+char *kiwi_str_decode_selective_inplace(char *src, bool fewer_encoded = false);
 
 enum { KSPLIT_NO_SKIP_EMPTY_FIELDS = 0x1, KSPLIT_HANDLE_EMBEDDED_DELIMITERS = 0x2 };
 int kiwi_split(char *ocp, char **mbuf, const char *delims, char *argv[], int nargs, int flags = 0);

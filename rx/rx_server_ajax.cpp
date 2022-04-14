@@ -91,7 +91,7 @@ static bool _dx_parse_csv_field(int type, char *field, void *val, bool *empty = 
                 // replace beginning and ending " into something that won't get encoded (restore below)
                 s[0] = 'x';
                 s[sl-1] = 'x';
-                s = kiwi_str_decode_selective_inplace(kiwi_str_encode(s));
+                s = kiwi_str_decode_selective_inplace(kiwi_str_encode(s), FEWER_ENCODED);
                 sl = strlen(s);
                 s[0] = '"';
                 s[sl-1] = '"';
@@ -289,7 +289,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
         } else
 
         // convert CSV data to JSON before writing dx.json file
-        // freq kHz;mode;ident;notes;extension;type;pb lo;pb hi;offset;dow;begin;end
+        // Freq kHz;Mode;Ident;Notes;Extension;Type;Passband low;Passband high;Offset;DOW;Begin;End
         if (strcmp(vname, "csv") == 0) {
             type = TYPE_CSV;
             #define NS_SIZE 256
@@ -330,7 +330,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
                 if (n != 12) { rc = 10; goto fail; }
                 
                 // skip what looks like a CSV field legend
-                if (line != 0 || strncmp(qs[0], "freq", 4) != 0) {
+                if (line != 0 || strncasecmp(qs[0], "freq", 4) != 0) {
                     sb3 = NULL;
                     bool empty, ext_empty;
 

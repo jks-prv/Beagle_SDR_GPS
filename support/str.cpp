@@ -551,30 +551,32 @@ char *kiwi_str_decode_static(char *src, int which)
 	return dst_static[which];
 }
 
+// = 1 encode only if fewer_encoded == false
+// = 2 always encode
 static u1_t decode_table[128] = {
-//  (ctrl)
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+//  (ctrl)                              always % encoded: 00 - 1f
+    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
 
 //  (ctrl)
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
 
 //    ! " # $ % & ' ( ) * + , - . /     still % encoded: "22 %25 &26 '27 +2b
-    1,1,0,1,1,0,0,0,1,1,1,0,1,1,1,1,
+    0,0,2,0,0,2,1,1,0,0,0,1,0,0,0,0,
 
 //  0 1 2 3 4 5 6 7 8 9 : ; < = > ?     still % encoded: ;3b <3c >3e
-    1,1,1,1,1,1,1,1,1,1,1,0,0,1,0,1,
+    0,0,0,0,0,0,0,0,0,0,0,1,1,0,1,0,
 
 //  @ (alpha)
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 
 //  (alpha)               [ \ ] ^ _     still % encoded: \5c
-    1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,
+    0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,
 
 //  ` (alpha)                           still % encoded: `60
-    0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 
 //  (alpha)               { | } ~ del   still % encoded: del 7f
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,
 };
 
 // Like mg_url_decode(), but only decodes chars not likely to cause trouble.
@@ -582,49 +584,51 @@ static u1_t decode_table[128] = {
 //
 // This is typically called on a fully-encoded string (via encodeURIComponent() or mg_url_encode())
 // before it is saved in one of the .json files.
-static int kiwi_url_decode_selective(const char *src, int src_len, char *dst,
-    int dst_len, int is_form_url_encoded)
+static void kiwi_url_decode_selective(const char *src, int src_len, char *dst,
+    int dst_len, bool fewer_encoded = false)
 {
     int i, j, a, b;
     u1_t c;
     #define HEXTOI(x) (isdigit(x) ? x - '0' : x - 'W')
 
+    //if (fewer_encoded) printf("%s\n", src);
     for (i = j = 0; i < src_len && j < dst_len - 1; i++, j++) {
-        if (src[i] == '%' && i < src_len - 2 &&
+        //if (fewer_encoded)
+            //printf("i%d j%d sl%d dl%d '%c'0x%02x\n", i, j, src_len, dst_len, src[i], src[i]);
+        if (src[i] == '%' && i + 2 < src_len &&
             isxdigit(* (const unsigned char *) (src + i + 1)) &&
             isxdigit(* (const unsigned char *) (src + i + 2))) {
             
             a = tolower(* (const unsigned char *) (src + i + 1));
             b = tolower(* (const unsigned char *) (src + i + 2));
+            
+             // preserve UTF-8 encoding values >= 0x80!
             c = (u1_t) (HEXTOI(a) << 4) | HEXTOI(b);
-            if (c < 0x80 && decode_table[c]) {      // preserve UTF-8 encoding values >= 0x80!
+            if (c < 0x80 && (decode_table[c] == 0 || (fewer_encoded && decode_table[c] == 1))) {
                 dst[j] = c;
                 i += 2;
+                //if (fewer_encoded) printf("replace %%xx with: '%c'0x%02x\n", c, c);
             } else {
                 dst[j] = '%';
+                //if (fewer_encoded && c < 0x80 && decode_table[c] == 2)
+                    //printf("=> keeping %% encoding for '%c'0x%02x\n", c, c);
             }
-        } else
-        
-        if (is_form_url_encoded && src[i] == '+') {
-            dst[j] = ' ';
         } else {
             dst[j] = src[i];
         }
     }
 
     dst[j] = '\0'; // Null-terminate the destination
-
-    return i >= src_len ? j : -1;
 }
 
-char *kiwi_str_decode_selective_inplace(char *src)
+char *kiwi_str_decode_selective_inplace(char *src, bool fewer_encoded)
 {
 	if (src == NULL) return NULL;
 	int slen = strlen(src);
 	char *dst = src;
     // dst = src is okay because length dst always <= src since we are decoding
     // yes, kiwi_url_decode_selective() dst length includes SPACE_FOR_NULL
-    kiwi_url_decode_selective(src, slen, dst, slen + SPACE_FOR_NULL, 0);
+    kiwi_url_decode_selective(src, slen, dst, slen + SPACE_FOR_NULL, fewer_encoded);
 	return dst;
 }
 

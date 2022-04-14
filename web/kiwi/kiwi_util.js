@@ -169,6 +169,11 @@ function ord(c, base)
       return c.charCodeAt(0);
 }
 
+function chr(i)
+{
+   return String.fromCharCode(i);
+}
+
 function sq(s)
 {
 	return '\''+ s +'\'';
@@ -623,35 +628,75 @@ function kiwi_decodeURIComponent(id, uri)
    return obj;
 }
 
+kiwi_util.str_recode_lookup = [];
+var e1 = function(c) { kiwi_util.str_recode_lookup[ord(c)] = 1; }
+var e2 = function(c) { kiwi_util.str_recode_lookup[ord(c)] = 2; }
+var er = function(r1, r2, v) {
+   for (var i = r1; i <= r2; i++)
+      kiwi_util.str_recode_lookup[i] = v;
+}
+er(0, 127, 0);
+e1('&'); e1("'"); e1('+'); e1(';'); e1('<'); e1('>'); e1('`');
+e2('"'); e2('%'); e2('\\');
+er(0x00, 0x1f, 2); er(0x7f, 0x7f, 2);
+//console.log(kiwi_util.str_recode_lookup);
+
+/*
+
+XXX This doesn't work because of UTF-8!
+      Like server-side, needs to be done on already %-encoded UTF-8 bytes
+
 // Equivalent of server side kiwi_url_decode_selective() except
 // that it works in the opposite direction, i.e. encoding un-encoded strings.
 // Encodes a more limited set of characters than encodeURIComponent()
 // to help with readability of the various configuration files.
 
-kiwi_util.str_encode_lookup = [];
-var e = function(c) { kiwi_util.str_encode_lookup[ord(c)] = 1; }
-e('"'); e('%'); e('&'); e("'"); e('+'); e(';'); e('<'); e('>'); e('\\'); e('`');
-var ev = function(v1, v2) {
-   v2 = v2 || v1;
-   for (var i = v1; i <= v2; i++)
-      kiwi_util.str_encode_lookup[i] = 1;
-}
-ev(0x00, 0x1f); ev(0x7f);
-//console.log(kiwi_util.str_encode_lookup);
-
-function kiwi_str_encode_selective(s)
+function kiwi_str_encode_selective(s, fewer_encoded)
 {
    var d = '';
    
    for (var i = 0; i < s.length; i++) {
       var c = s[i];
       var n = ord(c);
-      if (kiwi_util.str_encode_lookup[n]) d += '%'+ n.toHex(-2); else d += c;
+      var lu = kiwi_util.str_recode_lookup[n];
+      if ((fewer_encoded && lu == 2) || (!fewer_encoded && lu != 0))
+         d += '%'+ n.toHex(-2); else d += c;
    }
    
    return d;
 }
-//console.log(kiwi_str_encode_selective('ABC!@#$^*()_-={}[]|:,./?~   "%&\'+;<>\\`XYZ'+ String.fromCharCode(0, 1, 0x1f, 0x7f)));
+console.log(kiwi_str_encode_selective('ABC!@#$^*()_-={}[]|:,./?~   "%&\'+;<>\\`XYZ'+ String.fromCharCode(0, 1, 0x1f, 0x7f, 0x80)));
+*/
+
+// js version of service-side kiwi_url_decode_selective()
+function kiwi_str_decode_selective_inplace(src, fewer_encoded)
+{
+   var i, dst = '';
+   var src_len = src.length;
+   var dst_len = src.length + 1;
+   var hex_digit = /[0-9a-fA-F]/;
+   
+    for (i = 0; i < src_len; i++) {
+        if (src[i] == '%' && i + 2 < src_len &&
+            src[i + 1].match(hex_digit) &&
+            src[i + 2].match(hex_digit)) {
+            
+            var c = (parseInt(src[i+1], 16) << 4) | parseInt(src[i+2], 16);
+            
+             // preserve UTF-8 encoding values >= 0x80!
+            if (c < 0x80 && (kiwi_util.str_recode_lookup[c] == 0 || (fewer_encoded && kiwi_util.str_recode_lookup[c] == 1))) {
+                dst += chr(c);
+                i += 2;
+            } else {
+                dst += '%';
+            }
+        } else {
+            dst += src[i];
+        }
+    }
+
+   return dst;
+}
 
 function kiwi_JSON_parse(tag, json)
 {
