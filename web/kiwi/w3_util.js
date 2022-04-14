@@ -1255,26 +1255,21 @@ function w3_psa3(psa3)
 {
    //if (psa3.includes('w3-dump')) console.log('w3_psa3 in=['+ psa3 +']');
    psa3 = psa3 || '';
-   arr = psa3.split('/');
-   //if (psa3.includes('w3-dump')) console.log(arr);
-   if (arr.length == 1)
-      return { left:'', middle:'', right:arr[0] };
+   a = psa3.split('/');
+   var a0 = (a[0] || '').replace('&slash;', '/');
+   var a1 = (a[1] || '').replace('&slash;', '/');
+   var a2 = (a[2] || '').replace('&slash;', '/');
+   //if (psa3.includes('w3-dump')) console.log(a);
+
+   if (a.length == 1)
+      return { left:'', middle:'', right:a0 };
    else
-   if (arr.length == 2)
-      return { left:'', middle:arr[0], right:arr[1] };
+   if (a.length == 2)
+      return { left:'', middle:a0, right:a1};
    else
-   if (arr.length == 3)
-      return { left:arr[0], middle:arr[1], right:arr[2] };
+   if (a.length == 3)
+      return { left:a0, middle:a1, right:a2 };
    else
-   
-   // hack for when attribute of right part contains embedded '/'
-   // e.g. accept="image/*"
-   // FIXME: fails when the '/' is part of the left or middle parts
-   if (arr.length >= 4) {
-      var arr2 = kiwi_dup_array(arr);
-      arr2.splice(0,2);
-      return { left:arr[0], middle:arr[1], right:arr2.join('/') };
-   } else
       return { left:'', middle:'', right:'' };
 }
 
@@ -1342,7 +1337,7 @@ function w3_psa(psa, extra_prop, extra_style, extra_attr)
 	if (extra_style) style = w3_sbew(';', style, extra_style);
 	if (style != '') psa = w3_sb(psa, 'style='+ dq(style));
 
-	var attr = a[2] || '';
+	var attr = (a[2] || '').replace('&vbar;', '|');    // e.g. title="foo&vbar;bar" => title="foo|bar"
 	if (extra_attr) attr = w3_sb(attr, extra_attr);
 	if (attr != '') psa = w3_sb(psa, attr);
 
@@ -1369,7 +1364,7 @@ function w3_psa_mix(psa, extra_prop, extra_style, extra_attr)
 	if (extra_style) style = w3_sbew(';', style, extra_style);
    if (dump) console.log('mixed style=['+ style +']');
 
-	var attr = a[2] || '';
+	var attr = a[2] || '';     // NB: don't do &vbar; => | expansion here since output is in psa format
    if (dump) console.log('attr=['+ attr +']');
    if (dump) console.log('extra_attr=['+ extra_attr +']');
 	if (extra_attr) attr = w3_sb(attr, extra_attr);
@@ -1926,6 +1921,12 @@ function w3int_button(psa, path, text, cb, cb_param)
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left);
 	var psa_inner = w3_psa(psa3.right, path +' w3-btn w3-ext-btn'+ default_style, '', onclick);
+   if (psa.includes('w3-dump')) {
+      console.log('w3_button');
+      console.log(psa3);
+      console.log('psa_outer='+ psa_outer);
+      console.log('psa_inner='+ psa_inner);
+   }
 	var s = '<button '+ psa_inner +'>'+ text +'</button>';
 	if (psa_outer != '') s = '<div '+ psa_outer +'>'+ s +'</div>';
 	if (psa_outer.includes('w3-dump')) console.log(s);
@@ -2439,7 +2440,7 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb, cb_param)
 	return s;
 }
 
-function w3int_select_options(sel, opts)
+function w3int_select_options(sel, opts, show_empty)
 {
    var s = '';
    
@@ -2471,7 +2472,7 @@ function w3int_select_options(sel, opts)
             //var keys = Object.keys(obj);
             //obj = obj[keys[0]];
             var hasName = isDefined(obj.name);
-            if (hasName && obj.name == '') return;
+            if (hasName && !show_empty && obj.name == '') return;
             obj = hasName? obj.name : w3_obj_seq_el(obj, 0);
          }
          s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ obj +'</option>';
@@ -2494,7 +2495,9 @@ function w3int_select_options(sel, opts)
          var value, text, disabled = false;
          if (isObject(o)) {
             value = isDefined(o.value)? o.value : i;
-            text = isDefined(o.name)? o.name : key;
+            var hasName = isDefined(obj.name);
+            if (hasName && !show_empty && obj.name == '') return;
+            text = hasName? o.name : key;
             if (isDefined(o.disabled) && o.disabled) disabled = true;
          } else {
             value = i;
@@ -2515,7 +2518,7 @@ function w3int_select_options(sel, opts)
 
 function w3_select(psa, label, title, path, sel, opts, cb, cb_param)
 {
-   var s = w3int_select_options(sel, opts);
+   var s = w3int_select_options(sel, opts, psa.includes('w3-show-empty'));
 	if (psa.includes('w3-dump')) console.log(s);
    return w3int_select(psa, label, title, path, sel, s, cb, cb_param);
 }
