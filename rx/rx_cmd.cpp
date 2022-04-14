@@ -1047,6 +1047,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
     // With 3 params to search for the next label above or below the visible area when label stepping.
     // With 2 params giving the min/max index of the dx table to supply to the admin DX tab.
     // With params associated with dx list searching.
+    // Returning counts of the number of types used.
     
     case CMD_MARKER:
         if (kiwi_str_begins_with(cmd, "SET MARKER")) {
@@ -1157,7 +1158,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 dx_print_search(true, "DX_ADM_SEARCH_IDENT <%s> found #%d\n", ident, pos);
                 send_msg(conn, false, "MSG mkr_search_pos=1,%d", pos);
                 return true;
-            }
+            } else
 
             if (func == DX_ADM_SEARCH_NOTES) {
                 int pos = -1;
@@ -1193,7 +1194,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 send_msg(conn, false, "MSG mkr_search_pos=2,%d", pos);
                 return true;
             }
-
+            
             if (db_stored && dx.stored_len == 0 && func != DX_ADM_MKRS) {
                 send_msg(conn, false, "MSG mkr=[{\"t\":%d}]", DX_MKRS);     // otherwise last marker won't get cleared
                 return true;
@@ -1227,22 +1228,36 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             struct timespec ts;
             clock_gettime(CLOCK_REALTIME, &ts);
             u4_t msec = ts.tv_nsec/1000000;
+            int send = 0;
 
             // reset appending
-            sb = kstr_asprintf(NULL, "[{\"t\":%d,\"n\":%d,\"s\":%ld,\"m\":%d,\"f\":%d,\"pe\":%d,\"fe\":%d,\"l\":%d",
+            sb = kstr_asprintf(NULL, "[{\"t\":%d,\"n\":%d,\"s\":%ld,\"m\":%d,\"f\":%d,\"pe\":%d,\"fe\":%d",
                 func, dx.stored_len, ts.tv_sec, msec, (conn->dx_err_preg_ident? 1:0) + (conn->dx_err_preg_notes? 2:0),
-                dx.json_parse_errors, dx.dx_format_errors, (func == DX_ADM_MKRS && idx2 == dx.stored_len - 1)? 1:0);
+                dx.json_parse_errors, dx.dx_format_errors);
             if (drx->db == DB_EiBi) {
+                sb = kstr_cat(sb, ",\"ec\":[");
                 for (i = 0; i < DX_N_EiBi; i++)
-                    sb = kstr_asprintf(sb, ",\"c%d\":%d", i, eibi_counts[i]);
+                    sb = kstr_asprintf(sb, "%d%s", eibi_counts[i], (i < (DX_N_EiBi-1))? "," : "");
+                sb = kstr_cat(sb, "]");
             }
-            sb = kstr_cat(sb, "}");
-            int send = 0;
-            
+
+            // count of label entries using each type
+            sb = kstr_cat(sb, ",\"tc\":[");
+            int types_n[DX_N_STORED];
+            memset(types_n, 0, sizeof(types_n));
+            dx_t *dp = dx.stored_list;
+            for (i = 0; i < dx.stored_len; i++, dp++) {
+                types_n[DX_STORED_TYPE2IDX(dp->flags)]++;
+            }
+            for (i = 0; i < DX_N_STORED; i++) {
+                sb = kstr_asprintf(sb, "%d%s", types_n[i], (i < (DX_N_STORED-1))? "," : "");
+            }
+            sb = kstr_cat(sb, "]}");
+
             if (func == DX_ADM_MKRS) {
                 dx_t *cur_list = dx.stored_list;
                 int cur_len = dx.stored_len;
-                dx_t *dp = &cur_list[idx1];
+                dp = &cur_list[idx1];
                 for (i = idx1; i <= idx2 && dp < &cur_list[cur_len]; i++, dp++) {
                     u2_t dow = (dp->flags & DX_DOW) >> DX_DOW_SFT;
                     if (dow == 0) {

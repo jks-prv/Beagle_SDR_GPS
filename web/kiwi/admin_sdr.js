@@ -1265,14 +1265,13 @@ function public_update(p)
 
 
 ////////////////////////////////
-// dx
+// dx:
 ////////////////////////////////
 
 function dx_html()
 {
    var i, s;
-   //jksx
-   dx.enabled = dbgUs;
+   dx.enabled = true;
 
 	if (!dx.enabled)
 	   return w3_div('id-dx w3-hide', w3_div('w3-container w3-margin-top', 'TODO..'));
@@ -1293,9 +1292,11 @@ function dx_html()
    dx.SAVE_NOW = true;
    dx.DX_DOW_BASE = dx.DX_DOW >> dx.DX_DOW_SFT;
    dx.spacer = w3_div('w3-font-fixed w3-circle-pad-small w3-pale-blue', '&nbsp;');
+   dx.button_section = 'w3-font-fixed w3-aqua w3-circle w3-circle-pad||title="show&slash;hide section"';
    dx.button_add = 'w3-css-lime||title="duplicate this entry"';
    dx.button_del = 'w3-css-red||title="delete this entry"';
-   dx.link_psa = 'w3-link-darker-color w3-bold||title="more information"';
+   dx.link1 = 'w3-link-darker-color w3-bold||title="more information"';
+   dx.link2 = 'w3-link-darker-color w3-bold|width:175px|title="more information"';
    dx.hover_over =
       w3_inline('w3-valign',
          w3_text('w3-margin-left w3-text-black', 'Hover over'),
@@ -1303,8 +1304,10 @@ function dx_html()
          w3_text('w3-text-black', '&nbsp;for info')
       );
 
-   dx.export_label = 'Export: '+ w3_icon('id-dx-export-info w3-link-darker-color w3-help', 'fa-info-circle', 20);
-   dx.import_label = 'Import: '+ w3_icon('id-dx-import-info w3-link-darker-color w3-help', 'fa-info-circle', 20);
+   dx.export_label = 'Export: '+ w3_icon('id-dx-export-info w3-link-darker-color w3-help' +
+      '||title="Export (download) DX labels from Kiwi\nto a file on this computer.\nFiles can be in JSON or CSV format."', 'fa-info-circle', 20);
+   dx.import_label = 'Import: '+ w3_icon('id-dx-import-info w3-link-darker-color w3-help' +
+      '||title="Import (upload) DX labels from a file\non this computer to Kiwi.\nFiles can be in JSON or CSV format."', 'fa-info-circle', 20);
    
    // for search wrap
    s =
@@ -1323,8 +1326,8 @@ function dx_html()
          // dx labels
          w3_inline('w3-margin-T-16 w3-halign-space-between/',
             w3_inline('/w3-margin-between-16 w3-valign',
-               w3_button('w3-font-fixed w3-aqua w3-circle w3-circle-pad', '-', 'dx_expand_cb', 0),
-               w3_link(dx.link_psa, 'http://kiwisdr.com/quickstart/index.html#id-config-DX-list', 'DX labels'),
+               w3_button(dx.button_section, '-', 'dx_expand_cb', 0),
+               w3_link(dx.link1, 'http://kiwisdr.com/quickstart/index.html#id-config-DX-list', 'DX labels'),
                w3_text('id-dx-list-saved w3-margin-left w3-padding-medium w3-text-black w3-hide', 'Changes saved')
             ),
             w3_inline('/w3-margin-between-16 w3-valign',
@@ -1342,9 +1345,11 @@ function dx_html()
                w3_text('w3-padding-medium w3-padding-R-0 w3-text-teal w3-bold', 'Search:'),
                w3_input('w3-text-black/w3-label-inline/w3-padding-small w3-retain-input-focus|width:75px|title="finds nearest freq"',
                   'Freq', 'dx.o.search_f', '', 'dx_search_freq_cb'),
-               w3_input('w3-text-black/w3-label-inline/w3-padding-small w3-retain-input-focus w3-input-any-change|width:150px|title="search nearest freq"',
+               w3_input('w3-text-black/w3-label-inline/w3-padding-small w3-retain-input-focus w3-input-any-change|width:150px' +
+                  '|title="Search ident fields.\nUse return&slash;enter key to find next. Wraps."',
                   'Ident', 'dx.o.search_i', '', 'dx_search_ident_cb'),
-               w3_input('w3-text-black/w3-label-inline/w3-padding-small w3-retain-input-focus w3-input-any-change|width:150px',
+               w3_input('w3-text-black/w3-label-inline/w3-padding-small w3-retain-input-focus w3-input-any-change|width:150px' +
+                  '|title="Search notes fields.\nUse return&slash;enter key to find next. Wraps."',
                   'Notes', 'dx.o.search_n', '', 'dx_search_notes_cb')
             )
          ),
@@ -1358,8 +1363,11 @@ function dx_html()
          // dx type menu
          w3_inline('w3-margin-T-24 w3-halign-space-between/',
             w3_inline('/w3-margin-between-16 w3-valign',
-               w3_button('w3-font-fixed w3-aqua w3-circle w3-circle-pad', '+', 'dx_expand_cb', 1),
-               w3_link(dx.link_psa, 'http://kiwisdr.com/quickstart/index.html#id-config-DX-type', 'DX type menu'),
+               w3_button(dx.button_section, '+', 'dx_expand_cb', 1),
+               w3_link(dx.link2, 'http://kiwisdr.com/quickstart/index.html#id-config-DX-type', 'DX type menu'),
+               w3_text('w3-margin-left w3-text-black',
+                  'Defines content of <b>Type</b> menu in <i>DX labels</i> section above.<br>' +
+                  'Follow link at left for important info before making changes.'),
                w3_text('id-dx-type-saved w3-margin-left w3-padding-medium w3-text-black w3-hide', 'Changes saved')
             ),
             dx.hover_over
@@ -1373,8 +1381,11 @@ function dx_html()
          // band bars
          w3_inline('w3-margin-T-24 w3-halign-space-between/',
             w3_inline('/w3-margin-between-16 w3-valign',
-               w3_button('w3-font-fixed w3-aqua w3-circle w3-circle-pad', '+', 'dx_expand_cb', 2),
-               w3_link(dx.link_psa, 'http://kiwisdr.com/quickstart/index.html#id-config-band-bars', 'Band bars'),
+               w3_button(dx.button_section, '+', 'dx_expand_cb', 2),
+               w3_link(dx.link2, 'http://kiwisdr.com/quickstart/index.html#id-config-band-bars', 'Band bars'),
+               w3_text('w3-margin-left w3-text-black',
+                  'Defines content of band bars and <b>select band</b> menu on user page.<br>' +
+                  'Follow link at left for important info before making changes.'),
                w3_text('id-band-bar-saved w3-margin-left w3-padding-medium w3-text-black w3-hide', 'Changes saved')
             ),
             dx.hover_over
@@ -1388,8 +1399,11 @@ function dx_html()
          // band service menu
          w3_inline('w3-margin-TB-24 w3-halign-space-between/',
             w3_inline('/w3-margin-between-16 w3-valign',
-               w3_button('w3-font-fixed w3-aqua w3-circle w3-circle-pad', '+', 'dx_expand_cb', 3),
-               w3_link(dx.link_psa, 'http://kiwisdr.com/quickstart/index.html#id-config-band-svc', 'Band service menu'),
+               w3_button(dx.button_section, '+', 'dx_expand_cb', 3),
+               w3_link(dx.link2, 'http://kiwisdr.com/quickstart/index.html#id-config-band-svc', 'Band service menu'),
+               w3_text('w3-margin-left w3-text-black',
+                  'Defines content of <b>Service</b> menu in <i>Band bars</i> section above.<br>' +
+                  'Follow link at left for important info before making changes.'),
                w3_text('id-band-svc-saved w3-margin-left w3-padding-medium w3-text-black w3-hide', 'Changes saved')
             ),
             dx.hover_over
@@ -1399,13 +1413,6 @@ function dx_html()
             w3_div('id-band-svc-list w3-margin-bottom w3-padding-B-8 w3-black-box w3-scroll-y|height:'+ vh)
          )
       );
-
-   
-   // e.g. title="...\n..." with embedded \n or <br> can't be specified inline above
-   w3_do_when_rendered('id-dx', function() {
-      w3_title('id-dx-export-info', 'Export (download) DX labels from Kiwi\nto a file on this computer.\nFiles can be in JSON or CSV format.');
-      w3_title('id-dx-import-info', 'Import (upload) DX labels from a file\non this computer to Kiwi.\nFiles can be in JSON or CSV format.');
-   });
 
    //console.log(s);
    return s;
@@ -1509,7 +1516,7 @@ function dx_save(id, now)
 function dx_btn(c) { return 'w3-font-fixed w3-circle w3-circle-pad-small '+ c; }
 
 
-// dx labels
+// dx: labels
 
 // called in response to "admin_mkr=" sent from server processing "SET MARKER idx1= idx2="
 function dx_render(obj)
@@ -1537,6 +1544,16 @@ function dx_render(obj)
       el.innerHTML = 'Warning: dx.json file has '+ (hdr.pe + hdr.fe) +' labels with errors -- see Kiwi log tab for details';
       w3_show(el);
    }
+   
+   // show "Tn" in type menu entries that are otherwise blank but have list entry users
+   var type_menu = kiwi_deep_copy(cfg.dx_type);
+   for (i = 0; i < dx.DX_N_STORED; i++) {
+      if (hdr.tc[i] != 0 && type_menu[i].name == '') {
+         type_menu[i].name = '(T'+ i +')';    // make placeholder entry in menu, but not cfg.dx_type
+         //console.log('empty type menu entry: T'+ i +' #'+ hdr.tc[i]);
+      }
+   }
+   //console.log(type_menu);
    
    var new_len = +hdr.n;
    var cur_len = dx.o.len;
@@ -1646,7 +1663,7 @@ function dx_render(obj)
             w3_input(h('w3-padding-small||size=8'), l('Freq kHz'), 'dx.o.fr_'+i, freq, 'dx_num_cb'), 19,
             w3_select(h('w3-text-red'), l('Mode'), '', 'dx.o.fm_'+i, mo, kiwi.modes_u, 'dx_sel_cb'), 15,
             w3_input(h('w3-padding-small||size=4'), l('Passband Hz'), 'dx.o.pb_'+i, pb, 'dx_passband_cb'), 25,
-            w3_select(h('w3-text-red'), l('Type'), '', 'dx.o.ft_'+i, ty, cfg.dx_type, 'dx_sel_cb'), 25,
+            w3_select(h('w3-text-red'), l('Type'), '', 'dx.o.ft_'+i, ty, type_menu, 'dx_sel_cb'), 25,
             w3_input(h('w3-padding-small||size=2'), l('Offset Hz'), 'dx.o.o_'+i, os, 'dx_num_cb'), 18,
             w3_input(h('w3-padding-small'), l('Ident'), 'dx.o.i_'+i, id, 'dx_string_cb'), 40,
             w3_input(h('w3-padding-small'), l('Notes'), 'dx.o.n_'+i, no, 'dx_string_cb'), 40,
@@ -1684,7 +1701,7 @@ function dx_render(obj)
                w3_input('w3-label-inline/w3-padding-small', 'End', 'dx.o.e_'+i, end_s, 'dx_sched_time_cb'), 9
             );
          
-         console.log('i='+ i +' j='+ j +' dx.open_sched='+ dx.open_sched +' dx.o.len='+ dx.o.len);
+         //console.log('i='+ i +' j='+ j +' dx.open_sched='+ dx.open_sched +' dx.o.len='+ dx.o.len);
          if (dx.open_sched == dx.o.len - 1) {
             scroll_to_bottom = true;
          }
@@ -1713,7 +1730,7 @@ function dx_render(obj)
    
    if (dx.o.search_result) {
       //console.log('YELLOW idx='+ dx.o.search_result.idx);
-      w3_add('dx.o.'+ (['f_', 'i_', 'n_'][dx.o.search_result.which]) + dx.o.search_result.idx, 'w3-css-yellow');
+      w3_add('dx.o.'+ (['fr_', 'i_', 'n_'][dx.o.search_result.which]) + dx.o.search_result.idx, 'w3-css-yellow');
       
       // keep highlight through back-to-back dx_render() calls
       setTimeout(function() { dx.o.search_result = null; }, 500);
@@ -1766,7 +1783,6 @@ function dx_update_admin()
 {
    var pos = w3_scrolledPosition('id-dx-list');
    console.log('dx_update_admin: pos='+ pos);
-kiwi_trace();
    dx_list_scroll_done(pos);
 }
 
@@ -1839,7 +1855,6 @@ function dx_search_pos_cb(p)
    var p = p.split(',');
    var which = +p[0];
    var idx = +p[1];
-   //var wrap = +p[2];
 
    if (idx < 0) {
       //console.log('dx_search_pos_cb NOT FOUND idx=-1');
@@ -1903,6 +1918,7 @@ function dx_export_cb2(obj)
    //console.log('dx_export_cb2 n='+ obj[0].n +' len='+ len +'('+ obj[1].g +','+ obj[len].g +')');
    //console.log(obj);
    //console.log(JSON.stringify(obj));
+   var dx_dq = function(s) { return dq(kiwi_str_decode_selective_inplace(s, true)); };
    
    // create a JSON format file that exactly matches what server-side dx_save_as_json() produces
    if (dx.export_which == dx.DX_JSON) {
@@ -1914,15 +1930,15 @@ function dx_export_cb2(obj)
          var comma = last? '' : ',';
          var freq = o.f.toFixed(2);
          var mode = dq(kiwi.modes_u[o.fl & dx.DX_MODE]);
-         var ident = dq(kiwi_str_encode_selective(kiwi_decodeURIComponent('', o.i)));
-         var notes = o.n? dq(kiwi_str_encode_selective(kiwi_decodeURIComponent('', o.n))) : '""';
+         var ident = dx_dq(o.i);
+         var notes = o.n? dx_dq(o.n) : '""';
          
          var opt = '';
          var type = (o.fl & dx.DX_TYPE) >> dx.DX_TYPE_SFT;
          type = type? (dq('T'+ type) +':1') : '';
          var pb = (o.lo != 0 || o.hi != 0)? (dqc('lo') + o.lo +', '+  dqc('hi') + o.hi) : '';
          var off = o.o? (dqc('o') + o.o) : '';
-         var ext = (o.p && o.p != '')? (dqc('p') + dq(kiwi_str_encode_selective(kiwi_decodeURIComponent('', o.p)))) : '';
+         var ext = (o.p && o.p != '')? (dqc('p') + dx_dq(o.p)) : '';
          var dow = (o.fl & dx.DX_DOW);
          dow = (dow != 0 && dow != dx.DX_DOW)? (dqc('d0') + (dow >> dx.DX_DOW_SFT)) : '';
          var begin = o.b, end = o.e;
@@ -1939,7 +1955,7 @@ function dx_export_cb2(obj)
       
       obj.forEach(function(o, i) {
          if (i == 0) {
-            dx.export_s_a[0] = 'freq kHz;mode;ident;notes;extension;type;pb lo;pb hi;offset;dow;begin;end\n';
+            dx.export_s_a[0] = 'Freq kHz;"Mode";"Ident";"Notes";"Extension";"Type";PB low;PB high;Offset;"DOW";Begin;End\n';
             return;
          }
          var gid = o.g;
@@ -1968,9 +1984,6 @@ function dx_export_cb2(obj)
             end = "'"+ end.toFixed(0).leadingZeros(4);
          }
 
-         // per spreadsheet standards: escape double-quotes inside quoted strings by doing a double-up
-         // stackoverflow.com/questions/43273976/escaping-quotes-and-delimiters-in-csv-files-with-excel
-         var dx_dq = function(s) { return dq(kiwi_decodeURIComponent('dx_dq', s).replace(re_dq_g, '""')); };
          var ident = (o.i != '')? dx_dq(o.i) : '';
          var notes = o.n? dx_dq(o.n) : '';
          var ext = o.p? dx_dq(o.p) : '';
@@ -2144,7 +2157,7 @@ function dx_file_uploaded(o)
 }
 
 
-// dx type menu
+// dx: type menu
 
 function dx_type_render()
 {
@@ -2153,13 +2166,13 @@ function dx_type_render()
    var s_a = [];
    var icon = 'w3-link-darker-color w3-help';
    var i_psa = 'w3-margin-L-8 w3-center w3-bold|width:60px';
-   var type_i = 'typ bar baz\none two xxx';
-   var type_l = 'Code '+ w3_icon(icon +'||title='+ dq(type_i), 'fa-info-circle', 20);
-   var name_i = 'typ bar baz\none two xxx';
-   var name_l = 'Menu item name '+ w3_icon(icon +'||title='+ dq(name_i), 'fa-info-circle', 20);
-   var color_i = 'typ bar baz\none two xxx';
+   var type_i = 'The code appearing in the\ntype field of the dx.json file.';
+   var type_l = 'Type '+ w3_icon(icon +'||title='+ dq(type_i), 'fa-info-circle', 20);
+   var name_i = 'The menu entry names. The ordering here determines\nthe ordering of entries in the menu. See instructions.';
+   var name_l = 'Menu entry name '+ w3_icon(icon +'||title='+ dq(name_i), 'fa-info-circle', 20);
+   var color_i = 'An HTML color specification, including\ncolor name, hex or HSL value etc.';
    var color_l = 'HTML color name '+ w3_icon(icon +'||title='+ dq(color_i), 'fa-info-circle', 20);
-   var test_i = 'typ bar baz\none two xxx';
+   var test_i = 'How the colors of the labels with\nthis type value should appear.';
    var test_l = 'Test '+ w3_icon(icon +'||title='+ dq(test_i), 'fa-info-circle', 20);
 
    for (var i = -1; i < cfg.dx_type.length; i++) {
@@ -2169,7 +2182,7 @@ function dx_type_render()
       // done this way so all the s_new code can be reused to construct the legend
       var h = function(psa) { return legend? 'w3-hide' : psa; }
       var l = function(label) { return legend? label : ''; }
-      var i_s = (i < 1)? w3_label(i_psa, (legend? type_l : '')) : w3_div(i_psa, 'T'+ i.toFixed(0));
+      var i_s = legend? w3_label(i_psa, type_l) : w3_div(i_psa, 'T'+ i.toFixed(0));
       var masked = (i == cfg.dx_type.length - 1);
       var input_psa = w3_psa_mix('w3-padding-small||size=8', masked? 'w3-cursor-not-allowed':'', '', masked? 'disabled':'');
    
@@ -2257,7 +2270,7 @@ function dx_type_field_cb(path, val, first, a_cb)
 }
 
 
-// band bars
+// dx: band bars
 
 function band_bar_render()
 {
@@ -2265,17 +2278,18 @@ function band_bar_render()
    var s_a = [];
    var cbf = 'band_bar_float_cb|';
    var icon = 'w3-link-darker-color w3-help';
-   var freq_i = 'typ bar baz\none two xxx';
+   var freq_i = 'If an entry is defining a single frequency in the select band menu,\n' +
+      'and not a band bar, then set Min equal to Max.';
    var freq_l = 'Min kHz '+ w3_icon(icon +'||title='+ dq(freq_i), 'fa-info-circle', 20);
-   var band_i = 'typ bar baz\none two xxx';
+   var band_i = 'Name that appears in both the band bar\nand select band menu entry.';
    var band_l = 'Band name '+ w3_icon(icon +'||title='+ dq(band_i), 'fa-info-circle', 20);
-   var svc_i = 'svc bar baz\none two xxx';
+   var svc_i = 'Service class as defined by next section.';
    var svc_l = 'Service '+ w3_icon(icon +'||title='+ dq(svc_i), 'fa-info-circle', 20);
-   var itu_i = 'itu bar baz\none two xxx';
+   var itu_i = 'ITU region or visibility of band bar or frequency entry.';
    var itu_l = 'ITU / Visibility '+ w3_icon(icon +'||title='+ dq(itu_i), 'fa-info-circle', 20);
-   var chan_i = 'itu bar baz\none two xxx';
+   var chan_i = 'Defines the band channel spacing (kHz).\nFor example with LW and MW bands.';
    var chan_l = 'Chan '+ w3_icon(icon +'||title='+ dq(chan_i), 'fa-info-circle', 20);
-   var fms_i = 'itu bar baz\none two xxx';
+   var fms_i = 'Optional frequency and mode to set\nwhen select band entry used.';
    var fms_l = 'Band freq/mode '+ w3_icon(icon +'||title='+ dq(fms_i), 'fa-info-circle', 20);
    
    for (i = dx.LEGEND; i < cfg.bands.length; i++) {
@@ -2412,7 +2426,7 @@ function band_bar_select_cb(path, val, first, which)
 }
 
 
-// band service menu
+// dx: band service menu
 
 function band_svc_render()
 {
@@ -2420,13 +2434,13 @@ function band_svc_render()
    var cbf = 'band_svc_field_cb|';
    var s_a = [];
    var icon = 'w3-link-darker-color w3-help';
-   var name_i = 'typ bar baz\none two xxx';
-   var name_l = 'Menu item name '+ w3_icon(icon +'||title='+ dq(name_i), 'fa-info-circle', 20);
-   var color_i = 'typ bar baz\none two xxx';
+   var name_i = 'Changes made here should immediately\nbe visible in Service menu above.';
+   var name_l = 'Menu entry name '+ w3_icon(icon +'||title='+ dq(name_i), 'fa-info-circle', 20);
+   var color_i = 'An HTML color specification, including\ncolor name, hex or HSL value etc.';
    var color_l = 'HTML color name '+ w3_icon(icon +'||title='+ dq(color_i), 'fa-info-circle', 20);
-   var lname_i = 'typ bar baz\none two xxx';
+   var lname_i = 'Optional name shown in band bar, instead of menu entry name at left,\nwhen zoomed in and band bar is wide.';
    var lname_l = 'Long name '+ w3_icon(icon +'||title='+ dq(lname_i), 'fa-info-circle', 20);
-   var test_i = 'typ bar baz\none two xxx';
+   var test_i = 'Example of how band bar will look.';
    var test_l = '&nbsp;Test '+ w3_icon(icon +'||title='+ dq(test_i), 'fa-info-circle', 20);
 
    for (var i = -1; i < cfg.band_svc.length; i++) {

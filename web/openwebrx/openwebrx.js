@@ -6352,6 +6352,7 @@ var dx = {
    DX_TYPE:       0x000001f0,    // 32 types
    DX_TYPE_SFT: 4,
 
+   DX_N_STORED:   16,
    DX_STORED:     0x00000000,    // stored: 0x000, 0x010, ... 0x0f0 (16)
    DX_QUICK_0:    0x00000000,
    DX_QUICK_1:    0x00000010,
@@ -6570,14 +6571,15 @@ var dx_ibp_stations = {
 function dx_label_cb(arr)
 {
 	var i, j, k;
-	var obj = arr[0];
+	var hdr = arr[0];
+	var obj;
    var eibi = (dx.db == dx.DB_EiBi);
    var gap = eibi? 40 : 35;
    
    dx_color_init();
 
 	// reply to label step request
-	if (obj.t == dx.DX_STEP) {
+	if (hdr.t == dx.DX_STEP) {
 	   var dl = arr[1];
 	   if (dl) {
 	      //console_log_dbgUs('dx_label_cb: type=2 f='+ dl.f);
@@ -6598,16 +6600,17 @@ function dx_label_cb(arr)
 	
 	kiwi_clearInterval(dx_ibp_interval);
 	dx_ibp_list = [];
-	dx_ibp_server_time_ms = obj.s * 1000 + (+obj.m);
+	dx_ibp_server_time_ms = hdr.s * 1000 + (+hdr.m);
 	dx_ibp_local_time_epoch_ms = Date.now();
 	
 	if (eibi) for (i = 0; i < dx.DX_N_EiBi; i++) {
-	   var ct = obj['c'+ i];
-	   if (isDefined(ct))
-	      w3_innerHTML('eibi-cbox'+ i +'-label', dx.eibi_svc_s[i] +' ('+ ct +')');
+	   if (isDefined(hdr.ec[i]))
+	      w3_innerHTML('eibi-cbox'+ i +'-label', dx.eibi_svc_s[i] +' ('+ hdr.ec[i] +')');
 	}
 	
-	dx_filter_field_err(+obj.f);
+	dx.types_n = hdr.tc;
+	
+	dx_filter_field_err(+hdr.f);
 	
 	var dx_idx, dx_z = 120;
 	dx_div.innerHTML = '';
@@ -7214,13 +7217,25 @@ function dx_show_edit_panel2()
 	      end_s = end.toFixed(0).leadingZeros(4);
 	   }
 	   
+      // show "Tn" in type menu entries that are otherwise blank but have list entry users
+      var type_menu = kiwi_deep_copy(cfg.dx_type);
+      if (dx.types_n) {
+         for (i = 0; i < dx.DX_N_STORED; i++) {
+            if (dx.types_n[i] != 0 && type_menu[i].name == '') {
+               type_menu[i].name = '(T'+ i +')';    // make placeholder entry in menu, but not cfg.dx_type
+               //console.log('empty type menu entry: T'+ i +' #'+ dx.types_n[i]);
+            }
+         }
+      }
+      //console.log(type_menu);
+
 	   s2 =
          w3_divs('w3-text-white/w3-margin-T-8',
             w3_inline('w3-halign-space-between/',
                w3_input('w3-padding-small||size=8', 'Freq', 'dx.o.fr', dx.o.fr, 'dx_num_cb'),
                w3_select('w3-text-red', 'Mode', '', 'dx.o.fm', dx.o.fm, kiwi.modes_u, 'dx_sel_cb'),
                w3_input('w3-padding-small||size=10', 'Passband', 'dx.o.pb', dx.o.pb, 'dx_passband_cb'),
-               w3_select('w3-text-red', 'Type', '', 'dx.o.ft', dx.o.ft, cfg.dx_type, 'dx_sel_cb'),
+               w3_select('w3-text-red', 'Type', '', 'dx.o.ft', dx.o.ft, type_menu, 'dx_sel_cb'),
                w3_input('w3-padding-small||size=8', 'Offset', 'dx.o.o', dx.o.o, 'dx_num_cb')
             ),
       
@@ -8314,8 +8329,10 @@ function panels_setup()
       'w3-yellow',
       //'w3-grey-white',
       'w3-black',
+      
+      // future use:
       'w3-red',
-      'w3-khaki',
+      'w3-amber',
       'w3-green',
       'w3-orange',
       'w3-lime',
