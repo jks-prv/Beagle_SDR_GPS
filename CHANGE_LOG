@@ -2,6 +2,26 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.507  April 15, 2022
+    Admin page, DX tab:
+        New interface for editing the DX labels, band bars and "select band" menu entries.
+        See the kiwisdr.com documentation and forum for details.
+    
+    Admin page, network tab, IP local blacklist:
+        Support for whitelist entries. This is mostly for the benefit of the downloadable blacklist
+        from kiwisdr.com  But if you need a whitelisted ip inside of a blacklisted ip range,
+        prepend a plus sign (+) to the whitelisted ip and place it *after* the blacklisted range
+        e.g. 1.2.3.0/24 +1.2.3.22  So 1.2.3.22 will be allowed even though the rest of the
+        1.2.3.0 - 1.2.3.255 range is blocked.
+    
+    Repeated connections after the per 24hr time limit has passed will blacklist the IP address until
+        the 24hr time limit table is next cleared (once a day).
+    
+    Admin page: show message when server closes connection (so you're not inputting into a dead page).
+
+v1.505,506  March 31, 2022
+    Fix bug with configuration file.
+
 v1.504  March 20, 2022
     Fix for Kiwis using customized kiwi.config/config.js files (band bars and "select band" menu).
 
