@@ -215,3 +215,27 @@ void kiwi_str_redup(char **ptr, const char *from, const char *s)
 	kmprintf(("kiwi_str_redup \"%s\" #%d %d %p %p\n", from, i, sl, s, *ptr));
 #endif
 }
+
+void *kiwi_table_realloc(const char *id, void *cur_p, int cur_size, int inc_size, int el_size)
+{
+    void *new_p;
+    char *clr_p = NULL;
+    int new_size = cur_size + inc_size;
+    
+    if ((cur_size == 0 && cur_p != NULL) || (cur_size != 0 && cur_p == NULL)) {
+        printf("INVALID COMBO: cur_size=%d cur_p=%p\n", cur_size, cur_p);
+        panic("kiwi_table_realloc");
+    }
+    
+    if (cur_size == 0) {
+        new_p = kiwi_malloc(id, new_size * el_size);    // kiwi_malloc() zeros mem
+    } else {
+        new_p = kiwi_realloc(id, cur_p, new_size * el_size);
+        clr_p = ((char *) new_p) + (cur_size * el_size);
+        memset(clr_p, 0, inc_size * el_size);   // zero new part since kiwi_realloc() doesn't
+    }
+
+    //printf("kiwi_table_realloc %s: cur_p=%p cur_size=%d inc_size=%d el_size=%d | new_p=%p clr_p=%p new_size=%d\n",
+    //    id, cur_p, cur_size, inc_size, el_size, new_p, clr_p, new_size);
+    return new_p;
+}

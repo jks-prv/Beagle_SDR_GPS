@@ -54,8 +54,10 @@ int non_blocking_cmd_func_forall(const char *pname, const char *cmd, funcPR_t fu
 int non_blocking_cmd_func_foreach(const char *pname, const char *cmd, funcPR_t func, int param, int poll_msec);
 int non_blocking_cmd_system_child(const char *pname, const char *cmd, int poll_msec);
 
-// Deprecated because pclose() can block for an unpredictable length of time.
-// Use one of the routines above.
+// Deprecated for use during normal running when realtime requirements apply
+// because pclose() can block for an unpredictable length of time. Use one of the routines above.
+// But still useful during init because e.g. non_blocking_cmd() can return an arbitrarily large buffer
+// from reading a file as opposed to the above routines which can't due to various limitations.
 kstr_t *non_blocking_cmd(const char *cmd, int *status);
 int non_blocking_cmd_popen(non_blocking_cmd_t *p);
 int non_blocking_cmd_read(non_blocking_cmd_t *p, char *reply, int reply_size);

@@ -551,11 +551,15 @@ void reload_index_params()
 #endif
 }
 
-void web_served(const char *from, char *ip_s, const char *fn_s)
+static char cached_ip[NET_ADDRSTRLEN];
+static int cached_served;
+
+void web_has_served(const char *from, char *ip_s, const char *fn_s)
 {
 	conn_t *c;
 	int ch;
     rx_chan_t *rx;
+    bool found = false;
 
     for (rx = rx_channels, ch = 0; rx < &rx_channels[rx_chans]; rx++, ch++) {
         if (!rx->busy) continue;
@@ -566,8 +570,46 @@ void web_served(const char *from, char *ip_s, const char *fn_s)
 		if (strcmp(ip_s, c->remote_ip) == 0) {
 		    c->served++;
 		    //printf("SERVED: %6s RX%d #%d %s %s\n", from, ch, c->served, ip_s, fn_s);
+		    found = true;
 		}
 	}
+	
+	if (!found) {
+	    if (strcmp(cached_ip, ip_s) == 0) {
+	        cached_served++;
+            //printf("SERVED: %6s LAST cached #%d %s %s\n", from, cached_served, ip_s, fn_s);
+	    } else {
+	        kiwi_strncpy(cached_ip, ip_s, NET_ADDRSTRLEN);
+	        cached_served = 1;
+            //printf("SERVED: %6s NEW cached #1 %s %s\n", from, ip_s, fn_s);
+        }
+    }
+}
+
+// Race between when the master web socket is established so conn_t.served can be incremented
+// and when web file requests are actually served. So use a cache to hold early-served requests.
+int web_served(conn_t *c)
+{
+    int served;
+
+    if (strcmp(c->remote_ip, cached_ip) == 0) {
+        served = c->served + cached_served;
+        //printf("SERVED: RESULT served(%d) + cached(%d) = %d %s\n", c->served, cached_served, served, c->remote_ip);
+    } else {
+        served = c->served;
+        //printf("SERVED: RESULT served(%d) + NO_CACHE_MATCH = %d %s (cached=%s)\n", c->served, served, c->remote_ip, cached_ip);
+    }
+    
+    return served;
+}
+
+void web_served_clear_cache(conn_t *c)
+{
+    if (strcmp(c->remote_ip, cached_ip) == 0) {
+        //printf("SERVED: RESULT CLEAR_CACHE %s\n", c->remote_ip);
+        cached_ip[0] = '\0';
+        cached_served = 0;
+    }
 }
 
 
@@ -585,13 +627,14 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 	size_t edata_size = 0;
 	const char *edata_data;
 	bool isPort80 = (net.port != 80 && mc->local_port == 80);
+	char *ip_unforwarded = ip_remote(mc);
 
     //if (web_caching_debug == 0) web_caching_debug = bg? 3:1;
 
     // access to the local HTTP port should only come from local ip addresses
-    if (mc->local_port == net.port_http_local && !isLocal_ip(mc->remote_ip)) {
+    if (mc->local_port == net.port_http_local && !isLocal_ip(ip_unforwarded)) {
         if (evt == MG_REQUEST) {
-            printf("webserver: HTTP but not local ip evt=%d %s:%d <%s>\n", evt, mc->remote_ip, mc->local_port, mc->uri);
+            printf("webserver: HTTP but not local ip evt=%d %s:%d <%s>\n", evt, ip_unforwarded, mc->local_port, mc->uri);
             mg_send_status(mc, 403);    // 403 = "forbidden"
             mg_send_data(mc, NULL, 0);
             return MG_TRUE;
@@ -648,8 +691,17 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     // not web socket
     ////////////////////////////////
 
-    char remote_ip[NET_ADDRSTRLEN];
-    check_if_forwarded(NULL, mc, remote_ip);
+	// iptables will stop regular connection attempts from a blacklisted ip.
+	// But when proxied we need to check the forwarded ip address.
+	// Note that this code always sets remote_ip[] as a side-effect for later use (the real client ip).
+	char ip_forwarded[NET_ADDRSTRLEN];
+    check_if_forwarded("WEB", mc, ip_forwarded);
+    if (check_ip_blacklist(ip_forwarded) || check_ip_blacklist(ip_unforwarded)) {
+		//printf("WEB: IP BLACKLISTED: %s/%s url=<%s> qs=<%s>\n", ip_unforwarded, ip_forwarded, mc->uri, mc->query_string);
+        mg_send_status(mc, 403);    // 403 = "forbidden"
+        mg_send_data(mc, NULL, 0);
+        return MG_TRUE;
+    }
     
     //#define WEB_PRINTF_ON_URL
     #ifdef WEB_PRINTF_ON_URL
@@ -668,14 +720,14 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     #endif
 		
 	if (evt == MG_CACHE_RESULT) {
-	    web_served("CACHED", remote_ip, mc->uri);
+	    web_has_served("CACHED", ip_forwarded, mc->uri);
 	    if (web_caching_debug == 0) return MG_TRUE;
 	    
 	    if (mc->cache_info.cached)
             web_printf_cached("%-16s %6s %11s %4s %3s %4s %5s %s\n", "webserver", "-", mc->cache_info.cached? "304-CACHED":"NO_CACHE", "", "", "", "", mc->uri);
 
 		web_printf_all("%-16s %s:%05d %s (etag_match=%c not_mod_since=%c) mtime=[%s]", "MG_CACHE_RESULT",
-			remote_ip, mc->remote_port,
+			ip_forwarded, mc->remote_port,
 			mc->cache_info.cached? "### CLIENT_CACHED ###":"NOT_CACHED", mc->cache_info.etag_match? 'T':'F', mc->cache_info.not_mod_since? 'T':'F',
 			var_ctime_static(&mc->cache_info.st.st_mtime));
 
@@ -715,7 +767,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     bool acme = (strncmp(o_uri, "/.well-known/", 13) == 0);
     if ((isPort80 || acme) && evt == MG_CACHE_INFO) return MG_FALSE;
     if ((isPort80 && !acme) || (acme && !isPort80)) {
-        printf("webserver: bad ACME request evt=%d %s:%d <%s>\n", evt, remote_ip, mc->local_port, o_uri);
+        printf("webserver: bad ACME request evt=%d %s:%d <%s>\n", evt, ip_forwarded, mc->local_port, o_uri);
         mg_send_status(mc, 403);    // 403 = "forbidden"
         mg_send_data(mc, NULL, 0);
         return MG_TRUE;
@@ -764,7 +816,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
             suffix[last] = '\0';
         if (strcmp(suffix, ".json") == 0 || strcmp(suffix, ".ini") == 0 || strcmp(suffix, ".conf") == 0) {
             if (evt == MG_REQUEST)
-                lprintf("webserver: attempt to fetch config file: %s query=<%s> from %s\n", o_uri, mc->query_string, remote_ip);
+                lprintf("webserver: attempt to fetch config file: %s query=<%s> from %s\n", o_uri, mc->query_string, ip_forwarded);
             evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "BAD fetch config file");
             return MG_FALSE;
         }
@@ -914,7 +966,9 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
             return MG_FALSE;
         }
         //printf("rx_server_ajax: %s\n", mc->uri);
-        ajax_data = rx_server_ajax(mc);     // mc->uri is o_uri without "openwebrx" prefix
+        ajax_data = rx_server_ajax(mc, ip_forwarded);       // mc->uri is o_uri without "openwebrx" prefix
+        
+        // ajax_data can be: NULL, -1 or char *
         if (ajax_data) {
             if (FROM_VOID_PARAM(ajax_data) == -1) {
                 if (free_uri) {
@@ -934,8 +988,8 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 
     // give up
     if (!edata_data) {
-        //printf("unknown URL: %s (%s) query=<%s> from %s\n", o_uri, uri, mc->query_string, remote_ip);
-        web_printf_sent("%-16s %50s %15s %s\n", "webserver:", "NOT FOUND", remote_ip, isAJAX? mc->uri : uri);
+        //printf("unknown URL: %s (%s) query=<%s> from %s\n", o_uri, uri, mc->query_string, ip_forwarded);
+        web_printf_sent("%-16s %50s %15s %s\n", "webserver:", "NOT FOUND", ip_forwarded, isAJAX? mc->uri : uri);
         if (free_uri) {
             if (MTR) real_printf("-> uri-give-up FREE %p %d<%s>\n", uri, strlen(uri), uri);
             kiwi_ifree(uri);
@@ -1026,7 +1080,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 
     if (!(isAJAX && evt == MG_CACHE_INFO)) {		// don't print for isAJAX + MG_CACHE_INFO nop case
         web_printf_all("%-16s %s:%05d size=%6d dirty=%d mtime=[%s] %s %s %s%s\n", (evt == MG_CACHE_INFO)? "MG_CACHE_INFO" : "MG_REQUEST",
-            remote_ip, mc->remote_port,
+            ip_forwarded, mc->remote_port,
             mc->cache_info.st.st_size, dirty, var_ctime_static(&mtime), isAJAX? mc->uri : uri, mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"),
             (mc->query_string != NULL)? "qs:" : "", (mc->query_string != NULL)? mc->query_string : "");
     }
@@ -1089,8 +1143,8 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
                 web_printf_sent("%s ", var_ctime_static(&mc->cache_info.client_mtime));
             }
         }
-        web_printf_sent("%15s %s\n", remote_ip, isAJAX? mc->uri : uri);
-	    web_served("SENT", remote_ip, mc->uri);
+        web_printf_sent("%15s %s\n", ip_forwarded, isAJAX? mc->uri : uri);
+        if (!isAJAX) web_has_served("SENT", ip_forwarded, mc->uri);
         
         mg_send_header(mc, "Server", web_server_hdr);
         

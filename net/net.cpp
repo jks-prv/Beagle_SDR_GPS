@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "types.h"
 #include "config.h"
+#include "test.h"
 #include "mem.h"
 #include "misc.h"
 #include "timer.h"
@@ -669,6 +670,7 @@ char *ip_remote(struct mg_connection *mc)
     return kiwi_skip_over(mc->remote_ip, "::ffff:");
 }
 
+// CAUTION: returned remote_ip could be fake if X-Real-IP or X-Forwarded-For are spoofed
 bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_ip)
 {
     kiwi_strncpy(remote_ip, ip_remote(mc), NET_ADDRSTRLEN);
@@ -702,10 +704,17 @@ bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_i
 }
 
 
-void ip_blacklist_add(char *ips)
+// updates net.ip_blacklist
+static void ip_blacklist_add(char *ips, bool *whitelist)
 {
     char ip_str[NET_ADDRSTRLEN];
     u4_t cidr;
+    *whitelist = false;
+    
+    if (ips[0] == '+') {
+        ips++;
+        *whitelist = true;
+    }
     int n = sscanf(ips, "%[^/]/%d", ip_str, &cidr);
     if (n == 0 || n > 2) return;
     if (n == 1) cidr = 32;
@@ -716,30 +725,41 @@ void ip_blacklist_add(char *ips)
         lprintf("ip_blacklist_add: >= N_IP_BLACKLIST(%d)\n", N_IP_BLACKLIST);
         return;
     }
-    ip_blacklist_t *bl = &net.ip_blacklist[i];
+    
+    // always add to beginning of list to match iptables insert behavior
+    memmove(&net.ip_blacklist[1], &net.ip_blacklist[0], net.ip_blacklist_len * sizeof(ip_blacklist_t));
+    ip_blacklist_t *bl = &net.ip_blacklist[0];
     bl->ip = inet4_d2h(ip_str, &error, &bl->a, &bl->b, &bl->c, &bl->d);
     if (error || cidr < 1 || cidr > 32) return;
     bl->cidr = cidr;
     bl->nm = ~( (1 << (32-cidr)) -1 );
     bl->ip &= bl->nm;   // make consistent with netmask
-    //printf("ip_blacklist_add[%d] %s %d.%d.%d.%d 0x%08x\n", net.ip_blacklist_len, ips,
-        //bl->a, bl->b, bl->c, bl->d, bl->nm);
+    bl->whitelist = *whitelist;
+    //printf("ip_blacklist_add[%d] %s %d.%d.%d.%d 0x%08x\n", net.ip_blacklist_len, ips, bl->a, bl->b, bl->c, bl->d, bl->nm);
     net.ip_blacklist_len++;
 }
 
+// updates net.ip_blacklist (proxied Kiwis) and Linux iptables (non-proxied Kiwis)
+// called here and from admin "SET network_ip_blacklist="
 int ip_blacklist_add_iptables(char *ip_s)
 {
     //real_printf("    \"%s\",\n", ip_s);
-    bool is_loopback;
-    if (isLocal_ip(ip_s, &is_loopback) || is_loopback) {
-        lprintf("ip_blacklist_add_iptables: DANGER! local ip ignored: %s\n", ip_s);
-        return -1;
-    }
+
+    #ifdef TEST_IP_BLACKLIST_USING_LOCAL_IPs
+    #else
+        bool is_loopback;
+        if (isLocal_ip(ip_s, &is_loopback) || is_loopback) {
+            lprintf("ip_blacklist_add_iptables: DANGER! local ip ignored: %s\n", ip_s);
+            return -1;
+        }
+    #endif
     
-    ip_blacklist_add(ip_s);
+    bool whitelist;
+    ip_blacklist_add(ip_s, &whitelist);
 
     char *cmd_p;
-    asprintf(&cmd_p, "iptables -A KIWI -s %s -j DROP", ip_s);
+    // NB: insert (-I) NOT append (-A) because we may be incrementally adding after RETURN rule (last) exists
+    asprintf(&cmd_p, "iptables -I KIWI -s %s -j %s", ip_s, whitelist? "RETURN" : "DROP");
     int rv = non_blocking_cmd_system_child("kiwi.iptables", cmd_p, POLL_MSEC(200));
     rv = WEXITSTATUS(rv);
     lprintf("ip_blacklist_add_iptables: \"%s\" rv=%d\n", cmd_p, rv);
@@ -747,7 +767,7 @@ int ip_blacklist_add_iptables(char *ip_s)
     return rv;
 }
 
-void ip_blacklist_init_list(const char *list)
+static void ip_blacklist_init_list(const char *list)
 {
     const char *bl_s = admcfg_string(list, NULL, CFG_REQUIRED);
     if (bl_s == NULL) return;
@@ -756,7 +776,6 @@ void ip_blacklist_init_list(const char *list)
     int n = kiwi_split((char *) bl_s, &r_buf, " ", ips, N_IP_BLACKLIST);
     //printf("ip_blacklist_init n=%d bl_s=\"%s\"\n", n, bl_s);
     lprintf("ip_blacklist_init_list: %d entries: %s\n", n, list);
-    if (n == 0) return;
     
     for (int i=0; i < n; i++) {
         ip_blacklist_add_iptables(ips[i]);
@@ -769,12 +788,14 @@ void ip_blacklist_init_list(const char *list)
 void ip_blacklist_init()
 {
     net.ip_blacklist_len = 0;
-    system("iptables -D INPUT -j KIWI; iptables -N KIWI; iptables -F KIWI");
+    // clean out old KIWI table first (if any)
+    system("iptables -D INPUT -j KIWI; iptables -F KIWI; iptables -X KIWI; iptables -N KIWI");
     ip_blacklist_init_list("ip_blacklist");
     ip_blacklist_init_list("ip_blacklist_local");
     system("iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI");
 }
 
+// check internal blacklist for proxied Kiwis (iptables can't be used)
 bool check_ip_blacklist(char *remote_ip, bool log)
 {
     bool error;
@@ -786,6 +807,7 @@ bool check_ip_blacklist(char *remote_ip, bool log)
         if ((ip & nm) == bl->ip) {      // netmask previously applied to bl->ip
             net.ip_blacklist_inuse = true;
             bl->dropped++;
+            if (bl->whitelist) return false;
             if (log) lprintf("IP BLACKLISTED: %s\n", remote_ip);
             return true;
         }
@@ -802,8 +824,9 @@ void ip_blacklist_dump()
 	
 	for (int i = 0; i < net.ip_blacklist_len; i++) {
 	    ip_blacklist_t *bl = &net.ip_blacklist[i];
-	    if (bl->dropped == 0) continue;
-	    lprintf("%9d  %d.%d.%d.%d/%d\n", bl->dropped, bl->a, bl->b, bl->c, bl->d, bl->cidr);
+	    //if (bl->dropped == 0) continue;
+	    lprintf("%9d  %d.%d.%d.%d/%d%s\n", bl->dropped, bl->a, bl->b, bl->c, bl->d, bl->cidr,
+	        bl->whitelist? "  WHITELIST" : "");
 	}
 	lprintf("\n");
 }

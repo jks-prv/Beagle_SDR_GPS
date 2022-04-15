@@ -42,13 +42,14 @@ Boston, MA  02110-1301, USA.
 	void *kiwi_realloc(const char *from, void *ptr, size_t size);
 	void kiwi_free(const char *from, void *ptr);
 	char *kiwi_strdup(const char *from, const char *s);
-	void kiwi_str_redup(char **ptr, const char *from, const char *s);
 	int kiwi_malloc_stat();
 #else
 	#define kiwi_malloc(from, size) malloc(size)
 	#define kiwi_realloc(from, ptr, size) realloc(ptr, size)
 	#define kiwi_free(from, ptr) free(ptr)
 	#define kiwi_strdup(from, s) strdup(s)
-	void kiwi_str_redup(char **ptr, const char *from, const char *s);
 	#define kiwi_malloc_stat() 0
 #endif
+
+void kiwi_str_redup(char **ptr, const char *from, const char *s);
+void *kiwi_table_realloc(const char *id, void *cur_p, int cur_size, int new_size, int el_size);

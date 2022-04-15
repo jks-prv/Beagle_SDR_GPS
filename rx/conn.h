@@ -37,7 +37,7 @@ typedef struct conn_st {
 	u4_t magic;
 	int self_idx;
 	bool valid, auth, auth_kiwi, auth_prot, auth_admin;
-	bool isLocal, force_notLocal, isPassword;
+	bool isLocal, force_notLocal, isPassword, awaitingPassword;
 	bool isLocal_ip;    // is the ip itself a local or loopback address? (different from isLocal above)
 	int type;
 	struct conn_st *other;
@@ -139,8 +139,9 @@ typedef struct conn_st {
 #define STREAM_MONITOR      6
 #define AJAX_DISCOVERY		7
 #define AJAX_PHOTO			8
-#define AJAX_STATUS			9
-#define AJAX_USERS			10
-#define AJAX_SNR			11
+#define AJAX_DX 			9
+#define AJAX_STATUS			10
+#define AJAX_USERS			11
+#define AJAX_SNR			12
 
 extern conn_t conns[];

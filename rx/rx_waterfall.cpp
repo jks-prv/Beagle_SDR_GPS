@@ -252,7 +252,8 @@ void c2s_waterfall(void *param)
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
 	int adc_clk_corrections = 0;
-	int masked_seq = 0;
+	u4_t cfg_update_seq = 0;
+	u4_t dx_update_seq = 0;
 	
 	wf = &WF_SHMEM->wf_inst[rx_chan];
 	memset(wf, 0, sizeof(wf_inst_t));
@@ -800,11 +801,17 @@ void c2s_waterfall(void *param)
 			new_map = FALSE;
 		}
 		
-		if (masked_seq != dx.masked_seq) {
-            // get client to request updated dx list because admin edited masked list
-            // or made any other change to dx label list
+        // admin requested that all clients get updated cfg
+        if (cfg_update_seq != cfg_cfg.update_seq) {
+            rx_server_send_config(conn);
+            cfg_update_seq = cfg_cfg.update_seq;
+        }
+
+        // get client to request updated dx list because admin edited masked list
+        // or made any other change to dx label list
+		if (dx_update_seq != dx.update_seq) {
             send_msg(conn, false, "MSG request_dx_update");
-		    masked_seq = dx.masked_seq;
+		    dx_update_seq = dx.update_seq;
 		    new_scale_mask = true;
 		}
 		

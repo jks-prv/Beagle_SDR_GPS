@@ -536,7 +536,7 @@ function wspr_config_html()
 	   for (var j=0; j < 8 && i < rx_chans; j++, i++) {
 	      s2 += w3_select_get_param('w3-margin-right', 'Autorun '+ i, 'WSPR band', 'WSPR.autorun'+ i, wspr_autorun_u, 'wspr_autorun_select_cb');
 	   }
-	   s += w3_inline('w3-inline w3-margin-bottom/', s2);
+	   s += w3_inline('w3-margin-bottom/', s2);
 	}
 	w3_innerHTML('id-wspr-admin-autorun', s);
 }
