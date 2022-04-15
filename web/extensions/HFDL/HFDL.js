@@ -1361,10 +1361,11 @@ function hfdl_pre_select_cb(path, val, first)
       }
       
       id = id.split('-');
-      var i = id[0];
-      var j = id[1];
+      var i = +id[0];
+      var j = +id[1];
       if (dbgUs) console.log('hfdl_pre_select_cb i='+ i +' j='+ j);
       var o1 = w3_obj_seq_el(hfdl.menus[menu_n], i);
+      //console.log(hfdl.menus[menu_n]);
       //console.log('o1=...');
       //console.log(o1);
       if (dbgUs) w3_console.log(o1, 'o1');

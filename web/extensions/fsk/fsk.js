@@ -689,15 +689,15 @@ function fsk_pre_select_cb(path, idx, first)
 	      fsk.header = option.innerHTML;
 	   }
 	   
-	   if (option.value != idx) return;
+	   if (option.value != idx || option.disabled) return;
 	   
       fsk.menu_sel = option.innerHTML +' ';
       //console.log('fsk_pre_select_cb opt.val='+ option.value +' menu_sel='+ fsk.menu_sel +' opt.id='+ option.id);
 
       var id = option.id.split('id-')[1];
       id = id.split('-');
-      var i = id[0];
-      var j = id[1];
+      var i = +id[0];
+      var j = +id[1];
       //console.log('fsk_pre_select_cb i='+ i +' j='+ j);
       var o = w3_obj_seq_el(fsk_menus[menu_n], i);
       //w3_console.log(o);

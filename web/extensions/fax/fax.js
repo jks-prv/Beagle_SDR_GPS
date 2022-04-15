@@ -500,7 +500,7 @@ function fax_pre_select_cb(path, idx, first)
 	      fax_disabled = option;
 	   }
 	   
-	   if (option.value == idx) {
+	   if (option.value == idx && !option.disabled) {
 	      var inner = option.innerHTML;
 	      console.log('fax_pre_select_cb opt.val='+ option.value +' opt.inner='+ inner);
 	      var lsb = inner.includes('lsb');
