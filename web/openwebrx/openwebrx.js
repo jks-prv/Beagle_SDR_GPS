@@ -338,7 +338,13 @@ function kiwi_main()
       set_gen(gen_freq, gen_attn);
    }, 0, 500);
 
-	snd_send("SET mod=am low_cut=-4000 high_cut=4000 freq=1000");
+   var _lo = cfg.passbands[init_mode].lo;
+   if (!isNumber(_lo)) _lo = -4000;
+   var _hi = cfg.passbands[init_mode].hi;
+   if (!isNumber(_hi)) _hi = 4000;
+	snd_send('SET mod='+ init_mode +' low_cut='+ _lo +' high_cut='+ _hi +' freq='+ init_frequency);
+	//console.log('INIT: SET mod='+ init_mode +' low_cut='+ _lo +' high_cut='+ _hi +' freq='+ init_frequency);
+
 	set_agc();
 	snd_send("SET browser="+navigator.userAgent);
 	
