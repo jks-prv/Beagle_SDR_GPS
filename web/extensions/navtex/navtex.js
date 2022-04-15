@@ -401,7 +401,7 @@ function navtex_pre_select_cb(path, idx, first)
 	      nt.disabled = option;
 	   }
 	   
-	   if (option.value == idx) {
+	   if (option.value == idx && !option.disabled) {
 	      nt.freq_s = option.innerHTML;
 	      //console.log('navtex_pre_select_cb opt.val='+ option.value +' freq_s='+ nt.freq_s);
          nt.freq = parseFloat(nt.freq_s);

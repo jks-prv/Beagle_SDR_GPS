@@ -8,6 +8,7 @@
 //
 // Updates:
 //
+// 16 apr 22 forum: 108.61.0.0/16 constant/vultr
 // 11 apr 22 forum: 139.99.0.0/16 ovh hosting
 // 11 apr 22 forum: 158.247.192.0/18 140.82.0.0/18 167.179.64.0/19 45.32.0.0/16 139.180.128.0/18 constant/vultr/choopa
 //  8 apr 22 ip_blacklist3.cjson version now supports "+[ip]" whitelist notation
@@ -71,6 +72,7 @@
     "104.154.0.0/15",
     "104.196.0.0/14",
     "107.150.0.0/16",
+    "108.61.0.0/16",
     "110.87.0.0/16",
     "114.249.0.0/18",
     "117.30.0.0/16",

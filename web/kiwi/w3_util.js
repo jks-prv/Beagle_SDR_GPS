@@ -2491,17 +2491,17 @@ function w3int_select_options(sel, opts, show_empty)
    //       option value is elements's sequential position
    //          *unless* value obj.value exists, then obj.value is option value
    if (isObject(opts)) {
-      w3_obj_enum(opts, function(key, i, o) {
+      w3_obj_enum(opts, function(key, i, obj) {
          var value, text, disabled = false;
-         if (isObject(o)) {
-            value = isDefined(o.value)? o.value : i;
+         if (isObject(obj)) {
+            value = isDefined(obj.value)? obj.value : i;
             var hasName = isDefined(obj.name);
             if (hasName && !show_empty && obj.name == '') return;
-            text = hasName? o.name : key;
-            if (isDefined(o.disabled) && o.disabled) disabled = true;
+            text = hasName? obj.name : key;
+            if (isDefined(obj.disabled) && obj.disabled) disabled = true;
          } else {
             value = i;
-            text = o;
+            text = obj;
          }
          s += '<option value='+ dq(value) + ((i == sel)? ' selected':'') + (disabled? ' disabled':'') +'>'+ text +'</option>\n';
       });
