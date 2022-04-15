@@ -808,6 +808,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	#define DX_PRINT_SEARCH 16
 	#define dx_print_search(cond, fmt, ...) \
 		if ((dx_print & DX_PRINT_SEARCH) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
+
+	#define DX_PRINT_DEBUG 32
+	#define dx_print_debug(cond, fmt, ...) \
+		if ((dx_print & DX_PRINT_DEBUG) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
 #else
 	#define dx_print_dow_time(cond, fmt, ...)
 	#define dx_print_mkrs(cond, fmt, ...)
@@ -1089,7 +1093,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 func = DX_ADM_SEARCH_NOTES;
                 db = DB_STORED;
             } else {
-                cprintf(conn, "CMD_MARKER: unknown varient [%s]\n", cmd);
+                dx_print_debug("CMD_MARKER: unknown varient [%s]\n", cmd);
                 return true;
             }
             
