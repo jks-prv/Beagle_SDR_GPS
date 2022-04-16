@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.508  April 16, 2022
+v1.508,509  April 16, 2022
     Fixed extension menu selection problems.
     Eliminate initial brief audio heard from 1 MHz.
 
