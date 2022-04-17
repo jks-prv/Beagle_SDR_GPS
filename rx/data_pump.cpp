@@ -47,6 +47,8 @@ dpump_t dpump;
         rx_shmem_t *rx_shmem_p = &rx_shmem;
 #endif
 
+bool have_snd_users;
+
 #ifdef USE_SDR
 
 struct rx_data_t {
@@ -310,8 +312,6 @@ static void data_pump(void *param)
 		}
 	}
 }
-
-bool have_snd_users;
 
 void data_pump_start_stop()
 {
