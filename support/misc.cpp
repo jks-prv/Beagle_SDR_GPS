@@ -80,18 +80,18 @@ int median_i(int *i, int len, int *pct_1, int *pct_2)
      return i[len/2];
 }
 
-static int misc_miso_busy;
+static int misc_miso_busy[2];
 
-SPI_MISO *get_misc_miso()
+SPI_MISO *get_misc_miso(int which)
 {
-    assert(misc_miso_busy == 0);
-    misc_miso_busy++;
-    return &SPI_SHMEM->misc_miso;
+    assert(misc_miso_busy[which] == 0);
+    misc_miso_busy[which]++;
+    return &SPI_SHMEM->misc_miso[which];
 }
 
-void release_misc_miso()
+void release_misc_miso(int which)
 {
-    misc_miso_busy--;
+    misc_miso_busy[which]--;
 }
 
 static int misc_mosi_busy;

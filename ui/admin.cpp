@@ -632,7 +632,12 @@ void c2s_admin(void *param)
 						mprintf("%s", buf);
 					}
 					TaskSleepMsec(250);
-				} while (n > 0);
+					u4_t now = timer_sec();
+					if ((now - conn->keepalive_time) > 5) {
+					    send_msg(conn, false, "MSG keepalive");
+					    conn->keepalive_time = now;
+					}
+				} while (n >= 0);
 				err = non_blocking_cmd_pclose(&p);
                 //real_printf("microSD_write: err=%d\n", err);
 				sd_copy_in_progress = false;

@@ -43,7 +43,7 @@ typedef struct {
     SPI_MISO gps_search_miso, gps_channel_miso[GPS_CHANS], gps_clocks_miso, gps_iqdata_miso, gps_glitches_miso[2];
     SPI_MOSI gps_e1b_code_mosi;
     SPI_MISO wf_miso[MAX_RX_CHANS];
-    SPI_MISO misc_miso;
+    SPI_MISO misc_miso[2];
     SPI_MISO spi_junk_miso, pingx_miso;
     SPI_MOSI spi_tx[N_SPI_TX];
     SPI_MOSI misc_mosi;

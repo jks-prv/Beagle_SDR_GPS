@@ -408,11 +408,13 @@ int non_blocking_cmd_read(non_blocking_cmd_t *p, char *reply, int reply_size)
 	int n;
 	assert(p->open);
 
-	do {
-		TaskSleepMsec(NON_BLOCKING_POLL_MSEC);
-		n = read(p->pfd, reply, reply_size - SPACE_FOR_NULL);
-		if (n > 0) reply[n] = 0;	// assuming we're always expecting a string
-	} while (n == -1 && errno == EAGAIN);
+    TaskSleepMsec(NON_BLOCKING_POLL_MSEC);
+    n = read(p->pfd, reply, reply_size - SPACE_FOR_NULL);
+    if (n > 0) reply[n] = 0;	// assuming we're always expecting a string
+
+    if (n == 0) n = -1;     // EOF
+    else
+	if (n == -1 && errno == EAGAIN) n = 0;      // non-block
 
 	return n;
 }

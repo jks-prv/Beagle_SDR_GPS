@@ -28,8 +28,8 @@ Boston, MA  02110-1301, USA.
 #include <stdarg.h>
 #include <stdlib.h>
 
-SPI_MISO *get_misc_miso();
-void release_misc_miso();
+SPI_MISO *get_misc_miso(int which = 0);
+void release_misc_miso(int which = 0);
 
 SPI_MOSI *get_misc_mosi();
 void release_misc_mosi();

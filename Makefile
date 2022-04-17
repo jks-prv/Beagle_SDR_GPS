@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 509
+VERSION_MIN = 510
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -417,6 +417,7 @@ build_makefile_inc:
 	@echo "building" $(MF_INC)
 	@echo $(VER)
 	@echo $(DEBIAN_BUILD_VER)
+	@echo PROJECT = $(PROJECT)
 	@echo ARCH = $(ARCH)
 	@echo CPU = $(CPU)
 	@echo PLATFORMS = $(PLATFORMS)
@@ -474,6 +475,8 @@ pru/pru_realtime.bin: pas pru/pru_realtime.p pru/pru_realtime.h pru/pru_realtime
 ifneq ($(OTHER_DIR),)
     OTHER_DIR2 = -x $(OTHER_DIR)
     OTHER_CONFIG = $(subst ../../,../,$(OTHER_DIR)/other.config)
+else
+    PROJECT = "KiwiSDR"
 endif
 
 $(GEN_ASM): kiwi.config verilog/kiwi.inline.vh $(wildcard e_cpu/asm/*)
