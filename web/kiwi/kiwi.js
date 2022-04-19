@@ -1435,10 +1435,13 @@ function user_cb(obj)
 		   
 			var id = kiwi_strip_tags(deco, '');
 			if (!kiwi.called_from_admin && id == '') id = '(no identity)';
-			if (id != '') id = '"'+ id + '" ';
-			var g = (geoloc == '(null)' || geoloc == '')? 'unknown location' : decodeURIComponent(geoloc);
+			if (id != '') id = '"'+ id + '"';
+			var g = (geoloc == '(null)' || geoloc == '')?
+			      (kiwi.called_from_admin? 'unknown location' : '')
+			   :
+			      decodeURIComponent(geoloc);
 			ip = ip.replace(/::ffff:/, '');		// remove IPv4-mapped IPv6 if any
-			g = '('+ ip + g +') ';
+			g = (ip != '' || g != '')? ('('+ ip + g +')') : '';
 			var f = freq + kiwi.freq_offset_Hz;
 			var f = (f/1000).toFixed((f > 100e6)? 1:2);
 			var f_s = f + ' kHz ';
@@ -1454,7 +1457,7 @@ function user_cb(obj)
 			}
 
 			if (ext != '') ext = decodeURIComponent(ext) +' ';
-			s1 = id + g;
+			s1 = w3_sb(id, g) +' ';
 			s2 = w3_link('w3-link-darker-color', link, f_s + (obj.wf? 'WF' : mode) +' z'+ zoom) +' '+ ext + connected + remaining;
 		}
 		
