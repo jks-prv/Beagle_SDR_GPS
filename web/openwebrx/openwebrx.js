@@ -5402,18 +5402,20 @@ function freq_step_amount(b)
 			step_Hz = step_9_10? 9000 : 10000;
 		}
 		s = ' LW/MW';
-	} else
-   if (b && band_svc_lookup(b.svc).o.name.includes('Broadcast') && !ham_80m_swbc_75m_overlap) {      // SWBC bands
-      if (am_sax_iq_drm) {
-         step_Hz = 5000;
-         s = ' SWBC 5k';
-         //console.log('SFT-CLICK SWBC');
+	} else {
+	   var svc = band_svc_lookup(b.svc);
+      if (b && svc && svc.o.name.includes('Broadcast') && !ham_80m_swbc_75m_overlap) {      // SWBC bands
+         if (am_sax_iq_drm) {
+            step_Hz = 5000;
+            s = ' SWBC 5k';
+            //console.log('SFT-CLICK SWBC');
+         }
+      } else
+      if (b && b.chan != 0) {
+         step_Hz = b.chan;
+         s = ' band='+ b.name +' chan='+ b.chan;
       }
-	} else
-	if (b && b.chan != 0) {
-		step_Hz = b.chan;
-		s = ' band='+ b.name +' chan='+ b.chan;
-	}
+   }
 	
 	return { step_Hz: step_Hz, s:s };
 }
@@ -5547,6 +5549,7 @@ function band_info()
 }
 
 // for a particular cfg.band_svc.key return its object element and index
+// callers MUST be prepared to deal with null return value if no key match found
 function band_svc_lookup(svc_key)
 {
    var idx = null;
@@ -5555,8 +5558,7 @@ function band_svc_lookup(svc_key)
          idx = i;
    });
    if (idx == null) {
-      console.log('$$$ band_svc_lookup NO KEY <'+ svc_key +'>');
-      kiwi_trace();
+      console.log('$$$ band_svc_lookup NO KEY MATCH for <'+ svc_key +'>');
       return null;
    }
    return { o: cfg.band_svc[idx], i: idx };
@@ -5792,7 +5794,7 @@ function bands_addl_info()
 		   var longName = svc.o.longName || svc.o.name;
 		   b2.longName = b1.name +' '+ longName;
 		} else {
-		   b2.longName = '';
+		   b2.longName = b1.name;
 		}
 		//console.log("BAND "+b1.name+" bw="+bw+" z="+z);
 	}
@@ -5821,7 +5823,10 @@ function setup_band_menu()
 		if (!(b1.itu == kiwi.BAND_MENU_ONLY || b1.itu == kiwi.ITU_ANY || b1.itu == ITU_region)) continue;
 
 		if (service != b1.svc) {
-			service = b1.svc; s += '<option value='+ dq(op) +' disabled>'+ band_svc_lookup(b1.svc).o.name.toUpperCase() +'</option>';
+			service = b1.svc;
+			var svc = band_svc_lookup(b1.svc);
+			if (!svc) continue;
+			s += '<option value='+ dq(op) +' disabled>'+ svc.o.name.toUpperCase() +'</option>';
 			band_menu[op++] = null;		// section title
 		}
 		s += '<option value='+ dq(op) +'>'+ b1.name +'</option>';
@@ -5836,8 +5841,8 @@ function setup_band_menu()
 
 function mk_band_menu()
 {
-   console.log('mk_band_menu');
-   console.log(cfg.bands);
+   //console.log('mk_band_menu');
+   //console.log(cfg.bands);
    band_menu = [];
    owrx.last_selected_band = 0;
    w3_innerHTML('id-select-band', setup_band_menu());
@@ -5937,7 +5942,8 @@ function mk_bands_scale()
       if (w < 3) continue;
       //console.log('BANDS SHOW');
 
-      band_ctx.fillStyle = band_svc_lookup(b1.svc).o.color;
+      var svc = band_svc_lookup(b1.svc);
+      band_ctx.fillStyle = svc? svc.o.color : 'grey';
       band_ctx.globalAlpha = 0.2;
       //console.log("BB x="+x+" y="+y+" w="+w+" h="+h);
       band_ctx.fillRect(x,y,w,h);
