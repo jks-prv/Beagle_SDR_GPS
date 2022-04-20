@@ -2218,7 +2218,7 @@ function canvas_log(s)
       owrx.news_acc_s = '';
    } else
    if (s.charAt(0) == '$') {
-      owrx.news_acc_s = '<br><br>'+ s;
+      owrx.news_acc_s += '<br>'+ s;
    } else {
       owrx.news_acc_s += ((owrx.news_acc_s != '')? ' | ' : '') + s;
    }
@@ -3238,7 +3238,7 @@ function mobile_init()
 
       var el = w3_el('id-control');
 
-	   if (mobile_laptop_test) {
+	   if (0 && mobile_laptop_test) {
          extint_news('whu='+ mobile.width +','+ mobile.height +','+ el.uiWidth +
             ' psn='+ mobile.isPortrait +','+ mobile.small +','+ mobile.narrow +' #'+ owrx.dseq);
          owrx.dseq++;
@@ -5148,7 +5148,7 @@ function freqset_select()
    }
 
    if (!ae || !retain_input_focus || closed_ext_input_still_holding_focus) {
-	   w3_field_select('id-freq-input', {mobile:1});
+	   w3_field_select('id-freq-input', {mobile:1, log:1});
 	} else {
       //console.log('#### activeElement w3-retain-input-focus:');
       //console.log(ae);
@@ -5253,7 +5253,7 @@ function freqset_complete(from)
 	   f -= kiwi.freq_offset_kHz;
 	   if (f > 0 && !isNaN(f)) {
          freqmode_set_dsp_kHz(f, null);
-	      w3_field_select(obj, {mobile:1});
+	      w3_field_select(obj, {mobile:1, log:2});
 	      err = false;
       }
 	}
@@ -5403,8 +5403,8 @@ function freq_step_amount(b)
 		}
 		s = ' LW/MW';
 	} else {
-	   var svc = band_svc_lookup(b.svc);
-      if (b && svc && svc.o.name.includes('Broadcast') && !ham_80m_swbc_75m_overlap) {      // SWBC bands
+	   var svc = b? band_svc_lookup(b.svc) : null;
+      if (svc && svc.o.name.includes('Broadcast') && !ham_80m_swbc_75m_overlap) {      // SWBC bands
          if (am_sax_iq_drm) {
             step_Hz = 5000;
             s = ' SWBC 5k';

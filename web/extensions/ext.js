@@ -513,10 +513,14 @@ function ext_mobile_info(last)
 function extint_news(s)
 {
    var el = w3_el('id-news');
-   el.style.right = '';
-   el.style.left = '0';
+   el.style.top = '10px';
+   el.style.bottom = '';
+   //el.style.right = '';
+   el.style.right = '0';
+   //el.style.left = '0';
    el.style.width = '350px';
-   el.style.height = '300px';
+   //el.style.height = '300px';
+   el.style.height = '200px';
    el.style.visibility = 'visible';
    el.style.zIndex = 9999;
    w3_innerHTML('id-news-inner', s);
