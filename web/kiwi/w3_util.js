@@ -774,13 +774,14 @@ function w3_field_select(el_id, opts)
    if (!el) return;
    
    var focus=0, select=0, blur=0;
-   if (opts['mobile'] && kiwi_isMobile()) blur = 1; else focus = select = 1;
+   if (opts['mobile'] && (kiwi_isMobile() || mobile_laptop_test)) blur = 1; else focus = select = 1;
    if (opts['blur']) blur = 1;
    if (opts['focus_select']) focus = select = 1;
    if (opts['focus_only']) { focus = 1; select = 0; }
    if (opts['select_only']) select = 1;
    
    if (trace) console.log('w3_field_select focus='+ focus +' select='+ select +' blur='+ blur);
+   //if (opts['log']) canvas_log('$'+ opts['log'] +': F='+ focus +' S='+ select +' B='+ blur);
    if (focus) el.focus();
    if (select) el.select();
    if (blur) el.blur();

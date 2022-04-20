@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.511  April 20, 2022
+v1.511,512  April 20, 2022
     Fixed user connection page not loading when band bar has unknown service value set.
     Display nothing instead of "(no location)" when "show user geolocation info" is unchecked.
 
