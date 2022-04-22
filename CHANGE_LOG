@@ -2,6 +2,22 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.513  April 22, 2022
+    DX label CSV file import: commas are now an accepted field delimiter character.
+        String fields are not required to be quoted (unless they contain the delimiter character).
+        Spreadsheet CSV file write compatibility should be increased with this change.
+    
+    Mobile devices:
+        The double-finger-tap menu (right-click menu on desktop) now highlights entries
+        as you swipe over the menu. Just as the desktop menu does when swiping with the mouse.
+    
+    Added SAM PLL "Reset" button on audio tab. Use when the SAM PLL has wandered outside of its
+        capture range. The previous workaround was to switch to AM then back to SAM to reset the PLL.
+    
+    Admin page, config tab: option to set 1Hz frequency display resolution.
+        Will eventually be a user control panel option for this, but that will have to wait for
+        a general redesign of the control panel.
+
 v1.511,512  April 20, 2022
     Fixed user connection page not loading when band bar has unknown service value set.
     Display nothing instead of "(no location)" when "show user geolocation info" is unchecked.

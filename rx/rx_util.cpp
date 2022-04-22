@@ -261,6 +261,7 @@ void update_vars_from_config(bool called_at_init)
     snr_local_time = cfg_default_bool("snr_local_time", true, &update_cfg);
     cfg_default_int("ident_len", IDENT_LEN_MIN, &update_cfg);
     cfg_default_bool("show_geo", true, &update_cfg);
+    cfg_default_bool("show_1Hz", false, &update_cfg);
 
     if (wspr_update_vars_from_config()) update_cfg = true;
 

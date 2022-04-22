@@ -571,8 +571,9 @@ html, body
 	/*background-color: purple;		debug */
 }
 
-#id-freq-cell
+.id-freq-cell
 {
+    padding-right: 2px;
 }
 
 #id-freq-form
@@ -583,6 +584,10 @@ html, body
 	font-size: 10pt;
 	text-align: left;
 	/*border: 1px solid lime;	/* debug */
+}
+
+#id-freq-input
+{
 }
 
 #id-select-band-cell
@@ -656,22 +661,9 @@ html, body
 /*---- begin id-control:id-mouse-freq */
 .id-mouse-freq
 {
-	/*width: 9em;*/
-	overflow: hidden;
-	text-align: left;
-	font-size: 10pt;
-	color: #AAA;
-	font-family: 'expletus-sans-medium';
-	/*padding: 3px;*/
-	/*margin-bottom: 5px;*/
-}
-
-.id-mouse-unit
-{
-	display: inline-block;
-	width: 4.75em;		/* can't specify the width of an inline elem (span) without using 'display: inline-block' */
-	float: left;
-	overflow: hidden;
+    width: 5.5em;
+	font-size: 12px;
+    color: lightGrey;
 }
 
 /*---- begin id-control:id-step-freq */
@@ -869,22 +861,6 @@ html, body
     font-style: normal;
 }
 
-/*#id-freq-show
-{
-	visibility: hidden;
-	position: absolute;
-	top: 0px;
-	left: 0px;
-	padding: 5px;
-	font-weight: bold;
-	border-radius: 10px;
-	-moz-border-radius: 10px;
-	background-color: #999999;
-	color: White;
-	z-index: 9999; /*should be higher?
-	
-}*/
-
 /*---- end misc */
 
 
@@ -1013,7 +989,7 @@ html, body
 	display: inline;
 	background-color: #373737;
 	font-size: 85%;
-	padding: 3px 5px 3px 5px;
+	padding: 3px 4px;
 	border-radius: 5px;
 	-moz-border-radius: 5px;
 	color: white;

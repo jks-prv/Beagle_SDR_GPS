@@ -1131,7 +1131,8 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		pb_adj_lo_ttip.innerHTML = 'lo '+ this.parent.low_cut.toString() +', bw '+ bw.toString();
 		pb_adj_hi_ttip.innerHTML = 'hi '+ this.parent.high_cut.toString() +', bw '+ bw.toString();
 		pb_adj_cf_ttip.innerHTML = 'cf '+ (this.parent.low_cut + Math.abs(this.parent.high_cut - this.parent.low_cut)/2).toString();
-		pb_adj_car_ttip.innerHTML = ((center_freq + this.parent.offset_frequency)/1000 + kiwi.freq_offset_kHz).toFixed(2) +' kHz';
+		pb_adj_car_ttip.innerHTML =
+		   ((center_freq + this.parent.offset_frequency)/1000 + kiwi.freq_offset_kHz).toFixed(cfg.show_1Hz? 3:2) +' kHz';
 	};
 
 	// event handlers
@@ -2173,7 +2174,9 @@ function init_wf_container()
 	spec.dB.style.width = px(waterfall_width);
 	spec.dB.innerHTML = '<span id="id-spectrum-dB-ttip" class="class-spectrum-dB-tooltip class-tooltip-text"></span>';
 	add_canvas_listner(spec.dB);
-	spec.dB_ttip = html("id-spectrum-dB-ttip");
+	w3_do_when_rendered('id-spectrum-dB-ttip', function(el) {
+	   spec.dB_ttip = el;
+	});
 }
 
 function add_canvas_listner(obj)
@@ -2248,19 +2251,19 @@ function canvas_contextmenu(evt)
 function canvas_mouseover(evt)
 {
 	if (!waterfall_setup_done) return;
-	//html("id-freq-show").style.visibility="visible";	
 }
 
 function canvas_mouseout(evt)
 {
 	if (!waterfall_setup_done) return;
-	if (debug_canvas_drag) event_dump(evt, 'canvas_mouseout', 1);
-	//html("id-freq-show").style.visibility="hidden";
+	//if (debug_canvas_drag) event_dump(evt, 'canvas_mouseout', 1);
 
    // must also end dragging when mouse leaves canvas while still down
 	if (canvas_dragging) {
-      if (debug_canvas_drag) canvas_log("C-MOUT");
-      canvas_end_drag2();
+	   var ignore = evt.target.id.startsWith('id-spectrum-dB');
+      if (debug_canvas_drag) canvas_log('C-MOUT'+ (ignore? ' SPEC-IGNORE':''));
+      if (!ignore)
+         canvas_end_drag2();
    }
 }
 
@@ -2427,11 +2430,10 @@ function canvas_touchStart(evt)
 function canvas_drag(evt, x, y, clientX, clientY)
 {
 	if (!waterfall_setup_done) return;
-	//element=html("id-freq-show");
 	var relativeX = x;
 	var relativeY = y;
 	spectrum_tooltip_update(evt, clientX, clientY);
-	owrx.drag_count++;
+	owrx.drag_count = !isNumber(owrx.drag_count)? 0 : (owrx.drag_count + 1);
 
 	if (owrx.scale_canvas.mouse_out) {
 	   //event_dump(evt, "CD", 1);
@@ -2439,13 +2441,14 @@ function canvas_drag(evt, x, y, clientX, clientY)
 	   return;
 	}
 	   
-   if (debug_canvas_drag)
-      canvas_log('CD#'+ owrx.drag_count +' x'+ x +' y'+ y +' CMD'+ (canvas_mouse_down? 1:0) +' IME'+ (canvas_ignore_mouse_event? 1:0) +' DG'+ (canvas_dragging? 1:0));
+   if (debug_canvas_drag) canvas_log('CD#'+ owrx.drag_count +' x'+ x +' y'+ y +' dx'+ Math.abs(x - owrx.canvas.drag_start_x) +
+      ' CMD'+ (canvas_mouse_down? 1:0) +' IME'+ (canvas_ignore_mouse_event? 1:0) +' DG'+ (canvas_dragging? 1:0));
 
    // drag_count > 10 was required on Lenovo TB-7104F / Android 8.1.0 to differentiate double-touch from true drag.
    // I.e. an excessive number of touch events seem to be sent by browser for a single double-touch.
 	if (canvas_mouse_down && (!canvas_ignore_mouse_event || owrx.double_touch_start)) {
 		if (!canvas_dragging && owrx.drag_count > 10 && Math.abs(x - owrx.canvas.drag_start_x) > canvas_drag_min_delta) {
+		   if (debug_canvas_drag) canvas_log('### dc='+ owrx.drag_count +' >? 10 | '+ Math.abs(x - owrx.canvas.drag_start_x) +' >? '+ canvas_drag_min_delta);
 			canvas_dragging = true;
 			wf_container.style.cursor = "move";
 		}
@@ -2473,7 +2476,8 @@ function canvas_drag(evt, x, y, clientX, clientY)
 			owrx.canvas.drag_last_y = y;
 		}
 	} else {
-		w3_innerHTML('id-mouse-unit', format_frequency("{x}", canvas_get_dspfreq(relativeX) + kiwi.freq_offset_Hz, 1e3, 2));
+	   if (!kiwi_isMobile())
+		   w3_innerHTML('id-mouse-freq', format_frequency("{x}", canvas_get_dspfreq(relativeX) + kiwi.freq_offset_Hz, 1e3, cfg.show_1Hz? 3:2));
 		//console.log("MOU rX="+relativeX.toFixed(1)+" f="+canvas_get_dspfreq(relativeX).toFixed(1));
 	}
 }
@@ -2598,17 +2602,17 @@ function canvas_touchEnd(evt)
    owrx.touch_hold_pressed = false;
    kiwi_clearInterval(owrx.touch_hold_interval);
 */
-	spectrum_tooltip_update(evt, x, y);
+	//spectrum_tooltip_update(evt, x, y);
 	
 	if (owrx.double_touch_start) {
-	   if (debug_canvas_drag) canvas_log('dr'+ canvas_dragging);
+	   if (debug_canvas_drag) canvas_log('DTS-D='+ (canvas_dragging? 'T':'F'));
 
 	   if (!canvas_dragging) {
          // ensure menu on narrow screen devices is visible to prevent off-screen placement
          if (kiwi_isMobile() && owrx.mobile && owrx.mobile.small)
             x = 10;
    
-         if (debug_canvas_drag) canvas_log('*');
+         if (debug_canvas_drag) canvas_log('*-RCM');
          right_click_menu(x, y);
          owrx.right_click_menu_active = true;
       } else {
@@ -2676,8 +2680,9 @@ function right_click_menu_init()
    m.push('save waterfall as JPG'); owrx.rcm_save = i; i++;
    m.push('<hr>'); i++;
 
-   m.push('<i>cal ADC clock (admin)</i>'); owrx.rcm_cal = i; i++;
-   m.push('<i>set freq offset (admin)</i>'); owrx.rcm_foff = i; i++;
+   // "pointer-events:none" required to make document.elementFromPoint() not incorrectly match on <i>
+   m.push('<i style="pointer-events:none">cal ADC clock (admin)</i>'); owrx.rcm_cal = i; i++;
+   m.push('<i style="pointer-events:none">set freq offset (admin)</i>'); owrx.rcm_foff = i; i++;
    owrx.right_click_menu_content = m;
    
    w3_menu('id-right-click-menu', 'right_click_menu_cb');
@@ -2743,6 +2748,7 @@ function right_click_menu_cb(idx, x)
    case owrx.rcm_pb:  // restore passband
       restore_passband(cur_mode);
       demodulator_analog_replace(cur_mode);
+      if (debug_canvas_drag) canvas_log('RCM-RPB');
       break;
       
    case owrx.rcm_save:  // save waterfall image
@@ -3216,11 +3222,11 @@ function mobile_init()
 	}
 	
 	// for narrow screen devices, i.e. phones and 7" tablets
-	if (mobile.narrow) {
+	if (mobile.narrow || ext_mobile_info) {
 	   w3_hide('id-readme');   // don't show readme panel closed icon
 	   
 	   // remove top bar and band/label areas on phones
-	   if (mobile.width < 600) {
+	   if (mobile.width < 600 || ext_mobile_info) {
 	      toggle_or_set_hide_bars(owrx.HIDE_ALLBARS);
 	   }
 	}
@@ -3247,7 +3253,7 @@ function mobile_init()
       if (mobile.orient_unchanged) return;
       owrx.rescale_cnt++;
 
-      if (mobile.narrow) {
+      if (mobile.narrow && !mobile_laptop_test) {
          // scale control panel up or down to fit width of all narrow screens
          var scale = mobile.width / el.uiWidth * 0.95;
          el.style.transform = 'scale('+ scale.toFixed(2) +')';
@@ -3400,7 +3406,7 @@ function spectrum_tooltip_update(evt, clientX, clientY)
 		// spectrum div in this case, having included the tooltip text span will cause it to be re-positioned again. And the hover
 		// doesn't go away unless the mouse is moved quickly. So to stop this we need to manually detect when the mouse is out of the
 		// tooltip container and stop updating the tooltip text position so the hover will end.
-		
+
 		if (clientY >= 0 && clientY < spec.height_spectrum_canvas) {
 			spec.dB_ttip.style.left = px(clientX - (kiwi_isMobile()? spec.tooltip_offset : 0));
 			spec.dB_ttip.style.bottom = px(spec.height_spectrum_canvas + 10 - clientY);
@@ -3593,7 +3599,7 @@ function wf_init()
 	
 	wf_snap(kiwi_localStorage_getItem('wf_snap'));
 
-   if (kiwi_isMobile() || mobile_laptop_test)
+   if (kiwi_isMobile())
       mobile_init();
    
    dx_init();
@@ -5032,13 +5038,43 @@ function freqset_car_Hz(fcar)
 
 var freq_dsp_set_last;
 
+/*
+function freq_field_width()
+{
+   var b, width;
+
+   if (kiwi_isFirefox()) { b = 'Firefox'; size = cfg.show_1Hz? 11:10; }
+   else
+   if (kiwi_isChrome()) { b = 'Chrome'; size = cfg.show_1Hz? 9:8; }
+   else
+   if (kiwi_isSafari()) { b = 'Safari'; size = cfg.show_1Hz? 8:7; }
+   else {
+      b = 'Firefox'; size = cfg.show_1Hz? 9:8;
+   }
+
+   if (kiwi_isFirefox()) { b = 'Firefox'; width = cfg.show_1Hz? 11:10; }
+   else
+   if (kiwi_isChrome()) { b = 'Chrome'; width = cfg.show_1Hz? 9:8; }
+   else
+   if (kiwi_isSafari()) { b = 'Safari'; width = cfg.show_1Hz? 8:7; }
+   else {
+      b = 'Firefox'; width = cfg.show_1Hz? 9:8;
+   }
+
+   var s = 'FFS: '+ b + (cfg.show_1Hz? ' 1Hz' : ' 10Hz') +' '+ width +'em';
+   console.log(s);
+   w3_innerHTML('id-rx-title', s);
+   return width +'em';
+}
+*/
+
 function freqset_update_ui()
 {
 	//console.log('FUPD-UI freq_car_Hz='+ freq_car_Hz +' cf+of='+(center_freq + demodulators[0].offset_frequency));
 	//console.log('FUPD-UI center_freq='+ center_freq +' offset_frequency='+ demodulators[0].offset_frequency);
 	//kiwi_trace();
 	freq_displayed_Hz = freq_car_to_dsp(freq_car_Hz);
-   freq_displayed_kHz_str = (freq_displayed_Hz/1000).toFixed(2);
+   freq_displayed_kHz_str = (freq_displayed_Hz/1000).toFixed(cfg.show_1Hz? 3:2);
    //console.log("FUPD-UI freq_car_Hz="+freq_car_Hz+' NEW freq_displayed_Hz='+freq_displayed_Hz);
 	
 	if (!waterfall_setup_done) return;
@@ -5047,7 +5083,7 @@ function freqset_update_ui()
 	if (isUndefined(obj) || obj == null) return;		// can happen if SND comes up long before W/F
 
    var f_with_freq_offset = freq_displayed_Hz + kiwi.freq_offset_Hz;
-   var freq_displayed_kHz_str_with_freq_offset = (f_with_freq_offset/1000).toFixed((f_with_freq_offset > 100e6)? 1:2);
+   var freq_displayed_kHz_str_with_freq_offset = (f_with_freq_offset/1000).toFixed((f_with_freq_offset > 100e6)? 1 : (cfg.show_1Hz? 3:2));
    obj.value = freq_displayed_kHz_str_with_freq_offset;
 
 	//console.log("FUPD obj="+ typeof(obj) +" val="+ obj.value);
@@ -5491,7 +5527,8 @@ function freq_step_update_ui(force)
    var cm = cur_mode.substr(0,2);
    var am_sax_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'qa' || cm == 'iq' || cm == 'dr');
 	var show_9_10 = (b && (b.name == 'LW' || b.name == 'MW') && am_sax_iq_drm)? true:false;
-	w3_visible('id-9-10-cell', show_9_10);
+	//w3_visible('id-9-10-cell', show_9_10);
+	w3_disable('id-9-10-cell', !show_9_10);
 
 	for (var i=0; i < num_step_buttons; i++) {
 		var step_Hz = up_down[cur_mode][i]*1000;
@@ -7104,7 +7141,7 @@ function dx_show_edit_panel(ev, gid, from_shortcut)
                      w3_select('w3-margin-L-64/w3-label-inline w3-text-white /w3-text-red', 'database', '', 'dx.db', dx.db, dx.db_s, 'dx_database_cb')
                   ) +
                   w3_div('',
-			            w3_input('w3-margin-T-16//w3-margin-T-8 w3-padding-small w3-width-80pct', 'Admin password', 'dx.pwd', '', 'dx_admin_pwd_cb'),
+			            w3_input('w3-margin-T-16//w3-margin-T-8 w3-padding-small|width:80%', 'Admin password', 'dx.pwd', '', 'dx_admin_pwd_cb'),
 			            w3_text('w3-margin-T-4', 'editing the stored DX labels of this Kiwi requires admin privileges')
 			         );
 	            ext_panel_set_name('dx');
@@ -7825,7 +7862,7 @@ var shortcut = {
 
 function keyboard_shortcut_init()
 {
-   if (kiwi_isMobile() || kiwi_isFirefox() < 47 || kiwi_isChrome() <= 49 || kiwi_isOpera() <= 36) return;
+   if ((kiwi_isMobile() && !mobile_laptop_test) || kiwi_isFirefox() < 47 || kiwi_isChrome() <= 49 || kiwi_isOpera() <= 36) return;
    
    shortcut.help =
       w3_div('',
@@ -7976,6 +8013,8 @@ function keyboard_shortcut(key, mod, ctlAlt, keyCode)
    case 'E': extension_scroll(-1); break;
    case '\\': case '|': dx_database_cb('', (dx.db == dx.DB_STORED)? dx.DB_EiBi : dx.DB_STORED, false, key == '|', /* from_shortcut */ true); break;
    case '?': case 'h': keyboard_shortcut_help(); break;
+   
+   case 'n': if (dbgUs) { canvas_log('\f'); owrx.drag_count = 0; } break;
 
    default:
       if (key.length == 1 && keyCode != shortcut.KEYCODE_ALT) console.log('no shortcut key <'+ key +'>');
@@ -8194,7 +8233,7 @@ function panels_setup()
 		w3_input('w3-label-not-bold/w3-custom-events|padding:1px|size=20 onkeyup="ident_keyup(this, event)"', 'Your name or callsign:', 'ident-input');
 	
 	w3_el("id-control-freq1").innerHTML =
-	   w3_inline('',
+	   w3_inline('w3-halign-space-between/',
 	      w3_inline('',
             w3_div('id-freq-cell',
                // NB: DO NOT remove the following <form> (3/2021)
@@ -8202,7 +8241,8 @@ function panels_setup()
                // Dim jsFreqKiwiSDR As String = "targetForm = document.forms['form_freq']; targetForm.elements[0].value = '" + frequency + "'; freqset_complete(0); false"
                // Form1.browser.ExecuteScriptAsync(jsFreqKiwiSDR)
                '<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
-                  w3_input('w3-custom-events|padding:0 4px|size=9 onkeydown="freqset_keydown(event)" onkeyup="freqset_keyup(this, event)"', '', 'freq-input') +
+                  w3_input('w3-custom-events|padding:0 4px; width:'+ (cfg.show_1Hz? '6.5em' : '6em') +
+                     '|onkeydown="freqset_keydown(event)" onkeyup="freqset_keyup(this, event)"', '', 'id-freq-input') +
                '</form>'
             ),
 
@@ -8212,19 +8252,17 @@ function panels_setup()
             )
          ),
 
-	      w3_inline('w3-halign-space-around/',
-            w3_div('id-select-band-cell|padding:0 4px',
-               '<select id="id-select-band" class="w3-pointer w3-select-menu" onchange="select_band(this.value)">' +
-                  setup_band_menu() +
-               '</select>'
-            ),
+         w3_div('id-select-band-cell|padding:0 4px',
+            '<select id="id-select-band" class="w3-pointer w3-select-menu" onchange="select_band(this.value)">' +
+               setup_band_menu() +
+            '</select>'
+         ),
 
-            w3_div('id-select-ext-cell|padding:0',
-               '<select id="id-select-ext" class="w3-pointer w3-select-menu" onchange="freqset_select(); extint_select(this.value)">' +
-                  '<option value="-1" selected disabled>extension</option>' +
-                  extint_select_build_menu() +
-               '</select>'
-            )
+         w3_div('id-select-ext-cell|padding:0',
+            '<select id="id-select-ext" class="w3-pointer w3-select-menu" onchange="freqset_select(); extint_select(this.value)">' +
+               '<option value="-1" selected disabled>extension</option>' +
+               extint_select_build_menu() +
+            '</select>'
          )
       );
 
@@ -8232,15 +8270,14 @@ function panels_setup()
 	
 	w3_el("id-control-freq2").innerHTML =
 	   w3_inline('w3-halign-space-between w3-margin-T-4/',
-         w3_div('id-mouse-freq',
-            w3_div('id-mouse-unit', '-----.--')
-         ),
-         w3_div('id-link-cell',
-            w3_div('id-freq-link|padding-left:0px')
-         ),
+         w3_div('id-mouse-freq w3-hide||title="frequency under cursor"', '-----.--'+ (cfg.show_1Hz? '-' : '')),
+
+         w3_div('id-freq-link|padding-left:0px'),
+
          w3_div('id-9-10-cell',
             w3_div('id-button-9-10 class-button-small||title="LW/MW 9/10 kHz tuning step" onclick="button_9_10()"', '10')
          ),
+
          w3_div('id-step-freq',
             '<img id="id-step-0" src="icons/stepdn.20.png" onclick="freqstep(0)" />',
             '<img id="id-step-1" src="icons/stepdn.18.png" onclick="freqstep(1)" style="padding-bottom:1px" />',
@@ -8249,14 +8286,17 @@ function panels_setup()
             '<img id="id-step-4" src="icons/stepup.18.png" onclick="freqstep(4)" style="padding-bottom:1px" />',
             '<img id="id-step-5" src="icons/stepup.20.png" onclick="freqstep(5)" />'
          ),
+
          w3_div('',
             w3_button('id-button-spectrum class-button||title="toggle spectrum display"', 'Spec', 'toggle_or_set_spec')
          ),
+
          w3_div('',
             w3_div('fa-stack||title="record"',
                w3_icon('id-rec1', 'fa-repeat fa-stack-1x w3-text-pink', 22, '', 'toggle_or_set_rec')
             )
          ),
+
          w3_div('|width:8%|title="mute"',
             // from https://jsfiddle.net/cherrador/jomgLb2h since fa doesn't have speaker-slash
             w3_div('id-mute-no fa-stack|width:100%; color:lime',
@@ -8271,6 +8311,8 @@ function panels_setup()
             )
          )
       );
+   
+   w3_hide2('id-mouse-freq', kiwi_isMobile());
 	
 	if (!isNaN(override_9_10)) {
 		step_9_10 = override_9_10;
@@ -8495,11 +8537,11 @@ function panels_setup()
          '&nbsp;', 3, w3_div('id-squelch-field class-slider'), 14,
          w3_select('id-squelch-tail w3-hide w3-text-red||title="squelch tail length"', '', 'tail', 'squelch_tail', squelch_tail, squelch_tail_s, 'squelch_tail_cb')
 	   ) +
-      w3_inline_percent('id-sam-carrier-container w3-hide w3-valign/class-slider w3-last-halign-end',
+      w3_inline_percent('id-sam-carrier-container w3-hide w3-valign/w3-last-halign-end',
          w3_text(optbar_prefix_color, 'SAM'), 17,
-         w3_text('id-sam-carrier'), 42,
-         '&nbsp;', 23,
-         w3_select('w3-text-red', '', 'PLL', 'owrx.sam_pll', owrx.sam_pll, owrx.sam_pll_s, 'sam_pll_cb')
+         w3_text('id-sam-carrier'), 40,
+         w3_select('w3-text-red', '', 'PLL', 'owrx.sam_pll', owrx.sam_pll, owrx.sam_pll_s, 'sam_pll_cb'), 20,
+         w3_button('class-button w3-hcenter', 'Reset', 'sam_pll_reset_cb')
       ) +
       w3_inline('w3-margin-T-2 w3-valign w3-halign-end/class-slider',
          w3_select('id-chan-null w3-text-red w3-hide', '', 'channel<br>null', 'owrx.chan_null', owrx.chan_null, owrx.chan_null_s, 'chan_null_cb'),
@@ -9445,9 +9487,15 @@ function squelch_tail_cb(path, val, first)
    send_squelch();
 }
 
+function sam_pll_reset_cb(path, val, first)
+{
+   //console.log('sam_pll_reset_cb path='+ path +' val='+ val +' first='+ first);
+   snd_send('SET sam_pll=-1');
+}
+
 function sam_pll_cb(path, val, first)
 {
-   //console.log('$sam_pll_cb path='+ path +' val='+ val +' first='+ first);
+   //console.log('sam_pll_cb path='+ path +' val='+ val +' first='+ first);
    owrx.sam_pll = +val;
    snd_send('SET sam_pll='+ owrx.sam_pll);
 }

@@ -246,7 +246,7 @@ input[type=range]::-moz-range-thumb {
     background-color: rgb(240, 240, 240);
 }
 
-.w3-menu-item:hover {
+.w3-menu-item-hover:hover {
     background-color: rgb(79, 157, 251);
     color: white;
 }
@@ -956,11 +956,6 @@ input[type=range]::-moz-range-thumb {
 .w3-width-half
 {
 	width: 50%;
-}
-
-.w3-width-80pct
-{
-	width: 80%;
 }
 
 .w3-width-full

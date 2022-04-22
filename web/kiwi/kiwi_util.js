@@ -115,7 +115,7 @@ function kiwi_isLinux() { return kiwi_linux; }
 
 function kiwi_isAndroid() { return kiwi_android; }
 
-function kiwi_isMobile() { return (kiwi_isAndroid() || kiwi_is_iOS()); }
+function kiwi_isMobile() { return (kiwi_isAndroid() || kiwi_is_iOS() || mobile_laptop_test); }
 
 // returns the version number or NaN (later of which will evaluate false in numeric comparisons)
 function kiwi_isSafari() { return (kiwi_safari? kiwi_safari[1] : NaN); }

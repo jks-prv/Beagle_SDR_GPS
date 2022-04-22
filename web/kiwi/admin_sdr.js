@@ -158,8 +158,9 @@ function config_html()
 				)
 			),
 			w3_div('',
-            w3_checkbox_get_param('//w3-restart w3-label-inline', 'Show AGC threshold on S-meter', 'agc_thresh_smeter', 'admin_bool_cb', true),
-            w3_checkbox_get_param('w3-margin-T-8// w3-label-inline', 'Show user geolocation info', 'show_geo', 'admin_bool_cb', true)
+            w3_checkbox_get_param('//w3-label-inline', 'Show 1 Hz frequency resolution', 'show_1Hz', 'admin_bool_cb', true),
+            w3_checkbox_get_param('w3-margin-T-8//w3-restart w3-label-inline', 'Show AGC threshold on S-meter', 'agc_thresh_smeter', 'admin_bool_cb', true),
+            w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Show user geolocation info', 'show_geo', 'admin_bool_cb', true)
          )
 		) +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
@@ -1922,6 +1923,7 @@ function dx_export_cb2(obj)
    //console.log(obj);
    //console.log(JSON.stringify(obj));
    var dx_dq = function(s) { return dq(kiwi_str_decode_selective_inplace(s, true)); };
+   var dx_dq2 = function(s) { var s = kiwi_str_decode_selective_inplace(s, true); return (s.includes(',')? dq(s) : s); };
    
    // create a JSON format file that exactly matches what server-side dx_save_as_json() produces
    if (dx.export_which == dx.DX_JSON) {
@@ -1957,42 +1959,81 @@ function dx_export_cb2(obj)
       var re_dq_g = /\"/g;
       
       obj.forEach(function(o, i) {
-         if (i == 0) {
-            dx.export_s_a[0] = 'Freq kHz;"Mode";"Ident";"Notes";"Extension";"Type";PB low;PB high;Offset;"DOW";Begin;End\n';
-            return;
-         }
-         var gid = o.g;
-         if (gid == dx.o.len - 1) last = true;
-         var mode = kiwi.modes_u[o.fl & dx.DX_MODE];
-         var type = (o.fl & dx.DX_TYPE) >> dx.DX_TYPE_SFT;
-         type = type? dq('T'+ type) : '';
-         var lo = o.lo, hi = o.hi;
-         if (lo == 0 && hi == 0) lo = hi = '';
-         var off = o.o? o.o : '';
-         
-         var dow = (o.fl & dx.DX_DOW) >> dx.DX_DOW_SFT;
-         dow_s = '';
-         if (dow != 0 && dow != dx.DX_DOW_BASE) {
-            for (var j = 0; j < 7; j++) {
-               if (dow & (1 << (6-j))) dow_s += 'MTWTFSS'[j]; else dow_s += '_';
+         if (1) {
+            if (i == 0) {
+               dx.export_s_a[0] = 'Freq kHz;"Mode";"Ident";"Notes";"Extension";"Type";PB low;PB high;Offset;"DOW";Begin;End\n';
+               return;
             }
-            dow_s = dq(dow_s);
-         }
-         var begin = o.b, end = o.e;
-         if (begin == 0 && end == 2400) {
-            begin = end = '';
+            var gid = o.g;
+            if (gid == dx.o.len - 1) last = true;
+            var mode = dq(kiwi.modes_u[o.fl & dx.DX_MODE]);
+            var type = (o.fl & dx.DX_TYPE) >> dx.DX_TYPE_SFT;
+            type = type? dq('T'+ type) : '';
+            var lo = o.lo, hi = o.hi;
+            if (lo == 0 && hi == 0) lo = hi = '';
+            var off = o.o? o.o : '';
+         
+            var dow = (o.fl & dx.DX_DOW) >> dx.DX_DOW_SFT;
+            dow_s = '';
+            if (dow != 0 && dow != dx.DX_DOW_BASE) {
+               for (var j = 0; j < 7; j++) {
+                  if (dow & (1 << (6-j))) dow_s += 'MTWTFSS'[j]; else dow_s += '_';
+               }
+               dow_s = dq(dow_s);
+            }
+            var begin = o.b, end = o.e;
+            if (begin == 0 && end == 2400) {
+               begin = end = '';
+            } else {
+               // to preserve leading zeros in spreadsheet number field add leading single-quote
+               begin = "'"+ begin.toFixed(0).leadingZeros(4);
+               end = "'"+ end.toFixed(0).leadingZeros(4);
+            }
+
+            var ident = (o.i != '')? dx_dq(o.i) : '';
+            var notes = o.n? dx_dq(o.n) : '';
+            var ext = o.p? dx_dq(o.p) : '';
+
+            var s = [ o.f, mode, ident, notes, ext, type, lo, hi, off, dow_s, begin, end ];
+            dx.export_s_a[gid+1] = s.join(';') +'\n';    // gid+1 because export_s_a[0] has CSV column legend
          } else {
-            // to preserve leading zeros in spreadsheet number field add leading single-quote
-            begin = "'"+ begin.toFixed(0).leadingZeros(4);
-            end = "'"+ end.toFixed(0).leadingZeros(4);
+            // test exporting CSV files with comma delimiters and non-quoted string fields (unless they contain delimiter)
+            if (i == 0) {
+               dx.export_s_a[0] = 'Freq kHz,"Mode","Ident","Notes","Extension","Type",PB low,PB high,Offset,"DOW",Begin,End\n';
+               return;
+            }
+            var gid = o.g;
+            if (gid == dx.o.len - 1) last = true;
+            var mode = (kiwi.modes_u[o.fl & dx.DX_MODE]).toString();
+            var type = (o.fl & dx.DX_TYPE) >> dx.DX_TYPE_SFT;
+            type = type? ('T'+ type) : '';
+            var lo = o.lo, hi = o.hi;
+            if (lo == 0 && hi == 0) lo = hi = '';
+            var off = o.o? o.o : '';
+         
+            var dow = (o.fl & dx.DX_DOW) >> dx.DX_DOW_SFT;
+            dow_s = '';
+            if (dow != 0 && dow != dx.DX_DOW_BASE) {
+               for (var j = 0; j < 7; j++) {
+                  if (dow & (1 << (6-j))) dow_s += 'MTWTFSS'[j]; else dow_s += '_';
+               }
+            }
+            var begin = o.b, end = o.e;
+            if (begin == 0 && end == 2400) {
+               begin = end = '';
+            } else {
+               // to preserve leading zeros in spreadsheet number field add leading single-quote
+               begin = "'"+ begin.toFixed(0).leadingZeros(4);
+               end = "'"+ end.toFixed(0).leadingZeros(4);
+            }
+
+            var ident = (o.i != '')? dx_dq2(o.i) : '';
+            var notes = o.n? dx_dq2(o.n) : '';
+            var ext = o.p? dx_dq2(o.p) : '';
+
+            var s = [ o.f, mode, ident, notes, ext, type, lo, hi, off, dow_s, begin, end ];
+            dx.export_s_a[gid+1] = s.join(',') +'\n';    // gid+1 because export_s_a[0] has CSV column legend
          }
-
-         var ident = (o.i != '')? dx_dq(o.i) : '';
-         var notes = o.n? dx_dq(o.n) : '';
-         var ext = o.p? dx_dq(o.p) : '';
-
-         var s = [ o.f, dq(mode), ident, notes, ext, type, lo, hi, off, dow_s, begin, end ];
-         dx.export_s_a[gid+1] = s.join(';') +'\n';    // gid+1 because export_s_a[0] has CSV column legend
       });
    }
    
