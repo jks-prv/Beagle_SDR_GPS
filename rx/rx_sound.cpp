@@ -239,6 +239,9 @@ void c2s_sound(void *param)
 	int overload_timer = -1; // keep track of when we stopped being overloaded to allow a decay
 	//float max_thr = -35; // this is the maximum signal in dBm before muting (now a global config parameter)
 	float last_max_thr = max_thr;
+	
+	wdsp_SAM_PLL(rx_chan, PLL_MED);
+	wdsp_SAM_PLL(rx_chan, PLL_RESET);
 
 	gps_timestamp_t *gps_tsp = &gps_ts[rx_chan];
 	memset(gps_tsp, 0, sizeof(gps_timestamp_t));
@@ -387,8 +390,8 @@ void c2s_sound(void *param)
 
                             // reset SAM demod on non-SAM to SAM transition
                             if ((_mode >= MODE_SAM && _mode <= MODE_QAM) && !(mode >= MODE_SAM && mode <= MODE_QAM)) {
-                                //cprintf(conn, "wdsp_SAM_reset\n");
-                                wdsp_SAM_reset(rx_chan);
+                                //cprintf(conn, "SAM_PLL_RESET\n");
+                                wdsp_SAM_PLL(rx_chan, PLL_RESET);
                             }
 
                             mode = _mode;
@@ -595,7 +598,7 @@ void c2s_sound(void *param)
                 if (n == 1) {
                     did_cmd = true;
                     //cprintf(conn, "sam_pll=%d\n", type);
-                    wdsp_SAM_PLL(type);
+                    wdsp_SAM_PLL(rx_chan, type);
                 }
                 break;
 

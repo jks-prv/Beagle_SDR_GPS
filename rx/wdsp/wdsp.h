@@ -3,8 +3,10 @@
 #include "rx_noise.h"
 
 void wdsp_SAM_demod_init();
-void wdsp_SAM_reset(int rx_chan);
-void wdsp_SAM_PLL(int type);
+
+const int PLL_RESET = -1, PLL_DX = 0, PLL_MED = 1, PLL_FAST = 2;
+void wdsp_SAM_PLL(int rx_chan, int type);
+
 f32_t wdsp_SAM_carrier(int rx_chan);
 enum chan_null_e { CHAN_NULL_NONE, CHAN_NULL_LSB, CHAN_NULL_USB };
 void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *in, TYPEMONO16 *out);

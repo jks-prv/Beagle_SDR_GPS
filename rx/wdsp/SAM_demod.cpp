@@ -21,11 +21,16 @@
 
 struct wdsp_SAM_t {
     // pll
+    int type;
     f32_t phzerror;
     f32_t fil_out;
     f32_t omega2;
     f32_t SAM_carrier;
     f32_t SAM_lowpass;
+    f32_t zeta;         // PLL step response: smaller, slower response 1.0 - 0.1
+    f32_t omegaN;       // PLL bandwidth 50.0 - 1000.0
+    f32_t g1;
+    f32_t g2;
 
     // fade leveler
     f32_t dc;
@@ -49,10 +54,6 @@ static wdsp_SAM_t wdsp_SAM[MAX_RX_CHANS];
 static const f32_t pll_fmax = +22000.0;
 static f32_t omega_min;
 static f32_t omega_max;
-static f32_t zeta;          // PLL step response: smaller, slower response 1.0 - 0.1
-static f32_t omegaN;        // PLL bandwidth 50.0 - 1000.0
-static f32_t g1;
-static f32_t g2;
 
 // fade leveler
 #define FADE_LEVELER 1
@@ -96,37 +97,43 @@ static const f32_t c1[SAM_PLL_HILBERT_STAGES] = {
 // medium 0.6, 200
 // fast 1.2, 500
 
-const int PLL_DX = 0, PLL_MED = 1, PLL_FAST = 2;
-
-void wdsp_SAM_PLL(int type)
+void wdsp_SAM_PLL(int rx_chan, int type)
 {
+    wdsp_SAM_t *w = &wdsp_SAM[rx_chan];
+
     switch (type) {
     
+    case PLL_RESET:
+        type = w->type;     // prev PLL type
+        memset(w, 0, sizeof(wdsp_SAM_t));
+        if (type == PLL_RESET) type = PLL_MED;
+        wdsp_SAM_PLL(rx_chan, type);
+        break;
+    
     case PLL_DX:
-        zeta = 0.2;
-        omegaN = 70;
+        w->zeta = 0.2;
+        w->omegaN = 70;
         break;
     
     case PLL_MED:
-        zeta = 0.65;
-        omegaN = 200.0;
+        w->zeta = 0.65;
+        w->omegaN = 200.0;
         break;
     
     case PLL_FAST:
-        zeta = 1.0;
-        omegaN = 500;
+        w->zeta = 1.0;
+        w->omegaN = 500;
         break;
     }
 
-    //printf("SAM_PLL zeta=%.2f omegaN=%.0f\n", zeta, omegaN);
-    g1 = 1.0 - expf(-2.0 * omegaN * zeta / snd_rate);
-    g2 = - g1 + 2.0 * (1 - expf(- omegaN * zeta / snd_rate) * cosf(omegaN / snd_rate * sqrtf(1.0 - zeta * zeta)));
+    //printf("SAM_PLL zeta=%.2f omegaN=%.0f\n", w->zeta, w->omegaN);
+    w->g1 = 1.0 - expf(-2.0 * w->omegaN * w->zeta / snd_rate);
+    w->g2 = - w->g1 + 2.0 * (1 - expf(- w->omegaN * w->zeta / snd_rate) * cosf(w->omegaN / snd_rate * sqrtf(1.0 - w->zeta * w->zeta)));
+    w->type = type;
 }
 
 void wdsp_SAM_demod_init()
 {
-    wdsp_SAM_PLL(PLL_MED);
-
     omega_min = K_2PI * (-pll_fmax) / snd_rate;
     omega_max = K_2PI * pll_fmax / snd_rate;
 
@@ -134,12 +141,6 @@ void wdsp_SAM_demod_init()
     onem_mtauR = 1.0 - mtauR;
     mtauI = expf(-1 / (snd_rate * tauI));
     onem_mtauI = 1.0 - mtauI;
-}
-
-void wdsp_SAM_reset(int rx_chan)
-{
-    wdsp_SAM_t *w = &wdsp_SAM[rx_chan];
-    memset(w, 0, sizeof(wdsp_SAM_t));
 }
 
 f32_t wdsp_SAM_carrier(int rx_chan)
@@ -289,9 +290,9 @@ void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *i
         
         f32_t det = atan2f(corr[Q], corr[I]);
         f32_t del_out = w->fil_out;
-        w->omega2 = w->omega2 + g2 * det;
+        w->omega2 = w->omega2 + w->g2 * det;
         w->omega2 = CLAMP(w->omega2, omega_min, omega_max);
-        w->fil_out = g1 * det + w->omega2;
+        w->fil_out = w->g1 * det + w->omega2;
         w->phzerror = w->phzerror + del_out;
 
         // wrap round 2PI, modulus
