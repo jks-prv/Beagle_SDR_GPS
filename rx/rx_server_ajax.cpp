@@ -52,6 +52,7 @@ Boston, MA  02110-1301, USA.
 #define CSV_STR 1
 #define CSV_DEC 2
 
+// NB: if type == CSV_DEC, caller must kiwi_ifree(val)
 static bool _dx_parse_csv_field(int type, char *field, void *val, bool *empty = NULL)
 {
     bool fail = false;
@@ -70,6 +71,7 @@ static bool _dx_parse_csv_field(int type, char *field, void *val, bool *empty = 
         }
     } else
 
+    // don't require that string fields be quoted (except when they contain field delimiter)
     if (type == CSV_STR || type == CSV_DEC) {
         char *s = field;
         int sl = kiwi_strnlen(s, 1024);
@@ -79,25 +81,24 @@ static bool _dx_parse_csv_field(int type, char *field, void *val, bool *empty = 
             if (empty != NULL) *empty = true;
         } else
 
-        if (s[0] == '"' && s[sl-1] == '"') {
-            // remove the doubled-up double-quotes (if any)
-            if (sl > 2) {
-                kiwi_str_replace(s, "\"\"", "\"");      // shrinking, so same mem space
-                sl = kiwi_strnlen(s, 1024);
-            }
+        // remove the doubled-up double-quotes (if any)
+        if (sl > 2) {
+            kiwi_str_replace(s, "\"\"", "\"");      // shrinking, so same mem space
+            sl = kiwi_strnlen(s, 1024);
+        }
 
-            // decode if requested
-            if (type == CSV_DEC) {
-                // replace beginning and ending " into something that won't get encoded (restore below)
-                s[0] = 'x';
-                s[sl-1] = 'x';
-                s = kiwi_str_decode_selective_inplace(kiwi_str_encode(s), FEWER_ENCODED);
-                sl = strlen(s);
-                s[0] = '"';
-                s[sl-1] = '"';
-            }
-            *((char **) val) = s;       // if type == CSV_DEC caller must kiwi_ifree() val
-        } else { fail = true; }
+        // decode if requested
+        if (type == CSV_DEC) {
+            // replace beginning and ending " into something that won't get encoded (restore below)
+            bool restore_sf = false, restore_sl = false;
+            if (s[0] == '"') { s[0] = 'x'; restore_sf = true; }
+            if (s[sl-1] == '"') { s[sl-1] = 'x'; restore_sl = true; }
+            s = kiwi_str_decode_selective_inplace(kiwi_str_encode(s), FEWER_ENCODED);
+            sl = strlen(s);
+            if (restore_sf) s[0] = '"';
+            if (restore_sl) s[sl-1] = '"';
+        }
+        *((char **) val) = s;       // if type == CSV_DEC caller must kiwi_ifree() val
     } else
         panic("_dx_parse_csv_field");
     
@@ -295,6 +296,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
             #define NS_SIZE 256
             sb = (char *) data;
             int rem = data + data_len - sb;
+            char *delim = (char *) ";";
 
             for (line = idx = 0; rem > 0; line++) {
                 if (idx >= s_size) {
@@ -315,8 +317,16 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
                 
                 sb2 = index(sb, '\n');
                 *sb2 = '\0';
-                n = kiwi_split(sb, &r_buf, ";", qs, NQS,
+                n = kiwi_split(sb, &r_buf, delim, qs, NQS,
                     KSPLIT_NO_SKIP_EMPTY_FIELDS | KSPLIT_HANDLE_EMBEDDED_DELIMITERS);
+                
+                if (n != 12 && line == 0 && delim[0] == ';') {
+                    delim = (char *) ",";
+                    n = kiwi_split(sb, &r_buf, delim, qs, NQS,
+                        KSPLIT_NO_SKIP_EMPTY_FIELDS | KSPLIT_HANDLE_EMBEDDED_DELIMITERS);
+                    printf("DX_UPLOAD CSV: trying delim comma, n=%d\n", n);
+                }
+                
                 sb = sb2+1;
                 rem = data + data_len - sb;
                 //printf("rem=%d\n", rem);
@@ -346,7 +356,11 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
 
                     char *type;
                     if (_dx_parse_csv_field(CSV_STR, qs[5], &type, &empty)) { rc = 16; goto fail; }
-                    else { if (!empty) sb3 = kstr_asprintf(sb3, "%s:1", type); };
+                    else {
+                        if (!empty)
+                            sb3 = kstr_asprintf(sb3, "%s%s%s:1",
+                                (type[0] != '"')? "\"" : "", type, (type[strlen(type)-1] != '"')? "\"" : "");
+                    };
 
                     float pb_lo, pb_hi;
                     if (_dx_parse_csv_field(CSV_FLT, qs[6], &pb_lo)) { rc = 17; goto fail; }
@@ -381,14 +395,18 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
                         sb3 = kstr_asprintf(sb3, "%s\"b0\":%.0f, \"e0\":%.0f", sb3? ", " : "", begin, end);
                     
                     if (!ext_empty) {
-                        sb3 = kstr_asprintf(sb3, "%s\"p\":%s", sb3? ", " : "", ext);
+                        sb3 = kstr_asprintf(sb3, "%s\"p\":%s%s%s", sb3? ", " : "",
+                            (ext[0] != '"')? "\"" : "", ext, (ext[strlen(ext)-1] != '"')? "\"" : "");
                     }
                     kiwi_ifree(ext);
 
                     char *opt_s = kstr_sp(sb3);
                     bool opt = (kstr_len(sb3) != 0);
-                    asprintf(&s_a[idx], "[%.2f, %s, %s, %s%s%s%s]%s\n",
-                        freq, mode, ident, notes,
+                    asprintf(&s_a[idx], "[%.2f, %s%s%s, %s%s%s, %s%s%s%s%s%s]%s\n",
+                        freq,
+                        (mode[0] != '"')? "\"" : "", mode, (mode[strlen(mode)-1] != '"')? "\"" : "",
+                        (ident[0] != '"')? "\"" : "", ident, (ident[strlen(ident)-1] != '"')? "\"" : "",
+                        (notes[0] != '"')? "\"" : "", notes, (notes[strlen(notes)-1] != '"')? "\"" : "",
                         opt? ", {" : "", opt? opt_s : "", opt? "}" : "",
                         rem? ",":"");
                     kstr_free(sb3);
