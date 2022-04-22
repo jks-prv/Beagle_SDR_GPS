@@ -191,6 +191,13 @@
 */
 
 
+var w3int = {
+   prev_menu_hover_el: null,
+   
+   _last_: 0
+};
+
+
 ////////////////////////////////
 // deprecated
 ////////////////////////////////
@@ -774,7 +781,7 @@ function w3_field_select(el_id, opts)
    if (!el) return;
    
    var focus=0, select=0, blur=0;
-   if (opts['mobile'] && (kiwi_isMobile() || mobile_laptop_test)) blur = 1; else focus = select = 1;
+   if (opts['mobile'] && kiwi_isMobile()) blur = 1; else focus = select = 1;
    if (opts['blur']) blur = 1;
    if (opts['focus_select']) focus = select = 1;
    if (opts['focus_only']) { focus = 1; select = 0; }
@@ -1021,6 +1028,11 @@ function w3_show_hide(el, show, display)
 function w3_show_hide_inline(el, show)
 {
    w3_show_hide(el, show, 'w3-show-inline-new');
+}
+
+function w3_disable(el, disable)
+{
+	w3_set_props(el, 'w3-disabled', disable);
 }
 
 function w3_visible(el_id, visible)
@@ -2810,17 +2822,64 @@ function w3_menu_items(id, arr)
          prop = 'w3-menu-item';
          attr = 'id='+ dq(idx);
          idx++;
+         if (!kiwi_isMobile()) prop += ' w3-menu-item-hover';
       }
       s += w3_div(prop +'||'+ attr, items[i]);
    }
    
    //console.log(s);
    w3_el(id).innerHTML = s;
+   
+   // ":hover" highlighting doesn't work on mobile devices -- do it manually
+   if (kiwi_isMobile()) {
+      w3_iterate_children(id, function(el, i) {
+         el.addEventListener('touchmove', w3int_menu_touch_move, false);
+         if (mobile_laptop_test)
+            el.addEventListener('mousemove', w3int_menu_mouse_move, false);
+      });
+   }
+}
+
+function w3int_menu_mouse_move(ev)
+{
+   var x = Math.round(ev.pageX);
+   var y = Math.round(ev.pageY);
+   w3int_menu_move('MMM', x, y);
+}
+
+function w3int_menu_touch_move(ev)
+{
+   //event_dump(ev, 'w3int_menu_touch_move');
+   var x = Math.round(ev.touches[0].pageX);
+   var y = Math.round(ev.touches[0].pageY);
+   w3int_menu_move('MTM', x, y);
+}
+
+function w3int_menu_move(id, x, y)
+{
+   var el = document.elementFromPoint(x, y);
+   if (!el) return;
+   var rtn = (!el || !w3_contains(el, 'w3-menu-item'));
+   //canvas_log(id +' '+ x +':'+ y +':'+ el.id);
+
+   if (w3int.prev_menu_hover_el && (rtn || (el != w3int.prev_menu_hover_el))) {
+      w3int.prev_menu_hover_el.style.background = '';
+      w3int.prev_menu_hover_el.style.color = '';
+      if (rtn) {
+         //canvas_log('R');
+         return;
+      }
+   }
+
+   el.style.background = 'rgb(79, 157, 251)';
+   el.style.color = 'white';
+   w3int.prev_menu_hover_el = el;
 }
 
 function w3_menu_popup(id, x, y)
 {
    //console.log('w3_menu_popup id='+ id +' x='+ x +' y='+ y);
+   var x0 = x, y0 = y;
    var el = w3_el(id);
 	if (x == -1) x = window.innerWidth/2;
 	if (y == -1) y = window.innerHeight/2;
@@ -2828,14 +2887,19 @@ function w3_menu_popup(id, x, y)
 	var slop = 16;
 	el.w3_realigned = false;
 	
-	if (x + el.clientWidth + slop > window.innerWidth) {
+	if ((x + el.clientWidth) + slop > window.innerWidth) {
 	   x = window.innerWidth - el.clientWidth - slop;
+	   //canvas_log('X:'+ x0 +':'+ y0);
+	   el.w3_realigned_time = Date.now();
 	   el.w3_realigned = true;
 	}
    el.style.left = px(x);
 
-	if (y + el.clientHeight + slop > window.innerHeight) {
+   var yt = y + el.clientHeight + slop;
+	//canvas_log('Y:'+ x0 +':'+ y0 +'/'+ yt +'>'+ window.innerHeight +' '+ ((yt > window.innerHeight)? 'T':'F'));
+	if (yt > window.innerHeight) {
 	   y = window.innerHeight - el.clientHeight - slop;
+	   el.w3_realigned_time = Date.now();
 	   el.w3_realigned = true;
 	}
    el.style.top = px(y);
@@ -2855,11 +2919,17 @@ function w3int_menu_onclick(ev, id, cb)
    //console.log('w3int_menu_onclick id='+ id +' cb='+ cb);
    //if (ev != null) event_dump(ev, "MENU");
    var el = w3_el(id);
+
+   // ignore false click from menu re-alignment (only if click is recent enough)
    //console.log('w3int_menu_onclick realigned='+ el.w3_realigned);
    if (el.w3_realigned) {
-      // ignore false click from menu re-alignment
       el.w3_realigned = false;
-      return cancelEvent(ev);
+      var when = Date.now() - el.w3_realigned_time;
+      if (when < 50) {
+         //canvas_log('XRe'+ when);
+         return cancelEvent(ev);
+      }
+      //canvas_log('XOK'+ when);
    }
 
    el.style.visibility = 'hidden';
@@ -2873,12 +2943,14 @@ function w3int_menu_onclick(ev, id, cb)
       idx = +_id;
       if (_id == '' || isNaN(idx)) idx = -1;
       //console.log('w3int_menu_onclick CALL idx='+ idx);
+      //canvas_log('C');
       w3_call(cb, idx, el.w3_menu_x);
    }
 
    // allow right-button to select menu items
 	if (ev != null) {
       //console.log('w3int_menu_onclick: cancelEvent()');
+      //canvas_log('Enull');
 	   return cancelEvent(ev);
 	}
 }

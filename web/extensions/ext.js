@@ -512,18 +512,32 @@ function ext_mobile_info(last)
 
 function extint_news(s)
 {
-   var el = w3_el('id-news');
-   el.style.top = '10px';
-   el.style.bottom = '';
-   //el.style.right = '';
-   el.style.right = '0';
-   //el.style.left = '0';
-   el.style.width = '350px';
-   //el.style.height = '300px';
-   el.style.height = '200px';
-   el.style.visibility = 'visible';
-   el.style.zIndex = 9999;
-   w3_innerHTML('id-news-inner', s);
+   var el;
+   if (!extint.news_init) {
+      el = w3_el('id-news');
+      if (kiwi_isMobile()) {
+         //el.style.top = '36px';
+         el.style.top = '300px';
+         el.style.bottom = '';
+         el.style.left = '';
+         el.style.right = '0';
+         el.style.width = '350px';
+         el.style.height = '200px';
+      } else {
+         el.style.top = '';
+         el.style.bottom = '0';
+         el.style.right = '';
+         el.style.left = '0';
+         el.style.width = '350px';
+         el.style.height = '300px';
+      }
+      el.style.visibility = 'visible';
+      el.style.zIndex = 9999;
+      extint.news_init = true;
+   }
+   el = w3_el('id-news-inner');
+   w3_innerHTML(el, s);
+   w3_scrollDown(el);
 }
 
 function ext_panel_init()
