@@ -8655,7 +8655,7 @@ function panels_setup()
 		'<li> Adjust the "WF min" slider for best waterfall colors or use the "Auto Scale" button. </li>' +
 		"<li> Type 'h' or '?' to see the list of keyboard shortcuts. </li>" +
 		'<li> See the <a href="http://www.kiwisdr.com/quickstart/" target="_blank">Operating information</a> page' +
-		     'and <a href="https://www.dropbox.com/s/i1bjyp1acghnc16/KiwiSDR.design.review.pdf?dl=1" target="_blank">Design review document</a>. </li>' +
+		     'and <a href="https://www.dropbox.com/s/uaf2jwb99l56e98/KiwiSDR.design.review.pdf?dl=1" target="_blank">Design review document</a>. </li>' +
 		'</ul>';
 
 
