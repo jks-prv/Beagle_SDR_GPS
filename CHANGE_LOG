@@ -2,6 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.514  April 26, 2022
+    Admin page, DX tab:
+        Fix corruption of UTF-8 when uploading from .csv files.
+        Allow uploading from non-local networks, e.g. allow an non-local admin connection to
+            upload to a Kiwi at a remote site.
+    
+    Increased 24hr timeout repeated-connection auto ban limit from 2 to 5 retries.
+    Fixed link in README.md file.
+
 v1.513  April 22, 2022
     DX label CSV file import: commas are now an accepted field delimiter character.
         String fields are not required to be quoted (unless they contain the delimiter character).
