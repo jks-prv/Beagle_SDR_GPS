@@ -93,7 +93,7 @@ static bool _dx_parse_csv_field(int type, char *field, void *val, bool *empty = 
             bool restore_sf = false, restore_sl = false;
             if (s[0] == '"') { s[0] = 'x'; restore_sf = true; }
             if (s[sl-1] == '"') { s[sl-1] = 'x'; restore_sl = true; }
-            s = kiwi_str_decode_selective_inplace(kiwi_str_encode(s), FEWER_ENCODED);
+            s = kiwi_str_decode_selective_inplace(kiwi_str_encode(kiwi_str_decode_inplace(s)), FEWER_ENCODED);
             sl = strlen(s);
             if (restore_sf) s[0] = '"';
             if (restore_sl) s[sl-1] = '"';
@@ -249,7 +249,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
     //
 	// SECURITY:
 	//	Okay, requires a matching auth key generated from a previously authenticated admin web socket connection
-	//  Also, request restricted to the local network.
+	//  Requests NOT restricted to the local network so admins can update remote sites.
 	//	MITM vulnerable
 	//	Returns JSON
 	case AJAX_DX: {
@@ -259,11 +259,6 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
         char **s_a = NULL;
         int s_size = 0;
 		char *r_buf = NULL;
-		
-		if (!isLocalIP) {
-		    printf("DX UPLOAD: !isLocalIP %s content_len=%d\n", ip_unforwarded, mc->content_len);
-		    return (char *) -1;
-		}
 		
         #define TMEAS(x) x
         //#define TMEAS(x)
@@ -324,7 +319,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
                     delim = (char *) ",";
                     n = kiwi_split(sb, &r_buf, delim, qs, NQS,
                         KSPLIT_NO_SKIP_EMPTY_FIELDS | KSPLIT_HANDLE_EMBEDDED_DELIMITERS);
-                    printf("DX_UPLOAD CSV: trying delim comma, n=%d\n", n);
+                    //printf("DX_UPLOAD CSV: trying delim comma, n=%d\n", n);
                 }
                 
                 sb = sb2+1;

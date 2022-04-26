@@ -395,7 +395,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     kiwi_ifree(type_m); kiwi_ifree(pwd_m); kiwi_ifree(ipl_m);
                     conn->tlimit_zombie = true;
                     
-                    #define TOO_MANY_ATTEMPTS 2
+                    #define TOO_MANY_ATTEMPTS 5
                     #define WITHIN_THIS_MANY_MINUTES 30
                     u4_t last = json_default_int(&cfg_ipl, stprintf("%s_last", conn->remote_ip), 0, NULL);
                     
@@ -416,7 +416,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     #endif
                     
                     json_set_int(&cfg_ipl, stprintf("%s_last", conn->remote_ip), last);
-                    if (retries == TOO_MANY_ATTEMPTS) {
+                    if (retries >= TOO_MANY_ATTEMPTS) {
                         cprintf(conn, "TLIMIT-IP RETRIES EXCEEDED, adding to blacklist: %s\n", conn->remote_ip);
                         ip_blacklist_add_iptables(conn->remote_ip);
                     }
