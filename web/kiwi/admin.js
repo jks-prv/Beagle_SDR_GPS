@@ -43,6 +43,7 @@ function status_html()
          w3_div('id-msg-config w3-container') +
          w3_div('id-msg-gps w3-container') +
          w3_div('id-msg-snr w3-container') +
+         w3_div('w3-container', 'Browser: '+ navigator.userAgent) +
          '<hr>' +
          w3_div('id-msg-stats-cpu w3-container') +
          w3_div('id-msg-stats-xfer w3-container') +
