@@ -10,6 +10,7 @@ var kiwi = {
    GPS_fixes: 0,
    wf_fps: 0,
    is_multi_core: 0,
+   log2_seq: 0,
    
    inactivity_panel: false,
    no_admin_conns_pend: 0,
@@ -17,8 +18,8 @@ var kiwi = {
    ident_min: 16,    // e.g. "wsprdaemon_v3.0a" is 16 chars
 
    volume: 50,
-   volume_f: 0,
-   muted: false,
+   volume_f: 1e-6,
+   muted: 1,         // mute until muted_initially state determined
    unmuted_color: 'lime',
 
    queued: 0,
@@ -94,7 +95,16 @@ function kiwi_bodyonload(error)
 {
 	if (error != '') {
 		kiwi_serious_error(error);
-	} else {
+	}
+	else
+
+	if (kiwi_isSmartTV() && kiwi_isChrome() < 87) {
+	   var s = 'Browser: '+ navigator.userAgent +
+	      '<br>Sorry, KiwiSDR requires SmartTV Chrome version >= 87';
+		kiwi_serious_error(s);
+	} else
+	
+	{
 	   if (initCookie('ident', "").startsWith('ZL/KF6VO')) dbgUs = true;
 	   
 	   // for testing a clean webpage, e.g. kiwi:8073/test
@@ -107,7 +117,7 @@ function kiwi_bodyonload(error)
 	      return;
 	   }
 	   */
-
+	   
 		conn_type = html('id-kiwi-container').getAttribute('data-type');
 		if (conn_type == 'undefined') conn_type = 'kiwi';
 		console.log('conn_type='+ conn_type);
