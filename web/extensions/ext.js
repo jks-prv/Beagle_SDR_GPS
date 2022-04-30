@@ -476,13 +476,15 @@ function ext_panel_set_name(name)
 
 
 /*
+www.ios-resolution.com
 screen.{width,height}	P=portrait L=landscape
 			   w     h		screen.[wh] in portrait
 			   h     w		rotated to landscape
 iPhone 5S	320   568	P
-iPhone X	   414   896	P
-levono		600   976	P 7"
-huawei		600   976	P 7"
+iPhone 6S   375   667   P
+iPhone XR   414   896	P
+levono		600   1024	P 7"
+huawei		600   982	P 7"
 
 iPad 2		768   1024	P
 MBP 15"		1440  900	L
@@ -501,7 +503,7 @@ function ext_mobile_info(last)
 	rv.isPortrait = isPortrait? 1:0;
 	rv.iPad     = (isPortrait && w <= 768)? 1:0;    // iPad or smaller
 	rv.small    = (isPortrait && w <  768)? 1:0;    // anything smaller than iPad
-	rv.narrow   = (isPortrait && h <= 600)? 1:0;    // narrow screens, i.e. phones and 7" tablets
+	rv.narrow   = (isPortrait && w <= 600)? 1:0;    // narrow screens, i.e. phones and 7" tablets
    return rv;
 }
 
@@ -516,13 +518,21 @@ function extint_news(s)
    if (!extint.news_init) {
       el = w3_el('id-news');
       if (kiwi_isMobile()) {
-         //el.style.top = '36px';
-         el.style.top = '300px';
+         var mi = ext_mobile_info();
+         if (mi.width <= 768 && mi.width >= 600) {    // iPad & tablets
+            el.style.top = '36px';
+            el.style.width = '350px';
+            el.style.height = '300px';
+         } else {
+            el.style.top = '36px';
+            //el.style.top = '300px';
+            //el.style.width = '350px';
+            el.style.width = '150px';
+            el.style.height = '200px';
+         }
          el.style.bottom = '';
          el.style.left = '';
          el.style.right = '0';
-         el.style.width = '350px';
-         el.style.height = '200px';
       } else {
          el.style.top = '';
          el.style.bottom = '0';
@@ -727,6 +737,9 @@ function extint_environment_changed(changed)
          if (extint.current_ext_name) {
             w3_call(extint.current_ext_name +'_environment_changed', changed);
          }
+         
+         if (changed.freq || changed.mode || changed.zoom || changed.waterfall_pan || changed.resize)
+            mouse_freq_remove();
 
          // for benefit of programs like CATSync that use injected javascript to catch events
          w3_call('injection_environment_changed', changed);

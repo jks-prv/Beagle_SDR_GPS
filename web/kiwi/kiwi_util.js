@@ -115,7 +115,7 @@ function kiwi_isLinux() { return kiwi_linux; }
 
 function kiwi_isAndroid() { return kiwi_android; }
 
-function kiwi_isMobile() { return (kiwi_isAndroid() || kiwi_is_iOS() || mobile_laptop_test); }
+function kiwi_isMobile() { return (kiwi_isAndroid() || kiwi_is_iOS() || force_mobile || mobile_laptop_test); }
 
 // returns the version number or NaN (later of which will evaluate false in numeric comparisons)
 function kiwi_isSafari() { return (kiwi_safari? kiwi_safari[1] : NaN); }
@@ -229,6 +229,16 @@ function arrayBufferToStringLen(buf, len)
 function kiwi_dup_array(a)
 {
    return a.slice();
+}
+
+function kiwi_dedup_array(a, func)
+{
+   var ra = [];
+   a.forEach(function(v, i) {
+      if (func && func(v)) return;
+      if (!ra.includes(v)) ra.push(v);
+   });
+   return ra;
 }
 
 function kiwi_shallow_copy(obj)
@@ -522,6 +532,30 @@ function kiwi_trace_log(s)
    setTimeout(function(s) {
       kiwi_trace(s);
    }, 1, s);
+}
+
+function canvas_log(s)
+{
+   if (isUndefined(owrx.news_acc_s)) owrx.news_acc_s = '';
+
+   if (s == '\f') {
+      owrx.news_acc_s = '';
+   } else
+   if (s.charAt(0) == '$') {
+      owrx.news_acc_s += '<br>'+ s;
+   } else {
+      owrx.news_acc_s += ((owrx.news_acc_s != '')? ' | ' : '') + s;
+   }
+
+   extint_news(owrx.news_acc_s);
+}
+
+function canvas_log2(s)
+{
+   if (kiwi_isMobile())
+      toggle_or_set_hide_bars(owrx.HIDE_BANDBAR);
+   w3_innerHTML('id-rx-title', kiwi.log2_seq +': '+ s);
+   kiwi.log2_seq++;
 }
 
 function kiwi_rateLimit(cb, time)
