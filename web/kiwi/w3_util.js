@@ -192,6 +192,10 @@
 
 
 var w3int = {
+   menu_cur_id: null,
+   menu_active: false,
+   menu_debug: false,
+   menu_close_func: null,
    prev_menu_hover_el: null,
    
    _last_: 0
@@ -1042,6 +1046,13 @@ function w3_visible(el_id, visible)
 	return el;
 }
 
+function w3_isVisible(el_id)
+{
+	var el = w3_el(el_id);
+	if (!el) return null;
+	return (el.style.visibility == 'visible');
+}
+
 // our standard for confirming (highlighting) a control action (e.g.button push)
 var w3_highlight_time = 250;
 var w3_highlight_color = 'w3-selection-green';
@@ -1145,6 +1156,17 @@ function w3_colors(el_id, colors)
       w3_add(el, fg);
    else
       el.style.color = fg;
+}
+
+function w3_flip_colors(el_id, colors, cond)
+{
+   var el = w3_el(el_id);
+   if (!el) return null;
+   var ar = colors? colors.split(' ') : null;
+   if (!ar || ar.length != 2) return null;
+   w3_remove(el, ar[0]);
+   w3_remove(el, ar[1]);
+   w3_add(el, ar[cond? 1:0]);
 }
 
 function w3_fg_color_with_opacity_against_bk_color(fg, opacity, bg)
@@ -1409,10 +1431,18 @@ function w3_copy_to_clipboard(val)
    document.body.removeChild(el);
 }
 
+function w3_isScrolling(id)
+{
+   var el = w3_el(id);
+   if (!el) return null;
+   return (el.scrollHeight > el.clientHeight)
+}
+
 // see: developer.mozilla.org/en-US/docs/Web/API/Element/scrollHeight#determine_if_an_element_has_been_totally_scrolled
 function w3_isScrolledDown(id)
 {
    var el = w3_el(id);
+   if (!el) return null;
    return (Math.abs(el.scrollHeight - el.clientHeight - el.scrollTop) < 1)
 }
 
@@ -1420,6 +1450,7 @@ function w3_isScrolledDown(id)
 function w3_scrolledPosition(id)
 {
    var el = w3_el(id);
+   if (!el) return null;
    //console.log('w3_scrolledPosition scrollTop='+ el.scrollTop +' scrollHeight='+ el.scrollHeight +' clientHeight='+ el.clientHeight);
    if (el.clientHeight == 0) return -1;      // element hidden most likely
    var scrollH = el.scrollHeight - el.clientHeight;
@@ -2783,17 +2814,20 @@ function w3_menu(psa, cb)
 
    var onclick = 'onclick="w3int_menu_onclick(event, '+ sq(id) +', '+ sq(cb) +')"' +
       ' oncontextmenu="w3int_menu_onclick(event, '+ sq(id) +', '+ sq(cb) +')"';
-	var p = w3_psa(psa, 'w3-menu w3-round-large', '', onclick);
+	var p = w3_psa(psa, 'w3-menu w3-menu-container w3-round-large', '', onclick);
    var s = '<div '+ p +'></div>';
    //console.log('w3_menu s='+ s);
    w3_el('id-w3-main-container').innerHTML += s;
 }
 
 // menu items can be in argument list or passed as an array
-function w3_menu_items(id, arr)
+function w3_menu_items(id, arr, max_vis)
 {
    //console.log('w3_menu_items id='+ id);
-
+   if (w3int.menu_debug) canvas_log('w3_menu_items cur='+ w3int.menu_cur_id);
+   w3_menu_close();     // close any existing first
+	w3int.menu_cur_id = id;
+   
    var s = '';
    var idx = 0, prop, attr;
    var items;
@@ -2807,31 +2841,53 @@ function w3_menu_items(id, arr)
          items.push(arguments[i]);
    }
 
+   if (w3int.menu_debug) canvas_log('#='+ items.length);
    for (var i=0; i < items.length; i++) {
+   if (w3int.menu_debug) canvas_log('i='+ i +' '+ items[i]);
+      if (items[i] == null) continue;
+      prop = 'w3-menu ';
+      attr = 'id='+ dq(idx);
+
       if (items[i] == '<hr>') {
-         prop = 'w3-menu-item-hr';
-         attr = 'id='+ dq(idx);
+         prop += 'w3-menu-item-hr';
          idx++;
       } else
       if (items[i].charAt(0) == '!') {    // first char == '!' hack to disable menu item
-         prop = 'w3-menu-item-disabled';
-         attr = 'id='+ dq(idx);
+         prop += 'w3-menu-item-disabled';
          items[i] = items[i].substr(1);
          idx++;
       } else {
-         prop = 'w3-menu-item';
-         attr = 'id='+ dq(idx);
+         prop += 'w3-menu-item';
          idx++;
          if (!kiwi_isMobile()) prop += ' w3-menu-item-hover';
       }
-      s += w3_div(prop +'||'+ attr, items[i]);
+      var psa = w3_psa_mix('', prop, '', attr);
+      s += w3_div(psa, items[i]);
    }
    
+   if (w3int.menu_debug) canvas_log('s#='+ s.length);
    //console.log(s);
-   w3_el(id).innerHTML = s;
+   var el = w3_el(id);
+   el.innerHTML = s;
+   if (w3int.menu_debug) canvas_log('BUILD');
    
-   // ":hover" highlighting doesn't work on mobile devices -- do it manually
+   // NB: If "overflow-y: auto" is done instead of "overflow-y: scroll" (via w3-scroll-always-y)
+   // then the scrollbar will intrude into the width of the menu elements and cause the longest
+   // to lose right padding.
+   max_vis = max_vis || items.length;
+   if (items.length > max_vis) {
+      el.style.height = px((max_vis * (4 + 19.5 + 4)) + 2*8);
+      w3_add(el, 'w3-scroll-always-y');
+   } else {
+      el.style.height = '';
+      w3_remove(el, 'w3-scroll-always-y');
+   }
+   
+   // ":hover" highlighting doesn't work on mobile devices -- do it manually.
+   // But NOT if the menu is long enough to be scrollable since there is no
+   // gesture to distinguish mousing from scrolling, as with desktop.
    if (kiwi_isMobile()) {
+      if (mobile_laptop_test) console.log('w3_menu_items MOBILE '+ id);
       w3_iterate_children(id, function(el, i) {
          el.addEventListener('touchmove', w3int_menu_touch_move, false);
          if (mobile_laptop_test)
@@ -2840,6 +2896,7 @@ function w3_menu_items(id, arr)
    }
 }
 
+// for testing
 function w3int_menu_mouse_move(ev)
 {
    var x = Math.round(ev.pageX);
@@ -2855,18 +2912,22 @@ function w3int_menu_touch_move(ev)
    w3int_menu_move('MTM', x, y);
 }
 
-function w3int_menu_move(id, x, y)
+function w3int_menu_move(which, x, y)
 {
+   //console.log('w3int_menu_move '+ which);
    var el = document.elementFromPoint(x, y);
    if (!el) return;
+   if (w3_isScrolling(w3int.menu_cur_id)) return;
    var rtn = (!el || !w3_contains(el, 'w3-menu-item'));
-   //canvas_log(id +' '+ x +':'+ y +':'+ el.id);
+   //console.log(which +' '+ x +':'+ y +':'+ el.id);
+   //var el2 = w3_el(w3int.menu_cur_id);
+   //console.log(el2.scrollTop +':'+ el2.scrollHeight +':'+ el2.clientHeight);
 
    if (w3int.prev_menu_hover_el && (rtn || (el != w3int.prev_menu_hover_el))) {
       w3int.prev_menu_hover_el.style.background = '';
       w3int.prev_menu_hover_el.style.color = '';
       if (rtn) {
-         //canvas_log('R');
+         //if (w3int.menu_debug) canvas_log('R');
          return;
       }
    }
@@ -2876,27 +2937,27 @@ function w3int_menu_move(id, x, y)
    w3int.prev_menu_hover_el = el;
 }
 
-function w3_menu_popup(id, x, y)
+function w3_menu_popup(id, close_func, x, y)
 {
    //console.log('w3_menu_popup id='+ id +' x='+ x +' y='+ y);
    var x0 = x, y0 = y;
    var el = w3_el(id);
-	if (x == -1) x = window.innerWidth/2;
-	if (y == -1) y = window.innerHeight/2;
+	x = x || window.innerWidth/2;
+	y = y || window.innerHeight/2;
 
 	var slop = 16;
 	el.w3_realigned = false;
 	
 	if ((x + el.clientWidth) + slop > window.innerWidth) {
 	   x = window.innerWidth - el.clientWidth - slop;
-	   //canvas_log('X:'+ x0 +':'+ y0);
+	   //if (w3int.menu_debug) canvas_log('X:'+ x0 +':'+ y0);
 	   el.w3_realigned_time = Date.now();
 	   el.w3_realigned = true;
 	}
    el.style.left = px(x);
 
    var yt = y + el.clientHeight + slop;
-	//canvas_log('Y:'+ x0 +':'+ y0 +'/'+ yt +'>'+ window.innerHeight +' '+ ((yt > window.innerHeight)? 'T':'F'));
+	//if (w3int.menu_debug) canvas_log('Y:'+ x0 +':'+ y0 +'/'+ yt +'>'+ window.innerHeight +' '+ ((yt > window.innerHeight)? 'T':'F'));
 	if (yt > window.innerHeight) {
 	   y = window.innerHeight - el.clientHeight - slop;
 	   el.w3_realigned_time = Date.now();
@@ -2905,17 +2966,26 @@ function w3_menu_popup(id, x, y)
    el.style.top = px(y);
    //console.log('w3_menu_popup NEW id='+ id +' x='+ x +' y='+ y);
 
-   el.style.visibility = 'visible';
+   w3_visible(el, true);
+   if (w3int.menu_debug) canvas_log('VIS');
+   w3int.menu_active = true;
    el.w3_menu_x = x;
 
 	// close menu if escape key while menu is displayed
-	w3int_menu_close_cur_id = id;
-	window.addEventListener("keyup", w3int_menu_close, false);
-	window.addEventListener("click", w3int_menu_close, false);
+	w3int.menu_close_func = close_func;
+   w3int.menu_first = true;
+	window.addEventListener("keyup", w3int_menu_event, false);
+	window.addEventListener("click", w3int_menu_event, false);
 }
 
-function w3int_menu_onclick(ev, id, cb)
+function w3_menu_active()
 {
+   return w3int.menu_active;
+}
+
+function w3int_menu_onclick(ev, id, cb, cb_param)
+{
+   if (w3int.menu_debug) canvas_log('OC '+ id +' '+ cb_param);
    //console.log('w3int_menu_onclick id='+ id +' cb='+ cb);
    //if (ev != null) event_dump(ev, "MENU");
    var el = w3_el(id);
@@ -2926,15 +2996,17 @@ function w3int_menu_onclick(ev, id, cb)
       el.w3_realigned = false;
       var when = Date.now() - el.w3_realigned_time;
       if (when < 50) {
-         //canvas_log('XRe'+ when);
+         if (w3int.menu_debug) canvas_log('XRe'+ when);
          return cancelEvent(ev);
       }
-      //canvas_log('XOK'+ when);
+      if (w3int.menu_debug) canvas_log('XOK'+ when);
    }
 
-   el.style.visibility = 'hidden';
-   window.removeEventListener("keyup", w3int_menu_close, false);
-   window.removeEventListener("click", w3int_menu_close, false);
+   w3_visible(el, false);
+   if (w3int.menu_debug) canvas_log('NOT_VIS');
+   w3int.menu_active = false;
+   window.removeEventListener("keyup", w3int_menu_event, false);
+   window.removeEventListener("click", w3int_menu_event, false);
 
    if (ev != null && cb != null) {
       var _id = ev.target.id;
@@ -2943,29 +3015,43 @@ function w3int_menu_onclick(ev, id, cb)
       idx = +_id;
       if (_id == '' || isNaN(idx)) idx = -1;
       //console.log('w3int_menu_onclick CALL idx='+ idx);
-      //canvas_log('C');
-      w3_call(cb, idx, el.w3_menu_x);
+      if (w3int.menu_debug) canvas_log('CALL:'+ idx);
+      w3_call(cb, idx, el.w3_menu_x, cb_param);
    }
 
    // allow right-button to select menu items
 	if (ev != null) {
       //console.log('w3int_menu_onclick: cancelEvent()');
-      //canvas_log('Enull');
+      if (w3int.menu_debug) canvas_log('Enull');
 	   return cancelEvent(ev);
 	}
 }
 
-var w3int_menu_close_cur_id;
-
-// close menu if escape key pressed or a click outside of the menu
-function w3int_menu_close(evt)
+// close menu if caller's close_func() returns true
+function w3int_menu_event(evt)
 {
-   //event_dump(evt, 'MENU-CLOSE');
-   if ((evt.type == 'keyup' && evt.key == 'Escape') ||
-      (evt.type == 'click' && evt.button != 2 )) {
-      //console.log('w3int_menu_close '+ evt.type +' button='+ evt.button);
-      w3int_menu_onclick(null, w3int_menu_close_cur_id);
+   if (w3int.menu_debug) canvas_log('ME '+ evt.type);
+   var el = w3_el(w3int.menu_cur_id);
+   //console.log(el);
+   //event_dump(evt, 'MENU-CLOSE', true);
+
+   if (el && w3int.menu_close_func) {
+      //console.log(w3int.menu_close_func);
+      var close = w3int.menu_close_func(evt, w3int.menu_first);
+      w3int.menu_first = false;
+      if (w3int.menu_debug) canvas_log('CLOSE='+ close);
+      if (close) w3_menu_close();
    }
+}
+
+function w3_menu_close()
+{
+   if (!w3int.menu_cur_id) return;
+   var el = w3_el(w3int.menu_cur_id);
+   if (!el) return;
+   el.w3_realigned = false;
+   w3int_menu_onclick(null, w3int.menu_cur_id, null, 1138);
+   w3int.menu_cur_id = null;
 }
 
 
@@ -3227,6 +3313,7 @@ function w3_inline(psa, attr)
       for (var i = 1; i < narg; i++) {
          var psa;
          var a = arguments[i];
+         if (!a) continue;
          //console.log('w3_inline i='+ i +' a='+ a);
          
          // merge a pseudo psa specifier into the next argument

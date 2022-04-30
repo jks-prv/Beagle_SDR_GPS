@@ -2,6 +2,35 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.515  April 30, 2022
+    Modified the main control panel (user page, lower right):
+        Moved cursor frequency sub-display (the one under the frequency entry box).
+        Now it appears under the cursor while shift is held when mousing over the waterfall.
+        This gives back substantial space in the panel for the new features described below.
+
+        VFO A/B: Allows quick switching between two stored frequencies, including the mode and
+        zoom settings. Updates to the current frequency/mode/zoom also updates the currently
+        displayed VFO. This is an old ham radio concept.
+
+        Memory menu: The aqua/orange frequency memory up/down buttons to the right of the
+        frequency entry box have been replaced with a white, 3-bar icon that pops up a proper
+        scrolling menu. The most recent frequency used is at the menu top aging downward.
+        A "clear all" entry is at the bottom. The "m" keyboard shortcut key now toggles the menu.
+        This key was previously "mute". But so was the "space" key which now remains for muting.
+    
+    Eliminated the short burst of audio heard when "&mute" is specified in the URL.
+    
+    Mobile device improvements:
+        URL parameter "mobile" or "m" forces mobile behavior (e.g. my_kiwi:8073/?m)
+            Use when the Kiwi code doesn't properly detect your mobile device.
+        Stretch control panel width for 7" tablets (<= 600 pixel width in portrait mode).
+        To help declutter the second line of the control panel:
+            Remove the 9/10 kHz step button when not in the LW/MW bands.
+            Don't show frequency link icon (green arrow) since it's fairly useless on mobile.
+        For mobile Chrome give menus a white background to match the other browsers.
+    
+    Admin page, status tab: Show connecting browser info as a debugging aid.
+
 v1.514  April 26, 2022
     Admin page, DX tab:
         Fix corruption of UTF-8 when uploading from .csv files.

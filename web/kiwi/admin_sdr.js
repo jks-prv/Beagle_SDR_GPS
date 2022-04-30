@@ -1295,8 +1295,8 @@ function dx_html()
    dx.LEGEND = -1;
    dx.SAVE_NOW = true;
    dx.DX_DOW_BASE = dx.DX_DOW >> dx.DX_DOW_SFT;
-   dx.spacer = w3_div('w3-font-fixed w3-circle-pad-small w3-pale-blue', '&nbsp;');
-   dx.button_section = 'w3-font-fixed w3-aqua w3-circle w3-circle-pad||title="show&slash;hide section"';
+   dx.spacer = w3_div('w3-font-fixed w3-text-in-circle w3-wh-24px w3-pale-blue', '&nbsp;');
+   dx.button_section = 'w3-font-fixed w3-aqua w3-text-in-circle w3-wh-28px||title="show&slash;hide section"';
    dx.button_add = 'w3-css-lime||title="duplicate this entry"';
    dx.button_del = 'w3-css-red||title="delete this entry"';
    dx.link1 = 'w3-link-darker-color w3-bold||title="more information"';
@@ -1517,7 +1517,7 @@ function dx_save(id, now)
    }
 }
 
-function dx_btn(c) { return 'w3-font-fixed w3-circle w3-circle-pad-small '+ c; }
+function dx_btn(c) { return 'w3-font-fixed w3-text-in-circle w3-wh-24px '+ c; }
 
 
 // dx: labels

@@ -44,13 +44,13 @@ This file is part of OpenWebRX.
 		 101-6	passband elements
 		 110	dx-line
 		 120+n	dx-label
+         129	top-container
 		 130	control
 		 130	msgs
 		 140	readme
 		 150	dx-edit (id-ext-controls)
 		 998	dx-line active
 		 999	dx-label active
-		1000	top-container
 		1010    menus
 		1020    admin password
 		1030	iOS play button
@@ -83,7 +83,7 @@ html, body
 #id-top-container
 {
 	position: relative;
-	z-index:1000;
+	z-index:129;
 }
 
 .class-top-bar-parts
@@ -573,7 +573,6 @@ html, body
 
 .id-freq-cell
 {
-    padding-right: 2px;
 }
 
 #id-freq-form
@@ -596,10 +595,7 @@ html, body
 
 #id-select-band
 {
-	/*position: absolute;
-	top: 0;
-	left: 15%;*/
-	/*width: 90%;*/
+    margin-left: 6px;
 	font-size: 9pt;
 	color: red;
 	text-align: center;
@@ -612,10 +608,7 @@ html, body
 
 #id-select-ext
 {
-	/*position: absolute;
-	top: 0;
-	left: 15%;*/
-	/*width: 90%;*/
+    margin-left: 6px;
 	font-size: 9pt;
 	color: red;
 	text-align: center;

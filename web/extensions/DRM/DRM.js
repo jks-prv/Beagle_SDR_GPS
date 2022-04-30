@@ -843,7 +843,7 @@ function drm_mobile_controls_setup(mobile)
 
 	var controls_html =
       w3_div(sprintf('id-drm-controls w3-absolute|width:%dpx; height:%dpx;', drm.w_sched, drm.h_sched),
-         w3_div(sprintf('id-drm-panel-container cl-drm-sched|width:100%%; height:100%%;'),
+         w3_div('id-drm-panel-container cl-drm-sched|width:100%; height:100%',
             w3_div('id-drm-panel-by-svc-static', drm_schedule_static()),
             w3_div('id-drm-panel-by-svc w3-iphone-scroll w3-absolute|width:100%; height:100%;', drm.loading_msg)
          )
@@ -872,7 +872,7 @@ function drm_mobile_controls_setup(mobile)
       mobile = ext_mobile_info(drm.last_mobile);
       drm.last_mobile = mobile;
 
-      //extint_news('Dwh='+ mobile.width +','+ mobile.height +' '+ mobile.orient_unchanged +
+      //canvas_log('Dwh='+ mobile.width +','+ mobile.height +' '+ mobile.orient_unchanged +
       //   '<br>r='+ drm.rescale_cnt  +','+ drm.rescale_cnt2 +' '+ drm.fit +' #'+ drm.dseq);
       //drm.dseq++;
 
