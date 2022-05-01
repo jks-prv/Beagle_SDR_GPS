@@ -3271,11 +3271,11 @@ function mobile_init()
 	}
 	
 	// for narrow screen devices, i.e. phones and 7" tablets
-	if (mobile.narrow || ext_mobile_info) {
+	if (mobile.narrow) {
 	   w3_hide('id-readme');   // don't show readme panel closed icon
 	   
 	   // remove top bar and band/label areas on phones
-	   if (mobile.width < 600 || ext_mobile_info) {
+	   if (mobile.width < 600) {
 	      toggle_or_set_hide_bars(owrx.HIDE_ALLBARS);
 	   }
 	}
@@ -3316,7 +3316,6 @@ function mobile_scale_control_panel(mobile, doScale)
    var el = w3_el('id-control');
 
    if (doScale) {
-      //el.style.right = kiwi_isAndroid()? '-10px':'0px';
       el.style.right = '0px';
 
       // scale control panel up or down to fit width of all narrow screens
@@ -5185,6 +5184,12 @@ function freqset_update_ui()
 	freq_link_update();
 	vfo_update();
 	freq_memory_update(freq_displayed_kHz_str_with_freq_offset);
+
+	kiwi_clearTimeout(owrx.freqset_active_timeout);
+	owrx.freqset_active_timeout = setTimeout(function() {
+	   owrx.freqset_active = false;
+	   //canvas_log('***');
+	}, 2000);
 }
 
 function vfo_update()
@@ -5207,13 +5212,11 @@ function vfo_update()
 	writeCookie('last_vfo_'+ "AB"[owrx.vfo_ab], vfo);
 }
 
-// using keydown event allows key autorepeat to work
-function freqset_keydown(event)
+// owrx.freqset_active set while popup keyboard active so ext_mobile_info() works
+function freqset_touchstart(event)
 {
-   if (event.keyCode == '38') {  // up-arrow
-   }
-   else if (event.keyCode == '40') { // down-arrow
-   }
+   //canvas_log('FTS');
+   owrx.freqset_active = true;
 }
 
 function freqset_select()
@@ -5398,10 +5401,13 @@ var ignore_next_keyup_event = false;
 // entry is made, without a terminating <return> key, a setTimeout(freqset_complete()) can be done to
 // arrange automatic completion.
 //
+// It is also necessary for some mobile devices when using the popup "telephone pad" mode for input
+// (e.g. iPhone 6S) with its "done" button. In this case the onsubmit=freqset_complete() event is
+// never triggered, unlike the regular alphanumeric keypad when the "go" button is used.
+//
 // Also, keyup is used instead of keydown because the global id-kiwi-body has an eventlistener for keydown
 // to implement keyboard shortcut event interception before the keyup event of freqset (i.e. sequencing).
 // We use w3-custom-events in the freq box w3_input() to allow both onkeydown and onkeyup event handlers.
-// freqset_keydown() called by onkeydown is used to implement key autorepeat of history arrow keys.
 
 function freqset_keyup(obj, evt)
 {
@@ -5443,7 +5449,8 @@ function freqset_keyup(obj, evt)
       return;
    }
    
-	freqset_tout = setTimeout(function() {freqset_complete('t/o');}, 3000);
+   if (!kiwi_isMobile())
+	   freqset_tout = setTimeout(function() {freqset_complete('t/o');}, 3000);
 }
 
 var num_step_buttons = 6;
@@ -8400,8 +8407,9 @@ function panels_setup()
             // Dim jsFreqKiwiSDR As String = "targetForm = document.forms['form_freq']; targetForm.elements[0].value = '" + frequency + "'; freqset_complete(0); false"
             // Form1.browser.ExecuteScriptAsync(jsFreqKiwiSDR)
             '<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
-               w3_input('w3-custom-events w3-font-16px|padding:0 4px; width:'+ freq_field_width() +
-                  '|inputmode="tel" onfocus="this.select()" onkeydown="freqset_keydown(event)" onkeyup="freqset_keyup(this, event)"', '', 'id-freq-input') +
+               w3_input('w3-custom-events w3-font-16px|padding:0 4px; width:'+ freq_field_width() +'|type="text" inputmode="decimal"'+
+               ' onchange="freqset_complete(1)" ontouchstart="freqset_touchstart(event)" onkeyup="freqset_keyup(this, event)" onfocus="this.select()"',
+               '', 'id-freq-input') +
             '</form>'
          ) +
 

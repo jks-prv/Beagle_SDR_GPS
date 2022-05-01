@@ -2,6 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.516  May 2, 2022
+    Fixed problem on Android < 8.1 where tap on frequency box brings up number entry pad
+    then immediately closes it again so you're unable to enter a frequency.
+    Fixed other mobile issues.
+
+    Admin page, connect tab: Prevent entry of a local IP address into "Domain Name" or
+        "Specified IP" fields. This should prevent entries on rx.kiwisdr.com that are unreachable
+        because their links contain local IP addresses.
+
 v1.515  April 30, 2022
     Modified the main control panel (user page, lower right):
         Moved cursor frequency sub-display (the one under the frequency entry box).

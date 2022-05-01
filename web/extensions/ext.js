@@ -490,15 +490,28 @@ iPad 2		768   1024	P
 MBP 15"		1440  900	L
 */
 
+// Must delay the determination of orientation change while the popup keyboard is active.
+// Otherwise an incorrect window.innerHeight value is possible leading to an invalid
+// isPortrait determination. This is why the check for owrx.freqset_active
+// Tried checking w against window.screen.width, but latter changed with rotation on Android
+// but not with iOS. So isn't constant and can't be used.
 function ext_mobile_info(last)
 {
    var w = window.innerWidth;
-   var h = window.innerHeight;
+   var h = window.innerHeight;      // reduced if popup keyboard active
    var rv = { width:w, height:h };
-   rv.wh_unchanged = (last && last.width == w && last.height == h)? 1:0;
+   var isPortrait;
 
-	var isPortrait = (w < h || mobile_laptop_test)? 1:0;
+   if (owrx.freqset_active) {
+      isPortrait = last? last.isPortrait : 1;
+   } else {
+      // if popup keyboard active h could be <= w making test invalid
+      isPortrait = (w < h || mobile_laptop_test)? 1:0;
+   }
    rv.orient_unchanged = (last && last.isPortrait == isPortrait)? 1:0;
+
+   //if (!rv.orient_unchanged && last)
+   //   canvas_log(w +' '+ h +' '+ last.isPortrait + isPortrait);
 
 	rv.isPortrait = isPortrait? 1:0;
 	rv.iPad     = (isPortrait && w <= 768)? 1:0;    // iPad or smaller
@@ -518,8 +531,9 @@ function extint_news(s)
    if (!extint.news_init) {
       el = w3_el('id-news');
       if (kiwi_isMobile()) {
-         var mi = ext_mobile_info();
-         if (mi.width <= 768 && mi.width >= 600) {    // iPad & tablets
+         var w = window.innerWidth;
+         var h = window.innerHeight;
+         if (w <= 768 && h >= 600) {    // iPad & tablets
             el.style.top = '36px';
             el.style.width = '350px';
             el.style.height = '300px';

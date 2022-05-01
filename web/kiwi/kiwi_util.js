@@ -257,12 +257,45 @@ function getFirstChars(buf, len)
    arrayBufferToStringLen(buf, len);
 }
 
-// NB: no error checking
-function kiwi_inet4_d2h(inet4_str)
+function kiwi_inet4_d2h(inet4_str, exclude_local)
 {
 	var s = inet4_str.split('.');
-	return ((s[0]&0xff)<<24) | ((s[1]&0xff)<<16) | ((s[2]&0xff)<<8) | (s[3]&0xff);
+	//console.log(s);
+	if (s.length != 4) return null;
+	var check = function(v) {
+	   var n = parseInt(v);    // includes "" => NaN
+	   if (!isNumber(n) || n < 0 || n > 255) return null;
+	   return n;
+	}
+	var a, b, c, d;
+	if ((a = check(s[0])) == null) return null;
+	if ((b = check(s[1])) == null) return null;
+	if ((c = check(s[2])) == null) return null;
+	if ((d = check(s[3])) == null) return null;
+	var ip = (a<<24) | (b<<16) | (c<<8) | d;
+	
+	if (exclude_local) {
+	   //console.log('CHECK '+ kiwi_ip_str(ip));
+	   if (
+         (ip >= kiwi_ip_10_lo && ip <= kiwi_ip_10_hi) ||
+         (ip >= kiwi_ip_172_16_lo && ip <= kiwi_ip_172_16_hi) ||
+         (ip >= kiwi_ip_192_168_lo && ip <= kiwi_ip_192_168_hi) ||
+         (ip == kiwi_ip_loopback)) {
+	         //console.log('EXCLUDE LOCAL '+ kiwi_ip_str(ip));
+            return null;
+      }
+	}
+	
+	return ip;
 }
+
+var kiwi_ip_10_lo = kiwi_inet4_d2h('10.0.0.0');
+var kiwi_ip_10_hi = kiwi_inet4_d2h('10.255.255.255');
+var kiwi_ip_172_16_lo = kiwi_inet4_d2h('172.16.0.0');
+var kiwi_ip_172_16_hi = kiwi_inet4_d2h('172.31.255.255');
+var kiwi_ip_192_168_lo = kiwi_inet4_d2h('192.168.0.0');
+var kiwi_ip_192_168_hi = kiwi_inet4_d2h('192.168.255.255');
+var kiwi_ip_loopback = kiwi_inet4_d2h('127.0.0.1');
 
 function kiwi_h2n_32(ip, o)
 {
