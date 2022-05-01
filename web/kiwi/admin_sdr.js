@@ -1078,13 +1078,18 @@ function kiwisdr_com_register_cb(path, idx)
    
    var text, color;
    var no_url = (cfg.server_url == '');
+   var bad_ip = (kiwi_inet4_d2h(cfg.server_url) != null && kiwi_inet4_d2h(cfg.server_url, true) == null);
    var no_passwordless_channels = (adm.user_password != '' && cfg.chan_no_pwd == 0);
    var no_rx_gps = (cfg.rx_gps == '' || cfg.rx_gps == '(0.000000, 0.000000)' || cfg.rx_gps == '(0.000000%2C%200.000000)');
    //console.log('kiwisdr_com_register_cb has_u_pwd='+ (adm.user_password != '') +' chan_no_pwd='+ cfg.chan_no_pwd +' no_passwordless_channels='+ no_passwordless_channels);
-
-   if (idx == w3_SWITCH_YES_IDX && (no_url || no_passwordless_channels || no_rx_gps)) {
+   //console.log('cfg.server_url='+ cfg.server_url);
+   
+   if (idx == w3_SWITCH_YES_IDX && (no_url || bad_ip || no_passwordless_channels || no_rx_gps)) {
       if (no_url)
          text = 'Error, you must first setup a valid Kiwi connection URL on the admin "connect" tab';
+      else
+      if (bad_ip)
+         text = 'Error, must be a public (not local) IP address on the admin "connect" tab';
       else
       if (no_passwordless_channels)
          text = 'Error, must have at least one user channel that doesn\'t require a password (see admin "security" tab)';

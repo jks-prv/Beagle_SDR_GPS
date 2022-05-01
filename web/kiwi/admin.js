@@ -480,7 +480,7 @@ function connect_html()
             w3_div('id-connect-rev-dom w3-padding-TB-8'),
             w3_div('id-connect-pub-ip w3-padding-TB-8'),
             w3_div('w3-show-inline-block|width:70%;', w3_input_get('', '', 'sdr_hu_dom_ip', 'connect_dom_ip_cb', '',
-               'Enter known public IP address of the Kiwi (don\'t include port number)'))
+               'Enter known public IP address of the Kiwi (don\'t include port number or use a local ip address)'))
          ),
          
 		   w3_div('w3-margin-T-16', 
@@ -711,24 +711,24 @@ function connect_dom_sip_focus()
 
 function connect_dom_name_cb(path, val, first)
 {
-	connect_remove_port(path, val, first);
+	connect_remove_port_and_local_ip(path, val, first, { if_ip:1 });
    if (cfg.sdr_hu_dom_sel == connect_dom_sel.NAM)     // if currently selected option update the value
       connect_dom_nam_focus();
 }
 
 function connect_dom_ip_cb(path, val, first)
 {
-	connect_remove_port(path, val, first);
+	connect_remove_port_and_local_ip(path, val, first, { always:1 });
    if (cfg.sdr_hu_dom_sel == connect_dom_sel.SIP)     // if currently selected option update the value
       connect_dom_sip_focus();
 }
 
-function connect_remove_port(el, s, first)
+function connect_remove_port_and_local_ip(el, s, first, check_ip)
 {
 	var state = { bad:0, number:1, alpha:2, remove:3 };
 	var st = state.bad;
 	
-	s = s.replace('http://', '');
+	s = s.replace('http://', '').replace('https://', '');
 	var sl = s.length;
 	
 	for (var i = sl-1; i >= 0; i--) {
@@ -749,6 +749,13 @@ function connect_remove_port(el, s, first)
 	
 	if (st == state.remove) {
 		s = s.substr(0,i);
+	}
+	
+	if (check_ip['always'] && kiwi_inet4_d2h(s, true) == null) s = '';
+	
+	// only check for local ip if entry is a valid ip to begin with (i.e. allows domain name)
+	if (check_ip['if_ip'] && kiwi_inet4_d2h(s, false) != null) {
+	   if (kiwi_inet4_d2h(s, true) == null) s = '';
 	}
 	
 	w3_string_set_cfg_cb(el, s, first);
@@ -1399,7 +1406,8 @@ function network_download_blacklist_cb(bl)
       
       // NB: if a[0] begins with '+' due to being a whitelist entry, kiwi_inet4_d2h() still works
       // because the first component of the ip address string is just treated as a positive number
-      var ip1 = kiwi_inet4_d2h(a[0]);
+      var ip1 = kiwi_inet4_d2h(a[0], true);
+      if (ip1 == null) return;
       var ip = ip1 & nm;
       if (ip1 != ip)
          console.log('ip/netmask mismatch: '+ kiwi_ip_str(ip1) +'|'+ ip1.toHex(8) +' '+
@@ -1513,23 +1521,26 @@ function network_ip_blacklist_cb(path, val)
 	var ar = val.match(re);
 	//console.log(ar);
 	if (ar == null) ar = [];
+	var ar2 = [];
 
    var s = '';
-   ar.forEach(function(v) {
+   ar.forEach(function(v, i) {
+      if (kiwi_inet4_d2h(v, true) == null) return;    // filter out bad and local ip addresses
       s += v +' ';
+      ar2.push(v);
    });
    w3_set_value(path, s);
    w3_string_set_cfg_cb(path, s);
 
    if (path.endsWith('ip_blacklist_local')) {
-	   network.ip_blacklist_local = ar;
+	   network.ip_blacklist_local = ar2;
 	   
 	   // make sure network.ip_blacklist is valid
 	   ar = decodeURIComponent(adm.ip_blacklist).match(re);
 	   if (ar == null) ar = [];
 	   network.ip_blacklist = ar;
 	} else {
-	   network.ip_blacklist = ar;
+	   network.ip_blacklist = ar2;
 
 	   // make sure network.ip_blacklist_local is valid
 	   ar = decodeURIComponent(adm.ip_blacklist_local).match(re);
@@ -1801,6 +1812,7 @@ function network_netmask_cb(path, val, first)
 	network_show_check('network-check-nm', 'netmask', path, val, network_nm, first,
 		function(val_str, ip) {
 			var ip_host = kiwi_inet4_d2h(val_str);
+			if (ip_host == null) { ip.ok = false; return false; }
 			ip.nm = 0;		// degenerate case: no one-bits in netmask at all
 			for (var i = 0; i < 32; i++) {
 				if (ip_host & (1<<i)) {		// first one-bit hit
