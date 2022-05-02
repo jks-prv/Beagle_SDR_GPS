@@ -530,27 +530,31 @@ function extint_news(s)
    var el;
    if (!extint.news_init) {
       el = w3_el('id-news');
+      el.style.top = '';
+      el.style.bottom = '';
+      el.style.left = '';
+      el.style.right = '';
       if (kiwi_isMobile()) {
          var w = window.innerWidth;
          var h = window.innerHeight;
          if (w <= 768 && h >= 600) {    // iPad & tablets
-            el.style.top = '36px';
+            //el.style.top = '36px';
+            el.style.bottom = '0';
+            //el.style.right = '0';
+            el.style.left = '0';
             el.style.width = '350px';
-            el.style.height = '300px';
+            //el.style.height = '300px';
+            el.style.height = '400px';
          } else {
             el.style.top = '36px';
             //el.style.top = '300px';
+            el.style.right = '0';
             //el.style.width = '350px';
             el.style.width = '150px';
             el.style.height = '200px';
          }
-         el.style.bottom = '';
-         el.style.left = '';
-         el.style.right = '0';
       } else {
-         el.style.top = '';
          el.style.bottom = '0';
-         el.style.right = '';
          el.style.left = '0';
          el.style.width = '350px';
          el.style.height = '300px';
