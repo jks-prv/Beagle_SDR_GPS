@@ -2381,7 +2381,14 @@ function canvas_touchStart(evt)
    owrx.double_touch_start = false;
    
    if (touches == 1) {
-		canvas_start_drag(evt, x, y);
+      // don't drag the WF on a spectrum display touch/drag -- just update the tooltip
+      if (evt.target.id.startsWith('id-spectrum')) {
+         owrx.canvas.drag_last_x = owrx.canvas.drag_start_x = x;
+         owrx.canvas.drag_last_y = owrx.canvas.drag_start_y = y;
+	      if (owrx.debug_drag) canvas_log('*SPEC*');
+      } else {
+		   canvas_start_drag(evt, x, y);
+		}
    /*
 		owrx.touch_pending_start_drag = true;
 		owrx.touch_pending_evt = evt;
@@ -2453,7 +2460,7 @@ function canvas_drag(evt, x, y, clientX, clientY)
 			var deltaY = owrx.canvas.drag_last_y - y;
 
          if (owrx.double_touch_start) {
-            var dist = Math.round(Math.hypot(owrx.canvas.drag_last_x - x, owrx.canvas.drag_last_y - y));
+            var dist = Math.round(Math.hypot(deltaX, deltaY));
             var delta = Math.abs(dist - owrx.pinch_distance_last);
             if (owrx.debug_drag) canvas_log(dist.toFixed(0) +' '+ delta.toFixed(0));
             if (delta > 25) {
@@ -2552,7 +2559,7 @@ function canvas_touchMove(evt)
          owrx.touch_pending_start_drag = false;
       }
    */
-   
+
 		canvas_drag(evt, x, y, x, y);
 	}
 	evt.preventDefault();
@@ -2642,7 +2649,7 @@ function canvas_touchEnd(evt)
    owrx.touch_hold_pressed = false;
    kiwi_clearInterval(owrx.touch_hold_interval);
 */
-	//spectrum_tooltip_update(evt, x, y);
+	spectrum_tooltip_update(evt, x, y);
 	
 	if (owrx.double_touch_start) {
 	   if (owrx.debug_drag) canvas_log('DTS-D='+ (canvas_dragging? 'T':'F'));
@@ -2702,13 +2709,12 @@ function right_click_menu_init()
 {
    var i = 0;
    var m = [];
-   m.push('DX stored database'); owrx.rcm_stored = i; i++;
-   m.push('DX EiBi database'); owrx.rcm_eibi = i; i++;
+   m.push('DX database'); owrx.rcm_db = i; i++;
    m.push('edit last selected DX label'); owrx.rcm_edit = i; i++;
    m.push('DX label filter'); owrx.rcm_filter = i; i++;
    m.push('<hr>'); i++;
 
-   m.push('database lookup'); owrx.rcm_db = i; i++;
+   m.push('database lookup'); owrx.rcm_lookup = i; i++;
    //m.push('Utility database lookup'); owrx.rcm_util = i; i++;
    m.push('DX Cluster lookup'); owrx.rcm_cluster = i; i++;
    m.push('<hr>'); i++;
@@ -2737,6 +2743,8 @@ function right_click_menu_init()
 function right_click_menu(x, y, which)
 {
    if (owrx.debug_drag) canvas_log('RCM'+ which);
+   owrx.right_click_menu_content[owrx.rcm_db] = 'DX '+ dx.db_flip_s[dx.db] +' database';
+
    var kHz = freq_displayed_Hz/1000;
    var b = band_info();
    var db;
@@ -2749,7 +2757,7 @@ function right_click_menu(x, y, which)
    else
       db = 'SWBC';
 
-   owrx.right_click_menu_content[owrx.rcm_db] = db + ' database lookup';
+   owrx.right_click_menu_content[owrx.rcm_lookup] = db + ' database lookup';
    owrx.right_click_menu_content[owrx.rcm_snap] = owrx.wf_snap? 'no snap' : 'snap to nearest';
    
    // disable menu item if last label gid is not set
@@ -2776,12 +2784,11 @@ function right_click_menu_cb(idx, x, cbp)
    
    switch (idx) {
    
-   case owrx.rcm_stored:
-   case owrx.rcm_eibi:
-      dx_database_cb('', (idx == owrx.rcm_stored)? dx.DB_STORED : dx.DB_EiBi);
+   case owrx.rcm_db:
+      dx_database_cb('', (dx.db == dx.DB_EiBi)? dx.DB_STORED : dx.DB_EiBi);
       break;
 
-   case owrx.rcm_db:  // database lookups
+   case owrx.rcm_lookup:   // database lookups
    case owrx.rcm_cluster:
 		freq_database_lookup(canvas_get_dspfreq(x), idx);
       break;
@@ -2867,7 +2874,7 @@ function freq_database_lookup(Hz, utility)
       url += "qrg.globaltuners.com/?q="+f.toFixed(4);
    }
    */
-   if (utility == owrx.rcm_db) {
+   if (utility == owrx.rcm_lookup) {
       if (kHz >= b.NDB_lo && kHz < b.NDB_hi) {
          f = kHz_r1k.toFixed(0);		// 1kHz windows on 1 kHz boundaries for NDBs
          //url += "www.classaxe.com/dx/ndb/rww/signal_list/?mode=signal_list&submode=&targetID=&sort_by=khz&limit=-1&offset=0&show=list&"+
@@ -3431,14 +3438,18 @@ function spectrum_dB_bands()
    var anti_looping = 0;
 	for (var dB = Math.floor(s_maxdb/10)*10; (s_mindb-dB) < 10; dB -= 10) {
 		var norm = 1 - ((dB - s_mindb) / s_full_scale);
+		if (norm > 1) norm = 1;
 		var cmi = Math.round((dB - barmin) / rng * 255);
 		var color = color_map[cmi];
 		var color_transparent = color_map_transparent[cmi];
 		var color_name = '#'+(color >>> 8).toString(16).leadingZeros(6);
-		spec.dB_bands[i] = { dB:dB, norm:norm, color:color_name };
 		
-		var ypos = function(norm) { return Math.round(norm * spec.canvas.height) }
-		for (var y = ypos(last_norm); y < ypos(norm); y++) {
+		var ypos_f = function(norm) { return Math.round(norm * spec.canvas.height) }
+		var ypos_last = ypos_f(last_norm);
+		var ypos = ypos_f(norm);
+		if (ypos_last == 0 && ypos == 0) continue;
+		spec.dB_bands[i] = { dB:dB, y1:ypos_last, y2:ypos, norm:norm.toFixed(2), color:color_name };
+		for (var y = ypos_last; y < ypos; y++) {
 			for (var j=0; j<4; j++) {
 				spec.colormap.data[y*4+j] = ((color>>>0) >> ((3-j)*8)) & 0xff;
 				spec.colormap_transparent.data[y*4+j] = ((color_transparent>>>0) >> ((3-j)*8)) & 0xff;
@@ -3456,6 +3467,8 @@ function spectrum_dB_bands()
 	w3_call('colormap_aper');
 }
 
+// Not understood: The spectrum dB tooltip refuses to appear on all browsers using the Android tablets.
+// We checked the element visibility, z-index, etc. and nothing helped. Works fine with iOS.
 function spectrum_tooltip_update(evt, clientX, clientY)
 {
 	var target = (evt.target == spec.dB || evt.currentTarget == spec.dB || evt.target == spec.dB_ttip || evt.currentTarget == spec.dB_ttip);
@@ -3463,6 +3476,7 @@ function spectrum_tooltip_update(evt, clientX, clientY)
 	//if (kiwi_isMobile()) alert('CD '+ tf +' x='+ clientX +' tgt='+ evt.target.id +' ctg='+ evt.currentTarget.id);
 
 	if (target) {
+      if (owrx.debug_drag) canvas_log('*STTU*');
 		//event_dump(evt, 'SPEC');
 		
 		// This is a little tricky. The tooltip text span must be included as an event target so its position will update when the mouse
@@ -3471,13 +3485,20 @@ function spectrum_tooltip_update(evt, clientX, clientY)
 		// doesn't go away unless the mouse is moved quickly. So to stop this we need to manually detect when the mouse is out of the
 		// tooltip container and stop updating the tooltip text position so the hover will end.
 
-		if (clientY >= 0 && clientY < spec.height_spectrum_canvas) {
-			spec.dB_ttip.style.left = px(clientX - (kiwi_isMobile()? spec.tooltip_offset : 0));
-			spec.dB_ttip.style.bottom = px(spec.height_spectrum_canvas + 10 - clientY);
-			var dB = (((spec.height_spectrum_canvas - clientY) / spec.height_spectrum_canvas) * full_scale) + mindb;
-			spec.dB_ttip.innerHTML = dB.toFixed(0) +' dBm';
+      var h = spec.height_spectrum_canvas;
+		if (clientY >= 0 && clientY < h) {
+		   var cx = clientX - (kiwi_isMobile()? spec.tooltip_offset : 0);
+			spec.dB_ttip.style.left = px(cx);
+			spec.dB_ttip.style.bottom = px(h + 10 - clientY);
+         if (owrx.debug_drag) canvas_log('['+  cx +','+ clientY +']');
+         var f_kHz = (canvas_get_dspfreq(cx) + kiwi.freq_offset_Hz)/1000;
+         var f_text = format_frequency("{x}", f_kHz, 1, freq_field_prec(f_kHz));
+			var dB = (((h - clientY) / h) * full_scale) + mindb;
+			spec.dB_ttip.innerHTML = f_text +' kHz<br>'+ dB.toFixed(0) +' dBm';
 		}
-	}
+	} else {
+      if (owrx.debug_drag) canvas_log('STTU-ck');
+   }
 }
 
 function spectrum_update(data)
@@ -3587,8 +3608,22 @@ function spectrum_update(data)
       if (spectrum_slow_dev) {
          ctx.fillRect(x,y, 1,sh-y);
       } else {
-         // fixme: could optimize amount of data moved like smeter
-         ctx.putImageData(spec.colormap, x,0, 0,y, 1,sh-y+1);
+         // this is very slow on underpowered mobile devices
+         // hence need for "slow dev" button
+         //ctx.putImageData(spec.colormap, x,0, 0,y, 1,sh-y+1);
+
+         // this runs as fast as "slow dev" mode
+         //y = x % 200;      // checks for missing values
+         var first = true;
+         for (i = 0; i < spec.dB_bands.length; i++) {
+            var b = spec.dB_bands[i];
+            if (first && y > b.y2) continue;
+            first = false;
+            ctx.fillStyle = b.color;
+            var h = b.y2 - y;
+            ctx.fillRect(x,y, 1,h);
+            y = b.y2;
+         }
       }
    }
    
@@ -5138,7 +5173,8 @@ function freq_field_width()
    
    // limit to 9 characters max: 12345.789 or 123456.89
    var limit = 100e3 - (cfg.max_freq? 32e3 : 30e3);
-   var width = (kiwi.freq_offset_kHz >= limit)? 6.5 : (cfg.show_1Hz? 6.5 : 6);
+   //var width = (kiwi.freq_offset_kHz >= limit)? 6.5 : (cfg.show_1Hz? 6.5 : 6);
+   var width = (kiwi.freq_offset_kHz >= limit)? 6.25 : (cfg.show_1Hz? 6.25 : 5.75);
    return (width +'em');
 }
 
@@ -6511,6 +6547,7 @@ var dx = {
    DB_EiBi: 1,
    db: 0,
    db_s: [ 'stored (writeable)', 'EiBi-B21 (read-only)' ],
+   db_flip_s: [ 'EiBi', 'stored' ],
    url_p: null,
    help: false,
    ignore_dx_update: false,
@@ -8407,7 +8444,7 @@ function panels_setup()
             // Dim jsFreqKiwiSDR As String = "targetForm = document.forms['form_freq']; targetForm.elements[0].value = '" + frequency + "'; freqset_complete(0); false"
             // Form1.browser.ExecuteScriptAsync(jsFreqKiwiSDR)
             '<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
-               w3_input('w3-custom-events w3-font-16px|padding:0 4px; width:'+ freq_field_width() +'|type="text" inputmode="decimal"'+
+               w3_input('w3-custom-events w3-font-16px|margin: 2px 0 0 2px; padding:0 4px; width:'+ freq_field_width() +'|type="text" inputmode="decimal"'+
                ' onchange="freqset_complete(1)" ontouchstart="freqset_touchstart(event)" onkeyup="freqset_keyup(this, event)" onfocus="this.select()"',
                '', 'id-freq-input') +
             '</form>'

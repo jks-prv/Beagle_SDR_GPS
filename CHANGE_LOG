@@ -2,6 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.517  May 3, 2022
+    Made spectrum color bar mode run as fast as "slow dev" mode. Left slow dev button in for now
+    even though there's no reason for it anymore.
+    Added frequency to spectrum display dBm tooltip (thanks Martin).
+    Swapped C-QUAM AM stereo L/R channels based on a forum report (thanks nitroengine).
+    More mobile issues fixed.
+
 v1.516  May 2, 2022
     Fixed problem on Android < 8.1 where tap on frequency box brings up number entry pad
     then immediately closes it again so you're unable to enter a frequency.
