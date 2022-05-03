@@ -55,7 +55,7 @@ try {
 var kiwi_util = {
 };
 
-var kiwi_iOS, kiwi_OSX, kiwi_linux, kiwi_Windows, kiwi_android;
+var kiwi_iOS, kiwi_MacOS, kiwi_linux, kiwi_Windows, kiwi_android;
 var kiwi_safari, kiwi_firefox, kiwi_chrome, kiwi_opera, kiwi_smartTV;
 
 // wait until DOM has loaded before proceeding (browser has loaded HTML, but not necessarily images)
@@ -67,7 +67,7 @@ document.onreadystatechange = function() {
 		console.log(s);
 		//alert(s);
 		kiwi_iOS = (s.includes('iPhone') || s.includes('iPad'));
-		kiwi_OSX = s.includes('OS X');
+		kiwi_MacOS = s.includes('OS X');
 		kiwi_linux = s.includes('Linux');
 		kiwi_Windows = s.includes('Win');
 		kiwi_android = s.includes('Android');
@@ -76,11 +76,26 @@ document.onreadystatechange = function() {
 		kiwi_browserVersion = /version\/([0-9]+)/i.exec(s);
 		kiwi_firefox = /firefox\/([0-9]+)/i.exec(s);
 		kiwi_chrome = /chrome\/([0-9]+)/i.exec(s);
+
 		kiwi_opera = /opera\/([0-9]+)/i.exec(s);
 		if (!kiwi_opera) kiwi_opera = /OPR\/([0-9]+)/i.exec(s);
-		kiwi_smartTV = /SmartTV\/([0-9]+)/i.exec(s);
+
+		kiwi_smartTV = s.includes('SmartTV');
+		if (!kiwi_smartTV) kiwi_smartTV = s.includes('SMART-TV');
+		if (kiwi_smartTV) {
+		   if (s.includes('Samsung')) kiwi_smartTV = 'Samsung';
+		   else
+		   if (s.includes('LG')) kiwi_smartTV = 'LG';
+		}
 		
-		console.log('iOS='+ kiwi_iOS +' OSX='+ kiwi_OSX +' Linux='+ kiwi_linux +' Windows='+ kiwi_Windows +' android='+ kiwi_android);
+		
+		console.log(
+		   'MacOS='+ kiwi_MacOS +
+		   ' Linux='+ kiwi_linux +
+		   ' Windows='+ kiwi_Windows +
+		   ' iOS='+ kiwi_iOS +
+		   ' Android='+ kiwi_android +
+		   ' SmartTV='+ kiwi_smartTV);
 		
 		// madness..
 		if (kiwi_opera) {
@@ -93,7 +108,7 @@ document.onreadystatechange = function() {
 		   if (kiwi_browserVersion) kiwi_safari[1] = kiwi_browserVersion[1];
 		}
 
-		console.log('safari='+ kiwi_isSafari() + ' firefox='+ kiwi_isFirefox() + ' chrome='+ kiwi_isChrome() + ' opera='+ kiwi_isOpera());
+		console.log('Safari='+ kiwi_isSafari() + ' Firefox='+ kiwi_isFirefox() + ' Chrome='+ kiwi_isChrome() + ' Opera='+ kiwi_isOpera());
 
 		if (typeof(kiwi_check_js_version) !== 'undefined') {
 			// done as an AJAX because needed long before any websocket available
@@ -107,7 +122,7 @@ document.onreadystatechange = function() {
 
 function kiwi_is_iOS() { return kiwi_iOS; }
 
-function kiwi_isOSX() { return kiwi_OSX; }
+function kiwi_isMacOS() { return kiwi_MacOS; }
 
 function kiwi_isWindows() { return kiwi_Windows; }
 
@@ -115,7 +130,9 @@ function kiwi_isLinux() { return kiwi_linux; }
 
 function kiwi_isAndroid() { return kiwi_android; }
 
-function kiwi_isMobile() { return (kiwi_isAndroid() || kiwi_is_iOS() || force_mobile || mobile_laptop_test); }
+function kiwi_isSmartTV() { return kiwi_smartTV; }
+
+function kiwi_isMobile() { return (force_mobile || kiwi_is_iOS() || kiwi_isAndroid() || (kiwi_isSmartTV() == 'Samsung') || mobile_laptop_test); }
 
 // returns the version number or NaN (later of which will evaluate false in numeric comparisons)
 function kiwi_isSafari() { return (kiwi_safari? kiwi_safari[1] : NaN); }
@@ -125,8 +142,6 @@ function kiwi_isFirefox() { return (kiwi_firefox? kiwi_firefox[1] : NaN); }
 function kiwi_isChrome() { return (kiwi_chrome? kiwi_chrome[1] : NaN); }
 
 function kiwi_isOpera() { return (kiwi_opera? kiwi_opera[1] : NaN); }
-
-function kiwi_isSmartTV() { return (kiwi_smartTV? kiwi_smartTV[1] : NaN); }
 
 var kiwi_version_fail = false;
 
@@ -1426,7 +1441,7 @@ function kiwi_remove_cjson_comments(s)
 
 function kiwi_scrollbar_width()
 {
-	if (kiwi_isOSX()) return 10;		// OSX/iOS browser scrollbars are all narrower
+	if (kiwi_isMacOS()) return 10;		// MacOS/iOS browser scrollbars are all narrower
 	return 15;
 }
 

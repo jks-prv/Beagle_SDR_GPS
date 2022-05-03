@@ -253,7 +253,7 @@ endif
 
 # static analyzer (NB: different from address sanitizer "asan")
 # build on devsys or target with "make SAN=1" using alias "msan"
-# uses -O0 for speedup when used on target (clang on Debian seems to catch more errors than on OSX)
+# uses -O0 for speedup when used on target (clang on Debian seems to catch more errors than on MacOS)
 ifeq ($(SAN),1)
     CPP_FLAGS += -O0 -Werror --analyze -DKIWI_STATIC_ANALYSIS
     OPT = 0

@@ -8277,14 +8277,14 @@ function keyboard_shortcut_event(evt)
       if (evt.target.nodeName != 'INPUT' || (id == 'id-freq-input' && !field_input_key)) {
          
          // don't interfere with the meta key shortcuts of the browser
-         if (kiwi_isOSX()) {
+         if (kiwi_isMacOS()) {
             if (meta) {
-               //console.log('ignore OSX META '+ (k? k:''));
+               //console.log('ignore MacOS META '+ (k? k:''));
                return;
             }
          } else {
             if (ctl) {
-               //console.log('ignore non-OSX CTL '+ (k? k:''));
+               //console.log('ignore non-MacOS CTL '+ (k? k:''));
                return;
             }
          }

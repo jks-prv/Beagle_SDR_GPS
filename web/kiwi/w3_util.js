@@ -1050,7 +1050,7 @@ function w3_isVisible(el_id)
 {
 	var el = w3_el(el_id);
 	if (!el) return null;
-	return (el.style.visibility != 'hidden');
+	return (el.style.visibility == 'visible');
 }
 
 // our standard for confirming (highlighting) a control action (e.g.button push)
