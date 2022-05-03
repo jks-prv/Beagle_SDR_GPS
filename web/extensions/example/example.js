@@ -1,11 +1,19 @@
 // Copyright (c) 2017 John Seamons, ZL/KF6VO
 
+// NB: To capitalize the name in the extension menu while using lowercase in program code
+// follow the capitalization used below, e.g.
+// EXAMPLE_main() _environment_changed() _focus() _blur() _help() _config_html()
+// ALSO the .js and .css filenames must be capitalized and the Makefile changed.
+// AND capitalize the name of this directory and fix any use of kiwi_load_js_dir()
+
 var example = {
+   //ext_name: 'EXAMPLE',
    ext_name: 'example',    // NB: must match example.cpp:example_ext.name
    first_time: true,
    CMD1: 0
 };
 
+//function EXAMPLE_main()
 function example_main()
 {
 	ext_switch_to_client(example.ext_name, example.first_time, example_recv);		// tell server to use us (again)
@@ -84,6 +92,7 @@ function example_controls_setup()
 }
 
 // automatically called on changes in the environment
+//function EXAMPLE_environment_changed(changed)
 function example_environment_changed(changed)
 {
    if (!changed.resize) return;
@@ -92,11 +101,18 @@ function example_environment_changed(changed)
 	el.style.left = px(left);
 }
 
+//function EXAMPLE_focus()
+function example_focus()
+{
+}
+
+//function EXAMPLE_blur()
 function example_blur()
 {
    // anything that needs to be done when extension blurred (closed)
 }
 
+//function EXAMPLE_help(show)
 function example_help(show)
 {
    if (show) {
@@ -114,7 +130,13 @@ function example_help(show)
 }
 
 // called to display HTML for configuration parameters in admin interface
+//function EXAMPLE_config_html()
 function example_config_html()
 {
-   ext_config_html(example, 'example', 'Example', 'Example configuration');
+   ext_config_html(example, 'example', 'Example', 'Example configuration', '');
+   //              +         +          +          +                        +-- admin page, extensions tab: optional page content
+   //              +         +          +          +-- admin page, extensions tab: top bar title
+   //              +         +          +-- admin page, extensions tab: nav sidebar text
+   //              +         +-- cfg prefix, e.g. example.enable
+   //              +-- vars struct (above)
 }
