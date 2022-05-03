@@ -2642,7 +2642,7 @@ function extensions_html()
 {
 	var s =
 	w3_div('id-extensions w3-hide w3-section',
-      w3_sidenav('id-extensions-nav'),
+      w3_sidenav('id-extensions-nav w3-margin-B-16'),
 		w3_div('id-extensions-config')
 	);
 	return s;
