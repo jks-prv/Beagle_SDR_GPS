@@ -383,7 +383,7 @@ function audio_init(is_local, less_buffering, compression)
 		   audio_panner = null;
 		}
 		
-      if (kiwi_isSmartTV()) audio_gain = audio_context.createGain();
+      if (kiwi_isSmartTV() == 'LG') audio_gain = audio_context.createGain();
 	} catch(e) {
 		kiwi_serious_error("Your browser does not support Web Audio API, which is required for OpenWebRX to run. Please use an HTML5 compatible browser.");
 		audio_context = null;
@@ -512,7 +512,7 @@ function audio_disconnect()
 function audio_connect_destination(src)
 {
    // SmartTV browser won't play audio unless there is a gain block in the chain!
-   if (kiwi_isSmartTV()) {
+   if (kiwi_isSmartTV() == 'LG') {
       audio_gain.gain.value = 0.3;     // don't blow out the TV speakers when they're set at 50% volume
       src.connect(audio_gain);
       src = audio_gain;

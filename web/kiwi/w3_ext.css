@@ -260,7 +260,7 @@ input[type=range]::-moz-range-thumb {
     outline: 0;
 }
 
-/* OSX menu colors (sort-of) */
+/* MacOS menu colors (sort-of) */
 .w3-menu-item {
     padding: 4px 16px;      /* instead of margin so :hover inverts color of full width */
     background-color: rgb(240, 240, 240);

@@ -379,7 +379,7 @@ alias nfsdn="cd ~; umount -a -f -t nfs"
 #   pki nfs-common nfs-kernel-server
 # edit resulting /etc/exports file and add: (adjust for subnet address)
 #   / 192.168.1.0/24(ro,sync,no_subtree_check)
-# now on development machine: ("resvport" is necessary for OSX)
+# now on development machine: ("resvport" is necessary for MacOS)
 #   mkdir -p ${HOME}/mnt
 #   sudo mount -t nfs -o ro,resvport beagle_hostname:/ ${HOME}/mnt
 # later:

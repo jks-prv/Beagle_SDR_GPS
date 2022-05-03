@@ -98,7 +98,7 @@ function kiwi_bodyonload(error)
 	}
 	else
 
-	if (kiwi_isSmartTV() && kiwi_isChrome() < 87) {
+	if (kiwi_isSmartTV() == 'LG' && kiwi_isChrome() < 87) {
 	   var s = 'Browser: '+ navigator.userAgent +
 	      '<br>Sorry, KiwiSDR requires SmartTV Chrome version >= 87';
 		kiwi_serious_error(s);
