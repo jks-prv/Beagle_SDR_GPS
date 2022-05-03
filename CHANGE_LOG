@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.518  May 4, 2022
+    Fix frequency memory button.
+    Fix capitalization of extension names.
+    Samsung SMART-TV support.
+
 v1.517  May 3, 2022
     Made spectrum color bar mode run as fast as "slow dev" mode. Left slow dev button in for now
     even though there's no reason for it anymore.
@@ -2191,7 +2196,7 @@ v1.194  May 13, 2018
     Fixed memory allocation bug in dx label processing.
 
 v1.193  May 12, 2018
-    Don't interfere with control key on Linux/Windows (and all non-OSX OSs)
+    Don't interfere with control key on Linux/Windows (and all non-MacOS OSs)
 
 v1.192  May 12, 2018
     Typing into password fields is now masked, i.e. characters echo as dots.
