@@ -1482,17 +1482,15 @@ function scale_canvas_mousedown(evt)
 
 function scale_canvas_touchStart(evt)
 {
-   if (evt.targetTouches.length == 1) {
-		with (scale_canvas_drag_params) {
-			drag = false;
-			last_x = start_x = evt.targetTouches[0].pageX;
-			last_y = start_y = evt.targetTouches[0].pageY;
-			key_modifiers.shiftKey = false;
-			key_modifiers.altKey = false;
-			key_modifiers.ctrlKey = false;
-		}
-	   scale_canvas_start_drag(evt, 0);
-	}
+   with (scale_canvas_drag_params) {
+      drag = false;
+      last_x = start_x = evt.targetTouches[0].pageX;
+      last_y = start_y = evt.targetTouches[0].pageY;
+      key_modifiers.shiftKey = false;
+      key_modifiers.altKey = false;
+      key_modifiers.ctrlKey = false;
+   }
+   scale_canvas_start_drag(evt, 0);
 	
 	touch_restore_tooltip_visibility(owrx.scale_canvas);
 	evt.preventDefault();
@@ -2286,7 +2284,7 @@ function canvas_get_dspfreq(relativeX)
 
 canvas_dragging = false;
 canvas_drag_min_delta = 1;
-canvas_mouse_down = false;
+canvas_mouse_down_or_touch = false;
 canvas_ignore_mouse_event = false;
 
 var mouse = { 'left':0, 'middle':1, 'right':2 };
@@ -2357,7 +2355,7 @@ function canvas_start_drag(evt, x, y)
 	}
 	
 	owrx.drag_count = 0;
-	canvas_mouse_down = true;
+	canvas_mouse_down_or_touch = true;
 	canvas_dragging = false;
 	owrx.canvas.drag_last_x = owrx.canvas.drag_start_x = x;
 	owrx.canvas.drag_last_y = owrx.canvas.drag_start_y = y;
@@ -2407,15 +2405,21 @@ function canvas_touchStart(evt)
 	*/
 	} else
 	
-	if (touches == 2) {
+	if (touches >= 2) {
 		canvas_start_drag(evt, x, y);
 	   //alert('canvas_touchStart='+ evt.targetTouches.length);
 		canvas_ignore_mouse_event = true;
 		if (owrx.debug_drag) console.log('CTS-doubleTouch IME=set-true');
 		owrx.touches_first_startx = x;
+		var deltaX = evt.touches[0].pageX - evt.touches[1].pageX;
+		var deltaY = evt.touches[0].pageY - evt.touches[1].pageY;
       owrx.pinch_distance_first =
-         Math.round(Math.hypot(evt.touches[0].pageX - evt.touches[1].pageX, evt.touches[0].pageY - evt.touches[1].pageY));
+         Math.round(Math.hypot(deltaX, deltaY));
       owrx.pinch_distance_last = owrx.pinch_distance_first;
+      
+      // two fingers horizontally next to each other, i.e. differentiate from pinch zoom
+      // 50 gives better reliability against premature touchends on Android than 30
+      owrx.double_touch_swipe = (Math.abs(deltaY) < 50);
 		owrx.double_touch_start = true;
 	}
 
@@ -2423,7 +2427,7 @@ function canvas_touchStart(evt)
 	evt.preventDefault();	// don't show text selection mouse pointer
 }
 
-function canvas_drag(evt, x, y, clientX, clientY)
+function canvas_drag(evt, idx, x, y, clientX, clientY)
 {
 	if (!waterfall_setup_done) return;
 	var relativeX = x;
@@ -2437,14 +2441,14 @@ function canvas_drag(evt, x, y, clientX, clientY)
 	   return;
 	}
 	
-	var sx = canvas_mouse_down? owrx.canvas.drag_start_x : x;
+	var sx = canvas_mouse_down_or_touch? owrx.canvas.drag_start_x : x;
    if (owrx.debug_drag) canvas_log('CD#'+ owrx.drag_count +' x'+ x +' y'+ y +' dx'+ Math.abs(x - sx) +
-      ' CMD'+ (canvas_mouse_down? 1:0) +' IME'+ (canvas_ignore_mouse_event? 1:0) +' DG'+ (canvas_dragging? 1:0));
+      ' CMDT'+ (canvas_mouse_down_or_touch? 1:0) +' IME'+ (canvas_ignore_mouse_event? 1:0) +' DG'+ (canvas_dragging? 1:0));
 
    // drag_count > 10 was required on Lenovo TB-7104F / Android 8.1.0 to differentiate double-touch from true drag.
    // I.e. an excessive number of touch events seem to be sent by browser for a single double-touch.
-   // Sometimes non-mobile clicking produces a single drag count. So prevent that from stopping the click.
-	if (canvas_mouse_down && (!canvas_ignore_mouse_event || owrx.double_touch_start)) {
+   // For desktop, sometimes clicking produces a single drag count. So prevent that from stopping the click.
+	if (canvas_mouse_down_or_touch && (!canvas_ignore_mouse_event || owrx.double_touch_start)) {
 	   var min_drag_cnt = kiwi_isMobile()? 10 : 1;
 	   var drag_cnt_b = (owrx.drag_count > min_drag_cnt);
 	   var drag_delta_b = (Math.abs(x - owrx.canvas.drag_start_x) > canvas_drag_min_delta);
@@ -2460,15 +2464,24 @@ function canvas_drag(evt, x, y, clientX, clientY)
 			var deltaY = owrx.canvas.drag_last_y - y;
 
          if (owrx.double_touch_start) {
-            var dist = Math.round(Math.hypot(deltaX, deltaY));
-            var delta = Math.abs(dist - owrx.pinch_distance_last);
-            if (owrx.debug_drag) canvas_log(dist.toFixed(0) +' '+ delta.toFixed(0));
-            if (delta > 25) {
-               if (owrx.debug_drag) canvas_log('*');
-               var pinch_in = (dist <= owrx.pinch_distance_last);
-               zoom_step(pinch_in? ext_zoom.OUT : ext_zoom.IN);
-               if (owrx.debug_drag) canvas_log(pinch_in? 'IN' : 'OUT');
-               owrx.pinch_distance_last = dist;
+            if (owrx.double_touch_swipe) {
+               // double-touch tune
+               if (idx == 0 && evt.touches.length >= 2) {
+                  var relX = Math.round(Math.abs((evt.touches[0].pageX + evt.touches[1].pageX) / 2));
+                  demodulator_set_offset_frequency(0, canvas_get_carfreq_offset(relX, true));
+               }
+            } else {
+               // pinch zoom
+               var dist = Math.round(Math.hypot(deltaX, deltaY));
+               var dist_delta = Math.abs(dist - owrx.pinch_distance_last);
+               if (owrx.debug_drag) canvas_log(dist.toFixed(0) +' '+ dist_delta.toFixed(0));
+               if (dist_delta > 25) {
+                  if (owrx.debug_drag) canvas_log('*');
+                  var pinch_in = (dist <= owrx.pinch_distance_last);
+                  zoom_step(pinch_in? ext_zoom.OUT : ext_zoom.IN);
+                  if (owrx.debug_drag) canvas_log(pinch_in? 'IN' : 'OUT');
+                  owrx.pinch_distance_last = dist;
+               }
             }
          } else {
             var dbins = norm_to_bins(deltaX / waterfall_width);
@@ -2533,7 +2546,7 @@ function canvas_mousemove(evt)
 {
 	//if (owrx.debug_drag) console.log("C-MM");
    //event_dump(evt, "C-MM");
-	canvas_drag(evt, evt.pageX, evt.pageY, evt.clientX, evt.clientY);
+	canvas_drag(evt, 0, evt.pageX, evt.pageY, evt.clientX, evt.clientY);
 }
 
 function canvas_touchMove(evt)
@@ -2560,7 +2573,7 @@ function canvas_touchMove(evt)
       }
    */
 
-		canvas_drag(evt, x, y, x, y);
+		canvas_drag(evt, i, x, y, x, y);
 	}
 	evt.preventDefault();
 }
@@ -2569,7 +2582,7 @@ function canvas_end_drag2()
 {
 	if (owrx.debug_drag) canvas_log("C-ED2");
 	wf_container.style.cursor = owrx.wf_cursor;
-	canvas_mouse_down = false;
+	canvas_mouse_down_or_touch = false;
 	canvas_ignore_mouse_event = false;
 	if (owrx.debug_drag) { console.log("C-ED2 IME=set-false"); }
 }
@@ -2596,8 +2609,8 @@ function canvas_end_drag(evt, x)
 			//event_dump(evt, "MUP");
 			
 			// don't set freq if mouseup without mousedown due to move into canvas from elsewhere
-			if (owrx.debug_drag) canvas_log('CMD'+ (canvas_mouse_down? 1:0) +' TL'+ owrx.tuning_locked);
-			if (canvas_mouse_down) {
+			if (owrx.debug_drag) canvas_log('CMDT'+ (canvas_mouse_down_or_touch? 1:0) +' TL'+ owrx.tuning_locked);
+			if (canvas_mouse_down_or_touch) {
 			
 			   // mobile mode (touch screen): hack to close menu when touch outside of menu area.
 			   // Desktop does this instead by intercepting mousedown and keyboard escape events.
@@ -2627,7 +2640,7 @@ function canvas_end_drag(evt, x)
 		}
 	}
 	
-	canvas_mouse_down = false;
+	canvas_mouse_down_or_touch = false;
 	canvas_ignore_mouse_event = false;
 	if (owrx.debug_drag) console.log('C-ED IME=set-false');
 }
@@ -2643,7 +2656,7 @@ function canvas_mouseup(evt)
 function canvas_touchEnd(evt)
 {
 	var x = owrx.canvas.drag_last_x, y = owrx.canvas.drag_last_y;
-	if (owrx.debug_drag) canvas_log('C-TE-x'+ x +'-DTS'+ (owrx.double_touch_start? 1:0) +'-DRAG'+ (canvas_dragging? 1:0));
+	if (owrx.debug_drag) canvas_log('C-TE-x'+ x +'-DTS'+ (owrx.double_touch_start? 1:0) +'-DTSw'+ (owrx.double_touch_swipe? 1:0) +'-DRAG'+ (canvas_dragging? 1:0));
 	canvas_end_drag(evt, x);
 /*
    owrx.touch_hold_pressed = false;
@@ -2683,11 +2696,34 @@ function canvas_mousewheel(evt)
 	evt.preventDefault();	
 }
 
+
 function canvas_mousewheel_cb(evt)
 {
 	if (!waterfall_setup_done) return;
+	/*
+	if (cur_mode == 'lsb') { console.log('tp'); owrx.jks_tp = kiwi_serializeEvent(evt); }
+	if (cur_mode == 'usb') { console.log('mw'); owrx.jks_mw = kiwi_serializeEvent(evt); }
+	if (cur_mode == 'am') console.log(owrx.jks_tp.length +' '+ owrx.jks_mw.length +' '+ ((owrx.jks_tp != owrx.jks_mw)? 'DIFF!':'same'));
+	if (cur_mode == 'am' && owrx.jks_tp != owrx.jks_mw) {
+	   console.log('diff='+ owrx.jks_tp.indexOf(owrx.jks_mw));
+	   console.log('tp');
+	   console.log(owrx.jks_tp);
+	   console.log('mw');
+	   console.log(owrx.jks_mw);
+	}
+	*/
 	//console.log(evt);
-   zoom_step((evt.deltaY < 0)? ext_zoom.IN : ext_zoom.OUT, evt.pageX);
+	//event_dump(evt, 'canvas_mousewheel_cb');
+
+	// evt.ctrlKey is true for trackpad pinch (zoom-to-passband),
+	// but false for two-finger swipe across or up/down.
+	// false for actual USB-mouse mousewheel (zoom-to-cursor)
+   // x != 0 is two-finger swipe L/R
+   var x = evt.deltaX;
+   var y = evt.deltaY;
+   var to_passband = (evt.ctrlKey || x != 0);
+   var inout = (x < 0 || (x == 0 && y < 0))? ext_zoom.IN : ext_zoom.OUT;
+   zoom_step(inout, to_passband? undefined : evt.pageX);
 	
 	/*
    // scaling value is a scrolling sensitivity compromise between wheel mice and
@@ -5366,13 +5402,13 @@ function freqset_complete(from)
 	kiwi_clearTimeout(freqset_tout);
 	if (isUndefined(obj) || obj == null) return;		// can happen if SND comes up long before W/F
 
-   var p = obj.value.split(/[\/:]/);
-	var slash = obj.value.includes('/');
+   var p = obj.value.split(/[\/\+\:\;]/);
+	var slash_or_plus = obj.value.includes('/') || obj.value.includes('+');
    // 'k' suffix is simply ignored since default frequencies are in kHz
 	var f = p[0].replace(',', '.').parseFloatWithUnits('M', 1e-3);    // Thanks Petri, OH1BDF
 	var err = true;
 
-   if (obj.value == '/') {
+   if (obj.value == '/' || obj.value == '+') {
       //console.log('restore_passband '+ cur_mode);
       restore_passband(cur_mode);
       demodulator_analog_replace(cur_mode);
@@ -5393,6 +5429,9 @@ function freqset_complete(from)
 	// also "lo,hi" in place of "pbw"
 	// and ":pbc" or ":pbc,pbw" to set the pbc at the current pbw
 	// "/" alone resets to default passband
+	// "+" can be substituted for "/" above for iOS tel popup keyboard that has no "/"
+	// ";" can be substituted for ":" above for iOS tel popup keyboard that has no ":"
+	// with iOS tel you get ',' with the 'pause' key
 	if (p[1]) {
 	   p2 = p[1].split(',');
 	   var lo = p2[0].parseFloatWithUnits('k');
@@ -5400,12 +5439,12 @@ function freqset_complete(from)
 	   if (p2.length > 1) {
 	      hi = p2[1].parseFloatWithUnits('k');
 	   }
-	   //console.log('### <'+ (slash? '/' : ':') +'> '+ p2[0] +'/'+ lo +', '+ p2[1] +'/'+ hi);
+	   //console.log('### <'+ (slash_or_plus? '/' : ':') +'> '+ p2[0] +'/'+ lo +', '+ p2[1] +'/'+ hi);
       var cpb = ext_get_passband();
       var cpbhw = (cpb.high - cpb.low)/2;
       var cpbcf = cpb.low + cpbhw;
 	   
-      if (slash) {
+      if (slash_or_plus) {
          // adjust passband width about current pb center
          if (p2.length == 1) {
             // /pbw
@@ -8133,7 +8172,7 @@ function keyboard_shortcut_url_keys()
 }
 
 // abcdefghijklmnopqrstuvwxyz `~!@#$%^&*()-_=+[]{}\|;:'"<>? 0123456789.,/kM
-// ..........F.. ..... ......   ...       F .     .. F  ... FFFFFFFFFFFFFFF
+// ..........F.. ..... ......   ...       F .F    ..FF  ... FFFFFFFFFFFFFFF
 // .. ..   ..  F  .  .  ..  .                               F: frequency entry keys
 // ABCDEFGHIJKLMNOPQRSTUVWXYZ
 // :space: :tab:
@@ -8268,8 +8307,9 @@ function keyboard_shortcut_event(evt)
 
       var field_input_key = (
             (k >= '0' && k <= '9' && !ctl) ||
-            k == '.' || k == ',' ||                // ',' is alternate decimal point to '.'
+            k == '.' || k == ',' ||                // ',' is alternate decimal point to '.' and used in passband spec
             k == '/' || k == ':' || k == '-' ||    // for passband spec, have to allow for negative passbands (e.g. lsb)
+            k == '+' || k == ';' ||                // '+;' are for benefit of iOS tel popup keyboard that have no '/:'
             k == 'k' || k == 'M' ||                // scale modifiers
             k == 'Enter' || k == 'ArrowUp' || k == 'ArrowDown' || k == 'Backspace' || k == 'Delete'
          );
@@ -8436,6 +8476,9 @@ function panels_setup()
 	w3_el("id-ident").innerHTML =
 		w3_input('w3-label-not-bold/w3-custom-events|padding:1px|size=20 onkeyup="ident_keyup(this, event)"', 'Your name or callsign:', 'ident-input');
 	
+	var mobile = kiwi_isMobile()?
+	   (' inputmode="tel" ontouchstart="freqset_touchstart(event)" onclick="this.select()"') : '';
+	
 	w3_el("id-control-freq1").innerHTML =
 	   w3_inline('w3-halign-space-between/',
          w3_div('id-freq-cell',
@@ -8444,9 +8487,8 @@ function panels_setup()
             // Dim jsFreqKiwiSDR As String = "targetForm = document.forms['form_freq']; targetForm.elements[0].value = '" + frequency + "'; freqset_complete(0); false"
             // Form1.browser.ExecuteScriptAsync(jsFreqKiwiSDR)
             '<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
-               w3_input('w3-custom-events w3-font-16px|margin: 2px 0 0 2px; padding:0 4px; width:'+ freq_field_width() +'|type="text" inputmode="decimal"'+
-               ' onchange="freqset_complete(1)" ontouchstart="freqset_touchstart(event)" onkeyup="freqset_keyup(this, event)" onfocus="this.select()"',
-               '', 'id-freq-input') +
+               w3_input('w3-custom-events w3-font-16px|margin: 2px 0 0 2px; padding:0 4px; width:'+ freq_field_width() +
+               '|type="text"' + mobile + ' onchange="freqset_complete(1)" onkeyup="freqset_keyup(this, event)"', '', 'id-freq-input') +
             '</form>'
          ) +
 
@@ -10288,54 +10330,6 @@ function panel_set_width_height(id, width, height)
 ////////////////////////////////
 // misc
 ////////////////////////////////
-
-function event_dump(evt, id, oneline)
-{
-   if (oneline) {
-      var trel = (isDefined(evt.relatedTarget) && evt.relatedTarget)? (' Trel='+ evt.relatedTarget.id) : '';
-      var key = '';
-      if (evt.shiftKey) key += 'shift-';
-      if (evt.ctrlKey)  key += 'ctrl-';
-      if (evt.altKey)   key += 'alt-';
-      if (evt.metaKey)  key += 'meta-';
-      key += ''+ evt.key;
-      console.log('event_dump '+ id +' '+ evt.type +' k='+ key +' T='+ evt.target.id +' Tcur='+ evt.currentTarget.id + trel);
-   } else {
-      console.log('================================');
-      if (!isArg(evt)) {
-         console.log('EVENT_DUMP: '+ id +' bad evt');
-         kiwi_trace();
-         return;
-      }
-      console.log('EVENT_DUMP: '+ id +' type='+ evt.type);
-      console.log((evt.shiftKey? 'SFT ':'') + (evt.ctrlKey? 'CTL ':'') + (evt.altKey? 'ALT ':'') + (evt.metaKey? 'META ':'') +'key='+ evt.key);
-      console.log('this.id='+ this.id +' tgt.name='+ evt.target.nodeName +' tgt.id='+ evt.target.id +' ctgt.id='+ evt.currentTarget.id);
-      var buttons = '';
-      if (evt.buttons & 1) buttons += 'L';
-      if (evt.buttons & 4) buttons += 'M';   // yes, 4 is middle
-      if (evt.buttons & 2) buttons += 'R';
-      console.log('button='+ "LMR"[evt.button] +' buttons='+ buttons +' detail='+ evt.detail);
-      
-      if (evt.type.startsWith('touch')) {
-         console.log('pageX='+ evt.pageX +' clientX='+ evt.clientX +' screenX='+ evt.screenX);
-         console.log('pageY='+ evt.pageY +' clientY='+ evt.clientY +' screenY='+ evt.screenY);
-      } else {
-         console.log('pageX='+ evt.pageX +' clientX='+ evt.clientX +' screenX='+ evt.screenX +' offX(EXP)='+ evt.offsetX +' layerX(DEPR)='+ evt.layerX);
-         console.log('pageY='+ evt.pageY +' clientY='+ evt.clientY +' screenY='+ evt.screenY +' offY(EXP)='+ evt.offsetY +' layerY(DEPR)='+ evt.layerY);
-      }
-      
-      console.log('evt, evt.target, evt.currentTarget, evt.relatedTarget, elementFromPoint:');
-      console.log(evt);
-      console.log(evt.target);
-      console.log(evt.currentTarget);
-      console.log(evt.relatedTarget);
-      if (isNumber(evt.pageX) && isNumber(evt.pageY))
-         console.log(document.elementFromPoint(evt.pageX, evt.pageY));
-      else
-         console.log('(no x,y)');
-      console.log('----');
-   }
-}
 
 // NB: use kiwi_log() instead of console.log() in here
 function add_problem(what, append, sticky, el_id)

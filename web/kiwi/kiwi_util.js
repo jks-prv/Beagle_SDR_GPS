@@ -606,6 +606,148 @@ function canvas_log2(s)
    kiwi.log2_seq++;
 }
 
+// from: stackoverflow.com/questions/11547672/how-to-stringify-event-object
+// Calculate a string representation of a node's DOM path.
+function kiwi_pathToSelector(node)
+{
+  if (!node || !node.outerHTML) {
+    return null;
+  }
+
+  var path;
+  while (node.parentElement) {
+    var name = node.localName;
+    if (!name) break;
+    name = name.toLowerCase();
+    var parent = node.parentElement;
+
+    var domSiblings = [];
+
+    if (parent.children && parent.children.length > 0) {
+      for (var i = 0; i < parent.children.length; i++) {
+        var sibling = parent.children[i];
+        if (sibling.localName && sibling.localName.toLowerCase) {
+          if (sibling.localName.toLowerCase() === name) {
+            domSiblings.push(sibling);
+          }
+        }
+      }
+    }
+
+    if (domSiblings.length > 1) {
+      name += ':eq(' + domSiblings.indexOf(node) + ')';
+    }
+    path = name + (path ? '>' + path : '');
+    node = parent;
+  }
+
+  return path;
+}
+
+// Generate a JSON version of the event.
+function kiwi_serializeEvent(e) {
+  if (e) {
+    var o = {
+      eventName: e.toString(),
+      altKey: e.altKey,
+      bubbles: e.bubbles,
+      button: e.button,
+      buttons: e.buttons,
+      cancelBubble: e.cancelBubble,
+      cancelable: e.cancelable,
+      clientX: e.clientX,
+      clientY: e.clientY,
+      composed: e.composed,
+      ctrlKey: e.ctrlKey,
+      currentTarget: e.currentTarget ? e.currentTarget.outerHTML : null,
+      defaultPrevented: e.defaultPrevented,
+      detail: e.detail,
+      eventPhase: e.eventPhase,
+      fromElement: e.fromElement ? e.fromElement.outerHTML : null,
+      isTrusted: e.isTrusted,
+      layerX: e.layerX,
+      layerY: e.layerY,
+      metaKey: e.metaKey,
+      movementX: e.movementX,
+      movementY: e.movementY,
+      offsetX: e.offsetX,
+      offsetY: e.offsetY,
+      pageX: e.pageX,
+      pageY: e.pageY,
+      path: kiwi_pathToSelector(e.path && e.path.length ? e.path[0] : null),
+      relatedTarget: e.relatedTarget ? e.relatedTarget.outerHTML : null,
+      returnValue: e.returnValue,
+      screenX: e.screenX,
+      screenY: e.screenY,
+      shiftKey: e.shiftKey,
+      sourceCapabilities: e.sourceCapabilities ? e.sourceCapabilities.toString() : null,
+      target: e.target ? e.target.outerHTML : null,
+      timeStamp: e.timeStamp,
+      toElement: e.toElement ? e.toElement.outerHTML : null,
+      type: e.type,
+      view: e.view ? e.view.toString() : null,
+      which: e.which,
+      x: e.x,
+      y: e.y
+    };
+
+    var s = JSON.stringify(o, null, 2);
+    //console.log(s);
+    return s;
+  }
+  
+  return '(null)';
+}
+
+function event_dump(evt, id, oneline)
+{
+   if (oneline) {
+      var trel = (isDefined(evt.relatedTarget) && evt.relatedTarget)? (' Trel='+ evt.relatedTarget.id) : '';
+      var key = '';
+      if (evt.shiftKey) key += 'shift-';
+      if (evt.ctrlKey)  key += 'ctrl-';
+      if (evt.altKey)   key += 'alt-';
+      if (evt.metaKey)  key += 'meta-';
+      key += ''+ evt.key;
+      console.log('event_dump '+ id +' '+ evt.type +' k='+ key +' T='+ evt.target.id +' Tcur='+ evt.currentTarget.id + trel);
+   } else {
+      console.log('================================');
+      if (!isArg(evt)) {
+         console.log('EVENT_DUMP: '+ id +' bad evt');
+         kiwi_trace();
+         return;
+      }
+      console.log('EVENT_DUMP: '+ id +' type='+ evt.type);
+      console.log((evt.shiftKey? 'SFT ':'') + (evt.ctrlKey? 'CTL ':'') + (evt.altKey? 'ALT ':'') + (evt.metaKey? 'META ':'') +'key='+ evt.key);
+      var ct_id = evt.currentTarget? evt.currentTarget.id : '(null)';
+      console.log('this.id='+ this.id +' tgt.name='+ evt.target.nodeName +' tgt.id='+ evt.target.id +' ctgt.id='+ ct_id);
+      var buttons = '';
+      if (evt.buttons & 1) buttons += 'L';
+      if (evt.buttons & 4) buttons += 'M';   // yes, 4 is middle
+      if (evt.buttons & 2) buttons += 'R';
+      console.log('button='+ "LMR"[evt.button] +' buttons='+ buttons +' detail='+ evt.detail);
+      
+      if (evt.type.startsWith('touch')) {
+         console.log('pageX='+ evt.pageX +' clientX='+ evt.clientX +' screenX='+ evt.screenX);
+         console.log('pageY='+ evt.pageY +' clientY='+ evt.clientY +' screenY='+ evt.screenY);
+      } else {
+         console.log('pageX='+ evt.pageX +' clientX='+ evt.clientX +' screenX='+ evt.screenX +' offX(EXP)='+ evt.offsetX +' layerX(DEPR)='+ evt.layerX);
+         console.log('pageY='+ evt.pageY +' clientY='+ evt.clientY +' screenY='+ evt.screenY +' offY(EXP)='+ evt.offsetY +' layerY(DEPR)='+ evt.layerY);
+      }
+      
+      console.log('evt, evt.target, evt.currentTarget, evt.relatedTarget, elementFromPoint:');
+      console.log(evt);
+      console.log(evt.target);
+      console.log(evt.currentTarget);
+      console.log(evt.relatedTarget);
+      if (isNumber(evt.pageX) && isNumber(evt.pageY))
+         console.log(document.elementFromPoint(evt.pageX, evt.pageY));
+      else
+         console.log('(no x,y)');
+      console.log('----');
+   }
+}
+
 function kiwi_rateLimit(cb, time)
 {
    var waiting = false;
