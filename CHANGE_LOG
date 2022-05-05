@@ -2,6 +2,30 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.519  May 6, 2022
+    Mobile:
+        When taping the frequency entry box Android devices go back to showing the
+        telephone-style keypad instead of the alphanumeric one.
+
+        A new touch gesture on the waterfall for smooth frequency tuning: Touch two-fingers
+        horizontally, with a slight space between them, and swipe left/right to tune. Currently
+        you have to single-finger swipe on the frequency scale to smoothly tune. But this is
+        awkward because your finger always obscures the scale.
+        
+        For reference, these are the other waterfall gestures currently supported:
+        Two-finger "pinch" in or out to zoom in or out centered on the passband.
+        Two-finger touch to pop up the right-click menu.
+        Single-finger touch to set the frequency, but with limited resolution unless zoomed in.
+
+    Desktop:
+        Pinch zooming on a trackpad now zooms centered on the passband (like it does on mobile).
+        Previously it centered on the low-resolution pinch position instead. This caused the
+        passband to frequently wander off the screen when zooming in. Zooming with a mouse
+        scroll wheel is still centered on the cursor position which is typically what you want.
+        
+        Two-finger left/right swipe, as described above for mobile, does zoom in/out just like
+        two-finger up/down. Previously the behavior was undefined.
+
 v1.518  May 4, 2022
     Fix frequency memory button.
     Fix capitalization of extension names.
