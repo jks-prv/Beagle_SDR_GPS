@@ -235,12 +235,10 @@ void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *i
                 audiou = (ai_ps - bi_ps) + (aq_ps + bq_ps); // usb
                 break;
 
-            case MODE_QAM:  // C-QUAM, swapped L/R channels based on forum report
-                //audio  = corr[I]/2 + corr[Q]/2; // L
-                audio  = corr[I]/2 - corr[Q]/2; // R
+            case MODE_QAM:  // C-QUAM
+                audio  = corr[I]/2 + corr[Q]/2; // L
                 audio  *= 2;
-                //audiou = corr[I]/2 - corr[Q]/2; // R
-                audiou = corr[I]/2 + corr[Q]/2; // L
+                audiou = corr[I]/2 - corr[Q]/2; // R
                 audiou *= 2;
                 break;
             

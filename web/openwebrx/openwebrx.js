@@ -474,12 +474,15 @@ function toggle_panel(panel, set)
 	if (divPanel.panelShown) {
 		from = 0; to = hideWidth;
 	} else {
-		from = hideWidth; to = kiwi_scrollbar_width();
+		from = hideWidth; to = kiwi_isMobile()? 0 : kiwi_scrollbar_width();
 	}
+	//if (panel == 'id-control') canvas_log('f='+ from.toFixed(0) +' t='+ to.toFixed(0));
 	
-	// undo/redo scaling before hide/show
-	if (panel == 'id-control' && divPanel.panel_isScaled == true) {
-	   mobile_scale_control_panel(null, !divPanel.panelShown);
+	// undo scaling before hide
+	if (panel == 'id-control' && divPanel.panel_isScaled == true && divPanel.panelShown) {
+	   mobile_scale_control_panel(null, false);
+	   //canvas_log('TogScale=>F'+ divPanel.style.left +':'+ divPanel.style.right);
+	   //canvas_log(divPanel.style.marginLeft +':'+ divPanel.style.marginRight);
 	}
 
 	animate(divPanel, rightSide? 'right':'left', "px", from, to, 0.93, kiwi_isMobile()? 1:1000, 60, 0);
@@ -495,6 +498,16 @@ function toggle_panel(panel, set)
 		divVis.style.right = px(divPanel.panelShown? 0 : (visOffset + visIcon + visBorder*2));
 	else
 		divVis.style.left = px(visOffset + (divPanel.panelShown? visHoffset : (visIcon + visBorder*2)));
+	//if (panel == 'id-control') canvas_log('TogPan'+ visOffset +':'+ divPanel.style.right);
+
+	// redo scaling after show
+	// (NB: divPanel.panelShown instead of !divPanel.panelShown due to ^= 1 above
+	if (panel == 'id-control' && divPanel.panel_isScaled == true && divPanel.panelShown) {
+	   mobile_scale_control_panel(null, true);
+	   //canvas_log('TogScale=>T'+ divPanel.style.left +':'+ divPanel.style.right);
+	   //canvas_log(divPanel.style.marginLeft +':'+ divPanel.style.marginRight);
+	}
+
 	freqset_select();
 }
 
@@ -3344,11 +3357,11 @@ function mobile_init()
       if (mobile.orient_unchanged) return;
       //canvas_log('ORIENT-CH');
       owrx.rescale_cnt++;
-      if (owrx.rescale_cnt2 != 0)
+      if (owrx.rescale_cnt2 != 0) {
          toggle_panel('id-control', 1);   // always show control panel on orientation change
+      }
 
       var doScale = (mobile.narrow && !mobile_laptop_test);
-      el.panel_isScaled = doScale;
       mobile_scale_control_panel(mobile, doScale);
 	}, 500);
 }
@@ -3357,6 +3370,7 @@ function mobile_scale_control_panel(mobile, doScale)
 {
    mobile = mobile || owrx.mobile;
    var el = w3_el('id-control');
+      el.panel_isScaled = doScale;
 
    if (doScale) {
       el.style.right = '0px';
@@ -3369,7 +3383,6 @@ function mobile_scale_control_panel(mobile, doScale)
       //canvas_log2(mobile.width +':'+ mobile.height +' SCALE '+ scale.toFixed(2) +' '+ el.clientWidth +':'+ el.clientHeight);
    } else {
       el.style.transform = 'none';
-      el.style.right = '10px';
       //canvas_log2(mobile.width +':'+ mobile.height +' NORM '+ el.clientWidth +':'+ el.clientHeight);
    }
 }
@@ -3713,13 +3726,13 @@ function wf_init()
 	resize_wf_canvases();
 	bands_init();
 	panels_setup();
-	ident_init();
 	scale_setup();
 	mkcolormap();
    mkscale();
 	spectrum_init();
 	dx_schedule_update();
 	users_init( { user:1 } );
+	ident_init();
 	stats_init();
 	check_top_bar_congestion();
 	if (spectrum_show) setTimeout(spec_show, 2000);    // after control instantiation finishes
@@ -5257,9 +5270,9 @@ function freqset_update_ui()
 	vfo_update();
 	freq_memory_update(freq_displayed_kHz_str_with_freq_offset);
 
-	kiwi_clearTimeout(owrx.freqset_active_timeout);
-	owrx.freqset_active_timeout = setTimeout(function() {
-	   owrx.freqset_active = false;
+	kiwi_clearTimeout(owrx.popup_keyboard_active_timeout);
+	owrx.popup_keyboard_active_timeout = setTimeout(function() {
+	   owrx.popup_keyboard_active = false;
 	   //canvas_log('***');
 	}, 2000);
 }
@@ -5284,11 +5297,11 @@ function vfo_update()
 	writeCookie('last_vfo_'+ "AB"[owrx.vfo_ab], vfo);
 }
 
-// owrx.freqset_active set while popup keyboard active so ext_mobile_info() works
-function freqset_touchstart(event)
+// owrx.popup_keyboard_active set while popup keyboard active so ext_mobile_info() works
+function popup_keyboard_touchstart(event)
 {
    //canvas_log('FTS');
-   owrx.freqset_active = true;
+   owrx.popup_keyboard_active = true;
 }
 
 function freqset_select()
@@ -8035,29 +8048,39 @@ function ident_init()
 	//console.log('ident PRE ident_user=<'+ ident +'> ident_len='+ len);
 	ident = kiwi_strip_tags(ident, '').substring(0, len);
 	//console.log('ident POST ident_user=<'+ ident +'> ident_len='+ len);
-	var el = w3_el('id-ident-input');
+
+	var el = w3_el('id-ident-input1');
+	var el2 = w3_el('id-ident-input2');
 	w3_attribute(el, 'maxlength', len);
+	w3_attribute(el2, 'maxlength', len);
 	el.value = ident;
+	el2.value = ident;
+
 	ident_user = ident;
 	send_ident = true;
 	//console.log('ident_init: SET ident='+ ident_user);
 }
 
-function ident_complete(from)
+function ident_complete(from, which)
 {
-	var el = w3_el('id-ident-input');
+	var el = w3_el('id-ident-input'+ which);
+	var el2 = w3_el('id-ident-input'+ ((which == 1)? 2:1));
 	var ident = el.value;
 	var len = Math.max(cfg.ident_len, kiwi.ident_min);
    ident = kiwi_strip_tags(ident, '').substring(0, len);
-	//console.log('ICMPL from='+ from +' ident='+ ident);
+	//console.log('ICMPL from='+ from +' which='+ which +' ident='+ ident);
+	//canvas_log('IDC-'+ from +'-'+ which);
 	el.value = ident;
+	el2.value = ident;
 	//console.log('ICMPL el='+ typeof(el) +' ident_user=<'+ ident +'>');
+	//canvas_log('CTO-'+ from);
 	kiwi_clearTimeout(ident_tout);
 
 	// okay for ident='' to erase it
 	// SECURITY: input value length limited by "maxlength" attribute, but also guard against binary data injection?
 	//w3_field_select(el, {mobile:1});
 	w3_schedule_highlight(el);
+	w3_schedule_highlight(el2);
 	freqset_select();    // don't keep ident field selected
 
 	writeCookie('ident', ident);
@@ -8066,9 +8089,10 @@ function ident_complete(from)
 	//console.log('ident_complete: SET ident_user='+ ident_user);
 }
 
-function ident_keyup(el, evt)
+function ident_keyup(el, evt, which)
 {
 	//event_dump(evt, "IKU");
+	//canvas_log('CTO-ku');
 	kiwi_clearTimeout(ident_tout);
 	//console.log("IKU el="+ typeof(el) +" val="+ el.value);
 	
@@ -8080,7 +8104,7 @@ function ident_keyup(el, evt)
 		if (any_alternate_click_event_except_shift(evt) || klen != 1 && evt.key != 'Backspace' && evt.key != 'Shift') {
 		   //console.log('IDENT key='+ evt.key);
 			if (evt.key == 'Enter') {
-			   ident_complete('Enter');
+			   ident_complete('Enter', which);
 			}
          //console.log("ignore shift-key ident_keyup");
          //ignore_next_keyup_event = false;
@@ -8088,7 +8112,10 @@ function ident_keyup(el, evt)
       }
 	}
 	
-	ident_tout = setTimeout(function() { ident_complete('t/o'); } , 5000);
+	if (!send_ident) {
+      //canvas_log('STO');
+      ident_tout = setTimeout(function() { ident_complete('t/o', which); } , 5000);
+   }
 }
 
 
@@ -8474,10 +8501,12 @@ function panels_setup()
    var s;
    
 	w3_el("id-ident").innerHTML =
-		w3_input('w3-label-not-bold/w3-custom-events|padding:1px|size=20 onkeyup="ident_keyup(this, event)"', 'Your name or callsign:', 'ident-input');
+		w3_input('w3-label-not-bold/w3-custom-events|padding:1px|size=20'+
+		   ' onchange="ident_complete(\'el\', 1)" onkeyup="ident_keyup(this, event, 1)"',
+		   'Your name or callsign:', 'ident-input1');
 	
 	var mobile = kiwi_isMobile()?
-	   (' inputmode="tel" ontouchstart="freqset_touchstart(event)" onclick="this.select()"') : '';
+	   (' inputmode="tel" ontouchstart="popup_keyboard_touchstart(event)" onclick="this.select()"') : '';
 	
 	w3_el("id-control-freq1").innerHTML =
 	   w3_inline('w3-halign-space-between/',
@@ -9971,6 +10000,13 @@ function users_setup()
             w3_div('id-optbar-user-'+ i +' w3-show-inline-block')
          );
 	}
+
+   var mobile1 = kiwi_isMobile()? ' w3-font-16px' : '';
+   var mobile2 = ' ontouchstart="popup_keyboard_touchstart(event)"';
+	s += w3_input('w3-margin-TB-4 w3-width-half/w3-label-not-bold/w3-custom-events' + mobile1 +
+	   '|padding:1px|size=20 onchange="ident_complete(\'el\', 2)" onkeyup="ident_keyup(this, event, 2)"'+ mobile2,
+	   'Your name or callsign:', 'ident-input2');
+
 	w3_innerHTML('id-optbar-users', w3_div('w3-nowrap', s));
 }
 
@@ -10234,7 +10270,7 @@ function place_panels()
 	y=0;
 	while (right_col.length > 0) {
 		p = pop_bottommost_panel(right_col);
-		p.style.right = px(kiwi_scrollbar_width());		// room for waterfall scrollbar
+		p.style.right = kiwi_isMobile()? 0 : px(kiwi_scrollbar_width());		// room for waterfall scrollbar
 		p.style.bottom = px(y);
 		p.style.visibility = "visible";
 		y += p.uiHeight+3*panel_margin;
@@ -10546,6 +10582,7 @@ function send_keepalive()
 			if (!ident_user) ident_user = '';
 			if (snd_send("SET ident_user="+ encodeURIComponent(ident_user)) < 0)
 				break;
+         //canvas_log('send_ident');
 			send_ident = false;
 		}
 	

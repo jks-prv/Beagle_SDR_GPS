@@ -492,7 +492,7 @@ MBP 15"		1440  900	L
 
 // Must delay the determination of orientation change while the popup keyboard is active.
 // Otherwise an incorrect window.innerHeight value is possible leading to an invalid
-// isPortrait determination. This is why the check for owrx.freqset_active
+// isPortrait determination. This is why the check for owrx.popup_keyboard_active
 // Tried checking w against window.screen.width, but latter changed with rotation on Android
 // but not with iOS. So isn't constant and can't be used.
 function ext_mobile_info(last)
@@ -502,7 +502,7 @@ function ext_mobile_info(last)
    var rv = { width:w, height:h };
    var isPortrait;
 
-   if (owrx.freqset_active) {
+   if (owrx.popup_keyboard_active) {
       isPortrait = last? last.isPortrait : 1;
    } else {
       // if popup keyboard active h could be <= w making test invalid
@@ -511,7 +511,7 @@ function ext_mobile_info(last)
    rv.orient_unchanged = (last && last.isPortrait == isPortrait)? 1:0;
 
    //if (!rv.orient_unchanged && last)
-   //   canvas_log(w +' '+ h +' '+ last.isPortrait + isPortrait);
+   //   canvas_log(w +' '+ h +' '+ last +' '+ last.isPortrait + isPortrait);
 
 	rv.isPortrait = isPortrait? 1:0;
 	rv.iPad     = (isPortrait && w <= 768)? 1:0;    // iPad or smaller
@@ -551,7 +551,7 @@ function extint_news(s)
             el.style.right = '0';
             //el.style.width = '350px';
             el.style.width = '150px';
-            el.style.height = '200px';
+            el.style.height = '150px';
          }
       } else {
          el.style.bottom = '0';
