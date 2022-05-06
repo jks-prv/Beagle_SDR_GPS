@@ -584,15 +584,15 @@ function kiwi_trace_log(s)
 
 function canvas_log(s)
 {
-   if (isUndefined(owrx.news_acc_s)) owrx.news_acc_s = '';
+   if (isUndefined(owrx.news_acc_s)) owrx.news_acc_s = '<br>';
 
    if (s == '\f') {
-      owrx.news_acc_s = '';
+      owrx.news_acc_s = '<br>';
    } else
    if (s.charAt(0) == '$') {
       owrx.news_acc_s += '<br>'+ s;
    } else {
-      owrx.news_acc_s += ((owrx.news_acc_s != '')? ' | ' : '') + s;
+      owrx.news_acc_s += ((owrx.news_acc_s != '<br>')? ' | ' : '') + s;
    }
 
    extint_news(owrx.news_acc_s);
