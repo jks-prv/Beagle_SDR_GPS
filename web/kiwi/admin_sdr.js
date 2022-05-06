@@ -737,7 +737,7 @@ function webpage_html()
 		w3_half('w3-margin-bottom', 'w3-container',
 			w3_inline('w3-halign-space-between/',
             w3_inline('',
-               w3_input('w3-flex-col//w3-no-styling||type="file" accept="image/*"',
+               w3_input('w3-dump w3-flex-col//w3-no-styling||type="file" accept="image&slash;*"',
                   'Photo file', 'id-photo-file', '', 'webpage_photo_file_upload'
                ),
                w3_div('id-photo-error', '')
@@ -872,7 +872,7 @@ function webpage_photo_file_upload2(key)
 	w3_remove(el, 'w3-text-red');
 	w3_remove(el, 'w3-text-green');
 
-	//kiwi_ajax_send(fdata, '/PIX?'+ key, 'webpage_photo_uploaded');
+	kiwi_ajax_send(fdata, '/PIX?'+ key, 'webpage_photo_uploaded');
 }
 
 function webpage_title_cb(path, val)
