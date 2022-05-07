@@ -207,42 +207,19 @@ input[type=range]::-moz-range-thumb {
     margin: 0;
 }
 
-/* not Firefox */
-@supports not (-moz-appearance:none) {
-    .w3-select-menu
-    {
-        width: auto;
-        cursor: pointer;
-        
-        /*
-            Chrome mobile requires the background to be set white to get white.
-            Otherwise it seems to inherit the parent background color.
-            But if you specify a select background you get the default borders
-            which are awful. So we have to set those as well.
-        */
-        background: white;
-	    border: 1px solid rgb(227,227,227);
-	    border-radius: 3px;
-    }
-}
-
-/* Firefox: due to change in <select> menu width and added scrollbar, 10-mar-22 */
-@supports (-moz-appearance:none) {
-    .w3-select-menu
-    {
-        width: 90%;
-        cursor: pointer;
-
-        /*
-            Chrome mobile requires the background to be set white to get white.
-            Otherwise it seems to inherit the parent background color.
-            But if you specify a select background you get the default borders
-            which are awful. So we have to set those as well.
-        */
-        background: white;
-	    border: 1px solid rgb(227,227,227);
-	    border-radius: 3px;
-    }
+.w3-select-menu {
+    width: auto;
+    cursor: pointer;
+    
+    /*
+        Chrome mobile requires the background to be set white to get white.
+        Otherwise it seems to inherit the parent background color.
+        But if you specify a select background you get the default borders
+        which are awful. So we have to set those as well.
+    */
+    background: white;
+    border: 1px solid rgb(227,227,227);
+    border-radius: 3px;
 }
 
 .w3-menu-container {
