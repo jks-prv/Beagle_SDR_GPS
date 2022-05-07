@@ -266,8 +266,8 @@ void update_vars_from_config(bool called_at_init)
     cfg_default_int("nb_algo", 0, &update_cfg);
     cfg_default_int("nb_wf", 1, &update_cfg);
 	// NB_STD
-    cfg_default_int("nb_gate", 0, &update_cfg);
-    cfg_default_int("nb_thresh", 0, &update_cfg);
+    cfg_default_int("nb_gate", 100, &update_cfg);
+    cfg_default_int("nb_thresh", 50, &update_cfg);
 	// NB_WILD
     cfg_default_float("nb_thresh2", 0.95, &update_cfg);
     cfg_default_int("nb_taps", 10, &update_cfg);

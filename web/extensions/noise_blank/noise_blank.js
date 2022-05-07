@@ -23,8 +23,8 @@ var noise_blank = {
    NB_CLICK: 2,
 
    NB_STD: 1,
-   gate: 0,
-   threshold: 0,
+   gate: 100,
+   threshold: 50,
    
    NB_WILD: 2,
    thresh: 0.95,
