@@ -237,7 +237,7 @@ function colormap_init()
 function colormap_select()
 {
    var which = cmap.which = (wf.cmap >= kiwi.cmap_e.custom_1)? (wf.cmap - kiwi.cmap_e.custom_1) : -1;
-   var s = kiwi_localStorage_getItem('colormap');
+   var s = kiwi_storeGet('colormap');
    
    if (cmap.transfer_canvas && which == -1) {
       var c = cmap.transfer_canvas.ctx;
@@ -330,7 +330,7 @@ function colormap_clear_button_cb(path, idx)
 	colormap_color_gain_cb('', 0, true, false, cmap.R, 0);
 	colormap_color_gain_cb('', 0, true, false, cmap.G, 0);
 	colormap_color_gain_cb('', 0, true, false, cmap.B, 0);
-   kiwi_localStorage_setItem('colormap', JSON.stringify(cmap.save));
+   kiwi_storeSet('colormap', JSON.stringify(cmap.save));
 }
 
 function colormap_color_gain_cb(path, val, done, first, param, y_new)
@@ -592,7 +592,7 @@ function colormap_transfer_mouseup_cb(evt, escape)
    
    var s = JSON.stringify(cmap.save);
    //console.log('SAVE '+ s);
-   kiwi_localStorage_setItem('colormap', s);
+   kiwi_storeSet('colormap', s);
 }
 
 function colormap_escape_key_cb()
