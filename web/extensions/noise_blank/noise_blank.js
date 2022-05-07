@@ -5,7 +5,7 @@ var noise_blank = {
    first_time: true,
    
    algo: 0,
-   algo_s: [ '(none selected)', 'standard blanker', 'Wild algorithm' ],
+   algo_s: [ '(none)', 'standard', 'Wild algo' ],
    width: 400,
    height: [ 185, 310, 350 ],
    
@@ -108,9 +108,10 @@ function noise_blank_controls_html()
 	var controls_html =
 		w3_div('id-noise-blanker-controls w3-text-white',
 			w3_divs('/w3-tspace-8',
-				w3_inline('w3-margin-between-8',
+				w3_inline('w3-halign-space-between|width:75%/',
 				   w3_div('w3-medium w3-text-aqua', '<b>Noise blanker: </b>'),
-				   w3_div('w3-text-white', noise_blank.algo_s[noise_blank.algo])
+				   w3_div('w3-text-white', noise_blank.algo_s[noise_blank.algo]),
+				   w3_button('w3-padding-tiny w3-aqua', 'Defaults', 'noise_blank_load_defaults')
 				),
 				w3_inline('w3-margin-between-32',
                w3_select('w3-text-red', '', 'test mode', 'noise_blank.test', noise_blank.test, noise_blank.test_s, 'noise_blank_test_cb'),
@@ -154,17 +155,50 @@ function noise_blank_environment_changed(changed)
 // called from openwebrx.js
 function noise_blank_init()
 {
-	noise_blank.algo = readCookie('last_nb_algo', 0);
-	nb_algo_cb('nb_algo', noise_blank.algo, false, true);
-	
 	// NB_STD
-	noise_blank.gate = readCookie('last_noiseGate', 100);
-	noise_blank.threshold = readCookie('last_noiseThresh', 50);
+	noise_blank.gate = +kiwi_storeGet('last_noiseGate', cfg.nb_gate);
+	noise_blank.threshold = +kiwi_storeGet('last_noiseThresh', cfg.nb_thresh);
 	
 	// NB_WILD
-	// ...
+	noise_blank.thresh = +kiwi_storeGet('last_noiseThresh2', cfg.nb_thresh2);
+	noise_blank.taps = +kiwi_storeGet('last_noiseTaps', cfg.nb_taps);
+	noise_blank.impulse_samples = +kiwi_storeGet('last_noiseSamps', cfg.nb_samps);
 	
-   noise_blank_send();
+	noise_blank.wf = +kiwi_storeGet('last_nb_wf', cfg.nb_wf);
+	noise_blank.algo = +kiwi_storeGet('last_nb_algo', cfg.nb_algo);
+	nb_algo_cb('nb_algo', noise_blank.algo, false, 'i');
+}
+
+function noise_blank_load_defaults()
+{
+	// NB_STD
+   noise_blank.gate = cfg.nb_gate;
+   noise_blank.threshold = cfg.nb_thresh;
+
+	// NB_WILD
+   noise_blank.thresh = cfg.nb_thresh2;
+   noise_blank.taps = cfg.nb_taps;
+   noise_blank.impulse_samples = cfg.nb_samps;
+
+   noise_blank.wf = cfg.nb_wf;
+   noise_blank.algo = cfg.nb_algo;
+   nb_algo_cb('nb_algo', noise_blank.algo, false, 'd');
+}
+
+// called from right-click menu
+function noise_blank_save_defaults()
+{
+	// NB_STD
+   cfg.nb_gate = noise_blank.gate;
+   cfg.nb_thresh = noise_blank.threshold;
+
+	// NB_WILD
+   cfg.nb_thresh2 = noise_blank.thresh;
+   cfg.nb_taps = noise_blank.taps;
+   cfg.nb_samps = noise_blank.impulse_samples;
+
+   cfg.nb_wf = noise_blank.wf;
+   ext_set_cfg_param('cfg.nb_algo', noise_blank.algo, true);
 }
 
 // Don't have multiple simultaneous types, like the noise filter, to handle.
@@ -193,19 +227,15 @@ function noise_blank_send()
    snd_send('SET nb type=2 en='+ noise_blank.test);
 }
 
-function nb_algo_cb(path, idx, first, init)
+function nb_algo_cb(path, idx, first, from)
 {
-   //console.log('nb_algo_cb idx='+ idx +' first='+ first +' init='+ init);
+   //console.log('nb_algo_cb idx='+ idx +' first='+ first +' from='+ from);
    if (first) return;      // because call via openwebrx has zero, not restored value
    idx = +idx;
    w3_select_value(path, idx);
    noise_blank.algo = idx;
-   writeCookie('last_nb_algo', idx.toString());
-
-   if (init != true) {     // redundant when called from noise_blank_init()
-      noise_blank_send();
-   }
-
+   kiwi_storeSet('last_nb_algo', idx.toString());
+   noise_blank_send();
    noise_blank_controls_refresh();
 }
 
@@ -236,6 +266,7 @@ function noise_blank_wf_cb(path, checked, first)
 {
    if (first) return;
    noise_blank.wf = checked? 1:0;
+   kiwi_storeSet('last_nb_wf', noise_blank.wf.toString());
    noise_blank_send();
 }
 
@@ -249,7 +280,7 @@ function noise_blank_gate_cb(path, val, complete, first)
 	w3_set_label('Gate: '+ val.toFixed(0) +' usec', path);
 
 	if (complete) {
-	   writeCookie('last_noiseGate', val.toString());
+	   kiwi_storeSet('last_noiseGate', val.toString());
       if (!first) noise_blank_send();
 	}
 }
@@ -261,7 +292,7 @@ function noise_blank_threshold_cb(path, val, complete, first)
 	w3_set_label('Threshold: '+ val.toFixed(0) +'%', path);
 	
 	if (complete) {
-	   writeCookie('last_noiseThresh', val.toString());
+	   kiwi_storeSet('last_noiseThresh', val.toString());
       if (!first) noise_blank_send();
 	}
 }
@@ -274,7 +305,10 @@ function noise_blank_thresh_cb(path, val, complete, first)
    val = +val;
 	w3_num_cb(path, val);
 	w3_set_label('Threshold: '+ val.toFixed(2), path);
-	if (complete && !first) noise_blank_send();
+	if (complete) {
+	   kiwi_storeSet('last_noiseThresh2', val.toString());
+	   if (!first) noise_blank_send();
+	}
 }
 
 function noise_blank_taps_cb(path, val, complete, first)
@@ -282,7 +316,10 @@ function noise_blank_taps_cb(path, val, complete, first)
    val = +val;
 	w3_num_cb(path, val);
 	w3_set_label('Taps: '+ val.toFixed(0), path);
-	if (complete && !first) noise_blank_send();
+	if (complete) {
+	   kiwi_storeSet('last_noiseTaps', val.toString());
+	   if (!first) noise_blank_send();
+	}
 }
 
 function noise_blank_impulse_samples_cb(path, val, complete, first)
@@ -290,5 +327,8 @@ function noise_blank_impulse_samples_cb(path, val, complete, first)
    val = +val;
 	w3_num_cb(path, val);
 	w3_set_label('Impulse samples: '+ val.toFixed(0), path);
-	if (complete && !first) noise_blank_send();
+	if (complete) {
+	   kiwi_storeSet('last_noiseSamps', val.toString());
+	   if (!first) noise_blank_send();
+	}
 }

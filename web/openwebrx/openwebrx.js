@@ -2777,6 +2777,7 @@ function right_click_menu_init()
    // "pointer-events:none" required to make document.elementFromPoint() not incorrectly match on <i>
    m.push('<i style="pointer-events:none">cal ADC clock (admin)</i>'); owrx.rcm_cal = i; i++;
    m.push('<i style="pointer-events:none">set freq offset (admin)</i>'); owrx.rcm_foff = i; i++;
+   m.push('<i style="pointer-events:none">save noise defaults (admin)</i>'); owrx.rcm_noise = i; i++;
    owrx.right_click_menu_content = m;
    
    w3_menu('id-right-click-menu', 'right_click_menu_cb');
@@ -2891,6 +2892,13 @@ function right_click_menu_cb(idx, x, cbp)
    case owrx.rcm_foff:  // set freq offset
       admin_pwd_query(function() {
          set_freq_offset_dialog();
+      });
+      break;
+   
+   case owrx.rcm_noise:
+      admin_pwd_query(function() {
+         w3_call('noise_blank_save_defaults');
+         w3_call('noise_filter_save_defaults');
       });
       break;
    
@@ -3745,7 +3753,7 @@ function wf_init()
 	
 	if (shortcut.keys != '') setTimeout(keyboard_shortcut_url_keys, 3000);
 	
-	wf_snap(kiwi_localStorage_getItem('wf_snap'));
+	wf_snap(kiwi_storeGet('wf_snap'));
 
    if (kiwi_isMobile())
       mobile_init();
@@ -3911,7 +3919,7 @@ function wf_snap(set)
    owrx.wf_snap = isUndefined(set)? (owrx.wf_snap ^ 1) : (isNull(set)? 0 : (+set));
    //console.log('wf_snap new='+ owrx.wf_snap);
    w3_el('id-waterfall-container').style.cursor = owrx.wf_cursor = owrx.wf_snap? 'col-resize' : 'crosshair';
-   kiwi_localStorage_setItem('wf_snap', owrx.wf_snap);
+   kiwi_storeSet('wf_snap', owrx.wf_snap);
 }
 
 var page_scroll_amount = 0.8;
@@ -8778,9 +8786,9 @@ function panels_setup()
 	w3_el('id-optbar-audio').innerHTML =
 		w3_inline_percent('w3-valign/w3-last-halign-end',
 			w3_text(optbar_prefix_color +' cl-closer-spaced-label-text', 'Noise'), 17,
-         w3_select_conditional('w3-text-red||title="noise blanker selection"', '', 'blanker', 'nb_algo', 0, nb_algo_s, 'nb_algo_cb'), 24,
+         w3_select_conditional('w3-text-red||title="noise blanker selection"', '', 'blanker', 'nb_algo', 0, nb_algo_s, 'nb_algo_cb', 'm'), 24,
 			w3_div('w3-hcenter', w3_div('class-button w3-text-orange||onclick="extint_open(\'noise_blank\'); freqset_select();" title="noise blanker parameters"', 'More')), 19,
-         w3_div('w3-hcenter ', w3_select_conditional('w3-text-red||title="noise filter selection"', '', 'filter', 'nr_algo', 0, nr_algo_s, 'nr_algo_cb')), 27,
+         w3_div('w3-hcenter ', w3_select_conditional('w3-text-red||title="noise filter selection"', '', 'filter', 'nr_algo', 0, nr_algo_s, 'nr_algo_cb', 'm')), 27,
 			w3_div('class-button w3-text-orange||onclick="extint_open(\'noise_filter\'); freqset_select();" title="noise filter parameters"', 'More')
 		) +
 		w3_inline_percent('id-vol w3-valign w3-margin-T-2 w3-hide/class-slider w3-last-halign-end',
@@ -8807,15 +8815,23 @@ function panels_setup()
          '&nbsp;', 3, w3_div('id-squelch-field class-slider'), 14,
          w3_select('id-squelch-tail w3-hide w3-text-red||title="squelch tail length"', '', 'tail', 'squelch_tail', squelch_tail, squelch_tail_s, 'squelch_tail_cb')
 	   ) +
-      w3_inline_percent('id-sam-carrier-container w3-hide w3-valign/w3-last-halign-end',
-         w3_text(optbar_prefix_color, 'SAM'), 17,
-         w3_text('id-sam-carrier'), 40,
-         w3_select('w3-text-red', '', 'PLL', 'owrx.sam_pll', owrx.sam_pll, owrx.sam_pll_s, 'sam_pll_cb'), 20,
-         w3_button('class-button w3-hcenter', 'Reset', 'sam_pll_reset_cb')
+      w3_inline_percent('id-sam-carrier-container w3-hide w3-valign/',
+         w3_inline('w3-halign-space-between/w3-last-halign-end',
+            w3_text(optbar_prefix_color, 'SAM'),
+            w3_text('id-sam-carrier')
+         ), 50,
+         w3_div(), 5,
+         w3_inline('w3-halign-space-between/w3-last-halign-end',
+            w3_select('w3-text-red', '', 'PLL', 'owrx.sam_pll', owrx.sam_pll, owrx.sam_pll_s, 'sam_pll_cb'),
+            w3_button('class-button w3-hcenter', 'Reset', 'sam_pll_reset_cb')
+         )
       ) +
-      w3_inline('w3-margin-T-2 w3-valign w3-halign-end/class-slider',
-         w3_select('id-chan-null w3-text-red w3-hide', '', 'channel<br>null', 'owrx.chan_null', owrx.chan_null, owrx.chan_null_s, 'chan_null_cb'),
-         w3_select('id-ovld-mute w3-text-red', '', 'ovld<br>mute', 'owrx.ovld_mute', owrx.ovld_mute, owrx.ovld_mute_s, 'ovld_mute_cb')
+      w3_inline_percent('w3-margin-T-2 w3-valign/',
+         w3_div(''), 55,
+         w3_inline('w3-halign-space-between/w3-last-halign-end',
+            w3_select('id-chan-null w3-text-red w3-hide', '', 'channel<br>null', 'owrx.chan_null', owrx.chan_null, owrx.chan_null_s, 'chan_null_cb'),
+            w3_select('id-ovld-mute w3-text-red', '', 'ovld<br>mute', 'owrx.ovld_mute', owrx.ovld_mute, owrx.ovld_mute_s, 'ovld_mute_cb')
+         )
       );
       
       //w3_button('id-button-test class-button w3-hcenter w3-hide', 'Test', 'toggle_or_set_test')

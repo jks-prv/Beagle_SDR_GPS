@@ -263,6 +263,40 @@ void update_vars_from_config(bool called_at_init)
     cfg_default_bool("show_geo", true, &update_cfg);
     cfg_default_bool("show_1Hz", false, &update_cfg);
 
+    cfg_default_int("nb_algo", 0, &update_cfg);
+    cfg_default_int("nb_wf", 1, &update_cfg);
+	// NB_STD
+    cfg_default_int("nb_gate", 0, &update_cfg);
+    cfg_default_int("nb_thresh", 0, &update_cfg);
+	// NB_WILD
+    cfg_default_float("nb_thresh2", 0.95, &update_cfg);
+    cfg_default_int("nb_taps", 10, &update_cfg);
+    cfg_default_int("nb_samps", 7, &update_cfg);
+
+    cfg_default_int("nr_algo", 0, &update_cfg);
+    cfg_default_int("nr_de", 1, &update_cfg);
+    cfg_default_int("nr_an", 0, &update_cfg);
+   // NR_WDSP
+    cfg_default_int("nr_wdspDeTaps", 64, &update_cfg);
+    cfg_default_int("nr_wdspDeDelay",16, &update_cfg);
+    cfg_default_int("nr_wdspDeGain", 10, &update_cfg);
+    cfg_default_int("nr_wdspDeLeak", 7, &update_cfg);
+    cfg_default_int("nr_wdspAnTaps", 64, &update_cfg);
+    cfg_default_int("nr_wdspAnDelay",16, &update_cfg);
+    cfg_default_int("nr_wdspAnGain", 10, &update_cfg);
+    cfg_default_int("nr_wdspAnLeak", 7, &update_cfg);
+   // NR_ORIG
+    cfg_default_int("nr_origDeDelay",1, &update_cfg);
+    cfg_default_float("nr_origDeBeta", 0.05, &update_cfg);
+    cfg_default_float("nr_origDeDecay", 0.98, &update_cfg);
+    cfg_default_int("nr_origAnDelay",48, &update_cfg);
+    cfg_default_float("nr_origAnBeta", 0.125, &update_cfg);
+    cfg_default_float("nr_origAnDecay", 0.99915, &update_cfg);
+   // NR_SPECTRAL
+    cfg_default_int("nr_specGain", 0, &update_cfg);
+    cfg_default_float("nr_specAlpha", 0.95, &update_cfg);
+    cfg_default_int("nr_specSNR", 30, &update_cfg);
+
     if (wspr_update_vars_from_config()) update_cfg = true;
 
     int espeed = cfg_default_int("ethernet_speed", 0, &update_cfg);
