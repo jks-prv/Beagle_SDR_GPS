@@ -2,6 +2,19 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.521  May 8, 2022
+    Improvements to noise blanker/filter operation. All settings now saved in browser storage and
+    recalled on page load. All settings can have default values setup by the Kiwi admin. This could
+    be used to mitigate known, constant noise sources so for example the blanker is automatically
+    active when first-time users connect.
+    
+    A new "default" button at the top of the extension panels cab be used to load the defaults.
+    To simplify setting up the defaults the admin can use a new right-click menu entry
+    "Save noise defaults" which copies the current settings into the Kiwi configuration.
+    Admin password may be required (e.g. if not on the local network).
+
+    Made photo uploads work again (admin page, webpage tab).
+
 v1.520  May 7, 2022
     Added name/callsign entry field to end of "Users" tab on main control panel. Benefits mobile
     devices where the same field on the top bar could never be seen due to a small screen.
