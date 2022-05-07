@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.521  May 8, 2022
+v1.521,522  May 8, 2022
     Improvements to noise blanker/filter operation. All settings now saved in browser storage and
     recalled on page load. All settings can have default values setup by the Kiwi admin. This could
     be used to mitigate known, constant noise sources so for example the blanker is automatically
