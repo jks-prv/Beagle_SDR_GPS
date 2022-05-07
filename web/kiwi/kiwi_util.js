@@ -1225,28 +1225,48 @@ function deleteCookie(cookie)
 }
 
 // appinventor.mit.edu used by KiwiSDR Android app doesn't have localStorage
-function kiwi_localStorage_getItem(s)
+function kiwi_storeGet(s, init)
 {
    var rv;
+   if (!isArg(s)) return null;
 	try {
 	   if (localStorage == null) return null;
 	   rv = localStorage.getItem(s);
+	   if (rv == null) {
+	      rv = readCookie(s);
+	      // move cookie to storage api
+	      if (rv != null) {
+	         console.log('$moving to storage api: '+ s +'='+ rv);
+	         kiwi_storeSet(s, rv);
+	         deleteCookie(s);
+	      } else {
+	         if (isDefined(init)) {
+	            kiwi_storeSet(s, init);
+               rv = init;
+	         } else {
+	            rv = null;
+	         }
+	      }
+	   }
 	} catch(ex) {
+      console.log('$kiwi_storeGet CATCH: '+ s);
+      console.log('$kiwi_storeGet CATCH: '+ ex);
 	   rv = null;
 	}
+	if (rv == null) console.log('$ kiwi_storeGet warning: '+ s +'=null');
 	return rv;
 }
 
-function kiwi_localStorage_setItem(s, v)
+function kiwi_storeSet(s, v)
 {
-   var rv;
+   if (!isArg(v)) return null;
 	try {
 	   if (localStorage == null) return null;
-	   rv = localStorage.setItem(s, v);
+	   localStorage.setItem(s, v);
 	} catch(ex) {
-	   rv = null;
+	   return null;
 	}
-	return rv;
+	return true;
 }
 
 // Get function from string, with or without scopes (by Nicolas Gauthier)
