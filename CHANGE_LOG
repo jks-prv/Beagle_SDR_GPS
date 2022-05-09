@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.523  May 10, 2022
+    Fix race condition loading user page observed by KFS.
+    iOS frequency entry: Use 10-digit keypad that includes decimal point.
+
 v1.521,522  May 8, 2022
     Improvements to noise blanker/filter operation. All settings now saved in browser storage and
     recalled on page load. All settings can have default values setup by the Kiwi admin. This could
@@ -117,7 +121,7 @@ v1.513  April 22, 2022
     Added SAM PLL "Reset" button on audio tab. Use when the SAM PLL has wandered outside of its
         capture range. The previous workaround was to switch to AM then back to SAM to reset the PLL.
     
-    Admin page, config tab: option to set 1Hz frequency display resolution.
+    Admin page, config tab: option to set 1 Hz frequency display resolution.
         Will eventually be a user control panel option for this, but that will have to wait for
         a general redesign of the control panel.
 
