@@ -143,6 +143,16 @@ var okay_wf_init = false;
 
 function kiwi_main()
 {
+   w3_do_when_cond(function() {
+      //console.log('### '+ (owrx.cfg_loaded? 'GO' : 'WAIT') +' kiwi_main(cfg_loaded)');
+      return owrx.cfg_loaded;
+   }, function() {
+      kiwi_main_ready();
+   }, 0, 200);
+}
+
+function kiwi_main_ready()
+{
 	override_freq = parseFloat(readCookie('last_freq'));
 	override_mode = readCookie('last_mode');
 	override_zoom = parseFloat(readCookie('last_zoom'));
@@ -3723,10 +3733,16 @@ var wf_canvas_maxshift = 0;
 
 function wf_init()
 {
-   if (!okay_wf_init) {
-      return;
-   }
-   
+   w3_do_when_cond(function() {
+      //console.log('### '+ (okay_wf_init? 'GO' : 'WAIT') +' wf_init(okay_wf_init)');
+      return okay_wf_init;
+   }, function() {
+      wf_init_ready();
+   }, 0, 200);
+}
+
+function wf_init_ready()
+{
 	init_wf_container();
 
    wf.audioFFT_active = (rx_chan >= wf_chans);
@@ -3760,7 +3776,7 @@ function wf_init()
    
    dx_init();
 
-	waterfall_setup_done=1;
+	waterfall_setup_done = 1;
 }
 
 function add_wf_canvas()
@@ -6815,6 +6831,19 @@ function dx_color_init()
    }
 }
 
+function dx_update_request()
+{
+   w3_do_when_cond(function() {
+      //console.log('### '+ (waterfall_setup_done? 'GO' : 'WAIT') +' dx_update(waterfall_setup_done)');
+      return waterfall_setup_done;
+   }, function() {
+      dx_update();
+      bands_init();
+      mk_bands_scale();
+      mk_band_menu();
+   }, 0, 200);
+}
+
 var dx_update_delay = 350;
 var dx_update_timeout, dx_seq=0;
 
@@ -8514,7 +8543,7 @@ function panels_setup()
 		   'Your name or callsign:', 'ident-input1');
 	
 	var mobile = kiwi_isMobile()?
-	   (' inputmode="tel" ontouchstart="popup_keyboard_touchstart(event)" onclick="this.select()"') : '';
+	   (' inputmode='+ dq(kiwi_is_iOS()? 'decimal' : 'tel') +' ontouchstart="popup_keyboard_touchstart(event)" onclick="this.select()"') : '';
 	
 	w3_el("id-control-freq1").innerHTML =
 	   w3_inline('w3-halign-space-between/',

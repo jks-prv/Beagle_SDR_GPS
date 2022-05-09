@@ -1707,12 +1707,17 @@ function kiwi_msg(param, ws)
 		case "load_cfg":
 			var cfg_json = decodeURIComponent(param[1]);
 			console.log('### load_cfg '+ ws.stream +' '+ cfg_json.length);
-			cfg = kiwi_JSON_parse('load_cfg', cfg_json);
-			kiwi.isOffset = (cfg.freq_offset != 0);
-         kiwi.freq_offset_kHz = cfg.freq_offset;
-         kiwi.freq_offset_Hz  = cfg.freq_offset * 1000;
-	      kiwi.offset_frac = (cfg.freq_offset % 1000) * 1000;
-			owrx_cfg();
+
+         // introduce delayed async cfg load to test initialization locking
+         //setTimeout(function() {
+            //console.log('### DELAYED load_cfg '+ ws.stream +' '+ cfg_json.length);
+            cfg = kiwi_JSON_parse('load_cfg', cfg_json);
+            kiwi.isOffset = (cfg.freq_offset != 0);
+            kiwi.freq_offset_kHz = cfg.freq_offset;
+            kiwi.freq_offset_Hz  = cfg.freq_offset * 1000;
+            kiwi.offset_frac = (cfg.freq_offset % 1000) * 1000;
+            owrx_cfg();
+         //}, 2000);
 			break;
 
 		case "load_adm":
@@ -1749,10 +1754,7 @@ function kiwi_msg(param, ws)
 			      dx_update_admin();
 			   }
 		   } else {
-			   dx_update();
-			   bands_init();
-			   mk_bands_scale();
-			   mk_band_menu();
+		      dx_update_request();
 			}
 			break;
 

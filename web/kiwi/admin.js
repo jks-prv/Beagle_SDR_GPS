@@ -3271,8 +3271,13 @@ function admin_msg(param)
 
 		case "keepalive":
 		   kiwi_clearTimeout(admin.keepalive_timeoout);
+		   admin.keepalive_rx_time = Date.now();
 		   admin.keepalive_timeoout = setTimeout(function() {
-		      admin_close();
+		   
+		      // in case the timeout somehow didn't get cancelled (which shouldn't happen)
+		      var diff = Date.now() - admin.keepalive_rx_time;
+		      if (diff > 20000)
+		         admin_close();
 		   }, 30000);
 		   break;
 
