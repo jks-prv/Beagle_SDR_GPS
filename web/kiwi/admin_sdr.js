@@ -737,7 +737,7 @@ function webpage_html()
 		w3_half('w3-margin-bottom', 'w3-container',
 			w3_inline('w3-halign-space-between/',
             w3_inline('',
-               w3_input('w3-dump w3-flex-col//w3-no-styling||type="file" accept="image&slash;*"',
+               w3_input('w3-flex-col//w3-no-styling||type="file" accept="image&slash;*"',
                   'Photo file', 'id-photo-file', '', 'webpage_photo_file_upload'
                ),
                w3_div('id-photo-error', '')

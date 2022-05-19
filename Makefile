@@ -152,21 +152,38 @@ LIBS =
 
 PVT_EXT_DIR = ../extensions
 PVT_EXT_DIRS = $(sort $(dir $(wildcard $(PVT_EXT_DIR)/*/extensions/*/)))
+# included first to get value of OTHER_DIR before INT_EXT_DIRS definition
+-include $(wildcard $(addsuffix Makefile,$(PVT_EXT_DIRS)))
 
-INT_EXT_DIRS1 = $(sort $(dir $(wildcard extensions/*/)))
-EXT_SKIP1 = $(addsuffix /,$(addprefix extensions/,$(EXT_SKIP)))
-INT_EXT_DIRS = $(subst $(EXT_SKIP1),,$(INT_EXT_DIRS1))
+ifeq ($(OTHER_DIR),)
+    INT_EXT_DIRS1 = $(sort $(dir $(wildcard extensions/*/)))
+    EXT_SKIP1 = $(addsuffix /,$(addprefix extensions/,$(EXT_SKIP)))
+    INT_EXT_DIRS = $(subst $(EXT_SKIP1),,$(INT_EXT_DIRS1))
+else
+    INT_EXT_DIRS1 = extensions/
+    EXT_SKIP1 =
+    INT_EXT_DIRS = extensions/
+    OTHER_INC = rx/kiwi rx/CuteSDR rx/csdr rx/Teensy rx/wdsp gps \
+        extensions/wspr extensions/noise_blank extensions/noise_filter
+endif
 
 # extension-specific makefiles and makefile for the extension init generator
-EXT_DIRS = $(INT_EXT_DIRS) $(PVT_EXT_DIRS)
--include $(wildcard $(addsuffix Makefile,$(EXT_DIRS)))
+# PVT listed before INT so they can set EXT_SKIP etc.
+-include $(wildcard $(addsuffix Makefile,$(INT_EXT_DIRS)))
+EXT_DIRS = $(PVT_EXT_DIRS) $(INT_EXT_DIRS)
 
 PVT_EXTS = $(subst $(PVT_EXT_DIR)/,,$(wildcard $(PVT_EXT_DIR)/*))
 INT_EXTS = $(subst /,,$(subst extensions/,,$(wildcard $(INT_EXT_DIRS))))
 EXTS = $(INT_EXTS) $(PVT_EXTS)
 
-GPS = gps gps/ka9q-fec gps/GNSS-SDRLIB
-RX = rx rx/CuteSDR rx/Teensy rx/wdsp rx/csdr rx/kiwi rx/CMSIS
+ifeq ($(OTHER_DIR),)
+    GPS = gps gps/ka9q-fec gps/GNSS-SDRLIB
+    RX = rx rx/CuteSDR rx/Teensy rx/wdsp rx/csdr rx/kiwi rx/CMSIS
+else
+    GPS =
+    RX = rx
+endif
+
 ifneq ($(RPI),true)
 	_DIRS = pru $(PKGS)
 endif
@@ -186,7 +203,7 @@ else
 endif
 
 VPATH = $(DIRS) $(DIRS_O3) $(EXT_SUBDIRS_KEEP)
-I += -I$(GEN_DIR) $(addprefix -I,$(DIRS)) $(addprefix -I,$(DIRS_O3)) $(addprefix -I,$(EXT_SUBDIRS_KEEP)) -I/usr/local/include $(EXT_I)
+I += -I$(GEN_DIR) $(addprefix -I,$(DIRS)) $(addprefix -I,$(DIRS_O3)) $(addprefix -I,$(OTHER_INC)) $(addprefix -I,$(EXT_SUBDIRS_KEEP)) -I/usr/local/include $(EXT_I)
 H = $(wildcard $(addsuffix /*.h,$(DIRS))) $(wildcard $(addsuffix /*.h,$(DIRS_O3)))
 CPP_F = $(wildcard $(addsuffix /*.cpp,$(DIRS))) $(wildcard $(addsuffix /*.c,$(DIRS)))
 CPP_F_O3 = $(wildcard $(addsuffix /*.cpp,$(DIRS_O3))) $(wildcard $(addsuffix /*.c,$(DIRS_O3)))
@@ -472,11 +489,11 @@ pru/pru_realtime.bin: pas pru/pru_realtime.p pru/pru_realtime.h pru/pru_realtime
 ################################
 
 # OTHER_DIR set in Makefile of an extension wanting USE_OTHER FPGA framework
-ifneq ($(OTHER_DIR),)
+ifeq ($(OTHER_DIR),)
+    PROJECT = "KiwiSDR"
+else
     OTHER_DIR2 = -x $(OTHER_DIR)
     OTHER_CONFIG = $(subst ../../,../,$(OTHER_DIR)/other.config)
-else
-    PROJECT = "KiwiSDR"
 endif
 
 $(GEN_ASM): kiwi.config verilog/kiwi.inline.vh $(wildcard e_cpu/asm/*)
@@ -645,10 +662,12 @@ c_ext_clang_conv_vars:
 	@echo version $(VER)
 	@echo UNAME = $(UNAME)
 	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
+	@echo PROJECT = $(PROJECT)
 	@echo ARCH = $(ARCH)
 	@echo CPU = $(CPU)
 	@echo PLATFORMS = $(PLATFORMS)
 	@echo BUILD_DIR = $(BUILD_DIR)
+	@echo OTHER_DIR = $(OTHER_DIR)
 	@echo OBJ_DIR = $(OBJ_DIR)
 	@echo OBJ_DIR_O3 = $(OBJ_DIR_O3)
 	@echo OBJ_DIR_DEFAULT = $(OBJ_DIR_DEFAULT)
@@ -1379,15 +1398,15 @@ KiwiSDR.rx14.wf0.bit:
 endif
 
 EXISTS_OTHER_BITFILE := $(shell test -f $(V_DIR)/KiwiSDR.other.bit && echo true)
-ifneq ($(OTHER_DIR),)
+ifeq ($(OTHER_DIR),)
+    KiwiSDR.other.bit:
+else
     ifeq ($(EXISTS_OTHER_BITFILE),true)
         KiwiSDR.other.bit: $(V_DIR)/KiwiSDR.other.bit
 			rsync -av $(V_DIR)/KiwiSDR.other.bit .
     else
         KiwiSDR.other.bit:
     endif
-else
-    KiwiSDR.other.bit:
 endif
 
 endif

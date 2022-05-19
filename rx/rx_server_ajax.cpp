@@ -512,10 +512,13 @@ fail:
 		const char *gps_loc;
 		char *ipinfo_lat_lon = NULL;
 		if (strcmp(s4, "(-37.631120, 176.172210)") == 0) {
-			if (gps.ipinfo_ll_valid) {
-				asprintf(&ipinfo_lat_lon, "(%f, %f)", gps.ipinfo_lat, gps.ipinfo_lon);
-				gps_loc = ipinfo_lat_lon;
-			} else {
+		    #ifdef USE_GPS
+                if (kiwi.ipinfo_ll_valid) {
+                    asprintf(&ipinfo_lat_lon, "(%f, %f)", kiwi.ipinfo_lat, kiwi.ipinfo_lon);
+                    gps_loc = ipinfo_lat_lon;
+                } else
+            #endif
+			{
 				gps_loc = "(-69.0, 90.0)";		// Antarctica
 			}
 		} else {
@@ -638,7 +641,12 @@ fail:
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			(float) kiwi_reg_lo_kHz * kHz, (float) kiwi_reg_hi_kHz * kHz, freq_offset,
 			users, users_max, avatar_ctime,
-			gps_loc, gps.good, gps.fixes, gps.fixes_min, gps.fixes_hour,
+			gps_loc,
+			#ifdef USE_GPS
+			    gps.good, gps.fixes, gps.fixes_min, gps.fixes_hour,
+			#else
+			    0, 0, 0, 0,
+			#endif
 			(s7 = cfg_string("tdoa_id", NULL, CFG_OPTIONAL)), tdoa_ch,
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
 			s5,
@@ -647,7 +655,12 @@ fail:
 			snr_all, snr_HF,
 			dpump.rx_adc_ovfl_cnt,
 			timer_sec(),
-			gps.set_date? 1:0, gps.date_set? 1:0, utc_ctime_static()
+			#ifdef USE_GPS
+			    gps.set_date? 1:0, gps.date_set? 1:0,
+			#else
+			    0, 0,
+			#endif
+			utc_ctime_static()
 			);
 
 		kiwi_ifree(name);

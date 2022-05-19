@@ -36,6 +36,7 @@ Boston, MA  02110-1301, USA.
 #include "net.h"
 #include "data_pump.h"
 #include "mongoose.h"
+#include "wspr.h"
 
 #ifdef USE_SDR
  #include "ext_int.h"
@@ -194,7 +195,7 @@ void dump()
 		if (cd->valid) nconn++;
 	}
 	lprintf("\n");
-	lprintf("CONNS: used %d/%d is_locked=%d (______ => Master, Internal/ExtAPI, DetAPI, Local/ForceNotLocal, ProtAuth, AwaitPwd)\n",
+	lprintf("CONNS: used %d/%d is_locked=%d  ______ => Master, Internal/ExtAPI, DetAPI, Local/ForceNotLocal, ProtAuth, AwaitPwd\n",
 	    nconn, N_CONNS, is_locked);
 
 	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
@@ -235,19 +236,23 @@ static void dump_info_handler(int arg)
 {
     printf("SIGHUP: info.json requested\n");
     char *sb;
-    sb = kstr_asprintf(NULL, "echo '{ \"utc\": \"%s\", \"gps\": { \"lat\": %.6f, \"lon\": %.6f",
-        utc_ctime_static(), gps.sgnLat, gps.sgnLon);
+    sb = kstr_asprintf(NULL, "echo '{ \"utc\": \"%s\"", utc_ctime_static());
+    
+    #ifdef USE_GPS
+        sb = kstr_asprintf(sb, ", \"gps\": { \"lat\": %.6f, \"lon\": %.6f", gps.sgnLat, gps.sgnLon);
 
-    latLon_t loc;
-    loc.lat = gps.sgnLat;
-    loc.lon = gps.sgnLon;
-    char grid6[LEN_GRID];
-    if (latLon_to_grid6(&loc, grid6) == 0) {
-        sb = kstr_asprintf(sb, ", \"grid\": \"%.6s\"", grid6);
-    }
+        latLon_t loc;
+        loc.lat = gps.sgnLat;
+        loc.lon = gps.sgnLon;
+        char grid6[LEN_GRID];
+        if (latLon_to_grid6(&loc, grid6) == 0) {
+            sb = kstr_asprintf(sb, ", \"grid\": \"%.6s\"", grid6);
+        }
 
-    sb = kstr_asprintf(sb, ", \"fixes\": %d, \"fixes_min\": %d } }' > /root/kiwi.config/info.json",
-        gps.fixes, gps.fixes_min);
+        sb = kstr_asprintf(sb, ", \"fixes\": %d, \"fixes_min\": %d }", gps.fixes, gps.fixes_min);
+    #endif
+
+    sb = kstr_asprintf(sb, " }' > /root/kiwi.config/info.json");
     non_blocking_cmd_system_child("kiwi.info", kstr_sp(sb), NO_WAIT);
     kstr_free(sb);
 	sig_arm(SIGHUP, dump_info_handler);

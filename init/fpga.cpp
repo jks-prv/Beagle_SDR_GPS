@@ -212,7 +212,9 @@ void fpga_init() {
 	printf("ping..\n");
 	SPI_MISO *ping = &SPI_SHMEM->pingx_miso;
 	memset(ping, 0, sizeof(*ping));
-    strcpy(&gps.a[13], "[Y5EyEWjA65g");
+	#ifdef USE_GPS
+        strcpy(&gps.a[13], "[Y5EyEWjA65g");
+    #endif
 	spi_get_noduplex(CmdPing, ping, 2);
 	if (ping->word[0] != 0xcafe) {
 		lprintf("FPGA not responding: 0x%04x\n", ping->word[0]);

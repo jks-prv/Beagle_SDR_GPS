@@ -43,6 +43,17 @@ Boston, MA  02110-1301, USA.
 #define CUTESDR_MAX_VAL ((float) ((1 << CUTESDR_SCALE) - 1))
 #define CUTESDR_MAX_PWR (CUTESDR_MAX_VAL * CUTESDR_MAX_VAL)
 
+typedef struct {
+    // lat/lon returned by ipinfo lookup
+	bool ipinfo_ll_valid;
+	float ipinfo_lat, ipinfo_lon;
+	
+	// low-res lat/lon from timezone process
+	int lowres_lat, lowres_lon;
+} kiwi_t;
+
+extern kiwi_t kiwi;
+
 extern int version_maj, version_min;
 
 extern bool background_mode, need_hardware, is_multi_core, kiwi_restart,

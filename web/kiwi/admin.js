@@ -3218,6 +3218,7 @@ function admin_nav_blur(id, cb_arg)
 function admin_close()
 {
    // don't show message if reload countdown running
+   kiwi_clearTimeout(admin.keepalive_timeoout);
    if (!admin.reload_rem && !admin.long_running)
       kiwi_show_msg('Server has closed connection.');
 }

@@ -553,6 +553,7 @@ void c2s_admin(void *param)
 // public
 ////////////////////////////////
 
+#ifdef USE_SDR
 			i = strcmp(cmd, "SET public_update");
 			if (i == 0) {
                 if (admcfg_bool("kiwisdr_com_register", NULL, CFG_REQUIRED) == false) {
@@ -582,6 +583,7 @@ void c2s_admin(void *param)
 				kstr_free(sb);
 				continue;
 			}
+#endif
 
 
 ////////////////////////////////
@@ -824,6 +826,7 @@ void c2s_admin(void *param)
 // GPS
 ////////////////////////////////
 
+#ifdef USE_GPS
             n = sscanf(cmd, "SET gps_IQ_data_ch=%d", &j);
             if (n == 1) {
                 gps.IQ_data_ch = j;
@@ -1071,7 +1074,8 @@ void c2s_admin(void *param)
                 NextTask("gps_update5");
                 continue;
             }
-        
+#endif
+
 
 ////////////////////////////////
 // log
@@ -1186,6 +1190,7 @@ void c2s_admin(void *param)
 // extensions
 ////////////////////////////////
 
+#ifdef USE_SDR
 			i = strcmp(cmd, "ADM wspr_autorun_restart");
 			if (i == 0) {
 			    wspr_autorun_restart();
@@ -1208,6 +1213,8 @@ void c2s_admin(void *param)
 				}
 				continue;
 			}
+#endif
+
 
 ////////////////////////////////
 // security
