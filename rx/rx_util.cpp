@@ -297,8 +297,6 @@ void update_vars_from_config(bool called_at_init)
     cfg_default_float("nr_specAlpha", 0.95, &update_cfg);
     cfg_default_int("nr_specSNR", 30, &update_cfg);
 
-    if (wspr_update_vars_from_config()) update_cfg = true;
-
     int espeed = cfg_default_int("ethernet_speed", 0, &update_cfg);
     static int current_espeed;
     if (espeed != current_espeed) {
@@ -318,14 +316,18 @@ void update_vars_from_config(bool called_at_init)
         current_mtu = mtu;
     }
     
-    // fix corruption left by v1.131 dotdot bug
-    _cfg_int(&cfg_cfg, "WSPR.autorun", &err, CFG_OPTIONAL|CFG_NO_DOT);
-    if (!err) {
-        _cfg_set_int(&cfg_cfg, "WSPR.autorun", 0, CFG_REMOVE|CFG_NO_DOT, 0);
-        _cfg_set_bool(&cfg_cfg, "index_html_params.RX_PHOTO_LEFT_MARGIN", 0, CFG_REMOVE|CFG_NO_DOT, 0);
-        printf("removed v1.131 dotdot bug corruption\n");
-        update_cfg = true;
-    }
+    #ifdef USE_SDR
+        if (wspr_update_vars_from_config()) update_cfg = true;
+
+        // fix corruption left by v1.131 dotdot bug
+        _cfg_int(&cfg_cfg, "WSPR.autorun", &err, CFG_OPTIONAL|CFG_NO_DOT);
+        if (!err) {
+            _cfg_set_int(&cfg_cfg, "WSPR.autorun", 0, CFG_REMOVE|CFG_NO_DOT, 0);
+            _cfg_set_bool(&cfg_cfg, "index_html_params.RX_PHOTO_LEFT_MARGIN", 0, CFG_REMOVE|CFG_NO_DOT, 0);
+            printf("removed v1.131 dotdot bug corruption\n");
+            update_cfg = true;
+        }
+    #endif
     
     // enforce waterfall min_dB < max_dB
     int min_dB = cfg_default_int("init.min_dB", -110, &update_cfg);
@@ -461,33 +463,35 @@ void update_vars_from_config(bool called_at_init)
     //int new_find_local = admcfg_int("options", NULL, CFG_REQUIRED) & 1;
     admcfg_default_int("options", 0, &update_admcfg);
 
-    admcfg_default_bool("GPS_tstamp", true, &update_admcfg);
-    admcfg_default_bool("use_kalman_position_solver", true, &update_admcfg);
-    admcfg_default_int("rssi_azel_iq", 0, &update_admcfg);
+    #ifdef USE_GPS
+        admcfg_default_bool("GPS_tstamp", true, &update_admcfg);
+        admcfg_default_bool("use_kalman_position_solver", true, &update_admcfg);
+        admcfg_default_int("rssi_azel_iq", 0, &update_admcfg);
 
-    admcfg_default_bool("always_acq_gps", false, &update_admcfg);
-    gps.set_date = admcfg_default_bool("gps_set_date", false, &update_admcfg);
-    gps.include_alert_gps = admcfg_default_bool("include_alert_gps", false, &update_admcfg);
-    //real_printf("gps.include_alert_gps=%d\n", gps.include_alert_gps);
-    gps.include_E1B = admcfg_default_bool("include_E1B", true, &update_admcfg);
-    //real_printf("gps.include_E1B=%d\n", gps.include_E1B);
-    admcfg_default_int("E1B_offset", 4, &update_admcfg);
+        admcfg_default_bool("always_acq_gps", false, &update_admcfg);
+        gps.set_date = admcfg_default_bool("gps_set_date", false, &update_admcfg);
+        gps.include_alert_gps = admcfg_default_bool("include_alert_gps", false, &update_admcfg);
+        //real_printf("gps.include_alert_gps=%d\n", gps.include_alert_gps);
+        gps.include_E1B = admcfg_default_bool("include_E1B", true, &update_admcfg);
+        //real_printf("gps.include_E1B=%d\n", gps.include_E1B);
+        admcfg_default_int("E1B_offset", 4, &update_admcfg);
 
-    gps.acq_Navstar = admcfg_default_bool("acq_Navstar", true, &update_admcfg);
-    if (!gps.acq_Navstar) ChanRemove(Navstar);
-    gps.acq_QZSS = admcfg_default_bool("acq_QZSS", true, &update_admcfg);
-    if (!gps.acq_QZSS) ChanRemove(QZSS);
-    gps.QZSS_prio = admcfg_default_bool("QZSS_prio", false, &update_admcfg);
-    gps.acq_Galileo = admcfg_default_bool("acq_Galileo", true, &update_admcfg);
-    if (!gps.acq_Galileo) ChanRemove(E1B);
-    //real_printf("Navstar=%d QZSS=%d Galileo=%d\n", gps.acq_Navstar, gps.acq_QZSS, gps.acq_Galileo);
+        gps.acq_Navstar = admcfg_default_bool("acq_Navstar", true, &update_admcfg);
+        if (!gps.acq_Navstar) ChanRemove(Navstar);
+        gps.acq_QZSS = admcfg_default_bool("acq_QZSS", true, &update_admcfg);
+        if (!gps.acq_QZSS) ChanRemove(QZSS);
+        gps.QZSS_prio = admcfg_default_bool("QZSS_prio", false, &update_admcfg);
+        gps.acq_Galileo = admcfg_default_bool("acq_Galileo", true, &update_admcfg);
+        if (!gps.acq_Galileo) ChanRemove(E1B);
+        //real_printf("Navstar=%d QZSS=%d Galileo=%d\n", gps.acq_Navstar, gps.acq_QZSS, gps.acq_Galileo);
 
-    // force plot_E1B true because there is no longer an option switch in the admin interface (to make room for new ones)
-    bool plot_E1B = admcfg_default_bool("plot_E1B", true, &update_admcfg);
-    if (!plot_E1B) {
-	    admcfg_set_bool("plot_E1B", true);
-        update_admcfg = true;
-    }
+        // force plot_E1B true because there is no longer an option switch in the admin interface (to make room for new ones)
+        bool plot_E1B = admcfg_default_bool("plot_E1B", true, &update_admcfg);
+        if (!plot_E1B) {
+            admcfg_set_bool("plot_E1B", true);
+            update_admcfg = true;
+        }
+    #endif
     
     #ifdef CRYPT_PW
     
@@ -770,7 +774,13 @@ char *rx_users(bool include_ip)
                     kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom,
                     (c->type == STREAM_WATERFALL)? 1:0,
                     hr, min, sec, rtype, rn, r_hr, r_min, r_sec,
-                    ext? ext:"", ip, wdsp_SAM_carrier(i), freq_offset, rx->n_camp,
+                    ext? ext:"", ip,
+                    #ifdef USE_SDR
+                        wdsp_SAM_carrier(i),
+                    #else
+                        0.,
+                    #endif
+                    freq_offset, rx->n_camp,
                     extint.notify_chan, extint.notify_seq);
                 if (user) kiwi_ifree(user);
                 if (geo) kiwi_ifree(geo);

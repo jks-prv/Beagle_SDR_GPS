@@ -3,7 +3,10 @@ FILES_EMBED_JS += web/extensions/ext.js
 CLEAN_MIN_GZ += web/extensions/ext.min.js
 
 # filter out previously optimized
-EXT_ALL_W = $(patsubst %.gz,,$(patsubst %.min.css,,$(patsubst %.min.js,,$(addprefix web/,$(FILES_EXT)))))
+ifeq ($(OTHER_DIR),)
+    EXT_ALL_W = $(patsubst %.gz,,$(patsubst %.min.css,,$(patsubst %.min.js,,$(addprefix web/,$(FILES_EXT)))))
+endif
+
 EXT_EMBED_NW = $(subst web/,,$(shell $(FILE_OPTIM) -t8 -u $(EXT_ALL_W) 2> /dev/null))
 
 .PHONY: foptim_ext

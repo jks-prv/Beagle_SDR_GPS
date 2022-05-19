@@ -3767,7 +3767,7 @@ function wf_init_ready()
 	waterfall_timer = window.setInterval(waterfall_dequeue, waterfall_ms);
 	//console.log('waterfall_dequeue @ '+ waterfall_ms +' msec');
 	
-	if (shortcut.keys != '') setTimeout(keyboard_shortcut_url_keys, 3000);
+	if (shortcut.keys != '') setTimeout(keyboard_shortcut_url_keys, 5000);
 	
 	wf_snap(kiwi_storeGet('wf_snap'));
 
@@ -8230,6 +8230,7 @@ function keyboard_shortcut_key_proc()
 
 function keyboard_shortcut_url_keys()
 {
+   console.log('keyboard_shortcut_url_keys: '+ shortcut.keys);
    shortcut.keys = shortcut.keys.split('');
    shortcut.key_i = 0;
    keyboard_shortcut_key_proc();

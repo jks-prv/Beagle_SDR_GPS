@@ -900,8 +900,10 @@ function extint_select(value)
 	console.log('extint_select val='+ value +' name='+ name);
 	var idx;
    extint_names_enum(function(i, value, id, id_en) {
-      if (id.toLowerCase().includes(name)) {
-	      console.log('extint_select HIT id='+ id +' id_en='+ id_en +' i='+ i +' value='+ value);
+	   //console.log('extint_select CONSIDER id='+ id +' name='+ name +' id_en='+ id_en +' i='+ i +' value='+ value);
+      //if (id.toLowerCase().includes(name)) {
+      if (name.startsWith(id.toLowerCase())) {
+	      //console.log('extint_select HIT id='+ id +' name='+ name +' id_en='+ id_en +' i='+ i +' value='+ value);
 	      idx = i;
       }
    });
@@ -956,6 +958,7 @@ function extint_select_build_menu()
          //console.log('extint_select_menu id_en='+ id_en +' en='+ enable);
          if (enable == null || kiwi.is_local[rx_chan]) enable = true;   // enable if no cfg param or local connection
          if (id == 'DRM') kiwi.DRM_enable = enable;
+         if (id == 'NAVTEX') id = 'NAVTEX/DSC';
 		   s += '<option value='+ dq(value) +' kiwi_idx='+ dq(i) +' '+ (enable? '':'disabled') +'>'+ id +'</option>';
 		});
 	}

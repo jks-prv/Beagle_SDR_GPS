@@ -301,12 +301,22 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             bool is_password = false;
             bool log_auth_attempt, pwd_debug;
 
-            #define nwf_cprintf(conn, fmt, ...) \
+            #define pwd_printf(fmt, ...) \
+                cprintf(conn, fmt, ## __VA_ARGS__)
+
+            #define pwd_lprintf(fmt, ...) \
+                clprintf(conn, fmt, ## __VA_ARGS__)
+
+            #define pwd_lfprintf(flags, fmt, ...) \
+                clfprintf(conn, flags, fmt, ## __VA_ARGS__)
+
+            #define nwf_printf(fmt, ...) \
                 cprintf(conn, fmt, ## __VA_ARGS__)
                 //if (!stream_wf) cprintf(conn, fmt, ## __VA_ARGS__)
 
-            #define pdbug_cprintf(conn, fmt, ...) \
+            #define pdb_printf(fmt, ...) \
                 if (pwd_debug) cprintf(conn, fmt, ## __VA_ARGS__)
+
             if (debug_printfs) {
                 log_auth_attempt = true;
                 pwd_debug = true;
@@ -362,25 +372,28 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 check_ip_against_restricted = false;
             }
 
-            pdbug_cprintf(conn, "PWD %s %s conn #%d force_notLocal=%d isLocal=%d is_local=%d auth=%d auth_kiwi=%d auth_prot=%d auth_admin=%d check_ip_against_restricted=%d restricted_ip_match=%d from %s\n",
-                type_m, uri, conn->self_idx, conn->force_notLocal, isLocal, is_local,
-                conn->auth, conn->auth_kiwi, conn->auth_prot, conn->auth_admin, check_ip_against_restricted, restricted_ip_match, conn->remote_ip);
+            pdb_printf("PWD %s %s conn #%d from %s %s internal_conn=%d check_ip_against_restricted=%d restricted_ip_match=%d\n",
+                type_m, uri, conn->self_idx, ip_remote(mc), conn->remote_ip,
+                conn->internal_connection, check_ip_against_restricted, restricted_ip_match);
+            pdb_printf("PWD %s %s conn #%d force_notLocal=%d isLocal=%d is_local=%d auth=%d auth_kiwi=%d auth_prot=%d auth_admin=%d\n",
+                type_m, uri, conn->self_idx,
+                conn->force_notLocal, isLocal, is_local, conn->auth, conn->auth_kiwi, conn->auth_prot, conn->auth_admin);
         
             const char *tlimit_exempt_pwd = admcfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL);
             //#define TEST_TLIMIT_LOCAL
             #ifndef TEST_TLIMIT_LOCAL
                 if (is_local) {
                     conn->tlimit_exempt = true;
-                    cprintf(conn, "TLIMIT exempt local connection from %s\n", conn->remote_ip);
+                    pwd_printf("TLIMIT exempt local connection from %s\n", conn->remote_ip);
                 }
             #endif
-            pdbug_cprintf(conn, "PWD TLIMIT exempt password check: ipl=<%s> tlimit_exempt_pwd=<%s>\n",
+            pdb_printf("PWD TLIMIT exempt password check: ipl=<%s> tlimit_exempt_pwd=<%s>\n",
                 ipl_m, tlimit_exempt_pwd);
             if (ipl_m != NULL && tlimit_exempt_pwd != NULL && strcasecmp(ipl_m, tlimit_exempt_pwd) == 0) {
                 conn->tlimit_exempt = true;
                 conn->tlimit_exempt_by_pwd = true;
                 skip_dup_ip_check = true;
-                cprintf(conn, "TLIMIT exempt password from %s\n", conn->remote_ip);
+                pwd_printf("TLIMIT exempt password from %s\n", conn->remote_ip);
             }
             cfg_string_free(tlimit_exempt_pwd);
 
@@ -388,9 +401,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             if (ip_limit_mins && stream_snd && !conn->tlimit_exempt) {
                 int ipl_cur_secs = json_default_int(&cfg_ipl, conn->remote_ip, 0, NULL);
                 int ipl_cur_mins = SEC_TO_MINUTES(ipl_cur_secs);
-                //cprintf(conn, "TLIMIT-IP getting database sec:%d for %s\n", ipl_cur_secs, conn->remote_ip);
+                //pwd_printf("TLIMIT-IP getting database sec:%d for %s\n", ipl_cur_secs, conn->remote_ip);
                 if (ipl_cur_mins >= ip_limit_mins) {
-                    cprintf(conn, "TLIMIT-IP connecting 24hr LIMIT EXCEEDED cur:%d >= lim:%d for %s\n", ipl_cur_mins, ip_limit_mins, conn->remote_ip);
+                    pwd_printf("TLIMIT-IP connecting 24hr LIMIT EXCEEDED cur:%d >= lim:%d for %s\n", ipl_cur_mins, ip_limit_mins, conn->remote_ip);
                     send_msg_mc_encoded(mc, "MSG", "ip_limit", "%d,%s", ip_limit_mins, conn->remote_ip);
                     kiwi_ifree(type_m); kiwi_ifree(pwd_m); kiwi_ifree(ipl_m);
                     conn->tlimit_zombie = true;
@@ -407,23 +420,23 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                         bool too_frequent = (since_last_time < MINUTES_TO_SEC(WITHIN_THIS_MANY_MINUTES) && last_time != 0);
                         if (too_frequent) retries = CLAMP(retries+1, 0, TOO_MANY_ATTEMPTS);
                         last = (now << 3) | retries;
-                        cprintf(conn, "TLIMIT-IP retries=%d since_last_time=%d too_frequent=%d\n", retries, since_last_time, too_frequent);
+                        pwd_printf("TLIMIT-IP retries=%d since_last_time=%d too_frequent=%d\n", retries, since_last_time, too_frequent);
                     #else
                         u4_t retries = last;
                         retries++;
                         last = retries;
-                        cprintf(conn, "TLIMIT-IP retries=%d\n", retries);
+                        pwd_printf("TLIMIT-IP retries=%d\n", retries);
                     #endif
                     
                     json_set_int(&cfg_ipl, stprintf("%s_last", conn->remote_ip), last);
                     if (retries >= TOO_MANY_ATTEMPTS) {
-                        cprintf(conn, "TLIMIT-IP RETRIES EXCEEDED, adding to blacklist: %s\n", conn->remote_ip);
+                        pwd_printf("TLIMIT-IP RETRIES EXCEEDED, adding to blacklist: %s\n", conn->remote_ip);
                         ip_blacklist_add_iptables(conn->remote_ip);
                     }
                     
                     return true;
                 } else {
-                    cprintf(conn, "TLIMIT-IP connecting LIMIT OKAY cur:%d < lim:%d for %s\n", ipl_cur_mins, ip_limit_mins, conn->remote_ip);
+                    pwd_printf("TLIMIT-IP connecting LIMIT OKAY cur:%d < lim:%d for %s\n", ipl_cur_mins, ip_limit_mins, conn->remote_ip);
                 }
             }
 
@@ -433,7 +446,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             if (!stream_wf) {
                 char *client_public_ip = (is_local && net.pub_valid)? net.ip_pub : conn->remote_ip;
                 send_msg(conn, false, "MSG client_public_ip=%s", client_public_ip);
-                //cprintf(conn, "client_public_ip %s\n", client_public_ip);
+                //pwd_printf("client_public_ip %s\n", client_public_ip);
             }
 
             #ifdef CRYPT_PW
@@ -459,7 +472,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             
                 // config pwd set, but auto_login for local subnet is true
                 if (cfg_auto_login && is_local) {
-                    nwf_cprintf(conn, "PWD %s %s ALLOWED: config pwd set, but is_local and auto-login set\n",
+                    nwf_printf("PWD %s %s ALLOWED: config pwd set, but is_local and auto-login set\n",
                         type_m, uri);
                     allow = true;
                     skip_dup_ip_check = true;
@@ -467,14 +480,14 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
                 // if no user password set allow unrestricted connection
                 if (no_pwd) {
-                    nwf_cprintf(conn, "PWD %s %s ALLOWED: no config pwd set, allow any (%s)\n",
+                    nwf_printf("PWD %s %s ALLOWED: no config pwd set, allow any (%s)\n",
                         type_m, uri, conn->remote_ip);
                     allow = true;
                 } else
             
                 // internal connections always allowed
                 if (conn->internal_connection) {
-                    nwf_cprintf(conn, "PWD %s %s ALLOWED: internal connection\n",
+                    nwf_printf("PWD %s %s ALLOWED: internal connection\n",
                         type_m, uri);
                     allow = true;
                     skip_dup_ip_check = true;
@@ -492,17 +505,17 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     if (chan_need_pwd < 0) chan_need_pwd = 0;
                     
                     // NB: ">=" not ">" because channel already allocated (freed if this check fails)
-                    pdbug_cprintf(conn, "PWD %s %s rx_free=%d >= chan_need_pwd=%d %s rx_chans=%d rx_chan_no_pwd()=%d already_privileged_conns=%d stream_mon=%d\n", 
+                    pdb_printf("PWD %s %s rx_free=%d >= chan_need_pwd=%d %s rx_chans=%d rx_chan_no_pwd()=%d already_privileged_conns=%d stream_mon=%d\n", 
                         type_m, uri, rx_free, chan_need_pwd,
                         (rx_free >= chan_need_pwd)? "TRUE":"FALSE", rx_chans, rx_chan_no_pwd(), already_privileged_conns, stream_mon);
 
                     // always allow STREAM_MONITOR for the case when channels could become available
                     if (rx_free >= chan_need_pwd || stream_mon) {
                         allow = true;
-                        //nwf_cprintf(conn, "PWD rx_free=%d >= chan_need_pwd=%d %s\n", rx_free, chan_need_pwd, allow? "TRUE":"FALSE");
+                        //nwf_printf("PWD rx_free=%d >= chan_need_pwd=%d %s\n", rx_free, chan_need_pwd, allow? "TRUE":"FALSE");
                     }
                 } else {
-                    nwf_cprintf(conn, "PWD %s %s NEED PWD: protected mode requested\n", type_m, uri);
+                    nwf_printf("PWD %s %s NEED PWD: protected mode requested\n", type_m, uri);
                 }
             } else
         
@@ -522,47 +535,47 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
                 bool prior_auth = (conn->auth && conn->auth_admin);
                 cfg_auto_login = admcfg_bool("admin_auto_login", NULL, CFG_REQUIRED);
-                clfprintf(conn, prior_auth? PRINTF_REG : PRINTF_LOG, "PWD %s config pwd set %s, auto-login %s\n",
+                pwd_lfprintf(prior_auth? PRINTF_REG : PRINTF_LOG, "PWD %s config pwd set %s, auto-login %s\n",
                     type_m, no_pwd? "FALSE":"TRUE", cfg_auto_login? "TRUE":"FALSE");
             
                 // Since we no longer cookie save the admin password get session persistence by checking for prior auth.
                 // This is important so the admin pwd isn't asked for repeatedly during e.g. dx list editing.
                 if (prior_auth) {
-                    cprintf(conn, "PWD %s prior auth\n", type_m);
+                    pwd_printf("PWD %s prior auth\n", type_m);
                     allow = true;
                 } else
 
                 // can't determine local network status (yet)
                 if (isLocal == NO_LOCAL_IF) {
-                    clprintf(conn, "PWD %s CAN'T DETERMINE: no local network interface information\n", type_m);
+                    pwd_lprintf("PWD %s CAN'T DETERMINE: no local network interface information\n", type_m);
                     cant_determine = true;
                 } else
 
                 // no config pwd set (e.g. initial setup) -- allow if connection is from local network
                 if (no_pwd && is_local) {
-                    clprintf(conn, "PWD %s ALLOWED: no config pwd set, but is_local\n", type_m);
+                    pwd_lprintf("PWD %s ALLOWED: no config pwd set, but is_local\n", type_m);
                     allow = true;
                 } else
             
                 // config pwd set, but auto_login for local subnet is true
                 if (cfg_auto_login && is_local) {
-                    clprintf(conn, "PWD %s ALLOWED: config pwd set, but is_local and auto-login set\n", type_m);
+                    pwd_lprintf("PWD %s ALLOWED: config pwd set, but is_local and auto-login set\n", type_m);
                     allow = true;
                 } else
             
                 // when no admin pwd set, display msg when not on same subnet to aid in debugging
                 if (no_pwd && !is_local) {
-                    clprintf(conn, "PWD %s CANT LOGIN: no config pwd set, not is_local\n", type_m);
+                    pwd_lprintf("PWD %s CANT LOGIN: no config pwd set, not is_local\n", type_m);
                     cant_login = true;
                 }
             } else {
-                cprintf(conn, "PWD bad type=%s\n", type_m);
+                pwd_printf("PWD bad type=%s\n", type_m);
                 pwd_s = NULL;
             }
         
             int badp = 1;
 
-            pdbug_cprintf(conn, "PWD %s %s RESULT: allow=%d pwd_s=<%s> pwd_m=<%s> cant_determine=%d is_local=%d isLocal(enum)=%d %s\n",
+            pdb_printf("PWD %s %s RESULT: allow=%d pwd_s=<%s> pwd_m=<%s> cant_determine=%d is_local=%d isLocal(enum)=%d %s\n",
                 type_m, uri, allow, pwd_s, pwd_m, cant_determine, is_local, isLocal, conn->remote_ip);
 
             if (check_ip_against_restricted && !allow && !restricted_ip_match) {
@@ -579,19 +592,19 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
             if (allow) {
                 if (log_auth_attempt || pwd_debug)
-                    clprintf(conn, "PWD %s %s ALLOWED: from %s\n", type_m, uri, conn->remote_ip);
+                    pwd_lprintf("PWD %s %s ALLOWED: from %s\n", type_m, uri, conn->remote_ip);
                 badp = 0;
             } else
         
             if ((pwd_s == NULL || *pwd_s == '\0')) {
-                clprintf(conn, "PWD %s %s REJECTED: no config pwd set, from %s\n", type_m, uri, conn->remote_ip);
+                pwd_lprintf("PWD %s %s REJECTED: no config pwd set, from %s\n", type_m, uri, conn->remote_ip);
                 badp = 1;
             } else {
                 if (pwd_m == NULL || pwd_s == NULL) {
-                    pdbug_cprintf(conn, "PWD %s %s probably auto-login check, from %s\n", type_m, uri, conn->remote_ip);
+                    pdb_printf("PWD %s %s probably auto-login check, from %s\n", type_m, uri, conn->remote_ip);
                     badp = 1;
                 } else {
-                    //cprintf(conn, "PWD CMP %s pwd_s \"%s\" pwd_m \"%s\" from %s\n", type_m, pwd_s, pwd_m, conn->remote_ip);
+                    //pwd_printf("PWD CMP %s pwd_s \"%s\" pwd_m \"%s\" from %s\n", type_m, pwd_s, pwd_m, conn->remote_ip);
 
                     #ifdef CRYPT_PW
                         badp = kiwi_crypt_validate(pwd_m, salt, hash)? 0:1;
@@ -599,7 +612,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                         badp = strcasecmp(pwd_m, pwd_s)? 1:0;
                     #endif
 
-                    pdbug_cprintf(conn, "PWD %s %s %s:%s from %s\n", type_m, uri, badp? "REJECTED":"ACCEPTED",
+                    pdb_printf("PWD %s %s %s:%s from %s\n", type_m, uri, badp? "REJECTED":"ACCEPTED",
                         type_prot? " (protected login)":"", conn->remote_ip);
                     if (!badp) {
                         if (type_kiwi_prot) is_password = true;     // password used to get in
@@ -612,8 +625,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 kiwi_ifree(salt); kiwi_ifree(hash);
             #endif
             
-            //cprintf(conn, "DUP_IP badp=%d skip_dup_ip_check=%d stream_snd_or_wf=%d\n", badp, skip_dup_ip_check, stream_snd_or_wf);
-            //cprintf(conn, "DUP_IP rx%d %s %s\n", conn->rx_channel, uri, conn->remote_ip);
+            //pwd_printf("DUP_IP badp=%d skip_dup_ip_check=%d stream_snd_or_wf=%d\n", badp, skip_dup_ip_check, stream_snd_or_wf);
+            //pwd_printf("DUP_IP rx%d %s %s\n", conn->rx_channel, uri, conn->remote_ip);
         
             // only SND connection has tlimit_exempt_by_pwd
             if (stream_wf && conn->other && conn->other->tlimit_exempt_by_pwd) skip_dup_ip_check = true;
@@ -622,14 +635,14 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             bool skip_admin = (type_admin && allow);
             if (no_dup_ip && !skip_admin && badp == 0 && !skip_dup_ip_check && stream_snd_or_wf) {
                 conn_t *c = conns;
-                //cprintf(conn, "DUP_IP NEW rx%d %s %s\n", conn->rx_channel, uri, conn->remote_ip);
+                //pwd_printf("DUP_IP NEW rx%d %s %s\n", conn->rx_channel, uri, conn->remote_ip);
                 for (i=0; i < N_CONNS; i++, c++) {
                     bool snd_wf = (c->type == STREAM_SOUND || c->type == STREAM_WATERFALL);
                     if (!c->valid || c->internal_connection || !snd_wf) continue;
                     if (c->rx_channel == conn->rx_channel) continue;    // skip our own entry
-                    //cprintf(conn, "DUP_IP CHK rx%d %s %s\n", c->rx_channel, rx_streams[c->type].uri, c->remote_ip);
+                    //pwd_printf("DUP_IP CHK rx%d %s %s\n", c->rx_channel, rx_streams[c->type].uri, c->remote_ip);
                     if (strcmp(conn->remote_ip, c->remote_ip) == 0) {
-                        //cprintf(conn, "DUP_IP MATCH\n");
+                        //pwd_printf("DUP_IP MATCH\n");
                         badp = 5;
                         break;
                     }
@@ -641,7 +654,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             send_msg(conn, false, "MSG chan_no_pwd_true=%d", rx_chan_no_pwd(PWD_CHECK_YES));
             if (badp == 0 && (stream_snd || conn->type == STREAM_ADMIN)) {
                 send_msg(conn, false, "MSG is_local=%d,%d", conn->rx_channel, is_local? 1:0);
-                //pdbug_cprintf(conn, "PWD %s %s\n", type_m, uri);
+                //pdb_printf("PWD %s %s\n", type_m, uri);
             }
             send_msg(conn, false, "MSG max_camp=%d", N_CAMP);
             send_msg(conn, false, "MSG badp=%d", badp);
@@ -698,7 +711,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 conn->awaitingPassword = false;
             }
 
-            pdbug_cprintf(conn, "PWD %s %s AUTH=%d badp=%d auth_kiwi=%d auth_prot=%d auth_admin=%d\n", type_m, uri,
+            pdb_printf("PWD %s %s AUTH=%d badp=%d auth_kiwi=%d auth_prot=%d auth_admin=%d\n", type_m, uri,
                  conn->auth, badp, conn->auth_kiwi, conn->auth_prot, conn->auth_admin);
             kiwi_ifree(type_m);
         
@@ -1597,42 +1610,44 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 audio_kbps[ch], waterfall_kbps[ch], waterfall_fps[ch], http_kbps, sum_kbps,
                 ext_update_get_sample_rateHz(-1), snd_rate);
 
-            sb = kstr_asprintf(sb, ",\"ga\":%d,\"gt\":%d,\"gg\":%d,\"gf\":%d,\"gc\":%.6f,\"go\":%d",
-                gps.acquiring, gps.tracking, gps.good, gps.fixes, adc_clock_system()/1e6, clk.adc_gps_clk_corrections);
+            #ifdef USE_GPS
+                sb = kstr_asprintf(sb, ",\"ga\":%d,\"gt\":%d,\"gg\":%d,\"gf\":%d,\"gc\":%.6f,\"go\":%d",
+                    gps.acquiring, gps.tracking, gps.good, gps.fixes, adc_clock_system()/1e6, clk.adc_gps_clk_corrections);
+            #endif
 
-    #ifdef USE_SDR
-            //printf("ch=%d ug=%d lat=%d\n", ch, wspr_c.GPS_update_grid, (gps.StatLat != 0));
-            if (wspr_c.GPS_update_grid && gps.StatLat) {
-                latLon_t loc;
-                loc.lat = gps.sgnLat;
-                loc.lon = gps.sgnLon;
-                char grid6[LEN_GRID];
-                if (latLon_to_grid6(&loc, grid6) == 0) {
-                    //#define TEST_GPS_GRID
-                    #ifdef TEST_GPS_GRID
-                        static int grid_flip;
-                        grid6[5] = grid_flip? 'j':'i';
-                        if (ch == rx_chans) {
-                            grid_flip = grid_flip ^ 1;
-                            printf("TEST_GPS_GRID %s\n", grid6);
-                        }
-                    #endif
-                    kiwi_strncpy(wspr_c.rgrid, grid6, LEN_GRID);
+            #ifdef USE_SDR
+                //printf("ch=%d ug=%d lat=%d\n", ch, wspr_c.GPS_update_grid, (gps.StatLat != 0));
+                if (wspr_c.GPS_update_grid && gps.StatLat) {
+                    latLon_t loc;
+                    loc.lat = gps.sgnLat;
+                    loc.lon = gps.sgnLon;
+                    char grid6[LEN_GRID];
+                    if (latLon_to_grid6(&loc, grid6) == 0) {
+                        //#define TEST_GPS_GRID
+                        #ifdef TEST_GPS_GRID
+                            static int grid_flip;
+                            grid6[5] = grid_flip? 'j':'i';
+                            if (ch == rx_chans) {
+                                grid_flip = grid_flip ^ 1;
+                                printf("TEST_GPS_GRID %s\n", grid6);
+                            }
+                        #endif
+                        kiwi_strncpy(wspr_c.rgrid, grid6, LEN_GRID);
+                    }
                 }
-            }
         
-            // Always send WSPR grid. Won't reveal location if grid not set on WSPR admin page
-            // and update-from-GPS turned off.
-            sb = kstr_asprintf(sb, ",\"gr\":\"%s\"", kiwi_str_encode_static(wspr_c.rgrid));
-            //printf("status sending wspr_c.rgrid=<%s>\n", wspr_c.rgrid);
+                // Always send WSPR grid. Won't reveal location if grid not set on WSPR admin page
+                // and update-from-GPS turned off.
+                sb = kstr_asprintf(sb, ",\"gr\":\"%s\"", kiwi_str_encode_static(wspr_c.rgrid));
+                //printf("status sending wspr_c.rgrid=<%s>\n", wspr_c.rgrid);
         
-            sb = kstr_asprintf(sb, ",\"ad\":%d,\"au\":%d,\"ae\":%d,\"ar\":%d,\"an\":%d,\"an2\":%d,",
-                dpump.audio_dropped, underruns, seq_errors, dpump.resets, nrx_bufs, N_DPBUF);
-            sb = kstr_cat(sb, kstr_list_int("\"ap\":[", "%u", "],", (int *) dpump.hist, nrx_bufs));
-            sb = kstr_cat(sb, kstr_list_int("\"ai\":[", "%u", "]", (int *) dpump.in_hist, N_DPBUF));
+                sb = kstr_asprintf(sb, ",\"ad\":%d,\"au\":%d,\"ae\":%d,\"ar\":%d,\"an\":%d,\"an2\":%d,",
+                    dpump.audio_dropped, underruns, seq_errors, dpump.resets, nrx_bufs, N_DPBUF);
+                sb = kstr_cat(sb, kstr_list_int("\"ap\":[", "%u", "],", (int *) dpump.hist, nrx_bufs));
+                sb = kstr_cat(sb, kstr_list_int("\"ai\":[", "%u", "]", (int *) dpump.in_hist, N_DPBUF));
             
-            sb = kstr_asprintf(sb, ",\"sa\":%d,\"sh\":%d", snr_all, freq_offset? -1 : snr_HF);
-    #endif
+                sb = kstr_asprintf(sb, ",\"sa\":%d,\"sh\":%d", snr_all, freq_offset? -1 : snr_HF);
+            #endif
 
             char utc_s[32], local_s[32];
             time_t utc = utc_time();

@@ -205,6 +205,11 @@ function dqc(s)
 	return '"'+ s +'":';
 }
 
+function paren(s)
+{
+   return '('+ s +')';
+}
+
 function plural(num, word)
 {
    if (num == 1) return word; else return word +'s';
@@ -264,6 +269,20 @@ function kiwi_shallow_copy(obj)
 function kiwi_deep_copy(obj)
 {
    return JSON.parse(JSON.stringify(obj));
+}
+
+function kiwi_bitReverse(v, len) {
+   if (v == 0) return 0;
+   var rv = 0;
+   for (i = 0; i < len; i++) {
+      rv |= ((v >> i) & 1) << (len - 1 - i);
+   }
+   return rv >>> 0;     // force unsigned result if b31 set
+}
+
+function kiwi_bitCount(n) {
+   if (n == 0) return 0;
+   return n.toString(2).match(/1/g).length
 }
 
 // external API compatibility

@@ -57,6 +57,8 @@ Boston, MA  02110-1301, USA.
 #include <stdlib.h>
 #include <errno.h>
 
+kiwi_t kiwi;
+
 int version_maj, version_min;
 int fw_sel, fpga_id, rx_chans, wf_chans, nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem,
     snd_rate, rx_decim;

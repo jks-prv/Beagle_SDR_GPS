@@ -597,8 +597,8 @@ function Loran_C_config_html()
       w3_div('w3-show-inline-block',
          w3_div('w3-container w3-show-inline-block|width:200px',
             w3_divs('w3-margin-bottom',
-               w3_input_get('', 'default GRI 0', 'loran_c.gri0', 'w3_num_set_cfg_cb', ''),
-               w3_input_get('', 'default GRI 1', 'loran_c.gri1', 'w3_num_set_cfg_cb', '')
+               w3_input_get('', 'Default GRI 0', 'loran_c.gri0', 'w3_num_set_cfg_cb', ''),
+               w3_input_get('', 'Default GRI 1', 'loran_c.gri1', 'w3_num_set_cfg_cb', '')
             )
          )
       );

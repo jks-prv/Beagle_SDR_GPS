@@ -25,7 +25,9 @@
 
 function CCIR476() {
    var t = this;
+   t.start_bit = 1;
 
+   console.log('FSK encoder: CCIR476');
    t.code_character32 = 0x6a;
    t.LETTERS = 0x5a;
    t.FIGURES = 0x36;
@@ -92,20 +94,12 @@ CCIR476.prototype.reset = function() {
    this.shift = false;
 }
 
-CCIR476.prototype.get_shift = function() {
-   return this.shift;
-}
-
 CCIR476.prototype.get_nbits = function() {
    return 7;
 }
 
 CCIR476.prototype.get_msb = function() {
    return 0x40;
-}
-
-CCIR476.prototype.check_valid = function(code) {
-   return this.valid_codes[code];
 }
 
 /*

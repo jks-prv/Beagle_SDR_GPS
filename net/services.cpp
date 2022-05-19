@@ -80,15 +80,17 @@ static void get_TZ(void *param)
 			cfg_string_free(lat_lon);
 		}
 	
-		if (!haveLatLon && gps.StatLat) {
-			lat = gps.sgnLat; lon = gps.sgnLon;
-			lprintf("TIMEZONE: lat/lon from GPS: (%f, %f)\n", lat, lon);
-			haveLatLon = true;
-		}
+	    #ifdef USE_GPS
+            if (!haveLatLon && gps.StatLat) {
+                lat = gps.sgnLat; lon = gps.sgnLon;
+                lprintf("TIMEZONE: lat/lon from GPS: (%f, %f)\n", lat, lon);
+                haveLatLon = true;
+            }
+        #endif
 		
 		// lowest priority since it will be least accurate
-		if (!haveLatLon && gps.ipinfo_ll_valid) {
-			lat = gps.ipinfo_lat; lon = gps.ipinfo_lon;
+		if (!haveLatLon && kiwi.ipinfo_ll_valid) {
+			lat = kiwi.ipinfo_lat; lon = kiwi.ipinfo_lon;
 			lprintf("TIMEZONE: lat/lon from ipinfo: (%f, %f)\n", lat, lon);
 			haveLatLon = true;
 		}
@@ -98,8 +100,8 @@ static void get_TZ(void *param)
 			goto retry;
 		}
 		
-		gps.lowres_lat = ((int) roundf(lat)) & ~1;
-		gps.lowres_lon = ((int) roundf(lon)) & ~1;
+		kiwi.lowres_lat = ((int) roundf(lat)) & ~1;
+		kiwi.lowres_lon = ((int) roundf(lon)) & ~1;
 	
 		#define TIMEZONE_DB_COM
 		#ifdef TIMEZONE_DB_COM
@@ -505,29 +507,29 @@ static bool ipinfo_json(int https, const char *url, const char *path, const char
         if (!err) {
             lon = json_float(&cfg_ip, lon_s, &err, CFG_OPTIONAL);
             if (!err) {
-                gps.ipinfo_lat = lat; gps.ipinfo_lon = lon; gps.ipinfo_ll_valid = true;
+                kiwi.ipinfo_lat = lat; kiwi.ipinfo_lon = lon; kiwi.ipinfo_ll_valid = true;
             }
         }
         
         // try as strings
-        if (!gps.ipinfo_ll_valid) {
+        if (!kiwi.ipinfo_ll_valid) {
             s = (char *) json_string(&cfg_ip, lat_s, NULL, CFG_OPTIONAL);
             if (s != NULL) {
-                n = sscanf(s, "%f", &gps.ipinfo_lat);
+                n = sscanf(s, "%f", &kiwi.ipinfo_lat);
                 json_string_free(&cfg_ip, s);
                 if (n == 1) {
                     s = (char *) json_string(&cfg_ip, lon_s, NULL, CFG_OPTIONAL);
                     if (s != NULL) {
-                        n = sscanf(s, "%f", &gps.ipinfo_lon);
+                        n = sscanf(s, "%f", &kiwi.ipinfo_lon);
                         json_string_free(&cfg_ip, s);
-                        if (n == 1) gps.ipinfo_ll_valid = true;
+                        if (n == 1) kiwi.ipinfo_ll_valid = true;
                     }
                 }
             }
         }
         
-        if (gps.ipinfo_ll_valid) {
-            lprintf("IPINFO: lat/lon = (%f, %f) from %s\n", gps.ipinfo_lat, gps.ipinfo_lon, url);
+        if (kiwi.ipinfo_ll_valid) {
+            lprintf("IPINFO: lat/lon = (%f, %f) from %s\n", kiwi.ipinfo_lat, kiwi.ipinfo_lon, url);
         }
     }
 
