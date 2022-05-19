@@ -371,7 +371,6 @@ ext_t ale_2g_ext = {
 void ALE_2G_main()
 {
 	ext_register(&ale_2g_ext);
-    ale_2g.nom_rate = snd_rate;
 
 #ifdef ALE_2G_TEST_FILE
     int n;

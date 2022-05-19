@@ -664,13 +664,23 @@ var ansi = {
                [249,53,248],
                [20,240,240],
                [233,235,235]
-            ]
+   ],
+   
+   // black on color unless otherwise noted
+   RED:     "\u001b[97m\u001b[101m",   // white on red
+   YELLOW:  "\u001b[103m",
+   GREEN:   "\u001b[102m",
+   CYAN:    "\u001b[106m",
+   BLUE:    "\u001b[97m\u001b[104m",   // white on blue
+   MAGENTA: "\u001b[97m\u001b[105m",   // white on magenta
+   GREY:    "\u001b[47m",
+   NORM:    "\u001b[m"
 };
 
 // NB: doesn't yet handle XY screen addressing so apps like nano editor can be used in admin console
 function kiwi_output_msg(id, id_scroll, p)
 {
-   var dbg = (1 && dbgUs);
+   var dbg = (0 && dbgUs);
    
 	var parent_el = w3_el(id);
 	if (!parent_el) {

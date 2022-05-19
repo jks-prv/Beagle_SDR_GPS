@@ -23,7 +23,6 @@
 typedef enum { FILE_12k = 0, FILE_8k = 1 } test_fn_sel_e;
 
 typedef struct {
-	u4_t nom_rate;
     test_fn_sel_e test_fn_sel;
     
 	#ifdef ALE_2G_TEST_FILE

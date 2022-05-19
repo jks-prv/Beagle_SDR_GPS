@@ -31,6 +31,8 @@ function FSK_async(framing, encoding) {
    t.stop_variable = 0;
    t.raw = 0;
 
+   // processing for 4/7(CCIR476) and 7/3(DSC) doesn't appear here because they don't call FSK_async()
+   
    if (framing.endsWith('0V')) {
       t.stop_bits = 0;
       t.stop_variable = 1;
@@ -85,6 +87,7 @@ function FSK_async(framing, encoding) {
       t.CHU = 1;
       t.CHU_ch = [];
       t.CHU_cn = [];
+      t.start_bit = 0;
       t.data_bits = 8;
       t.parity_bits = 0;
       t.stop_bits = 2;
@@ -102,7 +105,7 @@ function FSK_async(framing, encoding) {
    if (t.stop_bits == 1.5) t.nbits *= 2;
    t.msb = 1 << (t.nbits - 1);
    t.data_msb = 1 << (t.data_bits - 1);
-   console.log('FSK_async data_bits='+ t.data_bits +' parity_bits='+ t.parity_bits +' stop_bits='+ t.stop_bits +' nbits='+ t.nbits +' data_msb=0x'+ t.data_msb.toString(16) +' msb=0x'+ t.msb.toString(16) +' enc='+ encoding);
+   console.log('FSK encoder: FSK_async data_bits='+ t.data_bits +' parity_bits='+ t.parity_bits +' stop_bits='+ t.stop_bits +' nbits='+ t.nbits +' data_msb=0x'+ t.data_msb.toString(16) +' msb=0x'+ t.msb.toString(16) +' enc='+ encoding);
    t.ITA2 = t.ASCII = 0;
    
    switch (encoding) {
@@ -168,23 +171,12 @@ FSK_async.prototype.reset = function() {
    this.shift = false;
 }
 
-FSK_async.prototype.get_shift = function() {
-   return this.shift;
-}
-
 FSK_async.prototype.get_nbits = function() {
    return this.nbits;
 }
 
 FSK_async.prototype.get_msb = function() {
    return this.msb;
-}
-
-FSK_async.prototype.check_valid = function(code) {
-   if (this.ITA2)
-      return (code >= 0 && code < 32);
-   else
-      return (code >= 0 && code <= 0x7f);
 }
 
 FSK_async.prototype.code_to_char = function(code, shift, fixed_start) {
@@ -308,7 +300,7 @@ FSK_async.prototype.code_to_char = function(code, shift, fixed_start) {
             (code >= 0x0b && code <= 0x0c) ||
             (code >= 0x0e && code <= 0x1f) ||
             (code >= 0x7f)) {
-               s = '\u2612';   // ASCII non-printing
+               s = -1;     // ASCII non-printing
          } else {
             s = String.fromCharCode(code);
          }

@@ -4,20 +4,22 @@ var nt = {
    ext_name: 'NAVTEX',     // NB: must match navtex.c:navtex_ext.name
    first_time: true,
    
+   dataH: 300,
+   ctrlW: 550,
+   ctrlH: 175,
+
    lhs: 150,
    tw: 1024,
-   th: 200,
    x: 0,
    last_y: [],
-   n_menu:     5,
+   n_menu:     3,
    menu0:      -1,
    menu1:      -1,
    menu2:      -1,
-   menu3:      -1,
-   menu4:      -1,
-   prev_disabled: 0,
-   disabled: 0,
 
+   type: 0,
+   TYPE_NAVTEX: 0,
+   TYPE_DSC: 1,
    decode: 1,
    freq: 0,
    freq_s: '',
@@ -27,7 +29,6 @@ var nt = {
    framing: '4/7',
    inverted: 0,
    encoding: 'CCIR476',
-   invert: 0,
 
    dx: 0,
    dxn: 80,
@@ -39,6 +40,10 @@ var nt = {
    decim: 4,
    sample_count: 0,
    edge: 0,
+
+   log_mins: 0,
+   log_interval: null,
+   log_txt: '',
 
    last_last: 0
 };
@@ -83,7 +88,10 @@ function navtex_recv(data)
 		switch (param[0]) {
 
 			case "ready":
-            kiwi_load_js_dir('extensions/FSK/', ['JNX.js', 'BiQuadraticFilter.js', 'CCIR476.js', 'FSK_async.js'], 'navtex_controls_setup');
+            kiwi_load_js_dir('extensions/FSK/', ['JNX.js', 'BiQuadraticFilter.js', 'CCIR476.js', 'DSC.js'], 'navtex_controls_setup');
+				break;
+
+			case "test_done":
 				break;
 
 			default:
@@ -183,14 +191,14 @@ var navtex_console_status_msg_p = { scroll_only_at_bottom: true, process_return_
 
 function navtex_output_char(c)
 {
-   if (nt.dx) {    // ZCZC_STnn
+   if (nt.type == nt.TYPE_NAVTEX && nt.dx) {    // ZCZC_STnn
       if (c == '\r' || c == '\n') c = ' ';
       nt.fifo.push(c);
       var s = nt.fifo.join('');
       //console.log('DX ['+ s +']');
       if (!s.startsWith('ZCZC')) {
          while (nt.fifo.length > 9) nt.fifo.shift();
-         
+      
          if (nt.dx_tail) {
             if (nt.dx_tail == nt.dxn && c == ' ') return;
             nt.dx_tail--;
@@ -210,14 +218,15 @@ function navtex_output_char(c)
    }
    
    navtex_console_status_msg_p.s = encodeURIComponent(c);
+   nt.log_txt += kiwi_remove_ANSI_escape_sequences(kiwi_decodeURIComponent('NAVTEX', c));
+
+   // kiwi_output_msg() does decodeURIComponent()
    kiwi_output_msg('id-navtex-console-msgs', 'id-navtex-console-msg', navtex_console_status_msg_p);
 }
 
-var navtex_jnx;
-
 function navtex_audio_data_cb(samps, nsamps)
 {
-   navtex_jnx.process_data(samps, nsamps);
+   nt.jnx.process_data(samps, nsamps);
 }
 
 var navtex_canvas;
@@ -225,65 +234,18 @@ var navtex_canvas;
 // www.dxinfocentre.com/navtex.htm
 // www.dxinfocentre.com/maritimesafetyinfo.htm
 
-var navtex_europe = {
-   "NE Atl":  [],
-   "I XIX-S": [ 490, 518 ],
-   
-   "Med": [],
-   "III":   [ 490, 518 ]
-};
+var navtex_menu_s = [ 'NAVTEX MF', 'NAVTEX HF', 'DSC HF' ];
 
-var navtex_asia_pac = {
-   "Asia S":  [],
-   "XI-S": [ 490, 518 ],
-
-   "Asia N":  [],
-   "XI-N": [ 424, 490, 518 ],
-
-   "Bering":  [],
-   "XIII": [ 518, 3165 ],
-
-   "Aus/NZ":  [],
-   "X XIV": [ ],
-   "None": [ ]
-};
-
-var navtex_americas = {
-   "NW Atl":  [],
-   "IV": [ 472, 490, 518 ],
-
-   "W N.Am":  [],
-   "XII-N": [ 426, 518 ],
-
-   "HI, C.Am":  [],
-   "XII-S XVI": [ 490, 518 ],
-
-   "W S.Am":  [],
-   "XV": [ 490, 518 ],
-
-   "E. S.Am":  [],
-   "V VI": [ 490, 518 ]
-};
-
-var navtex_africa = {
-   "W Africa":  [],
-   "II": [ 490, 500, 518 ],
-
-   "S Africa":  [],
-   "VII": [ 518 ],
-
-   "Indian O":  [],
-   "VIII": [ 490, 518 ],
-
-   "M East":  [],
-   "IX": [ 490, 518 ]
+var navtex_MF = {
+   "International": [ 518 ],
+   "National": [ 490 ],
+   "Other": [ 424, 426, 472, 500 ]
 };
 
 var navtex_HF = {
-   "Navtex":  [],
    "Main":  [ 4209.5 ],
    "NBDP": [ 4210, 6314, 8416.5, 12779, 16806.5, 19680.5, 22376 ],
-   "Aux":  [ 4212.5, 4215, 4228, 4241, 4255, 4323, 4560,
+   "Aux":  [ 3165, 4212.5, 4215, 4228, 4241, 4255, 4323, 4560,
          6326, 6328, 6360.5, 6405, 6425, 6448, 6460,
          8417.5, 8424, 8425.5, 8431, 8431.5, 8433, 8451, 8454, 8473, 8580, 8595, 8643,
          12581.5, 12599.5, 12603, 12631, 12637.5, 12654, 12709.9, 12729, 12799.5, 12825, 12877.5, 13050,
@@ -291,24 +253,30 @@ var navtex_HF = {
       ]
 };
 
+var DSC_HF = {
+   "Distress &amp;_Urgency": [ 2187.5, 4207.5, 6312, 8414.5, 12577, 16804.5 ],
+   "Ship/ship_calling": [ 2177 ]
+};
+
 var navtex_mode_s = [ 'decode', 'DX', 'scope' ];
 
 function navtex_controls_setup()
 {
+   nt.th = nt.dataH;
 	nt.saved_mode = ext_get_mode();
 
-	navtex_jnx = new JNX();
-	navtex_jnx.setup_values(ext_sample_rate(), nt.cf, nt.shift, nt.baud, nt.framing, nt.inverted, nt.encoding);
-	//w3_console.log(navtex_jnx, 'JNX');
-	navtex_jnx.set_baud_error_cb(navtex_baud_error);
-	navtex_jnx.set_output_char_cb(navtex_output_char);
+	nt.jnx = new JNX();
+	nt.freq = ext_get_freq()/1e3;
+	//w3_console.log(nt.jnx, 'nt.jnx');
+	nt.jnx.set_baud_error_cb(navtex_baud_error);
+	nt.jnx.set_output_char_cb(navtex_output_char);
 
    var data_html =
       time_display_html('navtex') +
       
-      w3_div('id-navtex-data|width:'+ px(nt.lhs+1024) +'; height:200px; overflow:hidden; position:relative; background-color:black;',
-         '<canvas id="id-navtex-canvas" width="'+ (nt.lhs+1024) +'" height="200" style="left:0; position:absolute"></canvas>',
-			w3_div('id-navtex-console-msg w3-text-output w3-scroll-down w3-small w3-text-black|left:'+ px(nt.lhs) +'; width:1024px; height:200px; position:relative; overflow-x:hidden;',
+      w3_div('id-navtex-data|width:'+ px(nt.lhs+1024) +'; height:'+ px(nt.dataH) +'; overflow:hidden; position:relative; background-color:black;',
+         '<canvas id="id-navtex-canvas" width='+ dq(nt.lhs+1024) +' height='+ dq(nt.dataH) +' style="left:0; position:absolute"></canvas>',
+			w3_div('id-navtex-console-msg w3-text-output w3-scroll-down w3-small w3-text-black|left:'+ px(nt.lhs) +'; width:1024px; position:relative; overflow-x:hidden;',
 			   '<pre><code id="id-navtex-console-msgs"></code></pre>'
 			)
       );
@@ -317,54 +285,91 @@ function navtex_controls_setup()
 		w3_div('id-navtex-controls w3-text-white',
 			w3_divs('/w3-tspace-8',
             w3_col_percent('',
-				   w3_div('w3-medium w3-text-aqua', '<b><a href="https://en.wikipedia.org/wiki/Navtex" target="_blank">Navtex</a> decoder</b>'), 45,
+				   w3_div('w3-medium w3-text-aqua', '<b><a href="https://en.wikipedia.org/wiki/Navtex" target="_blank">NAVTEX</a> / ' +
+				      '<a href="https://en.wikipedia.org/wiki/Digital_selective_calling" target="_blank">DSC</a> decoder</b>'), 45,
 					w3_div('', 'From <b><a href="https://arachnoid.com/JNX/index.html" target="_blank">JNX</a></b> by P. Lutus &copy; 2011'), 55
 				),
 				
             w3_col_percent('',
-               w3_div('id-navtex-area w3-text-css-yellow', '&nbsp;'), 45,
-               w3_div('', 'dxinfocentre.com schedules: ' +
+               w3_div('id-navtex-station w3-text-css-yellow', '&nbsp;'), 50,
+               w3_div('', 'NAVTEX schedules: ' +
                   '<a href="http://www.dxinfocentre.com/navtex.htm" target="_blank">MF</a>, ' +
-                  '<a href="http://www.dxinfocentre.com/maritimesafetyinfo.htm" target="_blank">HF</a>'), 55
+                  '<a href="http://www.dxinfocentre.com/maritimesafetyinfo.htm" target="_blank">HF</a>'), 50
             ),
 
-				w3_col_percent('',
-               w3_select_hier('w3-text-red', 'Europe', 'select', 'nt.menu0', nt.menu0, navtex_europe, 'navtex_pre_select_cb'), 20,
-               w3_select_hier('w3-text-red', 'Asia/Pacific', 'select', 'nt.menu1', nt.menu1, navtex_asia_pac, 'navtex_pre_select_cb'), 20,
-               w3_select_hier('w3-text-red', 'Americas', 'select', 'nt.menu2', nt.menu2, navtex_americas, 'navtex_pre_select_cb'), 20,
-               w3_select_hier('w3-text-red', 'Africa', 'select', 'nt.menu3', nt.menu3, navtex_africa, 'navtex_pre_select_cb'), 20,
-               w3_select_hier('w3-text-red', 'HF', 'select', 'nt.menu4', nt.menu4, navtex_HF, 'navtex_pre_select_cb'), 20
+				w3_inline('/w3-margin-between-16',
+               w3_select_hier('w3-text-red', 'NAVTEX MF', 'select', 'nt.menu0', nt.menu0, navtex_MF, 'navtex_pre_select_cb'),
+               w3_select_hier('w3-text-red', 'NAVTEX HF', 'select', 'nt.menu1', nt.menu1, navtex_HF, 'navtex_pre_select_cb'),
+               w3_select_hier('w3-text-red', 'DSC HF', 'select', 'nt.menu2', nt.menu2, DSC_HF, 'navtex_pre_select_cb')
             ),
 
-            w3_inline('',
-					w3_button('w3-padding-smaller', 'Next', 'w3_select_next_prev_cb', { dir:w3_MENU_NEXT, id:'nt.menu', func:'navtex_pre_select_cb' }),
-					w3_button('w3-margin-left w3-padding-smaller', 'Prev', 'w3_select_next_prev_cb', { dir:w3_MENU_PREV, id:'nt.menu', func:'navtex_pre_select_cb' }),
+            w3_inline('/w3-margin-between-16',
+               w3_button('w3-padding-smaller', 'Next', 'w3_select_next_prev_cb', { dir:w3_MENU_NEXT, id:'nt.menu', func:'navtex_pre_select_cb' }),
+               w3_button('w3-padding-smaller', 'Prev', 'w3_select_next_prev_cb', { dir:w3_MENU_PREV, id:'nt.menu', func:'navtex_pre_select_cb' }),
 
-               w3_select('w3-margin-left w3-text-red', '', 'mode', 'nt.mode', 0, navtex_mode_s, 'navtex_mode_cb'),
+               w3_select('w3-text-red', '', 'mode', 'nt.mode', 0, navtex_mode_s, 'navtex_mode_cb'),
 
-               w3_inline('id-navtex-decode/',
-                  w3_button('w3-margin-left w3-padding-smaller', 'Clear', 'navtex_clear_cb', 0),
-                  w3_checkbox('w3-margin-left/w3-label-inline w3-label-not-bold/', 'invert', 'nt.invert', nt.invert, 'navtex_invert_cb')
+               w3_inline('',     // because of /w3-margin-between-16 above
+                  w3_inline('id-navtex-decode/',
+                     w3_button('w3-padding-smaller w3-css-yellow', 'Clear', 'navtex_clear_button_cb', 0),
+                     w3_checkbox('w3-margin-left/w3-label-inline w3-label-not-bold/', 'inverted', 'nt.inverted', nt.inverted, 'navtex_inverted_cb')
+                  ),
+
+                  w3_inline('id-navtex-scope w3-hide/',     // so w3-margin-between-16 works when items below have w3-hide
+                     w3_button('w3-padding-smaller', 'Single', 'navtex_single_cb', 0)
+                  )
                ),
+   
+               w3_button('id-navtex-log w3-padding-smaller w3-purple', 'Log', 'navtex_log_cb'),
 
-               w3_inline('id-navtex-scope w3-hide/',
-                  w3_button('w3-margin-left w3-padding-smaller', 'Single', 'navtex_single_cb', 0)
-               )
+               cfg.navtex.test_file? w3_button('w3-padding-smaller w3-aqua', 'Test', 'navtex_test_cb') : '',
+
+               w3_input('id-navtex-log-mins/w3-label-not-bold/w3-ext-retain-input-focus|padding:0;width:auto|size=4',
+                  'log min', 'nt.log_mins', nt.log_mins, 'navtex_log_mins_cb')
             )
 			)
 		);
 	
 	ext_panel_show(controls_html, data_html, null);
 	time_display_setup('navtex');
-
 	navtex_canvas = w3_el('id-navtex-canvas');
 	navtex_canvas.ctx = navtex_canvas.getContext("2d");
+
+   // URL params that need to be setup after controls instantiated
+   nt.url_params = ext_param();
+	console.log('NAVTEX url_params='+ p);
+	if (nt.url_params) {
+      p = nt.url_params.split(',');
+      p.forEach(function(a, i) {
+         //console.log('NAVTEX param2 <'+ a +'>');
+         var r;
+         if (w3_ext_param('dx', a).match) {
+            navtex_mode_cb('id-nt.mode', 1);
+         } else
+         if (w3_ext_param('scope', a).match) {
+            navtex_mode_cb('id-nt.mode', 2);
+         } else
+         if ((r = w3_ext_param('log_time', a)).match) {
+            if (isNumber(r.num)) {
+               navtex_log_mins_cb('id-nt.log_mins', r.num);
+            }
+         } else
+         if (cfg.navtex.test_file && w3_ext_param('test', a).match) {
+            ext_send('SET test');
+         } else
+         if (w3_ext_param('help', a).match) {
+            extint_help_click();
+         }
+      });
+   }
+
+	navtex_setup();
 	navtex_baud_error_init();
 
-	ext_set_controls_width_height(550, 150);
+   ext_set_data_height(nt.dataH);
+	ext_set_controls_width_height(nt.ctrlW, nt.ctrlH);
 	
-	var p = ext_param();
-	console.log('Navtex p='+ p);
+	var p = nt.url_params;
 	var freq = parseFloat(p);
 	if (freq) {
 	   // select matching menu item frequency
@@ -386,38 +391,93 @@ function navtex_controls_setup()
 	ext_register_audio_data_cb(navtex_audio_data_cb);
 }
 
+function navtex_setup()
+{
+	nt.freq = ext_get_freq()/1e3;
+   console.log('NAVTEX/DSC SETUP freq='+ nt.freq +' cf='+ nt.cf +' shift='+ nt.shift  +' baud='+ nt.baud +' framing='+ nt.framing +' enc='+ nt.encoding +' inv='+ nt.inverted);
+	nt.jnx.setup_values(ext_sample_rate(), nt.cf, nt.shift, nt.baud, nt.framing, nt.inverted, nt.encoding);
+   w3_checkbox_set('nt.inverted', nt.inverted);
+   navtex_crosshairs(1);
+}
+
+function navtex_crosshairs(vis)
+{
+   var ct = canvas_annotation.ctx;
+   ct.clearRect(0,0, window.innerWidth,24);
+   
+   if (vis && ext_get_zoom() >= 10) {
+      var f = ext_get_freq();
+      var f_range = get_visible_freq_range();
+      //console.log(f_range);
+      var Lpx = scale_px_from_freq(f - nt.shift/2, f_range);
+      var Rpx = scale_px_from_freq(f + nt.shift/2, f_range);
+      //console.log('NAVTEX crosshairs f='+ f +' Lpx='+ Lpx +' Rpx='+ Rpx);
+      var d = 3;
+      for (var i = 0; i < 6; i++) {
+         var y = i*d;
+         ct.fillStyle = (i&1)? 'black' : 'white';
+         ct.fillRect(Lpx-d,y, d,d);
+         ct.fillRect(Rpx-d,y, d,d);
+         ct.fillStyle = (i&1)? 'white' : 'black';
+         ct.fillRect(Lpx,y, d,d);
+         ct.fillRect(Rpx,y, d,d);
+      }
+   }
+}
+
 function navtex_pre_select_cb(path, idx, first)
 {
    if (first) return;
 	idx = +idx;
 	var menu_n = parseInt(path.split('nt.menu')[1]);
    //console.log('navtex_pre_select_cb path='+ path +' idx='+ idx +' menu_n='+ menu_n);
+   var header;
+   var cont = 0;
+   var found = false;
 
 	w3_select_enum(path, function(option) {
+	   if (found) return;
 	   //console.log('navtex_pre_select_cb opt.val='+ option.value +' opt.disabled='+ option.disabled +' opt.inner='+ option.innerHTML);
 	   
-	   if (option.disabled) {
-	      nt.prev_disabled = nt.disabled;
-	      nt.disabled = option;
+	   if (option.disabled && option.value != -1) {
+	      if (cont)
+	         header = header +' '+ option.innerHTML;
+	      else
+	         header = option.innerHTML;
+	      cont = 1;
+	   } else {
+	      cont = 0;
 	   }
-	   
-	   if (option.value == idx && !option.disabled) {
-	      nt.freq_s = option.innerHTML;
-	      //console.log('navtex_pre_select_cb opt.val='+ option.value +' freq_s='+ nt.freq_s);
-         nt.freq = parseFloat(nt.freq_s);
-         ext_tune(nt.freq, 'cw', ext_zoom.ABS, 12);
 
-         var pb_half = nt.shift/2 + 50;
-	      //console.log('navtex_pre_select_cb cf='+ nt.cf +' pb_half='+ pb_half);
-         ext_set_passband(nt.cf - pb_half, nt.cf + pb_half);
-         ext_tune(nt.freq, 'cw', ext_zoom.ABS, 12);      // set again to get correct freq given new passband
+	   if (option.value != idx || option.disabled) return;
+	   found = true;
+      nt.freq_s = option.innerHTML;
+      //console.log('navtex_pre_select_cb opt.val='+ option.value +' freq_s='+ nt.freq_s);
+      nt.freq = parseFloat(nt.freq_s);
+      ext_tune(nt.freq, 'cw', ext_zoom.ABS, 12);
+      if (navtex_menu_s[menu_n].includes('DSC')) {
+         nt.type = nt.TYPE_DSC;
+         nt.framing = '7/3';
+         nt.encoding = 'DSC';
+         nt.inverted = 1;
+      } else {
+         nt.type = nt.TYPE_NAVTEX;
+         nt.framing = '4/7';
+         nt.encoding = 'CCIR476';
+         nt.inverted = 0;
+      }
+      navtex_setup();
 
-         // if called directly instead of from menu callback, select menu item
-         w3_select_value(path, idx);
+      var pb_half = nt.shift/2 + 50;
+      //console.log('navtex_pre_select_cb cf='+ nt.cf +' pb_half='+ pb_half);
+      ext_set_passband(nt.cf - pb_half, nt.cf + pb_half);
+      ext_tune(nt.freq, 'cw', ext_zoom.ABS, 12);      // set again to get correct freq given new passband
 
-         w3_el('id-navtex-area').innerHTML =
-            '<b>Area: '+ nt.prev_disabled.innerHTML +', '+ nt.disabled.innerHTML +'</b>';
-	   }
+      // if called directly instead of from menu callback, select menu item
+      w3_select_value(path, idx);
+
+      w3_el('id-navtex-station').innerHTML =
+         '<b>'+ navtex_menu_s[menu_n] +', '+ header +'</b>';
 	});
 
    // reset other menus
@@ -433,9 +493,40 @@ function navtex_clear_menus(except)
    }
 }
 
+function navtex_log_mins_cb(path, val)
+{
+   nt.log_mins = w3_clamp(+val, 0, 24*60, 0);
+   console.log('navtex_log_mins_cb path='+ path +' val='+ val +' log_mins='+ nt.log_mins);
+	w3_set_value(path, nt.log_mins);
+
+   kiwi_clearInterval(nt.log_interval);
+   if (nt.log_mins != 0) {
+      console.log('NAVTEX logging..');
+      nt.log_interval = setInterval(function() { navtex_log_cb(); }, nt.log_mins * 60000);
+   }
+}
+
+function navtex_log_cb()
+{
+   var ts = kiwi_host() +'_'+ new Date().toISOString().replace(/:/g, '_').replace(/\.[0-9]+Z$/, 'Z') +'_'+ w3_el('id-freq-input').value +'_'+ cur_mode;
+   var txt = new Blob([nt.log_txt], { type: 'text/plain' });
+   var a = document.createElement('a');
+   a.style = 'display: none';
+   a.href = window.URL.createObjectURL(txt);
+   a.download = 'NAVTEX.'+ ts +'.log.txt';
+   document.body.appendChild(a);
+   console.log('navtex_log: '+ a.download);
+   a.click();
+   window.URL.revokeObjectURL(a.href);
+   document.body.removeChild(a);
+}
+
 function NAVTEX_environment_changed(changed)
 {
    //w3_console.log(changed, 'NAVTEX_environment_changed');
+   if (!changed.passband_screen_location) return;
+   navtex_crosshairs(1);
+
    if (!changed.freq && !changed.mode) return;
 
    // reset all frequency menus when frequency etc. is changed by some other means (direct entry, WF click, etc.)
@@ -445,7 +536,7 @@ function NAVTEX_environment_changed(changed)
    //console.log('Navtex ENV nt.freq='+ nt.freq +' dsp_freq='+ dsp_freq);
    if (nt.freq != dsp_freq || mode != 'cw') {
       navtex_clear_menus();
-      w3_el('id-navtex-area').innerHTML = '&nbsp;';
+      w3_el('id-navtex-station').innerHTML = '&nbsp;';
    }
 }
 
@@ -472,26 +563,29 @@ function navtex_mode_cb(path, idx, first)
       break;
    }
 
-   navtex_jnx.set_scope_cb(nt.scope? navtex_scope : null);
+   nt.jnx.set_scope_cb(nt.scope? navtex_scope : null);
 
    w3_show_hide_inline('id-navtex-decode', !nt.scope);
    w3_show_hide('id-navtex-console-msg', !nt.scope);
    w3_show_hide_inline('id-navtex-scope', nt.scope);
 }
 
-function navtex_clear_cb(path, idx, first)
+function navtex_clear_button_cb(path, idx, first)
 {
    if (first) return;
    navtex_console_status_msg_p.s = encodeURIComponent('\f');
    kiwi_output_msg('id-navtex-console-msgs', 'id-navtex-console-msg', navtex_console_status_msg_p);
+   nt.log_txt = '';
 }
 
-function navtex_invert_cb(path, checked, first)
+function navtex_inverted_cb(path, checked, first)
 {
+   if (first) return;
    checked = checked? 1:0;
-   nt.invert = checked;
+   nt.inverted = checked;
    w3_checkbox_set(path, checked);
-   navtex_jnx.invert = checked;
+   nt.jnx.invert = checked;
+   navtex_setup();
 }
 
 function navtex_single_cb(path, idx, first)
@@ -503,14 +597,27 @@ function navtex_single_cb(path, idx, first)
    w3_innerHTML(path, nt.single? 'Run' : 'Single');
 }
 
+function navtex_test_cb(path, idx, first)
+{
+   ext_send('SET test');
+}
+
 function NAVTEX_blur()
 {
 	ext_unregister_audio_data_cb();
 	ext_set_mode(nt.saved_mode);
+   navtex_crosshairs(0);
 }
 
 // called to display HTML for configuration parameters in admin interface
 function NAVTEX_config_html()
 {
-   ext_config_html(nt, 'navtex', 'Navtex', 'Navtex configuration');
+   var s =
+      w3_inline_percent('w3-container',
+         w3_div('w3-restart',
+            w3_input_get('', 'Test filename', 'navtex.test_file', 'w3_string_set_cfg_cb', 'NAVTEX.test.12k.au')
+         ), 40
+      );
+
+   ext_config_html(nt, 'navtex', 'NAVTEX', 'NAVTEX configuration', s);
 }
