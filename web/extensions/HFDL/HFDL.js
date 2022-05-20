@@ -302,7 +302,7 @@ function hfdl_recv(data)
 function hfdl_decoder_output_chars(c)
 {
    hfdl.console_status_msg_p.s = c;     // NB: already encoded on C-side
-   hfdl.log_txt += kiwi_remove_ANSI_escape_sequences(kiwi_decodeURIComponent('HFDL', c));
+   hfdl.log_txt += kiwi_remove_escape_sequences(kiwi_decodeURIComponent('HFDL', c));
 
    // kiwi_output_msg() does decodeURIComponent()
    kiwi_output_msg('id-hfdl-console-msgs', 'id-hfdl-console-msg', hfdl.console_status_msg_p);
