@@ -47,10 +47,18 @@ function DSC() {
    t.CAT_URGENCY = 110;
    t.CAT_DISTRESS = 112;
    
+   t.CMD1_POLLING = 103;
+   t.CMD1_J3E_TP = 109;
    t.CMD1_DISTRESS_ACK = 110;
    t.CMD1_DISTRESS_ALERT_RELAY = 112;
+   t.CMD1_F1B_FEC = 113;
    t.CMD1_TEST = 118;
-   t.CMD1_POLLING = 103;
+   t.CMD1_NOP = 126;
+
+   t.CMD2_BUSY = 102;
+   t.CMD2_NOT_CONFLICT = 110;
+   t.CMD2_MED_TRANSPORTS = 111;
+   t.CMD2_NOP = 126;
    
    t.ARQ = 117;
    t.ABQ = 122;
@@ -160,14 +168,14 @@ DSC.prototype.process_msg = function() {
    
    var format = function() {
       var fmt = check('A', 4, 'format');
-      fmt.s = fmt.err? 'fmt?': t.format_s[fmt.sym_s];
+      fmt.s = fmt.err? 'fmtFEC': t.format_s[fmt.sym_s];
       fmt.s = fmt.s || (fmt.n +'?');
       return fmt;
    };
    
    var category = function() {
       var cat = check('C', 2, 'category');
-      cat.s = cat.err? 'cat?' : t.category_s[cat.sym_s];
+      cat.s = cat.err? 'catFEC' : t.category_s[cat.sym_s];
       cat.s = cat.s || (cat.n +'?');
       return cat;
    };
@@ -188,7 +196,7 @@ DSC.prototype.process_msg = function() {
       var c56 = check(sym_name +'3', 2, id);
       var c78 = check(sym_name +'4', 2, id);
       var c90 = check(sym_name +'5', 2, id);    // tenth digit always supposed to be zero
-      if (c12.err || c34.err || c56.err || c78.err || c90.err) return { s:'call?', err:1 };
+      if (c12.err || c34.err || c56.err || c78.err || c90.err) return { s:'callFEC', err:1 };
       var _12 = c12.sym_z;
       var _34 = c34.sym_z;
       var _56 = c56.sym_z;
@@ -227,12 +235,16 @@ DSC.prototype.process_msg = function() {
       // FIXME: enforce 2/4 min (vs 1/4) detection of fmt char against false alarms
       case t.FMT_DISTRESS:
       case t.FMT_ALL_SHIPS:
+         s = _12 + _34 + _56789;
          break;
       
+      // FIXME
       case t.FMT_GEO_AREA:
+         s = _12 + _34 + _56789;
          break;
       
       default:
+         s = _12 + _34 + _56789;
          break;
       }
 
@@ -241,7 +253,7 @@ DSC.prototype.process_msg = function() {
    
    var command = function(sym_name, id) {
       var cmd = check(sym_name, 2, id);
-      cmd.s = cmd.err? 'cmd?' : ((cmd.n == t.NOP)? '*' : cmd.sym_s);
+      cmd.s = cmd.err? 'cmdFEC' : ((cmd.n == t.NOP)? '*' : cmd.sym_s);
       return cmd;
    };
    
@@ -249,7 +261,7 @@ DSC.prototype.process_msg = function() {
       var freq1 = check(sym_name +'1', 2, id);
       var freq2 = check(sym_name +'2', 2, id);
       var freq3 = check(sym_name +'3', 2, id);
-      if (freq1.err || freq2.err || freq3.err) return { s:'freq?', err:1 };
+      if (freq1.err || freq2.err || freq3.err) return { s:'freqFEC', err:1 };
       if (freq1.n == t.NOP) freq1.sym_z = '*';
       if (freq2.n == t.NOP) freq2.sym_z = '*';
       if (freq3.n == t.NOP) freq3.sym_z = '*';
@@ -258,14 +270,14 @@ DSC.prototype.process_msg = function() {
    
    var end_of_sequence = function() {
       var eos = check('eos', 4, 'EOS');
-      eos.s = eos.err? 'eos?' : ((eos.n == t.EOS)? 'EOS' : ((eos.n == t.ARQ)? 'ARQ' : ((eos.n == t.ABQ)? 'ABQ' : 'eos?')));
+      eos.s = eos.err? 'eosFEC' : ((eos.n == t.EOS)? 'EOS' : ((eos.n == t.ARQ)? 'ARQ' : ((eos.n == t.ABQ)? 'ABQ' : 'eos?')));
       return eos;
    };
    
    var error_check_char = function() {
       var ecc = check('ecc', 2, 'ECC');
       // FIXME
-      ecc.s = ecc.err? 'ecc?' : '(fixme)';
+      ecc.s = ecc.err? 'eccFEC' : '(fixme)';
       return ecc;
    };
    
@@ -304,6 +316,10 @@ DSC.prototype.process_msg = function() {
       return (s +', '+ from.s +' => '+ to.s);
    };
    
+   var from_toArea = function(s) {
+      return (s +', '+ from.s +' => '+ to.s);
+   };
+   
    // A1-4.1: distress alerts
    // FMT_DISTRESS only used here, cat unused
    if (fmt.n == t.FMT_DISTRESS && eos.n == t.EOS) {
@@ -336,13 +352,17 @@ DSC.prototype.process_msg = function() {
          case t.CMD1_TEST: s = from_to(ack('Test')); break;
          default: s = '4.5'; break;
       }
-      s = '4.5';
    } else
 
    // A1-4.6: urgency & safety calls, geo areas
    // differs from above in fmt
    if ((cat.n == t.CAT_SAFETY || cat.n == t.CAT_URGENCY) && fmt.n == t.FMT_GEO_AREA && eos.n == t.EOS) {
-      s = '4.7';
+      s = '4.6';
+      switch (cmd1.n) {
+         // FIXME: decode freq
+         case t.CMD1_J3E_TP: if (cmd2.n == t.CMD2_NOP) s = from_toArea('J3E TP'); break;
+         case t.CMD1_F1B_FEC: if (cmd2.n == t.CMD2_NOP) s = from_toArea('F1B FEC'); break;
+      }
    } else
 
    // A1-4.7: urgency & safety calls, individual calls and acks
@@ -390,7 +410,8 @@ DSC.prototype.process_msg = function() {
       s = color(ansi.BLUE, 'FEC FAIL');
    } else {
       if (s.startsWith('4.'))
-         s = color(ansi.MAGENTA, 'FIXME '+ s) +' cat='+ cat.s +' fmt='+ fmt.s +' cmd1='+ cmd1.s+ ' cmd2='+ cmd2.s +' eos='+ eos.s;
+         s = color(ansi.MAGENTA, 'FIXME '+ s) +' cat='+ cat.s +' fmt='+ fmt.s +' cmd1='+ cmd1.s+ ' cmd2='+ cmd2.s +
+            ' from='+ from.s +' to='+ to.s +' freq1='+ freq1.s+ ' freq2='+ freq2.s +' eos='+ eos.s +' ecc='+ ecc.s;
       else
          s = type() +' '+ s;
    }
