@@ -1754,7 +1754,12 @@ function w3_link(psa, url, inner, title, cb, cb_param)
 	var onclick = cb? (' onclick="w3int_link_click(event, '+ sq(cb) +', '+ sq(cb_param) +')"') : '';
 
 	var p = w3_psa(psa, pointer, '', 'href='+ dq(qual_url) + target + title + onclick);
-	var s = '<a '+ p +'>'+ inner +'</a>';
+
+   // escape HTML '<' and '>' so they work with kiwi_output_msg()
+	var esc_html = psa.includes('w3-esc-html');
+	var lt = esc_html? kiwi.esc_lt : '<';
+	var gt = esc_html? kiwi.esc_gt : '>';
+	var s = lt +'a '+ p + gt + inner + lt +'/a'+ gt;
 	//console.log(s);
 	return s;
 }

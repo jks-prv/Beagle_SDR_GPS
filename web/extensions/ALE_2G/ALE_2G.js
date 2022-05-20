@@ -248,7 +248,7 @@ function ale_2g_recording_stop()
 function ale_2g_decoder_output_chars(c)
 {
    ale.console_status_msg_p.s = c;     // NB: already encoded on C-side
-   ale.log_txt += kiwi_remove_ANSI_escape_sequences(kiwi_decodeURIComponent('ALE_2G', c));
+   ale.log_txt += kiwi_remove_escape_sequences(kiwi_decodeURIComponent('ALE_2G', c));
 
    // kiwi_output_msg() does decodeURIComponent()
    kiwi_output_msg('id-ale_2g-console-msgs', 'id-ale_2g-console-msg', ale.console_status_msg_p);
