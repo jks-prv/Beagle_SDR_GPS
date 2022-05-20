@@ -606,7 +606,7 @@ fail:
 		
 		asprintf(&sb,
 			"status=%s\n%soffline=%s\n"
-			"name=%s\nsdr_hw=KiwiSDR v%d.%d%s%s%s%s%s%s%s%s ⁣\n"
+			"name=%s\nsdr_hw=KiwiSDR v%d.%dt%s%s%s%s%s%s%s%s ⁣\n"
 			"op_email=%s\nbands=%.0f-%.0f\nfreq_offset=%.3f\nusers=%d\nusers_max=%d\navatar_ctime=%u\n"
 			"gps=%s\ngps_good=%d\nfixes=%d\nfixes_min=%d\nfixes_hour=%d\n"
 			"tdoa_id=%s\ntdoa_ch=%d\n"
