@@ -218,7 +218,7 @@ function navtex_output_char(c)
    }
    
    navtex_console_status_msg_p.s = encodeURIComponent(c);
-   nt.log_txt += kiwi_remove_ANSI_escape_sequences(kiwi_decodeURIComponent('NAVTEX', c));
+   nt.log_txt += kiwi_remove_escape_sequences(kiwi_decodeURIComponent('NAVTEX', c));
 
    // kiwi_output_msg() does decodeURIComponent()
    kiwi_output_msg('id-navtex-console-msgs', 'id-navtex-console-msg', navtex_console_status_msg_p);
@@ -454,7 +454,7 @@ function navtex_pre_select_cb(path, idx, first)
       nt.freq_s = option.innerHTML;
       //console.log('navtex_pre_select_cb opt.val='+ option.value +' freq_s='+ nt.freq_s);
       nt.freq = parseFloat(nt.freq_s);
-      ext_tune(nt.freq, 'cw', ext_zoom.ABS, 12);
+      ext_tune(nt.freq, 'cw', ext_zoom.ABS, 13);
       if (navtex_menu_s[menu_n].includes('DSC')) {
          nt.type = nt.TYPE_DSC;
          nt.framing = '7/3';
@@ -471,7 +471,7 @@ function navtex_pre_select_cb(path, idx, first)
       var pb_half = nt.shift/2 + 50;
       //console.log('navtex_pre_select_cb cf='+ nt.cf +' pb_half='+ pb_half);
       ext_set_passband(nt.cf - pb_half, nt.cf + pb_half);
-      ext_tune(nt.freq, 'cw', ext_zoom.ABS, 12);      // set again to get correct freq given new passband
+      ext_tune(nt.freq, 'cw', ext_zoom.ABS, 13);      // set again to get correct freq given new passband
 
       // if called directly instead of from menu callback, select menu item
       w3_select_value(path, idx);

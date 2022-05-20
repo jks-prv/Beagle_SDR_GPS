@@ -9,7 +9,7 @@ function DSC() {
    
    t.start_bit = 0;
    t.syms = [];
-   t.seq = 3;
+   t.seq = 0;
    t.LETTERS = -1;
    t.FIGURES = -1;
    t.synced = 0;
@@ -95,8 +95,13 @@ function DSC() {
    };
 
    t.DX_w = (edc(t.DX) << 7) | t.DX;
-   t.RX7_w = (edc(t.RX7) << 7) | t.RX7;
-   if (t.dbg) console.log('DSC SYNC DX_w='+ t.DX_w.toHex(-3) +' RX7_w='+ t.RX7_w.toHex(-3));
+   t.svec = [];
+   var rx = t.RX7;
+   for (var i = 0; i < 12; i++) {
+      t.svec[i] = (i&1)? ((edc(rx) << 7) | rx) : t.DX_w;
+      if (i&1) rx--;
+   }
+   //console.log(t.svec);
 
    t.format_s = {
       102: 'geo-area', 112: '*distress*', 114: 'com-int', 116: 'all-ships', 120: 'indiv-sta', 121: 'resv', 123: 'semi-auto'
@@ -217,7 +222,8 @@ DSC.prototype.process_msg = function() {
          //               123 45 67 89
          if (iden1 >= 2 && iden1 <= 7) {
             var mid_s = _12 + _34[0];
-            s = mid_s + _34[1] + _56789 +' (Vessel, '+ mid(mid_s) +')';
+            var mmsi_s = mid_s + _34[1] + _56789;
+            s = w3_link('w3-esc-html w3-link-darker-color', 'www.marinetraffic.com/en/ais/details/ships/mmsi:'+ mmsi_s, mmsi_s) +' (Flag: '+ mid(mid_s) +')';
          } else
       
          // coast station: 00 MID xx xx
@@ -226,7 +232,7 @@ DSC.prototype.process_msg = function() {
             var mid_s = _34 + _56[0];
             var coast_station = mmsi(_34 + _56789);
             coast_station = coast_station? (', '+ coast_station) : '';
-            s = _12 + mid_s + _56[1] + _78 + _90[0] +' (Coast Station, '+ mid(mid_s) + coast_station +')';
+            s = _12 + mid_s + _56[1] + _78 + _90[0] +' (Coast Station: '+ mid(mid_s) + coast_station +')';
          } else {
             s = _12 + _34 + _56789;
          }
@@ -402,7 +408,9 @@ DSC.prototype.process_msg = function() {
 
    if (dbgUs) {
       var ok = '$$ '+ (fec? 'FEC FAIL' : 'OK');
-      console.log(ok +' fmt='+ fmt.s +' to='+ to.s +' cat='+ cat.s +' from='+ from.s);
+      var to_s = kiwi_remove_escape_sequences(to.s);
+      var from_s = kiwi_remove_escape_sequences(from.s);
+      console.log(ok +' fmt='+ fmt.s +' to='+ to_s +' cat='+ cat.s +' from='+ from_s);
       console.log(ok +' cmd1='+ cmd1.s +' cmd2='+ cmd2.s +' freq1='+ freq1.s +' freq2='+ freq2.s +' eos='+ eos.s +' ecc='+ ecc.s + pe);
    }
 
@@ -431,8 +439,7 @@ DSC.prototype.code_to_char = function(code) {
 
 DSC.prototype.reset = function() {
    var t = this;
-   t.seq = 3;
-   t.syncA = t.syncB = t.syncC = 0;
+   t.syncA = t.syncB = t.syncC = t.syncD = t.syncE = 0;
 }
 
 DSC.prototype.get_nbits = function() {
@@ -465,16 +472,47 @@ DSC.prototype.search_sync = function(bit) {     // FIXME: match more cases, pass
    cout = t.syncC & 1;
    t.syncC = (t.syncC >> 1) & 0x3ff;
    t.syncC |= cin? 0x200:0;
-   
-   if (0) console.log(bit +' '+
-      t.syncA.toString(2).leadingZeros(10) + paren(t.syncA.toHex(-3)) +'|'+
-      t.syncB.toString(2).leadingZeros(10) + paren(t.syncB.toHex(-3)) +'|'+
-      t.syncC.toString(2).leadingZeros(10) + paren(t.syncC.toHex(-3)));
 
-   if (t.syncA == t.DX_w && t.syncB == t.RX7_w && t.syncC == t.DX_w) {
-      if (t.dbg) console.log('*SYNC*');
-      t.synced = 1;
-      return true;
+   cin = cout;
+   cout = t.syncD & 1;
+   t.syncD = (t.syncD >> 1) & 0x3ff;
+   t.syncD |= cin? 0x200:0;
+
+   cin = cout;
+   cout = t.syncE & 1;
+   t.syncE = (t.syncE >> 1) & 0x3ff;
+   t.syncE |= cin? 0x200:0;
+   
+   if (0) {
+      console.log(bit +' '+
+         t.syncA.toString(2).leadingZeros(10) + paren(t.syncA.toHex(-3)) +'|'+
+         t.syncB.toString(2).leadingZeros(10) + paren(t.syncB.toHex(-3)) +'|'+
+         t.syncC.toString(2).leadingZeros(10) + paren(t.syncC.toHex(-3)) +'|'+
+         t.syncD.toString(2).leadingZeros(10) + paren(t.syncD.toHex(-3)) +'|'+
+         t.syncE.toString(2).leadingZeros(10) + paren(t.syncE.toHex(-3)));
+      console.log('> '+
+         t.svec[1].toString(2).leadingZeros(10) + paren(t.svec[1].toHex(-3)) +'|'+
+         (0+0).toString(2).leadingZeros(10) + paren((0+0).toHex(-3)) +'|'+
+         t.svec[3].toString(2).leadingZeros(10) + paren(t.svec[3].toHex(-3)) +'|'+
+         (0+0).toString(2).leadingZeros(10) + paren((0+0).toHex(-3)) +'|'+
+         t.svec[5].toString(2).leadingZeros(10) + paren(t.svec[5].toHex(-3)));
+   }
+
+   for (var i = 0; i <= (12-3); i++) {
+      if (t.syncC == t.svec[i] && t.syncB == t.svec[i+1] && t.syncA == t.svec[i+2]) {
+         if (1 || t.dbg) console.log('SYNC-DRD-'+ i);
+         t.seq = i+3;
+         t.synced = 1;
+         return true;
+      }
+   }
+   for (var i = 1; i <= 7; i += 2) {
+      if (t.syncE == t.svec[i] && t.syncC == t.svec[i+2] && t.syncA == t.svec[i+4]) {
+         if (1 || t.dbg) console.log('SYNC-RRR-'+ i);
+         t.seq = i+5;
+         t.synced = 1;
+         return true;
+      }
    }
    
    t.synced = 0;
