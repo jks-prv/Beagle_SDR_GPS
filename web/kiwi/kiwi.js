@@ -998,7 +998,8 @@ function kiwi_output_msg(id, id_scroll, p)
          }
 		} else
 		
-		if ((c >= ' ' && c <= '~') || c == '\n') {
+		// let single-byte UTF-8 go through
+		if ((c >= ' ' && c <= '\xff') || c == '\n') {
 		   if (c == '<') {
 		      snew += '&lt;';
             p.col += p.inc;
