@@ -10,6 +10,8 @@ function DSC() {
    t.start_bit = 0;
    t.syms = [];
    t.seq = 0;
+   t.MSG_LEN_MIN = 62;
+   t.MSG_LEN_MAX = 80;
    t.LETTERS = -1;
    t.FIGURES = -1;
    t.synced = 0;
@@ -48,14 +50,21 @@ function DSC() {
    t.CAT_DISTRESS = 112;
    
    t.CMD1_POLLING = 103;
-   t.CMD1_J3E_TP = 109;
+   t.CMD1_UNABLE_COMPLY = 104;
+   t.CMD1_END_OF_CALL = 105;
+   t.CMD1_F1B_DATA = 106;
+   t.CMD1_J3E_RT = 109;
    t.CMD1_DISTRESS_ACK = 110;
    t.CMD1_DISTRESS_ALERT_RELAY = 112;
    t.CMD1_F1B_FEC = 113;
+   t.CMD1_F1B_ARQ = 115;
    t.CMD1_TEST = 118;
+   t.CMD1_POSITION = 121;
    t.CMD1_NOP = 126;
 
+   t.CMD2_UNABLE_FIRST = 100;
    t.CMD2_BUSY = 102;
+   t.CMD2_UNABLE_LAST = 109;
    t.CMD2_NOT_CONFLICT = 110;
    t.CMD2_MED_TRANSPORTS = 111;
    t.CMD2_NOP = 126;
@@ -113,6 +122,16 @@ function DSC() {
    
    t.MID_area = [ 'Europe', 'N.AM/C.AM', 'Asia', 'Oceania', 'Africa', 'S.AM' ];
    
+   //t.test = null;
+   // 4.6 geo freq
+   //t.test = [ { s:'A', n:t.FMT_GEO_AREA }, { s:'e1', n:t.CMD1_J3E_RT }, { s:'f1', n:12 }, { s:'f2', n:34 }, { s:'f3', n:56 }, { s:'eos', n:t.EOS } ];
+   // 4.7 freq
+   //t.test = [ { s:'A', n:t.FMT_INDIV_STA }, { s:'e1', n:t.CMD1_J3E_RT }, { s:'f1', n:02 }, { s:'f2', n:34 }, { s:'f3', n:56 }, { s:'g1', n:02 }, { s:'g2', n:78 }, { s:'g3', n:90 }, { s:'eos', n:t.ARQ } ];
+   // 4.9 unable
+   //t.test = [ { s:'A', n:t.FMT_INDIV_STA }, { s:'C', n:t.CAT_ROUTINE }, { s:'e1', n:t.CMD1_UNABLE_COMPLY }, { s:'e2', n:t.CMD2_UNABLE_FIRST }, { s:'f1', n:12 }, { s:'f2', n:34 }, { s:'f3', n:56 }, { s:'eos', n:t.ABQ } ];
+   // 4.9 position
+   //t.test = [ { s:'A', n:t.FMT_INDIV_STA }, { s:'C', n:t.CAT_ROUTINE }, { s:'e1', n:t.CMD1_J3E_RT }, { s:'f1', n:55 }, { s:'f2', n:21 }, { s:'f3', n:23 }, { s:'g1', n:41 }, { s:'g2', n:56 }, { s:'g3', n:78 }, { s:'eos', n:t.ABQ } ];
+   
    t.init_MID_MMSI();
    
    t.bc_err = [];
@@ -125,12 +144,33 @@ DSC.prototype.sym_by_sym_name = function(sym_name) {
    return { /*name:sym_name,*/ pos:pos, sym:t.syms[pos] };
 }
    
+DSC.prototype.output_msg = function(s) {
+   var t = this;
+   //toUTCString().substr(5,20)
+   return ((new Date()).toUTCString().substr(17,8) +'Z '+ (ext_get_freq()/1e3).toFixed(2) +' '+ s +'\n');
+}
+   
 DSC.prototype.process_msg = function() {
    var t = this;
    var i, s;
    var parity_errors = 0;
    
    var check = function(sym_name, repeats, id) {
+      
+      if (t.test) {
+         var hit = -1;
+         t.test.forEach(function(a, i) {
+            //console.log(sym_name +'|'+ a.s);
+            if (sym_name == a.s) {
+               hit = i;
+            }
+         });
+         if (hit != -1) {
+            var sym = t.test[hit].n;
+            console.log('TEST '+ sym_name +'='+ sym);
+            return { n:sym, sym_s:sym.toString(), z:sym.leadingZeros(2), nop:(sym == t.NOP), err:0 };
+         }
+      }
       
       // only consider symbols that don't have bit count errors
       var i, ck = [];
@@ -168,7 +208,10 @@ DSC.prototype.process_msg = function() {
       }
 
       if (empty) return { err:1 };
-      return { n:ck[0].sym, sym_s:ck[0].sym.toString(), sym_z:ck[0].sym.leadingZeros(2), err:err };
+      //console.log(sym_name +':'+ repeats);
+      //console.log(ck);
+      var sym = ck[0].sym;
+      return { n:sym, sym_s:sym.toString(), z:sym.leadingZeros(2), nop:(sym == t.NOP), err:err };
    };
    
    var format = function() {
@@ -202,11 +245,11 @@ DSC.prototype.process_msg = function() {
       var c78 = check(sym_name +'4', 2, id);
       var c90 = check(sym_name +'5', 2, id);    // tenth digit always supposed to be zero
       if (c12.err || c34.err || c56.err || c78.err || c90.err) return { s:'callFEC', err:1 };
-      var _12 = c12.sym_z;
-      var _34 = c34.sym_z;
-      var _56 = c56.sym_z;
-      var _78 = c78.sym_z;
-      var _90 = c90.sym_z;
+      var _12 = c12.z;
+      var _34 = c34.z;
+      var _56 = c56.z;
+      var _78 = c78.z;
+      var _90 = c90.z;
 
       // t.MID_area[iden-2]
       var iden1 = +_12[0];
@@ -214,8 +257,11 @@ DSC.prototype.process_msg = function() {
       var _56789 = _56 + _78 + _90[0];
 
       var s, err = 0;
+      
+      // FMT_GEO_AREA only applies to "from" address
+      var format = (fmt.n == t.FMT_GEO_AREA && sym_name == /* to */ 'd')? t.FMT_INDIV_STA : fmt.n;
 
-      switch (fmt.n) {
+      switch (format) {
       
       case t.FMT_INDIV_STA:
          // ship station: MID xx xx xx
@@ -223,7 +269,7 @@ DSC.prototype.process_msg = function() {
          if (iden1 >= 2 && iden1 <= 7) {
             var mid_s = _12 + _34[0];
             var mmsi_s = mid_s + _34[1] + _56789;
-            s = w3_link('w3-esc-html w3-link-darker-color', 'www.marinetraffic.com/en/ais/details/ships/mmsi:'+ mmsi_s, mmsi_s) +' (Flag: '+ mid(mid_s) +')';
+            s = w3_link('w3-esc-html w3-link-darker-color', 'www.marinetraffic.com/en/ais/details/ships/mmsi:'+ mmsi_s, mmsi_s) +'[Flag: '+ mid(mid_s) +']';
          } else
       
          // coast station: 00 MID xx xx
@@ -232,7 +278,7 @@ DSC.prototype.process_msg = function() {
             var mid_s = _34 + _56[0];
             var coast_station = mmsi(_34 + _56789);
             coast_station = coast_station? (', '+ coast_station) : '';
-            s = _12 + mid_s + _56[1] + _78 + _90[0] +' (Coast Station: '+ mid(mid_s) + coast_station +')';
+            s = _12 + mid_s + _56[1] + _78 + _90[0] +'[Coast Station: '+ mid(mid_s) + coast_station +']';
          } else {
             s = _12 + _34 + _56789;
          }
@@ -246,7 +292,7 @@ DSC.prototype.process_msg = function() {
       
       // FIXME
       case t.FMT_GEO_AREA:
-         s = _12 + _34 + _56789;
+         s = 'FIXME-area '+ _12 + _34 + _56789;
          break;
       
       default:
@@ -259,19 +305,43 @@ DSC.prototype.process_msg = function() {
    
    var command = function(sym_name, id) {
       var cmd = check(sym_name, 2, id);
-      cmd.s = cmd.err? 'cmdFEC' : ((cmd.n == t.NOP)? '*' : cmd.sym_s);
+      cmd.s = cmd.err? 'cmdFEC' : ((cmd.nop)? '*' : cmd.sym_s);
       return cmd;
    };
    
-   var freq = function(sym_name, id) {
-      var freq1 = check(sym_name +'1', 2, id);
-      var freq2 = check(sym_name +'2', 2, id);
-      var freq3 = check(sym_name +'3', 2, id);
-      if (freq1.err || freq2.err || freq3.err) return { s:'freqFEC', err:1 };
-      if (freq1.n == t.NOP) freq1.sym_z = '*';
-      if (freq2.n == t.NOP) freq2.sym_z = '*';
-      if (freq3.n == t.NOP) freq3.sym_z = '*';
-      return { s: freq1.sym_z +'|'+ freq2.sym_z +'|'+ freq3.sym_z, err:0 };
+   var frequency = function(sym_name, id, force_pos) {
+      var f1 = check(sym_name +'1', 2, id);
+      var f2 = check(sym_name +'2', 2, id);
+      var f3 = check(sym_name +'3', 2, id);
+      if (f1.err || f2.err || f3.err) return { s:'freqFEC', err:1 };
+
+      if (f1.nop) f1.z = '*';
+      if (f2.nop) f2.z = '*';
+      if (f3.nop) f3.z = '*';
+      var pre = '', type = 0;
+      
+      if (!f1.nop && !f2.nop && !f3.nop) {
+         var n = f1.z[0];
+         
+         // position
+         if (force_pos == true || n == '5') {
+            return { s: f1.z + f2.z + f3.z, type:5, err:0 };
+         }
+      
+         // 6-digit freq
+         if (n == '0' || n == '1' || n == '2') {
+            return { s: ((n == '0')? f1.z[1] : f1.z) + f2.z + f3.z[0] +'.'+ f3.z[1], type:6, err:0 };
+         }
+      
+         // 7-digit freq
+         // FIXME: account for +1 add'l packet length this causes
+         if (n == '4') {
+            pre = '7-DIGIT MODE|';
+            type = 7;
+         }
+      }
+
+      return { s: pre + f1.z +'|'+ f2.z +'|'+ f3.z, type:type, err:0 };
    }
    
    var end_of_sequence = function() {
@@ -293,14 +363,18 @@ DSC.prototype.process_msg = function() {
    var from = call('d', fmt, 'called from');
    var cmd1 = command('e1', 'telecommand 1');
    var cmd2 = command('e2', 'telecommand 2');
-   var freq1 = freq('f', 'frequency 1');
-   var freq2 = freq('g', 'frequency 2');
+   var f1 = frequency('f', 'frequency 1');
+   var f2 = frequency('g', 'frequency 2', (f1.type == 5));
    var eos = end_of_sequence();
    var ecc = error_check_char();
    var pe = parity_errors? (' ['+ parity_errors +' PE]') : '';
    
    var ack = function(s) {
       return (s + ((eos.n == t.ABQ)? ' ack' : ''));
+   };
+   
+   var ack2 = function(s1, s2) {
+      return (s1 + ((eos.n == t.ABQ)? ' ack ' : ' ') + s2);
    };
    
    var color = function(color, s) {
@@ -322,96 +396,142 @@ DSC.prototype.process_msg = function() {
       return (s +', '+ from.s +' => '+ to.s);
    };
    
-   var from_toArea = function(s) {
-      return (s +', '+ from.s +' => '+ to.s);
+   var freq = function() {
+      var s = '';
+      
+      // frequency
+      if (f1.type == 6) {
+         s += f1.s;
+         if (f2.type == 6) s += '/'+ f2.s;
+         s += ' kHz';
+      } else
+      
+      // position
+      if (f1.type == 5) {
+         // f1.s     f2.s
+         // 01 23 45 01 23 45
+         // 55 Qd dm mD DD MM
+         //     |     +------ lon
+         //     +------------ lat
+         var quad = +f1.s[2];
+         var lat_sgn = (quad == 0 || quad == 1)? '' : '-';
+         var lon_sgn = (quad == 0 || quad == 2)? '' : '-';
+         var s = lat_sgn + f1.s[3] + f1.s[4] +'\xb0'+ f1.s[5] + f2.s[0] +"'/"+
+            lon_sgn + f2.s[1] + f2.s[2] + f2.s[3] +'\xb0'+ f2.s[4] + f2.s[5] +"'";
+      }
+
+      return s;
    };
+   
+   // FIXME: global cmd1 = 100,101? See man 8.3.1, third item
+   var ds;
    
    // A1-4.1: distress alerts
    // FMT_DISTRESS only used here, cat unused
    if (fmt.n == t.FMT_DISTRESS && eos.n == t.EOS) {
-      s = '4.1';
+      s = ds = '4.1';
    } else
 
    // A1-4.2: distress acks
    if (cat.n == t.CAT_DISTRESS && fmt.n == t.FMT_ALL_SHIPS && cmd1.n == t.CMD1_DISTRESS_ACK && eos.n == t.EOS) {
-      s = '4.2';
+      s = ds = '4.2';
    } else
 
    // A1-4.3: distress alert relays
    // differs from above in cmd1
    if (cat.n == t.CAT_DISTRESS && cmd1.n == t.CMD1_DISTRESS_ALERT_RELAY && (eos.n == t.EOS || eos.n == t.ARQ)) {
       // fmt: FMT_INDIV_STA, FMT_COMMON_INTEREST, FMT_GEO_AREA, FMT_ALL_SHIPS
-      s = '4.3';
+      s = ds = '4.3';
    } else
 
    // A1-4.4: distress alert relay acks
    // differs from above in eos
    if (cat.n == t.CAT_DISTRESS && cmd1.n == t.CMD1_DISTRESS_ALERT_RELAY && eos.n == t.ABQ) {
       // fmt: FMT_INDIV_STA, FMT_COMMON_INTEREST, FMT_GEO_AREA, FMT_ALL_SHIPS
-      s = '4.4';
+      s = ds = '4.4';
    } else
 
    // A1-4.5: urgency & safety calls, all ships
    if ((cat.n == t.CAT_SAFETY || cat.n == t.CAT_URGENCY) && fmt.n == t.FMT_ALL_SHIPS && eos.n == t.EOS) {
-
+      s = ds = '4.5';
+      
       switch (cmd1.n) {
          case t.CMD1_TEST: s = from_to(ack('Test')); break;
-         default: s = '4.5'; break;
       }
    } else
 
    // A1-4.6: urgency & safety calls, geo areas
    // differs from above in fmt
    if ((cat.n == t.CAT_SAFETY || cat.n == t.CAT_URGENCY) && fmt.n == t.FMT_GEO_AREA && eos.n == t.EOS) {
-      s = '4.6';
+      s = ds = '4.6';
+
       switch (cmd1.n) {
-         // FIXME: decode freq
-         case t.CMD1_J3E_TP: if (cmd2.n == t.CMD2_NOP) s = from_toArea('J3E TP'); break;
-         case t.CMD1_F1B_FEC: if (cmd2.n == t.CMD2_NOP) s = from_toArea('F1B FEC'); break;
+         case t.CMD1_J3E_RT: if (cmd2.n == t.CMD2_NOP) s = from_to('SSB call '+ freq()); break;
+         case t.CMD1_F1B_FEC: if (cmd2.n == t.CMD2_NOP) s = from_to('FSK-FEC call '+ freq()); break;
       }
    } else
 
    // A1-4.7: urgency & safety calls, individual calls and acks
    // differs from above in fmt
    if ((cat.n == t.CAT_SAFETY || cat.n == t.CAT_URGENCY) && fmt.n == t.FMT_INDIV_STA && (eos.n == t.ARQ || eos.n == t.ABQ)) {
+      s = ds = '4.7';
    
-      switch (cmd1.n) {
-         case t.CMD1_TEST: s = from_to(ack('Test')); break;
-         default: s = '4.7'; break;
+      if (cmd2.n == t.CMD2_NOP) {
+         switch (cmd1.n) {
+            case t.CMD1_J3E_RT: if (cmd2.n == t.CMD2_NOP) s = from_to(ack2('SSB call', freq())); break;
+            case t.CMD1_F1B_FEC: if (cmd2.n == t.CMD2_NOP) s = from_to(ack2('FSK-FEC call', freq())); break;
+            case t.CMD1_F1B_ARQ: if (cmd2.n == t.CMD2_NOP) s = from_to(ack2('FSK-ARQ call', freq())); break;
+            case t.CMD1_POSITION: if (cmd2.n == t.CMD2_NOP) s = from_to(ack2('Position', freq())); break;
+            case t.CMD1_TEST: s = from_to(ack('Test')); break;
+         }
+      } else {
+         if (cmd1.n == t.CMD1_UNABLE_COMPLY && cmd2.n >= t.CMD2_UNABLE_FIRST && cmd2.n <= t.CMD2_UNABLE_LAST && eos.n == t.ABQ) {
+            s = from_to(color(ansi.YELLOW, 'Unable to comply ack') +' '+ freq());
+         }
       }
    } else
 
    // A1-4.8: routine group calls
    if (cat.n == t.CAT_ROUTINE && fmt.n == t.FMT_COMMON_INTEREST && eos.n == t.EOS) {
-      s = '4.8';
+      s = ds = '4.8';
    } else
 
    // A1-4.9: routine individual calls and acks
    // differs from above in fmt
    if (cat.n == t.CAT_ROUTINE && fmt.n == t.FMT_INDIV_STA && (eos.n == t.ARQ || eos.n == t.ABQ)) {
+      s = ds = '4.9';
 
-      switch (cmd1.n) {
-         case t.CMD1_POLLING: s = from_to(ack('Polling')); break;
-         default: s = '4.9'; break;
+      if (cmd2.n == t.CMD2_NOP) {
+         switch (cmd1.n) {
+            case t.CMD1_J3E_RT: s = from_to(ack2('SSB call', freq())); break;
+            case t.CMD1_F1B_FEC: s = from_to(ack2('FSK-FEC call', freq())); break;
+            case t.CMD1_F1B_ARQ: s = from_to(ack2('FSK-ARQ call', freq())); break;
+            case t.CMD1_F1B_DATA: s = from_to(ack2('FSK-DATA call', freq())); break;
+            case t.CMD1_POLLING: s = from_to(ack('Polling')); break;
+         }
+      } else {
+         if (cmd1.n == t.CMD1_UNABLE_COMPLY && cmd2.n >= t.CMD2_UNABLE_FIRST && cmd2.n <= t.CMD2_UNABLE_LAST && eos.n == t.ABQ) {
+            s = from_to(color(ansi.YELLOW, 'Unable to comply ack') +' '+ freq());
+         }
       }
    } else
    
    // A1-4.10: semi/auto MF/HF
    // differs from above in fmt
    if (cat.n == t.CAT_ROUTINE && fmt.n == t.FMT_IS_SEMI_AUTO && (eos.n == t.ARQ || eos.n == t.ABQ)) {
-      s = '4.10';
+      s = ds = '4.10';
    } else {
-      s = '4.x UNKNOWN';
+      s = ds = '4.x UNKNOWN';
    }
    
-   var fec = (fmt.err || to.err || cat.err || from.err || cmd1.err || cmd2.err || freq1.err || freq2.err || eos.err || ecc.err);
+   var fec = (fmt.err || to.err || cat.err || from.err || cmd1.err || cmd2.err || f1.err || f2.err || eos.err || ecc.err);
 
    if (dbgUs) {
       var ok = '$$ '+ (fec? 'FEC FAIL' : 'OK');
       var to_s = kiwi_remove_escape_sequences(to.s);
       var from_s = kiwi_remove_escape_sequences(from.s);
       console.log(ok +' fmt='+ fmt.s +' to='+ to_s +' cat='+ cat.s +' from='+ from_s);
-      console.log(ok +' cmd1='+ cmd1.s +' cmd2='+ cmd2.s +' freq1='+ freq1.s +' freq2='+ freq2.s +' eos='+ eos.s +' ecc='+ ecc.s + pe);
+      console.log(ok +' cmd1='+ cmd1.s +' cmd2='+ cmd2.s +' freq1='+ f1.s +' freq2='+ f2.s +' eos='+ eos.s +' ecc='+ ecc.s + pe);
    }
 
    if (fec) {
@@ -419,13 +539,12 @@ DSC.prototype.process_msg = function() {
    } else {
       if (s.startsWith('4.'))
          s = color(ansi.MAGENTA, 'FIXME '+ s) +' cat='+ cat.s +' fmt='+ fmt.s +' cmd1='+ cmd1.s+ ' cmd2='+ cmd2.s +
-            ' from='+ from.s +' to='+ to.s +' freq1='+ freq1.s+ ' freq2='+ freq2.s +' eos='+ eos.s +' ecc='+ ecc.s;
+            ' from='+ from.s +' to='+ to.s +' freq1='+ f1.s+ ' freq2='+ f2.s +' eos='+ eos.s +' ecc='+ ecc.s;
       else
-         s = type() +' '+ s;
+         s = (dbgUs? (ds + ' ') : '') + type() +' '+ s;
    }
-   //toUTCString().substr(5,20)
-   var c = (new Date()).toUTCString().substr(17,8) +'Z '+ (ext_get_freq()/1e3).toFixed(2) +' '+ s + pe +'\n';
-   return c;
+
+   return t.output_msg(s + pe);
 }
 
 DSC.prototype.code_to_char = function(code) {
@@ -454,7 +573,7 @@ DSC.prototype.check_bits = function() {
    return false;
 }
 
-DSC.prototype.search_sync = function(bit) {     // FIXME: match more cases, pass offset to later code
+DSC.prototype.search_sync = function(bit) {
    var t = this;
    var cin, cout;
 
@@ -522,6 +641,11 @@ DSC.prototype.search_sync = function(bit) {     // FIXME: match more cases, pass
 DSC.prototype.process_char = function(_code, fixed_start, cb) {
    var t = this;
    if (!t.synced) return { resync:0 };
+
+   // test EOS detection
+   //if (t.seq == 54) _code = 99;
+   //if (t.seq == 58) _code = 99;
+
    var bc_rev = (_code >> 7) & 7;
    var code = _code & 0x7f;
    t.syms[t.seq] = code;
@@ -536,13 +660,53 @@ DSC.prototype.process_char = function(_code, fixed_start, cb) {
 
    if (t.dbg) console.log(t.seq.leadingZeros(2) +' '+ pos_s +': '+ chr +' '+ code.fieldWidth(3) +'.'+
       ' '+ bc_rev.toString(2).leadingZeros(3) +' '+ code.toString(2).leadingZeros(7) + zc);
-
    t.seq++;
-   if (t.seq >= 62) {
-      if (t.seq == 62) cb(t.process_msg());
+
+   // detect variable length EOS
+   var eos = false;
+
+   if (t.seq >= t.MSG_LEN_MIN) {
+      var eos_n = 0, s;
+      
+      var eos_ck = function(eos_sym) {
+         var eos_n = 0;
+         if (!t.bc_err[t.seq-2] && t.syms[t.seq-2] == eos_sym) eos_n++;
+         if (!t.bc_err[t.seq-3] && t.syms[t.seq-3] == eos_sym) eos_n++;
+         if (!t.bc_err[t.seq-4] && t.syms[t.seq-4] == eos_sym) eos_n++;
+         if (!t.bc_err[t.seq-8] && t.syms[t.seq-8] == eos_sym) eos_n++;
+         if (eos_n >= 3) console.log('eos_n('+ eos_sym +')='+ eos_n);
+         return (eos_n >= 3);
+      }
+      
+      var color = function(color, s) {
+         return (color + s + ansi.NORM);
+      };
+
+      if (eos_ck(t.EOS) || eos_ck(t.ARQ) || eos_ck(t.ABQ)) eos = true;
+      if (eos || t.seq > t.MSG_LEN_MAX) {
+         if (eos) {
+            if (t.seq != t.MSG_LEN_MIN) {
+               cb(t.output_msg(color(ansi.BLUE, 'non-std len='+ t.seq)));
+               console.log('$$ non-std len='+ t.seq)
+            }
+            cb(t.process_msg());
+         } else {
+            cb(t.output_msg(color(ansi.BLUE, 'no EOS')));
+            console.log('$$ no EOS')
+         }
+         t.synced = 0;
+         return { resync:1 };
+      }
+   }
+   
+   /*
+   if (t.seq >= t.MSG_LEN_MIN) {
+      if (t.seq == t.MSG_LEN_MIN) cb(t.process_msg());
       t.synced = 0;
       return { resync:1 };
    }
+   */
+   
    return { resync:0 };
 }
 
