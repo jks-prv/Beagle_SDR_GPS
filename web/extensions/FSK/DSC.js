@@ -8,6 +8,7 @@ function DSC() {
    t.dbg = 0;
    
    t.start_bit = 0;
+   t.full_syms = [];
    t.syms = [];
    t.seq = 0;
    t.MSG_LEN_MIN = 62;
@@ -646,6 +647,7 @@ DSC.prototype.process_char = function(_code, fixed_start, cb) {
    //if (t.seq == 54) _code = 99;
    //if (t.seq == 58) _code = 99;
 
+   t.full_syms[t.seq] = _code;
    var bc_rev = (_code >> 7) & 7;
    var code = _code & 0x7f;
    t.syms[t.seq] = code;
@@ -688,6 +690,18 @@ DSC.prototype.process_char = function(_code, fixed_start, cb) {
             if (t.seq != t.MSG_LEN_MIN) {
                cb(t.output_msg(color(ansi.BLUE, 'non-std len='+ t.seq)));
                console.log('$$ non-std len='+ t.seq)
+               if (dbgUs) for (var i = 0; i < t.seq; i++) {
+                  var code = t.syms[i];
+                  if (isUndefined(code)) code = 0;    // sync
+                  var pos_s = t.pos_s[i];
+                  var chr = t.code_to_char(code);
+                  var bc_rev = (t.full_syms[i] >> 7) & 7;
+                  var bc_ck = kiwi_bitReverse(bc_rev, 3);
+                  var bc_data = kiwi_bitCount(code ^ 0x7f);
+                  var zc = (bc_ck != bc_data)? (' Zck='+ bc_ck +' Zdata='+ bc_data) : '';
+                  console.log(i.leadingZeros(2) +' '+ pos_s +': '+ chr +' '+ code.fieldWidth(3) +'.'+
+                     ' '+ bc_rev.toString(2).leadingZeros(3) +' '+ code.toString(2).leadingZeros(7) + zc);
+               }
             }
             cb(t.process_msg());
          } else {
