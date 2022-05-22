@@ -6,6 +6,7 @@ function DSC() {
    console.log('FSK encoder: DSC');
    t.isDSC = true;
    t.dbg = 0;
+   t.dump_eos = 0;
    
    t.start_bit = 0;
    t.full_syms = [];
@@ -686,28 +687,36 @@ DSC.prototype.process_char = function(_code, fixed_start, cb) {
 
       if (eos_ck(t.EOS) || eos_ck(t.ARQ) || eos_ck(t.ABQ)) eos = true;
       if (eos || t.seq > t.MSG_LEN_MAX) {
+         var dump = 0;
          if (eos) {
             if (t.seq != t.MSG_LEN_MIN) {
                cb(t.output_msg(color(ansi.BLUE, 'non-std len='+ t.seq)));
-               console.log('$$ non-std len='+ t.seq)
-               if (dbgUs) for (var i = 0; i < t.seq; i++) {
-                  var code = t.syms[i];
-                  if (isUndefined(code)) code = 0;    // sync
-                  var pos_s = t.pos_s[i];
-                  var chr = t.code_to_char(code);
-                  var bc_rev = (t.full_syms[i] >> 7) & 7;
-                  var bc_ck = kiwi_bitReverse(bc_rev, 3);
-                  var bc_data = kiwi_bitCount(code ^ 0x7f);
-                  var zc = (bc_ck != bc_data)? (' Zck='+ bc_ck +' Zdata='+ bc_data) : '';
-                  console.log(i.leadingZeros(2) +' '+ pos_s +': '+ chr +' '+ code.fieldWidth(3) +'.'+
-                     ' '+ bc_rev.toString(2).leadingZeros(3) +' '+ code.toString(2).leadingZeros(7) + zc);
-               }
+               console.log('$$ non-std len='+ t.seq);
+               dump = 1;
             }
             cb(t.process_msg());
          } else {
             cb(t.output_msg(color(ansi.BLUE, 'no EOS')));
-            console.log('$$ no EOS')
+            console.log('$$ no EOS');
+            dump = t.dump_eos;
          }
+
+         if (dump && dbgUs) {
+            for (var i = 0; i < t.seq; i++) {
+               var _code = t.full_syms[i];
+               if (isUndefined(_code)) _code = 119;   // sync
+               var code = _code & 0x7f;
+               var pos_s = t.pos_s[i];
+               var chr = t.code_to_char(code);
+               var bc_rev = (_code >> 7) & 7;
+               var bc_ck = kiwi_bitReverse(bc_rev, 3);
+               var bc_data = kiwi_bitCount(code ^ 0x7f);
+               var zc = (bc_ck != bc_data)? (' Zck='+ bc_ck +' Zdata='+ bc_data) : '';
+               console.log(i.leadingZeros(2) +' '+ pos_s +': '+ chr +' '+ code.fieldWidth(3) +'.'+
+                  ' '+ bc_rev.toString(2).leadingZeros(3) +' '+ code.toString(2).leadingZeros(7) + zc);
+            }
+         }
+
          t.synced = 0;
          return { resync:1 };
       }
