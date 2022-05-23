@@ -5,12 +5,12 @@ function DSC() {
 
    console.log('FSK encoder: DSC');
    t.isDSC = true;
+
    t.dbg = 0;
+   t.test_msgs = 0;
    t.dump_eos = 0;
    
    t.start_bit = 0;
-   t.full_syms = [];
-   t.syms = [];
    t.seq = 0;
    t.MSG_LEN_MIN = 62;
    t.MSG_LEN_MAX = 80;
@@ -18,7 +18,7 @@ function DSC() {
    t.FIGURES = -1;
    t.synced = 0;
 
-   t.sym_s = [
+   t.sym_s = [    // sync & format
    //   xx0    xx1    xx2    xx3    xx4    xx5    xx6    xx7    xx8    xx9
       '   ', '   ', '   ', '   ', '   ', '   ', '   ', '   ', '   ', '   ',   // 00x
       '   ', '   ', '   ', '   ', '   ', '   ', '   ', '   ', '   ', '   ',   // 01x
@@ -32,7 +32,7 @@ function DSC() {
       '   ', '   ', '   ', '   ', '   ', '   ', '   ', '   ', '   ', '   ',   // 09x
       '   ', '   ', 'GEO', '   ', 'Pr0', 'Pr1', 'Pr2', 'Pr3', 'Pr4', 'Pr5',   // 10x
       'Pr6', 'Pr7', '*D*', '   ', 'INT', '   ', 'ALL', 'ARQ', '   ', '   ',   // 11x
-      'STA', 'rsv', 'ABQ', 'ATO', '   ', 'Pdx', '  *', 'EOS'                  // 12x
+      'STA', 'RSV', 'ABQ', 'ATO', '   ', 'Pdx', '  *', 'EOS'                  // 12x
    ];
    
    t.DX  = 125;
@@ -67,7 +67,7 @@ function DSC() {
    t.CMD2_UNABLE_FIRST = 100;
    t.CMD2_BUSY = 102;
    t.CMD2_UNABLE_LAST = 109;
-   t.CMD2_NOT_CONFLICT = 110;
+   t.CMD2_NON_CONFLICT = 110;
    t.CMD2_MED_TRANSPORTS = 111;
    t.CMD2_NOP = 126;
    
@@ -77,16 +77,25 @@ function DSC() {
    
    t.NOP = 126;
    
+   // sync  fmt    to  cat  from  cmd1  cmd2  freq1  freq2  EOS  ECC    nominal format (no var fields shown)
+   //         A  B1-5    C  D1-5    E1    E2   F1-3   G1-3    H    I
+   //         4     2    2     2     2     2      2      2    4    2    FEC repeat count
+   //   14    4    10    2    10     2     2      6      6    4    2    = 62 (MSG_LEN_MIN)
+   t.ecc_sym = [
+      'fmt', 'to1', 'to2', 'to3', 'to4', 'to5', 'cat', 'from1', 'from2', 'from3', 'from4', 'from5',
+      'cmd1', 'cmd2', 'freq1.1', 'freq1.2', 'freq1.3', 'freq2.1', 'freq2.2', 'freq2.3', 'eos'
+   ];
+   
    t.pos_s = [
       ' dx', 'rx7', ' dx', 'rx6', ' dx', 'rx5', ' dx', 'rx4', ' dx', 'rx3', ' dx', 'rx2',
-      '  A', 'rx1', '  A', 'rx0',
-      ' b1', '  A', ' b2', '  A', ' b3', ' b1', ' b4', ' b2', ' b5', ' b3',
-      '  C', ' b4', ' d1', ' b5', ' d2', '  C',
-      ' d3', ' d1', ' d4', ' d2', ' d5', ' d3',
-      ' e1', ' d4', ' e2', ' d5',
-      ' f1', ' e1', ' f2', ' e2', ' f3', ' f1',
-      ' g1', ' f2', ' g2', ' f3', ' g3', ' g1',
-      'eos', ' g2', 'ecc', ' g3', 'eos', 'eos', 'eos', 'ecc'
+      'Afmt', 'rx1', 'Afmt', 'rx0',
+      'Bto1', 'Afmt', 'Bto2', 'Afmt', 'Bto3', 'Bto1', 'Bto4', 'Bto2', 'Bto5', 'Bto3',
+      'Cat', 'Bto4', 'Dfr1', 'Bto5', 'Dfr2', 'Cat',
+      'Dfr3', 'Dfr1', 'Dfr4', 'Dfr2', 'Dfr5', 'Dfr3',
+      'E1cmd', 'Dfr4', 'E2cmd', 'Dfr5',
+      'Ffreq1', 'E1cmd', 'Ffreq2', 'E2cmd', 'Ffreq3', 'Ffreq1',
+      'Gfreq1', 'Ffreq2', 'Gfreq2', 'Ffreq3', 'Gfreq3', 'Gfreq1',
+      'eos', 'Gfreq2', 'ecc', 'Gfreq3', 'eos', 'eos', 'eos', 'ecc'
    ];
    
    // symbolic position lookup
@@ -124,19 +133,46 @@ function DSC() {
    
    t.MID_area = [ 'Europe', 'N.AM/C.AM', 'Asia', 'Oceania', 'Africa', 'S.AM' ];
    
-   //t.test = null;
-   // 4.6 geo freq
-   //t.test = [ { s:'A', n:t.FMT_GEO_AREA }, { s:'e1', n:t.CMD1_J3E_RT }, { s:'f1', n:12 }, { s:'f2', n:34 }, { s:'f3', n:56 }, { s:'eos', n:t.EOS } ];
-   // 4.7 freq
-   //t.test = [ { s:'A', n:t.FMT_INDIV_STA }, { s:'e1', n:t.CMD1_J3E_RT }, { s:'f1', n:02 }, { s:'f2', n:34 }, { s:'f3', n:56 }, { s:'g1', n:02 }, { s:'g2', n:78 }, { s:'g3', n:90 }, { s:'eos', n:t.ARQ } ];
-   // 4.9 unable
-   //t.test = [ { s:'A', n:t.FMT_INDIV_STA }, { s:'C', n:t.CAT_ROUTINE }, { s:'e1', n:t.CMD1_UNABLE_COMPLY }, { s:'e2', n:t.CMD2_UNABLE_FIRST }, { s:'f1', n:12 }, { s:'f2', n:34 }, { s:'f3', n:56 }, { s:'eos', n:t.ABQ } ];
-   // 4.9 position
-   //t.test = [ { s:'A', n:t.FMT_INDIV_STA }, { s:'C', n:t.CAT_ROUTINE }, { s:'e1', n:t.CMD1_J3E_RT }, { s:'f1', n:55 }, { s:'f2', n:21 }, { s:'f3', n:23 }, { s:'g1', n:41 }, { s:'g2', n:56 }, { s:'g3', n:78 }, { s:'eos', n:t.ABQ } ];
+   // tests (ecc calc is suppressed)
+   // FSK.DSC1.12k.au file is nominally: 4.7 SAFETY Test ack, 002191000[Coast Station: Denmark, Lyngby] => 244170080[Flag: Netherlands]
+   t.tlist = null;
+   if (t.test_msgs) {
+      var GRP = { s:'Afmt', n:t.FMT_COMMON_INTEREST };
+      var ALL = { s:'Afmt', n:t.FMT_ALL_SHIPS };
+      var GEO = { s:'Afmt', n:t.FMT_GEO_AREA };
+      var IS = { s:'Afmt', n:t.FMT_INDIV_STA };
+      var URG = { s:'Cat', n:t.CAT_URGENCY };
+      var SAF = { s:'Cat', n:t.CAT_SAFETY };
+      var ROU = { s:'Cat', n:t.CAT_ROUTINE };
+      var J3E_RT = { s:'E1cmd', n:t.CMD1_J3E_RT };
+      var TTY_FEC = { s:'E1cmd', n:t.CMD1_F1B_FEC };
+      var MED = { s:'E2cmd', n:t.CMD2_MED_TRANSPORTS };
+      var F1 = { s:'Ffreq1', n:02 };
+      var F2 = { s:'Ffreq2', n:34 };
+      var F3 = { s:'Ffreq3', n:56 };
+      var G1 = { s:'Ffreq1', n:12 };
+      var G2 = { s:'Ffreq2', n:78 };
+      var G3 = { s:'Ffreq3', n:90 };
+      var EOS = { s:'eos', n:t.EOS };
+      var ARQ = { s:'eos', n:t.ARQ };
+      var ABQ = { s:'eos', n:t.ABQ };
+      t.tlist = [];
+
+      // 4.5 from => to:all-ships
+      t.tlist.push([ ALL, SAF, J3E_RT, F1, F2, F3, EOS ]);
+      // 4.6 from => to:geo
+      t.tlist.push([ GEO, URG, J3E_RT, MED, { s:'Bto1', n:21 }, { s:'Bto2', n:21 }, { s:'Bto3', n:34 }, { s:'Bto4', n:02 }, { s:'Bto5', n:03 }, F1, F2, F3, EOS ]);
+      // 4.7 freq
+      t.tlist.push([ IS, SAF, J3E_RT, F1, F2, F3, G1, G2, G3, ARQ ]);
+      // 4.8 from => to:ship-group
+      t.tlist.push([ GRP, ROU, TTY_FEC, { s:'Bto1', n:02 }, { s:'Bto2', n:19 }, { s:'Bto3', n:00 }, { s:'Bto4', n:00 }, { s:'Bto5', n:00 }, F1, F2, F3, EOS ]);
+      // 4.9 unable
+      t.tlist.push([ IS, ROU, { s:'E1cmd', n:t.CMD1_UNABLE_COMPLY }, { s:'E2cmd', n:t.CMD2_UNABLE_FIRST }, F1, F2, F3, ABQ ]);
+      // 4.9 position
+      t.tlist.push([ IS, ROU, J3E_RT, { s:'Ffreq1', n:55 }, { s:'Ffreq2', n:21 }, { s:'Ffreq3', n:23 }, { s:'Gfreq1', n:41 }, { s:'Gfreq2', n:56 }, { s:'Gfreq3', n:78 }, ABQ ]);
+   }
    
    t.init_MID_MMSI();
-   
-   t.bc_err = [];
 }
 
 DSC.prototype.sym_by_sym_name = function(sym_name) {
@@ -152,10 +188,11 @@ DSC.prototype.output_msg = function(s) {
    return ((new Date()).toUTCString().substr(17,8) +'Z '+ (ext_get_freq()/1e3).toFixed(2) +' '+ s +'\n');
 }
    
-DSC.prototype.process_msg = function() {
+DSC.prototype.process_msg = function(show_errs) {
    var t = this;
    var i, s;
-   var parity_errors = 0;
+   var ecc_ck = [];
+   t.test = (t.tlist && t.tlist.length)? t.tlist[0] : null;
    
    var check = function(sym_name, repeats, id) {
       
@@ -178,10 +215,7 @@ DSC.prototype.process_msg = function() {
       var i, ck = [];
       for (i = 0; i < repeats; i++) {
          var sym = t.sym_by_sym_name(sym_name +'-'+ i);
-         if (!t.bc_err[sym.pos])
-            ck.push(sym);
-         else
-            parity_errors++;
+         if (!t.bc_err[sym.pos]) ck.push(sym);
       }
       var empty = (ck.length == 0), err = 0;
 
@@ -206,25 +240,29 @@ DSC.prototype.process_msg = function() {
             var sym = t.sym_by_sym_name(sn);
             s += sn +':'+ (t.bc_err[sym.pos]? 'Zerr' : sym.sym) +' ';
          }
+         t.FEC_errors++;
          if (t.dbg) console.log('FEC FAIL: '+ id +' '+ s);
       }
 
-      if (empty) return { err:1 };
+      if (empty) return { n:-1, err:1 };
       //console.log(sym_name +':'+ repeats);
       //console.log(ck);
       var sym = ck[0].sym;
-      return { n:sym, sym_s:sym.toString(), z:sym.leadingZeros(2), nop:(sym == t.NOP), err:err };
+      if (isUndefined(sym)) console.log(ck);
+      return { n: err? -1 : sym, sym_s:sym.toString(), z:sym.leadingZeros(2), nop:(sym == t.NOP), err:err };
    };
    
    var format = function() {
-      var fmt = check('A', 4, 'format');
+      var fmt = check('Afmt', 4, 'format');
+      ecc_ck.push(fmt.n);
       fmt.s = fmt.err? 'fmtFEC': t.format_s[fmt.sym_s];
       fmt.s = fmt.s || (fmt.n +'?');
       return fmt;
    };
    
    var category = function() {
-      var cat = check('C', 2, 'category');
+      var cat = check('Cat', 2, 'category');
+      ecc_ck.push(cat.n);
       cat.s = cat.err? 'catFEC' : t.category_s[cat.sym_s];
       cat.s = cat.s || (cat.n +'?');
       return cat;
@@ -235,9 +273,9 @@ DSC.prototype.process_msg = function() {
       return t.MID[mid] || ('MID='+ mid +'?');
    }
 
-   var mmsi = function(mmsi) {
-      //console.log('MMSI: mmsi='+ mmsi +' => '+ t.MMSI[mmsi]);
-      return t.MMSI[mmsi] || ('MMSI='+ mmsi +'?');
+   var mmsi_coast = function(mmsi_7) {
+      //console.log('MMSI: mmsi_7='+ mmsi_7 +' => '+ t.MMSI_coast[mmsi_7]);
+      return t.MMSI_coast[mmsi_7] || ('MMSI_7='+ mmsi_7 +'?');
    }
 
    var call = function(sym_name, fmt, id) {
@@ -246,59 +284,109 @@ DSC.prototype.process_msg = function() {
       var c56 = check(sym_name +'3', 2, id);
       var c78 = check(sym_name +'4', 2, id);
       var c90 = check(sym_name +'5', 2, id);    // tenth digit always supposed to be zero
+      ecc_ck.push(c12.n);
+      ecc_ck.push(c34.n);
+      ecc_ck.push(c56.n);
+      ecc_ck.push(c78.n);
+      ecc_ck.push(c90.n);
+
       if (c12.err || c34.err || c56.err || c78.err || c90.err) return { s:'callFEC', err:1 };
       var _12 = c12.z;
       var _34 = c34.z;
       var _56 = c56.z;
       var _78 = c78.z;
       var _90 = c90.z;
-
-      // t.MID_area[iden-2]
-      var iden1 = +_12[0];
-      var iden3 = +_34[0];
       var _56789 = _56 + _78 + _90[0];
+      var mmsi_s = _12 + _34 + _56789;
 
-      var s, err = 0;
+      var iden1 = +_12[0];
+      var iden2 = +_12[1];
+      var iden3 = +_34[0];
+      var isMID1 = (iden1 >= 2 && iden1 <= 7);
+      var isMID2 = (iden2 >= 2 && iden2 <= 7);
+      var isMID3 = (iden3 >= 2 && iden3 <= 7);
+
+      var s, format = fmt.n, err = 0;
       
-      // FMT_GEO_AREA only applies to "from" address
-      var format = (fmt.n == t.FMT_GEO_AREA && sym_name == /* to */ 'd')? t.FMT_INDIV_STA : fmt.n;
+      // FMT_GEO_AREA only applies to "to" address
+      if (format == t.FMT_GEO_AREA && sym_name == 'Dfr') format = t.FMT_INDIV_STA;
+
+      // FMT_ALL_SHIPS only applies to "to" address
+      if (format == t.FMT_ALL_SHIPS && sym_name == 'Dfr') format = t.FMT_INDIV_STA;
+
+      // FMT_COMMON_INTEREST (group call) only applies to "to" address
+      if (format == t.FMT_COMMON_INTEREST && sym_name == 'Dfr') format = t.FMT_INDIV_STA;
 
       switch (format) {
       
       case t.FMT_INDIV_STA:
          // ship station: MID xx xx xx
          //               123 45 67 89
-         if (iden1 >= 2 && iden1 <= 7) {
+         if (isMID1) {
             var mid_s = _12 + _34[0];
-            var mmsi_s = mid_s + _34[1] + _56789;
             s = w3_link('w3-esc-html w3-link-darker-color', 'www.marinetraffic.com/en/ais/details/ships/mmsi:'+ mmsi_s, mmsi_s) +'[Flag: '+ mid(mid_s) +']';
          } else
       
          // coast station: 00 MID xx xx
          //                12 345 67 89
-         if (_12 == '00' && iden3 >= 2 && iden3 <= 7) {
+         if (_12 == '00' && isMID3) {
             var mid_s = _34 + _56[0];
-            var coast_station = mmsi(_34 + _56789);
+            var mmsi_7 = _34 + _56789;
+            var coast_station = mmsi_coast(mmsi_7);
             coast_station = coast_station? (', '+ coast_station) : '';
-            s = _12 + mid_s + _56[1] + _78 + _90[0] +'[Coast Station: '+ mid(mid_s) + coast_station +']';
+            s = mmsi_s +'[Coast Station: '+ mid(mid_s) + coast_station +']';
+         } else
+         
+         // ship group: 0 MID x xx xx
+         //             1 234 5 67 89
+         if (_12[0] == '0' && isMID2) {
+            var mid_s = _12[1] + _34;
+            s = mmsi_s +'[Ship group: '+ mid(mid_s) +']';
+         } else
+         
+         // NAVAID: 99 MID xx xx
+         //         12 345 67 89
+         if (_12 == '99' && isMID3) {
+            var mid_s = _34 + _56[0];
+            s = mmsi_s +'[NAVAID: '+ mid(mid_s) +']';
          } else {
-            s = _12 + _34 + _56789;
+            // FIXME: worth doing the more uncommon ones?
+            s = mmsi_s;
          }
          break;
       
       // FIXME: enforce 2/4 min (vs 1/4) detection of fmt char against false alarms
       case t.FMT_DISTRESS:
       case t.FMT_ALL_SHIPS:
-         s = _12 + _34 + _56789;
+         s = '[All ships]';
          break;
       
-      // FIXME
+      case t.FMT_COMMON_INTEREST:
+         // ship group: 0 MID x xx xx
+         //             1 234 5 67 89
+         if (_12[0] == '0' && isMID2) {
+            var mid_s = _12[1] + _34;
+            s = mmsi_s +'[Ship group: '+ mid(mid_s) +']';
+         } else
+            s = mmsi_s +'[Ship group]';
+         break;
+      
       case t.FMT_GEO_AREA:
-         s = 'FIXME-area '+ _12 + _34 + _56789;
+         // 12 34 56 78 90
+         // Qd dD DD vv hh
+         // |  |   |  |  +- horiz lon deg
+         // |  |   |  +---- vert lat deg
+         // |  |   +------- lon deg
+         // |  +----------- lat deg
+         // +-------------- quadrant
+         var quad = +_12[0];
+         var lat_sgn = (quad == 0 || quad == 1)? '' : '-';
+         var lon_sgn = (quad == 0 || quad == 2)? '' : '-';
+         var s = lat_sgn + _12[1] + _34[0] +'\xb0/'+ lon_sgn +_34[1] + _56 +'\xb0 '+ _78+'\xb0V/'+ _90 +'\xb0H [Area]';
          break;
       
       default:
-         s = _12 + _34 + _56789;
+         s = mmsi_s +'[other]';
          break;
       }
 
@@ -307,6 +395,7 @@ DSC.prototype.process_msg = function() {
    
    var command = function(sym_name, id) {
       var cmd = check(sym_name, 2, id);
+      ecc_ck.push(cmd.n);
       cmd.s = cmd.err? 'cmdFEC' : ((cmd.nop)? '*' : cmd.sym_s);
       return cmd;
    };
@@ -315,6 +404,9 @@ DSC.prototype.process_msg = function() {
       var f1 = check(sym_name +'1', 2, id);
       var f2 = check(sym_name +'2', 2, id);
       var f3 = check(sym_name +'3', 2, id);
+      ecc_ck.push(f1.n);
+      ecc_ck.push(f2.n);
+      ecc_ck.push(f3.n);
       if (f1.err || f2.err || f3.err) return { s:'freqFEC', err:1 };
 
       if (f1.nop) f1.z = '*';
@@ -348,39 +440,52 @@ DSC.prototype.process_msg = function() {
    
    var end_of_sequence = function() {
       var eos = check('eos', 4, 'EOS');
+      ecc_ck.push(eos.n);
       eos.s = eos.err? 'eosFEC' : ((eos.n == t.EOS)? 'EOS' : ((eos.n == t.ARQ)? 'ARQ' : ((eos.n == t.ABQ)? 'ABQ' : 'eos?')));
       return eos;
    };
    
    var error_check_char = function() {
       var ecc = check('ecc', 2, 'ECC');
-      // FIXME
-      ecc.s = ecc.err? 'eccFEC' : '(fixme)';
+      var dump = function() {
+         err = [];
+         ecc_ck.forEach(function(a, i) { err.push( { n: t.ecc_sym[i], s: a } ); });
+         console.log(err);
+      };
+
+      if (!ecc.err && !t.test) {
+         var xor = 0;
+         ecc_ck.forEach(function(a, i) { xor ^= a; });
+         console.log('ECC len='+ ecc_ck.length +' got='+ xor +' want='+ ecc.n);
+         ecc.fail = (xor != ecc.n);
+         if (dbgUs && ecc.fail) dump();
+      }
+      if (dbgUs && t.test) dump();
+      ecc.s = ecc.err? 'eccFEC' : ((ecc.fail)? 'eccFAIL' : '');
       return ecc;
-   };
-   
-   var fmt = format();
-   var to = call('b', fmt, 'called to');
-   var cat = category();
-   var from = call('d', fmt, 'called from');
-   var cmd1 = command('e1', 'telecommand 1');
-   var cmd2 = command('e2', 'telecommand 2');
-   var f1 = frequency('f', 'frequency 1');
-   var f2 = frequency('g', 'frequency 2', (f1.type == 5));
-   var eos = end_of_sequence();
-   var ecc = error_check_char();
-   var pe = parity_errors? (' ['+ parity_errors +' PE]') : '';
-   
-   var ack = function(s) {
-      return (s + ((eos.n == t.ABQ)? ' ack' : ''));
-   };
-   
-   var ack2 = function(s1, s2) {
-      return (s1 + ((eos.n == t.ABQ)? ' ack ' : ' ') + s2);
    };
    
    var color = function(color, s) {
       return (color + s + ansi.NORM);
+   };
+   
+   var fmt = format();
+   var to = call('Bto', fmt, 'called to');
+   var cat = category();
+   var from = call('Dfr', fmt, 'called from');
+   var cmd1 = command('E1cmd', 'telecommand 1');
+   var cmd2 = command('E2cmd', 'telecommand 2');
+   var f1 = frequency('Ffreq', 'frequency 1');
+   var f2 = frequency('Gfreq', 'frequency 2', (f1.type == 5));
+   var eos = end_of_sequence();
+   var ecc = error_check_char();
+
+   var pe_s = t.parity_errors? (' '+ color(ansi.BLUE, t.parity_errors +' PE')) : '';
+   var ecc_s = ecc.err? 'ECC FEC' : (ecc.fail? 'ECC' : '');
+   if (ecc_s != '') ecc_s = ' '+ color(ansi.RED, ecc_s);
+   
+   var ack = function(s1, s2) {
+      return (s1 + ((eos.n == t.ABQ)? ' ack' : '') + (s2? s2 : ''));
    };
    
    var type = function() {
@@ -403,7 +508,7 @@ DSC.prototype.process_msg = function() {
       
       // frequency
       if (f1.type == 6) {
-         s += f1.s;
+         s += ' '+ f1.s;
          if (f2.type == 6) s += '/'+ f2.s;
          s += ' kHz';
       } else
@@ -413,12 +518,13 @@ DSC.prototype.process_msg = function() {
          // f1.s     f2.s
          // 01 23 45 01 23 45
          // 55 Qd dm mD DD MM
-         //     |     +------ lon
-         //     +------------ lat
+         //    ||     +------ lon deg/min
+         //    |+------------ lat deg/min
+         //    +------------- quadrant
          var quad = +f1.s[2];
          var lat_sgn = (quad == 0 || quad == 1)? '' : '-';
          var lon_sgn = (quad == 0 || quad == 2)? '' : '-';
-         var s = lat_sgn + f1.s[3] + f1.s[4] +'\xb0'+ f1.s[5] + f2.s[0] +"'/"+
+         var s = ' '+ lat_sgn + f1.s[3] + f1.s[4] +'\xb0'+ f1.s[5] + f2.s[0] +"'/"+
             lon_sgn + f2.s[1] + f2.s[2] + f2.s[3] +'\xb0'+ f2.s[4] + f2.s[5] +"'";
       }
 
@@ -427,7 +533,13 @@ DSC.prototype.process_msg = function() {
    
    // FIXME: global cmd1 = 100,101? See man 8.3.1, third item
    var ds;
-   
+   // don't include ecc.err here: for now, let decode occur even if ecc has fec error preventing ecc check
+   var fec = (fmt.err || to.err || cat.err || from.err || cmd1.err || cmd2.err || f1.err || f2.err || eos.err);
+
+   if (fec) {
+      ;
+   } else
+      
    // A1-4.1: distress alerts
    // FMT_DISTRESS only used here, cat unused
    if (fmt.n == t.FMT_DISTRESS && eos.n == t.EOS) {
@@ -454,11 +566,12 @@ DSC.prototype.process_msg = function() {
    } else
 
    // A1-4.5: urgency & safety calls, all ships
-   if ((cat.n == t.CAT_SAFETY || cat.n == t.CAT_URGENCY) && fmt.n == t.FMT_ALL_SHIPS && eos.n == t.EOS) {
+   if ((cat.n == t.CAT_SAFETY || cat.n == t.CAT_URGENCY) && fmt.n == t.FMT_ALL_SHIPS && cmd2.n == t.CMD2_NOP && eos.n == t.EOS) {
       s = ds = '4.5';
       
       switch (cmd1.n) {
-         case t.CMD1_TEST: s = from_to(ack('Test')); break;
+         case t.CMD1_J3E_RT: s = from_to('SSB call'+ freq()); break;
+         case t.CMD1_F1B_FEC: s = from_to('FSK-FEC call'+ freq()); break;
       }
    } else
 
@@ -466,10 +579,11 @@ DSC.prototype.process_msg = function() {
    // differs from above in fmt
    if ((cat.n == t.CAT_SAFETY || cat.n == t.CAT_URGENCY) && fmt.n == t.FMT_GEO_AREA && eos.n == t.EOS) {
       s = ds = '4.6';
+      var s2 = (cmd2.n == t.CMD2_NOP)? '' : ((cmd2.n == t.CMD2_MED_TRANSPORTS)? ' medical' : ((cmd2.n == t.CMD2_NON_CONFLICT)? ' ships/aircraft' : ''));
 
       switch (cmd1.n) {
-         case t.CMD1_J3E_RT: if (cmd2.n == t.CMD2_NOP) s = from_to('SSB call '+ freq()); break;
-         case t.CMD1_F1B_FEC: if (cmd2.n == t.CMD2_NOP) s = from_to('FSK-FEC call '+ freq()); break;
+         case t.CMD1_J3E_RT: s = from_to('SSB call'+ s2 + freq()); break;
+         case t.CMD1_F1B_FEC: s = from_to('FSK-FEC call'+ s2 + freq()); break;
       }
    } else
 
@@ -480,22 +594,27 @@ DSC.prototype.process_msg = function() {
    
       if (cmd2.n == t.CMD2_NOP) {
          switch (cmd1.n) {
-            case t.CMD1_J3E_RT: if (cmd2.n == t.CMD2_NOP) s = from_to(ack2('SSB call', freq())); break;
-            case t.CMD1_F1B_FEC: if (cmd2.n == t.CMD2_NOP) s = from_to(ack2('FSK-FEC call', freq())); break;
-            case t.CMD1_F1B_ARQ: if (cmd2.n == t.CMD2_NOP) s = from_to(ack2('FSK-ARQ call', freq())); break;
-            case t.CMD1_POSITION: if (cmd2.n == t.CMD2_NOP) s = from_to(ack2('Position', freq())); break;
+            case t.CMD1_J3E_RT: s = from_to(ack('SSB call', freq())); break;
+            case t.CMD1_F1B_FEC: s = from_to(ack('FSK-FEC call', freq())); break;
+            case t.CMD1_F1B_ARQ: s = from_to(ack('FSK-ARQ call', freq())); break;
+            case t.CMD1_POSITION: s = from_to(ack('Position', freq())); break;
             case t.CMD1_TEST: s = from_to(ack('Test')); break;
          }
       } else {
          if (cmd1.n == t.CMD1_UNABLE_COMPLY && cmd2.n >= t.CMD2_UNABLE_FIRST && cmd2.n <= t.CMD2_UNABLE_LAST && eos.n == t.ABQ) {
-            s = from_to(color(ansi.YELLOW, 'Unable to comply ack') +' '+ freq());
+            s = from_to(color(ansi.YELLOW, 'Unable to comply ack') + freq());
          }
       }
    } else
 
    // A1-4.8: routine group calls
-   if (cat.n == t.CAT_ROUTINE && fmt.n == t.FMT_COMMON_INTEREST && eos.n == t.EOS) {
+   if (cat.n == t.CAT_ROUTINE && fmt.n == t.FMT_COMMON_INTEREST && cmd2.n == t.CMD2_NOP && eos.n == t.EOS) {
       s = ds = '4.8';
+
+      switch (cmd1.n) {
+         case t.CMD1_J3E_RT: s = from_to('SSB call'+ freq()); break;
+         case t.CMD1_F1B_FEC: s = from_to('FSK-FEC call'+ freq()); break;
+      }
    } else
 
    // A1-4.9: routine individual calls and acks
@@ -505,15 +624,15 @@ DSC.prototype.process_msg = function() {
 
       if (cmd2.n == t.CMD2_NOP) {
          switch (cmd1.n) {
-            case t.CMD1_J3E_RT: s = from_to(ack2('SSB call', freq())); break;
-            case t.CMD1_F1B_FEC: s = from_to(ack2('FSK-FEC call', freq())); break;
-            case t.CMD1_F1B_ARQ: s = from_to(ack2('FSK-ARQ call', freq())); break;
-            case t.CMD1_F1B_DATA: s = from_to(ack2('FSK-DATA call', freq())); break;
+            case t.CMD1_J3E_RT: s = from_to(ack('SSB call', freq())); break;
+            case t.CMD1_F1B_FEC: s = from_to(ack('FSK-FEC call', freq())); break;
+            case t.CMD1_F1B_ARQ: s = from_to(ack('FSK-ARQ call', freq())); break;
+            case t.CMD1_F1B_DATA: s = from_to(ack('FSK-DATA call', freq())); break;
             case t.CMD1_POLLING: s = from_to(ack('Polling')); break;
          }
       } else {
          if (cmd1.n == t.CMD1_UNABLE_COMPLY && cmd2.n >= t.CMD2_UNABLE_FIRST && cmd2.n <= t.CMD2_UNABLE_LAST && eos.n == t.ABQ) {
-            s = from_to(color(ansi.YELLOW, 'Unable to comply ack') +' '+ freq());
+            s = from_to(color(ansi.YELLOW, 'Unable to comply ack') + freq());
          }
       }
    } else
@@ -526,27 +645,33 @@ DSC.prototype.process_msg = function() {
       s = ds = '4.x UNKNOWN';
    }
    
-   var fec = (fmt.err || to.err || cat.err || from.err || cmd1.err || cmd2.err || f1.err || f2.err || eos.err || ecc.err);
-
    if (dbgUs) {
       var ok = '$$ '+ (fec? 'FEC FAIL' : 'OK');
       var to_s = kiwi_remove_escape_sequences(to.s);
       var from_s = kiwi_remove_escape_sequences(from.s);
       console.log(ok +' fmt='+ fmt.s +' to='+ to_s +' cat='+ cat.s +' from='+ from_s);
-      console.log(ok +' cmd1='+ cmd1.s +' cmd2='+ cmd2.s +' freq1='+ f1.s +' freq2='+ f2.s +' eos='+ eos.s +' ecc='+ ecc.s + pe);
+      console.log(ok +' cmd1='+ cmd1.s +' cmd2='+ cmd2.s +' freq1='+ f1.s +' freq2='+ f2.s +' eos='+ eos.s +' ecc='+ ecc.s + pe_s + ecc_s);
    }
 
+   var msg_s = '', err_s = '';
    if (fec) {
-      s = color(ansi.BLUE, 'FEC FAIL');
+      err_s = color(ansi.BLUE, t.FEC_errors +' FEC');
    } else {
       if (s.startsWith('4.'))
-         s = color(ansi.MAGENTA, 'FIXME '+ s) +' cat='+ cat.s +' fmt='+ fmt.s +' cmd1='+ cmd1.s+ ' cmd2='+ cmd2.s +
+         err_s = color(ansi.MAGENTA, 'FIXME '+ s) +' cat='+ cat.s +' fmt='+ fmt.s +' cmd1='+ cmd1.s+ ' cmd2='+ cmd2.s +
             ' from='+ from.s +' to='+ to.s +' freq1='+ f1.s+ ' freq2='+ f2.s +' eos='+ eos.s +' ecc='+ ecc.s;
       else
-         s = (dbgUs? (ds + ' ') : '') + type() +' '+ s;
+         msg_s = (t.test? 'TEST ' : '') + (dbgUs? (ds + ' ') : '') + type() +' '+ s;
+      if (t.test) t.tlist.shift();
    }
 
-   return t.output_msg(s + pe);
+   if (show_errs) {
+      s = (err_s != '')? err_s : msg_s;
+      return t.output_msg(s + pe_s + ecc_s);
+   } else {
+      s = (err_s != '')? '' : t.output_msg(msg_s + pe_s + ecc_s);
+      return s;
+   }
 }
 
 DSC.prototype.code_to_char = function(code) {
@@ -623,6 +748,11 @@ DSC.prototype.search_sync = function(bit) {
       if (t.syncC == t.svec[i] && t.syncB == t.svec[i+1] && t.syncA == t.svec[i+2]) {
          if (1 || t.dbg) console.log('SYNC-DRD-'+ i);
          t.seq = i+3;
+         t.full_syms = [];
+         t.syms = [];
+         t.bc_err = [];
+         t.parity_errors = 0;
+         t.FEC_errors = 0;
          t.synced = 1;
          return true;
       }
@@ -631,6 +761,11 @@ DSC.prototype.search_sync = function(bit) {
       if (t.syncE == t.svec[i] && t.syncC == t.svec[i+2] && t.syncA == t.svec[i+4]) {
          if (1 || t.dbg) console.log('SYNC-RRR-'+ i);
          t.seq = i+5;
+         t.full_syms = [];
+         t.syms = [];
+         t.bc_err = [];
+         t.parity_errors = 0;
+         t.FEC_errors = 0;
          t.synced = 1;
          return true;
       }
@@ -640,7 +775,7 @@ DSC.prototype.search_sync = function(bit) {
    return false;
 }
 
-DSC.prototype.process_char = function(_code, fixed_start, cb) {
+DSC.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
    var t = this;
    if (!t.synced) return { resync:0 };
 
@@ -660,6 +795,7 @@ DSC.prototype.process_char = function(_code, fixed_start, cb) {
    var bc_data = kiwi_bitCount(code ^ 0x7f);
    var zc = (bc_ck != bc_data)? (' Zck='+ bc_ck +' Zdata='+ bc_data) : '';
    t.bc_err[t.seq] = (bc_ck != bc_data);
+   if (t.bc_err[t.seq]) t.parity_errors++;
 
    if (t.dbg) console.log(t.seq.leadingZeros(2) +' '+ pos_s +': '+ chr +' '+ code.fieldWidth(3) +'.'+
       ' '+ bc_rev.toString(2).leadingZeros(3) +' '+ code.toString(2).leadingZeros(7) + zc);
@@ -690,14 +826,15 @@ DSC.prototype.process_char = function(_code, fixed_start, cb) {
          var dump = 0;
          if (eos) {
             if (t.seq != t.MSG_LEN_MIN) {
-               cb(t.output_msg(color(ansi.BLUE, 'non-std len='+ t.seq)));
+               if (show_errs) cb(t.output_msg(color(ansi.BLUE, 'non-std len='+ t.seq)));
                console.log('$$ non-std len='+ t.seq);
                dump = 1;
             }
-            cb(t.process_msg());
+            cb(t.process_msg(show_errs));
          } else {
-            cb(t.output_msg(color(ansi.BLUE, 'no EOS')));
-            console.log('$$ no EOS');
+            var pe = t.parity_errors? (' '+ color(ansi.BLUE, (t.parity_errors +' PE'))) : '';
+            if (show_errs) cb(t.output_msg(color(ansi.BLUE, 'no EOS') + pe));
+            console.log('$$ no EOS pe='+ t.parity_errors);
             dump = t.dump_eos;
          }
 
@@ -721,14 +858,6 @@ DSC.prototype.process_char = function(_code, fixed_start, cb) {
          return { resync:1 };
       }
    }
-   
-   /*
-   if (t.seq >= t.MSG_LEN_MIN) {
-      if (t.seq == t.MSG_LEN_MIN) cb(t.process_msg());
-      t.synced = 0;
-      return { resync:1 };
-   }
-   */
    
    return { resync:0 };
 }
@@ -1029,7 +1158,7 @@ this.MID =
     "775": "Venezuela"
 };
 
-this.MMSI =
+this.MMSI_coast =
 {
     "2040100": "Delgada",
     "2040200": "Horta",
