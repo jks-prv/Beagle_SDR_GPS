@@ -16,6 +16,15 @@ var nt = {
    menu0:      -1,
    menu1:      -1,
    menu2:      -1,
+   
+   mode: 0,
+   mode_s: [ 'normal', 'DX' ],
+   dsc_mode: 0,
+   dsc_mode_s: [ 'normal', 'show errs' ],
+   MODE_DECODE: 0,
+   MODE_DX: 1,
+   MODE_SHOW_ERRS: 1,
+   show_errs: 0,
 
    type: 0,
    TYPE_NAVTEX: 0,
@@ -34,7 +43,6 @@ var nt = {
    dxn: 80,
    fifo: [],
 
-   scope: 0,
    run: 0,
    single: 0,
    decim: 4,
@@ -101,53 +109,6 @@ function navtex_recv(data)
 	}
 }
 
-function navtex_scope(dv, edge)
-{
-   if (!nt.scope || !nt.run) return;
-   nt.sample_count++;
-   nt.edge |= edge;
-   if ((nt.sample_count & (nt.decim-1)) != 0) return;
-   
-   var cv = navtex_canvas;
-   var ct = navtex_canvas.ctx;
-   var w = cv.width;
-   var h = cv.height;
-   var x = nt.lhs + nt.x;
-   var y;
-
-   if (nt.edge) {
-      ct.fillStyle = 'red';
-      ct.fillRect(x,0, 1,h);
-   } else {
-      y = nt.last_y[nt.x];
-      ct.fillStyle = 'black';
-      if (y == -1) {
-         ct.fillRect(x,0, 1,h);
-      } else {
-         ct.fillRect(x,y, 1,1);
-      }
-      ct.fillStyle = 'yellow';
-      ct.fillRect(x,h/2, 1,1);
-   }
-
-   //dv /= 5;
-   if (dv > 1) dv = 1;
-   if (dv < -1) dv = -1;
-   y = Math.floor(h/2 + dv*h/4);
-   ct.fillStyle = 'lime';
-   ct.fillRect(x,y, 1,1);
-   nt.last_y[nt.x] = nt.edge? -1:y;
-   nt.edge = 0;
-
-   nt.x++;
-   if (nt.x >= w) {
-      nt.x = 0;
-      if (nt.single) {
-         nt.run = 0;
-      }
-   }
-}
-
 function navtex_baud_error_init()
 {
    var hh = nt.th/2;
@@ -165,7 +126,7 @@ function navtex_baud_error(err)
    var max = 8;
    if (err > max) err = max;
    if (err < -max) err = -max;
-   var h = Math.round(nt.th*0.8/2 * err/max);
+   var h = Math.round(nt.th*0.4/2 * err/max);
    //console.log('err='+ err +' h='+ h);
 
    var bw = 20;
@@ -258,8 +219,6 @@ var DSC_HF = {
    "Ship/ship_calling": [ 2177 ]
 };
 
-var navtex_mode_s = [ 'decode', 'DX', 'scope' ];
-
 function navtex_controls_setup()
 {
    nt.th = nt.dataH;
@@ -307,19 +266,10 @@ function navtex_controls_setup()
                w3_button('w3-padding-smaller', 'Next', 'w3_select_next_prev_cb', { dir:w3_MENU_NEXT, id:'nt.menu', func:'navtex_pre_select_cb' }),
                w3_button('w3-padding-smaller', 'Prev', 'w3_select_next_prev_cb', { dir:w3_MENU_PREV, id:'nt.menu', func:'navtex_pre_select_cb' }),
 
-               w3_select('w3-text-red', '', 'mode', 'nt.mode', 0, navtex_mode_s, 'navtex_mode_cb'),
+               w3_select('w3-text-red', '', 'NAVTEX', 'nt.mode', 0, nt.mode_s, 'navtex_mode_cb'),
+               w3_select('w3-text-red', '', 'DSC', 'nt.dsc_mode', 0, nt.dsc_mode_s, 'navtex_dsc_mode_cb'),
 
-               w3_inline('',     // because of /w3-margin-between-16 above
-                  w3_inline('id-navtex-decode/',
-                     w3_button('w3-padding-smaller w3-css-yellow', 'Clear', 'navtex_clear_button_cb', 0),
-                     w3_checkbox('w3-margin-left/w3-label-inline w3-label-not-bold/', 'inverted', 'nt.inverted', nt.inverted, 'navtex_inverted_cb')
-                  ),
-
-                  w3_inline('id-navtex-scope w3-hide/',     // so w3-margin-between-16 works when items below have w3-hide
-                     w3_button('w3-padding-smaller', 'Single', 'navtex_single_cb', 0)
-                  )
-               ),
-   
+               w3_button('w3-padding-smaller w3-css-yellow', 'Clear', 'navtex_clear_button_cb', 0),
                w3_button('id-navtex-log w3-padding-smaller w3-purple', 'Log', 'navtex_log_cb'),
 
                cfg.navtex.test_file? w3_button('w3-padding-smaller w3-aqua', 'Test', 'navtex_test_cb') : '',
@@ -344,10 +294,10 @@ function navtex_controls_setup()
          //console.log('NAVTEX param2 <'+ a +'>');
          var r;
          if (w3_ext_param('dx', a).match) {
-            navtex_mode_cb('id-nt.mode', 1);
+            navtex_mode_cb('id-nt.mode', nt.MODE_DX);
          } else
-         if (w3_ext_param('scope', a).match) {
-            navtex_mode_cb('id-nt.mode', 2);
+         if (w3_ext_param('errors', a).match) {
+            navtex_dsc_mode_cb('id-nt.dsc_mode', nt.MODE_SHOW_ERRS);
          } else
          if ((r = w3_ext_param('log_time', a)).match) {
             if (isNumber(r.num)) {
@@ -394,9 +344,8 @@ function navtex_controls_setup()
 function navtex_setup()
 {
 	nt.freq = ext_get_freq()/1e3;
-   console.log('NAVTEX/DSC SETUP freq='+ nt.freq +' cf='+ nt.cf +' shift='+ nt.shift  +' baud='+ nt.baud +' framing='+ nt.framing +' enc='+ nt.encoding +' inv='+ nt.inverted);
-	nt.jnx.setup_values(ext_sample_rate(), nt.cf, nt.shift, nt.baud, nt.framing, nt.inverted, nt.encoding);
-   w3_checkbox_set('nt.inverted', nt.inverted);
+   console.log('NAVTEX/DSC SETUP freq='+ nt.freq +' cf='+ nt.cf +' shift='+ nt.shift  +' baud='+ nt.baud +' framing='+ nt.framing +' enc='+ nt.encoding +' inv='+ nt.inverted +' show_errs='+ nt.show_errs);
+	nt.jnx.setup_values(ext_sample_rate(), nt.cf, nt.shift, nt.baud, nt.framing, nt.inverted, nt.encoding, nt.show_errs);
    navtex_crosshairs(1);
 }
 
@@ -544,30 +493,42 @@ function navtex_mode_cb(path, idx, first)
 {
    if (first) return;
 	idx = +idx;
-   nt.decode = nt.dx = nt.scope = 0;
+   w3_select_value(path, idx);
+   nt.decode = nt.dx = 0;
 
    switch (idx) {
    
-   case 0:  // decode
+   case nt.MODE_DECODE:
    default:
       nt.decode = 1;
       break;
 
-   case 1:  // DX
+   case nt.MODE_DX:
       nt.dx = 1;
       break;
+   }
+}
 
-   case 2:  // scope
-      nt.scope = 1;
-      nt.run = 1;
+function navtex_dsc_mode_cb(path, idx, first)
+{
+   if (first) return;
+	idx = +idx;
+   w3_select_value(path, idx);
+   nt.decode = nt.show_errs = 0;
+
+   switch (idx) {
+   
+   case nt.MODE_DECODE:
+   default:
+      nt.decode = 1;
+      break;
+
+   case nt.MODE_SHOW_ERRS:
+      nt.show_errs = 1;
       break;
    }
-
-   nt.jnx.set_scope_cb(nt.scope? navtex_scope : null);
-
-   w3_show_hide_inline('id-navtex-decode', !nt.scope);
-   w3_show_hide('id-navtex-console-msg', !nt.scope);
-   w3_show_hide_inline('id-navtex-scope', nt.scope);
+   
+   navtex_setup();
 }
 
 function navtex_clear_button_cb(path, idx, first)
@@ -576,16 +537,6 @@ function navtex_clear_button_cb(path, idx, first)
    navtex_console_status_msg_p.s = encodeURIComponent('\f');
    kiwi_output_msg('id-navtex-console-msgs', 'id-navtex-console-msg', navtex_console_status_msg_p);
    nt.log_txt = '';
-}
-
-function navtex_inverted_cb(path, checked, first)
-{
-   if (first) return;
-   checked = checked? 1:0;
-   nt.inverted = checked;
-   w3_checkbox_set(path, checked);
-   nt.jnx.invert = checked;
-   navtex_setup();
 }
 
 function navtex_single_cb(path, idx, first)

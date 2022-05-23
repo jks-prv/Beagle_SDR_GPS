@@ -358,7 +358,7 @@ function fsk_baud_error(err)
    var max = 8;
    if (err > max) err = max;
    if (err < -max) err = -max;
-   var h = Math.round(fsk.th*0.8/2 * err/max);
+   var h = Math.round(fsk.th*0.4/2 * err/max);
    //console.log('err='+ err +' h='+ h);
 
    var bw = 20;
