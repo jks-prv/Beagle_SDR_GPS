@@ -286,10 +286,10 @@ function navtex_controls_setup()
 	navtex_canvas.ctx = navtex_canvas.getContext("2d");
 
    // URL params that need to be setup after controls instantiated
-   nt.url_params = ext_param();
+   var p = nt.url_params = ext_param();
 	console.log('NAVTEX url_params='+ p);
-	if (nt.url_params) {
-      p = nt.url_params.split(',');
+	if (p) {
+      p = p.split(',');
       p.forEach(function(a, i) {
          //console.log('NAVTEX param2 <'+ a +'>');
          var r;
@@ -319,21 +319,23 @@ function navtex_controls_setup()
    ext_set_data_height(nt.dataH);
 	ext_set_controls_width_height(nt.ctrlW, nt.ctrlH);
 	
-	var p = nt.url_params;
-	var freq = parseFloat(p);
-	if (freq) {
-	   // select matching menu item frequency
-	   var found = false;
-      for (var i = 0; i < nt.n_menu; i++) {
-         var menu = 'nt.menu'+ i;
-         w3_select_enum(menu, function(option) {
-            //console.log('CONSIDER '+ parseFloat(option.innerHTML));
-            if (parseFloat(option.innerHTML) == freq) {
-               navtex_pre_select_cb(menu, option.value, false);
-               found = true;
-            }
-         });
-         if (found) break;
+	// first URL param can be a match in the preset menus
+	if (nt.url_params) {
+      var freq = parseFloat(nt.url_params);
+      if (!isNaN(freq)) {
+         // select matching menu item frequency
+         var found = false;
+         for (var i = 0; i < nt.n_menu; i++) {
+            var menu = 'nt.menu'+ i;
+            w3_select_enum(menu, function(option) {
+               //console.log('CONSIDER '+ parseFloat(option.innerHTML));
+               if (parseFloat(option.innerHTML) == freq) {
+                  navtex_pre_select_cb(menu, option.value, false);
+                  found = true;
+               }
+            });
+            if (found) break;
+         }
       }
    }
 	

@@ -505,7 +505,7 @@ function fsk_controls_setup()
    fsk.th = fsk.dataH;
 	fsk.saved_mode = ext_get_mode();
 	
-	if (dbgUs) {
+	if (dbgUs && !fsk_encoding_s.includes('DSC')) {
 	   fsk_framing_s.push('7/3');
 	   fsk_encoding_s.push('DSC');
 	}
@@ -636,7 +636,7 @@ function fsk_controls_setup()
 
                w3_inline('',     // because of /w3-margin-between-16 above
                   w3_inline('id-fsk-decode/',
-                     w3_button('w3-padding-smaller w3-css-yellow', 'Clear', 'fsk_clear_cb', 0)
+                     w3_button('w3-padding-smaller w3-css-yellow', 'Clear', 'fsk_clear_button_cb', 0)
                   ),
    
                   w3_inline('id-fsk-framing w3-hide/w3-margin-between-16',
@@ -992,8 +992,9 @@ function fsk_mode_cb(path, idx, first)
    w3_show_hide_inline('id-fsk-framing', fsk.show_framing);
 }
 
-function fsk_clear_cb(path, idx, first)
+function fsk_clear_button_cb(path, idx, first)
 {
+   if (first) return;
    fsk_console_status_msg_p.s = encodeURIComponent('\f');
    kiwi_output_msg('id-fsk-console-msgs', 'id-fsk-console-msg', fsk_console_status_msg_p);
 }

@@ -1,10 +1,15 @@
 // Copyright (c) 2022 John Seamons, ZL/KF6VO
 
-function DSC() {
+function DSC(init, output_cb) {
    var t = this;
 
    console.log('FSK encoder: DSC');
    t.isDSC = true;
+
+   if (init) {
+      output_cb('\f'+ ansi.RED +'WARNING: Do not use the DSC decoder in any life-safety application. Hobby radio monitoring only.\n'+ ansi.NORM +
+         'No distress messages are currently decoded. See the KiwiSDR forum for details.\n\n');
+   }
 
    t.dbg = 0;
    t.test_msgs = 0;
@@ -14,8 +19,8 @@ function DSC() {
    t.seq = 0;
    t.MSG_LEN_MIN = 62;
    t.MSG_LEN_MAX = 80;
-   t.LETTERS = -1;
-   t.FIGURES = -1;
+   t.FIRST_CALL = true;
+   t.POS_REQUEST = true;
    t.synced = 0;
 
    t.sym_s = [    // sync & format
@@ -141,23 +146,39 @@ function DSC() {
       var ALL = { s:'Afmt', n:t.FMT_ALL_SHIPS };
       var GEO = { s:'Afmt', n:t.FMT_GEO_AREA };
       var IS = { s:'Afmt', n:t.FMT_INDIV_STA };
+      var F_DIS = { s:'Afmt', n:t.FMT_DISTRESS };
+
+      var C_DIS = { s:'Cat', n:t.CAT_DISTRESS };
       var URG = { s:'Cat', n:t.CAT_URGENCY };
       var SAF = { s:'Cat', n:t.CAT_SAFETY };
       var ROU = { s:'Cat', n:t.CAT_ROUTINE };
+
       var J3E_RT = { s:'E1cmd', n:t.CMD1_J3E_RT };
-      var TTY_FEC = { s:'E1cmd', n:t.CMD1_F1B_FEC };
+      var FSK_FEC = { s:'E1cmd', n:t.CMD1_F1B_FEC };
+      var POS = { s:'E1cmd', n:t.CMD1_POSITION };
+
       var MED = { s:'E2cmd', n:t.CMD2_MED_TRANSPORTS };
+
       var F1 = { s:'Ffreq1', n:02 };
       var F2 = { s:'Ffreq2', n:34 };
       var F3 = { s:'Ffreq3', n:56 };
       var G1 = { s:'Ffreq1', n:12 };
       var G2 = { s:'Ffreq2', n:78 };
       var G3 = { s:'Ffreq3', n:90 };
+
       var EOS = { s:'eos', n:t.EOS };
       var ARQ = { s:'eos', n:t.ARQ };
       var ABQ = { s:'eos', n:t.ABQ };
       t.tlist = [];
 
+      // 4.1 distress alert
+      t.tlist.push([ F_DIS, C_DIS, EOS ]);
+      // 4.7 position request ("pos3")
+      t.tlist.push([ IS, SAF, POS, { s:'Ffreq1', n:55 }, { s:'Ffreq2', n:21 }, { s:'Ffreq3', n:23 }, { s:'Gfreq1', n:41 }, { s:'Gfreq2', n:56 }, { s:'Gfreq3', n:78 }, ARQ ]);
+      // 4.7 position request ack (special "pos4" position msg)
+      t.tlist.push([ IS, SAF, POS, { s:'Ffreq1', n:21 }, { s:'Ffreq2', n:23 }, { s:'Ffreq3', n:41 }, { s:'Gfreq1', n:56 }, { s:'Gfreq2', n:78 }, { s:'Gfreq3', n:t.NOP }, ABQ ]);
+      // 4.9 call ack w/ position ("pos2")
+      t.tlist.push([ IS, ROU, J3E_RT, { s:'Ffreq1', n:55 }, { s:'Ffreq2', n:21 }, { s:'Ffreq3', n:23 }, { s:'Gfreq1', n:41 }, { s:'Gfreq2', n:56 }, { s:'Gfreq3', n:78 }, ABQ ]);
       // 4.5 from => to:all-ships
       t.tlist.push([ ALL, SAF, J3E_RT, F1, F2, F3, EOS ]);
       // 4.6 from => to:geo
@@ -165,11 +186,9 @@ function DSC() {
       // 4.7 freq
       t.tlist.push([ IS, SAF, J3E_RT, F1, F2, F3, G1, G2, G3, ARQ ]);
       // 4.8 from => to:ship-group
-      t.tlist.push([ GRP, ROU, TTY_FEC, { s:'Bto1', n:02 }, { s:'Bto2', n:19 }, { s:'Bto3', n:00 }, { s:'Bto4', n:00 }, { s:'Bto5', n:00 }, F1, F2, F3, EOS ]);
+      t.tlist.push([ GRP, ROU, FSK_FEC, { s:'Bto1', n:02 }, { s:'Bto2', n:19 }, { s:'Bto3', n:00 }, { s:'Bto4', n:00 }, { s:'Bto5', n:00 }, F1, F2, F3, EOS ]);
       // 4.9 unable
       t.tlist.push([ IS, ROU, { s:'E1cmd', n:t.CMD1_UNABLE_COMPLY }, { s:'E2cmd', n:t.CMD2_UNABLE_FIRST }, F1, F2, F3, ABQ ]);
-      // 4.9 position
-      t.tlist.push([ IS, ROU, J3E_RT, { s:'Ffreq1', n:55 }, { s:'Ffreq2', n:21 }, { s:'Ffreq3', n:23 }, { s:'Gfreq1', n:41 }, { s:'Gfreq2', n:56 }, { s:'Gfreq3', n:78 }, ABQ ]);
    }
    
    t.init_MID_MMSI();
@@ -278,7 +297,7 @@ DSC.prototype.process_msg = function(show_errs) {
       return t.MMSI_coast[mmsi_7] || ('MMSI_7='+ mmsi_7 +'?');
    }
 
-   var call = function(sym_name, fmt, id) {
+   var call = function(sym_name, fmt, id) {     // call(
       var c12 = check(sym_name +'1', 2, id);
       var c34 = check(sym_name +'2', 2, id);
       var c56 = check(sym_name +'3', 2, id);
@@ -306,7 +325,7 @@ DSC.prototype.process_msg = function(show_errs) {
       var isMID2 = (iden2 >= 2 && iden2 <= 7);
       var isMID3 = (iden3 >= 2 && iden3 <= 7);
 
-      var s, format = fmt.n, err = 0;
+      var s, format = fmt.n;
       
       // FMT_GEO_AREA only applies to "to" address
       if (format == t.FMT_GEO_AREA && sym_name == 'Dfr') format = t.FMT_INDIV_STA;
@@ -351,7 +370,7 @@ DSC.prototype.process_msg = function(show_errs) {
             s = mmsi_s +'[NAVAID: '+ mid(mid_s) +']';
          } else {
             // FIXME: worth doing the more uncommon ones?
-            s = mmsi_s;
+            s = color(ansi.YELLOW, mmsi_s) +'[Unknown]';
          }
          break;
       
@@ -386,11 +405,11 @@ DSC.prototype.process_msg = function(show_errs) {
          break;
       
       default:
-         s = mmsi_s +'[other]';
+         s = color(ansi.YELLOW, mmsi_s) +'[Other]';
          break;
       }
 
-      return { s:s, err:err };
+      return { s:s, z: mmsi_s + _90[1], err:0 };
    }
    
    var command = function(sym_name, id) {
@@ -400,7 +419,7 @@ DSC.prototype.process_msg = function(show_errs) {
       return cmd;
    };
    
-   var frequency = function(sym_name, id, force_pos) {
+   var frequency = function(sym_name, first_call, id, force_pos) {      // frequency(
       var f1 = check(sym_name +'1', 2, id);
       var f2 = check(sym_name +'2', 2, id);
       var f3 = check(sym_name +'3', 2, id);
@@ -409,16 +428,19 @@ DSC.prototype.process_msg = function(show_errs) {
       ecc_ck.push(f3.n);
       if (f1.err || f2.err || f3.err) return { s:'freqFEC', err:1 };
 
-      if (f1.nop) f1.z = '*';
-      if (f2.nop) f2.z = '*';
-      if (f3.nop) f3.z = '*';
       var pre = '', type = 0;
       
-      if (!f1.nop && !f2.nop && !f3.nop) {
+      if (!f1.nop && !f2.nop) {     // can't check for !f3.nop because it's true for the CMD1_POSITION case
          var n = f1.z[0];
+
+         // don't know eos yet, so this is just speculative for possible later eos=ABQ
+         if (first_call && cmd1.n == t.CMD1_POSITION) {
+            type = 5;
+            //console.log('sym_name='+ sym_name +' CMD1_POSITION');
+         }
          
          // position
-         if (force_pos == true || n == '5') {
+         if (force_pos == true || n == '5' || type == 5) {
             return { s: f1.z + f2.z + f3.z, type:5, err:0 };
          }
       
@@ -435,6 +457,10 @@ DSC.prototype.process_msg = function(show_errs) {
          }
       }
 
+      if (f1.nop) f1.z = '*';
+      if (f2.nop) f2.z = '*';
+      if (f3.nop) f3.z = '*';
+      //console.log('sym_name='+ sym_name +' default return type='+ type);
       return { s: pre + f1.z +'|'+ f2.z +'|'+ f3.z, type:type, err:0 };
    }
    
@@ -447,6 +473,8 @@ DSC.prototype.process_msg = function(show_errs) {
    
    var error_check_char = function() {
       var ecc = check('ecc', 2, 'ECC');
+      ecc.fail = false;
+      
       var dump = function() {
          err = [];
          ecc_ck.forEach(function(a, i) { err.push( { n: t.ecc_sym[i], s: a } ); });
@@ -475,8 +503,8 @@ DSC.prototype.process_msg = function(show_errs) {
    var from = call('Dfr', fmt, 'called from');
    var cmd1 = command('E1cmd', 'telecommand 1');
    var cmd2 = command('E2cmd', 'telecommand 2');
-   var f1 = frequency('Ffreq', 'frequency 1');
-   var f2 = frequency('Gfreq', 'frequency 2', (f1.type == 5));
+   var f1 = frequency('Ffreq', t.FIRST_CALL, 'frequency 1');
+   var f2 = frequency('Gfreq', false, 'frequency 2', (f1.type == 5));
    var eos = end_of_sequence();
    var ecc = error_check_char();
 
@@ -503,7 +531,7 @@ DSC.prototype.process_msg = function(show_errs) {
       return (s +', '+ from.s +' => '+ to.s);
    };
    
-   var freq = function() {
+   var freq = function(pos_request) {     // freq(
       var s = '';
       
       // frequency
@@ -515,17 +543,24 @@ DSC.prototype.process_msg = function(show_errs) {
       
       // position
       if (f1.type == 5) {
-         // f1.s     f2.s
-         // 01 23 45 01 23 45
-         // 55 Qd dm mD DD MM
-         //    ||     +------ lon deg/min
-         //    |+------------ lat deg/min
-         //    +------------- quadrant
-         var quad = +f1.s[2];
+
+         // "pos[23]" begin with "55" (offset 2)
+         // "pos4" ends with NOP (offset 0)
+         var i = (pos_request == true && eos.n == t.ABQ)? 0 : 2;
+         var p = f1.s + f2.s;
+
+         // spec position ack format
+         // p[0-11]
+         // 01 23 45 67 89
+         // Qd dm mD DD MM
+         // ||     +------ lon deg/min
+         // |+------------ lat deg/min
+         // +------------- quadrant
+         var quad = +p[i+0];
          var lat_sgn = (quad == 0 || quad == 1)? '' : '-';
          var lon_sgn = (quad == 0 || quad == 2)? '' : '-';
-         var s = ' '+ lat_sgn + f1.s[3] + f1.s[4] +'\xb0'+ f1.s[5] + f2.s[0] +"'/"+
-            lon_sgn + f2.s[1] + f2.s[2] + f2.s[3] +'\xb0'+ f2.s[4] + f2.s[5] +"'";
+         var s = ' '+ lat_sgn + p[i+1] + p[i+2] +'\xb0'+ p[i+3] + p[i+4] +"'/"+
+            lon_sgn + p[i+5] + p[i+6] + p[i+7] +'\xb0'+ p[i+8] + p[i+9] +"'";
       }
 
       return s;
@@ -597,7 +632,7 @@ DSC.prototype.process_msg = function(show_errs) {
             case t.CMD1_J3E_RT: s = from_to(ack('SSB call', freq())); break;
             case t.CMD1_F1B_FEC: s = from_to(ack('FSK-FEC call', freq())); break;
             case t.CMD1_F1B_ARQ: s = from_to(ack('FSK-ARQ call', freq())); break;
-            case t.CMD1_POSITION: s = from_to(ack('Position', freq())); break;
+            case t.CMD1_POSITION: s = from_to(ack('Position request', freq(t.POS_REQUEST))); break;
             case t.CMD1_TEST: s = from_to(ack('Test')); break;
          }
       } else {
@@ -642,7 +677,7 @@ DSC.prototype.process_msg = function(show_errs) {
    if (cat.n == t.CAT_ROUTINE && fmt.n == t.FMT_IS_SEMI_AUTO && (eos.n == t.ARQ || eos.n == t.ABQ)) {
       s = ds = '4.10';
    } else {
-      s = ds = '4.x UNKNOWN';
+      s = ds = '4.x';
    }
    
    if (dbgUs) {
@@ -656,13 +691,18 @@ DSC.prototype.process_msg = function(show_errs) {
    var msg_s = '', err_s = '';
    if (fec) {
       err_s = color(ansi.BLUE, t.FEC_errors +' FEC');
+      ecc_s = '';    // if fec errors don't bother displaying ecc which will always have failed
    } else {
-      if (s.startsWith('4.'))
-         err_s = color(ansi.MAGENTA, 'FIXME '+ s) +' cat='+ cat.s +' fmt='+ fmt.s +' cmd1='+ cmd1.s+ ' cmd2='+ cmd2.s +
-            ' from='+ from.s +' to='+ to.s +' freq1='+ f1.s+ ' freq2='+ f2.s +' eos='+ eos.s +' ecc='+ ecc.s;
-      else
-         msg_s = (t.test? 'TEST ' : '') + (dbgUs? (ds + ' ') : '') + type() +' '+ s;
-      if (t.test) t.tlist.shift();
+      if (s.startsWith('4.')) {
+         msg_s = color(ansi.MAGENTA, 'DECODE '+ s) +' fmt='+ fmt.n +' cat='+ cat.n +' cmd1='+ cmd1.n+ ' cmd2='+ cmd2.n +
+            ' from='+ from.z +' to='+ to.z +' freq1='+ f1.s + ' freq2='+ f2.s +' eos='+ eos.n +' ecc='+ ecc.n;
+      } else {
+         msg_s = (dbgUs? (ds + ' ') : '') + type() +' '+ s;
+      }
+      if (t.test) {
+         msg_s = 'TEST '+ msg_s;
+         t.tlist.shift();
+      }
    }
 
    if (show_errs) {

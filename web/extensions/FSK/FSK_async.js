@@ -26,7 +26,7 @@
 function FSK_async(framing, encoding) {
    var t = this;
    t.framing = framing;
-   t.start_bit = 1;
+   t.start_bit = 1;     // there is always one start bit in asymc comm
    t.data_bits = +framing.substr(0,1);
    t.stop_variable = 0;
    t.raw = 0;
@@ -87,7 +87,6 @@ function FSK_async(framing, encoding) {
       t.CHU = 1;
       t.CHU_ch = [];
       t.CHU_cn = [];
-      t.start_bit = 0;
       t.data_bits = 8;
       t.parity_bits = 0;
       t.stop_bits = 2;
@@ -105,7 +104,7 @@ function FSK_async(framing, encoding) {
    if (t.stop_bits == 1.5) t.nbits *= 2;
    t.msb = 1 << (t.nbits - 1);
    t.data_msb = 1 << (t.data_bits - 1);
-   console.log('FSK encoder: FSK_async data_bits='+ t.data_bits +' parity_bits='+ t.parity_bits +' stop_bits='+ t.stop_bits +' nbits='+ t.nbits +' data_msb=0x'+ t.data_msb.toString(16) +' msb=0x'+ t.msb.toString(16) +' enc='+ encoding);
+   console.log('FSK encoder: FSK_async start_bit='+ t.start_bit +' data_bits='+ t.data_bits +' parity_bits='+ t.parity_bits +' stop_bits='+ t.stop_bits +' nbits='+ t.nbits +' data_msb=0x'+ t.data_msb.toString(16) +' msb=0x'+ t.msb.toString(16) +' enc='+ encoding);
    t.ITA2 = t.ASCII = 0;
    
    switch (encoding) {
@@ -270,19 +269,31 @@ FSK_async.prototype.code_to_char = function(code, shift, fixed_start) {
             t.CHU_cn = [];
          }
          
-         code = (((code & 0xf) << 4) & 0xf0) | (((code & 0xf0) >>> 4) & 0xf);
+         code = (((code & 0xf) << 4) & 0xf0) | (((code & 0xf0) >>> 4) & 0xf);    // swap nybbles
          t.CHU_ch.push(code);
          t.CHU_cn.push(code ^ 0xff);
          
-         if (t.CHU_ch.length == 10) {
+         var dump = function(a) {
+            var s = [];
+            a.forEach(function(el, i) {
+               s[i] = el.toHex(-2);
+            });
+            return s.join('_');
+         };
+
+         // see: nrc.canada.ca/en/certifications-evaluations-standards/canadas-official-time/chu-broadcast-codes
+         if (t.CHU_ch.length == 10) {     // 5 data bytes, repeated twice
+            //console.log('CHU '+ dump(t.CHU_ch));
             var c = t.CHU_ch;
             var f1 = c[0] & 0xf0, f2 = c[5] & 0xf0, s1 = c[4] & 0xf0, s2 = c[9] & 0xf0;
 
+            // format "A", seconds 32-39: 6d dd hh mm ss  (first s in ss will always be 3)
             if (f1 == 0x60 && s1 == 0x30 && f2 == 0x60 && s2 == 0x30 &&
                c[0] == c[5] && c[1] == c[6] && c[2] == c[7] && c[3] == c[8] && c[4] == c[9]) {
                var d = new Date();
                s = 'CHU '+ c[2].toHex(-2) +':'+ c[3].toHex(-2) +':'+ c[4].toHex(-2) +' UTC (browser '+ d.toUTCString().substr(17,8) +')\n';
             } else {
+               // format "B", second 31: xz yy yy tt aa (second repeat bytes all inverted)
                var cn = t.CHU_cn;
                if (c[0] == cn[5] && c[1] == cn[6] && c[2] == cn[7] && c[3] == cn[8] && c[4] == cn[9]) {
                   var yyyy = c[1].toHex(-2) + c[2].toHex(-2);
