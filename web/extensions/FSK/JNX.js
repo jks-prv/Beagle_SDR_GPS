@@ -26,6 +26,7 @@
 function JNX()
 {
    var t = this;
+   t.init = true;
    
    t.State_e = { NOSIGNAL:0, SYNC1:1, SYNC2:2, READ_DATA:3, FIXED_LENGTH:4 };
    t.states = [ 'NOSIGNAL', 'SYNC1', 'SYNC2', 'READ_DATA', 'FIXED_LENGTH' ];
@@ -37,9 +38,9 @@ function JNX()
    t.fp_WAIT = 1;
    t.fp_WAIT2 = 2;
    t.fp_START = 3;
-   t.fp_SYNC = 4;
-   t.fp_SYNC_START = 5;
-   t.fp_PASS = 6;
+   t.fp_PASS = 4;
+   t.fp_SYNC = 5;
+   t.fp_SYNC_START = 6;
    
    // constants
    t.invsqr2 = 1.0 / Math.sqrt(2);
@@ -98,11 +99,12 @@ JNX.prototype.setup_values = function(sample_rate, center_frequency_f, shift_Hz,
       t.fp = t.fp_OFF;
    
    if (0 && dbgUs && framing == 'CHU') {
+      //t.trace = 1;
       //t.dbg = 1;
       t.chu_dbg = 1;
    }
    
-   if (1 && dbgUs && framing == 'DSC') {
+   if (0 && dbgUs && framing == 'DSC') {
       t.trace = 1;
       t.dbg = 1;
    }
@@ -123,7 +125,8 @@ JNX.prototype.setup_values = function(sample_rate, center_frequency_f, shift_Hz,
          break;
    
       case 'DSC':
-         t.encoding = new DSC();
+         t.encoding = new DSC(t.init, t.output_char_cb);
+         t.init = false;
          break;
    
    }
@@ -362,10 +365,10 @@ JNX.prototype.process_data = function(samps, nsamps) {
          }
          if (t.chu_bn >= 1 && t.chu_bn <= 8) { t.chu_s += bit; t.chu_v >>= 1; t.chu_v |= bit? 0x80:0; }
          if (t.chu_bn == 8) t.chu_s += ' ';
-         if (t.chu_bn >= 9 && t.chu_bn <= 10) { t.chu_s += bit; t.chu_s1 += bit; }
+         if (t.chu_bn >= 9 && t.chu_bn <= 10) { t.chu_s += bit; t.chu_s1 += bit; }     // stop bits
          if (t.chu_bn == 10) {
             var hv = t.chu_v;
-            hv = (((hv & 0xf) << 4) & 0xf0) | (((hv & 0xf0) >>> 4) & 0xf);
+            hv = (((hv & 0xf) << 4) & 0xf0) | (((hv & 0xf0) >>> 4) & 0xf);    // swap nybble
             t.chu_s = t.chu_cc.leadingZeros(2) +': '+ t.chu_s +' '+ hv.toHex(-2) +' ^'+ (hv ^ 0xff).toHex(-2) +' ';
             //console.log(t.chu_s);
             t.chu_s1 += '_'+ hv.toHex(-2) +' ';
@@ -384,7 +387,7 @@ JNX.prototype.process_data = function(samps, nsamps) {
 
          //t.sample_count++; continue;
       }
-      
+
       if (t.fp == t.fp_SYNC) {
          if (t.encoding.search_sync(bit)) {
             t.sync_setup = 1;

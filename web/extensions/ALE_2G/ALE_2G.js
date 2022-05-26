@@ -1194,6 +1194,7 @@ function ALE_2G_blur()
 	ext_send('SET stop');
 	console.log('ALE_2G_blur saved_mode='+ ale.saved_mode);
 	ext_set_mode(ale.saved_mode);
+   kiwi_clearInterval(ale.log_interval);
 }
 
 function ALE_2G_help(show)

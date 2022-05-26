@@ -375,6 +375,7 @@ function hfdl_controls_setup()
             w3_button('w3-padding-smaller', 'Next', 'w3_select_next_prev_cb', { dir:w3_MENU_NEXT, id:'hfdl.menu', isNumeric:true, func:'hfdl_np_pre_select_cb' }),
             w3_button('w3-padding-smaller', 'Prev', 'w3_select_next_prev_cb', { dir:w3_MENU_PREV, id:'hfdl.menu', isNumeric:true, func:'hfdl_np_pre_select_cb' }),
             w3_button('id-hfdl-clear-button w3-padding-smaller w3-css-yellow', 'Clear', 'hfdl_clear_button_cb'),
+            w3_button('id-hfdl-log w3-padding-smaller w3-purple', 'Log', 'hfdl_log_cb'),
             w3_button('id-id-hfdl-test w3-padding-smaller w3-aqua', 'Test', 'hfdl_test_cb', 1),
             w3_div('id-hfdl-bar-container w3-progress-container w3-round-large w3-white w3-hide|width:70px; height:16px',
                w3_div('id-hfdl-bar w3-progressbar w3-round-large w3-light-green|width:0%', '&nbsp;')
@@ -1480,7 +1481,10 @@ function hfdl_log_mins_cb(path, val)
 	w3_set_value(path, hfdl.log_mins);
 
    kiwi_clearInterval(hfdl.log_interval);
-   if (hfdl.log_mins) hfdl.log_interval = setInterval(function() { hfdl_log_cb(); }, hfdl.log_mins * 60000);
+   if (hfdl.log_mins != 0) {
+      console.log('HFDL logging..');
+      hfdl.log_interval = setInterval(function() { hfdl_log_cb(); }, hfdl.log_mins * 60000);
+   }
 }
 
 function hfdl_log_cb()
@@ -1544,6 +1548,7 @@ function HFDL_blur()
    // anything that needs to be done when extension blurred (closed)
 	ext_set_mode(hfdl.saved_mode);
    ext_agc_delay(hfdl.save_agc_delay);
+   kiwi_clearInterval(hfdl.log_interval);
 }
 
 function HFDL_help(show)
