@@ -560,6 +560,7 @@ function NAVTEX_blur()
 	ext_unregister_audio_data_cb();
 	ext_set_mode(nt.saved_mode);
    navtex_crosshairs(0);
+   kiwi_clearInterval(nt.log_interval);
 }
 
 // called to display HTML for configuration parameters in admin interface

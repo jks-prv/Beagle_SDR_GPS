@@ -65,6 +65,10 @@ var fsk = {
    
    CHU_offset: 2.125,
    
+   log_mins: 0,
+   log_interval: null,
+   log_txt: '',
+
    last_last: 0
 };
 
@@ -391,6 +395,9 @@ function fsk_output_char(s)
    }
    
    fsk_console_status_msg_p.s = encodeURIComponent(s);
+   fsk.log_txt += kiwi_remove_escape_sequences(kiwi_decodeURIComponent('FSK', c));
+
+   // kiwi_output_msg() does decodeURIComponent()
    kiwi_output_msg('id-fsk-console-msgs', 'id-fsk-console-msg', fsk_console_status_msg_p);
 }
 
@@ -635,8 +642,11 @@ function fsk_controls_setup()
                w3_select('w3-text-red', '', 'mode', 'fsk.mode', 0, fsk_mode_s, 'fsk_mode_cb'),
 
                w3_inline('',     // because of /w3-margin-between-16 above
-                  w3_inline('id-fsk-decode/',
-                     w3_button('w3-padding-smaller w3-css-yellow', 'Clear', 'fsk_clear_button_cb', 0)
+                  w3_inline('id-fsk-decode/w3-margin-between-16',
+                     w3_button('w3-padding-smaller w3-css-yellow', 'Clear', 'fsk_clear_button_cb', 0),
+                     w3_button('id-fsk-log w3-padding-smaller w3-purple', 'Log', 'fsk_log_cb'),
+                     w3_input('id-fsk-log-mins/w3-label-not-bold/w3-ext-retain-input-focus|padding:0;width:auto|size=4',
+                        'log min', 'fsk.log_mins', fsk.log_mins, 'fsk_log_mins_cb')
                   ),
    
                   w3_inline('id-fsk-framing w3-hide/w3-margin-between-16',
@@ -676,6 +686,11 @@ function fsk_controls_setup()
          } else
          if (w3_ext_param('scope', a).match) {
             fsk_mode_cb('id-fsk.mode', fsk.MODE_SCOPE);
+         } else
+         if ((r = w3_ext_param('log_time', a)).match) {
+            if (isNumber(r.num)) {
+               fsk_log_mins_cb('id-fsk.log_mins', r.num);
+            }
          } else
          if (cfg.fsk.test_file && w3_ext_param('test', a).match) {
             ext_send('SET test');
@@ -997,6 +1012,35 @@ function fsk_clear_button_cb(path, idx, first)
    if (first) return;
    fsk_console_status_msg_p.s = encodeURIComponent('\f');
    kiwi_output_msg('id-fsk-console-msgs', 'id-fsk-console-msg', fsk_console_status_msg_p);
+   fsk.log_txt = '';
+}
+
+function fsk_log_mins_cb(path, val)
+{
+   fsk.log_mins = w3_clamp(+val, 0, 24*60, 0);
+   console.log('fsk_log_mins_cb path='+ path +' val='+ val +' log_mins='+ fsk.log_mins);
+	w3_set_value(path, fsk.log_mins);
+
+   kiwi_clearInterval(fsk.log_interval);
+   if (fsk.log_mins != 0) {
+      console.log('FSK logging..');
+      fsk.log_interval = setInterval(function() { fsk_log_cb(); }, fsk.log_mins * 60000);
+   }
+}
+
+function fsk_log_cb()
+{
+   var ts = kiwi_host() +'_'+ new Date().toISOString().replace(/:/g, '_').replace(/\.[0-9]+Z$/, 'Z') +'_'+ w3_el('id-freq-input').value +'_'+ cur_mode;
+   var txt = new Blob([fsk.log_txt], { type: 'text/plain' });
+   var a = document.createElement('a');
+   a.style = 'display: none';
+   a.href = window.URL.createObjectURL(txt);
+   a.download = 'FSK.'+ ts +'.log.txt';
+   document.body.appendChild(a);
+   console.log('fsk_log: '+ a.download);
+   a.click();
+   window.URL.revokeObjectURL(a.href);
+   document.body.removeChild(a);
 }
 
 function fsk_single_cb(path, idx, first)
@@ -1068,6 +1112,7 @@ function FSK_blur()
 	ext_unregister_audio_data_cb();
 	ext_set_mode(fsk.saved_mode);
    fsk_crosshairs(0);
+   kiwi_clearInterval(fsk.log_interval);
 }
 
 // called to display HTML for configuration parameters in admin interface
@@ -1098,11 +1143,11 @@ function FSK_help(show)
          
          'URL parameters: <br>' +
          'First parameter can be a frequency matching an entry in station menus. <br>' +
-         'shift:<i>num</i> &nbsp; baud:<i>num</i> &nbsp; framing:<i>value</i> &nbsp; encoding:<i>value</i> &nbsp; inverted<i>[:0|1]</i> <br>' +
+         'shift:<i>num</i> &nbsp; baud:<i>num</i> &nbsp; framing:<i>value</i> &nbsp; encoding:<i>value</i> &nbsp; inverted<i>[:0|1]</i> &nbsp; log_time:<i>mins</i> <br>' +
          'Values are those appearing in their respective menus. <br>' +
          'Any number for shift and baud can be used. Not just the preset values in the menus. <br>' +
          'Keywords are case-insensitive and can be abbreviated. <br>' +
-         'So for example this is valid: <i>ext=fsk,147.3,s:425,b:200,a,i:0</i> <br>' +
+         'So for example this is valid: <i>ext=fsk,147.3,s:425,b:200,a,i:0</i> &nbsp; <i>ext=fsk,2474,log:5 <br>' +
          '';
       confirmation_show_content(s, 610, 300);
    }

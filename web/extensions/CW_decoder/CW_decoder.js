@@ -11,6 +11,11 @@ var cw = {
    // must set "remove_returns" so output lines with \r\n (instead of \n alone) don't produce double spacing
    console_status_msg_p: { scroll_only_at_bottom: true, process_return_alone: false, remove_returns: true, ncol: 135 },
 
+   log_mins: 0,
+   log_interval: null,
+   log_txt: '',
+
+   last_last: 0
 };
 
 function CW_decoder_main()
@@ -90,6 +95,8 @@ function cw_decoder_recv(data)
 function cw_decoder_output_chars(c)
 {
    cw.console_status_msg_p.s = c;      // NB: already encoded on C-side
+   cw.log_txt += kiwi_remove_escape_sequences(kiwi_decodeURIComponent('CW', c));
+
    // kiwi_output_msg() does decodeURIComponent()
    kiwi_output_msg('id-cw-console-msgs', 'id-cw-console-msg', cw.console_status_msg_p);
 }
@@ -113,13 +120,16 @@ function cw_decoder_controls_setup()
 				   w3_div('w3-medium w3-text-aqua', '<b>CW decoder</b>'), 30,
 					w3_div('', 'From Loftur Jonasson, TF3LJ / VE2LJX <br> and the <b><a href="https://github.com/df8oe/UHSDR" target="_blank">UHSDR project</a></b> &copy; 2016'), 55
 				),
-				w3_inline('',
-               w3_button('w3-padding-smaller', 'Clear', 'cw_clear_cb', 0),
-               w3_div('id-cw-wpm w3-margin-left', '0 WPM'),
-               w3_checkbox('w3-margin-left w3-label-inline w3-label-not-bold', 'word space<br>correction', 'cw.wspace', true, 'cw_decoder_wsc_cb'),
-               w3_input('id-cw-threshold w3-margin-left/w3-label-not-bold/|padding:0;width:auto|size=4', 'threshold', 'cw.threshold', cw.threshold, 'cw_decoder_threshold_cb'),
-               w3_button('w3-margin-left w3-padding-smaller', 'Reset', 'cw_reset_cb', 0),
-               w3_div('id-cw-train w3-margin-left w3-padding-small w3-text-black w3-hide', 'train')
+				w3_inline('/w3-margin-between-16',
+               w3_button('w3-padding-smaller', 'Clear', 'cw_clear_button_cb', 0),
+               w3_div('id-cw-wpm', '0 WPM'),
+               w3_checkbox('w3-label-inline w3-label-not-bold', 'word space<br>correction', 'cw.wspace', true, 'cw_decoder_wsc_cb'),
+               w3_input('id-cw-threshold/w3-label-not-bold/|padding:0;width:auto|size=4', 'threshold', 'cw.threshold', cw.threshold, 'cw_decoder_threshold_cb'),
+               w3_button('w3-padding-smaller', 'Reset', 'cw_reset_cb', 0),
+               w3_div('id-cw-train w3-padding-small w3-text-black w3-hide', 'train'),
+               w3_button('id-cw-log w3-padding-smaller w3-purple', 'Log', 'cw_log_cb'),
+               w3_input('id-cw-log-mins/w3-label-not-bold/w3-ext-retain-input-focus|padding:0;width:auto|size=4',
+                  'log min', 'cw.log_mins', cw.log_mins, 'cw_log_mins_cb')
             )
 			)
 		);
@@ -143,7 +153,7 @@ function cw_decoder_controls_setup()
 	cw.pboff_locked = parseFloat(p);
 	console.log('CW pboff_locked='+ cw.pboff_locked);
 	
-   cw_clear_cb();
+   cw_clear_button_cb();
 	ext_send('SET cw_start');
 	cw.pboff = -1;
 	CW_decoder_environment_changed();
@@ -164,11 +174,40 @@ function CW_decoder_environment_changed(changed)
    }
 }
 
-function cw_clear_cb(path, idx, first)
+function cw_clear_button_cb(path, idx, first)
 {
    if (first) return;
    cw.console_status_msg_p.s = encodeURIComponent('\f');
    kiwi_output_msg('id-cw-console-msgs', 'id-cw-console-msg', cw.console_status_msg_p);
+   cw.log_txt = '';
+}
+
+function cw_log_mins_cb(path, val)
+{
+   cw.log_mins = w3_clamp(+val, 0, 24*60, 0);
+   console.log('cw_log_mins_cb path='+ path +' val='+ val +' log_mins='+ cw.log_mins);
+	w3_set_value(path, cw.log_mins);
+
+   kiwi_clearInterval(cw.log_interval);
+   if (cw.log_mins != 0) {
+      console.log('CW logging..');
+      cw.log_interval = setInterval(function() { cw_log_cb(); }, cw.log_mins * 60000);
+   }
+}
+
+function cw_log_cb()
+{
+   var ts = kiwi_host() +'_'+ new Date().toISOString().replace(/:/g, '_').replace(/\.[0-9]+Z$/, 'Z') +'_'+ w3_el('id-freq-input').value +'_'+ cur_mode;
+   var txt = new Blob([cw.log_txt], { type: 'text/plain' });
+   var a = document.createElement('a');
+   a.style = 'display: none';
+   a.href = window.URL.createObjectURL(txt);
+   a.download = 'CW.'+ ts +'.log.txt';
+   document.body.appendChild(a);
+   console.log('cw_log: '+ a.download);
+   a.click();
+   window.URL.revokeObjectURL(a.href);
+   document.body.removeChild(a);
 }
 
 function cw_decoder_wsc_cb(path, checked, first)
@@ -206,6 +245,7 @@ function CW_decoder_blur()
 {
 	ext_set_data_height();     // restore default height
 	ext_send('SET cw_stop');
+   kiwi_clearInterval(cw.log_interval);
 }
 
 // called to display HTML for configuration parameters in admin interface
