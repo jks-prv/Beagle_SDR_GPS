@@ -395,7 +395,7 @@ function fsk_output_char(s)
    }
    
    fsk_console_status_msg_p.s = encodeURIComponent(s);
-   fsk.log_txt += kiwi_remove_escape_sequences(kiwi_decodeURIComponent('FSK', c));
+   fsk.log_txt += kiwi_remove_escape_sequences(kiwi_decodeURIComponent('FSK', s));
 
    // kiwi_output_msg() does decodeURIComponent()
    kiwi_output_msg('id-fsk-console-msgs', 'id-fsk-console-msg', fsk_console_status_msg_p);
