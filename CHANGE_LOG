@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.530  May 28, 2022
+    DSC fixes.
+
 v1.529  May 27, 2022
     Digital selective calling (DSC) decoder added to NAVTEX extension.
     Added/fixed consistent demand and timed logging of decoded messages to

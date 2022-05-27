@@ -56,6 +56,8 @@ function DSC(init, output_cb) {
    t.CAT_URGENCY = 110;
    t.CAT_DISTRESS = 112;
    
+   t.CMD1_FM_CALL = 100;
+   t.CMD1_FM_DUPLEX_CALL = 101;
    t.CMD1_POLLING = 103;
    t.CMD1_UNABLE_COMPLY = 104;
    t.CMD1_END_OF_CALL = 105;
@@ -153,6 +155,7 @@ function DSC(init, output_cb) {
       var SAF = { s:'Cat', n:t.CAT_SAFETY };
       var ROU = { s:'Cat', n:t.CAT_ROUTINE };
 
+      var FM_RT = { s:'E1cmd', n:t.CMD1_FM_CALL };
       var J3E_RT = { s:'E1cmd', n:t.CMD1_J3E_RT };
       var FSK_FEC = { s:'E1cmd', n:t.CMD1_F1B_FEC };
       var POS = { s:'E1cmd', n:t.CMD1_POSITION };
@@ -172,7 +175,11 @@ function DSC(init, output_cb) {
       t.tlist = [];
 
       // 4.1 distress alert
-      t.tlist.push([ F_DIS, C_DIS, EOS ]);
+      //t.tlist.push([ F_DIS, C_DIS, EOS ]);
+      // 4.7 FM call req
+      t.tlist.push([ IS, SAF, FM_RT, { s:'Bto1', n:97 }, { s:'Bto2', n:41 }, { s:'Bto3', n:90 }, { s:'Bto4', n:12 }, { s:'Bto5', n:30 }, ARQ ]);
+      // 4.9 FM call ack
+      t.tlist.push([ IS, ROU, FM_RT, { s:'Bto1', n:97 }, { s:'Bto2', n:51 }, { s:'Bto3', n:90 }, { s:'Bto4', n:12 }, { s:'Bto5', n:30 }, ABQ ]);
       // 4.7 position request ("pos3")
       t.tlist.push([ IS, SAF, POS, { s:'Ffreq1', n:55 }, { s:'Ffreq2', n:21 }, { s:'Ffreq3', n:23 }, { s:'Gfreq1', n:41 }, { s:'Gfreq2', n:56 }, { s:'Gfreq3', n:78 }, ARQ ]);
       // 4.7 position request ack (special "pos4" position msg)
@@ -287,14 +294,14 @@ DSC.prototype.process_msg = function(show_errs) {
       return cat;
    };
    
-   var mid = function(mid) {
+   var mid = function(mid) {     // mid(
       //console.log('MID: mid='+ mid +' => '+ t.MID[mid]);
-      return t.MID[mid] || ('MID='+ mid +'?');
+      return t.MID[mid] || '(unknown)';
    }
 
-   var mmsi_coast = function(mmsi_7) {
+   var mmsi_coast = function(mmsi_7) {    // mmsi_coast(
       //console.log('MMSI: mmsi_7='+ mmsi_7 +' => '+ t.MMSI_coast[mmsi_7]);
-      return t.MMSI_coast[mmsi_7] || ('MMSI_7='+ mmsi_7 +'?');
+      return t.MMSI_coast[mmsi_7] || '(unknown)';
    }
 
    var call = function(sym_name, fmt, id) {     // call(
@@ -339,8 +346,10 @@ DSC.prototype.process_msg = function(show_errs) {
       switch (format) {
       
       case t.FMT_INDIV_STA:
-         // ship station: MID xx xx xx
-         //               123 45 67 89
+         s = '';
+         
+         // ship: MID xx xx xx
+         //       123 45 67 89
          if (isMID1) {
             var mid_s = _12 + _34[0];
             s = w3_link('w3-esc-html w3-link-darker-color', 'www.marinetraffic.com/en/ais/details/ships/mmsi:'+ mmsi_s, mmsi_s) +'[Flag: '+ mid(mid_s) +']';
@@ -351,14 +360,12 @@ DSC.prototype.process_msg = function(show_errs) {
          if (_12 == '00' && isMID3) {
             var mid_s = _34 + _56[0];
             var mmsi_7 = _34 + _56789;
-            var coast_station = mmsi_coast(mmsi_7);
-            coast_station = coast_station? (', '+ coast_station) : '';
-            s = mmsi_s +'[Coast Station: '+ mid(mid_s) + coast_station +']';
+            s = mmsi_s +'[Coast Station: '+ mid(mid_s) +', '+ mmsi_coast(mmsi_7) +']';
          } else
          
          // ship group: 0 MID x xx xx
          //             1 234 5 67 89
-         if (_12[0] == '0' && isMID2) {
+         if (iden1 == 0 && isMID2) {
             var mid_s = _12[1] + _34;
             s = mmsi_s +'[Ship group: '+ mid(mid_s) +']';
          } else
@@ -368,10 +375,30 @@ DSC.prototype.process_msg = function(show_errs) {
          if (_12 == '99' && isMID3) {
             var mid_s = _34 + _56[0];
             s = mmsi_s +'[NAVAID: '+ mid(mid_s) +']';
-         } else {
-            // FIXME: worth doing the more uncommon ones?
-            s = color(ansi.YELLOW, mmsi_s) +'[Unknown]';
+         } else
+         
+         if (_12 == '98' && isMID3) {
+            var mid_s = _34 + _56[0];
+            s = mmsi_s +'[Associated craft: '+ mid(mid_s) +']';
+         } else
+         
+         if (_12 == '97') {
+            var _3 = +_34[0];
+            if (_3 == 0) s = '[SAR transponder]'; else
+            if (_3 == 2) s = '[MOB device]'; else
+            if (_3 == 4) s = '[EPIRB]';
+            if (s != '') s = mmsi_s + color(ansi.YELLOW, s);
+         } else
+         
+         if (iden1 == 1) {
+            s = mmsi_s + color(ansi.YELLOW, '[SAR aircraft]');
+         } else
+         
+         if (iden1 == 8) {
+            s = mmsi_s + '[Handheld VHF]';
          }
+         
+         if (s == '') s = mmsi_s + color(ansi.YELLOW, '[Unknown]');
          break;
       
       // FIXME: enforce 2/4 min (vs 1/4) detection of fmt char against false alarms
@@ -383,7 +410,7 @@ DSC.prototype.process_msg = function(show_errs) {
       case t.FMT_COMMON_INTEREST:
          // ship group: 0 MID x xx xx
          //             1 234 5 67 89
-         if (_12[0] == '0' && isMID2) {
+         if (iden1 == 0 && isMID2) {
             var mid_s = _12[1] + _34;
             s = mmsi_s +'[Ship group: '+ mid(mid_s) +']';
          } else
@@ -398,7 +425,7 @@ DSC.prototype.process_msg = function(show_errs) {
          // |  |   +------- lon deg
          // |  +----------- lat deg
          // +-------------- quadrant
-         var quad = +_12[0];
+         var quad = iden1;
          var lat_sgn = (quad == 0 || quad == 1)? '' : '-';
          var lon_sgn = (quad == 0 || quad == 2)? '' : '-';
          var s = lat_sgn + _12[1] + _34[0] +'\xb0/'+ lon_sgn +_34[1] + _56 +'\xb0 '+ _78+'\xb0V/'+ _90 +'\xb0H [Area]';
@@ -566,7 +593,6 @@ DSC.prototype.process_msg = function(show_errs) {
       return s;
    };
    
-   // FIXME: global cmd1 = 100,101? See man 8.3.1, third item
    var ds;
    // don't include ecc.err here: for now, let decode occur even if ecc has fec error preventing ecc check
    var fec = (fmt.err || to.err || cat.err || from.err || cmd1.err || cmd2.err || f1.err || f2.err || eos.err);
@@ -629,6 +655,8 @@ DSC.prototype.process_msg = function(show_errs) {
    
       if (cmd2.n == t.CMD2_NOP) {
          switch (cmd1.n) {
+            case t.CMD1_FM_CALL: s = from_to(ack('FM call', freq())); break;
+            case t.CMD1_FM_DUPLEX_CALL: s = from_to(ack('FM duplex call', freq())); break;
             case t.CMD1_J3E_RT: s = from_to(ack('SSB call', freq())); break;
             case t.CMD1_F1B_FEC: s = from_to(ack('FSK-FEC call', freq())); break;
             case t.CMD1_F1B_ARQ: s = from_to(ack('FSK-ARQ call', freq())); break;
@@ -659,6 +687,8 @@ DSC.prototype.process_msg = function(show_errs) {
 
       if (cmd2.n == t.CMD2_NOP) {
          switch (cmd1.n) {
+            case t.CMD1_FM_CALL: s = from_to(ack('FM call', freq())); break;
+            case t.CMD1_FM_DUPLEX_CALL: s = from_to(ack('FM duplex call', freq())); break;
             case t.CMD1_J3E_RT: s = from_to(ack('SSB call', freq())); break;
             case t.CMD1_F1B_FEC: s = from_to(ack('FSK-FEC call', freq())); break;
             case t.CMD1_F1B_ARQ: s = from_to(ack('FSK-ARQ call', freq())); break;
