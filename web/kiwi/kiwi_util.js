@@ -962,20 +962,22 @@ function kiwi_remove_escape_sequences(s)
    var a2 = [];
    var inANSI = false, inHTML = false;
    for (var i = 0; i < a1.length; i++) {
+      var c = a1[i];
       if (inANSI) {
-         if (a1[i] == 'm') inANSI = false;
+         if (c == 'm') inANSI = false;
       } else
       if (inHTML) {
-         if (a1[i] == kiwi.esc_gt) inHTML = false;
+         if (c == kiwi.esc_gt) inHTML = false;
       } else {
-         if (a1[i] == '\u001b' && (i+1) < a1.length && a1[i+1] == '[') {
+         if (c == '\u001b' && (i+1) < a1.length && a1[i+1] == '[') {
             i++;
             inANSI = true;
          } else
-         if (a1[i] == kiwi.esc_lt) {
+         if (c == kiwi.esc_lt) {
             inHTML = true;
          } else {
-            a2.push(a1[i]);
+            if (c != '\f')    // ignore kiwi_output_msg() screen clear form feed
+               a2.push(c);
          }
       }
    }
