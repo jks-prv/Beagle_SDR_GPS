@@ -8587,12 +8587,12 @@ function panels_setup()
          ),
 
          w3_div('id-step-freq',
-            '<img id="id-step-0" src="icons/stepdn.20.png" onclick="freqstep(0)" />',
-            '<img id="id-step-1" src="icons/stepdn.18.png" onclick="freqstep(1)" style="padding-bottom:1px" />',
-            '<img id="id-step-2" src="icons/stepdn.16.png" onclick="freqstep(2)" style="padding-bottom:2px" />',
-            '<img id="id-step-3" src="icons/stepup.16.png" onclick="freqstep(3)" style="padding-bottom:2px" />',
-            '<img id="id-step-4" src="icons/stepup.18.png" onclick="freqstep(4)" style="padding-bottom:1px" />',
-            '<img id="id-step-5" src="icons/stepup.20.png" onclick="freqstep(5)" />'
+            '<img id="id-step-0" src="icons/stepdn.20.png" onclick="freqstep(0)" style="width:20px;height:20px" />',
+            '<img id="id-step-1" src="icons/stepdn.18.png" onclick="freqstep(1)" style="width:18px;height:18px;padding-bottom:1px" />',
+            '<img id="id-step-2" src="icons/stepdn.16.png" onclick="freqstep(2)" style="width:16px;height:16px;padding-bottom:2px" />',
+            '<img id="id-step-3" src="icons/stepup.16.png" onclick="freqstep(3)" style="width:16px;height:16px;padding-bottom:2px" />',
+            '<img id="id-step-4" src="icons/stepup.18.png" onclick="freqstep(4)" style="width:18px;height:18px;padding-bottom:1px" />',
+            '<img id="id-step-5" src="icons/stepup.20.png" onclick="freqstep(5)" style="width:20px;height:20px" />'
          ),
 
          w3_div('',
