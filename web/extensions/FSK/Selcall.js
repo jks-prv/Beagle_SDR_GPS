@@ -299,7 +299,7 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
             var fec_err = false;
             var color_n = -1, color;
             var prev_len = 0;
-            var s = '';
+            var s = (new Date()).toUTCString().substr(17,8) +'Z ';
 
             for (var i = 0; i < t.seq; i++) {
                var _code = t.full_syms[i];
