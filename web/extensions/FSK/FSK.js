@@ -112,7 +112,7 @@ function fsk_recv(data)
 		switch (param[0]) {
 
 			case "ready":
-            kiwi_load_js_dir('extensions/FSK/', ['JNX.js', 'BiQuadraticFilter.js', 'CCIR476.js', 'DSC.js', 'FSK_async.js'], 'fsk_controls_setup');
+            kiwi_load_js_dir('extensions/FSK/', ['JNX.js', 'BiQuadraticFilter.js', 'CCIR476.js', 'DSC.js', 'Selcall.js', 'FSK_async.js'], 'fsk_controls_setup');
 				break;
 
 			case "test_done":
@@ -236,7 +236,7 @@ function fsk_framing(bit)
    if (!fsk.fr_sample) return;
    fsk.fr_bits.push(bit);
    fsk_framing_proc(bit);
-   if (fsk.encoder.isDSC) fsk.encoder.search_sync(bit);
+   if (fsk.is_7_3) fsk.encoder.search_sync(bit);
 }
 
 // FIXME: needs to handle 5N1V mode
@@ -269,7 +269,7 @@ function fsk_framing_proc(bit)
          }
          fsk.fr_bitzc = 0;
       } else
-      if (fsk.encoder.isDSC) {
+      if (fsk.is_7_3) {
          fsk.fr_bitzc <<= 1;
          fsk.fr_bitzc |= bit;
       }
@@ -281,7 +281,7 @@ function fsk_framing_proc(bit)
          var y = fsk.th - fsk.fr_bpw * yi;
          var yo = 8;
          
-         if (fsk.encoder.isDSC) {
+         if (fsk.is_7_3) {
             ct.font = '12px Courier';
             //var c_hex = code.toString(16).leadingZeros(2);
             //console.log('0x'+ c_hex +'|'+ fsk.fr_nzeros +'|'+ fsk.fr_bitzc);
@@ -421,19 +421,6 @@ var fsk_weather = {
 };
 
 var fsk_maritime = {
-   'DSC (selcal)': [
-      {f:2187.5,  cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
-      {f:4207.5,  cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
-      {f:6312,    cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
-      {f:8414.5,  cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
-      {f:12577,   cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
-      {f:16804.5, cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'}
-   ],
-   'NAVTEX': [
-      {f:518,     cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
-      {f:490,     cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
-      {f:4209.5,  cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'}
-   ],
    'MSI (safety)': [
       {f:4210,    cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
       {f:6314,    cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
@@ -452,6 +439,45 @@ var fsk_maritime = {
    'XSQ China': [
       {f:8425.5,  s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
       {f:12622.5, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'}
+   ],
+
+   'Selcall': [
+      {f:7919.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
+      {f:7922.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
+
+      {f:8004.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
+      {f:8007.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
+      {f:8010.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
+      {f:8013.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
+      {f:8016.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
+      {f:8019.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
+      {f:8022.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
+      {f:8025.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
+      {f:8028.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
+      {f:8031.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
+      {f:8034.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
+
+      {f:8067.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
+      {f:8070.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
+      {f:8073.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
+      {f:8076.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
+      {f:8079.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
+
+      {f:8085.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
+      {f:8091.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'}
+   ],
+   'DSC': [
+      {f:2187.5,  cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
+      {f:4207.5,  cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
+      {f:6312,    cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
+      {f:8414.5,  cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
+      {f:12577,   cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
+      {f:16804.5, cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'}
+   ],
+   'NAVTEX': [
+      {f:518,     cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
+      {f:490,     cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
+      {f:4209.5,  cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'}
    ]
 };
 
@@ -461,14 +487,6 @@ var fsk_military = {
       {f:4280,   s:850, b:75, fr:'5N1V', i:1, e:'ITA2'},
       {f:6358.5, s:850, b:75, fr:'5N1V', i:1, e:'ITA2'},
       {f:8439,   s:850, b:75, fr:'5N1V', i:1, e:'ITA2'}
-   ],
-   
-   // CIS/BEE 36-50 aka T600, see:
-   // github.com/IanWraith/Rivet/wiki/CIS36-50
-   // i56578-swl.blogspot.com/2014/10/cis-navy-broadcast-bee36-50.html
-   'RDL CIS': [
-      {f:18.1, s: 75, b:36, fr:'T600', i:1, e:'ITA2'},
-      {f:4582, s:200, b:50, fr:'T600', i:1, e:'ITA2'}
    ]
 };
 
@@ -500,8 +518,8 @@ var fsk_menus = [ fsk_weather, fsk_maritime, fsk_military, fsk_ham_utility ];
 
 var fsk_shift_s = [ 85, 170, 200, 340, 425, 450, 500, 850, 1000, 'custom' ];
 var fsk_baud_s = [ 36, 45.45, 50, 75, 100, 150, 200, 300, 'custom' ];
-var fsk_framing_s = [ '5N1', '5N1V', '5N1.5', '5N2', '7N1', '8N1', '4/7', 'EFR', 'EFR2', 'CHU', 'T600' ];
-var fsk_encoding_s = [ 'ITA2', 'ASCII', 'CCIR476' ];
+var fsk_framing_s = [ '5N1', '5N1V', '5N1.5', '5N2', '7N1', '8N1', '4/7', 'EFR', 'EFR2', 'CHU', '7/3' ];
+var fsk_encoding_s = [ 'ITA2', 'ASCII', 'CCIR476', 'DSC', 'Selcall' ];
 
 var fsk_mode_s = [ 'decode', 'scope', 'framing' ];
 var fsk_bpd_s = [ 'none', '5', '6', '7', '8' ];
@@ -512,11 +530,6 @@ function fsk_controls_setup()
    fsk.th = fsk.dataH;
 	fsk.saved_mode = ext_get_mode();
 	
-	if (dbgUs && !fsk_encoding_s.includes('DSC')) {
-	   fsk_framing_s.push('7/3');
-	   fsk_encoding_s.push('DSC');
-	}
-
 	fsk.jnx = new JNX();
 	fsk.freq = ext_get_freq()/1e3;
 	//w3_console.log(fsk.jnx, 'fsk.jnx');
@@ -591,7 +604,8 @@ function fsk_controls_setup()
       );
    
    if (!dbgUs) {
-      delete fsk_maritime['DSC (selcal)'];
+      delete fsk_maritime['DSC'];
+      delete fsk_maritime['Selcall'];
       delete fsk_maritime['NAVTEX'];
    }
 
@@ -747,6 +761,7 @@ function fsk_setup()
 	//console.log('FSK SETUP baud: '+ fsk.baud +'*'+ fsk.baud_mult +' = '+ baud);
 	fsk.jnx.setup_values(ext_sample_rate(), fsk.cf, fsk.shift, baud, fsk.framing, fsk.inverted, fsk.encoding);
 	//console.log('fsk_setup ext_get_freq='+ ext_get_freq()/1e3 +' ext_get_carrier_freq='+ ext_get_carrier_freq()/1e3 +' ext_get_mode='+ ext_get_mode())
+   fsk.is_7_3 = (fsk.framing == '7/3');
    fsk.encoder = fsk.jnx.get_encoding_obj();
 
    var z = ext_get_zoom();

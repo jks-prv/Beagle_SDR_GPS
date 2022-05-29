@@ -92,13 +92,6 @@ function FSK_async(framing, encoding) {
       t.stop_bits = 2;
       t.raw = 1;
    }
-
-   if (framing == 'T600') {
-      t.data_bits = 7;
-      t.parity_bits = 0;
-      t.stop_bits = 1;
-      fsk_output_char('T600 (aka CIS/BEE 36-50) not supported yet\n');
-   }
    
    t.nbits = t.start_bit + t.data_bits + t.parity_bits + t.stop_bits;
    if (t.stop_bits == 1.5) t.nbits *= 2;

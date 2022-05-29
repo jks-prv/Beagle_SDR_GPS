@@ -93,7 +93,7 @@ JNX.prototype.setup_values = function(sample_rate, center_frequency_f, shift_Hz,
       t.fp_mark_bits = 32;
       t.fp_pass_bits = 11 * 10;
    } else
-   if (encoding == 'DSC') {
+   if (encoding == 'DSC' || encoding == 'Selcall') {
       t.fp = t.fp_SYNC;
    } else
       t.fp = t.fp_OFF;
@@ -126,6 +126,11 @@ JNX.prototype.setup_values = function(sample_rate, center_frequency_f, shift_Hz,
    
       case 'DSC':
          t.encoding = new DSC(t.init, t.output_char_cb);
+         t.init = false;
+         break;
+   
+      case 'Selcall':
+         t.encoding = new Selcall(t.init, t.output_char_cb);
          t.init = false;
          break;
    

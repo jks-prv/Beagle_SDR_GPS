@@ -12,10 +12,11 @@ var nt = {
    tw: 1024,
    x: 0,
    last_y: [],
-   n_menu:     3,
+   n_menu:     4,
    menu0:      -1,
    menu1:      -1,
    menu2:      -1,
+   menu3:      -1,
    
    mode: 0,
    mode_s: [ 'normal', 'DX' ],
@@ -29,6 +30,7 @@ var nt = {
    type: 0,
    TYPE_NAVTEX: 0,
    TYPE_DSC: 1,
+   TYPE_Selcall: 2,
    decode: 1,
    freq: 0,
    freq_s: '',
@@ -96,7 +98,7 @@ function navtex_recv(data)
 		switch (param[0]) {
 
 			case "ready":
-            kiwi_load_js_dir('extensions/FSK/', ['JNX.js', 'BiQuadraticFilter.js', 'CCIR476.js', 'DSC.js'], 'navtex_controls_setup');
+            kiwi_load_js_dir('extensions/FSK/', ['JNX.js', 'BiQuadraticFilter.js', 'CCIR476.js', 'DSC.js', 'Selcall.js'], 'navtex_controls_setup');
 				break;
 
 			case "test_done":
@@ -195,7 +197,7 @@ var navtex_canvas;
 // www.dxinfocentre.com/navtex.htm
 // www.dxinfocentre.com/maritimesafetyinfo.htm
 
-var navtex_menu_s = [ 'NAVTEX MF', 'NAVTEX HF', 'DSC HF' ];
+var navtex_menu_s = [ 'NAVTEX MF', 'NAVTEX HF', 'DSC HF', 'Selcall HF' ];
 
 var navtex_MF = {
    "International": [ 518 ],
@@ -205,7 +207,7 @@ var navtex_MF = {
 
 var navtex_HF = {
    "Main": [ 4209.5 ],
-   "NBDP": [ 4210, 6314, 8416.5, 12779, 16806.5, 19680.5, 22376 ],
+   "NBDP": [ 4210, 6314, 8416.5, 12579, 16806.5, 19680.5, 22376, 26100.5 ],
    "Aux":  [ 3165, 4212.5, 4215, 4228, 4241, 4255, 4323, 4560,
                6326, 6328, 6360.5, 6405, 6425, 6448, 6460,
                8417.5, 8424, 8425.5, 8431, 8431.5, 8433, 8451, 8454, 8473, 8580, 8595, 8643,
@@ -217,6 +219,15 @@ var navtex_HF = {
 var DSC_HF = {
    "Distress &amp;_Urgency":  [ 2187.5, 4207.5, 6312, 8414.5, 12577, 16804.5 ],
    "Ship/ship_calling":       [ 2177, 4208, 6312.5, 8415, 12577.5, 16805 ]
+};
+
+var Selcall_HF = {
+   "Australia": [
+                  7919.78, 7922.78,
+                  8004.78, 8007.78, 8010.78, 8013.78, 8016.78, 8019.78, 8022.78, 8025.78, 8028.78, 8031.78, 8034.78,
+                  8067.78, 8070.78, 8073.78, 8076.78, 8079.78,
+                  8085.78,    8091.78
+                ]
 };
 
 function navtex_controls_setup()
@@ -259,7 +270,8 @@ function navtex_controls_setup()
 				w3_inline('/w3-margin-between-16',
                w3_select_hier('w3-text-red', 'NAVTEX MF', 'select', 'nt.menu0', nt.menu0, navtex_MF, 'navtex_pre_select_cb'),
                w3_select_hier('w3-text-red', 'NAVTEX HF', 'select', 'nt.menu1', nt.menu1, navtex_HF, 'navtex_pre_select_cb'),
-               w3_select_hier('w3-text-red', 'DSC HF', 'select', 'nt.menu2', nt.menu2, DSC_HF, 'navtex_pre_select_cb')
+               w3_select_hier('w3-text-red', 'DSC HF', 'select', 'nt.menu2', nt.menu2, DSC_HF, 'navtex_pre_select_cb'),
+               w3_select_hier('w3-text-red', 'Selcall HF', 'select', 'nt.menu3', nt.menu3, Selcall_HF, 'navtex_pre_select_cb')
             ),
 
             w3_inline('/w3-margin-between-16',
@@ -411,6 +423,12 @@ function navtex_pre_select_cb(path, idx, first)
          nt.framing = '7/3';
          nt.encoding = 'DSC';
          nt.inverted = 1;
+      } else
+      if (navtex_menu_s[menu_n].includes('Selcall')) {
+         nt.type = nt.TYPE_Selcall;
+         nt.framing = '7/3';
+         nt.encoding = 'Selcall';
+         nt.inverted = 0;
       } else {
          nt.type = nt.TYPE_NAVTEX;
          nt.framing = '4/7';

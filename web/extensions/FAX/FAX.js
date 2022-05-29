@@ -263,7 +263,8 @@ var fax_asia_pac = {
    
    // mt-utility.blogspot.com/2010/02/1800-utc-8658-utc-fax-confirmed-jfx.html
    // goughlui.com/2019/02/10/radiofax-jfx-kagoshima-japan-fisheries
-   "JFC/JFW/JFX": [],
+   // 4/2022: per goughlui.com and Fabrys, JFW is QRT
+   "JFC/JFX": [],
    "JP":       [ 6414.5, 8658, 13074, 16907.5, 22559.6 ],
    
    // mt-utility.blogspot.com/2009/11/afternoon-us-kyodo-news-is-jsc-not-jjc.html
@@ -279,7 +280,9 @@ var fax_asia_pac = {
    
    // per forum user Fabrys 10/2020
    "Guangzhou": [],
-   "XSQ, CN":  [ 4159.5, 8310.5, 12375.5, 16562.5 ],
+   //"XSQ, CN":  [ 4159.5, 8310.5, 12375.5, 16562.5 ],
+   // 4/2022: new freqs per Fabrys
+   "XSQ, CN":  [ 4199.8, 8412.5, 12629.3, 16826.3 ],
    
    "Shanghai": [],
    "XSG, CN":  [ 4170, 8302, 12382, 16559 ],
