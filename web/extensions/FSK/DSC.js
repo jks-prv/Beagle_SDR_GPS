@@ -4,7 +4,6 @@ function DSC(init, output_cb) {
    var t = this;
 
    console.log('FSK encoder: DSC');
-   t.isDSC = true;
 
    if (init) {
       output_cb('\f'+ ansi.RED +'WARNING: Do not use the DSC decoder in any life-safety application. Hobby radio monitoring only.\n'+ ansi.NORM +
@@ -159,6 +158,7 @@ function DSC(init, output_cb) {
       var J3E_RT = { s:'E1cmd', n:t.CMD1_J3E_RT };
       var FSK_FEC = { s:'E1cmd', n:t.CMD1_F1B_FEC };
       var POS = { s:'E1cmd', n:t.CMD1_POSITION };
+      var TST = { s:'E1cmd', n:t.CMD1_TEST };
 
       var MED = { s:'E2cmd', n:t.CMD2_MED_TRANSPORTS };
 
@@ -176,6 +176,8 @@ function DSC(init, output_cb) {
 
       // 4.1 distress alert
       //t.tlist.push([ F_DIS, C_DIS, EOS ]);
+      // 4.7 self-test (EOS instead of ARQ/ABQ)
+      t.tlist.push([ IS, SAF, TST, { s:'Bto1', n:00 }, { s:'Bto2', n:36 }, { s:'Bto3', n:69 }, { s:'Bto4', n:99 }, { s:'Bto5', n:30 }, EOS ]);
       // 4.7 FM call req
       t.tlist.push([ IS, SAF, FM_RT, { s:'Bto1', n:97 }, { s:'Bto2', n:41 }, { s:'Bto3', n:90 }, { s:'Bto4', n:12 }, { s:'Bto5', n:30 }, ARQ ]);
       // 4.9 FM call ack
@@ -650,23 +652,30 @@ DSC.prototype.process_msg = function(show_errs) {
 
    // A1-4.7: urgency & safety calls, individual calls and acks
    // differs from above in fmt
-   if ((cat.n == t.CAT_SAFETY || cat.n == t.CAT_URGENCY) && fmt.n == t.FMT_INDIV_STA && (eos.n == t.ARQ || eos.n == t.ABQ)) {
+   if ((cat.n == t.CAT_SAFETY || cat.n == t.CAT_URGENCY) && fmt.n == t.FMT_INDIV_STA) {
       s = ds = '4.7';
    
-      if (cmd2.n == t.CMD2_NOP) {
-         switch (cmd1.n) {
-            case t.CMD1_FM_CALL: s = from_to(ack('FM call', freq())); break;
-            case t.CMD1_FM_DUPLEX_CALL: s = from_to(ack('FM duplex call', freq())); break;
-            case t.CMD1_J3E_RT: s = from_to(ack('SSB call', freq())); break;
-            case t.CMD1_F1B_FEC: s = from_to(ack('FSK-FEC call', freq())); break;
-            case t.CMD1_F1B_ARQ: s = from_to(ack('FSK-ARQ call', freq())); break;
-            case t.CMD1_POSITION: s = from_to(ack('Position request', freq(t.POS_REQUEST))); break;
-            case t.CMD1_TEST: s = from_to(ack('Test')); break;
+      if (eos.n == t.ARQ || eos.n == t.ABQ) {
+         if (cmd2.n == t.CMD2_NOP) {
+            switch (cmd1.n) {
+               case t.CMD1_FM_CALL: s = from_to(ack('FM call', freq())); break;
+               case t.CMD1_FM_DUPLEX_CALL: s = from_to(ack('FM duplex call', freq())); break;
+               case t.CMD1_J3E_RT: s = from_to(ack('SSB call', freq())); break;
+               case t.CMD1_F1B_FEC: s = from_to(ack('FSK-FEC call', freq())); break;
+               case t.CMD1_F1B_ARQ: s = from_to(ack('FSK-ARQ call', freq())); break;
+               case t.CMD1_POSITION: s = from_to(ack('Position request', freq(t.POS_REQUEST))); break;
+               case t.CMD1_TEST: s = from_to(ack('Test')); break;
+            }
+         } else {
+            if (cmd1.n == t.CMD1_UNABLE_COMPLY && cmd2.n >= t.CMD2_UNABLE_FIRST && cmd2.n <= t.CMD2_UNABLE_LAST && eos.n == t.ABQ) {
+               s = from_to(color(ansi.YELLOW, 'Unable to comply ack') + freq());
+            }
          }
-      } else {
-         if (cmd1.n == t.CMD1_UNABLE_COMPLY && cmd2.n >= t.CMD2_UNABLE_FIRST && cmd2.n <= t.CMD2_UNABLE_LAST && eos.n == t.ABQ) {
-            s = from_to(color(ansi.YELLOW, 'Unable to comply ack') + freq());
-         }
+      } else
+      
+      // out-of-spec, but seen. USGC MMSI 0036699930 sending to itself, hence EOS instead of expected ARQ/ABQ
+      if (eos.n == t.EOS && cmd1.n == t.CMD1_TEST && cmd2.n == t.CMD2_NOP) {
+         s = from_to('Test');
       }
    } else
 
@@ -858,6 +867,7 @@ DSC.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
    var code = _code & 0x7f;
    t.syms[t.seq] = code;
    var pos_s = t.pos_s[t.seq];
+   pos_s = pos_s || 'unk';
    var chr = t.code_to_char(code);
 
    // verify #zeros count
@@ -867,7 +877,7 @@ DSC.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
    t.bc_err[t.seq] = (bc_ck != bc_data);
    if (t.bc_err[t.seq]) t.parity_errors++;
 
-   if (t.dbg) console.log(t.seq.leadingZeros(2) +' '+ pos_s +': '+ chr +' '+ code.fieldWidth(3) +'.'+
+   if (t.dbg) console.log(t.seq.leadingZeros(2) +' '+ pos_s.fieldWidth(6) +': '+ chr +' '+ code.fieldWidth(3) +'.'+
       ' '+ bc_rev.toString(2).leadingZeros(3) +' '+ code.toString(2).leadingZeros(7) + zc);
    t.seq++;
 
@@ -914,12 +924,13 @@ DSC.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
                if (isUndefined(_code)) _code = 119;   // sync
                var code = _code & 0x7f;
                var pos_s = t.pos_s[i];
+               pos_s = pos_s || 'unk';
                var chr = t.code_to_char(code);
                var bc_rev = (_code >> 7) & 7;
                var bc_ck = kiwi_bitReverse(bc_rev, 3);
                var bc_data = kiwi_bitCount(code ^ 0x7f);
                var zc = (bc_ck != bc_data)? (' Zck='+ bc_ck +' Zdata='+ bc_data) : '';
-               console.log(i.leadingZeros(2) +' '+ pos_s +': '+ chr +' '+ code.fieldWidth(3) +'.'+
+               console.log(i.leadingZeros(2) +' '+ pos_s.fieldWidth(6) +': '+ chr +' '+ code.fieldWidth(3) +'.'+
                   ' '+ bc_rev.toString(2).leadingZeros(3) +' '+ code.toString(2).leadingZeros(7) + zc);
             }
          }
@@ -943,7 +954,7 @@ this.MID =
     "205": "Belgium",
     "206": "Belarus",
     "207": "Bulgaria",
-    "208": "Vatican City State",
+    "208": "Vatican City",
     "209": "Cyprus",
     "210": "Cyprus",
     "211": "Germany",
@@ -962,7 +973,7 @@ this.MID =
     "228": "France",
     "229": "Malta",
     "230": "Finland",
-    "231": "Faroe Islands",
+    "231": "Faroe Is",
     "232": "United Kingdom",
     "233": "United Kingdom",
     "234": "United Kingdom",
@@ -1004,7 +1015,7 @@ this.MID =
     "271": "Turkey",
     "272": "Ukraine",
     "273": "Russian Federation",
-    "274": "Former Yugoslav Republic of Macedonia",
+    "274": "Macedonia",
     "275": "Latvia",
     "276": "Estonia",
     "277": "Lithuania",
@@ -1023,20 +1034,20 @@ this.MID =
     "312": "Belize",
     "314": "Barbados",
     "316": "Canada",
-    "319": "Cayman Islands",
+    "319": "Cayman Is",
     "321": "Costa Rica",
     "323": "Cuba",
     "325": "Dominica",
     "327": "Dominican Republic",
-    "329": "Guadeloupe (French Department)",
+    "329": "Guadeloupe",
     "330": "Grenada",
     "331": "Greenland",
     "332": "Guatemala",
     "334": "Honduras",
     "336": "Haiti",
-    "338": "United States of America",
+    "338": "USA",
     "339": "Jamaica",
-    "341": "Saint Kitts and Nevis",
+    "341": "Saint Kitts/Nevis",
     "343": "Saint Lucia",
     "345": "Mexico",
     "347": "Martinique",
@@ -1053,21 +1064,21 @@ this.MID =
     "359": "El Salvador",
     "361": "Saint Pierre and Miquelon",
     "362": "Trinidad and Tobago",
-    "364": "Turks and Caicos Islands",
-    "366": "United States of America",
-    "367": "United States of America",
-    "368": "United States of America",
-    "369": "United States of America",
+    "364": "Turks and Caicos Is",
+    "366": "USA",
+    "367": "USA",
+    "368": "USA",
+    "369": "USA",
     "370": "Panama",
     "371": "Panama",
     "372": "Panama",
     "373": "Panama",
     "374": "-",
-    "375": "Saint Vincent and the Grenadines",
-    "376": "Saint Vincent and the Grenadines",
-    "377": "Saint Vincent and the Grenadines",
-    "378": "British Virgin Islands",
-    "379": "United States Virgin Islands",
+    "375": "Saint Vincent/Grenadines",
+    "376": "Saint Vincent/Grenadines",
+    "377": "Saint Vincent/Grenadines",
+    "378": "British Virgin Is",
+    "379": "US Virgin Is",
     "401": "Afghanistan",
     "403": "Saudi Arabia",
     "405": "Bangladesh",
@@ -1092,7 +1103,7 @@ this.MID =
     "440": "South Korea",
     "441": "South Korea",
     "443": "State of Palestine",
-    "445": "Democratic People's Republic of Korea",
+    "445": "DPRK",
     "447": "Kuwait",
     "450": "Lebanon",
     "451": "Kyrgyz Republic",
@@ -1119,24 +1130,24 @@ this.MID =
     "512": "New Zealand",
     "514": "Cambodia",
     "515": "Cambodia",
-    "516": "Christmas Island (Indian Ocean)",
-    "518": "Cook Islands",
+    "516": "Christmas Is (Indian Ocean)",
+    "518": "Cook Is",
     "520": "Fiji",
-    "523": "Cocos (Keeling) Islands",
+    "523": "Cocos (Keeling) Is",
     "525": "Indonesia",
     "529": "Kiribati",
-    "531": "Lao People's Democratic Republic",
+    "531": "Lao People's D.Rep",
     "533": "Malaysia",
-    "536": "Northern Mariana Islands",
-    "538": "Marshall Islands",
+    "536": "Northern Mariana Is",
+    "538": "Marshall Is",
     "540": "New Caledonia",
     "542": "Niue",
     "544": "Nauru",
     "546": "French Polynesia",
     "548": "Philippines",
     "553": "Papua New Guinea",
-    "555": "Pitcairn Island",
-    "557": "Solomon Islands",
+    "555": "Pitcairn Is",
+    "557": "Solomon Is",
     "559": "American Samoa",
     "561": "Samoa",
     "563": "Singapore",
@@ -1149,12 +1160,12 @@ this.MID =
     "574": "Viet Nam",
     "576": "Vanuatu",
     "577": "Vanuatu",
-    "578": "Wallis and Futuna Islands",
+    "578": "Wallis and Futuna Is",
     "601": "South Africa",
     "603": "Angola",
     "605": "Algeria",
-    "607": "Saint Paul and Amsterdam Islands",
-    "608": "Ascension Island",
+    "607": "Saint Paul and Amsterdam Is",
+    "608": "Ascension Is",
     "609": "Burundi",
     "610": "Benin",
     "611": "Botswana",
@@ -1178,7 +1189,7 @@ this.MID =
     "632": "Guinea",
     "633": "Burkina Faso",
     "634": "Kenya",
-    "635": "Kerguelen Islands",
+    "635": "Kerguelen Is",
     "636": "Liberia",
     "637": "Liberia",
     "638": "South Sudan",
@@ -1208,7 +1219,7 @@ this.MID =
     "672": "Tunisia",
     "674": "Tanzania",
     "675": "Uganda",
-    "676": "Democratic Republic of the Congo",
+    "676": "D.Rep Congo",
     "677": "Tanzania",
     "678": "Zambia",
     "679": "Zimbabwe",
@@ -1218,8 +1229,8 @@ this.MID =
     "725": "Chile",
     "730": "Colombia",
     "735": "Ecuador",
-    "740": "Falkland Islands (Malvinas)",
-    "745": "Guiana (French Department)",
+    "740": "Falkland Is",
+    "745": "Guiana",
     "750": "Guyana",
     "755": "Paraguay",
     "760": "Peru",
@@ -1451,7 +1462,7 @@ this.MMSI_coast =
     "3452271": "Puerto Madero",
     "3452272": "Paredon",
     "3660030": "Mobile Radio/WLO",
-    "3669899": "Kodiak",
+    "3669899": "USCG Kodiak",
     "3669902": "Woods Hole",
     "3669903": "Atlantic City",
     "3669904": "Port Angeles",
@@ -1481,14 +1492,15 @@ this.MMSI_coast =
     "3669931": "New Haven",
     "3669932": "Chincoteague",
     "3669936": "Moriches",
-    "3669990": "Pt Reyes CAMSPAC",
-    "3669991": "Boston MA",
+    "3669990": "USCG Pt Reyes CAMSPAC",
+    "3669991": "USCG Boston MA",
     "3669992": "San Juan",
-    "3669993": "Honolulu",
-    "3669994": "Guam",
-    "3669995": "Portsmouth CAMSLANT",
-    "3669997": "Miami FL",
-    "3669998": "New Orleans LA",
+    "3669993": "USCG Honolulu",
+    "3669994": "USCG Guam",
+    "3669995": "USCG Portsmouth CAMSLANT",
+    "3669997": "USCG Miami FL",
+    "3669998": "USCG New Orleans LA",
+    "3669999": "Any USCG",
     "4030000": "Jeddah",
     "4121100": "Tianjin",
     "4121200": "Qinhuangdao",

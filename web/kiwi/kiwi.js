@@ -677,7 +677,10 @@ var ansi = {
    BLUE:    "\u001b[97m\u001b[104m",   // white on blue
    MAGENTA: "\u001b[97m\u001b[105m",   // white on magenta
    GREY:    "\u001b[47m",
-   NORM:    "\u001b[m"
+   NORM:    "\u001b[m",
+   
+   rolling: [ 'RED', 'YELLOW', 'GREEN', 'CYAN', 'BLUE', 'MAGENTA', 'GREY' ],
+   rolling_n: 7
 };
 
 // NB: doesn't yet handle XY screen addressing so apps like nano editor can be used in admin console
