@@ -7,6 +7,7 @@ function Selcall(init, output_cb) {
 
    t.dbg = 0;
    t.test_msgs = 0;
+   t.show_fec = 0;
    t.dump_always = 1;
    t.dump_non_std_len = 1;
    t.dump_no_eos = 0;
@@ -315,6 +316,7 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
             var s = (new Date()).toUTCString().substr(17,8) +'Z ';
 
             for (var i = 0; i < t.seq; i++) {
+               var fec = false;
                var _code = t.full_syms[i];
                if (isUndefined(_code)) _code = 119;   // sync
                var code = _code & 0x7f;
@@ -328,8 +330,7 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
                      if (!t.bc_err[i+5]) {
                         code = t.full_syms[i+5] & 0x7f;
                      } else {
-                        code = 'FEC';
-                        fec_err = true;
+                        fec_err = fec = true;
                      }
                   }
 
@@ -344,13 +345,19 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
                      s += '   ';
                   }
 
-                  var code_s = (code <= 99)? code.leadingZeros(2) : code.toString();
-                  if (prev_len != code_s.length) {
-                     color_n = (color_n + 1) % ansi.rolling_n;
-                     color = ansi[ansi.rolling[color_n]];
-                     prev_len = code_s.length;
+                  if (fec) {
+                     s += 'X ';
+                     code_s = '0';
+                  } else {
+                     var code_s = (code <= 99)? code.leadingZeros(2) : code.toString();
+                     if (prev_len != code_s.length) {
+                        color_n = (color_n + 1) % ansi.rolling_n;
+                        color = ansi[ansi.rolling[color_n]];
+                        prev_len = code_s.length;
+                     }
+                     s += color + code_s + ansi.NORM +' ';
                   }
-                  s += color + code_s + ansi.NORM +' ';
+
                   sym.push(code_s);
                } else {
                   var chr = t.code_to_char(code);
@@ -394,7 +401,7 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
                      s += s2.slice(10,12) +':'+ s2.slice(12,14) +'Z';
                   }
                }
-               cb(s + lat_lon +'\n');
+               if (!fec_err || t.show_fec) cb(s + lat_lon +'\n');
             }
          }
 
