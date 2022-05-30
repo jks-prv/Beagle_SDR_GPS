@@ -7,8 +7,10 @@ function Selcall(init, output_cb) {
 
    t.dbg = 0;
    t.test_msgs = 0;
+   t.dump_always = 1;
    t.dump_non_std_len = 1;
    t.dump_no_eos = 0;
+   t.zoom = 10;
    
    t.start_bit = 0;
    t.seq = 0;
@@ -236,6 +238,11 @@ Selcall.prototype.search_sync = function(bit) {
 Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
    var t = this;
    if (!t.synced) return { resync:0 };
+   
+   if (t.test) {
+      var bc_ck = kiwi_bitReverse(kiwi_bitCount(c ^ 0x7f), 3) << 7;
+      c = bc_ck | c;
+   }
 
    t.full_syms[t.seq] = _code;
    var bc_rev = (_code >> 7) & 7;
@@ -277,28 +284,34 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
          return (color + s + ansi.NORM);
       };
 
+      var map_lat_lon = function(lat_lon_s, lat_dd, lon_dd) {
+         return w3_link('w3-esc-html w3-link-darker-color',
+            'www.marinetraffic.com/en/ais/home/centerx:'+ lon_dd +'/centery:'+ lat_dd +'/zoom:'+ t.zoom, lat_lon_s);
+      }
+
       if (eos_ck(t.EOS) || eos_ck(t.ARQ) || eos_ck(t.ABQ)) eos = true;
       if (eos || t.seq > t.MSG_LEN_MAX) {
-         var dump = 0;
+         var dump = t.dump_always;
          if (eos) {
             if (t.seq != t.MSG_LEN_MIN) {
                if (show_errs) cb(t.output_msg(color(ansi.BLUE, 'non-std len='+ t.seq)));
                console.log('$$ non-std len='+ t.seq);
-               dump = t.dump_non_std_len;
+               dump |= t.dump_non_std_len;
             }
             //cb(t.process_msg(show_errs));
          } else {
             var pe = t.parity_errors? (' '+ color(ansi.BLUE, (t.parity_errors +' PE'))) : '';
             if (show_errs) cb(t.output_msg(color(ansi.BLUE, 'no EOS') + pe));
             console.log('$$ no EOS pe='+ t.parity_errors);
-            dump = t.dump_no_eos;
+            dump |= t.dump_no_eos;
          }
 
-         if (dump && dbgUs) {
+         if (dump) {
             var dump_line = 1;
             var fec_err = false;
             var color_n = -1, color;
             var prev_len = 0;
+            var sym = [];
             var s = (new Date()).toUTCString().substr(17,8) +'Z ';
 
             for (var i = 0; i < t.seq; i++) {
@@ -310,6 +323,7 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
                
                if (dump_line) {
                   if (i & 1 || i < 12) continue;      // skip FEC and phasing
+
                   if (t.bc_err[i] && i+5 < t.seq) {   // apply FEC
                      if (!t.bc_err[i+5]) {
                         code = t.full_syms[i+5] & 0x7f;
@@ -318,7 +332,18 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
                         fec_err = true;
                      }
                   }
-                  //s += pos_s +'|'+ code +' ';
+
+                  // format 4-digit calls to look like 6-digit
+                  //console.log(i +':'+ code);
+                  if (i == 14 && (t.full_syms[18] & 0x7f) > 99) {
+                     sym.push('  ');
+                     s += '   ';
+                  }
+                  if (i == 20 && (t.full_syms[24] & 0x7f) > 99) {
+                     sym.push('  ');
+                     s += '   ';
+                  }
+
                   var code_s = (code <= 99)? code.leadingZeros(2) : code.toString();
                   if (prev_len != code_s.length) {
                      color_n = (color_n + 1) % ansi.rolling_n;
@@ -326,6 +351,7 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
                      prev_len = code_s.length;
                   }
                   s += color + code_s + ansi.NORM +' ';
+                  sym.push(code_s);
                } else {
                   var chr = t.code_to_char(code);
                   var bc_rev = (_code >> 7) & 7;
@@ -340,10 +366,35 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
                      ' '+ bc_rev.toString(2).leadingZeros(3) +' '+ code.toString(2).leadingZeros(7) + zc);
                }
             }
-
+            
             if (dump_line) {
-               //console.log(s);
-               cb(s +'\n');
+               var lat_lon = '';
+               if (!fec_err) {
+                  var o = 0;
+                  //if (+sym[6] == 121) o = 8; else
+                  if (+sym[8] == 121) o = 10;
+                  if (o) {
+                     //  0  1  2  3  4  5  6
+                     // 01 23 45 67 89 01 23
+                     // 01 61 41 10 31 20 38    16.14 110.31 20:38
+                     var s2 = '';
+                     for (i = 0; i <= 6; i++) s2 += sym[o+i];
+                     var lat_dd = s2.slice(1,3) +'.'+ s2.slice(3,5);
+                     var lon_dd = s2.slice(5,8) +'.'+ s2.slice(8,10);
+                     s += map_lat_lon('['+ lat_dd +','+ lon_dd +']', +lat_dd, +lon_dd) +' ';
+                     s += map_lat_lon('[-lat]', -lat_dd, +lon_dd) +' ';
+
+                     var lat_dm = s2.slice(1,3) +'\u00b0'+ s2.slice(3,5) +"'";
+                     var lon_dm = s2.slice(5,8) +'\u00b0'+ s2.slice(8,10) +"'";
+                     var lat = s2.slice(1,3) + ((+s2.slice(3,5))/60).toFixed(2).slice(1);
+                     var lon = s2.slice(5,8) + ((+s2.slice(8,10))/60).toFixed(2).slice(1);
+                     s += map_lat_lon('['+ lat_dm +','+ lon_dm +']', +lat, +lon) +' ';
+                     s += map_lat_lon('[-lat]', -lat, +lon) +' ';
+                     
+                     s += s2.slice(10,12) +':'+ s2.slice(12,14) +'Z';
+                  }
+               }
+               cb(s + lat_lon +'\n');
             }
          }
 
