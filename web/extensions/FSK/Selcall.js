@@ -7,7 +7,6 @@ function Selcall(init, output_cb) {
 
    t.dbg = 0;
    t.test_msgs = 0;
-   t.show_fec = 0;
    t.dump_always = 1;
    t.dump_non_std_len = 1;
    t.dump_no_eos = 0;
@@ -132,7 +131,7 @@ Selcall.prototype.sym_by_sym_name = function(sym_name) {
 Selcall.prototype.output_msg = function(s) {
    var t = this;
    //toUTCString().substr(5,20)
-   return ((new Date()).toUTCString().substr(17,8) +'Z '+ (ext_get_freq()/1e3).toFixed(2) +' '+ s +'\n');
+   return ((new Date()).toUTCString().substr(17,8) +' '+ (ext_get_freq()/1e3).toFixed(2) +' '+ s +'\n');
 }
    
 Selcall.prototype.code_to_char = function(code) {
@@ -295,14 +294,14 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
          var dump = t.dump_always;
          if (eos) {
             if (t.seq != t.MSG_LEN_MIN) {
-               if (show_errs) cb(t.output_msg(color(ansi.BLUE, 'non-std len='+ t.seq)));
+               //if (show_errs) cb(t.output_msg(color(ansi.BLUE, 'non-std len='+ t.seq)));
                console.log('$$ non-std len='+ t.seq);
                dump |= t.dump_non_std_len;
             }
             //cb(t.process_msg(show_errs));
          } else {
             var pe = t.parity_errors? (' '+ color(ansi.BLUE, (t.parity_errors +' PE'))) : '';
-            if (show_errs) cb(t.output_msg(color(ansi.BLUE, 'no EOS') + pe));
+            //if (show_errs) cb(t.output_msg(color(ansi.BLUE, 'no EOS') + pe));
             console.log('$$ no EOS pe='+ t.parity_errors);
             dump |= t.dump_no_eos;
          }
@@ -313,7 +312,7 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
             var color_n = -1, color;
             var prev_len = 0;
             var sym = [];
-            var s = (new Date()).toUTCString().substr(17,8) +'Z ';
+            var s = (new Date()).toUTCString().substr(17,8) +' '+ (ext_get_freq()/1e3).toFixed(2) +' ';
 
             for (var i = 0; i < t.seq; i++) {
                var fec = false;
@@ -388,20 +387,20 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
                      for (i = 0; i <= 6; i++) s2 += sym[o+i];
                      var lat_dd = s2.slice(1,3) +'.'+ s2.slice(3,5);
                      var lon_dd = s2.slice(5,8) +'.'+ s2.slice(8,10);
-                     s += map_lat_lon('['+ lat_dd +','+ lon_dd +']', +lat_dd, +lon_dd) +' ';
-                     s += map_lat_lon('[-lat]', -lat_dd, +lon_dd) +' ';
+                     s += map_lat_lon('['+ lat_dd +','+ lon_dd +']', +lat_dd, +lon_dd);
+                     s += map_lat_lon('*', -lat_dd, +lon_dd) +' ';
 
                      var lat_dm = s2.slice(1,3) +'\u00b0'+ s2.slice(3,5) +"'";
                      var lon_dm = s2.slice(5,8) +'\u00b0'+ s2.slice(8,10) +"'";
                      var lat = s2.slice(1,3) + ((+s2.slice(3,5))/60).toFixed(2).slice(1);
                      var lon = s2.slice(5,8) + ((+s2.slice(8,10))/60).toFixed(2).slice(1);
                      s += map_lat_lon('['+ lat_dm +','+ lon_dm +']', +lat, +lon) +' ';
-                     s += map_lat_lon('[-lat]', -lat, +lon) +' ';
+                     //s += map_lat_lon('[-lat]', -lat, +lon) +' ';
                      
-                     s += s2.slice(10,12) +':'+ s2.slice(12,14) +'Z';
+                     s += s2.slice(10,12) +':'+ s2.slice(12,14);
                   }
                }
-               if (!fec_err || t.show_fec) cb(s + lat_lon +'\n');
+               if (!fec_err || t.show_errs) cb(s + lat_lon +'\n');
             }
          }
 
