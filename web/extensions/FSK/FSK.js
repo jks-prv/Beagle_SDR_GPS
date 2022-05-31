@@ -5,7 +5,7 @@ var fsk = {
    first_time: true,
    
    dataH: 300,
-   ctrlW: 650,
+   ctrlW: 575,
    ctrlH: 200,
 
    lhs: 150,
@@ -21,6 +21,7 @@ var fsk = {
    header: null,
    menu_sel: '',
    test_mode: false,
+   auto_zoom: 1,
    
    freq: 0,
    cf: 1000,
@@ -433,7 +434,7 @@ var fsk_maritime = {
    'SVO Athens': [
       {f:12603.5, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'}
    ],
-   'UDK2 Murmansk': [
+   'UDK2_Murmansk': [
       {f:6322.5, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'}
    ],
    'XSQ China': [
@@ -441,6 +442,19 @@ var fsk_maritime = {
       {f:12622.5, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'}
    ],
 
+   'NAVTEX': [
+      {f:518,     cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
+      {f:490,     cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
+      {f:4209.5,  cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'}
+   ],
+   'DSC': [
+      {f:2187.5,  cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
+      {f:4207.5,  cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
+      {f:6312,    cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
+      {f:8414.5,  cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
+      {f:12577,   cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
+      {f:16804.5, cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'}
+   ],
    'Selcall': [
       {f:7919.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
       {f:7922.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
@@ -465,24 +479,11 @@ var fsk_maritime = {
 
       {f:8085.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
       {f:8091.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'}
-   ],
-   'DSC': [
-      {f:2187.5,  cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
-      {f:4207.5,  cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
-      {f:6312,    cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
-      {f:8414.5,  cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
-      {f:12577,   cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
-      {f:16804.5, cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'}
-   ],
-   'NAVTEX': [
-      {f:518,     cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
-      {f:490,     cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
-      {f:4209.5,  cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'}
    ]
 };
 
 var fsk_military = {
-   'PBB Dutch Navy': [
+   'PBB_Dutch Navy': [
       {f:2474,   s:850, b:75, fr:'5N1V', i:1, e:'ITA2'},
       {f:4280,   s:850, b:75, fr:'5N1V', i:1, e:'ITA2'},
       {f:6358.5, s:850, b:75, fr:'5N1V', i:1, e:'ITA2'},
@@ -501,7 +502,7 @@ var fsk_ham_utility = {
       {f:'24925 12m', s:170, b:45.45, fr:'5N1.5', i:0, e:'ITA2'},
       {f:'28080 10m', s:170, b:45.45, fr:'5N1.5', i:0, e:'ITA2'}
    ],
-   'EFR Teleswitch': [
+   'EFR_Teleswitch': [
       {f:'129.1 DCF49', s:340, b:200, fr:'EFR', i:1, e:'ASCII'},
       {f:'135.6 HGA22', s:340, b:200, fr:'EFR', i:1, e:'ASCII'},
       {f:'139 DCF39',   s:340, b:200, fr:'EFR', i:1, e:'ASCII'}
@@ -580,6 +581,11 @@ function fsk_controls_setup()
          if ((r = w3_ext_param('inverted', a)).match) {
             fsk.inverted = (r.num == 0)? 0:1;
          } else
+         if ((r = w3_ext_param('zoom', a)).match) {
+            if (isNumber(r.num)) {
+               fsk.auto_zoom = (r.num == 0)? 0:1;
+            }
+         } else
          if ((r = w3_ext_param('word', a)).match) {
             if (!isNaN(r.num) && r.num >= 5 && r.num <= 15) {
                fsk.fr_bpw_i = r.num - 5;
@@ -657,6 +663,7 @@ function fsk_controls_setup()
 
                w3_inline('',     // because of /w3-margin-between-16 above
                   w3_inline('id-fsk-decode/w3-margin-between-16',
+                     w3_checkbox('w3-label-inline w3-label-not-bold/', 'auto<br>zoom', 'fsk.auto_zoom', fsk.auto_zoom, 'fsk_auto_zoom_cb'),
                      w3_button('w3-padding-smaller w3-css-yellow', 'Clear', 'fsk_clear_button_cb', 0),
                      w3_button('id-fsk-log w3-padding-smaller w3-purple', 'Log', 'fsk_log_cb'),
                      w3_input('id-fsk-log-mins/w3-label-not-bold/w3-ext-retain-input-focus|padding:0;width:auto|size=4',
@@ -665,13 +672,13 @@ function fsk_controls_setup()
    
                   w3_inline('id-fsk-framing w3-hide/w3-margin-between-16',
                      w3_button('w3-padding-smaller', 'Sample', 'fsk_sample_cb', 0),
-                     w3_select('w3-text-red', '', 'bits/word', 'fsk.fr_bpw_i', fsk.fr_bpw_i, '5:15', 'fsk_bpw_cb'),
+                     w3_select('w3-text-red', '', 'word', 'fsk.fr_bpw_i', fsk.fr_bpw_i, '5:15', 'fsk_bpw_cb'),
                      w3_inline('/w3-hspace-4',
                         w3_div('id-fsk-phase w3-font-14px', '\u03d500'),
                         w3_icon('w3-text-pink', 'fa-plus-square', 22, '', 'fsk_phase_cb', 1),
                         w3_icon('w3-text-blue', 'fa-minus-square', 22, '', 'fsk_phase_cb', -1)
                      ),
-                     w3_select('w3-text-red', '', 'bits/data', 'fsk.fr_bpd_i', fsk.fr_bpd_i, fsk_bpd_s, 'fsk_bpd_cb')
+                     w3_select('w3-text-red', '', 'data', 'fsk.fr_bpd_i', fsk.fr_bpd_i, fsk_bpd_s, 'fsk_bpd_cb')
                   ),
    
                   w3_inline('id-fsk-scope w3-hide/w3-margin-between-16',
@@ -752,6 +759,14 @@ function fsk_controls_setup()
 	ext_register_audio_data_cb(fsk_audio_data_cb);
 }
 
+function fsk_auto_zoom(shift)
+{
+   if (shift < 170) return 14;
+   if (shift <= 200) return 13;
+   if (shift <= 450) return 12;
+   return 11;
+}
+
 function fsk_setup()
 {
 	fsk.freq = ext_get_freq()/1e3;
@@ -764,13 +779,14 @@ function fsk_setup()
    fsk.is_7_3 = (fsk.framing == '7/3');
    fsk.encoder = fsk.jnx.get_encoding_obj();
 
-   var z = ext_get_zoom();
-   ext_tune(fsk.freq, 'cw', ext_zoom.ABS, z);
+   ext_tune(fsk.freq, 'cw', fsk.auto_zoom? ext_zoom.ABS : ext_zoom.CUR, fsk_auto_zoom(fsk.shift));
    var pb_half = Math.max(fsk.shift, fsk.baud) /2;
    var pb_edge = Math.round(((pb_half * 0.2) + 10) / 10) * 10;
    pb_half += pb_edge;
    ext_set_passband(fsk.cf - pb_half, fsk.cf + pb_half);
-   ext_tune(fsk.freq, 'cw', ext_zoom.ABS, z);      // set again to get correct freq given new passband
+   
+   // set again to get correct freq given new passband
+   ext_tune(fsk.freq, 'cw', fsk.auto_zoom? ext_zoom.ABS : ext_zoom.CUR, fsk_auto_zoom(fsk.shift));
    
    // set matching entries in menus
    var shift = fsk.shift_custom? 'custom' : fsk.shift;
@@ -854,8 +870,7 @@ function fsk_pre_select_cb(path, idx, first)
          fsk.encoding = o.e;
    
          // set freq here because fsk_setup() recalls current freq in case it has been manually tuned
-         var z = Math.min(ext_get_zoom(), 12);
-         ext_tune(fsk.freq, 'cw', ext_zoom.ABS, z);
+         ext_tune(fsk.freq, 'cw', fsk.auto_zoom? ext_zoom.ABS : ext_zoom.CUR, fsk_auto_zoom(fsk.shift));
          fsk_setup();
    
          // if called directly instead of from menu callback, select menu item
@@ -1020,6 +1035,15 @@ function fsk_mode_cb(path, idx, first)
    w3_show_hide_inline('id-fsk-console-msg', fsk.decode);
    w3_show_hide_inline('id-fsk-scope', fsk.scope);
    w3_show_hide_inline('id-fsk-framing', fsk.show_framing);
+}
+
+function fsk_auto_zoom_cb(path, checked, first)
+{
+   if (first) return;
+   checked = checked? 1:0;
+   //console.log('fsk_auto_zoom_cb checked='+ checked);
+   fsk.auto_zoom = checked;
+   w3_checkbox_set(path, checked);
 }
 
 function fsk_clear_button_cb(path, idx, first)

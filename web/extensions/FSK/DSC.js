@@ -213,7 +213,7 @@ DSC.prototype.sym_by_sym_name = function(sym_name) {
 DSC.prototype.output_msg = function(s) {
    var t = this;
    //toUTCString().substr(5,20)
-   return ((new Date()).toUTCString().substr(17,8) +'Z '+ (ext_get_freq()/1e3).toFixed(2) +' '+ s +'\n');
+   return ((new Date()).toUTCString().substr(17,8) +' '+ (ext_get_freq()/1e3).toFixed(2) +' '+ s +'\n');
 }
    
 DSC.prototype.process_msg = function(show_errs) {

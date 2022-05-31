@@ -5644,7 +5644,7 @@ function special_step(b, sel, caller)
 	return step_Hz;
 }
 
-function freqstep(sel)
+function freqstep(sel, shiftKey)
 {
 	var step_Hz = up_down[cur_mode][sel]*1000;
 	
@@ -5662,22 +5662,27 @@ function freqstep(sel)
 	var took;
 
 	if (incHz == NDB_400_1000_mode) {
-		var kHz = fnew % 1000;
-		if (posHz)
-			kHz = (kHz < 400)? 400 : ( (kHz < 600)? 600 : 1000 );
-		else
-			kHz = (kHz == 0)? -400 : ( (kHz <= 400)? 0 : ( (kHz <= 600)? 400 : 600 ) );
-		trunc = Math.floor(fnew/1000)*1000;
-		fnew = trunc + kHz;
-		took = '400/1000';
-		//console.log("STEP -400/1000 kHz="+kHz+" trunc="+trunc+" fnew="+fnew);
+	   if (shiftKey != true) {
+         var kHz = fnew % 1000;
+         if (posHz)
+            kHz = (kHz < 400)? 400 : ( (kHz < 600)? 600 : 1000 );
+         else
+            kHz = (kHz == 0)? -400 : ( (kHz <= 400)? 0 : ( (kHz <= 600)? 400 : 600 ) );
+         trunc = Math.floor(fnew/1000)*1000;
+         fnew = trunc + kHz;
+         took = '400/1000';
+         //console.log("STEP -400/1000 kHz="+kHz+" trunc="+trunc+" fnew="+fnew);
+      } else {
+		   fnew += Math.sign(step_Hz) * 1000;
+		   took = 'SHIFT';
+      }
 	} else
-	if (freq_displayed_Hz != trunc) {
+	if (shiftKey != true && freq_displayed_Hz != trunc) {
 		fnew = trunc;
 		took = 'TRUNC';
 	} else {
 		fnew += step_Hz;
-		took = 'INC';
+		took = (shiftKey == true)? 'SHIFT' : 'INC';
 	}
 	//console.log('STEP '+sel+' '+cur_mode+' fold='+freq_displayed_Hz+' inc='+incHz+' trunc='+trunc+' fnew='+fnew+' '+took);
 	
@@ -8262,6 +8267,7 @@ function keyboard_shortcut(key, mod, ctlAlt, keyCode)
    case 'q': ext_set_mode('iq'); break;
    
    // step
+   // 0: -large, 1: -med, 2: -small || 3: +small, 4: +med, 5: +large
    case 'j': case 'J': case 'ArrowLeft':
       if (mod != shortcut.SHIFT_PLUS_CTL_OR_ALT)
          freqstep(owrx.wf_snap? mod : (2-mod));
@@ -8587,12 +8593,12 @@ function panels_setup()
          ),
 
          w3_div('id-step-freq',
-            '<img id="id-step-0" src="icons/stepdn.20.png" onclick="freqstep(0)" />',
-            '<img id="id-step-1" src="icons/stepdn.18.png" onclick="freqstep(1)" style="padding-bottom:1px" />',
-            '<img id="id-step-2" src="icons/stepdn.16.png" onclick="freqstep(2)" style="padding-bottom:2px" />',
-            '<img id="id-step-3" src="icons/stepup.16.png" onclick="freqstep(3)" style="padding-bottom:2px" />',
-            '<img id="id-step-4" src="icons/stepup.18.png" onclick="freqstep(4)" style="padding-bottom:1px" />',
-            '<img id="id-step-5" src="icons/stepup.20.png" onclick="freqstep(5)" />'
+            '<img id="id-step-0" src="icons/stepdn.20.png" onclick="freqstep(0, event.shiftKey)" />',
+            '<img id="id-step-1" src="icons/stepdn.18.png" onclick="freqstep(1, event.shiftKey)" style="padding-bottom:1px" />',
+            '<img id="id-step-2" src="icons/stepdn.16.png" onclick="freqstep(2, event.shiftKey)" style="padding-bottom:2px" />',
+            '<img id="id-step-3" src="icons/stepup.16.png" onclick="freqstep(3, event.shiftKey)" style="padding-bottom:2px" />',
+            '<img id="id-step-4" src="icons/stepup.18.png" onclick="freqstep(4, event.shiftKey)" style="padding-bottom:1px" />',
+            '<img id="id-step-5" src="icons/stepup.20.png" onclick="freqstep(5, event.shiftKey)" />'
          ),
 
          w3_div('',
