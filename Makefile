@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 533
+VERSION_MIN = 535
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -1455,8 +1455,8 @@ copy_to_git:
 	@echo
 	@(cd $(GITAPP)/$(REPO_NAME); echo 'repo branch set to:'; pwd; git --no-pager branch)
 	@echo '################################'
-#	@echo 'DANGER: #define MINIFY_WEBSITE_DOWN'
-#	@echo '################################'
+	@echo 'DANGER: #define MINIFY_WEBSITE_DOWN'
+	@echo '################################'
 	@echo -n 'did you make install to rebuild the optimized files? '
 	@read not_used
 	make clean_dist

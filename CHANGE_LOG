@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.534  Jun 1, 2022
+v1.534-535  Jun 1, 2022
     Added auto-zoom checkbox to FSK and NAVTEX extensions so the auto zoom which usually occurs
         can be disabled.
     Main control panel: Shift-clicking the circled +/- icons prevents frequency rounding that
