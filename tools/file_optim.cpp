@@ -110,7 +110,7 @@ void minify(const char *ext_s, u4_t mflags, const char *svc, const char *ext, ch
     }
 
     if (!okay) {
-        //#define MINIFY_WEBSITE_DOWN
+        #define MINIFY_WEBSITE_DOWN
         #ifdef MINIFY_WEBSITE_DOWN
             if (mflags & MF_HTML) {
                 asprintf(&cmd, "cat %s >%s",
