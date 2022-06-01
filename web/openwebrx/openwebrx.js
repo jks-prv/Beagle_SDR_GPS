@@ -1491,28 +1491,24 @@ var scale_canvas_drag_params = {
 function scale_canvas_mousedown(evt)
 {
 	//event_dump(evt, 'SC-MDN', 1);
-	with (scale_canvas_drag_params) {
-		drag = false;
-		start_x = evt.pageX;
-		start_y = evt.pageY;
-		key_modifiers.shiftKey = evt.shiftKey;
-		key_modifiers.altKey = evt.altKey;
-		key_modifiers.ctrlKey = evt.ctrlKey;
-	}
+   scale_canvas_drag_params.drag = false;
+   scale_canvas_drag_params.start_x = evt.pageX;
+   scale_canvas_drag_params.start_y = evt.pageY;
+   scale_canvas_drag_params.key_modifiers.shiftKey = evt.shiftKey;
+   scale_canvas_drag_params.key_modifiers.altKey = evt.altKey;
+   scale_canvas_drag_params.key_modifiers.ctrlKey = evt.ctrlKey;
 	scale_canvas_start_drag(evt, 1);
 	evt.preventDefault();
 }
 
 function scale_canvas_touchStart(evt)
 {
-   with (scale_canvas_drag_params) {
-      drag = false;
-      last_x = start_x = evt.targetTouches[0].pageX;
-      last_y = start_y = evt.targetTouches[0].pageY;
-      key_modifiers.shiftKey = false;
-      key_modifiers.altKey = false;
-      key_modifiers.ctrlKey = false;
-   }
+   scale_canvas_drag_params.drag = false;
+   scale_canvas_drag_params.last_x = start_x = evt.targetTouches[0].pageX;
+   scale_canvas_drag_params.last_y = start_y = evt.targetTouches[0].pageY;
+   scale_canvas_drag_params.key_modifiers.shiftKey = false;
+   scale_canvas_drag_params.key_modifiers.altKey = false;
+   scale_canvas_drag_params.key_modifiers.ctrlKey = false;
    scale_canvas_start_drag(evt, 0);
 	
 	touch_restore_tooltip_visibility(owrx.scale_canvas);
