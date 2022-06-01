@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 535
+VERSION_MIN = 536
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -1105,6 +1105,14 @@ endif
 .PHONY: c_ext_clang_conv_install
 c_ext_clang_conv_install: $(DO_ONCE) $(BUILD_DIR)/kiwid.bin
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
+	@echo
+	@echo "############################################"
+	@echo "# DANGER: CHECK FOR MINIMIZATION FAILURE"
+	@echo "# kiwi_js_load.min.js and xd-utils.min.js are okay to be in this list"
+	find . -name "*.min.js" -size -1k -ls
+	@echo "############################################"
+	@echo
+
 	# remainder of "make install" only makes sense to run on target
 else
 # don't strip symbol table while we're debugging daemon crashes
@@ -1455,8 +1463,8 @@ copy_to_git:
 	@echo
 	@(cd $(GITAPP)/$(REPO_NAME); echo 'repo branch set to:'; pwd; git --no-pager branch)
 	@echo '################################'
-	@echo 'DANGER: #define MINIFY_WEBSITE_DOWN'
-	@echo '################################'
+#	@echo 'DANGER: #define MINIFY_WEBSITE_DOWN'
+#	@echo '################################'
 	@echo -n 'did you make install to rebuild the optimized files? '
 	@read not_used
 	make clean_dist

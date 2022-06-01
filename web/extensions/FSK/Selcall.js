@@ -6,7 +6,6 @@ function Selcall(init, output_cb) {
    console.log('FSK encoder: Selcall');
 
    t.dbg = 0;
-   t.test_msgs = 0;
    t.dump_always = 1;
    t.dump_non_std_len = 1;
    t.dump_no_eos = 0;
@@ -14,6 +13,7 @@ function Selcall(init, output_cb) {
    
    t.start_bit = 0;
    t.seq = 0;
+   t.pkt = 0;
    t.MSG_LEN_MIN = 30;
    t.MSG_LEN_MAX = 80;
    t.synced = 0;
@@ -238,12 +238,19 @@ Selcall.prototype.search_sync = function(bit) {
 Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
    var t = this;
    if (!t.synced) return { resync:0 };
+   if (t.seq == 12) t.pkt++;
    
-   if (t.test) {
-      var bc_ck = kiwi_bitReverse(kiwi_bitCount(c ^ 0x7f), 3) << 7;
-      c = bc_ck | c;
+   // test
+   var test = false;
+   if (test && t.pkt == 1) {
+      //if (t.seq == 18) _code = 0;
+      //if (t.seq == 18+5) _code = 0;
+      //if (t.seq == 24) _code = 0;
+      //if (t.seq == 24+5) _code = 0;
+      if (t.seq == 30) _code = 0;
+      if (t.seq == 30+5) _code = 0;
    }
-
+   
    t.full_syms[t.seq] = _code;
    var bc_rev = (_code >> 7) & 7;
    var code = _code & 0x7f;
@@ -251,7 +258,7 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
    var pos_s = t.pos_s[t.seq];
    pos_s = pos_s || 'unk';
    var chr = t.code_to_char(code);
-
+   
    // verify #zeros count
    var bc_ck = kiwi_bitReverse(bc_rev, 3);
    var bc_data = kiwi_bitCount(code ^ 0x7f);
@@ -280,14 +287,33 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
          return (eos_n >= 3);
       }
       
-      var color = function(color, s) {
-         return (color + s + ansi.NORM);
+      var color = function(_color, s) {
+         return (_color + s + ansi.NORM);
       };
 
       var map_lat_lon = function(lat_lon_s, lat_dd, lon_dd) {
          return w3_link('w3-esc-html w3-link-darker-color',
             'www.marinetraffic.com/en/ais/home/centerx:'+ lon_dd +'/centery:'+ lat_dd +'/zoom:'+ t.zoom, lat_lon_s);
       }
+
+      var fec = function(i) {
+         var rv = { code: t.full_syms[i] & 0x7f, fec_err: false };
+
+         if (t.bc_err[i]) {
+            if (i+5 < t.seq) {   // apply FEC
+               if (!t.bc_err[i+5]) {
+                  rv.code = t.full_syms[i+5] & 0x7f;
+                  if (test) console.log('FEC: i='+ i +' alt code='+ rv.code);
+                  return rv;
+               } 
+            }
+            rv.code = -1;
+            rv.fec_err = true;
+            if (test) console.log('FEC: i='+ i +' FAIL');
+         }
+         
+         return rv;
+      };
 
       if (eos_ck(t.EOS) || eos_ck(t.ARQ) || eos_ck(t.ABQ)) eos = true;
       if (eos || t.seq > t.MSG_LEN_MAX) {
@@ -308,14 +334,14 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
 
          if (dump) {
             var dump_line = 1;
-            var fec_err = false;
-            var color_n = -1, color;
+            var fec_errors = false;
+            var color_n = -1, color_s;
             var prev_len = 0;
             var sym = [];
             var s = (new Date()).toUTCString().substr(17,8) +' '+ (ext_get_freq()/1e3).toFixed(2) +' ';
 
             for (var i = 0; i < t.seq; i++) {
-               var fec = false;
+               var fec_err = false;
                var _code = t.full_syms[i];
                if (isUndefined(_code)) _code = 119;   // sync
                var code = _code & 0x7f;
@@ -325,36 +351,36 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
                if (dump_line) {
                   if (i & 1 || i < 12) continue;      // skip FEC and phasing
 
-                  if (t.bc_err[i] && i+5 < t.seq) {   // apply FEC
-                     if (!t.bc_err[i+5]) {
-                        code = t.full_syms[i+5] & 0x7f;
-                     } else {
-                        fec_err = fec = true;
-                     }
-                  }
+                  var rv = fec(i);
+                  code = rv.code;
+                  if (rv.fec_err) fec_errors = true;
 
                   // format 4-digit calls to look like 6-digit
+                  //   1  1  1   1  2  2   2   2  2  3
+                  //   2  4  6   8  0  2   4   6  8  0
+                  // 123 68 68 100 99 80 121 110 01 60 ...
                   //console.log(i +':'+ code);
-                  if (i == 14 && (t.full_syms[18] & 0x7f) > 99) {
+                  if (i == 14 && fec(18).code > 99) {
                      sym.push('  ');
-                     s += '   ';
+                     s += '__ ';
                   }
-                  if (i == 20 && (t.full_syms[24] & 0x7f) > 99) {
+                  if (i == 20 && fec(24).code > 99) {
                      sym.push('  ');
-                     s += '   ';
+                     s += '__ ';
                   }
 
-                  if (fec) {
+                  var code_s;
+                  if (rv.fec_err) {
                      s += 'X ';
                      code_s = '0';
                   } else {
-                     var code_s = (code <= 99)? code.leadingZeros(2) : code.toString();
+                     code_s = (code <= 99)? code.leadingZeros(2) : code.toString();
                      if (prev_len != code_s.length) {
                         color_n = (color_n + 1) % ansi.rolling_n;
-                        color = ansi[ansi.rolling[color_n]];
+                        color_s = ansi[ansi.rolling[color_n]];
                         prev_len = code_s.length;
                      }
-                     s += color + code_s + ansi.NORM +' ';
+                     s += color_s + code_s + ansi.NORM +' ';
                   }
 
                   sym.push(code_s);
@@ -375,7 +401,7 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
             
             if (dump_line) {
                var lat_lon = '';
-               if (!fec_err) {
+               if (!fec_errors) {
                   var o = 0;
                   //if (+sym[6] == 121) o = 8; else
                   if (+sym[8] == 121) o = 10;
@@ -399,8 +425,11 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
                      
                      s += s2.slice(10,12) +':'+ s2.slice(12,14);
                   }
+               } else {
+                  s += color(ansi.RED, 'FEC');
                }
-               if (!fec_err || t.show_errs) cb(s + lat_lon +'\n');
+               console.log('fec_errors='+ fec_errors +' show_errs='+ show_errs);
+               if (!fec_errors || show_errs) cb(s + lat_lon +'\n');
             }
          }
 

@@ -110,7 +110,7 @@ void minify(const char *ext_s, u4_t mflags, const char *svc, const char *ext, ch
     }
 
     if (!okay) {
-        #define MINIFY_WEBSITE_DOWN
+        //#define MINIFY_WEBSITE_DOWN
         #ifdef MINIFY_WEBSITE_DOWN
             if (mflags & MF_HTML) {
                 asprintf(&cmd, "cat %s >%s",
@@ -125,19 +125,21 @@ void minify(const char *ext_s, u4_t mflags, const char *svc, const char *ext, ch
             }
         #else
             if (mflags & MF_HTML) {
-                asprintf(&cmd, "curl -X POST -s --data-urlencode \'input@%s\' https://%s >%s",
-                    fn, svc, fn_min);
+                asprintf(&cmd, "curl -Ls -X POST --http1.0 --data \'type=html\' --data \'fn=%s\' --data-urlencode \'input@%s\' %s >%s",
+                    fn, fn, svc, fn_min);
             } else
             if (mflags & (MF_JS|MF_CSS)) {
                 asprintf(&cmd, "echo '\n\n/* %s (%s = %.24s) */' >%s; "
-                    "curl -X POST -s --data-urlencode \'input@%s\' https://%s >>%s; "
+                    "curl -Ls -X POST --http1.0 --data \'type=%s\' --data \'fn=%s\' --data-urlencode \'input@%s\' %s >>%s; "
                     "echo '\n\n' >>%s",
                     fn_min, fn, ctime(&sb_fn.st_mtime), fn_min,
-                    fn, svc, fn_min,
+                    (mflags & MF_JS)? "js" : "css", fn, fn, svc, fn_min,
                     fn_min);
             } else {
-                asprintf(&cmd, "curl -X POST -s --form \'input=@%s;type=image/%s\' https://%s >%s",
-                    fn, &ext[1], svc, fn_min);
+                //asprintf(&cmd, "curl -Ls -X POST --form \'input=@%s;type=image/%s\' %s >%s",
+                //    fn, &ext[1], svc, fn_min);
+                asprintf(&cmd, "cat %s >%s",
+                    fn, fn_min);
             }
         #endif
         printf("%s\n", cmd);
@@ -277,19 +279,22 @@ int main(int argc, char *argv[])
     
     // minify and (potentially) gzip them, but don't merge them.
     if (flags & MF_JS) for (i=0; i < fidx[F_JS]; i++) {
-        minify("js ", MF_JS|mflags, "www.toptal.com/developers/javascript-minifier/raw", ".js", files[i][F_JS]);
+        //minify("js ", MF_JS|mflags, "www.toptal.com/developers/javascript-minifier/api/raw", ".js", files[i][F_JS]);
+        minify("js ", MF_JS|mflags, "kiwisdr.com/php/update.php", ".js", files[i][F_JS]);
     }
     if (flags & MF_CSS) for (i=0; i < fidx[F_CSS]; i++) {
-        minify("css", MF_CSS|mflags, "cssminifier.com/raw", ".css", files[i][F_CSS]);
+        //minify("css", MF_CSS|mflags, "www.toptal.com/developers/cssminifier/raw", ".css", files[i][F_CSS]);
+        minify("css", MF_CSS|mflags, "kiwisdr.com/php/update.php", ".css", files[i][F_CSS]);
     }
     if (flags & MF_HTML) for (i=0; i < fidx[F_HTML]; i++) {
-        minify("html", MF_HTML|mflags, "html-minifier.com/raw", ".html", files[i][F_HTML]);
+        //minify("html", MF_HTML|mflags, "www.toptal.com/developers/html-minifier/raw", ".html", files[i][F_HTML]);
+        minify("html", MF_HTML|mflags, "kiwisdr.com/php/update.php", ".html", files[i][F_HTML]);
     }
     if (flags & MF_PNG) for (i=0; i < fidx[F_PNG]; i++) {
-        minify("png", MF_PNG|mflags, "pngcrush.com/crush", ".png", files[i][F_PNG]);
+        minify("png", MF_PNG|mflags, "www.toptal.com/developers/pngcrush/crush", ".png", files[i][F_PNG]);
     }
     if (flags & MF_JPG) for (i=0; i < fidx[F_JPG]; i++) {
-        minify("jpg", MF_JPG|mflags, "jpgoptimiser.com/optimise", ".jpg", files[i][F_JPG]);
+        minify("jpg", MF_JPG|mflags, "www.toptal.com/developers/jpgoptimiser/optimise", ".jpg", files[i][F_JPG]);
     }
     
     return 0;
