@@ -2,9 +2,8 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.536  Jun 2, 2022
+v1.536-537  Jun 3, 2022
     Selcall development.
-    Recovery from disaster with external minification website.
 
 v1.534-535  Jun 1, 2022
     Added auto-zoom checkbox to FSK and NAVTEX extensions so the auto zoom which usually occurs

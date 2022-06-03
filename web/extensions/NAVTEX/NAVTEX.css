@@ -1,1 +1,23 @@
 /* NAVTEX.css */
+
+#id-navtex-map-kiwi {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+/*
+    Qualified with .leaflet-tooltip because with dynload HFDL.css is now loaded
+    before Leaflet/MarkerCluster css. So needed for proper override.
+*/
+
+.leaflet-tooltip.id-navtex-location {
+    background-color: blue;
+    color: white;
+    padding: 0 2px;
+    cursor: pointer;
+    pointer-events: auto;
+    z-index: 9000;
+}

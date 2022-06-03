@@ -3,12 +3,15 @@
 var nt = {
    ext_name: 'NAVTEX',     // NB: must match navtex.c:navtex_ext.name
    first_time: true,
+   test_location: false,
    
-   dataH: 300,
+   //dataH: 300,
+   dataH: 445,
    ctrlW: 550,
    ctrlH: 175,
+   splitH: 100,
 
-   lhs: 150,
+   lhs: 130,
    tw: 1024,
    x: 0,
    last_y: [],
@@ -17,7 +20,14 @@ var nt = {
    menu1:      -1,
    menu2:      -1,
    menu3:      -1,
+   sfmt: 'w3-text-red w3-ext-retain-input-focus',
    
+   SHOW_MSGS: 0,
+   SHOW_MAP: 1,
+   SHOW_SPLIT: 2,
+   show: 0,
+   show_s: [ 'messages', 'map', 'split' ],
+
    navtex_mode: 0,
    navtex_mode_s:    [ 'normal', 'DX' ],
    dsc_mode: 0,
@@ -50,6 +60,10 @@ var nt = {
    log_mins: 0,
    log_interval: null,
    log_txt: '',
+
+   locations: {},
+   too_old_min: 30,
+   locations_visible: true,
 
    last_last: 0
 };
@@ -94,7 +108,10 @@ function navtex_recv(data)
 		switch (param[0]) {
 
 			case "ready":
-            kiwi_load_js_dir('extensions/FSK/', ['JNX.js', 'BiQuadraticFilter.js', 'CCIR476.js', 'DSC.js', 'Selcall.js'], 'navtex_controls_setup');
+				var f = 'extensions/FSK/';
+            kiwi_load_js(['pkgs_maps/pkgs_maps.js', 'pkgs_maps/pkgs_maps.css',
+               f+'JNX.js', f+'BiQuadraticFilter.js', f+'CCIR476.js', f+'DSC.js', f+'Selcall.js'],
+               'navtex_controls_setup');
 				break;
 
 			case "test_done":
@@ -115,8 +132,8 @@ function navtex_baud_error_init()
 
    ct.fillStyle = 'white';
    ct.font = '14px Verdana';
-   ct.fillText('Baud', nt.lhs/2-15, hh);
-   ct.fillText('Error', nt.lhs/2-15, hh+14);
+   ct.fillText('Baud', nt.lhs/2-25, hh);
+   ct.fillText('Error', nt.lhs/2-25, hh+14);
 }
 
 function navtex_baud_error(err)
@@ -275,14 +292,36 @@ function navtex_controls_setup()
       });
    }
 
+   var wh = 'width:'+ px(nt.lhs+1024) +'; height:'+ px(nt.dataH) +';';
+   var cbox = 'w3-label-inline w3-label-not-bold';
+
    var data_html =
       time_display_html('navtex') +
       
-      w3_div('id-navtex-data|width:'+ px(nt.lhs+1024) +'; height:'+ px(nt.dataH) +'; overflow:hidden; position:relative; background-color:black;',
-         '<canvas id="id-navtex-canvas" width='+ dq(nt.lhs+1024) +' height='+ dq(nt.dataH) +' style="left:0; position:absolute"></canvas>',
-			w3_div('id-navtex-console-msg w3-text-output w3-scroll-down w3-small w3-text-black|left:'+ px(nt.lhs) +'; width:1024px; position:relative; overflow-x:hidden;',
-			   '<pre><code id="id-navtex-console-msgs"></code></pre>'
-			)
+      w3_div('id-navtex-data w3-display-container|left:0px; '+ wh,
+
+         // re w3-hide: for map to initialize properly it must be initially selected, then it will be hidden if
+         // the 'map' URL param was not given.
+         w3_div('id-navtex-msgs w3-hide|'+ wh +'; z-index:1; overflow:hidden; position:absolute;',
+            '<canvas id="id-navtex-canvas" width='+ dq(nt.lhs+1024) +' height='+ dq(nt.dataH) +' style="left:0; position:absolute"></canvas>',
+            w3_div('id-navtex-console-msg w3-text-output w3-scroll-down w3-small w3-text-black|left:'+ px(nt.lhs) +'; width:1024px; position:absolute; overflow-x:hidden;',
+               '<pre><code id="id-navtex-console-msgs"></code></pre>'
+            )
+         ),
+         w3_div('|left:'+ px(nt.lhs) +'; width:1024px; height:'+ px(nt.dataH) +'; position:absolute; z-index:0|id="id-navtex-map"')
+      ) +
+
+      w3_div('id-navtex-options w3-display-right w3-text-white|top:230px; right:0px; width:250px; height:200px',
+         w3_text('w3-text-aqua w3-bold', 'Display options'),
+         w3_select('w3-margin-T-4 w3-width-auto '+ nt.sfmt, '', 'show', 'nt.show', nt.show, nt.show_s, 'navtex_show_cb'),
+         
+         w3_checkbox('w3-margin-T-10//'+ cbox, 'Show day/night', 'nt.day_night_visible', true, 'navtex_day_night_visible_cb'),
+         w3_checkbox(cbox, 'Show graticule', 'nt.graticule_visible', true, 'navtex_graticule_visible_cb'),
+
+         w3_inline('w3-margin-T-10 w3-valign/', 
+            w3_checkbox('//'+ cbox, 'Show locations', 'nt.locations_visible', true, 'navtex_locations_visible_cb'),
+            w3_button('id-navtex-show-locations w3-margin-left class-button w3-small w3-grey w3-momentary', 'Clear old', 'navtex_clear_old_cb', 1)
+         )
       );
 
 	var controls_html =
@@ -341,6 +380,8 @@ function navtex_controls_setup()
 	
 	ext_panel_show(controls_html, data_html, null);
 	time_display_setup('navtex');
+	var el = w3_el('navtex-time-display');
+	el.style.top = px(10);
 	navtex_canvas = w3_el('id-navtex-canvas');
 	navtex_canvas.ctx = navtex_canvas.getContext("2d");
 
@@ -362,6 +403,12 @@ function navtex_controls_setup()
                navtex_log_mins_cb('id-nt.log_mins', r.num);
             }
          } else
+         if (w3_ext_param('map', a).match) {
+            nt.show = nt.SHOW_MAP;
+         } else
+         if (w3_ext_param('split', a).match) {
+            nt.show = nt.SHOW_SPLIT;
+         } else
          if (cfg.navtex.test_file && w3_ext_param('test', a).match) {
             ext_send('SET test');
          } else
@@ -377,6 +424,8 @@ function navtex_controls_setup()
    ext_set_data_height(nt.dataH);
 	ext_set_controls_width_height(nt.ctrlW, nt.ctrlH);
 	
+	nt.kmap = kiwi_map_init('navtex', [12.5, 112.5], 5, 17);
+
 	// first URL param can be a match in the preset menus
 	if (nt.url_params) {
       var freq = parseFloat(nt.url_params);
@@ -399,6 +448,25 @@ function navtex_controls_setup()
 	
 	// receive the network-rate, post-decompression, real-mode samples
 	ext_register_audio_data_cb(navtex_audio_data_cb);
+
+   // age locations
+   setInterval(function() {
+      var old = Date.now() - nt.too_old_min*60*1000;
+      w3_obj_enum(nt.locations, function(key, i, o) {
+         if (o.upd < old) {
+            console.log('LOC-OLD '+ o.loc_name +' > '+ nt.too_old_min +'m');
+            o.el.style.background = 'grey';
+         }
+      });
+   }, 60000);
+
+   setTimeout(function() { navtex_show_cb('id-nt.show', nt.show); }, 1000);
+
+   if (nt.test_location) setTimeout(function() {
+         navtex_location_update('4444', 15, 115);
+         navtex_location_update('666666', 12.5, 112.5);
+         nt.test_location = false;
+      }, 5000);
 }
 
 function navtex_auto_zoom(shift)
@@ -508,6 +576,9 @@ function navtex_pre_select_cb(path, idx, first)
 
       w3_el('id-navtex-station').innerHTML =
          '<b>'+ navtex_menu_s[menu_n] +', '+ header +'</b>';
+      
+      if (header.includes('Fishing'))
+         navtex_show_cb('id-nt.show', nt.SHOW_SPLIT);
 	});
 
    // reset other menus
@@ -557,16 +628,26 @@ function NAVTEX_environment_changed(changed)
    if (!changed.passband_screen_location) return;
    navtex_crosshairs(1);
 
-   if (!changed.freq && !changed.mode) return;
+   if (changed.freq || changed.mode) {
 
-   // reset all frequency menus when frequency etc. is changed by some other means (direct entry, WF click, etc.)
-   // but not for changed.zoom, changed.resize etc.
-   var dsp_freq = ext_get_freq()/1e3;
-   var mode = ext_get_mode();
-   //console.log('Navtex ENV nt.freq='+ nt.freq +' dsp_freq='+ dsp_freq);
-   if (nt.freq != dsp_freq || mode != 'cw') {
-      navtex_clear_menus();
-      w3_el('id-navtex-station').innerHTML = '&nbsp;';
+      // reset all frequency menus when frequency etc. is changed by some other means (direct entry, WF click, etc.)
+      // but not for changed.zoom, changed.resize etc.
+      var dsp_freq = ext_get_freq()/1e3;
+      var mode = ext_get_mode();
+      //console.log('Navtex ENV nt.freq='+ nt.freq +' dsp_freq='+ dsp_freq);
+      if (nt.freq != dsp_freq || mode != 'cw') {
+         navtex_clear_menus();
+         w3_el('id-navtex-station').innerHTML = '&nbsp;';
+      }
+   }
+
+   if (0 && changed.resize) {
+      var el = w3_el('id-navtex-data');
+      if (!el) return;
+      var left = Math.max(0, (window.innerWidth - nt.dataW - time_display_width()) / 2);
+      //console.log('navtex_resize wiw='+ window.innerWidth +' nt.dataW='+ nt.dataW +' time_display_width='+ time_display_width() +' left='+ left);
+      el.style.left = px(left);
+      return;
    }
 }
 
@@ -633,6 +714,130 @@ function navtex_clear_button_cb(path, idx, first)
    navtex_console_status_msg_p.s = encodeURIComponent('\f');
    kiwi_output_msg('id-navtex-console-msgs', 'id-navtex-console-msg', navtex_console_status_msg_p);
    nt.log_txt = '';
+}
+
+function navtex_show_cb(path, idx, first)
+{
+	//console.log('navtex_show_cb: idx='+ idx +' first='+ first);
+	if (first) return;
+   idx = +idx;
+   nt.show = idx;
+	w3_set_value(path, idx);
+	w3_hide2('id-navtex-msgs', idx == nt.SHOW_MAP);
+	w3_hide2('id-navtex-map', idx == nt.SHOW_MSGS);
+	w3_el('id-navtex-msgs').style.top = px((idx == nt.SHOW_SPLIT)? (nt.dataH - nt.splitH) : 0);
+	w3_el('id-navtex-msgs').style.height = px((idx == nt.SHOW_SPLIT)? nt.splitH : nt.dataH);
+	if (idx == nt.SHOW_SPLIT)
+	   w3_scrollDown('id-navtex-console-msg');
+}
+
+function navtex_day_night_visible_cb(path, checked, first)
+{
+   if (first) return;
+   if (!nt.kmap.day_night) return;
+   var checked = w3_checkbox_get(path);
+   kiwi_map_day_night_visible(nt.kmap, checked);
+}
+
+function navtex_graticule_visible_cb(path, checked, first)
+{
+   //console.log('navtex_graticule_visible_cb checked='+ checked +' first='+ first);
+   if (first) return;
+   if (!nt.kmap.graticule) return;
+   checked = w3_checkbox_get(path);
+   kiwi_map_graticule_visible(nt.kmap, checked);
+}
+
+function navtex_locations_visible_cb(path, checked, first)
+{
+   //console.log('navtex_locations_visible_cb checked='+ checked +' first='+ first);
+   if (first) return;
+   nt.locations_visible = checked;
+	kiwi_map_markers_visible('leaflet-tooltip-pane', 'id-navtex-location', checked);
+}
+
+function navtex_clear_old_cb(path, idx, first)
+{
+   //console.log('navtex_clear_old_cb idx='+ idx +' first='+ first);
+   if (!(+idx)) return;
+   var old = Date.now() - nt.too_old_min*60*1000;
+   w3_obj_enum(nt.locations, function(key, i, o) {
+      if (o.upd > old) return;
+      console.log('LOC-CLR '+ o.loc_name);
+      o.mkr.remove();
+      delete nt.locations[o.loc_name];
+   });
+}
+
+function navtex_location_update(loc_name, lat, lon, url, color)
+{
+   if (!nt.locations[loc_name]) {
+      console.log('LOC-NEW '+ loc_name +' '+ lat.toFixed(2) +' '+ lon.toFixed(2));
+
+      var marker = kiwi_map_add_marker_div(nt.kmap, kmap.NO_ADD_TO_MAP,
+         [lat, lon], '', [12, 12], [0, 0], 1.0);
+      var loc_o = { loc_name: loc_name, mkr: marker, upd: Date.now(), pos: [] };
+      if (nt.test_location && loc_name.startsWith('ABC'))
+         loc_o.upd -= (nt.too_old_min+10)*60*1000;
+      loc_o.pos.push([lat, lon]);
+      nt.locations[loc_name] = loc_o;
+      
+      kiwi_style_marker(nt.kmap, kmap.ADD_TO_MAP, marker, loc_name,
+         'id-navtex-location id-navtex-location-'+ loc_name + (nt.locations_visible? '' : ' w3-hide'),
+         kmap.DIR_RIGHT,
+         function(ev) {
+            // sometimes multiple instances exist, so iterate to catch them all
+            w3_iterate_classname('id-navtex-location-'+ loc_name,
+               function(el) {
+                  if (!el) return;
+                  //console.log(el);
+                  loc_o.el = el;
+                  var fg = color? color[0] : 'white';
+                  var bg = color? color[1] : 'blue';
+                  w3_color(el, fg, bg);
+                  loc_o.orig_bg = bg;
+
+                  el.addEventListener('mouseenter', function(ev) {
+                     var mkr = ev.target;
+                     nt.saved_color = mkr.style.color;
+                     nt.saved_bkg = mkr.style.background;
+                     mkr.style.color = 'black';
+                     mkr.style.background = 'yellow';
+                  });
+                  el.addEventListener('mouseleave', function(ev) {
+                     var mkr = ev.target;
+                     mkr.style.color = nt.saved_color;
+                     mkr.style.background = nt.saved_bkg;
+                  });
+                  el.addEventListener('click', function(ev) {
+                     console.log('*click*');
+                     if (!url) return;
+                     var a = document.createElement('a');
+                     a.setAttribute('href', url);
+                     a.setAttribute('target', '_blank');
+                     document.body.appendChild(a);
+                     console.log(a);
+                     a.click();
+                     document.body.removeChild(a);
+                  });
+               }
+            );
+         }
+      );
+   } else {
+      var loc_o = nt.locations[loc_name];
+      var marker = loc_o.mkr;
+      marker.setLatLng([lat, lon]);
+      var n = loc_o.pos.push([lat, lon]);
+      
+      // might have re-appeared after previously going grey
+      loc_o.el.style.background = loc_o.orig_bg;     
+
+      var now = Date.now();
+      var dt = Math.floor(((now - loc_o.upd) / 60000) % 60);
+      loc_o.upd = now;
+      console.log('LOC-UPD '+ loc_name +' '+ lat.toFixed(2) +' '+ lon.toFixed(2) +' #'+ n +' '+ dt +'m');
+   }
 }
 
 function navtex_test_cb(path, idx, first)

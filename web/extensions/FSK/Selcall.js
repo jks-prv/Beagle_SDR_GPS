@@ -291,9 +291,12 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
          return (_color + s + ansi.NORM);
       };
 
-      var map_lat_lon = function(lat_lon_s, lat_dd, lon_dd) {
-         return w3_link('w3-esc-html w3-link-darker-color',
-            'www.marinetraffic.com/en/ais/home/centerx:'+ lon_dd +'/centery:'+ lat_dd +'/zoom:'+ t.zoom, lat_lon_s);
+      var url_lat_lon = function(lat_dd, lon_dd) {
+         return 'https://www.marinetraffic.com/en/ais/home/centerx:'+ lon_dd +'/centery:'+ lat_dd +'/zoom:'+ t.zoom;
+      }
+
+      var link_lat_lon = function(lat_lon_s, lat_dd, lon_dd) {
+         return w3_link('w3-esc-html w3-link-darker-color', url_lat_lon(lat_dd, lon_dd), lat_lon_s);
       }
 
       var fec = function(i) {
@@ -338,7 +341,8 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
             var color_n = -1, color_s;
             var prev_len = 0;
             var sym = [];
-            var s = (new Date()).toUTCString().substr(17,8) +' '+ (ext_get_freq()/1e3).toFixed(2) +' ';
+            var freq = ext_get_freq() / 1e3;
+            var s = (new Date()).toUTCString().substr(17,8) +' '+ freq.toFixed(2) +' ';
 
             for (var i = 0; i < t.seq; i++) {
                var fec_err = false;
@@ -411,18 +415,33 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
                      // 01 61 41 10 31 20 38    16.14 110.31 20:38
                      var s2 = '';
                      for (i = 0; i <= 6; i++) s2 += sym[o+i];
-                     var lat_dd = s2.slice(1,3) +'.'+ s2.slice(3,5);
-                     var lon_dd = s2.slice(5,8) +'.'+ s2.slice(8,10);
-                     s += map_lat_lon('['+ lat_dd +','+ lon_dd +']', +lat_dd, +lon_dd);
-                     s += map_lat_lon('*', -lat_dd, +lon_dd) +' ';
 
-                     var lat_dm = s2.slice(1,3) +'\u00b0'+ s2.slice(3,5) +"'";
-                     var lon_dm = s2.slice(5,8) +'\u00b0'+ s2.slice(8,10) +"'";
-                     var lat = s2.slice(1,3) + ((+s2.slice(3,5))/60).toFixed(2).slice(1);
-                     var lon = s2.slice(5,8) + ((+s2.slice(8,10))/60).toFixed(2).slice(1);
-                     s += map_lat_lon('['+ lat_dm +','+ lon_dm +']', +lat, +lon) +' ';
-                     //s += map_lat_lon('[-lat]', -lat, +lon) +' ';
+                     var lat_d = s2.slice(1,3);
+                     var lon_d = s2.slice(5,8);
+                     var lat_m = s2.slice(3,5);
+                     var lon_m = s2.slice(8,10);
+
+                     var lat_dd = lat_d +'.'+ lat_m;
+                     var lon_dd = lon_d +'.'+ lon_m;
+                     s += link_lat_lon('['+ lat_dd +','+ lon_dd +']', +lat_dd, +lon_dd);
+                     s += link_lat_lon('*', -lat_dd, +lon_dd) +' ';
                      
+                     var bad_min = false;
+                     var lat_min = +lat_m;
+                     var lon_min = +lon_m;
+                     if (lat_min >= 60) { lat_min = 59; bad_min = true; }
+                     if (lon_min >= 60) { lon_min = 59; bad_min = true; }
+                     var lat_dm = lat_d +'\u00b0'+ lat_m +"'";
+                     var lon_dm = lon_d +'\u00b0'+ lon_m +"'";
+                     var lat = lat_d + (lat_min/60).toFixed(2).slice(1);
+                     var lon = lon_d + (lon_min/60).toFixed(2).slice(1);
+                     s += link_lat_lon('['+ lat_dm +','+ lon_dm +']', +lat, +lon) +' ';
+                     //s += link_lat_lon('[-lat]', -lat, +lon) +' ';
+                     
+                     var id = ((+sym[5] != 0)? sym[5] : '') + sym[6] + sym[7];
+                     navtex_location_update(id, +lat, +lon, url_lat_lon(+lat, +lon),
+                        bad_min? [ 'white', 'red' ] : [ 'white', (freq < 7500)? 'magenta' : 'blue' ]);
+
                      s += s2.slice(10,12) +':'+ s2.slice(12,14);
                   }
                } else {
