@@ -14,10 +14,12 @@ js_load_scripts = document.getElementsByTagName('script');
 
 for (var i = 0; i < js_load_scripts.length; i++) {
    var se = js_load_scripts[i];
+   //console.log('se '+ i +'/'+ js_load_scripts.length);
+   //console.log(se);
    if (se.src.includes('kiwi/kiwi_js_load.js')) {
       //console.log('kiwi_js_load.js USE '+ i +'/'+ js_load_scripts.length +' '+ se.src);
       if (se.kiwi_cb) {
-         console.log('kiwi_js_load.js CALLING CALLBACK for '+ se.kiwi_js);
+         console.log('kiwi_js_load.js CALLBACK '+ ifString(se.kiwi_cb, '(func)') +' for '+ se.kiwi_js);
 
          // NB: if se.kiwi_cb is function pointer this will incorrectly show parent function
          // instead of anonymous (nameless) function, which is confusing
@@ -28,7 +30,7 @@ for (var i = 0; i < js_load_scripts.length; i++) {
          //console.log(queryString);
          var params = kiwi_parseQuery(queryString);
          //console.log(params);
-         console.log('kiwi_js_load.js OLD');
+         console.log('kiwi_js_load.js (OLD) CALLBACK '+ ifString(params.cb, '(func)'));
          if (params.cb) w3_call(params.cb);
       }
       se.remove();
@@ -36,3 +38,5 @@ for (var i = 0; i < js_load_scripts.length; i++) {
    }
    //else console.log('kiwi_js_load.js SKIP '+ i +'/'+ js_load_scripts.length +' '+ se.src);
 }
+
+console.log('kiwi_js_load.js DONE');

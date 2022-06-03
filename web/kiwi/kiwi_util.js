@@ -16,6 +16,8 @@ function isObject(v) { return (typeof(v) === 'object'); }
 function isArg(v) { return (isUndefined(v) || isNull(v))? false:true; }
 function kiwi_typeof(v) { return isNull(v)? 'null' : (isArray(v)? 'array' : typeof(v)); }
 
+function ifString(s, alt) { return (isString(s)? s : alt); }
+
 // browsers have added includes() only relatively recently
 try {
 	if (!String.prototype.includes) {
