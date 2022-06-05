@@ -8,6 +8,7 @@
 // Underscores in net/station names are converted to line breaks in menu entries.
 // A zero as the first element of the frequency array converts to a "scan" menu entry.
 // I.e. if a net consists of a single frequency the zero would be left out as there is nothing to scan.
+// "lsb" as the second element of the frequency array selects LSB mode for all entries.
 //
 // Updates:
 //  4 mar 22 Bob W  FEMA, US Govt updates.

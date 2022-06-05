@@ -419,6 +419,7 @@ html, body
 	left: 0px;
 	z-index: 101;
     cursor: ew-resize;
+	/* border: 1px solid yellow;	/* debug */
 }
 
 .class-passband-adjust-cf-tooltip
@@ -436,6 +437,7 @@ html, body
 	left: 0px;
 	z-index: 103;
     cursor: ew-resize;
+	/* border: 1px solid magenta;	/* debug */
 }
 
 .class-passband-adjust-cut-tooltip
