@@ -2,6 +2,20 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.538  Jun 5, 2022
+    Yellow/green passband graphic on frequency scale:
+        Fixed adjustment on mobile devices. Also made the "hit boxes" for the sloping part of
+            the passband larger so it's easier to aim with your finger.
+        Center frequency ("cf") tooltip: Added bandwidth ("bw") value.
+        When cursor is in frequency scale mouse wheel adjusts passband width about center frequency.
+            Previously a mouse wheel in the frequency scale did nothing.
+            Keyboard shortcuts "p" & "P" did the same. And now ctrl-p will reset passband to the default.
+            (can also be done by typing "/" in the frequency box or by right-click menu entry)
+            Mouse wheel continues to zoom waterfall when cursor in waterfall or DX label area.
+
+    When an admin connection closes unexpectedly an automatic page reload after 60 seconds will occur.
+    FAX frequency updates.
+
 v1.536-537  Jun 3, 2022
     Selcall development.
 
