@@ -307,7 +307,8 @@ var fax_americas = {
    "NMC US":   [ 4346, 8682, 12786, 17151.2, 22527 ],
    
    "New Orleans": [],
-   "NMG US":   [ 4317.9, 8503.9, 12789.9, 17146.4 ],
+   // 17M => 16M update per forum.kiwisdr.com/index.php?p=/discussion/comment/14312/#Comment_14312
+   "NMG US":   [ 4317.9, 8503.9, 12789.9, /* 17146.4 */ 16027.9 ],
    
    "Boston":   [],
    "NMF US":   [ 4235, 6340.5, 9110, 12750 ],
