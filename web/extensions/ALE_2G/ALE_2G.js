@@ -1297,9 +1297,10 @@ function ALE_2G_config_html()
             '{\n' +
             '// Data in JSON format.\n' +
             '// Double-slash comments MUST start in column one!\n' +
-            '// Underscores in net/station names are converted to line breaks in menu entries\n' +
-            '// A zero as the first element of the frequency array converts to a "scan" menu entry\n' +
-            '// "lsb" as the second element of the frequency array selects LSB mode for all entries\n' +
+            '// Underscores in net/station names are converted to line breaks in menu entries.\n' +
+            '// A zero as the first element of the frequency array converts to a "scan" menu entry.\n' +
+            '// I.e. if a net consists of a single frequency the zero would be left out as there is nothing to scan.\n' +
+            '// "lsb" as the second element of the frequency array selects LSB mode for all entries.\n' +
             '\n' +
             '    "Admin-1": [1111],\n' +
             '    "Admin-2": [0, 2222, 3333, 4444],\n' +
