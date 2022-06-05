@@ -767,30 +767,34 @@ function demod_envelope_draw(range, from, to, color, line)
 	// (beginning, ending and the line showing the offset frequency).
 	if (isUndefined(color)) color = 'lime';
 	
-	var env_bounding_line_w = 5;   //    
-	var env_att_w = 5;             //     _______   ___env_h2 in px   ___|_____
+	var env_bounding_line_w = 5;   //     |from  |to
+	var env_att_w = 5;             //     v______v  ___env_h2 in px   ___|_____
 	var env_h1 = 17;               //   _/|      \_ ___env_h1 in px _/   |_    \_
 	var env_h2 = 5;                //   |||env_att_w                     |_env_lineplus
 	var env_lineplus = 1;          //   ||env_bounding_line_w
 	var env_line_click_area = 8;
-	var env_slop = 5;
+	var env_slop = 15;
+	var env_adj = 20;
+	var env_slope = env_bounding_line_w + env_att_w;
 	
 	//range = get_visible_freq_range();
 	var from_px = scale_px_from_freq(from, range);
 	var to_px = scale_px_from_freq(to, range);
 	if (to_px < from_px) /* swap'em */ { var temp_px = to_px; to_px = from_px; from_px = temp_px; }
 	
-	pb_adj_cf.style.left = px(from_px);
-	pb_adj_cf.style.width = px(to_px - from_px);
+	pb_adj_cf.style.left = px(from_px + env_adj);
+	pb_adj_cf.style.width = px(Math.max(0, to_px - from_px - 2*env_adj));
 
-	pb_adj_lo.style.left = px(from_px - env_bounding_line_w - 2*env_slop);
-	pb_adj_lo.style.width = px(env_bounding_line_w + env_att_w + 2*env_slop);
+	pb_adj_lo.style.left = px(from_px - env_slope - env_adj);
+	pb_adj_lo.style.width = px(env_slope + 2*env_adj);
 
-	pb_adj_hi.style.left = px(to_px - env_bounding_line_w);
-	pb_adj_hi.style.width = px(env_bounding_line_w + env_att_w + 2*env_slop);
+	pb_adj_hi.style.left = px(to_px - env_adj);
+	pb_adj_hi.style.width = px(env_slope + 2*env_adj);
 	
-	/* from_px -= env_bounding_line_w/2;
-	to_px += env_bounding_line_w/2; */
+	//     v_____v
+	//   _/       \_
+	//  ^           ^
+	//  |from       |to
 	from_px -= (env_att_w + env_bounding_line_w);
 	to_px += (env_att_w + env_bounding_line_w);
 	
@@ -800,12 +804,14 @@ function demod_envelope_draw(range, from, to, color, line)
 	scale_ctx.fillStyle = color;
 	var drag_ranges = { envelope_on_screen: false, line_on_screen: false, allow_pb_adj: false };
 	
-	if (!(to_px < 0 || from_px > window.innerWidth)) {    // out of screen?
-		drag_ranges.beginning = {x1: from_px, x2: from_px + env_bounding_line_w + env_att_w + env_slop};
-		drag_ranges.ending = {x1: to_px - env_bounding_line_w - env_att_w - env_slop, x2: to_px};
+	if (!(to_px < 0 || from_px > window.innerWidth)) {
+	   // at least one on screen
+		drag_ranges.beginning = {x1: from_px - env_adj, x2: from_px + env_slope + env_adj};
+		drag_ranges.ending = {x1: to_px - env_slope - env_adj, x2: to_px + env_adj };
 		drag_ranges.whole_envelope = {x1: from_px, x2: to_px};
 		drag_ranges.envelope_on_screen = true;
-		drag_ranges.allow_pb_adj = ((to_px - from_px) >= (dbgUs? 100:30));
+		//drag_ranges.allow_pb_adj = ((to_px - from_px) >= (dbgUs? 100:30));
+		drag_ranges.allow_pb_adj = ((to_px - from_px) >= 50);
 		
 		if (!drag_ranges.allow_pb_adj)
 		   scale_ctx.strokeStyle = scale_ctx.fillStyle = 'yellow';
@@ -813,7 +819,7 @@ function demod_envelope_draw(range, from, to, color, line)
       scale_ctx.beginPath();
       scale_ctx.moveTo(from_px, env_h1);
       scale_ctx.lineTo(from_px + env_bounding_line_w, env_h1);
-      scale_ctx.lineTo(from_px + env_bounding_line_w + env_att_w, env_h2);
+      scale_ctx.lineTo(from_px + env_slope, env_h2);
       scale_ctx.lineTo(to_px - env_bounding_line_w - env_att_w, env_h2);
       scale_ctx.lineTo(to_px - env_bounding_line_w, env_h1);
       scale_ctx.lineTo(to_px, env_h1);
@@ -1154,7 +1160,8 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		var bw = Math.abs(this.parent.high_cut - this.parent.low_cut);
 		pb_adj_lo_ttip.innerHTML = 'lo '+ this.parent.low_cut.toString() +', bw '+ bw.toString();
 		pb_adj_hi_ttip.innerHTML = 'hi '+ this.parent.high_cut.toString() +', bw '+ bw.toString();
-		pb_adj_cf_ttip.innerHTML = 'cf '+ (this.parent.low_cut + Math.abs(this.parent.high_cut - this.parent.low_cut)/2).toString();
+		pb_adj_cf_ttip.innerHTML = 'cf '+ (this.parent.low_cut + Math.abs(this.parent.high_cut - this.parent.low_cut)/2).toString() +
+		   ', bw '+ bw.toString();
       var f_kHz = (center_freq + this.parent.offset_frequency)/1000 + kiwi.freq_offset_kHz;
 		pb_adj_car_ttip.innerHTML = f_kHz.toFixed(freq_field_prec(f_kHz)) +' kHz';
 	};
@@ -1464,6 +1471,7 @@ function add_scale_listner(obj)
 	obj.addEventListener("mousemove", scale_canvas_mousemove, false);
 	obj.addEventListener("mouseup", scale_canvas_mouseup, false);
 	obj.addEventListener("contextmenu", scale_canvas_contextmenu, false);
+	obj.addEventListener("wheel", canvas_mousewheel, false);    // yes, canvas_mousewheel, not scale_canvas_*
 
 	if (kiwi_isMobile()) {
 		obj.addEventListener('touchstart', scale_canvas_touchStart, false);
@@ -2740,19 +2748,24 @@ function canvas_mousewheel_cb(evt)
    // x != 0 is two-finger swipe L/R
    var x = evt.deltaX;
    var y = evt.deltaY;
-   var to_passband = (evt.ctrlKey || x != 0);
-   var inout = (x < 0 || (x == 0 && y < 0))? ext_zoom.IN : ext_zoom.OUT;
-   zoom_step(inout, to_passband? undefined : evt.pageX);
-	
-	/*
-   // scaling value is a scrolling sensitivity compromise between wheel mice and
-   // laptop trackpads (and also Apple trackpad mice)
-	zoom_level_f += evt.deltaY * -0.05;
-	zoom_level_f = Math.max(Math.min(zoom_level_f, zoom_levels_max), 0);
-	//console.log('mousewheel '+ zoom_level_f.toFixed(1));
-	//w3_innerHTML('id-owner-info', 'mousewheel '+ zoom_level_f.toFixed(2) +' '+ evt.deltaY);
-	zoom_step(ext_zoom.WHEEL, evt.pageX);
-	*/
+   var inout = (x < 0 || (x == 0 && y < 0));
+   
+   if (evt.target && evt.target.id && (evt.target.id == 'id-scale-canvas' || evt.target.id.startsWith('id-pb-'))) {
+      passband_increment(inout);
+   } else {
+      var to_passband = (evt.ctrlKey || x != 0);
+      zoom_step(inout? ext_zoom.IN : ext_zoom.OUT, to_passband? undefined : evt.pageX);
+   
+      /*
+      // scaling value is a scrolling sensitivity compromise between wheel mice and
+      // laptop trackpads (and also Apple trackpad mice)
+      zoom_level_f += evt.deltaY * -0.05;
+      zoom_level_f = Math.max(Math.min(zoom_level_f, zoom_levels_max), 0);
+      //console.log('mousewheel '+ zoom_level_f.toFixed(1));
+      //w3_innerHTML('id-owner-info', 'mousewheel '+ zoom_level_f.toFixed(2) +' '+ evt.deltaY);
+      zoom_step(ext_zoom.WHEEL, evt.pageX);
+      */
+   }
 }
 
 
@@ -8183,7 +8196,7 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny', 'b B', 25, 'scroll band menu'),
          w3_inline_percent('w3-padding-tiny', 'e E', 25, 'scroll extension menu'),
          w3_inline_percent('w3-padding-tiny', 'a A d l u c f q', 25, 'toggle modes: AM SAM DRM LSB USB CW NBFM IQ<br>add alt/ctrl to toggle backwards (e.g. SAM modes)'),
-         w3_inline_percent('w3-padding-tiny', 'p P', 25, 'passband narrow/widen'),
+         w3_inline_percent('w3-padding-tiny', 'p P ctrl-p', 25, 'passband narrow/widen, restore default'),
          w3_inline_percent('w3-padding-tiny', 'r', 25, 'toggle audio recording'),
          w3_inline_percent('w3-padding-tiny', 'z Z', 25, 'zoom in/out, add alt/ctrl for max in/out'),
          w3_inline_percent('w3-padding-tiny', '< >', 25, 'waterfall page down/up'),
@@ -8244,7 +8257,7 @@ function keyboard_shortcut_url_keys()
 // :space: :tab:
 //    .
 
-function keyboard_shortcut(key, mod, ctlAlt, keyCode)
+function keyboard_shortcut(key, key_mod, ctlAlt, keyCode)
 {
    var action = true;
    var dir = ctlAlt? -1 : 1;
@@ -8265,21 +8278,28 @@ function keyboard_shortcut(key, mod, ctlAlt, keyCode)
    // step
    // 0: -large, 1: -med, 2: -small || 3: +small, 4: +med, 5: +large
    case 'j': case 'J': case 'ArrowLeft':
-      if (mod != shortcut.SHIFT_PLUS_CTL_OR_ALT)
-         freqstep(owrx.wf_snap? mod : (2-mod));
+      if (key_mod != shortcut.SHIFT_PLUS_CTL_OR_ALT)
+         freqstep(owrx.wf_snap? key_mod : (2 - key_mod));
       else
          dx_label_step(-1);
       break;
    case 'i': case 'I': case 'ArrowRight':
-      if (mod != shortcut.SHIFT_PLUS_CTL_OR_ALT)
-         freqstep(owrx.wf_snap? (5-mod) : (3+mod));
+      if (key_mod != shortcut.SHIFT_PLUS_CTL_OR_ALT)
+         freqstep(owrx.wf_snap? (5 - key_mod) : (3 + key_mod));
       else
          dx_label_step(+1);
       break;
    
    // passband
-   case 'p': passband_increment(false); break;
-   case 'P': passband_increment(true); break;
+   case 'p':
+   case 'P':
+      if (key_mod == shortcut.CTL_OR_ALT) {
+         restore_passband(cur_mode);
+         demodulator_analog_replace(cur_mode);
+      } else {
+         passband_increment(key == 'P');
+      }
+      break;
    
    // volume/mute
    case 'v': setvolume(1, kiwi.volume-10); toggle_or_set_mute(0); keyboard_shortcut_nav('audio'); break;
@@ -8370,7 +8390,7 @@ function keyboard_shortcut_event(evt)
       var alt = evt.altKey;
       var meta = evt.metaKey;
       var ctlAlt = (ctl||alt);
-      var mod = (sft && !ctlAlt)? shortcut.SHIFT : ( (!sft & ctlAlt)? shortcut.CTL_OR_ALT : ( (sft && ctlAlt)? shortcut.SHIFT_PLUS_CTL_OR_ALT : 0 ) );
+      var key_mod = (sft && !ctlAlt)? shortcut.SHIFT : ( (!sft & ctlAlt)? shortcut.CTL_OR_ALT : ( (sft && ctlAlt)? shortcut.SHIFT_PLUS_CTL_OR_ALT : 0 ) );
 
       var field_input_key = (
             (k >= '0' && k <= '9' && !ctl) ||
@@ -8404,8 +8424,8 @@ function keyboard_shortcut_event(evt)
             //console.log('shortcut alt k='+ k);
          }
          
-         //console.log('keyboard_shortcut key=<'+ k +'> keyCode='+ evt.keyCode +' mod='+ mod +' ctlAlt='+ ctlAlt +' alt='+ alt);
-         keyboard_shortcut(k, mod, ctlAlt, evt.keyCode);
+         //console.log('keyboard_shortcut key=<'+ k +'> keyCode='+ evt.keyCode +' key_mod='+ key_mod +' ctlAlt='+ ctlAlt +' alt='+ alt);
+         keyboard_shortcut(k, key_mod, ctlAlt, evt.keyCode);
          
          /*
          if (k != 'Shift' && k != 'Control' && evt.key != 'Alt') {
