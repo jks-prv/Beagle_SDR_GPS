@@ -436,7 +436,7 @@ function hfdl_show_kiwi_cb(path, idx, first)
    
    //console.log('hfdl_show_kiwi_cb gs_visible='+ hfdl.gs_visible +' show='+ show);
    if (hfdl.flights_visible)
-	   kiwi_map_markers_visible('leaflet-tooltip-pane', 'id-hfdl-flight', !show);
+	   kiwi_map_markers_visible('id-hfdl-flight', !show);
    if (hfdl.gs_visible)
       hfdl_gs_visible(!show);
    w3_hide2('id-hfdl-kiwi-icon', !show);
@@ -460,13 +460,13 @@ function hfdl_flights_visible_cb(path, checked, first)
    //console.log('hfdl_flights_visible_cb checked='+ checked +' first='+ first);
    if (first) return;
    hfdl.flights_visible = checked;
-	kiwi_map_markers_visible('leaflet-tooltip-pane', 'id-hfdl-flight', checked);
+	kiwi_map_markers_visible('id-hfdl-flight', checked);
 }
 
 function hfdl_gs_visible(vis)
 {
-	kiwi_map_markers_visible('leaflet-marker-pane', 'id-hfdl-AFT-active', vis);
-	kiwi_map_markers_visible('leaflet-tooltip-pane', 'id-hfdl-gs', vis);
+	kiwi_map_markers_visible('id-hfdl-AFT-active', vis);
+	kiwi_map_markers_visible('id-hfdl-gs', vis);
 }
 
 function hfdl_gs_visible_cb(path, checked, first)
@@ -513,7 +513,6 @@ function hfdl_place_gs_marker(gs_n)
 {
    var i;
    var r = hfdl.refs[gs_n];
-   r.idx = gs_n;
    r.id = r.name.split(', ')[1];
    r.title = r.name;
    
@@ -522,32 +521,9 @@ function hfdl_place_gs_marker(gs_n)
 
    // when not using MarkerCluster add marker to map here
    if (hfdl.kmap.map) {
-      marker.kiwi_mkr_2_ref_or_host = r;     // needed before call to kiwi_style_marker()
       //console.log(r);
       var left = (r.id == 'New Zealand');
-      kiwi_style_marker(hfdl.kmap, kmap.ADD_TO_MAP, marker, r.id,
-         'id-hfdl-gs id-hfdl-gs-'+ r.idx, left,
-         function (ev) {
-            var rh = ev.sourceTarget.kiwi_mkr_2_ref_or_host;
-            //console.log('.on '+ type +' '+ rh.idx);
-            //console.log(ev);
-            //console.log('ADD '+ (rh.selected? 1:0) +' #'+ rh.idx +' '+ rh.id +' host='+ rh.type_host);
-      
-            // sometimes multiple instances exist, so iterate to catch them all
-            w3_iterate_classname('id-hfdl-gs-'+ rh.idx,
-               function(el) {
-                  if (el) {
-                     //console.log(el);
-                     if (rh.type_host) {
-                        if (rh.selected) w3_color(el, 'black', 'yellow'); else w3_color(el, 'white', 'blue');
-                     }
-                     el.title = rh.title;
-                     el.kiwi_mkr_2_ref_or_host = rh;
-                  }
-               }
-            );
-         }
-      );
+      kiwi_style_marker(hfdl.kmap, kmap.ADD_TO_MAP, marker, r.id, 'id-hfdl-gs', left);
    
       // band icons
       var sign = left? 1:-1;
@@ -590,16 +566,13 @@ function hfdl_place_gs_marker(gs_n)
             }
          });
 
-         //jks test
          el.innerHTML = ((hfdl.bf[i].toString().length < 2)? '&nbsp;' : '') + hfdl.bf[i];
          el.style.background = hfdl.bf_color[i];
-
       }
 
    }
    
    r.type_host = false;
-   marker.kiwi_mkr_2_ref_or_host = r;
    return marker;
 }
 
@@ -607,6 +580,7 @@ function hfdl_flight_update(flight_name, lat, lon)
 {
    if (!hfdl.flights[flight_name]) {
       console.log('FL-NEW '+ flight_name +' '+ lat.toFixed(4) +' '+ lon.toFixed(4));
+
       var marker = kiwi_map_add_marker_div(hfdl.kmap, kmap.NO_ADD_TO_MAP,
          [lat, lon], '', [12, 12], [0, 0], 1.0);
       var flight_o = { flight: flight_name, mkr: marker, upd: Date.now(), pos: [] };

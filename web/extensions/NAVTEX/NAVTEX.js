@@ -331,7 +331,7 @@ function navtex_controls_setup()
 				   w3_div('w3-medium w3-text-aqua', '<b><a href="https://en.wikipedia.org/wiki/Navtex" target="_blank">NAVTEX</a> / ' +
 				      '<a href="https://en.wikipedia.org/wiki/Digital_selective_calling" target="_blank">DSC</a> / ' +
 				      '<a href="http://hflink.com/selcall" target="_blank">Selcall</a></b>'), 45,
-					w3_div('', 'From <b><a href="https://arachnoid.com/JNX/index.html" target="_blank">JNX</a></b> by P. Lutus &copy; 2011'), 55
+					w3_div('', 'FSK from <b><a href="https://arachnoid.com/JNX/index.html" target="_blank">JNX</a></b>, P. Lutus &copy; 2011'), 55
 				),
 				
             w3_col_percent('',
@@ -753,7 +753,7 @@ function navtex_locations_visible_cb(path, checked, first)
    //console.log('navtex_locations_visible_cb checked='+ checked +' first='+ first);
    if (first) return;
    nt.locations_visible = checked;
-	kiwi_map_markers_visible('leaflet-tooltip-pane', 'id-navtex-location', checked);
+	kiwi_map_markers_visible('id-navtex-location', checked);
 }
 
 function navtex_clear_old_cb(path, idx, first)

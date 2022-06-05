@@ -173,10 +173,17 @@ function kiwi_map_graticule_visible(kmap, vis)
    }
 }
 
-//jksx hide leaflet-marker-pane/leaflet-tooltip-pane
-function kiwi_map_markers_visible(el, id, vis)
+function kiwi_map_markers_visible(id, vis)
 {
-	w3_iterate_children(el,
+	w3_iterate_children('leaflet-marker-pane',
+	   function(el, i) {
+	      if (el.className.includes(id)) {
+	         w3_hide2(el, !vis);
+	      }
+	   }
+	);
+
+	w3_iterate_children('leaflet-tooltip-pane',
 	   function(el, i) {
 	      if (el.className.includes(id)) {
 	         w3_hide2(el, !vis);
