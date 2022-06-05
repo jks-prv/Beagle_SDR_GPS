@@ -3219,8 +3219,10 @@ function admin_close()
 {
    // don't show message if reload countdown running
    kiwi_clearTimeout(admin.keepalive_timeoout);
-   if (!admin.reload_rem && !admin.long_running)
-      kiwi_show_msg('Server has closed connection.');
+   if (!admin.reload_rem && !admin.long_running) {
+      //kiwi_show_msg('Server has closed connection.');
+      admin_wait_then_reload(60, 'Server has closed connection. Will retry.');
+   }
 }
 
 // Process replies to our messages sent via ext_send('SET ...')
@@ -3466,7 +3468,12 @@ function admin_draw_pie() {
 		admin.reload_rem--;
 		kiwi_draw_pie('id-admin-pie', admin.pie_size, (admin.reload_secs - admin.reload_rem) / admin.reload_secs);
 	} else {
-		window.location.reload(true);
+	   try {
+		   window.location.reload(true);
+		} catch(ex) {
+		   console.log('RELOAD FAILED?');
+		   console.log(ex);
+		}
 	}
 };
 
