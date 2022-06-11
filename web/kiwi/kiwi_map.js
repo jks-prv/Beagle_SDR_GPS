@@ -66,7 +66,7 @@ function kiwi_map_init(ext_name, init_latlon, init_zoom, mapZoom_nom, move_cb, z
    var day_night = new Terminator();
    day_night.setStyle({ fillOpacity: 0.35 });
    day_night.addTo(map);
-   setInterval(function() {
+   kmap.day_night_interval = setInterval(function() {
       var t2 = new Terminator();
       day_night.setLatLngs(t2.getLatLngs());
       day_night.redraw();
@@ -84,6 +84,11 @@ function kiwi_map_init(ext_name, init_latlon, init_zoom, mapZoom_nom, move_cb, z
    kmap.mapZoom_nom = mapZoom_nom;
    
    return kmap;
+}
+
+function kiwi_map_blur(kmap)
+{
+   kiwi_clearInterval(kmap.day_night_interval);
 }
 
 ////////////////////////////////

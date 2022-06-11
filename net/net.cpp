@@ -638,6 +638,7 @@ int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const cha
             int slen = strlen(ip_list[i]);
             if (ip_list[i][slen-1] == '\n') ip_list[i][slen-1] = '\0';    // remove trailing \n
 	        printf("LOOKUP: \"%s\" %s\n", domain_name, ip_list[i]);
+	        r_ips->ip[i] = inet4_d2h(ip_list[i], NULL);
         }
         
         kiwi_ifree(r_buf);
@@ -645,6 +646,7 @@ int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const cha
 	} else {
 	    if (ip_backup != NULL) {
             ip_list[0] = (char *) ip_backup;
+	        r_ips->ip[0] = inet4_d2h(ip_list[0], NULL);
             n = 1;
             r_ips->valid = r_ips->backup = true;
             lprintf("WARNING: lookup for \"%s\" failed, using backup IPv4 address %s\n", domain_name, ip_backup);
@@ -705,7 +707,7 @@ bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_i
 
 
 // updates net.ip_blacklist
-static void ip_blacklist_add(char *ips, bool *whitelist)
+static int ip_blacklist_add(char *ips, bool *whitelist)
 {
     char ip_str[NET_ADDRSTRLEN];
     u4_t cidr;
@@ -716,33 +718,45 @@ static void ip_blacklist_add(char *ips, bool *whitelist)
         *whitelist = true;
     }
     int n = sscanf(ips, "%[^/]/%d", ip_str, &cidr);
-    if (n == 0 || n > 2) return;
+    if (n == 0 || n > 2) return -1;
     if (n == 1) cidr = 32;
     bool error;
+    u1_t a,b,c,d;
+    u4_t ip = inet4_d2h(ip_str, &error, &a, &b, &c, &d);
+    if (error || cidr < 1 || cidr > 32) return -1;
+    u4_t nm = ~( (1 << (32-cidr)) -1 );
+    ip &= nm;       // make consistent with netmask
+    
+    if (ip == (net.ips_kiwisdr_com.ip[0] & nm)) {
+        lprintf("DANGER: blacklist entry %s would contain kiwisdr.com ip of %s, IGNORED!!!\n", ips, net.ips_kiwisdr_com.ip_list[0]);
+        return -1;
+    }
     
     int i = net.ip_blacklist_len;
     if (i >= N_IP_BLACKLIST) {
         lprintf("ip_blacklist_add: >= N_IP_BLACKLIST(%d)\n", N_IP_BLACKLIST);
-        return;
+        return -1;
     }
     
     // always add to beginning of list to match iptables insert behavior
     memmove(&net.ip_blacklist[1], &net.ip_blacklist[0], net.ip_blacklist_len * sizeof(ip_blacklist_t));
     ip_blacklist_t *bl = &net.ip_blacklist[0];
-    bl->ip = inet4_d2h(ip_str, &error, &bl->a, &bl->b, &bl->c, &bl->d);
-    if (error || cidr < 1 || cidr > 32) return;
+    bl->ip = ip;
+    bl->a = a; bl->b = b; bl->c = c; bl->d = d;
     bl->cidr = cidr;
-    bl->nm = ~( (1 << (32-cidr)) -1 );
-    bl->ip &= bl->nm;   // make consistent with netmask
+    bl->nm = nm;
     bl->whitelist = *whitelist;
     //printf("ip_blacklist_add[%d] %s %d.%d.%d.%d 0x%08x\n", net.ip_blacklist_len, ips, bl->a, bl->b, bl->c, bl->d, bl->nm);
     net.ip_blacklist_len++;
+    
+    return 0;
 }
 
 // updates net.ip_blacklist (proxied Kiwis) and Linux iptables (non-proxied Kiwis)
 // called here and from admin "SET network_ip_blacklist="
 int ip_blacklist_add_iptables(char *ip_s)
 {
+    int rv;
     //real_printf("    \"%s\",\n", ip_s);
 
     #ifdef TEST_IP_BLACKLIST_USING_LOCAL_IPs
@@ -755,12 +769,12 @@ int ip_blacklist_add_iptables(char *ip_s)
     #endif
     
     bool whitelist;
-    ip_blacklist_add(ip_s, &whitelist);
+    if ((rv = ip_blacklist_add(ip_s, &whitelist)) != 0) return rv;
 
     char *cmd_p;
     // NB: insert (-I) NOT append (-A) because we may be incrementally adding after RETURN rule (last) exists
     asprintf(&cmd_p, "iptables -I KIWI -s %s -j %s", ip_s, whitelist? "RETURN" : "DROP");
-    int rv = non_blocking_cmd_system_child("kiwi.iptables", cmd_p, POLL_MSEC(200));
+    rv = non_blocking_cmd_system_child("kiwi.iptables", cmd_p, POLL_MSEC(200));
     rv = WEXITSTATUS(rv);
     lprintf("ip_blacklist_add_iptables: \"%s\" rv=%d\n", cmd_p, rv);
     kiwi_ifree(cmd_p);

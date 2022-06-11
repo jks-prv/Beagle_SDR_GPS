@@ -318,19 +318,18 @@ function kiwi_valpwd1_cb(badp, p)
 	} else
 	if (badp == 2) {
 	   kiwi_show_msg('Still determining local interface address.<br>Please try reloading page in a few moments.');
-	   return;
 	} else
 	if (badp == 3) {
 	   kiwi_show_msg('Admin connections not allowed from this ip address.');
-	   return;
 	} else
 	if (badp == 4) {
 	   kiwi_show_msg('No admin password set. Can only connect from same local network as Kiwi.<br>Client ip = '+ client_public_ip);
-	   return;
 	} else
 	if (badp == 5) {
 	   kiwi_show_msg('Multiple connections from the same ip address not allowed.<br>Client ip = '+ client_public_ip);
-	   return;
+	} else
+	if (badp == 6) {
+	   kiwi_show_msg('Database update in progress.<br>Please try reloading page after one minute.');
 	} else
 	if (badp == 0) {
 		if (p.conn_type == 'kiwi') {

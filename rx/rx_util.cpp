@@ -439,7 +439,7 @@ void update_vars_from_config(bool called_at_init)
     admcfg_default_string("ip_address.dns1", "1.1.1.1", &update_admcfg);
     admcfg_default_string("ip_address.dns2", "8.8.8.8", &update_admcfg);
     admcfg_default_string("url_redirect", "", &update_admcfg);
-    //admcfg_default_bool("ip_blacklist_auto_download", false, &update_admcfg);
+    admcfg_default_bool("ip_blacklist_auto_download", true, &update_admcfg);
     admcfg_default_string("ip_blacklist", "47.88.219.24/24", &update_admcfg);
     admcfg_default_string("ip_blacklist_local", "", &update_admcfg);
     admcfg_default_int("ip_blacklist_mtime", 0, &update_admcfg);

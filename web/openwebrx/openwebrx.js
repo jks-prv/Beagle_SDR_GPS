@@ -2243,6 +2243,7 @@ function remove_canvas_listner(obj)
 
 function canvas_contextmenu(evt)
 {
+   //event_dump(evt, "contextmenu", 1);
 	//console.log('## CMENU tgt='+ evt.target.id +' Ctgt='+ evt.currentTarget.id);
 	
 	if (evt.target.id == 'id-wf-canvas') {
@@ -2365,7 +2366,8 @@ function canvas_start_drag(evt, x, y)
 	if (evt.shiftKey && (evt.ctrlKey || evt.altKey)) {
 		canvas_ignore_mouse_event = true;
 		if (owrx.debug_drag) console.log('CSD-lookup IME=set-true');
-		freq_database_lookup(canvas_get_dspfreq(x), evt.altKey);
+		freq_database_lookup(canvas_get_dspfreq(x), evt.ctrlKey? owrx.rcm_lookup : owrx.rcm_cluster);
+      cancelEvent(evt);
 	} else
 	
 	// page scrolling via ctrl & alt-key click
@@ -2948,7 +2950,7 @@ function freq_database_lookup(Hz, utility)
    if (utility == owrx.rcm_util) {
       f = Math.floor(Hz/100) / 10000;	// round down to nearest 100 Hz, and express in MHz, for GlobalTuners
       url += "qrg.globaltuners.com/?q="+f.toFixed(4);
-   }
+   } else
    */
    if (utility == owrx.rcm_lookup) {
       if (kHz >= b.NDB_lo && kHz < b.NDB_hi) {
@@ -2978,7 +2980,7 @@ function freq_database_lookup(Hz, utility)
          f = Math.round(kHz_r1k/5) * 5;	// 5kHz windows on 5 kHz boundaries -- intended for SWBC
          url += "www.short-wave.info/index.php?freq="+ f.toFixed(0) +"&timbus=NOW&ip="+ client_public_ip +"&porm=4";
       }
-   }
+   } else
    if (utility == owrx.rcm_cluster) {
       f = Math.floor(Hz) / 1000;	// kHz for ve3sun dx cluster lookup
       url = 'http://ve3sun.com/KiwiSDR/DX.php?Search='+f.toFixed(1);

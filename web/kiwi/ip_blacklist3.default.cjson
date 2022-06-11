@@ -8,6 +8,7 @@
 //
 // Updates:
 //
+//  7 jun 22 173.255.0.0/16 => 173.255.0.0/20 1U Web (from base version, overly broad catching Nortel ISP IPs)
 //  8 may 22 forum: 141.164.48.0/20 constant/vultr/choopa
 //  7 may 22 forum: 104.238.128.0/18 constant/vultr
 //  3 may 22 forum: 199.247.0.0/19 constant/vultr
@@ -114,7 +115,7 @@
     "167.179.64.0/19",
     "172.245.187.0/24",
     "173.199.64.0/18",
-    "173.255.0.0/16",
+    "173.255.0.0/20",
     "180.242.213.14/32",
     "185.220.101.0/24",
     "185.237.0.0/16",

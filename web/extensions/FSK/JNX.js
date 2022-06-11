@@ -64,7 +64,7 @@ function JNX()
    t.biquad_lowpass = new BiQuadraticFilter();
 }
 
-JNX.prototype.setup_values = function(sample_rate, center_frequency_f, shift_Hz, baud_rate, framing, inverted, encoding, show_errs) {
+JNX.prototype.setup_values = function(sample_rate, center_frequency_f, shift_Hz, baud_rate, framing, inverted, encoding, show_raw, show_errs) {
    var t = this;
    t.sample_rate = sample_rate;
    t.center_frequency_f = (center_frequency_f == undefined)? 500.0 : center_frequency_f;
@@ -110,6 +110,7 @@ JNX.prototype.setup_values = function(sample_rate, center_frequency_f, shift_Hz,
    }
    
    t.inverted = inverted;
+   t.show_raw = show_raw;
    t.show_errs = show_errs;
 
    switch(encoding) {
@@ -519,7 +520,7 @@ JNX.prototype.process_data = function(samps, nsamps) {
             t.code_bits = (t.code_bits >> 1) | (bit? t.msb : 0);
             t.bit_count++;
             if (t.bit_count == t.nbits) {
-               var rv = t.encoding.process_char(t.code_bits, t.fixed_start, t.output_char_cb, t.show_errs);
+               var rv = t.encoding.process_char(t.code_bits, t.fixed_start, t.output_char_cb, t.show_raw, t.show_errs);
                if (rv.resync) {
                   t.fp = t.fp_SYNC;
                   t.set_state(t.State_e.NOSIGNAL);

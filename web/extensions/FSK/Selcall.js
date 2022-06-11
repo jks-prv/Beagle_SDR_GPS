@@ -235,7 +235,7 @@ Selcall.prototype.search_sync = function(bit) {
    return false;
 }
 
-Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
+Selcall.prototype.process_char = function(_code, fixed_start, output_cb, show_raw, show_errs) {
    var t = this;
    if (!t.synced) return { resync:0 };
    if (t.seq == 12) t.pkt++;
@@ -323,14 +323,14 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
          var dump = t.dump_always;
          if (eos) {
             if (t.seq != t.MSG_LEN_MIN) {
-               //if (show_errs) cb(t.output_msg(color(ansi.BLUE, 'non-std len='+ t.seq)));
+               //if (show_errs) output_cb(t.output_msg(color(ansi.BLUE, 'non-std len='+ t.seq)));
                console.log('$$ non-std len='+ t.seq);
                dump |= t.dump_non_std_len;
             }
-            //cb(t.process_msg(show_errs));
+            //output_cb(t.process_msg(show_errs));
          } else {
             var pe = t.parity_errors? (' '+ color(ansi.BLUE, (t.parity_errors +' PE'))) : '';
-            //if (show_errs) cb(t.output_msg(color(ansi.BLUE, 'no EOS') + pe));
+            //if (show_errs) output_cb(t.output_msg(color(ansi.BLUE, 'no EOS') + pe));
             console.log('$$ no EOS pe='+ t.parity_errors);
             dump |= t.dump_no_eos;
          }
@@ -342,7 +342,9 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
             var prev_len = 0;
             var sym = [];
             var freq = ext_get_freq() / 1e3;
-            var s = (new Date()).toUTCString().substr(17,8) +' '+ freq.toFixed(2) +' ';
+            var raw = (new Date()).toUTCString().substr(17,8) +' '+ freq.toFixed(2) +' ';
+            var fmt = fec(12).code;
+            var cat, cmd1;
 
             for (var i = 0; i < t.seq; i++) {
                var fec_err = false;
@@ -359,23 +361,35 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
                   code = rv.code;
                   if (rv.fec_err) fec_errors = true;
 
-                  // format 4-digit calls to look like 6-digit
+                  // 4-digit calls:
                   //   1  1  1   1  2  2   2   2  2  3
                   //   2  4  6   8  0  2   4   6  8  0
                   // 123 68 68 100 99 80 121 110 01 60 ...
                   //console.log(i +':'+ code);
-                  if (i == 14 && fec(18).code > 99) {
-                     sym.push('  ');
-                     s += '__ ';
+                  
+                  // format 4-digit calls to look like 6-digit
+                  if (i == 14) {
+                     cat = fec(18).code;
+                     if (cat > 99) {
+                        sym.push('  ');
+                        raw += '__ ';
+                     } else {
+                        cat = fec(20).code;
+                     }
                   }
-                  if (i == 20 && fec(24).code > 99) {
-                     sym.push('  ');
-                     s += '__ ';
+                  if (i == 20) {
+                     cmd1 = fec(24).code;
+                     if (cmd1 > 99) {
+                        sym.push('  ');
+                        raw += '__ ';
+                     } else {
+                        cmd1 = fec(28).code;
+                     }
                   }
 
                   var code_s;
                   if (rv.fec_err) {
-                     s += 'X ';
+                     raw += 'X ';
                      code_s = '0';
                   } else {
                      code_s = (code <= 99)? code.leadingZeros(2) : code.toString();
@@ -384,7 +398,7 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
                         color_s = ansi[ansi.rolling[color_n]];
                         prev_len = code_s.length;
                      }
-                     s += color_s + code_s + ansi.NORM +' ';
+                     raw += color_s + code_s + ansi.NORM +' ';
                   }
 
                   sym.push(code_s);
@@ -404,27 +418,45 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
             }
             
             if (dump_line) {
-               var lat_lon = '';
-               if (!fec_errors) {
-                  var o = 0;
-                  //if (+sym[6] == 121) o = 8; else
-                  if (+sym[8] == 121) o = 10;
-                  if (o) {
-                     //  0  1  2  3  4  5  6
-                     // 01 23 45 67 89 01 23
-                     // 01 61 41 10 31 20 38    16.14 110.31 20:38
-                     var s2 = '';
-                     for (i = 0; i <= 6; i++) s2 += sym[o+i];
+               var deco = null;
+               if (fec_errors) {
+                  raw += color(ansi.RED, 'FEC');
+               } else {
+                  // 6-digit calls:
+                  //                                    1  1
+                  //   0  1  2  3   4  5  6  7   8   9  0  1
+                  // 123 00 68 68 100 01 99 80 121 110 01 60 ...
 
-                     var lat_d = s2.slice(1,3);
-                     var lon_d = s2.slice(5,8);
-                     var lat_m = s2.slice(3,5);
-                     var lon_m = s2.slice(8,10);
+                  if (fmt == t.FMT_IS_SEMI_AUTO && cmd1 == t.CMD1_POSITION) {
+                     //  0  1  2  3  4  5  6    sym[i+10]
+                     // 01 23 45 67 89 01 23    s3.slice()
+                     // 01 61 41 10 31 20 38    16.14 110.31 20:38
+                     var call_to, call_from, id;
+                     if (+sym[1])
+                        call_to = color(ansi.CYAN, sym[1] + sym[2] + sym[3]);
+                     else
+                        call_to = color(ansi.CYAN, '__'+ sym[2] + sym[3]);
+                     if (+sym[5]) {
+                        id = sym[5] + sym[6] + sym[7];
+                        call_from = color(ansi.YELLOW, id);
+                     } else {
+                        id = sym[6] + sym[7];
+                        call_from = color(ansi.YELLOW, '__'+ id);
+                     }
+                     deco = call_from +' calling '+ call_to;
+
+                     var s = '';
+                     for (i = 0; i <= 6; i++) s += sym[i+10];
+
+                     var lat_d = s.slice(1,3);
+                     var lon_d = s.slice(5,8);
+                     var lat_m = s.slice(3,5);
+                     var lon_m = s.slice(8,10);
 
                      var lat_dd = lat_d +'.'+ lat_m;
                      var lon_dd = lon_d +'.'+ lon_m;
-                     s += link_lat_lon('['+ lat_dd +','+ lon_dd +']', +lat_dd, +lon_dd);
-                     s += link_lat_lon('*', -lat_dd, +lon_dd) +' ';
+                     deco += ', position '+ link_lat_lon('['+ lat_dd +','+ lon_dd +']', +lat_dd, +lon_dd);
+                     //deco += link_lat_lon('*', -lat_dd, +lon_dd) +' ';
                      
                      var bad_min = false;
                      var lat_min = +lat_m;
@@ -435,20 +467,26 @@ Selcall.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
                      var lon_dm = lon_d +'\u00b0'+ lon_m +"'";
                      var lat = lat_d + (lat_min/60).toFixed(2).slice(1);
                      var lon = lon_d + (lon_min/60).toFixed(2).slice(1);
-                     s += link_lat_lon('['+ lat_dm +','+ lon_dm +']', +lat, +lon) +' ';
-                     //s += link_lat_lon('[-lat]', -lat, +lon) +' ';
-                     
-                     var id = ((+sym[5] != 0)? sym[5] : '') + sym[6] + sym[7];
-                     navtex_location_update(id, +lat, +lon, url_lat_lon(+lat, +lon),
-                        bad_min? [ 'white', 'red' ] : [ 'white', (freq < 7500)? 'magenta' : 'blue' ]);
+                     deco += ' '+ link_lat_lon('['+ lat_dm +','+ lon_dm +']', +lat, +lon);
+                     //deco += link_lat_lon('[-lat]', -lat, +lon) +' ';
 
-                     s += s2.slice(10,12) +':'+ s2.slice(12,14);
+                     deco += ' '+ s.slice(10,12) +':'+ s.slice(12,14);
+                     
+                     if (navtex_location_update(id, +lat, +lon, url_lat_lon(+lat, +lon),
+                           bad_min? [ 'white', 'red' ] : [ 'white', (freq < 7500)? 'magenta' : 'blue' ])) {
+                        deco += ' '+ color(ansi.YELLOW, '(dupe)');
+                     }
                   }
-               } else {
-                  s += color(ansi.RED, 'FEC');
+                  
+                  if (deco) deco = (new Date()).toUTCString().substr(17,8) +' '+ freq.toFixed(2) +' '+ deco;
                }
                console.log('fec_errors='+ fec_errors +' show_errs='+ show_errs);
-               if (!fec_errors || show_errs) cb(s + lat_lon +'\n');
+               if (!fec_errors && deco) {
+                  output_cb(deco +'\n');
+               }
+               if ((!fec_errors && (!deco || show_raw)) || (fec_errors && show_errs)) {
+                  output_cb(raw +'\n');
+               }
             }
          }
 

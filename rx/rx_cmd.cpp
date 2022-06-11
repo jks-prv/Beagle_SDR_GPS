@@ -578,6 +578,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             pdb_printf("PWD %s %s RESULT: allow=%d pwd_s=<%s> pwd_m=<%s> cant_determine=%d is_local=%d isLocal(enum)=%d %s\n",
                 type_m, uri, allow, pwd_s, pwd_m, cant_determine, is_local, isLocal, conn->remote_ip);
 
+            if (type_admin && !kiwi.allow_admin_conns) {
+                badp = 6;
+            } else
+            
             if (check_ip_against_restricted && !allow && !restricted_ip_match) {
                 badp = 3;
             } else

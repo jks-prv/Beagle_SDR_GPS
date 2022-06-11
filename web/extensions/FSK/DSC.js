@@ -748,7 +748,7 @@ DSC.prototype.process_msg = function(show_errs) {
       s = (err_s != '')? err_s : msg_s;
       return t.output_msg(s + pe_s + ecc_s);
    } else {
-      s = (err_s != '')? '' : t.output_msg(msg_s + pe_s + ecc_s);
+      s = (err_s != '')? '' : t.output_msg(msg_s + ecc_s);
       return s;
    }
 }
@@ -854,7 +854,7 @@ DSC.prototype.search_sync = function(bit) {
    return false;
 }
 
-DSC.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
+DSC.prototype.process_char = function(_code, fixed_start, output_cb, show_raw, show_errs) {
    var t = this;
    if (!t.synced) return { resync:0 };
 
@@ -906,14 +906,14 @@ DSC.prototype.process_char = function(_code, fixed_start, cb, show_errs) {
          var dump = 0;
          if (eos) {
             if (t.seq != t.MSG_LEN_MIN) {
-               if (show_errs) cb(t.output_msg(color(ansi.BLUE, 'non-std len='+ t.seq)));
+               if (show_errs) output_cb(t.output_msg(color(ansi.BLUE, 'non-std len='+ t.seq)));
                console.log('$$ non-std len='+ t.seq);
                dump = 1;
             }
-            cb(t.process_msg(show_errs));
+            output_cb(t.process_msg(show_errs));
          } else {
-            var pe = t.parity_errors? (' '+ color(ansi.BLUE, (t.parity_errors +' PE'))) : '';
-            if (show_errs) cb(t.output_msg(color(ansi.BLUE, 'no EOS') + pe));
+            var pe_s = t.parity_errors? (' '+ color(ansi.BLUE, (t.parity_errors +' PE'))) : '';
+            if (show_errs) output_cb(t.output_msg(color(ansi.BLUE, 'no EOS') + pe_s));
             console.log('$$ no EOS pe='+ t.parity_errors);
             dump = t.dump_eos;
          }

@@ -278,10 +278,11 @@ function config_html()
          
          w3_label('w3-text-teal',
             '<ul>' +
-               '<li>Open a normal user connection to the SDR</li>' +
+               '<li>Close any admin page connections to the Kiwi</li>' +
+               '<li>Open a normal user connection to the Kiwi</li>' +
                '<li>Tune to a time station or other accurate signal and zoom all the way in</li>' +
                '<li>Higher frequency shortwave stations are better because they will show more offset than LF/VLF stations</li>' +
-               '<li>Click exactly on the signal carrier line in the waterfall</li>' +
+               '<li>Select AM mode and click exactly on the signal carrier line in the waterfall</li>' +
                '<li>On the right-click menu select the <i>cal ADC clock (admin)</i> entry</li>' +
                '<li>You may have to give the admin password if not already authenticated</li>' +
                '<li>The adjustment is calculated and the carrier on the waterfall should move to the nearest 1 kHz marker</li>' +
@@ -292,6 +293,7 @@ function config_html()
          w3_label('w3-text-teal',         
             'You can fine-tune after the above steps as follows:' +
             '<ul>' +
+               '<li>Close any admin page connections to the Kiwi</li>' +
                '<li>Open IQ display extension</li>' +
                '<li>Set the receive frequency to the exact nominal carrier (e.g. 15000 kHz for WWV)</li>' +
                '<li>Press the <i>40</i> button (i.e. sets mode to AM with 40 Hz passband)</li>' +
@@ -839,6 +841,9 @@ function webpage_photo_uploaded(obj)
 		break;
 	case 4:
 		e = 'File too large';
+		break;
+	case 5:
+		e = 'Can only upload from local network';
 		break;
 	default:
 		e = 'Undefined error?';

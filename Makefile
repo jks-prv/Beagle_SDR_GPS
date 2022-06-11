@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 538
+VERSION_MIN = 539
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -836,14 +836,16 @@ endif
 
 $(BUILD_DIR)/kiwi.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(ALL_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(EXTS_DEPS)
 ifneq ($(SAN),1)
-	$(CPP) $(LDFLAGS) $(ALL_OBJECTS) $(DEVEL_DEPS) $(EXTS_DEPS) $(LIBS) -o $(BUILD_OBJ)
+	@echo $(CPP) $(LDFLAGS) "..." $(DEVEL_DEPS) $(EXTS_DEPS) $(LIBS) -o $(BUILD_OBJ)
+	@$(CPP) $(LDFLAGS) $(ALL_OBJECTS) $(DEVEL_DEPS) $(EXTS_DEPS) $(LIBS) -o $(BUILD_OBJ)
 else
 	@echo loader skipped for static analysis
 endif
 
 $(BUILD_DIR)/kiwid.bin: foptim_gen $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(ALL_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS) $(EXTS_DEPS)
 ifneq ($(SAN),1)
-	$(CPP) $(LDFLAGS) $(ALL_OBJECTS) $(EMBED_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
+	@echo $(CPP) $(LDFLAGS) "..." $(EMBED_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
+	@$(CPP) $(LDFLAGS) $(ALL_OBJECTS) $(EMBED_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
 else
 	@echo loader skipped for static analysis
 endif

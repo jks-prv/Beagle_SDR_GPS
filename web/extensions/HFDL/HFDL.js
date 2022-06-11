@@ -401,7 +401,7 @@ function hfdl_controls_setup()
 	hfdl.kmap = kiwi_map_init('hfdl', [28, 15], 2, 17);
 
    // age flights
-   setInterval(function() {
+   hfdl.locations_age_interval = setInterval(function() {
       var old = Date.now() - hfdl.too_old_min*60*1000;
       w3_obj_enum(hfdl.flights, function(key, i, o) {
          if (o.upd < old) {
@@ -1192,6 +1192,8 @@ function HFDL_blur()
 	ext_set_mode(hfdl.saved_mode);
    ext_agc_delay(hfdl.save_agc_delay);
    kiwi_clearInterval(hfdl.log_interval);
+   kiwi_clearInterval(hfdl.locations_age_interval);
+   kiwi_map_blur(hfdl.kmap);
 }
 
 function HFDL_help(show)

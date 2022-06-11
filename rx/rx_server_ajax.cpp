@@ -199,16 +199,18 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
 		printf("PHOTO UPLOAD REQUESTED from %s len=%d\n", ip_unforwarded, mc->content_len);
 		//printf("PHOTO UPLOAD REQUESTED key=%s ckey=%s\n", mc->query_string, current_authkey);
 		
-		if (!isLocalIP) return (char *) -1;
+		if (!isLocalIP) rc = 5;
 
-		int key_cmp = -1;
-		if (mc->query_string && current_authkey) {
-			key_cmp = strcmp(mc->query_string, current_authkey);
-			kiwi_ifree(current_authkey);
-			current_authkey = NULL;
-		}
-		if (key_cmp != 0)
-			rc = 1;
+		if (rc == 0) {
+            int key_cmp = -1;
+            if (mc->query_string && current_authkey) {
+                key_cmp = strcmp(mc->query_string, current_authkey);
+                kiwi_ifree(current_authkey);
+                current_authkey = NULL;
+            }
+            if (key_cmp != 0)
+                rc = 1;
+        }
 		
 		if (rc == 0) {
 			mg_parse_multipart(mc->content, mc->content_len,

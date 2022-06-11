@@ -387,7 +387,7 @@ function tdoa_controls_setup()
       var terminator = new Terminator();
       terminator.setStyle({ fillOpacity: 0.35 });
       terminator.addTo(m);
-      setInterval(function() {
+      tdoa.day_night_interval = setInterval(function() {
          var t2 = new Terminator();
          terminator.setLatLngs(t2.getLatLngs());
          terminator.redraw();
@@ -2600,6 +2600,8 @@ function TDoA_blur()
 	   ext_set_optbar(tdoa.optbar);
 
    kiwi_clearInterval(tdoa.pie_interval);
+   kiwi_clearInterval(tdoa.day_night_interval);
+   //kiwi_clearInterval(tdoa.retry_interval);
 }
 
 function TDoA_config_focus()
