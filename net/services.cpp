@@ -360,90 +360,137 @@ static void misc_NET(void *param)
     }
 }
 
-#if 0
-static void bl_GET(void *param)
+void bl_GET(void *param)
 {
 	int status;
-	char *cmd_p, *reply, *dl_sp, st_sp;
+	char *cmd_p, *reply, *dl_sp, *bl_sp;
 	jsmntok_t *jt, *end_tok;
-	const char *bl_s;
+	const char *bl_old, *bl_new;
 	int slen, dlen, diff;
-	cfg_t cfg = {0};
-	kstr_t *sb = NULL;
+	cfg_t bl_json = {0};
+	kstr_t *sb;
+	bool failed = true, first, ip_err;
+    u4_t mtime;
+	
+	bool check_only = ((int) FROM_VOID_PARAM(param) == 1);
+	lprintf("bl_GET: running..%s\n", check_only? " (check only)" : "");
 	
     char *kiwisdr_com = DNS_lookup_result("bl_GET", "kiwisdr.com", &net.ips_kiwisdr_com);
     #define BLACKLIST_FILE "ip_blacklist/ip_blacklist3.cjson"
 
-    asprintf(&cmd_p, "curl -s -f --ipv4 \"%s/%s\" 2>&1", kiwisdr_com, BLACKLIST_FILE);
-    //printf("bl_GET: <%s>\n" cmd_p);
+    asprintf(&cmd_p, "curl -s -f --ipv4 --connect-timeout 5 \"%s/%s\" 2>&1", kiwisdr_com, BLACKLIST_FILE);
+    //printf("bl_GET: <%s>\n", cmd_p);
     
     reply = non_blocking_cmd(cmd_p, &status);
     kiwi_ifree(cmd_p);
 
     int exit_status = WEXITSTATUS(status);
     if (WIFEXITED(status) && exit_status != 0) {
-        lprintf("bl_GET: failed for %s exit_status=%d\n", BLACKLIST_FILE, exit_status);
+        lprintf("bl_GET: failed for %s/%s exit_status=%d\n", kiwisdr_com, BLACKLIST_FILE, exit_status);
         goto fail;
     }
 
     dl_sp = kstr_sp(reply);
     //real_printf("bl_GET: returned <%s>\n", dl_sp);
-    if (json_init(&cfg, dl_sp) == false) {
-        lprintf("bl_GET: JSON parse failed for %s\n", BLACKLIST_FILE);
+    if (json_init(&bl_json, dl_sp) == false) {
+        lprintf("bl_GET: JSON parse failed for %s/%s\n", kiwisdr_com, BLACKLIST_FILE);
         goto fail;
     }
 
-	end_tok = &(cfg.tokens[cfg.ntok]);
-	jt = cfg.tokens;
+	end_tok = &(bl_json.tokens[bl_json.ntok]);
+	jt = bl_json.tokens;
 	if (jt == NULL || !JSMN_IS_ARRAY(jt)) {
-        lprintf("bl_GET: JSON token error for %s\n", BLACKLIST_FILE);
+        lprintf("bl_GET: JSON token error for %s/%s\n", kiwisdr_com, BLACKLIST_FILE);
         goto fail;
 	}
 
-    bl_s = admcfg_string("ip_blacklist", NULL, CFG_REQUIRED);
-    slen = strlen(bl_s);
+    // existing stored blacklist string
+    bl_old = admcfg_string("ip_blacklist", NULL, CFG_REQUIRED);
+    slen = strlen(bl_old);
     
-    
-	for (jt = cfg.tokens + 1; jt != end_tok; jt++) {
+    // new blacklist string extracted from file json
+    bl_sp = NULL;
+    ip_err = false;
+    first = true;
+	for (jt = bl_json.tokens + 1; jt != end_tok && !ip_err; jt++) {
 		const char *ip_s;
-		if (_cfg_type_json(&cfg, JSMN_STRING, jt, &ip_s)) {
-		    sb = kstr_cat(sb, (char *) ip_s);
-            json_string_free(&cfg, ip_s);
+		if (_cfg_type_json(&bl_json, JSMN_STRING, jt, &ip_s)) {
+		    if (!first)
+		        bl_sp = kstr_cat(bl_sp, (char *) " ");
+		    first = false;
+		    bl_sp = kstr_cat(bl_sp, (char *) ip_s);
+            inet4_d2h((char *) ip_s, &ip_err);
+            json_string_free(&bl_json, ip_s);
         }
 	}
-	
-    dlen = strlen(kstr_sp(sb));
+	bl_new = kstr_sp(bl_sp);
+    dlen = strlen(bl_new);
+    
+    if (ip_err) {
+        lprintf("bl_GET: ip address parse fail for %s/%s\n", kiwisdr_com, BLACKLIST_FILE);
+        admcfg_string_free(bl_old);
+        kstr_free(bl_sp);
+        goto fail;
+    }
 
-    diff = strcmp(bl_s, kstr_sp(sb));
-    printf("bl_GET: stored=%d downloaded=%d diff=%d\n", slen, dlen, diff);
-    admcfg_string_free(bl_s);
+    diff = strcmp(bl_old, bl_new);
+    lprintf("bl_GET: stored=%d downloaded=%d diff=%s\n", slen, dlen, diff? "YES" : "NO");
+    admcfg_string_free(bl_old);
 
-    net.ip_blacklist_len = 0;
-    system("iptables -D INPUT -j KIWI; iptables -N KIWI; iptables -F KIWI");
-
-	for (jt = cfg.tokens + 1; jt != end_tok; jt++) {
-		const char *ip_s;
-		if (_cfg_type_json(&cfg, JSMN_STRING, jt, &ip_s)) {
-            ip_blacklist_add_iptables((char *) ip_s);
-            //real_printf("IP: %s\n", ip_s);
-            json_string_free(&cfg, ip_s);
+    if (check_only) {
+        //printf("bl_GET: check only\n");
+        if (diff) {
+            lprintf("bl_GET: new blacklist available, restarting..\n");
+            kiwi_exit(0);
         }
-	}
+    } else {
+        if (diff) {
+            // update stored blacklist
+            mtime = utc_time();
+            printf("bl_GET: mtime=%d\n", mtime);
+            admcfg_set_int("ip_blacklist_mtime", mtime);
+            admcfg_set_string_save("ip_blacklist", bl_new);
+            printf("bl_GET: CFG SAVE DONE\n");
 
-    system("iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI");
+            // reload iptables
+            lprintf("bl_GET: using DOWNLOADED blacklist from %s/%s\n", kiwisdr_com, BLACKLIST_FILE);
+            net.ip_blacklist_len = 0;
+            system("iptables -D INPUT -j KIWI; iptables -N KIWI; iptables -F KIWI");
+            for (jt = bl_json.tokens + 1; jt != end_tok; jt++) {
+                const char *ip_s;
+                if (_cfg_type_json(&bl_json, JSMN_STRING, jt, &ip_s)) {
+                    ip_blacklist_add_iptables((char *) ip_s);
+                    json_string_free(&bl_json, ip_s);
+                }
+            }
+            system("iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI");
+        } else {
+            lprintf("bl_GET: using STORED blacklist\n");
+            failed = false;
+            goto use_stored;
+        }
+    }
+
+	kiwi.allow_admin_conns = true;
     kstr_free(reply);
-    lprintf("bl_GET: successfully downloaded blacklist from %s\n", BLACKLIST_FILE);
-#warning update stored bl
+    kstr_free(bl_sp);
+    json_release(&bl_json);
     return;
 
-    // if downloading fails just use previously stored blacklist
+    // use previously stored blacklist
+use_stored:
 fail:
-    json_release(&cfg);
     kstr_free(reply);
-    lprintf("bl_GET: FAILED to download blacklist from %s -- using previously stored blacklist\n", BLACKLIST_FILE);
-    ip_blacklist_init();
+    json_release(&bl_json);
+
+    if (failed) 
+        lprintf("bl_GET: FAILED to download blacklist from %s/%s\n", kiwisdr_com, BLACKLIST_FILE);
+    if (!check_only) {
+        lprintf("bl_GET: using previously stored blacklist\n");
+        ip_blacklist_init();
+    }
+	kiwi.allow_admin_conns = true;
 }
-#endif
 
 static bool ipinfo_json(int https, const char *url, const char *path, const char *ip_s, const char *lat_s = NULL, const char *lon_s = NULL)
 {
@@ -947,13 +994,10 @@ void services_start()
 
     reg_kiwisdr_com_tid = CreateTask(reg_public, 0, SERVICES_PRIORITY);
 
-    #if 0
-        if (admcfg_bool("ip_blacklist_auto_download", NULL, CFG_REQUIRED) == true) {
-            CreateTask(bl_GET, 0, SERVICES_PRIORITY);
-        } else {
-            ip_blacklist_init();
-        }
-    #else
+    if (admcfg_bool("ip_blacklist_auto_download", NULL, CFG_REQUIRED) == true) {
+        CreateTask(bl_GET, 0, SERVICES_PRIORITY);
+    } else {
         ip_blacklist_init();
-    #endif
+        kiwi.allow_admin_conns = true;
+    }
 }

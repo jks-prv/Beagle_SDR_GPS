@@ -21,4 +21,5 @@ Boston, MA  02110-1301, USA.
 
 typedef enum { NAT_NO_DELETE, NAT_DELETE } nat_delete_e;
 
+void bl_GET(void *param);
 void UPnP_port(nat_delete_e nat_delete);

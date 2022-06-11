@@ -72,6 +72,7 @@ typedef struct {
     int n_ips;
 	#define N_IPS 16
 	char *ip_list[N_IPS];
+	u4_t ip[N_IPS];
 } ip_lookup_t;
 
 typedef struct {

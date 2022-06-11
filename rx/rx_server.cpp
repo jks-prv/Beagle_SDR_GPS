@@ -603,6 +603,11 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
     
     if (check_ip_blacklist(remote_ip) || check_ip_blacklist(ip_unforwarded)) return NULL;
     
+    if (!kiwi.allow_admin_conns && timer_sec() > 60) {
+        kiwi.allow_admin_conns = true;
+        lprintf("WARNING: allow_admin_conns still unset > 60 seconds after startup\n");
+    }
+    
 	if (down || update_in_progress || backup_in_progress) {
 		conn_printf("down=%d UIP=%d stream=%s\n", down, update_in_progress, st->uri);
         conn_printf("URL <%s> <%s> %s\n", mc->uri, mc->query_string, remote_ip);

@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.539  Jun 12, 2022
+    Automatic IP blacklist download added to admin network tab. Enabled by default.
+    Selcall decoder improvements.
+
 v1.538  Jun 5, 2022
     Yellow/green passband graphic on frequency scale:
         Fixed adjustment on mobile devices. Also made the "hit boxes" for the sloping part of

@@ -44,6 +44,8 @@ Boston, MA  02110-1301, USA.
 #define CUTESDR_MAX_PWR (CUTESDR_MAX_VAL * CUTESDR_MAX_VAL)
 
 typedef struct {
+    bool allow_admin_conns;
+    
     // lat/lon returned by ipinfo lookup
 	bool ipinfo_ll_valid;
 	float ipinfo_lat, ipinfo_lon;

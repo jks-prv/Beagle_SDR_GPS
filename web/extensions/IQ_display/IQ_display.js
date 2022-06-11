@@ -11,7 +11,6 @@ var iq = {
    df: 0,
    pll: 1,
    pll_bw: 5,
-   update_interval: 0,
    size: Math.round(Math.log2(1024)),
    offset: 0,
    gain: 0,
@@ -99,6 +98,7 @@ function iq_display_update()
 
       var gps_correcting = (cfg.ADC_clk_corr && ext_adc_gps_clock_corr() > 3)? 1:0;
       w3_innerHTML('iq_display-gps', gps_correcting? ('GPS corrections: '+ ext_adc_gps_clock_corr()) : '');
+	   w3_show_hide('id-iq-fcal', !gps_correcting);
       if (gps_correcting != iq.gps_correcting || iq.gps_correcting_initial) {
          if (!gps_correcting) {
             w3_innerHTML('iq-fcal-p',
@@ -111,7 +111,6 @@ function iq_display_update()
             w3_innerHTML('iq-fcal-p', 'GPS is correcting');
             w3_innerHTML('iq-fcal-m', '');
          }
-	      w3_show_hide('id-iq-fcal', !gps_correcting);
          iq.gps_correcting = gps_correcting;
          iq.gps_correcting_initial = 0;
       }

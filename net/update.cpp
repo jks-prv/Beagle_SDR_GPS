@@ -29,6 +29,7 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "net.h"
 #include "rx.h"
+#include "services.h"
 
 #include <types.h>
 #include <unistd.h>
@@ -108,11 +109,13 @@ static void fetch_makefile_ctask(void *param)
     system("echo ======== checking for update >/root/build.log; date >>/root/build.log");
 
 	int status = system("cd /root/" REPO_NAME " ; git fetch origin >>/root/build.log 2>&1");
-    printf("UPDATE: fetch origin status=0x%08x\n", status);
+	if (status != 0)
+        printf("UPDATE: fetch origin status=0x%08x\n", status);
 	child_status_exit(status);
 
 	status = system("cd /root/" REPO_NAME " ; git show origin:Makefile >Makefile.1 2>>/root/build.log");
-    printf("UPDATE: show origin:Makefile status=0x%08x\n", status);
+	if (status != 0)
+        printf("UPDATE: show origin:Makefile status=0x%08x\n", status);
 	child_status_exit(status);
 
     system("cd /root/" REPO_NAME " ; diff Makefile Makefile.1 >>/root/build.log");
@@ -133,6 +136,8 @@ static void report_result(conn_t *conn)
 }
 
 static bool daily_restart = false;
+static bool ip_auto_download_check = false;
+static bool ip_auto_download_oneshot = false;
 
 /*
     // task
@@ -258,6 +263,12 @@ static void update_task(void *param)
 	}
 
 common_return:
+	if (ip_auto_download_oneshot) {
+	    ip_auto_download_oneshot = false;
+        //printf("bl_GET: update check normal\n");
+	    bl_GET(TO_VOID_PARAM(1));
+	}
+
 	if (conn) conn->update_check = WAIT_UNTIL_NO_USERS;     // restore default
 	update_pending = update_task_running = update_in_progress = false;
 }
@@ -269,6 +280,13 @@ void check_for_update(update_check_e type, conn_t *conn)
 	
 	if (!force && admcfg_bool("update_check", NULL, CFG_REQUIRED) == false) {
 		//printf("UPDATE: exiting because admin update check not enabled\n");
+	
+        if (ip_auto_download_check) {
+            ip_auto_download_check = false;
+            //printf("bl_GET: update check false\n");
+            bl_GET(TO_VOID_PARAM(1));
+        }
+
 		return;
 	}
 	
@@ -282,6 +300,11 @@ void check_for_update(update_check_e type, conn_t *conn)
 		} else {
 			conn->update_check = type;
 		}
+	}
+	
+	if (ip_auto_download_check) {
+	    ip_auto_download_oneshot = true;
+	    ip_auto_download_check = false;
 	}
 
 	if ((force || (update_pending && rx_count_server_conns(EXTERNAL_ONLY) == 0)) && !update_task_running) {
@@ -314,10 +337,10 @@ void schedule_update(int min)
 	        utc_hour, min, local_hour, min, UPDATE_START_HOUR, UPDATE_END_HOUR);
 	#endif
 
-	bool update = (local_hour >= UPDATE_START_HOUR && local_hour < UPDATE_END_HOUR);
+	bool update_window = (local_hour >= UPDATE_START_HOUR && local_hour < UPDATE_END_HOUR);
 	
 	// don't let Kiwis hit github.com all at once!
-	if (update) {
+	if (update_window) {
 		int mins_now = min + (local_hour - UPDATE_START_HOUR) * 60;
 		
 		#ifdef TEST_UPDATE
@@ -328,22 +351,36 @@ void schedule_update(int min)
                 mins_now, mins_trig, hr_trig, min_trig, serial_number);
         #endif
         
-		update = update && (mins_now == (serial_number % UPDATE_SPREAD_MIN));
+		update_window = update_window && (mins_now == (serial_number % UPDATE_SPREAD_MIN));
 		
-		if (update) {
+		if (update_window) {
 		    printf("TLIMIT-IP 24hr cache cleared\n");
             json_init(&cfg_ipl, (char *) "{}");     // clear 24hr ip address connect time limit cache
         }
 	}
 	
-    daily_restart = update && !update_on_startup && (admcfg_bool("daily_restart", NULL, CFG_REQUIRED) == true);
+    //#define TRIG_UPDATE
+    #ifdef TRIG_UPDATE
+        static bool trig_update;
+        if (timer_sec() >= 60 && !trig_update) {
+            update_window = true;
+            trig_update = true;
+        }
+    #endif
+    
+    daily_restart = update_window && !update_on_startup && (admcfg_bool("daily_restart", NULL, CFG_REQUIRED) == true);
+    ip_auto_download_check = update_window && !update_on_startup && (admcfg_bool("ip_blacklist_auto_download", NULL, CFG_REQUIRED) == true);
+
+    //printf("min=%d ip_auto_download_check=%d update_window=%d update_on_startup=%d auto=%d\n",
+    //    timer_sec()/60, ip_auto_download_check, update_window, update_on_startup,
+    //    (admcfg_bool("ip_blacklist_auto_download", NULL, CFG_REQUIRED) == true));
     
     if (update_on_startup && admcfg_int("restart_update", NULL, CFG_REQUIRED) != 0) {
 		lprintf("UPDATE: update on restart delayed until update window\n");
 		update_on_startup = false;
     }
 
-	if (update || update_on_startup) {
+	if (update_window || update_on_startup) {
 		lprintf("UPDATE: check scheduled %s\n", update_on_startup? "(startup)":"");
 		update_on_startup = false;
 		update_pending = true;

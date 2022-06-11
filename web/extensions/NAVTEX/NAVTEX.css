@@ -9,7 +9,7 @@
 }
 
 /*
-    Qualified with .leaflet-tooltip because with dynload HFDL.css is now loaded
+    Qualified with .leaflet-tooltip because with dynload NAVTEX.css is now loaded
     before Leaflet/MarkerCluster css. So needed for proper override.
 */
 
