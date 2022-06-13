@@ -504,7 +504,7 @@ char *kiwi_str_encode(char *src, bool alt)
 
 	// don't use kiwi_malloc() due to large number of these simultaneously active from dx list
 	// and also because dx list has to use kiwi_ifree() due to related allocations via strdup()
-	check(dlen);
+	check(dlen != 0);
 	char *dst = (char *) kiwi_imalloc("kiwi_str_encode", dlen);
 	if (alt)
 	    kiwi_alt_encode(src, dst, dlen);
@@ -522,6 +522,7 @@ char *kiwi_str_encode_static(char *src, bool alt)
 {
 	if (src == NULL) src = (char *) "null";		// JSON compatibility
 	size_t slen = strlen(src);
+	check((slen * ENCODE_EXPANSION_FACTOR) < N_DST_STATIC_BUF);
 
 	if (alt)
 	    kiwi_alt_encode(src, dst_static[0], N_DST_STATIC_BUF);

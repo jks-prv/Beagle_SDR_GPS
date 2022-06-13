@@ -353,8 +353,11 @@ alias bbfp="ping -c 1 forum.kiwisdr.com"
 
 # networking
 alias nt="iptraf"
+# after iftop starts use: "L" log plot, "B" toggle 2/10/40s avg, "T" dsp cum totals
+alias ift="iftop -nNBP -m 1G"
 alias ipt="function _ipt () { iptables -n -v -L \$* ; } ; _ipt"
 alias ipti="ipt INPUT"
+alias iptio="ipt INPUT; ipt OUTPUT"
 alias iptz="iptables -L -n -v -Z"
 alias iptc="iptables -L -n -v -Z"
 alias iptadd="iptables -N KIWI; iptables -F KIWI; iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI"
@@ -363,6 +366,7 @@ alias ipban="function _iptban () { iptables -I INPUT -s \$1 -j DROP ; } ; _iptba
 alias ipunban="function _iptunban () { iptables -D INPUT -s \$1 -j DROP ; } ; _iptunban"
 alias iprtn="function _iprtn () { iptables -I INPUT -s \$1 -j RETURN ; } ; _iprtn"
 alias ipunrtn="function _ipunrtn () { iptables -D INPUT -s \$1 -j RETURN ; } ; _ipunrtn"
+alias tcpdhttp="tcpdump -vnlA 'tcp dst port 8073' | egrep -i 'POST /|GET /|Host:'"
 alias geoloc="curl -s https://ipapi.co/json | jq '.'"
 alias geoloc2="curl -s https://get.geojs.io/v1/ip/geo.json | jq '.'"
 alias geoloc3="curl -s http://ip-api.com/json | jq '.'"

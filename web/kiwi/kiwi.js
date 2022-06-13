@@ -457,9 +457,20 @@ function cfg_save_json(id, path)
 	var s;
 	if (path.startsWith('adm.')) {
 		s = encodeURIComponent(JSON.stringify(adm, null, 3));    // pretty-print the JSON
+		console.log('save_adm len='+ s.length);
 		extint.ws.send('SET save_adm='+ s);
 	} else {
 		s = encodeURIComponent(JSON.stringify(cfg, null, 3));    // pretty-print the JSON
+		console.log('save_cfg len='+ s.length);
+		
+		// Handle web socket fragmentation by sending in parts which can be reassembled on server side.
+		// Config data sent can get this large after double encoding.
+	   var frag_size = 65000;
+		while (s.length > frag_size) {
+		   extint.ws.send('SET save_cfg_part='+ s.slice(0, frag_size));
+		   s = s.slice(frag_size);
+		}
+		
 		extint.ws.send('SET save_cfg='+ s);
 	}
 	console.log('cfg_save_json: from='+ id +' path='+ path +' DONE');

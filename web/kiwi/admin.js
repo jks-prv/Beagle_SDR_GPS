@@ -3227,7 +3227,8 @@ function admin_close()
    kiwi_clearTimeout(admin.keepalive_timeoout);
    if (!admin.reload_rem && !admin.long_running) {
       //kiwi_show_msg('Server has closed connection.');
-      admin_wait_then_reload(60, 'Server has closed connection. Will retry.');
+      //if (dbgUs) console.log('admin close'); else
+         admin_wait_then_reload(60, 'Server has closed connection. Will retry.');
    }
 }
 
