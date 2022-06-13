@@ -1153,7 +1153,7 @@ static bool _cfg_parse_json(cfg_t *cfg, bool doPanic)
 	while ((cp = strstr(cfg->json, "\n//")) != NULL) {
 	    cp2 = strstr(cp+1, "\n");
 	    if (cp2) {
-	        strcpy(cp+1, cp2+1);
+	        kiwi_overlap_strcpy(cp+1, cp2+1);
 	    }
 	}
 	
