@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.540  Jun 14, 2022
+    Fixed bug encountered when saving large configuration files.
+        e.g. many band bar definitions (thanks Ben).
+
 v1.539  Jun 12, 2022
     Automatic IP blacklist download added to admin network tab. Enabled by default.
     Selcall decoder improvements.
