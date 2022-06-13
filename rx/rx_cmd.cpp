@@ -729,36 +729,46 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 ////////////////////////////////
 
     case CMD_SAVE_CFG:
-        if (kiwi_str_begins_with(cmd, "SET save_cfg=")) {
-            if (conn->auth_admin == FALSE) {
-                lprintf("** attempt to save kiwi config with auth_admin == FALSE! IP %s\n", conn->remote_ip);
-                return true;	// fake that we accepted command so it won't be further processed
-            }
-            
-            // To prevent cfg database multi-writer data loss, enforce no admin connections (a source of writes)
-            // on any non-admin/mfg (i.e. user) connection cfg save.
-            if (conn->type != STREAM_ADMIN && conn->type != STREAM_MFG && (n = rx_count_server_conns(ADMIN_USERS)) != 0) {
-                //cprintf(conn, "CMD_SAVE_CFG: abort because admin_users=%d\n", n);
-                send_msg(conn, false, "MSG no_admin_conns");    // tell user their cfg save was rejected
-                rx_server_send_config(conn);    // and reload last saved config to flush bad values
-                return true;
-            }
+        static char *json;
 
-            char *json = (char *) kiwi_imalloc("CMD_SAVE_CFG", strlen(cmd) + SPACE_FOR_NULL); // a little bigger than necessary
-            n = sscanf(cmd, "SET save_cfg=%s", json);
-            assert(n == 1);
+        if (conn->auth_admin == FALSE) {
+            lprintf("** attempt to save kiwi config with auth_admin == FALSE! IP %s\n", conn->remote_ip);
+            return true;	// fake that we accepted command so it won't be further processed
+        }
+        
+        // To prevent cfg database multi-writer data loss, enforce no admin connections (a source of writes)
+        // on any non-admin/mfg (i.e. user) connection cfg save.
+        if (conn->type != STREAM_ADMIN && conn->type != STREAM_MFG && (n = rx_count_server_conns(ADMIN_USERS)) != 0) {
+            //cprintf(conn, "CMD_SAVE_CFG: abort because admin_users=%d\n", n);
+            send_msg(conn, false, "MSG no_admin_conns");    // tell user their cfg save was rejected
+            rx_server_send_config(conn);    // and reload last saved config to flush bad values
+            return true;
+        }
+
+		// Handle web socket fragmentation by sending in parts which can be reassembled on server side.
+		// Config data sent can get this large after double encoding.
+
+        if (kiwi_str_begins_with(cmd, "SET save_cfg_part=")) {
+            // NB: sizeof("string") includes the null in the count
+            json = kstr_cat(json, kstr_wrap(strdup(&cmd[sizeof("SET save_cfg_part=") - 1])));
+            return true;
+        }
+        
+        if (kiwi_str_begins_with(cmd, "SET save_cfg=")) {
+            // NB: sizeof("string") includes the null in the count
+            json = kstr_cat(json, kstr_wrap(strdup(&cmd[sizeof("SET save_cfg=") - 1])));
             
             // For cfg strings double URI encoding is effectively used since they are stored encoded and
             // another encoding is done for transmission.
             // So decode the transmission encoding with kiwi_str_decode_inplace()
             // and then decode the cfg string encoding with kiwi_str_decode_selective_inplace().
-            //cprintf(conn, "SET save_cfg=...\n");
-            kiwi_str_decode_inplace(json);
-            kiwi_str_decode_selective_inplace(json);
-            cfg_save_json(json);
-            kiwi_ifree(json);
+            char *sp = kstr_sp(json);
+            kiwi_str_decode_inplace(sp);
+            kiwi_str_decode_selective_inplace(sp);
+            cfg_save_json(sp);
+            kstr_free(json);
+            json = NULL;    // NB: extremely important
             update_vars_from_config();      // update C copies of vars
-
             return true;
         }
 	    break;

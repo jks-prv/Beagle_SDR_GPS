@@ -6032,6 +6032,7 @@ function bands_init()
 		// Change IBP passband from CW to CWN.
 		// A software release can't modify bands[] definition in config.js so do this here.
 		// At some point config.js will be eliminated when admin page gets equivalent UI.
+		if (isUndefined(bnew.s)) bnew.s = svc.L;     // we've seen a case of a user with a corrupt config.js
 		if ((bnew.s.key == 'L' || bnew.s.key == 'X') && bnew.sel.includes('cw') && bnew.region == 'm') {
 		   if (!bnew.name.includes('IBP'))
 		      bnew.name = 'IBP '+ bnew.name;
