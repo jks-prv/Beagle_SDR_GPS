@@ -259,7 +259,7 @@ function w3_esc_dq(s)
 	return s;
 }
 
-// a single-argument call that silently continues if func not found
+// a multi-argument call that silently continues if func not found
 function w3_call(func, arg0, arg1, arg2, arg3, arg4)
 {
    var rv = undefined;
@@ -2830,7 +2830,7 @@ function w3_menu_items(id, arr, max_vis)
 {
    //console.log('w3_menu_items id='+ id);
    if (w3int.menu_debug) canvas_log('w3_menu_items cur='+ w3int.menu_cur_id);
-   w3_menu_close();     // close any existing first
+   w3_menu_close('open');     // close any existing first
 	w3int.menu_cur_id = id;
    
    var s = '';
@@ -2874,7 +2874,8 @@ function w3_menu_items(id, arr, max_vis)
    //console.log(s);
    var el = w3_el(id);
    el.innerHTML = s;
-   if (w3int.menu_debug) canvas_log('BUILD');
+   if (w3int.menu_debug)
+      canvas_log('BUILD');
    
    // NB: If "overflow-y: auto" is done instead of "overflow-y: scroll" (via w3-scroll-always-y)
    // then the scrollbar will intrude into the width of the menu elements and cause the longest
@@ -2972,7 +2973,8 @@ function w3_menu_popup(id, close_func, x, y)
    //console.log('w3_menu_popup NEW id='+ id +' x='+ x +' y='+ y);
 
    w3_visible(el, true);
-   if (w3int.menu_debug) canvas_log('VIS');
+   if (w3int.menu_debug)
+      canvas_log('VIS');
    w3int.menu_active = true;
    el.w3_menu_x = x;
 
@@ -2980,6 +2982,8 @@ function w3_menu_popup(id, close_func, x, y)
 	w3int.menu_close_func = close_func;
    w3int.menu_first = true;
 	window.addEventListener("keyup", w3int_menu_event, false);
+	window.addEventListener("mousedown", w3int_menu_event, false);
+	window.addEventListener("touchstart", w3int_menu_event, false);
 	window.addEventListener("click", w3int_menu_event, false);
 }
 
@@ -2990,7 +2994,8 @@ function w3_menu_active()
 
 function w3int_menu_onclick(ev, id, cb, cb_param)
 {
-   if (w3int.menu_debug) canvas_log('OC '+ id +' '+ cb_param);
+   if (w3int.menu_debug)
+      canvas_log('menu_onclick '+ id +' from='+ (cb_param || ev.type));
    //console.log('w3int_menu_onclick id='+ id +' cb='+ cb);
    //if (ev != null) event_dump(ev, "MENU");
    var el = w3_el(id);
@@ -3007,12 +3012,6 @@ function w3int_menu_onclick(ev, id, cb, cb_param)
       if (w3int.menu_debug) canvas_log('XOK'+ when);
    }
 
-   w3_visible(el, false);
-   if (w3int.menu_debug) canvas_log('NOT_VIS');
-   w3int.menu_active = false;
-   window.removeEventListener("keyup", w3int_menu_event, false);
-   window.removeEventListener("click", w3int_menu_event, false);
-
    if (ev != null && cb != null) {
       var _id = ev.target.id;
       var idx = +_id;
@@ -3020,9 +3019,20 @@ function w3int_menu_onclick(ev, id, cb, cb_param)
       idx = +_id;
       if (_id == '' || isNaN(idx)) idx = -1;
       //console.log('w3int_menu_onclick CALL idx='+ idx);
-      if (w3int.menu_debug) canvas_log('CALL:'+ idx);
+      if (w3int.menu_debug)
+         canvas_log('CALL: '+ idx);
+      if (idx == -1) return;     // clicked/touched top/bottom border -- don't dismiss menu
       w3_call(cb, idx, el.w3_menu_x, cb_param);
    }
+
+   w3_visible(el, false);
+   if (w3int.menu_debug)
+      canvas_log('NOT_VIS');
+   w3int.menu_active = false;
+   window.removeEventListener("keyup", w3int_menu_event, false);
+   window.removeEventListener("mousedown", w3int_menu_event, false);
+   window.removeEventListener("touchstart", w3int_menu_event, false);
+   window.removeEventListener("click", w3int_menu_event, false);
 
    // allow right-button to select menu items
 	if (ev != null) {
@@ -3045,17 +3055,19 @@ function w3int_menu_event(evt)
       var close = w3int.menu_close_func(evt, w3int.menu_first);
       w3int.menu_first = false;
       if (w3int.menu_debug) canvas_log('CLOSE='+ close);
-      if (close) w3_menu_close();
+      if (close) w3_menu_close(evt.type);
    }
+   //else canvas_log('no w3_menu_close()');
 }
 
-function w3_menu_close()
+function w3_menu_close(from)
 {
+   //canvas_log('w3_menu_close '+ from +' id='+ w3int.menu_cur_id);
    if (!w3int.menu_cur_id) return;
    var el = w3_el(w3int.menu_cur_id);
    if (!el) return;
    el.w3_realigned = false;
-   w3int_menu_onclick(null, w3int.menu_cur_id, null, 1138);
+   w3int_menu_onclick(null, w3int.menu_cur_id, null, 'menu_close');
    w3int.menu_cur_id = null;
 }
 
