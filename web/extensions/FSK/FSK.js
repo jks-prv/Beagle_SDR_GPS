@@ -498,12 +498,6 @@ function fsk_controls_setup()
 			   '<pre><code id="id-fsk-console-msgs"></code></pre>'
 			)
       );
-   
-   if (!dbgUs) {
-      delete fsk_maritime['DSC'];
-      delete fsk_maritime['Selcall'];
-      delete fsk_maritime['NAVTEX'];
-   }
 
 	var controls_html =
 		w3_div('id-fsk-controls w3-text-white',
