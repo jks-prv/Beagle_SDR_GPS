@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.541  Jun 17, 2022
+v1.541,542  Jun 17, 2022
     FAX, FSK, NAVTEX extensions:
         Menu frequencies are now loaded from a file on kiwisdr.com so a new release is not required
         to update them. A backup copy is kept on the server in case the Kiwi has no Internet access.
