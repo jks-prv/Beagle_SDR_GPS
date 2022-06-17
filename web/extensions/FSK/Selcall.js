@@ -38,19 +38,21 @@ function Selcall(init, output_cb) {
    t.DX  = 125;
    t.RX5 = 109;
    
-   t.FMT_GEO_AREA = 102;
+   t.FMT_GEO_CALL = 102;
    t.FMT_DISTRESS = 112;
-   t.FMT_COMMON_INTEREST = 114;
-   t.FMT_ALL_SHIPS = 116;
-   t.FMT_INDIV_STA = 120;
+   t.FMT_GROUP_CALL = 114;
+   t.FMT_ALL_STATIONS = 116;
+   t.FMT_INDIV_CALL = 120;
    t.FMT_RESV = 121;
-   t.FMT_IS_SEMI_AUTO = 123;
+   t.FMT_INDIV_SEMI_AUTO = 123;
 
    t.CAT_ROUTINE = 100;
+   t.CAT_SHIPS_BUSINESS = 106;      // per Rivet CCIR493.java
    t.CAT_SAFETY = 108;
    t.CAT_URGENCY = 110;
    t.CAT_DISTRESS = 112;
    
+   // these are from DSC
    t.CMD1_FM_CALL = 100;
    t.CMD1_FM_DUPLEX_CALL = 101;
    t.CMD1_POLLING = 103;
@@ -66,6 +68,7 @@ function Selcall(init, output_cb) {
    t.CMD1_POSITION = 121;
    t.CMD1_NOP = 126;
 
+   // these are from DSC
    t.CMD2_UNABLE_FIRST = 100;
    t.CMD2_BUSY = 102;
    t.CMD2_UNABLE_LAST = 109;
@@ -422,12 +425,14 @@ Selcall.prototype.process_char = function(_code, fixed_start, output_cb, show_ra
                if (fec_errors) {
                   raw += color(ansi.RED, 'FEC');
                } else {
+                  var call = (fmt == t.FMT_INDIV_CALL || fmt == t.FMT_INDIV_SEMI_AUTO);
+                  
                   // 6-digit calls:
                   //                                    1  1
                   //   0  1  2  3   4  5  6  7   8   9  0  1
                   // 123 00 68 68 100 01 99 80 121 110 01 60 ...
 
-                  if (fmt == t.FMT_IS_SEMI_AUTO && cmd1 == t.CMD1_POSITION) {
+                  if (call) {
                      //  0  1  2  3  4  5  6    sym[i+10]
                      // 01 23 45 67 89 01 23    s3.slice()
                      // 01 61 41 10 31 20 38    16.14 110.31 20:38
@@ -444,6 +449,9 @@ Selcall.prototype.process_char = function(_code, fixed_start, output_cb, show_ra
                         call_from = color(ansi.YELLOW, '__'+ id);
                      }
                      deco = call_from +' calling '+ call_to;
+                  }
+                  
+                  if (call && cmd1 == t.CMD1_POSITION) {
 
                      var s = '';
                      for (i = 0; i <= 6; i++) s += sym[i+10];
@@ -470,7 +478,7 @@ Selcall.prototype.process_char = function(_code, fixed_start, output_cb, show_ra
                      deco += ' '+ link_lat_lon('['+ lat_dm +','+ lon_dm +']', +lat, +lon);
                      //deco += link_lat_lon('[-lat]', -lat, +lon) +' ';
 
-                     deco += ' '+ s.slice(10,12) +':'+ s.slice(12,14);
+                     deco += ' '+ s.slice(10,12) +':'+ s.slice(12,14);     // hh:mm
                      
                      if (navtex_location_update(id, +lat, +lon, url_lat_lon(+lat, +lon),
                            bad_min? [ 'white', 'red' ] : [ 'white', (freq < 7500)? 'magenta' : 'blue' ])) {

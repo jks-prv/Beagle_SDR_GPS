@@ -603,6 +603,61 @@ function kiwi_trace_log(s)
    }, 1, s);
 }
 
+
+////////////////////////////////
+// canvas log
+//    use mute button / space bar to clear log
+////////////////////////////////
+
+function canvas_log_int(s)
+{
+   var el;
+   if (!kiwi.canvas_log_init) {
+      el = w3_el('id-news');
+      el.style.top = '';
+      el.style.bottom = '';
+      el.style.left = '';
+      el.style.right = '';
+      if (kiwi_isMobile()) {
+         var w = window.innerWidth;
+         var h = window.innerHeight;
+         if (w <= 768 && h >= 600) {    // iPad & tablets
+            el.style.top = '36px';
+            //el.style.bottom = '0';
+            //el.style.right = '0';
+            el.style.left = '0';
+            el.style.width = '350px';
+            //el.style.height = '300px';
+            el.style.height = '400px';
+         } else {
+            el.style.top = '36px';
+            //el.style.top = '300px';
+            el.style.right = '0';
+            //el.style.width = '350px';
+            el.style.width = '150px';
+            el.style.height = '150px';
+         }
+      } else {
+         el.style.bottom = '0';
+         el.style.left = '0';
+         el.style.width = '350px';
+         el.style.height = '300px';
+      }
+      el.style.visibility = 'visible';
+      el.style.zIndex = 9999;
+      kiwi.canvas_log_init = true;
+   }
+   el = w3_el('id-news-inner');
+   w3_innerHTML(el, s);
+   w3_scrollDown(el);
+}
+
+function canvas_log_clear()
+{
+   if (kiwi.canvas_log_init == true)
+      canvas_log('\f');
+}
+
 function canvas_log(s)
 {
    if (isUndefined(owrx.news_acc_s)) owrx.news_acc_s = '<br>';
@@ -616,7 +671,7 @@ function canvas_log(s)
       owrx.news_acc_s += ((owrx.news_acc_s != '<br>')? ' | ' : '') + s;
    }
 
-   extint_news(owrx.news_acc_s);
+   canvas_log_int(owrx.news_acc_s);
 }
 
 function canvas_log2(s)
@@ -626,6 +681,7 @@ function canvas_log2(s)
    w3_innerHTML('id-rx-title', kiwi.log2_seq +': '+ s);
    kiwi.log2_seq++;
 }
+
 
 // from: stackoverflow.com/questions/11547672/how-to-stringify-event-object
 // Calculate a string representation of a node's DOM path.
@@ -1590,7 +1646,11 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
                   } catch(ex) {
                      dbug("AJAX response JSON.parse failed: <"+ response +'>');
                      dbug(ex);
-                     obj = { AJAX_error:'JSON parse', JSON_ex:ex.toString(), response:response };
+                     var ex_s = ex.toString();
+                     var line = ex_s.match(/line ([0-9]*)/);
+                     line = (isArray(line) && line.length >= 1)? +line[1] : null;
+                     obj = { AJAX_error:'JSON parse', JSON_line:line, JSON_ex:ex_s,
+                        lines:response.split('\n'), response:response };
                   }
                }
             }

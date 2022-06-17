@@ -10,11 +10,11 @@ var fax = {
    winH:       400,              
    winSBW:     15,   // scrollbar width
    
-   n_menu:     4,
-   menu0:      -1,
-   menu1:      -1,
-   menu2:      -1,
-   menu3:      -1,
+   freqs: null,
+   menu_s: [ ],
+   menus: [ ],
+   sfmt: 'w3-text-red w3-ext-retain-input-focus',
+
    phasing:    true,
    autostop:   false,
    debug:      0,
@@ -34,6 +34,8 @@ var fax = {
    lpm: 120,
    lpm_i: 3,
    lpm_s: [ 60, 90, 100, 120, 180, 240 ],
+
+   last_last: 0
 };
 
 function FAX_main()
@@ -208,141 +210,6 @@ function fax_recv(data)
 	}
 }
 
-// these are usb passband center freqs that will have 1.9 kHz subtracted to give dial (carrier) freq
-
-var fax_europe = {
-   // www.dwd.de/DE/fachnutzer/schifffahrt/funkausstrahlung/sendeplan_fax_042017_sommer.pdf
-   "Hamburg":  [],
-   "DDH/K DE": [ 3855, 7880, 13882.5, 15988 ],
-   
-   // www.users.zetnet.co.uk/tempusfugit/marine/fwoc.htm
-   "Northwood": [],
-   "GYA UK":   [ 2618.5, 4610, 6834, 8040, 11086.5 ],
-   
-   "Athens":   [],
-   "SVJ4 GR":  [ 4482.9, 8106.9 ],
-   
-   // dk8ok.org/2017/06/11/6-3285-khz-murmansk-fax/
-   "Murmansk": [],
-   "RBW RU":   [ 5336, '6328.5 lsb', 7908.8, 8444.1, 10130 ],
-
-   // mt-utility.blogspot.com/2009/12/so-who-is-gm-11f.html
-   // forum.kiwisdr.com/index.php?p=/discussion/comment/11883/#Comment_11883
-   "Sevastopol": [],
-   "GM-11F UR":   [ /* 5103, */ 7090.9 ]
-};
-
-var fax_asia_pac = {
-   // www.nws.noaa.gov/om/marine/hfreyes_links.htm
-   "Pt. Reyes": [],
-   "NMC US":   [ 4346, 8682, 12786, 17151.2, 22527 ],
-   
-   // www.nws.noaa.gov/om/marine/hfhi_links.htm
-   "Honolulu": [],
-   "KVM70 HI": [ 8295.5, 9982.5, 11090, 16135 ],
-   
-   // www.nws.noaa.gov/om/marine/hfak_links.htm
-   "Kodiak":   [],
-   "NOJ AK":   [ 2054, 4298, 8459, 12412.5 ],
-   
-   // www.metservice.com/marine/radio/zklf-radiofax-schedule
-   "Wellington": [],
-   "ZKLF NZ":  [ 3247.4, 5807, 9459, 13550.5, 16340.1 ],
-   
-   // www.bom.gov.au/marine/radio-sat/vmc-technical-guide.shtml
-   "Charleville": [],
-   "VMC AU":   [ 2628, 5100, 11030, 13920, 20469 ],
-   
-   // www.bom.gov.au/marine/radio-sat/vmw-technical-guide.shtml
-   "Wiluna":   [],
-   "VMW AU":   [ 5755, 7535, 10555, 15615, 18060 ],
-
-   // www.jma-net.go.jp/common/177jmh/JMH-ENG.pdf
-   "Tokyo":    [],
-   "JMH JP":   [ 3622.5, 7795, 13988.5 ],
-   
-   // mt-utility.blogspot.com/2010/02/1800-utc-8658-utc-fax-confirmed-jfx.html
-   // goughlui.com/2019/02/10/radiofax-jfx-kagoshima-japan-fisheries
-   // 4/2022: per goughlui.com and Fabrys, JFW is QRT
-   "JFC/JFX": [],
-   "JP":       [ 6414.5, 8658, 13074, 16907.5, 22559.6 ],
-   
-   // mt-utility.blogspot.com/2009/11/afternoon-us-kyodo-news-is-jsc-not-jjc.html
-   "Kyodo":    [],
-   "JJC/JSC JP": [ '4316/60', '8467.5/60', '12745.5/60', '16971/60', '17069.6/60', '22542/60' ],
-
-   // terminated 10/2013
-   //"Taipei":   [],
-   //"BMF TW":   [ 4616, 8140, 13900, 18560 ],
-   
-   "Seoul":    [],
-   "HLL2 KR":  [ 3585, 5857.5, 7433.5, 9165, 13570 ],
-   
-   // per forum user Fabrys 10/2020
-   "Guangzhou": [],
-   //"XSQ, CN":  [ 4159.5, 8310.5, 12375.5, 16562.5 ],
-   // 4/2022: new freqs per Fabrys
-   "XSQ, CN":  [ 4199.8, 8412.5, 12629.3, 16826.3 ],
-   
-   "Shanghai": [],
-   "XSG, CN":  [ 4170, 8302, 12382, 16559 ],
-   
-   // per forum user Fabrys 10/2020
-   "UNID": [],
-   "CN":  [ 4027, 7759, 12588 ],
-   
-   "Bangkok":  [],
-   "HSW64 TH": [ 7395+1.9 ],
-   
-   "Singapore": [],
-   "9VF SG":   [ 16035, 17430 ],
-
-   // forum.kiwisdr.com/index.php?p=/discussion/comment/11280/#Comment_11280
-   "Vanino": [],
-   "RU":   [ 6455 ]
-};
-
-var fax_americas = {
-   "Pt. Reyes": [],
-   "NMC US":   [ 4346, 8682, 12786, 17151.2, 22527 ],
-   
-   "New Orleans": [],
-   // 17M => 16M update per forum.kiwisdr.com/index.php?p=/discussion/comment/14312/#Comment_14312
-   "NMG US":   [ 4317.9, 8503.9, 12789.9, /* 17146.4 */ 16027.9 ],
-   
-   "Boston":   [],
-   "NMF US":   [ 4235, 6340.5, 9110, 12750 ],
-
-   "Kodiak":   [],
-   "NOJ AK":   [ 2054, 4298, 8459, 12412.5 ],
-   
-   "Honolulu": [],
-   "KVM70 HI": [ 8295.5, 9982.5, 11090, 16135 ],
-   
-   "Nova Scotia": [],
-   "VCO CA":   [ 4416, 6915.1 ],
-   
-   "Iqaluit":  [],
-   "VFF CA":   [ 3253, 7710 ],
-   
-   "Resolute": [],
-   "VFR CA":   [ 3253, 7710 ],
-   
-   "Inuvik":   [],
-   "VFA CA":   [ 4292, 8456 ],
-   
-   "Brazil":   [],
-   "PWZ33 BR": [ 12665, 16978 ],
-   
-   "Chile":    [],
-   "CBV/M CL": [ 4228, 4322, 8677, 8696, 17146.4 ]
-};
-
-var fax_africa = {
-   "S. Africa": [],
-   "ZSJ SA":   [ 4014, 7508, 13538, 18238 ]
-};
-
 function fax_controls_setup()
 {
    if (kiwi_isMobile()) fax_startx = 0;
@@ -390,14 +257,11 @@ function fax_controls_setup()
                w3_div('id-fax-station w3-text-css-yellow'), 60,
                w3_div(), 10
             ),
-				w3_inline('w3-halign-space-between/',
-               w3_select_hier('w3-text-red', 'Europe', 'select', 'fax.menu0', fax.menu0, fax_europe, 'fax_pre_select_cb'),
-               w3_select_hier('w3-text-red', 'Asia/Pacific', 'select', 'fax.menu1', fax.menu1, fax_asia_pac, 'fax_pre_select_cb'),
-               w3_select_hier('w3-text-red', 'Americas', 'select', 'fax.menu2', fax.menu2, fax_americas, 'fax_pre_select_cb'),
-               w3_select_hier('w3-text-red', 'Africa', 'select', 'fax.menu3', fax.menu3, fax_africa, 'fax_pre_select_cb')
-            ),
+
+            w3_inline('id-fax-menus/'),
+
 				w3_inline('/w3-margin-between-16',
-               w3_select('w3-text-red', '', 'LPM', 'fax.lpm_i', fax.lpm_i, fax.lpm_s, 'fax_lpm_cb'),
+               w3_select(fax.sfmt, '', 'LPM', 'fax.lpm_i', fax.lpm_i, fax.lpm_s, 'fax_lpm_cb'),
 					w3_button('w3-padding-smaller', 'Next', 'w3_select_next_prev_cb', { dir:w3_MENU_NEXT, id:'fax.menu', func:'fax_pre_select_cb' }),
 					w3_button('w3-padding-smaller', 'Prev', 'w3_select_next_prev_cb', { dir:w3_MENU_PREV, id:'fax.menu', func:'fax_pre_select_cb' }),
 					w3_button('id-fax-stop-start w3-padding-smaller', 'Stop', 'fax_stop_start_cb'),
@@ -461,30 +325,55 @@ function fax_controls_setup()
 
    ext_set_controls_width_height(550, 200);
    
-	// first URL param can be a match in the preset menus
-   var found = false;
-	if (fax.url_params) {
-      var freq = parseFloat(fax.url_params);
-      if (!isNaN(freq)) {
-         // select matching menu item frequency
-         for (var i = 0; i < fax.n_menu; i++) {
-            var menu = 'fax.menu'+ i;
-            w3_select_enum(menu, function(option) {
-               //console.log('CONSIDER '+ parseFloat(option.innerHTML));
-               if (!found && parseFloat(option.innerHTML) == freq) {
-                  fax_pre_select_cb(menu, option.value, false);
-                  found = true;
-               }
-            });
-            if (found) break;
-         }
+	w3_do_when_rendered('id-fax-menus', function() {
+	   fax.ext_url = kiwi_SSL() +'files.kiwisdr.com/fax/FAX_freq_menus.cjson';
+	   fax.int_url = kiwi_url_origin() +'/extensions/FAX/FAX_freq_menus.cjson';
+	   fax.using_default = false;
+	   fax.double_fault = false;
+	   if (0 && dbgUs) {
+         kiwi_ajax(fax.ext_url +'.xxx', 'fax_get_menus_cb', 0, -500);
+	   } else {
+         kiwi_ajax(fax.ext_url, 'fax_get_menus_cb', 0, 10000);
       }
-   }
-
-   if (!found)
-	   ext_set_passband(fax.pbL, fax.pbH);    // FAX passband for usb
+   });
 	
    fax_start_stop(1);
+}
+
+function fax_get_menus_cb(freqs)
+{
+   fax.freqs = freqs;
+
+   ext_get_menus_cb(fax, freqs,
+      'fax_get_menus_cb',     // retry_cb
+
+      function(cb_param) {    // done_cb
+         ext_render_menus(fax, 'fax');
+   
+         // first URL param can be a match in the preset menus
+         var found = false;
+         if (fax.url_params) {
+            var freq = parseFloat(fax.url_params);
+            if (!isNaN(freq)) {
+               // select matching menu item frequency
+               for (var i = 0; i < fax.n_menu; i++) {
+                  var menu = 'fax.menu'+ i;
+                  w3_select_enum(menu, function(option) {
+                     //console.log('CONSIDER '+ parseFloat(option.innerHTML));
+                     if (!found && parseFloat(option.innerHTML) == freq) {
+                        fax_pre_select_cb(menu, option.value, false);
+                        found = true;
+                     }
+                  });
+                  if (found) break;
+               }
+            }
+         }
+
+         if (!found)
+            ext_set_passband(fax.pbL, fax.pbH);    // FAX passband for usb
+      }, null
+   );
 }
 
 var fax_disabled, fax_prev_disabled;

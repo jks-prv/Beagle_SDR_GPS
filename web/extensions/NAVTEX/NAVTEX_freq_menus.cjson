@@ -1,0 +1,91 @@
+{
+//
+// NAVTEX, DSC and Selcall frequency menus
+//
+// This is a JSON format file with the non-standard addition of double-slash comments which MUST start in column one.
+// Edit this file with a normal text editor (despite the .cjson filename suffix). Use 4 spaces per tab.
+//
+// Underscores in names are converted to line breaks in menu entries.
+//
+// Updates:
+// 16 jun 22 jks    Base version.
+
+
+// NAVTEX and DSC freqs are pbc, not cf
+// Use CW mode so displayed cf = pbc
+// www.dxinfocentre.com/navtex.htm
+// www.dxinfocentre.com/maritimesafetyinfo.htm
+
+   "NAVTEX MF": {
+      "International": [ 518 ],
+      "National": [ 490 ],
+      "Other": [ 424, 426, 472, 500 ]
+   },
+
+   "NAVTEX HF": {
+      "Main": [ 4209.5 ],
+      "NBDP": [ 4210, 6314, 8416.5, 12579, 16806.5, 19680.5, 22376, 26100.5 ],
+      "Aux":  [ 3165, 4212.5, 4215, 4228, 4241, 4255, 4323, 4560,
+                  6326, 6328, 6360.5, 6405, 6425, 6448, 6460,
+                  8417.5, 8424, 8425.5, 8431, 8431.5, 8433, 8451, 8454, 8473, 8580, 8595, 8643,
+                  12581.5, 12599.5, 12603, 12631, 12637.5, 12654, 12709.9, 12729, 12799.5, 12825, 12877.5, 13050,
+// not in Bill's list but rx in AU
+                  16808,
+                  16886, 16898.5, 16927, 16974, 17045, 17175.2, 17155
+         ]
+   },
+
+   "DSC": {
+      "Distress &amp;_Urgency":  [ 2187.5, 4207.5, 6312, 8414.5, 12577, 16804.5 ],
+      "Ship/ship_calling":       [ 2177, 4208, 6312.5, 8415, 12577.5, 16805 ]
+   },
+
+
+// Selcall menu freqs are cf, not pbc
+// Use USB mode so displayed cf is integral even though pbc is offset +1785 or +785 Hz
+
+   "Selcall": {
+
+// hflink.com/selcall/channels
+      "Amateur": [      
+            473,
+            1838, 1908, 1990, 
+            3529, 3590, 3605, 3710, 3795, 3845, 3995,
+            5330.5, 5346.5, 5355, 5363, 5403.5,
+            7044, 7100, 7195, 7291,
+            10126, 10144,
+            14094, 14122, 14343,
+            18107, 18113, 18163,
+            21094, 21228, 21427,
+            24924, 24977,
+            28143, 28305, 29520
+         ],
+
+// www.austravelsafetynet.org.au/node/2
+      "Austravel_net": [
+            3175, 4862, 5127, 5270, 6793, 7652, 9323, 10203, 13910, 17463
+         ],
+
+      "Beacons_7 MHz": [
+            7104, 7107, 7110, 7116,
+            7122,
+            7131, 7134, 7137, 7140, 7143,
+            7149, 7152,
+            7158, 7161,
+            7173
+         ],
+
+      "Beacons_8 MHz": [
+            7880,
+            7910, 7919, 7922, 7934,
+            8004, 8007, 8010, 8013, 8016, 8019, 8022, 8025, 8028, 8031, 8034,
+            8067, 8070, 8073, 8076, 8079,
+            8085, 8091,
+            8481, 8707, 8751, 8759
+         ],
+
+      "Beacons_other": [
+            9055, 10775, 11164, 11261
+         ]
+   }
+}

@@ -922,6 +922,11 @@ input[type=range]::-moz-range-thumb {
 	margin-left: 16px
 }
 
+.w3-margin-between-24:not(:first-child)
+{
+	margin-left: 24px
+}
+
 .w3-margin-between-32:not(:first-child)
 {
 	margin-left: 32px

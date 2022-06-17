@@ -72,6 +72,18 @@ var owrx = {
    ovld_mute: 0,
    ovld_mute_s: [ 'off', 'on' ],
    
+   FSET_NOP: 0,
+   FSET_ADD: 1,
+   FSET_SET_FREQ: 2,
+   FSET_EXT_SET_PB: 3,
+   FSET_PB_CHANGE: 4,
+   FSET_SCALE_DRAG: 5,
+   FSET_SCALE_DRAG_END: 6,
+   FSET_SCALE_MOUSE_CLICK: 7,
+   FSET_SCALE_TOUCH_DRAG: 8,
+   FSET_SCALE_TOUCH_DRAG_END: 9,
+   fset_s: [ 'nop', 'add', 'fset', 'extSetPB', 'pbChg', 'drag', 'dragEnd', 'mouseClick', 'touchDrag', 'touchClick' ],
+   
    scale_canvas: {
 	   mouse_out: false,
       target: null,
@@ -1281,7 +1293,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		mkenvelopes(this.visible_range);
 		freqset_car_Hz(this.parent.offset_frequency + center_freq);
 		this.parent.set();
-		freqset_update_ui();
+		freqset_update_ui(owrx.FSET_PB_CHANGE);
 
 		//will have to change this when changing to multi-demodulator mode:
 		//html("id-control-freq1").innerHTML=format_frequency("{x} MHz",center_freq+this.parent.offset_frequency,1e6,4);
@@ -1382,7 +1394,7 @@ function demodulator_analog_replace(subtype, freq)
 	// must be done here after demod is added, so demod.isCW is available after demodulator_add()
 	// done even if freq unchanged in case mode is changing
 	//console.log("DEMOD-replace calling set: FINAL freq="+ (offset + center_freq));
-	demodulator_set_offset_frequency(0, offset);
+	demodulator_set_offset_frequency(owrx.FSET_ADD, offset);
 	
 	try_modeset_update_ui(subtype);
 }
@@ -1400,7 +1412,7 @@ function demodulator_set_offset_frequency(which, offset)
 	var demod = demodulators[0];
 	demod.offset_frequency = offset;
 	demod.set();
-	try_freqset_update_ui();
+	try_freqset_update_ui(which);
 }
 
 function owrx_cfg()
@@ -1575,7 +1587,7 @@ function scale_canvas_drag(evt, x, y)
 			event_handled |= demodulators[i].envelope.drag_move(x);
 		//console.log("MOV2 evh? "+event_handled);
 		if (!event_handled)
-			demodulator_set_offset_frequency(0, scale_offset_carfreq_from_px(x));
+			demodulator_set_offset_frequency(owrx.FSET_SCALE_DRAG, scale_offset_carfreq_from_px(x));
 		scale_canvas_drag_params.last_x = x;
 	}
 }
@@ -1623,7 +1635,7 @@ function scale_canvas_end_drag(evt, x, canvas_mouse_up)
 	if (scale_canvas_drag_params.mouse_down == true) {
       for (var i=0; i < demodulators.length; i++) event_handled |= demodulators[i].envelope.drag_end(x);
       //console.log("MED evh? "+event_handled);
-      if (!event_handled) demodulator_set_offset_frequency(0, scale_offset_carfreq_from_px(x));
+      if (!event_handled) demodulator_set_offset_frequency(owrx.FSET_SCALE_DRAG_END, scale_offset_carfreq_from_px(x));
    }
 
 	scale_canvas_drag_params.mouse_down = false;
@@ -2463,7 +2475,7 @@ function canvas_drag(evt, idx, x, y, clientX, clientY)
 	var relativeY = y;
 	spectrum_tooltip_update(evt, clientX, clientY);
 	owrx.drag_count = !isNumber(owrx.drag_count)? 0 : (owrx.drag_count + 1);
-
+	
 	if (owrx.scale_canvas.mouse_out) {
 	   //event_dump(evt, "CD", 1);
 	   scale_canvas_drag(evt, x, y);    // continue scale dragging even though positioned on other canvases
@@ -2497,7 +2509,7 @@ function canvas_drag(evt, idx, x, y, clientX, clientY)
                // double-touch tune
                if (idx == 0 && evt.touches.length >= 2) {
                   var relX = Math.round(Math.abs((evt.touches[0].pageX + evt.touches[1].pageX) / 2));
-                  demodulator_set_offset_frequency(0, canvas_get_carfreq_offset(relX, true));
+                  demodulator_set_offset_frequency(owrx.FSET_SCALE_TOUCH_DRAG, canvas_get_carfreq_offset(relX, true));
                }
             } else {
                // pinch zoom
@@ -2629,7 +2641,7 @@ function canvas_end_drag(evt, x)
 	if (!waterfall_setup_done) return;
 	//console.log("MUP "+this.id+" ign="+canvas_ignore_mouse_event);
 	var relativeX = x;
-
+	
 	if (canvas_ignore_mouse_event) {
 	   //console.log('## canvas_ignore_mouse_event');
 		//ignore_next_keyup_event = true;
@@ -2640,28 +2652,20 @@ function canvas_end_drag(evt, x)
 			// don't set freq if mouseup without mousedown due to move into canvas from elsewhere
 			if (owrx.debug_drag) canvas_log('CMDT'+ (canvas_mouse_down_or_touch? 1:0) +' TL'+ owrx.tuning_locked);
 			if (canvas_mouse_down_or_touch) {
-			
-			   // mobile mode (touch screen): hack to close menu when touch outside of menu area.
-			   // Desktop does this instead by intercepting mousedown and keyboard escape events.
-			   if (w3_menu_active()) {
-               if (owrx.debug_drag) canvas_log('*MA*');
-			      w3_menu_close();
-			   } else {
-               if (owrx.tuning_locked) {
-                  var el = w3_el('id-tuning-lock-container');
-                  el.style.opacity = 0.8;
-                  w3_show(el);
-                  var el2 = w3_el('id-tuning-lock');
-                  el2.style.marginTop = px(w3_center_in_window(el2, 'TL'));
-                  setTimeout(function() {
-                     el.style.opacity = 0;      // CSS is setup so opacity fades
-                     setTimeout(function() { w3_hide(el); }, 500);
-                  }, 300);
-               } else {
-                  // single-click in canvas area
-                  if (owrx.debug_drag) canvas_log('*click*');
-                  demodulator_set_offset_frequency(0, canvas_get_carfreq_offset(relativeX, true));
-               }
+            if (owrx.tuning_locked) {
+               var el = w3_el('id-tuning-lock-container');
+               el.style.opacity = 0.8;
+               w3_show(el);
+               var el2 = w3_el('id-tuning-lock');
+               el2.style.marginTop = px(w3_center_in_window(el2, 'TL'));
+               setTimeout(function() {
+                  el.style.opacity = 0;      // CSS is setup so opacity fades
+                  setTimeout(function() { w3_hide(el); }, 500);
+               }, 300);
+            } else {
+               // single-click in canvas area
+               if (owrx.debug_drag) canvas_log('*click*');
+               demodulator_set_offset_frequency(owrx.FSET_SCALE_MOUSE_CLICK, canvas_get_carfreq_offset(relativeX, true));
             }
 			}
 		} else {
@@ -2685,7 +2689,8 @@ function canvas_mouseup(evt)
 function canvas_touchEnd(evt)
 {
 	var x = owrx.canvas.drag_last_x, y = owrx.canvas.drag_last_y;
-	if (owrx.debug_drag) canvas_log('C-TE-x'+ x +'-DTS'+ (owrx.double_touch_start? 1:0) +'-DTSw'+ (owrx.double_touch_swipe? 1:0) +'-DRAG'+ (canvas_dragging? 1:0));
+	if (owrx.debug_drag)
+	   canvas_log('C-TE-x'+ x +'-DTS'+ (owrx.double_touch_start? 1:0) +'-DTSw'+ (owrx.double_touch_swipe? 1:0) +'-DRAG'+ (canvas_dragging? 1:0));
 	canvas_end_drag(evt, x);
 /*
    owrx.touch_hold_pressed = false;
@@ -2695,6 +2700,9 @@ function canvas_touchEnd(evt)
 	
 	if (owrx.double_touch_start) {
 	   if (owrx.debug_drag) canvas_log('DTS-D='+ (canvas_dragging? 'T':'F'));
+
+      // last freq of a double-touch drag is saved in freq mem
+      demodulator_set_offset_frequency(owrx.FSET_SCALE_TOUCH_DRAG_END, freq_car_Hz - center_freq);
 
 	   if (!canvas_dragging) {
          // ensure menu on narrow screen devices is visible to prevent off-screen placement
@@ -2850,6 +2858,7 @@ function right_click_menu(x, y, which)
 
 function right_click_menu_cb(idx, x, cbp)
 {
+   idx = +idx;
    //if (owrx.debug_drag) canvas_log('RCM='+ cbp);
    //console.log('right_click_menu_cb idx='+ idx +' x='+ x +' f='+ canvas_get_dspfreq(x)/1e3);
    
@@ -3966,7 +3975,6 @@ function page_scroll_icon_click(evt, norm_dir)
       dx_label_step((norm_dir < 0)? -1:1);
    } else {
       page_scroll(norm_dir);
-      if (owrx.debug_drag) { canvas_log('\f'); owrx.drag_count = 0; }
    }
 }
 
@@ -5205,7 +5213,7 @@ function freqmode_set_dsp_kHz(fdsp, mode, opt)
 		freq_car_Hz = freq_dsp_to_car(fdsp);
 		if (!no_set_freq) {
          //console.log('freqmode_set_dsp_kHz: demodulator_set_offset_frequency NEW freq_car_Hz=' +freq_car_Hz +' no_set_freq='+ no_set_freq);
-         demodulator_set_offset_frequency(0, freq_car_Hz - center_freq);
+         demodulator_set_offset_frequency(owrx.FSET_SET_FREQ, freq_car_Hz - center_freq);
       }
 	}
 }
@@ -5262,7 +5270,7 @@ function freq_field_width()
    return (width +'em');
 }
 
-function freqset_update_ui()
+function freqset_update_ui(from)
 {
 	//console.log('FUPD-UI freq_car_Hz='+ freq_car_Hz +' cf+of='+(center_freq + demodulators[0].offset_frequency));
 	//console.log('FUPD-UI center_freq='+ center_freq +' offset_frequency='+ demodulators[0].offset_frequency);
@@ -5270,7 +5278,8 @@ function freqset_update_ui()
 	freq_displayed_Hz = freq_car_to_dsp(freq_car_Hz);
 	var f_kHz = freq_displayed_Hz/1000;
    freq_displayed_kHz_str = f_kHz.toFixed(freq_field_prec(f_kHz));
-   //console.log("FUPD-UI freq_car_Hz="+freq_car_Hz+' NEW freq_displayed_Hz='+freq_displayed_Hz);
+   //console.log("FUPD-UI freq_car_Hz="+freq_car_Hz+' NEW freq_displayed_Hz='+freq_displayed_Hz +' from='+ from +'('+ owrx.fset_s[from] +')');
+   //kiwi_trace();
 	
 	if (!waterfall_setup_done) return;
 	
@@ -5303,7 +5312,11 @@ function freqset_update_ui()
 	freq_step_update_ui();
 	freq_link_update();
 	vfo_update();
-	freq_memory_update(freq_displayed_kHz_str_with_freq_offset);
+	
+	// don't add to freq memory while tuning across scale except for final position
+	if (from != owrx.FSET_NOP && from != owrx.FSET_SCALE_DRAG && from != owrx.FSET_SCALE_TOUCH_DRAG) {
+	   freq_memory_update(freq_displayed_kHz_str_with_freq_offset);
+	}
 
 	kiwi_clearTimeout(owrx.popup_keyboard_active_timeout);
 	owrx.popup_keyboard_active_timeout = setTimeout(function() {
@@ -5398,10 +5411,10 @@ function modeset_update_ui(mode)
 }
 
 // delay the UI updates called from the audio path until the waterfall UI setup is done
-function try_freqset_update_ui()
+function try_freqset_update_ui(from)
 {
 	if (waterfall_setup_done) {
-		freqset_update_ui();
+		freqset_update_ui(from);
 		if (wf.audioFFT_active) {
          if (cur_mode != wf.audioFFT_prev_mode)
             wf.audioFFT_clear_wf = true;
@@ -5411,7 +5424,7 @@ function try_freqset_update_ui()
 		   mkenvelopes(get_visible_freq_range());
 		}
 	} else {
-		setTimeout(try_freqset_update_ui, 1000);
+		setTimeout(try_freqset_update_ui, 1000, from);
 	}
 }
 
@@ -5460,7 +5473,7 @@ function freqset_complete(from)
       //console.log('restore_passband '+ cur_mode);
       restore_passband(cur_mode);
       demodulator_analog_replace(cur_mode);
-      freqset_update_ui();    // restore previous
+      freqset_update_ui(owrx.FSET_NOP);    // restore previous
       return;
    } else
 	if (f > 0 && !isNaN(f)) {
@@ -5471,7 +5484,7 @@ function freqset_complete(from)
 	      err = false;
       }
 	}
-   if (err) freqset_update_ui();    // restore previous
+   if (err) freqset_update_ui(owrx.FSET_NOP);    // restore previous
 	
 	// accept "freq/pbw" or "/pbw" to quickly change passband width to a numeric value
 	// also "lo,hi" in place of "pbw"
@@ -5558,7 +5571,7 @@ function freqset_keyup(obj, evt)
 			if (evt.key == 'Escape') {
 			   //event_dump(evt, 'Escape-freq');
 				//console.log('** restore freq box');
-				freqset_update_ui();
+				freqset_update_ui(owrx.FSET_NOP);
 			}
 	
 			//console.log('FKU IGNORE ign='+ ignore_next_keyup_event +' klen='+ klen);
@@ -5798,13 +5811,19 @@ function freq_memory_menu_show(shortcut_key)
       function(evt, first) {     // close_func(), return true to close menu
          //event_dump(evt, 'close_func');
          // if 'm' key or click on freq-menu icon, take toggle state into account
-         var close = ((evt.type == 'keyup' && (evt.key != 'm' || !owrx.freq_memory_menu_shown)) ||
-            ((evt.type == 'click' || evt.type == 'touchend') && !first &&
-               (!w3_contains(evt.target, 'w3-menu') || !owrx.freq_memory_menu_shown)));
+         var close_keyup = (evt.type == 'keyup' && (evt.key != 'm' || !owrx.freq_memory_menu_shown));
+         var tgt_isMenu = w3_contains(evt.target, 'w3-menu');
+         var tgt_isMenuButton = w3_contains(evt.target, 'w3-menu-button');
+         var menu_shown = owrx.freq_memory_menu_shown;
+         var click = ((evt.type == 'click' || ((evt.type == 'mousedown' || evt.type == 'touchstart') && !tgt_isMenuButton) || evt.type == 'touchend'));
+         var close_click = (click && !first && (!tgt_isMenu || !menu_shown));
+         var close = (close_keyup || close_click);
          //canvas_log(close +' first='+ first +' '+ evt.type +' ='+ (owrx.freq_memory_menu_shown? 'SH':'NS') +
          //   (w3_contains(evt.target, 'w3-menu')? 'W3-MENU':''));
          //event_dump(evt, 'freq-memory-menu close_func='+ close, true);
-         //canvas_log('close='+ close +' '+ evt.type);
+         //canvas_log('menu_popup close_func='+ (close? 'T':'F') +' ev='+ evt.type +' kup='+ (close_keyup? 'T':'F') +' clk='+ (close_click? 'T':'F'));
+         //canvas_log((click? 'T':'F') + (first? 'T':'F') + (tgt_isMenu? 'T':'F') + (menu_shown? 'T':'F') +'{TF(F||F)}');
+
          return close;
       },
       x, y);
@@ -5817,28 +5836,38 @@ function freq_memory_update(f)
    if (!isNumber(+f)) return;
    if (f <= 1) f = 1;
 	if (f != freq_memory[0]) {
+      //canvas_log('add='+ f);
 	   freq_memory.unshift(f);
 	   freq_memory = kiwi_dedup_array(freq_memory);
 	}
 	if (freq_memory.length > 25) freq_memory.pop();
+   //canvas_log('mem2='+ freq_memory.join());
    //console.log(freq_memory);
 	writeCookie('freq_memory', JSON.stringify(freq_memory));
 }
 
 function freq_memory_menu_cb(idx, x)
 {
+   idx = +idx;
    //console.log('freq_memory_menu_cb idx='+ idx +' x='+ x);
+   if (idx == -1) return;
+   
    var f;
    if (idx >= freq_memory.length) {
       //console.log('CLEAR ALL');
       f = freq_memory[0];
       freq_memory = [f];
+      //canvas_log('clr_all top='+ f);
    } else {
+      //canvas_log('idx='+ idx);
+      //canvas_log('M='+ freq_memory);
       f = freq_memory[idx];
+      //canvas_log('sel='+ f);
       freq_memory.unshift(f);
       freq_memory = kiwi_dedup_array(freq_memory);
       if (freq_memory.length > 25) freq_memory.pop();
    }
+   //canvas_log('mem1='+ freq_memory.join());
    freqmode_set_dsp_kHz(f - kiwi.freq_offset_kHz);
 }
 
@@ -7796,6 +7825,10 @@ function dx_click(ev, gid)
 	if (ev.shiftKey && dx.db == dx.DB_STORED) {
 		dx_show_edit_panel(ev, gid);
 	} else {
+	   // easier to do this way since it's about the only element that
+	   // intercepts mousedown/touchstart without subsequent propagation
+	   w3_menu_close('dx_click');
+	   
 	   owrx.dx_click_gid_last = (dx.db == dx.DB_STORED)? gid : undefined;
 	   var label = dx.list[gid];
 	   var freq = label.freq;
@@ -8346,8 +8379,6 @@ function keyboard_shortcut(key, key_mod, ctlAlt, keyCode)
    case 'E': extension_scroll(-1); break;
    case '\\': case '|': dx_database_cb('', (dx.db == dx.DB_STORED)? dx.DB_EiBi : dx.DB_STORED, false, key == '|', /* from_shortcut */ true); break;
    case '?': case 'h': keyboard_shortcut_help(); break;
-   
-   case 'n': if (owrx.debug_drag) { canvas_log('\f'); owrx.drag_count = 0; } break;
 
    default:
       if (key.length == 1 && keyCode != shortcut.KEYCODE_ALT) console.log('no shortcut key <'+ key +'>');
@@ -8601,7 +8632,7 @@ function panels_setup()
 	   w3_inline('w3-halign-space-between w3-margin-T-4/',
          //w3_div('id-mouse-freq w3-hide||title="frequency under cursor"', '-----.--'+ (cfg.show_1Hz? '-' : '')),
 
-         w3_icon('id-freq-menu', 'fa-bars w3-text-white', 20, '', 'freq_memory_menu_show'),
+         w3_icon('id-freq-menu w3-menu-button', 'fa-bars w3-text-white', 20, '', 'freq_memory_menu_show'),
 
          w3_button('id-freq-vfo w3-text-in-circle w3-wh-20px w3-aqua||title="VFO A&slash;B"', 'A', 'freq_vfo_cb'),
 
@@ -9585,6 +9616,9 @@ function toggle_or_set_mute(set)
    kiwi.volume_f = (kiwi.muted || kiwi.volume == 0)? 1e-6 : (kiwi.volume/100);
 	//if (!isNumber(set)) console.log('vol='+ kiwi.volume +' muted='+ kiwi.muted +' vol_f='+ kiwi.volume_f.toFixed(6));
    freqset_select();
+
+   canvas_log_clear();
+   if (owrx.debug_drag) owrx.drag_count = 0;
 }
 
 var de_emphasis = 0;
