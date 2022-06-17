@@ -794,7 +794,7 @@ function wspr_draw_pie() {
 // dial freq = cf - bfo, cf aka "tx freq"
 // new entries can only be added at end due to limitations with autorun's wspr_autorun_u stored config value
 // 9999 entry for IWBP makes url param &ext=wspr,iwbp work due to freq range check
-var wspr_center_freqs = [ 137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1, 6781.5, 13554.5, 9999 ];
+var wspr_center_freqs = [ 137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1, 6781.5, 13555.4, 9999 ];
 var wspr_freqs_s = { 'lf':0, 'mf':1, '160m':2, '80m_ja':3, '80m':4, '60m':5, '60m_eu':6, '40m':7, '30m':8, '20m':9, '17m':10, '15m':11, '12m':12, '10m':13, 'ism_6':14, 'ism_13':15, 'iwbp':16 };
 var wspr_freqs_m = [ 'LF', 'MF', '160m', '80m_JA', '80m', '60m', '60m_EU', '40m', '30m', '20m', '17m', '15m', '12m', '10m', 'ISM_6', 'ISM_13', 'IWBP' ];
 
