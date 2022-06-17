@@ -153,6 +153,28 @@ void rx_common_init(conn_t *conn)
 	    send_msg(conn, false, "MSG is_multi_core");
 }
 
+// Because of the false hash match problem with rx_common_cmd()
+// must only do auth after the command string compares.
+bool rx_auth_okay(conn_t *conn)
+{
+    if (conn->auth_admin == FALSE) {
+        lprintf("** attempt to save kiwi config with auth_admin == FALSE! IP %s\n", conn->remote_ip);
+        return false;
+    }
+    
+    // To prevent cfg database multi-writer data loss, enforce no admin connections (a source of writes)
+    // on any non-admin/mfg (i.e. user) connection cfg save.
+    int n;
+    if (conn->type != STREAM_ADMIN && conn->type != STREAM_MFG && (n = rx_count_server_conns(ADMIN_USERS)) != 0) {
+        //cprintf(conn, "CMD_SAVE_CFG: abort because admin_users=%d\n", n);
+        send_msg(conn, false, "MSG no_admin_conns");    // tell user their cfg save was rejected
+        rx_server_send_config(conn);    // and reload last saved config to flush bad values
+        return false;
+    }
+
+    return true;
+}
+
 bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 {
 	int i, j, k, n;
@@ -731,30 +753,20 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
     case CMD_SAVE_CFG:
         static char *json;
 
-        if (conn->auth_admin == FALSE) {
-            lprintf("** attempt to save kiwi config with auth_admin == FALSE! IP %s\n", conn->remote_ip);
-            return true;	// fake that we accepted command so it won't be further processed
-        }
-        
-        // To prevent cfg database multi-writer data loss, enforce no admin connections (a source of writes)
-        // on any non-admin/mfg (i.e. user) connection cfg save.
-        if (conn->type != STREAM_ADMIN && conn->type != STREAM_MFG && (n = rx_count_server_conns(ADMIN_USERS)) != 0) {
-            //cprintf(conn, "CMD_SAVE_CFG: abort because admin_users=%d\n", n);
-            send_msg(conn, false, "MSG no_admin_conns");    // tell user their cfg save was rejected
-            rx_server_send_config(conn);    // and reload last saved config to flush bad values
-            return true;
-        }
-
 		// Handle web socket fragmentation by sending in parts which can be reassembled on server side.
 		// Config data sent can get this large after double encoding.
 
         if (kiwi_str_begins_with(cmd, "SET save_cfg_part=")) {
+            if (!rx_auth_okay(conn)) return true;
+            
             // NB: sizeof("string") includes the null in the count
             json = kstr_cat(json, kstr_wrap(strdup(&cmd[sizeof("SET save_cfg_part=") - 1])));
             return true;
         }
         
         if (kiwi_str_begins_with(cmd, "SET save_cfg=")) {
+            if (!rx_auth_okay(conn)) return true;
+
             // NB: sizeof("string") includes the null in the count
             json = kstr_cat(json, kstr_wrap(strdup(&cmd[sizeof("SET save_cfg=") - 1])));
             
