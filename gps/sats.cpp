@@ -25,7 +25,7 @@
 SATELLITE Sats[] = {
 
     // Navstar
-    // www.navcen.uscg.gov/?Do=constellationstatus
+    // www.navcen.uscg.gov/gps-constellation
     { 1,  2,  6, Navstar},
     { 2,  3,  7, Navstar},
     { 3,  4,  8, Navstar},
@@ -98,7 +98,7 @@ SATELLITE Sats[] = {
 //  {202, 900, 01045},
 
     // Galileo E1B
-    // last checked: 1-Feb-2022
+    // last checked: 15-Jun-2022
     // www.gsc-europa.eu/system-status/Constellation-Information
     // en.wikipedia.org/wiki/List_of_Galileo_satellites
     { 1, 0, 0, E1B},    // gsat0210
@@ -134,7 +134,7 @@ SATELLITE Sats[] = {
     {31, 0, 0, E1B},    // gsat0218
 //  {32, 0, 0, E1B},    // 
     {33, 0, 0, E1B},    // gsat0222
-//  {34, 0, 0, E1B},    // gsat0223 under commissioning
+    {34, 0, 0, E1B},    // gsat0223
 //  {35, 0, 0, E1B},    // 
     {36, 0, 0, E1B},    // gsat0219
     
