@@ -14,9 +14,6 @@ var hfdl = {
    pb: { lo: 300, hi: 2600 },
    
    stations: null,
-   url: kiwi_SSL() +'files.kiwisdr.com/hfdl/systable.cjson',
-   using_default: false,
-   double_fault: false,
 
    bf_cf:  [ 3500,  4670,  5600,  6625,  8900, 10065,  11290,  13310, 15020, 17945, 21965 ],
    bf_z:   [    4,     9,     6,     7,     7,     8,      7,      8,     8,     8,     8 ],
@@ -413,11 +410,14 @@ function hfdl_controls_setup()
    
 	w3_do_when_rendered('id-hfdl-menus', function() {
       ext_send('SET reset');
+	   hfdl.ext_url = kiwi_SSL() +'files.kiwisdr.com/hfdl/systable.cjson';
+	   hfdl.int_url = kiwi_url_origin() +'/extensions/HFDL/systable.backup.cjson';
+	   hfdl.using_default = false;
 	   hfdl.double_fault = false;
 	   if (0 && dbgUs) {
-         kiwi_ajax(hfdl.url +'.xxx', 'hfdl_get_systable_done_cb', 0, -500);
+         kiwi_ajax(hfdl.ext_url +'.xxx', 'hfdl_get_systable_done_cb', 0, -500);
 	   } else {
-         kiwi_ajax(hfdl.url, 'hfdl_get_systable_done_cb', 0, 10000);
+         kiwi_ajax(hfdl.ext_url, 'hfdl_get_systable_done_cb', 0, 10000);
       }
    });
 }
@@ -722,127 +722,88 @@ function hfdl_menu_match(m_freq, m_str)
 
 function hfdl_get_systable_done_cb(stations)
 {
-   var url = hfdl.url;
-   var fault = false;
-   
-   if (!stations) {
-      console.log('hfdl_get_systable_done_cb: stations='+ stations);
-      fault = true;
-   } else
-   
-   if (stations.AJAX_error && stations.AJAX_error == 'timeout') {
-      console.log('hfdl_get_systable_done_cb: TIMEOUT');
-      hfdl.using_default = true;
-      fault = true;
-   } else
-   if (stations.AJAX_error && stations.AJAX_error == 'status') {
-      console.log('hfdl_get_systable_done_cb: status='+ stations.status);
-      hfdl.using_default = true;
-      fault = true;
-   } else
-   if (!isObject(stations)) {
-      console.log('hfdl_get_systable_done_cb: not array');
-      fault = true;
-   }
-   
-   if (fault) {
-      if (hfdl.double_fault) {
-         console.log('hfdl_get_systable_done_cb: default station list fetch FAILED');
-         console.log(stations);
-         return;
-      }
-      console.log(stations);
-      
-      // load the default station list from a file embedded with the extension (should always succeed)
-      var url = kiwi_url_origin() + '/extensions/HFDL/systable.backup.cjson';
-      console.log('hfdl_get_systable_done_cb: using default station list '+ url);
-      hfdl.using_default = true;
-      hfdl.double_fault = true;
-      kiwi_ajax(url, 'hfdl_get_systable_done_cb', 0, /* timeout */ 10000);
-      return;
-   }
-   
-   console.log('hfdl_get_systable_done_cb: from '+ url);
-   if (isDefined(stations.AJAX_error)) {
-      console.log(stations);
-      return;
-   }
    hfdl.stations = stations;
-   hfdl_map_stations();
-   hfdl_render_menus();
-
-   hfdl.url_params = ext_param();
-   if (dbgUs) console.log('url_params='+ hfdl.url_params);
    
-	if (hfdl.url_params) {
-      var p = hfdl.url_params.split(',');
+   ext_get_menus_cb(hfdl, stations,
+      'hfdl_get_systable_done_cb',  // retry_cb
 
-	   // first URL param can be a match in the preset menus
-      var m_freq = p[0].parseFloatWithUnits('kM', 1e-3);
-      var m_str = kiwi_decodeURIComponent('hfdl', p[0]).toLowerCase();
-      if (dbgUs) console.log('URL freq='+ m_freq);
-      var do_test = 0;
+      function(cb_param) {    // done_cb
+         hfdl_map_stations();
+         hfdl_render_menus();
+   
+         hfdl.url_params = ext_param();
+         if (dbgUs) console.log('url_params='+ hfdl.url_params);
+   
+         if (hfdl.url_params) {
+            var p = hfdl.url_params.split(',');
 
-      // select matching menu item frequency
-      var rv = hfdl_menu_match(m_freq, m_str);
+            // first URL param can be a match in the preset menus
+            var m_freq = p[0].parseFloatWithUnits('kM', 1e-3);
+            var m_str = kiwi_decodeURIComponent('hfdl', p[0]).toLowerCase();
+            if (dbgUs) console.log('URL freq='+ m_freq);
+            var do_test = 0;
 
-      if (rv.found_menu_match)
-         p.shift();
+            // select matching menu item frequency
+            var rv = hfdl_menu_match(m_freq, m_str);
 
-      p.forEach(function(a, i) {
-         if (dbgUs) console.log('HFDL param2 <'+ a +'>');
-         var r;
-         if (w3_ext_param('help', a).match) {
-            extint_help_click();
-         } else
-         if (w3_ext_param('map', a).match) {
-            hfdl.show = hfdl.SHOW_MAP;
-         } else
-         if (w3_ext_param('split', a).match) {
-            hfdl.show = hfdl.SHOW_SPLIT;
-         } else
-         if ((r = w3_ext_param('display', a)).match) {
-            if (isNumber(r.num)) {
-               var idx = w3_clamp(r.num, 0, hfdl.dsp_s.length-1, 0);
-               //console.log('display '+ r.num +' '+ idx);
-               hfdl_display_cb('id-hfdl.dsp', idx);
-            }
-         } else
-         if ((r = w3_ext_param('log_time', a)).match) {
-            if (isNumber(r.num)) {
-               hfdl_log_mins_cb('id-hfdl.log_mins', r.num);
-            }
-         } else
-         if ((r = w3_ext_param('gs', a)).match) {
-            if (isNumber(r.num) && r.num == 0) {
-               hfdl_gs_visible_cb('id-hfdl.gs_visible', false);
-            }
-         } else
-         if (w3_ext_param('test', a).match) {
-            do_test = 1;
-         } else
-            console.log('HFDL: unknown URL param "'+ a +'"');
-      });
+            if (rv.found_menu_match)
+               p.shift();
+
+            p.forEach(function(a, i) {
+               if (dbgUs) console.log('HFDL param2 <'+ a +'>');
+               var r;
+               if (w3_ext_param('help', a).match) {
+                  extint_help_click();
+               } else
+               if (w3_ext_param('map', a).match) {
+                  hfdl.show = hfdl.SHOW_MAP;
+               } else
+               if (w3_ext_param('split', a).match) {
+                  hfdl.show = hfdl.SHOW_SPLIT;
+               } else
+               if ((r = w3_ext_param('display', a)).match) {
+                  if (isNumber(r.num)) {
+                     var idx = w3_clamp(r.num, 0, hfdl.dsp_s.length-1, 0);
+                     //console.log('display '+ r.num +' '+ idx);
+                     hfdl_display_cb('id-hfdl.dsp', idx);
+                  }
+               } else
+               if ((r = w3_ext_param('log_time', a)).match) {
+                  if (isNumber(r.num)) {
+                     hfdl_log_mins_cb('id-hfdl.log_mins', r.num);
+                  }
+               } else
+               if ((r = w3_ext_param('gs', a)).match) {
+                  if (isNumber(r.num) && r.num == 0) {
+                     hfdl_gs_visible_cb('id-hfdl.gs_visible', false);
+                  }
+               } else
+               if (w3_ext_param('test', a).match) {
+                  do_test = 1;
+               } else
+                  console.log('HFDL: unknown URL param "'+ a +'"');
+            });
       
-      if (rv.found_menu_match) {
-         // select band first if freq is not already a band specifier
-         var f = rv.match_entry.split(' ')[0];
+            if (rv.found_menu_match) {
+               // select band first if freq is not already a band specifier
+               var f = rv.match_entry.split(' ')[0];
 
-         if (f.length > 2) {
-            var b = hfdl_freq_2_band(f);
-            var rv2 = hfdl_menu_match(b, b.toString());
-            console.log('BAND b='+ b +' '+ dq(rv2.match_menu) +' '+ dq(rv2.match_val));
-            hfdl_pre_select_cb(rv2.match_menu, rv2.match_val, false);
-         }
+               if (f.length > 2) {
+                  var b = hfdl_freq_2_band(f);
+                  var rv2 = hfdl_menu_match(b, b.toString());
+                  console.log('BAND b='+ b +' '+ dq(rv2.match_menu) +' '+ dq(rv2.match_val));
+                  hfdl_pre_select_cb(rv2.match_menu, rv2.match_val, false);
+               }
          
-         hfdl_pre_select_cb(rv.match_menu, rv.match_val, false);
-      }
-   }
+               hfdl_pre_select_cb(rv.match_menu, rv.match_val, false);
+            }
+         }
 
-   setTimeout(function() { hfdl_show_cb('id-hfdl.show', hfdl.show); }, 1000);
+         setTimeout(function() { hfdl_show_cb('id-hfdl.show', hfdl.show); }, 1000);
 
-   if (do_test) hfdl_test_cb('', 1);
-   if (dbgUs) console.log(hfdl.stations);
+         if (do_test) hfdl_test_cb('', 1);
+      }, null
+   );
 }
 
 function hfdl_render_menus()

@@ -13,11 +13,11 @@ var fsk = {
    x: 0,
    last_y: [],
    
-   n_menu:     4,
-   menu0:      -1,
-   menu1:      -1,
-   menu2:      -1,
-   menu3:      -1,
+   freqs: null,
+   menu_s: [ ],
+   menus: [ ],
+   sfmt: 'w3-text-red w3-ext-retain-input-focus',
+
    header: null,
    menu_sel: '',
    test_mode: false,
@@ -407,140 +407,6 @@ function fsk_audio_data_cb(samps, nsamps)
    fsk.jnx.process_data(samps, nsamps);
 }
 
-
-// "f" is cw filter cf
-
-var fsk_weather = {
-   'Germany': [
-      {f:'147.3 DDH47',  s: 85, b:50, fr:'5N1.5', i:1, e:'ITA2', cf:500},
-      {f:'11039 DDH9',   s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
-      {f:'14467.3 DDH8', s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
-      {f:'4583 DDK2',    s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
-      {f:'7646 DDH7',    s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
-      {f:'10100.8 DDK9', s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'}
-   ]
-};
-
-var fsk_maritime = {
-   'MSI (safety)': [
-      {f:4210,    cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
-      {f:6314,    cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
-      {f:8416.5,  cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
-      {f:12579,   cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
-      {f:16806.5, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
-      {f:19680.5, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
-      {f:22376,   cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'}
-   ],
-   'SVO Athens': [
-      {f:12603.5, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'}
-   ],
-   'UDK2_Murmansk': [
-      {f:6322.5, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'}
-   ],
-   'XSQ China': [
-      {f:8425.5,  s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
-      {f:12622.5, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'}
-   ],
-
-   'NAVTEX': [
-      {f:518,     cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
-      {f:490,     cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
-      {f:4209.5,  cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'}
-   ],
-   'DSC': [
-      {f:2187.5,  cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
-      {f:4207.5,  cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
-      {f:6312,    cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
-      {f:8414.5,  cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
-      {f:12577,   cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'},
-      {f:16804.5, cf:500, s:170, b:100, fr:'7/3', i:1, e:'DSC'}
-   ],
-   'Selcall_7 MHz': [
-      {f:7104.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:7107.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:7110.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-
-      {f:7116.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:7122.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-
-      {f:7131.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:7134.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:7137.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:7140.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:7143.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-
-      {f:7149.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:7152.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-
-      {f:7158.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:7161.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-
-      {f:7173.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'}
-   ],
-   'Selcall_8 MHz': [
-      {f:7910.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:7919.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:7922.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:7934.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-
-      {f:8004.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:8007.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:8010.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:8013.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:8016.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:8019.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:8022.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:8025.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:8028.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:8031.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:8034.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-
-      {f:8067.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:8070.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:8073.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:8076.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:8079.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-
-      {f:8085.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'},
-      {f:8091.78,  cf:500, s:170, b:100, fr:'7/3', i:0, e:'Selcall'}
-   ]
-};
-
-var fsk_military = {
-   'PBB_Dutch Navy': [
-      {f:2474,   s:850, b:75, fr:'5N1V', i:1, e:'ITA2'},
-      {f:4280,   s:850, b:75, fr:'5N1V', i:1, e:'ITA2'},
-      {f:6358.5, s:850, b:75, fr:'5N1V', i:1, e:'ITA2'},
-      {f:8439,   s:850, b:75, fr:'5N1V', i:1, e:'ITA2'}
-   ]
-};
-
-var fsk_ham_utility = {
-   'Ham RTTY': [
-      {f:'3590 80m',  s:170, b:45.45, fr:'5N1.5', i:0, e:'ITA2'},
-      {f:'7043 40m',  s:170, b:45.45, fr:'5N1.5', i:0, e:'ITA2'},
-      {f:'10143 30m', s:170, b:45.45, fr:'5N1.5', i:0, e:'ITA2'},
-      {f:'14080 20m', s:170, b:45.45, fr:'5N1.5', i:0, e:'ITA2'},
-      {f:'18105 17m', s:170, b:45.45, fr:'5N1.5', i:0, e:'ITA2'},
-      {f:'21080 15m', s:170, b:45.45, fr:'5N1.5', i:0, e:'ITA2'},
-      {f:'24925 12m', s:170, b:45.45, fr:'5N1.5', i:0, e:'ITA2'},
-      {f:'28080 10m', s:170, b:45.45, fr:'5N1.5', i:0, e:'ITA2'}
-   ],
-   'EFR_Teleswitch': [
-      {f:'129.1 DCF49', s:340, b:200, fr:'EFR', i:1, e:'ASCII'},
-      {f:'135.6 HGA22', s:340, b:200, fr:'EFR', i:1, e:'ASCII'},
-      {f:'139 DCF39',   s:340, b:200, fr:'EFR', i:1, e:'ASCII'}
-   ],
-   'CHU time': [
-      {f:3330,  s:200, b:300, fr:'CHU', i:0, e:'ASCII'},
-      {f:7850,  s:200, b:300, fr:'CHU', i:0, e:'ASCII'},
-      {f:14670, s:200, b:300, fr:'CHU', i:0, e:'ASCII'}
-   ]
-};
-
-var fsk_menu_s = [ 'Weather', 'Maritime', 'Military', 'Ham/Utility' ];
-var fsk_menus = [ fsk_weather, fsk_maritime, fsk_military, fsk_ham_utility ];
-
 var fsk_shift_s = [ 85, 170, 200, 340, 425, 450, 500, 850, 1000, 'custom' ];
 var fsk_baud_s = [ 36, 45.45, 50, 75, 100, 150, 200, 300, 'custom' ];
 var fsk_framing_s = [ '5N1', '5N1V', '5N1.5', '5N2', '7N1', '8N1', '4/7', 'EFR', 'EFR2', 'CHU', '7/3' ];
@@ -654,27 +520,22 @@ function fsk_controls_setup()
                '', 50
             ),
 
-				w3_inline('w3-halign-space-between/',
-               w3_select_hier('w3-text-red', 'Weather', 'select', 'fsk.menu0', fsk.menu0, fsk_weather, 'fsk_pre_select_cb'),
-               w3_select_hier('w3-text-red', 'Maritime', 'select', 'fsk.menu1', fsk.menu1, fsk_maritime, 'fsk_pre_select_cb'),
-               w3_select_hier('w3-text-red', 'Military', 'select', 'fsk.menu2', fsk.menu2, fsk_military, 'fsk_pre_select_cb'),
-               w3_select_hier('w3-text-red', 'Ham/Utility', 'select', 'fsk.menu3', fsk.menu3, fsk_ham_utility, 'fsk_pre_select_cb')
-            ),
+            w3_inline('id-fsk-menus/'),
 
             w3_inline('/w3-margin-between-16',
                w3_inline('',
-                  w3_select('w3-text-red', '', 'shift', 'fsk.shift_i', W3_SELECT_SHOW_TITLE, fsk_shift_s, 'fsk_shift_cb'),
+                  w3_select(fsk.sfmt, '', 'shift', 'fsk.shift_i', W3_SELECT_SHOW_TITLE, fsk_shift_s, 'fsk_shift_cb'),
                   w3_input('id-fsk-shift-custom w3-margin-left w3-hide|padding:0;width:auto|size=4', '', 'fsk.shift_cval', fsk.shift_cval, 'fsk_shift_custom_cb')
                ),
 
                w3_inline('',
-                  w3_select('w3-text-red', '', 'baud', 'fsk.baud_i', W3_SELECT_SHOW_TITLE, fsk_baud_s, 'fsk_baud_cb'),
+                  w3_select(fsk.sfmt, '', 'baud', 'fsk.baud_i', W3_SELECT_SHOW_TITLE, fsk_baud_s, 'fsk_baud_cb'),
                   w3_input('id-fsk-baud-custom w3-margin-left w3-hide|padding:0;width:auto|size=4', '', 'fsk.baud_cval', fsk.baud_cval, 'fsk_baud_custom_cb')
                ),
 
-               w3_select('w3-text-red', '', 'framing', 'fsk.framing', fsk.framing, fsk_framing_s, 'fsk_framing_cb'),
+               w3_select(fsk.sfmt, '', 'framing', 'fsk.framing', fsk.framing, fsk_framing_s, 'fsk_framing_cb'),
 
-               w3_select('w3-text-red', '', 'encoding', 'fsk.encoding', fsk.encoding, fsk_encoding_s, 'fsk_encoding_cb'),
+               w3_select(fsk.sfmt, '', 'encoding', 'fsk.encoding', fsk.encoding, fsk_encoding_s, 'fsk_encoding_cb'),
 
                w3_checkbox('w3-label-inline w3-label-not-bold/', 'inverted', 'fsk.inverted', fsk.inverted, 'fsk_inverted_cb')
             ),
@@ -683,7 +544,7 @@ function fsk_controls_setup()
 					w3_button('w3-padding-smaller', 'Next', 'w3_select_next_prev_cb', { dir:w3_MENU_NEXT, id:'fsk.menu', func:'fsk_pre_select_cb' }),
 					w3_button('w3-padding-smaller', 'Prev', 'w3_select_next_prev_cb', { dir:w3_MENU_PREV, id:'fsk.menu', func:'fsk_pre_select_cb' }),
 
-               w3_select('w3-text-red', '', 'mode', 'fsk.mode', 0, fsk_mode_s, 'fsk_mode_cb'),
+               w3_select(fsk.sfmt, '', 'mode', 'fsk.mode', 0, fsk_mode_s, 'fsk_mode_cb'),
 
                w3_inline('',     // because of /w3-margin-between-16 above
                   w3_inline('id-fsk-decode/w3-margin-between-16',
@@ -696,18 +557,18 @@ function fsk_controls_setup()
    
                   w3_inline('id-fsk-framing w3-hide/w3-margin-between-16',
                      w3_button('w3-padding-smaller', 'Sample', 'fsk_sample_cb', 0),
-                     w3_select('w3-text-red', '', 'word', 'fsk.fr_bpw_i', fsk.fr_bpw_i, '5:15', 'fsk_bpw_cb'),
+                     w3_select(fsk.sfmt, '', 'word', 'fsk.fr_bpw_i', fsk.fr_bpw_i, '5:15', 'fsk_bpw_cb'),
                      w3_inline('/w3-hspace-4',
                         w3_div('id-fsk-phase w3-font-14px', '\u03d500'),
                         w3_icon('w3-text-pink', 'fa-plus-square', 22, '', 'fsk_phase_cb', 1),
                         w3_icon('w3-text-blue', 'fa-minus-square', 22, '', 'fsk_phase_cb', -1)
                      ),
-                     w3_select('w3-text-red', '', 'data', 'fsk.fr_bpd_i', fsk.fr_bpd_i, fsk_bpd_s, 'fsk_bpd_cb')
+                     w3_select(fsk.sfmt, '', 'data', 'fsk.fr_bpd_i', fsk.fr_bpd_i, fsk_bpd_s, 'fsk_bpd_cb')
                   ),
    
                   w3_inline('id-fsk-scope w3-hide/w3-margin-between-16',
                      w3_button('w3-padding-smaller', 'Single', 'fsk_single_cb', 0),
-                     w3_select('w3-text-red', '', 'decim', 'fsk.decim', 3, fsk_decim_s, 'fsk_decim_cb')
+                     w3_select(fsk.sfmt, '', 'decim', 'fsk.decim', 3, fsk_decim_s, 'fsk_decim_cb')
                   )
                ),
                
@@ -752,25 +613,17 @@ function fsk_controls_setup()
    ext_set_data_height(fsk.dataH);
 	ext_set_controls_width_height(fsk.ctrlW, fsk.ctrlH);
 	
-	// first URL param can be a match in the preset menus
-	if (fsk.url_params) {
-      var freq = parseFloat(fsk.url_params);
-      if (!isNaN(freq)) {
-         // select matching menu item frequency
-         var found = false;
-         for (var i = 0; i < fsk.n_menu; i++) {
-            var menu = 'fsk.menu'+ i;
-            w3_select_enum(menu, function(option) {
-               //console.log('CONSIDER '+ parseFloat(option.innerHTML));
-               if (!found && parseFloat(option.innerHTML) == freq) {
-                  fsk_pre_select_cb(menu, option.value, false);
-                  found = true;
-               }
-            });
-            if (found) break;
-         }
+	w3_do_when_rendered('id-fsk-menus', function() {
+	   fsk.ext_url = kiwi_SSL() +'files.kiwisdr.com/fsk/FSK_freq_menus.cjson';
+	   fsk.int_url = kiwi_url_origin() +'/extensions/FSK/FSK_freq_menus.cjson';
+	   fsk.using_default = false;
+	   fsk.double_fault = false;
+	   if (0 && dbgUs) {
+         kiwi_ajax(fsk.ext_url +'.xxx', 'fsk_get_menus_cb', 0, -500);
+	   } else {
+         kiwi_ajax(fsk.ext_url, 'fsk_get_menus_cb', 0, 10000);
       }
-   }
+   });
 
    // because w3_input() doesn't yet have instantiation callback
    if (fsk.shift_custom)
@@ -781,6 +634,39 @@ function fsk_controls_setup()
 	
 	// receive the network-rate, post-decompression, real-mode samples
 	ext_register_audio_data_cb(fsk_audio_data_cb);
+}
+
+function fsk_get_menus_cb(freqs)
+{
+   fsk.freqs = freqs;
+
+   ext_get_menus_cb(fsk, freqs,
+      'fsk_get_menus_cb',     // retry_cb
+
+      function(cb_param) {    // done_cb
+         ext_render_menus(fsk, 'fsk');
+   
+         // first URL param can be a match in the preset menus
+         if (fsk.url_params) {
+            var freq = parseFloat(fsk.url_params);
+            if (!isNaN(freq)) {
+               // select matching menu item frequency
+               var found = false;
+               for (var i = 0; i < fsk.n_menu; i++) {
+                  var menu = 'fsk.menu'+ i;
+                  w3_select_enum(menu, function(option) {
+                     //console.log('CONSIDER '+ parseFloat(option.innerHTML));
+                     if (!found && parseFloat(option.innerHTML) == freq) {
+                        fsk_pre_select_cb(menu, option.value, false);
+                        found = true;
+                     }
+                  });
+                  if (found) break;
+               }
+            }
+         }
+      }, null
+   );
 }
 
 function fsk_auto_zoom(shift)
@@ -857,7 +743,7 @@ function fsk_pre_select_cb(path, idx, first)
    //console.log('fsk_pre_select_cb path='+ path +' idx='+ idx +' menu_n='+ menu_n);
    var found = false;
 
-   // find matching object entry in fsk_menus[] hierarchy and set fsk.* parameters from it
+   // find matching object entry in fsk.menus[] hierarchy and set fsk.* parameters from it
 	w3_select_enum(path, function(option) {
 	   if (found) return;
 	   //console.log('fsk_pre_select_cb opt.val='+ option.value +' opt.disabled='+ option.disabled +' opt.inner='+ option.innerHTML);
@@ -874,7 +760,7 @@ function fsk_pre_select_cb(path, idx, first)
       var i = +id[0];
       var j = +id[1];
       //console.log('fsk_pre_select_cb i='+ i +' j='+ j);
-      var o = w3_obj_seq_el(fsk_menus[menu_n], i);
+      var o = w3_obj_seq_el(fsk.menus[menu_n], i);
       //w3_console.log(o);
       o = w3_obj_seq_el(o, j);
       //w3_console.log(o);
@@ -902,7 +788,7 @@ function fsk_pre_select_cb(path, idx, first)
       }
    
       w3_el('id-fsk-station').innerHTML =
-         '<b>Station: '+ fsk_menu_s[menu_n] +', '+ fsk.header +'</b>';
+         '<b>Station: '+ fsk.menu_s[menu_n] +', '+ fsk.header +'</b>';
 	});
 
    // reset other frequency menus

@@ -1,0 +1,117 @@
+{
+//
+// FAX frequency menus
+//
+// This is a JSON format file with the non-standard addition of double-slash comments which MUST start in column one.
+// Edit this file with a normal text editor (despite the .cjson filename suffix). Use 4 spaces per tab.
+//
+// Underscores in names are converted to line breaks in menu entries.
+//
+// These are usb passband center freqs that will have 1.9 kHz subtracted to give dial (carrier) freq.
+// Except when "lsb" appears after a freq given as a string.
+//
+// Updates:
+// 17 jun 22 jks    Base version.
+
+   "Europe": {
+// www.dwd.de/DE/fachnutzer/schifffahrt/funkausstrahlung/sendeplan_fax_042017_sommer.pdf
+      "Hamburg_DDH/K DE": [ 3855, 7880, 13882.5, 15988 ],
+   
+// www.users.zetnet.co.uk/tempusfugit/marine/fwoc.htm
+      "Northwood_GYA UK":   [ 2618.5, 4610, 6834, 8040, 11086.5 ],
+   
+      "Athens_SVJ4 GR":  [ 4482.9, 8106.9 ],
+   
+// dk8ok.org/2017/06/11/6-3285-khz-murmansk-fax/
+      "Murmansk_RBW RU":   [ 5336, "6328.5 lsb", 7908.8, 8444.1, 10130 ],
+
+// mt-utility.blogspot.com/2009/12/so-who-is-gm-11f.html
+// forum.kiwisdr.com/index.php?p=/discussion/comment/11883/#Comment_11883
+// 5103 removed
+      "Sevastopol_GM-11F UR":   [ 7090.9 ]
+   },
+
+   "Asia/Pacific": {
+// www.nws.noaa.gov/om/marine/hfreyes_links.htm
+      "Pt. Reyes_NMC US":   [ 4346, 8682, 12786, 17151.2, 22527 ],
+   
+// www.nws.noaa.gov/om/marine/hfhi_links.htm
+      "": [],
+      "Honolulu_KVM70 HI": [ 8295.5, 9982.5, 11090, 16135 ],
+   
+// www.nws.noaa.gov/om/marine/hfak_links.htm
+      "Kodiak_NOJ AK":   [ 2054, 4298, 8459, 12412.5 ],
+   
+// www.metservice.com/marine/radio/zklf-radiofax-schedule
+      "Wellington_ZKLF NZ":  [ 3247.4, 5807, 9459, 13550.5, 16340.1 ],
+   
+// www.bom.gov.au/marine/radio-sat/vmc-technical-guide.shtml
+      "Charleville_VMC AU":   [ 2628, 5100, 11030, 13920, 20469 ],
+   
+// www.bom.gov.au/marine/radio-sat/vmw-technical-guide.shtml
+      "Wiluna_VMW AU":   [ 5755, 7535, 10555, 15615, 18060 ],
+
+// www.jma-net.go.jp/common/177jmh/JMH-ENG.pdf
+      "Tokyo_JMH JP":   [ 3622.5, 7795, 13988.5 ],
+   
+// mt-utility.blogspot.com/2010/02/1800-utc-8658-utc-fax-confirmed-jfx.html
+// goughlui.com/2019/02/10/radiofax-jfx-kagoshima-japan-fisheries
+// 4/2022: per goughlui.com and Fabrys, JFW is QRT
+      "JFC/JFX_JP":       [ 6414.5, 8658, 13074, 16907.5, 22559.6 ],
+   
+// mt-utility.blogspot.com/2009/11/afternoon-us-kyodo-news-is-jsc-not-jjc.html
+      "Kyodo_JJC/JSC JP": [ "4316/60", "8467.5/60", "12745.5/60", "16971/60", "17069.6/60", "22542/60" ],
+
+// terminated 10/2013
+//"Taipei_BMF TW":   [ 4616, 8140, 13900, 18560 ],
+   
+      "Seoul_HLL2 KR":  [ 3585, 5857.5, 7433.5, 9165, 13570 ],
+   
+// per forum user Fabrys 10/2020
+// "Guangzhou_XSQ, CN":  [ 4159.5, 8310.5, 12375.5, 16562.5 ],
+// 4/2022: new freqs per Fabrys
+      "Guangzhou_XSQ, CN":  [ 4199.8, 8412.5, 12629.3, 16826.3 ],
+   
+      "Shanghai_XSG, CN":  [ 4170, 8302, 12382, 16559 ],
+   
+// per forum user Fabrys 10/2020
+      "UNID/CN":  [ 4027, 7759, 12588 ],
+
+// 7395 + 1.9
+      "Bangkok/HSW64 TH": [ 7396.9 ],
+   
+      "Singapore_9VF SG":   [ 16035, 17430 ],
+
+// forum.kiwisdr.com/index.php?p=/discussion/comment/11280/#Comment_11280
+      "Vanino_RU":   [ 6455 ]
+   },
+
+   "Americas": {
+      "Pt. Reyes_NMC US":   [ 4346, 8682, 12786, 17151.2, 22527 ],
+   
+// 17146.4 => 16027.9 update per forum.kiwisdr.com/index.php?p=/discussion/comment/14312/#Comment_14312
+      "New Orleans_NMG US":   [ 4317.9, 8503.9, 12789.9, 16027.9 ],
+   
+      "Boston_NMF US":   [ 4235, 6340.5, 9110, 12750 ],
+
+      "Kodiak_NOJ AK":   [ 2054, 4298, 8459, 12412.5 ],
+   
+      "Honolulu_KVM70 HI": [ 8295.5, 9982.5, 11090, 16135 ],
+   
+      "Nova Scotia_VCO CA":   [ 4416, 6915.1 ],
+   
+      "Iqaluit_VFF CA":   [ 3253, 7710 ],
+   
+      "Resolute_VFR CA":   [ 3253, 7710 ],
+   
+      "Inuvik_VFA CA":   [ 4292, 8456 ],
+   
+      "Brazil_PWZ33 BR": [ 12665, 16978 ],
+   
+      "Chile_CBV/M CL": [ 4228, 4322, 8677, 8696, 17146.4 ]
+   },
+
+   "Africa": {
+      "S. Africa_ZSJ SA":   [ 4014, 7508, 13538, 18238 ]
+   }
+}

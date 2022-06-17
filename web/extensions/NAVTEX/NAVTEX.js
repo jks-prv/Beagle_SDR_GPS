@@ -10,16 +10,14 @@ var nt = {
    ctrlW: 550,
    ctrlH: 175,
    splitH: 100,
-
    lhs: 130,
    tw: 1024,
    x: 0,
    last_y: [],
-   n_menu:     4,
-   menu0:      -1,
-   menu1:      -1,
-   menu2:      -1,
-   menu3:      -1,
+
+   freqs: null,
+   menu_s: [ ],
+   menus: [ ],
    sfmt: 'w3-text-red w3-ext-retain-input-focus',
    
    SHOW_MSGS: 0,
@@ -48,6 +46,11 @@ var nt = {
    TYPE_SELCALL: 2,
    freq: 0,
    freq_s: '',
+   cf_navtex: 500,
+   cf_dsc: 500,
+   cf_selcall: 1785,       // so cf/dial matches published freqs
+   cf_selcall_low: 785,    // signals where lower freq (easier to listen to) can be used
+   pb_skirt_width: 50,
    cf: 500,
    shift: 170,
    baud: 100,
@@ -209,65 +212,6 @@ function navtex_audio_data_cb(samps, nsamps)
 
 var navtex_canvas;
 
-// www.dxinfocentre.com/navtex.htm
-// www.dxinfocentre.com/maritimesafetyinfo.htm
-
-var navtex_menu_s = [ 'NAVTEX MF', 'NAVTEX HF', 'DSC HF', 'Selcall HF' ];
-
-var navtex_MF = {
-   "International": [ 518 ],
-   "National": [ 490 ],
-   "Other": [ 424, 426, 472, 500 ]
-};
-
-var navtex_HF = {
-   "Main": [ 4209.5 ],
-   "NBDP": [ 4210, 6314, 8416.5, 12579, 16806.5, 19680.5, 22376, 26100.5 ],
-   "Aux":  [ 3165, 4212.5, 4215, 4228, 4241, 4255, 4323, 4560,
-               6326, 6328, 6360.5, 6405, 6425, 6448, 6460,
-               8417.5, 8424, 8425.5, 8431, 8431.5, 8433, 8451, 8454, 8473, 8580, 8595, 8643,
-               12581.5, 12599.5, 12603, 12631, 12637.5, 12654, 12709.9, 12729, 12799.5, 12825, 12877.5, 13050,
-               /* not in Bill's list but rx in AU */ 16808, 16886, 16898.5, 16927, 16974, 17045, 17175.2, 17155
-      ]
-};
-
-var DSC_HF = {
-   "Distress &amp;_Urgency":  [ 2187.5, 4207.5, 6312, 8414.5, 12577, 16804.5 ],
-   "Ship/ship_calling":       [ 2177, 4208, 6312.5, 8415, 12577.5, 16805 ]
-};
-
-var Selcall_HF = {
-   "Ham radio": [
-         473,
-         1838, 1908, 1990, 
-         3529, 3590, 3605, 3710, 3795, 3845, 3995,
-         5330.5, 5346.5, 5355, 5363, 5403.5,
-         7044, 7100, 7195, 7291,
-         10126, 10144,
-         14094, 14122, 14343,
-         18107, 18113, 18163,
-         21094, 21228, 21427,
-         24924, 24977,
-         28143, 28305, 29520
-      ],
-
-   "Fishing_7 MHz": [
-         7104.78, 7107.78, 7110.78,
-         7116.78, 7122.78,
-         7131.78, 7134.78, 7137.78, 7140.78, 7143.78,
-         7149.78, 7152.78,
-         7158.78, 7161.78,
-         7173.78
-      ],
-
-   "Fishing_8 MHz": [
-         7910.78, 7919.78, 7922.78, 7934.78,
-         8004.78, 8007.78, 8010.78, 8013.78, 8016.78, 8019.78, 8022.78, 8025.78, 8028.78, 8031.78, 8034.78,
-         8067.78, 8070.78, 8073.78, 8076.78, 8079.78,
-         8085.78, 8091.78
-      ]
-};
-
 function navtex_controls_setup()
 {
    nt.th = nt.dataH;
@@ -343,12 +287,7 @@ function navtex_controls_setup()
                   '<a href="http://www.dxinfocentre.com/maritimesafetyinfo.htm" target="_blank">HF</a>'), 50
             ),
 
-				w3_inline('/w3-margin-between-16',
-               w3_select_hier('w3-text-red', 'NAVTEX MF', 'select', 'nt.menu0', nt.menu0, navtex_MF, 'navtex_pre_select_cb'),
-               w3_select_hier('w3-text-red', 'NAVTEX HF', 'select', 'nt.menu1', nt.menu1, navtex_HF, 'navtex_pre_select_cb'),
-               w3_select_hier('w3-text-red', 'DSC HF', 'select', 'nt.menu2', nt.menu2, DSC_HF, 'navtex_pre_select_cb'),
-               w3_select_hier('w3-text-red', 'Selcall HF', 'select', 'nt.menu3', nt.menu3, Selcall_HF, 'navtex_pre_select_cb')
-            ),
+            w3_inline('id-navtex-menus/'),
 
             w3_inline('/w3-margin-between-16',
                w3_button('w3-padding-smaller', 'Next', 'w3_select_next_prev_cb', { dir:w3_MENU_NEXT, id:'nt.menu', func:'navtex_pre_select_cb' }),
@@ -431,26 +370,18 @@ function navtex_controls_setup()
 	
 	nt.kmap = kiwi_map_init('navtex', [12.5, 112.5], 5, 17);
 
-	// first URL param can be a match in the preset menus
-	if (nt.url_params) {
-      var freq = parseFloat(nt.url_params);
-      if (!isNaN(freq)) {
-         // select matching menu item frequency
-         var found = false;
-         for (var i = 0; i < nt.n_menu; i++) {
-            var menu = 'nt.menu'+ i;
-            w3_select_enum(menu, function(option) {
-               //console.log('CONSIDER '+ parseFloat(option.innerHTML));
-               if (parseFloat(option.innerHTML) == freq) {
-                  navtex_pre_select_cb(menu, option.value, false);
-                  found = true;
-               }
-            });
-            if (found) break;
-         }
+	w3_do_when_rendered('id-navtex-menus', function() {
+	   nt.ext_url = kiwi_SSL() +'files.kiwisdr.com/navtex/NAVTEX_freq_menus.cjson';
+	   nt.int_url = kiwi_url_origin() +'/extensions/NAVTEX/NAVTEX_freq_menus.cjson';
+	   nt.using_default = false;
+	   nt.double_fault = false;
+	   if (0 && dbgUs) {
+         kiwi_ajax(nt.ext_url +'.xxx', 'navtex_get_menus_cb', 0, -500);
+	   } else {
+         kiwi_ajax(nt.ext_url, 'navtex_get_menus_cb', 0, 10000);
       }
-   }
-	
+   });
+
 	// receive the network-rate, post-decompression, real-mode samples
 	ext_register_audio_data_cb(navtex_audio_data_cb);
 
@@ -474,6 +405,39 @@ function navtex_controls_setup()
       }, 5000);
 }
 
+function navtex_get_menus_cb(freqs)
+{
+   nt.freqs = freqs;
+   
+   ext_get_menus_cb(nt, freqs,
+      'navtex_get_menus_cb',  // retry_cb
+
+      function(cb_param) {    // done_cb
+         ext_render_menus(nt, 'navtex', 'nt');
+   
+         // first URL param can be a match in the preset menus
+         if (nt.url_params) {
+            var freq = parseFloat(nt.url_params);
+            if (!isNaN(freq)) {
+               // select matching menu item frequency
+               var found = false;
+               for (var i = 0; i < nt.n_menu; i++) {
+                  var menu = 'nt.menu'+ i;
+                  w3_select_enum(menu, function(option) {
+                     //console.log('CONSIDER '+ parseFloat(option.innerHTML));
+                     if (parseFloat(option.innerHTML) == freq) {
+                        navtex_pre_select_cb(menu, option.value, false);
+                        found = true;
+                     }
+                  });
+                  if (found) break;
+               }
+            }
+         }
+      }, null
+   );
+}
+
 function navtex_auto_zoom(shift)
 {
    if (shift < 170) return 14;
@@ -485,7 +449,8 @@ function navtex_auto_zoom(shift)
 function navtex_setup()
 {
 	nt.freq = ext_get_freq()/1e3;
-   console.log('NAVTEX/DSC SETUP freq='+ nt.freq +' cf='+ nt.cf +' shift='+ nt.shift  +' baud='+ nt.baud +' framing='+ nt.framing +' enc='+ nt.encoding +' inv='+ nt.inverted +' show_errs='+ nt.show_errs);
+   console.log('NAVTEX/DSC SETUP freq='+ nt.freq +' cf='+ nt.cf +' shift='+ nt.shift  +' baud='+ nt.baud +' framing='+ nt.framing +
+      ' enc='+ nt.encoding +' inv='+ nt.inverted +' show_raw='+ nt.show_errs +' show_errs='+ nt.show_errs);
 	nt.jnx.setup_values(ext_sample_rate(), nt.cf, nt.shift, nt.baud, nt.framing, nt.inverted, nt.encoding, nt.show_raw, nt.show_errs);
    navtex_crosshairs(1);
 }
@@ -497,6 +462,7 @@ function navtex_crosshairs(vis)
    
    if (vis && ext_get_zoom() >= 10) {
       var f = ext_get_freq();
+      if (nt.mode == 'usb') f += nt.cf;
       var f_range = get_visible_freq_range();
       //console.log(f_range);
       var Lpx = scale_px_from_freq(f - nt.shift/2, f_range);
@@ -524,7 +490,7 @@ function navtex_pre_select_cb(path, idx, first)
    if (first) return;
 	idx = +idx;
 	var menu_n = parseInt(path.split('nt.menu')[1]);
-   //console.log('navtex_pre_select_cb path='+ path +' idx='+ idx +' menu_n='+ menu_n);
+   console.log('navtex_pre_select_cb path='+ path +' idx='+ idx +' menu_n='+ menu_n);
    var header;
    var cont = 0;
    var found = false;
@@ -545,44 +511,51 @@ function navtex_pre_select_cb(path, idx, first)
 
 	   if (option.value != idx || option.disabled) return;
 	   found = true;
-      nt.freq_s = option.innerHTML;
-      //console.log('navtex_pre_select_cb opt.val='+ option.value +' freq_s='+ nt.freq_s);
-      nt.freq = parseFloat(nt.freq_s);
-      ext_tune(nt.freq, 'cw', nt.auto_zoom? ext_zoom.ABS : ext_zoom.CUR, navtex_auto_zoom(nt.shift));
 
-      if (navtex_menu_s[menu_n].includes('DSC')) {
+      nt.mode = 'cw';
+      if (nt.menu_s[menu_n].includes('DSC')) {
+         nt.cf = nt.cf_dsc;
          nt.type = nt.TYPE_DSC;
          nt.framing = '7/3';
          nt.encoding = 'DSC';
          nt.inverted = 1;
       } else
-      if (navtex_menu_s[menu_n].includes('Selcall')) {
+      if (nt.menu_s[menu_n].includes('Selcall')) {
+         nt.mode = 'usb';
+         nt.cf = header.includes('Beacons')? nt.cf_selcall_low : nt.cf_selcall;
          nt.type = nt.TYPE_SELCALL;
          nt.framing = '7/3';
          nt.encoding = 'Selcall';
          nt.inverted = 0;
       } else {
+         nt.cf = nt.cf_navtex;
          nt.type = nt.TYPE_NAVTEX;
          nt.framing = '4/7';
          nt.encoding = 'CCIR476';
          nt.inverted = 0;
       }
+
+      nt.freq_s = option.innerHTML;
+      console.log('navtex_pre_select_cb opt.val='+ option.value +' freq_s='+ nt.freq_s);
+      nt.freq = parseFloat(nt.freq_s);
+      ext_tune(nt.freq, nt.mode, nt.auto_zoom? ext_zoom.ABS : ext_zoom.CUR, navtex_auto_zoom(nt.shift));
       navtex_setup();
 
-      var pb_half = nt.shift/2 + 50;
-      //console.log('navtex_pre_select_cb cf='+ nt.cf +' pb_half='+ pb_half);
+      var pb_half = nt.shift/2 + nt.pb_skirt_width;
+      console.log('navtex_pre_select_cb cf='+ nt.cf +' pb_half='+ pb_half);
       ext_set_passband(nt.cf - pb_half, nt.cf + pb_half);
 
       // set again to get correct freq given new passband
-      ext_tune(nt.freq, 'cw', nt.auto_zoom? ext_zoom.ABS : ext_zoom.CUR, navtex_auto_zoom(nt.shift));
+      ext_tune(nt.freq, nt.mode, nt.auto_zoom? ext_zoom.ABS : ext_zoom.CUR, navtex_auto_zoom(nt.shift));
 
       // if called directly instead of from menu callback, select menu item
+      console.log('navtex_pre_select_cb path='+ path +' idx='+ idx);
       w3_select_value(path, idx);
 
       w3_el('id-navtex-station').innerHTML =
-         '<b>'+ navtex_menu_s[menu_n] +', '+ header +'</b>';
+         '<b>'+ nt.menu_s[menu_n] +', '+ header +'</b>';
       
-      if (header.includes('Fishing'))
+      if (header.includes('Beacons'))
          navtex_show_cb('id-nt.show', nt.SHOW_SPLIT);
 	});
 
@@ -593,6 +566,7 @@ function navtex_pre_select_cb(path, idx, first)
 function navtex_clear_menus(except)
 {
    // reset frequency menus
+   console.log('navtex_clear_menus except='+ except);
    for (var i = 0; i < nt.n_menu; i++) {
       if (!isArg(except) || i != except)
          w3_select_value('nt.menu'+ i, -1);
@@ -640,7 +614,11 @@ function NAVTEX_environment_changed(changed)
       var dsp_freq = ext_get_freq()/1e3;
       var mode = ext_get_mode();
       //console.log('Navtex ENV nt.freq='+ nt.freq +' dsp_freq='+ dsp_freq);
-      if (nt.freq != dsp_freq || mode != 'cw') {
+      
+      // remove menu selection if freq/mode changed by action outside of extension
+      // but allow for +/- 1 kHz fine tuning
+      var delta_fkHz = Math.abs(nt.freq - dsp_freq);
+      if (delta_fkHz > 1 || mode != ((nt.type == nt.TYPE_SELCALL)? 'usb' : 'cw')) {
          navtex_clear_menus();
          w3_el('id-navtex-station').innerHTML = '&nbsp;';
       }
@@ -727,6 +705,9 @@ function navtex_clear_button_cb(path, idx, first)
    navtex_console_status_msg_p.s = encodeURIComponent('\f');
    kiwi_output_msg('id-navtex-console-msgs', 'id-navtex-console-msg', navtex_console_status_msg_p);
    nt.log_txt = '';
+   
+   // if the map is showing clear all the markers as well
+   if (nt.show == nt.SHOW_MAP || nt.show == nt.SHOW_SPLIT) navtex_clear_old_cb('', 2);
 }
 
 function navtex_show_cb(path, idx, first)
@@ -773,9 +754,10 @@ function navtex_clear_old_cb(path, idx, first)
 {
    //console.log('navtex_clear_old_cb idx='+ idx +' first='+ first);
    if (!(+idx)) return;
+   var all = (+idx == 2);
    var old = Date.now() - nt.too_old_min*60*1000;
    w3_obj_enum(nt.locations, function(key, i, o) {
-      if (o.upd > old) return;
+      if (!all && o.upd > old) return;
       console.log('LOC-CLR '+ o.loc_name);
       o.mkr.remove();
       delete nt.locations[o.loc_name];

@@ -142,6 +142,7 @@ var ext_zoom = {
 	MAX_OUT: -9
 };
 
+
 var extint_ext_is_tuning = false;
 
 // mode, zoom and passband are optional
@@ -285,7 +286,7 @@ function ext_set_passband(low_cut, high_cut, set_mode_pb, freq_dial_Hz)		// spec
 	}
 
 	extint_ext_is_tuning = true;
-	   demodulator_set_offset_frequency(0, freq_car_Hz - center_freq);
+	   demodulator_set_offset_frequency(owrx.FSET_EXT_SET_PB, freq_car_Hz - center_freq);
 	extint_ext_is_tuning = false;
 }
 
@@ -521,52 +522,105 @@ function ext_mobile_info(last)
 }
 
 
+function ext_get_menus_cb(ctx, freqs, retry_cb, done_cb, done_cb_param)
+{
+   var fault = false;
+   
+   if (!freqs) {
+      console.log('ext_get_menus_cb: freqs='+ freqs);
+      fault = true;
+   } else
+   
+   if (freqs.AJAX_error && freqs.AJAX_error == 'timeout') {
+      console.log('ext_get_menus_cb: TIMEOUT');
+      ctx.using_default = true;
+      fault = true;
+   } else
+
+   if (freqs.AJAX_error && freqs.AJAX_error == 'status') {
+      console.log('ext_get_menus_cb: status='+ freqs.status);
+      ctx.using_default = true;
+      fault = true;
+   } else
+
+   if (!isObject(freqs)) {
+      console.log('ext_get_menus_cb: not array');
+      fault = true;
+   } else
+   
+   if (isDefined(freqs.AJAX_error)) {
+      console.log('ext_get_menus_cb: AJAX_error');
+      fault = true;
+   }
+
+   var url;
+   if (fault) {
+      if (ctx.double_fault) {
+         console.log('ext_get_menus_cb: default freq list fetch FAILED');
+         console.log(freqs);
+         return;
+      }
+      console.log(freqs);
+      
+      // load the default freq list from a file embedded with the extension (should always succeed)
+      url = ctx.int_url;
+      console.log('ext_get_menus_cb: using default freq list '+ url);
+      ctx.using_default = true;
+      ctx.double_fault = true;
+      kiwi_ajax(url, retry_cb, 0, /* timeout */ 10000);
+      return;
+   } else {
+      url = ctx.ext_url;
+   }
+   
+   console.log('ext_get_menus_cb: from '+ url);
+   if (dbgUs) console.log(freqs);
+   
+   w3_call(done_cb, done_cb_param);
+}
+
+function ext_render_menus(ctx, ext_name, ctx_name)
+{
+   // {
+   //    o[i0]: {
+   //       o2[j0]: [ f, ... ],
+   //          ...
+   //       o2[jn]: [ f, ... ]
+   //    },
+   //       ...
+   //    o[in]: {
+   //       ...
+   //    }
+   // }
+   var new_menu = function(i, o, menu_s) {
+      ctx.n_menu++;
+      ctx.menus[i] = o;
+      ctx.menu_s[i] = menu_s;
+      var s =
+         w3_div('id-'+ menu_s +' w3-margin-between-24',
+            w3_select_hier(ctx.sfmt, menu_s, 'select', ctx_name +'.menu'+ i, -1, o, ext_name +'_pre_select_cb')
+         );
+      return s;
+   };
+   
+   if (isUndefined(ctx_name)) ctx_name = ext_name;
+   var s = '';
+   ctx.n_menu = 0;
+
+   w3_obj_enum(ctx.freqs, function(menu_s, i, o2) {   // each object
+      //console.log(menu_s +'.'+ i +' NEW:');
+      //console.log(o2);
+      s += new_menu(i, o2, menu_s);
+   });
+
+   w3_innerHTML('id-'+ ext_name +'-menus', s);   
+   console.log('ext_render_menus n_menu='+ ctx.n_menu);
+}
+
+
 ////////////////////////////////
 // internal routines
 ////////////////////////////////
-
-function extint_news(s)
-{
-   var el;
-   if (!extint.news_init) {
-      el = w3_el('id-news');
-      el.style.top = '';
-      el.style.bottom = '';
-      el.style.left = '';
-      el.style.right = '';
-      if (kiwi_isMobile()) {
-         var w = window.innerWidth;
-         var h = window.innerHeight;
-         if (w <= 768 && h >= 600) {    // iPad & tablets
-            //el.style.top = '36px';
-            el.style.bottom = '0';
-            //el.style.right = '0';
-            el.style.left = '0';
-            el.style.width = '350px';
-            //el.style.height = '300px';
-            el.style.height = '400px';
-         } else {
-            el.style.top = '36px';
-            //el.style.top = '300px';
-            el.style.right = '0';
-            //el.style.width = '350px';
-            el.style.width = '150px';
-            el.style.height = '150px';
-         }
-      } else {
-         el.style.bottom = '0';
-         el.style.left = '0';
-         el.style.width = '350px';
-         el.style.height = '300px';
-      }
-      el.style.visibility = 'visible';
-      el.style.zIndex = 9999;
-      extint.news_init = true;
-   }
-   el = w3_el('id-news-inner');
-   w3_innerHTML(el, s);
-   w3_scrollDown(el);
-}
 
 function ext_panel_init()
 {
