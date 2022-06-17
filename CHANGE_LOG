@@ -2,6 +2,29 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.541  Jun 17, 2022
+    FAX, FSK, NAVTEX extensions:
+        Menu frequencies are now loaded from a file on kiwisdr.com so a new release is not required
+        to update them. A backup copy is kept on the server in case the Kiwi has no Internet access.
+
+    Selcall:
+        Use published frequency values in menus at the expense of higher offset for some.
+        Added Austravel Safety Net: www.austravelsafetynet.org.au/node/2
+        Using clear button when map shown will clear map markers.
+        Decodes calling when position info not included. Formats not decoded show raw values.
+
+    Frequency memory:
+        When you continuously tune by mousing down in the frequency scale (or on mobile by two-finger
+            swiping on the waterfall) only the last frequency gets stored in the memory.
+            Previously all the intermediate frequencies were stored and older memory entries would
+            get flushed out (25 entry maximum).
+        Fixed a bunch of other user interface issues with the frequency menu.
+
+	Enable recently commissioned Galileo E34 (thanks Benjamin F4FPR/K5AW)
+
+	Changed WSPR ISM_13 center freq from 13554.5 to 13555.4 (900 Hz higher) per forum thread:
+	    forum.kiwisdr.com/index.php?p=/discussion/2649/wspr-22-m-ism-band-wrong-centre-frequency#p1
+
 v1.540  Jun 14, 2022
     Fixed bug encountered when saving large configuration files.
         e.g. many band bar definitions (thanks Ben).
