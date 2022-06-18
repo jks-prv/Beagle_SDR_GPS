@@ -276,8 +276,8 @@ function ext_set_passband(low_cut, high_cut, set_mode_pb, freq_dial_Hz)		// spec
 	
 	// set the passband for the current mode as well (sticky)
 	if (isArg(set_mode_pb) && set_mode_pb && okay) {
-		cfg.passbands[cur_mode].last_lo = low_cut;
-		cfg.passbands[cur_mode].last_hi = high_cut;
+		owrx.last_lo[cur_mode] = low_cut;
+		owrx.last_hi[cur_mode] = high_cut;
 	}
 	
 	if (freq_dial_Hz != undefined && freq_dial_Hz != null) {
@@ -916,6 +916,9 @@ function extint_focus(is_locked)
          //setTimeout('ext_set_controls_width_height(); w3_call('+ ext +'_main);', 3000);
          ext_set_controls_width_height();
          w3_call(ext +'_main');
+         
+         if (isNonEmptyArray(shortcut.keys))
+	         setTimeout(keyboard_shortcut_url_keys, 3000);
       },
 
       // pre-load

@@ -342,6 +342,9 @@ function navtex_controls_setup()
          if (w3_ext_param('raw', a).match) {
             navtex_selcall_mode_cb('id-nt.selcall_mode', nt.MODE_SHOW_RAW);
          } else
+         if (w3_ext_param('both', a).match) {
+            navtex_selcall_mode_cb('id-nt.selcall_mode', nt.MODE_SHOW_BOTH);
+         } else
          if ((r = w3_ext_param('log_time', a)).match) {
             if (isNumber(r.num)) {
                navtex_log_mins_cb('id-nt.log_mins', r.num);

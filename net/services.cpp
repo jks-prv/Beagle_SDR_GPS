@@ -38,6 +38,7 @@ Boston, MA  02110-1301, USA.
 #include "eeprom.h"
 #include "rx_waterfall.h"
 #include "security.h"
+#include "sha256.h"
 
 #include <string.h>
 #include <time.h>
@@ -392,6 +393,15 @@ void bl_GET(void *param)
 
     dl_sp = kstr_sp(reply);
     //real_printf("bl_GET: returned <%s>\n", dl_sp);
+
+    SHA256_CTX ctx;
+    sha256_init(&ctx);
+    sha256_update(&ctx, (BYTE *) dl_sp, strlen(dl_sp));
+    BYTE hash[SHA256_BLOCK_SIZE];
+    sha256_final(&ctx, hash);
+    mg_bin2str(net.ip_blacklist_hash, hash, N_IP_BLACKLIST_HASH_BYTES);
+    lprintf("bl_GET: ip_blacklist_hash = %s\n", net.ip_blacklist_hash);
+
     if (json_init(&bl_json, dl_sp) == false) {
         lprintf("bl_GET: JSON parse failed for %s/%s\n", kiwisdr_com, BLACKLIST_FILE);
         goto fail;
@@ -432,7 +442,7 @@ void bl_GET(void *param)
         kstr_free(bl_sp);
         goto fail;
     }
-
+    
     diff = strcmp(bl_old, bl_new);
     lprintf("bl_GET: stored=%d downloaded=%d diff=%s\n", slen, dlen, diff? "YES" : "NO");
     admcfg_string_free(bl_old);

@@ -342,6 +342,16 @@ function config_focus()
    console.log('config_focus');
    config_pb_mode('', admin_sdr.pmi, false);
    config_wf_show();
+   
+   // remove last_lo/hi unnecessarily stored in cfg.passbands
+   var update = false;
+   w3_obj_enum(cfg.passbands,
+      function(key, i, o) {
+         if (o.last_lo) { delete o.last_lo; update = true; }
+         if (o.last_hi) { delete o.last_hi; update = true; }
+      }
+   );
+   if (update) cfg_save_json('config_focus', 'cfg.passbands');
 }
 
 function config_wf_show()

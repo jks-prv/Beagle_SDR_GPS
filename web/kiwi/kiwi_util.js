@@ -10,7 +10,9 @@ function isNull(v) { return (v === null); }
 function isNumber(v) { return (typeof(v) === 'number' && !isNaN(v)); }
 function isBoolean(v) { return (typeof(v) === 'boolean'); }
 function isString(v) { return (typeof(v) === 'string'); }
+function isNonEmptyString(v) { return (isString(v) && v !== ''); }
 function isArray(v) { return (Array.isArray(v)); }
+function isNonEmptyArray(v) { return (isArray(v) && v.length > 0); }
 function isFunction(v) { return (typeof(v) === 'function'); }
 function isObject(v) { return (typeof(v) === 'object'); }
 function isArg(v) { return (isUndefined(v) || isNull(v))? false:true; }
