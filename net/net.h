@@ -150,6 +150,8 @@ typedef struct {
     
     bool ip_blacklist_inuse;
     int ip_blacklist_len;
+    #define N_IP_BLACKLIST_HASH_BYTES 4       // 4 bytes = 8 chars
+    char ip_blacklist_hash[N_IP_BLACKLIST_HASH_BYTES*2 + SPACE_FOR_NULL];
     #define N_IP_BLACKLIST 512
     ip_blacklist_t ip_blacklist[N_IP_BLACKLIST];
 } net_t;

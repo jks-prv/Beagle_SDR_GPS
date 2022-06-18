@@ -615,7 +615,8 @@ fail:
 			"asl=%d\nloc=%s\n"
 			"sw_version=%s%d.%d\nantenna=%s\nsnr=%d,%d\nadc_ov=%u\n"
 			"uptime=%d\n"
-			"gps_date=%d,%d\ndate=%s\n",
+			"gps_date=%d,%d\ndate=%s\n"
+			"ip_blacklist=%s\n",
 			status, no_open_access? "auth=password\n" : "", offline? "yes":"no",
 			name, version_maj, version_min,
 
@@ -662,7 +663,8 @@ fail:
 			#else
 			    0, 0,
 			#endif
-			utc_ctime_static()
+			utc_ctime_static(),
+			net.ip_blacklist_hash
 			);
 
 		kiwi_ifree(name);
