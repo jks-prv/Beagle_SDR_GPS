@@ -38,6 +38,10 @@ function Selcall(init, output_cb) {
    t.DX  = 125;
    t.RX5 = 109;
    
+   // fmt/cat seen w/ Selcall
+   // 120 100  indiv
+   // 123 100  semi-auto
+
    t.FMT_GEO_CALL = 102;
    t.FMT_DISTRESS = 112;
    t.FMT_GROUP_CALL = 114;
@@ -52,6 +56,14 @@ function Selcall(init, output_cb) {
    t.CAT_URGENCY = 110;
    t.CAT_DISTRESS = 112;
    
+   // seen w/ Selcall
+   // 123 100 121 110   sym-7 117-3                SCS unencrypted position
+   // 123 100 121 110   sym-22 117-3               Austravelnet
+   // 123 100 102 100   sym-21 117 sym-2 117-2     Austravelnet
+
+   t.CMD1_102 = 102;
+   t.CMD1_POSITION = 121;
+   
    // these are from DSC
    t.CMD1_FM_CALL = 100;
    t.CMD1_FM_DUPLEX_CALL = 101;
@@ -65,7 +77,6 @@ function Selcall(init, output_cb) {
    t.CMD1_F1B_FEC = 113;
    t.CMD1_F1B_ARQ = 115;
    t.CMD1_TEST = 118;
-   t.CMD1_POSITION = 121;
    t.CMD1_NOP = 126;
 
    // these are from DSC
@@ -455,6 +466,14 @@ Selcall.prototype.process_char = function(_code, fixed_start, output_cb, show_ra
 
                      var s = '';
                      for (i = 0; i <= 6; i++) s += sym[i+10];
+                     
+                     // [30.81,329.40] 01:63
+                     // 01 23 45 67 89 01 23    s3.slice()
+                     // 03 08 13 29 40 01 63   -30.81, 129.40   81/
+                     
+                     // 56 42 55 59 46 40 42 05 58 51 38 59 38 46 49 38 39 49 42 117 35 22 117 117 117
+                     //  8  *  7  ;  .  (  *     :  3  &  ;  &  .  1  &  '  1  *      # syn
+                     // 
 
                      var lat_d = s.slice(1,3);
                      var lon_d = s.slice(5,8);
