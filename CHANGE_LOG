@@ -2,6 +2,18 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.543  Jun 19, 2022
+    Fixes:
+        Fix passband initialization bug that occurs under certain circumstances.
+        When snap-to-nearest enabled via right-click menu or occurs via shift-click in waterfall:
+            Allows waterfall dragging and respects locked tuning mode.
+    
+    New URL parameters:
+        "mem=f1,f2...  Set frequency memory menu to values given. Overrides any previously stored values.
+        "z=[0-14]"  Set zoom level directly (historically could be done as part of "f=" parameter).
+
+    Show ip blacklist file hash in /status inquiry (help determine if auto update is working).
+
 v1.541,542  Jun 17, 2022
     FAX, FSK, NAVTEX extensions:
         Menu frequencies are now loaded from a file on kiwisdr.com so a new release is not required
