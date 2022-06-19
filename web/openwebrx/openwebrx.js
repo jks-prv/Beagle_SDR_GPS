@@ -249,7 +249,7 @@ function kiwi_main_ready()
 	s = 'pbw'; if (q[s]) override_pbw = q[s];
 	s = 'pb'; if (q[s]) override_pbw = q[s];
 	s = 'pbc'; if (q[s]) override_pbc = q[s];
-	s = 'z'; if (q[s]) override_zoom = q[s];
+	s = 'z'; if (q[s]) override_zoom = +q[s];
 	s = 'sp'; if (q[s]) spectrum_show = q[s];
 	s = 'spec'; if (q[s]) spectrum_show = q[s];
 	s = 'spp'; if (q[s]) spectrum_param = parseFloat(q[s]);
