@@ -2,6 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.544  Jun 23, 2022
+    Admin page, DX tab:
+        Show solitary circle-plus icon if all band bar entries have been deleted.
+        Don't allow last remaining DX label list or band service menu entries to be removed.
+    
+    Selcall extension:
+        For Austravel Net frequencies show base names when their selcalls are used.
+        Add Austravel Net channel numbers to the Selcall frequency menu.
+
 v1.543  Jun 19, 2022
     Fixes:
         Fix passband initialization bug that occurs under certain circumstances.

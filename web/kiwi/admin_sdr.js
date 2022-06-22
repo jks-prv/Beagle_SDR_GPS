@@ -1286,7 +1286,7 @@ function public_update(p)
 
 
 ////////////////////////////////
-// dx:
+// dx
 ////////////////////////////////
 
 function dx_html()
@@ -1821,6 +1821,7 @@ function dx_list_del_cb(path, idx)
 {
    idx = +idx;
    //console.log('dx_list_del_cb idx='+ idx);
+   if (dx.o.len <= 1) return;    // don't allow the last entry to be removed
    ext_send('SET DX_UPD g='+ idx +' f=-1');
    dx_save('id-dx-list-saved', dx.SAVE_NOW);
 }
@@ -2389,6 +2390,9 @@ function band_bar_render()
       
       if (i == dx.LEGEND) {
          w3_innerHTML('id-band-bar-list-legend', s_new);
+         if (cfg.bands.length == 0) {
+            s_a[0] = w3_button(dx_btn('w3-margin-L-8 w3-margin-T-8 w3-css-lime'), '+', 'band_bar_add_cb', i);
+         }
       } else {
          s_a[i] = s_new;
       }
@@ -2401,9 +2405,16 @@ function band_bar_add_cb(path, val, first)
    if (first) return;
    var i = +val;
    console.log('band_bar_add_cb path='+ path +' i='+ i);
-   if (i < 0 || i >= cfg.bands.length) return;
-   var b = cfg.bands[i];
-   var add = { min:b.min, max:b.max, name:b.name, svc:b.svc, itu:b.itu, sel:b.sel, chan:b.chan };
+   var add;
+
+   if (i == dx.LEGEND) {      // when only a circle-plus is shown generate a default entry
+      add = { min:530, max:1600, name:'new band bar', svc:null, itu:0, sel:'', chan:0 };
+   } else {
+      if (i < 0 || i >= cfg.bands.length) return;
+      var b = cfg.bands[i];
+      add = { min:b.min, max:b.max, name:b.name, svc:b.svc, itu:b.itu, sel:b.sel, chan:b.chan };
+   }
+   
    cfg.bands.splice(i+1, 0, add);
    dx_save('id-band-bar-saved', dx.SAVE_NOW);
    bands_addl_info();
@@ -2592,7 +2603,7 @@ function band_svc_del_cb(path, val, first)
    if (first) return;
    var i = +val;
    console.log('band_svc_del_cb path='+ path +' i='+ i);
-   if (i < 0 || i >= cfg.band_svc.length) return;
+   if (i < 0 || i >= cfg.band_svc.length || cfg.band_svc.length <= 1) return;
    cfg.band_svc.splice(i, 1);
    dx_save('id-band-svc-saved', dx.SAVE_NOW);
    bands_addl_info();

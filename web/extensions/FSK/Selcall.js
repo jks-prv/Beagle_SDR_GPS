@@ -79,6 +79,9 @@ function Selcall(init, output_cb) {
    t.CMD1_TEST = 118;
    t.CMD1_NOP = 126;
 
+   t.CMD2_100 = 100;
+   t.CMD2_110 = 110;
+
    // these are from DSC
    t.CMD2_UNABLE_FIRST = 100;
    t.CMD2_BUSY = 102;
@@ -331,10 +334,12 @@ Selcall.prototype.process_char = function(_code, fixed_start, output_cb, show_ra
          
          return rv;
       };
-
+      
       if (eos_ck(t.EOS) || eos_ck(t.ARQ) || eos_ck(t.ABQ)) eos = true;
+
       if (eos || t.seq > t.MSG_LEN_MAX) {
          var dump = t.dump_always;
+
          if (eos) {
             if (t.seq != t.MSG_LEN_MIN) {
                //if (show_errs) output_cb(t.output_msg(color(ansi.BLUE, 'non-std len='+ t.seq)));
@@ -358,7 +363,39 @@ Selcall.prototype.process_char = function(_code, fixed_start, output_cb, show_ra
             var freq = ext_get_freq() / 1e3;
             var raw = (new Date()).toUTCString().substr(17,8) +' '+ freq.toFixed(2) +' ';
             var fmt = fec(12).code;
-            var cat, cmd1;
+            var cat, cmd1, cmd2;
+            
+            var Austravel_net_match = false;
+            if (ext_get_name() == 'NAVTEX') {
+               var Austravel_net = getVarFromString('nt.freqs.Selcall.Austravel_net');
+               if (isArray(Austravel_net)) {
+                  Austravel_net.forEach(function(ae, i) {
+                     if (Austravel_net_match) return;
+                     if (Math.abs(freq - parseInt(ae)) < 1)
+                        Austravel_net_match = true;
+                  });
+               }
+            }
+
+            var call_decode = function(call, call_s) {
+               //console.log('Austravel_net_match='+ Austravel_net_match +' call='+ call);
+               if (!Austravel_net_match) return call_s;
+               var base = '';
+               switch (call) {
+                  case '2199': base = '(Austravel Casino NSW)'; break;
+                  case '3199': base = '(Austravel Shepparton VIC)'; break;
+                  case '4199': base = '(Austravel Mareeba North QLD)'; break;
+                  case '5199': base = '(Austravel Base SA)'; break;
+                  case '6199': base = '(Austravel Perth WA)'; break;
+                  case '6299': base = '(Austravel Kununnura WA)'; break;
+                  case '8199': base = '(Austravel Alice Springs NT)'; break;
+                  /*
+                  case '1234': base = '(Test1)'; break;
+                  case '5678': base = '(Test2)'; break;
+                  */
+               }
+               return w3_sb(call_s, base);
+            };
 
             for (var i = 0; i < t.seq; i++) {
                var fec_err = false;
@@ -393,11 +430,13 @@ Selcall.prototype.process_char = function(_code, fixed_start, output_cb, show_ra
                   }
                   if (i == 20) {
                      cmd1 = fec(24).code;
+                     cmd2 = fec(26).code;
                      if (cmd1 > 99) {
                         sym.push('  ');
                         raw += '__ ';
                      } else {
                         cmd1 = fec(28).code;
+                        cmd2 = fec(30).code;
                      }
                   }
 
@@ -436,38 +475,44 @@ Selcall.prototype.process_char = function(_code, fixed_start, output_cb, show_ra
                if (fec_errors) {
                   raw += color(ansi.RED, 'FEC');
                } else {
-                  var call = (fmt == t.FMT_INDIV_CALL || fmt == t.FMT_INDIV_SEMI_AUTO);
+                  var isCall = (fmt == t.FMT_INDIV_CALL || fmt == t.FMT_INDIV_SEMI_AUTO);
                   
                   // 6-digit calls:
                   //                                    1  1
                   //   0  1  2  3   4  5  6  7   8   9  0  1
                   // 123 00 68 68 100 01 99 80 121 110 01 60 ...
 
-                  if (call) {
+                  if (isCall) {
                      //  0  1  2  3  4  5  6    sym[i+10]
                      // 01 23 45 67 89 01 23    s3.slice()
                      // 01 61 41 10 31 20 38    16.14 110.31 20:38
-                     var call_to, call_from, id;
-                     if (+sym[1])
-                        call_to = color(ansi.CYAN, sym[1] + sym[2] + sym[3]);
-                     else
-                        call_to = color(ansi.CYAN, '__'+ sym[2] + sym[3]);
-                     if (+sym[5]) {
-                        id = sym[5] + sym[6] + sym[7];
-                        call_from = color(ansi.YELLOW, id);
+                     var call_to, call_to_s, call_from, call_from_s;
+                     if (+sym[1]) {
+                        call_to = sym[1] + sym[2] + sym[3];
+                        call_to_s = color(ansi.CYAN, call_to);
                      } else {
-                        id = sym[6] + sym[7];
-                        call_from = color(ansi.YELLOW, '__'+ id);
+                        call_to = sym[2] + sym[3];
+                        call_to_s = color(ansi.CYAN, '__'+ call_to);
                      }
-                     deco = call_from +' calling '+ call_to;
+                     if (+sym[5]) {
+                        call_from = sym[5] + sym[6] + sym[7];
+                        call_from_s = color(ansi.YELLOW, call_from);
+                     } else {
+                        call_from = sym[6] + sym[7];
+                        call_from_s = color(ansi.YELLOW, '__'+ call_from);
+                     }
+                     deco = call_decode(call_from, call_from_s) +' calling '+ call_decode(call_to, call_to_s);
                   }
                   
-                  if (call && cmd1 == t.CMD1_POSITION) {
+                  // SCS unencrypted position format, 4 and 6-digit calls
+                  if (isCall && cmd1 == t.CMD1_POSITION && cmd2 == t.CMD2_110 &&
+                     t.seq >= 48 && t.seq <= 56) {
 
                      var s = '';
                      for (i = 0; i <= 6; i++) s += sym[i+10];
                      
                      // [30.81,329.40] 01:63
+                     //  0  1  2  3  4  5  6
                      // 01 23 45 67 89 01 23    s3.slice()
                      // 03 08 13 29 40 01 63   -30.81, 129.40   81/
                      
@@ -499,15 +544,17 @@ Selcall.prototype.process_char = function(_code, fixed_start, output_cb, show_ra
 
                      deco += ' '+ s.slice(10,12) +':'+ s.slice(12,14);     // hh:mm
                      
-                     if (navtex_location_update(id, +lat, +lon, url_lat_lon(+lat, +lon),
-                           bad_min? [ 'white', 'red' ] : [ 'white', (freq < 7500)? 'magenta' : 'blue' ])) {
+                     var dupe = false;
+                     if (ext_get_name() == 'NAVTEX')
+                        dupe = navtex_location_update(call_from, +lat, +lon, url_lat_lon(+lat, +lon),
+                           bad_min? [ 'white', 'red' ] : [ 'white', (freq < 7500)? 'magenta' : 'blue' ]);
+                     if (dupe)
                         deco += ' '+ color(ansi.YELLOW, '(dupe)');
-                     }
                   }
                   
                   if (deco) deco = (new Date()).toUTCString().substr(17,8) +' '+ freq.toFixed(2) +' '+ deco;
                }
-               console.log('fec_errors='+ fec_errors +' show_errs='+ show_errs);
+               console.log('fec_errors='+ fec_errors +' show_errs='+ show_errs +' seq='+ t.seq);
                if (!fec_errors && deco) {
                   output_cb(deco +'\n');
                }

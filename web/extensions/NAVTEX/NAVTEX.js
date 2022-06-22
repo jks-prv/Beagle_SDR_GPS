@@ -46,8 +46,8 @@ var nt = {
    TYPE_SELCALL: 2,
    freq: 0,
    freq_s: '',
-   cf_navtex: 500,
-   cf_dsc: 500,
+   cf_navtex: 500,         // menu freq is cf, so low cf can be used
+   cf_dsc: 500,            // menu freq is cf, so low cf can be used
    cf_selcall: 1785,       // so cf/dial matches published freqs
    cf_selcall_low: 785,    // signals where lower freq (easier to listen to) can be used
    pb_skirt_width: 50,
@@ -835,7 +835,8 @@ function navtex_location_update(loc_name, lat, lon, url, color)
       var n = loc_o.pos.push([lat, lon]);
       
       // might have re-appeared after previously going grey
-      loc_o.el.style.background = loc_o.orig_bg;     
+      if (loc_o.el)
+         loc_o.el.style.background = loc_o.orig_bg;     
 
       var now = Date.now();
       var dt = Math.floor(((now - loc_o.upd) / 60000) % 60);
