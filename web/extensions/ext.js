@@ -475,6 +475,11 @@ function ext_panel_set_name(name)
 	extint.current_ext_name = name;
 }
 
+function ext_get_name()
+{
+	return extint.current_ext_name;
+}
+
 
 /*
 www.ios-resolution.com
