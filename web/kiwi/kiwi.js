@@ -14,6 +14,7 @@ var kiwi = {
    
    inactivity_panel: false,
    no_admin_conns_pend: 0,
+   foff_error_pend: 0,
    notify_seq: 0,
    ident_min: 16,    // e.g. "wsprdaemon_v3.0a" is 16 chars
 
@@ -1775,6 +1776,26 @@ function kiwi_msg(param, ws)
                   //console.log('$$$$ confirmation_panel_close');
                },
                'red');
+         }
+         break;
+      
+		case "foff_error":
+		   kiwi.foff_error_pend++;
+		   if (kiwi.foff_error_pend == 1) {
+		      setTimeout(function() {
+               confirmation_panel_close();
+               confirmation_show_content(
+                  (+param[1] == 0)?
+                     '"foff=" URL parameter available from local connections only.'
+                  :
+                     'Must close all admin connections before using "foff=" URL parameter.',
+                  500, 55,
+                  function() {
+                     confirmation_panel_close();
+                     kiwi.foff_error_pend = 0;
+                  },
+                  'red');
+            }, 5000);
          }
          break;
       

@@ -1,6 +1,6 @@
 // KiwiSDR utilities
 //
-// Copyright (c) 2014-2017 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2022 John Seamons, ZL/KF6VO
 
 
 // isUndeclared(v) => use inline "typeof(v) === 'undefined'" (i.e. can't pass undeclared v as func arg)
@@ -259,7 +259,11 @@ function kiwi_dedup_array(a, func)
 {
    var ra = [];
    a.forEach(function(v, i) {
-      if (func && func(v)) return;
+      if (func) {
+         var rv = func(v);
+         if (!rv || rv.err) return;
+         v = rv.v;
+      }
       if (!ra.includes(v)) ra.push(v);
    });
    return ra;
@@ -1846,6 +1850,8 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	
 	var no_wf = (window.location.href.includes('?no_wf') || window.location.href.includes('&no_wf'));
 	ws_url = ws_protocol + ws_url +'/'+ (no_wf? 'no_wf/':'kiwi/') + timestamp +'/'+ stream;
+	if (isNonEmptyString(window.location.search))
+	   ws_url += window.location.search;      // pass query string to support "&foff="
 	if (no_wf) wf.no_wf = true;
 	
 	//console.log('open_websocket '+ ws_url);

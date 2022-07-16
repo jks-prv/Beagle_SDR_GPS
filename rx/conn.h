@@ -61,6 +61,8 @@ typedef struct conn_st {
 	// set in both STREAM_SOUND & STREAM_WATERFALL
 	int task;
 	bool stop_data, kick;
+	bool foff_set;
+	double foff;
 
 	// set in STREAM_SOUND or STREAM_WATERFALL (WF-only connections)
 	bool ident, arrived;

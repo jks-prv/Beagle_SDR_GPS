@@ -19,7 +19,7 @@ This file is part of OpenWebRX.
 
 */
 
-// Copyright (c) 2015 - 2021 John Seamons, ZL/KF6VO
+// Copyright (c) 2015 - 2022 John Seamons, ZL/KF6VO
 
 var owrx = {
    debug_drag: false,
@@ -269,6 +269,7 @@ function kiwi_main_ready()
 	s = 'mobile'; if (q[s]) force_mobile = true;
 	s = 'mem'; if (q[s]) owrx.override_fmem = q[s];
 	// 'no_wf' is handled in kiwi_util.js
+	// 'foff' is handled in {rx_server,rx_cmd}.cpp
 
    // development
 	s = 'sqth'; if (q[s]) squelch_threshold = parseFloat(q[s]);
@@ -308,7 +309,7 @@ function kiwi_main_ready()
 	   }
 	}
 
-	kiwi_xdLocalStorage_init();
+	//kiwi_xdLocalStorage_init();
 	kiwi_get_init_settings();
 	if (!no_geoloc) kiwi_geolocate();
 
@@ -5779,6 +5780,7 @@ function freq_memory_init()
 	   fmem = owrx.override_fmem.split(',');
 	   var prec = cfg.show_1Hz? 3:2;
 	   fmem.forEach(function(s, i) {
+	      if (isNumber(s)) s = s.toString();
 	      var f = s.parseFloatWithUnits('kM', 1e-3);
 	      if (isNumber(f))
 	         fmem[i] = w3_clamp(f, 1, cfg.max_freq? 32000 : 30000).toFixed(prec);
@@ -5791,8 +5793,13 @@ function freq_memory_init()
       owrx.freq_memory =
          kiwi_dedup_array(fmem,
             function(v) {
-               if (v == null || !isNumber(+v) || +v <= 0) return true;
-               return false;
+               var rv = { err: false };
+               v = +v;
+               if (!isNumber(v) || v <= 0)
+                  rv.err = true;
+               else
+                  rv.v = v.toString();    // in case storage has a number instead of a string
+               return rv;
             }
          );
       //console.log('freq_memory_init');
@@ -5850,7 +5857,7 @@ function freq_memory_update(f)
    //console.log('freq_memory update');
    //console.log(owrx.freq_memory);
    if (!isNumber(+f)) return;
-   if (f <= 1) f = 1;
+   if (f < 1) f = '1';
 	if (f != owrx.freq_memory[0]) {
       //canvas_log('add='+ f);
 	   owrx.freq_memory.unshift(f);
@@ -8244,7 +8251,7 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', 'Keys', 25, 'Function'),
          w3_inline_percent('w3-padding-tiny', 'g =', 25, 'select frequency entry field'),
          w3_inline_percent('w3-padding-tiny', 'j i LR-arrow-keys', 25, 'frequency step down/up, add shift or alt/ctrl for faster<br>shift plus alt/ctrl to step to next/prev DX label'),
-         w3_inline_percent('w3-padding-tiny', 'm', 25, 'toggle frequency memory menu'),
+         w3_inline_percent('w3-padding-tiny', 'm n', 25, 'toggle frequency memory menu, VFO A/B'),
          w3_inline_percent('w3-padding-tiny', 'b B', 25, 'scroll band menu'),
          w3_inline_percent('w3-padding-tiny', 'e E', 25, 'scroll extension menu'),
          w3_inline_percent('w3-padding-tiny', 'a A d l u c f q', 25, 'toggle modes: AM SAM DRM LSB USB CW NBFM IQ<br>add alt/ctrl to toggle backwards (e.g. SAM modes)'),
@@ -8354,6 +8361,7 @@ function keyboard_shortcut(key, key_mod, ctlAlt, keyCode)
    case 'm': freq_memory_menu_show(true); break;
    case 'b': band_scroll(1); break;
    case 'B': band_scroll(-1); break;
+   case 'n': freq_vfo_cb(); break;
 
    // page scroll
    case '<': page_scroll(-page_scroll_amount); break;
@@ -10128,7 +10136,7 @@ function users_setup()
 ////////////////////////////////
 
 // icon callbacks
-function freq_vfo_cb(path)
+function freq_vfo_cb()
 {
    owrx.vfo_ab ^= 1;
    //console.log('VFO A/B ='+ owrx.vfo_ab);
