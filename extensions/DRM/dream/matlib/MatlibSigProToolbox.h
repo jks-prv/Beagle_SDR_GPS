@@ -38,7 +38,7 @@
 CMatlibVector<CReal>	Randn(const int iLen);
 inline
 CMatlibVector<CReal>	Rand(const int iLen)
-							{_VECOP(CReal, iLen, (CReal) rand() / RAND_MAX);}
+							{_VECOP(CReal, iLen, (CReal) ((double) rand() / RAND_MAX));}
 
 
 /* Window functions */

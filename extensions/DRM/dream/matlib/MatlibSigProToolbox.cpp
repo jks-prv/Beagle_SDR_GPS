@@ -233,7 +233,7 @@ CMatlibVector<CReal> Randn(const int iLen)
 {
 	/* Add some constant distributed random processes together */
 	_VECOP(CReal, iLen, 
-		(CReal) ((((CReal) 
+		(CReal) ((((double) 
 		rand() + rand() + rand() + rand() + rand() + rand() + rand()) 
 		/ RAND_MAX - 0.5) * /* sqrt(3) * 2 / sqrt(7) */ 1.3093));
 }
