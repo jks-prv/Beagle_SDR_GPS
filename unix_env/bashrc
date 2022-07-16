@@ -298,6 +298,7 @@ alias cm="while true; do date; ct; cf; vmstat; sleep 2; done"
 alias opp="omapconf show opp"
 
 # BBB
+type lsb_release >/dev/null 2>&1 || { lsb_release() { :; } ; }
 alias dog="echo Debian `cat /etc/debian_version`; more /etc/dogtag; uname -a; lsb_release -ds"
 alias tag=dog
 alias slots7="cat /sys/devices/bone_capemgr.*/slots"
@@ -377,7 +378,7 @@ alias certs="certbot certificates"
 
 # sharing KiwiSDR sources from a development machine to Beagle via NFS
 # download NFS with command: "pki nfs-common"
-alias nfs="mount -l -t nfs"
+alias nfs="mount -l -t nfs; showmount -a"
 # mount read-only so any changes don't flow backwards to development machine sources!
 #alias nfsup="mount -t nfs -o ro,proto=tcp,port=2049 dev_machine_name:path_to_Beagle_SDR_GPS /root/Beagle_SDR_GPS"
 alias nfsdn="cd ~; umount -a -f -t nfs"
@@ -391,6 +392,7 @@ alias nfsdn="cd ~; umount -a -f -t nfs"
 #   pki nfs-common nfs-kernel-server
 # edit resulting /etc/exports file and add: (adjust for subnet address)
 #   / 192.168.1.0/24(ro,sync,no_subtree_check)
+# might have to reboot beagle to get RPCd running
 # now on development machine: ("resvport" is necessary for MacOS)
 #   mkdir -p ${HOME}/mnt
 #   sudo mount -t nfs -o ro,resvport beagle_hostname:/ ${HOME}/mnt
