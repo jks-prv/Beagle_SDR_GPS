@@ -32,14 +32,12 @@
    },
 
    "Asia/Pacific": {
-// www.nws.noaa.gov/om/marine/hfreyes_links.htm
+// www.weather.gov/marine/uscg_broadcasts
+// other nws.noaa.gov links have out-of-date frequencies
       "Pt. Reyes_NMC US":   [ 4346, 8682, 12786, 17151.2, 22527 ],
    
-// www.nws.noaa.gov/om/marine/hfhi_links.htm
-      "": [],
       "Honolulu_KVM70 HI": [ 8295.5, 9982.5, 11090, 16135 ],
    
-// www.nws.noaa.gov/om/marine/hfak_links.htm
       "Kodiak_NOJ AK":   [ 2054, 4298, 8459, 12412.5 ],
    
 // www.metservice.com/marine/radio/zklf-radiofax-schedule
@@ -69,8 +67,8 @@
    
 // per forum user Fabrys 10/2020
 // "Guangzhou_XSQ, CN":  [ 4159.5, 8310.5, 12375.5, 16562.5 ],
-// 4/2022: new freqs per Fabrys
-      "Guangzhou_XSQ, CN":  [ 4199.8, 8412.5, 12629.3, 16826.3 ],
+// 7/2022: new freqs per Fabrys
+      "Guangzhou_XSQ, CN":  [ 4199.75, 8412.5, 12629.25, 16826.25 ],
    
       "Shanghai_XSG, CN":  [ 4170, 8302, 12382, 16559 ],
    
