@@ -9830,9 +9830,14 @@ function squelch_setup(flags)
       //console.log('$squelch_setup nbfm='+ nbfm +' sq='+ sq +' squelch='+ squelch);
       w3_el('id-squelch-value').max = nbfm? 99:40;
       w3_set_value('id-squelch-value', squelch);
+
+      var tail = kiwi_storeGet('last_tail', 0);
+      squelch_tail = tail? +tail : 0;
+      w3_select_value('id-squelch-tail', squelch_tail);
    }
    
    set_squelch_cb('', squelch, true, false, true);
+   squelch_tail_cb('', squelch_tail, false, true);
 
 	if (nbfm) {
 	   squelch_action(squelched);
@@ -9869,12 +9874,16 @@ function set_squelch_cb(path, str, done, first, no_write_cookie)
    }
 }
 
-function squelch_tail_cb(path, val, first)
+function squelch_tail_cb(path, val, first, no_write_cookie)
 {
-   //console.log('squelch_tail_cb path='+ path +' val='+ val +' first='+ first);
+   //console.log('squelch_tail_cb path='+ path +' val='+ val +' first='+ first +' no_write_cookie='+ no_write_cookie);
    if (first) return;
    squelch_tail = +val;
    send_squelch();
+
+   // nbfm has no tail menu
+   if (no_write_cookie != true && /* safety net */ cur_mode != 'nbfm')
+      kiwi_storeSet('last_tail', squelch_tail);
 }
 
 function sam_pll_reset_cb(path, val, first)
