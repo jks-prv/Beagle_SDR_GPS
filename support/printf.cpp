@@ -422,7 +422,7 @@ void mlprintf_ff(const char *fmt, ...)
 }
 
 #define N_DST_STATIC 4
-#define N_DST_STATIC_BUF (255 + SPACE_FOR_NULL)
+#define N_DST_STATIC_BUF (1024 + SPACE_FOR_NULL)
 static char dst_static[N_DST_STATIC][N_DST_STATIC_BUF];
 
 // result in a static buffer for use with e.g. a short-term immediate printf argument
