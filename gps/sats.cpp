@@ -99,7 +99,7 @@ SATELLITE Sats[] = {
 
     // Galileo E1B
     // last checked: 15-Jun-2022
-    // www.gsc-europa.eu/system-status/Constellation-Information
+    // www.gsc-europa.eu/system-service-status/constellation-information
     // en.wikipedia.org/wiki/List_of_Galileo_satellites
     { 1, 0, 0, E1B},    // gsat0210
     { 2, 0, 0, E1B},    // gsat0211
