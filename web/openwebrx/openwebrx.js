@@ -5468,52 +5468,65 @@ function freqset_complete(from)
 	//console.log("FCMPL from="+ from +" obj="+ typeof(obj) +" val="+ (obj.value).toString());
 	kiwi_clearTimeout(freqset_tout);
 	if (isUndefined(obj) || obj == null) return;		// can happen if SND comes up long before W/F
+	var iPhone = kiwi_is_iPhone();
 
-   var p = obj.value.split(/[\/\+\:\;]/);
-	var slash_or_plus = obj.value.includes('/') || obj.value.includes('+');
-   // 'k' suffix is simply ignored since default frequencies are in kHz
-	var f = p[0].replace(',', '.').parseFloatWithUnits('M', 1e-3);    // Thanks Petri, OH1BDF
-	var err = true;
+   var a, f, pb, adj_pbw;
+   if (iPhone) {
+      // ff ff. ff.f ff.f.pbw [ff]..pbw [ff]..pblo.pbhi
+      a = obj.value.split('.');
+      f = (a.length == 1)? a[0] : (a[0] +'.'+ a[1]);
+      pb = a; pb.shift(); pb.shift();
+      if (pb.length == 0) pb = null;
+	   adj_pbw = true;
+   } else {
+      // ff ff. ff.ff [/pbw] [/pblo,pbhi] [:pbc] [:pbc,pbw]
+      a = obj.value.split(/[\/\:]/);
+      f = a[0];
+      pb = (a.length >= 2)? a[1].split(',') : null;
+	   adj_pbw = obj.value.includes('/');
+   }
 
-   if (obj.value == '/' || obj.value == '+') {
+	// "/" alone resets to default passband (".." for iPhone)
+   if (obj.value == '/' || (iPhone && obj.value == '..')) {
       //console.log('restore_passband '+ cur_mode);
       restore_passband(cur_mode);
       demodulator_analog_replace(cur_mode);
-      freqset_update_ui(owrx.FSET_NOP);    // restore previous
+      freqset_update_ui(owrx.FSET_NOP);      // restore previous
       return;
-   } else
-	if (f > 0 && !isNaN(f)) {
-	   f -= kiwi.freq_offset_kHz;
-	   if (f > 0 && !isNaN(f)) {
-         freqmode_set_dsp_kHz(f, null);
-	      w3_field_select(obj, {mobile:1, log:2});
-	      err = false;
+   }
+   
+	var restore = true;
+   if (f != '') {       // f == '' for "/pb" or "..pb" cases
+      // 'k' suffix is simply ignored since default frequencies are in kHz
+      f = f.replace(',', '.').parseFloatWithUnits('M', 1e-3);    // Thanks Petri, OH1BDF
+      if (f > 0 && !isNaN(f)) {
+         f -= kiwi.freq_offset_kHz;
+         if (f > 0 && !isNaN(f)) {
+            freqmode_set_dsp_kHz(f, null);
+            w3_field_select(obj, {mobile:1, log:2});
+            restore = false;
+         }
       }
 	}
-   if (err) freqset_update_ui(owrx.FSET_NOP);    // restore previous
+
+   if (restore) freqset_update_ui(owrx.FSET_NOP);     // restore previous
 	
 	// accept "freq/pbw" or "/pbw" to quickly change passband width to a numeric value
 	// also "lo,hi" in place of "pbw"
 	// and ":pbc" or ":pbc,pbw" to set the pbc at the current pbw
-	// "/" alone resets to default passband
-	// "+" can be substituted for "/" above for iOS tel popup keyboard that has no "/"
-	// ";" can be substituted for ":" above for iOS tel popup keyboard that has no ":"
-	// with iOS tel you get ',' with the 'pause' key
-	if (p[1]) {
-	   p2 = p[1].split(',');
-	   var lo = p2[0].parseFloatWithUnits('k');
-	   var hi = NaN;
-	   if (p2.length > 1) {
-	      hi = p2[1].parseFloatWithUnits('k');
-	   }
-	   //console.log('### <'+ (slash_or_plus? '/' : ':') +'> '+ p2[0] +'/'+ lo +', '+ p2[1] +'/'+ hi);
+	if (pb) {
+      var lo = pb[0].parseFloatWithUnits('k');
+      var hi = NaN;
+      if (pb.length > 1) hi = pb[1].parseFloatWithUnits('k');
+	   
+	   //console.log('### pb '+ (adj_pbw? '/' : ':') +' '+ pb[0] +'|'+ lo +', '+ pb[1] +'|'+ hi);
       var cpb = ext_get_passband();
       var cpbhw = (cpb.high - cpb.low)/2;
       var cpbcf = cpb.low + cpbhw;
 	   
-      if (slash_or_plus) {
+      if (adj_pbw) {
          // adjust passband width about current pb center
-         if (p2.length == 1) {
+         if (pb.length == 1) {
             // /pbw
             var pbhw = lo/2;
             lo = cpbcf - pbhw, hi = cpbcf + pbhw;
@@ -5521,7 +5534,7 @@ function freqset_complete(from)
       } else {
          // adjust passband center using current or specified pb width
          var pbc = lo;
-         if (p2.length == 1) {
+         if (pb.length == 1) {
             // :pbc
             lo = pbc - cpbhw;
             hi = pbc + cpbhw;
@@ -8301,7 +8314,7 @@ function keyboard_shortcut_url_keys()
 }
 
 // abcdefghijklmnopqrstuvwxyz `~!@#$%^&*()-_=+[]{}\|;:'"<>? 0123456789.,/kM
-// ..........F.. ..... ......   ...       F .F    ..FF  ... FFFFFFFFFFFFFFF
+// ..........F.. ..... ......   ...       F .     .. F  ... FFFFFFFFFFFFFFF
 // .. ..   ..  F  .  .  ..  .                               F: frequency entry keys
 // ABCDEFGHIJKLMNOPQRSTUVWXYZ
 // :space: :tab:
@@ -8445,7 +8458,6 @@ function keyboard_shortcut_event(evt)
             (k >= '0' && k <= '9' && !ctl) ||
             k == '.' || k == ',' ||                // ',' is alternate decimal point to '.' and used in passband spec
             k == '/' || k == ':' || k == '-' ||    // for passband spec, have to allow for negative passbands (e.g. lsb)
-            k == '+' || k == ';' ||                // '+;' are for benefit of iOS tel popup keyboard that have no '/:'
             k == 'k' || k == 'M' ||                // scale modifiers
             k == 'Enter' || k == 'ArrowUp' || k == 'ArrowDown' || k == 'Backspace' || k == 'Delete'
          );
@@ -8616,6 +8628,7 @@ function panels_setup()
 	
 	var mobile = kiwi_isMobile()?
 	   (' inputmode='+ dq(kiwi_is_iOS()? 'decimal' : 'tel') +' ontouchstart="popup_keyboard_touchstart(event)" onclick="this.select()"') : '';
+	   //(' inputmode="tel" ontouchstart="popup_keyboard_touchstart(event)" onclick="this.select()"') : '';
 	
 	w3_el("id-control-freq1").innerHTML =
 	   w3_inline('w3-halign-space-between/',
