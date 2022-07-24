@@ -59,7 +59,7 @@ try {
 var kiwi_util = {
 };
 
-var kiwi_iOS, kiwi_MacOS, kiwi_linux, kiwi_Windows, kiwi_android;
+var kiwi_iOS, kiwi_iPhone, kiwi_MacOS, kiwi_linux, kiwi_Windows, kiwi_android;
 var kiwi_safari, kiwi_firefox, kiwi_chrome, kiwi_opera, kiwi_smartTV;
 
 // wait until DOM has loaded before proceeding (browser has loaded HTML, but not necessarily images)
@@ -71,6 +71,7 @@ document.onreadystatechange = function() {
 		console.log(s);
 		//alert(s);
 		kiwi_iOS = (s.includes('iPhone') || s.includes('iPad'));
+		kiwi_iPhone = s.includes('iPhone');
 		kiwi_MacOS = s.includes('OS X');
 		kiwi_linux = s.includes('Linux');
 		kiwi_Windows = s.includes('Win');
@@ -98,6 +99,7 @@ document.onreadystatechange = function() {
 		   ' Linux='+ kiwi_linux +
 		   ' Windows='+ kiwi_Windows +
 		   ' iOS='+ kiwi_iOS +
+		   ' iPhone='+ kiwi_iPhone +
 		   ' Android='+ kiwi_android +
 		   ' SmartTV='+ kiwi_smartTV);
 		
@@ -125,6 +127,8 @@ document.onreadystatechange = function() {
 }
 
 function kiwi_is_iOS() { return kiwi_iOS; }
+
+function kiwi_is_iPhone() { return kiwi_iPhone; }
 
 function kiwi_isMacOS() { return kiwi_MacOS; }
 
