@@ -2,6 +2,19 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.545  Jul 27, 2022
+    By request:
+    Main control panel sliders (WF, Audio, AGC tabs) can now be adjusted by hovering over them and
+        using the mouse wheel (or trackpad emulation of mouse wheel if enabled).
+    Keyboard shortcut key 'n' toggles VFO A/B. Next to the 'm' key which shows the freq memory menu.
+        As usual type 'h' or '?' to see a list of all shortcuts.
+    Squelch "tail" menu value (audio tab) restored on page reload.
+    New URL parameter "foff=freq_offset_kHz". Sets freq scale offset before loading user page.
+        Same as right-click menu "set freq offset" and admin page, config tab.
+        Restrictions:
+            1) Can only be used from local network connections since it's a privileged (admin) operation.
+            2) As with the right-click menu option, no admin page connections can be open.
+
 v1.544  Jun 23, 2022
     Admin page, DX tab:
         Show solitary circle-plus icon if all band bar entries have been deleted.
