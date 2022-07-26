@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2022 John Seamons, ZL/KF6VO
 
 #include "types.h"
 #include "config.h"
@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
 		if (ARG("-e1b_lo_gain")) { ARGL(gps_lo_gain); printf("e1b_lo_gain %d\n", gps_lo_gain); }
 		if (ARG("-e1b_cg_gain")) { ARGL(gps_cg_gain); printf("e1b_cg_gain %d\n", gps_cg_gain); }
 
-		if (ARG("-debian")) ARGL(debian_ver);
+		if (ARG("-debian")) {}
 		if (ARG("-ctrace")) ARGL(web_caching_debug);
 		if (ARG("-ext")) ext_clk = true;
 		if (ARG("-use_spidev")) ARGL(use_spidev);
@@ -251,13 +251,12 @@ int main(int argc, char *argv[])
         _exit(0);
     #endif
 
-    if (debian_ver) lprintf("-debian %d\n", debian_ver);
     char *reply = read_file_string_reply("/etc/debian_version");
-    if (reply != NULL) {
-        sscanf(kstr_sp(reply), "%d.%d", &debian_maj, &debian_min);
-        kstr_free(reply);
-        lprintf("/etc/debian_version %d.%d\n", debian_maj, debian_min);
-    }
+    if (reply == NULL) panic("debian_version");
+    if (sscanf(kstr_sp(reply), "%d.%d", &debian_maj, &debian_min) != 2) panic("debian_version");
+    kstr_free(reply);
+    lprintf("/etc/debian_version %d.%d\n", debian_maj, debian_min);
+    debian_ver = debian_maj;
     
     #if defined(USE_ASAN)
     	lprintf("### compiled with USE_ASAN\n");

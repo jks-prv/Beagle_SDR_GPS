@@ -9724,7 +9724,7 @@ function de_emp_cb(path, idx, first)
 
 function setpan_cb(path, val, done, first, cb_param)
 {
-   setpan_cb(done, val);
+   setpan(done, val);
 }
 
 function setpan(done, str, no_write_cookie)

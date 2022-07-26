@@ -116,16 +116,18 @@ retry:
 }
 
 eeprom_t eeprom;
-static bool debian8 = false;
+static bool debian7 = true;
 
-#define EEPROM_DEV_DEBIAN7	    "/sys/bus/i2c/devices/1-0054/eeprom"
+#define EEPROM_DEV_DEBIAN7  "/sys/bus/i2c/devices/1-0054/eeprom"
 
-#ifdef CPU_AM5729
- #define EEPROM_DEV_DEBIAN8	    "/sys/bus/i2c/devices/3-0054/eeprom"
+#ifdef CPU_TDA4VM
+ #define EEPROM_DEV     "/sys/bus/i2c/devices/5-0054/eeprom"
+#elif defined(CPU_AM5729)
+ #define EEPROM_DEV     "/sys/bus/i2c/devices/3-0054/eeprom"
 #elif defined(CPU_BCM2837)
- #define EEPROM_DEV_DEBIAN8	    "/sys/bus/i2c/devices/1-0050/eeprom"
+ #define EEPROM_DEV     "/sys/bus/i2c/devices/1-0050/eeprom"
 #else
- #define EEPROM_DEV_DEBIAN8	    "/sys/bus/i2c/devices/2-0054/eeprom"
+ #define EEPROM_DEV     "/sys/bus/i2c/devices/2-0054/eeprom"
 #endif
 
 int eeprom_check()
@@ -139,8 +141,8 @@ int eeprom_check()
 	fp = fopen(fn, "r");
 	
 	if (fp == NULL && errno == ENOENT) {
-		fn = EEPROM_DEV_DEBIAN8;
-		debian8 = true;
+		fn = EEPROM_DEV;
+		debian7 = false;
 		fp = fopen(fn, "r");
 	}
 	
@@ -259,7 +261,7 @@ void eeprom_write(next_serno_e type, int serno)
     // fully complete (flush) until after fclose() returns!
 	ctrl_clr_set(CTRL_EEPROM_WP, 0);    // takes effect about 600 us before last write
 
-	fn = debian8? EEPROM_DEV_DEBIAN8 : EEPROM_DEV_DEBIAN7;
+	fn = debian7? EEPROM_DEV_DEBIAN7 : EEPROM_DEV;
 
 	if ((fp = fopen(fn, "r+")) == NULL) {
 		mlprintf("EEPROM write: open %s %s\n", fn, strerror(errno));

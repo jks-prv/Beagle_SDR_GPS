@@ -1,4 +1,4 @@
-ifeq ($(DEBIAN_7),true)
+ifeq ($(DEBIAN_VERSION),7)
     HFDL_SKIP = true
 else
     HFDL_SKIP = false
@@ -16,38 +16,57 @@ else
 
     EXT_DEFINES += -DHFDL -DHFDL_KIWI -DDUMPHFDL_VERSION=STRINGIFY\(1.1.0\)
 
-    ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
-        EXT_I += -I/usr/local/include/libacars-2 -I/usr/local/include/liquid
-        EXT_I += -I/usr/lib/arm-linux-gnueabihf/glib-2.0/include -I/usr/include/glib-2.0
+    ifeq ($(XC),-DXC)
+        EXT_I += -I$(KIWI_XC_REMOTE_FS)/usr/local/include/libacars-2 -I$(KIWI_XC_REMOTE_FS)/usr/local/include/liquid
+        EXT_I += -I$(KIWI_XC_REMOTE_FS)/usr/lib/$(LIB_ARCH)/glib-2.0/include -I$(KIWI_XC_REMOTE_FS)/usr/include/glib-2.0
 
-        LIBS += -Wl,-rpath -Wl,/usr/lib/arm-linux-gnueabihf
+        LIBS += -Wl,-rpath -Wl,$(KIWI_XC_REMOTE_FS)/usr/lib/$(LIB_ARCH)
 
-        LIBS_DEP += /usr/local/lib/libacars-2.so /usr/local/lib/libliquid.so
-        /usr/local/lib/libacars-2.so /usr/local/lib/libliquid.so:
-	        rsync -av extensions/HFDL/include/ /usr/local/include
-	        rsync -av extensions/HFDL/lib/$(CPU)/ /usr/local/lib
-	        rsync -av extensions/HFDL/lib/pkgconfig/ /usr/local/lib/pkgconfig
+        LIBS_DEP += $(KIWI_XC_REMOTE_FS)/usr/local/lib/libacars-2.so $(KIWI_XC_REMOTE_FS)/usr/local/lib/libliquid.so
 
-        LIBS_DEP += /usr/bin/cmake
-        /usr/bin/cmake:
-	        -apt-get -y install cmake
+        LIBS_DEP += $(KIWI_XC_REMOTE_FS)/usr/bin/cmake
 
-        LIBS_DEP += /usr/lib/arm-linux-gnueabihf/libglib-2.0.so
-        /usr/lib/arm-linux-gnueabihf/libglib-2.0.so:
-	        -apt-get -y install libglib2.0-dev
+        LIBS_DEP += $(KIWI_XC_REMOTE_FS)/lib/$(LIB_ARCH)/libglib-2.0.so.0
+        LIBS += -lpthread
 
-        LIBS_DEP += /usr/lib/arm-linux-gnueabihf/libconfig++.so
-        /usr/lib/arm-linux-gnueabihf/libconfig++.so:
-	        -apt-get -y install libconfig++-dev
+        LIBS_DEP += $(KIWI_XC_REMOTE_FS)/usr/lib/$(LIB_ARCH)/libconfig++.so
 
-        LIBS_DEP += /usr/lib/arm-linux-gnueabihf/libsqlite3.so
-        /usr/lib/arm-linux-gnueabihf/libsqlite3.so:
-	        -apt-get -y install libsqlite3-dev
+        LIBS_DEP += $(KIWI_XC_REMOTE_FS)/usr/lib/$(LIB_ARCH)/libsqlite3.so
     else
-        EXT_I += -I/opt/local/include/glib-2.0 -I/usr/local/include/libacars-2
-        EXT_I += -I/usr/local/Cellar/glib/2.70.0_1/lib/glib-2.0/include
+    
+        ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
+            EXT_I += -I/usr/local/include/libacars-2 -I/usr/local/include/liquid
+            EXT_I += -I/usr/lib/$(LIB_ARCH)/glib-2.0/include -I/usr/include/glib-2.0
 
-        LIBS += -L/usr/local/lib -L/opt/local/lib -L /usr/local/MacGPG2/lib
+            LIBS += -Wl,-rpath -Wl,/usr/lib/$(LIB_ARCH)
+
+            LIBS_DEP += /usr/local/lib/libacars-2.so /usr/local/lib/libliquid.so
+            /usr/local/lib/libacars-2.so /usr/local/lib/libliquid.so:
+	            rsync -av extensions/HFDL/include/ /usr/local/include
+	            rsync -av extensions/HFDL/lib/$(CPU)/ /usr/local/lib
+	            rsync -av extensions/HFDL/lib/pkgconfig/ /usr/local/lib/pkgconfig
+
+            LIBS_DEP += /usr/bin/cmake
+            /usr/bin/cmake:
+	            -apt-get -y install cmake
+
+            LIBS_DEP += /usr/lib/$(LIB_ARCH)/libglib-2.0.so
+            /usr/lib/$(LIB_ARCH)/libglib-2.0.so:
+	            -apt-get -y install libglib2.0-dev
+
+            LIBS_DEP += /usr/lib/$(LIB_ARCH)/libconfig++.so
+            /usr/lib/$(LIB_ARCH)/libconfig++.so:
+	            -apt-get -y install libconfig++-dev
+
+            LIBS_DEP += /usr/lib/$(LIB_ARCH)/libsqlite3.so
+            /usr/lib/$(LIB_ARCH)/libsqlite3.so:
+	            -apt-get -y install libsqlite3-dev
+        else
+            EXT_I += -I/opt/local/include/glib-2.0 -I/usr/local/include/libacars-2
+            EXT_I += -I/usr/local/Cellar/glib/2.70.0_1/lib/glib-2.0/include
+
+            LIBS += -L/usr/local/lib -L/opt/local/lib -L /usr/local/MacGPG2/lib
+        endif
     endif
 
     LIBS += -lacars-2 -lliquid -lglib-2.0 -lconfig -lsqlite3

@@ -18,9 +18,17 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
+// Copyright (c) 2015-2022 John Seamons, ZL/KF6VO
+
 #pragma once
 
-#include "sitara.h"
+#if defined(CPU_AM3359) || defined(CPU_AM5729)
+ #include "sitara.h"
+#endif
+
+#ifdef CPU_TDA4VM
+ #include "jacinto.h"
+#endif
 
 extern volatile u4_t *spi_m, *gpio_m[];
 
@@ -36,7 +44,7 @@ extern gpio_t P811, P812, P813, P814, P815, P816, P817, P818, P819, P826;
 void _devio_check(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_val1, u4_t pmux_val2);
 
 #define gpio_setup(gpio, dir, initial, pmux_val1, pmux_val2) \
-	_gpio_setup(#gpio, gpio, dir, initial, pmux_val1, pmux_val2);
+    _gpio_setup(#gpio, gpio, dir, initial, pmux_val1, pmux_val2);
 void _gpio_setup(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t initial, u4_t pmux_val1, u4_t pmux_val2);
 
 void peri_init();

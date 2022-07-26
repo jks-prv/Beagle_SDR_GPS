@@ -1,5 +1,5 @@
 Instructions for cross-compiling KiwiSDR code on a fast development machine.
-[updated 12 June 2020]
+[updated 25 July 2022]
 
 It is now possible to create an ARM architecture executable kiwi.bin file that can be
 directly copied to Debian running on the Beagle of the Kiwi. It is essentially the same as
@@ -62,13 +62,15 @@ To use nfs follow this procedure:
     "pki nfs-common" and "pki nfs-kernel-server".
     Then edit the /etc/exports file and add "/ 192.168.1.0/24(ro,sync,no_subtree_check)"
     adjusting the subnet as necessary. Try "ps ax | grep nfs" and see if there are any
-    processes named "nfsd". If not try rebooting.
+    processes named "nfsd" or beginning with "rpc". If not try rebooting.
     
     Then on the development machine try:
     sudo mount -t nfs -o ro,resvport kiwisdr:/ ${HOME}/mnt
-    "resvport" is required for macOS otherwise you get "operation not permitted" errors.
+    "resvport" is required for MacOS otherwise you get "operation not permitted" errors.
     
 If the Beagle file sharing is working you should see a file called ${HOME}/mnt/ID.txt
+On the Beagle an alias called "nfs" will show which ip addresses have mounted filesystems
+from the Beagle.
 
 If you have changed the host name of your Kiwi to anything other than the default
 "kiwisdr", e.g. by editing the /etc/hostname file, then use that name in the commands
@@ -78,7 +80,7 @@ correct host when "make install_xc" is used.
 
 Setup instructions:
 
-1. Follow setup instructions below for your specific development machine.
+1. Follow setup instructions below for your specific development machine (e.g. Linux or MacOS).
 
 2. Set environment variables described below if default values are not suitable.
 
@@ -129,12 +131,11 @@ Defaults to "${HOME}/mnt"
 
 KIWI_XC_LD
 Set to the location of a Clang/LLVM loader capable of cross-compilation if the loader
-of your Clang/LLVM tools doesn't work by default. E.g. this is the case with macOS.
+of your Clang/LLVM tools doesn't work by default. E.g. this is the case with MacOS.
 Defaults to "lld".
 
 
 Setup instructions for specific development machines:
-(these instructions current as of June 2020)
 
 ==== Ubuntu (example of a generic Linux setup)
 
@@ -142,13 +143,13 @@ Installing Clang-9, or another version, using a package mechanism is all that is
 The cross compile capability in Linux Clang seems to work fine for generating ARM binaries.
 The Kiwi Makefile is already setup to use Clang when "make xc" is run.
 
-==== macOS Catalina (10.15)
+==== MacOS Catalina (10.15)
 
 The linker that is part of Xcode Clang/LLVM doesn't seem to work with cross compilation.
 Follow the steps below to install an alternative linker which does work.
 
-NB: We initially tried to get this working with macOS Mojave 10.11 since that's what our
-laptop was running. Brew warned about trying to install LLVM using such an old macOS
+NB: We initially tried to get this working with MacOS Mojave 10.11 since that's what our
+laptop was running. Brew warned about trying to install LLVM using such an old MacOS
 release and the resulting linker didn't work for cross compiling. So we had to update
 to Catalina.
  
@@ -158,30 +159,26 @@ tools are current.
 2. Install the Brew 3rd-party package management system if not already present.
 The MacPorts package system would also probably work.
 
-3. In the next two step reference is made to the LLVM "{minor_ver}". This number changes
-as updates are made to the Brew repository. As of April 2020 this value was "1".
-In June 2020 the value was "3".
-
-After initial installation of the cross-compile environment, if sometime later you get an
+3. After initial installation of the cross-compile environment, if you get an
 error message at Kiwi link time that the correct version of libffi cannot be found in
-/usr/local/opt/libffi/lib/ (e.g. libffi.7.dylib exists in that directory but LLVM is
-looking for version 6) then LLVM needs to be **completely reinstalled** to update
-{minor_ver} to a version that will look for libffi version 7.
+/usr/local/opt/libffi/lib (e.g. libffi.7.dylib exists in that directory but LLVM is looking
+for version 6) then LLVM needs to be upgraded to a version that will look for libffi version 7.
 It is not known why libffi updates without a better error message indicating LLVM is
 now out-of-date.
 
-3. Using Brew install the latest LLVM (llvm@10). This does not conflict with the Xcode
-installed Clang/LLVM because it is placed in the separate /usr/local/opt/llvm directory
-(symlink to /usr/local/Cellar/llvm/10.0.0_{minor_ver}).
+Using Brew install the latest LLVM (llvm@14 as of July 2022). This does not conflict with the
+Xcode-installed Clang/LLVM because that is placed in the separate /usr/local/opt/llvm directory
+(symlink to /usr/local/Cellar/llvm/...) Use the commands "brew update" followed by "brew upgrade"
+to upgrade all Brew components including LLVM and libffi.
 
 4. Set the environment variable KIWI_XC_LD in your .cshrc (or equivalent) to
-"/usr/local/Cellar/llvm/10.0.0_{minor_ver}/bin/ld.lld" to reference the linker from llvm@10
+"/usr/local/opt/llvm/bin/ld.lld" to reference the linker from LLVM
 which works with cross compilation. References to $(KIWI_XC_LD) are made in the
-Kiwi Makefile.
+Kiwi Makefile.comp.inc file.
 
 5. Cross compilation will need access to files from the root filesystem of the Kiwi.
 
-We found that using sshfs on macOS for this purpose has an interesting problem.
+We found that using sshfs on MacOS for this purpose has an interesting problem.
 The mount appears to work but then the local mount point directory disappears from the
 filesystem. It reappears when an unmount occurs. Example:
 "sudo sshfs -o ro,follow_symlinks,auto_cache,reconnect root@kiwisdr:/ /Users/jks/mnt"
@@ -193,6 +190,12 @@ We were able to use nfs instead:
 Follow the instructions above for setting up nfs. Be sure to use "resvport" in the
 mount command. Set the environment variable KIWI_XC_REMOTE_FS if a mount point other
 than the default is used.
+
+But note that NFS has its own problem: it doesn't see special files from the Kiwi /proc directory.
+This keeps the BeagleBone device auto-detection code in Makefile.comp.inc from working.
+So for a BeagleBone AI or AI-64 device you must set the choice manually in Makefile.comp.inc
+(e.g. "BBAI_64 := true" or "BBAI := true") If neither is set BBG/BBB will be used by default
+or RPi if it is detected (RPi uses a method not based on /proc).
 
 6. Now "make xc" described above should work.
 
