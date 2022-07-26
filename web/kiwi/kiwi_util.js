@@ -303,6 +303,14 @@ function getFirstChars(buf, len)
    arrayBufferToStringLen(buf, len);
 }
 
+function removeEnding(str, ending)
+{
+   if (str.endsWith(ending))
+      return str.slice(0, -ending.length);
+   else
+      return str;
+}
+
 function kiwi_inet4_d2h(inet4_str, exclude_local)
 {
 	var s = inet4_str.split('.');
@@ -798,7 +806,8 @@ function event_dump(evt, id, oneline)
       if (evt.altKey)   key += 'alt-';
       if (evt.metaKey)  key += 'meta-';
       key += k;
-      console.log('event_dump '+ id +' |'+ evt.type +'| k='+ key +' T='+ evt.target.id +' Tcur='+ evt.currentTarget.id + trel);
+      var ct_id = evt.currentTarget? evt.currentTarget.id : '(null)';
+      console.log('event_dump '+ id +' |'+ evt.type +'| k='+ key +' T='+ evt.target.id +' Tcur='+ ct_id + trel);
    } else {
       console.log('================================');
       if (!isArg(evt)) {
@@ -846,7 +855,10 @@ function kiwi_rateLimit(cb, time)
       var args = arguments;
       setTimeout(function() {
          waiting = false;
-         cb.apply(this, args);
+         if (isString(cb))
+            w3_call(cb);
+         else
+            cb.apply(this, args);
       }, time);
    };
    return rtn;

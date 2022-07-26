@@ -22,6 +22,7 @@ var kiwi = {
    volume_f: 1e-6,
    muted: 1,         // mute until muted_initially state determined
    unmuted_color: 'lime',
+   pan: 0,
 
    queued: 0,
    
