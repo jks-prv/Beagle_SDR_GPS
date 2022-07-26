@@ -548,15 +548,15 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	bool isKiwi_UI = false, isNo_WF = false, isWF_conn = false;
 	u64_t tstamp;
 	char *uri_m = NULL;
-	if (sscanf(uri_ts, "kiwi/%lld/%256ms", &tstamp, &uri_m) == 2) {
+	if (sscanf(uri_ts, "kiwi/%lld/%256m[^\?]", &tstamp, &uri_m) == 2) {
 	    isKiwi_UI = true;
 	} else
-	if (sscanf(uri_ts, "no_wf/%lld/%256ms", &tstamp, &uri_m) == 2) {
+	if (sscanf(uri_ts, "no_wf/%lld/%256m[^\?]", &tstamp, &uri_m) == 2) {
 	    isKiwi_UI = true;
 	    isNo_WF = true;
 	} else {
 	    // kiwiclient / kiwirecorder
-        if (sscanf(uri_ts, "%lld/%256ms", &tstamp, &uri_m) != 2) {
+        if (sscanf(uri_ts, "%lld/%256m[^\?]", &tstamp, &uri_m) != 2) {
             printf("bad URI_TS format\n");
             kiwi_ifree(uri_m);
             return NULL;
@@ -567,6 +567,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
     if (strstr(uri_m, "W/F"))
         isWF_conn = true;
 	
+    //printf("URL <%s> <%s> <%s>\n", mc->uri, mc->query_string, uri_m);
 	for (i=0; rx_streams[i].uri; i++) {
 		st = &rx_streams[i];
 		
@@ -580,7 +581,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 		return NULL;
 	}
     kiwi_ifree(uri_m);
-
+    
 	// handle case of server initially starting disabled, but then being enabled later by admin
 #ifdef USE_SDR
 	static bool init_snd_wf;
@@ -826,6 +827,12 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 		    rx_channels[c->rx_channel].conn = c;
 		    c->isMaster = true;
 		}
+
+        const char *cp;
+        if (mc->query_string && (cp = strstr(mc->query_string, "foff=")) != NULL && sscanf(cp, "foff=%lf", &c->foff) == 1) {
+            if (c->foff < 0 || c->foff > 100e9) c->foff = 0;
+            c->foff_set = true;
+        }
 	}
   
 	c->mc = mc;

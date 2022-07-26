@@ -1,6 +1,6 @@
 // KiwiSDR utilities
 //
-// Copyright (c) 2014-2017 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2022 John Seamons, ZL/KF6VO
 
 
 // isUndeclared(v) => use inline "typeof(v) === 'undefined'" (i.e. can't pass undeclared v as func arg)
@@ -59,7 +59,7 @@ try {
 var kiwi_util = {
 };
 
-var kiwi_iOS, kiwi_MacOS, kiwi_linux, kiwi_Windows, kiwi_android;
+var kiwi_iOS, kiwi_iPhone, kiwi_MacOS, kiwi_linux, kiwi_Windows, kiwi_android;
 var kiwi_safari, kiwi_firefox, kiwi_chrome, kiwi_opera, kiwi_smartTV;
 
 // wait until DOM has loaded before proceeding (browser has loaded HTML, but not necessarily images)
@@ -71,6 +71,7 @@ document.onreadystatechange = function() {
 		console.log(s);
 		//alert(s);
 		kiwi_iOS = (s.includes('iPhone') || s.includes('iPad'));
+		kiwi_iPhone = s.includes('iPhone');
 		kiwi_MacOS = s.includes('OS X');
 		kiwi_linux = s.includes('Linux');
 		kiwi_Windows = s.includes('Win');
@@ -98,6 +99,7 @@ document.onreadystatechange = function() {
 		   ' Linux='+ kiwi_linux +
 		   ' Windows='+ kiwi_Windows +
 		   ' iOS='+ kiwi_iOS +
+		   ' iPhone='+ kiwi_iPhone +
 		   ' Android='+ kiwi_android +
 		   ' SmartTV='+ kiwi_smartTV);
 		
@@ -125,6 +127,8 @@ document.onreadystatechange = function() {
 }
 
 function kiwi_is_iOS() { return kiwi_iOS; }
+
+function kiwi_is_iPhone() { return kiwi_iPhone; }
 
 function kiwi_isMacOS() { return kiwi_MacOS; }
 
@@ -259,7 +263,11 @@ function kiwi_dedup_array(a, func)
 {
    var ra = [];
    a.forEach(function(v, i) {
-      if (func && func(v)) return;
+      if (func) {
+         var rv = func(v);
+         if (!rv || rv.err) return;
+         v = rv.v;
+      }
       if (!ra.includes(v)) ra.push(v);
    });
    return ra;
@@ -293,6 +301,14 @@ function kiwi_bitCount(n) {
 function getFirstChars(buf, len)
 {
    arrayBufferToStringLen(buf, len);
+}
+
+function removeEnding(str, ending)
+{
+   if (str.endsWith(ending))
+      return str.slice(0, -ending.length);
+   else
+      return str;
 }
 
 function kiwi_inet4_d2h(inet4_str, exclude_local)
@@ -790,7 +806,8 @@ function event_dump(evt, id, oneline)
       if (evt.altKey)   key += 'alt-';
       if (evt.metaKey)  key += 'meta-';
       key += k;
-      console.log('event_dump '+ id +' |'+ evt.type +'| k='+ key +' T='+ evt.target.id +' Tcur='+ evt.currentTarget.id + trel);
+      var ct_id = evt.currentTarget? evt.currentTarget.id : '(null)';
+      console.log('event_dump '+ id +' |'+ evt.type +'| k='+ key +' T='+ evt.target.id +' Tcur='+ ct_id + trel);
    } else {
       console.log('================================');
       if (!isArg(evt)) {
@@ -838,7 +855,10 @@ function kiwi_rateLimit(cb, time)
       var args = arguments;
       setTimeout(function() {
          waiting = false;
-         cb.apply(this, args);
+         if (isString(cb))
+            w3_call(cb);
+         else
+            cb.apply(this, args);
       }, time);
    };
    return rtn;
@@ -1846,6 +1866,8 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	
 	var no_wf = (window.location.href.includes('?no_wf') || window.location.href.includes('&no_wf'));
 	ws_url = ws_protocol + ws_url +'/'+ (no_wf? 'no_wf/':'kiwi/') + timestamp +'/'+ stream;
+	if (isNonEmptyString(window.location.search))
+	   ws_url += window.location.search;      // pass query string to support "&foff="
 	if (no_wf) wf.no_wf = true;
 	
 	//console.log('open_websocket '+ ws_url);

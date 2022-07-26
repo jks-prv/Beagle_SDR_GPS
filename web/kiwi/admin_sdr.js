@@ -144,7 +144,7 @@ function config_html()
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_div('',
-				w3_input_get('w3-restart', 'Frequency scale offset (kHz, 1 Hz resolution)', 'freq_offset', 'admin_float_cb|3'),
+				w3_input_get('', 'Frequency scale offset (kHz, 1 Hz resolution)', 'freq_offset', 'admin_float_cb|3'),
 				w3_div('w3-text-black',
 					'Adds offset to frequency scale. <br> Useful when using a downconverter, e.g. set to <br>' +
 					'116000 kHz when 144-148 maps to 28-32 MHz.'

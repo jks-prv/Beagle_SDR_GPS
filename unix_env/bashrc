@@ -125,6 +125,9 @@ alias mk="make -k"
 alias mw="make --dry-run --debug=b"
 alias mgit="make git"
 
+# compile
+alias predef="clang -x c /dev/null -dM -E"      # compiler pre-defines
+
 # ls
 alias ls="function _ls () { /bin/ls \$COLOR -h \$* ; } ; _ls"
 alias la="function _la () { /bin/ls \$COLOR -lah \$* ; } ; _la"
@@ -234,19 +237,29 @@ alias pkrm="apt-get purge"
 alias pkar="apt-get autoremove"
 alias pkco="apt-get upgrade bb-cape-overlays"
 
-# BBAI
+# BBAI/BBAI-64 common
 # NB: /opt/source/dtb-* must match kernel version, hence based on "uname -r"
 d_sys=`uname -r`
 # following gives e.g. 4.19.94-ti-r42 => 4.19-ti
 d_ver=`uname -r | sed "s/\([0-9]*\.[0-9]*\)\..*/\1-ti/"`
+alias cdgpio="cd /sys/class/gpio"
+alias midt="make install_kiwi_device_tree"
+
+# BBAI-64
+alias cdpm="cd /sys/kernel/debug/pinctrl/11c000.pinctrl-pinctrl-single"
+d_dt="/opt/source/dtb-${d_ver}-arm64"
+d_dt2="/opt/source/dtb-${d_ver}-arm64/src/arm64"
+
+# BBAI
 alias ai="echo cd: cdbo cdbdt; echo dt: cddt cpdt m cpdt2 \(cpdtr2\); echo gpio: pmux wdt cdsdt cdpm ver"
 # cd
 alias cdbo="cd /boot"
 alias cdbdt="cd /boot/dtbs/${d_sys}"
 # dt
 # procedure: cddt; cpdt; m; cpdt2; reboot
-d_dt="/opt/source/dtb-${d_ver}"
-d_dt2="/opt/source/dtb-${d_ver}/src/arm"
+#d_dt="/opt/source/dtb-${d_ver}"
+#d_dt2="/opt/source/dtb-${d_ver}/src/arm"
+d_bb="~/Beagle_SDR_GPS/platform/beaglebone"
 d_ai="~/Beagle_SDR_GPS/platform/beaglebone_AI"
 f_dts="am5729-beagleboneai.dts"
 f_dtb="am5729-beagleboneai.dtb"
@@ -254,6 +267,7 @@ f_cape="am5729-beagleboneai-kiwisdr-cape"
 alias cdov="cd /proc/device-tree/chosen/overlays"
 alias cddt="cd ${d_dt}"
 alias cddt2="cd ${d_dt2}"
+alias cddti="cd ${d_dt}/include/dt-bindings/board"
 #alias cpdt="pd ${d_ai}; echo *kiwisdr*[dts,dtsi] ; cp *kiwisdr*[dts,dtsi] ${d_dt2}; echo *allmem*; cp *allmem* ${d_dt2}/${f_dts}; popd"
 alias cpdt="pd ${d_ai}; echo *kiwisdr*[dts,dtsi] ; cp *kiwisdr*[dts,dtsi] ${d_dt2}; echo ${f_dts}; cp ${f_dts} ${d_dt2}; popd"
 alias cpdts="echo STANDARD DTB; cp ${d_dt2}/${f_dtb} /boot/dtbs/${d_sys}/${f_dtb}"
@@ -265,8 +279,9 @@ alias cpdt3="cp ${d_dt2}/${f_dtb} /boot/dtbs/${d_sys}; sum ${d_dt2}/${f_dtb} /bo
 alias cdsdt="cd /sys/firmware/devicetree/base"
 alias cdfdt="cd /sys/firmware/devicetree/base"
 alias cdfw="cd /lib/firmware"
-alias cdpm="cd /sys/kernel/debug/pinctrl/4a003400.pinmux"
-alias pmux="/opt/scripts/device/bone/show-pins.pl"
+alias cdpc="cd /sys/kernel/debug/pinctrl"
+#alias cdpm="cd /sys/kernel/debug/pinctrl/4a003400.pinmux"
+alias pmux="${d_bb}/show-pins.pl"
 alias wdt="strings /boot/dtbs/${d_sys}/${f_dtb} | grep '.dts'"
 alias cdi2c="cd /sys/bus/i2c/devices"
 alias ver="/opt/scripts/tools/version.sh"
@@ -277,27 +292,27 @@ alias io="iotop -obtqqq"
 alias reb="shutdown -r now"
 # cpu
 alias ct="cat /sys/class/thermal/t*/temp"
-_cf="cpufreq-info|grep -i current\ cpu; cpufreq-info|grep -i cpufreq\ stats"
-alias cf="cpufreq-info -p; ${_cf}"
+alias cf="cpufreq-info -p; cpufreq-info | grep -i 'current cpu'; cpufreq-info | grep -i 'cpufreq stats'"
 alias cfi="cpufreq-info"
 alias cfs="cpufreq-info -s"
 alias cfs2="tail -vn +1 /sys/devices/system/cpu/cpufreq/policy0/stats/t*"
 alias cfp="cpufreq-info -p; echo -n 'available: '; cpufreq-info -g; echo select with: cfpc cfpd cfpu cfps cfpp"
-_cfp="cpufreq-set -g"
-alias cfpc="${_cfp} conservative; cfp"
-alias cfpd="${_cfp} ondemand; cfp"
-alias cfpu="${_cfp} userspace; cfp"
-alias cfps="${_cfp} powersave; cfp"
-alias cfpp="${_cfp} performance; cfp"
-_cfs="cpufreq-set -f"
-alias cf5="${_cfp} userspace; ${_cfs} 500MHz; ${_cf}"
-alias cf1="${_cfp} userspace; ${_cfs} 1GHz; ${_cf}"
-alias cf11="${_cfp} userspace; ${_cfs} 1.176GHz; ${_cf}"
-alias cf15="${_cfp} userspace; ${_cfs} 1.5GHz; ${_cf}"
+export _cfp="cpufreq-set -g"
+alias cfpc="\$_cfp conservative; cfp"
+alias cfpd="\$_cfp ondemand; cfp"
+alias cfpu="\$_cfp userspace; cfp"
+alias cfps="\$_cfp powersave; cfp"
+alias cfpp="\$_cfp performance; cfp"
+export _cfs="cpufreq-set -f"
+alias cf5="\$_cfp userspace; \$_cfs 500MHz; cpufreq-info | grep -i 'current cpu'; cpufreq-info | grep -i 'cpufreq stats'"
+alias cf1="\$_cfp userspace; \$_cfs 1GHz; cpufreq-info | grep -i 'current cpu'; cpufreq-info | grep -i 'cpufreq stats'"
+alias cf11="\$_cfp userspace; \$_cfs 1.176GHz; cpufreq-info | grep -i 'current cpu'; cpufreq-info | grep -i 'cpufreq stats'"
+alias cf15="\$_cfp userspace; \$_cfs 1.5GHz; cpufreq-info | grep -i 'current cpu'; cpufreq-info | grep -i 'cpufreq stats'"
 alias cm="while true; do date; ct; cf; vmstat; sleep 2; done"
 alias opp="omapconf show opp"
 
 # BBB
+type lsb_release >/dev/null 2>&1 || { lsb_release() { :; } ; }
 alias dog="echo Debian `cat /etc/debian_version`; more /etc/dogtag; uname -a; lsb_release -ds"
 alias tag=dog
 alias slots7="cat /sys/devices/bone_capemgr.*/slots"
@@ -377,7 +392,7 @@ alias certs="certbot certificates"
 
 # sharing KiwiSDR sources from a development machine to Beagle via NFS
 # download NFS with command: "pki nfs-common"
-alias nfs="mount -l -t nfs"
+alias nfs="mount -l -t nfs; showmount -a"
 # mount read-only so any changes don't flow backwards to development machine sources!
 #alias nfsup="mount -t nfs -o ro,proto=tcp,port=2049 dev_machine_name:path_to_Beagle_SDR_GPS /root/Beagle_SDR_GPS"
 alias nfsdn="cd ~; umount -a -f -t nfs"
@@ -391,6 +406,7 @@ alias nfsdn="cd ~; umount -a -f -t nfs"
 #   pki nfs-common nfs-kernel-server
 # edit resulting /etc/exports file and add: (adjust for subnet address)
 #   / 192.168.1.0/24(ro,sync,no_subtree_check)
+# might have to reboot beagle to get RPCd running
 # now on development machine: ("resvport" is necessary for MacOS)
 #   mkdir -p ${HOME}/mnt
 #   sudo mount -t nfs -o ro,resvport beagle_hostname:/ ${HOME}/mnt

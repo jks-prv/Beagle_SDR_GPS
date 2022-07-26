@@ -51,7 +51,7 @@ SND -> GPIO26, pin 37
     Reference: https://www.raspberrypi.org/documentation/remote-access/ssh/
 
 1. Install necessary software to build and run KiwiSDR software
-    >sudo apt update ; sudo apt-get install -y git libfftw3-single3 curl wget avahi-daemon avahi-utils libnss-mdns avahi-autoipd miniupnpc dnsutils pnmtopng ethtool sshpass psmisc jq zlib1g libsndfile1
+    >sudo apt update ; sudo apt-get install -y git libfftw3-single3 curl wget avahi-daemon avahi-utils libnss-mdns avahi-autoipd miniupnpc dnsutils netpbm ethtool sshpass psmisc jq zlib1g libsndfile1
 
 1. Enable SPI and I2C
     You can following the GUI via raspi-config to enable two interfaces

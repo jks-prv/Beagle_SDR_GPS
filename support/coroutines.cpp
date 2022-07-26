@@ -161,7 +161,7 @@ struct ctx_t {
 			#if defined(__x86_64__)
 				u4_t x1, fp, sp, x2[4], pc;
 			#endif
-			#if defined(__arm__)
+			#if defined(__arm__) || defined(__aarch64__)
 				u4_t v[6], sl, fp, sp, pc;
 			#endif
 		};

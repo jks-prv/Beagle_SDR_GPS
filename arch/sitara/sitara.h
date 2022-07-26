@@ -15,12 +15,9 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2015-2019 John Seamons, ZL/KF6VO
+// Copyright (c) 2015-2022 John Seamons, ZL/KF6VO
 
 #pragma once
-
-typedef enum { AM3359, AM5729 } arch_cpu_e;
-extern arch_cpu_e arch_cpu;
 
 // AM3359 memory map (BBB/G)
 #ifdef CPU_AM3359
@@ -97,25 +94,24 @@ extern arch_cpu_e arch_cpu;
  #define	PMUX_PU		0x10		// 1 = pull-up
  #define	PMUX_PD		0x00		// 0 = pull-down
  #define	PMUX_PDIS	0x08		// 1 = pull disable
+
+ #define	PMUX_SPI    0x00        // SPI2 = mode 0
  #define	PMUX_GPIO   0x07		// GPIO = mode 7
- #define	PMUX_M2		0x02
- #define	PMUX_M0		0x00
  #define	PMUX_MODE   0x07        // mode bits
  #define    PMUX_BITS	0x7f
 #endif
 
 #ifdef CPU_AM5729                   // TRM 18.4.6.1.1, 18.5.2.2
- #define	PMUX_WAKE	0x03000000
  #define	PMUX_SLOW	0x00080000  // slew rate
  #define	PMUX_FAST	0x00000000
  #define	PMUX_RXEN	0x00040000  // TX can always be enabled with GPIO_OE
  #define	PMUX_PU		0x00020000  // 1 = pull-up
  #define	PMUX_PD		0x00000000  // 0 = pull-down
  #define	PMUX_PDIS	0x00010000  // 1 = pull disable
- #define    PMUX_ATTR   0x000f0000
- #define    PMUX_TIME   0x00000100
- #define    PMUX_DELAY  0x000000f0
- #define	PMUX_M0		0x00000000  // SPI2 = mode 0
+ #define    PMUX_ATTR_S 19
+ #define    PMUX_ATTR_E 16
+
+ #define	PMUX_SPI    0x00000000  // SPI2 = mode 0
  #define	PMUX_GPIO   0x0000000e  // GPIO = mode 14
  #define	PMUX_OFF    0x0000000f  // mode 15
  #define	PMUX_MODE   0x0000000f  // mode bits
@@ -158,7 +154,7 @@ extern arch_cpu_e arch_cpu;
  #define	GPIO7	6
  #define	GPIO8	7
  #define	NGPIO	8
- #define    GPIO_BANK(gpio) (gpio.bank + 1)
+ #define    GPIO_BANK(gpio) ((gpio).bank + 1)
 #endif
 
 #define	_GPIO_REVISION		0x000
@@ -175,8 +171,8 @@ extern arch_cpu_e arch_cpu;
 #ifndef _PASM_
 #define GPIO_REVISION(g)	gpio_m[(g).bank][_GPIO_REVISION>>2]
 #define GPIO_SYSCONFIG(g)	gpio_m[(g).bank][_GPIO_SYSCONFIG>>2]
-#define GPIO_CLR_IRQ0(g)	gpio_m[(g).bank][_GPIO_CLR_IRQ0>>2]
-#define GPIO_CLR_IRQ1(g)	gpio_m[(g).bank][_GPIO_CLR_IRQ1>>2]
+#define GPIO_CLR_IRQ0(g)	gpio_m[(g).bank][_GPIO_CLR_IRQ0>>2] = 1 << (g).bit
+#define GPIO_CLR_IRQ1(g)	gpio_m[(g).bank][_GPIO_CLR_IRQ1>>2] = 1 << (g).bit
 #define GPIO_OE(g)			gpio_m[(g).bank][_GPIO_OE>>2]			// 0 = output
 #define GPIO_IN(g)			gpio_m[(g).bank][_GPIO_IN>>2]
 #define GPIO_OUT(g)			gpio_m[(g).bank][_GPIO_OUT>>2]

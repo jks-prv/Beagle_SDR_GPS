@@ -163,15 +163,19 @@ static void webserver_collect_print_stats(int print)
 		kstr_free(reply);
 	    int cpufreq_kHz = 1000000, temp_deg_mC = 0;
 
-#if defined(CPU_AM5729) || defined(CPU_BCM2837)
-	    reply = read_file_string_reply("/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_cur_freq");
-		sscanf(kstr_sp(reply), "%d", &cpufreq_kHz);
-		kstr_free(reply);
+        #if defined(CPU_AM5729) || defined(CPU_TDA4VM) || defined(CPU_BCM2837)
+	        #ifdef CPU_TDA4VM
+	            cpufreq_kHz = 2000000;  // FIXME: /sys/devices/system/cpu/cpufreq/ is empty currently
+	        #else
+                reply = read_file_string_reply("/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_cur_freq");
+                sscanf(kstr_sp(reply), "%d", &cpufreq_kHz);
+                kstr_free(reply);
+            #endif
 
-	    reply = read_file_string_reply("/sys/class/thermal/thermal_zone0/temp");
-		sscanf(kstr_sp(reply), "%d", &temp_deg_mC);
-		kstr_free(reply);
-#endif
+            reply = read_file_string_reply("/sys/class/thermal/thermal_zone0/temp");
+            sscanf(kstr_sp(reply), "%d", &temp_deg_mC);
+            kstr_free(reply);
+        #endif
 
 		// ecpu_use() below can thread block, so cpu_stats_buf must be properly set NULL for reading thread
 		kstr_t *ks;

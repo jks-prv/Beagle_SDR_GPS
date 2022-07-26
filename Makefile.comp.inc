@@ -6,15 +6,14 @@
 #
 
 DEBIAN_DEVSYS := $(shell grep -q -s Debian /etc/dogtag; echo $$?)
-
-# double check for RPI
-ifeq ($(DEBIAN_DEVSYS),2)
-	DEBIAN_DEVSYS := $(shell grep -q -s dtparam /boot/config.txt; echo $$?)
-endif
-
 DEBIAN := 0
 NOT_DEBIAN := 1
 DEVSYS := 2
+
+# double check for RPI
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
+    DEBIAN_DEVSYS := $(shell grep -q -s dtparam /boot/config.txt; echo $$?)
+endif
 
 UNAME := $(shell uname)
 SYS := $(shell uname -r)
@@ -39,21 +38,27 @@ CFLAGS_UNSAFE_OPT := -funsafe-math-optimizations
 
 # devsys
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-	ifeq ($(XC),-DXC)
-		# Headers+libraries from a KiwiSDR are needed for cross-compilation with clang
-		# For this mount the KiwiSDR's root file system:
-		#   sshfs -o ro,follow_symlinks,auto_cache,reconnect root@kiwisdr:/ ${HOME}/mnt
+    ifeq ($(XC),-DXC)
+        # Headers+libraries from a KiwiSDR are needed for cross-compilation with clang
+        # For this mount the KiwiSDR's root file system:
+        #   sshfs -o ro,follow_symlinks,auto_cache,reconnect root@kiwisdr:/ ${HOME}/mnt
         KIWI_XC_REMOTE_FS ?= ${HOME}/mnt
-        # nfs doesn't see special files in /proc, so assume BBAI if running Debian 9
+
         HAS_PROC := $(shell test -d $(KIWI_XC_REMOTE_FS)/proc/device-tree && echo true)
         ifeq ($(HAS_PROC),true)
-            BBAI := $(shell cat $(KIWI_XC_REMOTE_FS)/proc/device-tree/model | grep -q -s "BeagleBone AI" && echo true)
+            BBAI_64 := $(shell cat $(KIWI_XC_REMOTE_FS)/proc/device-tree/model | grep -q -s "BeagleBone AI-64" && echo true)
+            BBAI := $(shell cat $(KIWI_XC_REMOTE_FS)/proc/device-tree/model | sed "s/\(.*\)./\1x/" | grep -q -s "BeagleBone AIx" && echo true)
             RPI := $(shell cat $(KIWI_XC_REMOTE_FS)/proc/device-tree/model | grep -q -s "Raspberry Pi 3" && echo true)
         else
-            BBAI := $(shell cat $(KIWI_XC_REMOTE_FS)/etc/debian_version | grep -q -s "9\." && echo true)
+            # nfs doesn't see special files in /proc, so have to distinguish BBAI, BBAI-64 manually
+            BBAI_64 := 
+            BBAI := 
             RPI := $(shell cat $(KIWI_XC_REMOTE_FS)/etc/os-release | grep -q -s "raspbian" && echo true)
         endif
-        DEBIAN_7 := $(shell cat $(KIWI_XC_REMOTE_FS)/etc/debian_version | grep -q -s "7\." && echo true)
+
+        BBG_BBB := $(and $(if $(BBAI_64),,true), $(if $(BBAI),,true), $(if $(RPI),,true))
+        DEBIAN_VERSION := $(shell cat $(KIWI_XC_REMOTE_FS)/etc/debian_version | sed "s/\([0-9]*\)\..*/\1/")
+        DEBIAN_10_AND_LATER := $(shell [ $(DEBIAN_VERSION) -ge 10 ] && echo true)
 
         CC = clang
         CPP = clang++
@@ -71,33 +76,17 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
         LDFLAGS += --target=armv7a-linux-gnueabihf
         LDFLAGS += -L$(KIWI_XC_REMOTE_FS)/usr/lib/arm-linux-gnueabihf
         LDFLAGS += -L$(KIWI_XC_REMOTE_FS)/usr/local/lib/
+    else
+        # make the compiles fast on dev system (but don't do this with cross-compiling case above)
+        DEVSYS_BUT_NOT_XC = true
+        OPT = 0
+        CFLAGS += -DDEVSYS
 
-        ifeq ($(BBAI),true)
-            # BBAI
-			CFLAGS += -mtune=cortex-a15 -mcpu=cortex-a15
-	        CFLAGS += -mfpu=neon-vfpv4 -mfloat-abi=hard
-        else ifeq ($(RPI),true)
-            # RPI
-			CFLAGS += -mtune=cortex-a53 -mcpu=cortex-a53
-	        CFLAGS += -mfpu=neon -mfloat-abi=hard
-        else ifeq ($(DEBIAN_7),true)
-            # BBG/BBB
-			CFLAGS += -mtune=cortex-a8 -mcpu=cortex-a8
-	        CFLAGS += -mfpu=neon-vfpv3 -mfloat-abi=hard
-        else ifeq ($(DEBIAN_10),true)
-            # BBG/BBB
-			CFLAGS += -mtune=cortex-a8 -mcpu=cortex-a8
-	        CFLAGS += -mfpu=neon-vfpv3 -mfloat-abi=hard
-		else
-            # BBG/BBB
-			CFLAGS += -mtune=cortex-a8 -mcpu=cortex-a8
-	        CFLAGS += -mfpu=neon -mfloat-abi=hard
-		endif
-
-	else
-	    # make the compiles fast on dev system (but don't do this with cross-compiling case above)
-	    OPT = 0
-	    CFLAGS += -DDEVSYS
+        # platform choice when building on development machine
+        BBAI_64 := 
+        BBAI := 
+        RPI := 
+        BBG_BBB := $(and $(if $(BBAI_64),,true), $(if $(BBAI),,true), $(if $(RPI),,true))
 
         ifeq ($(UNAME),Darwin)
             CC = clang
@@ -116,112 +105,149 @@ endif
 
 # Debian target
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
-	CFLAGS += -DHOST
+    CFLAGS += -DHOST
 
-	BBAI := $(shell cat /proc/device-tree/model | grep -q -s "BeagleBone AI" && echo true)
-	RPI := $(shell cat /proc/device-tree/model | grep -q -s "Raspberry Pi 3" && echo true)
-	DEBIAN_7 := $(shell cat /etc/debian_version | grep -q -s "7\." && echo true)
-	DEBIAN_10 := $(shell cat /etc/debian_version | grep -q -s "10\." && echo true)
+    BBAI_64 := $(shell cat /proc/device-tree/model | grep -q -s "BeagleBone AI-64" && echo true)
+    BBAI := $(shell cat /proc/device-tree/model | sed "s/\(.*\)./\1x/" | grep -q -s "BeagleBone AIx" && echo true)
+    RPI := $(shell cat /proc/device-tree/model | grep -q -s "Raspberry Pi 3" && echo true)
+    BBG_BBB := $(and $(if $(BBAI_64),,true), $(if $(BBAI),,true), $(if $(RPI),,true))
 
-	ifeq ($(BBAI),true)
-	    DEBIAN_BUILD_VER = "Debian 9"
-	    #PROFILING = true
-	    PROFILING = false
-	    ifeq ($(PROFILING),true)
-            CC = gcc
-            CPP = g++
-            CFLAGS += -pg -fprofile-arcs -ftest-coverage
-            LDFLAGS += -pg -lgcov --coverage
-		    VIS_OPT =
-		    BUILD_OBJ = ./kiwi.bin
-		else
+    DEBIAN_VERSION := $(shell cat /etc/debian_version | sed "s/\([0-9]*\)\..*/\1/")
+    DEBIAN_10_AND_LATER := $(shell [ $(DEBIAN_VERSION) -ge 10 ] && echo true)
+
+    ifeq ($(BBAI_64),true)
+        ifeq ($(DEBIAN_VERSION),11)
+            CC = clang-11
+            CPP = clang++-11
+            VIS_OPT = -Ofast
+            # needed for iq_display.cpp et al
+            CPP_FLAGS += -std=gnu++11
+            # clang still used by other things (e_cpu etc)
+            CMD_DEPS_DEBIAN := /usr/bin/clang-11
+        endif
+    else ifeq ($(BBAI),true)
+        ifeq ($(DEBIAN_VERSION),10)
             CC = clang-7
             CPP = clang++-7
-		    VIS_OPT = -Ofast
+            VIS_OPT = -Ofast
+            # needed for iq_display.cpp et al
+            CPP_FLAGS += -std=gnu++11
+            # clang still used by other things (e_cpu etc)
+            CMD_DEPS_DEBIAN := /usr/bin/clang-7
+        else ifeq ($(DEBIAN_VERSION),9)
+            CC = clang-7
+            CPP = clang++-7
+            VIS_OPT = -Ofast
+            # needed for iq_display.cpp et al
+            CPP_FLAGS += -std=gnu++11
+            # clang still used by other things (e_cpu etc)
+            CMD_DEPS_DEBIAN := /usr/bin/clang-7
         endif
-
-		CFLAGS += -mtune=cortex-a15 -mcpu=cortex-a15
-	    CFLAGS += -mfpu=neon-vfpv4 -mfloat-abi=hard
-
-		# needed for iq_display.cpp et al
-		CPP_FLAGS += -std=gnu++11
-		# clang still used by other things (e_cpu etc)
-		CMD_DEPS_DEBIAN := /usr/bin/clang-7
-	else ifeq ($(RPI),true)
-	    DEBIAN_BUILD_VER = "Debian 10"
-		CMD_DEPS_DEBIAN := /usr/bin/clang-7
-		CC = clang-7
-		CPP = clang++-7
-
+    else ifeq ($(RPI),true)
+        CMD_DEPS_DEBIAN := /usr/bin/clang-7
+        CC = clang-7
+        CPP = clang++-7
         VIS_OPT = -Ofast
-		CFLAGS += -mtune=cortex-a53 -mcpu=cortex-a53
-	    CFLAGS += -mfpu=neon -mfloat-abi=hard
-
-		# needed for iq_display.cpp et al
-		CPP_FLAGS += -std=gnu++11
-	else ifeq ($(DEBIAN_7),true)
-	    DEBIAN_BUILD_VER = "Debian 7"
-		# clang 3.0 available on Debian 7.9 doesn't work
-		CC = gcc
-		CPP = g++
-		CFLAGS += -DKIWI_DEBIAN_7
-		CFLAGS += -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS
-
-		VIS_OPT = -O3
-		CFLAGS += -mtune=cortex-a8 -mcpu=cortex-a8
-	    CFLAGS += -mfpu=neon -mfloat-abi=hard
-
-		# needed for iq_display.cpp et al (-std=gnu++11 isn't available on Debian 7.9)
-		CPP_FLAGS += -std=gnu++0x
-	else ifeq ($(DEBIAN_10),true)
-	    # BBG/BBB Debian 10
-	    DEBIAN_BUILD_VER = "Debian 10"
-		CC = clang-8
-		CPP = clang++-8
-		#CC = clang
-		#CPP = clang++
-		CMD_DEPS_DEBIAN := /usr/bin/clang-8
-
-        VIS_OPT = -Ofast
-		CFLAGS += -mtune=cortex-a8 -mcpu=cortex-a8
-	    CFLAGS += -mfpu=neon-vfpv3 -mfloat-abi=hard
-
-		# needed for iq_display.cpp et al
-		CPP_FLAGS += -std=gnu++11
-	else
-	    # BBG/BBB Debian 8
-	    DEBIAN_BUILD_VER = "Debian 8"
-		CC = clang-6.0
-		CPP = clang++-6.0
-		#CC = clang
-		#CPP = clang++
-		CMD_DEPS_DEBIAN := /usr/bin/clang-6.0
-
-        VIS_OPT = -Ofast
-		CFLAGS += -mtune=cortex-a8 -mcpu=cortex-a8
-	    CFLAGS += -mfpu=neon-vfpv3 -mfloat-abi=hard
-
-		# needed for iq_display.cpp et al
-		CPP_FLAGS += -std=gnu++11
-	endif
+        # needed for iq_display.cpp et al
+        CPP_FLAGS += -std=gnu++11
+    else ifeq ($(BBG_BBB),true)
+        ifeq ($(DEBIAN_VERSION),10)
+            CC = clang-8
+            CPP = clang++-8
+            #CC = clang
+            #CPP = clang++
+            CMD_DEPS_DEBIAN := /usr/bin/clang-8
+            VIS_OPT = -Ofast
+            # needed for iq_display.cpp et al
+            CPP_FLAGS += -std=gnu++11
+        else ifeq ($(DEBIAN_VERSION),8)
+            CC = clang-6.0
+            CPP = clang++-6.0
+            #CC = clang
+            #CPP = clang++
+            CMD_DEPS_DEBIAN := /usr/bin/clang-6.0
+            VIS_OPT = -Ofast
+            # needed for iq_display.cpp et al
+            CPP_FLAGS += -std=gnu++11
+        else ifeq ($(DEBIAN_VERSION),7)
+            # clang 3.0 available on Debian 7.9 doesn't work
+            CC = gcc
+            CPP = g++
+            CFLAGS += -DKIWI_DEBIAN_7
+            CFLAGS += -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS
+            VIS_OPT = -O3
+            # needed for iq_display.cpp et al (-std=gnu++11 isn't available on Debian 7.9)
+            CPP_FLAGS += -std=gnu++0x
+        else
+            BAD_DEV_DETECT := true
+        endif
+    endif
 endif
 
 
-ifeq ($(BBAI),true)
-	ARCH := sitara
-	CPU := AM5729
-	PLATFORMS := beaglebone beaglebone_ai
-	CFLAGS += -DMULTI_CORE
+ifeq ($(BBAI_64),true)
+    ARCH := jacinto
+    CPU := TDA4VM
+    PLATFORMS := beaglebone beaglebone_ai64
+    CFLAGS += -DMULTI_CORE
+    FP_FLAGS += -mtune=cortex-a72 -mcpu=cortex-a72
+    #FP_FLAGS += -mfpu=neon-vfpv4 -mfloat-abi=hard
+    INSTALL_KIWI_DEVICE_TREE = true
+    ARM_DIR = arm64
+    LIB_ARCH = aarch64-linux-gnu
+else ifeq ($(BBAI),true)
+    ARCH := sitara
+    CPU := AM5729
+    PLATFORMS := beaglebone beaglebone_ai
+    CFLAGS += -DMULTI_CORE
+    FP_FLAGS += -mtune=cortex-a15 -mcpu=cortex-a15
+    FP_FLAGS += -mfpu=neon-vfpv4 -mfloat-abi=hard
+    INSTALL_KIWI_DEVICE_TREE = true
+    ARM_DIR = arm32
+    LIB_ARCH = arm-linux-gnueabihf
 else ifeq ($(RPI),true)
-	ARCH := omap
-	CPU := BCM2837
-	PLATFORMS := raspberrypi
-	CFLAGS += -DMULTI_CORE
+    ARCH := omap
+    CPU := BCM2837
+    PLATFORMS := raspberrypi
+    CFLAGS += -DMULTI_CORE
+    FP_FLAGS += -mtune=cortex-a53 -mcpu=cortex-a53
+    FP_FLAGS += -mfpu=neon -mfloat-abi=hard
+    ARM_DIR = arm32
+    LIB_ARCH = arm-linux-gnueabihf
+else ifeq ($(BBG_BBB),true)
+    ARCH := sitara
+    CPU := AM3359
+    PLATFORMS := beaglebone beaglebone_black
+    FP_FLAGS += -mtune=cortex-a8 -mcpu=cortex-a8
+    ifeq ($(DEBIAN_VERSION),7)
+        FP_FLAGS += -mfpu=neon -mfloat-abi=hard
+    else
+        FP_FLAGS += -mfpu=neon-vfpv3 -mfloat-abi=hard
+    endif
+    ifeq ($(DEBIAN_10_AND_LATER),true)
+        INSTALL_KIWI_DEVICE_TREE = true
+    endif
+    ARM_DIR = arm32
+    LIB_ARCH = arm-linux-gnueabihf
 else
-    # BBG/BBB
-	ARCH := sitara
-	CPU := AM3359
-	PLATFORMS := beaglebone beaglebone_black
+    BAD_DEV_DETECT := true
+endif
+
+
+ifneq ($(DEVSYS_BUT_NOT_XC),true)
+    CFLAGS += $(FP_FLAGS)
+endif
+
+
+#PROFILING = true
+PROFILING = false
+ifeq ($(PROFILING),true)
+    CC = gcc
+    CPP = g++
+    CFLAGS += -pg -fprofile-arcs -ftest-coverage
+    LDFLAGS += -pg -lgcov --coverage
+    VIS_OPT =
+    BUILD_OBJ = ./kiwi.bin
 endif
 
 
@@ -259,6 +285,7 @@ ifeq ($(SAN),1)
     OPT = 0
     VIS_OPT =
 endif
+
 
 ifeq ($(GDB),1)
     CPP_FLAGS += -O0

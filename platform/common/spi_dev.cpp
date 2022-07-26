@@ -28,6 +28,7 @@
 #include "debug.h"
 #include "spi.h"
 #include "spi_dev.h"
+#include "spi_pio.h"
 
 #ifdef CPU_AM3359
  #include "spi_pio.h"
@@ -234,29 +235,60 @@ static void _spi_dev_init(int spi_clkg, int spi_speed)
 
 void spi_dev_init(int spi_clkg, int spi_speed)
 {
-#ifdef SPI_SHMEM_DISABLE
-    printf("SPI: CPU_%s SPI_SHMEM_DISABLE\n", ARCH_CPU_S);
-#else
-    #ifdef CPU_AM3359
-        if (use_spidev) {
-            use_async = 1;  // using 2nd process ipc on uni-processor makes sense due to spi async stall problem
-        }
+    #ifdef CPU_AM5729
+        #if 0
+            real_printf("before SPI2_MODULCTRL=0x%08x\n", SPI_MODULE);
+    
+            // IS DPE1 DPE0
+            //  1    1    0 hw reset    0x00060000  rx=d1 d1tx=no  d0tx=yes (DPE sense is inverted)
+            //  0    0    1 linux       0x20010fc4  rx=d0 d1tx=yes d0tx=no
+            //                          0x20010fc4  clkg=1(ok) wl=0x1f(32-bits) epol=1(spien_L) clkd=1(div=2)
+            u4_t conf = SPI0_CONF;
+            real_printf("before anything SPI2_CH0CONF=0x%08x\n", conf);
+            conf |=  0x00060000;  // ~IS ~DPE1
+            conf &= ~0x00010000;  // DPE0
+            SPI0_CONF = conf;
+            real_printf("after force SPI2_CH0CONF=0x%08x\n", SPI0_CONF);
+        #endif
     #endif
 
-    #ifdef CPU_BCM2837
-        use_spidev = 1;
-        use_async = 1;
+    #ifdef SPI_SHMEM_DISABLE
+        printf("SPI: CPU_%s SPI_SHMEM_DISABLE\n", ARCH_CPU_S);
+    #else
+        #ifdef CPU_AM3359
+            if (use_spidev) {
+                use_async = 1;  // using 2nd process ipc on uni-processor makes sense due to spi async stall problem
+            }
+        #endif
+
+        #ifdef CPU_BCM2837
+            use_spidev = 1;
+            use_async = 1;
+        #endif
+
+        #ifdef CPU_AM5729
+            use_spidev = 1;
+            use_async = 1;
+        #endif
     #endif
+
+        _spi_dev_init(spi_clkg, spi_speed);
+
+        if (use_async) {
+            shmem_ipc_setup("kiwi.spi", SIG_IPC_SPI, spi_dev_func);
+        }
 
     #ifdef CPU_AM5729
-        use_spidev = 1;
-        use_async = 1;
+        #if 0
+            real_printf("after spi_dev_init SPI2_CHxCONF: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+                SPIn_CONF(0), SPIn_CONF(1), SPIn_CONF(2), SPIn_CONF(3));
+            real_printf("after spi_dev_init SPI2_CHxCTRL: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+                SPIn_CTRL(0), SPIn_CTRL(1), SPIn_CTRL(2), SPIn_CTRL(3));
+            conf = SPI0_CONF;
+            conf |=  0x00060000;  // ~IS ~DPE1
+            conf &= ~0x00010000;  // DPE0
+            SPI0_CONF = conf;
+            real_printf("after force2 SPI2_CH0CONF=0x%08x\n", SPI0_CONF);
+        #endif
     #endif
-#endif
-
-    _spi_dev_init(spi_clkg, spi_speed);
-
-    if (use_async) {
-        shmem_ipc_setup("kiwi.spi", SIG_IPC_SPI, spi_dev_func);
-    }
 }

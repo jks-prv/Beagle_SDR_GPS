@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2015 - 2019 John Seamons, ZL/KF6VO
+// Copyright (c) 2015-2022 John Seamons, ZL/KF6VO
 
 #include "types.h"
 #include "config.h"
@@ -27,6 +27,7 @@ Boston, MA  02110-1301, USA.
 #include "peri.h"
 #include "spi.h"
 #include "spi_dev.h"
+#include "spi_pio.h"
 #include "gps.h"
 #include "coroutines.h"
 #include "debug.h"
@@ -77,38 +78,7 @@ void fpga_init() {
 	    }
 	#endif
 
-#ifdef CPU_AM5729
-    #if 0
-        real_printf("before SPI2_MODULCTRL=0x%08x\n", spi[0x128>>2]);
-    
-        // IS DPE1 DPE0
-        //  1    1    0 hw reset    0x00060000  rx=d1 d1tx=no  d0tx=yes (DPE sense is inverted)
-        //  0    0    1 linux       0x20010fc4  rx=d0 d1tx=yes d0tx=no
-        //                          0x20010fc4  clkg=1(ok) wl=0x1f(32-bits) epol=1(spien_L) clkd=1(div=2)
-        u4_t conf = spi[0x12c>>2];
-        real_printf("before anything SPI2_CH0CONF=0x%08x\n", conf);
-        conf |=  0x00060000;  // ~IS ~DPE1
-        conf &= ~0x00010000;  // DPE0
-        spi[0x12c>>2] = conf;
-        real_printf("after force SPI2_CH0CONF=0x%08x\n", spi[0x12c>>2]);
-    #endif
-#endif
-
 	spi_dev_init(spi_clkg, spi_speed);
-
-#ifdef CPU_AM5729
-    //real_printf("after spi_dev_init SPI2_CHxCONF: 0x%08x 0x%08x 0x%08x 0x%08x\n",
-    //    spi[(0x12c+0x14*0)>>2], spi[(0x12c+0x14*1)>>2], spi[(0x12c+0x14*2)>>2], spi[(0x12c+0x14*3)>>2]);
-    //real_printf("after spi_dev_init SPI2_CHxCTRL: 0x%08x 0x%08x 0x%08x 0x%08x\n",
-    //    spi[(0x134+0x14*0)>>2], spi[(0x134+0x14*1)>>2], spi[(0x134+0x14*2)>>2], spi[(0x134+0x14*3)>>2]);
-    #if 0
-        conf = spi[0x12c>>2];
-        conf |=  0x00060000;  // ~IS ~DPE1
-        conf &= ~0x00010000;  // DPE0
-        spi[0x12c>>2] = conf;
-        real_printf("after force2 SPI2_CH0CONF=0x%08x\n", spi[0x12c>>2]);
-    #endif
-#endif
 
 #ifdef TEST_FLAG_SPI_RFI
 	if (test_flag)
@@ -163,7 +133,7 @@ void fpga_init() {
     		if (n <= 0) {
 				rewind(fp);
                 #ifdef CPU_AM5729
-                    //real_printf("later SPI2_CH0CONF=0x%08x\n", spi[0x12c>>2]);
+                    //real_printf("later SPI2_CH0CONF=0x%08x\n", SPI0_CONF);
                 #endif
 				continue;
 			}
@@ -175,11 +145,11 @@ void fpga_init() {
         
         #if 0
             static int first;
-            if (!first) real_printf("before spi_dev SPI2_CH0CONF=0x%08x SPI2_CH0CTRL=0x%08x\n", spi[0x12c>>2], spi[0x134>>2]);
+            if (!first) real_printf("before spi_dev SPI2_CH0CONF=0x%08x SPI2_CH0CTRL=0x%08x\n", SPI0_CONF, SPI0_CTRL);
         #endif
             spi_dev(SPI_FPGA, &code, SPI_B2X(n), &readback, SPI_B2X(n));
         #if 0
-            if (!first) real_printf("after spi_dev SPI2_CH0CONF=0x%08x SPI2_CH0CTRL=0x%08x\n", spi[0x12c>>2], spi[0x134>>2]);
+            if (!first) real_printf("after spi_dev SPI2_CH0CONF=0x%08x SPI2_CH0CTRL=0x%08x\n", SPI0_CONF, SPI0_CTRL);
             first = 1;
         #endif
     }

@@ -1,4 +1,4 @@
-ifeq ($(DEBIAN_7),true)
+ifeq ($(DEBIAN_VERSION),7)
     DRM_SKIP = true
 else
     DRM_SKIP = false
@@ -26,28 +26,45 @@ else
         -DHAVE_SYS_TYPES_H -DHAVE_UNISTD_H -DHAVE_LIBZ -DHAVE_LIBSNDFILE \
         -DUSE_CONSOLEIO -DUSE_KIWI -DHAVE_LIBFDK_AAC -DHAVE_USAC
 
-    ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
+    ifeq ($(XC),-DXC)
+            LIBS_DEP += $(KIWI_XC_REMOTE_FS)/usr/local/lib/libfdk-aac.so
+            LIBS += -Wl,-rpath -Wl,$(KIWI_XC_REMOTE_FS)/usr/local/lib -lfdk-aac
         
-        LIBS_DEP += /usr/local/lib/libfdk-aac.so
-        LIBS += -Wl,-rpath -Wl,/usr/local/lib -lfdk-aac
+            LIBS_DEP += $(KIWI_XC_REMOTE_FS)/usr/lib/$(LIB_ARCH)/libsndfile.so
+            LIBS_DEP += $(KIWI_XC_REMOTE_FS)/lib/$(LIB_ARCH)/libz.so.1
+            LIBS += -ldl
+    else        
+        ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
+            LIBS += -Wl,-rpath -Wl,/usr/local/lib
         
-	    LIBS_DEP += /usr/lib/arm-linux-gnueabihf/libsndfile.so  /usr/lib/arm-linux-gnueabihf/libz.so
-        LIBS += -ldl
+            LIBS_DEP += /usr/lib/$(LIB_ARCH)/libsndfile.so  /usr/lib/$(LIB_ARCH)/libz.so
+            LIBS += -ldl
 
-        /usr/local/lib/libfdk-aac.so:
-	        rsync -av extensions/DRM/FDK-AAC/lib/ /usr/local/lib
+            ifeq ($(BBAI_64),true)
+                LIBS_DEP += /usr/local/lib/libfdk-aac.so.2
+                LIBS +=  -lfdk-aac
+                
+                /usr/local/lib/libfdk-aac.so.2:
+	                rsync -av extensions/DRM/FDK-AAC/lib/$(ARM_DIR)/ /usr/local/lib
+            else
+                LIBS_DEP += /usr/local/lib/libfdk-aac.so
+                LIBS += -lfdk-aac
+                
+                /usr/local/lib/libfdk-aac.so:
+	                rsync -av extensions/DRM/FDK-AAC/lib/$(ARM_DIR)/ /usr/local/lib
+            endif
         
-        /usr/lib/arm-linux-gnueabihf/libsndfile.so:
-	        -apt-get -y install libsndfile1-dev
+            /usr/lib/$(LIB_ARCH)/libsndfile.so:
+	            -apt-get -y install libsndfile1-dev
         
-        /usr/lib/arm-linux-gnueabihf/libz.so:
-	        -apt-get -y install zlib1g-dev
+            /usr/lib/$(LIB_ARCH)/libz.so:
+	            -apt-get -y install zlib1g-dev
+        else
+            LIBS += -lfdk-aac
 
-    else
-        LIBS += -lfdk-aac
-
-        # install needed libs by hand and adjust the following path
-        LIBS += -L/opt/local/lib
+            # install needed libs by hand and adjust the following path
+            LIBS += -L/opt/local/lib
+        endif
     endif
 
     LIBS += -lz -lsndfile

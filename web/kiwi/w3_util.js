@@ -198,6 +198,9 @@ var w3int = {
    menu_close_func: null,
    prev_menu_hover_el: null,
    
+   rate_limit: {},
+   rate_limit_evt: {},
+   
    _last_: 0
 };
 
@@ -594,7 +597,12 @@ function w3_els(el_id, func)
       }
 		return els;
 	}
-	return (w3_el(el_id));
+	
+	var el = w3_el(el_id);
+	if (func) {
+	   func(el, 0);
+	}
+	return [el];
 }
 
 // return id of element (i.e. 'id-*') if found
@@ -1242,12 +1250,19 @@ function w3_check_restart_reboot(el_id)
 
 function w3_set_value(path, val)
 {
-	var el = w3_el(path);
-/*
-	if (val == '(encrypted)' && w3_contains(el, 'w3-encrypted'))
-	   w3_add(el, 'kiwi-pw');
-*/
-	if (el) el.value = val;
+   if (1) {
+      // set all similarly named elements
+      w3_els(path, function(el) {
+         if (el) el.value = val;
+      });
+   } else {
+      var el = w3_el(path);
+   /*
+      if (val == '(encrypted)' && w3_contains(el, 'w3-encrypted'))
+         w3_add(el, 'kiwi-pw');
+   */
+      if (el) el.value = val;
+   }
 }
 
 function w3_set_decoded_value(path, val)
@@ -2721,31 +2736,30 @@ function w3int_slider_change(ev, complete, path, cb, cb_param)
 	   w3int_post_action();
 }
 
-// deprecated
-function w3_slider_old(label, path, val, min, max, step, save_cb)
+function w3int_slider_wheel(evt, path, cb, cb_param)
 {
-	if (val == null)
-		val = '';
-	else
-		val = w3_strip_quotes(val);
-	var oc = 'oninput="w3int_slider_change(event, 0, '+ sq(path) +', '+ sq(save_cb) +')" ';
-	// change event fires when the slider is done moving
-	var os = 'onchange="w3int_slider_change(event, 1, '+ sq(path) +', '+ sq(save_cb) +')" ';
-	var label_s = w3_label('w3-bold', label, path);
-	var s =
-		label_s +'<br>'+
-		'<input id="id-'+ path +'" class="" value=\''+ val +'\' ' +
-		'type="range" min="'+ min +'" max="'+ max +'" step="'+ step +'" '+ oc + os +'>';
+   w3int.rate_limit_evt[cb] = evt;
+   w3int.rate_limit[cb](cb_param);
+	evt.preventDefault();	
+}
 
-	// run the callback after instantiation with the initial control value
-	if (save_cb)
-		setTimeout(function() {
-			//console.log('w3_slider: initial callback: '+ save_cb +'('+ sq(path) +', '+ val +')');
-			w3_call(save_cb, path, val, /* complete */ true, /* first */ true);
-		}, 500);
-
-	//if (path == 'iq.pll_bw') console.log(s);
-	return s;
+function w3_slider_wheel(cb, el, cur, slow, fast)
+{
+   var el = w3_el(el);
+   if (!el) return null;
+   var evt = w3int.rate_limit_evt[cb];
+	//event_dump(evt, cb, 0);
+   var x = evt.deltaX;
+   var y = evt.deltaY;
+   var ay = Math.abs(y);
+   //var up_down = ((x < 0 && y <= 0) || (x >= 0 && y < 0));
+   //console.log(x +' '+ y +' '+ (up_down? 'U':'D') +' '+ w3_id(evt.target));
+   var up_down = (ay < 50)? slow : fast;
+   if (y > 0) up_down = -up_down;
+   //console.log(x +' '+ y +' '+ up_down);
+   var nval = cur + up_down;
+   //console.log('w3_wheel '+ cb +' min='+ el.min +' max='+ el.max +' step='+ el.step +' cur='+ cur +' up_down='+ up_down +' nval='+ nval);
+   return w3_clamp(nval, +el.min, +el.max);
 }
 
 function w3_slider(psa, label, path, val, min, max, step, cb, cb_param)
@@ -2763,19 +2777,28 @@ function w3_slider(psa, label, path, val, min, max, step, cb, cb_param)
 	// change event fires when the slider is done moving
 	var os = ' onchange="w3int_slider_change(event, 1, '+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"';
 
+   var ow = '';
+   if (psa.includes('w3-wheel')) {
+      var cb_wheel = removeEnding(cb, '_cb') + '_wheel_cb';
+      ow = ' onwheel="w3int_slider_wheel(event, '+ sq(path) +', '+ sq(cb_wheel) +', '+ sq(cb_param) +')"';
+      w3int.rate_limit[cb_wheel] = kiwi_rateLimit(cb_wheel, 170);
+   }
+
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
    var psa_label = w3_psa_mix(psa3.middle, (label != '' && bold)? 'w3-bold':'');
 	var psa_inner = w3_psa(psa3.right, id + spacing, '', value +
-      ' type="range" min='+ dq(min) +' max='+ dq(max) +' step='+ dq(step) + oc + os);
+      ' type="range" min='+ dq(min) +' max='+ dq(max) +' step='+ dq(step) + oc + os + ow);
 
-	var s =
-	   '<div '+ psa_outer +'>' +
-         w3_label(psa_label, label, path) +
-         // need <br> because both <label> and <input-range> are inline elements
-         ((!inline && label != '')? '<br>':'') +
-         '<input '+ psa_inner +'>' +
-      '</div>';
+	var s = (label != '') ?
+         ('<div '+ psa_outer +'>' +
+            w3_label(psa_label, label, path) +
+            // need <br> because both <label> and <input-range> are inline elements
+            ((!inline && label != '')? '<br>':'') +
+            '<input '+ psa_inner +'>' +
+         '</div>')
+      :
+         ('<input '+ psa_inner +'>');
 
 	// run the callback after instantiation with the initial control value
 	if (cb)

@@ -198,7 +198,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         //printf("--> CMD trim \\n %d<%s>\n", slen, cmd);
     }
     
-	// SECURITY: we accept no incoming commands besides auth and keepalive until auth is successful
+	// SECURITY: we accept no incoming commands besides auth, options and keepalive until auth is successful
 	if (conn->auth == false &&
 	    strcmp(cmd, "SET keepalive") != 0 &&
 	    kiwi_str_begins_with(cmd, "SET options") == false &&    // options needed before CMD_AUTH
@@ -726,8 +726,29 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     }
 
                     // send cfg once to javascript
-                    if (stream_snd || stream_mon || stream_admin_or_mfg)
+                    if (stream_snd || stream_mon || stream_admin_or_mfg) {
+                    
+                        // if freq offset was specified in URL apply it if conditions allow
+                        if (conn->foff_set && conn->foff != freq_offset) {
+                            cprintf(conn, "foff: new %.3lf current %.3lf\n", conn->foff, freq_offset);
+                            if (!conn->isLocal) {
+                                cprintf(conn, "foff: not local conn\n");
+                                send_msg(conn, false, "MSG foff_error=0");
+                            } else
+                            if (rx_count_server_conns(ADMIN_USERS) != 0) {
+                                cprintf(conn, "foff: admin conns exist\n");
+                                send_msg(conn, false, "MSG foff_error=1");
+                            } else {
+		                        freq_offset = conn->foff;
+                                cfg_set_float("freq_offset", freq_offset);
+		                        cfg_save_json(cfg_cfg.json);
+                                cprintf(conn, "foff: UPDATED\n");
+                            }
+                            conn->foff_set = false;
+                        }
+                        
                         rx_server_send_config(conn);
+                    }
                 
                     // setup stream task first time it's authenticated
                     rx_stream_t *st = &rx_streams[conn->type];

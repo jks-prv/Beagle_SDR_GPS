@@ -1,5 +1,6 @@
 #!/bin/sh
 # wrapper for running the app
+# Copyright (c) 2014-2022 John Seamons, ZL/KF6VO
 
 DEV=kiwi
 BUILD_DIR=../build
@@ -27,17 +28,20 @@ if test ! -f /etc/dogtag; then
 	exit 0
 fi
 
+BBAI_64=$(cat /proc/device-tree/model | grep -q -s "BeagleBone AI-64" && echo true)
+BBAI=$(cat /proc/device-tree/model | grep -q -s "BeagleBone AI$" && echo true)
 RPI=$(cat /proc/device-tree/model | grep -q -s "Raspberry Pi 3" && echo true)
-BBAI=$(cat /proc/device-tree/model | grep -q -s "BeagleBone AI" && echo true)
 
-if [ "x${BBAI}" = "xtrue" ] ; then
+if [ "x${BBAI_64}" = "xtrue" ] ; then
+    SBC="BBAI-64"
+	USE_SPIDEV=1
+    USE_SPI="USE_SPIDEV"
+elif [ "x${BBAI}" = "xtrue" ] ; then
     SBC="BBAI"
-	DEBIAN=9
 	USE_SPIDEV=1
     USE_SPI="USE_SPIDEV"
 elif [ "x${RPI}" = "xtrue" ] ; then
     SBC="RPI"
-	DEBIAN=10
 	USE_SPIDEV=1
     USE_SPI="USE_SPIDEV"
 else
@@ -46,13 +50,13 @@ else
     # Debian 7, SPIDEV: BB-SPIDEV0 loaded via echo > slots
     # Debian 8, PIO: load our cape-bone-S overlay via echo > slots
     # Debian 8, SPIDEV: Bug: BB-SPIDEV0 must be loaded via /boot/uEnv.txt to config pmux properly
+    # Debian 10+, SPIDEV: Kiwi device tree loaded via UBOOT_OVERLAY, config-pin to setup spi pins
 
     SBC="BBG/BBB"
-    SLOTS7_FN="/sys/devices/bone_capemgr.*/slots"
+    SLOTS7_FN=$(ls /sys/devices/bone_capemgr.*/slots 2>/dev/null)
     SLOTS8_FN="/sys/devices/platform/bone_capemgr/slots"
 
-    if ls ${SLOTS7_FN} > /dev/null 2>&1 ; then
-        DEBIAN=7
+    if [ "x${SLOTS7_FN}" != "x" ] ; then
         # do not use USE_SPIDEV on Debian 7
         USE_SPIDEV=0
         LOAD_SPIDEV=yes
@@ -60,14 +64,12 @@ else
         SLOTS_FN=${SLOTS7_FN}
         UBOOT_OVERLAY=false
     elif test \( -f ${SLOTS8_FN} \) ; then
-        DEBIAN=8
         USE_SPIDEV=1
         LOAD_SPIDEV=no
         LOAD_SPIPIO=no
         SLOTS_FN=${SLOTS8_FN}
         UBOOT_OVERLAY=false
     else
-        DEBIAN=10
         USE_SPIDEV=1
         LOAD_SPIDEV=no
         LOAD_SPIPIO=no
@@ -98,10 +100,13 @@ else
     PRU=${DEVID_PRU}-00A0
 fi
 
-echo ${SBC} "DEBIAN-"${DEBIAN} ${USE_SPI}
+DEBIAN=$(cat /etc/debian_version)
+echo ${SBC} "Debian ${DEBIAN}" ${USE_SPI}
 
 # cape
-if [ "x${BBAI}" = "xtrue" ] ; then
+if [ "x${BBAI_64}" = "xtrue" ] ; then
+    echo "BBAI-64 uses custom Kiwi device tree loaded via U-boot"
+elif [ "x${BBAI}" = "xtrue" ] ; then
     echo "BBAI uses custom Kiwi device tree loaded via U-boot"
 elif [ "x${RPI}" = "xtrue" ] ; then
     modprobe i2c-dev
@@ -116,6 +121,7 @@ else
 
     if [ "x${UBOOT_OVERLAY}" = "xtrue" ] ; then
         echo "Kiwi device tree loaded via U-boot overlay"
+        echo "SPI setup via config-pin"
         
         # easier to do this way than via U-boot
         config-pin p9.17 spi_cs
@@ -127,6 +133,7 @@ else
 
         if ! grep -q ${DEVID} ${SLOTS_FN} ; then
             echo load ${DEV} device tree;
+            echo "${DEVID} to ${SLOTS_FN}"
             echo ${DEVID} > ${SLOTS_FN};
         fi
 
@@ -158,5 +165,5 @@ else
     fi
 fi
 
-echo PROG = ${PROG} -debian ${DEBIAN} -use_spidev ${USE_SPIDEV} ${ARGS}
-${PROG} -debian ${DEBIAN} -use_spidev ${USE_SPIDEV} ${ARGS}
+echo PROG = ${PROG} -use_spidev ${USE_SPIDEV} ${ARGS}
+${PROG} -use_spidev ${USE_SPIDEV} ${ARGS}

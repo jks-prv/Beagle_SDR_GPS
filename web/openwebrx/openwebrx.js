@@ -19,7 +19,7 @@ This file is part of OpenWebRX.
 
 */
 
-// Copyright (c) 2015 - 2021 John Seamons, ZL/KF6VO
+// Copyright (c) 2015 - 2022 John Seamons, ZL/KF6VO
 
 var owrx = {
    debug_drag: false,
@@ -269,6 +269,7 @@ function kiwi_main_ready()
 	s = 'mobile'; if (q[s]) force_mobile = true;
 	s = 'mem'; if (q[s]) owrx.override_fmem = q[s];
 	// 'no_wf' is handled in kiwi_util.js
+	// 'foff' is handled in {rx_server,rx_cmd}.cpp
 
    // development
 	s = 'sqth'; if (q[s]) squelch_threshold = parseFloat(q[s]);
@@ -308,7 +309,7 @@ function kiwi_main_ready()
 	   }
 	}
 
-	kiwi_xdLocalStorage_init();
+	//kiwi_xdLocalStorage_init();
 	kiwi_get_init_settings();
 	if (!no_geoloc) kiwi_geolocate();
 
@@ -1451,38 +1452,38 @@ function scale_setup()
 {
 	w3_el('id-scale-container').addEventListener("mouseout", scale_container_mouseout, false);
    
-	scale_canvas = html("id-scale-canvas");
+	scale_canvas = w3_el("id-scale-canvas");
 	scale_ctx = scale_canvas.getContext("2d");
 	add_scale_listner(scale_canvas);
 
-	pb_adj_car = html("id-pb-adj-car");
+	pb_adj_car = w3_el("id-pb-adj-car");
 	pb_adj_car.innerHTML = '<span id="id-pb-adj-car-ttip" class="class-passband-adjust-car-tooltip class-tooltip-text"></span>';
-	pb_adj_car_ttip = html("id-pb-adj-car-ttip");
+	pb_adj_car_ttip = w3_el("id-pb-adj-car-ttip");
 	add_scale_listner(pb_adj_car);
 
-	pb_adj_lo = html("id-pb-adj-lo");
+	pb_adj_lo = w3_el("id-pb-adj-lo");
 	pb_adj_lo.innerHTML = '<span id="id-pb-adj-lo-ttip" class="class-passband-adjust-cut-tooltip class-tooltip-text"></span>';
-	pb_adj_lo_ttip = html("id-pb-adj-lo-ttip");
+	pb_adj_lo_ttip = w3_el("id-pb-adj-lo-ttip");
 	add_scale_listner(pb_adj_lo);
 
-	pb_adj_hi = html("id-pb-adj-hi");
+	pb_adj_hi = w3_el("id-pb-adj-hi");
 	pb_adj_hi.innerHTML = '<span id="id-pb-adj-hi-ttip" class="class-passband-adjust-cut-tooltip class-tooltip-text"></span>';
-	pb_adj_hi_ttip = html("id-pb-adj-hi-ttip");
+	pb_adj_hi_ttip = w3_el("id-pb-adj-hi-ttip");
 	add_scale_listner(pb_adj_hi);
 
-	pb_adj_cf = html("id-pb-adj-cf");
+	pb_adj_cf = w3_el("id-pb-adj-cf");
 	pb_adj_cf.innerHTML = '<span id="id-pb-adj-cf-ttip" class="class-passband-adjust-cf-tooltip class-tooltip-text"></span>';
-	pb_adj_cf_ttip = html("id-pb-adj-cf-ttip");
+	pb_adj_cf_ttip = w3_el("id-pb-adj-cf-ttip");
 	add_scale_listner(pb_adj_cf);
 
-	band_canvas = html("id-band-canvas");
+	band_canvas = w3_el("id-band-canvas");
 	band_ctx = band_canvas.getContext("2d");
 	add_canvas_listner(band_canvas);
 	
-	dx_div = html('id-dx-container');
+	dx_div = w3_el('id-dx-container');
 	add_canvas_listner(dx_div);
 
-	dx_canvas = html("id-dx-canvas");
+	dx_canvas = w3_el("id-dx-canvas");
 	dx_ctx = dx_canvas.getContext("2d");
 	add_canvas_listner(dx_canvas);
 	
@@ -5468,51 +5469,67 @@ function freqset_complete(from)
 	kiwi_clearTimeout(freqset_tout);
 	if (isUndefined(obj) || obj == null) return;		// can happen if SND comes up long before W/F
 
-   var p = obj.value.split(/[\/\+\:\;]/);
-	var slash_or_plus = obj.value.includes('/') || obj.value.includes('+');
-   // 'k' suffix is simply ignored since default frequencies are in kHz
-	var f = p[0].replace(',', '.').parseFloatWithUnits('M', 1e-3);    // Thanks Petri, OH1BDF
-	var err = true;
+	var iPhone = kiwi_is_iPhone();
+   var a, f, pb;
+   var adj_pbw = obj.value.includes('/');
+   var adj_pbc = obj.value.includes(':');
 
-   if (obj.value == '/' || obj.value == '+') {
+   if (!iPhone || adj_pbw || adj_pbc) {
+      // ff ff. ff.ff [/pbw] [/pblo,pbhi] [:pbc] [:pbc,pbw]
+      a = obj.value.split(/[\/\:]/);
+      f = a[0];
+      pb = (a.length >= 2)? a[1].split(',') : null;
+   } else {
+      // iPhone
+      // ff ff. ff.f ff.f.pbw [ff]..pbw [ff]..pblo.pbhi
+      a = obj.value.split('.');
+      f = (a.length == 1)? a[0] : (a[0] +'.'+ a[1]);
+      pb = a; pb.shift(); pb.shift();
+      if (pb.length == 0) pb = null;
+	   adj_pbw = true;
+   }
+
+	// "/" alone resets to default passband (".." for iPhone)
+   if (obj.value == '/' || (iPhone && obj.value == '..')) {
       //console.log('restore_passband '+ cur_mode);
       restore_passband(cur_mode);
       demodulator_analog_replace(cur_mode);
-      freqset_update_ui(owrx.FSET_NOP);    // restore previous
+      freqset_update_ui(owrx.FSET_NOP);      // restore previous
       return;
-   } else
-	if (f > 0 && !isNaN(f)) {
-	   f -= kiwi.freq_offset_kHz;
-	   if (f > 0 && !isNaN(f)) {
-         freqmode_set_dsp_kHz(f, null);
-	      w3_field_select(obj, {mobile:1, log:2});
-	      err = false;
+   }
+   
+	var restore = true;
+   if (f != '') {       // f == '' for "/pb" or "..pb" cases
+      // 'k' suffix is simply ignored since default frequencies are in kHz
+      f = f.replace(',', '.').parseFloatWithUnits('M', 1e-3);    // Thanks Petri, OH1BDF
+      if (f > 0 && !isNaN(f)) {
+         f -= kiwi.freq_offset_kHz;
+         if (f > 0 && !isNaN(f)) {
+            freqmode_set_dsp_kHz(f, null);
+            w3_field_select(obj, {mobile:1, log:2});
+            restore = false;
+         }
       }
 	}
-   if (err) freqset_update_ui(owrx.FSET_NOP);    // restore previous
+
+   if (restore) freqset_update_ui(owrx.FSET_NOP);     // restore previous
 	
 	// accept "freq/pbw" or "/pbw" to quickly change passband width to a numeric value
 	// also "lo,hi" in place of "pbw"
 	// and ":pbc" or ":pbc,pbw" to set the pbc at the current pbw
-	// "/" alone resets to default passband
-	// "+" can be substituted for "/" above for iOS tel popup keyboard that has no "/"
-	// ";" can be substituted for ":" above for iOS tel popup keyboard that has no ":"
-	// with iOS tel you get ',' with the 'pause' key
-	if (p[1]) {
-	   p2 = p[1].split(',');
-	   var lo = p2[0].parseFloatWithUnits('k');
-	   var hi = NaN;
-	   if (p2.length > 1) {
-	      hi = p2[1].parseFloatWithUnits('k');
-	   }
-	   //console.log('### <'+ (slash_or_plus? '/' : ':') +'> '+ p2[0] +'/'+ lo +', '+ p2[1] +'/'+ hi);
+	if (pb) {
+      var lo = pb[0].parseFloatWithUnits('k');
+      var hi = NaN;
+      if (pb.length > 1) hi = pb[1].parseFloatWithUnits('k');
+	   
+	   //console.log('### pb '+ (adj_pbw? '/' : ':') +' '+ pb[0] +'|'+ lo +', '+ pb[1] +'|'+ hi);
       var cpb = ext_get_passband();
       var cpbhw = (cpb.high - cpb.low)/2;
       var cpbcf = cpb.low + cpbhw;
 	   
-      if (slash_or_plus) {
+      if (adj_pbw) {
          // adjust passband width about current pb center
-         if (p2.length == 1) {
+         if (pb.length == 1) {
             // /pbw
             var pbhw = lo/2;
             lo = cpbcf - pbhw, hi = cpbcf + pbhw;
@@ -5520,7 +5537,7 @@ function freqset_complete(from)
       } else {
          // adjust passband center using current or specified pb width
          var pbc = lo;
-         if (p2.length == 1) {
+         if (pb.length == 1) {
             // :pbc
             lo = pbc - cpbhw;
             hi = pbc + cpbhw;
@@ -5760,7 +5777,7 @@ function freq_step_update_ui(force)
 		else {
 			title = (posHz? '+':'-')+'400/'+(posHz? '+':'-')+'1000';
 		}
-		html('id-step-'+i).title = title;
+		w3_el('id-step-'+i).title = title;
 	}
 	
 	freq_step_last_mode = cur_mode;
@@ -5779,6 +5796,7 @@ function freq_memory_init()
 	   fmem = owrx.override_fmem.split(',');
 	   var prec = cfg.show_1Hz? 3:2;
 	   fmem.forEach(function(s, i) {
+	      if (isNumber(s)) s = s.toString();
 	      var f = s.parseFloatWithUnits('kM', 1e-3);
 	      if (isNumber(f))
 	         fmem[i] = w3_clamp(f, 1, cfg.max_freq? 32000 : 30000).toFixed(prec);
@@ -5791,8 +5809,13 @@ function freq_memory_init()
       owrx.freq_memory =
          kiwi_dedup_array(fmem,
             function(v) {
-               if (v == null || !isNumber(+v) || +v <= 0) return true;
-               return false;
+               var rv = { err: false };
+               v = +v;
+               if (!isNumber(v) || v <= 0)
+                  rv.err = true;
+               else
+                  rv.v = v.toString();    // in case storage has a number instead of a string
+               return rv;
             }
          );
       //console.log('freq_memory_init');
@@ -5850,7 +5873,7 @@ function freq_memory_update(f)
    //console.log('freq_memory update');
    //console.log(owrx.freq_memory);
    if (!isNumber(+f)) return;
-   if (f <= 1) f = 1;
+   if (f < 1) f = '1';
 	if (f != owrx.freq_memory[0]) {
       //canvas_log('add='+ f);
 	   owrx.freq_memory.unshift(f);
@@ -8244,7 +8267,7 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', 'Keys', 25, 'Function'),
          w3_inline_percent('w3-padding-tiny', 'g =', 25, 'select frequency entry field'),
          w3_inline_percent('w3-padding-tiny', 'j i LR-arrow-keys', 25, 'frequency step down/up, add shift or alt/ctrl for faster<br>shift plus alt/ctrl to step to next/prev DX label'),
-         w3_inline_percent('w3-padding-tiny', 'm', 25, 'toggle frequency memory menu'),
+         w3_inline_percent('w3-padding-tiny', 'm n', 25, 'toggle frequency memory menu, VFO A/B'),
          w3_inline_percent('w3-padding-tiny', 'b B', 25, 'scroll band menu'),
          w3_inline_percent('w3-padding-tiny', 'e E', 25, 'scroll extension menu'),
          w3_inline_percent('w3-padding-tiny', 'a A d l u c f q', 25, 'toggle modes: AM SAM DRM LSB USB CW NBFM IQ<br>add alt/ctrl to toggle backwards (e.g. SAM modes)'),
@@ -8294,7 +8317,7 @@ function keyboard_shortcut_url_keys()
 }
 
 // abcdefghijklmnopqrstuvwxyz `~!@#$%^&*()-_=+[]{}\|;:'"<>? 0123456789.,/kM
-// ..........F.. ..... ......   ...       F .F    ..FF  ... FFFFFFFFFFFFFFF
+// ..........F.. ..... ......   ...       F .     .. F  ... FFFFFFFFFFFFFFF
 // .. ..   ..  F  .  .  ..  .                               F: frequency entry keys
 // ABCDEFGHIJKLMNOPQRSTUVWXYZ
 // :space: :tab:
@@ -8345,8 +8368,8 @@ function keyboard_shortcut(key, key_mod, ctlAlt, keyCode)
       break;
    
    // volume/mute
-   case 'v': setvolume(1, kiwi.volume-10); toggle_or_set_mute(0); keyboard_shortcut_nav('audio'); break;
-   case 'V': setvolume(1, kiwi.volume+10); toggle_or_set_mute(0); keyboard_shortcut_nav('audio'); break;
+   case 'v': setvolume(1, kiwi.volume-5); toggle_or_set_mute(0); keyboard_shortcut_nav('audio'); break;
+   case 'V': setvolume(1, kiwi.volume+5); toggle_or_set_mute(0); keyboard_shortcut_nav('audio'); break;
    case ' ': toggle_or_set_mute(); shortcut.nav_click = true; break;
 
    // frequency entry / memory list
@@ -8354,6 +8377,7 @@ function keyboard_shortcut(key, key_mod, ctlAlt, keyCode)
    case 'm': freq_memory_menu_show(true); break;
    case 'b': band_scroll(1); break;
    case 'B': band_scroll(-1); break;
+   case 'n': freq_vfo_cb(); break;
 
    // page scroll
    case '<': page_scroll(-page_scroll_amount); break;
@@ -8437,7 +8461,6 @@ function keyboard_shortcut_event(evt)
             (k >= '0' && k <= '9' && !ctl) ||
             k == '.' || k == ',' ||                // ',' is alternate decimal point to '.' and used in passband spec
             k == '/' || k == ':' || k == '-' ||    // for passband spec, have to allow for negative passbands (e.g. lsb)
-            k == '+' || k == ';' ||                // '+;' are for benefit of iOS tel popup keyboard that have no '/:'
             k == 'k' || k == 'M' ||                // scale modifiers
             k == 'Enter' || k == 'ArrowUp' || k == 'ArrowDown' || k == 'Backspace' || k == 'Delete'
          );
@@ -8608,6 +8631,7 @@ function panels_setup()
 	
 	var mobile = kiwi_isMobile()?
 	   (' inputmode='+ dq(kiwi_is_iOS()? 'decimal' : 'tel') +' ontouchstart="popup_keyboard_touchstart(event)" onclick="this.select()"') : '';
+	   //(' inputmode="tel" ontouchstart="popup_keyboard_touchstart(event)" onclick="this.select()"') : '';
 	
 	w3_el("id-control-freq1").innerHTML =
 	   w3_inline('w3-halign-space-between/',
@@ -8792,28 +8816,24 @@ function panels_setup()
    wf.max_min_sliders =
       w3_col_percent('w3-valign/class-slider',
          w3_text(optbar_prefix_color, 'WF max'), 19,
-         '<input id="id-input-maxdb" type="range" min="-100" max="20" value="'+ maxdb
-            +'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0,this.value)">', 60,
+         w3_slider('id-input-maxdb w3-wheel', '', '', maxdb, -100, 20, 1, 'setmaxdb_cb'), 60,
          w3_div('id-field-maxdb class-slider'), 19
       ) +
       w3_col_percent('w3-valign/class-slider',
          w3_text(optbar_prefix_color, 'WF min'), 19,
-         '<input id="id-input-mindb" type="range" min="-190" max="-30" value="'+ mindb
-            +'" step="1" onchange="setmindb(1,this.value)" oninput="setmindb(0,this.value)">', 60,
+         w3_slider('id-input-mindb w3-wheel', '', '', mindb, -190, -30, 1, 'setmindb_cb'), 60,
          w3_div('id-field-mindb class-slider'), 19
       );
 
    wf.floor_ceil_sliders =
       w3_col_percent('w3-valign/class-slider',
          w3_text(optbar_prefix_color, 'WF ceil'), 19,
-         '<input id="id-input-ceildb" type="range" min="-30" max="30" value="'+ wf.auto_ceil.val
-            +'" step="5" onchange="setceildb(1,this.value)" oninput="setceildb(0,this.value)">', 60,
+         w3_slider('id-input-ceildb w3-wheel', '', '', wf.auto_ceil.val, -30, 30, 1, 'setceildb_cb'), 60,
          w3_div('id-field-ceildb class-slider'), 19
       ) +
       w3_col_percent('w3-valign/class-slider',
          w3_text(optbar_prefix_color, 'WF floor'), 19,
-         '<input id="id-input-floordb" type="range" min="-30" max="30" value="'+ wf.auto_floor.val
-            +'" step="5" onchange="setfloordb(1,this.value)" oninput="setfloordb(0,this.value)">', 60,
+         w3_slider('id-input-floordb w3-wheel', '', '', wf.auto_floor.val, -30, 30, 1, 'setfloordb_cb'), 60,
          w3_div('id-field-floordb class-slider'), 19
       );
 
@@ -8829,15 +8849,13 @@ function panels_setup()
             
             w3_col_percent('w3-valign/class-slider',
                w3_text(optbar_prefix_color, 'WF rate'), 19,
-               '<input id="slider-rate" class="'+ d +'" type="range" min="0" max="4" value="'+
-                  wf_speed +'" step="1" onchange="setwfspeed(1,this.value)" oninput="setwfspeed(0,this.value)">', 60,
+               w3_slider('id-slider-rate w3-wheel'+ d, '', '', wf_speed, 0, 4, 1, 'setwfspeed_cb'), 60,
                w3_div('slider-rate-field class-slider'), 19
             ),
 
             w3_col_percent('w3-valign/class-slider',
-               //w3_text(optbar_prefix_color, 'SP parm'), 19,
                w3_button('id-wf-sp-button class-button w3-font-12px', 'Spec &Delta;', 'toggle_or_set_wf_sp_button'), 19,
-               w3_slider('id-wf-sp-slider', '', 'wf_sp_param', wf_sp_param, 0, 10, 1, 'wf_sp_slider_cb'), 60,
+               w3_slider('id-wf-sp-slider w3-wheel', '', 'wf_sp_param', wf_sp_param, 0, 10, 1, 'wf_sp_slider_cb'), 60,
                w3_div('id-wf-sp-slider-field class-slider'), 19
             )
          ), 85,
@@ -8864,7 +8882,7 @@ function panels_setup()
          //w3_button('id-button-wf-gnd class-button w3-momentary', 'G', 'wf_gnd_cb', 1)
       );
 
-   setwfspeed(1, wf_speed);
+   setwfspeed_cb('', wf_speed, 1);
    toggle_or_set_slow_dev(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
    toggle_or_set_spec_peak(toggle_e.FROM_COOKIE | toggle_e.SET_URL, peak_initially);
    toggle_or_set_wf_sp_button(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
@@ -8874,7 +8892,7 @@ function panels_setup()
    var nr_algo_s = [ ['off',1], ['wdsp',1], ['LMS',1], ['spec',1] ];
 	de_emphasis = readCookie('last_de_emphasis', 0);
 	de_emphasis = w3_clamp(de_emphasis, 0, 1, 0);
-	pan = readCookie('last_pan', 0);
+	kiwi.pan = readCookie('last_pan', 0);
 
 	w3_el('id-optbar-audio').innerHTML =
 		w3_inline_percent('w3-valign/w3-last-halign-end',
@@ -8886,25 +8904,25 @@ function panels_setup()
 		) +
 		w3_inline_percent('id-vol w3-valign w3-margin-T-2 w3-hide/class-slider w3-last-halign-end',
 			w3_text(optbar_prefix_color, 'Volume'), 17,
-			'<input id="id-input-volume" type="range" min="0" max="200" value="'+ kiwi.volume +'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 50,
+         w3_slider('id-input-volume w3-wheel', '', '', kiwi.volume, 0, 200, 1, 'setvolume_cb'), 50,
          '&nbsp;', 8,
          w3_select('w3-text-red||title="de-emphasis selection"', '', 'de-emp', 'de_emphasis', de_emphasis, de_emphasis_s, 'de_emp_cb')
 		) +
 		w3_inline_percent('id-vol-comp w3-valign w3-margin-T-2/class-slider w3-last-halign-end',
 			w3_text(optbar_prefix_color, 'Volume'), 17,
-			'<input id="id-input-volume" type="range" min="0" max="200" value="'+ kiwi.volume +'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 40,
+         w3_slider('id-input-volume w3-wheel', '', '', kiwi.volume, 0, 200, 1, 'setvolume_cb'), 50,
          w3_select('w3-text-red', '', 'de-emp', 'de_emphasis', de_emphasis, de_emphasis_s, 'de_emp_cb'), 28,
 		   w3_button('id-button-compression class-button w3-hcenter||title="compression"', 'Comp', 'toggle_or_set_compression')
 		) +
       w3_inline_percent('id-pan w3-valign w3-hide/class-slider w3-last-halign-end',
          w3_text(optbar_prefix_color, 'Pan'), 17,
-         '<input id="id-pan-value" type="range" min="-1" max="1" value="'+ pan +'" step="0.01" onchange="setpan(1,this.value)" oninput="setpan(0,this.value)">', 50,
+         w3_slider('id-pan-value w3-wheel', '', '', kiwi.pan, -1, 1, 0.01, 'setpan_cb'), 50,
          '&nbsp;', 3, w3_div('id-pan-field'), 8, '&nbsp;', 7,
 		   w3_button('id-button-compression class-button w3-hcenter||title="compression"', 'Comp', 'toggle_or_set_compression')
       ) +
       w3_inline_percent('id-squelch w3-valign/class-slider w3-last-halign-end',
 			w3_text('id-squelch-label', 'Squelch'), 17,
-         w3_slider('', '', 'squelch-value', squelch, 0, 99, 1, 'set_squelch_cb'), 50,
+         w3_slider('id-squelch-value w3-wheel', '', '', squelch, 0, 99, 1, 'set_squelch_cb'), 50,
          '&nbsp;', 3, w3_div('id-squelch-field class-slider'), 14,
          w3_select('id-squelch-tail w3-hide w3-text-red||title="squelch tail length"', '', 'tail', 'squelch_tail', squelch_tail, squelch_tail_s, 'squelch_tail_cb')
 	   ) +
@@ -8950,29 +8968,29 @@ function panels_setup()
 			'<div id="id-button-agc" class="class-button" onclick="toggle_agc(event)" onmousedown="cancelEvent(event)" onmouseover="agc_over(event)">AGC</div>', 13,
 			'<div id="id-button-hang" class="class-button" onclick="toggle_or_set_hang();">Hang</div>', 17,
 			w3_divs('w3-show-inline-block/id-label-man-gain cl-closer-spaced-label-text', 'Manual<br>gain'), 15,
-			'<input id="input-man-gain" type="range" min="0" max="120" value="'+ manGain +'" step="1" onchange="setManGain(1,this.value)" oninput="setManGain(0,this.value)">', 40,
-			w3_div('field-man-gain w3-show-inline-block', manGain.toString()) +' dB', 15
+         w3_slider('id-input-man-gain w3-wheel', '', '', manGain, 0, 120, 1, 'setManGain_cb'), 40,
+			w3_div('id-field-man-gain w3-show-inline-block', manGain.toString()) +' dB', 15
 		) +
 		w3_div('',
 			w3_col_percent('w3-valign/class-slider',
 				w3_div('label-threshold w3-show-inline-block', 'Threshold'), 20,
-				'<input id="input-threshold" type="range" min="-130" max="0" value="'+ thresh +'" step="1" onchange="setThresh(1,this.value)" oninput="setThresh(0,this.value)">', 52,
-				w3_div('field-threshold w3-show-inline-block', thresh.toString()) +' dBm'
+            w3_slider('id-input-threshold w3-wheel', '', '', thresh, -130, 0, 1, 'setThresh_cb'), 52,
+				w3_div('id-field-threshold w3-show-inline-block', thresh.toString()) +' dBm'
 			),
 			w3_col_percent('w3-valign/class-slider',
 				w3_div('label-threshCW w3-show-inline-block', 'Thresh CW'), 20,
-				'<input id="input-threshCW" type="range" min="-130" max="0" value="'+ threshCW +'" step="1" onchange="setThreshCW(1,this.value)" oninput="setThreshCW(0,this.value)">', 52,
-				w3_div('field-threshCW w3-show-inline-block', threshCW.toString()) +' dBm'
+            w3_slider('id-input-threshCW w3-wheel', '', '', threshCW, -130, 0, 1, 'setThreshCW_cb'), 52,
+				w3_div('id-field-threshCW w3-show-inline-block', threshCW.toString()) +' dBm'
 			),
 			w3_col_percent('w3-valign/class-slider',
 				w3_div('label-slope w3-show-inline-block', 'Slope'), 20,
-				'<input id="input-slope" type="range" min="0" max="10" value="'+ slope +'" step="1" onchange="setSlope(1,this.value)" oninput="setSlope(0,this.value)">', 52,
-				w3_div('field-slope w3-show-inline-block', slope.toString()) +' dB'
+            w3_slider('id-input-slope w3-wheel', '', '', slope, 0, 10, 1, 'setSlope_cb'), 52,
+				w3_div('id-field-slope w3-show-inline-block', slope.toString()) +' dB'
 			),
 			w3_col_percent('w3-valign/class-slider',
 				w3_div('label-decay w3-show-inline-block', 'Decay'), 20,
-				'<input id="input-decay" type="range" min="20" max="5000" value="'+ decay +'" step="1" onchange="setDecay(1,this.value)" oninput="setDecay(0,this.value)">', 52,
-				w3_div('field-decay w3-show-inline-block', decay.toString()) +' msec'
+            w3_slider('id-input-decay w3-wheel', '', '', decay, 20, 5000, 10, 'setDecay_cb'), 52,
+				w3_div('id-field-decay w3-show-inline-block', decay.toString()) +' msec'
 			)
 		);
 	setup_agc(toggle_e.FROM_COOKIE | toggle_e.SET);
@@ -9187,6 +9205,7 @@ var wf_filter = 0, spec_filter = 0;
 var wf_sp_menu_s = [ 'IIR', 'MMA', 'EMA', 'off' ];
 var wf_sp_menu_e = { IIR:0, MMA:1, EMA:2, OFF:3 };
 var wf_sp_slider_s = [ 'gain', 'avgs', 'avgs', '' ];
+var wf_sp_slider_d = [ 1, 0, 0, 0 ];
 
 var wf_sp_filter_p = [
    {  // spectrum
@@ -9299,7 +9318,7 @@ function wf_sp_slider_cb(path, val, done, first)
 
    // for benefit of direct callers
    w3_slider_setup('id-wf-sp-slider', f_p[f+'_min'], f_p[f+'_max'], f_p[f+'_step'], val);
-   w3_el('id-wf-sp-slider-field').innerHTML = (f_val == wf_sp_menu_e.OFF)? '' : (val +' '+ wf_sp_slider_s[f_val]);
+   w3_el('id-wf-sp-slider-field').innerHTML = (f_val == wf_sp_menu_e.OFF)? '' : (val.toFixed(wf_sp_slider_d[f_val]) +' '+ wf_sp_slider_s[f_val]);
 
    if (done) {
 	   //console.log('wf_sp_slider_cb DONE WRITE_COOKIE last_filter_param='+ val.toFixed(2) +' which='+ wf_sp_which);
@@ -9308,6 +9327,15 @@ function wf_sp_slider_cb(path, val, done, first)
    }
 
    //console.log('wf_sp_slider_cb EXIT path='+ path);
+}
+
+function wf_sp_slider_wheel_cb()
+{
+   var el = w3_el('id-wf-sp-slider')
+   var param = wf_sp_which? wf_param : sp_param;
+   var nval = w3_slider_wheel('wf_sp_slider_wheel_cb', el, param, +el.step, +el.step * 5);
+   //console.log('wf_sp_slider_wheel_cb min='+ el.min +' max='+ el.max +' step='+ el.step +' param='+ param +' up_down='+ up_down +' nval='+ nval);
+   wf_sp_slider_cb('', nval, 1);
 }
 
 function wf_cmap_cb(path, idx, first)
@@ -9361,7 +9389,7 @@ function wf_aper_cb(path, idx, first)
    freqset_select();
 }
 
-function setwfspeed(done, str)
+function setwfspeed_cb(path, str, done)
 {
    if (wf.audioFFT_active) {
       freqset_select();
@@ -9371,10 +9399,22 @@ function setwfspeed(done, str)
 	wf_speed = +str;
 	//console.log('# setwfspeed '+ wf_speed +' done='+ done);
 	w3_set_value('slider-rate', wf_speed)
-   w3_el('slider-rate-field').innerHTML = wf_speeds[wf_speed];
-   w3_el('slider-rate-field').style.color = wf_speed? 'white':'orange';
+   var el = w3_el('slider-rate-field');
+   el.innerHTML = wf_speeds[wf_speed];
+   el.style.color = wf_speed? 'white':'orange';
    wf_send('SET wf_speed='+ wf_speed.toFixed(0));
    if (done) freqset_select();
+}
+
+function setwfspeed_wheel_cb()
+{
+   var nval = w3_slider_wheel('setwfspeed_wheel_cb', 'id-slider-rate', wf_speed, 1, 1);
+   setwfspeed_cb('', nval, 1);
+}
+
+function setmaxdb_cb(path, val, done, first)
+{
+   setmaxdb(done, val, false);
 }
 
 function setmaxdb(done, str, no_freqset_select)
@@ -9393,18 +9433,25 @@ function setmaxdb(done, str, no_freqset_select)
 
       if (strdb <= mindb) {
          maxdb = mindb + 1;
-         html(input_max).value = maxdb;
-         html(field_max).innerHTML = maxdb.toFixed(0) + ' dB';
-         html(field_max).style.color = "red"; 
+         input_max.value = maxdb;
+         field_max.innerHTML = maxdb.toFixed(0) + ' dB';
+         field_max.style.color = "red"; 
       } else {
          maxdb = strdb;
-         html(field_max).innerHTML = strdb.toFixed(0) + ' dB';
-         html(field_max).style.color = "white"; 
-         html(field_min).style.color = "white";
+         input_max.value = maxdb;
+         field_max.innerHTML = strdb.toFixed(0) + ' dB';
+         field_max.style.color = "white"; 
+         field_min.style.color = "white";
       }
    }
 	
 	setmaxmindb(done, write_cookies, no_freqset_select);
+}
+
+function setmaxdb_wheel_cb()
+{
+   var nval = w3_slider_wheel('setmaxdb_wheel_cb', 'id-input-maxdb', maxdb, 1, 10);
+   setmaxdb(1, nval);
 }
 
 function incr_mindb(done, incr)
@@ -9414,6 +9461,11 @@ function incr_mindb(done, incr)
    var val = Math.max(-190, Math.min(-30, incrdb));
    //console.log('incr_mindb mindb='+ mindb +' incrdb='+ incrdb +' val='+ val);
    setmindb(done, val.toFixed(0));
+}
+
+function setmindb_cb(path, val, done, first)
+{
+   setmindb(done, val, false);
 }
 
 function setmindb(done, str, no_freqset_select)
@@ -9433,21 +9485,27 @@ function setmindb(done, str, no_freqset_select)
 
       if (maxdb <= strdb) {
          mindb = maxdb - 1;
-         html(input_min).value = mindb;
-         html(field_min).innerHTML = mindb.toFixed(0) + ' dB';
-         html(field_min).style.color = "red";
+         input_min.value = mindb;
+         field_min.innerHTML = mindb.toFixed(0) + ' dB';
+         field_min.style.color = "red";
       } else {
          mindb = strdb;
          //console.log('setmindb SET strdb='+ strdb +' maxdb='+ maxdb +' mindb='+ mindb +' done='+ done);
-         html(input_min).value = mindb;
-         html(field_min).innerHTML = strdb.toFixed(0) + ' dB';
-         html(field_min).style.color = "white";
-         html(field_max).style.color = "white";
+         input_min.value = mindb;
+         field_min.innerHTML = strdb.toFixed(0) + ' dB';
+         field_min.style.color = "white";
+         field_max.style.color = "white";
       }
    }
 
 	mindb_un = mindb + zoomCorrection();
 	setmaxmindb(done, write_cookies, no_freqset_select);
+}
+
+function setmindb_wheel_cb()
+{
+   var nval = w3_slider_wheel('setmindb_wheel_cb', 'id-input-mindb', mindb, 1, 10);
+   setmindb(1, nval);
 }
 
 function setmaxmindb(done, write_cookies, no_freqset_select)
@@ -9504,28 +9562,42 @@ function update_maxmindb_sliders()
    field2.innerHTML = db2_s + ' dB';
 }
 
-function setceildb(done, str)
+function setceildb_cb(path, str, done)
 {
    var input_ceil = w3_el('id-input-ceildb');
    var field_ceil = w3_el('id-field-ceildb');
    if (!input_ceil || !field_ceil) return;
 
 	var ceildb = parseFloat(str);
+   input_ceil.value = ceildb;
    w3_innerHTML(field_ceil, ceildb.toFixed(0).positiveWithSign() + ' dB');
    wf.auto_ceil.val = ceildb;
 	set_ceilfloordb(done);
 }
 
-function setfloordb(done, str)
+function setceildb_wheel_cb()
+{
+   var nval = w3_slider_wheel('setceildb_wheel_cb', 'id-input-ceildb', wf.auto_ceil.val, 1, 5);
+   setceildb_cb('', nval, 1);
+}
+
+function setfloordb_cb(path, str, done)
 {
    var input_floor = w3_el('id-input-floordb');
    var field_floor = w3_el('id-field-floordb');
    if (!input_floor || !field_floor) return;
 
 	var floordb = parseFloat(str);
+   input_floor.value = floordb;
    w3_innerHTML(field_floor, floordb.toFixed(0).positiveWithSign() + ' dB');
    wf.auto_floor.val = floordb;
 	set_ceilfloordb(done);
+}
+
+function setfloordb_wheel_cb()
+{
+   var nval = w3_slider_wheel('setfloordb_wheel_cb', 'id-input-floordb', wf.auto_floor.val, 1, 5);
+   setfloordb_cb('', nval, 1);
 }
 
 function set_ceilfloordb(done)
@@ -9564,7 +9636,7 @@ function toggle_or_set_slow_dev(set, val)
 	freqset_select();
 	writeCookie('last_slow_dev', spectrum_slow_dev.toString());
 	if (spectrum_slow_dev && wf_speed == WF_SPEED_FAST)
-	   setwfspeed(1, WF_SPEED_MED);
+	   setwfspeed_cb('', WF_SPEED_MED, 1);
 }
 
 function toggle_or_set_spec_peak(set, val)
@@ -9587,9 +9659,14 @@ function toggle_or_set_spec_peak(set, val)
 var muted_until_freq_set = true;
 var recording = false;
 
+function setvolume_cb(path, val, done, first, cb_param)
+{
+   setvolume(done, val);
+}
+
 function setvolume(done, str)
 {
-   //console.log('setvolume str='+ str +' t/o='+ typeof(str) +' volume_f WAS='+ kiwi.volume_f);
+   //console.log('setvolume done='+ done +' str='+ str +' t/o='+ typeof(str) +' volume_f WAS='+ kiwi.volume_f);
    kiwi.volume = +str
    if (!isNumber(kiwi.volume)) kiwi.volume = 50;
    
@@ -9607,6 +9684,12 @@ function setvolume(done, str)
       writeCookie('last_volume', kiwi.volume);
       freqset_select();
    }
+}
+
+function setvolume_wheel_cb()
+{
+   var nval = w3_slider_wheel('setvolume_wheel_cb', 'id-input-volume', kiwi.volume, 5, 15);
+   setvolume(1, nval);
 }
 
 function toggle_or_set_mute(set)
@@ -9639,21 +9722,33 @@ function de_emp_cb(path, idx, first)
    writeCookie('last_de_emphasis', de_emphasis.toString());
 }
 
-var pan = 0;
+function setpan_cb(path, val, done, first, cb_param)
+{
+   setpan(done, val);
+}
 
-function setpan(done, str)
+function setpan(done, str, no_write_cookie)
 {
    var pan = +str;
-   //console.log('pan='+ pan.toFixed(1));
+   //console.log('pan='+ pan.toFixed(2));
    if (pan > -0.1 && pan < +0.1) pan = 0;    // snap-to-zero interval
    w3_set_value('id-pan-value', pan);
    w3_color('id-pan-value', null, (pan < 0)? 'rgba(255,0,0,0.3)' : (pan? 'rgba(0,255,0,0.2)':''));
    w3_innerHTML('id-pan-field', pan? ((Math.abs(pan)*100).toFixed(0) +' '+ ((pan < 0)? 'L':'R')) : 'L=R');
    audio_set_pan(pan);
+   kiwi.pan = pan;
+
    if (done) {
-      writeCookie('last_pan', pan.toString());
+      if (no_write_cookie != true)
+         writeCookie('last_pan', pan.toString());
       freqset_select();
    }
+}
+
+function setpan_wheel_cb()
+{
+   var nval = w3_slider_wheel('setpan_wheel_cb', 'id-pan-value', kiwi.pan, 0.1, 0.1);
+   setpan(1, nval);
 }
 
 // called from both audio_init() and panels_setup() since there is a race setting audio_panner
@@ -9663,7 +9758,7 @@ function audio_panner_ui_init()
       w3_hide2('id-vol-comp');
       w3_hide2('id-vol', false);
       w3_hide2('id-pan', false);
-      setpan(1, pan);
+      setpan(1, kiwi.pan, true);
    }
 }
 
@@ -9822,9 +9917,14 @@ function squelch_setup(flags)
       //console.log('$squelch_setup nbfm='+ nbfm +' sq='+ sq +' squelch='+ squelch);
       w3_el('id-squelch-value').max = nbfm? 99:40;
       w3_set_value('id-squelch-value', squelch);
+
+      var tail = kiwi_storeGet('last_tail', 0);
+      squelch_tail = tail? +tail : 0;
+      w3_select_value('id-squelch-tail', squelch_tail);
    }
    
    set_squelch_cb('', squelch, true, false, true);
+   squelch_tail_cb('', squelch_tail, false, true);
 
 	if (nbfm) {
 	   squelch_action(squelched);
@@ -9849,24 +9949,36 @@ function set_squelch_cb(path, str, done, first, no_write_cookie)
    if (first) return;
 
    squelch = parseFloat(str);
-	w3_el('id-squelch-field').innerHTML = squelch? (str + (nbfm? '':' dB')) : 'off';
+   var sq_s = squelch.toFixed(0);
+	w3_el('id-squelch-field').innerHTML = squelch? (sq_s + (nbfm? '':' dB')) : 'off';
+   w3_set_value('id-squelch-value', squelch);
    w3_color('id-squelch-value', null, squelch? '' : 'rgba(255,0,0,0.3)');
 
    if (done) {
       send_squelch();
       if (no_write_cookie != true) {
-         writeCookie('last_squelch'+ (nbfm? '':'_efm'), str);
+         writeCookie('last_squelch'+ (nbfm? '':'_efm'), sq_s);
       }
       freqset_select();
    }
 }
 
-function squelch_tail_cb(path, val, first)
+function set_squelch_wheel_cb()
 {
-   //console.log('squelch_tail_cb path='+ path +' val='+ val +' first='+ first);
+   var nval = w3_slider_wheel('set_squelch_wheel_cb', 'id-squelch-value', squelch, 1, 5);
+   set_squelch_cb('', nval, 1);
+}
+
+function squelch_tail_cb(path, val, first, no_write_cookie)
+{
+   //console.log('squelch_tail_cb path='+ path +' val='+ val +' first='+ first +' no_write_cookie='+ no_write_cookie);
    if (first) return;
    squelch_tail = +val;
    send_squelch();
+
+   // nbfm has no tail menu
+   if (no_write_cookie != true && /* safety net */ cur_mode != 'nbfm')
+      kiwi_storeSet('last_tail', squelch_tail);
 }
 
 function sam_pll_reset_cb(path, val, first)
@@ -9994,11 +10106,11 @@ function setup_agc(toggle_flags)
 {
 	agc = kiwi_toggle(toggle_flags, default_agc, agc, 'last_agc'); toggle_or_set_agc(agc);
 	hang = kiwi_toggle(toggle_flags, default_hang, hang, 'last_hang'); toggle_or_set_hang(hang);
-	manGain = kiwi_toggle(toggle_flags, default_manGain, manGain, 'last_manGain'); setManGain(true, manGain);
-	thresh = kiwi_toggle(toggle_flags, default_thresh, thresh, 'last_thresh'); setThresh(true, thresh);
-	threshCW = kiwi_toggle(toggle_flags, default_threshCW, threshCW, 'last_threshCW'); setThreshCW(true, threshCW);
-	slope = kiwi_toggle(toggle_flags, default_slope, slope, 'last_slope'); setSlope(true, slope);
-	decay = kiwi_toggle(toggle_flags, default_decay, decay, 'last_decay'); setDecay(true, decay);
+	manGain = kiwi_toggle(toggle_flags, default_manGain, manGain, 'last_manGain'); setManGain_cb('', manGain, 1);
+	thresh = kiwi_toggle(toggle_flags, default_thresh, thresh, 'last_thresh'); setThresh_cb('', thresh, 1);
+	threshCW = kiwi_toggle(toggle_flags, default_threshCW, threshCW, 'last_threshCW'); setThreshCW_cb('', threshCW, 1);
+	slope = kiwi_toggle(toggle_flags, default_slope, slope, 'last_slope'); setSlope_cb('', slope, 1);
+	decay = kiwi_toggle(toggle_flags, default_decay, decay, 'last_decay'); setDecay_cb('', decay, 1);
 }
 
 function toggle_or_set_agc(set)
@@ -10008,13 +10120,13 @@ function toggle_or_set_agc(set)
 	else
 		agc ^= 1;
 	
-	html('id-button-agc').style.color = agc? 'lime':'white';
+	w3_el('id-button-agc').style.color = agc? 'lime':'white';
 	if (agc) {
-		html('id-label-man-gain').style.color = 'white';
-		html('id-button-hang').style.borderColor = html('label-slope').style.color = html('label-decay').style.color = 'orange';
+		w3_el('id-label-man-gain').style.color = 'white';
+		w3_el('id-button-hang').style.borderColor = w3_el('label-slope').style.color = w3_el('label-decay').style.color = 'orange';
 	} else {
-		html('id-label-man-gain').style.color = 'orange';
-		html('id-button-hang').style.borderColor = html('label-slope').style.color = html('label-decay').style.color = 'white';
+		w3_el('id-label-man-gain').style.color = 'orange';
+		w3_el('id-button-hang').style.borderColor = w3_el('label-slope').style.color = w3_el('label-decay').style.color = 'white';
 	}
 	set_agc();
 	writeCookie('last_agc', agc.toString());
@@ -10030,7 +10142,7 @@ function toggle_or_set_hang(set)
 	else
 		hang ^= 1;
 
-	html('id-button-hang').style.color = hang? 'lime':'white';
+	w3_el('id-button-hang').style.color = hang? 'lime':'white';
 	set_agc();
 	writeCookie('last_hang', hang.toString());
    freqset_select();
@@ -10038,62 +10150,97 @@ function toggle_or_set_hang(set)
 
 var manGain = 0;
 
-function setManGain(done, str)
+function setManGain_cb(path, str, done, first)
 {
+   if (first) return;
    manGain = parseFloat(str);
-   html('input-man-gain').value = manGain;
-   html('field-man-gain').innerHTML = str;
+   w3_el('id-input-man-gain').value = manGain;
+   w3_el('id-field-man-gain').innerHTML = str;
 	set_agc();
 	writeCookie('last_manGain', manGain.toString());
    if (done) freqset_select();
 }
 
+function setManGain_wheel_cb()
+{
+   var nval = w3_slider_wheel('setManGain_wheel_cb', 'id-input-man-gain', manGain, 1, 10);
+   setManGain_cb('', nval, 1);
+}
+
 var thresh = 0;
 
-function setThresh(done, str)
+function setThresh_cb(path, str, done, first)
 {
+   if (first) return;
    thresh = parseFloat(str);
-   html('input-threshold').value = thresh;
-   html('field-threshold').innerHTML = str;
+   w3_el('id-input-threshold').value = thresh;
+   w3_el('id-field-threshold').innerHTML = str;
 	set_agc();
 	writeCookie('last_thresh', thresh.toString());
    if (done) freqset_select();
 }
 
+function setThresh_wheel_cb()
+{
+   var nval = w3_slider_wheel('setThresh_wheel_cb', 'id-input-threshold', thresh, 1, 10);
+   setThresh_cb('', nval, 1);
+}
+
 var threshCW = 0;
 
-function setThreshCW(done, str)
+function setThreshCW_cb(path, str, done, first)
 {
+   if (first) return;
    threshCW = parseFloat(str);
-   html('input-threshCW').value = threshCW;
-   html('field-threshCW').innerHTML = str;
+   w3_el('id-input-threshCW').value = threshCW.toFixed(0);
+   w3_el('id-field-threshCW').innerHTML = str;
 	set_agc();
 	writeCookie('last_threshCW', threshCW.toString());
    if (done) freqset_select();
 }
 
+function setThreshCW_wheel_cb()
+{
+   var nval = w3_slider_wheel('setThreshCW_wheel_cb', 'id-input-threshCW', threshCW, 1, 10);
+   setThreshCW_cb('', nval, 1);
+}
+
 var slope = 0;
 
-function setSlope(done, str)
+function setSlope_cb(path, str, done, first)
 {
+   if (first) return;
    slope = parseFloat(str);
-   html('input-slope').value = slope;
-   html('field-slope').innerHTML = str;
+   w3_el('id-input-slope').value = slope;
+   w3_el('id-field-slope').innerHTML = str;
 	set_agc();
 	writeCookie('last_slope', slope.toString());
    if (done) freqset_select();
 }
 
+function setSlope_wheel_cb()
+{
+   var nval = w3_slider_wheel('setSlope_wheel_cb', 'id-input-slope', slope, 1, 1);
+   setSlope_cb('', nval, 1);
+}
+
 var decay = 0;
 
-function setDecay(done, str)
+function setDecay_cb(path, str, done, first)
 {
+   if (first) return;
    decay = parseFloat(str);
-   html('input-decay').value = decay;
-   html('field-decay').innerHTML = str;
+   w3_el('id-input-decay').value = decay;
+   w3_el('id-field-decay').innerHTML = str;
 	set_agc();
 	writeCookie('last_decay', decay.toString());
    if (done) freqset_select();
+}
+
+function setDecay_wheel_cb()
+{
+   var nval = w3_slider_wheel('setDecay_wheel_cb', 'id-input-decay', decay, 100, 500);
+   setDecay_cb('', nval, 1);
 }
 
 
@@ -10128,7 +10275,7 @@ function users_setup()
 ////////////////////////////////
 
 // icon callbacks
-function freq_vfo_cb(path)
+function freq_vfo_cb()
 {
    owrx.vfo_ab ^= 1;
    //console.log('VFO A/B ='+ owrx.vfo_ab);

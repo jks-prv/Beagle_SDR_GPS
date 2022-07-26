@@ -171,11 +171,11 @@ function fax_recv(data)
 
 			case "fax_download_avail":
             var file = kiwi_url_origin() +'/kiwi.config/fax.ch'+ fax.ch +'_'+ param[1];
-            var png = file +'.png';
-            var thumb = file +'.thumb.png';
+            var gif = file +'.gif';
+            var thumb = file +'.thumb.gif';
             w3_remove_then_add('id-fax-file-icon', 'fa-refresh fa-spin w3-text-aqua', 'fa-repeat w3-text-pink');
             w3_el('id-fax-file-status').innerHTML =
-               w3_link('', png, '<img src='+ dq(thumb) +' />');
+               w3_link('', gif, '<img src='+ dq(thumb) +' />');
 				break;
 
 			case "fax_sps_changed":

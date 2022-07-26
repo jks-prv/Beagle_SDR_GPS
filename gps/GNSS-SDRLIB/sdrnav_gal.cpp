@@ -349,7 +349,7 @@ extern int decode_page_e1b(const uint8_t *buff1, const uint8_t *buff2,
     case 10: decode_word10(buff, nav);      break;
     case 63: break;                                 // dummy page (we've actually seen these)
     default:
-        printf("%s UNKNOWN W%d\n", PRN(nav->sat), id);
+        //printf("%s UNKNOWN W%d\n", PRN(nav->sat), id);
         break;
     }
 

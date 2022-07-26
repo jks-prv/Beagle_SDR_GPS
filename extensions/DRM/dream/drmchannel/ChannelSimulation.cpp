@@ -609,7 +609,7 @@ _REAL CTapgain::NormShift(const _REAL rShift) const
 _REAL CChannelSim::randn() const
 {
     const int iNoRand = 10;
-    const _REAL rFactor = (_REAL) sqrt((_REAL) 12.0 / iNoRand) / RAND_MAX;
+    const _REAL rFactor = (_REAL) ((double) sqrt((_REAL) 12.0 / iNoRand) / RAND_MAX);
     const int iRandMaxHalf = RAND_MAX / 2;
 
     /* Add some constant distributed random processes to get Gaussian
