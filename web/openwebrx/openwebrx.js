@@ -10030,7 +10030,7 @@ function toggle_or_set_audio(set, val)
 	// if toggling (i.e. not the first time during setup) reinitialize audio with specified buffering
 	if (!isNumber(set)) {
 	   // haven't got audio_init() calls to work yet (other than initial)
-	   //audio_init(0, null, btn_less_buffering, btn_compression);
+	   //audio_init(null, btn_less_buffering, btn_compression);
       window.location.reload(true);
    }
 }

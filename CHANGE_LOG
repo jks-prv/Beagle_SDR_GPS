@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.546  Jul 27, 2022
+    Fix audio bug caused by default audio suspension introduced in Firefox 103.
+
 v1.545  Jul 27, 2022
     By request:
     Main control panel sliders (WF, Audio, AGC tabs) can now be adjusted by hovering over them and

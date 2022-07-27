@@ -28,6 +28,8 @@ var audio = {
    d: false,
    last_flags: 0,
    trim_bufs: false,
+   buffer_size: 8192,
+   //buffer_size: 4096,
    
    lo_cut: 0,
    hi_cut: 0,
@@ -317,7 +319,7 @@ function audio_init(is_local, less_buffering, compression)
          }
          audio_buffer_min_length_sec = abuf;
          audio_buffer_max_length_sec = max;
-         audio_buffer_size = 8192;
+         audio_buffer_size = audio.buffer_size;
          buffering_scheme = 9;
          scheme_s = 'abuf=';
       } else {
@@ -340,21 +342,21 @@ function audio_init(is_local, less_buffering, compression)
       // 8192 = 186 ms/buf  5.4 /sec @ 44.1 kHz
    
       if (buffering_scheme == 2) {
-         audio_buffer_size = 8192;
+         audio_buffer_size = audio.buffer_size;
          audio_buffer_min_length_sec = 0.37;    // min_nbuf = 2 @ 44.1 kHz
          audio_buffer_max_length_sec = 2.00;
          scheme_s = 'less buf, local';
       } else
       
       if (buffering_scheme == 1) {
-         audio_buffer_size = 8192;
+         audio_buffer_size = audio.buffer_size;
          audio_buffer_min_length_sec = 0.74;    // min_nbuf = 4 @ 44.1 kHz
          audio_buffer_max_length_sec = 3.00;
          scheme_s = 'less buf, remote';
       } else
       
       if (buffering_scheme == 0) {
-         audio_buffer_size = 8192;
+         audio_buffer_size = audio.buffer_size;
          audio_buffer_min_length_sec = 0.85;    // min_nbuf = 5 @ 44.1 kHz
          audio_buffer_max_length_sec = 3.40;
          scheme_s = 'more buf';
@@ -699,11 +701,23 @@ function audio_periodic()
    // Because this discards input buffers the compression must be restarted to avoid a noise burst.
    // Do this by asking the server to restart the audio stream with a reset compression state.
 
+   // if suspended waiting for user gesture
+   if (audio_context.state != 'running') {
+      while (audio_prepared_buffers.length > 0) {
+         audio_prepared_buffers.shift();
+         if (audio_channels == 2) audio_prepared_buffers2.shift();
+         audio_prepared_seq.shift();
+         audio_prepared_flags.shift();
+         audio_prepared_smeter.shift();
+      }
+      return;
+   }
+
    if (audio_started && audio_prepared_buffers.length && audio_firefox_watchdog == 0 && kiwi_isFirefox() && !cfg.disable_recent_changes) {
       add_problem("FF watchdog");
       console.log('AUDIO FF WATCHDOG Q'+ audio_prepared_buffers.length +' WD='+ audio_firefox_watchdog +' ============================================');
-      audio_init(0, null, false, null);
-      audio_initial_connect = true;
+      audio_init(null, false, null);
+      audio_initial_connect = false;
       audio_watchdog_restart = true;
       snd_send("SET reinit");
    }
@@ -1265,16 +1279,17 @@ function audio_stats()
 	var net_avg = audio_stat_total_input_size / secs_since_reset;
 	var out_sps = (audio_stat_output_bufs * audio_buffer_size) / secs_since_first_output;
 	
-	var s = "Audio: network "+
-		net_sps.toFixed(0) +" sps ("+
-		net_avg.toFixed(0) +" avg), output "+
-		out_sps.toFixed(0) +" sps";
+   if (audio.d) {
+      var s = "Audio: network "+
+         net_sps.toFixed(0) +" sps ("+
+         net_avg.toFixed(0) +" avg), output "+
+         out_sps.toFixed(0) +" sps";
 
-	s += ', Qlen '+ audio_prepared_buffers.length;
-	if (audio_underrun_errors) s += ', underruns '+ audio_underrun_errors.toString();
-	if (audio_restart_count) s += ', restart '+ audio_restart_count.toString();
-   w3_innerHTML('id-msg-audio', s);
-   if (audio.d) console.log(s);
+      s += ', Qlen '+ audio_prepared_buffers.length;
+      if (audio_underrun_errors) s += ', underruns '+ audio_underrun_errors.toString();
+      if (audio_restart_count) s += ', restart '+ audio_restart_count.toString();
+      console.log(s);
+   }
    
    if (isNaN(out_sps)) out_sps = 0;
    w3_innerHTML('id-status-audio',
