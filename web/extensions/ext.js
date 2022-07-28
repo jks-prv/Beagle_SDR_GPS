@@ -308,7 +308,7 @@ function ext_set_scanning(scanning)
 function ext_agc_delay(set_val)
 {
    var prev_val = w3_el('input-decay').value;
-   if (isDefined(set_val)) setDecay(true, set_val);
+   if (isDefined(set_val)) setDecay_cb('', set_val, 1);
    return prev_val;
 }
 
