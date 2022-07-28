@@ -187,13 +187,15 @@ static void _spi_dev_init(int spi_clkg, int spi_speed)
 		if (spi_fd != -1) close(spi_fd);
 	
 	    const char *spi_devname;
-        #if defined(CPU_BCM2837)
-            spi_devname = "/dev/spidev0.0";
-        #else
+        #if defined(CPU_AM5729)
+            spi_devname = "/dev/spidev1.0";
+        #elif defined(CPU_AM3359)
             if (debian_ver <= 9)
                 spi_devname = "/dev/spidev1.0";
             else
                 spi_devname = "/dev/spidev0.0";
+        #else
+            spi_devname = "/dev/spidev0.0";
         #endif
 		lprintf("### using SPI_DEV %s\n", spi_devname);
 	
