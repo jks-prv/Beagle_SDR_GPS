@@ -6,16 +6,17 @@
 
 /dts-v1/;
 
+#define KiwiSDR
+
 #include "k3-j721e-som-p0.dtsi"
 #include "k3-j721e-rtos-memory-map.dtsi"
+#include "k3-j721e-beagleboneai64-cape.dtsi"
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/net/ti-dp83867.h>
 #include <dt-bindings/board/k3-j721e-bone-pins.h>
 
 /* KiwiSDR workarounds */
-#define KiwiSDR
-
 #ifdef KiwiSDR
     #define TXDISABLE_SHIFT     (21)
     #define OUTPUT_EN		    (0 << TXDISABLE_SHIFT)
@@ -917,6 +918,11 @@
 	/* uart2 P9.24 P9.22 */
 	/* uart5 P8.37 P8.38 P8.32 P8.31 */
 
+	/* PWM: https://elinux.org/Beagleboard:BeagleBone_cape_interface_spec#PWM */
+	/* ehrpwm1 P9.22 P9.21 */
+	/* ehrpwm2 P9.14 P9.16 */
+	/* ehrpwm0 P8.19 P8.13 */
+
 	/* Full P8/P9 header mode definitions */
 	/* P8_01 - GND */
 	/* P8_02 - GND */
@@ -1115,7 +1121,6 @@
 	BONE_PIN(P8_26, gpio,      P8_26(PIN_INPUT, 7))
 	BONE_PIN(P8_26, gpio_pu,   P8_26(PIN_INPUT_PULLUP, 7))
 	BONE_PIN(P8_26, gpio_pd,   P8_26(PIN_INPUT_PULLDOWN, 7))
-
 
 	/* P8_27 (AA28) PRG0_PRU1_GPO8 (gpio0_71) AA28_PRG0_PRU1_GPO8 */
 	BONE_PIN(P8_27, default,   P8_27(PIN_INPUT, 7))
@@ -1367,7 +1372,11 @@
 	BONE_PIN(P9_16, pwm,       P9_16(PIN_OUTPUT, 6))	/* ehrpwm2_b */
 
 	/* P9_17 (AC21/AA3) PRG1_PRU1_GPO7/SPI0_D1 (gpio0_28/gpio0_115) AC21_AA3 */
+#ifdef KiwiSDR
+	BONE_PIN(P9_17, default,   P9_17A(PIN_OUT_PULLUP, 4) P9_17B(PIN_INPUT, 7))  /* P9_17 SPIn_CS0 */
+#else
 	BONE_PIN(P9_17, default,   P9_17A(PIN_INPUT, 7) P9_17B(PIN_INPUT, 7))
+#endif
 	BONE_PIN(P9_17, pruout,    P9_17A(PIN_OUTPUT, 0) P9_17B(PIN_INPUT, 7))	/* prg1_pru1_gpo7 */
 	BONE_PIN(P9_17, pruin,     P9_17A(PIN_INPUT, 1) P9_17B(PIN_INPUT, 7))	/* prg1_pru1_gpi7 */
 	BONE_PIN(P9_17, gpio,      P9_17A(PIN_INPUT, 7) P9_17B(PIN_INPUT, 7))	/* gpio0_28 */
@@ -1377,7 +1386,11 @@
 	BONE_PIN(P9_17, spi,       P9_17A(PIN_OUTPUT, 4) P9_17B(PIN_INPUT, 7))	/* spi6_cs0 */
 
 	/* P9_18 (AH22/Y2) PRG1_PRU1_GPO19/SPI1_D1 (gpio0_40/gpio0_120) AH22_Y2 */
+#ifdef KiwiSDR
+	BONE_PIN(P9_18, default,   P9_18A(PIN_OUT_PULLDOWN, 4) P9_18B(PIN_INPUT, 7))  /* P9_18 SPIn_MOSI */
+#else
 	BONE_PIN(P9_18, default,   P9_18A(PIN_INPUT, 7) P9_18B(PIN_INPUT, 7))
+#endif
 	BONE_PIN(P9_18, pruout,    P9_18A(PIN_OUTPUT, 0) P9_18B(PIN_INPUT, 7))	/* prg1_pru1_gpo19 */
 	BONE_PIN(P9_18, pruin,     P9_18A(PIN_INPUT, 1) P9_18B(PIN_INPUT, 7))	/* prg1_pru1_gpi19 */
 	BONE_PIN(P9_18, gpio,      P9_18A(PIN_INPUT, 7) P9_18B(PIN_INPUT, 7))	/* gpio0_40 */
@@ -2045,20 +2058,10 @@ bone_i2c_0: &wkup_i2c0 {
 	};
 };
 
-bone_i2c_2: &main_i2c3 {
-	symlink = "bone/i2c/2";
-};
-
 &main_i2c3 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&main_i2c3_pins_default>;
 	clock-frequency = <400000>;
-};
-
-bone_i2c_3: &main_i2c4 {
-	pinctrl-names = "default";
-	clock-frequency = <400000>;
-	symlink = "bone/i2c/3";
 };
 
 &main_i2c5 {
@@ -2105,52 +2108,61 @@ bone_i2c_3: &main_i2c4 {
 #endif
 };
 
-bone_spi_0: &main_spi6 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&main_spi6_pins_default>;
-	ti,spi-num-cs = <2>;
 #ifdef KiwiSDR
-	ti,pindir-d0-in-d1-out;
-#else
-	ti,pindir-d0-out-d1-in;
+    bone_spi_0: &main_spi6 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&main_spi6_pins_default>;
+        ti,spi-num-cs = <2>;
+    #ifdef KiwiSDR
+        ti,pindir-d0-in-d1-out;
+    #else
+        ti,pindir-d0-out-d1-in;
+    #endif
+
+        spidev0: spidev@0{
+            symlink = "bone/spi/0.0";
+            compatible = "spidev";
+            reg = <0>;	/* CE0 */
+            #address-cells = <1>;
+            #size-cells = <0>;
+            spi-max-frequency = <125000000>;
+        };
+
+        spidev1: spidev@1{
+            symlink = "bone/spi/0.1";
+            compatible = "spidev";
+            reg = <1>;	/* CE1 */
+            #address-cells = <1>;
+            #size-cells = <0>;
+            spi-max-frequency = <125000000>;
+        };
+    };
 #endif
 
-	spidev0: spidev@0{
-		symlink = "bone/spi/0.0";
-		compatible = "spidev";
-		reg = <0>;	/* CE0 */
-		#address-cells = <1>;
-		#size-cells = <0>;
-		spi-max-frequency = <125000000>;
-	};
-
-	spidev1: spidev@1{
-		symlink = "bone/spi/0.1";
-		compatible = "spidev";
-		reg = <1>;	/* CE1 */
-		#address-cells = <1>;
-		#size-cells = <0>;
-		spi-max-frequency = <125000000>;
-	};
-};
-
-bone_i2c_1: &main_i2c6 {
-	symlink = "bone/i2c/1";
-};
-
-/* KiwiSDR cape eeprom */
-#ifdef KiwiSDR
-bone_i2c_4: &main_i2c2 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&main_i2c2_pins_default>;
-	clock-frequency = <400000>;
-
-	eeprom@54 {
-		compatible = "atmel,24c32";
-		reg = <0x54>;
-	};
-};
-#endif
+//bone_spi_0: &main_spi6 {
+//	pinctrl-names = "default";
+//	pinctrl-0 = <&main_spi6_pins_default>;
+//	ti,spi-num-cs = <2>;
+//	ti,pindir-d0-out-d1-in;
+//
+//	spidev0: spidev@0{
+//		symlink = "bone/spi/0.0";
+//		compatible = "spidev";
+//		reg = <0>;	/* CE0 */
+//		#address-cells = <1>;
+//		#size-cells = <0>;
+//		spi-max-frequency = <125000000>;
+//	};
+//
+//	spidev1: spidev@1{
+//		symlink = "bone/spi/0.1";
+//		compatible = "spidev";
+//		reg = <1>;	/* CE1 */
+//		#address-cells = <1>;
+//		#size-cells = <0>;
+//		spi-max-frequency = <125000000>;
+//	};
+//};
 
 &mcu_cpsw {
 	pinctrl-names = "default";

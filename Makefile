@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 546
+VERSION_MIN = 547
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -1068,6 +1068,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
         install_kiwi_device_tree:
 	        @echo "BBAI-64: install Kiwi device tree to configure GPIO pins"
 	        cp platform/beaglebone_AI64/$(DTB_KIWI_TMP) $(DIR_DTB2)
+	        cp platform/beaglebone_AI64/k3-j721e-beagleboneai64-cape.dtsi $(DIR_DTB2)
 	        (cd $(DIR_DTB); make all)
 	        (cd $(DIR_DTB); make install)
     endif
