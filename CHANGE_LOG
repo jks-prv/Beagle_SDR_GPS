@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.548  Jul 29, 2022
+    BBAI's should not use the code for BBG/BBB that switches from using /dev/spidev1 to spidev0 when
+    Debian version > 9.
+
 v1.547  Jul 28, 2022
     Fix bug preventing HFDL and timecode extensions from fully loading.
 
