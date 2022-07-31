@@ -57,6 +57,7 @@ typedef struct conn_st {
 
 	// set in STREAM_{SOUND, WATERFALL, EXT, ADMIN}
 	u4_t keepalive_time, keep_alive, keepalive_count;
+	bool ext_no_keepalive;
 
 	// set in both STREAM_SOUND & STREAM_WATERFALL
 	int task;

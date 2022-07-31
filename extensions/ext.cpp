@@ -271,7 +271,12 @@ int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *c
 
 void ext_kick(int rx_chan)
 {
-	conn_t *conn_ext = ext_users[rx_chan].conn_ext;
+    //printf("ext_kick rx_chan=%d\n", rx_chan);
+	ext_users_t *extu = &ext_users[rx_chan];
+	if (!extu) return;
+	conn_t *conn_ext = extu->conn_ext;
+	if (!conn_ext) return;
+    //printf("ext_kick KICKING\n");
 	conn_ext->kick = true;
 }
 
@@ -352,7 +357,7 @@ void extint_setup_c2s(void *param)
 
 	// initialize extension for this connection
 	// NB: has to be a 'MSG' and not an 'EXT' due to sequencing of recv_cb setup
-    printf("rx%d SET extint_setup_c2s: ext_client_init=%d(is_locked)\n", conn_ext->ext_rx_chan, is_locked);
+    printf("EXT extint_setup_c2s SET: rx%d ext_client_init=%d(is_locked)\n", conn_ext->ext_rx_chan, is_locked);
 	send_msg(conn_ext, false, "MSG ext_client_init=%d", is_locked);
 }
 
@@ -414,7 +419,7 @@ void extint_c2s(void *param)
 					}
 				}
 				if (i == n_exts) {
-				    printf("ext_switch_to_client: <%s>\n", client_m);
+				    printf("EXT ext_switch_to_client: <%s>\n", client_m);
 				    //panic("ext_switch_to_client: unknown ext");
 				} else {
                     ext_send_msg(conn_ext->ext_rx_chan, false, "MSG EXT-STOP-FLUSH-INPUT");
@@ -444,8 +449,16 @@ void extint_c2s(void *param)
 
 			i = strcmp(cmd, "SET ext_is_locked_status");
 			if (i == 0) {
-			    printf("rx%d SET ext_is_locked_status: ext_client_init=%d(is_locked)\n", conn_ext->ext_rx_chan, is_locked);
+			    printf("EXT ext_is_locked_status SET: rx%d ext_client_init=%d(is_locked)\n", conn_ext->ext_rx_chan, is_locked);
                 send_msg(conn_ext, false, "MSG ext_client_init=%d", is_locked);
+				continue;
+			}
+
+            // ext client (e.g. kiwiclient) can't generate async keepalive messages
+            // snd/wf will take care of it anyway
+			i = strcmp(cmd, "SET ext_no_keepalive");
+			if (i == 0) {
+			    conn_ext->ext_no_keepalive = true;
 				continue;
 			}
 
@@ -468,7 +481,7 @@ void extint_c2s(void *param)
 				continue;
 			}
 			
-			printf("extint_c2s: %s CONN%d(%p) unknown command: sl=%d %d|%d|%d [%s] ip=%s ==================================\n",
+			printf("EXT extint_c2s: %s CONN%d(%p) unknown command: sl=%d %d|%d|%d [%s] ip=%s ==================================\n",
 			    conn_ext->ext? conn_ext->ext->name:"?", conn_ext->self_idx, conn_ext,
 			    strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn_ext->remote_ip);
 
@@ -478,7 +491,7 @@ void extint_c2s(void *param)
         ext_rx_chan = conn_ext->ext_rx_chan;
         ext = (ext_rx_chan == -1)? NULL : ext_users[ext_rx_chan].ext;
 
-		conn_ext->keep_alive = timer_sec() - conn_ext->keepalive_time;
+		conn_ext->keep_alive = conn_ext->ext_no_keepalive? 0 : timer_sec() - conn_ext->keepalive_time;
 		bool keepalive_expired = (!conn_ext->internal_connection && conn_ext->keep_alive > KEEPALIVE_SEC);
 		if (keepalive_expired || conn_ext->kick) {
 			//printf("EXT %s RX%d %s\n", conn_ext->kick? "KICKED" : "KEEP-ALIVE EXPIRED", ext_rx_chan, ext? ext->name : "(no ext)");
@@ -499,4 +512,13 @@ void extint_c2s(void *param)
 
 		TaskSleepReasonMsec("ext-cmd", 250);
 	}
+}
+
+void extint_shutdown_c2s(void *param)
+{
+    conn_t *conn_ext = (conn_t*) param;
+    //printf("EXT rx%d extint_shutdown_c2s mc=0x%x\n", conn_ext->ext_rx_chan, conn_ext->mc);
+    if (conn_ext && conn_ext->mc) {
+        rx_server_websocket(WS_MODE_CLOSE, conn_ext->mc);
+    }
 }

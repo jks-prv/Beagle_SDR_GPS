@@ -71,7 +71,7 @@ rx_stream_t rx_streams[] = {
 #ifdef USE_SDR
 	{ STREAM_SOUND,		"SND",		&c2s_sound,		&c2s_sound_setup,		&c2s_sound_shutdown,	 SND_PRIORITY },
 	{ STREAM_WATERFALL,	"W/F",		&c2s_waterfall,	&c2s_waterfall_setup,	&c2s_waterfall_shutdown, WF_PRIORITY },
-	{ STREAM_EXT,		"EXT",		&extint_c2s,	&extint_setup_c2s,		NULL,                    TASK_MED_PRIORITY },
+	{ STREAM_EXT,		"EXT",		&extint_c2s,	&extint_setup_c2s,		&extint_shutdown_c2s,    TASK_MED_PRIORITY },
 	{ STREAM_MONITOR,   "MON",		&c2s_mon,	    &c2s_mon_setup,         NULL,                    TASK_MED_PRIORITY },
 
 	// AJAX requests
@@ -361,6 +361,17 @@ void rx_loguser(conn_t *c, logtype_e type)
 void rx_server_remove(conn_t *c)
 {
     rx_stream_t *st = &rx_streams[c->type];
+    
+    // kick corresponding ext if any 
+    if (c->type == STREAM_SOUND || c->type == STREAM_WATERFALL) {
+        //cprintf(c, "EXT remove from=conn-%02d rx_chan=%d tstamp=%lld\n", c->self_idx, c->rx_channel, c->tstamp);
+        //dump();
+	    for (conn_t *conn = conns; conn < &conns[N_CONNS]; conn++) {
+	        if (conn->type == STREAM_EXT && conn->ext_rx_chan == c->rx_channel && conn->tstamp == c->tstamp)
+	            ext_kick(conn->ext_rx_chan);
+	    }
+    }
+    
     if (st->shutdown) (st->shutdown)((void *) c);
     
 	c->stop_data = TRUE;
