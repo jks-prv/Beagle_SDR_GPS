@@ -241,17 +241,17 @@ void WSPR_FFT(void *param)
 		    //wspr_dprintf("WSPR_FFTtask %s %02d:%02d deco=%.1f tune=%.1f\n", (last < nffts)? "LOOP" : "DONE",
 		    //    min, sec, w->arun_deco_cf_MHz*1e3, w->arun_cf_MHz*1e3);
 		    int per = ((min&1) * 60) + sec;
-		    static int prev_per;
 		    const int trig = 60 + 50;
-		    if (prev_per < trig && per >= trig) {
-		        wspr_dprintf("WSPR IWBP TRIG %02d:%02d ====\n", min, sec);
-		        
+		    if (w->prev_per < trig && per >= trig) {
                 int deco_hop = (min % WSPR_HOP_PERIOD) / 2;
                 double deco_cf_kHz = wspr_cf_IWBP[deco_hop];
 		        
                 int tune_hop = ((min+1) % WSPR_HOP_PERIOD) / 2;
                 double tune_cf_kHz = wspr_cf_IWBP[tune_hop];
-                
+
+		        wspr_dprintf("WSPR IWBP TRIG %02d:%02d deco_cf_kHz=%.2f tune_cf_kHz=%.2f ====\n",
+		            min, sec, deco_cf_kHz, tune_cf_kHz);
+		                        
 	            double cfo = roundf((deco_cf_kHz - floorf(deco_cf_kHz)) * 1e3);
                 input_msg_internal(w->arun_cext, (char *) "SET dialfreq=%.2f centerfreq=%.2f cf_offset=%.0f",
                     deco_cf_kHz - AUTORUN_BFO/1e3, deco_cf_kHz, cfo);
@@ -263,7 +263,7 @@ void WSPR_FFT(void *param)
                 w->arun_deco_cf_MHz = deco_cf_kHz / 1e3;
                 w->arun_cf_MHz = tune_cf_kHz / 1e3;
 		    }
-		    prev_per = per;
+		    w->prev_per = per;
 		}
 		
 		if (last < nffts) continue;
@@ -333,7 +333,7 @@ void wspr_send_decode(wspr_t *w, int seq)
         asprintf(&W_s, "%.0f %s", watts, units);
     
     if (log_decodes && (d->r_valid == 1 || d->r_valid == 2 || d->r_valid == 3)) {
-        static int arct;
+        static int arct;    // yes, static because decode msgs from all channels interleaved together
         if ((arct & 7) == 0) {
             //                   1234 123 1234 123456789 12  123456 1234 12345  123
             //                   0920 -26  0.4  7.040121  0  AE7YQ  DM41 10770   37 (5.0 W)
@@ -360,7 +360,8 @@ void wspr_send_decode(wspr_t *w, int seq)
             d->call, d->call, d->grid, d->grid,
             (int) grid_to_distance_km(d->grid), d->dBm, W_s);
         if (log_decodes)
-            rcfprintf(w->rx_chan, printf_type, "WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  %-6s %s %5d  %3d (%s)\n",
+            rcfprintf(w->rx_chan, printf_type, "%s DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  %-6s %s %5d  %3d (%s)\n",
+                w->iwbp? "IWBP" : "WSPR",
                 d->hour, d->min, d->snr, d->dt_print, d->freq_print, (int) d->drift1,
                 d->call, d->grid, (int) grid_to_distance_km(d->grid), d->dBm, W_s);
     } else
@@ -371,7 +372,8 @@ void wspr_send_decode(wspr_t *w, int seq)
                 "%02d%02d %3.0f %4.1f %9.6f %2d  ...                %3d (%s)",
                 d->hour, d->min, d->snr, d->dt_print, d->freq_print, (int) d->drift1, d->dBm, W_s);
             if (log_decodes)
-                rcfprintf(w->rx_chan, printf_type, "WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  ...                %3d (%s)\n",
+                rcfprintf(w->rx_chan, printf_type, "%s DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  ...                %3d (%s)\n",
+                    w->iwbp? "IWBP" : "WSPR",
                     d->hour, d->min, d->snr, d->dt_print, d->freq_print, (int) d->drift1, d->dBm, W_s);
         } else {
             ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
@@ -382,8 +384,9 @@ void wspr_send_decode(wspr_t *w, int seq)
                 d->hour, d->min, d->snr, d->dt_print, d->freq_print, (int) d->drift1,
                 d->call, d->call, d->dBm, W_s);
             if (log_decodes)
-                rcfprintf(w->rx_chan, printf_type, "WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  %-17s  %3d (%s)\n",
+                rcfprintf(w->rx_chan, printf_type, "%s DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  %-17s  %3d (%s)\n",
                     //kkkkk--ppp
+                    w->iwbp? "IWBP" : "WSPR",
                     d->hour, d->min, d->snr, d->dt_print, d->freq_print, (int) d->drift1,
                     d->call, d->dBm, W_s);
         }
@@ -399,7 +402,8 @@ void wspr_send_decode(wspr_t *w, int seq)
                 d->hour, d->min, d->snr, d->dt_print, d->freq_print, (int) d->drift1,
                 d->grid, d->grid, (int) grid_to_distance_km(d->grid), d->dBm, W_s);
             if (log_decodes)
-                rcfprintf(w->rx_chan, printf_type, "WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  ...  %6s %5d  %3d (%s)\n",
+                rcfprintf(w->rx_chan, printf_type, "%s DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  ...  %6s %5d  %3d (%s)\n",
+                    w->iwbp? "IWBP" : "WSPR",
                     d->hour, d->min, d->snr, d->dt_print, d->freq_print, (int) d->drift1,
                     d->grid, (int) grid_to_distance_km(d->grid), d->dBm, W_s);
         } else {
@@ -412,7 +416,8 @@ void wspr_send_decode(wspr_t *w, int seq)
                 d->call, d->call, d->grid, d->grid,
                 (int) grid_to_distance_km(d->grid), d->dBm, W_s);
             if (log_decodes)
-                rcfprintf(w->rx_chan, printf_type, "WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  %s %s %d %d (%s)\n",
+                rcfprintf(w->rx_chan, printf_type, "%s DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  %s %s %d %d (%s)\n",
+                    w->iwbp? "IWBP" : "WSPR",
                     d->hour, d->min, d->snr, d->dt_print, d->freq_print, (int) d->drift1,
                     d->call, d->grid, (int) grid_to_distance_km(d->grid), d->dBm, W_s);
         }
@@ -798,6 +803,8 @@ void wspr_reset(wspr_t *w)
     w->last_sec = -1;
     w->abort_decode = false;
     w->send_error = false;
+    w->autorun = false;
+    w->iwbp = false;
 }
 
 static internal_conn_t iconn[MAX_RX_CHANS];
@@ -834,7 +841,9 @@ void wspr_autorun(int instance, int band)
     conn_t *csnd = iconn[instance].csnd;
     int chan = csnd->rx_channel;
     wspr_t *w = &WSPR_SHMEM->wspr[chan];
+    iconn[instance].param = w;
     wspr_reset(w);
+    //w->debug = 1;
     w->arun_csnd = csnd;
     w->arun_deco_cf_MHz = center_freq_kHz / 1e3;
     w->arun_cf_MHz = tune_freq_kHz / 1e3;
@@ -850,10 +859,8 @@ void wspr_autorun(int instance, int band)
     input_msg_internal(cext, (char *) "SET autorun");
     input_msg_internal(cext, (char *) "SET BFO=%d", AUTORUN_BFO);
     input_msg_internal(cext, (char *) "SET capture=0");
-    if (iwbp) {
-        w->iwbp = true;
-        input_msg_internal(cext, (char *) "SET IWBP");
-    }
+    w->iwbp = iwbp? true : false;
+    if (iwbp) input_msg_internal(cext, (char *) "SET IWBP");
     input_msg_internal(cext, (char *) "SET dialfreq=%.2f centerfreq=%.2f cf_offset=%.0f", dial_freq_kHz, center_freq_kHz, cfo);
     input_msg_internal(cext, (char *) "SET capture=1");
 
@@ -885,6 +892,10 @@ void wspr_autorun_restart()
         internal_conn_shutdown(&iconn[instance]);
     }
     TaskSleepReasonSec("wspr_autorun_stop", 3);     // give time to disconnect
+    for (int instance = 0; instance < rx_chans; instance++) {
+        wspr_t *w = (wspr_t *) iconn[instance].param;
+        if (w != NULL) wspr_reset(w);
+    }
     memset(iconn, 0, sizeof(internal_conn_t));
     wspr_autorun_start();
 }

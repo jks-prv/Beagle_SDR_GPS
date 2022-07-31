@@ -39,7 +39,10 @@ static const unsigned char pr3[NSYM_162]=
     0,0,0,0,0,0,0,1,1,0,1,0,1,1,0,0,0,1,1,0,
     0,0};
 
-void sync_and_demodulate(
+static const float DT = 1.0/FSRATE, DF = FSRATE/FSPS;
+static const float TWOPIDT = 2*K_PI*DT;
+
+static void sync_and_demodulate(wspr_t *w,
 	WSPR_CPX_t *id, WSPR_CPX_t *qd, long np,
 	unsigned char *symbols, float *f1, int ifmin, int ifmax, float fstep,
 	int *shift1,
@@ -53,10 +56,7 @@ void sync_and_demodulate(
      *                              symbols using passed frequency and shift.
      ************************************************************************/
     
-    static float fplast=-10000.0;
-    static float dt=1.0/FSRATE, df=FSRATE/FSPS;
-    static float pi=K_PI;
-    float twopidt, df15=df*1.5, df05=df*0.5;
+    float const DF15=DF*1.5, DF05=DF*0.5;
 
     int i, j, k, lag;
     float
@@ -84,7 +84,6 @@ void sync_and_demodulate(
     if (mode == FIND_BEST_FREQ)     { lagmin=*shift1; lagmax=*shift1; }
     if (mode == CALC_SOFT_SYMS)     { lagmin=*shift1; lagmax=*shift1; ifmin=0; ifmax=0; }
 
-    twopidt=2*pi*dt;
     for(ifreq=ifmin; ifreq<=ifmax; ifreq++) {
         f0=*f1+ifreq*fstep;
         for(lag=lagmin; lag<=lagmax; lag=lag+lagstep) {
@@ -92,20 +91,21 @@ void sync_and_demodulate(
             totp=0.0;
             for (i=0; i<NSYM_162; i++) {
                 fp = f0 + (drift1/2.0)*((float)i-FHSYM_81)/FHSYM_81;
+                float fplast;   // init first time through by i == 0
                 if( i==0 || (fp != fplast) ) {  // only calculate sin/cos if necessary
-                    dphi0=twopidt*(fp-df15);
+                    dphi0=TWOPIDT*(fp-DF15);
                     cdphi0=cos(dphi0);
                     sdphi0=sin(dphi0);
                     
-                    dphi1=twopidt*(fp-df05);
+                    dphi1=TWOPIDT*(fp-DF05);
                     cdphi1=cos(dphi1);
                     sdphi1=sin(dphi1);
                     
-                    dphi2=twopidt*(fp+df05);
+                    dphi2=TWOPIDT*(fp+DF05);
                     cdphi2=cos(dphi2);
                     sdphi2=sin(dphi2);
                     
-                    dphi3=twopidt*(fp+df15);
+                    dphi3=TWOPIDT*(fp+DF15);
                     cdphi3=cos(dphi3);
                     sdphi3=sin(dphi3);
                     
@@ -255,23 +255,20 @@ void renormalize(wspr_t *w, float psavg[], float smspec[], float tmpsort[])
 /***************************************************************************
  symbol-by-symbol signal subtraction
  ****************************************************************************/
-void subtract_signal(float *id, float *qd, long np,
+static void subtract_signal(float *id, float *qd, long np,
                      float f0, int shift0, float drift0, unsigned char* channel_symbols)
 {
-    float dt=1.0/FSRATE, df=FSRATE/FSPS;
     int i, j, k;
-    float pi=K_PI, twopidt, fp;
+    float fp;
     
     float i0,q0;
     float c0[SPS],s0[SPS];
     float dphi, cdphi, sdphi;
     
-    twopidt=2*pi*dt;
-    
     for (i=0; i<NSYM_162; i++) {
         fp = f0 + ((float)drift0/2.0)*((float)i-FHSYM_81)/FHSYM_81;
         
-        dphi=twopidt*(fp+((float)channel_symbols[i]-1.5)*df);
+        dphi=TWOPIDT*(fp+((float)channel_symbols[i]-1.5)*DF);
         cdphi=cos(dphi);
         sdphi=sin(dphi);
         
@@ -312,11 +309,10 @@ void subtract_signal(float *id, float *qd, long np,
 /******************************************************************************
  Fully coherent signal subtraction
  *******************************************************************************/
-void subtract_signal2(float *id, float *qd, long np,
+static void subtract_signal2(float *id, float *qd, long np,
                       float f0, int shift0, float drift0, unsigned char* channel_symbols)
 {
-    float dt=1.0/FSRATE, df=FSRATE/FSPS;
-    float pi=K_PI, twopidt, phi=0, dphi, cs;
+    float phi=0, dphi, cs;
     int i, j, k, ii, nsym=NSYM_162, nspersym=SPS,  nfilt=SPS; //nfilt must be even number.
     int nsig=nsym*nspersym;
     int nc2=TPOINTS;
@@ -337,8 +333,6 @@ void subtract_signal2(float *id, float *qd, long np,
     memset(cfi,0,sizeof(float)*nc2);
     memset(cfq,0,sizeof(float)*nc2);
     
-    twopidt=2.0*pi*dt;
-    
     /******************************************************************************
      Measured signal:                    s(t)=a(t)*exp( j*theta(t) )
      Reference is:                       r(t) = exp( j*phi(t) )
@@ -353,10 +347,10 @@ void subtract_signal2(float *id, float *qd, long np,
         
         cs=(float)channel_symbols[i];
         
-        dphi=twopidt*
+        dphi=TWOPIDT*
         (
          f0 + (drift0/2.0)*((float)i-(float)nsym/2.0)/((float)nsym/2.0)
-         + (cs-1.5)*df
+         + (cs-1.5)*DF
          );
         
         for ( j=0; j<nspersym; j++ ) {
@@ -384,7 +378,7 @@ void subtract_signal2(float *id, float *qd, long np,
     float w[nfilt], norm=0, partialsum[nfilt];
     memset(partialsum,0,sizeof(float)*nfilt);
     for (i=0; i<nfilt; i++) {
-        w[i]=sin(pi*(float)i/(float)(nfilt-1));
+        w[i]=sin(K_PI*(float)i/(float)(nfilt-1));
         norm=norm+w[i];
     }
     for (i=0; i<nfilt; i++) {
@@ -517,8 +511,8 @@ void wspr_decode(int rx_chan)
     int shift1, lagmin, lagmax, lagstep, ifmin, ifmax;
     unsigned int metric, cycles, maxnp;
 
-    float df = FSRATE/FSPS/2;
-    float dt = 1.0/FSRATE, dt_print;
+    float DF2 = FSRATE/FSPS/2;
+    float dt_print;
 
 	int pki, npk=0;
 
@@ -597,7 +591,7 @@ void wspr_decode(int rx_chan)
 					candidate = (wb->smspec[WSPR_RENORM_DECODE][j] > w->min_snr) && (npk < NPK);
 					if (candidate) {
 						wb->pk_snr[npk].bin0 = j;
-						wb->pk_snr[npk].freq0 = (j-hbins_205)*df;
+						wb->pk_snr[npk].freq0 = (j-hbins_205)*DF2;
 						wb->pk_snr[npk].snr0 = 10*log10(wb->smspec[WSPR_RENORM_DECODE][j]) - w->snr_scaling_factor;
 						npk++;
 					}
@@ -609,7 +603,7 @@ void wspr_decode(int rx_chan)
 								(npk < NPK);
 					if (candidate) {
 						wb->pk_snr[npk].bin0 = j;
-						wb->pk_snr[npk].freq0 = (j-hbins_205)*df;
+						wb->pk_snr[npk].freq0 = (j-hbins_205)*DF2;
 						wb->pk_snr[npk].snr0 = 10*log10(wb->smspec[WSPR_RENORM_DECODE][j]) - w->snr_scaling_factor;
 						npk++;
 					}
@@ -692,7 +686,7 @@ void wspr_decode(int rx_chan)
         for (pki=0; pki < npk; pki++) {			//For each candidate...
         	wspr_pk_t *p = &wb->pk_snr[pki];
             smax = -1e30;
-            if0 = p->freq0/df+SPS;
+            if0 = p->freq0/DF2+SPS;
 
 			#if defined(MORE_EFFORT)
 				if (ipass != 0 && p->ignore)
@@ -705,7 +699,7 @@ void wspr_decode(int rx_chan)
                         ss=0.0;
                         power=0.0;
                         for (k=0; k<NSYM_162; k++) {				//Sum over symbols
-                            ifd=ifr+((float)k-FHSYM_81)/FHSYM_81*( (float)idrift )/(2.0*df);
+                            ifd=ifr+((float)k-FHSYM_81)/FHSYM_81*( (float)idrift )/(2.0*DF2);
                             kindex=k0+2*k;
                             if( kindex >= 0 && kindex < nffts ) {
                                 wspr_array_dim(w->decode_ping_pong, N_PING_PONG);
@@ -731,7 +725,7 @@ void wspr_decode(int rx_chan)
                             smax=sync1;
 							p->shift0=HSPS*(k0+1);
 							p->drift0=idrift;
-							p->freq0=(ifr-SPS)*df;
+							p->freq0=(ifr-SPS)*DF2;
 							p->sync0=sync1;
                         }
 						//wspr_d1printf("drift %d  k0 %d  sync %f\n", idrift, k0, smax);
@@ -790,22 +784,22 @@ void wspr_decode(int rx_chan)
             lagmin = shift1-128;
             lagmax = shift1+128;
             lagstep = 64;
-            sync_and_demodulate(idat, qdat, TPOINTS, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
+            sync_and_demodulate(w, idat, qdat, TPOINTS, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
                                 lagmin, lagmax, lagstep, drift1, symfac, &sync1, FIND_BEST_TIME_LAG);
 
             fstep = 0.25; ifmin = -2; ifmax = 2;
-            sync_and_demodulate(idat, qdat, TPOINTS, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
+            sync_and_demodulate(w, idat, qdat, TPOINTS, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
                                 lagmin, lagmax, lagstep, drift1, symfac, &sync1, FIND_BEST_FREQ);
 
             // refine drift estimate
             fstep=0.0; ifmin=0; ifmax=0;
             float driftp,driftm,syncp,syncm;
             driftp = drift1+0.5;
-            sync_and_demodulate(idat, qdat, TPOINTS, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
+            sync_and_demodulate(w, idat, qdat, TPOINTS, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
                                 lagmin, lagmax, lagstep, driftp, symfac, &syncp, FIND_BEST_FREQ);
             
             driftm = drift1-0.5;
-            sync_and_demodulate(idat, qdat, TPOINTS, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
+            sync_and_demodulate(w, idat, qdat, TPOINTS, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
                                 lagmin, lagmax, lagstep, driftm, symfac, &syncm, FIND_BEST_FREQ);
             
             if (syncp > sync1) {
@@ -826,12 +820,12 @@ void wspr_decode(int rx_chan)
 
             if (r_minsync1) {
                 lagmin = shift1-32; lagmax = shift1+32; lagstep = 16;
-                sync_and_demodulate(idat, qdat, TPOINTS, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
+                sync_and_demodulate(w, idat, qdat, TPOINTS, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
                                     lagmin, lagmax, lagstep, drift1, symfac, &sync1, FIND_BEST_TIME_LAG);
             
                 // fine search over frequency
                 fstep = 0.05; ifmin = -2; ifmax = 2;
-                sync_and_demodulate(idat, qdat, TPOINTS, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
+                sync_and_demodulate(w, idat, qdat, TPOINTS, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
                                 lagmin, lagmax, lagstep, drift1, symfac, &sync1, FIND_BEST_FREQ);
             } else {
             	p->ignore = true;
@@ -853,7 +847,7 @@ void wspr_decode(int rx_chan)
                 jiggered_shift = shift1+ii;
                 
                 // Use mode 2 to get soft-decision symbols
-                sync_and_demodulate(idat, qdat, TPOINTS, w->symbols, &f1, ifmin, ifmax, fstep,
+                sync_and_demodulate(w, idat, qdat, TPOINTS, w->symbols, &f1, ifmin, ifmax, fstep,
                                     &jiggered_shift, lagmin, lagmax, lagstep, drift1, symfac,
                                     &sync1, CALC_SOFT_SYMS);
 
@@ -967,10 +961,10 @@ void wspr_decode(int rx_chan)
 
                     if (w->wspr_type == WSPR_TYPE_15MIN) {
                         freq_print = w->dialfreq_MHz + (w->bfo+112.5+f1/8.0)/1e6;
-                        dt_print = shift1*8*dt-1.0;
+                        dt_print = shift1*8*DT-1.0;
                     } else {
                         freq_print = w->dialfreq_MHz + (w->bfo+f1)/1e6;
-                        dt_print = shift1*dt-1.0;
+                        dt_print = shift1*DT-1.0;
                     }
 
 					int hour, min; time_hour_min_sec(w->utc[w->decode_ping_pong], &hour, &min);

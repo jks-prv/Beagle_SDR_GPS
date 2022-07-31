@@ -43,7 +43,7 @@ void DRM_close(int rx_chan)
 void drm_task(void *param)
 {
     int rx_chan = (int) FROM_VOID_PARAM(param);
-	rcprintf(rx_chan, "DRM drm_task calling DRL_loop() rx_chan=%d\n", rx_chan);
+	rcprintf(rx_chan, "DRM drm_task calling DRM_loop() rx_chan=%d\n", rx_chan);
     DRM_loop(rx_chan);
     DRM_SHMEM->drm[rx_chan].tid = 0;
 }
@@ -80,7 +80,13 @@ static void drm_pushback_file_data(int rx_chan, int chan, int nsamps, TYPECPX *s
 
 bool DRM_msgs(char *msg, int rx_chan)
 {
-    
+	rcprintf(rx_chan, "DRM enable=%d <%s>\n", DRM_enable, msg);
+	if (rx_chan == -1) {
+	    printf("DRM rx_chan == -1?\n");
+        dump();
+	    return true;
+	}
+
     drm_t *d = &DRM_SHMEM->drm[rx_chan];
     if (strcmp(msg, "SET ext_server_init") == 0) {
 		ext_send_msg(rx_chan, false, "EXT ready");
@@ -94,7 +100,12 @@ bool DRM_msgs(char *msg, int rx_chan)
     }
 
     conn_t *conn = rx_channels[rx_chan].conn;
-	rcprintf(rx_chan, "DRM enable=%d conn=%p isLocal=%d <%s>\n", DRM_enable, conn, conn? conn->isLocal : -1, msg);
+	if (conn == NULL) {
+	    rcprintf(rx_chan, "DRM conn == NULL?\n");
+        dump();
+	    return true;
+	}
+	rcprintf(rx_chan, "DRM conn=%p isLocal=%d\n", conn, conn->isLocal);
 	
 	// stop any non-Kiwi API attempts to run DRM if it's disabled and connection is not local
 	if (!DRM_enable && conn && !conn->isLocal) {
@@ -118,14 +129,14 @@ bool DRM_msgs(char *msg, int rx_chan)
             int prev = is_locked;
             if (is_multi_core) {
                 is_locked = (rx_chan < drm_info.drm_chan)? 1:0;
-                printf("DRM BBAI lock_set inuse=%d heavy=%d rx_chan=%d drm_chan=%d prev=%d locked=%d\n",
+                printf("DRM multi-core lock_set: inuse=%d heavy=%d rx_chan=%d drm_chan=%d prev=%d locked=%d\n",
                     inuse, heavy, rx_chan, drm_info.drm_chan, prev, is_locked);
             } else {
                 // inuse-1 to not count DRM channel
                 is_locked = ((inuse-1) <= drm_nreg_chans && heavy == 0 && rx_chan < drm_info.drm_chan)? 1:0;
                 if (conn->is_locked)
                     printf("DRM conn->is_locked was already set?\n");
-                printf("DRM BBG/B lock_set inuse=%d(%d) heavy=%d prev=%d locked=%d\n", inuse, inuse-1, heavy, prev, is_locked);
+                printf("DRM single-core lock_set: inuse=%d(%d) heavy=%d prev=%d locked=%d\n", inuse, inuse-1, heavy, prev, is_locked);
             }
             if (is_locked) conn->is_locked = true;
             rv = is_locked;

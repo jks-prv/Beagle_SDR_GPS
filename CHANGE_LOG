@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.549  Jul 31, 2022
+    Fixed WSPR extension bug causing interference between multiple autorun channels.
+    Close extension web socket correctly for benefit of kiwirecorder using "--ext" option.
+
 v1.548  Jul 29, 2022
     BBAI's should not use the code for BBG/BBB that switches from using /dev/spidev1 to spidev0 when
     Debian version > 9.

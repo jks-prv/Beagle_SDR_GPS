@@ -187,6 +187,7 @@ void ip_blacklist_dump();
 typedef struct {
     struct mg_connection snd_mc, wf_mc, ext_mc;
     conn_t *csnd, *cwf, *cext;
+    void *param;
 } internal_conn_t;
 
 const u4_t ICONN_WS_SND = 1, ICONN_WS_WF = 2, ICONN_WS_EXT = 4;

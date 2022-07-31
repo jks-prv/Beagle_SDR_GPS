@@ -69,3 +69,4 @@ void extint_load_extension_configs(conn_t *conn);
 void extint_ext_users_init(int rx_chan);
 void extint_setup_c2s(void *param);
 void extint_c2s(void *param);
+void extint_shutdown_c2s(void *param);
