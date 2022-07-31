@@ -2845,7 +2845,7 @@ function w3_menu(psa, cb)
 	var p = w3_psa(psa, 'w3-menu w3-menu-container w3-round-large', '', onclick);
    var s = '<div '+ p +'></div>';
    //console.log('w3_menu s='+ s);
-   w3_el('id-w3-main-container').innerHTML += s;
+   w3_el('id-w3-misc-container').innerHTML += s;
 }
 
 // menu items can be in argument list or passed as an array

@@ -2820,7 +2820,7 @@ function right_click_menu_init()
       w3_div('id-tuning-lock-container class-overlay-container w3-hide',
          w3_div('id-tuning-lock', w3_icon('', 'fa-lock', 192) + '<br>Tuning locked')
       );
-   w3_create_appendElement('id-main-container', 'div', s);
+   w3_create_appendElement('id-w3-misc-container', 'div', s);
 }
 
 function right_click_menu(x, y, which)
