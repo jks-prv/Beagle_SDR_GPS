@@ -27,7 +27,6 @@ else
         LIBS_DEP += $(KIWI_XC_REMOTE_FS)/usr/bin/cmake
 
         LIBS_DEP += $(KIWI_XC_REMOTE_FS)/lib/$(LIB_ARCH)/libglib-2.0.so.0
-        LIBS += -lpthread
 
         LIBS_DEP += $(KIWI_XC_REMOTE_FS)/usr/lib/$(LIB_ARCH)/libconfig++.so
 

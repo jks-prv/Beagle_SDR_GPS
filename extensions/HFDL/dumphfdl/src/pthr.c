@@ -166,3 +166,33 @@ gpointer hfdl_g_async_queue_pop(const char *id, GAsyncQueue *q)
     return qe;
 }
 #endif
+
+
+// We used to simply "LIBS += -lpthread" in HFDL/Makefile to resolve these
+// pthread routines for libglib. But that doesn't work anymore with macOS versions
+// beyond 10.15 for some reason. So just define null routines here.
+// This is backward compatible with maxOS 10.15 (Catalina).
+// The routines in glib called by HFDL obviously never use any pthread routines.
+
+#if defined(KIWI) && defined(XC)
+    int pthread_sigmask() { return 0; }
+    int pthread_mutexattr_init() { return 0; }
+    int pthread_mutexattr_destroy() { return 0; }
+    int pthread_mutexattr_settype() { return 0; }
+    int pthread_rwlock_init() { return 0; }
+    int pthread_mutex_trylock() { return 0; }
+    int pthread_rwlock_destroy() { return 0; }
+    int pthread_rwlock_trywrlock() { return 0; }
+    int pthread_rwlock_tryrdlock() { return 0; }
+    int pthread_key_create() { return 0; }
+    int pthread_key_delete() { return 0; }
+    int pthread_setspecific() { return 0; }
+    void *pthread_getspecific (pthread_key_t __key) { return NULL; }
+    int pthread_detach() { return 0; }
+    int pthread_create() { return 0; }
+    int pthread_attr_setstacksize() { return 0; }
+    int pthread_rwlock_wrlock() { return 0; }
+    int pthread_rwlock_unlock() { return 0; }
+    int pthread_rwlock_rdlock() { return 0; }
+    int pthread_join (pthread_t __th, void **__thread_return) { return 0; }
+#endif
