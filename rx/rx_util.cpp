@@ -460,6 +460,15 @@ void update_vars_from_config(bool called_at_init)
         update_admcfg = true;
     }
 
+    // disable public registration if all the channels are full of WSPR autorun
+	bool isPublic = admcfg_bool("kiwisdr_com_register", NULL, CFG_REQUIRED);
+	int wspr_autorun = cfg_int("WSPR.autorun", NULL, CFG_REQUIRED);
+	if (isPublic && wspr_autorun >= rx_chans) {
+	    lprintf("REG: WSPR.autorun(%d) >= rx_chans(%d) -- DISABLING PUBLIC REGISTRATION\n", wspr_autorun, rx_chans);
+        admcfg_set_bool("kiwisdr_com_register", false);
+        update_admcfg = true;
+	}
+
     // historical uses of options parameter:
     //int new_find_local = admcfg_int("options", NULL, CFG_REQUIRED) & 1;
     admcfg_default_int("options", 0, &update_admcfg);

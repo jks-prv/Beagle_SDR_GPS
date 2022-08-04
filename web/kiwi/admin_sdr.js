@@ -1058,7 +1058,7 @@ function kiwisdr_com_register_cb(path, idx)
    var bad_ip = (kiwi_inet4_d2h(cfg.server_url) != null && kiwi_inet4_d2h(cfg.server_url, true) == null);
    var no_passwordless_channels = (adm.user_password != '' && cfg.chan_no_pwd == 0);
    var no_rx_gps = (cfg.rx_gps == '' || cfg.rx_gps == '(0.000000, 0.000000)' || cfg.rx_gps == '(0.000000%2C%200.000000)');
-   var wspr_autorun_full = (cfg.WSPR.autorun == rx_chans);
+   var wspr_autorun_full = (cfg.WSPR.autorun >= rx_chans);
    //console.log('kiwisdr_com_register_cb has_u_pwd='+ (adm.user_password != '') +' chan_no_pwd='+ cfg.chan_no_pwd +' no_passwordless_channels='+ no_passwordless_channels);
    //console.log('cfg.server_url='+ cfg.server_url);
    
@@ -1091,6 +1091,9 @@ function kiwisdr_com_register_cb(path, idx)
    w3_innerHTML('id-kiwisdr_com-reg-status', text);
    w3_remove_then_add_cond('id-kiwisdr_com-reg-status', error, 'w3-red w3-text-white', 'w3-pale-blue w3-text-black');
    admin_radio_YN_cb(path, idx);
+
+   // make sure server side notices change promptly
+	ext_send("SET public_wakeup");
    //console.log('kiwisdr_com_register_cb adm.kiwisdr_com_register='+ adm.kiwisdr_com_register);
 }
 

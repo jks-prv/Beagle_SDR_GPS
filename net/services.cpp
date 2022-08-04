@@ -934,8 +934,11 @@ static void reg_public(void *param)
         bool send_deregister = false;
         static bool last_reg;
         if (last_reg && !kiwisdr_com_reg) {     // reg=1 => reg=0 transition
-            printf("REG deregister\n");
+            printf("REG: deregister\n");
             send_deregister = true;
+        }
+        if (!last_reg && kiwisdr_com_reg) {     // reg=0 => reg=1 transition
+            printf("REG: register\n");
         }
         last_reg = kiwisdr_com_reg;
 
