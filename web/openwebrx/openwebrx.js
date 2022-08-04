@@ -376,7 +376,7 @@ function kiwi_main_ready()
 	wf_send("SET maxdb=0 mindb=-100");
 
 	if (wf_compression == 0) wf_send('SET wf_comp=0');
-	if (wf_interp != 0) wf_send('SET interp='+ wf_interp);
+	if (wf_interp != -1) wf_send('SET interp='+ wf_interp);
 	if (wf_winf != 0) wf_send('SET window_func='+ wf_winf);
 	wf_speed = wf_rates[wf_rate];
 	//console.log('wf_rate="'+ wf_rate +'" wf_speed='+ wf_speed);
@@ -4230,6 +4230,8 @@ function waterfall_add(data_raw, audioFFT)
          signal = -110;
          noise = -120;
       }
+      
+      // empirical adjustments
 	   signal += 30;
 	   if (signal < -80) signal = -80;
       noise -= 10;
@@ -5331,7 +5333,7 @@ function freqset_update_ui(from)
 	}, 2000);
 }
 
-function vfo_update()
+function vfo_update(A_equal_B)
 {
 	if (owrx.vfo_first) {
       var vfo_default = freq_displayed_kHz_str_with_freq_offset + cur_mode +'z'+ zoom_level;
@@ -5347,8 +5349,9 @@ function vfo_update()
 	   owrx.vfo_first = false;
 	}
 
+   var flip = (A_equal_B == true)? 1:0;
    var vfo = freq_displayed_kHz_str_with_freq_offset + cur_mode +'z'+ zoom_level;
-	writeCookie('last_vfo_'+ "AB"[owrx.vfo_ab], vfo);
+	writeCookie('last_vfo_'+ "AB"[owrx.vfo_ab ^ flip], vfo);
 }
 
 // owrx.popup_keyboard_active set while popup keyboard active so ext_mobile_info() works
@@ -5845,6 +5848,7 @@ function freq_memory_menu_show(shortcut_key)
 
    var fmem_copy = kiwi_dup_array(owrx.freq_memory);
    fmem_copy.push('clear all');
+   fmem_copy.push('VFO A=B');
    w3_menu_items('id-freq-memory-menu', fmem_copy, Math.min(fmem_copy.length, 10));
    w3_menu_popup('id-freq-memory-menu',
       function(evt, first) {     // close_func(), return true to close menu
@@ -5891,23 +5895,33 @@ function freq_memory_menu_cb(idx, x)
    //console.log('freq_memory_menu_cb idx='+ idx +' x='+ x);
    if (idx == -1) return;
    
-   var f;
-   if (idx >= owrx.freq_memory.length) {
+   var f, set_f = false;
+   if (idx == owrx.freq_memory.length) {
       //console.log('CLEAR ALL');
       f = owrx.freq_memory[0];
+      set_f = true;
       owrx.freq_memory = [f];
       //canvas_log('clr_all top='+ f);
-   } else {
+   } else
+   if (idx == owrx.freq_memory.length + 1) {
+      //console.log('VFO A=B');
+      vfo_update(true);
+   } else
+   if (idx <= owrx.freq_memory.length - 1) {
       //canvas_log('idx='+ idx);
       //canvas_log('M='+ owrx.freq_memory);
       f = owrx.freq_memory[idx];
+      set_f = true;
       //canvas_log('sel='+ f);
       owrx.freq_memory.unshift(f);
       owrx.freq_memory = kiwi_dedup_array(owrx.freq_memory);
       if (owrx.freq_memory.length > 25) owrx.freq_memory.pop();
    }
-   //canvas_log('mem1='+ owrx.freq_memory.join());
-   freqmode_set_dsp_kHz(f - kiwi.freq_offset_kHz);
+   
+   if (set_f) {
+      //canvas_log('mem1='+ owrx.freq_memory.join());
+      freqmode_set_dsp_kHz(f - kiwi.freq_offset_kHz);
+   }
 }
 
 
@@ -8267,7 +8281,7 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', 'Keys', 25, 'Function'),
          w3_inline_percent('w3-padding-tiny', 'g =', 25, 'select frequency entry field'),
          w3_inline_percent('w3-padding-tiny', 'j i LR-arrow-keys', 25, 'frequency step down/up, add shift or alt/ctrl for faster<br>shift plus alt/ctrl to step to next/prev DX label'),
-         w3_inline_percent('w3-padding-tiny', 'm n', 25, 'toggle frequency memory menu, VFO A/B'),
+         w3_inline_percent('w3-padding-tiny', 'm n N', 25, 'toggle frequency memory menu, VFO A/B, VFO A=B'),
          w3_inline_percent('w3-padding-tiny', 'b B', 25, 'scroll band menu'),
          w3_inline_percent('w3-padding-tiny', 'e E', 25, 'scroll extension menu'),
          w3_inline_percent('w3-padding-tiny', 'a A d l u c f q', 25, 'toggle modes: AM SAM DRM LSB USB CW NBFM IQ<br>add alt/ctrl to toggle backwards (e.g. SAM modes)'),
@@ -8317,8 +8331,8 @@ function keyboard_shortcut_url_keys()
 }
 
 // abcdefghijklmnopqrstuvwxyz `~!@#$%^&*()-_=+[]{}\|;:'"<>? 0123456789.,/kM
-// ..........F.. ..... ......   ...       F .     .. F  ... FFFFFFFFFFFFFFF
-// .. ..   ..  F  .  .  ..  .                               F: frequency entry keys
+// ..........F........ ......   ...       F .     .. F  ... FFFFFFFFFFFFFFF
+// .. ..   ..  F. .  .  ..  .                               F: frequency entry keys
 // ABCDEFGHIJKLMNOPQRSTUVWXYZ
 // :space: :tab:
 //    .
@@ -8378,6 +8392,7 @@ function keyboard_shortcut(key, key_mod, ctlAlt, keyCode)
    case 'b': band_scroll(1); break;
    case 'B': band_scroll(-1); break;
    case 'n': freq_vfo_cb(); break;
+   case 'N': vfo_update(true); break;     // VFO A=B
 
    // page scroll
    case '<': page_scroll(-page_scroll_amount); break;
@@ -10695,6 +10710,8 @@ function owrx_msg_cb(param, ws)
 			wf_fps = parseInt(param[1]);
 		   //console.log('# wf_fps='+ wf_fps);
 			break;
+		case "wf_cal":    // for benefit of kiwirecorder
+		   break;
 		case "start":
 			bin_server = parseInt(param[1]);
 			break;
