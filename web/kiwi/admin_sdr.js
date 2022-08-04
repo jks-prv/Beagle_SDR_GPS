@@ -160,7 +160,8 @@ function config_html()
 			w3_div('',
             w3_checkbox_get_param('//w3-label-inline', 'Show 1 Hz frequency resolution', 'show_1Hz', 'admin_bool_cb', true),
             w3_checkbox_get_param('w3-margin-T-8//w3-restart w3-label-inline', 'Show AGC threshold on S-meter', 'agc_thresh_smeter', 'admin_bool_cb', true),
-            w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Show user geolocation info', 'show_geo', 'admin_bool_cb', true)
+            w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Show user geolocation info', 'show_geo', 'admin_bool_cb', true),
+            w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Downconverter high-side injection', 'spectral_inversion', 'admin_bool_cb', true)
          )
 		) +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',

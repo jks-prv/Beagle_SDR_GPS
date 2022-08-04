@@ -56,6 +56,7 @@ Boston, MA  02110-1301, USA.
 //#define WF_INFO
 //#define TR_WF_CMDS
 #define SM_WF_DEBUG		false
+//#define WF_SPEC_INV_DEBUG
 
 //#define SHOW_MAX_MIN_IQ
 //#define SHOW_MAX_MIN_PWR
@@ -228,8 +229,8 @@ void c2s_waterfall_setup(void *param)
 
     // If not wanting a wf (!conn->isWF_conn) send wf_chans=0 to force audio FFT to be used.
     // But need to send actual value via wf_chans_real for use elsewhere.
-	send_msg(conn, SM_WF_DEBUG, "MSG wf_fft_size=1024 wf_fps=%d wf_fps_max=%d zoom_max=%d rx_chans=%d wf_chans=%d wf_chans_real=%d wf_setup",
-		WF_SPEED_FAST, WF_SPEED_MAX, MAX_ZOOM, rx_chans, conn->isWF_conn? wf_chans:0, wf_chans);
+	send_msg(conn, SM_WF_DEBUG, "MSG wf_fft_size=1024 wf_fps=%d wf_fps_max=%d zoom_max=%d rx_chans=%d wf_chans=%d wf_chans_real=%d wf_cal=%d wf_setup",
+		WF_SPEED_FAST, WF_SPEED_MAX, MAX_ZOOM, rx_chans, conn->isWF_conn? wf_chans:0, wf_chans, waterfall_cal);
 	if (do_gps && !do_sdr) send_msg(conn, SM_WF_DEBUG, "MSG gps");
 }
 
@@ -244,10 +245,12 @@ void c2s_waterfall(void *param)
 	//float adc_scale_samps = powf(2, -ADC_BITS);
 
 	bool new_map = false, new_scale_mask = false;
+	bool spectral_inversion = kiwi.spectral_inversion;
 	int wband=-1, _wband, zoom=-1, _zoom, scale=1, _scale, _speed, cmap, aper, algo, _dvar, _pipe;
 	float start=-1, _start, cf, aper_param;
 	float samp_wait_us;
-	float off_freq, HZperStart = ui_srate / (WF_WIDTH << MAX_ZOOM);
+	float off_freq, off_freq_inv;
+	float HZperStart = ui_srate / (WF_WIDTH << MAX_ZOOM);
 	u64_t i_offset;
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
@@ -291,11 +294,19 @@ void c2s_waterfall(void *param)
 
 	while (TRUE) {
 
+        // admin spectral inversion setting changed
+        if (spectral_inversion != kiwi.spectral_inversion) {
+            new_map = wf->new_map = wf->new_map2 = TRUE;
+            spectral_inversion = kiwi.spectral_inversion;
+        }
+		
 		// reload freq NCO if adc clock has been corrected
-		if (start >= 0 && adc_clk_corrections != clk.adc_clk_corrections) {
+		// reload freq NCO if spectral inversion changed
+		if (start >= 0 && zoom != -1 && (adc_clk_corrections != clk.adc_clk_corrections || new_map)) {
 			adc_clk_corrections = clk.adc_clk_corrections;
 			off_freq = start * HZperStart;
-			i_offset = (u64_t) (s64_t) (off_freq / conn->adc_clock_corrected * pow(2,48));
+            off_freq_inv = ((float) MAX_START(zoom) - start) * HZperStart;
+			i_offset = (u64_t) (s64_t) ((spectral_inversion? off_freq_inv : off_freq) / conn->adc_clock_corrected * pow(2,48));
 			i_offset = -i_offset;
 			if (wf->isWF)
 			    spi_set3(CmdSetWFFreq, rx_chan, (i_offset >> 16) & 0xffffffff, i_offset & 0xffff);
@@ -456,16 +467,19 @@ void c2s_waterfall(void *param)
                     //cprintf(conn, "WF: START %.0f ", start);
                     int maxstart = MAX_START(zoom);
                     start = CLAMP(start, 0, maxstart);
+                    
                     //printf(" CLAMPED %.0f %.3f\n", start, start * HZperStart / kHz);
 
                     off_freq = start * HZperStart;
+                    off_freq_inv = ((float) maxstart - start) * HZperStart;
                 
                     #ifdef USE_WF_NEW
+                        #error spectral_inversion
                         off_freq += conn->adc_clock_corrected / (4<<zoom);
                     #endif
                 
-			        i_offset = (u64_t) (s64_t) (off_freq / conn->adc_clock_corrected * pow(2,48));
-                    i_offset = -i_offset;
+			        i_offset = (u64_t) (s64_t) ((spectral_inversion? off_freq_inv : off_freq) / conn->adc_clock_corrected * pow(2,48));
+			        i_offset = -i_offset;
 
                     #ifdef WF_INFO
                     if (!bg) cprintf(conn, "WF z%d OFFSET %.3f kHz i_offset 0x%012llx\n",
@@ -721,7 +735,7 @@ void c2s_waterfall(void *param)
             TaskSleepMsec(250);
             continue;
         }
-		
+        
 		wf->fft_used = WF_C_NFFT / WF_USING_HALF_FFT;		// the result is contained in the first half of a complex FFT
 		
 		// if any CIC is used (z != 0) only look at half of it to avoid the aliased images
@@ -752,29 +766,62 @@ void c2s_waterfall(void *param)
 
 			if (wf->fft_used >= wf->plot_width) {
 				// FFT >= plot
-				#ifdef WF_FFT_UNWRAP_NEEDED
-					// IQ reverse unwrapping (X)
-					for (i=wf->fft_used/2,j=0; i<wf->fft_used; i++,j++) {
-						wf->fft2wf_map[i] = wf->plot_width * j/wf->fft_used;
-					}
-					for (i=0; i<wf->fft_used/2; i++,j++) {
-						wf->fft2wf_map[i] = wf->plot_width * j/wf->fft_used;
-					}
-				#else
-					// no unwrap
-					for (i=0; i<wf->fft_used; i++) {
-						wf->fft2wf_map[i] = wf->plot_width * i/wf->fft_used;
-					}
-				#endif
-				//for (i=0; i<wf->fft_used; i++) printf("%d>%d ", i, wf->fft2wf_map[i]);
-				
-				for (i=0; i < wf->plot_width; i++) {
-				    if (i >= WF_WIDTH) break;
-				    wf->drop_sample[i] = roundf((float) wf->fft_used * i/wf->plot_width);
-				}
+
+                #ifdef WF_FFT_UNWRAP_NEEDED
+                    // IQ reverse unwrapping (X)
+                    #error spectral_inversion
+                    for (i=wf->fft_used/2,j=0; i<wf->fft_used; i++,j++) {
+                        wf->fft2wf_map[i] = wf->plot_width * j/wf->fft_used;
+                    }
+                    for (i=0; i<wf->fft_used/2; i++,j++) {
+                        wf->fft2wf_map[i] = wf->plot_width * j/wf->fft_used;
+                    }
+                #else
+                    // no unwrap
+                    #ifdef WF_SPEC_INV_DEBUG
+                        real_printf("$INV NORMAL_SAMPLE SETUP %s z%d fft_used %d plot_width %d\n",
+                        spectral_inversion? "REV":"NORM", zoom, wf->fft_used, wf->plot_width);
+                    #endif
+                    for (i=0; i < wf->fft_used; i++) {
+                        j = wf->plot_width * i/wf->fft_used;
+                        if (spectral_inversion)
+                            j = (j < WF_WIDTH)? (WF_WIDTH-1 - j) : -1;
+                        wf->fft2wf_map[i] = j;
+                        #ifdef WF_SPEC_INV_DEBUG
+                            real_printf("%d|%.2f=%d ", i, (float)i/wf->fft_used, j);
+                        #endif
+                    }
+                #endif
+                //for (i=0; i<wf->fft_used; i++) printf("%d>%d ", i, wf->fft2wf_map[i]);
+
+                // Not like above where fft2wf_map[] can map multiple FFT values per pixel for use
+                // in e.g. averaging. Only a single value is needed based on plot width due to
+                // the fact this is drop sampling.
+                int fft_used_inv = roundf((float) wf->fft_used * (wf->plot_width_clamped-1)/wf->plot_width);
+                #ifdef WF_SPEC_INV_DEBUG
+                    if (wf->interp == WF_DROP) 
+                        real_printf("$INV DROP_SAMPLE SETUP %s z%d fft_used %d plot_width_clamped %d fft_used_inv %d\n",
+                            spectral_inversion? "REV":"NORM", zoom, wf->fft_used, wf->plot_width_clamped, fft_used_inv);
+                #endif
+                for (i=0; i < wf->plot_width_clamped; i++) {
+                    j = roundf((float) wf->fft_used * i/wf->plot_width);
+                    if (spectral_inversion) j = fft_used_inv - j;
+                    #ifdef WF_SPEC_INV_DEBUG
+                        if (wf->interp == WF_DROP) 
+                            real_printf("%d|%.2f=%d ", i, (float)i/wf->plot_width, j);
+                    #endif
+                    wf->drop_sample[i] = j;
+                }
+
+                #ifdef WF_SPEC_INV_DEBUG
+                    real_printf("\n\n");
+                    wf->trigger = true;
+                #endif
 			} else {
 				// FFT < plot
+
 				#ifdef WF_FFT_UNWRAP_NEEDED
+					#error spectral_inversion
 					for (i=0; i<wf->plot_width_clamped; i++) {
 						int t = wf->fft_used * i/wf->plot_width;
 						if (t >= wf->fft_used/2) t -= wf->fft_used/2; else t += wf->fft_used/2;
@@ -783,7 +830,8 @@ void c2s_waterfall(void *param)
 				#else
 					// no unwrap
 					for (i=0; i<wf->plot_width_clamped; i++) {
-						wf->wf2fft_map[i] = wf->fft_used * i/wf->plot_width;
+					    j = spectral_inversion? (wf->plot_width-1 - i) : i;
+						wf->wf2fft_map[i] = wf->fft_used * j/wf->plot_width;
 					}
 				#endif
 				//for (i=0; i<wf->plot_width_clamped; i++) printf("%d:%d ", i, wf->wf2fft_map[i]);
@@ -1329,25 +1377,49 @@ void compute_frame(int rx_chan)
 		// FFT >= plot
 		
 		if (wf->interp == WF_DROP) {
+            #ifdef WF_SPEC_INV_DEBUG
+                if (wf->trigger) {
+                    real_printf("$INV DROP_SAMPLE TRIG %s plot_width_clamped=%d\n",
+                    kiwi.spectral_inversion? "REV":"NORM", wf->plot_width_clamped);
+                }
+            #endif
+            
             for (i=0; i < wf->plot_width_clamped; i++) {
+                #ifdef WF_SPEC_INV_DEBUG
+                    if (wf->trigger) real_printf("%d|%d ", i, wf->drop_sample[i]);
+                #endif
                 pwr_out[i] = pwr[wf->drop_sample[i]];
             }
 		} else {
+            #ifdef WF_SPEC_INV_DEBUG
+                if (wf->trigger) {
+                    real_printf("$INV NORMAL_SAMPLE TRIG %s fft_used_limit=%d\n",
+                    kiwi.spectral_inversion? "REV":"NORM", wf->fft_used_limit);
+                }
+            #endif
+            
             for (i=0; i < wf->fft_used_limit; i++) {
                 p = pwr[i];
                 bin = wf->fft2wf_map[i];
-                if (bin >= WF_WIDTH) {
+                if (bin >= WF_WIDTH || bin < 0) {
                     if (wf->new_map) {
-                
+            
                         #ifdef WF_INFO
                         if (!bg) printf(">= FFT: Z%d WF_C_NSAMPS %d i %d fft_used %d plot_width %d pix_per_dB %.3f range %.0f:%.0f\n",
                             wf->zoom, WF_C_NSAMPS, i, wf->fft_used, wf->plot_width, pix_per_dB, max_dB, min_dB);
                         #endif
                         wf->new_map = FALSE;
                     }
+                    #ifdef WF_SPEC_INV_DEBUG
+                        if (wf->trigger) real_printf("###%d### ", i);
+                    #endif
+                    
                     wf->fft_used_limit = i;		// we now know what the limit is
                     break;
                 }
+                #ifdef WF_SPEC_INV_DEBUG
+                    if (wf->trigger) real_printf("%d|%d ", i, bin);
+                #endif
             
                 #if LTRIG
                     if (dbg_bin == LTRIG)
@@ -1495,6 +1567,13 @@ void compute_frame(int rx_chan)
 			*bp++ = (u1_t) (int) dB;
 		}
 	}
+
+    #ifdef WF_SPEC_INV_DEBUG
+        if (wf->trigger) {
+            real_printf("\n\n$INV TRIG END\n");
+            wf->trigger = false;
+        }
+    #endif
 	
 	if (wf->flush_wf_pipe) {
 		out->x_bin_server = (wf->prev_start == -1)? wf->start : wf->prev_start;

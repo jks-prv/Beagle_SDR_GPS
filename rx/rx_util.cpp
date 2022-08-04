@@ -262,6 +262,7 @@ void update_vars_from_config(bool called_at_init)
     cfg_default_int("ident_len", IDENT_LEN_MIN, &update_cfg);
     cfg_default_bool("show_geo", true, &update_cfg);
     cfg_default_bool("show_1Hz", false, &update_cfg);
+    kiwi.spectral_inversion = cfg_default_bool("spectral_inversion", false, &update_cfg);
 
     cfg_default_int("nb_algo", 0, &update_cfg);
     cfg_default_int("nb_wf", 1, &update_cfg);
