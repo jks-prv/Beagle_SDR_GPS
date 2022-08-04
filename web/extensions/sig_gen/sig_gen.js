@@ -112,6 +112,12 @@ function gen_controls_setup()
 	ext_panel_show(controls_html, null, null);
 	ext_set_controls_width_height(null, 225);
 	gen_freq_cb('gen.freq', gen.freq);
+
+	// if no URL "f=" param set freq so signal appears on screen
+	// (in case off screen at current zoom level)
+	if (kiwi_url_param('f', null, null) == null)
+      ext_tune(gen.freq);
+
 	toggle_or_set_spec(toggle_e.SET, 1);
 	ext_send('SET run=1');
 	ext_send('SET wf_comp=0');
@@ -165,7 +171,10 @@ function gen_step_cb(path, val, first)
 
 function gen_step_up_down_cb(path, sign, first)
 {
-   gen.freq += w3_clamp(parseInt(sign) * gen.step, 0, cfg.max_freq? 32e3 : 30e3);
+   var step = parseInt(sign) * gen.step;
+   //console.log('gen_step_up_down_cb: step='+ step +' '+ typeof(step));
+   gen.freq += step;
+   gen.freq = w3_clamp(gen.freq, 0, cfg.max_freq? 32e3 : 30e3);
 	gen_freq_cb('gen.freq', gen.freq);
 }
 
