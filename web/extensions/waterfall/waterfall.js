@@ -144,6 +144,12 @@ function waterfall_init()
    wf_aper_cb('wf.aper', last_aper, false);     // writes 'last_aper' cookie
    w3_show('id-aper-data');
    
+   // allow URL param to override
+   if (wf_interp != -1) {
+      wfext.interp_i = wf_interp % 10;
+      wfext.cic_comp = (wf_interp >= 10)? true:false;
+   }
+   
    if (wf.url_tstamp) wfext.tstamp = wf.url_tstamp;
 }
 
