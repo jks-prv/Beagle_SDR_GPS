@@ -357,7 +357,8 @@ void extint_setup_c2s(void *param)
 
 	// initialize extension for this connection
 	// NB: has to be a 'MSG' and not an 'EXT' due to sequencing of recv_cb setup
-    printf("EXT extint_setup_c2s SET: rx%d ext_client_init=%d(is_locked)\n", conn_ext->ext_rx_chan, is_locked);
+    printf("EXT extint_setup_c2s SET: rx%d ext_client_init(is_locked)=%d\n", conn_ext->ext_rx_chan, is_locked);
+    send_msg(conn_ext, false, "MSG version_maj=%d version_min=%d debian_ver=%d", version_maj, version_min, debian_ver);
 	send_msg(conn_ext, false, "MSG ext_client_init=%d", is_locked);
 }
 
@@ -369,7 +370,7 @@ void extint_c2s(void *param)
 	
 	nbuf_t *nb = NULL;
 	while (TRUE) {
-		int rx_chan, ext_rx_chan;
+		int rx_channel, ext_rx_chan;
 		ext_t *ext = NULL;
 	
 		if (nb) web_to_app_done(conn_ext, nb);
@@ -391,17 +392,18 @@ void extint_c2s(void *param)
 			char *client_m = NULL;
 			int first_time;
 
-			i = sscanf(cmd, "SET ext_switch_to_client=%32ms first_time=%d rx_chan=%d", &client_m, &first_time, &rx_chan);
+			i = sscanf(cmd, "SET ext_switch_to_client=%32ms first_time=%d rx_chan=%d", &client_m, &first_time, &rx_channel);
 			if (i == 3) {
 				for (i=0; i < n_exts; i++) {
 					ext = ext_list[i];
 					if (strcmp(client_m, ext->name) == 0) {
-						//printf("ext_switch_to_client: found func %p CONN%d(%p) for ext %s RX%d\n", ext->receive_msgs, conn_ext->self_idx, conn_ext, client_m, rx_chan);
-                        ext_users_t *eusr = &ext_users[rx_chan];
+						//printf("ext_switch_to_client: found func %p CONN-%02d(%p) for ext %s RX%d\n",
+						//    ext->receive_msgs, conn_ext->self_idx, conn_ext, client_m, rx_channel);
+                        ext_users_t *eusr = &ext_users[rx_channel];
                         eusr->valid = TRUE;
 						eusr->ext = ext;
 						eusr->conn_ext = conn_ext;
-						conn_ext->ext_rx_chan = rx_chan;
+						conn_ext->ext_rx_chan = rx_channel;
 						conn_ext->ext = ext;
 						TaskNameS(ext->name);
                         u4_t flags = TaskFlags();
@@ -409,17 +411,17 @@ void extint_c2s(void *param)
 
                         // point STREAM_SOUND conn at ext_t so it has access to the ext->name after ext conn_t is gone
                         // point rx_channel at ext_t so it has access to ext->flags for EXT_FLAGS_HEAVY checking
-                        conn_t *c = rx_channels[rx_chan].conn;
+                        conn_t *c = rx_channels[rx_channel].conn;
                         if (c && c->valid && c->type == STREAM_SOUND) {
                             c->ext = ext;
-                            rx_channels[rx_chan].ext = ext;
+                            rx_channels[rx_channel].ext = ext;
                         }
 
 						break;
 					}
 				}
 				if (i == n_exts) {
-				    printf("EXT ext_switch_to_client: <%s>\n", client_m);
+				    printf("EXT ext_switch_to_client UNKNOWN EXT: <%s>\n", client_m);
 				    //panic("ext_switch_to_client: unknown ext");
 				} else {
                     ext_send_msg(conn_ext->ext_rx_chan, false, "MSG EXT-STOP-FLUSH-INPUT");
@@ -427,7 +429,7 @@ void extint_c2s(void *param)
                     // Automatically let extension server-side know the connection has been established and
                     // our stream thread is running. Only called ONCE per client session.
                     if (first_time) {
-                        SAN_NULL_PTR_CK(ext, ext->receive_msgs((char *) "SET ext_server_init", rx_chan));
+                        SAN_NULL_PTR_CK(ext, ext->receive_msgs((char *) "SET ext_server_init", rx_channel));
                     }
                 }
 				
@@ -436,9 +438,9 @@ void extint_c2s(void *param)
 			}
 			kiwi_ifree(client_m);
 			
-			i = sscanf(cmd, "SET ext_blur=%d", &rx_chan);   // SECURITY: why do we need to accept rx_chan from client?!?
+			i = sscanf(cmd, "SET ext_blur=%d", &rx_channel);   // SECURITY: why do we need to accept rx_channel from client?!?
 			if (i == 1) {
-				extint_ext_users_init(rx_chan);
+				extint_ext_users_init(rx_channel);
 				continue;
 			}
 			
@@ -450,6 +452,7 @@ void extint_c2s(void *param)
 			i = strcmp(cmd, "SET ext_is_locked_status");
 			if (i == 0) {
 			    printf("EXT ext_is_locked_status SET: rx%d ext_client_init=%d(is_locked)\n", conn_ext->ext_rx_chan, is_locked);
+                send_msg(conn_ext, false, "MSG version_maj=%d version_min=%d debian_ver=%d", version_maj, version_min, debian_ver);
                 send_msg(conn_ext, false, "MSG ext_client_init=%d", is_locked);
 				continue;
 			}
