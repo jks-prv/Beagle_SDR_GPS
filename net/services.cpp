@@ -738,7 +738,7 @@ static void pvt_NET(void *param)
             reply = read_file_string_reply("/sys/class/net/eth0/address");
             if (reply != NULL) {
                 n = sscanf(kstr_sp(reply), "%17s", net.mac);
-                assert (n == 1);
+                assert(n == 1);
                 kstr_free(reply);
                 sprintf(net.mac_no_delim, "%.2s%.2s%.2s%.2s%.2s%.2s",
                     &net.mac[0], &net.mac[3], &net.mac[6], &net.mac[9], &net.mac[12], &net.mac[15]);
