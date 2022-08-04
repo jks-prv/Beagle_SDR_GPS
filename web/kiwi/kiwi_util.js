@@ -483,15 +483,22 @@ Number.prototype.toUnits = function()
 
 // allow 'k' (1e3) and 'M' (1e6) suffix
 // use "adj" param to convert returned result in kHz (=1e-3), MHz (=1e-6) etc.
-String.prototype.parseFloatWithUnits = function(allowed_suffixes, adj) {
+String.prototype.parseFloatWithUnits = function(allowed_suffixes, adj, frac_digits) {
 	var s = String(this);
 	var v = parseFloat(s);
 	if (isNaN(v)) return NaN;
 	if (!allowed_suffixes || allowed_suffixes.includes('k'))
-      if (new RegExp('([-0-9.]*k)').test(s)) { v *= 1e3; if (adj) v *= adj; }
+      if (new RegExp('([-0-9.]*k)').test(s)) { v *= 1e3; if (isNumber(adj)) v *= adj; }
 	if (!allowed_suffixes || allowed_suffixes.includes('M'))
-      if (new RegExp('([-0-9.]*M)').test(s)) { v *= 1e6; if (adj) v *= adj; }
-	return v;
+      if (new RegExp('([-0-9.]*M)').test(s)) { v *= 1e6; if (isNumber(adj)) v *= adj; }
+   return kiwi_round(v, frac_digits);
+}
+
+function kiwi_round(v, frac_digits)
+{
+   if (!isNumber(frac_digits) || frac_digits < 0) return v;
+   var factor = Math.pow(10, frac_digits);
+   return Math.floor(v * factor) / factor;
 }
 
 Number.prototype.withSign = function()
