@@ -989,49 +989,11 @@ function kiwi_reg_html()
          w3_div('id-kiwisdr_com-reg-status-container',
             w3_div('w3-container',
                w3_label('w3-show-inline-block w3-margin-R-16 w3-text-teal', 'kiwisdr.com registration status:') +
-               w3_div('id-kiwisdr_com-reg-status w3-show-inline-block w3-text-black', '')
+               w3_div('id-kiwisdr_com-reg-status w3-show-inline-block w3-padding-LR-8 w3-text-black', '')
             )
          )
 		);
 		
-      /*
-		w3_half('w3-margin-bottom', 'w3-container',
-			w3_div('',
-					'<b>Register on <a href="http://rx.kiwisdr.com" target="_blank">rx.kiwisdr.com</a>?</b> ' +
-					w3_switch('', 'Yes', 'No', 'adm.kiwisdr_com_register', adm.kiwisdr_com_register, 'kiwisdr_com_register_cb')
-			),
-			w3_div('',
-					'<b>Register on <a href="https://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a>?</b> ' +
-					w3_switch('', 'Yes', 'No', 'adm.sdr_hu_register', adm.sdr_hu_register, 'sdr_hu_register_cb')
-			)
-		) +
-
-		w3_half('w3-margin-bottom', 'w3-container',
-		   //w3_div('w3-restart',
-		   //   w3_input('', 'kiwisdr.com API key', 'adm.api_key_kiwisdr_com', '', 'w3_string_set_cfg_cb')
-		   //),
-		   w3_div(),
-		   w3_div('w3-restart',
-		      w3_input('', 'sdr.hu API key', 'adm.api_key', '', 'w3_string_set_cfg_cb', 'enter value returned from sdr.hu/register process')
-		   )
-		) +
-
-		w3_half('', '',
-         w3_div('id-kiwisdr_com-reg-status-container',
-            w3_div('w3-container',
-               w3_label('w3-show-inline-block w3-margin-R-16 w3-text-teal', 'kiwisdr.com registration status:') +
-               w3_div('id-kiwisdr_com-reg-status w3-show-inline-block w3-text-black', '')
-            )
-         ),
-         w3_div('id-sdr_hu-reg-status-container',
-            w3_div('w3-container',
-               w3_label('w3-show-inline-block w3-margin-R-16 w3-text-teal', 'sdr.hu registration status:') +
-               w3_div('id-sdr_hu-reg-status w3-show-inline-block w3-text-black', '')
-            )
-         )
-      );
-		*/
-      
    var s2 =
 		'<hr>' +
 		w3_half('w3-margin-bottom w3-restart', 'w3-container',
@@ -1040,7 +1002,6 @@ function kiwi_reg_html()
 		) +
 
 		w3_half('w3-margin-bottom w3-restart', 'w3-container',
-			//w3_input('', 'Device', 'rx_device', '', 'w3_string_set_cfg_cb'),
 			w3_input('', 'Admin email', 'admin_email', '', 'w3_string_set_cfg_cb'),
 			w3_input('', 'Antenna', 'rx_antenna', '', 'w3_string_set_cfg_cb')
 		) +
@@ -1092,15 +1053,16 @@ function kiwisdr_com_register_cb(path, idx)
    idx = +idx;
    //console.log('kiwisdr_com_register_cb idx='+ idx);
    
-   var text, color;
+   var text, error = false;
    var no_url = (cfg.server_url == '');
    var bad_ip = (kiwi_inet4_d2h(cfg.server_url) != null && kiwi_inet4_d2h(cfg.server_url, true) == null);
    var no_passwordless_channels = (adm.user_password != '' && cfg.chan_no_pwd == 0);
    var no_rx_gps = (cfg.rx_gps == '' || cfg.rx_gps == '(0.000000, 0.000000)' || cfg.rx_gps == '(0.000000%2C%200.000000)');
+   var wspr_autorun_full = (cfg.WSPR.autorun == rx_chans);
    //console.log('kiwisdr_com_register_cb has_u_pwd='+ (adm.user_password != '') +' chan_no_pwd='+ cfg.chan_no_pwd +' no_passwordless_channels='+ no_passwordless_channels);
    //console.log('cfg.server_url='+ cfg.server_url);
    
-   if (idx == w3_SWITCH_YES_IDX && (no_url || bad_ip || no_passwordless_channels || no_rx_gps)) {
+   if (idx == w3_SWITCH_YES_IDX && (no_url || bad_ip || no_passwordless_channels || no_rx_gps || wspr_autorun_full)) {
       if (no_url)
          text = 'Error, you must first setup a valid Kiwi connection URL on the admin "connect" tab';
       else
@@ -1112,51 +1074,24 @@ function kiwisdr_com_register_cb(path, idx)
       else
       if (no_rx_gps)
          text = 'Error, you must first set a valid entry in the "<i>Location (lat, lon)</i>" field';
-      color = '#ffeb3b';
+      else
+      if (wspr_autorun_full)
+         text = 'Error, cannot have WSPR autorun enabled on ALL channels!';
       w3_switch_set_value(path, w3_SWITCH_NO_IDX);    // force back to 'no'
       idx = w3_SWITCH_NO_IDX;
+      error = true;
    } else
    if (idx == w3_SWITCH_YES_IDX) {
       text = '(waiting for kiwisdr.com response, can take several minutes in some cases)';
-      color = 'hsl(180, 100%, 95%)';
    } else {    // w3_SWITCH_NO_IDX
       text = '(registration not enabled)';
-      color = 'hsl(180, 100%, 95%)';
       w3_switch_set_value(path, w3_SWITCH_NO_IDX);    // for benefit of direct callers
    }
    
    w3_innerHTML('id-kiwisdr_com-reg-status', text);
-   w3_color('id-kiwisdr_com-reg-status', null, color);
+   w3_remove_then_add_cond('id-kiwisdr_com-reg-status', error, 'w3-red w3-text-white', 'w3-pale-blue w3-text-black');
    admin_radio_YN_cb(path, idx);
    //console.log('kiwisdr_com_register_cb adm.kiwisdr_com_register='+ adm.kiwisdr_com_register);
-}
-
-function sdr_hu_register_cb(path, idx)
-{
-   idx = +idx;
-   //console.log('sdr_hu_register_cb idx='+ idx);
-   
-   var text, color;
-   if (idx == w3_SWITCH_YES_IDX && cfg.server_url == '') {
-      text = 'Error, you must first setup a valid Kiwi connection URL on the admin "connect" tab';
-      color = '#ffeb3b';
-      w3_switch_set_value(path, w3_SWITCH_NO_IDX);    // force back to 'no'
-      idx = w3_SWITCH_NO_IDX;
-   } else
-   if (idx == w3_SWITCH_YES_IDX) {
-      text = '(waiting for sdr.hu response, can take several minutes in some cases)';
-      color = 'hsl(180, 100%, 95%)';
-   } else {    // w3_SWITCH_NO_IDX
-      text = '(registration not enabled)';
-      color = 'hsl(180, 100%, 95%)';
-   }
-   
-   /*
-   w3_innerHTML('id-sdr_hu-reg-status', text);
-   w3_color('id-sdr_hu-reg-status', null, color);
-   */
-   admin_radio_YN_cb(path, idx);
-   //console.log('sdr_hu_register_cb adm.sdr_hu_register='+ adm.sdr_hu_register);
 }
 
 var sdr_hu_interval;
@@ -1166,12 +1101,10 @@ function sdr_hu_focus()
 {
 	admin_set_decoded_value('rx_name');
 	admin_set_decoded_value('rx_location');
-	//admin_set_decoded_value('rx_device');
 	admin_set_decoded_value('rx_antenna');
 	admin_set_decoded_value('rx_grid');
 	admin_set_decoded_value('rx_gps');
 	admin_set_decoded_value('admin_email');
-	//admin_set_decoded_value('adm.api_key');
 
 	// The default in the factory-distributed kiwi.json is the kiwisdr.com NZ location.
 	// Detect this and ask user to change it so sdr.hu/map doesn't end up with multiple SDRs
@@ -1200,7 +1133,6 @@ function sdr_hu_focus()
 	
 	// display initial switch state
 	kiwisdr_com_register_cb('adm.kiwisdr_com_register', adm.kiwisdr_com_register? w3_SWITCH_YES_IDX : w3_SWITCH_NO_IDX);
-	sdr_hu_register_cb('adm.sdr_hu_register', adm.sdr_hu_register? w3_SWITCH_YES_IDX : w3_SWITCH_NO_IDX);
 }
 
 function sdr_hu_input_grid(path, val)
@@ -1270,13 +1202,6 @@ function public_update(p)
 	if (adm.kiwisdr_com_register && admin.reg_status.kiwisdr_com != undefined && admin.reg_status.kiwisdr_com != '') {
 	   w3_innerHTML('id-kiwisdr_com-reg-status', 'rx.kiwisdr.com registration: successful');
 	}
-	
-	// sdr.hu registration status
-	/*
-	if (adm.sdr_hu_register && admin.reg_status.sdr_hu != undefined && admin.reg_status.sdr_hu != '') {
-	   w3_innerHTML('id-sdr_hu-reg-status', admin.reg_status.sdr_hu);
-	}
-	*/
 	
 	// GPS has had a solution, show buttons
 	if (admin.reg_status.lat != undefined) {
