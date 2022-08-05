@@ -583,6 +583,14 @@ void c2s_admin(void *param)
 				kstr_free(sb);
 				continue;
 			}
+
+			i = strcmp(cmd, "SET public_wakeup");
+			if (i == 0) {
+                if (reg_kiwisdr_com_tid) {
+                    TaskWakeupF(reg_kiwisdr_com_tid, TWF_CANCEL_DEADLINE);
+                }
+				continue;
+			}
 #endif
 
 

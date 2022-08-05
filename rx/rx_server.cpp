@@ -739,12 +739,12 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	c->other = cother;
 
 	if (snd_or_wf) {
-		int rx, heavy;
+		int rx_n, heavy;
 		if (!cother) {
 		    rx_free_count_e flags = ((isKiwi_UI || isWF_conn) && !isNo_WF)? RX_COUNT_ALL : RX_COUNT_NO_WF_FIRST;
-			int inuse = rx_chans - rx_chan_free_count(flags, &rx, &heavy);
+			int inuse = rx_chans - rx_chan_free_count(flags, &rx_n, &heavy);
             conn_printf("%s cother=%p isKiwi_UI=%d isWF_conn=%d isNo_WF=%d inuse=%d/%d use_rx=%d heavy=%d locked=%d %s\n",
-                st->uri, cother, isKiwi_UI, isWF_conn, isNo_WF, inuse, rx_chans, rx, heavy, is_locked,
+                st->uri, cother, isKiwi_UI, isWF_conn, isNo_WF, inuse, rx_chans, rx_n, heavy, is_locked,
                 (flags == RX_COUNT_ALL)? "RX_COUNT_ALL" : "RX_COUNT_NO_WF_FIRST");
             
             if (is_locked) {
@@ -763,9 +763,9 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
                 }
             }
 
-            if (rx == -1 || force_camp) {
-                if (force_camp) rx = -1;
-                //cprintf(c, "rx=%d force_camp=%d\n", rx, force_camp);
+            if (rx_n == -1 || force_camp) {
+                if (force_camp) rx_n = -1;
+                //cprintf(c, "rx=%d force_camp=%d\n", rx_n, force_camp);
                 force_camp = false;
                 #ifdef USE_SDR
                     if (isKiwi_UI && (mon_total < monitors_max)) {
@@ -783,7 +783,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
                     return NULL;
                 }
             } else {
-                if (st->type == STREAM_WATERFALL && rx >= wf_chans) {
+                if (st->type == STREAM_WATERFALL && rx_n >= wf_chans) {
             
                     // Kiwi UI handles no-WF condition differently -- don't send error
                     if (!isKiwi_UI) {
@@ -796,9 +796,9 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
                 }
             }
 			
-			if (rx != -1) {
-			    conn_printf("CONN-%02d no other, new alloc rx%d\n", cn, rx);
-			    rx_channels[rx].busy = true;
+			if (rx_n != -1) {
+			    conn_printf("CONN-%02d no other, new alloc rx%d\n", cn, rx_n);
+			    rx_channels[rx_n].busy = true;
 			}
 		} else {
             conn_printf("### %s cother=%p isKiwi_UI=%d isNo_WF=%d isWF_conn=%d\n",
@@ -822,11 +822,11 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
                 }
 			}
 			
-			rx = -1;
+			rx_n = -1;
 			cother->other = c;
 		}
 		
-		c->rx_channel = cother? cother->rx_channel : rx;
+		c->rx_channel = cother? cother->rx_channel : rx_n;
 		if (st->type == STREAM_SOUND && c->rx_channel != -1) {
 		    rx_channels[c->rx_channel].conn = c;
 		    c->isMaster = true;

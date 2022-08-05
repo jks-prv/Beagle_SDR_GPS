@@ -635,7 +635,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     // access to the local HTTP port should only come from local ip addresses
     if (mc->local_port == net.port_http_local && !isLocal_ip(ip_unforwarded)) {
         if (evt == MG_REQUEST) {
-            printf("webserver: HTTP but not local ip evt=%d %s:%d <%s>\n", evt, ip_unforwarded, mc->local_port, mc->uri);
+            lprintf("webserver: HTTP but not local ip evt=%d %s:%d <%s>\n", evt, ip_unforwarded, mc->local_port, mc->uri);
             mg_send_status(mc, 403);    // 403 = "forbidden"
             mg_send_data(mc, NULL, 0);
             return MG_TRUE;
@@ -697,8 +697,11 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 	// Note that this code always sets remote_ip[] as a side-effect for later use (the real client ip).
 	char ip_forwarded[NET_ADDRSTRLEN];
     check_if_forwarded("WEB", mc, ip_forwarded);
-    if (check_ip_blacklist(ip_forwarded) || check_ip_blacklist(ip_unforwarded)) {
-		//printf("WEB: IP BLACKLISTED: %s/%s url=<%s> qs=<%s>\n", ip_unforwarded, ip_forwarded, mc->uri, mc->query_string);
+    bool bl_fwd = check_ip_blacklist(ip_forwarded);
+    bool bl_ufw = check_ip_blacklist(ip_unforwarded);
+    if (bl_fwd || bl_ufw) {
+		lprintf("WEB: IP BLACKLISTED: %d|%d %s|%s url=<%s> qs=<%s>\n",
+		    bl_fwd, bl_ufw, ip_unforwarded, ip_forwarded, mc->uri, mc->query_string);
         mg_send_status(mc, 403);    // 403 = "forbidden"
         mg_send_data(mc, NULL, 0);
         return MG_TRUE;
@@ -768,7 +771,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     bool acme = (strncmp(o_uri, "/.well-known/", 13) == 0);
     if ((isPort80 || acme) && evt == MG_CACHE_INFO) return MG_FALSE;
     if ((isPort80 && !acme) || (acme && !isPort80)) {
-        printf("webserver: bad ACME request evt=%d %s:%d <%s>\n", evt, ip_forwarded, mc->local_port, o_uri);
+        lprintf("webserver: bad ACME request evt=%d %s:%d <%s>\n", evt, ip_forwarded, mc->local_port, o_uri);
         mg_send_status(mc, 403);    // 403 = "forbidden"
         mg_send_data(mc, NULL, 0);
         return MG_TRUE;

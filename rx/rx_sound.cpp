@@ -211,6 +211,7 @@ void c2s_sound(void *param)
 	int chan_null = 0;
 	int arate_in, arate_out, acomp;
 	int adc_clk_corrections = 0;
+	bool spectral_inversion = kiwi.spectral_inversion;
 	
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
@@ -278,9 +279,14 @@ void c2s_sound(void *param)
 		u64_t i_phase;
 		
 		// reload freq NCO if adc clock has been corrected
-		if (freq >= 0 && adc_clk_corrections != clk.adc_clk_corrections) {
+		// reload freq NCO if spectral inversion changed
+		if (freq >= 0 && (adc_clk_corrections != clk.adc_clk_corrections || spectral_inversion != kiwi.spectral_inversion)) {
 			adc_clk_corrections = clk.adc_clk_corrections;
-			f_phase = freq * kHz / conn->adc_clock_corrected;
+            spectral_inversion = kiwi.spectral_inversion;
+
+			double freq_kHz = freq * kHz;
+			double freq_inv_kHz = ui_srate - freq_kHz;
+			f_phase = (spectral_inversion? freq_inv_kHz : freq_kHz) / conn->adc_clock_corrected;
             i_phase = (u64_t) round(f_phase * pow(2,48));
             //cprintf(conn, "SND UPD freq %.3f kHz i_phase 0x%08x|%08x clk %.3f\n",
             //    freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected);
@@ -346,7 +352,9 @@ void c2s_sound(void *param)
                     bool new_freq = false;
                     if (freq != _freq) {
                         freq = _freq;
-                        f_phase = freq * kHz / conn->adc_clock_corrected;
+                        double freq_kHz = freq * kHz;
+                        double freq_inv_kHz = ui_srate - freq_kHz;
+                        f_phase = (spectral_inversion? freq_inv_kHz : freq_kHz) / conn->adc_clock_corrected;
                         i_phase = (u64_t) round(f_phase * pow(2,48));
                         //cprintf(conn, "SND SET freq %.3f kHz i_phase 0x%08x|%08x clk %.3f\n",
                         //    freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected);

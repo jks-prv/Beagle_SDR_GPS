@@ -262,6 +262,7 @@ void update_vars_from_config(bool called_at_init)
     cfg_default_int("ident_len", IDENT_LEN_MIN, &update_cfg);
     cfg_default_bool("show_geo", true, &update_cfg);
     cfg_default_bool("show_1Hz", false, &update_cfg);
+    kiwi.spectral_inversion = cfg_default_bool("spectral_inversion", false, &update_cfg);
 
     cfg_default_int("nb_algo", 0, &update_cfg);
     cfg_default_int("nb_wf", 1, &update_cfg);
@@ -458,6 +459,15 @@ void update_vars_from_config(bool called_at_init)
         admcfg_set_bool("kiwisdr_com_register", sdr_hu_register);
         update_admcfg = true;
     }
+
+    // disable public registration if all the channels are full of WSPR autorun
+	bool isPublic = admcfg_bool("kiwisdr_com_register", NULL, CFG_REQUIRED);
+	int wspr_autorun = cfg_int("WSPR.autorun", NULL, CFG_REQUIRED);
+	if (isPublic && wspr_autorun >= rx_chans) {
+	    lprintf("REG: WSPR.autorun(%d) >= rx_chans(%d) -- DISABLING PUBLIC REGISTRATION\n", wspr_autorun, rx_chans);
+        admcfg_set_bool("kiwisdr_com_register", false);
+        update_admcfg = true;
+	}
 
     // historical uses of options parameter:
     //int new_find_local = admcfg_int("options", NULL, CFG_REQUIRED) & 1;

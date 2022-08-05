@@ -521,6 +521,14 @@ function wspr_config_html()
                   'Spot decodes are available in the Kiwi log (use "Log" tab above) and are listed on <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a><br>' +
                   'The "Reporter" fields above must be set to valid values for proper spot entry into the <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a> database.'),
                
+               w3_div('w3-margin-T-10 w3-valign',
+                  '<header class="id-wspr-warn-full w3-container w3-yellow"><h6>' +
+                  'If your Kiwi is publicly listed you must not configure all the channels to use WSPR-autorun!<br>' +
+                  'This defeats the purpose of making your Kiwi public and public registration will be disabled<br>' +
+                  'until you make at least one channel available for connection. Check the Admin Public tab.' +
+                  '</h6></header>'
+               ),
+               
                w3_button('id-wspr-restart w3-margin-T-16 w3-aqua w3-hide', 'autorun restart', 'wspr_autorun_restart_cb'),
                
                w3_div('id-wspr-admin-autorun w3-margin-T-16')
@@ -541,8 +549,25 @@ function wspr_config_html()
 	w3_innerHTML('id-wspr-admin-autorun', s);
 }
 
+function wspr_autorun_public_check()
+{
+   var num_autorun = 0;
+	for (var i=0; i < rx_chans; i++) {
+	   if (cfg.WSPR['autorun'+ i] != 0)
+	      num_autorun++;
+	}
+	ext_set_cfg_param('WSPR.autorun', num_autorun, EXT_SAVE);
+	
+	var full = (adm.kiwisdr_com_register && num_autorun >= rx_chans);
+   w3_remove_then_add_cond('id-wspr-warn-full', full, 'w3-red', 'w3-yellow');
+	if (full) {
+      kiwisdr_com_register_cb('adm.kiwisdr_com_register', w3_SWITCH_NO_IDX);
+	}
+}
+
 function wspr_autorun_restart_cb()
 {
+   wspr_autorun_public_check();
    w3_hide('id-wspr-restart');
    ext_send("ADM wspr_autorun_restart");  // NB: must be sent as ADM command
 }
@@ -559,6 +584,7 @@ function wspr_autorun_select_cb(path, idx, first)
 function wspr_config_focus()
 {
    //console.log('wspr_config_focus');
+   wspr_autorun_public_check();
    wspr_check_GPS_update_grid();
    wspr.focus_interval = setInterval(function() { wspr_check_GPS_update_grid(); }, 10000);
 

@@ -131,6 +131,7 @@ struct wf_inst_t {
 	bool cic_comp;
 	wf_interp_t interp;
 	int window_func;
+	bool trigger;
 
 	// NB: matches rx_noise.h which is not included here to prevent re-compile cascade
     #define NOISE_TYPES 4

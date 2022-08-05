@@ -855,9 +855,8 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
     int zoom, float cf_kHz, int min_dB, int max_dB, int wf_speed, int wf_comp)
 {
     struct mg_connection *mc_fail, *mcs = NULL, *mcw = NULL, *mce = NULL;
-    conn_t *csnd, *cwf, *cext;
+    conn_t *csnd = NULL, *cwf, *cext;
     int port = port_base + instance;
-    int chan;
     bool ident_geo_sent = false;
     memset(iconn, 0, sizeof(internal_conn_t));
     
@@ -904,7 +903,7 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
     }
 
     if (ws & ICONN_WS_EXT) {
-        chan = csnd->rx_channel;
+        if (csnd == NULL) goto error2;  // i.e. ICONN_WS_SND must be used together with ICONN_WS_EXT
         mce = &iconn->ext_mc;
         mc_fail = mcs;
         mce->connection_param = NULL;
@@ -912,17 +911,23 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
         kiwi_strncpy(mce->remote_ip, "127.0.0.1", NET_ADDRSTRLEN);
         mce->remote_port = mce->local_port = net.port;
         cext = rx_server_websocket(WS_INTERNAL_CONN, mce);
-        if (csnd == NULL) goto error;
+        if (cext == NULL) goto error;
         iconn->cext = cext;
         input_msg_internal(cext, (char *) "SET auth t=kiwi p=");
         input_msg_internal(cext, (char *) "SET ext_switch_to_client=%s first_time=1 rx_chan=%d",
-            client, chan);
+            client, csnd->rx_channel);
     }
 
     return true;
 
 error:
     printf("internal_conn_setup: couldn't get websocket instance=%d uri=%s port=%d\n",
+        instance, mc_fail->uri, mc_fail->remote_port);
+    internal_conn_shutdown(iconn);
+    return false;
+
+error2:
+    printf("internal_conn_setup: need (ICONN_WS_EXT | ICONN_WS_SND) instance=%d uri=%s port=%d\n",
         instance, mc_fail->uri, mc_fail->remote_port);
     internal_conn_shutdown(iconn);
     return false;

@@ -2,6 +2,36 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.550  Aug 5, 2022
+    Added "Downconverter high-side injection" checkbox to admin page, config tab.
+        This is used in conjunction with the "Frequency scale offset (kHz, 1 Hz resolution)" field
+        when a downconverter/transverter ahead of the Kiwi uses high-side LO injection to its mixer
+        such that the spectrum applied to the Kiwi is "inverted". A good explanation of this
+        phenomenon is here: www.rfcafe.com/references/electrical/spectral-inv.htm
+        
+        When the checkbox is set the waterfall essentially reverses all display bins/pixels and the
+        audio channels swap I/Q channels meaning USB/LSB are swapped. Nothing about the polarity of
+        the Kiwi frequency scale or display of the passband (yellow/green symbol) changes. The scale
+        still has the lowest frequency on the left of the screen. And LSB is still on the left.
+    
+    The current VFO (A or B) will be copied to the other, i.e. "VFO A=B", when the 'N' key is used.
+        There is also an option at the bottom of the frequency memory menu ('m' key) that does this.
+    
+    Admin page, WSPR extension and Public registration configuration:
+        Show a warning message and disable public registration if it is enabled, and then
+        WSPR autorun is setup for ALL the channels. This is effectively a misconfiguration since
+        it is now impossible for any public connections to occur! Yes, there are number of publicly
+        listed Kiwis in this condition (i.e. always a yellow-colored pin on map.kiwisdr.com)
+    
+    Sig gen extension:
+        Changed "+/- 1k" buttons to be "+/- Step" (current step size).
+        Frequency suffixes 'k' and 'M' can be used in Start, Stop and Step fields.
+        
+    The waterfall extension "interpolation" and "CIC comp" settings are now correctly initialized
+        from the URL "wfi=" parameters if present.
+    
+    Cross compilation fix for macOS versions later than 10.15
+
 v1.549  Jul 31, 2022
     Fixed WSPR extension bug causing interference between multiple autorun channels.
     Close extension web socket correctly for benefit of kiwirecorder using "--ext" option.

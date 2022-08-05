@@ -896,6 +896,12 @@ function w3_remove_then_add(el_id, r_props, a_props)
 	w3_add(el_id, a_props);
 }
 
+function w3_remove_then_add_cond(el_id, cond, t_props, f_props)
+{
+	w3_remove(el_id, t_props +' '+ f_props);
+	w3_add(el_id, cond? t_props : f_props);
+}
+
 function w3_contains(el_id, prop)
 {
 	var el = w3_el(el_id);

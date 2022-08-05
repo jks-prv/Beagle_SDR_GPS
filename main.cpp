@@ -266,12 +266,12 @@ int main(int argc, char *argv[])
     	lprintf("### compiled with USE_VALGRIND\n");
     #endif
     
-    assert (TRUE != FALSE);
-    assert (true != false);
-    assert (TRUE == true);
-    assert (FALSE == false);
-    assert (NOT_FOUND != TRUE);
-    assert (NOT_FOUND != FALSE);
+    assert(TRUE != FALSE);
+    assert(true != false);
+    assert(TRUE == true);
+    assert(FALSE == false);
+    assert(NOT_FOUND != TRUE);
+    assert(NOT_FOUND != FALSE);
     
     debug_printfs |= kiwi_file_exists(DIR_CFG "/opt.debug")? 1:0;
 

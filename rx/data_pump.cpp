@@ -144,7 +144,7 @@ static void snd_service()
             i_samps[ch] = rx->in_samps[rx->wr_pos];
         }
     
-        rx_iq_t *iqp = (rx_iq_t*) &rxd->iq_t;
+        rx_iq_t *iqp = (rx_iq_t *) &rxd->iq_t;
     
         #if 0
             // check 48-bit ticks counter timestamp
@@ -159,23 +159,46 @@ static void snd_service()
             }
             debug_ticks++;
         #endif
-                
-        for (j=0; j < nrx_samps; j++) {
-    
-            for (int ch=0; ch < rx_chans; ch++) {
-                if (rx_channels[ch].data_enabled) {
-                    s4_t i, q;
-                    i = S24_8_16(iqp->i3, iqp->i);
-                    q = S24_8_16(iqp->q3, iqp->q);
-                
-                    // NB: I/Q reversed to get correct sideband polarity; fixme: why?
-                    // [probably because mixer NCO polarity is wrong, i.e. cos/sin should really be cos/-sin]
-                    i_samps[ch]->re = q * rescale + DC_offset_I;
-                    i_samps[ch]->im = i * rescale + DC_offset_Q;
-                    i_samps[ch]++;
+
+        // NB: I/Q reversed below to get correct sideband polarity
+        // i.e. normal case: re=q im=i; spectral_inversion case: re=i im=q
+        // Probably because mixer NCO polarity is wrong, i.e. cos/sin should really be cos/-sin
+        // but we never took the time to verify this.
+        if (kiwi.spectral_inversion) {
+            for (j=0; j < nrx_samps; j++) {
+
+                for (int ch=0; ch < rx_chans; ch++) {
+                    if (rx_channels[ch].data_enabled) {
+                        s4_t i, q;
+                        i = S24_8_16(iqp->i3, iqp->i);
+                        q = S24_8_16(iqp->q3, iqp->q);
+            
+                        i_samps[ch]->re = i * rescale + DC_offset_I;
+                        i_samps[ch]->im = q * rescale + DC_offset_Q;
+                        i_samps[ch]++;
+                    }
+            
+                    iqp++;
                 }
-                
-                iqp++;
+            }
+        } else {
+            for (j=0; j < nrx_samps; j++) {
+
+                for (int ch=0; ch < rx_chans; ch++) {
+                    if (rx_channels[ch].data_enabled) {
+                        s4_t i, q;
+                        i = S24_8_16(iqp->i3, iqp->i);
+                        q = S24_8_16(iqp->q3, iqp->q);
+            
+                        // NB: I/Q reversed to get correct sideband polarity; fixme: why?
+                        // [probably because mixer NCO polarity is wrong, i.e. cos/sin should really be cos/-sin]
+                        i_samps[ch]->re = q * rescale + DC_offset_I;
+                        i_samps[ch]->im = i * rescale + DC_offset_Q;
+                        i_samps[ch]++;
+                    }
+            
+                    iqp++;
+                }
             }
         }
     
@@ -364,10 +387,10 @@ void data_pump_init()
 	#define WORDS_PER_SAMP 3	// 2 * 24b IQ = 3 * 16b
 	
 	// does a single nrx_samps transfer fit in the SPI buf?
-	assert (rx_xfer_size <= SPIBUF_BMAX);	// in bytes
+	assert(rx_xfer_size <= SPIBUF_BMAX);	// in bytes
 	
 	// see rx_dpump_t.in_samps[][]
-	assert (FASTFIR_OUTBUF_SIZE > nrx_samps);
+	assert(FASTFIR_OUTBUF_SIZE > nrx_samps);
 	
 	// rescale factor from hardware samples to what CuteSDR code is expecting
 	rescale = MPOW(2, -RXOUT_SCALE + CUTESDR_SCALE);
