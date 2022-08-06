@@ -80,6 +80,21 @@ u4_t timer_ms()
     return (ts.tv_sec - epoch_sec)*1000 + msec;
 }
 
+// never overflows (effectively)
+u64_t timer_ms64_1970()
+{
+	struct timespec ts;
+	u64_t t;
+
+	clock_gettime(CLOCK_REALTIME, &ts);
+	int msec = ts.tv_nsec / 1000000;
+	assert(msec >= 0 && msec < 1000);
+	t = ts.tv_sec;
+	t *= 1000;
+	t += msec;
+    return t;
+}
+
 // overflows 1.2 hours after timer epoch
 u4_t timer_us()
 {
