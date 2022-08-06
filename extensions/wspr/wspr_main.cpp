@@ -497,7 +497,7 @@ void WSPR_Deco(void *param)
         //#define TEST_UPLOADS
 
         double rqrg = w->autorun? w->arun_deco_cf_MHz : w->centerfreq_MHz;
-        wspr_ulprintf("WSPR UPLOAD %d spots RX%d %.4f START%s%s\n", w->uniques, w->rx_chan, rqrg, w->autorun? " AUTORUN" : "", w->iwbp? " IWBP" : "");
+        wspr_ulprintf("%s UPLOAD %d spots RX%d %.4f START%s\n", w->iwbp? "IWBP" : "WSPR", w->uniques, w->rx_chan, rqrg, w->autorun? " AUTORUN" : "");
         for (int i = 0; i < w->uniques; i++) {
             wspr_decode_t *dp = &w->deco[i];
             if (w->autorun) {
@@ -509,6 +509,8 @@ void WSPR_Deco(void *param)
                     wspr_printf("WSPR UPLOAD RX%d %d/%d %s\n", w->rx_chan, i+1, w->uniques, cmd);
                 #else
                     non_blocking_cmd_system_child("kiwi.wsprnet.org", cmd, NO_WAIT);
+                    if (wspr_c.spot_log)
+                        rcprintf(w->rx_chan, "%s UPLOAD: %s\n", w->iwbp? "IWBP" : "WSPR", cmd);
                 #endif
                 kiwi_ifree(cmd);
                 w->arun_decoded++;
@@ -522,12 +524,13 @@ void WSPR_Deco(void *param)
                         dp->hour, dp->min, dp->snr, dp->dt_print, dp->freq_print, (int) dp->drift1, dp->c_l_p);
                 #endif
             }
-            wspr_printf("WSPR UPLOAD U%d/%d %s"
-                "%02d%02d %3.0f %4.1f %9.6f %2d %s" "\n", i, w->uniques, w->autorun? "autorun ":"",
+            wspr_printf("%s UPLOAD U%d/%d %s"
+                "%02d%02d %3.0f %4.1f %9.6f %2d %s" "\n",
+                w->iwbp? "IWBP" : "WSPR", i, w->uniques, w->autorun? "autorun ":"",
                 dp->hour, dp->min, dp->snr, dp->dt_print, dp->freq_print, (int) dp->drift1, dp->c_l_p);
             TaskSleepMsec(1000);
         }
-        wspr_ulprintf("WSPR UPLOAD %d spots RX%d %.4f DONE\n", w->uniques, w->rx_chan, rqrg);
+        wspr_ulprintf("%s UPLOAD %d spots RX%d %.4f DONE\n", w->iwbp? "IWBP" : "WSPR", w->uniques, w->rx_chan, rqrg);
 
 		wspr_status(w, w->status_resume, NONE);
 		

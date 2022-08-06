@@ -2,6 +2,14 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.551  Aug 7, 2022
+    WSPR:
+        Disable Kiwi public registration when all channels configured to use WSPR autorun.
+        Fixed autorun bug where no spots with power < 10 dBm were being uploaded (e.g. 22m)
+        Added admin/WSPR page option to log exact command used to upload autorun spots.
+    
+    Changes to support upcoming kiwirecorder enhancements.
+
 v1.550  Aug 5, 2022
     Added "Downconverter high-side injection" checkbox to admin page, config tab.
         This is used in conjunction with the "Frequency scale offset (kHz, 1 Hz resolution)" field

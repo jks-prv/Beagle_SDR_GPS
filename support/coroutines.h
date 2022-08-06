@@ -75,7 +75,7 @@ void TaskInit();
 void TaskInitCfg();
 void TaskCollect();
 
-#define CTF_CHANNEL         0x000f
+#define CTF_CHANNEL         (MAX_RX_CHANS - 1)
 #define CTF_RX_CHANNEL		0x0010
 #define CTF_BUSY_HELPER		0x0020
 #define CTF_POLL_INTR		0x0040

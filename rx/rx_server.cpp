@@ -91,7 +91,6 @@ static void conn_init(conn_t *c)
 	c->magic = CN_MAGIC;
 	c->self_idx = c - conns;
 	c->rx_channel = -1;
-	c->ext_rx_chan = -1;
 }
 
 void rx_enable(int chan, rx_chan_action_e action)
@@ -156,22 +155,19 @@ void show_conn(const char *prefix, conn_t *cd)
     }
     
     char *type_s = (cd->type == STREAM_ADMIN)? (char *) "ADM" : stnprintf(0, "%s", rx_streams[cd->type].uri);
-    int rx_n = (cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel;
-    char *rx_s = (rx_n == -1)? (char *) "" : stnprintf(1, "rx%d", rx_n);
-    char *other_s = cd->other? stnprintf(2, "+CONN-%02d", cd->other-conns) : (char *) "";
+    char *rx_s = (cd->rx_channel == -1)? (char *) "" : stnprintf(1, "rx%d", cd->rx_channel);
+    char *other_s = cd->other? stnprintf(2, " +CONN-%02d", cd->other-conns) : (char *) "";
+    char *ext_s = (cd->type == STREAM_EXT)? (cd->ext? stnprintf(3, " %s", cd->ext->name) : (char *) " (ext name?)") : (char *) "";
     
-    lprintf("%sCONN-%02d %p %3s %-3s %s%s%s%s%s%s auth%d kiwi%d admin%d isP%d tle%d%d sv=%02d KA=%02d/60 KC=%05d mc=%9p %s:%d %s%s%s%s\n",
+    lprintf("%sCONN-%02d %p %3s %-3s %s%s%s%s%s%s%s%s%s isPwd%d tle%d%d sv=%02d KA=%02d/60 KC=%05d mc=%9p %s:%d:%016llx%s%s%s%s\n",
         prefix, cd->self_idx, cd, type_s, rx_s,
+        cd->auth? "*":"_", cd->auth_kiwi? "K":"_", cd->auth_admin? "A":"_",
         cd->isMaster? "M":"_", cd->internal_connection? "I":(cd->ext_api? "E":"_"), cd->ext_api_determined? "D":"_",
         cd->isLocal? "L":(cd->force_notLocal? "F":"_"), cd->auth_prot? "P":"_", cd->awaitingPassword? "A":"_",
-        cd->auth, cd->auth_kiwi, cd->auth_admin,
-        cd->isPassword, cd->tlimit_exempt, cd->tlimit_exempt_by_pwd,
-        cd->served,
+        cd->isPassword, cd->tlimit_exempt, cd->tlimit_exempt_by_pwd, cd->served,
         cd->keep_alive, cd->keepalive_count, cd->mc,
-        cd->remote_ip, cd->remote_port, other_s,
-        (cd->type == STREAM_EXT)? (cd->ext? cd->ext->name : "?") : "",
-        cd->stop_data? " STOP_DATA":"",
-        cd->is_locked? " LOCKED":"");
+        cd->remote_ip, cd->remote_port, cd->tstamp,
+        other_s, ext_s, cd->stop_data? " STOP_DATA":"", cd->is_locked? " LOCKED":"");
 
     if (cd->isMaster && cd->arrived)
         lprintf("        user=<%s> isUserIP=%d geo=<%s>\n", cd->ident_user, cd->isUserIP, cd->geo);
@@ -195,7 +191,7 @@ void dump()
 		if (cd->valid) nconn++;
 	}
 	lprintf("\n");
-	lprintf("CONNS: used %d/%d is_locked=%d  ______ => Master, Internal/ExtAPI, DetAPI, Local/ForceNotLocal, ProtAuth, AwaitPwd\n",
+	lprintf("CONNS: used %d/%d is_locked=%d  ______ => *auth, Kiwi, Admin, Master, Internal/ExtAPI, DetAPI, Local/ForceNotLocal, ProtAuth, AwaitPwd\n",
 	    nconn, N_CONNS, is_locked);
 
 	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
@@ -206,21 +202,6 @@ void dump()
 	TaskDump(TDUMP_LOG | TDUMP_HIST | PRINTF_LOG);
 	lock_dump();
 	ip_blacklist_dump();
-}
-
-static void dump_conn()
-{
-	int i;
-	conn_t *cd;
-	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
-	    if (!cd->valid) continue;
-        show_conn("dump_conn: ", cd);
-	}
-	rx_chan_t *rc;
-	for (rc = rx_channels, i=0; rc < &rx_channels[rx_chans]; rc++, i++) {
-		lprintf("dump_conn: RX_CHAN-%d en %d busy %d conn = %s%d %p\n",
-			i, rc->chan_enabled, rc->busy, rc->conn? "CONN-":"", rc->conn? rc->conn-conns:0, rc->conn);
-	}
 }
 
 // can optionally configure SIG_DEBUG to call this debug handler
@@ -364,11 +345,11 @@ void rx_server_remove(conn_t *c)
     
     // kick corresponding ext if any 
     if (c->type == STREAM_SOUND || c->type == STREAM_WATERFALL) {
-        //cprintf(c, "EXT remove from=conn-%02d rx_chan=%d tstamp=%lld\n", c->self_idx, c->rx_channel, c->tstamp);
+        //cprintf(c, "EXT remove from=conn-%02d rx_chan=%d tstamp=%016llx\n", c->self_idx, c->rx_channel, c->tstamp);
         //dump();
 	    for (conn_t *conn = conns; conn < &conns[N_CONNS]; conn++) {
-	        if (conn->type == STREAM_EXT && conn->ext_rx_chan == c->rx_channel && conn->tstamp == c->tstamp)
-	            ext_kick(conn->ext_rx_chan);
+	        if (conn->type == STREAM_EXT && conn->rx_channel == c->rx_channel && conn->tstamp == c->tstamp)
+	            ext_kick(conn->rx_channel);
 	    }
     }
     
@@ -477,7 +458,7 @@ void rx_server_user_kick(int chan)
 		} else
 		
 		if (c->type == STREAM_EXT) {
-		    if (chan == -1 || chan == c->ext_rx_chan) {
+		    if (chan == -1 || chan == c->rx_channel) {
                 c->kick = true;
                 if (chan != -1)
                     printf("rx_server_user_kick KICKING rx=%d EXT %s\n", chan, c->ext? c->ext->name : "?");
@@ -529,7 +510,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
             lprintf("rx_server_websocket: (mc=%p == mc->c->mc=%p)? mc->c=%p mc->c->valid %d mc->c->magic=0x%x CN_MAGIC=0x%x mc->c->rport=%d\n",
                 mc, c->mc, c, c->valid, c->magic, CN_MAGIC, c->remote_port);
             lprintf("rx_server_websocket: mc: %s:%d %s\n", mc->remote_ip, mc->remote_port, mc->uri);
-            dump_conn();
+            dump();
             lprintf("rx_server_websocket: returning NULL\n");
         #endif
             return NULL;
@@ -658,11 +639,13 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 		}
 	}
 	
-	conn_printf("CONN LOOKING for free conn for type=%d(%s) ip=%s:%d mc=%p\n", st->type, st->uri, remote_ip, mc->remote_port, mc);
+	conn_printf("CONN LOOKING for free conn for type=%d(%s) ip=%s:%d:%016llx mc=%p\n",
+	    st->type, st->uri, remote_ip, mc->remote_port, tstamp, mc);
 	bool multiple = false;
 	int cn, cnfree;
 	conn_t *cfree = NULL, *cother = NULL;
 	bool snd_or_wf = (st->type == STREAM_SOUND || st->type == STREAM_WATERFALL);
+	bool snd_or_wf_or_ext = (snd_or_wf || st->type == STREAM_EXT);
 	int mon_total = 0;
 	
 	for (c = conns, cn=0; c < &conns[N_CONNS]; c++, cn++) {
@@ -681,36 +664,54 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			continue;
 		}
 		
-		conn_printf("CONN-%02d IS %p type=%d(%s) tstamp=%lld ip=%s:%d rx=%d auth=%d other%s%ld mc=%p\n", cn, c, c->type, rx_streams[c->type].uri, c->tstamp,
-		    c->remote_ip, c->remote_port, c->rx_channel, c->auth, c->other? "=CONN-":"=", c->other? c->other-conns:0, c->mc);
+		conn_printf("CONN-%02d IS %p type=%d(%s) ip=%s:%d:%016llx rx=%d auth=%d other=%s%ld mc=%p\n", cn, c, c->type, rx_streams[c->type].uri,
+		    c->remote_ip, c->remote_port, c->tstamp, c->rx_channel, c->auth, c->other? "CONN-":"", c->other? c->other-conns:-1, c->mc);
+
+        // link streams to each other, e.g. snd <=> wf, snd => ext
 		if (c->tstamp == tstamp && (strcmp(remote_ip, c->remote_ip) == 0)) {
-			if (snd_or_wf && c->type == st->type) {
+			if (snd_or_wf_or_ext && c->type == st->type) {
 				conn_printf("CONN-%02d DUPLICATE!\n", cn);
 				return NULL;
 			}
+
 			if (st->type == STREAM_SOUND && (c->type == STREAM_WATERFALL || c->type == STREAM_MONITOR)) {
 				if (!multiple) {
 					cother = c;
 					multiple = true;
 					#ifdef CONN_PRINTF
 					    conn_printf("NEW SND, OTHER is %s @ CONN-%02d\n", rx_streams[c->type].uri, cn);
-					    dump_conn();
+					    dump();
 					#endif
 				} else {
 					printf("NEW SND, MULTIPLE OTHERS!\n");
 					return NULL;
 				}
 			}
+
 			if (st->type == STREAM_WATERFALL && (c->type == STREAM_SOUND || c->type == STREAM_MONITOR)) {
 				if (!multiple) {
 					cother = c;
 					multiple = true;
 					#ifdef CONN_PRINTF
 					    conn_printf("NEW WF, OTHER is %s @ CONN-%02d\n", rx_streams[c->type].uri, cn);
-					    dump_conn();
+					    dump();
 					#endif
 				} else {
 					printf("NEW WF, MULTIPLE OTHERS!\n");
+					return NULL;
+				}
+			}
+
+			if (st->type == STREAM_EXT && c->type == STREAM_SOUND) {
+				if (!multiple) {
+					cother = c;
+					multiple = true;
+					#ifdef CONN_PRINTF
+					    conn_printf("NEW EXT, OTHER is %s @ CONN-%02d\n", rx_streams[c->type].uri, cn);
+					    dump();
+					#endif
+				} else {
+					printf("NEW EXT, MULTIPLE OTHERS!\n");
 					return NULL;
 				}
 			}
@@ -772,7 +773,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
                         // turn first connection when no channels (SND or WF) into MONITOR
                         c->type = STREAM_MONITOR;
                         st = &rx_streams[STREAM_MONITOR];
-                        snd_or_wf = false;
+                        snd_or_wf_or_ext = snd_or_wf = false;
                     } else
                 #endif
                 {
@@ -845,6 +846,20 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
             c->foff_set = true;
         }
 	}
+	
+	if (st->type == STREAM_EXT) {
+	    if (c->other == NULL) {
+            printf("NEW EXT, DID NOT FIND OTHER SND CONN!\n");
+            dump();
+	        return NULL;
+	    }
+	    if (c->other->rx_channel == -1) {
+            printf("NEW EXT, DID NOT FIND OTHER SND CONN!\n");
+            dump();
+	        return NULL;
+	    }
+	    c->rx_channel = c->other->rx_channel;
+	}
   
 	c->mc = mc;
     kiwi_strncpy(c->remote_ip, remote_ip, NET_ADDRSTRLEN);
@@ -858,11 +873,11 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	c->arrival = timer_sec();
 	c->isWF_conn = !isNo_WF;
 	clock_conn_init(c);
-	conn_printf("NEW channel RX%d\n", c->rx_channel);
+	conn_printf("NEW %s channel RX%d\n", st->uri, c->rx_channel);
 	
 	if (st->f != NULL) {
 		c->task_func = st->f;
-    	if (snd_or_wf)
+    	if (snd_or_wf_or_ext)
     		asprintf(&c->tname, "%s-%d", st->uri, c->rx_channel);
     	else
     		asprintf(&c->tname, "%s[%02d]", st->uri, c->self_idx);

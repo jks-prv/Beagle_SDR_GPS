@@ -196,8 +196,8 @@ void c2s_mon(void *param)
             }
 		}
 		
-		conn_mon->keep_alive = timer_sec() - conn_mon->keepalive_time;
-		bool keepalive_expired = (!conn_mon->internal_connection && conn_mon->keep_alive > KEEPALIVE_SEC);
+		conn_mon->keep_alive = conn_mon->internal_connection? 0 : (timer_sec() - conn_mon->keepalive_time);
+		bool keepalive_expired = (conn_mon->keep_alive > KEEPALIVE_SEC);
 		if (keepalive_expired || conn_mon->kick) {
 			rx_server_remove(conn_mon);
 			panic("shouldn't return");

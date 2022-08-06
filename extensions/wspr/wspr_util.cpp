@@ -50,10 +50,22 @@
 // ....1098 76543210 98765432 10......
 //     gggg gggggggg gggppppp pp		g: 15-bit grid, p: 7-bit pwr
 
+// grid_pwr_22b
+// dddd dddddddd dddddddd dd
+// 3333 44444444 55555555 66
+// 2211 11111111 00000000 00
+// 1098 76543210 98765432 10
+//    +        +        +  +  d[6] >> 6
+//    +        +        +---  d[5] << 2
+//    +        +------------  d[4] << 10
+//    +---------------------  (d[3] & 0xf) << 18
+// gggg gggggggg ggg          >> 7
+//                  ppppp pp  & 0x7f
+
 void unpack50(u1_t *d, u4_t *call_28b, u4_t *grid_pwr_22b, u4_t *grid_15b, u4_t *pwr_7b)
 {
     *call_28b = (d[0]<<20) | (d[1]<<12) | (d[2]<<4) | (d[3]>>4);
-    *grid_pwr_22b = ((d[3]&0xf)<<18) | (d[4]<<10) | (d[5]<<2) | (d[6]>>6);
+    *grid_pwr_22b = ((d[3]&0xf)<<18) | (d[4]<<10) | (d[5]<<2) | (d[6]>>6);  // yes, d[6] >> 6!
 	*grid_15b = *grid_pwr_22b >> 7;
 	*pwr_7b = *grid_pwr_22b & 0x7f;
     //wspr_gprintf("unpack50 %d|%d|%d|%d 0x%08x\n", d[0], d[1], d[2], d[3], *call_28b);

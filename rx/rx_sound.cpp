@@ -842,8 +842,8 @@ void c2s_sound(void *param)
 
 		// no keep-alive seen for a while or the bug where the initial cmds are not received and the connection hangs open
 		// and locks-up a receiver channel
-		conn->keep_alive = timer_sec() - conn->keepalive_time;
-		bool keepalive_expired = (!conn->internal_connection && conn->keep_alive > (conn->auth? KEEPALIVE_SEC : KEEPALIVE_SEC_NO_AUTH));
+		conn->keep_alive = conn->internal_connection? 0 : (timer_sec() - conn->keepalive_time);
+		bool keepalive_expired = (conn->keep_alive > (conn->auth? KEEPALIVE_SEC : KEEPALIVE_SEC_NO_AUTH));
 		bool connection_hang = (conn->keepalive_count > 4 && cmd_recv != CMD_ALL);
 		if (keepalive_expired || connection_hang || conn->inactivity_timeout || conn->kick) {
 			//if (keepalive_expired) clprintf(conn, "SND KEEP-ALIVE EXPIRED\n");

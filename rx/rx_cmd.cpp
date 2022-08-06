@@ -228,8 +228,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
             // for STREAM_EXT send a roundtrip keepalive
             if (conn->type == STREAM_EXT) {
-                if (conn->ext_rx_chan == -1) return true;
-                ext_send_msg(conn->ext_rx_chan, false, "MSG keepalive");
+                if (conn->rx_channel == -1) return true;
+                ext_send_msg(conn->rx_channel, false, "MSG keepalive");
             }
             
             // for STREAM_ADMIN send a roundtrip keepalive so admin client can tell
@@ -709,7 +709,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                         for (int i=0; i < N_CONNS; i++, c++) {
                             if (!c->valid || !(c->type == STREAM_SOUND || c->type == STREAM_WATERFALL || c->type == STREAM_EXT))
                                 continue;
-                            if (c->rx_channel == chan || (c->type == STREAM_EXT && c->ext_rx_chan == chan)) {
+                            if (c->rx_channel == chan || (c->type == STREAM_EXT && c->rx_channel == chan)) {
                                 c->auth_admin = true;
                             }
                         }

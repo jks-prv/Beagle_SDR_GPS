@@ -431,13 +431,27 @@ static void subtract_signal2(float *id, float *qd, long np,
 static int mettab[2][256];
 
 // catch changes to reporter call/grid from admin page WSPR config (also called during initialization)
-bool wspr_update_vars_from_config()
+bool wspr_update_vars_from_config(bool called_at_init)
 {
+    int i, n;
     bool update_cfg = false;
     char *s;
     
     cfg_default_object("WSPR", "{}", &update_cfg);
-    cfg_default_int("WSPR.autorun", 0, &update_cfg);
+    
+    if (called_at_init) {
+    
+        // make sure WSPR.autorun holds count of autorun processes
+        int num_autorun = 0;
+        for (i = 0; i < MAX_RX_CHANS; i++) {
+            n = cfg_default_int(stprintf("WSPR.autorun%d", i), 0, &update_cfg);
+            if (n) num_autorun++;
+        }
+        cfg_set_int("WSPR.autorun", num_autorun);
+        update_cfg = true;
+    } else {
+        cfg_default_int("WSPR.autorun", 0, &update_cfg);
+    }
 
     // Changing reporter call on admin page requires restart. This is because of
     // conditional behavior at startup, e.g. uploads enabled because valid call is now present
@@ -459,6 +473,7 @@ bool wspr_update_vars_from_config()
 
     wspr_c.GPS_update_grid = cfg_default_bool("WSPR.GPS_update_grid", false, &update_cfg);
     wspr_c.syslog = cfg_default_bool("WSPR.syslog", false, &update_cfg);
+    wspr_c.spot_log = cfg_default_bool("WSPR.spot_log", false, &update_cfg);
 
 	//printf("wspr_update_vars_from_config: rcall <%s> wspr_c.rgrid=<%s> wspr_c.GPS_update_grid=%d\n", wspr_c.rcall, wspr_c.rgrid, wspr_c.GPS_update_grid);
     return update_cfg;
@@ -474,7 +489,7 @@ void wspr_init()
         mettab[1][i] = round(10 * (metric_tables[2][SPS-1-i] - bias));
     }
     
-    wspr_update_vars_from_config();
+    wspr_update_vars_from_config(false);
 }
 
 #ifdef WSPR_SHMEM_DISABLE
@@ -978,7 +993,7 @@ void wspr_decode(int rx_chan)
                     strcpy(dp->call, w->callsign);
                     strcpy(dp->grid, w->grid);
                     dp->dBm = w->dBm;
-                    sprintf(dp->pwr, "%2d", w->dBm);
+                    sprintf(dp->pwr, "%d", w->dBm);
                     dp->freq = f1;
                     dp->hour = hour;
                     dp->min = min;

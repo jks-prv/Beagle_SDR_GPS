@@ -856,7 +856,8 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
 {
     struct mg_connection *mc_fail, *mcs = NULL, *mcw = NULL, *mce = NULL;
     conn_t *csnd = NULL, *cwf, *cext;
-    int port = port_base + instance;
+    int local_port = port_base + instance * 3;
+    u64_t tstamp = timer_ms64_1970();
     bool ident_geo_sent = false;
     memset(iconn, 0, sizeof(internal_conn_t));
     
@@ -864,9 +865,10 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
         mcs = &iconn->snd_mc;
         mc_fail = mcs;
         mcs->connection_param = NULL;
-        asprintf((char **) &mcs->uri, "%d/SND", port);
+        asprintf((char **) &mcs->uri, "%lld/SND", tstamp);
         kiwi_strncpy(mcs->remote_ip, "127.0.0.1", NET_ADDRSTRLEN);
-        mcs->remote_port = mcs->local_port = net.port;
+        mcs->remote_port = local_port;
+        mcs->local_port = net.port;
         csnd = rx_server_websocket(WS_INTERNAL_CONN, mcs);
         if (csnd == NULL) goto error;
         iconn->csnd = csnd;
@@ -884,9 +886,10 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
         mcw = &iconn->wf_mc;
         mc_fail = mcw;
         mcw->connection_param = NULL;
-        asprintf((char **) &mcw->uri, "%d/W/F", port);
+        asprintf((char **) &mcw->uri, "%lld/W/F", tstamp);
         kiwi_strncpy(mcw->remote_ip, "127.0.0.1", NET_ADDRSTRLEN);
-        mcw->remote_port = mcw->local_port = net.port;
+        mcw->remote_port = local_port + 1;
+        mcw->local_port = net.port;
         cwf = rx_server_websocket(WS_INTERNAL_CONN, mcw);
         if (cwf == NULL) goto error;
         iconn->cwf = cwf;
@@ -903,13 +906,14 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
     }
 
     if (ws & ICONN_WS_EXT) {
-        if (csnd == NULL) goto error2;  // i.e. ICONN_WS_SND must be used together with ICONN_WS_EXT
         mce = &iconn->ext_mc;
-        mc_fail = mcs;
+        mc_fail = mce;
+        if (csnd == NULL) goto error2;  // i.e. ICONN_WS_SND must be used together with ICONN_WS_EXT
         mce->connection_param = NULL;
-        asprintf((char **) &mce->uri, "%d/EXT", port);
+        asprintf((char **) &mce->uri, "%lld/EXT", tstamp);
         kiwi_strncpy(mce->remote_ip, "127.0.0.1", NET_ADDRSTRLEN);
-        mce->remote_port = mce->local_port = net.port;
+        mce->remote_port = local_port + 2;
+        mce->local_port = net.port;
         cext = rx_server_websocket(WS_INTERNAL_CONN, mce);
         if (cext == NULL) goto error;
         iconn->cext = cext;
