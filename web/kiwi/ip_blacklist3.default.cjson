@@ -8,6 +8,7 @@
 //
 // Updates:
 //
+//  5 aug 22 78.129.128.0/17 (128.0:255.255) rapidswitch.com (UK), seen kiwirecorder camping on 11175 kHz for many hours
 //  6 jul 22 forum: 207.148.64.0/20 (64.0:79.255) constant/vultr/choopa
 //  6 jul 22 forum: 65.49.192.0/19 (192.0:223:255) 65.49.224.0/20 (224.0:239.255) Cluster Logic Inc
 // 19 jun 22 forum: 192.248.158.0/23 constant/vultr London
@@ -74,6 +75,7 @@
     "69.251.12.0/24",
     "70.34.192.0/19",
     "70.34.240.0/20",
+    "78.129.128.0/17",
     "83.8.190.0/24",
     "92.38.0.0/16",
     "92.118.45.78/32",
