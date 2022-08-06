@@ -31,7 +31,7 @@ Boston, MA  02110-1301, USA.
 #define FW_SEL_SDR_RX3_WF3  2
 #define FW_SEL_SDR_RX14_WF0 3
 
-#define MAX_RX_CHANS    16
+#define MAX_RX_CHANS    16      // must be pow2, see coroutines.h:CTF_CHANNEL
 #define MAX_WF_CHANS    4
 #define MAX_NRX_BUFS    16      // for RXBUF_SIZE_14CH
 #define MAX_NRX_SAMPS   226     // for nch = 3

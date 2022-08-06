@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2016 - 2022 John Seamons, ZL/KF6VO
 
 #include "types.h"
 #include "kiwi.h"
@@ -357,7 +357,7 @@ void extint_setup_c2s(void *param)
 
 	// initialize extension for this connection
 	// NB: has to be a 'MSG' and not an 'EXT' due to sequencing of recv_cb setup
-    printf("EXT extint_setup_c2s SET: rx%d ext_client_init(is_locked)=%d\n", conn_ext->ext_rx_chan, is_locked);
+    printf("EXT extint_setup_c2s SET: rx%d ext_client_init(is_locked)=%d\n", conn_ext->rx_channel, is_locked);
     send_msg(conn_ext, false, "MSG version_maj=%d version_min=%d debian_ver=%d", version_maj, version_min, debian_ver);
 	send_msg(conn_ext, false, "MSG ext_client_init=%d", is_locked);
 }
@@ -370,7 +370,7 @@ void extint_c2s(void *param)
 	
 	nbuf_t *nb = NULL;
 	while (TRUE) {
-		int rx_channel, ext_rx_chan;
+		int rx_channel, ignored_rx_chan;
 		ext_t *ext = NULL;
 	
 		if (nb) web_to_app_done(conn_ext, nb);
@@ -385,38 +385,42 @@ void extint_c2s(void *param)
 				continue;
 			
 			//printf("extint_c2s: %s CONN%d(%p) RX=%d(%p) %d <%s>\n", conn_ext->ext? conn_ext->ext->name:"?", conn_ext->self_idx,
-			//    conn_ext, conn_ext->ext_rx_chan, (conn_ext->ext_rx_chan == -1)? 0:ext_users[conn_ext->ext_rx_chan].conn_ext, strlen(cmd), cmd);
+			//    conn_ext, conn_ext->rx_channel, (conn_ext->rx_channel == -1)? 0:ext_users[conn_ext->rx_channel].conn_ext, strlen(cmd), cmd);
 
 			// answer from client ext about who they are
 			// match against list of known extensions and register msg handler
 			char *client_m = NULL;
 			int first_time;
 
-			i = sscanf(cmd, "SET ext_switch_to_client=%32ms first_time=%d rx_chan=%d", &client_m, &first_time, &rx_channel);
+			i = sscanf(cmd, "SET ext_switch_to_client=%32ms first_time=%d rx_chan=%d", &client_m, &first_time, &ignored_rx_chan);
 			if (i == 3) {
 				for (i=0; i < n_exts; i++) {
 					ext = ext_list[i];
 					if (strcmp(client_m, ext->name) == 0) {
 						//printf("ext_switch_to_client: found func %p CONN-%02d(%p) for ext %s RX%d\n",
 						//    ext->receive_msgs, conn_ext->self_idx, conn_ext, client_m, rx_channel);
-                        ext_users_t *eusr = &ext_users[rx_channel];
-                        eusr->valid = TRUE;
-						eusr->ext = ext;
-						eusr->conn_ext = conn_ext;
-						conn_ext->ext_rx_chan = rx_channel;
-						conn_ext->ext = ext;
-						TaskNameS(ext->name);
-                        u4_t flags = TaskFlags();
-                        TaskSetFlags(flags | CTF_RX_CHANNEL | (conn_ext->ext_rx_chan & CTF_CHANNEL));
+						rx_channel = conn_ext->rx_channel;
+						if (rx_channel < 0 || rx_channel >= rx_chans) {
+						    printf("extint_c2s: FAIL rx_channel=%d rx_chans=%d\n", rx_channel, rx_chans);
+						    panic("extint_c2s");
+						} else {
+                            ext_users_t *eusr = &ext_users[rx_channel];
+                            eusr->valid = TRUE;
+                            eusr->ext = ext;
+                            eusr->conn_ext = conn_ext;
+                            conn_ext->ext = ext;
+                            TaskNameS(ext->name);
+                            u4_t flags = TaskFlags();
+                            TaskSetFlags(flags | CTF_RX_CHANNEL | (conn_ext->rx_channel & CTF_CHANNEL));
 
-                        // point STREAM_SOUND conn at ext_t so it has access to the ext->name after ext conn_t is gone
-                        // point rx_channel at ext_t so it has access to ext->flags for EXT_FLAGS_HEAVY checking
-                        conn_t *c = rx_channels[rx_channel].conn;
-                        if (c && c->valid && c->type == STREAM_SOUND) {
-                            c->ext = ext;
-                            rx_channels[rx_channel].ext = ext;
+                            // point STREAM_SOUND conn at ext_t so it has access to the ext->name after ext conn_t is gone
+                            // point rx_channels[].ext at ext_t so it has access to ext->flags for EXT_FLAGS_HEAVY checking
+                            conn_t *c_snd = rx_channels[rx_channel].conn;
+                            if (c_snd && c_snd->valid && c_snd->type == STREAM_SOUND) {
+                                c_snd->ext = ext;
+                                rx_channels[rx_channel].ext = ext;
+                            }
                         }
-
 						break;
 					}
 				}
@@ -424,7 +428,7 @@ void extint_c2s(void *param)
 				    printf("EXT ext_switch_to_client UNKNOWN EXT: <%s>\n", client_m);
 				    //panic("ext_switch_to_client: unknown ext");
 				} else {
-                    ext_send_msg(conn_ext->ext_rx_chan, false, "MSG EXT-STOP-FLUSH-INPUT");
+                    ext_send_msg(conn_ext->rx_channel, false, "MSG EXT-STOP-FLUSH-INPUT");
 
                     // Automatically let extension server-side know the connection has been established and
                     // our stream thread is running. Only called ONCE per client session.
@@ -438,9 +442,9 @@ void extint_c2s(void *param)
 			}
 			kiwi_ifree(client_m);
 			
-			i = sscanf(cmd, "SET ext_blur=%d", &rx_channel);   // SECURITY: why do we need to accept rx_channel from client?!?
+			i = sscanf(cmd, "SET ext_blur=%d", &ignored_rx_chan);
 			if (i == 1) {
-				extint_ext_users_init(rx_channel);
+				extint_ext_users_init(conn_ext->rx_channel);
 				continue;
 			}
 			
@@ -451,7 +455,7 @@ void extint_c2s(void *param)
 
 			i = strcmp(cmd, "SET ext_is_locked_status");
 			if (i == 0) {
-			    printf("EXT ext_is_locked_status SET: rx%d ext_client_init=%d(is_locked)\n", conn_ext->ext_rx_chan, is_locked);
+			    printf("EXT ext_is_locked_status SET: rx%d ext_client_init=%d(is_locked)\n", conn_ext->rx_channel, is_locked);
                 send_msg(conn_ext, false, "MSG version_maj=%d version_min=%d debian_ver=%d", version_maj, version_min, debian_ver);
                 send_msg(conn_ext, false, "MSG ext_client_init=%d", is_locked);
 				continue;
@@ -465,22 +469,22 @@ void extint_c2s(void *param)
 				continue;
 			}
 
-			ext_rx_chan = conn_ext->ext_rx_chan;
-			if (ext_rx_chan == -1) {
-				printf("### extint_c2s: %s CONN%d(%p) ext_rx_chan == -1?\n", conn_ext->ext? conn_ext->ext->name:"?", conn_ext->self_idx, conn_ext);
+			rx_channel = conn_ext->rx_channel;
+			if (rx_channel == -1) {
+				printf("### extint_c2s: %s CONN%d(%p) rx_channel == -1?\n", conn_ext->ext? conn_ext->ext->name:"?", conn_ext->self_idx, conn_ext);
 				continue;
 			}
-			ext = ext_users[ext_rx_chan].ext;
+			ext = ext_users[rx_channel].ext;
 			if (ext == NULL) {
-				printf("### extint_c2s: %s CONN%d(%p) ext_rx_chan %d ext NULL?\n", conn_ext->ext? conn_ext->ext->name:"?", conn_ext->self_idx, conn_ext, ext_rx_chan);
+				printf("### extint_c2s: %s CONN%d(%p) rx_channel=%d ext NULL?\n", conn_ext->ext? conn_ext->ext->name:"?", conn_ext->self_idx, conn_ext, rx_channel);
 				continue;
 			}
 			if (ext->receive_msgs) {
-				//printf("extint_c2s: %s ext->receive_msgs() %p CONN%d(%p) RX%d(%p) %d <%s>\n", conn_ext->ext? conn_ext->ext->name:"?", ext->receive_msgs, conn_ext->self_idx, conn_ext, ext_rx_chan, (ext_rx_chan == -1)? 0:ext_users[ext_rx_chan].conn_ext, strlen(cmd), cmd);
-				if (ext->receive_msgs(cmd, ext_rx_chan))
+				//printf("extint_c2s: %s ext->receive_msgs() %p CONN%d(%p) RX%d(%p) %d <%s>\n", conn_ext->ext? conn_ext->ext->name:"?", ext->receive_msgs, conn_ext->self_idx, conn_ext, rx_channel, (rx_channel == -1)? 0:ext_users[rx_channel].conn_ext, strlen(cmd), cmd);
+				if (ext->receive_msgs(cmd, rx_channel))
 					continue;
 			} else {
-				printf("### extint_c2s: %s CONN%d(%p) RX%d(%p) ext->receive_msgs == NULL?\n", conn_ext->ext? conn_ext->ext->name:"?", conn_ext->self_idx, conn_ext, ext_rx_chan, (ext_rx_chan == -1)? 0:ext_users[ext_rx_chan].conn_ext);
+				printf("### extint_c2s: %s CONN%d(%p) RX%d(%p) ext->receive_msgs == NULL?\n", conn_ext->ext? conn_ext->ext->name:"?", conn_ext->self_idx, conn_ext, rx_channel, (rx_channel == -1)? 0:ext_users[rx_channel].conn_ext);
 				continue;
 			}
 			
@@ -491,19 +495,19 @@ void extint_c2s(void *param)
 			continue;
 		}
 		
-        ext_rx_chan = conn_ext->ext_rx_chan;
-        ext = (ext_rx_chan == -1)? NULL : ext_users[ext_rx_chan].ext;
+        rx_channel = conn_ext->rx_channel;
+        ext = (rx_channel == -1)? NULL : ext_users[rx_channel].ext;
 
-		conn_ext->keep_alive = conn_ext->ext_no_keepalive? 0 : timer_sec() - conn_ext->keepalive_time;
-		bool keepalive_expired = (!conn_ext->internal_connection && conn_ext->keep_alive > KEEPALIVE_SEC);
+		conn_ext->keep_alive = (conn_ext->ext_no_keepalive || conn_ext->internal_connection)? 0 : (timer_sec() - conn_ext->keepalive_time);
+		bool keepalive_expired = (conn_ext->keep_alive > KEEPALIVE_SEC);
 		if (keepalive_expired || conn_ext->kick) {
-			//printf("EXT %s RX%d %s\n", conn_ext->kick? "KICKED" : "KEEP-ALIVE EXPIRED", ext_rx_chan, ext? ext->name : "(no ext)");
+			//printf("EXT %s RX%d %s\n", conn_ext->kick? "KICKED" : "KEEP-ALIVE EXPIRED", rx_channel, ext? ext->name : "(no ext)");
 			if (ext != NULL && ext->close_conn != NULL) {
-				ext->close_conn(ext_rx_chan);
-                //c2s_waterfall_no_sync(ext_rx_chan, false);      // NB: be certain to disable waterfall no_sync mode
+				ext->close_conn(rx_channel);
+                //c2s_waterfall_no_sync(rx_channel, false);      // NB: be certain to disable waterfall no_sync mode
 			}
-			if (ext_rx_chan != -1) {
-				extint_ext_users_init(ext_rx_chan);
+			if (rx_channel != -1) {
+				extint_ext_users_init(rx_channel);
 			}
 			rx_server_remove(conn_ext);
 			panic("shouldn't return");
@@ -511,7 +515,7 @@ void extint_c2s(void *param)
 		
 		// call periodic callback if requested
         if (ext != NULL && ext->version == EXT_NEW_VERSION && ext->poll_cb != NULL)
-            ext->poll_cb(ext_rx_chan);
+            ext->poll_cb(rx_channel);
 
 		TaskSleepReasonMsec("ext-cmd", 250);
 	}
@@ -520,7 +524,7 @@ void extint_c2s(void *param)
 void extint_shutdown_c2s(void *param)
 {
     conn_t *conn_ext = (conn_t*) param;
-    //printf("EXT rx%d extint_shutdown_c2s mc=0x%x\n", conn_ext->ext_rx_chan, conn_ext->mc);
+    //printf("EXT rx%d extint_shutdown_c2s mc=0x%x\n", conn_ext->rx_channel, conn_ext->mc);
     if (conn_ext && conn_ext->mc) {
         rx_server_websocket(WS_MODE_CLOSE, conn_ext->mc);
     }
