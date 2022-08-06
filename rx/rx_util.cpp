@@ -318,9 +318,10 @@ void update_vars_from_config(bool called_at_init)
     }
     
     #ifdef USE_SDR
-        if (wspr_update_vars_from_config()) update_cfg = true;
+        if (wspr_update_vars_from_config(called_at_init)) update_cfg = true;
 
         // fix corruption left by v1.131 dotdot bug
+        // i.e. "WSPR.autorun": N instead of "WSPR": { "autorun": N ... }"
         _cfg_int(&cfg_cfg, "WSPR.autorun", &err, CFG_OPTIONAL|CFG_NO_DOT);
         if (!err) {
             _cfg_set_int(&cfg_cfg, "WSPR.autorun", 0, CFG_REMOVE|CFG_NO_DOT, 0);

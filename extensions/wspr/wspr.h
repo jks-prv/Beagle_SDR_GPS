@@ -98,8 +98,9 @@
 	#define wspr_printf(fmt, ...)
 	#define wspr_d1printf(fmt, ...)
     #define wspr_d2printf(fmt, ...)
-	#define wspr_gprintf(fmt, ...)
 	#define wspr_dprintf(fmt, ...)
+	#define wspr_ulprintf(fmt, ...)
+	#define wspr_gprintf(fmt, ...)
 #endif
 
 #define WSPR_CHECKING
@@ -305,7 +306,7 @@ typedef struct {
     char *rcall;
     char rgrid[LEN_GRID];
 	bool GPS_update_grid;
-	bool syslog;
+	bool syslog, spot_log;
 } wspr_conf_t;
 
 extern wspr_conf_t wspr_c;
@@ -348,7 +349,7 @@ typedef struct {
 #define YIELD_EVERY_N_TIMES 64
 
 void wspr_init();
-bool wspr_update_vars_from_config();
+bool wspr_update_vars_from_config(bool called_at_init);
 void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps);
 void wspr_decode(int rx_chan);
 void wspr_send_peaks(wspr_t *w, int start, int stop);
