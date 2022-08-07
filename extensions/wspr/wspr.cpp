@@ -441,13 +441,19 @@ bool wspr_update_vars_from_config(bool called_at_init)
     
     if (called_at_init) {
     
-        // make sure WSPR.autorun holds count of autorun processes
+        // Make sure WSPR.autorun holds *correct* count of autorun processes.
+        // If Kiwi was previously configured for a larger rx_chans, and more than rx_chans worth
+        // of autoruns were enabled, then with a reduced rx_chans it is essential not to count
+        // the ones beyond the rx_chans limit. That's why "i < rx_chans" appears below and
+        // not MAX_RX_CHANS.
         int num_autorun = 0;
-        for (i = 0; i < MAX_RX_CHANS; i++) {
+        for (i = 0; i < rx_chans; i++) {
             n = cfg_default_int(stprintf("WSPR.autorun%d", i), 0, &update_cfg);
+            //printf("WSPR.autorun%d=%d\n", i, n);
             if (n) num_autorun++;
         }
         cfg_set_int("WSPR.autorun", num_autorun);
+        //printf("WSPR.autorun=%d rx_chans=%d\n", num_autorun, rx_chans);
         update_cfg = true;
     } else {
         cfg_default_int("WSPR.autorun", 0, &update_cfg);

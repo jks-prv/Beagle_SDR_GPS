@@ -2,10 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.551  Aug 7, 2022
+v1.551,552  Aug 7, 2022
     WSPR:
         Disable Kiwi public registration when all channels configured to use WSPR autorun.
-        Fixed autorun bug where no spots with power < 10 dBm were being uploaded (e.g. 22m)
+            Since this is a nonsensical configuration not allowing any public connections.
+        Fixed autorun bug where no spots with power < 10 dBm (0.01 W) were being uploaded, e.g. 22m
+            This bug effected AUTORUN spots ONLY.
+        Spots now uploaded with a version field of "1.4 Kiwi" and "1.4A Kiwi" instead of the
+            previous "1.3 Kiwi". "1.4A" are spots from autorun. This allows pre/post v1.552
+            spots to be distinguished using advanced searching on the site wspr.rocks
         Added admin/WSPR page option to log exact command used to upload autorun spots.
     
     Changes to support upcoming kiwirecorder enhancements.
