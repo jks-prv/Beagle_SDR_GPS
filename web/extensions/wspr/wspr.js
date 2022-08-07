@@ -766,7 +766,7 @@ function wspr_upload(type, s)
 	
 	kiwi_GETrequest_param(request, "dbm", dbm);
 
-	var version = "1.3 Kiwi";
+	var version = "1.4 Kiwi";
 	if (version.length <= 10) {
 		kiwi_GETrequest_param(request, "version", version);
 		kiwi_GETrequest_submit(request, { gc: kiwi_gc_wspr } );
