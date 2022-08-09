@@ -181,6 +181,7 @@ bool ip_match(const char *ip, ip_lookup_t *ips);
 char *ip_remote(struct mg_connection *mc);
 bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_ip);
 void ip_blacklist_init();
+void ip_blacklist_init_list(const char *list);
 int ip_blacklist_add_iptables(char *ip_s);
 bool check_ip_blacklist(char *remote_ip, bool log=false);
 void ip_blacklist_dump();

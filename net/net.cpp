@@ -755,8 +755,7 @@ static int ip_blacklist_add(char *ips, bool *whitelist)
     bl->cidr = cidr;
     bl->nm = nm;
     bl->whitelist = *whitelist;
-    bl->dropped = 0;
-    bl->last_dropped = 0;
+    bl->dropped = bl->last_dropped = 0;
     //printf("ip_blacklist_add[%d] %s %d.%d.%d.%d 0x%08x\n", net.ip_blacklist_len, ips, bl->a, bl->b, bl->c, bl->d, bl->nm);
     net.ip_blacklist_len++;
     
@@ -792,7 +791,7 @@ int ip_blacklist_add_iptables(char *ip_s)
     return rv;
 }
 
-static void ip_blacklist_init_list(const char *list)
+void ip_blacklist_init_list(const char *list)
 {
     const char *bl_s = admcfg_string(list, NULL, CFG_REQUIRED);
     if (bl_s == NULL) return;

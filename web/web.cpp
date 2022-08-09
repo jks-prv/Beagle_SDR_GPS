@@ -701,7 +701,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     bool bl_ufw = check_ip_blacklist(ip_unforwarded);
     bool bl_fwd = check_ip_blacklist(ip_forwarded);
     
-    #define IP_BL_TEST
+    //#define IP_BL_TEST
     #ifdef IP_BL_TEST
         bool bl_test = (mc->query_string && strstr(mc->query_string, "bl_test_jks") != NULL)? check_ip_blacklist((char *) "199.247.0.22") : false;
     #else
