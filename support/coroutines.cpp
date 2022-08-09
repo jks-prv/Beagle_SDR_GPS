@@ -702,7 +702,7 @@ static void trampoline(int signo)
 #ifdef USE_ASAN
 	//printf("TaskResume(trampoline) fake_stack=%p stack=%p %s\n", t->ctx->fake_stack, t->ctx->stack, t->name);
     #ifdef USE_ASAN2
-	    __sanitizer_finish_switch_fiber(c->fake_stack, (const void **) &(c->stack), &(c->stack_size_bytes));
+	    __sanitizer_finish_switch_fiber(c->fake_stack, (const void **) &(c->stack), (size_t *) &(c->stack_size_bytes));
 	#else
 	    __sanitizer_finish_switch_fiber(c->fake_stack);
 	#endif
@@ -1329,7 +1329,7 @@ void _NextTask(const char *where, u4_t param, u_int64_t pc)
 #ifdef USE_ASAN
 		//printf("TaskResume(NextTask) fake_stack=%p stack=%p %s\n", t->ctx->fake_stack, t->ctx->stack, t->name);
         #ifdef USE_ASAN2
-            __sanitizer_finish_switch_fiber(ct->ctx->fake_stack, (const void **) &(ct->ctx->stack), &(ct->ctx->stack_size_bytes));
+            __sanitizer_finish_switch_fiber(ct->ctx->fake_stack, (const void **) &(ct->ctx->stack), (size_t *) &(ct->ctx->stack_size_bytes));
         #else
             __sanitizer_finish_switch_fiber(ct->ctx->fake_stack);
         #endif
