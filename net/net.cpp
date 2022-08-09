@@ -755,6 +755,8 @@ static int ip_blacklist_add(char *ips, bool *whitelist)
     bl->cidr = cidr;
     bl->nm = nm;
     bl->whitelist = *whitelist;
+    bl->dropped = 0;
+    bl->last_dropped = 0;
     //printf("ip_blacklist_add[%d] %s %d.%d.%d.%d 0x%08x\n", net.ip_blacklist_len, ips, bl->a, bl->b, bl->c, bl->d, bl->nm);
     net.ip_blacklist_len++;
     
