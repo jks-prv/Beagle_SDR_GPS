@@ -473,6 +473,8 @@ void bl_GET(void *param)
                     json_string_free(&bl_json, ip_s);
                 }
             }
+
+            ip_blacklist_init_list("ip_blacklist_local");
             system("iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI");
         } else {
             lprintf("bl_GET: using STORED blacklist\n");
