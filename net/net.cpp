@@ -523,6 +523,14 @@ err:
     return 0;
 }
 
+void inet4_h2d(u4_t inet4, u1_t *ap, u1_t *bp, u1_t *cp, u1_t *dp)
+{
+    if (ap != NULL) *ap = bf(inet4, 31, 24);
+    if (bp != NULL) *bp = bf(inet4, 23, 16);
+    if (cp != NULL) *cp = bf(inet4, 15,  8);
+    if (dp != NULL) *dp = bf(inet4,  7,  0);
+}
+
 // ::ffff:a.b.c.d/96
 bool is_inet4_map_6(u1_t *a)
 {
@@ -739,7 +747,8 @@ static int ip_blacklist_add(char *ips, bool *whitelist)
     }
     
     // always add to beginning of list to match iptables insert behavior
-    memmove(&net.ip_blacklist[1], &net.ip_blacklist[0], net.ip_blacklist_len * sizeof(ip_blacklist_t));
+    if (net.ip_blacklist_len != 0)
+        memmove(&net.ip_blacklist[1], &net.ip_blacklist[0], net.ip_blacklist_len * sizeof(ip_blacklist_t));
     ip_blacklist_t *bl = &net.ip_blacklist[0];
     bl->ip = ip;
     bl->a = a; bl->b = b; bl->c = c; bl->d = d;
@@ -822,6 +831,7 @@ bool check_ip_blacklist(char *remote_ip, bool log)
             net.ip_blacklist_inuse = true;
             bl->dropped++;
             if (bl->whitelist) return false;
+            bl->last_dropped = ip;
             if (log) lprintf("IP BLACKLISTED: %s\n", remote_ip);
             return true;
         }
@@ -831,7 +841,7 @@ bool check_ip_blacklist(char *remote_ip, bool log)
 
 void ip_blacklist_dump()
 {
-    if (!net.ip_blacklist_inuse) return;
+    //if (!net.ip_blacklist_inuse) return;
 	lprintf("\n");
 	lprintf("PROXY IP BLACKLIST:\n");
 	lprintf("  dropped  ip\n");
@@ -839,8 +849,12 @@ void ip_blacklist_dump()
 	for (int i = 0; i < net.ip_blacklist_len; i++) {
 	    ip_blacklist_t *bl = &net.ip_blacklist[i];
 	    //if (bl->dropped == 0) continue;
-	    lprintf("%9d  %d.%d.%d.%d/%d%s\n", bl->dropped, bl->a, bl->b, bl->c, bl->d, bl->cidr,
-	        bl->whitelist? "  WHITELIST" : "");
+	    u1_t a, b, c, d;
+	    inet4_h2d(bl->last_dropped, &a, &b, &c, &d);
+	    lprintf("%9d  %18s %08x|%08x last=%d.%d.%d.%d|%08x %s\n",
+	        bl->dropped, stprintf("%d.%d.%d.%d/%d", bl->a, bl->b, bl->c, bl->d, bl->cidr),
+	        bl->ip, bl->nm, a, b, c, d, bl->last_dropped,
+	        bl->whitelist? " WHITELIST" : "");
 	}
 	lprintf("\n");
 }
