@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.553  Aug 10, 2022
+    Fixed some problems with the ip blacklist for proxied Kiwis.
+
 v1.551,552  Aug 7, 2022
     WSPR:
         Disable Kiwi public registration when all channels configured to use WSPR autorun.
