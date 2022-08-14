@@ -118,7 +118,7 @@ static void fetch_makefile_ctask(void *param)
         printf("UPDATE: show origin:Makefile status=0x%08x\n", status);
 	child_status_exit(status);
 
-    system("cd /root/" REPO_NAME " ; diff Makefile Makefile.1 >>/root/build.log");
+    system("cd /root/" REPO_NAME " ; diff Makefile Makefile.1 >>/root/build.log; echo ======== update check complete >>/root/build.log");
 	child_exit(EXIT_SUCCESS);
 }
 
