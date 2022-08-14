@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 553
+VERSION_MIN = 554
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -1178,6 +1178,9 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	@echo "# DANGER: CHECK FOR MINIMIZATION FAILURE"
 	@echo "# kiwi_js_load.min.js and xd-utils.min.js are okay to be in this list"
 	find . -name "*.min.js" -size -1k -ls
+	# next are for when dotmaui is down and local JShrink/Minifier is in use for *.js (ONLY)
+	find . -name "*.min.html" -exec grep -q "no minifier" "{}" \; -ls
+	find . -name "*.min.css" -exec grep -q "no minifier" "{}" \; -ls
 	@echo "############################################"
 	@echo
 

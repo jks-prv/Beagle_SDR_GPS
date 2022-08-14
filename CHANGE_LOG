@@ -2,6 +2,24 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.554  Aug 15, 2022
+    Admin page
+        Console tab: added buttons with common commands, e.g. monitor build progress, disk free,
+            check github.com reachability, ping kiwisdr.com sites.
+
+        Config tab: "Downconverter high-side injection" checkbox will be disabled if antenna switch
+            extension is in use since the switch now has per-antenna high-side injection control.
+
+        Config tab: "GPS correction of ADC clock" is now a menu instead of an on/off switch.
+            New options prevent corrections from disturbing WSPR-2 and FST4W reception.
+            On the GPS tab, the correction count color after the displayed ADC clock frequency
+            indicates if updates are currently allowed (green) or not (red).
+
+    TDoA extension:
+        Add "show all results" checkbox. If set this will cause the green markers displaying the
+        most likely lat/lon positions to accumulate across successive runs.
+        The "clear old results" button will erase all but the most recent likely position marker.
+
 v1.553  Aug 10, 2022
     Fixed some problems with the ip blacklist for proxied Kiwis.
 
