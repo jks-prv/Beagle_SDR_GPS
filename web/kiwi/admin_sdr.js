@@ -34,6 +34,15 @@ var admin_sdr = {
       qam:  { c:     0, w:  9800 }
    },
    
+   ADC_clk2_corr_s: [
+      'disabled',
+      'continuous',
+      'modulo even 2 min (WSPR-2)',
+      'modulo 5 min (FST4W-300)',
+      'modulo 15 min (FST4W-900)',
+      'modulo 30 min (FST4W-1800)'
+   ],
+   
    _last_: 0
 };
 
@@ -161,7 +170,7 @@ function config_html()
             w3_checkbox_get_param('//w3-label-inline', 'Show 1 Hz frequency resolution', 'show_1Hz', 'admin_bool_cb', true),
             w3_checkbox_get_param('w3-margin-T-8//w3-restart w3-label-inline', 'Show AGC threshold on S-meter', 'agc_thresh_smeter', 'admin_bool_cb', true),
             w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Show user geolocation info', 'show_geo', 'admin_bool_cb', true),
-            w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Downconverter high-side injection', 'spectral_inversion', 'admin_bool_cb', true)
+            w3_checkbox_get_param('id-config-spec-inv w3-margin-T-8//w3-label-inline', 'Downconverter high-side injection', 'spectral_inversion', 'config_spec_inv_cb', false)
          )
 		) +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
@@ -259,11 +268,12 @@ function config_html()
 				w3_text('w3-text-black', 'Set exact clock frequency applied. <br> Input value stored in Hz.')
 		   ),
 			w3_divs('w3-restart/w3-center w3-tspace-8',
-				w3_div('', '<b>Enable GPS correction of ADC clock?</b>'),
-            w3_switch('', 'Yes', 'No', 'ADC_clk_corr', cfg.ADC_clk_corr, 'admin_radio_YN_cb'),
+            w3_select('', 'GPS correction of ADC clock', '', 'cfg.ADC_clk2_corr', cfg.ADC_clk2_corr, admin_sdr.ADC_clk2_corr_s, 'admin_select_cb'),
 				w3_text('w3-text-black w3-center',
-				   'Set "no" to keep the Kiwi GPS from correcting for <br>' +
-				   'errors in the ADC clock (internal or external).'
+				   'Set "disabled" to keep the Kiwi GPS from correcting <br>' +
+				   'for errors in the ADC clock (internal or external). <br>' +
+				   'Other settings prevent corrections from <br>' +
+				   'disturbing WSPR and FST4W reception.'
 				)
 			)
 		);
@@ -336,6 +346,24 @@ function config_html()
 		'<hr>';
 
 	return w3_div('id-config w3-hide', s1 + s2 + s3 + s4 + s5 + s6 + s7);
+}
+
+function config_spec_inv_cb(path, val, first)
+{
+   // do nothing first time to not upset possible ant switch setting
+	//console.log('config_spec_inv_cb: path='+ path +' val='+ val +' first='+ first);
+   if (first) return;
+   admin_bool_cb(path, val, first);
+}
+
+function config_status_cb(o)
+{
+   if (o.sl && !admin.spectral_inversion_lockout) {
+      admin.spectral_inversion_lockout = true;
+      var el = w3_el('id-config-spec-inv');
+      w3_add(el, 'w3-disabled');
+      w3_attribute(el, 'title', 'overriden by antenna switch extension');
+   }
 }
 
 function config_focus()

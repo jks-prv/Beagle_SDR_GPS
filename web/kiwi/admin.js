@@ -5,11 +5,15 @@
 //		NTP status?
 
 var admin = {
+   console_open: false,
+   
    long_running: false,
    is_multi_core: false,
    reg_status: {},
    
    pie_size: 25,
+   
+   spectral_inversion_lockout: false,
    
    _last_: 0
 };
@@ -2309,7 +2313,8 @@ function gps_update_admin_cb()
 				gps.ttff? gps.ttff:'',
 			//	gps.gpstime? gps.gpstime:'',
 				gps.utc_offset? gps.utc_offset:'',
-				gps.adc_clk.toFixed(6) +' ('+ gps.adc_corr.toUnits() +')',
+				gps.adc_clk.toFixed(6) +' '+
+				w3_span('w3-round-xlarge w3-padding-LR-6 '+ (gps.is_corr? 'w3-green':'w3-red'), gps.adc_corr.toUnits()),
 				gps.lat? gps.lat:'',
 				gps.lat? gps.lon:'',
 				gps.lat? gps.alt:'',
@@ -2856,14 +2861,20 @@ function console_html()
 	w3_div('id-console w3-section w3-text-teal w3-hide',
 		w3_div('w3-container',
 		   w3_div('',
-            w3_label('w3-show-inline', 'Beagle Debian console') +
-            w3_button('w3-aqua|margin-left:10px', 'Connect', 'console_connect_cb')
+            w3_label('w3-show-inline', 'Beagle Debian console'),
+            w3_button('w3-aqua|margin-left:10px', 'Connect', 'console_connect_cb'),
+            w3_button('w3-green|margin-left:32px', 'monitor build progress', 'console_cmd_cb', 'console_input_cb|tail -n 500 -f /root/build.log'),
+            w3_button('w3-yellow|margin-left:16px', 'disk free', 'console_cmd_cb', 'console_input_cb|df .'),
+            w3_button('w3-blue|margin-left:16px', 'check github.com', 'console_cmd_cb', 'console_input_cb|git show origin:Makefile&vbar;head -n 2'),
+            w3_button('w3-blue|margin-left:16px', 'ping 1.1.1.1', 'console_cmd_cb', 'console_input_cb|ping -c3 1.1.1.1'),
+            w3_button('w3-blue|margin-left:16px', 'ping kiwisdr.com', 'console_cmd_cb', 'console_input_cb|ping -c3 kiwisdr.com'),
+            w3_button('w3-blue|margin-left:16px', 'ping forum.kiwisdr.com', 'console_cmd_cb', 'console_input_cb|ping -c3 forum.kiwisdr.com')
          ),
 			w3_div('id-console-msg w3-margin-T-8 w3-text-output w3-scroll-down w3-small w3-text-black|background-color:#a8a8a8',
 			   '<pre><code id="id-console-msgs"></code></pre>'
 			),
          w3_div('w3-margin-top',
-            w3_input('', '', 'console_input', '', 'console_input_cb|console_ctrl_cb', 'enter shell command')
+            w3_input('id-console-input', '', 'console_input', '', 'console_input_cb|console_ctrl_cb', 'enter shell command')
          ),
          w3_text('w3-text-black w3-margin-top',
             'Control characters (^C, ^D, ^\\) and empty lines may now be typed directly into shell command field.'
@@ -2883,11 +2894,31 @@ function console_input_cb(path, val)
 function console_connect_cb()
 {
 	ext_send('SET console_open');
+   admin.console_open = true;
 }
 
 function console_ctrl_cb(c)
 {
 	ext_send('SET console_ctrl='+ c);
+}
+
+function console_cmd_cb(id, cb_param)
+{
+   var delay = 1;
+   
+   if (!admin.console_open) {
+	   ext_send('SET console_open');
+      admin.console_open = true;
+      delay = 1000;
+   }
+   
+	setTimeout(function() {
+	   var a = cb_param.split('|');
+	   var cb = a[0];
+	   var cmd = a[1];
+      //console.log('console_cmd_cb: cmd='+ cmd);
+	   w3_input_force('id-console-input', cb, cmd);
+	}, delay);
 }
 
 function console_setup()
@@ -3582,7 +3613,7 @@ function admin_bool_cb(path, val, first)
 {
 	// if first time don't save, otherwise always save
 	var save = (first != undefined)? (first? false : true) : true;
-	//console.log('admin_bool_cb path='+ path +' val='+ val +' save='+ save);
+	//console.log('admin_bool_cb path='+ path +' val='+ val +' first='+ first +' save='+ save);
 	ext_set_cfg_param(path, val? true:false, save);
 }
 

@@ -239,9 +239,18 @@ void update_vars_from_config(bool called_at_init)
     kiwi_reg_lo_kHz = cfg_default_int("sdr_hu_lo_kHz", 0, &update_cfg);
     kiwi_reg_hi_kHz = cfg_default_int("sdr_hu_hi_kHz", 30000, &update_cfg);
     cfg_default_bool("index_html_params.RX_PHOTO_LEFT_MARGIN", true, &update_cfg);
+
     cfg_default_bool("ext_ADC_clk", false, &update_cfg);
     cfg_default_int("ext_ADC_freq", (int) round(ADC_CLOCK_TYP), &update_cfg);
-    cfg_default_bool("ADC_clk_corr", true, &update_cfg);
+    bool ADC_clk_corr = cfg_bool("ADC_clk_corr", &err, CFG_OPTIONAL);
+    if (!err) {     // convert from yes/no switch to multiple-entry menu
+        int ADC_clk2_corr = ADC_clk_corr? ADC_CLK_CORR_CONTINUOUS : ADC_CLK_CORR_DISABLED;
+        cfg_default_int("ADC_clk2_corr", ADC_clk2_corr, &update_cfg);
+        cfg_rem_bool("ADC_clk_corr");
+    } else {
+        cfg_default_int("ADC_clk2_corr", ADC_CLK_CORR_CONTINUOUS, &update_cfg);
+    }
+
     cfg_default_string("tdoa_id", "", &update_cfg);
     cfg_default_int("tdoa_nchans", -1, &update_cfg);
     cfg_default_int("ext_api_nchans", -1, &update_cfg);
@@ -262,7 +271,10 @@ void update_vars_from_config(bool called_at_init)
     cfg_default_int("ident_len", IDENT_LEN_MIN, &update_cfg);
     cfg_default_bool("show_geo", true, &update_cfg);
     cfg_default_bool("show_1Hz", false, &update_cfg);
-    kiwi.spectral_inversion = cfg_default_bool("spectral_inversion", false, &update_cfg);
+
+    bool want_inv = cfg_default_bool("spectral_inversion", false, &update_cfg);
+    if (called_at_init || !kiwi.spectral_inversion_lockout)
+        kiwi.spectral_inversion = want_inv;
 
     cfg_default_int("nb_algo", 0, &update_cfg);
     cfg_default_int("nb_wf", 1, &update_cfg);

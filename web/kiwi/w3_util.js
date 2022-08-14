@@ -2189,6 +2189,20 @@ function w3int_input_keyup(ev, path, cb)
 */
 }
 
+// event generated from w3_input_force()
+function w3_input_input(ev)
+{
+   var a = ev.detail.split('|');
+   var path = a[0];
+   var cb = a[1];
+	var el = w3_el(path);
+	if (el) {
+      var trace = w3_contains(el, 'w3-trace');
+      if (trace) console.log('w3_input_input path='+ path +' val='+ el.value +' cb='+ cb);
+      w3_input_change(path, cb, 'w3_input_input');
+   }
+}
+
 // 'from' arg (that is appended to w3_call() cb_a[] arg) is:
 //    'ev' if called from normal onchange event
 //    'kd' or 'ku' if 'w3-input-any-change' is specified and the "any change" criteria is met
@@ -2270,6 +2284,16 @@ function w3_input(psa, label, path, val, cb, placeholder)
 	return s;
 }
 
+
+function w3_input_force(path, cb, input)
+{
+   var el = w3_el(path);
+   if (!el) return;
+   el.addEventListener('input', w3_input_input, true);
+   el.value = input.replace('&vbar;', '|');
+   el.dispatchEvent(new CustomEvent('input', { detail: path +'|'+ cb}));
+   el.removeEventListener('input', w3_input_input, true);
+}
 /*
 function w3int_input_set_id(id)
 {

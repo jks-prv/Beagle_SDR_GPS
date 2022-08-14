@@ -69,6 +69,11 @@ var kiwi = {
    
    xdLocalStorage_ready: false,
    prefs_import_ch: -1,
+   
+   ADC_CLK_CORR_DISABLED: 0,
+   ADC_CLK_CORR_CONTINUOUS: 1,
+   
+   _last_: null
 };
 
 kiwi.modes_l.forEach(function(e,i) { kiwi.modes_u.push(e.toUpperCase()); kiwi.modes_s[e] = i});
@@ -647,9 +652,10 @@ function time_display_width()
    return 200;
 }
 
-function time_display_html(ext_name)
+function time_display_html(ext_name, top)
 {
-   return w3_div(ext_name +'-time-display|top:50px; background-color:black; position:relative;');
+   top = top || '50px';
+   return w3_div(ext_name +'-time-display|top:'+ top +'; background-color:black; position:relative;');
 }
 
 
@@ -1840,7 +1846,7 @@ function kiwi_msg(param, ws)
 				decodeURIComponent(o.d), decodeURIComponent(o.t));
 			break;
 
-		case "stats_cb":
+		case "stats_cb":     // in response to "SET STATS_UPD"
 			//console.log('stats_cb='+ param[1]);
 			var o = kiwi_JSON_parse('stats_cb', param[1]);
 			if (o) {
@@ -1868,6 +1874,7 @@ function kiwi_msg(param, ws)
 				}
 
 				admin_stats_cb(o.ad, o.au, o.ae, o.ar, o.an, o.ap, o.an2, o.ai);
+				w3_call('config_status_cb', o);
 				time_display_cb(o);
 			}
 			break;

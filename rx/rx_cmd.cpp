@@ -1693,7 +1693,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 sb = kstr_cat(sb, kstr_list_int("\"ap\":[", "%u", "],", (int *) dpump.hist, nrx_bufs));
                 sb = kstr_cat(sb, kstr_list_int("\"ai\":[", "%u", "]", (int *) dpump.in_hist, N_DPBUF));
             
-                sb = kstr_asprintf(sb, ",\"sa\":%d,\"sh\":%d", snr_all, freq_offset? -1 : snr_HF);
+                sb = kstr_asprintf(sb, ",\"sa\":%d,\"sh\":%d,\"sl\":%d", snr_all, freq_offset? -1 : snr_HF,
+                    kiwi.spectral_inversion_lockout? 1:0);
             #endif
 
             char utc_s[32], local_s[32];
