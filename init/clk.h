@@ -35,8 +35,18 @@ Boston, MA  02110-1301, USA.
 // if using an int for clk_hz make it u64_t or constant ULL to prevent overflow
 #define PPM_TO_HZ(clk_hz, ppm) ((clk_hz) * (ppm) / 1000000)
 
+enum adc_clk2_corr_e {
+    ADC_CLK_CORR_DISABLED = 0,
+    ADC_CLK_CORR_CONTINUOUS = 1,
+    ADC_CLK_CORR_EVEN_2_MIN = 2,
+    ADC_CLK_CORR_5_MIN = 3,
+    ADC_CLK_CORR_15_MIN = 4,
+    ADC_CLK_CORR_30_MIN = 5
+};
+
 typedef struct {
-    bool do_corrections;
+    int do_corrections;
+    bool is_corr;
     bool ext_ADC_clk;
     int adc_clk_corrections;        // manual and GPS corrections
     int last_adc_clk_corrections;

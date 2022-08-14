@@ -459,6 +459,16 @@ input[type=range]::-moz-range-thumb {
     margin-left: 16px
 }
 
+.w3-margin-L-20
+{
+    margin-left: 20px
+}
+
+.w3-margin-L-24
+{
+    margin-left: 24px
+}
+
 .w3-margin-L-32
 {
     margin-left: 32px
@@ -658,6 +668,12 @@ input[type=range]::-moz-range-thumb {
 {
     padding-left: 4px !important;
     padding-right: 4px !important;
+}
+
+.w3-padding-LR-6
+{
+    padding-left: 6px !important;
+    padding-right: 6px !important;
 }
 
 .w3-padding-LR-8

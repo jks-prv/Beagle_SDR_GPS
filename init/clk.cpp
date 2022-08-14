@@ -48,9 +48,9 @@ static int ns_nom;
 
 void clock_init()
 {
-    bool err;       // all CFG_OPTIONAL because don't get defaulted early enough
-    clk.do_corrections = cfg_bool("ADC_clk_corr", &err, CFG_OPTIONAL);
-    if (err) clk.do_corrections = true;
+    bool err;       // NB: all CFG_OPTIONAL because don't get defaulted early enough
+    clk.do_corrections = cfg_int("ADC_clk2_corr", &err, CFG_OPTIONAL);
+    if (err) clk.do_corrections = ADC_CLK_CORR_CONTINUOUS;
     clk.ext_ADC_clk = cfg_bool("ext_ADC_clk", &err, CFG_OPTIONAL);
     #ifdef USE_GPS
         strcpy(gps.a, "<hfz>1jqB5loF");
@@ -90,8 +90,8 @@ double adc_clock_system()
     }
 
     if (clk.adc_clk_corrections != clk.last_adc_clk_corrections) {
-        clk_printf("adc_clock_system base=%.0f man_adj=%d clk=%.0f(%d)\n",
-            clk.adc_clock_base, clk.manual_adj, new_clk, clk.adc_clk_corrections);
+        clk_printf("%-18s adc_clock_system() base=%.6lf man_adj=%d clk=%.6lf(%d)\n", "CLK",
+            clk.adc_clock_base/1e6, clk.manual_adj, new_clk/1e6, clk.adc_clk_corrections);
         clk.last_adc_clk_corrections = clk.adc_clk_corrections;
     }
 
@@ -112,12 +112,61 @@ void clock_correction(double t_rx, u64_t ticks)
     // record stats
     clk.gps_secs = t_rx;
     clk.ticks = ticks;
+    
+    if (last_ticks == 0) {
+        last_ticks = ticks;
+        last_t_rx = t_rx;
+        clk_printf("CLK INIT\n");
+        return;
+    }
 
-    if (!clk.do_corrections) {
-        clk_printf("!clk.do_corrections\n");
+    bool initial_temp_correction = (clk.adc_clk_corrections <= 5);
+
+    if (!initial_temp_correction && clk.do_corrections == ADC_CLK_CORR_DISABLED) {
+        clk.is_corr = false;
+        clk_printf("CLK CORR DISABLED\n");
         return;
     }
     
+    if (!initial_temp_correction && clk.do_corrections > ADC_CLK_CORR_CONTINUOUS) {
+        bool ok = false;
+        const char *s;
+        int min, sec;
+        utc_hour_min_sec(NULL, &min, &sec);
+        
+        switch (clk.do_corrections) {
+        
+            case ADC_CLK_CORR_EVEN_2_MIN:
+                s = "even 2 min";
+                ok = ((min & 1) && sec > 51);
+                break;
+            
+            case ADC_CLK_CORR_5_MIN:
+                s = "5 min";
+                ok = ((min % 5) == 4 && sec > 50);
+                break;
+            
+            case ADC_CLK_CORR_15_MIN:
+                s = "15 min";
+                ok = ((min % 15) == 14 && sec > 50);
+                break;
+            
+            case ADC_CLK_CORR_30_MIN:
+                s = "30 min";
+                ok = ((min % 30) == 29 && sec > 52);
+                break;
+            
+            default:
+                s = "???";
+                break;
+        }
+        
+        clk_printf("CLK %02d:%02d every %s, %s\n", min, sec, s, ok? "OK" : "skip");
+        clk.is_corr = ok;
+        if (!ok) return;
+    }
+    
+    clk.is_corr = true;
     u64_t diff_ticks = time_diff48(ticks, last_ticks);
     double gps_secs = t_rx - last_t_rx;
     double new_adc_clock = diff_ticks / gps_secs;
@@ -128,7 +177,7 @@ void clock_correction(double t_rx, u64_t ticks)
 
     last_ticks = ticks;
     last_t_rx = t_rx;
-		
+    
     // First correction allows wider window to capture temperature error.
     // Subsequent corrections use a much tighter window to remove bad GPS solution outliers.
     // Also use wider window if too many sequential solutions outside window.
@@ -142,8 +191,9 @@ void clock_correction(double t_rx, u64_t ticks)
     // limit offset to a window to help remove outliers
     if (offset < -offset_window || offset > offset_window) {
         outside_window++;
-        clk_printf("CLK BAD %d off %.0f win %.0f SYS %.6f NEW %.6f GT %6.3f ticks %08x|%08x\n", outside_window,
-            offset, offset_window, clk.adc_clock_base/1e6, new_adc_clock/1e6, gps_secs, PRINTF_U64_ARG(ticks));
+        clk_printf("CLK BAD %4d offHz %.0f winHz %.0f SYS %.6f NEW %.6f GT %6.3f ticks %08x|%08x\n",
+            outside_window, offset, offset_window,
+            clk.adc_clock_base/1e6, new_adc_clock/1e6, gps_secs, PRINTF_U64_ARG(ticks));
         return;
     }
     outside_window = 0;
@@ -168,8 +218,8 @@ void clock_correction(double t_rx, u64_t ticks)
     #ifdef CLK_PRINTF
         double diff_mma = adc_clock_mma - clk.adc_clock_base, diff_new = new_adc_clock - prev_new;
     #endif
-    clk_printf("CLK %3d win %4.0lf MMA %.6lf(%5.1f) %5.1f NEW %.6lf(%5.1f) ratio %.6f\n",
-        clk.adc_clk_corrections, offset_window,
+    clk_printf("CLK CORR %3d offHz %.0f winHz %4.0lf MMA %.6lf(%5.1f) %5.1f NEW %.6lf(%5.1f) ratio %.6f\n",
+        clk.adc_clk_corrections, offset, offset_window,
         adc_clock_mma/1e6, diff_mma, offset, new_adc_clock/1e6, diff_new, diff_new / diff_mma);
     prev_new = new_adc_clock;
 

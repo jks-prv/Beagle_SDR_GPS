@@ -45,7 +45,7 @@ Boston, MA  02110-1301, USA.
 
 typedef struct {
     bool allow_admin_conns;
-    bool spectral_inversion;
+    bool spectral_inversion, spectral_inversion_lockout;
     
     // lat/lon returned by ipinfo lookup
 	bool ipinfo_ll_valid;

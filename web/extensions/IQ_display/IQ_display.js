@@ -96,7 +96,7 @@ function iq_display_update()
       w3_el('iq_display-adc').innerHTML =
          'ADC clock: '+ (iq.adc_clock_Hz/1e6).toFixed(6) +' MHz';
 
-      var gps_correcting = (cfg.ADC_clk_corr && ext_adc_gps_clock_corr() > 3)? 1:0;
+      var gps_correcting = (cfg.ADC_clk2_corr != kiwi.ADC_CLK_CORR_DISABLED && ext_adc_gps_clock_corr() > 3)? 1:0;
       w3_innerHTML('iq_display-gps', gps_correcting? ('GPS corrections: '+ ext_adc_gps_clock_corr()) : '');
 	   w3_show_hide('id-iq-fcal', !gps_correcting);
       if (gps_correcting != iq.gps_correcting || iq.gps_correcting_initial) {

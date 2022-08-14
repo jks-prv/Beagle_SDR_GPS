@@ -6636,7 +6636,7 @@ var cal_adc_new_adj;
 function cal_adc_dialog(new_adj, clk_diff, r1k, ppm)
 {
    var s;
-   var gps_correcting = (cfg.ADC_clk_corr && ext_adc_gps_clock_corr() > 3)? 1:0;
+   var gps_correcting = (cfg.ADC_clk2_corr != kiwi.ADC_CLK_CORR_DISABLED && ext_adc_gps_clock_corr() > 3)? 1:0;
    if (gps_correcting) {
       s = w3_col_percent('/w3-valign',
             w3_div('w3-show-inline-block', 'GPS is automatically correcting ADC clock. <br> No manual calibration available.') +
