@@ -4,6 +4,7 @@ var tdoa = {
    ext_name:   'TDoA',  // NB: must match tdoa.cpp:tdoa_ext.name
    first_time: true,
    old_algorithm: false,
+   all_results: false,
    prev_ui:    false,
    spiderfied: false,
    spiderfy_deferred: false,
@@ -57,6 +58,9 @@ var tdoa = {
    // .field_idx
 
    results: [],   // indexed by menu entry
+   
+   result_refs: [],
+   result_mkrs: [],
 
    heatmap: [],   // indexed by map number
    
@@ -198,7 +202,7 @@ function tdoa_controls_setup()
    var cbox2 = 'w3-margin-left//'+ cbox;
    
 	var data_html =
-      time_display_html('tdoa') +
+      time_display_html('tdoa', '25px') +
       
       w3_div('id-tdoa-data w3-display-container|left:0px; '+ wh,
          w3_div('|'+ wh +'|id="id-tdoa-map-kiwi"' , ''),
@@ -209,12 +213,13 @@ function tdoa_controls_setup()
          )
       ) +
       
-      w3_div('id-tdoa-options w3-display-right w3-text-white w3-light-greyx|top:230px; right:0px; width:200px; height:200px',
+      w3_div('id-tdoa-options w3-display-right w3-text-white w3-light-greyx|top:200px; right:0px; width:200px; height:200px',
          w3_text('w3-text-aqua w3-bold', 'TDoA options'),
          w3_checkbox(cbox, 'Show heatmap', 'tdoa.heatmap_visible', true, 'tdoa_heatmap_visible_cb'),
          w3_checkbox(cbox, 'Show day/night', 'tdoa.day_night_visible', true, 'tdoa_day_night_visible_cb'),
          w3_checkbox(cbox, 'Show graticule', 'tdoa.graticule_visible', true, 'tdoa_graticule_visible_cb'),
-         w3_checkbox(cbox, 'Old algorithm', 'tdoa.old_algorithm', false, 'tdoa_old_algorithm_cb'),
+         w3_checkbox(cbox, 'Show all results', 'tdoa.all_results', false, 'tdoa_all_results_cb'),
+         w3_button('class-button w3-margin-L-20 w3-small w3-grey w3-momentary', 'Clear old results', 'tdoa_clear_results_cb', 1),
 
          w3_checkbox('w3-margin-T-10//'+ cbox, 'Kiwi hosts', 'tdoa.hosts_visible', true, 'tdoa_hosts_visible_cb'),
          w3_checkbox(cbox, 'Reference locations', 'tdoa.refs_visible', true, 'tdoa_refs_visible_cb'),
@@ -702,9 +707,14 @@ function tdoa_host_marker_dblclick(marker)
    tdoa_open_window(marker.kiwi_mkr_2_ref_or_host);
 }
 
-function tdoa_place_ref_marker(idx, map)
+function tdoa_place_ref_marker(idx, map, ref)
 {
-   var r = tdoa.refs[idx];
+   var r;
+   if (ref) {
+      r = ref;
+   } else {
+      r = tdoa.refs[idx];
+   }
    r.idx = idx;
    var title;
    if (r.t != '')
@@ -1027,13 +1037,17 @@ function tdoa_get_hosts_cb(hosts)
             if (a.startsWith('kml:')) {
                tdoa.kml = true;
             } else
+            if (a.startsWith('all:')) {
+               tdoa_all_results_cb('tdoa.all_results', true);
+            } else
+            if (a.startsWith('hosts:')) {
+               tdoa_hosts_visible_cb('tdoa.hosts_visible', false);
+            } else
             if (a.startsWith('old:')) {
                tdoa.old_algorithm = true;
-               w3_checkbox_set('tdoa.old_algorithm', true);
             } else
             if (a.startsWith('new:')) {
                tdoa.old_algorithm = false;
-               w3_checkbox_set('tdoa.old_algorithm', false);
             } else
             if (a.startsWith('devl:')) {
                tdoa.devl = true;
@@ -2124,11 +2138,19 @@ function tdoa_result_menu_click_cb(path, idx, first)
          }
 
          if (tdoa.response.likely_lat != undefined && tdoa.response.likely_lon != undefined) {
-            var ref = tdoa.refs[1];
+            var ref = {};
             ref.id = tdoa.response.likely_lat +', '+ tdoa.response.likely_lon;
             ref.lat = tdoa.response.likely_lat; ref.lon = tdoa.response.likely_lon;
             ref.t = 'Most likely position';
-            tdoa_place_ref_marker(1, tdoa.result_map);
+            if (!tdoa.all_results) {
+               tdoa.result_refs = [];
+            }
+            tdoa.result_refs.push(ref);
+            tdoa.result_mkrs = [];
+            tdoa.result_refs.forEach(function(ref, idx) {
+               var mkr = tdoa_place_ref_marker(idx+1000, tdoa.result_map, ref);
+               tdoa.result_mkrs.push(mkr);
+            });
          }
       } else {
          // old maps or new dt maps
@@ -2155,9 +2177,23 @@ function tdoa_result_menu_click_cb(path, idx, first)
    }
 }
 
-function tdoa_old_algorithm_cb(path, checked)
+function tdoa_all_results_cb(path, checked)
 {
-   tdoa.old_algorithm = checked;
+   tdoa.all_results = checked;
+   w3_checkbox_set(path, checked? true:false);
+}
+
+function tdoa_clear_results_cb(path, idx, first)
+{
+   if (!(+idx)) return;
+   tdoa.result_refs.forEach(function(ref, i) {
+      if (tdoa.result_refs.length <= 1) return;
+      var m = tdoa.result_mkrs.shift();
+      tdoa.result_refs.shift();
+      if (m == null) return;
+      console.log(m);
+      if (tdoa.leaflet) { m.unbindTooltip(); m.remove(); m.off(); } else m.setMap(null);
+   });
 }
 
 function tdoa_heatmap_visible_cb(path, checked)
@@ -2232,6 +2268,7 @@ function tdoa_hosts_visible_cb(path, checked, first)
    if (first) return;
 
    tdoa.show_hosts = checked;
+   w3_checkbox_set(path, checked? true:false);
    tdoa_rebuild_hosts();
 }
 
@@ -2539,6 +2576,9 @@ function TDoA_help(show)
                'You can pan and zoom the resulting maps and click submit again after making any changes. ' +
                'Or use the rerun button to get new maps without resampling. The checkboxes exclude stations during a rerun.<br><br>' +
          
+               'The <i>show all results</i> checkbox, if checked, will cause the most likely position markers to accumulate for ' +
+               'successive runs. The <i>clear old results</i> button will erase all but the most recent likely position marker.<br><br>' +
+               
                'To begin zoom into the general area of interest on the Kiwi map (note the "quick zoom" menu). ' +
                'Click on the desired blue Kiwi sampling stations. If they are not responding or have ' +
                'had no recent GPS solutions an error message will appear. ' +
@@ -2559,8 +2599,8 @@ function TDoA_help(show)
                'lat:<i>num</i> lon:<i>num</i> z|zoom:<i>num</i> (map control) <br>' +
                'List of sampling stations and/or reference station IDs. Case-insensitive and can be abbreviated ' +
                '(e.g. "dcf" matches "DCF77", "cyp2" matches "OTHR/CYP2") <br>' +
-               'submit: (start TDoA process) <br>' +
-               'Example: <i>ext=tdoa,lat:35,lon:35,z:6,cyp2,iu8cri,ur5vib,kuwait,submit:</i> <br>' +
+               'submit: (start TDoA process) &nbsp; &nbsp; all: (check "show all results" checkbox)<br>' +
+               'Example: <i>ext=tdoa,lat:35,lon:35,z:6,cyp2,iu8cri,ur5vib,kuwait,all:,submit:</i> <br>' +
                ''
             )
          );
