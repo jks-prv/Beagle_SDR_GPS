@@ -2,6 +2,33 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.555  Aug 25, 2022
+    Improvements to build process:
+        Better error messages when admin update tab "check now" or "build now" fails.
+        Similarly, better error messages in log file.
+        Console tab, new button "re-clone Beagle_SDR_GPS".
+            If the build returns the error message "Git clone damaged!" use this button to recover.
+            The latest Kiwi software will be re-cloned from github.com
+            Understand consequences before using:
+            1. The Kiwi configuration information in /root/kiwi.config will NOT be changed.
+            2. The Kiwi git clone (source files) in /root/Beagle_SDR_GPS will be completely removed
+                and re-cloned. In the unlikely event you have made custom changes they will be lost.
+                You must restart after the re-clone and let a full build occur.
+
+    iframe extension now accepts arbitrary HTML/Javascript in addition to existing URL parameter.
+    Examples (see admin extensions tab, iframe entry)
+        URL:
+            https://services.swpc.noaa.gov/images/planetary-k-index.gif
+        HTML:
+            <center>
+              <a href="https://www.hamqsl.com/solar.html"
+                 title="Click to add Solar-Terrestrial Data to your website!">
+                 <img src="https://www.hamqsl.com/solarbrief.php">
+              </a>
+            </center>
+
+    BBAI-64: Expand main memory available from 2 GB to 4 GB.
+
 v1.554  Aug 15, 2022
     Admin page
         Console tab: added buttons with common commands, e.g. monitor build progress, disk free,
