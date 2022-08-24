@@ -333,7 +333,7 @@ input[type=range]::-moz-range-thumb {
 }
 
 /* overrides w3-css with "cursor: not-allowed !important" that
-   subsequently overrides openwebrx.css ".class-button: cursor: pointer"*/
+   subsequently overrides openwebrx.css ".class-button: cursor: pointer" */
 .w3-disabled
 {
     cursor: not-allowed !important;
@@ -343,6 +343,11 @@ input[type=range]::-moz-range-thumb {
 .w3-cursor-not-allowed
 {
     cursor: not-allowed !important;
+}
+
+.w3-pointer-events-none
+{
+    pointer-events: none
 }
 
 .w3-link-color

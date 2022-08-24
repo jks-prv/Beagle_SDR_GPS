@@ -9066,7 +9066,7 @@ function panels_setup()
 		'<li> Control or option/alt click to page spectrum down and up in frequency. </li>' +
 		'<li> Adjust the "WF min" slider for best waterfall colors or use the "Auto Scale" button. </li>' +
 		"<li> Type 'h' or '?' to see the list of keyboard shortcuts. </li>" +
-		'<li> See the <a href="http://www.kiwisdr.com/quickstart/" target="_blank">Operating information</a> page' +
+		'<li> See the <a href="http://www.kiwisdr.com/quickstart/" target="_blank">Operating information</a> page ' +
 		     'and <a href="http://kiwisdr.com/docs/KiwiSDR/KiwiSDR.design.review.pdf" target="_blank">Design review document</a>. </li>' +
 		'</ul>';
 

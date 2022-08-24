@@ -266,6 +266,7 @@ static void _non_blocking_cmd_foreach(void *param)
 		        char *sp = kstr_sp(args->kstr);
 		        
 		        // remove possible padding spaces sent to flush stream
+		        // e.g. from our common.php::realtime_msg() used by tdoa.php on server
 		        char *ep = sp + strlen(sp) - 1;
 		        while (*ep == ' ' && ep != sp) ep--;
 		        *(ep+1) = '\0';
