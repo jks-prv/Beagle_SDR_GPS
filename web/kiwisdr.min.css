@@ -16,7 +16,7 @@ html{box-sizing:border-box}*,:after,:before{box-sizing:inherit}html{-ms-text-siz
 
 
 
-/* web/kiwi/w3_ext.min.css (web/kiwi/w3_ext.css = Sun Aug 14 18:38:00 2022) */
+/* web/kiwi/w3_ext.min.css (web/kiwi/w3_ext.css = Wed Aug 24 13:45:00 2022) */
 /* WARNING: no minifier for file type .css! */
 
 /* Copyright (c) 2016 John Seamons, ZL/KF6VO */
@@ -354,7 +354,7 @@ input[type=range]::-moz-range-thumb {
 }
 
 /* overrides w3-css with "cursor: not-allowed !important" that
-   subsequently overrides openwebrx.css ".class-button: cursor: pointer"*/
+   subsequently overrides openwebrx.css ".class-button: cursor: pointer" */
 .w3-disabled
 {
     cursor: not-allowed !important;
@@ -364,6 +364,11 @@ input[type=range]::-moz-range-thumb {
 .w3-cursor-not-allowed
 {
     cursor: not-allowed !important;
+}
+
+.w3-pointer-events-none
+{
+    pointer-events: none
 }
 
 .w3-link-color

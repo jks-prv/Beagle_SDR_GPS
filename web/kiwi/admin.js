@@ -983,12 +983,16 @@ var update_restart_u = { 0: 'restart server', 1: 'reboot Beagle' };
 function update_check_now_cb(id, idx)
 {
 	ext_send('SET force_check=1 force_build=0');
-	w3_el('msg-update').innerHTML = w3_icon('', 'fa-refresh fa-spin', 20);
+	w3_el('id-msg-update').innerHTML =
+	   w3_icon('', 'fa-refresh fa-spin', 24) + ' &nbsp; Checking for software update..';
 }
 
 function update_build_now_cb(id, idx)
 {
 	ext_send('SET force_check=1 force_build=1');
+	w3_el('id-msg-update').innerHTML = w3_icon('', 'fa-refresh fa-spin', 24) +
+      ' &nbsp; Monitor build progress using console tab, "monitor build progress" button.';
+
 	if (adm.update_restart == 0)
 	   w3_show_block('id-build-restart');
 	else
@@ -1339,7 +1343,7 @@ function network_use_ssl_cb(path, idx, first)
 function network_download_button_cb(id, idx, first)
 {
    if (first) return;
-   w3_innerHTML('id-ip-blacklist-status', 'updating..'+ w3_icon('w3-margin-left', 'fa-refresh fa-spin', 20));
+   w3_innerHTML('id-ip-blacklist-status', 'updating..'+ w3_icon('w3-margin-left', 'fa-refresh fa-spin', 24));
    //kiwi_ajax(network.ip_blacklist_file_SSL, 'network_download_blacklist_cb', 0, -2000);
    kiwi_ajax(network.ip_blacklist_file_SSL, 'network_download_blacklist_cb', 0, 10000);
 }
@@ -1383,7 +1387,7 @@ function network_download_blacklist_cb(bl)
          w3_innerHTML('id-ip-blacklist-status', 'download failed: could not contact kiwisdr.com or find default file');
          return;
       } else {
-         w3_innerHTML('id-ip-blacklist-status', 'download failed, using default..'+ w3_icon('w3-margin-left', 'fa-refresh fa-spin', 20));
+         w3_innerHTML('id-ip-blacklist-status', 'download failed, using default..'+ w3_icon('w3-margin-left', 'fa-refresh fa-spin', 24));
          network.show_updating = false;
       }
       
@@ -1560,7 +1564,7 @@ function network_ip_blacklist_cb(path, val)
 
    ext_send('SET network_ip_blacklist_clear');
    if (network.show_updating) {
-      w3_innerHTML('id-ip-blacklist-status', 'updating..'+ w3_icon('w3-margin-left', 'fa-refresh fa-spin', 20));
+      w3_innerHTML('id-ip-blacklist-status', 'updating..'+ w3_icon('w3-margin-left', 'fa-refresh fa-spin', 24));
    }
    
    network.seq = 0;
@@ -2863,12 +2867,24 @@ function console_html()
 		   w3_div('',
             w3_label('w3-show-inline', 'Beagle Debian console'),
             w3_button('w3-aqua|margin-left:10px', 'Connect', 'console_connect_cb'),
-            w3_button('w3-green|margin-left:32px', 'monitor build progress', 'console_cmd_cb', 'console_input_cb|tail -n 500 -f /root/build.log'),
-            w3_button('w3-yellow|margin-left:16px', 'disk free', 'console_cmd_cb', 'console_input_cb|df .'),
-            w3_button('w3-blue|margin-left:16px', 'check github.com', 'console_cmd_cb', 'console_input_cb|git show origin:Makefile&vbar;head -n 2'),
-            w3_button('w3-blue|margin-left:16px', 'ping 1.1.1.1', 'console_cmd_cb', 'console_input_cb|ping -c3 1.1.1.1'),
-            w3_button('w3-blue|margin-left:16px', 'ping kiwisdr.com', 'console_cmd_cb', 'console_input_cb|ping -c3 kiwisdr.com'),
-            w3_button('w3-blue|margin-left:16px', 'ping forum.kiwisdr.com', 'console_cmd_cb', 'console_input_cb|ping -c3 forum.kiwisdr.com')
+
+            w3_button('w3-green|margin-left:32px', 'monitor build progress', 'console_cmd_cb',
+               'console_input_cb|tail -fn 500 /root/build.log'),
+
+            w3_button('w3-yellow|margin-left:16px', 'disk free', 'console_cmd_cb',
+               'console_input_cb|df .'),
+
+            w3_button('w3-red|margin-left:16px', 're-clone Beagle_SDR_GPS', 'console_cmd_cb',
+               'console_input_cb|cd /root; rm -rf Beagle_SDR_GPS; git clone https://github.com/jks-prv/Beagle_SDR_GPS.git'),
+
+            w3_button('w3-blue|margin-left:16px', 'check github.com', 'console_cmd_cb',
+               'console_input_cb|cdp; git show origin:Makefile &vbar; head -n 2'),
+
+            w3_button('w3-blue|margin-left:16px', 'ping 1.1.1.1', 'console_cmd_cb',
+               'console_input_cb|ping -c3 1.1.1.1'),
+
+            w3_button('w3-blue|margin-left:16px', 'ping kiwisdr.com', 'console_cmd_cb',
+               'console_input_cb|ping -c3 kiwisdr.com')
          ),
 			w3_div('id-console-msg w3-margin-T-8 w3-text-output w3-scroll-down w3-small w3-text-black|background-color:#a8a8a8',
 			   '<pre><code id="id-console-msgs"></code></pre>'
