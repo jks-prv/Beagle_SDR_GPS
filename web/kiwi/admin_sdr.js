@@ -809,7 +809,8 @@ function webpage_html()
       w3_div('w3-container',
          w3_textarea_get_param('w3-input-any-change|width:100%',
             w3_div('',
-               w3_text('w3-bold w3-text-teal', 'Additional HTML/Javascript for HTML &lt;head&gt; element (e.g. Google analytics or user customization)'),
+               w3_text('w3-bold w3-text-teal w3-show-block',
+                  'Additional HTML/Javascript for HTML &lt;head&gt; element (e.g. Google analytics or user customization)'),
                w3_text('w3-text-black', 'Press enter(return) key while positioned at end of text to submit data.')
             ),
             'index_html_params.HTML_HEAD', 10, 100, 'webpage_string_cb', ''

@@ -255,16 +255,19 @@ function kiwi_load_js(js_files, cb_post, cb_pre)
 	// if the kiwi_js_load.js process never loaded anything just call the callback(s) here
 	if (!loaded_any) {
 	   if (cb_pre) {
-         console.log('DYNLOAD call pre '+ cb_pre);
+         //console.log('DYNLOAD call pre '+ cb_pre);
+         console.log('DYNLOAD call pre');
 	      w3_call(cb_pre, false);
 	   }
 	   if (cb_post) {
-         console.log('DYNLOAD call post '+ cb_post);
+         //console.log('DYNLOAD call post '+ cb_post);
+         console.log('DYNLOAD call post');
          w3_call(cb_post);
       }
 	} else {
 	   if (cb_pre) {
-         console.log('DYNLOAD call pre subsequent '+ cb_pre);
+         //console.log('DYNLOAD call pre subsequent '+ cb_pre);
+         console.log('DYNLOAD call pre subsequent');
          w3_call(cb_pre, true);
       }
       // cb_post is called from kiwi_js_load.js after module has actually loaded
@@ -1367,7 +1370,7 @@ function config_cb(rx_chans, gps_chans, serno, pub, port_ext, pvt, port_int, nm,
 	}
 }
 
-function update_cb(fs_full, pending, in_progress, rx_chans, gps_chans, vmaj, vmin, pmaj, pmin, build_date, build_time)
+function update_cb(fail_reason, pending, in_progress, rx_chans, gps_chans, vmaj, vmin, pmaj, pmin, build_date, build_time)
 {
 	config_str_update(rx_chans, gps_chans, vmaj, vmin);
 
@@ -1376,8 +1379,22 @@ function update_cb(fs_full, pending, in_progress, rx_chans, gps_chans, vmaj, vmi
 	if (msg_update) {
 		var s;
 		s = 'Installed version: v'+ vmaj +'.'+ vmin +', built '+ build_date +' '+ build_time;
-		if (fs_full) {
-			s += '<br>Cannot build, filesystem is FULL!';
+		if (fail_reason) {
+		   var r;
+		   switch (fail_reason) {
+			   case 1: r = 'Filesystem is FULL!'; break;
+			   case 2: r = 'No Internet connection? (can\'t ping 1.1.1.1)'; break;
+			   case 3: r = 'No connection to github.com?'; break;
+			   case 4: r = 'Git clone damaged!'; break;
+			   case 5: r = 'Makefile update failed -- check /root/build.log file'; break;
+			   case 6: r = 'Build failed, check /root/build.log file'; break;
+			   default: r = 'Unknown reason, code='+ fail_reason; break;
+			}
+			s += '<br>'+ r;
+
+         // remove restart/reboot banners from "build now" button
+	      w3_hide('id-build-restart');
+	      w3_hide('id-build-reboot');
 		} else
 		if (in_progress) {
 			s += '<br>Update to version v'+ + pmaj +'.'+ pmin +' in progress';

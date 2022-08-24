@@ -35,8 +35,15 @@ Boston, MA  02110-1301, USA.
 #include <unistd.h>
 #include <sys/stat.h>
 
-bool update_pending = false, update_task_running = false, update_in_progress = false, fs_full = false;
+bool update_pending = false, update_task_running = false, update_in_progress = false;
 int pending_maj = -1, pending_min = -1;
+
+enum fail_reason_e {
+    FAIL_NONE = 0,
+    FAIL_FS_FULL = 1, FAIL_NO_INET = 2, FAIL_NO_GITHUB = 3, FAIL_GIT = 4,
+    FAIL_MAKEFILE = 5, FAIL_BUILD = 6
+};
+fail_reason_e fail_reason;
 
 static void update_build_ctask(void *param)
 {
@@ -49,10 +56,10 @@ static void update_build_ctask(void *param)
         bool force_build = (bool) FROM_VOID_PARAM(param);
         if (force_build) {
             #if defined(BUILD_SHORT_MF)
-                status = system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/r*.o; make >>/root/build.log 2>&1");
+                status = system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f /root/build/obj/r*.o; make >>/root/build.log 2>&1");
                 build_normal = false;
             #elif defined(BUILD_SHORT)
-                status = system("cd /root/" REPO_NAME "; rm -f obj_O3/u*.o; make >>/root/build.log 2>&1");
+                status = system("cd /root/" REPO_NAME "; rm -f /root/build/obj_O3/u*.o; make >>/root/build.log 2>&1");
                 build_normal = false;
             #endif
             child_status_exit(status);
@@ -65,7 +72,7 @@ static void update_build_ctask(void *param)
 	    // run git directly rather than depending on the Makefile to be intact
 	    // (for the failure case when the Makefile has become zero length)
 	    char *cmd_p;
-	    asprintf(&cmd_p, "cd /root/" REPO_NAME "; echo ======== building >>/root/build.log; date >>/root/build.log; " \
+	    asprintf(&cmd_p, "cd /root/" REPO_NAME "; echo ======== building.. >>/root/build.log; date >>/root/build.log; " \
 		    "git clean -fd >>/root/build.log 2>&1; " \
 		    "git checkout . >>/root/build.log 2>&1; " \
 		);
@@ -118,7 +125,7 @@ static void fetch_makefile_ctask(void *param)
         printf("UPDATE: show origin:Makefile status=0x%08x\n", status);
 	child_status_exit(status);
 
-    system("cd /root/" REPO_NAME " ; diff Makefile Makefile.1 >>/root/build.log; echo ======== update check complete >>/root/build.log");
+    system("cd /root/" REPO_NAME " ; diff Makefile Makefile.1 >>/root/build.log; echo ======== version check complete >>/root/build.log");
 	child_exit(EXIT_SUCCESS);
 }
 
@@ -129,8 +136,10 @@ static void report_result(conn_t *conn)
 	char *date_m = kiwi_str_encode((char *) __DATE__);
 	char *time_m = kiwi_str_encode((char *) __TIME__);
 	send_msg(conn, false, "MSG update_cb="
-	    "{\"f\":%d,\"p\":%d,\"i\":%d,\"r\":%d,\"g\":%d,\"v1\":%d,\"v2\":%d,\"p1\":%d,\"p2\":%d,\"d\":\"%s\",\"t\":\"%s\"}",
-		fs_full, update_pending, update_in_progress, rx_chans, GPS_CHANS, version_maj, version_min, pending_maj, pending_min, date_m, time_m);
+	    "{\"f\":%d,\"p\":%d,\"i\":%d,\"r\":%d,\"g\":%d,"
+	    "\"v1\":%d,\"v2\":%d,\"p1\":%d,\"p2\":%d,\"d\":\"%s\",\"t\":\"%s\"}",
+		fail_reason, update_pending, update_in_progress, rx_chans, GPS_CHANS,
+		version_maj, version_min, pending_maj, pending_min, date_m, time_m);
 	kiwi_ifree(date_m);
 	kiwi_ifree(time_m);
 }
@@ -141,7 +150,7 @@ static bool ip_auto_download_oneshot = false;
 
 /*
     // task
-    update_task()
+    _update_task()
         status = child_task(fetch_makefile_ctask)
 	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
 	        error ...
@@ -165,22 +174,60 @@ static bool ip_auto_download_oneshot = false;
         return status
 */
 
-static void update_task(void *param)
+static void _update_task(void *param)
 {
 	conn_t *conn = (conn_t *) FROM_VOID_PARAM(param);
 	bool force_check = (conn && conn->update_check == FORCE_CHECK);
 	bool force_build = (conn && conn->update_check == FORCE_BUILD);
+	bool report = (force_check || force_build);
 	bool ver_changed, update_install;
+	int status;
+	fail_reason = FAIL_NONE;
 	
 	lprintf("UPDATE: checking for updates\n");
 	if (force_check) update_pending = false;    // don't let pending status override version reporting when a forced check
 	
-    #define FS_USE "df . | tail -1 | /usr/bin/tr -s ' ' | cut -d' ' -f 5 | grep '100%'"
-    int status = non_blocking_cmd_system_child("kiwi.fs_use", FS_USE, POLL_MSEC(250));
+	// NB debug mode: use of "cd /root/" REPO_NAME "; " very important here as a potential git re-clone causes
+	// the current directory of the kiwid process to be deleted! So a subsequent forced build via the
+	// update tab "build now" button would otherwise fail.
+	
+    #define FS_USE "cd /root/" REPO_NAME "; df . | tail -1 | /usr/bin/tr -s ' ' | cut -d' ' -f 5 | grep '100%'"
+    //#define FS_USE "cd /root/" REPO_NAME "; df . | tail -1 | /usr/bin/tr -s ' ' | cut -d' ' -f 5 | grep '100%' | true"
+    status = non_blocking_cmd_system_child("kiwi.ck_fs", FS_USE, POLL_MSEC(250));
     if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-        lprintf("UPDATE: Cannot build, filesystem is FULL!\n");
-        fs_full = true;
-		if (force_check) report_result(conn);
+        lprintf("UPDATE: Filesystem is FULL!\n");
+        fail_reason = FAIL_FS_FULL;
+		if (report) report_result(conn);
+		goto common_return;
+    }
+
+    #define PING_INET "cd /root/" REPO_NAME "; ping -qc2 1.1.1.1 >/dev/null 2>&1"
+    //#define PING_INET "cd /root/" REPO_NAME "; ping -qc2 192.0.2.1"     // will never answer (RFC 5737)
+    status = non_blocking_cmd_system_child("kiwi.ck_inet", PING_INET, POLL_MSEC(250));
+    if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+        lprintf("UPDATE: No Internet connection? (can't ping 1.1.1.1)\n");
+        fail_reason = FAIL_NO_INET;
+		if (report) report_result(conn);
+		goto common_return;
+    }
+
+    #define PING_GITHUB "cd /root/" REPO_NAME "; git show origin:Makefile >/dev/null 2>&1"
+    //#define PING_GITHUB "cd /root/" REPO_NAME "; git show origin:MakefileXXX"
+    status = non_blocking_cmd_system_child("kiwi.ck_ghub", PING_GITHUB, POLL_MSEC(250));
+    if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+        lprintf("UPDATE: No connection to github.com?\n");
+        fail_reason = FAIL_NO_GITHUB;
+		if (report) report_result(conn);
+		goto common_return;
+    }
+
+    #define CHECK_GIT "cd /root/" REPO_NAME "; git fetch origin >/dev/null 2>&1"
+    //#define CHECK_GIT "false"
+    status = non_blocking_cmd_system_child("kiwi.ck_git", CHECK_GIT, POLL_MSEC(250));
+    if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+        lprintf("UPDATE: Git clone damaged!\n");
+        fail_reason = FAIL_GIT;
+		if (report) report_result(conn);
 		goto common_return;
     }
 
@@ -189,9 +236,9 @@ static void update_task(void *param)
 	status = child_task("kiwi.update", fetch_makefile_ctask, POLL_MSEC(1000));
 
 	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-		lprintf("UPDATE: Makefile fetch error, no Internet access? status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",
-		    status, WIFEXITED(status), WEXITSTATUS(status));
-		if (force_check) report_result(conn);
+		lprintf("UPDATE: Makefile update failed -- check /root/build.log file\n");
+        fail_reason = FAIL_MAKEFILE;
+		if (report) report_result(conn);
 		goto common_return;
 	}
 	
@@ -240,8 +287,9 @@ static void update_task(void *param)
 		status = child_task("kiwi.build", update_build_ctask, POLL_MSEC(1000), TO_VOID_PARAM(force_build));
 		
         if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-            lprintf("UPDATE: build error, check /root/build.log file, status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",
-                status, WIFEXITED(status), WEXITSTATUS(status));
+            lprintf("UPDATE: Build failed, check /root/build.log file\n");
+            fail_reason = FAIL_BUILD;
+		    if (force_build) report_result(conn);
 		    goto common_return;
 		}
 		
@@ -309,7 +357,7 @@ void check_for_update(update_check_e type, conn_t *conn)
 
 	if ((force || (update_pending && rx_count_server_conns(EXTERNAL_ONLY) == 0)) && !update_task_running) {
 		update_task_running = true;
-		CreateTask(update_task, TO_VOID_PARAM(conn), ADMIN_PRIORITY);
+		CreateTask(_update_task, TO_VOID_PARAM(conn), ADMIN_PRIORITY);
 	}
 }
 
