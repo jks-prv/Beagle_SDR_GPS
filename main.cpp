@@ -284,6 +284,7 @@ int main(int argc, char *argv[])
     #endif
 
 	TaskInit();
+	misc_init();
     cfg_reload();
     clock_init();
 

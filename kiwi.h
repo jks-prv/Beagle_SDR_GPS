@@ -47,6 +47,8 @@ typedef struct {
     bool allow_admin_conns;
     bool spectral_inversion, spectral_inversion_lockout;
     
+    int CAT_fd, CAT_ch;
+    
     // lat/lon returned by ipinfo lookup
 	bool ipinfo_ll_valid;
 	float ipinfo_lat, ipinfo_lon;

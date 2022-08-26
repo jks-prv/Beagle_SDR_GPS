@@ -2,6 +2,22 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.556  Aug 27, 2022
+    New feature: Send current tuned frequency as CAT "FA" command to attached USB tty device.
+        Only works for serial devices at 115.2k baud due to realtime limitations
+        (i.e. otherwise Kiwi audio and waterfall get glitched). Enabled on admin page, config tab.
+        Format of sent string: "FAfffffffffff;" where "f" is 11-digit, zero padded frequency in Hz.
+    
+    New parameter returned by /status query: "clk_ext_gps=0,0" where first digit is =1 if an external
+    ADC clock is being used, =0 otherwise. Second digit reflects state of admin config setting
+    "GPS correction of ADC clock" with values: 0 = disabled, 1 = continuous, 2 = every even 2 minutes,
+    3 = every 5 minutes, 4 = every 15 minutes, 5 = every 30 minutes.
+    
+    Hopefully, a fix for the long-standing problem of the system log filling up with these strange
+    messages: "... action 'action 17' suspended, next retry is Fri Aug 26 03:17:10 2022 ..."
+    Should not disturb anyone who has already implemented a fix by having made a custom change to
+    the /etc/rsyslog.conf file.
+
 v1.555  Aug 25, 2022
     Improvements to build process:
         Better error messages when admin update tab "check now" or "build now" fails.

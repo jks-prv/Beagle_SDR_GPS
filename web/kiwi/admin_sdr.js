@@ -43,6 +43,8 @@ var admin_sdr = {
       'modulo 30 min (FST4W-1800)'
    ],
    
+   CAT_baud_s: [ 'disabled', 115200 ],
+   
    _last_: 0
 };
 
@@ -216,13 +218,20 @@ function config_html()
 					'Set to 24 MHz to reduce interference <br> on 2 meters (144-148 MHz).'
 				)
 			),
+
 			w3_divs('w3-restart/w3-center w3-tspace-8',
 				w3_select_get_param('w3-width-auto', 'Status LED brightness', '', 'led_brightness', led_brightness_i, 'admin_select_cb', 0),
 				w3_div('w3-text-black',
 					'Sets brightness of the 4 LEDs <br> that show status info.'
 				)
 			),
-			''
+
+			w3_divs('w3-restart/w3-center w3-tspace-8',
+				w3_select_get_param('w3-width-auto', 'CAT interface baud rate', '', 'CAT_baud', admin_sdr.CAT_baud_s, 'admin_select_cb', 0),
+				w3_div('w3-text-black',
+					'Attach an optional USB/serial adapter to the Kiwi <br> for CAT interface reporting of frequency tuning.'
+				)
+			)
 		);
 
    var s5 =
