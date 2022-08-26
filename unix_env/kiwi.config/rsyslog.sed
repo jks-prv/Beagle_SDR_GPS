@@ -1,0 +1,1 @@
+s@daemon\.\*;mail\.\*;\\\n\tnews\.err;\\\n\t\*\.=debug;\*\.=info;\\\n\t\*\.=notice;\*\.=warn\t|/dev/xconsole@#daemon\.\*;mail\.\*;\\\n#\tnews\.err;\\\n#\t\*\.=debug;\*\.=info;\\\n#\t\*\.=notice;\*\.=warn\t|/dev/xconsole@

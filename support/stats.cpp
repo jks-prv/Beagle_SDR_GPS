@@ -32,7 +32,14 @@ Boston, MA  02110-1301, USA.
 #include "printf.h"
 #include "non_block.h"
 #include "eeprom.h"
+#include "shmem.h"
 
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <fcntl.h>
 
 int current_nusers;
 static int last_hour = -1, last_min = -1;
@@ -228,6 +235,9 @@ static void webserver_collect_print_stats(int print)
 	spi_stats();
 }
 
+//#ifdef CAT_TASK_CHILD
+static int CAT_task_tid;
+
 static void called_every_second()
 {
 	int i;
@@ -237,9 +247,30 @@ static void called_every_second()
     rx_chan_t *rx;
 
     for (rx = rx_channels, ch = 0; rx < &rx_channels[rx_chans]; rx++, ch++) {
-        if (!rx->busy) continue;
+        if (!rx->busy) {
+            if (kiwi.CAT_ch == ch) { kiwi.CAT_ch = -1; return; }
+            continue;
+        }
 		c = rx->conn;
-		if (c == NULL || !c->valid || c->ext_api_determined) continue;
+		if (c == NULL || !c->valid) {
+            if (kiwi.CAT_ch == ch) { kiwi.CAT_ch = -1; return; }
+            continue;
+        }
+		
+        if (kiwi.CAT_fd > 0 && !c->internal_connection && (kiwi.CAT_ch < 0 || kiwi.CAT_ch == ch)) {
+            //printf("CAT_CH=%d ch=%d\n", kiwi.CAT_ch, ch);
+            if (kiwi.CAT_ch < 0) kiwi.CAT_ch = ch;      // lock to the first channel encountered
+
+            if (c->freqHz != shmem->CAT_last_freqHz) {
+                shmem->CAT_last_freqHz = c->freqHz;
+                #ifdef CAT_TASK_CHILD
+                #else
+                    TaskWakeup(CAT_task_tid);
+                #endif
+            }
+        }
+		
+		if (c->ext_api_determined) continue;
 		int served = web_served(c);
 		
 		#if 0
@@ -306,11 +337,68 @@ static void called_every_second()
 	}
 }
 
+static void CAT_write_tty(void *param)
+{
+    int CAT_fd = (int) FROM_VOID_PARAM(param);
+    bool loop = false;
+    
+    #ifdef CAT_TASK_CHILD
+        set_cpu_affinity(1);
+        loop = true;
+    #endif
+    
+    do {
+        static int last_freqHz;
+        if (last_freqHz != shmem->CAT_last_freqHz) {
+            char *s;
+            //asprintf(&s, "IF%011d     +000000 000%1d%1d00001 ;\n", shmem->CAT_last_freqHz, /* mode */ 0, /* vfo */ 0);
+            asprintf(&s, "FA%011d;\n", shmem->CAT_last_freqHz);
+            //real_printf("CAT %s", s);
+            write(CAT_fd, s, strlen(s));
+            free(s);
+            last_freqHz = shmem->CAT_last_freqHz;
+        }
+        
+        if (loop) kiwi_msleep(900);
+    } while (loop);
+}
+
+void CAT_task(void *param)
+{
+    int CAT_fd = (int) FROM_VOID_PARAM(param);
+
+    #ifdef CAT_TASK_CHILD
+        child_task("kiwi.CAT", CAT_write_tty, NO_WAIT, param);
+    #else
+        while (1) {
+            TaskSleep();
+            CAT_write_tty(TO_VOID_PARAM(CAT_fd));
+        }
+    #endif
+}
+
 void stat_task(void *param)
 {
 	u64_t stats_deadline = timer_us64() + SEC_TO_USEC(1);
 	u64_t secs = 0;
-	
+
+    bool err;
+    int baud = cfg_int("CAT_baud", &err, CFG_OPTIONAL);
+    if (!err && baud > 0) {
+        kiwi.CAT_fd = open("/dev/ttyUSB0", O_RDWR | O_NONBLOCK);
+        if (kiwi.CAT_fd >= 0) {
+            kiwi.CAT_ch = -1;
+            char *s;
+            const int baud_i[] = { 0, 115200 };
+            asprintf(&s, "stty -F /dev/ttyUSB0 %d", baud_i[baud]);
+            system(s);
+            free(s);
+            printf("CAT /dev/ttyUSB0 %d baud\n", baud_i[baud]);
+            //system("stty -a -F /dev/ttyUSB0");
+            CAT_task_tid = CreateTask(CAT_task, TO_VOID_PARAM(kiwi.CAT_fd), CAT_PRIORITY);
+        }
+    }
+
 	while (TRUE) {
 	    called_every_second();
 

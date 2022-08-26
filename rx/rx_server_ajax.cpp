@@ -609,14 +609,23 @@ fail:
 		asprintf(&sb,
 			"status=%s\n%soffline=%s\n"
 			"name=%s\nsdr_hw=KiwiSDR v%d.%d%s%s%s%s%s%s%s%s ⁣\n"
-			"op_email=%s\nbands=%.0f-%.0f\nfreq_offset=%.3f\nusers=%d\nusers_max=%d\navatar_ctime=%u\n"
+			"op_email=%s\n"
+			"bands=%.0f-%.0f\nfreq_offset=%.3f\n"
+			"users=%d\nusers_max=%d\navatar_ctime=%u\n"
 			"gps=%s\ngps_good=%d\nfixes=%d\nfixes_min=%d\nfixes_hour=%d\n"
 			"tdoa_id=%s\ntdoa_ch=%d\n"
-			"asl=%d\nloc=%s\n"
-			"sw_version=%s%d.%d\nantenna=%s\nsnr=%d,%d\nadc_ov=%u\n"
+			"asl=%d\n"
+			"loc=%s\n"
+			"sw_version=%s%d.%d\n"
+			"antenna=%s\n"
+			"snr=%d,%d\n"
+			"adc_ov=%u\n"
+			"clk_ext_gps=%d,%d\n"
 			"uptime=%d\n"
-			"gps_date=%d,%d\ndate=%s\n"
+			"gps_date=%d,%d\n"
+			"date=%s\n"
 			"ip_blacklist=%s\n",
+			
 			status, no_open_access? "auth=password\n" : "", offline? "yes":"no",
 			name, version_maj, version_min,
 
@@ -657,6 +666,7 @@ fail:
 			(s6 = cfg_string("rx_antenna", NULL, CFG_OPTIONAL)),
 			snr_all, snr_HF,
 			dpump.rx_adc_ovfl_cnt,
+			clk.ext_ADC_clk? 1:0, clk.do_corrections,
 			timer_sec(),
 			#ifdef USE_GPS
 			    gps.set_date? 1:0, gps.date_set? 1:0,

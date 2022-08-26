@@ -53,6 +53,8 @@ extern u4_t task_medium_priority;
 #define SERVICES_PRIORITY   2
 #define	MAIN_PRIORITY		2
 
+#define CAT_PRIORITY        1
+
 #define	LOWEST_PRIORITY		0
 #define	NUM_PRIORITY		(HIGHEST_PRIORITY+1)
 

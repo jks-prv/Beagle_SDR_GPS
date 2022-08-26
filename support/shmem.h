@@ -115,6 +115,7 @@ typedef struct {
 
 typedef struct {
     net_t net_shmem;
+    int CAT_last_freqHz;
 
     u4_t rv_u4_t[MAX_RX_CHANS];
     u4_t status_u4[N_SHMEM_STATUS][MAX_RX_CHANS];
