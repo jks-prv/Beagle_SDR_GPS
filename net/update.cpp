@@ -361,7 +361,10 @@ void check_for_update(update_check_e type, conn_t *conn)
 	}
 }
 
+//#define TEST_UPDATE     // enables printf()s and simulates local time entering update window
+
 static bool update_on_startup = true;
+static int 	prev_update_window = -1;
 
 // called at the top of each minute
 void schedule_update(int min)
@@ -376,31 +379,42 @@ void schedule_update(int min)
     int local_hour;
     (void) local_hour_min_sec(&local_hour);
 
-	//#define TEST_UPDATE
-	// enables printf()s so when Debian time is changed via "date -u -s hh:mm" action can be observed
 	#ifdef TEST_UPDATE
         int utc_hour;
         time_hour_min_sec(utc_time(), &utc_hour);
 	    printf("UPDATE: UTC=%02d:%02d Local=%02d:%02d update_window=[%02d:00,%02d:00]\n",
 	        utc_hour, min, local_hour, min, UPDATE_START_HOUR, UPDATE_END_HOUR);
+	    local_hour = 1;
 	#endif
 
 	bool update_window = (local_hour >= UPDATE_START_HOUR && local_hour < UPDATE_END_HOUR);
+	bool first_update_window = false;
 	
 	// don't let Kiwis hit github.com all at once!
 	if (update_window) {
 		int mins_now = min + (local_hour - UPDATE_START_HOUR) * 60;
+		int serno = serial_number;
 		
 		#ifdef TEST_UPDATE
-		    int mins_trig = serial_number % UPDATE_SPREAD_MIN;
+            #define SERNO_MIN_TRIG 1
+		    serno = SERNO_MIN_TRIG;
+		    int mins_trig = serno % UPDATE_SPREAD_MIN;
 		    int hr_trig = UPDATE_START_HOUR + mins_trig/60;
 		    int min_trig = mins_trig % 60;
-            printf("UPDATE: %02d:%02d mins_now=%d mins_trig=%d (%02d:%02d sn=%d)\n", local_hour, min,
-                mins_now, mins_trig, hr_trig, min_trig, serial_number);
+            printf("TEST_UPDATE: %02d:%02d mins_now=%d mins_trig=%d (%02d:%02d sn=%d)\n",
+                local_hour, min, mins_now, mins_trig, hr_trig, min_trig, serno);
         #endif
-        
-		update_window = update_window && (mins_now == (serial_number % UPDATE_SPREAD_MIN));
-		
+
+        update_window = update_window && (mins_now == (serno % UPDATE_SPREAD_MIN));
+
+        if (prev_update_window == -1) prev_update_window = update_window? 1:0;
+        first_update_window = ((prev_update_window == 0) && update_window);
+		#ifdef TEST_UPDATE
+            printf("TEST_UPDATE: update_window=%d prev_update_window=%d first_update_window=%d\n",
+                update_window, prev_update_window, first_update_window);
+        #endif
+        prev_update_window = update_window? 1:0;
+
 		if (update_window) {
 		    printf("TLIMIT-IP 24hr cache cleared\n");
             json_init(&cfg_ipl, (char *) "{}");     // clear 24hr ip address connect time limit cache
@@ -416,8 +430,8 @@ void schedule_update(int min)
         }
     #endif
     
-    daily_restart = update_window && !update_on_startup && (admcfg_bool("daily_restart", NULL, CFG_REQUIRED) == true);
-    ip_auto_download_check = update_window && !update_on_startup && (admcfg_bool("ip_blacklist_auto_download", NULL, CFG_REQUIRED) == true);
+    daily_restart = first_update_window && !update_on_startup && (admcfg_bool("daily_restart", NULL, CFG_REQUIRED) == true);
+    ip_auto_download_check = first_update_window && !update_on_startup && (admcfg_bool("ip_blacklist_auto_download", NULL, CFG_REQUIRED) == true);
 
     //printf("min=%d ip_auto_download_check=%d update_window=%d update_on_startup=%d auto=%d\n",
     //    timer_sec()/60, ip_auto_download_check, update_window, update_on_startup,

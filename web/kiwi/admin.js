@@ -238,7 +238,7 @@ function control_html()
             w3_switch('', 'Yes', 'No', 'adm.daily_restart', adm.daily_restart, 'admin_radio_YN_cb'),
 				w3_div('w3-text-black',
 					"Set if you're having problems with the server<br>after it has run for a period of time.<br>" +
-					"Restart occurs at the same time as updates (0200-0600 UTC)<br> and will wait until there are no connections."
+					"Restart occurs at the same time as updates (0100-0600 Local)<br> and will wait until there are no connections."
 				)
 			)
       );
