@@ -1873,6 +1873,14 @@ function isAdmin()
    return (Object.keys(adm).length != 0);
 }
 
+function kiwi_force_admin_close_cb(path, val, first)
+{
+   if (first) return;
+   ext_send('SET close_admin_force');
+   confirmation_panel_close();
+   kiwi.no_admin_conns_pend = 0;
+}
+
 
 ////////////////////////////////
 // control messages
@@ -1974,8 +1982,10 @@ function kiwi_msg(param, ws)
             //console.log('$$$$ confirmation_show_content');
             confirmation_panel_close();
             confirmation_show_content(
-               'Must close all admin connections before attempting this operation.',
-               500, 55,
+               'Must close all admin connections before attempting this operation.' +
+               w3_button('w3-small w3-padding-smaller w3-yellow w3-margin-T-8',
+                  'Close all admin connections', 'kiwi_force_admin_close_cb'),
+               500, 75,
                function() {
                   confirmation_panel_close();
                   kiwi.no_admin_conns_pend = 0;
@@ -2102,6 +2112,10 @@ function kiwi_msg(param, ws)
 			kiwi.is_local[+p[0]] = +p[1];
 			break;
 		
+		case "no_admin_reopen_retry":
+			admin.no_admin_reopen_retry = true;
+			break;
+
       /*
       // enable DRM mode button
       var el = w3_el('id-button-drm');

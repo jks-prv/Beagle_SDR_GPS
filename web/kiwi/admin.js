@@ -8,6 +8,7 @@ var admin = {
    console_open: false,
    
    long_running: false,
+   no_admin_reopen_retry: false,
    is_multi_core: false,
    reg_status: {},
    
@@ -3276,6 +3277,11 @@ function admin_close()
 {
    // don't show message if reload countdown running
    kiwi_clearTimeout(admin.keepalive_timeoout);
+   if (admin.no_admin_reopen_retry) {
+	      w3_hide('id-kiwi-msg-container');      // in case password entry panel is being shown
+         w3_show_block('id-kiwi-container');
+         admin_wait_then_reload(0, 'Server has closed connection.');
+   } else
    if (!admin.reload_rem && !admin.long_running) {
       //kiwi_show_msg('Server has closed connection.');
       //if (dbgUs) console.log('admin close'); else

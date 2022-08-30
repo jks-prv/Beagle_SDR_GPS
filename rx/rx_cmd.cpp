@@ -135,6 +135,7 @@ static str_hashes_t rx_common_cmd_hashes[] = {
     { "SET dbug_v", CMD_DEBUG_VAL },
     { "SET dbug_m", CMD_DEBUG_MSG },
     { "SET is_adm", CMD_IS_ADMIN },
+    { "SET close_", CMD_FORCE_CLOSE_ADMIN },
     { "SET get_au", CMD_GET_AUTHKEY },
     { "SET clk_ad", CMD_CLK_ADJ },
     { "SERVER DE ", CMD_SERVER_DE_CLIENT },
@@ -1099,7 +1100,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         
             //cprintf(conn, "DX_FILTER setup <%s> <%s> case=%d wild=%d grep=%d\n",
             //    conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_wild, conn->dx_filter_grep);
-            //show_conn("DX FILTER ", conn);
+            //show_conn("DX FILTER ", PRINTF_REG, conn);
             send_msg(conn, false, "MSG request_dx_update");	// get client to request updated dx list
             return true;
         }
@@ -1374,7 +1375,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     fn_flags = conn->dx_filter_case? 0 : FNM_CASEFOLD;
                     //cprintf(conn, "DX_MKR FILTERING on <%s> <%s> case=%d wild=%d grep=%d\n",
                     //    conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_wild, conn->dx_filter_grep);
-                    //show_conn("DX FILTER ", conn);
+                    //show_conn("DX FILTER ", PRINTF_REG, conn);
                 }
         
                 //if (drx->db == DB_EiBi) cprintf(conn, "EiBi BSEARCH len=%d %.2f\n", cur_len, dp->freq);
@@ -2022,6 +2023,26 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         }
 	    break;
 
+	// SECURITY: should be okay: checks for conn->auth_admin first
+    case CMD_FORCE_CLOSE_ADMIN:
+        if (strcmp(cmd, "SET close_admin_force") == 0) {
+            if (conn->auth_admin == false) {
+                cprintf(conn, "force_admin_close NO ADMIN AUTH %s\n", conn->remote_ip);
+                return true;
+            }
+            conn_t *c = conns;
+            for (i=0; i < N_CONNS; i++, c++) {
+                if (!c->valid || !(c->type == STREAM_ADMIN || c->type == STREAM_MFG))
+                    continue;
+                send_msg(c, false, "MSG no_admin_reopen_retry");
+	            show_conn("force_close_admin ", PRINTF_REG, c);
+                rx_server_remove(c);
+            }
+            return true;
+        }
+	    break;
+
+	// SECURITY: should be okay: checks for conn->auth_admin first
     case CMD_GET_AUTHKEY:
     if (strcmp(cmd, "SET get_authkey") == 0) {
         if (conn->auth_admin == false) {
@@ -2036,6 +2057,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
     }
 	    break;
 
+	// SECURITY: should be okay: checks for conn->auth_admin first
     case CMD_CLK_ADJ: {
         int clk_adj;
         n = sscanf(cmd, "SET clk_adj=%d", &clk_adj);
