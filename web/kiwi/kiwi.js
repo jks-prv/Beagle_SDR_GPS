@@ -663,7 +663,7 @@ function time_display_html(ext_name, top)
 
 
 ////////////////////////////////
-// status
+// ANSI output
 ////////////////////////////////
 
 var ansi = {
@@ -690,6 +690,8 @@ var ansi = {
                [233,235,235]
    ],
    
+   BRIGHT: 8,
+   
    // black on color unless otherwise noted
    RED:     "\u001b[97m\u001b[101m",   // white on red
    YELLOW:  "\u001b[103m",
@@ -704,16 +706,194 @@ var ansi = {
    rolling_n: 7
 };
 
-// NB: doesn't yet handle XY screen addressing so apps like nano editor can be used in admin console
+// esc[ ... m
+function kiwi_output_sgr(p)
+{
+   var result = 'SGR', snew = '';
+   var sgr, saw_reset = 0, saw_color = 0;
+   var sa = p.esc.s.substr(1).split(';');
+   var sl = sa.length;
+   //console.log('SGR '+ JSON.stringify(p.esc.s) +' sl='+ sl);
+   //console.log(sa);
+   if (p.isAltBuf) result += '('+ p.r +','+ p.c +')';
+
+   for (var ai = 0; ai < sl && !isNumber(result); ai++) {
+      sgr = (sa[ai] == '' || sa[ai] == 'm')? 0 : parseInt(sa[ai]);
+      //console.log('sgr['+ ai +']='+ sgr);
+      if (sgr == 0) {      // \e[m or \e[0m  all attributes off
+         p.sgr.fg = p.sgr.bg = null;
+         result += ', reset'; 
+         saw_reset = 1;
+      } else
+
+      if (isNaN(sgr)) {
+         result = 2;
+      } else
+
+      if (sgr == 1)  { p.sgr.bright = ansi.BRIGHT; result += ', bright'; } else
+      if (sgr == 2)  { p.sgr.bright = 0; result += ', faint'; } else
+      if (sgr == 22) { p.sgr.bright = 0; result += ', normal'; } else
+      
+      if (sgr == 7) {      // reverse video (swap fg/bg)
+         var tf = p.sgr.fg;
+         p.sgr.fg = p.sgr.bg;
+         p.sgr.bg = tf;
+         if (p.sgr.fg == null) p.sgr.fg = [255,255,255];
+         if (p.sgr.bg == null) p.sgr.bg = [0,0,0];
+         result += ', reverse video'; 
+         saw_color = 1;
+      } else
+
+      if (sgr == 27) {     // inverse off
+         p.sgr.fg = p.sgr.bg = null;
+         result += ', reverse video off'; 
+         saw_color = 1;
+      } else
+      
+      // foreground color
+      if (sgr >= 30 && sgr <= 37) {
+         //console.log('SGR='+ sgr +' bright='+ p.sgr.bright);
+         p.sgr.fg = ansi.colors[sgr-30 + p.sgr.bright];
+         result += ', fg color'; 
+         saw_color = 1;
+      } else
+
+      if (sgr >= 90 && sgr <= 97) {    // force bright
+         p.sgr.fg = ansi.colors[sgr-90 + ansi.BRIGHT];
+         result += ', fg color bright'; 
+         saw_color = 1;
+      } else
+
+      if (sgr == 39) {     // normal
+         p.sgr.fg = null;
+         result += ', fg normal'; 
+         saw_color = 1;
+      } else
+
+      // background color
+      if (sgr >= 40 && sgr <= 47) {
+         p.sgr.bg = ansi.colors[sgr-40 + p.sgr.bright];
+         result += ', bg color'; 
+         saw_color = 1;
+      } else
+
+      if (sgr >= 100 && sgr <= 107) {     // force bright
+         p.sgr.bg = ansi.colors[sgr-100 + ansi.BRIGHT];
+         result += ', bg color bright'; 
+         saw_color = 1;
+      } else
+
+      if (sgr == 49) {     // normal
+         p.sgr.bg = null;
+         result += ', bg normal'; 
+         saw_color = 1;
+      } else
+      
+      // 8 or 24-bit fg/bg
+      if (sgr == 38 || sgr == 48) {
+         //console.log('SGR-8/24 sl='+ sl);
+         var n8, r, g, b, color, ci;
+
+         if (sl == 3 && (parseInt(sa[1]) == 5) && (!isNaN(n8 = parseInt(sa[2])))) {
+            //console.log('SGR n8='+ n8);
+            ai += 2;
+            if (n8 <= 15) {      // standard colors
+               color = ansi.colors[n8];
+               if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
+               result += ', 38/48 mode color'; 
+               saw_color = 1;
+            } else
+            if (n8 <= 231) {     // 6x6x6 color cube
+               n8 -= 16;
+               r = Math.floor(n8/36); n8 -= r*36;
+               g = Math.floor(n8/6); n8 -= g*6;
+               b = n8;
+               r = Math.floor(255 * r/5);
+               g = Math.floor(255 * g/5);
+               b = Math.floor(255 * b/5);
+               color = [r,g,b];
+               if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
+               result += ', color cube'; 
+               saw_color = 1;
+            } else
+            if (n8 <= 255) {     // grayscale ramp
+               ci = 8 + (n8-232)*10;
+               //console.log('n8='+ n8 +' ci='+ ci);
+               color = [ci,ci,ci];
+               if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
+               result += ', grayscale ramp'; 
+               saw_color = 1;
+            } else
+               result = 2;
+         } else
+
+         if (sl == 5 && (parseInt(sa[1]) == 2) &&
+            (!isNaN(r = parseInt(sa[2]))) && (!isNaN(g = parseInt(sa[3]))) && (!isNaN(b = parseInt(sa[4])))) {
+               r = w3_clamp(r, 0,255);
+               g = w3_clamp(g, 0,255);
+               b = w3_clamp(b, 0,255);
+               color = [r,g,b];
+               if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
+               result += ', 24-bit color'; 
+               saw_color = 1;
+         } else
+            result = 2;
+      } else
+         result = 2;
+   }
+   
+   if (saw_reset) {  // \e[m or \e[0m
+      //console.log('SGR DONE');
+      if (p.sgr.span) {
+         snew += '</span>';
+         p.sgr.span = 0;
+      }
+   } else
+   if (saw_color) {
+      //console.log('SGR saw_color fg='+ kiwi_rgb(p.sgr.fg) +' bg='+ kiwi_rgb(p.sgr.bg));
+      //console.log(p.sgr.fg);
+      //console.log(p.sgr.bg);
+      if (p.sgr.span) snew += '</span>';
+      snew += '<span style="'+ (p.sgr.fg? ('color:'+ kiwi_rgb(p.sgr.fg) +';') :'') + (p.sgr.bg? ('background-color:'+ kiwi_rgb(p.sgr.bg) +';') :'') +'">';
+      p.sgr.span = 1;
+   } else {
+      //console.log('SGR ERROR');
+   }
+   
+   return { result: result, snew: snew, color_change: (saw_reset || saw_color) };
+}
+
 function kiwi_output_msg(id, id_scroll, p)
 {
-   var dbg = (0 && dbgUs);
+   var i, j;
+   var dbg = (1 && dbgUs);
    
 	var parent_el = w3_el(id);
 	if (!parent_el) {
 	   console.log('kiwi_output_msg NOT_FOUND id='+ id);
 	   return;
 	}
+	
+	var appendEmptyLine = function(parent_el) { return w3_create_appendElement(parent_el, 'pre', ''); };
+	var removeAllLines = function(parent_el) { while (parent_el.firstChild) { parent_el.removeChild(parent_el.firstChild); } };
+	
+	var scr_char = function(c) {
+      //if (p.traceEvery) console.log('$every '+ p.r +','+ p.c +' '+ c +'('+ ord(c) +')');
+      //var color = p.color[p.r-1][p.c-1]? p.color[p.r-1][p.c-1] : '';
+	   p.scr[p.r][p.c] = c;
+	   p.els[p.r-1].innerHTML = p.scr[p.r].join('');
+	   if (p.els[p.r-1].innerHTML == '') p.els[p.r-1].innerHTML = '&nbsp;';    // make empty lines render
+	   p.c++;
+	   if (p.c > p.cols) { p.c = 1; p.r++; if (p.r > p.rows) p.r = 1; }
+	   p.tstr += c;
+      kiwi_clearTimeout(p.rend_timeout);
+	   p.rend_timeout = setTimeout(function() {
+	      if (p.tstr != '') {
+            if (dbg) console.log('REND '+ JSON.stringify(p.tstr));
+		      p.tstr = '';
+	      }
+	   }, 500);
+	};
 
 	var s;
 	try {
@@ -725,11 +905,29 @@ function kiwi_output_msg(id, id_scroll, p)
 	}
 	
    if (!p.init) {
-      p.el = w3_create_appendElement(parent_el, 'pre', '');
+      p.el = appendEmptyLine(parent_el);
       p.esc = { s:'', state:0 };
       p.sgr = { span:0, bright:0, fg:null, bg:null };
       p.return_pending = false;
       p.inc = 1;
+      p.r = p.c = 1;
+      p.rows = 10; p.cols = 100;
+      p.scr = [];
+      p.color = [];
+      p.els = [];
+      for (i = 0; i <= p.rows; i++) {
+         p.scr[i] = [];
+         p.color[i] = [];
+         for (j = 0; j <= p.cols; j++) {
+            p.scr[i][j] = '';
+            p.color[i][j] = null;
+         }
+      }
+      p.isAltBuf = false;
+      p.alt_save = '';
+      p.test_altbuf = true;
+      p.traceEvery = false;
+      p.rend_timeout = null;
       p.init = true;
    }
 
@@ -746,14 +944,20 @@ function kiwi_output_msg(id, id_scroll, p)
       //console.log('\\r @ beginning:');
       //console.log(JSON.stringify(s));
       //console.log(JSON.stringify(p.tstr));
-      s = s.substring(1);
-      p.tstr = snew = '';
-      p.col = 0;
+      if (p.isAltBuf) {
+         //p.c = 1;    // \r
+      } else {
+         s = s.substring(1);
+         p.tstr = snew = '';
+         p.col = 0;
+      }
    }
 
-   if (dbg) console.log('kiwi_output_msg:');
-   if (dbg) console.log(JSON.stringify(p));
-   if (dbg) console.log(JSON.stringify(s));
+   if (0) {
+      if (dbg) console.log('kiwi_output_msg:');
+      if (dbg) console.log(JSON.stringify(p));
+      if (dbg) console.log(JSON.stringify(s));
+   }
    if (p.remove_returns) s = s.replace(/\r/g, '');
    if (p.inline_returns) {
       // done twice to handle case observed with "pkup":
@@ -763,245 +967,207 @@ function kiwi_output_msg(id, id_scroll, p)
       s = s.replace(/\r\n/g, '\n');
    }
    if (dbg) console.log(JSON.stringify(s));
+   if (p.test_altbuf && p.isAltBuf && s.includes('foo')) {
+      console.log('$EXIT alt buf');
+      removeAllLines(parent_el);
+      parent_el.innerHTML = p.alt_save;
+      p.isAltBuf = false;
+   }
       
-	for (var i=0; i < s.length; i++) {
+	for (i = 0; i < s.length; i++) {
 
 		var c = s.charAt(i);
-      //console.log('c='+ JSON.stringify(c));
+      //console.log(i +' c='+ JSON.stringify(c));
 
 		if (p.inline_returns && p.return_pending && c != '\r') {
-         p.tstr = snew = '';
-			p.col = 0;
-         p.return_pending = false;
+		   if (p.isAltBuf) {
+            //p.c = 1;    // \r
+		   } else {
+            p.tstr = snew = '';
+            p.col = 0;
+            p.return_pending = false;
+         }
 		}
 
-		if (c == '\f') {		// form-feed is how we clear accumulated pre elements (screen clear)
-		   while (parent_el.firstChild) {
-		      parent_el.removeChild(parent_el.firstChild);
-		   }
-         p.el = w3_create_appendElement(parent_el, 'pre', '');
-         p.tstr = snew = '';
-			p.col = 0;
+		if (c == '\f') {		// form-feed is how we clear accumulated pre elements (screen clear, pre-ANSI)
+		   if (p.isAltBuf) {
+		   } else {
+            removeAllLines(parent_el);
+            p.el = appendEmptyLine(parent_el);
+            p.tstr = snew = '';
+            p.col = 0;
+         }
 		} else
 		
-		if (p.inline_returns && c == '\r') {
-         if (dbg) console.log('\\r inline:');
-         p.return_pending = true;
+		if (!p.isAltBuf && p.inline_returns && c == '\r') {
+		   if (p.isAltBuf) {
+		   } else {
+            //if (dbg) console.log('\\r inline:');
+            p.return_pending = true;
+         }
       } else
       
 		// tab-8
 		if (c == '\t') {
-         snew += '&nbsp;';
-         p.col++;
-		   while ((p.col & 7) != 0) {
-		      snew += '&nbsp;';
-		      p.col++;
-		   }
+		   if (p.isAltBuf) {
+		   } else {
+            snew += '&nbsp;';
+            p.col++;
+            while ((p.col & 7) != 0) {
+               snew += '&nbsp;';
+               p.col++;
+            }
+         }
 		} else
+	
+	   // CSI:
+	   //    0-n 0x30-3f    0-9:;<=>?
+	   //    0-n 0x20-2f    space !"#$%&'()*+,-./
+	   //      1 0x40-7e    @ A-Z [\]^_` a-z {|}~
 		
 		// ANSI color escapes
-		if (c == '\x1b') {
+		if (c == '\x1b') {      // esc = ^[ = 0x1b = 033 = 27.
 		   p.esc.s = '';
 		   p.esc.state = 1;
+		   p.traceEvery = false;
+		   //console.log('traceEvery = false');
+		   
+		   if (p.isAltBuf && p.tstr != '') {
+		      kiwi_clearTimeout(p.rend_timeout);
+            if (dbg) console.log('REND '+ JSON.stringify(p.tstr));
+		      p.tstr = '';
+		   }
 		} else
 
 		if (p.esc.state == 1) {
-         //console.log('acc '+ JSON.stringify(c));
-		   if (c < '@' || c == '[') {
+         //console.log(i +' acc '+ JSON.stringify(c));
+		   if (c < '@' || c == '[') {    // accumulate '[' and CSI 0x20-2f, 0x30-3f chars
             p.esc.s += c;
+            //console.log('$acc '+ c +'('+ ord(c) +')');
 		   } else {
-            p.esc.s += c;
-            //console.log('process ESC '+ JSON.stringify(p.esc.s));
+            p.esc.s += c;     // single terminating CSI 0x40-7f char
+            //if (dbg) console.log('process ESC '+ JSON.stringify(p.esc.s));
 		      var first = p.esc.s.charAt(0);
 		      var second = p.esc.s.charAt(1);
+		      var last_hl = (c == 'h' || c == 'l');
+		      var enable = (c == 'h');
             var n = 0, result = 0;
+            
+            var n1 = 1, n2 = 1;
+            var t = p.esc.s.slice(1);
+            if (t.length > 1 && isNumber(+t[0])) {
+               var a = t.slice(0, t.length-1);
+               a = a.split(';');
+               n1 = +a[0];
+               n1 = n1 || 1;
+               if (a.length > 1) n2 = +a[1];
+               n2 = n2 || 1;
+            }
 		      
-		      if (first == '[') {
+		      if (first == '[') {     // esc[
 
-               // fg/bg color
-               if (c == 'm') {
-                  var sgr, saw_reset = 0, saw_color = 0;
-                  var sa = p.esc.s.substr(1).split(';');
-                  var sl = sa.length;
-                  //console.log('SGR '+ JSON.stringify(p.esc.s) +' sl='+ sl);
-                  //console.log(sa);
-         
-                  for (var ai=0; ai < sl && result == 0; ai++) {
-                     sgr = (sa[ai] == '' || sa[ai] == 'm')? 0 : parseInt(sa[ai]);
-                     //console.log('sgr['+ ai +']='+ sgr);
-                     if (sgr == 0) {   // \e[m or \e[0m
-                        p.sgr.fg = p.sgr.bg = null;
-                        saw_reset = 1;
-                     } else
-                     if (isNaN(sgr)) {
-                        result = 2;
-                     } else
-                     if (sgr == 1)  { p.sgr.bright = 8; } else
-                     if (sgr == 2)  { p.sgr.bright = 0; } else
-                     if (sgr == 22) { p.sgr.bright = 0; } else
-                     
-                     if (sgr == 7) {      // reverse video (swap fg/bg)
-                        var tf = p.sgr.fg;
-                        p.sgr.fg = p.sgr.bg;
-                        p.sgr.bg = tf;
-                        if (p.sgr.fg == null) p.sgr.fg = [255,255,255];
-                        if (p.sgr.bg == null) p.sgr.bg = [0,0,0];
-                        saw_color = 1;
-                     } else
-                     if (sgr == 27) {     // inverse off
-                        p.sgr.fg = p.sgr.bg = null;
-                        saw_color = 1;
-                     } else
-                     
-                     // foreground
-                     if (sgr >= 30 && sgr <= 37) {
-                        //console.log('SGR='+ sgr +' bright='+ p.sgr.bright);
-                        p.sgr.fg = ansi.colors[sgr-30 + p.sgr.bright];
-                        saw_color = 1;
-                     } else
-                     if (sgr >= 90 && sgr <= 97) {
-                        p.sgr.fg = ansi.colors[sgr-90 + 8];
-                        saw_color = 1;
-                     } else
-                     if (sgr == 39) {     // normal
-                        p.sgr.fg = null;
-                        saw_color = 1;
-                     } else
-      
-                     // background
-                     if (sgr >= 40 && sgr <= 47) {
-                        p.sgr.bg = ansi.colors[sgr-40 + p.sgr.bright];
-                        saw_color = 1;
-                     } else
-                     if (sgr >= 100 && sgr <= 107) {
-                        p.sgr.bg = ansi.colors[sgr-100 + 8];
-                        saw_color = 1;
-                     } else
-                     if (sgr == 49) {     // normal
-                        p.sgr.bg = null;
-                        saw_color = 1;
-                     } else
-                     
-                     // 8 or 24-bit fg/bg
-                     if (sgr == 38 || sgr == 48) {
-                        //console.log('SGR-8/24 sl='+ sl);
-                        var n8, r, g, b, color, ci;
-   
-                        if (sl == 3 && (parseInt(sa[1]) == 5) && (!isNaN(n8 = parseInt(sa[2])))) {
-                           //console.log('SGR n8='+ n8);
-                           ai += 2;
-                           if (n8 <= 15) {      // standard colors
-                              color = ansi.colors[n8];
-                              if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
-                              saw_color = 1;
-                           } else
-                           if (n8 <= 231) {     // 6x6x6 color cube
-                              n8 -= 16;
-                              r = Math.floor(n8/36); n8 -= r*36;
-                              g = Math.floor(n8/6); n8 -= g*6;
-                              b = n8;
-                              r = Math.floor(255 * r/5);
-                              g = Math.floor(255 * g/5);
-                              b = Math.floor(255 * b/5);
-                              color = [r,g,b];
-                              if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
-                              saw_color = 1;
-                           } else
-                           if (n8 <= 255) {     // grayscale ramp
-                              ci = 8 + (n8-232)*10;
-                              //console.log('n8='+ n8 +' ci='+ ci);
-                              color = [ci,ci,ci];
-                              if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
-                              saw_color = 1;
-                           } else
-                              result = 2;
-                        } else
-   
-                        if (sl == 5 && (parseInt(sa[1]) == 2) &&
-                           (!isNaN(r = parseInt(sa[2]))) && (!isNaN(g = parseInt(sa[3]))) && (!isNaN(b = parseInt(sa[4])))) {
-                              r = w3_clamp(r, 0,255);
-                              g = w3_clamp(g, 0,255);
-                              b = w3_clamp(b, 0,255);
-                              color = [r,g,b];
-                              if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
-                              saw_color = 1;
-                        } else
-                           result = 2;
-                     } else
-                        result = 2;
-                  }
-                  
-                  if (saw_reset) {  // \e[m or \e[0m
-                     //console.log('SGR DONE');
-                     if (p.sgr.span) {
-                        snew += '</span>';
-                        p.sgr.span = 0;
-                     }
-                  } else
-                  if (saw_color) {
-                     //console.log('SGR saw_color fg='+ kiwi_rgb(p.sgr.fg) +' bg='+ kiwi_rgb(p.sgr.bg));
-                     //console.log(p.sgr.fg);
-                     //console.log(p.sgr.bg);
-                     if (p.sgr.span) snew += '</span>';
-                     snew += '<span style="'+ (p.sgr.fg? ('color:'+ kiwi_rgb(p.sgr.fg) +';') :'') + (p.sgr.bg? ('background-color:'+ kiwi_rgb(p.sgr.bg) +';') :'') +'">';
-                     p.sgr.span = 1;
+               if (c == 'm') {      // esc[ ... m  fg/bg color
+                  var rv = kiwi_output_sgr(p);
+                  result = rv.result;
+                  if (p.isAltBuf) {
+	                  if (rv.color_change)
+	                     p.color[p.r][p.c] = { fg: p.sgr.fg, bg: p.sgr.bg };
                   } else {
-                     //console.log('SGR ERROR');
-                     result = 2;
+                     snew += rv.snew;
                   }
+                  p.traceEvery = true;
+                  //console.log('traceEvery = true [m');
                } else
                
-               if (c == 'K') {
-                  if (second.match(/[012]/)) n = second - '0';
-                  result = 'erase in line '+ ["#0: cur to EOL","#1: cur to BOL","#2: full line"][n];
-               } else
-               
-               // not on Wikipedia, see: docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
-               if (c == 'P') {
-                  n = second - '0';
-                  result = 'del #'+ n +' chars';
-               } else
-               
-               if (second == '?') {    // set/reset mode
-                  result = 'set/reset mode';
-                  //result = 1;
-               } else
-               
-               if (c == 'r') {      // set scrolling region (t_row;b_row)
-                  //result = 1;
-               } else
-               
-               if (c == 'l') {      // reset mode (i.e. "4l" = reset insert mode)
-                  result = 'reset mode';
-                  //result = 1;
-               } else
-		      
-               if (c == 'J') {
+               if (c == 'J') {      // erase in display
                   if (second == '0' || second == 'J') result = 'erase cur to EOS'; else
                   if (second == '2' || second == '3') result = 'erase full screen'; else
                   if (second == '1') result = 'erase BOS to cur'; else
                      result = 2;
                } else
                
-               if (c == 'H') {
-                  result = 'move row,col';
+               if (c == 'K') {      // erase in line
+                  if (second.match(/[012]/)) n = second - '0';
+                  result = 'erase in line '+ ["#0: cur to EOL","#1: cur to BOL","#2: full line"][n];
+               } else
+               
+               if (c == 'H') {      // cursor position
+                  result = 'move '+ n1 +','+ n2;
+                  p.r = n1; p.c = n2;
                } else
 		      
-               if (c == 'd') {
-                  result = 'move row';
+               if (c == 'd') {      // vertical line position absolute (vt100)
+                  result = 'move row '+ n1;
+                  p.r = n1; p.c = 1;
                } else
 		      
-               if (c == 'G') {
-                  result = 'move col';
+               if (c == 'G') {      // cursor horizontal absolute
+                  result = 'move col'+ n1;
+                  p.c = n1;
                } else
 		      
+               if (second == '?' && last_hl) {     // esc[? # h  esc[? # l
+                  n = parseInt(p.esc.s.substr(2));
+                  result = (enable? 'SET':'RESET') +' ';
+                  switch (n) {
+                     //case 1: result += ''; break;
+
+                     case 7: result += 'vertical autowrap'; break;   // vt100
+
+                     //case 12: result += ''; break;
+
+                     case 25: result += 'cursor visible'; break;
+
+                     case 1049:
+                        result += 'alt screen buf';
+                        if (dbg && enable && !p.isAltBuf) {
+                           //console.log('$ENTER alt buf');
+                           p.alt_save = parent_el.innerHTML;
+                           removeAllLines(parent_el);
+                           for (j = 0; j < p.rows; j++) {
+                              p.els[j] = appendEmptyLine(parent_el);
+                              p.els[j].innerHTML = '&nbsp;';      // force initial rendering
+                           }
+                           p.tstr = '';
+                           p.isAltBuf = true;
+                        } else
+                     if (!p.test_altbuf) {
+                        if (!enable && p.isAltBuf) {
+                           console.log('$EXIT alt buf');
+                           parent_el.innerHTML = p.alt_save;
+                           p.isAltBuf = false;
+                        }
+                     }
+                        break;
+
+                     default: result += '$UNKNOWN ='+ n; break;
+                  }
+               } else
+               
+               if (c == 'r') {      // set top and bottom margin (default =1; default=lines-per-screen, vt100)
+                  result = 'set margins, top='+ n1 +', bottom='+ n2;
+               } else
+               
+               // not on Wikipedia, see: vt100.net/docs/vt510-rm/chapter4.html
+               if (second == '4' && last_hl) {     // esc[4h  esc[4l
+                  result = (c == 'h')? 'INSERT mode' : 'REPLACE mode';
+               } else
+		      
+               // not on Wikipedia, see: docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
+               if (c == 'P') {
+                  n = second - '0';
+                  result = 'del #'+ n +' chars';
+               } else
+               
                {
                   result = 2;
                }
-            } else
+            } else   // esc[
 
-		      if (first == '(') {     // define char set
-               //result = 1;
+		      if (first == '(') {     // esc(  define char set
+               result = 'define char set';
+               p.traceEvery = true;
+		         //console.log('traceEvery = true (B');
 		      } else
 		      
 		      {
@@ -1009,10 +1175,10 @@ function kiwi_output_msg(id, id_scroll, p)
             }
             
             if (result === 1) {
-                  if (dbg) console.log('ESC '+ JSON.stringify(p.esc.s) +' IGNORED');
+                  if (dbg) console.log('ESC '+ JSON.stringify(p.esc.s) +' $IGNORED');
             } else
             if (result === 2) {
-                  if (dbg) console.log('ESC '+ JSON.stringify(p.esc.s) +' UNKNOWN');
+                  if (dbg) console.log('ESC '+ JSON.stringify(p.esc.s) +' $UNKNOWN');
             } else
             if (isString(result)) {
                if (dbg) console.log('ESC '+ JSON.stringify(p.esc.s) +' '+ result);
@@ -1020,7 +1186,7 @@ function kiwi_output_msg(id, id_scroll, p)
    
             p.esc.state = 0;
          }
-		} else
+		} else   // p.esc.state == 1
 		
 		// let single-byte UTF-8 go through
 		if ((c >= ' ' && c <= '\xff') || c == '\n') {
@@ -1033,18 +1199,26 @@ function kiwi_output_msg(id, id_scroll, p)
             p.col += p.inc;
 		   } else {
             if (c != '\n') {
-               snew += c;
-               p.col += p.inc;
+               if (p.isAltBuf) {
+                  scr_char(c);
+               } else {
+                  snew += c;
+                  p.col += p.inc;
+               }
             }
-            if (c == '\n' || p.col == p.ncol) {
+            if (c == '\n' || p.col == p.ncol) {    // newline or wrap
                wasScrolledDown = w3_isScrolledDown(el_scroll);
-               p.tstr += snew;
-               if (p.tstr == '') p.tstr = '&nbsp;';
-               p.el.innerHTML = p.tstr;
-               //console.log('TEXT '+ JSON.stringify(p.tstr));
-               p.tstr = snew = '';
-               p.el = w3_create_appendElement(parent_el, 'pre', '');
-               p.col = 0;
+               if (p.isAltBuf) {
+                  p.c = 1; p.r++; if (p.r > p.rows) p.r = 1;   // \n
+               } else {
+                  p.tstr += snew;
+                  if (p.tstr == '') p.tstr = '&nbsp;';
+                  p.el.innerHTML = p.tstr;
+                  if (dbg) console.log('TEXT2 '+ JSON.stringify(p.tstr));
+                  p.tstr = snew = '';
+                  p.el = appendEmptyLine(parent_el);
+                  p.col = 0;
+               }
             
                if (w3_contains(el_scroll, 'w3-scroll-down') && (!p.scroll_only_at_bottom || (p.scroll_only_at_bottom && wasScrolledDown)))
                   w3_scrollDown(el_scroll);
@@ -1060,13 +1234,21 @@ function kiwi_output_msg(id, id_scroll, p)
 	}
 
    wasScrolledDown = w3_isScrolledDown(el_scroll);
-   p.tstr += snew;
-   //console.log('TEXT '+ JSON.stringify(p.tstr));
-   p.el.innerHTML = p.tstr;
+   if (p.isAltBuf) {
+   } else {
+      p.tstr += snew;
+      if (dbg) console.log('TEXT1 '+ JSON.stringify(p.tstr));
+      p.el.innerHTML = p.tstr;
+   }
 
 	if (w3_contains(el_scroll, 'w3-scroll-down') && (!p.scroll_only_at_bottom || (p.scroll_only_at_bottom && wasScrolledDown)))
       w3_scrollDown(el_scroll);
 }
+
+
+////////////////////////////////
+// status
+////////////////////////////////
 
 function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_gps_clk_corrections)
 {
