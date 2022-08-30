@@ -272,14 +272,6 @@ bool iq_display_msgs(char *msg, int rx_chan)
         return true;
     }
 
-    // SECURITY
-    // FIXME: need a per-user PLL instead of just changing the clock offset
-    float offset = 0.0f;
-    if (sscanf(msg, "SET offset=%f", &offset) == 1) {
-        ext_adjust_clock_offset(rx_chan, offset);
-        return true;
-    }
-
     if (iqs[rx_chan])
         return iqs[rx_chan]->process_msg(msg);
 

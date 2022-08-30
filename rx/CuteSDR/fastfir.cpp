@@ -48,6 +48,7 @@
 #include "ext_int.h"
 #include "misc.h"
 #include "simd.h"
+#include "rx_sound.h"
 
 CFastFIR m_PassbandFIR[MAX_RX_CHANS];
 CFastFIR m_chan_null_FIR[MAX_RX_CHANS];
@@ -76,45 +77,12 @@ CFastFIR::CFastFIR()
 		m_CIC[i] = pow(sincf, -5) + p1*exp(p2*(f-0.5f));
 	}
 
-#if 1
-	//create Blackman-Nuttall window function for windowed sinc low pass filter design
-	for (i=0; i < CONV_FIR_SIZE; i++)
-	{
-		m_pWindowTbl[i] = (0.3635819
-			- 0.4891775*MCOS( (K_2PI*i)/(CONV_FIR_SIZE-1) )
-			+ 0.1365995*MCOS( (2.0*K_2PI*i)/(CONV_FIR_SIZE-1) )
-			- 0.0106411*MCOS( (3.0*K_2PI*i)/(CONV_FIR_SIZE-1) ) );
-		m_pFFTOverlapBuf[i].re = 0.0;
-		m_pFFTOverlapBuf[i].im = 0.0;
-	}
-#endif
-
-#if 0
-	//create Blackman-Harris window function for windowed sinc low pass filter design
-	for (i=0; i < CONV_FIR_SIZE; i++)
-	{
-		m_pWindowTbl[i] = (0.35875
-			- 0.48829*MCOS( (K_2PI*i)/(CONV_FIR_SIZE-1) )
-			+ 0.14128*MCOS( (2.0*K_2PI*i)/(CONV_FIR_SIZE-1) )
-			- 0.01168*MCOS( (3.0*K_2PI*i)/(CONV_FIR_SIZE-1) ) );
-		m_pFFTOverlapBuf[i].re = 0.0;
-		m_pFFTOverlapBuf[i].im = 0.0;
-	}
-#endif
-
-#if 0
-	//create Nuttall window function for windowed sinc low pass filter design
-	for (i=0; i < CONV_FIR_SIZE; i++)
-	{
-		m_pWindowTbl[i] = (0.355768
-			- 0.487396*MCOS( (K_2PI*i)/(CONV_FIR_SIZE-1) )
-			+ 0.144232*MCOS( (2.0*K_2PI*i)/(CONV_FIR_SIZE-1) )
-			- 0.012604*MCOS( (3.0*K_2PI*i)/(CONV_FIR_SIZE-1) ) );
-		m_pFFTOverlapBuf[i].re = 0.0;
-		m_pFFTOverlapBuf[i].im = 0.0;
-	}
-#endif
-
+    SetupWindowFunction(-1);
+    for (i=0; i < CONV_FIR_SIZE; i++) {
+        m_pFFTOverlapBuf[i].re = 0.0;
+        m_pFFTOverlapBuf[i].im = 0.0;
+    }
+    
 	m_FFT_CoefPlan = MFFTW_PLAN_DFT_1D(CONV_FFT_SIZE, (MFFTW_COMPLEX*) m_pFilterCoef, (MFFTW_COMPLEX*) m_pFilterCoef, FFTW_FORWARD, FFTW_ESTIMATE);
 	m_FFT_FwdPlan = MFFTW_PLAN_DFT_1D(CONV_FFT_SIZE, (MFFTW_COMPLEX*) m_pFFTBuf, (MFFTW_COMPLEX*) m_pFFTBuf, FFTW_FORWARD, FFTW_ESTIMATE);
 	m_FFT_RevPlan = MFFTW_PLAN_DFT_1D(CONV_FFT_SIZE, (MFFTW_COMPLEX*) m_pFFTBuf, (MFFTW_COMPLEX*) m_pFFTBuf, FFTW_BACKWARD, FFTW_ESTIMATE);
@@ -127,6 +95,53 @@ CFastFIR::CFastFIR()
 
 CFastFIR::~CFastFIR()
 {
+}
+
+// create window function for windowed sinc low pass filter design
+void CFastFIR::SetupWindowFunction(int window_func)
+{
+    int i;
+    if (window_func < 0)
+        window_func = WINF_SND_BLACKMAN_NUTTALL;
+    else
+        printf("CFastFIR::SetupWindowFunction %d\n", window_func);
+
+    for (i=0; i < CONV_FIR_SIZE; i++) {
+
+        switch (window_func) {
+
+        case WINF_SND_BLACKMAN_NUTTALL:
+            m_pWindowTbl[i] = (0.3635819
+                - 0.4891775*MCOS( (K_2PI*i)/(CONV_FIR_SIZE-1) )
+                + 0.1365995*MCOS( (2.0*K_2PI*i)/(CONV_FIR_SIZE-1) )
+                - 0.0106411*MCOS( (3.0*K_2PI*i)/(CONV_FIR_SIZE-1) ) );
+            break;
+
+        case WINF_SND_BLACKMAN_HARRIS:
+            m_pWindowTbl[i] = (0.35875
+                - 0.48829*MCOS( (K_2PI*i)/(CONV_FIR_SIZE-1) )
+                + 0.14128*MCOS( (2.0*K_2PI*i)/(CONV_FIR_SIZE-1) )
+                - 0.01168*MCOS( (3.0*K_2PI*i)/(CONV_FIR_SIZE-1) ) );
+            break;
+
+        case WINF_SND_NUTTALL:
+            m_pWindowTbl[i] = (0.355768
+                - 0.487396*MCOS( (K_2PI*i)/(CONV_FIR_SIZE-1) )
+                + 0.144232*MCOS( (2.0*K_2PI*i)/(CONV_FIR_SIZE-1) )
+                - 0.012604*MCOS( (3.0*K_2PI*i)/(CONV_FIR_SIZE-1) ) );
+            break;
+
+        case WINF_SND_HANNING:
+            m_pWindowTbl[i] = (0.5
+                - 0.5 * MCOS( (K_2PI*i)/(CONV_FIR_SIZE-1) ) );
+            break;
+    
+        case WINF_SND_HAMMING:
+            m_pWindowTbl[i] = (0.54
+                - 0.46 * MCOS( (K_2PI*i)/(CONV_FIR_SIZE-1) ) );
+            break;
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////////////////

@@ -128,6 +128,7 @@ var wf_mm = '';
 var wf_compression = 1;
 var wf_interp = 13;  // WF_DROP + WF_CIC_COMP by default
 var wf_winf = 2;     // WIN_BLACKMAN_HARRIS
+var snd_winf = 0;    // WIN_BLACKMAN_NUTTALL
 var debug_v = 0;		// a general value settable from the URI to be used during debugging
 var sb_trace = 0;
 var kiwi_gc = 1;
@@ -280,6 +281,7 @@ function kiwi_main_ready()
 	s = 'wf_comp'; if (q[s]) wf_compression = parseInt(q[s]);
 	s = 'wfi'; if (q[s]) wf_interp = parseInt(q[s]);
 	s = 'wfw'; if (q[s]) wf_winf = parseInt(q[s]);
+	s = 'sndw'; if (q[s]) snd_winf = parseInt(q[s]);
 	s = 'gen'; if (q[s]) gen_freq = q[s].parseFloatWithUnits('kM', 1e-3);
 	s = 'attn'; if (q[s]) gen_attn = Math.abs(parseInt(q[s]));
 	s = 'blen'; if (q[s]) audio_buffer_min_length_sec = parseFloat(q[s])/1000;
@@ -368,6 +370,7 @@ function kiwi_main_ready()
 
 	set_agc();
 	snd_send("SET browser="+navigator.userAgent);
+	if (snd_winf != 0) snd_send('SET window_func='+ snd_winf);
 	
 	wf_send("SERVER DE CLIENT openwebrx.js W/F");
 	wf_send("SET send_dB=1");

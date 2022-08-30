@@ -58,22 +58,6 @@ double ext_update_get_sample_rateHz(int rx_chan)
     return srate;
 }
 
-void ext_adjust_clock_offset(int rx_chan, double offset)
-{
-	if (offset > -1000.0 && offset < 1000.0)
-	    return;
-	
-    /* FIXME XXX WRONG-WRONG-WRONG
-	conn_t *c = ext_users[rx_chan].conn_ext;
-    c->adc_clock_corrected -= c->manual_offset;		// remove old offset first
-    c->manual_offset = offset;
-    c->adc_clock_corrected += c->manual_offset;
-    clk.adc_clk_corrections++;
-    c->srate = c->adc_clock_corrected / rx_decim;
-    cprintf(c, "ext_adjust_clock_offset: clk.adc_clock %.6f offset %.2f\n", c->adc_clock_corrected/1e6, offset);
-    */
-}
-
 double ext_get_displayed_freq_kHz(int rx_chan)
 {
     conn_t *conn = rx_channels[rx_chan].conn;
