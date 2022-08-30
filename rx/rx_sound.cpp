@@ -117,6 +117,7 @@ static str_hashes_t snd_cmd_hashes[] = {
     { "SET seq=", CMD_SEQ },
     { "SET lms_", CMD_LMS_AUTONOTCH },
     { "SET sam_", CMD_SAM_PLL },
+    { "SET wind", CMD_SND_WINDOW_FUNC },
     { 0 }
 };
 
@@ -210,7 +211,7 @@ void c2s_sound(void *param)
 	int thresh = -90, _thresh, manGain = 0, _manGain, slope = 0, _slope, decay = 50, _decay;
 	int chan_null = 0;
 	int arate_in, arate_out, acomp;
-	int adc_clk_corrections = 0;
+	double adc_clock_corrected = 0;
 	bool spectral_inversion = kiwi.spectral_inversion;
 	
 	int tr_cmds = 0;
@@ -280,16 +281,16 @@ void c2s_sound(void *param)
 		
 		// reload freq NCO if adc clock has been corrected
 		// reload freq NCO if spectral inversion changed
-		if (freq >= 0 && (adc_clk_corrections != clk.adc_clk_corrections || spectral_inversion != kiwi.spectral_inversion)) {
-			adc_clk_corrections = clk.adc_clk_corrections;
+		if (freq >= 0 && (adc_clock_corrected != conn->adc_clock_corrected || spectral_inversion != kiwi.spectral_inversion)) {
+			adc_clock_corrected = conn->adc_clock_corrected;
             spectral_inversion = kiwi.spectral_inversion;
 
 			double freq_kHz = freq * kHz;
 			double freq_inv_kHz = ui_srate - freq_kHz;
 			f_phase = (spectral_inversion? freq_inv_kHz : freq_kHz) / conn->adc_clock_corrected;
             i_phase = (u64_t) round(f_phase * pow(2,48));
-            //cprintf(conn, "SND UPD freq %.3f kHz i_phase 0x%08x|%08x clk %.3f\n",
-            //    freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected);
+            cprintf(conn, "SND UPD freq %.3f kHz i_phase 0x%08x|%08x clk %.3f(%d)\n",
+                freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected, clk.adc_clk_corrections);
             if (do_sdr) spi_set3(CmdSetRXFreq, rx_chan, (i_phase >> 16) & 0xffffffff, i_phase & 0xffff);
 		    //cprintf(conn, "SND freq updated due to ADC clock correction\n");
 		}
@@ -489,6 +490,16 @@ void c2s_sound(void *param)
 			    break;
 			}
 			
+            case CMD_SND_WINDOW_FUNC:
+                if (sscanf(cmd, "SET window_func=%d", &n) == 1) {
+                    if (n < 0 || n >= N_SND_WINF) n = 0;
+                    snd->window_func = n;
+                    m_PassbandFIR[rx_chan].SetupWindowFunction(snd->window_func);
+                    cprintf(conn, "SND window_func=%d\n", snd->window_func);
+                    did_cmd = true;                
+                }
+                break;
+
             case CMD_COMPRESSION: {
                 int _comp;
                 n = sscanf(cmd, "SET compression=%d", &_comp);

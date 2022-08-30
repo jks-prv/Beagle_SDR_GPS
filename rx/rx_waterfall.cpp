@@ -111,7 +111,7 @@ static str_hashes_t wf_cmd_hashes[] = {
     { "SET send_", CMD_SEND_DB },
     { "SET ext_b", CMD_EXT_BLUR },
     { "SET inter", CMD_INTERPOLATE },
-    { "SET windo", CMD_WINDOW_FUNC },
+    { "SET windo", CMD_WF_WINDOW_FUNC },
     { 0 }
 };
 
@@ -139,7 +139,7 @@ void c2s_waterfall_init()
 	//#define WINDOW_GAIN		2.0
 	#define WINDOW_GAIN		1.0
 	
-	for (int winf = 0; winf < N_WINF; winf++) {
+	for (int winf = 0; winf < N_WF_WINF; winf++) {
         float *window = WF_SHMEM->window_function[winf];
 
         for (i=0; i < WF_C_NSAMPS; i++) {
@@ -147,22 +147,22 @@ void c2s_waterfall_init()
         
             switch (winf) {
         
-            case WIN_HANNING:
+            case WINF_WF_HANNING:
                 window[i] *= (0.5 - 0.5 * cos( (K_2PI*i)/(float)(WF_C_NSAMPS-1) ));
                 break;
             
-            case WIN_HAMMING:
+            case WINF_WF_HAMMING:
                 window[i] *= (0.54 - 0.46 * cos( (K_2PI*i)/(float)(WF_C_NSAMPS-1) ));
                 break;
 
-            case WIN_BLACKMAN_HARRIS:
+            case WINF_WF_BLACKMAN_HARRIS:
                 window[i] *= (0.35875
                     - 0.48829 * cos( (K_2PI*i)/(float)(WF_C_NSAMPS-1) )
                     + 0.14128 * cos( (2.0*K_2PI*i)/(float)(WF_C_NSAMPS-1) )
                     - 0.01168 * cos( (3.0*K_2PI*i)/(float)(WF_C_NSAMPS-1) ));
                 break;
 
-            case WIN_NONE: default:
+            case WINF_WF_NONE: default:
                 break;
             }
         }
@@ -254,7 +254,7 @@ void c2s_waterfall(void *param)
 	u64_t i_offset;
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
-	int adc_clk_corrections = 0;
+	double adc_clock_corrected = 0;
 	u4_t cfg_update_seq = 0;
 	u4_t dx_update_seq = 0;
 	
@@ -302,8 +302,8 @@ void c2s_waterfall(void *param)
 		
 		// reload freq NCO if adc clock has been corrected
 		// reload freq NCO if spectral inversion changed
-		if (start >= 0 && zoom != -1 && (adc_clk_corrections != clk.adc_clk_corrections || new_map)) {
-			adc_clk_corrections = clk.adc_clk_corrections;
+		if (start >= 0 && zoom != -1 && (adc_clock_corrected != conn->adc_clock_corrected || new_map)) {
+			adc_clock_corrected = conn->adc_clock_corrected;
 			off_freq = start * HZperStart;
             off_freq_inv = ((float) MAX_START(zoom) - start) * HZperStart;
 			i_offset = (u64_t) (s64_t) ((spectral_inversion? off_freq_inv : off_freq) / conn->adc_clock_corrected * pow(2,48));
@@ -560,9 +560,9 @@ void c2s_waterfall(void *param)
                 }
                 break;
 
-            case CMD_WINDOW_FUNC:
+            case CMD_WF_WINDOW_FUNC:
                 if (sscanf(cmd, "SET window_func=%d", &i) == 1) {
-                    if (i < 0 || i >= N_WINF) i = 0;
+                    if (i < 0 || i >= N_WF_WINF) i = 0;
                     wf->window_func = i;
                     cprintf(conn, "WF window_func=%d\n", wf->window_func);
                     did_cmd = true;                
@@ -1277,7 +1277,7 @@ void compute_frame(int rx_chan)
 	// zero-out the DC component in lowest bins (around -90 dBFS)
 	// otherwise when scrolling wf it will move but then not continue at the new location
 	// Blackman-Harris window DC component is a little wider for z=0
-	int bin_dc_offset = (wf->zoom == 0 && wf->window_func == WIN_BLACKMAN_HARRIS)? 4:2;    
+	int bin_dc_offset = (wf->zoom == 0 && wf->window_func == WINF_WF_BLACKMAN_HARRIS)? 4:2;    
 	for (i = 0; i < bin_dc_offset; i++) pwr[i] = 0;
 	
 	#ifdef SHOW_MAX_MIN_PWR

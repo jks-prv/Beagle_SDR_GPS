@@ -238,7 +238,7 @@ function control_html()
             w3_switch('', 'Yes', 'No', 'adm.daily_restart', adm.daily_restart, 'admin_radio_YN_cb'),
 				w3_div('w3-text-black',
 					"Set if you're having problems with the server<br>after it has run for a period of time.<br>" +
-					"Restart occurs at the same time as updates (0200-0600 UTC)<br> and will wait until there are no connections."
+					"Restart occurs at the same time as updates (0100-0600 Local)<br> and will wait until there are no connections."
 				)
 			)
       );
@@ -2857,7 +2857,7 @@ function log_update()
 
 // must set "remove_returns" since pty output lines are terminated with \r\n instead of \n alone
 // otherwise the \r overwrite logic in kiwi_output_msg() will be triggered
-var console_status_msg_p = { scroll_only_at_bottom: true, inline_returns: true, process_return_alone: false, remove_returns: false, ncol: 160 };
+admin.console = { scroll_only_at_bottom: true, inline_returns: true, process_return_alone: false, remove_returns: false, ncol: 160 };
 
 function console_html()
 {
@@ -2871,8 +2871,12 @@ function console_html()
             w3_button('w3-green|margin-left:32px', 'monitor build progress', 'console_cmd_cb',
                'console_input_cb|tail -fn 500 /root/build.log'),
 
-            w3_button('w3-yellow|margin-left:16px', 'disk free', 'console_cmd_cb',
-               'console_input_cb|df .'),
+            dbgUs?
+               w3_button('w3-aqua|margin-left:16px', 'nano j', 'console_cmd_cb',
+                  'console_input_cb|stty rows 10 cols 100; nano j')
+               :
+               w3_button('w3-yellow|margin-left:16px', 'disk free', 'console_cmd_cb',
+                  'console_input_cb|df .'),
 
             w3_button('w3-red|margin-left:16px', 're-clone Beagle_SDR_GPS', 'console_cmd_cb',
                'console_input_cb|cd /root; rm -rf Beagle_SDR_GPS; git clone https://github.com/jks-prv/Beagle_SDR_GPS.git'),
@@ -3472,10 +3476,10 @@ function admin_recv(data)
 				
 			case "console_c2w":
 		      // kiwi_output_msg() does decodeURIComponent()
-		      console_status_msg_p.s = param[1];
+		      admin.console.s = param[1];
 		      //console.log('console_c2w:');
-		      //console.log(console_status_msg_p);
-				kiwi_output_msg('id-console-msgs', 'id-console-msg', console_status_msg_p);
+		      //console.log(admin.console);
+				kiwi_output_msg('id-console-msgs', 'id-console-msg', admin.console);
 				break;
 
 			case "console_done":

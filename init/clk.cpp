@@ -25,13 +25,14 @@ Boston, MA  02110-1301, USA.
 #include "gps/GNSS-SDRLIB/rtklib.h"
 #include "timing.h"
 #include "web.h"
+#include "misc.h"
 
 #include <time.h>
 
-//#define CLK_PRINTF
+#define CLK_PRINTF
 #ifdef CLK_PRINTF
 	#define clk_printf(fmt, ...) \
-		printf(fmt, ## __VA_ARGS__)
+		if (clk_printfs) printf(fmt, ## __VA_ARGS__)
 #else
 	#define clk_printf(fmt, ...)
 #endif
@@ -42,6 +43,7 @@ static double adc_clock_initial = ADC_CLOCK_TYP;
 static double last_t_rx;
 static u64_t last_ticks;
 static int outside_window;
+static bool clk_printfs;
 
 static int ns_bin[1024];
 static int ns_nom;
@@ -64,6 +66,7 @@ void clock_init()
         clk.ext_ADC_clk? "EXTERNAL, J5 connector, " : "", clk.adc_clock_base/MHz);
     
     clk.manual_adj = 0;
+    clk_printfs = kiwi_file_exists(DIR_CFG "/clk.debug");
 }
 
 double clock_initial()
@@ -73,7 +76,7 @@ double clock_initial()
 
 void clock_conn_init(conn_t *conn)
 {
-	conn->adc_clock_corrected = clock_initial();
+	conn->adc_clock_corrected = (clk.adc_clk_corrections > 0)? clk.adc_clock_base : clock_initial();
 	conn->manual_offset = 0;
 	conn->adjust_clock = true;
 }
@@ -82,17 +85,20 @@ double adc_clock_system()
 {
     double new_clk = clk.adc_clock_base + clk.manual_adj;
 
-    for (conn_t *c = conns; c < &conns[N_CONNS]; c++) {
-        if (!c->valid) continue;
-        
-        // adc_clock_corrected is what the sound and waterfall channels use for the NCOs
-        c->adc_clock_corrected = new_clk;
-    }
+    // apply effect of any manual clock corrections
+    if (clk.do_corrections == ADC_CLK_CORR_DISABLED) {
+        for (conn_t *c = conns; c < &conns[N_CONNS]; c++) {
+            if (!c->valid) continue;
+    
+            // adc_clock_corrected is what the sound and waterfall channels use for their NCOs
+            c->adc_clock_corrected = new_clk;
+        }
 
-    if (clk.adc_clk_corrections != clk.last_adc_clk_corrections) {
-        clk_printf("%-18s adc_clock_system() base=%.6lf man_adj=%d clk=%.6lf(%d)\n", "CLK",
-            clk.adc_clock_base/1e6, clk.manual_adj, new_clk/1e6, clk.adc_clk_corrections);
-        clk.last_adc_clk_corrections = clk.adc_clk_corrections;
+        if (clk.adc_clk_corrections != clk.last_adc_clk_corrections) {
+            clk_printf("%-12s adc_clock_system() base=%.6lf man_adj=%d clk=%.6lf(%d)\n", "CLK",
+                clk.adc_clock_base/1e6, clk.manual_adj, new_clk/1e6, clk.adc_clk_corrections);
+            clk.last_adc_clk_corrections = clk.adc_clk_corrections;
+        }
     }
 
     return new_clk;
@@ -102,7 +108,7 @@ void clock_manual_adj(int manual_adj)
 {
     clk.manual_adj = manual_adj;
     adc_clock_system();
-    clk.adc_clk_corrections++;      // otherwise c2s_sound() and c2s_waterfall() won't update
+    clk.adc_clk_corrections++;
 }
 
 // Compute corrected ADC clock based on GPS time.
@@ -128,45 +134,6 @@ void clock_correction(double t_rx, u64_t ticks)
         return;
     }
     
-    if (!initial_temp_correction && clk.do_corrections > ADC_CLK_CORR_CONTINUOUS) {
-        bool ok = false;
-        const char *s;
-        int min, sec;
-        utc_hour_min_sec(NULL, &min, &sec);
-        
-        switch (clk.do_corrections) {
-        
-            case ADC_CLK_CORR_EVEN_2_MIN:
-                s = "even 2 min";
-                ok = ((min & 1) && sec > 51);
-                break;
-            
-            case ADC_CLK_CORR_5_MIN:
-                s = "5 min";
-                ok = ((min % 5) == 4 && sec > 50);
-                break;
-            
-            case ADC_CLK_CORR_15_MIN:
-                s = "15 min";
-                ok = ((min % 15) == 14 && sec > 50);
-                break;
-            
-            case ADC_CLK_CORR_30_MIN:
-                s = "30 min";
-                ok = ((min % 30) == 29 && sec > 52);
-                break;
-            
-            default:
-                s = "???";
-                break;
-        }
-        
-        clk_printf("CLK %02d:%02d every %s, %s\n", min, sec, s, ok? "OK" : "skip");
-        clk.is_corr = ok;
-        if (!ok) return;
-    }
-    
-    clk.is_corr = true;
     u64_t diff_ticks = time_diff48(ticks, last_ticks);
     double gps_secs = t_rx - last_t_rx;
     double new_adc_clock = diff_ticks / gps_secs;
@@ -191,7 +158,7 @@ void clock_correction(double t_rx, u64_t ticks)
     // limit offset to a window to help remove outliers
     if (offset < -offset_window || offset > offset_window) {
         outside_window++;
-        clk_printf("CLK BAD %4d offHz %.0f winHz %.0f SYS %.6f NEW %.6f GT %6.3f ticks %08x|%08x\n",
+        clk_printf("CLK BAD %4d offHz %2.0f winHz %2.0f SYS %.6f NEW %.6f GT %6.3f ticks %08x|%08x\n",
             outside_window, offset, offset_window,
             clk.adc_clock_base/1e6, new_adc_clock/1e6, gps_secs, PRINTF_U64_ARG(ticks));
         return;
@@ -209,7 +176,7 @@ void clock_correction(double t_rx, u64_t ticks)
     // Keeps up better than a simple cumulative moving average.
     
     static double adc_clock_mma;
-    #define MMA_PERIODS 16
+    #define MMA_PERIODS 32
     if (adc_clock_mma == 0) adc_clock_mma = new_adc_clock;
     adc_clock_mma = ((adc_clock_mma * (MMA_PERIODS-1)) + new_adc_clock) / MMA_PERIODS;
     clk.adc_clk_corrections++;
@@ -218,29 +185,86 @@ void clock_correction(double t_rx, u64_t ticks)
     #ifdef CLK_PRINTF
         double diff_mma = adc_clock_mma - clk.adc_clock_base, diff_new = new_adc_clock - prev_new;
     #endif
-    clk_printf("CLK CORR %3d offHz %.0f winHz %4.0lf MMA %.6lf(%5.1f) %5.1f NEW %.6lf(%5.1f) ratio %.6f\n",
+    clk_printf("CLK CORR %3d offHz %2.0f winHz %4.0lf MMA %.3lf(%6.3f) %4.1f NEW %.3lf(%6.3f) ratio %.6f\n",
         clk.adc_clk_corrections, offset, offset_window,
-        adc_clock_mma/1e6, diff_mma, offset, new_adc_clock/1e6, diff_new, diff_new / diff_mma);
+        adc_clock_mma, diff_mma, offset, new_adc_clock, diff_new, diff_new / diff_mma);
     prev_new = new_adc_clock;
 
     clk.manual_adj = 0;     // remove any manual adjustment now that we're automatically correcting
     clk.adc_clock_base = adc_clock_mma;
     
-    /*  FIXME XXX WRONG-WRONG-WRONG
-    // even if !adjust_clock mode is set adjust for first_time_temp_correction
-    conn_t *c;
-    for (c = conns; c < &conns[N_CONNS]; c++) {
-        if (!c->valid || (!c->adjust_clock && !first_time_temp_correction)) continue;
-        c->adc_clock_corrected = adc_clock_mma;
-        c->adc_clk_corrections++;
-    }
-    */
-
     #if 0
-    if (!ns_nom) ns_nom = clk.adc_clock_base;
-    int bin = ns_nom - clk.adc_clock_base;
-    ns_bin[bin+512]++;
+        if (!ns_nom) ns_nom = clk.adc_clock_base;
+        int bin = ns_nom - clk.adc_clock_base;
+        ns_bin[bin+512]++;
     #endif
+
+    // If in one of the clock correction-limiting modes we still maintain the corrected clock values
+    // for the benefit of GPS timestamping (i.e. clk.* values updated).
+    // But don't update the conn->adc_clock_corrected values which keeps the audio and waterfall
+    // NCOs from changing during the blocked intervals.
+    if (clk.do_corrections > ADC_CLK_CORR_CONTINUOUS) {
+        bool ok = false;
+        const char *s;
+        int min, sec;
+        utc_hour_min_sec(NULL, &min, &sec);
+    
+        switch (clk.do_corrections) {
+    
+            case ADC_CLK_CORR_EVEN_2_MIN:
+                s = "even 2 min";
+                ok = ((min & 1) && sec > 51);
+                break;
+        
+            case ADC_CLK_CORR_5_MIN:
+                s = "5 min";
+                ok = ((min % 5) == 4 && sec > 50);
+                break;
+        
+            case ADC_CLK_CORR_15_MIN:
+                s = "15 min";
+                ok = ((min % 15) == 14 && sec > 50);
+                break;
+        
+            case ADC_CLK_CORR_30_MIN:
+                s = "30 min";
+                ok = ((min % 30) == 29 && sec > 52);
+                break;
+        
+            default:
+                s = "???";
+                break;
+        }
+    
+        if (!initial_temp_correction) {
+            clk_printf("CLK %02d:%02d every %s, %s\n", min, sec, s, ok? "OK" : "skip");
+            clk.is_corr = ok;
+            if (!ok) return;
+        } else {
+            clk_printf("CLK %02d:%02d every %s, but initial temp correction\n", min, sec, s);
+        }
+    }
+    
+    clk.is_corr = true;
+
+    // Even if !adjust_clock mode is set adjust for first_time_temp_correction.
+    // If any of the correction-limiting modes are in effect, apply during the entire window
+    // to make sure correction is propagated.
+    u4_t now = timer_sec();
+    static u4_t last;
+    if (now > (last + 10) || clk.do_corrections > ADC_CLK_CORR_CONTINUOUS) {
+        clk_printf("%-12s CONN ", "CLK");
+        for (conn_t *c = conns; c < &conns[N_CONNS]; c++) {
+            if (!c->valid || (!c->adjust_clock && !first_time_temp_correction)) continue;
+
+            // adc_clock_corrected is what the sound and waterfall channels use for their NCOs
+            c->adc_clock_corrected = clk.adc_clock_base;
+            clk_printf("%d ", c->self_idx);
+        }
+        clk_printf("\n");
+        clk_printf("%-12s APPLY clk=%.3lf(%d)\n", "CLK", clk.adc_clock_base, clk.adc_clk_corrections);
+        last = now;
+    }
 }
 
 

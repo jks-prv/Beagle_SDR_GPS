@@ -157,16 +157,16 @@ struct wf_inst_t {
     int last_noise, last_signal;
 };
 
-#define WIN_HANNING         0
-#define WIN_HAMMING         1
-#define WIN_BLACKMAN_HARRIS 2
-#define WIN_NONE            3
-#define N_WINF              4
+#define WINF_WF_HANNING          0
+#define WINF_WF_HAMMING          1
+#define WINF_WF_BLACKMAN_HARRIS  2
+#define WINF_WF_NONE             3
+#define N_WF_WINF               4
 
 struct wf_shmem_t {
     wf_inst_t wf_inst[MAX_RX_CHANS];        // NB: MAX_RX_CHANS even though there may be fewer MAX_WF_CHANS
     fft_t fft_inst[MAX_WF_CHANS];           // NB: MAX_WF_CHANS not MAX_RX_CHANS
-    float window_function[N_WINF][WF_C_NSAMPS];
+    float window_function[N_WF_WINF][WF_C_NSAMPS];
     float CIC_comp[WF_C_NSAMPS];
     int n_chunks;
 };     
@@ -197,5 +197,5 @@ struct wf_shmem_t {
 
 enum wf_cmd_key_e {
     CMD_SET_ZOOM=1, CMD_SET_MAX_MIN_DB, CMD_SET_CMAP, CMD_SET_APER, CMD_SET_BAND,
-    CMD_SET_SCALE, CMD_SET_WF_SPEED, CMD_SEND_DB, CMD_EXT_BLUR, CMD_INTERPOLATE, CMD_WINDOW_FUNC
+    CMD_SET_SCALE, CMD_SET_WF_SPEED, CMD_SEND_DB, CMD_EXT_BLUR, CMD_INTERPOLATE, CMD_WF_WINDOW_FUNC
 };

@@ -82,7 +82,6 @@ void ext_unregister_receive_cmds(int rx_chan);
 
 // general routines
 double ext_update_get_sample_rateHz(int rx_chan);		// return sample rate of audio channel
-void ext_adjust_clock_offset(int rx_chan, double offset);
 typedef enum { AUTH_USER = 0, AUTH_LOCAL = 1, AUTH_PASSWORD = 2 } ext_auth_e;
 ext_auth_e ext_auth(int rx_chan);
 void ext_notify_connected(int rx_chan, u4_t seq, char *msg);

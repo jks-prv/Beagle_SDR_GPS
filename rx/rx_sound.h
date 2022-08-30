@@ -54,6 +54,13 @@ typedef struct {
 	};
 } __attribute__((packed)) snd_pkt_iq_t;
 
+#define WINF_SND_BLACKMAN_NUTTALL   0
+#define WINF_SND_BLACKMAN_HARRIS    1
+#define WINF_SND_NUTTALL            2
+#define WINF_SND_HANNING            3
+#define WINF_SND_HAMMING            4
+#define N_SND_WINF                  5
+
 typedef struct {
     snd_pkt_real_t out_pkt_real;
     snd_pkt_iq_t   out_pkt_iq;
@@ -62,6 +69,7 @@ typedef struct {
 	u4_t seq;
 	int mode;
 	float locut, hicut, norm_locut, norm_hicut;
+    int window_func;
 	bool secondary_filter;
 	ima_adpcm_state_t adpcm_snd;
 	
@@ -78,5 +86,5 @@ enum snd_cmd_key_e {
     CMD_AUDIO_START=1, CMD_TUNE, CMD_COMPRESSION, CMD_REINIT, CMD_LITTLE_ENDIAN,
     CMD_GEN_FREQ, CMD_GEN_ATTN, CMD_SET_AGC, CMD_SQUELCH, CMD_NB_ALGO, CMD_NR_ALGO, CMD_NB_TYPE,
     CMD_NR_TYPE, CMD_MUTE, CMD_OVLD_MUTE, CMD_DE_EMP, CMD_TEST, CMD_UAR, CMD_AR_OKAY, CMD_UNDERRUN,
-    CMD_SEQ, CMD_LMS_AUTONOTCH, CMD_SAM_PLL
+    CMD_SEQ, CMD_LMS_AUTONOTCH, CMD_SAM_PLL, CMD_SND_WINDOW_FUNC
 };

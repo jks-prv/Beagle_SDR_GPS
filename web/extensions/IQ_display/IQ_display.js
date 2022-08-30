@@ -291,7 +291,6 @@ function iq_display_controls_setup()
 					   w3_label('w3-margin-L-8', ' Hz')
 					),
 					w3_inline('w3-tspace-8/w3-margin-between-16',
-					   //w3_input('w3-width-128', 'Clock offset', 'iq.offset', iq.offset, 'iq_display_offset_cb'),
 						w3_button('w3-padding-small', 'Clear', 'iq_display_clear_cb'),
 						w3_button('w3-padding-small', '2.4k', 'iq_display_AM_bw_cb', 2400),
 						w3_button('w3-padding-small', '160', 'iq_display_AM_bw_cb', 160),
@@ -398,12 +397,6 @@ function iq_display_pll_bw_cb(path, val, complete, first)
 	w3_num_cb(path, val);
 	ext_send('SET pll_bandwidth='+ val);
 	iq_display_clear();
-}
-
-function iq_display_offset_cb(path, val)
-{
-	w3_num_cb(path, val);
-	ext_send('SET offset='+ val);
 }
 
 function iq_display_clear_cb(path, val)

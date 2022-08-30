@@ -16,8 +16,8 @@
 #include "kiwi.h"
 #include <fftw3.h>
 
-#define CONV_FIR_SIZE (CONV_FFT_SIZE/2+1)	//must be <= FFT size. Make 1/2 +1 if want
-											//output to be in power of 2
+// Must be <= FFT size. Make 1/2 +1 if want output to be in power of 2
+#define CONV_FIR_SIZE (CONV_FFT_SIZE/2+1)	
 
 class CFastFIR  
 {
@@ -26,6 +26,7 @@ public:
 	virtual ~CFastFIR();
 
 	void SetupParameters(int ch, TYPEREAL FLoCut,TYPEREAL FHiCut,TYPEREAL Offset, TYPEREAL SampleRate);
+	void SetupWindowFunction(int window_func);
 	int ProcessData(int rx_chan, int InLength, TYPECPX* InBuf, TYPECPX* OutBuf);
 
 	int FirPos() const { return m_InBufInPos - CONV_FIR_SIZE + 1; }
