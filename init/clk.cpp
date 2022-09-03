@@ -39,7 +39,6 @@ Boston, MA  02110-1301, USA.
 
 clk_t clk;
 
-static double adc_clock_initial = ADC_CLOCK_TYP;
 static double last_t_rx;
 static u64_t last_ticks;
 static int outside_window;
@@ -61,22 +60,23 @@ void clock_init()
     double ext_clk_freq = (double) cfg_int("ext_ADC_freq", &err, CFG_OPTIONAL);
     if (err) ext_clk_freq = (int) round(ADC_CLOCK_TYP);
     
-    clk.adc_clock_base = clk.ext_ADC_clk? ext_clk_freq : ADC_CLOCK_TYP;
-    printf("ADC_CLOCK: %s%.6f MHz\n",
-        clk.ext_ADC_clk? "EXTERNAL, J5 connector, " : "", clk.adc_clock_base/MHz);
+    //#define TEST_CLK_EXT
+    #ifdef TEST_CLK_EXT
+        clk.adc_clock_base = ext_clk_freq;
+        printf("ADC_CLOCK: %s%.6f MHz\n", clk.adc_clock_base/MHz);
+    #else
+        clk.adc_clock_base = clk.ext_ADC_clk? ext_clk_freq : ADC_CLOCK_TYP;
+        printf("ADC_CLOCK: %s%.6f MHz\n",
+            clk.ext_ADC_clk? "EXTERNAL, J5 connector, " : "", clk.adc_clock_base/MHz);
+    #endif
     
     clk.manual_adj = 0;
     clk_printfs = kiwi_file_exists(DIR_CFG "/clk.debug");
 }
 
-double clock_initial()
-{
-    return adc_clock_initial;
-}
-
 void clock_conn_init(conn_t *conn)
 {
-	conn->adc_clock_corrected = (clk.adc_clk_corrections > 0)? clk.adc_clock_base : clock_initial();
+	conn->adc_clock_corrected = clk.adc_clock_base;
 	conn->manual_offset = 0;
 	conn->adjust_clock = true;
 }
@@ -153,7 +153,7 @@ void clock_correction(double t_rx, u64_t ticks)
     
     double offset_window =
         (first_time_temp_correction || outside_window > MAX_OUTSIDE)? PPM_TO_HZ(ADC_CLOCK_TYP, ADC_CLOCK_PPM_TYP) : PPM_TO_HZ(ADC_CLOCK_TYP, 1);
-    double offset = new_adc_clock - clk.adc_clock_base;      // offset from previous clock value
+    double offset = new_adc_clock - clk.adc_clock_base;     // offset from previous clock value
 
     // limit offset to a window to help remove outliers
     if (offset < -offset_window || offset > offset_window) {
@@ -167,7 +167,7 @@ void clock_correction(double t_rx, u64_t ticks)
     
     // first correction handles XO temperature offset
     if (first_time_temp_correction) {
-        adc_clock_initial = prev_new = new_adc_clock;
+        prev_new = new_adc_clock;
         clk.temp_correct_offset = offset;
     }
 
