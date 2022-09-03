@@ -230,7 +230,7 @@ static void console_task(void *param)
 
         if (c->send_oob_key) {
             write(c->master_pty_fd, &c->send_oob_key_char, 1);
-            printf("sent_oob_key %d\n", c->send_oob_key_char);
+            //printf("sent_oob_key %d\n", c->send_oob_key_char);
             c->send_oob_key = false;
         }
     } while ((n > 0 || (n == -1 && errno == EAGAIN)) && c->mc);
