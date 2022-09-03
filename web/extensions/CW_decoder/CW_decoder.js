@@ -9,7 +9,7 @@ var cw = {
    threshold: 49,
 
    // must set "remove_returns" so output lines with \r\n (instead of \n alone) don't produce double spacing
-   console_status_msg_p: { scroll_only_at_bottom: true, process_return_alone: false, remove_returns: true, ncol: 135 },
+   console_status_msg_p: { scroll_only_at_bottom: true, process_return_alone: false, remove_returns: true, cols: 135 },
 
    log_mins: 0,
    log_interval: null,

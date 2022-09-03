@@ -7,6 +7,8 @@ cd $HOME
 if [ "x${TERM}" == "xdumb" ]; then
   export TERM=xterm-256color
   export KIWI_CONSOLE=yes
+  export LANG=en_US.UTF-8
+else
   stty cols 160
 fi
 

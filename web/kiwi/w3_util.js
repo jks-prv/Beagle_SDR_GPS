@@ -2116,20 +2116,22 @@ function w3int_input_keydown(ev, path, cb)
 {
    var i, s;
    var k = ev.key.toUpperCase();
-   var ctl = ev.ctrlKey;
+   var ctrl = ev.ctrlKey;
 	var el = w3_el(path);
    if (!el) return;
+   var input_any_key = w3_contains(el, 'w3-input-any-key');
+   var input_any_change = w3_contains(el, 'w3-input-any-change');
    //w3_remove(el, 'kiwi-pw');
    var trace = w3_contains(el, 'w3-trace');
-   if (trace) console.log('w3int_input_keydown k='+ k + (ctl? ' CTL ':'') +' val=<'+ el.value +'> cb='+ cb);
+   if (trace) console.log('w3int_input_keydown k='+ k + (ctrl? ' CTRL ':'') +' val=<'+ el.value +'> cb='+ cb);
    var cb_a = cb.split('|');
-
-   if (ctl && 'CD\\'.includes(k) && cb_a[1]) {
-      //console.log('w3int_input_keydown ^'+ k +' cb_a[1]='+ cb_a[1]);
-      w3_call(cb_a[1], k);
+   
+   if (input_any_key && cb_a[1]) {
+      //console.log('w3int_input_keydown: input_any_key '+ k +' cb_a[1]='+ cb_a[1]);
+      //event_dump(ev, "input_any_change", true);
+      w3_call(cb_a[1], ev, input_any_key, input_any_change);
    }
 
-   var input_any_change = w3_contains(el, 'w3-input-any-change');
 	if (ev.key == 'Enter') {
       if (input_any_change) {
          // consider unchanged input value followed by Enter, at the end of input text, to be an input change

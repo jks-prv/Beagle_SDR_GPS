@@ -385,7 +385,7 @@ function fsk_baud_error(err)
 }
 
 // must set "remove_returns" so output lines with \r\n (instead of \n alone) don't produce double spacing
-var fsk_console_status_msg_p = { scroll_only_at_bottom: true, process_return_alone: false, remove_returns: true, ncol: 135 };
+var fsk_console_status_msg_p = { scroll_only_at_bottom: true, process_return_alone: false, remove_returns: true, cols: 135 };
 
 function fsk_output_char(s)
 {
