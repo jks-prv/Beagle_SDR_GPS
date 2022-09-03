@@ -2,6 +2,31 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.558  Sep 4, 2022
+    Passband adjustment improvements:
+        Adjust left/right passband edges individually
+            The arrow up/down keys now adjust the passband. With the shift key added the right
+            passband alone is adjusted (passband high in USB). With alt/ctrl passband low is adjusted.
+            With no modifier keys pressed both passband edges are adjusted (like the "p" and "P" keys).
+            
+            Also for a shift or alt/ctrl during a mouse wheel while positioned in the frequency scale.
+            
+            Also for alt/ctrl or shift-alt/shift-ctrl when clicking the zoom buttons (different from
+            the above since no-shift/shift is already used to distinguish zoom from passband adjust.
+            The tooltip popup when you mouse over the zoom buttons shows which type of passband
+            adjustment will occur depending on the modifier keys.
+            
+        BFO/PBT indicator
+            When you mouse over the passband with the shift key pressed the tooltip popups will
+            include "BFO" or "PBT" to remind you of the alternate passband operation about to
+            be performed when you begin click-dragging the passband.
+    
+    Added a "Close all admin connections" button to the admin connection exclusion panel.
+        The usual admin page automatic reconnect will not occur. Whatever operation you were
+        performing (e.g. DX label edit) will have to be repeated since it did not take effect.
+
+    Fix for external ADC clock when Kiwi GPS correction disabled.
+        
 v1.557  Aug 30, 2022
     Make GPS clock corrections insensitive to type of connection to Kiwi.
     Added URL parameter "sndw=N" (N=0-4) to set alternate passband FFT filter window functions.
