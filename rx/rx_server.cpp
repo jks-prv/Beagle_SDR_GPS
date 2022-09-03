@@ -316,7 +316,7 @@ void rx_loguser(conn_t *c, logtype_e type)
 	
 	const char *mode = "";
 	if (c->type == STREAM_WATERFALL)
-	    mode = "WF";
+	    mode = "WF";    // for WF-only connections (i.e. c->isMaster set)
 	else
 	    mode = kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s));
 	

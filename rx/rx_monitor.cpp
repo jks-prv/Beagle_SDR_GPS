@@ -56,7 +56,7 @@ void c2s_mon(void *param)
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
 			// SECURITY: this must be first for auth check
-			if (rx_common_cmd("MON", conn_mon, cmd)) {
+			if (rx_common_cmd(STREAM_MONITOR, conn_mon, cmd)) {
 			    if (!init) {
 			        if (kiwi_str_begins_with(cmd, "SET auth")) {
                         send_msg(conn_mon, false, "MSG monitor");

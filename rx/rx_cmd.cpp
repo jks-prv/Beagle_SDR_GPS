@@ -38,6 +38,7 @@ Boston, MA  02110-1301, USA.
 #include "ext_int.h"
 #include "wspr.h"
 #include "security.h"
+#include "options.h"
 
 #ifdef USE_SDR
  #include "data_pump.h"
@@ -176,9 +177,10 @@ bool rx_auth_okay(conn_t *conn)
     return true;
 }
 
-bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
+bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 {
 	int i, j, k, n;
+	const char *stream_name = rx_streams[stream_type].uri;
 	struct mg_connection *mc = conn->mc;
 	char *sb;
 	int slen;
@@ -209,6 +211,14 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             conn->kick = true;
 		    return true;	// fake that we accepted command so it won't be further processed
 	}
+	
+	#ifdef HONEY_POT
+	    if ((stream_type == STREAM_SOUND || stream_type == STREAM_WATERFALL) &&
+	        (strcmp(cmd, "SET keepalive") && strcmp(cmd, "SET GET_USERS") && strcmp(cmd, "SET STATS_UPD"))) {
+	        cprintf(conn, "HONEY_POT %s %s%d <%s>\n", stream_name,
+	            (stream_type == STREAM_WATERFALL && conn->isMaster)? "-------- " : "", slen, cmd);
+	    }
+	#endif
 
     // CAUTION: because rx_common_cmd() can pass cmds it doesn't match there can be false hash matches
     // because not all possible commands are in the rx_common_cmd_hashes[] list.
