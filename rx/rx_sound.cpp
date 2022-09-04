@@ -289,8 +289,8 @@ void c2s_sound(void *param)
 			double freq_inv_kHz = ui_srate - freq_kHz;
 			f_phase = (spectral_inversion? freq_inv_kHz : freq_kHz) / conn->adc_clock_corrected;
             i_phase = (u64_t) round(f_phase * pow(2,48));
-            cprintf(conn, "SND UPD freq %.3f kHz i_phase 0x%08x|%08x clk %.3f(%d)\n",
-                freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected, clk.adc_clk_corrections);
+            //cprintf(conn, "SND UPD freq %.3f kHz i_phase 0x%08x|%08x clk %.3f(%d)\n",
+            //    freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected, clk.adc_clk_corrections);
             if (do_sdr) spi_set3(CmdSetRXFreq, rx_chan, (i_phase >> 16) & 0xffffffff, i_phase & 0xffff);
 		    //cprintf(conn, "SND freq updated due to ADC clock correction\n");
 		}
@@ -312,7 +312,7 @@ void c2s_sound(void *param)
             #endif
 
 			// SECURITY: this must be first for auth check
-			if (rx_common_cmd("SND", conn, cmd)) {
+			if (rx_common_cmd(STREAM_SOUND, conn, cmd)) {
                 #ifdef TR_SND_CMDS
                     if (tr_cmds++ < 32)
                         clprintf(conn, "SND #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);

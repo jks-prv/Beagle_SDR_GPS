@@ -328,7 +328,7 @@ void c2s_waterfall(void *param)
 			#endif
 
 			// SECURITY: this must be first for auth check
-			if (rx_common_cmd("W/F", conn, cmd)) {
+			if (rx_common_cmd(STREAM_WATERFALL, conn, cmd)) {
                 #ifdef TR_WF_CMDS
                     if (tr_cmds++ < 32)
                         clprintf(conn, "WF #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
@@ -361,6 +361,9 @@ void c2s_waterfall(void *param)
                         _zoom = CLAMP(_zoom, 0, MAX_ZOOM);
                         float halfSpan_Hz = (ui_srate / (1 << _zoom)) / 2;
                         cf = (_start * HZperStart) + halfSpan_Hz;
+                        #ifdef HONEY_POT
+                            cprintf(conn, "HONEY_POT W/F cf=%.3f\n", cf / kHz);
+                        #endif
                         zoom_start_chg = true;
                     } else
                     if (sscanf(cmd, "SET zoom=%d cf=%f", &_zoom, &cf) == 2) {

@@ -54,6 +54,7 @@ Boston, MA  02110-1301, USA.
 #include <limits.h>
 #include <termios.h>
 #include <sys/types.h>
+#include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <signal.h>
 
@@ -151,7 +152,7 @@ static void tunnel(void *param)
 }
 
 // console task
-static void console(void *param)
+static void console_task(void *param)
 {
 	conn_t *c = (conn_t *) param;
 
@@ -192,7 +193,7 @@ static void console(void *param)
     //printf("master_pty_fd=%d\n", c->master_pty_fd);
     
     do {
-        TaskSleepMsec(250);
+        TaskSleepMsec(250);     // can be woken up prematurely by console_oob_key
         
         // Without this a reload of the admin console page with an active shell often
         // hangs in the read() below even though O_NONBLOCK has been set on the fd!
@@ -227,10 +228,10 @@ static void console(void *param)
             send_msg_encoded(c, "ADM", "console_c2w", "%s", buf);
         }
 
-        if (c->send_ctrl) {
-            write(c->master_pty_fd, &c->send_ctrl_char, 1);
-            //printf("sent ^%c\n", c->send_ctrl_char + '@');
-            c->send_ctrl = false;
+        if (c->send_oob_key) {
+            write(c->master_pty_fd, &c->send_oob_key_char, 1);
+            //printf("sent_oob_key %d\n", c->send_oob_key_char);
+            c->send_oob_key = false;
         }
     } while ((n > 0 || (n == -1 && errno == EAGAIN)) && c->mc);
 
@@ -293,7 +294,7 @@ void c2s_admin(void *param)
             #endif
 
 			// SECURITY: this must be first for auth check
-			if (rx_common_cmd("ADM", conn, cmd))
+			if (rx_common_cmd(STREAM_ADMIN, conn, cmd))
 				continue;
 			
 			//printf("ADMIN: %d <%s>\n", strlen(cmd), cmd);
@@ -1161,6 +1162,31 @@ void c2s_admin(void *param)
 				continue;
 			}
 
+            u4_t ch;
+			i = sscanf(cmd, "SET console_oob_key=%d", &ch);
+			if (i == 1) {
+			    if (conn->console_child_pid && !conn->send_oob_key) {
+			        conn->send_oob_key_char = ch;
+			        conn->send_oob_key = true;
+			        TaskWakeupF(conn->console_task_id, TWF_CANCEL_DEADLINE);
+			    }
+				continue;
+			}
+
+            int rows, cols;
+			i = sscanf(cmd, "SET console_rows_cols=%d,%d", &rows, &cols);
+			if (i == 2) {
+			    if (conn->master_pty_fd > 0) {
+                    struct winsize ws;
+                    ws.ws_row = rows; ws.ws_col = cols;
+                    //printf("console rows=%d cols=%d\n", rows, cols);
+                    scall("TIOCSWINSZ", ioctl(conn->master_pty_fd, TIOCSWINSZ, &ws));
+                    //scall("TIOCGWINSZ", ioctl(conn->master_pty_fd, TIOCGWINSZ, &ws));
+                    //printf("console TIOCGWINSZ %d,%d\n", ws.ws_row, ws.ws_col);
+                }
+				continue;
+			}
+
 			i = strcmp(cmd, "SET console_open");
 			if (i == 0) {
 			    if (conn->console_child_pid == 0) {
@@ -1172,23 +1198,13 @@ void c2s_admin(void *param)
 
                     // conn->isLocal can be forced false for testing by using the URL "nolocal" parameter
 			        if (no_console == false && ((console_local && conn->isLocal) || !console_local)) {
-			            CreateTask(console, conn, ADMIN_PRIORITY);
+			            conn->console_task_id = CreateTask(console_task, conn, ADMIN_PRIORITY);
 			        } else
 			        if (no_console) {
                         send_msg_encoded(conn, "ADM", "console_c2w", "CONSOLE: disabled because kiwi.config/opt.no_console file exists\n");
 			        } else {
                         send_msg_encoded(conn, "ADM", "console_c2w", "CONSOLE: only available to local admin connections\n");
 			        }
-			    }
-				continue;
-			}
-
-            char ch;
-			i = sscanf(cmd, "SET console_ctrl=%c", &ch);
-			if (i == 1) {
-			    if (conn->console_child_pid && !conn->send_ctrl) {
-			        conn->send_ctrl_char = ch - '@';
-			        conn->send_ctrl = true;
 			    }
 				continue;
 			}

@@ -365,7 +365,7 @@ void extint_c2s(void *param)
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
 			// SECURITY: this must be first for auth check
-			if (rx_common_cmd("EXT", conn_ext, cmd))
+			if (rx_common_cmd(STREAM_EXT, conn_ext, cmd))
 				continue;
 			
 			//printf("extint_c2s: %s CONN%d(%p) RX=%d(%p) %d <%s>\n", conn_ext->ext? conn_ext->ext->name:"?", conn_ext->self_idx,

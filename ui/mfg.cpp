@@ -75,7 +75,7 @@ void c2s_mfg(void *param)
     		TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, "cmd");
 			
 			// SECURITY: this must be first for auth check
-			if (rx_common_cmd("MFG", conn, cmd))
+			if (rx_common_cmd(STREAM_MFG, conn, cmd))
 				continue;
 			
 			printf("MFG: <%s>\n", cmd);

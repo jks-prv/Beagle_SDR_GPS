@@ -30,10 +30,15 @@ var owrx = {
    HIDE_BANDBAR: 2,
    HIDE_ALLBARS: 3,
    
+   PB_NO_EDGE: 0,
+   PB_RIGHT_EDGE: 1,
+   PB_LEFT_EDGE: 2,
+   
    cfg_loaded: false,
    mobile: null,
    wf_snap: 0,
    wf_cursor: 'crosshair',
+   last_shiftKey: false,
    last_pageX: 0,
    last_pageY: 0,
    mouse_freq: {},
@@ -100,6 +105,12 @@ var owrx = {
       restore_visibility: [],
       restore_visibility_delay: 500
    },
+   
+   zoom_titles: [
+      [ 'passband narrow', 'passband widen' ],
+      [ 'passband right edge', 'passband right edge' ],
+      [ 'passband left edge', 'passband left edge' ]
+   ],
    
    __last: 0
 };
@@ -1185,13 +1196,24 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 				center_freq + this.parent.offset_frequency + this.parent.high_cut,
 				this.color,
 				center_freq + this.parent.offset_frequency);
+
+      // replace bw in lo/hi/cf tooltips with "PBT" when shift key changed before dragging starts or while it is ongoing
+      var isAdjPBT = (owrx.last_shiftKey || this.dragged_range == demodulator.draggable_ranges.pbs);
 		var bw = Math.abs(this.parent.high_cut - this.parent.low_cut);
-		pb_adj_lo_ttip.innerHTML = 'lo '+ this.parent.low_cut.toString() +', bw '+ bw.toString();
-		pb_adj_hi_ttip.innerHTML = 'hi '+ this.parent.high_cut.toString() +', bw '+ bw.toString();
-		pb_adj_cf_ttip.innerHTML = 'cf '+ (this.parent.low_cut + Math.abs(this.parent.high_cut - this.parent.low_cut)/2).toString() +
-		   ', bw '+ bw.toString();
+		var bw_pbt;
+		if (isAdjPBT) {
+         bw_pbt = ', PBT';
+		} else {
+		   bw_pbt = ', bw '+ bw.toString();
+      }
+      pb_adj_lo_ttip.innerHTML = 'lo '+ this.parent.low_cut.toString() + bw_pbt;
+      pb_adj_hi_ttip.innerHTML = 'hi '+ this.parent.high_cut.toString() + bw_pbt;
+		pb_adj_cf_ttip.innerHTML = 'cf '+ (this.parent.low_cut + Math.abs(this.parent.high_cut - this.parent.low_cut)/2).toString() + bw_pbt;
+
+      // show "BFO" in tooltip when shift key changed before BFO dragging starts or while it is ongoing
+      var isAdjBFO = (owrx.last_shiftKey || this.dragged_range == demodulator.draggable_ranges.bfo);
       var f_kHz = (center_freq + this.parent.offset_frequency)/1000 + kiwi.freq_offset_kHz;
-		pb_adj_car_ttip.innerHTML = f_kHz.toFixed(freq_field_prec(f_kHz)) +' kHz';
+		pb_adj_car_ttip.innerHTML = (isAdjBFO? 'BFO ':'') + f_kHz.toFixed(freq_field_prec(f_kHz)) +' kHz';
 	};
 
 	// event handlers
@@ -1323,6 +1345,32 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		return to_return;
 	};
 	
+}
+
+function add_shift_listener(el)
+{
+   // couldn't get these global keyup/down to fire properly
+   // so just call shift_event() from existing global keyup/down event handlers (hack)
+	//el.addEventListener("keydown", shift_event, true);     // called via keyboard_shortcut_event()
+	//el.addEventListener("keyup", shift_event, true);       // called via mouse_freq_remove()
+	el.addEventListener("mouseover", shift_event, true);
+}
+
+function shift_event(evt, from)
+{
+   from = from || 'mouseover';
+   var ok = (evt && (evt.type == 'mouseover' || (evt.key && evt.key == 'Shift')));
+   //console.log('from='+ from +' evt='+ evt +' evt.key='+ evt.key +' ok='+ ok);
+   if (!ok) return;
+	//event_dump(evt, 'shift_event', 1);
+	if (evt.key && evt.key == 'Shift') {
+      owrx.last_shiftKey = evt.shiftKey;
+      //console.log('shift_event: *** last_shiftKey='+ owrx.last_shiftKey);
+   }
+   
+   // shift key has no effect on tooltip while dragging in progress
+   if (demodulators[0].envelope.dragged_range == demodulator.draggable_ranges.none)
+      mkenvelopes(get_visible_freq_range());
 }
 
 demodulator_default_analog.prototype = new demodulator();
@@ -1457,43 +1505,47 @@ function scale_setup()
    
 	scale_canvas = w3_el("id-scale-canvas");
 	scale_ctx = scale_canvas.getContext("2d");
-	add_scale_listner(scale_canvas);
+	add_scale_listener(scale_canvas);
 
 	pb_adj_car = w3_el("id-pb-adj-car");
 	pb_adj_car.innerHTML = '<span id="id-pb-adj-car-ttip" class="class-passband-adjust-car-tooltip class-tooltip-text"></span>';
 	pb_adj_car_ttip = w3_el("id-pb-adj-car-ttip");
-	add_scale_listner(pb_adj_car);
+	add_scale_listener(pb_adj_car);
+	add_shift_listener(pb_adj_car);
 
 	pb_adj_lo = w3_el("id-pb-adj-lo");
 	pb_adj_lo.innerHTML = '<span id="id-pb-adj-lo-ttip" class="class-passband-adjust-cut-tooltip class-tooltip-text"></span>';
 	pb_adj_lo_ttip = w3_el("id-pb-adj-lo-ttip");
-	add_scale_listner(pb_adj_lo);
+	add_scale_listener(pb_adj_lo);
+	add_shift_listener(pb_adj_lo);
 
 	pb_adj_hi = w3_el("id-pb-adj-hi");
 	pb_adj_hi.innerHTML = '<span id="id-pb-adj-hi-ttip" class="class-passband-adjust-cut-tooltip class-tooltip-text"></span>';
 	pb_adj_hi_ttip = w3_el("id-pb-adj-hi-ttip");
-	add_scale_listner(pb_adj_hi);
+	add_scale_listener(pb_adj_hi);
+	add_shift_listener(pb_adj_hi);
 
 	pb_adj_cf = w3_el("id-pb-adj-cf");
 	pb_adj_cf.innerHTML = '<span id="id-pb-adj-cf-ttip" class="class-passband-adjust-cf-tooltip class-tooltip-text"></span>';
 	pb_adj_cf_ttip = w3_el("id-pb-adj-cf-ttip");
-	add_scale_listner(pb_adj_cf);
+	add_scale_listener(pb_adj_cf);
+	add_shift_listener(pb_adj_cf);
 
 	band_canvas = w3_el("id-band-canvas");
 	band_ctx = band_canvas.getContext("2d");
-	add_canvas_listner(band_canvas);
+	add_canvas_listener(band_canvas);
 	
 	dx_div = w3_el('id-dx-container');
-	add_canvas_listner(dx_div);
+	add_canvas_listener(dx_div);
 
 	dx_canvas = w3_el("id-dx-canvas");
 	dx_ctx = dx_canvas.getContext("2d");
-	add_canvas_listner(dx_canvas);
+	add_canvas_listener(dx_canvas);
 	
 	resize_scale('setup');
 }
 
-function add_scale_listner(obj)
+function add_scale_listener(obj)
 {
 	obj.addEventListener("mousedown", scale_canvas_mousedown, false);
 	obj.addEventListener("mousemove", scale_canvas_mousemove, false);
@@ -1564,6 +1616,7 @@ function scale_canvas_start_drag(evt, isMouse)
 	}
 
    scale_canvas_drag_params.mouse_down = true;
+   //console.log('SCSD MD=T');
    owrx.scale_canvas.target = evt.target;
    if (isMouse) scale_canvas_mousemove(evt);
 }
@@ -1633,7 +1686,7 @@ function scale_canvas_end_drag(evt, x, canvas_mouse_up)
    //   console.log('IME='+ scale_canvas_ignore_mouse_event +' SCMD='+ scale_canvas_drag_params.mouse_down +' ET='+ evt.type);
    
    if (scale_canvas_ignore_mouse_event) {
-      scale_canvas_ignore_mouse_event = false;
+      scale_canvas_ignore_mouse_event = scale_canvas_drag_params.mouse_down = false;
       return;
    }
 
@@ -1655,6 +1708,7 @@ function scale_canvas_end_drag(evt, x, canvas_mouse_up)
    }
 
 	scale_canvas_drag_params.mouse_down = false;
+	//console.log('SCED MD=F');
 	var target = owrx.scale_canvas.target;
 	if (target && target.style) {
 	   target.style.cursor = null;      // re-enable default mouseover cursor in .css (if any)
@@ -2197,18 +2251,18 @@ function init_wf_container()
    canvas_annotation = create_canvas('id-annotation-canvas', wf_fft_size, wf_canvas_default_height, waterfall_width, wf_canvas_default_height);
    canvas_annotation.style.zIndex = 1;    // make on top of waterfall
 	wf_container.appendChild(canvas_annotation);
-	add_canvas_listner(canvas_annotation);
-	w3_el('id-kiwi-body').addEventListener('keyup', mouse_freq_remove);
+	add_canvas_listener(canvas_annotation);
+	w3_el('id-kiwi-body').addEventListener('keyup', mouse_freq_remove, false);
 	
 	// annotation div for text containing links etc.
 	annotation_div = w3_el('id-annotation-div');
-	add_canvas_listner(annotation_div);
+	add_canvas_listener(annotation_div);
 	annotation_div.style.pointerEvents = 'none';    // prevent premature end of canvas dragging
 
 	// a phantom one at the end
 	// not an actual canvas but a <div> spacer
 	canvas_phantom = html("id-phantom-canvas");
-	add_canvas_listner(canvas_phantom);
+	add_canvas_listener(canvas_phantom);
 	canvas_phantom.style.width = px(wf_container.clientWidth);
 
 	// the first one to get started
@@ -2217,7 +2271,7 @@ function init_wf_container()
    spec.canvas = create_canvas('id-spectrum-canvas', wf_fft_size, spec.height_spectrum_canvas, waterfall_width, spec.height_spectrum_canvas);
 	html("id-spectrum-container").appendChild(spec.canvas);
 	spec.ctx = spec.canvas.ctx;
-	add_canvas_listner(spec.canvas);
+	add_canvas_listener(spec.canvas);
 	spec.ctx.font = "10px sans-serif";
 	spec.ctx.textBaseline = "middle";
 	spec.ctx.textAlign = "left";
@@ -2226,7 +2280,7 @@ function init_wf_container()
 	spec.dB.style.height = px(spec.height_spectrum_canvas);
 	spec.dB.style.width = px(waterfall_width);
 	spec.dB.innerHTML = '<span id="id-spectrum-dB-ttip" class="class-spectrum-dB-tooltip class-tooltip-text"></span>';
-	add_canvas_listner(spec.dB);
+	add_canvas_listener(spec.dB);
 	w3_do_when_rendered('id-spectrum-dB-ttip', function(el) {
 	   spec.dB_ttip = el;
 	});
@@ -2235,7 +2289,7 @@ function init_wf_container()
 	document.addEventListener("mousemove", mouse_freq_add, false);
 }
 
-function add_canvas_listner(obj)
+function add_canvas_listener(obj)
 {
 	obj.addEventListener("mouseover", canvas_mouseover, false);
 	obj.addEventListener("mouseout", canvas_mouseout, false);
@@ -2252,7 +2306,7 @@ function add_canvas_listner(obj)
 	}
 }
 
-function remove_canvas_listner(obj)
+function remove_canvas_listener(obj)
 {
 	obj.removeEventListener("mouseover", canvas_mouseover, false);
 	obj.removeEventListener("mouseout", canvas_mouseout, false);
@@ -2307,7 +2361,7 @@ function canvas_mouseout(evt)
          canvas_end_drag2();
    }
    
-   mouse_freq_remove();
+   mouse_freq_remove(evt);
 }
 
 function canvas_get_carfreq_offset(relativeX, incl_PBO)
@@ -2570,16 +2624,19 @@ function mouse_freq_add(evt)
       owrx.mouse_freq.cy = cy;
       owrx.mouse_freq.vis = true;
    } else {
-      mouse_freq_remove();
+      mouse_freq_remove(evt);
    }
 }
 
-function mouse_freq_remove()
+function mouse_freq_remove(evt)
 {
    if (owrx.mouse_freq.vis) {
       canvas_annotation.ctx.clearRect(owrx.mouse_freq.tx, owrx.mouse_freq.cy, owrx.mouse_freq.tw, owrx.mouse_freq.th);
       owrx.mouse_freq.vis = false;
    }
+
+   if (evt && evt.type == 'keyup')
+      shift_event(evt, 'keyup');
 }
 
 function canvas_mousemove(evt)
@@ -2768,7 +2825,12 @@ function canvas_mousewheel_cb(evt)
    var inout = (x < 0 || (x == 0 && y < 0));
    
    if (evt.target && evt.target.id && (evt.target.id == 'id-scale-canvas' || evt.target.id.startsWith('id-pb-'))) {
-      passband_increment(inout);
+      //event_dump(evt, 'canvas_mousewheel_cb', true);
+      var edge = owrx.PB_LEFT_EDGE;
+      var key_mod = shortcut_key_mod(evt);
+      if (key_mod == shortcut.NO_MODIFIER) edge = owrx.PB_NO_EDGE; else
+      if (key_mod == shortcut.SHIFT) edge = owrx.PB_RIGHT_EDGE;
+      passband_increment(inout, edge);
    } else {
       var to_passband = (evt.ctrlKey || x != 0);
       zoom_step(inout? ext_zoom.IN : ext_zoom.OUT, to_passband? undefined : evt.pageX);
@@ -3290,8 +3352,10 @@ function zoom_step(dir, arg2)
    }
 }
 
-function passband_increment(wider)
+function passband_increment(wider, pb_edge)
 {
+   if (isUndefined(pb_edge)) pb_edge = owrx.PB_NO_EDGE;
+   
    var pb = ext_get_passband();
    var pb_width = Math.abs(pb.high - pb.low);
    var pb_inc;
@@ -3302,11 +3366,15 @@ function passband_increment(wider)
 
    var rnd = (pb_inc > 10)? 10 : 1;
    pb_inc = Math.round(pb_inc/rnd) * rnd;
-   //console.log('PB w='+ pb_width +' inc='+ pb_inc +' lo='+ pb.low +' hi='+ pb.high);
-   pb.low += wider? -pb_inc : pb_inc;
-   pb.low = Math.round(pb.low/rnd) * rnd;
-   pb.high += wider? pb_inc : -pb_inc;
-   pb.high = Math.round(pb.high/rnd) * rnd;
+   console.log('PB w='+ pb_width +' inc='+ pb_inc +' lo='+ pb.low +' hi='+ pb.high +' pb_edge='+ pb_edge);
+   if (pb_edge == owrx.PB_NO_EDGE || pb_edge == owrx.PB_RIGHT_EDGE) {
+      pb.high += wider? pb_inc : -pb_inc;
+      pb.high = Math.round(pb.high/rnd) * rnd;
+   }
+   if (pb_edge == owrx.PB_NO_EDGE || pb_edge == owrx.PB_LEFT_EDGE) {
+      pb.low += wider? -pb_inc : pb_inc;
+      pb.low = Math.round(pb.low/rnd) * rnd;
+   }
    //console.log('PB lo='+ pb.low +' hi='+ pb.high);
    ext_set_passband(pb.low, pb.high, true);
 }
@@ -3320,7 +3388,13 @@ function zoom_click(evt, dir, arg2)
 		var zin = w3_contains(div, 'id-zoom-in');
 		var zout = w3_contains(div, 'id-zoom-out');
 		if (!zin && !zout) return;
-		passband_increment(zin);
+
+      var edge;
+      var key_mod = shortcut_key_mod(evt);
+      if (key_mod == shortcut.SHIFT) edge = owrx.PB_NO_EDGE; else
+      if (key_mod == shortcut.CTL_OR_ALT) edge = owrx.PB_RIGHT_EDGE; else
+         edge = owrx.PB_LEFT_EDGE;
+      passband_increment(zin, edge);
 		return;
 	}
 	
@@ -3343,8 +3417,11 @@ function zoom_over(evt)
 	var zin = w3_contains(div, 'id-zoom-in');
 	
 	// apply shift-key title to inner IMG element so when removed the default of the parent div applies
-	if (any_alternate_click_event(evt)) {
-		img.title = zin? 'passband widen' : 'passband narrow';
+   var key_mod = shortcut_key_mod(evt);
+	if (key_mod != shortcut.NO_MODIFIER) {
+		//img.title = zin? 'passband widen' : 'passband narrow';
+		key_mod = (key_mod == shortcut.SHIFT)? 0 : ((key_mod == shortcut.CTL_OR_ALT)? 1 : 2);
+		img.title = owrx.zoom_titles[key_mod][zin];
 	} else {
 		img.removeAttribute('title');
 	}
@@ -3823,7 +3900,7 @@ function add_wf_canvas()
 	new_canvas.oneline_image = new_canvas.ctx.createImageData(wf_fft_size, 1);
 
 	wf_container.appendChild(new_canvas);
-	add_canvas_listner(new_canvas);
+	add_canvas_listener(new_canvas);
 	wf_canvases.unshift(new_canvas);		// add to front of array which is top of waterfall
 
 	wf_cur_canvas = new_canvas;
@@ -3849,7 +3926,7 @@ function wf_shift_canvases()
 		if (pp) old_canvases.unshift(pp);
 		if (old_canvases.length > 15) old_canvases.pop();  // save up to 10*wf_fps seconds 
 		//p.style.display = "none";
-		if (kiwi_gc_wf) remove_canvas_listner(p);	// gc
+		if (kiwi_gc_wf) remove_canvas_listener(p);	// gc
 		wf_container.removeChild(p);
 		if (kiwi_gc_wf) p = wf_canvases[wf_canvases.length-1] = null;	// gc
 		wf_canvases.pop();
@@ -8269,11 +8346,22 @@ function ident_keyup(el, evt, which)
 var shortcut = {
    nav_off: 0,
    keys: null,
+   NO_MODIFIER: 0,
    SHIFT: 1,
    CTL_OR_ALT: 2,
    SHIFT_PLUS_CTL_OR_ALT: 3,
    KEYCODE_ALT: 18
 };
+
+function shortcut_key_mod(evt)
+{
+   var sft = evt.shiftKey;
+   var ctl = evt.ctrlKey;
+   var alt = evt.altKey;
+   var meta = evt.metaKey;
+   var ctlAlt = (ctl||alt);
+   return (sft && !ctlAlt)? shortcut.SHIFT : ( (!sft & ctlAlt)? shortcut.CTL_OR_ALT : ( (sft && ctlAlt)? shortcut.SHIFT_PLUS_CTL_OR_ALT : shortcut.NO_MODIFIER ) );
+}
 
 function keyboard_shortcut_init()
 {
@@ -8289,6 +8377,7 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny', 'e E', 25, 'scroll extension menu'),
          w3_inline_percent('w3-padding-tiny', 'a A d l u c f q', 25, 'toggle modes: AM SAM DRM LSB USB CW NBFM IQ<br>add alt/ctrl to toggle backwards (e.g. SAM modes)'),
          w3_inline_percent('w3-padding-tiny', 'p P ctrl-p', 25, 'passband narrow/widen, restore default'),
+         w3_inline_percent('w3-padding-tiny', 'UD-arrow-keys', 25, 'passband adjust both, right(shift), left(alt/ctrl) edges'),
          w3_inline_percent('w3-padding-tiny', 'r', 25, 'toggle audio recording'),
          w3_inline_percent('w3-padding-tiny', 'z Z', 25, 'zoom in/out, add alt/ctrl for max in/out'),
          w3_inline_percent('w3-padding-tiny', '< >', 25, 'waterfall page down/up'),
@@ -8313,7 +8402,7 @@ function keyboard_shortcut_init()
 
 function keyboard_shortcut_help()
 {
-   confirmation_show_content(shortcut.help, 550, 565);   // height +15 per added line
+   confirmation_show_content(shortcut.help, 550, 585);   // height +15 per added line
 }
 
 // FIXME: animate (light up) control panel icons?
@@ -8337,7 +8426,7 @@ function keyboard_shortcut_url_keys()
 // ..........F........ ......   ...       F .     .. F  ... FFFFFFFFFFFFFFF
 // .. ..   ..  F. .  .  ..  .                               F: frequency entry keys
 // ABCDEFGHIJKLMNOPQRSTUVWXYZ
-// :space: :tab:
+// :space: :tab: :arrow-UDLR:
 //    .
 
 function keyboard_shortcut(key, key_mod, ctlAlt, keyCode)
@@ -8380,8 +8469,16 @@ function keyboard_shortcut(key, key_mod, ctlAlt, keyCode)
          restore_passband(cur_mode);
          demodulator_analog_replace(cur_mode);
       } else {
-         passband_increment(key == 'P');
+         passband_increment(key == 'P', owrx.PB_NO_EDGE);
       }
+      break;
+   
+   case 'ArrowUp':
+   case 'ArrowDown':
+      var edge = owrx.PB_LEFT_EDGE;
+      if (key_mod == shortcut.NO_MODIFIER) edge = owrx.PB_NO_EDGE; else
+      if (key_mod == shortcut.SHIFT) edge = owrx.PB_RIGHT_EDGE;
+      passband_increment(key == 'ArrowUp', edge);
       break;
    
    // volume/mute
@@ -8442,89 +8539,92 @@ function keyboard_shortcut(key, key_mod, ctlAlt, keyCode)
 
 function keyboard_shortcut_event(evt)
 {
-   if (evt.target) {
-      var k = evt.key;
-      
-      // ignore esc and Fnn function keys
-      if (k == 'Escape' || k.match(/F[1-9][12]?/)) {
-         //event_dump(evt, 'Escape-shortcut');
-         //console.log('KEY PASS Esc');
-         return;
-      }
-      
-      var id = evt.target.id;
-      var suffix = '';
-      if (id == '') {
-         //event_dump(evt, 'shortcut');
-         w3_iterate_classList(evt.target, function(className, idx) {
-            if (className.startsWith('id-')) {
-               id = className;
-               suffix = ' (class)';
-               //console.log('KEY shortcut className='+ id + suffix +' ###');
-            }
-         });
-      }
-      
-      //{ event_dump(evt, 'shortcut'); return; }
-      //event_dump(evt, 'shortcut');
-
-      var sft = evt.shiftKey;
-      var ctl = evt.ctrlKey;
-      var alt = evt.altKey;
-      var meta = evt.metaKey;
-      var ctlAlt = (ctl||alt);
-      var key_mod = (sft && !ctlAlt)? shortcut.SHIFT : ( (!sft & ctlAlt)? shortcut.CTL_OR_ALT : ( (sft && ctlAlt)? shortcut.SHIFT_PLUS_CTL_OR_ALT : 0 ) );
-
-      var field_input_key = (
-            (k >= '0' && k <= '9' && !ctl) ||
-            k == '.' || k == ',' ||                // ',' is alternate decimal point to '.' and used in passband spec
-            k == '/' || k == ':' || k == '-' ||    // for passband spec, have to allow for negative passbands (e.g. lsb)
-            k == 'k' || k == 'M' ||                // scale modifiers
-            k == 'Enter' || k == 'ArrowUp' || k == 'ArrowDown' || k == 'Backspace' || k == 'Delete'
-         );
-
-      if (evt.target.nodeName != 'INPUT' || (id == 'id-freq-input' && !field_input_key)) {
-         
-         // don't interfere with the meta key shortcuts of the browser
-         if (kiwi_isMacOS()) {
-            if (meta) {
-               //console.log('ignore MacOS META '+ (k? k:''));
-               return;
-            }
-         } else {
-            if (ctl) {
-               //console.log('ignore non-MacOS CTL '+ (k? k:''));
-               return;
-            }
-         }
-         
-         // evt.key isn't what you'd expect when evt.altKey
-         if (alt && !k.startsWith('Arrow')) {
-            //event_dump(evt, 'shortcut alt');
-            k = String.fromCharCode(evt.keyCode).toLowerCase();
-            if (sft) k = k.toUpperCase();
-            //console.log('shortcut alt k='+ k);
-         }
-         
-         //console.log('keyboard_shortcut key=<'+ k +'> keyCode='+ evt.keyCode +' key_mod='+ key_mod +' ctlAlt='+ ctlAlt +' alt='+ alt);
-         keyboard_shortcut(k, key_mod, ctlAlt, evt.keyCode);
-         
-         /*
-         if (k != 'Shift' && k != 'Control' && evt.key != 'Alt') {
-            if (!action) event_dump(evt, 'shortcut');
-            console.log('KEY SHORTCUT <'+ k +'> '+ (sft? 'SFT ':'') + (ctl? 'CTL ':'') + (alt? 'ALT ':'') + (meta? 'META ':'') +
-               ((evt.target.nodeName == 'INPUT')? 'id-freq-input' : evt.target.nodeName) +
-               (action? ' ACTION':''));
-         }
-         */
-
-         cancelEvent(evt);
-         return;
-      } else {
-         //console.log('KEY INPUT FIELD <'+ k +'> '+ id + suffix);
-      }
-   } else {
+   if (!evt.target) {
       //console.log('KEY no EVT');
+      return;
+   }
+   
+   var k = evt.key;
+   
+   // ignore esc and Fnn function keys
+   if (k == 'Escape' || k.match(/F[1-9][12]?/)) {
+      //event_dump(evt, 'Escape-shortcut');
+      //console.log('KEY PASS Esc');
+      return;
+   }
+   
+   shift_event(evt, 'keydown');
+   
+   var id = evt.target.id;
+   var suffix = '';
+   if (id == '') {
+      //event_dump(evt, 'shortcut');
+      w3_iterate_classList(evt.target, function(className, idx) {
+         if (className.startsWith('id-')) {
+            id = className;
+            suffix = ' (class)';
+            //console.log('KEY shortcut className='+ id + suffix +' ###');
+         }
+      });
+   }
+   
+   //{ event_dump(evt, 'shortcut'); return; }
+   //event_dump(evt, 'shortcut');
+
+   var sft = evt.shiftKey;
+   var ctl = evt.ctrlKey;
+   var alt = evt.altKey;
+   var meta = evt.metaKey;
+   var ctlAlt = (ctl||alt);
+   var key_mod = shortcut_key_mod(evt);
+
+   var field_input_key = (
+         (k >= '0' && k <= '9' && !ctl) ||
+         k == '.' || k == ',' ||                // ',' is alternate decimal point to '.' and used in passband spec
+         k == '/' || k == ':' || k == '-' ||    // for passband spec, have to allow for negative passbands (e.g. lsb)
+         k == 'k' || k == 'M' ||                // scale modifiers
+         k == 'Enter' || k == 'Backspace' || k == 'Delete'
+      );
+
+   if (evt.target.nodeName != 'INPUT' || (id == 'id-freq-input' && !field_input_key)) {
+      
+      // don't interfere with the meta key shortcuts of the browser
+      if (kiwi_isMacOS()) {
+         if (meta) {
+            //console.log('ignore MacOS META '+ (k? k:''));
+            return;
+         }
+      } else {
+         if (ctl) {
+            //console.log('ignore non-MacOS CTL '+ (k? k:''));
+            return;
+         }
+      }
+      
+      // evt.key isn't what you'd expect when evt.altKey
+      if (alt && !k.startsWith('Arrow')) {
+         //event_dump(evt, 'shortcut alt');
+         k = String.fromCharCode(evt.keyCode).toLowerCase();
+         if (sft) k = k.toUpperCase();
+         //console.log('shortcut alt k='+ k);
+      }
+      
+      //console.log('keyboard_shortcut key=<'+ k +'> keyCode='+ evt.keyCode +' key_mod='+ key_mod +' ctlAlt='+ ctlAlt +' alt='+ alt);
+      //if (k.startsWith('Arrow')) event_dump(evt, 'Arrow', true);
+      keyboard_shortcut(k, key_mod, ctlAlt, evt.keyCode);
+      
+      /*
+      if (k != 'Shift' && k != 'Control' && evt.key != 'Alt') {
+         if (!action) event_dump(evt, 'shortcut');
+         console.log('KEY SHORTCUT <'+ k +'> '+ (sft? 'SFT ':'') + (ctl? 'CTL ':'') + (alt? 'ALT ':'') + (meta? 'META ':'') +
+            ((evt.target.nodeName == 'INPUT')? 'id-freq-input' : evt.target.nodeName) +
+            (action? ' ACTION':''));
+      }
+      */
+
+      return cancelEvent(evt);
+   } else {
+      //console.log('KEY INPUT FIELD <'+ k +'> '+ id + suffix);
    }
 }
 

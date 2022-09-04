@@ -1030,6 +1030,11 @@ function kiwi_str_decode_selective_inplace(src, fewer_encoded)
    return dst;
 }
 
+function kiwi_JSON(json, pretty)
+{
+   return JSON.stringify(json, null, pretty? 3:undefined);
+}
+
 function kiwi_JSON_parse(tag, json)
 {
    var obj;

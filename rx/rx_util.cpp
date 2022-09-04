@@ -39,6 +39,7 @@ Boston, MA  02110-1301, USA.
 #include "rx_noise.h"
 #include "wdsp.h"
 #include "security.h"
+#include "options.h"
 
 #ifdef DRM
  #include "DRM.h"
@@ -948,6 +949,10 @@ void SNR_meas(void *param)
 
             meas->valid = true;
             rx_server_websocket(WS_MODE_CLOSE, &iconn.wf_mc);
+            
+            #ifdef HONEY_POT
+                snr_all = snr_HF = 55;
+            #endif
         }
         
         //TaskSleepSec(60);

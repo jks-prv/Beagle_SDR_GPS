@@ -374,6 +374,7 @@ alias whiled="while true; do ./d; done"
 alias bbpp="ping -c 1 proxy.kiwisdr.com"
 alias bbfp="ping -c 1 forum.kiwisdr.com"
 alias mblog="tail -fn 100 ~/build.log"
+alias st="stty -a"
 
 # networking
 alias nt="iptraf"

@@ -106,8 +106,9 @@ typedef struct conn_st {
 	// set only in STREAM_ADMIN
 	int log_last_sent, log_last_not_shown;
 	int master_pty_fd, console_child_pid;
-	bool send_ctrl;
-	char send_ctrl_char;
+	int console_task_id;
+	bool send_oob_key;
+	u1_t send_oob_key_char;
 	
 	bool adjust_clock;      // should this connections clock be adjusted?
 	double adc_clock_corrected, manual_offset, srate;

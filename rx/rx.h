@@ -46,9 +46,9 @@ void rx_server_remove(conn_t *c);
 void rx_server_user_kick(int chan);
 void rx_server_send_config(conn_t *conn);
 void rx_common_init(conn_t *conn);
-bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd);
+bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd);
 char *rx_users(bool include_ip);
-void show_conn(const char *prefix, conn_t *cd);
+void show_conn(const char *prefix, u4_t printf_type, conn_t *cd);
 void geoloc_task(void *param);
 
 #define SNR_MEAS_MAX    (24 * 7)

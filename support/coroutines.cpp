@@ -1174,9 +1174,14 @@ void _NextTask(const char *where, u4_t param, u_int64_t pc)
                         }
                     }
                     
+                    // Return how long task ran last time.
+                    // But ONLY do this if task waking due to deadline expiring or wakeup_test succeeding.
+                    // Doesn't happen if deadline cancelled due to someone else doing a TaskWakeup(id, TWF_CANCEL_DEADLINE, param)
+                    // In that case param gets returned when the loop in _TaskSleep() exits due to RUNNABLE_YES()
+                    // happening in _TaskWakeup() and not here.
                     if (wake) {
                         RUNNABLE_YES(tp);
-                        tp->wake_param = TO_VOID_PARAM(tp->last_run_time);      // return how long task ran last time
+                        tp->wake_param = TO_VOID_PARAM(tp->last_run_time);
                     }
                     
 					if (!tp->stopped)
@@ -1443,11 +1448,11 @@ void *_TaskSleep(const char *reason, u64_t usec, u4_t *wakeup_test)
     taskSleepSetup(t, reason, usec, wakeup_test);
 
 	#if 0
-	static bool trigger;
-	if (t->id == 2 && !trigger) {
-		evNT(EC_DUMP, EV_NEXTTASK, 30, "TaskInit", "DUMP 30 MSEC");
-		trigger = true;
-	}
+        static bool trigger;
+        if (t->id == 2 && !trigger) {
+            evNT(EC_DUMP, EV_NEXTTASK, 30, "TaskInit", "DUMP 30 MSEC");
+            trigger = true;
+        }
 	#endif
 
 	do {
@@ -1491,13 +1496,11 @@ void _TaskWakeup(tid_t tid, u4_t flags, void *wake_param)
     
     if (!t->valid) return;
 
+    // Don't wakeup a task sleeping on a time interval (as opposed to unconditional sleeping)
+    // This is generally the default.
     if ((flags & TWF_CANCEL_DEADLINE) == 0 && t->deadline > 0) {
-        // FIXME: remove at some point
-        // This is a hack for the benefit of "-rx 0" measurements where we don't want the
-        // TaskSleepMsec(1000) in the audio task to cause a task switch while sleeping
-        // because it's being woken up all the time.
         evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskWakeup", evprintf("%s still deadline of %08x|%08x", task_ls(t), PRINTF_U64_ARG(t->deadline)));
-        return;		// don't interrupt a task sleeping on a time interval
+        return;
     }
 
     t->deadline = 0;	// cancel any outstanding deadline

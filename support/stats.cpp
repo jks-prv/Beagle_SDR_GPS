@@ -247,6 +247,10 @@ static void called_every_second()
     rx_chan_t *rx;
 
     for (rx = rx_channels, ch = 0; rx < &rx_channels[rx_chans]; rx++, ch++) {
+
+
+        // CAT tuned frequency reporting
+
         if (!rx->busy) {
             if (kiwi.CAT_ch == ch) { kiwi.CAT_ch = -1; return; }
             continue;
@@ -269,7 +273,10 @@ static void called_every_second()
                 #endif
             }
         }
-		
+
+
+        // External API detection and limiting
+        
 		if (c->ext_api_determined) continue;
 		int served = web_served(c);
 		
@@ -321,9 +328,13 @@ static void called_every_second()
             }
         }
 
+
+        // TDoA connection detection and limiting
+        //
         // Can only distinguish the TDoA service at the time the kiwirecorder identifies itself.
         // If a match and the limit is exceeded then kick the connection off immediately.
         // This identification is typically sent right after initial connection is made.
+
         if (!c->kick && c->ident_user && kiwi_str_begins_with(c->ident_user, "TDoA_service")) {
             int tdoa_ch = cfg_int("tdoa_nchans", NULL, CFG_REQUIRED);
             if (tdoa_ch == -1) tdoa_ch = rx_chans;      // has never been set
