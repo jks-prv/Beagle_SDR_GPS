@@ -1176,12 +1176,14 @@ void c2s_admin(void *param)
             int rows, cols;
 			i = sscanf(cmd, "SET console_rows_cols=%d,%d", &rows, &cols);
 			if (i == 2) {
-                struct winsize ws;
-                ws.ws_row = rows; ws.ws_col = cols;
-                //printf("console rows=%d cols=%d\n", rows, cols);
-                scall("TIOCSWINSZ", ioctl(conn->master_pty_fd, TIOCSWINSZ, &ws));
-                //scall("TIOCGWINSZ", ioctl(conn->master_pty_fd, TIOCGWINSZ, &ws));
-                //printf("console TIOCGWINSZ %d,%d\n", ws.ws_row, ws.ws_col);
+			    if (conn->master_pty_fd > 0) {
+                    struct winsize ws;
+                    ws.ws_row = rows; ws.ws_col = cols;
+                    //printf("console rows=%d cols=%d\n", rows, cols);
+                    scall("TIOCSWINSZ", ioctl(conn->master_pty_fd, TIOCSWINSZ, &ws));
+                    //scall("TIOCGWINSZ", ioctl(conn->master_pty_fd, TIOCGWINSZ, &ws));
+                    //printf("console TIOCGWINSZ %d,%d\n", ws.ws_row, ws.ws_col);
+                }
 				continue;
 			}
 
