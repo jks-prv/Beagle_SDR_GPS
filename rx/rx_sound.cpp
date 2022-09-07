@@ -172,7 +172,8 @@ void c2s_sound(void *param)
 	const char *s;
 	
 	double freq=-1, _freq, gen=-1, _gen, locut=0, _locut, hicut=0, _hicut, mix;
-	int mode=-1, _mode, genattn=0, _genattn, mute, test=0, de_emp=0, mparam=0;
+	int mode=-1, _mode, genattn=0, _genattn, mute, test=0, de_emp=0;
+	u4_t mparam=0;
 	double z1 = 0;
 
 	double frate = ext_update_get_sample_rateHz(rx_chan);      // FIXME: do this in loop to get incremental changes
@@ -209,7 +210,7 @@ void c2s_sound(void *param)
 
 	int agc = 1, _agc, hang = 0, _hang;
 	int thresh = -90, _thresh, manGain = 0, _manGain, slope = 0, _slope, decay = 50, _decay;
-	int chan_null = 0;
+	u4_t SAM_mparam = 0;
 	int arate_in, arate_out, acomp;
 	double adc_clock_corrected = 0;
 	bool spectral_inversion = kiwi.spectral_inversion;
@@ -394,7 +395,9 @@ void c2s_sound(void *param)
                             }
                     
                             if (_mode == MODE_SAM && n == 5) {
-                                chan_null = mparam;
+                                SAM_mparam = mparam & MODE_FLAGS_SAM;
+                                cprintf(conn, "SAM DC_block=%d fade_leveler=%d chan_null=%d\n",
+                                    (SAM_mparam & DC_BLOCK)? 1:0, (SAM_mparam & FADE_LEVELER)? 1:0, SAM_mparam & CHAN_NULL);
                             }
 
                             // reset SAM demod on non-SAM to SAM transition
@@ -447,8 +450,8 @@ void c2s_sound(void *param)
                         //cprintf(conn, "SND LOcut %.0f HIcut %.0f BW %.0f/%.0f\n", locut, hicut, bw, frate/2);
                     
                         #define CW_OFFSET 0		// fixme: how is cw offset handled exactly?
-                        m_PassbandFIR[rx_chan].SetupParameters(0, locut, hicut, CW_OFFSET, frate);
-                        m_chan_null_FIR[rx_chan].SetupParameters(1, locut, hicut, CW_OFFSET, frate);
+                        m_PassbandFIR[rx_chan].SetupParameters(SND_INSTANCE_FFT_PASSBAND, locut, hicut, CW_OFFSET, frate);
+                        m_chan_null_FIR[rx_chan].SetupParameters(SND_INSTANCE_FFT_CHAN_NULL, locut, hicut, CW_OFFSET, frate);
                         conn->half_bw = bw;
                     
                         // post AM detector filter
@@ -1177,8 +1180,8 @@ void c2s_sound(void *param)
 
                 // NB:
                 //      MODE_SAS/QAM stereo mode: output samples put back into a_samps
-                //      chan_null mode: in addition to r_samps output, compute FFT of nulled a_samps
-                wdsp_SAM_demod(rx_chan, mode, chan_null, ns_out, a_samps, r_samps);
+                //      chan null mode: in addition to r_samps output, compute FFT of nulled a_samps
+                wdsp_SAM_demod(rx_chan, mode, SAM_mparam, ns_out, a_samps, r_samps);
                 if (snd->secondary_filter) {
                     //real_printf("2"); fflush(stdout);
                     m_chan_null_FIR[rx_chan].ProcessData(rx_chan, ns_out, a_samps, NULL);
