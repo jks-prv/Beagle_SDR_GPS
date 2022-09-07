@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.559  Sep 7, 2022
+    Added DC block to the SAM/QAM modes. There is a temporary menu on the main control panel,
+        audio tab, to allow A/B testing of the DC block against the existing fade leveler that was
+        already part of the SAM code. Thanks to Daz for pointing out this problem.
+
 v1.558  Sep 4, 2022
     Passband adjustment improvements:
         Adjust left/right passband edges individually
