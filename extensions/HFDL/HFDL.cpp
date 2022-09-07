@@ -7,7 +7,7 @@
 static hfdl_t hfdl;
 static hfdl_chan_t hfdl_chan[MAX_RX_CHANS];
 
-static void hfdl_pushback_file_data(int rx_chan, int chan, int nsamps, TYPECPX *samps)
+static void hfdl_pushback_file_data(int rx_chan, int instance, int nsamps, TYPECPX *samps)
 {
     hfdl_chan_t *e = &hfdl_chan[rx_chan];
 

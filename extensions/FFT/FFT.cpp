@@ -16,6 +16,19 @@
 //#define DEBUG_MSG	true
 #define DEBUG_MSG	false
 
+//#define PN_F_DEBUG
+#ifdef PN_F_DEBUG
+    #define P0_F p0_f
+    #define P1_F p1_f
+    #define P2_F p2_f
+    #define P3_F p3_f
+#else
+    #define P0_F 0
+    #define P1_F 0
+    #define P2_F 0
+    #define P3_F 0
+#endif
+
 #define INTEG_WIDTH CONV_FFT_SIZE		// as defined by cuteSDR.h, typ 1024
 
 // rx_chan is the receiver channel number we've been assigned, 0..rx_chans
@@ -25,7 +38,7 @@
 
 typedef struct {
 	int rx_chan;
-	int run, ch, mode;
+	int run, instance, mode;
 	float fft_scale, spectrum_scale;
 	u4_t last_ms;
 	
@@ -52,11 +65,11 @@ static fft_t fft[MAX_RX_CHANS];
 enum data_e { FUNC_OFF=-1, FUNC_WF=0, FUNC_SPEC=1, FUNC_INTEG=2 };
 static const char* func_s[] = { "off", "wf", "spec", "integ" };
 
-bool fft_data(int rx_chan, int ch, int flags, int ratio, int nsamps, TYPECPX *samps)
+bool fft_data(int rx_chan, int instance, int flags, int ratio, int nsamps, TYPECPX *samps)
 {
 	fft_t *e = &fft[rx_chan];
-	if (ch != e->ch) return false;      // not the instance we want
-	//real_printf("%d", e->ch); fflush(stdout);
+	if (instance != e->instance) return false;      // not the instance we want
+	//real_printf("%d", e->instance); fflush(stdout);
 	int i, bin;
 	bool buf_changed = false;
 	
@@ -201,24 +214,24 @@ bool fft_msgs(char *msg, int rx_chan)
 			switch (e->run) {
 			
 			    case FUNC_WF:
-			        e->ch = 0;
+			        e->instance = SND_INSTANCE_FFT_PASSBAND;
 			        snd->secondary_filter = false;
-			        boost = (p3_f? p3_f : 1e4);
+			        boost = (P3_F? P3_F : 1e4);
 			        break;
 			
 			    case FUNC_SPEC:
-			        e->ch = e->isSAM? 1:0;
+			        e->instance = e->isSAM? SND_INSTANCE_FFT_CHAN_NULL : SND_INSTANCE_FFT_PASSBAND;
 			        snd->secondary_filter = e->isSAM? true:false;
 
                     // scale up to roughly match WF spectrum values
-                    boost = e->isSAM? ( (snd->mode == MODE_QAM)? (p2_f? p2_f : 100) : (p1_f? p1_f : 100) ) : (p0_f? p0_f : 1e6);
+                    boost = e->isSAM? ( (snd->mode == MODE_QAM)? (P2_F? P2_F : 100) : (P1_F? P1_F : 100) ) : (P0_F? P0_F : 1e6);
                     e->last_ms = 0;
 			        break;
 			
 			    case FUNC_INTEG:
-			        e->ch = 0;
+			        e->instance = SND_INSTANCE_FFT_PASSBAND;
 			        snd->secondary_filter = false;
-			        boost = (p3_f? p3_f : 1e4);
+			        boost = (P3_F? P3_F : 1e4);
 			        break;
 			}
 

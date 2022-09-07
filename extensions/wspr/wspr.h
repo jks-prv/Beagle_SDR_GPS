@@ -350,7 +350,7 @@ typedef struct {
 
 void wspr_init();
 bool wspr_update_vars_from_config(bool called_at_init);
-void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps);
+void wspr_data(int rx_chan, int instance, int nsamps, TYPECPX *samps);
 void wspr_decode(int rx_chan);
 void wspr_send_peaks(wspr_t *w, int start, int stop);
 void wspr_send_decode(wspr_t *w, int seq);

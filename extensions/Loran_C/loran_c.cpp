@@ -62,9 +62,9 @@ static loran_c_t loran_c[MAX_RX_CHANS];
 #define USE_IQ
 
 #ifdef USE_IQ
-static void loran_c_data(int rx_chan, int chan, int nsamps, TYPECPX *samps)
+static void loran_c_data(int rx_chan, int instance, int nsamps, TYPECPX *samps)
 #else
-static void loran_c_data(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps)
+static void loran_c_data(int rx_chan, int instance, int nsamps, TYPEMONO16 *samps)
 #endif
 {
 	loran_c_t *e = &loran_c[rx_chan];

@@ -243,10 +243,10 @@ private:
 
 std::array<iq_display::sptr, MAX_RX_CHANS> iqs;
 
-void iq_display_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
+void iq_display_data(int rx_chan, int instance, int nsamps, TYPECPX *samps)
 {
     if (iqs[rx_chan])
-        iqs[rx_chan]->display_data(ch, nsamps, samps);
+        iqs[rx_chan]->display_data(instance, nsamps, samps);
 }
 
 void iq_display_close(int rx_chan) {

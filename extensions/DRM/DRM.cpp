@@ -51,7 +51,7 @@ void drm_task(void *param)
 #endif
 
 #ifdef DRM_TEST_FILE
-static void drm_pushback_file_data(int rx_chan, int chan, int nsamps, TYPECPX *samps)
+static void drm_pushback_file_data(int rx_chan, int instance, int nsamps, TYPECPX *samps)
 {
     drm_t *d = &DRM_SHMEM->drm[rx_chan];
     assert(d->init);
