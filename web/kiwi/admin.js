@@ -2959,7 +2959,7 @@ function console_key_cb(ev, input_any_key, input_any_change)
       if (ok) {
          if (ev.ctrlKey) {
             ord_k &= 0x1f;
-            //console.log('console_key_cb CTRL ^'+ ctrl_k +'('+ ord_k +')');
+            console.log('console_key_cb CTRL ^'+ ctrl_k +'('+ ord_k +')');
             ext_send('SET console_oob_key='+ ord_k);
          } else {
 	         ext_send('SET console_w2c='+ encodeURIComponent(k));

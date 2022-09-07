@@ -929,6 +929,10 @@ function kiwi_output_msg(id, id_scroll, p)
 	   p.rend_timeout = setTimeout(function() { render(); }, 250);
 	};
 	
+	var dirty = function() {
+	   p.dirty[p.r] = true;
+	};
+	
 	var screen_char = function(ch) {
 	   var r = p.r, c = p.c;
       //if (dbg && p.traceEvery && ord(ch) > 0x7f)
@@ -943,9 +947,9 @@ function kiwi_output_msg(id, id_scroll, p)
       
 	   p.screen[r][c] = ch;
 	   p.color[r][c] = { fg: p.sgr.fg, bg: p.sgr.bg };
-	   p.dirty[r] = true;
+	   dirty();
 	   p.c++;
-	   if (p.c > p.cols) { p.c = 1; p.r++; if (p.r > p.rows) p.r = 1; }
+	   if (p.c > p.cols) { p.c = 1; p.r++; if (p.r > p.rows) { p.r = 1; dirty(); } }
 	   sched();
 	};
 
@@ -1020,6 +1024,7 @@ function kiwi_output_msg(id, id_scroll, p)
    if (dbg) console.log(JSON.stringify(s));
       
 	for (var si = 0; si < s.length; si++) {
+	   var result = null;
 
 		var c = s.charAt(si);
       //console.log(i +' c='+ JSON.stringify(c));
@@ -1045,9 +1050,10 @@ function kiwi_output_msg(id, id_scroll, p)
 		} else
 		
 		if (c == '\r') {
-         if (dbg) console.log('\\r inline, isAltBuf='+ p.isAltBuf);
+         //if (dbg) console.log('\\r inline, isAltBuf='+ p.isAltBuf);
          if (p.isAltBuf) {
             p.c = 1;
+            result = '\\r (col = 1)';
          }
          if (p.inline_returns) {
             p.return_pending = true;
@@ -1055,8 +1061,13 @@ function kiwi_output_msg(id, id_scroll, p)
       } else
       
 		if (c == '\b') {
-		   if (p.tstr.length > 1)
-		      p.tstr = p.tstr.slice(0, p.tstr.length-1);
+		   if (p.isAltBuf) {
+            if (p.c > 1) { dirty(); p.c--; }
+            result = 'backspace (arrow left)';
+		   } else {
+            if (p.tstr.length > 1)
+               p.tstr = p.tstr.slice(0, p.tstr.length-1);
+         }
 		} else
 		
 		// tab-8
@@ -1101,7 +1112,7 @@ function kiwi_output_msg(id, id_scroll, p)
 		      var second = p.esc.s.charAt(1);
 		      var last_hl = (c == 'h' || c == 'l');
 		      var enable = (c == 'h');
-            var result = 0;
+            result = 0;
             
             var n1 = 1, n2 = 1;
             var t = p.esc.s.slice(1);
@@ -1173,19 +1184,21 @@ function kiwi_output_msg(id, id_scroll, p)
                         p.screen[p.r][c] = ' ';
                         p.color[p.r][c] = { fg: null, bg: null };
                      }
-                     p.dirty[p.r] = true;
+                     dirty();
                      sched();
                   }
                } else
                
                if (c == 'H') {      // cursor position
                   result = 'move '+ n1 +','+ n2;
-                  p.r = n1; p.c = n2;
+                  dirty(); p.r = n1; p.c = n2; dirty();
                } else
 		      
                if (c == 'd') {      // vertical line position absolute (vt100)
-                  result = 'move row '+ n1 +' (col = 1)';
-                  p.r = n1; p.c = 1;
+                  //result = 'move row '+ n1 +' (col = 1)';
+                  //p.r = n1; p.c = 1;
+                  result = 'move row '+ n1;
+                  dirty(); p.r = n1; dirty();
                } else
 		      
                if (c == 'G') {      // cursor horizontal absolute
@@ -1261,7 +1274,7 @@ function kiwi_output_msg(id, id_scroll, p)
                      p.screen[p.r][col] = ' ';
                      p.color[p.r][col] = { fg: null, bg: null };
                   }
-                  p.dirty[p.r] = true;
+                  dirty();
                   sched();
                   result = 'eraseX #'+ n1 +' chars';
                } else
@@ -1275,14 +1288,31 @@ function kiwi_output_msg(id, id_scroll, p)
                      p.screen[p.r][col] = ' ';
                      p.color[p.r][col] = { fg: null, bg: null };
                   }
-                  p.dirty[p.r] = true;
+                  dirty();
 	               sched();
                   result = 'del #'+ n1 +' chars';
                } else
                
-               if (c == 'A' || c == 'B' || c == 'C' || c == 'D') {
-                  // FIXME: temp swallow arrow keys
-                  result = 'arrow key '+ c;
+               // pan down (??)
+               if (c == 'S' && p.isAltBuf) {
+                  result = 'pan down '+ n1;
+               } else
+               
+               if (c == 'A') {   // actual
+                  if (p.r > 1) { dirty(); p.r--; dirty(); }
+                  result = 'arrow up';
+               } else
+               if (c == 'B') {   // done via esc[Nd
+                  if (p.r < p.rows) { dirty(); p.r++; dirty(); }
+                  result = 'arrow down';
+               } else
+               if (c == 'C') {
+                  if (p.c < p.cols) { dirty(); p.c++; }
+                  result = 'arrow right';
+               } else
+               if (c == 'D') {
+                  if (p.c > 1) { dirty(); p.c--; }
+                  result = 'arrow left';
                } else
                
                {
@@ -1305,15 +1335,16 @@ function kiwi_output_msg(id, id_scroll, p)
             }
             
             if (result === 1) {
-                  if (dbg) console.log('ESC '+ JSON.stringify(p.esc.s) +' $IGNORED');
+                  if (dbg) console.log('> ESC '+ JSON.stringify(p.esc.s) +' $IGNORED');
             } else
             if (result === 2) {
-                  if (dbg) console.log('ESC '+ JSON.stringify(p.esc.s) +' $UNKNOWN');
+                  if (dbg) console.log('> ESC '+ JSON.stringify(p.esc.s) +' $UNKNOWN');
             } else
             if (isString(result)) {
-               if (dbg) console.log('ESC '+ JSON.stringify(p.esc.s) +' '+ result);
+               if (dbg) console.log('> ESC '+ JSON.stringify(p.esc.s) +' '+ result);
             }
    
+            result = null;
             p.esc.state = 0;
          }
 		} else   // p.esc.state == 1
@@ -1340,7 +1371,7 @@ function kiwi_output_msg(id, id_scroll, p)
             if (c == '\n' || p.col == p.cols) {    // newline or wrap
                wasScrolledDown = w3_isScrolledDown(el_scroll);
                if (p.isAltBuf) {
-                  p.c = 1; p.r++; if (p.r > p.rows) p.r = 1;   // \n
+                  p.c = 1; dirty(); p.r++; dirty(); if (p.r > p.rows) p.r = 1;   // \n
                } else {
                   p.tstr += snew;
                   if (p.tstr == '') p.tstr = '&nbsp;';
@@ -1362,6 +1393,8 @@ function kiwi_output_msg(id, id_scroll, p)
 		if (c == kiwi.esc_gt) { snew += '>'; p.inc = 1; }
 		
       // ignore any other chars
+
+      if (dbg && result) console.log('> '+ result);
 	}
 
    wasScrolledDown = w3_isScrolledDown(el_scroll);
