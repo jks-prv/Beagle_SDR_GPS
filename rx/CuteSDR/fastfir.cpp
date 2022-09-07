@@ -155,11 +155,11 @@ void CFastFIR::SetupWindowFunction(int window_func)
 //		example to make 2700Hz USB filter:
 //	SetupParameters( 100, 2800, 0, 48000);
 //////////////////////////////////////////////////////////////////////
-void CFastFIR::SetupParameters(int ch, TYPEREAL FLoCut, TYPEREAL FHiCut,
+void CFastFIR::SetupParameters(int instance, TYPEREAL FLoCut, TYPEREAL FHiCut,
 								TYPEREAL Offset, TYPEREAL SampleRate)
 {
     int i;
-    m_ch = ch;
+    m_instance = instance;
     
 	if( (FLoCut==m_FLoCut) && (FHiCut==m_FHiCut) &&
 		(Offset==m_Offset) && (SampleRate==m_SampleRate) )
@@ -234,7 +234,7 @@ int CFastFIR::ProcessData(int rx_chan, int InLength, TYPECPX* InBuf, TYPECPX* Ou
 
     ext_users_t *ext_u = &ext_users[rx_chan];
     ext_receive_FFT_samps_t receive_FFT = ext_u->receive_FFT;
-    int receive_FFT_ch = m_ch;
+    int receive_FFT_instance = m_instance;
     bool receive_FFT_pre = (receive_FFT != NULL && (ext_u->FFT_flags & PRE_FILTERED));
     bool receive_FFT_post = (receive_FFT != NULL && (ext_u->FFT_flags & POST_FILTERED));
 
@@ -266,7 +266,7 @@ int CFastFIR::ProcessData(int rx_chan, int InLength, TYPECPX* InBuf, TYPECPX* Ou
                                   reinterpret_cast<const fftwf_complex *>(m_pFFTBuf),
                                   m_CIC,
                                   reinterpret_cast<fftwf_complex *>(m_pFFTBuf_pre));
-                buf_modified = receive_FFT(rx_chan, receive_FFT_ch, PRE_FILTERED, CONV_FFT_TO_OUTBUF_RATIO, CONV_FFT_SIZE, m_pFFTBuf_pre);
+                buf_modified = receive_FFT(rx_chan, receive_FFT_instance, PRE_FILTERED, CONV_FFT_TO_OUTBUF_RATIO, CONV_FFT_SIZE, m_pFFTBuf_pre);
             }
 
             if (buf_modified) {
@@ -283,7 +283,7 @@ int CFastFIR::ProcessData(int rx_chan, int InLength, TYPECPX* InBuf, TYPECPX* Ou
             }
 
 			if (receive_FFT_post)
-				receive_FFT(rx_chan, receive_FFT_ch, POST_FILTERED, CONV_FFT_TO_OUTBUF_RATIO, CONV_FFT_SIZE, m_pFFTBuf);
+				receive_FFT(rx_chan, receive_FFT_instance, POST_FILTERED, CONV_FFT_TO_OUTBUF_RATIO, CONV_FFT_SIZE, m_pFFTBuf);
 
 			MFFTW_EXECUTE(m_FFT_RevPlan);
 

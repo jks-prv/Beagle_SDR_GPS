@@ -17,6 +17,19 @@
 
 #include <math.h>
 
+//#define PN_F_DEBUG
+#ifdef PN_F_DEBUG
+    #define P0_F p0_f
+    #define P1_F p1_f
+    #define P2_F p2_f
+    #define P3_F p3_f
+#else
+    #define P0_F 0
+    #define P1_F 0
+    #define P2_F 0
+    #define P3_F 0
+#endif
+
 #define SAM_PLL_HILBERT_STAGES 7
 
 struct wdsp_SAM_t {
@@ -37,6 +50,9 @@ struct wdsp_SAM_t {
     f32_t dc_insert;
     f32_t dcu;
     f32_t dc_insertu;
+    
+    // DC block;
+    double z1, z1_u;
 
     #define SAM_array_dim(d,l) assert_array_dim(d,l)
     #define ABCD_DIM (3 * SAM_PLL_HILBERT_STAGES + 3)
@@ -56,7 +72,6 @@ static f32_t omega_min;
 static f32_t omega_max;
 
 // fade leveler
-#define FADE_LEVELER 1
 static const f32_t tauR = 0.02;
 static const f32_t tauI = 1.4;
 static f32_t mtauR;
@@ -150,14 +165,20 @@ f32_t wdsp_SAM_carrier(int rx_chan)
     return carrier;
 }
 
-void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *in, TYPEMONO16 *out)
+void wdsp_SAM_demod(int rx_chan, int mode, u4_t SAM_mparam, int ns_out, TYPECPX *in, TYPEMONO16 *out)
 {
     TYPECPX *out_stereo = in;   // stereo output is pushed back onto IQ input buffer
     wdsp_SAM_t *w = &wdsp_SAM[rx_chan];
     f32_t ai_ps, bi_ps, bq_ps, aq_ps;
+
+    u4_t chan_null = SAM_mparam & CHAN_NULL;
     bool isChanNull = (mode == MODE_SAM && chan_null != CHAN_NULL_NONE);
     bool need_ps = ((mode != MODE_SAM && mode != MODE_QAM) || isChanNull);
     bool stereoMode_or_nulling = (mode == MODE_SAS || mode == MODE_QAM || isChanNull);
+    
+    bool fade_leveler = SAM_mparam & FADE_LEVELER;
+    bool DC_block = SAM_mparam & DC_BLOCK;
+    //real_printf("%s%s", fade_leveler? "f":"", DC_block? "D":""); fflush(stdout);
     
     for (u4_t i = 0; i < ns_out; i++) {
           
@@ -247,19 +268,37 @@ void wdsp_SAM_demod(int rx_chan, int mode, int chan_null, int ns_out, TYPECPX *i
                 break;
         }
         
-        if (FADE_LEVELER) {
+        audio  *= P0_F? P0_F : 1;
+        audiou *= P1_F? P1_F : 1;
+
+        if (fade_leveler) {
             w->dc = mtauR * w->dc + onem_mtauR * audio;
             w->dc_insert = mtauI * w->dc_insert + onem_mtauI * corr[I];
             audio = audio + w->dc_insert - w->dc;
         }
         
+        // high pass filter (DC removal) with IIR filter
+        // H(z) = (1 - z^-1) / (1 - DC_ALPHA*z^-1)
+        #define DC_ALPHA 0.99f
+        if (DC_block) {
+            f32_t z0 = audio + (w->z1 * DC_ALPHA);
+            audio = z0 - w->z1;
+            w->z1 = z0;
+        }
+        
         if (stereoMode_or_nulling) {
-            if (FADE_LEVELER) {
+            if (fade_leveler) {
                 w->dcu = mtauR * w->dcu + onem_mtauR * audiou;
                 w->dc_insertu = mtauI * w->dc_insertu + onem_mtauI * corr[I];
                 audiou = audiou + w->dc_insertu - w->dcu;
             }
             
+            if (DC_block) {
+                f32_t z0 = audiou + (w->z1_u * DC_ALPHA);
+                audiou = z0 - w->z1_u;
+                w->z1_u = z0;
+            }
+
             if (isChanNull) {   // MODE_SAM
                 out[i] = audion;    // lsb or usb nulled
 

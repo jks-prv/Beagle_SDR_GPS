@@ -25,7 +25,7 @@ public:
 	CFastFIR();
 	virtual ~CFastFIR();
 
-	void SetupParameters(int ch, TYPEREAL FLoCut,TYPEREAL FHiCut,TYPEREAL Offset, TYPEREAL SampleRate);
+	void SetupParameters(int instance, TYPEREAL FLoCut,TYPEREAL FHiCut,TYPEREAL Offset, TYPEREAL SampleRate);
 	void SetupWindowFunction(int window_func);
 	int ProcessData(int rx_chan, int InLength, TYPECPX* InBuf, TYPECPX* OutBuf);
 
@@ -33,7 +33,7 @@ public:
 private:
 	inline void CpxMpy(int N, TYPECPX* m, TYPECPX* src, TYPECPX* dest);
 	
-	int m_ch;
+	int m_instance;
 
 	TYPEREAL m_FLoCut;
 	TYPEREAL m_FHiCut;

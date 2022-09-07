@@ -610,6 +610,7 @@ function FFT_blur()
    spec.source_audio = 0;
    ext_send('SET run='+ fft.func_e.OFF);
 	spec.need_clear_avg = true;   // remove our spectrum data from averaging buffers
+   ext_hide_spectrum();
 }
 
 // called to display HTML for configuration parameters in admin interface

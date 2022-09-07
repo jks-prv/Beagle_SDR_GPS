@@ -558,7 +558,7 @@ void WSPR_Deco(void *param)
 static double frate, fdecimate;
 static int int_decimate;
 
-void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
+void wspr_data(int rx_chan, int instance, int nsamps, TYPECPX *samps)
 {
     wspr_t *w = &WSPR_SHMEM->wspr[rx_chan];
     assert(rx_chan == w->rx_chan);

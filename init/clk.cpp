@@ -86,7 +86,8 @@ double adc_clock_system()
     double new_clk = clk.adc_clock_base + clk.manual_adj;
 
     // apply effect of any manual clock corrections
-    if (clk.do_corrections == ADC_CLK_CORR_DISABLED) {
+    if (clk.do_corrections == ADC_CLK_CORR_DISABLED ||
+        (clk.do_corrections >= ADC_CLK_CORR_CONTINUOUS && clk.adc_gps_clk_corrections == 0)) {
         for (conn_t *c = conns; c < &conns[N_CONNS]; c++) {
             if (!c->valid) continue;
     
@@ -128,7 +129,7 @@ void clock_correction(double t_rx, u64_t ticks)
 
     bool initial_temp_correction = (clk.adc_clk_corrections <= 5);
 
-    if (!initial_temp_correction && clk.do_corrections == ADC_CLK_CORR_DISABLED) {
+    if (clk.do_corrections == ADC_CLK_CORR_DISABLED) {
         clk.is_corr = false;
         clk_printf("CLK CORR DISABLED\n");
         return;

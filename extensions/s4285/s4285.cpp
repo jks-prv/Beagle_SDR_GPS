@@ -81,8 +81,8 @@ void s4285_rx(void *param)
 	}
 }
 
-//void s4285_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
-void s4285_data(int rx_chan, int ch, int nsamps, TYPEMONO16 *samps)
+//void s4285_data(int rx_chan, int instance, int nsamps, TYPECPX *samps)
+void s4285_data(int rx_chan, int instance, int nsamps, TYPEMONO16 *samps)
 {
 	s4285_t *e = &s4285[rx_chan];
 	

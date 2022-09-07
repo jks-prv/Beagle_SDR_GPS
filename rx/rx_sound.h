@@ -24,6 +24,14 @@ Boston, MA  02110-1301, USA.
 #include "cuteSDR.h"
 #include "ima_adpcm.h"
 
+
+#define SND_INSTANCE_FFT_PASSBAND   0
+#define SND_INSTANCE_FFT_CHAN_NULL  1
+
+
+#define MODE_FLAGS_SAM  0x0000000f
+
+
 typedef struct {
 	struct {
 		char id[3];

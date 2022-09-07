@@ -58,7 +58,7 @@ public:
         return u1_t(std::max(0.0f, std::min(255.0f, 127+sample.real())));
     }
 
-    void display_data(int ch, int nsamps, TYPECPX *samps) {
+    void display_data(int instance, int nsamps, TYPECPX *samps) {
         for (int i=0; i<nsamps; ++i) {
             const std::complex<float> new_sample = process_sample(samps+i);
             _buf[i] = to_u1(new_sample);
@@ -236,7 +236,7 @@ private:
 
 std::array<timecode::sptr, MAX_RX_CHANS> tc;
 
-void timecode_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
+void timecode_data(int rx_chan, int instance, int nsamps, TYPECPX *samps)
 {
     if (!tc[rx_chan]) return;
     
@@ -260,7 +260,7 @@ void timecode_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
         }
     }
     
-    tc[rx_chan]->display_data(ch, nsamps, samps);
+    tc[rx_chan]->display_data(instance, nsamps, samps);
         
 }
 

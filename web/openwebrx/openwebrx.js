@@ -78,6 +78,10 @@ var owrx = {
    chan_null: 0,
    chan_null_s: [ 'normal', 'null LSB', 'null USB' ],
    
+   SAM_opts: 3,
+   SAM_opts_s: [ 'none', 'fade leveler', 'DC block', 'fade+block' ],
+   SAM_opts_sft: 2,
+   
    ovld_mute: 0,
    ovld_mute_s: [ 'off', 'on' ],
    
@@ -1144,7 +1148,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		var mode = this.server_mode;
 		var locut = this.low_cut.toString();
 		var hicut = this.high_cut.toString();
-		var mparam = (mode == 'sam')? (' param='+ owrx.chan_null) : '';
+		var mparam = (mode == 'sam')? (' param='+ (owrx.chan_null | (owrx.SAM_opts << owrx.SAM_opts_sft))) : '';
 		//console.log('$mode '+ mode);
 		var s = 'SET mod='+ mode +' low_cut='+ locut +' high_cut='+ hicut +' freq='+ freq + mparam;
 		snd_send(s);
@@ -5497,6 +5501,7 @@ function modeset_update_ui(mode)
 
    w3_hide2('id-sam-carrier-container', m != 'sa');  // also QAM
    w3_hide2('id-chan-null', mode != 'sam');
+   w3_hide2('id-SAM-opts', m != 'sa');
 }
 
 // delay the UI updates called from the audio path until the waterfall UI setup is done
@@ -9056,9 +9061,10 @@ function panels_setup()
          )
       ) +
       w3_inline_percent('w3-margin-T-2 w3-valign/',
-         w3_div(''), 55,
+         w3_div(''), 27,
          w3_inline('w3-halign-space-between/w3-last-halign-end',
             w3_select('id-chan-null w3-text-red w3-hide', '', 'channel<br>null', 'owrx.chan_null', owrx.chan_null, owrx.chan_null_s, 'chan_null_cb'),
+            w3_select('id-SAM-opts w3-text-red w3-hide', '', 'SAM<br>options', 'owrx.SAM_opts', owrx.SAM_opts, owrx.SAM_opts_s, 'SAM_opts_cb'),
             w3_select('id-ovld-mute w3-text-red', '', 'ovld<br>mute', 'owrx.ovld_mute', owrx.ovld_mute, owrx.ovld_mute_s, 'ovld_mute_cb')
          )
       );
@@ -10117,6 +10123,14 @@ function chan_null_cb(path, val, first)
    //console.log('$chan_null_cb path='+ path +' val='+ val +' first='+ first);
    if (first) return;   // cur_mode still undefined this early
    owrx.chan_null = +val;
+   ext_set_mode(cur_mode);
+}
+
+function SAM_opts_cb(path, val, first)
+{
+   //console.log('$SAM_opts_cb path='+ path +' val='+ val +' first='+ first);
+   if (first) return;   // cur_mode still undefined this early
+   owrx.SAM_opts = +val;
    ext_set_mode(cur_mode);
 }
 

@@ -214,7 +214,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 	
 	#ifdef HONEY_POT
 	    if ((stream_type == STREAM_SOUND || stream_type == STREAM_WATERFALL) &&
-	        (strcmp(cmd, "SET keepalive") && strcmp(cmd, "SET GET_USERS") && strcmp(cmd, "SET STATS_UPD"))) {
+	        (strcmp(cmd, "SET keepalive") && strcmp(cmd, "SET GET_USERS") && strncmp(cmd, "SET STATS_UPD", 13))) {
 	        cprintf(conn, "HONEY_POT %s %s%d <%s>\n", stream_name,
 	            (stream_type == STREAM_WATERFALL && conn->isMaster)? "-------- " : "", slen, cmd);
 	    }
