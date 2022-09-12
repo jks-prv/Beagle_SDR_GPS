@@ -110,7 +110,7 @@ SATELLITE Sats[] = {
     { 7, 0, 0, E1B},    // gsat0207
     { 8, 0, 0, E1B},    // gsat0208
     { 9, 0, 0, E1B},    // gsat0209
-//  {10, 0, 0, E1B},    // gsat0224 under commissioning
+    {10, 0, 0, E1B},    // gsat0224 Active since 2022-08-29
     {11, 0, 0, E1B},    // gsat0101
     {12, 0, 0, E1B},    // gsat0102
     {13, 0, 0, E1B},    // gsat0220
