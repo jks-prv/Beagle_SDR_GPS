@@ -9046,7 +9046,7 @@ function panels_setup()
       ) +
       w3_inline_percent('id-squelch w3-valign/class-slider w3-last-halign-end',
 			w3_text('id-squelch-label', 'Squelch'), 15,
-         w3_icon('w3-momentary||title="momentary zero squelch"', 'fa-sort-amount-desc', 14, 'white', 'squelch_zero_cb', 1), 3,
+         w3_icon('w3-momentary||title="momentary zero squelch"', 'fa-caret-down', 22, 'white', 'squelch_zero_cb', 1), 3,
          w3_slider('id-squelch-value w3-wheel', '', '', squelch, 0, 99, 1, 'set_squelch_cb'), 42,
          w3_div('id-squelch-field class-slider'), 14,
          w3_select('id-pre-rec w3-margin-R-4 w3-hide w3-text-red||title="pre-record time"', '', 'pre', 'pre_record', pre_record, pre_record_s, 'pre_record_cb'), 16,
