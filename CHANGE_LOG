@@ -29,6 +29,11 @@ v1.560  Sep 12, 2022
         environment. Somewhat related to our difficulties in automating SNR measurement.
 
     "SAM options" menu now works for the other SAM modes (SAL, SAU, SAS, QAM).
+    
+    S-meter extension now has its own menu for setting the timestamps to UTC or local time.
+    Previously the value from the waterfall extension UTC/local menu was used.
+    
+    Waterfall and S-meter timestamps now appended with "UTC" or "L".
 
     Fixed a somewhat strange problem with proxied Kiwis: If you had a low value in the menu on the
     admin control tab "Number of simultaneous channels available for connection by non-Kiwi apps"
