@@ -172,7 +172,7 @@ void c2s_sound(void *param)
 	const char *s;
 	
 	double freq=-1, _freq, gen=-1, _gen, locut=0, _locut, hicut=0, _hicut, mix;
-	int mode=-1, _mode, genattn=0, _genattn, mute, test=0, de_emp=0;
+	int mode=-1, _mode, genattn=0, _genattn, mute=0, test=0, de_emp=0;
 	u4_t mparam=0;
 	double z1 = 0;
 
@@ -232,7 +232,7 @@ void c2s_sound(void *param)
 	#define N_RSSI 65
 	float rssi_q[N_RSSI];
 	int squelch=0, squelch_on_seq=-1, tail_delay=0;
-	bool sq_init=false, squelched=false;
+	bool sq_changed=false, squelched=false;
 
 	// Overload muting stuff
 	int mute_overload = 0; // activate the muting when overloaded
@@ -394,14 +394,15 @@ void c2s_sound(void *param)
                                 memset(&snd->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
                             }
                     
-                            if (_mode == MODE_SAM && n == 5) {
+                            bool SAM_modes = (_mode >= MODE_SAM && _mode <= MODE_QAM);
+                            if (SAM_modes && n == 5) {
                                 SAM_mparam = mparam & MODE_FLAGS_SAM;
                                 cprintf(conn, "SAM DC_block=%d fade_leveler=%d chan_null=%d\n",
                                     (SAM_mparam & DC_BLOCK)? 1:0, (SAM_mparam & FADE_LEVELER)? 1:0, SAM_mparam & CHAN_NULL);
                             }
 
                             // reset SAM demod on non-SAM to SAM transition
-                            if ((_mode >= MODE_SAM && _mode <= MODE_QAM) && !(mode >= MODE_SAM && mode <= MODE_QAM)) {
+                            if (SAM_modes && !(mode >= MODE_SAM && mode <= MODE_QAM)) {
                                 //cprintf(conn, "SAM_PLL_RESET\n");
                                 wdsp_SAM_PLL(rx_chan, PLL_RESET);
                             }
@@ -600,15 +601,17 @@ void c2s_sound(void *param)
                     if (n == 2) {
                         squelch = _squelch;
                         squelched = false;
-                        //cprintf(conn, "SND SET squelch=%d param=%.2f %s\n", squelch, _squelch_param, mode_s[mode]);
+                        //cprintf(conn, "SND SET squelch=%d param=%.2f %s", squelch, _squelch_param, mode_s[mode]);
                         if (mode == MODE_NBFM) {
                             m_Squelch[rx_chan].SetSquelch(squelch, _squelch_param);
                         } else {
                             float squelch_tail = _squelch_param;
                             tail_delay = roundf(squelch_tail * snd_rate / LOOP_BC);
                             squelch_on_seq = -1;
-                            sq_init = true;
+                            sq_changed = true;
+                            //cprintf(conn, " squelch_tail=%.2f tail_delay=%d", squelch_tail, tail_delay);
                         }
+                        //cprintf(conn, "\n");
                     }
                 }
                 break;
@@ -708,7 +711,7 @@ void c2s_sound(void *param)
                 n = sscanf(cmd, "SET ovld_mute=%d", &mute_overload);
                 if (n == 1) {
                     did_cmd = true;
-                    //printf("mute %d\n", mute);
+                    //printf("ovld_mute %d\n", mute);
                     // FIXME: stop audio stream to save bandwidth?
                 }
 
@@ -1280,19 +1283,19 @@ void c2s_sound(void *param)
                 }
             }
             
-            
-            if ((squelch || sq_init) && !isNBFM && mode != MODE_DRM) {
+            if ((squelch || sq_changed) && !isNBFM && mode != MODE_DRM) {
                 if (!rssi_filled || squelch_on_seq == -1) {
                     rssi_q[rssi_p++] = sMeter_dBm;
                     if (rssi_p >= N_RSSI) { rssi_p = 0; rssi_filled = true; }
                 }
+
                 bool squelch_off = (squelch == 0);
                 bool rtn_is_open = squelch_off? true:false;
                 if (!squelch_off && rssi_filled) {
                     float median_nf = median_f(rssi_q, N_RSSI);
                     float rssi_thresh = median_nf + squelch;
                     bool is_open = (squelch_on_seq != -1);
-                    if (is_open) rssi_thresh -= 6;
+                    if (is_open) rssi_thresh -= 6;      // hysteresis
                     bool rssi_green = (sMeter_dBm >= rssi_thresh);
                     if (rssi_green) {
                         squelch_on_seq = snd->seq;
@@ -1305,10 +1308,16 @@ void c2s_sound(void *param)
                         squelch_on_seq = -1;
                         rtn_is_open = false; 
                     }
+
+                    //cprintf(conn, "squelch=%d rssi_p=%02d rssi_filled=%d median_nf=%.0f mute=%d sMeter_dBm=%.0f >= rssi_thresh=%.0f(%d) rssi_green=%d squelch_on_seq=%d squelched=%d\n",
+                    //    squelch, rssi_p, rssi_filled, median_nf, mute, sMeter_dBm, rssi_thresh, is_open, rssi_green, squelch_on_seq, squelched);
+                } else {
+                    //cprintf(conn, "squelch=%d rssi_p=%02d rssi_filled=%d mute=%d sMeter_dBm=%.0f squelch_on_seq=%d squelched=%d\n",
+                    //    squelch, rssi_p, rssi_filled, mute, sMeter_dBm, squelch_on_seq, squelched);
                 }
-                if (sq_init) sq_init = false;
-                
+
                 squelched = (!rtn_is_open);
+                if (sq_changed) sq_changed = false;
             }
 
             // mute receiver if overload is detected
