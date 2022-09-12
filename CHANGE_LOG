@@ -2,6 +2,47 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.560  Sep 12, 2022
+    New audio "pre-record time" menu (located to the left of the squelch tail length menu).
+    Allows audio samples stored from before the "record" button is pressed, or before the
+    squelch opens, to be included in file recordings.
+    
+        Handy for when you hear something you want to record but it takes you a few seconds to hit
+        the record key ('r') or click the record button. Or you find critical content missing from
+        the recorded file because the squelch opens too slowly (e.g. preamble to a data burst).
+    
+    The (non-NBFM) squelch has this feature/problem that it only responds to relative changes in
+    signal strength. For example, if it is set to 10 dB then the squelch will only open when there
+    is a 10 dB *increase* in signal strength. This means if you had a non-zero squelch value set
+    while tuned to a strong signal, and then reload the page, the squelch remains open (no audio).
+    This happens because there has never been a 10 dB increase in signal strength from the
+    squelch's perspective.
+
+        To fix this you must tune to a quiet part of the band, set the squelch to zero to establish
+        the noise floor, then set it back to the desired value (10 dB in our example).
+        To make this operation easier a new button just before the squelch slider will momentarily
+        zero the squelch value while pressed.
+        
+        In case you're wondering, the NBFM squelch doesn't have this problem because it constantly
+        measures the threshold noise power above the voice frequencies in the FM channel. So it
+        is able to make a continuous relative measurement. This is difficult in the non-NBFM
+        environment. Somewhat related to our difficulties in automating SNR measurement.
+
+    "SAM options" menu now works for the other SAM modes (SAL, SAU, SAS, QAM).
+
+    Fixed a somewhat strange problem with proxied Kiwis: If you had a low value in the menu on the
+    admin control tab "Number of simultaneous channels available for connection by non-Kiwi apps"
+    (like "none" or "1") then some non-local, legitimate browser connections would sometimes get
+    flagged as a "non-Kiwi app" and denied a connection. The details are hard to explain.
+    
+        Anyway, it is fixed. So if you had to increase the menu value as a workaround you should be
+        able to decrease it again. A lower value is helpful if you have lots of bots connecting that
+        you're trying to limit (the bots are classified as non-Kiwi connections). You usually want
+        at least one non-Kiwi connection to handle legitimate TDoA or kiwirecorder use.
+    
+        As usual, connections from the local network are exempt from all this. So for example
+        wsprdaemon running on an RPi on the local network won't be subject to this limit.    
+
 v1.559  Sep 7, 2022
     Added DC block to the SAM/QAM modes. There is a temporary menu on the main control panel,
         audio tab, to allow A/B testing of the DC block against the existing fade leveler that was
