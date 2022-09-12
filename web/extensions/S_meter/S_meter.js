@@ -7,6 +7,7 @@ var S_meter = {
    update_interval:  null,
    show_adc_ovfl: true,
    have_adc_ovfl: 0,
+   sfmt:          'w3-text-red w3-ext-retain-input-focus',
    
    maxdb_init:    -30,
    mindb_init:    -130,
@@ -25,6 +26,9 @@ var S_meter = {
 	marker_s:      [ '1 sec', '5 sec', '10 sec', '15 sec', '30 sec', '1 min', '5 min', '10 min', '15 min', '30 min', '1 hr' ],
 	marker_i:      0,
 	marker_v:      1,
+	
+	tstamp_tz:     0,
+   tstamp_tz_s:   [ 'UTC', 'local' ],
 	
    sm_last_freq:  null,
    sm_last_mode:  null,
@@ -128,11 +132,14 @@ function S_meter_controls_setup()
 					w3_button('w3-padding-smaller', 'Mark', 'S_meter_mark_cb'),
 					w3_button('w3-padding-smaller', 'Clear', 'S_meter_clear_cb')
 				),
-				w3_inline('w3-halign-space-between/',
-               w3_checkbox('/w3-label-inline', 'Averaging', 'S_meter.averaging', true, 'S_meter_averaging_cb'),
+				w3_inline_percent('w3-halign-space-between/',
+               w3_checkbox('/w3-label-inline', 'Averaging', 'S_meter.averaging', true, 'S_meter_averaging_cb'), 50,
                w3_checkbox('/w3-label-inline', 'Timestamp', 'S_meter.timestamp', false, 'S_meter_timestamp_cb')
             ),
-            w3_checkbox('/w3-label-inline', 'Show ADC overflow', 'S_meter.show_adc_ovfl', true, 'w3_bool_cb')
+				w3_inline_percent('w3-halign-space-between/',
+               w3_checkbox('/w3-label-inline', 'Show ADC<br>overflow', 'S_meter.show_adc_ovfl', true, 'w3_bool_cb'), 50,
+               w3_select(S_meter.sfmt, '', '', 'S_meter.tstamp_tz', S_meter.tstamp_tz, S_meter.tstamp_tz_s, 'S_meter_UTC_cb')
+            )
 	)
 		);
 
@@ -285,6 +292,14 @@ function S_meter_timestamp_cb(path, checked, first)
 {
    if (first) return;
 	graph_timestamp(S_meter.gr, checked);
+}
+
+function S_meter_UTC_cb(path, idx, first)
+{
+   if (first) return;
+   w3_num_cb(path, idx, first);
+   idx = +idx;
+	graph_UTC(S_meter.gr, idx? false:true);
 }
 
 // detect when frequency or mode has changed and mark graph
