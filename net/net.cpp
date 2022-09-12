@@ -346,8 +346,8 @@ isLocal_t isLocal_if_ip(conn_t *conn, char *remote_ip_s, const char *log_prefix)
 			continue;
 		}
 		
-		if (log_prefix) cprintf(conn, "%s isLocal_if_ip: flg=0x%x fam=%d socktype=%d proto=%d addrlen=%d %s\n",
-			log_prefix, rp->ai_flags, family, rp->ai_socktype, rp->ai_protocol, rp->ai_addrlen, ip_client_s);
+		if (log_prefix) cprintf(conn, "%s isLocal_if_ip: flg=0x%x fam=%d socktype=%d proto=%d addrlen=%d %s/%s\n",
+			log_prefix, rp->ai_flags, family, rp->ai_socktype, rp->ai_protocol, rp->ai_addrlen, ip_client_s, conn->remote_ip);
 
 		// do local network check depending on type of client address: IPv4, IPv4-mapped IPv6, IPv6 or IPv6LL
 		u4_t ip_server, ip_client;
@@ -453,8 +453,11 @@ isLocal_t isLocal_if_ip(conn_t *conn, char *remote_ip_s, const char *log_prefix)
                     ((ip_client & netmask) == (ip_server & netmask))
                     /* || (ip_client == IPV4_LOOPBACK) */
                 );
-                if (log_prefix) clprintf(conn, "%s isLocal_if_ip: %s IPv4/4_6 remote_ip %s ip_client %s/0x%08x ip_server[%s] %s/0x%08x nm /%d 0x%08x\n",
-                    log_prefix, local? "TRUE":"FALSE", remote_ip_s, ip_client_s, ip_client, ips_type, ip_server_s, ip_server, nm_bits, netmask);
+                
+                // NB: we print conn->remote_ip because remote_ip_s will be 127.0.0.1 for proxied Kiwis.
+                // But we NEVER test local network matching against it since it can be spoofed (a proxied Kiwi can never be local anyway).
+                if (log_prefix) clprintf(conn, "%s isLocal_if_ip: %s IPv4/4_6 remote_ip %s/%s ip_client %s/0x%08x ip_server[%s] %s/0x%08x nm /%d 0x%08x\n",
+                    log_prefix, local? "TRUE":"FALSE", remote_ip_s, conn->remote_ip, ip_client_s, ip_client, ips_type, ip_server_s, ip_server, nm_bits, netmask);
             } else {
                 local = true;
                 for (i=0; i < 16; i++) {
@@ -474,8 +477,8 @@ isLocal_t isLocal_if_ip(conn_t *conn, char *remote_ip_s, const char *log_prefix)
                         break;
                 }
                 */
-                if (log_prefix) clprintf(conn, "%s isLocal_if_ip: %s IPv6 remote_ip %s ip_client %s ip_server[%s] %s nm /%d\n",
-                    log_prefix, local? "TRUE":"FALSE", remote_ip_s, ip_client_s, ips_type, ip_server_s, nm_bits);
+                if (log_prefix) clprintf(conn, "%s isLocal_if_ip: %s IPv6 remote_ip %s/%s ip_client %s ip_server[%s] %s nm /%d\n",
+                    log_prefix, local? "TRUE":"FALSE", remote_ip_s, conn->remote_ip, ip_client_s, ips_type, ip_server_s, nm_bits);
             }
 		
 		} while (ip6_n && local == false);      // more ipv6 addresses to check
@@ -683,9 +686,10 @@ char *ip_remote(struct mg_connection *mc)
 // CAUTION: returned remote_ip could be fake if X-Real-IP or X-Forwarded-For are spoofed
 bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_ip)
 {
-    kiwi_strncpy(remote_ip, ip_remote(mc), NET_ADDRSTRLEN);
+    kiwi_strncpy(remote_ip, ip_remote(mc), NET_ADDRSTRLEN);     // unforwarded
     const char *x_real_ip = mg_get_header(mc, "X-Real-IP");
     const char *x_forwarded_for = mg_get_header(mc, "X-Forwarded-For");
+    //printf("check_if_forwarded: x_real_ip=<%s> x_forwarded_for=<%s>\n", x_real_ip, x_forwarded_for);
 
     int n = 0;
     char *ip_r = NULL;
@@ -705,8 +709,12 @@ bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_i
 
     bool forwarded = false;
     if (n == 1) {
-        kiwi_strncpy(remote_ip, ip_r, NET_ADDRSTRLEN);
-        forwarded = true;
+        if (strcmp(ip_r, "127.0.0.1") != 0) {
+            kiwi_strncpy(remote_ip, ip_r, NET_ADDRSTRLEN);
+            forwarded = true;
+        } else {
+            //printf("check_if_forwarded: BOTH loopback? x_real_ip=<%s> x_forwarded_for=<%s>\n", x_real_ip, x_forwarded_for);
+        }
     }
     
     kiwi_ifree(ip_r);

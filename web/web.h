@@ -40,10 +40,15 @@ Boston, MA  02110-1301, USA.
 	#define WEB_CACHING_DEBUG_ALL 4
 	#define web_printf_all(fmt, ...) \
 		if (web_caching_debug & WEB_CACHING_DEBUG_ALL) lprintf(fmt, ## __VA_ARGS__)
+
+	#define WEB_CACHING_DEBUG_SERVED 8
+	#define web_printf_served(fmt, ...) \
+		if (web_caching_debug & WEB_CACHING_DEBUG_SERVED) lprintf(fmt, ## __VA_ARGS__)
 #else
 	#define web_printf_sent(fmt, ...)
 	#define web_printf_cached(fmt, ...)
 	#define web_printf_all(fmt, ...)
+	#define web_printf_served(fmt, ...)
 #endif
 
 #define NREQ_BUF (16*1024)		// the dx list can easily get longer than 1K

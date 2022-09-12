@@ -123,6 +123,7 @@ typedef struct conn_st {
 	u4_t wf_loop, wf_lock, wf_get;
 	u4_t audio_underrun, sequence_errors;
 	u4_t spurious_timestamps_recvd, unknown_cmd_recvd;
+	char *browser;
 
 	#ifdef SND_TIMING_CK
 		bool audio_check;

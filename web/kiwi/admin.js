@@ -1104,7 +1104,8 @@ var network = {
    ip_blacklist_file_base: 'kiwisdr.com/ip_blacklist/ip_blacklist3.cjson',
    ip_blacklist_check_mtime: true,
    
-   ethernet_speed_s: [ '100 Mbps', '10 Mbps' ],
+   // this ordering gives a remapping of the old 0/1 values: 100M(0) => auto, 10M(1) => same
+   ethernet_speed_s: [ 'auto', '10 Mbps', '100 Mbps' ],
    ethernet_mtu_s: [ '1500 (default)', '1440', '1400' ]
 };
 

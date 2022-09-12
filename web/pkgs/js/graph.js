@@ -13,6 +13,7 @@ function graph_init(canvas, opt)
    gr.threshold = 0;
    gr.averaging = false;
    gr.timestamp = false;
+   gr.UTC = true;
    gr.avg_dB = 0;
    gr.divider = false;
    
@@ -44,6 +45,7 @@ function graph_init(canvas, opt)
    gr.speed = w3_opt(opt, 'speed', 1);
    gr.averaging = w3_opt(opt, 'averaging', false);
    gr.timestamp = w3_opt(opt, 'timestamp', false);
+   gr.UTC = w3_opt(opt, 'UTC', true);
    gr.plot_color = w3_opt(opt, 'color', 'black');
    
    if (gr.dBm) {
@@ -111,6 +113,11 @@ function graph_averaging(gr, averaging)
 function graph_timestamp(gr, timestamp)
 {
    gr.timestamp = timestamp;
+}
+
+function graph_UTC(gr, UTC)
+{
+   gr.UTC = UTC;
 }
 
 function graph_plot(gr, val_dB, opt)
@@ -240,9 +247,9 @@ function graph_plot(gr, val_dB, opt)
          ct.fillRect(w-1,0, 1,h);
       }
 
-      if (gr.x_tick == 75) {
-         var tstamp = (wf.ts_tz == 0)? gr.time_mark.toUTCString().substr(17,8) : gr.time_mark.toString().substr(16,8);
-         var xt = w - 70 + ct.measureText(tstamp).width / 2;
+      if (gr.x_tick == 100) {
+         var tstamp = gr.UTC? (gr.time_mark.toUTCString().substr(17,8) +' UTC') : (gr.time_mark.toString().substr(16,8) +' L');
+         var xt = w - 90 + ct.measureText(tstamp).width / 2;
 	      w3_fillText(ct, xt, h-10, tstamp, 'black', '14px Arial', 1);
       }
       if (gr.x_tick == 300) gr.x_tick = 0;

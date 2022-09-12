@@ -73,6 +73,17 @@ var kiwi = {
    ADC_CLK_CORR_DISABLED: 0,
    ADC_CLK_CORR_CONTINUOUS: 1,
    
+   // pre-record / pre-squelch buffer
+   pre_samps: 0,
+   pre_size: 0,
+   pre_last: 0,
+   pre_buf: null,
+   pre_data: null,
+   pre_off: 0,
+   pre_captured: false,
+   pre_wrapped: false,
+   pre_ping_pong: 0,
+   
    _last_: null
 };
 

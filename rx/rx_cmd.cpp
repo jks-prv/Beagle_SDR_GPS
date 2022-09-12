@@ -405,7 +405,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 check_ip_against_restricted = false;
             }
 
-            pdb_printf("PWD %s %s conn #%d from %s %s internal_conn=%d check_ip_against_restricted=%d restricted_ip_match=%d\n",
+            pdb_printf("PWD %s %s conn #%d from %s/%s internal_conn=%d check_ip_against_restricted=%d restricted_ip_match=%d\n",
                 type_m, uri, conn->self_idx, ip_remote(mc), conn->remote_ip,
                 conn->internal_connection, check_ip_against_restricted, restricted_ip_match);
             pdb_printf("PWD %s %s conn #%d force_notLocal=%d isLocal=%d is_local=%d auth=%d auth_kiwi=%d auth_prot=%d auth_admin=%d\n",
@@ -1857,11 +1857,12 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 	
     case CMD_BROWSER: {
         char *browser_m = NULL;
-        n = sscanf(cmd, "SET browser=%256ms", &browser_m);
+        n = sscanf(cmd, "SET browser=%256m[^\n]", &browser_m);
         if (n == 1) {
             kiwi_str_decode_inplace(browser_m);
             //clprintf(conn, "SET browser=<%s>\n", browser_m);
-            kiwi_ifree(browser_m);
+            kiwi_ifree(conn->browser);
+            conn->browser = browser_m;
             return true;
         }
 	    break;
