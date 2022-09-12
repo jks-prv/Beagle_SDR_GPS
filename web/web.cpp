@@ -556,12 +556,22 @@ void reload_index_params()
 static char cached_ip[NET_ADDRSTRLEN];
 static int cached_served;
 
-void web_has_served(const char *from, char *ip_s, const char *fn_s)
+static void web_has_served(int from, char *ip_unforwarded, char *ip_forwarded, const char *fn_s)
 {
 	conn_t *c;
 	int ch;
     rx_chan_t *rx;
+    const char *from_s = (from == MG_REQUEST)? "SENT" : "CACHED";
     bool found = false;
+    bool loopback_unforwarded = (strcmp(ip_unforwarded, "127.0.0.1") == 0);
+    bool loopback_forwarded = (strcmp(ip_forwarded, "127.0.0.1") == 0);
+    char *ip_s = loopback_unforwarded? ip_forwarded : ip_unforwarded;
+    
+    // NB: unknown why this happens -- we have no way to determine ip in this case
+    if (loopback_unforwarded && loopback_forwarded) {
+        web_printf_served("SERVED: BOTH loopback %s\n", fn_s);
+        return;
+    }
 
     for (rx = rx_channels, ch = 0; rx < &rx_channels[rx_chans]; rx++, ch++) {
         if (!rx->busy) continue;
@@ -570,20 +580,22 @@ void web_has_served(const char *from, char *ip_s, const char *fn_s)
 		if (c->isLocal || c->internal_connection || c->ext_api_determined ||
             (c->type != STREAM_SOUND && c->type != STREAM_WATERFALL)) continue;
 		if (strcmp(ip_s, c->remote_ip) == 0) {
-		    c->served++;
-		    //printf("SERVED: %6s RX%d #%d %s %s\n", from, ch, c->served, ip_s, fn_s);
+		    //if (from == MG_REQUEST)
+		        c->served++;
+		    web_printf_served("SERVED: %6s RX%d #%d %s %s\n", from_s, ch, c->served, ip_s, fn_s);
 		    found = true;
 		}
 	}
 	
 	if (!found) {
 	    if (strcmp(cached_ip, ip_s) == 0) {
-	        cached_served++;
-            //printf("SERVED: %6s LAST cached #%d %s %s\n", from, cached_served, ip_s, fn_s);
+	        //if (from == MG_REQUEST)
+	            cached_served++;
+            web_printf_served("SERVED: %6s LAST cached #%d %s %s\n", from_s, cached_served, ip_s, fn_s);
 	    } else {
 	        kiwi_strncpy(cached_ip, ip_s, NET_ADDRSTRLEN);
 	        cached_served = 1;
-            //printf("SERVED: %6s NEW cached #1 %s %s\n", from, ip_s, fn_s);
+            web_printf_served("SERVED: %6s NEW cached #1 %s %s\n", from_s, ip_s, fn_s);
         }
     }
 }
@@ -596,10 +608,10 @@ int web_served(conn_t *c)
 
     if (strcmp(c->remote_ip, cached_ip) == 0) {
         served = c->served + cached_served;
-        //printf("SERVED: RESULT served(%d) + cached(%d) = %d %s\n", c->served, cached_served, served, c->remote_ip);
+        web_printf_served("SERVED: RESULT served(%d) + cached(%d) = %d %s\n", c->served, cached_served, served, c->remote_ip);
     } else {
         served = c->served;
-        //printf("SERVED: RESULT served(%d) + NO_CACHE_MATCH = %d %s (cached=%s)\n", c->served, served, c->remote_ip, cached_ip);
+        web_printf_served("SERVED: RESULT served(%d) + NO_CACHE_MATCH = %d %s (cached=%s)\n", c->served, served, c->remote_ip, cached_ip);
     }
     
     return served;
@@ -608,7 +620,7 @@ int web_served(conn_t *c)
 void web_served_clear_cache(conn_t *c)
 {
     if (strcmp(c->remote_ip, cached_ip) == 0) {
-        //printf("SERVED: RESULT CLEAR_CACHE %s\n", c->remote_ip);
+        web_printf_served("SERVED: RESULT CLEAR_CACHE %s %s\n", c->remote_ip, cached_ip);
         cached_ip[0] = '\0';
         cached_served = 0;
     }
@@ -695,9 +707,10 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 
 	// iptables will stop regular connection attempts from a blacklisted ip.
 	// But when proxied we need to check the forwarded ip address.
-	// Note that this code always sets remote_ip[] as a side-effect for later use (the real client ip).
+	// Note that this code always sets ip_forwarded[] as a side-effect for later use (the real client ip).
 	char ip_forwarded[NET_ADDRSTRLEN];
     check_if_forwarded("WEB", mc, ip_forwarded);
+    //printf("WEB mc=%p mc->remote_ip=%s ip_unforwarded=%s ip_forwarded=%s %s\n", mc, mc->remote_ip, ip_unforwarded, ip_forwarded, mc->uri);
     bool bl_ufw = check_ip_blacklist(ip_unforwarded);
     bool bl_fwd = check_ip_blacklist(ip_forwarded);
     
@@ -738,7 +751,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     #endif
 		
 	if (evt == MG_CACHE_RESULT) {
-	    web_has_served("CACHED", ip_forwarded, mc->uri);
+	    web_has_served(MG_CACHE_RESULT, ip_unforwarded, ip_forwarded, mc->uri);
 	    if (web_caching_debug == 0) return MG_TRUE;
 	    
 	    if (mc->cache_info.cached)
@@ -1162,7 +1175,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
             }
         }
         web_printf_sent("%15s %s\n", ip_forwarded, isAJAX? mc->uri : uri);
-        if (!isAJAX) web_has_served("SENT", ip_forwarded, mc->uri);
+        if (!isAJAX) web_has_served(MG_REQUEST, ip_unforwarded, ip_forwarded, mc->uri);
         
         mg_send_header(mc, "Server", web_server_hdr);
         

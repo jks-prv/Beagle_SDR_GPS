@@ -280,7 +280,7 @@ static void called_every_second()
 		if (c->ext_api_determined) continue;
 		int served = web_served(c);
 		
-		#if 0
+		#ifdef HONEY_POT
             cprintf(c, "API: rx%d arrival=%d served=%d type=%s ext_api%d isLocal%d internal%d\n",
                 ch, now - c->arrival, served, rx_streams[c->type].uri,
                 c->ext_api, c->isLocal, c->internal_connection);
@@ -304,13 +304,15 @@ static void called_every_second()
             c->ext_api = false;
             c->ext_api_determined = true;
 		    web_served_clear_cache(c);
-		    cprintf(c, "API: decided connection is OKAY (%d)\n", served);
+		    cprintf(c, "API: decided connection is OKAY (%d) %s\n",
+		        served, c->browser? c->browser : "");
 		    continue;
 		}
 		
 		c->ext_api = c->ext_api_determined = true;
 		web_served_clear_cache(c);
-		cprintf(c, "API: decided connection is non-Kiwi app (%d)\n", served);
+		cprintf(c, "API: decided connection is non-Kiwi app (%d) %s\n",
+		    served, c->browser? c->browser : "");
 		//dump();
 
         // ext_api_nchans, if exceeded, overrides tdoa_nchans

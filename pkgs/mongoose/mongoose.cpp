@@ -1855,6 +1855,7 @@ static void parse_http_headers(char **buf, struct mg_connection *ri) {
     ri->http_headers[i].value = skip(buf, "\r\n");
     if (ri->http_headers[i].name[0] == '\0')
       break;
+    //printf("HDR %d %s = %s\n", i, ri->http_headers[i].name, ri->http_headers[i].value);
     ri->num_headers = i + 1;
   }
 }
