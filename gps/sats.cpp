@@ -98,7 +98,7 @@ SATELLITE Sats[] = {
 //  {202, 900, 01045},
 
     // Galileo E1B
-    // last checked: 15-Jun-2022
+    // last checked: 13 Sep 2022
     // www.gsc-europa.eu/system-service-status/constellation-information
     // en.wikipedia.org/wiki/List_of_Galileo_satellites
     { 1, 0, 0, E1B},    // gsat0210
@@ -110,7 +110,7 @@ SATELLITE Sats[] = {
     { 7, 0, 0, E1B},    // gsat0207
     { 8, 0, 0, E1B},    // gsat0208
     { 9, 0, 0, E1B},    // gsat0209
-//  {10, 0, 0, E1B},    // gsat0224 under commissioning
+    {10, 0, 0, E1B},    // gsat0224
     {11, 0, 0, E1B},    // gsat0101
     {12, 0, 0, E1B},    // gsat0102
     {13, 0, 0, E1B},    // gsat0220
