@@ -10134,6 +10134,7 @@ function pre_record_cb(path, val, first, no_write_cookie)
    //console.log('pre_record_cb path='+ path +' val='+ val +' first='+ first +' no_write_cookie='+ no_write_cookie);
    if (first) return;
    pre_record = +val;
+   audio_pre_record_buf_init();
 
    // nbfm has no pre menu
    if (no_write_cookie != true && /* safety net */ cur_mode != 'nbfm')
