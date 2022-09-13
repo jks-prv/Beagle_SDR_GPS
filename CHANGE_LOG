@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.560  Sep 12, 2022
+v1.560,561  Sep 13, 2022
     New audio "pre-record time" menu (located to the left of the squelch tail length menu).
     Allows audio samples stored from before the "record" button is pressed, or before the
     squelch opens, to be included in file recordings.

@@ -1358,9 +1358,11 @@ void c2s_sound(void *param)
             // copy to output buffer and send to client
             ////////////////////////////////
             
-            bool send_silence = (masked || squelched || squelched_overload);
+            #define SILENCE_VALUE 1     // non-zero to prevent triggering the Firefox "goes silent" watchdog
+            //bool send_silence = (masked || squelched || squelched_overload);
+            bool send_silence = masked;     // enforced on server side to prevent clients from cheating
 
-            // IQ output modes (except non-monitor mode DRM)
+            // IQ/stereo output modes (except non-monitor mode DRM)
             if (mode == MODE_IQ || mode == MODE_SAS || mode == MODE_QAM
             #ifdef DRM
                 // DRM monitor mode is effectively the same as MODE_IQ
@@ -1395,7 +1397,7 @@ void c2s_sound(void *param)
                 
                 if (send_silence) {
                     TYPECPX *sp = cp;
-                    for (int i = 0; i < ns_out; i++) { sp->re = sp->im = 1; sp++; }
+                    for (int i = 0; i < ns_out; i++) { sp->re = sp->im = SILENCE_VALUE; sp++; }
                 }
                 
                 if (little_endian) {
@@ -1435,7 +1437,7 @@ void c2s_sound(void *param)
     
                 if (send_silence) {
                     TYPEMONO16 *rs = r_samps;
-                    for (int i = 0; i < ns_out; i++) *rs++ = 1;
+                    for (int i = 0; i < ns_out; i++) *rs++ = SILENCE_VALUE;
                 }
                 
                 if (compression) {
@@ -1489,15 +1491,15 @@ void c2s_sound(void *param)
                         if (little_endian) {
                             bc += pkt_remain * NIQ * sizeof(s2_t);
                             for (j=0; j < pkt_remain; j++) {
-                                *bp_iq_s2++ = 0x1;     // arm native little-endian (put any swap burden on client)
-                                *bp_iq_s2++ = 0x1;
+                                *bp_iq_s2++ = SILENCE_VALUE;     // arm native little-endian (put any swap burden on client)
+                                *bp_iq_s2++ = SILENCE_VALUE;
                             }
                         } else {
                             for (j=0; j < pkt_remain; j++) {
                                 *bp_iq_u1++ = 0; bc++;     // choose a network byte-order (big-endian)
-                                *bp_iq_u1++ = 1; bc++;
+                                *bp_iq_u1++ = SILENCE_VALUE; bc++;
                                 *bp_iq_u1++ = 0; bc++;
-                                *bp_iq_u1++ = 1; bc++;
+                                *bp_iq_u1++ = SILENCE_VALUE; bc++;
                             }
                         }
                     } else {

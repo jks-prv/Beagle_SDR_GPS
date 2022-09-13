@@ -128,7 +128,7 @@ function ImaAdpcmDecode(deltaCode, state)
    return state.previousValue;
 }
 
-function decode_ima_adpcm_e8_i16(input, output, input_length, state)
+function decode_ima_adpcm_e8_i16(input, output, output_unsquelched, squelched, input_length, state)
 {
 	state.pos_clamp = +32767;
 	state.neg_clamp = -32768;
@@ -137,8 +137,12 @@ function decode_ima_adpcm_e8_i16(input, output, input_length, state)
 	for (i=0; i<input_length; i++)
 	{
 	   var byte = input.getUint8(i);
-		output[k++] = ImaAdpcmDecode(byte&0xf, state);
-		output[k++] = ImaAdpcmDecode((byte>>4)&0xf, state);
+		output_unsquelched[k] = ImaAdpcmDecode(byte&0xf, state);
+		output[k] = squelched? 1 : output_unsquelched[k];
+		k++;
+		output_unsquelched[k] = ImaAdpcmDecode((byte>>4)&0xf, state);
+		output[k] = squelched? 1 : output_unsquelched[k];
+		k++;
 	}
 }
 
