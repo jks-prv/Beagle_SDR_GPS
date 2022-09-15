@@ -146,7 +146,7 @@ function iframe_src_cb(path, idx, first)
 {
    iframe.src = +idx;
    admin_select_cb(path, iframe.src, first);
-   console.log('iframe_src_cb: src='+ iframe.src +' '+ (iframe.src != iframe.SRC_IFRAME) +' '+ (iframe.src != iframe.SRC_HTML));
+   //console.log('iframe_src_cb: src='+ iframe.src +' '+ (iframe.src != iframe.SRC_IFRAME) +' '+ (iframe.src != iframe.SRC_HTML));
    w3_disable('id-iframe-url', iframe.src != iframe.SRC_IFRAME);
    //w3_set_props('id-iframe-url', 'w3-disabled w3-pointer-events-none', iframe.src != iframe.SRC_IFRAME);
    w3_disable('id-iframe-html', iframe.src != iframe.SRC_HTML);
