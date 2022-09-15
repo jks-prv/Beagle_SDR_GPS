@@ -2861,7 +2861,7 @@ function log_update()
 // otherwise the \r overwrite logic in kiwi_output_msg() will be triggered
 admin.console = {
    scroll_only_at_bottom: true, inline_returns: true, process_return_alone: false, remove_returns: false,
-   rows: 10, cols: 100
+   rows: 10, cols: 140
 };
 
 function console_html()
@@ -2913,7 +2913,7 @@ function console_html()
 function console_input_cb(path, val)
 {
    if (admin.console.isAltBuf) {
-	   console.log('console_w2c IGNORED due to isAltBuf');
+	   //console.log('console_w2c IGNORED due to isAltBuf');
 	   return;
    }
    
@@ -2923,21 +2923,25 @@ function console_input_cb(path, val)
    w3_scrollDown('id-console-msg');    // scroll to bottom on input
 }
 
-function console_calc_rows_cols()
+function console_calc_rows_cols(init)
 {
    var h_msgs = parseInt(w3_el('id-console-msg').style.height) - /* margins +5 */ 25;
    var h_msg = 15.6;
    var h_ratio = h_msgs / h_msg;
-   admin.console.rows = Math.floor(h_ratio);
+   var rows = Math.floor(h_ratio);
    if (dbgUs)
-      w3_innerHTML('id-console-debug', 'h_msgs='+ h_msgs +' rows: '+ h_ratio.toFixed(2) +' '+ admin.console.rows);
-	ext_send('SET console_rows_cols='+ admin.console.rows +','+ admin.console.cols);
+      w3_innerHTML('id-console-debug', 'h_msgs='+ h_msgs +' rows: '+ h_ratio.toFixed(2) +' '+ rows);
+   if (init || rows != admin.console.rows) {
+      admin.console.init = false;
+      ext_send('SET console_rows_cols='+ rows +','+ admin.console.cols);
+      admin.console.rows = rows;
+   }
 }
 
 function console_connect_cb()
 {
 	ext_send('SET console_open');
-   console_calc_rows_cols();
+   console_calc_rows_cols(1);
    admin.console_open = true;
 }
 
@@ -2971,22 +2975,29 @@ function console_key_cb(ev, input_any_key, input_any_change)
    }
 
    if (admin.console.isAltBuf || input_any_change) {
-      if (1) {
-         var k_s = ev.ctrlKey? k.toUpperCase() : k;
-         var ord_s =  '('+ (ev.ctrlKey? (ord_k & 0x1f) : ord_k) +')';
-         console.log('console_key_cb '+ (ev.ctrlKey? 'CTRL ^':'') + k_s + ord_s +' '+ (k.length == 1));
-      }
+      var ok = true, redo = false;
 
-      var ok = true;
       if (k.length == 1) ; else
       if (k == 'ArrowUp') k = '\x1b[A'; else
       if (k == 'ArrowDown') k = '\x1b[B'; else
       if (k == 'ArrowRight') k = '\x1b[C'; else
       if (k == 'ArrowLeft') k = '\x1b[D'; else
+      if (k == 'Enter') { k = '\n'; redo = true; } else
          ok = false;
+      
+      if (redo) { ord_k = ord(k); }
+      var ctrl = ev.ctrlKey;
+      var ctrl1 = (k.length == 1 && ord_k < 32);
+      var isCtrl = (ctrl || ctrl1);
+
+      if (1) {
+         var k_s = ctrl? k.toUpperCase() : (ctrl1? ('\\'+ chr(ord_k + 32)) : k);
+         var ord_s =  '('+ (ctrl? (ord_k & 0x1f) : ord_k) +')';
+         console.log('console_key_cb '+ (ctrl? 'CTRL ^':'') + k_s + ord_s +' len=1:'+ (k.length == 1) +' ok='+ ok);
+      }
 
       if (ok) {
-         if (ev.ctrlKey) {
+         if (ctrl) {
             ext_send('SET console_oob_key='+ (ord_k & 0x1f));
          } else {
 	         ext_send('SET console_w2c='+ encodeURIComponent(k));
@@ -3010,7 +3021,7 @@ function console_cmd_cb(id, cb_param)
    
    if (!admin.console_open) {
 	   ext_send('SET console_open');
-      console_calc_rows_cols();
+      console_calc_rows_cols(1);
       admin.console_open = true;
       delay = 1000;
    }

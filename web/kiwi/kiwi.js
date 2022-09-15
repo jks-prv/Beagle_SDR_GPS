@@ -975,6 +975,7 @@ function kiwi_output_msg(id, id_scroll, p)
 	}
 	
    if (!p.init) {
+      removeAllLines(parent_el);
       p.el = appendEmptyLine(parent_el);
       p.esc = { s:'', state:0 };
       p.sgr = { span:0, bright:0, fg:null, bg:null };
@@ -1243,9 +1244,16 @@ function kiwi_output_msg(id, id_scroll, p)
                            removeAllLines(parent_el);
                            for (var r = 1; r <= p.rows; r++) {
                               p.dirty[r] = false;
-                              for (var c = 1; c <= p.cols; c++) {
-                                 p.screen[r][c] = ' ';
-                                 p.color[r][c] = { fg: null, bg: null };
+                              try {
+                                 for (var c = 1; c <= p.cols; c++) {
+                                    p.screen[r][c] = ' ';
+                                    p.color[r][c] = { fg: null, bg: null };
+                                 }
+                              } catch(ex) {
+                                 console.log('--------');
+                                 console.log('r='+ r +' c='+ c);
+                                 console.log(p.screen);
+                                 console.log(ex);
                               }
                               p.els[r] = appendEmptyLine(parent_el);
                               p.els[r].innerHTML = '&nbsp;';      // force initial rendering
