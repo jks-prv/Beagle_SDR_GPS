@@ -130,7 +130,7 @@ var bandwidth;
 var center_freq;
 var wf_fft_size;
 
-var cur_mode = 'am';
+var cur_mode;
 var wf_fps, wf_fps_max;
 
 var ws_snd, ws_wf;
@@ -1150,7 +1150,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		var hicut = this.high_cut.toString();
       var m = mode.substr(0,2);
 		var mparam = (m == 'sa' || m == 'qa')? (' param='+ (owrx.chan_null | (owrx.SAM_opts << owrx.SAM_opts_sft))) : '';
-		//console.log('$mode '+ mode);
+		//if (mparam != '') console.log('$mode='+ mode +' mparam='+ mparam); else console.log('$mode='+ mode);
 		var s = 'SET mod='+ mode +' low_cut='+ locut +' high_cut='+ hicut +' freq='+ freq + mparam;
 		snd_send(s);
 		//console.log('$'+ s);
@@ -1792,7 +1792,7 @@ function get_visible_freq_range()
 {
 	out={};
 	
-	if (wf.audioFFT_active && cur_mode) {
+	if (wf.audioFFT_active && cur_mode && demodulators.length != 0) {
 	   var off, span;
       var srate = Math.round(audio_input_rate || 12000);
 	   if (ext_is_IQ_or_stereo_curmode()) {
@@ -10171,7 +10171,7 @@ function chan_null_cb(path, val, first)
    //console.log('$chan_null_cb path='+ path +' val='+ val +' first='+ first);
    if (first) return;   // cur_mode still undefined this early
    owrx.chan_null = +val;
-   ext_set_mode(cur_mode);
+   ext_set_mode(cur_mode);    // set mode so chan_null value passed to server via mparam
 }
 
 function SAM_opts_cb(path, val, first)
@@ -10179,7 +10179,7 @@ function SAM_opts_cb(path, val, first)
    //console.log('$SAM_opts_cb path='+ path +' val='+ val +' first='+ first);
    if (first) return;   // cur_mode still undefined this early
    owrx.SAM_opts = +val;
-   ext_set_mode(cur_mode);
+   ext_set_mode(cur_mode);    // set mode so SAM_opts value passed to server
 }
 
 function ovld_mute_cb(path, val, first)

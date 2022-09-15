@@ -781,7 +781,7 @@ function audio_adpcm_state(index, previousValue)
 
 function audio_pre_record_buf_init()
 {
-   if (pre_record == 0) {
+   if (pre_record == 0 || isUndefined(cur_mode)) {
       kiwi.pre_buf = null;
       return;
    }

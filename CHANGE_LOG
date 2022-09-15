@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.562  Sep 16, 2022
+    Fixed bug causing Kiwi 8 and 14-channel (BBAI et al) modes to fail loading page displaying
+    audio FFT instead of the full waterfall. For example channels 3-8 in 8-channel mode.
+
 v1.560,561  Sep 13, 2022
     New audio "pre-record time" menu (located to the left of the squelch tail length menu).
     Allows audio samples stored from before the "record" button is pressed, or before the
@@ -21,7 +25,8 @@ v1.560,561  Sep 13, 2022
         To fix this you must tune to a quiet part of the band, set the squelch to zero to establish
         the noise floor, then set it back to the desired value (10 dB in our example).
         To make this operation easier a new button just before the squelch slider will momentarily
-        zero the squelch value while pressed.
+        zero the squelch value while pressed. Wait a few seconds with the button pressed for the
+        squelch to establish a new noise floor.
         
         In case you're wondering, the NBFM squelch doesn't have this problem because it constantly
         measures the threshold noise power above the voice frequencies in the FM channel. So it

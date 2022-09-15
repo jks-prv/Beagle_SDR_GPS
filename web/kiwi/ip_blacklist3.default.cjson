@@ -8,6 +8,8 @@
 //
 // Updates:
 //
+// 14 sep 22 141.164.32.0/20 (32.0:47.255) constant/vultr/choopa
+// 14 sep 22 207.246.64.0/18 (64.0:127:255) widened from 207.246.104.0/23 (104.0:105.0) constant/vultr/choopa
 //  3 sep 22 149.248.0.0/18 (0.0:63.255) constant/vultr/choopa
 //  5 aug 22 78.129.128.0/17 (128.0:255.255) rapidswitch.com (UK), seen kiwirecorder camping on 11175 kHz for many hours
 //  6 jul 22 forum: 207.148.64.0/20 (64.0:79.255) constant/vultr/choopa
@@ -15,7 +17,7 @@
 // 19 jun 22 forum: 192.248.158.0/23 constant/vultr London
 // 12 jun 22 forum: 115.171.128.0/18 (128.0:191.255) Chinanet (115.171.170.4)
 //  7 jun 22 173.255.0.0/16 => 173.255.0.0/20 1U Web (from base version, overly broad catching Nortel ISP IPs)
-//  8 may 22 forum: 141.164.48.0/20 constant/vultr/choopa
+//  8 may 22 forum: 141.164.48.0/20 (48.0:63.255) constant/vultr/choopa
 //  7 may 22 forum: 104.238.128.0/18 constant/vultr
 //  3 may 22 forum: 199.247.0.0/19 constant/vultr
 // 17 apr 22 forum: 65.20.64.0/18 constant/vultr
@@ -104,6 +106,7 @@
     "139.180.128.0/18",
     "139.198.0.0/16",
     "140.82.0.0/18",
+    "141.164.32.0/20",
     "141.164.48.0/20",
     "144.202.0.0/17",
     "146.148.0.0/17",
@@ -136,7 +139,7 @@
     "196.247.0.0/16",
     "199.247.0.0/19",
     "207.148.64.0/20",
-    "207.246.104.0/23",
+    "207.246.64.0/18",
     "208.85.16.0/21",
     "210.152.84.111/32",
     "216.128.128.0/18",

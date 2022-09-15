@@ -398,16 +398,22 @@ void stat_task(void *param)
     bool err;
     int baud = cfg_int("CAT_baud", &err, CFG_OPTIONAL);
     if (!err && baud > 0) {
+        bool isUSB = true;
         kiwi.CAT_fd = open("/dev/ttyUSB0", O_RDWR | O_NONBLOCK);
+        if (kiwi.CAT_fd < 0) {
+            isUSB = false;
+            kiwi.CAT_fd = open("/dev/ttyACM0", O_RDWR | O_NONBLOCK);
+        }
+
         if (kiwi.CAT_fd >= 0) {
             kiwi.CAT_ch = -1;
             char *s;
             const int baud_i[] = { 0, 115200 };
-            asprintf(&s, "stty -F /dev/ttyUSB0 %d", baud_i[baud]);
+            asprintf(&s, "stty -F /dev/tty%s0 %d", isUSB? "USB" : "ACM", baud_i[baud]);
             system(s);
             free(s);
-            printf("CAT /dev/ttyUSB0 %d baud\n", baud_i[baud]);
-            //system("stty -a -F /dev/ttyUSB0");
+            printf("CAT /dev/tty%s0 %d baud\n", isUSB? "USB" : "ACM", baud_i[baud]);
+            //if (isUSB) system("stty -a -F /dev/ttyUSB0"); else system("stty -a -F /dev/ttyACM0");
             CAT_task_tid = CreateTask(CAT_task, TO_VOID_PARAM(kiwi.CAT_fd), CAT_PRIORITY);
         }
     }

@@ -213,6 +213,8 @@ function ext_get_prev_mode()
 
 function ext_set_mode(mode, freq, opt)
 {
+   if (isUndefined(mode)) return;
+
    var new_drm = (mode == 'drm');
    if (new_drm)
       extint.prev_mode = cur_mode;

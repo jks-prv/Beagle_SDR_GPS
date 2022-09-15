@@ -443,8 +443,8 @@ alias gk="gdb ../build/kiwi.bin"
 # aliases added to ~/.gdbinit
 # to detect leaks type "leaks" before gk and use asan
 # gdb> asan // sets ASAN breakpoint
-# gdb> {ng,ng10,ngai,ng7}   // no gps, leds
-# gdb> {k,k10,kai,k7}       // normal run
+# gdb> {ng,ng7} // no gps, leds
+# gdb> {k,k7}   // normal run
 
 # KiwiSDR valgrind with gdb (deprecated, use clang ASAN)
 #   'vgh' alias below is a reminder of the sequence of commands
