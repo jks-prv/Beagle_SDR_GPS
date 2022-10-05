@@ -65,6 +65,8 @@ static kstring_t kstrings[KSTRINGS];
 u2_t kstr_next_free;
 int kstr_nused, kstr_hiwat;
 
+char ASCII[128][4];
+
 void kstr_init()
 {
     int i;
@@ -76,6 +78,17 @@ void kstr_init()
 	
 	ks->next_free = KS_LAST;
 	kstr_next_free = 0;
+	
+	// init ASCII[]
+	for (i = 0; i < 32; i++) sprintf(ASCII[i], "^%c", '@'+i);
+	sprintf(ASCII[ 8], "\\b");
+	sprintf(ASCII[ 9], "\\t");
+	sprintf(ASCII[10], "\\n");
+	sprintf(ASCII[13], "\\r");
+	sprintf(ASCII[27], "\\e");
+	for (i = 32; i < 127; i++) sprintf(ASCII[i], "%c", i);
+	sprintf(ASCII[127], "\\7f");
+	//for (i = 0; i < 128; i++) real_printf("%s ", ASCII[i]);
 }
 
 static kstring_t *kstr_is(char *s_kstr_cstr)
@@ -516,6 +529,21 @@ char *kiwi_str_encode(char *src, bool alt)
 #define N_DST_STATIC 4
 #define N_DST_STATIC_BUF (511 + SPACE_FOR_NULL)
 static char dst_static[N_DST_STATIC][N_DST_STATIC_BUF];
+
+// for use with e.g. an immediate printf argument
+char *kiwi_str_ASCII_static(char *src, int which)
+{
+	if (src == NULL) return NULL;
+	check(which < N_DST_STATIC);
+	int i, sl = strlen(src), dl = 0;
+	char *dp = dst_static[which];
+	*dp = '\0';
+	for (char *sp = src; *sp; sp++) {
+	    kiwi_strncat(dp, ASCII[*sp], N_DST_STATIC_BUF);
+	}
+	
+	return dst_static[which];
+}
 
 // for use with e.g. an immediate printf argument
 char *kiwi_str_encode_static(char *src, bool alt)

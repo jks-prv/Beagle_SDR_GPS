@@ -171,7 +171,7 @@ void print_max_min_stream_f(void **state, int flags, const char *name, int index
 static char *cdeco(int idx, char c)
 {
     static char s[16][16];
-    sprintf(s[idx], "%c(%02x)", (c >= ' ' && c < 0x7f)? c : '?', (c & 0xff));
+    sprintf(s[idx], "%s(%02x)", ASCII[c], (c & 0xff));
     return s[idx];
 }
 
