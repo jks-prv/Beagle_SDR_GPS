@@ -119,7 +119,7 @@ function iframe_config_html()
       w3_inline_percent('w3-valign-start/',
          w3_divs('/w3-margin-bottom',
             w3_select('w3-label-inline', 'Source', '', 'iframe.src', iframe.src, ['URL', 'HTML'], 'iframe_src_cb'),
-            w3_input_get('id-iframe-url//', 'URL',           'iframe.url',     'w3_string_set_cfg_cb', ''),
+            w3_input_get('id-iframe-url//', 'URL', 'iframe.url', 'w3_string_set_cfg_cb', ''),
             w3_textarea_get_param('id-iframe-html//w3-input-any-change|width:100%',
                w3_div('',
                   w3_text('w3-bold w3-text-teal w3-show-block', 'HTML/Javascript'),

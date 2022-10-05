@@ -1312,9 +1312,9 @@ function w3_psa3(psa3)
    //if (psa3.includes('w3-dump')) console.log('w3_psa3 in=['+ psa3 +']');
    psa3 = psa3 || '';
    a = psa3.split('/');
-   var a0 = (a[0] || '').replace('&slash;', '/');
-   var a1 = (a[1] || '').replace('&slash;', '/');
-   var a2 = (a[2] || '').replace('&slash;', '/');
+   var a0 = (a[0] || '').replace(/&slash;/g, '/');
+   var a1 = (a[1] || '').replace(/&slash;/g, '/');
+   var a2 = (a[2] || '').replace(/&slash;/g, '/');
    //if (psa3.includes('w3-dump')) console.log(a);
 
    if (a.length == 1)
@@ -1393,7 +1393,7 @@ function w3_psa(psa, extra_prop, extra_style, extra_attr)
 	if (extra_style) style = w3_sbew(';', style, extra_style);
 	if (style != '') psa = w3_sb(psa, 'style='+ dq(style));
 
-	var attr = (a[2] || '').replace('&vbar;', '|');    // e.g. title="foo&vbar;bar" => title="foo|bar"
+	var attr = (a[2] || '').replace(/&vbar;/g, '|');   // e.g. title="foo&vbar;bar" => title="foo|bar"
 	if (extra_attr) attr = w3_sb(attr, extra_attr);
 	if (attr != '') psa = w3_sb(psa, attr);
 
@@ -2121,15 +2121,21 @@ function w3int_input_keydown(ev, path, cb)
    if (!el) return;
    var input_any_key = w3_contains(el, 'w3-input-any-key');
    var input_any_change = w3_contains(el, 'w3-input-any-change');
+   var disabled = w3_parent_with(el, 'w3-disabled');
    //w3_remove(el, 'kiwi-pw');
    var trace = w3_contains(el, 'w3-trace');
-   if (trace) console.log('w3int_input_keydown k='+ k + (ctrl? ' CTRL ':'') +' val=<'+ el.value +'> cb='+ cb);
+   if (trace) console.log('w3int_input_keydown k='+ k + (ctrl? ' CTRL ':'') +' val=<'+ el.value +'> cb='+ cb +' disabled='+ disabled);
    var cb_a = cb.split('|');
+   
+   if (disabled) {
+      if (trace) console.log('w3int_input_keydown w3-disabled');
+      return;
+   }
    
    if (input_any_key && cb_a[1]) {
       //console.log('w3int_input_keydown: input_any_key '+ k +' cb_a[1]='+ cb_a[1]);
       //event_dump(ev, "input_any_change", true);
-      w3_call(cb_a[1], ev, input_any_key, input_any_change);
+      w3_call(cb_a[1], ev, true);
    }
 
 	if (ev.key == 'Enter') {
@@ -2197,6 +2203,7 @@ function w3_input_input(ev)
    var a = ev.detail.split('|');
    var path = a[0];
    var cb = a[1];
+   //console.log('w3_input_input path='+ path +' cb='+ cb);
 	var el = w3_el(path);
 	if (el) {
       var trace = w3_contains(el, 'w3-trace');
@@ -2358,9 +2365,11 @@ function w3_textarea(psa, label, path, val, rows, cols, cb)
 {
 	var id = w3_add_id(path);
 	var spacing = (label != '')? ' w3-margin-T-8' : '';
+	var custom = psa.includes('w3-custom-events');
 	var onchange = psa.includes('w3-input-any-change')? '' : (' onchange="w3_input_change('+ sq(path) +', '+ sq(cb) +')"');
 	var onkeydown = ' onkeydown="w3int_input_keydown(event, '+ sq(path) +', '+ sq(cb) +')"';
 	var onkeyup = ' onkeyup="w3int_input_keyup(event, '+ sq(path) +', '+ sq(cb) +')"';
+	var events = (path && !custom)? (onchange + onkeydown + onkeyup) : '';
 	var val = val || '';
 	var bold = !psa.includes('w3-label-not-bold');
    var psa3 = w3_psa3(psa);
@@ -2370,14 +2379,14 @@ function w3_textarea(psa, label, path, val, rows, cols, cb)
 	var s =
 	   w3_div(psa3.left,
          w3_label(psa_label, label, path) +
-		   '<textarea '+ psa_inner + onchange + onkeydown + onkeyup +'>'+ val +'</textarea>'
+		   '<textarea '+ psa_inner + events +'>'+ val +'</textarea>'
 		);
 	//if (psa.includes('w3-dump')) console.log('$');
 	//if (psa.includes('w3-dump')) console.log(psa3);
 	//if (psa.includes('w3-dump')) console.log(psa_inner);
 	//if (psa.includes('w3-dump')) console.log('label='+ label);
 	//if (psa.includes('w3-dump')) console.log('val='+ val);
-	//if (psa.includes('w3-dump')) console.log('s='+ s);
+	if (psa.includes('w3-dump')) console.log('s='+ s);
 	return s;
 }
 
