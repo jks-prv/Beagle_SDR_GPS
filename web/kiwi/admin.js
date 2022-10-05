@@ -597,18 +597,29 @@ function connect_html()
 				
 			w3_div('',
                w3_div('w3-show-inline-block|width:60%;',
-                  w3_input_get('', 'Host name (your choice, see instructions)',
+                  w3_input_get('', "Host name: a-z, 0-9, -, _<br>(all lower case, see instructions)",
                      'adm.rev_host', 'connect_rev_host_cb', '', 'required'
                   )
                ) +
-               w3_div('id-connect-proxy_server w3-show-inline-block')
+               w3_div('id-connect-proxy_server w3-margin-L-8 w3-show-inline-block')
             ), 50
 			),
 			
 			w3_div('w3-container',
             w3_label('w3-show-inline-block w3-margin-R-16 w3-text-teal', 'Status:') +
 				w3_div('id-connect-rev-status w3-show-inline-block w3-text-black w3-background-pale-aqua', '')
-			)
+			),
+
+         w3_half('w3-margin-top w3-margin-bottom w3-text-teal', 'w3-container',
+            w3_div('w3-restart',
+               w3_input_get('id-proxy-server', 'Proxy server hostname', 'adm.proxy_server', 'connect_proxy_server_cb'),
+               w3_div('w3-text-black',
+                  'Change <b>only</b> if you have implemented a private proxy server. <br>' +
+                  'Set to "proxy.kiwisdr.com" for the default proxy service.'
+               )
+            ),
+            w3_div()
+         )
 		) +
 		'<hr>';
 
@@ -617,10 +628,10 @@ function connect_html()
 
 function connect_focus()
 {
-    connect.focus = 1;
-    connect_update_url();
-	w3_el('id-proxy-hdr').innerHTML = 'Proxy information for '+ adm.proxy_server;
-    ext_send('SET DUC_status_query');
+   connect.focus = 1;
+   connect_update_url();
+   w3_el('id-proxy-hdr').innerHTML = 'Proxy information for '+ adm.proxy_server;
+   ext_send('SET DUC_status_query');
 	
    w3_hide('id-proxy-menu');
 	if (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)
@@ -799,7 +810,7 @@ function connect_DUC_start_cb(id, idx)
 	var s = '-u '+ sq(decodeURIComponent(adm.duc_user)) +' -p '+ sq(decodeURIComponent(adm.duc_pass)) +
 	   ' -H '+ sq(decodeURIComponent(adm.duc_host)) +' -U '+ duc_update_v[adm.duc_update];
 	console.log('start DUC: '+ s);
-	w3_innerHTML('id-net-duc-status', 'Getting status from DUC server...');
+	w3_innerHTML('id-net-duc-status', w3_icon('', 'fa-refresh fa-spin', 24) + '&nbsp; Getting status from DUC server...');
 	ext_send('SET DUC_start args='+ encodeURIComponent(s));
 }
 
@@ -848,7 +859,7 @@ function connect_rev_register_cb(id, idx)
    
    connect_rev_usage();
    kiwi_clearTimeout(connect.timeout);
-	w3_innerHTML('id-connect-rev-status', 'Getting status from proxy server...');
+	w3_innerHTML('id-connect-rev-status', w3_icon('', 'fa-refresh fa-spin', 24) + '&nbsp; Getting status from proxy server...');
 	var s = 'user='+ adm.rev_user +' host='+ adm.rev_host;
 	console.log('start rev: '+ s);
 	ext_send('SET rev_register '+ s);
@@ -904,6 +915,17 @@ function connect_rev_status_cb(status)
 	if (status == 201) {
 	   connect.timeout = setTimeout(function() { ext_send('SET rev_status_query'); }, 5000);
 	}
+}
+
+function connect_proxy_server_cb(path, val)
+{
+   val = val.trim();
+   if (val == '') {
+      val = 'proxy.kiwisdr.com';
+      w3_set_value('id-proxy-server', val);
+   }
+	w3_string_set_cfg_cb(path, val);
+	connect_update_url();
 }
 
 
@@ -1303,18 +1325,6 @@ function network_html()
             'adm.ip_blacklist_local', 8, 100, 'network_user_blacklist_cb', ''
          )
       ) +
-
-      '<hr>' +
-      w3_half('w3-margin-bottom w3-text-teal', 'w3-container',
-         w3_div('w3-restart',
-            w3_input_get('id-proxy-server', 'Proxy server hostname', 'adm.proxy_server', 'network_proxy_server_cb'),
-            w3_div('w3-text-black',
-               'Change <b>only</b> if you have implemented a private proxy server. <br>' +
-               'Set to "proxy.kiwisdr.com" for the default proxy service.'
-            )
-         ),
-         w3_div()
-      ) +
       '<hr>';
 
 	return w3_div('id-network w3-hide', s1 + s2 + s3);
@@ -1517,16 +1527,6 @@ function network_blacklist_mtime_cb(mt, update)
          w3_hide2('id-ip-blacklist-new', false);
       }
    }
-}
-
-function network_proxy_server_cb(path, val)
-{
-   val = val.trim();
-   if (val == '') {
-      val = 'proxy.kiwisdr.com';
-      w3_set_value('id-proxy-server', val);
-   }
-	w3_string_set_cfg_cb(path, val);
 }
 
 function network_ip_blacklist_cb(path, val)
@@ -2857,35 +2857,44 @@ function log_update()
 // console
 ////////////////////////////////
 
-// must set "remove_returns" since pty output lines are terminated with \r\n instead of \n alone
-// otherwise the \r overwrite logic in kiwi_output_msg() will be triggered
-admin.console = {
-   scroll_only_at_bottom: true, inline_returns: true, process_return_alone: false, remove_returns: false,
-   rows: 10, cols: 140
-};
-
 function console_html()
 {
+   // must set "remove_returns" since pty output lines are terminated with \r\n instead of \n alone
+   // otherwise the \r overwrite logic in kiwi_output_msg() will be triggered
+   //console.log('$console SETUP');
+   //kiwi_trace();
+   admin.console = {
+      scroll_only_at_bottom: true, inline_returns: true, process_return_alone: false, remove_returns: false,
+      rows: 10, cols: 140,
+      show_cursor: true,
+      is_char_oriented: false,
+      always_char_oriented: true
+   };
+
 	var s =
-	w3_div('id-console w3-section w3-text-teal w3-hide',
+	w3_div('id-console w3-margin-top w3-text-teal w3-hide',
 		w3_div('w3-container',
 		   w3_div('',
             w3_label('w3-show-inline', 'Beagle Debian console'),
             w3_button('w3-aqua|margin-left:10px', 'Connect', 'console_connect_cb'),
 
             dbgUs?
-               w3_button('w3-aqua|margin-left:16px', 'ht', 'console_cmd_cb', 'console_input_cb|ht')
+               w3_button('w3-aqua|margin-left:16px', 'top', 'console_cmd_cb', 'console_input_cb|top -c')
                :
                w3_button('w3-green|margin-left:32px', 'monitor build progress', 'console_cmd_cb',
                   'console_input_cb|tail -fn 500 /root/build.log'),
 
+            w3_button('w3-aqua|margin-left:16px', 'htop', 'console_cmd_cb', 'console_input_cb|htop'),
+            
+            w3_button('w3-yellow|margin-left:16px', 'disk free', 'console_cmd_cb', 'console_input_cb|df .'),
+
             dbgUs?
                w3_button('w3-aqua|margin-left:16px', 'nano j', 'console_cmd_cb', 'console_input_cb|nano j')
                :
-               w3_button('w3-yellow|margin-left:16px', 'disk free', 'console_cmd_cb', 'console_input_cb|df .'),
-
-            w3_button('w3-red|margin-left:16px', 're-clone sources', 'console_cmd_cb',
-               'console_input_cb|cd /root; rm -rf Beagle_SDR_GPS; git clone https://github.com/jks-prv/Beagle_SDR_GPS.git'),
+               w3_button('w3-red|margin-left:16px|' +
+                  'title="CAUTION: Do not use unless git clone in\n&slash;root&slash;Beagle_SDR_GPS has become corrupted"',
+                  're-clone sources', 'console_cmd_cb',
+                  'console_input_cb|cd /root; rm -rf Beagle_SDR_GPS; git clone https://github.com/jks-prv/Beagle_SDR_GPS.git'),
 
             w3_button('w3-blue|margin-left:16px', 'check github', 'console_cmd_cb',
                'console_input_cb|cdp; git show origin:Makefile &vbar; head -n 2'),
@@ -2896,31 +2905,160 @@ function console_html()
             w3_button('w3-blue|margin-left:16px', 'ping kiwisdr', 'console_cmd_cb',
                'console_input_cb|ping -c3 kiwisdr.com')
          ),
+         
 			w3_div('id-console-msg w3-margin-T-8 w3-text-output w3-scroll-down w3-small w3-text-black|background-color:#a8a8a8',
 			   '<pre><code id="id-console-msgs"></code></pre>'
 			),
-         w3_div('w3-margin-T-8',
-            w3_input('id-console-input w3-input-any-key', '', 'console_input', '', 'console_input_cb|console_key_cb', 'enter shell command')
-         ),
-         w3_text('id-console-debug w3-text-black w3-margin-T-8',
-            'Control characters (^C, ^D, ^\\) and empty lines may now be typed directly into shell command field.'
-         )
+			
+			admin.console.always_char_oriented?
+            w3_text('id-console-debug w3-text-black w3-margin-T-8',
+               'New scheme: After connecting just start typing. Keyboard input appears immediately in console window.'
+            )
+			:
+            w3_div('id-console-line',
+               w3_div('w3-margin-T-8',
+                  w3_input('id-console-line-input w3-input-any-key', '', 'console_input', '', 'console_input_cb|console_key_cb', 'enter shell command')
+               ),
+               w3_text('id-console-debug w3-text-black w3-margin-T-8',
+                  'Control characters (^C, ^D, ^\\) and empty lines may now be typed directly into shell command field.'
+               )
+            )
 		)
 	);
 	return s;
 }
 
+function console_is_char_oriented(is_char_oriented)
+{
+   is_char_oriented = isDefined(is_char_oriented)? is_char_oriented : admin.console.always_char_oriented;
+   admin.console.is_char_oriented = is_char_oriented;
+   
+   if (admin.console.always_char_oriented) {
+      return;
+   }
+   
+   w3_disable('id-console-line', is_char_oriented);
+   var el_input = w3_el('id-console-line-input');
+   //console.log('console_is_char_oriented is_char_oriented='+ is_char_oriented);
+   if (is_char_oriented) {
+      el_input.blur();
+   } else {
+      el_input.focus();
+   }
+}
+
 function console_input_cb(path, val)
 {
-   if (admin.console.isAltBuf) {
-	   //console.log('console_w2c IGNORED due to isAltBuf');
+   if (admin.console.is_char_oriented) {
+	   //console.log('console_w2c IGNORED due to admin.console.is_char_oriented');
 	   return;
    }
    
-	console.log('console_w2c '+ val.length +' <'+ val +'>');
+	//console.log('console_w2c '+ val.length +' <'+ val +'>');
 	ext_send('SET console_w2c='+ encodeURIComponent(val +'\n'));
    w3_set_value(path, '');    // erase input field
    w3_scrollDown('id-console-msg');    // scroll to bottom on input
+}
+
+function console_key_cb(ev, called_from_w3_input)
+{
+   called_from_w3_input = called_from_w3_input || false;
+   //console.log('console_key_cb called_from_w3_input='+ called_from_w3_input);
+
+	//event_dump(ev, 'console_key_cb', 1);
+   if (!ev || !ev.key) return;
+   var k = ev.key;
+   var ord_k = ord(k);
+   var ctrl_k = ord_k & 0x1f;
+   
+   // NB: send SS3 versions of cursor keys (e.g. \x1bOA) instead of
+   // CSI version (e.g. \x1b[A) since htop requires it
+   // see: stackoverflow.com/questions/13585131/keyboard-transmit-mode-in-vt100-terminal-emulator
+
+   if (!admin.console.is_char_oriented) {
+   
+      // line-oriented
+      if (!called_from_w3_input) return;     // ignore the global keydown events
+      var ctrl_s = k.toUpperCase();
+      var ok = true;
+      if (ev.ctrlKey && 'CDPN\\'.includes(ctrl_s)) ; else
+      if (k == 'ArrowUp') k = '\x1bOA'; else
+      if (k == 'ArrowDown') k = '\x1bOB'; else
+      if (k == 'ArrowRight') k = '\x1bOC'; else
+      if (k == 'ArrowLeft') k = '\x1bOD'; else
+         ok = false;
+
+      if (ok) {
+         if (ev.ctrlKey) {
+            //console.log('console_key_cb LINE: CTRL ^'+ ctrl_s +'('+ ctrl_k +') w3_input='+ called_from_w3_input);
+            if (ctrl_k <= 0xff)
+               ext_send('SET console_oob_key='+ ctrl_k);
+         } else {
+            //console.log('console_key_cb LINE: k='+ JSON.stringify(k) +' w3_input='+ called_from_w3_input);
+	         ext_send('SET console_w2c='+ encodeURIComponent(k));
+         }
+         w3_scrollDown('id-console-msg');    // scroll to bottom on input
+      }
+   } else
+   
+   if (!ev.metaKey) {
+   
+      // character-oriented
+      if (called_from_w3_input) return;      // ignore the w3_input keydown events
+	   //event_dump(ev, 'CHAR:', 1);
+      var k2 = k, ok = true, redo = false;
+
+      if (k.length == 1)      { k2 = k; } else
+      if (k == 'Enter')       { k2 = '\r';   redo = true; } else
+      if (k == 'Backspace')   { k2 = '\x7f'; redo = true; } else
+      if (k == 'Tab')         { k2 = '\t';   redo = true; } else
+      if (k == 'Escape')      { k2 = '\x1b'; redo = true; } else
+      if (k == 'ArrowUp')     { k2 = '\x1bOA'; } else
+      if (k == 'ArrowDown')   { k2 = '\x1bOB'; } else
+      if (k == 'ArrowRight')  { k2 = '\x1bOC'; } else
+      if (k == 'ArrowLeft')   { k2 = '\x1bOD'; } else
+      if (k == 'F1')          { k2 = '\x1bOP'; } else
+      if (k == 'F2')          { k2 = '\x1bOQ'; } else
+      if (k == 'F3')          { k2 = '\x1bOR'; } else
+      if (k == 'F4')          { k2 = '\x1bOS'; } else
+      if (k == 'F5')          { k2 = '\x1b[15~'; } else
+      if (k == 'F6')          { k2 = '\x1b[17~'; } else
+      if (k == 'F7')          { k2 = '\x1b[18~'; } else
+      if (k == 'F8')          { k2 = '\x1b[19~'; } else
+      if (k == 'F9')          { k2 = '\x1b[20~'; } else
+      if (k == 'F10')         { k2 = '\x1b[21~'; } else
+         ok = false;
+      
+      if (redo) { ord_k = ord(k2); ctrl_k = ord_k & 0x1f; }
+      var ctrl = ev.ctrlKey;
+
+      if (dbgUs) {
+         var ctrl1 = (k2.length == 1 && ord_k < 32);  // not ev.ctrlKey but still single char with ord_k < 32
+         var esc = (k2.length > 1);
+         var del = (k2.length == 1 && ord_k == 127);
+         var k_s = ctrl? k2.toUpperCase() : (ctrl1? ('\\'+ chr(ord_k + 96)) : (del? 'del' : (esc? k : k2)));
+         var ord_s =  esc? '' : ( '('+ (ctrl? ctrl_k : ord_k) +')' );
+         console.log('console_key_cb CHAR: '+ (ctrl? 'CTRL ^':'') + k_s + ord_s +
+            ' len='+ k.length +'|'+ k2.length +' w3_input='+ called_from_w3_input +' ok='+ ok);
+      }
+
+      if (ok) {
+         if (ctrl) {
+            if (ctrl_k <= 0xff)
+               ext_send('SET console_oob_key='+ ctrl_k);
+         } else {
+            // htop requires multi-char sequences (e.g. arrow keys) to be written to server-side pty together
+            // so use console_w2c= instead of repeated console_oob_key=
+	         ext_send('SET console_w2c='+ encodeURIComponent(k2));
+         }
+         admin.console.must_scroll_down = true;
+      }
+   }
+
+   // prevent Firefox "quick find" popup from appearing with ' and / keys
+   // but let meta keys go through for things like page reload (meta-R), cut/paste etc.
+   if (!ev.metaKey)
+      ev.preventDefault();
 }
 
 function console_calc_rows_cols(init)
@@ -2929,99 +3067,37 @@ function console_calc_rows_cols(init)
    var h_msg = 15.6;
    var h_ratio = h_msgs / h_msg;
    var rows = Math.floor(h_ratio);
-   if (dbgUs)
-      w3_innerHTML('id-console-debug', 'h_msgs='+ h_msgs +' rows: '+ h_ratio.toFixed(2) +' '+ rows);
+   if (dbgUs) w3_innerHTML('id-console-debug', 'h_msgs='+ h_msgs +' rows: '+ h_ratio.toFixed(2) +' '+ rows);
    if (init || rows != admin.console.rows) {
+      //console.log('$console_calc_rows_cols init='+ init);
+      //kiwi_trace('$');
       admin.console.init = false;
+      // let server-side know so it can send a TIOCSWINSZ to libcurses et al
       ext_send('SET console_rows_cols='+ rows +','+ admin.console.cols);
       admin.console.rows = rows;
    }
 }
 
-function console_connect_cb()
+function console_connect_cb(id)
 {
+   //console.log('console_connect_cb id='+ id);
+   if (admin.console_open) return;
+   
 	ext_send('SET console_open');
    console_calc_rows_cols(1);
+   console_is_char_oriented();
    admin.console_open = true;
-}
-
-function console_key_cb(ev, input_any_key, input_any_change)
-{
-   if (!ev || !ev.key) return;
-   var k = ev.key;
-   var ord_k = ord(k);
-
-   if (!input_any_change) {
-      var ctrl_k = k.toUpperCase();
-      var ok = true;
-      if (ev.ctrlKey && 'CDPN\\'.includes(ctrl_k)) ; else
-      if (k == 'ArrowUp') k = '\x1b[A'; else
-      if (k == 'ArrowDown') k = '\x1b[B'; else
-      if (k == 'ArrowRight') k = '\x1b[C'; else
-      if (k == 'ArrowLeft') k = '\x1b[D'; else
-         ok = false;
-
-      if (ok) {
-         if (ev.ctrlKey) {
-            ord_k &= 0x1f;
-            console.log('console_key_cb CTRL ^'+ ctrl_k +'('+ ord_k +')');
-            ext_send('SET console_oob_key='+ ord_k);
-         } else {
-	         ext_send('SET console_w2c='+ encodeURIComponent(k));
-         }
-         w3_scrollDown('id-console-msg');    // scroll to bottom on input
-         return;
-      }
-   }
-
-   if (admin.console.isAltBuf || input_any_change) {
-      var ok = true, redo = false;
-
-      if (k.length == 1) ; else
-      if (k == 'ArrowUp') k = '\x1b[A'; else
-      if (k == 'ArrowDown') k = '\x1b[B'; else
-      if (k == 'ArrowRight') k = '\x1b[C'; else
-      if (k == 'ArrowLeft') k = '\x1b[D'; else
-      if (k == 'Enter') { k = '\n'; redo = true; } else
-         ok = false;
-      
-      if (redo) { ord_k = ord(k); }
-      var ctrl = ev.ctrlKey;
-      var ctrl1 = (k.length == 1 && ord_k < 32);
-      var isCtrl = (ctrl || ctrl1);
-
-      if (1) {
-         var k_s = ctrl? k.toUpperCase() : (ctrl1? ('\\'+ chr(ord_k + 32)) : k);
-         var ord_s =  '('+ (ctrl? (ord_k & 0x1f) : ord_k) +')';
-         console.log('console_key_cb '+ (ctrl? 'CTRL ^':'') + k_s + ord_s +' len=1:'+ (k.length == 1) +' ok='+ ok);
-      }
-
-      if (ok) {
-         if (ctrl) {
-            ext_send('SET console_oob_key='+ (ord_k & 0x1f));
-         } else {
-	         ext_send('SET console_w2c='+ encodeURIComponent(k));
-	         /*
-            for (var i = 0; i < k.length; i++) {
-               if (k.length > 1)
-                  console.log(k[i] +'('+ ord(k[i]) +')');
-               ext_send('SET console_key='+ ord(k[i]));
-            }
-            */
-         }
-         w3_scrollDown('id-console-msg');    // scroll to bottom on input
-         return;
-      }
-   }
 }
 
 function console_cmd_cb(id, cb_param)
 {
+   //console.log('console_cmd_cb id='+ id +' cb_param='+ cb_param);
    var delay = 1;
    
    if (!admin.console_open) {
 	   ext_send('SET console_open');
       console_calc_rows_cols(1);
+      console_is_char_oriented();
       admin.console_open = true;
       delay = 1000;
    }
@@ -3031,19 +3107,22 @@ function console_cmd_cb(id, cb_param)
 	   var cb = a[0];
 	   var cmd = a[1];
       //console.log('console_cmd_cb: cmd='+ cmd);
-	   w3_input_force('id-console-input', cb, cmd);
+      if (admin.console.is_char_oriented) {
+         cmd = cmd.replace('&vbar;', '|');
+         ext_send('SET console_w2c='+ encodeURIComponent(cmd +'\n'));
+         w3_scrollDown('id-console-msg');    // scroll to bottom on input
+      } else {
+	      w3_input_force('id-console-line-input', cb, cmd);
+	   }
 	}, delay);
-}
-
-function console_setup()
-{
 }
 
 function console_resize()
 {
 	var el = w3_el('id-console-msg');
 	if (!el) return;
-	var console_height = window.innerHeight - w3_el("id-admin-header-container").clientHeight - 150;
+	var console_height = window.innerHeight - w3_el("id-admin-header-container").clientHeight
+	   - (admin.console.always_char_oriented? 110 : 150);
 	el.style.height = px(console_height);
 	//w3_innerHTML('id-console-debug', window.innerHeight +' '+ w3_el("id-admin-header-container").clientHeight +' '+ console_height);
 
@@ -3052,11 +3131,13 @@ function console_resize()
 
 function console_focus(id)
 {
+	document.addEventListener("keydown", console_key_cb, false);
 	console_resize();
 }
 
 function console_blur(id)
 {
+	document.removeEventListener("keydown", console_key_cb, false);
 }
 
 
@@ -3336,7 +3417,6 @@ function admin_draw(sdr_mode)
 
 	ael.innerHTML += s;
 	log_setup();
-	console_setup();
 	stats_init();
 
 	if (sdr_mode) {

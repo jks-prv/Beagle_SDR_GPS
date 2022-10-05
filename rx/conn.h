@@ -107,8 +107,9 @@ typedef struct conn_st {
 	int log_last_sent, log_last_not_shown;
 	int master_pty_fd, console_child_pid;
 	int console_task_id;
-	bool send_oob_key;
-	u1_t send_oob_key_char;
+	#define N_OOB_BUF 256
+	int oob_w, oob_r;
+	u1_t *oob_buf;
 	
 	bool adjust_clock;      // should this connections clock be adjusted?
 	double adc_clock_corrected, manual_offset, srate;

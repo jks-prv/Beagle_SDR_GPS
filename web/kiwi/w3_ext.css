@@ -65,13 +65,6 @@
 {
 }
 
-/*
-	To get a table cell with a centered, fixed-width text field (button) you have to
-	be aware of two issues. For the cell to be centered the element following the
-	display:table-cell must not be a div. But a span cannot specify a width unless
-	it has display:inline-block. I hate CSS..
-*/
-
 .w3-table-cell
 {
     /* from old class-td */

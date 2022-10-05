@@ -1,6 +1,6 @@
 
 
-/* web/kiwi/w3_ext.min.css (web/kiwi/w3_ext.css = Wed Aug 24 13:45:00 2022) */
+/* web/kiwi/w3_ext.min.css (web/kiwi/w3_ext.css = Thu Oct  6 11:33:56 2022) */
 /* WARNING: no minifier for file type .css! */
 
 /* Copyright (c) 2016 John Seamons, ZL/KF6VO */
@@ -69,13 +69,6 @@
 .w3-table-row
 {
 }
-
-/*
-	To get a table cell with a centered, fixed-width text field (button) you have to
-	be aware of two issues. For the cell to be centered the element following the
-	display:table-cell must not be a div. But a span cannot specify a width unless
-	it has display:inline-block. I hate CSS..
-*/
 
 .w3-table-cell
 {

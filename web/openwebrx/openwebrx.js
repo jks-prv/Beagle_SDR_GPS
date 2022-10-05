@@ -1374,7 +1374,7 @@ function shift_event(evt, from)
    }
    
    // shift key has no effect on tooltip while dragging in progress
-   if (demodulators[0].envelope.dragged_range == demodulator.draggable_ranges.none)
+   if (demodulators[0] && demodulators[0].envelope.dragged_range == demodulator.draggable_ranges.none)
       mkenvelopes(get_visible_freq_range());
 }
 
