@@ -84,9 +84,8 @@ while( <> ) {
 	/^pin/gc  or next;
 	/\G +(0|[1-9]\d*)/gc or die;
 	my $pin = 0 + $1;
-	my $addr;
 	if(/\G +\((\w+)\.0\):/gc) {
-		$addr = hex $1;
+		my $addr = hex $1;
 		( $addr & 0x7ff ) == 4 * $pin  or die;
 	} elsif(/\G +\(PIN(0|[1-9]\d*)\):/gc) {
 		$1 == $pin  or die;
@@ -97,24 +96,22 @@ while( <> ) {
 	/\G (\S+)/gc  or die;
 	my @path = split m!:!, $1;
 	s/^(.*)\.([^.]+)\z/$2\@$1/ for @path;
-	$addr = join '/', @path;
+	my $path = join '/', @path;
 	/\G \(GPIO UNCLAIMED\)/gc  or die;
 	/\G function (\S+) group (\S+)\s*\z/gc && $1 eq $2  or die;
-	$usage[ $pin ] = [ $addr, $1 ];
+	$usage[ $pin ] = [ $path, $1 ];
 }
 
 
 my @data;
 if($tda4) {
 	@data = map { chomp; [ split /\t/ ] } grep /^[^#]/, <TDA4XX>;
-	@ARGV = "$pinmux/pins";
 } elsif($am5) {
 	@data = map { chomp; [ split /\t/ ] } grep /^[^#]/, <AM57XX>;
-	@ARGV = "$pinmux/pins";
 } else {
 	@data = map { chomp; [ split /\t+/ ] } grep /^[^#]/, <AM335X>;
-	@ARGV = "$pinmux/pins";
 }
+	@ARGV = "$pinmux/pins";
 
 
 while( <> ) {
@@ -160,6 +157,7 @@ while( <> ) {
 
 	my ($mux_s, $lock, $wu_evt, $wu_en, $slew, $tx, $rx, $pull, $st, $mode, $mode_i, $mode_s);
 	if($tda4) {
+		# BB AI-64 TDA4XX
 		$mux_s = sprintf "$YEL{'%08x'}", $mux;
 		$mux_s = sprintf "$DIM_BLK{'%08x'}", $mux if $mux == 0x08214007;    # post-reset value
 		$lock = ( "  ..", "$RED{lock}" )[ $mux >> 31 & 1 ];
@@ -178,10 +176,11 @@ while( <> ) {
 		}
 		$mode = $mux & 0xf;
 		$mode_s = sprintf "$DIM_RED{'m%-2d'}", $mode;
-		$mode_s = sprintf "$GRN{'m7'} " if $mode == 7;
-		$mode_s = sprintf "$DIM_BLK{'m15'}" if $mode == 15;
+		$mode_s = sprintf "$GRN{'m7'} " if $mode == 7;   # GPIO
+		$mode_s = sprintf "$DIM_BLK{'m15'}" if $mode == 15;   # bootstrap
 		$mode_i = $mode + 3;
 	} elsif($am5) {
+		# BB AI AM57XX
 		$mux_s = sprintf "$YEL{'%08x'}", $mux;
 		$wu_evt = ( "  ", "$RED{wu}" )[ $mux >> 25 & 1 ];
 		$wu_en = ( "    ", "$RED{wuen}" )[ $mux >> 24 & 1 ];
@@ -191,10 +190,11 @@ while( <> ) {
 		$pull = "    " if $mux >> 16 & 1;
 		$mode = $mux & 0xf;
 		$mode_s = sprintf "$DIM_RED{'m%-2d'}", $mode;
-		$mode_s = sprintf "$GRN{'m14'}" if $mode == 14;
-		$mode_s = sprintf "$DIM_BLK{'m15'}" if $mode == 15;
+		$mode_s = sprintf "$GRN{'m14'}" if $mode == 14;   # GPIO
+		$mode_s = sprintf "$DIM_BLK{'m15'}" if $mode == 15;   # bootstrap
 		$mode_i = $mode + 3;
 	} else {
+		# BB AM335X
 		$mux_s = sprintf "$YEL{'%08x'}", $mux;
 		$slew = ( "$DIM_BLK{fast}", "$RED{slow}" )[ $mux >> 6 & 1 ];
 		$rx = ( "  ", "$GRN{rx}" )[ $mux >> 5 & 1 ];
@@ -202,7 +202,7 @@ while( <> ) {
 		$pull = "    " if $mux >> 3 & 1;
 		$mode = $mux & 7;
 		$mode_s = sprintf "$DIM_RED{'m%d'}", $mode;
-		$mode_s = sprintf "$GRN{'m7'}" if $mode == 7;
+		$mode_s = sprintf "$GRN{'m7'}" if $mode == 7;   # GPIO
 		$mode_i = $mode;
 	}
 
