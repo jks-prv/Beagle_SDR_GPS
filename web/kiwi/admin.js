@@ -2867,9 +2867,13 @@ function console_html()
       scroll_only_at_bottom: true, inline_returns: true, process_return_alone: false, remove_returns: false,
       rows: 10, cols: 140,
       show_cursor: true,
-      is_char_oriented: false,
-      always_char_oriented: true
+      is_char_oriented: false
    };
+   
+   admin.console.isMobile = kiwi_isMobile();
+   //admin.console.isMobile = true;
+   admin.console.always_char_oriented = admin.console.isMobile? false : true;
+   //admin.console.always_char_oriented = false;
 
 	var s =
 	w3_div('id-console w3-margin-top w3-text-teal w3-hide',
@@ -2906,7 +2910,7 @@ function console_html()
                'console_input_cb|ping -c3 kiwisdr.com')
          ),
          
-			w3_div('id-console-msg w3-margin-T-8 w3-text-output w3-scroll-down w3-small w3-text-black|background-color:#a8a8a8',
+			w3_div('id-console-msg w3-margin-T-8 w3-text-output w3-scroll-always-y w3-scroll-down w3-small w3-text-black|background-color:#a8a8a8',
 			   '<pre><code id="id-console-msgs"></code></pre>'
 			),
 			
@@ -2916,12 +2920,25 @@ function console_html()
             )
 			:
             w3_div('id-console-line',
-               w3_div('w3-margin-T-8',
-                  w3_input('id-console-line-input w3-input-any-key', '', 'console_input', '', 'console_input_cb|console_key_cb', 'enter shell command')
-               ),
-               w3_text('id-console-debug w3-text-black w3-margin-T-8',
-                  'Control characters (^C, ^D, ^\\) and empty lines may now be typed directly into shell command field.'
-               )
+               admin.console.isMobile?
+                  w3_inline('w3-margin-T-8 w3-halign-space-between/',
+                     w3_input('w3-width-half//id-console-line-input w3-input-any-key', '', 'console_input', '',
+                        'console_input_cb|console_key_cb', 'enter shell command'),
+                     w3_inline('w3-margin-R-16/',
+                        w3_button('w3-yellow', 'Send ^C', 'console_ctrl_button_cb', 'c'),
+                        w3_button('w3-blue|margin-left:10px', 'Send ^D', 'console_ctrl_button_cb', 'd'),
+                        w3_button('w3-red|margin-left:10px', 'Send ^\\', 'console_ctrl_button_cb', '\x3c'),
+                        w3_button('w3-blue|margin-left:10px', 'Send ^P', 'console_ctrl_button_cb', 'p'),
+                        w3_button('w3-blue|margin-left:10px', 'Send ^N', 'console_ctrl_button_cb', 'n')
+                     )
+                  )
+               :
+                  w3_div('w3-margin-T-8',
+                     w3_input('id-console-line-input w3-input-any-key', '', 'console_input', '',
+                        'console_input_cb|console_key_cb', 'enter shell command'),
+                     w3_text('id-console-debug w3-text-black w3-margin-T-8',
+                        'Control characters (^C, ^D, ^\\) and empty lines may now be typed directly into shell command field.')
+                  )
             )
 		)
 	);
@@ -3061,6 +3078,12 @@ function console_key_cb(ev, called_from_w3_input)
       ev.preventDefault();
 }
 
+function console_ctrl_button_cb(id, ch)
+{
+   console.log('console_ctrl_button_cb ch='+ ord(ch));
+   ext_send('SET console_oob_key='+ (ord(ch) & 0x1f));
+}
+
 function console_calc_rows_cols(init)
 {
    var h_msgs = parseInt(w3_el('id-console-msg').style.height) - /* margins +5 */ 25;
@@ -3122,7 +3145,7 @@ function console_resize()
 	var el = w3_el('id-console-msg');
 	if (!el) return;
 	var console_height = window.innerHeight - w3_el("id-admin-header-container").clientHeight
-	   - (admin.console.always_char_oriented? 110 : 150);
+	   - (admin.console.always_char_oriented? 110 : (admin.console.isMobile? 120 : 150));
 	el.style.height = px(console_height);
 	//w3_innerHTML('id-console-debug', window.innerHeight +' '+ w3_el("id-admin-header-container").clientHeight +' '+ console_height);
 
