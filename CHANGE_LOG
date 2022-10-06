@@ -2,6 +2,35 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.563  Oct 6, 2022
+    Admin console tab:
+        Supports "character-oriented" input mode compared to the previous line-oriented mode
+        where all input was typed into a field outside of the output display window. Now resembles
+        a more traditional terminal program.
+        
+        As a result, Xterm/VT100 style ANSI command sequences are accepted. This allows programs
+        that perform 2D X/Y screen addressing to work such as the "nano" text editor and "htop" and
+        "top -c" process display utilities.
+        
+        Also, shell line editing via control keys and keypad arrows should work (e.g. ctrl-P or
+        up arrow for previous entry from command history, ctrl-A for beginning of line etc).
+
+    Neglected to mention earlier: Galileo sat table updated to add E10. Thanks Benjamin F4FPR/K5AW.
+
+    TDoA extension:
+        Changed server polling mechanism to (hopefully) fix a problem with certain 4G mobile
+        connections dropping the TDoA connection prematurely.
+    
+        Removed "rerun" button because it produces incorrect heat map results. And in fact I don't
+        believe it's possible to work in any event. If you change the map lat/lon you need new
+        samples by definition of the algorithm (I think).
+
+    Moved "Proxy server hostname" field from admin network tab to connect tab
+    ("reverse proxy configuration" section) where it really belongs.
+    
+    Removed "SAM options" menu from audio tab since it seems default "DC block + fade" option
+    is the correct setting to use.
+    
 v1.562  Sep 16, 2022
     Fixed bug causing Kiwi 8 and 14-channel (BBAI et al) modes to fail loading page displaying
     audio FFT instead of the full waterfall. For example channels 3-8 in 8-channel mode.

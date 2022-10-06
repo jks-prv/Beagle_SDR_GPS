@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 562
+VERSION_MIN = 563
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -256,7 +256,7 @@ else
 	LIBS += -lfftw3f -lutil
 	LIBS_DEP += /usr/lib/$(LIB_ARCH)/libfftw3f.a
 	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pgmtoppm /sbin/ethtool /usr/bin/sshpass
-	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget
+	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget /usr/bin/htop
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
@@ -347,6 +347,9 @@ $(INSTALL_CERTIFICATES):
 
 /usr/bin/wget:
 	-apt-get -y install wget
+
+/usr/bin/htop:
+	-apt-get -y install htop
 
 /usr/sbin/avahi-autoipd:
 	-apt-get -y install avahi-daemon avahi-utils libnss-mdns avahi-autoipd
@@ -709,6 +712,7 @@ c_ext_clang_conv_vars: check_device_detect
 	@echo PLATFORMS = $(PLATFORMS)
 	@echo BUILD_DIR = $(BUILD_DIR)
 	@echo OTHER_DIR = $(OTHER_DIR)
+	@echo EXISTS_OTHER_BITFILE = $(shell test -f $(V_DIR)/KiwiSDR.other.bit && echo true)
 	@echo OBJ_DIR = $(OBJ_DIR)
 	@echo OBJ_DIR_O3 = $(OBJ_DIR_O3)
 	@echo OBJ_DIR_DEFAULT = $(OBJ_DIR_DEFAULT)
@@ -1506,9 +1510,14 @@ endif
 
 # other_rsync is a rule that can be defined in an extension Makefile (i.e. CFG = other) to do additional source installation
 other_rsync:
+# other_post_rsync is invoked after the rsync, e.g. for augmenting server sources
+other_post_rsync:
 
 rsync_bit: $(BIN_DEPS) other_rsync
 	sudo $(RSYNC) $(RSYNC_ARGS)
+    ifneq ($(OTHER_DIR),)
+	    make other_post_rsync
+    endif
 
 endif
 
