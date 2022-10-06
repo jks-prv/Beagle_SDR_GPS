@@ -3,6 +3,7 @@
 var tdoa = {
    ext_name:   'TDoA',  // NB: must match tdoa.cpp:tdoa_ext.name
    first_time: true,
+   new_polling_method: true,
    old_algorithm: false,
    all_results: false,
    prev_ui:    false,
@@ -78,6 +79,7 @@ var tdoa = {
    show_hosts: true,
    show_refs: true,
    rerun: 0,
+   last_was_rerun: 0,
    
    FIRST_REF: 2,
    // to tdoa.refs we add: .idx .id_lcase .mkr
@@ -125,6 +127,8 @@ var tdoa = {
    state: 0, READY_SAMPLE: 0, READY_COMPUTE: 1, RUNNING: 2, RETRY: 3, RESULT: 4, ERROR: 5,
    
    key: '',
+   response: {},
+   SEQ_DONE: 4,
    select: undefined,
 };
 
@@ -256,9 +260,13 @@ function tdoa_controls_setup()
             w3_div('id-tdoa-results-select w3-margin-left w3-hide'),
             w3_div('id-tdoa-results-options w3-margin-left w3-hide'),
             w3_div('id-tdoa-submit-status w3-margin-left'),
+            
+            /* rerun function has major problems, and probably not used much, so disable for now
             w3_button('id-tdoa-rerun-button w3-margin-left w3-padding-smaller w3-css-yellow w3-hide||title="rerun TDoA using same samples"',
                'Rerun', 'tdoa_rerun_button_cb'
             ),
+            */
+            
 		      w3_div('id-tdoa-download-KML w3-margin-left w3-hide||title="download KML file"'),
 		      w3_div('id-tdoa-download-MAT w3-margin-left w3-hide||title="download MAT file"')
          ),
@@ -1084,7 +1092,7 @@ function tdoa_get_hosts_cb(hosts)
    tdoa_rebuild_hosts();
    tdoa_rebuild_refs();
    
-   tdoa_pan_zoom(tdoa.kiwi_map, (lat && lon)? [lat, lon]:null, zoom? zoom:-1);
+   tdoa_pan_zoom(tdoa.kiwi_map, (isNumber(lat) && isNumber(lon))? [lat, lon]:null, zoom? zoom:-1);
    if (!tdoa.leaflet && maptype == 1) tdoa.kiwi_map.setMapTypeId('roadmap');
    
    tdoa.state = tdoa.READY_SAMPLE;
@@ -1208,7 +1216,7 @@ function tdoa_rerun_clear()
    w3_hide('id-tdoa-rerun-button');
    w3_hide('id-tdoa-download-KML');
    w3_hide('id-tdoa-download-MAT');
-   tdoa.rerun = 0;
+   tdoa.rerun = tdoa.last_was_rerun = 0;
 }
 
 function tdoa_edit_url_field_cb(path, val, first)
@@ -1405,13 +1413,13 @@ function tdoa_submit_button_cb2()
    
    if (tdoa.ngood < 2) {
       tdoa_submit_state(tdoa.ERROR, 'at least 2 available hosts needed');
-      tdoa.rerun = 0;
+      tdoa.rerun = tdoa.last_was_rerun = 0;
       return;
    }
    
    if (tdoa.cur_map.getZoom() < 3) {
       tdoa_submit_state(tdoa.ERROR, 'must be zoomed in further');
-      tdoa.rerun = 0;
+      tdoa.rerun = tdoa.last_was_rerun = 0;
       return;
    }
 
@@ -1465,7 +1473,7 @@ function tdoa_submit_button_cb2()
 
    if (list_i < 2) {
       tdoa_submit_state(tdoa.ERROR, 'at least 2 available hosts needed');
-      tdoa.rerun = 0;
+      tdoa.rerun = tdoa.last_was_rerun = 0;
       return;
    }
    
@@ -1507,19 +1515,64 @@ function tdoa_submit_button_cb2()
    
    tdoa.last_menu_select = undefined;
    tdoa.response = {};
-   
    tdoa.response.seq = 0;
-   kiwi_ajax_progress(tdoa.url_base +'php/tdoa.php'+ tdoa.a[0] + s,
-      function(json) {     // done callback
-         //console.log('DONE');
-         tdoa_protocol_response_cb(json);
-      }, 0,
-      0,    // timeout
-      function(json) {     // progress callback
-         //console.log('PROGRESS');
-         tdoa_protocol_response_cb(json);
-      }, 0
-   );
+   
+   if (tdoa.new_polling_method) {
+      tdoa.response.key = (Date.now() % 100000).leadingZeros(5);
+      kiwi_ajax_progress(tdoa.url_base +'php/tdoa.php'+ tdoa.a[0] +'&key='+ tdoa.response.key + s,
+         function(json) {     // done callback
+            //console.log('$TDoA tdoa.php DONE json='+ json);
+         }, 0,
+         
+         0,    // timeout
+         
+         '', 0
+         /*
+         function(json) {     // progress callback
+         
+            // Have to get the key using the old php realtime output method
+            // before polling for the $key/progress.json file can begin
+            
+            //console.log('$TDoA tdoa.php PROGRESS json='+ json);
+            var key_s = '{"key":"';
+            if (!tdoa.response.key && json.startsWith(key_s)) {
+               // don't use parseInt here because key is a 5-digit number that can start with zero
+               tdoa.response.key = json.substr(key_s.length, 5);
+               console.log('$TDoA key='+ tdoa.response.key);
+            }
+         }, 0
+         */
+      );
+      //console.log('$TDoA tdoa.php RUNNING');
+      
+      tdoa.progress_interval = setInterval(function() {
+         if (tdoa.response.key) {
+            kiwi_ajax(tdoa.url_files + tdoa.response.key +'/progress.json',
+               function(json) {
+                  tdoa_protocol_response_cb(json);
+                  if (tdoa.response.seq == tdoa.SEQ_DONE) {
+                     kiwi_clearInterval(tdoa.progress_interval);
+                     //console.log('$TDoA /progress.json DONE');
+                  }
+               }
+            );
+         }
+      }, 1000);
+   } else {
+      kiwi_ajax_progress(tdoa.url_base +'php/tdoa.php'+ tdoa.a[0] + s,
+         function(json) {     // done callback
+            //console.log('DONE');
+            tdoa_protocol_response_cb(json);
+         }, 0,
+         
+         0,    // timeout
+         
+         function(json) {     // progress callback
+            //console.log('PROGRESS');
+            tdoa_protocol_response_cb(json);
+         }, 0
+      );
+   }
 
    if (!tdoa.rerun) {
       tdoa.field.forEach(function(f, i) {
@@ -1533,9 +1586,11 @@ function tdoa_submit_button_cb2()
          }
       });
       tdoa_submit_state(tdoa.RUNNING, 'sampling started');
+      tdoa.last_was_rerun = 0;
    } else {
       tdoa_submit_state(tdoa.RUNNING, 'rerun using same samples');
       tdoa.rerun = 0;
+      tdoa.last_was_rerun = 1;
    }
    
    w3_button_text('id-tdoa-submit-button', 'Stop', 'w3-red', 'w3-css-yellow');
@@ -1832,6 +1887,7 @@ function tdoa_protocol_response_cb(json)
 {
    var obj;
    if (isString(json)) {
+      //console.log('tdoa_protocol_response_cb: STRING');
       json = json.trim();
       var sl = json.length;
       if (sl && json[0] == '{' && json[sl-1] != '}') {
@@ -1841,8 +1897,13 @@ function tdoa_protocol_response_cb(json)
       //console.log(json);
       obj = kiwi_JSON_parse('tdoa_protocol_response_cb', json);
       if (!obj) return;
-   } else
+   } else {
+      //console.log('tdoa_protocol_response_cb: OBJECT');
+      //console.log(json);
+      if (json && json.AJAX_error && json.AJAX_error == 'JSON parse')
+         json = kiwi_JSON_parse('tdoa_protocol_response_cb', json.response + '}');
       obj = json;
+   }
    //console.log(obj);
    
    if (tdoa.response.seq > 0 && obj.key && obj.key != tdoa.response.key) {
@@ -1859,28 +1920,28 @@ function tdoa_protocol_response_cb(json)
    if (tdoa.response.seq == 0 && obj.key != undefined) {
       tdoa.response.key = obj.key;
       tdoa.response.seq++;
-      //console.log('GOT key='+ obj.key);
+      console.log('GOT key='+ obj.key);
    }
    //console.log('files: seq='+ tdoa.response.seq +' <'+ obj.files +'>');
    if (tdoa.response.seq == 1 && obj.files != undefined) {
       tdoa.response.files = obj.files;
       tdoa.response.seq++;
-      //console.log('GOT files='+ tdoa.response.files.toString());
+      console.log('GOT files='+ tdoa.response.files.toString());
    }
    //console.log('status0: seq='+ tdoa.response.seq +' <'+ obj.status0 +'>');
    if (tdoa.response.seq == 2 && obj.status0 != undefined) {
       v = obj.status0;
       tdoa_sample_status_cb(v);
       tdoa.response.seq++;
-      //console.log('GOT status0='+ v);
+      console.log('GOT status0='+ v);
    }
    
    //console.log('done: seq='+ tdoa.response.seq +' <'+ obj.done +'>');
    if (tdoa.response.seq == 3 && obj.done != undefined) {
       v = obj.done;
       tdoa_submit_status_new_cb(v);
-      tdoa.response.seq++;
-      //console.log('GOT done='+ v);
+      tdoa.response.seq = tdoa.SEQ_DONE;
+      console.log('GOT done='+ v);
    }
 }
 
@@ -1977,14 +2038,18 @@ function tdoa_result_menu_click_cb(path, idx, first)
                //console.log(j);
 
                if (tdoa.leaflet) {
-                  tdoa.heatmap[midx] = L.imageOverlay(
-                     //tdoa.url_files + j.filename,
-                     tdoa.url_files + tdoa.response.key +'/'+ tdoa.results[midx].ids +'_for_map.png',
-                     [[j.imgBounds.north, j.imgBounds.west], [j.imgBounds.south, j.imgBounds.east]],
-                     {opacity : 0.5});
-                  if (tdoa.heatmap_visible) {
-                     tdoa.heatmap[midx].addTo(tdoa.result_map);
-                     tdoa.map_layers.push(tdoa.heatmap[midx]);
+                  if (tdoa.last_was_rerun) {
+                     // recalculated heat maps don't appear at correct coordinates after a rerun when lat/lon/zoom changed
+                  } else {
+                     tdoa.heatmap[midx] = L.imageOverlay(
+                        //tdoa.url_files + j.filename,
+                        tdoa.url_files + tdoa.response.key +'/'+ tdoa.results[midx].ids +'_for_map.png',
+                        [[j.imgBounds.north, j.imgBounds.east], [j.imgBounds.south, j.imgBounds.west]],
+                        {opacity : 0.5});
+                     if (tdoa.heatmap_visible) {
+                        tdoa.heatmap[midx].addTo(tdoa.result_map);
+                        tdoa.map_layers.push(tdoa.heatmap[midx]);
+                     }
                   }
                   
                   if (tdoa.kml) {
@@ -2080,14 +2145,15 @@ function tdoa_result_menu_click_cb(path, idx, first)
 
          // figure out which markers to show on the result maps
          var show_mkrs = [];
+         var ms2, me2   // can't reuse ms/me here because of async kiwi_ajax() callback code above!
          if (idx == tdoa.TDOA_MAP_NO_HOSTS || idx == tdoa.TDOA_MAP_WITH_HOSTS || idx == tdoa.COMBINED_MAP) {
             // TDoA and combined map get all host markers
-            ms = tdoa.SINGLE_MAPS; me = tdoa.SINGLE_MAPS + npairs;
+            ms2 = tdoa.SINGLE_MAPS; me2 = tdoa.SINGLE_MAPS + npairs;
          } else {
-            ms = idx; me = ms+1;
+            ms2 = idx; me2 = ms2+1;
          }
          
-         for (var mi = ms; mi < me; mi++) {
+         for (var mi = ms2; mi < me2; mi++) {
             var list1 = tdoa.results[mi].list1;
             var list2 = tdoa.results[mi].list2;
             //console.log('mi='+ mi +' L1='+ list1 +' L2='+ list2);
@@ -2574,7 +2640,8 @@ function TDoA_help(show)
                'After sampling, the TDoA process will be run on the server. After it finishes a result map will appear. ' +
                'Additional maps may be viewed with the TDoA result menu. ' +
                'You can pan and zoom the resulting maps and click submit again after making any changes. ' +
-               'Or use the rerun button to get new maps without resampling. The checkboxes exclude stations during a rerun.<br><br>' +
+               //'Or use the rerun button to get new maps without resampling. The checkboxes exclude stations during a rerun.' +
+               '<br><br>' +
          
                'The <i>show all results</i> checkbox, if checked, will cause the most likely position markers to accumulate for ' +
                'successive runs. The <i>clear old results</i> button will erase all but the most recent likely position marker.<br><br>' +

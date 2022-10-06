@@ -471,3 +471,9 @@ input.kiwi-pw
     /* padding: 1px 3px 1px 3px; */
     /* border: 2px solid orange; */
 }
+
+.cl-admin-console-cursor
+{
+    color: black;
+    background: cyan;
+}

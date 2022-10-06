@@ -1374,7 +1374,7 @@ function shift_event(evt, from)
    }
    
    // shift key has no effect on tooltip while dragging in progress
-   if (demodulators[0].envelope.dragged_range == demodulator.draggable_ranges.none)
+   if (demodulators[0] && demodulators[0].envelope.dragged_range == demodulator.draggable_ranges.none)
       mkenvelopes(get_visible_freq_range());
 }
 
@@ -9063,13 +9063,14 @@ function panels_setup()
             w3_button('class-button w3-hcenter||title="PLL reset"', 'Reset', 'sam_pll_reset_cb')
          )
       ) +
-      w3_inline_percent('w3-margin-T-2 w3-valign/',
-         w3_div(''), 27,
-         w3_inline('w3-halign-space-between/w3-last-halign-end',
-            w3_select('id-chan-null w3-text-red w3-hide||title="channel null"', '', 'channel<br>null', 'owrx.chan_null', owrx.chan_null, owrx.chan_null_s, 'chan_null_cb'),
-            w3_select('id-SAM-opts w3-text-red w3-hide||title="SAM options"', '', 'SAM<br>options', 'owrx.SAM_opts', owrx.SAM_opts, owrx.SAM_opts_s, 'SAM_opts_cb'),
+      //w3_inline_percent('w3-margin-T-2 w3-valign/',
+      w3_inline('w3-margin-T-2 w3-valign w3-halign-end/class-slider',
+         //w3_div(''), 27,
+         //w3_inline('w3-halign-space-between/w3-last-halign-end',
+            w3_select('id-chan-null w3-text-red w3-margin-R-6 w3-hide||title="channel null"', '', 'channel<br>null', 'owrx.chan_null', owrx.chan_null, owrx.chan_null_s, 'chan_null_cb'),
+            //w3_select('id-SAM-opts w3-text-red w3-hide||title="SAM options"', '', 'SAM<br>options', 'owrx.SAM_opts', owrx.SAM_opts, owrx.SAM_opts_s, 'SAM_opts_cb'),
             w3_select('id-ovld-mute w3-text-red||title="overload mute"', '', 'ovld<br>mute', 'owrx.ovld_mute', owrx.ovld_mute, owrx.ovld_mute_s, 'ovld_mute_cb')
-         )
+         //)
       );
       
       //w3_button('id-button-test class-button w3-hcenter w3-hide', 'Test', 'toggle_or_set_test')

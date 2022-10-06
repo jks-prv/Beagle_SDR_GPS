@@ -3,6 +3,8 @@
 // Copyright (c) 2014-2021 John Seamons, ZL/KF6VO
 
 var kiwi = {
+   d: {},      // debug
+   
    isOffset: false,
    is_local: [],
    loaded_files: {},
@@ -718,32 +720,33 @@ var ansi = {
 };
 
 // esc[ ... m
+// vt100.net/docs/vt510-rm/SGR.html
 function kiwi_output_sgr(p)
 {
-   var result = 'SGR', snew = '';
+   var msg = 'SGR', str = '';
    var sgr, saw_reset = 0, saw_color = 0;
    var sa = p.esc.s.substr(1).split(';');
    var sl = sa.length;
-   //console.log('SGR '+ JSON.stringify(p.esc.s) +' sl='+ sl);
+   //console.log('SGR '+ kiwi_JSON(p.esc.s) +' sl='+ sl);
    //console.log(sa);
-   if (p.isAltBuf) result += '('+ p.r +','+ p.c +')';
+   if (p.isAltBuf) msg += '('+ p.r +','+ p.c +')';
 
-   for (var ai = 0; ai < sl && !isNumber(result); ai++) {
+   for (var ai = 0; ai < sl && !isNumber(msg); ai++) {
       sgr = (sa[ai] == '' || sa[ai] == 'm')? 0 : parseInt(sa[ai]);
       //console.log('sgr['+ ai +']='+ sgr);
       if (sgr == 0) {      // \e[m or \e[0m  all attributes off
          p.sgr.fg = p.sgr.bg = null;
-         result += ', reset'; 
+         msg += ', reset'; 
          saw_reset = 1;
       } else
 
       if (isNaN(sgr)) {
-         result = 2;
+         msg = 2;
       } else
 
-      if (sgr == 1)  { p.sgr.bright = ansi.BRIGHT; result += ', bright'; } else
-      if (sgr == 2)  { p.sgr.bright = 0; result += ', faint'; } else
-      if (sgr == 22) { p.sgr.bright = 0; result += ', normal'; } else
+      if (sgr == 1)  { p.sgr.bright = ansi.BRIGHT; msg += ', bright'; } else
+      if (sgr == 2)  { p.sgr.bright = 0; msg += ', faint'; } else
+      if (sgr == 22) { p.sgr.bright = 0; msg += ', normal'; } else
       
       if (sgr == 7) {      // reverse video (swap fg/bg)
          var tf = p.sgr.fg;
@@ -751,13 +754,13 @@ function kiwi_output_sgr(p)
          p.sgr.bg = tf;
          if (p.sgr.fg == null) p.sgr.fg = [255,255,255];
          if (p.sgr.bg == null) p.sgr.bg = [0,0,0];
-         result += ', reverse video'; 
+         msg += ', reverse video'; 
          saw_color = 1;
       } else
 
       if (sgr == 27) {     // inverse off
          p.sgr.fg = p.sgr.bg = null;
-         result += ', reverse video off'; 
+         msg += ', reverse video off'; 
          saw_color = 1;
       } else
       
@@ -765,38 +768,38 @@ function kiwi_output_sgr(p)
       if (sgr >= 30 && sgr <= 37) {
          //console.log('SGR='+ sgr +' bright='+ p.sgr.bright);
          p.sgr.fg = ansi.colors[sgr-30 + p.sgr.bright];
-         result += ', fg color'; 
+         msg += ', fg color'; 
          saw_color = 1;
       } else
 
       if (sgr >= 90 && sgr <= 97) {    // force bright
          p.sgr.fg = ansi.colors[sgr-90 + ansi.BRIGHT];
-         result += ', fg color bright'; 
+         msg += ', fg color bright'; 
          saw_color = 1;
       } else
 
       if (sgr == 39) {     // normal
          p.sgr.fg = null;
-         result += ', fg normal'; 
+         msg += ', fg normal'; 
          saw_color = 1;
       } else
 
       // background color
       if (sgr >= 40 && sgr <= 47) {
          p.sgr.bg = ansi.colors[sgr-40 + p.sgr.bright];
-         result += ', bg color'; 
+         msg += ', bg color'; 
          saw_color = 1;
       } else
 
       if (sgr >= 100 && sgr <= 107) {     // force bright
          p.sgr.bg = ansi.colors[sgr-100 + ansi.BRIGHT];
-         result += ', bg color bright'; 
+         msg += ', bg color bright'; 
          saw_color = 1;
       } else
 
       if (sgr == 49) {     // normal
          p.sgr.bg = null;
-         result += ', bg normal'; 
+         msg += ', bg normal'; 
          saw_color = 1;
       } else
       
@@ -811,7 +814,7 @@ function kiwi_output_sgr(p)
             if (n8 <= 15) {      // standard colors
                color = ansi.colors[n8];
                if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
-               result += ', 38/48 mode color'; 
+               msg += ', 38/48 mode color'; 
                saw_color = 1;
             } else
             if (n8 <= 231) {     // 6x6x6 color cube
@@ -824,7 +827,7 @@ function kiwi_output_sgr(p)
                b = Math.floor(255 * b/5);
                color = [r,g,b];
                if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
-               result += ', color cube'; 
+               msg += ', color cube'; 
                saw_color = 1;
             } else
             if (n8 <= 255) {     // grayscale ramp
@@ -832,10 +835,10 @@ function kiwi_output_sgr(p)
                //console.log('n8='+ n8 +' ci='+ ci);
                color = [ci,ci,ci];
                if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
-               result += ', grayscale ramp'; 
+               msg += ', grayscale ramp'; 
                saw_color = 1;
             } else
-               result = 2;
+               msg = 2;
          } else
 
          if (sl == 5 && (parseInt(sa[1]) == 2) &&
@@ -845,18 +848,18 @@ function kiwi_output_sgr(p)
                b = w3_clamp(b, 0,255);
                color = [r,g,b];
                if (sgr == 38) p.sgr.fg = color; else p.sgr.bg = color;
-               result += ', 24-bit color'; 
+               msg += ', 24-bit color'; 
                saw_color = 1;
          } else
-            result = 2;
+            msg = 2;
       } else
-         result = 2;
+         msg = 2;
    }
    
    if (saw_reset) {  // \e[m or \e[0m
       //console.log('SGR DONE');
       if (p.sgr.span) {
-         snew += '</span>';
+         str += '</span>';
          p.sgr.span = 0;
       }
    } else
@@ -864,23 +867,28 @@ function kiwi_output_sgr(p)
       //console.log('SGR saw_color fg='+ kiwi_rgb(p.sgr.fg) +' bg='+ kiwi_rgb(p.sgr.bg));
       //console.log(p.sgr.fg);
       //console.log(p.sgr.bg);
-      if (p.sgr.span) snew += '</span>';
-      snew += '<span style="'+ (p.sgr.fg? ('color:'+ kiwi_rgb(p.sgr.fg) +';') :'') + (p.sgr.bg? ('background-color:'+ kiwi_rgb(p.sgr.bg) +';') :'') +'">';
+      if (p.sgr.span) str += '</span>';
+      str += '<span style="'+ (p.sgr.fg? ('color:'+ kiwi_rgb(p.sgr.fg) +';') :'') + (p.sgr.bg? ('background-color:'+ kiwi_rgb(p.sgr.bg) +';') :'') +'">';
       p.sgr.span = 1;
    } else {
       //console.log('SGR ERROR');
    }
    
-   return { result: result, snew: snew };
+   return { msg: msg, str: str };
 }
 
-var pp;   //jksx
 function kiwi_output_msg(id, id_scroll, p)
 {
    var i, j;
    var dbg = (1 && dbgUs);
-   if (dbg) pp = p;   //jksx
+   if (dbg) kiwi.d.p = p;
    
+   if (0 && dbg) {
+      console.log('$kiwi_output_msg id='+ id +' init='+ p.init +' isAltBuf='+ p.isAltBuf +' s='+ p.s);
+      console.log('$ '+ kiwi_JSON(p));
+      if (!p.init) kiwi_trace();
+   }
+
 	var parent_el = w3_el(id);
 	if (!parent_el) {
 	   console.log('kiwi_output_msg NOT_FOUND id='+ id);
@@ -889,12 +897,18 @@ function kiwi_output_msg(id, id_scroll, p)
 	
 	var appendEmptyLine = function(parent_el) { return w3_create_appendElement(parent_el, 'pre', ''); };
 	var removeAllLines = function(parent_el) { while (parent_el.firstChild) { parent_el.removeChild(parent_el.firstChild); } };
-	
-	var render = function() {
+
+   var console_cursor = function(ch) {
+      ch = ch || '&nbsp;';
+      return '<span class="cl-admin-console-cursor">'+ ch +'</span>';
+   };
+   
+	var render2 = function() {
 	   var fg = null, bg = null, span = false;
+	   //var r_s = '';
 	   for (var r = 1; r <= p.rows; r++) {
-         //jksx do every line because old cursor position undo isn't handled properly yet!
-         //if (!p.dirty[r]) continue;
+         if (!p.dirty[r]) continue;
+         //r_s += r +' ';
          p.dirty[r] = false;
          var s = '';
          for (var c = 1; c <= p.cols; c++) {
@@ -912,11 +926,20 @@ function kiwi_output_msg(id, id_scroll, p)
                span = true;
             }
             
-            // cursor
+            // HTML escapes
             var ch = p.screen[r][c];
-            if (1 && p.show_cursor && r == p.r && c == p.c) {
-               console.log('cursor '+ p.r +','+ p.c);
-               s += '<span style="color: white; background: black;">'+ ch +'</span>';
+            if (ch == '<') ch = '&lt;'; else
+            if (ch == '>') ch = '&gt;'; else
+            if (ch == '&') ch = '&amp;'; else
+            if (ch == '\'') ch = '&apos;'; else
+            if (ch == '/') ch = '&#47;'; else
+               ;
+
+            // cursor
+            if (p.show_cursor && r == p.r && c == p.c) {
+               if (dbg) console.log('cursor '+ p.r +','+ p.c);
+               s += console_cursor(ch);
+               p.r_cursor = r; p.c_cursor = c;
             } else {
                s += ch;
             }
@@ -927,11 +950,21 @@ function kiwi_output_msg(id, id_scroll, p)
          try {
             p.els[r].innerHTML = s;
          } catch(ex) {
-            console.log('r='+ r);
-            console.log(p.els[r]);
-            console.log(ex);
+            if (dbg) {
+               console.log('r='+ r);
+               console.log(p.els[r]);
+               console.log(ex);
+            }
          }
       }
+      //if (dbg) console.log('RENDER '+ r_s);
+	};
+	
+	var render = function() {
+	   if (p.r_cursor != p.r && p.r_cursor != 0) {
+	      p.dirty[p.r_cursor] = true;      // re-render row with old cursor (if not the current row)
+	   }
+      render2();
 	};
 	
    // schedule rendering
@@ -944,29 +977,109 @@ function kiwi_output_msg(id, id_scroll, p)
 	   p.dirty[p.r] = true;
 	};
 	
-	var screen_char = function(ch) {
+	var screen_char = function(ch, shift_mode) {
 	   var r = p.r, c = p.c;
       //if (dbg && p.traceEvery && ord(ch) > 0x7f)
       //   console.log('$every '+ r +','+ c +' '+ ch +'('+ ord(ch) +')');
       
-      if (p.insertMode) {
+      if (shift_mode != p.NOSHIFT_MODE && p.insertMode) {
          for (i = r.cols-1; i >= c; i--) {
             p.screen[r][i+1] = p.screen[r][i];
             p.color[r][i+1] = p.color[r][i];
          }
       }
       
-	   p.screen[r][c] = ch;
+      try {
+	      p.screen[r][c] = ch;
+	   } catch(ex) {
+         if (dbg) {
+            console.log('r='+ r +' c='+ c);
+            console.log(kiwi_JSON(ch));
+            //console.log(kiwi_JSON(p));
+            console.log(p);
+            console.log(ex);
+         }
+	   }
+	   
 	   p.color[r][c] = { fg: p.sgr.fg, bg: p.sgr.bg };
 	   dirty();
-	   p.c++;
-	   if (p.c > p.cols) { p.c = 1; p.r++; if (p.r > p.rows) { p.r = 1; dirty(); } }
+      p.c++;
+      if (p.c > p.cols) {
+         if (p.eol_wrap && shift_mode != p.NOSHIFT_MODE) {
+            p.c = 1; p.r++;
+            if (p.r > p.rows) { p.r = 1; dirty(); }
+         } else {
+            p.c = p.cols;
+         }
+      }
 	   sched();
 	};
 
+	var move_in_display = function(dr_start, sr_start, sr_end, step) {
+	   var row = dr_start;
+	   var down = (step > 0);
+      for (var ri = sr_start; (down && ri <= sr_end) || (!down && ri >= sr_end); ri += step) {
+         p.r = row; row += step;
+         p.c = 1;
+         for (var ci = 1; ci <= p.cols; ci++) {
+            screen_char(p.screen[ri][ci]);
+         }
+      }
+	};
+	
+	var erase_in_line = function(c_start, c_end) {
+      for (var c = c_start; c_start && c <= c_end; c++) {
+         p.screen[p.r][c] = ' ';
+         p.color[p.r][c] = { fg: null, bg: null };
+      }
+      dirty();
+      sched();
+	};
+
+	var erase_in_display = function(r_start, r_end, c_start, c_end) {
+      for (var r = r_start; r_start && r <= r_end; r++) {
+         for (var c = c_start; c <= ((r == p.r)? c_end : p.cols); c++) {
+            p.screen[r][c] = ' ';
+            p.color[r][c] = { fg: null, bg: null };
+         }
+         p.dirty[r] = true;
+      }
+      sched();
+	};
+	
+	var snew_add = function(c) {
+	   if (snew == '') {
+	      p.snew_r = p.r;
+	      p.snew_c = p.c;
+	   }
+	   snew += c;
+   };
+   
+	var snew_dump = function(where) {
+      if (snew != '') {
+         if (dbg) console.log('> '+ (p.isAltBuf? 'ALT' : 'REG') +' '+ where +
+            ' ('+ p.snew_r +','+ p.snew_c +') '+ ' CHARS #'+ snew.length +' '+ kiwi_JSON(snew));
+         snew = '';
+      }
+   };
+   
+   var line_s = function() {
+      return kiwi_JSON(p.line.join(''));
+   };
+   
+   var line_join = function(col_start, col_stop) {
+      col_stop = col_stop || p.cols;
+      var s = '';
+      for (var c = col_start; c < col_stop; c++) {
+         if (isString(p.line_sgr[c])) s += p.line_sgr[c];
+         if (isString(p.line[c])) s += p.line[c];
+      }
+      return s;
+   };
+   
 	var s;
 	try {
-      //if (dbg) console.log(JSON.stringify(p.s));
+      //if (dbg) console.log(kiwi_JSON(p.s));
 	   s = kiwi_decodeURIComponent('kiwi_output_msg', p.s);
 	} catch(ex) {
 	   console.log('decodeURIComponent FAIL:');
@@ -974,16 +1087,37 @@ function kiwi_output_msg(id, id_scroll, p)
 	   s = p.s;
 	}
 	
-   if (!p.init) {
+   if (p.init != true) {
+      //if (dbg) console.log('$console INIT '+ p.init);
+      //kiwi_trace();
       removeAllLines(parent_el);
       p.el = appendEmptyLine(parent_el);
-      p.esc = { s:'', state:0 };
+      p.NONE = 0;
+      p.ESC = 1;
+      p.CSI = 2;
+      p.NON_CSI = 3;
+      p.NOSHIFT_MODE = true;
+      p.esc = { s: '', state: p.NONE };
       p.sgr = { span:0, bright:0, fg:null, bg:null };
       p.return_pending = false;
+      p.must_scroll_down = false;
+      p.traceEvery = false;
+      
+      // line-oriented
+      p.ccol = 1;
+      p.line = [];
+      p.line_sgr = [];
       p.inc = 1;
+      
+      // char-oriented
       p.r = p.c = 1;
-      p.show_cursor = false;
+      p.margin_set = false;
+      p.margin_top = 1;
+      p.margin_bottom = p.rows;
+      p.show_cursor = p.show_cursor || false;
+      p.r_cursor = p.c_cursor = 0;
       p.insertMode = true;
+      p.eol_wrap = false;     // NB: "top -c" doesn't like EOL wrapping
       p.screen = [];
       p.color = [];
       p.dirty = [];
@@ -993,37 +1127,38 @@ function kiwi_output_msg(id, id_scroll, p)
          p.color[r] = [];
       }
       p.isAltBuf = false;
+      p.altbuf_via_cursor_visible = false;
+      p.altbuf_via_cup = false;
       p.alt_save = '';
-      p.traceEvery = false;
       p.rend_timeout = null;
+
       p.init = true;
    }
 
-   var snew = '';
+   var snew = '', stmp;
 	var el_scroll = w3_el(id_scroll);
    var wasScrolledDown = null;
    
-   if (isUndefined(p.tstr)) p.tstr = '';
-   if (isUndefined(p.col)) p.col = 0;
-
-   // handle beginning output with '\r' only to overwrite current line
-   //if (dbg) console.log(JSON.stringify(s));
+   // handle output beginning with '\r' alone (or starting with '\r\n') to overwrite current line
+   // see also p.remove_returns and p.inline_returns
+   // NB: there are no users currently that set "process_return_alone = true"
+   //if (dbg) console.log(kiwi_JSON(s));
    if (p.process_return_alone && s.charAt(0) == '\r' && (s.length == 1 || s.charAt(1) != '\n')) {
       //console.log('\\r @ beginning:');
-      //console.log(JSON.stringify(s));
-      //console.log(JSON.stringify(p.tstr));
+      //console.log(kiwi_JSON(s));
       if (p.isAltBuf) {
       } else {
          s = s.substring(1);
-         p.tstr = snew = '';
-         p.col = 0;
+         p.line = [];
+         p.line_sgr = [];
+         p.ccol = 1;
       }
    }
 
    if (0) {
       if (dbg) console.log('kiwi_output_msg:');
-      if (dbg) console.log(JSON.stringify(p));
-      if (dbg) console.log(JSON.stringify(s));
+      if (dbg) console.log(kiwi_JSON(p));
+      if (dbg) console.log(kiwi_JSON(s));
    }
    if (p.remove_returns) s = s.replace(/\r/g, '');
    if (p.inline_returns && !p.isAltBuf) {
@@ -1033,98 +1168,179 @@ function kiwi_output_msg(id, id_scroll, p)
       s = s.replace(/\r\n/g, '\n');
       s = s.replace(/\r\n/g, '\n');
    }
-   if (dbg) console.log(JSON.stringify(s));
-      
+   if (dbg) console.log('OUTPUT '+ kiwi_JSON(s).replace(/\\u001b/g, '\\e'));
+   
+   var cnt = 0;
 	for (var si = 0; si < s.length; si++) {
 	   var result = null;
 
 		var c = s.charAt(si);
-      //console.log(i +' c='+ JSON.stringify(c));
+      //if (dbg) console.log(i +' c='+ kiwi_JSON(c));
 
 		if (p.inline_returns && p.return_pending && c != '\r') {
 		   if (p.isAltBuf) {
 		   } else {
-            p.tstr = snew = '';
-            p.col = 0;
+            p.ccol = 1;
             p.return_pending = false;
          }
 		}
 
-		if (c == '\f') {		// form-feed is how we clear accumulated pre elements (screen clear, pre-ANSI)
+		if (c == '\f') {
 		   if (p.isAltBuf) {
-		      // FIXME?
 		   } else {
+            // form-feed is how we clear accumulated pre elements (screen clear, pre-ANSI)
+            if (dbg) console.log('console \f');
             removeAllLines(parent_el);
             p.el = appendEmptyLine(parent_el);
-            p.tstr = snew = '';
-            p.col = 0;
+            p.line = [];
+            p.line_sgr = [];
+            p.ccol = 1;
          }
 		} else
 		
 		if (c == '\r') {
          //if (dbg) console.log('\\r inline, isAltBuf='+ p.isAltBuf);
          if (p.isAltBuf) {
-            p.c = 1;
-            result = '\\r (col = 1)';
+            p.c = 1; dirty();
          }
          if (p.inline_returns) {
             p.return_pending = true;
          }
+         snew_dump('rtn');
+         result = '\\r col = 1 ('+ p.r +',1)';
+      } else
+      
+      // scroll text up
+		if (c == '\n' && p.isAltBuf) {
+		   if (p.margin_set) {
+            move_in_display(p.margin_top, p.margin_top + 1, p.margin_bottom, +1);
+            result = '\\n (scroll text up)';
+         } else {
+            p.c = 1;
+            if (p.r < p.rows) p.r++;
+            dirty();
+            result = '\\n row++ ('+ p.r +','+ p.c +')';
+         }
       } else
       
 		if (c == '\b') {
+         result = 'backspace (arrow left)';
 		   if (p.isAltBuf) {
             if (p.c > 1) { dirty(); p.c--; }
-            result = 'backspace (arrow left)';
 		   } else {
-            if (p.tstr.length > 1)
-               p.tstr = p.tstr.slice(0, p.tstr.length-1);
+            if (p.ccol > 1) {
+               p.ccol--;
+               if (dbg) console.log('BACKSPACE col='+ p.ccol +' '+ line_s());
+            }
          }
 		} else
 		
 		// tab-8
 		if (c == '\t') {
+		   result = 'tab';
 		   if (p.isAltBuf) {
-		      // FIXME
 		   } else {
-            snew += '&nbsp;';
-            p.col++;
-            while ((p.col & 7) != 0) {
-               snew += '&nbsp;';
-               p.col++;
+            snew_add('&nbsp;');
+            p.line[p.ccol] = '&nbsp;';
+            p.ccol++;
+            while ((p.ccol & 7) != 0) {
+               snew_add('&nbsp;');
+               p.line[p.ccol] = '&nbsp;';
+               p.ccol++;
             }
          }
 		} else
 	
-	   // CSI:
-	   //    0-n 0x30-3f    0-9:;<=>?
-	   //    0-n 0x20-2f    space !"#$%&'()*+,-./
-	   //      1 0x40-7e    @ A-Z [\]^_` a-z {|}~
+	   // CSI:  ESC [ ...
+	   //    0-n 0x30-3f    0-9:;<=>?               parameter bytes
+	   //    0-n 0x20-2f    space !"#$%&'()*+,-./   intermediate bytes
+	   //      1 0x40-7e    @ A-Z [\]^_` a-z {|}~   final byte (0x70-7e are private)
+	   
+	   // non-CSI:
+	   //    Fe seq (C1 control codes)     ESC 0x40-5e    @ A-Z [\]^
+	   // H     set ht (nop)
+	   // M     reverse index
+	   // O_    func keys
+	   // ]     OS command (uses ST)
+	   // \     string terminator (ST)
+
+	   //    Fs seq                        ESC 0x60-7e    ` a-z {|}~
+	   // c     reset to initial state
+	   // l     UNK
+	   // m     UNK
+
+	   //    Fp seq                        ESC 0x30-3f    0-9:;<=>?
+	   // 7     save cursor
+	   // 8     restore cursor
+	   // >     num keypad
+	   // =     keypad applic mode
+
+	   //    Nf seq                        ESC 0x20-2f    space !"#$%&'()*+,-./
+	   // (     select char set G0
 		
-		// ANSI color escapes
 		if (c == '\x1b') {      // esc = ^[ = 0x1b = 033 = 27.
 		   p.esc.s = '';
-		   p.esc.state = 1;
+		   p.esc.state = p.ESC;
 		   p.traceEvery = false;
-		   //console.log('traceEvery = false');
 		} else
 
-		if (p.esc.state == 1) {
-         //console.log(i +' acc '+ JSON.stringify(c));
+      // en.wikipedia.org/wiki/ANSI_escape_code
+      // vt100.net/docs/vt510-rm/chapter4.html
+      // output from "infocmp xterm-256color" command
+      // pubs.opengroup.org/onlinepubs/7908799/xcurses/terminfo.html
+
+		if (p.esc.state >= p.ESC) {
+         var interp = false;
+         //if (dbg) console.log(i +' acc '+ kiwi_JSON(c));
          
-         // accumulate '[' and CSI 0x20-2f, 0x30-3f chars
-         // exception: ESC >  (0x3e) which is set numeric keypad
-		   if ((c < '@' && c != '>') || c == '[') {
+         if (p.esc.state == p.ESC) {
+            if (c == '[') {
+               p.esc.state = p.CSI;
+            } else {
+               p.esc.state = p.NON_CSI;
+               switch (c) {
+                  case '(':
+                  case 'O':
+                     cnt = 2; break;
+
+                  case '>':
+                  case '=':
+                     cnt = 1; break;
+
+                  default:
+                     if (dbg) console.log('$LEN? c='+ c);
+                     cnt = 1; break;
+               }
+               //if (dbg) console.log('$NON c='+ c +' cnt='+ cnt);
+            }
+         }
+         
+         // CSI
+         // accumulate CSI '[' (0x5b) and CSI 0x20-2f, 0x30-3f chars (i.e. outside 0x40-7e)
+		   if (p.esc.state == p.CSI) {
             p.esc.s += c;
-            //console.log('$acc '+ c +'('+ ord(c) +')');
-		   } else {
-            p.esc.s += c;     // single terminating CSI 0x40-7f char
-            //if (dbg) console.log('process ESC '+ JSON.stringify(p.esc.s));
+            //if (dbg) console.log('$acc CSI '+ c +'('+ ord(c) +') '+ p.esc.s);
+            if (p.esc.s.length > 1 && c >= '@' && c <= '~') interp = true;
+		   } else
+
+         // non CSI
+         // accumulate a fixed number of chars defined by first char seen
+		   if (p.esc.state == p.NON_CSI && cnt) {
+            p.esc.s += c;
+            //if (dbg) console.log('$acc NON '+ c +'('+ ord(c) +') '+ p.esc.s);
+            cnt--;
+            if (cnt == 0) interp = true;
+		   }
+
+         // sequence complete, interpret
+		   if (interp) {
+		      //if (dbg && p.esc.state == p.NON_CSI) console.log('$INTERPRET ESC '+ kiwi_JSON(p.esc.s));
 		      var first = p.esc.s.charAt(0);
 		      var second = p.esc.s.charAt(1);
 		      var last_hl = (c == 'h' || c == 'l');
 		      var enable = (c == 'h');
             result = 0;
+            var error = 0;
             
             var n1 = 1, n2 = 1;
             var t = p.esc.s.slice(1);
@@ -1137,268 +1353,475 @@ function kiwi_output_msg(id, id_scroll, p)
                n2 = n2 || 1;
             }
 		      
-		      if (first == '[') {     // esc[
+            // CSI handled: (* = non-isAltBuf)
+            // ESC [    A B C* D d G H J* K* M m* P* r S T X 4 ? @
+		      if (first == '[') {
 
-               if (c == 'm') {      // esc[ ... m  fg/bg color
+		         // ANSI color escapes
+               if (c == 'm') {      // esc [ ... m  fg/bg color
                   var rv = kiwi_output_sgr(p);
-                  result = rv.result;
+                  result = rv.msg;
                   if (p.isAltBuf) {
                   } else {
-                     snew += rv.snew;
+                     snew_add(rv.str);
+                     p.line_sgr[p.ccol] = rv.str;
+                     if (dbg) console.log('AFTER SGR snew='+ kiwi_JSON(snew));
                   }
                   p.traceEvery = true;
-                  //console.log('traceEvery = true [m');
-               } else
-               
-               if (c == 'J' && p.isAltBuf) {      // erase in display
-                  var r_start, r_end, c_start, c_end;
-                  
-                  if (second == '0' || second == 'J') {     // [J  [0J
-                     r_start = p.r, r_end = p.rows;
-                     c_start = p.c, c_end = p.cols;
-                     result = 'erase cur to EOS';
-                  } else
-                  if (second == '2' || second == '3') {     // [2J  [3J
-                     r_start = 1, r_end = p.rows;
-                     c_start = 1, c_end = p.cols;
-                     result = 'erase full screen';
-                  } else
-                  if (second == '1') {                      // [1J
-                     r_start = 1, r_end = p.r;
-                     c_start = 1, c_end = p.c;
-                     result = 'erase BOS to cur';
-                  } else {
-                     r_start = 0;
-                     result = 2;
-                  }
-
-                  for (var r = r_start; r_start && r <= r_end; r++) {
-                     for (var c = c_start; c <= ((r == p.r)? c_end : p.cols); c++) {
-                        p.screen[r][c] = ' ';
-                        p.color[r][c] = { fg: null, bg: null };
-                     }
-                     p.dirty[r] = true;
-                  }
-                  sched();
                } else
                
                if (c == 'K') {      // erase in line
                   if (p.isAltBuf) {
-                     var start, end;
+                     var c_start, c_end;
                      result = 'erase in line: ';
+
                      switch (second) {
-                        case '0': case 'K': start = p.c; end = p.cols; result += 'cur to EOL'; break;
-                        case '1': start = 1; end = p.c; result += 'BOL to cur'; break;
-                        case '2': start = 1; end = p.cols; result += 'full line'; break;
-                        default: start = 0; break;
+                        case '0':
+                        case 'K': c_start = p.c; c_end = p.cols; result += 'cur to EOL'; break;
+                        case '1': c_start = 1;   c_end = p.c;    result += 'BOL to cur'; break;
+                        case '2': c_start = 1;   c_end = p.cols; result += 'full line'; break;
+                        default:  c_start = 0; break;
                      }
-                     for (var c = start; start && c <= end; c++) {
-                        p.screen[p.r][c] = ' ';
-                        p.color[p.r][c] = { fg: null, bg: null };
+                     erase_in_line(c_start, c_end);
+                  } else {
+                     if (second == 'K') {
+                        if (dbg) console.log('EEOL BEFORE col='+ p.ccol +' '+ line_s());
+                        var col_stop = p.line.length;
+                        for (i = p.ccol; i <= col_stop; i++) p.line[i] = null;
+                        if (dbg) console.log('EEOL AFTER col='+ p.ccol +' '+ line_s());
+                        result = 'erase in line: cur to EOL';
                      }
-                     dirty();
-                     sched();
+                  }
+               } else
+               
+               if (c == 'J') {      // erase in display
+                  if (p.isAltBuf) {
+                     var r_start, r_end, c_start, c_end;
+
+                     if (second == '0' || second == 'J') {     // [J  [0J
+                        r_start = p.r, r_end = p.rows;
+                        c_start = p.c, c_end = p.cols;
+                        result = 'erase cur to EOS';
+                     } else
+                     if (second == '2' || second == '3') {     // [2J  [3J
+                        r_start = 1, r_end = p.rows;
+                        c_start = 1, c_end = p.cols;
+                        result = 'erase full screen';
+                     } else
+                     if (second == '1') {                      // [1J
+                        r_start = 1, r_end = p.r;
+                        c_start = 1, c_end = p.c;
+                        result = 'erase BOS to cur';
+                     } else {
+                        r_start = 0;
+                        result = 2;
+                     }
+                     erase_in_display(r_start, r_end, c_start, c_end);
+                  } else {
+                     if (second == '2' || second == '3') {     // [2J  [3J
+                        if (dbg) console.log('console ERASE FULL SCREEN');
+                        removeAllLines(parent_el);
+                        p.el = appendEmptyLine(parent_el);
+                        p.line = [];
+                        p.line_sgr = [];
+                        p.ccol = 1;
+                        result = 'erase full screen';
+                     }
                   }
                } else
                
                if (c == 'H') {      // cursor position
                   result = 'move '+ n1 +','+ n2;
-                  dirty(); p.r = n1; p.c = n2; dirty();
+                  if (p.isAltBuf) {
+                     dirty(); p.r = n1; p.c = n2; dirty();
+                  } else {
+                     error = 1;
+                  }
                } else
 		      
-               if (c == 'd') {      // vertical line position absolute (vt100)
+               if (c == 'd') {      // vertical line position absolute
                   //result = 'move row '+ n1 +' (col = 1)';
                   //p.r = n1; p.c = 1;
                   result = 'move row '+ n1;
-                  dirty(); p.r = n1; dirty();
+                  if (p.isAltBuf) {
+                     dirty(); p.r = n1; dirty();
+                  } else {
+                     error = 1;
+                  }
                } else
 		      
                if (c == 'G') {      // cursor horizontal absolute
-                  result = 'move col'+ n1;
-                  p.c = n1;
+                  result = 'move col '+ n1;
+                  if (p.isAltBuf) {
+                     p.c = n1; dirty();
+                  } else {
+                     error = 1;
+                  }
                } else
 		      
 		         // see: pubs.opengroup.org/onlinepubs/7908799/xcurses/terminfo.html
-               if (second == '?' && last_hl) {     // esc[? # h  esc[? # l
+               if (second == '?' && last_hl) {     // esc[ ? # h  esc[ ? # l
                   n1 = parseInt(p.esc.s.substr(2));
                   result = (enable? 'SET':'RESET') +' ';
+                  var enter_altbuf = false, exit_altbuf = false, exit_altbuf_no_restore = false;
+
                   switch (n1) {
-                     // [sr] mkx=\E[?1 [hl]
-                     case 1: result += 'automatic margins'; break;
+                  
+                     // 3 [hl]   col mode, 132/80
+                     // 4 [hl]   scrolling mode, smooth/jump
+                     // 5 [hl]   screen mode light/dark, used in flashing screen:
+                     //          flash=\E[?5h$<100/>\E[?5l ($<100/> is time delay)
+                     // 6 [hl]   origin mode
+                     // other hl: 42 95 96 98 34 64 61 35 36 104
+                     //
+                     // non-hl:
+                     // 5 W      tab every 8 cols
+                     // 6 n      extended cursor report
+                  
+                     // [sr]mkx=\E[?1 [hl]
+                     // see: stackoverflow.com/questions/13585131/keyboard-transmit-mode-in-vt100-terminal-emulator
+                     case 1: result += 'cursor keys mode'; break;
 
-                     // [sr] mam=\E[?7 [hl]
-                     case 7: result += 'vertical autowrap'; break;   // vt100
+                     // [sr]mam=\E[?7 [hl]
+                     case 7: result += 'vertical autowrap'; break;
 
-                     // cnorm=\E[?12l\E[?25h
-                     case 12: result += '(part of RESET cursor visible)'; break;
+                     // cvvis=\E[?12;25h
+                     // civis=\E[?25l
+                     // cnorm=\E[?12l \E[?25h
+                     // ?25 = cursor visible(h)/invisible(l)
+                     // ?12 = make cursor very visible(h) / normal(l)
+                     case 12: result += 'cursor bold'; break;
+                     case 25: result += 'cursor visible';
+                              p.show_cursor = enable? true:false;
+                              if (!enable && !p.isAltBuf) {
+                                 enter_altbuf = true;
+                                 p.altbuf_via_cursor_visible = true;
+                              } else
+                              if (enable && p.isAltBuf && p.altbuf_via_cursor_visible) {
+                                 exit_altbuf = true;
+                                 //exit_altbuf_no_restore = true;
+                              }
+                              break;
 
-                     // civis=\E[?25l cnorm=\E[?12l\E[?25h
-                     case 25: result += 'cursor visible'; p.show_cursor = true; break;
-
-                     // enter/exit "cup" (cursor position) mode: [sr] mcup=\E[?1049 [hl]
+                     // enter/exit "cup" (cursor position) mode: [sr]mcup=\E[?1049 [hl]
                      case 1049:
                         result += 'alt screen buf';
-                        if (dbg && enable && !p.isAltBuf) {
-                           //console.log('$ENTER alt buf');
-                           p.alt_save = parent_el.innerHTML;
-                           removeAllLines(parent_el);
-                           for (var r = 1; r <= p.rows; r++) {
-                              p.dirty[r] = false;
-                              try {
-                                 for (var c = 1; c <= p.cols; c++) {
-                                    p.screen[r][c] = ' ';
-                                    p.color[r][c] = { fg: null, bg: null };
-                                 }
-                              } catch(ex) {
-                                 console.log('--------');
-                                 console.log('r='+ r +' c='+ c);
-                                 console.log(p.screen);
-                                 console.log(ex);
-                              }
-                              p.els[r] = appendEmptyLine(parent_el);
-                              p.els[r].innerHTML = '&nbsp;';      // force initial rendering
-                           }
-                           //w3_add('id-console-input', 'w3-input-any-change');
-                           p.isAltBuf = true;
+                        if (enable && !p.isAltBuf) {
+                           enter_altbuf = true;
+                           p.altbuf_via_cup = true;
                         } else
-                        if (!enable && p.isAltBuf) {
-                           console.log('$EXIT alt buf');
-                           console.log(kiwi_JSON(p.alt_save));
-                           parent_el.innerHTML = p.alt_save;
-                           p.el = appendEmptyLine(parent_el);
-                           p.isAltBuf = false;
+                        if (!enable && p.isAltBuf && p.altbuf_via_cup) {
+                           exit_altbuf = true;
                         }
                         break;
 
                      default: result += '$UNKNOWN ='+ n1; break;
                   }
+                  
+                  if (enter_altbuf) {
+                     if (dbg) console.log('$ENTER alt buf via '+ (p.altbuf_via_cup? 'cup' : 'cursor_visible') +
+                        ' ====================================');
+
+                     // remove any cursor at end that we don't want to display on restore
+                     p.alt_save = parent_el.innerHTML.replace(/<pre><span class="cl-admin-console-cursor">.*<\/span><\/pre>$/, '');
+                     if (dbg) console.log(kiwi_JSON(p.alt_save));
+                     removeAllLines(parent_el);
+                     for (var r = 1; r <= p.rows; r++) {
+                        p.dirty[r] = false;
+                        try {
+                           for (var c = 1; c <= p.cols; c++) {
+                              p.screen[r][c] = ' ';
+                              p.color[r][c] = { fg: null, bg: null };
+                           }
+                        } catch(ex) {
+                           if (dbg) {
+                              console.log('--------');
+                              console.log('r='+ r +' c='+ c);
+                              console.log(p.screen);
+                              console.log(ex);
+                           }
+                        }
+                        p.els[r] = appendEmptyLine(parent_el);
+                        p.els[r].innerHTML = '&nbsp;';      // force initial rendering
+                     }
+                     console_is_char_oriented(true);
+                     p.margin_set = false;
+                     p.isAltBuf = true;
+                  } else
+                  
+                  if (exit_altbuf) {
+                     if (dbg) console.log('$EXIT alt buf via '+ (p.altbuf_via_cup? 'cup' : 'cursor_visible') +
+                        ' ====================================');
+                     p.altbuf_via_cursor_visible = false;
+                     p.altbuf_via_cup = false;
+
+                     if (dbg) console.log(kiwi_JSON(p.alt_save));
+                     parent_el.innerHTML = p.alt_save;
+                     p.el = appendEmptyLine(parent_el);
+                     p.must_scroll_down = true;
+                     console_is_char_oriented();
+                     p.isAltBuf = false;
+                  } else
+
+                  if (exit_altbuf_no_restore) {
+                     if (dbg) console.log('$EXIT alt buf NO RESTORE =====================================');
+                     p.must_scroll_down = true;
+                     console_is_char_oriented();
+                     p.isAltBuf = false;
+                  }
                } else
                
-               if (c == 'r') {      // set top and bottom margin (default =1; default=lines-per-screen, vt100)
-                  result = 'set margins, top='+ n1 +', bottom='+ n2;
-               } else
-               
-               // not on Wikipedia, see: vt100.net/docs/vt510-rm/chapter4.html
-               if (second == '4' && last_hl) {     // esc[4h  esc[4l
+               if (second == '4' && p.isAltBuf && last_hl) {      // esc[4h  esc[4l
                   p.insertMode = enable;
                   result = enable? 'INSERT mode' : 'REPLACE mode';
                } else
                
-               // erase characters (vt100)
+               // erase characters
                if (c == 'X' && p.isAltBuf) {    // ech=\E[%p1%dX
                   if (n1 == 0) n1 = 1;
                   var col;
                   for (var ci = 0, col = p.c; ci < n1 && col <= p.cols; ci++, col++) {
-                     //console.log('erase '+ p.r +','+ col +'|'+ ci +'/'+ n1);
+                     //if (dbg) console.log('erase '+ p.r +','+ col +'|'+ ci +'/'+ n1);
                      p.screen[p.r][col] = ' ';
                      p.color[p.r][col] = { fg: null, bg: null };
                   }
                   dirty();
                   sched();
-                  result = 'eraseX #'+ n1 +' chars';
+                  result = 'erase '+ n1 +' chars';
                } else
                
-               // delete characters (vt100)
-               // FIXME: this should probably do a shift-left
-               if (c == 'P' && p.isAltBuf) {
+               // delete characters (shift left)
+               if (c == 'P') {
                   if (n1 == 0) n1 = 1;
-                  var col;
-                  for (var ci = 0, col = p.c; ci < n1 && col <= p.cols; ci++, col++) {
-                     p.screen[p.r][col] = ' ';
-                     p.color[p.r][col] = { fg: null, bg: null };
+                  if (p.isAltBuf) {
+                     var save_col = p.c, src_col, dst_col;
+                     for (src_col = p.c + n1, dst_col = p.c; src_col <= p.cols; src_col++, dst_col++) {
+                        p.screen[p.r][dst_col] = p.screen[p.r][src_col];
+                        p.color [p.r][dst_col] = p.color [p.r][src_col];
+                     }
+                     for (; dst_col < p.cols; dst_col++) {
+                        p.screen[p.r][dst_col] = ' ';
+                        p.color [p.r][dst_col] = { fg: null, bg: null };
+                     }
+                     p.c = save_col;
+                     dirty();
+                     sched();
+                  } else {
+                     if (dbg) console.log('DEL-CHARS BEFORE col='+ p.ccol +'/'+ p.line.length +' '+ line_s());
+                     for (i = 0; i < n1; i++) {
+                        var col_stop = p.line.length;
+                        for (j = p.ccol; j < col_stop; j++) p.line[j] = p.line[j+1];
+                        p.line[j] = null;
+                     }
+                     if (dbg) console.log('DEL-CHARS AFTER col='+ p.ccol +'/'+ p.line.length +' '+ line_s());
                   }
-                  dirty();
-	               sched();
                   result = 'del #'+ n1 +' chars';
                } else
                
-               // pan down (??)
+               // insert characters (shift right)
+               if (c == '@') {
+                  if (n1 == 0) n1 = 1;
+                  if (p.isAltBuf) {
+                     var save_col = p.c, src_col, dst_col;
+                     for (src_col = p.cols - n1, dst_col = p.cols; src_col >= save_col; src_col--, dst_col--) {
+                        p.screen[p.r][dst_col] = p.screen[p.r][src_col];
+                        p.color [p.r][dst_col] = p.color [p.r][src_col];
+                     }
+                     for (; dst_col >= save_col; dst_col--) {
+                        p.screen[p.r][dst_col] = ' ';
+                        p.color [p.r][dst_col] = { fg: null, bg: null };
+                     }
+                     p.c = save_col;
+                     dirty();
+                     sched();
+                  } else {
+                     if (dbg) console.log('INS-CHARS BEFORE col='+ p.ccol +'/'+ p.line.length +' '+ line_s());
+                     for (i = 0; i < n1; i++) {
+                        var col_stop = p.line.length;
+                        for (j = col_stop; j > p.ccol; j--) p.line[j] = p.line[j-1];
+                     }
+                     if (dbg) console.log('INS-CHARS AFTER col='+ p.ccol +'/'+ p.line.length +' '+ line_s());
+                  }
+                  result = 'ins #'+ n1 +' chars';
+               } else
+               
+               // set top and bottom margin, defaults: top = 1, bottom = lines-per-screen
+               // AKA: change scroll region
+               if (c == 'r' && p.isAltBuf) {
+                  p.margin_top = n1;
+                  p.margin_bottom = n2;
+                  p.margin_set = true;
+                  result = 'set margins, top='+ n1 +', bottom='+ n2;
+               } else
+               
+               // pan down (text moves up)
                if (c == 'S' && p.isAltBuf) {
+                  move_in_display(p.margin_top, p.margin_top + n1, p.margin_bottom, +1);
+                  erase_in_display(p.r, p.margin_bottom, 1, p.cols);
+                  p.insertMode = save_insertMode;
                   result = 'pan down '+ n1;
                } else
                
-               if (c == 'A') {   // actual
-                  if (p.r > 1) { dirty(); p.r--; dirty(); }
-                  result = 'arrow up';
+               // pan up (text moves down)
+               if (c == 'T' && p.isAltBuf) {
+                  var save_insertMode = p.insertMode;
+                  p.insertMode = false;
+                  move_in_display(p.margin_bottom, p.margin_top + n1 - 1, p.margin_top, -1);
+                  erase_in_display(p.margin_top, p.margin_top + n1 - 1, 1, p.cols);
+                  p.insertMode = save_insertMode;
+                  result = 'pan up '+ n1;
                } else
-               if (c == 'B') {   // done via esc[Nd
-                  if (p.r < p.rows) { dirty(); p.r++; dirty(); }
-                  result = 'arrow down';
+               
+               // delete line(s)
+               if (c == 'M' && p.isAltBuf) {
+                  var save_insertMode = p.insertMode;
+                  p.insertMode = false;
+                  move_in_display(p.r, p.r + 1, p.r + n1, +1);
+                  erase_in_display(p.r + n1, p.r + n1, 1, p.cols);
+                  p.insertMode = save_insertMode;
+                  result = 'delete line(s) '+ n1;
+               } else
+               
+               if (c == 'A') {   // actual
+                  if (p.isAltBuf) {
+                     if (p.r > 1) { dirty(); p.r--; dirty(); }
+                     result = 'arrow up';
+                  } else {
+                  }
+               } else
+               if (c == 'B') {   // done via esc[#d
+                  if (p.isAltBuf) {
+                     if (p.r < p.rows) { dirty(); p.r++; dirty(); }
+                     result = 'arrow down';
+                  } else {
+                  }
                } else
                if (c == 'C') {
-                  if (p.c < p.cols) { dirty(); p.c++; }
+                  if (p.isAltBuf) {
+                     if (p.c < p.cols) { dirty(); p.c++; }
+                  } else {
+                     if (dbg) console.log('ARROW RIGHT col='+ p.ccol +'/'+ p.line.length +
+                        ' '+ sq(p.line[p.ccol]) +' '+ line_s());
+                     if (p.ccol < p.line.length)
+                        p.ccol++;
+                  }
                   result = 'arrow right';
                } else
                if (c == 'D') {
-                  if (p.c > 1) { dirty(); p.c--; }
-                  result = 'arrow left';
+                  if (p.isAltBuf) {
+                     if (p.c > 1) { dirty(); p.c--; }
+                     result = 'arrow left';
+                  } else {
+                  }
                } else
                
                {
                   result = 2;
                }
-            } else   // esc[
+            } /* esc [ ... */ else
 
-		      if (first == '(') {     // esc(  define char set
+
+            // non-CSI handled:
+            // ESC   H M c 7 8 ( > =
+
+            // esc (
+		      if (first == '(') {
                result = 'define char set';
-               p.traceEvery = true;
-		         //console.log('traceEvery = true (B');
+               //p.traceEvery = true;
 		      } else
 		      
-            if (c == '>') {
-               result = 'set numeric keypad';
-            } else
+		      switch (c) {
 		      
-		      {
-               result = 2;
+               case 'H': result = 'set horiz tab (nop)'; break;
+            
+               case 'M':
+                  if (p.isAltBuf) {
+                     var save_insertMode = p.insertMode;
+                     p.insertMode = false;
+                     move_in_display(p.margin_bottom, p.margin_bottom - 1, p.margin_top, -1);
+                     erase_in_display(p.margin_top, p.margin_top, 1, p.cols);
+                     p.insertMode = save_insertMode;
+                     result = 'scroll text down';
+                  }
+                  break;
+            
+               // i.e. arrow keys interpreted as numbers (like a numlock)
+               // FIXME? nop on mac laptops, but e.g. pc keyboards can have numbers on the arrow keys
+               case '>': result = 'set numeric keypad'; break;
+            
+               // i.e. arrow keys interpreted as cursor movement
+               case '=': result = 'keypad application mode'; break;
+            
+               case '7': result = 'save cursor'; break;
+               case '8': result = 'restore cursor'; break;
+            
+               case 'c': result = 'reset initial state (nop)'; break;
+            
+               default: result = 2; break;
             }
             
+            snew_dump('cmd');
+            
+            if (error) result += ' UNEXPECTED ====================================================================================';
+            error = 0;
+            
             if (result === 1) {
-                  if (dbg) console.log('> ESC '+ JSON.stringify(p.esc.s) +' $IGNORED');
+                  if (dbg) console.log('> ESC '+ kiwi_JSON(p.esc.s) +' $IGNORED ==========================================================================================');
             } else
             if (result === 2) {
-                  if (dbg) console.log('> ESC '+ JSON.stringify(p.esc.s) +' $UNKNOWN');
+                  if (1 || dbg) console.log('> ESC '+ kiwi_JSON(p.esc.s) +' $UNKNOWN ======================================================================================');
             } else
             if (isString(result)) {
-               if (dbg) console.log('> ESC '+ JSON.stringify(p.esc.s) +' '+ result);
+               if (dbg) console.log('> ESC '+ (p.isAltBuf? 'ALT' : 'REG') +' '+ kiwi_JSON(p.esc.s) +' '+ result);
             }
    
             result = null;
-            p.esc.state = 0;
+            p.esc.state = p.NONE;
          }
-		} else   // p.esc.state == 1
+		} else   // p.esc.state >= p.ESC
 		
-		// let UTF-16 surrogates go through (e.g. 0xd83d)
-      //console.log('$every '+ c +'('+ ord(c).toHex(-2) +')');
-		if ((c >= ' ') || c == '\n') {
-		   if (c == '<') {
-		      snew += '&lt;';
-            p.col += p.inc;
+		// let UTF-16 surrogates go through (e.g. 0xd83d for benefit of htop)
+      //if (dbg) console.log('$every '+ c +'('+ ord(c).toHex(-2) +')');
+		if (c >= ' ' || c == '\n' || c == '\t') {
+		   if (!p.isAltBuf && c == '<') {
+            if (p.inc) {
+               p.line[p.ccol] = '&lt;';
+               p.ccol++;
+            }
 		   } else
-		   if (c == '>') {
-		      snew += '&gt;';
-            p.col += p.inc;
+		   if (!p.isAltBuf && c == '>') {
+            if (p.inc) {
+               p.line[p.ccol] = '&gt;';
+               p.ccol++;
+            }
 		   } else {
             if (c != '\n') {
+
+               // ordinary chars
+               snew_add(c);
                if (p.isAltBuf) {
                   screen_char(c);
                } else {
-                  snew += c;
-                  p.col += p.inc;
+                  //if (dbg) console.log('ordinary "'+ c +'" col='+ p.ccol);
+                  p.line[p.ccol] = c;
+                  p.ccol++;
                }
             }
-            if (c == '\n' || p.col == p.cols) {    // newline or wrap
+            
+            if (c == '\n' || (p.eol_wrap && p.ccol == p.cols)) {    // newline or wrap
                wasScrolledDown = w3_isScrolledDown(el_scroll);
                if (p.isAltBuf) {
-                  p.c = 1; dirty(); p.r++; dirty(); if (p.r > p.rows) p.r = 1;   // \n
+                  p.c = 1; dirty(); p.r++; dirty();
+                  if (p.r > p.rows) p.r = 1;    // \n
                } else {
-                  p.tstr += snew;
-                  if (p.tstr == '') p.tstr = '&nbsp;';
-                  p.el.innerHTML = p.tstr;
-                  if (dbg) console.log('TEXT2 '+ JSON.stringify(p.tstr));
-                  p.tstr = snew = '';
+                  //var stmp = p.line.join('');
+                  var stmp = line_join(1);
+                  p.el.innerHTML = (stmp == '')? '&nbsp;' : stmp;
+                  //if (dbg) console.log('TEXT-EMIT '+ kiwi_JSON(stmp));
+                  p.line = [];
+                  p.line_sgr = [];
                   p.el = appendEmptyLine(parent_el);
-                  p.col = 0;
+                  p.ccol = 1;
                }
             
                if (w3_contains(el_scroll, 'w3-scroll-down') && (!p.scroll_only_at_bottom || (p.scroll_only_at_bottom && wasScrolledDown)))
@@ -1408,26 +1831,51 @@ function kiwi_output_msg(id, id_scroll, p)
 		} else
 		
 		// don't count HTML escape sequences
-		if (c == kiwi.esc_lt) { snew += '<'; p.inc = 0; } else
-		if (c == kiwi.esc_gt) { snew += '>'; p.inc = 1; }
+		if (!p.isAltBuf && c == kiwi.esc_lt) { snew_add('<'); p.inc = 0; } else
+		if (!p.isAltBuf && c == kiwi.esc_gt) { snew_add('>'); p.inc = 1; } else
+		
+		if (p.isAltBuf) {
+		   if (dbg) console.log('> 0x7f CHAR '+ ord(c) +' '+ ord(c).toHex(-2));
+		}
 		
       // ignore any other chars
 
-      if (dbg && result) console.log('> '+ result);
-	}
+      if (result) {
+         if (dbg) console.log('> '+ result);
+      }
+	} // for (var si = 0; si < s.length; si++) {
 
    wasScrolledDown = w3_isScrolledDown(el_scroll);
    if (p.isAltBuf) {
    } else {
-      p.tstr += snew;
-      if (dbg) console.log('TEXT1 '+ JSON.stringify(p.tstr));
-      p.el.innerHTML = p.tstr;
+      //if (dbg) console.log('TEXT-ACCUM col='+ p.ccol +'/'+ p.line.length +' '+ line_s());
+      if (p.show_cursor) {
+         var first = line_join(1, p.ccol);
+         var second = line_join(p.ccol);
+         if (second.length) {
+            // cursor is on top of a character in the line
+            stmp = first + console_cursor(second[0]) + second.slice(1);
+         } else {
+            // cursor is after the end of the line
+            stmp = first + console_cursor();
+         }
+      } else {
+         stmp = line_join(1);
+      }
+      p.el.innerHTML = stmp;
+      //if (dbg) console.log('TEXT-ACCUM col='+ p.ccol +' '+ kiwi_JSON(stmp));
    }
 
-	if (w3_contains(el_scroll, 'w3-scroll-down') && (!p.scroll_only_at_bottom || (p.scroll_only_at_bottom && wasScrolledDown)))
+   //if (dbg) console.log('wasScrolledDown='+ wasScrolledDown);
+	if (w3_contains(el_scroll, 'w3-scroll-down') &&
+	   (!p.scroll_only_at_bottom || (p.scroll_only_at_bottom && wasScrolledDown) || p.must_scroll_down)) {
       w3_scrollDown(el_scroll);
+      p.must_scroll_down = false;
+      //if (dbg) console.log('w3_scrollDown()');
+   }
 
    if (p.isAltBuf) sched();
+   snew_dump('end');
 }
 
 

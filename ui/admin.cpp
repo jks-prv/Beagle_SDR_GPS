@@ -99,6 +99,8 @@ void c2s_admin_shutdown(void *param)
 	    }
 	    c->console_child_pid = 0;
 	}
+	
+	free(c->oob_buf);   // okay if c->oob_buf == NULL
 }
 
 // tunnel task
@@ -210,17 +212,7 @@ static void console_task(void *param)
         #if 0
             real_printf("read %d %d >>>", n, strlen(buf));
             for (i=0; i<strlen(buf); i++) {
-                char c = buf[i];
-                if (c >= 0x20 && c <= 0x7e)
-                    real_printf("%c", c);
-                else
-                if (c == '\n')
-                    real_printf("\\n");
-                else
-                if (c == '\r')
-                    real_printf("\\r");
-                else
-                    real_printf("[0x02x]", c);
+                real_printf("%s", ASCII[buf[i]]);
             }
             real_printf("<<<\n");
         #endif
@@ -228,15 +220,20 @@ static void console_task(void *param)
             send_msg_encoded(c, "ADM", "console_c2w", "%s", buf);
         }
 
-        if (c->send_oob_key) {
-            write(c->master_pty_fd, &c->send_oob_key_char, 1);
-            //printf("sent_oob_key %d\n", c->send_oob_key_char);
-            c->send_oob_key = false;
+        // process out-of-band chars
+        // multi-char sequences (e.g. arrow keys) are sent via "console_w2c="
+        while (c->oob_buf != NULL && c->oob_r != c->oob_w) {
+            u1_t ch = c->oob_buf[c->oob_r];
+            n = write(c->master_pty_fd, &ch, 1);
+            //printf("sent console_oob_key ch=%-3s (%02x) n=%d\n", ASCII[ch], ch, n);
+            c->oob_r++;
+            if (c->oob_r == N_OOB_BUF) c->oob_r = 0;
         }
+
     } while ((n > 0 || (n == -1 && errno == EAGAIN)) && c->mc);
 
     if (n < 0 /*&& errno != EIO*/ && c->mc) {
-        //cprintf(c, "CONSOLE: n=%d errno=%d (%s)\n", n, errno, strerror(errno));
+        cprintf(c, "CONSOLE: n=%d errno=%d (%s)\n", n, errno, strerror(errno));
     }
     if (c->master_pty_fd > 0)
         close(c->master_pty_fd);
@@ -1146,7 +1143,7 @@ void c2s_admin(void *param)
 			if (i == 1) {
 				kiwi_str_decode_inplace(buf_m);
 				int slen = strlen(buf_m);
-				//cprintf(conn, "CONSOLE write %d <%s>\n", slen, buf_m);
+				//cprintf(conn, "CONSOLE write %d <%s>\n", slen, kiwi_str_ASCII_static(buf_m));
 				if (conn->master_pty_fd > 0) {
 				    sb = buf_m;
 				    while (slen) {
@@ -1165,9 +1162,10 @@ void c2s_admin(void *param)
             u4_t ch;
 			i = sscanf(cmd, "SET console_oob_key=%d", &ch);
 			if (i == 1) {
-			    if (conn->console_child_pid && !conn->send_oob_key) {
-			        conn->send_oob_key_char = ch;
-			        conn->send_oob_key = true;
+			    if (conn->console_child_pid && conn->oob_buf != NULL && ch <= 0xff) {
+			        conn->oob_buf[conn->oob_w] = ch;
+			        conn->oob_w++;
+			        if (conn->oob_w == N_OOB_BUF) conn->oob_w = 0;
 			        TaskWakeupF(conn->console_task_id, TWF_CANCEL_DEADLINE);
 			    }
 				continue;
@@ -1198,6 +1196,8 @@ void c2s_admin(void *param)
 
                     // conn->isLocal can be forced false for testing by using the URL "nolocal" parameter
 			        if (no_console == false && ((console_local && conn->isLocal) || !console_local)) {
+			            if (conn->oob_buf == NULL) conn->oob_buf = (u1_t *) malloc(N_OOB_BUF);
+			            conn->oob_w = conn->oob_r = 0;
 			            conn->console_task_id = CreateTask(console_task, conn, ADMIN_PRIORITY);
 			        } else
 			        if (no_console) {
