@@ -406,6 +406,19 @@ function w3_obj_enum(obj, func, opt)
    });
 }
 
+function w3_enum_obj_or_array_of_objs(obj_arr, func)
+{
+   if (isArray(obj_arr)) {
+      obj_arr.forEach(function(obj) {
+         func(obj);
+      });
+   } else
+   
+   if (isObject(obj_arr)) {
+      func(obj_arr);
+   }
+}
+
 // arr:     [] string vals to iterate over
 // s:       string val to match with startsWith() (case-insensitive)
 // func:    (optional) called as func(arr-idx, val) only on first match
