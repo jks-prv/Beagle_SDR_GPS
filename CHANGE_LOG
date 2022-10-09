@@ -2,11 +2,14 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.564  Oct 10, 2022
+    Fixed bug in new console code that effects display of links in DSC output text.
+
 v1.563  Oct 6, 2022
     Admin console tab:
         Supports "character-oriented" input mode compared to the previous line-oriented mode
         where all input was typed into a field outside of the output display window. Now resembles
-        a more traditional terminal program.
+        a more traditional terminal program. Not supported on mobile devices.
         
         As a result, Xterm/VT100 style ANSI command sequences are accepted. This allows programs
         that perform 2D X/Y screen addressing to work such as the "nano" text editor and "htop" and
