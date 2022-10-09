@@ -133,6 +133,7 @@ var tdoa = {
 };
 
 tdoa.url_base =   'http://tdoa.kiwisdr.com/';
+//tdoa.url_base =   'https://tdoa2.kiwisdr.com/';    // switch to using new SSL version of TDoA service
 tdoa.url =        tdoa.url_base +'tdoa/';
 tdoa.url_files =  tdoa.url +'files/';
 tdoa.rep_files =  'tdoa.kiwisdr.com/tdoa/files';   // NB: not full URL, and no trailing /
@@ -1723,20 +1724,21 @@ function tdoa_submit_status_new_cb(no_rerun_files)
 
          if (okay == 0) {
             try { per_file = j.input.per_file; } catch(ex) { per_file = undefined; }
-            if (per_file) {
-               per_file.forEach(function(pf, i) {
-                  if (pf.status == 'BAD') {
-                     var name = pf.name.toLowerCase();
-                     tdoa.field.forEach(function(f, i) {
-                        if (f.good && f.host.id_lcase == name) {
-                           tdoa_set_icon('sample', i, 'fa-times-circle', 20, 'red');
-                           w3_innerHTML('id-tdoa-sample-status-'+ i, 'unused, poor data quality');
-                        }
-                     });
-                     // NB: don't set okay here -- let next test decide if < 2 hosts remaining
-                  }
-               });
-            }
+            
+            // Single object (i.e. not array) returned if two sampling stations and one of them
+            // has a kiwirecorder error. So use w3_enum_obj_or_array_of_objs() to enumerate.
+            w3_enum_obj_or_array_of_objs(per_file, function(pf, i) {
+               if (pf.status == 'BAD') {
+                  var name = pf.name.toLowerCase();
+                  tdoa.field.forEach(function(f, i) {
+                     if (f.good && f.host.id_lcase == name) {
+                        tdoa_set_icon('sample', i, 'fa-times-circle', 20, 'red');
+                        w3_innerHTML('id-tdoa-sample-status-'+ i, 'unused, poor data quality');
+                     }
+                  });
+                  // NB: don't set okay here -- let next test decide if < 2 hosts remaining
+               }
+            });
          }
 
          if (okay == 0) {
