@@ -1063,6 +1063,13 @@ function kiwi_output_msg(id, id_scroll, p)
       }
    };
    
+	var html_add = function(c) {
+      if (isString(p.line_html[p.ccol]))
+         p.line_html[p.ccol] += c;
+      else
+         p.line_html[p.ccol] = c;
+   };
+   
    var line_s = function() {
       return kiwi_JSON(p.line.join(''));
    };
@@ -1072,6 +1079,7 @@ function kiwi_output_msg(id, id_scroll, p)
       var s = '';
       for (var c = col_start; c < col_stop; c++) {
          if (isString(p.line_sgr[c])) s += p.line_sgr[c];
+         if (isString(p.line_html[c])) s += p.line_html[c];
          if (isString(p.line[c])) s += p.line[c];
       }
       return s;
@@ -1107,6 +1115,7 @@ function kiwi_output_msg(id, id_scroll, p)
       p.ccol = 1;
       p.line = [];
       p.line_sgr = [];
+      p.line_html = [];
       p.inc = 1;
       
       // char-oriented
@@ -1151,6 +1160,7 @@ function kiwi_output_msg(id, id_scroll, p)
          s = s.substring(1);
          p.line = [];
          p.line_sgr = [];
+         p.line_html = [];
          p.ccol = 1;
       }
    }
@@ -1194,6 +1204,7 @@ function kiwi_output_msg(id, id_scroll, p)
             p.el = appendEmptyLine(parent_el);
             p.line = [];
             p.line_sgr = [];
+            p.line_html = [];
             p.ccol = 1;
          }
 		} else
@@ -1424,6 +1435,7 @@ function kiwi_output_msg(id, id_scroll, p)
                         p.el = appendEmptyLine(parent_el);
                         p.line = [];
                         p.line_sgr = [];
+                        p.line_html = [];
                         p.ccol = 1;
                         result = 'erase full screen';
                      }
@@ -1783,17 +1795,23 @@ function kiwi_output_msg(id, id_scroll, p)
 		// let UTF-16 surrogates go through (e.g. 0xd83d for benefit of htop)
       //if (dbg) console.log('$every '+ c +'('+ ord(c).toHex(-2) +')');
 		if (c >= ' ' || c == '\n' || c == '\t') {
+		   var prt = false;
+		   
 		   if (!p.isAltBuf && c == '<') {
             if (p.inc) {
+		         snew_add('<');
                p.line[p.ccol] = '&lt;';
-               p.ccol++;
+               p.ccol += p.inc;
             }
+            prt = true;
 		   } else
 		   if (!p.isAltBuf && c == '>') {
             if (p.inc) {
+		         snew_add('>');
                p.line[p.ccol] = '&gt;';
-               p.ccol++;
+               p.ccol += p.inc;
             }
+            prt = true;
 		   } else {
             if (c != '\n') {
 
@@ -1802,9 +1820,13 @@ function kiwi_output_msg(id, id_scroll, p)
                if (p.isAltBuf) {
                   screen_char(c);
                } else {
-                  //if (dbg) console.log('ordinary "'+ c +'" col='+ p.ccol);
-                  p.line[p.ccol] = c;
-                  p.ccol++;
+                  if (p.inc) {
+                     p.line[p.ccol] = c;
+                     p.ccol++;
+                  } else {
+                     html_add(c);
+                  }
+                  prt = true;
                }
             }
             
@@ -1820,6 +1842,7 @@ function kiwi_output_msg(id, id_scroll, p)
                   //if (dbg) console.log('TEXT-EMIT '+ kiwi_JSON(stmp));
                   p.line = [];
                   p.line_sgr = [];
+                  p.line_html = [];
                   p.el = appendEmptyLine(parent_el);
                   p.ccol = 1;
                }
@@ -1828,11 +1851,22 @@ function kiwi_output_msg(id, id_scroll, p)
                   w3_scrollDown(el_scroll);
             }
          }
+
+         //if (dbg && prt) console.log('ORD '+ kiwi_JSON(c) +' col='+ p.ccol +' inc='+ p.inc);
 		} else
 		
 		// don't count HTML escape sequences
-		if (!p.isAltBuf && c == kiwi.esc_lt) { snew_add('<'); p.inc = 0; } else
-		if (!p.isAltBuf && c == kiwi.esc_gt) { snew_add('>'); p.inc = 1; } else
+		if (!p.isAltBuf && c == kiwi.esc_lt) {
+		   snew_add('<');
+         html_add('<');
+		   p.inc = 0;
+		} else
+		
+		if (!p.isAltBuf && c == kiwi.esc_gt) {
+		   snew_add('>');
+         html_add('>');
+		   p.inc = 1;
+		} else
 		
 		if (p.isAltBuf) {
 		   if (dbg) console.log('> 0x7f CHAR '+ ord(c) +' '+ ord(c).toHex(-2));
