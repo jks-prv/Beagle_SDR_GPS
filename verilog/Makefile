@@ -1,7 +1,7 @@
 #
 # When running Vivado on a machine/OS different from where the Kiwi sources are kept,
 # and those two machines are connected via a shared folder, specify the shared folder directory
-# with V_SRC_DIR and use the makefile targets "cv2" and "cb" to copy sources and results back and forth.
+# with V_SRC_DIR and use the makefile targets "cv" and "cb" to copy sources and results back and forth.
 #
 # When building in batch mode, as opposed to using the Vivado UI, V_SRC_DIR is passed to the tcl script
 # to specify where to place the resulting .bit files.
@@ -38,14 +38,18 @@ verilog: $(GEN_VERILOG)
 	@echo verilog/kiwi.gen.vh, verilog/rx/cic_*.vh
 
 # command to "copy verilog" from KiwiSDR distribution to the Vivado build location
-# designed to complement the "make cv2" command run on the Vivado build machine
+# designed to complement the "make cv" command run on the Vivado build machine
 EXCLUDE_CV = ".DS_Store" "rx/cic_gen" "rx/*.dSYM" "*(original)*"
 
-cv cv2: $(GEN_VERILOG)
+# cv2_dev is a rule that can be defined in */Makefile.inc (i.e. CFG = other) to do additional source installation
+cv2_dev:
+
+cv: $(GEN_VERILOG)
 	@echo V_PROJ = $(V_PROJ)
 	@echo V_DIR = $(V_DIR)
 	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog/ $(V_DIR)/$(V_PROJ)
 	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog.Vivado.2017.4.ip/ $(V_DIR)/$(V_PROJ).Vivado.2017.4.ip
+	make cv2_dev V_SRC_DIR=$(V_SRC_DIR)
 
 sum:
 	sum *.bit
@@ -99,15 +103,15 @@ rebuild:
 # designed to complement the "make cv" command run in the KiwiSDR server build directory
 EXCLUDE_RSYNC = ".DS_Store" "KiwiSDR/" "generated" ".Xil/" "vivado.*"
 
-# cv22 is a rule that can be defined in */Makefile.inc (i.e. CFG = other) to do additional source installation
-cv22:
+# cv2_host is a rule that can be defined in */Makefile.inc (i.e. CFG = other) to do additional source installation
+cv2_host:
 
-cv cv2:
+cv:
 	@echo V_PROJ = $(V_PROJ)
 	@echo V_SRC_DIR = $(V_SRC_DIR)
 	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) $(V_SRC_DIR)/$(V_PROJ)/ .
 	rsync -av --delete --exclude .DS_Store $(V_SRC_DIR)/$(V_PROJ).Vivado.2017.4.ip/ ../import_ip
-	make cv22 V_SRC_DIR=$(V_SRC_DIR)
+	make cv2_host V_SRC_DIR=$(V_SRC_DIR)
 
 RX_CFG = $(shell grep RX_CFG kiwi.cfg.vh | cut -d\  -f 4 | tr -d ';')
 ifeq ($(RX_CFG),4)
@@ -125,6 +129,7 @@ endif
 cb:
 	@echo "CFG =" $(CFG)
 	cp ../*.runs/impl_1/KiwiSDR.bit $(V_SRC_DIR)/KiwiSDR.$(CFG).bit
+	sum /media/sf_shared/*.bit
 
 sum:
 	sum /media/sf_shared/*.bit
