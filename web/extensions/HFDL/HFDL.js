@@ -50,6 +50,7 @@ var hfdl = {
    menu_sel: '',
 
    flights: {},
+   prev_flight: null,
    too_old_min: 10,
    flights_visible: true,
    gs_visible: true,
@@ -176,9 +177,9 @@ function hfdl_recv(data)
                //hfdl_update_AFT('Ireland', [ '21949.0', '17922.0', '15025.0', '13321.0', '11384.0', '10081.0', '8942.0', '6532.0', '5547.0', '3455.0' ]);
 
                if (hfdl.test_flight) {
-                  hfdl_flight_update('XYZ123', 0, 0);
-                  hfdl_flight_update('ABC987', 60, -20);
-                  hfdl.test_flight = false;
+                  hfdl_flight_update('XYZ123', 40, 0);
+                  setTimeout(function() { hfdl_flight_update('ABC987', 60, -20); }, 5000);
+                  setTimeout(function() { hfdl_flight_update('ZZZ000', 50, 20); }, 60000);
                }
             }
 
@@ -401,12 +402,17 @@ function hfdl_controls_setup()
    hfdl.locations_age_interval = setInterval(function() {
       var old = Date.now() - hfdl.too_old_min*60*1000;
       w3_obj_enum(hfdl.flights, function(key, i, o) {
+         //console.log('FL-OLD '+ o.flight +' '+ ((o.upd - old)/1000).toFixed(3));
          if (o.upd < old) {
-            console.log('FL-OLD '+ o.loc_name +' > '+ hfdl.too_old_min +'m');
-            o.el.style.background = 'grey';
+            console.log('FL-OLD '+ o.flight +' > '+ hfdl.too_old_min +'m');
+            w3_color(o.el, 'white', 'grey');
+            if (hfdl.prev_flight == o.flight) {
+               //console.log('HFDL grey is prev: '+ o.flight);
+               hfdl.prev_flight = null;
+            }
          }
       });
-   }, 60000);
+   }, hfdl.test_flight? 10000 : 60000);
    
 	w3_do_when_rendered('id-hfdl-menus', function() {
       ext_send('SET reset');
@@ -578,14 +584,19 @@ function hfdl_place_gs_marker(gs_n)
 
 function hfdl_flight_update(flight_name, lat, lon)
 {
+   var flight_o;
+   
    if (!hfdl.flights[flight_name]) {
       console.log('FL-NEW '+ flight_name +' '+ lat.toFixed(4) +' '+ lon.toFixed(4));
 
       var marker = kiwi_map_add_marker_div(hfdl.kmap, kmap.NO_ADD_TO_MAP,
          [lat, lon], '', [12, 12], [0, 0], 1.0);
-      var flight_o = { flight: flight_name, mkr: marker, upd: Date.now(), pos: [] };
-      if (hfdl.test_flight && flight_name.startsWith('ABC'))
-         flight_o.upd -= (hfdl.too_old_min+10)*60*1000;
+      flight_o = { flight: flight_name, mkr: marker, upd: Date.now(), pos: [] };
+      if (hfdl.test_flight && flight_name.startsWith('ABC')) {
+         console.log('HFDL accelerate age: '+ flight_name);
+         flight_o.upd -= (hfdl.too_old_min-0.5)*60*1000;
+         hfdl.test_flight = false;
+      }
       flight_o.pos.push([lat, lon]);
       hfdl.flights[flight_name] = flight_o;
       
@@ -598,7 +609,7 @@ function hfdl_flight_update(flight_name, lat, lon)
                function(el) {
                   if (el) {
                      //console.log(el);
-                     w3_color(el, 'white', 'blue');
+                     w3_color(el, 'black', 'yellow');
                      flight_o.el = el;
                   }
                }
@@ -606,17 +617,23 @@ function hfdl_flight_update(flight_name, lat, lon)
          }
       );
    } else {
-      var flight_o = hfdl.flights[flight_name];
+      flight_o = hfdl.flights[flight_name];
       var marker = flight_o.mkr;
       marker.setLatLng([lat, lon]);
       var n = flight_o.pos.push([lat, lon]);
-      flight_o.el.style.background = 'blue';     // might have re-appeared after previously going grey
+      w3_color(flight_o.el, 'black', 'yellow');    // might have re-appeared after previously going grey
 
       var now = Date.now();
       var dt = Math.floor(((now - flight_o.upd) / 60000) % 60);
       flight_o.upd = now;
       console.log('FL-UPD '+ flight_name +' '+ lat.toFixed(4) +' '+ lon.toFixed(4) +' #'+ n +' '+ dt +'m');
    }
+   
+   if (hfdl.prev_flight) {
+      flight_o = hfdl.flights[hfdl.prev_flight];
+      w3_color(flight_o.el, 'white', 'blue');
+   }
+   hfdl.prev_flight = flight_name;
 }
 
 function hfdl_update_AFT(gs, freqs)
@@ -1147,6 +1164,13 @@ function HFDL_environment_changed(changed)
    */
 }
 
+function HFDL_focus()
+{
+   hfdl.dx_db_save = dx.db;
+   hfdl.dx_type_save = dx.eibi_types_mask;
+   //console.log('HFDL save dx_db_save='+ hfdl.dx_db_save +' dx_type_save='+ hfdl.dx_type_save.toHex());
+}
+
 function HFDL_blur()
 {
    // anything that needs to be done when extension blurred (closed)
@@ -1155,6 +1179,10 @@ function HFDL_blur()
    kiwi_clearInterval(hfdl.log_interval);
    kiwi_clearInterval(hfdl.locations_age_interval);
    kiwi_map_blur(hfdl.kmap);
+   
+   //console.log('HFDL restore dx_db_save='+ hfdl.dx_db_save +' dx_type_save='+ hfdl.dx_type_save.toHex());
+   dx.eibi_types_mask = hfdl.dx_type_save;
+   dx_database_cb('', hfdl.dx_db_save);
 }
 
 function HFDL_help(show)

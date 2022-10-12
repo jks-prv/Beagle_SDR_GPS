@@ -1830,13 +1830,13 @@ function kiwi_output_msg(id, id_scroll, p)
                }
             }
             
-            if (c == '\n' || (p.eol_wrap && p.ccol == p.cols)) {    // newline or wrap
+            var at_EOL = (p.ccol == p.cols);
+            if (c == '\n' || (at_EOL && (!p.isAltBuf || (p.isAltBuf && p.eol_wrap)))) {   // newline or wrap
                wasScrolledDown = w3_isScrolledDown(el_scroll);
                if (p.isAltBuf) {
                   p.c = 1; dirty(); p.r++; dirty();
                   if (p.r > p.rows) p.r = 1;    // \n
                } else {
-                  //var stmp = p.line.join('');
                   var stmp = line_join(1);
                   p.el.innerHTML = (stmp == '')? '&nbsp;' : stmp;
                   //if (dbg) console.log('TEXT-EMIT '+ kiwi_JSON(stmp));

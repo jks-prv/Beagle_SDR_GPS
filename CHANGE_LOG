@@ -2,6 +2,14 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.565  Oct 13, 2022
+    HFDL:
+        Restore DX database settings on extension close.
+        Most recently updated aircraft marker shown in yellow.
+    
+    Admin console:
+        Fix long line wrapping in non-ANSI mode.
+
 v1.564  Oct 10, 2022
     Fixed bug in new console code that effects display of links in DSC output text.
 
