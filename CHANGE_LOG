@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.566  Oct 17, 2022
+    Admin backup tab: Fixed bug preventing output from appearing in text panel.
+
 v1.565  Oct 13, 2022
     HFDL:
         Restore DX database settings on extension close.
