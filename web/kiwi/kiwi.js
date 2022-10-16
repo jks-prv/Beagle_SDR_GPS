@@ -1100,6 +1100,7 @@ function kiwi_output_msg(id, id_scroll, p)
       //kiwi_trace();
       removeAllLines(parent_el);
       p.el = appendEmptyLine(parent_el);
+      p.cols = p.cols || 80;
       p.NONE = 0;
       p.ESC = 1;
       p.CSI = 2;
