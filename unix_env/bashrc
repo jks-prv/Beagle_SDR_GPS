@@ -37,6 +37,7 @@ alias e100="ethtool -s eth0 speed 100 duplex full"
 alias ip="ifconfig eth0 | grep 'eth0\|inet'"
 alias mac='cat /sys/class/net/eth0/address'
 alias df="/bin/df -h"
+alias df.="/bin/df -h ."
 alias d.="/bin/df -h ."
 alias tr="traceroute"
 alias cdp="cd \${PROJ}"

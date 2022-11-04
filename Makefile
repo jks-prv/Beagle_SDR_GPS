@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 566
+VERSION_MIN = 567
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -378,6 +378,9 @@ $(INSTALL_CERTIFICATES):
 ifeq ($(DEBIAN_10_AND_LATER),true)
 /usr/include/openssl/ssl.h:
 	-apt-get -y install openssl libssl1.1 libssl-dev
+
+/usr/bin/connmanctl:
+	-apt-get -y install connman
 endif
 
 ifeq ($(BBAI_64),true)
