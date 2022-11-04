@@ -137,3 +137,4 @@
 #define MAGENTA "\e[97m\e[105m"     // white on magenta
 #define GREY    "\e[47m"
 #define NORM    "\e[m"
+#define NONL    " \e[m\n"
