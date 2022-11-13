@@ -845,7 +845,7 @@ int main(int argc, char *argv[])
             if (p->flags & TF_DOT_H) {
                 fprintf(hfp, "%s#define %s    // DEFh 0x%x\n", p->val? "":"//", p->str, p->val);
                 fprintf(hfp, "#define VAL_%s %d\n", p->str, p->val);
-                if (vfp) fprintf(vfp, "%s`define %s    // DEFh 0x%x\n", p->val? "":"//", p->str, p->val);
+                if (vfp) fprintf(vfp, "%s`define %s%s    // DEFh 0x%x\n", p->val? "":"//", p->str, p->val? " 1":"", p->val);
             }
             if (p->flags & TF_DOT_VP) {
                 fprintf(hfp, "#define %s %d    // DEFp 0x%x\n", p->str, p->val, p->val);
@@ -854,7 +854,7 @@ int main(int argc, char *argv[])
                         fprintf(vfp, "\tlocalparam %s = %d\'d%d;    // DEFp 0x%x\n", p->str, p->width, p->val, p->val);
                     else
                         fprintf(vfp, "\tlocalparam %s = %d;    // DEFp 0x%x\n", p->str, p->val, p->val);
-                    fprintf(vfp, "%s`define DEF_%s\n", p->val? "":"//", p->str);
+                    fprintf(vfp, "%s`define DEF_%s%s\n", p->val? "":"//", p->str, p->val? " 1":"");
                 }
             }
             if (p->flags & TF_DOT_VB) {
