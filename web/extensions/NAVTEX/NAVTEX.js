@@ -170,6 +170,14 @@ function navtex_baud_error(err)
 // must set "remove_returns" so output lines with \r\n (instead of \n alone) don't produce double spacing
 var navtex_console_status_msg_p = { scroll_only_at_bottom: true, process_return_alone: false, remove_returns: true, cols: 135 };
 
+function navtex_output(s)
+{
+   navtex_console_status_msg_p.s = encodeURIComponent(s);
+
+   // kiwi_output_msg() does decodeURIComponent()
+   kiwi_output_msg('id-navtex-console-msgs', 'id-navtex-console-msg', navtex_console_status_msg_p);
+}
+
 function navtex_output_char(c)
 {
    if (nt.type == nt.TYPE_NAVTEX && nt.dx) {    // ZCZC_STnn
@@ -198,11 +206,8 @@ function navtex_output_char(c)
       }
    }
    
-   navtex_console_status_msg_p.s = encodeURIComponent(c);
+   navtex_output(c);
    nt.log_txt += kiwi_remove_escape_sequences(kiwi_decodeURIComponent('NAVTEX', c));
-
-   // kiwi_output_msg() does decodeURIComponent()
-   kiwi_output_msg('id-navtex-console-msgs', 'id-navtex-console-msg', navtex_console_status_msg_p);
 }
 
 function navtex_audio_data_cb(samps, nsamps)
@@ -705,8 +710,7 @@ function navtex_auto_zoom_cb(path, checked, first)
 function navtex_clear_button_cb(path, idx, first)
 {
    if (first) return;
-   navtex_console_status_msg_p.s = encodeURIComponent('\f');
-   kiwi_output_msg('id-navtex-console-msgs', 'id-navtex-console-msg', navtex_console_status_msg_p);
+   navtex_output('\f');
    nt.log_txt = '';
    
    // if the map is showing clear all the markers as well
@@ -726,6 +730,8 @@ function navtex_show_cb(path, idx, first)
 	w3_el('id-navtex-msgs').style.height = px((idx == nt.SHOW_SPLIT)? nt.splitH : nt.dataH);
 	if (idx == nt.SHOW_SPLIT)
 	   w3_scrollDown('id-navtex-console-msg');
+	if (idx != nt.SHOW_MSGS)
+      navtex_output("Map only displays Selcall beacon locations (e.g. not DSC)");
 }
 
 function navtex_day_night_visible_cb(path, checked, first)
