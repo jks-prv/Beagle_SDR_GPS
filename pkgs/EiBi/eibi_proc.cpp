@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
         n = fscanf(fi, "%lf;%d-%d;", &freq, &begin, &end);
         if (n == EOF) break;
         if (n != 3) {
-            printf("n=%d\n", n);
+            printf("line %d: n=%d\n", line, n);
             panic("fscanf");
         }
 

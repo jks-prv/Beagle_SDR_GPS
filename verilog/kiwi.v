@@ -19,7 +19,7 @@
 //////////////////////////////////////////////////////////////////////////
 
 
-// Copyright (c) 2014 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2023 John Seamons, ZL/KF6VO
 
 `default_nettype none
 
@@ -62,7 +62,7 @@ module KiwiSDR (
     
 `include "kiwi.gen.vh"
 `include "other.gen.vh"
-    
+
     //////////////////////////////////////////////////////////////////////////
     // debug
     
@@ -102,13 +102,16 @@ module KiwiSDR (
     //////////////////////////////////////////////////////////////////////////
     // clocks
 
+`ifdef USE_SDR
+    wire adc_clk;
+    IBUFG vcxo_ibufg(.I(ADC_CLKIN), .O(adc_clk));
+
     wire gps_tcxo_buf;
     IBUFG tcxo_ibufg(.I(GPS_TCXO), .O(gps_tcxo_buf));   // 16.368 MHz TCXO
     wire cpu_clk = gps_tcxo_buf;
     wire gps_clk = gps_tcxo_buf;
+`endif
 
-    wire adc_clk;
-    IBUFG vcxo_ibufg(.I(ADC_CLKIN), .O(adc_clk));
 	assign ADC_CLKEN = ctrl[CTRL_OSC_EN];
 
 `ifdef USE_SDR
@@ -167,14 +170,19 @@ module KiwiSDR (
 	assign P8[8] = ctrl[CTRL_UNUSED_OUT];
 	assign P8[9] = ctrl[CTRL_UNUSED_OUT];
     
-	wire unused_inputs_or_regs = IF_MAG | P9[2]
-	| ctrl[CTRL_0001] | ctrl[CTRL_0002] | ctrl[CTRL_0004] | ctrl[CTRL_0008]
-	| ctrl[CTRL_0010] | ctrl[CTRL_0020] | ctrl[CTRL_0040] | ctrl[CTRL_0080]
-`ifndef USE_SDR
-        | ADC_CLKIN | |ADC_DATA | ADC_OVFL
+	wire unused_inputs = IF_MAG | P9[2]
+`ifdef USE_OTHER
+        | unused_inputs_other
+`else
+`ifdef USE_SDR
+	    | ctrl[CTRL_0001] | ctrl[CTRL_0002] | ctrl[CTRL_0004] | ctrl[CTRL_0008]
+	    | ctrl[CTRL_0010] | ctrl[CTRL_0020] | ctrl[CTRL_0040] | ctrl[CTRL_0080]
+`else
 `endif
-`ifndef USE_GPS
+`ifdef USE_GPS
+`else
         | IF_SGN
+`endif
 `endif
         ;
 
@@ -186,7 +194,7 @@ module KiwiSDR (
     wire [3:0] stat_user = { other_flags, dna_data };
 
     // when the eCPU firmware returns status it replaces stat_replaced with FW_ID
-    wire [2:0] stat_replaced = { 2'b0, unused_inputs_or_regs };
+    wire [2:0] stat_replaced = { 2'b0, unused_inputs };
     wire [3:0] fpga_id = { FPGA_ID };
     wire [15:0] status = { rx_overflow_C, stat_replaced, FPGA_VER, stat_user, fpga_id };
 
@@ -273,12 +281,14 @@ module KiwiSDR (
     assign rx_dout = 0;
     assign wf_rd = 0;
     assign wf_dout = 0;
-`ifndef USE_OTHER
+	wire rx_orst;
+	wire rx_overflow_C = 0;
+
+`ifdef USE_OTHER
+`else
 	assign ser[1] = 1'b0;
 	assign ser[2] = 1'b0;
 `endif
-	wire rx_orst;
-	wire rx_overflow_C = 0;
 `endif
 
 
@@ -419,7 +429,41 @@ module KiwiSDR (
 `endif
 
 `ifdef USE_OTHER
+    wire cpu_clk, unused_inputs_other;
+    
+    other other (
+        .ADC_CLKIN      (ADC_CLKIN),
+        .GPS_TCXO       (GPS_TCXO),
+        // o
+        .cpu_clk        (cpu_clk),
+        
+        .ADC_DATA       (ADC_DATA),
+        .ADC_OVFL       (ADC_OVFL),
+        
+        .IF_SGN         (IF_SGN),
+        .IF_MAG         (IF_MAG),
+
+        .tos		    (tos[31:0]),
+        .op             (op),        
+        .wrReg          (wrReg),
+        .wrEvt          (wrEvt),
+        .rdBit_diag     (rdBit1),
+        // o
+        .diag_sout      (ser[1]),
+        .host_sout      (ser[2]),
+        .dev_intr       (dev_intr),
+        .rd             (ext_rd),
+        .dout           (ext_dout),
+
+        .ctrl           (ctrl),
+        // o
+        .flags          (other_flags),
+        
+        // o
+        .unused_inputs  (unused_inputs_other)
+        );
 `else
+	assign ser[2] = 1'b0;
     assign ext_rd = 0;
     assign ext_dout = 0;
 `endif

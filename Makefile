@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 567
+VERSION_MIN = 568
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -419,7 +419,7 @@ GEN_OTHER_ASM = $(GEN_DIR)/other.gen.h verilog/other.gen.vh
 OUT_ASM = $(GEN_DIR)/kiwi.aout
 GEN_VERILOG = $(addprefix verilog/rx/,cic_rx1_12k.vh cic_rx1_20k.vh cic_rx2_12k.vh cic_rx2_20k.vh cic_rx3_12k.vh cic_rx3_20k.vh cic_wf1.vh cic_wf2.vh)
 GEN_NOIP2 = $(GEN_DIR)/noip2
-SUB_MAKE_DEPS = $(INSTALL_CERTIFICATES) $(CMD_DEPS) $(LIBS_DEP) $(GEN_ASM) $(GEN_OTHER_ASM) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
+SUB_MAKE_DEPS = $(INSTALL_CERTIFICATES) $(CMD_DEPS) $(LIBS_DEP) $(GEN_ASM) $(GEN_OTHER_ASM) $(GEN_OTHER) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
 
 
 ################################

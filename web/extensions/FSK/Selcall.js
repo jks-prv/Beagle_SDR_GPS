@@ -57,7 +57,7 @@ function Selcall(init, output_cb) {
    t.CAT_DISTRESS = 112;
    
    // seen w/ Selcall
-   // 123 100 121 110   sym-7 117-3                SCS unencrypted position
+   // 123 100 121 110   sym-7 117-3                South China Sea Beacons (SCS-B) unencrypted position
    // 123 100 121 110   sym-22 117-3               Austravelnet
    // 123 100 102 100   sym-21 117 sym-2 117-2     Austravelnet
 
@@ -504,7 +504,7 @@ Selcall.prototype.process_char = function(_code, fixed_start, output_cb, show_ra
                      deco = call_decode(call_from, call_from_s) +' calling '+ call_decode(call_to, call_to_s);
                   }
                   
-                  // SCS unencrypted position format, 4 and 6-digit calls
+                  // SCS-B unencrypted position format, 4 and 6-digit calls
                   if (isCall && cmd1 == t.CMD1_POSITION && cmd2 == t.CMD2_110 &&
                      t.seq >= 48 && t.seq <= 56) {
 

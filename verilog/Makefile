@@ -20,6 +20,9 @@ ifeq ($(DEBIAN_DEVSYS),)
     DEBIAN_DEVSYS = verilog_host
 endif
 
+proj:
+	@echo "V_PROJ = $(V_PROJ)"
+
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 

@@ -3,28 +3,28 @@
 // from assembler DEF directives:
 
 	localparam GPS_CHANS = 12;    // DEFp 0xc
-`define DEF_GPS_CHANS
+`define DEF_GPS_CHANS 1
 	localparam NUM_CMDS_OTHER = 0;    // DEFp 0x0
 //`define DEF_NUM_CMDS_OTHER
-`define USE_SDR    // DEFh 0x1
-`define USE_GPS    // DEFh 0x1
-`define ARTIX_7A35    // DEFh 0x1
+`define USE_SDR 1    // DEFh 0x1
+`define USE_GPS 1    // DEFh 0x1
+`define ARTIX_7A35 1    // DEFh 0x1
 //`define ZYNQ_7007    // DEFh 0x0
 	localparam FPGA_VER = 4'd1;    // DEFp 0x1
-`define DEF_FPGA_VER
+`define DEF_FPGA_VER 1
 	localparam FW_ID = 20480;    // DEFp 0x5000
-`define DEF_FW_ID
+`define DEF_FW_ID 1
 	localparam ADC_BITS = 14;    // DEFp 0xe
-`define DEF_ADC_BITS
+`define DEF_ADC_BITS 1
 	localparam DEFAULT_NSYNC = 2;    // DEFp 0x2
-`define DEF_DEFAULT_NSYNC
-`define USE_GEN    // DEFh 0x1
-`define USE_CPU_CTR    // DEFh 0x1
-`define USE_LOGGER    // DEFh 0x1
-`define USE_DEBUG    // DEFh 0x1
+`define DEF_DEFAULT_NSYNC 1
+`define USE_GEN 1    // DEFh 0x1
+`define USE_CPU_CTR 1    // DEFh 0x1
+`define USE_LOGGER 1    // DEFh 0x1
+`define USE_DEBUG 1    // DEFh 0x1
 //`define USE_RX_SEQ    // DEFh 0x0
-`define USE_VIVADO    // DEFh 0x1
-`define SERIES_7    // DEFh 0x1
+`define USE_VIVADO 1    // DEFh 0x1
+`define SERIES_7 1    // DEFh 0x1
 //`define SPI_PUMP_CHECK    // DEFh 0x0
 //`define STACK_CHECK    // DEFh 0x0
 //`define SND_SEQ_CHECK    // DEFh 0x0
@@ -32,161 +32,161 @@
 	localparam FPGA_ID_RX4_WF4 = 4'd0;    // DEFp 0x0
 //`define DEF_FPGA_ID_RX4_WF4
 	localparam FPGA_ID_RX8_WF2 = 4'd1;    // DEFp 0x1
-`define DEF_FPGA_ID_RX8_WF2
+`define DEF_FPGA_ID_RX8_WF2 1
 	localparam FPGA_ID_RX3_WF3 = 4'd2;    // DEFp 0x2
-`define DEF_FPGA_ID_RX3_WF3
+`define DEF_FPGA_ID_RX3_WF3 1
 	localparam FPGA_ID_RX14_WF0 = 4'd3;    // DEFp 0x3
-`define DEF_FPGA_ID_RX14_WF0
+`define DEF_FPGA_ID_RX14_WF0 1
 	localparam FPGA_ID_OTHER = 4'd4;    // DEFp 0x4
-`define DEF_FPGA_ID_OTHER
+`define DEF_FPGA_ID_OTHER 1
 	localparam NUM_CMDS_BASE = 14;    // DEFp 0xe
-`define DEF_NUM_CMDS_BASE
+`define DEF_NUM_CMDS_BASE 1
 	localparam NUM_CMDS_SDR = 12;    // DEFp 0xc
-`define DEF_NUM_CMDS_SDR
+`define DEF_NUM_CMDS_SDR 1
 	localparam NUM_CMDS_GPS = 16;    // DEFp 0x10
-`define DEF_NUM_CMDS_GPS
+`define DEF_NUM_CMDS_GPS 1
 	localparam NUM_CMDS = 42;    // DEFp 0x2a
-`define DEF_NUM_CMDS
-`define SPI_32    // DEFh 0x1
+`define DEF_NUM_CMDS 1
+`define SPI_32 1    // DEFh 0x1
 	localparam SPIBUF_W = 2048;    // DEFp 0x800
-`define DEF_SPIBUF_W
+`define DEF_SPIBUF_W 1
 	localparam SPIBUF_B = 4096;    // DEFp 0x1000
-`define DEF_SPIBUF_B
+`define DEF_SPIBUF_B 1
 	localparam SPIBUF_BMAX = 4094;    // DEFp 0xffe
-`define DEF_SPIBUF_BMAX
+`define DEF_SPIBUF_BMAX 1
 	localparam RX1_WIDE_DECIM = 823;    // DEFp 0x337
-`define DEF_RX1_WIDE_DECIM
+`define DEF_RX1_WIDE_DECIM 1
 	localparam RX2_WIDE_DECIM = 4;    // DEFp 0x4
-`define DEF_RX2_WIDE_DECIM
+`define DEF_RX2_WIDE_DECIM 1
 	localparam RX1_STD_DECIM = 505;    // DEFp 0x1f9
-`define DEF_RX1_STD_DECIM
+`define DEF_RX1_STD_DECIM 1
 	localparam RX2_STD_DECIM = 11;    // DEFp 0xb
-`define DEF_RX2_STD_DECIM
+`define DEF_RX2_STD_DECIM 1
 	localparam MAX_SND_RATE = 20250;    // DEFp 0x4f1a
-`define DEF_MAX_SND_RATE
+`define DEF_MAX_SND_RATE 1
 	localparam MIN_SND_RATE = 12000;    // DEFp 0x2ee0
-`define DEF_MIN_SND_RATE
+`define DEF_MIN_SND_RATE 1
 	localparam SND_RATE_3CH = 20250;    // DEFp 0x4f1a
-`define DEF_SND_RATE_3CH
+`define DEF_SND_RATE_3CH 1
 	localparam SND_RATE_4CH = 12000;    // DEFp 0x2ee0
-`define DEF_SND_RATE_4CH
+`define DEF_SND_RATE_4CH 1
 	localparam SND_RATE_8CH = 12000;    // DEFp 0x2ee0
-`define DEF_SND_RATE_8CH
+`define DEF_SND_RATE_8CH 1
 	localparam SND_RATE_14CH = 12000;    // DEFp 0x2ee0
-`define DEF_SND_RATE_14CH
+`define DEF_SND_RATE_14CH 1
 	localparam RX_DECIM_3CH = 3292;    // DEFp 0xcdc
-`define DEF_RX_DECIM_3CH
+`define DEF_RX_DECIM_3CH 1
 	localparam RX_DECIM_4CH = 5555;    // DEFp 0x15b3
-`define DEF_RX_DECIM_4CH
+`define DEF_RX_DECIM_4CH 1
 	localparam RX_DECIM_8CH = 5555;    // DEFp 0x15b3
-`define DEF_RX_DECIM_8CH
+`define DEF_RX_DECIM_8CH 1
 	localparam RX_DECIM_14CH = 5555;    // DEFp 0x15b3
-`define DEF_RX_DECIM_14CH
+`define DEF_RX_DECIM_14CH 1
 	localparam RXBUF_SIZE_3CH = 16384;    // DEFp 0x4000
-`define DEF_RXBUF_SIZE_3CH
+`define DEF_RXBUF_SIZE_3CH 1
 	localparam RXBUF_SIZE_4CH = 8192;    // DEFp 0x2000
-`define DEF_RXBUF_SIZE_4CH
+`define DEF_RXBUF_SIZE_4CH 1
 	localparam RXBUF_SIZE_8CH = 16384;    // DEFp 0x4000
-`define DEF_RXBUF_SIZE_8CH
+`define DEF_RXBUF_SIZE_8CH 1
 	localparam RXBUF_SIZE_14CH = 32768;    // DEFp 0x8000
-`define DEF_RXBUF_SIZE_14CH
+`define DEF_RXBUF_SIZE_14CH 1
 	localparam NRX_IQW = 3;    // DEFp 0x3
-`define DEF_NRX_IQW
+`define DEF_NRX_IQW 1
 	localparam NRX_SPI = 2047;    // DEFp 0x7ff
-`define DEF_NRX_SPI
+`define DEF_NRX_SPI 1
 	localparam NRX_OVHD = 5;    // DEFp 0x5
-`define DEF_NRX_OVHD
+`define DEF_NRX_OVHD 1
 	localparam NRX_SAMPS_RPT = 8;    // DEFp 0x8
-`define DEF_NRX_SAMPS_RPT
+`define DEF_NRX_SAMPS_RPT 1
 //`define USE_RX_CIC24    // DEFh 0x0
 	localparam RX1_BITS = 22;    // DEFp 0x16
-`define DEF_RX1_BITS
+`define DEF_RX1_BITS 1
 	localparam RX2_BITS = 18;    // DEFp 0x12
-`define DEF_RX2_BITS
+`define DEF_RX2_BITS 1
 	localparam RXO_BITS = 24;    // DEFp 0x18
-`define DEF_RXO_BITS
+`define DEF_RXO_BITS 1
 	localparam RX1_STAGES = 3;    // DEFp 0x3
-`define DEF_RX1_STAGES
+`define DEF_RX1_STAGES 1
 	localparam RX2_STAGES = 5;    // DEFp 0x5
-`define DEF_RX2_STAGES
+`define DEF_RX2_STAGES 1
 	localparam MAX_ZOOM = 14;    // DEFp 0xe
-`define DEF_MAX_ZOOM
+`define DEF_MAX_ZOOM 1
 	localparam NWF_FFT = 8192;    // DEFp 0x2000
-`define DEF_NWF_FFT
+`define DEF_NWF_FFT 1
 	localparam NWF_IQW = 2;    // DEFp 0x2
-`define DEF_NWF_IQW
+`define DEF_NWF_IQW 1
 	localparam NWF_NXFER = 9;    // DEFp 0x9
-`define DEF_NWF_NXFER
+`define DEF_NWF_NXFER 1
 	localparam NWF_SAMPS = 911;    // DEFp 0x38f
-`define DEF_NWF_SAMPS
+`define DEF_NWF_SAMPS 1
 	localparam NWF_SAMPS_RPT = 50;    // DEFp 0x32
-`define DEF_NWF_SAMPS_RPT
+`define DEF_NWF_SAMPS_RPT 1
 	localparam NWF_SAMPS_LOOP = 18;    // DEFp 0x12
-`define DEF_NWF_SAMPS_LOOP
+`define DEF_NWF_SAMPS_LOOP 1
 	localparam NWF_SAMPS_LOOP2 = 900;    // DEFp 0x384
-`define DEF_NWF_SAMPS_LOOP2
+`define DEF_NWF_SAMPS_LOOP2 1
 	localparam NWF_SAMPS_REM = 11;    // DEFp 0xb
-`define DEF_NWF_SAMPS_REM
-`define USE_WF_1CIC    // DEFh 0x1
-`define USE_WF_CIC24    // DEFh 0x1
+`define DEF_NWF_SAMPS_REM 1
+`define USE_WF_1CIC 1    // DEFh 0x1
+`define USE_WF_CIC24 1    // DEFh 0x1
 //`define USE_WF_MEM24    // DEFh 0x0
 //`define USE_WF_NEW    // DEFh 0x0
 	localparam WF1_STAGES = 5;    // DEFp 0x5
-`define DEF_WF1_STAGES
+`define DEF_WF1_STAGES 1
 	localparam WF2_STAGES = 5;    // DEFp 0x5
-`define DEF_WF2_STAGES
+`define DEF_WF2_STAGES 1
 	localparam WF1_BITS = 24;    // DEFp 0x18
-`define DEF_WF1_BITS
+`define DEF_WF1_BITS 1
 	localparam WF2_BITS = 24;    // DEFp 0x18
-`define DEF_WF2_BITS
+`define DEF_WF2_BITS 1
 	localparam WFO_BITS = 16;    // DEFp 0x10
-`define DEF_WFO_BITS
+`define DEF_WFO_BITS 1
 	localparam WF_1CIC_MAXD = 8192;    // DEFp 0x2000
-`define DEF_WF_1CIC_MAXD
+`define DEF_WF_1CIC_MAXD 1
 	localparam WF_2CIC_MAXD = 0;    // DEFp 0x0
 //`define DEF_WF_2CIC_MAXD
 	localparam MAX_GPS_CHANS = 12;    // DEFp 0xc
-`define DEF_MAX_GPS_CHANS
+`define DEF_MAX_GPS_CHANS 1
 	localparam GPS_INTEG_BITS = 20;    // DEFp 0x14
-`define DEF_GPS_INTEG_BITS
+`define DEF_GPS_INTEG_BITS 1
 	localparam GPS_REPL_BITS = 18;    // DEFp 0x12
-`define DEF_GPS_REPL_BITS
+`define DEF_GPS_REPL_BITS 1
 	localparam MAX_NAV_BITS = 128;    // DEFp 0x80
-`define DEF_MAX_NAV_BITS
+`define DEF_MAX_NAV_BITS 1
 	localparam GPS_RPT = 32;    // DEFp 0x20
-`define DEF_GPS_RPT
+`define DEF_GPS_RPT 1
 	localparam GPS_SAMPS = 256;    // DEFp 0x100
-`define DEF_GPS_SAMPS
+`define DEF_GPS_SAMPS 1
 	localparam GPS_SAMPS_RPT = 32;    // DEFp 0x20
-`define DEF_GPS_SAMPS_RPT
+`define DEF_GPS_SAMPS_RPT 1
 	localparam GPS_SAMPS_LOOP = 8;    // DEFp 0x8
-`define DEF_GPS_SAMPS_LOOP
+`define DEF_GPS_SAMPS_LOOP 1
 	localparam GPS_IQ_SAMPS = 255;    // DEFp 0xff
-`define DEF_GPS_IQ_SAMPS
+`define DEF_GPS_IQ_SAMPS 1
 	localparam GPS_IQ_SAMPS_W = 1020;    // DEFp 0x3fc
-`define DEF_GPS_IQ_SAMPS_W
+`define DEF_GPS_IQ_SAMPS_W 1
 	localparam L1_CODEBITS = 10;    // DEFp 0xa
-`define DEF_L1_CODEBITS
+`define DEF_L1_CODEBITS 1
 	localparam L1_CODELEN = 1023;    // DEFp 0x3ff
-`define DEF_L1_CODELEN
+`define DEF_L1_CODELEN 1
 	localparam E1B_MODE = 2048;    // DEFp 0x800
-`define DEF_E1B_MODE
+`define DEF_E1B_MODE 1
 	localparam E1B_CODEBITS = 12;    // DEFp 0xc
-`define DEF_E1B_CODEBITS
+`define DEF_E1B_CODEBITS 1
 	localparam E1B_CODELEN = 4092;    // DEFp 0xffc
-`define DEF_E1B_CODELEN
+`define DEF_E1B_CODELEN 1
 	localparam E1B_CODE_XFERS = 2;    // DEFp 0x2
-`define DEF_E1B_CODE_XFERS
+`define DEF_E1B_CODE_XFERS 1
 	localparam E1B_CODE_LOOP = 2046;    // DEFp 0x7fe
-`define DEF_E1B_CODE_LOOP
+`define DEF_E1B_CODE_LOOP 1
 	localparam E1B_CODE_RPT = 32;    // DEFp 0x20
-`define DEF_E1B_CODE_RPT
+`define DEF_E1B_CODE_RPT 1
 	localparam E1B_CODE_LOOP2 = 63;    // DEFp 0x3f
-`define DEF_E1B_CODE_LOOP2
+`define DEF_E1B_CODE_LOOP2 1
 	localparam E1B_CODE_LOOP3 = 2016;    // DEFp 0x7e0
-`define DEF_E1B_CODE_LOOP3
+`define DEF_E1B_CODE_LOOP3 1
 	localparam E1B_CODE_REM = 30;    // DEFp 0x1e
-`define DEF_E1B_CODE_REM
+`define DEF_E1B_CODE_REM 1
 	localparam GET_CHAN_IQ = 0;    // DEFb: bit number for value: 0x1
 	localparam GET_SRQ = 1;    // DEFb: bit number for value: 0x2
 	localparam GET_SNAPSHOT = 2;    // DEFb: bit number for value: 0x4
@@ -241,14 +241,14 @@
 	localparam WF_SAMP_CONTIN = 2;    // DEFb: bit number for value: 0x4
 	localparam WF_SAMP_SYNC = 3;    // DEFb: bit number for value: 0x8
 	localparam STAT_FPGA_ID = 15;    // DEFp 0xf
-`define DEF_STAT_FPGA_ID
+`define DEF_STAT_FPGA_ID 1
 	localparam STAT_USER = 240;    // DEFp 0xf0
-`define DEF_STAT_USER
+`define DEF_STAT_USER 1
 	localparam STAT_DNA_DATA = 4;    // DEFb: bit number for value: 0x10
 	localparam STAT_FPGA_VER = 3840;    // DEFp 0xf00
-`define DEF_STAT_FPGA_VER
+`define DEF_STAT_FPGA_VER 1
 	localparam STAT_FW_ID = 28672;    // DEFp 0x7000
-`define DEF_STAT_FW_ID
+`define DEF_STAT_FW_ID 1
 	localparam STAT_OVFL = 15;    // DEFb: bit number for value: 0x8000
 	localparam CTRL_0001 = 0;    // DEFb: bit number for value: 0x1
 	localparam CTRL_0002 = 1;    // DEFb: bit number for value: 0x2
