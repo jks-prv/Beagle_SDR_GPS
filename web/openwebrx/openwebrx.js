@@ -6807,7 +6807,7 @@ var dx = {
    DB_STORED: 0,
    DB_EiBi: 1,
    db: 0,
-   db_s: [ 'stored (writeable)', 'EiBi-B21 (read-only)' ],
+   db_s: [ 'stored (writeable)', 'EiBi-B22 (read-only)' ],
    db_flip_s: [ 'EiBi', 'stored' ],
    url_p: null,
    help: false,
