@@ -26,6 +26,8 @@
 # ln -s sked-b22.14nov22.kiwi.csv sked-current.csv
 # make run
 #
+# Also: update openwebrx.js:dx.db_s: "EiBi-[AB]yy" string
+#
 
 include ../../Makefile.comp.inc
 
