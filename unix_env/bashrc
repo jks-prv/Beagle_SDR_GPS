@@ -412,6 +412,8 @@ alias geolocip="function _geolocip () { curl -s http://ip-api.com/json/\$1 | jq 
 
 # SSL
 alias certs="certbot certificates"
+alias renew="certbot renew"
+alias renew-force="certbot renew --force-renewal"
 
 # sharing KiwiSDR sources from a development machine to Beagle via NFS
 # download NFS with command: "pki nfs-common"
