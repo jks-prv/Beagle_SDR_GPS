@@ -953,7 +953,7 @@ void c2s_sound(void *param)
 		int fir_pos;
 		TYPECPX *f_samps;
 
-        do {
+        do {    // while (bc < LOOP_BC)
 			while (rx->wr_pos == rx->rd_pos) {
 				evSnd(EC_EVENT, EV_SND, -1, "rx_snd", "sleeping");
 
