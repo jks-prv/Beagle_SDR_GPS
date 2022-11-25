@@ -47,19 +47,19 @@ else
 
             LIBS_DEP += /usr/bin/cmake
             /usr/bin/cmake:
-	            -apt-get -y install cmake
+	            -apt-get -y --force-yes install cmake
 
             LIBS_DEP += /usr/lib/$(LIB_ARCH)/libglib-2.0.so
             /usr/lib/$(LIB_ARCH)/libglib-2.0.so:
-	            -apt-get -y install libglib2.0-dev
+	            -apt-get -y --force-yes install libglib2.0-dev
 
             LIBS_DEP += /usr/lib/$(LIB_ARCH)/libconfig++.so
             /usr/lib/$(LIB_ARCH)/libconfig++.so:
-	            -apt-get -y install libconfig++-dev
+	            -apt-get -y --force-yes install libconfig++-dev
 
             LIBS_DEP += /usr/lib/$(LIB_ARCH)/libsqlite3.so
             /usr/lib/$(LIB_ARCH)/libsqlite3.so:
-	            -apt-get -y install libsqlite3-dev
+	            -apt-get -y --force-yes install libsqlite3-dev
         else
             EXT_I += -I/opt/local/include/glib-2.0 -I/usr/local/include/libacars-2
             EXT_I += -I/usr/local/lib/glib-2.0/include
