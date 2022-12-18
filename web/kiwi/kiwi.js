@@ -2233,7 +2233,7 @@ function update_cb(fail_reason, pending, in_progress, rx_chans, gps_chans, vmaj,
 		   var r;
 		   switch (fail_reason) {
 			   case 1: r = 'Filesystem is FULL!'; break;
-			   case 2: r = 'No Internet connection? (can\'t ping 1.1.1.1)'; break;
+			   case 2: r = 'No Internet connection? (can\'t ping 1.1.1.1 or 8.8.8.8)'; break;
 			   case 3: r = 'No connection to github.com?'; break;
 			   case 4: r = 'Git clone damaged!'; break;
 			   case 5: r = 'Makefile update failed -- check /root/build.log file'; break;

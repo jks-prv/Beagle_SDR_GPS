@@ -205,10 +205,16 @@ static void _update_task(void *param)
     //#define PING_INET "cd /root/" REPO_NAME "; ping -qc2 192.0.2.1"     // will never answer (RFC 5737)
     status = non_blocking_cmd_system_child("kiwi.ck_inet", PING_INET, POLL_MSEC(250));
     if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
-        lprintf("UPDATE: No Internet connection? (can't ping 1.1.1.1)\n");
-        fail_reason = FAIL_NO_INET;
-		if (report) report_result(conn);
-		goto common_return;
+
+        #define PING_INET2 "cd /root/" REPO_NAME "; ping -qc2 8.8.8.8 >/dev/null 2>&1"
+        //#define PING_INET2 "cd /root/" REPO_NAME "; ping -qc2 192.0.2.1"     // will never answer (RFC 5737)
+        status = non_blocking_cmd_system_child("kiwi.ck_inet", PING_INET2, POLL_MSEC(250));
+        if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+            lprintf("UPDATE: No Internet connection? (can't ping 1.1.1.1 or 8.8.8.8)\n");
+            fail_reason = FAIL_NO_INET;
+            if (report) report_result(conn);
+            goto common_return;
+        }
     }
 
     #define PING_GITHUB "cd /root/" REPO_NAME "; git show origin:Makefile >/dev/null 2>&1"
