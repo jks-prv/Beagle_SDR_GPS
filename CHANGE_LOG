@@ -2,6 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.570  Dec 19, 2022
+    Pass configured frequency offset in sound/waterfall API. For benefit of kiwirecorder.
+    
+    wfm=min,max URL parameter now respected when in audio FFT display mode.
+    URL parameter wfa (also wfa=1) to select auto aperture mode, wfa=0 for manual mode.
+    
+    Software update Internet connectivity check: If ping of 1.1.1.1 (Cloudflare DNS) fails try
+        8.8.8.8 (Google DNS). Workaround for an ISP that intercepts 1.1.1.1 making it un-pingable.
+
 v1.568,569  Nov 14, 2022
     Update to EiBi B22 database.
     
