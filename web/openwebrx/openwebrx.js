@@ -3979,7 +3979,7 @@ function resize_wf_canvases()
 	spec.canvas.style.width = new_width;
 
    // above width change clears canvas, so redraw
-   if (wf.audioFFT_active) {
+   if (wf.audioFFT_active && !kiwi_isMobile()) {
       w3_innerHTML('id-annotation-div',
          w3_div('w3-section w3-container',
             w3_text('w3-large|color:cyan', 'Audio FFT<br>'),
