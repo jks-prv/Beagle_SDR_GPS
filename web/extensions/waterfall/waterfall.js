@@ -139,8 +139,9 @@ function waterfall_controls_setup()
 function waterfall_init()
 {
    var init_aper = +ext_get_cfg_param('init.aperture', -1, EXT_NO_SAVE);
-   //console.log('waterfall_init: init_aper='+ init_aper +' url_tstamp='+ wf.url_tstamp);
    var last_aper = readCookie('last_aper', (init_aper == -1)? 0 : init_aper);
+   if (isArg(wf_auto)) last_aper = wf_auto? 1:0;
+   console.log('waterfall_init: last_aper='+ last_aper +' init_aper='+ init_aper +' wfa='+ wf_auto +' url_tstamp='+ wf.url_tstamp);
    wf_aper_cb('wf.aper', last_aper, false);     // writes 'last_aper' cookie
    w3_show('id-aper-data');
    

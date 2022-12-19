@@ -68,7 +68,7 @@ alias jsonf="function _json () { cat \$* | jq '.' ; } ; _json"
 # pki colordiff
 p_diff_exclude="--exclude=.DS_Store --exclude=.git --exclude=.svn ${no_diff}"
 alias diff="colordiff"
-alias dif="colordiff -br ${p_diff_exclude}"
+alias dif="echo ${no_diff}; colordiff -br ${p_diff_exclude}"
 alias difff="colordiff -qbr ${p_diff_exclude}"
 
 # ANSI color escapes
@@ -170,7 +170,10 @@ alias g.="function _gdot () { grep -iI \$* * ; } ; _gdot"
 alias gg="function _gfile () { grep -iI \$* ; } ; _gfile"
 alias gt="function _gtail () { tail -n 300 -f \$2 | grep -i --line-buffered \$1 ; } ; _gtail"
 # note that only $* is required here (not \$*) perhaps due to use in built-in commands?
+
+#find
 alias ff='function _ff () { export ffa=$* ; find . -name "*$ffa*" -print ; } ; _ff'
+alias f1m='find . -size +1M -exec ls -lah "{}" \;'
 
 # file times in epoch seconds
 alias lss="ls -lah --time-style=+%s"

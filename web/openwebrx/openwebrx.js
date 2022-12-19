@@ -140,6 +140,7 @@ var gen_freq = 0, gen_attn = 0;
 var squelch_threshold = 0;
 var wf_rate = '';
 var wf_mm = '';
+var wf_auto = null;
 var wf_compression = 1;
 var wf_interp = 13;  // WF_DROP + WF_CIC_COMP by default
 var wf_winf = 2;     // WIN_BLACKMAN_HARRIS
@@ -273,6 +274,7 @@ function kiwi_main_ready()
 	s = 'mute'; if (q[s]) muted_initially = parseInt(q[s]);
 	s = 'wf'; if (q[s]) wf_rate = q[s];
 	s = 'wfm'; if (q[s]) wf_mm = q[s];
+	s = 'wfa'; if (q[s]) wf_auto = parseInt(q[s]);
 	s = 'cmap'; if (q[s]) wf.cmap_override = w3_clamp(parseInt(q[s]), 0, kiwi.cmap_s.length - 1, 0);
 	s = 'sqrt'; if (q[s]) wf.sqrt = w3_clamp(parseInt(q[s]), 0, 4, 0);
 	s = 'wfts'; if (q[s]) wf.url_tstamp = w3_clamp(parseInt(q[s]), 2, 60*60, 2);
@@ -3977,7 +3979,7 @@ function resize_wf_canvases()
 	spec.canvas.style.width = new_width;
 
    // above width change clears canvas, so redraw
-   if (wf.audioFFT_active) {
+   if (wf.audioFFT_active && !kiwi_isMobile()) {
       w3_innerHTML('id-annotation-div',
          w3_div('w3-section w3-container',
             w3_text('w3-large|color:cyan', 'Audio FFT<br>'),
@@ -5054,9 +5056,10 @@ function wf_audio_FFT(audio_data, samps)
       // FIXME: What's the correct value to use here? Adding the third afft.size was just arbitrary.
       afft.scale = 10.0 * 2.0 / (afft.size * afft.size * afft.size * afft.CUTESDR_MAX_VAL * afft.CUTESDR_MAX_VAL);
       
-      // do initial autoscale in case stored max/min values are unreasonable
-      if (!afft.init && wf.aper != kiwi.aper_e.auto)
+      // do initial autoscale in case stored max/min values are unreasonable (UNLESS they were set from the URL)
+      if (!afft.init && wf.aper != kiwi.aper_e.auto && wf_mm == '') {
          wf.need_autoscale = 16;
+      }
       
       afft.iq = iq;
       afft.comp = audio_compression;
@@ -7104,6 +7107,10 @@ function dx_label_cb(arr)
 	var obj;
    var eibi = (dx.db == dx.DB_EiBi);
    var gap = eibi? 40 : 35;
+   //var dbg_lbl = dbgUs;
+   var dbg_lbl = false;
+   
+   console_log_lbl = function(s) { if (dbg_lbl) console.log(s); };
    
    dx_color_init();
 
@@ -7201,7 +7208,10 @@ function dx_label_cb(arr)
       }
 	};
 	
-	//console_log_dbgUs('######## dx_label_cb db='+ dx.db +' arr.len='+ arr.length);
+	if (dbg_lbl) {
+	   console.log('######## dx_label_cb db='+ dx.db +' arr.len='+ arr.length);
+	   console.log(arr);
+	}
 
 	// first pass
 	for (i = 1; i < arr.length; i++) {
@@ -7218,14 +7228,14 @@ function dx_label_cb(arr)
 		var filtered = flags & dx.DX_FILTERED;
 		var ident = obj.i;
 		if (eibi && ident == dx.last_ident) {
-         //console_log_dbgUs('1111 dx_idx='+ dx_idx +' '+ obj.f +' SAME AS LAST filtered='+ (filtered? 1:0) + ident);
+         console_log_lbl('1111 dx_idx='+ dx_idx +' '+ obj.f +' SAME AS LAST filtered='+ (filtered? 1:0) + ident);
          if (filtered == 0) dx.color_fixup[dx.last_idx] = dx.eibi_colors[color_idx];
          continue;
 		}
 
 		dx.last_idx = dx_idx;
 		dx.last_ident = ident;
-      //console_log_dbgUs('1111 dx_idx='+ dx_idx +' '+ obj.f +' OK filtered='+ (filtered? 1:0) + ident);
+      console_log_lbl('1111 dx_idx='+ dx_idx +' '+ obj.f +' OK filtered='+ (filtered? 1:0) + ident);
 		
 		var gid = obj.g;
 		var freq = obj.f;
@@ -7272,13 +7282,13 @@ function dx_label_cb(arr)
 		if (!eibi && color_idx == 0 && (ident == 'IBP' || ident == 'IARU%2fNCDXF')) {
 		   color = 'aquamarine';
 		}
-		//console_log_dbgUs("DX "+dx_seq+':'+dx_idx+" f="+freq+" o="+loff+" k="+moff+" F="+flags+" m="+kiwi.modes_u[flags & dx.DX_MODE]+" <"+ident+"> <"+notes+'>');
+		console_log_lbl("DX "+dx_seq+':'+dx_idx+" f="+freq+" k="+moff+" F="+flags+" m="+kiwi.modes_u[flags & dx.DX_MODE]+" <"+ident+"> <"+notes+'>');
 		
 		carrier /= 1000;
 		dx.list[gid] = { "gid":gid, "carrier":carrier, "lo":obj.lo, "hi":obj.hi, "freq":freq, "moff":moff, "flags":flags, "begin":obj.b, "end":obj.e, "ident":ident, "notes":notes, "params":params };
-	   //console_log_dbgUs('dx_label_cb db='+ dx.db +' dx_idx='+ dx_idx +'/'+ arr.length +' gid='+ gid +' dx.list.len='+ dx.list.length +' '+ freq.toFixed(2) +' x='+ x);
+	   console_log_lbl('dx_label_cb db='+ dx.db +' dx_idx='+ dx_idx +'/'+ arr.length +' gid='+ gid +' dx.list.len='+ dx.list.length +' '+ freq.toFixed(2) +' x='+ x);
       dx.displayed[dx_idx] = dx.list[gid];
-		//console_log_dbgUs(dx.list[gid]);
+		console_log_lbl(dx.list[gid]);
 		var has_ext = (params != '')? ' id-has-ext' : '';
 		
 		s_a[dx_idx] =
@@ -7296,8 +7306,8 @@ function dx_label_cb(arr)
 		dx_z++;
 	}
    if (eibi && dx.f_same.length > 2) optimize_label_layout(same_x, lock_z, -1);
-	//console_log_dbgUs(dx.list);
-	//console_log_dbgUs(dx.displayed);
+	console_log_lbl(dx.list);
+	console_log_lbl(dx.displayed);
 	
 	var s = '';
 	for (i = 0; i < arr.length-1; i++)
@@ -7310,7 +7320,7 @@ function dx_label_cb(arr)
 	   var el = w3_el('0-id-dx-label');
 	   if (el) {
 	      dx.font = css_style(el, 'font-size') +' '+ css_style(el, 'font-family');
-	      console_log_dbgUs('dx.font=<'+ dx.font +'>');
+	      console_log_lbl('dx.font=<'+ dx.font +'>');
 	   }
 	}
 
@@ -7354,7 +7364,7 @@ function dx_label_cb(arr)
 		
 		if (eibi) {
 		   if (ident == dx.last_ident) {
-		      //console_log_dbgUs('2222 dx_idx='+ dx_idx +' last_dx_idx='+ dx.last_dx_idx +' '+ obj.f +' SAME AS LAST '+ ident);
+		      console_log_lbl('2222 dx_idx='+ dx_idx +' last_dx_idx='+ dx.last_dx_idx +' '+ obj.f +' SAME AS LAST '+ ident);
 		      el = w3_el(dx.last_dx_idx +'-id-dx-label');
 		      el.title += '\n'+ dx_title(obj);
 		      continue;
@@ -7362,7 +7372,7 @@ function dx_label_cb(arr)
 		}
 		dx.last_dx_idx = dx_idx;
 		dx.last_ident = ident;
-      //if (eibi) console_log_dbgUs('2222 dx_idx='+ dx_idx +' '+ obj.f +' OK '+ ident);
+      if (eibi) console_log_lbl('2222 dx_idx='+ dx_idx +' '+ obj.f +' OK '+ ident);
 
 		var notes = (isDefined(obj.n))? obj.n : '';
 		el = w3_el(dx_idx +'-id-dx-label');
@@ -7372,7 +7382,7 @@ function dx_label_cb(arr)
       el.innerHTML = _ident.replace(/\\n/g, '<br>');
 		var idx = dx_type2idx(obj.fl & dx.DX_TYPE);
 		var ex = (eibi && dx.eibi_ext[idx] != '')? '\nshift-click to open extension' : '';
-		//if (eibi) console.log(obj.i +' '+ idx +' '+ dx.eibi_ext[idx] +' '+ ex);
+		if (eibi) console_log_lbl(obj.i +' '+ idx +' '+ dx.eibi_ext[idx] +' '+ ex);
 
       if (eibi) {
          el.title = dx.eibi_svc_s[idx] +' // home country: '+ obj.c + ex +'\n'+ dx_title(obj);
@@ -10931,6 +10941,8 @@ function owrx_msg_cb(param, ws)
 			break;
 		case "max_thr":
 			owrx.overload_mute = Math.round(+param[1]);
+			break;
+		case "freq_offset":     // sent this way for benefit of kiwirecorder
 			break;
 		default:
 		   return false;

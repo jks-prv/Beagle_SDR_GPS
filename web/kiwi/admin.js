@@ -2904,7 +2904,7 @@ function console_html()
                'console_input_cb|cdp; git show origin:Makefile &vbar; head -n 2'),
 
             w3_button('w3-blue|margin-left:16px', 'ping DNS', 'console_cmd_cb',
-               'console_input_cb|ping -c3 1.1.1.1'),
+               'console_input_cb|ping -c3 1.1.1.1; ping -c3 8.8.8.8'),
 
             w3_button('w3-blue|margin-left:16px', 'ping kiwisdr', 'console_cmd_cb',
                'console_input_cb|ping -c3 kiwisdr.com')

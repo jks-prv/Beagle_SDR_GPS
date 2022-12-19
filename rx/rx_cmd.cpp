@@ -860,27 +860,31 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 
 #define DX_PRINT
 #ifdef DX_PRINT
-	#define DX_PRINT_DOW_TIME 1
+	#define DX_PRINT_DOW_TIME 0x01
 	#define dx_print_dow_time(cond, fmt, ...) \
 		if ((dx_print & DX_PRINT_DOW_TIME) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
 
-	#define DX_PRINT_MKRS 2
+	#define DX_PRINT_MKRS 0x02
 	#define dx_print_mkrs(cond, fmt, ...) \
 		if ((dx_print & DX_PRINT_MKRS) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
 
-	#define DX_PRINT_ADM_MKRS 4
+	#define DX_PRINT_ADM_MKRS 0x04
 	#define dx_print_adm_mkrs(fmt, ...) \
 		if (dx_print & DX_PRINT_ADM_MKRS) cprintf(conn, fmt, ## __VA_ARGS__)
 
-	#define DX_PRINT_UPD 8
+	#define DX_PRINT_UPD 0x08
 	#define dx_print_upd(fmt, ...) \
 		if (dx_print & DX_PRINT_UPD) cprintf(conn, fmt, ## __VA_ARGS__)
 
-	#define DX_PRINT_SEARCH 16
+	#define DX_PRINT_SEARCH 0x10
 	#define dx_print_search(cond, fmt, ...) \
 		if ((dx_print & DX_PRINT_SEARCH) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
 
-	#define DX_PRINT_DEBUG 32
+	#define DX_PRINT_FILTER 0x20
+	#define dx_print_filter(cond, fmt, ...) \
+		if ((dx_print & DX_PRINT_FILTER) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
+
+	#define DX_PRINT_DEBUG 0x40
 	#define dx_print_debug(cond, fmt, ...) \
 		if ((dx_print & DX_PRINT_DEBUG) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
 #else
@@ -889,6 +893,8 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 	#define dx_print_adm_mkrs(fmt, ...)
 	#define dx_print_upd(fmt, ...)
 	#define dx_print_search(cond, fmt, ...)
+	#define dx_print_filter(cond, fmt, ...)
+	#define dx_print_debug(cond, fmt, ...)
 #endif
 
     dx_t *dp, *ldp, *upd;
@@ -1108,9 +1114,9 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 }
             }
         
-            //cprintf(conn, "DX_FILTER setup <%s> <%s> case=%d wild=%d grep=%d\n",
-            //    conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_wild, conn->dx_filter_grep);
-            //show_conn("DX FILTER ", PRINTF_REG, conn);
+            dx_print_search(true, "DX_FILTER setup <%s> <%s> case=%d wild=%d grep=%d\n",
+                conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_wild, conn->dx_filter_grep);
+            if (dx_print & DX_PRINT_FILTER) show_conn("DX FILTER ", PRINTF_REG, conn);
             send_msg(conn, false, "MSG request_dx_update");	// get client to request updated dx list
             return true;
         }
@@ -1376,16 +1382,16 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 
                 dx_t *dp = (dx_t *) bsearch(&dx_min, cur_list, cur_len, sizeof(dx_t), bsearch_freqcomp);
                 if (dp == NULL) panic("DX bsearch");
-                //cprintf(conn, "DX_MKR key=%.2f bsearch=%.2f(%d/%d) min=%.2f max=%.2f\n",
-                //    dx_min.freq, dp->freq + ((float) dp->offset / 1000.0), dp->idx, cur_len, min, max);
+                dx_print_search(true, "DX_MKR key=%.2f bsearch=%.2f(%d/%d) min=%.2f max=%.2f\n",
+                    dx_min.freq, dp->freq + ((float) dp->offset / 1000.0), dp->idx, cur_len, min, max);
         
                 int dx_filter = 0, fn_flags = 0;
                 if (conn->dx_filter_ident || conn->dx_filter_notes) {
                     dx_filter = 1;
                     fn_flags = conn->dx_filter_case? 0 : FNM_CASEFOLD;
-                    //cprintf(conn, "DX_MKR FILTERING on <%s> <%s> case=%d wild=%d grep=%d\n",
-                    //    conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_wild, conn->dx_filter_grep);
-                    //show_conn("DX FILTER ", PRINTF_REG, conn);
+                    dx_print_filter(true, "DX_MKR FILTERING on <%s> <%s> case=%d wild=%d grep=%d\n",
+                        conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_wild, conn->dx_filter_grep);
+                    if (dx_print & DX_PRINT_FILTER) show_conn("DX FILTER ", PRINTF_REG, conn);
                 }
         
                 //if (drx->db == DB_EiBi) cprintf(conn, "EiBi BSEARCH len=%d %.2f\n", cur_len, dp->freq);
@@ -1471,6 +1477,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     }
             
                     if (dx_filter) {
+                        dx_print_mkrs(drx->db == DB_EiBi, "DX_MKR CHECK dx_filter EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident_s);
                         if (conn->dx_filter_grep) {
                             if (conn->dx_has_preg_ident) {
                                 if (regexec(&conn->dx_preg_ident, dp->ident_s, 0, NULL, 0) == REG_NOMATCH) continue;
@@ -1496,6 +1503,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                             }
                             //cprintf(conn, "DX_MKR FILTER MATCHED-no-grep <%s> <%s>\n", dp->ident_s, dp->notes_s);
                         }
+                        dx_print_mkrs(drx->db == DB_EiBi, "DX_MKR OK dx_filter EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident_s);
                     }
             
                     // reduce dx label clutter
@@ -1504,6 +1512,11 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                         int diff = x - dx_lastx;
                         //dx_print_mkrs(drx->db == DB_STORED, "DX_MKR spacing %d %d %d %s\n", dx_lastx, x, diff, dp->ident_s);
                         if (!first && diff < DX_SPACING_THRESHOLD_PX) {
+                            if (clutter_filtered < 32) {
+                                dx_print_mkrs(drx->db == DB_EiBi, "DX_MKR anti-clutter EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident_s);
+                                dx_print_mkrs(drx->db == DB_STORED, "DX_MKR anti-clutter #%d %.2f flags=%04x o=%d b=%d e=%d \"%s\"\n", dp->idx, freq, dp->flags, dp->offset,
+                                    time_begin, time_end, kiwi_str_decode_static((char *) dp->ident));
+                            }
                             clutter_filtered++;
                             continue;
                         }
@@ -1568,7 +1581,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                                 dp->ident,
                                 dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"",
                                 dp->params? ",\"p\":\"":"", dp->params? dp->params:"", dp->params? "\"":"");
-                            //if (drx->db == DB_EiBi) cprintf(conn, "DX_MKR EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident_s);
+                            dx_print_mkrs(drx->db == DB_EiBi, "DX_MKR EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident_s);
                             dx_print_mkrs(drx->db == DB_STORED, "DX_MKR #%d %.2f flags=%04x o=%d b=%d e=%d \"%s\"\n", dp->idx, freq, dp->flags, dp->offset,
                                 time_begin, time_end, kiwi_str_decode_static((char *) dp->ident));
                             send++;
@@ -1582,7 +1595,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
         
             sb = kstr_cat(sb, "]");
             send_msg(conn, false, "MSG mkr=%s", kstr_sp(sb));
-            dx_print_mkrs(drx->db == DB_STORED, "DX_MKR send=%d anti_clutter=%d clutter_filtered=%d\n", send, anti_clutter, clutter_filtered);
+            dx_print_mkrs(true, "DX_MKR send=%d anti_clutter=%d clutter_filtered=%d zoom=%d\n", send, anti_clutter, clutter_filtered, zoom);
             if (drx->db == DB_EiBi) {
                 //cprintf(conn, "DX_MKR EiBi send=%d\n", send);
                 //real_printf("%s\n", kstr_sp(sb));
