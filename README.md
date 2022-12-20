@@ -24,7 +24,7 @@ KiwiSDR had a successful [Kickstarter](https://www.kickstarter.com/projects/1575
 * [Operating information: installation, operation, FAQ](http://www.kiwisdr.com/quickstart/)
 * Latest [source code commits](https://github.com/jks-prv/Beagle_SDR_GPS/commits/master)
 * [Design review document](http://kiwisdr.com/docs/KiwiSDR/KiwiSDR.design.review.pdf)
-* [Schematic](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.schematic.pdf), [Gerbers](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.gerbers.tar), [Active antenna](http://www.kiwisdr.com/docs/KiwiSDR/ant.pdf), [BOM ODS](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.bom.ods), [BOM XLS](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.bom.xls)
+* [Schematic](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.schematic.pdf)
 
 ### Description
 This SDR is a bit different. It has a web interface that can be used by up to four separate listeners. Each one listening and tuning an independent frequency simultaneously. See the screenshots below.
@@ -38,7 +38,7 @@ This SDR is a bit different. It has a web interface that can be used by up to fo
 * Skyworks SE4150L GPS front-end.
 
 ### Features
-* 100% Open Source / Open Hardware.
+* Open Source.
 * Browser-based interface allowing multiple simultaneous user web connections (currently 4).
 * Each connection tunes an independent receiver channel over the entire spectrum.
 * Waterfall tunes independently of audio and includes zooming and panning.
