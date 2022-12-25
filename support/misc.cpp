@@ -56,10 +56,18 @@ void misc_init()
 
 
 // used by qsort
-// NB: assumes first element in struct is float sort field
+// NB: assumes first element in struct is sort field
 int qsort_floatcomp(const void *elem1, const void *elem2)
 {
 	const float f1 = *(const float *) elem1, f2 = *(const float *) elem2;
+    if (f1 < f2)
+        return -1;
+    return f1 > f2;
+}
+
+int qsort_doublecomp(const void *elem1, const void *elem2)
+{
+	const double f1 = *(const double *) elem1, f2 = *(const double *) elem2;
     if (f1 < f2)
         return -1;
     return f1 > f2;
