@@ -528,6 +528,17 @@ function drm_click(idx)
    drm_pre_set_freq(o.f, o.s);
 }
 
+function drm_freq_time(o)
+{
+   var b_hh = Math.trunc(o.b);
+   var b_mm = Math.round(60 * (o.b - b_hh));
+   var e_hh = Math.trunc(o.e);
+   var e_mm = Math.round(60 * (o.e - e_hh));
+   return o.f.toFixed(0) +' kHz\n'+
+      b_hh.leadingZeros(2) + b_mm.leadingZeros(2) +'-'+
+      e_hh.leadingZeros(2) + e_mm.leadingZeros(2);
+}
+
 function drm_schedule_svc()
 {
    if (!drm.stations) return '';
@@ -558,7 +569,7 @@ function drm_schedule_svc()
          var b_px = drm_tscale(o.b);
          var e_px = drm_tscale(o.e);
          si += w3_div(sprintf('id-drm-sched-time %s|left:%spx; width:%spx; height:%dpx|title="%s" onclick="drm_click(%d);"',
-            o.v? 'w3-light-green':'', b_px, (e_px - b_px + 2).toFixed(0), time_h, freq.toFixed(0), i));
+            o.v? 'w3-light-green':'', b_px, (e_px - b_px + 2).toFixed(0), time_h, drm_freq_time(o), i));
          i++;
          o = drm.stations[i];
       }
@@ -633,7 +644,7 @@ function drm_schedule_time_freq(sort_by_freq)
          var b_px = drm_tscale(o.b);
          var e_px = drm_tscale(o.e);
          si += w3_div(sprintf('id-drm-sched-time %s|left:%spx; width:%spx; height:%dpx|title="%s" onclick="drm_click(%d);"',
-            o.v? 'w3-light-green':'', b_px, (e_px - b_px + 2).toFixed(0), time_h, freq.toFixed(0), o.i));
+            o.v? 'w3-light-green':'', b_px, (e_px - b_px + 2).toFixed(0), time_h, drm_freq_time(o), o.i));
          i++;
          o = drm.stations_freq[i];
       }
