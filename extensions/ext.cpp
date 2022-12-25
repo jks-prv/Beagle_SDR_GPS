@@ -62,7 +62,7 @@ double ext_get_displayed_freq_kHz(int rx_chan)
 {
     conn_t *conn = rx_channels[rx_chan].conn;
     if (conn == NULL) return 0;
-    return ((double) conn->freqHz / kHz + freq_offset);
+    return ((double) conn->freqHz / kHz + freq_offset_kHz);
 }
 
 ext_auth_e ext_auth(int rx_chan)

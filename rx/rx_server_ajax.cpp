@@ -651,7 +651,7 @@ fail:
 			have_ant_switch_ext?			" ⁣ 📶 ANT-SWITCH" : "",
 
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
-			(float) kiwi_reg_lo_kHz * kHz, (float) kiwi_reg_hi_kHz * kHz, freq_offset,
+			(float) kiwi_reg_lo_kHz * kHz, (float) kiwi_reg_hi_kHz * kHz, freq_offset_kHz,
 			users, users_max, avatar_ctime,
 			gps_loc,
 			#ifdef USE_GPS

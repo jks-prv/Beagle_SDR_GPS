@@ -321,7 +321,7 @@ void rx_loguser(conn_t *c, logtype_e type)
 	    mode = kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s));
 	
 	if (type == LOG_ARRIVED || type == LOG_LEAVING) {
-		clprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq_offset,
+		clprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq_offset_kHz,
 			mode, c->zoom, c->ext? c->ext->name : "", c->ext? " ":"",
 			c->ident_user? c->ident_user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
 			c->geo? " ":"", c->geo? c->geo:"", s);
@@ -329,7 +329,7 @@ void rx_loguser(conn_t *c, logtype_e type)
 
     #ifdef OPTION_LOG_WF_ONLY_UPDATES
         if (c->type == STREAM_WATERFALL && type == LOG_UPDATE) {
-            cprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq_offset,
+            cprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq_offset_kHz,
 			    mode, c->zoom, c->ext? c->ext->name : "", c->ext? " ":"",
                 c->ident_user? c->ident_user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
                 c->geo? " ":"", c->geo? c->geo:"", s);
