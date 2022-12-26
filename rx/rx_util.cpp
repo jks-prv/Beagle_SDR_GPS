@@ -124,11 +124,11 @@ void cfg_adm_transition()
 
 int inactivity_timeout_mins, ip_limit_mins;
 int S_meter_cal, waterfall_cal;
-double ui_srate, freq_offset;
+double ui_srate, ui_srate_kHz, freq_offset_kHz, freq_offmax_kHz;
 int kiwi_reg_lo_kHz, kiwi_reg_hi_kHz;
 float max_thr;
 int n_camp;
-bool log_local_ip, DRM_enable;
+bool log_local_ip, DRM_enable, admin_keepalive;
 
 #define DC_OFFSET_DEFAULT -0.02F
 #define DC_OFFSET_DEFAULT_PREV 0.05F
@@ -142,6 +142,17 @@ TYPEREAL DC_offset_I, DC_offset_Q;
 static int mtu_v[N_MTU] = { 1500, 1440, 1400 };
 
 static int snr_interval[] = { 0, 1, 4, 6, 24 };
+
+void update_freqs(bool *update_cfg)
+{
+    int srate_idx = cfg_default_int("max_freq", 0, update_cfg);
+	ui_srate = srate_idx? 32*MHz : 30*MHz;
+	ui_srate_kHz = round(ui_srate/kHz);
+    freq_offset_kHz = cfg_default_float("freq_offset", 0, update_cfg);
+    freq_offmax_kHz = freq_offset_kHz + ui_srate_kHz;
+	//printf("ui_srate=%.3f ui_srate_kHz=%.3f freq_offset_kHz=%.3f freq_offmax_kHz=%.3f\n",
+	//    ui_srate, ui_srate_kHz, freq_offset_kHz, freq_offmax_kHz);
+}
 
 void update_vars_from_config(bool called_at_init)
 {
@@ -160,10 +171,12 @@ void update_vars_from_config(bool called_at_init)
 
     inactivity_timeout_mins = cfg_default_int("inactivity_timeout_mins", 0, &update_cfg);
     ip_limit_mins = cfg_default_int("ip_limit_mins", 0, &update_cfg);
-
-    int srate_idx = cfg_default_int("max_freq", 0, &update_cfg);
-	ui_srate = srate_idx? 32*MHz : 30*MHz;
-
+    
+	double prev_freq_offset_kHz = freq_offset_kHz;
+    update_freqs(&update_cfg);
+	if (freq_offset_kHz != prev_freq_offset_kHz) {
+	    update_masked_freqs();
+	}
 
     // force DC offsets to the default value if not configured
     // also if set to the previous default value
@@ -236,7 +249,6 @@ void update_vars_from_config(bool called_at_init)
     cfg_default_bool("contact_admin", true, &update_cfg);
     cfg_default_int("chan_no_pwd", 0, &update_cfg);
     cfg_default_int("clk_adj", 0, &update_cfg);
-    freq_offset = cfg_default_float("freq_offset", 0, &update_cfg);
     kiwi_reg_lo_kHz = cfg_default_int("sdr_hu_lo_kHz", 0, &update_cfg);
     kiwi_reg_hi_kHz = cfg_default_int("sdr_hu_hi_kHz", 30000, &update_cfg);
     cfg_default_bool("index_html_params.RX_PHOTO_LEFT_MARGIN", true, &update_cfg);
@@ -464,8 +476,10 @@ void update_vars_from_config(bool called_at_init)
     admcfg_default_bool("no_dup_ip", false, &update_admcfg);
     admcfg_default_bool("my_kiwi", true, &update_admcfg);
     admcfg_default_bool("onetime_password_check", false, &update_admcfg);
+    admcfg_default_bool("dx_labels_converted", false, &update_admcfg);
     admcfg_default_string("proxy_server", "proxy.kiwisdr.com", &update_admcfg);
     admcfg_default_bool("console_local", true, &update_admcfg);
+    admin_keepalive = admcfg_default_bool("admin_keepalive", true, &update_admcfg);
     log_local_ip = admcfg_default_bool("log_local_ip", true, &update_admcfg);
 
     // decouple rx.kiwisdr.com and sdr.hu registration
@@ -807,7 +821,7 @@ char *rx_users(bool include_ip)
                     #else
                         0.,
                     #endif
-                    freq_offset, rx->n_camp,
+                    freq_offset_kHz, rx->n_camp,
                     extint.notify_chan, extint.notify_seq);
                 if (user) kiwi_ifree(user);
                 if (geo) kiwi_ifree(geo);
@@ -847,11 +861,10 @@ int SNR_calc(SNR_meas_t *meas, int meas_type, int f_lo, int f_hi)
 {
     static int dB[WF_WIDTH];
     int i, rv = 0, len = 0, masked = 0;
-    double ui_srate_kHz = round(ui_srate/1e3);
-    int b_lo = f_lo - freq_offset, b_hi = f_hi - freq_offset;
+    int b_lo = f_lo - freq_offset_kHz, b_hi = f_hi - freq_offset_kHz;
     int start = (float) WF_WIDTH * b_lo / ui_srate_kHz;
     int stop  = (float) WF_WIDTH * b_hi / ui_srate_kHz;
-    //printf("b_lo=%d b_hi=%d fo=%d s/s=%d/%d\n", b_lo, b_hi, (int) freq_offset, start, stop);
+    //printf("b_lo=%d b_hi=%d fo=%d s/s=%d/%d\n", b_lo, b_hi, (int) freq_offset_kHz, start, stop);
 
     for (i = (int) start; i < stop; i++) {
         if (dB_raw[i] <= -190) {
@@ -935,8 +948,7 @@ void SNR_meas(void *param)
                 dB_raw[i] /= SNR_NSAMPS;
             }
             
-            double ui_srate_kHz = round(ui_srate/1e3);
-            int f_lo = freq_offset, f_hi = freq_offset + ui_srate_kHz;
+            int f_lo = freq_offset_kHz, f_hi = freq_offmax_kHz;
             
             snr_all = SNR_calc(meas, SNR_MEAS_ALL, f_lo, f_hi);
 

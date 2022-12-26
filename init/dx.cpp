@@ -48,7 +48,7 @@ Boston, MA  02110-1301, USA.
 dxlist_t dx;
 
 // create JSON string from dx_t struct representation
-void dx_save_as_json()
+void dx_save_as_json(bool dx_label_foff_convert)
 {
 	int i, n;
 	cfg_t *cfg = &cfg_dx;
@@ -57,6 +57,11 @@ void dx_save_as_json()
 
 	TMEAS(u4_t start = timer_ms();)
 	TMEAS(printf("DX_UPD dx_save_as_json: START saving as dx.json, %d entries\n", dx.stored_len);)
+	
+	if (dx_label_foff_convert && freq_offset_kHz == 0) {
+	    lprintf("dx_save_as_json: DX_LABEL_FOFF_CONVERT requested, but freq offset is zero. Ignored!\n");
+	    dx_label_foff_convert = false;
+	}
 	
 	typedef struct { char *sp; int sl; } dx_a_t;
 	dx_a_t *dx_a = (dx_a_t *) kiwi_imalloc("dx_a", dx.stored_len * sizeof(dx_a_t));
@@ -67,8 +72,13 @@ void dx_save_as_json()
 	    char *notes = dxp->notes? kiwi_str_decode_selective_inplace(strdup(dxp->notes), FEWER_ENCODED) : strdup("");
 	    char *params = (dxp->params && *dxp->params)? kiwi_str_decode_selective_inplace(strdup(dxp->params), FEWER_ENCODED) : NULL;
 	    
+	    double freq_kHz = dxp->freq;
+	    if (dx_label_foff_convert && freq_kHz <= 32000) {
+	        freq_kHz += freq_offset_kHz;
+	        printf("DX CONVERT: %.2f => %.2f %s\n", dxp->freq, freq_kHz, ident);
+	    }
 	    sb = kstr_asprintf(NULL, "[%.2f, \"%s\", \"%s\", \"%s\"",
-	        dxp->freq, modu_s[dxp->flags & DX_MODE], ident, notes);
+	        freq_kHz, modu_s[dxp->flags & DX_MODE], ident, notes);
         free(ident); free(notes);   // not kiwi_ifree() because from strdup()
 
 		u4_t type = dxp->flags & DX_TYPE;
@@ -214,36 +224,56 @@ static void dx_flag(dx_t *dxp, const char *flag)
 	lprintf("%.2f \"%s\": unknown dx flag \"%s\"\n", dxp->freq, dxp->ident, flag);
 }
 
-// prepare dx list by conditionally sorting, initializing self indexes and constructing new masked freq list
-void dx_prep_list(bool need_sort, dx_t *_dx_list, int _dx_list_len, int _dx_list_len_new)
+void update_masked_freqs(dx_t *_dx_list, int _dx_list_len)
 {
     int i, j;
     dx_t *dxp;
+    //printf("update_masked_freqs\n");
     
-	if (need_sort) qsort(_dx_list, _dx_list_len, sizeof(dx_t), qsort_floatcomp);
+    // called when freq_offset change detected -- use current stored list
+    if (_dx_list == NULL) {
+        _dx_list = dx.stored_list;
+        _dx_list_len = dx.stored_len;
+    }
 
-    // have to sort first before rebuilding masked list in case an entry is being deleted
     dx.masked_len = 0;
-    for (i = 0, dxp = _dx_list; i < _dx_list_len_new; i++, dxp++) {
-        dxp->idx = i;   // init self index
-        if ((dxp->flags & DX_TYPE) == DX_MASKED) dx.masked_len++;
+    for (i = 0, dxp = _dx_list; i < _dx_list_len; i++, dxp++) {
+        if ((dxp->flags & DX_TYPE) == DX_MASKED && dxp->freq >= freq_offset_kHz && dxp->freq <= freq_offmax_kHz)
+            dx.masked_len++;
     }
     kiwi_ifree(dx.masked_list); dx.masked_list = NULL;
-    if (dx.masked_len > 0) dx.masked_list = (dx_mask_t *) kiwi_imalloc("dx_prep_list", dx.masked_len * sizeof(dx_mask_t));
+    if (dx.masked_len > 0) dx.masked_list = (dx_mask_t *) kiwi_imalloc("update_masked_freqs", dx.masked_len * sizeof(dx_mask_t));
 
-    for (i = j = 0, dxp = _dx_list; i < _dx_list_len_new; i++, dxp++) {
-        if ((dxp->flags & DX_TYPE) == DX_MASKED) {
+    for (i = j = 0, dxp = _dx_list; i < _dx_list_len; i++, dxp++) {
+        if ((dxp->flags & DX_TYPE) == DX_MASKED && dxp->freq >= freq_offset_kHz && dxp->freq <= freq_offmax_kHz) {
             dx_mask_t *dmp = &dx.masked_list[j++];
             int mode = dxp->flags & DX_MODE;
-            int masked_f = roundf(dxp->freq * kHz);
+            int masked_f = roundf((dxp->freq - freq_offset_kHz) * kHz);     // masked freq list always baseband
             int hbw = mode_hbw[mode];
             int offset = mode_offset[mode];
             dmp->masked_lo = masked_f + offset + (dxp->low_cut? dxp->low_cut : -hbw);
             dmp->masked_hi = masked_f + offset + (dxp->high_cut? dxp->high_cut : hbw);
-            //printf("masked %.3f %d-%d %s hbw=%d off=%d lc=%d hc=%d\n",
+            //printf("masked %.2f baseband: %d-%d %s hbw=%d off=%d lc=%d hc=%d\n",
             //    dxp->freq, dmp->masked_lo, dmp->masked_hi, modu_s[mode], hbw, offset, dxp->low_cut, dxp->high_cut);
         }
     }
+}
+
+// prepare dx list by conditionally sorting, initializing self indexes and constructing new masked freq list
+void dx_prep_list(bool need_sort, dx_t *_dx_list, int _dx_list_len_prev, int _dx_list_len_new)
+{
+    int i;
+    dx_t *dxp;
+    
+    // have to sort first before rebuilding masked list in case an entry is being deleted
+	if (need_sort) qsort(_dx_list, _dx_list_len_prev, sizeof(dx_t), qsort_doublecomp);
+
+    for (i = 0, dxp = _dx_list; i < _dx_list_len_new; i++, dxp++) {
+        dxp->idx = i;   // init self index
+    }
+    
+    update_freqs();     // on startup dx list read before cfg setup
+    update_masked_freqs(_dx_list, _dx_list_len_new);
 
     // this causes all active user waterfall tasks to reload the dx list when it changes
     // from dx edit panel or admin dx tab

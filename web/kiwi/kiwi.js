@@ -174,7 +174,7 @@ function kiwi_bodyonload(error)
 function kiwi_open_ws_cb(p)
 {
 	if (p.conn_type != 'kiwi')
-		setTimeout(function() { setInterval(function() { ext_send("SET keepalive") }, 5000) }, 5000);
+		setTimeout(function() { setInterval(function() { ext_send("SET keepalive"); }, 5000) }, 5000);
 	
 	if (seriousError)
 	   return;        // don't go any further
@@ -2544,9 +2544,30 @@ function isAdmin()
 function kiwi_force_admin_close_cb(path, val, first)
 {
    if (first) return;
+   val = +val;
+   //console.log('$$$$ kiwi_force_admin_close_cb val='+ val);
    ext_send('SET close_admin_force');
    confirmation_panel_close();
    kiwi.no_admin_conns_pend = 0;
+   
+   // complete the original operation
+   if (val) {
+      // give console time to close before retrying
+      setTimeout(function() { dx_send_update_retry(); }, 1000);
+      //console.log('$$$$ kiwi_force_admin_close_cb: COMPLETE ORIGINAL dx_send_update_retry');
+   } else {
+      // give console time to close before retrying
+      setTimeout(function() { cfg_save_json('kiwi_force_admin_close_cb', 'adm'); }, 1000);
+      //console.log('$$$$ kiwi_force_admin_close_cb: COMPLETE ORIGINAL cfg_save_json(adm)');
+   }
+}
+
+function kiwi_set_freq_offset(freq_offset_kHz)
+{
+   kiwi.isOffset = (freq_offset_kHz != 0);
+   kiwi.freq_offset_kHz = freq_offset_kHz;
+   kiwi.freq_offset_Hz  = freq_offset_kHz * 1000;
+   kiwi.offset_frac = (freq_offset_kHz % 1000) * 1000;
 }
 
 
@@ -2629,10 +2650,7 @@ function kiwi_msg(param, ws)
          //setTimeout(function() {
             //console.log('### DELAYED load_cfg '+ ws.stream +' '+ cfg_json.length);
             cfg = kiwi_JSON_parse('load_cfg', cfg_json);
-            kiwi.isOffset = (cfg.freq_offset != 0);
-            kiwi.freq_offset_kHz = cfg.freq_offset;
-            kiwi.freq_offset_Hz  = cfg.freq_offset * 1000;
-            kiwi.offset_frac = (cfg.freq_offset % 1000) * 1000;
+	         kiwi_set_freq_offset(cfg.freq_offset);
             owrx_cfg();
          //}, 2000);
 			break;
@@ -2644,20 +2662,23 @@ function kiwi_msg(param, ws)
 			break;
 		
 		case "no_admin_conns":
+			var retry_dx_update = parseInt(param[1]);
 		   kiwi.no_admin_conns_pend++;
-		   //console.log('$$$$ no_admin_conns '+ kiwi.no_admin_conns_pend);
+		   //console.log('$$$$ no_admin_conns '+ kiwi.no_admin_conns_pend +' retry_dx_update='+ retry_dx_update);
 		   if (kiwi.no_admin_conns_pend == 1) {
             //console.log('$$$$ confirmation_show_content');
             confirmation_panel_close();
             confirmation_show_content(
                'Must close all admin connections before attempting this operation.' +
                w3_button('w3-small w3-padding-smaller w3-yellow w3-margin-T-8',
-                  'Close all admin connections', 'kiwi_force_admin_close_cb'),
+                  'Close all admin connections and complete original operation',
+                  'kiwi_force_admin_close_cb', retry_dx_update),
                500, 75,
                function() {
+                  // NB: this is the panel close icon at upper right, not the w3_button() click cb above
+                  //console.log('$$$$ confirmation_panel_close');
                   confirmation_panel_close();
                   kiwi.no_admin_conns_pend = 0;
-                  //console.log('$$$$ confirmation_panel_close');
                },
                'red');
          }

@@ -53,6 +53,7 @@ void printmem(const char *str, u2_t addr);
 float ecpu_use();
 
 int qsort_floatcomp(const void *elem1, const void *elem2);
+int qsort_doublecomp(const void *elem1, const void *elem2);
 int qsort_intcomp(const void *elem1, const void *elem2);
 float median_f(float *f, int len, float *pct_1 = NULL, float *pct_2 = NULL);
 int median_i(int *i, int len, int *pct_1 = NULL, int *pct_2 = NULL);

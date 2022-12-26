@@ -228,10 +228,6 @@ function control_html()
                w3_button('w3-aqua w3-margin', 'KiwiSDR server restart', 'control_restart_cb'),
                w3_button('w3-blue w3-margin', 'Beagle reboot', 'control_reboot_cb'),
                w3_button('w3-red w3-margin', 'Beagle power off', 'control_power_off_cb')
-            ),
-            w3_div('id-confirm w3-valign w3-hide',
-               w3_button('w3-green w3-margin', 'Confirm', 'control_confirm_cb'),
-               w3_button('w3-yellow w3-margin', 'Cancel', 'control_confirm_cancel_cb')
             )
          ),
 			w3_div('w3-container w3-center',
@@ -385,23 +381,31 @@ function reason_disabled_cb(path, val)
 var pending_restart = false;
 var pending_reboot = false;
 var pending_power_off = false;
+var control_confirm_cb_func = null;
+
+function control_confirm_show(msg, cb_func)
+{
+   control_confirm_cb_func = cb_func;
+   w3_innerHTML('id-confirm-msg', '<h5>'+ msg +'</h5>');
+	w3_show_block('id-confirm');
+}
 
 function control_restart_cb()
 {
 	pending_restart = true;
-	w3_show_block('id-confirm');
+	control_confirm_show('Really restart?');
 }
 
 function control_reboot_cb()
 {
 	pending_reboot = true;
-	w3_show_block('id-confirm');
+	control_confirm_show('Really reboot?');
 }
 
 function control_power_off_cb()
 {
 	pending_power_off = true;
-	w3_show_block('id-confirm');
+	control_confirm_show('Really power off?');
 }
 
 function control_confirm_cb()
@@ -415,6 +419,8 @@ function control_confirm_cb()
 	if (pending_power_off) {
 		ext_send('SET power_off');
 		admin_wait_then_reload(0, 'Powering off Beagle');
+	} else {
+	   w3_call(control_confirm_cb_func);
 	}
 }
 
@@ -2897,8 +2903,7 @@ function console_html()
                :
                w3_button('w3-red|margin-left:16px|' +
                   'title="CAUTION: Do not use unless git clone in\n&slash;root&slash;Beagle_SDR_GPS has become corrupted"',
-                  're-clone sources', 'console_cmd_cb',
-                  'console_input_cb|cd /root; rm -rf Beagle_SDR_GPS; git clone https://github.com/jks-prv/Beagle_SDR_GPS.git'),
+                  're-clone sources', 'console_reclone_confirm'),
 
             w3_button('w3-blue|margin-left:16px', 'check github', 'console_cmd_cb',
                'console_input_cb|cdp; git show origin:Makefile &vbar; head -n 2'),
@@ -2945,6 +2950,18 @@ function console_html()
 	return s;
 }
 
+function console_reclone_confirm(cmd)
+{
+   control_confirm_show('Really re-clone?',
+      function() {
+         console_cmd_cb('console_reclone_confirm',
+            'console_input_cb|cd /root; rm -rf Beagle_SDR_GPS; git clone https://github.com/jks-prv/Beagle_SDR_GPS.git');
+         control_confirm_cancel_cb();
+      }
+   );
+   
+}
+
 function console_is_char_oriented(is_char_oriented)
 {
    is_char_oriented = isDefined(is_char_oriented)? is_char_oriented : admin.console.always_char_oriented;
@@ -2967,11 +2984,11 @@ function console_is_char_oriented(is_char_oriented)
 function console_input_cb(path, val)
 {
    if (admin.console.is_char_oriented) {
-	   //console.log('console_w2c IGNORED due to admin.console.is_char_oriented');
+	   //console.log('console_input_cb IGNORED due to admin.console.is_char_oriented');
 	   return;
    }
    
-	//console.log('console_w2c '+ val.length +' <'+ val +'>');
+	//console.log('console_input_cb '+ val.length +' <'+ val +'>');
 	ext_send('SET console_w2c='+ encodeURIComponent(val +'\n'));
    w3_set_value(path, '');    // erase input field
    w3_scrollDown('id-console-msg');    // scroll to bottom on input
@@ -3287,13 +3304,32 @@ function security_html()
 				'For more discussion please see the ' +
 				w3_link('w3-link-darker-color', 'http://forum.kiwisdr.com/discussion/1218/participation-of-kiwis-in-the-tdoa-process/p1', 'Kiwi forum') +'.'
 			), 33
-		) +
+		);
 
+   var s3 =
 		'<hr>' +
-		//w3_div('id-security-json w3-section w3-border')
-		'';
+		w3_inline_percent('w3-container/w3-hspace-16 w3-text-teal',
+			w3_div('',
+				w3_div('',
+					'<b>Automatically reload admin page <br> if server stops responding?</b><br>',
+					w3_switch('w3-margin-T-8', 'Yes', 'No', 'adm.admin_keepalive', adm.admin_keepalive, 'admin_radio_YN_cb')
+				)
+			), 25,
 
-	return w3_div('id-security w3-hide', s1 + s2);
+			w3_div('w3-text-black',
+			   'Default "Yes". If set to "No" only a warning message will be displayed if the Kiwi server ' +
+			   'or network closes the connection.'
+			), 33,
+
+			w3_div('w3-text-black'), 1,
+
+			w3_div('w3-text-black',
+			   ''
+			), 33
+		) +
+		'<hr>';
+
+	return w3_div('id-security w3-hide', s1 + s2 + s3);
 }
 
 function security_focus(id)
@@ -3389,16 +3425,22 @@ function admin_draw(sdr_mode)
 			'<header class="w3-container w3-teal"><h5>Admin interface</h5></header>' +
 			w3_navbar('w3-border w3-light-grey', s) +
 	
+			w3_divs('id-confirm w3-hide/w3-valign',
+				'<header class="id-confirm-msg w3-show-inline-block w3-container w3-red"></header>' +
+				w3_div('w3-show-inline-block', w3_button('w3-green w3-margin-L-16', 'Confirm', 'control_confirm_cb')) +
+				w3_div('w3-show-inline-block', w3_button('w3-yellow w3-margin-L-16', 'Cancel', 'control_confirm_cancel_cb'))
+			) +
+			
 			w3_divs('id-restart w3-hide/w3-valign',
 				'<header class="w3-show-inline-block w3-container w3-red"><h5>Restart required for changes to take effect</h5></header>' +
-				w3_div('w3-show-inline-block', w3_button('w3-green w3-margin', 'KiwiSDR server restart', 'admin_restart_now_cb')) +
-				w3_div('w3-show-inline-block', w3_button('w3-yellow w3-margin', 'cancel', 'admin_restart_cancel_cb'))
+				w3_div('w3-show-inline-block', w3_button('w3-green w3-margin-L-16', 'KiwiSDR server restart', 'admin_restart_now_cb')) +
+				w3_div('w3-show-inline-block', w3_button('w3-yellow w3-margin-L-16', 'Cancel', 'admin_restart_cancel_cb'))
 			) +
 			
 			w3_divs('id-reboot w3-hide/w3-valign',
 				'<header class="w3-show-inline-block w3-container w3-red"><h5>Reboot required for changes to take effect</h5></header>' +
-				w3_div('w3-show-inline-block', w3_button('w3-green w3-margin', 'Beagle reboot', 'admin_reboot_now_cb')) +
-				w3_div('w3-show-inline-block', w3_button('w3-yellow w3-margin', 'cancel', 'admin_reboot_cancel_cb'))
+				w3_div('w3-show-inline-block', w3_button('w3-green w3-margin-L-16', 'Beagle reboot', 'admin_reboot_now_cb')) +
+				w3_div('w3-show-inline-block', w3_button('w3-yellow w3-margin-L-16', 'Cancel', 'admin_reboot_cancel_cb'))
 			) +
 			
 			w3_div('id-build-restart w3-valign w3-hide',
@@ -3407,6 +3449,10 @@ function admin_draw(sdr_mode)
 
 			w3_div('id-build-reboot w3-valign w3-hide',
 				'<header class="w3-container w3-red"><h5>Beagle will reboot after build</h5></header>'
+			) +
+
+			w3_div('id-admin-closed w3-valign w3-hide',
+				'<header class="w3-container w3-red"><h5>Warning: Admin connection closed</h5></header>'
 			)
 		);
 	
@@ -3481,10 +3527,16 @@ function admin_close()
          w3_show_block('id-kiwi-container');
          admin_wait_then_reload(0, 'Server has closed connection.');
    } else
-   if (!admin.reload_rem && !admin.long_running) {
-      //kiwi_show_msg('Server has closed connection.');
-      //if (dbgUs) console.log('admin close'); else
-         admin_wait_then_reload(60, 'Server has closed connection. Will retry.');
+   if (adm.admin_keepalive) {
+      if (!admin.reload_rem && !admin.long_running) {
+         //kiwi_show_msg('Server has closed connection.');
+         //if (dbgUs) console.log('admin close'); else
+            admin_wait_then_reload(60, 'Server has closed connection. Will retry.');
+      }
+   } else {
+      //console.log('ignoring admin keepalive (websocket close)');
+      w3_show_block('id-admin-closed');
+      w3_scrollTop('id-kiwi-container');
    }
 }
 
@@ -3537,14 +3589,19 @@ function admin_msg(param)
 
 		case "keepalive":
 		   kiwi_clearTimeout(admin.keepalive_timeoout);
-		   admin.keepalive_rx_time = Date.now();
-		   admin.keepalive_timeoout = setTimeout(function() {
-		   
-		      // in case the timeout somehow didn't get cancelled (which shouldn't happen)
-		      var diff = Date.now() - admin.keepalive_rx_time;
-		      if (diff > 20000)
-		         admin_close();
-		   }, 30000);
+		   if (adm.admin_keepalive) {
+		      //console.log('admin keepalive');
+            admin.keepalive_rx_time = Date.now();
+            admin.keepalive_timeoout = setTimeout(function() {
+         
+               // in case the timeout somehow didn't get cancelled (which shouldn't happen)
+               var diff = Date.now() - admin.keepalive_rx_time;
+               if (diff > 75000)
+                  admin_close();
+            }, 90000);
+         } else {
+            //console.log('ignoring admin keepalive (server)');
+         }
 		   break;
 
 		default:

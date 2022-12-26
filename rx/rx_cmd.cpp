@@ -80,8 +80,8 @@ static dx_t *dx_list_first, *dx_list_last;
 int bsearch_freqcomp(const void *key, const void *elem)
 {
 	dx_t *dx_key = (dx_t *) key, *dx_elem = (dx_t *) elem;
-	float key_freq = dx_key->freq;
-    float elem_freq = dx_elem->freq + ((float) dx_elem->offset / 1000.0);		// carrier plus offset
+	double key_freq = dx_key->freq;
+    double elem_freq = dx_elem->freq + ((double) dx_elem->offset / 1000.0);		// carrier plus offset
     
     if (key_freq == elem_freq) return 0;
     if (key_freq < elem_freq) {
@@ -94,7 +94,7 @@ int bsearch_freqcomp(const void *key, const void *elem)
     dx_t *dx_elem2 = dx_elem+1;
     if (dx_elem2 < dx_list_last) {
         // there is a following array element to range check with
-        float elem2_freq = dx_elem2->freq + ((float) dx_elem2->offset / 1000.0);		// carrier plus offset
+        double elem2_freq = dx_elem2->freq + ((double) dx_elem2->offset / 1000.0);		// carrier plus offset
         if (key_freq < elem2_freq) return 0;    // key was between without exact match
         return 1;   // key_freq > elem2_freq -> keep looking
     }
@@ -157,7 +157,7 @@ void rx_common_init(conn_t *conn)
 
 // Because of the false hash match problem with rx_common_cmd()
 // must only do auth after the command string compares.
-bool rx_auth_okay(conn_t *conn)
+static bool rx_auth_okay(conn_t *conn)
 {
     if (conn->auth_admin == FALSE) {
         lprintf("** attempt to save kiwi config with auth_admin == FALSE! IP %s\n", conn->remote_ip);
@@ -169,8 +169,8 @@ bool rx_auth_okay(conn_t *conn)
     int n;
     if (conn->type != STREAM_ADMIN && conn->type != STREAM_MFG && (n = rx_count_server_conns(ADMIN_USERS)) != 0) {
         //cprintf(conn, "CMD_SAVE_CFG: abort because admin_users=%d\n", n);
-        send_msg(conn, false, "MSG no_admin_conns");    // tell user their cfg save was rejected
-        rx_server_send_config(conn);    // and reload last saved config to flush bad values
+        send_msg(conn, false, "MSG no_admin_conns=0");    // tell user their cfg save was rejected
+        //rx_server_send_config(conn);    // and reload last saved config to flush bad values
         return false;
     }
 
@@ -740,8 +740,8 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     if (stream_snd || stream_mon || stream_admin_or_mfg) {
                     
                         // if freq offset was specified in URL apply it if conditions allow
-                        if (conn->foff_set && conn->foff != freq_offset) {
-                            cprintf(conn, "foff: new %.3lf current %.3lf\n", conn->foff, freq_offset);
+                        if (conn->foff_set && conn->foff != freq_offset_kHz) {
+                            cprintf(conn, "foff: new %.3lf current %.3lf\n", conn->foff, freq_offset_kHz);
                             if (!conn->isLocal) {
                                 cprintf(conn, "foff: not local conn\n");
                                 send_msg(conn, false, "MSG foff_error=0");
@@ -750,9 +750,11 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                                 cprintf(conn, "foff: admin conns exist\n");
                                 send_msg(conn, false, "MSG foff_error=1");
                             } else {
-		                        freq_offset = conn->foff;
-                                cfg_set_float("freq_offset", freq_offset);
+		                        freq_offset_kHz = conn->foff;
+                                cfg_set_float("freq_offset", freq_offset_kHz);
 		                        cfg_save_json(cfg_cfg.json);
+                                update_freqs();
+                                update_masked_freqs();
                                 cprintf(conn, "foff: UPDATED\n");
                             }
                             conn->foff_set = false;
@@ -860,6 +862,9 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 
 #define DX_PRINT
 #ifdef DX_PRINT
+
+    // -dx 0xhh
+    
 	#define DX_PRINT_DOW_TIME 0x01
 	#define dx_print_dow_time(cond, fmt, ...) \
 		if ((dx_print & DX_PRINT_DOW_TIME) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
@@ -909,18 +914,18 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
         
             int chan = (conn->type == STREAM_ADMIN)? MAX_RX_CHANS : conn->rx_channel;
             dx_rx_t *drx = &dx.dx_rx[chan];
-            float freq = 0;
+            double freq = 0;
             int gid = -999;
             int low_cut, high_cut, mkr_off, flags, begin, end, new_len;
             flags = 0;
 
             char *text_m, *notes_m, *params_m;
             text_m = notes_m = params_m = NULL;
-            n = sscanf(cmd, "SET DX_UPD g=%d f=%f lo=%d hi=%d o=%d fl=%d b=%d e=%d i=%1024ms n=%1024ms p=%1024ms",
+            n = sscanf(cmd, "SET DX_UPD g=%d f=%lf lo=%d hi=%d o=%d fl=%d b=%d e=%d i=%1024ms n=%1024ms p=%1024ms",
                 &gid, &freq, &low_cut, &high_cut, &mkr_off, &flags, &begin, &end, &text_m, &notes_m, &params_m);
             enum { DX_MOD_ADD = 11, DX_DEL = 2 };
             
-            #if 0
+            if (dx_print & DX_PRINT_UPD) {
                 cprintf(conn, "DX_UPD [%s]\n", cmd);
                 int type;
                 if (n == DX_MOD_ADD) {
@@ -932,11 +937,11 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                         dx_mod_add_s[type], n, gid, freq, mode_s[flags & DX_MODE], low_cut, high_cut, mkr_off, flags, begin, end,
                         text_m, notes_m, params_m);
                 } else {
-                    const char * dx_del_s[] = { "DEL", "???" };
-                    if (gid != -1 && freq == -1) type = 0; else type = 1;
+                    const char * dx_del_s[] = { "DEL", "CVT", "???" };
+                    if (gid != -1 && freq == -1) type = 0; else { if (gid == -9) type = 1; else type = 2; }
                     cprintf(conn, "DX_UPD %s: n=%d #%d\n", dx_del_s[type], n, gid);
                 }
-            #endif
+            }
 
             if (n != DX_MOD_ADD && n != DX_DEL) {
                 cprintf(conn, "DX_UPD n=%d ?\n", n);
@@ -954,7 +959,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             // on any user connection (with admin pwd given) dx save.
             if (conn->type != STREAM_ADMIN && conn->type != STREAM_MFG && (n = rx_count_server_conns(ADMIN_USERS)) != 0) {
                 dx_print_upd("CMD_DX_UPD: abort because admin_users=%d\n", n);
-                send_msg(conn, false, "MSG no_admin_conns");    // tell user their dx save was rejected
+                send_msg(conn, false, "MSG no_admin_conns=1");    // tell user their dx save was rejected
                 send_msg(conn, false, "MSG request_dx_update");	// get client to request updated dx list to flush bad values
                 return true;
             }
@@ -963,6 +968,18 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             //  !-1 -1      delete
             //  !-1 !-1     modify
             //  -1  x       add new
+            //  -9  x       one-time addition of frequency offset
+            
+            if (gid == -9) {
+                if (freq_offset_kHz != 0) {
+                    system("cp " DIR_CFG "/dx.json " DIR_CFG "/dx.pre_convert.json");
+                    dx_save_as_json(DX_LABEL_FOFF_CONVERT);
+                    kiwi_restart();
+                } else {
+                    clprintf(conn, "DX_LABEL_FOFF_CONVERT requested, but freq offset is zero. Ignored!\n");
+                }
+                return true;
+            }
         
             // dx.stored_len == 0 only applies when adding first entry to empty list
             if (gid != -1 && dx.stored_len == 0) return true;
@@ -1134,7 +1151,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
         if (kiwi_str_begins_with(cmd, "SET MARKER")) {
             int chan = (conn->type == STREAM_ADMIN)? MAX_RX_CHANS : conn->rx_channel;
             dx_rx_t *drx = &dx.dx_rx[chan];
-            float freq, min, max, bw;
+            double freq, min, max, bw;
             int db, zoom, width, dir = 1, filter_tod, anti_clutter, clutter_filtered = 0;
             int idx1, idx2;
             u4_t eibi_types_mask;
@@ -1146,19 +1163,19 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             enum { DX_ADM_MKRS = 0, DX_ADM_SEARCH_F = 1, DX_STEP = 2, DX_ADM_SEARCH_IDENT = 3, DX_MKRS = 4, DX_ADM_SEARCH_NOTES = 5 };
             int func;
 
-            if (sscanf(cmd, "SET MARKER db=%d min=%f max=%f zoom=%d width=%d eibi_types_mask=0x%x filter_tod=%d anti_clutter=%d",
+            if (sscanf(cmd, "SET MARKER db=%d min=%lf max=%lf zoom=%d width=%d eibi_types_mask=0x%x filter_tod=%d anti_clutter=%d",
                 &db, &min, &max, &zoom, &width, &eibi_types_mask, &filter_tod, &anti_clutter) == 8) {
                 bw = max - min;
                 func = DX_MKRS;
             } else
-            if (sscanf(cmd, "SET MARKER db=%d dir=%d freq=%f", &db, &dir, &min) == 3) {
+            if (sscanf(cmd, "SET MARKER db=%d dir=%d freq=%lf", &db, &dir, &min) == 3) {
                 func = DX_STEP;
             } else
             if (sscanf(cmd, "SET MARKER idx1=%d idx2=%d", &idx1, &idx2) == 2) {
                 func = DX_ADM_MKRS;
                 db = DB_STORED;
             } else
-            if (sscanf(cmd, "SET MARKER search_freq=%f", &freq) == 1) {
+            if (sscanf(cmd, "SET MARKER search_freq=%lf", &freq) == 1) {
                 func = DX_ADM_SEARCH_F;
                 db = DB_STORED;
             } else
@@ -1351,7 +1368,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                         dp->time_end = 2400;
                     }
                     
-                    //float freq = dp->freq + ((float) dp->offset / 1000.0);		// carrier plus offset
+                    //double freq = dp->freq + ((double) dp->offset / 1000.0);		// carrier plus offset
                     sb = kstr_asprintf(sb, ",{\"g\":%d,\"f\":%.3f,\"lo\":%d,\"hi\":%d,\"o\":%d,\"fl\":%d,\"b\":%d,\"e\":%d,"
                         "\"i\":\"%s\"%s%s%s%s%s%s}",
                         dp->idx, dp->freq, dp->low_cut, dp->high_cut, dp->offset, dp->flags, dp->time_begin, dp->time_end,
@@ -1383,7 +1400,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 dx_t *dp = (dx_t *) bsearch(&dx_min, cur_list, cur_len, sizeof(dx_t), bsearch_freqcomp);
                 if (dp == NULL) panic("DX bsearch");
                 dx_print_search(true, "DX_MKR key=%.2f bsearch=%.2f(%d/%d) min=%.2f max=%.2f\n",
-                    dx_min.freq, dp->freq + ((float) dp->offset / 1000.0), dp->idx, cur_len, min, max);
+                    dx_min.freq, dp->freq + ((double) dp->offset / 1000.0), dp->idx, cur_len, min, max);
         
                 int dx_filter = 0, fn_flags = 0;
                 if (conn->dx_filter_ident || conn->dx_filter_notes) {
@@ -1397,7 +1414,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 //if (drx->db == DB_EiBi) cprintf(conn, "EiBi BSEARCH len=%d %.2f\n", cur_len, dp->freq);
                 for (; dp < &cur_list[cur_len] && dp >= cur_list; dp += dir) {
                     u4_t flags = 0;
-                    float freq = dp->freq + ((float) dp->offset / 1000.0);		// carrier plus offset
+                    double freq = dp->freq + ((double) dp->offset / 1000.0);		// carrier plus offset
                     //if (drx->db == DB_EiBi) cprintf(conn, "DX_MKR EiBi CONSIDER %.2f\n", freq);
 
                     if (func == DX_MKRS && freq > max + DX_SEARCH_WINDOW) break;    // get extra one above for label stepping
@@ -1717,7 +1734,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 sb = kstr_cat(sb, kstr_list_int("\"ap\":[", "%u", "],", (int *) dpump.hist, nrx_bufs));
                 sb = kstr_cat(sb, kstr_list_int("\"ai\":[", "%u", "]", (int *) dpump.in_hist, N_DPBUF));
             
-                sb = kstr_asprintf(sb, ",\"sa\":%d,\"sh\":%d,\"sl\":%d", snr_all, freq_offset? -1 : snr_HF,
+                sb = kstr_asprintf(sb, ",\"sa\":%d,\"sh\":%d,\"sl\":%d", snr_all, freq_offset_kHz? -1 : snr_HF,
                     kiwi.spectral_inversion_lockout? 1:0);
             #endif
 

@@ -256,7 +256,7 @@ void WSPR_FFT(void *param)
                 input_msg_internal(w->arun_cext, (char *) "SET dialfreq=%.2f centerfreq=%.2f cf_offset=%.0f",
                     deco_cf_kHz - AUTORUN_BFO/1e3, deco_cf_kHz, cfo);
 
-                double if_freq_kHz = (tune_cf_kHz - AUTORUN_BFO/1e3) - freq_offset;
+                double if_freq_kHz = (tune_cf_kHz - AUTORUN_BFO/1e3) - freq_offset_kHz;
                 input_msg_internal(w->arun_csnd, (char *) "SET mod=usb low_cut=%d high_cut=%d freq=%.3f",
                     AUTORUN_BFO - AUTORUN_FILTER_BW/2, AUTORUN_BFO + AUTORUN_FILTER_BW/2, if_freq_kHz);
 
@@ -827,13 +827,13 @@ void wspr_autorun(int instance, int band)
     }
 
     double dial_freq_kHz = center_freq_kHz - AUTORUN_BFO/1e3;
-    double if_freq_kHz = (tune_freq_kHz - AUTORUN_BFO/1e3) - freq_offset;
+    double if_freq_kHz = (tune_freq_kHz - AUTORUN_BFO/1e3) - freq_offset_kHz;
 	double cfo = roundf((center_freq_kHz - floorf(center_freq_kHz)) * 1e3);
 	
-	double max_freq = freq_offset + ui_srate/1e3;
-	if (dial_freq_kHz < freq_offset || dial_freq_kHz > max_freq) {
+	double max_freq = freq_offset_kHz + ui_srate/1e3;
+	if (dial_freq_kHz < freq_offset_kHz || dial_freq_kHz > max_freq) {
 	    lprintf("WSPR autorun: ERROR band_id=%d dial_freq_kHz %.2f is outside rx range %.2f - %.2f\n",
-	        band, dial_freq_kHz, freq_offset, max_freq);
+	        band, dial_freq_kHz, freq_offset_kHz, max_freq);
 	    return;
 	}
 
@@ -855,7 +855,7 @@ void wspr_autorun(int instance, int band)
 
 	clprintf(csnd, "WSPR autorun: instance=%d band_id=%d%s off=%.2f if=%.2f tf=%.2f df=%.2f cf=%.2f cfo=%.0f\n",
 	    instance, band, iwbp? "(IWBP)" : "",
-	    freq_offset, if_freq_kHz, tune_freq_kHz, dial_freq_kHz, center_freq_kHz, cfo);
+	    freq_offset_kHz, if_freq_kHz, tune_freq_kHz, dial_freq_kHz, center_freq_kHz, cfo);
 	
     conn_t *cext = iconn[instance].cext;
     w->arun_cext = cext;

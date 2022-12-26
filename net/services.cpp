@@ -958,14 +958,7 @@ static void reg_public(void *param)
                 }
                 if (exit_status == 42) {
                     system("touch " DIR_CFG "/opt.debug");
-                    
-                    #ifdef USE_ASAN
-                        // leak detector needs exit while running on main() stack
-                        kiwi_restart = true;
-                        TaskWakeupF(TID_MAIN, TWF_CANCEL_DEADLINE);
-                    #else
-                        kiwi_exit(0);
-                    #endif
+				    kiwi_restart();
                 }
                 if (exit_status == 43) {
 				    system("reboot");

@@ -2,6 +2,58 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.571  Dec 27, 2022
+    Admin page DX tab: CAUTION: If you have a "normal" Kiwi with HF DX labels only you don't need to
+    perform the conversion process described below. You don't need to do anything.
+    
+    From this release forward new DX labels stored in the dx.json file will use
+    their true frequency instead of their normalized baseband freq (0 to 30/32 MHz). This will allow
+    proper label display when using a variable frequency downconverter (such as the freq extender
+    developed by Glenn, N6GN, www.sonic.net/~n6gn/BCReferenceBlock.png)
+    
+    So for example if dx.json contains a combination of HF labels and airband labels (108-137 MHz)
+    then the airband labels won't be used until the Kiwi frequency offset is configured for
+    108 MHz (via either the admin interface or the "foff=108000" user page URL parameter).
+    
+    However, this means there needs to be a conversion process for pre-v1.571 Kiwis with non-HF
+    labels in dx.json (e.g. those setup for airband or vhf/uhf ham bands). The label frequencies
+    must be adjusted from baseband to their true frequencies. This could be done (rather painfully)
+    one label at a time via the admin DX tab.
+
+    But in v1.571 a bulk mechanism for adding the freq offset to ALL the labels has been added.
+    It will appear at the top of the admin DX tab, but only if a non-zero frequency offset if set
+    (i.e. Kiwi is setup (presumably) for non-HF operation). When the "Add offset" button is pressed
+    a one-time addition of the current frequency offset is made to ALL labels in dx.json
+    The mechanism will then disappear and not be shown again since this is a one-time operation.
+    There is also a button saying: "Skip this and don't ask again". A backup copy of dx.json is
+    made for safety. Ask on the Kiwi forum if you get into trouble.
+    
+    If you never removed the HF labels before beginning non-HF operation then DON'T perform the
+    above conversion. You don't want the HF labels to be shifted into your non-HF band.
+    Instead, with v1.571 or later, just begin adding labels with non-HF frequencies and they will
+    be stored with their true frequencies distinguishing them from the existing HF labels.
+    
+    This change prevents the EiBi database labels from appearing when a frequency offset
+    is in effect. The change also makes the labels appear properly when only a part of the
+    HF band is visible (e.g. a frequency offset of 25 MHz is used with a converter that captures
+    the 10, 8 and 6m ham bands together).
+    ----
+    
+    User page DX edit panel and admin page DX tab: Can use 'k' and 'M' suffixes in frequency entry
+    boxes e.g. "116M" instead of  "116000" (kHz). Note: this has always been true for the
+    passband field where you could specify e.g. "2k" instead of "2000" (Hz).
+    
+    When attempting a privileged operation from a user connection (DX label edit, ADC clock adjust
+    etc.) an error is displayed if an admin connection is also open. After closing the admin
+    connection you had to completely repeat the privileged operation. Now it is automatically
+    completed with no further action required.
+    
+    Admin page security tab: new option "Automatically reload admin page if server stops responding?
+    Defaults to "Yes", the current behavior. If set to "No" the page won't reload, but instead
+    a warning message will appear when disconnection is detected.
+    
+    DRM extension: Hovering the cursor over the schedule entries now also shows the begin/end times.
+
 v1.570  Dec 19, 2022
     Pass configured frequency offset in sound/waterfall API. For benefit of kiwirecorder.
     

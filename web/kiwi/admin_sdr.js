@@ -155,7 +155,7 @@ function config_html()
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_div('',
-				w3_input_get('', 'Frequency scale offset (kHz, 1 Hz resolution)', 'freq_offset', 'admin_float_cb|3'),
+				w3_input_get('', 'Frequency scale offset (kHz, 1 Hz resolution)', 'freq_offset', 'config_freq_offset'),
 				w3_div('w3-text-black',
 					'Adds offset to frequency scale. <br> Useful when using a downconverter, e.g. set to <br>' +
 					'116000 kHz when 144-148 maps to 28-32 MHz.'
@@ -355,6 +355,13 @@ function config_html()
 		'<hr>';
 
 	return w3_div('id-config w3-hide', s1 + s2 + s3 + s4 + s5 + s6 + s7);
+}
+
+function config_freq_offset(path, val, first)
+{
+   admin_float_cb(path, val, first, [0,3]);
+	//console.log('### config_freq_offset '+ path +'='+ val +' cfg.freq_offset='+ cfg.freq_offset);
+	kiwi_set_freq_offset(cfg.freq_offset);
 }
 
 function config_spec_inv_cb(path, val, first)
@@ -1306,13 +1313,25 @@ function dx_html()
          w3_div('id-search-wrap', w3_icon('', 'fa-repeat', 192))
       );
    w3_create_appendElement('id-kiwi-container', 'div', s);
+   
+   // freq offset conversion
+   var s1 =
+      w3_div('id-dx-convert w3-hide',
+         '<hr>',
+         w3_div('w3-valign', 
+            w3_text('id-dx-convert-freq w3-text-black w3-center'),
+            w3_button('w3-margin-L-16 w3-aqua', 'Add offset', 'dx_convert_label_foff_cb', 0),
+            w3_button('w3-margin-L-8 w3-yellow', "Skip this and don't ask again", 'dx_convert_label_foff_cb', 1)
+         ),
+         '<hr>'
+      );
 
    // reminder: "Nvh" means N% of the viewport (browser window) height
    var vh = '63vh';
    //var vh = '32vh';
 	s =
       w3_div('id-dx w3-hide',
-
+         s1,
 
          // dx labels
          w3_inline('w3-margin-T-16 w3-halign-space-between/',
@@ -1409,6 +1428,26 @@ function dx_html()
    return s;
 }
 
+function dx_convert_label_foff_cb(path, idx)
+{
+   var ignore = +idx;
+   console.log('dx_convert_label_foff_cb ignore='+ ignore);
+   if (ignore) {
+      w3_show_hide('id-dx-convert', false);
+      adm.dx_labels_converted = true;
+      cfg_save_json('dx_convert_label_foff_cb', 'adm.dx_labels_converted');
+   } else {
+	   control_confirm_show('Really convert?',
+	      function() {
+            adm.dx_labels_converted = true;
+            cfg_save_json('dx_convert_label_foff_cb', 'adm.dx_labels_converted');
+            ext_send('SET DX_UPD g=-9 f=-1');
+            admin_wait_then_reload(60, 'DX labels converted, restarting KiwiSDR server');
+	      }
+	   );
+   }
+}
+
 function dx_expand_cb(path, which)
 {
    which = +which;
@@ -1427,6 +1466,12 @@ function dx_focus()
    if (!dx.enabled) return;
    dx.open_sched = -1;
    dx.o.last_search_idx = 0;
+
+   w3_innerHTML('id-dx-convert-freq',
+      '<b>One-time</b> addition of current frequency offset '+ kiwi.freq_offset_kHz.toFixed(3) +' kHz'+
+      '<br>('+(kiwi.freq_offset_kHz/1000).toFixed(6) +' MHz) '+
+      'to <b>ALL</b> DX labels <b>under 32 MHz</b>:');
+   w3_show_hide('id-dx-convert', (adm.dx_labels_converted == false && kiwi.freq_offset_kHz != 0));
 
    w3_innerHTML('id-band-bar-list-legend', '');
    w3_innerHTML('id-band-bar-list', '');
@@ -1603,7 +1648,7 @@ function dx_render(obj)
 
       if (i != dx.LEGEND) {
          d = obj[j];
-         freq = d.f + kiwi.freq_offset_kHz;
+         freq = d.f;
          mo = d.fl & dx.DX_MODE;
          ty = (d.fl & dx.DX_TYPE) >> dx.DX_TYPE_SFT;
          id = kiwi_decodeURIComponent('dx_id', d.i);
@@ -1651,7 +1696,7 @@ function dx_render(obj)
                   w3_button('w3-padding-0', w3_icon('w3-pale-blue||title="add schedule time"', 'fa-clock-o', 26), 'dx_list_sched_add_cb', i)
             ), 6,
             //i.toString(), 4,     // debug
-            w3_input(h('w3-padding-small||size=8'), l('Freq kHz'), 'dx.o.fr_'+i, freq, 'dx_num_cb'), 19,
+            w3_input(h('w3-padding-small||size=8'), l('Freq kHz'), 'dx.o.fr_'+i, freq, 'dx_freq_cb'), 19,
             w3_select(h('w3-text-red'), l('Mode'), '', 'dx.o.fm_'+i, mo, kiwi.modes_u, 'dx_sel_cb'), 15,
             w3_input(h('w3-padding-small||size=4'), l('Passband Hz'), 'dx.o.pb_'+i, pb, 'dx_passband_cb'), 25,
             w3_select(h('w3-text-red'), l('Type'), '', 'dx.o.ft_'+i, ty, type_menu, 'dx_sel_cb'), 25,

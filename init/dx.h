@@ -26,7 +26,7 @@ Boston, MA  02110-1301, USA.
 #define DX_HIDDEN_SLOT 1
 
 typedef struct {
-	float freq;				// must be first for qsort_floatcomp()
+	double freq;        // must be first for qsort_doublecomp()
     u2_t time_begin, time_end;
 	u4_t flags;
     u2_t ident_idx;
@@ -123,6 +123,9 @@ extern dxlist_t dx;
 extern const int eibi_counts[DX_N_EiBi];
 
 void dx_reload();
-void dx_save_as_json();
-void dx_prep_list(bool need_sort, dx_t *_dx_list, int _dx_list_len, int _dx_list_len_new);
+void update_masked_freqs(dx_t *_dx_list = NULL, int _dx_list_len = 0);
+void dx_prep_list(bool need_sort, dx_t *_dx_list, int _dx_list_len_prev, int _dx_list_len_new);
 void dx_eibi_init();
+
+#define DX_LABEL_FOFF_CONVERT true
+void dx_save_as_json(bool dx_label_foff_convert = false);

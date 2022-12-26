@@ -41,12 +41,6 @@ function dx_update_check(idx, upd, isPassband)
    }
 
    var flags = (dx.o.fd << dx.DX_DOW_SFT) | (dx.o.ft << dx.DX_TYPE_SFT) | dx.o.fm;
-   
-   if (dx.o.fr > 32000 || kiwi.freq_offset_kHz) {
-      var new_freq = dx.o.fr - kiwi.freq_offset_kHz;
-      console.log('removing freq_offset from old_freq='+ dx.o.fr +' freq_offset_kHz='+ kiwi.freq_offset_kHz +' new_freq='+ new_freq);
-	   dx.o.fr = new_freq;
-	}
 	if (dx.o.fr < 0) dx.o.fr = 0;
 	
 	// delay setting to -1 until here so dx.o.* params are copied from cur gid/idx
@@ -76,6 +70,17 @@ function dx_num_cb(path, val, first)
    if (first) return;
 	var o = w3_remove_trailing_index(path, '_');
 	console.log('dx_num_cb path='+ path +' val='+ val +' o.idx='+ o.idx);
+	w3_num_cb(o.el, val);
+	dx_update_check(o.idx, dx.UPD_MOD);
+}
+
+function dx_freq_cb(path, val, first)
+{
+   if (first) return;
+	var o = w3_remove_trailing_index(path, '_');
+	val = val.parseFloatWithUnits('kM', 1e-3);
+	console.log('dx_num_cb path='+ path +' val='+ val +' o.idx='+ o.idx);
+   w3_set_value(path, val);      // NB: keep field numeric!
 	w3_num_cb(o.el, val);
 	dx_update_check(o.idx, dx.UPD_MOD);
 }
