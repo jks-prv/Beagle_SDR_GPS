@@ -1260,15 +1260,8 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET restart");
 			if (i == 0) {
 				clprintf(conn, "ADMIN: restart requested by admin..\n");
-				
-				#ifdef USE_ASAN
-				    // leak detector needs exit while running on main() stack
-				    kiwi_restart = true;
-				    TaskWakeupF(TID_MAIN, TWF_CANCEL_DEADLINE);
-				    continue;
-				#else
-				    kiwi_exit(0);
-				#endif
+				kiwi_restart();
+				continue;
 			}
 
 			i = strcmp(cmd, "SET reboot");
@@ -1287,13 +1280,20 @@ void c2s_admin(void *param)
 					kiwi_usleep(100000);
 			}
 
+
+            // we see these sometimes; not part of our protocol
+            if (strcmp(cmd, "PING") == 0)
+                continue;
+
 			printf("ADMIN: unknown command: <%s>\n", cmd);
 			continue;
 		}
 		
 		conn->keep_alive = timer_sec() - conn->keepalive_time;
 		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
-		if (keepalive_expired || conn->kick) {
+		
+		// ignore expired keepalive if disabled
+		if ((admin_keepalive && keepalive_expired) || conn->kick) {
 			cprintf(conn, "ADMIN connection closed\n");
 			rx_server_remove(conn);
 			return;

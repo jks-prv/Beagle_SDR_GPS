@@ -61,10 +61,10 @@ extern kiwi_t kiwi;
 
 extern int version_maj, version_min;
 
-extern bool background_mode, need_hardware, is_multi_core, kiwi_restart,
+extern bool background_mode, need_hardware, is_multi_core,
 	DUC_enable_start, rev_enable_start, web_nocache, kiwi_reg_debug, cmd_debug,
 	have_ant_switch_ext, gps_e1b_only, disable_led_task, debug_printfs, force_camp,
-	snr_local_time, log_local_ip, DRM_enable, have_snd_users;
+	snr_local_time, log_local_ip, DRM_enable, have_snd_users, admin_keepalive;
 
 extern int wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_start, tone, down, navg,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, meas, monitors_max,
@@ -80,7 +80,8 @@ extern char **main_argv;
 
 extern u4_t ov_mask, snd_intr_usec;
 extern float g_genfreq, g_genampl, g_mixfreq, max_thr;
-extern double ui_srate, freq_offset;
+extern double ui_srate, ui_srate_kHz, freq_offset_kHz, freq_offmax_kHz;
+#define freq_offset freq_offset_kHz     // ant switch ext compatibility
 extern TYPEREAL DC_offset_I, DC_offset_Q;
 extern kstr_t *cpu_stats_buf;
 extern char *tzone_id, *tzone_name;
@@ -120,8 +121,10 @@ typedef enum { RX4_WF4=0, RX8_WF2=1, RX3_WF3=2, RX14_WF0=3 } firmware_e;
 
 #define IDENT_LEN_MIN   16      // e.g. "wsprdaemon_v3.0a" is 16 chars
 
+void kiwi_restart();
 void fpga_init();
 
+void update_freqs(bool *update_cfg = NULL);
 void update_vars_from_config(bool called_at_init = false);
 void cfg_adm_transition();
 void dump();
