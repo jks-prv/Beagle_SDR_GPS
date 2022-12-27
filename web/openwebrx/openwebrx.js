@@ -3980,20 +3980,23 @@ function resize_wf_canvases()
 
    // above width change clears canvas, so redraw
    if (wf.audioFFT_active && !kiwi_isMobile()) {
+      var reason;
+      if (wf.no_wf) {
+         reason = 'when \"no_wf\" URL option used.';
+      } else {
+         if (wf_chans == 0) {
+            reason = 'because all waterfalls disabled<br>on this Kiwi.';
+         } else {
+            reason = 'on channels '+ wf_chans_real +'-'+ (rx_chans-1) +' of Kiwis<br>' +
+               'configured for '+ rx_chans +' channels.';
+         }
+      }
+      
       w3_innerHTML('id-annotation-div',
          w3_div('w3-section w3-container',
             w3_text('w3-large|color:cyan', 'Audio FFT<br>'),
-            w3_text('w3-small|color:cyan',
-                  'Zoom waterfall not available<br>' +
-                  (wf.no_wf?
-                     'when \"no_wf\" URL option used.<br>'
-                  :
-                     ('on channels '+ wf_chans_real +'-'+ (rx_chans-1) +' of Kiwis<br>' +
-                     'configured for '+ rx_chans +' channels.<br>')
-                  )
-            ),
-            w3_text('w3-small|color:cyan',
-               'For details see the Kiwi forum.'
+            w3_text('w3-small|color:cyan', 'Zoom waterfall not available<br>' + reason),
+            w3_text('w3-small|color:cyan', '<br>For details see the Kiwi forum.'
             )
          )
       );
