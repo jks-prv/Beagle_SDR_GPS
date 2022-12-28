@@ -1142,7 +1142,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 
     // Called in many different ways:
     // With 8 params to search for and return labels in the visible area defined by max/min freq.
-    // With 3 params to search for the next label above or below the visible area when label stepping.
+    // With 5 params to search for the next label above or below the visible area when label stepping.
     // With 2 params giving the min/max index of the dx table to supply to the admin DX tab.
     // With params associated with dx list searching.
     // Returning counts of the number of types used.
@@ -1152,15 +1152,16 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             int chan = (conn->type == STREAM_ADMIN)? MAX_RX_CHANS : conn->rx_channel;
             dx_rx_t *drx = &dx.dx_rx[chan];
             double freq, min, max, bw;
-            int db, zoom, width, dir = 1, filter_tod, anti_clutter, clutter_filtered = 0;
+            int db, zoom, width, dir = 1, filter_tod = 0, anti_clutter = 0, clutter_filtered = 0;
             int idx1, idx2;
-            u4_t eibi_types_mask;
+            u4_t eibi_types_mask = 0;
             char *ident = NULL, *notes = NULL;
             bool db_changed = false;
-            if (dx_print) cprintf(conn, "DX_MKR [%s]\n", cmd);
+            if (dx_print) cprintf(conn, "--- DX_MKR [%s]\n", cmd);
 
             // values for compatibility with client side
-            enum { DX_ADM_MKRS = 0, DX_ADM_SEARCH_F = 1, DX_STEP = 2, DX_ADM_SEARCH_IDENT = 3, DX_MKRS = 4, DX_ADM_SEARCH_NOTES = 5 };
+            enum { DX_ADM_MKRS = 0, DX_ADM_SEARCH_FREQ = 1, DX_STEP = 2, DX_ADM_SEARCH_IDENT = 3, DX_MKRS = 4, DX_ADM_SEARCH_NOTES = 5 };
+            const char *func_s[] = { "DX_ADM_MKRS", "DX_ADM_SEARCH_FREQ", "DX_STEP", "DX_ADM_SEARCH_IDENT", "DX_MKRS", "DX_ADM_SEARCH_NOTES" };
             int func;
 
             if (sscanf(cmd, "SET MARKER db=%d min=%lf max=%lf zoom=%d width=%d eibi_types_mask=0x%x filter_tod=%d anti_clutter=%d",
@@ -1168,7 +1169,8 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 bw = max - min;
                 func = DX_MKRS;
             } else
-            if (sscanf(cmd, "SET MARKER db=%d dir=%d freq=%lf", &db, &dir, &min) == 3) {
+            if (sscanf(cmd, "SET MARKER db=%d dir=%d freq=%lf eibi_types_mask=0x%x filter_tod=%d",
+                &db, &dir, &min, &eibi_types_mask, &filter_tod) == 5) {
                 func = DX_STEP;
             } else
             if (sscanf(cmd, "SET MARKER idx1=%d idx2=%d", &idx1, &idx2) == 2) {
@@ -1176,7 +1178,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 db = DB_STORED;
             } else
             if (sscanf(cmd, "SET MARKER search_freq=%lf", &freq) == 1) {
-                func = DX_ADM_SEARCH_F;
+                func = DX_ADM_SEARCH_FREQ;
                 db = DB_STORED;
             } else
             if (sscanf(cmd, "SET MARKER idx=%d search_ident=%64ms", &idx1, &ident) == 2) {
@@ -1190,6 +1192,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 dx_print_debug("CMD_MARKER: unknown varient [%s]\n", cmd);
                 return true;
             }
+            if (dx_print) cprintf(conn, "DX_MKR func=%s\n", func_s[func]);
             
             bool db_stored = (db == DB_STORED);
             bool db_eibi = (db == DB_EiBi);
@@ -1210,7 +1213,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             //cprintf(conn, "DX_MKR: SET MARKER db=%s func=%d admin=%d\n",
             //    db_stored? "stored" : "EiBi", func, conn->type == STREAM_ADMIN);
         
-            if (func == DX_ADM_SEARCH_F) {
+            if (func == DX_ADM_SEARCH_FREQ) {
                 dx_t dx_min;
                 dx_min.freq = freq;
                 dx_t *cur_list = dx.stored_list;
@@ -1218,7 +1221,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 dx_list_first = &cur_list[0];
                 dx_list_last = &cur_list[cur_len];      // NB: addr of LAST+1 in list
                 dx_t *dp = (dx_t *) bsearch(&dx_min, cur_list, cur_len, sizeof(dx_t), bsearch_freqcomp);
-                dx_print_search(true, "DX_ADM_SEARCH_F %.2f found #%d %.2f\n", freq, dp->idx, dp->freq);
+                dx_print_search(true, "DX_ADM_SEARCH_FREQ %.2f found #%d %.2f\n", freq, dp->idx, dp->freq);
                 send_msg(conn, false, "MSG mkr_search_pos=0,%d", dp->idx);
                 return true;
             } else
@@ -1332,7 +1335,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             sb = kstr_asprintf(NULL, "[{\"t\":%d,\"n\":%d,\"s\":%ld,\"m\":%d,\"f\":%d,\"pe\":%d,\"fe\":%d",
                 func, dx.stored_len, ts.tv_sec, msec, (conn->dx_err_preg_ident? 1:0) + (conn->dx_err_preg_notes? 2:0),
                 dx.json_parse_errors, dx.dx_format_errors);
-            if (drx->db == DB_EiBi) {
+            if (db_eibi) {
                 sb = kstr_cat(sb, ",\"ec\":[");
                 for (i = 0; i < DX_N_EiBi; i++)
                     sb = kstr_asprintf(sb, "%d%s", eibi_counts[i], (i < (DX_N_EiBi-1))? "," : "");
@@ -1411,15 +1414,15 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     if (dx_print & DX_PRINT_FILTER) show_conn("DX FILTER ", PRINTF_REG, conn);
                 }
         
-                //if (drx->db == DB_EiBi) cprintf(conn, "EiBi BSEARCH len=%d %.2f\n", cur_len, dp->freq);
+                dx_print_search(db_eibi, "EiBi BSEARCH len=%d %.2f\n", cur_len, dp->freq);
                 for (; dp < &cur_list[cur_len] && dp >= cur_list; dp += dir) {
                     u4_t flags = 0;
                     double freq = dp->freq + ((double) dp->offset / 1000.0);		// carrier plus offset
-                    //if (drx->db == DB_EiBi) cprintf(conn, "DX_MKR EiBi CONSIDER %.2f\n", freq);
+                    //dx_print_search(db_eibi, "DX_MKR EiBi CONSIDER %.2f\n", freq);
 
                     if (func == DX_MKRS && freq > max + DX_SEARCH_WINDOW) break;    // get extra one above for label stepping
                 
-                    if (drx->db == DB_EiBi) {
+                    if (db_eibi) {
                         u4_t type_bit = 1 << (((dp->flags & DX_TYPE) - DX_BCAST) >> 4);
                         if ((type_bit & eibi_types_mask) == 0) continue;
                     }
@@ -1467,11 +1470,12 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                         dow_ok = (hr_min >= time_begin)? today_ok : yesterday_ok;
                     }
                     
-                    dx_print_dow_time(!dow_ok || rev, "%s today_Mo_0=%d|%d today_ok=%d|%d b=%04x|%04x m=%04x fl=%04x rev=%d %04d|%04d|%04d %s %.2f %s\n",
-                        !dow_ok? "!DOW" : "REV",
+                    dx_print_dow_time(!dow_ok || rev, "%s today_Mo_0=%d|%d today_ok=%d|%d b=%04x|%04x m=%04x fl=%04x rev=%d %04d|%04d|%04d %s %s %.2f %s\n",
+                        !dow_ok? "DOW" : "REV",
                         today_Mo_0, yesterday_Mo_0, today_ok, yesterday_ok, today_bit, yesterday_bit,
                         dow_mask, dp->flags, rev, time_begin, hr_min, time_end,
-                        filter_tod? "FILTERED-OUT" : "FILTER-OFF", freq, dp->ident_s);
+                        filter_tod? "FILTER-ON" : "FILTER-OFF", (filter_tod && !dow_ok)? "DOW-FAIL" : "DOW-PASS",
+                        freq, dp->ident_s);
 
                     if (!dow_ok) {
                         if (filter_tod)
@@ -1482,11 +1486,12 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     
                     bool within = (hr_min >= time_begin && hr_min < time_end);
                     bool within_rev = (hr_min >= time_end && hr_min < time_begin);
-                    if ((!rev && within) || (rev && !within_rev)) {
-                        // TOD okay
-                    } else {
-                        dx_print_dow_time(true, "!TOD %04d|%04d|%04d fl=04%x %s %.2f %s\n", time_begin, hr_min, time_end, dp->flags,
-                            filter_tod? "FILTERED-OUT" : "FILTER-OFF", freq, dp->ident_s);
+                    bool tod_ok = ((!rev && within) || (rev && !within_rev));
+                    if (!tod_ok) {
+                        dx_print_dow_time(true, "TOD %04d|%04d|%04d fl=04%x %s %s %.2f %s\n",
+                            time_begin, hr_min, time_end, dp->flags,
+                            filter_tod? "FILTER-ON" : "FILTER-OFF", (filter_tod && !tod_ok)? "TOD-FAIL" : "TOD-PASS",
+                            freq, dp->ident_s);
                         if (filter_tod)
                             continue;
                         else
@@ -1494,7 +1499,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     }
             
                     if (dx_filter) {
-                        dx_print_mkrs(drx->db == DB_EiBi, "DX_MKR CHECK dx_filter EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident_s);
+                        dx_print_mkrs(db_eibi, "DX_MKR CHECK dx_filter EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident_s);
                         if (conn->dx_filter_grep) {
                             if (conn->dx_has_preg_ident) {
                                 if (regexec(&conn->dx_preg_ident, dp->ident_s, 0, NULL, 0) == REG_NOMATCH) continue;
@@ -1520,18 +1525,18 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                             }
                             //cprintf(conn, "DX_MKR FILTER MATCHED-no-grep <%s> <%s>\n", dp->ident_s, dp->notes_s);
                         }
-                        dx_print_mkrs(drx->db == DB_EiBi, "DX_MKR OK dx_filter EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident_s);
+                        dx_print_mkrs(db_eibi, "DX_MKR OK dx_filter EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident_s);
                     }
             
                     // reduce dx label clutter
                     if (func == DX_MKRS && anti_clutter && zoom <= DX_SPACING_ZOOM_THRESHOLD) {
                         int x = ((dp->freq - min) / bw) * width;
                         int diff = x - dx_lastx;
-                        //dx_print_mkrs(drx->db == DB_STORED, "DX_MKR spacing %d %d %d %s\n", dx_lastx, x, diff, dp->ident_s);
+                        //dx_print_mkrs(db_stored, "DX_MKR spacing %d %d %d %s\n", dx_lastx, x, diff, dp->ident_s);
                         if (!first && diff < DX_SPACING_THRESHOLD_PX) {
                             if (clutter_filtered < 32) {
-                                dx_print_mkrs(drx->db == DB_EiBi, "DX_MKR anti-clutter EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident_s);
-                                dx_print_mkrs(drx->db == DB_STORED, "DX_MKR anti-clutter #%d %.2f flags=%04x o=%d b=%d e=%d \"%s\"\n", dp->idx, freq, dp->flags, dp->offset,
+                                dx_print_mkrs(db_eibi, "DX_MKR anti-clutter EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident_s);
+                                dx_print_mkrs(db_stored, "DX_MKR anti-clutter #%d %.2f flags=%04x o=%d b=%d e=%d \"%s\"\n", dp->idx, freq, dp->flags, dp->offset,
                                     time_begin, time_end, kiwi_str_decode_static((char *) dp->ident));
                             }
                             clutter_filtered++;
@@ -1585,7 +1590,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                             }
                         
                             if (fail) {
-                                lprintf("$$$$$$$$ DEBUG_DX_MKRS: ERROR freq=%.3f db=%s\n", freq, (drx->db == DB_EiBi)? "EiBi" : "stored");
+                                lprintf("$$$$$$$$ DEBUG_DX_MKRS: ERROR freq=%.3f db=%s\n", freq, (db_eibi)? "EiBi" : "stored");
                             } else
                         #endif
                     
@@ -1598,22 +1603,25 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                                 dp->ident,
                                 dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"",
                                 dp->params? ",\"p\":\"":"", dp->params? dp->params:"", dp->params? "\"":"");
-                            dx_print_mkrs(drx->db == DB_EiBi, "DX_MKR EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident_s);
-                            dx_print_mkrs(drx->db == DB_STORED, "DX_MKR #%d %.2f flags=%04x o=%d b=%d e=%d \"%s\"\n", dp->idx, freq, dp->flags, dp->offset,
+                            dx_print_mkrs(db_eibi, "DX_MKR EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident_s);
+                            dx_print_mkrs(db_stored, "DX_MKR #%d %.2f flags=%04x o=%d b=%d e=%d \"%s\"\n", dp->idx, freq, dp->flags, dp->offset,
                                 time_begin, time_end, kiwi_str_decode_static((char *) dp->ident));
                             send++;
                         }
                     }
             
                     // return the very first we hit that passed the filtering criteria above
-                    if (func == DX_STEP && send) break;
+                    if (func == DX_STEP && send) {
+                        dx_print_search(true, "DX_STEP found\n");
+                        break;
+                    }
                 }
             }
         
             sb = kstr_cat(sb, "]");
             send_msg(conn, false, "MSG mkr=%s", kstr_sp(sb));
             dx_print_mkrs(true, "DX_MKR send=%d anti_clutter=%d clutter_filtered=%d zoom=%d\n", send, anti_clutter, clutter_filtered, zoom);
-            if (drx->db == DB_EiBi) {
+            if (db_eibi) {
                 //cprintf(conn, "DX_MKR EiBi send=%d\n", send);
                 //real_printf("%s\n", kstr_sp(sb));
             }

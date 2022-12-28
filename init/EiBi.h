@@ -1743,39 +1743,39 @@ dx_t eibi_db[] = {
   {  2830.00, 1533, 1543, 0x0ff92,  196, "GRC", "E",   "SEE" },  //   -aero Olimpia Radio
   {  2830.00, 1633, 1643, 0x0ff92,  196, "GRC", "E",   "SEE" },  //   -aero Olimpia Radio
   {  2830.00, 2133, 2143, 0x0ff92,  196, "GRC", "E",   "SEE" },  //   -aero Olimpia Radio
-  {  2860.00,    0, 2400, 0x0ff12,  224, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio I
+  {  2860.00,    0, 2400, 0x0ff92,  224, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio I
   {  2863.00,    0, 2400, 0x0ff92,  225, "HKG", "E",   "FE"  },  //   -aero Hongkong Volmet x15,x45
   {  2863.00,    0, 2400, 0x0ff92,  226, "JPN", "E",   "FE"  },  //   -aero Tokyo Volmet x10,x40
-  {  2869.00,    0, 2400, 0x0ff12,  227, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
+  {  2869.00,    0, 2400, 0x0ff92,  227, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio J
   {  2869.00, 1100, 2300, 0x0ff92,  228, "RUS", "R",   "CIS" },  //   -aero Novosibir Volmet x10,40
   {  2869.00, 1400,  200, 0x0ff92,  229, "RUS", "R",   "CIS" },  //   -aero Samara Volmet x15,45
   {  2869.00, 1500,  300, 0x0ff92,  230, "RUS", "R",   "CIS" },  //   -aero Syktyvkar Volmet x00,30
   {  2869.00,    0, 2400, 0x0ff92,  231, "USA", "E",   "EOc" },  //   -aero San Francisco Radio CEP
   {  2872.00,    0, 2400, 0x0ff92,  232, "CAN", "E",   "NAO" },  //   -aero Gander Radio C
-  {  2872.00, 1800,  900, 0x0ff12,  233, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio C
+  {  2872.00, 1800,  900, 0x0ff92,  233, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio C
   {  2872.00,    0, 2400, 0x0ff92,  234, "ISL", "E",   "NAO" },  //   -aero Iceland Radio C
   {  2881.00,    0, 2400, 0x0ff92,  235, "ARG", "S",   "SAm" },  //   -aero Ezeiza Volmet x01
-  {  2881.00,    0, 2400, 0x0ff12,  224, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio I
+  {  2881.00,    0, 2400, 0x0ff92,  224, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio I
   {  2887.00,    0, 2400, 0x0ff92,  236, "USA", "E",   "Car" },  //   -aero New York Radio CAR-A
-  {  2890.00,    0, 2400, 0x0ff12,  224, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio I
+  {  2890.00,    0, 2400, 0x0ff92,  224, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio I
   {  2899.00,  930, 2350, 0x0ff92,  237, "ARG", "S",   "ARG" },  //   -aero Com.RivadaviaVolmet x30
   {  2899.00,    0, 2400, 0x0ff92,  238, "CAN", "E",   "NAO" },  //   -aero Gander Radio B
-  {  2899.00, 1800,  900, 0x0ff12,  239, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio B
+  {  2899.00, 1800,  900, 0x0ff92,  239, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio B
   {  2899.00,    0, 2400, 0x0ff92,  240, "ISL", "E",   "NAO" },  //   -aero Iceland Radio B
   {  2941.00,    0, 2400, 0x2ff47,  241, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
   {  2941.00, 1500,  300, 0x0ff92,  242, "RUS", "R",   "CIS" },  //   -aero Rostov Volmet x25,55
   {  2944.00,    0, 2400, 0x2ff47,  243, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
-  {  2944.00,    0, 2400, 0x0ff12,  227, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
+  {  2944.00,    0, 2400, 0x0ff92,  227, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio J
   {  2962.00,    0, 2400, 0x0ff92,  244, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio E
   {  2962.00,    0, 2400, 0x0ff92,  245, "USA", "E",   "NAO" },  //   -aero New York Radio NAT-E
   {  2965.00, 1305,  240, 0x0ff92,  246, "IND", "E",   "SAs" },  //   -aero Kolkata Volmet x05,x35
   {  2965.00, 1325,  300, 0x0ff92,  247, "IND", "E",   "SAs" },  //   -aero Mumbai Volmet x25,x55
-  {  2965.00,    0, 2400, 0x0ff12,  248, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio H
+  {  2965.00,    0, 2400, 0x0ff92,  248, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio H
   {  2965.00, 1210, 2245, 0x0ff92,  249, "THA", "E",   "SAs" },  //   -aero Bangkok Volmet x10,x40
   {  2971.00,    0, 2400, 0x0ff92,  250, "ARG", "S",   "ARG" },  //   -aero ResistenciaVolmetx20x50
-  {  2971.00,  100,  800, 0x0ff12,  251, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio D
+  {  2971.00,  100,  800, 0x0ff92,  251, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio D
   {  2992.00,    0, 2400, 0x2ff47,  243, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
-  {  2992.00,    0, 2400, 0x0ff12,  227, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
+  {  2992.00,    0, 2400, 0x0ff92,  227, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio J
   {  2998.00,    0, 2400, 0x2ff47,  252, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
   {  2998.00,    0, 2400, 0x0ff92,  253, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
   {  2998.00,    0, 2400, 0x0ff92,  253, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
@@ -1783,8 +1783,8 @@ dx_t eibi_db[] = {
   {  3016.00,    0, 2400, 0x2ff47,  254, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
   {  3016.00, 2100,  800, 0x0ff92,  255, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio A
   {  3016.00,    0, 2400, 0x0ff92,  256, "CAN", "E",   "NAO" },  //   -aero Gander Radio A
-  {  3016.00,  100,  900, 0x0ff12,  257, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio A
-  {  3016.00, 1800, 2200, 0x0ff12,  257, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio A
+  {  3016.00,  100,  900, 0x0ff92,  257, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio A
+  {  3016.00, 1800, 2200, 0x0ff92,  257, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio A
   {  3016.00,    0, 2400, 0x0ff92,  258, "USA", "E",   "NAO" },  //   -aero New York Radio NAT-A
   {  3023.00,    0, 2400, 0x0ff12,  259, "XUU", "E",   ""    },  //   -util Search and Rescue Coord
   {  3040.00,    0, 2400, 0x0ff92,  260, "RUS", "R",   "RUS" },  //   -aero Khantym Aero Berezhny
@@ -1953,7 +1953,7 @@ dx_t eibi_db[] = {
   {  3432.00,    0, 2400, 0x0ff92,  308, "RUS", "R",   "RUS" },  //   -aero Tarko-Sale Aero
   {  3432.00,    0, 2400, 0x0ff92,  309, "RUS", "R",   "RUS" },  //   -aero Tyumen Aero
   {  3434.00,    0, 2400, 0x0ff92,  310, "ARG", "S",   "SAm" },  //   -aero Córdoba Volmet x25, x45
-  {  3446.00,    0, 2400, 0x0ff12,  227, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
+  {  3446.00,    0, 2400, 0x0ff92,  227, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio J
   {  3450.00, 1430,  400, 0x0ff92,  311, "RUS", "E,R", "RUS" },  //   -aero Khanty-Mansiysk Volmet
   {  3452.00,    0, 2400, 0x0ff92,  231, "USA", "E",   "EOc" },  //   -aero San Francisco Radio CEP
   {  3455.00,    0, 2400, 0x2ff47,  252, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
@@ -1962,22 +1962,22 @@ dx_t eibi_db[] = {
   {  3458.00,  815, 2400, 0x0ff92,  312, "CHN", "E",   "FE"  },  //   -aero Beijing Volmet x15,x45
   {  3458.00, 1015, 2400, 0x0ff92,  312, "CHN", "E",   "FE"  },  //   -aero Beijing Volmet x15,x45
   {  3458.00,  800, 2345, 0x0ff92,  313, "CHN", "E",   "FE"  },  //   -aero Guangzhou Volmet x00,30
-  {  3458.00,    0, 2400, 0x0ff12,  224, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio I
+  {  3458.00,    0, 2400, 0x0ff92,  224, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio I
   {  3467.00,    0, 2400, 0x0ff92,  314, "AUS", "E",   "Oc"  },  //   -aero Brisbane Radio
   {  3467.00,    0, 2400, 0x0ff92,  315, "FJI", "E",   "Oc"  },  //   -aero Nadi Radio
   {  3467.00,    0, 2400, 0x0ff92,  316, "NZL", "E",   "Oc"  },  //   -aero Auckland Radio
   {  3467.00,    0, 2400, 0x0ff92,  317, "OCE", "E",   "Oc"  },  //   -aero Tahiti Radio
   {  3467.00,    0, 2400, 0x0ff92,  318, "USA", "E",   "Oc"  },  //   -aero San Francisco Radio SP
   {  3470.00,    0, 2400, 0x0ff92,  319, "CLN", "E",   "SAs" },  //   -aero Colombo Radio
-  {  3473.00,    0, 2400, 0x0ff12,  224, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio I
-  {  3473.00,    0, 2400, 0x0ff12,  227, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
+  {  3473.00,    0, 2400, 0x0ff92,  224, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio I
+  {  3473.00,    0, 2400, 0x0ff92,  227, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio J
   {  3476.00,    0, 2400, 0x0ff92,  320, "CAN", "E",   "NAO" },  //   -aero Gander Radio F
-  {  3476.00,  100,  800, 0x0ff12,  321, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio F
+  {  3476.00,  100,  800, 0x0ff92,  321, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio F
   {  3480.00,    0, 2400, 0x0ff00,  322, "CLA", "K",   "KRE" },  //  -bcast Voice of the People
   {  3485.00,    0, 2400, 0x0ff92,  323, "CAN", "E",   "NAm" },  //   -aero Gander Volmet x20,x50
-  {  3488.00,    0, 2400, 0x0ff12,  224, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio I
+  {  3488.00,    0, 2400, 0x0ff92,  224, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio I
   {  3491.00,    0, 2400, 0x0ff92,  324, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio H
-  {  3491.00,    0, 2400, 0x0ff12,  248, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio H
+  {  3491.00,    0, 2400, 0x0ff92,  248, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio H
   {  3494.00, 1800,  600, 0x0ff92,  325, "SWE", "E",   "Eu"  },  //   -aero Stockholm Radio (Air)
   {  3494.00,    0, 2400, 0x0ff92,  326, "USA", "E",   "NAO" },  //   -aero New York Radio LDOC
   {  3494.00,    0, 2400, 0x0ff12,  327, "USA", "E",   "Oc"  },  //   -util San Francisco R. LDOC
@@ -2408,11 +2408,11 @@ dx_t eibi_db[] = {
   {  4627.00,    0, 2400, 0x2ff32,  350, "SWE", "",    "S"   },  //    -ale Swedish Military ALE
   {  4648.00,    0, 2400, 0x2ff32,  194, "AUT", "",    "AUT" },  //    -ale Austrian Military ALE
   {  4650.00,    0, 2400, 0x2ff32,  417, "USA", "",    "ENA" },  //    -ale Washington GasLight ALE
-  {  4651.00,    0, 2400, 0x0ff12,  227, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
+  {  4651.00,    0, 2400, 0x0ff92,  227, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio J
   {  4654.00,    0, 2400, 0x2ff47,  243, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   {  4657.00,  930, 2350, 0x0ff92,  237, "ARG", "S",   "ARG" },  //   -aero Com.RivadaviaVolmet x30
   {  4660.00,    0, 2400, 0x2ff47,  418, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
-  {  4666.00,    0, 2400, 0x0ff12,  227, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
+  {  4666.00,    0, 2400, 0x0ff92,  227, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio J
   {  4666.00,    0, 2400, 0x0ff92,  419, "JPN", "E",   "FE"  },  //   -aero Tokyo Radio
   {  4666.00,    0, 2400, 0x0ff92,  420, "SNG", "E",   "SEA" },  //   -aero Singapore Radio
   {  4666.00,    0, 2400, 0x0ff92,  253, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
@@ -2421,11 +2421,11 @@ dx_t eibi_db[] = {
   {  4672.00,    0, 2400, 0x0ff92,  422, "RUS", "R",   "NEu" },  //   -aero Vologda Aero
   {  4675.00,    0, 2400, 0x0ff92,  250, "ARG", "S",   "ARG" },  //   -aero ResistenciaVolmetx20x50
   {  4675.00,    0, 2400, 0x0ff92,  423, "CAN", "E",   "NAO" },  //   -aero Gander Radio
-  {  4675.00,  100,  800, 0x0ff12,  251, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio D
-  {  4675.00, 1100, 1800, 0x0ff12,  251, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio D
+  {  4675.00,  100,  800, 0x0ff92,  251, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio D
+  {  4675.00, 1100, 1800, 0x0ff92,  251, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio D
   {  4675.00,    0, 2400, 0x0ff92,  424, "ISL", "E",   "NAO" },  //   -aero Iceland Radio
   {  4681.00,    0, 2400, 0x2ff47,  254, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
-  {  4684.00,    0, 2400, 0x0ff12,  227, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
+  {  4684.00,    0, 2400, 0x0ff92,  227, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio J
   {  4687.00,    0, 2400, 0x2ff47,  243, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   {  4700.00,    0, 2400, 0x2ff32,  417, "USA", "",    "ENA" },  //    -ale Washington GasLight ALE
   {  4703.00,    0, 2400, 0x2ff32,  175, "GBR", "",    "WEu" },  //    -ale DHFCS Forest Moor ALE
@@ -2828,19 +2828,19 @@ dx_t eibi_db[] = {
   {  5120.00,    0, 2400, 0x2ff32,  358, "BIH", "",    "BIH" },  //    -ale Bosnian Emergency ALE
   {  5123.00, 2040, 2050, 0x0a1b2,  412, "RUS", "E",   "RUS" },  //    -spy E07 Russian Spy Numbers
   {  5123.00,    0, 2400, 0x2ff32,  352, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
-  {  5130.00,    0,  200, 0x0ff12,  491, "KGZ", "AFG", "AFG" },  //   -util R.Sedaye Zindagi
-  {  5130.00, 1450, 1750, 0x0f912,  492, "KGZ", "AFG", "AFG" },  //   -util R.Sedaye Zindagi,d.1-15
-  {  5130.00, 2300, 2400, 0x0ff12,  491, "KGZ", "AFG", "AFG" },  //   -util R.Sedaye Zindagi
-  {  5130.00,  255,  500, 0x0ff92,  493, "USA", "E",   "NAm" },  //   -aero WBCQ Radio Angela
-  {  5130.00,  500,  510, 0x07992,  493, "USA", "E",   "NAm" },  //   -aero WBCQ Radio Angela
-  {  5130.00,  500,  530, 0x0ff92,  493, "USA", "E",   "NAm" },  //   -aero WBCQ Radio Angela
+  {  5130.00,    0,  200, 0x0ff00,  491, "KGZ", "AFG", "AFG" },  //  -bcast R.Sedaye Zindagi
+  {  5130.00, 1450, 1750, 0x0f900,  492, "KGZ", "AFG", "AFG" },  //  -bcast R.Sedaye Zindagi,d.1-15
+  {  5130.00, 2300, 2400, 0x0ff00,  491, "KGZ", "AFG", "AFG" },  //  -bcast R.Sedaye Zindagi
+  {  5130.00,  255,  500, 0x0ff00,  493, "USA", "E",   "NAm" },  //  -bcast WBCQ Radio Angela
+  {  5130.00,  500,  510, 0x07900,  493, "USA", "E",   "NAm" },  //  -bcast WBCQ Radio Angela
+  {  5130.00,  500,  530, 0x0ff00,  493, "USA", "E",   "NAm" },  //  -bcast WBCQ Radio Angela
   {  5130.00,    0, 2400, 0x2ff32,  407, "SVK", "",    "SVK" },  //    -ale Slovak Military ALE
   {  5131.00,    0, 2400, 0x2ff32,  401, "AZE", "",    "Cau" },  //    -ale Azeri Emergency ALE
   {  5132.00,    0, 2400, 0x2ff32,  494, "TUR", "",    "TUR" },  //    -ale Red Crescent ALE
   {  5135.00,    0, 2400, 0x2ff32,  401, "AZE", "",    "Cau" },  //    -ale Azeri Emergency ALE
   {  5135.00,    0, 2400, 0x2ff32,  495, "USA", "",    "USA" },  //    -ale American Red Cross ALE
   {  5135.00,    0, 2400, 0x2ff32,  496, "USA", "",    "CNA" },  //    -ale Illinois Emergency ALE
-  {  5140.00,    0, 2400, 0x0ff92,  497, "GER", "-MX", "Eu"  },  //   -aero Charleston Radio Int.
+  {  5140.00,    0, 2400, 0x0ff00,  497, "GER", "-MX", "Eu"  },  //  -bcast Charleston Radio Int.
   {  5140.00,    0, 2400, 0x2ff32,  495, "USA", "",    "USA" },  //    -ale American Red Cross ALE
   {  5140.00,    0, 2400, 0x2ff32,  498, "USA", "",    "WNA" },  //    -ale Calif.Emergency Sce.ALE
   {  5140.00,    0, 2400, 0x2ff32,  496, "USA", "",    "CNA" },  //    -ale Illinois Emergency ALE
@@ -2973,7 +2973,7 @@ dx_t eibi_db[] = {
   {  5448.00,  530, 1400, 0x2ff21,  348, "RUS", "-TS", "EEu" },  //   -time The Pip (Kaplya) Rostov
   {  5450.00,    0, 2400, 0x0ff92,  506, "GBR", "E",   "Eu"  },  //   -aero RAF Volmet Military 1
   {  5451.00,    0, 2400, 0x2ff47,  507, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
-  {  5460.00,    0, 2400, 0x0ff12,  227, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
+  {  5460.00,    0, 2400, 0x0ff92,  227, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio J
   {  5460.00,    0, 2400, 0x2ff32,  401, "AZE", "",    "Cau" },  //    -ale Azeri Emergency ALE
   {  5466.00, 2230, 2240, 0x0ffb2,  490, "RUS", "R",   "RUS" },  //    -spy S06 Russian Spy Numbers
   {  5466.00,    0, 2400, 0x2ff64,  270, "UZB", "-CW", "CAs" },  //     -cw Channel Marker V
@@ -2983,8 +2983,8 @@ dx_t eibi_db[] = {
   {  5473.00,  500, 1500, 0x0ff12,  293, "RUS", "",    "RUS" },  //   -util The Squeaky Wheel
   {  5473.00,  600, 1410, 0x0ff12,  293, "RUS", "",    "RUS" },  //   -util The Squeaky Wheel
   {  5475.00,    0, 2400, 0x0ff92,  310, "ARG", "S",   "SAm" },  //   -aero Córdoba Volmet x25, x45
-  {  5481.00,    0, 2400, 0x0ff12,  227, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
-  {  5484.00,    0, 2400, 0x0ff12,  224, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio I
+  {  5481.00,    0, 2400, 0x0ff92,  227, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio J
+  {  5484.00,    0, 2400, 0x0ff92,  224, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio I
   {  5491.00,    0, 2400, 0x2ff32,  358, "BIH", "",    "BIH" },  //    -ale Bosnian Emergency ALE
   {  5493.00,    0, 2400, 0x2ff32,  508, "CLM", "",    "CLM" },  //    -ale Colombian Navy ALE
   {  5499.00,    0, 2400, 0x0ff92,  509, "MDG", "E",   "EAf" },  //   -aero Antanan.Volmet x25,x50
@@ -3008,10 +3008,10 @@ dx_t eibi_db[] = {
   {  5550.00,    0, 2400, 0x0ff92,  516, "TRD", "E",   "Car" },  //   -aero Piarco Radio CAR-B
   {  5550.00,    0, 2400, 0x0ff92,  236, "USA", "E",   "Car" },  //   -aero New York Radio CAR-A
   {  5555.00,    0, 2400, 0x2ff32,  499, "GEO", "",    "GEO" },  //    -ale Georgia Borderguard ALE
-  {  5559.00,    0, 2400, 0x0ff12,  227, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
+  {  5559.00,    0, 2400, 0x0ff92,  227, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio J
   {  5565.00,    0, 2400, 0x0ff92,  517, "PNG", "E",   "WOc" },  //   -aero Lae Aero
   {  5565.00,    0, 2400, 0x0ff92,  518, "SEN", "E",   "WAf" },  //   -aero Dakar Radio
-  {  5568.00,    0, 2400, 0x0ff12,  224, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio I
+  {  5568.00,    0, 2400, 0x0ff92,  224, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio I
   {  5568.00,    0, 2400, 0x0ff92,  199, "RUS", "R",   "EEu" },  //   -aero AstrakhanAero Serioshka
   {  5568.00,    0, 2400, 0x0ff92,  200, "RUS", "R",   "EEu" },  //   -aero Elista Aero Triol
   {  5568.00,    0, 2400, 0x0ff92,  201, "RUS", "R",   "EEu" },  //   -aero Krasnodar Aero Tyurik
@@ -3028,9 +3028,9 @@ dx_t eibi_db[] = {
   {  5568.00,    0, 2400, 0x0ff92,  212, "RUS", "R",   "EEu" },  //   -aero Volgograd Aero Avrora
   {  5570.00,    0, 2400, 0x2ff32,  401, "AZE", "",    "Cau" },  //    -ale Azeri Emergency ALE
   {  5574.00,    0, 2400, 0x0ff92,  231, "USA", "E",   "EOc" },  //   -aero San Francisco Radio CEP
-  {  5577.00,    0, 2400, 0x0ff12,  227, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
+  {  5577.00,    0, 2400, 0x0ff92,  227, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio J
   {  5581.00,    0, 2400, 0x2ff32,  352, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
-  {  5583.00,    0, 2400, 0x0ff12,  248, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio H
+  {  5583.00,    0, 2400, 0x0ff92,  248, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio H
   {  5583.00,    0, 2400, 0x2ff47,  519, "NZL", "-HF", "SOc" },  //   -hfdl Auckland HFDL (ID5)
   {  5589.00,    0, 2400, 0x2ff47,  520, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
   {  5590.00,    0, 2400, 0x2ff64,  270, "UZB", "-CW", "CAs" },  //     -cw Channel Marker V
@@ -3038,11 +3038,11 @@ dx_t eibi_db[] = {
   {  5596.00,    0, 2400, 0x0ff92,  433, "RUS", "R",   "RUS" },  //   -aero Syktyvkar Aero Sivkar
   {  5598.00,    0, 2400, 0x0ff92,  255, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio A
   {  5598.00,    0, 2400, 0x0ff92,  256, "CAN", "E",   "NAO" },  //   -aero Gander Radio A
-  {  5598.00,    0, 2400, 0x0ff12,  257, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio A
+  {  5598.00,    0, 2400, 0x0ff92,  257, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio A
   {  5598.00,    0, 2400, 0x0ff92,  258, "USA", "E",   "NAO" },  //   -aero New York Radio NAT-A
   {  5601.00,    0, 2400, 0x0ff92,  235, "ARG", "S",   "SAm" },  //   -aero Ezeiza Volmet x01
   {  5616.00,    0, 2400, 0x0ff92,  238, "CAN", "E",   "NAO" },  //   -aero Gander Radio B
-  {  5616.00,    0, 2400, 0x0ff12,  239, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio B
+  {  5616.00,    0, 2400, 0x0ff92,  239, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio B
   {  5616.00,    0, 2400, 0x0ff92,  240, "ISL", "E",   "NAO" },  //   -aero Iceland Radio B
   {  5620.00,    0, 2400, 0x2ff64,  521, "RUS", "-CW", "FE"  },  //     -cw Channel Marker G
   {  5620.00,    0, 2400, 0x2ff64,  522, "RUS", "-CW", "EEu" },  //     -cw Channel Marker W
@@ -3062,7 +3062,7 @@ dx_t eibi_db[] = {
   {  5643.00,    0, 2400, 0x0ff92,  253, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
   {  5643.00,    0, 2400, 0x0ff92,  318, "USA", "E",   "Oc"  },  //   -aero San Francisco Radio SP
   {  5649.00,    0, 2400, 0x0ff92,  232, "CAN", "E",   "NAO" },  //   -aero Gander Radio C
-  {  5649.00,    0, 2400, 0x0ff12,  233, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio C
+  {  5649.00,    0, 2400, 0x0ff92,  233, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio C
   {  5649.00,    0, 2400, 0x0ff92,  234, "ISL", "E",   "NAO" },  //   -aero Iceland Radio C
   {  5650.00,  400, 1430, 0x0ff92,  311, "RUS", "E,R", "RUS" },  //   -aero Khanty-Mansiysk Volmet
   {  5650.00,    0, 2400, 0x2ff32,  401, "AZE", "",    "Cau" },  //    -ale Azeri Emergency ALE
@@ -4436,12 +4436,12 @@ dx_t eibi_db[] = {
   {  6535.00,    0, 2400, 0x2ff47,  519, "NZL", "-HF", "SOc" },  //   -hfdl Auckland HFDL (ID5)
   {  6535.00,    0, 2400, 0x0ff92,  518, "SEN", "E",   "WAf" },  //   -aero Dakar Radio
   {  6535.00,    0, 2400, 0x2ff47,  529, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
-  {  6547.00,    0, 2400, 0x0ff12,  227, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
-  {  6550.00,    0, 2400, 0x0ff12,  224, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio I
+  {  6547.00,    0, 2400, 0x0ff92,  227, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio J
+  {  6550.00,    0, 2400, 0x0ff92,  224, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio I
   {  6550.00,    0, 2400, 0x2ff32,  647, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
   {  6556.00,    0, 2400, 0x0ff92,  648, "BGD", "E",   "SAs" },  //   -aero Dhaka Radio
   {  6556.00,    0, 2400, 0x0ff92,  649, "IND", "E",   "SAs" },  //   -aero Kolkata Radio
-  {  6556.00,    0, 2400, 0x0ff12,  248, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio H
+  {  6556.00,    0, 2400, 0x0ff92,  248, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio H
   {  6556.00,    0, 2400, 0x0ff92,  650, "MYA", "E",   "SEA" },  //   -aero Yangon Radio
   {  6556.00,    0, 2400, 0x0ff92,  651, "INS", "E",   "SEA" },  //   -aero Jakarta Radio
   {  6556.00,    0, 2400, 0x0ff92,  420, "SNG", "E",   "SEA" },  //   -aero Singapore Radio
@@ -4458,7 +4458,7 @@ dx_t eibi_db[] = {
   {  6589.00,    0, 2400, 0x2ff47,  520, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
   {  6589.00,    0, 2400, 0x2ff32,  505, "IRQ", "",    "IRQ" },  //    -ale Iraqi Security Fcs. ALE
   {  6592.00,    0, 2400, 0x0ff92,  652, "RUS", "R",   "EEu" },  //   -aero Moscow Aero
-  {  6595.00,    0, 2400, 0x0ff12,  224, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio I
+  {  6595.00,    0, 2400, 0x0ff92,  224, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio I
   {  6596.00,    0, 2400, 0x2ff47,  523, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
   {  6600.00,    0, 2400, 0x0ff00,  322, "CLA", "K",   "KRE" },  //  -bcast Voice of the People
   {  6600.00,    0, 2400, 0x2ff32,  534, "ITL", "",    "I"   },  //    -ale Guardia di Finanza ALE
@@ -4468,7 +4468,7 @@ dx_t eibi_db[] = {
   {  6617.00,    0, 2400, 0x0ff92,  653, "RUS", "R",   "CIS" },  //   -aero StPeterbg Volmet x05,35
   {  6619.00,    0, 2400, 0x2ff47,  241, "KOR", "-HF", "FE"  },  //   -hfdl Seoul Muan HFDL (ID10)
   {  6622.00,    0, 2400, 0x0ff92,  320, "CAN", "E",   "NAO" },  //   -aero Gander Radio F
-  {  6622.00, 1000, 1800, 0x0ff12,  321, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio F
+  {  6622.00, 1000, 1800, 0x0ff92,  321, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio F
   {  6628.00,    0, 2400, 0x0ff92,  244, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio E
   {  6628.00,    0, 2400, 0x2ff47,  418, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
   {  6628.00,    0, 2400, 0x0ff92,  245, "USA", "E",   "NAO" },  //   -aero New York Radio NAT-E
@@ -4484,7 +4484,7 @@ dx_t eibi_db[] = {
   {  6661.00,    0, 2400, 0x0ff92,  655, "IND", "E",   "SAs" },  //   -aero Mumbai Radio
   {  6661.00,    0, 2400, 0x2ff47,  528, "USA", "-HF", "ENA" },  //   -hfdl Riverhead HFDL (ID4)
   {  6667.00,    0, 2400, 0x0ff92,  324, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio H
-  {  6667.00,    0, 2400, 0x0ff12,  248, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio H
+  {  6667.00,    0, 2400, 0x0ff92,  248, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio H
   {  6668.70,    0, 2400, 0x2ff32,  499, "GEO", "",    "GEO" },  //    -ale Georgia Borderguard ALE
   {  6673.00,    0, 2400, 0x0ff92,  231, "USA", "E",   "EOc" },  //   -aero San Francisco Radio CEP
   {  6676.00,    0, 2400, 0x0ff92,  656, "AUS", "E",   "Oc"  },  //   -aero Australia Volmet x00,30
@@ -6283,7 +6283,7 @@ dx_t eibi_db[] = {
   {  8828.00,    0, 2400, 0x0ff92,  658, "NZL", "E",   "FE"  },  //   -aero Auckland Volmet x20,x50
   {  8831.00,    0, 2400, 0x0ff92,  314, "AUS", "E",   "AUS" },  //   -aero Brisbane Radio
   {  8831.00,    0, 2400, 0x0ff92,  320, "CAN", "E",   "NAO" },  //   -aero Gander Radio F
-  {  8831.00, 1000, 1800, 0x0ff12,  321, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio F
+  {  8831.00, 1000, 1800, 0x0ff92,  321, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio F
   {  8834.00,    0, 2400, 0x2ff47,  254, "AFS", "-HF", "SAf" },  //   -hfdl Johannesburg HFDL (ID8)
   {  8841.00,    0, 2400, 0x2ff32,  352, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
   {  8843.00,    0, 2400, 0x2ff47,  252, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
@@ -6302,7 +6302,7 @@ dx_t eibi_db[] = {
   {  8861.00,    0, 2400, 0x0ff92,  750, "IND", "E",   "SAs" },  //   -aero Chennai Radio
   {  8861.00,    0, 2400, 0x0ff92,  518, "SEN", "E",   "WAf" },  //   -aero Dakar Radio
   {  8864.00,    0, 2400, 0x0ff92,  238, "CAN", "E",   "NAO" },  //   -aero Gander Radio B
-  {  8864.00,  900, 2100, 0x0ff12,  239, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio B
+  {  8864.00,  900, 2100, 0x0ff92,  239, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio B
   {  8864.00,    0, 2400, 0x0ff92,  240, "ISL", "E",   "NAO" },  //   -aero Iceland Radio B
   {  8867.00,    0, 2400, 0x0ff92,  314, "AUS", "E",   "Oc"  },  //   -aero Brisbane Radio
   {  8867.00,    0, 2400, 0x0ff92,  315, "FJI", "E",   "Oc"  },  //   -aero Nadi Radio
@@ -6319,7 +6319,7 @@ dx_t eibi_db[] = {
   {  8878.00,    0, 2400, 0x0ff92,  525, "ROU", "RO",  "Eu"  },  //   -aero Bucuresti Aero
   {  8879.00,    0, 2400, 0x0ff92,  232, "CAN", "E",   "NAO" },  //   -aero Gander Radio C
   {  8879.00,    0, 2400, 0x0ff92,  655, "IND", "E",   "SAs" },  //   -aero Mumbai Radio
-  {  8879.00,  900, 2100, 0x0ff12,  233, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio C
+  {  8879.00,  900, 2100, 0x0ff92,  233, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio C
   {  8879.00,    0, 2400, 0x0ff92,  234, "ISL", "E",   "NAO" },  //   -aero Iceland Radio C
   {  8885.00,    0, 2400, 0x2ff47,  515, "BHR", "-HF", "ME"  },  //   -hfdl Al Muharraq HFDL (ID15)
   {  8886.00,    0, 2400, 0x2ff47,  523, "RUS", "-HF", "Sib" },  //   -hfdl Krasnoyarsk HFDL (ID14)
@@ -6328,7 +6328,7 @@ dx_t eibi_db[] = {
   {  8888.00,    0, 2400, 0x0ff92,  230, "RUS", "R",   "CIS" },  //   -aero Syktyvkar Volmet x00,30
   {  8888.00,    0, 2400, 0x2ff32,  669, "MEX", "",    "MEX" },  //    -ale Mexican Military ALE
   {  8891.00,    0, 2400, 0x0ff92,  423, "CAN", "E",   "NAO" },  //   -aero Gander Radio
-  {  8891.00,    0, 2400, 0x0ff12,  251, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio D
+  {  8891.00,    0, 2400, 0x0ff92,  251, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio D
   {  8891.00,    0, 2400, 0x0ff92,  240, "ISL", "E",   "NAO" },  //   -aero Iceland Radio B
   {  8891.00,    0, 2400, 0x0ff92,  752, "NOR", "E",   "NAO" },  //   -aero Bodo Radio
   {  8894.00,    0, 2400, 0x0ff92,  753, "ALG", "E",   "NAf" },  //   -aero Algiers Radio
@@ -6348,7 +6348,7 @@ dx_t eibi_db[] = {
   {  8906.00,    0, 2400, 0x0ff92,  310, "ARG", "S",   "SAm" },  //   -aero Córdoba Volmet x25, x45
   {  8906.00,    0, 2400, 0x0ff92,  255, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio A
   {  8906.00,    0, 2400, 0x0ff92,  256, "CAN", "E",   "NAO" },  //   -aero Gander Radio A
-  {  8906.00,  900, 2100, 0x0ff12,  257, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio A
+  {  8906.00,  900, 2100, 0x0ff92,  257, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio A
   {  8906.00,    0, 2400, 0x0ff92,  258, "USA", "E",   "NAO" },  //   -aero New York Radio NAT-A
   {  8907.00,    0, 2400, 0x2ff32,  410, "CHN", "",    "FE"  },  //    -ale China Military ALE
   {  8912.00,    0, 2400, 0x2ff47,  511, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
@@ -6382,7 +6382,7 @@ dx_t eibi_db[] = {
   {  8948.00,    0, 2400, 0x0ff92,  655, "IND", "E",   "SAs" },  //   -aero Mumbai Radio
   {  8950.00,    0, 2400, 0x2ff32,  328, "TUR", "",    "TUR" },  //    -ale Turk.AFAD Emergency ALE
   {  8951.00,    0, 2400, 0x0ff92,  524, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP
-  {  8954.00,    0, 2400, 0x0ff12,  227, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
+  {  8954.00,    0, 2400, 0x0ff92,  227, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio J
   {  8957.00,    0, 2400, 0x2ff47,  418, "BOL", "-HF", "SAm" },  //   -hfdl Santa Cruz HFDL (ID13)
   {  8957.00,    0, 2400, 0x0ff92,  299, "IRL", "E",   "Eu"  },  //   -aero Shannon Volmet
   {  8965.00,    0, 2400, 0x2ff32,  647, "USA", "",    "SEE" },  //    -ale ArmyAviation SCPTOC ALE
@@ -7961,14 +7961,14 @@ dx_t eibi_db[] = {
   { 10004.00,    0, 2400, 0x2ff32,  352, "ISR", "",    "ME"  },  //    -ale Israeli Air Force ALE
   { 10015.00,    0, 2400, 0x2ff32,  537, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   { 10018.00,    0, 2400, 0x0ff92,  655, "IND", "E",   "SAs" },  //   -aero Mumbai Radio
-  { 10021.00,    0, 2400, 0x0ff12,  248, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio H
+  { 10021.00,    0, 2400, 0x0ff92,  248, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio H
   { 10021.00,    0, 2400, 0x0ff92,  525, "ROU", "RO",  "Eu"  },  //   -aero Bucuresti Aero
   { 10024.00, 1200, 2400, 0x0ff12,  654, "HND", "S",   "CAm" },  //   -util COCESNA Cenamer Control
   { 10024.00,    0, 2400, 0x0ff92,  814, "PRU", "S",   "SAm" },  //   -aero Lima Radio
   { 10027.00,    0, 2400, 0x2ff47,  243, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   { 10027.00,    0, 2400, 0x2ff47,  511, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
   { 10033.00,    0, 2400, 0x2ff32,  537, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
-  { 10036.00,    0, 2400, 0x0ff12,  248, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio H
+  { 10036.00,    0, 2400, 0x0ff92,  248, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio H
   { 10048.00,    0, 2400, 0x0ff92,  419, "JPN", "E",   "FE"  },  //   -aero Tokyo Radio
   { 10048.00,    0, 2400, 0x0ff92,  524, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP
   { 10048.00,    0, 2400, 0x0ff92,  524, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP
@@ -7979,7 +7979,7 @@ dx_t eibi_db[] = {
   { 10063.00,    0, 2400, 0x2ff47,  520, "PNR", "-HF", "CAm" },  //   -hfdl Albrook HFDL (ID11)
   { 10066.00,    0, 2400, 0x0ff92,  648, "BGD", "E",   "SAs" },  //   -aero Dhaka Radio
   { 10066.00,    0, 2400, 0x0ff92,  649, "IND", "E",   "SAs" },  //   -aero Kolkata Radio
-  { 10066.00,    0, 2400, 0x0ff12,  224, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio I
+  { 10066.00,    0, 2400, 0x0ff92,  224, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio I
   { 10066.00,    0, 2400, 0x0ff92,  650, "MYA", "E",   "SEA" },  //   -aero Yangon Radio
   { 10066.00,    0, 2400, 0x2ff47,  529, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
   { 10075.00,    0, 2400, 0x2ff47,  515, "BHR", "-HF", "ME"  },  //   -hfdl Al Muharraq HFDL (ID15)
@@ -8354,9 +8354,9 @@ dx_t eibi_db[] = {
   { 11250.00,    0, 2400, 0x2ff32,  223, "USA", "",    "Glo" },  //    -ale US Air Force ALE
   { 11253.00,    0, 2400, 0x0ff92,  506, "GBR", "E",   "Eu"  },  //   -aero RAF Volmet Military 1
   { 11253.00,    0, 2400, 0x2ff32,  698, "FRA", "",    "F"   },  //    -ale French Military ALE
-  { 11276.00,    0, 2400, 0x0ff12,  227, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio J
+  { 11276.00,    0, 2400, 0x0ff92,  227, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio J
   { 11279.00,    0, 2400, 0x0ff92,  423, "CAN", "E",   "NAO" },  //   -aero Gander Radio
-  { 11279.00,    0, 2400, 0x0ff12,  251, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio D
+  { 11279.00,    0, 2400, 0x0ff92,  251, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio D
   { 11279.00,    0, 2400, 0x0ff92,  298, "UZB", "R",   "CAs" },  //   -aero Tashkent Volmet x20,x50
   { 11282.00,    0, 2400, 0x0ff92,  231, "USA", "E",   "EOc" },  //   -aero San Francisco Radio CEP
   { 11285.00,    0, 2400, 0x0ff92,  319, "CLN", "E",   "SAs" },  //   -aero Colombo Radio
@@ -8392,7 +8392,7 @@ dx_t eibi_db[] = {
   { 11327.00,    0, 2400, 0x2ff47,  510, "USA", "-HF", "WNA" },  //   -hfdl San Francisco HFDL(ID1)
   { 11330.00,    0, 2400, 0x0ff92,  513, "USA", "E",   "Car" },  //   -aero New York Radio CAR-B
   { 11336.00,    0, 2400, 0x0ff92,  232, "CAN", "E",   "NAO" },  //   -aero Gander Radio C
-  { 11336.00,    0, 2400, 0x0ff12,  233, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio C
+  { 11336.00,    0, 2400, 0x0ff92,  233, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio C
   { 11336.00,    0, 2400, 0x0ff92,  234, "ISL", "E",   "NAO" },  //   -aero Iceland Radio C
   { 11340.00,    0, 2400, 0x2ff32,  537, "MTN", "",    "MTN" },  //    -ale Mauritania Military ALE
   { 11342.00,    0, 2400, 0x0ff92,  326, "USA", "E",   "NAO" },  //   -aero New York Radio LDOC
@@ -8402,7 +8402,7 @@ dx_t eibi_db[] = {
   { 11348.00,    0, 2400, 0x2ff47,  644, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
   { 11348.00,    0, 2400, 0x2ff47,  511, "HWA", "-HF", "Oc"  },  //   -hfdl Moloka'i HFDL (ID2)
   { 11354.00,    0, 2400, 0x2ff47,  243, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
-  { 11363.00,    0, 2400, 0x0ff12,  248, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio H
+  { 11363.00,    0, 2400, 0x0ff92,  248, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio H
   { 11369.00,    0, 2400, 0x0ff92,  235, "ARG", "S",   "SAm" },  //   -aero Ezeiza Volmet x01
   { 11384.00,    0, 2400, 0x2ff47,  252, "IRL", "-HF", "NAO" },  //   -hfdl Shannon HFDL (ID7)
   { 11384.00,    0, 2400, 0x0ff92,  822, "JPN", "E",   "WOc" },  //   -aero Naha Radio CWP
@@ -10156,8 +10156,8 @@ dx_t eibi_db[] = {
   { 13285.00,    0,  745, 0x0ff92,  313, "CHN", "E",   "FE"  },  //   -aero Guangzhou Volmet x00,30
   { 13288.00,    0, 2400, 0x0ff92,  231, "USA", "E",   "EOc" },  //   -aero San Francisco Radio CEP
   { 13291.00,    0, 2400, 0x0ff92,  320, "CAN", "E",   "NAO" },  //   -aero Gander Radio F
-  { 13291.00,    0, 2400, 0x0ff12,  239, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio B
-  { 13291.00,    0, 2400, 0x0ff12,  321, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio F
+  { 13291.00,    0, 2400, 0x0ff92,  239, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio B
+  { 13291.00,    0, 2400, 0x0ff92,  321, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio F
   { 13297.00,    0, 2400, 0x0ff92,  516, "TRD", "E",   "Car" },  //   -aero Piarco Radio CAR-B
   { 13297.00,    0, 2400, 0x0ff92,  513, "USA", "E",   "Car" },  //   -aero New York Radio CAR-B
   { 13300.00,    0, 2400, 0x0ff92,  253, "USA", "E",   "WOc" },  //   -aero San Francisco Radio CWP
@@ -10165,8 +10165,8 @@ dx_t eibi_db[] = {
   { 13303.00,    0, 2400, 0x2ff47,  644, "CNR", "-HF", "WAf" },  //   -hfdl Canarias HFDL (ID17)
   { 13306.00, 1000, 2100, 0x0ff92,  255, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio A
   { 13306.00,    0, 2400, 0x0ff92,  256, "CAN", "E",   "NAO" },  //   -aero Gander Radio A
-  { 13306.00,    0, 2400, 0x0ff12,  257, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio A
-  { 13306.00,    0, 2400, 0x0ff12,  233, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio C
+  { 13306.00,    0, 2400, 0x0ff92,  257, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio A
+  { 13306.00,    0, 2400, 0x0ff92,  233, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio C
   { 13306.00,    0, 2400, 0x0ff92,  234, "ISL", "E",   "NAO" },  //   -aero Iceland Radio C
   { 13306.00,    0, 2400, 0x0ff92,  258, "USA", "E",   "NAO" },  //   -aero New York Radio NAT-A
   { 13312.00,    0, 2400, 0x2ff47,  507, "GUM", "-HF", "WOc" },  //   -hfdl Agana Guam HFDL (ID16)
@@ -12443,7 +12443,7 @@ dx_t eibi_db[] = {
   { 17928.00,    0, 2400, 0x2ff47,  529, "THA", "-HF", "SEA" },  //   -hfdl Hat Yai HFDL (ID6)
   { 17934.00,    0, 2400, 0x2ff47,  243, "ALS", "-HF", "NOc" },  //   -hfdl Barrow HFDL (ID9)
   { 17946.00, 1200, 1800, 0x0ff92,  255, "AZR", "E",   "NAO" },  //   -aero Santa Maria Radio A
-  { 17946.00,    0, 2400, 0x0ff12,  321, "IRL", "E",   "NAO" },  //   -util Shannon Aeradio F
+  { 17946.00,    0, 2400, 0x0ff92,  321, "IRL", "E",   "NAO" },  //   -aero Shannon Aeradio F
   { 17946.00,    0, 2400, 0x0ff92,  258, "USA", "E",   "NAO" },  //   -aero New York Radio NAT-A
   { 17946.00,    0, 2400, 0x0ff92,  524, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP
   { 17946.00,    0, 2400, 0x0ff92,  524, "USA", "E",   "NOc" },  //   -aero San Francisco Radio NP
@@ -13594,8 +13594,8 @@ const char *eibi_ident[] = {
 };
 
 const int eibi_counts[DX_N_EiBi] = {
-   6613,  // bcast
-   2013,  // util
+   6620,  // bcast
+   1952,  // util
      75,  // time
    1167,  // ale
     129,  // hfdl
@@ -13603,7 +13603,7 @@ const int eibi_counts[DX_N_EiBi] = {
     129,  // cw
      32,  // fsk
     412,  // fax
-   1343,  // aero
+   1397,  // aero
      82,  // marine
     715   // spy
 };

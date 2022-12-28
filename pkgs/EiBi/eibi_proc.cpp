@@ -100,6 +100,7 @@ band_t bcast_f[] = {
     { 3185, 3400 },     // 3200 => 3185
     { 3900, 4000 },
     { 4750, 5060 },
+    { 5130, 5150 },     // prevent WBCQ and several others being classified as DX_AERO
     { 5850, 6210 },     // 5900,6200 => 5850,6210
     { 7200, 7800 },     // 7450 => 7800
     { 9300, 9900 },     // 9400 => 9300
@@ -328,7 +329,7 @@ int main(int argc, char *argv[])
         if (strstr(ident, "Spy") || strstr(ident, "Numbers")) type = DX_SPY | MODE_USB; else
         if (strstr(ident, "Marine") || strstr(ident, "Maritime")) type = DX_MARINE | MODE_USB; else
 
-        if (strstr(ident, "Volmet") || strstr(ident, "Aero") ||
+        if (strstr(ident, "Volmet") || strstr(ident, "Aero") || strstr(ident, "Aeradio") ||
             (!in_bcast_band && strstr(ident, " Radio"))) type = DX_AERO | MODE_USB;
         
         if (type == 0) {

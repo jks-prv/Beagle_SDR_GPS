@@ -1551,6 +1551,18 @@ function DRM_config_html()
             w3_select('w3-width-auto', 'Number of non-DRM connections allowed<br>when DRM in use',
                '', 'DRM.nreg_chans', drm.nreg_chans, drm.nreg_chans_u, 'admin_select_cb')
          ), 40
+      ) +
+
+      w3_inline_percent('w3-container',
+         w3_div('w3-margin-T-16 w3-restart',
+            w3_input_get('', 'Test1 filename', 'DRM.test_file1', 'w3_string_set_cfg_cb', 'Kuwait.15110.1.12k.iq.au')
+         ), 40
+      ) +
+
+      w3_inline_percent('w3-container',
+         w3_div('w3-margin-T-16 w3-restart',
+            w3_input_get('', 'Test2 filename', 'DRM.test_file2', 'w3_string_set_cfg_cb', 'Delhi.828.1.12k.iq.au')
+         ), 40
       );
 
    ext_config_html(drm, 'DRM', 'DRM', 'DRM configuration', s);

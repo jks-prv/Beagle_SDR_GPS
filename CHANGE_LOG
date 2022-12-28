@@ -2,6 +2,16 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.572  Dec 29, 2022
+    EiBi database fixes:
+        The label stepping function (alt-pan buttons or shift-alt/ctrl LR-arrow keys) with EiBi labels
+        was completely broken. The EiBi category selection and "filter by time/day-of-week" in the
+        "DX label edit" panel was not considered properly. In addition, entries in the
+        "DX label filter" panel are now properly considered.
+        
+        Fix type misclassification of Shannon Aeradio and a few broadcast stations (e.g. WBCQ) in
+            the 5130 - 5150 kHz range.
+
 v1.571  Dec 27, 2022
     Admin page DX tab: CAUTION: If you have a "normal" Kiwi with HF DX labels only you don't need to
     perform the conversion process described below. You don't need to do anything.

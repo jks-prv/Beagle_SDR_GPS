@@ -7156,6 +7156,7 @@ function dx_label_cb(arr)
 	var dx_idx, dx_z = 120;
 	dx_div.innerHTML = '';
 	dx.displayed = [];
+	dx.last_freq = 0;
 	dx.last_ident = '';
 	dx.last_f_base = -1;
 	dx.post_render = [];
@@ -7222,7 +7223,8 @@ function dx_label_cb(arr)
 	for (i = 1; i < arr.length; i++) {
 		dx_idx = i-1;
 		obj = arr[i];
-      //if (obj.f == 10000) console_log_dbgUs(obj);
+      var freq = obj.f;
+      //if (freq == 10000) console_log_dbgUs(obj);
 		var flags = obj.fl;
 
 		var type = flags & dx.DX_TYPE;
@@ -7232,19 +7234,19 @@ function dx_label_cb(arr)
 
 		var filtered = flags & dx.DX_FILTERED;
 		var ident = obj.i;
-		if (eibi && ident == dx.last_ident) {
-         console_log_lbl('1111 dx_idx='+ dx_idx +' '+ obj.f +' SAME AS LAST filtered='+ (filtered? 1:0) + ident);
+		if (eibi && ident == dx.last_ident && freq == dx.last_freq) {
+         console_log_lbl('1111 dx_idx='+ dx_idx +' '+ freq +' SAME AS LAST filtered='+ (filtered? 1:0) +' '+ ident);
          if (filtered == 0) dx.color_fixup[dx.last_idx] = dx.eibi_colors[color_idx];
          continue;
 		}
 
 		dx.last_idx = dx_idx;
+		dx.last_freq = freq;
 		dx.last_ident = ident;
-      console_log_lbl('1111 dx_idx='+ dx_idx +' '+ obj.f +' OK filtered='+ (filtered? 1:0) + ident);
+      console_log_lbl('1111 dx_idx='+ dx_idx +' '+ freq +' OK filtered='+ (filtered? 1:0) +' '+ ident);
 		
 		var gid = obj.g;
-      var freq = obj.f;
-		var f_base = obj.f - kiwi.freq_offset_kHz;
+		var f_base = freq - kiwi.freq_offset_kHz;
 		var moff = obj.o;
 		var notes = isDefined(obj.n)? obj.n : '';
 		var params = isDefined(obj.p)? obj.p : '';
@@ -7288,7 +7290,8 @@ function dx_label_cb(arr)
 		if (!eibi && color_idx == 0 && (ident == 'IBP' || ident == 'IARU%2fNCDXF')) {
 		   color = 'aquamarine';
 		}
-		console_log_lbl("DX "+dx_seq+':'+dx_idx+" f="+freq+" k="+moff+" F="+flags+" m="+kiwi.modes_u[flags & dx.DX_MODE]+" <"+ident+"> <"+notes+'>');
+		console_log_lbl('DX '+ dx_seq +':'+ dx_idx +' f='+ freq +' k='+ moff +' FL='+ flags.toHex(8)
+		   +' m='+ kiwi.modes_u[flags & dx.DX_MODE] +' <'+ ident +'> <'+ notes +'>');
 		
 		carrier = freq * 1000 - moff;
 		carrier /= 1000;
@@ -7321,6 +7324,7 @@ function dx_label_cb(arr)
 	   if (isDefined(s_a[i]))
 	      s += s_a[i];
 	dx_div.innerHTML = s;
+	dx.last_freq = 0;
 	dx.last_ident = '';
 
 	if (!dx.font) {
@@ -7370,7 +7374,7 @@ function dx_label_cb(arr)
 		var freq = obj.f;
 		
 		if (eibi) {
-		   if (ident == dx.last_ident) {
+		   if (ident == dx.last_ident && freq == dx.last_freq) {
 		      console_log_lbl('2222 dx_idx='+ dx_idx +' last_dx_idx='+ dx.last_dx_idx +' '+ obj.f +' SAME AS LAST '+ ident);
 		      el = w3_el(dx.last_dx_idx +'-id-dx-label');
 		      el.title += '\n'+ dx_title(obj);
@@ -7378,6 +7382,7 @@ function dx_label_cb(arr)
 		   }
 		}
 		dx.last_dx_idx = dx_idx;
+		dx.last_freq = freq;
 		dx.last_ident = ident;
       if (eibi) console_log_lbl('2222 dx_idx='+ dx_idx +' '+ obj.f +' OK '+ ident);
 
@@ -7563,6 +7568,7 @@ function dx_label_step(dir)
 {
    //console.log('dx_label_step f='+ freq_car_Hz +'/'+ freq_displayed_Hz +' m='+ cur_mode);
    var i, dl;
+   var eibi = (dx.db == dx.DB_EiBi);
 
    if (dir == 1) {
       for (i = 0; i < dx.displayed.length; i++) {
@@ -7573,7 +7579,9 @@ function dx_label_step(dir)
          if (f > freq_displayed_Hz) break;
       }
       if (i == dx.displayed.length) {
-	      wf_send('SET MARKER db='+ dx.db +' dir=1 freq='+ (freq_displayed_Hz/1e3).toFixed(3));
+	      wf_send('SET MARKER db='+ dx.db +' dir=1 freq='+ (freq_displayed_Hz/1e3).toFixed(3)
+	         +' eibi_types_mask='+ dx.eibi_types_mask.toHex()
+	         +' filter_tod='+ (eibi? dx.eibi_filter_tod : dx.stored_filter_tod));
          return;
       }
    } else {
@@ -7585,7 +7593,9 @@ function dx_label_step(dir)
          if (f < freq_displayed_Hz) break;
       }
       if (i < 0) {
-	      wf_send('SET MARKER db='+ dx.db +' dir=-1 freq='+ (freq_displayed_Hz/1e3).toFixed(3));
+	      wf_send('SET MARKER db='+ dx.db +' dir=-1 freq='+ (freq_displayed_Hz/1e3).toFixed(3)
+	         +' eibi_types_mask='+ dx.eibi_types_mask.toHex()
+	         +' filter_tod='+ (eibi? dx.eibi_filter_tod : dx.stored_filter_tod));
          return;
       }
    }

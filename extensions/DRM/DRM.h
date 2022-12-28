@@ -19,8 +19,6 @@
     #define DRM_CHECK_ALT(x,y) y
 #endif
 
-#define DRM_TEST_FILE
-
 enum { DRM_DAT_IQ=0 } drm_dat_e;
 
 typedef struct {
@@ -34,12 +32,9 @@ typedef struct {
 typedef struct {
     int drm_chan;
     
-    #ifdef DRM_TEST_FILE
-        s2_t *s2p_start1, *s2p_end1;
-        s2_t *s2p_start2, *s2p_end2;
-        u4_t tsamps1, tsamps2;
-    #endif
-
+    s2_t *s2p_start1, *s2p_end1;
+    s2_t *s2p_start2, *s2p_end2;
+    u4_t tsamps1, tsamps2;
 } drm_info_t;
 
 typedef struct {
@@ -61,11 +56,9 @@ typedef struct {
 	int audio_service;
 	bool send_iq;
 
-    #ifdef DRM_TEST_FILE
-        int test;
-        s2_t *s2p;
-        u4_t tsamp;
-    #endif
+    int test;
+    s2_t *s2p;
+    u4_t tsamp;
 
     // stats
     u4_t no_input;
