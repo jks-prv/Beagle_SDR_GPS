@@ -291,8 +291,9 @@ int main(int argc, char *argv[])
 
     #ifndef PLATFORM_raspberrypi
         // on reboot let ntpd and other stuff settle first
-        if (background_mode) {
+        if (background_mode && !kiwi_file_exists("/tmp/.kiwi_no_restart_delay")) {
             lprintf("background mode: delaying start 30 secs...\n");
+            system("touch /tmp/.kiwi_no_restart_delay");    // removed on reboot
             sleep(30);
         }
     #endif
