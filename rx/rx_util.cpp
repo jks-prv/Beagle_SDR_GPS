@@ -225,9 +225,12 @@ void update_vars_from_config(bool called_at_init)
         dc_off_msg = true;
     }
 
-    // DON'T use cfg_default_int() here because "DRM.nreg_chans" is a two-level we can't init from C code
+    // DON'T use cfg_default_int() here because "DRM.nreg_chans" is a two-level we can't init
+    // (the very first time if it doesn't exist) from C code
     drm_nreg_chans = cfg_int("DRM.nreg_chans", &err, CFG_OPTIONAL);
     if (err) drm_nreg_chans = DRM_NREG_CHANS_DEFAULT;
+    cfg_default_string("DRM.test_file1", "Kuwait.15110.1.12k.iq.au", &update_cfg);
+    cfg_default_string("DRM.test_file2", "Delhi.828.1.12k.iq.au", &update_cfg);
 
     // fix any broken UTF-8 sequences via cfg_default_string()
     cfg_default_string("index_html_params.HTML_HEAD", "", &update_cfg);
