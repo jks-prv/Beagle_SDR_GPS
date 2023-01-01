@@ -204,6 +204,14 @@ bool DRM_msgs(char *msg, int rx_chan)
         return true;
     }
     
+    int objID = 0;
+    if (sscanf(msg, "SET journaline_objID=%d", &objID) == 1) {
+        printf("DRM journaline_objID=0x%x\n", objID);
+        d->journaline_objID = objID;
+        d->journaline_objSet = true;
+        return true;
+    }
+    
     int debug = 0;
     if (sscanf(msg, "SET debug=%d", &debug) == 1) {
         d->debug = debug;
@@ -226,14 +234,18 @@ bool DRM_msgs(char *msg, int rx_chan)
         d->reset = true;
         d->i_epoch = d->i_samples = d->i_tsamples = 0;
         d->no_input = d->sent_silence = 0;
+        d->journaline_objID = 0;
+        d->journaline_objSet = true;
         return true;    
     }
     
     return false;
 }
 
-void DRM_msg(drm_t *drm, kstr_t *ks)
+// pass msg & data via shared mem buf since DRM_SHMEM might be enabled
+void DRM_msg_encoded(drm_t *drm, const char *cmd, kstr_t *ks)
 {
+    kiwi_strncpy(drm->msg_cmd, cmd, N_MSGCMD);
     kiwi_strncpy(drm->msg_buf, kstr_sp(ks), N_MSGBUF);
     drm->msg_tx_seq++;
     DRM_YIELD();
@@ -255,16 +267,29 @@ void DRM_poll(int rx_chan)
     
     drm_t *d = &DRM_SHMEM->drm[rx_chan];
     if (d->msg_rx_seq != d->msg_tx_seq) {
-        //printf("%d %s\n", rx_chan, d->msg_buf);
-        ext_send_msg_encoded(rx_chan, false, "EXT", "drm_status_cb", "%s", d->msg_buf);
+        //printf("%d %s=%s\n", rx_chan, d->msg_cmd, d->msg_buf);
+        ext_send_msg_encoded(rx_chan, false, "EXT", d->msg_cmd, "%s", d->msg_buf);
         d->msg_rx_seq = d->msg_tx_seq;
     }
     
     if (d->data_rx_seq != d->data_tx_seq) {
-        //printf("%d %s\n", rx_chan, d->msg_buf);
         ext_send_msg_data(rx_chan, false, d->data_cmd, d->data_buf, d->data_nbuf);
         d->data_rx_seq = d->data_tx_seq;
     }
+    
+    #if 0
+        conn_t *conn = rx_channels[rx_chan].conn;
+        if (conn->ident_user) {
+            static u4_t last_journaline_objID;
+            int objID;
+            if (sscanf(conn->ident_user, "%x", &objID) == 1 && objID != last_journaline_objID) {
+                d->journaline_objID = objID;
+                d->journaline_objSet = true;
+                last_journaline_objID = objID;
+                printf("DRM journaline_objID=0x%x\n", objID);
+            }
+        }
+    #endif
 }
 
 static s2_t *drm_mmap(char *fn, int *words)

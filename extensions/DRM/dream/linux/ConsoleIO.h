@@ -29,17 +29,26 @@
 #include <signal.h>
 #include "../DRMReceiver.h"
 
+#include "Journaline.h"
+
 class CConsoleIO
 {
-public:
-	void Enter(CDRMReceiver* pDRMReceiver);
-	void Leave();
-	void Restart();
-	ERunState Update(drm_t *drm);
-protected:
-	int ETypeRxStatus2int(ETypeRxStatus eTypeRxStatus);
-	CDRMReceiver* pDRMReceiver;
-	unsigned long long time;
-	CVector<_COMPLEX> facIQ, sdcIQ, mscIQ;
-	char *text_msg_utf8_enc;
+    public:
+        void Enter(CDRMReceiver* pDRMReceiver);
+        void Leave();
+        void Restart();
+        ERunState Update(drm_t *drm);
+
+    protected:
+        int ETypeRxStatus2int(ETypeRxStatus eTypeRxStatus);
+        CDRMReceiver* pDRMReceiver;
+        unsigned long long time;
+        CVector<_COMPLEX> facIQ, sdcIQ, mscIQ;
+        char *text_msg_utf8_enc;
+        CDataDecoder* decoder;
+    
+    private:
+        // Journaline
+        int total;
+        int ready;
 };

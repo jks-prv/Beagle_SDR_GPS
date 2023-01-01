@@ -80,6 +80,7 @@ class CDataDecoder:public CReceiverModul < _BINARY, _BINARY >
     {
 		return eAppType[iServPacketID];
     }
+    CJournaline& Journaline;
 
   protected:
     class CDataUnit
@@ -108,7 +109,6 @@ class CDataDecoder:public CReceiverModul < _BINARY, _BINARY >
     int iContInd[MAX_NUM_PACK_PER_STREAM];
     CDataUnit DataUnit[MAX_NUM_PACK_PER_STREAM];
     CMOTDABDec MOTObject[MAX_NUM_PACK_PER_STREAM];
-    CJournaline& Journaline;
     CExperiment& Experiment;
     uint32_t iOldJournalineServiceID;
 
@@ -121,7 +121,6 @@ class CDataDecoder:public CReceiverModul < _BINARY, _BINARY >
     int iEPGPacketID;
     void DecodeEPG(const CParameter& Parameters);
 	EAppType GetAppType(const CDataParam&);
-
 };
 
 

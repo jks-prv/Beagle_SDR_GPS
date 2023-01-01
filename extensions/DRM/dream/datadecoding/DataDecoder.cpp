@@ -137,7 +137,7 @@ CDataDecoder::ProcessDataInternal(CParameter & Parameters)
 				DataUnit[iPacketID].bOK = true;
 			}
 
-			/* If all packets are received correctely, data unit is ready */
+			/* If all packets are received correctly, data unit is ready */
 			if (biLastFlag == 1)
 			{
 				if (DataUnit[iPacketID].bOK)
@@ -220,23 +220,28 @@ CDataDecoder::ProcessDataInternal(CParameter & Parameters)
 				{
 					int iCurSelDataServ = Parameters.GetCurSelDataService();
 					// TODO int iCurDataStreamID = Parameters.Service[iCurSelDataServ].DataParam.iStreamID;
+				    //printf("AT_NOT_SUP iPacketID=%d iCurSelDataServ=%d ", iPacketID, iCurSelDataServ);
 					for (int i = 0; i <=3; i++)
 					{
 						if(Parameters.Service[iCurSelDataServ].DataParam.iPacketID == iPacketID)
 						{
 							eAppType[iPacketID] = GetAppType(Parameters.Service[iCurSelDataServ].DataParam);
+							//printf("#%d MATCH eAppType[iPacketID]=%d\n", i, eAppType[iPacketID]);
 						}
+                        //else printf("#%d NO-MATCH iPacketID=%d\n", i, Parameters.Service[iCurSelDataServ].DataParam.iPacketID);
 					}
 				}
 
 				switch (eAppType[iPacketID])
 				{
 				case AT_MOTSLIDESHOW:	/* MOTSlideshow */
+				    printf("AT_MOTSLIDESHOW iPacketID=%d\n", iPacketID);
 					/* Packet unit decoding */
 					MOTObject[iPacketID].
 						AddDataUnit(DataUnit[iPacketID].vecbiData);
 					break;
 				case AT_EPG:	/* EPG */
+				    printf("AT_EPG iPacketID=%d\n", iPacketID);
 					/* Packet unit decoding */
 					//cout << iEPGPacketID << " " << iPacketID << endl; cout.flush();
 					if(iEPGPacketID == -1)
@@ -248,19 +253,23 @@ CDataDecoder::ProcessDataInternal(CParameter & Parameters)
 					break;
 
 				case AT_BROADCASTWEBSITE:	/* MOT Broadcast Web Site */
+				    printf("AT_BROADCASTWEBSITE iPacketID=%d\n", iPacketID);
 					/* Packet unit decoding */
 					MOTObject[iPacketID].AddDataUnit(DataUnit[iPacketID].vecbiData);
 					break;
 
 				case AT_JOURNALINE:
+				    //printf("AT_JOURNALINE iPacketID=%d\n", iPacketID);
 					Journaline.AddDataUnit(DataUnit[iPacketID].vecbiData);
 					break;
 
 				case AT_EXPERIMENTAL:
+				    printf("AT_EXPERIMENTAL iPacketID=%d\n", iPacketID);
 					Experiment.AddDataUnit(DataUnit[iPacketID].vecbiData);
 					break;
 
 				default:		/* do nothing */
+				    //printf("AT_default eAppType=%d iPacketID=%d\n", eAppType[iPacketID], iPacketID);
 					;
 				}
 
@@ -410,6 +419,7 @@ CDataDecoder::InitInternal(CParameter & Parameters)
 
 				/* Reset Journaline decoder and store the new service
 				   ID number */
+				printf("Journaline iOldJournalineServiceID=%X iNewServID=%X\n", iOldJournalineServiceID, iNewServID);
 				Journaline.Reset();
 				iOldJournalineServiceID = iNewServID;
 			}

@@ -55,6 +55,9 @@ typedef struct {
 	
 	int audio_service;
 	bool send_iq;
+	
+	int journaline_objID;
+	bool journaline_objSet;
 
     int test;
     s2_t *s2p;
@@ -65,6 +68,8 @@ typedef struct {
     u4_t sent_silence;
 
     u4_t msg_tx_seq, msg_rx_seq;
+    #define N_MSGCMD 32
+    char msg_cmd[N_MSGCMD];
     #define N_MSGBUF 4096
     char msg_buf[N_MSGBUF];
     
@@ -134,5 +139,5 @@ typedef struct {
     #endif
 #endif
 
-void DRM_msg(drm_t *drm, kstr_t *ks);
+void DRM_msg_encoded(drm_t *drm, const char *cmd, kstr_t *ks);
 void DRM_data(drm_t *drm, u1_t cmd, u1_t *data, u4_t nbuf);
