@@ -40,8 +40,8 @@ var drm = {
    MSC: 8,
    IQ_END: 8,
    
-   //display_idx: 1,
-   display_idx: 5,
+   display_idx: 1,
+   //display_idx: 5,
    display_idx_s:    [ 'schedule', 'media', 'graph', 'iq' ],
    display_idx_si:   [ 1, 5, 7, 9 ],   // index into display_s below (enumerated object keys and values)
    
