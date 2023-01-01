@@ -22,34 +22,43 @@ var drm = {
    // ui
    w_graph_nom: 675,
    w_graph_min: 400,
+   status_tc: [ 'black', 'black', 'white', 'white', 'white' ],
+   status_bc: [ 'lime', 'yellow', 'red', 'red', 'grey' ],
 
-   panel_0:       [  'info',     'info',     'info',     'info',  'info',  'info',  'info',  'info' ],
-   panel_1:       [  'by-svc',   'by-time',  'by-freq',  'graph', 'IQ',    'IQ',    'IQ',    'IQ' ],
+   panel_0:    [  'info',     'info',     'info',     'info',        'info',        'info',  'info',  'info',  'info' ],
+   panel_1:    [  'by-svc',   'by-time',  'by-freq',  'journaline',  'graph',       'IQ',    'IQ',    'IQ',    'IQ' ],
+   panel_1_bg: [  'black',    'black',    'black',    'white',       'mediumBlue',  'black', 'black', 'black', 'black' ],
+
    BY_SVC: 0,
    BY_TIME: 1,
    BY_FREQ: 2,
-   GRAPH: 3,
-   IQ_ALL: 4,
-   FAC: 5,
-   SDC: 6,
-   MSC: 7,
-   IQ_END: 7,
+   JOURNALINE: 3,
+   GRAPH: 4,
+   IQ_ALL: 5,
+   FAC: 6,
+   SDC: 7,
+   MSC: 8,
+   IQ_END: 8,
    
-   display_idx: 1,
-   display_idx_s:    [ 'schedule', 'graph', 'iq' ],
-   display_idx_si:   [ 1, 5, 7 ],   // index into display_s below (enumerated object keys and values)
+   //display_idx: 1,
+   display_idx: 5,
+   display_idx_s:    [ 'schedule', 'media', 'graph', 'iq' ],
+   display_idx_si:   [ 1, 5, 7, 9 ],   // index into display_s below (enumerated object keys and values)
    
    display_s: {
       'Schedule': [
-         { m:'by service' },        // display_idx = 1
+         { m:'by service' },           // display_idx = 1
          { m:'by time' },
          { m:'by freq' }
       ],
-      'Display': [
-         { m:'IF/SNR', c:'graph' },
+      'Media': [
+         { m:'Journaline' },           // display_idx = 5
+      ],
+      'Stats': [
+         { m:'IF/SNR', c:'graph' },    // display_idx = 7
       ],
       'IQ': [
-         { m:'all', c:'IQ' },
+         { m:'all', c:'IQ' },          // display_idx = 9
          { m:'FAC', c:'IQ' },
          { m:'SDC', c:'IQ' },
          { m:'MSC', c:'IQ' }
@@ -104,6 +113,11 @@ var drm = {
       { n:'13m', b:21400, e:22000 },
       { n:'11m', b:25500, e:26200 }
    ],
+   
+   JOURNALINE_LINK_NOT_ACTIVE: -1,
+   JOURNALINE_IS_NO_LINK: -2,
+   journaline_objID: 0,
+   journaline_stk: [],
 
    last_last: 0
 };
@@ -336,20 +350,29 @@ function drm_recv(data)
 			   w3_show_hide('id-drm-mode', isDefined(o.mod));
 			   
 			   var codec = drm.AAC;
+			   //console.log('o.svc');
+			   //console.log(o.svc);
 			   o.svc.forEach(function(ao, i) {
 			      i++;
                //if (ao.cur && i == 2) ao.ac = drm.xHE_AAC;
 			      s = i;
-			      if (ao.id) {
+			      var has = isDefined(ao.id);
+			      if (has) {
 			         var label = kiwi_clean_html(kiwi_clean_newline(decodeURIComponent(ao.lbl)));
                   s += ' '+ drm.EAudCod[ao.ac] +' ('+ ao.id +') '+ label + (ao.ep? (' UEP ('+ ao.ep.toFixed(1) +'%) ') : ' EEP ') +
                      (ao.ad? 'Audio ':'Data ') + ao.br.toFixed(2) +' kbps';
                }
                var el = w3_el('id-drm-svc-'+ i);
 			      el.innerHTML = s;
+			      if (!has) return;
 			      w3_color(el, null, ao.cur? 'mediumSlateBlue' : '');
 			      if (ao.cur && ao.ac < 4)   // glitches to = 4 during acquisition
 			         codec = ao.ac;
+			      //console.log('$'+ i +' '+ ao.dat);
+			      //console.log(ao);
+               w3_visible('id-drm-data-'+ i, ao.dat != -1);
+               if (ao.dat != -1)
+                  w3_color('id-drm-data-'+ i, drm.status_tc[ao.dat], drm.status_bc[ao.dat]);
 			   });
             w3_show('id-drm-svcs');
             if (codec != drm.AAC && codec != drm.xHE_AAC) console.log('codec='+ codec);
@@ -358,6 +381,37 @@ function drm_recv(data)
             w3_color('id-drm-error', 'white', 'red', (codec != drm.AAC && codec != drm.xHE_AAC));
 
 			   w3_innerHTML('id-drm-msgs', o.msg? kiwi_clean_html(kiwi_clean_newline(decodeURIComponent(o.msg))) : '');
+			   break;
+			
+			case "drm_journaline_cb":
+			   var s = kiwi_decodeURIComponent('DRM', param[1]);
+			   //console.log(s);
+            var o = kiwi_JSON_parse('drm_journaline_cb', s);
+			   console.log(o);
+			   drm.journaline_objID = +o.l;
+			   
+			   s = w3_icon('w3-link-darker-color', 'fa-backward', 24, '', 'drm_journaline_back');
+			   var title = (o.t == '')? 'Waiting for data..' : o.t;
+			   s += '&nbsp;&nbsp;&nbsp;Journaline: '+ title +' ('+ o.l.toHex() +')<br><ul>';
+			   o.a.forEach(function(e, i) {
+			      if (e.l == drm.JOURNALINE_IS_NO_LINK) {
+			         s += e.s +'<br>';
+			      } else
+			      if ( e.l == drm.JOURNALINE_LINK_NOT_ACTIVE) {
+			         s += '<li>'+ e.s +'</li>';
+			      } else {
+			         s += '<li>'+ w3_link('w3-underline w3-link-darker-color', '', e.s, '', 'drm_journaline_link', e.l.toHex());
+			         s += ' ('+ e.l.toHex() +')</li>';
+			      }
+			   });
+			   /*
+			   s += 'scroll test1<br>';
+			   s += 'scroll test2<br>';
+			   s += 'scroll test3<br>';
+			   s += 'scroll test4<br>';
+			   */
+			   s += '</ul>';
+			   w3_innerHTML('id-drm-panel-1-journaline', w3_div('w3-absolute w3-width-full w3-height-full w3-scroll-y', s));
 			   break;
 
 			case "drm_bar_pct":
@@ -386,6 +440,37 @@ function drm_recv(data)
 	}
 }
 
+function drm_journaline_reset_cb(path, idx, first)
+{
+   if (first) return;
+   if (!(+idx)) return;
+   console.log('drm_journaline_reset_cb');
+   ext_send('SET journaline_objID=-1');
+}
+
+function drm_journaline_link(el, cb_param)
+{
+   var objID = +cb_param;
+   console.log('drm_journaline_link objID='+ objID.toHex());
+   if (objID == 0) {
+      console.log('drm_journaline_link objID=0?');
+      return;
+   }
+   drm.journaline_stk.push(drm.journaline_objID);
+   ext_send('SET journaline_objID='+ objID);
+}
+
+function drm_journaline_back(path, cb_param)
+{
+   if (drm.journaline_stk.length == 0) {
+      console.log('drm_journaline_back EMPTY stk');
+      return;
+   }
+   var objID = drm.journaline_stk.pop();
+   console.log('drm_journaline_back '+ objID.toHex());
+   ext_send('SET journaline_objID='+ objID);
+}
+
 function drm_annotate(color)
 {
    graph_annotate(drm.gr_if, color);
@@ -408,15 +493,7 @@ function drm_reset_status()
 
 function drm_status(id, v)
 {
-   var color;
-   switch (v) {
-      case 0: color = 'lime'; break;
-      case 1: color = 'yellow'; break;
-      case 2: color = 'red'; break;
-      case 3: default: color = 'red'; break;
-      case 4: color = 'grey'; break;
-   }
-   w3_color('id-drm-status-'+ id, color);
+   w3_color('id-drm-status-'+ id, drm.status_bc[v]);
 }
 
 function drm_all_status(io, time, frame, FAC, SDC, MSC)
@@ -974,7 +1051,8 @@ function drm_desktop_controls_setup(w_graph)
       for (var i=1; i <= 4; i++) {
          svcs +=
             w3_inline('',
-               w3_checkbox('w3-margin-R-8', '', 'drm.svc'+ i, (i == 1), 'drm_svcs_cbox_cb'),
+               w3_checkbox('w3-margin-R-4', '', 'drm.svc'+ i, (i == 1), 'drm_svcs_cbox_cb'),
+               w3_span('id-drm-data-'+ i +' cl-drm-data', 'D'),
                w3_div('id-drm-svc-'+ i +'|width:100%')
             );
       }
@@ -1022,7 +1100,7 @@ function drm_desktop_controls_setup(w_graph)
                w3_div(sprintf('id-drm-msgs|width:%dpx', w_msg))
             ),
 
-            w3_div(sprintf('id-drm-panel-graph w3-absolute|width:%dpx; height:%dpx; left:%dpx;', w_graph, h, w_lhs + w_msg),
+            w3_div(sprintf('id-drm-panel-multi w3-absolute|width:%dpx; height:%dpx; left:%dpx;', w_graph, h, w_lhs + w_msg),
                w3_div(sprintf('id-drm-panel-1-by-svc cl-drm-sched|width:%dpx; height:100%%;', w_graph),
                   w3_div('id-drm-tscale', drm_schedule_static()),
                   w3_div('id-drm-panel-by-svc w3-scroll-y w3-absolute|width:100%; height:100%;', drm.loading_msg)
@@ -1035,6 +1113,8 @@ function drm_desktop_controls_setup(w_graph)
                   w3_div('id-drm-tscale', drm_schedule_static()),
                   w3_div('id-drm-panel-by-freq w3-scroll-y w3-absolute|width:100%; height:100%;', drm.loading_msg)
                ),
+
+               w3_div(sprintf('id-drm-panel-1-journaline w3-absolute w3-text-black|width:%dpx; height:100%%;', w_graph)),
 
                w3_div('id-drm-panel-1-graph w3-show-block',
                   //w3_canvas('id-drm-graph-if', w_graph, h/2, { pad_top:pad, pad_bottom:pad/2 }),
@@ -1054,6 +1134,9 @@ function drm_desktop_controls_setup(w_graph)
                   w3_div('cl-drm-sched-options-time w3-light-green', 'verified'),
                   w3_div('cl-drm-sched-options-time', 'not verified'),
                   w3_link('w3-link-color', 'http://forum.kiwisdr.com/discussion/1865/drm-heard#latest', 'Please report<br>schedule changes')
+               ),
+               w3_div('id-drm-options-journaline',
+                  w3_button('class-button w3-small w3-grey w3-momentary', 'Reset', 'drm_journaline_reset_cb', 1)
                )
             )
          );
@@ -1065,8 +1148,7 @@ function drm_desktop_controls_setup(w_graph)
                'Use menu to sort schedules by service, time or frequency. <br>' +
                'Gray vertical lines are spaced 1 hour apart beginning at 00:00 UTC on the left. <br>' +
                'Red line shows current UTC time and updates while the extension is running. <br>' +
-               '<span class="w3-text-yellow-highlight">New</span> ' +
-               'Database menu below selects source of schedule information including ' +
+               'Schedule information courtesy of ' +
                w3_link('w3-link-color', 'https://www.drmrx.org', 'drmrx.org')
             )
          ) +
@@ -1413,7 +1495,7 @@ function drm_display_cb(path, idx, first)
 	});
 
    var dsp = drm.display = idx_actual;
-   w3_color('id-drm-panel-graph', null, (drm.panel_1[dsp] != 'graph')? 'black' : 'mediumBlue');
+   w3_color('id-drm-panel-multi', null, drm.panel_1_bg[dsp]);
    
    console.log('$ drm_display_cb idx='+ idx +' show='+ dsp +' '+ drm.panel_0[dsp] +'/'+ drm.panel_1[dsp]);
    drm.panel_0.forEach(function(el) { w3_hide('id-drm-panel-0-'+ el); });

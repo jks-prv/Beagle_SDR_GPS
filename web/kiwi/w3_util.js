@@ -1753,10 +1753,10 @@ function w3_title(id, text)
 
 function w3int_link_click(ev, cb, cb_param)
 {
-   console.log('w3int_link_click cb='+ cb +' cb_param='+ cb_param);
-   console.log(ev);
+   //console.log('w3int_link_click cb='+ cb +' cb_param='+ cb_param);
+   //console.log(ev);
    var el = ev.currentTarget;
-   console.log(el);
+   //console.log(el);
    w3_check_restart_reboot(el);
 
    // cb is a string because can't pass an object to onclick
@@ -1770,13 +1770,15 @@ function w3int_link_click(ev, cb, cb_param)
 function w3_link(psa, url, inner, title, cb, cb_param)
 {
    var qual_url = url;
-   var target;
-   if (url.startsWith('javascript:')) {
-      target = '';
-   } else {
-      if (url != '' && !url.startsWith('http://') && !url.startsWith('https://'))
-         qual_url = 'http://'+ url;
-      target = ' target="_blank"';
+   var href = '';
+   var target = '';
+   if (url != '') {
+      if (!url.startsWith('javascript:')) {
+         if (!url.startsWith('http://') && !url.startsWith('https://'))
+            qual_url = 'http://'+ url;
+         target = ' target="_blank"';
+      }
+      href = 'href='+ dq(qual_url) +' ';
    }
    inner = inner || '';
    title = title || '';
@@ -1787,7 +1789,7 @@ function w3_link(psa, url, inner, title, cb, cb_param)
 	cb_param = cb_param || 0;
 	var onclick = cb? (' onclick="w3int_link_click(event, '+ sq(cb) +', '+ sq(cb_param) +')"') : '';
 
-	var p = w3_psa(psa, pointer, '', 'href='+ dq(qual_url) + target + title + onclick);
+	var p = w3_psa(psa, pointer, '', href + target + title + onclick);
 
    // escape HTML '<' and '>' so they work with kiwi_output_msg()
 	var esc_html = psa.includes('w3-esc-html');
@@ -1807,6 +1809,7 @@ function w3_link_set(path, url)
       if (!url.startsWith('http://') && !url.startsWith('https://'))
          url = 'http://'+ url;
       w3_attribute(el, 'href', url);
+      w3_attribute(el, 'target', '_blank');
    }
 }
 

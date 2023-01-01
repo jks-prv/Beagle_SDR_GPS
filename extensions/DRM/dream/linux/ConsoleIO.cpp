@@ -60,6 +60,7 @@ void
 CConsoleIO::Enter(CDRMReceiver* pDRMReceiver)
 {
 	CConsoleIO::pDRMReceiver = pDRMReceiver;
+	decoder = pDRMReceiver->GetDataDecoder();
     //real_printf("--> CConsoleIO::Enter set null\n");
     text_msg_utf8_enc = nullptr;
 }
@@ -163,12 +164,18 @@ CConsoleIO::Update(drm_t *drm)
 
     sb = kstr_cat(sb, ",\"svc\":[");
     int iCurAudService = Parameters.GetCurSelAudioService();
+    int iCurDataService = Parameters.GetCurSelDataService();
+    uint32_t CurDataServiceID = 0;
     
     if (iCurAudService != drm->audio_service) {
         Parameters.SetCurSelAudioService(drm->audio_service);
+        Parameters.SetCurSelDataService(drm->audio_service);
         iCurAudService = Parameters.GetCurSelAudioService();
+        iCurDataService = Parameters.GetCurSelDataService();
     }
     
+    int datStat = ETypeRxStatus2int(Parameters.DataComponentStatus[iCurDataService].GetStatus());
+
     for (int i = 0; i < MAX_NUM_SERVICES; i++)
     {
         sb = kstr_asprintf(sb, "%s{", i? ",":"");
@@ -179,7 +186,8 @@ CConsoleIO::Update(drm_t *drm)
             CAudioParam::EAudCod ac = service.AudioParam.eAudioCoding;
             char *strLabel = kiwi_str_encode((char *) service.strLabel.c_str());
             //real_printf("--> strLabel new %p %d<%s>\n", strLabel, strlen(strLabel), strLabel);
-            int ID = service.iServiceID;
+            uint32_t ID = service.iServiceID;
+            if (i == iCurDataService) CurDataServiceID = ID;
             bool audio = (service.eAudDataFlag == CService::SF_AUDIO);
             _REAL rPartABLenRat = Parameters.PartABLenRatio(i);
             _REAL rBitRate = Parameters.GetBitRateKbps(i, !audio);
@@ -197,8 +205,10 @@ CConsoleIO::Update(drm_t *drm)
             }
 
             sb = kstr_asprintf(sb,
-                "\"cur\":%d,\"ac\":%d,\"id\":\"%X\",\"lbl\":\"%s\",\"ep\":%.1f,\"ad\":%d,\"br\":%.2f",
-                (i == iCurAudService)? 1:0, ac, ID, strLabel, rPartABLenRat * 100, br_audio? 1:0, rBitRate
+                "\"cur\":%d,\"dat\":%d,\"ac\":%d,\"id\":\"%X\",\"lbl\":\"%s\",\"ep\":%.1f,\"ad\":%d,\"br\":%.2f",
+                (i == iCurAudService)? 1:0,
+                (i == iCurDataService)? datStat : -1,
+                ac, ID, strLabel, rPartABLenRat * 100, br_audio? 1:0, rBitRate
             );
             //real_printf("--> strLabel free %p\n", strLabel);
             free(strLabel);
@@ -262,8 +272,95 @@ CConsoleIO::Update(drm_t *drm)
     Parameters.Unlock();
 
     sb = kstr_cat(sb, "}");
-    DRM_msg(drm, sb);
+    DRM_msg_encoded(drm, "drm_status_cb", sb);
     kstr_free(sb);
+    
+
+    // process Journaline stream
+    bool reset = false;
+    if (drm->journaline_objSet) {
+        total = ready = 0;
+        if (drm->journaline_objID < 0) {
+            decoder->Journaline.Reset();
+            reset = true;
+            drm->journaline_objID = 0;
+        }
+        drm->journaline_objSet = false;
+    }
+    CNews News;
+    decoder->GetNews(drm->journaline_objID, News);
+    int new_total = News.vecItem.Size();
+    int new_ready = 0;
+    bool dirty = false;
+
+    for (int i = 0; i < new_total; i++) {
+        switch (News.vecItem[i].iLink) {
+        case JOURNALINE_IS_NO_LINK:         // Only text, no link
+        case JOURNALINE_LINK_NOT_ACTIVE:
+            break;
+        default:        // has active link
+            new_ready++;
+        }
+    }
+    if (new_total != total) { total = new_total; dirty = true; }
+    if (new_ready != ready) { ready = new_ready; dirty = true; }
+
+    if (dirty || reset) {
+        //printf("new_total =%d|%d new_ready=%d|%d\n", new_total, total, new_ready, ready);
+        char *c_s = (char *) News.sTitle.c_str();
+        if (!c_s || *c_s == '\0') {
+            c_s = (char *) "";
+            if (new_total == 0)
+                drm->journaline_objID = 0;
+        }
+        //printf("JL %s\n", c_s);
+        sb = kstr_asprintf(NULL, "{\"l\":%d,\"t\":\"%s\",\"a\":[", drm->journaline_objID, c_s);
+        
+        int iLink;
+        bool comma = false;
+        for (int i = 0; i < new_total; i++) {
+            c_s = (char *) News.vecItem[i].sText.c_str();
+            iLink = News.vecItem[i].iLink;
+            sb = kstr_asprintf(sb, "%s{\"i\":%d,\"l\":%d,\"s\":\"%s\"}",
+                comma? ",":"", i, iLink, c_s);
+            comma = true;
+
+            #if 0
+                switch (iLink) {
+                case JOURNALINE_IS_NO_LINK: /* Only text, no link */
+                    printf("%d JL-nl %s\n", i, c_s);
+                    break;
+                case JOURNALINE_LINK_NOT_ACTIVE:
+                    printf("%d JL-w   %s\n", i, c_s);
+                    break;
+                default:    // has active link
+                    printf("%d JL-%x %s\n", i, iLink, c_s);
+                    break;
+                }
+            #endif
+        }
+        sb = kstr_cat(sb, "]}");
+        DRM_msg_encoded(drm, "drm_journaline_cb", sb);
+        kstr_free(sb);
+
+        #if 0
+            for (int i = 0; i < new_total; i++) {
+                if (News.vecItem[i].iLink < 0)
+                    continue;
+                iLink = News.vecItem[i].iLink;
+                CNews subNews;
+                decoder->GetNews(iLink, subNews);
+                printf(">>> %d SUB %x %s --------------------------------------------------------------\n",
+                    i, iLink, subNews.sTitle.c_str());
+                for (int j = 0; j < subNews.vecItem.Size(); j++) {
+                    int jLink = subNews.vecItem[j].iLink;
+                    printf("%d|%d SUB %x(%d) %s\n",
+                        i, j, jLink, jLink, subNews.vecItem[j].sText.c_str());
+                }
+            }
+        #endif
+    }
+
 
 	return RUNNING;
 }
