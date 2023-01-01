@@ -186,7 +186,7 @@ char *kstr_sp(char *s_kstr_cstr)
 char *kstr_wrap(char *s_malloced)
 {
 	if (s_malloced == NULL) return NULL;
-	kdebug (!kstr_is(s_malloced));
+	kdebug(!kstr_is(s_malloced));
 	return kstr_malloc(KSTR_EXT_MALLOC, s_malloced, 0);
 }
 
