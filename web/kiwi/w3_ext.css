@@ -996,6 +996,11 @@ input[type=range]::-moz-range-thumb {
     width: min-content;
 }
 
+.w3-height-full
+{
+	height: 100%;
+}
+
 .w3-scroll
 {
 	overflow: auto;
@@ -1257,4 +1262,8 @@ input[type=range]::-moz-range-thumb {
 
 .w3-font-24px {
     font-size: 24px !important;
+}
+
+.w3-underline {
+    text-decoration-line: underline;
 }
