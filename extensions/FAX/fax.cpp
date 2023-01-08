@@ -118,7 +118,7 @@ bool fax_msgs(char *msg, int rx_chan)
 		
 		// remove old results for this channel on each start of the extension
         non_blocking_cmd_system_child("kiwi.fax", 
-            stprintf("cd /root/kiwi.config; rm fax.ch%d_*", rx_chan), POLL_MSEC(500));
+            stprintf("cd " DIR_DATA "; rm fax.ch%d_*", rx_chan), POLL_MSEC(500));
 
 		ext_send_msg(rx_chan, false, "EXT ready=%d", rx_chan);
 		return true;
@@ -185,7 +185,7 @@ bool fax_msgs(char *msg, int rx_chan)
 		    // Debian 11 doesn't have pnmtopng anymore, use .ppm intermediate format
 		    // Also, have to use .gif now instead of .png (there is no p*topng)
             non_blocking_cmd_system_child("kiwi.fax", 
-                stprintf("cd /root/kiwi.config; "
+                stprintf("cd " DIR_DATA "; "
                     "pgmtoppm rgbi:1/1/1 fax.ch%d.pgm > fax.ch%d.ppm; "
                     "ppmtogif fax.ch%d.ppm > fax.ch%d_%d.gif; "
                     "pnmscale fax.ch%d.pgm -width=96 -height=32 > fax.ch%d.thumb.pgm; "
@@ -199,7 +199,7 @@ bool fax_msgs(char *msg, int rx_chan)
                 POLL_MSEC(500));
 		#else
             non_blocking_cmd_system_child("kiwi.fax", 
-                stprintf("cd /root/kiwi.config;
+                stprintf("cd " DIR_DATA ";
                     "pnmtopng fax.ch%d.pgm > fax.ch%d_%d.png; "
                     "pnmscale fax.ch%d.pgm -width=96 -height=32 > fax.ch%d.thumb.pgm; "
                     "pnmtopng fax.ch%d.thumb.pgm > fax.ch%d_%d.thumb.png",

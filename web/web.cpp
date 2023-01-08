@@ -883,6 +883,12 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         free_uri = TRUE;
         has_prefix = TRUE;
     } else
+    if (strncmp(o_uri, "kiwi.data/", 10) == 0) {
+        asprintf(&uri, "%s/%s", DIR_DATA, &o_uri[10]);
+        if (MTR) real_printf("-> uri-3 ASPR %p %d<%s>\n", uri, strlen(uri), uri);
+        free_uri = TRUE;
+        has_prefix = TRUE;
+    } else
     // handle HTTP-01 authenticator challenges for ACME clients like certbot
     if (strncmp(o_uri, ".well-known/", 12) == 0) {
         asprintf(&uri, "%s/%s", DIR_CFG, o_uri);
@@ -891,7 +897,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         has_prefix = TRUE;
     } else {
         asprintf(&uri, "openwebrx/%s", o_uri);
-        if (MTR) real_printf("-> uri-3 ASPR %p %d<%s>\n", uri, strlen(uri), uri);
+        if (MTR) real_printf("-> uri-4 ASPR %p %d<%s>\n", uri, strlen(uri), uri);
         free_uri = TRUE;
     }
     //printf("---- HTTP: uri %s (orig %s)\n", uri, o_uri);

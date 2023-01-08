@@ -141,6 +141,8 @@ int main(int argc, char *argv[])
 	kstr_init();
 	shmem_init();
 	printf_init();
+	
+	system("mkdir -p " DIR_DATA);
 
     #define ARG(s) (strcmp(argv[ai], s) == 0)
     #define ARGP() argv[++ai]

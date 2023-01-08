@@ -170,7 +170,7 @@ function fax_recv(data)
 				break;
 
 			case "fax_download_avail":
-            var file = kiwi_url_origin() +'/kiwi.config/fax.ch'+ fax.ch +'_'+ param[1];
+            var file = kiwi_url_origin() +'/kiwi.data/fax.ch'+ fax.ch +'_'+ param[1];
             var gif = file +'.gif';
             var thumb = file +'.thumb.gif';
             w3_remove_then_add('id-fax-file-icon', 'fa-refresh fa-spin w3-text-aqua', 'fa-repeat w3-text-pink');
@@ -568,7 +568,7 @@ function fax_file_cb(path, param, first)
    
    if (fax.file) {
 	   ext_send('SET fax_file_open');
-      w3_remove_then_add(el1, '', 'fa-spin');
+      w3_spin(el1);
       w3_el('id-fax-file-status').innerHTML =
          w3_div('w3-show-inline-block', 'recording<br>line '+ w3_div('id-fax-line w3-show-inline-block'));
 	} else {
