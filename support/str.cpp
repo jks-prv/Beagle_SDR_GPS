@@ -415,7 +415,7 @@ void kiwi_str_unescape_quotes(char *str)
 }
 
 // inplace is okay because we are only ever shortening the string
-static void remove_unprintable_chars_inplace(char *str, int *printable, int *UTF)
+void kiwi_remove_unprintable_chars_inplace(char *str, int *printable, int *UTF)
 {
 	if (printable) *printable = 0;
 	if (UTF) *UTF = 0;
@@ -464,7 +464,7 @@ char *kiwi_str_escape_HTML(char *str, int *printable, int *UTF)
     }
     
     if (n == 0) {
-        remove_unprintable_chars_inplace(str, printable, UTF);
+        kiwi_remove_unprintable_chars_inplace(str, printable, UTF);
         return NULL;
     }
     
@@ -483,7 +483,7 @@ char *kiwi_str_escape_HTML(char *str, int *printable, int *UTF)
     }
 	
 	*o = '\0';
-    remove_unprintable_chars_inplace(sn, printable, UTF);
+    kiwi_remove_unprintable_chars_inplace(sn, printable, UTF);
 	return sn;
 }
 

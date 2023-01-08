@@ -405,6 +405,16 @@ input[type=range]::-moz-range-thumb {
     margin: 32px !important
 }
 
+.w3-margin-LR-4
+{
+    margin: 0px 4px !important
+}
+
+.w3-margin-LR-6
+{
+    margin: 0px 6px !important
+}
+
 .w3-margin-LR-8
 {
     margin: 0px 8px !important
@@ -567,6 +577,11 @@ input[type=range]::-moz-range-thumb {
     margin-top: 32px
 }
 
+.w3-margin-TL-10
+{
+    margin: 10px 0 0 10px
+}
+
 .w3-margin-B-4
 {
     margin-bottom: 4px !important
@@ -615,6 +630,11 @@ input[type=range]::-moz-range-thumb {
 .w3-margin-TB-8
 {
     margin: 8px 0
+}
+
+.w3-margin-TB-10
+{
+    margin: 10px 0
 }
 
 .w3-margin-TB-16

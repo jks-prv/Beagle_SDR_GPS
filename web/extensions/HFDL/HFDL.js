@@ -326,14 +326,14 @@ function hfdl_controls_setup()
          w3_text('w3-text-aqua w3-bold', 'HFDL options'),
          w3_select('w3-margin-T-4 w3-width-auto '+ hfdl.sfmt, '', 'show', 'hfdl.show', hfdl.show, hfdl.show_s, 'hfdl_show_cb'),
          
-         w3_button('id-hfdl-show-kiwi w3-margin-T-10 class-button w3-cyan w3-momentary', 'Show Kiwi', 'hfdl_show_kiwi_cb', 1),
+         w3_button('id-hfdl-show-kiwi w3-margin-T-10 w3-btn w3-small w3-cyan w3-momentary', 'Show Kiwi', 'hfdl_show_kiwi_cb', 1),
 
          w3_checkbox('w3-margin-T-10//'+ cbox, 'Show day/night', 'hfdl.day_night_visible', true, 'hfdl_day_night_visible_cb'),
          w3_checkbox(cbox, 'Show graticule', 'hfdl.graticule_visible', true, 'hfdl_graticule_visible_cb'),
 
          w3_inline('w3-margin-T-10 w3-valign/', 
             w3_checkbox('//'+ cbox, 'Show flights', 'hfdl.flights_visible', true, 'hfdl_flights_visible_cb'),
-            w3_button('id-hfdl-clear-old w3-margin-left class-button w3-small w3-grey w3-momentary', 'Clear old', 'hfdl_clear_old_cb', 1)
+            w3_button('id-hfdl-clear-old w3-margin-left w3-btn w3-small w3-grey w3-momentary', 'Clear old', 'hfdl_clear_old_cb', 1)
          ),
          w3_checkbox(cbox, 'Show ground stations', 'hfdl.gs_visible', true, 'hfdl_gs_visible_cb')
       );
