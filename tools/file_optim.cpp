@@ -68,6 +68,8 @@ static char *files[NFILES][NTYPES];
 #define MF_ZIP      0x0800
 #define MF_DRY_RUN  0x1000
 
+#define MTU 1500
+
 void minify(const char *ext_s, u4_t mflags, const char *svc, const char *ext, char *fn)
 {
     char *cmd;
@@ -80,9 +82,12 @@ void minify(const char *ext_s, u4_t mflags, const char *svc, const char *ext, ch
         char *fn_zip = new_ext(fn_min, ext, ".gz");
         struct stat sb_zip;
         err = stat(fn_zip, &sb_zip);
-        if (!(mflags & MF_USE) || err) printf("%s ", fn_min);
+        
+        // ignore leftover zips that haven't been removed yet due to below MTU
+        bool small = (err == 0 && sb_zip.st_size <= MTU);
+        if (!(mflags & MF_USE) || err || small) printf("%s ", fn_min);
         free(fn_min);
-        if (err == 0) printf("%s ", fn_zip);
+        if (err == 0 && !small) printf("%s ", fn_zip);
         free(fn_zip);
         return;
     }
@@ -169,6 +174,7 @@ void minify(const char *ext_s, u4_t mflags, const char *svc, const char *ext, ch
     
     struct stat sb_zip = {0};
     const char *status_zip = "Z-NO ";
+    bool remove_old_zip = false;
     char *fn_zip = new_ext(fn_min, ext, ".gz");
     err = stat(fn_zip, &sb_zip);
 
@@ -185,7 +191,6 @@ void minify(const char *ext_s, u4_t mflags, const char *svc, const char *ext, ch
         }
     
         if (!okay) {
-            #define MTU 1500
             if (sb_min.st_size > MTU) {
                 //asprintf(&cmd, "gzip --best --keep --force %s", fn_min);
                 asprintf(&cmd, "gzip --fast --keep --force %s", fn_min);
@@ -194,18 +199,21 @@ void minify(const char *ext_s, u4_t mflags, const char *svc, const char *ext, ch
                 free(cmd);
                 stat(fn_zip, &sb_zip);
             } else {
+                remove_old_zip = true;      // prevent old zip leftover if file shrinking
                 sb_zip.st_size = 0;
                 status_zip = "Z-SML";
             }
         }
     } else {
+        remove_old_zip = true;
+    }
+    
+    if (remove_old_zip && err == 0) {
         // ensure any old/unwanted .gz is removed
-        if (err == 0) {
-            asprintf(&cmd, "rm -f %s", fn_zip);
-            if (not_dry_run) system(cmd);
-            free(cmd);
-            status_zip = "Z-RM ";
-        }
+        asprintf(&cmd, "rm -f %s", fn_zip);
+        if (not_dry_run) system(cmd);
+        free(cmd);
+        status_zip = "Z-RM ";
     }
     
     printf("%-3s %6llu %s %6llu %s %6llu %s\n",

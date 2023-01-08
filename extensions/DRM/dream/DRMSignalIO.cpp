@@ -590,7 +590,7 @@ void CReceiveData::ProcessDataInternal(CParameter& Parameters)
         for (i = 0; i < iOutputBlockSize; i+=2)
         {
             /* We flip the spectrum by using the mirror spectrum at the negative
-               frequencys. If we shift by half of the sample frequency, we can
+               frequencies. If we shift by half of the sample frequency, we can
                do the shift without the need of a Hilbert transformation */
             (*pvecOutputData)[i] = -(*pvecOutputData)[i];
         }

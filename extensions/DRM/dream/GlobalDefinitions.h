@@ -189,8 +189,8 @@ typedef unsigned int					_MESSAGE_IDENT;
 #define MS_RESET_ALL					7
 #define MS_MOT_OBJ_STAT					8
 
-#define GUI_CONTROL_UPDATE_TIME			500	/* Milliseconds */
-#define GUI_CONTROL_UPDATE_TIME_FAST	250	/* Milliseconds */
+#define GUI_IQ_UPDATE_TIME			    500     /* Milliseconds */
+#define GUI_CONTROL_UPDATE_TIME			1000    /* Milliseconds */
 
 
 /* Global enumerations ------------------------------------------------------ */

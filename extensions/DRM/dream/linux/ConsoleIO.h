@@ -42,7 +42,7 @@ class CConsoleIO
     protected:
         int ETypeRxStatus2int(ETypeRxStatus eTypeRxStatus);
         CDRMReceiver* pDRMReceiver;
-        unsigned long long time;
+        unsigned long long time_iq, time;
         CVector<_COMPLEX> facIQ, sdcIQ, mscIQ;
         char *text_msg_utf8_enc;
         CDataDecoder* decoder;

@@ -9990,8 +9990,8 @@ function toggle_or_set_rec(set)
       recording = set;
    else
       recording = !recording;
-   w3_remove_then_add('id-rec1', 'fa-spin', recording? 'fa-spin':'');
-   w3_remove_then_add('id-rec2', 'fa-spin', recording? 'fa-spin':'');
+   w3_spin('id-rec1', recording);
+   w3_spin('id-rec2', recording);
    w3_remove_then_add('id-rec1', 'w3-text-white', 'w3-text-pink');      // in case squelched when recording stopped
    w3_remove_then_add('id-rec2', 'w3-text-white', 'w3-text-pink');      // in case squelched when recording stopped
 
@@ -10081,8 +10081,8 @@ function squelch_action(sq)
    
    if (recording) {
       var stop = (squelched || owrx.squelched_overload);
-      w3_remove_then_add('id-rec1', 'fa-spin', stop? '':'fa-spin');
-      w3_remove_then_add('id-rec2', 'fa-spin', stop? '':'fa-spin');
+      w3_spin('id-rec1', !stop);
+      w3_spin('id-rec2', !stop);
       w3_remove_then_add('id-rec1', 'w3-text-white w3-text-pink', stop? 'w3-text-white' : 'w3-text-pink');
       w3_remove_then_add('id-rec2', 'w3-text-white w3-text-pink', stop? 'w3-text-white' : 'w3-text-pink');
    }

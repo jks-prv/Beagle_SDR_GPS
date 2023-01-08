@@ -1165,24 +1165,61 @@ function w3_background_color(el_id, color)
 	return prev;
 }
 
-// colors = "bgColor/w3-bg-color, fgColor/w3-fg-color"
-// color '' to revert to default color
-function w3_colors(el_id, colors)
+// colors = color1 and [, color2] if cond
+// color[12] =
+//    'css-fg-color'
+//    ['css-fg-color', 'css-bg-color']
+//    'w3-color' or 'w3-text-color'
+// CSS color '' to revert to default color
+function w3_colors(el_id, c1, c2, cond)
 {
    var el = w3_el(el_id);
    if (!el) return null;
-   var ar = colors? colors.split(',') : null;
-   var bg = null, fg = null;
-   if (ar && ar.length > 0) bg = ar[0];
-   if (ar && ar.length > 1) fg = ar[1];
-   if (bg && bg.startsWith('w3-'))
-      w3_add(el, bg);
-   else
-      el.style.backgroundColor = bg;
-   if (fg && fg.startsWith('w3-'))
-      w3_add(el, fg);
-   else
-      el.style.color = fg;
+   cond = isArg(cond)? cond : true;
+
+   var fg1 = null, bg1 = null;
+   if (isArray(c1)) {
+      if (c1.length > 0) fg1 = c1[0];
+      if (c1.length > 1) bg1 = c1[1];
+   } else
+   if (isString(c1)) {
+      fg1 = c1;
+   } else {
+      return null;
+   }
+   
+   //console.log('w3_colors fg1='+ fg1 +' '+ cond);
+   if (fg1.startsWith('w3-')) {
+      w3_remove(el, fg1);
+      if (!cond) w3_add(el, fg1);
+   } else {
+         if (!cond) el.style.color = fg1;
+   }
+   if (bg1) {
+      el.style.backgroundColor = bg1;
+   }
+
+   var fg2 = null, bg2 = null;
+   if (isArray(c2)) {
+      if (c2.length > 0) fg2 = c2[0];
+      if (c2.length > 1) bg2 = c2[1];
+   } else
+   if (isString(c2)) {
+      fg2 = c2;
+   } else {
+      return null;
+   }
+   
+   //console.log('w3_colors fg2='+ fg2 +' '+ cond);
+   if (fg2.startsWith('w3-')) {
+      w3_remove(el, fg2);
+      if (cond) w3_add(el, fg2);
+   } else {
+         if (cond) el.style.color = fg2;
+   }
+   if (bg2) {
+      el.style.backgroundColor = bg2;
+   }
 }
 
 function w3_flip_colors(el_id, colors, cond)
@@ -1815,6 +1852,23 @@ function w3_link_set(path, url)
 
 
 ////////////////////////////////
+// image
+////////////////////////////////
+
+function w3_img_wh(src, func)
+{
+   // see: stackoverflow.com/questions/318630/get-the-real-width-and-height-of-an-image-with-javascript-in-safari-chrome
+   // There are huge issues obtaining the true height/width of an img given variable state during loading (caching etc).
+   var img = new Image();
+   img.onload = function() {
+      //console.log('w3_img_wh '+ this.width +'x'+ this.height +' src='+ src);
+      func(this.width, this.height);
+   };
+   img.src = src;
+}
+
+
+////////////////////////////////
 // buttons: radio
 ////////////////////////////////
 
@@ -2035,7 +2089,8 @@ function w3_button_text(path, text, color_or_add_color, remove_color)
 {
    var el = w3_el(path);
    if (!el) return null;
-   el.innerHTML = text;
+   if (isArg(text))
+      el.innerHTML = text;
    if (color_or_add_color) {
       if (color_or_add_color.startsWith('w3-')) {
          w3_remove(el, remove_color);
@@ -2045,6 +2100,11 @@ function w3_button_text(path, text, color_or_add_color, remove_color)
    }
    return el;
 }
+
+
+////////////////////////////////
+// icon
+////////////////////////////////
 
 function w3_icon(psa, fa_icon, size, color, cb, cb_param)
 {
@@ -2075,6 +2135,14 @@ function w3_icon(psa, fa_icon, size, color, cb, cb_param)
 	var s = '<i '+ p +'></i>';
 	//console.log(s);
 	return s;
+}
+
+function w3_spin(el, cond)
+{
+   var el = w3_el(el);
+   if (!el) return null;
+   cond = isArg(cond)? cond : true;
+   w3_remove_then_add(el, 'fa-spin', cond? 'fa-spin':'');
 }
 
 /*
@@ -3396,6 +3464,7 @@ function w3_table_cells(psa)
 function w3_inline(psa, attr)
 {
 	var narg = arguments.length;
+   var dump = psa.includes('w3-dump');
    
    if (psa == '' && attr == '' && narg > 2) {
       console.log('### w3_inline OLD API DEPRECATED');
@@ -3406,12 +3475,13 @@ function w3_inline(psa, attr)
       var psa3 = w3_psa3(psa);
       var psa_outer = w3_psa(psa3.middle, 'w3-show-inline-new');
       var psa_inner = w3_psa(psa3.right);
+         if (dump) console.log('w3_inline psa_outer='+ psa_outer +' psa_inner='+ psa_inner);
       var s = '<div w3d-inlo '+ psa_outer +'>';
       for (var i = 1; i < narg; i++) {
          var psa;
          var a = arguments[i];
          if (!a) continue;
-         //console.log('w3_inline i='+ i +' a='+ a);
+         if (dump) console.log('w3_inline i='+ i +' a='+ a);
          
          // merge a pseudo psa specifier into the next argument
          // i.e. 'w3-*', w3_*('w3-psa') => w3_*('w3-* w3-psa')
@@ -3435,7 +3505,7 @@ function w3_inline(psa, attr)
             s += '<div w3d-inli-'+ (i-1) +' '+ psa +'>'+ a + '</div>';
       }
       s += '</div>';
-      //console.log(s);
+      if (dump) console.log(s);
       return s;
    }
 }

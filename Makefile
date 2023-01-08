@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 573
+VERSION_MIN = 574
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -140,6 +140,7 @@ OBJ_DIR_O3 := $(BUILD_DIR)/obj_O3
 KEEP_DIR := $(BUILD_DIR)/obj_keep
 GEN_DIR := $(BUILD_DIR)/gen
 TOOLS_DIR := $(BUILD_DIR)/tools
+DIR_DATA = /tmp/kiwi.data
 
 ifeq ($(OPT),0)
 	OBJ_DIR_DEFAULT = $(OBJ_DIR)
@@ -432,7 +433,7 @@ V = -Dv$(VERSION_MAJ)_$(VERSION_MIN)
 
 INT_FLAGS += $(VERSION) -DKIWI -DKIWISDR
 INT_FLAGS += -DARCH_$(ARCH) -DCPU_$(CPU) -DARCH_CPU=$(CPU) -DARCH_CPU_S=STRINGIFY\($(CPU)\) $(addprefix -DPLATFORM_,$(PLATFORMS))
-INT_FLAGS += -DDIR_CFG=STRINGIFY\($(DIR_CFG)\) -DCFG_PREFIX=STRINGIFY\($(CFG_PREFIX)\)
+INT_FLAGS += -DDIR_CFG=STRINGIFY\($(DIR_CFG)\) -DDIR_DATA=STRINGIFY\($(DIR_DATA)\) -DCFG_PREFIX=STRINGIFY\($(CFG_PREFIX)\)
 INT_FLAGS += -DBUILD_DIR=STRINGIFY\($(BUILD_DIR)\) -DREPO=STRINGIFY\($(REPO)\) -DREPO_NAME=STRINGIFY\($(REPO_NAME)\)
 
 
@@ -1185,7 +1186,8 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	@echo "# DANGER: CHECK FOR MINIMIZATION FAILURE"
 	@echo "# kiwi_js_load.min.js and xd-utils.min.js are okay to be in this list"
 	find . -name "*.min.js" -size -1k -ls
-	# next are for when dotmaui is down and local JShrink/Minifier is in use for *.js (ONLY)
+	# next is to remind us dotmaui is down and local JShrink/Minifier (used for *.js ONLY)
+	# is not compressing .min.html and .min.css files
 	find . -name "*.min.html" -exec grep -q "no minifier" "{}" \; -ls
 	find . -name "*.min.css" -exec grep -q "no minifier" "{}" \; -ls
 	@echo "############################################"

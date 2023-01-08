@@ -37,6 +37,8 @@ typedef struct {
     u4_t tsamps1, tsamps2;
 } drm_info_t;
 
+typedef enum { DRM_MSG_STATUS, DRM_MSG_SERVICE, DRM_MSG_JOURNALINE, DRM_MSG_SLIDESHOW } drm_msg_e;
+
 typedef struct {
     DRM_CHECK(u4_t magic1;)
 	bool init;
@@ -67,12 +69,15 @@ typedef struct {
     u4_t no_input;
     u4_t sent_silence;
 
-    u4_t msg_tx_seq, msg_rx_seq;
-    #define N_MSGCMD 32
-    char msg_cmd[N_MSGCMD];
-    #define N_MSGBUF 4096
-    char msg_buf[N_MSGBUF];
-    
+    // DRM_msg_encoded()
+    #define N_MSGBUF 4
+    #define L_MSGCMD 32
+    #define L_MSGBUF 4096
+    char msg_cmd[N_MSGBUF][L_MSGCMD];
+    char msg_buf[N_MSGBUF][L_MSGBUF];
+    u4_t msg_tx_seq[N_MSGBUF], msg_rx_seq[N_MSGBUF];
+
+    // DRM_data()
     u4_t data_tx_seq, data_rx_seq;
     u4_t data_nbuf;
     #define N_DATABUF (64*2 + 256*2 + 2048*2)
@@ -139,5 +144,6 @@ typedef struct {
     #endif
 #endif
 
-void DRM_msg_encoded(drm_t *drm, const char *cmd, kstr_t *ks);
-void DRM_data(drm_t *drm, u1_t cmd, u1_t *data, u4_t nbuf);
+int DRM_rx_chan();
+void DRM_msg_encoded(drm_msg_e msg_type, const char *cmd, kstr_t *ks);
+void DRM_data(u1_t cmd, u1_t *data, u4_t nbuf);

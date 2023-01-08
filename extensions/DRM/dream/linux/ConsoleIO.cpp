@@ -36,6 +36,8 @@
  *
 \******************************************************************************/
 
+#include "mem.h"
+
 #include "DRM_main.h"
 
 #include <unistd.h>
@@ -100,13 +102,11 @@ CConsoleIO::Update(drm_t *drm)
         unsigned long long curtime = (unsigned long long)ts.tv_sec*1000 + (unsigned long long)ts.tv_nsec/1000000;
     #endif
     
-	if ((curtime - time) < GUI_CONTROL_UPDATE_TIME) {
-	//if ((curtime - time) < 250) {
-        //printf("%llu ", curtime - time); fflush(stdout);
+	if ((curtime - time_iq) < GUI_IQ_UPDATE_TIME) {
 		return RUNNING;
 	}
     //printf("."); fflush(stdout);
-	time = curtime;
+	time_iq = curtime;
 	
 	if (drm->send_iq) {
         pDRMReceiver->GetFACMLC()->GetVectorSpace(facIQ);
@@ -127,9 +127,18 @@ CConsoleIO::Update(drm_t *drm)
             u1[j*2]   = (mscIQ[i].real() + 1.5) * 255.0 / 3.0;
             u1[j*2+1] = (mscIQ[i].imag() + 1.5) * 255.0 / 3.0;
         }
-        DRM_data(drm, (u1_t) DRM_DAT_IQ, u1, N_IQDATA);
+        DRM_data((u1_t) DRM_DAT_IQ, u1, N_IQDATA);
         //printf("%d|%d|%d ", facIQ.Size(), sdcIQ.Size(), mscIQ.Size()); fflush(stdout);
     }
+
+
+	if ((curtime - time) < GUI_CONTROL_UPDATE_TIME) {
+	//if ((curtime - time) < 250) {
+        //printf("%llu ", curtime - time); fflush(stdout);
+		return RUNNING;
+	}
+    //printf("."); fflush(stdout);
+	time = curtime;
 
 	char *sb;
 
@@ -154,11 +163,13 @@ CConsoleIO::Update(drm_t *drm)
     if (signal) {
         _REAL rSNR = Parameters.GetSNR();
         sb = kstr_asprintf(sb,
-            ",\"snr\":%.1f,\"mod\":%d,\"occ\":%d,\"ilv\":%d,\"sdc\":%d,\"msc\":%d,\"plb\":%d,\"pla\":%d,\"nas\":%d,\"nds\":%d",
+            ",\"snr\":%.1f,\"mod\":%d,\"occ\":%d,\"ilv\":%d,\"sdc\":%d,\"msc\":%d,\"plb\":%d,\"pla\":%d,\"nas\":%d,\"nds\":%d,"
+            "\"epg\":%d",
             rSNR, Parameters.GetWaveMode(), Parameters.GetSpectrumOccup(), Parameters.eSymbolInterlMode,
             Parameters.eSDCCodingScheme, Parameters.eMSCCodingScheme,
             Parameters.MSCPrLe.iPartB, Parameters.MSCPrLe.iPartA,
-            Parameters.iNumAudioService, Parameters.iNumDataService
+            Parameters.iNumAudioService, Parameters.iNumDataService,
+            decoder->iEPGService
         );
     }
 
@@ -272,7 +283,7 @@ CConsoleIO::Update(drm_t *drm)
     Parameters.Unlock();
 
     sb = kstr_cat(sb, "}");
-    DRM_msg_encoded(drm, "drm_status_cb", sb);
+    DRM_msg_encoded(DRM_MSG_STATUS, "drm_status_cb", sb);
     kstr_free(sb);
     
 
@@ -313,16 +324,28 @@ CConsoleIO::Update(drm_t *drm)
             if (new_total == 0)
                 drm->journaline_objID = 0;
         }
-        //printf("JL %s\n", c_s);
         sb = kstr_asprintf(NULL, "{\"l\":%d,\"t\":\"%s\",\"a\":[", drm->journaline_objID, c_s);
         
-        int iLink;
         bool comma = false;
         for (int i = 0; i < new_total; i++) {
+            int iLink = News.vecItem[i].iLink;
             c_s = (char *) News.vecItem[i].sText.c_str();
-            iLink = News.vecItem[i].iLink;
+            
+            #if 0
+                printf("JL%d %x %p sl=%d\n", i, iLink, c_s, strlen(c_s));
+                for (int j = 0; j < strlen(c_s); j++) {
+                    char c = c_s[j];
+                    if (c < ' ' && c != '\n')
+                        printf("JL %02x@%d\n", c, j);
+                }
+            #endif
+            
+            kiwi_str_replace(c_s, "\n", " ");
+            char *c2_s = kiwi_str_escape_HTML(c_s);     // also removes non-printing chars
+            if (c2_s) c_s = c2_s;
             sb = kstr_asprintf(sb, "%s{\"i\":%d,\"l\":%d,\"s\":\"%s\"}",
                 comma? ",":"", i, iLink, c_s);
+            if (c2_s) kiwi_ifree(c2_s);
             comma = true;
 
             #if 0
@@ -340,25 +363,9 @@ CConsoleIO::Update(drm_t *drm)
             #endif
         }
         sb = kstr_cat(sb, "]}");
-        DRM_msg_encoded(drm, "drm_journaline_cb", sb);
+        //printf("%s\n", kstr_sp(sb));
+        DRM_msg_encoded(DRM_MSG_JOURNALINE, "drm_journaline_cb", sb);
         kstr_free(sb);
-
-        #if 0
-            for (int i = 0; i < new_total; i++) {
-                if (News.vecItem[i].iLink < 0)
-                    continue;
-                iLink = News.vecItem[i].iLink;
-                CNews subNews;
-                decoder->GetNews(iLink, subNews);
-                printf(">>> %d SUB %x %s --------------------------------------------------------------\n",
-                    i, iLink, subNews.sTitle.c_str());
-                for (int j = 0; j < subNews.vecItem.Size(); j++) {
-                    int jLink = subNews.vecItem[j].iLink;
-                    printf("%d|%d SUB %x(%d) %s\n",
-                        i, j, jLink, jLink, subNews.vecItem[j].sText.c_str());
-                }
-            }
-        #endif
     }
 
 

@@ -8,6 +8,8 @@ var drm = {
    dseq: 0,
    interval: null,
    interval2: null,
+   info_msg: '<br>',
+   error: false,
 
    locked: 0,
    wrong_srate: false,
@@ -19,32 +21,45 @@ var drm = {
    freq_s: '',
    freq: 0,
    
+   nsvcs: 4,
+   csvc: 1,       // NB: 1-based
+   
    // ui
-   w_graph_nom: 675,
-   w_graph_min: 400,
+   w_multi_nom: 675,
+   w_multi_min: 400,
+   h_data: 300,
    status_tc: [ 'black', 'black', 'white', 'white', 'white' ],
    status_bc: [ 'lime', 'yellow', 'red', 'red', 'grey' ],
+   ST_GRN: 0,
+   ST_YEL: 1,
+   ST_RED: 2,
+   ST_GRY: 4,
 
-   panel_0:    [  'info',     'info',     'info',     'info',        'info',        'info',  'info',  'info',  'info' ],
-   panel_1:    [  'by-svc',   'by-time',  'by-freq',  'journaline',  'graph',       'IQ',    'IQ',    'IQ',    'IQ' ],
-   panel_1_bg: [  'black',    'black',    'black',    'white',       'mediumBlue',  'black', 'black', 'black', 'black' ],
+   panel_0:    [  'info',     'info',     'info',     'info',  'info',        'info',        'info',  'info',  'info',  'info',  'info' ],
+   panel_1:    [  'by-svc',   'by-time',  'by-freq',  'EPG',   'journaline',  'slideshow',   'graph', 'IQ',    'IQ',    'IQ',    'IQ' ],
 
-   BY_SVC: 0,
-   BY_TIME: 1,
-   BY_FREQ: 2,
-   JOURNALINE: 3,
-   GRAPH: 4,
-   IQ_ALL: 5,
-   FAC: 6,
-   SDC: 7,
-   MSC: 8,
-   IQ_END: 8,
+   display:    0,    // NB: sequential compared to display_idx which is a menu index
+   BY_SVC:     0,
+   BY_TIME:    1,
+   BY_FREQ:    2,
+   EPG:        3,
+   JOURNALINE: 4,
+   SLIDESHOW:  5,
+   GRAPH:      6,
+   IQ_ALL:     7,
+   FAC:        8,
+   SDC:        9,
+   MSC:        10,
+   IQ_END:     10,
    
-   display_idx: 1,
-   //display_idx: 5,
-   display_idx_s:    [ 'schedule', 'media', 'graph', 'iq' ],
-   display_idx_si:   [ 1, 5, 7, 9 ],   // index into display_s below (enumerated object keys and values)
+   // for URL param
+   display_idx_s:    [ 'schedule', 'program', 'journaline', 'slideshow', 'graph', 'iq' ],
+   display_idx_si:   [ 1, 5, 6, 7, 9, 11 ],  // index into display_s below (enumerated object keys and values)
    
+   display_idx:      1,
+   JOURNALINE_IDX:   6,
+   SLIDESHOW_IDX:    7,
+
    display_s: {
       'Schedule': [
          { m:'by service' },           // display_idx = 1
@@ -52,13 +67,15 @@ var drm = {
          { m:'by freq' }
       ],
       'Media': [
-         { m:'Journaline' },           // display_idx = 5
+         { m:'Program Guide' },        // display_idx = 5
+         { m:'Journaline&reg;' },      // display_idx = 6
+         { m:'Slideshow' },            // display_idx = 7
       ],
       'Stats': [
-         { m:'IF/SNR', c:'graph' },    // display_idx = 7
+         { m:'IF/SNR', c:'graph' },    // display_idx = 9
       ],
       'IQ': [
-         { m:'all', c:'IQ' },          // display_idx = 9
+         { m:'all', c:'IQ' },          // display_idx = 11
          { m:'FAC', c:'IQ' },
          { m:'SDC', c:'IQ' },
          { m:'MSC', c:'IQ' }
@@ -114,10 +131,21 @@ var drm = {
       { n:'11m', b:25500, e:26200 }
    ],
    
+   // media: EPG
+   
+   // media: journaline
    JOURNALINE_LINK_NOT_ACTIVE: -1,
    JOURNALINE_IS_NO_LINK: -2,
    journaline_objID: 0,
    journaline_stk: [],
+   
+   // media: slideshow
+   SS_PLAY: 2,
+   SS_RESET: -2,
+   cur_slide: -1,
+   slides: [],
+   play: 0,
+   ss_ping_pong: 0,
 
    last_last: 0
 };
@@ -334,15 +362,15 @@ function drm_recv(data)
 
 			      w3_innerHTML('id-drm-nsvc', sprintf('Services: A=%d D=%d', o.nas, o.nds));
 
-			      if (o.mod >= 0 && o.mod <= 3)
-                  w3_innerHTML('id-drm-desc',
+			      if (o.mod >= 0 && o.mod <= 3 && !drm.error) {
+                  drm.info_msg = 
                      [
-                        'Local/regional use',
-                        'Medium range use, multipath resistant',
-                        'Long distance use, multipath/doppler resistant',
-                        'Resistance to large delay/doppler spread'
-                     ][o.mod]
-                  );
+                        'Mode A: Local/regional use',
+                        'Mode B: Medium range use, multipath resistant',
+                        'Mode C: Long distance use, multipath/doppler resistant',
+                        'Mode D: Resistance to large delay/doppler spread'
+                     ][o.mod];
+               }
 			   } else {
                drm_reset_status();
             }
@@ -374,11 +402,19 @@ function drm_recv(data)
                if (ao.dat != -1)
                   w3_color('id-drm-data-'+ i, drm.status_tc[ao.dat], drm.status_bc[ao.dat]);
 			   });
+			   
             w3_show('id-drm-svcs');
-            if (codec != drm.AAC && codec != drm.xHE_AAC) console.log('codec='+ codec);
-            w3_innerHTML('id-drm-error',
-               (codec != drm.AAC && codec != drm.xHE_AAC)? 'WARNING: codec not supported -- audio will be bad' : '<br>');
-            w3_color('id-drm-error', 'white', 'red', (codec != drm.AAC && codec != drm.xHE_AAC));
+            
+            if (codec != drm.AAC && codec != drm.xHE_AAC) {
+               console.log('codec='+ codec);
+               s = 'WARNING: codec not supported -- audio will be bad';
+               drm.error = true;
+            } else {
+               s = drm.info_msg;
+               drm.error = false;
+            }
+            w3_innerHTML('id-drm-info', s);
+            w3_color('id-drm-info', 'white', 'red', drm.error);
 
 			   w3_innerHTML('id-drm-msgs', o.msg? kiwi_clean_html(kiwi_clean_newline(decodeURIComponent(o.msg))) : '');
 			   break;
@@ -387,31 +423,53 @@ function drm_recv(data)
 			   var s = kiwi_decodeURIComponent('DRM', param[1]);
 			   //console.log(s);
             var o = kiwi_JSON_parse('drm_journaline_cb', s);
-			   console.log(o);
-			   drm.journaline_objID = +o.l;
-			   
-			   s = w3_icon('w3-link-darker-color', 'fa-backward', 24, '', 'drm_journaline_back');
-			   var title = (o.t == '')? 'Waiting for data..' : o.t;
-			   s += '&nbsp;&nbsp;&nbsp;Journaline: '+ title +' ('+ o.l.toHex() +')<br><ul>';
-			   o.a.forEach(function(e, i) {
-			      if (e.l == drm.JOURNALINE_IS_NO_LINK) {
-			         s += e.s +'<br>';
-			      } else
-			      if ( e.l == drm.JOURNALINE_LINK_NOT_ACTIVE) {
-			         s += '<li>'+ e.s +'</li>';
-			      } else {
-			         s += '<li>'+ w3_link('w3-underline w3-link-darker-color', '', e.s, '', 'drm_journaline_link', e.l.toHex());
-			         s += ' ('+ e.l.toHex() +')</li>';
-			      }
-			   });
-			   /*
-			   s += 'scroll test1<br>';
-			   s += 'scroll test2<br>';
-			   s += 'scroll test3<br>';
-			   s += 'scroll test4<br>';
-			   */
-			   s += '</ul>';
-			   w3_innerHTML('id-drm-panel-1-journaline', w3_div('w3-absolute w3-width-full w3-height-full w3-scroll-y', s));
+            if (isNull(o)) {
+               s = '&nbsp;(data error, see browser console log)';
+               drm_status('journaline', drm.ST_YEL);
+            } else {
+               //console.log(o);
+               var link = +o.l
+               s = link? w3_icon('w3-link-darker-color w3-margin-LR-4', 'fa-backward', 24, '', 'drm_journaline_back') : '';
+               s += '&nbsp;NewsService Journaline&reg; &#8209; ';
+               drm.journaline_objID = link;
+               var title;
+               if (o.t == '') {
+                  title = 'Waiting for data..';
+               } else {
+                  title = o.t;
+               }
+               s += title;
+               if (dbgUs) s += ' ('+ link.toHex() +')';
+               s += '<br><ul>';
+               o.a.forEach(function(e, i) {
+                  if (e.l == drm.JOURNALINE_IS_NO_LINK) {
+                     s += e.s +'<br>';
+                  } else
+                  if ( e.l == drm.JOURNALINE_LINK_NOT_ACTIVE) {
+                     s += '<li>'+ e.s +'</li>';
+                  } else {
+                     s += '<li>'+ w3_link('w3-underline w3-link-darker-color', '', e.s, '', 'drm_journaline_link', e.l.toHex());
+                     if (dbgUs) s += ' ('+ e.l.toHex() +')';
+                     s += '</li>';
+                  }
+               });
+               s += '</ul>';
+               drm_status('journaline', drm.ST_GRN);
+            }
+			   w3_innerHTML('id-drm-journaline', s);
+			   break;
+			
+			case "drm_slideshow_status":
+            drm_status('slideshow', drm.ST_GRN);
+			   break;
+
+			case "drm_slideshow_cb":
+			   var fn = kiwi_decodeURIComponent('DRM', param[1]);
+			   console.log('DRM slideshow fn='+ fn);
+			   drm.slides.push(fn);
+			   drm.slides = kiwi_dedup_array(drm.slides);
+			   if (!drm.play)
+			      drm_slideshow_display(drm.slides.length-1);
 			   break;
 
 			case "drm_bar_pct":
@@ -438,6 +496,19 @@ function drm_recv(data)
 				break;
 		}
 	}
+}
+
+
+////////////////////////////////
+// Journaline
+////////////////////////////////
+
+function drm_journaline_init()
+{
+}
+
+function drm_journaline_select()
+{
 }
 
 function drm_journaline_reset_cb(path, idx, first)
@@ -471,6 +542,91 @@ function drm_journaline_back(path, cb_param)
    ext_send('SET journaline_objID='+ objID);
 }
 
+
+////////////////////////////////
+// slideshow
+////////////////////////////////
+
+function drm_slideshow_init()
+{
+}
+
+function drm_slideshow_select()
+{
+   drm_slideshow_display(0);
+}
+
+function drm_slideshow_display(n)
+{
+   var src, pp, s1, s2;
+   drm.cur_slide = drm.slides.length? w3_clamp(n, 0, drm.slides.length-1) : -1;
+   //console.log('drm_slideshow_display: n='+ n +' cur_slide='+ drm.cur_slide);
+   if (drm.cur_slide < 0) {
+      s1 = 'No';
+      drm.ss_img[0].src = '';
+      drm.ss_img[1].src = '';
+      drm.ss_ping_pong = 0;
+      s2 = 'No images received';
+   } else {
+      s1 = drm.slides.length;
+      drm.ss_ping_pong ^= 1;
+      pp = drm.ss_ping_pong;
+      src = 'kiwi.data/drm.ch'+ rx_chan +'_'+ drm.slides[drm.cur_slide];
+      drm.ss_img[pp].src = src;
+      drm.ss_img[pp^1].style.opacity = 0;
+      drm.ss_img[pp].style.opacity = 1;
+      w3_innerHTML(drm.ss_info, '');      // blank until new height has been determined
+      s2 = sprintf('%d of %d', drm.cur_slide+1, +s1);
+   }
+   w3_innerHTML('id-drm-nslides', s1 +' image'+ ((s1 != 1)? 's':'') +' received');
+   
+   if (drm.cur_slide < 0) {
+      drm.ss_info.style.top = 0;
+      w3_innerHTML(drm.ss_info, s2);
+   } else {
+      w3_img_wh(src, function(w, h) {
+         drm.ss_info.style.top = px(h);
+         w3_innerHTML(drm.ss_info, s2);
+      });
+   }
+   
+   w3_colors('id-drm-btn-play', 'w3-text-pink', 'w3-text-css-lime', drm.play); 
+   w3_spin('id-drm-btn-play', drm.play);
+}
+
+function drm_slideshow_step_cb(path, idx, first)
+{
+   if (first) return;
+   idx = +idx;
+   //console.log('drm_slideshow_step_cb idx='+ idx);
+   var start_playing = 0;
+
+   switch (idx) {
+      case 0: drm.cur_slide = 0; break;
+      case 1: case -1: drm.cur_slide += idx; break;
+      case drm.SS_RESET: default: drm.slides = []; drm.play = 0; break;
+      case drm.SS_PLAY:
+         if (drm.slides.length) {
+            drm.play ^= 1;
+            if (drm.play) start_playing = 1;
+         }
+         break;
+   }
+   
+   drm_slideshow_display(drm.cur_slide);
+   if (start_playing) {
+      drm.slideshow_interval = setInterval(function() {
+         if (!drm.slides.length) return;
+         drm.cur_slide++;
+         if (drm.cur_slide >= drm.slides.length) drm.cur_slide = 0;
+         drm_slideshow_display(drm.cur_slide);
+      }, 5000);
+   } else {
+      kiwi_clearInterval(drm.slideshow_interval);
+   }
+}
+
+
 function drm_annotate(color)
 {
    graph_annotate(drm.gr_if, color);
@@ -480,20 +636,26 @@ function drm_annotate(color)
 function drm_reset_status()
 {
    //console.log('drm_reset_status');
-   drm_all_status(4,4,4,4,4,4);
+   drm_all_status();
    w3_innerHTML('id-drm-if_level', '');
    w3_innerHTML('id-drm-snr', '');
    w3_hide('id-drm-mode');
    for (var i = 0; i <= 3; i++)
       w3_color('id-drm-mod-'+ ['A','B','C','D'][i], '', '');
-   w3_innerHTML('id-drm-error', '');
+   drm.info_msg = '<br>';
+   drm_status('program');
+   drm_status('journaline');
+   drm_status('slideshow');
+   w3_innerHTML('id-drm-info', '');
    w3_hide('id-drm-svcs');
    w3_innerHTML('id-drm-msgs', '');
 }
 
-function drm_status(id, v)
+function drm_status(id, v, from)
 {
-   w3_color('id-drm-status-'+ id, drm.status_bc[v]);
+   if (!isUndefined(from)) console.log('drm_status '+ id +' from='+ from +' v='+ v);
+   if (isUndefined(v)) v = drm.ST_GRY;
+   w3_color('id-drm-status-'+ id.slice(0,5), drm.status_bc[v]);
 }
 
 function drm_all_status(io, time, frame, FAC, SDC, MSC)
@@ -1005,11 +1167,11 @@ function drm_mobile_controls_setup(mobile)
 	}, 500);
 }
 
-function drm_desktop_controls_setup(w_graph)
+function drm_desktop_controls_setup(w_multi)
 {
    var s;
    var controls_inner, data_html = null;
-   var h = 250;
+   var h = drm.h_data;
    var w_lhs = 25;
    var w_msg = 500;
    var w_msg2 = 450;
@@ -1048,16 +1210,16 @@ function drm_desktop_controls_setup(w_graph)
       controls_inner = w3_text('w3-medium w3-text-css-yellow', s);
    } else {
       var svcs = 'Services:<br>';
-      for (var i=1; i <= 4; i++) {
+      for (var i=1; i <= drm.nsvcs; i++) {
          svcs +=
             w3_inline('',
-               w3_checkbox('w3-margin-R-4', '', 'drm.svc'+ i, (i == 1), 'drm_svcs_cbox_cb'),
+               w3_checkbox('w3-margin-R-4', '', 'drm.svc'+ i, (i == drm.csvc), 'drm_svcs_cbox_cb'),
                w3_span('id-drm-data-'+ i +' cl-drm-data', 'D'),
                w3_div('id-drm-svc-'+ i +'|width:100%')
             );
       }
    
-      var sblk = function(id)    { return id +' '+ w3_icon('id-drm-status-'+ id.toLowerCase(), 'fa-square', 16, 'grey') +' &nbsp;&nbsp;'; };
+      var sblk = function(id)    { return w3_icon('id-drm-status-'+ id.slice(0,5).toLowerCase(), 'fa-square', 16, 'grey') +' '+ id +'&nbsp;&nbsp;'; };
       var tblk = function(id,t)  { return w3_span('id-drm-'+ id +' cl-drm-blk', t); };
       var mblk = function(t)     { return tblk('mod-'+ t, t); };
       var oblk = function(t)     { return tblk('occ-'+ t, t); };
@@ -1065,16 +1227,17 @@ function drm_desktop_controls_setup(w_graph)
       var qsdc = function(t)     { return tblk('sdc-'+ t, t); };
       var qmsc = function(t)     { return tblk('msc-'+ t, t); };
 
-      var width =  w_msg + w_graph;
-      drm.w_sched = w_graph;
-      var twidth = w_lhs + width;
-      var margin = 10;
+      drm.w_sched = w_multi;
+      var twidth = w_lhs + w_msg + w_multi;
+      var m_ss = 10;
+      var w_ss = w_multi - m_ss - kiwi_scrollbar_width();
+      var h_ss = drm.h_data - m_ss - kiwi_scrollbar_width();
 
       data_html =
          time_display_html('drm') +
          
          w3_div(sprintf('id-drm-panel-0-info w3-relative w3-no-scroll|width:%dpx; height:%dpx; background-color:black;', twidth, h),
-            w3_div(sprintf('id-drm-console-msg w3-margin-T-8 w3-small w3-text-white w3-absolute|left:%dpx; width:%dpx; height:%dpx; overflow-x:hidden;',
+            w3_div(sprintf('id-drm-console-msg w3-margin-T-2 w3-small w3-text-white w3-absolute|left:%dpx; width:%dpx; height:%dpx; overflow-x:hidden;',
                w_lhs, w_msg, h),
                w3_div('id-drm-status', sblk('IO') + sblk('Time') + sblk('Frame') + sblk('FAC') + sblk('SDC') + sblk('MSC')),
                w3_inline('w3-halign-space-between|width:250px/',
@@ -1092,51 +1255,91 @@ function drm_desktop_controls_setup(w_graph)
                      w3_div('id-drm-prot w3-margin-left'),
                      w3_div('id-drm-nsvc w3-margin-left')
                   ),
-                  w3_div('id-drm-desc')
+                  w3_inline('id-drm-media/w3-show-inline',
+                     'Media:&nbsp;&nbsp;', sblk('Program Guide'), sblk('Journaline&reg;'), sblk('Slideshow')
+                  )
                ),
-               w3_div('id-drm-error|width:'+ px(w_msg2)),
-               w3_div('id-drm-svcs w3-hide|width:'+ px(w_msg2), svcs),
-               '<br><br>',
-               w3_div(sprintf('id-drm-msgs|width:%dpx', w_msg))
+               w3_div('id-drm-info w3-margin-T-2|width:'+ px(w_msg2)),
+               w3_div('id-drm-svcs w3-margin-T-8 w3-hide|width:'+ px(w_msg2), svcs),
+               w3_div(sprintf('id-drm-msgs w3-margin-T-4|width:%dpx', w_msg))
             ),
 
-            w3_div(sprintf('id-drm-panel-multi w3-absolute|width:%dpx; height:%dpx; left:%dpx;', w_graph, h, w_lhs + w_msg),
-               w3_div(sprintf('id-drm-panel-1-by-svc cl-drm-sched|width:%dpx; height:100%%;', w_graph),
+            w3_div(sprintf('id-drm-panel-multi w3-absolute|width:%dpx; height:%dpx; left:%dpx;', w_multi, h, w_lhs + w_msg),
+               w3_div(sprintf('id-drm-panel-1-by-svc cl-drm-sched|width:%dpx; height:100%%;', w_multi),
                   w3_div('id-drm-tscale', drm_schedule_static()),
                   w3_div('id-drm-panel-by-svc w3-scroll-y w3-absolute|width:100%; height:100%;', drm.loading_msg)
                ),
-               w3_div(sprintf('id-drm-panel-1-by-time cl-drm-sched|width:%dpx; height:100%%;', w_graph),
+               w3_div(sprintf('id-drm-panel-1-by-time cl-drm-sched|width:%dpx; height:100%%;', w_multi),
                   w3_div('id-drm-tscale', drm_schedule_static()),
                   w3_div('id-drm-panel-by-time w3-scroll-y w3-absolute|width:100%; height:100%;', drm.loading_msg)
                ),
-               w3_div(sprintf('id-drm-panel-1-by-freq cl-drm-sched|width:%dpx; height:100%%;', w_graph),
+               w3_div(sprintf('id-drm-panel-1-by-freq cl-drm-sched|width:%dpx; height:100%%;', w_multi),
                   w3_div('id-drm-tscale', drm_schedule_static()),
                   w3_div('id-drm-panel-by-freq w3-scroll-y w3-absolute|width:100%; height:100%;', drm.loading_msg)
                ),
 
-               w3_div(sprintf('id-drm-panel-1-journaline w3-absolute w3-text-black|width:%dpx; height:100%%;', w_graph)),
-
-               w3_div('id-drm-panel-1-graph w3-show-block',
-                  //w3_canvas('id-drm-graph-if', w_graph, h/2, { pad_top:pad, pad_bottom:pad/2 }),
-                  //w3_canvas('id-drm-graph-snr', w_graph, h/2, { pad_top:pad, pad_bottom:pad/2, top:h/2 })
-                  w3_canvas('id-drm-graph-if', w_graph, h/2 - pad*2 , { top:pad }),
-                  w3_canvas('id-drm-graph-snr', w_graph, h/2 - pad*2, { top:h/2 + pad })
+               w3_div(sprintf('id-drm-panel-1-EPG w3-absolute w3-light-blue w3-text-black|width:%dpx; height:100%%;', w_multi),
+                  w3_div('id-drm-program w3-margin-TL-10 w3-absolute w3-width-full w3-height-full w3-scroll-y',
+                     '(not yet implemented)'
+                  )
                ),
 
-               w3_canvas('id-drm-panel-1-IQ', w_graph, h, { pad:pad })
+               w3_div(sprintf('id-drm-panel-1-journaline w3-absolute w3-light-blue w3-text-black|width:%dpx; height:100%%;', w_multi),
+                  w3_div('id-drm-journaline w3-margin-TL-10 w3-absolute w3-width-full w3-height-full w3-scroll-y')
+               ),
+
+               w3_div(sprintf('id-drm-panel-1-slideshow w3-relative w3-light-blue|width:%dpx; height:100%%;', w_multi),
+                  w3_div(sprintf('w3-margin-TL-%d w3-relative w3-scroll|width:%dpx; height:%dpx', m_ss, w_ss, h_ss),
+                     w3_div('id-drm-slideshow-images',
+                        '<img id="id-drm-slideshow-img0" class="cl-drm-slideshow-img" src="">' +
+                        '<img id="id-drm-slideshow-img1" class="cl-drm-slideshow-img" src="">'
+                     ),
+                     w3_div('id-drm-slideshow-info w3-relative')
+                  )
+               ),
+
+               w3_div('id-drm-panel-1-graph w3-show-block||color:mediumBlue',
+                  //w3_canvas('id-drm-graph-if', w_multi, h/2, { pad_top:pad, pad_bottom:pad/2 }),
+                  //w3_canvas('id-drm-graph-snr', w_multi, h/2, { pad_top:pad, pad_bottom:pad/2, top:h/2 })
+                  w3_canvas('id-drm-graph-if', w_multi, h/2 - pad*2 , { top:pad }),
+                  w3_canvas('id-drm-graph-snr', w_multi, h/2 - pad*2, { top:h/2 + pad })
+               ),
+
+               w3_canvas('id-drm-panel-1-IQ', w_multi, h, { pad:pad })
             )
          ) +
 
          w3_div('id-drm-options w3-display-right w3-text-white|top:230px; right:0px; width:200px; height:200px',
             w3_select_hier('w3-text-red w3-width-auto', '', '', 'drm.display_idx', drm.display_idx, drm.display_s, 'drm_display_cb'),
             w3_div('w3-margin-T-8',
+            
                w3_divs('id-drm-options-by-svc id-drm-options-by-time id-drm-options-by-freq/w3-tspace-4',
                   w3_div('cl-drm-sched-options-time w3-light-green', 'verified'),
                   w3_div('cl-drm-sched-options-time', 'not verified'),
                   w3_link('w3-link-color', 'http://forum.kiwisdr.com/discussion/1865/drm-heard#latest', 'Please report<br>schedule changes')
                ),
+               
+               w3_div('id-drm-options-EPG',
+                  w3_button('w3-btn w3-small w3-padding-smaller w3-grey w3-momentary', 'Reset', 'drm_EPG_reset_cb', 1)
+               ),
+               
                w3_div('id-drm-options-journaline',
-                  w3_button('class-button w3-small w3-grey w3-momentary', 'Reset', 'drm_journaline_reset_cb', 1)
+                  w3_button('w3-btn w3-small w3-padding-smaller w3-grey w3-momentary', 'Reset', 'drm_journaline_reset_cb', 1)
+               ),
+               
+               w3_divs('id-drm-options-slideshow/w3-tspace-8',    // ugh, can't be doing dynamic w3_hide() on w3_inline()
+                  w3_div('id-drm-nslides'),
+                  
+                  w3_inline('/w3-margin-between-8',
+                     w3_button('w3-btn w3-small w3-padding-smaller w3-cyan', 'First', 'drm_slideshow_step_cb', 0),
+                     w3_button('w3-btn w3-small w3-padding-smaller w3-ext-btn', 'Next', 'drm_slideshow_step_cb', 1),
+                     w3_button('w3-btn w3-small w3-padding-smaller w3-ext-btn', 'Prev', 'drm_slideshow_step_cb', -1)
+                  ),
+                  w3_inline('/w3-margin-between-8',
+                     w3_icon('id-drm-btn-play w3-static||title="play slideshow"',
+                        'fa-repeat fa-stack-1x', 22, '', 'drm_slideshow_step_cb', drm.SS_PLAY),
+                     w3_button('w3-btn w3-small w3-padding-smaller w3-grey', 'Reset', 'drm_slideshow_step_cb', drm.SS_RESET)
+                  )
                )
             )
          );
@@ -1144,7 +1347,7 @@ function drm_desktop_controls_setup(w_graph)
       controls_inner =
          w3_inline('w3-halign-space-between w3-margin-T-8/',
             w3_text('w3-text-white',
-               'Schedules in top panel: Click on green/pink bars to tune a station. <br>' +
+               'Top panel schedules: Click green/pink bars to tune station. Hover to see times.<br>' +
                'Use menu to sort schedules by service, time or frequency. <br>' +
                'Gray vertical lines are spaced 1 hour apart beginning at 00:00 UTC on the left. <br>' +
                'Red line shows current UTC time and updates while the extension is running. <br>' +
@@ -1172,6 +1375,11 @@ function drm_desktop_controls_setup(w_graph)
 	if (drm.locked == 0) return;
 
 	time_display_setup('drm');
+	
+	drm.ss_img = [];
+	drm.ss_img[0] = w3_el('id-drm-slideshow-img0');
+	drm.ss_img[1] = w3_el('id-drm-slideshow-img1');
+	drm.ss_info = w3_el('id-drm-slideshow-info');
 
 	drm.canvas_if = w3_el('id-drm-graph-if');
 	drm.canvas_if.ctx = drm.canvas_if.getContext("2d");
@@ -1191,7 +1399,7 @@ function drm_desktop_controls_setup(w_graph)
 	
 	drm.canvas_IQ = w3_el('id-drm-panel-1-IQ');
 	drm.canvas_IQ.ctx = drm.canvas_IQ.getContext("2d");
-	drm.w_IQ = w_graph - pad*2;
+	drm.w_IQ = w_multi - pad*2;
 	drm.h_IQ = h - pad*2;
 	
 	drm.desktop = 1;
@@ -1220,6 +1428,9 @@ function drm_controls_setup()
          a1 = a1[a1.length-1].toLowerCase();
          w3_ext_param_array_match_str(drm.display_idx_s, a, function(i) { drm.display_idx = drm.display_idx_si[i]; });
          var r;
+         if ((r = w3_ext_param('svc', a)).match) {
+            drm.csvc = w3_clamp(r.num, 1, drm.nsvcs);
+         } else
          if ((r = w3_ext_param('lo', a)).match) {
             drm.pb_lo = r.num;
          } else
@@ -1237,15 +1448,15 @@ function drm_controls_setup()
    }
    
 	var mobile = ext_mobile_info();
-   var w_graph = drm.w_graph_nom - (Math.max(0, 1440 - mobile.width));
-   drm.narrow_listing = (w_graph < drm.w_graph_nom) || (drm.mobile == 2);
-   //console.log('$ whg='+ mobile.width +','+ mobile.height +','+ w_graph);
+   var w_multi = drm.w_multi_nom - (Math.max(0, 1440 - mobile.width));
+   drm.narrow_listing = (w_multi < drm.w_multi_nom) || (drm.mobile == 2);
+   //console.log('$ whg='+ mobile.width +','+ mobile.height +','+ w_multi);
 	
-	//alert('mw='+ mobile.width +' w_graph='+ w_graph);
-	if (drm.mobile || w_graph <= drm.w_graph_min) {
+	//alert('mw='+ mobile.width +' w_multi='+ w_multi);
+	if (drm.mobile || w_multi <= drm.w_multi_min) {
 	   drm_mobile_controls_setup(mobile);
 	} else {
-	   drm_desktop_controls_setup(w_graph);
+	   drm_desktop_controls_setup(w_multi);
 	}
 
 	if (drm.locked == 0) return;
@@ -1271,14 +1482,12 @@ function drm_controls_setup()
          if ((r = w3_ext_param('test', a)).match) {
             var test = r.has_value? r.num : 1;
             test = w3_clamp(test, 1, 2, 1);
-            drm_station('Test Recording '+ test);
-            w3_show('id-drm-bar-container');
-            drm_test(test);
-           
+            drm_test_cb('', test);
          }
       });
    }
 
+   w3_call('drm_'+ drm.panel_1[drm.display] +'_init');
    drm_run(1);
    // done after drm_run() so correct drm.saved_{mode,passband} is set
    drm_set_freq(ext_get_freq_kHz());
@@ -1431,6 +1640,18 @@ function drm_test_cb(path, val, first)
    drm_set_mode('drm');
    w3_show('id-drm-bar-container');
    drm_annotate('magenta');
+   
+   if (cfg.DRM['test_file'+val] == 'DRM.BBC.Journaline.au') {
+      drm.display_idx = drm.JOURNALINE_IDX;
+      drm_display_cb('drm.display_idx', drm.display_idx);
+      drm_svcs_cbox_cb('drm.svc2', true);
+   }
+
+   if (cfg.DRM['test_file'+val] == 'DRM.KTWR.slideshow.au') {
+      drm.display_idx = drm.SLIDESHOW_IDX;
+      drm_display_cb('drm.display_idx', drm.display_idx);
+      drm_svcs_cbox_cb('drm.svc2', true);
+   }
 }
 
 function drm_svcs_cbox_cb(path, checked, first)
@@ -1438,7 +1659,7 @@ function drm_svcs_cbox_cb(path, checked, first)
    var which = path.substr(-1,1);
    //console.log('drm_svcs_cbox_cb path='+ path +' checked='+ checked +' which='+ which);
    if (first) return;
-   for (var i = 1; i <= 4; i++)
+   for (var i = 1; i <= drm.nsvcs; i++)
       w3_checkbox_set('drm.svc'+ i, false);
    w3_checkbox_set(path, true);
    ext_send('SET svc='+ which);
@@ -1475,8 +1696,9 @@ function drm_database_cb(path, idx, first)
 
 function drm_display_cb(path, idx, first)
 {
-   idx = +idx;
-   //console.log('$ drm_display_cb idx='+ idx);
+   // if first time take possibly delayed-set display_idx value from drm_test_cb()
+   idx = first? drm.display_idx : +idx;      
+   //console.log('$ drm_display_cb path='+ path +' idx='+ idx);
    w3_select_value(path, idx);   // for benefit of non-default startup drm.display_idx values
 
    var i = 0, idx_actual = -1;
@@ -1495,7 +1717,6 @@ function drm_display_cb(path, idx, first)
 	});
 
    var dsp = drm.display = idx_actual;
-   w3_color('id-drm-panel-multi', null, drm.panel_1_bg[dsp]);
    
    console.log('$ drm_display_cb idx='+ idx +' show='+ dsp +' '+ drm.panel_0[dsp] +'/'+ drm.panel_1[dsp]);
    drm.panel_0.forEach(function(el) { w3_hide('id-drm-panel-0-'+ el); });
@@ -1506,6 +1727,7 @@ function drm_display_cb(path, idx, first)
    w3_show('id-drm-options-'+ drm.panel_1[dsp]);
 
    ext_send('SET send_iq='+ ((dsp >= drm.IQ_ALL && dsp <= drm.IQ_END)? 1:0));
+   w3_call('drm_'+ drm.panel_1[drm.display] +'_select');
 }
 
 function drm_station(s)
@@ -1593,7 +1815,7 @@ function DRM_help(show)
                'License: Apache License V2.0 <br>' +
                '<hr>' +
 
-               'Features <b>NewsService Journaline(R)</b> decoder technology by <br>' +
+               'Features <b>NewsService Journaline&reg;</b> decoder technology by <br>' +
                'Fraunhofer IIS, Erlangen, Germany. <br>' +
                'Copyright (c) 2003, 2004 <br>' +
                'For more information visit <a href="http://www.iis.fhg.de/dab" target="_blank">www.iis.fhg.de/dab</a> <br>' +

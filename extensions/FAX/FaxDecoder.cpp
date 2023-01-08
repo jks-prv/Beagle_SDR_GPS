@@ -562,7 +562,7 @@ void FaxDecoder::CleanUpBuffers()
 void FaxDecoder::FileOpen()
 {
     FileClose();
-    asprintf(&m_fn, "/root/kiwi.config/fax.ch%d.pgm", m_rx_chan);
+    asprintf(&m_fn, DIR_DATA "/fax.ch%d.pgm", m_rx_chan);
     m_file = pgm_file_open(m_fn, &m_offset, m_imagewidth, 0, 255);
 
     if (m_file == NULL) {

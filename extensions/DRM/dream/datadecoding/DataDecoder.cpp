@@ -26,6 +26,7 @@
  *
 \******************************************************************************/
 
+#include "DRM.h"
 #include "DataDecoder.h"
 #include "epgutil.h"
 #include "Journaline.h"
@@ -235,14 +236,16 @@ CDataDecoder::ProcessDataInternal(CParameter & Parameters)
 				switch (eAppType[iPacketID])
 				{
 				case AT_MOTSLIDESHOW:	/* MOTSlideshow */
-				    printf("AT_MOTSLIDESHOW iPacketID=%d\n", iPacketID);
 					/* Packet unit decoding */
+				    //printf("AT_MOTSLIDESHOW iPacketID=%d\n", iPacketID);
+		            DRM_msg_encoded(DRM_MSG_SERVICE, "drm_slideshow_status", (char *) "1");
 					MOTObject[iPacketID].
 						AddDataUnit(DataUnit[iPacketID].vecbiData);
 					break;
 				case AT_EPG:	/* EPG */
-				    printf("AT_EPG iPacketID=%d\n", iPacketID);
 					/* Packet unit decoding */
+				    //printf("AT_EPG iPacketID=%d iEPGPacketID=%d iEPGService=%d\n", iPacketID, iEPGPacketID, iEPGService);
+				    //printf("AT_EPG MOT path <%s>\n", Parameters.GetDataDirectory("MOT").c_str());
 					//cout << iEPGPacketID << " " << iPacketID << endl; cout.flush();
 					if(iEPGPacketID == -1)
 					{
@@ -253,8 +256,8 @@ CDataDecoder::ProcessDataInternal(CParameter & Parameters)
 					break;
 
 				case AT_BROADCASTWEBSITE:	/* MOT Broadcast Web Site */
-				    printf("AT_BROADCASTWEBSITE iPacketID=%d\n", iPacketID);
 					/* Packet unit decoding */
+				    //printf("AT_BROADCASTWEBSITE iPacketID=%d\n", iPacketID);
 					MOTObject[iPacketID].AddDataUnit(DataUnit[iPacketID].vecbiData);
 					break;
 
@@ -264,7 +267,7 @@ CDataDecoder::ProcessDataInternal(CParameter & Parameters)
 					break;
 
 				case AT_EXPERIMENTAL:
-				    printf("AT_EXPERIMENTAL iPacketID=%d\n", iPacketID);
+				    //printf("AT_EXPERIMENTAL iPacketID=%d\n", iPacketID);
 					Experiment.AddDataUnit(DataUnit[iPacketID].vecbiData);
 					break;
 
@@ -294,6 +297,7 @@ void
 CDataDecoder::DecodeEPG(const CParameter & Parameters)
 {
 	/* Application Decoding - must run all the time and in background */
+    //printf("DecodeEPG iEPGPacketID=%d MOTObject=%d\n", iEPGPacketID, MOTObject[iEPGPacketID].NewObjectAvailable());
 	if ((DoNotProcessData == false)
 		&& (iEPGPacketID >= 0)
 		&& MOTObject[iEPGPacketID].NewObjectAvailable())
@@ -303,6 +307,7 @@ CDataDecoder::DecodeEPG(const CParameter & Parameters)
 		MOTObject[iEPGPacketID].GetNextObject(NewObj);
 		string fileName;
 		bool advanced = false;
+		//printf("EPG obj iContentType=%d\n", NewObj.iContentType);
 		if (NewObj.iContentType == 7)
 		{
 			for (size_t i = 0; i < NewObj.vecbProfileSubset.size(); i++)
@@ -329,9 +334,11 @@ CDataDecoder::DecodeEPG(const CParameter & Parameters)
 			fileName = NewObj.strName;
 		}
 
-		string path = Parameters.GetDataDirectory("EPG") + fileName;
-		mkdirs(path);
+		//string path = Parameters.GetDataDirectory("EPG") + fileName;
+		//mkdirs(path);
+        string path = "/tmp/kiwi.data/drm.ch"+ to_string(DRM_rx_chan()) +"_"+ fileName;
 		//cerr << "writing EPG file " << path << endl;
+		printf("DRM write EPG file <%s>\n", path.c_str());
 		FILE *f = fopen(path.c_str(), "wb");
 		if (f)
 		{
@@ -419,7 +426,7 @@ CDataDecoder::InitInternal(CParameter & Parameters)
 
 				/* Reset Journaline decoder and store the new service
 				   ID number */
-				printf("Journaline iOldJournalineServiceID=%X iNewServID=%X\n", iOldJournalineServiceID, iNewServID);
+				//printf("Journaline iOldJournalineServiceID=%X iNewServID=%X\n", iOldJournalineServiceID, iNewServID);
 				Journaline.Reset();
 				iOldJournalineServiceID = iNewServID;
 			}

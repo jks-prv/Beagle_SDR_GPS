@@ -224,7 +224,7 @@ function tdoa_controls_setup()
          w3_checkbox(cbox, 'Show day/night', 'tdoa.day_night_visible', true, 'tdoa_day_night_visible_cb'),
          w3_checkbox(cbox, 'Show graticule', 'tdoa.graticule_visible', true, 'tdoa_graticule_visible_cb'),
          w3_checkbox(cbox, 'Show all results', 'tdoa.all_results', false, 'tdoa_all_results_cb'),
-         w3_button('class-button w3-margin-L-20 w3-small w3-grey w3-momentary', 'Clear old results', 'tdoa_clear_results_cb', 1),
+         w3_button('w3-btn w3-margin-L-20 w3-small w3-grey w3-momentary', 'Clear old results', 'tdoa_clear_results_cb', 1),
 
          w3_checkbox('w3-margin-T-10//'+ cbox, 'Kiwi hosts', 'tdoa.hosts_visible', true, 'tdoa_hosts_visible_cb'),
          w3_checkbox(cbox, 'Reference locations', 'tdoa.refs_visible', true, 'tdoa_refs_visible_cb'),

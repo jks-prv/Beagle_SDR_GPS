@@ -4,10 +4,11 @@
 //
 // Double-slash comment sequence MUST start in column one!
 //
-// CAUTION:     kiwisdr.com 50.116.2.70     forum 45.79.102.170     jks 103.26.16.xxx
+// CAUTION:     kiwisdr.com 50.116.2.xxx    forum 45.79.102.xxx     jks 103.156.230.xxx 103.26.16.xxx
 //
 // Updates:
 //
+// 27 dec 22 github issue: 192.248.176.0/20 (176.0:191.255) constant/vultr/choopa
 // 14 sep 22 141.164.32.0/20 (32.0:47.255) constant/vultr/choopa
 // 14 sep 22 207.246.64.0/18 (64.0:127:255) widened from 207.246.104.0/23 (104.0:105.0) constant/vultr/choopa
 //  3 sep 22 149.248.0.0/18 (0.0:63.255) constant/vultr/choopa
@@ -137,6 +138,7 @@
     "185.237.0.0/16",
     "192.248.144.0/23",
     "192.248.158.0/23",
+    "192.248.176.0/20",
     "193.38.0.0/16",
     "196.247.0.0/16",
     "199.247.0.0/19",

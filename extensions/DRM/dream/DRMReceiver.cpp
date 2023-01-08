@@ -367,16 +367,6 @@ CDRMReceiver::UtilizeDRM(bool& bEnoughData)
     if (iAudioStreamID != STREAM_ID_NOT_USED)
     {
         //cerr << "audio processing" << endl;
-        drm_t *drm = &DRM_SHMEM->drm[(int) FROM_VOID_PARAM(TaskGetUserParam())];
-        assert(drm->init);
-        #if 0
-            if (drm->reset_codec) {
-                AudioSourceDecoder.SetInitFlag();
-                printf("DRM reset codec\n");
-                drm->reset_codec = false;
-            }
-        #endif
-
         if (AudioSourceDecoder.ProcessData(Parameters,
                                            MSCUseBuf[iAudioStreamID],
                                            AudSoDecBuf))

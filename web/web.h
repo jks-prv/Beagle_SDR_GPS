@@ -29,19 +29,22 @@ Boston, MA  02110-1301, USA.
 
 #define WEB_PRINTF
 #ifdef WEB_PRINTF
-	#define WEB_CACHING_DEBUG_SENT 1
+
+    // -ctrace 0xhh
+    
+	#define WEB_CACHING_DEBUG_SENT 0x01
 	#define web_printf_sent(fmt, ...) \
 		if (web_caching_debug & WEB_CACHING_DEBUG_SENT) lprintf(fmt, ## __VA_ARGS__)
 
-	#define WEB_CACHING_DEBUG_CACHED 2
+	#define WEB_CACHING_DEBUG_CACHED 0x02
 	#define web_printf_cached(fmt, ...) \
 		if (web_caching_debug & WEB_CACHING_DEBUG_CACHED) lprintf(fmt, ## __VA_ARGS__)
 
-	#define WEB_CACHING_DEBUG_ALL 4
+	#define WEB_CACHING_DEBUG_ALL 0x04
 	#define web_printf_all(fmt, ...) \
 		if (web_caching_debug & WEB_CACHING_DEBUG_ALL) lprintf(fmt, ## __VA_ARGS__)
 
-	#define WEB_CACHING_DEBUG_SERVED 8
+	#define WEB_CACHING_DEBUG_SERVED 0x08
 	#define web_printf_served(fmt, ...) \
 		if (web_caching_debug & WEB_CACHING_DEBUG_SERVED) lprintf(fmt, ## __VA_ARGS__)
 #else

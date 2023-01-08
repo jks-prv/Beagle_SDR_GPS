@@ -271,7 +271,7 @@ function navtex_controls_setup()
 
          w3_inline('w3-margin-T-10 w3-valign/', 
             w3_checkbox('//'+ cbox, 'Show locations', 'nt.locations_visible', true, 'navtex_locations_visible_cb'),
-            w3_button('id-navtex-show-locations w3-margin-left class-button w3-small w3-grey w3-momentary', 'Clear old', 'navtex_clear_old_cb', 1)
+            w3_button('id-navtex-show-locations w3-margin-left w3-btn w3-small w3-grey w3-momentary', 'Clear old', 'navtex_clear_old_cb', 1)
          )
       );
 
