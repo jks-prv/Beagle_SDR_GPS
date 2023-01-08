@@ -31,6 +31,7 @@
  *
 \******************************************************************************/
 
+#include "DRM.h"
 #include "DABMOT.h"
 #include "../util/Utilities.h"
 #include <algorithm>
@@ -625,11 +626,14 @@ CMOTDABDec::DeliverIfReady(TTransportID TransportID)
 				o.strName = string(o.strName.c_str()) + ".gz";
 		}
 		//cerr << o << endl;;
-		ostringstream ss; ss << o << endl;
+		//ostringstream ss; ss << o << endl;
 		ofstream file;
-		file.open(o.strName.c_str());
+        string fn = "/tmp/kiwi.data/drm.ch"+ to_string(DRM_rx_chan()) +"_"+ o.strName;
+        printf("DRM write file <%s>\n", fn.c_str());
+		file.open(fn.c_str());
 		file.write((char*)&o.Body.vecData[0], o.Body.vecData.Size());
-		file.close();		
+		file.close();
+		DRM_msg_encoded(DRM_MSG_SLIDESHOW, "drm_slideshow_cb", (char *) o.strName.c_str());
 	}
 }
 
@@ -789,6 +793,7 @@ CMOTDABDec::AddDataUnit(CVector < _BINARY > &vecbiNewData)
 				if (o.Ready())
 				{
 					MOTCarousel[TransportID].AddHeader(o.vecData);
+                    //printf("HDR iDataGroupType=3.DeliverIfReady TransportID=%x\n", TransportID);
 					DeliverIfReady(TransportID);
 				}
 			}
@@ -822,6 +827,7 @@ CMOTDABDec::AddDataUnit(CVector < _BINARY > &vecbiNewData)
 				}
 
 				/* if the body just got complete we can see if its ready to deliver */
+                //printf("DATA iDataGroupType=4.DeliverIfReady TransportID=%x\n", TransportID);
 				DeliverIfReady(TransportID);
 			}
 			else if (iDataGroupType == 6)	/* MOT directory */
@@ -1003,6 +1009,7 @@ CMOTDABDec::ProcessDirectory(CBitReassembler & MOTDir)
 		/* mark objects which are in the new directory */
 		MOTDirectory.vecObjects.push_back(tid);
 		//cout << tid << " ";
+        //printf("ProcessDirectory.DeliverIfReady tid=%x\n", tid);
 		DeliverIfReady(tid);
 	}
 	//cout << "}" << endl;
@@ -1637,6 +1644,8 @@ CMOTObject::AddHeader(CVector < _BINARY > &vecbiHeader)
 		strFormat = video[iContentSubType];
 		break;
 	}
+    //printf("AddHeader iContentType=%d iContentSubType=%d fn=%s fmt=%s\n",
+        //iContentType, iContentSubType, strName.c_str(), strFormat.c_str());
 	bHasHeader = true;
 }
 

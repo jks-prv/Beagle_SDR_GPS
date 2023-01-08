@@ -242,17 +242,28 @@ bool DRM_msgs(char *msg, int rx_chan)
     return false;
 }
 
-// pass msg & data via shared mem buf since DRM_SHMEM might be enabled
-void DRM_msg_encoded(drm_t *drm, const char *cmd, kstr_t *ks)
+int DRM_rx_chan()
 {
-    kiwi_strncpy(drm->msg_cmd, cmd, N_MSGCMD);
-    kiwi_strncpy(drm->msg_buf, kstr_sp(ks), N_MSGBUF);
-    drm->msg_tx_seq++;
+    drm_t *drm = &DRM_SHMEM->drm[(int) FROM_VOID_PARAM(TaskGetUserParam())];
+    return drm->rx_chan;
+}
+
+// pass msg & data via shared mem buf since DRM_SHMEM might be enabled
+void DRM_msg_encoded(drm_msg_e msg_type, const char *cmd, kstr_t *ks)
+{
+    drm_t *drm = &DRM_SHMEM->drm[(int) FROM_VOID_PARAM(TaskGetUserParam())];
+    int slen = strlen(kstr_sp(ks));
+    if (slen >= L_MSGBUF)
+        printf("WARNING DRM_msg_encoded: msg_type=%d len=%d/%d\n", msg_type, slen, L_MSGBUF);
+    kiwi_strncpy(drm->msg_cmd[msg_type], cmd, L_MSGCMD);
+    kiwi_strncpy(drm->msg_buf[msg_type], kstr_sp(ks), L_MSGBUF);
+    drm->msg_tx_seq[msg_type]++;
     DRM_YIELD();
 }
 
-void DRM_data(drm_t *drm, u1_t cmd, u1_t *data, u4_t nbuf)
+void DRM_data(u1_t cmd, u1_t *data, u4_t nbuf)
 {
+    drm_t *drm = &DRM_SHMEM->drm[(int) FROM_VOID_PARAM(TaskGetUserParam())];
     assert(nbuf <= N_DATABUF);
     drm->data_cmd = cmd;
     memcpy(drm->data_buf, data, nbuf);
@@ -266,10 +277,13 @@ void DRM_poll(int rx_chan)
     if (rx_chan >= drm_info.drm_chan) return;
     
     drm_t *d = &DRM_SHMEM->drm[rx_chan];
-    if (d->msg_rx_seq != d->msg_tx_seq) {
-        //printf("%d %s=%s\n", rx_chan, d->msg_cmd, d->msg_buf);
-        ext_send_msg_encoded(rx_chan, false, "EXT", d->msg_cmd, "%s", d->msg_buf);
-        d->msg_rx_seq = d->msg_tx_seq;
+    
+    for (int i = 0; i < N_MSGBUF; i++) {
+        if (d->msg_rx_seq[i] != d->msg_tx_seq[i]) {
+            //printf("%d %s=%s\n", rx_chan, d->msg_cmd[i], d->msg_buf[i]);
+            ext_send_msg_encoded(rx_chan, false, "EXT", d->msg_cmd[i], "%s", d->msg_buf[i]);
+            d->msg_rx_seq[i] = d->msg_tx_seq[i];
+        }
     }
     
     if (d->data_rx_seq != d->data_tx_seq) {

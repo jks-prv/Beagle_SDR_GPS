@@ -80,22 +80,24 @@ class CDataDecoder:public CReceiverModul < _BINARY, _BINARY >
     {
 		return eAppType[iServPacketID];
     }
+
     CJournaline& Journaline;
+    int iEPGService;
 
   protected:
     class CDataUnit
     {
       public:
-	CVector < _BINARY > vecbiData;
-	bool bOK;
-	bool bReady;
+	    CVector < _BINARY > vecbiData;
+        bool bOK;
+        bool bReady;
 
-	void Reset ()
-	{
-	    vecbiData.Init (0);
-	    bOK = false;
-	    bReady = false;
-	}
+        void Reset ()
+        {
+            vecbiData.Init (0);
+            bOK = false;
+            bReady = false;
+        }
     };
 
     int iTotalPacketSize;
@@ -117,7 +119,6 @@ class CDataDecoder:public CReceiverModul < _BINARY, _BINARY >
     virtual void InitInternal (CParameter & Parameters);
     virtual void ProcessDataInternal (CParameter & Parameters);
 
-    int iEPGService;
     int iEPGPacketID;
     void DecodeEPG(const CParameter& Parameters);
 	EAppType GetAppType(const CDataParam&);
