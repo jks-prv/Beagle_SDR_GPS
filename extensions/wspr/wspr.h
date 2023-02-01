@@ -298,6 +298,11 @@ typedef struct {
     wspr_pk_t pk_freq[MAX_NPK], pk_save[MAX_NPK];
     int send_decode_seq_parent, send_decode_seq;
 
+	bool test;
+	int skip_upload;
+    s2_t *s2p;
+    int nsamps;
+
     WSPR_CHECK(u4_t magic2;)
 } wspr_t;
 
@@ -307,6 +312,9 @@ typedef struct {
     char rgrid[LEN_GRID];
 	bool GPS_update_grid;
 	bool syslog, spot_log;
+
+    s2_t *s2p_start, *s2p_end;
+    int tsamps;
 } wspr_conf_t;
 
 extern wspr_conf_t wspr_c;

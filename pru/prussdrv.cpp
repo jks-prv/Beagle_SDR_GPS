@@ -253,7 +253,7 @@ int prussdrv_open(unsigned int host_interrupt)
 	
     char name[PRUSS_UIO_PRAM_PATH_LEN];
     if (!prussdrv.fd[host_interrupt]) {
-        sprintf(name, "/dev/uio%d", host_interrupt);
+        kiwi_snprintf_buf(name, "/dev/uio%d", host_interrupt);
         for (i=0; i<UIO_OPEN_TIMEOUT; i++) {
         	if ((fd = open(name, O_RDWR | O_SYNC)) >= 0)
         		break;

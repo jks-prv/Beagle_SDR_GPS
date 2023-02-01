@@ -222,12 +222,13 @@ void send_msg(conn_t *c, bool debug, const char *msg, ...)
 	kiwi_ifree(s, "send_msg");
 }
 
+#define N_MSG_HDR 4
 void send_msg_data(conn_t *c, bool debug, u1_t cmd, u1_t *bytes, int nbytes)
 {
-	int size = 4 + sizeof(cmd) + nbytes;
+	int size = N_MSG_HDR + sizeof(cmd) + nbytes;
 	char *buf = (char *) kiwi_imalloc("send_msg_data", size);
 	char *s = buf;
-	int n = sprintf(s, "DAT ");
+	int n = kiwi_snprintf_ptr(s, N_MSG_HDR + SPACE_FOR_NULL, "DAT ");
 	if (debug) cprintf(c, "send_msg_data: cmd=%d nbytes=%d size=%d\n", cmd, nbytes, size);
 	s += n;
 	*s++ = cmd;
@@ -239,10 +240,10 @@ void send_msg_data(conn_t *c, bool debug, u1_t cmd, u1_t *bytes, int nbytes)
 
 void send_msg_data2(conn_t *c, bool debug, u1_t cmd, u1_t data2, u1_t *bytes, int nbytes)
 {
-	int size = 4 + sizeof(cmd)+ sizeof(data2) + nbytes;
+	int size = N_MSG_HDR + sizeof(cmd)+ sizeof(data2) + nbytes;
 	char *buf = (char *) kiwi_imalloc("send_msg_data2", size);
 	char *s = buf;
-	int n = sprintf(s, "DAT ");
+	int n = kiwi_snprintf_ptr(s, N_MSG_HDR + SPACE_FOR_NULL, "DAT ");
 	if (debug) cprintf(c, "send_msg_data2: cmd=%d data2=%d nbytes=%d size=%d\n", cmd, data2, nbytes, size);
 	s += n;
 	*s++ = cmd;
@@ -369,6 +370,13 @@ void print_max_min_stream_i(void **state, int flags, const char *name, int index
 	print_max_min_int_t *p = print_max_min_init(state);
 	bool update = false;
 
+	if (flags & P_MAX_MIN_RESET) {
+		memset(p, 0, sizeof(*p));
+		p->min_i = 0x7fffffff; p->max_i = 0x80000000;
+		p->min_f = 1e38; p->max_f = -1e38;
+		p->min_idx = p->max_idx = -1;
+	}
+
 	for (int i=0; i < nargs; i++) {
 		int arg_i = va_arg(ap, int);
 		if (arg_i > p->max_i) {
@@ -397,6 +405,13 @@ void print_max_min_stream_f(void **state, int flags, const char *name, int index
 	print_max_min_int_t *p = print_max_min_init(state);
 	bool dump = (flags & P_MAX_MIN_DUMP);
 	bool update = false;
+	
+	if (flags & P_MAX_MIN_RESET) {
+		memset(p, 0, sizeof(*p));
+		p->min_i = 0x7fffffff; p->max_i = 0x80000000;
+		p->min_f = 1e38; p->max_f = -1e38;
+		p->min_idx = p->max_idx = -1;
+	}
 
 	if (!dump) for (int i=0; i < nargs; i++) {
 		double arg_f = va_arg(ap, double);
@@ -421,6 +436,36 @@ void print_max_min_stream_f(void **state, int flags, const char *name, int index
 }
 
 void print_max_min_u1(const char *name, u1_t *data, int len)
+{
+	int i;
+	int max = (int) 0x80000000U, min = (int) 0x7fffffffU;
+	int max_idx = -1, min_idx = -1;
+	
+	for (i=0; i < len; i++) {
+		int s = data[i];
+		if (s > max) { max = s; max_idx = i; }
+		if (s < min) { min = s; min_idx = i; }
+	}
+	
+	printf("min/max %s: %d(%d)..%d(%d)\n", name, min, min_idx, max, max_idx);
+}
+
+void print_max_min_u2(const char *name, u2_t *data, int len)
+{
+	int i;
+	int max = (int) 0x80000000U, min = (int) 0x7fffffffU;
+	int max_idx = -1, min_idx = -1;
+	
+	for (i=0; i < len; i++) {
+		int s = data[i];
+		if (s > max) { max = s; max_idx = i; }
+		if (s < min) { min = s; min_idx = i; }
+	}
+	
+	printf("min/max %s: %d(%d)..%d(%d)\n", name, min, min_idx, max, max_idx);
+}
+
+void print_max_min_s2(const char *name, s2_t *data, int len)
 {
 	int i;
 	int max = (int) 0x80000000U, min = (int) 0x7fffffffU;
@@ -706,7 +751,8 @@ u4_t pos_wrap_diff(u4_t next, u4_t prev, u4_t size)
 }
 
 
-static char toUnits_buf[4][8];
+#define N_TO_UNITS 16
+static char toUnits_buf[4][N_TO_UNITS];
 
 char *toUnits(int num, int instance)
 {
@@ -714,18 +760,18 @@ char *toUnits(int num, int instance)
     float nf;
     
     if (num < 1000) {
-        sprintf(cp, "%d", num);
+        kiwi_snprintf_ptr(cp, N_TO_UNITS, "%d", num);
     } else
     if (num < 1000000) {
         nf = num / 1e3;
-        sprintf(cp, "%.1fk", nf);
+        kiwi_snprintf_ptr(cp, N_TO_UNITS, "%.1fk", nf);
     } else
     if (num < 1000000000) {
         nf = num / 1e6;
-        sprintf(cp, "%.1fM", nf);
+        kiwi_snprintf_ptr(cp,  N_TO_UNITS,"%.1fM", nf);
     } else {
         nf = num / 1e9;
-        sprintf(cp, "%.1fG", nf);
+        kiwi_snprintf_ptr(cp, N_TO_UNITS, "%.1fG", nf);
     }
 
     return cp;

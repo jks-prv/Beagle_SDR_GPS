@@ -22,8 +22,10 @@ var wspr = {
    pie_size: 25,
    stack_decoder: 0,
    debug: 0,
-   no_upload: 0,
+   upload: true,
+   upload_lockout: false,
    pie_interval: null,
+   testing: false,
    
    hop_period: 20,
    //hop_period: 6,
@@ -243,6 +245,27 @@ function wspr_recv(data)
 				wspr_startx = Math.round((wspr_canvas_width - wspr_bins*2)/2);
 				break;
 
+			case "bar_pct":
+			   if (wspr.testing) {
+               var pct = w3_clamp(parseInt(param[1]), 0, 100);
+               //if (pct > 0 && pct < 3) pct = 3;    // 0% and 1% look weird on bar
+               var el = w3_el('id-wspr-bar');
+               if (el) el.style.width = pct +'%';
+               //console.log('bar_pct='+ pct);
+            }
+			   break;
+
+			case "test_start":
+			   wspr_test_cb('', 1);
+			   break;
+
+			case "test_done":
+            if (wspr.testing) {
+               w3_hide('id-wspr-bar-container');
+               w3_show_inline('id-wspr-upload-container');
+            }
+			   break;
+
 			default:
 				console.log('wspr_recv: UNKNOWN CMD '+ param[0]);
 				break;
@@ -323,14 +346,18 @@ function wspr_controls_setup()
 
 	var controls_html =
 	w3_div('id-wspr-controls',
-		w3_inline('w3-halign-space-between|width:83%/',
+		w3_inline('w3-halign-space-between w3-margin-B-4|width:83%/',
+         w3_div('w3-medium w3-text-aqua cl-viewer-label', '<b>WSPR<br>viewer</b>'),
          w3_select('w3-text-red', '', 'band', 'wspr_init_band', wspr_init_band, wspr_freqs_m, 'wspr_band_select_cb'),
-         w3_button('cl-wspr-button', 'stop', 'wspr_stop_start_cb'),
-         w3_button('cl-wspr-button', 'clear', 'wspr_clear_cb'),
-         w3_div('id-wspr-upload-bkg cl-upload-checkbox',
-            '<input id="id-wspr-upload" type="checkbox" value="" onclick="wspr_set_upload_cb(this.checked)"> upload spots'
-         ),
-         w3_div('w3-medium w3-text-aqua cl-viewer-label', '<b>WSPR<br>viewer</b>')
+         w3_button('w3-ext-btn w3-padding-smaller', 'stop', 'wspr_stop_start_cb'),
+         w3_button('cl-w3-ext-btn w3-padding-smaller w3-css-yellow', 'clear', 'wspr_clear_cb'),
+         w3_button('cl-w3-ext-btn w3-padding-smaller w3-aqua||title="test spots NOT uploaded\nto wsprnet.org"',
+            'test', 'wspr_test_cb', 1),
+         w3_checkbox('id-wspr-upload-container cl-upload-checkbox/w3-label-inline w3-label-not-bold/',
+            'upload<br>spots', 'wspr.upload', true, 'wspr_set_upload_cb'),
+         w3_div('id-wspr-bar-container w3-progress-container w3-round-large w3-white w3-hide|width:70px; height:16px',
+            w3_div('id-wspr-bar w3-progressbar w3-round-large w3-light-green|width:0%', '&nbsp;')
+         )
 		),
 
 		w3_inline('w3-halign-space-between/',
@@ -360,6 +387,7 @@ function wspr_controls_setup()
 	ext_panel_show(controls_html, data_html, null);
 	ext_set_controls_width_height(null, 240);
 	time_display_setup('wspr');
+	wspr.saved_mode = ext_get_mode();
 	//wspr_resize();
 	
 	wspr_spectrum_A = w3_el('id-wspr-spectrum-A');
@@ -398,9 +426,12 @@ function wspr_controls_setup()
          if (a.startsWith('stack')) wspr.stack_decoder = 1; else
          if (a.startsWith('debug')) wspr.debug = 1; else
          if (a.startsWith('noupload')) {
-            wspr.no_upload = 1;
-            wspr_set_upload_cb(false);
+            wspr.upload_lockout = true;
+            wspr_set_upload_cb('', false);
          } else
+         if (a.startsWith('help')) {
+            extint_help_click();
+         }
          console.log('WSPR unknown URL param <'+ a +'>');
       });
 	} else {
@@ -412,11 +443,58 @@ function wspr_controls_setup()
 
 function wspr_help(show)
 {
-   console.log('wspr_help show='+ show);
-   if (1) return false;
    if (show) {
-      var s = 'And this is where WSPR help goes..';
-      confirmation_show_content(s);
+      var s = 
+         w3_text('w3-medium w3-bold w3-text-aqua', 'WSPR viewer help') +
+         w3_div('w3-margin-T-8 w3-scroll-y|height:90%',
+            w3_div('w3-margin-R-8',
+               'The WSPR viewer was the first Kiwi extension developed. ' +
+               'It\'s more of a demonstration than a serious WSPR decoding utility. ' +
+               'An older version of the WSJT-X <i>wsprd</i> decoder is used. Together with the limited ' +
+               'processing power of the Beagle this means fewer decodes occur compared to the current WSJT-X. ' +
+               'For serious decoding try <a href="http://wsprdaemon.org/index.html" target="_blank">WsprDaemon</a> ' +
+               'which runs on a separate computer and makes connections to the Kiwi. ' +
+               '<br><br>' +
+         
+               'The <i>band</i> menu contains the standard <a href="http://www.wsprnet.org" target="_blank">ham band frequencies</a> ' +
+               'plus the ISM 6/13 MHz bands. Frequency hopping specified by the ' +
+               '<a href="https://github.com/HB9VQQ/WSPRBeacon" target="_blank">International WSPR Beacon Project</a> (IWBP) is also supported. '+
+               '<br><br>' +
+
+               'About dial frequencies: By default the WSPR extension uses a BFO value of 750 Hz instead of the more traditional 1500 Hz ' +
+               '(this value is set by the Kiwi owner on the admin page). ' +
+               'This lower tone gives less listening fatigue. But it means the number shown in the Kiwi frequency entry box (dial frequency) ' +
+               'must be reduced by 750 Hz to match the dial frequencies mentioned in the references above. ' +
+               'The BFO value and center frequency (CF) of the passband are displayed in the WSPR control panel. ' +
+               '<br><br>' +
+               
+               'Before spots will be uploaded to wsprnet.org the reporter <i>call</i> and <i>grid</i> must be set on the ' +
+               'admin page (Extensions > WSPR) and <i>upload spots</i> checked. ' +
+               'WSPR decoding still occurs even though spots are not being uploaded. ' +
+               '<br><br>' +
+
+               'Test button: Click when the time clock just becomes fully blue (i.e. at the beginning of an even minute). ' +
+               'A two minutes test recording will be played back containing 8 spots. These spots will <b>not</b> be uploaded to wsprnet.org ' +
+               '&nbsp;The recording was made with a BFO of 750 Hz, but will still decode even if the Kiwi is configured for another BFO value. ' +
+               '<br><br>' +
+               
+               'The decoder column values are the same as with other WSPR programs:' +
+               '<ul>' +
+                  '<li><i>dB</i> is signal-to-noise ratio (SNR), negative values meaning below the noise floor.</li>' +
+                  '<li><i>dt</i> and <i>dF</i> indicate how far off the signal is in time and frequency.</li>' +
+                  '<li><i>Freq</i> is the signal\'s passband frequency as seen in the spectrum display.</li>' +
+                  '<li><i>km</i> is the signal\'s distance from the receiving Kiwi.</li>' +
+                  '<li><i>dBm</i> is the transmit power reported by the WSPR beacon.</li>' +
+               '</ul>' +
+
+               'URL parameters: <br>' +
+               'First parameter can be an entry from the band menu, e.g. <i>ext=wspr,40m</i> <br>' +
+               '<br>'
+            )
+         );
+
+      confirmation_show_content(s, 610, 300);
+      w3_el('id-confirmation-container').style.height = '100%';   // to get the w3-scroll-y above to work
    }
    return true;
 }
@@ -453,6 +531,7 @@ function wspr_blur()
    ext_send('SET capture=0');
    kiwi_clearTimeout(wspr_upload_timeout);
    kiwi_clearInterval(wspr.pie_interval);
+	ext_set_mode(wspr.saved_mode);
 }
 
 
@@ -482,42 +561,55 @@ function wspr_config_html()
 {
    var s =
       w3_div('w3-show-inline-block w3-foo w3-width-full',
-         w3_col_percent('w3-container w3-restart/w3-margin-bottom',
-            w3_input_get('', 'BFO Hz (multiple of 375 Hz)', 'WSPR.BFO', 'w3_num_set_cfg_cb', '', 'typically 750 Hz'), 24, ''
-         ),
-         w3_col_percent('w3-container w3-restart/w3-margin-bottom',
-            w3_input_get('', 'Reporter callsign', 'WSPR.callsign', 'w3_string_set_cfg_cb', ''), 24, ''
-         ),
          w3_col_percent('w3-container/w3-margin-bottom',
+            w3_divs('',
+               w3_input_get('', 'Reporter callsign', 'WSPR.callsign', 'w3_string_set_cfg_cb', ''),
+            ), 22,
+            '', 3,
+            w3_divs('',
                w3_input_get('', w3_label('w3-bold', 'Reporter grid square ') +
                   w3_div('id-wspr-grid-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS'),
-                  'WSPR.grid', 'wspr_input_grid_cb', '', '4 or 6-character grid square location'
-               ), 24,
-               '', 3,
-               w3_divs('w3-center w3-tspace-8',
-                  w3_div('', '<b>Update grid continuously<br>from GPS?</b>'),
-                  w3_switch('', 'Yes', 'No', 'cfg.WSPR.GPS_update_grid', cfg.WSPR.GPS_update_grid, 'admin_radio_YN_cb'),
-                  w3_text('w3-text-black w3-center',
-                     'Useful for Kiwis in motion <br> (e.g. marine mobile)'
-                  )
-               ), 22,
-               '', 3,
-               w3_divs('w3-center w3-tspace-8',
-                  w3_div('', '<b>Log decodes to<br>syslog?</b>'),
-                  w3_switch('', 'Yes', 'No', 'cfg.WSPR.syslog', cfg.WSPR.syslog, 'admin_radio_YN_cb'),
-                  w3_text('w3-text-black w3-center',
-                     'Use with care as over time <br> filesystem can fill up.'
-                  )
-               ), 22,
-               '', 3,
-               w3_divs('w3-center w3-tspace-8',
-                  w3_div('', '<b>Log spot debug<br>info?</b>'),
-                  w3_switch('', 'Yes', 'No', 'cfg.WSPR.spot_log', cfg.WSPR.spot_log, 'admin_radio_YN_cb'),
-                  w3_text('w3-text-black w3-center',
-                     'Logs the actual upload commands<br>used to assist in spot debugging.'
-                  )
+                     'WSPR.grid', 'wspr_input_grid_cb', '', '4 or 6-character grid square location'
                )
+            ), 22,
+            '', 3,
+            w3_div('w3-restart',
+               w3_input_get('', 'BFO Hz (multiple of 375 Hz)', 'WSPR.BFO', 'w3_num_set_cfg_cb', '', 'typically 750 Hz'),
+            ), 22,
+            '', 3,
+            w3_div('w3-restart',
+               w3_input_get('', 'Test filename', 'WSPR.test_file', 'w3_string_set_cfg_cb', 'WSPR.test.au')
+            ), 22,
+            ''
          ),
+
+         w3_col_percent('w3-container w3-margin-T-8 w3-margin-B-16/',
+            w3_divs('w3-center w3-tspace-8',
+               w3_div('', '<b>Update grid continuously<br>from GPS?</b>'),
+               w3_switch('', 'Yes', 'No', 'cfg.WSPR.GPS_update_grid', cfg.WSPR.GPS_update_grid, 'admin_radio_YN_cb'),
+               w3_text('w3-text-black w3-center',
+                  'Useful for Kiwis in motion <br> (e.g. marine mobile)'
+               )
+            ), 22,
+            '', 3,
+            w3_divs('w3-center w3-tspace-8',
+               w3_div('', '<b>Log decodes to<br>syslog?</b>'),
+               w3_switch('', 'Yes', 'No', 'cfg.WSPR.syslog', cfg.WSPR.syslog, 'admin_radio_YN_cb'),
+               w3_text('w3-text-black w3-center',
+                  'Use with care as over time <br> filesystem can fill up.'
+               )
+            ), 22,
+            '', 3,
+            w3_divs('w3-center w3-tspace-8',
+               w3_div('', '<b>Log spot debug<br>info?</b>'),
+               w3_switch('', 'Yes', 'No', 'cfg.WSPR.spot_log', cfg.WSPR.spot_log, 'admin_radio_YN_cb'),
+               w3_text('w3-text-black w3-center',
+                  'Logs the actual upload commands<br>used to assist in spot debugging.'
+               )
+            ), 22,
+            ''
+         ),
+         
          '<hr>',
          w3_div('w3-container',
             w3_div('', '<b>Autorun</b>'),
@@ -653,18 +745,31 @@ function wspr_stop_start_cb(path, idx, first)
    w3_button_text(path, wspr_stop_start_state? 'start' : 'stop');
 }
 
+function wspr_test_cb(path, val, first)
+{
+   if (first) return;
+   val = +val;
+   if (dbgUs) console.log('wspr_test_cb: val='+ val);
+   wspr.testing = val;
+   w3_show_hide('id-wspr-upload-container', !wspr.testing, 'w3-show-inline-new');
+	w3_el('id-wspr-bar').style.width = '0%';
+   w3_show_hide('id-wspr-bar-container', wspr.testing);
+	ext_send('SET test='+ (val? 1:0));
+}
+
 function wspr_reset()
 {
 	//console.log('### wspr_reset');
 	ext_send('SET capture=0');
 	wspr_set_status(wspr_status.IDLE);
 	
-	wspr_set_upload_cb(true);		// by default allow uploads unless manually unchecked
+	wspr_set_upload_cb('', true);    // by default allow uploads unless manually unchecked
 }
 
 function wspr_clear_cb(path, idx, first)
 {
 	wspr_reset();
+   wspr_test_cb('', 0);
 	html('id-wspr-decode').innerHTML = '';
 	html('id-wspr-peaks-labels').innerHTML = '';
 }
@@ -698,14 +803,15 @@ function wspr_draw_scale(cf)
 	}
 }
 
-function wspr_set_upload_cb(upload)
+function wspr_set_upload_cb(path, checked)
 {
 	// remove old cookie use
 	deleteCookie('wspr_upload');
 	
-	if (!wspr_config_okay || wspr.no_upload) upload = false;
-	w3_checkbox_set('id-wspr-upload', upload);
-	w3_color('id-wspr-upload-bkg', upload? "white":"black", upload? "inherit":"yellow");
+	if (!wspr_config_okay || wspr.upload_lockout) checked = false;
+	wspr.upload = checked;
+	w3_checkbox_set('id-wspr.upload', checked);
+	w3_color('id-wspr-upload-container', checked? "white":"black", checked? "inherit":"yellow");
 }
 
 // from WSPR-X via tcpdump: (how can 'rcall' have an un-%-escaped '/'?)
@@ -721,7 +827,7 @@ function wspr_upload(type, s)
 	var valid = wspr_rfreq && wspr_tfreq && (rcall != undefined) && (rgrid != undefined) && (rcall != null) && (rgrid != null) && (rcall != '') && (rgrid != '');
 
 	// don't even report status if not uploading
-	if (!valid || (html('id-wspr-upload').checked == false)) {
+	if (!valid || (wspr.upload == false)) {
 		wspr_upload_timeout = setTimeout(function() {wspr_upload(wspr_report_e.STATUS);}, 1*60*1000);	// check again in another minute
 		return;
 	}

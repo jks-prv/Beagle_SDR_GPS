@@ -80,15 +80,19 @@ void kstr_init()
 	kstr_next_free = 0;
 	
 	// init ASCII[]
-	for (i = 0; i < 32; i++) sprintf(ASCII[i], "^%c", '@'+i);
-	sprintf(ASCII[ 8], "\\b");
-	sprintf(ASCII[ 9], "\\t");
-	sprintf(ASCII[10], "\\n");
-	sprintf(ASCII[13], "\\r");
-	sprintf(ASCII[27], "\\e");
-	for (i = 32; i < 127; i++) sprintf(ASCII[i], "%c", i);
-	sprintf(ASCII[127], "\\7f");
-	//for (i = 0; i < 128; i++) real_printf("%s ", ASCII[i]);
+	for (i = 0; i < 32; i++) kiwi_snprintf_buf(ASCII[i], "^%c", '@'+i);
+	kiwi_snprintf_buf(ASCII[ 8], "\\b");
+	kiwi_snprintf_buf(ASCII[ 9], "\\t");
+	kiwi_snprintf_buf(ASCII[10], "\\n");
+	kiwi_snprintf_buf(ASCII[13], "\\r");
+	kiwi_snprintf_buf(ASCII[27], "\\e");
+	for (i = 32; i < 127; i++) kiwi_snprintf_buf(ASCII[i], "%c", i);
+	kiwi_snprintf_buf(ASCII[127], "\\7f");
+	
+	#if 0
+        for (i = 0; i < 128; i++) real_printf("%s ", ASCII[i]);
+        real_printf("\n");
+    #endif
 }
 
 static kstring_t *kstr_is(char *s_kstr_cstr)
@@ -681,22 +685,6 @@ char *kiwi_str_clean(char *str)
     return str;
 }
 
-int kiwi_str2enum(const char *s, const char *strs[], int len)
-{
-	int i;
-	for (i=0; i<len; i++) {
-		if (strcasecmp(s, strs[i]) == 0) return i;
-	}
-	return NOT_FOUND;
-}
-
-const char *kiwi_enum2str(int e, const char *strs[], int len)
-{
-	if (e < 0 || e >= len) return NULL;
-	check(strs[e] != NULL);
-	return (strs[e]);
-}
-
 void kiwi_chrrep(char *str, const char from, const char to)
 {
 	char *cp;
@@ -764,6 +752,39 @@ char *kiwi_strncat(char *dst, const char *src, size_t n)
     char *rv = strncat(dst, src, n);
     // remember that strncat() "adds not more than n chars, then a terminating \0"
     return rv;
+}
+
+// From Mongoose mg_vsnprintf()
+// Like snprintf(), but never returns negative value, or a value
+// that is larger than the supplied buffer.
+//
+// If setting gdb breakpoints in here must use "noinline" attribute to prevent false breakpoints:
+//__attribute__((noinline))
+int kiwi_vsnprintf_int(char *buf, size_t buflen, const char *fmt, va_list ap) {
+    int n;
+    if (buflen < 1) {
+        printf("WARNING kiwi_vsnprintf_int: buflen=%d which is < 1\n", buflen);
+        return 0;
+    }
+    n = vsnprintf(buf, buflen, fmt, ap);
+    if (n < 0) {
+        n = 0;
+    } else
+    if (n >= (int) buflen) {
+        printf("WARNING kiwi_vsnprintf_int: n=%d buflen=%d RESULT TRUNCATED\n", n, buflen);
+        n = (int) buflen - 1;
+    }
+    buf[n] = '\0';      // ensure string is always terminated
+    return n;
+}
+
+int kiwi_snprintf_int(const char *buf, size_t buflen, const char *fmt, ...) {
+    va_list ap;
+    int n;
+    va_start(ap, fmt);
+    n = kiwi_vsnprintf_int((char *) buf, buflen, fmt, ap);
+    va_end(ap);
+    return n;
 }
 
 // SECURITY: zeros stack vars

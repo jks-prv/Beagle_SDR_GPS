@@ -37,7 +37,6 @@ public:
 	void ProcessFilter(int InLength, TYPEREAL* InBuf, TYPECPX* OutBuf);
 	void ProcessFilter(int InLength, TYPECPX* InBuf, TYPECPX* OutBuf);
 	void ProcessFilter(int InLength, TYPEREAL* InBuf, TYPEMONO16* OutBuf);
-	void ProcessFilter(int InLength, TYPEMONO16* InBuf, TYPEMONO16* OutBuf);
 
 private:
 	TYPEREAL Izero(TYPEREAL x);

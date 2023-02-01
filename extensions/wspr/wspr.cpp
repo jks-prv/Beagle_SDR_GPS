@@ -663,7 +663,7 @@ void wspr_decode(int rx_chan)
 			memcpy(w->pk_freq, wb->pk_snr, sizeof(wspr_pk_t) * npk);
 		
 			for (pki=0; pki < npk; pki++) {
-				sprintf(w->pk_freq[pki].snr_call, "%d", (int) roundf(w->pk_freq[pki].snr0));
+                kiwi_snprintf_buf(w->pk_freq[pki].snr_call, "%d", (int) roundf(w->pk_freq[pki].snr0));
 			}
 		
 			send_peaks_all(w, npk);
@@ -999,7 +999,7 @@ void wspr_decode(int rx_chan)
                     strcpy(dp->call, w->callsign);
                     strcpy(dp->grid, w->grid);
                     dp->dBm = w->dBm;
-                    sprintf(dp->pwr, "%d", w->dBm);
+                    kiwi_snprintf_buf(dp->pwr, "%d", w->dBm);
                     dp->freq = f1;
                     dp->hour = hour;
                     dp->min = min;

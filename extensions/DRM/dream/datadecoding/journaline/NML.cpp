@@ -66,6 +66,8 @@
 ///
 //////////////////////////////////////////////////////////////////////////////
 
+#include "str.h"
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -212,7 +214,7 @@ std::string NML::Dump(void) const
   {
     if (isMenu())
     {
-      sprintf(buf,
+        kiwi_snprintf_buf(buf,
               "Link #%d [%04x] %s\n",
               i,
               GetLinkId(i),
@@ -220,14 +222,14 @@ std::string NML::Dump(void) const
     }
     else
     {
-      sprintf(buf, "Item #%d is\n", i);
+         kiwi_snprintf_buf(buf, "Item #%d is\n", i);
     }
     items += buf;
     items += HexDump(GetItemText(i).c_str(),
                      GetItemText(i).size());
   }
 
-  sprintf(buf,
+      kiwi_snprintf_buf(buf,
           "object_id=%04x, object_type: %s(%d), static_flag=%1x,\n"
           "revision=%d,extended_header_len=%d,nr_of_items=%d\n",
           GetObjectId(),
@@ -322,15 +324,14 @@ unsigned char* NMLFactory::getNextSection( const unsigned char*& p, unsigned sho
 NML* NMLFactory::CreateNML( const NML::RawNewsObject_t& rno, const NMLEscapeCodeHandler* EscapeCodeHandler )
 {
 	NML*           n          = new NML();
-	char           buf[256];
-	char*          error      = &buf[0];
+	char           error[256];
 	std::string    tmp_string;
 	unsigned char* pure_text;
 
 	// at least header needs to be present
 	if( rno.nml_len < 4 )
 	{
-		sprintf( error, "Error: NML has only %u bytes", rno.nml_len );
+	    kiwi_snprintf_buf( error, "Error: NML has only %u bytes", rno.nml_len );
 		n->SetErrorDump( 0x0815, rno, error );
 		return n;
 	}
@@ -341,7 +342,7 @@ NML* NMLFactory::CreateNML( const NML::RawNewsObject_t& rno, const NMLEscapeCode
 	// check for reserved object types
 	if( ( ( rno.nml[2] >> 5 ) == 0 ) || ( ( rno.nml[2] >> 5 ) > NML::LIST ) )
 	{
-		sprintf( error, "Error: NML has illegal object type 0x%02x", rno.nml[2] >> 5 );
+	    kiwi_snprintf_buf( error, "Error: NML has illegal object type 0x%02x", rno.nml[2] >> 5 );
 		n->SetErrorDump( n->_news.object_id, rno, error );
 		return n;
 	}
@@ -356,7 +357,7 @@ NML* NMLFactory::CreateNML( const NML::RawNewsObject_t& rno, const NMLEscapeCode
 	// extended header checks
 	if( rno.extended_header_len > len )
 	{
-		sprintf( error, "Error: NML extended header too big (%u>%u)", rno.extended_header_len, len );
+	    kiwi_snprintf_buf( error, "Error: NML extended header too big (%u>%u)", rno.extended_header_len, len );
 		n->SetErrorDump( n->_news.object_id, rno, error );
 		return n;
 	}
@@ -373,7 +374,7 @@ NML* NMLFactory::CreateNML( const NML::RawNewsObject_t& rno, const NMLEscapeCode
 		if( *p != 0x08 )
 		{
 			// unknown (not libz) compression
-			sprintf( error, "Error: NML with unknown compression 0x%02x", *p );
+		    kiwi_snprintf_buf( error, "Error: NML with unknown compression 0x%02x", *p );
 			log_err << error << endmsg;
 			n->SetErrorDump( n->_news.object_id, rno, error );
 			return n;
@@ -388,7 +389,7 @@ NML* NMLFactory::CreateNML( const NML::RawNewsObject_t& rno, const NMLEscapeCode
 
 		if( !rv )
 		{
-			sprintf( error, "Error: could not uncompress NML body (%d)", rv );
+		    kiwi_snprintf_buf( error, "Error: could not uncompress NML body (%d)", rv );
 			n->SetErrorDump(n->_news.object_id, rno, error);
 			return n;
 		}
@@ -402,7 +403,7 @@ NML* NMLFactory::CreateNML( const NML::RawNewsObject_t& rno, const NMLEscapeCode
 
 		if( ulen + NML::NML_NR_OF_HEADER_BYTES + rno.extended_header_len > NML::NML_MAX_LEN )
 		{
-			sprintf( error, "Error: uncompressed NML body too big (%lu bytes)",
+		    kiwi_snprintf_buf( error, "Error: uncompressed NML body too big (%lu bytes)",
 				ulen + NML::NML_NR_OF_HEADER_BYTES + rno.extended_header_len );
 			n->SetErrorDump(n->_news.object_id, rno, error);
 			return n;
@@ -430,7 +431,7 @@ NML* NMLFactory::CreateNML( const NML::RawNewsObject_t& rno, const NMLEscapeCode
 	// check for title section
 	if( *p != 0x01 )
 	{
-		sprintf( error, "Error: expected NML Code 0x01, got 0x%02x", *p );
+	    kiwi_snprintf_buf( error, "Error: expected NML Code 0x01, got 0x%02x", *p );
 		n->SetErrorDump( n->_news.object_id, uncompressed, error );
 		return n;
 	}
@@ -443,7 +444,7 @@ NML* NMLFactory::CreateNML( const NML::RawNewsObject_t& rno, const NMLEscapeCode
 	pure_text = getNextSection( p, len, pure_txt_len );
 	if( !pure_text )
 	{
-		sprintf( error, "Error: ignoreDataSections() returned illegal data section" );
+	    kiwi_snprintf_buf( error, "Error: ignoreDataSections() returned illegal data section" );
 		n->SetErrorDump( n->_news.object_id, uncompressed, error );
 		return n;
 	}
@@ -463,7 +464,7 @@ NML* NMLFactory::CreateNML( const NML::RawNewsObject_t& rno, const NMLEscapeCode
 	{
 		if( *p != 0x03 )
 		{
-			sprintf( error, "Error: expected NML Code 0x03, got 0x%02x", *p );
+		    kiwi_snprintf_buf( error, "Error: expected NML Code 0x03, got 0x%02x", *p );
 			n->SetErrorDump( n->_news.object_id, uncompressed, error );
 			return n;
 		}
@@ -472,7 +473,7 @@ NML* NMLFactory::CreateNML( const NML::RawNewsObject_t& rno, const NMLEscapeCode
 		pure_text = getNextSection( p, len, pure_txt_len );
 		if( !pure_text )
 		{
-			sprintf(error, "Error: ignoreDataSections() returned illegal data section" );
+		    kiwi_snprintf_buf(error, "Error: ignoreDataSections() returned illegal data section" );
 			n->SetErrorDump( n->_news.object_id, uncompressed, error );
 			return n;
 		}
@@ -490,7 +491,7 @@ NML* NMLFactory::CreateNML( const NML::RawNewsObject_t& rno, const NMLEscapeCode
 		{
 			if( *p != 0x02 )
 			{
-				sprintf( error, "Error: expected NML Code 0x02, got 0x%02x", *p );
+			    kiwi_snprintf_buf( error, "Error: expected NML Code 0x02, got 0x%02x", *p );
 				n->SetErrorDump( n->_news.object_id, uncompressed, error );
 				return n;
 			}
@@ -506,7 +507,7 @@ NML* NMLFactory::CreateNML( const NML::RawNewsObject_t& rno, const NMLEscapeCode
 			pure_text = getNextSection( p, len, pure_txt_len );
 			if( !pure_text )
 			{
-				sprintf( error, "Error: ignoreDataSections() returned illegal data section" );
+			    kiwi_snprintf_buf( error, "Error: ignoreDataSections() returned illegal data section" );
 				n->SetErrorDump( n->_news.object_id, uncompressed, error );
 				return n;
 			}
@@ -525,7 +526,7 @@ NML* NMLFactory::CreateNML( const NML::RawNewsObject_t& rno, const NMLEscapeCode
 		{
 			if( *p != 0x04 && *p != 0x05 )
 			{
-				sprintf( error, "Error: expected NML Code 0x04 or 0x05, got 0x%02x", *p );
+			    kiwi_snprintf_buf( error, "Error: expected NML Code 0x04 or 0x05, got 0x%02x", *p );
 				n->SetErrorDump( n->_news.object_id, uncompressed, error );
 				return n;
 			}
@@ -536,7 +537,7 @@ NML* NMLFactory::CreateNML( const NML::RawNewsObject_t& rno, const NMLEscapeCode
 			pure_text = getNextSection( p, len, pure_txt_len );
 			if( !pure_text )
 			{
-				sprintf( error, "Error: ignoreDataSections() returned illegal data section" );
+			    kiwi_snprintf_buf( error, "Error: ignoreDataSections() returned illegal data section" );
 				n->SetErrorDump( n->_news.object_id, uncompressed, error );
 				return n;
 			}
@@ -687,7 +688,7 @@ std::string HexDump(const unsigned char *p,
   for (i=0; i<len; i++)
   {
     char buf[4];
-    sprintf(buf, "%02x ", p[i]);
+    kiwi_snprintf_buf(buf, "%02x ", p[i]);
     ascii += isprint(p[i])?char(p[i]):'.';
     dump += buf;
     if (i%bytes_per_line==bytes_per_line-1)

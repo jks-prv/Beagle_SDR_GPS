@@ -100,7 +100,7 @@ int unpackcall(u4_t call_28b, char *call)
             if (tmp[i] != ' ')
                 break;
         }
-        sprintf(call, "%-6s", &tmp[i]);
+        kiwi_snprintf_ptr(call, LEN_CALL, "%-6s", &tmp[i]);
         
 		// remove trailing whitespace
         for (i=0; i<6; i++) {
@@ -334,7 +334,7 @@ int unpk_(u1_t *decdata, char *call_loc_pow, char *callsign, char *grid, int *dB
         int nu = ntype%10;
         if (nu == 0 || nu == 3 || nu == 7) {
             *dBm = ndbm = ntype;
-        	sprintf(call_loc_pow, "%s %s %2d", callsign, grid, ndbm);
+        	kiwi_snprintf_ptr(call_loc_pow, LEN_C_L_P, "%s %s %2d", callsign, grid, ndbm);
 			hash_update(callsign);
             rtn = 1;
         } else {
@@ -348,7 +348,7 @@ int unpk_(u1_t *decdata, char *call_loc_pow, char *callsign, char *grid, int *dB
             grid[0] = '\0';		// no grid info for TYPE2
 
             *dBm = ndbm = ntype-nadd;
-        	sprintf(call_loc_pow, "%s no_grid %2d", callsign, ndbm);
+        	kiwi_snprintf_ptr(call_loc_pow, LEN_C_L_P, "%s no_grid %2d", callsign, ndbm);
 
             int nu = ndbm%10;
             if (nu == 0 || nu == 3 || nu == 7 || nu == 10) { // make sure power is OK
@@ -364,7 +364,7 @@ int unpk_(u1_t *decdata, char *call_loc_pow, char *callsign, char *grid, int *dB
         memset(grid, 0, LEN_GRID);
         // this because the grid6 L1L2N1N2L3L4 was packed as L2N1N2L3L4L1 to be
         // compatible with the AANLLL required by pack_call() / unpackcall()
-        sprintf(grid, "%c%.5s", callsign[5], callsign);
+        kiwi_snprintf_ptr(grid, LEN_GRID, "%c%.5s", callsign[5], callsign);
 
         int nu = ndbm%10;
         if ((nu != 0 && nu != 3 && nu != 7 && nu != 10) ||
@@ -379,8 +379,8 @@ int unpk_(u1_t *decdata, char *call_loc_pow, char *callsign, char *grid, int *dB
         // get hashed callsign
         // wspr_t:callsign shouldn't contain HTML-confusing angle brackets
         char *callp = hash_lookup((grid_pwr_22b-ntype-64) / 128);
-        sprintf(callsign, "%s", callp? callp : "...");
-        sprintf(call_loc_pow, "<%s> %s %2d", callsign, grid, ndbm);
+        kiwi_snprintf_ptr(callsign, LEN_CALL, "%s", callp? callp : "...");
+        kiwi_snprintf_ptr(call_loc_pow, LEN_C_L_P, "<%s> %s %2d", callsign, grid, ndbm);
         
         // I don't know what to do with these... They show up as "A000AA" grids.
         if (ntype == -64) return -6;

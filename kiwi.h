@@ -94,16 +94,31 @@ extern float p0_f, p1_f, p2_f, p3_f, p4_f, p5_f, p6_f, p7_f;
 extern int p0_i, p1_i, p2_i, p3_i, p4_i, p5_i, p6_i, p7_i;
 
 
-// values defined in rx_cmd.cpp
-// CAUTION: order in mode_s/modu_s must match mode_e, mode_hbw, mode_offset
-// CAUTION: order in mode_s/modu_s must match kiwi.js:kiwi.modes_l
+// CAUTION: must match order in kiwi.js
 // CAUTION: add new entries at the end
-#define N_MODE 16
-// = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq", "drm", "usn", "lsn", "sam", "sau", "sal", "sas", "qam" };
-extern const char *mode_s[N_MODE], *modu_s[N_MODE];
-extern const int mode_hbw[N_MODE], mode_offset[N_MODE];
+const char * const mode_lc[] = {
+    "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq", "drm",
+    "usn", "lsn", "sam", "sau", "sal", "sas", "qam", "nnfm"
+};
+
+const char * const mode_uc[] = {
+    "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ", "DRM",
+    "USN", "LSN", "SAM", "SAU", "SAL", "SAS", "QAM", "NNFM"
+};
+
+const int mode_hbw[] = {
+    9800/2, 5000/2, 2400/2, 2400/2, 400/2, 60/2, 12000/2, 10000/2, 10000/2,
+    2100/2, 2100/2, 9800/2, 9800/2, 9800/2, 9800/2, 9800/2, 6000/2
+};
+
+const int mode_offset[] = {
+    0, 0, 1500, -1500, 0, 0, 0, 0, 0,
+    1350, -1350, 0, 0, 0, 0, 0, 0
+};
+
 typedef enum {
-    MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NBFM, MODE_IQ, MODE_DRM, MODE_USN, MODE_LSN, MODE_SAM, MODE_SAU, MODE_SAL, MODE_SAS, MODE_QAM
+    MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NBFM, MODE_IQ, MODE_DRM,
+    MODE_USN, MODE_LSN, MODE_SAM, MODE_SAU, MODE_SAL, MODE_SAS, MODE_QAM, MODE_NNFM
 } mode_e;
 
 

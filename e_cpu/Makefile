@@ -8,6 +8,8 @@ BUILD_DIR = ../../build
 TOOLS_DIR = $(BUILD_DIR)/tools
 GEN_DIR = $(BUILD_DIR)/gen
 
+CFLAGS = -I. -I./asm -I.. -D_GNU_SOURCE -g 
+
 ASM = $(TOOLS_DIR)/asm
 
 all: $(ASM)
@@ -26,7 +28,7 @@ ASM_INCLUDES = $(wildcard asm/*.h)
 ASM_SOURCE = $(wildcard asm/*.cpp)
 
 $(ASM): $(TOOLS_DIR) $(GEN_DIR) $(ASM_INCLUDES) $(ASM_SOURCE) Makefile
-	$(CPP) -I. -I./asm -D_GNU_SOURCE -g $(ASM_SOURCE) -o $@
+	$(CPP) $(CFLAGS) $(ASM_SOURCE) -o $@
 
 # don't regenerate the .h/.vh files
 no_gen: $(ASM)

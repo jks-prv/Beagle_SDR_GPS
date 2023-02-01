@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
 				ifn++; ifl++;
 				if (ifn >= NIFILES_NEST) panic("too many nested include files");
 				fn = ifiles[ifn]; strcpy(fn, basename); strcpy(ifiles_list[ifl], basename);
-                sprintf(fullpath, "%s%s", other_dir? other_dir : "", fn);
+                snprintf(fullpath, sizeof(fullpath), "%s%s", other_dir? other_dir : "", fn);
                 printf("#include file: %s\n", fullpath);
                 if ((ifp[ifn] = fopen(fullpath, "r")) == NULL) {
                     sys_panic("fopen include file");
@@ -636,7 +636,7 @@ int main(int argc, char *argv[])
 
 		// concat to make numeric generated branch target: SYM # NUM -> SYM
 		if (tp->num == OPR_CONCAT && (tp-1)->ttype == TT_SYM && (tp+1)->ttype == TT_NUM) {
-			sprintf(sym, "%s%d", (tp-1)->str, (tp+1)->num);
+			snprintf(sym, sizeof(sym), "%s%d", (tp-1)->str, (tp+1)->num);
 			if (debug) printf("%s # %d = %s\n", (tp-1)->str, (tp+1)->num, sym);
 			string_enter(sym, &(tp-1)->str, 0);
 			pullup(tp, tp+2, &ep3); tp--;

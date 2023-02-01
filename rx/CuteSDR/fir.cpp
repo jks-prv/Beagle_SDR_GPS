@@ -2,11 +2,11 @@
 // fir.cpp: implementation of the CFir class.
 //
 //  This class implements a FIR  filter using a double flat coefficient
-//array to eliminate testing for buffer wrap around.
+//  array to eliminate testing for buffer wrap around.
 //
-//Filter coefficients can be from a fixed table or this class will create
-// a lowpass or highpass filter from frequency and attenuation specifications
-// using a Kaiser-Bessel windowed sinc algorithm
+//  Filter coefficients can be from a fixed table or this class will create
+//  a lowpass or highpass filter from frequency and attenuation specifications
+//  using a Kaiser-Bessel windowed sinc algorithm
 //
 // History:
 //	2011-01-29  Initial creation MSW
@@ -177,35 +177,6 @@ TYPEREAL* HQptr;
 //REAL in MONO16 out version (for AM demodulator post-filtering where only real signal is considered)
 /////////////////////////////////////////////////////////////////////////////////
 void CFir::ProcessFilter(int InLength, TYPEREAL* InBuf, TYPEMONO16* OutBuf)
-{
-TYPEREAL acc;
-TYPEREAL* Zptr;
-const TYPEREAL* Hptr;
-	//m_Mutex.lock();
-	for(int i=0; i<InLength; i++)
-	{
-		m_rZBuf[m_State] = InBuf[i];
-		Hptr = &m_Coef[m_NumTaps - m_State];
-		Zptr = m_rZBuf;
-		acc = (*Hptr++ * *Zptr++);	//do the 1st MAC
-		for(int j=1; j<m_NumTaps; j++)
-			acc += (*Hptr++ * *Zptr++);	//do the remaining MACs
-		if(--m_State < 0)
-			m_State += m_NumTaps;
-		OutBuf[i] = (TYPEMONO16) acc;
-	}
-	//m_Mutex.unlock();
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-//	Process InLength InBuf[] samples and place in OutBuf[]
-//  Note the Coefficient array is twice the length and has a duplicated set
-// in order to eliminate testing for buffer wrap in the inner loop
-//  ex: if 3 tap FIR with coefficients{21,-43,15} is made into a array of 6 entries
-//   {21, -43, 15, 21, -43, 15 }
-//MONO16 in MONO16 out version (for AM demodulator post-filtering where only real signal is considered)
-/////////////////////////////////////////////////////////////////////////////////
-void CFir::ProcessFilter(int InLength, TYPEMONO16* InBuf, TYPEMONO16* OutBuf)
 {
 TYPEREAL acc;
 TYPEREAL* Zptr;

@@ -348,7 +348,7 @@ alias hbeat="echo heartbeat >${led}0/trigger; echo heartbeat >${led}1/trigger; e
 # /dev/ttyUSB0 is created by plugging in a Keyspan USA-19H device to USB port.
 # Same for BB-specific FTDI FT232RL cables with 6-pin 3.3V serial interface headers
 #   e.g. successfully used one to connect one BB USB port to 6-pin serial console port of another
-alias bbser="screen -h 1024 /dev/ttyUSB0 115200"
+alias bbser="screen -h 10240 /dev/ttyUSB0 115200"
 
 # BB MMC
 # CAUTION: on the BBAI everything is on mmcblk[01]p1 (i.e. no sep /boot & / anymore)

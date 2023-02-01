@@ -74,10 +74,13 @@ void cmd_debug_print(conn_t *c, char *s, int slen, bool tx);
 #define P_MAX_MIN_DEMAND    0x00
 #define P_MAX_MIN_RANGE     0x01
 #define P_MAX_MIN_DUMP      0x02
+#define P_MAX_MIN_RESET     0x04
 
 void print_max_min_stream_i(void **state, int flags, const char *name, int index=0, int nargs=0, ...);
 void print_max_min_stream_f(void **state, int flags, const char *name, int index=0, int nargs=0, ...);
 void print_max_min_u1(const char *name, u1_t *data, int len);
+void print_max_min_u2(const char *name, u2_t *data, int len);
+void print_max_min_s2(const char *name, s2_t *data, int len);
 void print_max_min_i(const char *name, int *data, int len);
 void print_max_min_f(const char *name, float *data, int len);
 void print_max_min_c(const char *name, TYPECPX* data, int len);

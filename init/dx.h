@@ -72,12 +72,14 @@ typedef struct {
 
 extern dxlist_t dx;
 
-#define	DX_MODE	    0x0000000f  // 16 modes
+#define	DX_MODE	    0x0000000f  // 32 modes
+#define DX_DECODE_MODE(flags)   (  (((flags) & DX_MODE_16)? 16:0) | ((flags) & DX_MODE) )
+#define DX_ENCODE_MODE(mode)    (  (((mode) >= 16)? DX_MODE_16:0) | ((mode) & DX_MODE) )
 
 #define	DX_TYPE	    0x000001f0  // 32 types
 #define DX_TYPE_SFT 4
-#define DX_STORED_TYPE2IDX(type)    (  ((type) & DX_TYPE)            >> DX_TYPE_SFT )
-#define DX_EiBi_TYPE2IDX(type)      ( (((type) & DX_TYPE) - DX_EiBi) >> DX_TYPE_SFT )
+#define DX_STORED_FLAGS_TYPEIDX(flags)  (  ((flags) & DX_TYPE)            >> DX_TYPE_SFT )
+#define DX_EiBi_FLAGS_TYPEIDX(flags)    ( (((flags) & DX_TYPE) - DX_EiBi) >> DX_TYPE_SFT )
 
 #define DX_N_STORED 16
 #define DX_STORED   0x00000000  // stored: 0x000, 0x010, ... 0x0f0 (16)
@@ -119,6 +121,7 @@ extern dxlist_t dx;
 #define DX_FLAGS    0xffff0000
 #define DX_FILTERED 0x00010000
 #define DX_HAS_EXT  0x00020000
+#define DX_MODE_16  0x00040000
 
 extern const int eibi_counts[DX_N_EiBi];
 
