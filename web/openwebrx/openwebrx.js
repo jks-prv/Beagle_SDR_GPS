@@ -10117,9 +10117,9 @@ var squelch_tail_v = [ 0, 0.2, 0.5, 1, 2 ];
 function squelch_action(sq)
 {
    squelched = sq;
-   //console.log('squelch_action squelched='+ (squelched? 1:0) +' sMeter_dBm='+ owrx.sMeter_dBm.toFixed(0));
    var mute_color = squelched? 'white' : kiwi.unmuted_color;
    var sq_color = mute_color;
+   //console.log('squelch_action squelched='+ (squelched? 1:0) +' sMeter_dBm='+ owrx.sMeter_dBm.toFixed(0) +' sq_color='+ sq_color);
 
    owrx.squelched_overload = (owrx.sMeter_dBm >= cfg.overload_mute);
    if (owrx.prev_squelched_overload != owrx.squelched_overload) {
@@ -10144,7 +10144,7 @@ function squelch_action(sq)
 
 function squelch_setup(flags)
 {
-   var nbfm = (cur_mode == 'nbfm');
+   var nbfm = kiwi_mode(cur_mode).NBFM;
    
    if (flags & toggle_e.FROM_COOKIE) { 
       var sq = readCookie('last_squelch'+ (nbfm? '':'_efm'));
@@ -10179,13 +10179,13 @@ function squelch_setup(flags)
 
 function send_squelch()
 {
-   var nbfm = (cur_mode == 'nbfm');
+   var nbfm = kiwi_mode(cur_mode).NBFM;
    snd_send("SET squelch="+ squelch.toFixed(0) +' param='+ (nbfm? squelch_threshold : squelch_tail_v[squelch_tail]).toFixed(2));
 }
 
 function set_squelch_cb(path, str, done, first, no_write_cookie)
 {
-   var nbfm = (cur_mode == 'nbfm');
+   var nbfm = kiwi_mode(cur_mode).NBFM;
    //console.log('$set_squelch_cb path='+ path +' str='+ str +' done='+ done +' first='+ first +' no_write_cookie='+ no_write_cookie +' nbfm='+ nbfm);
    if (first) return;
 
@@ -10238,7 +10238,7 @@ function pre_record_cb(path, val, first, no_write_cookie)
    audio_pre_record_buf_init();
 
    // nbfm has no pre menu
-   if (no_write_cookie != true && /* safety net */ cur_mode != 'nbfm')
+   if (no_write_cookie != true && /* safety net */ !kiwi_mode(cur_mode).NBFM)
       kiwi_storeSet('last_pre', pre_record);
 }
 
@@ -10250,7 +10250,7 @@ function squelch_tail_cb(path, val, first, no_write_cookie)
    send_squelch();
 
    // nbfm has no tail menu
-   if (no_write_cookie != true && /* safety net */ cur_mode != 'nbfm')
+   if (no_write_cookie != true && /* safety net */ !kiwi_mode(cur_mode).NBFM)
       kiwi_storeSet('last_tail', squelch_tail);
 }
 

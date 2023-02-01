@@ -370,6 +370,13 @@ void print_max_min_stream_i(void **state, int flags, const char *name, int index
 	print_max_min_int_t *p = print_max_min_init(state);
 	bool update = false;
 
+	if (flags & P_MAX_MIN_RESET) {
+		memset(p, 0, sizeof(*p));
+		p->min_i = 0x7fffffff; p->max_i = 0x80000000;
+		p->min_f = 1e38; p->max_f = -1e38;
+		p->min_idx = p->max_idx = -1;
+	}
+
 	for (int i=0; i < nargs; i++) {
 		int arg_i = va_arg(ap, int);
 		if (arg_i > p->max_i) {
@@ -398,6 +405,13 @@ void print_max_min_stream_f(void **state, int flags, const char *name, int index
 	print_max_min_int_t *p = print_max_min_init(state);
 	bool dump = (flags & P_MAX_MIN_DUMP);
 	bool update = false;
+	
+	if (flags & P_MAX_MIN_RESET) {
+		memset(p, 0, sizeof(*p));
+		p->min_i = 0x7fffffff; p->max_i = 0x80000000;
+		p->min_f = 1e38; p->max_f = -1e38;
+		p->min_idx = p->max_idx = -1;
+	}
 
 	if (!dump) for (int i=0; i < nargs; i++) {
 		double arg_f = va_arg(ap, double);

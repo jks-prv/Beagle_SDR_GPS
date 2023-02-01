@@ -20,7 +20,7 @@ public:
 	CSquelch();
 	
 	void Reset();
-	void SetSampleRate(int rx_chan, TYPEREAL samplerate);
+	void SetupParameters(int rx_chan, TYPEREAL samplerate);
 	void SetSquelch(int Value, int SquelchMax);		//call with range of 0 to 99 to set squelch threshold
 	int PerformFMSquelch(int InLength, TYPEREAL* pTmpData, TYPEMONO16* pOutData);
 	int PerformNonFMSquelch(int InLength, TYPEMONO16* pTmpData, TYPEMONO16* pOutData);

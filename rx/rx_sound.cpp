@@ -194,7 +194,7 @@ void c2s_sound(void *param)
         snd->snd_seq_ck_init = false;
     #endif
     
-	m_Squelch[rx_chan].SetSampleRate(rx_chan, frate);
+	m_Squelch[rx_chan].SetupParameters(rx_chan, frate);
 	m_Squelch[rx_chan].SetSquelch(0, 0);
 	
 	// don't start data pump until first connection so GPS search can run at full speed on startup
@@ -369,7 +369,7 @@ void c2s_sound(void *param)
                 
                     bool no_mode_change = (strcmp(mode_m, "x") == 0);
                     if (!no_mode_change) {
-                        _mode = kiwi_str2enum(mode_m, mode_s, ARRAY_LEN(mode_s));
+                        _mode = rx_mode2enum(mode_m);
                         cmd_recv |= CMD_MODE;
 
                         if (_mode == NOT_FOUND) {
@@ -409,13 +409,13 @@ void c2s_sound(void *param)
                             }
 
                             mode = _mode;
-                            if (mode == MODE_NBFM)
+                            if (mode == MODE_NBFM || mode == MODE_NNFM)
                                 new_nbfm = true;
                             change_freq_mode = true;
                             //cprintf(conn, "SND mode %s\n", mode_m);
                         }
 
-                        if (mode == MODE_NBFM && (new_freq || new_nbfm)) {
+                        if ((mode == MODE_NBFM || mode == MODE_NNFM) && (new_freq || new_nbfm)) {
                             m_Squelch[rx_chan].Reset();
                             conn->last_sample.re = conn->last_sample.im = 0;
                         }
@@ -602,8 +602,8 @@ void c2s_sound(void *param)
                     if (n == 2) {
                         squelch = _squelch;
                         squelched = false;
-                        //cprintf(conn, "SND SET squelch=%d param=%.2f %s", squelch, _squelch_param, mode_s[mode]);
-                        if (mode == MODE_NBFM) {
+                        //cprintf(conn, "SND SET squelch=%d param=%.2f %s", squelch, _squelch_param, mode_lc[mode]);
+                        if (mode == MODE_NBFM || mode == MODE_NNFM) {
                             m_Squelch[rx_chan].SetSquelch(squelch, _squelch_param);
                         } else {
                             float squelch_tail = _squelch_param;
@@ -716,7 +716,7 @@ void c2s_sound(void *param)
                     // FIXME: stop audio stream to save bandwidth?
                 }
 
-            // https://dsp.stackexchange.com/questions/34605/biquad-cookbook-formula-for-broadcast-fm-de-emphasis
+            // dsp.stackexchange.com/questions/34605/biquad-cookbook-formula-for-broadcast-fm-de-emphasis
             case CMD_DE_EMP: {
                 int _de_emp;
                 n = sscanf(cmd, "SET de_emp=%d", &_de_emp);
@@ -923,7 +923,7 @@ void c2s_sound(void *param)
 		#define SND_FLAG_SQUELCH_UI     0x40
 		#define SND_FLAG_LITTLE_ENDIAN  0x80
 		
-		bool isNBFM = (mode == MODE_NBFM);
+		bool isNBFM = (mode == MODE_NBFM || mode == MODE_NNFM);
 		bool IQ_or_DRM_or_stereo = (mode == MODE_IQ || mode == MODE_DRM || mode == MODE_SAS || mode == MODE_QAM);
 
 		u1_t *bp_real_u1  = snd->out_pkt_real.u1;
@@ -1101,7 +1101,7 @@ void c2s_sound(void *param)
 			iq->iq_seq++;
 
             // Forward IQ samples if requested.
-            // Remember that receive_iq() is used to pushback test data in some cases, e.g. DRM
+            // Remember that receive_iq_*() is used by some extensions to pushback test data, e.g. DRM
             if (receive_iq_pre_agc != NULL)
                 receive_iq_pre_agc(rx_chan, 0, ns_out, f_samps);
             
@@ -1141,8 +1141,6 @@ void c2s_sound(void *param)
                 rx->real_seq++;
             }
             
-            squelched = false;
-
             switch (mode) {
             
             case MODE_AM:
@@ -1193,32 +1191,75 @@ void c2s_sound(void *param)
                 break;
             }
             
-            case MODE_NBFM: {
+            case MODE_NBFM:
+            case MODE_NNFM: {
                 TYPEREAL *d_samps = rx->demod_samples;
                 TYPECPX *a_samps = rx->agc_samples;
                 m_Agc[rx_chan].ProcessData(ns_out, f_samps, a_samps);
                 
-                // FM demod from CSDR: https://github.com/simonyiszk/csdr
-                // also see: http://www.embedded.com/design/configurable-systems/4212086/DSP-Tricks--Frequency-demodulation-algorithms-
+                //#define PN_F_DEBUG
+                #ifdef PN_F_DEBUG
+                    if (p0_f) {
+                        TYPEREAL fm_scale = p0_f;
+                        for (j=0; j < ns_out; j++) {
+                            a_samps[j].re /= fm_scale; a_samps[j].im /= fm_scale;
+                            #define SHOW_MAX_MIN_FM_IN
+                            #ifdef SHOW_MAX_MIN_FM_IN
+                                static void *FM_in_state;
+                                print_max_min_stream_f(&FM_in_state, P_MAX_MIN_RANGE, "FM_IN", j, 2, (double) a_samps[j].re, (double) a_samps[j].im);
+                            #endif
+                        }
+                    }
+                #endif
+                
+                // FM demod from CSDR: github.com/simonyiszk/csdr
+                // Output clipper is mandatory to prevent artifacts that make the audio "rough" sounding.
+                // See NFM fmdemod_quadri_cf command pipeline example.
+                // See also:
+                //      www.embedded.com/design/configurable-systems/4212086/DSP-Tricks--Frequency-demodulation-algorithms-
+                //      www.pa3fwm.nl/technotes/tn24-fm-noise.html
+                #define MAX_NBFM_VAL 8192
+                #ifdef PN_F_DEBUG
+                    float max_val = p1_f? fabsf(p1_f) : MAX_NBFM_VAL;
+                    float clipper_val = p2_f? p2_f : MAX_NBFM_VAL;
+                #else
+                    float max_val = MAX_NBFM_VAL;
+                    float clipper_val = MAX_NBFM_VAL;
+                #endif
+
                 #define fmdemod_quadri_K 0.340447550238101026565118445432744920253753662109375
-                float i = a_samps->re, q = a_samps->im;
+                float i = a_samps->re, q = a_samps->im, out;
                 float iL = conn->last_sample.re, qL = conn->last_sample.im;
-                *d_samps = SND_MAX_VAL * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / (i*i + q*q);
-                conn->last_sample = a_samps[ns_out-1];
+                float pwr = i*i + q*q;
+                out = pwr? (max_val * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / pwr) : 0;
+                if (clipper_val > 0) out = PN_CLAMP(out, clipper_val);
+                *d_samps = out;
                 a_samps++; d_samps++;
                 
                 for (j=1; j < ns_out; j++) {
                     i = a_samps->re, q = a_samps->im;
                     iL = a_samps[-1].re, qL = a_samps[-1].im;
-                    *d_samps = SND_MAX_VAL * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / (i*i + q*q);
+                    pwr = i*i + q*q;
+                    out = pwr? (max_val * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / pwr) : 0;
+                    if (clipper_val > 0) out = PN_CLAMP(out, clipper_val);
+
+                    //#define SHOW_MAX_MIN_FM_OUT
+                    #ifdef SHOW_MAX_MIN_FM_OUT
+                        static void *FM_out_state;
+                        print_max_min_stream_f(&FM_out_state, (p1_f < 0)? P_MAX_MIN_RESET : P_MAX_MIN_RANGE, "FM_OUT", j-1, 1, (double) out);
+                    #endif
+
+                    *d_samps = out;
                     a_samps++; d_samps++;
                 }
                 
+                conn->last_sample = a_samps[-1];
                 d_samps = rx->demod_samples;
     
                 // use the noise squelch from CuteSDR
+                // nsq_nc_sq = -1_0_+1
                 int nsq_nc_sq = m_Squelch[rx_chan].PerformFMSquelch(ns_out, d_samps, r_samps);
-                squelched = (nsq_nc_sq == 1)? true:false;
+                if (nsq_nc_sq != 0) squelched = (nsq_nc_sq == 1)? true:false;
                 break;
             }
             
@@ -1284,6 +1325,7 @@ void c2s_sound(void *param)
                 }
             }
             
+            // non-NBFM squelch
             if ((squelch || sq_changed) && !isNBFM && mode != MODE_DRM) {
                 if (!rssi_filled || squelch_on_seq == -1) {
                     rssi_q[rssi_p++] = sMeter_dBm;
@@ -1379,7 +1421,7 @@ void c2s_sound(void *param)
                         m_Agc[rx_chan].ProcessData(ns_out, cp, cp);
 
                     // Forward IQ samples if requested.
-                    // Remember that receive_iq() is used to pushback test data in some cases, e.g. DRM
+                    // Remember that receive_iq_*() is used by some extensions to pushback test data, e.g. DRM
                     if (receive_iq_post_agc != NULL)
                         receive_iq_post_agc(rx_chan, 0, ns_out, cp);
             
@@ -1429,7 +1471,8 @@ void c2s_sound(void *param)
                 int freqHz = rx->freqHz[rx->real_wr_pos];
                 rx->real_wr_pos = (rx->real_wr_pos+1) & (N_DPBUF-1);
     
-                // forward real samples if requested
+                // Forward real samples if requested.
+                // Remember that receive_real() is used by some extensions to pushback test data.
                 if (receive_real != NULL)
                     receive_real(rx_chan, 0, ns_out, r_samps, freqHz);
                 

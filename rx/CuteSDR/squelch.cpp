@@ -85,7 +85,7 @@ void CSquelch::Reset()
 /////////////////////////////////////////////////////////////////////////////////
 // Sets sample rate and adjusts any parameters that are affected.
 /////////////////////////////////////////////////////////////////////////////////
-void CSquelch::SetSampleRate(int rx_chan, TYPEREAL samplerate)
+void CSquelch::SetupParameters(int rx_chan, TYPEREAL samplerate)
 {
 	m_rx_chan = rx_chan;
 	m_SampleRate = samplerate;
@@ -113,7 +113,7 @@ void CSquelch::SetSampleRate(int rx_chan, TYPEREAL samplerate)
 
 	m_DeemphasisAlpha = (1.0-MEXP(-1.0/(m_SampleRate*DEMPHASIS_TIME)) );
 
-	m_LpFir.InitLPFilter(0,1.0,50.0,VOICE_BANDWIDTH, 1.6*VOICE_BANDWIDTH, m_SampleRate);
+	m_LpFir.InitLPFilter(0, 1.0, 50.0, VOICE_BANDWIDTH, 1.6*VOICE_BANDWIDTH, m_SampleRate);
 
 	InitNoiseSquelch();
 	//printf("PLL SR %f norm %f Alpha %.9f Beta %.9f Gain %f\n", m_SampleRate, norm, m_PllAlpha_P, m_PllBeta_F, m_OutGain);
