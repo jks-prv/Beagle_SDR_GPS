@@ -1421,14 +1421,14 @@ static void taskSleepSetup(TASK *t, const char *reason, u64_t usec, u4_t *wakeup
 	if (usec > 0) {
     	t->deadline = timer_us64() + usec;
         t->wakeup_test = NULL;
-    	sprintf(t->reason, "(%.3f msec) ", (float) usec/1000.0);
+    	kiwi_snprintf_buf(t->reason, "(%.3f msec) ", (float) usec/1000.0);
 		evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleep", evprintf("sleeping usec %lld %s Qrunnable %d", usec, task_ls(t), t->tq->runnable));
 	} else {
 	    assert(usec == 0);
         t->wakeup_test = wakeup_test;
 		t->deadline = 0;
 		if (wakeup_test != NULL) {
-            sprintf(t->reason, "(test %p) ", wakeup_test);
+            kiwi_snprintf_buf(t->reason, "(test %p) ", wakeup_test);
             evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleep", evprintf("sleeping test %p %s Qrunnable %d", wakeup_test, task_ls(t), t->tq->runnable));
 		} else {
             strcpy(t->reason, "(evt) ");
@@ -1529,7 +1529,7 @@ void _TaskWakeup(tid_t tid, u4_t flags, void *wake_param)
     	t->interrupted_task = cur_task;		// remember who we interrupted
     	evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskWakeup", evprintf("HIGHER PRIORITY wake %s ...", task_ls(t)));
     	evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskWakeup", evprintf("HIGHER PRIORITY ... from interrupted %s", task_ls(cur_task)));
-    	sprintf(t->reason, "TaskWakeup: HIGHER PRIO %p", wake_param);
+    	kiwi_snprintf_buf(t->reason, "TaskWakeup: HIGHER PRIO %p", wake_param);
     	NextTask(t->reason);
     }
 }
@@ -1633,7 +1633,7 @@ void _lock_init(lock_t *lock, const char *name)
 	memset(lock, 0, sizeof(*lock));
 	lock->name = name;
 	// for NextTask() inside lock_enter()
-    sprintf(lock->enter_name, "lock enter: %.*s", LEN_ENTER_NAME, name);
+    kiwi_snprintf_buf(lock->enter_name, "lock enter: %.*s", LEN_ENTER_NAME, name);
 	lock->init = true;
 	lock->magic_b = LOCK_MAGIC_B;
 	lock->magic_e = LOCK_MAGIC_E;

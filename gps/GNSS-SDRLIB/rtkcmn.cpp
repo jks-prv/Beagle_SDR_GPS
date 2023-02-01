@@ -438,17 +438,17 @@ extern int satid2no(const char *id)
 *          char   *id       O   satellite id (Gnn,Rnn,Enn,Jnn,Cnn or nnn)
 * return : none
 *-----------------------------------------------------------------------------*/
-extern void satno2id(int sat, char *id)
+extern void satno2id(int sat, char *id, size_t size)
 {
     int prn;
     switch (satsys(sat,&prn)) {
-        case SYS_GPS: sprintf(id,"G%02d",prn-MINPRNGPS+1); return;
-        case SYS_GLO: sprintf(id,"R%02d",prn-MINPRNGLO+1); return;
-        case SYS_GAL: sprintf(id,"E%02d",prn-MINPRNGAL+1); return;
-        case SYS_QZS: sprintf(id,"J%02d",prn-MINPRNQZS+1); return;
-        case SYS_CMP: sprintf(id,"C%02d",prn-MINPRNCMP+1); return;
-        case SYS_LEO: sprintf(id,"L%02d",prn-MINPRNLEO+1); return;
-        case SYS_SBS: sprintf(id,"%03d" ,prn); return;
+        case SYS_GPS: kiwi_snprintf_ptr(id,size,"G%02d",prn-MINPRNGPS+1); return;
+        case SYS_GLO: kiwi_snprintf_ptr(id,size,"R%02d",prn-MINPRNGLO+1); return;
+        case SYS_GAL: kiwi_snprintf_ptr(id,size,"E%02d",prn-MINPRNGAL+1); return;
+        case SYS_QZS: kiwi_snprintf_ptr(id,size,"J%02d",prn-MINPRNQZS+1); return;
+        case SYS_CMP: kiwi_snprintf_ptr(id,size,"C%02d",prn-MINPRNCMP+1); return;
+        case SYS_LEO: kiwi_snprintf_ptr(id,size,"L%02d",prn-MINPRNLEO+1); return;
+        case SYS_SBS: kiwi_snprintf_ptr(id,size,"%03d" ,prn); return;
     }
     strcpy(id,"");
 }
@@ -1480,14 +1480,14 @@ extern double utc2gmst(gtime_t t, double ut1_utc)
 *          int    n         I   number of decimals
 * return : none
 *-----------------------------------------------------------------------------*/
-extern void time2str(gtime_t t, char *s, int n)
+extern void time2str(gtime_t t, char *s, size_t size, int n)
 {
     double ep[6];
     
     if (n<0) n=0; else if (n>12) n=12;
     if (1.0-t.sec<0.5/pow(10.0,n)) {t.time++; t.sec=0.0;};
     time2epoch(t,ep);
-    sprintf(s,"%04.0f/%02.0f/%02.0f %02.0f:%02.0f:%0*.*f",ep[0],ep[1],ep[2],
+    kiwi_snprintf_ptr(s,size,"%04.0f/%02.0f/%02.0f %02.0f:%02.0f:%0*.*f",ep[0],ep[1],ep[2],
             ep[3],ep[4],n<=0?2:n+3,n<=0?0:n,ep[5]);
 }
 /* get time string -------------------------------------------------------------
@@ -1500,7 +1500,7 @@ extern void time2str(gtime_t t, char *s, int n)
 extern char *time_str(gtime_t t, int n)
 {
     static char buff[64];
-    time2str(t,buff,n);
+    time2str(t,buff,sizeof(buff),n);
     return buff;
 }
 /* time to day of year ---------------------------------------------------------
@@ -2606,7 +2606,7 @@ extern int savenav(const char *file, const nav_t *nav)
     
     for (i=0;i<MAXSAT;i++) {
         if (nav->eph[i].ttr.time==0) continue;
-        satno2id(nav->eph[i].sat,id);
+        satno2id(nav->eph[i].sat,id,sizeof(id));
         fprintf(fp,"%s,%d,%d,%d,%d,%d,%d,%d,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,"
                    "%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,%.14E,"
                    "%.14E,%.14E,%.14E,%.14E,%.14E,%d,%d\n",
@@ -2714,8 +2714,8 @@ extern void traceobs(int level, const obsd_t *obs, int n)
     
     if (!fp_trace||level>level_trace) return;
     for (i=0;i<n;i++) {
-        time2str(obs[i].time,str,3);
-        satno2id(obs[i].sat,id);
+        time2str(obs[i].time,str,sizeof(str),3);
+        satno2id(obs[i].sat,id,sizeof(id));
         fprintf(fp_trace," (%2d) %s %-3s rcv%d %13.3f %13.3f %13.3f %13.3f %d %d %d %d %3.1f %3.1f\n",
               i+1,str,id,obs[i].rcv,obs[i].L[0],obs[i].L[1],obs[i].P[0],
               obs[i].P[1],obs[i].LLI[0],obs[i].LLI[1],obs[i].code[0],
@@ -2730,9 +2730,9 @@ extern void tracenav(int level, const nav_t *nav)
     
     if (!fp_trace||level>level_trace) return;
     for (i=0;i<nav->n;i++) {
-        time2str(nav->eph[i].toe,s1,0);
-        time2str(nav->eph[i].ttr,s2,0);
-        satno2id(nav->eph[i].sat,id);
+        time2str(nav->eph[i].toe,s1,sizeof(s1),0);
+        time2str(nav->eph[i].ttr,s2,sizeof(s2),0);
+        satno2id(nav->eph[i].sat,id,sizeof(id));
         fprintf(fp_trace,"(%3d) %-3s : %s %s %3d %3d %02x\n",i+1,
                 id,s1,s2,nav->eph[i].iode,nav->eph[i].iodc,nav->eph[i].svh);
     }
@@ -2750,9 +2750,9 @@ extern void tracegnav(int level, const nav_t *nav)
     
     if (!fp_trace||level>level_trace) return;
     for (i=0;i<nav->ng;i++) {
-        time2str(nav->geph[i].toe,s1,0);
-        time2str(nav->geph[i].tof,s2,0);
-        satno2id(nav->geph[i].sat,id);
+        time2str(nav->geph[i].toe,s1,sizeof(s1),0);
+        time2str(nav->geph[i].tof,s2,sizeof(s2),0);
+        satno2id(nav->geph[i].sat,id,sizeof(id));
         fprintf(fp_trace,"(%3d) %-3s : %s %s %2d %2d %8.3f\n",i+1,
                 id,s1,s2,nav->geph[i].frq,nav->geph[i].svh,nav->geph[i].taun*1E6);
     }
@@ -2764,9 +2764,9 @@ extern void tracehnav(int level, const nav_t *nav)
     
     if (!fp_trace||level>level_trace) return;
     for (i=0;i<nav->ns;i++) {
-        time2str(nav->seph[i].t0,s1,0);
-        time2str(nav->seph[i].tof,s2,0);
-        satno2id(nav->seph[i].sat,id);
+        time2str(nav->seph[i].t0,s1,sizeof(s1),0);
+        time2str(nav->seph[i].tof,s2,sizeof(s2),0);
+        satno2id(nav->seph[i].sat,id,sizeof(id));
         fprintf(fp_trace,"(%3d) %-3s : %s %s %2d %2d\n",i+1,
                 id,s1,s2,nav->seph[i].svh,nav->seph[i].sva);
     }
@@ -2779,9 +2779,9 @@ extern void tracepeph(int level, const nav_t *nav)
     if (!fp_trace||level>level_trace) return;
     
     for (i=0;i<nav->ne;i++) {
-        time2str(nav->peph[i].time,s,0);
+        time2str(nav->peph[i].time,s,sizeof(s),0);
         for (j=0;j<MAXSAT;j++) {
-            satno2id(j+1,id);
+            satno2id(j+1,id,sizeof(id));
             fprintf(fp_trace,"%-3s %d %-3s %13.3f %13.3f %13.3f %13.3f %6.3f %6.3f %6.3f %6.3f\n",
                     s,nav->peph[i].index,id,
                     nav->peph[i].pos[j][0],nav->peph[i].pos[j][1],
@@ -2799,9 +2799,9 @@ extern void tracepclk(int level, const nav_t *nav)
     if (!fp_trace||level>level_trace) return;
     
     for (i=0;i<nav->nc;i++) {
-        time2str(nav->pclk[i].time,s,0);
+        time2str(nav->pclk[i].time,s,sizeof(s),0);
         for (j=0;j<MAXSAT;j++) {
-            satno2id(j+1,id);
+            satno2id(j+1,id,sizeof(id));
             fprintf(fp_trace,"%-3s %d %-3s %13.3f %6.3f\n",
                     s,nav->pclk[i].index,id,
                     nav->pclk[i].clk[j][0]*1E9,nav->pclk[i].std[j][0]*1E9);
@@ -2848,7 +2848,7 @@ extern int execcmd(const char *cmd)
     trace(3,"execcmd: cmd=%s\n",cmd);
     
     si.cb=sizeof(si);
-    sprintf(cmds,"cmd /c %s",cmd);
+    kiwi_snprintf_buf(cmds,"cmd /c %s",cmd);
     if (!CreateProcess(NULL,(LPTSTR)cmds,NULL,NULL,FALSE,CREATE_NO_WINDOW,NULL,
                        NULL,&si,&info)) return -1;
     WaitForSingleObject(info.hProcess,INFINITE);
@@ -2873,6 +2873,7 @@ extern int execcmd(const char *cmd)
 extern int expath(const char *path, char *paths[], int nmax)
 {
     int i,j,n=0;
+    #define N_PATH 1024
     char tmp[1024];
 #ifdef WIN32
     WIN32_FIND_DATA file;
@@ -2889,10 +2890,10 @@ extern int expath(const char *path, char *paths[], int nmax)
         strcpy(paths[0],path);
         return 1;
     }
-    sprintf(paths[n++],"%s%s",dir,file.cFileName);
+    kiwi_snprintf_ptr(paths[n++],N_PATH,"%s%s",dir,file.cFileName);
     while (FindNextFile(h,&file)&&n<nmax) {
         if (file.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY) continue;
-        sprintf(paths[n++],"%s%s",dir,file.cFileName);
+        kiwi_snprintf_ptr(paths[n++],N_PATH,"%s%s",dir,file.cFileName);
     }
     FindClose(h);
 #else
@@ -2909,14 +2910,14 @@ extern int expath(const char *path, char *paths[], int nmax)
     if (!(dp=opendir(*dir?dir:"."))) return 0;
     while ((d=readdir(dp))) {
         if (*(d->d_name)=='.') continue;
-        sprintf(s1,"^%s$",d->d_name);
-        sprintf(s2,"^%s$",file);
+        kiwi_snprintf_buf(s1,"^%s$",d->d_name);
+        kiwi_snprintf_buf(s2,"^%s$",file);
         for (p=s1;*p;p++) *p=(char)tolower((int)*p);
         for (p=s2;*p;p++) *p=(char)tolower((int)*p);
         for (p=s1,q=strtok(s2,"*");q;q=strtok(NULL,"*")) {
             if ((p=strstr(p,q))) p+=strlen(q); else break;
         }
-        if (p&&n<nmax) sprintf(paths[n++],"%s%s",dir,d->d_name);
+        if (p&&n<nmax) kiwi_snprintf_ptr(paths[n++],N_PATH,"%s%s",dir,d->d_name);
     }
     closedir(dp);
 #endif
@@ -2961,12 +2962,17 @@ static int repstr(char *str, const char *pat, const char *rep)
 {
     int len=(int)strlen(pat);
     char buff[1024],*p,*q,*r;
+    int n, rem = sizeof(buff);
     
     for (p=str,r=buff;*p;p=q+len) {
         if (!(q=strstr(p,pat))) break;
         strncpy(r,p,q-p);
-        r+=q-p;
-        r+=sprintf(r,"%s",rep);
+        n = q-p;
+        r += n;
+        rem -= n;
+        n = kiwi_snprintf_ptr(r,rem,"%s",rep);
+        r += n;
+        rem -= n;
     }
     if (p<=str) return 0;
     strcpy(r,p);
@@ -3021,21 +3027,21 @@ extern int reppath(const char *path, char *rpath, gtime_t time, const char *rov,
         ep0[0]=ep[0];
         dow=(int)floor(time2gpst(time,&week)/86400.0);
         doy=(int)floor(timediff(time,epoch2time(ep0))/86400.0)+1;
-        sprintf(rep,"%02d",  ((int)ep[3]/3)*3);   stat|=repstr(rpath,"%ha",rep);
-        sprintf(rep,"%02d",  ((int)ep[3]/6)*6);   stat|=repstr(rpath,"%hb",rep);
-        sprintf(rep,"%02d",  ((int)ep[3]/12)*12); stat|=repstr(rpath,"%hc",rep);
-        sprintf(rep,"%04.0f",ep[0]);              stat|=repstr(rpath,"%Y",rep);
-        sprintf(rep,"%02.0f",fmod(ep[0],100.0));  stat|=repstr(rpath,"%y",rep);
-        sprintf(rep,"%02.0f",ep[1]);              stat|=repstr(rpath,"%m",rep);
-        sprintf(rep,"%02.0f",ep[2]);              stat|=repstr(rpath,"%d",rep);
-        sprintf(rep,"%02.0f",ep[3]);              stat|=repstr(rpath,"%h",rep);
-        sprintf(rep,"%02.0f",ep[4]);              stat|=repstr(rpath,"%M",rep);
-        sprintf(rep,"%02.0f",floor(ep[5]));       stat|=repstr(rpath,"%S",rep);
-        sprintf(rep,"%03d",  doy);                stat|=repstr(rpath,"%n",rep);
-        sprintf(rep,"%04d",  week);               stat|=repstr(rpath,"%W",rep);
-        sprintf(rep,"%d",    dow);                stat|=repstr(rpath,"%D",rep);
-        sprintf(rep,"%c",    'a'+(int)ep[3]);     stat|=repstr(rpath,"%H",rep);
-        sprintf(rep,"%02d",  ((int)ep[4]/15)*15); stat|=repstr(rpath,"%t",rep);
+        kiwi_snprintf_buf(rep,"%02d",  ((int)ep[3]/3)*3);   stat|=repstr(rpath,"%ha",rep);
+        kiwi_snprintf_buf(rep,"%02d",  ((int)ep[3]/6)*6);   stat|=repstr(rpath,"%hb",rep);
+        kiwi_snprintf_buf(rep,"%02d",  ((int)ep[3]/12)*12); stat|=repstr(rpath,"%hc",rep);
+        kiwi_snprintf_buf(rep,"%04.0f",ep[0]);              stat|=repstr(rpath,"%Y",rep);
+        kiwi_snprintf_buf(rep,"%02.0f",fmod(ep[0],100.0));  stat|=repstr(rpath,"%y",rep);
+        kiwi_snprintf_buf(rep,"%02.0f",ep[1]);              stat|=repstr(rpath,"%m",rep);
+        kiwi_snprintf_buf(rep,"%02.0f",ep[2]);              stat|=repstr(rpath,"%d",rep);
+        kiwi_snprintf_buf(rep,"%02.0f",ep[3]);              stat|=repstr(rpath,"%h",rep);
+        kiwi_snprintf_buf(rep,"%02.0f",ep[4]);              stat|=repstr(rpath,"%M",rep);
+        kiwi_snprintf_buf(rep,"%02.0f",floor(ep[5]));       stat|=repstr(rpath,"%S",rep);
+        kiwi_snprintf_buf(rep,"%03d",  doy);                stat|=repstr(rpath,"%n",rep);
+        kiwi_snprintf_buf(rep,"%04d",  week);               stat|=repstr(rpath,"%W",rep);
+        kiwi_snprintf_buf(rep,"%d",    dow);                stat|=repstr(rpath,"%D",rep);
+        kiwi_snprintf_buf(rep,"%c",    'a'+(int)ep[3]);     stat|=repstr(rpath,"%H",rep);
+        kiwi_snprintf_buf(rep,"%02d",  ((int)ep[4]/15)*15); stat|=repstr(rpath,"%t",rep);
     }
     else if (strstr(rpath,"%ha")||strstr(rpath,"%hb")||strstr(rpath,"%hc")||
              strstr(rpath,"%Y" )||strstr(rpath,"%y" )||strstr(rpath,"%m" )||
@@ -3662,7 +3668,7 @@ extern int uncompress(const char *file, char *uncfile)
         !strcmp(p,".zip")||!strcmp(p,".ZIP")) {
         
         strcpy(uncfile,tmpfile); uncfile[p-tmpfile]='\0';
-        sprintf(cmd,"gzip -f -d -c \"%s\" > \"%s\"",tmpfile,uncfile);
+        kiwi_snprintf_buf(cmd,"gzip -f -d -c \"%s\" > \"%s\"",tmpfile,uncfile);
         
         if (execcmd(cmd)) {
             remove(uncfile);
@@ -3681,10 +3687,10 @@ extern int uncompress(const char *file, char *uncfile)
         if ((p=strrchr(buff,'\\'))) {
             *p='\0'; dir=fname; fname=p+1;
         }
-        sprintf(cmd,"set PATH=%%CD%%;%%PATH%% & cd /D \"%s\" & tar -xf \"%s\"",
+        kiwi_snprintf_buf(cmd,"set PATH=%%CD%%;%%PATH%% & cd /D \"%s\" & tar -xf \"%s\"",
                 dir,fname);
 #else
-        sprintf(cmd,"tar -xf \"%s\"",tmpfile);
+        kiwi_snprintf_buf(cmd,"tar -xf \"%s\"",tmpfile);
 #endif
         if (execcmd(cmd)) {
             if (stat) remove(tmpfile);
@@ -3698,7 +3704,7 @@ extern int uncompress(const char *file, char *uncfile)
         
         strcpy(uncfile,tmpfile);
         uncfile[p-tmpfile+3]=*(p+3)=='D'?'O':'o';
-        sprintf(cmd,"crx2rnx < \"%s\" > \"%s\"",tmpfile,uncfile);
+        kiwi_snprintf_buf(cmd,"crx2rnx < \"%s\" > \"%s\"",tmpfile,uncfile);
         
         if (execcmd(cmd)) {
             remove(uncfile);

@@ -135,7 +135,7 @@ int child_task(const char *pname, funcP_t func, int poll_msec, void *param)
         #endif
         // rename process as seen by ps command
         int sl = strlen(main_argv[0]);
-        sprintf(main_argv[0], "%-*.*s", sl, sl, pname);     // have to blank fill, and not overrun, old argv[0]
+        kiwi_snprintf_ptr(main_argv[0], sl, "%-*.*s", sl-1, sl-1, pname);    // have to blank fill, and not overrun, old argv[0]
         
 		func(param);	// this function should child_exit() with some other value if it wants
 		child_exit(EXIT_SUCCESS);

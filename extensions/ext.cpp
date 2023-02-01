@@ -279,24 +279,23 @@ void extint_setup()
 void extint_send_extlist(conn_t *conn)
 {
 	int i;
-	#define	MAX_EXT_NAME 32
-	char *elist = (char *) kiwi_imalloc("extint_send_extlist", N_EXT * MAX_EXT_NAME);
+	char *elist;
 
 	if (n_exts == 0) {
-		strcpy(elist, "null");
+		elist = (char *) "null";
 	} else {
-		strcpy(elist, "[");
+		elist = (char *) "[";
 		for (i=0; i < n_exts; i++) {
 			ext_t *ext = ext_list[i];
 	
 			// by now all the extensions have long since registered via ext_register()
 			// send a list of all extensions to an object on the .js side
-			sprintf(elist + strlen(elist), "\"%s\"%s", ext->name, (i < (n_exts-1))? ",":"]");
+			elist = kstr_asprintf(elist, "\"%s\"%s", ext->name, (i < (n_exts-1))? ",":"]");
 		}
 	}
-	//printf("elist = %s\n", elist);
-	send_msg_encoded(conn, "MSG", "extint_list_json", "%s", elist);
-	kiwi_ifree(elist);
+	//printf("elist = %s\n", kstr_sp(elist));
+	send_msg_encoded(conn, "MSG", "extint_list_json", "%s", kstr_sp(elist));
+	kstr_free(elist);
 }
 
 // create the <script> tags needed to load all the extension .js and .css files

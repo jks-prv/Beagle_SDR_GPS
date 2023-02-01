@@ -742,7 +742,7 @@ static void pvt_NET(void *param)
                 n = sscanf(kstr_sp(reply), "%17s", net.mac);
                 assert(n == 1);
                 kstr_free(reply);
-                sprintf(net.mac_no_delim, "%.2s%.2s%.2s%.2s%.2s%.2s",
+                kiwi_snprintf_buf(net.mac_no_delim, "%.2s%.2s%.2s%.2s%.2s%.2s",
                     &net.mac[0], &net.mac[3], &net.mac[6], &net.mac[9], &net.mac[12], &net.mac[15]);
                 printf("NET: eth0 MAC %s (%s)\n", net.mac, net.mac_no_delim);
                 net.mac_valid = true;

@@ -105,7 +105,7 @@ static void led_set_one(int led, int v)
         bool full_off = (led_delay_off == -1);
         scall("led write delay_on", write(fd, full_off? "0" : (v? "1":"0"), 1));
         static char sbuf[8];
-        int slen = sprintf(sbuf, "%d", full_off? 1000 : led_delay_off);
+        int slen = kiwi_snprintf_buf(sbuf, "%d", full_off? 1000 : led_delay_off);
         scall("led write delay_off", write(led_fd[led][1], sbuf, slen));
         
     }

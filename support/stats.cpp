@@ -153,7 +153,7 @@ static void webserver_collect_print_stats(int print)
 		char *cpu_ptr = kstr_sp(reply);
 		for (ncpu = 0; ncpu < NCPU; ncpu++) {
 			char buf[10];
-			sprintf(buf, "cpu%d", ncpu);
+			kiwi_snprintf_buf(buf, "cpu%d", ncpu);
 			cpu_ptr = strstr(cpu_ptr, buf);
 			if (cpu_ptr == nullptr)
 				break;

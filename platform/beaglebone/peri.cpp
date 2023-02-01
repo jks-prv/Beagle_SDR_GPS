@@ -219,12 +219,12 @@ static char *pmux_deco(int i, u4_t pmux, gpio_t gpio)
 {
     #ifdef CPU_TDA4VM
         int drive = pmux & PMUX_DRIVE;
-        sprintf(pmux_deco_s[i], "<%s, %s, %s, %s, m%-2d>",
+        kiwi_snprintf_buf(pmux_deco_s[i], "<%s, %s, %s, %s, m%-2d>",
             (drive == PMUX_NOM)? " NOM" : ((drive == PMUX_FAST)? "FAST" : "SLOW"),
             (pmux & PMUX_RXEN)? "RX":"  ", (!(pmux & PMUX_TXDIS))? "TX":"  ",
             (pmux & PMUX_PDIS)? "Px" : ((pmux & PMUX_PU)? "PU":"PD"), pmux & PMUX_MODE);
     #else
-        sprintf(pmux_deco_s[i], "<%s, %s, %s, %s, m%-2d>",
+        kiwi_snprintf_buf(pmux_deco_s[i], "<%s, %s, %s, %s, m%-2d>",
             (pmux & PMUX_SLOW)? "SLOW":"FAST", (pmux & PMUX_RXEN)? "RX":"  ", GPIO_isOE(gpio)? "OE":"  ",
             (pmux & PMUX_PDIS)? "Px" : ((pmux & PMUX_PU)? "PU":"PD"), pmux & PMUX_MODE);
     #endif

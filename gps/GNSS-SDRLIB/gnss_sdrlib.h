@@ -12,6 +12,10 @@
             printf("assertion failed: \"%s\" %s line %d\n", #e, __FILE__, __LINE__); \
             exit(-1); \
         }
+
+    // NB: check that caller buf is const (i.e. not a pointer) so sizeof(buf) is valid
+    #define kiwi_snprintf_buf(buf, fmt, ...) snprintf(buf, sizeof(buf), fmt, ## __VA_ARGS__)
+    #define kiwi_snprintf_ptr(ptr, buflen, fmt, ...) snprintf(ptr, buflen, fmt, ## __VA_ARGS__)
 #endif
 
 #define _CRT_SECURE_NO_WARNINGS

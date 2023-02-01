@@ -226,16 +226,16 @@ void eeprom_write(next_serno_e type, int serno)
 	int ww = (ord_date - weekday + 10) / 7;
 	if (ww < 1) ww = 1;
 	if (ww > 52) ww = 52;
-	sprintf(e->week, "%2d", ww);	// caution: leaves '\0' at start of next field (year)
+	kiwi_snprintf_buf(e->week, "%2d", ww);	// caution: leaves '\0' at start of next field (year)
 
 	int yy = tm.tm_year - 100;
-	sprintf(e->year, "%2d", yy);	// caution: leaves '\0' at start of next field (assembly)
+	kiwi_snprintf_buf(e->year, "%2d", yy);	// caution: leaves '\0' at start of next field (assembly)
 
 	SET_CHARS(e->assembly, "0001", ' ');
 
 	if (type == SERNO_ALLOC)
 		serno = eeprom_next_serno(SERNO_ALLOC, 0);
-	sprintf(e->serial_no, "%4d", serno);	// caution: leaves '\0' at start of next field (n_pins)
+	kiwi_snprintf_buf(e->serial_no, "%4d", serno);	// caution: leaves '\0' at start of next field (n_pins)
 	
 	e->n_pins = FLIP16(2*26);
 	int pin;

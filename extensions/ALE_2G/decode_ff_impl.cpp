@@ -133,7 +133,7 @@ void print_max_min_stream_f(void **state, int flags, const char *name, int index
 #ifdef KIWI
     #ifdef HOST
         #define cprintf(cond_d, cond_c, color, fmt, ...) \
-            sprintf(log_buf, "%s" fmt "%s\n", (dsp >= cond_c)? color : "", ## __VA_ARGS__, (dsp >= cond_c)? NORM : ""); \
+            kiwi_snprintf_buf(log_buf, "%s" fmt "%s\n", (dsp >= cond_c)? color : "", ## __VA_ARGS__, (dsp >= cond_c)? NORM : ""); \
             cprintf_msg(cond_d);
     #else
         #define cprintf(cond_d, cond_c, color, fmt, ...) \
@@ -152,7 +152,7 @@ void print_max_min_stream_f(void **state, int flags, const char *name, int index
             }
     #else
         #define cprintf(cond_d, cond_c, color, fmt, ...) \
-            sprintf(log_buf, "%s" fmt NORM "\n", (dsp >= cond_c)? color : "", ## __VA_ARGS__); \
+            kiwi_snprintf_buf(log_buf, "%s" fmt NORM "\n", (dsp >= cond_c)? color : "", ## __VA_ARGS__); \
             cprintf_msg(cond_d);
     #endif
 #endif
@@ -161,7 +161,7 @@ void print_max_min_stream_f(void **state, int flags, const char *name, int index
 #ifdef DEBUG_PRINTF
     #define dprintf(fmt, ...) \
         if (dsp == DBG) { \
-            sprintf(dpf_buf, fmt, ## __VA_ARGS__); \
+            kiwi_snprintf_buf(dpf_buf, fmt, ## __VA_ARGS__); \
             dprintf_msg(); \
         }
 #else
@@ -171,7 +171,7 @@ void print_max_min_stream_f(void **state, int flags, const char *name, int index
 static char *cdeco(int idx, char c)
 {
     static char s[16][16];
-    sprintf(s[idx], "%s(%02x)", ASCII[c], (c & 0xff));
+    kiwi_snprintf_buf(s[idx], "%s(%02x)", ASCII[c], (c & 0xff));
     return s[idx];
 }
 
@@ -329,17 +329,18 @@ namespace ale {
 	    return rv;
 	}
 
+    #define N_MSG 256
     static int zs, zz;
     
 	int decode_ff_impl::decode_word(u4_t w, int nt, int berw, int caller)
 	{
 	    u1_t a, b, c, preamble;
 	    int rv = 1;
+	    bool word_debug = false;
 	    
-	    char message[256];
+	    char message[N_MSG];
 	    char *s = message;
 	    *s = '\0';
-	    int n;
         cmd_t *cp = &cmds[cmd_cnt];
         current_word = w;
 
@@ -372,64 +373,66 @@ namespace ale {
 
 	    if (preamble == CMD) {
             ber[nt] = berw;
-            s += sprintf(s, "CMD a38=%d a64=%d %s %s %s 0x%04x %d %2x %2x %2x", ascii_38_ok, ascii_64_ok,
+            if (word_debug) kiwi_snprintf_ptr(s, N_MSG, "CMD a38=%d a64=%d %s %s %s 0x%04x %d %2x %2x %2x", ascii_38_ok, ascii_64_ok,
                 cdeco(0,a), cdeco(1,b), cdeco(2,c),
                 w, bf(w,23,21), bf(w,20,14), bf(w,13,7), bf(w,6,0));
-            sprintf(cmd, "%c%c%c", a,b,c);
+            kiwi_snprintf_buf(cmd, "%c%c%c", a,b,c);
 	        icmd = 1;
 	        if (gdebug & 1) printf("%scmd=1 %s%s\n", GREEN, cmd, NORM);
 	    } else
 	    
 	    if (preamble == DATA) {
-            s += sprintf(s, "DATA a38=%d a64=%d %s %s %s 0x%04x %d %2x %2x %2x", ascii_38_ok, ascii_64_ok,
-                cdeco(0,a), cdeco(1,b), cdeco(2,c),
-                w, bf(w,23,21), bf(w,20,14), bf(w,13,7), bf(w,6,0));
+	        bool ign = false;
             if (ascii_38_ok || (ascii_nl_ok && in_cmd && (cp->cmd == AMD || cp->cmd == DTM))) {
                 ber[nt] = berw;
-                sprintf(data, "%c%c%c", a,b,c);
+                kiwi_snprintf_buf(data, "%c%c%c", a,b,c);
                 idata = 1;
             } else {
-                s += sprintf(s, " IGNORED");
                 activity_cnt = 0;       // prevent false activity triggering
+                ign = true;
             }
+            if (word_debug) kiwi_snprintf_ptr(s, N_MSG, "DATA a38=%d a64=%d %s %s %s 0x%04x %d %2x %2x %2x %s", ascii_38_ok, ascii_64_ok,
+                cdeco(0,a), cdeco(1,b), cdeco(2,c),
+                w, bf(w,23,21), bf(w,20,14), bf(w,13,7), bf(w,6,0), ign? "IGNORED":"");
 	    } else
 	    
 	    if (preamble == REP) {
-            s += sprintf(s, "REP a38=%d a64=%d %s %s %s 0x%04x %d %2x %2x %2x", ascii_38_ok, ascii_64_ok,
-                cdeco(0,a), cdeco(1,b), cdeco(2,c),
-                w, bf(w,23,21), bf(w,20,14), bf(w,13,7), bf(w,6,0));
+	        bool ign = false;
             if (ascii_38_ok || (ascii_nl_ok && in_cmd && (cp->cmd == AMD || cp->cmd == DTM))) {
                 ber[nt] = berw;
-                sprintf(rep, "%c%c%c", a,b,c);
+                kiwi_snprintf_buf(rep, "%c%c%c", a,b,c);
                 irep = 1;
             } else {
-                s += sprintf(s, " IGNORED");
                 activity_cnt = 0;       // prevent false activity triggering
+                ign = true;
             }
+            if (word_debug) kiwi_snprintf_ptr(s, N_MSG, "REP a38=%d a64=%d %s %s %s 0x%04x %d %2x %2x %2x %s", ascii_38_ok, ascii_64_ok,
+                cdeco(0,a), cdeco(1,b), cdeco(2,c),
+                w, bf(w,23,21), bf(w,20,14), bf(w,13,7), bf(w,6,0), ign? "IGNORED":"");
 	    } else
 	    
 	    {
 	        // not AQC-ALE protocol
 		    if (ascii_38_ok) {
                 ber[nt] = berw;
-                s += sprintf(s, "%s %c%c%c 0x%04x %d %2x %2x %2x",
+                if (word_debug) kiwi_snprintf_ptr(s, N_MSG, "%s %c%c%c 0x%04x %d %2x %2x %2x",
                     preamble_types[preamble], a,b,c, w, bf(w,23,21), bf(w,20,14), bf(w,13,7), bf(w,6,0));
 
                 switch (preamble) {
                     case TO:
-                        sprintf(to, "%c%c%c", a,b,c);
+                        kiwi_snprintf_buf(to, "%c%c%c", a,b,c);
                         ito = 1;
                         break;
                     case TWAS:
-                        sprintf(twas, "%c%c%c", a,b,c);
+                        kiwi_snprintf_buf(twas, "%c%c%c", a,b,c);
                         itwas = 1;
                         break;
                     case FROM:
-                        sprintf(from, "%c%c%c", a,b,c);
+                        kiwi_snprintf_buf(from, "%c%c%c", a,b,c);
                         ifrom = 1;
                         break;
                     case TIS:
-                        sprintf(tis, "%c%c%c", a,b,c);
+                        kiwi_snprintf_buf(tis, "%c%c%c", a,b,c);
                         itis = 1;
                         break;
                     default:
@@ -442,8 +445,7 @@ namespace ale {
                 int adf = b20(w);
                 u2_t p = bf(w,19,4);
                 u2_t dx = bf(w,3,0);
-                s += sprintf(s, "$AQC %s 0x%04x p=%d [adf=%d adf_ok=%d] [%d(0x%x) dx=%d]", aqc_preamble_types[preamble],
-                    w, bf(w,23,21), adf, adf == b15(p), p, p, dx);
+
                 // ppp  d pppppppppppppppp xxxx
                 //  21 20 19             4 3  0
                 //        15             0
@@ -484,19 +486,22 @@ namespace ale {
                 u1_t pb = ascii_2_packed[b - 40];
                 u1_t pc = ascii_2_packed[c - 40];
                 u4_t regen = pa*1600 + pb*40 + pc;
-                //s += sprintf(s, " %d='%c' %d='%c' %d='%c' regen=%d(0x%x)", ai,a, bi,b, ci,c, regen, regen);
-                s += sprintf(s, " %s %s %s", cdeco(0,a), cdeco(1,b), cdeco(2,c));
+
+                if (word_debug) kiwi_snprintf_ptr(s, N_MSG, "$AQC %s 0x%04x p=%d [adf=%d adf_ok=%d] [%d(0x%x) dx=%d] %s %s %s",
+                    aqc_preamble_types[preamble],
+                    w, bf(w,23,21), adf, adf == b15(p), p, p, dx,
+                    cdeco(0,a), cdeco(1,b), cdeco(2,c));
+                //kiwi_snprintf_ptr(s, N_MSG, " %d='%c' %d='%c' %d='%c' regen=%d(0x%x)", ai,a, bi,b, ci,c, regen, regen);
+
                 rv = -1;
             }
 	    }
 	    
-	    #if 0
-            if (dsp >= DBG || (dsp >= CMDS && icmd)) {
-                //cprintf(ALL, ALL, icmd? YELLOW : "", "%d: ic%d NTIME%02d %s", zs, in_cmd, nt, message);
-                //cprintf(ALL, ALL, icmd? YELLOW : "", "%5d: >icmd%d caller%d ic%d NTIME%02d %s", nsym, icmd, caller, in_cmd, nt, message);
-                cprintf(ALL, ALL, icmd? YELLOW : "", ">icmd%d caller%d ic%d NTIME%02d %s", icmd, caller, in_cmd, nt, message);
-            }
-        #endif
+        if (word_debug && (dsp >= DBG || (dsp >= CMDS && icmd))) {
+            //cprintf(ALL, ALL, icmd? YELLOW : "", "%d: ic%d NTIME%02d %s", zs, in_cmd, nt, message);
+            //cprintf(ALL, ALL, icmd? YELLOW : "", "%5d: >icmd%d caller%d ic%d NTIME%02d %s", nsym, icmd, caller, in_cmd, nt, message);
+            cprintf(ALL, ALL, icmd? YELLOW : "", ">icmd%d caller%d ic%d NTIME%02d %s", icmd, caller, in_cmd, nt, message);
+        }
         
         zs++;
 	    return rv;
@@ -505,7 +510,7 @@ namespace ale {
 	void decode_ff_impl::log(char *cur, char *cur2, int state, int ber, const char *from)
 	{
 	    int i;
-	    char message[256];
+	    char message[N_MSG];
         zs=0;
         bool event = false;
         
@@ -573,7 +578,8 @@ namespace ale {
 
             if (cp->cmd == AMD) {
                 // AMD - automatic message display
-                s += sprintf(s, "AMD: \"%s", cp->cmd_s);
+                s += kiwi_snprintf_ptr(s, N_MSG, "AMD: \"%s", cp->cmd_s);
+
                 // stuffed with space char, so trim trailing spaces
                 char *e = s + strlen(s) -1;
                 while (*e == ' ' || *e == '\r' || *e == '\n') e--;
@@ -586,7 +592,8 @@ namespace ale {
 
             if (cp->cmd == DTM) {
                 // DTM - data text message
-                s += sprintf(s, "DTM: \"%s", cp->cmd_s);
+                s += kiwi_snprintf_ptr(s, N_MSG, "DTM: \"%s", cp->cmd_s);
+
                 // stuffed with space char, so trim trailing spaces
                 char *e = s + strlen(s) - 1;
                 while (*e == ' ' || *e == '\r' || *e == '\n') e--;
@@ -599,12 +606,12 @@ namespace ale {
 
             if (cp->cmd == LQA) {
                 // LQA
-                s += sprintf(s, "LQA: reply=%u MP=%u SINAD=%u BER=%u", b13(w2), bf(w2,12,10), bf(w2,9,5), bf(w2,4,0));
+                kiwi_snprintf_ptr(s, N_MSG, "LQA: reply=%u MP=%u SINAD=%u BER=%u", b13(w2), bf(w2,12,10), bf(w2,9,5), bf(w2,4,0));
                 event = true;
             } else
 
             if (cp->cmd == FRQ) {
-                s += sprintf(s, "Freq: con=%d b4(0)=%d %d_%d_%d_%d_%d.%d_%d",
+                kiwi_snprintf_ptr(s, N_MSG, "Freq: con=%d b4(0)=%d %d_%d_%d_%d_%d.%d_%d",
                     bf(w,13,8), b20(w2), bf(w2,19,16), bf(w2,15,12), bf(w2,11,8), bf(w2,7,4), bf(w2,3,0), bf(w,7,4), bf(w,3,0));
                 event = true;
             } else
@@ -612,16 +619,16 @@ namespace ale {
             if (a == 'd') {     // data text message
                 u1_t kd = bf(w,13,10);
                 u2_t dc = bf(w,9,0);
-                s += sprintf(s, "DTM: kd=0x%x dc=0x%x", kd, dc); 
+                kiwi_snprintf_ptr(s, N_MSG, "DTM: kd=0x%x dc=0x%x", kd, dc); 
                 event = true;
             } else
 
             if (cp->cmd == CRC) {
-                s += sprintf(s, "CRC");
+                kiwi_snprintf_ptr(s, N_MSG, "CRC");
             } else
 
             {   // OTH
-                s += sprintf(s, "Other: %s %s %s", cdeco(0,a), cdeco(1,b), cdeco(2,c));
+                kiwi_snprintf_ptr(s, N_MSG, "Other: %s %s %s", cdeco(0,a), cdeco(1,b), cdeco(2,c));
             }
             
             cprintf(cond_d, DX, MAGENTA, "[%s] [%s] [His BER: %d]", cmd_type, message, ber);
@@ -656,11 +663,11 @@ namespace ale {
         bool show_locked = (cond_d == SHOW_DX && !log_buf_empty);
         if (show_locked || (have_msg && dsp >= cond_d)) {
             if (use_UTC)
-                sprintf(buf, "[%d-%02d-%02d %02d:%02d:%02d %.2f] %s",
+                kiwi_snprintf_buf(buf, "[%d-%02d-%02d %02d:%02d:%02d %.2f] %s",
                     1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec,
                     frequency, show_locked? locked_msg : log_buf);
             else
-                sprintf(buf, "[%02d:%02d:%02d] %s", tm->tm_hour, tm->tm_min, tm->tm_sec,
+                kiwi_snprintf_buf(buf, "[%02d:%02d:%02d] %s", tm->tm_hour, tm->tm_min, tm->tm_sec,
                     show_locked? locked_msg : log_buf);
 	    
             #ifdef KIWI
@@ -685,11 +692,11 @@ namespace ale {
 	    tm = gmtime(&timestamp);
 	    
         if (use_UTC)
-            sprintf(buf, "[%d-%02d-%02d %02d:%02d:%02d %.2f] debug: %s %s",
+            kiwi_snprintf_buf(buf, "[%d-%02d-%02d %02d:%02d:%02d %.2f] debug: %s %s",
                 1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec,
                 frequency, state_s[state], dpf_buf);
         else
-            sprintf(buf, "[%02d:%02d:%02d] debug: %s %s", tm->tm_hour, tm->tm_min, tm->tm_sec,
+            kiwi_snprintf_buf(buf, "[%02d:%02d:%02d] debug: %s %s", tm->tm_hour, tm->tm_min, tm->tm_sec,
                 state_s[state], dpf_buf);
 	    
         #ifdef KIWI
