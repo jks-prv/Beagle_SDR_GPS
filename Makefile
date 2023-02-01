@@ -82,14 +82,14 @@ KIWI_XC_HOST_PORT ?= 22
 # "all" target must be first
 ################################
 .PHONY: all
-all: check_device_detect c_ext_clang_conv
+all: check_device_detect make_prereq
 	@make $(MAKE_ARGS) build_makefile_inc
-	@make $(MAKE_ARGS) c_ext_clang_conv_all
+	@make $(MAKE_ARGS) make_all
 
 .PHONY: debug
-debug: check_device_detect c_ext_clang_conv
+debug: check_device_detect make_prereq
 	@make $(MAKE_ARGS) DEBUG=-DDEBUG build_makefile_inc
-	@make $(MAKE_ARGS) DEBUG=-DDEBUG c_ext_clang_conv_all
+	@make $(MAKE_ARGS) DEBUG=-DDEBUG make_all
 
 .PHONY: check_device_detect
 check_device_detect:
@@ -113,13 +113,13 @@ ifeq ($(XC),)
 	    fi
 	    @make XC=-DXC $@
 else
-    xc: c_ext_clang_conv
+    xc: make_prereq
 	    @echo KIWI_XC_HOST = $(KIWI_XC_HOST)
 	    @echo KIWI_XC_HOST_PORT = $(KIWI_XC_HOST_PORT)
 	    @echo KIWI_XC_REMOTE_FS = $(KIWI_XC_REMOTE_FS)
 	    @echo KIWI_XC_COPY_SOURCES = $(KIWI_XC_COPY_SOURCES)
 	    @make $(MAKE_ARGS) build_makefile_inc
-	    @make $(MAKE_ARGS) c_ext_clang_conv_all
+	    @make $(MAKE_ARGS) make_all
     endif
 endif
 
@@ -420,7 +420,15 @@ GEN_OTHER_ASM = $(GEN_DIR)/other.gen.h verilog/other.gen.vh
 OUT_ASM = $(GEN_DIR)/kiwi.aout
 GEN_VERILOG = $(addprefix verilog/rx/,cic_rx1_12k.vh cic_rx1_20k.vh cic_rx2_12k.vh cic_rx2_20k.vh cic_rx3_12k.vh cic_rx3_20k.vh cic_wf1.vh cic_wf2.vh)
 GEN_NOIP2 = $(GEN_DIR)/noip2
-SUB_MAKE_DEPS = $(INSTALL_CERTIFICATES) $(CMD_DEPS) $(LIBS_DEP) $(GEN_ASM) $(GEN_OTHER_ASM) $(GEN_OTHER) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
+SUB_MAKE_DEPS = $(INSTALL_CERTIFICATES) $(GEN_DIR) $(CMD_DEPS) $(LIBS_DEP) $(GEN_ASM) $(GEN_OTHER_ASM) $(GEN_OTHER) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
+
+.PHONY: make_prereq
+make_prereq: DISABLE_WS $(SUB_MAKE_DEPS)
+	@echo "make_prereq DONE"
+
+.PHONY: make_all
+make_all: $(BUILD_DIR)/kiwi.bin
+	@echo "make_all DONE"
 
 
 ################################
@@ -435,30 +443,6 @@ INT_FLAGS += $(VERSION) -DKIWI -DKIWISDR
 INT_FLAGS += -DARCH_$(ARCH) -DCPU_$(CPU) -DARCH_CPU=$(CPU) -DARCH_CPU_S=STRINGIFY\($(CPU)\) $(addprefix -DPLATFORM_,$(PLATFORMS))
 INT_FLAGS += -DDIR_CFG=STRINGIFY\($(DIR_CFG)\) -DDIR_DATA=STRINGIFY\($(DIR_DATA)\) -DCFG_PREFIX=STRINGIFY\($(CFG_PREFIX)\)
 INT_FLAGS += -DBUILD_DIR=STRINGIFY\($(BUILD_DIR)\) -DREPO=STRINGIFY\($(REPO)\) -DREPO_NAME=STRINGIFY\($(REPO_NAME)\)
-
-
-################################
-# conversion to clang
-################################
-
-# NB: afterwards have to rerun make to pickup filename change!
-ifneq ($(PVT_EXT_DIRS),)
-	PVT_EXT_C_FILES = $(shell find $(PVT_EXT_DIRS) -name '*.c' -print)
-endif
-
-.PHONY: c_ext_clang_conv
-c_ext_clang_conv: DISABLE_WS $(SUB_MAKE_DEPS)
-ifeq ($(PVT_EXT_C_FILES),)
-#	@echo SUB_MAKE_DEPS = $(SUB_MAKE_DEPS)
-#	@echo no installed extensions with files needing conversion from .c to .cpp for clang compatibility
-else
-	@echo PVT_EXT_C_FILES = $(PVT_EXT_C_FILES)
-	@echo convert installed extension .c files to .cpp for clang compatibility
-	find $(PVT_EXT_DIRS) -name '*.c' -exec mv '{}' '{}'pp \;
-endif
-
-.PHONY: c_ext_clang_conv_all
-c_ext_clang_conv_all: $(BUILD_DIR)/kiwi.bin
 
 
 ################################
@@ -696,11 +680,11 @@ $(EDATA_ALWAYS2): $(EDATA_DEP) $(addprefix web/,$(FILES_ALWAYS2_SORTED_NW))
 # vars
 ################################
 .PHONY: vars
-vars: c_ext_clang_conv
-	@make $(MAKE_ARGS) c_ext_clang_conv_vars
+vars: make_prereq
+	make $(MAKE_ARGS) make_vars
 
-.PHONY: c_ext_clang_conv_vars
-c_ext_clang_conv_vars: check_device_detect
+.PHONY: make_vars
+make_vars: check_device_detect
 	@echo version $(VER)
 	@echo UNAME = $(UNAME)
 	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
@@ -1146,20 +1130,20 @@ EXISTS_SSH_KEYS := $(shell test -f $(SSH_KEYS) && echo true)
 # DANGER: do not use $(MAKE_ARGS) here! The targets for building $(EMBED_DEPS) must be run sequentially
 
 .PHONY: install
-install: c_ext_clang_conv
+install: make_prereq
 	@# don't use MAKE_ARGS here!
-	@make c_ext_clang_conv_install
+	make make_install
 
 # copy binaries to Kiwi named $(KIWI_XC_HOST)
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-RSYNC_XC = sudo rsync -av -e "ssh -p $(KIWI_XC_HOST_PORT) -l root"
+RSYNC_XC = rsync -av -e "ssh -p $(KIWI_XC_HOST_PORT) -l root"
 
 .PHONY: install_xc
 ifeq ($(XC),)
     install_xc:
 	    @make XC=-DXC install_xc
 else
-    install_xc: c_ext_clang_conv $(BUILD_DIR)/kiwid.bin
+    install_xc: make_prereq $(BUILD_DIR)/kiwid.bin
 	    # must use rsync instead of install because $(KIWI_XC_REMOTE_FS) may be read-only
 	    # NB: --relative option use of "/./" to delimit creation dir path
 	    $(RSYNC_XC) --relative .././build/kiwi.bin root@$(KIWI_XC_HOST):~root/
@@ -1178,8 +1162,8 @@ else
 endif
 endif
 
-.PHONY: c_ext_clang_conv_install
-c_ext_clang_conv_install: $(DO_ONCE) $(BUILD_DIR)/kiwid.bin
+.PHONY: make_install
+make_install: $(DO_ONCE) $(BUILD_DIR)/kiwid.bin
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	@echo
 	@echo "############################################"
@@ -1448,7 +1432,7 @@ else
 endif
 
 rsync_su:
-	sudo $(RSYNC) $(RSYNC_ARGS)
+	$(RSYNC) $(RSYNC_ARGS)
 
 endif
 
@@ -1519,7 +1503,7 @@ other_rsync:
 other_post_rsync:
 
 rsync_bit: $(BIN_DEPS) other_rsync
-	sudo $(RSYNC) $(RSYNC_ARGS)
+	$(RSYNC) $(RSYNC_ARGS)
     ifneq ($(OTHER_DIR),)
 	    make other_post_rsync
     endif
