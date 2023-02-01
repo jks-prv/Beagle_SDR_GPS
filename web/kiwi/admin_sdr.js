@@ -25,6 +25,7 @@ var admin_sdr = {
       cw:   { c:   500, w:   400 },
       cwn:  { c:   500, w:    60 },
       nbfm: { c:     0, w: 12000 },
+      nnfm: { c:     0, w:  6000 },
       iq:   { c:     0, w: 10000 },
       drm:  { c:     0, w: 10000 },
       sam:  { c:     0, w:  9800 },
@@ -33,7 +34,7 @@ var admin_sdr = {
       sas:  { c:     0, w:  9800 },
       qam:  { c:     0, w:  9800 }
    },
-   
+
    ADC_clk2_corr_s: [
       'disabled',
       'continuous',
@@ -69,7 +70,10 @@ function config_html()
 {
 	kiwi_get_init_settings();		// make sure defaults exist
 	
-	var init_mode = ext_get_cfg_param('init.mode', 0);
+	var init_mode = ext_get_cfg_param('init.mode', 'lsb').toUpperCase();
+   // convert from dx mode order to mode menu order
+	var mode_menu_idx = w3_array_el_seq(kiwi.mode_menu, init_mode);
+	console.log('config_html init_mode='+ init_mode +' mode_menu_idx='+ mode_menu_idx);
 	var init_colormap = ext_get_cfg_param('init.colormap', 0);
 	var init_aperture = ext_get_cfg_param('init.aperture', 1);
 	var init_AM_BCB_chan = ext_get_cfg_param('init.AM_BCB_chan', 0);
@@ -83,7 +87,7 @@ function config_html()
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_input_get('', 'Frequency (kHz)', 'init.freq', 'admin_float_cb|3'),
 			w3_inline('/w3-halign-space-around/w3-center',
-				w3_select('', 'Mode', '', 'init.mode', init_mode, kiwi.modes_u, 'admin_select_cb'),
+				w3_select('', 'Mode', '', 'init.mode', mode_menu_idx, kiwi.mode_menu, 'config_mode_cb'),
 				w3_select('', 'Colormap', '', 'init.colormap', init_colormap, kiwi.cmap_s, 'admin_select_cb'),
 				w3_select('', 'Aperture', '', 'init.aperture', init_aperture, kiwi.aper_s, 'config_aperture_cb')
 			),
@@ -118,7 +122,7 @@ function config_html()
 		w3_third('w3-text-teal w3-valign', 'w3-container',
 			w3_inline('w3-halign-space-around w3-tspace-8/w3-center',
             w3_button('w3-aqua', 'Reset', 'config_pb_reset'),
-            w3_select('w3-label-inline', 'Mode', '', 'admin_sdr.pbm', admin_sdr.pbm, kiwi.modes_u, 'config_pb_mode')
+            w3_select('w3-label-inline', 'Mode', '', 'admin_sdr.pbm', 0, kiwi.mode_menu, 'config_pb_mode')
 			),
 			w3_input('', 'Passband low', 'admin_sdr.pbl', admin_sdr.pbl, 'config_pb_val'),
 			w3_input('', 'Passband high', 'admin_sdr.pbh', admin_sdr.pbh, 'config_pb_val')
@@ -357,6 +361,14 @@ function config_html()
 	return w3_div('id-config w3-hide', s1 + s2 + s3 + s4 + s5 + s6 + s7);
 }
 
+function config_mode_cb(path, idx, first)
+{
+   if (first) return;
+   var mode_s = kiwi.mode_menu[+idx].toLowerCase();
+	console.log('config_mode_cb: path='+ path +' idx='+ idx +' mode_s='+ mode_s);
+   ext_set_cfg_param(path, mode_s, true);
+}
+
 function config_freq_offset(path, val, first)
 {
    admin_float_cb(path, val, first, [0,3]);
@@ -396,6 +408,21 @@ function config_focus()
          if (o.last_hi) { delete o.last_hi; update = true; }
       }
    );
+   
+   // add in newly defined modes
+   w3_obj_enum(admin_sdr.pb,
+      function(key, i, o) {
+         if (!isDefined(cfg.passbands[key])) {
+            console.log('config_focus: adding new mode '+ key +' to cfg.passbands');
+            var pb = admin_sdr.pb[key];
+            var hbw = pb.w/2;
+            cfg.passbands[key] = {};
+            cfg.passbands[key].hi = pb.c + hbw;
+            cfg.passbands[key].lo = pb.c - hbw;
+            update = true;
+         }
+      }
+   );
    if (update) cfg_save_json('config_focus', 'cfg.passbands');
 }
 
@@ -410,7 +437,6 @@ function config_wf_show()
 function config_aperture_cb(path, idx, first)
 {
    if (first) return;
-   i = +idx;
    admin_select_cb(path, idx);
    config_wf_show();
 }
@@ -433,7 +459,7 @@ function config_pb_mode(path, idx, first)
    if (first) return;      // cfg.passbands not available yet
    idx = +idx;
    admin_sdr.pmi = idx;
-   var mode = kiwi.modes_l[idx];
+   var mode = kiwi.mode_menu[idx].toLowerCase();
    admin_sdr.pbm = mode;
    console.log('config_pb_mode idx='+ idx +' mode='+ mode);
 
@@ -1649,7 +1675,9 @@ function dx_render(obj)
       if (i != dx.LEGEND) {
          d = obj[j];
          freq = d.f;
-         mo = d.fl & dx.DX_MODE;
+         mo = dx_decode_mode(d.fl);
+         // convert from dx mode order to mode menu order
+         var mode_menu_idx = w3_array_el_seq(kiwi.mode_menu, kiwi.modes_uc[mo])
          ty = (d.fl & dx.DX_TYPE) >> dx.DX_TYPE_SFT;
          id = kiwi_decodeURIComponent('dx_id', d.i);
          if (d.n) no = kiwi_decodeURIComponent('dx_no', d.n);
@@ -1697,7 +1725,7 @@ function dx_render(obj)
             ), 6,
             //i.toString(), 4,     // debug
             w3_input(h('w3-padding-small||size=8'), l('Freq kHz'), 'dx.o.fr_'+i, freq, 'dx_freq_cb'), 19,
-            w3_select(h('w3-text-red'), l('Mode'), '', 'dx.o.fm_'+i, mo, kiwi.modes_u, 'dx_sel_cb'), 15,
+            w3_select(h('w3-text-red'), l('Mode'), '', 'dx.o.fm_'+i, mode_menu_idx, kiwi.mode_menu, 'dx_sel_cb'), 15,
             w3_input(h('w3-padding-small||size=4'), l('Passband Hz'), 'dx.o.pb_'+i, pb, 'dx_passband_cb'), 25,
             w3_select(h('w3-text-red'), l('Type'), '', 'dx.o.ft_'+i, ty, type_menu, 'dx_sel_cb'), 25,
             w3_input(h('w3-padding-small||size=2'), l('Offset Hz'), 'dx.o.o_'+i, os, 'dx_num_cb'), 18,
@@ -1967,7 +1995,7 @@ function dx_export_cb2(obj)
          if (gid == dx.o.len - 1) last = true;
          var comma = last? '' : ',';
          var freq = o.f.toFixed(2);
-         var mode = dq(kiwi.modes_u[o.fl & dx.DX_MODE]);
+         var mode = dq(kiwi.modes_uc[dx_decode_mode(o.fl)]);
          var ident = dx_dq(o.i);
          var notes = o.n? dx_dq(o.n) : '""';
          
@@ -1999,7 +2027,7 @@ function dx_export_cb2(obj)
             }
             var gid = o.g;
             if (gid == dx.o.len - 1) last = true;
-            var mode = dq(kiwi.modes_u[o.fl & dx.DX_MODE]);
+            var mode = dq(kiwi.modes_uc[dx_decode_mode(o.fl)]);
             var type = (o.fl & dx.DX_TYPE) >> dx.DX_TYPE_SFT;
             type = type? dq('T'+ type) : '';
             var lo = o.lo, hi = o.hi;
@@ -2037,7 +2065,7 @@ function dx_export_cb2(obj)
             }
             var gid = o.g;
             if (gid == dx.o.len - 1) last = true;
-            var mode = (kiwi.modes_u[o.fl & dx.DX_MODE]).toString();
+            var mode = (kiwi.modes_uc[dx_decode_mode(o.fl)]).toString();
             var type = (o.fl & dx.DX_TYPE) >> dx.DX_TYPE_SFT;
             type = type? ('T'+ type) : '';
             var lo = o.lo, hi = o.hi;

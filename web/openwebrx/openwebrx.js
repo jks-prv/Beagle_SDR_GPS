@@ -378,9 +378,9 @@ function kiwi_main_ready()
       set_gen(gen_freq, gen_attn);
    }, 0, 500);
 
-   var _lo = cfg.passbands[init_mode].lo;
+   var _lo = kiwi_passbands(init_mode).lo;
    if (!isNumber(_lo)) _lo = -4000;
-   var _hi = cfg.passbands[init_mode].hi;
+   var _hi = kiwi_passbands(init_mode).hi;
    if (!isNumber(_hi)) _hi = 4000;
 	snd_send('SET mod='+ init_mode +' low_cut='+ _lo +' high_cut='+ _hi +' freq='+ init_frequency);
 	//console.log('INIT: SET mod='+ init_mode +' low_cut='+ _lo +' high_cut='+ _hi +' freq='+ init_frequency);
@@ -952,11 +952,7 @@ demodulator.draggable_ranges = {
 demodulator_response_time = 100; 
 //in ms; if we don't limit the number of SETs sent to the server, audio will underrun (possibly output buffer is cleared on SETs in GNU Radio
 
-/*
-set in configuration now (cfg.passbands)
-see also cfg.cpp::_cfg_load_json()
-
-var passbands = {
+var passbands_fallback = {
 	am:		{ lo: -4900,	hi:  4900 },            // 9.8 kHz instead of 10 to avoid adjacent channel heterodynes in SW BCBs
 	amn:		{ lo: -2500,	hi:  2500 },
 	sam:		{ lo: -4900,	hi:  4900 },
@@ -972,13 +968,62 @@ var passbands = {
 	cw:		{ lo:   300,	hi:   700,  pbw: 400 },	// cf = 500 Hz, bw = 400 Hz
 	cwn:		{ lo:   470,	hi:   530,  pbw:  60 },	// cf = 500 Hz, bw = 60 Hz
 	nbfm:		{ lo: -6000,	hi:  6000 },	         // FIXME: set based on current srate?
+	nnfm:		{ lo: -3000,	hi:  3000 },
 	iq:		{ lo: -5000,	hi:  5000 },
 };
-*/
+
+// When a new mode is defined, and doesn't yet exist in cfg.passbands because
+// admin page hasn't been loaded, then use fallback values.
+function kiwi_passbands(mode)
+{
+   var pb = cfg.passbands[mode];
+   if (isDefined(pb)) {
+      return pb;
+   } else {
+      console.log('kiwi_passbands('+ mode +') fallback:');
+      console.log(passbands_fallback[mode]);
+      return passbands_fallback[mode];
+   }
+}
+
+function kiwi_mode(mode)
+{
+   var fail = false;
+   
+   if (isArg(mode)) {
+      mode = mode.toLowerCase();
+      var str = mode.substr(0,2);
+      if (str == 'qa') str = 'sa';  // QAM -> SAM case
+      if (str == 'nn') str = 'nb';  // NNFM -> NBFM case
+   } else {
+      str = '';
+      fail = true;
+   }
+   
+   var o    = { fail:fail, str:str };
+   o.AM     = fail? false : (str == 'am');
+   o.LSB    = fail? false : (str == 'ls');
+   o.USB    = fail? false : (str == 'us');
+   o.CW     = fail? false : (str == 'cw');
+   o.IQ     = fail? false : (str == 'iq');
+   o.NBFM   = fail? false : (str == 'nb');
+   o.SAx    = fail? false : (str == 'sa');
+   o.DRM    = fail? false : (str == 'dr');
+   o.AM     = fail? false : (str == 'am');
+   
+   o.LSB_SAL   = fail? false : (o.LSB || mode == 'sal');
+   o.SSB       = fail? false : (o.USB || o.LSB);
+   o.SSB_CW    = fail? false : (o.SSB || o.CW);
+   o.AM_SAx_IQ_DRM = fail? false : (o.AM || o.SAx || o.SSB || o.DRM);
+
+   //console.log(o);
+   //kiwi_trace('kiwi_mode');
+   return o;
+}
 
 function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 {
-   if (cfg.passbands[subtype] == null) subtype = 'am';
+   if (kiwi_passbands(subtype) == null) subtype = 'am';
    //console.log('demodulator_default_analog '+ subtype +' locut='+ locut +' hicut='+ hicut);
    
 	//http://stackoverflow.com/questions/4152931/javascript-inheritance-call-super-constructor-or-use-prototype-chain
@@ -1003,8 +1048,8 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
       lo = owrx.last_lo[subtype];
       //console.log('$demodulator_default_analog owrx.last_lo['+ subtype +']='+ lo);
       if (isNaN(lo)) {
-         lo = cfg.passbands[subtype].lo;
-         //console.log('$demodulator_default_analog cfg.passbands['+ subtype +']='+ lo);
+         lo = kiwi_passbands(subtype).lo;
+         //console.log('$demodulator_default_analog kiwi_passbands('+ subtype +')='+ lo);
       }
    }
    owrx.last_lo[subtype] = lo;
@@ -1013,7 +1058,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
    if (isNaN(hi)) {
       hi = owrx.last_hi[subtype];
       if (isNaN(hi)) {
-         hi = cfg.passbands[subtype].hi;
+         hi = kiwi_passbands(subtype).hi;
       }
    }
    owrx.last_hi[subtype] = hi;
@@ -1100,6 +1145,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	   case 'qam':
 	   case 'drm':
 	   case 'nbfm':
+	   case 'nnfm':
 	   case 'iq':
 		   break;
 		   
@@ -1150,8 +1196,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		var mode = this.server_mode;
 		var locut = this.low_cut.toString();
 		var hicut = this.high_cut.toString();
-      var m = mode.substr(0,2);
-		var mparam = (m == 'sa' || m == 'qa')? (' param='+ (owrx.chan_null | (owrx.SAM_opts << owrx.SAM_opts_sft))) : '';
+		var mparam = (kiwi_mode(mode).SAx)? (' param='+ (owrx.chan_null | (owrx.SAM_opts << owrx.SAM_opts_sft))) : '';
 		//if (mparam != '') console.log('$mode='+ mode +' mparam='+ mparam); else console.log('$mode='+ mode);
 		var s = 'SET mod='+ mode +' low_cut='+ locut +' high_cut='+ hicut +' freq='+ freq + mparam;
 		snd_send(s);
@@ -1406,7 +1451,7 @@ function demodulator_add(what)
 function demodulator_analog_replace(subtype, freq)
 { //this function should only exist until the multi-demodulator capability is added
    //console.log('demodulator_analog_replace subtype='+ subtype);
-   if (cfg.passbands[subtype] == null) subtype = 'am';
+   if (kiwi_passbands(subtype) == null) subtype = 'am';
 
 	var offset = 0, prev_pbo = 0;
 	var wasCW = false, toCW = false, fromCW = false;
@@ -1801,7 +1846,7 @@ function get_visible_freq_range()
 	      off = 0;
 	      span = srate;
 	   } else
-	   if (cur_mode && (cur_mode.substr(0,2) == 'ls' || cur_mode == 'sal')) {
+	   if (kiwi_mode(cur_mode).LSB_SAL) {
 	      off = 0;
 	      span = srate/2;
 	   } else {
@@ -2864,6 +2909,7 @@ function right_click_menu_init()
    var i = 0;
    var m = [];
    m.push('DX database'); owrx.rcm_db = i; i++;
+   m.push('open DX label edit panel'); owrx.rcm_open = i; i++;
    m.push('edit last selected DX label'); owrx.rcm_edit = i; i++;
    m.push('DX label filter'); owrx.rcm_filter = i; i++;
    m.push('<hr>'); i++;
@@ -2915,10 +2961,6 @@ function right_click_menu(x, y, which)
    owrx.right_click_menu_content[owrx.rcm_lookup] = db + ' database lookup';
    owrx.right_click_menu_content[owrx.rcm_snap] = owrx.wf_snap? 'no snap' : 'snap to nearest';
    
-   // disable menu item if last label gid is not set
-   var edit = (dx.db == dx.DB_STORED && isDefined(owrx.dx_click_gid_last));
-   owrx.right_click_menu_content[owrx.rcm_edit] = edit? 'edit last selected DX label' : 'open DX label edit panel';
-
    w3_menu_items('id-right-click-menu', owrx.right_click_menu_content);
    w3_menu_popup('id-right-click-menu',
       function(evt, first) {     // close_func(), return true to close menu
@@ -2968,11 +3010,13 @@ function right_click_menu_cb(idx, x, cbp)
       export_waterfall();
       break;
    
-   case owrx.rcm_edit:  // edit last selected dx label
+   case owrx.rcm_open:  // open/edit DX label edit panel using current freq/mode or last selected dx label info
+   case owrx.rcm_edit:
       var gid = -1;
-      if (dx.db == dx.DB_STORED && isDefined(owrx.dx_click_gid_last))
+      var edit_gid = (idx == owrx.rcm_edit && dx.db == dx.DB_STORED && isDefined(owrx.dx_click_gid_last));
+      if (edit_gid)
          gid = owrx.dx_click_gid_last;
-      console.log('RCM rcm_edit: gid='+ gid +' db='+ dx.db);
+      console.log('RCM rcm_'+ (edit_gid? 'edit' : 'open') +' gid='+ gid +' db='+ dx.db);
       dx_show_edit_panel(null, gid);
 	   dx_schedule_update();
       break;
@@ -5035,7 +5079,7 @@ function wf_audio_FFT(audio_data, samps)
    //console.log('iq='+ audio_mode_iq +' comp='+ audio_compression +' samps='+ samps);
 
    var iq = ext_is_IQ_or_stereo_curmode();
-   var lsb = (cur_mode.substr(0,2) == 'ls' || cur_mode == 'sal');
+   var lsb = kiwi_mode(cur_mode).LSB_SAL;
    var fft_setup = (!afft.init || iq != afft.iq || audio_compression != afft.comp);
 
    if (fft_setup) {
@@ -5282,9 +5326,8 @@ function freq_passband_center()
 
 function passband_offset_dxlabel(mode)
 {
-	var pb = cfg.passbands[mode];
-	var m = mode.substr(0,2);
-	var usePBCenter = (m == 'us' || m == 'ls');
+	var pb = kiwi_passbands(mode);
+	var usePBCenter = kiwi_mode(mode).SSB;
 	var offset = usePBCenter? pb.lo + (pb.hi - pb.lo)/2 : 0;
 	//console.log("passband_offset: m="+mode+" use="+usePBCenter+' o='+offset);
 	return offset;
@@ -5487,9 +5530,8 @@ function modeset_update_ui(mode)
 	if (owrx.last_mode_el != null) owrx.last_mode_el.style.color = "white";
 	
 	// if sound comes up before waterfall then the button won't be there
-	var m = mode.substr(0,2);
-	if (m == 'qa') m = 'sa';   // QAM -> SAM case
-	var el = w3_el('id-mode-'+ m);
+	var kmode = kiwi_mode(mode);
+	var el = w3_el('id-mode-'+ kmode.str);
 	el.innerHTML = mode.toUpperCase();
 	if (el && el.style) el.style.color = "lime";
 	owrx.last_mode_el = el;
@@ -5506,9 +5548,9 @@ function modeset_update_ui(mode)
 	      w3_set_props(el, 'w3-disabled', disabled);
       });
 
-   w3_hide2('id-sam-carrier-container', m != 'sa');  // also QAM
+   w3_hide2('id-sam-carrier-container', !kmode.SAx);  // also QAM
    w3_hide2('id-chan-null', mode != 'sam');
-   w3_hide2('id-SAM-opts', m != 'sa');
+   w3_hide2('id-SAM-opts', kmode.SAx);
 }
 
 // delay the UI updates called from the audio path until the waterfall UI setup is done
@@ -5725,6 +5767,7 @@ var up_down = {
 	cw:   [ 0, -0.1, -0.01, 0.01, 0.1, 0 ],
 	cwn:  [ 0, -0.1, -0.01, 0.01, 0.1, 0 ],
 	nbfm: [ -5, -1, -0.1, 0.1, 1, 5 ],
+	nnfm: [ -5, -1, -0.1, 0.1, 1, 5 ],
 	iq:   [ 0, -1, -0.1, 0.1, 1, 0 ],
 };
 
@@ -5733,30 +5776,28 @@ var NDB_400_1000_mode = 1;		// special 400/1000 step mode for NDB band
 // nearest appropriate boundary (1, 5 or 9/10 kHz depending on band & mode)
 function freq_step_amount(b)
 {
-   var cm = cur_mode.substr(0,2);
-   var ssb_cw = (cm == 'ls' || cm == 'us' || cm == 'cw');
-	var step_Hz = ssb_cw? 1000 : 5000;
-	var s = ssb_cw? ' 1k default' : ' 5k default';
-	var am_sax_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'qa' || cm == 'ls' || cm == 'us' || cm == 'iq' || cm == 'dr');
+   var kmode = kiwi_mode(cur_mode);
+	var step_Hz = kmode.SSB_CW? 1000 : 5000;
+	var s = kmode.SSB_CW? ' 1k default' : ' 5k default';
    var ITU_region = cfg.init.ITU_region + 1;
    var ham_80m_swbc_75m_overlap = (ITU_region == 2 && b && b.name == '75m');
 
 	if (b && b.name == 'NDB') {
-		if (cm == 'cw') {
+		if (kmode.CW) {
 			step_Hz = NDB_400_1000_mode;
 		}
 		s = ' NDB';
 	} else
 	if (b && (b.name == 'LW' || b.name == 'MW')) {
-		//console_log('special step', cm, am_sax_iq_drm);
-		if (am_sax_iq_drm) {
+		//console_log('special step', kmode.str, kmode.AM_SAx_IQ_DRM);
+		if (kmode.AM_SAx_IQ_DRM) {
 			step_Hz = step_9_10? 9000 : 10000;
 		}
 		s = ' LW/MW';
 	} else {
 	   var svc = b? band_svc_lookup(b.svc) : null;
       if (svc && svc.o.name.includes('Broadcast') && !ham_80m_swbc_75m_overlap) {      // SWBC bands
-         if (am_sax_iq_drm) {
+         if (kmode.AM_SAx_IQ_DRM) {
             step_Hz = 5000;
             s = ' SWBC 5k';
             //console.log('SFT-CLICK SWBC');
@@ -5835,7 +5876,7 @@ var freq_step_last_mode, freq_step_last_band;
 
 function freq_step_update_ui(force)
 {
-	if (isUndefined(cur_mode) || cfg.passbands[cur_mode] == undefined ) return;
+	if (isUndefined(cur_mode) || kiwi_passbands(cur_mode) == undefined ) return;
 	var b = find_band(freq_displayed_Hz);
 	
 	//console.log("freq_step_update_ui: lm="+freq_step_last_mode+' cm='+cur_mode);
@@ -5844,9 +5885,7 @@ function freq_step_update_ui(force)
 		return;
 	}
 
-   var cm = cur_mode.substr(0,2);
-   var am_sax_iq_drm = (cm == 'am' || cm == 'sa' || cm == 'qa' || cm == 'iq' || cm == 'dr');
-	var show_9_10 = (b && (b.name == 'LW' || b.name == 'MW') && am_sax_iq_drm)? true:false;
+	var show_9_10 = (b && (b.name == 'LW' || b.name == 'MW') && kiwi_mode(cur_mode).AM_SAx_IQ_DRM)? true:false;
 	
 	if (kiwi_isMobile()) {
 	   w3_hide2('id-9-10-cell', !show_9_10);
@@ -6711,7 +6750,7 @@ function set_freq_offset_dialog()
 {
 	var s =
 		w3_col_percent('/w3-text-aqua',
-			w3_input_get('', 'Frequency scale offset (kHz, 1 Hz resolution)', 'cfg.freq_offset', 'w3_float_set_cfg_cb|3'), 80
+			w3_input_get('w3-margin-T-6', 'Frequency scale offset (kHz, 1 Hz resolution)', 'cfg.freq_offset', 'w3_float_set_cfg_cb|3'), 80
 		);
    confirmation_show_content(s, 525, 80);
 
@@ -6869,7 +6908,7 @@ var dx = {
    eibi_filter_tod: 1,
 
 
-   DX_MODE:       0x0000000f,    // 16 modes
+   DX_MODE:       0x0000000f,    // 32 modes
 
    DX_TYPE:       0x000001f0,    // 32 types
    DX_TYPE_SFT: 4,
@@ -6902,6 +6941,7 @@ var dx = {
    DX_FLAGS:      0xffff0000,
    DX_FILTERED:   0x00010000,
    DX_HAS_EXT:    0x00020000,
+   DX_MODE_16:    0x00040000,
    
    eibi_types_mask: 0xffffffff,
    
@@ -6968,6 +7008,16 @@ function dx_init()
 	      dx_schedule_update();
       }, 0, 500);
    }
+}
+
+function dx_decode_mode(flags)
+{
+   return (  (((flags) & dx.DX_MODE_16)? 16:0) | ((flags) & dx.DX_MODE) );
+}
+
+function dx_encode_mode(mode)
+{
+   return (  (((mode) >= 16)? dx.DX_MODE_16:0) | ((mode) & dx.DX_MODE) );
 }
 
 // either type: EiBi or stored
@@ -7125,12 +7175,12 @@ function dx_label_cb(arr)
 	   if (dl) {
 	      //console_log_dbgUs('dx_label_cb: type=2 f='+ dl.f);
 	      //console_log_dbgUs(dl);
-	      var mode = kiwi.modes_l[dl.fl & dx.DX_MODE];
+	      var mode = kiwi.modes_lc[dx_decode_mode(dl.fl)];
          freqmode_set_dsp_kHz(dl.f, mode);
          if (dl.lo != 0 && dl.hi != 0) {
             ext_set_passband(dl.lo, dl.hi);     // label has custom pb
          } else {
-            var dpb = cfg.passbands[mode];
+            var dpb = kiwi_passbands(mode);
             ext_set_passband(dpb.lo, dpb.hi);   // need to force default pb in case cpb is not default
          }
       } else {
@@ -7254,7 +7304,8 @@ function dx_label_cb(arr)
 		if (eibi && (flags & dx.DX_HAS_EXT)) params = dx.eibi_ext[dx_type2idx(type)];
 
 		var f_baseHz = f_base * 1000;
-		var f_base_label_Hz = f_baseHz + passband_offset_dxlabel(kiwi.modes_l[flags & dx.DX_MODE]);	// always place label at center of passband
+      // always place label at center of passband
+		var f_base_label_Hz = f_baseHz + passband_offset_dxlabel(kiwi.modes_lc[dx_decode_mode(flags)]);
 		var x = scale_px_from_freq(f_base_label_Hz, g_range) - 1;	// fixme: why are we off by 1?
 		var cmkr_x = 0;		// optional carrier marker for NDBs
 		var carrier = f_baseHz - moff;
@@ -7291,7 +7342,7 @@ function dx_label_cb(arr)
 		   color = 'aquamarine';
 		}
 		console_log_lbl('DX '+ dx_seq +':'+ dx_idx +' f='+ freq +' k='+ moff +' FL='+ flags.toHex(8)
-		   +' m='+ kiwi.modes_u[flags & dx.DX_MODE] +' <'+ ident +'> <'+ notes +'>');
+		   +' m='+ kiwi.modes_uc[dx_decode_mode(flags)] +' <'+ ident +'> <'+ notes +'>');
 		
 		carrier = freq * 1000 - moff;
 		carrier /= 1000;
@@ -7602,13 +7653,13 @@ function dx_label_step(dir)
    
    // after changing display to this frequency the normal dx_schedule_update() process will
    // acquire a new set of labels
-   var mode = kiwi.modes_l[dl.flags & dx.DX_MODE];
-   //console.log('FOUND #'+ i +' '+ f +' '+ dl.ident +' '+ mode +' '+ dl.lo +' '+ dl.hi);
-   freqmode_set_dsp_kHz(dl.freq, mode);
+   var mode_s = kiwi.modes_lc[dx_decode_mode(dl.flags)];
+   //console.log('FOUND #'+ i +' '+ f +' '+ dl.ident +' '+ mode_s +' '+ dl.lo +' '+ dl.hi);
+   freqmode_set_dsp_kHz(dl.freq, mode_s);
    if (dl.lo != 0 && dl.hi != 0) {
       ext_set_passband(dl.lo, dl.hi);     // label has custom pb
    } else {
-      var dpb = cfg.passbands[mode];
+      var dpb = kiwi_passbands(mode_s);
       //console.log(dpb);
       ext_set_passband(dpb.lo, dpb.hi);   // need to force default pb in case cpb is not default
    }
@@ -7683,7 +7734,7 @@ function dx_show_edit_panel2()
 		console.log('DX EDIT new f='+ freq_car_Hz +'|'+ freq_displayed_Hz +'|'+ freq_displayed_kHz_str +' m='+ cur_mode);
 		dx.o.fr = +(freq_displayed_kHz_str) + kiwi.freq_offset_kHz;
 		dx.o.lo = dx.o.hi = dx.o.o = 0;
-		dx.o.fm = kiwi.modes_s[cur_mode];
+		dx.o.fm = kiwi.modes_idx[cur_mode];
 		dx.o.ft = dx.DX_QUICK_0;
 		dx.o.fd = dx.DX_DOW_BASE;
 		dx.o.begin = 0;
@@ -7696,7 +7747,7 @@ function dx_show_edit_panel2()
       dx.o.lo = label.lo;
       dx.o.hi = label.hi;
 		dx.o.o = label.moff;
-		dx.o.fm = (label.flags & dx.DX_MODE);
+		dx.o.fm = dx_decode_mode(label.flags);
 		dx.o.ft = ((label.flags & dx.DX_TYPE) >> dx.DX_TYPE_SFT);
 		dx.o.fd = ((label.flags & dx.DX_DOW) >> dx.DX_DOW_SFT);
 		if (dx.o.fd == 0) {
@@ -7719,7 +7770,7 @@ function dx_show_edit_panel2()
 		var type = dx.o.ft;
 		type = (type == dx.DX_QUICK_0)? dx.DX_QUICK_1 : dx.DX_QUICK_0;
 		dx.o.ft = type;
-		var flags = (dx.o.fd << dx.DX_DOW_SFT) | (type << dx.DX_TYPE_SFT) | dx.o.fm;
+		var flags = (dx.o.fd << dx.DX_DOW_SFT) | (type << dx.DX_TYPE_SFT) | dx_encode_mode(dx.o.fm);
 		dx_send_update('DX_QUICK', dx.o.gid, dx.o.fr, flags, dx.o);
 		return;
 	}
@@ -7782,12 +7833,15 @@ function dx_show_edit_panel2()
          }
       }
       //console.log(type_menu);
+      
+      // convert from dx mode order to mode menu order
+      var mode_menu_idx = w3_array_el_seq(kiwi.mode_menu, kiwi.modes_uc[dx.o.fm])
 
 	   s2 =
          w3_divs('w3-text-white/w3-margin-T-8',
             w3_inline('w3-halign-space-between/',
                w3_input('w3-padding-small||size=10', 'Freq', 'dx.o.fr', dx.o.fr, 'dx_freq_cb'),
-               w3_select('w3-text-red', 'Mode', '', 'dx.o.fm', dx.o.fm, kiwi.modes_u, 'dx_sel_cb'),
+               w3_select('w3-text-red', 'Mode', '', 'dx.o.fm', mode_menu_idx, kiwi.mode_menu, 'dx_sel_cb'),
                w3_input('w3-padding-small||size=10', 'Passband', 'dx.o.pb', dx.o.pb, 'dx_passband_cb'),
                w3_select('w3-text-red', 'Type', '', 'dx.o.ft', dx.o.ft, type_menu, 'dx_sel_cb'),
                w3_input('w3-padding-small||size=8', 'Offset', 'dx.o.o', dx.o.o, 'dx_num_cb')
@@ -7974,7 +8028,7 @@ function dx_modify_cb(id, val)
 	console_log_dbgUs('DX COMMIT modify entry #'+ dx.o.gid +' f='+ dx.o.fr);
 	console_log_dbgUs(dx.o);
 	if (dx.o.gid == -1) return;
-   var flags = (dx.o.fd << dx.DX_DOW_SFT) | (dx.o.ft << dx.DX_TYPE_SFT) | dx.o.fm;
+   var flags = (dx.o.fd << dx.DX_DOW_SFT) | (dx.o.ft << dx.DX_TYPE_SFT) | dx_encode_mode(dx.o.fm);
 
 	if (dx.o.fr < 0) dx.o.fr = 0;
 	dx_send_update('DX_MODIFY', dx.o.gid, dx.o.fr, flags, dx.o);
@@ -7985,7 +8039,7 @@ function dx_add_cb(id, val)
 {
 	//console.log('DX COMMIT new entry');
 	//console.log(dx.o);
-   var flags = (dx.o.fd << dx.DX_DOW_SFT) | (dx.o.ft << dx.DX_TYPE_SFT) | dx.o.fm;
+   var flags = (dx.o.fd << dx.DX_DOW_SFT) | (dx.o.ft << dx.DX_TYPE_SFT) | dx_encode_mode(dx.o.fm);
 
 	if (dx.o.fr < 0) dx.o.fr = 0;
 	dx_send_update('DX_ADD', -1, dx.o.fr, flags, dx.o);
@@ -8017,7 +8071,7 @@ function dx_click(ev, gid)
 	   var label = dx.list[gid];
 	   var freq = label.freq;
 	   var f_base = freq - kiwi.freq_offset_kHz;
-		var mode = kiwi.modes_l[label.flags & dx.DX_MODE];
+		var mode = kiwi.modes_lc[dx_decode_mode(label.flags)];
 		var lo = label.lo;
 		var hi = label.hi;
 		var params = label.params;
@@ -8260,7 +8314,7 @@ function update_smeter()
 	line_stroke(sMeter_ctx, 0, 5, "lime", 0,y, x,y);
 
    if (cfg.agc_thresh_smeter && owrx.force_no_agc_thresh_smeter != true) {
-      var thold = (cur_mode && cur_mode.substr(0,2) == 'cw')? threshCW : thresh;
+      var thold = kiwi_mode(cur_mode).CW? threshCW : thresh;
 	   var x_thr = smeter_dBm_biased_to_x(-thold);
 	   line_stroke(sMeter_ctx, 0, 2, "white", 0,y-3, w-x_thr,y-3);
 	   line_stroke(sMeter_ctx, 0, 2, "black", w-x_thr,y-3, w,y-3);
@@ -8496,7 +8550,7 @@ function keyboard_shortcut(key, key_mod, ctlAlt, keyCode)
    case 'l': mode_button(null, w3_el('id-button-lsb'), dir); break;
    case 'u': mode_button(null, w3_el('id-button-usb'), dir); break;
    case 'c': mode_button(null, w3_el('id-button-cw'), dir); break;
-   case 'f': ext_set_mode('nbfm'); break;
+   case 'f': mode_button(null, w3_el('id-button-nbfm'), dir); break;
    case 'q': ext_set_mode('iq'); break;
    
    // step
@@ -8903,7 +8957,7 @@ function panels_setup()
 	      var disabled = mba.dis || (mslc == 'drm' && !kiwi.DRM_enable);
 	      var attr = disabled? '' : ' onclick="mode_button(event, this)"';
 	      attr += ' onmouseover="mode_over(event, this)"';
-	      s += w3_div('id-button-'+ mslc + ' id-mode-'+ mslc.substr(0,2) +
+	      s += w3_div('id-button-'+ mslc + ' id-mode-'+ kiwi_mode(mslc).str +
 	         ' class-button'+ (disabled? ' class-button-disabled':'') +
 	         ' ||id="'+ i +'-id-mode-col"' + attr + ' onmousedown="cancelEvent(event)"', ms);
 	   });
@@ -10294,7 +10348,7 @@ function toggle_or_set_compression(set, val)
 
 function set_agc()
 {
-   var isCW = (cur_mode && cur_mode.substr(0,2) == 'cw');
+   var isCW = kiwi_mode(cur_mode).CW;
    //console.log('isCW='+ isCW +' agc='+ agc);
    w3_color('label-threshold', (!isCW && agc)? 'orange' : 'white');
    w3_color('label-threshCW',  ( isCW && agc)? 'orange' : 'white');
@@ -10577,8 +10631,8 @@ function any_modifier_key(evt)
 
 function restore_passband(mode)
 {
-   owrx.last_lo[mode] = cfg.passbands[mode].lo;
-   owrx.last_hi[mode] = cfg.passbands[mode].hi;
+   owrx.last_lo[mode] = kiwi_passbands(mode).lo;
+   owrx.last_hi[mode] = kiwi_passbands(mode).hi;
 }
 
 var mode_buttons = [
@@ -10588,7 +10642,7 @@ var mode_buttons = [
    { s:[ 'LSB', 'LSN' ],                        dis:0 },
    { s:[ 'USB', 'USN' ],                        dis:0 },
    { s:[ 'CW', 'CWN' ],                         dis:0 },
-   { s:[ 'NBFM' ],                              dis:0 },
+   { s:[ 'NBFM', 'NNFM' ],                      dis:0 },
    { s:[ 'IQ' ],                                dis:0 },
 ];
 

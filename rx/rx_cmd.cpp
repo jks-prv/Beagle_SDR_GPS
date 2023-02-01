@@ -60,19 +60,6 @@ volatile float audio_kbps[MAX_RX_CHANS+1], waterfall_kbps[MAX_RX_CHANS+1], water
 volatile u4_t audio_bytes[MAX_RX_CHANS+1], waterfall_bytes[MAX_RX_CHANS+1], waterfall_frames[MAX_RX_CHANS+1], http_bytes;
 int debug_v;
 
-const char *mode_s[N_MODE] = {
-    "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq", "drm", "usn", "lsn", "sam", "sau", "sal", "sas", "qam"
-};
-const char *modu_s[N_MODE] = {
-    "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ", "DRM", "USN", "LSN", "SAM", "SAU", "SAL", "SAS", "QAM"
-};
-const int mode_hbw[N_MODE] = {
-    9800/2, 5000/2, 2400/2, 2400/2, 400/2, 60/2, 12000/2, 10000/2, 10000/2, 2100/2, 2100/2, 9800/2, 9800/2, 9800/2, 9800/2, 9800/2
-};
-const int mode_offset[N_MODE] = {
-    0, 0, 1500, -1500, 0, 0, 0, 0, 0, 1350, -1350, 0, 0, 0, 0, 0
-};
-
 #ifdef USE_SDR
 
 static dx_t *dx_list_first, *dx_list_last;
@@ -934,7 +921,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     else
                     if (gid == -1) type = 1; else type = 2;
                     cprintf(conn, "DX_UPD %s: n=%d #%d %8.2f %s lo=%d hi=%d off=%d flags=0x%x b=%d e=%d text=<%s> notes=<%s> params=<%s>\n",
-                        dx_mod_add_s[type], n, gid, freq, mode_s[flags & DX_MODE], low_cut, high_cut, mkr_off, flags, begin, end,
+                        dx_mod_add_s[type], n, gid, freq, mode_lc[DX_DECODE_MODE(flags)], low_cut, high_cut, mkr_off, flags, begin, end,
                         text_m, notes_m, params_m);
                 } else {
                     const char * dx_del_s[] = { "DEL", "CVT", "???" };
@@ -1348,7 +1335,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             memset(types_n, 0, sizeof(types_n));
             dx_t *dp = dx.stored_list;
             for (i = 0; i < dx.stored_len; i++, dp++) {
-                types_n[DX_STORED_TYPE2IDX(dp->flags)]++;
+                types_n[DX_STORED_FLAGS_TYPEIDX(dp->flags)]++;
             }
             for (i = 0; i < DX_N_STORED; i++) {
                 sb = kstr_asprintf(sb, "%d%s", types_n[i], (i < (DX_N_STORED-1))? "," : "");
@@ -1536,8 +1523,8 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                         if (!first && diff < DX_SPACING_THRESHOLD_PX) {
                             if (clutter_filtered < 32) {
                                 dx_print_mkrs(db_eibi, "DX_MKR anti-clutter EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident_s);
-                                dx_print_mkrs(db_stored, "DX_MKR anti-clutter #%d %.2f flags=%04x o=%d b=%d e=%d \"%s\"\n", dp->idx, freq, dp->flags, dp->offset,
-                                    time_begin, time_end, kiwi_str_decode_static((char *) dp->ident));
+                                dx_print_mkrs(db_stored, "DX_MKR anti-clutter #%d %.2f flags=%05x o=%d b=%d e=%d \"%s\"\n",
+                                    dp->idx, freq, dp->flags, dp->offset, time_begin, time_end, kiwi_str_decode_static((char *) dp->ident));
                             }
                             clutter_filtered++;
                             continue;
@@ -1604,7 +1591,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                                 dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"",
                                 dp->params? ",\"p\":\"":"", dp->params? dp->params:"", dp->params? "\"":"");
                             dx_print_mkrs(db_eibi, "DX_MKR EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident_s);
-                            dx_print_mkrs(db_stored, "DX_MKR #%d %.2f flags=%04x o=%d b=%d e=%d \"%s\"\n", dp->idx, freq, dp->flags, dp->offset,
+                            dx_print_mkrs(db_stored, "DX_MKR #%d %.2f flags=%05x o=%d b=%d e=%d \"%s\"\n", dp->idx, freq, dp->flags, dp->offset,
                                 time_begin, time_end, kiwi_str_decode_static((char *) dp->ident));
                             send++;
                         }

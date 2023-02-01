@@ -29,6 +29,7 @@ Boston, MA  02110-1301, USA.
 #include "jsmn.h"
 #include "cfg.h"
 #include "dx.h"
+#include "rx.h"
 #include "coroutines.h"
 
 #include <string.h>
@@ -77,8 +78,8 @@ void dx_save_as_json(bool dx_label_foff_convert)
 	        freq_kHz += freq_offset_kHz;
 	        printf("DX CONVERT: %.2f => %.2f %s\n", dxp->freq, freq_kHz, ident);
 	    }
-	    sb = kstr_asprintf(NULL, "[%.2f, \"%s\", \"%s\", \"%s\"",
-	        freq_kHz, modu_s[dxp->flags & DX_MODE], ident, notes);
+	    int mode_i = DX_DECODE_MODE(dxp->flags);
+	    sb = kstr_asprintf(NULL, "[%.2f, \"%s\", \"%s\", \"%s\"", freq_kHz, mode_uc[mode_i], ident, notes);
         free(ident); free(notes);   // not kiwi_ifree() because from strdup()
 
 		u4_t type = dxp->flags & DX_TYPE;
@@ -102,7 +103,7 @@ void dx_save_as_json(bool dx_label_foff_convert)
 			*/
 			
 			if (type) {
-			    sb = kstr_asprintf(sb, "%s\"T%d\":1", delim, DX_STORED_TYPE2IDX(type));
+			    sb = kstr_asprintf(sb, "%s\"T%d\":1", delim, DX_STORED_FLAGS_TYPEIDX(type));
 			    delim = ", ";
 			}
 
@@ -155,11 +156,13 @@ void dx_save_as_json(bool dx_label_foff_convert)
 	
 	kiwi_ifree(dx.json);
 	TMEAS(u4_t split = timer_ms(); printf("DX_UPD sb_len=%d %.3f sec\n", sb_len, TIME_DIFF_MS(split, start));)
-	dx.json = (char *) kiwi_imalloc("dx.json", sb_len + 32);     // 32 is for '{"dx":[...]}' below
+    int rem = sb_len + 32;      // 32 is for '{"dx":[...]}' below
+	dx.json = (char *) kiwi_imalloc("dx.json", rem);
 	char *cp = dx.json;
 	int tsize = 0;
-	n = sprintf(cp, "{\"dx\":[\n");
+	n = kiwi_snprintf_ptr(cp, rem, "{\"dx\":[\n");
 	cp += n;
+	rem -= n;
 	tsize += n;
 
 	for (i = 0; i < dx.stored_len; i++) {
@@ -167,6 +170,7 @@ void dx_save_as_json(bool dx_label_foff_convert)
 	    kiwi_ifree(dx_a[i].sp);
 	    n = dx_a[i].sl;
 	    cp += n;
+	    rem -= n;
 	    tsize += n;
 		if ((i & 0x1f) == 0) {
 		    NextTask("dx_save_as_json");
@@ -174,7 +178,7 @@ void dx_save_as_json(bool dx_label_foff_convert)
 	}
 
 	kiwi_ifree(dx_a);
-	n = sprintf(cp, "]}");      // dxcfg_save_json() adds final \n
+	n = kiwi_snprintf_ptr(cp, rem, "]}");    // dxcfg_save_json() adds final \n
     tsize += n;
 	TMEAS(printf("DX_UPD tsize=%d\n", tsize);)
     cfg->json = dx.json;
@@ -183,23 +187,6 @@ void dx_save_as_json(bool dx_label_foff_convert)
 	TMEAS(u4_t split2 = timer_ms(); printf("DX_UPD dx_save_as_json: dx struct -> json string %.3f sec\n", TIME_DIFF_MS(split2, split));)
 	dxcfg_save_json(cfg->json);
 	TMEAS(u4_t now = timer_ms(); printf("DX_UPD dx_save_as_json: DONE %.3f/%.3f sec\n", TIME_DIFF_MS(now, split2), TIME_DIFF_MS(now, start));)
-}
-
-static void dx_mode(dx_t *dxp, const char *s)
-{
-    int i;
-    
-    for (i = 0; i < N_MODE; i++) {
-        if (strcasecmp(s, modu_s[i]) == 0)
-            break;
-    }
-    
-    if (i == N_MODE) {
-	    lprintf("unknown dx config mode \"%s\", defaulting to AM\n", s);
-	    i = 0;
-	}
-	
-	dxp->flags = i;
 }
 
 static void dx_flag(dx_t *dxp, const char *flag)
@@ -247,14 +234,14 @@ void update_masked_freqs(dx_t *_dx_list, int _dx_list_len)
     for (i = j = 0, dxp = _dx_list; i < _dx_list_len; i++, dxp++) {
         if ((dxp->flags & DX_TYPE) == DX_MASKED && dxp->freq >= freq_offset_kHz && dxp->freq <= freq_offmax_kHz) {
             dx_mask_t *dmp = &dx.masked_list[j++];
-            int mode = dxp->flags & DX_MODE;
+            int mode_i = DX_DECODE_MODE(dxp->flags);
             int masked_f = roundf((dxp->freq - freq_offset_kHz) * kHz);     // masked freq list always baseband
-            int hbw = mode_hbw[mode];
-            int offset = mode_offset[mode];
+            int hbw = mode_hbw[mode_i];
+            int offset = mode_offset[mode_i];
             dmp->masked_lo = masked_f + offset + (dxp->low_cut? dxp->low_cut : -hbw);
             dmp->masked_hi = masked_f + offset + (dxp->high_cut? dxp->high_cut : hbw);
             //printf("masked %.2f baseband: %d-%d %s hbw=%d off=%d lc=%d hc=%d\n",
-            //    dxp->freq, dmp->masked_lo, dmp->masked_hi, modu_s[mode], hbw, offset, dxp->low_cut, dxp->high_cut);
+            //    dxp->freq, dmp->masked_lo, dmp->masked_hi, mode_uc[mode_i], hbw, offset, dxp->low_cut, dxp->high_cut);
         }
     }
 }
@@ -316,10 +303,12 @@ static jsmntok_t *dx_reload_element(jsmntok_t *jt, jsmntok_t *end_tok, dx_t *dxp
     dxp->freq = f;
     jt++;
     
-    const char *mode;
-    if (dxcfg_string_json(jt, &mode) == false) { *error = E_MODE; return NULL; }
-    dx_mode(dxp, mode);
-    dxcfg_string_free(mode);
+    const char *mode_s;
+    if (dxcfg_string_json(jt, &mode_s) == false) { *error = E_MODE; return NULL; }
+    int mode_i = rx_mode2enum(mode_s);
+    if (mode_i == NOT_FOUND) mode_i = 0;    // default to AM
+	dxp->flags = DX_ENCODE_MODE(mode_i);    // dxp->flags has no prior bits to preserve
+    dxcfg_string_free(mode_s);
     jt++;
     
     if (dxcfg_string_json(jt, &s) == false) { *error = E_IDENT; return NULL; }
@@ -596,8 +585,6 @@ void dx_reload()
 {
 	cfg_t *cfg = &cfg_dx;
 	
-	check(DX_MODE <= N_MODE);
-
 	TMEAS(u4_t start = timer_ms();)
 	TMEAS(printf("DX_RELOAD START\n");)
 	if (!dxcfg_init())
@@ -632,7 +619,7 @@ void dx_eibi_init()
 		dxp->params = "";
 		dxp->idx = i;
 		
-		// setup special mode-specific passbands
+		// setup special type-specific passbands
 		int type = dxp->flags & DX_TYPE;
 		if (type == DX_ALE)  { dxp->low_cut = 600; dxp->high_cut = 2650; } else
 		if (type == DX_HFDL) { dxp->low_cut = 300; dxp->high_cut = 2600; } else

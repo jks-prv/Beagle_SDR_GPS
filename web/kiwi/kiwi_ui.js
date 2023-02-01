@@ -10,15 +10,21 @@ function dx_get_value(v) { return w3_get_value('dx.o.'+ v +'_'+ dx.o.gid); }
 
 function dx_update_check(idx, upd, isPassband)
 {
-   // called from user connection label edit panel, not admin edit tab
+   if (idx != dx.IDX_USER) dx.o.gid = idx = +idx;
+
+   // convert from mode menu order to dx mode order
+   var mode_menu_idx = (idx == dx.IDX_USER)? dx.o.fm : (+dx_get_value('fm'));
+   var dx_mode_idx = w3_array_el_seq(kiwi.modes_uc, kiwi.mode_menu[mode_menu_idx]);
+   console.log('dx_update_check dx_mode_idx='+ dx_mode_idx +' mode_menu_idx='+ mode_menu_idx +' '+ kiwi.mode_menu[mode_menu_idx]);
+   dx.o.fm = dx_mode_idx;
+
+   // Called from user connection label edit panel, not admin edit tab.
+   // User label edit panel has a separate commit mechanism.
    if (idx == dx.IDX_USER) return;
 
-   idx = +idx;
-   dx.o.gid = idx;
 	console.log('### dx_update_check gid(idx)='+ idx +' '+ ((upd == dx.UPD_ADD)? 'ADD' : 'MODIFY'));
 
    dx.o.fr = +dx_get_value('fr');
-   dx.o.fm = +dx_get_value('fm');
    dx.o.ft = +dx_get_value('ft');
 
    dx.o.fd = dx.o.last_fd[idx];
@@ -40,7 +46,7 @@ function dx_update_check(idx, upd, isPassband)
       }
    }
 
-   var flags = (dx.o.fd << dx.DX_DOW_SFT) | (dx.o.ft << dx.DX_TYPE_SFT) | dx.o.fm;
+   var flags = (dx.o.fd << dx.DX_DOW_SFT) | (dx.o.ft << dx.DX_TYPE_SFT) | dx_encode_mode(dx.o.fm);
 	if (dx.o.fr < 0) dx.o.fr = 0;
 	
 	// delay setting to -1 until here so dx.o.* params are copied from cur gid/idx
@@ -90,7 +96,7 @@ function dx_sel_cb(path, val, first)
    if (first) return;
 	var o = w3_remove_trailing_index(path, '_');
 	console.log('dx_sel_cb path='+ path +' val='+ val +' o.idx='+ o.idx);
-	w3_string_cb(o.el, val);
+	w3_string_cb(o.el, +val);
 	dx_update_check(o.idx, dx.UPD_MOD);
 }
 

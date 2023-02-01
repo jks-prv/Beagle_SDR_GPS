@@ -1273,6 +1273,7 @@ static bool _cfg_load_json(cfg_t *cfg)
                 "\"cw\":  {\"lo\":  300, \"hi\": 700},"
                 "\"cwn\": {\"lo\":  470, \"hi\": 530},"
                 "\"nbfm\":{\"lo\":-6000, \"hi\":6000},"
+                "\"nnfm\":{\"lo\":-3000, \"hi\":3000},"
                 "\"iq\":  {\"lo\":-5000, \"hi\":5000}"
 	        "}}");
         _cfg_save_json(cfg, cfg->json);

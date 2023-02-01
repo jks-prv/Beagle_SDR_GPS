@@ -120,7 +120,7 @@ band_t aero_f[] = {
 char *qs(int n, const char *fmt, char *s)
 {
     static char b[4][8];
-    sprintf(b[n], fmt, s);
+    snprintf(b[n], 8, fmt, s);
     return b[n];
 }
 
@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
                 if (*ip < 0x80) {
                     *ip2++ = *ip;
                 } else {
-                    j = sprintf((char *) ip2, "[%02x]", *ip);
+                    j = snprintf((char *) ip2, 256, "[%02x]", *ip);
                     ip2 += j;
                     dump_ident = true;
                 }
@@ -318,47 +318,47 @@ int main(int argc, char *argv[])
         */
 
         assert(ident[0] != '\0');
-        int type = 0;
+        int flags = 0, mode;
         
         // classify based on keywords in ident
-        if (strstr(ident, "ALE"))     type = DX_ALE | DX_HAS_EXT | MODE_USB; else
+        if (strstr(ident, "ALE")) { flags = DX_ALE | DX_HAS_EXT; mode = MODE_USB; } else
         if (strstr(ident, "STANAG") || strstr(ident, "Ny") || strstr(ident, "SECURE") ||
-            strstr(ident, "Air Force")) type = DX_MILCOM | MODE_USB; else
-        if (strstr(ident, "RTTY"))    type = DX_FSK | DX_HAS_EXT | MODE_CW; else
-        if (strstr(ident, "Fax"))     type = DX_FAX | DX_HAS_EXT | MODE_USB; else
-        if (strstr(ident, "Spy") || strstr(ident, "Numbers")) type = DX_SPY | MODE_USB; else
-        if (strstr(ident, "Marine") || strstr(ident, "Maritime")) type = DX_MARINE | MODE_USB; else
+            strstr(ident, "Air Force")) { flags = DX_MILCOM; mode = MODE_USB; } else
+        if (strstr(ident, "RTTY")) { flags = DX_FSK | DX_HAS_EXT; mode = MODE_CW; } else
+        if (strstr(ident, "Fax")) { flags = DX_FAX | DX_HAS_EXT; mode = MODE_USB; } else
+        if (strstr(ident, "Spy") || strstr(ident, "Numbers")) { flags = DX_SPY; mode = MODE_USB; } else
+        if (strstr(ident, "Marine") || strstr(ident, "Maritime")) { flags = DX_MARINE; mode = MODE_USB; } else
 
         if (strstr(ident, "Volmet") || strstr(ident, "Aero") || strstr(ident, "Aeradio") ||
-            (!in_bcast_band && strstr(ident, " Radio"))) type = DX_AERO | MODE_USB;
+            (!in_bcast_band && strstr(ident, " Radio"))) { flags = DX_AERO; mode = MODE_USB; }
         
-        if (type == 0) {
+        if (flags == 0) {
             // Use classifications from lang field if provided.
             // Done after above since e.g. "spy" entries can be flagged -CW or -TY 
-            if (strcmp(lang, "-MX") == 0) type = DX_BCAST | MODE_AM; else
-            if (strcmp(lang, "-HF") == 0) type = DX_HFDL | DX_HAS_EXT | MODE_IQ; else
-            if (strcmp(lang, "-CW") == 0) type = DX_CW | DX_HAS_EXT | MODE_CW; else
-            if (strcmp(lang, "-TY") == 0) type = DX_FSK | DX_HAS_EXT | MODE_CW; else
-            if (strcmp(lang, "-TS") == 0) type = DX_TIME | DX_HAS_EXT | MODE_AMN; else
-            if (strcmp(lang, "-EC") == 0) type = DX_BCAST | MODE_AM; else
+            if (strcmp(lang, "-MX") == 0) { flags = DX_BCAST; mode = MODE_AM; } else
+            if (strcmp(lang, "-HF") == 0) { flags = DX_HFDL | DX_HAS_EXT; mode = MODE_IQ; } else
+            if (strcmp(lang, "-CW") == 0) { flags = DX_CW | DX_HAS_EXT; mode = MODE_CW; } else
+            if (strcmp(lang, "-TY") == 0) { flags = DX_FSK | DX_HAS_EXT; mode = MODE_CW; } else
+            if (strcmp(lang, "-TS") == 0) { flags = DX_TIME | DX_HAS_EXT; mode = MODE_AMN; } else
+            if (strcmp(lang, "-EC") == 0) { flags = DX_BCAST; mode = MODE_AM; } else
             
             // non CW markers appear inside bcast bands
-            if (strstr(ident, "Marker")) type = DX_UTIL | MODE_USB; else
+            if (strstr(ident, "Marker")) { flags = DX_UTIL; mode = MODE_USB; } else
 
             // If it's in the bcast band, and not classified above, then consider it broadcast.
-            if (in_bcast_band || strstr(ident, "Voice of")) { type = DX_BCAST | MODE_AM; } else
+            if (in_bcast_band || strstr(ident, "Voice of")) { flags = DX_BCAST; mode = MODE_AM; } else
         
             // Everything else is considered a "utility".
             // FIXME: this catches things it shouldn't
-            { type = DX_UTIL | MODE_USB; }
+            { flags = DX_UTIL; mode = MODE_USB; }
         }
 
-        types_n[DX_EiBi_TYPE2IDX(type)]++;
+        types_n[DX_EiBi_FLAGS_TYPEIDX(flags)]++;
 
 
         // DOW decoding
         // FIXME: support some of the other lesser-used types?
-        bool bcast = ((type & DX_TYPE) == DX_BCAST);
+        bool bcast = ((flags & DX_TYPE) == DX_BCAST);
         u2_t dow_mask = 0;
         assert(dow[0] != '\0');
         c = dow[0];
@@ -452,10 +452,11 @@ int main(int argc, char *argv[])
     #endif
         
         // output data
+        flags |= DX_ENCODE_MODE(mode);
         fprintf(fo, "  { %8.2f, %4d, %4d, 0x%05x, %4d, \"%3s\", %-6s %-5s },  // %7s %s\n",
-            freq, begin, end, type | dow_mask, ident_i, country,
+            freq, begin, end, flags | dow_mask, ident_i, country,
             qs(0, "\"%s\",", lang), qs(1, "\"%s\"", target),
-            qs(2, "-%s", (char *) types_s[DX_EiBi_TYPE2IDX(type)]), ident);
+            qs(2, "-%s", (char *) types_s[DX_EiBi_FLAGS_TYPEIDX(flags)]), ident);
 
         kiwi_ifree(rbuf);
         line++;
