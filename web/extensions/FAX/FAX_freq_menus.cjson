@@ -25,6 +25,9 @@
 // dk8ok.org/2017/06/11/6-3285-khz-murmansk-fax/
       "Murmansk_RBW RU":   [ 5336, "6328.5 lsb", 7908.8, 8444.1, 10130 ],
 
+// forum.kiwisdr.com/index.php?p=/discussion/comment/15428/#Comment_15428
+      "St.Petersburg_UGC RU":   [ 2640 ],
+
 // mt-utility.blogspot.com/2009/12/so-who-is-gm-11f.html
 // forum.kiwisdr.com/index.php?p=/discussion/comment/11883/#Comment_11883
 // 5103 removed
