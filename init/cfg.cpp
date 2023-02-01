@@ -848,17 +848,21 @@ int _cfg_set_string(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 			return 0;
 		}
 		
-		s = &cfg->json[jt->start] - 1;
+		s = &cfg->json[jt->start];
 
-		if (*s == '\"') {
+		if (*(s-1) == '\"') {
             // ,"id":"string" or {"id":"string"
             //        ^start (NB: NOT first double quote)
             assert(JSMN_IS_STRING(jt));
 		    pos = _cfg_cut(cfg, jt, SLEN_2QUOTES);
 		} else
-		if (strncmp(s, ":null", 5) == 0) {
+		if (strncmp(s, "null", 4) == 0) {
             // ,"id":null or {"id":null
             //       ^start
+            // DANGER: might actually be:
+            //      ,"id": null     (note space before "null")
+            // This is because we're now pretty-printing JSON output created by javascript.
+            // So CANNOT strncmp for ":null" -- must only be for "null" instead.
             assert(JSMN_IS_PRIMITIVE(jt));
 		    pos = _cfg_cut(cfg, jt, SLEN_NOTHING_ELSE);
         } else {
