@@ -2,6 +2,24 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.575  Feb 2, 2023
+    FM demodulator:
+        Added NNFM mode which has a 6 kHz passband useful for FM signals with +/- 2.5 kHz deviation.
+        Fixed "rough", "crackling" sound of demod. Needed a post-demod clipper.
+    
+    WSPR extension:
+        Added test button. Test result spots are NOT uploaded to wsprnet.org
+        Added help panel.
+    
+    Restore mode and passband on extension exit from: FAX, FFT, HFDL, IQ, SSTV and WSPR
+    
+    By request, right-click menu shows both of these entries all the time:
+        "open DX label edit panel" and "edit last selected DX label"
+        Previously they appeared in a single menu slot under different conditions
+        which wasn't optimal for all use cases (Thanks W4ILM).
+
+    FAX frequency menu updates.
+
 v1.574  Jan 9, 2023
     DRM extension: preliminary slideshow support for testing.
     IP blacklist: added 192.248.176.0/20 (constant/vultr/choopa) courtesy F4FPR. Thanks!
