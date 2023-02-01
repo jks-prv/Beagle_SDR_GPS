@@ -6,6 +6,7 @@ var fft = {
    ext_name: 'FFT',     // NB: must match fft.c:fft_ext.name
    first_time: true,
    update_interval: 0,
+   passband_altered: false,
    
    cmd_e: { FFT:0, CLEAR:1 },
 
@@ -360,6 +361,7 @@ function fft_controls_setup()
 		);
 
 	ext_panel_show(controls_html, data_html, null);
+	fft.saved_mode = ext_get_mode();
 	time_display_setup('fft');
 
 	fft.integ_canvas = w3_el('id-fft-integ-canvas');
@@ -539,6 +541,7 @@ function fft_pre_select_cb(path, idx, first)
 	case fft.pre_ALPHA:
 		ext_tune(11.5, 'usb', ext_zoom.NOM_IN);
 		ext_set_passband(300, 3470);
+		fft.passband_altered = true;
 		fft_set_itime(3.6);
 		break;
 	
@@ -611,6 +614,9 @@ function FFT_blur()
    ext_send('SET run='+ fft.func_e.OFF);
 	spec.need_clear_avg = true;   // remove our spectrum data from averaging buffers
    ext_hide_spectrum();
+   
+   if (fft.passband_altered)
+	   ext_set_mode(fft.saved_mode);
 }
 
 // called to display HTML for configuration parameters in admin interface

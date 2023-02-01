@@ -221,6 +221,7 @@ function sstv_controls_setup()
 
 	ext_panel_show(controls_html, data_html, null);
 	ext_set_controls_width_height(560, 125);
+	sstv.saved_mode = ext_get_mode();
 	sstv_mode_name_cb("");
 	sstv_status_cb("");
 	sstv_result_cb("");
@@ -382,6 +383,7 @@ function SSTV_blur()
 {
 	//console.log('### SSTV_blur');
 	ext_send('SET stop');
+	ext_set_mode(sstv.saved_mode);
 }
 
 function SSTV_help(show)

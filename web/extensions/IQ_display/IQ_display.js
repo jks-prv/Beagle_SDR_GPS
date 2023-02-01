@@ -308,6 +308,7 @@ function iq_display_controls_setup()
 
 	ext_panel_show(controls_html, null, null);
 	ext_set_controls_width_height(550, 350);
+	iq.saved_mode = ext_get_mode();
 	iq_display_clk_adj();
 
 	iq_display_canvas = w3_el('id-iq_display-canvas');
@@ -499,6 +500,7 @@ function IQ_display_blur()
 	//console.log('### IQ_display_blur');
 	ext_send('SET run=0');
 	kiwi_clearInterval(iq.update_interval);
+	ext_set_mode(iq.saved_mode);
 }
 
 // called to display HTML for configuration parameters in admin interface

@@ -131,7 +131,6 @@ function hfdl_recv(data)
 			case "test_done":
             if (hfdl.testing) {
                w3_hide('id-hfdl-bar-container');
-               w3_show('id-hfdl-record');
             }
 			   break;
 

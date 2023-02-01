@@ -24,7 +24,7 @@ var fax = {
    data_canvas:   0,
    copy_canvas:   0,
    
-   freq:       0,
+   freq:          0,
    pbL:         800,    // cf - 1100
    black:      1500,
    cf:         1900,
@@ -324,6 +324,8 @@ function fax_controls_setup()
    // no dynamic resize used because id-fax-data uses left:0 and the canvas begins at the window left edge
 
    ext_set_controls_width_height(550, 200);
+	fax.saved_mode = ext_get_mode();
+	ext_set_mode('usb');
    
 	w3_do_when_rendered('id-fax-menus', function() {
 	   fax.ext_url = kiwi_SSL() +'files.kiwisdr.com/fax/FAX_freq_menus.cjson';
@@ -583,6 +585,7 @@ function FAX_blur()
 	ext_send('SET fax_stop');
 	ext_send('SET fax_close');
    ext_set_data_height();
+	ext_set_mode(fax.saved_mode);
 }
 
 // called to display HTML for configuration parameters in admin interface

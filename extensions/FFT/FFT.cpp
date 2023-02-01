@@ -239,7 +239,7 @@ bool fft_msgs(char *msg, int rx_chan)
             e->fft_scale      = scale * boost;
 			ext_register_receive_FFT_samps(fft_data, rx_chan, POST_FILTERED);
             printf("FFT func=%s mode=%s isSAM=%d (scale=%g * boost=%.1g) => spectrum_scale=%g fft_scale=%g\n",
-                func_s[e->run+1], modu_s[snd->mode], e->isSAM, scale, boost, e->spectrum_scale, e->fft_scale);
+                func_s[e->run+1], mode_uc[snd->mode], e->isSAM, scale, boost, e->spectrum_scale, e->fft_scale);
 		} else {
             snd->secondary_filter = false;
 			ext_unregister_receive_FFT_samps(rx_chan);
