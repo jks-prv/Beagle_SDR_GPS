@@ -40,6 +40,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <strings.h>
+#include <sys/mman.h>
 
 #define WSPR_DATA		0
 
@@ -278,10 +279,8 @@ void WSPR_FFT(void *param)
 
 void wspr_send_peaks(wspr_t *w, int start, int stop)
 {
-    char peaks_s[MAX_NPK*(6+1 + LEN_CALL) + 16];
-    char *s = peaks_s;
-    *s = '\0';
-    int j, n;
+    char *peaks_s = NULL;
+    int j;
     
     // update peaks that have changed
     for (j = start; j < stop; j++)
@@ -290,9 +289,10 @@ void wspr_send_peaks(wspr_t *w, int start, int stop)
     // complete peak list sent on each update
     for (j = 0; j < w->npk; j++) {
     	int bin_flags = w->pk_save[j].bin0 | w->pk_save[j].flags;
-    	n = sprintf(s, "%d:%s:", bin_flags, w->pk_save[j].snr_call); s += n;
+    	peaks_s = kstr_asprintf(peaks_s, "%d:%s:", bin_flags, w->pk_save[j].snr_call);
     }
-	ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_PEAKS", "%s", peaks_s);
+	ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_PEAKS", "%s", kstr_sp(peaks_s));
+	kstr_free(peaks_s);
 }
 
 void wspr_send_decode(wspr_t *w, int seq)
@@ -503,8 +503,9 @@ void WSPR_Deco(void *param)
             if (w->autorun) {
                 int year, month, day; utc_year_month_day(&year, &month, &day);
                 char *cmd;
-                asprintf(&cmd, "curl 'http://wsprnet.org/post?function=wspr&rcall=%s&rgrid=%s&rqrg=%.6f&date=%02d%02d%02d&time=%02d%02d&sig=%.0f&dt=%.1f&drift=%d&tqrg=%.6f&tcall=%s&tgrid=%s&dbm=%s&version=1.4A+Kiwi' >/dev/null 2>&1",
-                    wspr_c.rcall, wspr_c.rgrid, rqrg, year%100, month, day, dp->hour, dp->min, dp->snr, dp->dt_print, (int) dp->drift1, dp->freq_print, dp->call, dp->grid, dp->pwr);
+                #define WSPR_SPOT "curl 'http://wsprnet.org/post?function=wspr&rcall=%s&rgrid=%s&rqrg=%.6f&date=%02d%02d%02d&time=%02d%02d&sig=%.0f&dt=%.1f&drift=%d&tqrg=%.6f&tcall=%s&tgrid=%s&dbm=%s&version=1.4A+Kiwi' >/dev/null 2>&1"
+                asprintf(&cmd, WSPR_SPOT, wspr_c.rcall, wspr_c.rgrid, rqrg, year%100, month, day,
+                    dp->hour, dp->min, dp->snr, dp->dt_print, (int) dp->drift1, dp->freq_print, dp->call, dp->grid, dp->pwr);
                 #ifdef TEST_UPLOADS
                     wspr_printf("WSPR UPLOAD RX%d %d/%d %s\n", w->rx_chan, i+1, w->uniques, cmd);
                 #else
@@ -519,9 +520,12 @@ void WSPR_Deco(void *param)
                     wspr_printf("WSPR UPLOAD %02d%02d %3.0f %4.1f %9.6f %2d %s\n",
                         dp->hour, dp->min, dp->snr, dp->dt_print, dp->freq_print, (int) dp->drift1, dp->c_l_p);
                 #else
-                    ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_UPLOAD",
-                        "%02d%02d %3.0f %4.1f %9.6f %2d %s",
-                        dp->hour, dp->min, dp->snr, dp->dt_print, dp->freq_print, (int) dp->drift1, dp->c_l_p);
+                    //printf("WSPR #%d skip_upload %d\n", i, w->skip_upload);
+                    if (w->skip_upload == 0) {
+                        ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_UPLOAD",
+                            "%02d%02d %3.0f %4.1f %9.6f %2d %s",
+                            dp->hour, dp->min, dp->snr, dp->dt_print, dp->freq_print, (int) dp->drift1, dp->c_l_p);
+                    }
                 #endif
             }
             wspr_printf("%s UPLOAD U%d/%d %s"
@@ -531,6 +535,8 @@ void WSPR_Deco(void *param)
             TaskSleepMsec(1000);
         }
         wspr_ulprintf("%s UPLOAD %d spots RX%d %.4f DONE\n", w->iwbp? "IWBP" : "WSPR", w->uniques, w->rx_chan, rqrg);
+        if (w->skip_upload > 0) w->skip_upload--;
+        //printf("WSPR skip_upload=%d\n", w->skip_upload);
 
 		wspr_status(w, w->status_resume, NONE);
 		
@@ -672,34 +678,83 @@ void wspr_data(int rx_chan, int instance, int nsamps, TYPECPX *samps)
 
 	#else
 
-		for (i=0; i<nsamps; i++) {
-	
-			// decimate
-			if (w->decim++ < (int_decimate-1))
-				continue;
-			w->decim = 0;
-			
-			if (w->didx >= TPOINTS)
-				return;
+        if (w->test) {
+            if (w->s2p >= wspr_c.s2p_end) {
+                ext_send_msg(w->rx_chan, false, "EXT test_done");
+                w->test = false;
+                return;
+            }
 
-    		if (w->group == 3) w->tsync = FALSE;	// arm re-sync
-			
-			WSPR_CPX_t re = (WSPR_CPX_t) samps[i].re/scale;
-			WSPR_CPX_t im = (WSPR_CPX_t) samps[i].im/scale;
-			idat[w->didx] = re;
-			qdat[w->didx] = im;
-	
-			if ((w->didx % NFFT) == (NFFT-1)) {
-				w->fft_ping_pong = w->ping_pong;
-				w->FFTtask_group = w->group-1;
-				if (w->group) {     // skip first to pipeline
-				    w->fft_wakeups++;
-				    TaskWakeupFP(w->WSPR_FFTtask_id, TWF_CHECK_WAKING, TO_VOID_PARAM(w->rx_chan));
-				}
-				w->group++;
-			}
-			w->didx++;
-		}
+            for (i=0; i<nsamps; i++) {
+    
+                // pushback audio samples
+                WSPR_CPX_t re = (WSPR_CPX_t) (s4_t) (s2_t) FLIP16(*w->s2p);
+                samps[i].re = re;
+                w->s2p++;
+                WSPR_CPX_t im = (WSPR_CPX_t) (s4_t) (s2_t) FLIP16(*w->s2p);
+                samps[i].im = im;
+                w->s2p++;
+
+                // decimate
+                if (w->decim++ < (int_decimate-1))
+                    continue;
+                w->decim = 0;
+            
+                if (w->didx >= TPOINTS)
+                    return;
+
+                if (w->group == 3) w->tsync = FALSE;	// arm re-sync
+            
+                idat[w->didx] = re;
+                qdat[w->didx] = im;
+    
+                if ((w->didx % NFFT) == (NFFT-1)) {
+                    w->fft_ping_pong = w->ping_pong;
+                    w->FFTtask_group = w->group-1;
+                    if (w->group) {     // skip first to pipeline
+                        w->fft_wakeups++;
+                        TaskWakeupFP(w->WSPR_FFTtask_id, TWF_CHECK_WAKING, TO_VOID_PARAM(w->rx_chan));
+                    }
+                    w->group++;
+                }
+                w->didx++;
+            }
+
+            int pct = w->nsamps * 100 / wspr_c.tsamps;
+            w->nsamps += nsamps;
+            pct += 3;
+            if (pct > 100) pct = 100;
+            ext_send_msg(w->rx_chan, false, "EXT bar_pct=%d", pct);
+        } else {
+            for (i=0; i<nsamps; i++) {
+    
+                // decimate
+                if (w->decim++ < (int_decimate-1))
+                    continue;
+                w->decim = 0;
+            
+                if (w->didx >= TPOINTS)
+                    return;
+
+                if (w->group == 3) w->tsync = FALSE;	// arm re-sync
+            
+                WSPR_CPX_t re = (WSPR_CPX_t) samps[i].re/scale;
+                WSPR_CPX_t im = (WSPR_CPX_t) samps[i].im/scale;
+                idat[w->didx] = re;
+                qdat[w->didx] = im;
+    
+                if ((w->didx % NFFT) == (NFFT-1)) {
+                    w->fft_ping_pong = w->ping_pong;
+                    w->FFTtask_group = w->group-1;
+                    if (w->group) {     // skip first to pipeline
+                        w->fft_wakeups++;
+                        TaskWakeupFP(w->WSPR_FFTtask_id, TWF_CHECK_WAKING, TO_VOID_PARAM(w->rx_chan));
+                    }
+                    w->group++;
+                }
+                w->didx++;
+            }
+        }
 
     #endif
 }
@@ -792,6 +847,19 @@ bool wspr_msgs(char *msg, int rx_chan)
 			w->abort_decode = true;
 			wspr_close(w->rx_chan);
 		}
+		return true;
+	}
+	
+	int test;
+	n = sscanf(msg, "SET test=%d", &test);
+	if (n == 1) {
+        w->s2p = wspr_c.s2p_start;
+        w->test = test? true:false;
+        w->nsamps = 0;
+
+        // skip several upload cycles to make sure the test decodes don't get uploaded
+        if (w->test) w->skip_upload = 4;
+        //printf("WSPR SET TEST test=%d skip_upload=%d\n", w->test, w->skip_upload);
 		return true;
 	}
 	
@@ -966,4 +1034,34 @@ void wspr_main()
         frate, snd_rate, fdecimate, int_decimate, SPS, NFFT, nbins_411);
 
     wspr_autorun_start();
+
+    const char *fn = cfg_string("WSPR.test_file", NULL, CFG_OPTIONAL);
+    if (!fn || *fn == '\0') return;
+    char *fn2;
+    asprintf(&fn2, "%s/samples/%s", DIR_CFG, fn);
+    cfg_string_free(fn);
+    printf("WSPR: mmap %s\n", fn2);
+    int fd = open(fn2, O_RDONLY);
+    if (fd < 0) {
+        printf("WSPR: open failed\n");
+        return;
+    }
+    off_t fsize = kiwi_file_size(fn2);
+    kiwi_ifree(fn2);
+    char *file = (char *) mmap(NULL, fsize, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (file == MAP_FAILED) {
+        printf("WSPR: mmap failed\n");
+        return;
+    }
+    close(fd);
+    int words = fsize/2;
+    wspr_c.s2p_start = (s2_t *) file;
+    u4_t off = *(wspr_c.s2p_start + 3);
+    off = FLIP16(off);
+    printf("WSPR: off=%d size=%ld\n", off, fsize);
+    off /= 2;
+    wspr_c.s2p_start += off;
+    words -= off;
+    wspr_c.s2p_end = wspr_c.s2p_start + words;
+    wspr_c.tsamps = words / NIQ;
 }
