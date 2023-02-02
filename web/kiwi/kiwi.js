@@ -92,6 +92,7 @@ var kiwi = {
    pre_wrapped: false,
    pre_ping_pong: 0,
    
+   _ver_: 1.576,
    _last_: null
 };
 
