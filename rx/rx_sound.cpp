@@ -732,16 +732,16 @@ void c2s_sound(void *param)
                     did_cmd = true;
                     if (n == 1) {
                         _nfm = (mode == MODE_NBFM || mode == MODE_NNFM);
-                        cprintf(conn, "DEEMP: _de_emp=%d mode=%d _nfm=%d (old kiwiclient API)\n", _de_emp, mode, _nfm);
+                        //cprintf(conn, "DEEMP: _de_emp=%d mode=%d _nfm=%d (old kiwiclient API)\n", _de_emp, mode, _nfm);
                     } else {
-                        cprintf(conn, "DEEMP: _de_emp=%d _nfm=%d\n", _de_emp, _nfm);
+                        //cprintf(conn, "DEEMP: _de_emp=%d _nfm=%d\n", _de_emp, _nfm);
                     }
                     if (_nfm) deemp_nfm = _de_emp; else deemp = _de_emp;
 
                     if (_de_emp) {
                         if (_nfm) {
                             // -20 dB @ 4 kHz
-                            cprintf(conn, "DEEMP: NFM %d %s\n", (snd_rate == SND_RATE_4CH)? 12000:20250, (_de_emp == 1)? "-LF":"+LF");
+                            //cprintf(conn, "DEEMP: NFM %d %s\n", (snd_rate == SND_RATE_4CH)? 12000:20250, (_de_emp == 1)? "-LF":"+LF");
                             const TYPEREAL *pCoef =
                                 (snd_rate == SND_RATE_4CH)? nfm_deemp_12000[_de_emp-1] : nfm_deemp_20250[_de_emp-1];
                             m_nfm_deemp_FIR[rx_chan].InitConstFir(N_NFM_DEEMP_TAPS, pCoef, frate);
@@ -763,14 +763,14 @@ void c2s_sound(void *param)
                                 cprintf(conn, "DEEMP: AM/SSB %d %d uS [%f %f %f %f %f %f]\n",
                                     snd_rate, (_de_emp == 1)? 75:50, a0, a1, a2, b0, b1, b2);
                             #else
-                                cprintf(conn, "DEEMP: AM/SSB %d %d uS\n", (snd_rate == SND_RATE_4CH)? 12000:20250, (_de_emp == 1)? 75:50);
+                                //cprintf(conn, "DEEMP: AM/SSB %d %d uS\n", (snd_rate == SND_RATE_4CH)? 12000:20250, (_de_emp == 1)? 75:50);
                                 const TYPEREAL *pCoef =
                                     (snd_rate == SND_RATE_4CH)? am_ssb_deemp_12000[_de_emp-1] : am_ssb_deemp_20250[_de_emp-1];
                                 m_am_ssb_deemp_FIR[rx_chan].InitConstFir(N_NFM_DEEMP_TAPS, pCoef, frate);
                             #endif
                         }
                     }
-                    else cprintf(conn, "DEEMP: %sOFF\n", _nfm? "NFM ":"");
+                    //else cprintf(conn, "DEEMP: %sOFF\n", _nfm? "NFM ":"");
                 }
                 break;
             }
@@ -1252,11 +1252,11 @@ void c2s_sound(void *param)
                     float clipper_val = MAX_NBFM_VAL;
                 #endif
 
-                #define fmdemod_quadri_K 0.340447550238101026565118445432744920253753662109375
+                #define FMDEMOD_QUADRI_K 0.340447550238101026565118445432744920253753662109375
                 float i = a_samps->re, q = a_samps->im, out;
                 float iL = conn->last_sample.re, qL = conn->last_sample.im;
                 float pwr = i*i + q*q;
-                out = pwr? (max_val * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / pwr) : 0;
+                out = pwr? (max_val * FMDEMOD_QUADRI_K * (i*(q-qL) - q*(i-iL)) / pwr) : 0;
                 if (clipper_val > 0) out = PN_CLAMP(out, clipper_val);
                 *d_samps = out;
                 a_samps++; d_samps++;
@@ -1265,7 +1265,7 @@ void c2s_sound(void *param)
                     i = a_samps->re, q = a_samps->im;
                     iL = a_samps[-1].re, qL = a_samps[-1].im;
                     pwr = i*i + q*q;
-                    out = pwr? (max_val * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / pwr) : 0;
+                    out = pwr? (max_val * FMDEMOD_QUADRI_K * (i*(q-qL) - q*(i-iL)) / pwr) : 0;
                     if (clipper_val > 0) out = PN_CLAMP(out, clipper_val);
 
                     //#define SHOW_MAX_MIN_FM_OUT
