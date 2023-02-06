@@ -1,10 +1,10 @@
 //////////////////////////////////////////////////////////////////////
-// noiseproc.h: interface for the CNoiseProc class.
+// iir.h: interface for the CIir class.
 //
-//  This class implements various noise reduction and blanker functions.
+//  This class implements an IIR  filter
 //
 // History:
-//	2011-01-06  Initial creation MSW
+//	2011-02-05  Initial creation MSW
 //	2011-03-27  Initial release
 //////////////////////////////////////////////////////////////////////
 //==========================================================================================
@@ -35,45 +35,38 @@
 //authors and should not be interpreted as representing official policies, either expressed
 //or implied, of Moe Wheatley.
 //=============================================================================
-#ifndef NOISEPROC_H
-#define NOISEPROC_H
+#ifndef IIR_H
+#define IIR_H
 
 #include "datatypes.h"
 #include "kiwi.h"
-#include "rx.h"
-#include "noise_blank.h"
 
-class CNoiseProc
+
+class CIir
 {
 public:
-	CNoiseProc();
-	virtual ~CNoiseProc();
+	CIir();
 
-	void SetupBlanker(const char *id, TYPEREAL SampleRate, TYPEREAL nb_param[NOISE_PARAMS]);
-	void ProcessBlanker(int InLength, TYPECPX* pInData, TYPECPX* pOutData);
-	void ProcessBlanker(int InLength, TYPEMONO16* pInData, TYPEMONO16* pOutData);
-	void ProcessBlankerOneShot(int InLength, TYPECPX* pInData, TYPECPX* pOutData);
+	void InitFilterCoef(TYPEREAL A0, TYPEREAL A1, TYPEREAL A2, TYPEREAL B0, TYPEREAL B1, TYPEREAL B2);
+	void InitLP(TYPEREAL F0Freq, TYPEREAL FilterQ, TYPEREAL SampleRate);	//create Low Pass
+	void InitHP(TYPEREAL F0Freq, TYPEREAL FilterQ, TYPEREAL SampleRate);	//create High Pass
+	void InitBP(TYPEREAL F0Freq, TYPEREAL FilterQ, TYPEREAL SampleRate);	//create Band Pass
+	void InitBR(TYPEREAL F0Freq, TYPEREAL FilterQ, TYPEREAL SampleRate);	//create Band Reject
+	void ProcessFilter(int InLength, TYPEREAL* InBuf, TYPEREAL* OutBuf);
+	void ProcessFilter(int InLength, TYPECPX* InBuf, TYPECPX* OutBuf);
+	void ProcessFilter(int InLength, TYPEMONO16* InBuf, TYPEMONO16* OutBuf);
 
 private:
-    const char *m_id;
-    TYPEREAL m_GateUsec;
-	TYPECPX* m_DelayBuf;
-	TYPEMONO16* m_DelayBuf_r;
-	TYPEREAL* m_MagBuf;
-	TYPEMONO16* m_MagBuf_r;
-	TYPECPX* m_pIgnoreData;
-	TYPECPX* m_pZeroData;
-	int m_Dptr;
-	int m_Mptr;
-	int m_BlankCounter;
-	int m_DelaySamples;
-	int m_MagSamples;
-	int m_GateSamples;
-	TYPEREAL m_Ratio;
-	TYPEREAL m_MagAveSum;
-	TYPEMONO16 m_MagAveSum_r;
-	int m_Blanked;
-	int m_LastMsg;
+	TYPEREAL m_A1;		//direct form 2 coefficients
+	TYPEREAL m_A2;
+	TYPEREAL m_B0;
+	TYPEREAL m_B1;
+	TYPEREAL m_B2;
+
+	TYPEREAL m_w1a;		//biquad delay storage
+	TYPEREAL m_w2a;
+	TYPEREAL m_w1b;		//biquad delay storage
+	TYPEREAL m_w2b;
 };
 
-#endif //  NOISEPROC_H
+#endif // IIR_H

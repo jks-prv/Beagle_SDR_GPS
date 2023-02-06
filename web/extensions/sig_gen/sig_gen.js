@@ -95,8 +95,7 @@ function gen_controls_setup()
 				   w3_switch('', 'On', 'Off', 'gen.enable', gen.enable, 'gen_enable_cb'),
 				   w3_button('w3-red w3-margin-left', '-Step', 'gen_step_up_down_cb', -1),
 				   w3_button('w3-green w3-margin-left', '+Step', 'gen_step_up_down_cb', +1),
-				   w3_button('id-gen-sweep w3-css-yellow w3-margin-left', 'Sweep', 'gen_sweep_cb'),
-				   w3_button('w3-aqua w3-margin-left', 'Clear peak', 'gen_clear_peak_cb')
+				   w3_button('id-gen-sweep w3-css-yellow w3-margin-left', 'Sweep', 'gen_sweep_cb')
 				),
 				w3_col_percent('w3-margin-top',
                w3_slider('', 'Attenuation', 'gen.attn_dB', gen.attn_dB, 0, 100, 5, 'gen_attn_cb'), 35,
@@ -232,12 +231,6 @@ function gen_attn_offset_cb(path, idx, first)
    idx = +idx;
    gen.attn_offset_val = (idx == 0)? 0 : cfg.waterfall_cal;
    gen_attn_cb('gen.attn_dB', w3_get_value('gen.attn_dB'), true);
-}
-
-function gen_clear_peak_cb(path, val, first)
-{
-   if (first) return;
-   spec.peak_clear = true;
 }
 
 // hook that is called when controls panel is closed

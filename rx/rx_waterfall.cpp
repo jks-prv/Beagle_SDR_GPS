@@ -219,6 +219,10 @@ void c2s_waterfall_no_sync(int rx_chan, bool no_sync)
 #define	CMD_SPEED	0x08
 #define	CMD_ALL		(CMD_ZOOM | CMD_START | CMD_DB | CMD_SPEED)
 
+
+CNoiseProc m_NoiseProc_wf[MAX_RX_CHANS];
+
+
 void c2s_waterfall_setup(void *param)
 {
 	conn_t *conn = (conn_t *) param;
@@ -1071,13 +1075,13 @@ void sample_wf(int rx_chan)
             //u4_t srate = round(conn->adc_clock_corrected) / (1 << (zoom+1));
             u4_t srate = WF_C_NSAMPS;
             //printf("NB WF sr=%d usec=%.0f th=%.0f\n", srate, wf->nb_param[NB_BLANKER][0], wf->nb_param[NB_BLANKER][1]);
-            m_NoiseProc[rx_chan][NB_WF].SetupBlanker("WF", srate, wf->nb_param[NB_BLANKER]);
+            m_NoiseProc_wf[rx_chan].SetupBlanker("WF", srate, wf->nb_param[NB_BLANKER]);
             wf->nb_param_change[NB_BLANKER] = false;
             wf->nb_setup = true;
         }
 
         if (wf->nb_setup)
-            m_NoiseProc[rx_chan][NB_WF].ProcessBlankerOneShot(WF_C_NSAMPS, (TYPECPX*) fft->hw_c_samps, (TYPECPX*) fft->hw_c_samps);
+            m_NoiseProc_wf[rx_chan].ProcessBlankerOneShot(WF_C_NSAMPS, (TYPECPX*) fft->hw_c_samps, (TYPECPX*) fft->hw_c_samps);
     }
 
     // contents of WF DDC pipeline is uncertain when mix freq or decim just changed
@@ -1338,12 +1342,13 @@ void compute_frame(int rx_chan)
 	// recall:
 	// pwr = mag*mag			
 	// pwr = i*i + q*q
-	// mag = sqrt(i*i + q*q)
+	// mag = sqrt(i*i + q*q) = sqrt(pwr)
 	// pwr = mag*mag = i*i + q*q
 	// pwr(dB) = 10 * log10(pwr)		i.e. no sqrt() needed
-	// pwr(dB) = 20 * log10(mag[ampl])
+	// mag[amp](dB) = 20 * log10(mag[ampl])
 	// pwr gain = pow10(db/10)
 	// mag[ampl] gain = pow10(db/20)
+	// *** mag_db == pwr_db ***
 	
 	// with 'bc -l', l() = log base e
 	// log10(n) = l(n)/l(10)

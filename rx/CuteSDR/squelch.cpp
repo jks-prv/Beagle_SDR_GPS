@@ -40,8 +40,6 @@
 #include "squelch.h"
 #include "datatypes.h"
 
-CSquelch m_Squelch[MAX_RX_CHANS];
-
 //#define FMPLL_RANGE 15000.0	//maximum deviation limit of PLL
 #define FMPLL_RANGE 9600.0	//maximum deviation limit of PLL
 #define VOICE_BANDWIDTH 3000.0

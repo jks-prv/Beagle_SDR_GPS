@@ -195,10 +195,45 @@ function ext_get_mode()
 	return cur_mode;
 }
 
+function ext_mode(mode)
+{
+   var fail = false;
+   
+   if (isArg(mode)) {
+      mode = mode.toLowerCase();
+      var str = mode.substr(0,2);
+      if (str == 'qa') str = 'sa';  // QAM -> SAM case
+      if (str == 'nn') str = 'nb';  // NNFM -> NBFM case
+   } else {
+      str = '';
+      fail = true;
+   }
+   
+   var o    = { fail:fail, str:str };
+   o.AM     = fail? false : (str == 'am');
+   o.LSB    = fail? false : (str == 'ls');
+   o.USB    = fail? false : (str == 'us');
+   o.CW     = fail? false : (str == 'cw');
+   o.IQ     = fail? false : (str == 'iq');
+   o.NBFM   = fail? false : (str == 'nb');
+   o.SAx    = fail? false : (str == 'sa');
+   o.DRM    = fail? false : (str == 'dr');
+   o.AM     = fail? false : (str == 'am');
+   
+   o.LSB_SAL   = fail? false : (o.LSB || mode == 'sal');
+   o.SSB       = fail? false : (o.USB || o.LSB);
+   o.SSB_CW    = fail? false : (o.SSB || o.CW);
+   o.STEREO    = fail? false : (o.IQ || o.DRM || mode == 'sas' || mode == 'qam');
+   o.AM_SAx_IQ_DRM = fail? false : (o.AM || o.SAx || o.SSB || o.DRM);
+
+   //console.log(o);
+   //kiwi_trace('ext_mode');
+   return o;
+}
+
 function ext_is_IQ_or_stereo_mode(mode)
 {
-   mode = mode.toLowerCase(mode);
-   return (mode == 'drm' || mode == 'iq' || mode == 'sas' || mode == 'qam');
+   return ext_mode(mode).STEREO;
 }
 
 function ext_is_IQ_or_stereo_curmode()
