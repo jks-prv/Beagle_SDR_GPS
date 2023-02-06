@@ -3554,12 +3554,17 @@ var spec = {
    clear_avg: 0,
    avg: [],
    
+   slow_dev_color: '#66ffff',    // light-cyan hsl(180, 100%, 70%)
+   
    PEAK_OFF: 0,
    PEAK_ON: 1,
    PEAK_HOLD: 2,
    peak_show: [0, 0],
    peak_clear: [0, 0],
    peak: [[], []],
+   peak1_color: 'yellow',
+   peak2_color: 'magenta',
+   peak_alpha: 1.0,
    
    dB_bands: [],
    redraw_dB_scale: false,
@@ -3756,7 +3761,7 @@ function spectrum_update(data)
    }
 	
 	// Add line to spectrum image
-   ctx.fillStyle = 'hsl(180, 100%, 70%)';
+   ctx.fillStyle = spec.slow_dev_color;
 
    for (x=0; x<sw; x++) {
       z = color_index(wf_gnd? wf_gnd_value : data[x]);
@@ -3807,7 +3812,8 @@ function spectrum_update(data)
          // hence need for "slow dev" button
          //ctx.putImageData(spec.colormap, x,0, 0,y, 1,sh-y+1);
 
-         // this runs as fast as "slow dev" mode
+         // This now runs as fast as "slow dev" mode.
+         // But we left "slow dev" mode in because some people like the single-color fill.
          //y = x % 200;      // checks for missing values
          var first = true;
          for (i = 0; i < spec.dB_bands.length; i++) {
@@ -3825,7 +3831,7 @@ function spectrum_update(data)
    for (i = 0; i < 2; i++) {
       if (spec.peak_show[i] != spec.PEAK_OFF) {
          ctx.lineWidth = 1;
-         ctx.strokeStyle = i? 'cyan' : 'yellow';
+         ctx.strokeStyle = i? spec.peak2_color : spec.peak1_color;
          ctx.beginPath();
          y = Math.round((1 - spec.peak[i][0]/255) * sh) - 1;
          ctx.moveTo(0,y);
@@ -3833,7 +3839,7 @@ function spectrum_update(data)
             y = Math.round((1 - spec.peak[i][x]/255) * sh) - 1;
             ctx.lineTo(x,y);
          }
-         ctx.globalAlpha = 0.55;
+         ctx.globalAlpha = spec.peak_alpha;
          //ctx.fill();
          ctx.stroke();
          ctx.globalAlpha = 1;
@@ -10195,9 +10201,9 @@ function set_squelch_cb(path, str, done, first, no_write_cookie)
 	w3_el('id-squelch-field').innerHTML = squelch? (sq_s + (nbfm? '':' dB')) : 'off';
    w3_set_value('id-squelch-value', squelch);
    w3_color('id-squelch-value', null, squelch? '' : 'rgba(255,0,0,0.3)');
+   send_squelch();
 
    if (done) {
-      send_squelch();
       if (no_write_cookie != true) {
          writeCookie('last_squelch'+ (nbfm? '':'_efm'), sq_s);
       }
