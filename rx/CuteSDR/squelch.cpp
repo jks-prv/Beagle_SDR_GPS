@@ -111,7 +111,7 @@ void CSquelch::SetupParameters(int rx_chan, TYPEREAL samplerate)
 
 	m_DeemphasisAlpha = (1.0-MEXP(-1.0/(m_SampleRate*DEMPHASIS_TIME)) );
 
-	m_LpFir.InitLPFilter(0, 1.0, 50.0, VOICE_BANDWIDTH, 1.6*VOICE_BANDWIDTH, m_SampleRate);
+	//m_LpFir.InitLPFilter(0, 1.0, 50.0, VOICE_BANDWIDTH, 1.6*VOICE_BANDWIDTH, m_SampleRate);
 
 	InitNoiseSquelch();
 	//printf("PLL SR %f norm %f Alpha %.9f Beta %.9f Gain %f\n", m_SampleRate, norm, m_PllAlpha_P, m_PllBeta_F, m_OutGain);
@@ -143,7 +143,7 @@ void CSquelch::InitNoiseSquelch()
 }
 
 
-int CSquelch::PerformNonFMSquelch(int InLength, TYPEMONO16* pTmpData, TYPEMONO16* pOutData)
+int CSquelch::PerformNonFMSquelch(int InLength, TYPEMONO16* pInData, TYPEMONO16* pOutData)
 {
     return 0;
 }
@@ -152,7 +152,7 @@ int CSquelch::PerformNonFMSquelch(int InLength, TYPEMONO16* pTmpData, TYPEMONO16
 /////////////////////////////////////////////////////////////////////////////////
 // Performs noise squelch by reading the noise power above the voice frequencies
 /////////////////////////////////////////////////////////////////////////////////
-int CSquelch::PerformFMSquelch(int InLength, TYPEREAL* pTmpData, TYPEMONO16* pOutData)
+int CSquelch::PerformFMSquelch(int InLength, TYPEREAL* pInData, TYPEMONO16* pOutData)
 {
 	int nsq_nc_sq = 0;
 
@@ -162,7 +162,7 @@ int CSquelch::PerformFMSquelch(int InLength, TYPEREAL* pTmpData, TYPEMONO16* pOu
 	TYPEREAL sqbuf[MAX_SQBUF_SIZE];
 	
 	// high pass filter to get the high frequency noise above the voice
-	m_HpFir.ProcessFilter(InLength, pTmpData, sqbuf);
+	m_HpFir.ProcessFilter(InLength, pInData, sqbuf);
 
 	for (int i=0; i<InLength; i++) {
 		TYPEREAL mag = MFABS(sqbuf[i]); // get magnitude of High pass filtered data
@@ -204,15 +204,19 @@ int CSquelch::PerformFMSquelch(int InLength, TYPEREAL* pTmpData, TYPEMONO16* pOu
 		}
 	}
 	
-	if (m_SquelchState) {
-	    // silence output if squelched
-		for (int i=0; i<InLength; i++)
-			pOutData[i] = 1;    // non-zero to keep FF silence detector from being tripped
-	} else {
-	    // low pass filter audio if squelch is open
-//		ProcessDeemphasisFilter(InLength, pOutData, pOutData);
-		m_LpFir.ProcessFilter(InLength, pTmpData, pOutData);
-	}
+    if (m_SquelchState) {
+        // silence output if squelched
+        for (int i=0; i<InLength; i++)
+            pOutData[i] = 1;    // non-zero to keep FF silence detector from being tripped
+    } else {
+        // low pass filter audio if squelch is open
+        //ProcessDeemphasisFilter(InLength, pOutData, pOutData);
+        //m_LpFir.ProcessFilter(InLength, pInData, pOutData);
+
+        // Don't LPF here. Let our de-emphasis elsewhere handle it.
+        for (int i=0; i<InLength; i++)
+            pOutData[i] = (TYPEMONO16) pInData[i];   
+    }
 	
     if (m_SetSquelch) {
         nsq_nc_sq = m_SquelchState? 1 : -1;

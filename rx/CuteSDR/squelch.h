@@ -22,8 +22,8 @@ public:
 	void Reset();
 	void SetupParameters(int rx_chan, TYPEREAL samplerate);
 	void SetSquelch(int Value, int SquelchMax);		//call with range of 0 to 99 to set squelch threshold
-	int PerformFMSquelch(int InLength, TYPEREAL* pTmpData, TYPEMONO16* pOutData);
-	int PerformNonFMSquelch(int InLength, TYPEMONO16* pTmpData, TYPEMONO16* pOutData);
+	int PerformFMSquelch(int InLength, TYPEREAL* pInData, TYPEMONO16* pOutData);
+	int PerformNonFMSquelch(int InLength, TYPEMONO16* pInData, TYPEMONO16* pOutData);
 
 private:
 	void InitNoiseSquelch();
