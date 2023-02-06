@@ -498,7 +498,7 @@ function kiwi_round(v, frac_digits)
 {
    if (!isNumber(frac_digits) || frac_digits < 0) return v;
    var factor = Math.pow(10, frac_digits);
-   return Math.floor(v * factor) / factor;
+   return Math.round(v * factor) / factor;
 }
 
 Number.prototype.withSign = function()
