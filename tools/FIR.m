@@ -9,25 +9,37 @@
 % pkg load signal
 clear all
 clc
-function mkdeemph(sr, type) 
+function mk(sr, type) 
 	% Make NFM deemphasis filter. Parameters: samplerate, filter length, frequency to normalize at (filter gain will be 0dB at this frequency)
     tapnum = 78;
 	attn = -80;
 	normalize_at_freq = @(vect,freq,i) vect/dot(vect,sin(2*pi*freq*[0:1/sr:(size(vect)(i)-1)/sr])); 
     norm_freq=400;
     if (type == 0)
+        % -20 dB / dec (-6.02 dB / oct)
         % rolloff below 400 Hz
 	    printf("NFM -LF\n")
-        freqvect=   [0,200,   200,400, 400,600, 600,800, 800,1200, 1200,1600, 1600,3200, 3200,4000, 4000,sr/2];
-        loss=       [-80,-80, -80,0,   0,-3.5,  -3.5,-6, -6,-9.54, -9.54,-12, -12,-18,   -18,-20,   -20,attn];
+	    if (sr == 12000)
+            freqvect=   [0,200,   200,400, 400,600, 600,800, 800,1200, 1200,1600, 1600,3200, 3200,4000, 4000,5000, 5000,6000];
+            loss=       [-80,-80, -80,0,   0,-3.5,  -3.5,-6, -6,-9.54, -9.54,-12, -12,-18,   -18,-20,   -20,-22,   -22,-23];
+        else
+            freqvect=   [0,200,   200,400, 400,600, 600,800, 800,1200, 1200,1600, 1600,3200, 3200,4000, 4000,5000, 5000,6000, 6000,10000];
+            loss=       [-80,-80, -80,0,   0,-3.5,  -3.5,-6, -6,-9.54, -9.54,-12, -12,-18,   -18,-20,   -20,-22,   -22,-23,   -23,-28];
+        endif
         resp=power(10.0,loss/20.0);
         coeffs=firls(tapnum,freqvect/(sr/2),resp);
         i=1;
     elseif (type == 1)
+        % -20 dB / dec (-6.02 dB / oct)
         % flat to 0 Hz
 	    printf("NFM +LF\n")
-        freqvect=   [0,400, 400,600, 600,800, 800,1200, 1200,1600, 1600,3200, 3200,4000, 4000,sr/2];
-        loss=       [0,0,   0,-3.5,  -3.5,-6, -6,-9.54, -9.54,-12, -12,-18,   -18,-20,   -20,attn];
+	    if (sr == 12000)
+            freqvect=   [0,400, 400,600, 600,800, 800,1200, 1200,1600, 1600,3200, 3200,4000, 4000,5000, 5000,6000];
+            loss=       [0,0,   0,-3.5,  -3.5,-6, -6,-9.54, -9.54,-12, -12,-18,   -18,-20,   -20,-22,   -22,-23];
+        else
+            freqvect=   [0,400, 400,600, 600,800, 800,1200, 1200,1600, 1600,3200, 3200,4000, 4000,5000, 5000,6000, 6000,10000];
+            loss=       [0,0,   0,-3.5,  -3.5,-6, -6,-9.54, -9.54,-12, -12,-18,   -18,-20,   -20,-22,   -22,-23,   -23,-28];
+        endif
         resp=power(10.0,loss/20.0);
         coeffs=firls(tapnum,freqvect/(sr/2),resp);
         i=1;
