@@ -25,11 +25,13 @@ var fax = {
    copy_canvas:   0,
    
    freq:          0,
-   pbL:         800,    // cf - 1100
+// pbL:         800,    // cf - 2200/2
+   pbL:        1300,    // cf - 1200/2
    black:      1500,
    cf:         1900,
    white:      2300,
-   pbH:        3000,    // cf + 1100
+   pbH:        2500,    // cf + 1200/2
+// pbH:        3000,    // cf + 2200/2
 
    lpm: 120,
    lpm_i: 3,

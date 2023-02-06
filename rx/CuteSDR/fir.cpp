@@ -47,9 +47,6 @@
 //#include <QDir>
 //#include <QDebug>
 
-CFir m_AM_FIR[MAX_RX_CHANS];
-CFir m_de_emp_FIR[MAX_RX_CHANS];
-
 //////////////////////////////////////////////////////////////////////
 // Local Defines
 //////////////////////////////////////////////////////////////////////
@@ -79,7 +76,6 @@ void CFir::ProcessFilter(int InLength, TYPEREAL* InBuf, TYPEREAL* OutBuf)
 TYPEREAL acc;
 TYPEREAL* Zptr;
 const TYPEREAL* Hptr;
-	//m_Mutex.lock();
 	for(int i=0; i<InLength; i++)
 	{
 		m_rZBuf[m_State] = InBuf[i];
@@ -92,7 +88,6 @@ const TYPEREAL* Hptr;
 			m_State += m_NumTaps;
 		OutBuf[i] = acc;
 	}
-	//m_Mutex.unlock();
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -110,7 +105,6 @@ TYPECPX* Zptr;
 TYPEREAL* HIptr;
 TYPEREAL* HQptr;
 
-	//m_Mutex.lock();
 	for(int i=0; i<InLength; i++)
 	{
 		m_cZBuf[m_State] = InBuf[i];
@@ -128,7 +122,6 @@ TYPEREAL* HQptr;
 			m_State += m_NumTaps;
 		OutBuf[i] = acc;
 	}
-	//m_Mutex.unlock();
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -146,7 +139,6 @@ TYPECPX* Zptr;
 TYPEREAL* HIptr;
 TYPEREAL* HQptr;
 
-	//m_Mutex.lock();
 	for(int i=0; i<InLength; i++)
 	{
 		m_cZBuf[m_State].re = InBuf[i];
@@ -165,7 +157,6 @@ TYPEREAL* HQptr;
 			m_State += m_NumTaps;
 		OutBuf[i] = acc;
 	}
-	//m_Mutex.unlock();
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -181,7 +172,6 @@ void CFir::ProcessFilter(int InLength, TYPEREAL* InBuf, TYPEMONO16* OutBuf)
 TYPEREAL acc;
 TYPEREAL* Zptr;
 const TYPEREAL* Hptr;
-	//m_Mutex.lock();
 	for(int i=0; i<InLength; i++)
 	{
 		m_rZBuf[m_State] = InBuf[i];
@@ -194,7 +184,33 @@ const TYPEREAL* Hptr;
 			m_State += m_NumTaps;
 		OutBuf[i] = (TYPEMONO16) acc;
 	}
-	//m_Mutex.unlock();
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+//	Process InLength InBuf[] samples and place in OutBuf[]
+//  Note the Coefficient array is twice the length and has a duplicated set
+// in order to eliminate testing for buffer wrap in the inner loop
+//  ex: if 3 tap FIR with coefficients{21,-43,15} is made into a array of 6 entries
+//   {21, -43, 15, 21, -43, 15 }
+//MONO16 in MONO16 out version (for AM demodulator post-filtering where only real signal is considered)
+/////////////////////////////////////////////////////////////////////////////////
+void CFir::ProcessFilter(int InLength, TYPEMONO16* InBuf, TYPEMONO16* OutBuf)
+{
+TYPEREAL acc;
+TYPEREAL* Zptr;
+const TYPEREAL* Hptr;
+	for(int i=0; i<InLength; i++)
+	{
+		m_rZBuf[m_State] = InBuf[i];
+		Hptr = &m_Coef[m_NumTaps - m_State];
+		Zptr = m_rZBuf;
+		acc = (*Hptr++ * *Zptr++);	//do the 1st MAC
+		for(int j=1; j<m_NumTaps; j++)
+			acc += (*Hptr++ * *Zptr++);	//do the remaining MACs
+		if(--m_State < 0)
+			m_State += m_NumTaps;
+		OutBuf[i] = (TYPEMONO16) acc;
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -203,7 +219,6 @@ const TYPEREAL* Hptr;
 /////////////////////////////////////////////////////////////////////////////////
 void CFir::InitConstFir( int NumTaps, const TYPEREAL* pCoef, TYPEREAL Fsamprate)
 {
-	//m_Mutex.lock();
 	m_SampleRate = Fsamprate;
 	if(NumTaps>MAX_NUMCOEF)
 		m_NumTaps = MAX_NUMCOEF;
@@ -221,7 +236,6 @@ void CFir::InitConstFir( int NumTaps, const TYPEREAL* pCoef, TYPEREAL Fsamprate)
 		m_cZBuf[i].im = 0.0;
 	}
 	m_State = 0;	//zero filter state variable
-	//m_Mutex.unlock();
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -230,7 +244,6 @@ void CFir::InitConstFir( int NumTaps, const TYPEREAL* pCoef, TYPEREAL Fsamprate)
 /////////////////////////////////////////////////////////////////////////////////
 void CFir::InitConstFir( int NumTaps, const TYPEREAL* pICoef, const TYPEREAL* pQCoef, TYPEREAL Fsamprate)
 {
-	//m_Mutex.lock();
 	m_SampleRate = Fsamprate;
 	if(NumTaps>MAX_NUMCOEF)
 		m_NumTaps = MAX_NUMCOEF;
@@ -250,7 +263,6 @@ void CFir::InitConstFir( int NumTaps, const TYPEREAL* pICoef, const TYPEREAL* pQ
 		m_cZBuf[i].im = 0.0;
 	}
 	m_State = 0;	//zero filter state variable
-	//m_Mutex.unlock();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -275,7 +287,6 @@ int CFir::InitLPFilter(int NumTaps, TYPEREAL Scale, TYPEREAL Astop, TYPEREAL Fpa
 {
 int n;
 TYPEREAL Beta;
-	//m_Mutex.lock();
 	m_SampleRate = Fsamprate;
 	//create normalized frequency parameters
 	TYPEREAL normFpass = Fpass/Fsamprate;
@@ -338,7 +349,6 @@ TYPEREAL Beta;
 	}
 	m_State = 0;
 
-	//m_Mutex.unlock();
 
 #if 0		//debug hack to write m_Coef to a file for analysis
 	QDir::setCurrent("d:/");
@@ -383,7 +393,6 @@ int CFir::InitHPFilter(int NumTaps, TYPEREAL Scale, TYPEREAL Astop, TYPEREAL Fpa
 {
 int n;
 TYPEREAL Beta;
-	//m_Mutex.lock();
 	m_SampleRate = Fsamprate;
 	//create normalized frequency parameters
 	TYPEREAL normFpass = Fpass/Fsamprate;
@@ -448,9 +457,6 @@ TYPEREAL Beta;
 		m_cZBuf[i].im = 0.0;
 	}
 	m_State = 0;
-
-	//m_Mutex.unlock();
-
 
 #if 0		//debug hack to write m_Coef to a file for analysis
 	QDir::setCurrent("d:/");

@@ -36,7 +36,7 @@ Boston, MA  02110-1301, USA.
 #include "teensy.h"
 #include "agc.h"
 #include "fir.h"
-#include "biquad.h"
+#include "iir.h"
 #include "squelch.h"
 #include "debug.h"
 #include "data_pump.h"
@@ -144,6 +144,14 @@ void c2s_sound_init()
 
 #define LOOP_BC 1024
 
+CAgc m_Agc[MAX_RX_CHANS];
+
+CNoiseProc m_NoiseProc_snd[MAX_RX_CHANS];
+
+CSquelch m_Squelch[MAX_RX_CHANS];
+
+#include "rx_filter.h"
+
 void c2s_sound_setup(void *param)
 {
 	conn_t *conn = (conn_t *) param;
@@ -173,7 +181,7 @@ void c2s_sound(void *param)
 	const char *s;
 	
 	double freq=-1, _freq, gen=-1, _gen, locut=0, _locut, hicut=0, _hicut, mix;
-	int mode=-1, _mode, genattn=0, _genattn, mute=0, test=0, de_emp=0;
+	int mode=-1, _mode, genattn=0, _genattn, mute=0, test=0, deemp=0, deemp_nfm=0;
 	u4_t mparam=0;
 	double z1 = 0;
 
@@ -671,7 +679,7 @@ void c2s_sound(void *param)
 
                     if (n_type == NB_BLANKER) {
                         switch (nb_algo) {
-                            case NB_STD: m_NoiseProc[rx_chan][NB_SND].SetupBlanker("SND", frate, nb_param[n_type]); break;
+                            case NB_STD: m_NoiseProc_snd[rx_chan].SetupBlanker("SND", frate, nb_param[n_type]); break;
                             case NB_WILD: nb_Wild_init(rx_chan, nb_param[n_type]); break;
                         }
                     }
@@ -718,34 +726,51 @@ void c2s_sound(void *param)
 
             // dsp.stackexchange.com/questions/34605/biquad-cookbook-formula-for-broadcast-fm-de-emphasis
             case CMD_DE_EMP: {
-                int _de_emp;
-                n = sscanf(cmd, "SET de_emp=%d", &_de_emp);
-                if (n == 1) {
+                int _de_emp, _nfm;
+                n = sscanf(cmd, "SET de_emp=%d nfm=%d", &_de_emp, &_nfm);
+                if (n == 1 || n == 2) {
                     did_cmd = true;
-                    de_emp = _de_emp;
-                    if (de_emp) {
-                        TYPEREAL a0, a1, a2, b0, b1, b2;
-                    
-                        // frate 20250 Hz: -20 dB @ 10 kHz
-                        //  This seems to be the natural filter response when Fs = frate.
-                        //
-                        // frate 12000 Hz: -10 dB @  6 kHz
-                        //  Approximate this by increasing Fs until -10 dB @  6 kHz is achieved
-                        //  even though this results in an incorrect attenuation curve (too flat).
-                        double Fs = (snd_rate == SND_RATE_4CH)? frate*6 : frate;
-                        double T1 = (de_emp == 1)? 0.000075 : 0.000050;
-                        double z1 = -exp(-1.0/(Fs*T1));
-                        double p1 = 1.0 + z1;
-                        a0 = 1.0;
-                        a1 = p1;
-                        a2 = 0;
-                        b0 = 2.0;   // remove filter gain
-                        b1 = z1;
-                        b2 = 0;
-                        m_de_emp_Biquad[rx_chan].InitFilterCoef(a0, a1, a2, b0, b1, b2);
-                        //cprintf(conn, "SND de-emp: %dus frate %.0f\n", (de_emp == 1)? 75:50, frate);
-                        //cprintf(conn, "SND de-emp: %f %f %f %f %f %f\n", a0, a1, a2, b0, b1, b2);
+                    if (n == 1) {
+                        _nfm = (mode == MODE_NBFM || mode == MODE_NNFM);
+                        cprintf(conn, "DEEMP: _de_emp=%d mode=%d _nfm=%d (old kiwiclient API)\n", _de_emp, mode, _nfm);
+                    } else {
+                        cprintf(conn, "DEEMP: _de_emp=%d _nfm=%d\n", _de_emp, _nfm);
                     }
+                    if (_nfm) deemp_nfm = _de_emp; else deemp = _de_emp;
+
+                    if (_de_emp) {
+                        if (_nfm) {
+                            // -20 dB @ 4 kHz
+                            cprintf(conn, "DEEMP: NFM %d %s\n", (snd_rate == SND_RATE_4CH)? 12000:20250, (_de_emp == 1)? "-LF":"+LF");
+                            const TYPEREAL *pCoef =
+                                (snd_rate == SND_RATE_4CH)? nfm_deemp_12000[_de_emp-1] : nfm_deemp_20250[_de_emp-1];
+                            m_nfm_deemp_FIR[rx_chan].InitConstFir(N_NFM_DEEMP_TAPS, pCoef, frate);
+                        } else {
+                            //#define TEST_AM_SSB_BIQUAD
+                            #ifdef TEST_AM_SSB_BIQUAD
+                                TYPEREAL a0, a1, a2, b0, b1, b2;
+                                double Fs = frate;
+                                double T1 = (_de_emp == 1)? 0.000075 : 0.000050;
+                                double z1 = -exp(-1.0/(Fs*T1));
+                                double p1 = 1.0 + z1;
+                                a0 = 1.0;
+                                a1 = p1;
+                                a2 = 0;
+                                b0 = 2.0;   // remove filter gain
+                                b1 = z1;
+                                b2 = 0;
+                                m_deemp_Biquad[rx_chan].InitFilterCoef(b0, b1, b2, a0, a1, a2);
+                                cprintf(conn, "DEEMP: AM/SSB %d %d uS [%f %f %f %f %f %f]\n",
+                                    snd_rate, (_de_emp == 1)? 75:50, a0, a1, a2, b0, b1, b2);
+                            #else
+                                cprintf(conn, "DEEMP: AM/SSB %d %d uS\n", (snd_rate == SND_RATE_4CH)? 12000:20250, (_de_emp == 1)? 75:50);
+                                const TYPEREAL *pCoef =
+                                    (snd_rate == SND_RATE_4CH)? am_ssb_deemp_12000[_de_emp-1] : am_ssb_deemp_20250[_de_emp-1];
+                                m_am_ssb_deemp_FIR[rx_chan].InitConstFir(N_NFM_DEEMP_TAPS, pCoef, frate);
+                            #endif
+                        }
+                    }
+                    else cprintf(conn, "DEEMP: %sOFF\n", _nfm? "NFM ":"");
                 }
                 break;
             }
@@ -825,7 +850,7 @@ void c2s_sound(void *param)
 				nb_param[NB_BLANKER][NB_THRESHOLD] = th;
 				nb_enable[NB_BLANKER] = nb? 1:0;
 
-				if (nb) m_NoiseProc[rx_chan][NB_SND].SetupBlanker("SND", frate, nb_param[NB_BLANKER]);
+				if (nb) m_NoiseProc_snd[rx_chan].SetupBlanker("SND", frate, nb_param[NB_BLANKER]);
 				continue;
 			}
 
@@ -934,7 +959,7 @@ void c2s_sound(void *param)
 		u1_t *seq      = (IQ_or_DRM_or_stereo? snd->out_pkt_iq.h.seq    : snd->out_pkt_real.h.seq);
 		char *smeter   = (IQ_or_DRM_or_stereo? snd->out_pkt_iq.h.smeter : snd->out_pkt_real.h.smeter);
 
-		bool do_de_emp = (de_emp && !IQ_or_DRM_or_stereo);
+		bool do_de_emp = (!IQ_or_DRM_or_stereo && ((isNBFM && deemp_nfm) || (!isNBFM && deemp)));
 		
 		#ifdef DRM
             drm_t *drm = &DRM_SHMEM->drm[rx_chan];
@@ -1044,7 +1069,7 @@ void c2s_sound(void *param)
             #ifdef NB_STD_POST_FILTER
             #else
                 if (nb_enable[NB_BLANKER] && nb_algo == NB_STD)
-		            m_NoiseProc[rx_chan][NB_SND].ProcessBlanker(ns_in, i_samps, i_samps);
+		            m_NoiseProc_snd[rx_chan].ProcessBlanker(ns_in, i_samps, i_samps);
 		    #endif
 
 			ns_out  = m_PassbandFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps, f_samps);
@@ -1280,8 +1305,16 @@ void c2s_sound(void *param)
                 panic("mode");
             }
     
-            if (do_de_emp) {    // AM and NBFM modes
-                m_de_emp_Biquad[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
+            if (do_de_emp) {    // !IQ_or_DRM_or_stereo
+                if (isNBFM) {
+                    m_nfm_deemp_FIR[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
+                } else {
+                    #ifdef TEST_AM_SSB_BIQUAD
+                        m_deemp_Biquad[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
+                    #else
+                        m_am_ssb_deemp_FIR[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
+                    #endif
+                }
             }
             
             if (nb_enable[NB_CLICK] == NB_POST_FILTER) {
@@ -1301,7 +1334,7 @@ void c2s_sound(void *param)
                 if (nb_enable[NB_BLANKER]) {
                     switch (nb_algo) {
                         #ifdef NB_STD_POST_FILTER
-                            case NB_STD: m_NoiseProc[rx_chan][NB_SND].ProcessBlanker(ns_out, r_samps, r_samps); break;
+                            case NB_STD: m_NoiseProc_snd[rx_chan].ProcessBlanker(ns_out, r_samps, r_samps); break;
                         #endif
                         case NB_WILD: nb_Wild_process(rx_chan, ns_out, r_samps, r_samps); break;
                     }

@@ -57,5 +57,3 @@ private:
 	CFir m_LpFir;
 
 };
-
-extern CSquelch m_Squelch[MAX_RX_CHANS];

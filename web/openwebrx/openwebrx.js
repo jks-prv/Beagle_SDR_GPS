@@ -154,7 +154,7 @@ var kiwi_gc_recv = -1;
 var kiwi_gc_wspr = -1;
 var override_ext = null;
 var muted_initially = 0;
-var peak_initially = null;
+var peak_initially1 = null, peak_initially2 = null;
 var param_nocache = false;
 var nocache = false;
 var param_ctrace = false;
@@ -278,7 +278,8 @@ function kiwi_main_ready()
 	s = 'cmap'; if (q[s]) wf.cmap_override = w3_clamp(parseInt(q[s]), 0, kiwi.cmap_s.length - 1, 0);
 	s = 'sqrt'; if (q[s]) wf.sqrt = w3_clamp(parseInt(q[s]), 0, 4, 0);
 	s = 'wfts'; if (q[s]) wf.url_tstamp = w3_clamp(parseInt(q[s]), 2, 60*60, 2);
-	s = 'peak'; if (q[s]) peak_initially = parseInt(q[s]);
+	s = 'peak'; if (q[s]) peak_initially1 = w3_clamp(parseInt(q[s], 0, 2));
+	s = 'peak2'; if (q[s]) peak_initially2 = w3_clamp(parseInt(q[s], 0, 2));
 	s = 'no_geo'; if (q[s]) no_geoloc = true;
 	s = 'keys'; if (q[s]) shortcut.keys = isNonEmptyString(q[s])? q[s].split('') : null;
 	s = 'user'; if (q[s]) user_url = q[s];
@@ -986,41 +987,6 @@ function kiwi_passbands(mode)
    }
 }
 
-function kiwi_mode(mode)
-{
-   var fail = false;
-   
-   if (isArg(mode)) {
-      mode = mode.toLowerCase();
-      var str = mode.substr(0,2);
-      if (str == 'qa') str = 'sa';  // QAM -> SAM case
-      if (str == 'nn') str = 'nb';  // NNFM -> NBFM case
-   } else {
-      str = '';
-      fail = true;
-   }
-   
-   var o    = { fail:fail, str:str };
-   o.AM     = fail? false : (str == 'am');
-   o.LSB    = fail? false : (str == 'ls');
-   o.USB    = fail? false : (str == 'us');
-   o.CW     = fail? false : (str == 'cw');
-   o.IQ     = fail? false : (str == 'iq');
-   o.NBFM   = fail? false : (str == 'nb');
-   o.SAx    = fail? false : (str == 'sa');
-   o.DRM    = fail? false : (str == 'dr');
-   o.AM     = fail? false : (str == 'am');
-   
-   o.LSB_SAL   = fail? false : (o.LSB || mode == 'sal');
-   o.SSB       = fail? false : (o.USB || o.LSB);
-   o.SSB_CW    = fail? false : (o.SSB || o.CW);
-   o.AM_SAx_IQ_DRM = fail? false : (o.AM || o.SAx || o.SSB || o.DRM);
-
-   //console.log(o);
-   //kiwi_trace('kiwi_mode');
-   return o;
-}
-
 function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 {
    if (kiwi_passbands(subtype) == null) subtype = 'am';
@@ -1196,7 +1162,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		var mode = this.server_mode;
 		var locut = this.low_cut.toString();
 		var hicut = this.high_cut.toString();
-		var mparam = (kiwi_mode(mode).SAx)? (' param='+ (owrx.chan_null | (owrx.SAM_opts << owrx.SAM_opts_sft))) : '';
+		var mparam = (ext_mode(mode).SAx)? (' param='+ (owrx.chan_null | (owrx.SAM_opts << owrx.SAM_opts_sft))) : '';
 		//if (mparam != '') console.log('$mode='+ mode +' mparam='+ mparam); else console.log('$mode='+ mode);
 		var s = 'SET mod='+ mode +' low_cut='+ locut +' high_cut='+ hicut +' freq='+ freq + mparam;
 		snd_send(s);
@@ -1846,7 +1812,7 @@ function get_visible_freq_range()
 	      off = 0;
 	      span = srate;
 	   } else
-	   if (kiwi_mode(cur_mode).LSB_SAL) {
+	   if (ext_mode(cur_mode).LSB_SAL) {
 	      off = 0;
 	      span = srate/2;
 	   } else {
@@ -3588,9 +3554,12 @@ var spec = {
    clear_avg: 0,
    avg: [],
    
-   peak_show: 0,
-   peak_clear: 0,
-   peak: [],
+   PEAK_OFF: 0,
+   PEAK_ON: 1,
+   PEAK_HOLD: 2,
+   peak_show: [0, 0],
+   peak_clear: [0, 0],
+   peak: [[], []],
    
    dB_bands: [],
    redraw_dB_scale: false,
@@ -3750,14 +3719,17 @@ function spectrum_update(data)
          spec.avg[x] = color_index(data[x]);
       }
       spec.clear_avg = false;
-      spec.peak_clear = true;
+      spec.peak_clear[1] = spec.peak_clear[0] = true;
    }
    
-   if (spec.peak_clear) {
-      for (x=0; x<sw; x++) {
-         spec.peak[x] = 0;
+   for (i=0; i < 2; i++) {
+      if (spec.peak_clear[i]) {
+         console.log('SPEC CLEAR '+ i);
+         for (x=0; x<sw; x++) {
+            spec.peak[i][x] = 0;
+         }
+         spec.peak_clear[i] = false;
       }
-      spec.peak_clear = false;
    }
    
    // if necessary, draw scale on right side
@@ -3821,7 +3793,8 @@ function spectrum_update(data)
          break;
       }
 
-      if (z > spec.peak[x]) spec.peak[x] = z; 
+      for (i=0; i < 2; i++)
+         if (spec.peak_show[i] == spec.PEAK_ON && z > spec.peak[i][x]) spec.peak[i][x] = z; 
 
       // draw the spectrum based on the spectrum colormap which should
       // color the 10 dB bands appropriately
@@ -3849,21 +3822,22 @@ function spectrum_update(data)
       }
    }
    
-   if (spec.peak_show) {
-      ctx.lineWidth = 1;
-      //ctx.fillStyle = 'yellow';
-      ctx.strokeStyle = 'yellow';
-      ctx.beginPath();
-      y = Math.round((1 - spec.peak[0]/255) * sh) - 1;
-      ctx.moveTo(0,y);
-      for (x=1; x<sw; x++) {
-         y = Math.round((1 - spec.peak[x]/255) * sh) - 1;
-         ctx.lineTo(x,y);
+   for (i = 0; i < 2; i++) {
+      if (spec.peak_show[i] != spec.PEAK_OFF) {
+         ctx.lineWidth = 1;
+         ctx.strokeStyle = i? 'cyan' : 'yellow';
+         ctx.beginPath();
+         y = Math.round((1 - spec.peak[i][0]/255) * sh) - 1;
+         ctx.moveTo(0,y);
+         for (x=1; x<sw; x++) {
+            y = Math.round((1 - spec.peak[i][x]/255) * sh) - 1;
+            ctx.lineTo(x,y);
+         }
+         ctx.globalAlpha = 0.55;
+         //ctx.fill();
+         ctx.stroke();
+         ctx.globalAlpha = 1;
       }
-      ctx.globalAlpha = 0.55;
-      //ctx.fill();
-      ctx.stroke();
-      ctx.globalAlpha = 1;
    }
 }
 
@@ -5079,7 +5053,7 @@ function wf_audio_FFT(audio_data, samps)
    //console.log('iq='+ audio_mode_iq +' comp='+ audio_compression +' samps='+ samps);
 
    var iq = ext_is_IQ_or_stereo_curmode();
-   var lsb = kiwi_mode(cur_mode).LSB_SAL;
+   var lsb = ext_mode(cur_mode).LSB_SAL;
    var fft_setup = (!afft.init || iq != afft.iq || audio_compression != afft.comp);
 
    if (fft_setup) {
@@ -5327,7 +5301,7 @@ function freq_passband_center()
 function passband_offset_dxlabel(mode)
 {
 	var pb = kiwi_passbands(mode);
-	var usePBCenter = kiwi_mode(mode).SSB;
+	var usePBCenter = ext_mode(mode).SSB;
 	var offset = usePBCenter? pb.lo + (pb.hi - pb.lo)/2 : 0;
 	//console.log("passband_offset: m="+mode+" use="+usePBCenter+' o='+offset);
 	return offset;
@@ -5530,7 +5504,7 @@ function modeset_update_ui(mode)
 	if (owrx.last_mode_el != null) owrx.last_mode_el.style.color = "white";
 	
 	// if sound comes up before waterfall then the button won't be there
-	var kmode = kiwi_mode(mode);
+	var kmode = ext_mode(mode);
 	var el = w3_el('id-mode-'+ kmode.str);
 	el.innerHTML = mode.toUpperCase();
 	if (el && el.style) el.style.color = "lime";
@@ -5545,12 +5519,22 @@ function modeset_update_ui(mode)
 	var disabled = ext_is_IQ_or_stereo_mode(mode);
    w3_els('id-button-compression',
       function(el) {
-	      w3_set_props(el, 'w3-disabled', disabled);
+	      w3_disable(el, disabled);
+      });
+   w3_els('id-deemp',
+      function(el) {
+	      w3_disable(el, disabled);
       });
 
    w3_hide2('id-sam-carrier-container', !kmode.SAx);  // also QAM
    w3_hide2('id-chan-null', mode != 'sam');
    w3_hide2('id-SAM-opts', kmode.SAx);
+   
+   console.log('kmode.NBFM='+ kmode.NBFM);
+   w3_hide2('id-deemp1-ofm',  kmode.NBFM);
+   w3_hide2('id-deemp2-ofm',  kmode.NBFM);
+   w3_hide2('id-deemp1-nfm', !kmode.NBFM);
+   w3_hide2('id-deemp2-nfm', !kmode.NBFM);
 }
 
 // delay the UI updates called from the audio path until the waterfall UI setup is done
@@ -5776,7 +5760,7 @@ var NDB_400_1000_mode = 1;		// special 400/1000 step mode for NDB band
 // nearest appropriate boundary (1, 5 or 9/10 kHz depending on band & mode)
 function freq_step_amount(b)
 {
-   var kmode = kiwi_mode(cur_mode);
+   var kmode = ext_mode(cur_mode);
 	var step_Hz = kmode.SSB_CW? 1000 : 5000;
 	var s = kmode.SSB_CW? ' 1k default' : ' 5k default';
    var ITU_region = cfg.init.ITU_region + 1;
@@ -5880,12 +5864,9 @@ function freq_step_update_ui(force)
 	var b = find_band(freq_displayed_Hz);
 	
 	//console.log("freq_step_update_ui: lm="+freq_step_last_mode+' cm='+cur_mode);
-	if (!force && freq_step_last_mode == cur_mode && freq_step_last_band == b) {
-		//console.log("freq_step_update_ui: return "+freq_step_last_mode+' '+cur_mode);
-		return;
-	}
+	if (!force && freq_step_last_mode == cur_mode && freq_step_last_band == b) return;
 
-	var show_9_10 = (b && (b.name == 'LW' || b.name == 'MW') && kiwi_mode(cur_mode).AM_SAx_IQ_DRM)? true:false;
+	var show_9_10 = (b && (b.name == 'LW' || b.name == 'MW') && ext_mode(cur_mode).AM_SAx_IQ_DRM)? true:false;
 	
 	if (kiwi_isMobile()) {
 	   w3_hide2('id-9-10-cell', !show_9_10);
@@ -8314,7 +8295,7 @@ function update_smeter()
 	line_stroke(sMeter_ctx, 0, 5, "lime", 0,y, x,y);
 
    if (cfg.agc_thresh_smeter && owrx.force_no_agc_thresh_smeter != true) {
-      var thold = kiwi_mode(cur_mode).CW? threshCW : thresh;
+      var thold = ext_mode(cur_mode).CW? threshCW : thresh;
 	   var x_thr = smeter_dBm_biased_to_x(-thold);
 	   line_stroke(sMeter_ctx, 0, 2, "white", 0,y-3, w-x_thr,y-3);
 	   line_stroke(sMeter_ctx, 0, 2, "black", w-x_thr,y-3, w,y-3);
@@ -8957,7 +8938,7 @@ function panels_setup()
 	      var disabled = mba.dis || (mslc == 'drm' && !kiwi.DRM_enable);
 	      var attr = disabled? '' : ' onclick="mode_button(event, this)"';
 	      attr += ' onmouseover="mode_over(event, this)"';
-	      s += w3_div('id-button-'+ mslc + ' id-mode-'+ kiwi_mode(mslc).str +
+	      s += w3_div('id-button-'+ mslc + ' id-mode-'+ ext_mode(mslc).str +
 	         ' class-button'+ (disabled? ' class-button-disabled':'') +
 	         ' ||id="'+ i +'-id-mode-col"' + attr + ' onmousedown="cancelEvent(event)"', ms);
 	   });
@@ -9082,40 +9063,40 @@ function panels_setup()
                w3_slider('id-wf-sp-slider w3-wheel', '', 'wf_sp_param', wf_sp_param, 0, 10, 1, 'wf_sp_slider_cb'), 60,
                w3_div('id-wf-sp-slider-field class-slider'), 19
             )
-         ), 85,
+         ), 84,
          
          w3_divs('/w3-tspace-4 w3-hcenter w3-font-11_25px',
             w3_button('id-button-wf-autoscale class-button||title="waterfall auto scale"', 'Auto<br>Scale', 'wf_autoscale_cb'),
             w3_button('id-button-slow-dev class-button||title="slow device mode"', 'Slow<br>Dev', 'toggle_or_set_slow_dev'),
             w3_inline('',
-               w3_button('id-button-spec-peak class-button||title="toggle peak hold"', 'Pk', 'toggle_or_set_spec_peak'),
-               w3_icon('id-wf-gnd w3-margin-L-4 w3-momentary', 'fa-caret-down', 22, 'white', 'wf_gnd_cb', 1)
+               w3_button('id-button-spec-peak0 class-button||title="toggle peak hold\n#1: off-on-hold"', 'P1', 'toggle_or_set_spec_peak', 0),
+               w3_button('id-button-spec-peak1 w3-margin-L-4 class-button||title="toggle peak hold\n#2: off-on-hold"', 'P2', 'toggle_or_set_spec_peak', 1),
             )
-         ), 15
+         ), 16
       ) +
 
       w3_inline('w3-halign-space-between w3-margin-T-2/',
-         w3_select('w3-text-red||title="colormap selection"', '', 'colormap', 'wf.cmap', wf.cmap, kiwi.cmap_s, 'wf_cmap_cb'),
+         w3_select('w3-text-red||title="colormap selection"', '', 'color<br>map', 'wf.cmap', wf.cmap, kiwi.cmap_s, 'wf_cmap_cb'),
          w3_select('w3-text-red||title="aperture selection"', '', 'aper', 'wf.aper', wf.aper, kiwi.aper_s, 'wf_aper_cb'),
          w3_select('w3-text-red||title="waterfall filter selection"', '', 'wf', 'wf_filter', wf_filter, wf_sp_menu_s, 'wf_sp_menu_cb', 1),
          w3_select('w3-text-red||title="spectrum filter selection"', '', 'spec', 'spec_filter', spec_filter, wf_sp_menu_s, 'wf_sp_menu_cb', 0),
+         w3_icon('id-wf-gnd w3-momentary||title="disable waterfall input"', 'fa-caret-down', 22, 'white', 'wf_gnd_cb', 1),
          w3_button('id-button-wf-more class-button w3-text-orange||onclick="extint_open(\'waterfall\'); freqset_select();" title="more waterfall params"', 'More')
-
-         //w3_select('w3-text-red', '', 'contrast', 'wf.contr', W3_SELECT_SHOW_TITLE, wf_contr_s, 'wf_contr_cb'),
-         //w3_div('w3-hcenter', w3_button('id-button-spec-peak class-button', 'Peak', 'toggle_or_set_spec_peak'))
-         //w3_button('id-button-wf-gnd class-button w3-momentary', 'G', 'wf_gnd_cb', 1)
       );
 
    setwfspeed_cb('', wf_speed, 1);
    toggle_or_set_slow_dev(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
-   toggle_or_set_spec_peak(toggle_e.FROM_COOKIE | toggle_e.SET_URL, peak_initially);
+   toggle_or_set_spec_peak(toggle_e.FROM_COOKIE | toggle_e.SET_URL, peak_initially1, 0);
+   toggle_or_set_spec_peak(toggle_e.FROM_COOKIE | toggle_e.SET_URL, peak_initially2, 1);
    toggle_or_set_wf_sp_button(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
 
    // audio & nb
    var nb_algo_s = [ ['off',1], ['std',1], ['Wild',1] ];
    var nr_algo_s = [ ['off',1], ['wdsp',1], ['LMS',1], ['spec',1] ];
 	de_emphasis = readCookie('last_de_emphasis', 0);
-	de_emphasis = w3_clamp(de_emphasis, 0, 1, 0);
+	de_emphasis = w3_clamp(de_emphasis, 0, 2, 0);
+	de_emphasis_nfm = readCookie('last_de_emphasis_nfm', 0);
+	de_emphasis_nfm = w3_clamp(de_emphasis_nfm, 0, 2, 0);
 	kiwi.pan = readCookie('last_pan', 0);
 
 	w3_el('id-optbar-audio').innerHTML =
@@ -9130,12 +9111,18 @@ function panels_setup()
 			w3_text(optbar_prefix_color, 'Volume'), 17,
          w3_slider('id-input-volume w3-wheel', '', '', kiwi.volume, 0, 200, 1, 'setvolume_cb'), 50,
          '&nbsp;', 8,
-         w3_select('w3-text-red||title="de-emphasis"', '', 'de-emp', 'de_emphasis', de_emphasis, de_emphasis_s, 'de_emp_cb')
+         w3_div('',
+            w3_select('id-deemp id-deemp1-ofm w3-text-red||title="de-emphasis"', '', 'de-<br>emp', 'de_emphasis', de_emphasis, de_emphasis_s, 'de_emp_cb', 0),
+            w3_select('id-deemp id-deemp1-nfm w3-text-red w3-hide||title="de-emphasis"', '', 'de-<br>emp', 'de_emphasis_nfm', de_emphasis_nfm, de_emphasis_nfm_s, 'de_emp_cb', 1)
+         )
 		) +
 		w3_inline_percent('id-vol-comp w3-valign w3-margin-T-2/class-slider w3-last-halign-end',
 			w3_text(optbar_prefix_color, 'Volume'), 17,
          w3_slider('id-input-volume w3-wheel', '', '', kiwi.volume, 0, 200, 1, 'setvolume_cb'), 50,
-         w3_select('w3-text-red', '', 'de-emp', 'de_emphasis', de_emphasis, de_emphasis_s, 'de_emp_cb'), 28,
+         w3_div('',
+            w3_select('id-deemp id-deemp2-ofm w3-text-red||title="de-emphasis"', '', 'de-<br>emp', 'de_emphasis', de_emphasis, de_emphasis_s, 'de_emp_cb', 0),
+            w3_select('id-deemp id-deemp2-nfm w3-text-red w3-hide', '', 'de-<br>emp', 'de_emphasis_nfm', de_emphasis_nfm, de_emphasis_nfm_s, 'de_emp_cb', 1)
+         ), 28,
 		   w3_button('id-button-compression class-button w3-hcenter||title="compression"', 'Comp', 'toggle_or_set_compression')
 		) +
       w3_inline_percent('id-pan w3-valign w3-hide/class-slider w3-last-halign-end',
@@ -9146,9 +9133,10 @@ function panels_setup()
       ) +
       w3_inline_percent('id-squelch w3-valign/class-slider w3-last-halign-end',
 			w3_text('id-squelch-label', 'Squelch'), 15,
-         w3_icon('w3-momentary||title="momentary zero squelch"', 'fa-caret-down', 22, 'white', 'squelch_zero_cb', 1), 3,
+         //w3_icon('w3-momentary||title="momentary zero squelch"', 'fa-caret-down', 22, 'white', 'squelch_zero_cb', 1), 3,
+         w3_icon('||title="toggle squelch"', 'fa-caret-down', 22, 'lime', 'squelch_zero_cb', 1), 3,
          w3_slider('id-squelch-value w3-wheel', '', '', squelch, 0, 99, 1, 'set_squelch_cb'), 42,
-         w3_div('id-squelch-field class-slider'), 14,
+         w3_div('id-squelch-field w3-center class-slider'), 14,
          w3_select('id-pre-rec w3-margin-R-4 w3-hide w3-text-red||title="pre-record time"', '', 'pre', 'pre_record', pre_record, pre_record_s, 'pre_record_cb'), 16,
          w3_select('id-squelch-tail w3-hide w3-text-red||title="squelch tail length"', '', 'tail', 'squelch_tail', squelch_tail, squelch_tail_s, 'squelch_tail_cb')
 	   ) +
@@ -9867,16 +9855,21 @@ function toggle_or_set_slow_dev(set, val)
 	   setwfspeed_cb('', WF_SPEED_MED, 1);
 }
 
-function toggle_or_set_spec_peak(set, val)
+function toggle_or_set_spec_peak(set, val, which)
 {
-	if (isNumber(set))
-		spec.peak_show = kiwi_toggle(set, val, spec.peak_show, 'last_spec_peak');
-	else
-		spec.peak_show ^= 1;
-	if (spec.peak_show) spec.peak_clear = true;
-	w3_color('id-button-spec-peak', spec.peak_show? 'lime':'white');
+	if (isNumber(set)) {
+	   which = +which;
+      console.log('toggle_or_set_spec_peak SET set='+ set +' val='+ val +' which='+ which);
+		spec.peak_show[which] = kiwi_toggle(set, val, spec.peak_show[which], 'last_spec_peak'+ (which? '1':''));
+	} else {
+	   which = +val;
+		spec.peak_show[which] = (spec.peak_show[which] + 1) % 3;
+      console.log('toggle_or_set_spec_peak TOGGLE set='+ set +' val='+ val +' which='+ which +' NEW peak_show='+ spec.peak_show[which]);
+	}
+	if (spec.peak_show[which] == spec.PEAK_OFF) spec.peak_clear[which] = true;
+	w3_color('id-button-spec-peak'+ which, ['white', 'lime', 'magenta'][spec.peak_show[which]]);
 	freqset_select();
-	writeCookie('last_spec_peak', spec.peak_show.toString());
+	writeCookie('last_spec_peak'+ (which? '1':''), (spec.peak_show[which] == spec.PEAK_ON)? '1':'0');
 }
 
 
@@ -9940,15 +9933,23 @@ function toggle_or_set_mute(set)
    if (owrx.debug_drag) owrx.drag_count = 0;
 }
 
-var de_emphasis = 0;
-//var de_emphasis_s = [ 'off', '75us', '50us' ];
-var de_emphasis_s = [ 'off', 'on' ];
+var de_emphasis = 0, de_emphasis_nfm = 0;
+var de_emphasis_s = [ 'off', '75 uS', '50 uS' ];
+var de_emphasis_nfm_s = [ 'off', 'on', '+LF' ];
 
-function de_emp_cb(path, idx, first)
+function de_emp_cb(path, idx, first, nfm)
 {
-   de_emphasis = +idx;
-	snd_send('SET de_emp='+ de_emphasis);
-   writeCookie('last_de_emphasis', de_emphasis.toString());
+	var kmode = ext_mode(cur_mode);
+	console.log('$ de_emp_cb path='+ path +' idx='+ idx +' nfm='+ nfm +' first='+ first +' kmode.NBFM='+ kmode.NBFM);
+   if (+nfm) {
+      de_emphasis_nfm = +idx;
+      snd_send('SET de_emp='+ de_emphasis_nfm +' nfm=1');
+      writeCookie('last_de_emphasis_nfm', de_emphasis_nfm.toString());
+   } else {
+      de_emphasis = +idx;
+      snd_send('SET de_emp='+ de_emphasis +' nfm=0');
+      writeCookie('last_de_emphasis', de_emphasis.toString());
+   }
 }
 
 function setpan_cb(path, val, done, first, cb_param)
@@ -10144,7 +10145,7 @@ function squelch_action(sq)
 
 function squelch_setup(flags)
 {
-   var nbfm = kiwi_mode(cur_mode).NBFM;
+   var nbfm = ext_mode(cur_mode).NBFM;
    
    if (flags & toggle_e.FROM_COOKIE) { 
       var sq = readCookie('last_squelch'+ (nbfm? '':'_efm'));
@@ -10179,13 +10180,13 @@ function squelch_setup(flags)
 
 function send_squelch()
 {
-   var nbfm = kiwi_mode(cur_mode).NBFM;
+   var nbfm = ext_mode(cur_mode).NBFM;
    snd_send("SET squelch="+ squelch.toFixed(0) +' param='+ (nbfm? squelch_threshold : squelch_tail_v[squelch_tail]).toFixed(2));
 }
 
 function set_squelch_cb(path, str, done, first, no_write_cookie)
 {
-   var nbfm = kiwi_mode(cur_mode).NBFM;
+   var nbfm = ext_mode(cur_mode).NBFM;
    //console.log('$set_squelch_cb path='+ path +' str='+ str +' done='+ done +' first='+ first +' no_write_cookie='+ no_write_cookie +' nbfm='+ nbfm);
    if (first) return;
 
@@ -10210,24 +10211,28 @@ function set_squelch_wheel_cb()
    set_squelch_cb('', nval, 1);
 }
 
-var squelch_save = 0;
+var squelch_enable = 1;
+var squelch_save = null;
 
 function squelch_zero_cb(path, idx, first)
 {
    //console.log('squelch_zero_cb idx='+ idx +' first='+ first +' squelch_save='+ squelch_save +' squelch='+ squelch);
-   idx = +idx;
-   w3_color(path, idx? 'white':'lime');
+   squelch_enable ^= 1;
+   w3_color(path, squelch_enable? 'lime':'magenta');
    var squelch_new;
-   if (idx == 0) {
-      // down
+   if (squelch_enable) {
+      // enable
+      squelch_new = (squelch_save == null)? squelch : squelch_save;
+      freqset_select();
+      w3_disable('id-squelch-value', false);
+   } else {
+      // disable
       squelch_save = squelch;
       squelch_new = 0;
-   } else {
-      // up
-      squelch_new = squelch_save;
-      freqset_select();
    }
    set_squelch_cb('', squelch_new, true, false, true);
+   if (!squelch_enable)
+      w3_disable('id-squelch-value', true);
 }
 
 function pre_record_cb(path, val, first, no_write_cookie)
@@ -10238,7 +10243,7 @@ function pre_record_cb(path, val, first, no_write_cookie)
    audio_pre_record_buf_init();
 
    // nbfm has no pre menu
-   if (no_write_cookie != true && /* safety net */ !kiwi_mode(cur_mode).NBFM)
+   if (no_write_cookie != true && /* safety net */ !ext_mode(cur_mode).NBFM)
       kiwi_storeSet('last_pre', pre_record);
 }
 
@@ -10250,7 +10255,7 @@ function squelch_tail_cb(path, val, first, no_write_cookie)
    send_squelch();
 
    // nbfm has no tail menu
-   if (no_write_cookie != true && /* safety net */ !kiwi_mode(cur_mode).NBFM)
+   if (no_write_cookie != true && /* safety net */ !ext_mode(cur_mode).NBFM)
       kiwi_storeSet('last_tail', squelch_tail);
 }
 
@@ -10348,7 +10353,7 @@ function toggle_or_set_compression(set, val)
 
 function set_agc()
 {
-   var isCW = kiwi_mode(cur_mode).CW;
+   var isCW = ext_mode(cur_mode).CW;
    //console.log('isCW='+ isCW +' agc='+ agc);
    w3_color('label-threshold', (!isCW && agc)? 'orange' : 'white');
    w3_color('label-threshCW',  ( isCW && agc)? 'orange' : 'white');

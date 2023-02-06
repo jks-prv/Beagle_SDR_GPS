@@ -62,8 +62,8 @@ var kiwi = {
    
    // colormap definitions needed by admin config
    cmap_s: [
-      'Kiwi', 'CuteSDR', 'grey', 'linear', 'turbo', 'SdrDx',
-      'custom 1', 'custom 2', 'custom 3', 'custom 4'
+      'Kiwi', 'CSDR', 'grey', 'linear', 'turbo', 'SdrDx',
+      'cust1', 'cust2', 'cust3', 'cust4'
    ],
    cmap_e: {
       kiwi:0, CuteSDR:1, greyscale:2, linear:3, turbo:4, SdrDx:5,
@@ -92,7 +92,7 @@ var kiwi = {
    pre_wrapped: false,
    pre_ping_pong: 0,
    
-   _ver_: 1.576,
+   _ver_: 1.577,
    _last_: null
 };
 

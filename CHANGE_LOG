@@ -2,11 +2,34 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.575  Feb 2, 2023
+v1.577  Feb 6, 2023
+    Audio response de-emphasis for AM/SSB and NBFM:
+        On the main control panel, audio tab, the "de-emp" menu to the right of the volume control
+        has been greatly improved. For AM/SSB modes the traditional 75 uS (N.Am) and 50 uS (EU)
+        filter profiles are available. For NBFM a 20 dB / decade (= 6 dB / octave) is available,
+        with or without ("+LF") attenuation below 400 Hz (e.g. to suppress PL tone etc).
+        The de-emp menu settings are stored and persistent across page reloads.
+        
+        Comments welcome. These filters are now FIR-based and designed with Octave from a
+        frequency response profile. So they are easy to adjust.
+    
+    A second spectrum peak hold is available. The "Pk" button on the WF tab has been replaced by
+    "P1" and "P2". Each click on Pk cycled between off/clear(wht) and hold(grn).
+    But P1 and P2 cycle between three states: off(wht) - on(grn) - hold(red).
+    This is so one can be in hold mode while the other is on. P1 is the yellow trace and P2 cyan.
+    
+    The momentary zero icon of the left of the squelch slider has been changed to a toggle.
+    
+    The default FAX passband has been lowered from 2200 Hz to 1200 Hz. It was observed that for weak
+    signals this slightly reduced the background noise in the image without lowering the overall
+    contrast, indicating that the extra passband width was just increasing the noise floor.
+    Comments welcome. You can type "/2200" or "/2k" in the frequency box to re-widen the passband.
+
+v1.576  Feb 2, 2023
     FM demodulator:
         Added NNFM mode which has a 6 kHz passband useful for FM signals with +/- 2.5 kHz deviation.
         Fixed "rough", "crackling" sound of demod. Needed a post-demod clipper.
-    
+
     WSPR extension:
         Added test button. Test result spots are NOT uploaded to wsprnet.org
         Added help panel.

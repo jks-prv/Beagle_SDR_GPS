@@ -5,9 +5,9 @@ var gen = {
    first_time: true,
 
 	freq: 10000,
-	freq_stop: 10011,
-	step: 1.0,
-	dwell: 1000,
+	freq_stop: 10006,
+	step: 0.1,
+	dwell: 300,
 	attn_dB: 60,
 	attn_ampl: 0,
 	filter: 0,
@@ -95,8 +95,7 @@ function gen_controls_setup()
 				   w3_switch('', 'On', 'Off', 'gen.enable', gen.enable, 'gen_enable_cb'),
 				   w3_button('w3-red w3-margin-left', '-Step', 'gen_step_up_down_cb', -1),
 				   w3_button('w3-green w3-margin-left', '+Step', 'gen_step_up_down_cb', +1),
-				   w3_button('id-gen-sweep w3-css-yellow w3-margin-left', 'Sweep', 'gen_sweep_cb'),
-				   w3_button('w3-aqua w3-margin-left', 'Clear peak', 'gen_clear_peak_cb')
+				   w3_button('id-gen-sweep w3-css-yellow w3-margin-left', 'Sweep', 'gen_sweep_cb')
 				),
 				w3_col_percent('w3-margin-top',
                w3_slider('', 'Attenuation', 'gen.attn_dB', gen.attn_dB, 0, 100, 5, 'gen_attn_cb'), 35,
@@ -143,7 +142,8 @@ function gen_enable_cb(path, idx, first)
 function gen_freq_cb(path, val)
 {
    // might not be a string if not called from w3_input()
-	gen.freq = val.toString().parseFloatWithUnits('kM', 1e-3, 2);
+   //console.log('gen_freq_cb: val='+ val +' '+ typeof(val));
+	gen.freq = val.toString().parseFloatWithUnits('kM', 1e-3, 3);
 	w3_num_cb(path, gen.freq);
 	w3_set_value(path, gen.freq);
 	
@@ -157,14 +157,15 @@ function gen_freq_cb(path, val)
 
 function gen_stop_cb(path, val, first)
 {
-   gen.freq_stop = val.parseFloatWithUnits('kM', 1e-3, 2);
+   gen.freq_stop = val.parseFloatWithUnits('kM', 1e-3, 3);
 	w3_num_cb(path, gen.freq_stop);
 	w3_set_value(path, gen.freq_stop);
 }
 
 function gen_step_cb(path, val, first)
 {
-   gen.step = val.parseFloatWithUnits('kM', 1e-3, 2);
+   console.log('gen_step_cb: val='+ val +' '+ typeof(val));
+   gen.step = val.parseFloatWithUnits('kM', 1e-3, 3);
 	w3_num_cb(path, gen.step);
 	w3_set_value(path, gen.step);
 }
@@ -172,7 +173,7 @@ function gen_step_cb(path, val, first)
 function gen_step_up_down_cb(path, sign, first)
 {
    var step = parseInt(sign) * gen.step;
-   //console.log('gen_step_up_down_cb: step='+ step +' '+ typeof(step));
+   console.log('gen_step_up_down_cb: step='+ step +' '+ typeof(step));
    gen.freq += step;
    gen.freq = w3_clamp(gen.freq, 0, cfg.max_freq? 32e3 : 30e3);
 	gen_freq_cb('gen.freq', gen.freq);
@@ -193,9 +194,11 @@ function gen_sweep_cb(path, val, first)
    if (!gen.sweeping && gen.enable) {
       gen.save_freq = gen.freq;
       w3_button_text('id-gen-sweep', 'Stop', 'w3-red', 'w3-css-yellow');
+      console.log('$ gen_sweep_cb');
       gen.sweep_interval = setInterval(function() {
+         var prev = gen.freq;
          gen.freq += gen.step;
-	      //console.log('gen_sweep_cb freq='+ gen.freq);
+	      console.log('gen_sweep_cb '+ prev.toFixed(3) +'|'+ gen.step.toFixed(3) +'|'+ gen.freq.toFixed(3));
          if (gen.freq > gen.freq_stop || gen.freq < 0.01 || gen.freq > (cfg.max_freq? 32e3 : 30e3))
             gen_sweep_cancel();
          gen_freq_cb('gen.freq', gen.freq);
@@ -228,12 +231,6 @@ function gen_attn_offset_cb(path, idx, first)
    idx = +idx;
    gen.attn_offset_val = (idx == 0)? 0 : cfg.waterfall_cal;
    gen_attn_cb('gen.attn_dB', w3_get_value('gen.attn_dB'), true);
-}
-
-function gen_clear_peak_cb(path, val, first)
-{
-   if (first) return;
-   spec.peak_clear = true;
 }
 
 // hook that is called when controls panel is closed

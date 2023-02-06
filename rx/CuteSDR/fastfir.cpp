@@ -50,9 +50,6 @@
 #include "simd.h"
 #include "rx_sound.h"
 
-CFastFIR m_PassbandFIR[MAX_RX_CHANS];
-CFastFIR m_chan_null_FIR[MAX_RX_CHANS];
-
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction

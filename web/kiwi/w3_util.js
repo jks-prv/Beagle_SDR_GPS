@@ -1061,9 +1061,27 @@ function w3_show_hide_inline(el, show)
    w3_show_hide(el, show, 'w3-show-inline-new');
 }
 
-function w3_disable(el, disable)
+function w3_disable(el_id, disable)
 {
+   el = w3_el(el_id);
+   //console.log('w3_disable disable='+ disable +' t/o(el)='+ typeof(el) +' nodeName='+ el.nodeName);
+   //console.log(el);
 	w3_set_props(el, 'w3-disabled', disable);
+	
+	// for disabling menu popup
+	if (isDefined(el.nodeName) && (el.nodeName == 'SELECT' || el.nodeName == 'INPUT')) {
+	   try {
+         if (disable)
+            el.setAttribute('disabled', '');
+         else
+            el.removeAttribute('disabled');
+      } catch(ex) {
+         console.log('w3_disable:Attribute');
+         console.log(ex);
+      }
+   }
+	
+	return el;
 }
 
 function w3_visible(el_id, visible)
