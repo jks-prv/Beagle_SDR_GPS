@@ -92,7 +92,7 @@ var kiwi = {
    pre_wrapped: false,
    pre_ping_pong: 0,
    
-   _ver_: 1.577,
+   _ver_: 1.578,
    _last_: null
 };
 
@@ -886,7 +886,7 @@ function kiwi_output_sgr(p)
 function kiwi_output_msg(id, id_scroll, p)
 {
    var i, j;
-   var dbg = (1 && dbgUs);
+   var dbg = (0 && dbgUs);
    if (dbg) kiwi.d.p = p;
    
    if (0 && dbg) {
