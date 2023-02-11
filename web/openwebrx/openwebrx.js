@@ -3733,13 +3733,13 @@ function spectrum_update(data)
    
    for (i=0; i < 2; i++) {
       if (spec.peak_clear_spec[i] || spec.peak_clear_btn[i]) {
-         console.log('SPEC CLEAR '+ i);
+         //console.log('SPEC CLEAR '+ i);
          for (x=0; x<sw; x++) {
             spec.peak[i][x] = 0;
          }
       }
       if (spec.peak_clear_spec[i]) {
-	      toggle_or_set_spec_peak(toggle_e.SET, spec.PEAK_OFF, i);
+	      //toggle_or_set_spec_peak(toggle_e.SET, spec.PEAK_OFF, i);
          spec.peak_clear_spec[i] = false;
          
       }
