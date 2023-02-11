@@ -1667,6 +1667,7 @@ function dx_render(obj)
       var freq, mo, id, no = '';
       var pb = '', ty = 0, os, ext = '';
       var dow, begin, end, has_sched = false;
+      var mode_menu_idx;
    
       // done this way so all the s_new code can be reused to construct the legend
       var h = function(psa) { return (i == dx.LEGEND)? 'w3-hide' : psa; }
@@ -1677,7 +1678,7 @@ function dx_render(obj)
          freq = d.f;
          mo = dx_decode_mode(d.fl);
          // convert from dx mode order to mode menu order
-         var mode_menu_idx = w3_array_el_seq(kiwi.mode_menu, kiwi.modes_uc[mo])
+         mode_menu_idx = w3_array_el_seq(kiwi.mode_menu, kiwi.modes_uc[mo])
          ty = (d.fl & dx.DX_TYPE) >> dx.DX_TYPE_SFT;
          id = kiwi_decodeURIComponent('dx_id', d.i);
          if (d.n) no = kiwi_decodeURIComponent('dx_no', d.n);
@@ -1725,7 +1726,7 @@ function dx_render(obj)
             ), 6,
             //i.toString(), 4,     // debug
             w3_input(h('w3-padding-small||size=8'), l('Freq kHz'), 'dx.o.fr_'+i, freq, 'dx_freq_cb'), 19,
-            w3_select(h('w3-text-red'), l('Mode'), '', 'dx.o.fm_'+i, mode_menu_idx, kiwi.mode_menu, 'dx_sel_cb'), 15,
+            w3_select(h('w3-text-red'), l('Mode'), '', 'dx.o.mm_'+i, mode_menu_idx, kiwi.mode_menu, 'dx_sel_cb'), 15,
             w3_input(h('w3-padding-small||size=4'), l('Passband Hz'), 'dx.o.pb_'+i, pb, 'dx_passband_cb'), 25,
             w3_select(h('w3-text-red'), l('Type'), '', 'dx.o.ft_'+i, ty, type_menu, 'dx_sel_cb'), 25,
             w3_input(h('w3-padding-small||size=2'), l('Offset Hz'), 'dx.o.o_'+i, os, 'dx_num_cb'), 18,
