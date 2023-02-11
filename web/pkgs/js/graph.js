@@ -11,6 +11,7 @@ function graph_init(canvas, opt)
    gr.marker = -1;
    gr.x_tick = 0;
    gr.threshold = 0;
+   gr.threshold_color = 'red';
    gr.averaging = false;
    gr.timestamp = false;
    gr.UTC = true;
@@ -99,9 +100,10 @@ function graph_annotate(gr, color)
    gr.divider = color;
 }
 
-function graph_threshold(gr, threshold_dB)
+function graph_threshold(gr, threshold_dB, color)
 {
    gr.threshold = threshold_dB;
+   if (isString(color)) gr.threshold_color = color;
 }
 
 function graph_averaging(gr, averaging)
@@ -264,7 +266,7 @@ function graph_plot(gr, val_dB, opt)
       }
       
       if (gr.threshold) {
-         ct.fillStyle = 'red';
+         ct.fillStyle = gr.threshold_color;
          ct.fillRect(w-1,y_dB(gr.threshold), 1,1);
       }
       

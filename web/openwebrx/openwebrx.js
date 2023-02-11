@@ -3554,16 +3554,20 @@ var spec = {
    clear_avg: 0,
    avg: [],
    
-   slow_dev_color: '#66ffff',    // light-cyan hsl(180, 100%, 70%)
+   //slow_dev_color: '#66ffff',    // light-cyan hsl(180, 100%, 70%)
+   slow_dev_color: '#d3d3d3',
    
    PEAK_OFF: 0,
    PEAK_ON: 1,
    PEAK_HOLD: 2,
    peak_show: [0, 0],
-   peak_clear: [0, 0],
+   peak_clear_spec: [0, 0],
+   peak_clear_btn: [0, 0],
    peak: [[], []],
-   peak1_color: 'yellow',
-   peak2_color: 'magenta',
+   //peak1_color: 'yellow',
+   //peak2_color: 'magenta',
+   peak1_color: 'white',
+   peak2_color: 'khaki',
    peak_alpha: 1.0,
    
    dB_bands: [],
@@ -3724,16 +3728,23 @@ function spectrum_update(data)
          spec.avg[x] = color_index(data[x]);
       }
       spec.clear_avg = false;
-      spec.peak_clear[1] = spec.peak_clear[0] = true;
+      spec.peak_clear_spec[1] = spec.peak_clear_spec[0] = true;
    }
    
    for (i=0; i < 2; i++) {
-      if (spec.peak_clear[i]) {
-         console.log('SPEC CLEAR '+ i);
+      if (spec.peak_clear_spec[i] || spec.peak_clear_btn[i]) {
+         //console.log('SPEC CLEAR '+ i);
          for (x=0; x<sw; x++) {
             spec.peak[i][x] = 0;
          }
-         spec.peak_clear[i] = false;
+      }
+      if (spec.peak_clear_spec[i]) {
+	      //toggle_or_set_spec_peak(toggle_e.SET, spec.PEAK_OFF, i);
+         spec.peak_clear_spec[i] = false;
+         
+      }
+      if (spec.peak_clear_btn[i]) {
+         spec.peak_clear_btn[i] = false;
       }
    }
    
@@ -5515,6 +5526,9 @@ function modeset_update_ui(mode)
 	el.innerHTML = mode.toUpperCase();
 	if (el && el.style) el.style.color = "lime";
 	owrx.last_mode_el = el;
+	
+   // set last_mode_col for case of ext_set_mode() called direct instead of via mode_button()
+	owrx.last_mode_col = parseInt(el.id);
 
 	squelch_setup(toggle_e.FROM_COOKIE);
 	writeCookie('last_mode', mode);
@@ -7748,6 +7762,9 @@ function dx_show_edit_panel2()
 		dx.o.p = kiwi_decodeURIComponent('dx_params', label.params);
 		//console.log('dx.o.i='+ dx.o.i +' len='+ dx.o.i.length);
 	}
+
+   // convert from dx mode order to mode menu order
+	dx.o.mm = w3_array_el_seq(kiwi.mode_menu, kiwi.modes_uc[dx.o.fm]);
 	//console_log_dbgUs(dx.o);
 	
 	// quick key combo to toggle 'active' type without bringing up panel
@@ -7820,15 +7837,12 @@ function dx_show_edit_panel2()
          }
       }
       //console.log(type_menu);
-      
-      // convert from dx mode order to mode menu order
-      var mode_menu_idx = w3_array_el_seq(kiwi.mode_menu, kiwi.modes_uc[dx.o.fm])
 
 	   s2 =
          w3_divs('w3-text-white/w3-margin-T-8',
             w3_inline('w3-halign-space-between/',
                w3_input('w3-padding-small||size=10', 'Freq', 'dx.o.fr', dx.o.fr, 'dx_freq_cb'),
-               w3_select('w3-text-red', 'Mode', '', 'dx.o.fm', mode_menu_idx, kiwi.mode_menu, 'dx_sel_cb'),
+               w3_select('w3-text-red', 'Mode', '', 'dx.o.mm', dx.o.mm, kiwi.mode_menu, 'dx_sel_cb'),
                w3_input('w3-padding-small||size=10', 'Passband', 'dx.o.pb', dx.o.pb, 'dx_passband_cb'),
                w3_select('w3-text-red', 'Type', '', 'dx.o.ft', dx.o.ft, type_menu, 'dx_sel_cb'),
                w3_input('w3-padding-small||size=8', 'Offset', 'dx.o.o', dx.o.o, 'dx_num_cb')
@@ -9863,16 +9877,21 @@ function toggle_or_set_slow_dev(set, val)
 
 function toggle_or_set_spec_peak(set, val, which)
 {
+   var prev;
 	if (isNumber(set)) {
 	   which = +which;
-      console.log('toggle_or_set_spec_peak SET set='+ set +' val='+ val +' which='+ which);
+      prev = spec.peak_show[which];
+      console.log('toggle_or_set_spec_peak SET set='+ set +' val='+ val +' prev='+ prev +' which='+ which);
 		spec.peak_show[which] = kiwi_toggle(set, val, spec.peak_show[which], 'last_spec_peak'+ (which? '1':''));
 	} else {
 	   which = +val;
+      prev = spec.peak_show[which];
 		spec.peak_show[which] = (spec.peak_show[which] + 1) % 3;
       console.log('toggle_or_set_spec_peak TOGGLE set='+ set +' val='+ val +' which='+ which +' NEW peak_show='+ spec.peak_show[which]);
 	}
-	if (spec.peak_show[which] == spec.PEAK_OFF) spec.peak_clear[which] = true;
+	var peak_clear_btn = (prev != spec.PEAK_OFF && spec.peak_show[which] == spec.PEAK_OFF);
+	console.log('toggle_or_set_spec_peak peak_clear_btn='+ peak_clear_btn +' which='+ which);
+	if (peak_clear_btn) spec.peak_clear_btn[which] = true;
 	w3_color('id-button-spec-peak'+ which, ['white', 'lime', 'magenta'][spec.peak_show[which]]);
 	freqset_select();
 	writeCookie('last_spec_peak'+ (which? '1':''), (spec.peak_show[which] == spec.PEAK_ON)? '1':'0');

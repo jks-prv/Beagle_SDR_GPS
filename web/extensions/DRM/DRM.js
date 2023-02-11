@@ -1080,7 +1080,7 @@ function drm_panel_show(controls_inner, data_html)
       );
    
 	ext_panel_show(controls_html, data_html, null);
-	ext_set_controls_width_height(600, 185);
+	ext_set_controls_width_height(600, 120);
 }
 
 function drm_mobile_controls_setup(mobile)
@@ -1315,8 +1315,8 @@ function drm_desktop_controls_setup(w_multi)
             
                w3_divs('id-drm-options-by-svc id-drm-options-by-time id-drm-options-by-freq/w3-tspace-4',
                   w3_div('cl-drm-sched-options-time w3-light-green', 'verified'),
-                  w3_div('cl-drm-sched-options-time', 'not verified'),
-                  w3_link('w3-link-color', 'http://forum.kiwisdr.com/discussion/1865/drm-heard#latest', 'Please report<br>schedule changes')
+                  w3_div('cl-drm-sched-options-time', 'not verified')
+                  //w3_link('w3-link-color', 'http://forum.kiwisdr.com/discussion/1865/drm-heard#latest', 'Please report<br>schedule changes')
                ),
                
                w3_div('id-drm-options-EPG',
@@ -1347,17 +1347,17 @@ function drm_desktop_controls_setup(w_multi)
       controls_inner =
          w3_inline('w3-halign-space-between w3-margin-T-8/',
             w3_text('w3-text-white',
-               'Top panel schedules: Click green/pink bars to tune station. Hover to see times.<br>' +
-               'Use menu to sort schedules by service, time or frequency. <br>' +
-               'Gray vertical lines are spaced 1 hour apart beginning at 00:00 UTC on the left. <br>' +
-               'Red line shows current UTC time and updates while the extension is running. <br>' +
-               'Schedule information courtesy of ' +
+               //'Top panel schedule: Click green/pink bars to tune station. Hover to see times.<br>' +
+               //'Use menu to sort schedule by service, time or frequency. <br>' +
+               //'Gray vertical lines are spaced 1 hour apart beginning at 00:00 UTC on the left. <br>' +
+               //'Red line shows current UTC time and updates while the extension is running. <br>' +
+               'Click help button for more information. Schedule information courtesy of ' +
                w3_link('w3-link-color', 'https://www.drmrx.org', 'drmrx.org')
             )
          ) +
 
          w3_inline('w3-margin-T-8/w3-margin-between-16',
-            w3_select('w3-text-red', '', 'database', 'drm.database', drm.database, drm.database_s, 'drm_database_cb'),
+            //w3_select('w3-text-red', '', 'database', 'drm.database', drm.database, drm.database_s, 'drm_database_cb'),
             w3_button('id-drm-stop-button w3-padding-smaller w3-pink', 'Stop', 'drm_stop_start_cb'),
             w3_button('w3-padding-smaller w3-pink', 'Monitor IQ', 'drm_monitor_IQ_cb'),
             //w3_button('w3-padding-smaller w3-css-yellow', 'Reset', 'drm_reset_cb'),
@@ -1375,6 +1375,7 @@ function drm_desktop_controls_setup(w_multi)
 	if (drm.locked == 0) return;
 
 	time_display_setup('drm');
+	drm_database_cb('drm.database', 0, true);
 	
 	drm.ss_img = [];
 	drm.ss_img[0] = w3_el('id-drm-slideshow-img0');
@@ -1776,8 +1777,8 @@ function DRM_help(show)
          w3_text('w3-medium w3-bold w3-text-aqua', 'Digital Radio Mondiale (DRM30) decoder help') +
          w3_div('w3-margin-T-8 w3-scroll-y|height:90%',
             w3_div('w3-margin-R-8',
-               'Schedules in top panel: Click on green/pink bars to tune a station. <br>' +
-               'Use menu to sort schedules by service, time or frequency. <br>' +
+               'Schedule in top panel: Click on green/pink bars to tune a station. <br>' +
+               'Use menu to sort schedule by service, time or frequency. <br>' +
                'Gray vertical lines are spaced 1 hour apart beginning at 00:00 UTC on the left. <br>' +
                'Red line shows current UTC time and updates while the extension is running. <br>' +
                '<span class="w3-text-yellow-highlight">New</span> ' +

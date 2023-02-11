@@ -8,15 +8,30 @@
 
 function dx_get_value(v) { return w3_get_value('dx.o.'+ v +'_'+ dx.o.gid); }
 
+// dx_mode(fm) to menu_mode(mm) mapping: (see kiwi.js)
+// fm: am amn usb lsb  cw cwn nbfm  iq  drm  usn lsn sam sau sal sas qam nnfm     modes_{lc,uc,idx}[]
+//      0   1   2   3   4   5    6   7    8    9  10  11  12  13  14  15   16
+// mm: AM AMN USB USN LSB LSN   CW CWN NBFM NNFM  IQ DRM SAM SAU SAL SAS  QAM     mode_menu[]
+
 function dx_update_check(idx, upd, isPassband)
 {
-   if (idx != dx.IDX_USER) dx.o.gid = idx = +idx;
+   var user = (idx == dx.IDX_USER);
+   if (!user) dx.o.gid = idx = +idx;
 
    // convert from mode menu order to dx mode order
-   var mode_menu_idx = (idx == dx.IDX_USER)? dx.o.fm : (+dx_get_value('fm'));
-   var dx_mode_idx = w3_array_el_seq(kiwi.modes_uc, kiwi.mode_menu[mode_menu_idx]);
-   console.log('dx_update_check dx_mode_idx='+ dx_mode_idx +' mode_menu_idx='+ mode_menu_idx +' '+ kiwi.mode_menu[mode_menu_idx]);
-   dx.o.fm = dx_mode_idx;
+   var dx_mode_idx, mode_menu_idx, mode_s;
+   if (user) {
+      mode_menu_idx = +dx.o.mm;
+      mode_s = kiwi.mode_menu[mode_menu_idx];
+      dx_mode_idx = w3_array_el_seq(kiwi.modes_uc, mode_s);
+      console.log('dx_update_check USER dx_mode_idx='+ dx_mode_idx +' mode_menu_idx='+ mode_menu_idx +' '+ mode_s);
+   } else {
+      mode_menu_idx = +dx_get_value('mm');
+      mode_s = kiwi.mode_menu[mode_menu_idx];
+      dx_mode_idx = w3_array_el_seq(kiwi.modes_uc, mode_s);
+      console.log('dx_update_check ADMIN dx_mode_idx='+ dx_mode_idx +' mode_menu_idx='+ mode_menu_idx +' '+ mode_s);
+   }
+   dx.o.fm = +dx_mode_idx;
 
    // Called from user connection label edit panel, not admin edit tab.
    // User label edit panel has a separate commit mechanism.
@@ -94,9 +109,10 @@ function dx_freq_cb(path, val, first)
 function dx_sel_cb(path, val, first)
 {
    if (first) return;
+   // e.g. path = "dx.o.mm_123", o = { el: "dx.o.mm", idx: "123" }
 	var o = w3_remove_trailing_index(path, '_');
 	console.log('dx_sel_cb path='+ path +' val='+ val +' o.idx='+ o.idx);
-	w3_string_cb(o.el, +val);
+	w3_num_cb(o.el, +val);     // e.g. sets dx.o.mm
 	dx_update_check(o.idx, dx.UPD_MOD);
 }
 
