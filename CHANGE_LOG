@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.578  Feb 12, 2023
+    Fixed bug setting dx label modes.
+    Improved high end response of NBFM de-emphasis filters.
+    Squelch value updated continuously while slider moved, not just on mouse-up.
+    New colors for spectrum peak hold traces and "slow dev" plot based on forum discussions.
+
 v1.577  Feb 6, 2023
     Audio response de-emphasis for AM/SSB and NBFM:
         On the main control panel, audio tab, the "de-emp" menu to the right of the volume control
