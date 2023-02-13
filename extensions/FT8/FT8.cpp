@@ -52,7 +52,6 @@ static void ft8_file_data(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps, 
         return;
     }
     if (e->s2p >= ft8_conf.s2p_end) {
-        ext_send_msg(rx_chan, false, "EXT test_done");
         e->test = e->start_test = false;
         return;
     }
@@ -117,7 +116,7 @@ void ft8_close(int rx_chan)
 		e->task_created = false;
 	}
 	
-	decode_ft8_close(rx_chan);
+	decode_ft8_free(rx_chan);
 }
 
 bool ft8_msgs(char *msg, int rx_chan)
@@ -153,15 +152,15 @@ bool ft8_msgs(char *msg, int rx_chan)
 		return true;
 	}
 	
-	if (strcmp(msg, "SET ft8_stop") == 0) {
-		//printf("FT8 rx%d stop\n", rx_chan);
-		ft8_close(rx_chan);
+	if (strcmp(msg, "SET ft8_free") == 0) {
+		printf("FT8 rx%d free\n", rx_chan);
+		decode_ft8_free(rx_chan);
 		return true;
 	}
 	
-	if (strcmp(msg, "SET ft8_reset") == 0) {
-		//printf("FT8 rx%d reset\n", rx_chan);
-		// ...
+	if (strcmp(msg, "SET ft8_close") == 0) {
+		printf("FT8 rx%d close\n", rx_chan);
+		ft8_close(rx_chan);
 		return true;
 	}
 	

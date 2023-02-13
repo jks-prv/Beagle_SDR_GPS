@@ -2829,6 +2829,18 @@ function w3_select_enum(path, func)
 	w3_iterate_children(path, func);
 }
 
+function w3_select_get_value(path, idx)
+{
+   var found = null;
+   w3_select_enum(path,
+      function(e) {
+         if (e.value == idx)
+            found = e.innerHTML;
+      }
+   );
+   return found;
+}
+
 function w3_select_value(path, idx, opt)
 {
    if (w3_opt(opt, 'all')) {

@@ -350,7 +350,7 @@ void decode_ft8_init(int rx_chan, int proto)
     ft8->tsync = false;
 }
 
-void decode_ft8_close(int rx_chan)
+void decode_ft8_free(int rx_chan)
 {
     decode_ft8_t *ft8 = &decode_ft8[rx_chan];
     free(ft8->samples);

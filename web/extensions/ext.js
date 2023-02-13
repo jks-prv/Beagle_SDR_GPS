@@ -151,10 +151,11 @@ function ext_tune(freq_dial_kHz, mode, zoom, zlevel, low_cut, high_cut, opt) {
 	//console.log('ext_tune: '+ freq_dial_kHz +', '+ mode +', '+ zoom +', '+ zlevel);
 	
 	extint_ext_is_tuning = true;
+	   freq_dial_kHz = freq_dial_kHz || (freq_displayed_Hz / 1000);
       freqmode_set_dsp_kHz(freq_dial_kHz, mode, opt);
       if (pb_specified) ext_set_passband(low_cut, high_cut);
       
-      if (zoom != undefined) {
+      if (isArg(zoom)) {
          if (zoom == ext_zoom.CUR)
             zoom_step(ext_zoom.ABS, zoom_level);
          else
@@ -335,6 +336,11 @@ function ext_get_tuning()
 function ext_get_zoom()
 {
 	return zoom_level;
+}
+
+function ext_set_zoom(zoom_mode, zoom_level)
+{
+   zoom_step(zoom_mode, zoom_level);
 }
 
 function ext_set_scanning(scanning)
