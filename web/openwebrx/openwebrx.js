@@ -3564,10 +3564,8 @@ var spec = {
    peak_clear_spec: [0, 0],
    peak_clear_btn: [0, 0],
    peak: [[], []],
-   //peak1_color: 'yellow',
-   //peak2_color: 'magenta',
-   peak1_color: 'white',
-   peak2_color: 'khaki',
+   peak1_color: 'yellow',
+   peak2_color: 'magenta',
    peak_alpha: 1.0,
    
    dB_bands: [],
