@@ -1,0 +1,9 @@
+gen_ft8
+decode_ft8
+test_ft8
+libft8.a
+wsjtx2/
+.build/
+.DS_Store
+.vscode/
+__pycache__/
