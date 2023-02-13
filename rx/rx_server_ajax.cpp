@@ -624,7 +624,7 @@ fail:
 			"uptime=%d\n"
 			"gps_date=%d,%d\n"
 			"date=%s\n"
-			"test=1\n"
+			"test=2\n"
 			"ip_blacklist=%s\n",
 			
 			status, no_open_access? "auth=password\n" : "", offline? "yes":"no",

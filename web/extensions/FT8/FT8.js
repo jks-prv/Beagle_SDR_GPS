@@ -5,7 +5,11 @@ var ft8 = {
    first_time: true,
    mode: 0,
    mode_s: [ 'FT8', 'FT4' ],
-   
+
+   freq_s: {
+      'FT8': [ '1840', '3573', '5357', '7074', '10136', '14074', '18100', '21074', '24915', '28074' ],
+      'FT4': [ '3575.5', '7047.5', '10140', '14080', '18104', '21140', '24919', '28180' ]
+   },
 
    // must set "remove_returns" so output lines with \r\n (instead of \n alone) don't produce double spacing
    console_status_msg_p: { scroll_only_at_bottom: true, process_return_alone: false, remove_returns: true, cols: 135 },
@@ -82,6 +86,9 @@ function ft8_output_chars(c)
 
 function ft8_controls_setup()
 {
+	ft8.saved_mode = ext_get_mode();
+   ext_tune(null, 'usb', ext_zoom.ABS, 11, 200, 3100);
+
    var data_html =
       time_display_html('ft8') +
       
@@ -101,7 +108,7 @@ function ft8_controls_setup()
 					w3_div('', 'From Karlis Goba, <b><a href="https://github.com/kgoba/ft8_lib/tree/update_to_0_2" target="_blank">lib_ft8</a></b> &copy; 2018'), 45
 				),
 				w3_inline('w3-margin-T-6/w3-margin-between-16',
-               //w3_button('w3-padding-smaller', 'Reset', 'ft8_reset_cb', 0),
+               w3_select_hier('id-ft8-freq w3-text-red w3-width-auto', '', 'freq', 'ft8.freq_idx', -1, ft8.freq_s, 'ft8_freq_cb'),
                w3_select('w3-text-red', '', 'mode', 'ft8.mode', ft8.mode, ft8.mode_s, 'ft8_mode_cb'),
                w3_button('w3-padding-smaller w3-css-yellow', 'Clear', 'ft8_clear_button_cb'),
                w3_button('w3-padding-smaller w3-aqua', 'Test', 'ft8_test_cb')
@@ -122,13 +129,24 @@ function ft8_controls_setup()
 	ext_send('SET ft8_start='+ ft8.mode);
 }
 
+function ft8_freq_cb(path, idx, first)
+{
+	if (first) return;
+   idx = +idx;
+	var freq = +w3_select_get_value('id-ft8-freq', idx);
+   ext_tune(freq, 'usb', ext_zoom.ABS, 11);
+	console.log('ft8_freq_cb: idx='+ idx +' freq='+ freq);
+}
+
 function ft8_mode_cb(path, idx, first)
 {
-	//console.log('ft8_mode_cb: idx='+ idx +' first='+ first);
+	console.log('ft8_mode_cb: idx='+ idx +' first='+ first);
 	if (first) return;
    idx = +idx;
    ft8.mode = idx;
 	w3_set_value(path, idx);
+   ext_send('SET ft8_free');
+	ext_send('SET ft8_start='+ ft8.mode);
 }
 
 function ft8_clear_button_cb(path, idx, first)
@@ -144,16 +162,11 @@ function ft8_test_cb()
    ext_send('SET ft8_test');
 }
 
-function ft8_reset_cb(path, idx, first)
-{
-   if (first) return;
-   ext_send('SET ft8_reset');
-}
-
 function FT8_blur()
 {
 	ext_set_data_height();     // restore default height
-	ext_send('SET ft8_stop');
+	ext_set_mode(ft8.saved_mode);
+	ext_send('SET ft8_close');
    kiwi_clearInterval(ft8.log_interval);
 }
 

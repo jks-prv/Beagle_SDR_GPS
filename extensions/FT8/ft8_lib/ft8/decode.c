@@ -1,3 +1,6 @@
+#include "types.h"
+#include "coroutines.h"
+
 #include "decode.h"
 #include "constants.h"
 #include "crc_ft8.h"
@@ -200,6 +203,7 @@ int ftx_find_candidates(const ftx_waterfall_t* wf, int num_candidates, ftx_candi
     // sync symbols we included in the score, so the score is averaged.
     for (candidate.time_sub = 0; candidate.time_sub < wf->time_osr; ++candidate.time_sub)
     {
+        NextTask("ftx_find_candidates");
         for (candidate.freq_sub = 0; candidate.freq_sub < wf->freq_osr; ++candidate.freq_sub)
         {
             for (candidate.time_offset = -10; candidate.time_offset < 20; ++candidate.time_offset)
