@@ -8,6 +8,7 @@
 #include "mem.h"
 
 #include "FT8.h"
+#include "PSKReporter.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -75,7 +76,7 @@ static void ft8_file_data(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps, 
 
 }
 
-void ft8_task(void *param)
+static void ft8_task(void *param)
 {
     int rx_chan = (int) FROM_VOID_PARAM(param);
     ft8_t *e = &ft8[rx_chan];
@@ -142,6 +143,7 @@ bool ft8_msgs(char *msg, int rx_chan)
 		}
 
         if (!e->task_created) {
+            PSKReporter_init();
 			e->tid = CreateTaskF(ft8_task, TO_VOID_PARAM(rx_chan), EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL));
             e->task_created = true;
         }

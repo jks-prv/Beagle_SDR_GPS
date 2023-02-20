@@ -105,7 +105,7 @@ function ft8_controls_setup()
                w3_div('',
 				      w3_div('w3-medium w3-text-aqua', '<b>FT8/FT4 decoder</b>')
 				   ), 40,
-					w3_div('', 'From Karlis Goba, <b><a href="https://github.com/kgoba/ft8_lib/tree/update_to_0_2" target="_blank">lib_ft8</a></b> &copy; 2018'), 45
+					w3_div('', 'From <b><a href="https://github.com/kgoba/ft8_lib/tree/update_to_0_2" target="_blank">ft8_lib</a></b> Karlis Goba &copy; 2018'), 45
 				),
 				w3_inline('w3-margin-T-6/w3-margin-between-16',
                w3_select_hier('id-ft8-freq w3-text-red w3-width-auto', '', 'freq', 'ft8.freq_idx', -1, ft8.freq_s, 'ft8_freq_cb'),
@@ -121,12 +121,18 @@ function ft8_controls_setup()
 
    ext_set_data_height(300);
 	ext_set_controls_width_height(550, 100);
-	
-	var p = ext_param();
-	// ...
-	
    ft8_clear_button_cb();
 	ext_send('SET ft8_start='+ ft8.mode);
+
+	ft8.url_params = ext_param();
+	var p = ft8.url_params.split(',');
+	var do_test = 0;
+   p.forEach(function(a, i) {
+      if (w3_ext_param('test', a).match) {
+         do_test = 1;
+      }
+   });
+   if (do_test) ft8_test_cb();
 }
 
 function ft8_freq_cb(path, idx, first)
