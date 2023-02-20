@@ -2,6 +2,7 @@
 #include "config.h"
 #include "rx/CuteSDR/datatypes.h"
 #include "coroutines.h"
+#include "PSKReporter.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -22,14 +23,28 @@
 
 int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *cmd, const char *fmt, ...);
 
+#ifdef PR_USE_CALLSIGN_HASHTABLE
+    #define CALLSIGN_HASHTABLE_MAX 1024
+    //#define CALLSIGN_AGE_MAX (60*4)         // one hour
+    #define CALLSIGN_AGE_MAX (2*4)
+#else
+    #define CALLSIGN_HASHTABLE_MAX 256
+    #define CALLSIGN_AGE_MAX 10
+#endif
+
 typedef struct {
-    char callsign[12]; ///> Up to 11 symbols of callsign + trailing zeros (always filled)
-    uint32_t hash;     ///> 8 MSBs contain the age of callsign; 22 LSBs contain hash value
-} callsign_hashtable_t;
+    // NB: callsign is NOT null terminated (to save a byte). Must use strncpy() / strncmp()
+    char callsign[11]; ///> Up to 11 symbols of callsign + trailing zeros (always filled)
+    u1_t uploaded;
+    uint32_t hash;     ///> 10 MSBs contain the age of callsign; 22 LSBs contain hash value
+    
+} __attribute__((packed)) callsign_hashtable_t;
 
 typedef struct {
     u4_t magic;
     int rx_chan;
+    u4_t decode_time;
+    ftx_protocol_t protocol;
     monitor_t mon;
     float slot_period;
     struct tm tm_slot_start;
@@ -54,8 +69,6 @@ const int kMax_decoded_messages = 50;
 const int kFreq_osr = 2; // Frequency oversampling rate (bin subdivision)
 const int kTime_osr = 2; // Time oversampling rate (symbol subdivision)
 
-#define CALLSIGN_HASHTABLE_MAX 256
-
 static void hashtable_init(int rx_chan)
 {
     decode_ft8_t *ft8 = &decode_ft8[rx_chan];
@@ -67,39 +80,53 @@ static void hashtable_init(int rx_chan)
 static void hashtable_cleanup(int rx_chan, uint8_t max_age)
 {
     decode_ft8_t *ft8 = &decode_ft8[rx_chan];
-    for (int idx_hash = 0; idx_hash < CALLSIGN_HASHTABLE_MAX; ++idx_hash)
+    callsign_hashtable_t *ht = ft8->callsign_hashtable;
+
+    for (int idx_hash = 0; idx_hash < CALLSIGN_HASHTABLE_MAX; ++idx_hash, ht++)
     {
-        if (ft8->callsign_hashtable[idx_hash].callsign[0] != '\0')
+        if (ht->callsign[0] != '\0')
         {
-            uint8_t age = (uint8_t)(ft8->callsign_hashtable[idx_hash].hash >> 24);
-            if (age > max_age)
+            uint8_t age = (uint8_t)(ht->hash >> 22);
+            if (age >= max_age)
             {
-                LOG(LOG_INFO, "Removing [%s] from hash table, age = %d\n", ft8->callsign_hashtable[idx_hash].callsign, age);
+                LOG(LOG_INFO, "Removing [%.11s] from hash table, age = %d, uploaded = %d\n",
+                    ht->callsign, age, ht->uploaded);
+                printf("FT8 hashtable REMOVE age=%d uploaded=%d %.11s\n", age, ht->uploaded, ht->callsign);
                 // free the hash entry
-                ft8->callsign_hashtable[idx_hash].callsign[0] = '\0';
-                ft8->callsign_hashtable[idx_hash].hash = 0;
+                ht->callsign[0] = '\0';
+                ht->uploaded = 0;
+                ht->hash = 0;
                 ft8->callsign_hashtable_size--;
             }
             else
             {
+                //printf("FT8 hashtable AGE+1 age=%d uploaded=%d %.11s\n", age, ht->uploaded, ht->callsign);
                 // increase callsign age
-                ft8->callsign_hashtable[idx_hash].hash = (((uint32_t)age + 1u) << 24) | (ft8->callsign_hashtable[idx_hash].hash & 0x3FFFFFu);
+                ht->hash = (((uint32_t)age + 1u) << 22) | (ht->hash & 0x3FFFFFu);
             }
         }
     }
 }
 
-static void hashtable_add(const char* callsign, uint32_t hash)
+static void hashtable_add(const char* callsign, uint32_t hash, int *hash_idx)
 {
     decode_ft8_t *ft8 = (decode_ft8_t *) FROM_VOID_PARAM(TaskGetUserParam());
     uint16_t hash10 = (hash >> 12) & 0x3FFu;
     int idx_hash = (hash10 * 23) % CALLSIGN_HASHTABLE_MAX;
-    while (ft8->callsign_hashtable[idx_hash].callsign[0] != '\0')
+    callsign_hashtable_t *ht = &ft8->callsign_hashtable[idx_hash];
+
+    while (ht->callsign[0] != '\0')
     {
-        if (((ft8->callsign_hashtable[idx_hash].hash & 0x3FFFFFu) == hash) && (0 == strcmp(ft8->callsign_hashtable[idx_hash].callsign, callsign)))
+        if (((ht->hash & 0x3FFFFFu) == hash) && (0 == strncmp(ht->callsign, callsign, 11)))
         {
-            // reset age
-            ft8->callsign_hashtable[idx_hash].hash &= 0x3FFFFFu;
+            #ifdef PR_USE_CALLSIGN_HASHTABLE
+                // Don't reset age when using callsign hashtable as PSKReporter upload limiter.
+            #else
+                // reset age
+                ht->hash &= 0x3FFFFFu;
+            #endif
+            
+            if (hash_idx != NULL) *hash_idx = idx_hash;
             LOG(LOG_DEBUG, "Found a duplicate [%s]\n", callsign);
             return;
         }
@@ -108,12 +135,13 @@ static void hashtable_add(const char* callsign, uint32_t hash)
             LOG(LOG_DEBUG, "Hash table clash!\n");
             // Move on to check the next entry in hash table
             idx_hash = (idx_hash + 1) % CALLSIGN_HASHTABLE_MAX;
+            ht = &ft8->callsign_hashtable[idx_hash];
         }
     }
     ft8->callsign_hashtable_size++;
-    strncpy(ft8->callsign_hashtable[idx_hash].callsign, callsign, 11);
-    ft8->callsign_hashtable[idx_hash].callsign[11] = '\0';
-    ft8->callsign_hashtable[idx_hash].hash = hash;
+    strncpy(ht->callsign, callsign, 11);    // NB: strncpy does zero-fill
+    ht->hash = hash;
+    if (hash_idx != NULL) *hash_idx = idx_hash;
 }
 
 static bool hashtable_lookup(ftx_callsign_hash_type_t hash_type, uint32_t hash, char* callsign)
@@ -122,15 +150,18 @@ static bool hashtable_lookup(ftx_callsign_hash_type_t hash_type, uint32_t hash, 
     uint8_t hash_shift = (hash_type == FTX_CALLSIGN_HASH_10_BITS) ? 12 : (hash_type == FTX_CALLSIGN_HASH_12_BITS ? 10 : 0);
     uint16_t hash10 = (hash >> (12 - hash_shift)) & 0x3FFu;
     int idx_hash = (hash10 * 23) % CALLSIGN_HASHTABLE_MAX;
-    while (ft8->callsign_hashtable[idx_hash].callsign[0] != '\0')
+    callsign_hashtable_t *ht = &ft8->callsign_hashtable[idx_hash];
+
+    while (ht->callsign[0] != '\0')
     {
-        if (((ft8->callsign_hashtable[idx_hash].hash & 0x3FFFFFu) >> hash_shift) == hash)
+        if (((ht->hash & 0x3FFFFFu) >> hash_shift) == hash)
         {
-            strcpy(callsign, ft8->callsign_hashtable[idx_hash].callsign);
+            strncpy(callsign, ht->callsign, 11);    // NB: strncpy does zero-fill
             return true;
         }
         // Move on to check the next entry in hash table
         idx_hash = (idx_hash + 1) % CALLSIGN_HASHTABLE_MAX;
+        ht = &ft8->callsign_hashtable[idx_hash];
     }
     callsign[0] = '\0';
     return false;
@@ -230,10 +261,37 @@ static void decode(int rx_chan, const monitor_t* mon)
             ++num_decoded;
 
             char text[FTX_MAX_MESSAGE_LENGTH];
-            ftx_message_rc_t unpack_status = ftx_message_decode(&message, &hash_if, text);
-            if (unpack_status != FTX_MESSAGE_RC_OK)
+            int hash_idx = -1;
+            ftx_message_rc_t unpack_status = ftx_message_decode(&message, &hash_if, text, &hash_idx);
+            if (unpack_status != FTX_MESSAGE_RC_OK && unpack_status != FTX_MESSAGE_RC_PSKR_OK)
             {
                 snprintf(text, sizeof(text), "Error [%d] while unpacking!", (int)unpack_status);
+            }
+
+            if (unpack_status == FTX_MESSAGE_RC_PSKR_OK) {
+                if (hash_idx < 0 || hash_idx >= CALLSIGN_HASHTABLE_MAX) {
+                    printf("FT8 hash_idx=%d ??? <%s>\n", hash_idx, text);
+                } else {
+                    #ifdef PR_USE_CALLSIGN_HASHTABLE
+                        callsign_hashtable_t *ht = &ft8->callsign_hashtable[hash_idx];
+                        if (ht->uploaded == 0) {
+                            // call_to call_de [R] grid4
+                            bool ok = false;
+                            char *call = NULL, *f1 = NULL, *f2 = NULL, *grid;
+                            int n = sscanf(text, "%*s %ms %ms %ms", &call, &f1, &f2);
+                            if (n == 3) { grid = f2; ok = true; } else
+                            if (n == 2) { grid = f1; ok = true; }
+                            if (ok) {
+                                u4_t passband_freq = (u4_t) roundf(freq_hz);
+                                PSKReporter_spot(rx_chan, call, passband_freq, ft8->protocol, grid, ft8->decode_time);
+                                ht->uploaded = 1;
+                            }
+                            free(call); free(f1); free(f2);     // NB: free(NULL) is okay
+                        } else {
+                            printf("FT8 already uploaded age=%d <%s>\n", ht->hash >> 22, text);
+                        }
+                    #endif
+                }
             }
 
             // Fake WSJT-X-like output for now
@@ -242,18 +300,19 @@ static void decode(int rx_chan, const monitor_t* mon)
                 ft8->tm_slot_start.tm_hour, ft8->tm_slot_start.tm_min, ft8->tm_slot_start.tm_sec,
                 snr, time_sec, freq_hz, text);
             ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
-                "%02d%02d%02d %+05.1f %+4.2f %4.0f ~  %s\n",
+                "%02d:%02d:%02d %+05.1f %+4.2f %4.0f ~  %s\n",
                 ft8->tm_slot_start.tm_hour, ft8->tm_slot_start.tm_min, ft8->tm_slot_start.tm_sec,
                 snr, time_sec, freq_hz, text);
         }
     }
     LOG(LOG_INFO, "Decoded %d messages, callsign hashtable size %d\n", num_decoded, ft8->callsign_hashtable_size);
-    if (num_decoded > 0)
+    if (num_decoded > 0) {
         ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
-            "%02d%02d%02d decoded %d, hashtable %d%%\n",
+            "%02d:%02d:%02d decoded %d, hashtable %d%%\n",
             ft8->tm_slot_start.tm_hour, ft8->tm_slot_start.tm_min, ft8->tm_slot_start.tm_sec,
             num_decoded, ft8->callsign_hashtable_size * 100 / CALLSIGN_HASHTABLE_MAX);
-    hashtable_cleanup(rx_chan, 10);
+    }
+    hashtable_cleanup(rx_chan, CALLSIGN_AGE_MAX);
 }
 
 void decode_ft8_setup(int rx_chan)
@@ -283,6 +342,7 @@ void decode_ft8_samples(int rx_chan, TYPEMONO16 *samps, int nsamps, bool *start_
             ft8->tm_slot_start.tm_min, ft8->tm_slot_start.tm_sec, time_within_slot);
         ft8->in_pos = ft8->frame_pos = 0;
         *start_test = true;
+        ft8->decode_time = spec.tv_sec;
         ft8->tsync = true;
     }
     
@@ -324,6 +384,7 @@ void decode_ft8_init(int rx_chan, int proto)
     ft8->rx_chan = rx_chan;
 
     ftx_protocol_t protocol = proto? FTX_PROTOCOL_FT4 : FTX_PROTOCOL_FT8;
+    ft8->protocol = protocol;
     float slot_period = ((protocol == FTX_PROTOCOL_FT8) ? FT8_SLOT_TIME : FT4_SLOT_TIME);
     ft8->slot_period = slot_period;
     int sample_rate = snd_rate;

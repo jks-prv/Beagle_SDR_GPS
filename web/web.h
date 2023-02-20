@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #pragma once
 
 #include "embed.h"
+#include "mongoose.h"
 
 #ifdef USE_SDR
  #define N_EXT 32
@@ -98,3 +99,4 @@ void web_server_init(ws_init_t type);
 void services_start();
 int web_served(conn_t *c);
 void web_served_clear_cache(conn_t *c);
+struct mg_connection *web_connect(const char *url);

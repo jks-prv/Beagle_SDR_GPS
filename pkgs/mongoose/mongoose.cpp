@@ -5011,7 +5011,9 @@ struct mg_connection *mg_connect(struct mg_server *server, const char *addr) {
   conn->endpoint_type = EP_CLIENT;
   //conn->handler = handler;
   conn->mg_conn.server_param = server->ns_mgr.user_data;
-  conn->ns_conn->flags = NSF_CONNECTING;
+
+  // KiwiSDR: set to NSF_CONNECTING *or* NSF_UDP in ns_connect(), so don't overwrite here
+  //conn->ns_conn->flags = NSF_CONNECTING;
 
   return &conn->mg_conn;
 }

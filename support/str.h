@@ -77,7 +77,7 @@ char *kiwi_str_decode_selective_inplace(char *src, bool fewer_encoded = false);
 enum { KSPLIT_NO_SKIP_EMPTY_FIELDS = 0x1, KSPLIT_HANDLE_EMBEDDED_DELIMITERS = 0x2 };
 int kiwi_split(char *ocp, char **mbuf, const char *delims, char *argv[], int nargs, int flags = 0);
 
-extern char ASCII[128][4];
+extern char ASCII[256][4];
 
 #define STR_HASH_MISS 0
 

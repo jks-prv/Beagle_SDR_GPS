@@ -65,12 +65,13 @@ typedef struct
     /// Called when a callsign is looked up by its 22/12/10 bit hash code
     bool (*lookup_hash)(ftx_callsign_hash_type_t hash_type, uint32_t hash, char* callsign);
     /// Called when a callsign should hashed and stored (by its 22, 12 and 10 bit hash codes)
-    void (*save_hash)(const char* callsign, uint32_t n22);
+    void (*save_hash)(const char* callsign, uint32_t n22, int *hash_idx);
 } ftx_callsign_hash_interface_t;
 
 typedef enum
 {
     FTX_MESSAGE_RC_OK,
+    FTX_MESSAGE_RC_PSKR_OK,
     FTX_MESSAGE_RC_ERROR_CALLSIGN1,
     FTX_MESSAGE_RC_ERROR_CALLSIGN2,
     FTX_MESSAGE_RC_ERROR_SUFFIX,
@@ -109,8 +110,8 @@ void ftx_message_encode_free(const char* text);
 void ftx_message_encode_telemetry_hex(const char* telemetry_hex);
 void ftx_message_encode_telemetry(const uint8_t* telemetry);
 
-ftx_message_rc_t ftx_message_decode(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* message);
-ftx_message_rc_t ftx_message_decode_std(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* call_to, char* call_de, char* extra);
+ftx_message_rc_t ftx_message_decode(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* message, int *hash_idx);
+ftx_message_rc_t ftx_message_decode_std(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* call_to, char* call_de, char* extra, int *hash_idx);
 ftx_message_rc_t ftx_message_decode_nonstd(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* call_to, char* call_de, char* extra);
 void ftx_message_decode_free(const ftx_message_t* msg, char* text);
 void ftx_message_decode_telemetry_hex(const ftx_message_t* msg, char* telemetry_hex);

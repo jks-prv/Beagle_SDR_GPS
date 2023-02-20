@@ -65,7 +65,7 @@ static kstring_t kstrings[KSTRINGS];
 u2_t kstr_next_free;
 int kstr_nused, kstr_hiwat;
 
-char ASCII[128][4];
+char ASCII[256][4];
 
 void kstr_init()
 {
@@ -87,11 +87,15 @@ void kstr_init()
 	kiwi_snprintf_buf(ASCII[13], "\\r");
 	kiwi_snprintf_buf(ASCII[27], "\\e");
 	for (i = 32; i < 127; i++) kiwi_snprintf_buf(ASCII[i], "%c", i);
-	kiwi_snprintf_buf(ASCII[127], "\\7f");
+	for (i = 127; i < 256; i++) kiwi_snprintf_buf(ASCII[i], "%2x", i);
 	
 	#if 0
-        for (i = 0; i < 128; i++) real_printf("%s ", ASCII[i]);
+        for (i = 0; i < 256; i++) {
+            real_printf("%s ", ASCII[i]);
+            if ((i & 7) == 7) real_printf("\n");
+        }
         real_printf("\n");
+        kiwi_exit(0);
     #endif
 }
 

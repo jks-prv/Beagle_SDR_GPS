@@ -311,7 +311,13 @@ void web_server(void *param)
 	}
 }
 
+static struct mg_server *server;
 char *web_server_hdr;
+
+struct mg_connection *web_connect(const char *url)
+{
+    return mg_connect(server, url);
+}
 
 void web_server_init(ws_init_t type)
 {
@@ -364,7 +370,6 @@ void web_server_init(ws_init_t type)
 	}
 
 	// create webserver port(s)
-    static struct mg_server *server;
     if (type == WS_INIT_CREATE) {
         server = mg_create_server(NULL, ev_handler);
         //mg_set_option(server, "document_root", "./");		// if serving from file system

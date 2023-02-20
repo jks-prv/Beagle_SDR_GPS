@@ -1,5 +1,7 @@
 #include "message.h"
 #include "text.h"
+#include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -22,8 +24,8 @@ static void add_brackets(char* result, const char* original, int length);
 /// @param[out] n12_out Pointer to store 12-bit hash value (can be NULL)
 /// @param[out] n10_out Pointer to store 10-bit hash value (can be NULL)
 /// @return True on success
-static bool save_callsign(const ftx_callsign_hash_interface_t* hash_if, const char* callsign, uint32_t* n22_out, uint16_t* n12_out, uint16_t* n10_out);
-static bool lookup_callsign(const ftx_callsign_hash_interface_t* hash_if, ftx_callsign_hash_type_t hash_type, uint32_t hash, char* callsign);
+static bool save_callsign(const ftx_callsign_hash_interface_t* hash_if, const char* callsign, uint32_t* n22_out, uint16_t* n12_out, uint16_t* n10_out, int *hash_idx);
+static int lookup_callsign(const ftx_callsign_hash_interface_t* hash_if, ftx_callsign_hash_type_t hash_type, uint32_t hash, char* callsign);
 
 static int32_t pack_basecall(const char* callsign, int length);
 
@@ -35,7 +37,7 @@ static int32_t pack28(const char* callsign, const ftx_callsign_hash_interface_t*
 /// @param[in] i3      Payload type (3 bits), 1 or 2
 /// @param[in] hash_if Callsign hash table interface (can be NULL)
 /// @param[out] result Unpacked callsign (max size: 13 characters including the terminating \0)
-static int unpack28(uint32_t n28, uint8_t ip, uint8_t i3, const ftx_callsign_hash_interface_t* hash_if, char* result);
+static int unpack28(uint32_t n28, uint8_t ip, uint8_t i3, const ftx_callsign_hash_interface_t* hash_if, char* result, int *hash_idx);
 
 /// Pack a non-standard base call into a 28-bit integer.
 static bool pack58(const ftx_callsign_hash_interface_t* hash_if, const char* callsign, uint64_t* n58);
@@ -248,7 +250,7 @@ ftx_message_rc_t ftx_message_encode_nonstd(ftx_message_t* msg, ftx_callsign_hash
         const char* call12;
         call12 = (iflip == 0) ? call_to : call_de;
         call58 = (iflip == 0) ? call_de : call_to;
-        if (!save_callsign(hash_if, call12, NULL, &n12, NULL))
+        if (!save_callsign(hash_if, call12, NULL, &n12, NULL, NULL))
         {
             return FTX_MESSAGE_RC_ERROR_CALLSIGN1;
         }
@@ -293,7 +295,7 @@ ftx_message_rc_t ftx_message_encode_nonstd(ftx_message_t* msg, ftx_callsign_hash
     return FTX_MESSAGE_RC_OK;
 }
 
-ftx_message_rc_t ftx_message_decode(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* message)
+ftx_message_rc_t ftx_message_decode(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* message, int *hash_idx)
 {
     ftx_message_rc_t rc;
 
@@ -308,7 +310,7 @@ ftx_message_rc_t ftx_message_decode(const ftx_message_t* msg, ftx_callsign_hash_
     switch (msg_type)
     {
     case FTX_MESSAGE_TYPE_STANDARD:
-        rc = ftx_message_decode_std(msg, hash_if, field1, field2, field3);
+        rc = ftx_message_decode_std(msg, hash_if, field1, field2, field3, hash_idx);
         break;
     case FTX_MESSAGE_TYPE_NONSTD_CALL:
         rc = ftx_message_decode_nonstd(msg, hash_if, field1, field2, field3);
@@ -351,7 +353,7 @@ ftx_message_rc_t ftx_message_decode(const ftx_message_t* msg, ftx_callsign_hash_
     return rc;
 }
 
-ftx_message_rc_t ftx_message_decode_std(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* call_to, char* call_de, char* extra)
+ftx_message_rc_t ftx_message_decode_std(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* call_to, char* call_de, char* extra, int *hash_idx)
 {
     uint32_t n29a, n29b;
     uint16_t igrid4;
@@ -379,17 +381,24 @@ ftx_message_rc_t ftx_message_decode_std(const ftx_message_t* msg, ftx_callsign_h
     call_to[0] = call_de[0] = extra[0] = '\0';
 
     // Unpack both callsigns
-    if (unpack28(n29a >> 1, n29a & 1u, i3, hash_if, call_to) < 0)
+    if (unpack28(n29a >> 1, n29a & 1u, i3, hash_if, call_to, NULL) < 0)
     {
         return FTX_MESSAGE_RC_ERROR_CALLSIGN1;
     }
-    if (unpack28(n29b >> 1, n29b & 1u, i3, hash_if, call_de) < 0)
+    int rc_call = unpack28(n29b >> 1, n29b & 1u, i3, hash_if, call_de, hash_idx);
+    if (rc_call < 0)
     {
         return FTX_MESSAGE_RC_ERROR_CALLSIGN2;
     }
-    if (unpackgrid(igrid4, ir, extra) < 0)
+    int rc_grid = unpackgrid(igrid4, ir, extra);
+    if (rc_grid < 0)
     {
         return FTX_MESSAGE_RC_ERROR_GRID;
+    }
+    
+    #define RC_PSKR 73
+    if (rc_call == RC_PSKR && rc_grid == RC_PSKR) {
+        return FTX_MESSAGE_RC_PSKR_OK;
     }
 
     LOG(LOG_INFO, "Decoded standard (type %d) message [%s] [%s] [%s]\n", i3, call_to, call_de, extra);
@@ -420,7 +429,7 @@ ftx_message_rc_t ftx_message_decode_nonstd(const ftx_message_t* msg, ftx_callsig
 
     // Extract i3 (bits 74..76)
     uint8_t i3 = (msg->payload[9] >> 3) & 0x07u;
-    LOG(LOG_DEBUG, "decode_nonstd() n12=%04x n58=%08llx iflip=%d nrpt=%d icq=%d i3=%d\n", n12, n58, iflip, nrpt, icq, i3);
+    LOG(LOG_DEBUG, "decode_nonstd() n12=%04x n58=%016" __UINT64_FMTx__ " iflip=%d nrpt=%d icq=%d i3=%d\n", n12, n58, iflip, nrpt, icq, i3);
 
     // Decode one of the calls from 58 bit encoded string
     char call_decoded[14];
@@ -554,7 +563,7 @@ static void add_brackets(char* result, const char* original, int length)
     result[length + 2] = '\0';
 }
 
-static bool save_callsign(const ftx_callsign_hash_interface_t* hash_if, const char* callsign, uint32_t* n22_out, uint16_t* n12_out, uint16_t* n10_out)
+static bool save_callsign(const ftx_callsign_hash_interface_t* hash_if, const char* callsign, uint32_t* n22_out, uint16_t* n12_out, uint16_t* n10_out, int *hash_idx)
 {
     uint64_t n58 = 0;
     int i = 0;
@@ -586,20 +595,20 @@ static bool save_callsign(const ftx_callsign_hash_interface_t* hash_if, const ch
         *n10_out = n10;
 
     if (hash_if != NULL)
-        hash_if->save_hash(callsign, n22);
+        hash_if->save_hash(callsign, n22, hash_idx);
 
     return true;
 }
 
-static bool lookup_callsign(const ftx_callsign_hash_interface_t* hash_if, ftx_callsign_hash_type_t hash_type, uint32_t hash, char* callsign)
+static int lookup_callsign(const ftx_callsign_hash_interface_t* hash_if, ftx_callsign_hash_type_t hash_type, uint32_t hash, char* callsign)
 {
     char c11[12];
 
-    bool found;
+    int found;
     if (hash_if != NULL)
-        found = hash_if->lookup_hash(hash_type, hash, c11);
+        found = hash_if->lookup_hash(hash_type, hash, c11)? RC_PSKR : 0;
     else
-        found = false;
+        found = 0;
 
     if (!found)
     {
@@ -710,7 +719,7 @@ static int32_t pack28(const char* callsign, const ftx_callsign_hash_interface_t*
     if (n28 >= 0)
     {
         // Callsign can be encoded as a standard basecall with optional /P or /R suffix
-        if (!save_callsign(hash_if, callsign, NULL, NULL, NULL))
+        if (!save_callsign(hash_if, callsign, NULL, NULL, NULL, NULL))
             return -1;                          // Error (some problem with callsign contents)
         return NTOKENS + MAX22 + (uint32_t)n28; // Standard callsign
     }
@@ -720,7 +729,7 @@ static int32_t pack28(const char* callsign, const ftx_callsign_hash_interface_t*
         // Treat this as a nonstandard callsign: compute its 22-bit hash
         LOG(LOG_DEBUG, "Encoding as non-standard callsign\n");
         uint32_t n22;
-        if (!save_callsign(hash_if, callsign, &n22, NULL, NULL))
+        if (!save_callsign(hash_if, callsign, &n22, NULL, NULL, NULL))
             return -1; // Error (some problem with callsign contents)
         *ip = 0;
         return NTOKENS + n22; // 22-bit hashed callsign
@@ -729,7 +738,7 @@ static int32_t pack28(const char* callsign, const ftx_callsign_hash_interface_t*
     return -1; // Error
 }
 
-static int unpack28(uint32_t n28, uint8_t ip, uint8_t i3, const ftx_callsign_hash_interface_t* hash_if, char* result)
+static int unpack28(uint32_t n28, uint8_t ip, uint8_t i3, const ftx_callsign_hash_interface_t* hash_if, char* result, int *hash_idx)
 {
     LOG(LOG_DEBUG, "unpack28() n28=%d i3=%d\n", n28, i3);
     // Check for special tokens DE, QRZ, CQ, CQ_nnn, CQ_aaaa
@@ -779,8 +788,7 @@ static int unpack28(uint32_t n28, uint8_t ip, uint8_t i3, const ftx_callsign_has
     if (n28 < MAX22)
     {
         // This is a 22-bit hash of a result
-        lookup_callsign(hash_if, FTX_CALLSIGN_HASH_22_BITS, n28, result);
-        return 0; // Success
+        return lookup_callsign(hash_if, FTX_CALLSIGN_HASH_22_BITS, n28, result);
     }
 
     // Standard callsign
@@ -835,9 +843,9 @@ static int unpack28(uint32_t n28, uint8_t ip, uint8_t i3, const ftx_callsign_has
     }
 
     // Save the result to hash table
-    save_callsign(hash_if, result, NULL, NULL, NULL);
+    save_callsign(hash_if, result, NULL, NULL, NULL, hash_idx);
 
-    return 0; // Success
+    return RC_PSKR; // Success
 }
 
 static bool pack58(const ftx_callsign_hash_interface_t* hash_if, const char* callsign, uint64_t* n58)
@@ -861,11 +869,11 @@ static bool pack58(const ftx_callsign_hash_interface_t* hash_if, const char* cal
     }
     c11[length] = '\0';
 
-    if (!save_callsign(hash_if, c11, NULL, NULL, NULL))
+    if (!save_callsign(hash_if, c11, NULL, NULL, NULL, NULL))
         return false;
 
     *n58 = result;
-    LOG(LOG_DEBUG, "pack58('%s')=%016llx\n", callsign, *n58);
+    LOG(LOG_DEBUG, "pack58('%s')=%016" __UINT64_FMTx__ "\n", callsign, *n58);
     return true;
 }
 
@@ -885,11 +893,11 @@ static bool unpack58(uint64_t n58, const ftx_callsign_hash_interface_t* hash_if,
     // The decoded string will be right-aligned, so trim all whitespace (also from back just in case)
     trim_copy(callsign, c11);
 
-    LOG(LOG_DEBUG, "unpack58(%016llx)=%s\n", n58_backup, callsign);
+    LOG(LOG_DEBUG, "unpack58(%016" __UINT64_FMTx__ ")=%s\n", n58_backup, callsign);
 
     // Save the decoded call in a hash table for later
     if (strlen(callsign) >= 3)
-        return save_callsign(hash_if, callsign, NULL, NULL, NULL);
+        return save_callsign(hash_if, callsign, NULL, NULL, NULL, NULL);
 
     return false;
 }
@@ -963,6 +971,7 @@ static int unpackgrid(uint16_t igrid4, uint8_t ir, char* extra)
         n /= 18;
         dst[0] = 'A' + (n % 18); // A..R
         // if (ir > 0 && strncmp(call_to, "CQ", 2) == 0) return -1;
+        return RC_PSKR;
     }
     else
     {
