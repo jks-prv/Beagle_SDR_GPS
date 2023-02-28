@@ -2769,7 +2769,7 @@ function ext_config_html(vars, cfg_prefix, nav_text, title_text, s)
 {
    var id = vars.ext_name;
    vars.enable = ext_get_cfg_param(cfg_prefix +'.enable', true, EXT_SAVE);
-   if (extint.excl_devl.includes(id)) return;
+   if (!dbgUs && extint.excl_devl.includes(id)) return;
 
 	ext_admin_config(id, nav_text,
 		w3_div('id-'+ id +' w3-text-teal w3-hide',

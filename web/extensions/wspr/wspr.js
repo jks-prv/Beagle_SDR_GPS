@@ -303,7 +303,7 @@ function wspr_controls_setup()
    		'<canvas id="id-wspr-scale-canvas" width="1024" height="20" style="position:absolute"></canvas>'
       );
    
-   var call = ext_get_cfg_param_string('WSPR.callsign', '');
+   var call = ext_get_cfg_param_string('WSPR.callsign', '', EXT_NO_SAVE);
    if (call == undefined || call == null || call == '') {
    	call = '(not set)';
    	wspr_config_okay = false;
@@ -560,7 +560,7 @@ var wspr_autorun_u = [
 function wspr_config_html()
 {
    var s =
-      w3_div('w3-show-inline-block w3-foo w3-width-full',
+      w3_div('w3-show-inline-block w3-width-full',
          w3_col_percent('w3-container/w3-margin-bottom',
             w3_divs('',
                w3_input_get('', 'Reporter callsign', 'WSPR.callsign', 'w3_string_set_cfg_cb', ''),
@@ -623,7 +623,7 @@ function wspr_config_html()
                
                w3_div('w3-margin-T-10 w3-valign',
                   '<header class="id-wspr-warn-full w3-container w3-yellow"><h6>' +
-                  'If your Kiwi is publicly listed you must not configure all the channels to use WSPR-autorun!<br>' +
+                  'If your Kiwi is publicly listed you must <b>not</b> configure all the channels to use WSPR-autorun!<br>' +
                   'This defeats the purpose of making your Kiwi public and public registration will be disabled<br>' +
                   'until you make at least one channel available for connection. Check the Admin Public tab.' +
                   '</h6></header>'
@@ -821,7 +821,7 @@ function wspr_set_upload_cb(path, checked)
 function wspr_upload(type, s)
 {
 	var spot = (type == wspr_report_e.SPOT)? 1:0;
-	var rcall = ext_get_cfg_param_string('WSPR.callsign', '');
+	var rcall = ext_get_cfg_param_string('WSPR.callsign', '', EXT_NO_SAVE);
    var rgrid = (kiwi.WSPR_rgrid)? kiwi.WSPR_rgrid : cfg.WSPR.grid;
 	//console.log('wspr_upload: rcall=<'+ rcall +'> rgrid=<'+ rgrid +'>');
 	var valid = wspr_rfreq && wspr_tfreq && (rcall != undefined) && (rgrid != undefined) && (rcall != null) && (rgrid != null) && (rcall != '') && (rgrid != '');
