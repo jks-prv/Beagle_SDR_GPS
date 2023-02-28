@@ -971,6 +971,11 @@ input[type=range]::-moz-range-thumb {
 	width: auto;
 }
 
+.w3-width-fit
+{
+	width: fit-content;
+}
+
 .w3-width-32
 {
 	width: 32px;

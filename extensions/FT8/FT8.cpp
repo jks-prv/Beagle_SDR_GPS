@@ -32,18 +32,14 @@ typedef struct {
 	bool seq_init;
 	u4_t seq;
 
-	bool test, start_test;
+	bool test;
+	u1_t start_test;
     s2_t *s2p;
 } ft8_t;
 
 static ft8_t ft8[MAX_RX_CHANS];
 
-typedef struct {
-    s2_t *s2p_start, *s2p_end;
-    int tsamps;
-} ft8_conf_t;
-
-static ft8_conf_t ft8_conf;
+ft8_conf_t ft8_conf;
 
 static void ft8_file_data(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps, int freqHz)
 {
@@ -53,7 +49,8 @@ static void ft8_file_data(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps, 
         return;
     }
     if (e->s2p >= ft8_conf.s2p_end) {
-        e->test = e->start_test = false;
+        e->test = false;
+        e->start_test = 0;
         return;
     }
     
@@ -92,7 +89,7 @@ static void ft8_task(void *param)
                     e->seq_init = true;
                 } else {
                     u4_t got = rx->real_seqnum[e->rd_pos], expecting = e->seq;
-                    printf("FT8 rx%d SEQ: @%d got %d expecting %d (%d)\n", rx_chan, e->rd_pos, got, expecting, got - expecting);
+                    rcprintf(rx_chan, "FT8 SEQ: @%d got %d expecting %d (%d)\n", e->rd_pos, got, expecting, got - expecting);
                 }
                 e->seq = rx->real_seqnum[e->rd_pos];
             }
@@ -108,11 +105,11 @@ static void ft8_task(void *param)
 void ft8_close(int rx_chan)
 {
 	ft8_t *e = &ft8[rx_chan];
-    printf("FT8: close task_created=%d\n", e->task_created);
+    rcprintf(rx_chan, "FT8: close task_created=%d\n", e->task_created);
     ext_unregister_receive_real_samps_task(rx_chan);
 
 	if (e->task_created) {
-        printf("FT8: TaskRemove\n");
+        rcprintf(rx_chan, "FT8: TaskRemove\n");
 		TaskRemove(e->tid);
 		e->task_created = false;
 	}
@@ -125,7 +122,7 @@ bool ft8_msgs(char *msg, int rx_chan)
 	ft8_t *e = &ft8[rx_chan];
 	int n;
 	
-	//printf("### ft8_msgs RX%d <%s>\n", rx_chan, msg);
+	//rcprintf(rx_chan, "### ft8_msgs <%s>\n", msg);
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
 		e->rx_chan = rx_chan;	// remember our receiver channel number
@@ -135,7 +132,7 @@ bool ft8_msgs(char *msg, int rx_chan)
 
     int proto;
 	if (sscanf(msg, "SET ft8_start=%d", &proto) == 1) {
-		printf("FT8 rx%d start %s\n", rx_chan, proto? "FT4" : "FT8");
+		rcprintf(rx_chan, "FT8 start %s\n", proto? "FT4" : "FT8");
 		decode_ft8_init(rx_chan, proto? 1:0);
 
 		if (ft8_conf.tsamps != 0) {
@@ -143,32 +140,30 @@ bool ft8_msgs(char *msg, int rx_chan)
 		}
 
         if (!e->task_created) {
-            PSKReporter_init();
-			e->tid = CreateTaskF(ft8_task, TO_VOID_PARAM(rx_chan), EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL));
+            e->tid = CreateTaskF(ft8_task, TO_VOID_PARAM(rx_chan), EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL));
             e->task_created = true;
         }
-		
-        e->seq_init = false;
-		ext_register_receive_real_samps_task(e->tid, rx_chan);
 
+        e->seq_init = false;
+        ext_register_receive_real_samps_task(e->tid, rx_chan);
 		return true;
 	}
 	
-	if (strcmp(msg, "SET ft8_free") == 0) {
-		printf("FT8 rx%d free\n", rx_chan);
-		decode_ft8_free(rx_chan);
+	if (sscanf(msg, "SET ft8_protocol=%d", &proto) == 1) {
+		rcprintf(rx_chan, "FT8 protocol %s\n", proto? "FT4" : "FT8");
+		decode_ft8_protocol(rx_chan, proto? 1:0);
 		return true;
 	}
-	
+
 	if (strcmp(msg, "SET ft8_close") == 0) {
-		printf("FT8 rx%d close\n", rx_chan);
+		rcprintf(rx_chan, "FT8 close\n");
 		ft8_close(rx_chan);
 		return true;
 	}
 	
 	if (strcmp(msg, "SET ft8_test") == 0) {
-		printf("FT8 rx%d test\n", rx_chan);
-		e->start_test = false;
+		rcprintf(rx_chan, "FT8 test\n");
+		e->start_test = 0;
         e->s2p = ft8_conf.s2p_start;
 		e->test = true;
 		return true;
@@ -191,6 +186,7 @@ ext_t ft8_ext = {
 void FT8_main()
 {
 	ext_register(&ft8_ext);
+	PSKReporter_init();
 
     //const char *fn = cfg_string("FT8.test_file", NULL, CFG_OPTIONAL);
     const char *fn = "FT8.test.au";

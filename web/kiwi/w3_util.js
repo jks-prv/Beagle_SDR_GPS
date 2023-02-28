@@ -2831,14 +2831,16 @@ function w3_select_enum(path, func)
 
 function w3_select_get_value(path, idx)
 {
-   var found = null;
+   var found = null, last_disabled = null;
    w3_select_enum(path,
       function(e) {
          if (e.value == idx)
             found = e.innerHTML;
+         if (!found && e.disabled)
+            last_disabled = e.innerHTML;
       }
    );
-   return found;
+   return { option:found, last_disabled:last_disabled };
 }
 
 function w3_select_value(path, idx, opt)

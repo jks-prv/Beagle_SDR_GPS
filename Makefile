@@ -868,8 +868,8 @@ endif
 
 $(BUILD_DIR)/kiwi.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(ALL_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(EXTS_DEPS)
 ifneq ($(SAN),1)
-    ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-	    @echo "DEVSYS: TEMPORARY SKIP OF KIWI.BIN LINK STEP"
+    ifeq ($(KIWI_SKIP_LINK),true)
+	    @echo "DEVSYS: SKIP OF KIWI.BIN LINK STEP"
 	    touch $@
     else
 	    @echo $(CPP) $(LDFLAGS) "..." $(DEVEL_DEPS) $(EXTS_DEPS) $(LIBS) -o $(BUILD_OBJ)
@@ -881,8 +881,8 @@ endif
 
 $(BUILD_DIR)/kiwid.bin: foptim_gen $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(ALL_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS) $(EXTS_DEPS)
 ifneq ($(SAN),1)
-    ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-	    @echo "DEVSYS: TEMPORARY SKIP OF KIWID.BIN LINK STEP"
+    ifeq ($(KIWI_SKIP_LINK),true)
+	    @echo "DEVSYS: SKIP OF KIWID.BIN LINK STEP"
 	    touch $@
     else
 	    @echo $(CPP) $(LDFLAGS) "..." $(EMBED_DEPS) $(EXTS_DEPS) $(LIBS) -o $@

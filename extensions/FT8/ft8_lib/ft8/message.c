@@ -971,6 +971,7 @@ static int unpackgrid(uint16_t igrid4, uint8_t ir, char* extra)
         n /= 18;
         dst[0] = 'A' + (n % 18); // A..R
         // if (ir > 0 && strncmp(call_to, "CQ", 2) == 0) return -1;
+        //if (strcmp(dst, "RR73") == 0) printf("decode RR73 BAD igrid4=%d\n", igrid4);
         return RC_PSKR;
     }
     else
@@ -983,9 +984,10 @@ static int unpackgrid(uint16_t igrid4, uint8_t ir, char* extra)
             dst[0] = '\0';
         else if (irpt == 2)
             strcpy(dst, "RRR");
-        else if (irpt == 3)
+        else if (irpt == 3) {
             strcpy(dst, "RR73");
-        else if (irpt == 4)
+            printf("decode RR73 OK igrid4=%d irpt=%d ===============================================\n", igrid4, irpt);
+        } else if (irpt == 4)
             strcpy(dst, "73");
         else
         {

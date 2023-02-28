@@ -44,6 +44,9 @@ typedef struct
     void* ifft_work;       ///< Work area required by inverse Kiss FFT
     kiss_fft_cfg ifft_cfg; ///< Inverse Kiss FFT housekeeping object
 #endif
+
+    kiss_fft_scalar *timedata;
+    kiss_fft_cpx *freqdata;
 } monitor_t;
 
 void monitor_init(monitor_t* me, const monitor_config_t* cfg);

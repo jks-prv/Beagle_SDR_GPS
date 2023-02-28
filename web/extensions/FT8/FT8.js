@@ -3,7 +3,13 @@
 var ft8 = {
    ext_name: 'FT8',     // NB: must match FT8.cpp:ft8_ext.name
    first_time: true,
+   
+   callsign: '',
+   grid: '',
+   
    mode: 0,
+   FT8: 0,
+   FT4: 1,
    mode_s: [ 'FT8', 'FT4' ],
 
    freq_s: {
@@ -68,6 +74,10 @@ function ft8_recv(data)
 				ft8_output_chars(param[1]);
 				break;
 
+			case "debug":
+            if (dbgUs) console.log(kiwi_decodeURIComponent('FT8', param[1]));
+				break;
+
 			default:
 				console.log('ft8_recv: UNKNOWN CMD '+ param[0]);
 				break;
@@ -97,6 +107,14 @@ function ft8_controls_setup()
 			   '<pre><code id="id-ft8-console-msgs"></code></pre>'
 			)
       );
+   
+   var callsign = ext_get_cfg_param_string('ft8.callsign') || '';
+   ft8.callsign = callsign;
+   if (callsign == '') callsign = '(not set)';
+
+   var grid = ext_get_cfg_param_string('ft8.grid') || '';
+   ft8.grid = grid;
+   if (grid == '') grid = '(not set)';
 
 	var controls_html =
 		w3_div('id-ft8-controls w3-text-white',
@@ -107,11 +125,14 @@ function ft8_controls_setup()
 				   ), 40,
 					w3_div('', 'From <b><a href="https://github.com/kgoba/ft8_lib/tree/update_to_0_2" target="_blank">ft8_lib</a></b> Karlis Goba &copy; 2018'), 45
 				),
-				w3_inline('w3-margin-T-6/w3-margin-between-16',
+				w3_div('id-ft8-err w3-margin-T-10 w3-padding-small w3-css-yellow w3-width-fit w3-hide'),
+				w3_inline('id-ft8-container w3-margin-T-6/w3-margin-between-16',
                w3_select_hier('id-ft8-freq w3-text-red w3-width-auto', '', 'freq', 'ft8.freq_idx', -1, ft8.freq_s, 'ft8_freq_cb'),
-               w3_select('w3-text-red', '', 'mode', 'ft8.mode', ft8.mode, ft8.mode_s, 'ft8_mode_cb'),
+               w3_select('w3-text-red', '', 'mode', 'ft8.mode', ft8.FT8, ft8.mode_s, 'ft8_mode_cb'),
+               w3_div('cl-ft8-text', 'reporter call '+ callsign),
+               w3_div('cl-ft8-text', 'reporter grid '+ grid),
                w3_button('w3-padding-smaller w3-css-yellow', 'Clear', 'ft8_clear_button_cb'),
-               w3_button('w3-padding-smaller w3-aqua', 'Test', 'ft8_test_cb')
+               (dbgUs? w3_button('w3-padding-smaller w3-aqua', 'Test', 'ft8_test_cb') : '')
             )
 			)
 		);
@@ -120,39 +141,58 @@ function ft8_controls_setup()
 	time_display_setup('ft8');
 
    ext_set_data_height(300);
-	ext_set_controls_width_height(550, 100);
+	ext_set_controls_width_height(525, 90);
    ft8_clear_button_cb();
-	ext_send('SET ft8_start='+ ft8.mode);
+
+	if (ext_nom_sample_rate() != 12000) {
+	   w3_hide2('id-ft8-container', true);
+	   w3_hide2('id-ft8-err', false);
+	   w3_innerHTML('id-ft8-err',
+	      'FT8 extension only works on Kiwis configured for 12 kHz wide channels');
+	} else {
+	   ext_send('SET ft8_start='+ ft8.FT8);
+	}
 
 	ft8.url_params = ext_param();
-	var p = ft8.url_params.split(',');
-	var do_test = 0;
-   p.forEach(function(a, i) {
-      if (w3_ext_param('test', a).match) {
-         do_test = 1;
-      }
-   });
-   if (do_test) ft8_test_cb();
+	var p = ft8.url_params;
+   if (p) {
+      p = p.split(',');
+      var do_test = 0;
+      p.forEach(function(a, i) {
+         if (w3_ext_param('test', a).match) {
+            do_test = 1;
+         }
+      });
+      if (dbgUs && do_test) ft8_test_cb();
+   }
 }
 
 function ft8_freq_cb(path, idx, first)
 {
 	if (first) return;
    idx = +idx;
-	var freq = +w3_select_get_value('id-ft8-freq', idx);
+	var menu_item = w3_select_get_value('id-ft8-freq', idx);
+	var freq = +(menu_item.option);
    ext_tune(freq, 'usb', ext_zoom.ABS, 11);
-	console.log('ft8_freq_cb: idx='+ idx +' freq='+ freq);
+   var mode = menu_item.last_disabled;
+	console.log('ft8_freq_cb: idx='+ idx +' freq='+ freq +' mode='+ mode);
+	
+	if (mode != ft8.mode_s[ft8.mode]) {
+	   ft8.mode ^= 1;
+	   ft8_mode_cb('ft8.mode', ft8.mode);
+	   console.log('ft8_freq_cb: changing mode to '+ ft8.mode);
+	}
 }
 
 function ft8_mode_cb(path, idx, first)
 {
-	console.log('ft8_mode_cb: idx='+ idx +' first='+ first);
 	if (first) return;
+	console.log('ft8_mode_cb: idx='+ idx);
    idx = +idx;
-   ft8.mode = idx;
 	w3_set_value(path, idx);
-   ext_send('SET ft8_free');
-	ext_send('SET ft8_start='+ ft8.mode);
+   ft8.mode = idx? ft8.FT4 : ft8.FT8;
+	ext_send('SET ft8_protocol='+ ft8.mode);
+   console.log('ft8_mode_cb: changing mode to '+ ft8.mode);
 }
 
 function ft8_clear_button_cb(path, idx, first)
@@ -179,7 +219,20 @@ function FT8_blur()
 // called to display HTML for configuration parameters in admin interface
 function FT8_config_html()
 {
-   ext_config_html(ft8, 'ft8', 'FT8', 'FT8/FT4 configuration');
+   var s =
+      w3_div('w3-show-inline-block w3-width-full',
+         w3_col_percent('w3-container/w3-margin-bottom',
+            w3_input_get('', 'Reporter callsign', 'ft8.callsign', 'w3_string_set_cfg_cb', ''), 22,
+            '', 3,
+            w3_input_get('', 'Reporter grid square', 'ft8.grid', 'w3_string_set_cfg_cb', '', '6-character grid square location'), 22,
+            '', 3,
+            w3_input_get('', 'SNR correction', 'ft8.SNR_adj', 'w3_num_set_cfg_cb', ''), 22,
+            '', 3,
+            w3_input_get('', 'dT correction', 'ft8.dT_adj', 'w3_num_set_cfg_cb', ''), 22
+         )
+      )
+
+   ext_config_html(ft8, 'ft8', 'FT8', 'FT8/FT4 configuration', s);
 }
 
 function FT8_help(show)
