@@ -1,7 +1,9 @@
+
 #include "types.h"
 #include "config.h"
 #include "rx/CuteSDR/datatypes.h"
 #include "coroutines.h"
+#include "FT8.h"
 #include "PSKReporter.h"
 
 #include <stdlib.h>
@@ -25,8 +27,8 @@ int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *c
 
 #ifdef PR_USE_CALLSIGN_HASHTABLE
     #define CALLSIGN_HASHTABLE_MAX 1024
-    //#define CALLSIGN_AGE_MAX (60*4)         // one hour
-    #define CALLSIGN_AGE_MAX (2*4)
+    #define CALLSIGN_AGE_MAX (60*4)         // one hour for FT8, 24 min FT4
+    //#define CALLSIGN_AGE_MAX (2*4)
 #else
     #define CALLSIGN_HASHTABLE_MAX 256
     #define CALLSIGN_AGE_MAX 10
@@ -42,9 +44,11 @@ typedef struct {
 
 typedef struct {
     u4_t magic;
-    int rx_chan;
     u4_t decode_time;
     ftx_protocol_t protocol;
+    char protocol_s[4];
+    int have_call_and_grid;
+    
     monitor_t mon;
     float slot_period;
     struct tm tm_slot_start;
@@ -182,7 +186,7 @@ static void decode(int rx_chan, const monitor_t* mon)
     int num_candidates = ftx_find_candidates(wf, kMax_candidates, candidate_list, kMin_score);
 
     // Hash table for decoded messages (to check for duplicates)
-    int num_decoded = 0;
+    int num_decoded = 0, num_spots = 0;
     ftx_message_t decoded[kMax_decoded_messages];
     ftx_message_t* decoded_hashtable[kMax_decoded_messages];
 
@@ -193,6 +197,7 @@ static void decode(int rx_chan, const monitor_t* mon)
     }
 
     // Go over candidates and attempt to decode messages
+    bool need_header = true;
     for (int idx = 0; idx < num_candidates; ++idx)
     {
         NextTask("candidate");
@@ -233,6 +238,7 @@ static void decode(int rx_chan, const monitor_t* mon)
         int idx_hash = message.hash % kMax_decoded_messages;
         bool found_empty_slot = false;
         bool found_duplicate = false;
+        
         do
         {
             if (decoded_hashtable[idx_hash] == NULL)
@@ -262,6 +268,9 @@ static void decode(int rx_chan, const monitor_t* mon)
 
             char text[FTX_MAX_MESSAGE_LENGTH];
             int hash_idx = -1;
+            bool need_free = false, uploaded = false;
+            char *f[4];
+            int n, km = 0;
             ftx_message_rc_t unpack_status = ftx_message_decode(&message, &hash_if, text, &hash_idx);
             if (unpack_status != FTX_MESSAGE_RC_OK && unpack_status != FTX_MESSAGE_RC_PSKR_OK)
             {
@@ -275,18 +284,42 @@ static void decode(int rx_chan, const monitor_t* mon)
                     #ifdef PR_USE_CALLSIGN_HASHTABLE
                         callsign_hashtable_t *ht = &ft8->callsign_hashtable[hash_idx];
                         if (ht->uploaded == 0) {
-                            // call_to call_de [R] grid4
+                        
+                            // n=3: call_to call_de grid4    CQ call_de grid4
+                            // n=4: CQ DX call_de grid4
+                            // n=4: call_to call_de R grid4
                             bool ok = false;
-                            char *call = NULL, *f1 = NULL, *f2 = NULL, *grid;
-                            int n = sscanf(text, "%*s %ms %ms %ms", &call, &f1, &f2);
-                            if (n == 3) { grid = f2; ok = true; } else
-                            if (n == 2) { grid = f1; ok = true; }
-                            if (ok) {
-                                u4_t passband_freq = (u4_t) roundf(freq_hz);
-                                PSKReporter_spot(rx_chan, call, passband_freq, ft8->protocol, grid, ft8->decode_time);
-                                ht->uploaded = 1;
+                            char *call, *grid;
+                            need_free = true;
+                            for (n = 0; n < 4; n++) f[n] = NULL;
+                            n = sscanf(text, "%ms %ms %ms %ms", &f[0], &f[1], &f[2], &f[3]);
+                            //printf("FT8 n=%d <%s> | <%s> <%s> <%s> <%s>\n", n, text, f[0], f[1], f[2], f[3]);
+                            ext_send_msg_encoded(rx_chan, false, "EXT", "debug",
+                                "FT8 n=%d <%s> | <%s> <%s> <%s> <%s>\n", n, text, f[0], f[1], f[2], f[3]);
+                            if (n == 3 || n == 4) {
+                                ok = true;
+                                grid = f[n-1];
+                                if (strcmp(f[n-2], "R") == 0) {
+                                    call = f[n-3];
+                                    n = 0;
+                                } else {
+                                    call = f[n-2];
+                                }
                             }
-                            free(call); free(f1); free(f2);     // NB: free(NULL) is okay
+                            if (ok) {
+                                if (strlen(call) >= 3 && strlen(grid) == 4) {
+                                    // silently ignore incorrect encoding of RR73 (i.e. sent as grid code instead of MAXGRID4+3)
+                                    if (strcmp(grid, "RR73") != 0) {
+                                        u4_t passband_freq = (u4_t) roundf(freq_hz);
+                                        km = PSKReporter_spot(rx_chan, call, passband_freq, ft8->protocol, grid, ft8->decode_time);
+                                        ht->uploaded = 1;
+                                        uploaded = true;
+                                        num_spots++;
+                                    }
+                                } else {
+                                    printf("FT8 bad call or grid <%s> <%s> <%s>\n", text, call, grid);
+                                }
+                            }
                         } else {
                             printf("FT8 already uploaded age=%d <%s>\n", ht->hash >> 22, text);
                         }
@@ -294,23 +327,63 @@ static void decode(int rx_chan, const monitor_t* mon)
                 }
             }
 
-            // Fake WSJT-X-like output for now
-            float snr = cand->score * 0.5f; // TODO: compute better approximation of SNR
-            LOG(LOG_INFO, "%02d%02d%02d %+05.1f %+4.2f %4.0f ~  %s\n",
+            if (need_header) {
+                ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
+                //   22:40:30 +11.0 +2.80 1931 nnnnn  CQ DH1NAS JO50
+                    "     UTC   SNR    dT Freq    km\n");
+                need_header = false;
+            }
+            
+            // TODO: compute better approximation of SNR
+            float snr = cand->score * 0.5f + ft8_conf.SNR_adj;
+            time_sec += ft8_conf.dT_adj;
+            
+            LOG(LOG_INFO, "%02d%02d%02d %+05.1f %+4.2f %4.0f %5d  %s\n",
                 ft8->tm_slot_start.tm_hour, ft8->tm_slot_start.tm_min, ft8->tm_slot_start.tm_sec,
-                snr, time_sec, freq_hz, text);
-            ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
-                "%02d:%02d:%02d %+05.1f %+4.2f %4.0f ~  %s\n",
-                ft8->tm_slot_start.tm_hour, ft8->tm_slot_start.tm_min, ft8->tm_slot_start.tm_sec,
-                snr, time_sec, freq_hz, text);
+                snr, time_sec, freq_hz, km, text);
+            
+            char *as;
+            if (km > 0)
+                asprintf(&as, "%02d:%02d:%02d %+05.1f %+4.2f %4.0f %5d",
+                    ft8->tm_slot_start.tm_hour, ft8->tm_slot_start.tm_min, ft8->tm_slot_start.tm_sec,
+                    snr, time_sec, freq_hz, km);
+            else
+                asprintf(&as, "%02d:%02d:%02d %+05.1f %+4.2f %4.0f      ",
+                    ft8->tm_slot_start.tm_hour, ft8->tm_slot_start.tm_min, ft8->tm_slot_start.tm_sec,
+                    snr, time_sec, freq_hz);
+                
+            if (uploaded) {
+                if (n == 3) {
+                    // call_to call_de grid4
+                    ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
+                        "%s  %s " GREEN "%s %s" NONL, as, f[0], f[1], f[2]);
+                } else
+                if (n == 4) {
+                    // CQ DX call_de grid4
+                    ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
+                        "%s  %s %s " GREEN "%s %s" NONL, as, f[0], f[1], f[2], f[3]);
+                } else {
+                    // call_to call_de R grid4
+                    ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
+                        "%s  %s " GREEN "%s %s %s" NONL, as, f[0], f[1], f[2], f[3]);
+                }
+                
+            } else {
+                ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
+                    "%s  %s\n", as, text);
+            }
+
+            free(as);
+            if (need_free) for (n = 0; n < 4; n++) free(f[n]);     // NB: free(NULL) is okay
         }
     }
     LOG(LOG_INFO, "Decoded %d messages, callsign hashtable size %d\n", num_decoded, ft8->callsign_hashtable_size);
     if (num_decoded > 0) {
         ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
-            "%02d:%02d:%02d decoded %d, hashtable %d%%\n",
+            "%02d:%02d:%02d %s decoded %d, new spots %d%s, hashtable %d%%\n",
             ft8->tm_slot_start.tm_hour, ft8->tm_slot_start.tm_min, ft8->tm_slot_start.tm_sec,
-            num_decoded, ft8->callsign_hashtable_size * 100 / CALLSIGN_HASHTABLE_MAX);
+            ft8->protocol_s, num_decoded, num_spots, (ft8->have_call_and_grid < 0)? " (PSKReporter upload disabled)" : "",
+            ft8->callsign_hashtable_size * 100 / CALLSIGN_HASHTABLE_MAX);
     }
     hashtable_cleanup(rx_chan, CALLSIGN_AGE_MAX);
 }
@@ -319,9 +392,11 @@ void decode_ft8_setup(int rx_chan)
 {
     decode_ft8_t *ft8 = &decode_ft8[rx_chan];
     TaskSetUserParam(TO_VOID_PARAM(ft8));
+    int have_call_and_grid = PSKReporter_setup(rx_chan);
+    if (have_call_and_grid != 0) ft8->have_call_and_grid = have_call_and_grid;
 }
 
-void decode_ft8_samples(int rx_chan, TYPEMONO16 *samps, int nsamps, bool *start_test)
+void decode_ft8_samples(int rx_chan, TYPEMONO16 *samps, int nsamps, u1_t *start_test)
 {
     decode_ft8_t *ft8 = &decode_ft8[rx_chan];
 
@@ -332,7 +407,7 @@ void decode_ft8_samples(int rx_chan, TYPEMONO16 *samps, int nsamps, bool *start_
         double time_sec = (double) spec.tv_sec + (spec.tv_nsec / 1e9);
         double time_within_slot = fmod(time_sec - time_shift, ft8->slot_period);
         if (time_within_slot > ft8->slot_period / 4) {
-            *start_test = false;
+            *start_test = 0;
             return;     // wait for beginning of slot
         }
 
@@ -341,7 +416,7 @@ void decode_ft8_samples(int rx_chan, TYPEMONO16 *samps, int nsamps, bool *start_
         LOG(LOG_INFO, "FT8 Time within slot %02d:%02d:%02d %.3f s\n", ft8->tm_slot_start.tm_hour,
             ft8->tm_slot_start.tm_min, ft8->tm_slot_start.tm_sec, time_within_slot);
         ft8->in_pos = ft8->frame_pos = 0;
-        *start_test = true;
+        *start_test = 1;
         ft8->decode_time = spec.tv_sec;
         ft8->tsync = true;
     }
@@ -363,7 +438,7 @@ void decode_ft8_samples(int rx_chan, TYPEMONO16 *samps, int nsamps, bool *start_
     if (ft8->frame_pos < ft8->num_samples)
         return;
     
-    *start_test = false;
+    *start_test = 0;
     LOG(LOG_DEBUG, "FT8 Waterfall accumulated %d symbols\n", ft8->mon.wf.num_blocks);
     LOG(LOG_INFO, "FT8 Max magnitude: %.1f dB\n", ft8->mon.max_mag);
 
@@ -381,11 +456,10 @@ void decode_ft8_init(int rx_chan, int proto)
     decode_ft8_t *ft8 = &decode_ft8[rx_chan];
     memset(ft8, 0, sizeof(decode_ft8_t));
     ft8->magic = 0xbeefcafe;
-    ft8->rx_chan = rx_chan;
-
     ftx_protocol_t protocol = proto? FTX_PROTOCOL_FT4 : FTX_PROTOCOL_FT8;
     ft8->protocol = protocol;
     float slot_period = ((protocol == FTX_PROTOCOL_FT8) ? FT8_SLOT_TIME : FT4_SLOT_TIME);
+    sprintf(ft8->protocol_s, "FT%d", (protocol == FTX_PROTOCOL_FT8)? 8:4);
     ft8->slot_period = slot_period;
     int sample_rate = snd_rate;
     int num_samples = slot_period * sample_rate;
@@ -417,4 +491,10 @@ void decode_ft8_free(int rx_chan)
     free(ft8->samples);
     free(ft8->callsign_hashtable);
     monitor_free(&ft8->mon);
+}
+
+void decode_ft8_protocol(int rx_chan, int proto)
+{
+    decode_ft8_free(rx_chan);
+    decode_ft8_init(rx_chan, proto);
 }

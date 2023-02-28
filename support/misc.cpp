@@ -646,29 +646,30 @@ static const char *field = "ABCDEFGHIJKLMNOPQR";
 static const char *square = "0123456789";
 static const char *subsquare = "abcdefghijklmnopqrstuvwx";
 
-void grid_to_latLon(char *grid, latLon_t *loc)
+bool grid_to_latLon(const char *grid, latLon_t *loc)
 {
 	double lat, lon;
 	char c;
-	int slen = strlen(grid);
 	
 	loc->lat = loc->lon = 999.0;
-	if (slen < 4) return;
+	if (grid == NULL || grid[0] == '\0') return false;
+	int slen = strlen(grid);
+	if (slen < 4) return false;
 	
 	c = tolower(grid[0]);
-	if (c < 'a' || c > 'r') return;
+	if (c < 'a' || c > 'r') return false;
 	lon = (c-'a')*20 - 180;
 
 	c = tolower(grid[1]);
-	if (c < 'a' || c > 'r') return;
+	if (c < 'a' || c > 'r') return false;
 	lat = (c-'a')*10 - 90;
 
 	c = grid[2];
-	if (c < '0' || c > '9') return;
+	if (c < '0' || c > '9') return false;
 	lon += (c-'0') * SQ_LON_DEG;
 
 	c = grid[3];
-	if (c < '0' || c > '9') return;
+	if (c < '0' || c > '9') return false;
 	lat += (c-'0') * SQ_LAT_DEG;
 
 	if (slen != 6) {	// assume center of square (i.e. "....ll")
@@ -676,11 +677,11 @@ void grid_to_latLon(char *grid, latLon_t *loc)
 		lat += SQ_LAT_DEG /2.0;
 	} else {
 		c = tolower(grid[4]);
-		if (c < 'a' || c > 'x') return;
+		if (c < 'a' || c > 'x') return false;
 		lon += (c-'a') * SUBSQ_LON_DEG;
 
 		c = tolower(grid[5]);
-		if (c < 'a' || c > 'x') return;
+		if (c < 'a' || c > 'x') return false;
 		lat += (c-'a') * SUBSQ_LAT_DEG;
 
 		lon += SUBSQ_LON_DEG /2.0;	// assume center of sub-square (i.e. "......44")
@@ -690,6 +691,7 @@ void grid_to_latLon(char *grid, latLon_t *loc)
 	loc->lat = lat;
 	loc->lon = lon;
 	//printf("GRID %s%s = (%f, %f)\n", grid, (slen != 6)? "[ll]":"", lat, lon);
+	return true;
 }
 
 int latLon_to_grid6(latLon_t *loc, char *grid6)
@@ -726,6 +728,30 @@ int latLon_to_grid6(latLon_t *loc, char *grid6)
 	grid6[5] = subsquare[i];
 	
 	return 0;
+}
+
+int grid_to_distance_km(latLon_t *r_loc, char *grid)
+{
+	if (r_loc->lat == 999.0)
+		return 0;
+	
+	latLon_t loc;
+	if (!grid_to_latLon(grid, &loc)) return 0;
+	latLon_deg_to_rad(loc);
+	
+	double delta_lat = loc.lat - r_loc->lat;
+	delta_lat /= 2.0;
+	delta_lat = sin(delta_lat);
+	delta_lat *= delta_lat;
+	double delta_lon = loc.lon - r_loc->lon;
+	delta_lon /= 2.0;
+	delta_lon = sin(delta_lon);
+	delta_lon *= delta_lon;
+
+	double t = delta_lat + (delta_lon * cos(loc.lat) * cos(r_loc->lat));
+	#define EARTH_RADIUS_KM 6371.0
+	double km = EARTH_RADIUS_KM * 2.0 * atan2(sqrt(t), sqrt(1.0-t));
+	return (int) ceil(km);
 }
 
 void set_cpu_affinity(int cpu)

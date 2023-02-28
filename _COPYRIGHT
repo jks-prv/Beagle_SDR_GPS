@@ -59,6 +59,12 @@ Copyright (C) 2010-2019 ARM Limited or its affiliates. All rights reserved.
 Antenna switch
 Copyright (c) 2016-2019 Kari Karvonen, OH1KK
 
+ALE 2G
+Copyright 2015 Milen Rangelov <gat3way@gmail.com>
+    LinuxALE project, Copyright (C) 2000 - 2001
+        Charles Brain (chbrain@dircon.co.uk)
+        Ilkka Toivanen (pile@aimo.kareltek.fi)
+
 CW decoder
 Copyright (c) 2016  Loftur E. Jonasson  (tf3lj [at] arrl [dot] net)
 
@@ -78,11 +84,20 @@ Copyright (C) 2015 by Sean D'Epagnier
 FSK / Navtex
 Copyright (C) 2011 by Paul Lutus
 
+FT8 decoder
+Copyright (c) 2018-2023 Karlis Goba, YL3JG
+
+HFDL
+Copyright (c) 2018-2021 Tomasz Lemiech <szpajder@gmail.com>
+
 IBP scanner
 Copyright (c) 2017 Peter Jennings, VE3SUN
 
 Iframe
 Copyright (c) 2020 Kari Karvonen, OH1KK
+
+DSC / Selcall
+Copyright (c) 2022-2023 John Seamons, ZL/KF6VO
 
 SSTV
 Copyright (c) 2007-2013, Oona Räisänen (OH2EIQ [at] sral.fi)

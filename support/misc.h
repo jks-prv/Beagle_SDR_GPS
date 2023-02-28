@@ -119,8 +119,9 @@ typedef struct {
 #define	FLD_DEG_LON		(SQ_PER_FLD * SQ_LON_DEG)
 #define	FLD_DEG_LAT		(SQ_PER_FLD * SQ_LAT_DEG)
 
-void grid_to_latLon(char *grid, latLon_t *loc);
+bool grid_to_latLon(const char *grid, latLon_t *loc);
 int latLon_to_grid6(latLon_t *loc, char *grid);
+int grid_to_distance_km(latLon_t *r_loc, char *grid);
 
 void set_cpu_affinity(int cpu);
 

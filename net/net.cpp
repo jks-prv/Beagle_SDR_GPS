@@ -534,6 +534,13 @@ void inet4_h2d(u4_t inet4, u1_t *ap, u1_t *bp, u1_t *cp, u1_t *dp)
     if (dp != NULL) *dp = bf(inet4,  7,  0);
 }
 
+char *inet4_h2s(u4_t inet4)
+{
+    u1_t a,b,c,d;
+    inet4_h2d(inet4, &a,&b,&c,&d);
+    return stprintf("%d.%d.%d.%d", a,b,c,d);
+}
+
 // ::ffff:a.b.c.d/96
 bool is_inet4_map_6(u1_t *a)
 {

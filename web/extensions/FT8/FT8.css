@@ -1,1 +1,11 @@
 /* FT8.css */
+
+.cl-ft8-text
+{
+	width: 100px;
+	margin-top: 5px;
+	margin-left: 5px;
+	text-align: center;
+	color: black;
+	background-color: lightGray;
+}

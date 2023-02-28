@@ -109,7 +109,8 @@ function ext_get_cfg_param(path, init_val, save)
 
 function ext_get_cfg_param_string(path, init_val, save)
 {
-	return kiwi_decodeURIComponent(ext_get_cfg_param_string +':'+ path, ext_get_cfg_param(path, init_val, save));
+   var s = ext_get_cfg_param(path, init_val, save) || '';
+	return kiwi_decodeURIComponent(ext_get_cfg_param_string +':'+ path, s);
 }
 
 function ext_set_cfg_param(path, val, save)

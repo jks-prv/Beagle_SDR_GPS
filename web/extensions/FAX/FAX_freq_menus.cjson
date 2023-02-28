@@ -71,7 +71,9 @@
 // per forum user Fabrys 10/2020
 // "Guangzhou_XSQ, CN":  [ 4159.5, 8310.5, 12375.5, 16562.5 ],
 // 7/2022: new freqs per Fabrys
-      "Guangzhou_XSQ, CN":  [ 4199.75, 8412.5, 12629.25, 16826.25 ],
+// "Guangzhou_XSQ, CN":  [ 4199.75, 8412.5, 12629.25, 16826.25 ],
+// 2/2023: +50 Hz per forum user YogiCat
+      "Guangzhou_XSQ, CN":  [ 4199.8, 8412.5, 12629.3, 16826.3 ],
    
       "Shanghai_XSG, CN":  [ 4170, 8302, 12382, 16559 ],
    

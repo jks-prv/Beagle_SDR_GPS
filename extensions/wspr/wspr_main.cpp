@@ -358,12 +358,12 @@ void wspr_send_decode(wspr_t *w, int seq)
             "%5d  %3d (%s)",
             d->hour, d->min, d->snr, d->dt_print, d->freq_print, (int) d->drift1,
             d->call, d->call, d->grid, d->grid,
-            (int) grid_to_distance_km(d->grid), d->dBm, W_s);
+            grid_to_distance_km(&wspr_c.r_loc, d->grid), d->dBm, W_s);
         if (log_decodes)
             rcfprintf(w->rx_chan, printf_type, "%s DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  %-6s %s %5d  %3d (%s)\n",
                 w->iwbp? "IWBP" : "WSPR",
                 d->hour, d->min, d->snr, d->dt_print, d->freq_print, (int) d->drift1,
-                d->call, d->grid, (int) grid_to_distance_km(d->grid), d->dBm, W_s);
+                d->call, d->grid, grid_to_distance_km(&wspr_c.r_loc, d->grid), d->dBm, W_s);
     } else
     
     if (d->r_valid == 2) {	// TYPE2
@@ -400,12 +400,12 @@ void wspr_send_decode(wspr_t *w, int seq)
                 "<a href='http://www.levinecentral.com/ham/grid_square.php?Grid=%s' target='_blank'>%6s</a> "
                 "%5d  %3d (%s)",
                 d->hour, d->min, d->snr, d->dt_print, d->freq_print, (int) d->drift1,
-                d->grid, d->grid, (int) grid_to_distance_km(d->grid), d->dBm, W_s);
+                d->grid, d->grid, grid_to_distance_km(&wspr_c.r_loc, d->grid), d->dBm, W_s);
             if (log_decodes)
                 rcfprintf(w->rx_chan, printf_type, "%s DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  ...  %6s %5d  %3d (%s)\n",
                     w->iwbp? "IWBP" : "WSPR",
                     d->hour, d->min, d->snr, d->dt_print, d->freq_print, (int) d->drift1,
-                    d->grid, (int) grid_to_distance_km(d->grid), d->dBm, W_s);
+                    d->grid, grid_to_distance_km(&wspr_c.r_loc, d->grid), d->dBm, W_s);
         } else {
             ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
                 "%02d%02d %3.0f %4.1f %9.6f %2d  "
@@ -414,12 +414,12 @@ void wspr_send_decode(wspr_t *w, int seq)
                 "%d %d (%s)",
                 d->hour, d->min, d->snr, d->dt_print, d->freq_print, (int) d->drift1,
                 d->call, d->call, d->grid, d->grid,
-                (int) grid_to_distance_km(d->grid), d->dBm, W_s);
+                grid_to_distance_km(&wspr_c.r_loc, d->grid), d->dBm, W_s);
             if (log_decodes)
                 rcfprintf(w->rx_chan, printf_type, "%s DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  %s %s %d %d (%s)\n",
                     w->iwbp? "IWBP" : "WSPR",
                     d->hour, d->min, d->snr, d->dt_print, d->freq_print, (int) d->drift1,
-                    d->call, d->grid, (int) grid_to_distance_km(d->grid), d->dBm, W_s);
+                    d->call, d->grid, grid_to_distance_km(&wspr_c.r_loc, d->grid), d->dBm, W_s);
         }
     }
     

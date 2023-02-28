@@ -310,6 +310,7 @@ typedef struct {
 typedef struct {
     char *rcall;
     char rgrid[LEN_GRID];
+    latLon_t r_loc;
 	bool GPS_update_grid;
 	bool syslog, spot_log;
 
@@ -380,4 +381,3 @@ int snr_comp(const void *elem1, const void *elem2);
 int freq_comp(const void *elem1, const void *elem2);
 
 void set_reporter_grid(char *grid);
-double grid_to_distance_km(char *grid);

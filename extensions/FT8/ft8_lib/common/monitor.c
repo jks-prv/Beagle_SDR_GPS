@@ -110,6 +110,9 @@ void monitor_init(monitor_t* me, const monitor_config_t* cfg)
     me->symbol_period = symbol_period;
 
     me->max_mag = -120.0f;
+    
+    me->timedata = (kiss_fft_scalar *) malloc(sizeof(kiss_fft_scalar) * me->nfft);
+    me->freqdata = (kiss_fft_cpx *) malloc(sizeof(kiss_fft_cpx) * (me->nfft / 2 + 1));
 }
 
 void monitor_free(monitor_t* me)
@@ -118,6 +121,8 @@ void monitor_free(monitor_t* me)
     free(me->fft_work);
     free(me->last_frame);
     free(me->window);
+    free(me->timedata);
+    free(me->freqdata);
 }
 
 void monitor_reset(monitor_t* me)
@@ -139,8 +144,8 @@ void monitor_process(monitor_t* me, const float* frame)
     // Loop over block subdivisions
     for (int time_sub = 0; time_sub < me->wf.time_osr; ++time_sub)
     {
-        kiss_fft_scalar timedata[me->nfft];
-        kiss_fft_cpx freqdata[me->nfft / 2 + 1];
+        //kiss_fft_scalar timedata[me->nfft];
+        //kiss_fft_cpx freqdata[me->nfft / 2 + 1];
 
         // Shift the new data into analysis frame
         for (int pos = 0; pos < me->nfft - me->subblock_size; ++pos)
@@ -156,9 +161,9 @@ void monitor_process(monitor_t* me, const float* frame)
         // Do DFT of windowed analysis frame
         for (int pos = 0; pos < me->nfft; ++pos)
         {
-            timedata[pos] = me->window[pos] * me->last_frame[pos];
+            me->timedata[pos] = me->window[pos] * me->last_frame[pos];
         }
-        kiss_fftr(me->fft_cfg, timedata, freqdata);
+        kiss_fftr(me->fft_cfg, me->timedata, me->freqdata);
 
         // Loop over possible frequency OSR offsets
         for (int freq_sub = 0; freq_sub < me->wf.freq_osr; ++freq_sub)
@@ -166,12 +171,12 @@ void monitor_process(monitor_t* me, const float* frame)
             for (int bin = me->min_bin; bin < me->max_bin; ++bin)
             {
                 int src_bin = (bin * me->wf.freq_osr) + freq_sub;
-                float mag2 = (freqdata[src_bin].i * freqdata[src_bin].i) + (freqdata[src_bin].r * freqdata[src_bin].r);
+                float mag2 = (me->freqdata[src_bin].i * me->freqdata[src_bin].i) + (me->freqdata[src_bin].r * me->freqdata[src_bin].r);
                 float db = 10.0f * log10f(1E-12f + mag2);
 
 #ifdef WATERFALL_USE_PHASE
                 // Save the magnitude in dB and phase in radians
-                float phase = atan2f(freqdata[src_bin].i, freqdata[src_bin].r);
+                float phase = atan2f(me->freqdata[src_bin].i, me->freqdata[src_bin].r);
                 me->wf.mag[offset].mag = db;
                 me->wf.mag[offset].phase = phase;
 #else
@@ -208,11 +213,11 @@ void monitor_resynth(const monitor_t* me, const candidate_t* candidate, float* s
     WF_ELEM_T* el = me->wf.mag + offset;
 
     // DFT frequency data - initialize to zero
-    kiss_fft_cpx freqdata[num_ifft];
+    //kiss_fft_cpx freqdata[num_ifft];
     for (int i = 0; i < num_ifft; ++i)
     {
-        freqdata[i].r = 0;
-        freqdata[i].i = 0;
+        me->freqdata[i].r = 0;
+        me->freqdata[i].i = 0;
     }
 
     int pos = 0;
@@ -236,23 +241,23 @@ void monitor_resynth(const monitor_t* me, const candidate_t* candidate, float* s
 
                 // Convert (dB magnitude, phase) to (real, imaginary)
                 float mag = powf(10.0f, el[i].mag / 20) / 2 * weight;
-                freqdata[tgt_bin].r = mag * cosf(el[i].phase);
-                freqdata[tgt_bin].i = mag * sinf(el[i].phase);
+                me->freqdata[tgt_bin].r = mag * cosf(el[i].phase);
+                me->freqdata[tgt_bin].i = mag * sinf(el[i].phase);
 
                 int i2 = i + me->wf.num_bins;
                 tgt_bin = (tgt_bin + 1) % num_ifft;
                 float mag2 = powf(10.0f, el[i2].mag / 20) / 2 * weight;
-                freqdata[tgt_bin].r = mag2 * cosf(el[i2].phase);
-                freqdata[tgt_bin].i = mag2 * sinf(el[i2].phase);
+                me->freqdata[tgt_bin].r = mag2 * cosf(el[i2].phase);
+                me->freqdata[tgt_bin].i = mag2 * sinf(el[i2].phase);
             }
         }
 
         // Compute inverse DFT and overlap-add the waveform
-        kiss_fft_cpx timedata[num_ifft];
-        kiss_fft(me->ifft_cfg, freqdata, timedata);
+        kiss_fft_cpx me->timedata[num_ifft];
+        kiss_fft(me->ifft_cfg, me->freqdata, me->timedata);
         for (int i = 0; i < num_ifft; ++i)
         {
-            signal[pos + i] += timedata[i].i;
+            signal[pos + i] += me->timedata[i].i;
         }
 
         // Move to the next symbol

@@ -4,11 +4,19 @@
 #include "bits.h"
 #include "printf.h"
 #include "str.h"
+#include "misc.h"
 #include "timer.h"
 #include "coroutines.h"
+#include "rx.h"
+#include "net.h"
 #include "web.h"
-#include "wspr.h"
 #include "PSKReporter.h"
+
+//#define PR_UPLOAD_MINUTES 1
+#define PR_UPLOAD_MINUTES 5
+
+#define PR_UPLOAD_PORT 14739    // report.pskreporter.info (test)
+//#define PR_UPLOAD_PORT 4739     // report.pskreporter.info (LIVE)
 
 // can't use traditional hton[sl] when initializing structs with const values
 #define hns(i)          FLIP16(i)
@@ -118,7 +126,13 @@ struct {
 typedef struct {
 	bool task_created;
 	tid_t tid;
+
+    char *upload_url;
+	char rcall[16], rgrid[8];
+    latLon_t r_loc;
+
 	int send_info_desc_repeat, send_info_desc_interval;
+	u4_t spots[2];
 	bool packet_full;
 	int ping_pong;
     u1_t buf[2][PR_BUF_LEN], *bp, *bbp, *xbp, *xbbp;
@@ -208,15 +222,10 @@ static u1_t *pr_rx_info(u1_t *bp)
     lenp = (u2_t *) bp;
     bp += 2;
     
-    char *rcall = strdup(wspr_c.rcall);
-    rcall = kiwi_str_decode_inplace(rcall);
-    bp = pr_emit_string(bp, rcall);
-    free(rcall);
+    bp = pr_emit_string(bp, pr->rcall);
+    bp = pr_emit_string(bp, pr->rgrid);
     
-    char *rgrid = wspr_c.rgrid;
-    bp = pr_emit_string(bp, rgrid);
-    
-    const char *client = "KiwiSDR v1";
+    const char *client = "KiwiSDR 1.0";
     bp = pr_emit_string(bp, client);
     
     while (((bp - bbp) % 4) != 0) *bp++ = 0;
@@ -252,46 +261,56 @@ void pr_info_desc()
     pr->bp = bp;
 }
 
-void PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, ftx_protocol_t protocol, const char *grid, u4_t slot_time)
+int PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, ftx_protocol_t protocol, const char *grid, u4_t slot_time)
 {
     pr_conf_t *pr = &pr_conf;
-    conn_t *conn = rx_channels[rx_chan].conn;
-    u4_t freq = conn->freqHz + passband_freq;
-    const char *mode = (protocol == FTX_PROTOCOL_FT8)? "FT8" : "FT4";
-    time_t time = (time_t) slot_time;
-    printf("PSKReporter spot %s %.3f %s %s %s\n", mode, (double) freq / 1e3, call, grid, var_ctime_static(&time));
+    if (pr->task_created) {
+        conn_t *conn = rx_channels[rx_chan].conn;
+        u4_t freq = conn->freqHz + passband_freq;
+        const char *mode = (protocol == FTX_PROTOCOL_FT8)? "FT8" : "FT4";
+        time_t time = (time_t) slot_time;
+        rcprintf(rx_chan, "PSKReporter spot %s %.3f %s %s %s\n", mode, (double) freq / 1e3, call, grid, var_ctime_static(&time));
+        ext_send_msg_encoded(rx_chan, false, "EXT", "debug", "%s %.3f %s %s %s", mode, (double) freq / 1e3, call, grid, var_ctime_static(&time));
     
-    u1_t *bp = pr->bp;
-    int so;
-    u2_t *lenp;
-    bp = pr_check_need_hdr(bp);
-    u1_t *bbp = bp;
+        u1_t *bp = pr->bp;
+        int so;
+        u2_t *lenp;
+        bp = pr_check_need_hdr(bp);
+        u1_t *bbp = bp;
 
-    *(u2_t *) bp = PR_TX_LINK;
-    bp += 2;
-    lenp = (u2_t *) bp;
-    bp += 2;
+        *(u2_t *) bp = PR_TX_LINK;
+        bp += 2;
+        lenp = (u2_t *) bp;
+        bp += 2;
     
-    bp = pr_emit_string(bp, call);
-    *(u4_t *) bp = hnl(freq); bp += 4;
-    bp = pr_emit_string(bp, mode);
-    bp = pr_emit_string(bp, grid);
-    *bp++ = PR_TX_ISRC_AUTO;
-    *(u4_t *) bp = hnl(slot_time); bp += 4;
+        bp = pr_emit_string(bp, call);
+        *(u4_t *) bp = hnl(freq); bp += 4;
+        bp = pr_emit_string(bp, mode);
+        bp = pr_emit_string(bp, grid);
+        *bp++ = PR_TX_ISRC_AUTO;
+        *(u4_t *) bp = hnl(slot_time); bp += 4;
 
-    // pad out
-    while (((bp - bbp) % 4) != 0) *bp++ = 0;
-    *lenp = hns(bp - bbp);
-    //pr_dump("spot", pr->ping_pong, pr->bbp, bbp, bp - bbp);
-    pr->bp = bp;
+        // pad out
+        while (((bp - bbp) % 4) != 0) *bp++ = 0;
+        *lenp = hns(bp - bbp);
+        //pr_dump("spot", pr->ping_pong, pr->bbp, bbp, bp - bbp);
+        pr->bp = bp;
     
-    if ((pr->bp - pr->bbp) > (PR_BUF_LEN - PR_TX_MAX_LEN)) {
-        pr->xbp = pr->bp; pr->xbbp = pr->bbp;
-        pr->ping_pong ^= 1; pr->bp = pr->bbp = pr->buf[pr->ping_pong]; pr->hdr = NULL;
-		pr->packet_full = true;
-		printf("PSKReporter spot pkt FULL ping_pong %d => %d\n", pr->ping_pong ^ 1, pr->ping_pong);
-        TaskWakeupF(pr->tid, TWF_CANCEL_DEADLINE);
+        size_t offset = pr->bp - pr->bbp;
+        bool pkt_full = offset > (PR_BUF_LEN - PR_TX_MAX_LEN);
+        //ext_send_msg_encoded(rx_chan, false, "EXT", "debug", "pp %d off %d full %d", pr->ping_pong, offset, pkt_full);
+        pr->spots[pr->ping_pong]++;
+
+        if (pkt_full) {
+            pr->xbp = pr->bp; pr->xbbp = pr->bbp;
+            pr->ping_pong ^= 1; pr->bp = pr->bbp = pr->buf[pr->ping_pong]; pr->hdr = NULL;
+            pr->packet_full = true;
+            printf("PSKReporter spot pkt FULL ping_pong %d => %d\n", pr->ping_pong ^ 1, pr->ping_pong);
+            TaskWakeupF(pr->tid, TWF_CANCEL_DEADLINE);
+        }
     }
+    
+    return grid_to_distance_km(&pr->r_loc, (char *) grid);
 }
 
 static void PSKreport(void *param)      // task
@@ -316,7 +335,7 @@ static void PSKreport(void *param)      // task
             pr->send_info_desc_interval = 60;
 	    }
 	    
-		u64_t sleep_msec = SEC_TO_MSEC(MINUTES_TO_SEC(1)) + delta_msec;
+		u64_t sleep_msec = SEC_TO_MSEC(MINUTES_TO_SEC(PR_UPLOAD_MINUTES)) + delta_msec;
 		TaskSleepMsec(sleep_msec);
 		
 		// Randomize next upload time +/- 8192 msec
@@ -352,28 +371,64 @@ static void PSKreport(void *param)      // task
         hdr->uniq = hnl(pr_conf.uniq);
         pr_dump("upload", ping_pong, bbp, bbp, total_len);
 
-        //#define PR_UPLOAD_SITE "udp://50.116.2.70:14739"    // proxy.kiwisdr.com (test)
-        #define PR_UPLOAD_SITE "udp://50.116.2.70:14739"    // report.pskreporter.info (test)
-        //#define PR_UPLOAD_SITE "udp://50.116.2.70:4739"     // report.pskreporter.info (LIVE)
-        struct mg_connection *mg = web_connect(PR_UPLOAD_SITE);     
-        printf(GREEN "PSKReporter upload %s" NONL, PR_UPLOAD_SITE);
+        struct mg_connection *mg = web_connect(pr->upload_url);     
+        printf("PSKReporter upload %d spots to %s\n", pr->spots[ping_pong], pr->upload_url);
+        pr->spots[ping_pong] = 0;
         size_t n = mg_write(mg, bbp, total_len);
         //printf("PSK UDP mg_write n=%d|%d\n", n, total_len);
 	}
 }
 
-void PSKReporter_init()
+int PSKReporter_setup(int rx_chan)
 {
     pr_conf_t *pr = &pr_conf;
-    printf("s/o time_t %d\n", sizeof(time_t));
     
     // only launch once
     #ifdef PR_USE_CALLSIGN_HASHTABLE
         if (!pr->task_created) {
-            pr->tid = CreateTask(PSKreport, NULL, SERVICES_PRIORITY);
-            pr->task_created = true;
+            bool no_call_or_grid = true;
+            const char *rcall = cfg_string("ft8.callsign", NULL, CFG_OPTIONAL);
+            const char *rgrid = cfg_string("ft8.grid", NULL, CFG_OPTIONAL);
+            //printf("rcall <%s> rgrid <%s>\n", rcall, rgrid);
+            
+            bool grid_ok = false;
+            if (rgrid) {
+                int glen = strlen(rgrid);
+                if (glen >= 4 && glen <= 6) {
+                    kiwi_strncpy(pr->rgrid, rgrid, 8);
+	                grid_to_latLon(rgrid, &pr->r_loc);
+                    grid_ok = true;
+                }
+            }
+            
+            if (rcall && strlen(rcall) >= 3 && grid_ok) {
+                kiwi_strncpy(pr->rcall, rcall, 16);
+                kiwi_str_decode_inplace(pr->rcall);
+                pr->tid = CreateTask(PSKreport, NULL, SERVICES_PRIORITY);
+                pr->task_created = true;
+                no_call_or_grid = false;
+            }
+            cfg_string_free(rcall); cfg_string_free(rgrid);
+            if (no_call_or_grid) {
+                rcprintf(rx_chan, "PSKReporter_setup: no call or grid configured\n");
+                return -1;
+            } else {
+                return 1;
+            }
         }
+        return 0;
     #else
         #warning FT8: PSKReporter upload code not enabled
+        return -1;
     #endif
+}
+
+void PSKReporter_init()
+{
+    #define BACKUP_PSKREPORTER_PUBLIC_IP "74.116.41.13"
+    static ip_lookup_t ips_pskreporter;
+    DNS_lookup("report.pskreporter.info", &ips_pskreporter, N_IPS, BACKUP_PSKREPORTER_PUBLIC_IP);
+    u1_t a,b,c,d;
+    inet4_h2d(ips_pskreporter.ip[0], &a,&b,&c,&d);
+    asprintf(&pr_conf.upload_url, "udp://%d.%d.%d.%d:%d", a,b,c,d, PR_UPLOAD_PORT);
 }
