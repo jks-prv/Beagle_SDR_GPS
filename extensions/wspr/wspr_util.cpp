@@ -405,35 +405,9 @@ int freq_comp(const void *elem1, const void *elem2)
 	return r;
 }
 
-static latLon_t r_loc;
-
 void set_reporter_grid(char *grid)
 {
-	grid_to_latLon(grid, &r_loc);
-	if (r_loc.lat != 999.0)
-		latLon_deg_to_rad(r_loc);
-}
-
-double grid_to_distance_km(char *grid)
-{
-	if (r_loc.lat == 999.0 || *grid == '\0')
-		return 0;
-	
-	latLon_t loc;
-	grid_to_latLon(grid, &loc);
-	latLon_deg_to_rad(loc);
-	
-	double delta_lat = loc.lat - r_loc.lat;
-	delta_lat /= 2.0;
-	delta_lat = sin(delta_lat);
-	delta_lat *= delta_lat;
-	double delta_lon = loc.lon - r_loc.lon;
-	delta_lon /= 2.0;
-	delta_lon = sin(delta_lon);
-	delta_lon *= delta_lon;
-
-	double t = delta_lat + (delta_lon * cos(loc.lat) * cos(r_loc.lat));
-	#define EARTH_RADIUS_KM 6371.0
-	double km = EARTH_RADIUS_KM * 2.0 * atan2(sqrt(t), sqrt(1.0-t));
-	return km;
+	grid_to_latLon(grid, &wspr_c.r_loc);
+	if (wspr_c.r_loc.lat != 999.0)
+		latLon_deg_to_rad(wspr_c.r_loc);
 }
