@@ -737,6 +737,7 @@ int grid_to_distance_km(latLon_t *r_loc, char *grid)
 	
 	latLon_t loc;
 	if (!grid_to_latLon(grid, &loc)) return 0;
+	//printf("grid_to_distance_km: grid=%s lat=%f lon=%f\n", grid, loc.lat, loc.lon);
 	latLon_deg_to_rad(loc);
 	
 	double delta_lat = loc.lat - r_loc->lat;
@@ -751,6 +752,7 @@ int grid_to_distance_km(latLon_t *r_loc, char *grid)
 	double t = delta_lat + (delta_lon * cos(loc.lat) * cos(r_loc->lat));
 	#define EARTH_RADIUS_KM 6371.0
 	double km = EARTH_RADIUS_KM * 2.0 * atan2(sqrt(t), sqrt(1.0-t));
+	//printf("grid_to_distance_km: km=%d\n", (int) ceil(km));
 	return (int) ceil(km);
 }
 
