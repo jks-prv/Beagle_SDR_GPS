@@ -15,8 +15,8 @@
 //#define PR_UPLOAD_MINUTES 1
 #define PR_UPLOAD_MINUTES 5
 
-#define PR_UPLOAD_PORT 14739    // report.pskreporter.info (test)
-//#define PR_UPLOAD_PORT 4739     // report.pskreporter.info (LIVE)
+//#define PR_UPLOAD_PORT 14739    // report.pskreporter.info (test)
+#define PR_UPLOAD_PORT 4739     // report.pskreporter.info (LIVE)
 
 // can't use traditional hton[sl] when initializing structs with const values
 #define hns(i)          FLIP16(i)
@@ -397,6 +397,8 @@ int PSKReporter_setup(int rx_chan)
                 if (glen >= 4 && glen <= 6) {
                     kiwi_strncpy(pr->rgrid, rgrid, 8);
 	                grid_to_latLon(rgrid, &pr->r_loc);
+	                //printf("PSKReporter_setup grid=%s lat=%f lon=%f\n", rgrid, pr->r_loc.lat, pr->r_loc.lon);
+	                latLon_deg_to_rad(pr->r_loc);
                     grid_ok = true;
                 }
             }

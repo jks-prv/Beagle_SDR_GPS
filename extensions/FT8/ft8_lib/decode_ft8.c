@@ -471,8 +471,10 @@ void decode_ft8_init(int rx_chan, int proto)
 
     // Compute FFT over the whole signal and store it
     monitor_config_t mon_cfg = {
-        .f_min = 200,
-        .f_max = 3000,
+        //.f_min = 200,
+        .f_min = 100,
+        //.f_max = 3000,
+        .f_max = 3100,
         .sample_rate = sample_rate,
         .time_osr = kTime_osr,
         .freq_osr = kFreq_osr,

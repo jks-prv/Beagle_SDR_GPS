@@ -97,7 +97,7 @@ function ft8_output_chars(c)
 function ft8_controls_setup()
 {
 	ft8.saved_mode = ext_get_mode();
-   ext_tune(null, 'usb', ext_zoom.ABS, 11, 200, 3100);
+   ext_tune(null, 'usb', ext_zoom.ABS, 11, 100, 3100);
 
    var data_html =
       time_display_html('ft8') +
