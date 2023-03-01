@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.579  Mar 2, 2023
+    Revert spectrum peak hold colors.
+    Extension development/testing.
+
 v1.578  Feb 12, 2023
     Fixed bug setting dx label modes.
     Improved high end response of NBFM de-emphasis filters.

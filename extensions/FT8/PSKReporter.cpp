@@ -132,6 +132,7 @@ typedef struct {
     latLon_t r_loc;
 
 	int send_info_desc_repeat, send_info_desc_interval;
+	bool sent_info_desc[2];
 	u4_t spots[2];
 	bool packet_full;
 	int ping_pong;
@@ -231,6 +232,7 @@ static u1_t *pr_rx_info(u1_t *bp)
     while (((bp - bbp) % 4) != 0) *bp++ = 0;
     *lenp = hns(bp - bbp);
     //pr_dump("rx_info", pr->ping_pong, pr->bbp, bbp, bp - bbp);
+    pr->sent_info_desc[pr->ping_pong] = true;
     return bp;
 }
 
@@ -349,11 +351,15 @@ static void PSKreport(void *param)      // task
             pr->xbp = pr->bp; pr->xbbp = pr->bbp; ping_pong = pr->ping_pong;
             pr->ping_pong ^= 1; pr->bp = pr->bbp = pr->buf[pr->ping_pong]; pr->hdr = NULL;
 		    printf("PSKReporter task wakeup: TIMEOUT ping_pong %d => %d\n", pr->ping_pong ^ 1, pr->ping_pong);
+            ext_send_msg_encoded(/* rx_chan */ 0, false, "EXT", "debug",
+                "PSKReporter task wakeup: TIMEOUT ping_pong %d => %d\n", pr->ping_pong ^ 1, pr->ping_pong);
 		} else {
 		    // PSKReporter_spot() did flip_flop and set xbp/xbbp
 		    ping_pong = pr->ping_pong ^ 1;
 		    pr->packet_full = false;
 		    printf("PSKReporter task wakeup: EARLY pkt FULL\n");
+            ext_send_msg_encoded(/* rx_chan */ 0, false, "EXT", "debug",
+		        "PSKReporter task wakeup: EARLY pkt FULL\n");
 		}
 		
 		// upload
@@ -361,6 +367,8 @@ static void PSKreport(void *param)      // task
         int total_len = bp - bbp;
         if (total_len == 0) {
 		    printf("PSKReporter task wakeup: nothing to do, send_info_desc_interval=%d\n", pr->send_info_desc_interval);
+            ext_send_msg_encoded(/* rx_chan */ 0, false, "EXT", "debug",
+		        "PSKReporter task wakeup: nothing to do, send_info_desc_interval=%d\n", pr->send_info_desc_interval);
             continue;
         }
         
@@ -372,7 +380,12 @@ static void PSKreport(void *param)      // task
         pr_dump("upload", ping_pong, bbp, bbp, total_len);
 
         struct mg_connection *mg = web_connect(pr->upload_url);     
-        printf("PSKReporter upload %d spots to %s\n", pr->spots[ping_pong], pr->upload_url);
+        printf("PSKReporter upload %d spots %sto %s\n",
+            pr->spots[ping_pong], pr->sent_info_desc[ping_pong]? "(and info desc) " : "", pr->upload_url);
+        ext_send_msg_encoded(/* rx_chan */ 0, false, "EXT", "debug",
+            "PSKReporter upload %d spots %sto %s\n",
+            pr->spots[ping_pong], pr->sent_info_desc[ping_pong]? "(and info desc) " : "", pr->upload_url);
+        pr->sent_info_desc[ping_pong] = false;
         pr->spots[ping_pong] = 0;
         size_t n = mg_write(mg, bbp, total_len);
         //printf("PSK UDP mg_write n=%d|%d\n", n, total_len);
