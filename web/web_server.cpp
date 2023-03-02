@@ -316,7 +316,8 @@ char *web_server_hdr;
 
 struct mg_connection *web_connect(const char *url)
 {
-    return mg_connect(server, url);
+    struct mg_connection *mg = mg_connect(server, url);
+    return mg;
 }
 
 void web_server_init(ws_init_t type)

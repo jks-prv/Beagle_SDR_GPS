@@ -12,8 +12,14 @@
 #include "web.h"
 #include "PSKReporter.h"
 
-//#define PR_UPLOAD_MINUTES 1
-#define PR_UPLOAD_MINUTES 5
+//#define PR_TESTING
+#ifdef PR_TESTING
+    #define PR_UPLOAD_MINUTES   1
+    #define PR_INFO_DESC_RPT    1
+#else
+    #define PR_UPLOAD_MINUTES   5
+    #define PR_INFO_DESC_RPT    3
+#endif
 
 //#define PR_UPLOAD_PORT 14739    // report.pskreporter.info (test)
 #define PR_UPLOAD_PORT 4739     // report.pskreporter.info (LIVE)
@@ -321,10 +327,12 @@ static void PSKreport(void *param)      // task
     pr->ping_pong = 0; pr->bp = pr->bbp = pr->buf[pr->ping_pong]; pr->hdr = NULL;
     pr->seq = 1;
     pr->uniq = timer_us();
-    pr->send_info_desc_repeat = 3;
+    pr->send_info_desc_repeat = PR_INFO_DESC_RPT;
     pr->send_info_desc_interval = 60;
     s4_t delta_msec = 0;
     
+    struct mg_connection *mg = web_connect(pr->upload_url);
+
 	while (1) {
 	    if (pr->send_info_desc_repeat > 0) {
 	        pr_info_desc();
@@ -379,7 +387,6 @@ static void PSKreport(void *param)      // task
         hdr->uniq = hnl(pr_conf.uniq);
         pr_dump("upload", ping_pong, bbp, bbp, total_len);
 
-        struct mg_connection *mg = web_connect(pr->upload_url);     
         printf("PSKReporter upload %d spots %sto %s\n",
             pr->spots[ping_pong], pr->sent_info_desc[ping_pong]? "(and info desc) " : "", pr->upload_url);
         ext_send_msg_encoded(/* rx_chan */ 0, false, "EXT", "debug",
