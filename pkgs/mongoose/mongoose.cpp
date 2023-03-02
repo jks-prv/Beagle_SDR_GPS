@@ -1452,7 +1452,7 @@ struct dir_entry {
   file_stat_t st;
 };
 
-// NOTE(lsm): this enum shoulds be in sync with the config_options.
+// NOTE(lsm): this enum should be in sync with the config_options.
 enum {
   ACCESS_CONTROL_LIST,
 #ifndef MONGOOSE_NO_FILESYSTEM
