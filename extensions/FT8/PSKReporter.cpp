@@ -12,9 +12,6 @@
 #include "web.h"
 #include "PSKReporter.h"
 
-//#define PR_UPLOAD_PORT 14739    // report.pskreporter.info (test)
-#define PR_UPLOAD_PORT 4739     // report.pskreporter.info (LIVE)
-
 // can't use traditional hton[sl] when initializing structs with const values
 #define hns(i)          FLIP16(i)
 #define hnl(i)          FLIP32(i)
@@ -37,12 +34,15 @@ struct msg_hdr_t {
 
 
 // rx info desc
-#define PR_RX_ID        hns(3)
-#define PR_RX_LINK      hns(0x1138)
-#define PR_RX_CALL      PR_INFO_ELEM(2)
-#define PR_RX_LOC       PR_INFO_ELEM(4)
-#define PR_RX_CLIENT    PR_INFO_ELEM(8)
-#define PR_RX_NFIELDS   hns(3)
+#define PR_RX_ID            hns(3)
+#define PR_RX_LINK          hns(0x1138)
+#define PR_RX_ANT_LINK      hns(0x1139)
+#define PR_RX_CALL          PR_INFO_ELEM(2)
+#define PR_RX_LOC           PR_INFO_ELEM(4)
+#define PR_RX_CLIENT        PR_INFO_ELEM(8)
+#define PR_RX_ANT           PR_INFO_ELEM(9)
+#define PR_RX_NFIELDS       hns(3)
+#define PR_RX_ANT_NFIELDS   hns(4)
 
 struct {
     u2_t id = PR_RX_ID;
@@ -66,10 +66,36 @@ struct {
     u2_t pad[1];
 } __attribute__((packed)) rx_info_desc;
 
+struct {
+    u2_t id = PR_RX_ID;
+    u2_t len;
+    u2_t link = PR_RX_ANT_LINK;
+    u2_t nfields = PR_RX_ANT_NFIELDS;
+    u2_t scope_field_count = 0;
+    
+    u2_t op1_el = PR_RX_CALL;
+    u2_t op1_len = PR_LEN_STRING;
+    u4_t op1_ent = PR_ENTERPRISE;
+    
+    u2_t op2_el = PR_RX_LOC;
+    u2_t op2_len = PR_LEN_STRING;
+    u4_t op2_ent = PR_ENTERPRISE;
+    
+    u2_t op3_el = PR_RX_ANT;
+    u2_t op3_len = PR_LEN_STRING;
+    u4_t op3_ent = PR_ENTERPRISE;
+    
+    u2_t op4_el = PR_RX_CLIENT;
+    u2_t op4_len = PR_LEN_STRING;
+    u4_t op4_ent = PR_ENTERPRISE;
+    
+    u2_t pad[1];
+} __attribute__((packed)) rx_ant_info_desc;
+
 
 // tx info desc
 #define PR_TX_ID        hns(2)
-#define PR_TX_LINK      hns(0x1139)
+#define PR_TX_LINK      hns(0x1140)
 #define PR_TX_CALL      PR_INFO_ELEM(1)
 #define PR_TX_FREQ      PR_INFO_ELEM(5)
 #define PR_TX_SNR       PR_INFO_ELEM(6)
@@ -127,6 +153,8 @@ typedef struct {
     char *upload_url;
 	char rcall[16], rgrid[8];
     latLon_t r_loc;
+    bool have_ant;
+    char *ant;
 
 	int send_info_desc_repeat, send_info_desc_interval;
 	bool sent_info_desc[2];
@@ -197,7 +225,7 @@ static u1_t *pr_emit_string(u1_t *bp, const char *s)
 
 static u1_t * pr_info_desc(u1_t *bp)
 {
-    printf("PSKReporter send info_desc\n");
+    pr_printf("PSKReporter send info_desc\n");
     pr_conf_t *pr = &pr_conf;
     int so;
     u2_t *lenp;
@@ -210,10 +238,17 @@ static u1_t * pr_info_desc(u1_t *bp)
     bp += so;
 
     // rx info desc
-    so = sizeof(rx_info_desc);
-    rx_info_desc.len = hns(so);
-    memcpy(bp, (char *) &rx_info_desc, so);
-    //pr_dump("rx_info_desc", pr->ping_pong, pr->bbp, bp, so);
+    if (pr->have_ant) {
+        so = sizeof(rx_ant_info_desc);
+        rx_ant_info_desc.len = hns(so);
+        memcpy(bp, (char *) &rx_ant_info_desc, so);
+        //pr_dump("rx_ant_info_desc", pr->ping_pong, pr->bbp, bp, so);
+    } else {
+        so = sizeof(rx_info_desc);
+        rx_info_desc.len = hns(so);
+        memcpy(bp, (char *) &rx_info_desc, so);
+        //pr_dump("rx_info_desc", pr->ping_pong, pr->bbp, bp, so);
+    }
     bp += so;
     
     pr->sent_info_desc[pr->ping_pong] = true;
@@ -227,13 +262,14 @@ static u1_t *pr_rx_info(u1_t *bp)
     int so;
     u2_t *lenp;
     
-    *(u2_t *) bp = PR_RX_LINK;
+    *(u2_t *) bp = pr->have_ant? PR_RX_ANT_LINK : PR_RX_LINK;
     bp += 2;
     lenp = (u2_t *) bp;
     bp += 2;
     
     bp = pr_emit_string(bp, pr->rcall);
     bp = pr_emit_string(bp, pr->rgrid);
+    if (pr->have_ant) bp = pr_emit_string(bp, pr->ant);
     
     const char *client = "KiwiSDR 1.0";
     bp = pr_emit_string(bp, client);
@@ -308,7 +344,7 @@ int PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, ftx_prot
             pr->xbp = pr->bp; pr->xbbp = pr->bbp;
             pr->ping_pong ^= 1; pr->bp = pr->bbp = pr->buf[pr->ping_pong]; pr->hdr = NULL;
             pr->packet_full = true;
-            printf("PSKReporter spot pkt FULL ping_pong %d => %d\n", pr->ping_pong ^ 1, pr->ping_pong);
+            pr_printf("PSKReporter spot pkt FULL ping_pong %d => %d\n", pr->ping_pong ^ 1, pr->ping_pong);
             TaskWakeupF(pr->tid, TWF_CANCEL_DEADLINE);
         }
     }
@@ -348,14 +384,14 @@ static void PSKreport(void *param)      // task
 		    // flip_flop
             pr->xbp = pr->bp; pr->xbbp = pr->bbp; ping_pong = pr->ping_pong;
             pr->ping_pong ^= 1; pr->bp = pr->bbp = pr->buf[pr->ping_pong]; pr->hdr = NULL;
-		    printf("PSKReporter task wakeup: TIMEOUT ping_pong %d => %d\n", pr->ping_pong ^ 1, pr->ping_pong);
+		    pr_printf("PSKReporter task wakeup: TIMEOUT ping_pong %d => %d\n", pr->ping_pong ^ 1, pr->ping_pong);
             ext_send_msg_encoded(/* rx_chan */ 0, false, "EXT", "debug",
                 "PSKReporter task wakeup: TIMEOUT ping_pong %d => %d\n", pr->ping_pong ^ 1, pr->ping_pong);
 		} else {
 		    // PSKReporter_spot() did flip_flop and set xbp/xbbp
 		    ping_pong = pr->ping_pong ^ 1;
 		    pr->packet_full = false;
-		    printf("PSKReporter task wakeup: EARLY pkt FULL\n");
+		    pr_printf("PSKReporter task wakeup: EARLY pkt FULL\n");
             ext_send_msg_encoded(/* rx_chan */ 0, false, "EXT", "debug",
 		        "PSKReporter task wakeup: EARLY pkt FULL\n");
 		}
@@ -364,7 +400,7 @@ static void PSKreport(void *param)      // task
         u1_t *bbp = pr->xbbp, *bp = pr->xbp;
         int total_len = bp - bbp;
         if (total_len == 0) {
-		    printf("PSKReporter task wakeup: nothing to do, send_info_desc_interval=%d\n", pr->send_info_desc_interval);
+		    pr_printf("PSKReporter task wakeup: nothing to do, send_info_desc_interval=%d\n", pr->send_info_desc_interval);
             ext_send_msg_encoded(/* rx_chan */ 0, false, "EXT", "debug",
 		        "PSKReporter task wakeup: nothing to do, send_info_desc_interval=%d\n", pr->send_info_desc_interval);
             continue;
@@ -377,7 +413,7 @@ static void PSKreport(void *param)      // task
         hdr->uniq = hnl(pr_conf.uniq);
         pr_dump("upload", ping_pong, bbp, bbp, total_len);
 
-        printf("PSKReporter upload %d spots %sto %s\n",
+        pr_printf("PSKReporter upload %d spots %sto %s\n",
             pr->spots[ping_pong], pr->sent_info_desc[ping_pong]? "(and info desc) " : "", pr->upload_url);
         ext_send_msg_encoded(/* rx_chan */ 0, false, "EXT", "debug",
             "PSKReporter upload %d spots %sto %s\n",
@@ -385,7 +421,7 @@ static void PSKreport(void *param)      // task
         pr->sent_info_desc[ping_pong] = false;
         pr->spots[ping_pong] = 0;
         size_t n = mg_write(mg, bbp, total_len);
-        //printf("PSK UDP mg_write n=%d|%d\n", n, total_len);
+        //pr_printf("PSK UDP mg_write n=%d|%d\n", n, total_len);
 	}
 }
 
@@ -399,7 +435,9 @@ int PSKReporter_setup(int rx_chan)
             bool no_call_or_grid = true;
             const char *rcall = cfg_string("ft8.callsign", NULL, CFG_OPTIONAL);
             const char *rgrid = cfg_string("ft8.grid", NULL, CFG_OPTIONAL);
-            //printf("rcall <%s> rgrid <%s>\n", rcall, rgrid);
+            const char *ant = cfg_string("rx_antenna", NULL, CFG_OPTIONAL);
+            pr->have_ant = (ant != NULL && ant[0] != '\0');
+            //pr_printf("rcall <%s> rgrid <%s> ant <%s>\n", rcall, rgrid, ant);
             
             bool grid_ok = false;
             if (rgrid) {
@@ -407,10 +445,15 @@ int PSKReporter_setup(int rx_chan)
                 if (glen >= 4 && glen <= 6) {
                     kiwi_strncpy(pr->rgrid, rgrid, 8);
 	                grid_to_latLon(rgrid, &pr->r_loc);
-	                //printf("PSKReporter_setup grid=%s lat=%f lon=%f\n", rgrid, pr->r_loc.lat, pr->r_loc.lon);
+	                //pr_printf("PSKReporter_setup grid=%s lat=%f lon=%f\n", rgrid, pr->r_loc.lat, pr->r_loc.lon);
 	                latLon_deg_to_rad(pr->r_loc);
                     grid_ok = true;
                 }
+            }
+            
+            if (pr->have_ant) {
+                pr->ant = strndup(ant, 255);
+                kiwi_str_decode_inplace(pr->ant);
             }
             
             if (rcall && strlen(rcall) >= 3 && grid_ok) {
@@ -420,7 +463,7 @@ int PSKReporter_setup(int rx_chan)
                 pr->task_created = true;
                 no_call_or_grid = false;
             }
-            cfg_string_free(rcall); cfg_string_free(rgrid);
+            cfg_string_free(rcall); cfg_string_free(rgrid); cfg_string_free(ant);
             if (no_call_or_grid) {
                 rcprintf(rx_chan, "PSKReporter_setup: no call or grid configured\n");
                 return -1;

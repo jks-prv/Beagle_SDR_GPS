@@ -237,6 +237,8 @@ function FT8_config_html()
 
 function FT8_help(show)
 {
+   return false;
+   /*
    if (show) {
       var s =
          w3_text('w3-medium w3-bold w3-text-aqua', 'FT8/FT4 decoder help') +
@@ -245,4 +247,5 @@ function FT8_help(show)
       confirmation_show_content(s, 610, 150);
    }
    return true;
+   */
 }
