@@ -12,15 +12,6 @@
 #include "web.h"
 #include "PSKReporter.h"
 
-//#define PR_TESTING
-#ifdef PR_TESTING
-    #define PR_UPLOAD_MINUTES   1
-    #define PR_INFO_DESC_RPT    1
-#else
-    #define PR_UPLOAD_MINUTES   5
-    #define PR_INFO_DESC_RPT    3
-#endif
-
 //#define PR_UPLOAD_PORT 14739    // report.pskreporter.info (test)
 #define PR_UPLOAD_PORT 4739     // report.pskreporter.info (LIVE)
 
@@ -204,16 +195,28 @@ static u1_t *pr_emit_string(u1_t *bp, const char *s)
     return bp;
 }
 
-static u1_t *pr_check_need_hdr(u1_t *bp)
+static u1_t * pr_info_desc(u1_t *bp)
 {
+    printf("PSKReporter send info_desc\n");
     pr_conf_t *pr = &pr_conf;
-    if (pr->hdr != NULL) return bp;
+    int so;
+    u2_t *lenp;
     
-    pr->hdr = (struct msg_hdr_t *) bp;
-    int so = sizeof(msg_hdr);
-    memcpy(bp, (char *) &msg_hdr, so);
-    //pr_dump("msg_hdr", pr->ping_pong, pr->bbp, bp, so);
+    // tx info desc
+    so = sizeof(tx_info_desc);
+    tx_info_desc.len = hns(so);
+    memcpy(bp, (char *) &tx_info_desc, so);
+    //pr_dump("tx_info_desc", pr->ping_pong, pr->bbp, bp, so);
     bp += so;
+
+    // rx info desc
+    so = sizeof(rx_info_desc);
+    rx_info_desc.len = hns(so);
+    memcpy(bp, (char *) &rx_info_desc, so);
+    //pr_dump("rx_info_desc", pr->ping_pong, pr->bbp, bp, so);
+    bp += so;
+    
+    pr->sent_info_desc[pr->ping_pong] = true;
     return bp;
 }
 
@@ -238,35 +241,27 @@ static u1_t *pr_rx_info(u1_t *bp)
     while (((bp - bbp) % 4) != 0) *bp++ = 0;
     *lenp = hns(bp - bbp);
     //pr_dump("rx_info", pr->ping_pong, pr->bbp, bbp, bp - bbp);
-    pr->sent_info_desc[pr->ping_pong] = true;
     return bp;
 }
 
-void pr_info_desc()
+static u1_t *pr_check_need_hdr(u1_t *bp)
 {
-    printf("PSKReporter send info_desc\n");
     pr_conf_t *pr = &pr_conf;
-    u1_t *bp = pr->bp;
-    int so;
-    u2_t *lenp;
-    bp = pr_check_need_hdr(bp);
+    if (pr->hdr != NULL) return bp;
     
-    // tx info desc
-    so = sizeof(tx_info_desc);
-    tx_info_desc.len = hns(so);
-    memcpy(bp, (char *) &tx_info_desc, so);
-    //pr_dump("tx_info_desc", pr->ping_pong, pr->bbp, bp, so);
+    pr->hdr = (struct msg_hdr_t *) bp;
+    int so = sizeof(msg_hdr);
+    memcpy(bp, (char *) &msg_hdr, so);
+    //pr_dump("msg_hdr", pr->ping_pong, pr->bbp, bp, so);
     bp += so;
 
-    // rx info desc
-    so = sizeof(rx_info_desc);
-    rx_info_desc.len = hns(so);
-    memcpy(bp, (char *) &rx_info_desc, so);
-    //pr_dump("rx_info_desc", pr->ping_pong, pr->bbp, bp, so);
-    bp += so;
-    
-    bp = pr_rx_info(bp);
-    pr->bp = bp;
+    if (pr->send_info_desc_repeat > 0) {
+        bp = pr_info_desc(bp);
+        pr->send_info_desc_repeat--;
+    }
+	
+    bp = pr_rx_info(bp);    // always send rx info before spots
+    return bp;
 }
 
 int PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, ftx_protocol_t protocol, const char *grid, u4_t slot_time)
@@ -334,11 +329,6 @@ static void PSKreport(void *param)      // task
     struct mg_connection *mg = web_connect(pr->upload_url);
 
 	while (1) {
-	    if (pr->send_info_desc_repeat > 0) {
-	        pr_info_desc();
-	        pr->send_info_desc_repeat--;
-	    }
-	    
         pr->send_info_desc_interval--;
 	    if (pr->send_info_desc_interval == 0) {
             pr->send_info_desc_repeat = 1;
