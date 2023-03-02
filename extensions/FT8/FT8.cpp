@@ -4,6 +4,7 @@
 
 #include "kiwi.h"
 #include "coroutines.h"
+#include "conn.h"
 #include "data_pump.h"
 #include "mem.h"
 
@@ -26,6 +27,9 @@
 typedef struct {
 	int rx_chan;
 	int run;
+	int proto;
+	int last_freq_kHz;
+	
 	bool task_created;
 	tid_t tid;
 	int rd_pos;
@@ -77,11 +81,19 @@ static void ft8_task(void *param)
 {
     int rx_chan = (int) FROM_VOID_PARAM(param);
     ft8_t *e = &ft8[rx_chan];
+    conn_t *conn = rx_channels[rx_chan].conn;
     rx_dpump_t *rx = &rx_dpump[rx_chan];
     decode_ft8_setup(rx_chan);
     
 	while (1) {
 		TaskSleepReason("wait for wakeup");
+		
+		int new_freq_kHz = (int) round(conn->freqHz/1e3);
+		if (e->last_freq_kHz != new_freq_kHz) {
+		    rcprintf(rx_chan, "FT8: freq changed %d => %d\n", e->last_freq_kHz, new_freq_kHz);
+		    e->last_freq_kHz = new_freq_kHz;
+		    decode_ft8_protocol(rx_chan, conn->freqHz, e->proto);
+		}
 
 		while (e->rd_pos != rx->real_wr_pos) {
 		    if (rx->real_seqnum[e->rd_pos] != e->seq) {
@@ -96,7 +108,7 @@ static void ft8_task(void *param)
             e->seq++;
 		    
 		    //real_printf("%d ", e->rd_pos); fflush(stdout);
-		    decode_ft8_samples(rx_chan, &rx->real_samples[e->rd_pos][0], FASTFIR_OUTBUF_SIZE, &e->start_test);
+		    decode_ft8_samples(rx_chan, &rx->real_samples[e->rd_pos][0], FASTFIR_OUTBUF_SIZE, conn->freqHz, &e->start_test);
 			e->rd_pos = (e->rd_pos+1) & (N_DPBUF-1);
 		}
     }
@@ -132,6 +144,9 @@ bool ft8_msgs(char *msg, int rx_chan)
 
     int proto;
 	if (sscanf(msg, "SET ft8_start=%d", &proto) == 1) {
+	    e->proto = proto;
+        conn_t *conn = rx_channels[e->rx_chan].conn;
+		e->last_freq_kHz = conn->freqHz/1e3;
 		rcprintf(rx_chan, "FT8 start %s\n", proto? "FT4" : "FT8");
 		decode_ft8_init(rx_chan, proto? 1:0);
 
@@ -150,8 +165,11 @@ bool ft8_msgs(char *msg, int rx_chan)
 	}
 	
 	if (sscanf(msg, "SET ft8_protocol=%d", &proto) == 1) {
-		rcprintf(rx_chan, "FT8 protocol %s\n", proto? "FT4" : "FT8");
-		decode_ft8_protocol(rx_chan, proto? 1:0);
+	    e->proto = proto;
+        conn_t *conn = rx_channels[e->rx_chan].conn;
+		e->last_freq_kHz = conn->freqHz/1e3;
+		rcprintf(rx_chan, "FT8 protocol %s freq %.2f\n", proto? "FT4" : "FT8", conn->freqHz/1e3);
+		decode_ft8_protocol(rx_chan, conn->freqHz, proto? 1:0);
 		return true;
 	}
 

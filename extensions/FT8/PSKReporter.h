@@ -7,13 +7,17 @@
 
 //#define PR_TESTING
 #ifdef PR_TESTING
+    #define PR_UPLOAD_PORT      14739   // report.pskreporter.info (test)
     #define PR_UPLOAD_MINUTES   1
     #define PR_INFO_DESC_RPT    1
     #define PR_LIMITER          3
+    #define pr_printf(fmt, ...) printf(fmt, ## __VA_ARGS__)
 #else
+    #define PR_UPLOAD_PORT      4739    // report.pskreporter.info (LIVE)
     #define PR_UPLOAD_MINUTES   5
     #define PR_INFO_DESC_RPT    3
     #define PR_LIMITER          0
+    #define pr_printf(fmt, ...)
 #endif
 
 #define PR_USE_CALLSIGN_HASHTABLE

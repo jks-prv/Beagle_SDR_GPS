@@ -45,6 +45,7 @@ typedef struct {
 typedef struct {
     u4_t magic;
     u4_t decode_time;
+    int freqHz;
     ftx_protocol_t protocol;
     char protocol_s[4];
     int have_call_and_grid;
@@ -176,7 +177,7 @@ ftx_callsign_hash_interface_t hash_if = {
     .save_hash = hashtable_add
 };
 
-static void decode(int rx_chan, const monitor_t* mon)
+static void decode(int rx_chan, const monitor_t* mon, int freqHz)
 {
     decode_ft8_t *ft8 = &decode_ft8[rx_chan];
 
@@ -337,7 +338,8 @@ static void decode(int rx_chan, const monitor_t* mon)
             if (need_header) {
                 ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
                 //   22:40:30 +11.0 +2.80 1931 nnnnn  CQ DH1NAS JO50
-                    "     UTC   SNR    dT Freq    km\n");
+                    "     UTC   SNR    dT Freq    km  freq: %.2f  mode: %s\n",
+                    freqHz/1e3, ft8->protocol_s);
                 need_header = false;
             }
             
@@ -403,9 +405,10 @@ void decode_ft8_setup(int rx_chan)
     if (have_call_and_grid != 0) ft8->have_call_and_grid = have_call_and_grid;
 }
 
-void decode_ft8_samples(int rx_chan, TYPEMONO16 *samps, int nsamps, u1_t *start_test)
+void decode_ft8_samples(int rx_chan, TYPEMONO16 *samps, int nsamps, int freqHz, u1_t *start_test)
 {
     decode_ft8_t *ft8 = &decode_ft8[rx_chan];
+    ft8->freqHz = freqHz;
 
     if (!ft8->tsync) {
         const float time_shift = 0.8;
@@ -451,7 +454,7 @@ void decode_ft8_samples(int rx_chan, TYPEMONO16 *samps, int nsamps, u1_t *start_
 
     // Decode accumulated data (containing slightly less than a full time slot)
     NextTask("decode");
-    decode(rx_chan, &ft8->mon);
+    decode(rx_chan, &ft8->mon, freqHz);
 
     // Reset internal variables for the next time slot
     monitor_reset(&ft8->mon);
@@ -502,8 +505,12 @@ void decode_ft8_free(int rx_chan)
     monitor_free(&ft8->mon);
 }
 
-void decode_ft8_protocol(int rx_chan, int proto)
+void decode_ft8_protocol(int rx_chan, int freqHz, int proto)
 {
+    decode_ft8_t *ft8 = &decode_ft8[rx_chan];
     decode_ft8_free(rx_chan);
     decode_ft8_init(rx_chan, proto);
+    ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
+        "-------------------------------------------------------  new freq %.2f mode %s\n",
+        freqHz/1e3, ft8->protocol_s);
 }
