@@ -198,6 +198,7 @@ static void decode(int rx_chan, const monitor_t* mon)
 
     // Go over candidates and attempt to decode messages
     bool need_header = true;
+    int limiter = 0;
     for (int idx = 0; idx < num_candidates; ++idx)
     {
         NextTask("candidate");
@@ -283,7 +284,13 @@ static void decode(int rx_chan, const monitor_t* mon)
                 } else {
                     #ifdef PR_USE_CALLSIGN_HASHTABLE
                         callsign_hashtable_t *ht = &ft8->callsign_hashtable[hash_idx];
-                        if (ht->uploaded == 0) {
+                        
+                        #ifdef PR_TESTING
+                            if (ht->uploaded == 0 && limiter < PR_LIMITER) {
+                                limiter++;
+                        #else
+                            if (ht->uploaded == 0) {
+                        #endif
                         
                             // n=3: call_to call_de grid4    CQ call_de grid4
                             // n=4: CQ DX call_de grid4
