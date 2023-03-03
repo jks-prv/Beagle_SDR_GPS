@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.582  Mar 4, 2023
+v1.583  Mar 4, 2023
     FT8 extension: Make spot callsign and grid clickable links like WSPR extension.
     Fixed "Antenna switch extension is not configured" problem.
 
