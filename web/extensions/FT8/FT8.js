@@ -18,7 +18,7 @@ var ft8 = {
    },
 
    // must set "remove_returns" so output lines with \r\n (instead of \n alone) don't produce double spacing
-   console_status_msg_p: { scroll_only_at_bottom: true, process_return_alone: false, remove_returns: true, cols: 135 },
+   console_status_msg_p: { no_decode: true, scroll_only_at_bottom: true, process_return_alone: false, remove_returns: true, cols: 135 },
 
    log_mins: 0,
    log_interval: null,
@@ -87,10 +87,17 @@ function ft8_recv(data)
 
 function ft8_output_chars(c)
 {
-   ft8.console_status_msg_p.s = c;      // NB: already encoded on C-side
-   ft8.log_txt += kiwi_remove_escape_sequences(kiwi_decodeURIComponent('FT8', c));
+   c = kiwi_decodeURIComponent('FT8', c);    // NB: already encoded on C-side
+   ft8.log_txt += kiwi_remove_escape_sequences(c);
 
-   // kiwi_output_msg() does decodeURIComponent()
+   var a = c.split('');
+   a.forEach(function(ch, i) {
+      if (ch == '<') a[i] = kiwi.esc_lt;
+      else
+      if (ch == '>') a[i] = kiwi.esc_gt;
+   });
+   ft8.console_status_msg_p.s = a.join('');
+   //console.log(ft8.console_status_msg_p.s);
    kiwi_output_msg('id-ft8-console-msgs', 'id-ft8-console-msg', ft8.console_status_msg_p);
 }
 
@@ -198,7 +205,7 @@ function ft8_mode_cb(path, idx, first)
 function ft8_clear_button_cb(path, idx, first)
 {
    if (first) return;
-   ft8.console_status_msg_p.s = encodeURIComponent('\f');
+   ft8.console_status_msg_p.s = '\f';
    kiwi_output_msg('id-ft8-console-msgs', 'id-ft8-console-msg', ft8.console_status_msg_p);
    ft8.log_txt = '';
 }
