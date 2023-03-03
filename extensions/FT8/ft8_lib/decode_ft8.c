@@ -362,21 +362,34 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
                     snr, time_sec, freq_hz);
                 
             if (uploaded) {
+                char *call, *call_s, *grid, *grid_s;
+                if (n == 3)
+                    call = f[1], grid = f[2];
+                else
+                if (n == 3)
+                    call = f[2], grid = f[3];
+                else
+                    call = f[1], grid = f[3];
+                asprintf(&call_s, "<a style=\"color:blue\" href=\"https://www.qrz.com/lookup/%s\" target=\"_blank\">%s</a>", call, call);
+                asprintf(&grid_s, "<a style=\"color:blue\" href=\"http://www.levinecentral.com/ham/grid_square.php?"
+                    "Grid=%s\" target=\"_blank\">%s</a>", grid, grid);
+
                 if (n == 3) {
                     // call_to call_de grid4
                     ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
-                        "%s  %s " GREEN "%s %s" NONL, as, f[0], f[1], f[2]);
+                        "%s  %s " GREEN "%s %s" NONL, as, f[0], call_s, grid_s);
                 } else
                 if (n == 4) {
                     // CQ DX call_de grid4
                     ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
-                        "%s  %s %s " GREEN "%s %s" NONL, as, f[0], f[1], f[2], f[3]);
+                        "%s  %s %s " GREEN "%s %s" NONL, as, f[0], f[1], call_s, grid_s);
                 } else {
                     // call_to call_de R grid4
                     ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
-                        "%s  %s " GREEN "%s %s %s" NONL, as, f[0], f[1], f[2], f[3]);
+                        "%s  %s " GREEN "%s %s %s" NONL, as, f[0], call_s, f[2], grid_s);
                 }
                 
+                free(call_s); free(grid_s);
             } else {
                 ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
                     "%s  %s\n", as, text);

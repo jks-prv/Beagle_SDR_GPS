@@ -1092,14 +1092,18 @@ function kiwi_output_msg(id, id_scroll, p)
    };
    
 	var s;
-	try {
-      //if (dbg) console.log(kiwi_JSON(p.s));
-	   s = kiwi_decodeURIComponent('kiwi_output_msg', p.s);
-	} catch(ex) {
-	   console.log('decodeURIComponent FAIL:');
-	   console.log(p.s);
-	   s = p.s;
-	}
+	if (!isArg(p.no_decode) || p.no_decode != true) {
+      try {
+         //if (dbg) console.log(kiwi_JSON(p.s));
+         s = kiwi_decodeURIComponent('kiwi_output_msg', p.s);
+      } catch(ex) {
+         console.log('decodeURIComponent FAIL:');
+         console.log(p.s);
+         s = p.s;
+      }
+   } else {
+      s = p.s;
+   }
 	
    if (p.init != true) {
       //if (dbg) console.log('$console INIT '+ p.init);
