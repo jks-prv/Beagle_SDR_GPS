@@ -366,7 +366,7 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
                 if (n == 3)
                     call = f[1], grid = f[2];
                 else
-                if (n == 3)
+                if (n == 4)
                     call = f[2], grid = f[3];
                 else
                     call = f[1], grid = f[3];
