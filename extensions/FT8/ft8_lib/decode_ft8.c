@@ -1,6 +1,7 @@
 
 #include "types.h"
 #include "config.h"
+#include "str.h"
 #include "rx/CuteSDR/datatypes.h"
 #include "coroutines.h"
 #include "FT8.h"
@@ -27,11 +28,11 @@ int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *c
 
 #ifdef PR_USE_CALLSIGN_HASHTABLE
     #define CALLSIGN_HASHTABLE_MAX 1024
-    #define CALLSIGN_AGE_MAX (60*4)         // one hour for FT8, 24 min FT4
-    //#define CALLSIGN_AGE_MAX (2*4)
+    #define CALLSIGN_AGE_MAX 60             // one hour
+    //#define CALLSIGN_AGE_MAX 2
 #else
     #define CALLSIGN_HASHTABLE_MAX 256
-    #define CALLSIGN_AGE_MAX 10
+    #define CALLSIGN_AGE_MAX 3
 #endif
 
 typedef struct {
@@ -279,6 +280,8 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
                 snprintf(text, sizeof(text), "Error [%d] while unpacking!", (int)unpack_status);
             }
 
+            bool pskr_ok = false;
+            int age = 0;
             if (unpack_status == FTX_MESSAGE_RC_PSKR_OK) {
                 if (hash_idx < 0 || hash_idx >= CALLSIGN_HASHTABLE_MAX) {
                     printf("FT8 hash_idx=%d ??? <%s>\n", hash_idx, text);
@@ -286,35 +289,33 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
                     #ifdef PR_USE_CALLSIGN_HASHTABLE
                         callsign_hashtable_t *ht = &ft8->callsign_hashtable[hash_idx];
                         
-                        #ifdef PR_TESTING
-                            if (ht->uploaded == 0 && limiter < PR_LIMITER) {
-                                limiter++;
-                        #else
-                            if (ht->uploaded == 0) {
-                        #endif
-                        
-                            // n=3: call_to call_de grid4    CQ call_de grid4
-                            // n=4: CQ DX call_de grid4
-                            // n=4: call_to call_de R grid4
-                            bool ok = false;
-                            char *call, *grid;
-                            need_free = true;
-                            for (n = 0; n < 4; n++) f[n] = NULL;
-                            n = sscanf(text, "%ms %ms %ms %ms", &f[0], &f[1], &f[2], &f[3]);
-                            //printf("FT8 n=%d <%s> | <%s> <%s> <%s> <%s>\n", n, text, f[0], f[1], f[2], f[3]);
-                            ext_send_msg_encoded(rx_chan, false, "EXT", "debug",
-                                "FT8 n=%d <%s> | <%s> <%s> <%s> <%s>\n", n, text, f[0], f[1], f[2], f[3]);
-                            if (n == 3 || n == 4) {
-                                ok = true;
-                                grid = f[n-1];
-                                if (strcmp(f[n-2], "R") == 0) {
-                                    call = f[n-3];
-                                    n = 0;
-                                } else {
-                                    call = f[n-2];
-                                }
+                        // n=3: call_to call_de grid4    CQ call_de grid4
+                        // n=4: CQ DX call_de grid4
+                        // n=4: call_to call_de R grid4
+                        char *call, *grid;
+                        need_free = true;
+                        for (n = 0; n < 4; n++) f[n] = NULL;
+                        n = sscanf(text, "%ms %ms %ms %ms", &f[0], &f[1], &f[2], &f[3]);
+                        //printf("FT8 n=%d <%s> | <%s> <%s> <%s> <%s>\n", n, text, f[0], f[1], f[2], f[3]);
+                        ext_send_msg_encoded(rx_chan, false, "EXT", "debug",
+                            "FT8 n=%d <%s> | <%s> <%s> <%s> <%s>\n", n, text, f[0], f[1], f[2], f[3]);
+                        if (n == 3 || n == 4) {
+                            pskr_ok = true;
+                            grid = f[n-1];
+                            if (strcmp(f[n-2], "R") == 0) {
+                                call = f[n-3];
+                                n = 0;
+                            } else {
+                                call = f[n-2];
                             }
-                            if (ok) {
+                        }
+
+                        if (ht->uploaded == 0) {
+                            if (pskr_ok && limiter <= PR_LIMITER) {
+                                #ifdef PR_TESTING
+                                    limiter++;
+                                #endif
+                        
                                 if (strlen(call) >= 3 && strlen(grid) == 4) {
                                     // silently ignore incorrect encoding of RR73 (i.e. sent as grid code instead of MAXGRID4+3)
                                     if (strcmp(grid, "RR73") != 0) {
@@ -329,7 +330,9 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
                                 }
                             }
                         } else {
-                            printf("FT8 already uploaded age=%d <%s>\n", ht->hash >> 22, text);
+                            km = PSKReporter_distance(grid);
+                            age = ht->hash >> 22;
+                            printf("FT8 already uploaded age=%d/%d <%s>\n", age, CALLSIGN_AGE_MAX, text);
                         }
                     #endif
                 }
@@ -338,7 +341,7 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
             if (need_header) {
                 ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
                 //   22:40:30 +11.0 +2.80 1931 nnnnn  CQ DH1NAS JO50
-                    "     UTC   SNR    dT Freq    km  freq: %.2f  mode: %s\n",
+                    "     UTC   SNR    dT Freq    km age  freq: %.2f  mode: %s\n",
                     freqHz/1e3, ft8->protocol_s);
                 need_header = false;
             }
@@ -351,17 +354,14 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
                 ft8->tm_slot_start.tm_hour, ft8->tm_slot_start.tm_min, ft8->tm_slot_start.tm_sec,
                 snr, time_sec, freq_hz, km, text);
             
-            char *as;
-            if (km > 0)
-                asprintf(&as, "%02d:%02d:%02d %+05.1f %+4.2f %4.0f %5d",
-                    ft8->tm_slot_start.tm_hour, ft8->tm_slot_start.tm_min, ft8->tm_slot_start.tm_sec,
-                    snr, time_sec, freq_hz, km);
-            else
-                asprintf(&as, "%02d:%02d:%02d %+05.1f %+4.2f %4.0f      ",
-                    ft8->tm_slot_start.tm_hour, ft8->tm_slot_start.tm_min, ft8->tm_slot_start.tm_sec,
-                    snr, time_sec, freq_hz);
+            char *ks = NULL;
+            ks = kstr_asprintf(ks, "%02d:%02d:%02d %+05.1f %+4.2f %4.0f",
+                ft8->tm_slot_start.tm_hour, ft8->tm_slot_start.tm_min, ft8->tm_slot_start.tm_sec,
+                snr, time_sec, freq_hz);
+            ks = kstr_asprintf(ks, (km > 0)? " %5d" : "      ", km);
+            ks = kstr_asprintf(ks, (age != 0)? "  %02d" : "    ", age);
                 
-            if (uploaded) {
+            if (pskr_ok) {
                 char *call, *call_s, *grid, *grid_s;
                 if (n == 3)
                     call = f[1], grid = f[2];
@@ -370,32 +370,35 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
                     call = f[2], grid = f[3];
                 else
                     call = f[1], grid = f[3];
-                asprintf(&call_s, "<a style=\"color:blue\" href=\"https://www.qrz.com/lookup/%s\" target=\"_blank\">%s</a>", call, call);
-                asprintf(&grid_s, "<a style=\"color:blue\" href=\"http://www.levinecentral.com/ham/grid_square.php?"
+
+                // silently ignore incorrect encoding of RR73 (i.e. sent as grid code instead of MAXGRID4+3)
+                bool rr73 = (strcmp(grid, "RR73") == 0);
+                asprintf(&call_s, rr73? "%s" : "<a style=\"color:blue\" href=\"https://www.qrz.com/lookup/%s\" target=\"_blank\">%s</a>", call, call);
+                asprintf(&grid_s, rr73? "(RR73)" : "<a style=\"color:blue\" href=\"http://www.levinecentral.com/ham/grid_square.php?"
                     "Grid=%s\" target=\"_blank\">%s</a>", grid, grid);
 
                 if (n == 3) {
                     // call_to call_de grid4
                     ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
-                        "%s  %s " GREEN "%s %s" NONL, as, f[0], call_s, grid_s);
+                        "%s  %s %s%s %s" NONL, kstr_sp(ks), f[0], uploaded? GREEN : "", call_s, grid_s);
                 } else
                 if (n == 4) {
                     // CQ DX call_de grid4
                     ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
-                        "%s  %s %s " GREEN "%s %s" NONL, as, f[0], f[1], call_s, grid_s);
+                        "%s  %s %s %s%s %s" NONL, kstr_sp(ks), f[0], f[1], uploaded? GREEN : "", call_s, grid_s);
                 } else {
                     // call_to call_de R grid4
                     ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
-                        "%s  %s " GREEN "%s %s %s" NONL, as, f[0], call_s, f[2], grid_s);
+                        "%s  %s %s%s %s %s" NONL, kstr_sp(ks), f[0], uploaded? GREEN : "", call_s, f[2], grid_s);
                 }
                 
                 free(call_s); free(grid_s);
             } else {
                 ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
-                    "%s  %s\n", as, text);
+                    "%s  %s\n", kstr_sp(ks), text);
             }
 
-            free(as);
+            kstr_free(ks);
             if (need_free) for (n = 0; n < 4; n++) free(f[n]);     // NB: free(NULL) is okay
         }
     }
@@ -407,7 +410,10 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
             ft8->protocol_s, num_decoded, num_spots, (ft8->have_call_and_grid < 0)? " (PSKReporter upload disabled)" : "",
             ft8->callsign_hashtable_size * 100 / CALLSIGN_HASHTABLE_MAX);
     }
-    hashtable_cleanup(rx_chan, CALLSIGN_AGE_MAX);
+
+    if (ft8->tm_slot_start.tm_sec == 0) {
+        hashtable_cleanup(rx_chan, CALLSIGN_AGE_MAX);
+    }
 }
 
 void decode_ft8_setup(int rx_chan)

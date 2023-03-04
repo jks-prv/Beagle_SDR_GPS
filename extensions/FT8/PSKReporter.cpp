@@ -153,6 +153,7 @@ typedef struct {
     char *upload_url;
 	char rcall[16], rgrid[8];
     latLon_t r_loc;
+    bool grid_ok;
     bool have_ant;
     char *ant;
 
@@ -300,6 +301,12 @@ static u1_t *pr_check_need_hdr(u1_t *bp)
     return bp;
 }
 
+int PSKReporter_distance(const char *grid)
+{
+    pr_conf_t *pr = &pr_conf;
+    return pr->grid_ok? grid_to_distance_km(&pr->r_loc, (char *) grid) : 0;
+}
+
 int PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, ftx_protocol_t protocol, const char *grid, u4_t slot_time)
 {
     pr_conf_t *pr = &pr_conf;
@@ -349,7 +356,7 @@ int PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, ftx_prot
         }
     }
     
-    return grid_to_distance_km(&pr->r_loc, (char *) grid);
+    return PSKReporter_distance(grid);
 }
 
 static void PSKreport(void *param)      // task
@@ -439,7 +446,7 @@ int PSKReporter_setup(int rx_chan)
             pr->have_ant = (ant != NULL && ant[0] != '\0');
             //pr_printf("rcall <%s> rgrid <%s> ant <%s>\n", rcall, rgrid, ant);
             
-            bool grid_ok = false;
+            pr->grid_ok = false;
             if (rgrid) {
                 int glen = strlen(rgrid);
                 if (glen >= 4 && glen <= 6) {
@@ -447,7 +454,7 @@ int PSKReporter_setup(int rx_chan)
 	                grid_to_latLon(rgrid, &pr->r_loc);
 	                //pr_printf("PSKReporter_setup grid=%s lat=%f lon=%f\n", rgrid, pr->r_loc.lat, pr->r_loc.lon);
 	                latLon_deg_to_rad(pr->r_loc);
-                    grid_ok = true;
+                    pr->grid_ok = true;
                 }
             }
             
@@ -456,7 +463,7 @@ int PSKReporter_setup(int rx_chan)
                 kiwi_str_decode_inplace(pr->ant);
             }
             
-            if (rcall && strlen(rcall) >= 3 && grid_ok) {
+            if (rcall && strlen(rcall) >= 3 && pr->grid_ok) {
                 kiwi_strncpy(pr->rcall, rcall, 16);
                 kiwi_str_decode_inplace(pr->rcall);
                 pr->tid = CreateTask(PSKreport, NULL, SERVICES_PRIORITY);
