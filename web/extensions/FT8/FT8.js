@@ -122,6 +122,10 @@ function ft8_controls_setup()
    var grid = ext_get_cfg_param_string('ft8.grid') || '';
    ft8.grid = grid;
    if (grid == '') grid = '(not set)';
+   
+   var url =
+      'https://pskreporter.info/pskmap.html?preset'+ ((ft8.callsign != '')? ('&callsign='+ ft8.callsign) : '') +
+      '&txrx=rx&mode=FT8&timerange=86400&blankifnone=1&hidepink=1&hidelight=1&showlines=1&mapCenter=35,13,2';
 
 	var controls_html =
 		w3_div('id-ft8-controls w3-text-white',
@@ -134,8 +138,17 @@ function ft8_controls_setup()
 				),
 				w3_div('id-ft8-err w3-margin-T-10 w3-padding-small w3-css-yellow w3-width-fit w3-hide'),
 				w3_inline('id-ft8-container w3-margin-T-6/w3-margin-between-16',
-               w3_select_hier('id-ft8-freq w3-text-red w3-width-auto', '', 'freq', 'ft8.freq_idx', -1, ft8.freq_s, 'ft8_freq_cb'),
-               w3_select('w3-text-red', '', 'mode', 'ft8.mode', ft8.FT8, ft8.mode_s, 'ft8_mode_cb'),
+
+               w3_div('',
+                  w3_inline('/w3-margin-between-16',
+                     w3_select_hier('id-ft8-freq w3-text-red w3-width-auto', '', 'freq', 'ft8.freq_idx', -1, ft8.freq_s, 'ft8_freq_cb'),
+                     w3_select('w3-text-red', '', 'mode', 'ft8.mode', ft8.FT8, ft8.mode_s, 'ft8_mode_cb')
+                  ),
+                  w3_div('w3-margin-T-4',
+                     w3_link('w3-bold', url, 'pskreporter.info')
+                  )
+               ),
+
                w3_div('cl-ft8-text', 'reporter call '+ callsign),
                w3_div('cl-ft8-text', 'reporter grid '+ grid),
                w3_button('w3-padding-smaller w3-css-yellow', 'Clear', 'ft8_clear_button_cb'),

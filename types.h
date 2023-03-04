@@ -124,10 +124,14 @@ static __inline__ u4_t round_up(u4_t val, u4_t size) {
     #define C_LINKAGE(x) extern "C" { x; }
     #define DEF_0 =0
     #define DEF_NULL =NULL
+    #define DEF_FALSE =FALSE
+    #define DEF_TRUE =TRUE
 #else
     #define C_LINKAGE(x) x;
     #define DEF_0
     #define DEF_NULL
+    #define DEF_FALSE
+    #define DEF_TRUE
 #endif
 
 #endif
