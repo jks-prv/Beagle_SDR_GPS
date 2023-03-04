@@ -5,7 +5,7 @@
 #include "types.h"
 #include "ft8/constants.h"
 
-#define PR_TESTING
+//#define PR_TESTING
 #ifdef PR_TESTING
     #define PR_UPLOAD_PORT      14739   // report.pskreporter.info (test)
     #define PR_UPLOAD_MINUTES   1
