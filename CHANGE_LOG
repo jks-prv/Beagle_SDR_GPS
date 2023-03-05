@@ -2,6 +2,23 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.584  Mar 6, 2023
+    FT8 extension:
+        First URL parameter selects an entry in the freq menu, E.g. "my_kiwi:8073/?ext=ft8,10136"
+        
+        Added clickable call/grid links to older, previously reported, spots.
+        
+        Added "age" column. After a call/grid spot is uploaded to pskreporter.info the callsign is
+        cached and prevented from uploading again for 60 minutes. The age column shows this
+        cache timer. The age cache is cleared when FT8/FT4 mode is changed or the
+        frequency changed by more than 1 kHz, e.g. a band change or a change to a different
+        signal cluster (e.g. 10136 regular versus 10140 used for a particular DX operation).
+        
+        Added link to pskreporter.info map page with the reporter callsign preset and defaults
+        of: all bands, signals, rcvd by, callsign, FT8, 24 hrs.
+        
+        Added help button content.
+
 v1.583  Mar 4, 2023
     FT8 extension: Make spot callsign and grid clickable links like WSPR extension.
     Fixed "Antenna switch extension is not configured" problem.
