@@ -404,11 +404,27 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
     }
     LOG(LOG_INFO, "Decoded %d messages, callsign hashtable size %d\n", num_decoded, ft8->callsign_hashtable_size);
     if (num_decoded > 0) {
-        ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
-            "%02d:%02d:%02d %s decoded %d, new spots %d%s, hashtable %d%%\n",
+        char *ks = NULL;
+        ks = kstr_asprintf(ks, "%02d:%02d:%02d %s decoded %d, ",
             ft8->tm_slot_start.tm_hour, ft8->tm_slot_start.tm_min, ft8->tm_slot_start.tm_sec,
-            ft8->protocol_s, num_decoded, num_spots, (ft8->have_call_and_grid < 0)? " (PSKReporter upload disabled)" : "",
+            ft8->protocol_s, num_decoded);
+        if (num_spots != 0) {
+            ks = kstr_asprintf(ks, "new spots %d, ", num_spots);
+        }
+        static u4_t last_num_uploads[MAX_RX_CHANS];
+        u4_t num_uploads = PSKReporter_num_uploads(rx_chan);
+        if (num_uploads != 0) {
+            u4_t diff = num_uploads - last_num_uploads[rx_chan];
+            last_num_uploads[rx_chan] = num_uploads;
+            if (diff != 0) {
+                ks = kstr_asprintf(ks, YELLOW "uploaded %d spot%s to pskreporter.info" NORM ", ",
+                    diff, (diff == 1)? "" : "s");
+            }
+        }
+        ks = kstr_asprintf(ks, "hashtable %d%%",
             ft8->callsign_hashtable_size * 100 / CALLSIGN_HASHTABLE_MAX);
+        ext_send_msg_encoded(rx_chan, false, "EXT", "chars", "%s\n", kstr_sp(ks));
+        kstr_free(ks);
     }
 
     if (ft8->tm_slot_start.tm_sec == 0) {

@@ -182,7 +182,24 @@ function ft8_controls_setup()
          if (w3_ext_param('test', a).match) {
             do_test = 1;
          }
+         if (w3_ext_param('help', a).match) {
+            extint_help_click();
+         }
       });
+
+      // check first URL param matching entry in the freq menu
+      var found = false;
+      var freq = parseFloat(ft8.url_params);
+      if (!isNaN(freq)) {
+         w3_select_enum('id-ft8-freq', function(option) {
+            //console.log('CONSIDER '+ parseFloat(option.innerHTML));
+            if (!found && parseFloat(option.innerHTML) == freq) {
+               ft8_freq_cb('id-ft8-freq', option.value, false);
+               found = true;
+            }
+         });
+      }
+
       if (dbgUs && do_test) ft8_test_cb();
    }
 }
@@ -195,7 +212,8 @@ function ft8_freq_cb(path, idx, first)
 	var freq = +(menu_item.option);
    ext_tune(freq, 'usb', ext_zoom.ABS, 11);
    var mode = menu_item.last_disabled;
-	console.log('ft8_freq_cb: idx='+ idx +' freq='+ freq +' mode='+ mode);
+   w3_select_value(path, idx);   // for benefit of direct callers
+	console.log('ft8_freq_cb: path='+ path +' idx='+ idx +' freq='+ freq +' mode='+ mode);
 	
 	if (mode != ft8.mode_s[ft8.mode]) {
 	   ft8.mode ^= 1;
@@ -242,9 +260,9 @@ function FT8_config_html()
    var s =
       w3_div('w3-show-inline-block w3-width-full',
          w3_col_percent('w3-container/w3-margin-bottom',
-            w3_input_get('', 'Reporter callsign', 'ft8.callsign', 'w3_string_set_cfg_cb', ''), 22,
+            w3_input_get('w3-restart', 'Reporter callsign', 'ft8.callsign', 'w3_string_set_cfg_cb', ''), 22,
             '', 3,
-            w3_input_get('', 'Reporter grid square', 'ft8.grid', 'w3_string_set_cfg_cb', '', '6-character grid square location'), 22,
+            w3_input_get('w3-restart', 'Reporter grid square', 'ft8.grid', 'w3_string_set_cfg_cb', '', '6-character grid square location'), 22,
             '', 3,
             w3_input_get('', 'SNR correction', 'ft8.SNR_adj', 'w3_num_set_cfg_cb', ''), 22,
             '', 3,
@@ -257,15 +275,27 @@ function FT8_config_html()
 
 function FT8_help(show)
 {
-   return false;
-   /*
    if (show) {
       var s =
          w3_text('w3-medium w3-bold w3-text-aqua', 'FT8/FT4 decoder help') +
-         '...' +
+         '<br>Spots are uploaded to pskreporter.info if the <i>reporter call</i> and <i>reporter grid</i> ' +
+         'fields on the admin page, extensions tab, FT8 subtab have valid entries. ' +
+         'Leave the callsign field blank if you do not want any uploads to pskreporter.info ' +
+         'But consider leaving the grid field set so the km distance from the Kiwi to the ' +
+         'spot will be shown.<br><br>' +
+         
+         'Uploaded spots are highlighted in green. Spots are only uploaded once every 60 minutes. ' +
+         'The <i>age</i> column shows, in minutes, how long it has been since the last upload. ' +
+         '<br>SNR information is currently not uploaded as it is not accurate.<br><br>' +
+         
+         'Clicking the <i>pskreporter.info</i> link will take you directly to the map with the ' +
+         'reporter callsign of the Kiwi preset.<br><br>' +
+         
+         'URL parameters:<br>' +
+         'The first parameters can select one of the entries in the <i>freq</i> menu<br>' +
+         'e.g. <i>my_kiwi:8073/?ext=ft8,10136</i>' +
          '';
-      confirmation_show_content(s, 610, 150);
+      confirmation_show_content(s, 610, 300);
    }
    return true;
-   */
 }
