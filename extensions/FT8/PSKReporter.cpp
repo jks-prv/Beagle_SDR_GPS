@@ -7,6 +7,7 @@
 #include "misc.h"
 #include "timer.h"
 #include "coroutines.h"
+#include "config.h"
 #include "rx.h"
 #include "net.h"
 #include "web.h"
@@ -151,6 +152,8 @@ typedef struct {
 	tid_t tid;
 
     char *upload_url;
+    u4_t pending_uploads[MAX_RX_CHANS];
+    u4_t num_uploads[MAX_RX_CHANS];     // running total number of uploads created per channel
 	char rcall[16], rgrid[8];
     latLon_t r_loc;
     bool grid_ok;
@@ -346,6 +349,8 @@ int PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, ftx_prot
         bool pkt_full = offset > (PR_BUF_LEN - PR_TX_MAX_LEN);
         //ext_send_msg_encoded(rx_chan, false, "EXT", "debug", "pp %d off %d full %d", pr->ping_pong, offset, pkt_full);
         pr->spots[pr->ping_pong]++;
+        pr->pending_uploads[rx_chan]++;
+        pr_printf("pending_uploads[%d]=%d\n", rx_chan, pr->pending_uploads[rx_chan]);
 
         if (pkt_full) {
             pr->xbp = pr->bp; pr->xbbp = pr->bbp;
@@ -357,6 +362,11 @@ int PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, ftx_prot
     }
     
     return PSKReporter_distance(grid);
+}
+
+u4_t PSKReporter_num_uploads(int rx_chan)
+{
+    return pr_conf.num_uploads[rx_chan];
 }
 
 static void PSKreport(void *param)      // task
@@ -389,7 +399,8 @@ static void PSKreport(void *param)      // task
 		int ping_pong;
 		if (!pr->packet_full) {
 		    // flip_flop
-            pr->xbp = pr->bp; pr->xbbp = pr->bbp; ping_pong = pr->ping_pong;
+            ping_pong = pr->ping_pong;
+            pr->xbp = pr->bp; pr->xbbp = pr->bbp;
             pr->ping_pong ^= 1; pr->bp = pr->bbp = pr->buf[pr->ping_pong]; pr->hdr = NULL;
 		    pr_printf("PSKReporter task wakeup: TIMEOUT ping_pong %d => %d\n", pr->ping_pong ^ 1, pr->ping_pong);
             ext_send_msg_encoded(/* rx_chan */ 0, false, "EXT", "debug",
@@ -429,6 +440,11 @@ static void PSKreport(void *param)      // task
         pr->spots[ping_pong] = 0;
         size_t n = mg_write(mg, bbp, total_len);
         //pr_printf("PSK UDP mg_write n=%d|%d\n", n, total_len);
+        
+        for (int rxc = 0; rxc < MAX_RX_CHANS; rxc++) {
+            pr->num_uploads[rxc] = pr->pending_uploads[rxc];
+            pr_printf("num_uploads[%d] = pending_uploads %d\n", rxc, pr->pending_uploads[rxc]);
+        }
 	}
 }
 
