@@ -117,7 +117,7 @@ function gen_controls_setup()
 	if (kiwi_url_param('f', null, null) == null)
       ext_tune(gen.freq);
 
-	toggle_or_set_spec(toggle_e.SET, 1);
+	toggle_or_set_spec(toggle_e.SET, spec.RF);
 	ext_send('SET run=1');
 	ext_send('SET wf_comp=0');
 }
@@ -240,7 +240,7 @@ function sig_gen_blur()
 	gen_set(0, 0, true);
 	ext_send('SET run=0');
 	ext_send('SET wf_comp=1');
-   toggle_or_set_spec(toggle_e.SET, 0);
+   toggle_or_set_spec(toggle_e.SET, spec.NONE);
 }
 
 // called to display HTML for configuration parameters in admin interface

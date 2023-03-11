@@ -484,8 +484,16 @@ bool wspr_update_vars_from_config(bool called_at_init)
     set_reporter_grid((char *) wspr_c.rgrid);
     
     // since we're already setting up FT8
-    ft8_conf.SNR_adj = cfg_default_int("ft8.SNR_adj", 0, &update_cfg);
-    ft8_conf.dT_adj = cfg_default_int("ft8.dT_adj", 0, &update_cfg);
+    ft8_conf.SNR_adj = cfg_default_int("ft8.SNR_adj", -22, &update_cfg);
+    if (ft8_conf.SNR_adj == 0) {    // update to new default
+        cfg_set_int("ft8.SNR_adj", -22);
+        update_cfg = true;
+    }
+    ft8_conf.dT_adj = cfg_default_int("ft8.dT_adj", -1, &update_cfg);
+    if (ft8_conf.dT_adj == 0) {     // update to new default
+        cfg_set_int("ft8.dT_adj", -1);
+        update_cfg = true;
+    }
 
     wspr_c.GPS_update_grid = cfg_default_bool("WSPR.GPS_update_grid", false, &update_cfg);
     wspr_c.syslog = cfg_default_bool("WSPR.syslog", false, &update_cfg);

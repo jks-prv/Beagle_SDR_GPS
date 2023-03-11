@@ -10,10 +10,13 @@ var fft = {
    
    cmd_e: { FFT:0, CLEAR:1 },
 
-   func: 1,
-   func_e: { OFF:-1, WF:0, SPEC:1, INTEG:2 },
-   func_s: [ 'waterfall', 'spectrum', 'integrate' ],
-   spec_source_save: 0,
+   //func: 1,
+   //func_e: { OFF:-1, WF:0, SPEC:1, INTEG:2 },
+   //func_s: [ 'waterfall', 'spectrum', 'integrate' ],
+   func: 0,
+   func_e: { OFF:-1, WF:0, SPEC:999, INTEG:1 },
+   run: [ -1, 0, 2 ],
+   func_s: [ 'waterfall', 'integrate' ],
 
    pre: -1,
    pre_none: 0,
@@ -138,7 +141,7 @@ function fft_clear()
 		fft_marker((f/1e3).toFixed(2), false, f);
 	}
 
-   ext_send('SET run='+ fft.func);
+   ext_send('SET run='+ fft.run[fft.func+1]);
 }
 
 // detect when frequency or offset has changed and adjust display
@@ -198,12 +201,11 @@ function fft_recv(data_raw)
       o++; len--;
 
 		if (cmd == fft.cmd_e.FFT) {
-			if (!fft.integ_draw) return;
-			
-			if (spec.source_audio) {
+			if (spec.source == spec.AUDIO) {
 			   var data = new Uint8Array(data_raw, 6);
 			   spectrum_update(data);
 			} else {
+			   if (!fft.integ_draw) return;
 			   var fc, c, im;
 			   
 			   if (fft.func == fft.func_e.WF) {
@@ -395,7 +397,7 @@ function FFT_environment_changed(changed)
 {
    if (changed.mode) {
       //console.log('FFT_environment_changed run='+ fft.func);
-      ext_send('SET run='+ fft.func);
+      ext_send('SET run='+ fft.run[fft.func+1]);
    }
    
    if (changed.resize) {
@@ -489,27 +491,20 @@ function fft_set_itime(itime)
 
 function fft_func_cb(path, idx, first)
 {
-   //console.log('fft_func_cb new='+ idx +' prev='+ fft.func +' first='+ first);
+   console.log('fft_func_cb new='+ idx +' prev='+ fft.func +' first='+ first);
    if (first) return;
 	idx = +idx;
 	
 	switch (idx) {
 	
       case fft.func_e.SPEC:
-         //console.log('fft_func_cb SAVE spec.source_wf='+ spec.source_wf);
-         fft.spec_source_save = spec.source_wf;
-         spec.source_wf = 0;
-         spec.source_audio = 1;
          w3_hide('id-ext-data-container');
-         ext_show_spectrum();
+         ext_show_spectrum(spec.RF);
          // id-top-container already hidden because we use data_html
          break;
    
       default:
          if (fft.func != fft.func_e.SPEC) break;
-         spec.source_wf = fft.spec_source_save;
-         //console.log('fft_func_cb RESTORE spec.source_wf='+ spec.source_wf);
-         spec.source_audio = 0;
          ext_hide_spectrum();
          w3_show_block('id-ext-data-container');
          break;
@@ -610,10 +605,8 @@ function FFT_blur()
 {
    console.log('FFT_blur');
 	kiwi_clearInterval(fft.update_interval);
-   spec.source_audio = 0;
    ext_send('SET run='+ fft.func_e.OFF);
 	spec.need_clear_avg = true;   // remove our spectrum data from averaging buffers
-   ext_hide_spectrum();
    
    if (fft.passband_altered)
 	   ext_set_mode(fft.saved_mode);

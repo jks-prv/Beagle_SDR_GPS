@@ -3108,7 +3108,7 @@ function export_waterfall() {
 
    // include spectrum if selected and visible
    var specC = w3_el('id-spectrum-canvas');
-   var specH = (specC && spec.source_wf)? specC.height : 0;
+   var specH = (specC && spec.source == spec.RF)? specC.height : 0;
 
    var canvas = document.createElement("canvas");
    var ctx = canvas.getContext("2d");
@@ -3535,8 +3535,11 @@ var spec = {
    height_spectrum_canvas: 200,
    tooltip_offset: 100,
    
-   source_wf: 0,
-   source_audio: 0,
+   NONE: 0,
+   RF: 1,
+   AUDIO: 2,
+   CHOICES: 3,
+   source: 0,
    
    canvas: null,
    ctx: null,
@@ -3552,7 +3555,7 @@ var spec = {
    
    need_clear_avg: 0,
    clear_avg: 0,
-   avg: [],
+   avg: [[], []],
    
    //slow_dev_color: '#66ffff',    // light-cyan hsl(180, 100%, 70%)
    slow_dev_color: '#d3d3d3',
@@ -3563,7 +3566,7 @@ var spec = {
    peak_show: [0, 0],
    peak_clear_spec: [0, 0],
    peak_clear_btn: [0, 0],
-   peak: [[], []],
+   peak: [ [[], []], [[], []] ],
    peak1_color: 'yellow',
    peak2_color: 'magenta',
    peak_alpha: 1.0,
@@ -3689,10 +3692,18 @@ function spectrum_tooltip_update(evt, clientX, clientY)
 			spec.dB_ttip.style.left = px(cx);
 			spec.dB_ttip.style.bottom = px(h + 10 - clientY);
          if (owrx.debug_drag) canvas_log('['+  cx +','+ clientY +']');
-         var f_kHz = (canvas_get_dspfreq(cx) + kiwi.freq_offset_Hz)/1000;
-         var f_text = format_frequency("{x}", f_kHz, 1, freq_field_prec(f_kHz));
+         var f_kHz, f_text;
+         var rf = (spec.source == spec.RF);
+         if (rf) {
+            f_kHz = (canvas_get_dspfreq(cx) + kiwi.freq_offset_Hz)/1000;
+            f_text = format_frequency("{x}", f_kHz, 1, freq_field_prec(f_kHz));
+         } else {    // spec.AUDIO
+            var norm = cx/waterfall_width - 0.5;
+            f_kHz = norm * audio_input_rate / 1000;
+            f_text = format_frequency("{x}", f_kHz, 1, freq_field_prec(f_kHz));
+         }
 			var dB = (((h - clientY) / h) * full_scale) + mindb;
-			spec.dB_ttip.innerHTML = f_text +' kHz<br>'+ dB.toFixed(0) +' dBm';
+			spec.dB_ttip.innerHTML = f_text +' kHz'+ (rf? '':' AF') +'<br>'+ dB.toFixed(0) +' dBm';
 		}
 	} else {
       if (owrx.debug_drag) canvas_log('STTU-ck');
@@ -3704,7 +3715,7 @@ function spectrum_update(data)
 	var i, x, y, z, sw, sh, tw=25;
 	
    spec.last_update = spec.update;
-
+   
    // clear entire spectrum canvas to black
    var ctx = spec.ctx;
    sw = spec.canvas.width-tw;
@@ -3720,10 +3731,33 @@ function spectrum_update(data)
       y = Math.round(band.norm * sh);
       ctx.fillRect(0,y,sw,1);
    }
+   
+   // for audio spectrum annotate the passband
+   if (spec.source == spec.AUDIO) {
+      var sr = ext_nom_sample_rate();
+      var frac = sr % 1000;
+      var sp = (sr - frac) - 1000;
+      //console.log('sp='+ sp +' frac='+ frac);
+      for (i = 1000 + frac/2; i <= sp + frac/2; i += 1000) {
+         //if (i == sr/2) continue;
+         x = Math.round(spec.canvas.width * i/sr);
+         //console.log(x);
+         ctx.fillRect(x,0,1,sh);
+      }
+      ctx.fillStyle = 'lime';
+      ctx.fillRect(Math.round(spec.canvas.width/2)-1,0,3,sh);
+   }
 
+   var ra = (spec.source == spec.RF)? 0:1;
+   if (isNaN(spec.avg[ra][0])) {    // first time init
+      for (x=0; x<sw; x++) {
+         spec.avg[ra][x] = 0;
+      }
+   }
+   
    if (spec.clear_avg) {
       for (x=0; x<sw; x++) {
-         spec.avg[x] = color_index(data[x]);
+         spec.avg[ra][x] = color_index(data[x]);
       }
       spec.clear_avg = false;
       spec.peak_clear_spec[1] = spec.peak_clear_spec[0] = true;
@@ -3733,7 +3767,7 @@ function spectrum_update(data)
       if (spec.peak_clear_spec[i] || spec.peak_clear_btn[i]) {
          //console.log('SPEC CLEAR '+ i);
          for (x=0; x<sw; x++) {
-            spec.peak[i][x] = 0;
+            spec.peak[ra][i][x] = 0;
          }
       }
       if (spec.peak_clear_spec[i]) {
@@ -3770,7 +3804,8 @@ function spectrum_update(data)
    }
 	
 	// Add line to spectrum image
-   ctx.fillStyle = spec.slow_dev_color;
+   if (spectrum_slow_dev)
+      ctx.fillStyle = spec.slow_dev_color;
 
    for (x=0; x<sw; x++) {
       z = color_index(wf_gnd? wf_gnd_value : data[x]);
@@ -3783,22 +3818,22 @@ function spectrum_update(data)
          
          var iir_gain = 1 - Math.exp(-sp_param * z/255);
          if (iir_gain <= 0.01) iir_gain = 0.01;    // enforce minimum decay rate
-         var z1 = spec.avg[x];
+         var z1 = spec.avg[ra][x];
          z1 = z1 + iir_gain * (z - z1);
          if (z1 > 255) z1 = 255; if (z1 < 0) z1 = 0;
-         z = spec.avg[x] = z1;
+         z = spec.avg[ra][x] = z1;
          break;
          
       case wf_sp_menu_e.MMA:
          if (z > 255) z = 255; if (z < 0) z = 0;
-         spec.avg[x] = ((spec.avg[x] * (sp_param-1)) + z) / sp_param;
-         z = spec.avg[x];
+         spec.avg[ra][x] = ((spec.avg[ra][x] * (sp_param-1)) + z) / sp_param;
+         z = spec.avg[ra][x];
          break;
          
       case wf_sp_menu_e.EMA:
          if (z > 255) z = 255; if (z < 0) z = 0;
-         spec.avg[x] += (z - spec.avg[x]) / sp_param;
-         z = spec.avg[x];
+         spec.avg[ra][x] += (z - spec.avg[ra][x]) / sp_param;
+         z = spec.avg[ra][x];
          break;
          
       case wf_sp_menu_e.OFF:
@@ -3808,7 +3843,7 @@ function spectrum_update(data)
       }
 
       for (i=0; i < 2; i++)
-         if (spec.peak_show[i] == spec.PEAK_ON && z > spec.peak[i][x]) spec.peak[i][x] = z; 
+         if (spec.peak_show[i] == spec.PEAK_ON && z > spec.peak[ra][i][x]) spec.peak[ra][i][x] = z; 
 
       // draw the spectrum based on the spectrum colormap which should
       // color the 10 dB bands appropriately
@@ -3842,10 +3877,10 @@ function spectrum_update(data)
          ctx.lineWidth = 1;
          ctx.strokeStyle = i? spec.peak2_color : spec.peak1_color;
          ctx.beginPath();
-         y = Math.round((1 - spec.peak[i][0]/255) * sh) - 1;
+         y = Math.round((1 - spec.peak[ra][i][0]/255) * sh) - 1;
          ctx.moveTo(0,y);
          for (x=1; x<sw; x++) {
-            y = Math.round((1 - spec.peak[i][x]/255) * sh) - 1;
+            y = Math.round((1 - spec.peak[ra][i][x]/255) * sh) - 1;
             ctx.lineTo(x,y);
          }
          ctx.globalAlpha = spec.peak_alpha;
@@ -3853,6 +3888,12 @@ function spectrum_update(data)
          ctx.stroke();
          ctx.globalAlpha = 1;
       }
+   }
+
+   if (spec.switch_container) {
+      w3_show_hide('id-spectrum-container', true);
+      w3_show_hide('id-top-container', false);
+      spec.switch_container = false;
    }
 }
 
@@ -4185,14 +4226,14 @@ function waterfall_add(data_raw, audioFFT)
       }
    } else {
       data = data_raw;     // unsigned dB values, converted to signed later on
-      if (spec.source_wf && spec.need_clear_avg) {
+      if (spec.source == spec.RF && spec.need_clear_avg) {
          spec.clear_avg = true;
          spec.need_clear_avg = false;
       }
    }
 	
 	// spectrum
-	if (spec.source_wf && spec.update != spec.last_update) {
+	if (spec.source == spec.RF && spec.update != spec.last_update) {
 	   spectrum_update(data);
 	}
 
@@ -5548,7 +5589,7 @@ function modeset_update_ui(mode)
    w3_hide2('id-chan-null', mode != 'sam');
    w3_hide2('id-SAM-opts', kmode.SAx);
    
-   console.log('kmode.NBFM='+ kmode.NBFM);
+   //console.log('kmode.NBFM='+ kmode.NBFM);
    w3_hide2('id-deemp1-ofm',  kmode.NBFM);
    w3_hide2('id-deemp2-ofm',  kmode.NBFM);
    w3_hide2('id-deemp1-nfm', !kmode.NBFM);
@@ -8906,7 +8947,7 @@ function panels_setup()
          ),
 
          w3_div('',
-            w3_button('id-button-spectrum class-button||title="toggle spectrum display"', 'Spec', 'toggle_or_set_spec')
+            w3_button('id-button-spectrum class-button|font-size: 12px|title="toggle spectrum display"', 'Spec', 'toggle_or_set_spec')
          ),
 
          w3_div('',
@@ -9458,7 +9499,7 @@ var wf_sp_filter_p = [
 
 function spec_show()
 {
-   toggle_or_set_spec(toggle_e.SET, 1);
+   toggle_or_set_spec(toggle_e.SET, spec.RF);
    
    var sp = -1;
    spectrum_param = parseFloat(spectrum_param);
@@ -9963,7 +10004,7 @@ var de_emphasis_nfm_s = [ 'off', 'on', '+LF' ];
 function de_emp_cb(path, idx, first, nfm)
 {
 	var kmode = ext_mode(cur_mode);
-	console.log('$ de_emp_cb path='+ path +' idx='+ idx +' nfm='+ nfm +' first='+ first +' kmode.NBFM='+ kmode.NBFM);
+	//console.log('$ de_emp_cb path='+ path +' idx='+ idx +' nfm='+ nfm +' first='+ first +' kmode.NBFM='+ kmode.NBFM);
    if (+nfm) {
       de_emphasis_nfm = +idx;
       snd_send('SET de_emp='+ de_emphasis_nfm +' nfm=1');
@@ -10024,7 +10065,7 @@ function toggle_or_set_hide_bars(set)
 	   owrx.hide_bars = (owrx.hide_bars + 1) & owrx.HIDE_ALLBARS;
 	   
 	   // there is no top container to hide if data container or spectrum in use
-      if ((owrx.hide_bars & owrx.HIDE_TOPBAR) && (extint.using_data_container || spec.source_wf || spec.source_audio))
+      if ((owrx.hide_bars & owrx.HIDE_TOPBAR) && (extint.using_data_container || spec.source != spec.NONE))
 	      owrx.hide_bars = (owrx.hide_bars + 1) & owrx.HIDE_ALLBARS;
 	}
    //console.log('toggle_or_set_hide_bars set='+ set +' hide_bars='+ owrx.hide_bars);
@@ -10601,25 +10642,37 @@ function freq_vfo_cb()
 
 function toggle_or_set_spec(set, val)
 {
-   console.log('toggle_or_set_spec set='+ set +' val='+ val);
-   
+   var no_close_ext = false;
 	if (isNumber(set) && (set & toggle_e.SET)) {
-		spec.source_wf = val;
+		spec.source = +val;
+		no_close_ext = ((set & toggle_e.NO_CLOSE_EXT) != 0);
+      //console.log('toggle_or_set_spec SET val='+ val);
 	} else {
-		spec.source_wf ^= 1;
+		spec.source = (spec.source + 1) % spec.CHOICES;
+      //console.log('toggle_or_set_spec NEXT spec.source='+ spec.source);
 	}
+   var isSpec = (spec.source != spec.NONE);
+   //console.log('toggle_or_set_spec isSpec='+ isSpec);
 
 	// close the extension first if it's using the data container and the spectrum button is pressed
-	if (extint.using_data_container && spec.source_wf) {
+	if (!no_close_ext && extint.using_data_container && isSpec) {
 	   //console.log('toggle_or_set_spec: extint_panel_hide()..');
-		extint_panel_hide();
+		extint_panel_hide( /* skip_calling_hide_spec */ true);
 	}
 
-   //console.log('toggle_or_set_spec: source_wf='+ spec.source_wf);
-	html('id-button-spectrum').style.color = spec.source_wf? 'lime':'white';
-	w3_show_hide('id-spectrum-container', spec.source_wf);
-	w3_show_hide('id-top-container', !spec.source_wf);
+   //console.log('toggle_or_set_spec: source='+ spec.source);
+   var el = w3_el('id-button-spectrum');
+   el.innerHTML = ['Spec', 'Spec RF', 'Spec AF'][spec.source];
+	el.style.color = isSpec? 'lime':'white';
+	if (isSpec) {
+	   // delay switching container visibility until data update to prevent flash of previous spectrum
+	   spec.switch_container = true;
+	} else {
+      w3_show_hide('id-spectrum-container', false);
+      w3_show_hide('id-top-container', true);
+   }
    freqset_select();
+   snd_send('SET spc_='+ spec.source);
 }
 
 function mode_over(evt, el)
@@ -11042,7 +11095,7 @@ function owrx_msg_cb(param, ws)
 			kiwi_up(parseInt(param[1]));
 			break;
 		case "gps":
-			toggle_or_set_spec(toggle_e.SET, 1);
+			toggle_or_set_spec(toggle_e.SET, spec.RF);
 			break;
 		case "fft_mode":
 			kiwi_fft_mode();

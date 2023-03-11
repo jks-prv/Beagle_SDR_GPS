@@ -215,13 +215,11 @@ bool fft_msgs(char *msg, int rx_chan)
 			
 			    case FUNC_WF:
 			        e->instance = SND_INSTANCE_FFT_PASSBAND;
-			        snd->secondary_filter = false;
 			        boost = (P3_F? P3_F : 1e4);
 			        break;
 			
 			    case FUNC_SPEC:
 			        e->instance = e->isSAM? SND_INSTANCE_FFT_CHAN_NULL : SND_INSTANCE_FFT_PASSBAND;
-			        snd->secondary_filter = e->isSAM? true:false;
 
                     // scale up to roughly match WF spectrum values
                     boost = e->isSAM? ( (snd->mode == MODE_QAM)? (P2_F? P2_F : 100) : (P1_F? P1_F : 100) ) : (P0_F? P0_F : 1e6);
@@ -230,7 +228,6 @@ bool fft_msgs(char *msg, int rx_chan)
 			
 			    case FUNC_INTEG:
 			        e->instance = SND_INSTANCE_FFT_PASSBAND;
-			        snd->secondary_filter = false;
 			        boost = (P3_F? P3_F : 1e4);
 			        break;
 			}
@@ -241,7 +238,6 @@ bool fft_msgs(char *msg, int rx_chan)
             printf("FFT func=%s mode=%s isSAM=%d (scale=%g * boost=%.1g) => spectrum_scale=%g fft_scale=%g\n",
                 func_s[e->run+1], mode_uc[snd->mode], e->isSAM, scale, boost, e->spectrum_scale, e->fft_scale);
 		} else {
-            snd->secondary_filter = false;
 			ext_unregister_receive_FFT_samps(rx_chan);
 		}
 		return true;

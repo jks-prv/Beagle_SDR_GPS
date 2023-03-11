@@ -3706,12 +3706,13 @@ function w3_text(psa, text)
 	return s;
 }
 
-function w3_code(prop_outer, prop_inner)
+function w3_code(psa)
 {
-	var narg = arguments.length;
-	var s = '<pre class="'+ prop_outer +'"><code>';
-		for (var i=2; i < narg; i++) {
-			s += '<div class="'+ prop_inner +'">'+ arguments[i] + '</div>';
+   var psa3 = w3_psa3(psa);
+   var narg = arguments.length;
+	var s = '<pre '+ w3_psa(psa3.left) +'><code '+ w3_psa(psa3.middle) +'>';
+		for (var i=1; i < narg; i++) {
+			s += '<code '+ w3_psa(psa3.right) +'>'+ arguments[i] + '</code>';
 		}
 	s += '</code></pre>';
 	//console.log(s);

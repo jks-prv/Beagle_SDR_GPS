@@ -97,7 +97,7 @@ function ft8_output_chars(c)
       if (ch == '>') a[i] = kiwi.esc_gt;
    });
    ft8.console_status_msg_p.s = a.join('');
-   //console.log(ft8.console_status_msg_p.s);
+   //console.log(ft8.console_status_msg_p);
    kiwi_output_msg('id-ft8-console-msgs', 'id-ft8-console-msg', ft8.console_status_msg_p);
 }
 
@@ -111,7 +111,7 @@ function ft8_controls_setup()
       
       w3_div('id-ft8-data|left:150px; width:1044px; height:300px; overflow:hidden; position:relative; background-color:mediumBlue;',
 			w3_div('id-ft8-console-msg w3-text-output w3-scroll-down w3-small w3-text-black|width:1024px; height:300px; position:absolute; overflow-x:hidden;',
-			   '<pre><code id="id-ft8-console-msgs"></code></pre>'
+			   w3_code('id-ft8-console-msgs w3-text-output-striped/')
 			)
       );
    

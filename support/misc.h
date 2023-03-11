@@ -67,6 +67,8 @@ void send_msg_data2(conn_t *c, bool debug, u1_t dst, u1_t data2, u1_t *bytes, in
 void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...);
 void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char *fmt, ...);
 void send_msg_mc_encoded(struct mg_connection *mc, const char *dst, const char *cmd, const char *fmt, ...);
+int snd_send_msg(int rx_chan, bool debug, const char *msg, ...);
+void snd_send_msg_data(int rc_chan, bool debug, u1_t cmd, u1_t *bytes, int nbytes);
 void input_msg_internal(conn_t *conn, const char *fmt, ...);
 
 void cmd_debug_print(conn_t *c, char *s, int slen, bool tx);

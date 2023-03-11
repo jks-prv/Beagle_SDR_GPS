@@ -1699,7 +1699,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             #endif
 
             #ifdef USE_SDR
-                //printf("ch=%d ug=%d lat=%d\n", ch, wspr_c.GPS_update_grid, (gps.StatLat != 0));
+                //printf("ch=%d ug=%d haveLat=%d\n", ch, wspr_c.GPS_update_grid, (gps.StatLat != 0));
                 if (wspr_c.GPS_update_grid && gps.StatLat) {
                     latLon_t loc;
                     loc.lat = gps.sgnLat;

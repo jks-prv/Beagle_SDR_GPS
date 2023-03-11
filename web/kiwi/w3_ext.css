@@ -200,6 +200,11 @@ input[type=range]::-moz-range-thumb {
     margin: 0;
 }
 
+.w3-text-output-striped pre:nth-child(even)
+{
+    background-color: hsl(0, 0%, 95%);
+}
+
 .w3-select-menu {
     width: auto;
     cursor: pointer;

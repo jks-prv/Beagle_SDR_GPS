@@ -197,24 +197,6 @@ int ext_send_msg(int rx_chan, bool debug, const char *msg, ...)
 	return 0;
 }
 
-// send to the SND web socket, NOT the EXT web socket
-// note the conn_t difference below
-int ext_send_snd_msg(int rx_chan, bool debug, const char *msg, ...)
-{
-	va_list ap;
-	char *s;
-
-	conn_t *conn = rx_channels[rx_chan].conn;
-	if (!conn) return -1;
-	va_start(ap, msg);
-	vasprintf(&s, msg, ap);
-	va_end(ap);
-	if (debug) printf("ext_send_msg: RX%d(%p) <%s>\n", rx_chan, conn, s);
-	send_msg_buf(conn, s, strlen(s));
-	kiwi_ifree(s);
-	return 0;
-}
-
 int ext_send_msg_data(int rx_chan, bool debug, u1_t cmd, u1_t *bytes, int nbytes)
 {
 	conn_t *conn = ext_users[rx_chan].conn_ext;

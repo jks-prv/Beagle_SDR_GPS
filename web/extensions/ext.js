@@ -9,7 +9,6 @@ var extint = {
    override_pb: false,
    displayed: false,
    help_displayed: false,
-   spectrum_used: false,
    current_ext_name: null,
    using_data_container: false,
    hide_func: null,
@@ -714,16 +713,14 @@ function ext_panel_init()
 	   }, true);
 }
 
-function ext_show_spectrum()
+function ext_show_spectrum(which)
 {
-   w3_show_block('id-spectrum-container');
-   extint.spectrum_used = true;
+   toggle_or_set_spec(toggle_e.SET | toggle_e.NO_CLOSE_EXT, which);
 }
 
 function ext_hide_spectrum()
 {
-   w3_hide('id-spectrum-container');
-   extint.spectrum_used = false;
+   toggle_or_set_spec(toggle_e.SET | toggle_e.NO_CLOSE_EXT, spec.NONE);
 }
 
 function extint_panel_show(controls_html, data_html, show_func, hide_func, show_help_button)
@@ -734,17 +731,14 @@ function extint_panel_show(controls_html, data_html, show_func, hide_func, show_
 	//console.log('extint_panel_show using_data_container='+ extint.using_data_container);
 
 	if (extint.using_data_container) {
-		toggle_or_set_spec(toggle_e.SET, 0);
-		w3_hide('id-top-container');
+      // remove previous use of spectrum
+		toggle_or_set_spec(toggle_e.SET, spec.NONE);
 		w3_show_block(w3_innerHTML('id-ext-data-container', data_html));
 	} else {
 		w3_hide('id-ext-data-container');
-		if (!spec.source_wf)
+		if (spec.source == spec.NONE)
 			w3_show_block('id-top-container');
 	}
-
-   // remove previous use of spectrum (if any)
-   //jks ext_hide_spectrum();
 
    // remove previous help panel if displayed
    if (extint.help_displayed == true) {
@@ -797,13 +791,14 @@ function ext_panel_displayed(ext_name) {
 
 function ext_panel_redisplay(s) { w3_innerHTML('id-ext-controls-container', s); }
 
-function extint_panel_hide()
+function extint_panel_hide(skip_calling_hide_spec)
 {
-	//console.log('extint_panel_hide using_data_container='+ extint.using_data_container);
+	console.log('extint_panel_hide using_data_container='+ extint.using_data_container +' skip_calling_hide_spec='+ skip_calling_hide_spec);
 
 	if (extint.using_data_container) {
 		w3_hide('id-ext-data-container');
-      ext_hide_spectrum();
+		if (skip_calling_hide_spec != true)
+         ext_hide_spectrum();
 		w3_show_block('id-top-container');
 		extint.using_data_container = false;
 		

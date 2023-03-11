@@ -2470,10 +2470,11 @@ function freq_offset_page_reload() { window.location.reload(true); }
 
 var toggle_e = {
    // zero implies toggle
-	SET : 1,
-	SET_URL : 2,
-	FROM_COOKIE : 4,
-	WRITE_COOKIE : 8
+	SET: 1,
+	SET_URL: 2,
+	FROM_COOKIE: 4,
+	WRITE_COOKIE: 8,
+	NO_CLOSE_EXT: 16
 };
 
 // return value depending on flags: cookie value, set value, default value, no change
@@ -2515,17 +2516,10 @@ function kiwi_toggle(flags, val_set, val_default, cookie_id)
 	return rv;
 }
 
-function kiwi_plot_max(b)
-{
-   var t = bi[b];
-   var plot_max = 1024 / (t.samplerate/t.plot_samplerate);
-   return plot_max;
-}
-
 function kiwi_fft_mode()
 {
 	if (0) {
-		toggle_or_set_spec(toggle_e.SET, 1);
+		toggle_or_set_spec(toggle_e.SET, spec.RF);
 		setmaxdb(10);
 	} else {
 		setmaxdb(-30);

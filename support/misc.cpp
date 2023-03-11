@@ -306,6 +306,32 @@ void send_msg_mc_encoded(struct mg_connection *mc, const char *dst, const char *
 	kiwi_ifree(buf, "send_msg_mc_encoded");
 }
 
+// send to the SND web socket
+// note the conn_t difference below
+int snd_send_msg(int rx_chan, bool debug, const char *msg, ...)
+{
+	va_list ap;
+	char *s;
+
+	conn_t *conn = rx_channels[rx_chan].conn;
+	if (!conn) return -1;
+	va_start(ap, msg);
+	vasprintf(&s, msg, ap);
+	va_end(ap);
+	if (debug) printf("ext_send_msg: RX%d(%p) <%s>\n", rx_chan, conn, s);
+	send_msg_buf(conn, s, strlen(s));
+	kiwi_ifree(s);
+	return 0;
+}
+
+// send to the SND web socket
+// note the conn_t difference below
+void snd_send_msg_data(int rx_chan, bool debug, u1_t cmd, u1_t *bytes, int nbytes)
+{
+	conn_t *conn = rx_channels[rx_chan].conn;
+	send_msg_data(conn, debug, cmd, bytes, nbytes);
+}
+
 void input_msg_internal(conn_t *conn, const char *fmt, ...)
 {
 	va_list ap;

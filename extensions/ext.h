@@ -90,7 +90,6 @@ double ext_get_displayed_freq_kHz(int rx_chan);
 
 // routines to send messages to extension client-part
 C_LINKAGE(int ext_send_msg(int rx_chan, bool debug, const char *msg, ...));
-int ext_send_snd_msg(int rx_chan, bool debug, const char *msg, ...);
 int ext_send_msg_data(int rx_chan, bool debug, u1_t cmd, u1_t *bytes, int nbytes);
 int ext_send_msg_data2(int rx_chan, bool debug, u1_t cmd, u1_t data2, u1_t *bytes, int nbytes);
 C_LINKAGE(int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *cmd, const char *fmt, ...));

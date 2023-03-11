@@ -803,11 +803,18 @@ function audio_pre_record_buf_init()
    kiwi.pre_ping_pong = 0;
 }
 
-function audio_recv(data)
+function audio_recv(data, ws, firstChars)
 {
    //if (!audio_running) console.log('AUDIO audio_recv running='+ audio_running);
    if (!audio_running) return;
    
+   if (firstChars != 'SND') {
+      //console.log(firstChars);
+      var spec = new Uint8Array(data, 5);
+      spectrum_update(spec);
+      return;
+   }
+
 	var h8 = new Uint8Array(data, 0, 8);   // data, offset, length
    var flags = h8[3];
    var squelched = flags & audio.SND_FLAG_SQUELCH_UI;

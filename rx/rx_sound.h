@@ -23,6 +23,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "cuteSDR.h"
 #include "ima_adpcm.h"
+#include "ext.h"
 
 
 #define SND_INSTANCE_FFT_PASSBAND   0
@@ -69,6 +70,11 @@ typedef struct {
 #define WINF_SND_HAMMING            4
 #define N_SND_WINF                  5
 
+#define SPEC_SND_NONE   0
+#define SPEC_SND_RF     1
+#define SPEC_SND_AF     2
+#define N_SND_SPEC      3
+
 typedef struct {
     snd_pkt_real_t out_pkt_real;
     snd_pkt_iq_t   out_pkt_iq;
@@ -76,10 +82,14 @@ typedef struct {
     u4_t firewall[32];
 	u4_t seq;
 	int mode;
+	bool isSAM;
 	float locut, hicut, norm_locut, norm_hicut;
     int window_func;
-	bool secondary_filter;
 	ima_adpcm_state_t adpcm_snd;
+
+	ext_receive_FFT_samps_t specAF_FFT;
+	int specAF_instance;
+	u4_t specAF_last_ms;
 	
     #ifdef SND_SEQ_CHECK
         bool snd_seq_ck_init;
@@ -94,5 +104,5 @@ enum snd_cmd_key_e {
     CMD_AUDIO_START=1, CMD_TUNE, CMD_COMPRESSION, CMD_REINIT, CMD_LITTLE_ENDIAN,
     CMD_GEN_FREQ, CMD_GEN_ATTN, CMD_SET_AGC, CMD_SQUELCH, CMD_NB_ALGO, CMD_NR_ALGO, CMD_NB_TYPE,
     CMD_NR_TYPE, CMD_MUTE, CMD_OVLD_MUTE, CMD_DE_EMP, CMD_TEST, CMD_UAR, CMD_AR_OKAY, CMD_UNDERRUN,
-    CMD_SEQ, CMD_LMS_AUTONOTCH, CMD_SAM_PLL, CMD_SND_WINDOW_FUNC
+    CMD_SEQ, CMD_LMS_AUTONOTCH, CMD_SAM_PLL, CMD_SND_WINDOW_FUNC, CMD_SPEC
 };
