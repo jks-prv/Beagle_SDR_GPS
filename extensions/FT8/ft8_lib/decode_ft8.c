@@ -201,6 +201,7 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
     // Go over candidates and attempt to decode messages
     bool need_header = true;
     int limiter = 0;
+
     for (int idx = 0; idx < num_candidates; ++idx)
     {
         NextTask("candidate");
@@ -280,6 +281,7 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
                 snprintf(text, sizeof(text), "Error [%d] while unpacking!", (int)unpack_status);
             }
 
+            float snr = cand->score * 0.5f + ft8_conf.SNR_adj;
             bool pskr_ok = false;
             int age = 0;
             if (unpack_status == FTX_MESSAGE_RC_PSKR_OK) {
@@ -320,7 +322,8 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
                                     // silently ignore incorrect encoding of RR73 (i.e. sent as grid code instead of MAXGRID4+3)
                                     if (strcmp(grid, "RR73") != 0) {
                                         u4_t passband_freq = (u4_t) roundf(freq_hz);
-                                        km = PSKReporter_spot(rx_chan, call, passband_freq, ft8->protocol, grid, ft8->decode_time);
+                                        s1_t snr_i = (s1_t) roundf(snr);
+                                        km = PSKReporter_spot(rx_chan, call, passband_freq, snr_i, ft8->protocol, grid, ft8->decode_time);
                                         ht->uploaded = 1;
                                         uploaded = true;
                                         num_spots++;
@@ -346,8 +349,6 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
                 need_header = false;
             }
             
-            // TODO: compute better approximation of SNR
-            float snr = cand->score * 0.5f + ft8_conf.SNR_adj;
             time_sec += ft8_conf.dT_adj;
             
             LOG(LOG_INFO, "%02d%02d%02d %+05.1f %+4.2f %4.0f %5d  %s\n",

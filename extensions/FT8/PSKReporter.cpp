@@ -104,7 +104,7 @@ struct {
 #define PR_TX_LOC       PR_INFO_ELEM(3)
 #define PR_TX_ISRC      PR_INFO_ELEM(11)
 #define PR_TX_ISRC_AUTO 1
-#define PR_TX_NFIELDS   hns(6)
+#define PR_TX_NFIELDS   hns(7)
 
 struct {
     u2_t id = PR_TX_ID;
@@ -120,31 +120,30 @@ struct {
     u2_t op2_len = PR_LEN_INT;
     u4_t op2_ent = PR_ENTERPRISE;
     
-    // don't currently know how to compute the correct SNR
-    //u2_t op_el = PR_TX_SNR;
-    //u2_t op_len = PR_LEN_BYTE;
-    //u4_t op_ent = PR_ENTERPRISE;
-    
-    u2_t op3_el = PR_TX_MODE;
-    u2_t op3_len = PR_LEN_STRING;
+    u2_t op3_el = PR_TX_SNR;
+    u2_t op3_len = PR_LEN_BYTE;
     u4_t op3_ent = PR_ENTERPRISE;
     
-    u2_t op4_el = PR_TX_LOC;
+    u2_t op4_el = PR_TX_MODE;
     u2_t op4_len = PR_LEN_STRING;
     u4_t op4_ent = PR_ENTERPRISE;
     
-    u2_t op5_el = PR_TX_ISRC;
-    u2_t op5_len = PR_LEN_BYTE;
+    u2_t op5_el = PR_TX_LOC;
+    u2_t op5_len = PR_LEN_STRING;
     u4_t op5_ent = PR_ENTERPRISE;
     
-    u2_t op6_el = PR_TIME_SECS;
-    u2_t op6_len = PR_LEN_INT;
+    u2_t op6_el = PR_TX_ISRC;
+    u2_t op6_len = PR_LEN_BYTE;
+    u4_t op6_ent = PR_ENTERPRISE;
+    
+    u2_t op7_el = PR_TIME_SECS;
+    u2_t op7_len = PR_LEN_INT;
     
     //u2_t pad[1];
 } __attribute__((packed)) tx_info_desc;
 
-// PR_TX_LINK, len, call, freq, mode, grid, isrc, slot_time, pad (max), slop
-#define PR_TX_MAX_LEN   (2 + 2 + (1+14) + 4 + (1+3) + (1+6) + 1 + 4 + 3 + 16)
+// PR_TX_LINK, len, call, freq, snr, mode, grid, isrc, slot_time, pad (max), slop
+#define PR_TX_MAX_LEN   (2 + 2 + (1+14) + 4 + 1 + (1+3) + (1+6) + 1 + 4 + 3 + 16)
 #define PR_BUF_LEN 2048
 
 typedef struct {
@@ -275,7 +274,7 @@ static u1_t *pr_rx_info(u1_t *bp)
     bp = pr_emit_string(bp, pr->rgrid);
     if (pr->have_ant) bp = pr_emit_string(bp, pr->ant);
     
-    const char *client = "KiwiSDR 1.0";
+    const char *client = "KiwiSDR 1.1";
     bp = pr_emit_string(bp, client);
     
     while (((bp - bbp) % 4) != 0) *bp++ = 0;
@@ -310,7 +309,7 @@ int PSKReporter_distance(const char *grid)
     return pr->grid_ok? grid_to_distance_km(&pr->r_loc, (char *) grid) : 0;
 }
 
-int PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, ftx_protocol_t protocol, const char *grid, u4_t slot_time)
+int PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, s1_t snr, ftx_protocol_t protocol, const char *grid, u4_t slot_time)
 {
     pr_conf_t *pr = &pr_conf;
     if (pr->task_created) {
@@ -318,8 +317,8 @@ int PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, ftx_prot
         u4_t freq = conn->freqHz + passband_freq;
         const char *mode = (protocol == FTX_PROTOCOL_FT8)? "FT8" : "FT4";
         time_t time = (time_t) slot_time;
-        rcprintf(rx_chan, "PSKReporter spot %s %.3f %s %s %s\n", mode, (double) freq / 1e3, call, grid, var_ctime_static(&time));
-        ext_send_msg_encoded(rx_chan, false, "EXT", "debug", "%s %.3f %s %s %s", mode, (double) freq / 1e3, call, grid, var_ctime_static(&time));
+        rcprintf(rx_chan, "PSKReporter spot %s %.3f %s %s %d %s\n", mode, (double) freq / 1e3, call, grid, snr, var_ctime_static(&time));
+        ext_send_msg_encoded(rx_chan, false, "EXT", "debug", "%s %.3f %s %s %d %s", mode, (double) freq / 1e3, call, grid, snr, var_ctime_static(&time));
     
         u1_t *bp = pr->bp;
         int so;
@@ -334,6 +333,7 @@ int PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, ftx_prot
     
         bp = pr_emit_string(bp, call);
         *(u4_t *) bp = hnl(freq); bp += 4;
+        *bp++ = (u1_t) snr;
         bp = pr_emit_string(bp, mode);
         bp = pr_emit_string(bp, grid);
         *bp++ = PR_TX_ISRC_AUTO;
