@@ -118,6 +118,7 @@ static str_hashes_t snd_cmd_hashes[] = {
     { "SET lms_", CMD_LMS_AUTONOTCH },
     { "SET sam_", CMD_SAM_PLL },
     { "SET wind", CMD_SND_WINDOW_FUNC },
+    { "SET spc_", CMD_SPEC },
     { 0 }
 };
 
@@ -162,6 +163,64 @@ void c2s_sound_setup(void *param)
 	send_msg(conn, SM_SND_DEBUG, "MSG freq_offset=%.3f", freq_offset_kHz);
 	send_msg(conn, SM_SND_DEBUG, "MSG center_freq=%d bandwidth=%d adc_clk_nom=%.0f", (int) ui_srate/2, (int) ui_srate, ADC_CLOCK_NOM);
 	send_msg(conn, SM_SND_DEBUG, "MSG audio_init=%d audio_rate=%d sample_rate=%.6f", conn->isLocal, snd_rate, frate);
+}
+
+//#define PN_F_AF_FFT_DEBUG
+#ifdef PN_F_AF_FFT_DEBUG
+    #define P0_F p0_f
+    #define P1_F p1_f
+    #define P2_F p2_f
+    #define P3_F p3_f
+#else
+    #define P0_F 0
+    #define P1_F 0
+    #define P2_F 0
+    #define P3_F 0
+#endif
+
+static bool specAF_FFT(int rx_chan, int instance, int flags, int ratio, int ns_out, TYPECPX *samps)
+{
+    int i;
+	snd_t *snd = &snd_inst[rx_chan];
+    //printf("specAF_FFT %d\n", ns_out);
+    #define FFT_WIDTH CONV_FFT_SIZE
+    float pwr[FFT_WIDTH];
+    u1_t fft[FFT_WIDTH];
+    check (ns_out == FFT_WIDTH);
+
+    // limit update rate
+    u4_t ms = timer_ms();
+    #define UPDATE_MS 100
+    if (ms > snd->specAF_last_ms + UPDATE_MS) {
+        if (snd->specAF_last_ms)
+            snd->specAF_last_ms += UPDATE_MS;
+        else
+            snd->specAF_last_ms = ms;
+    } else {
+        return false;
+    }
+
+    for (i=0; i < FFT_WIDTH; i++) {
+        pwr[i] = samps[i].re * samps[i].re;
+    }
+
+    #define BOOST 1e6f
+    const float scale = BOOST * 10.0f * 2.0f / (CUTESDR_MAX_VAL * CUTESDR_MAX_VAL * FFT_WIDTH * FFT_WIDTH);
+    //float boost = snd->isSAM? ( (snd->mode == MODE_QAM)? (P2_F? P2_F : 1e6) : (P1_F? P1_F : 1e6) ) : (P0_F? P0_F : 1e6);
+    //scale *= boost;
+	
+	for (i=0; i < FFT_WIDTH; i++) {
+		float dB = 10.0 * log10f(pwr[i] * scale + (float) 1e-30);
+		if (dB > 0) dB = 0;
+		if (dB < -200.0) dB = -200.0;
+		dB--;
+
+		int unwrap = (i < FFT_WIDTH/2)? FFT_WIDTH/2 : -FFT_WIDTH/2;
+		fft[i+unwrap] = (u1_t) (int) dB;
+	}
+
+    snd_send_msg_data(rx_chan, false, 0x00, fft, FFT_WIDTH);
+    return true;
 }
 
 void c2s_sound(void *param)
@@ -403,18 +462,20 @@ void c2s_sound(void *param)
                                 memset(&snd->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
                             }
                     
-                            bool SAM_modes = (_mode >= MODE_SAM && _mode <= MODE_QAM);
-                            if (SAM_modes && n == 5) {
+                            snd->isSAM = (_mode >= MODE_SAM && _mode <= MODE_QAM);
+                            if (snd->isSAM && n == 5) {
                                 SAM_mparam = mparam & MODE_FLAGS_SAM;
                                 cprintf(conn, "SAM DC_block=%d fade_leveler=%d chan_null=%d\n",
-                                    (SAM_mparam & DC_BLOCK)? 1:0, (SAM_mparam & FADE_LEVELER)? 1:0, SAM_mparam & CHAN_NULL);
+                                    (SAM_mparam & DC_BLOCK)? 1:0, (SAM_mparam & FADE_LEVELER)? 1:0, SAM_mparam & CHAN_NULL_WHICH);
                             }
 
                             // reset SAM demod on non-SAM to SAM transition
-                            if (SAM_modes && !(mode >= MODE_SAM && mode <= MODE_QAM)) {
+                            if (snd->isSAM && !(mode >= MODE_SAM && mode <= MODE_QAM)) {
                                 //cprintf(conn, "SAM_PLL_RESET\n");
                                 wdsp_SAM_PLL(rx_chan, PLL_RESET);
                             }
+
+                            snd->specAF_instance = SND_INSTANCE_FFT_PASSBAND;
 
                             mode = _mode;
                             if (mode == MODE_NBFM || mode == MODE_NNFM)
@@ -509,6 +570,15 @@ void c2s_sound(void *param)
                     snd->window_func = n;
                     m_PassbandFIR[rx_chan].SetupWindowFunction(snd->window_func);
                     cprintf(conn, "SND window_func=%d\n", snd->window_func);
+                    did_cmd = true;                
+                }
+                break;
+
+            case CMD_SPEC:
+                if (sscanf(cmd, "SET spc_=%d", &n) == 1) {
+                    if (n < 0 || n >= N_SND_SPEC) n = 0;
+                    //cprintf(conn, "SND spec=%d\n", n);
+                    snd->specAF_FFT = (n == SPEC_SND_AF)? specAF_FFT : NULL;
                     did_cmd = true;                
                 }
                 break;
@@ -1091,12 +1161,16 @@ void c2s_sound(void *param)
             #if 0
                 for (int i=0; i < ns_in; i++) {
                     TYPECPX *in = &i_samps[i];
-                    if (in->re > 32767.0) real_printf("FIR-in %.1f\n", in->re);
+                    if (in->re > 32767.0f) { real_printf("FIR-in %.1f ", in->re); fflush(stdout); }
+                    static TYPEREAL max_in;
+                    if (in->re > max_in) { max_in = in->re; real_printf("MAX-IN %.1f ", max_in); fflush(stdout); }
                 }
                 if (ns_out) for (int i=0; i < ns_out; i++) {
                     TYPECPX *out = &f_samps[i];
-                    if (out->re > 32767.0) real_printf("FIR-o%d re %.1f\n", i, out->re);
-                    if (out->im > 32767.0) real_printf("FIR-o%d im %.1f\n", i, out->im);
+                    if (out->re > 32767.0f) { real_printf("FIR-o%d re %.1f ", i, out->re); fflush(stdout); }
+                    if (out->im > 32767.0f) { real_printf("FIR-o%d im %.1f ", i, out->im); fflush(stdout); }
+                    static TYPEREAL max_out;
+                    if (out->re > max_out) { max_out = out->re; real_printf("MAX-OUT %.1f ", max_out); fflush(stdout); }
                 }
             #endif
             
@@ -1208,11 +1282,9 @@ void c2s_sound(void *param)
                 // NB:
                 //      MODE_SAS/QAM stereo mode: output samples put back into a_samps
                 //      chan null mode: in addition to r_samps output, compute FFT of nulled a_samps
-                wdsp_SAM_demod(rx_chan, mode, SAM_mparam, ns_out, a_samps, r_samps);
-                if (snd->secondary_filter) {
-                    //real_printf("2"); fflush(stdout);
-                    m_chan_null_FIR[rx_chan].ProcessData(rx_chan, ns_out, a_samps, NULL);
-                }
+                bool isChanNull = wdsp_SAM_demod(rx_chan, mode, SAM_mparam, ns_out, a_samps, r_samps);
+                snd->specAF_instance = isChanNull? SND_INSTANCE_FFT_CHAN_NULL : SND_INSTANCE_FFT_PASSBAND;
+                if (isChanNull) m_chan_null_FIR[rx_chan].ProcessData(rx_chan, ns_out, a_samps, NULL);
                 break;
             }
             

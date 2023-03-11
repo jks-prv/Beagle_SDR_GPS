@@ -52,7 +52,7 @@ struct wdsp_SAM_t {
     f32_t dc_insertu;
     
     // DC block;
-    double z1, z1_u;
+    double z1, z1_u, z1_n;
 
     #define SAM_array_dim(d,l) assert_array_dim(d,l)
     #define ABCD_DIM (3 * SAM_PLL_HILBERT_STAGES + 3)
@@ -165,14 +165,14 @@ f32_t wdsp_SAM_carrier(int rx_chan)
     return carrier;
 }
 
-void wdsp_SAM_demod(int rx_chan, int mode, u4_t SAM_mparam, int ns_out, TYPECPX *in, TYPEMONO16 *out)
+bool wdsp_SAM_demod(int rx_chan, int mode, u4_t SAM_mparam, int ns_out, TYPECPX *in, TYPEMONO16 *out)
 {
     TYPECPX *out_stereo = in;   // stereo output is pushed back onto IQ input buffer
     wdsp_SAM_t *w = &wdsp_SAM[rx_chan];
     f32_t ai_ps, bi_ps, bq_ps, aq_ps;
 
-    u4_t chan_null = SAM_mparam & CHAN_NULL;
-    bool isChanNull = (mode == MODE_SAM && chan_null != CHAN_NULL_NONE);
+    u4_t chan_null_which = SAM_mparam & CHAN_NULL_WHICH;
+    bool isChanNull = (mode == MODE_SAM && chan_null_which != CHAN_NULL_NONE);
     bool need_ps = ((mode != MODE_SAM && mode != MODE_QAM) || isChanNull);
     bool stereoMode_or_nulling = (mode == MODE_SAS || mode == MODE_QAM || isChanNull);
     
@@ -233,7 +233,7 @@ void wdsp_SAM_demod(int rx_chan, int mode, u4_t SAM_mparam, int ns_out, TYPECPX 
                     audio  = (ai_ps + bi_ps) - (aq_ps - bq_ps); // lsb
                     audiou = (ai_ps - bi_ps) + (aq_ps + bq_ps); // usb
 
-                    if (chan_null == CHAN_NULL_LSB) {
+                    if (chan_null_which == CHAN_NULL_LSB) {
                         audion = audio - audiou;
                     } else {    // CHAN_NULL_USB
                         audion = audiou - audio;
@@ -300,17 +300,22 @@ void wdsp_SAM_demod(int rx_chan, int mode, u4_t SAM_mparam, int ns_out, TYPECPX 
             }
 
             if (isChanNull) {   // MODE_SAM
+                if (DC_block) {
+                    f32_t z0 = audion + (w->z1_n * DC_ALPHA);
+                    audion = z0 - w->z1_n;
+                    w->z1_n = z0;
+                }
                 out[i] = audion;    // lsb or usb nulled
 
                 // also save lsb/usb for display purposes
-                if (chan_null == CHAN_NULL_LSB) {
-                    out_stereo[i].re = audion;  // lsb nulled
-                    //out_stereo[i].im = audiou;  // usb
-                    out_stereo[i].im = 0;  // usb
+                if (chan_null_which == CHAN_NULL_LSB) {
+                    out_stereo[i].re = audion;      // lsb nulled
+                    //out_stereo[i].im = audiou;    // usb
+                    out_stereo[i].im = 0;           // usb
                 } else {
-                    //out_stereo[i].re = audio;   // lsb
-                    out_stereo[i].re = 0;   // lsb
-                    out_stereo[i].im = audion;  // usb nulled
+                    //out_stereo[i].re = audio;     // lsb
+                    out_stereo[i].re = 0;           // lsb
+                    out_stereo[i].im = audion;      // usb nulled
                 }
             } else {
                 out_stereo[i].re = audio;
@@ -345,4 +350,6 @@ void wdsp_SAM_demod(int rx_chan, int mode, u4_t SAM_mparam, int ns_out, TYPECPX 
             last = now;
         }
     #endif
+    
+    return isChanNull;
 }
