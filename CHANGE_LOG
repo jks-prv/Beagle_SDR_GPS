@@ -2,6 +2,21 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.585  Mar 12, 2023
+    The spectrum ("Spec") button on the main control panel now toggles between the existing
+    waterfall spectrum (renamed "Spec RF") and a new audio channel spectrum ("Spec AF").
+    Spec AF is identical to the spectrum function on the FFT extension (which has been removed).
+    This change allows the AF spectrum to be observed when other extensions (that don't use the
+    top display) are running. The sig gen in particular.
+
+    FT8 extension:
+        Set default SNR correction value to -22 dB.
+        Include decoder-computed SNR in spots uploaded to pskreporter.info
+        Added background color stripes to log messages for easier reading (thanks Martin).
+
+    Fixed bug causing incorrect reseting of admin page WSPR grid field while typing.
+    SNR reporting task takes twice as many measurements spread out over one minute.
+
 v1.584  Mar 6, 2023
     FT8 extension:
         First URL parameter selects an entry in the freq menu, E.g. "my_kiwi:8073/?ext=ft8,10136"
