@@ -950,7 +950,7 @@ void SNR_meas(void *param)
             if (internal_conn_setup(ICONN_WS_WF, &iconn, 0, PORT_INTERNAL_SNR,
                 NULL, 0, 0, 0,
                 "SNR-measure", "internal%20task", "SNR",
-                WF_ZOOM_MIN, 15000, -110, -10, WF_SELECT_FAST, WF_COMP_OFF) == false) {
+                WF_ZOOM_MIN, 15000, -110, -10, WF_SELECT_1FPS, WF_COMP_OFF) == false) {
                 printf("SNR_meas: all channels busy\n");
                 break;
             };
@@ -969,27 +969,34 @@ void SNR_meas(void *param)
             static u4_t snr_seq;
             meas->seq = snr_seq++;
             
-            #define SNR_NSAMPS 32
+            #define SNR_NSAMPS 64
             memset(dB_raw, 0, sizeof(dB_raw));
     
             nbuf_t *nb = NULL;
-            for (i = 0; i < SNR_NSAMPS;) {
+            bool early_exit = false;
+            int nsamps;
+            for (nsamps = 0; nsamps < SNR_NSAMPS && !early_exit;) {
                 do {
                     if (nb) web_to_app_done(iconn.cwf, nb);
                     n = web_to_app(iconn.cwf, &nb, /* internal_connection */ true);
                     if (n == 0) continue;
+                    if (n == -1) {
+                        early_exit = true;
+                        break;
+                    }
                     wf_pkt_t *wf = (wf_pkt_t *) nb->buf;
-                    //printf("SNR_meas i=%d rcv=%d <%.3s>\n", i, n, wf->id4);
+                    //printf("SNR_meas nsamps=%d rcv=%d <%.3s>\n", nsamps, n, wf->id4);
                     if (strncmp(wf->id4, "W/F", 3) != 0) continue;
                     for (j = 0; j < WF_WIDTH; j++) {
                         dB_raw[j] += dB_wire_to_dBm(wf->un.buf[j]);
                     }
-                    i++;
+                    nsamps++;
                 } while (n);
-                TaskSleepMsec(1000 / WF_SPEED_FAST);
+                TaskSleepMsec(900 / WF_SPEED_1FPS);
             }
+            //printf("SNR_meas DONE nsamps=%d\n", nsamps);
             for (i = 0; i < WF_WIDTH; i++) {
-                dB_raw[i] /= SNR_NSAMPS;
+                dB_raw[i] /= nsamps;
             }
             
             int f_lo = freq_offset_kHz, f_hi = freq_offmax_kHz;
