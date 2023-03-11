@@ -120,7 +120,9 @@ int web_to_app(conn_t *c, nbuf_t **nbp, bool internal_connection)
 	
     *nbp = NULL;
 	if (c->stop_data) return 0;
-	nb = nbuf_dequeue(internal_connection? &c->s2c : &c->c2s);
+    ndesc_t *ndesc = internal_connection? &c->s2c : &c->c2s;
+    if (ndesc->mc == NULL) return -1;
+	nb = nbuf_dequeue(ndesc);
 	if (!nb) return 0;
 	assert(!nb->done && !nb->expecting_done && nb->buf && nb->len);
 	nb->expecting_done = TRUE;
