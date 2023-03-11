@@ -541,12 +541,12 @@ function wspr_blur()
 
 function wspr_input_grid_cb(path, val, first)
 {
-    val = val.trim();
+   val = val.trim();
    //console.log('wspr_input_grid_cb val='+ val);
 	w3_string_set_cfg_cb(path, val);
 	
 	// need this because wspr_check_GPS_update_grid() runs asynch of server sending updated value via 10s status
-	kiwi.WSPR_rgrid = val;
+	kiwi.WSPR_rgrid = wspr.grid = val;
 }
 
 // order matches wspr_main.cpp:wspr_cfs[]
@@ -703,11 +703,12 @@ function wspr_config_blur()
 
 function wspr_check_GPS_update_grid()
 {
-   //console.log('wspr_check_GPS_update_grid kiwi.WSPR_rgrid='+ kiwi.WSPR_rgrid);
+   //console.log('wspr_check_GPS_update_grid GPS_update_grid='+ cfg.WSPR.GPS_update_grid +' kiwi.WSPR_rgrid='+ kiwi.WSPR_rgrid +' w3_get_value:WSPR.grid='+ w3_get_value('WSPR.grid') +' cfg.WSPR.grid='+ cfg.WSPR.grid);
 
-   if (w3_get_value('WSPR.grid') != kiwi.WSPR_rgrid) {
-      w3_set_value('WSPR.grid', kiwi.WSPR_rgrid);
-      w3_input_change('WSPR.grid');
+   if (cfg.WSPR.GPS_update_grid && cfg.WSPR.grid != kiwi.WSPR_rgrid) {
+      w3_set_value('id-WSPR.grid', kiwi.WSPR_rgrid);
+      w3_input_change('WSPR.grid', 'wspr_input_grid_cb');
+      //console.log('wspr_check_GPS_update_grid SET '+ kiwi.WSPR_rgrid);
    }
    if (kiwi.GPS_fixes) w3_show_inline_block('id-wspr-grid-set');
    wspr.single_shot_update = false;
@@ -722,7 +723,7 @@ function wspr_gps_info_cb(o)
    if (wspr_gps) {
       //console.log(wspr_gps);
       kiwi.WSPR_rgrid = wspr_gps.grid;
-      w3_set_value('WSPR.grid', kiwi.WSPR_rgrid);
+      w3_set_value('id-WSPR.grid', kiwi.WSPR_rgrid);
       w3_input_change('WSPR.grid', 'wspr_input_grid_cb');
    }
    wspr.single_shot_update = false;
