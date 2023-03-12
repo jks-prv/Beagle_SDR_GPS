@@ -49,7 +49,7 @@ bool devl_msgs(char *msg, int rx_chan)
 	double pf;
 	n = sscanf(msg, "SET devl.p%d=%lf", &pn, &pf);
 	if (n == 2) {
-	    printf("DEVL: p%d=%lf\n", pn, pf);
+	    printf("DEVL: p%d=%lg <%s>\n", pn, pf, msg);
 	    
         if (pn == 0) {
             p0_f = pf;

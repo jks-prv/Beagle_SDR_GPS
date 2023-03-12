@@ -165,19 +165,6 @@ void c2s_sound_setup(void *param)
 	send_msg(conn, SM_SND_DEBUG, "MSG audio_init=%d audio_rate=%d sample_rate=%.6f", conn->isLocal, snd_rate, frate);
 }
 
-//#define PN_F_AF_FFT_DEBUG
-#ifdef PN_F_AF_FFT_DEBUG
-    #define P0_F p0_f
-    #define P1_F p1_f
-    #define P2_F p2_f
-    #define P3_F p3_f
-#else
-    #define P0_F 0
-    #define P1_F 0
-    #define P2_F 0
-    #define P3_F 0
-#endif
-
 static bool specAF_FFT(int rx_chan, int instance, int flags, int ratio, int ns_out, TYPECPX *samps)
 {
     int i;
@@ -204,10 +191,8 @@ static bool specAF_FFT(int rx_chan, int instance, int flags, int ratio, int ns_o
         pwr[i] = samps[i].re * samps[i].re;
     }
 
-    #define BOOST 1e6f
-    const float scale = BOOST * 10.0f * 2.0f / (CUTESDR_MAX_VAL * CUTESDR_MAX_VAL * FFT_WIDTH * FFT_WIDTH);
-    //float boost = snd->isSAM? ( (snd->mode == MODE_QAM)? (P2_F? P2_F : 1e6) : (P1_F? P1_F : 1e6) ) : (P0_F? P0_F : 1e6);
-    //scale *= boost;
+    float scale = 10.0f * 2.0f / (CUTESDR_MAX_VAL * CUTESDR_MAX_VAL * FFT_WIDTH * FFT_WIDTH);
+    scale *= snd->isChanNull? 0.0004f : 1e6f;
 	
 	for (i=0; i < FFT_WIDTH; i++) {
 		float dB = 10.0 * log10f(pwr[i] * scale + (float) 1e-30);
@@ -475,6 +460,7 @@ void c2s_sound(void *param)
                                 wdsp_SAM_PLL(rx_chan, PLL_RESET);
                             }
 
+                            snd->isChanNull = false;
                             snd->specAF_instance = SND_INSTANCE_FFT_PASSBAND;
 
                             mode = _mode;
@@ -1282,9 +1268,9 @@ void c2s_sound(void *param)
                 // NB:
                 //      MODE_SAS/QAM stereo mode: output samples put back into a_samps
                 //      chan null mode: in addition to r_samps output, compute FFT of nulled a_samps
-                bool isChanNull = wdsp_SAM_demod(rx_chan, mode, SAM_mparam, ns_out, a_samps, r_samps);
-                snd->specAF_instance = isChanNull? SND_INSTANCE_FFT_CHAN_NULL : SND_INSTANCE_FFT_PASSBAND;
-                if (isChanNull) m_chan_null_FIR[rx_chan].ProcessData(rx_chan, ns_out, a_samps, NULL);
+                snd->isChanNull = wdsp_SAM_demod(rx_chan, mode, SAM_mparam, ns_out, a_samps, r_samps);
+                snd->specAF_instance = snd->isChanNull? SND_INSTANCE_FFT_CHAN_NULL : SND_INSTANCE_FFT_PASSBAND;
+                if (snd->isChanNull) m_chan_null_FIR[rx_chan].ProcessData(rx_chan, ns_out, a_samps, NULL);
                 break;
             }
             
