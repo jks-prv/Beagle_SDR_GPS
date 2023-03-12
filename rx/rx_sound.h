@@ -90,6 +90,7 @@ typedef struct {
 	ext_receive_FFT_samps_t specAF_FFT;
 	int specAF_instance;
 	u4_t specAF_last_ms;
+    bool isChanNull;
 	
     #ifdef SND_SEQ_CHECK
         bool snd_seq_ck_init;
