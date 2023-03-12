@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.587  Mar 13, 2023
+    FT8 extension:
+        Limit log output to 1024 lines (roughly 10 minutes of decodes). Prevents browser from
+        eventually going into meltdown.
+    Reverted SNR measurement change per request.
+
 v1.585,586  Mar 12, 2023
     The spectrum ("Spec") button on the main control panel now toggles between the existing
     waterfall spectrum (renamed "Spec RF") and a new audio channel spectrum ("Spec AF").
