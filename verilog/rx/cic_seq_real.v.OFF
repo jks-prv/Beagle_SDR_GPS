@@ -90,18 +90,19 @@ generate
 endgenerate
 
 	localparam NPOST_STAGES = 2;
-	localparam NSTAGE = clog2(STAGES + NPOST_STAGES);
-	reg [NSTAGE-1:0] stage;
-	wire [NSTAGE-1:0] FIRST_STAGE = 0, LAST_STAGE = STAGES;
+	localparam NSTAGE_b = clog2(STAGES + NPOST_STAGES);
+	reg [NSTAGE_b-1:0] stage;
+	wire [NSTAGE_b-1:0] FIRST_STAGE = 0, LAST_STAGE = STAGES;
 
-	localparam NSTATE = clog2(3);
-	reg [NSTATE-1:0] state;
+	localparam NSTATE_b = clog2(3);
+	reg [NSTATE_b-1:0] state;
 	
-	localparam NADDR = NSTAGE + 2;
+	// addr: {R/W(1), COMB/PREV(1), stage(NSTAGE_b)} => 2 + NSTAGE_b
+	localparam NADDR = 2 + NSTAGE_b;    // e.g. NADDR = 2+3 = 5 (2^5 = 32xN BRAM) for STAGES == 5
 	reg [NADDR-1:0] Raddr, Waddr;
 	
-	reg Wen, bank;
-	wire R = bank, W = ~bank;
+	reg Wen, ping_pong;
+	wire R = ping_pong, W = ~ping_pong;
 	localparam COMB = 1'b0, PREV = 1'b1;
 	reg signed [ACC_WIDTH-1:0] Wdata, t;
 	wire signed [ACC_WIDTH-1:0] Rdata;
@@ -169,7 +170,7 @@ endgenerate
 			// cur
 				out_data <= Rdata[ACC_WIDTH-1 -:16] + Rdata[ACC_WIDTH-1-16];
 				out_strobe <= 1;
-				bank <= ~bank;
+				ping_pong <= ~ping_pong;
 			// next
         		stage <= 0;
 		end
@@ -180,7 +181,7 @@ endgenerate
 	//------------------------------------------------------------------------------
 		
 	localparam X = 1'bx;
-	wire [NSTAGE-1:0] STAGE_X = {NSTAGE{1'bx}};
+	wire [NSTAGE_b-1:0] STAGE_X = {NSTAGE_b{1'bx}};
 	
 	always @*
 	begin
