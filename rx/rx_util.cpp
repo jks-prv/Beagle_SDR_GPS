@@ -942,6 +942,14 @@ void SNR_meas(void *param)
     int i, j, n, len;
     static internal_conn_t iconn;
     TaskSleepSec(20);
+    
+    //#define SNR_MEAS_SELECT WF_SELECT_1FPS
+    //#define SNR_MEAS_SPEED WF_SPEED_1FPS
+    //#define SNR_MEAS_NAVGS 64
+    #define SNR_MEAS_SELECT WF_SELECT_FAST
+    #define SNR_MEAS_SPEED WF_SPEED_FAST
+    #define SNR_MEAS_NAVGS 32
+    //printf("SNR_meas SNR_MEAS_SELECT/SPEED=%d/%d\n", SNR_MEAS_SELECT, SNR_MEAS_SPEED);
 
     do {
         static int meas_idx;
@@ -950,7 +958,7 @@ void SNR_meas(void *param)
             if (internal_conn_setup(ICONN_WS_WF, &iconn, 0, PORT_INTERNAL_SNR,
                 NULL, 0, 0, 0,
                 "SNR-measure", "internal%20task", "SNR",
-                WF_ZOOM_MIN, 15000, -110, -10, WF_SELECT_1FPS, WF_COMP_OFF) == false) {
+                WF_ZOOM_MIN, 15000, -110, -10, SNR_MEAS_SELECT, WF_COMP_OFF) == false) {
                 printf("SNR_meas: all channels busy\n");
                 break;
             };
@@ -969,13 +977,12 @@ void SNR_meas(void *param)
             static u4_t snr_seq;
             meas->seq = snr_seq++;
             
-            #define SNR_NSAMPS 64
             memset(dB_raw, 0, sizeof(dB_raw));
     
             nbuf_t *nb = NULL;
             bool early_exit = false;
             int nsamps;
-            for (nsamps = 0; nsamps < SNR_NSAMPS && !early_exit;) {
+            for (nsamps = 0; nsamps < SNR_MEAS_NAVGS && !early_exit;) {
                 do {
                     if (nb) web_to_app_done(iconn.cwf, nb);
                     n = web_to_app(iconn.cwf, &nb, /* internal_connection */ true);
@@ -992,7 +999,7 @@ void SNR_meas(void *param)
                     }
                     nsamps++;
                 } while (n);
-                TaskSleepMsec(900 / WF_SPEED_1FPS);
+                TaskSleepMsec(900 / SNR_MEAS_SPEED);
             }
             //printf("SNR_meas DONE nsamps=%d\n", nsamps);
             for (i = 0; i < WF_WIDTH; i++) {
