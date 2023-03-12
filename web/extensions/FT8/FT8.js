@@ -18,7 +18,10 @@ var ft8 = {
    },
 
    // must set "remove_returns" so output lines with \r\n (instead of \n alone) don't produce double spacing
-   console_status_msg_p: { no_decode: true, scroll_only_at_bottom: true, process_return_alone: false, remove_returns: true, cols: 135 },
+   console_status_msg_p: {
+      no_decode: true, scroll_only_at_bottom: true, process_return_alone: false, remove_returns: true,
+      cols: 135, max_lines: 1024
+   },
 
    log_mins: 0,
    log_interval: null,
@@ -88,7 +91,7 @@ function ft8_recv(data)
 function ft8_output_chars(c)
 {
    c = kiwi_decodeURIComponent('FT8', c);    // NB: already encoded on C-side
-   ft8.log_txt += kiwi_remove_escape_sequences(c);
+   //ft8.log_txt += kiwi_remove_escape_sequences(c);
 
    var a = c.split('');
    a.forEach(function(ch, i) {

@@ -901,8 +901,22 @@ function kiwi_output_msg(id, id_scroll, p)
 	   return;
 	}
 	
-	var appendEmptyLine = function(parent_el) { return w3_create_appendElement(parent_el, 'pre', ''); };
-	var removeAllLines = function(parent_el) { while (parent_el.firstChild) { parent_el.removeChild(parent_el.firstChild); } };
+	var appendEmptyLine = function(parent_el) {
+	   var el = w3_create_appendElement(parent_el, 'pre', '');
+	   p.nlines++;
+	   while (p.nlines > p.max_lines) {
+	      parent_el.removeChild(parent_el.firstChild);
+	      p.nlines--;
+	   }
+	   return el;
+	};
+
+	var removeAllLines = function(parent_el) {
+	   while (parent_el.firstChild) {
+	      parent_el.removeChild(parent_el.firstChild);
+	   }
+	   p.nlines = 0;
+	};
 
    var console_cursor = function(ch) {
       ch = ch || '&nbsp;';

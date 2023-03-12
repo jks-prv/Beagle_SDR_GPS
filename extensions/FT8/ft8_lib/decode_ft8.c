@@ -537,7 +537,9 @@ void decode_ft8_free(int rx_chan)
 {
     decode_ft8_t *ft8 = &decode_ft8[rx_chan];
     free(ft8->samples);
+    ft8->samples = NULL;
     free(ft8->callsign_hashtable);
+    ft8->callsign_hashtable = NULL;
     monitor_free(&ft8->mon);
 }
 

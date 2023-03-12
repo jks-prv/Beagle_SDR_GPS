@@ -123,6 +123,10 @@ void monitor_free(monitor_t* me)
     free(me->window);
     free(me->timedata);
     free(me->freqdata);
+
+    #ifdef WATERFALL_USE_PHASE
+        ...
+    #endif
 }
 
 void monitor_reset(monitor_t* me)
