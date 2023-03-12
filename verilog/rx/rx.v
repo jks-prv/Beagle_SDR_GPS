@@ -98,7 +98,7 @@ cic_prune_var #(.INCLUDE("rx1"), .STAGES(RX1_STAGES), .DECIMATION(RX1_DECIM), .G
 
 `ifdef USE_RX_SEQ
 
-cic_prune_seq #(.INCLUDE("rx3"), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .GROWTH(RX2_GROWTH), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
+cic_seq_iq_prune #(.INCLUDE("rx3"), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .GROWTH(RX2_GROWTH), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
 	rx_cic2 (
 		.clock			(adc_clk),
 		.reset			(1'b0),

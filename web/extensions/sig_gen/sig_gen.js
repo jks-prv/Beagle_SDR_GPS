@@ -8,7 +8,7 @@ var gen = {
 	freq_stop: 10006,
 	step: 0.1,
 	dwell: 300,
-	attn_dB: 60,
+	attn_dB: 80,
 	attn_ampl: 0,
 	filter: 0,
 

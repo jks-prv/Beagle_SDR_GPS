@@ -221,6 +221,7 @@ module RECEIVER (
 		//  iq3:    iq3 iq3 iq3 iq3     iq3 ...     iq3 iq3 iq3 iq3     iq3 iq3 iq3 iq3 XYZ   xxC
 		//  evts:  AT               S  AT       S  AT               S ALT               -         S  AT
 		//  A:rx_avail_A, T:transfer=1, S(stop):transfer=0, -:note_no_stop, L:ticks_latch, XYZ:ticks_A, C:buf_ctr
+		//  NB: "rx4" is a pseudo channel number that encodes "rxn == V_RX_CHANS" to signal all channel data moved.
 		
 		if (transfer) {
             if (rxn == V_RX_CHANS) {      // after moving all channel data

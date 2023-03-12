@@ -495,7 +495,7 @@ used by gps/demod.v:
         Bypass
             > no
 
-used by rx/{cic_iq_seq.v, cic_prune_seq.v}:
+used by rx/{cic_seq_iq.v, cic_seq_iq_prune.v}:
     Component Name
         ipcore_add_s48b
     Basic
