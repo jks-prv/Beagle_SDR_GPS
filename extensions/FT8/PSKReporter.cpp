@@ -429,9 +429,11 @@ static void PSKreport(void *param)      // task
         hdr->upload_time = hnl(utc_time());
         hdr->seq = hnl(pr_conf.seq); pr_conf.seq++;
         hdr->uniq = hnl(pr_conf.uniq);
-        pr_dump("upload", ping_pong, bbp, bbp, total_len);
+        #ifdef PR_TESTING
+            pr_dump("upload", ping_pong, bbp, bbp, total_len);
+        #endif
 
-        pr_printf("PSKReporter upload %d spots %sto %s\n",
+        printf("PSKReporter upload %d spots %sto %s\n",
             pr->spots[ping_pong], pr->sent_info_desc[ping_pong]? "(and info desc) " : "", pr->upload_url);
         ext_send_msg_encoded(/* rx_chan */ 0, false, "EXT", "debug",
             "PSKReporter upload %d spots %sto %s\n",

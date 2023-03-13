@@ -29,7 +29,8 @@ int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *c
 #ifdef PR_USE_CALLSIGN_HASHTABLE
     #define CALLSIGN_HASHTABLE_MAX 1024
     #define CALLSIGN_AGE_MAX 60             // one hour
-    //#define CALLSIGN_AGE_MAX 2
+    //#define CALLSIGN_HASHTABLE_MAX 64
+    //#define CALLSIGN_AGE_MAX 15
 #else
     #define CALLSIGN_HASHTABLE_MAX 256
     #define CALLSIGN_AGE_MAX 3
@@ -97,7 +98,7 @@ static void hashtable_cleanup(int rx_chan, uint8_t max_age)
             {
                 LOG(LOG_INFO, "Removing [%.11s] from hash table, age = %d, uploaded = %d\n",
                     ht->callsign, age, ht->uploaded);
-                printf("FT8 hashtable REMOVE age=%d uploaded=%d %.11s\n", age, ht->uploaded, ht->callsign);
+                //printf("FT8 hashtable REMOVE age=%d uploaded=%d %.11s\n", age, ht->uploaded, ht->callsign);
                 // free the hash entry
                 ht->callsign[0] = '\0';
                 ht->uploaded = 0;
@@ -120,6 +121,7 @@ static void hashtable_add(const char* callsign, uint32_t hash, int *hash_idx)
     uint16_t hash10 = (hash >> 12) & 0x3FFu;
     int idx_hash = (hash10 * 23) % CALLSIGN_HASHTABLE_MAX;
     callsign_hashtable_t *ht = &ft8->callsign_hashtable[idx_hash];
+    int wrap_idx = -1;
 
     while (ht->callsign[0] != '\0')
     {
@@ -134,14 +136,21 @@ static void hashtable_add(const char* callsign, uint32_t hash, int *hash_idx)
             
             if (hash_idx != NULL) *hash_idx = idx_hash;
             LOG(LOG_DEBUG, "Found a duplicate [%s]\n", callsign);
+            //printf("hashtable_add DUP idx=%d hash=0x%x <%s>\n", idx_hash, hash, callsign);
             return;
         }
         else
         {
+            if (wrap_idx == -1) wrap_idx = idx_hash;
             LOG(LOG_DEBUG, "Hash table clash!\n");
             // Move on to check the next entry in hash table
             idx_hash = (idx_hash + 1) % CALLSIGN_HASHTABLE_MAX;
             ht = &ft8->callsign_hashtable[idx_hash];
+            if (idx_hash == wrap_idx) {
+                ft8->callsign_hashtable_size--;
+                //printf("hashtable_add WRAPPED idx=%d hash=0x%x <%s>\n", idx_hash, hash, callsign);
+                break;
+            }
         }
     }
     ft8->callsign_hashtable_size++;
@@ -157,6 +166,7 @@ static bool hashtable_lookup(ftx_callsign_hash_type_t hash_type, uint32_t hash, 
     uint16_t hash10 = (hash >> (12 - hash_shift)) & 0x3FFu;
     int idx_hash = (hash10 * 23) % CALLSIGN_HASHTABLE_MAX;
     callsign_hashtable_t *ht = &ft8->callsign_hashtable[idx_hash];
+    int wrap_idx = -1;
 
     while (ht->callsign[0] != '\0')
     {
@@ -165,9 +175,15 @@ static bool hashtable_lookup(ftx_callsign_hash_type_t hash_type, uint32_t hash, 
             strncpy(callsign, ht->callsign, 11);    // NB: strncpy does zero-fill
             return true;
         }
-        // Move on to check the next entry in hash table
+        // Move on to check the next entry in hash table until entire table has been searched.
+        // Unless an empty entry is hit which means a match cannot exist
+        if (wrap_idx == -1) wrap_idx = idx_hash;
         idx_hash = (idx_hash + 1) % CALLSIGN_HASHTABLE_MAX;
         ht = &ft8->callsign_hashtable[idx_hash];
+        if (idx_hash == wrap_idx) {
+            //printf("hashtable_lookup WRAPPED hash=0x%x\n", hash);
+            break;
+        }
     }
     callsign[0] = '\0';
     return false;
@@ -312,30 +328,34 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
                             }
                         }
 
-                        if (ht->uploaded == 0) {
-                            if (pskr_ok && limiter <= PR_LIMITER) {
-                                #ifdef PR_TESTING
-                                    limiter++;
-                                #endif
-                        
-                                if (strlen(call) >= 3 && strlen(grid) == 4) {
-                                    // silently ignore incorrect encoding of RR73 (i.e. sent as grid code instead of MAXGRID4+3)
-                                    if (strcmp(grid, "RR73") != 0) {
-                                        u4_t passband_freq = (u4_t) roundf(freq_hz);
-                                        s1_t snr_i = (s1_t) roundf(snr);
-                                        km = PSKReporter_spot(rx_chan, call, passband_freq, snr_i, ft8->protocol, grid, ft8->decode_time);
-                                        ht->uploaded = 1;
-                                        uploaded = true;
-                                        num_spots++;
-                                    }
-                                } else {
-                                    printf("FT8 bad call or grid <%s> <%s> <%s>\n", text, call, grid);
-                                }
-                            }
+                        if (strncmp(ht->callsign, call, 11) != 0) {
+                            printf("FT8 ######## UNEXPECTED CALLSIGN IN HASHTABLE hash_idx=%d want <%.11s> got <%.11s>\n", hash_idx, call, ht->callsign);
                         } else {
-                            km = PSKReporter_distance(grid);
-                            age = ht->hash >> 22;
-                            printf("FT8 already uploaded age=%d/%d <%s>\n", age, CALLSIGN_AGE_MAX, text);
+                            if (ht->uploaded == 0) {
+                                if (pskr_ok && limiter <= PR_LIMITER) {
+                                    #ifdef PR_TESTING
+                                        limiter++;
+                                    #endif
+                        
+                                    if (strlen(call) >= 3 && strlen(grid) == 4) {
+                                        // silently ignore incorrect encoding of RR73 (i.e. sent as grid code instead of MAXGRID4+3)
+                                        if (strcmp(grid, "RR73") != 0) {
+                                            u4_t passband_freq = (u4_t) roundf(freq_hz);
+                                            s1_t snr_i = (s1_t) roundf(snr);
+                                            km = PSKReporter_spot(rx_chan, call, passband_freq, snr_i, ft8->protocol, grid, ft8->decode_time);
+                                            ht->uploaded = 1;
+                                            uploaded = true;
+                                            num_spots++;
+                                        }
+                                    } else {
+                                        printf("FT8 bad call or grid <%s> <%s> <%s>\n", text, call, grid);
+                                    }
+                                }
+                            } else {
+                                km = PSKReporter_distance(grid);
+                                age = ht->hash >> 22;
+                                //printf("FT8 already uploaded age=%d/%d <%s>\n", age, CALLSIGN_AGE_MAX, text);
+                            }
                         }
                     #endif
                 }
