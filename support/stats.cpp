@@ -322,9 +322,22 @@ static void called_every_second()
             int ext_api_users = rx_count_server_conns(EXT_API_USERS);
             cprintf(c, "API: ext_api_users=%d >? ext_api_ch=%d %s\n", ext_api_users, ext_api_ch,
                 (ext_api_users > ext_api_ch)? "T(DENY)":"F(OKAY)");
+            bool kick = false;
             if (ext_api_users > ext_api_ch) {
                 clprintf(c, "API: non-Kiwi app was denied connection: %d/%d %s \"%s\"\n",
                     ext_api_users, ext_api_ch, c->remote_ip, c->ident_user);
+                kick = true;
+            } else {
+                #ifdef OPTION_DENY_APP_FINGERPRINT_CONN
+                    float f_kHz = (float) c->freqHz / kHz + freq_offset_kHz;
+                    if (c->type == STREAM_WATERFALL && (f_kHz >= 58.59f && f_kHz <= 58.60f) && c->zoom == 8) {
+                        clprintf(c, "API: non-Kiwi app fingerprint was denied connection\n");
+                        kick = true;
+                    }
+                #endif
+            }
+            
+            if (kick) {
                 send_msg(c, SM_NO_DEBUG, "MSG too_busy=%d", ext_api_ch);
                 c->kick = true;
             }
