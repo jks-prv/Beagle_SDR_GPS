@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 587
+VERSION_MIN = 588
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -1324,14 +1324,14 @@ LOGS = \
 	cat /tmp/kiwi.log
 
 log:
-	-@$(LOGS) | grep kiwid
+	-@$(LOGS) | grep -a kiwid
 	@rm -f /tmp/kiwi.log
 
 slog:
-	-@cat /var/log/user.log | grep kiwid
+	-@cat /var/log/user.log | -a grep kiwid
 
 tlog:
-	-@cat /var/log/user.log | grep kiwid | tail -500
+	-@cat /var/log/user.log | grep -a kiwid | tail -500
 
 syslog:
 	tail -n 1000 -f /var/log/syslog
@@ -1340,7 +1340,7 @@ flog:
 	tail -n 100 -f /var/log/frpc.log
 
 LOCAL_IP = grep -vi 192.168.1
-LEAVING = grep -i leaving | grep -vi kf6vo | $(LOCAL_IP)
+LEAVING = grep -ai leaving | grep -vi kf6vo | $(LOCAL_IP)
 users:
 	-@$(LOGS) | $(LEAVING)
 	@rm -f /tmp/kiwi.log

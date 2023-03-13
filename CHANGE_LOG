@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.587  Mar 13, 2023
+v1.587,588  Mar 13, 2023
     FT8 extension:
         Limit log output to 1024 lines (roughly 10 minutes of decodes). Prevents browser from
         eventually going into meltdown.
