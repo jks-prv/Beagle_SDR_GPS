@@ -79,7 +79,7 @@ dict_t dict[] = {
 	{ "add",		TT_OPC,		OC_ADD },
 	{ "sub",		TT_OPC,		OC_SUB },
 	{ "mult",		TT_OPC,		OC_MULT },
-	{ "mult18",		TT_OPC,		OC_MULT18 },
+	{ "mult20",		TT_OPC,		OC_MULT20 },
 	{ "and",		TT_OPC,		OC_AND },
 	{ "or",			TT_OPC,		OC_OR },
 //	{ "xor",		TT_OPC,		OC_XOR },
