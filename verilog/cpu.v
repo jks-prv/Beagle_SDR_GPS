@@ -18,6 +18,8 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
+// Copyright (c) 2014-2023 John Seamons, ZL/KF6VO
+
 module CPU (
     input  wire        clk,
     input  wire [2:1]  rst,
@@ -87,7 +89,7 @@ module CPU (
                op_or        =  8'h8C,
                op_xor       =  8'h8D,
                op_not       =  8'h8E,
-               op_mult18    =  8'h8F,
+               op_mult20    =  8'h8F,
 
                op_shl64     =  8'h90,
                op_shl       =  8'h91,
@@ -156,8 +158,7 @@ module CPU (
         case (op8)
             op_swap, op_rot    : nos <= tos;
             op_shl64           : nos <= {nos[30:0], tos[31]};
-          //op_mult18          : nos <= {{28{nos_x_tos[35]}}, nos_x_tos[35:32]};    // 64-bit sign extend
-            op_mult18          : nos <= {{24{prod40[39]}}, prod40[39:32]};          // 64-bit sign extend
+            op_mult20          : nos <= {{24{prod40[39]}}, prod40[39:32]};  // 64-bit sign extend
             default :
                 if      (inc_sp) nos <= tos;
                 else if (dec_sp) nos <= dstk_dout;
@@ -166,8 +167,9 @@ module CPU (
     //////////////////////////////////////////////////////////////////////////
     // ALU
 
-    reg [17:0] xa, xb;
-    wire [35:0] nos_x_tos;
+    //reg  [17:0] xa18, xb18;
+    wire    [17:0] xa18, xb18;
+    wire [35:0] prod36;
     wire [19:0] xa20, xb20;
     wire [39:0] prod40;
     wire [31:0] sum;
@@ -177,7 +179,8 @@ module CPU (
     reg         carry;
 
 	// fixme: use a c_out instead and reduce s width to 32 from 33?
-	// FIXME: combine adder & multipler into a single DSP slice
+	// FIXME: combine 36b & 40b multipliers?
+	// FIXME: combine adder & multipler(s) into a single DSP slice
     ip_add_u32b cpu_sum (.a(a), .b(b), .s({co, sum}), .c_in(ci));
 
     always @ (posedge clk) if (op8 == op_add) carry <= co;
@@ -197,10 +200,8 @@ module CPU (
         else case (op8)
             op_add, op_addi,
             op_sub          : alu = sum;
-          //op_mult,
-          //op_mult18       : alu = nos_x_tos[31:0];
-            op_mult         : alu = nos_x_tos[31:0];
-            op_mult18       : alu = prod40[31:0];
+            op_mult         : alu = prod36[31:0];
+            op_mult20       : alu = prod40[31:0];
             op_and          : alu = nos & tos;
             op_or           : alu = nos | tos;
 //			op_xor          : alu = nos ^ tos;
@@ -210,17 +211,17 @@ module CPU (
             default         : alu = tos;
         endcase
 
+/*
     always @*
-        if (op8 == op_mult) begin
-            xa = {{2{nos[15]}}, nos[15:0]};
-            xb = {{2{tos[15]}}, tos[15:0]};
+        if (op8 == op_mult) begin   // inferred latch
+            xa18 = {{2{nos[15]}}, nos[15:0]};
+            xb18 = {{2{tos[15]}}, tos[15:0]};
         end
-        else begin
-            xa = nos[17:0];
-            xb = tos[17:0];
-        end
+*/
 
-    MULT18X18 mult(.P(nos_x_tos), .A(xa), .B(xb));
+    assign xa18 = {{2{nos[15]}}, nos[15:0]};
+    assign xb18 = {{2{tos[15]}}, tos[15:0]};
+    MULT18X18 mult_18b_18b_36b(.P(prod36), .A(xa18), .B(xb18));
 
     assign xa20 = nos[19:0];
     assign xb20 = tos[19:0];
@@ -296,6 +297,8 @@ module CPU (
     // WRITE_MODE doesn't matter because address spaces don't overlap
     // But on Artix / Vivado WRITE_MODE = WRITE_FIRST on both ports is needed
     // for correct functioning.
+    // On Artix 7 requires 36kb BRAM because true dual-port mode required (i.e. r/w on both ports)
+    // even though memory requirement would fit in a 18kb BRAM (512 * 32b = 16kb).
 
     wire [8:0] dstk_addr = {1'b0, next_sp};
     wire [8:0] rstk_addr = {1'b1, next_rp};
@@ -315,6 +318,7 @@ module CPU (
     // bram init values and reset value set to = op_nop
     // N.B. Unlike stack mem above, address space here is _not_ separate.
     // There are just two ports so opcode fetch and data i/o can overlap.
+    // Requires 36kb BRAM.
     
     ipcore_bram_cpu_2k_16b cpu_code_data (
         .clka       (clk),          .clkb       (clk),

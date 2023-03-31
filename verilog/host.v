@@ -18,6 +18,8 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
+// Copyright (c) 2014-2023 John Seamons, ZL/KF6VO
+
 `default_nettype none
 
 module HOST (

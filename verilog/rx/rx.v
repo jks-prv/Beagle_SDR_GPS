@@ -17,13 +17,14 @@ Boston, MA  02110-1301, USA.
 
 // Copyright (c) 2008 Alex Shovkoplyas, VE3NEA
 // Copyright (c) 2013 Phil Harman, VK6APH
-// Copyright (c) 2014 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2023 John Seamons, ZL/KF6VO
 
 module RX (
 	input  wire		   adc_clk,
 	input  wire signed [IN_WIDTH-1:0] adc_data,
 
 	input  wire		   rx_sel_C,
+	input  wire		   use_FIR_A,
 
 	input  wire		   rd_i,
 	input  wire		   rd_q,
@@ -91,8 +92,7 @@ cic_prune_var #(.INCLUDE("rx1"), .STAGES(RX1_STAGES), .DECIMATION(RX1_DECIM), .G
 		.out_data		(rx_cic1_out_q)
     );
 
-    wire rx_cic2_strobe_i;
-	wire signed [RXO_BITS-1:0] rx_cic2_out_i, rx_cic2_out_q;
+    wire rx_cic2_avail;
 
 	localparam RX2_GROWTH = RX2_STAGES * clog2(RX2_DECIM);
 
@@ -103,14 +103,19 @@ cic_seq_iq_prune #(.INCLUDE("rx3"), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM),
 		.clock			(adc_clk),
 		.reset			(1'b0),
 		.in_strobe		(rx_cic1_avail),
-		.out_strobe_i	(rx_cic2_strobe_i),
+		.out_strobe_i	(rx_cic2_avail),
 		.out_strobe_q	(),
 		.in_data_i		(rx_cic1_out_i),
 		.in_data_q		(rx_cic1_out_q),
 		.out_data		(rx_cic2_out)
     );
+    
+    assign rx_dout_A = ...
+    rx_cic_out ...
 
 `else
+
+	wire signed [RXO_BITS-1:0] rx_cic2_out_i, rx_cic2_out_q;
 
 cic_prune_var #(.INCLUDE("rx2"), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .GROWTH(RX2_GROWTH), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
 	rx_cic2_i(
@@ -118,7 +123,7 @@ cic_prune_var #(.INCLUDE("rx2"), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .G
 		.reset			(1'b0),
 		.decimation		(18'b0),
 		.in_strobe		(rx_cic1_avail),
-		.out_strobe		(rx_cic2_strobe_i),
+		.out_strobe		(rx_cic2_avail),
 		.in_data		(rx_cic1_out_i),
 		.out_data		(rx_cic2_out_i)
 		//.out_data		()
@@ -134,12 +139,39 @@ cic_prune_var #(.INCLUDE("rx2"), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .G
 		.in_data		(rx_cic1_out_q),
 		.out_data		(rx_cic2_out_q)
     );
-    
-    assign rx_avail_A = rx_cic2_strobe_i;
+
+	wire signed [RXO_BITS-1:0] rx_cic_out_i, rx_cic_out_q;
+
+`ifdef USE_RX_CICF
+
+    wire rx_cicf_avail;
+	wire signed [RXO_BITS-1:0] rx_cicf_out_i, rx_cicf_out_q;
+
+fir_iq #(.WIDTH(RXO_BITS))
+    cicf(
+		.adc_clk        (adc_clk),
+		.reset			(1'b0),
+		.use_FIR_A      (use_FIR_A),
+		.in_strobe		(rx_cic2_avail),
+		.out_strobe		(rx_cicf_avail),
+		.in_data_i		(rx_cic2_out_i),
+		.in_data_q		(rx_cic2_out_q),
+		.out_data_i		(rx_cicf_out_i),
+		.out_data_q		(rx_cicf_out_q)
+    );
+
+    assign rx_avail_A   = rx_cicf_avail;
+    assign rx_cic_out_i = rx_cicf_out_i;
+    assign rx_cic_out_q = rx_cicf_out_q;
+`else
+    assign rx_avail_A   = rx_cic2_avail;
+    assign rx_cic_out_i = rx_cic2_out_i;
+    assign rx_cic_out_q = rx_cic2_out_q;
+`endif
 
 	reg [15:0] rx_dout;
 	always @*
-		rx_dout = rd_i? rx_cic2_out_i[15:0] : ( rd_q? rx_cic2_out_q[15:0] : {rx_cic2_out_i[RXO_BITS-1 -:8], rx_cic2_out_q[RXO_BITS-1 -:8]} );
+		rx_dout = rd_i? rx_cic_out_i[15:0] : ( rd_q? rx_cic_out_q[15:0] : {rx_cic_out_i[RXO_BITS-1 -:8], rx_cic_out_q[RXO_BITS-1 -:8]} );
 
 	assign rx_dout_A = rx_dout;
 

@@ -67,16 +67,11 @@ CFastFIR::CFastFIR()
 		m_pFFTBuf_pre[i].im = 0.0;
 
 		// CIC compensating filter
-		#define USE_CIC_COMP
-		#ifdef USE_CIC_COMP
-            const TYPEREAL f = fabs(fmod(TYPEREAL(i)/CONV_FFT_SIZE+0.5f, 1.0f) - 0.5f);
-            const TYPEREAL p1 = (snd_rate == SND_RATE_3CH ? -3.107f : -2.969f);
-            const TYPEREAL p2 = (snd_rate == SND_RATE_3CH ? 32.04f  : 36.26f );
-            const TYPEREAL sincf = f ? MSIN(f*K_PI)/(f*K_PI) : 1.0f;
-            m_CIC[i] = pow(sincf, -5) + p1*exp(p2*(f-0.5f));
-		#else
-		    m_CIC[i] = 1.0f;
-		#endif
+        const TYPEREAL f = fabs(fmod(TYPEREAL(i)/CONV_FFT_SIZE+0.5f, 1.0f) - 0.5f);
+        const TYPEREAL p1 = (snd_rate == SND_RATE_3CH ? -3.107f : -2.969f);
+        const TYPEREAL p2 = (snd_rate == SND_RATE_3CH ? 32.04f  : 36.26f );
+        const TYPEREAL sincf = f ? MSIN(f*K_PI)/(f*K_PI) : 1.0f;
+        m_CIC_coeffs[i] = pow(sincf, -5) + p1*exp(p2*(f-0.5f));
 	}
 
     SetupWindowFunction(-1);
@@ -93,6 +88,7 @@ CFastFIR::CFastFIR()
 	m_FHiCut = 1.0;
 	m_Offset = 1.0;
 	m_SampleRate = 1.0;
+	m_do_CIC_comp = true;
 }
 
 CFastFIR::~CFastFIR()
@@ -143,6 +139,17 @@ void CFastFIR::SetupWindowFunction(int window_func)
                 - 0.46 * MCOS( (K_2PI*i)/(CONV_FIR_SIZE-1) ) );
             break;
         }
+    }
+}
+
+void CFastFIR::SetupCICFilter(bool do_CIC_comp)
+{
+    m_do_CIC_comp = do_CIC_comp;
+    
+    for (int i = 0; i < CONV_FFT_SIZE; i++) {
+        m_pFilterCoef_CIC[i].re = m_pFilterCoef[i].re * (do_CIC_comp? m_CIC_coeffs[i] : 1.0);
+        m_pFilterCoef_CIC[i].im = m_pFilterCoef[i].im * (do_CIC_comp? m_CIC_coeffs[i] : 1.0);
+        m_CIC[i] = do_CIC_comp? m_CIC_coeffs[i] : 1.0;
     }
 }
 
@@ -217,10 +224,7 @@ void CFastFIR::SetupParameters(int instance, TYPEREAL FLoCut, TYPEREAL FHiCut,
 	//convert FIR coefficients to frequency domain by taking forward FFT
 	MFFTW_EXECUTE(m_FFT_CoefPlan);
 
-    for (i = 0; i < CONV_FFT_SIZE; i++) {
-        m_pFilterCoef_CIC[i].re = m_pFilterCoef[i].re * m_CIC[i];
-        m_pFilterCoef_CIC[i].im = m_pFilterCoef[i].im * m_CIC[i];
-    }
+    SetupCICFilter(m_do_CIC_comp);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

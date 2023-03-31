@@ -114,10 +114,10 @@ GetCount2:
 
 GetPower:		call	GetCount				; i[17:0]
 				dup                             ; i[17:0] i[17:0]
-				mult18							; i^2:H L
+				mult20							; i^2:H L
 				call	GetCount				; i^2:H L q[17:0]
 				dup                             ; i^2:H L q[17:0] q[17:0]
-				mult18							; i^2:H L q^2:H L
+				mult20							; i^2:H L q^2:H L
 				add64							; pH L
 				ret                             ; pH L
 #endif
@@ -134,10 +134,10 @@ GetCount2:
 
 GetPower:		call	GetCount				; i[19:0]
 				dup                             ; i[19:0] i[19:0]
-				mult18							; i^2:H L
+				mult20							; i^2:H L
 				call	GetCount				; i^2:H L q[19:0]
 				dup                             ; i^2:H L q[19:0] q[19:0]
-				mult18							; i^2:H L q^2:H L
+				mult20							; i^2:H L q^2:H L
 				add64							; pH L
 				ret                             ; pH L
 #endif
@@ -218,15 +218,15 @@ g_continue:
 				// close the LO loop based on error term ip*qp
 				
 				dup64						; Inav ip qp ip qp
-                mult18						; Inav ip qp ip*qp:H L
+                mult20						; Inav ip qp ip*qp:H L
                 CloseLoop ch_LO_FREQ ch_LO_GAIN SET_LO_NCO
 
                 // compute prompt power (pp)
                 dup							; Inav ip qp qp
-                mult18						; Inav ip qp^2:H L
+                mult20						; Inav ip qp^2:H L
                 rot                         ; Inav qp^2:H L ip
                 dup							; Inav qp^2:H L ip ip
-                mult18						; Inav qp^2:H L ip^:2H L
+                mult20						; Inav qp^2:H L ip^:2H L
                 add64                       ; Inav ppH L
 
 
@@ -558,7 +558,7 @@ UploadGlitches:									; &GPS_channels + ch_NAV_GLITCH
 CmdSample:		wrEvt	GPS_SAMPLER_RST
             	ret
 
-CmdSetMask:     SetReg	SET_MASK
+CmdSetMask:     SetReg SET_MASK
                 ret
 
 CmdSetRateCG:   SetRate	ch_CG_FREQ SET_CG_NCO

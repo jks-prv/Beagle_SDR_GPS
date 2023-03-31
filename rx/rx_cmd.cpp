@@ -122,6 +122,7 @@ static str_hashes_t rx_common_cmd_hashes[] = {
     { "SET ctrace", CMD_CTRACE },
     { "SET dbug_v", CMD_DEBUG_VAL },
     { "SET dbug_m", CMD_DEBUG_MSG },
+    { "SET devl.p", CMD_DEVL },
     { "SET is_adm", CMD_IS_ADMIN },
     { "SET close_", CMD_FORCE_CLOSE_ADMIN },
     { "SET get_au", CMD_GET_AUTHKEY },
@@ -2046,6 +2047,32 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
         }
 	    break;
     }
+
+	// SECURITY: only used during debugging
+    case CMD_DEVL: {
+	    double pf;
+        n = sscanf(cmd, "SET devl.p%d=%lf", &i, &pf);
+        if (n == 2) {
+            if (i >= 0 && i <= 7) {
+                p_f[i] = pf;
+                printf("CMD_DEVL SET p_f[%d]=%lf\n", i, p_f[i]);
+                return true;
+            }
+        }
+        /*
+	    int pi;
+        n = sscanf(cmd, "SET devl.pi%d=%d", &i, &pi);
+        if (n == 2) {
+            if (i >= 0 && i <= 7) {
+                p_i[i] = pi;
+                printf("CMD_DEVL SET p_i[%d]=%d\n", i, p_i[i]);
+                return true;
+            }
+        }
+        */
+        printf("CMD_DEVL didn't parse: \"%s\"\n", cmd);
+	    break;
+	}
 
 
 ////////////////////////////////

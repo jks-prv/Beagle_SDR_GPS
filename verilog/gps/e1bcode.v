@@ -18,6 +18,8 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
+// Copyright (c) 2018-2023 John Seamons, ZL/KF6VO
+
 `default_nettype none
 
 // E1B code memory gadget
@@ -78,9 +80,9 @@ module E1BCODE (
     generate
         for (ch_c = 0; ch_c < GPS_CHANS; ch_c = ch_c + 1)
         begin : e1b_code_c
-            always @*
+            always @ (posedge clk)
                 if (full_chip[ch_c])
-                    code_o[ch_c] = code_n[ch_c];
+                    code_o[ch_c] <= code_n[ch_c];
         end
     endgenerate
 

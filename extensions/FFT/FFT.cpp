@@ -18,10 +18,10 @@
 
 //#define PN_F_DEBUG
 #ifdef PN_F_DEBUG
-    #define P0_F p0_f
-    #define P1_F p1_f
-    #define P2_F p2_f
-    #define P3_F p3_f
+    #define P0_F p_f[0]
+    #define P1_F p_f[1]
+    #define P2_F p_f[2]
+    #define P3_F p_f[3]
 #else
     #define P0_F 0
     #define P1_F 0

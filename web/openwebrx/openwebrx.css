@@ -979,6 +979,11 @@ html, body
 	/*color: #FFFF50;*/
 }
 
+.class-button.class-button-noactive:active
+{
+	background: inherit !important;
+}
+
 .class-button-small
 {
 	display: inline;

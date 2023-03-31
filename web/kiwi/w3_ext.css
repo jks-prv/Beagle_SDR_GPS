@@ -105,7 +105,12 @@
 {
     color: white;
     background-color: #4CAF50 !important;   /* = w3-selection-green */
-    border-color: #4CAF50 !important;       /* = w3-selection-green */
+    /* border-color: #4CAF50 !important;       /* = w3-selection-green */
+}
+
+.w3-ext-btn.w3-ext-btn-noactive:active
+{
+	background: inherit !important;
 }
 
 /* normalize browser range slider disaster (adapted from www.cssportal.com/style-input-range) */
@@ -1158,7 +1163,7 @@ input[type=range]::-moz-range-thumb {
 
 .w3-text-css-yellow
 {
-    color: yellow;
+    color: yellow !important;
 }
 
 .w3-css-lime
@@ -1170,6 +1175,17 @@ input[type=range]::-moz-range-thumb {
 .w3-text-css-lime
 {
     color: lime;
+}
+
+.w3-css-magenta
+{
+    color: white;
+    background-color: magenta;
+}
+
+.w3-text-css-magenta
+{
+    color: magenta !important;
 }
 
 .w3-css-orange

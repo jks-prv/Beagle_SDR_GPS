@@ -84,6 +84,16 @@ void ext_notify_connected(int rx_chan, u4_t seq, char *msg)
     kiwi_strncpy(extint.notify_msg, msg, N_NOTIFY);
 }
 
+void ext_register_receive_iq_samps_raw(ext_receive_iq_samps_t func, int rx_chan)
+{
+	ext_users[rx_chan].receive_iq_pre_fir = func;
+}
+
+void ext_unregister_receive_iq_samps_raw(int rx_chan)
+{
+	ext_users[rx_chan].receive_iq_pre_fir = NULL;
+}
+
 void ext_register_receive_iq_samps(ext_receive_iq_samps_t func, int rx_chan, int flags)
 {
     if (flags == PRE_AGC)

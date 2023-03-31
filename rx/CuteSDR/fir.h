@@ -30,7 +30,7 @@ public:
 
 	void InitConstFir(int NumTaps, const TYPEREAL* pCoef, TYPEREAL Fsamprate);
 	void InitConstFir(int NumTaps, const TYPEREAL* pICoef, const TYPEREAL* pQCoef, TYPEREAL Fsamprate);
-	int InitLPFilter(int NumTaps, TYPEREAL Scale, TYPEREAL Astop, TYPEREAL Fpass, TYPEREAL Fstop, TYPEREAL Fsamprate);
+	int InitLPFilter(int NumTaps, TYPEREAL Scale, TYPEREAL Astop, TYPEREAL Fpass, TYPEREAL Fstop, TYPEREAL Fsamprate, bool dump = false);
 	int InitHPFilter(int NumTaps, TYPEREAL Scale, TYPEREAL Astop, TYPEREAL Fpass, TYPEREAL Fstop, TYPEREAL Fsamprate);
 	void GenerateHBFilter( TYPEREAL FreqOffset);
 	void ProcessFilter(int InLength, TYPEREAL* InBuf, TYPEREAL* OutBuf);

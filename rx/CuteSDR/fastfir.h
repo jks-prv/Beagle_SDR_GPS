@@ -27,6 +27,7 @@ public:
 
 	void SetupParameters(int instance, TYPEREAL FLoCut,TYPEREAL FHiCut,TYPEREAL Offset, TYPEREAL SampleRate);
 	void SetupWindowFunction(int window_func);
+    void SetupCICFilter(bool do_CIC_comp);
 	int ProcessData(int rx_chan, int InLength, TYPECPX* InBuf, TYPECPX* OutBuf);
 
 	int FirPos() const { return m_InBufInPos - CONV_FIR_SIZE + 1; }
@@ -34,6 +35,7 @@ private:
 	inline void CpxMpy(int N, TYPECPX* m, TYPECPX* src, TYPECPX* dest);
 	
 	int m_instance;
+	bool m_do_CIC_comp;
 
 	TYPEREAL m_FLoCut;
 	TYPEREAL m_FHiCut;
@@ -47,7 +49,8 @@ private:
 	TYPECPX m_pFilterCoef_CIC[CONV_FFT_SIZE];
 	TYPECPX m_pFFTBuf[CONV_FFT_SIZE];
 	TYPECPX m_pFFTBuf_pre[CONV_FFT_SIZE]; // pre-filtered FFT with CIC compensation
-	TYPEREAL m_CIC[CONV_FFT_SIZE]; // CIC compensation coefficients
+	TYPEREAL m_CIC_coeffs[CONV_FFT_SIZE]; // CIC compensation coefficients
+	TYPEREAL m_CIC[CONV_FFT_SIZE];
 	MFFTW_PLAN m_FFT_CoefPlan;
 	MFFTW_PLAN m_FFT_FwdPlan;
 	MFFTW_PLAN m_FFT_RevPlan;

@@ -16,11 +16,12 @@
 
 	link
    
-	radio_button               T
+	radio_button               T     no label option needed
 	radio_button_get_param     T
 	radio_unhighlight
 	
-	switch                     T     **Needs L added
+	switch                     T
+	switch_label               TL    rename w3_switch_label() to w3_switch()? Any external API users?
 	switch_set_value
 	
 	button                     T
@@ -1968,6 +1969,34 @@ function w3_switch(psa, text_0, text_1, path, text_0_selected, cb, cb_param)
 	return s;
 }
 
+function w3_switch_label(psa, label, text_0, text_1, path, text_0_selected, cb, cb_param)
+{
+   //console.log('w3_switch_label psa='+ psa);
+   var hasLabel = (label != '');
+	var inline = psa.includes('w3-label-inline');
+	var centered = psa.includes('w3-center');
+	var left = psa.includes('w3-label-left');
+	var bold = !psa.includes('w3-label-not-bold');
+	
+	var spacing = (hasLabel && !inline)? 'w3-margin-T-8' : '';
+	if (hasLabel && inline) spacing += left? ' w3-margin-L-8' : ' w3-margin-R-8';
+	if (centered) spacing += ' w3-halign-center';
+
+   var psa3 = w3_psa3(psa);
+   var psa_outer = w3_psa_mix(psa3.left, (inline? 'w3-show-inline-new':'') + (centered? ' w3-halign-center w3-center':''));
+   var psa_label = w3_psa_mix(psa3.middle, (hasLabel && bold)? 'w3-bold':'');
+	var psa_inner = w3_psa();
+
+   var ls = w3_label(psa_label, label, path);
+   var cs =
+      w3_inline(spacing +'/'+ psa3.right,
+         w3_radio_button('w3int-switch-0', text_0, path, text_0_selected? 1:0, cb, cb_param) +
+         w3_radio_button('w3int-switch-1', text_1, path, text_0_selected? 0:1, cb, cb_param)
+      );
+	var s = w3_div(psa_outer, ((left || !inline)? (ls + cs) : (cs + ls)));
+	return s;
+}
+
 // used when current value should come from config param
 function w3_switch_get_param(psa, text_0, text_1, path, text_0_selected_if_val, init_val, cb, cb_param)
 {
@@ -1977,10 +2006,19 @@ function w3_switch_get_param(psa, text_0, text_1, path, text_0_selected_if_val, 
 	//if (w3_contains(psa, 'id-net-ssl'))
 	//   console.log('w3_switch_get_param cur_val='+ cur_val +' text_0_selected_if_val='+ text_0_selected_if_val);
 	var text_0_selected = (cur_val == text_0_selected_if_val)? w3_SELECTED : w3_NOT_SELECTED;
-	var s =
-		w3_radio_button(w3_psa_mix(psa, 'w3int-switch-0'), text_0, path, text_0_selected? 1:0, cb, cb_param) +
-		w3_radio_button(w3_psa_mix(psa, 'w3int-switch-1'), text_1, path, text_0_selected? 0:1, cb, cb_param);
-	return s;
+   return w3_switch(psa, text_0, text_1, path, text_0_selected, cb, cb_param);
+}
+
+// used when current value should come from config param
+function w3_switch_label_get_param(psa, label, text_0, text_1, path, text_0_selected_if_val, init_val, cb, cb_param)
+{
+	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
+
+	// set default selection of button based on current value
+	//if (w3_contains(psa, 'id-net-ssl'))
+	//   console.log('w3_switch_get_param cur_val='+ cur_val +' text_0_selected_if_val='+ text_0_selected_if_val);
+	var text_0_selected = (cur_val == text_0_selected_if_val)? w3_SELECTED : w3_NOT_SELECTED;
+   return w3_switch_label(psa, label, text_0, text_1, path, text_0_selected, cb, cb_param);
 }
 
 function w3_switch_set_value(path, switch_idx)
@@ -2011,7 +2049,7 @@ function w3int_button_click(ev, path, cb, cb_param)
    
       // cb is a string because can't pass an object to onclick
       if (cb) {
-         w3_call(cb, path, cb_param, /* first */ false);    // buttons don't really have first callback
+         w3_call(cb, path, cb_param, /* first */ false, ev);   // buttons don't really have first callback
       }
    }
 
@@ -2076,9 +2114,10 @@ function w3int_button(psa, path, text, cb, cb_param)
 	
 	// w3-round-large listed first so its '!important' can be overriden by subsequent '!important's
 	var default_style = (psa.includes('w3-round') || psa.includes('w3-circle'))? '' : ' w3-round-large';
+	var noactive = psa.includes('w3-noactive')? ' class-button-noactive w3-ext-btn-noactive' : '';
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left);
-	var psa_inner = w3_psa(psa3.right, path +' w3-btn w3-ext-btn'+ default_style, '', onclick);
+	var psa_inner = w3_psa(psa3.right, path +' w3-btn w3-ext-btn'+ default_style + noactive, '', onclick);
    if (psa.includes('w3-dump')) {
       console.log('w3_button');
       console.log(psa3);

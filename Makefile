@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 588
+VERSION_MIN = 589
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -1431,10 +1431,12 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 # selectively transfer files to the target so everything isn't compiled each time
 EXCLUDE_RSYNC = ".DS_Store" ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" \
 	"verilog/kiwi.gen.vh" "web/edata*" "node_modules" "morse-pro-compiled.js"
-RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) $(addprefix --exclude , $(EXT_EXCLUDE_RSYNC)) . $(RSYNC_USER)@$(HOST):~root/$(REPO_NAME)
+RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) $(addprefix --exclude , $(EXT_EXCLUDE_RSYNC)) . $(RSYNC_USER)@$(HOST):$(RSYNC_DIR)/$(REPO_NAME)
 
 RSYNC_USER ?= root
+RSYNC_DIR ?= /root
 PORT ?= 22
+
 ifeq ($(PORT),22)
 	RSYNC = rsync
 else

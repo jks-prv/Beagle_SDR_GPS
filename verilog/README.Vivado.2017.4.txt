@@ -2,8 +2,9 @@ Steps to creating and building the KiwiSDR project with Vivado 2017.4
     Updated 15 May 2021
 
 1) You will most likely be running Vivado on a Windows or Linux machine.
-We run Vivado successfully on a MacBook Pro using the VirtualBox application to emulate a PC
-and then running Ubuntu Linux on that and Vivado on that! (talk about punishment, lol).
+We run Vivado successfully on an x86-based MacBook Pro using the VirtualBox application to emulate
+a PC and then running Ubuntu Linux on that and Vivado on that! (talk about punishment, lol).
+Note that this solution will NOT work on an ARM-based MacBook (e.g. M1)
 
 2) Copy Verilog source files from the KiwiSDR distribution to a directory on the machine
 you will run Vivado as follows. We suggest creating a directory like verilog/KiwiSDR/import_srcs
