@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 
 #include "types.h"
 #include "kiwi.h"
+#include "options.h"
 #include "cuteSDR.h"
 #include "ima_adpcm.h"
 #include "ext.h"
@@ -92,6 +93,11 @@ typedef struct {
 	u4_t specAF_last_ms;
     bool isChanNull;
 	
+    #ifdef OPTION_EXPERIMENT_CICF
+        bool cicf_setup;
+        bool cicf_run;
+    #endif
+
     #ifdef SND_SEQ_CHECK
         bool snd_seq_ck_init;
 	    u4_t snd_seq_ck;
