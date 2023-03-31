@@ -54,19 +54,23 @@ typedef struct {
 
 void ext_register(ext_t *ext);
 
-// call to start/stop receiving audio channel FFT samples, pre- or post-FIR filter, detection & AGC
+// call to start/stop receiving raw audio channel IQ samples, pre-passband FIR filter
+void ext_register_receive_iq_samps_raw(ext_receive_iq_samps_t func, int rx_chan);
+void ext_unregister_receive_iq_samps_raw(int rx_chan);
+
+// call to start/stop receiving audio channel FFT samples, pre- or post-passband FIR filter, detection & AGC
 typedef enum { PRE_FILTERED = 1, POST_FILTERED = 2 } ext_FFT_flags_e;
 void ext_register_receive_FFT_samps(ext_receive_FFT_samps_t func, int rx_chan, int flags);
 void ext_unregister_receive_FFT_samps(int rx_chan);
 
-// call to start/stop receiving audio channel IQ samples, post-FIR filter, but pre- detector & AGC
+// call to start/stop receiving audio channel IQ samples, post-passband FIR filter, but pre- detector & AGC
 typedef enum { PRE_AGC = 0, POST_AGC = 1 } ext_IQ_flags_e;
 void ext_register_receive_iq_samps(ext_receive_iq_samps_t func, int rx_chan, int flags = PRE_AGC);
 void ext_register_receive_iq_samps_task(tid_t tid, int rx_chan, int flags = PRE_AGC);
 void ext_unregister_receive_iq_samps(int rx_chan);
 void ext_unregister_receive_iq_samps_task(int rx_chan);
 
-// call to start/stop receiving audio channel real samples, post- FIR filter, detection & AGC
+// call to start/stop receiving audio channel real samples, post-passband FIR filter, detection & AGC
 void ext_register_receive_real_samps(ext_receive_real_samps_t func, int rx_chan);
 void ext_register_receive_real_samps_task(tid_t tid, int rx_chan);
 void ext_unregister_receive_real_samps(int rx_chan);

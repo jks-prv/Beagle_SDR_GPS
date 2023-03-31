@@ -47,7 +47,7 @@ typedef struct {
 	ext_receive_FFT_samps_t receive_FFT;
 
     // server-side routine for receiving IQ data
-	ext_receive_iq_samps_t receive_iq_pre_agc, receive_iq_post_agc;
+	ext_receive_iq_samps_t receive_iq_pre_fir, receive_iq_pre_agc, receive_iq_post_agc;
 	tid_t receive_iq_pre_agc_tid, receive_iq_post_agc_tid;
 
 	// server-side routine for receiving real data
