@@ -91,6 +91,10 @@ function mode_html()
 	w3_div('id-mode w3-hide',
 		'<hr>',
 		w3_div('w3-container',
+		   dbgUs?
+            w3_switch_label('w3-restart w3-margin-B-32 w3-text-teal/w3-label-left w3-label-inline/', 'Use anti-aliased versions?', 'Yes', 'No', 'adm.anti_aliased', adm.anti_aliased, 'admin_radio_YN_cb')
+            : '',
+
          w3_div('w3-flex w3-margin-B-8',
             w3_div('w3-text-teal|width:'+ pwpx, ' '),
             w3_div('w3-text-teal w3-center w3-bold|width:'+ bwpx, 'select FPGA mode'),
@@ -165,8 +169,7 @@ function mode_html()
             w3_div('w3-text-black', ' '), 4,
    
             w3_div('w3-text-black',
-               'In exchange the number of channels drops from four to three. It may have to drop to two in the future depending ' +
-               'on how stable operation is with three channels.'
+               'In exchange the number of channels must drop from four to three.'
             ), 48
          ),
 		   w3_div('w3-margin-T-16', '<hr>')
@@ -231,9 +234,8 @@ function control_html()
             )
          ),
 			w3_div('w3-container w3-center',
-            '<b>Daily restart?</b> ' +
-            w3_switch('', 'Yes', 'No', 'adm.daily_restart', adm.daily_restart, 'admin_radio_YN_cb'),
-				w3_div('w3-text-black',
+            w3_switch_label('w3-center', 'Daily restart?', 'Yes', 'No', 'adm.daily_restart', adm.daily_restart, 'admin_radio_YN_cb'),
+				w3_div('w3-text-black w3-tspace-8',
 					"Set if you're having problems with the server<br>after it has run for a period of time.<br>" +
 					"Restart occurs at the same time as updates (0100-0600 Local)<br> and will wait until there are no connections."
 				)
@@ -252,12 +254,9 @@ function control_html()
 	var s2 =
 		'<hr>' +
 		w3_third('w3-container w3-valign', '',
-         w3_divs('/w3-center w3-tspace-8',
+         w3_divs('',
             w3_inline('w3-halign-space-around/',
-               w3_divs('w3-center/w3-margin-T-8',
-                  w3_div('', '<b>Enable user<br>connections?</b>'),
-                  w3_switch('', 'Yes', 'No', 'adm.server_enabled', adm.server_enabled, 'server_enabled_cb')
-               ),
+               w3_switch_label('w3-center', 'Enable user<br>connections?', 'Yes', 'No', 'adm.server_enabled', adm.server_enabled, 'server_enabled_cb'),
          
                w3_divs('w3-center/w3-margin-T-8',
                   w3_div('', '<b>Close all active<br>user connections</b>'),
@@ -275,9 +274,8 @@ function control_html()
             )
          ),
 
-			w3_divs('w3-restart/w3-center w3-tspace-8',
-				w3_div('', '<b>Disable waterfalls/spectrum?</b>'),
-            w3_switch('', 'Yes', 'No', 'cfg.no_wf', cfg.no_wf, 'admin_radio_YN_cb'),
+			w3_divs('w3-restart/w3-tspace-8',
+            w3_switch_label('w3-center', 'Disable waterfalls/spectrum?', 'Yes', 'No', 'cfg.no_wf', cfg.no_wf, 'admin_radio_YN_cb'),
 				w3_text('w3-text-black w3-center',
 				   'Set "yes" to save Internet bandwidth by preventing <br>' +
 				   'the waterfall and spectrum from being displayed.'
@@ -339,9 +337,8 @@ function control_html()
 				)
 			),
 			
-			w3_divs('/w3-center w3-tspace-8',
-            w3_div('', '<b>Timestamp SNR with local time?</b>'),
-            w3_switch('', 'Yes', 'No', 'cfg.snr_local_time', cfg.snr_local_time, 'admin_radio_YN_cb')
+			w3_divs('/w3-tspace-8',
+            w3_switch_label('w3-center', 'Timestamp SNR with local time?', 'Yes', 'No', 'cfg.snr_local_time', cfg.snr_local_time, 'admin_radio_YN_cb')
          )
 		) +
 		'<hr>';
@@ -541,9 +538,7 @@ function connect_html()
 			),
 			
 			w3_col_percent('w3-text-teal/w3-container',
-				w3_div('w3-center',
-					'<b>Enable DUC at startup?</b><br>' +
-					w3_switch('w3-margin-T-8', 'Yes', 'No', 'adm.duc_enable', adm.duc_enable, 'connect_DUC_enabled_cb')
+				w3_switch_label('w3-center', 'Enable DUC at startup?', 'Yes', 'No', 'adm.duc_enable', adm.duc_enable, 'connect_DUC_enabled_cb'
 				), 20,
 				
 				w3_div('w3-center',
@@ -959,14 +954,8 @@ function update_html()
 		'<hr>' +
 		w3_div('w3-margin-bottom',
          w3_half('w3-container', 'w3-text-teal',
-				w3_div('',
-                  '<b>Automatically check for software updates?</b> ' +
-                  w3_switch('', 'Yes', 'No', 'adm.update_check', adm.update_check, 'admin_radio_YN_cb')
-            ),
-				w3_div('',
-                  '<b>Automatically install software updates?</b> ' +
-                  w3_switch('', 'Yes', 'No', 'adm.update_install', adm.update_install, 'admin_radio_YN_cb')
-            )
+            w3_switch_label('w3-label-inline w3-label-left', 'Automatically check for software updates?', 'Yes', 'No', 'adm.update_check', adm.update_check, 'admin_radio_YN_cb'),
+            w3_switch_label('w3-label-inline w3-label-left', 'Automatically install software updates?', 'Yes', 'No', 'adm.update_install', adm.update_install, 'admin_radio_YN_cb')
          ),
          w3_half('w3-container w3-tspace-16', 'w3-text-teal',
             w3_div('',
@@ -992,9 +981,9 @@ function update_html()
 		'<hr>' +
 		w3_inline('w3-halign-space-between w3-margin-bottom w3-text-teal w3-restart/w3-container',
          w3_divs('w3-tspace-8',
-               w3_div('', '<b>Disable recent changes?</b>'),
-               w3_switch('', 'Yes', 'No', 'disable_recent_changes', cfg.disable_recent_changes, 'admin_radio_YN_cb'),
-               w3_text('w3-text-black', 'Currently:<br><ul><li>The Firefox audio hang workaround.</li></ul>')
+            w3_switch_label('w3-label-left', 'Disable recent changes?',
+               'Yes', 'No', 'disable_recent_changes', cfg.disable_recent_changes, 'admin_radio_YN_cb'),
+            w3_text('w3-text-black', 'Currently:<br><ul><li>The Firefox audio hang workaround.</li></ul>')
          ),
          ''
       ) +
@@ -1174,17 +1163,12 @@ function network_html()
 					w3_input_get('', 'External port', 'adm.port_ext', 'admin_int_cb')
 				),
 				w3_divs('id-net-ssl-vis w3-hide/ w3-center w3-restart',
-					'<b>Enable HTTPS/SSL on<br>network connections?</b><br>',
-					w3_switch_get_param('id-net-ssl w3-margin-T-8', 'Yes', 'No', 'adm.use_ssl', true, false, 'network_use_ssl_cb')
+					w3_switch_label_get_param('id-net-ssl w3-center', 'Enable HTTPS/SSL on<br>network connections?',
+					   'Yes', 'No', 'adm.use_ssl', true, false, 'network_use_ssl_cb')
 				),
-				w3_divs('w3-center',
-					'<b>Auto add NAT rule<br>on firewall / router?</b><br>',
-					w3_switch('w3-margin-T-8', 'Yes', 'No', 'adm.auto_add_nat', adm.auto_add_nat, 'network_auto_nat_cb')
-				),
-				w3_div('w3-center',
-						'<b>IP address<br>(only static IPv4 for now)</b><br> ' +
-						w3_switch_get_param('w3-margin-T-8', 'DHCP', 'Static', 'adm.ip_address.use_static', 0, false, 'network_use_static_cb')
-				),
+				w3_switch_label('w3-center', 'Auto add NAT rule<br>on firewall / router?', 'Yes', 'No', 'adm.auto_add_nat', adm.auto_add_nat, 'network_auto_nat_cb'),
+            w3_switch_label_get_param('w3-center', 'IP address<br>(only static IPv4 for now)',
+               'DHCP', 'Static', 'adm.ip_address.use_static', 0, false, 'network_use_static_cb'),
             w3_divs('w3-center/',
                w3_select('w3-width-auto', 'Ethernet interface speed', '', 'ethernet_speed', cfg.ethernet_speed, network.ethernet_speed_s, 'network_ethernet_speed'),
                w3_div('w3-text-black',
@@ -1252,9 +1236,9 @@ function network_html()
                w3_div('id-net-check-port-ip-s w3-show-inline-block w3-text-black w3-background-pale-aqua')
             )
          ),
-         w3_div('w3-center',
-            w3_label('w3-bold w3-text-teal', 'Register this Kiwi on my.kiwisdr.com<br>on each reboot?<br>'),
-            w3_switch('w3-margin-T-8 w3-margin-B-8', 'Yes', 'No', 'adm.my_kiwi', adm.my_kiwi, 'admin_radio_YN_cb'),
+         w3_div('w3-center w3-text-teal',
+            w3_switch_label('w3-center', 'Register this Kiwi on my.kiwisdr.com<br>on each reboot?',
+               'Yes', 'No', 'adm.my_kiwi', adm.my_kiwi, 'admin_radio_YN_cb'),
             w3_text('w3-block w3-center w3-text-black',
                'Registering on <a href="http://my.kiwisdr.com" target="_blank">my.kiwisdr.com</a> allows the local ip address of Kiwis <br>' +
                'to be easily discovered. Set to "no" if you don\'t want your Kiwi <br>' +
@@ -1296,16 +1280,11 @@ function network_html()
                )
             ),
             
-            w3_div('w3-center w3-margin-B-24',
-               '<b>Automatically download<br>IP blacklist?</b><br>',
-               w3_switch('w3-margin-T-8 w3-margin-B-8', 'Yes', 'No', 'adm.ip_blacklist_auto_download',
-                  adm.ip_blacklist_auto_download, 'admin_radio_YN_cb')
-            ),
+            w3_switch_label('w3-center w3-margin-B-24', 'Automatically download<br>IP blacklist?',
+               'Yes', 'No', 'adm.ip_blacklist_auto_download', adm.ip_blacklist_auto_download, 'admin_radio_YN_cb'),
             
-            w3_div('w3-center w3-margin-B-24',
-               '<b>Prevent multiple connections<br>from the same IP address?</b><br>',
-               w3_switch('w3-margin-T-8 w3-margin-B-8', 'Yes', 'No', 'adm.no_dup_ip', adm.no_dup_ip, 'admin_radio_YN_cb')
-            )
+            w3_switch_label('w3-center w3-margin-B-24', 'Prevent multiple connections<br>from the same IP address?',
+               'Yes', 'No', 'adm.no_dup_ip', adm.no_dup_ip, 'admin_radio_YN_cb')
          ),
          
          
@@ -1906,9 +1885,6 @@ function gps_html()
 	w3_div('id-gps w3-hide|line-height:1.5',
 	   w3_inline('w3-valign w3-halign-space-between w3-margin-T-16/',
          w3_div('w3-valign w3-text-teal',
-            //w3_div('w3-show-inline w3-margin-right w3-small', '<b>Enable<br>GPS?</b>') +
-            //w3_switch('w3-show-inline w3-padding-smaller', 'Yes', 'No', 'adm.enable_gps', adm.enable_gps, 'admin_radio_YN_cb')
-            
             w3_text('w3-text-teal w3-bold w3-small', 'Acquire'),
             w3_div('w3-flex-col w3-valign-start w3-margin-L-4',
                w3_checkbox('w3-label-inline w3-label-not-bold w3-small/w3-small', 'Navstar', 'adm.acq_Navstar', adm.acq_Navstar, 'gps_acq_cb'),
@@ -1921,8 +1897,6 @@ function gps_html()
          ),
 
          w3_div('w3-valign w3-text-teal',
-            //w3_div('w3-show-inline w3-margin-right w3-small', '<b>Always<br>acquire?</b>') +
-            //w3_switch('w3-show-inline w3-padding-smaller', 'Yes', 'No', 'adm.always_acq_gps', adm.always_acq_gps, 'admin_radio_YN_cb')
             w3_checkbox('w3-label-inline w3-small/w3-small', 'Acquire<br>if Kiwi<br>busy? [n]', 'adm.always_acq_gps', adm.always_acq_gps, 'w3_bool_set_cfg_cb')
          ),
 
@@ -1931,43 +1905,16 @@ function gps_html()
          ),
 
          w3_div('w3-valign w3-text-teal',
-            //w3_div('w3-show-inline w3-margin-right w3-small', '<b>Include<br>alerted?</b>') +
-            //w3_switch('w3-show-inline w3-padding-smaller', 'Yes', 'No', 'adm.include_alert_gps', adm.include_alert_gps, 'admin_radio_YN_cb')
             w3_checkbox('w3-label-inline w3-small/w3-small', 'Include<br>alerted sats in<br>solutions? [n]', 'adm.include_alert_gps', adm.include_alert_gps, 'w3_bool_set_cfg_cb')
          ),
 
          w3_div('w3-valign w3-text-teal',
-            //w3_div('w3-show-inline w3-margin-right w3-small', '<b>Include<br>Galileo?</b>') +
-            //w3_switch('w3-show-inline w3-padding-smaller', 'Yes', 'No', 'adm.include_E1B', adm.include_E1B, 'admin_radio_YN_cb')
             w3_checkbox('w3-label-inline w3-small/w3-small', 'Include<br>Galileo in<br>solutions? [y]', 'adm.include_E1B', adm.include_E1B, 'w3_bool_set_cfg_cb')
          ),
 
          w3_div('w3-valign w3-text-teal',
-            //w3_div('w3-show-inline w3-margin-right w3-small', '<b>Kalman<br>filter?</b>') +
-            //w3_switch('w3-show-inline w3-padding-smaller', 'Yes', 'No', 'adm.use_kalman_position_solver', adm.use_kalman_position_solver, 'admin_radio_YN_cb')
             w3_checkbox('w3-label-inline w3-small/w3-small', 'Use<br>Kalman<br>filter? [y]', 'adm.use_kalman_position_solver', adm.use_kalman_position_solver, 'w3_bool_set_cfg_cb')
          ),
-
-         /*
-         w3_div('w3-valign w3-text-teal',
-            w3_div('w3-show-inline w3-margin-right w3-small', '<b>Plot<br>Galileo?</b>') +
-            w3_switch('w3-show-inline w3-padding-smaller', 'Yes', 'No', 'adm.plot_E1B', adm.plot_E1B, 'admin_radio_YN_cb')
-         ),
-         */
-
-         /*
-         w3_div('w3-valign w3-text-teal',
-            w3_div('w3-show-inline w3-margin-right w3-small', '<b>E1B<br>offset</b>') +
-				w3_select('w3-text-red w3-width-auto', '', 'chips', 'adm.E1B_offset', adm.E1B_offset, E1B_offset_i, 'gps_E1B_offset_cb')
-         ),
-         */
-
-         /*
-         w3_div('w3-valign w3-text-teal',
-            w3_div('w3-show-inline w3-margin-right w3-small', '<b>E1B<br>gain</b>') +
-            w3_select('w3-margin-L-5 w3-text-red w3-width-auto', '', '', '_gps.gain', 0, '1:12', 'gps_gain_cb')
-         ),
-         */
 
          w3_div('w3-valign w3-hcenter w3-text-teal',
             w3_div('w3-margin-right', '<b>Select<br>Graph</b>') +
@@ -2795,10 +2742,8 @@ function log_html()
                w3_button('w3-aqua|margin-left:10px', 'Dump', 'log_dump_cb'),
                w3_button('w3-blue|margin-left:10px', 'Clear Histogram', 'log_clear_hist_cb')
             ),
-				w3_div('',
-					'<b>Log connections from local ip addresses?</b> ',
-					w3_switch('', 'Yes', 'No', 'adm.log_local_ip', adm.log_local_ip, 'admin_radio_YN_cb')
-				)
+            w3_switch_label('w3-label-inline w3-label-left', 'Log connections from local ip addresses?',
+               'Yes', 'No', 'adm.log_local_ip', adm.log_local_ip, 'admin_radio_YN_cb')
          ),
 			w3_div('id-log-msg w3-margin-T-8 w3-text-output w3-small w3-text-black', '')
 		)
@@ -3218,10 +3163,8 @@ function security_html()
 		'<hr>' +
 		w3_inline_percent('w3-container/w3-hspace-16 w3-text-teal',
 			w3_div('',
-				w3_div('',
-					'<b>User auto-login from local net<br>even if password set?</b><br>',
-					w3_switch('w3-margin-T-8', 'Yes', 'No', 'adm.user_auto_login', adm.user_auto_login, 'admin_radio_YN_cb')
-				)
+            w3_switch_label('', 'User auto-login from local net<br>even if password set?',
+               'Yes', 'No', 'adm.user_auto_login', adm.user_auto_login, 'admin_radio_YN_cb')
 			), 25,
 
 			w3_div('w3-center',
@@ -3244,10 +3187,8 @@ function security_html()
 		'<hr>' +
 		w3_inline_percent('w3-container/w3-hspace-16 w3-text-teal',
 			w3_div('',
-				w3_div('',
-					'<b>Admin auto-login from local net<br>even if password set?</b><br>',
-					w3_switch('w3-margin-T-8', 'Yes', 'No', 'adm.admin_auto_login', adm.admin_auto_login, 'admin_radio_YN_cb')
-				)
+            w3_switch_label('', 'Admin auto-login from local net<br>even if password set?',
+               'Yes', 'No', 'adm.admin_auto_login', adm.admin_auto_login, 'admin_radio_YN_cb')
 			), 25,
 
 			w3_div('w3-text-teal',
@@ -3266,10 +3207,8 @@ function security_html()
 		'<hr>' +
 		w3_inline_percent('w3-container/w3-hspace-16 w3-text-teal',
 			w3_div('',
-				w3_div('',
-					'<b>Restrict console connections <br> to the local network?</b><br>',
-					w3_switch('w3-margin-T-8', 'Yes', 'No', 'adm.console_local', adm.console_local, 'admin_radio_YN_cb')
-				)
+            w3_switch_label('', 'Restrict console connections <br> to the local network?',
+               'Yes', 'No', 'adm.console_local', adm.console_local, 'admin_radio_YN_cb')
 			), 25,
 
 			w3_div('w3-text-black',
@@ -3283,10 +3222,8 @@ function security_html()
 		'<hr>' +
 		w3_inline_percent('w3-container/w3-hspace-16 w3-text-teal',
 			w3_div('',
-				w3_div('',
-					'<b>Allow GPS timestamp information <br> to be sent on the network?</b><br>',
-					w3_switch('w3-margin-T-8', 'Yes', 'No', 'adm.GPS_tstamp', adm.GPS_tstamp, 'admin_radio_YN_cb')
-				)
+            w3_switch_label('', 'Allow GPS timestamp information <br> to be sent on the network?',
+               'Yes', 'No', 'adm.GPS_tstamp', adm.GPS_tstamp, 'admin_radio_YN_cb')
 			), 25,
 
 			w3_div('w3-text-black',
@@ -3310,10 +3247,8 @@ function security_html()
 		'<hr>' +
 		w3_inline_percent('w3-container/w3-hspace-16 w3-text-teal',
 			w3_div('',
-				w3_div('',
-					'<b>Automatically reload admin page <br> if server stops responding?</b><br>',
-					w3_switch('w3-margin-T-8', 'Yes', 'No', 'adm.admin_keepalive', adm.admin_keepalive, 'admin_radio_YN_cb')
-				)
+            w3_switch_label('', 'Automatically reload admin page <br> if server stops responding?',
+               'Yes', 'No', 'adm.admin_keepalive', adm.admin_keepalive, 'admin_radio_YN_cb')
 			), 25,
 
 			w3_div('w3-text-black',

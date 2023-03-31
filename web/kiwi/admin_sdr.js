@@ -272,9 +272,8 @@ function config_html()
       ) +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_divs('w3-restart/w3-center w3-tspace-8',
-				w3_div('', '<b>External ADC clock?</b>'),
-            w3_switch('', 'Yes', 'No', 'ext_ADC_clk', cfg.ext_ADC_clk, 'config_ext_clk_sel_cb'),
-				w3_text('w3-text-black w3-center', 'Set when external 66.666600 MHz (nominal) <br> clock connected to J5 connector/pad.')
+            w3_switch_label('w3-center', 'External ADC clock?', 'Yes', 'No', 'ext_ADC_clk', cfg.ext_ADC_clk, 'config_ext_clk_sel_cb'),
+				w3_text('w3-text-black', 'Set when external 66.666600 MHz (nominal) <br> clock connected to J5 connector/pad.')
 			),
 			w3_divs('w3-restart/w3-tspace-8',
 		      w3_input('', 'External clock frequency (enter in MHz or Hz)', 'ext_ADC_freq', cfg.ext_ADC_freq, 'config_ext_freq_cb'),
@@ -345,13 +344,11 @@ function config_html()
 		) +
 		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
 			w3_divs('w3-center w3-tspace-8',
-				w3_div('', '<b>Increase web server priority?</b>'),
-            w3_switch('', 'Yes', 'No', 'test_webserver_prio', cfg.test_webserver_prio, 'admin_radio_YN_cb'),
+            w3_switch_label('w3-center', 'Increase web server priority?', 'Yes', 'No', 'test_webserver_prio', cfg.test_webserver_prio, 'admin_radio_YN_cb'),
 				w3_text('w3-text-black w3-center', 'Set \'no\' for standard behavior.')
 			),
 			w3_divs('w3-center w3-tspace-8',
-				w3_div('', '<b>New deadline update scheme?</b>'),
-            w3_switch('', 'Yes', 'No', 'test_deadline_update', cfg.test_deadline_update, 'admin_radio_YN_cb'),
+            w3_switch_label('w3-center', 'New deadline update scheme?', 'Yes', 'No', 'test_deadline_update', cfg.test_deadline_update, 'admin_radio_YN_cb'),
 				w3_text('w3-text-black w3-center', 'Set \'no\' for standard behavior.')
 			),
 			''
@@ -838,8 +835,7 @@ function webpage_html()
 		'<hr>' +
 		w3_half('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_divs('/w3-center w3-tspace-8',
-            w3_div('', '<b>Web server caching?</b>'),
-            w3_switch('', 'Yes', 'No', 'webserver_caching', cfg.webserver_caching, 'admin_radio_YN_cb'),
+            w3_switch_label('w3-center', 'Web server caching?', 'Yes', 'No', 'webserver_caching', cfg.webserver_caching, 'admin_radio_YN_cb'),
             w3_text('w3-text-black w3-center',
                'Set "No" when there are caching problems in your <br>' +
                'network path, e.g. user interface icons don\'t load.'
@@ -1053,10 +1049,8 @@ function kiwi_reg_html()
 		'<hr>' +
 
 		w3_divs('w3-margin-bottom w3-container w3-center',
-			w3_div('',
-					'<b>Register on <a href="http://rx.kiwisdr.com" target="_blank">rx.kiwisdr.com</a>?</b> ' +
-					w3_switch('', 'Yes', 'No', 'adm.kiwisdr_com_register', adm.kiwisdr_com_register, 'kiwisdr_com_register_cb')
-			),
+         w3_switch_label('w3-label-inline w3-label-left w3-center', 'Register on <a href="http://rx.kiwisdr.com" target="_blank">rx.kiwisdr.com</a>?',
+            'Yes', 'No', 'adm.kiwisdr_com_register', adm.kiwisdr_com_register, 'kiwisdr_com_register_cb'),
          w3_div('id-kiwisdr_com-reg-status-container',
             w3_div('w3-container',
                w3_label('w3-show-inline-block w3-margin-R-16 w3-text-teal', 'kiwisdr.com registration status:') +
@@ -1096,8 +1090,8 @@ function kiwi_reg_html()
 
 		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
-         '<b>Display owner/admin email link on KiwiSDR main page?</b> ' +
-         w3_switch('', 'Yes', 'No', 'contact_admin', cfg.contact_admin, 'admin_radio_YN_cb'),
+         w3_switch_label('w3-label-inline w3-label-left', 'Display owner/admin email link on KiwiSDR main page?',
+            'Yes', 'No', 'contact_admin', cfg.contact_admin, 'admin_radio_YN_cb'),
 		   ''
 		) +
 
@@ -2776,8 +2770,7 @@ function ext_config_html(vars, cfg_prefix, nav_text, title_text, s)
          w3_col_percent('w3-valign/',
             w3_div('w3-bold', title_text), 40,
             w3_inline('',
-               w3_div('w3-bold w3-margin-R-8', 'User enabled?'),
-               w3_switch('', 'Yes', 'No', cfg_prefix +'.enable', vars.enable, 'admin_radio_YN_cb'),
+               w3_switch_label('w3-margin-R-8/w3-label-inline w3-label-left/', 'User enabled?', 'Yes', 'No', cfg_prefix +'.enable', vars.enable, 'admin_radio_YN_cb'),
 				   w3_div('w3-text-black w3-margin-L-32', 'Local connections exempt.')
             )
          ) +

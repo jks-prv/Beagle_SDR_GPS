@@ -233,7 +233,7 @@ function wspr_recv(data)
 						w3_div('cl-wspr-line '+ color +'|width:1px; height:10px; position:absolute; left:'+ x +'px; bottom:0px;');
 				}
 				
-				html('id-wspr-peaks-labels').innerHTML = s;
+				w3_el('id-wspr-peaks-labels').innerHTML = s;
 				break;
 
 			case "nbins":
@@ -585,29 +585,25 @@ function wspr_config_html()
 
          w3_col_percent('w3-container w3-margin-T-8 w3-margin-B-16/',
             w3_divs('w3-center w3-tspace-8',
-               w3_div('', '<b>Update grid continuously<br>from GPS?</b>'),
-               w3_switch('', 'Yes', 'No', 'cfg.WSPR.GPS_update_grid', cfg.WSPR.GPS_update_grid, 'admin_radio_YN_cb'),
+               w3_switch_label('w3-center', 'Update grid continuously<br>from GPS?', 'Yes', 'No', 'cfg.WSPR.GPS_update_grid', cfg.WSPR.GPS_update_grid, 'admin_radio_YN_cb'),
                w3_text('w3-text-black w3-center',
                   'Useful for Kiwis in motion <br> (e.g. marine mobile)'
                )
             ), 22,
-            '', 3,
+            '&nbsp;', 3,
             w3_divs('w3-center w3-tspace-8',
-               w3_div('', '<b>Log decodes to<br>syslog?</b>'),
-               w3_switch('', 'Yes', 'No', 'cfg.WSPR.syslog', cfg.WSPR.syslog, 'admin_radio_YN_cb'),
+               w3_switch_label('w3-center', 'Log decodes to<br>syslog?', 'Yes', 'No', 'cfg.WSPR.syslog', cfg.WSPR.syslog, 'admin_radio_YN_cb'),
                w3_text('w3-text-black w3-center',
                   'Use with care as over time <br> filesystem can fill up.'
                )
             ), 22,
-            '', 3,
+            '&nbsp;', 3,
             w3_divs('w3-center w3-tspace-8',
-               w3_div('', '<b>Log spot debug<br>info?</b>'),
-               w3_switch('', 'Yes', 'No', 'cfg.WSPR.spot_log', cfg.WSPR.spot_log, 'admin_radio_YN_cb'),
+               w3_switch_label('w3-center', 'Log spot debug<br>info?', 'Yes', 'No', 'cfg.WSPR.spot_log', cfg.WSPR.spot_log, 'admin_radio_YN_cb'),
                w3_text('w3-text-black w3-center',
                   'Logs the actual upload commands<br>used to assist in spot debugging.'
                )
-            ), 22,
-            ''
+            ), 22
          ),
          
          '<hr>',
@@ -771,8 +767,8 @@ function wspr_clear_cb(path, idx, first)
 {
 	wspr_reset();
    wspr_test_cb('', 0);
-	html('id-wspr-decode').innerHTML = '';
-	html('id-wspr-peaks-labels').innerHTML = '';
+	w3_el('id-wspr-decode').innerHTML = '';
+	w3_el('id-wspr-peaks-labels').innerHTML = '';
 }
 
 var wspr_upload_timeout;
@@ -893,7 +889,7 @@ var wspr_status_color = { 0:'white', 1:'lightSkyBlue', 2:'violet', 3:'cyan', 4:'
 
 function wspr_set_status(status)
 {
-	var el = html('id-wspr-status');
+	var el = w3_el('id-wspr-status');
 	el.innerHTML = wspr_status_text[status];
 	el.style.backgroundColor = wspr_status_color[status];
 	
@@ -907,7 +903,7 @@ function wspr_server_Date()
 
 function wspr_draw_pie() {
 	var d = wspr_server_Date();
-	html('id-wspr-time').innerHTML = d.toUTCString().substr(17,8) +' UTC';
+	w3_el('id-wspr-time').innerHTML = d.toUTCString().substr(17,8) +' UTC';
 	var min = d.getUTCMinutes();
    var wspr_secs = (min&1)*60 + d.getUTCSeconds() + 1;
    kiwi_draw_pie('id-wspr-pie', wspr.pie_size, wspr_secs / 120);
