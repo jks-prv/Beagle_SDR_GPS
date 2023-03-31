@@ -2,6 +2,31 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.589  Apr 1, 2023
+    Workaround added for the IQ extension residual phase rotation problem. Details on the forum:
+    forum.kiwisdr.com/index.php?p=/discussion/2852/unexpected-iq-phase-shift-in-gpsdo-kiwi/p1
+    
+    Debian 8 is now deprecated. Existing Kiwis using Debian 8 and a recent Kiwi software version
+    and will continue to receive auto-updates and don't really need to do anything.
+    But re-flashing from the factory v1.2 image (on the supplied sd card) or from the old v1.390
+    img.xz file no longer works as the Debian 8 repos from debian.org are now broken.
+    However, if you're running Debian 8 you can choose to upgrade to Debian 10.
+    Instructions are on the forum.
+
+    Spec AF:
+        Indented the maximum bandwidth edges and mark with red lines (thanks Paul).
+        Moved the de-emphasis filter before the FFT-based passband filter so the effect of
+        de-emphasis will now appear in the Spec AF display.
+
+    Spectrum peak hold:
+        In peak hold active mode a mousedown on P1 P2 for more than one second will clear the trace.
+        Added border to peak buttons P1 P1 with colors matching the yellow/magenta trace color.
+            Text colors similar to before: white=OFF green=ACTIVE orange=HOLD (was magenta)
+        Fixed problem where activating peak hold didn't always work in until the second try.
+    
+    Admin console: Optimized ANSI color palette for increased contrast. For example a
+        "nano /etc/ssh/sshd_config" is readable now (thanks Rob). Fixed other ANSI-related bugs.
+
 v1.587,588  Mar 13, 2023
     FT8 extension:
         Limit log output to 1024 lines (roughly 10 minutes of decodes). Prevents browser from
