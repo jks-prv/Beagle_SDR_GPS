@@ -34,7 +34,8 @@ module SYNC_REG (
 	
 	parameter WIDTH = 1;
 	
-	reg [WIDTH-1:0] shared_reg;
+	// forums.xilinx.com/t5/Timing-Analysis/Understanding-ASYNC-REG-attribute/m-p/774027#M11817
+	(* ASYNC_REG = "TRUE" *) reg [WIDTH-1:0] shared_reg;
 	reg valid_data;
 	
 	reg in_req;

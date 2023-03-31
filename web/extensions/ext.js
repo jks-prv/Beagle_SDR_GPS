@@ -344,6 +344,16 @@ function ext_set_zoom(zoom_mode, zoom_level)
    zoom_step(zoom_mode, zoom_level);
 }
 
+function ext_get_audio_comp()
+{
+   return btn_compression? true:false;
+}
+
+function ext_set_audio_comp(comp)
+{
+   toggle_or_set_compression(toggle_e.SET, comp? 1:0);
+}
+
 function ext_set_scanning(scanning)
 {
 	extint.scanning = scanning? 1:0;

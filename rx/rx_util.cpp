@@ -182,6 +182,7 @@ void update_vars_from_config(bool called_at_init)
     // also if set to the previous default value
     int firmware_sel = admcfg_default_int("firmware_sel", 0, &update_admcfg);   // needed below
     int mode_20kHz = (firmware_sel == RX3_WF3)? 1:0;
+    admcfg_default_bool("anti_aliased", false, &update_admcfg);
     TYPEREAL Ioff, Ioff_20kHz, Qoff, Qoff_20kHz;
     //printf("mode_20kHz=%d\n", mode_20kHz);
 

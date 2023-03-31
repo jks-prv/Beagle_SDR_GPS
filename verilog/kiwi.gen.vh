@@ -18,6 +18,7 @@
 `define DEF_ADC_BITS 1
 	localparam DEFAULT_NSYNC = 2;    // DEFp 0x2
 `define DEF_DEFAULT_NSYNC 1
+//`define USE_RX_CICF    // DEFh 0x0
 `define USE_GEN 1    // DEFh 0x1
 `define USE_CPU_CTR 1    // DEFh 0x1
 `define USE_LOGGER 1    // DEFh 0x1
@@ -62,6 +63,8 @@
 `define DEF_RX1_STD_DECIM 1
 	localparam RX2_STD_DECIM = 11;    // DEFp 0xb
 `define DEF_RX2_STD_DECIM 1
+	localparam CICF_DECIM_BY_2 = 1;    // DEFp 0x1
+`define DEF_CICF_DECIM_BY_2 1
 	localparam MAX_SND_RATE = 20250;    // DEFp 0x4f1a
 `define DEF_MAX_SND_RATE 1
 	localparam MIN_SND_RATE = 12000;    // DEFp 0x2ee0
@@ -259,6 +262,7 @@
 	localparam CTRL_0040 = 6;    // DEFb: bit number for value: 0x40
 	localparam CTRL_0080 = 7;    // DEFb: bit number for value: 0x80
 	localparam CTRL_USE_GEN = 10;    // DEFb: bit number for value: 0x400
+	localparam CTRL_GEN_FIR = 7;    // DEFb: bit number for value: 0x80
 	localparam CTRL_OSC_EN = 8;    // DEFb: bit number for value: 0x100
 	localparam CTRL_EEPROM_WP = 9;    // DEFb: bit number for value: 0x200
 	localparam CTRL_UNUSED_OUT = 9;    // DEFb: bit number for value: 0x200

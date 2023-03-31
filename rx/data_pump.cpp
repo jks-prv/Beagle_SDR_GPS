@@ -43,8 +43,8 @@ rx_dpump_t rx_dpump[MAX_RX_CHANS];
 dpump_t dpump;
 
 #ifdef RX_SHMEM_DISABLE
-        static rx_shmem_t rx_shmem;
-        rx_shmem_t *rx_shmem_p = &rx_shmem;
+    static rx_shmem_t rx_shmem;
+    rx_shmem_t *rx_shmem_p = &rx_shmem;
 #endif
 
 bool have_snd_users;
@@ -53,10 +53,10 @@ bool have_snd_users;
 
 struct rx_data_t {
     #ifdef SND_SEQ_CHECK
-	struct rx_header_t {
-        u2_t magic;
-        u2_t snd_seq;
-	} hdr;
+        struct rx_header_t {
+            u2_t magic;
+            u2_t snd_seq;
+        } hdr;
     #endif
 	rx_iq_t iq_t[MAX_NRX_SAMPS * MAX_RX_CHANS];
 } __attribute__((packed));
@@ -68,8 +68,9 @@ struct rx_trailer_t {
 } __attribute__((packed));
 static rx_trailer_t *rxt;
 
+// rescale factor from hardware samples to what CuteSDR code is expecting
+const TYPEREAL rescale = MPOW(2, -RXOUT_SCALE + CUTESDR_SCALE);
 static int rx_xfer_size;
-static TYPEREAL rescale;
 static u4_t last_run_us;
 
 #ifdef SND_SEQ_CHECK
@@ -172,7 +173,7 @@ static void snd_service()
                         s4_t i, q;
                         i = S24_8_16(iqp->i3, iqp->i);
                         q = S24_8_16(iqp->q3, iqp->q);
-            
+
                         i_samps[ch]->re = i * rescale + DC_offset_I;
                         i_samps[ch]->im = q * rescale + DC_offset_Q;
                         i_samps[ch]++;
@@ -189,7 +190,7 @@ static void snd_service()
                         s4_t i, q;
                         i = S24_8_16(iqp->i3, iqp->i);
                         q = S24_8_16(iqp->q3, iqp->q);
-            
+
                         // NB: I/Q reversed to get correct sideband polarity; fixme: why?
                         // [probably because mixer NCO polarity is wrong, i.e. cos/sin should really be cos/-sin]
                         i_samps[ch]->re = q * rescale + DC_offset_I;
@@ -392,8 +393,7 @@ void data_pump_init()
 	// see rx_dpump_t.in_samps[][]
 	assert(FASTFIR_OUTBUF_SIZE > nrx_samps);
 	
-	// rescale factor from hardware samples to what CuteSDR code is expecting
-	rescale = MPOW(2, -RXOUT_SCALE + CUTESDR_SCALE);
+	//printf("data pump: rescale=%.6g\n", rescale);
 
 	CreateTaskF(data_pump, 0, DATAPUMP_PRIORITY, CTF_POLL_INTR);
 }

@@ -283,7 +283,7 @@ void CFir::InitConstFir( int NumTaps, const TYPEREAL* pICoef, const TYPEREAL* pQ
 //                    Fpass   Fstop
 //
 ////////////////////////////////////////////////////////////////////
-int CFir::InitLPFilter(int NumTaps, TYPEREAL Scale, TYPEREAL Astop, TYPEREAL Fpass, TYPEREAL Fstop, TYPEREAL Fsamprate)
+int CFir::InitLPFilter(int NumTaps, TYPEREAL Scale, TYPEREAL Astop, TYPEREAL Fpass, TYPEREAL Fstop, TYPEREAL Fsamprate, bool dump)
 {
 int n;
 TYPEREAL Beta;
@@ -349,7 +349,16 @@ TYPEREAL Beta;
 	}
 	m_State = 0;
 
-
+    if (dump) {
+        for(n=0; n<m_NumTaps; n++) {
+            u4_t coef1 = (u4_t) (s4_t) roundf(m_Coef[n] * 256.0f);     // 1/0.00390625 = 256.0
+            u4_t coef2 = (u4_t) (s4_t) roundf((m_Coef[n] * 256.0f) * 512.0f);
+            #define CFIR_18b 0x3ffff
+            u4_t m = CFIR_18b;
+            real_printf("CFir_taps %02d: %.6g %d 0x%05x 0x%05x\n", n, m_Coef[n], coef1, coef1&m, coef2&m);
+        }
+    }
+    
 #if 0		//debug hack to write m_Coef to a file for analysis
 	QDir::setCurrent("d:/");
 	QFile File;

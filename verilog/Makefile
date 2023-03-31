@@ -12,13 +12,13 @@
 # include any rules from another FPGA project using the KiwiSDR framework (i.e. CFG = other)
 -include $(wildcard */Makefile.inc)
 
-ifeq ($(V_PROJ),)
-    V_PROJ = KiwiSDR
-endif
+V_PROJ ?= KiwiSDR
 
 ifeq ($(DEBIAN_DEVSYS),)
     DEBIAN_DEVSYS = verilog_host
 endif
+
+VIVADO_VER = 2022.2
 
 proj:
 	@echo "V_PROJ = $(V_PROJ)"
@@ -30,7 +30,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 # devsys
 ################################
 
-V_DIR = ~/shared/shared
+V_DIR ?= ~/sf_shared
 
 $(GEN_VERILOG): $(GEN_DIR)/kiwi.gen.h verilog/rx/cic_gen.c
 	(cd verilog/rx; make)
@@ -51,7 +51,7 @@ cv: $(GEN_VERILOG)
 	@echo V_PROJ = $(V_PROJ)
 	@echo V_DIR = $(V_DIR)
 	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog/ $(V_DIR)/$(V_PROJ)
-	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog.Vivado.2017.4.ip/ $(V_DIR)/$(V_PROJ).Vivado.2017.4.ip
+	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog.Vivado.$(VIVADO_VER).ip/ $(V_DIR)/$(V_PROJ).Vivado.$(VIVADO_VER).ip
 	make cv2_dev V_SRC_DIR=$(V_SRC_DIR)
 
 sum:
@@ -66,9 +66,7 @@ ifeq ($(DEBIAN_DEVSYS),verilog_host)
 # Vivado build host
 ################################
 
-ifeq ($(V_SRC_DIR)x,x)
-    V_SRC_DIR = /media/sf_shared
-endif
+V_SRC_DIR ?= /media/sf_shared
 
 all:
 	@reset
@@ -113,7 +111,7 @@ cv:
 	@echo V_PROJ = $(V_PROJ)
 	@echo V_SRC_DIR = $(V_SRC_DIR)
 	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) $(V_SRC_DIR)/$(V_PROJ)/ .
-	rsync -av --delete --exclude .DS_Store $(V_SRC_DIR)/$(V_PROJ).Vivado.2017.4.ip/ ../import_ip
+	rsync -av --delete --exclude .DS_Store $(V_SRC_DIR)/$(V_PROJ).Vivado.$(VIVADO_VER).ip/ ../import_ip
 	make cv2_host V_SRC_DIR=$(V_SRC_DIR)
 
 RX_CFG = $(shell grep RX_CFG kiwi.cfg.vh | cut -d\  -f 4 | tr -d ';')
@@ -132,10 +130,10 @@ endif
 cb:
 	@echo "CFG =" $(CFG)
 	cp ../*.runs/impl_1/KiwiSDR.bit $(V_SRC_DIR)/KiwiSDR.$(CFG).bit
-	sum /media/sf_shared/*.bit
+	sum $(V_SRC_DIR)/*.bit
 
 sum:
-	sum /media/sf_shared/*.bit
+	sum $(V_SRC_DIR)/*.bit
 
 ts:
 	-tail -f KiwiSDR/KiwiSDR.runs/synth_1/runme.log

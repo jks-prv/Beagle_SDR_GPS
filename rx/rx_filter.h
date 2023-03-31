@@ -19,10 +19,18 @@ Boston, MA  02110-1301, USA.
 
 #pragma once
 
+#include "CuteSDR/fastfir.h"
+#include "CuteSDR/fir.h"
+#include "CuteSDR/iir.h"
+
 CFastFIR m_PassbandFIR[MAX_RX_CHANS];
 CFastFIR m_chan_null_FIR[MAX_RX_CHANS];
 
 CFir m_AM_FIR[MAX_RX_CHANS];
+
+#ifdef OPTION_EXPERIMENT_CICF
+    CFir m_CICF_FIR[MAX_RX_CHANS];
+#endif
 
 CFir m_nfm_deemp_FIR[MAX_RX_CHANS];     // see: tools/FIR.m
 CFir m_am_ssb_deemp_FIR[MAX_RX_CHANS];

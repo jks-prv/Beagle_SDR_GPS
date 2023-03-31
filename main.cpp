@@ -74,7 +74,7 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 u4_t ov_mask, snd_intr_usec;
 
 bool create_eeprom, need_hardware, kiwi_reg_debug, have_ant_switch_ext, gps_e1b_only,
-    disable_led_task, is_multi_core, debug_printfs, cmd_debug;
+    disable_led_task, is_multi_core, debug_printfs, cmd_debug, anti_aliased;
 
 int main_argc;
 char **main_argv;
@@ -312,6 +312,10 @@ int main(int argc, char *argv[])
         if (err) fw_sel = FW_SEL_SDR_RX4_WF4;
     }
     
+    bool update_admcfg = false;
+    anti_aliased = admcfg_default_bool("anti_aliased", false, &update_admcfg);
+    if (update_admcfg) admcfg_save_json(cfg_adm.json);
+    
     if (fw_sel == FW_SEL_SDR_RX4_WF4) {
         fpga_id = FPGA_ID_RX4_WF4;
         rx_chans = 4;
@@ -370,8 +374,10 @@ int main(int argc, char *argv[])
         nrx_samps_loop = nrx_samps * rx_chans / NRX_SAMPS_RPT;
         nrx_samps_rem = (nrx_samps * rx_chans) - (nrx_samps_loop * NRX_SAMPS_RPT);
         snd_intr_usec = 1e6 / ((float) snd_rate/nrx_samps);
-        lprintf("firmware: RX bufs=%d samps=%d loop=%d rem=%d intr_usec=%d\n",
-            nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem, snd_intr_usec);
+        lprintf("firmware: RX rx_decim=%d RX1_STD_DECIM=%d RX2_STD_DECIM=%d USE_RX_CICF=%d\n",
+            rx_decim, RX1_STD_DECIM, RX2_STD_DECIM, VAL_USE_RX_CICF);
+        lprintf("firmware: RX srate=%.3f(%d) bufs=%d samps=%d loop=%d rem=%d intr_usec=%d\n",
+            ext_update_get_sample_rateHz(-2), snd_rate, nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem, snd_intr_usec);
 
         assert(nrx_bufs <= MAX_NRX_BUFS);
         assert(nrx_samps <= MAX_NRX_SAMPS);

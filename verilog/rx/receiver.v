@@ -15,11 +15,12 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2014 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2023 John Seamons, ZL/KF6VO
 
 module RECEIVER (
 	input wire		   adc_clk,
 	input wire signed [ADC_BITS-1:0] adc_data,
+	input wire         adc_ovfl,
 
     output wire        rx_rd_C,
     output wire [15:0] rx_dout_C,
@@ -28,6 +29,7 @@ module RECEIVER (
     output wire [15:0] wf_dout_C,
 
     input  wire [47:0] ticks_A,
+    output wire        adc_ovfl_C,
     
 	input  wire		   cpu_clk,
     output wire        ser,
@@ -67,7 +69,40 @@ module RECEIVER (
 	    .in_strobe(freeze_C),   .in_reg(tos),               .in_clk(cpu_clk),
 	    .out_strobe(),          .out_reg(freeze_tos_A),     .out_clk(adc_clk)
 	);
-	
+
+
+    //////////////////////////////////////////////////////////////////////////
+    // ADC overflow detection
+    //////////////////////////////////////////////////////////////////////////
+    
+    // signal overflow only if a variable value of 64k consecutive samples have ADC overflow asserted
+    localparam ADC_OVFL_CTR_BITS = 16;
+	reg  [ADC_OVFL_CTR_BITS-1:0] adc_ovfl_ctr, adc_ovfl_cnt, cnt_mask_A;
+    reg adc_ovfl_A;
+
+	wire set_cnt_mask_C = wrReg2 & op[SET_CNT_MASK];
+	wire set_cnt_mask_A;
+	SYNC_PULSE sync_set_cnt_mask (.in_clk(cpu_clk), .in(set_cnt_mask_C), .out_clk(adc_clk), .out(set_cnt_mask_A));
+    always @ (posedge adc_clk)
+        if (set_cnt_mask_A) cnt_mask_A <= freeze_tos_A[ADC_OVFL_CTR_BITS-1:0];
+
+    always @ (posedge adc_clk)
+    begin
+        if (adc_ovfl_ctr == ((1 << ADC_OVFL_CTR_BITS) - 1))
+        begin
+            adc_ovfl_A <= ((adc_ovfl_cnt & cnt_mask_A) != 0)? 1:0;
+            adc_ovfl_cnt <= 0;
+            adc_ovfl_ctr <= 0;
+        end else
+        begin
+            adc_ovfl_A = 0;
+            adc_ovfl_cnt <= adc_ovfl_cnt + adc_ovfl;
+            adc_ovfl_ctr <= adc_ovfl_ctr + 1;
+        end
+    end
+
+	SYNC_PULSE sync_adc_ovfl (.in_clk(adc_clk), .in(adc_ovfl_A), .out_clk(cpu_clk), .out(adc_ovfl_C));
+
 	
     //////////////////////////////////////////////////////////////////////////
     // optional signal GEN
@@ -137,11 +172,15 @@ module RECEIVER (
 	// an "undriven" error for rd_* results.
 	reg rd_i, rd_q;
 
+    wire use_FIR_A;
+    SYNC_WIRE sync_use_FIR (.in(ctrl[CTRL_GEN_FIR]), .out_clk(adc_clk), .out(use_FIR_A));
+
 	RX #(.IN_WIDTH(RX_IN_WIDTH)) rx_inst [V_RX_CHANS-1:0] (
 		.adc_clk		(adc_clk),
 		.adc_data		(rx_data),
 		
 		.rx_sel_C		(rxn_sel_C),
+		.use_FIR_A      (use_FIR_A),
 
 		.rd_i			(rd_i),
 		.rd_q			(rd_q),

@@ -100,6 +100,8 @@ void fpga_init() {
 
 	// FPGA configuration bitstream
     fp = fopen(stprintf("%sKiwiSDR.%s.bit", background_mode? "/usr/local/bin/":"", fpga_file) , "rb");
+    //fp = fopen(stprintf("%sKiwiSDR.%s%s.bit", background_mode? "/usr/local/bin/":"",
+    //    anti_aliased? ".anti_aliased" : "", fpga_file) , "rb");
     if (!fp) panic("fopen config");
     kiwi_ifree(fpga_file);
 
