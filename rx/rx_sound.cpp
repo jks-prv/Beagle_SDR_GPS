@@ -70,7 +70,9 @@ Boston, MA  02110-1301, USA.
 
 #include <algorithm>
 
+
 // current tests & workarounds
+
 #define SND_FREQ_SET_IQ_ROTATION_BUG_WORKAROUND
 #define TEST_DEEMP_PRE_PB_FILTERING
 
@@ -364,7 +366,9 @@ void c2s_sound(void *param)
 
         #ifdef SND_FREQ_SET_IQ_ROTATION_BUG_WORKAROUND
             if (first_freq_set) {
-                if (timer_ms() > first_freq_time + 500) {
+                //#define DOUBLE_SET_DELAY 500        // only 90% reliable!
+                #define DOUBLE_SET_DELAY 1500
+                if (timer_ms() > first_freq_time + DOUBLE_SET_DELAY) {
                     double freq_kHz = freq * kHz;
                     double freq_inv_kHz = ui_srate - freq_kHz;
                     f_phase = (spectral_inversion? freq_inv_kHz : freq_kHz) / conn->adc_clock_corrected;
@@ -1125,6 +1129,8 @@ void c2s_sound(void *param)
 			
         	TaskStat2(TSTAT_INCR|TSTAT_ZERO, 0, "aud");
 
+			TYPECPX *i_samps_c = rx->in_samps[rx->rd_pos];
+
 			// check 48-bit ticks counter timestamp in audio IQ stream
 			const u64_t ticks   = rx->ticks[rx->rd_pos];
 			const u64_t dt      = time_diff48(ticks, clk.ticks);  // time difference to last GPS solution
@@ -1161,8 +1167,7 @@ void c2s_sound(void *param)
 		    #endif
 		    
 			rx->rd_pos = (rx->rd_pos+1) & (N_DPBUF-1);
-
-			TYPECPX *i_samps_c = rx->in_samps[rx->rd_pos];
+			
 			const int ns_in = nrx_samps;
 			
             // Forward IQ samples if requested.
