@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.589  Apr 1, 2023
+v1.589,590  Apr 1, 2023
     Workaround added for the IQ extension residual phase rotation problem. Details on the forum:
     forum.kiwisdr.com/index.php?p=/discussion/2852/unexpected-iq-phase-shift-in-gpsdo-kiwi/p1
     
