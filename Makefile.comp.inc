@@ -81,6 +81,11 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
         DEVSYS_BUT_NOT_XC = true
         OPT = 0
         CFLAGS += -DDEVSYS
+        
+        # stops incorrect/pesky warnings:
+        # warning: 'sscanf' may overflow; destination buffer in argument 3 has size 8, but the corresponding specifier may require size 33 [-Wfortify-source]
+        # for sscanf("%m", (char **) &alloced_str_ptr)
+        CFLAGS += -Wno-fortify-source
 
         # platform choice when building on development machine
         BBAI_64 := 
