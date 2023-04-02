@@ -33,7 +33,7 @@ module GPS (
     
     output wire        ser,
     input  wire [31:0] tos,
-    input  wire [15:0] op,
+    input  wire [ 7:0] op_8,
     input  wire        rdBit,
     input  wire        rdReg,
     input  wire        wrReg,
@@ -48,7 +48,7 @@ module GPS (
     reg [3:0] cmd_chan;
 
     always @ (posedge clk)
-        if (wrReg & op[SET_CHAN]) cmd_chan <= tos[3:0];
+        if (wrReg & op_8[SET_CHAN]) cmd_chan <= tos[3:0];
 
     //////////////////////////////////////////////////////////////////////////
     // Service request flags and masks
@@ -57,7 +57,7 @@ module GPS (
     wire [GPS_CHANS-1:0] chan_srq;
 
     always @ (posedge clk)
-        if (wrReg & op[SET_MASK]) chan_mask <= tos[GPS_CHANS-1:0];
+        if (wrReg & op_8[SET_MASK]) chan_mask <= tos[GPS_CHANS-1:0];
 
 	localparam NSRQ = GPS_CHANS;		// GPS_CHANS, not GPS_CHANS-1, allows for host_srq
 
@@ -75,9 +75,9 @@ module GPS (
     reg  [2:0] ser_sel;		// rdReg latches ser_sel bits from op in addition to usual simul par read
 
     always @ (posedge clk)
-        if (rdReg) ser_sel <= op[2:0];
+        if (rdReg) ser_sel <= op_8[2:0];
 
-    wire [2:1] ser_load = {2{rdReg}} & op[2:1];		// op[GET_SNAPSHOT, GET_SRQ] during rdReg
+    wire [2:1] ser_load = {2{rdReg}} & op_8[2:1];   // op[GET_SNAPSHOT, GET_SRQ] during rdReg
     wire [2:0] ser_next = {3{rdBit}} & ser_sel;		// any during subsequent rdBit
 
     assign ser = | (ser_data & ser_sel);	// presumably only one will be selected
@@ -139,8 +139,8 @@ module GPS (
     //////////////////////////////////////////////////////////////////////////
     // Sampling
 
-    wire sampler_rst = wrEvt & op[GPS_SAMPLER_RST];
-    wire sampler_rd  = wrEvt & op[GET_GPS_SAMPLES];
+    wire sampler_rst = wrEvt & op_8[GPS_SAMPLER_RST];
+    wire sampler_rd  = wrEvt & op_8[GET_GPS_SAMPLES];
 
     wire [15:0] sampler_dout;
     reg         sample;
@@ -159,9 +159,9 @@ module GPS (
     // Logging
 
 `ifdef USE_LOGGER
-    wire log_rst = wrEvt & op[LOG_RST];
-    wire log_rd  = wrEvt & op[GET_LOG];
-    wire log_wr  = wrEvt & op[PUT_LOG];
+    wire log_rst = wrEvt & op_8[LOG_RST];
+    wire log_rd  = wrEvt & op_8[GET_LOG];
+    wire log_wr  = wrEvt & op_8[PUT_LOG];
 
     wire [15:0] log_dout;
 
@@ -183,7 +183,7 @@ module GPS (
     wire        cg_resume;
 
     always @ (posedge clk)
-        if (wrReg & op[SET_PAUSE])
+        if (wrReg & op_8[SET_PAUSE])
             cg_cnt <= tos[15:0];
         else
             cg_cnt <= cg_nxt;
@@ -213,7 +213,8 @@ module GPS (
     wire [(GPS_CHANS * E1B_CODEBITS)-1:0] nchip;
     wire [GPS_CHANS-1:0] e1b_full_chip, e1b_code;
     
-    wire e1b_wr = wrReg & op[SET_E1B_CODE];
+    wire e1b_wr = wrReg & op_8[SET_E1B_CODE];
+
     E1BCODE e1b (
         .rst            (sampler_rst),
         .clk            (clk),
@@ -224,14 +225,22 @@ module GPS (
         .code_o         (e1b_code)
     );
     
+    wire op_set_sat   = op_8[SET_SAT];
+    wire op_set_pause = op_8[SET_PAUSE];
+    wire op_lo_nco    = op_8[SET_LO_NCO];
+    wire op_cg_nco    = op_8[SET_CG_NCO];
+
     //DEMOD #(.E1B(1)) demod [GPS_CHANS-1:0] (      // not used currently
     DEMOD #(.E1B(0)) demod [GPS_CHANS-1:0] (
         .clk            (clk),
         .rst            (chan_rst),
         .sample         (sample),
         .cg_resume      (cg_resume),
-        .wrReg          (chan_wrReg),
-        .op             (op),
+        .chan_wrReg     (chan_wrReg),
+        .op_set_sat     (op_set_sat),
+        .op_set_pause   (op_set_pause),
+        .op_lo_nco      (op_lo_nco),
+        .op_cg_nco      (op_cg_nco),
         .tos            (tos),
 
         .nchip          (nchip),

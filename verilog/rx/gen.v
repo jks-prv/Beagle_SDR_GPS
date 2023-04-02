@@ -23,8 +23,10 @@ module GEN (
 
 	input wire		   			cpu_clk,
     input wire [31:0]        	freeze_tos_A,
-    input wire [15:0]			op,
-    input wire        			wrReg2
+
+    input wire        			set_gen_freqH_C,
+    input wire        			set_gen_freqL_C,
+    input wire        			set_gen_attn_C
 	);
 	
 `include "kiwi.gen.vh"
@@ -41,11 +43,6 @@ module GEN (
 	reg [47:0] gen_phase_inc;
     reg signed [17:0] gen_attn;
     
-	wire freq_l =           wrReg2 & op[FREQ_L];
-	wire set_gen_C =		wrReg2 & op[SET_GEN_FREQ];
-	wire set_gen_freqH_C =  (wrReg2 & op[SET_GEN_FREQ]) && !freq_l;
-	wire set_gen_freqL_C =  (wrReg2 & op[SET_GEN_FREQ]) &&  freq_l;
-	wire set_gen_attn_C =	wrReg2 & op[SET_GEN_ATTN];
 
 	wire set_gen_freqH_A, set_gen_freqL_A, set_gen_attn_A;
 	SYNC_PULSE gen_phaseH_inst (.in_clk(cpu_clk), .in(set_gen_freqH_C), .out_clk(adc_clk), .out(set_gen_freqH_A));

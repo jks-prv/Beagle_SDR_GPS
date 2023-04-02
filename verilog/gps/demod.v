@@ -25,15 +25,18 @@ module DEMOD (
     input  wire        rst,
     input  wire        sample,
     input  wire        cg_resume, 
-    input  wire        wrReg,
-    input  wire [15:0] op,
+    input  wire        chan_wrReg,
+    input  wire        op_set_sat,
+    input  wire        op_set_pause,
+    input  wire        op_lo_nco,
+    input  wire        op_cg_nco,
     input  wire [31:0] tos,
-    input  wire        shift,
     
     output reg [E1B_CODEBITS-1:0] nchip,
     output wire        e1b_full_chip,
     input  wire        e1b_code,
     
+    input  wire        shift,
     output wire        sout,
     output reg         ms0,
     output wire [GPS_REPL_BITS-1:0] replica
@@ -50,7 +53,7 @@ module DEMOD (
     reg [10:1] init;
 
     always @ (posedge clk)
-        if (wrReg & op[SET_SAT]) begin
+        if (chan_wrReg & op_set_sat) begin
             {e1b_mode, g2_init, init} <= tos[11:0];
         end
 
@@ -60,7 +63,7 @@ module DEMOD (
     reg cg_en;
 
     always @ (posedge clk)
-        if (wrReg & op[SET_PAUSE])
+        if (chan_wrReg & op_set_pause)
             cg_en <= 0;
         else if (~cg_en)
             cg_en <= cg_resume;
@@ -100,8 +103,8 @@ module DEMOD (
 	ip_acc_u32b lo_nco (.clk(clk), .sclr(1'b0), .b(lo_rate), .q(lo_phase));
 
     always @ (posedge clk) begin
-        if (wrReg & op[SET_LO_NCO]) lo_rate <= tos;
-        if (wrReg & op[SET_CG_NCO]) cg_rate <= tos;
+        if (chan_wrReg & op_lo_nco) lo_rate <= tos;
+        if (chan_wrReg & op_cg_nco) cg_rate <= tos;
         if (rst) cg_phase <= 0; else if (cg_en) cg_phase <= cg_sum;
     end
 
