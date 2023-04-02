@@ -34,6 +34,7 @@ Boston, MA  02110-1301, USA.
 #include "net.h"
 #include "clk.h"
 #include "wspr.h"
+#include "FT8.h"
 #include "ext_int.h"
 #include "shmem.h"      // shmem->status_str_large
 #include "rx_noise.h"
@@ -373,6 +374,8 @@ void update_vars_from_config(bool called_at_init)
             printf("removed v1.131 dotdot bug corruption\n");
             update_cfg = true;
         }
+
+        if (ft8_update_vars_from_config(called_at_init)) update_cfg = true;
     #endif
     
     // enforce waterfall min_dB < max_dB
@@ -522,11 +525,12 @@ void update_vars_from_config(bool called_at_init)
         update_admcfg = true;
     }
 
-    // disable public registration if all the channels are full of WSPR autorun
+    // disable public registration if all the channels are full of WSPR/FT8 autorun
 	bool isPublic = admcfg_bool("kiwisdr_com_register", NULL, CFG_REQUIRED);
 	int wspr_autorun = cfg_int("WSPR.autorun", NULL, CFG_REQUIRED);
-	if (isPublic && wspr_autorun >= rx_chans) {
-	    lprintf("REG: WSPR.autorun(%d) >= rx_chans(%d) -- DISABLING PUBLIC REGISTRATION\n", wspr_autorun, rx_chans);
+	int ft8_autorun = cfg_int("ft8.autorun", NULL, CFG_REQUIRED);
+	if (isPublic && (wspr_autorun + ft8_autorun) >= rx_chans) {
+	    lprintf("REG: WSPR.autorun(%d) + ft8.autorun(%d) >= rx_chans(%d) -- DISABLING PUBLIC REGISTRATION\n", wspr_autorun, ft8_autorun, rx_chans);
         admcfg_set_bool("kiwisdr_com_register", false);
         update_admcfg = true;
 	}
@@ -847,7 +851,8 @@ char *rx_users(bool include_ip)
                 u4_t r_hr = t;
 
                 char *user = (c->isUserIP || !c->ident_user)? NULL : kiwi_str_encode(c->ident_user);
-                char *geo = show_geo? (c->geo? kiwi_str_encode(c->geo) : NULL) : NULL;
+                bool show = show_geo || c->internal_connection;
+                char *geo = show? (c->geo? kiwi_str_encode(c->geo) : NULL) : NULL;
                 char *ext = ext_users[i].ext? kiwi_str_encode((char *) ext_users[i].ext->name) : NULL;
                 const char *ip = include_ip? c->remote_ip : "";
                 asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,"
@@ -956,7 +961,7 @@ void SNR_meas(void *param)
         static int meas_idx;
 	
         for (int loop = 0; loop == 0 && snr_meas_interval_hrs; loop++) {   // so break can be used below
-            if (internal_conn_setup(ICONN_WS_WF, &iconn, 0, PORT_INTERNAL_SNR,
+            if (internal_conn_setup(ICONN_WS_WF, &iconn, 0, PORT_BASE_INTERNAL_SNR,
                 NULL, 0, 0, 0,
                 "SNR-measure", "internal%20task", "SNR",
                 WF_ZOOM_MIN, 15000, -110, -10, SNR_MEAS_SELECT, WF_COMP_OFF) == false) {

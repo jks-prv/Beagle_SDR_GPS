@@ -60,6 +60,7 @@ typedef struct {
     bool tsync;
     int in_pos;
     int frame_pos;
+    u4_t slot;
 
     callsign_hashtable_t *callsign_hashtable;
     int callsign_hashtable_size;
@@ -342,7 +343,7 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
                                         if (strcmp(grid, "RR73") != 0) {
                                             u4_t passband_freq = (u4_t) roundf(freq_hz);
                                             s1_t snr_i = (s1_t) roundf(snr);
-                                            km = PSKReporter_spot(rx_chan, call, passband_freq, snr_i, ft8->protocol, grid, ft8->decode_time);
+                                            km = PSKReporter_spot(rx_chan, call, passband_freq, snr_i, ft8->protocol, grid, ft8->decode_time, ft8->slot);
                                             ht->uploaded = 1;
                                             uploaded = true;
                                             num_spots++;
@@ -432,16 +433,23 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
         if (num_spots != 0) {
             ks = kstr_asprintf(ks, "new spots %d, ", num_spots);
         }
+        
         static u4_t last_num_uploads[MAX_RX_CHANS];
         u4_t num_uploads = PSKReporter_num_uploads(rx_chan);
-        if (num_uploads != 0) {
+        if (num_uploads > last_num_uploads[rx_chan]) {
             u4_t diff = num_uploads - last_num_uploads[rx_chan];
+            //printf("FT8 SPOTS %+d num_uploads=%d last_num_uploads=%d\n", diff, num_uploads, last_num_uploads[rx_chan]);
             last_num_uploads[rx_chan] = num_uploads;
             if (diff != 0) {
                 ks = kstr_asprintf(ks, YELLOW "uploaded %d spot%s to pskreporter.info" NORM ", ",
                     diff, (diff == 1)? "" : "s");
             }
+        } else
+        if (num_uploads < last_num_uploads[rx_chan]) {
+            //printf("FT8 RESET num_uploads=%d last_num_uploads=%d\n", num_uploads, last_num_uploads[rx_chan]);
+            last_num_uploads[rx_chan] = num_uploads;
         }
+        
         ks = kstr_asprintf(ks, "hashtable %d%%",
             ft8->callsign_hashtable_size * 100 / CALLSIGN_HASHTABLE_MAX);
         ext_send_msg_encoded(rx_chan, false, "EXT", "chars", "%s\n", kstr_sp(ks));
@@ -484,6 +492,7 @@ void decode_ft8_samples(int rx_chan, TYPEMONO16 *samps, int nsamps, int freqHz, 
         ft8->in_pos = ft8->frame_pos = 0;
         *start_test = 1;
         ft8->decode_time = spec.tv_sec;
+        ft8->slot++;
         ft8->tsync = true;
     }
     
@@ -537,10 +546,8 @@ void decode_ft8_init(int rx_chan, int proto)
 
     // Compute FFT over the whole signal and store it
     monitor_config_t mon_cfg = {
-        //.f_min = 200,
-        .f_min = 100,
-        //.f_max = 3000,
-        .f_max = 3100,
+        .f_min = FT8_PASSBAND_LO,
+        .f_max = FT8_PASSBAND_HI,
         .sample_rate = sample_rate,
         .time_osr = kTime_osr,
         .freq_osr = kFreq_osr,
@@ -551,6 +558,7 @@ void decode_ft8_init(int rx_chan, int proto)
     monitor_init(&ft8->mon, &mon_cfg);
     LOG(LOG_DEBUG, "FT8 Waterfall allocated %d symbols\n", ft8->mon.wf.max_blocks);
     ft8->tsync = false;
+    PSKReporter_reset(rx_chan);
 }
 
 void decode_ft8_free(int rx_chan)

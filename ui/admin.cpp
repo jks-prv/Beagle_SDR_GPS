@@ -37,6 +37,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "clk.h"
 #include "wspr.h"
+#include "FT8.h"
 
 #ifdef USE_SDR
  #include "data_pump.h"
@@ -1218,6 +1219,12 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "ADM wspr_autorun_restart");
 			if (i == 0) {
 			    wspr_autorun_restart();
+				continue;
+			}
+
+			i = strcmp(cmd, "ADM ft8_autorun_restart");
+			if (i == 0) {
+			    ft8_autorun_restart();
 				continue;
 			}
 

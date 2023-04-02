@@ -26,7 +26,6 @@
  */
 
 #include "wspr.h"
-#include "FT8.h"
 #include "mem.h"
 
 static const unsigned char pr3[NSYM_162]=
@@ -465,35 +464,18 @@ bool wspr_update_vars_from_config(bool called_at_init)
     // or autorun tasks starting for the same reason.
     // wspr_c.rcall is still updated here to handle the initial assignment and
     // manual changes from WSPR admin page.
-    //
-    // Also, first-time init of FT8 reporter call/grid from WSPR values
     
     cfg_default_string("WSPR.callsign", "", &update_cfg);
     s = (char *) cfg_string("WSPR.callsign", NULL, CFG_REQUIRED);
     kiwi_ifree(wspr_c.rcall);
 	wspr_c.rcall = kiwi_str_encode(s);
-    cfg_default_object("ft8", "{}", &update_cfg);
-    cfg_default_string("ft8.callsign", s, &update_cfg);
 	cfg_string_free(s);
 
     cfg_default_string("WSPR.grid", "", &update_cfg);
     s = (char *) cfg_string("WSPR.grid", NULL, CFG_REQUIRED);
 	kiwi_strncpy(wspr_c.rgrid, s, LEN_GRID);
-    cfg_default_string("ft8.grid", s, &update_cfg);
 	cfg_string_free(s);
     set_reporter_grid((char *) wspr_c.rgrid);
-    
-    // since we're already setting up FT8
-    ft8_conf.SNR_adj = cfg_default_int("ft8.SNR_adj", -22, &update_cfg);
-    if (ft8_conf.SNR_adj == 0) {    // update to new default
-        cfg_set_int("ft8.SNR_adj", -22);
-        update_cfg = true;
-    }
-    ft8_conf.dT_adj = cfg_default_int("ft8.dT_adj", -1, &update_cfg);
-    if (ft8_conf.dT_adj == 0) {     // update to new default
-        cfg_set_int("ft8.dT_adj", -1);
-        update_cfg = true;
-    }
 
     wspr_c.GPS_update_grid = cfg_default_bool("WSPR.GPS_update_grid", false, &update_cfg);
     wspr_c.syslog = cfg_default_bool("WSPR.syslog", false, &update_cfg);

@@ -986,7 +986,8 @@ static int unpackgrid(uint16_t igrid4, uint8_t ir, char* extra)
             strcpy(dst, "RRR");
         else if (irpt == 3) {
             strcpy(dst, "RR73");
-            printf("decode RR73 OK igrid4=%d irpt=%d ===============================================\n", igrid4, irpt);
+            // someone actually sent a non-buggy RR73!
+            //printf("decode RR73 OK igrid4=%d irpt=%d ===============================================\n", igrid4, irpt);
         } else if (irpt == 4)
             strcpy(dst, "73");
         else
