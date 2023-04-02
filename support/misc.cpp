@@ -177,7 +177,7 @@ void printmem(const char *str, u2_t addr)
 void cmd_debug_print(conn_t *c, char *s, int slen, bool tx)
 {
     int sl = slen - 4;
-    printf("%c %s %.3s %.4s%s%d ", tx? 'T':'<', Task_s(-1), c? rx_streams[c->type].uri : "nil",
+    printf("%c %s %.3s %.4s%s%d ", tx? 'T':'<', Task_s(-1), rx_conn_type(c),
         s, (s[3] != ' ')? " " : "", sl);
     if (sl > 0) {
         char *s2 = kiwi_str_encode(&s[4], true);
@@ -198,7 +198,7 @@ void send_msg_buf(conn_t *c, char *s, int slen)
             #if 0
                 clprintf(c, "send_msg_buf: c->mc is NULL\n");
                 clprintf(c, "send_msg_buf: CONN-%d %p valid=%d type=%d [%s] auth=%d KA=%d KC=%d mc=%p rx=%d magic=0x%x ip=%s:%d other=%s%d %s\n",
-                    c->self_idx, c, c->valid, c->type, rx_streams[c->type].uri, c->auth, c->keep_alive, c->keepalive_count, c->mc, c->rx_channel,
+                    c->self_idx, c, c->valid, c->type, rx_conn_type(c), c->auth, c->keep_alive, c->keepalive_count, c->mc, c->rx_channel,
                     c->magic, c->remote_ip, c->remote_port, c->other? "CONN-":"", c->other? c->other-conns:0, c->stop_data? "STOP":"");
             #endif
             return;

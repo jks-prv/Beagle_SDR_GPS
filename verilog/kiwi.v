@@ -219,6 +219,9 @@ module KiwiSDR (
 	wire [47:0] ticks_A;
 	
 `ifdef USE_SDR
+	wire use_gen_C = ctrl[CTRL_USE_GEN];
+	wire gen_fir_C = ctrl[CTRL_GEN_FIR];
+
     RECEIVER receiver (
     	.adc_clk	(adc_clk),
     	.adc_data	(reg_adc_data),
@@ -237,12 +240,13 @@ module KiwiSDR (
 		.cpu_clk	(cpu_clk),
         .ser		(ser[1]),        
         .tos		(tos),
-        .op			(op),        
+        .op_11      (op[10:0]),        
         .rdReg      (rdReg),
         .wrReg2     (wrReg2),
         .wrEvt2     (wrEvt2),
         
-        .ctrl       (ctrl)
+        .use_gen_C  (use_gen_C),
+        .gen_fir_C  (gen_fir_C)
     	);
 
 
@@ -386,7 +390,7 @@ module KiwiSDR (
         
         .ser		(ser[0]),        
         .tos		(tos),      // no clk domain crossing because gps_clk = cpu_clk
-        .op			(op),        
+        .op_8       (op[7:0]),        
         .rdBit      (rdBit0),
         .rdReg      (rdReg),
         .wrReg      (wrReg),

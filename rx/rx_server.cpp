@@ -93,6 +93,13 @@ static void conn_init(conn_t *c)
 	c->rx_channel = -1;
 }
 
+const char *rx_conn_type(conn_t *c)
+{
+    if (c == NULL) return "nil";
+	if (c->type < 0 || c->type >= ARRAY_LEN(rx_streams)) return "(bad type)";
+	return (rx_streams[c->type].uri);
+}
+
 void rx_enable(int chan, rx_chan_action_e action)
 {
     if (chan < 0) return;
@@ -154,7 +161,7 @@ void show_conn(const char *prefix, u4_t printf_type, conn_t *cd)
         return;
     }
     
-    char *type_s = (cd->type == STREAM_ADMIN)? (char *) "ADM" : stnprintf(0, "%s", rx_streams[cd->type].uri);
+    char *type_s = (cd->type == STREAM_ADMIN)? (char *) "ADM" : stnprintf(0, "%s", rx_conn_type(cd));
     char *rx_s = (cd->rx_channel == -1)? (char *) "" : stnprintf(1, "rx%d", cd->rx_channel);
     char *other_s = cd->other? stnprintf(2, " +CONN-%02d", cd->other-conns) : (char *) "";
     char *ext_s = (cd->type == STREAM_EXT)? (cd->ext? stnprintf(3, " %s", cd->ext->name) : (char *) " (ext name?)") : (char *) "";
@@ -456,7 +463,7 @@ void rx_server_user_kick(int chan)
 		    if (chan == -1 || chan == c->rx_channel) {
                 c->kick = true;
                 if (chan != -1)
-                    printf("rx_server_user_kick KICKING rx=%d %s\n", chan, rx_streams[c->type].uri);
+                    printf("rx_server_user_kick KICKING rx=%d %s\n", chan, rx_conn_type(c));
             }
 		} else
 		
@@ -520,7 +527,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
         }
         
         if (mode == WS_MODE_CLOSE) {
-            //cprintf(c, "WS_MODE_CLOSE %s KICK KA=%02d/60 KC=%05d\n", rx_streams[c->type].uri, c->keep_alive, c->keepalive_count);
+            //cprintf(c, "WS_MODE_CLOSE %s KICK KA=%02d/60 KC=%05d\n", rx_conn_type(c), c->keep_alive, c->keepalive_count);
             if (!c->internal_connection)
                 mg_websocket_write(mc, WEBSOCKET_OPCODE_CONNECTION_CLOSE, "", 0);
             c->mc = NULL;
@@ -656,7 +663,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 
 		// cull conns stuck in STOP_DATA state (Novosibirsk problem)
 		if (c->valid && c->stop_data && c->mc == NULL) {
-			//clprintf(c, "STOP_DATA cull conn-%02d %s rx_chan=%d\n", c->self_idx, rx_streams[c->type].uri, c->rx_channel);
+			//clprintf(c, "STOP_DATA cull conn-%02d %s rx_chan=%d\n", c->self_idx, rx_conn_type(c), c->rx_channel);
 			rx_enable(c->rx_channel, RX_CHAN_FREE);
 			rx_server_remove(c);
 		}
@@ -667,7 +674,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			continue;
 		}
 		
-		conn_printf("CONN-%02d IS %p type=%d(%s) ip=%s:%d:%016llx rx=%d auth=%d other=%s%ld mc=%p\n", cn, c, c->type, rx_streams[c->type].uri,
+		conn_printf("CONN-%02d IS %p type=%d(%s) ip=%s:%d:%016llx rx=%d auth=%d other=%s%ld mc=%p\n", cn, c, c->type, rx_conn_type(c),
 		    c->remote_ip, c->remote_port, c->tstamp, c->rx_channel, c->auth, c->other? "CONN-":"", c->other? c->other-conns:-1, c->mc);
 
         // link streams to each other, e.g. snd <=> wf, snd => ext
@@ -682,7 +689,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 					cother = c;
 					multiple = true;
 					#ifdef CONN_PRINTF
-					    conn_printf("NEW SND, OTHER is %s @ CONN-%02d\n", rx_streams[c->type].uri, cn);
+					    conn_printf("NEW SND, OTHER is %s @ CONN-%02d\n", rx_conn_type(c), cn);
 					    dump();
 					#endif
 				} else {
@@ -696,7 +703,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 					cother = c;
 					multiple = true;
 					#ifdef CONN_PRINTF
-					    conn_printf("NEW WF, OTHER is %s @ CONN-%02d\n", rx_streams[c->type].uri, cn);
+					    conn_printf("NEW WF, OTHER is %s @ CONN-%02d\n", rx_conn_type(c), cn);
 					    dump();
 					#endif
 				} else {
@@ -710,7 +717,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 					cother = c;
 					multiple = true;
 					#ifdef CONN_PRINTF
-					    conn_printf("NEW EXT, OTHER is %s @ CONN-%02d\n", rx_streams[c->type].uri, cn);
+					    conn_printf("NEW EXT, OTHER is %s @ CONN-%02d\n", rx_conn_type(c), cn);
 					    dump();
 					#endif
 				} else {

@@ -16,6 +16,8 @@ var ft8 = {
       'FT8': [ '1840', '3573', '5357', '7074', '10136', '14074', '18100', '21074', '24915', '28074' ],
       'FT4': [ '3575.5', '7047.5', '10140', '14080', '18104', '21140', '24919', '28180' ]
    },
+   PASSBAND_LO: 100,
+   PASSBAND_HI: 3100,
 
    // must set "remove_returns" so output lines with \r\n (instead of \n alone) don't produce double spacing
    console_status_msg_p: {
@@ -107,7 +109,7 @@ function ft8_output_chars(c)
 function ft8_controls_setup()
 {
 	ft8.saved_mode = ext_get_mode();
-   ext_tune(null, 'usb', ext_zoom.ABS, 11, 100, 3100);
+   ext_tune(null, 'usb', ext_zoom.ABS, 11, ft8.PASSBAND_LO, ft8.PASSBAND_HI);
 
    var data_html =
       time_display_html('ft8') +
@@ -249,13 +251,15 @@ function ft8_test_cb()
    ext_send('SET ft8_test');
 }
 
-function FT8_blur()
-{
-	ext_set_data_height();     // restore default height
-	ext_set_mode(ft8.saved_mode);
-	ext_send('SET ft8_close');
-   kiwi_clearInterval(ft8.log_interval);
-}
+
+// order matches FT8.cpp:ft8_cfs[]
+// only add new entries to the end so as not to disturb existing values stored in config
+// yes, there are really no assigned FT4 freqs for 160m and 60m
+var ft8_autorun_u = [
+   'regular use',
+   'FT8-160m', 'FT8-80m', 'FT8-60m', 'FT8-40m', 'FT8-30m', 'FT8-20m', 'FT8-17m', 'FT8-15m', 'FT8-12m', 'FT8-10m',
+               'FT4-80m',            'FT4-40m', 'FT4-30m', 'FT4-20m', 'FT4-17m', 'FT4-15m', 'FT4-12m', 'FT4-10m'
+];
 
 // called to display HTML for configuration parameters in admin interface
 function FT8_config_html()
@@ -270,10 +274,91 @@ function FT8_config_html()
             w3_input_get('', 'SNR correction', 'ft8.SNR_adj', 'w3_num_set_cfg_cb', ''), 22,
             '', 3,
             w3_input_get('', 'dT correction', 'ft8.dT_adj', 'w3_num_set_cfg_cb', ''), 22
+         ),
+
+         '<hr>',
+         w3_div('w3-container',
+            w3_div('', '<b>Autorun</b>'),
+            w3_div('w3-container',
+               w3_div('w3-text-black', 'On startup automatically begins running the FT8 decoder on the selected band(s).<br>' +
+                  'Channels available for regular use are reduced by one for each FT8 autorun enabled.<br>' +
+                  'If Kiwi has been configured for a mix of channels with and without waterfalls then channels without waterfalls will be used first.<br><br>' +
+                  
+                  'Spot decodes are available in the Kiwi log (use "Log" tab above) and are listed on <a href="https://pskreporter.info/pskmap.html" target="_blank">pskreporter.info</a><br>' +
+                  'The "Reporter" fields above must be set to valid values for proper spot entry into the <a href="https://pskreporter.info/pskmap.html" target="_blank">pskreporter.info</a> database.'),
+               
+               w3_div('w3-margin-T-10 w3-valign',
+                  '<header class="id-ft8-warn-full w3-container w3-yellow"><h6>' +
+                  'If your Kiwi is publicly listed you must <b>not</b> configure all the channels to use FT8-autorun!<br>' +
+                  'This defeats the purpose of making your Kiwi public and public registration will be disabled<br>' +
+                  'until you make at least one channel available for connection. Check the Admin Public tab.' +
+                  '</h6></header>'
+               ),
+               
+               w3_button('id-ft8-restart w3-margin-T-16 w3-aqua w3-hide', 'autorun restart', 'ft8_autorun_restart_cb'),
+               
+               w3_div('id-ft8-admin-autorun w3-margin-T-16')
+            )
          )
       )
 
    ext_config_html(ft8, 'ft8', 'FT8', 'FT8/FT4 configuration', s);
+
+	s = '';
+	for (var i=0; i < rx_chans;) {
+	   var s2 = '';
+	   for (var j=0; j < 8 && i < rx_chans; j++, i++) {
+	      s2 += w3_select_get_param('w3-margin-right', 'Autorun '+ i, 'FT8 band', 'ft8.autorun'+ i, ft8_autorun_u, 'ft8_autorun_select_cb');
+	   }
+	   s += w3_inline('w3-margin-bottom/', s2);
+	}
+	w3_innerHTML('id-ft8-admin-autorun', s);
+}
+
+function ft8_autorun_public_check()
+{
+   var num_autorun = 0;
+	for (var i=0; i < rx_chans; i++) {
+	   if (cfg.ft8['autorun'+ i] != 0)
+	      num_autorun++;
+	}
+	ext_set_cfg_param('ft8.autorun', num_autorun, EXT_SAVE);
+	
+	var full = (adm.kiwisdr_com_register && num_autorun >= rx_chans);
+   w3_remove_then_add_cond('id-ft8-warn-full', full, 'w3-red', 'w3-yellow');
+	if (full) {
+      kiwisdr_com_register_cb('adm.kiwisdr_com_register', w3_SWITCH_NO_IDX);
+	}
+}
+
+function ft8_autorun_restart_cb()
+{
+   ft8_autorun_public_check();
+   w3_hide('id-ft8-restart');
+   ext_send("ADM ft8_autorun_restart");  // NB: must be sent as ADM command
+}
+
+function ft8_autorun_select_cb(path, idx, first)
+{
+   admin_select_cb(path, idx, first);
+   if (first) return;
+   w3_show('id-ft8-restart');
+	var el = w3_el('id-kiwi-container');
+	w3_scrollDown(el);   // keep menus visible
+}
+
+function FT8_config_focus()
+{
+   //console.log('ft8_config_focus');
+   ft8_autorun_public_check();
+}
+
+function FT8_blur()
+{
+	ext_set_data_height();     // restore default height
+	ext_set_mode(ft8.saved_mode);
+	ext_send('SET ft8_close');
+   kiwi_clearInterval(ft8.log_interval);
 }
 
 function FT8_help(show)

@@ -148,7 +148,7 @@ function mode_html()
    
             w3_div('w3-text-black',
                'Having more receiver channels per Kiwi is especially important with the recently added features that are channel intensive. ' +
-               'Namely the TDoA service, WSPR autorun and external connection via the kiwirecorder program for using other software such ' +
+               'Namely the TDoA service, WSPR/FT8 autorun and external connection via the kiwirecorder program for using other software such ' +
                'as WSJT-X and Dream (DRM). When these kinds of connections are made channels rx2 - rx7 will be used first ' +
                'leaving rx0 and rx1 available for normal browser connections where it is desirable to view the waterfall. ' +
                'However rx0 and rx1 will be used last if necessary. The configurable TDoA channel limit still applies.<br><br>' +

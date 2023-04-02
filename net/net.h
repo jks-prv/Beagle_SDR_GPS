@@ -31,8 +31,10 @@ Boston, MA  02110-1301, USA.
 #define KIWISDR_COM_PUBLIC_IP   "50.116.2.70"
 #define GITHUB_COM_PUBLIC_IP    "52.64.108.95"      // was "192.30.253.112"
 
-#define PORT_INTERNAL_WSPR      1138    // + 0..MAX_RX_CHANS
-#define PORT_INTERNAL_SNR       1238    // + 0..MAX_RX_CHANS
+// range of port base: + 0 .. MAX_RX_CHANS(instance) * 3(SND/WF/EXT)
+#define PORT_BASE_INTERNAL_WSPR 1138
+#define PORT_BASE_INTERNAL_FT8  1238
+#define PORT_BASE_INTERNAL_SNR  1338
 
 #define NET_DEBUG
 #ifdef NET_DEBUG

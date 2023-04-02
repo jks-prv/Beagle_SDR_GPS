@@ -434,7 +434,7 @@ void c2s_sound(void *param)
                 n = sscanf(cmd, "SET mod=%16ms low_cut=%lf high_cut=%lf freq=%lf param=%d", &mode_m, &_locut, &_hicut, &_freq, &mparam);
                 if ((n == 4 || n == 5) && do_sdr) {
                     did_cmd = true;
-                    cprintf(conn, "SND f=%.3f lo=%.3f hi=%.3f mode=%s\n", _freq, _locut, _hicut, mode_m);
+                    //cprintf(conn, "SND f=%.3f lo=%.3f hi=%.3f mode=%s\n", _freq, _locut, _hicut, mode_m);
 
                     bool new_freq = false;
                     if (freq != _freq) {

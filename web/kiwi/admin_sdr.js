@@ -1123,11 +1123,11 @@ function kiwisdr_com_register_cb(path, idx)
    var bad_ip = (kiwi_inet4_d2h(cfg.server_url) != null && kiwi_inet4_d2h(cfg.server_url, true) == null);
    var no_passwordless_channels = (adm.user_password != '' && cfg.chan_no_pwd == 0);
    var no_rx_gps = (cfg.rx_gps == '' || cfg.rx_gps == '(0.000000, 0.000000)' || cfg.rx_gps == '(0.000000%2C%200.000000)');
-   var wspr_autorun_full = (cfg.WSPR.autorun >= rx_chans);
+   var autorun_full = ((cfg.WSPR.autorun + cfg.ft8.autorun) >= rx_chans);
    //console.log('kiwisdr_com_register_cb has_u_pwd='+ (adm.user_password != '') +' chan_no_pwd='+ cfg.chan_no_pwd +' no_passwordless_channels='+ no_passwordless_channels);
    //console.log('cfg.server_url='+ cfg.server_url);
    
-   if (idx == w3_SWITCH_YES_IDX && (no_url || bad_ip || no_passwordless_channels || no_rx_gps || wspr_autorun_full)) {
+   if (idx == w3_SWITCH_YES_IDX && (no_url || bad_ip || no_passwordless_channels || no_rx_gps || autorun_full)) {
       if (no_url)
          text = 'Error, you must first setup a valid Kiwi connection URL on the admin "connect" tab';
       else
@@ -1140,8 +1140,8 @@ function kiwisdr_com_register_cb(path, idx)
       if (no_rx_gps)
          text = 'Error, you must first set a valid entry in the "<i>Location (lat, lon)</i>" field';
       else
-      if (wspr_autorun_full)
-         text = 'Error, cannot have WSPR autorun enabled on ALL channels!';
+      if (autorun_full)
+         text = 'Error, cannot have WSPR/FT8 autorun enabled on ALL channels!';
       w3_switch_set_value(path, w3_SWITCH_NO_IDX);    // force back to 'no'
       idx = w3_SWITCH_NO_IDX;
       error = true;

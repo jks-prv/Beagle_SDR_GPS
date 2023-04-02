@@ -12,6 +12,7 @@
 #include "net.h"
 #include "web.h"
 #include "PSKReporter.h"
+#include "FT8.h"
 
 // can't use traditional hton[sl] when initializing structs with const values
 #define hns(i)          FLIP16(i)
@@ -309,16 +310,18 @@ int PSKReporter_distance(const char *grid)
     return pr->grid_ok? grid_to_distance_km(&pr->r_loc, (char *) grid) : 0;
 }
 
-int PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, s1_t snr, ftx_protocol_t protocol, const char *grid, u4_t slot_time)
+int PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, s1_t snr, ftx_protocol_t protocol, const char *grid, u4_t slot_time, u4_t slot)
 {
     pr_conf_t *pr = &pr_conf;
+    int km = PSKReporter_distance(grid);
+    
     if (pr->task_created) {
         conn_t *conn = rx_channels[rx_chan].conn;
         u4_t freq = conn->freqHz + passband_freq;
         const char *mode = (protocol == FTX_PROTOCOL_FT8)? "FT8" : "FT4";
         time_t time = (time_t) slot_time;
-        rcprintf(rx_chan, "PSKReporter spot %s %.3f %s %s %d %s\n", mode, (double) freq / 1e3, call, grid, snr, var_ctime_static(&time));
-        ext_send_msg_encoded(rx_chan, false, "EXT", "debug", "%s %.3f %s %s %d %s", mode, (double) freq / 1e3, call, grid, snr, var_ctime_static(&time));
+        rcprintf(rx_chan, "PSKReporter spot %s %9.3f %8s %s %+3d %5dkm %s\n", mode, (double) freq / 1e3, call, grid, snr, km, var_ctime_static(&time));
+        ext_send_msg_encoded(rx_chan, false, "EXT", "debug", "%s %.3f %s %s %+d %dkm %s", mode, (double) freq / 1e3, call, grid, snr, km, var_ctime_static(&time));
     
         u1_t *bp = pr->bp;
         int so;
@@ -330,7 +333,7 @@ int PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, s1_t snr
         bp += 2;
         lenp = (u2_t *) bp;
         bp += 2;
-    
+        
         bp = pr_emit_string(bp, call);
         *(u4_t *) bp = hnl(freq); bp += 4;
         *bp++ = (u1_t) snr;
@@ -359,14 +362,29 @@ int PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, s1_t snr
             pr_printf("PSKReporter spot pkt FULL ping_pong %d => %d\n", pr->ping_pong ^ 1, pr->ping_pong);
             TaskWakeupF(pr->tid, TWF_CANCEL_DEADLINE);
         }
+        
+        static u4_t last_slot;
+        if (slot != last_slot) {
+            ft8_update_spot_count(rx_chan, pr->pending_uploads[rx_chan]);
+            last_slot = slot;
+        }
     }
     
-    return PSKReporter_distance(grid);
+    return km;
 }
 
 u4_t PSKReporter_num_uploads(int rx_chan)
 {
     return pr_conf.num_uploads[rx_chan];
+}
+
+// reset counters on band/frequency change so PSKReporter_num_uploads() always returns the
+// spot count for the current settings
+void PSKReporter_reset(int rx_chan)
+{
+    pr_conf_t *pr = &pr_conf;
+    pr->pending_uploads[rx_chan] = pr->num_uploads[rx_chan] = 0;
+    //printf("PSKReporter RESET\n");
 }
 
 static void PSKreport(void *param)      // task

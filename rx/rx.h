@@ -82,6 +82,7 @@ void SNR_meas(void *param);
 
 int rx_mode2enum(const char *mode);
 const char * rx_enum2mode(int e);
+const char *rx_conn_type(conn_t *c);
 
 enum conn_count_e { EXTERNAL_ONLY, INCLUDE_INTERNAL, TDOA_USERS, EXT_API_USERS, LOCAL_OR_PWD_PROTECTED_USERS, ADMIN_USERS };
 int rx_count_server_conns(conn_count_e type, conn_t *our_conn = NULL);

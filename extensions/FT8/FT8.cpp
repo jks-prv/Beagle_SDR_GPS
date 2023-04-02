@@ -7,7 +7,9 @@
 #include "conn.h"
 #include "data_pump.h"
 #include "mem.h"
+#include "misc.h"
 
+#include "wspr.h"
 #include "FT8.h"
 #include "PSKReporter.h"
 
@@ -36,6 +38,11 @@ typedef struct {
 	bool seq_init;
 	u4_t seq;
 
+	// autorun
+	bool autorun;
+	conn_t *arun_csnd, *arun_cext;
+	double arun_dial_freq_kHz;
+
 	bool test;
 	u1_t start_test;
     s2_t *s2p;
@@ -44,6 +51,16 @@ typedef struct {
 static ft8_t ft8[MAX_RX_CHANS];
 
 ft8_conf_t ft8_conf;
+
+typedef struct {
+    char *rcall;
+    char rgrid[LEN_GRID];
+    latLon_t r_loc;
+	bool GPS_update_grid;
+	bool syslog, spot_log;
+} ft8_conf2_t;
+
+ft8_conf2_t ft8_conf2;
 
 static void ft8_file_data(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps, int freqHz)
 {
@@ -90,7 +107,7 @@ static void ft8_task(void *param)
 		
 		int new_freq_kHz = (int) round(conn->freqHz/1e3);
 		if (e->last_freq_kHz != new_freq_kHz) {
-		    rcprintf(rx_chan, "FT8: freq changed %d => %d\n", e->last_freq_kHz, new_freq_kHz);
+		    //rcprintf(rx_chan, "FT8: freq changed %d => %d\n", e->last_freq_kHz, new_freq_kHz);
 		    e->last_freq_kHz = new_freq_kHz;
 		    decode_ft8_protocol(rx_chan, conn->freqHz, e->proto);
 		}
@@ -117,11 +134,11 @@ static void ft8_task(void *param)
 void ft8_close(int rx_chan)
 {
 	ft8_t *e = &ft8[rx_chan];
-    rcprintf(rx_chan, "FT8: close task_created=%d\n", e->task_created);
+    //rcprintf(rx_chan, "FT8: close task_created=%d\n", e->task_created);
     ext_unregister_receive_real_samps_task(rx_chan);
 
 	if (e->task_created) {
-        rcprintf(rx_chan, "FT8: TaskRemove\n");
+        //rcprintf(rx_chan, "FT8: TaskRemove\n");
 		TaskRemove(e->tid);
 		e->task_created = false;
 	}
@@ -147,7 +164,7 @@ bool ft8_msgs(char *msg, int rx_chan)
 	    e->proto = proto;
         conn_t *conn = rx_channels[e->rx_chan].conn;
 		e->last_freq_kHz = conn->freqHz/1e3;
-		rcprintf(rx_chan, "FT8 start %s\n", proto? "FT4" : "FT8");
+		//rcprintf(rx_chan, "FT8 start %s\n", proto? "FT4" : "FT8");
 		decode_ft8_init(rx_chan, proto? 1:0);
 
 		if (ft8_conf.tsamps != 0) {
@@ -173,14 +190,27 @@ bool ft8_msgs(char *msg, int rx_chan)
 		return true;
 	}
 
+	float df;
+	n = sscanf(msg, "SET dialfreq=%f", &df);
+	if (n == 1) {
+		e->arun_dial_freq_kHz = df;
+		//rcprintf(rx_chan, "FT8 autorun: dial_freq_kHz=%.6f\n", e->arun_dial_freq_kHz);
+		return true;
+	}
+
+	if (strcmp(msg, "SET autorun") == 0) {
+	    e->autorun = true;
+	    return true;
+	}
+
 	if (strcmp(msg, "SET ft8_close") == 0) {
-		rcprintf(rx_chan, "FT8 close\n");
+		//rcprintf(rx_chan, "FT8 close\n");
 		ft8_close(rx_chan);
 		return true;
 	}
 	
 	if (strcmp(msg, "SET ft8_test") == 0) {
-		rcprintf(rx_chan, "FT8 test\n");
+		//rcprintf(rx_chan, "FT8 test\n");
 		e->start_test = 0;
         e->s2p = ft8_conf.s2p_start;
 		e->test = true;
@@ -188,6 +218,164 @@ bool ft8_msgs(char *msg, int rx_chan)
 	}
 	
 	return false;
+}
+
+// catch changes to reporter call/grid from admin page FT8 config (also called during initialization)
+bool ft8_update_vars_from_config(bool called_at_init)
+{
+    int i, n;
+    bool update_cfg = false;
+    char *s;
+    
+    cfg_default_object("ft8", "{}", &update_cfg);
+    
+    if (called_at_init) {
+    
+        // Make sure ft8.autorun holds *correct* count of autorun processes.
+        // If Kiwi was previously configured for a larger rx_chans, and more than rx_chans worth
+        // of autoruns were enabled, then with a reduced rx_chans it is essential not to count
+        // the ones beyond the rx_chans limit. That's why "i < rx_chans" appears below and
+        // not MAX_RX_CHANS.
+        int num_autorun = 0;
+        for (i = 0; i < rx_chans; i++) {
+            n = cfg_default_int(stprintf("ft8.autorun%d", i), 0, &update_cfg);
+            //printf("ft8.autorun%d=%d\n", i, n);
+            if (n) num_autorun++;
+        }
+        cfg_set_int("ft8.autorun", num_autorun);
+        //printf("ft8.autorun=%d rx_chans=%d\n", num_autorun, rx_chans);
+        update_cfg = true;
+    } else {
+        cfg_default_int("ft8.autorun", 0, &update_cfg);
+    }
+
+    // Changing reporter call on admin page requires restart. This is because of
+    // conditional behavior at startup, e.g. uploads enabled because valid call is now present
+    // or autorun tasks starting for the same reason.
+    // ft8_conf2.rcall is still updated here to handle the initial assignment and
+    // manual changes from FT8 admin page.
+    //
+    // Also, first-time init of FT8 reporter call/grid from WSPR values
+    
+    s = (char *) cfg_string("WSPR.callsign", NULL, CFG_REQUIRED);
+    cfg_default_object("ft8", "{}", &update_cfg);
+    cfg_default_string("ft8.callsign", s, &update_cfg);
+	cfg_string_free(s);
+    s = (char *) cfg_string("ft8.callsign", NULL, CFG_REQUIRED);
+    kiwi_ifree(ft8_conf2.rcall);
+	ft8_conf2.rcall = kiwi_str_encode(s);
+	cfg_string_free(s);
+
+    s = (char *) cfg_string("WSPR.grid", NULL, CFG_REQUIRED);
+    cfg_default_string("ft8.grid", s, &update_cfg);
+	cfg_string_free(s);
+    s = (char *) cfg_string("ft8.grid", NULL, CFG_REQUIRED);
+	kiwi_strncpy(ft8_conf2.rgrid, s, LEN_GRID);
+	cfg_string_free(s);
+    set_reporter_grid((char *) ft8_conf2.rgrid);
+	grid_to_latLon(ft8_conf2.rgrid, &ft8_conf2.r_loc);
+	if (ft8_conf2.r_loc.lat != 999.0)
+		latLon_deg_to_rad(ft8_conf2.r_loc);
+    
+    ft8_conf.SNR_adj = cfg_default_int("ft8.SNR_adj", -22, &update_cfg);
+    if (ft8_conf.SNR_adj == 0) {    // update to new default
+        cfg_set_int("ft8.SNR_adj", -22);
+        update_cfg = true;
+    }
+    ft8_conf.dT_adj = cfg_default_int("ft8.dT_adj", -1, &update_cfg);
+    if (ft8_conf.dT_adj == 0) {     // update to new default
+        cfg_set_int("ft8.dT_adj", -1);
+        update_cfg = true;
+    }
+
+    ft8_conf2.GPS_update_grid = cfg_default_bool("ft8.GPS_update_grid", false, &update_cfg);
+    ft8_conf2.syslog = cfg_default_bool("ft8.syslog", false, &update_cfg);
+    ft8_conf2.spot_log = cfg_default_bool("ft8.spot_log", false, &update_cfg);
+
+	//printf("ft8_update_vars_from_config: rcall <%s> ft8_conf2.rgrid=<%s> ft8_conf2.GPS_update_grid=%d\n", ft8_conf2.rcall, ft8_conf2.rgrid, ft8_conf2.GPS_update_grid);
+    return update_cfg;
+}
+
+void ft8_reset(ft8_t *e)
+{
+}
+
+// order matches ft8_autorun_u in FT8.js
+// only add new entries to the end so as not to disturb existing values stored in config
+#define FT4_BAND_IDX 10
+static double ft8_cfs[] = {     // usb carrier/dial freq
+    /* FT8 */ 1840, 3573, 5357, 7074,   10136, 14074, 18100, 21074, 24915, 28074,
+    /* FT4 */       3575.5,     7047.5, 10140, 14080, 18104, 21140, 24919, 28180
+};
+
+static internal_conn_t iconn[MAX_RX_CHANS];
+
+void ft8_update_spot_count(int rx_chan, u4_t spot_sount)
+{
+    ft8_t *e = &ft8[rx_chan];
+    input_msg_internal(e->arun_csnd, (char *) "SET geoloc=%d%%20decoded", spot_sount);
+}
+
+void ft8_autorun(int instance, int band)
+{
+    double dial_freq_kHz = ft8_cfs[band];
+    bool ft4 = (band >= FT4_BAND_IDX);
+
+	if (internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_BASE_INTERNAL_FT8,
+        "usb", FT8_PASSBAND_LO, FT8_PASSBAND_HI, dial_freq_kHz,
+        ft4? "FT4-autorun" : "FT8-autorun", "0%20decoded", "FT8") == false) {
+        printf("FT8 autorun: internal_conn_setup() FAILED instance=%d band_id=%d %s dial=%.2f\n",
+	        instance, band, ft4? "FT4" : "FT8", dial_freq_kHz);
+        return;
+    }
+
+    conn_t *csnd = iconn[instance].csnd;
+    int chan = csnd->rx_channel;
+    ft8_t *e = &ft8[chan];
+    iconn[instance].param = e;
+    ft8_reset(e);
+    e->arun_csnd = csnd;
+    e->arun_dial_freq_kHz = dial_freq_kHz;
+
+	clprintf(csnd, "FT8 autorun: START instance=%d band_id=%d %s dial=%.2f\n",
+	    instance, band, ft4? "FT4" : "FT8", dial_freq_kHz);
+	
+    conn_t *cext = iconn[instance].cext;
+    e->arun_cext = cext;
+    input_msg_internal(cext, (char *) "SET autorun");
+    input_msg_internal(cext, (char *) "SET dialfreq=%.2f", dial_freq_kHz);
+    input_msg_internal(cext, (char *) "SET ft8_start=%d", ft4? 1:0);
+}
+
+void ft8_autorun_start()
+{
+    if (*ft8_conf2.rcall == '\0' || ft8_conf2.rgrid[0] == '\0') {
+        printf("FT8 autorun: reporter callsign and grid square fields must be entered on FT8 section of admin page\n");
+        return;
+    }
+
+    for (int instance = 0; instance < rx_chans; instance++) {
+        bool err;
+        int band = cfg_int(stprintf("ft8.autorun%d", instance), &err, CFG_OPTIONAL);
+        if (!err && band != 0) {
+            ft8_autorun(instance, band-1);      // band-1 to skip first "regular use" menu entry
+        }
+    }
+}
+
+void ft8_autorun_restart()
+{
+    printf("FT8 autorun: RESTART\n");
+    for (int instance = 0; instance < rx_chans; instance++) {
+        internal_conn_shutdown(&iconn[instance]);
+    }
+    TaskSleepReasonSec("ft8_autorun_stop", 3);      // give time to disconnect
+    for (int instance = 0; instance < rx_chans; instance++) {
+        ft8_t *e = (ft8_t *) iconn[instance].param;
+        if (e != NULL) ft8_reset(e);
+    }
+    memset(iconn, 0, sizeof(internal_conn_t));
+    ft8_autorun_start();
 }
 
 void FT8_main();
@@ -204,7 +392,9 @@ ext_t ft8_ext = {
 void FT8_main()
 {
 	ext_register(&ft8_ext);
+    ft8_update_vars_from_config(false);
 	PSKReporter_init();
+    ft8_autorun_start();
 
     //const char *fn = cfg_string("FT8.test_file", NULL, CFG_OPTIONAL);
     const char *fn = "FT8.test.au";

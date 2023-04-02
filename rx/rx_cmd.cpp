@@ -195,7 +195,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 	    kiwi_str_begins_with(cmd, "SET options") == false &&    // options needed before CMD_AUTH
 	    kiwi_str_begins_with(cmd, "SET auth") == false) {
 		    clprintf(conn, "### SECURITY: NO AUTH YET: %s %s %s %d <%.64s>\n",
-		        stream_name, rx_streams[conn->type].uri, conn->remote_ip, strlen(cmd), cmd);
+		        stream_name, rx_conn_type(conn), conn->remote_ip, strlen(cmd), cmd);
             conn->kick = true;
 		    return true;	// fake that we accepted command so it won't be further processed
 	}
@@ -261,7 +261,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             const char *pwd_s = NULL;
             bool no_pwd = false;;
             int cfg_auto_login;
-            const char *uri = rx_streams[conn->type].uri;
+            const char *uri = rx_conn_type(conn);
             
             conn->awaitingPassword = true;
 
@@ -665,7 +665,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     bool snd_wf = (c->type == STREAM_SOUND || c->type == STREAM_WATERFALL);
                     if (!c->valid || c->internal_connection || !snd_wf) continue;
                     if (c->rx_channel == conn->rx_channel) continue;    // skip our own entry
-                    //pwd_printf("DUP_IP CHK rx%d %s %s\n", c->rx_channel, rx_streams[c->type].uri, c->remote_ip);
+                    //pwd_printf("DUP_IP CHK rx%d %s %s\n", c->rx_channel, rx_conn_type(c), c->remote_ip);
                     if (strcmp(conn->remote_ip, c->remote_ip) == 0) {
                         //pwd_printf("DUP_IP MATCH\n");
                         badp = 5;

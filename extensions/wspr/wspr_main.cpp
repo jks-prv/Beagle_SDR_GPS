@@ -905,7 +905,7 @@ void wspr_autorun(int instance, int band)
 	    return;
 	}
 
-	if (internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_INTERNAL_WSPR,
+	if (internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_BASE_INTERNAL_WSPR,
         "usb", AUTORUN_BFO - AUTORUN_FILTER_BW/2, AUTORUN_BFO + AUTORUN_FILTER_BW/2, if_freq_kHz,
         iwbp? "IWBP-autorun" : "WSPR-autorun", "0%20decoded", "wspr") == false) return;
 
@@ -921,7 +921,7 @@ void wspr_autorun(int instance, int band)
     w->arun_decoded = 0;
     w->arun_last_decoded = -1;
 
-	clprintf(csnd, "WSPR autorun: instance=%d band_id=%d%s off=%.2f if=%.2f tf=%.2f df=%.2f cf=%.2f cfo=%.0f\n",
+	clprintf(csnd, "WSPR autorun: START instance=%d band_id=%d%s off=%.2f if=%.2f tf=%.2f df=%.2f cf=%.2f cfo=%.0f\n",
 	    instance, band, iwbp? "(IWBP)" : "",
 	    freq_offset_kHz, if_freq_kHz, tune_freq_kHz, dial_freq_kHz, center_freq_kHz, cfo);
 	
@@ -959,6 +959,7 @@ void wspr_autorun_start()
 
 void wspr_autorun_restart()
 {
+    printf("WSPR autorun: RESTART\n");
     for (int instance = 0; instance < rx_chans; instance++) {
         internal_conn_shutdown(&iconn[instance]);
     }
