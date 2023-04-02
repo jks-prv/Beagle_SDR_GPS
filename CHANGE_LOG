@@ -2,12 +2,19 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.591  Apr 3, 2023
+
+    FT8: Added autorun function. Works the same as WSPR autorun. See Admin > Extensions > FT8 page.
+    FT8/4 autorun channels display "NNN decoded", much like WSPR, where NNN is a count of pending
+    spots to be uploaded to pskreporter.info Pending, because uploads to pskreporter.info only
+    occur once every 5 minutes.
+
 v1.589,590  Apr 1, 2023
     Workaround added for the IQ extension residual phase rotation problem. Details on the forum:
     forum.kiwisdr.com/index.php?p=/discussion/2852/unexpected-iq-phase-shift-in-gpsdo-kiwi/p1
     
     Debian 8 is now deprecated. Existing Kiwis using Debian 8 and a recent Kiwi software version
-    and will continue to receive auto-updates and don't really need to do anything.
+    will continue to receive auto-updates and don't really need to do anything.
     But re-flashing from the factory v1.2 image (on the supplied sd card) or from the old v1.390
     img.xz file no longer works as the Debian 8 repos from debian.org are now broken.
     However, if you're running Debian 8 you can choose to upgrade to Debian 10.
