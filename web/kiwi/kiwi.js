@@ -2855,7 +2855,7 @@ function kiwi_msg(param, ws)
 			break;
 		
 		case "is_admin":
-			extint_isAdmin_cb(param[1]);
+			extint.isAdmin_cb(param[1]);
 			break;
 
 		case "is_local":
@@ -2915,7 +2915,8 @@ function kiwi_msg(param, ws)
 
 		// can't simply come from 'cfg.*' because config isn't available without a web socket
 		case "reason_disabled":
-			reason_disabled = kiwi_decodeURIComponent('reason_disabled', param[1]);
+			reason_disabled = 'User connections disabled.'+
+			   ((param[1] != '')? (' Reason: '+ kiwi_decodeURIComponent('reason_disabled', param[1])) : '');
 			break;
 		
 		case "sample_rate":
@@ -2943,6 +2944,15 @@ function kiwi_msg(param, ws)
          s = w3_div('', s);
          confirmation_show_content(s, 425, 50);
          setTimeout(confirmation_panel_close, 3000);
+			break;
+
+		case 'kiwi_kick':
+		   var s = param[1] + ((cfg.reason_kicked != '')? ('<br>Reason: '+ cfg.reason_kicked) : '');
+		   s = kiwi_decodeURIComponent('kiwi_kick', s);
+         //kiwi_show_msg(s);
+			if (confirmation.displayed) break;
+         s = w3_div('', s);
+         confirmation_show_content(s, 425, 75, null, 'red');
 			break;
 
 		default:
