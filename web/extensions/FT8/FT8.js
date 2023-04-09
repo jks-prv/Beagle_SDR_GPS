@@ -10,7 +10,7 @@ var ft8 = {
    mode: 0,
    FT8: 0,
    FT4: 1,
-   mode_s: [ 'FT8', 'FT4' ],
+   mode_s: ['FT8', 'FT4'],
 
    freq_s: {
       'FT8': [ '1840', '3573', '5357', '7074', '10136', '14074', '18100', '21074', '24915', '28074' ],
@@ -28,6 +28,19 @@ var ft8 = {
    log_mins: 0,
    log_interval: null,
    log_txt: '',
+
+   // order matches FT8.cpp:ft8_cfs[]
+   // only add new entries to the end so as not to disturb existing values stored in config
+   // yes, there are really no assigned FT4 freqs for 160m and 60m
+   autorun_u: [
+      'regular use',
+      'FT8-160m', 'FT8-80m', 'FT8-60m', 'FT8-40m', 'FT8-30m', 'FT8-20m', 'FT8-17m', 'FT8-15m', 'FT8-12m', 'FT8-10m',
+                  'FT4-80m',            'FT4-40m', 'FT4-30m', 'FT4-20m', 'FT4-17m', 'FT4-15m', 'FT4-12m', 'FT4-10m'
+   ],
+
+   PREEMPT_NO: 0,
+   PREEMPT_YES: 1,
+   preempt_u: ['no', 'yes'],
 
    last_last: 0
 };
@@ -251,16 +264,6 @@ function ft8_test_cb()
    ext_send('SET ft8_test');
 }
 
-
-// order matches FT8.cpp:ft8_cfs[]
-// only add new entries to the end so as not to disturb existing values stored in config
-// yes, there are really no assigned FT4 freqs for 160m and 60m
-var ft8_autorun_u = [
-   'regular use',
-   'FT8-160m', 'FT8-80m', 'FT8-60m', 'FT8-40m', 'FT8-30m', 'FT8-20m', 'FT8-17m', 'FT8-15m', 'FT8-12m', 'FT8-10m',
-               'FT4-80m',            'FT4-40m', 'FT4-30m', 'FT4-20m', 'FT4-17m', 'FT4-15m', 'FT4-12m', 'FT4-10m'
-];
-
 // called to display HTML for configuration parameters in admin interface
 function FT8_config_html()
 {
@@ -308,7 +311,11 @@ function FT8_config_html()
 	for (var i=0; i < rx_chans;) {
 	   var s2 = '';
 	   for (var j=0; j < 8 && i < rx_chans; j++, i++) {
-	      s2 += w3_select_get_param('w3-margin-right', 'Autorun '+ i, 'FT8 band', 'ft8.autorun'+ i, ft8_autorun_u, 'ft8_autorun_select_cb');
+	      s2 +=
+	         w3_div('',
+	            w3_select_get_param('w3-margin-right', 'Autorun '+ i, 'FT8 band', 'ft8.autorun'+ i, ft8.autorun_u, 'ft8_autorun_select_cb'),
+	            w3_select_get_param('w3-margin-right w3-margin-T-8', '', 'preemptible?', 'ft8.preempt'+ i, ft8.preempt_u, 'ft8_autorun_select_cb')
+	         );
 	   }
 	   s += w3_inline('w3-margin-bottom/', s2);
 	}
@@ -319,7 +326,7 @@ function ft8_autorun_public_check()
 {
    var num_autorun = 0;
 	for (var i=0; i < rx_chans; i++) {
-	   if (cfg.ft8['autorun'+ i] != 0)
+	   if (cfg.ft8['autorun'+ i] != 0 && cfg.ft8['preempt'+ i] == ft8.PREEMPT_NO)
 	      num_autorun++;
 	}
 	ext_set_cfg_param('ft8.autorun', num_autorun, EXT_SAVE);

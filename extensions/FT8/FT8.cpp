@@ -5,10 +5,10 @@
 #include "kiwi.h"
 #include "coroutines.h"
 #include "conn.h"
+#include "rx_util.h"
 #include "data_pump.h"
 #include "mem.h"
 #include "misc.h"
-
 #include "wspr.h"
 #include "FT8.h"
 #include "PSKReporter.h"
@@ -40,6 +40,7 @@ typedef struct {
 
 	// autorun
 	bool autorun;
+	int instance;
 	conn_t *arun_csnd, *arun_cext;
 	double arun_dial_freq_kHz;
 
@@ -61,6 +62,10 @@ typedef struct {
 } ft8_conf2_t;
 
 ft8_conf2_t ft8_conf2;
+
+static int ft8_arun_band[MAX_ARUN_INST];
+static int ft8_arun_preempt[MAX_ARUN_INST];
+static internal_conn_t iconn[MAX_ARUN_INST];
 
 static void ft8_file_data(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps, int freqHz)
 {
@@ -131,11 +136,22 @@ static void ft8_task(void *param)
     }
 }
 
+void ft8_reset(ft8_t *e)
+{
+    memset(e, 0, sizeof(*e));
+}
+
 void ft8_close(int rx_chan)
 {
+    rx_util_t *r = &rx_util;
 	ft8_t *e = &ft8[rx_chan];
-    //rcprintf(rx_chan, "FT8: close task_created=%d\n", e->task_created);
+    //rcprintf(rx_chan, "FT8: close rx_chan=%d autorun=%d arun_which=%d task_created=%d\n",
+    //    rx_chan, e->autorun, r->arun_which[rx_chan], e->task_created);
     ext_unregister_receive_real_samps_task(rx_chan);
+
+	if (e->autorun) {
+        internal_conn_shutdown(&iconn[e->instance]);
+	}
 
 	if (e->task_created) {
         //rcprintf(rx_chan, "FT8: TaskRemove\n");
@@ -144,6 +160,7 @@ void ft8_close(int rx_chan)
 	}
 	
 	decode_ft8_free(rx_chan);
+    ft8_reset(e);
 }
 
 bool ft8_msgs(char *msg, int rx_chan)
@@ -185,7 +202,7 @@ bool ft8_msgs(char *msg, int rx_chan)
 	    e->proto = proto;
         conn_t *conn = rx_channels[e->rx_chan].conn;
 		e->last_freq_kHz = conn->freqHz/1e3;
-		rcprintf(rx_chan, "FT8 protocol %s freq %.2f\n", proto? "FT4" : "FT8", conn->freqHz/1e3);
+		//rcprintf(rx_chan, "FT8 protocol %s freq %.2f\n", proto? "FT4" : "FT8", conn->freqHz/1e3);
 		decode_ft8_protocol(rx_chan, conn->freqHz, proto? 1:0);
 		return true;
 	}
@@ -221,32 +238,33 @@ bool ft8_msgs(char *msg, int rx_chan)
 }
 
 // catch changes to reporter call/grid from admin page FT8 config (also called during initialization)
-bool ft8_update_vars_from_config(bool called_at_init)
+bool ft8_update_vars_from_config(bool called_at_init_or_restart)
 {
     int i, n;
+    rx_util_t *r = &rx_util;
     bool update_cfg = false;
     char *s;
     
     cfg_default_object("ft8", "{}", &update_cfg);
     
-    if (called_at_init) {
-    
-        // Make sure ft8.autorun holds *correct* count of autorun processes.
-        // If Kiwi was previously configured for a larger rx_chans, and more than rx_chans worth
-        // of autoruns were enabled, then with a reduced rx_chans it is essential not to count
-        // the ones beyond the rx_chans limit. That's why "i < rx_chans" appears below and
-        // not MAX_RX_CHANS.
+    // Make sure ft8.autorun holds *correct* count of non-preemptible autorun processes.
+    // If Kiwi was previously configured for a larger rx_chans, and more than rx_chans worth
+    // of autoruns were enabled, then with a reduced rx_chans it is essential not to count
+    // the ones beyond the rx_chans limit. That's why "i < rx_chans" appears below and
+    // not MAX_RX_CHANS.
+    if (called_at_init_or_restart) {
         int num_autorun = 0;
-        for (i = 0; i < rx_chans; i++) {
-            n = cfg_default_int(stprintf("ft8.autorun%d", i), 0, &update_cfg);
-            //printf("ft8.autorun%d=%d\n", i, n);
-            if (n) num_autorun++;
+        for (int instance = 0; instance < rx_chans; instance++) {
+            int autorun = cfg_default_int(stprintf("ft8.autorun%d", instance), 0, &update_cfg);
+            int preempt = cfg_default_int(stprintf("ft8.preempt%d", instance), 0, &update_cfg);
+            //printf("ft8.autorun%d=%d(band=%d) ft8.preempt%d=%d\n", instance, autorun, autorun-1, instance, preempt);
+            if (autorun && (preempt == 0)) num_autorun++;
+            ft8_arun_band[instance] = autorun;
+            ft8_arun_preempt[instance] = preempt;
         }
         cfg_set_int("ft8.autorun", num_autorun);
-        //printf("ft8.autorun=%d rx_chans=%d\n", num_autorun, rx_chans);
+        //printf("ft8_update_vars_from_config: ft8.autorun=%d rx_chans=%d\n", num_autorun, rx_chans);
         update_cfg = true;
-    } else {
-        cfg_default_int("ft8.autorun", 0, &update_cfg);
     }
 
     // Changing reporter call on admin page requires restart. This is because of
@@ -258,7 +276,6 @@ bool ft8_update_vars_from_config(bool called_at_init)
     // Also, first-time init of FT8 reporter call/grid from WSPR values
     
     s = (char *) cfg_string("WSPR.callsign", NULL, CFG_REQUIRED);
-    cfg_default_object("ft8", "{}", &update_cfg);
     cfg_default_string("ft8.callsign", s, &update_cfg);
 	cfg_string_free(s);
     s = (char *) cfg_string("ft8.callsign", NULL, CFG_REQUIRED);
@@ -296,11 +313,7 @@ bool ft8_update_vars_from_config(bool called_at_init)
     return update_cfg;
 }
 
-void ft8_reset(ft8_t *e)
-{
-}
-
-// order matches ft8_autorun_u in FT8.js
+// order matches ft8.autorun_u in FT8.js
 // only add new entries to the end so as not to disturb existing values stored in config
 #define FT4_BAND_IDX 10
 static double ft8_cfs[] = {     // usb carrier/dial freq
@@ -308,37 +321,50 @@ static double ft8_cfs[] = {     // usb carrier/dial freq
     /* FT4 */       3575.5,     7047.5, 10140, 14080, 18104, 21140, 24919, 28180
 };
 
-static internal_conn_t iconn[MAX_RX_CHANS];
-
-void ft8_update_spot_count(int rx_chan, u4_t spot_sount)
+void ft8_update_spot_count(int rx_chan, u4_t spot_count)
 {
     ft8_t *e = &ft8[rx_chan];
-    input_msg_internal(e->arun_csnd, (char *) "SET geoloc=%d%%20decoded", spot_sount);
+    if (e->autorun) {
+        input_msg_internal(e->arun_csnd, (char *) "SET geoloc=%d%%20decoded%s",
+            spot_count, e->arun_csnd->arun_preempt? ",%20preemptible" : "");
+    }
 }
 
-void ft8_autorun(int instance, int band)
+static void ft8_autorun(int instance)
 {
+    rx_util_t *r = &rx_util;
+    int band = ft8_arun_band[instance]-1;
     double dial_freq_kHz = ft8_cfs[band];
     bool ft4 = (band >= FT4_BAND_IDX);
+    bool preempt = (ft8_arun_preempt[instance] != ARUN_PREEMPT_NO);
+    char *ident_user;
+    asprintf(&ident_user, "FT%d-autorun", ft4? 4:8);
+    char *geoloc;
+    asprintf(&geoloc, "0%%20decoded%s", preempt? ",%20preemptible" : "");
 
-	if (internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_BASE_INTERNAL_FT8,
-        "usb", FT8_PASSBAND_LO, FT8_PASSBAND_HI, dial_freq_kHz,
-        ft4? "FT4-autorun" : "FT8-autorun", "0%20decoded", "FT8") == false) {
-        printf("FT8 autorun: internal_conn_setup() FAILED instance=%d band_id=%d %s dial=%.2f\n",
-	        instance, band, ft4? "FT4" : "FT8", dial_freq_kHz);
+	bool ok = internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_BASE_INTERNAL_FT8,
+        "usb", FT8_PASSBAND_LO, FT8_PASSBAND_HI, dial_freq_kHz, ident_user, geoloc, "FT8");
+    free(ident_user); free(geoloc);
+    if (!ok) {
+        //printf("FT8 autorun: internal_conn_setup() FAILED instance=%d band=%d %s %.2f\n",
+	    //    instance, band, ft4? "FT4" : "FT8", dial_freq_kHz);
         return;
     }
 
     conn_t *csnd = iconn[instance].csnd;
-    int chan = csnd->rx_channel;
-    ft8_t *e = &ft8[chan];
-    iconn[instance].param = e;
+    csnd->arun_preempt = preempt;
+    int rx_chan = csnd->rx_channel;
+    r->arun_which[rx_chan] = ARUN_FT8;
+    r->arun_band[rx_chan] = band;
+    ft8_t *e = &ft8[rx_chan];
     ft8_reset(e);
+    e->instance = instance;
+    e->rx_chan = rx_chan;
     e->arun_csnd = csnd;
     e->arun_dial_freq_kHz = dial_freq_kHz;
 
-	clprintf(csnd, "FT8 autorun: START instance=%d band_id=%d %s dial=%.2f\n",
-	    instance, band, ft4? "FT4" : "FT8", dial_freq_kHz);
+	clprintf(csnd, "FT8 autorun: START instance=%d rx_chan=%d band=%d %s %.2f preempt=%d\n",
+	    instance, rx_chan, band, ft4? "FT4" : "FT8", dial_freq_kHz, preempt);
 	
     conn_t *cext = iconn[instance].cext;
     e->arun_cext = cext;
@@ -349,33 +375,75 @@ void ft8_autorun(int instance, int band)
 
 void ft8_autorun_start()
 {
+    rx_util_t *r = &rx_util;
+    if (snd_rate != MIN_SND_RATE) {
+        printf("FT8 autorun: Only works on Kiwis configured for 12 kHz wide channels\n");
+        return;
+    }
+
     if (*ft8_conf2.rcall == '\0' || ft8_conf2.rgrid[0] == '\0') {
         printf("FT8 autorun: reporter callsign and grid square fields must be entered on FT8 section of admin page\n");
         return;
     }
 
     for (int instance = 0; instance < rx_chans; instance++) {
-        bool err;
-        int band = cfg_int(stprintf("ft8.autorun%d", instance), &err, CFG_OPTIONAL);
-        if (!err && band != 0) {
-            ft8_autorun(instance, band-1);      // band-1 to skip first "regular use" menu entry
+        int band = ft8_arun_band[instance];
+        if (band == ARUN_REG_USE) continue;     // "regular use" menu entry
+        band--;     // make array index
+        
+        // Is this instance already running on any channel?
+        // This loop should never exclude ft8_autorun() when called from ft8_autorun_restart()
+        // because all instances were just stopped.
+        // When called from rx_autorun_restart_victims() it functions normally.
+        int rx_chan;
+        for (rx_chan = 0; rx_chan < rx_chans; rx_chan++) {
+            if (r->arun_which[rx_chan] == ARUN_FT8 && r->arun_band[rx_chan] == band) {
+                //printf("FT8 autorun: instance=%d band=%d %.2f already running on rx%d\n",
+                //    instance, band, ft8_cfs[band], rx_chan);
+                break;
+            }
+        }
+        if (rx_chan == rx_chans) {
+            // arun_{which,band} set only after ft8_autorun():internal_conn_setup() succeeds
+            ft8_autorun(instance);
         }
     }
 }
 
 void ft8_autorun_restart()
 {
+    int rx_chan;
+    rx_util_t *r = &rx_util;
+    ft8_t *ft8_p[MAX_RX_CHANS];
+
     printf("FT8 autorun: RESTART\n");
-    for (int instance = 0; instance < rx_chans; instance++) {
-        internal_conn_shutdown(&iconn[instance]);
-    }
-    TaskSleepReasonSec("ft8_autorun_stop", 3);      // give time to disconnect
-    for (int instance = 0; instance < rx_chans; instance++) {
-        ft8_t *e = (ft8_t *) iconn[instance].param;
-        if (e != NULL) ft8_reset(e);
-    }
-    memset(iconn, 0, sizeof(internal_conn_t));
-    ft8_autorun_start();
+    r->arun_suspend_restart_victims = true;
+        // shutdown all
+        for (rx_chan = 0; rx_chan < rx_chans; rx_chan++) {
+            ft8_p[rx_chan] = NULL;
+            if (r->arun_which[rx_chan] == ARUN_FT8) {
+                ft8_t *e = &ft8[rx_chan];
+                ft8_p[rx_chan] = e;
+                internal_conn_shutdown(&iconn[e->instance]);
+                //printf("FT8 autorun: rx_chan=%d ARUN_FT8 => ARUN_NONE\n", rx_chan);
+                r->arun_which[rx_chan] = ARUN_NONE;
+            }
+        }
+        rx_autorun_clear();
+        TaskSleepReasonSec("ft8_autorun_stop", 3);      // give time to disconnect
+    
+        // reset only autorun instances identified above (there may be non-autorun FT8 extensions running)
+        for (rx_chan = 0; rx_chan < rx_chans; rx_chan++) {
+            if (ft8_p[rx_chan] != NULL) ft8_reset(ft8_p[rx_chan]);
+        }
+        memset(iconn, 0, sizeof(internal_conn_t));
+        
+        // bring ft8_arun_band[] and ft8_arun_preempt[] up-to-date
+        ft8_update_vars_from_config(true);
+        
+        // restart all enabled
+        ft8_autorun_start();
+    r->arun_suspend_restart_victims = false;
 }
 
 void FT8_main();

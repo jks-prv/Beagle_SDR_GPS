@@ -30,6 +30,7 @@
 #include "mem.h"
 #include "net.h"
 #include "rx.h"
+#include "rx_util.h"
 #include "web.h"
 #include "non_block.h"
 #include "coroutines.h"
@@ -58,6 +59,10 @@
 
 wspr_conf_t wspr_c;
 
+static int wspr_arun_band[MAX_ARUN_INST];
+static int wspr_arun_preempt[MAX_ARUN_INST];
+static internal_conn_t iconn[MAX_ARUN_INST];
+
 // assigned constants
 int nffts, nbins_411, hbins_205;
 
@@ -68,7 +73,7 @@ static float window[NFFT];
 #define AUTORUN_BFO 750
 #define AUTORUN_FILTER_BW 300
 
-// order matches wspr_autorun_u in wspr.js
+// order matches wspr.autorun_u in wspr.js
 // only add new entries to the end so as not to disturb existing values stored in config
 // WSPR_BAND_IWBP entry for IWBP makes url param &ext=wspr,iwbp work due to freq range check
 #define WSPR_BAND_IWBP 9999
@@ -426,6 +431,17 @@ void wspr_send_decode(wspr_t *w, int seq)
     kiwi_ifree(W_s);
 }
 
+// Pass result json back to main process via shmem->status_str_medium
+// since _upload_task runs in context of child_task()'s child process.
+// This presumes the response from wsprnet.org is < N_SHMEM_STATUS_STR_MEDIUM.
+static int _upload_task(void *param)
+{
+	nbcmd_args_t *args = (nbcmd_args_t *) param;
+	char *sp = kstr_sp(args->kstr);
+    kiwi_strncpy(shmem->status_str_medium, sp, N_SHMEM_STATUS_STR_MEDIUM);
+    return 0;
+}
+
 void WSPR_Deco(void *param)
 {
     int rx_chan = (int) FROM_VOID_PARAM(param);
@@ -500,18 +516,29 @@ void WSPR_Deco(void *param)
         wspr_ulprintf("%s UPLOAD %d spots RX%d %.4f START%s\n", w->iwbp? "IWBP" : "WSPR", w->uniques, w->rx_chan, rqrg, w->autorun? " AUTORUN" : "");
         for (int i = 0; i < w->uniques; i++) {
             wspr_decode_t *dp = &w->deco[i];
+            if (strcmp(dp->call, "...") == 0) continue;
+            
             if (w->autorun) {
                 int year, month, day; utc_year_month_day(&year, &month, &day);
                 char *cmd;
-                #define WSPR_SPOT "curl 'http://wsprnet.org/post?function=wspr&rcall=%s&rgrid=%s&rqrg=%.6f&date=%02d%02d%02d&time=%02d%02d&sig=%.0f&dt=%.1f&drift=%d&tqrg=%.6f&tcall=%s&tgrid=%s&dbm=%s&version=1.4A+Kiwi' >/dev/null 2>&1"
+                #define WSPR_SPOT "curl -s 'http://wsprnet.org/post?function=wspr&" \
+                    "rcall=%s&rgrid=%s&rqrg=%.6f&date=%02d%02d%02d&time=%02d%02d&sig=%.0f&" \
+                    "dt=%.1f&drift=%d&tqrg=%.6f&tcall=%s&tgrid=%s&dbm=%s&version=1.4A+Kiwi'%s"
                 asprintf(&cmd, WSPR_SPOT, wspr_c.rcall, wspr_c.rgrid, rqrg, year%100, month, day,
-                    dp->hour, dp->min, dp->snr, dp->dt_print, (int) dp->drift1, dp->freq_print, dp->call, dp->grid, dp->pwr);
+                    dp->hour, dp->min, dp->snr, dp->dt_print, (int) dp->drift1, dp->freq_print, dp->call, dp->grid, dp->pwr,
+                    wspr_c.spot_log? "" : " >/dev/null 2>&1");
                 #ifdef TEST_UPLOADS
                     wspr_printf("WSPR UPLOAD RX%d %d/%d %s\n", w->rx_chan, i+1, w->uniques, cmd);
                 #else
-                    non_blocking_cmd_system_child("kiwi.wsprnet.org", cmd, NO_WAIT);
-                    if (wspr_c.spot_log)
+                    if (wspr_c.spot_log) {
+                        int status = non_blocking_cmd_func_forall("kiwi.wsprnet.org", cmd, _upload_task, 0, POLL_MSEC(250));
                         rcprintf(w->rx_chan, "%s UPLOAD: %s\n", w->iwbp? "IWBP" : "WSPR", cmd);
+                        int n, added, total;
+                        n = sscanf(shmem->status_str_medium, "%*s%*s%d out of %d", &added, &total);
+                        rcprintf(w->rx_chan, "%s UPLOAD: wsprnet.org said: \"%d out of %d spot(s) added\"\n", w->iwbp? "IWBP" : "WSPR", added, total);
+                    } else {
+                        non_blocking_cmd_system_child("kiwi.wsprnet.org", cmd, NO_WAIT);
+                    }
                 #endif
                 kiwi_ifree(cmd);
                 w->arun_decoded++;
@@ -554,7 +581,8 @@ void WSPR_Deco(void *param)
                 non_blocking_cmd_system_child("kiwi.wsprnet.org", w->arun_stat_cmd, NO_WAIT);
 		    }
 		    if (w->arun_decoded > w->arun_last_decoded) {
-		        input_msg_internal(w->arun_csnd, (char *) "SET geoloc=%d%%20decoded", w->arun_decoded);
+		        input_msg_internal(w->arun_csnd, (char *) "SET geoloc=%d%%20decoded%s",
+		            w->arun_decoded, w->arun_csnd->arun_preempt? ",%20preemptible" : "");
 		        w->arun_last_decoded = w->arun_decoded;
             }
 		}
@@ -759,12 +787,30 @@ void wspr_data(int rx_chan, int instance, int nsamps, TYPECPX *samps)
     #endif
 }
 
+void wspr_reset(wspr_t *w)
+{
+    w->status_resume = IDLE;
+    w->tsync = FALSE;
+    w->capture = 0;
+    w->last_sec = -1;
+    w->abort_decode = false;
+    w->send_error = false;
+    w->autorun = false;
+    w->iwbp = false;
+}
+
 void wspr_close(int rx_chan)
 {
+    rx_util_t *r = &rx_util;
     wspr_t *w = &WSPR_SHMEM->wspr[rx_chan];
     assert(rx_chan == w->rx_chan);
-	//wspr_printf("wspr_close\n");
+    rcprintf(rx_chan, "WSPR: close rx_chan=%d autorun=%d arun_which=%d create_tasks=%d\n",
+        rx_chan, w->autorun, r->arun_which[rx_chan], w->create_tasks);
     ext_unregister_receive_iq_samps(w->rx_chan);
+
+	if (w->autorun) {
+        internal_conn_shutdown(&iconn[w->instance]);
+	}
 
 	if (w->create_tasks) {
 		//wspr_printf("wspr_close TaskRemove FFT%d deco%d\n", w->WSPR_FFTtask_id, w->WSPR_DecodeTask_id);
@@ -772,6 +818,8 @@ void wspr_close(int rx_chan)
 		TaskRemove(w->WSPR_DecodeTask_id);
 		w->create_tasks = false;
 	}
+	
+	wspr_reset(w);
 }
 
 bool wspr_msgs(char *msg, int rx_chan)
@@ -866,22 +914,66 @@ bool wspr_msgs(char *msg, int rx_chan)
 	return false;
 }
 
-void wspr_reset(wspr_t *w)
+// catch changes to reporter call/grid from admin page WSPR config (also called during initialization)
+bool wspr_update_vars_from_config(bool called_at_init_or_restart)
 {
-    w->status_resume = IDLE;
-    w->tsync = FALSE;
-    w->capture = 0;
-    w->last_sec = -1;
-    w->abort_decode = false;
-    w->send_error = false;
-    w->autorun = false;
-    w->iwbp = false;
+    int i, n;
+    rx_util_t *r = &rx_util;
+    bool update_cfg = false;
+    char *s;
+    
+    cfg_default_object("WSPR", "{}", &update_cfg);
+    
+    // Make sure WSPR.autorun holds *correct* count of non-preemptible autorun processes.
+    // If Kiwi was previously configured for a larger rx_chans, and more than rx_chans worth
+    // of autoruns were enabled, then with a reduced rx_chans it is essential not to count
+    // the ones beyond the rx_chans limit. That's why "i < rx_chans" appears below and
+    // not MAX_RX_CHANS.
+    if (called_at_init_or_restart) {
+        int num_autorun = 0;
+        for (int instance = 0; instance < rx_chans; instance++) {
+            int autorun = cfg_default_int(stprintf("WSPR.autorun%d", instance), 0, &update_cfg);
+            int preempt = cfg_default_int(stprintf("WSPR.preempt%d", instance), 0, &update_cfg);
+            //printf("WSPR.autorun%d=%d(band=%d) WSPR.preempt%d=%d\n", instance, autorun, autorun-1, instance, preempt);
+            if (autorun && (preempt == 0)) num_autorun++;
+            wspr_arun_band[instance] = autorun;
+            wspr_arun_preempt[instance] = preempt;
+        }
+        cfg_set_int("wspr_update_vars_from_config: WSPR.autorun", num_autorun);
+        //printf("WSPR.autorun=%d rx_chans=%d\n", num_autorun, rx_chans);
+        update_cfg = true;
+    }
+
+    // Changing reporter call on admin page requires restart. This is because of
+    // conditional behavior at startup, e.g. uploads enabled because valid call is now present
+    // or autorun tasks starting for the same reason.
+    // wspr_c.rcall is still updated here to handle the initial assignment and
+    // manual changes from WSPR admin page.
+    
+    cfg_default_string("WSPR.callsign", "", &update_cfg);
+    s = (char *) cfg_string("WSPR.callsign", NULL, CFG_REQUIRED);
+    kiwi_ifree(wspr_c.rcall);
+	wspr_c.rcall = kiwi_str_encode(s);
+	cfg_string_free(s);
+
+    cfg_default_string("WSPR.grid", "", &update_cfg);
+    s = (char *) cfg_string("WSPR.grid", NULL, CFG_REQUIRED);
+	kiwi_strncpy(wspr_c.rgrid, s, LEN_GRID);
+	cfg_string_free(s);
+    set_reporter_grid((char *) wspr_c.rgrid);
+
+    wspr_c.GPS_update_grid = cfg_default_bool("WSPR.GPS_update_grid", false, &update_cfg);
+    wspr_c.syslog = cfg_default_bool("WSPR.syslog", false, &update_cfg);
+    wspr_c.spot_log = cfg_default_bool("WSPR.spot_log", false, &update_cfg);
+
+	//printf("wspr_update_vars_from_config: rcall <%s> wspr_c.rgrid=<%s> wspr_c.GPS_update_grid=%d\n", wspr_c.rcall, wspr_c.rgrid, wspr_c.GPS_update_grid);
+    return update_cfg;
 }
-
-static internal_conn_t iconn[MAX_RX_CHANS];
-
-void wspr_autorun(int instance, int band)
+    
+void wspr_autorun(int instance)
 {
+    rx_util_t *r = &rx_util;
+    int band = wspr_arun_band[instance]-1;
 	double center_freq_kHz, tune_freq_kHz;
 	bool iwbp = (wspr_cfs[band] == WSPR_BAND_IWBP);
 
@@ -900,36 +992,54 @@ void wspr_autorun(int instance, int band)
 	
 	double max_freq = freq_offset_kHz + ui_srate/1e3;
 	if (dial_freq_kHz < freq_offset_kHz || dial_freq_kHz > max_freq) {
-	    lprintf("WSPR autorun: ERROR band_id=%d dial_freq_kHz %.2f is outside rx range %.2f - %.2f\n",
+	    lprintf("WSPR autorun: ERROR band=%d dial_freq_kHz %.2f is outside rx range %.2f - %.2f\n",
 	        band, dial_freq_kHz, freq_offset_kHz, max_freq);
 	    return;
 	}
 
-	if (internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_BASE_INTERNAL_WSPR,
+    bool preempt = (wspr_arun_preempt[instance] != ARUN_PREEMPT_NO);
+    char *ident_user;
+    asprintf(&ident_user, "%s-autorun", iwbp? "IWBP" : "WSPR");
+    char *geoloc;
+    asprintf(&geoloc, "0%%20decoded%s", preempt? ",%20preemptible" : "");
+
+	bool ok = internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_BASE_INTERNAL_WSPR,
         "usb", AUTORUN_BFO - AUTORUN_FILTER_BW/2, AUTORUN_BFO + AUTORUN_FILTER_BW/2, if_freq_kHz,
-        iwbp? "IWBP-autorun" : "WSPR-autorun", "0%20decoded", "wspr") == false) return;
+        ident_user, geoloc, "wspr");
+    free(ident_user); free(geoloc);
+    if (!ok) {
+        //printf("WSPR autorun: internal_conn_setup() FAILED instance=%d band=%d dial=%.2f\n",
+	    //    instance, band, dial_freq_kHz);
+        return;
+    }
 
     conn_t *csnd = iconn[instance].csnd;
-    int chan = csnd->rx_channel;
-    wspr_t *w = &WSPR_SHMEM->wspr[chan];
+    csnd->arun_preempt = preempt;
+    int rx_chan = csnd->rx_channel;
+    r->arun_which[rx_chan] = ARUN_WSPR;
+    r->arun_band[rx_chan] = band;
+    wspr_t *w = &WSPR_SHMEM->wspr[rx_chan];
     iconn[instance].param = w;
     wspr_reset(w);
     //w->debug = 1;
+    w->instance = instance;
+    w->rx_chan = rx_chan;
     w->arun_csnd = csnd;
     w->arun_deco_cf_MHz = center_freq_kHz / 1e3;
     w->arun_cf_MHz = tune_freq_kHz / 1e3;
     w->arun_decoded = 0;
     w->arun_last_decoded = -1;
 
-	clprintf(csnd, "WSPR autorun: START instance=%d band_id=%d%s off=%.2f if=%.2f tf=%.2f df=%.2f cf=%.2f cfo=%.0f\n",
-	    instance, band, iwbp? "(IWBP)" : "",
+	clprintf(csnd, "WSPR autorun: START instance=%d rx_chan=%d band=%d%s off=%.2f if=%.2f tf=%.2f df=%.2f cf=%.2f cfo=%.0f\n",
+	    instance, rx_chan, band, iwbp? "(IWBP)" : "",
 	    freq_offset_kHz, if_freq_kHz, tune_freq_kHz, dial_freq_kHz, center_freq_kHz, cfo);
 	
     conn_t *cext = iconn[instance].cext;
     w->arun_cext = cext;
+    w->abort_decode = true;
     input_msg_internal(cext, (char *) "SET autorun");
     input_msg_internal(cext, (char *) "SET BFO=%d", AUTORUN_BFO);
-    input_msg_internal(cext, (char *) "SET capture=0");
+    //input_msg_internal(cext, (char *) "SET capture=0");
     w->iwbp = iwbp? true : false;
     if (iwbp) input_msg_internal(cext, (char *) "SET IWBP");
     input_msg_internal(cext, (char *) "SET dialfreq=%.2f centerfreq=%.2f cf_offset=%.0f", dial_freq_kHz, center_freq_kHz, cfo);
@@ -943,33 +1053,77 @@ void wspr_autorun(int instance, int band)
 
 void wspr_autorun_start()
 {
+    rx_util_t *r = &rx_util;
     if (*wspr_c.rcall == '\0' || wspr_c.rgrid[0] == '\0') {
         printf("WSPR autorun: reporter callsign and grid square fields must be entered on WSPR section of admin page\n");
         return;
     }
 
     for (int instance = 0; instance < rx_chans; instance++) {
-        bool err;
-        int band = cfg_int(stprintf("WSPR.autorun%d", instance), &err, CFG_OPTIONAL);
-        if (!err && band != 0) {
-            wspr_autorun(instance, band-1);
+        int band = wspr_arun_band[instance];
+        if (band == ARUN_REG_USE) continue;     // "regular use" menu entry
+        band--;     // make array index
+        
+        // Is this instance already running on any channel?
+        // This loop should never exclude wspr_autorun() when called from wspr_autorun_restart()
+        // because all instances were just stopped.
+        // When called from rx_autorun_restart_victims() it functions normally.
+        int rx_chan;
+        for (rx_chan = 0; rx_chan < rx_chans; rx_chan++) {
+            if (r->arun_which[rx_chan] == ARUN_WSPR && r->arun_band[rx_chan] == band) {
+                //printf("WSPR autorun: instance=%d band=%d %.2f already running on rx%d\n",
+                //    instance, band, wspr_cfs[band], rx_chan);
+                break;
+            }
+        }
+        if (rx_chan == rx_chans) {
+            // arun_{which,band} set only after wspr_autorun():internal_conn_setup() succeeds
+            wspr_autorun(instance);
         }
     }
 }
 
 void wspr_autorun_restart()
 {
+    int rx_chan;
+    rx_util_t *r = &rx_util;
+    wspr_t *wspr_p[MAX_ARUN_INST];
+
     printf("WSPR autorun: RESTART\n");
-    for (int instance = 0; instance < rx_chans; instance++) {
-        internal_conn_shutdown(&iconn[instance]);
-    }
-    TaskSleepReasonSec("wspr_autorun_stop", 3);     // give time to disconnect
-    for (int instance = 0; instance < rx_chans; instance++) {
-        wspr_t *w = (wspr_t *) iconn[instance].param;
-        if (w != NULL) wspr_reset(w);
-    }
-    memset(iconn, 0, sizeof(internal_conn_t));
-    wspr_autorun_start();
+    r->arun_suspend_restart_victims = true;
+        // shutdown all
+        for (int rx_chan = 0; rx_chan < rx_chans; rx_chan++) {
+            wspr_p[rx_chan] = NULL;
+            if (r->arun_which[rx_chan] == ARUN_WSPR) {
+                wspr_t *w = &WSPR_SHMEM->wspr[rx_chan];
+                wspr_p[rx_chan] = w;
+                w->abort_decode = true;     // for MULTI_CORE it's important to stop the decode process
+                internal_conn_shutdown(&iconn[w->instance]);
+                r->arun_which[rx_chan] = ARUN_NONE;
+            }
+        }
+        rx_autorun_clear();
+    
+        // MULTI_CORE: has to be long enough that wspr_p[rx_chan]->abort_decode above is seen by decode process
+        #ifdef MULTI_CORE
+            #define WSPR_PROCESS_ABORT_WAIT 8
+        #else
+            #define WSPR_PROCESS_ABORT_WAIT 3
+        #endif
+        TaskSleepReasonSec("wspr_autorun_stop", WSPR_PROCESS_ABORT_WAIT);
+
+        // reset only autorun instances identified above (there may be non-autorun WSPR extensions running)
+        for (int rx_chan = 0; rx_chan < rx_chans; rx_chan++) {
+            if (wspr_p[rx_chan] != NULL) wspr_reset(wspr_p[rx_chan]);
+        }
+        memset(iconn, 0, sizeof(internal_conn_t));
+
+        // bring wspr_arun_band[] and wspr_arun_preempt[] up-to-date
+        wspr_update_vars_from_config(true);
+        
+        // restart all enabled
+        wspr_autorun_start();
+    r->arun_suspend_restart_victims = false;
 }
 
 void wspr_main();
