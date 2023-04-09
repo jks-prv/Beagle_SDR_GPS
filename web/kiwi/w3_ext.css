@@ -1011,6 +1011,11 @@ input[type=range]::-moz-range-thumb {
 	width: 0%;
 }
 
+.w3-width-third
+{
+	width: 33%;
+}
+
 .w3-width-half
 {
 	width: 50%;

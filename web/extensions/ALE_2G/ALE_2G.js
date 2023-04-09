@@ -1286,7 +1286,7 @@ function ale_2g_admin_menu_cb(path, val)
 function ALE_2G_config_html()
 {
    var s =
-      w3_div('',
+      w3_div('w3-container',
          w3_textarea_get_param('id-ale_2g-admin-textarea w3-input-any-change|width:100%',
             w3_inline('',
                w3_text('w3-bold w3-text-teal', 'Admin menu'),
