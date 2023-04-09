@@ -22,6 +22,7 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "kiwi.h"
 #include "rx.h"
+#include "rx_util.h"
 #include "clk.h"
 #include "mem.h"
 #include "misc.h"
@@ -74,7 +75,6 @@ Boston, MA  02110-1301, USA.
 // current tests & workarounds
 
 #define SND_FREQ_SET_IQ_ROTATION_BUG_WORKAROUND
-#define TEST_DEEMP_PRE_PB_FILTERING
 
 snd_t snd_inst[MAX_RX_CHANS];
 
@@ -200,7 +200,10 @@ static bool specAF_FFT(int rx_chan, int instance, int flags, int ratio, int ns_o
 
     float scale = 10.0f * 2.0f / (CUTESDR_MAX_VAL * CUTESDR_MAX_VAL * FFT_WIDTH * FFT_WIDTH);
     scale *= snd->isChanNull? 0.0004f : 1e6f;
-    if (p_f[1]) scale *= p_f[1];
+    //#define PN_SCALE_DEBUG
+    #ifdef PN_SCALE_DEBUG
+        if (p_f[1]) scale *= p_f[1];
+    #endif
 	
 	for (i=0; i < FFT_WIDTH; i++) {
 		float dB = 10.0 * log10f(pwr[i] * scale + (float) 1e-30);
@@ -830,23 +833,19 @@ void c2s_sound(void *param)
                     did_cmd = true;
                     if (n == 1) {
                         _nfm = (mode == MODE_NBFM || mode == MODE_NNFM);
-                        cprintf(conn, "DEEMP: _de_emp=%d mode=%d _nfm=%d (old kiwiclient API)\n", _de_emp, mode, _nfm);
+                        //cprintf(conn, "DEEMP: _de_emp=%d mode=%d _nfm=%d (old kiwiclient API)\n", _de_emp, mode, _nfm);
                     } else {
-                        cprintf(conn, "DEEMP: _de_emp=%d _nfm=%d\n", _de_emp, _nfm);
+                        //cprintf(conn, "DEEMP: _de_emp=%d _nfm=%d\n", _de_emp, _nfm);
                     }
                     if (_nfm) deemp_nfm = _de_emp; else deemp = _de_emp;
 
                     if (_de_emp) {
                         if (_nfm) {
                             // -20 dB @ 4 kHz
-                            cprintf(conn, "DEEMP: NFM %d %s\n", (snd_rate == SND_RATE_4CH)? 12000:20250, (_de_emp == 1)? "-LF":"+LF");
+                            //cprintf(conn, "DEEMP: NFM %d %s\n", (snd_rate == SND_RATE_4CH)? 12000:20250, (_de_emp == 1)? "-LF":"+LF");
                             const TYPEREAL *pCoef =
                                 (snd_rate == SND_RATE_4CH)? nfm_deemp_12000[_de_emp-1] : nfm_deemp_20250[_de_emp-1];
-                            #ifdef TEST_DEEMP_PRE_PB_FILTERING
-                                m_nfm_deemp_FIR[rx_chan].InitConstFir(N_NFM_DEEMP_TAPS, pCoef, pCoef, frate);
-                            #else
-                                m_nfm_deemp_FIR[rx_chan].InitConstFir(N_NFM_DEEMP_TAPS, pCoef, frate);
-                            #endif
+                            m_nfm_deemp_FIR[rx_chan].InitConstFir(N_DEEMP_TAPS, pCoef, frate);
                         } else {
                             //#define TEST_AM_SSB_BIQUAD
                             #ifdef TEST_AM_SSB_BIQUAD
@@ -865,14 +864,10 @@ void c2s_sound(void *param)
                                 cprintf(conn, "DEEMP: AM/SSB %d %d uS [%f %f %f %f %f %f]\n",
                                     snd_rate, (_de_emp == 1)? 75:50, a0, a1, a2, b0, b1, b2);
                             #else
-                                cprintf(conn, "DEEMP: AM/SSB %d %d uS\n", (snd_rate == SND_RATE_4CH)? 12000:20250, (_de_emp == 1)? 75:50);
+                                //cprintf(conn, "DEEMP: AM/SSB %d %d uS\n", (snd_rate == SND_RATE_4CH)? 12000:20250, (_de_emp == 1)? 75:50);
                                 const TYPEREAL *pCoef =
                                     (snd_rate == SND_RATE_4CH)? am_ssb_deemp_12000[_de_emp-1] : am_ssb_deemp_20250[_de_emp-1];
-                                #ifdef TEST_DEEMP_PRE_PB_FILTERING
-                                    m_am_ssb_deemp_FIR[rx_chan].InitConstFir(N_NFM_DEEMP_TAPS, pCoef, pCoef, frate);
-                                #else
-                                    m_am_ssb_deemp_FIR[rx_chan].InitConstFir(N_NFM_DEEMP_TAPS, pCoef, frate);
-                                #endif
+                                m_am_ssb_deemp_FIR[rx_chan].InitConstFir(N_DEEMP_TAPS, pCoef, frate);
                             #endif
                         }
                     }
@@ -1203,19 +1198,10 @@ void c2s_sound(void *param)
 		        }
 		    #endif
 
-            #ifdef TEST_DEEMP_PRE_PB_FILTERING
-                if (do_de_emp) {    // !IQ_or_DRM_or_stereo
-                    if (isNBFM) {
-                        m_nfm_deemp_FIR[rx_chan].ProcessFilter(ns_in, i_samps_c, i_samps_c);
-                    } else {
-                        m_am_ssb_deemp_FIR[rx_chan].ProcessFilter(ns_in, i_samps_c, i_samps_c);
-                    }
-                }
-            #endif
-
             TYPECPX *f_samps_c = &iq->iq_samples[iq->iq_wr_pos][0];
-			ns_out  = m_PassbandFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps_c, f_samps_c);
-			fir_pos = m_PassbandFIR[rx_chan].FirPos();
+            ns_out  = m_PassbandFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps_c, f_samps_c);
+            fir_pos = m_PassbandFIR[rx_chan].FirPos();
+
             // [this diagram was back when the audio buffer was 1/2 its current size and NRX_SAMPS = 84]
             //
 			// FIR has a pipeline delay:
@@ -1312,56 +1298,56 @@ void c2s_sound(void *param)
                 rx->real_seq++;
             }
             
-            /*
+            /*  Signal path:
             
-            rx->in_samps => TYPECPX *i_samps_c
-            m_PassbandFIR(i_samps_c, => TYPECPX *f_samps_c)
-            s_meter(f_samps_c(s_samps_c))
+                rx->in_samps => TYPECPX *i_samps_c
+                m_PassbandFIR(i_samps_c, => TYPECPX *f_samps_c)
+                s_meter(f_samps_c(s_samps_c))
             
-            if (!IQ_or_DRM_or_stereo) rx->real_samples => TYPEMONO16 *r_samps_r     // output buf
+                if (!IQ_or_DRM_or_stereo) rx->real_samples => TYPEMONO16 *r_samps_r     // output buf
             
-            switch (mode) {     // f_samps_c => r_samps_r
-                MODE_AMx
-                    m_Agc(f_samps_c, => TYPECPX *a_samps_c)
-                    demod(a_samps_c) => TYPEREAL *d_samps_r
-                    m_AM_FIR(d_samps_r, => r_samps_r)
+                switch (mode) {     // f_samps_c => r_samps_r
+                    MODE_AMx
+                        m_Agc(f_samps_c, => TYPECPX *a_samps_c)
+                        demod(a_samps_c) => TYPEREAL *d_samps_r
+                        m_AM_FIR(d_samps_r, => r_samps_r)
             
-                MODE_SAMx/QAM
-                    m_Agc(f_samps_c, => TYPECPX *a_samps_c)
-                    wdsp_SAM_demod(a_samps_c, => r_samps_r)
-                        m_chan_null_FIR(a_samps_c, NULL)        // has side-effect internal output
+                    MODE_SAMx/QAM
+                        m_Agc(f_samps_c, => TYPECPX *a_samps_c)
+                        wdsp_SAM_demod(a_samps_c, => r_samps_r)
+                            m_chan_null_FIR(a_samps_c, NULL)        // has side-effect internal output
             
-                MODE NxFM
-                    m_Agc(f_samps_c, => TYPECPX *a_samps_c)
-                    demod(a_samps_c) => TYPEREAL *d_samps_r
-                    m_Squelch(d_samps_r, => r_samps_r)
+                    MODE NxFM
+                        m_Agc(f_samps_c, => TYPECPX *a_samps_c)
+                        demod(a_samps_c) => TYPEREAL *d_samps_r
+                        m_Squelch(d_samps_r, => r_samps_r)
             
-                MODE_IQ/DRM
-                    (f_samps_c used later)
+                    MODE_IQ/DRM
+                        (f_samps_c used later)
             
-                MODE_SSB
-                    m_Agc(f_samps_c, => TYPEREAL *r_samps_r)
-            }
+                    MODE_SSB
+                        m_Agc(f_samps_c, => TYPEREAL *r_samps_r)
+                }
             
-            do_de_emp: m_nfm_deemp_FIR/m_am_ssb_deemp_FIR(r_samps_r, => r_samps_r)
-            !IQ_or_DRM_or_stereo: <noise_blankers>(r_samps_r, => r_samps_r)     // algos are non-IQ only
-            non_NBFM_squelch()
+                do_de_emp: m_nfm_deemp_FIR/m_am_ssb_deemp_FIR(r_samps_r, => r_samps_r)
+                !IQ_or_DRM_or_stereo: <noise_blankers>(r_samps_r, => r_samps_r)     // algos are non-IQ only
+                non_NBFM_squelch()
             
-            switch (output_mode) {
-                IQ SAS QAM DRM-monitor-mode     // i.e. 2ch modes
-                    SAS QAM
-                        r_samps_r(rx->agc_samples) => TYPECPX *cs_c
-                    IQ DRM-monitor-mode
-                        f_samps_c => TYPECPX *cs_c
-                        m_Agc(cs_c, cs_c)
-                    cs_c => OUT
+                switch (output_mode) {
+                    IQ SAS QAM DRM-monitor-mode     // i.e. 2ch modes
+                        SAS QAM
+                            r_samps_r(rx->agc_samples) => TYPECPX *cs_c
+                        IQ DRM-monitor-mode
+                            f_samps_c => TYPECPX *cs_c
+                            m_Agc(cs_c, cs_c)
+                        cs_c => OUT
                 
-                other-non-DRM
-                    r_samps_r => OUT
+                    other-non-DRM
+                        r_samps_r => OUT
                 
-                DRM
-                    drm_buf->out_samples => OUT
-            }
+                    DRM
+                        drm_buf->out_samples => OUT
+                }
             
             */
             
@@ -1440,13 +1426,15 @@ void c2s_sound(void *param)
                 // See also:
                 //      www.embedded.com/design/configurable-systems/4212086/DSP-Tricks--Frequency-demodulation-algorithms-
                 //      www.pa3fwm.nl/technotes/tn24-fm-noise.html
-                #define MAX_NBFM_VAL 8192
+                #define MAX_NBFM_VAL 32767
+                #define CLIPPER_NBFM_VAL 8192
+                //#define PN_F_DEBUG
                 #ifdef PN_F_DEBUG
                     float max_val = p_f[1]? fabsf(p_f[1]) : MAX_NBFM_VAL;
-                    float clipper_val = p_f[2]? p_f[2] : MAX_NBFM_VAL;
+                    float clipper_val = p_f[2]? p_f[2] : CLIPPER_NBFM_VAL;
                 #else
-                    float max_val = MAX_NBFM_VAL;
-                    float clipper_val = MAX_NBFM_VAL;
+                    const float max_val = MAX_NBFM_VAL;
+                    const float clipper_val = CLIPPER_NBFM_VAL;
                 #endif
 
                 #define FMDEMOD_QUADRI_K 0.340447550238101026565118445432744920253753662109375
@@ -1502,20 +1490,17 @@ void c2s_sound(void *param)
                 panic("mode");
             }
     
-            #ifdef TEST_DEEMP_PRE_PB_FILTERING
-            #else
-                if (do_de_emp) {    // !IQ_or_DRM_or_stereo
-                    if (isNBFM) {
-                        m_nfm_deemp_FIR[rx_chan].ProcessFilter(ns_out, r_samps_r, r_samps_r);
-                    } else {
-                        #ifdef TEST_AM_SSB_BIQUAD
-                            m_deemp_Biquad[rx_chan].ProcessFilter(ns_out, r_samps_r, r_samps_r);
-                        #else
-                            m_am_ssb_deemp_FIR[rx_chan].ProcessFilter(ns_out, r_samps_r, r_samps_r);
-                        #endif
-                    }
+            if (do_de_emp) {    // !IQ_or_DRM_or_stereo
+                if (isNBFM) {
+                    m_nfm_deemp_FIR[rx_chan].ProcessFilter(ns_out, r_samps_r, r_samps_r);
+                } else {
+                    #ifdef TEST_AM_SSB_BIQUAD
+                        m_deemp_Biquad[rx_chan].ProcessFilter(ns_out, r_samps_r, r_samps_r);
+                    #else
+                        m_am_ssb_deemp_FIR[rx_chan].ProcessFilter(ns_out, r_samps_r, r_samps_r);
+                    #endif
                 }
-            #endif
+            }
             
             if (nb_enable[NB_CLICK] == NB_POST_FILTER) {
                 u4_t now = timer_sec();
