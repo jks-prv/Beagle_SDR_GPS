@@ -4,6 +4,7 @@
 
 #include "DRM.h"
 #include "mem.h"
+#include "rx_util.h"
 
 #ifdef DRM
     #include "DRM_main.h"

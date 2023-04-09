@@ -22,6 +22,7 @@ Boston, MA  02110-1301, USA.
 #include "options.h"
 #include "kiwi.h"
 #include "rx.h"
+#include "rx_util.h"
 #include "clk.h"
 #include "mem.h"
 #include "misc.h"
@@ -120,138 +121,6 @@ void rx_enable(int chan, rx_chan_action_e action)
 	#endif
 }
 
-int rx_chan_free_count(rx_free_count_e flags, int *idx, int *heavy)
-{
-	int i, free_cnt = 0, free_idx = -1, heavy_cnt = 0;
-	rx_chan_t *rx;
-
-    // When configuration has a limited number of channels with waterfalls
-    // allocate them to non-Kiwi UI users last.
-    // Note that we correctly detect the WF-only use of kiwirecorder
-    // (e.g. SNR-measuring applications)
-
-    #define RX_CHAN_FREE_COUNT() { \
-        rx = &rx_channels[i]; \
-        if (rx->busy) { \
-            /*printf("rx_chan_free_count rx%d: ext=%p flags=0x%x\n", i, rx->ext, rx->ext? rx->ext->flags : 0xffffffff);*/ \
-            if (rx->ext && (rx->ext->flags & EXT_FLAGS_HEAVY)) \
-                heavy_cnt++; \
-        } else { \
-            free_cnt++; \
-            if (free_idx == -1) free_idx = i; \
-        } \
-    }
-
-    if (flags == RX_COUNT_NO_WF_FIRST && wf_chans < rx_chans) {
-        for (i = wf_chans; i < rx_chans; i++) RX_CHAN_FREE_COUNT();
-        for (i = 0; i < wf_chans; i++) RX_CHAN_FREE_COUNT();
-    } else {
-        for (i = 0; i < rx_chans; i++) RX_CHAN_FREE_COUNT();
-    }
-	
-	if (idx != NULL) *idx = free_idx;
-	if (heavy != NULL) *heavy = heavy_cnt;
-	return free_cnt;
-}
-
-void show_conn(const char *prefix, u4_t printf_type, conn_t *cd)
-{
-    if (!cd->valid) {
-        lprintf("%sCONN not valid\n", prefix);
-        return;
-    }
-    
-    char *type_s = (cd->type == STREAM_ADMIN)? (char *) "ADM" : stnprintf(0, "%s", rx_conn_type(cd));
-    char *rx_s = (cd->rx_channel == -1)? (char *) "" : stnprintf(1, "rx%d", cd->rx_channel);
-    char *other_s = cd->other? stnprintf(2, " +CONN-%02d", cd->other-conns) : (char *) "";
-    char *ext_s = (cd->type == STREAM_EXT)? (cd->ext? stnprintf(3, " %s", cd->ext->name) : (char *) " (ext name?)") : (char *) "";
-    
-    lfprintf(printf_type,
-        "%sCONN-%02d %p %3s %-3s %s%s%s%s%s%s%s%s%s isPwd%d tle%d%d sv=%02d KA=%02d/60 KC=%05d mc=%9p %s:%d:%016llx%s%s%s%s\n",
-        prefix, cd->self_idx, cd, type_s, rx_s,
-        cd->auth? "*":"_", cd->auth_kiwi? "K":"_", cd->auth_admin? "A":"_",
-        cd->isMaster? "M":"_", cd->internal_connection? "I":(cd->ext_api? "E":"_"), cd->ext_api_determined? "D":"_",
-        cd->isLocal? "L":(cd->force_notLocal? "F":"_"), cd->auth_prot? "P":"_", cd->awaitingPassword? "A":"_",
-        cd->isPassword, cd->tlimit_exempt, cd->tlimit_exempt_by_pwd, cd->served,
-        cd->keep_alive, cd->keepalive_count, cd->mc,
-        cd->remote_ip, cd->remote_port, cd->tstamp,
-        other_s, ext_s, cd->stop_data? " STOP_DATA":"", cd->is_locked? " LOCKED":"");
-
-    if (cd->isMaster && cd->arrived)
-        lprintf("        user=<%s> isUserIP=%d geo=<%s>\n", cd->ident_user, cd->isUserIP, cd->geo);
-}
-
-void dump()
-{
-	int i;
-	
-	lprintf("\n");
-	lprintf("dump --------\n");
-	for (i=0; i < rx_chans; i++) {
-		rx_chan_t *rx = &rx_channels[i];
-		lprintf("RX%d en%d busy%d conn-%2s %p\n", i, rx->chan_enabled, rx->busy,
-			rx->conn? stprintf("%02d", rx->conn->self_idx) : "", rx->conn? rx->conn : 0);
-	}
-
-	conn_t *cd;
-	int nconn = 0;
-	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
-		if (cd->valid) nconn++;
-	}
-	lprintf("\n");
-	lprintf("CONNS: used %d/%d is_locked=%d  ______ => *auth, Kiwi, Admin, Master, Internal/ExtAPI, DetAPI, Local/ForceNotLocal, ProtAuth, AwaitPwd\n",
-	    nconn, N_CONNS, is_locked);
-
-	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
-		if (!cd->valid) continue;
-        show_conn("", PRINTF_LOG, cd);
-	}
-	
-	TaskDump(TDUMP_LOG | TDUMP_HIST | PRINTF_LOG);
-	lock_dump();
-	ip_blacklist_dump();
-}
-
-// can optionally configure SIG_DEBUG to call this debug handler
-static void debug_dump_handler(int arg)
-{
-	lprintf("\n");
-	lprintf("SIG_DEBUG: debugging..\n");
-	dump();
-	sig_arm(SIG_DEBUG, debug_dump_handler);
-}
-
-static void dump_info_handler(int arg)
-{
-    printf("SIGHUP: info.json requested\n");
-    char *sb;
-    sb = kstr_asprintf(NULL, "echo '{ \"utc\": \"%s\"", utc_ctime_static());
-    
-    #ifdef USE_GPS
-        sb = kstr_asprintf(sb, ", \"gps\": { \"lat\": %.6f, \"lon\": %.6f", gps.sgnLat, gps.sgnLon);
-
-        latLon_t loc;
-        loc.lat = gps.sgnLat;
-        loc.lon = gps.sgnLon;
-        char grid6[LEN_GRID];
-        if (latLon_to_grid6(&loc, grid6) == 0) {
-            sb = kstr_asprintf(sb, ", \"grid\": \"%.6s\"", grid6);
-        }
-
-        sb = kstr_asprintf(sb, ", \"fixes\": %d, \"fixes_min\": %d }", gps.fixes, gps.fixes_min);
-    #endif
-
-    sb = kstr_asprintf(sb, " }' > /root/kiwi.config/info.json");
-    non_blocking_cmd_system_child("kiwi.info", kstr_sp(sb), NO_WAIT);
-    kstr_free(sb);
-	sig_arm(SIGHUP, dump_info_handler);
-}
-
-static void debug_exit_backtrace_handler(int arg)
-{
-    panic("debug_exit_backtrace_handler");
-}
-
 cfg_t cfg_ipl;
 
 void rx_server_init()
@@ -267,9 +136,8 @@ void rx_server_init()
 		c++;
 	}
 	
-    sig_arm(SIG_DEBUG, debug_dump_handler);
-    sig_arm(SIGHUP, dump_info_handler);
-
+	debug_init();
+	
     //#ifndef DEVSYS
     #if 0
 	    sig_arm(SIG_BACKTRACE, debug_exit_backtrace_handler);
@@ -294,57 +162,6 @@ void rx_server_init()
     #ifdef USE_SDR
         spi_set(CmdSetOVMask, 0, ov_mask);
     #endif
-}
-
-void rx_loguser(conn_t *c, logtype_e type)
-{
-	u4_t now = timer_sec();
-	
-	if (!log_local_ip && c->isLocal_ip) {
-	    if (type == LOG_ARRIVED) c->last_tune_time = now;
-	    return;
-	}
-	
-	char *s;
-	u4_t t = now - c->arrival;
-	u4_t sec = t % 60; t /= 60;
-	u4_t min = t % 60; t /= 60;
-	u4_t hr = t;
-
-	if (type == LOG_ARRIVED) {
-		asprintf(&s, "(ARRIVED)");
-		c->last_tune_time = now;
-	} else
-	if (type == LOG_LEAVING) {
-		asprintf(&s, "(LEAVING after %d:%02d:%02d)", hr, min, sec);
-	} else {
-		asprintf(&s, "%d:%02d:%02d%s", hr, min, sec, (type == LOG_UPDATE_NC)? " n/c":"");
-	}
-	
-	const char *mode_s = "";
-	if (c->type == STREAM_WATERFALL)
-	    mode_s = "WF";      // for WF-only connections (i.e. c->isMaster set)
-	else
-	    mode_s = rx_enum2mode(c->mode);
-	
-	if (type == LOG_ARRIVED || type == LOG_LEAVING) {
-		clprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq_offset_kHz,
-			mode_s, c->zoom, c->ext? c->ext->name : "", c->ext? " ":"",
-			c->ident_user? c->ident_user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
-			c->geo? " ":"", c->geo? c->geo:"", s);
-	}
-
-    #ifdef OPTION_LOG_WF_ONLY_UPDATES
-        if (c->type == STREAM_WATERFALL && type == LOG_UPDATE) {
-            cprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq_offset_kHz,
-			    mode_s, c->zoom, c->ext? c->ext->name : "", c->ext? " ":"",
-                c->ident_user? c->ident_user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
-                c->geo? " ":"", c->geo? c->geo:"", s);
-        }
-    #endif
-	
-	// we don't do anything with LOG_UPDATE and LOG_UPDATE_NC at present
-	kiwi_ifree(s);
 }
 
 void rx_server_remove(conn_t *c)
@@ -390,110 +207,6 @@ void rx_server_remove(conn_t *c)
 	check_for_update(WAIT_UNTIL_NO_USERS, NULL);
 	conn_printf("CONN-%02d rx_server_remove %p %s\n", cn, c, Task_ls(task));
 	TaskRemove(task);
-}
-
-int rx_chan_no_pwd(pwd_check_e pwd_check)
-{
-    int chan_no_pwd = cfg_int("chan_no_pwd", NULL, CFG_REQUIRED);
-    // adjust if number of rx channels changed due to mode change but chan_no_pwd wasn't adjusted
-    if (chan_no_pwd >= rx_chans) chan_no_pwd = rx_chans - 1;
-
-    if (pwd_check == PWD_CHECK_YES) {
-        const char *pwd_s = admcfg_string("user_password", NULL, CFG_REQUIRED);
-		if (pwd_s == NULL || *pwd_s == '\0') chan_no_pwd = 0;   // ignore setting if no password set
-		cfg_string_free(pwd_s);
-    }
-
-    return chan_no_pwd;
-}
-
-int rx_count_server_conns(conn_count_e type, conn_t *our_conn)
-{
-	int users=0, any=0;
-	
-	conn_t *c = conns;
-	for (int i=0; i < N_CONNS; i++, c++) {
-	    if (!c->valid)
-	        continue;
-	    
-        // if type == EXTERNAL_ONLY don't count internal connections so e.g. WSPR autorun won't prevent updates
-        bool sound = (c->type == STREAM_SOUND && ((type == EXTERNAL_ONLY)? !c->internal_connection : true));
-
-	    if (type == TDOA_USERS) {
-	        if (sound && c->ident_user && kiwi_str_begins_with(c->ident_user, "TDoA_service"))
-	            users++;
-	    } else
-	    if (type == EXT_API_USERS) {
-	        if (c->ext_api)
-	            users++;
-	    } else
-	    if (type == LOCAL_OR_PWD_PROTECTED_USERS) {
-	        // don't count ourselves if e.g. SND has already connected but rx_count_server_conns() is being called during WF connection
-	        if (our_conn && c->other && c->other == our_conn) continue;
-
-	        if (sound && (c->isLocal || c->auth_prot)) {
-                //show_conn("LOCAL_OR_PWD_PROTECTED_USERS ", PRINTF_LOG, c);
-	            users++;
-	        }
-	    } else
-	    if (type == ADMIN_USERS) {
-	        // don't count admin connections awaiting password input (!c->auth)
-	        if ((c->type == STREAM_ADMIN || c->type == STREAM_MFG) && c->auth)
-                users++;
-	    } else {
-            if (sound) users++;
-            // will return 1 if there are no sound connections but at least one waterfall connection
-            if (sound || c->type == STREAM_WATERFALL) any = 1;
-        }
-	}
-	
-	return (users? users : any);
-}
-
-void rx_server_user_kick(int chan)
-{
-	// kick users off (all or individual channel)
-	printf("rx_server_user_kick rx=%d\n", chan);
-	conn_t *c = conns;
-	for (int i=0; i < N_CONNS; i++, c++) {
-		if (!c->valid)
-			continue;
-
-		if (c->type == STREAM_SOUND || c->type == STREAM_WATERFALL) {
-		    if (chan == -1 || chan == c->rx_channel) {
-                c->kick = true;
-                if (chan != -1)
-                    printf("rx_server_user_kick KICKING rx=%d %s\n", chan, rx_conn_type(c));
-            }
-		} else
-		
-		if (c->type == STREAM_EXT) {
-		    if (chan == -1 || chan == c->rx_channel) {
-                c->kick = true;
-                if (chan != -1)
-                    printf("rx_server_user_kick KICKING rx=%d EXT %s\n", chan, c->ext? c->ext->name : "?");
-            }
-		}
-	}
-}
-
-void rx_server_send_config(conn_t *conn)
-{
-	// SECURITY: only send configuration after auth has validated
-	assert(conn->auth == true);
-
-	char *json = cfg_get_json(NULL);
-	if (json != NULL) {
-		send_msg_encoded(conn, "MSG", "load_cfg", "%s", json);
-
-		// send admin config ONLY if this is an authenticated connection from the admin page
-		if (conn->type == STREAM_ADMIN && conn->auth_admin) {
-			char *adm_json = admcfg_get_json(NULL);
-			if (adm_json != NULL) {
-				send_msg_encoded(conn, "MSG", "load_adm", "%s", adm_json);
-			}
-		}
-	}
 }
 
 void rx_stream_tramp(void *param)
@@ -587,7 +300,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	// handle case of server initially starting disabled, but then being enabled later by admin
 #ifdef USE_SDR
 	static bool init_snd_wf;
-	if (!init_snd_wf && !down) {
+	if (!init_snd_wf) {
 		c2s_sound_init();
 		c2s_waterfall_init();
 		init_snd_wf = true;
@@ -612,11 +325,11 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
     }
     
 	if (down || update_in_progress || backup_in_progress) {
-		conn_printf("down=%d UIP=%d stream=%s\n", down, update_in_progress, st->uri);
+		conn_printf("down=%d UIP=%d BIP=%d stream=%s\n", down, update_in_progress, backup_in_progress, st->uri);
         conn_printf("URL <%s> <%s> %s\n", mc->uri, mc->query_string, ip_forwarded);
+        bool update_backup = (update_in_progress || backup_in_progress);
 
-        // internal STREAM_SOUND connections don't understand "reason_disabled" API,
-        // so just close connection in non-STREAM_ADMIN case below.
+        // internal STREAM_SOUND connections don't understand "reason_disabled" API, see below
 		if (st->type == STREAM_SOUND && !internal) {
 			int type;
 			const char *reason_disabled = NULL;
@@ -641,14 +354,19 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
             //printf("DOWN %s %s\n", rx_streams[st->type].uri, ip_forwarded);
 			return NULL;
 		} else
+		if (internal && update_backup) {
+			return NULL;
+		}
 
-		// always allow admin connections
-		if (st->type != STREAM_ADMIN) {
+		if (st->type != STREAM_ADMIN && !internal) {
             //printf("DOWN %s %s\n", rx_streams[st->type].uri, ip_forwarded);
 			return NULL;
 		}
+
+		// should only get here for admin connections or internal connections when not update/backup
 	}
-	
+
+retry:
 	conn_printf("CONN LOOKING for free conn for type=%d(%s) ip=%s:%d:%016llx mc=%p\n",
 	    st->type, st->uri, ip_forwarded, mc->remote_port, tstamp, mc);
 	bool multiple = false;
@@ -669,7 +387,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 		}
 		
 		if (!c->valid) {
-			if (!cfree) { cfree = c; cnfree = cn; }
+			if (!cfree) { cfree = c; cnfree = cn; }     // remember first free conn
 			//printf("CONN-%d !VALID\n", cn);
 			continue;
 		}
@@ -690,7 +408,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 					multiple = true;
 					#ifdef CONN_PRINTF
 					    conn_printf("NEW SND, OTHER is %s @ CONN-%02d\n", rx_conn_type(c), cn);
-					    dump();
+					    //dump();
 					#endif
 				} else {
 					printf("NEW SND, MULTIPLE OTHERS!\n");
@@ -704,7 +422,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 					multiple = true;
 					#ifdef CONN_PRINTF
 					    conn_printf("NEW WF, OTHER is %s @ CONN-%02d\n", rx_conn_type(c), cn);
-					    dump();
+					    //dump();
 					#endif
 				} else {
 					printf("NEW WF, MULTIPLE OTHERS!\n");
@@ -718,7 +436,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 					multiple = true;
 					#ifdef CONN_PRINTF
 					    conn_printf("NEW EXT, OTHER is %s @ CONN-%02d\n", rx_conn_type(c), cn);
-					    dump();
+					    //dump();
 					#endif
 				} else {
 					printf("NEW EXT, MULTIPLE OTHERS!\n");
@@ -751,6 +469,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 
 	if (snd_or_wf) {
 		int rx_n, heavy;
+
 		if (!cother) {
 		    rx_free_count_e flags = ((isKiwi_UI || isWF_conn) && !isNo_WF)? RX_COUNT_ALL : RX_COUNT_NO_WF_FIRST;
 			int inuse = rx_chans - rx_chan_free_count(flags, &rx_n, &heavy);
@@ -775,20 +494,47 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
             }
 
             if (rx_n == -1 || force_camp) {
-                if (force_camp) rx_n = -1;
                 //cprintf(c, "rx=%d force_camp=%d\n", rx_n, force_camp);
-                force_camp = false;
+                if (force_camp) {
+                    rx_n = -1;
+                    force_camp = false;
+                } else {
+                    // Attempt to kick a channel using autorun.
+                    // But only for Kiwi UI connections!
+                    if (isKiwi_UI && !internal) {
+                        for (i = 0; i < rx_chans; i++) {
+                            int victim;
+                            if ((victim = rx_autorun_find_victim()) != -1) {
+                                rx_n = victim;
+                                c = rx_channels[rx_n].conn;
+                                rx_enable(rx_n, RX_CHAN_FREE);
+                                rx_server_remove(c);
+                                goto retry;
+                            }
+                        }
+                    }
+                }
+                
                 #ifdef USE_SDR
                     if (isKiwi_UI && (mon_total < monitors_max)) {
                         // turn first connection when no channels (SND or WF) into MONITOR
                         c->type = STREAM_MONITOR;
                         st = &rx_streams[STREAM_MONITOR];
                         snd_or_wf_or_ext = snd_or_wf = false;
+                        conn_printf("STREAM_MONITOR 1st OK %s conn-%ld other conn-%d\n", st->uri, c-conns, cother->self_idx);
                     } else
                 #endif
                 {
-                    conn_printf("(too many rx channels open for %s)\n", st->uri);
-                    if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
+                    char *url_redirect = (char *) admcfg_string("url_redirect", NULL, CFG_REQUIRED);
+                    if (url_redirect != NULL && *url_redirect != '\0' && !internal) {
+                        conn_printf("(too many rx channels open for %s -- redirect to %s)\n", st->uri, url_redirect);
+                        send_msg_mc_encoded(mc, "MSG", "redirect", "%s", url_redirect);
+                    } else {
+                        conn_printf("(too many rx channels open for %s)\n", st->uri);
+                        if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
+                    }
+                    admcfg_string_free(url_redirect);
+
                     mc->connection_param = NULL;
                     conn_init(c);
                     return NULL;
@@ -816,7 +562,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
                 st->uri, cother, isKiwi_UI, isNo_WF, isWF_conn);
 
             if (cother->type == STREAM_MONITOR) {   // sink second connection
-                conn_printf("STREAM_MONITOR sink conn-%ld other conn-%d\n", c-conns, cother->self_idx);
+                conn_printf("STREAM_MONITOR 2nd SINK %s conn-%ld other conn-%d\n", st->uri, c-conns, cother->self_idx);
                 mc->connection_param = NULL;
                 conn_init(c);
                 return NULL;

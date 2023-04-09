@@ -41,6 +41,7 @@ Boston, MA  02110-1301, USA.
 #include "str.h"
 #include "mem.h"
 #include "rx_waterfall.h"
+#include "rx_util.h"
 #include "options.h"
 
 #include <string.h>
