@@ -90,9 +90,13 @@
 	    #define wspr_ulprintf(fmt, ...)
 	#endif
 
-    // general
-	#define wspr_gprintf(fmt, ...) \
-		printf(fmt, ## __VA_ARGS__)
+    #if 0
+        // general
+        #define wspr_gprintf(fmt, ...) \
+            printf(fmt, ## __VA_ARGS__)
+	#else
+	    #define wspr_gprintf(fmt, ...)
+	#endif
 
 #else
 	#define wspr_printf(fmt, ...)
@@ -254,6 +258,7 @@ typedef struct {
 	
 	// autorun
 	bool autorun;
+	int instance;
 	conn_t *arun_csnd, *arun_cext;
 	double arun_cf_MHz, arun_deco_cf_MHz;
 	char *arun_stat_cmd;
@@ -358,11 +363,13 @@ typedef struct {
 #define YIELD_EVERY_N_TIMES 64
 
 void wspr_init();
-bool wspr_update_vars_from_config(bool called_at_init);
+bool wspr_update_vars_from_config(bool called_at_init_or_restart);
 void wspr_data(int rx_chan, int instance, int nsamps, TYPECPX *samps);
 void wspr_decode(int rx_chan);
 void wspr_send_peaks(wspr_t *w, int start, int stop);
 void wspr_send_decode(wspr_t *w, int seq);
+
+void wspr_autorun_start();
 void wspr_autorun_restart();
 
 typedef enum { FIND_BEST_TIME_LAG, FIND_BEST_FREQ, CALC_SOFT_SYMS } wspr_mode_e;

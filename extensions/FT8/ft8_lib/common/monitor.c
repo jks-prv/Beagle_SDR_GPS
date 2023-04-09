@@ -127,6 +127,8 @@ void monitor_free(monitor_t* me)
     #ifdef WATERFALL_USE_PHASE
         ...
     #endif
+    
+    memset(me, 0, sizeof(*me));
 }
 
 void monitor_reset(monitor_t* me)

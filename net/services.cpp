@@ -36,6 +36,7 @@ Boston, MA  02110-1301, USA.
 #include "leds.h"
 #include "non_block.h"
 #include "eeprom.h"
+#include "rx_util.h"
 #include "rx_waterfall.h"
 #include "security.h"
 #include "sha256.h"

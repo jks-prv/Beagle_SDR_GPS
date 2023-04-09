@@ -35,6 +35,7 @@ Boston, MA  02110-1301, USA.
 #include "net.h"
 #include "dx.h"
 #include "rx.h"
+#include "rx_util.h"
 #include "security.h"
 
 #include <string.h>

@@ -69,7 +69,7 @@ extern log_save_t *log_save_p;
 
 
 #define N_SHMEM_STATUS              4
-#define N_SHMEM_STATUS_STR          256
+#define N_SHMEM_STATUS_STR_MEDIUM   256
 #define N_SHMEM_STATUS_STR_LARGE    1024
 
 #ifndef linux
@@ -101,6 +101,7 @@ typedef struct {
     #define N_SHMEM_WHICH 32
     u4_t request[N_SHMEM_WHICH], done[N_SHMEM_WHICH];
     u4_t request_tx, request_rx, request_func[2];
+    bool no_wait[N_SHMEM_WHICH];
 } shmem_ipc_t;
 
 #ifdef SHMEM_CONFIG_H_INCLUDED
@@ -122,7 +123,7 @@ typedef struct {
     double status_f[N_SHMEM_STATUS][MAX_RX_CHANS];
     
     // users: (none currently)
-	char status_str[N_SHMEM_STATUS_STR];
+	char status_str_medium[N_SHMEM_STATUS_STR_MEDIUM];
 
 	// users: geoloc
 	char status_str_large[N_SHMEM_STATUS_STR_LARGE];

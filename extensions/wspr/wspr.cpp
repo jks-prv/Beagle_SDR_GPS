@@ -430,61 +430,6 @@ static void subtract_signal2(float *id, float *qd, long np,
 #include "./metric_tables.h"
 static int mettab[2][256];
 
-// catch changes to reporter call/grid from admin page WSPR config (also called during initialization)
-bool wspr_update_vars_from_config(bool called_at_init)
-{
-    int i, n;
-    bool update_cfg = false;
-    char *s;
-    
-    cfg_default_object("WSPR", "{}", &update_cfg);
-    
-    if (called_at_init) {
-    
-        // Make sure WSPR.autorun holds *correct* count of autorun processes.
-        // If Kiwi was previously configured for a larger rx_chans, and more than rx_chans worth
-        // of autoruns were enabled, then with a reduced rx_chans it is essential not to count
-        // the ones beyond the rx_chans limit. That's why "i < rx_chans" appears below and
-        // not MAX_RX_CHANS.
-        int num_autorun = 0;
-        for (i = 0; i < rx_chans; i++) {
-            n = cfg_default_int(stprintf("WSPR.autorun%d", i), 0, &update_cfg);
-            //printf("WSPR.autorun%d=%d\n", i, n);
-            if (n) num_autorun++;
-        }
-        cfg_set_int("WSPR.autorun", num_autorun);
-        //printf("WSPR.autorun=%d rx_chans=%d\n", num_autorun, rx_chans);
-        update_cfg = true;
-    } else {
-        cfg_default_int("WSPR.autorun", 0, &update_cfg);
-    }
-
-    // Changing reporter call on admin page requires restart. This is because of
-    // conditional behavior at startup, e.g. uploads enabled because valid call is now present
-    // or autorun tasks starting for the same reason.
-    // wspr_c.rcall is still updated here to handle the initial assignment and
-    // manual changes from WSPR admin page.
-    
-    cfg_default_string("WSPR.callsign", "", &update_cfg);
-    s = (char *) cfg_string("WSPR.callsign", NULL, CFG_REQUIRED);
-    kiwi_ifree(wspr_c.rcall);
-	wspr_c.rcall = kiwi_str_encode(s);
-	cfg_string_free(s);
-
-    cfg_default_string("WSPR.grid", "", &update_cfg);
-    s = (char *) cfg_string("WSPR.grid", NULL, CFG_REQUIRED);
-	kiwi_strncpy(wspr_c.rgrid, s, LEN_GRID);
-	cfg_string_free(s);
-    set_reporter_grid((char *) wspr_c.rgrid);
-
-    wspr_c.GPS_update_grid = cfg_default_bool("WSPR.GPS_update_grid", false, &update_cfg);
-    wspr_c.syslog = cfg_default_bool("WSPR.syslog", false, &update_cfg);
-    wspr_c.spot_log = cfg_default_bool("WSPR.spot_log", false, &update_cfg);
-
-	//printf("wspr_update_vars_from_config: rcall <%s> wspr_c.rgrid=<%s> wspr_c.GPS_update_grid=%d\n", wspr_c.rcall, wspr_c.rgrid, wspr_c.GPS_update_grid);
-    return update_cfg;
-}
-    
 void wspr_init()
 {
     float bias = 0.45;						//Fano metric bias (used for both Fano and stack algorithms)
@@ -499,23 +444,33 @@ void wspr_init()
 }
 
 #ifdef WSPR_SHMEM_DISABLE
-    #define send_peaks_all(w, npk) w->npk = npk; wspr_send_peaks(w, 0, npk)
-    #define send_peak_single(w, pki) wspr_send_peaks(w, pki, pki+1)
-    #define send_decode(w, seq) wspr_send_decode(w, seq-1)
+    #define send_peaks_all(w, npk) w->npk = npk; if (!w->autorun) wspr_send_peaks(w, 0, npk);
+    #define send_peak_single(w, pki) if (!w->autorun) wspr_send_peaks(w, pki, pki+1);
+    #define send_decode(w, seq) wspr_send_decode(w, seq-1);
 #else
     #define send_peaks_all(w, npk) \
-        if (w->send_peaks_seq < MAX_NPKQ) { \
-            w->npk = npk; \
-            wb->send_peaks_q[w->send_peaks_seq].start = 0; \
-            wb->send_peaks_q[w->send_peaks_seq].stop = npk; \
-            w->send_peaks_seq++; \
-        } else lprintf("WSPR WARNING! send_peaks_seq(%d) >= MAX_NPKQ(%d)\n", w->send_peaks_seq, MAX_NPKQ);
+        if (!w->autorun) { \
+            if (w->send_peaks_seq < MAX_NPKQ) { \
+                w->npk = npk; \
+                wb->send_peaks_q[w->send_peaks_seq].start = 0; \
+                wb->send_peaks_q[w->send_peaks_seq].stop = npk; \
+                w->send_peaks_seq++; \
+                /* printf("WSPR ALL send_peaks_seq=%d\n", w->send_peaks_seq); */ \
+            } else { \
+                lprintf("WSPR WARNING! send_peaks_seq(%d) >= MAX_NPKQ(%d)\n", w->send_peaks_seq, MAX_NPKQ); \
+            } \
+        }
     #define send_peak_single(w, pki) \
-        if (w->send_peaks_seq < MAX_NPKQ) { \
-            wb->send_peaks_q[w->send_peaks_seq].start = pki; \
-            wb->send_peaks_q[w->send_peaks_seq].stop = pki+1; \
-            w->send_peaks_seq++; \
-        } else lprintf("WSPR WARNING! send_peaks_seq(%d) >= MAX_NPKQ(%d)\n", w->send_peaks_seq, MAX_NPKQ);
+        if (!w->autorun) { \
+            if (w->send_peaks_seq < MAX_NPKQ) { \
+                wb->send_peaks_q[w->send_peaks_seq].start = pki; \
+                wb->send_peaks_q[w->send_peaks_seq].stop = pki+1; \
+                w->send_peaks_seq++; \
+                /* printf("WSPR SINGLE send_peaks_seq=%d\n", w->send_peaks_seq); */ \
+            } else { \
+                lprintf("WSPR WARNING! send_peaks_seq(%d) >= MAX_NPKQ(%d)\n", w->send_peaks_seq, MAX_NPKQ); \
+            } \
+        }
     #define send_decode(w, seq) w->send_decode_seq = seq
 #endif
 

@@ -283,14 +283,22 @@ function control_html()
 			)
 		) +
 
-		w3_div('w3-container w3-margin-top',
-			w3_input_get('', 'Reason if disabled', 'reason_disabled', 'reason_disabled_cb', '', 'will be shown to users attempting to connect')
-		) +
-
-		w3_divs('w3-margin-top/w3-container',
-			'<label><b>Reason HTML preview</b></label>',
-			w3_div('id-reason-disabled-preview w3-text-black w3-background-pale-aqua', '')
-		);
+      w3_half('w3-margin-top', 'w3-container',
+         w3_div('',
+            w3_input_get('', 'Reason if disabled', 'reason_disabled', 'reason_cb', '', 'will be shown to users attempting to connect'),
+            w3_divs('w3-margin-top/',
+               '<label><b>Disabled reason HTML preview</b></label>',
+               w3_div('id-reason-disabled-preview w3-text-black w3-background-pale-aqua', '')
+            )
+         ),
+         w3_div('',
+            w3_input_get('', 'Reason if kicked', 'reason_kicked', 'reason_cb', '', 'will be shown to users when kicked'),
+            w3_divs('w3-margin-top/',
+               '<label><b>Kicked reason HTML preview</b></label>',
+               w3_div('id-reason-kicked-preview w3-text-black w3-background-pale-aqua', '')
+            )
+         )
+      );
 	
 	var n_camp = ext_get_cfg_param('n_camp', -1);
 	console.log('rx_chans='+ rx_chans +' n_camp='+ n_camp +' max_camp='+ max_camp);
@@ -349,6 +357,7 @@ function control_html()
 function control_focus()
 {
 	w3_innerHTML('id-reason-disabled-preview', admin_preview_status_box('disabled_preview_1', cfg.reason_disabled));
+	w3_innerHTML('id-reason-kicked-preview', admin_preview_status_box('kicked_preview_1', cfg.reason_kicked));
 }
 
 function server_enabled_cb(path, idx, first)
@@ -369,10 +378,11 @@ function control_user_kick_cb(id, idx)
 	ext_send('SET user_kick=-1');
 }
 
-function reason_disabled_cb(path, val)
+function reason_cb(path, val)
 {
 	w3_string_set_cfg_cb(path, val);
 	w3_el('id-reason-disabled-preview').innerHTML = admin_preview_status_box('disabled_preview_2', cfg.reason_disabled);
+	w3_el('id-reason-kicked-preview').innerHTML = admin_preview_status_box('kicked_preview_2', cfg.reason_kicked);
 }
 
 var pending_restart = false;

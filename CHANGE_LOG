@@ -2,8 +2,39 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.591  Apr 3, 2023
+v1.592  Apr 10, 2023
+    Reverted change causing NBFM distortion (thanks Glenn).
 
+    FT8/WSPR autorun preemption: A new menu on the autorun configuration section allows you to
+    specify if an autorun process is preemptible. I.e. a new incoming user connection will
+    kick the autorun process off the channel and take its place. Every 10 seconds autorun processes
+    will attempt to fill empty channels. Kiwirecorder connections should not interrupt preemptible
+    autoruns. Only Kiwi user connections. (thanks Martin)
+
+    WSPR extension:
+        Control panel height now set to 90% the height of the waterfall (thanks Eric).
+        
+        Spot upload debugging: On the admin > extensions > WSPR page, when "Log spot debug info?" is
+        "Yes" then an additional line in the log will show the actual upload response from wsprnet.org
+            e.g.    WSPR UPLOAD: wsprnet.org said: "1 out of 1 spot(s) added"
+        Upload debugging only works for WSPR autorun currently.
+    
+    S-meter extension: Defaults for all control panel values can be set on the
+        Admin > Extensions > S-meter page (thanks Eric).
+    
+    kiwiclient/kiwirecorder: Added support for URL redirection. Requires most recent version of
+    kiwirecorder and kiwi server v1.592 or later to be used (thanks loststation).
+    
+    Kick reason: The admin control tab has a new field "Reason if kicked" that will be displayed in
+    a panel when a user connection is kicked. Previously a kicked connection would just stop with
+    no explanation (thanks Rob who suggested this some time ago I believe).
+    
+    Internal connections (e.g. autorun) behavior w.r.t. disabled/kicked connections:
+    An internal connection will ignore the disabling of user connections and ignore the
+    global kick button (both on admin control tab). However individual internal connections can
+    still be kicked via the button on the admin status page.
+
+v1.591  Apr 3, 2023
     FT8: Added autorun function. Works the same as WSPR autorun. See Admin > Extensions > FT8 page.
     FT8/4 autorun channels display "NNN decoded", much like WSPR, where NNN is a count of pending
     spots to be uploaded to pskreporter.info Pending, because uploads to pskreporter.info only

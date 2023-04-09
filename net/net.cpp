@@ -887,7 +887,7 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
     struct mg_connection *mc_fail, *mcs = NULL, *mcw = NULL, *mce = NULL;
     conn_t *csnd = NULL, *cwf, *cext;
     int local_port = port_base + instance * 3;
-    u64_t tstamp = timer_us64();    // CAUTION: tstamp must be unique even if called rapidly in succession!
+    u64_t tstamp = timer_us64();    // CAUTION: tstamp must be unique even if called in rapid succession!
     bool ident_geo_sent = false;
     memset(iconn, 0, sizeof(internal_conn_t));
     
@@ -955,14 +955,14 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
     return true;
 
 error:
-    printf("internal_conn_setup: couldn't get websocket instance=%d uri=%s port=%d\n",
-        instance, mc_fail->uri, mc_fail->remote_port);
+    //printf("internal_conn_setup: %s couldn't get websocket instance=%d uri=%s port=%d\n",
+    //    ident_user, instance, mc_fail->uri, mc_fail->remote_port);
     internal_conn_shutdown(iconn);
     return false;
 
 error2:
-    printf("internal_conn_setup: need (ICONN_WS_EXT | ICONN_WS_SND) instance=%d uri=%s port=%d\n",
-        instance, mc_fail->uri, mc_fail->remote_port);
+    //printf("internal_conn_setup: %s need (ICONN_WS_EXT | ICONN_WS_SND) instance=%d uri=%s port=%d\n",
+    //    ident_user, instance, mc_fail->uri, mc_fail->remote_port);
     internal_conn_shutdown(iconn);
     return false;
 }

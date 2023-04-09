@@ -189,6 +189,15 @@ void cmd_debug_print(conn_t *c, char *s, int slen, bool tx)
     }
 }
 
+
+/*
+    server: send_msg()
+    js: on_ws_recv()
+        MSG:
+            if (kiwi.js:kiwi_msg() == !claimed)
+                ws.msg_cb()
+*/
+
 void send_msg_buf(conn_t *c, char *s, int slen)
 {
     if (c->internal_connection) {

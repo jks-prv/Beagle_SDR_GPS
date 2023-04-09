@@ -3,6 +3,7 @@
 var extint = {
    ws: null,
    extname: null,
+   isAdmin_cb: null,
    srate: 0,
    nom_srate: 0,
    param: null,
@@ -77,30 +78,44 @@ function ext_set_controls_width_height(width, height)
 var EXT_SAVE = true;
 var EXT_NO_SAVE = false;   // set the local JSON cfg, but don't set on server which would require admin privileges.
 
-function ext_get_cfg_param(path, init_val, save)
+// init_val => (cfg|adm).path if was null|undef AND init_val not undef
+//    if isAdmin: save cfg if save = undef|EXT_SAVE
+//    update_path_var: cur_val/init_val => path [NB: w/o (cfg|adm)
+// return (cfg|adm).path
+
+function ext_get_cfg_param(path, init_val, save, update_path_var)
 {
 	var cur_val;
-	
-	path = w3_add_toplevel(path);
+	var cfg_path = w3_add_toplevel(path);
 	
 	try {
-		cur_val = getVarFromString(path);
+		cur_val = getVarFromString(cfg_path);
 	} catch(ex) {
 		// when scope is missing create all the necessary scopes and variable as well
 		cur_val = null;
 	}
 	
-   //console.log('ext_get_cfg_param: path='+ path +' cur_val='+ cur_val +' init_val='+ init_val);
-	if ((cur_val == null || cur_val == undefined) && init_val != undefined) {		// scope or parameter doesn't exist, create it
+   //console.log('ext_get_cfg_param: path='+ path +' admin='+ isAdmin() +' cur_val='+ cur_val +' init_val='+ init_val);
+   
+	if (!isArg(cur_val) && init_val != undefined) {    // scope or parameter doesn't exist, create it
 		cur_val = init_val;
 		// parameter hasn't existed before or hasn't been set (empty field)
-		//console.log('ext_get_cfg_param: creating path='+ path +' cur_val='+ cur_val);
-		setVarFromString(path, cur_val);
+		//console.log('ext_get_cfg_param: creating cfg_path='+ cfg_path +' cur_val='+ cur_val);
+		setVarFromString(cfg_path, cur_val);
 		
-		// save newly initialized value in configuration unless EXT_NO_SAVE specified
-		//console.log('ext_get_cfg_param: SAVE path='+ path +' init_val='+ init_val);
-		if (save == undefined || save == EXT_SAVE)
-			cfg_save_json('ext_get_cfg_param', path);
+		// save newly initialized value in configuration (if admin) unless EXT_NO_SAVE specified
+		//console.log('ext_get_cfg_param: SAVE cfg_path='+ cfg_path +' init_val='+ init_val);
+		if ((save == undefined && isAdmin()) || save == EXT_SAVE)
+			cfg_save_json('ext_get_cfg_param', cfg_path);
+	}
+	
+	if (update_path_var) {
+	   if (path.startsWith('cfg.') || path.startsWith('adm.')) {
+		   console.log('ext_get_cfg_param: update_path_var CAUTION: NOT SETTING path='+ path +' cur_val='+ cur_val);
+	   } else {
+		   //console.log('ext_get_cfg_param: update_path_var SETTING path='+ path +' cur_val='+ cur_val);
+	      setVarFromString(path, cur_val);
+	   }
 	}
 	
 	return cur_val;
@@ -453,11 +468,9 @@ function ext_valpwd(conn_type, pwd, ws)
 	// the server reply then calls extint_valpwd_cb() below
 }
 
-var extint_isAdmin_cb;
-
 function ext_isAdmin(cb)
 {
-   extint_isAdmin_cb = cb;
+   extint.isAdmin_cb = cb;
 	ext_send('SET is_admin');
 }
 

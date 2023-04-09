@@ -5,9 +5,11 @@ var S_meter = {
    first_time:    true,
    stop_start_state: 0,
    update_interval:  null,
+
+   averaging:     true,
+   timestamp:     false,
    show_adc_ovfl: true,
    have_adc_ovfl: 0,
-   sfmt:          'w3-text-red w3-ext-retain-input-focus',
    
    maxdb_init:    -30,
    mindb_init:    -130,
@@ -29,7 +31,7 @@ var S_meter = {
 	
 	tstamp_tz:     0,
    tstamp_tz_s:   [ 'UTC', 'local' ],
-	
+
    sm_last_freq:  null,
    sm_last_mode:  null,
 
@@ -119,28 +121,28 @@ function S_meter_controls_setup()
 			w3_divs('/w3-tspace-8',
 				w3_div('id-S_meter-info w3-medium w3-text-aqua', '<b>S-meter graph</b>'),
             w3_inline('w3-halign-space-between/',
-				   w3_select('w3-text-red', 'Range', '', 'S_meter.range_i', S_meter.range_i, S_meter.range_s, 'S_meter_range_select_cb'),
-					w3_select('w3-text-red', 'Marker rate', '', 'S_meter.marker_i', S_meter.marker_i, S_meter.marker_s, 'S_meter_marker_select_cb')
+				   w3_select_get_param('w3-text-red w3-update', 'Range', '', 'S_meter.range_i', S_meter.range_s, 'S_meter_range_select_cb', S_meter.range_i),
+               w3_select_get_param('w3-text-red w3-update', 'Marker rate', '', 'S_meter.marker_i', S_meter.marker_s, 'S_meter_marker_select_cb', S_meter.marker_i)
 				),
 				w3_div('id-S_meter-scale-sliders',
-					w3_slider('', 'Scale max', 'S_meter.maxdb', S_meter.maxdb, -160, 0, 10, 'S_meter_maxdb_cb'),
-					w3_slider('', 'Scale min', 'S_meter.mindb', S_meter.mindb, -160, 0, 10, 'S_meter_mindb_cb')
+					w3_slider_get_param('w3-update', 'Scale max', 'S_meter.maxdb', -160, 0, 10, 'S_meter_maxdb_cb', 0, S_meter.maxdb),
+					w3_slider_get_param('w3-update', 'Scale min', 'S_meter.mindb', -160, 0, 10, 'S_meter_mindb_cb', 0, S_meter.mindb)
 				),
-				w3_slider('', 'Speed', 'S_meter.speed_i', S_meter.speed_i, 1, S_meter.speed_max, 1, 'S_meter_speed_cb'),
+				w3_slider_get_param('w3-update', 'Speed', 'S_meter.speed_i', 1, S_meter.speed_max, 1, 'S_meter_speed_cb', 0, S_meter.speed_i),
             w3_inline('w3-halign-space-between/',
-					w3_button('w3-padding-smaller', 'Stop', 'S_meter_stop_start_cb'),
-					w3_button('w3-padding-smaller', 'Mark', 'S_meter_mark_cb'),
-					w3_button('w3-padding-smaller', 'Clear', 'S_meter_clear_cb')
+					w3_button('w3-padding-smaller w3-update', 'Stop', 'S_meter_stop_start_cb'),
+					w3_button('w3-padding-smaller w3-update', 'Mark', 'S_meter_mark_cb'),
+					w3_button('w3-padding-smaller w3-update', 'Clear', 'S_meter_clear_cb')
 				),
 				w3_inline_percent('w3-halign-space-between/',
-               w3_checkbox('/w3-label-inline', 'Averaging', 'S_meter.averaging', true, 'S_meter_averaging_cb'), 50,
-               w3_checkbox('/w3-label-inline', 'Timestamp', 'S_meter.timestamp', false, 'S_meter_timestamp_cb')
+               w3_checkbox_get_param('w3-update/w3-label-inline', 'Averaging', 'S_meter.averaging', 'S_meter_averaging_cb', S_meter.averaging), 50,
+               w3_checkbox_get_param('w3-update/w3-label-inline', 'Timestamp', 'S_meter.timestamp', 'S_meter_timestamp_cb', S_meter.timestamp)
             ),
 				w3_inline_percent('w3-halign-space-between/',
-               w3_checkbox('/w3-label-inline', 'Show ADC<br>overflow', 'S_meter.show_adc_ovfl', true, 'w3_bool_cb'), 50,
-               w3_select(S_meter.sfmt, '', '', 'S_meter.tstamp_tz', S_meter.tstamp_tz, S_meter.tstamp_tz_s, 'S_meter_UTC_cb')
+               w3_checkbox_get_param('w3-update/w3-label-inline', 'Show ADC<br>overflow', 'S_meter.show_adc_ovfl', 'w3_bool_cb', S_meter.show_adc_ovfl), 50,
+               w3_select_get_param('w3-text-red w3-update', '', '', 'S_meter.tstamp_tz', S_meter.tstamp_tz_s, 'S_meter_UTC_cb', S_meter.tstamp_tz)
             )
-	)
+	      )
 		);
 
 	ext_panel_show(controls_html, data_html, null);
@@ -150,8 +152,8 @@ function S_meter_controls_setup()
 	S_meter.data_canvas = w3_el('id-S_meter-data-canvas');
 	S_meter.data_canvas.ctx = S_meter.data_canvas.getContext("2d");
 
-   S_meter.gr = graph_init(S_meter.data_canvas, { dBm:1, averaging:true });
-   S_meter_auto_man();
+   S_meter.gr = graph_init(S_meter.data_canvas,
+      { dBm: 1, averaging: S_meter.averaging, timestamp: S_meter.timestamp, UTC: (S_meter.tstamp_tz == 0) });
 
 	S_meter_environment_changed( {resize:1} );
 
@@ -213,9 +215,6 @@ function S_meter_environment_changed(changed)
 
 function S_meter_range_select_cb(path, idx, first)
 {
-	// ignore the auto instantiation callback because we don't want to rescale at this point
-	if (first) return;
-
 	S_meter.range_i = +idx;
 	w3_show_hide('id-S_meter-scale-sliders', S_meter.range_i == S_meter.range_MANUAL);
 	/*
@@ -232,31 +231,45 @@ function S_meter_maxdb_cb(path, val, complete)
 {
    var maxdb = +val;
    maxdb = Math.max(S_meter.mindb, maxdb);		// don't let min & max cross
-	w3_num_cb(path, maxdb.toString());
+   if (isAdmin())    // because label needs to update during admin config
+      w3_int_set_cfg_cb(path, maxdb.toString());
+   else {
+	   w3_num_cb(path, maxdb.toString());
+      S_meter_auto_man();
+   }
 	w3_set_label('Scale max '+ maxdb.toString() +' dBm', path);
-   S_meter_auto_man();
 }
 
 function S_meter_mindb_cb(path, val, complete)
 {
    var mindb = +val;
    mindb = Math.min(mindb, S_meter.maxdb);		// don't let min & max cross
-	w3_num_cb(path, mindb.toString());
+   if (isAdmin())    // because label needs to update during admin config
+      w3_int_set_cfg_cb(path, mindb.toString());
+   else {
+	   w3_num_cb(path, mindb.toString());
+      S_meter_auto_man();
+   }
 	w3_set_label('Scale min '+ mindb.toString() +' dBm', path);
-   S_meter_auto_man();
 }
 
 function S_meter_speed_cb(path, val, complete)
 {
 	var val_i = +val;
    var speed_pow2 = Math.round(Math.pow(2, S_meter.speed_max - val_i));
-	w3_num_cb(path, val_i.toString());
+   if (isAdmin())    // because label needs to update during admin config
+      w3_int_set_cfg_cb(path, val_i.toString());
+   else {
+	   w3_num_cb(path, val_i.toString());
+	   graph_speed(S_meter.gr, speed_pow2);
+	}
 	w3_set_label('Speed 1'+ ((speed_pow2 != 1)? ('/'+speed_pow2.toString()) : ''), path);
-	graph_speed(S_meter.gr, speed_pow2);
 }
 
-function S_meter_marker_select_cb(path, idx)
+function S_meter_marker_select_cb(path, idx, first)
 {
+   idx = +idx;
+   //console.log('S_meter_marker_select_cb path='+ path +' idx='+ idx +' first='+ first);
 	S_meter.marker_v = S_meter.marker_sec[+idx];
 	graph_marker(S_meter.gr, S_meter.marker_v);
 }
@@ -336,5 +349,29 @@ function S_meter_blur()
 // called to display HTML for configuration parameters in admin interface
 function S_meter_config_html()
 {
-   ext_config_html(S_meter, 'S_meter', 'S-meter', 'S-meter graph configuration');
+   var s =
+      w3_divs('w3-container',
+         w3_text('w3-medium w3-bold w3-text-teal w3-margin-B-16', 'Defaults:'),
+         w3_divs('w3-container w3-width-third/w3-tspace-8',
+            w3_inline('w3-halign-space-between/',
+               w3_select_get_param('w3-text-red', 'Range', '', 'S_meter.range_i', S_meter.range_s, 'w3_int_set_cfg_cb', S_meter.range_i),
+               w3_select_get_param('w3-text-red', 'Marker rate', '', 'S_meter.marker_i', S_meter.marker_s, 'w3_int_set_cfg_cb', S_meter.marker_i)
+            ),
+            w3_div('id-S_meter-scale-sliders',
+               w3_slider_get_param('', 'Scale max', 'S_meter.maxdb', -160, 0, 10, 'S_meter_maxdb_cb', 0, S_meter.maxdb),
+               w3_slider_get_param('', 'Scale min', 'S_meter.mindb', -160, 0, 10, 'S_meter_mindb_cb', 0, S_meter.mindb)
+            ),
+            w3_slider_get_param('', 'Speed', 'S_meter.speed_i', 1, S_meter.speed_max, 1, 'S_meter_speed_cb', 0, S_meter.speed_i),
+            w3_inline_percent('w3-halign-space-between/',
+               w3_checkbox_get_param('/w3-label-inline', 'Averaging', 'S_meter.averaging', 'w3_bool_set_cfg_cb', S_meter.averaging), 50,
+               w3_checkbox_get_param('/w3-label-inline', 'Timestamp', 'S_meter.timestamp', 'w3_bool_set_cfg_cb', S_meter.timestamp)
+            ),
+            w3_inline_percent('w3-halign-space-between/',
+               w3_checkbox_get_param('/w3-label-inline', 'Show ADC<br>overflow', 'S_meter.show_adc_ovfl', 'w3_bool_set_cfg_cb', S_meter.show_adc_ovfl), 50,
+               w3_select_get_param('w3-text-red', '', '', 'S_meter.tstamp_tz', S_meter.tstamp_tz_s, 'w3_int_set_cfg_cb', S_meter.tstamp_tz)
+            )
+         )
+      );
+
+   ext_config_html(S_meter, 'S_meter', 'S-meter', 'S-meter graph configuration', s);
 }

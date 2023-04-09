@@ -165,6 +165,12 @@ static void shmem_child_task(void *param)
                 ipc->request_func[1]++;
                 //real_printf("CHILD shmem_child_sig_handler ..func(%d)\n", i);
                 ipc->done[i] = 1;
+                
+                // if the shmem_ipc_invoke() caller is not waiting then _we_ must clear ipc->request
+                // so the caller doesn't get a reentrancy fault
+                if (ipc->no_wait[i]) {
+                    ipc->request[i] = 0;
+                }
             }
         }
 
@@ -199,6 +205,7 @@ void shmem_ipc_invoke(int signal, int which, int wait)
 
     ipc->request_tx++;
     ipc->request[which] = 1;
+    ipc->no_wait[which] = (wait == NO_WAIT);
 
     kill(ipc->child_pid, ipc->child_sig);
     if (wait == NO_WAIT) return;

@@ -3119,23 +3119,23 @@ function export_waterfall() {
    var specC = w3_el('id-spectrum-canvas');
    var specH = (specC && spec.source == spec.RF)? specC.height : 0;
 
-   var canvas = document.createElement("canvas");
-   var ctx = canvas.getContext("2d");
-   var canW = canvas.width = wf_fft_size;
-   var canH = canvas.height = legendH + fscaleH + specH + (old_canvases.length + wf_canvases.length) * wf_canvas_default_height;
-   //w3_console.log({mult:wf.scroll_multiple, Ncan:wf_canvases.length, Nold:old_canvases.length, canH}, 'export_waterfall');
-   ctx.fillStyle="black";
-   ctx.fillRect(0, 0, canW, canH);
+   var e_canvas = document.createElement("canvas");
+   var e_ctx = e_canvas.getContext("2d");
+   var e_canW = e_canvas.width = wf_fft_size;
+   var e_canH = e_canvas.height = legendH + fscaleH + specH + (old_canvases.length + wf_canvases.length) * wf_canvas_default_height;
+   //w3_console.log({mult:wf.scroll_multiple, Ncan:wf_canvases.length, Nold:old_canvases.length, e_canH}, 'export_waterfall');
+   e_ctx.fillStyle="black";
+   e_ctx.fillRect(0, 0, e_canW, e_canH);
 
    if (specH) {
-      ctx.drawImage(specC, 0,h);
+      e_ctx.drawImage(specC, 0,h);
       h += specH;
    }
    
-   ctx.fillStyle="gray";
-   ctx.fillRect(0, h, canW, fscaleH);
-   //w3_console.log({fscaleW, canW, ratio:fscaleW/canW}, 'export_waterfall');
-   ctx.drawImage(fscale, 0,0, fscaleW,fscaleH, 0,h, canW, fscaleH);
+   e_ctx.fillStyle="gray";
+   e_ctx.fillRect(0, h, e_canW, fscaleH);
+   //w3_console.log({fscaleW, e_canW, ratio:fscaleW/e_canW}, 'export_waterfall');
+   e_ctx.drawImage(fscale, 0,0, fscaleW,fscaleH, 0,h, e_canW, fscaleH);
    h += fscaleH;
 
    wf_canvases.forEach(function(wf_c, i) {
@@ -3147,32 +3147,32 @@ function export_waterfall() {
          wfY = -top;
          //w3_console.log({top, wfH, wfY}, 'export_waterfall');
       }
-      ctx.drawImage(wf_c, 0,wfY, canW,wfH, 0,h, canW,wfH);
-      //ctx.fillStyle="red";
-      //ctx.fillRect(0, h, canW, 2);
+      e_ctx.drawImage(wf_c, 0,wfY, e_canW,wfH, 0,h, e_canW,wfH);
+      //e_ctx.fillStyle="red";
+      //e_ctx.fillRect(0, h, e_canW, 2);
       h += wfH;
    });
 
    if (old_canvases.length > 1) {
       for (i = 1; i < old_canvases.length; i++) {
-         ctx.drawImage(old_canvases[i], 0,h);
-         //ctx.fillStyle="red";
-         //ctx.fillRect(0, h, canW, 2);
+         e_ctx.drawImage(old_canvases[i], 0,h);
+         //e_ctx.fillStyle="red";
+         //e_ctx.fillRect(0, h, e_canW, 2);
          h += old_canvases[i].height;
       }
    }
-   //ctx.fillStyle="red";
-   //ctx.fillRect(0, h, canW, 2);
+   //e_ctx.fillStyle="red";
+   //e_ctx.fillRect(0, h, e_canW, 2);
    
-   ctx.font = "18px Arial";
-   ctx.fillStyle = "lime";
+   e_ctx.font = "18px Arial";
+   e_ctx.fillStyle = "lime";
    var flabel = kiwi_host() +'     '+ (new Date()).toUTCString() +'     '+ freq_displayed_kHz_str +' kHz  '+ cur_mode;
-   var x = canW/2 - ctx.measureText(flabel).width/2;
-   ctx.fillText(flabel, x, 35);
+   var x = e_canW/2 - e_ctx.measureText(flabel).width/2;
+   e_ctx.fillText(flabel, x, 35);
 
    // same format filename as .wav recording
    var fileName = kiwi_host() +'_'+ new Date().toISOString().replace(/:/g, '_').replace(/\.[0-9]+Z$/, 'Z') +'_'+ w3_el('id-freq-input').value +'_'+ cur_mode +'.jpg';
-   var imgURL = canvas.toDataURL("image/jpeg", 0.85);
+   var imgURL = e_canvas.toDataURL("image/jpeg", 0.85);
    var dlLink = document.createElement('a');
    dlLink.download = fileName;
    dlLink.href = imgURL;
@@ -4627,12 +4627,14 @@ function waterfall_zoom_canvases(dz, x)
 //		top container
 //		non-waterfall container
 //		waterfall container
+//
+// need this because "w3_el('id-waterfall-container').clientHeight" includes an off-screen portion
 
 function waterfall_height()
 {
-	var top_height = html("id-top-container").clientHeight;
-	var non_waterfall_height = html("id-non-waterfall-container").clientHeight;
-	var scale_height = html("id-scale-container").clientHeight;
+	var top_height = w3_el("id-top-container").clientHeight;
+	var non_waterfall_height = w3_el("id-non-waterfall-container").clientHeight;
+	var scale_height = w3_el("id-scale-container").clientHeight;
 	owrx.scale_offsetY = top_height + non_waterfall_height - scale_height;
 
 	var wf_height = window.innerHeight - top_height - non_waterfall_height;

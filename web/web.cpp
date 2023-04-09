@@ -31,6 +31,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "str.h"
 #include "rx.h"
+#include "rx_util.h"
 #include "clk.h"
 #include "ext_int.h"
 #include "debug.h"

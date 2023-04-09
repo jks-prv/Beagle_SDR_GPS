@@ -1945,6 +1945,8 @@ function w3_radio_button(psa, text, path, isSelected, cb, cb_param)
 // used when current value should come from config param
 function w3_radio_button_get_param(psa, text, path, selected_if_val, init_val, cb, cb_param)
 {
+   // FIXME
+   //var update_path_var = psa.includes('w3-update');
 	//console.log('w3_radio_button_get_param: '+ path);
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
 	
@@ -2000,6 +2002,8 @@ function w3_switch_label(psa, label, text_0, text_1, path, text_0_selected, cb, 
 // used when current value should come from config param
 function w3_switch_get_param(psa, text_0, text_1, path, text_0_selected_if_val, init_val, cb, cb_param)
 {
+   // FIXME
+   //var update_path_var = psa.includes('w3-update');
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
 
 	// set default selection of button based on current value
@@ -2012,6 +2016,8 @@ function w3_switch_get_param(psa, text_0, text_1, path, text_0_selected_if_val, 
 // used when current value should come from config param
 function w3_switch_label_get_param(psa, label, text_0, text_1, path, text_0_selected_if_val, init_val, cb, cb_param)
 {
+   // FIXME
+   //var update_path_var = psa.includes('w3-update');
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
 
 	// set default selection of button based on current value
@@ -2474,6 +2480,8 @@ function w3int_input_set_id_timeout(id)
 // used when current value should come from config param
 function w3_input_get(psa, label, path, cb, init_val, placeholder)
 {
+   // FIXME
+   //var update_path_var = psa.includes('w3-update');
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
 	cur_val = kiwi_decodeURIComponent('w3_input_get:'+ path, cur_val);
 	//console.log('w3_input_get: path='+ path +' cur_val="'+ cur_val +'" placeholder="'+ placeholder +'"');
@@ -2534,6 +2542,8 @@ function w3_textarea(psa, label, path, val, rows, cols, cb)
 // used when current value should come from config param
 function w3_textarea_get_param(psa, label, path, rows, cols, cb, init_val)
 {
+   // FIXME
+   //var update_path_var = psa.includes('w3-update');
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
 	cur_val = kiwi_decodeURIComponent('w3_textarea_get_param:'+ path, cur_val);
 	//if (psa.includes('w3-dump')) console.log('w3_textarea_get_param: path='+ path +' cur_val="'+ cur_val +'"');
@@ -2600,8 +2610,9 @@ function w3_checkbox(psa, label, path, checked, cb, cb_param)
 // used when current value should come from config param
 function w3_checkbox_get_param(psa, label, path, cb, init_val)
 {
-	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
-	//console.log('w3_checkbox_get_param: path='+ path +' cur_val="'+ cur_val +'"');
+   var update_path_var = psa.includes('w3-update');
+	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val, undefined, update_path_var);
+	//console.log('w3_checkbox_get_param: path='+ path +' update_path_var='+ update_path_var +' cur_val='+ cur_val +' init_val='+ init_val);
 	return w3_checkbox(psa, label, path, cur_val, cb);
 }
 
@@ -2857,7 +2868,8 @@ function w3_select_set_disabled(path, value, disabled)
 // used when current value should come from config param
 function w3_select_get_param(psa, label, title, path, opts, cb, init_val)
 {
-	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? 0 : init_val);
+   var update_path_var = psa.includes('w3-update');
+	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? 0 : init_val, undefined, update_path_var);
 	return w3_select(psa, label, title, path, cur_val, opts, cb);
 }
 
@@ -2960,6 +2972,7 @@ function w3_slider_wheel(cb, el, cur, slow, fast)
 
 function w3_slider(psa, label, path, val, min, max, step, cb, cb_param)
 {
+   var dump = psa.includes('w3-dump');
 	var id = w3_add_id(path);
 	var inline = psa.includes('w3-label-inline');
 	var bold = !psa.includes('w3-label-not-bold');
@@ -3003,7 +3016,7 @@ function w3_slider(psa, label, path, val, min, max, step, cb, cb_param)
 			w3_call(cb, path, val, /* complete */ true, /* first */ true, cb_param);
 		}, 500);
 
-	//if (path == 'iq.pll_bw') console.log(s);
+	if (dump) console.log(s);
 	return s;
 }
 
@@ -3023,6 +3036,15 @@ function w3_slider_setup(path, min, max, step, val)
    el.step = step;
    el.value = val;
    return el;
+}
+
+// used when current value should come from config param
+function w3_slider_get_param(psa, label, path, min, max, step, cb, cb_param, init_val)
+{
+   var update_path_var = psa.includes('w3-update');
+	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? 0 : init_val, undefined, update_path_var);
+	//console.log('w3_slider_get_param path='+ path +' update_path_var='+ update_path_var +' init_val='+ init_val +' cur_val='+ cur_val +' psa='+ psa);
+   return w3_slider(psa, label, path, cur_val, min, max, step, cb, cb_param);
 }
 
 
@@ -3292,7 +3314,7 @@ function w3_menu_close(from)
 
 
 ////////////////////////////////
-// standard callbacks
+// standard callbacks -- only set var
 ////////////////////////////////
 
 function w3_num_cb(path, val)
@@ -3320,6 +3342,11 @@ function w3_string_cb(path, val)
 	//console.log('w3_string_cb: path='+ path +' val='+ val);
 	setVarFromString(path, val.toString());
 }
+
+
+////////////////////////////////
+// standard callbacks -- set cfg and var
+////////////////////////////////
 
 function w3_num_set_cfg_cb(path, val, first)
 {
@@ -3398,6 +3425,7 @@ function w3_json_set_cfg_cb(path, val, first)
 	var save = (first != undefined)? (first? false : true) : true;
 	ext_set_cfg_param(path, val, save);
 }
+
 
 // path is structured to be: [el_name][sep][idx]
 // e.g. [id-dx.o.ty][_][123]

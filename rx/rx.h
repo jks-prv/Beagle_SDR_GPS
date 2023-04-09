@@ -43,61 +43,12 @@ extern volatile u4_t audio_bytes[], waterfall_bytes[], waterfall_frames[], http_
 
 void rx_server_init();
 void rx_server_remove(conn_t *c);
-void rx_server_user_kick(int chan);
-void rx_server_send_config(conn_t *conn);
 void rx_common_init(conn_t *conn);
 bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd);
-char *rx_users(bool include_ip);
-void show_conn(const char *prefix, u4_t printf_type, conn_t *cd);
-void geoloc_task(void *param);
-
-
-#define SNR_MEAS_MAX    (24 * 7)
-
-#define SNR_MEAS_ALL    0
-#define SNR_MEAS_HF     1
-#define SNR_MEAS_0_2    2
-#define SNR_MEAS_2_10   3
-#define SNR_MEAS_10_20  4
-#define SNR_MEAS_20_MAX 5
-#define SNR_MEAS_NDATA  6
-
-typedef struct {
-    int f_lo, f_hi, min, max, pct_50, pct_95, snr;
-} SNR_data_t;
-
-typedef struct {
-	bool valid;
-    u4_t seq;
-    char tstamp[CTIME_R_NL + 1 + SPACE_FOR_NULL];
-    bool is_local_time;
-    SNR_data_t data[SNR_MEAS_NDATA];
-} SNR_meas_t;
-
-extern SNR_meas_t SNR_meas_data[SNR_MEAS_MAX];
-
-int dB_wire_to_dBm(int db_value);
-void SNR_meas(void *param);
-
-
-int rx_mode2enum(const char *mode);
-const char * rx_enum2mode(int e);
 const char *rx_conn_type(conn_t *c);
-
-enum conn_count_e { EXTERNAL_ONLY, INCLUDE_INTERNAL, TDOA_USERS, EXT_API_USERS, LOCAL_OR_PWD_PROTECTED_USERS, ADMIN_USERS };
-int rx_count_server_conns(conn_count_e type, conn_t *our_conn = NULL);
 
 typedef enum { WS_MODE_ALLOC, WS_MODE_LOOKUP, WS_MODE_CLOSE, WS_INTERNAL_CONN } websocket_mode_e;
 conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc);
 
 typedef enum { RX_CHAN_ENABLE, RX_CHAN_DISABLE, RX_DATA_ENABLE, RX_CHAN_FREE } rx_chan_action_e;
 void rx_enable(int chan, rx_chan_action_e action);
-
-typedef enum { RX_COUNT_ALL, RX_COUNT_NO_WF_FIRST } rx_free_count_e;
-int rx_chan_free_count(rx_free_count_e flags, int *idx = NULL, int *heavy = NULL);
-
-typedef enum { LOG_ARRIVED, LOG_UPDATE, LOG_UPDATE_NC, LOG_LEAVING } logtype_e;
-void rx_loguser(conn_t *c, logtype_e type);
-
-typedef enum { PWD_CHECK_NO, PWD_CHECK_YES } pwd_check_e;
-int rx_chan_no_pwd(pwd_check_e pwd_check = PWD_CHECK_NO);

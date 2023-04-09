@@ -29,6 +29,7 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "net.h"
 #include "rx.h"
+#include "rx_util.h"
 #include "services.h"
 
 #include <types.h>

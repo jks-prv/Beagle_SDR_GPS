@@ -61,7 +61,7 @@ typedef struct conn_st {
 
 	// set in both STREAM_SOUND & STREAM_WATERFALL
 	int task;
-	bool stop_data, kick;
+	bool stop_data, kick, arun_preempt;
 	bool foff_set;
 	double foff;
 

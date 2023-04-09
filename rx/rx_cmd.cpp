@@ -22,6 +22,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "rx.h"
 #include "rx_cmd.h"
+#include "rx_util.h"
 #include "clk.h"
 #include "mem.h"
 #include "misc.h"

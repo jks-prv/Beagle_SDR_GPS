@@ -21,6 +21,7 @@
 #include "types.h"
 #include "kiwi.h"
 #include "rx.h"
+#include "rx_util.h"
 #include "clk.h"
 #include "cfg.h"
 #include "misc.h"

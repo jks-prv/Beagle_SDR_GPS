@@ -478,6 +478,7 @@ void extint_c2s(void *param)
 		if (keepalive_expired || conn_ext->kick) {
 			//printf("EXT %s RX%d %s\n", conn_ext->kick? "KICKED" : "KEEP-ALIVE EXPIRED", rx_channel, ext? ext->name : "(no ext)");
 			if (ext != NULL && ext->close_conn != NULL) {
+			    //printf("EXT CLOSE_CONN\n");
 				ext->close_conn(rx_channel);
                 //c2s_waterfall_no_sync(rx_channel, false);      // NB: be certain to disable waterfall no_sync mode
 			}

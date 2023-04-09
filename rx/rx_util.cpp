@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "kiwi.h"
 #include "rx.h"
+#include "rx_util.h"
 #include "mem.h"
 #include "misc.h"
 #include "str.h"
@@ -33,8 +34,6 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "net.h"
 #include "clk.h"
-#include "wspr.h"
-#include "FT8.h"
 #include "ext_int.h"
 #include "shmem.h"      // shmem->status_str_large
 #include "rx_noise.h"
@@ -42,11 +41,8 @@ Boston, MA  02110-1301, USA.
 #include "security.h"
 #include "options.h"
 
-#ifdef DRM
- #include "DRM.h"
-#else
- #define DRM_NREG_CHANS_DEFAULT 3
-#endif
+#include "wspr.h"
+#include "FT8.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -56,619 +52,355 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <signal.h>
 
-// copy admin-related configuration from kiwi.json to new admin.json file
-void cfg_adm_transition()
+rx_util_t rx_util;
+
+void rx_loguser(conn_t *c, logtype_e type)
+{
+	u4_t now = timer_sec();
+	
+	if (!log_local_ip && c->isLocal_ip) {
+	    if (type == LOG_ARRIVED) c->last_tune_time = now;
+	    return;
+	}
+	
+	char *s;
+	u4_t t = now - c->arrival;
+	u4_t sec = t % 60; t /= 60;
+	u4_t min = t % 60; t /= 60;
+	u4_t hr = t;
+
+	if (type == LOG_ARRIVED) {
+		asprintf(&s, "(ARRIVED)");
+		c->last_tune_time = now;
+	} else
+	if (type == LOG_LEAVING) {
+		asprintf(&s, "(LEAVING after %d:%02d:%02d)", hr, min, sec);
+	} else {
+		asprintf(&s, "%d:%02d:%02d%s", hr, min, sec, (type == LOG_UPDATE_NC)? " n/c":"");
+	}
+	
+	const char *mode_s = "";
+	if (c->type == STREAM_WATERFALL)
+	    mode_s = "WF";      // for WF-only connections (i.e. c->isMaster set)
+	else
+	    mode_s = rx_enum2mode(c->mode);
+	
+	if (type == LOG_ARRIVED || type == LOG_LEAVING) {
+		clprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq_offset_kHz,
+			mode_s, c->zoom, c->ext? c->ext->name : "", c->ext? " ":"",
+			c->ident_user? c->ident_user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
+			c->geo? " ":"", c->geo? c->geo:"", s);
+	}
+
+    #ifdef OPTION_LOG_WF_ONLY_UPDATES
+        if (c->type == STREAM_WATERFALL && type == LOG_UPDATE) {
+            cprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq_offset_kHz,
+			    mode_s, c->zoom, c->ext? c->ext->name : "", c->ext? " ":"",
+                c->ident_user? c->ident_user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
+                c->geo? " ":"", c->geo? c->geo:"", s);
+        }
+    #endif
+	
+	// we don't do anything with LOG_UPDATE and LOG_UPDATE_NC at present
+	kiwi_ifree(s);
+}
+
+int rx_chan_free_count(rx_free_count_e flags, int *idx, int *heavy)
+{
+	int i, free_cnt = 0, free_idx = -1, heavy_cnt = 0;
+	rx_chan_t *rx;
+
+    // When configuration has a limited number of channels with waterfalls
+    // allocate them to non-Kiwi UI users last.
+    // Note that we correctly detect the WF-only use of kiwirecorder
+    // (e.g. SNR-measuring applications)
+
+    #define RX_CHAN_FREE_COUNT() { \
+        rx = &rx_channels[i]; \
+        if (rx->busy) { \
+            /*printf("rx_chan_free_count rx%d: ext=%p flags=0x%x\n", i, rx->ext, rx->ext? rx->ext->flags : 0xffffffff);*/ \
+            if (rx->ext && (rx->ext->flags & EXT_FLAGS_HEAVY)) \
+                heavy_cnt++; \
+        } else { \
+            free_cnt++; \
+            if (free_idx == -1) free_idx = i; \
+        } \
+    }
+
+    if (flags == RX_COUNT_NO_WF_FIRST && wf_chans < rx_chans) {
+        for (i = wf_chans; i < rx_chans; i++) RX_CHAN_FREE_COUNT();
+        for (i = 0; i < wf_chans; i++) RX_CHAN_FREE_COUNT();
+    } else {
+        for (i = 0; i < rx_chans; i++) RX_CHAN_FREE_COUNT();
+    }
+	
+	if (idx != NULL) *idx = free_idx;
+	if (heavy != NULL) *heavy = heavy_cnt;
+	return free_cnt;
+}
+
+int rx_chan_no_pwd(pwd_check_e pwd_check)
+{
+    int chan_no_pwd = cfg_int("chan_no_pwd", NULL, CFG_REQUIRED);
+    // adjust if number of rx channels changed due to mode change but chan_no_pwd wasn't adjusted
+    if (chan_no_pwd >= rx_chans) chan_no_pwd = rx_chans - 1;
+
+    if (pwd_check == PWD_CHECK_YES) {
+        const char *pwd_s = admcfg_string("user_password", NULL, CFG_REQUIRED);
+		if (pwd_s == NULL || *pwd_s == '\0') chan_no_pwd = 0;   // ignore setting if no password set
+		cfg_string_free(pwd_s);
+    }
+
+    return chan_no_pwd;
+}
+
+int rx_count_server_conns(conn_count_e type, conn_t *our_conn)
+{
+	int users=0, any=0;
+	
+	conn_t *c = conns;
+	for (int i=0; i < N_CONNS; i++, c++) {
+	    if (!c->valid)
+	        continue;
+	    
+        // if type == EXTERNAL_ONLY don't count internal connections so e.g. WSPR autorun won't prevent updates
+        bool sound = (c->type == STREAM_SOUND && ((type == EXTERNAL_ONLY)? !c->internal_connection : true));
+
+	    if (type == TDOA_USERS) {
+	        if (sound && c->ident_user && kiwi_str_begins_with(c->ident_user, "TDoA_service"))
+	            users++;
+	    } else
+	    if (type == EXT_API_USERS) {
+	        if (c->ext_api)
+	            users++;
+	    } else
+	    if (type == LOCAL_OR_PWD_PROTECTED_USERS) {
+	        // don't count ourselves if e.g. SND has already connected but rx_count_server_conns() is being called during WF connection
+	        if (our_conn && c->other && c->other == our_conn) continue;
+
+	        if (sound && (c->isLocal || c->auth_prot)) {
+                //show_conn("LOCAL_OR_PWD_PROTECTED_USERS ", PRINTF_LOG, c);
+	            users++;
+	        }
+	    } else
+	    if (type == ADMIN_USERS) {
+	        // don't count admin connections awaiting password input (!c->auth)
+	        if ((c->type == STREAM_ADMIN || c->type == STREAM_MFG) && c->auth)
+                users++;
+	    } else {
+            if (sound) users++;
+            // will return 1 if there are no sound connections but at least one waterfall connection
+            if (sound || c->type == STREAM_WATERFALL) any = 1;
+        }
+	}
+	
+	return (users? users : any);
+}
+
+void rx_server_user_kick(int chan)
+{
+	// kick users off (all or individual channel)
+	printf("rx_server_user_kick rx=%d\n", chan);
+	conn_t *c = conns;
+	const char *msg = (chan == -1)? "Everyone was kicked!" : "You were kicked!";
+	
+	for (int i=0; i < N_CONNS; i++, c++) {
+		if (!c->valid)
+			continue;
+
+		if (c->type == STREAM_SOUND || c->type == STREAM_WATERFALL) {
+		    if ((chan == -1 && !c->internal_connection) || (chan != -1 && chan == c->rx_channel)) {
+		        send_msg_encoded(c, "MSG", "kiwi_kick", "%s", msg);
+                c->kick = true;
+                if (chan != -1)
+                    printf("rx_server_user_kick KICKING rx=%d %s\n", chan, rx_conn_type(c));
+            }
+		} else
+		
+		if (c->type == STREAM_EXT) {
+		    if ((chan == -1 && !c->internal_connection) || (chan != -1 && chan == c->rx_channel)) {
+		        send_msg_encoded(c, "MSG", "kiwi_kick", "%s", msg);
+                c->kick = true;
+                if (chan != -1)
+                    printf("rx_server_user_kick KICKING rx=%d EXT %s\n", chan, c->ext? c->ext->name : "?");
+            }
+		}
+	}
+}
+
+void rx_autorun_clear()
+{
+    // when one group (wspr, ft8) does a restart reset _all_ eviction counters
+    // so future evictions rate will be equal
+    memset(rx_util.arun_evictions, 0, sizeof(rx_util.arun_evictions));
+}
+
+int rx_autorun_find_victim()
+{
+    conn_t *c, *lowest_eviction_conn;
+    u4_t lowest_eviction_count = (u4_t) -1;
+    int lowest_eviction_ch = -1, highest_eviction_ch = -1;
+    
+    for (int ch = 0; ch < rx_chans; ch++) {
+        rx_chan_t *rx = &rx_channels[ch];
+        if (!rx->busy) continue;
+        c = rx->conn;
+        if (!c->arun_preempt) continue;
+        int evictions = rx_util.arun_evictions[ch];
+        //rcprintf(ch, "AUTORUN: rx_autorun_find_victim %s rx_chan=%d evictions=%d\n",
+        //    c->ident_user, ch, evictions);
+        if (evictions < lowest_eviction_count) {
+            lowest_eviction_count = evictions;
+            lowest_eviction_ch = ch;
+            lowest_eviction_conn = c;
+        }
+        if (evictions > highest_eviction_ch) {
+            highest_eviction_ch = evictions;
+        }
+    }
+    if (lowest_eviction_ch != -1) {
+        //rcprintf(lowest_eviction_ch, "AUTORUN: evicting %s rx_chan=%d evictions=%d|%d\n",
+        //    lowest_eviction_conn->ident_user, lowest_eviction_ch, lowest_eviction_count, highest_eviction_ch);
+        rx_util.arun_which[lowest_eviction_ch] = ARUN_NONE;
+        rx_util.arun_evictions[lowest_eviction_ch]++;
+        return lowest_eviction_ch;
+    }
+    return -1;
+}
+
+void rx_autorun_restart_victims()
+{
+    if (rx_util.arun_suspend_restart_victims) {
+        //printf("rx_autorun_restart_victims SUSPENDED\n");
+        return;
+    }
+    
+    //printf("rx_autorun_restart_victims\n");
+    ft8_autorun_start();
+    wspr_autorun_start();
+}
+
+void rx_server_send_config(conn_t *conn)
+{
+	// SECURITY: only send configuration after auth has validated
+	assert(conn->auth == true);
+
+	char *json = cfg_get_json(NULL);
+	if (json != NULL) {
+		send_msg_encoded(conn, "MSG", "load_cfg", "%s", json);
+
+		// send admin config ONLY if this is an authenticated connection from the admin page
+		if (conn->type == STREAM_ADMIN && conn->auth_admin) {
+			char *adm_json = admcfg_get_json(NULL);
+			if (adm_json != NULL) {
+				send_msg_encoded(conn, "MSG", "load_adm", "%s", adm_json);
+			}
+		}
+	}
+}
+
+void show_conn(const char *prefix, u4_t printf_type, conn_t *cd)
+{
+    if (!cd->valid) {
+        lprintf("%sCONN not valid\n", prefix);
+        return;
+    }
+    
+    char *type_s = (cd->type == STREAM_ADMIN)? (char *) "ADM" : stnprintf(0, "%s", rx_conn_type(cd));
+    char *rx_s = (cd->rx_channel == -1)? (char *) "" : stnprintf(1, "rx%d", cd->rx_channel);
+    char *other_s = cd->other? stnprintf(2, " +CONN-%02d", cd->other-conns) : (char *) "";
+    char *ext_s = (cd->type == STREAM_EXT)? (cd->ext? stnprintf(3, " %s", cd->ext->name) : (char *) " (ext name?)") : (char *) "";
+    
+    lfprintf(printf_type,
+        "%sCONN-%02d %p %3s %-3s %s%s%s%s%s%s%s%s%s isPwd%d tle%d%d sv=%02d KA=%02d/60 KC=%05d mc=%9p %s:%d:%016llx%s%s%s%s\n",
+        prefix, cd->self_idx, cd, type_s, rx_s,
+        cd->auth? "*":"_", cd->auth_kiwi? "K":"_", cd->auth_admin? "A":"_",
+        cd->isMaster? "M":"_", cd->arun_preempt? "P":(cd->internal_connection? "I":(cd->ext_api? "E":"_")), cd->ext_api_determined? "D":"_",
+        cd->isLocal? "L":(cd->force_notLocal? "F":"_"), cd->auth_prot? "P":"_", cd->awaitingPassword? "A":"_",
+        cd->isPassword, cd->tlimit_exempt, cd->tlimit_exempt_by_pwd, cd->served,
+        cd->keep_alive, cd->keepalive_count, cd->mc,
+        cd->remote_ip, cd->remote_port, cd->tstamp,
+        other_s, ext_s, cd->stop_data? " STOP_DATA":"", cd->is_locked? " LOCKED":"");
+
+    if (cd->isMaster && cd->arrived)
+        lprintf("        user=<%s> isUserIP=%d geo=<%s>\n", cd->ident_user, cd->isUserIP, cd->geo);
+}
+
+void dump()
 {
 	int i;
-	bool b;
-	const char *s;
-
-	s = cfg_string("user_password", NULL, CFG_REQUIRED);
-	admcfg_set_string("user_password", s);
-	cfg_string_free(s);
-	b = cfg_bool("user_auto_login", NULL, CFG_REQUIRED);
-	admcfg_set_bool("user_auto_login", b);
-	s = cfg_string("admin_password", NULL, CFG_REQUIRED);
-	admcfg_set_string("admin_password", s);
-	cfg_string_free(s);
-	b = cfg_bool("admin_auto_login", NULL, CFG_REQUIRED);
-	admcfg_set_bool("admin_auto_login", b);
 	
-	i = cfg_int("port", NULL, CFG_REQUIRED);
-	admcfg_set_int("port", i);
-	
-	b = cfg_bool("enable_gps", NULL, CFG_REQUIRED);
-	admcfg_set_bool("enable_gps", b);
-
-	b = cfg_bool("update_check", NULL, CFG_REQUIRED);
-	admcfg_set_bool("update_check", b);
-	b = cfg_bool("update_install", NULL, CFG_REQUIRED);
-	admcfg_set_bool("update_install", b);
-	
-	b = cfg_bool("sdr_hu_register", NULL, CFG_REQUIRED);
-	admcfg_set_bool("sdr_hu_register", b);
-	s = cfg_string("api_key", NULL, CFG_REQUIRED);
-	admcfg_set_string("api_key", s);
-	cfg_string_free(s);
-
-
-	// remove from kiwi.json file
-	cfg_rem_string("user_password");
-	cfg_rem_bool("user_auto_login");
-	cfg_rem_string("admin_password");
-	cfg_rem_bool("admin_auto_login");
-
-	cfg_rem_int("port");
-
-	cfg_rem_bool("enable_gps");
-
-	cfg_rem_bool("update_check");
-	cfg_rem_bool("update_install");
-
-	cfg_rem_bool("sdr_hu_register");
-	cfg_rem_string("api_key");
-
-
-	// won't be present first time after upgrading from v1.2
-	// first admin page connection will create
-	if ((s = cfg_object("ip_address", NULL, CFG_OPTIONAL)) != NULL) {
-		admcfg_set_object("ip_address", s);
-		cfg_object_free(s);
-		cfg_rem_object("ip_address");
+	lprintf("\n");
+	lprintf("dump --------\n");
+	for (i=0; i < rx_chans; i++) {
+		rx_chan_t *rx = &rx_channels[i];
+		lprintf("RX%d en%d busy%d conn-%2s %p\n", i, rx->chan_enabled, rx->busy,
+			rx->conn? stprintf("%02d", rx->conn->self_idx) : "", rx->conn? rx->conn : 0);
 	}
 
+	conn_t *cd;
+	int nconn = 0;
+	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
+		if (cd->valid) nconn++;
+	}
+	lprintf("\n");
+	lprintf("CONNS: used %d/%d is_locked=%d  ______ => *auth, Kiwi, Admin, Master, Internal/Preempt/ExtAPI, DetAPI, Local/ForceNotLocal, ProtAuth, AwaitPwd\n",
+	    nconn, N_CONNS, is_locked);
 
-	// update JSON files
-	admcfg_save_json(cfg_adm.json);
-	cfg_save_json(cfg_cfg.json);
+	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
+		if (!cd->valid) continue;
+        show_conn("", PRINTF_LOG, cd);
+	}
+	
+	TaskDump(TDUMP_LOG | TDUMP_HIST | PRINTF_LOG);
+	lock_dump();
+	ip_blacklist_dump();
 }
 
-int inactivity_timeout_mins, ip_limit_mins;
-int S_meter_cal, waterfall_cal;
-double ui_srate, ui_srate_kHz, freq_offset_kHz, freq_offmax_kHz;
-int kiwi_reg_lo_kHz, kiwi_reg_hi_kHz;
-float max_thr;
-int n_camp;
-bool log_local_ip, DRM_enable, admin_keepalive;
-
-#define DC_OFFSET_DEFAULT -0.02F
-#define DC_OFFSET_DEFAULT_PREV 0.05F
-#define DC_OFFSET_DEFAULT_20kHz -0.034F
-TYPEREAL DC_offset_I, DC_offset_Q;
-
-#define WATERFALL_CALIBRATION_DEFAULT -13
-#define SMETER_CALIBRATION_DEFAULT -13
-
-#define N_MTU 3
-static int mtu_v[N_MTU] = { 1500, 1440, 1400 };
-
-static int snr_interval[] = { 0, 1, 4, 6, 24 };
-
-void update_freqs(bool *update_cfg)
+// can optionally configure SIG_DEBUG to call this debug handler
+static void debug_dump_handler(int arg)
 {
-    int srate_idx = cfg_default_int("max_freq", 0, update_cfg);
-	ui_srate = srate_idx? 32*MHz : 30*MHz;
-	ui_srate_kHz = round(ui_srate/kHz);
-    freq_offset_kHz = cfg_default_float("freq_offset", 0, update_cfg);
-    freq_offmax_kHz = freq_offset_kHz + ui_srate_kHz;
-	//printf("ui_srate=%.3f ui_srate_kHz=%.3f freq_offset_kHz=%.3f freq_offmax_kHz=%.3f\n",
-	//    ui_srate, ui_srate_kHz, freq_offset_kHz, freq_offmax_kHz);
+	lprintf("\n");
+	lprintf("SIG_DEBUG: debugging..\n");
+	dump();
+	sig_arm(SIG_DEBUG, debug_dump_handler);
 }
 
-void update_vars_from_config(bool called_at_init)
+static void dump_info_handler(int arg)
 {
-    int n;
-	bool update_cfg = false;
-	bool update_admcfg = false;
-	const char *s;
-    bool err;
-
-    // When called by client-side "SET save_cfg/save_adm=":
-	//  Makes C copies of vars that must be updated when configuration saved from js.
-	//
-	// When called by server-side rx_server_init():
-	//  Makes C copies of vars that must be updated when configuration loaded from cfg files.
-	//  Creates configuration parameters with default values that must exist for client connections.
-
-    inactivity_timeout_mins = cfg_default_int("inactivity_timeout_mins", 0, &update_cfg);
-    ip_limit_mins = cfg_default_int("ip_limit_mins", 0, &update_cfg);
+    printf("SIGHUP: info.json requested\n");
+    char *sb;
+    sb = kstr_asprintf(NULL, "echo '{ \"utc\": \"%s\"", utc_ctime_static());
     
-	double prev_freq_offset_kHz = freq_offset_kHz;
-    update_freqs(&update_cfg);
-	if (freq_offset_kHz != prev_freq_offset_kHz) {
-	    update_masked_freqs();
-	}
-
-    // force DC offsets to the default value if not configured
-    // also if set to the previous default value
-    int firmware_sel = admcfg_default_int("firmware_sel", 0, &update_admcfg);   // needed below
-    int mode_20kHz = (firmware_sel == RX3_WF3)? 1:0;
-    admcfg_default_bool("anti_aliased", false, &update_admcfg);
-    TYPEREAL Ioff, Ioff_20kHz, Qoff, Qoff_20kHz;
-    //printf("mode_20kHz=%d\n", mode_20kHz);
-
-    Ioff = cfg_float("DC_offset_I", &err, CFG_OPTIONAL);
-    if (err || Ioff == DC_OFFSET_DEFAULT_PREV) {
-        Ioff = DC_OFFSET_DEFAULT;
-        cfg_set_float("DC_offset_I", Ioff);
-        lprintf("DC_offset_I: no cfg or prev default, setting to default value\n");
-        update_cfg = true;
-    }
-
-    Qoff = cfg_float("DC_offset_Q", &err, CFG_OPTIONAL);
-    if (err || Qoff == DC_OFFSET_DEFAULT_PREV) {
-        Qoff = DC_OFFSET_DEFAULT;
-        cfg_set_float("DC_offset_Q", Ioff);
-        lprintf("DC_offset_Q: no cfg or prev default, setting to default value\n");
-        update_cfg = true;
-    }
-
-    Ioff_20kHz = cfg_float("DC_offset_20kHz_I", &err, CFG_OPTIONAL);
-    if (err) {
-        Ioff_20kHz = DC_OFFSET_DEFAULT_20kHz;
-        cfg_set_float("DC_offset_20kHz_I", Ioff_20kHz);
-        lprintf("DC_offset_20kHz_I: no cfg or prev default, setting to default value\n");
-        update_cfg = true;
-    }
-
-    Qoff_20kHz = cfg_float("DC_offset_20kHz_Q", &err, CFG_OPTIONAL);
-    if (err) {
-        Qoff_20kHz = DC_OFFSET_DEFAULT_20kHz;
-        cfg_set_float("DC_offset_20kHz_Q", Qoff_20kHz);
-        lprintf("DC_offset_20kHz_Q: no cfg or prev default, setting to default value\n");
-        update_cfg = true;
-    }
-
-    DC_offset_I = mode_20kHz? Ioff_20kHz : Ioff;
-    DC_offset_Q = mode_20kHz? Qoff_20kHz : Qoff;
-    static bool dc_off_msg;
-    if (!dc_off_msg) {
-        lprintf("using DC_offsets: I %.6f Q %.6f\n", DC_offset_I, DC_offset_Q);
-        dc_off_msg = true;
-    }
-
-    // DON'T use cfg_default_int() here because "DRM.nreg_chans" is a two-level we can't init
-    // (the very first time if it doesn't exist) from C code
-    drm_nreg_chans = cfg_int("DRM.nreg_chans", &err, CFG_OPTIONAL);
-    if (err) drm_nreg_chans = DRM_NREG_CHANS_DEFAULT;
-    //cfg_default_string("DRM.test_file1", "Kuwait.15110.1.12k.iq.au", &update_cfg);
-    s = cfg_string("DRM.test_file1", NULL, CFG_OPTIONAL);
-	if (!s || strcmp(s, "Kuwait.15110.1.12k.iq.au") == 0) {
-	    cfg_set_string("DRM.test_file1", "DRM.BBC.Journaline.au");
-	    update_cfg = true;
-    }
-    cfg_string_free(s);
-    //cfg_default_string("DRM.test_file2", "Delhi.828.1.12k.iq.au", &update_cfg);
-    s = cfg_string("DRM.test_file2", NULL, CFG_OPTIONAL);
-	if (!s || strcmp(s, "Delhi.828.1.12k.iq.au") == 0) {
-	    cfg_set_string("DRM.test_file2", "DRM.KTWR.slideshow.au");
-	    update_cfg = true;
-    }
-    cfg_string_free(s);
-
-    // fix any broken UTF-8 sequences via cfg_default_string()
-    cfg_default_string("index_html_params.HTML_HEAD", "", &update_cfg);
-    cfg_default_string("index_html_params.PAGE_TITLE", "", &update_cfg);
-    cfg_default_string("index_html_params.RX_PHOTO_TITLE", "", &update_cfg);
-    cfg_default_string("index_html_params.RX_PHOTO_DESC", "", &update_cfg);
-    cfg_default_string("index_html_params.RX_TITLE", "", &update_cfg);
-    cfg_default_string("index_html_params.RX_LOC", "", &update_cfg);
-    cfg_default_string("status_msg", "", &update_cfg);
-    cfg_default_string("rx_name", "", &update_cfg);
-    cfg_default_string("rx_device", "", &update_cfg);
-    cfg_default_string("rx_location", "", &update_cfg);
-    cfg_default_string("rx_antenna", "", &update_cfg);
-    cfg_default_string("owner_info", "", &update_cfg);
-    cfg_default_string("reason_disabled", "", &update_cfg);
-
-    S_meter_cal = cfg_default_int("S_meter_cal", SMETER_CALIBRATION_DEFAULT, &update_cfg);
-    waterfall_cal = cfg_default_int("waterfall_cal", WATERFALL_CALIBRATION_DEFAULT, &update_cfg);
-    cfg_default_bool("contact_admin", true, &update_cfg);
-    cfg_default_int("chan_no_pwd", 0, &update_cfg);
-    cfg_default_int("clk_adj", 0, &update_cfg);
-    kiwi_reg_lo_kHz = cfg_default_int("sdr_hu_lo_kHz", 0, &update_cfg);
-    kiwi_reg_hi_kHz = cfg_default_int("sdr_hu_hi_kHz", 30000, &update_cfg);
-    cfg_default_bool("index_html_params.RX_PHOTO_LEFT_MARGIN", true, &update_cfg);
-
-    cfg_default_bool("ext_ADC_clk", false, &update_cfg);
-    cfg_default_int("ext_ADC_freq", (int) round(ADC_CLOCK_TYP), &update_cfg);
-    bool ADC_clk_corr = cfg_bool("ADC_clk_corr", &err, CFG_OPTIONAL);
-    if (!err) {     // convert from yes/no switch to multiple-entry menu
-        int ADC_clk2_corr = ADC_clk_corr? ADC_CLK_CORR_CONTINUOUS : ADC_CLK_CORR_DISABLED;
-        cfg_default_int("ADC_clk2_corr", ADC_clk2_corr, &update_cfg);
-        cfg_rem_bool("ADC_clk_corr");
-    } else {
-        cfg_default_int("ADC_clk2_corr", ADC_CLK_CORR_CONTINUOUS, &update_cfg);
-    }
-
-    cfg_default_string("tdoa_id", "", &update_cfg);
-    cfg_default_int("tdoa_nchans", -1, &update_cfg);
-    cfg_default_int("ext_api_nchans", -1, &update_cfg);
-    cfg_default_bool("no_wf", false, &update_cfg);
-    cfg_default_bool("test_webserver_prio", false, &update_cfg);
-    cfg_default_bool("test_deadline_update", false, &update_cfg);
-    cfg_default_bool("disable_recent_changes", false, &update_cfg);
-    cfg_default_int("init.cw_offset", 500, &update_cfg);
-    cfg_default_int("init.colormap", 0, &update_cfg);
-    cfg_default_int("init.aperture", 1, &update_cfg);
-    cfg_default_int("S_meter_OV_counts", 10, &update_cfg);
-    cfg_default_bool("webserver_caching", true, &update_cfg);
-    max_thr = (float) cfg_default_int("overload_mute", -15, &update_cfg);
-    cfg_default_bool("agc_thresh_smeter", true, &update_cfg);
-    n_camp = cfg_default_int("n_camp", N_CAMP, &update_cfg);
-    snr_meas_interval_hrs = snr_interval[cfg_default_int("snr_meas_interval_hrs", 1, &update_cfg)];
-    snr_local_time = cfg_default_bool("snr_local_time", true, &update_cfg);
-    cfg_default_int("ident_len", IDENT_LEN_MIN, &update_cfg);
-    cfg_default_bool("show_geo", true, &update_cfg);
-    cfg_default_bool("show_1Hz", false, &update_cfg);
-
-    bool want_inv = cfg_default_bool("spectral_inversion", false, &update_cfg);
-    if (called_at_init || !kiwi.spectral_inversion_lockout)
-        kiwi.spectral_inversion = want_inv;
-
-    cfg_default_int("nb_algo", 0, &update_cfg);
-    cfg_default_int("nb_wf", 1, &update_cfg);
-	// NB_STD
-    cfg_default_int("nb_gate", 100, &update_cfg);
-    cfg_default_int("nb_thresh", 50, &update_cfg);
-	// NB_WILD
-    cfg_default_float("nb_thresh2", 0.95, &update_cfg);
-    cfg_default_int("nb_taps", 10, &update_cfg);
-    cfg_default_int("nb_samps", 7, &update_cfg);
-
-    cfg_default_int("nr_algo", 0, &update_cfg);
-    cfg_default_int("nr_de", 1, &update_cfg);
-    cfg_default_int("nr_an", 0, &update_cfg);
-   // NR_WDSP
-    cfg_default_int("nr_wdspDeTaps", 64, &update_cfg);
-    cfg_default_int("nr_wdspDeDelay",16, &update_cfg);
-    cfg_default_int("nr_wdspDeGain", 10, &update_cfg);
-    cfg_default_int("nr_wdspDeLeak", 7, &update_cfg);
-    cfg_default_int("nr_wdspAnTaps", 64, &update_cfg);
-    cfg_default_int("nr_wdspAnDelay",16, &update_cfg);
-    cfg_default_int("nr_wdspAnGain", 10, &update_cfg);
-    cfg_default_int("nr_wdspAnLeak", 7, &update_cfg);
-   // NR_ORIG
-    cfg_default_int("nr_origDeDelay",1, &update_cfg);
-    cfg_default_float("nr_origDeBeta", 0.05, &update_cfg);
-    cfg_default_float("nr_origDeDecay", 0.98, &update_cfg);
-    cfg_default_int("nr_origAnDelay",48, &update_cfg);
-    cfg_default_float("nr_origAnBeta", 0.125, &update_cfg);
-    cfg_default_float("nr_origAnDecay", 0.99915, &update_cfg);
-   // NR_SPECTRAL
-    cfg_default_int("nr_specGain", 0, &update_cfg);
-    cfg_default_float("nr_specAlpha", 0.95, &update_cfg);
-    cfg_default_int("nr_specSNR", 30, &update_cfg);
-
-    // the auto speed process is only run at restart time -- only handle forced speed changes here
-    int espeed = cfg_default_int("ethernet_speed", 0, &update_cfg);
-    static int current_espeed;
-    if (espeed != current_espeed) {
-        printf("ETH0 ethernet speed %s\n", (espeed == 0)? "auto" : ((espeed == 1)? "10M" : "100M"));
-        if (espeed) {
-            non_blocking_cmd_system_child("kiwi.ethtool",
-                stprintf("ethtool -s eth0 speed %d duplex full", (espeed == 1)? 10:100), NO_WAIT);
-        }
-        current_espeed = espeed;
-    }
-    
-    int mtu = cfg_default_int("ethernet_mtu", 0, &update_cfg);
-    if (mtu < 0 || mtu >= N_MTU) mtu = 0;
-    static int current_mtu;
-    if (mtu != current_mtu) {
-        int mtu_val = mtu_v[mtu];
-        printf("ETH0 ifconfig eth0 mtu %d\n", mtu_val);
-        non_blocking_cmd_system_child("kiwi.ifconfig", stprintf("ifconfig eth0 mtu %d", mtu_val), NO_WAIT);
-        current_mtu = mtu;
-    }
-    
-    #ifdef USE_SDR
-        if (wspr_update_vars_from_config(called_at_init)) update_cfg = true;
-
-        // fix corruption left by v1.131 dotdot bug
-        // i.e. "WSPR.autorun": N instead of "WSPR": { "autorun": N ... }"
-        _cfg_int(&cfg_cfg, "WSPR.autorun", &err, CFG_OPTIONAL|CFG_NO_DOT);
-        if (!err) {
-            _cfg_set_int(&cfg_cfg, "WSPR.autorun", 0, CFG_REMOVE|CFG_NO_DOT, 0);
-            _cfg_set_bool(&cfg_cfg, "index_html_params.RX_PHOTO_LEFT_MARGIN", 0, CFG_REMOVE|CFG_NO_DOT, 0);
-            printf("removed v1.131 dotdot bug corruption\n");
-            update_cfg = true;
-        }
-
-        if (ft8_update_vars_from_config(called_at_init)) update_cfg = true;
-    #endif
-    
-    // enforce waterfall min_dB < max_dB
-    int min_dB = cfg_default_int("init.min_dB", -110, &update_cfg);
-    int max_dB = cfg_default_int("init.max_dB", -10, &update_cfg);
-    if (min_dB >= max_dB) {
-        cfg_set_int("init.min_dB", -110);
-        cfg_set_int("init.max_dB", -10);
-        update_cfg = true;
-    }
-    cfg_default_int("init.floor_dB", 0, &update_cfg);
-    cfg_default_int("init.ceil_dB", 5, &update_cfg);
-
-    int _dom_sel = cfg_default_int("sdr_hu_dom_sel", DOM_SEL_NAM, &update_cfg);
-
-    #if 0
-        // try and get this Kiwi working with the proxy
-        //printf("serno=%d dom_sel=%d\n", serial_number, _dom_sel);
-	    if (serial_number == 1006 && _dom_sel == DOM_SEL_NAM) {
-            cfg_set_int("sdr_hu_dom_sel", DOM_SEL_REV);
-            update_cfg = true;
-            lprintf("######## FORCE DOM_SEL_REV serno=%d ########\n", serial_number);
-	    }
-    #endif
-    
-    // remove old kiwisdr.example.com default
-    cfg_default_string("server_url", "", &update_cfg);
-    const char *server_url = cfg_string("server_url", NULL, CFG_REQUIRED);
-	if (strcmp(server_url, "kiwisdr.example.com") == 0) {
-	    cfg_set_string("server_url", "");
-	    update_cfg = true;
-    }
-    
-    // not sure I want to do this yet..
-    #if 0
-        // Strange problem where cfg.sdr_hu_dom_sel seems to get changed occasionally between modes
-        // DOM_SEL_NAM=0 and DOM_SEL_PUB=2. This can result in DOM_SEL_NAM selected but the corresponding
-        // domain field blank which has bad consequences (e.g. TDoA host file corrupted).
-        // So do some consistency checking here.
-        if (dom_sel == DOM_SEL_NAM && (*server_url == '\0' || strcmp(server_url, "kiwisdr.example.com") == 0)) {
-            lprintf("### DOM_SEL check: DOM_SEL_NAM but server_url=\"%s\"\n", server_url);
-            lprintf("### DOM_SEL check: forcing change to DOM_SEL_PUB\n");
-            cfg_set_int("sdr_hu_dom_sel", DOM_SEL_PUB);
-            // FIXME: but then server_url needs to be set when pub ip is detected
-            update_cfg = true;
-        }
-	#endif
-    cfg_string_free(server_url); server_url = NULL;
-    
-    // move kiwi.json tlimit_exempt_pwd to admin.json
-	if ((s = cfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL)) != NULL) {
-		admcfg_set_string("tlimit_exempt_pwd", s);
-	    cfg_string_free(s);
-	    cfg_rem_string("tlimit_exempt_pwd");
-	    update_cfg = update_admcfg = true;
-	} else {
-        admcfg_default_string("tlimit_exempt_pwd", "", &update_admcfg);
-    }
-    
-    // sdr.hu => rx.kiwisdr.com in status msg
-    char *status_msg = (char *) cfg_string("status_msg", NULL, CFG_REQUIRED);
-    bool caller_must_free;
-	char *nsm = kiwi_str_replace(status_msg, "sdr.hu", "rx.kiwisdr.com", &caller_must_free);
-	if (nsm) {
-	    nsm = kiwi_str_replace(nsm, "/?top=kiwi", "");  // shrinking, so nsm same memory space
-	    cfg_set_string("status_msg", nsm);
-	    if (caller_must_free) kiwi_ifree(nsm);
-	    update_cfg = true;
-    }
-    cfg_string_free(status_msg); status_msg = NULL;
-
-    char *rx_name = (char *) cfg_string("rx_name", NULL, CFG_REQUIRED);
-    // shrinking, so same memory space
-	nsm = kiwi_str_replace(rx_name, ", ZL/KF6VO, New Zealand", "");
-	if (nsm) {
-        cfg_set_string("rx_name", nsm);
-        update_cfg = true;
-    }
-    cfg_string_free(rx_name); rx_name = NULL;
-
-    char *rx_title = (char *) cfg_string("RX_TITLE", NULL, CFG_REQUIRED);
-    // shrinking, so same memory space
-	nsm = kiwi_str_replace(rx_title, " at <a href='http://kiwisdr.com' target='_blank' onclick='dont_toggle_rx_photo()'>ZL/KF6VO</a>", "");
-	if (nsm) {
-        cfg_set_string("RX_TITLE", nsm);
-        update_cfg = true;
-    }
-    cfg_string_free(rx_title); rx_title = NULL;
-
-    DRM_enable = cfg_bool("DRM.enable", &err, CFG_OPTIONAL);
-    if (err) DRM_enable = true;
-    
-    // change init.mode from mode menu idx to a mode string
-	n = cfg_int("init.mode", &err, CFG_OPTIONAL);
-	if (err) {
-	    s = cfg_string("init.mode", &err, CFG_OPTIONAL);
-	    if (err) {
-	        cfg_set_string("init.mode", "lsb");     // init.mode never existed?
-	        update_cfg = true;
-	    }
-        cfg_string_free(s);
-	} else {
-	    cfg_rem_int("init.mode");
-	    cfg_set_string("init.mode", mode_lc[n]);
-	    update_cfg = true;
-	}
-
-	if (update_cfg)
-		cfg_save_json(cfg_cfg.json);
-
-
-	// same, but for admin config
-	// currently just default values that need to exist
-	
-    admcfg_default_bool("server_enabled", true, &update_admcfg);
-    admcfg_default_bool("auto_add_nat", false, &update_admcfg);
-    admcfg_default_bool("duc_enable", false, &update_admcfg);
-    admcfg_default_string("duc_user", "", &update_admcfg);
-    admcfg_default_string("duc_pass", "", &update_admcfg);
-    admcfg_default_string("duc_host", "", &update_admcfg);
-    admcfg_default_int("duc_update", 3, &update_admcfg);
-    admcfg_default_bool("daily_restart", false, &update_admcfg);
-    admcfg_default_int("restart_update", 0, &update_admcfg);
-    admcfg_default_int("update_restart", 0, &update_admcfg);
-    admcfg_default_string("ip_address.dns1", "1.1.1.1", &update_admcfg);
-    admcfg_default_string("ip_address.dns2", "8.8.8.8", &update_admcfg);
-    admcfg_default_string("url_redirect", "", &update_admcfg);
-    admcfg_default_bool("ip_blacklist_auto_download", true, &update_admcfg);
-    admcfg_default_string("ip_blacklist", "47.88.219.24/24", &update_admcfg);
-    admcfg_default_string("ip_blacklist_local", "", &update_admcfg);
-    admcfg_default_int("ip_blacklist_mtime", 0, &update_admcfg);
-    admcfg_default_bool("no_dup_ip", false, &update_admcfg);
-    admcfg_default_bool("my_kiwi", true, &update_admcfg);
-    admcfg_default_bool("onetime_password_check", false, &update_admcfg);
-    admcfg_default_bool("dx_labels_converted", false, &update_admcfg);
-    admcfg_default_string("proxy_server", "proxy.kiwisdr.com", &update_admcfg);
-    admcfg_default_bool("console_local", true, &update_admcfg);
-    admin_keepalive = admcfg_default_bool("admin_keepalive", true, &update_admcfg);
-    log_local_ip = admcfg_default_bool("log_local_ip", true, &update_admcfg);
-
-    // decouple rx.kiwisdr.com and sdr.hu registration
-    bool sdr_hu_register = admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED);
-	admcfg_bool("kiwisdr_com_register", &err, CFG_OPTIONAL);
-    // never set or incorrectly set to false by v1.365,366
-	if (err || (VERSION_MAJ == 1 && VERSION_MIN <= 369)) {
-        admcfg_set_bool("kiwisdr_com_register", sdr_hu_register);
-        update_admcfg = true;
-    }
-
-    // disable public registration if all the channels are full of WSPR/FT8 autorun
-	bool isPublic = admcfg_bool("kiwisdr_com_register", NULL, CFG_REQUIRED);
-	int wspr_autorun = cfg_int("WSPR.autorun", NULL, CFG_REQUIRED);
-	int ft8_autorun = cfg_int("ft8.autorun", NULL, CFG_REQUIRED);
-	if (isPublic && (wspr_autorun + ft8_autorun) >= rx_chans) {
-	    lprintf("REG: WSPR.autorun(%d) + ft8.autorun(%d) >= rx_chans(%d) -- DISABLING PUBLIC REGISTRATION\n", wspr_autorun, ft8_autorun, rx_chans);
-        admcfg_set_bool("kiwisdr_com_register", false);
-        update_admcfg = true;
-	}
-
-    // historical uses of options parameter:
-    //int new_find_local = admcfg_int("options", NULL, CFG_REQUIRED) & 1;
-    admcfg_default_int("options", 0, &update_admcfg);
-
     #ifdef USE_GPS
-        admcfg_default_bool("GPS_tstamp", true, &update_admcfg);
-        admcfg_default_bool("use_kalman_position_solver", true, &update_admcfg);
-        admcfg_default_int("rssi_azel_iq", 0, &update_admcfg);
+        sb = kstr_asprintf(sb, ", \"gps\": { \"lat\": %.6f, \"lon\": %.6f", gps.sgnLat, gps.sgnLon);
 
-        admcfg_default_bool("always_acq_gps", false, &update_admcfg);
-        gps.set_date = admcfg_default_bool("gps_set_date", false, &update_admcfg);
-        gps.include_alert_gps = admcfg_default_bool("include_alert_gps", false, &update_admcfg);
-        //real_printf("gps.include_alert_gps=%d\n", gps.include_alert_gps);
-        gps.include_E1B = admcfg_default_bool("include_E1B", true, &update_admcfg);
-        //real_printf("gps.include_E1B=%d\n", gps.include_E1B);
-        admcfg_default_int("E1B_offset", 4, &update_admcfg);
-
-        gps.acq_Navstar = admcfg_default_bool("acq_Navstar", true, &update_admcfg);
-        if (!gps.acq_Navstar) ChanRemove(Navstar);
-        gps.acq_QZSS = admcfg_default_bool("acq_QZSS", true, &update_admcfg);
-        if (!gps.acq_QZSS) ChanRemove(QZSS);
-        gps.QZSS_prio = admcfg_default_bool("QZSS_prio", false, &update_admcfg);
-        gps.acq_Galileo = admcfg_default_bool("acq_Galileo", true, &update_admcfg);
-        if (!gps.acq_Galileo) ChanRemove(E1B);
-        //real_printf("Navstar=%d QZSS=%d Galileo=%d\n", gps.acq_Navstar, gps.acq_QZSS, gps.acq_Galileo);
-
-        // force plot_E1B true because there is no longer an option switch in the admin interface (to make room for new ones)
-        bool plot_E1B = admcfg_default_bool("plot_E1B", true, &update_admcfg);
-        if (!plot_E1B) {
-            admcfg_set_bool("plot_E1B", true);
-            update_admcfg = true;
+        latLon_t loc;
+        loc.lat = gps.sgnLat;
+        loc.lon = gps.sgnLon;
+        char grid6[LEN_GRID];
+        if (latLon_to_grid6(&loc, grid6) == 0) {
+            sb = kstr_asprintf(sb, ", \"grid\": \"%.6s\"", grid6);
         }
+
+        sb = kstr_asprintf(sb, ", \"fixes\": %d, \"fixes_min\": %d }", gps.fixes, gps.fixes_min);
     #endif
-    
-    #ifdef CRYPT_PW
-    
-        // Either:
-        // 1) Transitioning on startup from passwords stored in admin.json file from a prior version
-        //      (.eup/.eap files will not exist).
-        // or
-        // 2) In response to a password change from the admin UI (sequence number will increment).
-        //
-        // Generates and saves a new salt/hash in either case.
-        // The old {user,admin}_password fields are kept because other code needs to know when
-        // the password is blank/empty. So it is either set to the empty string or "(encrypted)".
-        // This does not preclude the user from using the string "(encrypted)" as an actual password.
-        
-        bool ok;
-        const char *key;
-        char *encrypted;
-        static u4_t user_pwd_seq, admin_pwd_seq;
-        
-        if (called_at_init) {
-            user_pwd_seq = admcfg_default_int("user_pwd_seq", 0, &update_admcfg);
-            admin_pwd_seq = admcfg_default_int("admin_pwd_seq", 0, &update_admcfg);
-        }
-        u4_t updated_user_pwd_seq = admcfg_int("user_pwd_seq", NULL, CFG_REQUIRED);
-        u4_t updated_admin_pwd_seq = admcfg_int("admin_pwd_seq", NULL, CFG_REQUIRED);
 
-        bool eup_exists = kiwi_file_exists(DIR_CFG "/.eup");
-        bool user_seq_diff = (user_pwd_seq != updated_user_pwd_seq);
-        if (!eup_exists || user_seq_diff) {
-            user_pwd_seq = updated_user_pwd_seq;
-    	    key = admcfg_string("user_password", NULL, CFG_REQUIRED);
-    	    
-    	    if (!eup_exists) {
-    	        // if hash file is missing, but key indicates encryption previously used, make key empty
-    	        if (key && strcmp(key, "(encrypted)") == 0) {
-                    cfg_string_free(key);
-                    key = NULL;
-                }
-    	    }
+    sb = kstr_asprintf(sb, " }' > /root/kiwi.config/info.json");
+    non_blocking_cmd_system_child("kiwi.info", kstr_sp(sb), NO_WAIT);
+    kstr_free(sb);
+	sig_arm(SIGHUP, dump_info_handler);
+}
 
-            encrypted = kiwi_crypt_generate(key, user_pwd_seq);
-            printf("### user crypt ok=%d seq=%d key=<%s> => %s\n", ok, updated_user_pwd_seq, key, encrypted);
-            n = kiwi_file_write("eup", DIR_CFG "/.eup", encrypted, strlen(encrypted), /* add_nl */ true);
-            free(encrypted);
+static void debug_exit_backtrace_handler(int arg)
+{
+    panic("debug_exit_backtrace_handler");
+}
 
-            if (n) {
-                admcfg_set_string("user_password", (key == NULL || *key == '\0')? "" : "(encrypted)");
-                update_admcfg = true;
-            }
-
-            cfg_string_free(key);
-        }
-
-        bool eap_exists = kiwi_file_exists(DIR_CFG "/.eap");
-        bool admin_seq_diff = (admin_pwd_seq != updated_admin_pwd_seq);
-        if (!eap_exists || admin_seq_diff) {
-            admin_pwd_seq = updated_admin_pwd_seq;
-    	    key = admcfg_string("admin_password", NULL, CFG_REQUIRED);
-
-    	    if (!eap_exists) {
-    	        // if hash file is missing, but key indicates encryption previously used, make key empty
-    	        if (key && strcmp(key, "(encrypted)") == 0) {
-                    cfg_string_free(key);
-                    key = NULL;
-                }
-    	    }
-
-            encrypted = kiwi_crypt_generate(key, admin_pwd_seq);
-            printf("### admin crypt ok=%d seq=%d key=<%s> => %s\n", ok, updated_admin_pwd_seq, key, encrypted);
-            n = kiwi_file_write("eap", DIR_CFG "/.eap", encrypted, strlen(encrypted), /* add_nl */ true);
-            free(encrypted);
-
-            if (n) {
-                admcfg_set_string("admin_password", (key == NULL || *key == '\0')? "" : "(encrypted)");
-                update_admcfg = true;
-            }
-
-            cfg_string_free(key);
-        }
-    #endif
-    
-    // FIXME: resolve problem of ip_address.xxx vs ip_address:{xxx} in .json files
-    //admcfg_default_bool("ip_address.use_static", false, &update_admcfg);
-
-	if (update_admcfg)
-		admcfg_save_json(cfg_adm.json);
-
-
-    // one-time-per-run initializations
-    
-    static bool initial_clk_adj;
-    if (!initial_clk_adj) {
-        int clk_adj = cfg_int("clk_adj", &err, CFG_OPTIONAL);
-        if (err == false) {
-            printf("INITIAL clk_adj=%d\n", clk_adj);
-            if (clk_adj != 0) {
-                clock_manual_adj(clk_adj);
-            }
-        }
-        initial_clk_adj = true;
-    }
+void debug_init()
+{
+    sig_arm(SIG_DEBUG, debug_dump_handler);
+    sig_arm(SIGHUP, dump_info_handler);
 }
 
 int rx_mode2enum(const char *mode)
