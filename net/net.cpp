@@ -955,14 +955,14 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
     return true;
 
 error:
-    printf("internal_conn_setup: %s couldn't get websocket instance=%d uri=%s port=%d\n",
-        ident_user, instance, mc_fail->uri, mc_fail->remote_port);
+    //printf("internal_conn_setup: %s couldn't get websocket instance=%d uri=%s port=%d\n",
+    //    ident_user, instance, mc_fail->uri, mc_fail->remote_port);
     internal_conn_shutdown(iconn);
     return false;
 
 error2:
-    printf("internal_conn_setup: %s need (ICONN_WS_EXT | ICONN_WS_SND) instance=%d uri=%s port=%d\n",
-        ident_user, instance, mc_fail->uri, mc_fail->remote_port);
+    //printf("internal_conn_setup: %s need (ICONN_WS_EXT | ICONN_WS_SND) instance=%d uri=%s port=%d\n",
+    //    ident_user, instance, mc_fail->uri, mc_fail->remote_port);
     internal_conn_shutdown(iconn);
     return false;
 }
