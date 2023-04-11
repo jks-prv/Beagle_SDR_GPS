@@ -522,7 +522,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     // Allow with no password if minimum number of channels needing password remains.
                     // This minimum number is reduced by the number of already privileged connections.
                     // If no password has been set at all we've already allowed access above.
-                    int already_privileged_conns = rx_count_server_conns(LOCAL_OR_PWD_PROTECTED_USERS, conn);
+                    int already_privileged_conns = rx_count_server_conns(LOCAL_OR_PWD_PROTECTED_USERS, 0, conn);
                     int chan_need_pwd = rx_chans - rx_chan_no_pwd() - already_privileged_conns;
                     if (chan_need_pwd < 0) chan_need_pwd = 0;
                     
