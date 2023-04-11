@@ -200,6 +200,18 @@
 	localparam GET_CPU_CTR2 = 7;    // DEFb: bit number for value: 0x80
 	localparam GET_CPU_CTR3 = 8;    // DEFb: bit number for value: 0x100
 	localparam GET_STATUS = 9;    // DEFb: bit number for value: 0x200
+	localparam RDREG_0400 = 10;    // DEFb: bit number for value: 0x400
+	localparam RDREG2_001 = 0;    // DEFb: bit number for value: 0x1
+	localparam RDREG2_002 = 1;    // DEFb: bit number for value: 0x2
+	localparam RDREG2_004 = 2;    // DEFb: bit number for value: 0x4
+	localparam RDREG2_008 = 3;    // DEFb: bit number for value: 0x8
+	localparam RDREG2_010 = 4;    // DEFb: bit number for value: 0x10
+	localparam RDREG2_020 = 5;    // DEFb: bit number for value: 0x20
+	localparam RDREG2_040 = 6;    // DEFb: bit number for value: 0x40
+	localparam RDREG2_080 = 7;    // DEFb: bit number for value: 0x80
+	localparam RDREG2_100 = 8;    // DEFb: bit number for value: 0x100
+	localparam RDREG2_200 = 9;    // DEFb: bit number for value: 0x200
+	localparam RDREG2_400 = 10;    // DEFb: bit number for value: 0x400
 	localparam HOST_TX = 0;    // DEFb: bit number for value: 0x1
 	localparam SET_MASK = 1;    // DEFb: bit number for value: 0x2
 	localparam SET_CHAN = 2;    // DEFb: bit number for value: 0x4
@@ -208,6 +220,8 @@
 	localparam SET_SAT = 5;    // DEFb: bit number for value: 0x20
 	localparam SET_E1B_CODE = 6;    // DEFb: bit number for value: 0x40
 	localparam SET_PAUSE = 7;    // DEFb: bit number for value: 0x80
+	localparam WRREG_100 = 8;    // DEFb: bit number for value: 0x100
+	localparam WRREG_200 = 9;    // DEFb: bit number for value: 0x200
 	localparam SET_CTRL = 10;    // DEFb: bit number for value: 0x400
 	localparam SET_RX_CHAN = 0;    // DEFb: bit number for value: 0x1
 	localparam SET_RX_FREQ = 1;    // DEFb: bit number for value: 0x2
@@ -228,6 +242,9 @@
 	localparam GET_LOG = 5;    // DEFb: bit number for value: 0x20
 	localparam PUT_LOG = 6;    // DEFb: bit number for value: 0x40
 	localparam LOG_RST = 7;    // DEFb: bit number for value: 0x80
+	localparam WREVT_100 = 8;    // DEFb: bit number for value: 0x100
+	localparam WREVT_200 = 9;    // DEFb: bit number for value: 0x200
+	localparam WREVT_400 = 10;    // DEFb: bit number for value: 0x400
 	localparam GET_RX_SAMP = 0;    // DEFb: bit number for value: 0x1
 	localparam RX_BUFFER_RST = 1;    // DEFb: bit number for value: 0x2
 	localparam RX_GET_BUF_CTR = 2;    // DEFb: bit number for value: 0x4
@@ -260,7 +277,6 @@
 	localparam CTRL_0010 = 4;    // DEFb: bit number for value: 0x10
 	localparam CTRL_0020 = 5;    // DEFb: bit number for value: 0x20
 	localparam CTRL_0040 = 6;    // DEFb: bit number for value: 0x40
-	localparam CTRL_0080 = 7;    // DEFb: bit number for value: 0x80
 	localparam CTRL_USE_GEN = 10;    // DEFb: bit number for value: 0x400
 	localparam CTRL_GEN_FIR = 7;    // DEFb: bit number for value: 0x80
 	localparam CTRL_OSC_EN = 8;    // DEFb: bit number for value: 0x100

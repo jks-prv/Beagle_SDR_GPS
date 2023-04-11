@@ -154,7 +154,7 @@ int rx_chan_no_pwd(pwd_check_e pwd_check)
     return chan_no_pwd;
 }
 
-int rx_count_server_conns(conn_count_e type, conn_t *our_conn)
+int rx_count_server_conns(conn_count_e type, u4_t flags, conn_t *our_conn)
 {
 	int users=0, any=0;
 	
@@ -165,6 +165,10 @@ int rx_count_server_conns(conn_count_e type, conn_t *our_conn)
 	    
         // if type == EXTERNAL_ONLY don't count internal connections so e.g. WSPR autorun won't prevent updates
         bool sound = (c->type == STREAM_SOUND && ((type == EXTERNAL_ONLY)? !c->internal_connection : true));
+        
+        // don't count preemptible internal connections since they can be kicked
+        if (sound && (type == INCLUDE_INTERNAL) && (flags & EXCEPT_PREEMPTABLE) && c->arun_preempt)
+            sound = false;
 
 	    if (type == TDOA_USERS) {
 	        if (sound && c->ident_user && kiwi_str_begins_with(c->ident_user, "TDoA_service"))

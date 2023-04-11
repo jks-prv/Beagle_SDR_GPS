@@ -812,7 +812,9 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         // Kiwi URL redirection
         // don't redirect if camp specified in URL
         bool camp = (mc->query_string && (kiwi_str_begins_with((char *) mc->query_string, "camp") || strstr(mc->query_string, "&camp")));
-        bool all_chans_full = (rx_count_server_conns(INCLUDE_INTERNAL) == rx_chans);
+        int chan_count = rx_count_server_conns(INCLUDE_INTERNAL, EXCEPT_PREEMPTABLE);
+        bool all_chans_full = (chan_count == rx_chans);
+        //printf("WEB: index.html %s chans=%d/%d camp=%d\n", (evt == MG_CACHE_INFO)? "MG_CACHE_INFO" : "MG_REQUEST", chan_count, rx_chans, camp);
         if ((!camp && all_chans_full) || down || update_in_progress || backup_in_progress) {
             char *url_redirect = (char *) admcfg_string("url_redirect", NULL, CFG_REQUIRED);
             if (url_redirect != NULL && *url_redirect != '\0') {

@@ -11153,7 +11153,7 @@ function owrx_msg_cb(param, ws)
 			break;
 		case "audio_camp":
          var p = param[1].split(',');
-			audio_camp(+p[0], +p[1], btn_less_buffering, kiwi_toggle(toggle_e.FROM_COOKIE | toggle_e.SET, 1, 1, 'last_compression'));
+			audio_camp(+p[0], +p[1], false, false);
 			break;
 		case "audio_rate":
 			audio_rate(parseFloat(param[1]));
