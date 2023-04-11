@@ -223,32 +223,31 @@ module KiwiSDR (
 	wire gen_fir_C = ctrl[CTRL_GEN_FIR];
 
     RECEIVER receiver (
-    	.adc_clk	(adc_clk),
-    	.adc_data	(reg_adc_data),
-    	.adc_ovfl   (ADC_OVFL),
+    	.adc_clk	    (adc_clk),
+    	.adc_data	    (reg_adc_data),
+    	.adc_ovfl       (ADC_OVFL),
 
 		// these are all on the cpu_clk
-        .rx_rd_C	(rx_rd),
-        .rx_dout_C	(rx_dout),
+        .rx_rd_C	    (rx_rd),
+        .rx_dout_C	    (rx_dout),
 
-        .wf_rd_C	(wf_rd),
-        .wf_dout_C	(wf_dout),
+        .wf_rd_C	    (wf_rd),
+        .wf_dout_C	    (wf_dout),
 
-        .ticks_A	(ticks_A),
-        .adc_ovfl_C (rx_ovfl_C),
+        .ticks_A	    (ticks_A),
+        .adc_ovfl_C     (rx_ovfl_C),
         
-		.cpu_clk	(cpu_clk),
-        .ser		(ser[1]),        
-        .tos		(tos),
-        .op_11      (op[10:0]),        
-        .rdReg      (rdReg),
-        .wrReg2     (wrReg2),
-        .wrEvt2     (wrEvt2),
+		.cpu_clk	    (cpu_clk),
+        .ser		    (ser[1]),        
+        .tos		    (tos),
+        .op_11          (op[10:0]),        
+        .rdReg          (rdReg),
+        .wrReg2         (wrReg2),
+        .wrEvt2         (wrEvt2),
         
-        .use_gen_C  (use_gen_C),
-        .gen_fir_C  (gen_fir_C)
+        .use_gen_C      (use_gen_C),
+        .gen_fir_C      (gen_fir_C)
     	);
-
 
 	wire rx_ovfl_C, rx_orst;
 	reg rx_overflow_C;
@@ -317,8 +316,9 @@ module KiwiSDR (
         .ext_rd 	(ext_rd),
         .ext_dout	(ext_dout),
 
+        // NB: hb_clk = gps_clk = cpu_clk
         .hb_ovfl	(rx_overflow_C),
-        .hb_orst	(rx_orst),          // NB: hb_clk = gps_clk = cpu_clk
+        .hb_orst	(rx_orst),
 
         .host_dout  (host_dout),
         .mem_rd     (mem_rd),

@@ -132,3 +132,24 @@ void dx_eibi_init();
 
 #define DX_LABEL_FOFF_CONVERT true
 void dx_save_as_json(bool dx_label_foff_convert = false);
+
+
+// AJAX_DX support
+
+#define CSV_FLT 0
+#define CSV_STR 1
+#define CSV_DEC 2       // NB: if type == CSV_DEC, caller must kiwi_ifree(val)
+
+#define TYPE_JSON 0
+#define TYPE_CSV 1
+
+typedef struct {
+    int type;
+    const char *data;
+    int data_len;
+    char **s_a;
+    int idx;
+} dx_param_t;
+
+bool _dx_parse_csv_field(int type, char *field, void *val, bool *empty = NULL);
+void _dx_write_file(void *param);

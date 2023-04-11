@@ -49,99 +49,6 @@ Boston, MA  02110-1301, USA.
 #include <sys/time.h>
 
 
-#define CSV_FLT 0
-#define CSV_STR 1
-#define CSV_DEC 2
-
-// NB: if type == CSV_DEC, caller must kiwi_ifree(val)
-static bool _dx_parse_csv_field(int type, char *field, void *val, bool *empty = NULL)
-{
-    bool fail = false;
-    if (empty != NULL) *empty = false;
-    
-    if (type == CSV_FLT) {
-        int sl = kiwi_strnlen(field, 256);
-        if (sl == 0) {
-            *((float *) val) = 0;               // empty number field becomes zero
-            if (empty != NULL) *empty = true;
-        } else {
-            if (field[0] == '\'') field++;      // allow for leading zero escape e.g. '0123
-            char *endp;
-            *((float *) val) = strtof(field, &endp);
-            if (endp == field) { fail = true; }
-        }
-    } else
-
-    // don't require that string fields be quoted (except when they contain field delimiter)
-    if (type == CSV_STR || type == CSV_DEC) {
-        char *s = field;
-        int sl = kiwi_strnlen(s, 1024);
-
-        if (sl == 0) {
-            *((char **) val) = (type == CSV_DEC)? strdup("\"\"") : (char *) "\"\"";     // empty string field becomes ""
-            if (empty != NULL) *empty = true;
-        } else
-
-        // remove the doubled-up double-quotes (if any)
-        if (sl > 2) {
-            kiwi_str_replace(s, "\"\"", "\"");      // shrinking, so same mem space
-            sl = kiwi_strnlen(s, 1024);
-        }
-
-        // decode if requested
-        if (type == CSV_DEC) {
-            // replace beginning and ending " into something that won't get encoded (restore below)
-            bool restore_sf = false, restore_sl = false;
-            if (s[0] == '"') { s[0] = 'x'; restore_sf = true; }
-            if (s[sl-1] == '"') { s[sl-1] = 'x'; restore_sl = true; }
-            s = kiwi_str_decode_selective_inplace(kiwi_str_encode(kiwi_str_decode_inplace(s)), FEWER_ENCODED);
-            sl = strlen(s);
-            if (restore_sf) s[0] = '"';
-            if (restore_sl) s[sl-1] = '"';
-        }
-        *((char **) val) = s;       // if type == CSV_DEC caller must kiwi_ifree() val
-    } else
-        panic("_dx_parse_csv_field");
-    
-    return fail;
-}
-
-#define TYPE_JSON 0
-#define TYPE_CSV 1
-
-typedef struct {
-    int type;
-    const char *data;
-    int data_len;
-    char **s_a;
-    int idx;
-} dx_param_t;
-
-static void _dx_write_file(void *param)
-{
-    dx_param_t *dxp = (dx_param_t *) FROM_VOID_PARAM(param);
-    int i, n, rc = 0;
-
-    FILE *fp = fopen(DIR_CFG "/upload.dx.json", "w");
-    if (fp == NULL) { rc = 3; goto fail; }
-
-    if (dxp->type == TYPE_JSON) {
-        n = fwrite(dxp->data, 1, dxp->data_len, fp);
-        if (n != dxp->data_len) { rc = 3; goto fail; }
-    }
-
-    if (dxp->type == TYPE_CSV) {
-        for (i = 0; i < dxp->idx; i++) {
-            if (fputs(dxp->s_a[i], fp) < 0) { rc = 3; goto fail; }
-        }
-    }
-
-fail:
-    if (fp != NULL) fclose(fp);
-	child_exit(rc);
-}
-
-
 // process non-websocket connections
 // check_ip_blacklist() done by caller
 char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
@@ -192,6 +99,9 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
 	//  Also, request restricted to the local network.
 	//	MITM vulnerable
 	//	Returns JSON
+	//
+	// Using AJAX to upload a file to the server is required because browser javascript doesn't have access to the
+	// filesystem of the client. But a FormData() object passed to kiwi_ajax_send() can specify a file.
 	case AJAX_PHOTO: {
 		char vname[64], fname[64];		// mg_parse_multipart() checks size of these
 		const char *data;
@@ -255,6 +165,9 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
 	//  Requests NOT restricted to the local network so admins can update remote sites.
 	//	MITM vulnerable
 	//	Returns JSON
+	//
+	// Using AJAX to upload a file to the server is required because browser javascript doesn't have access to the
+	// filesystem of the client. But a FormData() object passed to kiwi_ajax_send() can specify a file.
 	case AJAX_DX: {
 		char vname[64], fname[64];		// mg_parse_multipart() checks size of these
 		const char *data;
@@ -460,6 +373,7 @@ fail:
 
 	// SECURITY:
 	//	Delivery restricted to the local network.
+	//	Returns JSON
 	case AJAX_USERS:
 		if (!isLocalIP) {
 			printf("/users NON_LOCAL FETCH ATTEMPT from %s\n", ip_unforwarded);
