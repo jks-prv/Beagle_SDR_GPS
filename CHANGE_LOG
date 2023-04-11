@@ -2,6 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.593  Apr 11, 2023
+    Fixed problem where new user connections were incorrectly being redirected even though
+    preemptible autorun processes exist.
+
+    Fixed problem where camping a channel sometimes resulted in very low volume because the wrong
+    initial compression state was being used.
+
 v1.592  Apr 10, 2023
     Reverted change causing NBFM distortion (thanks Glenn).
 
