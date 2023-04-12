@@ -5,7 +5,6 @@ CONFIG.Bypass                 string  false      false
 CONFIG.Bypass_Sense           string  false      Active_High
 CONFIG.CE                     string  false      false
 CONFIG.CLK_INTF.FREQ_HZ       string  false      100000000
-CONFIG.CLK_INTF.INSERT_VIP    string  false      0
 CONFIG.C_In                   string  false      false
 CONFIG.Component_Name         string  false      ipcore_acc_u32b
 CONFIG.Implementation         string  false      DSP48
@@ -15,7 +14,6 @@ CONFIG.Latency                string  false      1
 CONFIG.Latency_Configuration  string  false      Manual
 CONFIG.Output_Width           string  false      32
 CONFIG.SCLR                   string  false      true
-CONFIG.SCLR_INTF.INSERT_VIP   string  false      0
 CONFIG.SINIT                  string  false      false
 CONFIG.SINIT_Value            string  false      0
 CONFIG.SSET                   string  false      false

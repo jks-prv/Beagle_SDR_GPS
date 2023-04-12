@@ -1,7 +1,5 @@
 Property                            Type    Read-only  Value
 CONFIG.ACLK_INTF.FREQ_HZ            string  false      100000000
-CONFIG.ACLK_INTF.INSERT_VIP         string  false      0
-CONFIG.ARESETN_INTF.INSERT_VIP      string  false      0
 CONFIG.Amplitude_Mode               string  false      Full_Range
 CONFIG.Channels                     string  false      1
 CONFIG.Component_Name               string  false      ipcore_dds_sin_cos_13b_15b_48b
@@ -16,8 +14,6 @@ CONFIG.Has_Phase_Out                string  false      false
 CONFIG.Has_TREADY                   string  false      false
 CONFIG.Latency                      string  false      8
 CONFIG.Latency_Configuration        string  false      Auto
-CONFIG.M_AXIS_DATA.INSERT_VIP       string  false      0
-CONFIG.M_AXIS_PHASE.INSERT_VIP      string  false      0
 CONFIG.M_DATA_Has_TUSER             string  false      Not_Required
 CONFIG.M_PHASE_Has_TUSER            string  false      Not_Required
 CONFIG.Memory_Type                  string  false      Block_ROM
@@ -101,8 +97,6 @@ CONFIG.Phase_Offset_Angles16        string  false      0
 CONFIG.Phase_Width                  string  false      48
 CONFIG.Phase_offset                 string  false      None
 CONFIG.Resync                       string  false      false
-CONFIG.S_AXIS_CONFIG.INSERT_VIP     string  false      0
-CONFIG.S_AXIS_PHASE.INSERT_VIP      string  false      0
 CONFIG.S_CONFIG_Sync_Mode           string  false      On_Vector
 CONFIG.S_PHASE_Has_TUSER            string  false      Not_Required
 CONFIG.S_PHASE_TUSER_Width          string  false      1

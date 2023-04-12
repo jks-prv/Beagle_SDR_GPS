@@ -1,7 +1,10 @@
 namespace eval kiwi {
 
-    ## generates txt files for each used ipcore in the directory "./ipcore_properties"
-    ## type "kiwi::update_ip_properties" in the Vivado tcl console when ip has been reconfigured in the Vivado UI
+    ## Generates txt files for each used ipcore in the directory "./ipcore_properties"
+    ## After ip has been reconfigured in the Vivado UI, run script by typing in Vivado tcl console:
+    ##      cd <whatever dir needed>/import_srcs
+    ##      source kiwi.tcl
+    ##      kiwi::update_ip_properties
     proc update_ip_properties {} {
         foreach p [get_ips] {
             report_property -quiet -regexp -file [file normalize "./ipcore_properties/${p}.txt"] [get_ips $p] "(CONFIG.*|IPDEF)"
