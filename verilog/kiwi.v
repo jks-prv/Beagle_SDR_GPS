@@ -236,12 +236,14 @@ module KiwiSDR (
 
         .ticks_A	    (ticks_A),
         .adc_ovfl_C     (rx_ovfl_C),
+        .adc_count_C    (adc_count),
         
 		.cpu_clk	    (cpu_clk),
         .ser		    (ser[1]),        
         .tos		    (tos),
         .op_11          (op[10:0]),        
         .rdReg          (rdReg),
+        .wrReg          (wrReg),
         .wrReg2         (wrReg2),
         .wrEvt2         (wrEvt2),
         
@@ -256,6 +258,8 @@ module KiwiSDR (
     	if (rx_orst) rx_overflow_C <= rx_ovfl_C; else
     	rx_overflow_C <= rx_overflow_C | rx_ovfl_C;
     end
+    
+    wire [31:0] adc_count;
 
 `else
     assign rx_rd = 0;
@@ -284,6 +288,11 @@ module KiwiSDR (
 		if (rdReg & op[GET_CPU_CTR1]) par = { cpu_ctr[1][15 -:8], cpu_ctr[0][15 -:8] }; else
 		if (rdReg & op[GET_CPU_CTR2]) par = { cpu_ctr[1][23 -:8], cpu_ctr[0][23 -:8] }; else
 		if (rdReg & op[GET_CPU_CTR3]) par = { cpu_ctr[1][31 -:8], cpu_ctr[0][31 -:8] }; else
+`endif
+
+`ifdef USE_SDR
+		if (rdReg2 & op[GET_ADC_CTR0]) par = { adc_count[15: 0] }; else
+		if (rdReg2 & op[GET_ADC_CTR1]) par = { adc_count[31:16] }; else
 `endif
 
 		if (rdReg & op[GET_STATUS]) par = status; else

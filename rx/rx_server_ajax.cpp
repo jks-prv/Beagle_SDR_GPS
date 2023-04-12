@@ -418,6 +418,41 @@ fail:
 	}
 
 	// SECURITY:
+	//	Delivery restricted to the local network.
+	//	Returns JSON
+	case AJAX_ADC: {
+        typedef struct {
+            u1_t d0, d1, d2, d3;
+        } ctr_t;
+        ctr_t *c;
+        static u4_t adc_level;
+        
+		if (!isLocalIP) {
+			printf("/users NON_LOCAL FETCH ATTEMPT from %s\n", ip_unforwarded);
+			return (char *) -1;
+		}
+		//printf("/adc REQUESTED from %s\n", ip_unforwarded);
+		
+        SPI_MISO *adc_ctr = get_misc_miso();
+            spi_get_noduplex(CmdGetADCCtr, adc_ctr, sizeof(u2_t[3]));
+        release_misc_miso();
+        c = (ctr_t*) &adc_ctr->word[0];
+        u4_t adc_count = (c->d3 << 24) | (c->d2 << 16) | (c->d1 << 8) | c->d0;
+        
+        //printf("/adc qs=<%s>\n", mc->query_string);
+        u4_t level = 0;
+        // "%i" so decimal or hex beginning with 0x can be specified
+        if (mc->query_string && sscanf(mc->query_string, "level=%i", &level) == 1) {
+            adc_level = level & ((1 << ADC_BITS) - 1);
+            //printf("/adc SET level=%d(0x%x)\n", adc_level, adc_level);
+            spi_set(CmdSetADCLvl, adc_level);
+        }
+		asprintf(&sb, "{ \"adc_level_dec\":%u, \"adc_level_hex\":\"0x%x\", \"adc_count\":%u }\n",
+		    adc_level, adc_level, adc_count);
+		break;
+	}
+
+	// SECURITY:
 	//	OKAY, used by kiwisdr.com and Priyom Pavlova at the moment
 	//	Returns '\n' delimited keyword=value pairs
 	case AJAX_STATUS: {

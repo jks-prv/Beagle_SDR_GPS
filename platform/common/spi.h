@@ -35,7 +35,6 @@ typedef enum { // Embedded CPU commands, order must match 'Commands:' table in .
     CmdPing = 0,
     CmdLoad,
     CmdPing2,
-    CmdCPUCtrClr,
     CmdGetCPUCtr,
     CmdCtrlClrSet,
     CmdCtrlPulse,
@@ -61,6 +60,8 @@ typedef enum { // Embedded CPU commands, order must match 'Commands:' table in .
     CmdGetWFSamples,
     CmdGetWFContSamps,
 	CmdSetOVMask,
+	CmdGetADCCtr,
+	CmdSetADCLvl,
 #endif
 
 	// GPS
@@ -105,6 +106,8 @@ typedef enum { // Embedded CPU commands, order must match 'Commands:' table in .
     CmdGetWFSamples = 0,
     CmdGetWFContSamps = 0,
 	CmdSetOVMask = 0,
+	CmdGetADCCtr = 0,
+	CmdSetADCLvl = 0,
 #endif
 
 #ifndef USE_GPS
@@ -134,7 +137,6 @@ static const char *cmds[] = {
     "CmdPing",
     "CmdLoad",
     "CmdPing2",
-    "CmdCPUCtrClr",
     "CmdGetCPUCtr",
     "CmdCtrlClrSet",
     "CmdCtrlPulse",
@@ -160,6 +162,8 @@ static const char *cmds[] = {
     "CmdGetWFSamples",
     "CmdGetWFContSamps",
     "CmdSetOVMask",
+    "CmdGetADCCtr",
+    "CmdSetADCLvl",
 #endif
 
 	// GPS

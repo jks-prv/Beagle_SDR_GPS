@@ -373,7 +373,6 @@ float ecpu_use()
 	u4_t gated = (c->g3 << 24) | (c->g2 << 16) | (c->g1 << 8) | c->g0;
 	u4_t free_run = (c->f3 << 24) | (c->f2 << 16) | (c->f1 << 8) | c->f0;
 
-	spi_set(CmdCPUCtrClr);
 	if (free_run == 0) return 0;
 	return ((float) gated / (float) free_run * 100);
 }

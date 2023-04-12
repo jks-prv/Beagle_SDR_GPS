@@ -30,12 +30,14 @@ module RECEIVER (
 
     input  wire [47:0] ticks_A,
     output wire        adc_ovfl_C,
+    output wire [31:0] adc_count_C,
     
 	input  wire		   cpu_clk,
     output wire        ser,
     input  wire [31:0] tos,
     input  wire [10:0] op_11,
     input  wire        rdReg,
+    input  wire        wrReg,
     input  wire        wrReg2,
     input  wire        wrEvt2,
     
@@ -103,6 +105,34 @@ module RECEIVER (
     end
 
 	SYNC_PULSE sync_adc_ovfl (.in_clk(adc_clk), .in(adc_ovfl_A), .out_clk(cpu_clk), .out(adc_ovfl_C));
+
+
+    //////////////////////////////////////////////////////////////////////////
+    // ADC level detection
+    //////////////////////////////////////////////////////////////////////////
+
+    wire [ADC_BITS-1:0] adc_data_abs = adc_data[ADC_BITS-1]? (-adc_data) : adc_data;
+    reg [ADC_BITS-1:0] adc_level_A;
+	wire set_adc_lvl_C = wrReg & op_11[SET_ADC_LVL];
+    wire set_adc_lvl_A;
+	SYNC_PULSE sync_set_adc_lvl (.in_clk(cpu_clk), .in(set_adc_lvl_C), .out_clk(adc_clk), .out(set_adc_lvl_A));
+    always @ (posedge adc_clk)
+        if (set_adc_lvl_A) adc_level_A <= freeze_tos_A[ADC_BITS-1:0];
+
+    reg [31:0] adc_count_A;
+    always @ (posedge adc_clk)
+    begin
+        if (!set_adc_lvl_A && (adc_data_abs >= adc_level_A)) adc_count_A <= adc_count_A + 1'b1;
+        //if (!set_adc_lvl_A) adc_count_A <= adc_level_A;     // loopback test
+        else
+        if (set_adc_lvl_A) adc_count_A <= 0;
+    end
+
+    // continuously sync adc_count_A => adc_count_C
+	SYNC_REG #(.WIDTH(32)) sync_adc_count (
+	    .in_strobe(1),      .in_reg(adc_count_A),       .in_clk(adc_clk),
+	    .out_strobe(),      .out_reg(adc_count_C),      .out_clk(cpu_clk)
+	);
 
 
     //////////////////////////////////////////////////////////////////////////
