@@ -82,6 +82,7 @@ rx_stream_t rx_streams[] = {
 	{ AJAX_STATUS,		"status" },
 	{ AJAX_USERS,		"users" },
 	{ AJAX_SNR,         "snr" },
+	{ AJAX_ADC,         "adc" },
 #endif
 	{ 0 }
 };
@@ -216,7 +217,7 @@ void rx_stream_tramp(void *param)
 }
 
 // if this connection is new, spawn new receiver channel with sound/waterfall tasks
-conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
+conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_t ws_flags)
 {
 	int i;
 	conn_t *c;
@@ -500,13 +501,16 @@ retry:
                     force_camp = false;
                 } else {
                     // Attempt to kick a channel using autorun.
-                    // But only for Kiwi UI connections!
-                    if (isKiwi_UI && !internal) {
+                    // But only for Kiwi UI connections or if specifically flagged.
+                    conn_printf("CONN check preempt kick: any_preempt_autorun=%d isKiwi_UI=%d internal=%d ws_flags=%d\n",
+                        any_preempt_autorun, isKiwi_UI, internal, ws_flags);
+                    if (any_preempt_autorun || (isKiwi_UI && !internal) || (internal && (ws_flags & WS_FL_PREEMPT_AUTORUN))) {
                         for (i = 0; i < rx_chans; i++) {
                             int victim;
                             if ((victim = rx_autorun_find_victim()) != -1) {
                                 rx_n = victim;
                                 c = rx_channels[rx_n].conn;
+                                c->preempted = true;
                                 rx_enable(rx_n, RX_CHAN_FREE);
                                 rx_server_remove(c);
                                 goto retry;

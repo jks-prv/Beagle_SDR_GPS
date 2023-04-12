@@ -198,7 +198,7 @@ typedef struct {
 
 const u4_t ICONN_WS_SND = 1, ICONN_WS_WF = 2, ICONN_WS_EXT = 4;
 
-bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port_base,
+bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port_base, u4_t ws_flags,
     const char *mode, int locut, int hicut, float freq_kHz,
     const char *ident_user, const char *geoloc, const char *client = NULL,
     int zoom = 0, float cf_kHz = 0, int min_dB = 0, int max_dB = 0, int wf_speed = 0, int wf_comp = 0);

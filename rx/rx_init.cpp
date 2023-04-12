@@ -128,7 +128,7 @@ double ui_srate, ui_srate_kHz, freq_offset_kHz, freq_offmax_kHz;
 int kiwi_reg_lo_kHz, kiwi_reg_hi_kHz;
 float max_thr;
 int n_camp;
-bool log_local_ip, DRM_enable, admin_keepalive;
+bool log_local_ip, DRM_enable, admin_keepalive, any_preempt_autorun;
 
 #define DC_OFFSET_DEFAULT -0.02F
 #define DC_OFFSET_DEFAULT_PREV 0.05F
@@ -297,6 +297,7 @@ void update_vars_from_config(bool called_at_init)
     n_camp = cfg_default_int("n_camp", N_CAMP, &update_cfg);
     snr_meas_interval_hrs = snr_interval[cfg_default_int("snr_meas_interval_hrs", 1, &update_cfg)];
     snr_local_time = cfg_default_bool("snr_local_time", true, &update_cfg);
+    any_preempt_autorun = cfg_default_bool("any_preempt_autorun", true, &update_cfg);
     cfg_default_int("ident_len", IDENT_LEN_MIN, &update_cfg);
     cfg_default_bool("show_geo", true, &update_cfg);
     cfg_default_bool("show_1Hz", false, &update_cfg);

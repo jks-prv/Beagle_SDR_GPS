@@ -61,7 +61,7 @@ typedef struct conn_st {
 
 	// set in both STREAM_SOUND & STREAM_WATERFALL
 	int task;
-	bool stop_data, kick, arun_preempt;
+	bool stop_data, kick, arun_preempt, preempted;
 	bool foff_set;
 	double foff;
 
@@ -148,5 +148,6 @@ typedef struct conn_st {
 #define AJAX_STATUS			10
 #define AJAX_USERS			11
 #define AJAX_SNR			12
+#define AJAX_ADC			13
 
 extern conn_t conns[];

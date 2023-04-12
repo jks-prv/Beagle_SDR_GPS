@@ -48,7 +48,9 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd);
 const char *rx_conn_type(conn_t *c);
 
 typedef enum { WS_MODE_ALLOC, WS_MODE_LOOKUP, WS_MODE_CLOSE, WS_INTERNAL_CONN } websocket_mode_e;
-conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc);
+#define WS_FL_NONE              0x00
+#define WS_FL_PREEMPT_AUTORUN   0x01
+conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_t ws_flags = 0);
 
 typedef enum { RX_CHAN_ENABLE, RX_CHAN_DISABLE, RX_DATA_ENABLE, RX_CHAN_FREE } rx_chan_action_e;
 void rx_enable(int chan, rx_chan_action_e action);

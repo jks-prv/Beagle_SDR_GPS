@@ -74,7 +74,7 @@ void rx_loguser(conn_t *c, logtype_e type)
 		c->last_tune_time = now;
 	} else
 	if (type == LOG_LEAVING) {
-		asprintf(&s, "(LEAVING after %d:%02d:%02d)", hr, min, sec);
+		asprintf(&s, "(%s after %d:%02d:%02d)", c->preempted? "PREEMPTED" : "LEAVING", hr, min, sec);
 	} else {
 		asprintf(&s, "%d:%02d:%02d%s", hr, min, sec, (type == LOG_UPDATE_NC)? " n/c":"");
 	}
@@ -679,7 +679,7 @@ int SNR_calc(SNR_meas_t *meas, int meas_type, int f_lo, int f_hi)
     return rv;
 }
 
-void SNR_meas(void *param)
+void SNR_meas(void *param)      // task
 {
     int i, j, n, len;
     static internal_conn_t iconn;
@@ -697,7 +697,7 @@ void SNR_meas(void *param)
         static int meas_idx;
 	
         for (int loop = 0; loop == 0 && snr_meas_interval_hrs; loop++) {   // so break can be used below
-            if (internal_conn_setup(ICONN_WS_WF, &iconn, 0, PORT_BASE_INTERNAL_SNR,
+            if (internal_conn_setup(ICONN_WS_WF, &iconn, 0, PORT_BASE_INTERNAL_SNR, WS_FL_PREEMPT_AUTORUN,
                 NULL, 0, 0, 0,
                 "SNR-measure", "internal%20task", "SNR",
                 WF_ZOOM_MIN, 15000, -110, -10, SNR_MEAS_SELECT, WF_COMP_OFF) == false) {

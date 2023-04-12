@@ -879,7 +879,7 @@ void ip_blacklist_dump()
 // Emulates the client-side (js) of a Kiwi sound/waterfall/extension channel API connection.
 // For use by server-side internal connections, e.g. WSPR autorun, FT8 autorun, SNR measurement.
 
-bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port_base,
+bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port_base, u4_t ws_flags,
     const char *mode, int locut, int hicut, float freq_kHz,
     const char *ident_user, const char *geoloc, const char *client,
     int zoom, float cf_kHz, int min_dB, int max_dB, int wf_speed, int wf_comp)
@@ -899,7 +899,7 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
         kiwi_strncpy(mcs->remote_ip, "127.0.0.1", NET_ADDRSTRLEN);
         mcs->remote_port = local_port;
         mcs->local_port = net.port;
-        csnd = rx_server_websocket(WS_INTERNAL_CONN, mcs);
+        csnd = rx_server_websocket(WS_INTERNAL_CONN, mcs, ws_flags);
         if (csnd == NULL) goto error;
         iconn->csnd = csnd;
         input_msg_internal(csnd, (char *) "SET auth t=kiwi p=");
@@ -920,7 +920,7 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
         kiwi_strncpy(mcw->remote_ip, "127.0.0.1", NET_ADDRSTRLEN);
         mcw->remote_port = local_port + 1;
         mcw->local_port = net.port;
-        cwf = rx_server_websocket(WS_INTERNAL_CONN, mcw);
+        cwf = rx_server_websocket(WS_INTERNAL_CONN, mcw, ws_flags);
         if (cwf == NULL) goto error;
         iconn->cwf = cwf;
         input_msg_internal(cwf, (char *) "SET auth t=kiwi p=");
@@ -944,7 +944,7 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
         kiwi_strncpy(mce->remote_ip, "127.0.0.1", NET_ADDRSTRLEN);
         mce->remote_port = local_port + 2;
         mce->local_port = net.port;
-        cext = rx_server_websocket(WS_INTERNAL_CONN, mce);
+        cext = rx_server_websocket(WS_INTERNAL_CONN, mce, ws_flags);
         if (cext == NULL) goto error;
         iconn->cext = cext;
         input_msg_internal(cext, (char *) "SET auth t=kiwi p=");
