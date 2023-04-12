@@ -2,6 +2,24 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.594  Apr 12, 2023
+    ADC level measurement: AJAX/JSON interface to help determine how much "headroom" is available in
+    the ADC. That is, how often the upper bits of the 14-bit ADC are getting set by strong signals.
+    Interface similar to how /snr works, i.e. my_kiwi:8073/adc?level=0x1800
+    Done this way so it doesn't require a channel connection, which would otherwise be very intrusive
+    given how often measurements will probably have to be made to properly characterize the headroom.
+    Note that this is fundamentally different from the current overload indicator on the S-meter
+    which is an averaged measurement of the full-scale overflow signal produced by the ADC itself.
+    Complete discussion on the forum.
+    
+    The SNR measurement process will now run if a preemptible autorun channel is available (thanks Martin).
+
+    Admin page, control tab. New checkbox:
+    "Non-Kiwi connections (kiwirecorder, TDoA) can preempt autorun processes"
+    
+    When an autorun process gets kicked the log will say e.g. "(PREEMPTED after 0:12:34)" instead of
+    "(LEAVING after 0:12:34)".
+
 v1.593  Apr 11, 2023
     Fixed problem where new user connections were incorrectly being redirected even though
     preemptible autorun processes exist.
