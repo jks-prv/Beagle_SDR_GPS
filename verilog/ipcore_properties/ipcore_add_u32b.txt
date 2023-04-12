@@ -13,6 +13,7 @@ CONFIG.Bypass_CE_Priority     string  false      CE_Overrides_Bypass
 CONFIG.Bypass_Sense           string  false      Active_High
 CONFIG.CE                     string  false      false
 CONFIG.CLK_INTF.FREQ_HZ       string  false      100000000
+CONFIG.CLK_INTF.INSERT_VIP    string  false      0
 CONFIG.C_In                   string  false      true
 CONFIG.C_Out                  string  false      false
 CONFIG.Component_Name         string  false      ipcore_add_u32b
@@ -21,6 +22,7 @@ CONFIG.Latency                string  false      0
 CONFIG.Latency_Configuration  string  false      Manual
 CONFIG.Out_Width              string  false      33
 CONFIG.SCLR                   string  false      false
+CONFIG.SCLR_INTF.INSERT_VIP   string  false      0
 CONFIG.SINIT                  string  false      false
 CONFIG.SINIT_Value            string  false      0
 CONFIG.SSET                   string  false      false

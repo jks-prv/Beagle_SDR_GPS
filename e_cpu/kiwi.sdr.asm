@@ -159,6 +159,20 @@ CmdSetOVMask:
                 wrReg2  SET_CNT_MASK		; wparam
                 drop.r
 
+CmdGetADCCtr:
+				wrEvt	HOST_RST
+				rdReg2	GET_ADC_CTR0        ; adc_count[15:0]
+				wrReg	HOST_TX
+				rdReg2	GET_ADC_CTR1        ; adc_count[31:16]
+				wrReg	HOST_TX
+                ret
+
+CmdSetADCLvl:
+                rdReg	HOST_RX				; adc_level[13:0]
+				FreezeTOS
+				wrReg	SET_ADC_LVL
+                ret
+
 
 ; ============================================================================
 ; waterfall

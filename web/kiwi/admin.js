@@ -346,7 +346,9 @@ function control_html()
 			),
 			
 			w3_divs('/w3-tspace-8',
-            w3_switch_label('w3-center', 'Timestamp SNR with local time?', 'Yes', 'No', 'cfg.snr_local_time', cfg.snr_local_time, 'admin_radio_YN_cb')
+            //w3_switch_label('w3-center', 'Timestamp SNR with local time?', 'Yes', 'No', 'cfg.snr_local_time', cfg.snr_local_time, 'admin_radio_YN_cb')
+            w3_checkbox_get_param('//w3-label-inline w3-restart', 'Non-Kiwi connections (kiwirecorder, TDoA) can preempt autorun processes', 'any_preempt_autorun', 'admin_bool_cb', true),
+            w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Timestamp SNR with local time', 'snr_local_time', 'admin_bool_cb', true)
          )
 		) +
 		'<hr>';

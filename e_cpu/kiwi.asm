@@ -416,7 +416,6 @@ Commands:
 				u16		CmdPing
 				u16		CmdLoad
 				u16		CmdPing2
-				u16		CmdCPUCtrClr
 				u16		CmdGetCPUCtr
 				u16		CmdCtrlClrSet
 				u16     CmdCtrlPulse
@@ -442,6 +441,8 @@ Commands:
 				u16		CmdGetWFSamples
 				u16		CmdGetWFContSamps
 				u16     CmdSetOVMask
+				u16     CmdGetADCCtr
+				u16     CmdSetADCLvl
 #endif
 
                 // GPS
@@ -788,9 +789,6 @@ CmdCtrlGet:		wrEvt	HOST_RST
 			
 ctrl:			u16		0
 
-CmdCPUCtrClr:	wrEvt2	CPU_CTR_CLR
-            	ret
-
 CmdGetCPUCtr:
 				wrEvt	HOST_RST
 				rdReg	GET_CPU_CTR0
@@ -801,6 +799,7 @@ CmdGetCPUCtr:
 				wrReg	HOST_TX
 				rdReg	GET_CPU_CTR3
 				wrReg	HOST_TX
+				wrEvt2	CPU_CTR_CLR
 				ret
 
 

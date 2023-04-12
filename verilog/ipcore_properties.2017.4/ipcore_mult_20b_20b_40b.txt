@@ -1,6 +1,5 @@
 Property                        Type    Read-only  Value
 CONFIG.CLK_INTF.FREQ_HZ         string  false      10000000
-CONFIG.CLK_INTF.INSERT_VIP      string  false      0
 CONFIG.CcmImp                   string  false      Distributed_Memory
 CONFIG.ClockEnable              string  false      false
 CONFIG.Component_Name           string  false      ipcore_mult_20b_20b_40b
@@ -17,7 +16,6 @@ CONFIG.PortAWidth               string  false      20
 CONFIG.PortBType                string  false      Signed
 CONFIG.PortBWidth               string  false      20
 CONFIG.RoundPoint               string  false      0
-CONFIG.SCLR_INTF.INSERT_VIP     string  false      0
 CONFIG.SclrCePriority           string  false      SCLR_Overrides_CE
 CONFIG.SyncClear                string  false      false
 CONFIG.UseRounding              string  false      false

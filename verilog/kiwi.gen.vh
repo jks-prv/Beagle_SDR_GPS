@@ -40,13 +40,13 @@
 `define DEF_FPGA_ID_RX14_WF0 1
 	localparam FPGA_ID_OTHER = 4'd4;    // DEFp 0x4
 `define DEF_FPGA_ID_OTHER 1
-	localparam NUM_CMDS_BASE = 14;    // DEFp 0xe
+	localparam NUM_CMDS_BASE = 13;    // DEFp 0xd
 `define DEF_NUM_CMDS_BASE 1
-	localparam NUM_CMDS_SDR = 12;    // DEFp 0xc
+	localparam NUM_CMDS_SDR = 14;    // DEFp 0xe
 `define DEF_NUM_CMDS_SDR 1
 	localparam NUM_CMDS_GPS = 16;    // DEFp 0x10
 `define DEF_NUM_CMDS_GPS 1
-	localparam NUM_CMDS = 42;    // DEFp 0x2a
+	localparam NUM_CMDS = 43;    // DEFp 0x2b
 `define DEF_NUM_CMDS 1
 `define SPI_32 1    // DEFh 0x1
 	localparam SPIBUF_W = 2048;    // DEFp 0x800
@@ -201,8 +201,8 @@
 	localparam GET_CPU_CTR3 = 8;    // DEFb: bit number for value: 0x100
 	localparam GET_STATUS = 9;    // DEFb: bit number for value: 0x200
 	localparam RDREG_0400 = 10;    // DEFb: bit number for value: 0x400
-	localparam RDREG2_001 = 0;    // DEFb: bit number for value: 0x1
-	localparam RDREG2_002 = 1;    // DEFb: bit number for value: 0x2
+	localparam GET_ADC_CTR0 = 0;    // DEFb: bit number for value: 0x1
+	localparam GET_ADC_CTR1 = 1;    // DEFb: bit number for value: 0x2
 	localparam RDREG2_004 = 2;    // DEFb: bit number for value: 0x4
 	localparam RDREG2_008 = 3;    // DEFb: bit number for value: 0x8
 	localparam RDREG2_010 = 4;    // DEFb: bit number for value: 0x10
@@ -220,7 +220,7 @@
 	localparam SET_SAT = 5;    // DEFb: bit number for value: 0x20
 	localparam SET_E1B_CODE = 6;    // DEFb: bit number for value: 0x40
 	localparam SET_PAUSE = 7;    // DEFb: bit number for value: 0x80
-	localparam WRREG_100 = 8;    // DEFb: bit number for value: 0x100
+	localparam SET_ADC_LVL = 8;    // DEFb: bit number for value: 0x100
 	localparam WRREG_200 = 9;    // DEFb: bit number for value: 0x200
 	localparam SET_CTRL = 10;    // DEFb: bit number for value: 0x400
 	localparam SET_RX_CHAN = 0;    // DEFb: bit number for value: 0x1
