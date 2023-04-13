@@ -332,7 +332,7 @@ void extint_setup_c2s(void *param)
 
 	// initialize extension for this connection
 	// NB: has to be a 'MSG' and not an 'EXT' due to sequencing of recv_cb setup
-    printf("EXT extint_setup_c2s SET: rx%d ext_client_init(is_locked)=%d\n", conn_ext->rx_channel, is_locked);
+    rcprintf(conn_ext->rx_channel, "EXT extint_setup_c2s SET: rx%d ext_client_init(is_locked)=%d\n", conn_ext->rx_channel, is_locked);
     send_msg(conn_ext, false, "MSG version_maj=%d version_min=%d debian_ver=%d", version_maj, version_min, debian_ver);
 	send_msg(conn_ext, false, "MSG ext_client_init=%d", is_locked);
 }

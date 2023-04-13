@@ -279,6 +279,13 @@ void rx_autorun_restart_victims()
         return;
     }
     
+    int free_chans = rx_chan_free_count(RX_COUNT_ALL);
+    if (free_chans == 0) {
+        //printf("rx_autorun_restart_victims: no free chans\n");
+        return;
+    }
+    //printf("rx_autorun_restart_victims: free_chans=%d\n", free_chans);
+
     //printf("rx_autorun_restart_victims\n");
     ft8_autorun_start();
     wspr_autorun_start();

@@ -342,7 +342,7 @@ static void ft8_autorun(int instance)
     char *geoloc;
     asprintf(&geoloc, "0%%20decoded%s", preempt? ",%20preemptible" : "");
 
-	bool ok = internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_BASE_INTERNAL_FT8, WS_FL_NONE,
+	bool ok = internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_BASE_INTERNAL_FT8, WS_FL_IS_AUTORUN,
         "usb", FT8_PASSBAND_LO, FT8_PASSBAND_HI, dial_freq_kHz, ident_user, geoloc, "FT8");
     free(ident_user); free(geoloc);
     if (!ok) {
@@ -385,7 +385,7 @@ void ft8_autorun_start()
         printf("FT8 autorun: reporter callsign and grid square fields must be entered on FT8 section of admin page\n");
         return;
     }
-
+    
     for (int instance = 0; instance < rx_chans; instance++) {
         int band = ft8_arun_band[instance];
         if (band == ARUN_REG_USE) continue;     // "regular use" menu entry
