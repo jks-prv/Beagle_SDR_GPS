@@ -367,9 +367,14 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
 		// should only get here for admin connections or internal connections when not update/backup
 	}
 
+    bool isRetry = false;
 retry:
-	conn_printf("CONN LOOKING for free conn for type=%d(%s) ip=%s:%d:%016llx mc=%p\n",
-	    st->type, st->uri, ip_forwarded, mc->remote_port, tstamp, mc);
+	conn_printf("CONN LOOKING for free conn for type=%d(%s%s%s%s%s%s) ip=%s:%d:%016llx mc=%p\n",
+	    st->type, st->uri,
+	    internal? ",INTERNAL" : "", isKiwi_UI? "" : ",NON-KIWI",
+	    (ws_flags & WS_FL_PREEMPT_AUTORUN)? ",PREEMPT" : "", (ws_flags & WS_FL_IS_AUTORUN)? ",AUTORUN" : "",
+	    isRetry? ",RETRY" : "",
+	    ip_forwarded, mc->remote_port, tstamp, mc);
 	bool multiple = false;
 	int cn, cnfree;
 	conn_t *cfree = NULL, *cother = NULL;
@@ -501,10 +506,13 @@ retry:
                     force_camp = false;
                 } else {
                     // Attempt to kick a channel using autorun.
-                    // But only for Kiwi UI connections or if specifically flagged.
-                    conn_printf("CONN check preempt kick: any_preempt_autorun=%d isKiwi_UI=%d internal=%d ws_flags=%d\n",
-                        any_preempt_autorun, isKiwi_UI, internal, ws_flags);
-                    if (any_preempt_autorun || (isKiwi_UI && !internal) || (internal && (ws_flags & WS_FL_PREEMPT_AUTORUN))) {
+                    // Be careful not to let an autorun process kick another autorun.
+                    bool ok_kiwi = (isKiwi_UI && !internal);
+                    bool ok_non_kiwi = (!isKiwi_UI && !internal && any_preempt_autorun);    // e.g. kiwirecorder
+                    bool ok_internal = (!isKiwi_UI && internal && (ws_flags & WS_FL_PREEMPT_AUTORUN));  // e.g. SNR_meas
+                    conn_printf("CONN check preempt kick: any_preempt_autorun=%d isKiwi_UI=%d internal=%d ws_flags=%d | ok_kiwi=%d ok_non_kiwi=%d ok_internal=%d\n",
+                        any_preempt_autorun, isKiwi_UI, internal, ws_flags, ok_kiwi, ok_non_kiwi, ok_internal);
+                    if (ok_kiwi || ok_non_kiwi || ok_internal) {
                         for (i = 0; i < rx_chans; i++) {
                             int victim;
                             if ((victim = rx_autorun_find_victim()) != -1) {
@@ -513,6 +521,7 @@ retry:
                                 c->preempted = true;
                                 rx_enable(rx_n, RX_CHAN_FREE);
                                 rx_server_remove(c);
+                                isRetry = true;
                                 goto retry;
                             }
                         }

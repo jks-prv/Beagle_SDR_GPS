@@ -1003,7 +1003,7 @@ void wspr_autorun(int instance)
     char *geoloc;
     asprintf(&geoloc, "0%%20decoded%s", preempt? ",%20preemptible" : "");
 
-	bool ok = internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_BASE_INTERNAL_WSPR, WS_FL_NONE,
+	bool ok = internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_BASE_INTERNAL_WSPR, WS_FL_IS_AUTORUN,
         "usb", AUTORUN_BFO - AUTORUN_FILTER_BW/2, AUTORUN_BFO + AUTORUN_FILTER_BW/2, if_freq_kHz,
         ident_user, geoloc, "wspr");
     free(ident_user); free(geoloc);
@@ -1039,7 +1039,6 @@ void wspr_autorun(int instance)
     w->abort_decode = true;
     input_msg_internal(cext, (char *) "SET autorun");
     input_msg_internal(cext, (char *) "SET BFO=%d", AUTORUN_BFO);
-    //input_msg_internal(cext, (char *) "SET capture=0");
     w->iwbp = iwbp? true : false;
     if (iwbp) input_msg_internal(cext, (char *) "SET IWBP");
     input_msg_internal(cext, (char *) "SET dialfreq=%.2f centerfreq=%.2f cf_offset=%.0f", dial_freq_kHz, center_freq_kHz, cfo);

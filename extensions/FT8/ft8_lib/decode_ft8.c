@@ -46,6 +46,7 @@ typedef struct {
 
 typedef struct {
     u4_t magic;
+    bool init;
     u4_t decode_time;
     int freqHz;
     ftx_protocol_t protocol;
@@ -66,7 +67,7 @@ typedef struct {
     int callsign_hashtable_size;
 } decode_ft8_t;
 
-decode_ft8_t decode_ft8[MAX_RX_CHANS];
+static decode_ft8_t decode_ft8[MAX_RX_CHANS];
 
 const int kMin_score = 10; // Minimum sync score threshold for candidates
 const int kMax_candidates = 140;
@@ -473,6 +474,7 @@ void decode_ft8_samples(int rx_chan, TYPEMONO16 *samps, int nsamps, int freqHz, 
 {
     decode_ft8_t *ft8 = &decode_ft8[rx_chan];
     ft8->freqHz = freqHz;
+    if (!ft8->init) return;
 
     if (!ft8->tsync) {
         const float time_shift = 0.8;
@@ -559,11 +561,13 @@ void decode_ft8_init(int rx_chan, int proto)
     LOG(LOG_DEBUG, "FT8 Waterfall allocated %d symbols\n", ft8->mon.wf.max_blocks);
     ft8->tsync = false;
     PSKReporter_reset(rx_chan);
+    ft8->init = true;
 }
 
 void decode_ft8_free(int rx_chan)
 {
     decode_ft8_t *ft8 = &decode_ft8[rx_chan];
+    ft8->init = false;
     free(ft8->samples);
     ft8->samples = NULL;
     free(ft8->callsign_hashtable);
