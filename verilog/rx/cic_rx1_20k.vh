@@ -2,7 +2,7 @@
 
 // CIC: INTEG_COMB|MODE_REAL N=3 R=823 M=1 Bin=22 Bout=18
 // growth 30 = ceil(N=3 * log2(R=823)=10)
-// Bin 22 + growth 30 = acc_max 52
+// Bin 22 + growth 30 = acc_max 52 
 
 wire signed [51:0] integrator0_data;
 wire signed [51:0] integrator1_data;

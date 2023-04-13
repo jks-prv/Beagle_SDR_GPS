@@ -196,6 +196,15 @@ void cic_gen(char *fn, int options, int N, int R, int Bin, int Bout)
 	double Num_of_Bits_Growth = ceil(log2(CIC_Filter_Gain));
     double Num_Output_Bits_With_No_Truncation = Num_of_Bits_Growth + Bin;
 	double Num_of_Output_Bits_Truncated = Num_Output_Bits_With_No_Truncation - Bout;
+	
+	// 4/2023
+	// For some configurations it's possible desired Bout is larger than Num_Output_Bits_With_No_Truncation (acc_max).
+	int acc_max_set_to_Bout = 0;
+	if (Num_of_Output_Bits_Truncated < 0) {
+	    Num_Output_Bits_With_No_Truncation = Bout;
+	    Num_of_Output_Bits_Truncated = 0;
+	    acc_max_set_to_Bout = 1;
+	}
 
 	double Output_Truncation_Noise_Variance = pow((pow(2, Num_of_Output_Bits_Truncated)), 2) /12;
 	double Output_Truncation_Noise_Standard_Deviation = sqrt(Output_Truncation_Noise_Variance);
@@ -233,11 +242,11 @@ void cic_gen(char *fn, int options, int N, int R, int Bin, int Bout)
 	trunc_extra[N2P1] = 0;
 	if (debug) printf("\n");
 	
+	const char *msg = acc_max_set_to_Bout? "(Note: acc_max increased to Bout)" : "";
 	printf("growth %.0f = ceil(N=%d * log2(R=%d)=%.0f)\n", Num_of_Bits_Growth, N, R, log2(R));
 	if (fp) fprintf(fp, "// growth %.0f = ceil(N=%d * log2(R=%d)=%.0f)\n", Num_of_Bits_Growth, N, R, log2(R));
-
-	printf("Bin %d + growth %.0f = acc_max %.0f\n", Bin, Num_of_Bits_Growth, Num_Output_Bits_With_No_Truncation);
-	if (fp) fprintf(fp, "// Bin %d + growth %.0f = acc_max %.0f\n\n", Bin, Num_of_Bits_Growth, Num_Output_Bits_With_No_Truncation);
+	printf("Bin %d + growth %.0f = acc_max %.0f %s\n", Bin, Num_of_Bits_Growth, Num_Output_Bits_With_No_Truncation, msg);
+	if (fp) fprintf(fp, "// Bin %d + growth %.0f = acc_max %.0f %s\n\n", Bin, Num_of_Bits_Growth, Num_Output_Bits_With_No_Truncation, msg);
 	
 	printf("noise_factor %f = %f + %f\n\n", noise_factor, Log_base2_of_Output_Truncation_Noise_Standard_Deviation, Half_Log_Base2_of_6_over_N);
 
