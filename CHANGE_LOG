@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.595  Apr 14, 2023
+    Autorun/preemption bug fixes.
+
 v1.594  Apr 12, 2023
     ADC level measurement: AJAX/JSON interface to help determine how much "headroom" is available in
     the ADC. That is, how often the upper bits of the 14-bit ADC are getting set by strong signals.
