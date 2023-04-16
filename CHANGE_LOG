@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.597  Apr 17, 2023
+    Autorun/preemption bug fix for TDoA extension.
+
 v1.596  Apr 16, 2023
     Autorun/preemption bug fixes.
 
