@@ -74,7 +74,7 @@ typedef enum { LOG_ARRIVED, LOG_UPDATE, LOG_UPDATE_NC, LOG_LEAVING } logtype_e;
 void rx_loguser(conn_t *c, logtype_e type);
 
 typedef enum { RX_COUNT_ALL, RX_COUNT_NO_WF_FIRST } rx_free_count_e;
-int rx_chan_free_count(rx_free_count_e flags, int *idx = NULL, int *heavy = NULL);
+int rx_chan_free_count(rx_free_count_e flags, int *idx = NULL, int *heavy = NULL, int *preempt = NULL);
 
 typedef enum { PWD_CHECK_NO, PWD_CHECK_YES } pwd_check_e;
 int rx_chan_no_pwd(pwd_check_e pwd_check = PWD_CHECK_NO);

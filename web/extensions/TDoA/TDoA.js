@@ -1304,13 +1304,14 @@ function tdoa_host_click_status_cb(obj, field_idx)
       var arr = obj.response.split('\n');
       //console.log('tdoa_host_click_status_cb field_idx='+ field_idx +' arr.len='+ arr.length);
       //console.log(arr);
-      var offline = auth = users = users_max = fixes_min = null;
+      var offline = auth = users = users_max = preempt = fixes_min = null;
       for (var i = 0; i < arr.length; i++) {
          var a = arr[i];
          if (a.startsWith('offline=')) offline = a.split('=')[1];
          if (a.startsWith('auth=')) auth = a.split('=')[1];
          if (a.startsWith('users=')) users = a.split('=')[1];
          if (a.startsWith('users_max=')) users_max = a.split('=')[1];
+         if (a.startsWith('preempt=')) preempt = a.split('=')[1];
          if (a.startsWith('fixes_min=')) fixes_min = a.split('=')[1];
       }
 
@@ -1328,9 +1329,9 @@ function tdoa_host_click_status_cb(obj, field_idx)
       if (fixes_min == 0) {
          err = 'no recent GPS timestamps';
       } else {
-         //console.log('u='+ users +' u_max='+ users_max);
+         //console.log('u='+ users +' u_max='+ users_max +' preempt='+ preempt);
          if (users_max == null) return;      // unexpected response
-         if (users < users_max) {
+         if (users < users_max || preempt > 0) {      // also try if any preemptible channels
             tdoa_set_icon('sample', field_idx, 'fa-refresh', 20, 'lime');
             tdoa_set_icon('listen', field_idx, 'fa-volume-up', 20, 'lime', 'tdoa_listen_cb', field_idx);
             var s = fixes_min? (fixes_min +' GPS fixes/min') : 'channel available';
