@@ -313,6 +313,7 @@ typedef struct {
 
 // configuration
 typedef struct {
+    int num_autorun;
     char *rcall;
     char rgrid[LEN_GRID];
     latLon_t r_loc;

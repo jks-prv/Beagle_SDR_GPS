@@ -578,11 +578,11 @@ function wspr_config_html()
    var s =
       w3_div('w3-show-inline-block w3-width-full',
          w3_col_percent('w3-container/w3-margin-bottom',
-            w3_divs('',
+            w3_divs('w3-restart',
                w3_input_get('', 'Reporter callsign', 'WSPR.callsign', 'w3_string_set_cfg_cb', '')
             ), 22,
             '', 3,
-            w3_divs('',
+            w3_divs('w3-restart',
                w3_input_get('', w3_label('w3-bold', 'Reporter grid square ') +
                   w3_div('id-wspr-grid-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS'),
                      'WSPR.grid', 'wspr_input_grid_cb', '', '4 or 6-character grid square location'

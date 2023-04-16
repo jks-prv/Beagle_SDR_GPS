@@ -924,26 +924,6 @@ bool wspr_update_vars_from_config(bool called_at_init_or_restart)
     
     cfg_default_object("WSPR", "{}", &update_cfg);
     
-    // Make sure WSPR.autorun holds *correct* count of non-preemptible autorun processes.
-    // If Kiwi was previously configured for a larger rx_chans, and more than rx_chans worth
-    // of autoruns were enabled, then with a reduced rx_chans it is essential not to count
-    // the ones beyond the rx_chans limit. That's why "i < rx_chans" appears below and
-    // not MAX_RX_CHANS.
-    if (called_at_init_or_restart) {
-        int num_autorun = 0;
-        for (int instance = 0; instance < rx_chans; instance++) {
-            int autorun = cfg_default_int(stprintf("WSPR.autorun%d", instance), 0, &update_cfg);
-            int preempt = cfg_default_int(stprintf("WSPR.preempt%d", instance), 0, &update_cfg);
-            //printf("WSPR.autorun%d=%d(band=%d) WSPR.preempt%d=%d\n", instance, autorun, autorun-1, instance, preempt);
-            if (autorun && (preempt == 0)) num_autorun++;
-            wspr_arun_band[instance] = autorun;
-            wspr_arun_preempt[instance] = preempt;
-        }
-        cfg_set_int("wspr_update_vars_from_config: WSPR.autorun", num_autorun);
-        //printf("WSPR.autorun=%d rx_chans=%d\n", num_autorun, rx_chans);
-        update_cfg = true;
-    }
-
     // Changing reporter call on admin page requires restart. This is because of
     // conditional behavior at startup, e.g. uploads enabled because valid call is now present
     // or autorun tasks starting for the same reason.
@@ -961,6 +941,32 @@ bool wspr_update_vars_from_config(bool called_at_init_or_restart)
 	kiwi_strncpy(wspr_c.rgrid, s, LEN_GRID);
 	cfg_string_free(s);
     set_reporter_grid((char *) wspr_c.rgrid);
+
+    // Make sure WSPR.autorun holds *correct* count of non-preemptible autorun processes.
+    // If Kiwi was previously configured for a larger rx_chans, and more than rx_chans worth
+    // of autoruns were enabled, then with a reduced rx_chans it is essential not to count
+    // the ones beyond the rx_chans limit. That's why "i < rx_chans" appears below and
+    // not MAX_RX_CHANS.
+    if (called_at_init_or_restart) {
+        int num_autorun = 0, num_non_preempt = 0;
+        for (int instance = 0; instance < rx_chans; instance++) {
+            int autorun = cfg_default_int(stprintf("WSPR.autorun%d", instance), 0, &update_cfg);
+            int preempt = cfg_default_int(stprintf("WSPR.preempt%d", instance), 0, &update_cfg);
+            //printf("WSPR.autorun%d=%d(band=%d) WSPR.preempt%d=%d\n", instance, autorun, autorun-1, instance, preempt);
+            if (autorun) num_autorun++;
+            if (autorun && (preempt == 0)) num_non_preempt++;
+            wspr_arun_band[instance] = autorun;
+            wspr_arun_preempt[instance] = preempt;
+        }
+        if (wspr_c.rcall == NULL || *wspr_c.rcall == '\0' || wspr_c.rgrid[0] == '\0') {
+            printf("WSPR autorun: reporter callsign and grid square fields must be entered on WSPR section of admin page\n");
+            num_autorun = num_non_preempt = 0;
+        }
+        wspr_c.num_autorun = num_autorun;
+        cfg_set_int("WSPR.autorun", num_non_preempt);
+        //printf("WSPR autorun: num_autorun=%d WSPR.autorun=%d(non-preempt) rx_chans=%d\n", num_autorun, num_non_preempt, rx_chans);
+        update_cfg = true;
+    }
 
     wspr_c.GPS_update_grid = cfg_default_bool("WSPR.GPS_update_grid", false, &update_cfg);
     wspr_c.syslog = cfg_default_bool("WSPR.syslog", false, &update_cfg);
@@ -1053,8 +1059,8 @@ void wspr_autorun(int instance)
 void wspr_autorun_start()
 {
     rx_util_t *r = &rx_util;
-    if (*wspr_c.rcall == '\0' || wspr_c.rgrid[0] == '\0') {
-        printf("WSPR autorun: reporter callsign and grid square fields must be entered on WSPR section of admin page\n");
+    if (wspr_c.num_autorun == 0) {
+        //printf("WSPR autorun_start: none configured\n");
         return;
     }
 
