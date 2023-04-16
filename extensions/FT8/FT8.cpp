@@ -54,6 +54,7 @@ static ft8_t ft8[MAX_RX_CHANS];
 ft8_conf_t ft8_conf;
 
 typedef struct {
+    int num_autorun;
     char *rcall;
     char rgrid[LEN_GRID];
     latLon_t r_loc;
@@ -61,7 +62,7 @@ typedef struct {
 	bool syslog, spot_log;
 } ft8_conf2_t;
 
-ft8_conf2_t ft8_conf2;
+static ft8_conf2_t ft8_conf2;
 
 static int ft8_arun_band[MAX_ARUN_INST];
 static int ft8_arun_preempt[MAX_ARUN_INST];
@@ -247,26 +248,6 @@ bool ft8_update_vars_from_config(bool called_at_init_or_restart)
     
     cfg_default_object("ft8", "{}", &update_cfg);
     
-    // Make sure ft8.autorun holds *correct* count of non-preemptible autorun processes.
-    // If Kiwi was previously configured for a larger rx_chans, and more than rx_chans worth
-    // of autoruns were enabled, then with a reduced rx_chans it is essential not to count
-    // the ones beyond the rx_chans limit. That's why "i < rx_chans" appears below and
-    // not MAX_RX_CHANS.
-    if (called_at_init_or_restart) {
-        int num_autorun = 0;
-        for (int instance = 0; instance < rx_chans; instance++) {
-            int autorun = cfg_default_int(stprintf("ft8.autorun%d", instance), 0, &update_cfg);
-            int preempt = cfg_default_int(stprintf("ft8.preempt%d", instance), 0, &update_cfg);
-            //printf("ft8.autorun%d=%d(band=%d) ft8.preempt%d=%d\n", instance, autorun, autorun-1, instance, preempt);
-            if (autorun && (preempt == 0)) num_autorun++;
-            ft8_arun_band[instance] = autorun;
-            ft8_arun_preempt[instance] = preempt;
-        }
-        cfg_set_int("ft8.autorun", num_autorun);
-        //printf("ft8_update_vars_from_config: ft8.autorun=%d rx_chans=%d\n", num_autorun, rx_chans);
-        update_cfg = true;
-    }
-
     // Changing reporter call on admin page requires restart. This is because of
     // conditional behavior at startup, e.g. uploads enabled because valid call is now present
     // or autorun tasks starting for the same reason.
@@ -294,6 +275,36 @@ bool ft8_update_vars_from_config(bool called_at_init_or_restart)
 	if (ft8_conf2.r_loc.lat != 999.0)
 		latLon_deg_to_rad(ft8_conf2.r_loc);
     
+    // Make sure ft8.autorun holds *correct* count of non-preemptible autorun processes.
+    // If Kiwi was previously configured for a larger rx_chans, and more than rx_chans worth
+    // of autoruns were enabled, then with a reduced rx_chans it is essential not to count
+    // the ones beyond the rx_chans limit. That's why "i < rx_chans" appears below and
+    // not MAX_RX_CHANS.
+    if (called_at_init_or_restart) {
+        int num_autorun = 0, num_non_preempt = 0;
+        for (int instance = 0; instance < rx_chans; instance++) {
+            int autorun = cfg_default_int(stprintf("ft8.autorun%d", instance), 0, &update_cfg);
+            int preempt = cfg_default_int(stprintf("ft8.preempt%d", instance), 0, &update_cfg);
+            //printf("ft8.autorun%d=%d(band=%d) ft8.preempt%d=%d\n", instance, autorun, autorun-1, instance, preempt);
+            if (autorun) num_autorun++;
+            if (autorun && (preempt == 0)) num_non_preempt++;
+            ft8_arun_band[instance] = autorun;
+            ft8_arun_preempt[instance] = preempt;
+        }
+        if (snd_rate != MIN_SND_RATE) {
+            printf("FT8 autorun: Only works on Kiwis configured for 12 kHz wide channels\n");
+            num_autorun = num_non_preempt = 0;
+        }
+        if (ft8_conf2.rcall == NULL || *ft8_conf2.rcall == '\0' || ft8_conf2.rgrid[0] == '\0') {
+            printf("FT8 autorun: reporter callsign and grid square fields must be entered on FT8 section of admin page\n");
+            num_autorun = num_non_preempt = 0;
+        }
+        ft8_conf2.num_autorun = num_autorun;
+        cfg_set_int("ft8.autorun", num_non_preempt);
+        //printf("FT8 autorun: num_autorun=%d ft8.autorun=%d(non-preempt) rx_chans=%d\n", num_autorun, num_non_preempt, rx_chans);
+        update_cfg = true;
+    }
+
     ft8_conf.SNR_adj = cfg_default_int("ft8.SNR_adj", -22, &update_cfg);
     if (ft8_conf.SNR_adj == 0) {    // update to new default
         cfg_set_int("ft8.SNR_adj", -22);
@@ -376,16 +387,11 @@ static void ft8_autorun(int instance)
 void ft8_autorun_start()
 {
     rx_util_t *r = &rx_util;
-    if (snd_rate != MIN_SND_RATE) {
-        printf("FT8 autorun: Only works on Kiwis configured for 12 kHz wide channels\n");
+    if (ft8_conf2.num_autorun == 0) {
+        //printf("FT8 autorun_start: none configured\n");
         return;
     }
 
-    if (*ft8_conf2.rcall == '\0' || ft8_conf2.rgrid[0] == '\0') {
-        printf("FT8 autorun: reporter callsign and grid square fields must be entered on FT8 section of admin page\n");
-        return;
-    }
-    
     for (int instance = 0; instance < rx_chans; instance++) {
         int band = ft8_arun_band[instance];
         if (band == ARUN_REG_USE) continue;     // "regular use" menu entry
