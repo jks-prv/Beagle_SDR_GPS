@@ -541,6 +541,11 @@ fail:
 			status = "offline";
 		else
 			status = "active";
+		
+		// number of channels preemptible, but only if external preemption enabled
+		int preempt = 0;
+		if (any_preempt_autorun)
+		    rx_chan_free_count(RX_COUNT_ALL, NULL, NULL, &preempt);
 
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
 		u4_t avatar_ctime = timer_server_build_unix_time();
@@ -561,7 +566,8 @@ fail:
 			"name=%s\nsdr_hw=KiwiSDR v%d.%d%s%s%s%s%s%s%s%s ⁣\n"
 			"op_email=%s\n"
 			"bands=%.0f-%.0f\nfreq_offset=%.3f\n"
-			"users=%d\nusers_max=%d\navatar_ctime=%u\n"
+			"users=%d\nusers_max=%d\npreempt=%d\n"
+			"avatar_ctime=%u\n"
 			"gps=%s\ngps_good=%d\nfixes=%d\nfixes_min=%d\nfixes_hour=%d\n"
 			"tdoa_id=%s\ntdoa_ch=%d\n"
 			"asl=%d\n"
@@ -603,7 +609,8 @@ fail:
 
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			(float) kiwi_reg_lo_kHz * kHz, (float) kiwi_reg_hi_kHz * kHz, freq_offset_kHz,
-			users, users_max, avatar_ctime,
+			users, users_max, preempt,
+			avatar_ctime,
 			gps_loc,
 			#ifdef USE_GPS
 			    gps.good, gps.fixes, gps.fixes_min, gps.fixes_hour,

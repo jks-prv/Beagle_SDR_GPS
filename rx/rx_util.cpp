@@ -105,9 +105,9 @@ void rx_loguser(conn_t *c, logtype_e type)
 	kiwi_ifree(s);
 }
 
-int rx_chan_free_count(rx_free_count_e flags, int *idx, int *heavy)
+int rx_chan_free_count(rx_free_count_e flags, int *idx, int *heavy, int *preempt)
 {
-	int i, free_cnt = 0, free_idx = -1, heavy_cnt = 0;
+	int i, free_cnt = 0, free_idx = -1, heavy_cnt = 0, preempt_cnt = 0;
 	rx_chan_t *rx;
 
     // When configuration has a limited number of channels with waterfalls
@@ -121,6 +121,8 @@ int rx_chan_free_count(rx_free_count_e flags, int *idx, int *heavy)
             /*printf("rx_chan_free_count rx%d: ext=%p flags=0x%x\n", i, rx->ext, rx->ext? rx->ext->flags : 0xffffffff);*/ \
             if (rx->ext && (rx->ext->flags & EXT_FLAGS_HEAVY)) \
                 heavy_cnt++; \
+            if (rx->conn && rx->conn->arun_preempt) \
+                preempt_cnt++; \
         } else { \
             free_cnt++; \
             if (free_idx == -1) free_idx = i; \
@@ -136,6 +138,7 @@ int rx_chan_free_count(rx_free_count_e flags, int *idx, int *heavy)
 	
 	if (idx != NULL) *idx = free_idx;
 	if (heavy != NULL) *heavy = heavy_cnt;
+	if (preempt != NULL) *preempt = preempt_cnt;
 	return free_cnt;
 }
 
