@@ -756,6 +756,7 @@ function extint_panel_show(controls_html, data_html, show_func, hide_func, show_
 	if (extint.using_data_container) {
       // remove previous use of spectrum
 		toggle_or_set_spec(toggle_e.SET, spec.NONE);
+		w3_hide('id-top-container');
 		w3_show_block(w3_innerHTML('id-ext-data-container', data_html));
 	} else {
 		w3_hide('id-ext-data-container');
