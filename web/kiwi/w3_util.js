@@ -3426,6 +3426,15 @@ function w3_json_set_cfg_cb(path, val, first)
 	ext_set_cfg_param(path, val, save);
 }
 
+// like w3_string_set_cfg_cb(), but enforces specification of leading 'http://' or 'https://'
+function w3_url_set_cfg_cb(path, val, first)
+{
+	//console.log('w3_url_set_cfg_cb: path='+ path +' '+ typeof(val) +' "'+ val +'" first='+ first);
+	if (val != '' && !val.startsWith('http://') && !val.startsWith('https://')) val = 'http://'+ val;
+	w3_string_set_cfg_cb(path, val, first);
+	w3_set_value('id-'+ path, val);
+}
+
 
 // path is structured to be: [el_name][sep][idx]
 // e.g. [id-dx.o.ty][_][123]

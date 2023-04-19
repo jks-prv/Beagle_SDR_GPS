@@ -1118,6 +1118,17 @@ function kiwi_host()
    return window.location.hostname;
 }
 
+function kiwi_remove_protocol(url)
+{
+   return url.replace(/^http:\/\//, '').replace(/^https:\/\//, '');
+}
+
+function kiwi_add_end(s, end)
+{
+   if (!s.endsWith(end)) s = s + end;
+   return s;
+}
+
 // pnames can be: 'string' or [ 'string1', 'string2', ... ]
 function kiwi_url_param(pnames, default_val, not_found_val)
 {

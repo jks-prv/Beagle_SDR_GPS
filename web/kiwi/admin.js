@@ -512,7 +512,7 @@ function connect_html()
    var s2 =
 		'<hr>' +
       w3_div('w3-container w3-text-teal|width:80%',
-         w3_input_get('', 'Next Kiwi URL redirect', 'adm.url_redirect', 'connect_url_redirect_cb'),
+         w3_input_get('', 'Next Kiwi URL redirect', 'adm.url_redirect', 'w3_url_set_cfg_cb'),
          w3_div('w3-text-black',
             'Use this setting to get multiple Kiwis to respond to a single URL.<br>' +
             'When all the channels of this Kiwi are busy further connection attempts ' +
@@ -789,16 +789,6 @@ function connect_remove_port_and_local_ip(el, s, first, check_ip)
 	
 	w3_string_set_cfg_cb(el, s, first);
 	admin_set_decoded_value(el);
-}
-
-
-// URL chain
-
-function connect_url_redirect_cb(path, val, first)
-{
-	if (val != '' && !val.startsWith('http://')) val = 'http://'+ val;
-	w3_string_set_cfg_cb(path, val, first);
-	w3_set_value('id-'+ path, val);
 }
 
 
@@ -2845,7 +2835,7 @@ function console_html()
             w3_label('w3-show-inline', 'Beagle Debian console'),
             w3_button('w3-aqua|margin-left:10px', 'Connect', 'console_connect_cb'),
 
-            dbgUs?
+            (0 && dbgUs)?
                w3_button('w3-aqua|margin-left:16px', 'top', 'console_cmd_cb', 'console_input_cb|top -c')
                :
                w3_button('w3-green|margin-left:32px', 'monitor build progress', 'console_cmd_cb',
@@ -2855,7 +2845,7 @@ function console_html()
             
             w3_button('w3-yellow|margin-left:16px', 'disk free', 'console_cmd_cb', 'console_input_cb|df .'),
 
-            dbgUs?
+            (0 && dbgUs)?
                w3_button('w3-aqua|margin-left:16px', 'nano j', 'console_cmd_cb', 'console_input_cb|nano j')
                :
                w3_button('w3-red|margin-left:16px|' +
@@ -3023,7 +3013,7 @@ function console_key_cb(ev, called_from_w3_input)
       if (redo) { ord_k = ord(k2); ctrl_k = ord_k & 0x1f; }
       var ctrl = ev.ctrlKey;
 
-      if (dbgUs) {
+      if (0 && dbgUs) {
          var ctrl1 = (k2.length == 1 && ord_k < 32);  // not ev.ctrlKey but still single char with ord_k < 32
          var esc = (k2.length > 1);
          var del = (k2.length == 1 && ord_k == 127);
@@ -3064,7 +3054,7 @@ function console_calc_rows_cols(init)
    var h_msg = 15.6;
    var h_ratio = h_msgs / h_msg;
    var rows = Math.floor(h_ratio);
-   if (dbgUs) w3_innerHTML('id-console-debug', 'h_msgs='+ h_msgs +' rows: '+ h_ratio.toFixed(2) +' '+ rows);
+   if (0 && dbgUs) w3_innerHTML('id-console-debug', 'h_msgs='+ h_msgs +' rows: '+ h_ratio.toFixed(2) +' '+ rows);
    if (init || rows != admin.console.rows) {
       //console.log('$console_calc_rows_cols init='+ init);
       //kiwi_trace('$');
