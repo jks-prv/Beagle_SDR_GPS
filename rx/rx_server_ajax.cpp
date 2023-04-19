@@ -443,12 +443,15 @@ fail:
         u4_t level = 0;
         // "%i" so decimal or hex beginning with 0x can be specified
         if (mc->query_string && sscanf(mc->query_string, "level=%i", &level) == 1) {
-            adc_level = level & ((1 << ADC_BITS) - 1);
+            adc_level = level & ((1 << (ADC_BITS-1)) - 1);
             //printf("/adc SET level=%d(0x%x)\n", adc_level, adc_level);
+            #define COUNT_ADC_OVFL 0x2000
+            if (adc_level == 0) adc_level = COUNT_ADC_OVFL;     // count ADC overflow instead of a level value
             spi_set(CmdSetADCLvl, adc_level);
         }
-		asprintf(&sb, "{ \"adc_level_dec\":%u, \"adc_level_hex\":\"0x%x\", \"adc_count\":%u }\n",
-		    adc_level, adc_level, adc_count);
+        u4_t _adc_level = (adc_level == COUNT_ADC_OVFL)? 0 : adc_level;
+		asprintf(&sb, "{ \"adc_level_dec\":%u, \"adc_level_hex\":\"0x%x\", \"adc_count\":%u, \"ver_maj\":%d, \"ver_min\":%d }\n",
+		    _adc_level, _adc_level, adc_count, version_maj, version_min);
 		break;
 	}
 
