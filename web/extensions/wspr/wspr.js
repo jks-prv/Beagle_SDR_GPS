@@ -641,7 +641,10 @@ function wspr_config_html()
                   '</h6></header>'
                ),
                
-               w3_button('id-wspr-restart w3-margin-T-16 w3-aqua w3-hide', 'autorun restart', 'wspr_autorun_restart_cb'),
+               w3_inline('w3-margin-top/',
+                  w3_button('w3-blue', 'set all to regular use', 'wspr_autorun_all_regular_cb'),
+                  w3_button('id-wspr-restart w3-margin-left w3-aqua w3-hide', 'autorun restart', 'wspr_autorun_restart_cb')
+               ),
                
                w3_div('id-wspr-admin-autorun w3-margin-T-16')
             )
@@ -692,6 +695,19 @@ function wspr_autorun_select_cb(path, idx, first)
 {
    admin_select_cb(path, idx, first);
    if (first) return;
+   w3_show('id-wspr-restart');
+	var el = w3_el('id-kiwi-container');
+	w3_scrollDown(el);   // keep menus visible
+}
+
+function wspr_autorun_all_regular_cb(path, idx, first)
+{
+   if (first) return;
+   for (var i = 0; i < rx_chans; i++) {
+      var path = 'WSPR.autorun'+ i;
+      w3_select_value(path, 0);
+      admin_select_cb(path, 0);
+   }
    w3_show('id-wspr-restart');
 	var el = w3_el('id-kiwi-container');
 	w3_scrollDown(el);   // keep menus visible
