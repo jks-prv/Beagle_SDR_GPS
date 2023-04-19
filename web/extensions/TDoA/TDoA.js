@@ -132,14 +132,13 @@ var tdoa = {
    select: undefined,
 };
 
-tdoa.url_base =   'http://tdoa.kiwisdr.com/';
-//tdoa.url_base =   'https://tdoa2.kiwisdr.com/';    // switch to using new SSL version of TDoA service
-tdoa.url =        tdoa.url_base +'tdoa/';
-tdoa.url_files =  tdoa.url +'files/';
-tdoa.rep_files =  'tdoa.kiwisdr.com/tdoa/files';   // NB: not full URL, and no trailing /
-
 function TDoA_main()
 {
+   tdoa.url_base =   kiwi_add_end(cfg.tdoa.server_url, '/');
+   tdoa.url =        tdoa.url_base +'tdoa/';
+   tdoa.url_files =  tdoa.url +'files/';
+   tdoa.rep_files =  kiwi_remove_protocol(tdoa.url) +'files';  // NB: not full URL, and no trailing /
+
 	ext_switch_to_client(tdoa.ext_name, tdoa.first_time, tdoa_recv);		// tell server to use us (again)
 	if (!tdoa.first_time)
 		tdoa_controls_setup();
@@ -2763,7 +2762,21 @@ function TDoA_config_html()
          ), 40,
 
          w3_div('w3-text-black'), 5
-      );
+      ) +
+
+      w3_inline_percent('w3-container',
+         w3_div('',
+            w3_input_get('w3-restart', 'TDoA server URL', 'tdoa.server_url', 'w3_url_set_cfg_cb', 'http://tdoa.kiwisdr.com'),
+            w3_div('w3-margin-T-8 w3-text-black',
+               'Change <b>only</b> if you have implemented an alternate TDoA server. <br>' +
+               'Set to "http://tdoa.kiwisdr.com" for the default TDoA server.'
+            )
+         ), 48,
+
+         w3_div('w3-text-black'), 4,
+
+         w3_div()
+      );      
 
    ext_config_html(tdoa, 'tdoa', 'TDoA', 'TDoA configuration', s);
 }

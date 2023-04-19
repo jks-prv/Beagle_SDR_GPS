@@ -1202,19 +1202,18 @@ void c2s_sound(void *param)
             ns_out  = m_PassbandFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps_c, f_samps_c);
             fir_pos = m_PassbandFIR[rx_chan].FirPos();
 
-            // [this diagram was back when the audio buffer was 1/2 its current size and NRX_SAMPS = 84]
-            //
 			// FIR has a pipeline delay:
-			//   gpssec=         t_0    t_1  t_2  t_3  t_4  t_5  t_6  t_7
-			//                    v      v    v    v    v    v    v    v
-			//   ns_in|ns_out = 84|512 84|0 84|0 84|0 84|0 84|0 84|0 84|512 ... (84*6 = 504)
-			//                    ^                                    ^
-			//                   (a) fir_pos=0                        (b) fir_pos=76
+			//   gpssec=          t_0     t_1   t_2   t_3   t_4     t_5   t_6   t_7
+			//                     v       v     v     v     v       v     v     v
+			//   ns_in|ns_out = 170|512 170|0 170|0 170|0 170|512 170|0 170|0 170|512 ... (170*3 = 510)
+			//                    ^                          ^                   ^
+			//                   (a) fir_pos=0              (b) fir_pos=168     (c) fir_pos=166
 			// GPS start times of 512 sample buffers:
-			//  * @a : t_0 +  84    (no samples in the FIR buffer)
-			//  * @b : t_7 +  84-76 (there are already 76 samples in the FIR buffer)
+			//  * @a : t_0 +  170     (no samples in the FIR buffer)
+			//  * @b : t_4 +  170-168 (there are already 168 samples in the FIR buffer)
+			// NB: 4 processing chunks when fir_pos=0, 3 otherwise
 			
-			// real_printf("ns_i,out=%2d|%3d gps_ts.fir_pos=%d\n", ns_in, ns_out, fir_pos); fflush(stdout);
+		    //real_printf("ns_in,out=%2d|%3d fir_pos=%d\n", ns_in, ns_out, fir_pos); fflush(stdout);
 
             #if 0
                 for (int i=0; i < ns_in; i++) {

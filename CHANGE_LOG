@@ -2,6 +2,16 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.598  Apr 19, 2023
+    /adc API: When a level of zero is specified (e.g. my_kiwi:8073/adc?level=0) the ADC overload
+    signal will be counted instead of the current "ADC value over level threshold" scheme.
+    This will give a precise count of ADC overload events compared to the "adc_ov=N" entry in
+    the /status API which is an averaged and quantized indicator.
+    
+    FT8/WSPR admin page: Added "set all to regular use" button as a fast way to clear autorun menus.
+
+    Don't display unwanted top bar when extensions open.
+
 v1.597  Apr 17, 2023
     Autorun/preemption bug fix for TDoA extension.
 

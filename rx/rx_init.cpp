@@ -226,24 +226,31 @@ void update_vars_from_config(bool called_at_init)
         dc_off_msg = true;
     }
 
-    // DON'T use cfg_default_int() here because "DRM.nreg_chans" is a two-level we can't init
-    // (the very first time if it doesn't exist) from C code
-    drm_nreg_chans = cfg_int("DRM.nreg_chans", &err, CFG_OPTIONAL);
-    if (err) drm_nreg_chans = DRM_NREG_CHANS_DEFAULT;
-    //cfg_default_string("DRM.test_file1", "Kuwait.15110.1.12k.iq.au", &update_cfg);
+    // DRM extension related
+    cfg_default_object("DRM", "{}", &update_cfg);
+    DRM_enable = cfg_default_bool("DRM.enable", true, &update_cfg);
+    drm_nreg_chans = cfg_default_int("DRM.nreg_chans", DRM_NREG_CHANS_DEFAULT, &update_cfg);
+
     s = cfg_string("DRM.test_file1", NULL, CFG_OPTIONAL);
 	if (!s || strcmp(s, "Kuwait.15110.1.12k.iq.au") == 0) {
 	    cfg_set_string("DRM.test_file1", "DRM.BBC.Journaline.au");
 	    update_cfg = true;
     }
     cfg_string_free(s);
-    //cfg_default_string("DRM.test_file2", "Delhi.828.1.12k.iq.au", &update_cfg);
+
     s = cfg_string("DRM.test_file2", NULL, CFG_OPTIONAL);
 	if (!s || strcmp(s, "Delhi.828.1.12k.iq.au") == 0) {
 	    cfg_set_string("DRM.test_file2", "DRM.KTWR.slideshow.au");
 	    update_cfg = true;
     }
     cfg_string_free(s);
+    
+    
+    // TDoA extension related
+    cfg_default_object("tdoa", "{}", &update_cfg);
+    // FIXME: switch to using new SSL version of TDoA service at some point: https://tdoa2.kiwisdr.com
+    cfg_default_string("tdoa.server_url", "http://tdoa.kiwisdr.com", &update_cfg);
+
 
     // fix any broken UTF-8 sequences via cfg_default_string()
     cfg_default_string("index_html_params.HTML_HEAD", "", &update_cfg);
@@ -465,9 +472,6 @@ void update_vars_from_config(bool called_at_init)
     }
     cfg_string_free(rx_title); rx_title = NULL;
 
-    DRM_enable = cfg_bool("DRM.enable", &err, CFG_OPTIONAL);
-    if (err) DRM_enable = true;
-    
     // change init.mode from mode menu idx to a mode string
 	n = cfg_int("init.mode", &err, CFG_OPTIONAL);
 	if (err) {
