@@ -73,7 +73,11 @@ void SNR_meas(void *param);
 typedef enum { LOG_ARRIVED, LOG_UPDATE, LOG_UPDATE_NC, LOG_LEAVING } logtype_e;
 void rx_loguser(conn_t *c, logtype_e type);
 
-typedef enum { RX_COUNT_ALL, RX_COUNT_NO_WF_FIRST } rx_free_count_e;
+typedef enum {
+    RX_COUNT_ALL,           // check all channels in order, *idx will be first free
+    RX_COUNT_NO_WF_FIRST,   // check non-wf channels first, then wf channels
+    RX_COUNT_NO_WF_AT_ALL   // never consider wf channels for configs where wf_chans != 0 && wf_chans < rx_chans
+} rx_free_count_e;
 int rx_chan_free_count(rx_free_count_e flags, int *idx = NULL, int *heavy = NULL, int *preempt = NULL);
 
 typedef enum { PWD_CHECK_NO, PWD_CHECK_YES } pwd_check_e;

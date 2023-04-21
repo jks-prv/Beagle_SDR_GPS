@@ -477,11 +477,13 @@ retry:
 		int rx_n, heavy;
 
 		if (!cother) {
-		    rx_free_count_e flags = ((isKiwi_UI || isWF_conn) && !isNo_WF)? RX_COUNT_ALL : RX_COUNT_NO_WF_FIRST;
+		    // if autorun on configurations with limited wf chans (e.g. rx8_wf2) never use the wf chans at all
+		    rx_free_count_e wf_flags = (ws_flags & WS_FL_IS_AUTORUN)? RX_COUNT_NO_WF_AT_ALL : RX_COUNT_NO_WF_FIRST;
+		    rx_free_count_e flags = ((isKiwi_UI || isWF_conn) && !isNo_WF)? RX_COUNT_ALL : wf_flags;
 			int inuse = rx_chans - rx_chan_free_count(flags, &rx_n, &heavy);
             conn_printf("%s cother=%p isKiwi_UI=%d isWF_conn=%d isNo_WF=%d inuse=%d/%d use_rx=%d heavy=%d locked=%d %s\n",
                 st->uri, cother, isKiwi_UI, isWF_conn, isNo_WF, inuse, rx_chans, rx_n, heavy, is_locked,
-                (flags == RX_COUNT_ALL)? "RX_COUNT_ALL" : "RX_COUNT_NO_WF_FIRST");
+                (flags == RX_COUNT_ALL)? "RX_COUNT_ALL" : ((flags == RX_COUNT_NO_WF_FIRST)? "RX_COUNT_NO_WF_FIRST" : "RX_COUNT_NO_WF_AT_ALL"));
             
             if (is_locked) {
                 if (inuse == 0) {
