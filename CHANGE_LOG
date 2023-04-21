@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.599  Apr 21, 2023
+    Autorun: Don't use waterfall channels on waterfall-limited, split configurations (e.g. rx8_wf2).
+
 v1.598  Apr 19, 2023
     /adc API: When a level of zero is specified (e.g. my_kiwi:8073/adc?level=0) the ADC overload
     signal will be counted instead of the current "ADC value over level threshold" scheme.
