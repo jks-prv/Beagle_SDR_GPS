@@ -15,10 +15,25 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2022 John Seamons, ZL/KF6VO
+// Copyright (c) 2022-2023 John Seamons, ZL/KF6VO
 
 #pragma once
 
-typedef enum { NAT_NO_DELETE, NAT_DELETE } nat_delete_e;
+#define N_IP_BLACKLIST 512
+#define N_IP_BLACKLIST_HASH_BYTES 4     // 4 bytes = 8 chars
 
-void UPnP_port(nat_delete_e nat_delete);
+typedef struct {
+    u4_t dropped;
+    u4_t ip;        // ipv4
+    u1_t a,b,c,d;   // ipv4
+    u4_t nm;        // ipv4
+    u1_t cidr;
+    bool whitelist;
+    u4_t last_dropped;
+} ip_blacklist_t;
+
+int ip_blacklist_add_iptables(char *ip_s);
+void ip_blacklist_init();
+bool check_ip_blacklist(char *remote_ip, bool log=false);
+void ip_blacklist_dump();
+void bl_GET(void *param);

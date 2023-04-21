@@ -32,6 +32,7 @@ Boston, MA  02110-1301, USA.
 #include "rx.h"
 #include "rx_util.h"
 #include "coroutines.h"
+#include "sha256.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -478,6 +479,9 @@ static void _dx_reload_file(cfg_t *cfg)
 	dx_t *dxp;
 	bool done = false;
 
+    SHA256_CTX ctx;
+    sha256_init(&ctx);
+
     do {
         for (i = 0; !done; i++) {
             if (i >= size_i) {
@@ -524,6 +528,8 @@ static void _dx_reload_file(cfg_t *cfg)
                         i--;    // don't load labels with errors
                     }
                 }
+                
+                sha256_update(&ctx, (BYTE *) s, slen);
             } else {
                 i--;    // detection of EOF is another trip through loop
                 done = true;
@@ -543,6 +549,12 @@ static void _dx_reload_file(cfg_t *cfg)
     fclose(fp);
     kiwi_free("cfg tokens", cfg->tokens);
     
+    BYTE hash[SHA256_BLOCK_SIZE];
+    sha256_final(&ctx, hash);
+    mg_bin2str(dx.file_hash, hash, N_DX_FILE_HASH_BYTES);
+    dx.file_size = (int) kiwi_file_size(cfg->filename);
+    lprintf("DX: file = %s,%d\n", dx.file_hash, dx.file_size);
+
     int _dx_list_len = i;   // NB: doesn't include DX_HIDDEN_SLOT
     dx.stored_alloc_size = size_i;
 	dx_reload_finalize(_dx_list, _dx_list_len);
