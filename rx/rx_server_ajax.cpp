@@ -584,7 +584,8 @@ fail:
 			"gps_date=%d,%d\n"
 			"date=%s\n"
 			//"test=7\n"
-			"ip_blacklist=%s\n",
+			"ip_blacklist=%s\n"
+			"dx_file=%d,%s,%d\n",
 			
 			status, no_open_access? "auth=password\n" : "", offline? "yes":"no",
 			name, version_maj, version_min,
@@ -635,7 +636,8 @@ fail:
 			    0, 0,
 			#endif
 			utc_ctime_static(),
-			net.ip_blacklist_hash
+			net.ip_blacklist_hash,
+			dx.stored_len, dx.file_hash, dx.file_size
 			);
 
 		kiwi_ifree(name);
