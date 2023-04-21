@@ -20,7 +20,7 @@ Boston, MA  02110-1301, USA.
 #pragma once
 
 #include "types.h"
-#include "mongoose.h"
+#include "ip_blacklist.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -76,16 +76,6 @@ typedef struct {
 	char *ip_list[N_IPS];
 	u4_t ip[N_IPS];
 } ip_lookup_t;
-
-typedef struct {
-    u4_t dropped;
-    u4_t ip;        // ipv4
-    u1_t a,b,c,d;   // ipv4
-    u4_t nm;        // ipv4
-    u1_t cidr;
-    bool whitelist;
-    u4_t last_dropped;
-} ip_blacklist_t;
 
 typedef struct {
     // set by init_NET()
@@ -153,9 +143,7 @@ typedef struct {
     
     bool ip_blacklist_inuse;
     int ip_blacklist_len;
-    #define N_IP_BLACKLIST 512
     ip_blacklist_t ip_blacklist[N_IP_BLACKLIST];
-    #define N_IP_BLACKLIST_HASH_BYTES 4       // 4 bytes = 8 chars
     char ip_blacklist_hash[N_IP_BLACKLIST_HASH_BYTES*2 + SPACE_FOR_NULL];
 } net_t;
 
@@ -183,11 +171,6 @@ bool ip_match(const char *ip, ip_lookup_t *ips);
 
 char *ip_remote(struct mg_connection *mc);
 bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_ip);
-void ip_blacklist_init();
-void ip_blacklist_init_list(const char *list);
-int ip_blacklist_add_iptables(char *ip_s);
-bool check_ip_blacklist(char *remote_ip, bool log=false);
-void ip_blacklist_dump();
 
 
 typedef struct {
