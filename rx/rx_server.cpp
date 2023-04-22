@@ -478,7 +478,7 @@ retry:
 
 		if (!cother) {
 		    // if autorun on configurations with limited wf chans (e.g. rx8_wf2) never use the wf chans at all
-		    rx_free_count_e wf_flags = (ws_flags & WS_FL_IS_AUTORUN)? RX_COUNT_NO_WF_AT_ALL : RX_COUNT_NO_WF_FIRST;
+		    rx_free_count_e wf_flags = ((ws_flags & WS_FL_IS_AUTORUN) && !(ws_flags & WS_FL_INITIAL))? RX_COUNT_NO_WF_AT_ALL : RX_COUNT_NO_WF_FIRST;
 		    rx_free_count_e flags = ((isKiwi_UI || isWF_conn) && !isNo_WF)? RX_COUNT_ALL : wf_flags;
 			int inuse = rx_chans - rx_chan_free_count(flags, &rx_n, &heavy);
             conn_printf("%s cother=%p isKiwi_UI=%d isWF_conn=%d isNo_WF=%d inuse=%d/%d use_rx=%d heavy=%d locked=%d %s\n",

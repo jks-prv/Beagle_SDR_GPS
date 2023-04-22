@@ -162,6 +162,7 @@ void ft8_close(int rx_chan)
 	
 	decode_ft8_free(rx_chan);
     ft8_reset(e);
+    r->arun_which[rx_chan] = ARUN_NONE;
 }
 
 bool ft8_msgs(char *msg, int rx_chan)
@@ -341,7 +342,7 @@ void ft8_update_spot_count(int rx_chan, u4_t spot_count)
     }
 }
 
-static void ft8_autorun(int instance)
+static void ft8_autorun(int instance, bool initial)
 {
     rx_util_t *r = &rx_util;
     int band = ft8_arun_band[instance]-1;
@@ -353,7 +354,8 @@ static void ft8_autorun(int instance)
     char *geoloc;
     asprintf(&geoloc, "0%%20decoded%s", preempt? ",%20preemptible" : "");
 
-	bool ok = internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_BASE_INTERNAL_FT8, WS_FL_IS_AUTORUN,
+	bool ok = internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_BASE_INTERNAL_FT8,
+	    WS_FL_IS_AUTORUN | (initial? WS_FL_INITIAL : 0),
         "usb", FT8_PASSBAND_LO, FT8_PASSBAND_HI, dial_freq_kHz, ident_user, geoloc, "FT8");
     free(ident_user); free(geoloc);
     if (!ok) {
@@ -384,7 +386,7 @@ static void ft8_autorun(int instance)
     input_msg_internal(cext, (char *) "SET ft8_start=%d", ft4? 1:0);
 }
 
-void ft8_autorun_start()
+void ft8_autorun_start(bool initial)
 {
     rx_util_t *r = &rx_util;
     if (ft8_conf2.num_autorun == 0) {
@@ -411,7 +413,7 @@ void ft8_autorun_start()
         }
         if (rx_chan == rx_chans) {
             // arun_{which,band} set only after ft8_autorun():internal_conn_setup() succeeds
-            ft8_autorun(instance);
+            ft8_autorun(instance, initial);
         }
     }
 }
@@ -448,7 +450,7 @@ void ft8_autorun_restart()
         ft8_update_vars_from_config(true);
         
         // restart all enabled
-        ft8_autorun_start();
+        ft8_autorun_start(true);
     r->arun_suspend_restart_victims = false;
 }
 
@@ -468,7 +470,7 @@ void FT8_main()
 	ext_register(&ft8_ext);
     ft8_update_vars_from_config(false);
 	PSKReporter_init();
-    ft8_autorun_start();
+    ft8_autorun_start(true);
 
     //const char *fn = cfg_string("FT8.test_file", NULL, CFG_OPTIONAL);
     const char *fn = "FT8.test.au";

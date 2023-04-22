@@ -87,11 +87,14 @@ enum conn_count_e { EXTERNAL_ONLY, INCLUDE_INTERNAL, TDOA_USERS, EXT_API_USERS, 
 #define EXCEPT_PREEMPTABLE  0x01
 int rx_count_server_conns(conn_count_e type, u4_t flags = 0, conn_t *our_conn = NULL);
 
+enum kick_e { KICK_CHAN, KICK_USERS, KICK_ALL };
+const char * const kick_s[] = { "KICK_CHAN", "KICK_USERS", "KICK_ALL" };
+void rx_server_user_kick(kick_e kick, int chan = -1);
+
 void show_conn(const char *prefix, u4_t printf_type, conn_t *cd);
-void rx_server_user_kick(int chan);
 void rx_autorun_clear();
 int rx_autorun_find_victim();
-void rx_autorun_restart_victims();
+void rx_autorun_restart_victims(bool initial);
 void rx_server_send_config(conn_t *conn);
 char *rx_users(bool include_ip);
 void geoloc_task(void *param);

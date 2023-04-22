@@ -370,7 +370,7 @@ void wspr_decode(int rx_chan);
 void wspr_send_peaks(wspr_t *w, int start, int stop);
 void wspr_send_decode(wspr_t *w, int seq);
 
-void wspr_autorun_start();
+void wspr_autorun_start(bool initial);
 void wspr_autorun_restart();
 
 typedef enum { FIND_BEST_TIME_LAG, FIND_BEST_FREQ, CALC_SOFT_SYMS } wspr_mode_e;

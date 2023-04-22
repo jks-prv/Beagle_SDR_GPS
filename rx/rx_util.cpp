@@ -206,35 +206,39 @@ int rx_count_server_conns(conn_count_e type, u4_t flags, conn_t *our_conn)
 	return (users? users : any);
 }
 
-void rx_server_user_kick(int chan)
+void rx_server_user_kick(kick_e kick, int chan)
 {
 	// kick users off (all or individual channel)
-	printf("rx_server_user_kick rx=%d\n", chan);
+	printf("rx_server_user_kick %s rx=%d\n", kick_s[kick], chan);
 	conn_t *c = conns;
-	const char *msg = (chan == -1)? "Everyone was kicked!" : "You were kicked!";
+	const char *msg = (kick == KICK_CHAN)? "You were kicked!" : "Everyone was kicked!";
 	
 	for (int i=0; i < N_CONNS; i++, c++) {
 		if (!c->valid)
 			continue;
 
+        bool kick_chan  = (kick == KICK_CHAN  && chan == c->rx_channel);
+        bool kick_users = (kick == KICK_USERS && !c->internal_connection);
+        bool kick_all   = (kick == KICK_ALL);
+        //printf("rx_server_user_kick consider CONN-%02d rx=%d %s kick_chan=%d kick_users=%d kick_all=%d\n",
+        //    i, c->rx_channel, rx_conn_type(c), kick_chan, kick_users, kick_all);
 		if (c->type == STREAM_SOUND || c->type == STREAM_WATERFALL) {
-		    if ((chan == -1 && !c->internal_connection) || (chan != -1 && chan == c->rx_channel)) {
+		    if (kick_chan || kick_users || kick_all) {
 		        send_msg_encoded(c, "MSG", "kiwi_kick", "%s", msg);
                 c->kick = true;
-                if (chan != -1)
-                    printf("rx_server_user_kick KICKING rx=%d %s\n", chan, rx_conn_type(c));
+                printf("rx_server_user_kick KICKING rx=%d %s\n", c->rx_channel, rx_conn_type(c));
             }
 		} else
 		
 		if (c->type == STREAM_EXT) {
-		    if ((chan == -1 && !c->internal_connection) || (chan != -1 && chan == c->rx_channel)) {
+		    if (kick_chan || kick_users || kick_all) {
 		        send_msg_encoded(c, "MSG", "kiwi_kick", "%s", msg);
                 c->kick = true;
-                if (chan != -1)
-                    printf("rx_server_user_kick KICKING rx=%d EXT %s\n", chan, c->ext? c->ext->name : "?");
+                printf("rx_server_user_kick KICKING rx=%d EXT %s\n", c->rx_channel, c->ext? c->ext->name : "?");
             }
 		}
 	}
+	//printf("rx_server_user_kick DONE\n");
 }
 
 void rx_autorun_clear()
@@ -277,24 +281,24 @@ int rx_autorun_find_victim()
     return -1;
 }
 
-void rx_autorun_restart_victims()
+void rx_autorun_restart_victims(bool initial)
 {
-    if (rx_util.arun_suspend_restart_victims) {
+    if (rx_util.arun_suspend_restart_victims || update_in_progress || backup_in_progress || sd_copy_in_progress) {
         //printf("rx_autorun_restart_victims SUSPENDED\n");
         return;
     }
     
     // if autorun on configurations with limited wf chans (e.g. rx8_wf2) never use the wf chans at all
     int free_chans = rx_chan_free_count(RX_COUNT_NO_WF_AT_ALL);
-    //printf("rx_autorun_restart_victims: free_chans=%d rx_chans=%d wf_chans=%d\n", free_chans, rx_chans, wf_chans);
+    //printf("rx_autorun_restart_victims: initial=%d free_chans=%d rx_chans=%d wf_chans=%d\n", initial, free_chans, rx_chans, wf_chans);
     if (free_chans == 0) {
         //printf("rx_autorun_restart_victims: no free chans\n");
         return;
     }
     //printf("rx_autorun_restart_victims: free_chans=%d\n", free_chans);
 
-    ft8_autorun_start();
-    wspr_autorun_start();
+    ft8_autorun_start(initial);
+    wspr_autorun_start(initial);
 }
 
 void rx_server_send_config(conn_t *conn)
@@ -333,7 +337,7 @@ void show_conn(const char *prefix, u4_t printf_type, conn_t *cd)
         prefix, cd->self_idx, cd, type_s, rx_s,
         cd->auth? "*":"_", cd->auth_kiwi? "K":"_", cd->auth_admin? "A":"_",
         cd->isMaster? "M":"_", cd->arun_preempt? "P":(cd->internal_connection? "I":(cd->ext_api? "E":"_")), cd->ext_api_determined? "D":"_",
-        cd->isLocal? "L":(cd->force_notLocal? "F":"_"), cd->auth_prot? "P":"_", cd->awaitingPassword? "A":"_",
+        cd->isLocal? "L":(cd->force_notLocal? "F":"_"), cd->auth_prot? "P":"_", cd->awaitingPassword? "A":(cd->kick? "K":"_"),
         cd->isPassword, cd->tlimit_exempt, cd->tlimit_exempt_by_pwd, cd->served,
         cd->keep_alive, cd->keepalive_count, cd->mc,
         cd->remote_ip, cd->remote_port, cd->tstamp,
@@ -361,7 +365,7 @@ void dump()
 		if (cd->valid) nconn++;
 	}
 	lprintf("\n");
-	lprintf("CONNS: used %d/%d is_locked=%d  ______ => *auth, Kiwi, Admin, Master, Internal/Preempt/ExtAPI, DetAPI, Local/ForceNotLocal, ProtAuth, AwaitPwd\n",
+	lprintf("CONNS: used %d/%d is_locked=%d  ______ => *auth, Kiwi, Admin, Master, Internal/Preempt/ExtAPI, DetAPI, Local/ForceNotLocal, ProtAuth, Kicked/AwaitPwd\n",
 	    nconn, N_CONNS, is_locked);
 
 	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {

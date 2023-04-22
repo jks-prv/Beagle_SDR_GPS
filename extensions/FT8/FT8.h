@@ -26,6 +26,6 @@ C_LINKAGE(void decode_ft8_protocol(int rx_chan, int freqHz, int proto));
 C_LINKAGE(void decode_ft8_samples(int rx_chan, TYPEMONO16 *samps, int nsamps, int freqHz, u1_t *start_test));
 
 bool ft8_update_vars_from_config(bool called_at_init_or_restart);
-void ft8_autorun_start();
+void ft8_autorun_start(bool initial);
 void ft8_autorun_restart();
 void ft8_update_spot_count(int rx_chan, u4_t spot_count);
