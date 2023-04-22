@@ -804,8 +804,8 @@ void wspr_close(int rx_chan)
     rx_util_t *r = &rx_util;
     wspr_t *w = &WSPR_SHMEM->wspr[rx_chan];
     assert(rx_chan == w->rx_chan);
-    rcprintf(rx_chan, "WSPR: close rx_chan=%d autorun=%d arun_which=%d create_tasks=%d\n",
-        rx_chan, w->autorun, r->arun_which[rx_chan], w->create_tasks);
+    //rcprintf(rx_chan, "WSPR: close rx_chan=%d autorun=%d arun_which=%d create_tasks=%d\n",
+    //    rx_chan, w->autorun, r->arun_which[rx_chan], w->create_tasks);
     ext_unregister_receive_iq_samps(w->rx_chan);
 
 	if (w->autorun) {
@@ -820,6 +820,7 @@ void wspr_close(int rx_chan)
 	}
 	
 	wspr_reset(w);
+    r->arun_which[rx_chan] = ARUN_NONE;
 }
 
 bool wspr_msgs(char *msg, int rx_chan)
@@ -976,7 +977,7 @@ bool wspr_update_vars_from_config(bool called_at_init_or_restart)
     return update_cfg;
 }
     
-void wspr_autorun(int instance)
+void wspr_autorun(int instance, bool initial)
 {
     rx_util_t *r = &rx_util;
     int band = wspr_arun_band[instance]-1;
@@ -1009,7 +1010,8 @@ void wspr_autorun(int instance)
     char *geoloc;
     asprintf(&geoloc, "0%%20decoded%s", preempt? ",%20preemptible" : "");
 
-	bool ok = internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_BASE_INTERNAL_WSPR, WS_FL_IS_AUTORUN,
+	bool ok = internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_BASE_INTERNAL_WSPR,
+        WS_FL_IS_AUTORUN | (initial? WS_FL_INITIAL : 0),
         "usb", AUTORUN_BFO - AUTORUN_FILTER_BW/2, AUTORUN_BFO + AUTORUN_FILTER_BW/2, if_freq_kHz,
         ident_user, geoloc, "wspr");
     free(ident_user); free(geoloc);
@@ -1056,7 +1058,7 @@ void wspr_autorun(int instance)
     w->arun_last_status_sent = timer_sec();
 }
 
-void wspr_autorun_start()
+void wspr_autorun_start(bool initial)
 {
     rx_util_t *r = &rx_util;
     if (wspr_c.num_autorun == 0) {
@@ -1083,7 +1085,7 @@ void wspr_autorun_start()
         }
         if (rx_chan == rx_chans) {
             // arun_{which,band} set only after wspr_autorun():internal_conn_setup() succeeds
-            wspr_autorun(instance);
+            wspr_autorun(instance, initial);
         }
     }
 }
@@ -1127,7 +1129,7 @@ void wspr_autorun_restart()
         wspr_update_vars_from_config(true);
         
         // restart all enabled
-        wspr_autorun_start();
+        wspr_autorun_start(true);
     r->arun_suspend_restart_victims = false;
 }
 
@@ -1193,7 +1195,7 @@ void wspr_main()
     wspr_gprintf("WSPR %s decimation: srate=%.6f/%d decim=%.6f/%d sps=%d NFFT=%d nbins_411=%d\n", FRACTIONAL_DECIMATION? "fractional" : "integer",
         frate, snd_rate, fdecimate, int_decimate, SPS, NFFT, nbins_411);
 
-    wspr_autorun_start();
+    wspr_autorun_start(true);
 
     const char *fn = cfg_string("WSPR.test_file", NULL, CFG_OPTIONAL);
     if (!fn || *fn == '\0') return;

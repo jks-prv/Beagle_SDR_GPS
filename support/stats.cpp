@@ -234,7 +234,7 @@ static void webserver_collect_print_stats(int print)
 		last_min = min;
 	}
 	
-    rx_autorun_restart_victims();
+    rx_autorun_restart_victims(false);
 	spi_stats();
 }
 

@@ -1,7 +1,7 @@
+HFDL_SKIP ?= false
+
 ifeq ($(DEBIAN_VERSION),7)
     HFDL_SKIP = true
-else
-    HFDL_SKIP = false
 endif
 
 THIS_HFDL = extensions/HFDL

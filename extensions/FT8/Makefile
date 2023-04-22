@@ -1,7 +1,7 @@
+FT8_SKIP ?= false
+
 ifeq ($(DEBIAN_VERSION),7)
     FT8_SKIP = true
-else
-    FT8_SKIP = false
 endif
 
 THIS_FT8 = extensions/FT8

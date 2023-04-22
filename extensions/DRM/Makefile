@@ -1,7 +1,7 @@
+DRM_SKIP ?= false
+
 ifeq ($(DEBIAN_VERSION),7)
     DRM_SKIP = true
-else
-    DRM_SKIP = false
 endif
 
 THIS_DRM = extensions/DRM
