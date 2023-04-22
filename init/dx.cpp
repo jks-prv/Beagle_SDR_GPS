@@ -553,7 +553,7 @@ static void _dx_reload_file(cfg_t *cfg)
     sha256_final(&ctx, hash);
     mg_bin2str(dx.file_hash, hash, N_DX_FILE_HASH_BYTES);
     dx.file_size = (int) kiwi_file_size(cfg->filename);
-    lprintf("DX: file = %s,%d\n", dx.file_hash, dx.file_size);
+    lprintf("DX: file = %d,%s,%d\n", i, dx.file_hash, dx.file_size);
 
     int _dx_list_len = i;   // NB: doesn't include DX_HIDDEN_SLOT
     dx.stored_alloc_size = size_i;

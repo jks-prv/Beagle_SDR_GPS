@@ -6,6 +6,9 @@ VERSION_MIN = 599
 REPO_NAME := Beagle_SDR_GPS
 REPO := https://github.com/jks-prv/$(REPO_NAME).git
 
+# for any config-specific options/dependencies
+-include ../kiwi.config/Makefile.kiwi.inc
+
 #
 # Makefile for KiwiSDR project
 #

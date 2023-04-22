@@ -73,6 +73,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
 	if ((down || update_in_progress || backup_in_progress)
 		&& st->type != AJAX_VERSION
 		&& st->type != AJAX_STATUS
+		&& st->type != AJAX_USERS
 		&& st->type != AJAX_DISCOVERY
 		)
 			return NULL;
