@@ -2,6 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.600  Apr 23, 2023
+    FT8/WSPR autorun:
+        For waterfall-limited, split configurations (e.g. rx8_wf2) allow waterfall channels to be
+        used initially (after rx3-rx7 have been filled) except for the case of preemption restart.
+        This restores the prior behavior allowing e.g. 7 of 8 channels to be initialized with
+        autorun processes.
+        
+        Stop autorun processes during an sd card backup and resume afterwards.
+
 v1.599  Apr 21, 2023
     Autorun: Don't use waterfall channels on waterfall-limited, split configurations (e.g. rx8_wf2).
 
