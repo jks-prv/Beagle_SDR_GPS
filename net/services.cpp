@@ -861,7 +861,7 @@ void services_start()
     reg_kiwisdr_com_tid = CreateTask(reg_public, 0, SERVICES_PRIORITY);
 
     if (admcfg_bool("ip_blacklist_auto_download", NULL, CFG_REQUIRED) == true) {
-        CreateTask(bl_GET, 0, SERVICES_PRIORITY);
+        CreateTask(bl_GET, BL_DOWNLOAD, SERVICES_PRIORITY);
     } else {
         ip_blacklist_init();
         kiwi.allow_admin_conns = true;

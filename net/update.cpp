@@ -321,7 +321,7 @@ common_return:
 	if (ip_auto_download_oneshot) {
 	    ip_auto_download_oneshot = false;
         //printf("bl_GET: update check normal\n");
-	    bl_GET(TO_VOID_PARAM(1));
+	    bl_GET(TO_VOID_PARAM(BL_CHECK_ONLY));
 	}
 
 	if (conn) conn->update_check = WAIT_UNTIL_NO_USERS;     // restore default
@@ -339,7 +339,7 @@ void check_for_update(update_check_e type, conn_t *conn)
         if (ip_auto_download_check) {
             ip_auto_download_check = false;
             //printf("bl_GET: update check false\n");
-            bl_GET(TO_VOID_PARAM(1));
+            bl_GET(TO_VOID_PARAM(BL_CHECK_ONLY));
         }
 
 		return;

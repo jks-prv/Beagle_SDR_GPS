@@ -731,7 +731,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     
     #ifdef IP_BL_TEST
         if (mc->query_string && strstr(mc->query_string, "bl_get_jks") != NULL) {
-            bl_GET(TO_VOID_PARAM(1));
+            bl_GET(TO_VOID_PARAM(BL_CHECK_ONLY));
         }
     #endif
     

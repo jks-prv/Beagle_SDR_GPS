@@ -183,7 +183,7 @@ void bl_GET(void *param)
 	bool failed = true, first, ip_err;
     u4_t mtime;
 	
-	bool check_only = ((int) FROM_VOID_PARAM(param) == 1);
+	bool check_only = ((int) FROM_VOID_PARAM(param) == BL_CHECK_ONLY);
 	lprintf("bl_GET: running..%s\n", check_only? " (check only)" : "");
 	
     char *kiwisdr_com = DNS_lookup_result("bl_GET", "kiwisdr.com", &net.ips_kiwisdr_com);
