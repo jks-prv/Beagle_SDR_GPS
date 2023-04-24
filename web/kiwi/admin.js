@@ -46,6 +46,7 @@ function status_html()
          '<hr>' +
          w3_div('id-problems w3-container') +
          w3_div('id-msg-config w3-container') +
+         w3_div('id-msg-debian w3-container') +
          w3_div('id-msg-gps w3-container') +
          w3_div('id-msg-snr w3-container') +
          w3_div('w3-container', 'Browser: '+ navigator.userAgent) +
@@ -1030,28 +1031,30 @@ function backup_html()
 	w3_div('id-backup w3-hide',
 		'<hr>',
 		w3_div('w3-section w3-text-teal w3-bold', 'Backup complete contents of KiwiSDR by writing Beagle filesystem onto a user provided micro-SD card'),
-		w3_div('w3-container w3-text w3-red', 'WARNING: after SD card is written immediately remove from Beagle.<br>Otherwise on next reboot Beagle will be re-flashed from SD card.'),
-		'<hr>',
-		w3_third('w3-container', 'w3-valign',
-			w3_button('w3-aqua w3-margin', 'Click to write micro-SD card', 'backup_sd_write'),
+      w3_div('id-backup-container w3-hide', 
+         w3_div('w3-container w3-text w3-red', 'WARNING: after SD card is written immediately remove from Beagle.<br>Otherwise on next reboot Beagle will be re-flashed from SD card.'),
+         '<hr>',
+         w3_third('w3-container', 'w3-valign',
+            w3_button('w3-aqua w3-margin', 'Click to write micro-SD card', 'backup_sd_write'),
 
-			w3_div('',
-				w3_div('id-progress-container w3-progress-container w3-round-large w3-gray w3-show-inline-block',
-					w3_div('id-progress w3-progressbar w3-round-large w3-light-green w3-width-zero',
-						w3_div('id-progress-text w3-container')
-					)
-				),
-				
-            w3_div('w3-margin-T-8',
-               w3_div('id-progress-time w3-show-inline-block') +
-               w3_div('id-progress-icon w3-show-inline-block w3-margin-left')
-            )
-			),
+            w3_div('',
+               w3_div('id-progress-container w3-progress-container w3-round-large w3-gray w3-show-inline-block',
+                  w3_div('id-progress w3-progressbar w3-round-large w3-light-green w3-width-zero',
+                     w3_div('id-progress-text w3-container')
+                  )
+               ),
+         
+               w3_div('w3-margin-T-8',
+                  w3_div('id-progress-time w3-show-inline-block') +
+                  w3_div('id-progress-icon w3-show-inline-block w3-margin-left')
+               )
+            ),
 
-			w3_div('id-sd-status class-sd-status')
-		),
-		'<hr>',
-		w3_div('id-output-msg w3-container w3-text-output w3-scroll-down w3-small w3-margin-B-16')
+            w3_div('id-sd-status class-sd-status')
+         ),
+         '<hr>',
+         w3_div('id-output-msg w3-container w3-text-output w3-scroll-down w3-small w3-margin-B-16')
+      )
 	);
 	return s;
 }
@@ -1060,9 +1063,18 @@ function backup_focus()
 {
 	w3_el('id-progress-container').style.width = px(300);
 	w3_el('id-output-msg').style.height = px(300);
+
+   w3_do_when_cond(function() { return isNumber(kiwi.debian_maj); },
+      function() {
+         if (kiwi.debian_maj >= 11) {
+            w3_innerHTML('id-backup-container',
+               w3_div('w3-container w3-text w3-red', 'Debian '+ kiwi.debian_maj +' does not yet support the backup function.'));
+         }
+         w3_show('id-backup-container', 'w3-show-inline');
+      }, 0, 250);
 }
 
-var sd_progress, sd_progress_max = 6*60;		// measured estimate -- in secs (varies with SD card write speed)
+var sd_progress, sd_progress_max = 12*60;    // measured estimate -- in secs (varies with SD card write speed)
 var backup_sd_interval;
 var backup_refresh_icon = w3_icon('', 'fa-refresh fa-spin', 20);
 
@@ -1086,7 +1098,7 @@ function backup_sd_progress()
 {
 	sd_progress++;
 	var pct = ((sd_progress / sd_progress_max) * 100).toFixed(0);
-	if (pct <= 95) {	// stall updates until we actually finish in case SD is writing slowly
+	if (pct <= 99) {	// stall updates until we actually finish in case SD is writing slowly
 		w3_el('id-progress-text').innerHTML = w3_el('id-progress').style.width = pct +'%';
 	}
 	var secs = (sd_progress % 60).toFixed(0).leadingZeros(2);

@@ -2,6 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.601  Apr 25, 2023
+    Admin page:
+        Debian version now shown on status tab.
+        Backup tab shows error message if Debian 11 (or higher) because backups not supported yet.
+            Currently this only effects BBAI-64. BBAI running Debian 9 and BBG/B Debian 10 work.
+    
+    GPS: Fixed bug with Galileo solution accuracy introduced as a side-effect of Verilog
+    code cleanup (thanks Tom and Glenn).
+
 v1.600  Apr 23, 2023
     FT8/WSPR autorun:
         For waterfall-limited, split configurations (e.g. rx8_wf2) allow waterfall channels to be

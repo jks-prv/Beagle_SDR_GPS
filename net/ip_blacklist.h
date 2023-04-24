@@ -36,4 +36,7 @@ int ip_blacklist_add_iptables(char *ip_s);
 void ip_blacklist_init();
 bool check_ip_blacklist(char *remote_ip, bool log=false);
 void ip_blacklist_dump();
+
+#define BL_DOWNLOAD     0
+#define BL_CHECK_ONLY   1
 void bl_GET(void *param);
