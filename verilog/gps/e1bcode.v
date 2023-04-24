@@ -80,9 +80,9 @@ module E1BCODE (
     generate
         for (ch_c = 0; ch_c < GPS_CHANS; ch_c = ch_c + 1)
         begin : e1b_code_c
-            always @ (posedge clk)
+            always @*
                 if (full_chip[ch_c])
-                    code_o[ch_c] <= code_n[ch_c];
+                    code_o[ch_c] = code_n[ch_c];
         end
     endgenerate
 
