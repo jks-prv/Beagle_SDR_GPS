@@ -8,6 +8,8 @@
 //
 // Updates:
 //
+// 11 may 23 64.176.0.0/19 (0.0:31.255) constant/vultr/choopa Waterfall Scan
+// 11 may 23 8.215.0.0/16 (0.0:255.255) Alibaba VPN Proxy
 // 13 mar 23 139.84.128.0/17 (128.0:255.255) constant/vultr/choopa
 // 13 mar 23 forum: 103.68.194.0/24 (194.0:194.255) hkcloudx.com
 // 27 dec 22 github issue: 192.248.176.0/20 (176.0:191.255) constant/vultr/choopa
