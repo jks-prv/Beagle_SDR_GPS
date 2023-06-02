@@ -433,7 +433,7 @@ void iparams_add(const char *id, char *encoded)
 	int n = strlen(encoded);
     ip->decoded = (char *) kiwi_imalloc("iparams_add", n + SPACE_FOR_NULL);
     mg_url_decode(ip->encoded, n, ip->decoded, n + SPACE_FOR_NULL, 0);
-    //printf("iparams_add: %d %s <%s>\n", n_iparams, ip->id, ip->decoded);
+    //printf("iparams_add: %d %s DEC:%d<%s> ENC:%d<%s>\n", n_iparams, ip->id, strlen(ip->decoded), ip->decoded, n, ip->encoded);
 	n_iparams++;
 }
 
@@ -730,8 +730,8 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     }
     
     #ifdef IP_BL_TEST
-        if (mc->query_string && strstr(mc->query_string, "bl_get_jks") != NULL) {
-            bl_GET(TO_VOID_PARAM(BL_CHECK_ONLY));
+        if (mc->query_string && strstr(mc->query_string, "IP_BL_TEST") != NULL) {
+            ip_blacklist_get(TO_VOID_PARAM(BL_DOWNLOAD_DIFF_RESTART));
         }
     #endif
     
