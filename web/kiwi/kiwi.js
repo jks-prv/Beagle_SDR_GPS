@@ -1,9 +1,26 @@
 // KiwiSDR
 //
-// Copyright (c) 2014-2021 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2023 John Seamons, ZL/KF6VO
 
 var kiwi = {
    d: {},      // debug
+   
+   cfg:   { seq:0, name:'cfg',   cmd:'save_cfg',   lock:0, timeout:null },
+   dxcfg: { seq:0, name:'dxcfg', cmd:'save_dxcfg', lock:0, timeout:null },
+   adm:   { seq:0, name:'adm',   cmd:'save_adm',   lock:0, timeout:null },
+   //test_cfg_save_seq: true,
+   test_cfg_save_seq: false,
+   log_cfg_save_seq: false,
+   
+   // NB: must match rx_cmd.h
+   BADP_OK:                            0,
+   BADP_TRY_AGAIN:                     1,
+   BADP_STILL_DETERMINING_LOCAL_IP:    2,
+   BADP_NOT_ALLOWED_FROM_IP:           3,
+   BADP_NO_ADMIN_PWD_SET:              4,
+   BADP_NO_MULTIPLE_CONNS:             5,
+   BADP_DATABASE_UPDATE_IN_PROGRESS:   6,
+   BADP_ADMIN_CONN_ALREADY_OPEN:       7,
    
    isOffset: false,
    is_local: [],
@@ -14,6 +31,7 @@ var kiwi = {
    is_multi_core: 0,
    log2_seq: 0,
    
+   w3_text: 'w3-text-bottom w3-text-css-orange',
    inactivity_panel: false,
    no_admin_conns_pend: 0,
    foff_error_pend: 0,
@@ -39,10 +57,6 @@ var kiwi = {
    mode_menu: [ 'AM', 'AMN', 'USB', 'USN', 'LSB', 'LSN', 'CW', 'CWN', 'NBFM', 'NNFM',
                 'IQ', 'DRM', 'SAM', 'SAU', 'SAL', 'SAS', 'QAM' ],
 
-   
-   // cfg.bands
-
-   cfg_fields: [ 'min', 'max', 'chan' ],
    
    ITU_s: [
       'any',
@@ -92,6 +106,9 @@ var kiwi = {
    pre_wrapped: false,
    pre_ping_pong: 0,
    
+   bands: null,
+   bands_community: null,
+   
    _ver_: 1.578,
    _last_: null
 };
@@ -110,10 +127,6 @@ var conn_type;
 var seriousError = false;
 
 var timestamp;
-
-//var optbar_prefix_color = 'w3-text-css-lime';
-//var optbar_prefix_color = 'w3-text-aqua';
-var optbar_prefix_color = 'w3-text-css-orange';
 
 var dbgUs = false;
 var dbgUsFirst = true;
@@ -211,6 +224,7 @@ function kiwi_load_js_polled(obj, js_files)
 
 function kiwi_load_js_dir(dir, js_files, cb_post, cb_pre)
 {
+	if (isString(js_files)) js_files = [js_files];
    for (var i = 0; i < js_files.length; i++) {
       js_files[i] = dir + js_files[i];
    }
@@ -223,6 +237,7 @@ function kiwi_load_js(js_files, cb_post, cb_pre)
 	console.log('DYNLOAD START');
 	// kiwi_js_load.js will begin running only after all others have loaded and run.
 	// Can then safely call the callback.
+	if (isString(js_files)) js_files = [js_files];
 	js_files.push('kiwi/kiwi_js_load.js');
 	console.log(js_files);
 
@@ -342,26 +357,32 @@ function kiwi_valpwd1_cb(badp, p)
 	if (seriousError)
 	   return;        // don't go any further
 
-	if (badp == 1) {
+	if (badp == kiwi.BADP_TRY_AGAIN) {
 		kiwi_ask_pwd(p.conn_type == 'kiwi');
 		try_again = 'Try again. ';
 	} else
-	if (badp == 2) {
+	if (badp == kiwi.BADP_STILL_DETERMINING_LOCAL_IP) {
 	   kiwi_show_msg('Still determining local interface address.<br>Please try reloading page in a few moments.');
 	} else
-	if (badp == 3) {
-	   kiwi_show_msg('Admin connections not allowed from this ip address.');
+	if (badp == kiwi.BADP_NOT_ALLOWED_FROM_IP) {
+	   kiwi_show_msg('Admin connection not allowed from this ip address.');
 	} else
-	if (badp == 4) {
+	if (badp == kiwi.BADP_NO_ADMIN_PWD_SET) {
 	   kiwi_show_msg('No admin password set. Can only connect from same local network as Kiwi.<br>Client ip = '+ client_public_ip);
 	} else
-	if (badp == 5) {
+	if (badp == kiwi.BADP_NO_MULTIPLE_CONNS) {
 	   kiwi_show_msg('Multiple connections from the same ip address not allowed.<br>Client ip = '+ client_public_ip);
 	} else
-	if (badp == 6) {
+	if (badp == kiwi.BADP_DATABASE_UPDATE_IN_PROGRESS) {
 	   kiwi_show_msg('Database update in progress.<br>Please try reloading page after one minute.');
 	} else
-	if (badp == 0) {
+	if (badp == kiwi.BADP_ADMIN_CONN_ALREADY_OPEN) {
+	   kiwi_show_msg('Another admin connection already open. Only one at a time allowed. <br>' +
+	      'Kick the other connection and retry? <br>' +
+         w3_button('w3-medium w3-padding-smaller w3-red w3-margin-T-8', 'Kick other admin', 'kick_other_admin_cb')
+      );
+	} else
+	if (badp == kiwi.BADP_OK) {
 		if (p.conn_type == 'kiwi') {
 		
 			// For the client connection, repeat the auth process for the second websocket.
@@ -371,6 +392,13 @@ function kiwi_valpwd1_cb(badp, p)
 			kiwi_valpwd2_cb(0, p);
 		}
 	}
+}
+
+function kick_other_admin_cb()
+{
+	console.log('kick_other_admin_cb');
+	msg_send('SET kick_admins');
+   setTimeout(function() { window.location.reload(true); }, 1000);
 }
 
 function kiwi_open_ws_cb2(p)
@@ -396,8 +424,7 @@ function kiwi_valpwd2_cb(badp, p)
 		
 		//console.log("calling "+ p.conn_type+ "_main()..");
 		try {
-			kiwi_init();
-			w3_call(p.conn_type +'_main');
+         w3_call(p.conn_type +'_main');
 		} catch(ex) {
 			console.log('EX: '+ ex);
 			console.log('kiwi_valpwd2_cb: no interface routine for '+ p.conn_type +'?');
@@ -406,10 +433,6 @@ function kiwi_valpwd2_cb(badp, p)
 		console.log("kiwi_valpwd2_cb: body_loaded previously!");
 		return;
 	}
-}
-
-function kiwi_init()
-{
 }
 
 function kiwi_xdLocalStorage_init()
@@ -476,33 +499,52 @@ function kiwi_get_init_settings()
 ////////////////////////////////
 
 var cfg = { };
+var dxcfg = { };
+var dxcomm_cfg = { };   // read-only, doesn't appear in cfg_save_json()
 var adm = { };
+
+function config_save(cfg_s, cfg)
+{
+   var kiwi_cfg = kiwi[cfg_s];
+   
+   // Can't do this because it defeats the kiwi.cfg.lock mechanism!
+   // Better to just fix the places where back-to-back requests are occurring.
+   /*
+   // coalesce back-to-back save requests
+   if (kiwi.test_cfg_save_seq == false) {
+      kiwi_clearTimeout(kiwi_cfg.timeout);
+      kiwi_cfg.timeout = setTimeout(function() {
+         config_save2(kiwi_cfg, cfg);
+      }, 250);
+   } else
+   */
+   {
+      config_save2(kiwi_cfg, cfg);
+   }
+}
+
+function config_save2(kiwi_cfg, cfg)
+{
+   //kiwi_trace();
+   var s = encodeURIComponent(JSON.stringify(cfg, null, 3));   // pretty-print the JSON
+   ext_send_cfg(kiwi_cfg, s);
+}
 
 function cfg_save_json(id, path)
 {
-	//console.log('cfg_save_json: path='+ path);
+	console.log('cfg_save_json: from='+ id +' path='+ path +' BEGIN');
 	//kiwi_trace();
 
 	var s;
 	if (path.startsWith('adm.')) {
-		s = encodeURIComponent(JSON.stringify(adm, null, 3));    // pretty-print the JSON
-		console.log('save_adm len='+ s.length);
-		extint.ws.send('SET save_adm='+ s);
-	} else {
-		s = encodeURIComponent(JSON.stringify(cfg, null, 3));    // pretty-print the JSON
-		console.log('save_cfg len='+ s.length);
-		
-		// Handle web socket fragmentation by sending in parts which can be reassembled on server side.
-		// Config data sent can get this large after double encoding.
-	   var frag_size = 65000;
-		while (s.length > frag_size) {
-		   extint.ws.send('SET save_cfg_part='+ s.slice(0, frag_size));
-		   s = s.slice(frag_size);
-		}
-		
-		extint.ws.send('SET save_cfg='+ s);
+	   config_save('adm', adm);
+	} else
+	if (path.startsWith('dxcfg.')) {
+	   config_save('dxcfg', dxcfg);
+	} else {    // cfg.*
+	   config_save('cfg', cfg);
 	}
-	console.log('cfg_save_json: from='+ id +' path='+ path +' DONE');
+	//console.log('cfg_save_json: from='+ id +' path='+ path +' DONE');
 }
 
 ////////////////////////////////
@@ -1140,7 +1182,7 @@ function kiwi_output_msg(id, id_scroll, p)
    };
    
 	var s;
-	if (!isArg(p.no_decode) || p.no_decode != true) {
+	if (isNoArg(p.no_decode) || p.no_decode != true) {
       try {
          //if (dbg) console.log(kiwi_JSON(p.s));
          s = kiwi_decodeURIComponent('kiwi_output_msg', p.s);
@@ -1992,7 +2034,7 @@ function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_gps_clk_c
    var s = (acquiring? 'yes':'pause') +', track '+ tracking +', good '+ good +', fixes '+ fixes.toUnits();
 	w3_innerHTML('id-msg-gps', 'GPS: acquire '+ s);
 	w3_innerHTML('id-status-gps',
-	   w3_text(optbar_prefix_color, 'GPS'),
+	   w3_text('w3-text-css-orange', 'GPS'),
 	   w3_text('', 'acq '+ s)
 	);
 	extint_adc_clock_Hz = adc_clock * 1e6;
@@ -2002,7 +2044,7 @@ function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_gps_clk_c
 	   var el = w3_el('id-msg-gps');
 	   if (el) el.innerHTML += ', ADC clock '+ s;
 		w3_innerHTML('id-status-adc',
-	      w3_text(optbar_prefix_color, 'ADC clock '),
+	      w3_text('w3-text-css-orange', 'ADC clock '),
 	      w3_text('', s)
 		);
 	}
@@ -2169,7 +2211,7 @@ var kiwi_xfer_stats_str_long = "";
 function xfer_stats_cb(audio_kbps, waterfall_kbps, waterfall_fps, http_kbps, sum_kbps)
 {
 	kiwi_xfer_stats_str =
-	   w3_text(optbar_prefix_color, 'Net') +
+	   w3_text('w3-text-css-orange', 'Net') +
 	   w3_text('', 'aud '+ audio_kbps.toFixed(0) +', wf '+ waterfall_kbps.toFixed(0) +', http '+
 		http_kbps.toFixed(0) +', total '+ sum_kbps.toFixed(0) +' kB/s');
 
@@ -2192,11 +2234,11 @@ function cpu_stats_cb(o, uptime_secs, ecpu, waterfall_fps)
    var cputemp = cputempC? (cputempC.toFixed(0) +'&deg;C '+ cputempF.toFixed(0) +'&deg;F ') : '';
    var cpufreq = (o.cf >= 1000)? ((o.cf/1000).toFixed(1) +' GHz') : (o.cf.toFixed(0) +' MHz');
 	kiwi_cpu_stats_str =
-	   w3_text(optbar_prefix_color, 'BB ') +
+	   w3_text('w3-text-css-orange', 'BB ') +
 	   w3_text('', o.cu[0] +','+ o.cs[0] +','+ o.ci[0] +' usi% ') +
 	   (cputempC? w3_text(temp_color, cputemp) :'') +
 	   w3_text('', cpufreq +' ') +
-	   w3_text(optbar_prefix_color, 'FPGA') +
+	   w3_text('w3-text-css-orange', 'FPGA') +
 	   w3_text('', ecpu.toFixed(0) +'%');
 	kiwi.wf_fps = waterfall_fps;
 
@@ -2232,7 +2274,7 @@ function cpu_stats_cb(o, uptime_secs, ecpu, waterfall_fps)
 	if (days) s += days +'d:';
 	s += hr +':'+ min.leadingZeros(2) +':'+ sec.leadingZeros(2);
 	w3_innerHTML('id-status-config',
-      w3_text(optbar_prefix_color, 'Up'),
+      w3_text('w3-text-css-orange', 'Up'),
       w3_text('', s +', '+ kiwi_config_str)
 	);
 
@@ -2721,6 +2763,18 @@ function kiwi_msg(param, ws)
          //}, 2000);
 			break;
 
+		case "load_dxcfg":
+			var dxcfg_json = decodeURIComponent(param[1]);
+			console.log('### load_dxcfg '+ ws.stream +' '+ dxcfg_json.length);
+         dxcfg = kiwi_JSON_parse('load_dxcfg', dxcfg_json);
+			break;
+
+		case "load_dxcomm_cfg":
+			var dxcomm_cfg_json = decodeURIComponent(param[1]);
+			console.log('### load_dxcomm_cfg '+ ws.stream +' '+ dxcomm_cfg_json.length);
+         dxcomm_cfg = kiwi_JSON_parse('load_dxcomm_cfg', dxcomm_cfg_json);
+			break;
+
 		case "load_adm":
 			var adm_json = decodeURIComponent(param[1]);
 			console.log('### load_adm '+ ws.stream +' '+ adm_json.length);
@@ -2735,9 +2789,9 @@ function kiwi_msg(param, ws)
             //console.log('$$$$ confirmation_show_content');
             confirmation_panel_close();
             confirmation_show_content(
-               'Must close all admin connections before attempting this operation.' +
+               'Must close admin connection before attempting this operation.' +
                w3_button('w3-small w3-padding-smaller w3-yellow w3-margin-T-8',
-                  'Close all admin connections and complete original operation',
+                  'Close admin connection and complete original operation',
                   'kiwi_force_admin_close_cb', retry_dx_update),
                500, 75,
                function() {
@@ -2759,7 +2813,7 @@ function kiwi_msg(param, ws)
                   (+param[1] == 0)?
                      '"foff=" URL parameter available from local connections only.'
                   :
-                     'Must close all admin connections before using "foff=" URL parameter.',
+                     'Must close admin connection before using "foff=" URL parameter.',
                   500, 55,
                   function() {
                      confirmation_panel_close();
@@ -2972,10 +3026,10 @@ function kiwi_msg(param, ws)
 // debug
 ////////////////////////////////
 
-function kiwi_debug(msg)
+function kiwi_debug(msg, syslog)
 {
 	console.log(msg);
-	msg_send('SET dbug_msg='+ encodeURIComponent(msg));
+	msg_send('SET '+ (syslog? 'dbug_msg=' : 'x-DEBUG=') + encodeURIComponent(msg));
 }
 	
 function kiwi_show_msg(s)

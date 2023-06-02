@@ -302,104 +302,117 @@ endif
 # some of these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
-KEYRING := $(DIR_CFG)/.keyring.dep
+# runs only once per update of the .keyringN.dep filename
+KEYRING := $(DIR_CFG)/.keyring2.dep
 $(KEYRING):
 	@echo "KEYRING.."
 ifeq ($(DEBIAN_VERSION),7)
-	cp /etc/apt/sources.list /etc/apt/sources.list.orig
-	sed -e 's/ftp\.us/archive/' < /etc/apt/sources.list >/tmp/sources.list
-	mv /tmp/sources.list /etc/apt/sources.list
+	@echo "switch to using Debian 7 (Wheezy) archive repo"
+	-cp /etc/apt/sources.list /etc/apt/sources.list.orig
+	-sed -e 's/ftp\.us/archive/' < /etc/apt/sources.list >/tmp/sources.list
+	-mv /tmp/sources.list /etc/apt/sources.list
 endif
-	-apt-get -y --force-yes update
-	-apt-get -y --force-yes install debian-archive-keyring
-	-apt-get -y --force-yes update
+ifeq ($(DEBIAN_VERSION),8)
+	@echo "switch to using Debian 8 (Jessie) archive repo"
+	-cp /etc/apt/sources.list /etc/apt/sources.list.orig
+	-cp unix_env/sources.D8.new.list /etc/apt/sources.list
+endif
+ifeq ($(DEBIAN_VERSION),9)
+	@echo "switch to using Debian 9 (Stretch) archive repo"
+	-cp /etc/apt/sources.list /etc/apt/sources.list.orig
+	-cp unix_env/sources.D9.new.list /etc/apt/sources.list
+endif
+	-apt-get -y $(APT_GET_FORCE) update
+	-apt-get -y $(APT_GET_FORCE) install debian-archive-keyring
+	-apt-get -y $(APT_GET_FORCE) update
 	@mkdir -p $(DIR_CFG)
 	touch $(KEYRING)
 
+# runs once-per-boot
 INSTALL_CERTIFICATES := /tmp/.kiwi-ca-certs
 $(INSTALL_CERTIFICATES):
 	@echo "INSTALL_CERTIFICATES.."
 	make $(KEYRING)
-	-apt-get -y --force-yes install ca-certificates
-	-apt-get -y --force-yes update
+	-apt-get -y $(APT_GET_FORCE) install ca-certificates
+	-apt-get -y $(APT_GET_FORCE) update
 	touch $(INSTALL_CERTIFICATES)
 
 /usr/lib/$(LIB_ARCH)/libfftw3f.a:
-	apt-get -y --force-yes install libfftw3-dev
+	apt-get -y $(APT_GET_FORCE) install libfftw3-dev
 
 # NB not a typo: "clang-6.0" vs "clang-7"
 
 /usr/bin/clang-6.0:
 	# only available recently?
-	-apt-get -y --force-yes update
-	apt-get -y --force-yes install clang-6.0
+	-apt-get -y $(APT_GET_FORCE) update
+	apt-get -y $(APT_GET_FORCE) install clang-6.0
 
 /usr/bin/clang-7:
-	-apt-get -y --force-yes update
-	apt-get -y --force-yes install clang-7
+	-apt-get -y $(APT_GET_FORCE) update
+	apt-get -y $(APT_GET_FORCE) install clang-7
 
 /usr/bin/clang-8:
-	-apt-get -y --force-yes update
-	apt-get -y --force-yes install clang-8
+	-apt-get -y $(APT_GET_FORCE) update
+	apt-get -y $(APT_GET_FORCE) install clang-8
 
 /usr/bin/clang-11:
-	-apt-get -y --force-yes update
-	apt-get -y --force-yes install clang-11
+	-apt-get -y $(APT_GET_FORCE) update
+	apt-get -y $(APT_GET_FORCE) install clang-11
 
 /usr/bin/curl:
-	-apt-get -y --force-yes install curl
+	-apt-get -y $(APT_GET_FORCE) install curl
 
 /usr/bin/wget:
-	-apt-get -y --force-yes install wget
+	-apt-get -y $(APT_GET_FORCE) install wget
 
 /usr/bin/htop:
-	-apt-get -y --force-yes install htop
+	-apt-get -y $(APT_GET_FORCE) install htop
 
 /usr/sbin/avahi-autoipd:
-	-apt-get -y --force-yes install avahi-daemon avahi-utils libnss-mdns avahi-autoipd
+	-apt-get -y $(APT_GET_FORCE) install avahi-daemon avahi-utils libnss-mdns avahi-autoipd
 
 /usr/bin/upnpc:
-	-apt-get -y --force-yes install miniupnpc
+	-apt-get -y $(APT_GET_FORCE) install miniupnpc
 
 /usr/bin/dig:
-	-apt-get -y --force-yes install dnsutils
+	-apt-get -y $(APT_GET_FORCE) install dnsutils
 
 /usr/bin/pgmtoppm:
-	-apt-get -y --force-yes install netpbm
+	-apt-get -y $(APT_GET_FORCE) install netpbm
 
 /sbin/ethtool:
-	-apt-get -y --force-yes install ethtool
+	-apt-get -y $(APT_GET_FORCE) install ethtool
 
 /usr/bin/sshpass:
-	-apt-get -y --force-yes install sshpass
+	-apt-get -y $(APT_GET_FORCE) install sshpass
 
 /usr/bin/killall:
-	-apt-get -y --force-yes install psmisc
+	-apt-get -y $(APT_GET_FORCE) install psmisc
 
 /usr/bin/dtc:
-	-apt-get -y --force-yes install device-tree-compiler
+	-apt-get -y $(APT_GET_FORCE) install device-tree-compiler
 
 ifeq ($(DEBIAN_10_AND_LATER),true)
 /usr/include/openssl/ssl.h:
-	-apt-get -y --force-yes install openssl libssl1.1 libssl-dev
+	-apt-get -y install openssl libssl1.1 libssl-dev
 
 /usr/bin/connmanctl:
-	-apt-get -y --force-yes install connman
+	-apt-get -y $(APT_GET_FORCE) install connman
 endif
 
 ifeq ($(BBAI_64),true)
 /usr/bin/cpufreq-info:
-	-apt-get -y --force-yes install cpufrequtils
+	-apt-get -y install cpufrequtils
 endif
 
 ifeq ($(BBAI),true)
 /usr/bin/cpufreq-info:
-	-apt-get -y --force-yes install cpufrequtils
+	-apt-get -y install cpufrequtils
 endif
 
 ifneq ($(DEBIAN_VERSION),7)
 /usr/bin/jq:
-	-apt-get -y --force-yes install jq
+	-apt-get -y $(APT_GET_FORCE) install jq
 endif
 
 endif
@@ -627,7 +640,7 @@ $(FILE_OPTIM): $(FILE_OPTIM_SRC)
 #EDATA_DEP = web/kiwi/Makefile web/openwebrx/Makefile web/pkgs/Makefile web/extensions/Makefile $(wildcard extensions/*/Makefile) $(FILE_OPTIM)
 EDATA_DEP = web/kiwi/Makefile web/openwebrx/Makefile web/pkgs/Makefile web/extensions/Makefile $(FILE_OPTIM)
 
-.PHONY: foptim_gen foptim_list foptim_clean
+.PHONY: foptim_gen foptim_list foptim_clean clean_min clean_gz
 
 # NEVER let target Kiwis contact external optimization site via foptim_gen.
 # If customers are developing they need to do a "make install" on a development machine
@@ -652,10 +665,10 @@ foptim_list: loptim_embed loptim_ext loptim_maps
 
 CLEAN_MIN_GZ_2 = $(wildcard $(CLEAN_MIN_GZ))
 ifeq ($(CLEAN_MIN_GZ_2),)
-foptim_clean: roptim_embed roptim_ext roptim_maps
-	@echo "nothing to foptim_clean"
+foptim_clean clean_min clean_gz: roptim_embed roptim_ext roptim_maps
+	@echo "nothing to clean"
 else
-foptim_clean: roptim_embed roptim_ext roptim_maps
+foptim_clean clean_min clean_gz: roptim_embed roptim_ext roptim_maps
 	@echo "removing:"
 	@-ls -la $(CLEAN_MIN_GZ_2)
 	@-rm $(CLEAN_MIN_GZ_2)
@@ -1127,11 +1140,21 @@ EXISTS_ADMIN := $(shell test -f $(DIR_CFG)/$(CFG_ADMIN) && echo true)
 CFG_CONFIG = config.js
 EXISTS_CONFIG := $(shell test -f $(DIR_CFG)/$(CFG_CONFIG) && echo true)
 
-CFG_DX = dx.json
-EXISTS_DX := $(shell test -f $(DIR_CFG)/$(CFG_DX) && echo true)
+ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
+    DX = dx.json
+    EXISTS_DX := $(shell test -f $(DIR_CFG)/$(DX) && echo true)
+    DX_CFG = dx_config.json
+    EXISTS_DX_CFG := $(shell test -f $(DIR_CFG)/$(DX_CFG) && echo true)
+    DX_SHA256 := $(shell test -f $(DIR_CFG)/$(DX) && sha256sum $(DIR_CFG)/$(DX) | cut -c1-8)
+    DX_NEEDS_UPDATE := $(findstring $(DX_SHA256),612d92da f607e7c7 574fb11d)
 
-CFG_DX_MIN = dx.min.json
-EXISTS_DX_MIN := $(shell test -f $(DIR_CFG)/$(CFG_DX_MIN) && echo true)
+    # If missing install DIR_CFG copies (initial versions).
+    # If Internet connection exists subsequent updates will occur.
+    DX_COMM = dx_community.json
+    EXISTS_DX_COMM := $(shell test -f $(DIR_CFG)/$(DX_COMM) && echo true)
+    DX_COMM_CFG = dx_community_config.json
+    EXISTS_DX_COMM_CFG := $(shell test -f $(DIR_CFG)/$(DX_COMM_CFG) && echo true)
+endif
 
 ETC_HOSTS_HAS_KIWI := $(shell grep -qi kiwisdr /etc/hosts && echo true)
 
@@ -1183,8 +1206,10 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	@echo "# DANGER: CHECK FOR MINIMIZATION FAILURE"
 	@echo "# kiwi_js_load.min.js and xd-utils.min.js are okay to be in this list"
 	find . -name "*.min.js" -size -1k -ls
-	# next is to remind us dotmaui is down and local JShrink/Minifier (used for *.js ONLY)
-	# is not compressing .min.html and .min.css files
+#	@echo "# DANGER: REMOVING FILES ###############################################################"
+#	find . -name "*.min.js" -size -1k -exec rm "{}" \;
+	# report when something has gone wrong with the minimization process
+	find . -name "*.min.js" -exec grep -q "no minifier" "{}" \; -ls
 	find . -name "*.min.html" -exec grep -q "no minifier" "{}" \; -ls
 	find . -name "*.min.css" -exec grep -q "no minifier" "{}" \; -ls
 	@echo "############################################"
@@ -1241,46 +1266,69 @@ endif
 
 # only install post-customized config files if they've never existed before
 ifneq ($(EXISTS_BASHRC_LOCAL),true)
-	@echo installing .bashrc.local
+	@echo "\nINSTALLING .bashrc.local"
 	cp unix_env/bashrc.local ~root/.bashrc.local
 endif
 
 ifneq ($(EXISTS_KIWI),true)
-	@echo installing $(DIR_CFG)/$(CFG_KIWI)
+	@echo "\nINSTALLING $(DIR_CFG)/$(CFG_KIWI)"
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_KIWI) $(DIR_CFG)/$(CFG_KIWI)
 
 # don't prevent admin.json transition process
-ifneq ($(EXISTS_ADMIN),true)
-	@echo installing $(DIR_CFG)/$(CFG_ADMIN)
-	@mkdir -p $(DIR_CFG)
-	cp $(DIR_CFG_SRC)/dist.$(CFG_ADMIN) $(DIR_CFG)/$(CFG_ADMIN)
-endif
+	ifneq ($(EXISTS_ADMIN),true)
+	    @echo "\nINSTALLING $(DIR_CFG)/$(CFG_ADMIN)"
+	    @mkdir -p $(DIR_CFG)
+	    cp $(DIR_CFG_SRC)/dist.$(CFG_ADMIN) $(DIR_CFG)/$(CFG_ADMIN)
+	endif
 endif
 
 ifneq ($(EXISTS_DX),true)
-	@echo installing $(DIR_CFG)/$(CFG_DX)
+	@echo "\nINSTALLING $(DIR_CFG)/$(DX)"
 	@mkdir -p $(DIR_CFG)
-	cp $(DIR_CFG_SRC)/dist.$(CFG_DX) $(DIR_CFG)/$(CFG_DX)
+	cp $(DIR_CFG_SRC)/dist.$(DX) $(DIR_CFG)/$(DX)
 endif
 
-ifneq ($(EXISTS_DX_MIN),true)
-	@echo installing $(DIR_CFG)/$(CFG_DX_MIN)
+ifneq ($(EXISTS_DX_CFG),true)
+	@echo "\nINSTALLING $(DIR_CFG)/$(DX_CFG)"
+	cp $(DIR_CFG_SRC)/dist.$(DX_CFG) $(DIR_CFG)/$(DX_CFG)
+endif
+
+	@echo "\nDX_SHA256=$(DX_SHA256) DX_NEEDS_UPDATE=$(DX_NEEDS_UPDATE)"
+
+ifneq ($(DX_NEEDS_UPDATE),)
+	@echo "\nUPDATING $(DIR_CFG)/$(DX)"
+	cp --backup=numbered $(DIR_CFG)/$(DX) $(DIR_CFG)/$(DX).save
+	cp $(DIR_CFG_SRC)/dist.$(DX) $(DIR_CFG)/$(DX)
+# if dx.json hasn't changed then presume a conversion from config.js isn't necessary
+	@echo "\nINSTALLING $(DIR_CFG)/$(DX_CFG)"
+	cp $(DIR_CFG_SRC)/dist.$(DX_CFG) $(DIR_CFG)/$(DX_CFG)
+endif
+
+ifneq ($(EXISTS_DX_COMM),true)
+	@echo "\nINSTALLING $(DIR_CFG)/$(DX_COMM)"
 	@mkdir -p $(DIR_CFG)
-	cp $(DIR_CFG_SRC)/dist.$(CFG_DX_MIN) $(DIR_CFG)/$(CFG_DX_MIN)
+	cp $(DIR_CFG_SRC)/dist.$(DX_COMM) $(DIR_CFG)/$(DX_COMM)
+endif
+
+ifneq ($(EXISTS_DX_COMM_CFG),true)
+	@echo "\nINSTALLING $(DIR_CFG)/$(DX_COMM_CFG)"
+	@mkdir -p $(DIR_CFG)
+	cp $(DIR_CFG_SRC)/dist.$(DX_COMM_CFG) $(DIR_CFG)/$(DX_COMM_CFG)
 endif
 
 ifneq ($(EXISTS_CONFIG),true)
-	@echo installing $(DIR_CFG)/$(CFG_CONFIG)
+	@echo "\nINSTALLING $(DIR_CFG)/$(CFG_CONFIG)"
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_CONFIG) $(DIR_CFG)/$(CFG_CONFIG)
 endif
 
 ifneq ($(ETC_HOSTS_HAS_KIWI),true)
-	@echo appending kiwisdr to /etc/hosts
+	@echo "\nAPPENDING kiwisdr to /etc/hosts"
 	@echo '127.0.0.1       kiwisdr' >>/etc/hosts
 endif
 
+	@echo
 	systemctl enable kiwid.service
 
 # remove public keys leftover from development
@@ -1289,7 +1337,7 @@ ifeq ($(EXISTS_SSH_KEYS),true)
 endif
 
 # must be last obviously
-	@if [ -f $(REBOOT) ]; then rm $(REBOOT); echo "MUST REBOOT FOR CHANGES TO TAKE EFFECT"; echo -n "Press \"return\" key to reboot else control-C: "; read in; reboot; fi;
+	@if [ -f $(REBOOT) ]; then rm $(REBOOT); echo "\nMUST REBOOT FOR CHANGES TO TAKE EFFECT"; echo -n "Press \"return\" key to reboot else control-C: "; read in; reboot; fi;
 
 endif
 
@@ -1300,7 +1348,7 @@ endif
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 enable disable start stop restart status:
-	-systemctl --full --lines=100 $@ kiwid.service || true
+	-systemctl --full --lines=250 $@ kiwid.service || true
 
 # SIGUSR1 == SIG_DUMP
 reload dump:
@@ -1331,7 +1379,7 @@ log:
 	@rm -f /tmp/kiwi.log
 
 slog:
-	-@cat /var/log/user.log | -a grep kiwid
+	-@cat /var/log/user.log | grep -a kiwid
 
 tlog:
 	-@cat /var/log/user.log | grep -a kiwid | tail -500
@@ -1583,6 +1631,8 @@ gitdiff_context:
 	colordiff -br -C 10 --exclude=.DS_Store --exclude=.git "--exclude=*.min.*" $(GITAPP)/$(REPO_NAME) . || true
 gitdiff_brief:
 	colordiff -br --brief --exclude=.DS_Store --exclude=.git $(GITAPP)/$(REPO_NAME) . || true
+gitdiff_no_big:
+	colordiff -br --exclude=.DS_Store --exclude=.git "--exclude=*.min.*" "--exclude=*.json" --exclude=EiBi.h --exclude=sked-current.csv $(GITAPP)/$(REPO_NAME) . || true
 
 gitdiff2:
 	colordiff -br --exclude=.DS_Store --exclude=.git "--exclude=*.min.*" ../../../sdr/KiwiSDR/$(REPO_NAME) . || true
@@ -1592,7 +1642,7 @@ endif
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 /usr/bin/xz: $(INSTALL_CERTIFICATES)
-	apt-get -y --force-yes install xz-utils
+	apt-get -y $(APT_GET_FORCE) install xz-utils
 
 #
 # DANGER: "count=2400M" below (i.e. 1.6 GB) must be larger than the partition size (currently ~2.1 GB)

@@ -44,9 +44,13 @@ Boston, MA  02110-1301, USA.
 #include <signal.h>
 #include <ctype.h>
 
-#define CFG_FN	DIR_CFG "/" CFG_PREFIX "kiwi.json"
-#define ADM_FN	DIR_CFG "/" CFG_PREFIX "admin.json"
-#define DX_FN	DIR_CFG "/" CFG_PREFIX "dx.json"
+#define CFG_PRE         DIR_CFG "/" CFG_PREFIX
+#define CFG_FN          CFG_PRE "kiwi.json"
+#define ADM_FN          CFG_PRE "admin.json"
+#define DX_FN           CFG_PRE "dx.json"
+#define DX_CFG_FN       CFG_PRE "dx_config.json"
+#define DX_COMM_FN      CFG_PRE "dx_community.json"
+#define DX_COMM_CFG_FN  CFG_PRE "dx_community_config.json"
 
 #define SPACE_FOR_CLOSE_BRACE       1
 #define SPACE_FOR_POSSIBLE_COMMA    1
@@ -148,6 +152,7 @@ static void cfg_test()
 
 int serial_number;
 
+// only called once from main()
 void cfg_reload()
 {
 	cfg_init();
@@ -169,11 +174,11 @@ void cfg_reload()
     }
 
 #ifdef USE_SDR
-	dx_reload();
+	dx_label_init();
 #endif
 }
 
-cfg_t cfg_cfg, cfg_adm, cfg_dx;
+cfg_t cfg_cfg, cfg_adm, cfg_dx, cfg_dxcfg, cfg_dxcomm, cfg_dxcomm_cfg;
 	
 char *_cfg_get_json(cfg_t *cfg, int *size)
 {
@@ -188,6 +193,8 @@ static bool _cfg_load_json(cfg_t *cfg);
 
 bool _cfg_init(cfg_t *cfg, int flags, char *buf)
 {
+    bool rv = true;
+    
 	if (buf != NULL) {
 		memset(cfg, 0, sizeof(cfg_t));
         cfg->flags = flags;
@@ -197,37 +204,63 @@ bool _cfg_init(cfg_t *cfg, int flags, char *buf)
 		if (_cfg_parse_json(cfg, false) == false)
 			return false;
 		cfg->init = true;
-		cfg->isJSON = true;
 		return true;
+	} else
+	
+	if (cfg != NULL && buf == NULL && cfg->filename != NULL && (flags & CFG_IS_JSON)) {
+        cfg->init = false;
 	} else
 	
 	if (cfg == &cfg_cfg) {
 		cfg->filename = CFG_FN;
 	} else
+
 	if (cfg == &cfg_adm) {
 		cfg->filename = ADM_FN;
 	} else
+
 	if (cfg == &cfg_dx) {
 		cfg->filename = DX_FN;
-		flags |= CFG_INT_BASE10;
-        #ifdef OPTION_DX_INCREMENTAL_PARSE
-            flags |= CFG_NO_PARSE;
-        #endif
+		flags |= CFG_NO_PARSE | CFG_INT_BASE10;
+    } else
+
+	if (cfg == &cfg_dxcfg) {
+		cfg->filename = DX_CFG_FN;
+		flags |= CFG_NO_PARSE | CFG_INT_BASE10;
+    } else
+
+	if (cfg == &cfg_dxcomm) {
+        cfg->filename = DX_COMM_FN;
+		flags |= CFG_NO_PARSE | CFG_INT_BASE10;
+    } else
+
+	if (cfg == &cfg_dxcomm_cfg) {
+        cfg->filename = DX_COMM_CFG_FN;
+		flags |= CFG_NO_PARSE | CFG_INT_BASE10;
 	} else {
 		panic("cfg_init cfg");
 	}
 	
+    bool parse = !(flags & CFG_NO_PARSE);
 	if (!cfg->init) {
         cfg->flags = flags;
         
-        if (!(flags & CFG_NO_PARSE)) {
+        if (parse) {
             cfg->init_load = true;
             if (_cfg_load_json(cfg) == false) {
-                if (cfg == &cfg_dx) {
-                    lprintf("DX configuration file %s: JSON parse failed\n", cfg->filename);
+                if (cfg->flags & CFG_IS_JSON) {
+                    lprintf("JSON parse failed: %s\n", cfg->filename);
                     return false;
                 }
                 panic("cfg_init json");
+            }
+        } else
+        
+        if (flags & CFG_LOAD_ONLY) {
+            lprintf("reading configuration from file %s\n", cfg->filename);
+            if (_cfg_load_json(cfg) == false) {
+                lprintf("configuration file %s doesn't exist\n", cfg->filename);
+                rv = false;
             }
         }
         
@@ -235,7 +268,7 @@ bool _cfg_init(cfg_t *cfg, int flags, char *buf)
 	    cfg->init_load = false;
 	}
 	
-    if (!(flags & CFG_NO_PARSE))
+    if (parse)
         lprintf("reading configuration from file %s: %d tokens (%s bytes)\n",
             cfg->filename, cfg->ntok, toUnits(cfg->json_buf_size, 0));
 
@@ -251,12 +284,12 @@ bool _cfg_init(cfg_t *cfg, int flags, char *buf)
 		}
 	}
 	
-	return true;
+	return rv;
 }
 
 void _cfg_release(cfg_t *cfg)
 {
-	if (!cfg->init || !cfg->isJSON) return;
+	if (!cfg->init || !(cfg->flags & CFG_IS_JSON)) return;
 	if (cfg->tokens) {
 	    //printf("cfg_release: tokens %p\n", cfg->tokens);
 	    kiwi_free("cfg tokens", cfg->tokens);
@@ -942,6 +975,27 @@ void _cfg_default_string(cfg_t *cfg, const char *name, const char *val, bool *er
 }
 
 
+const char *_cfg_array(cfg_t *cfg, const char *name, bool *error, u4_t flags)
+{
+	const char *array = NULL;
+	bool err = false;
+
+	jsmntok_t *jt = _cfg_lookup_json(cfg, name, CFG_OPT_NONE);
+	if (!jt || jt == CFG_LOOKUP_LVL1 || _cfg_type_json(cfg, JSMN_ARRAY, jt, &array) == false) {
+		err = true;
+	}
+	if (error) *error = err;
+	if (err) {
+		if (!(flags & CFG_REQUIRED)) return NULL;
+		lprintf("%s: required parameter not found: %s\n", cfg->filename, name);
+		panic("cfg_array");
+	}
+
+	if (flags & CFG_PRINT) lprintf("CFG read %s: %s = \"%s\"\n", cfg->filename, name, array);
+	//if (flags & CFG_PRINT) real_printf("CFG read %s: %s = \"%s\"\n", cfg->filename, name, array);
+	return array;
+}
+
 const char *_cfg_object(cfg_t *cfg, const char *name, bool *error, u4_t flags)
 {
 	const char *obj = NULL;
@@ -1241,6 +1295,7 @@ static bool _cfg_load_json(cfg_t *cfg)
     TMEAS(printf("cfg_load_json: START file=%s\n", cfg->filename);)
 
 	off_t fsize = kiwi_file_size(cfg->filename);
+	if (fsize == -1) return false;
 	_cfg_realloc_json(cfg, fsize + SPACE_FOR_NULL, CFG_NONE);
 	
 	if (fsize > 128*K)
@@ -1249,12 +1304,12 @@ static bool _cfg_load_json(cfg_t *cfg)
     FILE *fp;
     scallz("_cfg_load_json fopen", (fp = fopen(cfg->filename, "r")));
     n = fread(cfg->json, 1, cfg->json_buf_size, fp);
-    assert(n > 0 && n < cfg->json_buf_size);
+    assert(n >= 0 && n < cfg->json_buf_size);   // n == 0 if e.g. a wget -O fails and file is zero length
     fclose(fp);
 
 	// turn into a string
 	cfg->json[n] = '\0';
-	if (cfg->json[n-1] == '\n')
+	if (n > 0 && cfg->json[n-1] == '\n')
 		cfg->json[n-1] = '\0';
 
 	// hack to add passband configuration (too difficult to do with cfg.h interface)
@@ -1284,15 +1339,17 @@ static bool _cfg_load_json(cfg_t *cfg)
         return true;
 	}
 	
-    TMEAS(printf("cfg_load_json: parse\n");)
-	if (_cfg_parse_json(cfg, false) == false)
-		return false;
+	if (!(cfg->flags & CFG_LOAD_ONLY)) {
+        TMEAS(printf("cfg_load_json: parse\n");)
+        if (_cfg_parse_json(cfg, false) == false)
+            return false;
 
-	if (0 && cfg != &cfg_dx) {
-	//if (1) {
-		printf("walking %s config list after load (%d tokens)...\n", cfg->filename, cfg->ntok);
-		_cfg_walk(cfg, NULL, cfg_print_tok, NULL);
-	}
+        if (0 && cfg != &cfg_dx) {
+        //if (1) {
+            printf("walking %s config list after load (%d tokens)...\n", cfg->filename, cfg->ntok);
+            _cfg_walk(cfg, NULL, cfg_print_tok, NULL);
+        }
+    }
 
     TMEAS(printf("cfg_load_json: DONE\n");)
 	return true;
@@ -1327,7 +1384,8 @@ void _cfg_save_json(cfg_t *cfg, char *json)
 		strcpy(cfg->json, json);
 	}
 
-    // This takes forever for a large file. But we fixed it by putting a NextTask() in jsmn_parse().
+    // This takes forever for a large file.
+    // But we fixed the realtime impact by putting a NextTask() in jsmn_parse().
     TMEAS(u4_t split = timer_ms(); printf("cfg_save_json json string -> file save %.3f msec\n", TIME_DIFF_MS(split, start));)
     #define CFG_NO_REPARSE_JSON
     #ifdef CFG_NO_REPARSE_JSON

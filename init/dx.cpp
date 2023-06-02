@@ -22,6 +22,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "options.h"
 #include "mem.h"
+#include "net.h"
 #include "misc.h"
 #include "str.h"
 #include "timer.h"
@@ -46,20 +47,70 @@ Boston, MA  02110-1301, USA.
 //#define TMEAS(x) x
 #define TMEAS(x)
 
+#define _      0
+#define EXT    DX_HAS_EXT
+
+#define BCST   DX_BCAST
+#define UTIL   DX_UTIL
+#define TIME   DX_TIME
+#define ALE    DX_ALE
+#undef  HFDL
+#define HFDL   DX_HFDL
+#define MIL    DX_MILCOM
+#define CW_    DX_CW
+#define FSK    DX_FSK
+#define FAX    DX_FAX
+#define AERO   DX_AERO
+#define MAR    DX_MARINE
+#define SPY    DX_SPY
+
+#define AM     MODE_AM
+#define AMN    MODE_AMN
+#define USB    MODE_USB
+#define LSB    MODE_LSB
+#define CW     MODE_CW
+#define CWN    MODE_CWN
+#define IQ     MODE_IQ
+
 #include "EiBi.h"
+
+#undef _
+#undef EXT
+
+#undef BCST
+#undef UTIL
+#undef TIME
+#undef ALE
+#undef HFDL
+#undef MIL
+#undef CW_
+#undef FSK
+#undef FAX
+#undef AERO
+#undef MAR
+#undef SPY
+
+#undef AM
+#undef AMN
+#undef USB
+#undef LSB
+#undef CW
+#undef CWN
+#undef IQ
 
 dxlist_t dx;
 
 // create JSON string from dx_t struct representation
-void dx_save_as_json(bool dx_label_foff_convert)
+void dx_save_as_json(dx_db_t *dx_db, bool dx_label_foff_convert)
 {
 	int i, n;
 	cfg_t *cfg = &cfg_dx;
 	dx_t *dxp;
 	char *sb;
 
+    check (dx_db->db == DB_STORED);
 	TMEAS(u4_t start = timer_ms();)
-	TMEAS(printf("DX_UPD dx_save_as_json: START saving as dx.json, %d entries\n", dx.stored_len);)
+	TMEAS(printf("DX_UPD dx_save_as_json: START saving as dx-json, %d entries\n", dx_db->actual_len);)
 	
 	if (dx_label_foff_convert && freq_offset_kHz == 0) {
 	    lprintf("dx_save_as_json: DX_LABEL_FOFF_CONVERT requested, but freq offset is zero. Ignored!\n");
@@ -67,13 +118,13 @@ void dx_save_as_json(bool dx_label_foff_convert)
 	}
 	
 	typedef struct { char *sp; int sl; } dx_a_t;
-	dx_a_t *dx_a = (dx_a_t *) kiwi_imalloc("dx_a", dx.stored_len * sizeof(dx_a_t));
+	dx_a_t *dx_a = (dx_a_t *) kiwi_imalloc("dx_a", dx_db->actual_len * sizeof(dx_a_t));
 	int sb_len = 0;
 
-	for (i=0, dxp = dx.stored_list; i < dx.stored_len; i++, dxp++) {
+	for (i=0, dxp = dx_db->list; i < dx_db->actual_len; i++, dxp++) {
 	    char *ident = kiwi_str_decode_selective_inplace(strdup(dxp->ident), FEWER_ENCODED);
 	    char *notes = dxp->notes? kiwi_str_decode_selective_inplace(strdup(dxp->notes), FEWER_ENCODED) : strdup("");
-	    char *params = (dxp->params && *dxp->params)? kiwi_str_decode_selective_inplace(strdup(dxp->params), FEWER_ENCODED) : NULL;
+	    char *params = (dxp->params && *dxp->params != '\0')? kiwi_str_decode_selective_inplace(strdup(dxp->params), FEWER_ENCODED) : NULL;
 	    
 	    double freq_kHz = dxp->freq;
 	    if (dx_label_foff_convert && freq_kHz <= 32000) {
@@ -124,6 +175,11 @@ void dx_save_as_json(bool dx_label_foff_convert)
 			    delim = ", ";
 			}
 			
+			if (dxp->sig_bw) {
+			    sb = kstr_asprintf(sb, "%s\"s\":%d", delim, dxp->sig_bw);
+			    delim = ", ";
+			}
+			
 			u2_t dow = dxp->flags & DX_DOW;
 			if (dow != 0 && dow != DX_DOW) {
 			    sb = kstr_asprintf(sb, "%s\"d0\":%d", delim, dow >> DX_DOW_SFT);
@@ -145,7 +201,7 @@ void dx_save_as_json(bool dx_label_foff_convert)
 			free(params);   // not kiwi_ifree() because from strdup()
 		}
 
-        sb = kstr_asprintf(sb, "]%s\n", (i != dx.stored_len-1)? ",":"");
+        sb = kstr_asprintf(sb, "]%s\n", (i != dx_db->actual_len-1)? ",":"");
         n = kstr_len(sb);
         sb_len += n;
         dx_a[i].sl = n;
@@ -156,18 +212,18 @@ void dx_save_as_json(bool dx_label_foff_convert)
 		}
 	}
 	
-	kiwi_ifree(dx.json);
+	kiwi_ifree(dx_db->json);
 	TMEAS(u4_t split = timer_ms(); printf("DX_UPD sb_len=%d %.3f sec\n", sb_len, TIME_DIFF_MS(split, start));)
     int rem = sb_len + 32;      // 32 is for '{"dx":[...]}' below
-	dx.json = (char *) kiwi_imalloc("dx.json", rem);
-	char *cp = dx.json;
+	dx_db->json = (char *) kiwi_imalloc("dx-json", rem);
+	char *cp = dx_db->json;
 	int tsize = 0;
 	n = kiwi_snprintf_ptr(cp, rem, "{\"dx\":[\n");
 	cp += n;
 	rem -= n;
 	tsize += n;
 
-	for (i = 0; i < dx.stored_len; i++) {
+	for (i = 0; i < dx_db->actual_len; i++) {
 	    strcpy(cp, dx_a[i].sp);
 	    kiwi_ifree(dx_a[i].sp);
 	    n = dx_a[i].sl;
@@ -180,14 +236,14 @@ void dx_save_as_json(bool dx_label_foff_convert)
 	}
 
 	kiwi_ifree(dx_a);
-	n = kiwi_snprintf_ptr(cp, rem, "]}");    // dxcfg_save_json() adds final \n
+	n = kiwi_snprintf_ptr(cp, rem, "]}");    // dx_save_json() adds final \n
     tsize += n;
 	TMEAS(printf("DX_UPD tsize=%d\n", tsize);)
-    cfg->json = dx.json;
+    cfg->json = dx_db->json;
     cfg->json_buf_size = tsize;
 
 	TMEAS(u4_t split2 = timer_ms(); printf("DX_UPD dx_save_as_json: dx struct -> json string %.3f sec\n", TIME_DIFF_MS(split2, split));)
-	dxcfg_save_json(cfg->json);
+	dx_save_json(cfg->json);
 	TMEAS(u4_t now = timer_ms(); printf("DX_UPD dx_save_as_json: DONE %.3f/%.3f sec\n", TIME_DIFF_MS(now, split2), TIME_DIFF_MS(now, start));)
 }
 
@@ -219,10 +275,11 @@ void update_masked_freqs(dx_t *_dx_list, int _dx_list_len)
     dx_t *dxp;
     //printf("update_masked_freqs\n");
     
-    // called when freq_offset change detected -- use current stored list
+    // always use masked freqs set by admin in stored list, even when other lists currently active
     if (_dx_list == NULL) {
-        _dx_list = dx.stored_list;
-        _dx_list_len = dx.stored_len;
+        dx_db_t *dx_db = &dx.dx_db[DB_STORED];
+        _dx_list = dx_db->list;
+        _dx_list_len = dx_db->actual_len;
     }
 
     dx.masked_len = 0;
@@ -249,17 +306,20 @@ void update_masked_freqs(dx_t *_dx_list, int _dx_list_len)
 }
 
 // prepare dx list by conditionally sorting, initializing self indexes and constructing new masked freq list
-void dx_prep_list(bool need_sort, dx_t *_dx_list, int _dx_list_len_prev, int _dx_list_len_new)
+void dx_prep_list(dx_db_t *dx_db, bool need_sort, dx_t *_dx_list, int _dx_list_len_prev, int _dx_list_len_new)
 {
     int i;
     dx_t *dxp;
     
     // have to sort first before rebuilding masked list in case an entry is being deleted
-	if (need_sort) qsort(_dx_list, _dx_list_len_prev, sizeof(dx_t), qsort_doublecomp);
+	if (dx_db->db == DB_STORED && need_sort)
+	    qsort(_dx_list, _dx_list_len_prev, sizeof(dx_t), qsort_doublecomp);
 
     for (i = 0, dxp = _dx_list; i < _dx_list_len_new; i++, dxp++) {
         dxp->idx = i;   // init self index
     }
+    
+    if (dx_db->db != DB_STORED) return;
     
     update_freqs();     // on startup dx list read before cfg setup
     update_masked_freqs(_dx_list, _dx_list_len_new);
@@ -269,7 +329,7 @@ void dx_prep_list(bool need_sort, dx_t *_dx_list, int _dx_list_len_prev, int _dx
     dx.update_seq++;
 }
 
-enum { E_ARRAY = 0, E_FREQ, E_MODE, E_IDENT, E_NOTES, E_OPT_ARRAY, E_OPT_ID } error_e;
+enum { E_ARRAY = 0, E_FREQ, E_MODE, E_IDENT, E_NOTES, E_OPT_ARRAY, E_OPT_ID, E_SORT, E_UNEXPECTED } error_e;
 	
 static const char *error_s[] = {
     "enclosing array missing",
@@ -278,7 +338,9 @@ static const char *error_s[] = {
     "expected ident string (3rd parameter)",
     "expected notes string (4th parameter)",
     "expected options array",
-    "expected options key"
+    "expected options key",
+    "frequency sort error",
+    "unexpected error"
 };
 
 static void dx_reload_error(cfg_t *cfg, int line, int error, bool have_source)
@@ -292,48 +354,56 @@ static void dx_reload_error(cfg_t *cfg, int line, int error, bool have_source)
     }
 }
 
-static jsmntok_t *dx_reload_element(jsmntok_t *jt, jsmntok_t *end_tok, dx_t *dxp, int *error)
+static jsmntok_t *dx_reload_element(cfg_t *cfg, dx_db_t *dx_db, jsmntok_t *jt, jsmntok_t *end_tok, dx_t *dxp, int *error)
 {
 	const char *s;
     u4_t dow = DX_DOW;
+    *error = E_UNEXPECTED;
     
     if (!JSMN_IS_ARRAY(jt)) { *error = E_ARRAY; return NULL; }
     jt++;
     
     double f;
-    if (dxcfg_float_json(jt, &f) == false) { *error = E_FREQ; return NULL; }
+    if (cfg_float_tok(cfg, jt, &f) == false) { *error = E_FREQ; return NULL; }
     dxp->freq = f;
     jt++;
     
+    if (f < dx_db->last_freq) {
+        dx_db->last_freq = 0;
+        *error = E_SORT;
+        return NULL;
+    }
+    dx_db->last_freq = f;
+    
     const char *mode_s;
-    if (dxcfg_string_json(jt, &mode_s) == false) { *error = E_MODE; return NULL; }
+    if (cfg_string_tok(cfg, jt, &mode_s) == false) { *error = E_MODE; return NULL; }
     int mode_i = rx_mode2enum(mode_s);
     if (mode_i == NOT_FOUND) mode_i = 0;    // default to AM
 	dxp->flags = DX_ENCODE_MODE(mode_i);    // dxp->flags has no prior bits to preserve
-    dxcfg_string_free(mode_s);
+    cfg_string_tok_free(cfg, mode_s);
     jt++;
     
-    if (dxcfg_string_json(jt, &s) == false) { *error = E_IDENT; return NULL; }
+    if (cfg_string_tok(cfg, jt, &s) == false) { *error = E_IDENT; return NULL; }
     kiwi_str_unescape_quotes((char *) s);
     dxp->ident_s = strdup(s);
     dxp->ident = kiwi_str_encode((char *) s);
-    dxcfg_string_free(s);
+    cfg_string_tok_free(cfg, s);
     jt++;
     
-    if (dxcfg_string_json(jt, &s) == false) { *error = E_NOTES; return NULL; }
+    if (cfg_string_tok(cfg, jt, &s) == false) { *error = E_NOTES; return NULL; }
     kiwi_str_unescape_quotes((char *) s);
     dxp->notes_s = strdup(s);
     dxp->notes = kiwi_str_encode((char *) s);
-    dxcfg_string_free(s);
+    cfg_string_tok_free(cfg, s);
     if (*dxp->notes == '\0') {
-        dxcfg_string_free(dxp->notes);
+        cfg_string_tok_free(cfg, dxp->notes);
         dxp->notes = NULL;
     }
     jt++;
     
     // deprecated
     int timestamp;
-    if (dxcfg_int_json(jt, &timestamp)) {
+    if (cfg_int_tok(cfg, jt, &timestamp)) {
         jt++;
     } else {
         //printf("### DX #%d missing timestamp\n", i);
@@ -341,25 +411,25 @@ static jsmntok_t *dx_reload_element(jsmntok_t *jt, jsmntok_t *end_tok, dx_t *dxp
     }
     
     int tag;
-    if (dxcfg_int_json(jt, &tag)) {
+    if (cfg_int_tok(cfg, jt, &tag)) {
         jt++;
     } else {
         //printf("### DX #%d missing tag\n", i);
         //dxp->tag = random() % 10000;
     }
     
-    //printf("dx.json %d %.2f 0x%x \"%s\" \"%s\"\n", i, dxp->freq, dxp->flags, dxp->ident, dxp->notes);
+    //printf("dx-json %d %.2f 0x%x \"%s\" \"%s\"\n", i, dxp->freq, dxp->flags, dxp->ident, dxp->notes);
 
     if (jt != end_tok && JSMN_IS_OBJECT(jt)) {
         jt++;
         while (jt != end_tok && !JSMN_IS_ARRAY(jt)) {
             if (!JSMN_IS_ID(jt)) { *error = E_OPT_ARRAY; return NULL; }
             const char *id;
-            if (dxcfg_string_json(jt, &id) == false) { *error = E_OPT_ID; return NULL; }
+            if (cfg_string_tok(cfg, jt, &id) == false) { *error = E_OPT_ID; return NULL; }
             jt++;
             
             int num;
-            if (dxcfg_int_json(jt, &num) == true) {
+            if (cfg_int_tok(cfg, jt, &num) == true) {
                 if (strcmp(id, "lo") == 0) {
                     dxp->low_cut = num;
                 } else
@@ -370,7 +440,12 @@ static jsmntok_t *dx_reload_element(jsmntok_t *jt, jsmntok_t *end_tok, dx_t *dxp
                 
                 if (strcmp(id, "o") == 0) {
                     dxp->offset = num;
-                    //printf("dx.json %d offset %s %d\n", i, id, num);
+                    //printf("dx-json %d offset %s %d\n", i, id, num);
+                } else
+                
+                if (strcmp(id, "s") == 0) {
+                    dxp->sig_bw = num;
+                    //printf("dx-json %d sig_bw %s %d\n", i, id, num);
                 } else
                 
                 if (strcmp(id, "d0") == 0) {
@@ -387,20 +462,20 @@ static jsmntok_t *dx_reload_element(jsmntok_t *jt, jsmntok_t *end_tok, dx_t *dxp
                 } else {
                     if (num) {
                         dx_flag(dxp, id);
-                        //printf("dx.json %d dx_flag %s\n", i, id);
+                        //printf("dx-json %d dx_flag %s\n", i, id);
                     }
                 }
             } else
-            if (dxcfg_string_json(jt, &s) == true) {
-                //printf("dx.json %s=<%s>\n", id, s);
+            if (cfg_string_tok(cfg, jt, &s) == true) {
+                //printf("dx-json %s=<%s>\n", id, s);
                 if (strcmp(id, "p") == 0) {
                     kiwi_str_unescape_quotes((char *) s);
                     dxp->params = kiwi_str_encode((char *) s);
                 }
-                dxcfg_string_free(s);
+                cfg_string_tok_free(cfg, s);
             }
 
-            dxcfg_string_free(id);
+            cfg_string_tok_free(cfg, id);
             jt++;
         }
     }
@@ -411,28 +486,25 @@ static jsmntok_t *dx_reload_element(jsmntok_t *jt, jsmntok_t *end_tok, dx_t *dxp
     return jt;
 }
 
-static void dx_reload_finalize(dx_t *_dx_list, int _dx_list_len)
+static void dx_reload_finalize(dx_db_t *dx_db, dx_t *_dx_list, int _dx_list_len)
 {
     int i;
-    dx_prep_list(true, _dx_list, _dx_list_len, _dx_list_len);
+    
+    dx_prep_list(dx_db, true, _dx_list, _dx_list_len, _dx_list_len);
 
 	// switch to new list
-	dx_t *prev_dx_list = dx.stored_list;
-	int prev_dx_list_len = dx.stored_len;
+	dx_t *prev_dx_list = dx_db->list;
+	int prev_dx_list_len = dx_db->actual_len;
 
-	dx.stored_list = _dx_list;
-	dx.stored_len = _dx_list_len;
+	dx_db->list = _dx_list;
+	dx_db->actual_len = _dx_list_len;
 	
-	for (i = 0; i < MAX_RX_CHANS; i++) {
-        dx_rx_t *drx = &dx.dx_rx[i];
-	    drx->db = DB_STORED;
-	}
-
-	dx.hidden_used = false;
-	dx.json_up_to_date = true;
+	dx_db->hidden_used = false;
+	dx_db->json_up_to_date = true;
 	
 	// release previous
 	if (prev_dx_list) {
+        check(dx_db == &dx.dx_db[DB_STORED])
 		dx_t *dxp;
 		
 		for (i = 0, dxp = prev_dx_list; i < prev_dx_list_len; i++, dxp++) {
@@ -450,21 +522,22 @@ static void dx_reload_finalize(dx_t *_dx_list, int _dx_list_len)
 
 // create and switch to new dx_t struct from JSON token list representation
 
-#ifdef OPTION_DX_INCREMENTAL_PARSE
-
 // caller has not read JSON file nor parsed it (do that here on a per-line basis)
-static void _dx_reload_file(cfg_t *cfg)
+static void _dx_reload_file(cfg_t *cfg, int db)
 {
     int i;
     FILE *fp;
 
     lprintf("reading configuration from file %s\n", cfg->filename);
-    scallz("_cfg_load_json fopen", (fp = fopen(cfg->filename, "r")));
+    scallz("_dx_reload_file fopen", (fp = fopen(cfg->filename, "r")));
 
     #define LBUF 512
     char lbuf[LBUF], *s;
     fgets(lbuf, LBUF, fp);      // skip first line
-    dx.lines = 1;
+    
+    dx_db_t *dx_db = &dx.dx_db[db];
+    dx_db->lines = 1;
+    dx_db->json_parse_errors = dx_db->dx_format_errors = 0;
     cfg->json = lbuf;
 
 	jsmn_parser parser;
@@ -491,25 +564,26 @@ static void _dx_reload_file(cfg_t *cfg)
 
             dxp = &_dx_list[i];
             if ((s = fgets(lbuf, LBUF, fp)) != NULL) {
-                dx.lines++;
-                jsmn_init(&parser);
+                dx_db->lines++;
                 int slen = strlen(s);
                 if (slen > 0) {
                     slen--;     // remove \n
                     if (slen > 0) if (s[slen-1] == ',') slen--;
                     s[slen] = '\0';
                 }
+                if (slen >= 2 && strncmp(s, "//", 2) == 0) { i--; continue; }   // ignore comments
                 cfg->json_buf_size = slen + SPACE_FOR_NULL;
-                int rc = jsmn_parse(&parser, s, slen, cfg->tokens, cfg->tok_size, /* yield */ false);
-                //printf("DX: #%d rc=%d <%s>\n", i, rc, s);
-                if (rc == 0) { i--; continue; }
-                if (rc < 0) {
+                jsmn_init(&parser);
+                int ntok_or_err = jsmn_parse(&parser, s, slen, cfg->tokens, cfg->tok_size, /* yield */ false);
+                //printf("DX: #%d ntok_or_err=%d tok_size=%d %d<%s><%s>\n", i, ntok_or_err, cfg->tok_size, slen, s, cfg->json);
+                if (ntok_or_err == 0) { i--; continue; }
+                if (ntok_or_err < 0) {
                     if (strcmp(s, "]}") != 0) {          // i.e. "]}" on last line
                         const char *err = "(unknown error)";
-                        if (rc == JSMN_ERROR_INVAL) err = "invalid character inside JSON string"; else
-                        if (rc == JSMN_ERROR_PART) err = "the string is not a full JSON packet, more bytes expected";
-                        lprintf("DX ERROR: line=%d position=%d token=%d %s\n", dx.lines, parser.pos, parser.toknext, err);
-                        dx.json_parse_errors++;
+                        if (ntok_or_err == JSMN_ERROR_INVAL) err = "invalid character inside JSON string"; else
+                        if (ntok_or_err == JSMN_ERROR_PART) err = "the string is not a full JSON packet, more bytes expected";
+                        lprintf("DX ERROR: line=%d position=%d token=%d %s\n", dx_db->lines, parser.pos, parser.toknext, err);
+                        dx_db->json_parse_errors++;
                         lprintf("DX ERROR: %s\n", s);
                         lprintf("DX ERROR: %*s JSON error position\n", parser.pos, "^");
                     }
@@ -517,14 +591,14 @@ static void _dx_reload_file(cfg_t *cfg)
                     i--;    // don't load labels with errors
                     continue;
                 } else {
-                    cfg->ntok = rc;
+                    cfg->ntok = ntok_or_err;
                     check(cfg->ntok < NTOK);
                     jsmntok_t *end_tok = &(cfg->tokens[cfg->ntok]);
                     int error;
-                    jsmntok_t *jt = dx_reload_element(cfg->tokens, end_tok, dxp, &error);
+                    jsmntok_t *jt = dx_reload_element(cfg, dx_db, cfg->tokens, end_tok, dxp, &error);
                     if (jt == NULL) {
-                        dx_reload_error(cfg, dx.lines, error, true);
-                        dx.dx_format_errors++;
+                        dx_reload_error(cfg, dx_db->lines, error, true);
+                        dx_db->dx_format_errors++;
                         i--;    // don't load labels with errors
                     }
                 }
@@ -542,8 +616,8 @@ static void _dx_reload_file(cfg_t *cfg)
     
     //printf("%d/%d DX entries\n", i, size_i);
     lprintf("DX: %d label entries", i);
-    if (dx.json_parse_errors) lprintf(", %d JSON parse error%s", dx.json_parse_errors, (dx.json_parse_errors == 1)? "":"s");
-    if (dx.dx_format_errors) lprintf(", %d label format error%s", dx.dx_format_errors, (dx.dx_format_errors == 1)? "":"s");
+    if (dx_db->json_parse_errors) lprintf(", %d JSON parse error%s", dx_db->json_parse_errors, (dx_db->json_parse_errors == 1)? "":"s");
+    if (dx_db->dx_format_errors) lprintf(", %d label format error%s", dx_db->dx_format_errors, (dx_db->dx_format_errors == 1)? "":"s");
     lprintf("\n");
 
     fclose(fp);
@@ -551,65 +625,145 @@ static void _dx_reload_file(cfg_t *cfg)
     
     BYTE hash[SHA256_BLOCK_SIZE];
     sha256_final(&ctx, hash);
-    mg_bin2str(dx.file_hash, hash, N_DX_FILE_HASH_BYTES);
-    dx.file_size = (int) kiwi_file_size(cfg->filename);
-    lprintf("DX: file = %d,%s,%d\n", i, dx.file_hash, dx.file_size);
+    mg_bin2str(dx_db->file_hash, hash, N_DX_FILE_HASH_BYTES);
+    dx_db->file_size = (int) kiwi_file_size(cfg->filename);
+    lprintf("DX: file = %d,%s,%d\n", i, dx_db->file_hash, dx_db->file_size);
 
     int _dx_list_len = i;   // NB: doesn't include DX_HIDDEN_SLOT
-    dx.stored_alloc_size = size_i;
-	dx_reload_finalize(_dx_list, _dx_list_len);
+    dx_db->alloc_size = size_i;
+    dx_reload_finalize(dx_db, _dx_list, _dx_list_len);
 }
 
-#else
-
-// caller has already read JSON file and parsed it
-static void _dx_reload_json(cfg_t *cfg)
+static bool dx_download_file(const char *host, const char *src, const char *dst)
 {
-	jsmntok_t *end_tok = &(cfg->tokens[cfg->ntok]);
-	jsmntok_t *jt = dxcfg_lookup_json("dx");
-	check(jt != NULL);
-	check(JSMN_IS_ARRAY(jt));
-	int _dx_list_len = jt->size;
-	jt++;
-	
-	lprintf("DX: %d label entries\n", _dx_list_len);
-	
-	// NB: kiwi_malloc() zeros mem
-	dx_t *_dx_list = (dx_t *) kiwi_malloc("dx_list", (_dx_list_len + DX_HIDDEN_SLOT) * sizeof(dx_t));
-	
-	dx_t *dxp = _dx_list;
-	int i = 0;
+    bool restart = false, rm_tmp = true;
+    char *cmd, *tmp;
+    lprintf("DX: checking %s against %s/%s\n", dst, host, src);
+    asprintf(&tmp, "%s.tmp", dst);
+    asprintf(&cmd, "wget --timeout=10 --tries=2 --inet4-only -q --no-use-server-timestamps -O %s %s/%s 2>&1", tmp, host, src);
+    int status = system(cmd);
+    if (status) {
+        lprintf("DX: <%s>\n", cmd);
+        lprintf("DX: ERROR status=%d\n", status);
+    } else
+    if (kiwi_file_size(tmp) > 256) {
+        #if 0
+            cfg_t dx_json = {0};
+            dx_json.filename = tmp;
+            if (json_init_file(&dx_json) == true) {
+            }
+            json_release(&dx_json);
+        #else
+            char *sum1 = non_blocking_cmd_fmt(NULL, "sum %s", tmp);
+            char *sum2 = non_blocking_cmd_fmt(NULL, "sum %s", dst);
+            char *sum1_s = kstr_sp(sum1);
+            char *sum2_s = kstr_sp(sum2);
+            if (sum1_s != NULL && sum2_s != NULL && strcmp(sum1_s, sum2_s) != 0) {
+                lprintf("DX: sum1 <%.*s> %s\n", strlen(sum1_s)-1, sum1_s, tmp);
+                lprintf("DX: sum2 <%.*s> %s\n", strlen(sum1_s)-1, sum2_s, dst);
+                lprintf("DX: UPDATING %s\n", dst);
+                blocking_system("mv %s %s", tmp, dst);
+                rm_tmp = false;
+                lprintf("DX: new file installed, need RESTART\n");
+                restart = true;
+            } else {
+                lprintf("DX: CURRENT %s\n", dst);
+            }
+            kstr_free(sum1); kstr_free(sum2);
+        #endif
+    }
+    if (rm_tmp) {
+        blocking_system("rm -f %s", tmp);
+    }
+    kiwi_ifree(cmd); kiwi_ifree(tmp);
+    return restart;
+}
 
-	for (; jt != end_tok; dxp++, i++) {
-        check(i < _dx_list_len);
-        int error;
-	    jt = dx_reload_element(jt, end_tok, dxp, &error);
-	    if (jt == NULL) {
-	        dx_reload_error(cfg, -1, error, false);
-	    }
+void dx_last_community_download(bool capture_time)
+{
+    if (capture_time) dx.last_community_download = utc_time();
+    
+    if (admcfg_bool("dx_comm_auto_download", NULL, CFG_OPTIONAL)) {
+        snd_send_msg_encoded(SM_RX_CHAN_ALL, false, "MSG", "last_community_download", "Downloads enabled. Last checked: %s",
+            var_ctime_static(&dx.last_community_download));
+    } else {
+        snd_send_msg_encoded(SM_RX_CHAN_ALL, false, "MSG", "last_community_download", "Downloads disabled.");
+    }
+}
+
+bool dx_community_get(bool download_diff_restart)
+{
+    bool restart = false;
+    char *kiwisdr_com = DNS_lookup_result("dx_community_get", "kiwisdr.com", &net.ips_kiwisdr_com);
+
+    bool download_oneshot = kiwi_file_exists(DX_DOWNLOAD_ONESHOT_FN);
+    if (download_oneshot) {
+        system("rm -f " DX_DOWNLOAD_ONESHOT_FN);
+        printf("DX: dx_community_download ONESHOT\n");
+    }
+
+    // attempt to update dx community label database
+    if (admcfg_bool("dx_comm_auto_download", NULL, CFG_OPTIONAL) || download_oneshot) {
+        restart |= dx_download_file(kiwisdr_com, "dx/dx_community_config.json", DIR_CFG "/dx_community_config.json");
+        restart |= dx_download_file(kiwisdr_com, "dx/dx_community.json", DIR_CFG "/dx_community.json");
+    }
+    dx_last_community_download(true);
+
+    return restart;
+}
+
+void dx_label_init()
+{
+    int i;
+    
+    for (i = 0; i < DB_N; i++) {
+        dx_db_t *dx_db = &dx.dx_db[i];
+        dx_db->db = i;
+    }
+    
+	for (i = 0; i <= MAX_RX_CHANS; i++) {       // <= for STREAM_ADMIN use at end
+	    dx.rx_db[i] = &dx.dx_db[DB_STORED];
 	}
-	
-	dx_reload_finalize(_dx_list, _dx_list_len);
-}
-#endif
 
-// reload requested at startup
-void dx_reload()
-{
-	cfg_t *cfg = &cfg_dx;
-	
+    const char *s;
+    if ((s = cfg_array("dx_type", NULL, CFG_OPTIONAL)) != NULL) {
+        cfg_array_free(s);
+        
+        // kiwi.json/dx_type[] exists
+        
+        if (kiwi_file_exists(DIR_CFG "/dx_config.json")) {
+            lprintf("DX config conversion: ERROR dx_config.json exists but also kiwi.json/{dx_type, band_svc, bands}?\n");
+            lprintf("DX config conversion: will leave dx_config.json intact, but remove kiwi.json/{dx_type, band_svc, bands}\n");
+        } else {
+            lprintf("DX config conversion: MOVING kiwi.json/{dx_type, band_svc, bands} => dx_config.json\n");
+            system("jq '{dx_type, band_svc, bands}' " DIR_CFG "/kiwi.json >" DIR_CFG "/dx_config.json");
+        }
+        system("jq 'del(.dx_type) | del(.band_svc) | del(.bands)' " DIR_CFG "/kiwi.json >" DIR_CFG "/kiwi.NEW.json");
+        system("mv " DIR_CFG "/kiwi.NEW.json " DIR_CFG "/kiwi.json");
+        lprintf("DX config conversion: RESTART Kiwi..\n");
+        kiwi_exit(0);
+    }
+
+	dxcfg_init();
+
 	TMEAS(u4_t start = timer_ms();)
 	TMEAS(printf("DX_RELOAD START\n");)
-	if (!dxcfg_init())
+
+	if (!dx_init())
+		return;
+
+    TMEAS(u4_t split = timer_ms(); printf("DX_RELOAD json file read and json struct %.3f sec\n", TIME_DIFF_MS(split, start));)
+        _dx_reload_file(&cfg_dx, DB_STORED);
+    TMEAS(u4_t now = timer_ms(); printf("DX_RELOAD DONE json struct -> dx struct %.3f/%.3f sec\n", TIME_DIFF_MS(now, split), TIME_DIFF_MS(now, start));)
+
+	if (!dxcomm_init())
+		return;
+	
+	if (!dxcomm_cfg_init())
 		return;
 	
     TMEAS(u4_t split = timer_ms(); printf("DX_RELOAD json file read and json struct %.3f sec\n", TIME_DIFF_MS(split, start));)
-	#ifdef OPTION_DX_INCREMENTAL_PARSE
-        _dx_reload_file(cfg);
-	#else
-        //dxcfg_walk(NULL, cfg_print_tok, NULL);
-        _dx_reload_json(cfg);
-    #endif
+        _dx_reload_file(&cfg_dxcomm, DB_COMMUNITY);
     TMEAS(u4_t now = timer_ms(); printf("DX_RELOAD DONE json struct -> dx struct %.3f/%.3f sec\n", TIME_DIFF_MS(now, split), TIME_DIFF_MS(now, start));)
 }
 
@@ -619,6 +773,7 @@ void dx_eibi_init()
     dx_t *dxp;
     //float f = 0;
     
+    // augment EiBi list with additional or decoded info
     for (i = 0, dxp = eibi_db; dxp->freq; i++, dxp++) {
         //if (dxp->freq == f) continue;   // temp: only take first per freq
         n++;
@@ -641,8 +796,9 @@ void dx_eibi_init()
     }
     printf("DX_UPD dx_eibi_init: %d/%d EiBi entries\n", n, i);
 
-    dx.eibi_list = eibi_db;
-    dx.eibi_len = n;
+    dx_db_t *dx_db = &dx.dx_db[DB_EiBi];
+    dx_db->list = eibi_db;
+    dx_db->actual_len = n;
 }
 
 
