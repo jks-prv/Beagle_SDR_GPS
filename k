@@ -22,6 +22,10 @@ case ${CMD} in
 		;;
 esac
 
+VERSION_MAJ=$(awk 'NR==1 {print $0}' Makefile | cut -d ' ' -f 3)
+VERSION_MIN=$(awk 'NR==2 {print $0}' Makefile | cut -d ' ' -f 3)
+ARGS="-v ${VERSION_MAJ}.${VERSION_MIN} ${ARGS}"
+
 # hack to see if we're running on a BBB
 if test ! -f /etc/dogtag; then
 	${PROG} ${ARGS}
