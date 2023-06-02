@@ -66,6 +66,7 @@ typedef struct {
 } SNR_meas_t;
 
 extern SNR_meas_t SNR_meas_data[SNR_MEAS_MAX];
+extern int SNR_meas_tid;
 
 int dB_wire_to_dBm(int db_value);
 void SNR_meas(void *param);
@@ -83,19 +84,20 @@ int rx_chan_free_count(rx_free_count_e flags, int *idx = NULL, int *heavy = NULL
 typedef enum { PWD_CHECK_NO, PWD_CHECK_YES } pwd_check_e;
 int rx_chan_no_pwd(pwd_check_e pwd_check = PWD_CHECK_NO);
 
-enum conn_count_e { EXTERNAL_ONLY, INCLUDE_INTERNAL, TDOA_USERS, EXT_API_USERS, LOCAL_OR_PWD_PROTECTED_USERS, ADMIN_USERS };
+enum conn_count_e { EXTERNAL_ONLY, INCLUDE_INTERNAL, TDOA_USERS, EXT_API_USERS, LOCAL_OR_PWD_PROTECTED_USERS, ADMIN_USERS, ADMIN_CONN };
 #define EXCEPT_PREEMPTABLE  0x01
 int rx_count_server_conns(conn_count_e type, u4_t flags = 0, conn_t *our_conn = NULL);
 
-enum kick_e { KICK_CHAN, KICK_USERS, KICK_ALL };
-const char * const kick_s[] = { "KICK_CHAN", "KICK_USERS", "KICK_ALL" };
-void rx_server_user_kick(kick_e kick, int chan = -1);
+enum kick_e { KICK_CHAN, KICK_USERS, KICK_ALL, KICK_ADMIN };
+const char * const kick_s[] = { "KICK_CHAN", "KICK_USERS", "KICK_ALL", "KICK_ADMIN" };
+void rx_server_kick(kick_e kick, int chan = -1);
 
 void show_conn(const char *prefix, u4_t printf_type, conn_t *cd);
 void rx_autorun_clear();
 int rx_autorun_find_victim();
 void rx_autorun_restart_victims(bool initial);
 void rx_server_send_config(conn_t *conn);
+bool save_config(u2_t key, conn_t *conn, char *cmd);
 char *rx_users(bool include_ip);
 void geoloc_task(void *param);
 int rx_mode2enum(const char *mode);

@@ -15,12 +15,13 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2014-2021 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2023 John Seamons, ZL/KF6VO
 
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
 #include "rx.h"
+#include "rx_cmd.h"
 #include "rx_util.h"
 #include "mem.h"
 #include "misc.h"
@@ -40,6 +41,7 @@ Boston, MA  02110-1301, USA.
 #include "wdsp.h"
 #include "security.h"
 #include "options.h"
+#include "services.h"
 
 #include "wspr.h"
 #include "FT8.h"
@@ -196,6 +198,12 @@ int rx_count_server_conns(conn_count_e type, u4_t flags, conn_t *our_conn)
 	        // don't count admin connections awaiting password input (!c->auth)
 	        if ((c->type == STREAM_ADMIN || c->type == STREAM_MFG) && c->auth)
                 users++;
+        } else
+	    if (type == ADMIN_CONN) {
+	        // don't count admin connections awaiting password input (!c->awaitingPassword)
+	        if ((c->type == STREAM_ADMIN || c->type == STREAM_MFG) &&
+	            c->auth && c->auth_admin && c->isMaster && !c->awaitingPassword)
+                users++;
 	    } else {
             if (sound) users++;
             // will return 1 if there are no sound connections but at least one waterfall connection
@@ -206,10 +214,10 @@ int rx_count_server_conns(conn_count_e type, u4_t flags, conn_t *our_conn)
 	return (users? users : any);
 }
 
-void rx_server_user_kick(kick_e kick, int chan)
+void rx_server_kick(kick_e kick, int chan)
 {
 	// kick users off (all or individual channel)
-	printf("rx_server_user_kick %s rx=%d\n", kick_s[kick], chan);
+	printf("rx_server_kick %s rx=%d\n", kick_s[kick], chan);
 	conn_t *c = conns;
 	const char *msg = (kick == KICK_CHAN)? "You were kicked!" : "Everyone was kicked!";
 	
@@ -220,13 +228,14 @@ void rx_server_user_kick(kick_e kick, int chan)
         bool kick_chan  = (kick == KICK_CHAN  && chan == c->rx_channel);
         bool kick_users = (kick == KICK_USERS && !c->internal_connection);
         bool kick_all   = (kick == KICK_ALL);
-        //printf("rx_server_user_kick consider CONN-%02d rx=%d %s kick_chan=%d kick_users=%d kick_all=%d\n",
+        bool kick_admin = (kick == KICK_ADMIN);
+        //printf("rx_server_kick consider CONN-%02d rx=%d %s kick_chan=%d kick_users=%d kick_all=%d\n",
         //    i, c->rx_channel, rx_conn_type(c), kick_chan, kick_users, kick_all);
 		if (c->type == STREAM_SOUND || c->type == STREAM_WATERFALL) {
 		    if (kick_chan || kick_users || kick_all) {
 		        send_msg_encoded(c, "MSG", "kiwi_kick", "%s", msg);
                 c->kick = true;
-                printf("rx_server_user_kick KICKING rx=%d %s\n", c->rx_channel, rx_conn_type(c));
+                printf("rx_server_kick KICKING rx=%d %s\n", c->rx_channel, rx_conn_type(c));
             }
 		} else
 		
@@ -234,11 +243,16 @@ void rx_server_user_kick(kick_e kick, int chan)
 		    if (kick_chan || kick_users || kick_all) {
 		        send_msg_encoded(c, "MSG", "kiwi_kick", "%s", msg);
                 c->kick = true;
-                printf("rx_server_user_kick KICKING rx=%d EXT %s\n", c->rx_channel, c->ext? c->ext->name : "?");
+                printf("rx_server_kick KICKING rx=%d EXT %s\n", c->rx_channel, c->ext? c->ext->name : "?");
             }
+		} else
+		
+		if (kick_admin && c->type == STREAM_ADMIN) {
+            c->kick = true;
+            printf("rx_server_kick KICKING admin [%02d]\n", c->self_idx);
 		}
 	}
-	//printf("rx_server_user_kick DONE\n");
+	//printf("rx_server_kick DONE\n");
 }
 
 void rx_autorun_clear()
@@ -310,14 +324,208 @@ void rx_server_send_config(conn_t *conn)
 	if (json != NULL) {
 		send_msg_encoded(conn, "MSG", "load_cfg", "%s", json);
 
+        json = dxcfg_get_json(NULL);
+        if (json != NULL) {
+            send_msg_encoded(conn, "MSG", "load_dxcfg", "%s", json);
+        }
+
+        json = dxcomm_cfg_get_json(NULL);
+        if (json != NULL) {
+            send_msg_encoded(conn, "MSG", "load_dxcomm_cfg", "%s", json);
+        }
+
 		// send admin config ONLY if this is an authenticated connection from the admin page
 		if (conn->type == STREAM_ADMIN && conn->auth_admin) {
-			char *adm_json = admcfg_get_json(NULL);
-			if (adm_json != NULL) {
-				send_msg_encoded(conn, "MSG", "load_adm", "%s", adm_json);
+			json = admcfg_get_json(NULL);
+			if (json != NULL) {
+				send_msg_encoded(conn, "MSG", "load_adm", "%s", json);
 			}
 		}
 	}
+}
+
+// Because of the false hash match problem with rx_common_cmd()
+// must only do auth after the command string compares.
+static bool rx_auth_okay(conn_t *conn)
+{
+    if (conn->auth_admin == FALSE) {
+        lprintf("** attempt to save kiwi config with auth_admin == FALSE! IP %s\n", conn->remote_ip);
+        return false;
+    }
+    
+    // To prevent cfg database multi-writer data loss, enforce no admin connections (a source of writes)
+    // on any non-admin/mfg (i.e. user) connection cfg save.
+    int n;
+    if (conn->type != STREAM_ADMIN && conn->type != STREAM_MFG && (n = rx_count_server_conns(ADMIN_USERS)) != 0) {
+        //cprintf(conn, "CMD_SAVE_CFG: abort because admin_users=%d\n", n);
+        send_msg(conn, false, "MSG no_admin_conns=0");    // tell user their cfg save was rejected
+        //rx_server_send_config(conn);    // and reload last saved config to flush bad values
+        return false;
+    }
+
+    return true;
+}
+
+static bool admin_auth_okay(conn_t *conn)
+{
+    if (conn->type != STREAM_ADMIN) {
+        lprintf("** attempt to save admin config from non-STREAM_ADMIN! IP %s\n", conn->remote_ip);
+        return false;
+    }
+
+    if (conn->auth_admin == FALSE) {
+        lprintf("** attempt to save admin config with auth_admin == FALSE! IP %s\n", conn->remote_ip);
+        return false;
+    }
+    
+    return true;
+}
+
+typedef struct {
+    const char name[8];
+    bool init;
+    conn_t *conn;
+	char remote_ip[NET_ADDRSTRLEN];
+	int remote_port;
+	u64_t tstamp;       // msec since 1970
+    char *frag_prefix_s, *end_prefix_s;
+    int seq;
+    char *json;
+} save_cfg_t;
+
+static save_cfg_t save_cfg = { "cfg" }, save_dxcfg = { "dxcfg" }, save_adm = { "adm" };
+
+bool save_config(u2_t key, conn_t *conn, char *cmd)
+{
+    int n, seq;
+    char *sb;
+    const bool dbug = false;
+    save_cfg_t *cfg;
+    
+    switch (key) {
+        case CMD_SAVE_CFG:   cfg = &save_cfg; break;
+        case CMD_SAVE_DXCFG: cfg = &save_dxcfg; break;
+        case CMD_SAVE_ADM:   cfg = &save_adm; break;
+        default: panic("save_config"); break;
+    }
+    
+    if (!cfg->init) {
+        asprintf(&cfg->frag_prefix_s, "SET save_%s_frag=", cfg->name);
+        asprintf(&cfg->end_prefix_s, "SET save_%s=", cfg->name);
+        cfg->init = true;
+    }
+    
+    // CAUTION: Remember that key could be a false hash match for non rx_common_cmd() commands.
+    // So as with other rx_common_cmd() code, must do cmd prefix matching before continuing.
+    // Does no harm that we essentially have an incorrect cfg based on a bogus key.
+    // It just causes the cfg->init code above to be done earlier than it might otherwise.
+    bool isFrag = (kiwi_str_begins_with(cmd, cfg->frag_prefix_s));
+    bool isEnd  = (kiwi_str_begins_with(cmd, cfg->end_prefix_s));
+    if (!isFrag && !isEnd) {
+        //clprintf(conn, "save_config: bogus hash match, key=%d cmd=\"%.32s\"\n", key, cmd);
+        return false;   // indicate cmd matching failed
+    }
+    
+    if (cfg->conn != conn || strncmp(cfg->remote_ip, conn->remote_ip, NET_ADDRSTRLEN) != 0 ||
+        cfg->remote_port != conn->remote_port || cfg->tstamp != conn->tstamp) {
+        // persists: init, frag_prefix_s, end_prefix_s
+        cfg->seq = 0;
+        kstr_free(cfg->json);
+        if (dbug) clprintf(conn, "save_config: %s RESET cfg|conn CONN:%p|%p IP:%s|%s PORT:%d|%d TSTAMP:0x%llx|0x%llx\n",
+            cfg->name, cfg->conn, conn, cfg->remote_ip, conn->remote_ip, cfg->remote_port, conn->remote_port, cfg->tstamp, conn->tstamp);
+        cfg->conn = conn;
+        kiwi_strncpy(cfg->remote_ip, conn->remote_ip, NET_ADDRSTRLEN);
+        cfg->remote_port = conn->remote_port;
+        cfg->tstamp = conn->tstamp;
+    }
+    
+    #if 0
+        if (key == CMD_SAVE_CFG) {
+            clprintf(conn, "CMD_SAVE_CFG key=%d %s \"%s\" \"%s\" \"%.32s\"\n", key, cfg->name, cfg->frag_prefix_s, cfg->end_prefix_s, cmd);
+            show_conn("save_config ", PRINTF_REG, conn);
+        }
+    #endif
+    
+    // Handle web socket fragmentation by sending in parts which can be reassembled on server side.
+    // Due to data getting large after double encoding or web socket buffering limitations on browser.
+
+    if (isFrag) {
+        if (key == CMD_SAVE_ADM) {
+            if (!admin_auth_okay(conn)) { printf("save_config: BAD AUTH\n"); return true; }
+        } else {
+            if (!rx_auth_okay(conn)) { printf("save_config: BAD AUTH\n"); return true; }
+        }
+        
+        if ((n = sscanf(cmd, "%*s %*[^=]=%d %ms", &seq, &sb)) != 2) {
+            printf("save_config: BAD DECODE n=%d \"%.32s\"\n", n, cmd);
+            return true;
+        }
+        if (dbug) clprintf(conn, "save_config: %s FRAG conn=%p seq=%d sl=%d\n", cfg->name, conn, seq, strlen(sb));
+        if (seq < cfg->seq) {
+            kiwi_ifree(sb);
+            if (dbug) clprintf(conn, "save_config: %s FRAG conn=%p seq=%d < cfg.seq=%d IGNORE DELAYED, OUT-OF-SEQ FRAG\n", cfg->name, conn, seq, cfg->seq);
+            return true;
+        }
+        if (cfg->json != NULL && seq > cfg->seq) {
+            kstr_free(cfg->json);
+            cfg->json = NULL;
+            if (dbug) clprintf(conn, "save_config: %s FRAG conn=%p seq=%d > cfg.seq=%d NEW SEQ, DISCARD ACCUMULATED FRAGS\n", cfg->name, conn, seq, cfg->seq);
+        }
+        cfg->seq = seq;     // lock to new seq
+        cfg->json = kstr_cat(cfg->json, kstr_wrap(sb));
+        return true;
+    }
+    
+    if (isEnd) {
+        if (key == CMD_SAVE_ADM) {
+            if (!admin_auth_okay(conn)) return true;
+        } else {
+            if (!rx_auth_okay(conn)) return true;
+        }
+
+        if ((n = sscanf(cmd, "%*s %*[^=]=%d %ms", &seq, &sb)) != 2) {
+            printf("save_config: BAD DECODE n=%d \"%.32s\"\n", n, cmd);
+            return true;
+        }
+        if (dbug) clprintf(conn, "save_config: %s END conn=%p seq=%d sl=%d\n", cfg->name, conn, seq, strlen(sb));
+        if (seq < cfg->seq) {
+            kiwi_ifree(sb);
+            if (dbug) clprintf(conn, "save_config: %s END conn=%p seq=%d < cfg.seq=%d IGNORE DELAYED, OUT-OF-SEQ FRAG\n", cfg->name, conn, seq, cfg->seq);
+            return true;
+        }
+        
+        // this should only happen in the case of seq N being fragmented, but seq N+1 having no fragments (due to reduced size presumably)
+        if (cfg->json != NULL && seq > cfg->seq) {
+            kstr_free(cfg->json);
+            cfg->json = NULL;
+            if (dbug) clprintf(conn, "save_config: %s END conn=%p seq=%d > cfg.seq=%d NEW SEQ, DISCARD ACCUMULATED FRAGS\n", cfg->name, conn, seq, cfg->seq);
+        }
+        cfg->seq = seq;     // lock to new seq
+        cfg->json = kstr_cat(cfg->json, kstr_wrap(sb));
+        
+        // For cfg strings double URI encoding is effectively used since they are stored encoded and
+        // another encoding is done for transmission.
+        // So decode the transmission encoding with kiwi_str_decode_inplace()
+        // and then decode the cfg string encoding with kiwi_str_decode_selective_inplace().
+        char *sp = kstr_sp(cfg->json);
+        kiwi_str_decode_inplace(sp);
+        kiwi_str_decode_selective_inplace(sp);
+
+        switch (key) {
+            case CMD_SAVE_CFG:   cfg_save_json(sp); break;
+            case CMD_SAVE_DXCFG: dxcfg_save_json(sp); break;
+            case CMD_SAVE_ADM:   admcfg_save_json(sp); break;
+            default: panic("save_config"); break;
+        }
+
+        kstr_free(cfg->json);
+        cfg->json = NULL;        // NB: extremely important
+        update_vars_from_config();      // update C copies of vars
+        if (dbug) clprintf(conn, "save_config: %s COMMIT conn=%p seq=%d\n", cfg->name, conn, cfg->seq);
+        return true;
+    }
+
+    return false;   // always (and only) return false if the cmd matching failed
 }
 
 void show_conn(const char *prefix, u4_t printf_type, conn_t *cd)
@@ -333,13 +541,13 @@ void show_conn(const char *prefix, u4_t printf_type, conn_t *cd)
     char *ext_s = (cd->type == STREAM_EXT)? (cd->ext? stnprintf(3, " %s", cd->ext->name) : (char *) " (ext name?)") : (char *) "";
     
     lfprintf(printf_type,
-        "%sCONN-%02d %p %3s %-3s %s%s%s%s%s%s%s%s%s isPwd%d tle%d%d sv=%02d KA=%02d/60 KC=%05d mc=%9p %s:%d:%016llx%s%s%s%s\n",
+        "%sCONN-%02d %p %3s %-3s %s%s%s%s%s%s%s%s%s isPwd%d tle%d%d sv=%02d KA=%02d/60 KC=%05d mc=%9p %s%s:%d:%016llx%s%s%s%s\n",
         prefix, cd->self_idx, cd, type_s, rx_s,
         cd->auth? "*":"_", cd->auth_kiwi? "K":"_", cd->auth_admin? "A":"_",
         cd->isMaster? "M":"_", cd->arun_preempt? "P":(cd->internal_connection? "I":(cd->ext_api? "E":"_")), cd->ext_api_determined? "D":"_",
         cd->isLocal? "L":(cd->force_notLocal? "F":"_"), cd->auth_prot? "P":"_", cd->awaitingPassword? "A":(cd->kick? "K":"_"),
         cd->isPassword, cd->tlimit_exempt, cd->tlimit_exempt_by_pwd, cd->served,
-        cd->keep_alive, cd->keepalive_count, cd->mc,
+        cd->keep_alive, cd->keepalive_count, cd->mc, cd->debug? stprintf("dbg=%d ", cd->debug):"",
         cd->remote_ip, cd->remote_port, cd->tstamp,
         other_s, ext_s, cd->stop_data? " STOP_DATA":"", cd->is_locked? " LOCKED":"");
 
@@ -375,7 +583,7 @@ void dump()
 	
 	TaskDump(TDUMP_LOG | TDUMP_HIST | PRINTF_LOG);
 	lock_dump();
-	ip_blacklist_dump();
+	ip_blacklist_dump(false);
 }
 
 // can optionally configure SIG_DEBUG to call this debug handler
@@ -656,6 +864,7 @@ int dB_wire_to_dBm(int db_value)
 // schedule SNR measurements
 
 int snr_meas_interval_hrs, snr_all, snr_HF;
+int ant_connected = 1;
 bool snr_local_time;
 SNR_meas_t SNR_meas_data[SNR_MEAS_MAX];
 static int dB_raw[WF_WIDTH];
@@ -681,20 +890,47 @@ int SNR_calc(SNR_meas_t *meas, int meas_type, int f_lo, int f_hi)
     //    meas_type, b_lo, b_hi, f_lo, f_hi, start, stop, len, masked);
 
     if (len) {
-        qsort(dB, len, sizeof(int), qsort_intcomp);
         SNR_data_t *data = &meas->data[meas_type];
         data->f_lo = f_lo; data->f_hi = f_hi;
-        data->min = dB[0]; data->max = dB[len-1];
         data->pct_95 = 95;
-        data->pct_50 = median_i(dB, len, &data->pct_95);
+        data->pct_50 = median_i(dB, len, &data->pct_95);    // does int qsort on dB array
+        data->min = dB[0]; data->max = dB[len-1];
         data->snr = data->pct_95 - data->pct_50;
         rv = data->snr;
-        //printf("SNR_calc-%d: [%d,%d] noise(50%)=%d signal(95%)=%d snr=%d\n",
-        //    meas_type, data->min, data->max, data->pct_50, data->pct_95, data->snr);
+        
+        // Antenna disconnect detector
+        // Rules based on observed cases. Avoiding false-positives is very important.
+        // Disconnected if:
+        // 1) freq_offset_kHz == 0 (via meas_type == SNR_MEAS_HF),
+        //      i.e. no V/UHF transverter setups that might be inherently quiet when no signals.
+        // 2) snr <= 3
+        // 3) Not greater than 2 peaks stronger than -100 dBm
+        if (meas_type == SNR_MEAS_HF && data->snr <= 3) {
+            int peaks = 0;
+            for (i = 0; i < len; i++) {
+                if (dB[i] >= -100) peaks++;
+            }
+            int _ant_connected = (peaks <= 2)? 0:1;
+            if (ant_connected != _ant_connected) {
+            
+                // wakeup the registration process (if any) so that the change in
+                // antenna disconnection shows up on rx.kiwisdr.com as soon as possible
+                bool woke = wakeup_reg_kiwisdr_com(WAKEUP_REG);
+                ant_connected = _ant_connected;
+                printf("SNR_calc-%d:%s ant_connected=%d\n",
+                    meas_type, woke? " WAKEUP_REGISTRATION" : "", ant_connected);
+            }
+        }
+        
+        printf("SNR_calc-%d: [%d,%d] noise(50%%)=%d signal(95%%)=%d snr=%d range=%d|%d\n",
+            meas_type, data->min, data->max, data->pct_50, data->pct_95,
+            data->snr, data->pct_95 - data->min, data->max - data->min);
     }
     
     return rv;
 }
+
+int SNR_meas_tid;
 
 void SNR_meas(void *param)      // task
 {
@@ -782,7 +1018,7 @@ void SNR_meas(void *param)      // task
             meas->valid = true;
             rx_server_websocket(WS_MODE_CLOSE, &iconn.wf_mc);
             
-            #ifdef HONEY_POT
+            #ifdef OPTION_HONEY_POT
                 snr_all = snr_HF = 55;
             #endif
         }

@@ -37,6 +37,7 @@ Boston, MA  02110-1301, USA.
 #include "printf.h"
 #include "cfg.h"
 #include "clk.h"
+#include "dx.h"
 #include "wspr.h"
 #include "FT8.h"
 
@@ -328,13 +329,6 @@ void c2s_admin(void *param)
 			}
 #endif
 
-            int chan;
-			i = sscanf(cmd, "SET user_kick=%d", &chan);
-			if (i == 1) {
-				rx_server_user_kick(KICK_CHAN, chan);
-				continue;
-			}
-
 
 ////////////////////////////////
 // control
@@ -349,8 +343,34 @@ void c2s_admin(void *param)
 					down = false;
 				} else {
 					down = true;
-					rx_server_user_kick(KICK_USERS);    // kick all users off
+					rx_server_kick(KICK_USERS);    // kick all users off
 				}
+				continue;
+			}
+
+            int chan;
+			i = sscanf(cmd, "SET user_kick=%d", &chan);
+			if (i == 1) {
+				rx_server_kick(KICK_CHAN, chan);
+				continue;
+			}
+
+			if (strcmp(cmd, "SET snr_meas") == 0) {
+                if (SNR_meas_tid) {
+                    TaskWakeupF(SNR_meas_tid, TWF_CANCEL_DEADLINE);
+                }
+				continue;
+			}
+
+            int dload;
+			i = sscanf(cmd, "SET dx_comm_download=%d", &dload);
+			if (i == 1) {
+			    if (dload == 1) {
+                    system("touch " DX_DOWNLOAD_ONESHOT_FN);
+			    } else {
+                    system("rm -f " DX_DOWNLOAD_ONESHOT_FN);
+			    }
+                clprintf(conn, "ADMIN: dx_comm_download %s\n", dload? "NOW" : "CANCEL");
 				continue;
 			}
 
@@ -500,19 +520,33 @@ void c2s_admin(void *param)
                             kiwi_ifree(cmd_p);
                             status_c += status;
                             if (status_c == 0) {
-                                asprintf(&cmd_p, CLONE_FILE, &pwd_m[1], host_m, "config.js");
+                                asprintf(&cmd_p, CLONE_FILE, &pwd_m[1], host_m, "dx_config.json");
                                 kstr_free(non_blocking_cmd(cmd_p, &status));
                                 kiwi_ifree(cmd_p);
-                                status_c += status;
+                                // won't exist if source kiwi < v1.602
+                                if (status != 0) status_c = 2;
                             }
                         }
                     }
 			    } else {
-		            asprintf(&cmd_p, CLONE_FILE, &pwd_m[1], host_m, "dx.json");
-                    //printf("config clone: %s\n", cmd_p);
-                    kstr_free(non_blocking_cmd(cmd_p, &status_c));
-                    //cprintf(conn, "config clone: status=%d\n", status_c);
-                    kiwi_ifree(cmd_p);
+			        //#define TEST_CLONE_UI
+			        #ifdef TEST_CLONE_UI
+			            status_c = 2;
+			        #else
+                        asprintf(&cmd_p, CLONE_FILE, &pwd_m[1], host_m, "dx.json");
+                        //printf("config clone: %s\n", cmd_p);
+                        kstr_free(non_blocking_cmd(cmd_p, &status_c));
+                        //cprintf(conn, "config clone: status=%d\n", status_c);
+                        kiwi_ifree(cmd_p);
+                        if (status_c == 0) {
+                            asprintf(&cmd_p, CLONE_FILE, &pwd_m[1], host_m, "dx_config.json");
+                            kstr_free(non_blocking_cmd(cmd_p, &status));
+                            kiwi_ifree(cmd_p);
+                            // won't exist if remote kiwi < v1.602
+                            if (status != 0) status_c = 2;
+                        }
+                        if (status_c == 0) status_c = 1;
+                    #endif
 		        }
 				kiwi_ifree(host_m);
 				kiwi_ifree(pwd_m);
@@ -544,6 +578,7 @@ void c2s_admin(void *param)
 
 			i = strcmp(cmd, "SET reload_index_params");
 			if (i == 0) {
+			    printf("reload_index_params\n");
 				reload_index_params();
 				continue;
 			}
@@ -558,10 +593,7 @@ void c2s_admin(void *param)
 			if (i == 0) {
                 if (admcfg_bool("kiwisdr_com_register", NULL, CFG_REQUIRED) == false) {
 		            // force switch to short sleep cycle so we get status returned sooner
-		            if (reg_kiwisdr_com_status && reg_kiwisdr_com_tid) {
-                        TaskWakeupF(reg_kiwisdr_com_tid, TWF_CANCEL_DEADLINE);
-                    }
-		            reg_kiwisdr_com_status = 0;
+		            wakeup_reg_kiwisdr_com(WAKEUP_REG_STATUS);
                 }
 
 				sb = kstr_asprintf(NULL, "{\"kiwisdr_com\":%d", reg_kiwisdr_com_status);
@@ -586,9 +618,7 @@ void c2s_admin(void *param)
 
 			i = strcmp(cmd, "SET public_wakeup");
 			if (i == 0) {
-                if (reg_kiwisdr_com_tid) {
-                    TaskWakeupF(reg_kiwisdr_com_tid, TWF_CANCEL_DEADLINE);
-                }
+                wakeup_reg_kiwisdr_com(WAKEUP_REG);
 				continue;
 			}
 #endif
@@ -619,8 +649,8 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET microSD_write");
 			if (i == 0) {
 				mprintf_ff("ADMIN: received microSD_write\n");
-				backup_in_progress = true;  // NB: must be before rx_server_user_kick() to prevent new connections
-				rx_server_user_kick(KICK_ALL);      // kick everything (including autorun) off to speed up copy
+				backup_in_progress = true;  // NB: must be before rx_server_kick() to prevent new connections
+				rx_server_kick(KICK_ALL);      // kick everything (including autorun) off to speed up copy
 				// if this delay isn't here the subsequent non_blocking_cmd_popen() hangs for
 				// MINUTES, if there is a user connection open, for reasons we do not understand
 				TaskSleepReasonSec("kick delay", 5);
@@ -1129,9 +1159,15 @@ void c2s_admin(void *param)
 				continue;
 			}
 			
-			i = strcmp(cmd, "SET log_dump");
+			i = strcmp(cmd, "SET log_state");
 			if (i == 0) {
 		        dump();
+				continue;
+			}
+
+			i = strcmp(cmd, "SET log_blacklist");
+			if (i == 0) {
+		        ip_blacklist_dump(true);
 				continue;
 			}
 
@@ -1211,7 +1247,7 @@ void c2s_admin(void *param)
 			        if (no_console) {
                         send_msg_encoded(conn, "ADM", "console_c2w", "CONSOLE: disabled because kiwi.config/opt.no_console file exists\n");
 			        } else {
-                        send_msg_encoded(conn, "ADM", "console_c2w", "CONSOLE: only available to local admin connections\n");
+                        send_msg_encoded(conn, "ADM", "console_c2w", "CONSOLE: only available to local admin connection\n");
 			        }
 			    }
 				continue;

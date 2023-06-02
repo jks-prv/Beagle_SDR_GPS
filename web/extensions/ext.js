@@ -1,4 +1,4 @@
-// Copyright (c) 2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2016-2023 John Seamons, ZL/KF6VO
 
 var extint = {
    ws: null,
@@ -16,8 +16,13 @@ var extint = {
    default_w: 525,
    default_h: 300,
    prev_mode: null,
+   mode_prior_to_dx_click: null,
    seq: 0,
    scanning: 0,
+   
+   web_socket_fragmentation: 8192,
+   send_hiwat: 0,
+   send_hiwat_msg: null,
    
    // extensions not subject to DRM lockout
    // FIXME: allow C-side API to specify
@@ -41,8 +46,13 @@ function ext_switch_to_client(ext_name, first_time, recv_func)
 
 function ext_send(msg, ws)
 {
-	if (ws == undefined)
-		ws = extint.ws;
+	if (isNoArg(ws)) ws = extint.ws;
+	
+	var len = msg.length;
+	if (len > extint.send_hiwat) {
+	   extint.send_hiwat_msg = msg;
+	   extint.send_hiwat = len;
+	}
 
 	try {
 	   //console.log('ext_send: ws='+ ws.stream +' '+ msg);
@@ -52,6 +62,70 @@ function ext_send(msg, ws)
 		console.log("CATCH ext_send('"+s+"') ex="+ex);
 		kiwi_trace();
 	}
+}
+
+// Handle web socket fragmentation by sending in parts which can be reassembled on server side.
+// Due to data getting large after double encoding or web socket buffering limitations on browser.
+function ext_send_cfg(cfg, s)
+{
+	var ws = extint.ws;
+	var len = s.length;
+	var tr = '='+ len;
+	var _send = function(seq, suffix, s) {
+	   return ('SET '+ cfg.cmd + suffix + seq +' '+ s);
+	};
+
+   var transaction_seq = cfg.seq;
+   cfg.seq++;
+   
+   w3_do_when_cond(
+      function(seq) {
+         var ba = ws.bufferedAmount? ('['+ ws.bufferedAmount +']') : '0';
+         tr = w3_sb(tr, ba);
+         if (ws.bufferedAmount != 0) return false;    // wait for buffer to drain
+
+         if (len > extint.web_socket_fragmentation) {
+            cfg.lock = 1;     // lock if fragmented transfers are occurring
+            ws.send(_send(seq, '_frag=', s.slice(0, extint.web_socket_fragmentation)));
+            s = s.slice(extint.web_socket_fragmentation);
+            len = s.length;
+            tr = w3_sb(tr, 'W'+ extint.web_socket_fragmentation);
+            return false;
+         } else {
+            ws.send(_send(seq, '=', s.slice(0, extint.web_socket_fragmentation)));
+            cfg.lock = 0;
+            if (kiwi.log_cfg_save_seq)
+               kiwi_debug(w3_sb('save_config:', seq +'-'+ cfg.name + tr, 'w'+ len, 'DONE'), /* syslog */ true);
+            len = 0;
+            return true;
+         }
+      },
+      null,
+      transaction_seq, kiwi.test_cfg_save_seq? 1000 : 50
+   );
+   // REMINDER: w3_do_when_cond() returns immediately and not when the ws.send()s are done
+}
+
+// It's hard to do this any other way than a longish fixed delay because of recent
+// save cfg web socket write buffering changes (i.e. when we're called right after a cfg save
+// returns server may not have yet received and processed all the fragmented data).
+function ext_send_after_cfg_save(msg, cfg_s)
+{
+   //setTimeout(function() { ext_send(msg); }, 1000);
+   //ext_send(msg);
+   
+   cfg_s = cfg_s || 'cfg';
+   var kiwi_cfg = kiwi[cfg_s];
+   w3_do_when_cond(
+      function() {
+         if (kiwi.log_cfg_save_seq)
+         kiwi_debug('ext_send_after_cfg_save lock='+ kiwi_cfg.lock +' msg=<'+ msg +'>');
+         return (kiwi_cfg.lock == 0);
+      },
+      function(msg) {
+         ext_send(msg);
+      }, msg, 100
+   );
 }
 
 function ext_panel_show(controls_html, data_html, show_func, hide_func)
@@ -97,7 +171,7 @@ function ext_get_cfg_param(path, init_val, save, update_path_var)
 	
    //console.log('ext_get_cfg_param: path='+ path +' admin='+ isAdmin() +' cur_val='+ cur_val +' init_val='+ init_val);
    
-	if (!isArg(cur_val) && init_val != undefined) {    // scope or parameter doesn't exist, create it
+	if (isNoArg(cur_val) && init_val != undefined) {    // scope or parameter doesn't exist, create it
 		cur_val = init_val;
 		// parameter hasn't existed before or hasn't been set (empty field)
 		//console.log('ext_get_cfg_param: creating cfg_path='+ cfg_path +' cur_val='+ cur_val);
@@ -124,7 +198,7 @@ function ext_get_cfg_param(path, init_val, save, update_path_var)
 function ext_get_cfg_param_string(path, init_val, save)
 {
    var s = ext_get_cfg_param(path, init_val, save);
-   if (!isArg(s)) s = '';
+   if (isNoArg(s)) s = '';
 	return kiwi_decodeURIComponent(ext_get_cfg_param_string +':'+ path, s);
 }
 
@@ -133,8 +207,8 @@ function ext_set_cfg_param(path, val, save)
 	path = w3_add_toplevel(path);	
 	setVarFromString(path, val);
 	
-	// save unless EXT_NO_SAVE specified
-	if (save != undefined && save == EXT_SAVE) {
+	// save only if EXT_SAVE specified
+	if (isArg(save) && save == EXT_SAVE) {
 		//console.log('ext_set_cfg_param: SAVE path='+ path +' val='+ val);
 		cfg_save_json('ext_set_cfg_param', path);
 	}
@@ -207,6 +281,21 @@ function ext_get_passband_center_freq()
    return freq_passband_center();
 }
 
+function ext_save_setup()
+{
+   var mode = isArg(extint.mode_prior_to_dx_click)? extint.mode_prior_to_dx_click : cur_mode;
+   console.log('ext_save_setup mode='+ mode +' mode_prior_to_dx_click='+ extint.mode_prior_to_dx_click +' cur_mode='+ cur_mode);
+   extint.mode_prior_to_dx_click = null;
+	return { mode: mode, zoom: zoom_level };
+}
+
+function ext_restore_setup(s)
+{
+   console.log('ext_restore_setup mode='+ s.mode +' zoom='+ s.zoom);
+   ext_set_mode(s.mode);
+   ext_set_zoom(ext_zoom.ABS, s.zoom);
+}
+
 function ext_get_mode()
 {
 	return cur_mode;
@@ -271,7 +360,7 @@ function ext_set_mode(mode, freq, opt)
    if (new_drm)
       extint.prev_mode = cur_mode;
 
-   //console.log('### ext_set_mode '+ mode +' prev='+ extint.prev_mode);
+   console.log('### ext_set_mode '+ mode +' prev='+ extint.prev_mode);
 	demodulator_analog_replace(mode, freq);
 	
 	var open_ext = w3_opt(opt, 'open_ext', false);
@@ -1084,7 +1173,12 @@ function extint_select_build_menu()
          //console.log('extint_select_menu id_en='+ id_en +' en='+ enable);
          if (enable == null || kiwi.is_local[rx_chan]) enable = true;   // enable if no cfg param or local connection
          if (id == 'DRM') kiwi.DRM_enable = enable;
-         if (id == 'NAVTEX') id = 'NAVTEX/DSC';
+         
+         // menu entry name exceptions
+         if (id == 'NAVTEX') id = 'NAVTEX/DSC'; else
+         if (id == 'FT8') id = 'FT8/FT4'; else
+            ;
+         
 		   s += '<option value='+ dq(value) +' kiwi_idx='+ dq(i) +' '+ (enable? '':'disabled') +'>'+ id +'</option>';
 		});
 	}
@@ -1096,6 +1190,12 @@ function extint_open(name, delay)
 {
    //console.log('extint_open rx_chan='+ rx_chan +' is_local='+ kiwi.is_local[rx_chan]);
    name = name.toLowerCase();
+   
+   // aliases, for the benefit of dx.json file
+   if (name == 'dsc') name = 'navtex'; else
+   if (name == 'ft4') name = 'ft8'; else
+      ;
+   
    var found = 0;
    extint_names_enum(function(i, value, id, id_en) {
       var enable = ext_get_cfg_param(id_en +'.enable');
