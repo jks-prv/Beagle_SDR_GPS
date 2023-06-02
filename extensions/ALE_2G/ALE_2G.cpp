@@ -323,7 +323,7 @@ bool ale_2g_msgs(char *msg, int rx_chan)
 		//printf("ALE_2G: rx tune %.2f\n", freq);
 		//e->decode.set_freq(freq);
         ext_send_msg(rx_chan, false, "EXT tune_ack=%.2f", freq);
-        //snd_send_msg(rx_chan, true, "MSG audio_flags2=tune_ack:%.2f", frequency);
+        //snd_send_msg_encoded(rx_chan, true, "MSG", "audio_flags2", "tune_ack:%.2f", frequency);
 
 		conn_t *conn = rx_channels[rx_chan].conn;
         input_msg_internal(conn, "SET mod=x low_cut=0 high_cut=0 freq=%.2f", freq);

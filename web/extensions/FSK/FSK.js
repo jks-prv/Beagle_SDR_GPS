@@ -419,7 +419,7 @@ var fsk_decim_s = [ 1, 2, 4, 8, 16, 32 ];
 function fsk_controls_setup()
 {
    fsk.th = fsk.dataH;
-	fsk.saved_mode = ext_get_mode();
+	fsk.saved_setup = ext_save_setup();
 	
 	fsk.jnx = new JNX();
 	fsk.freq = ext_get_freq()/1e3;
@@ -485,6 +485,43 @@ function fsk_controls_setup()
             if (!isNaN(r.num) && (r.num == 0 || (r.num >= 5 && r.num <= 8))) {
                fsk.fr_bpd_i = r.num? (r.num - 4) : 0;
             }
+         } else
+         
+         // combo setups
+         if ((r = w3_ext_param('sitor-b', a)).match) {   // e.g. NAVTEX, MSI, WLO/TAH/SVO et al etc.
+            fsk.shift = 170; fsk.shift_custom = false;
+            fsk.baud = 100; fsk.baud_custom = false;
+            fsk.framing = '4/7';
+            fsk.inverted = 0;
+            fsk.encoding = 'CCIR476';
+         } else
+         if ((r = w3_ext_param('wx', a)).match) {
+            fsk.shift = 450; fsk.shift_custom = false;
+            fsk.baud = 50; fsk.baud_custom = false;
+            fsk.framing = '5N1.5';
+            fsk.inverted = 1;
+            fsk.encoding = 'ITA2';
+         } else
+         if ((r = w3_ext_param('dsc', a)).match) {
+            fsk.shift = 170; fsk.shift_custom = false;
+            fsk.baud = 100; fsk.baud_custom = false;
+            fsk.framing = '7/3';
+            fsk.inverted = 1;
+            fsk.encoding = 'DSC';
+         } else
+         if ((r = w3_ext_param('selcall', a)).match) {
+            fsk.shift = 170; fsk.shift_custom = false;
+            fsk.baud = 100; fsk.baud_custom = false;
+            fsk.framing = '7/3';
+            fsk.inverted = 0;
+            fsk.encoding = 'Selcall';
+         } else
+         if ((r = w3_ext_param('ham', a)).match) {
+            fsk.shift = 170; fsk.shift_custom = false;
+            fsk.baud = 45.45; fsk.baud_custom = false;
+            fsk.framing = '5N1.5';
+            fsk.inverted = 0;
+            fsk.encoding = 'ITA2';
          }
       });
    }
@@ -607,17 +644,20 @@ function fsk_controls_setup()
    ext_set_data_height(fsk.dataH);
 	ext_set_controls_width_height(fsk.ctrlW, fsk.ctrlH);
 	
-	w3_do_when_rendered('id-fsk-menus', function() {
-	   fsk.ext_url = kiwi_SSL() +'files.kiwisdr.com/fsk/FSK_freq_menus.cjson';
-	   fsk.int_url = kiwi_url_origin() +'/extensions/FSK/FSK_freq_menus.cjson';
-	   fsk.using_default = false;
-	   fsk.double_fault = false;
-	   if (0 && dbgUs) {
-         kiwi_ajax(fsk.ext_url +'.xxx', 'fsk_get_menus_cb', 0, -500);
-	   } else {
-         kiwi_ajax(fsk.ext_url, 'fsk_get_menus_cb', 0, 10000);
+	w3_do_when_rendered('id-fsk-menus',
+	   function() {
+         fsk.ext_url = kiwi_SSL() +'files.kiwisdr.com/fsk/FSK_freq_menus.cjson';
+         fsk.int_url = kiwi_url_origin() +'/extensions/FSK/FSK_freq_menus.cjson';
+         fsk.using_default = false;
+         fsk.double_fault = false;
+         if (0 && dbgUs) {
+            kiwi_ajax(fsk.ext_url +'.xxx', 'fsk_get_menus_cb', 0, -500);
+         } else {
+            kiwi_ajax(fsk.ext_url, 'fsk_get_menus_cb', 0, 10000);
+         }
       }
-   });
+   );
+   // REMINDER: w3_do_when_rendered() returns immediately
 
    // because w3_input() doesn't yet have instantiation callback
    if (fsk.shift_custom)
@@ -793,7 +833,7 @@ function fsk_clear_menus(except)
 {
    // reset frequency menus
    for (var i = 0; i < fsk.n_menu; i++) {
-      if (!isArg(except) || i != except)
+      if (isNoArg(except) || i != except)
          w3_select_value('fsk.menu'+ i, -1);
    }
 }
@@ -973,12 +1013,11 @@ function fsk_log_mins_cb(path, val)
 
 function fsk_log_cb()
 {
-   var ts = kiwi_host() +'_'+ new Date().toISOString().replace(/:/g, '_').replace(/\.[0-9]+Z$/, 'Z') +'_'+ w3_el('id-freq-input').value +'_'+ cur_mode;
    var txt = new Blob([fsk.log_txt], { type: 'text/plain' });
    var a = document.createElement('a');
    a.style = 'display: none';
    a.href = window.URL.createObjectURL(txt);
-   a.download = 'FSK.'+ ts +'.log.txt';
+   a.download = kiwi_timestamp_filename('FSK.', '.log.txt');
    document.body.appendChild(a);
    console.log('fsk_log: '+ a.download);
    a.click();
@@ -1053,7 +1092,7 @@ function fsk_test_cb(path, idx, first)
 function FSK_blur()
 {
 	ext_unregister_audio_data_cb();
-	ext_set_mode(fsk.saved_mode);
+	ext_restore_setup(fsk.saved_setup);
    fsk_crosshairs(0);
    kiwi_clearInterval(fsk.log_interval);
 }
@@ -1076,23 +1115,34 @@ function FSK_help(show)
    if (show) {
       var s = 
          w3_text('w3-medium w3-bold w3-text-aqua', 'FSK decoder help') +
-         '<br>Decoding FSK is not always easy because of the many signal parameters involved. <br>' +
-         'Try the stations listed in the menus. Most of these are best heard from Kiwis in Europe. <br><br>' +
+         w3_div('w3-margin-T-8 w3-scroll-y|height:90%',
+            w3_div('w3-margin-R-8',
+               '<br>Decoding FSK is not always easy because of the many signal parameters involved. <br>' +
+               'Try the stations listed in the menus. Most of these are best heard from Kiwis in Europe. <br><br>' +
 
-         'The frequency shift can be set by zooming in sufficiently, centering the passband between <br>' +
-         'the two tones, and selecting a menu shift (or setting a custom shift) so that the <br>' +
-         'checkered crosshairs align on the tones. The scope and framing modes are to assist ' +
-         'in setting the correct baud rate and framing. <br><br>' +
+               'The frequency shift can be set by zooming in sufficiently, centering the passband between <br>' +
+               'the two tones, and selecting a menu shift (or setting a custom shift) so that the <br>' +
+               'checkered crosshairs align on the tones. The scope and framing modes are to assist ' +
+               'in setting the correct baud rate and framing. <br><br>' +
          
-         'URL parameters: <br>' +
-         'First parameter can be a frequency matching an entry in station menus. <br>' +
-         'shift:<i>num</i> &nbsp; baud:<i>num</i> &nbsp; framing:<i>value</i> &nbsp; encoding:<i>value</i> &nbsp; inverted<i>[:0|1]</i> &nbsp; log_time:<i>mins</i> <br>' +
-         'Values are those appearing in their respective menus. <br>' +
-         'Any number for shift and baud can be used. Not just the preset values in the menus. <br>' +
-         'Keywords are case-insensitive and can be abbreviated. <br>' +
-         'So for example this is valid: <i>ext=fsk,147.3,s:425,b:200,a,i:0</i> &nbsp; <i>ext=fsk,2474,log:5 <br>' +
-         '';
-      confirmation_show_content(s, 610, 300);
+               'URL parameters: <br>' +
+               'First parameter can be a frequency matching an entry in station menus. <br>' +
+               w3_text('|color:orange', 'shift:<i>num</i> &nbsp; baud:<i>num</i> &nbsp; framing:<i>value</i> &nbsp; encoding:<i>value</i> &nbsp; inverted<i>[:0|1]</i> &nbsp; log_time:<i>mins</i>') +
+               '<br> Values are those appearing in their respective menus. <br>' +
+               'Any number for shift and baud can be used. Not just the preset values in the menus. <br>' +
+               'Keywords are case-insensitive and can be abbreviated. <br>' +
+               'So for example this is valid: <i>ext=fsk,147.3,s:425,b:200,a,i:0</i> &nbsp; <i>ext=fsk,2474,log:5</i> <br>' +
+               '<br> There are several aliases that combine the settings: <br>' +
+               w3_text('|color:orange', 'sitor-b') + ' &nbsp; <i>s:170,b:100,4/7,i:0,CCIR476</i> <br>' +
+               w3_text('|color:orange', 'wx') + ' &nbsp; <i>s:450,b:50,5N1.5,i:1,ITA2</i> <br>' +
+               w3_text('|color:orange', 'dsc') + ' &nbsp; <i>s:170,b:100,7/3,i:1,DSC</i> <br>' +
+               w3_text('|color:orange', 'selcall') + ' &nbsp; <i>s:170,b:100,7/3,i:0,Selcall</i> <br>' +
+               w3_text('|color:orange', 'ham') + ' &nbsp; <i>s:170,b:45.45,5N1.5,i:0,ITA2</i> <br>' +
+               ''
+            )
+         );
+      confirmation_show_content(s, 610, 375);
+      w3_el('id-confirmation-container').style.height = '100%';   // to get the w3-scroll-y above to work
    }
    return true;
 }

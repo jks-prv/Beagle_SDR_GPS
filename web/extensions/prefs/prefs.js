@@ -1,4 +1,4 @@
-// Copyright (c) 2021 John Seamons, ZL/KF6VO
+// Copyright (c) 2021-2023 John Seamons, ZL/KF6VO
 
 var prefs = {
    ext_name: 'prefs',    // NB: must match prefs.cpp:prefs_ext.name
@@ -185,10 +185,10 @@ function prefs_check()
       if (d.value) {
          var obj = kiwi_JSON_parse('prefs_check', d.value);
          if (obj) {
-            //msg_send('SET dbug_msg=prefs_check '+ JSON.stringify(d));
+            //kiwi_debug('prefs_check '+ JSON.stringify(d));
             if (prefs.pobj.p != obj.p) {
                console.log('--> prefs_check '+ d.value);
-               msg_send('SET dbug_msg=prefs_check '+ d.value);
+               kiwi_debug('prefs_check '+ d.value);
             }
          }
       }
@@ -202,7 +202,7 @@ function prefs_load(cb)
       var id = ident_user? ident_user : '_no_user_';
       xdLocalStorageHA.getItem('prefs.'+ id, function(d) {
          console.log('prefs_load key=prefs.'+ id);
-         msg_send('SET dbug_msg=prefs_load '+ JSON.stringify(d));
+         kiwi_debug('prefs_load '+ JSON.stringify(d));
          console.log(d);
          if (d.value == null) {
             prefs.pobj = prefs.default;
@@ -210,7 +210,7 @@ function prefs_load(cb)
             var obj = kiwi_JSON_parse('prefs_load', d.value);
             if (obj) {
                prefs.pobj = obj;
-               msg_send('SET dbug_msg=prefs_load '+ d.value);
+               kiwi_debug('prefs_load '+ d.value);
             }
          }
          console.log(prefs.pobj);

@@ -629,8 +629,8 @@ function FFT_help(show)
          'an FFT, waterfall and integrator (summing waterfall) for weak signals. <br>' +
          
          '<br>URL parameters: <br>' +
-         'itime:<i>num</i> &nbsp; maxdb:<i>num</i> &nbsp; mindb:<i>num</i> <br>' +
-         'Non-numeric values are those appearing in their respective menus. <br>' +
+         w3_text('|color:orange', 'itime:<i>num</i> &nbsp; maxdb:<i>num</i> &nbsp; mindb:<i>num</i>') +
+         '<br> Non-numeric values are those appearing in their respective menus. <br>' +
          'Keywords are case-insensitive and can be abbreviated. <br>' +
          'So for example these are valid: <br>' +
          '<i>ext=fft,integ,itime:5</i> &nbsp;&nbsp; ' +

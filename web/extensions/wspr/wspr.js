@@ -476,7 +476,7 @@ function wspr_help(show)
                'It\'s more of a demonstration than a serious WSPR decoding utility. ' +
                'An older version of the WSJT-X <i>wsprd</i> decoder is used. Together with the limited ' +
                'processing power of the Beagle this means fewer decodes occur compared to the current WSJT-X. ' +
-               'For serious decoding try <a href="http://wsprdaemon.org/index.html" target="_blank">WsprDaemon</a> ' +
+               'For serious decoding try <a href="http://wsprdaemon.org/index.html" target="_blank">wsprdaemon</a> ' +
                'which runs on a separate computer and makes connections to the Kiwi. ' +
                '<br><br>' +
          
@@ -497,9 +497,10 @@ function wspr_help(show)
                'WSPR decoding still occurs even though spots are not being uploaded. ' +
                '<br><br>' +
 
-               'Test button: Click when the time clock just becomes fully blue (i.e. at the beginning of an even minute). ' +
-               'A two minutes test recording will be played back containing 8 spots. These spots will <b>not</b> be uploaded to wsprnet.org ' +
-               '&nbsp;The recording was made with a BFO of 750 Hz, but will still decode even if the Kiwi is configured for another BFO value. ' +
+               'Test button: First, select a band from the band menu. It doesn\'t matter which one. ' +
+               'Then click the <i>test</i> button when the time clock just becomes fully blue (i.e. at the beginning of an even minute). ' +
+               'A two minute test recording will be played back containing 8 spots. These spots will <b>not</b> be uploaded to wsprnet.org ' +
+               '&nbsp;The recording was made with a BFO of 750 Hz, but will still decode even if the extension is configured for another BFO value. ' +
                '<br><br>' +
                
                'The decoder column values are the same as with other WSPR programs:' +

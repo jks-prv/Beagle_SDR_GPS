@@ -221,7 +221,7 @@ function sstv_controls_setup()
 
 	ext_panel_show(controls_html, data_html, null);
 	ext_set_controls_width_height(560, 125);
-	sstv.saved_mode = ext_get_mode();
+	sstv.saved_setup = ext_save_setup();
 	sstv_mode_name_cb("");
 	sstv_status_cb("");
 	sstv_result_cb("");
@@ -383,7 +383,7 @@ function SSTV_blur()
 {
 	//console.log('### SSTV_blur');
 	ext_send('SET stop');
-	ext_set_mode(sstv.saved_mode);
+	ext_restore_setup(sstv.saved_setup);
 }
 
 function SSTV_help(show)
@@ -408,7 +408,7 @@ function SSTV_help(show)
                'the edge. The image will then auto adjust. You can repeat this procedure multiple times<br>' +
                'if necessary.' +
                '<br><br>URL parameters: <br>' +
-               '<i>(freq menu match)</i> &nbsp; noadj &nbsp; test' +
+               w3_text('|color:orange', '(freq menu match) &nbsp; noadj &nbsp; test') +
                '<br><br>' +
                'The first URL parameter can be the number from an entry of the freq menu (e.g. "3730"). ' +
                '<i>noadj</i> un-checks the <i>auto adjust</i> box. <br>' +

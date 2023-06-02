@@ -59,16 +59,17 @@ var tc = {
 
    config:     0,
    // RBU: lsb stronger, RTZ: usb stronger
-   sig:        { JJY40:0,  RTZ:1,   WWVBa:2, WWVBp:3, JJY60:4, MSF:5,   RBU:6,   BPCa:7,  BPCss:8, DCF77a:9,   DCF77ss:10, TDF:11,  WWV:12 },
-   freq:       [ 40,       50.1,    60,      60,      60,      60,      66.566,  68.5,    68.5,    77.5,       77.5,       162,     10000.1, ],
-   pb:         [ 5,        30,      5,       5,       5,       5,       30,      5,       5,       5,          5,          5,       5 ],
-   pll_bw_i:   [ 100,      100,     100,     5,       100,     100,     100,     100,     100,     100,        100,        5,       5 ],
-   pll_off_i:  [ 500,      500,     500,     0,       500,     500,     500,     500,     500,     500,        500,        0,       100 ],
-   sigid_s:    [ 'jjy',    'rus',   'wwvb',  'wwvb',  'jjy',   'msf',   'rus',   'bpc',   'bpc',   'dcf77',    'dcf77',    'tdf',   'wwv' ],
+   sig:        { Beta:0,   JJY40:1, RTZ:2,   WWVBa:3, WWVBp:4, JJY60:5, MSF:6,   RBU:7,   BPCa:8,  BPCss:9, DCF77a:10,  DCF77ss:11, TDF:12,  WWV:13 },
+   freq:       [ 25,       40,      50.1,    60,      60,      60,      60,      66.566,  68.5,    68.5,    77.5,       77.5,       162,     10000.1, ],
+   pb:         [ 5,        5,       30,      5,       5,       5,       5,       30,      5,       5,       5,          5,          5,       5 ],
+   pll_bw_i:   [ 100,      100,     100,     100,     5,       100,     100,     100,     100,     100,     100,        100,        5,       5 ],
+   pll_off_i:  [ 500,      500,     500,     500,     0,       500,     500,     500,     500,     500,     500,        500,        0,       100 ],
+   sigid_s:    [ 'beta',   'jjy',   'rus',   'wwvb',  'wwvb',  'jjy',   'msf',   'rus',   'bpc',   'bpc',   'dcf77',    'dcf77',    'tdf',   'wwv' ],
    prev_sig:   -1,
 
    sig_s: [
       //                       ena
+      [ '25 kHz Beta-25',        0, 'Beta',     'https://en.wikipedia.org/wiki/Beta_(time_signal)' ],
       [ '40 kHz JJY-40',         1, 'JJY',      'https://en.wikipedia.org/wiki/JJY' ],
       [ '50 kHz RTZ',            1, 'RTZ',      'https://en.wikipedia.org/wiki/RTZ_(radio_station)' ],
       [ '60 kHz WWVB-ampl',      1, 'WWVB',     'https://en.wikipedia.org/wiki/WWVB' ],
@@ -416,7 +417,7 @@ function tc_controls_setup()
 			'<canvas id="id-tc-scope" width="1024" height="200" style="position:absolute"></canvas>'
 		);
 	
-   tc.save_mode = ext_get_mode();
+	tc.saved_setup = ext_save_setup();
    tc.save_agc_delay = ext_agc_delay(5000);
 	tc.config = tc.sig.WWVBp;
    tc.pll_bw = tc.pll_bw_i[tc.config];
@@ -667,7 +668,7 @@ function timecode_blur()
 {
 	ext_send('SET run=0');
 	kiwi_clearInterval(tc.interval);
-   ext_set_mode(tc.save_mode);
+	ext_restore_setup(tc.saved_setup);
    ext_agc_delay(tc.save_agc_delay);
 }
 

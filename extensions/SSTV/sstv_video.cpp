@@ -432,21 +432,6 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
 //////////////////////////////////////////////////////////////////////////
 
 
-    /*
-    if (PixelIdx >= e->PixelGrid_len) {
-        printf("Redraw=%d SampleNum=%d PixelIdx=%d\n", Redraw, SampleNum, PixelIdx);
-        panic("sstv");
-    }
-    */
-    
-    static bool overrun;
-    if (SampleNum > PixelGrid[PixelIdx].Time && !overrun) {
-        PixelGrid_t *pg = &PixelGrid[PixelIdx];
-        printf("SSTV: OVERRUN SampleNum=%d x=%d y=%d PixelGrid.Time=%d PixelIdx=%d\n",
-            SampleNum, pg->X, pg->Y, pg->Time, PixelIdx);
-        overrun = true;
-    }
-    
     if (PixelIdx < e->PixelGrid_len && SampleNum == PixelGrid[PixelIdx].Time) {
 
         x = PixelGrid[PixelIdx].X;
@@ -513,7 +498,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
 
         PixelIdx++;
 
-    } /* endif (SampleNum == PixelGrid[PixelIdx].Time) */
+    } /* endif (PixelIdx < e->PixelGrid_len && SampleNum == PixelGrid[PixelIdx].Time) */
 
     } // for SampleNum
 
