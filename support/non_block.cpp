@@ -345,6 +345,17 @@ int non_blocking_cmd_system_child(const char *pname, const char *cmd, int poll_m
 	return status;
 }
 
+int blocking_system(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	char *sb;
+	vasprintf(&sb, fmt, ap);
+	int rv = system(sb);
+	kiwi_ifree(sb);
+	return rv;
+}
+
 // Deprecated for use during normal running when realtime requirements apply
 // because pclose() can block for an unpredictable length of time. Use one of the routines above.
 // But still useful during init because e.g. non_blocking_cmd() can return an arbitrarily large buffer
@@ -387,6 +398,17 @@ kstr_t *non_blocking_cmd(const char *cmd, int *status)
 		*status = stat;
 	return reply;
 	#undef NBUF
+}
+
+kstr_t *non_blocking_cmd_fmt(int *status, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	char *cmd;
+	vasprintf(&cmd, fmt, ap);
+    kstr_t *rv = non_blocking_cmd(cmd, status);
+	kiwi_ifree(cmd);
+    return rv;
 }
 
 // non_blocking_cmd() broken down into separately callable routines in case you have to
