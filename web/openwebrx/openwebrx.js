@@ -7517,7 +7517,7 @@ function dx_label_cb(arr)
 		   if (ident.includes('CHU')) ext_name = 'fsk';    // exception: CHU uses FSK, not timecode, extension
 		   //params = ext_name +','+ freq.toFixedNZ(2);
 		   params = ext_name +',*';
-		   console.log('DX EXT EiBi freq='+ freq +' params='+ params);
+		   //console.log('DX EXT EiBi freq='+ freq +' params='+ params);
 		}
 
 		var f_baseHz = f_base * 1000;
