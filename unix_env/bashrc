@@ -11,33 +11,37 @@ BBAI="$(cat /proc/device-tree/model | sed "s/\(.*\)./\1x/" | grep -q -s "BeagleB
 DEBIAN_7="$(cat /etc/debian_version | grep -q -s "7\." && echo "true" || echo "false")"
 RPI="$(cat /proc/device-tree/model | grep -q -s "Raspberry Pi" && echo "true" || echo "false")"
 
+APT_GET_FORCE=
+
 if [ "x${BBAI_64}" == "xtrue" ] ; then
-export CC="clang-11"
-export CPU="TDA4VM"
+    export CC="clang-11"
+    export CPU="TDA4VM"
 fi
 
 if [ "x${BBAI}" == "xtrue" ] ; then
-export CC="clang-7"
-export CPU="AM5729"
+    export CC="clang-7"
+    export CPU="AM5729"
 fi
 
 if [ "x${BBG_BBB}" == "xtrue" ] ; then
-export CC="clang-6.0"
-export CPU="AM3359"
+    export CC="clang-6.0"
+    export CPU="AM3359"
+    APT_GET_FORCE="--force-yes"
 fi
 
 if [ "x${DEBIAN_7}" == "xtrue" ] ; then
-export CC="gcc"
-export CPU="AM3359"
+    export CC="gcc"
+    export CPU="AM3359"
+    APT_GET_FORCE="--force-yes"
 fi
 
 if [ "x${RPI}" == "xtrue" ] ; then
-export CC="clang-7"
-export CPU="BCM2837"
+    export CC="clang-7"
+    export CPU="BCM2837"
 fi
 
 if [ -f ~/.bashrc.local ]; then
-  . ~/.bashrc.local
+    . ~/.bashrc.local
 fi
 
 export COLOR='--color=auto'
@@ -273,13 +277,13 @@ alias pkver="apt-cache showpkg"
 alias pkvers="apt-cache madison"
 alias pkpol="apt-cache policy"
 alias pkch="apt-get update --allow-releaseinfo-change"
-alias pkup="apt-get -y install debian-archive-keyring; apt-get update; apt-get -y install ca-certificates; apt-get update"
+alias pkup="apt-get -y ${APT_GET_FORCE} install debian-archive-keyring; apt-get update; apt-get -y ${APT_GET_FORCE} install ca-certificates; apt-get update"
 # update(upgrade) single package
 alias pkupp="apt-get install --only-upgrade"
-alias pkug="apt-get -y dist-upgrade"
-#alias pkuug="apt-get -y upgrade"
+alias pkug="apt-get -y ${APT_GET_FORCE} dist-upgrade"
+#alias pkuug="apt-get -y ${APT_GET_FORCE} upgrade"
 #alias pkfug="apt-get full-upgrade"
-alias pki="apt-get -y install"
+alias pki="apt-get -y ${APT_GET_FORCE} install"
 alias pkc="df; apt-get clean; echo; df"
 alias pksz="dpkg-query -W -f='\${Installed-Size;8}\t\${Status;1}\t\${Package}\n' | gr -v '\\sd\\s' | sort -n | cut -f1,3-"
 alias pkf="apt-file search"
