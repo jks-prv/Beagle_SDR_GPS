@@ -63,6 +63,11 @@ define ng
     run -use_spidev 1 -gps -leds
 end
 
+define dx
+    bload
+    run -use_spidev 1 -gps -leds -dx 0x7f
+end
+
 define ng7
     bload
     run -use_spidev 0 -gps -leds
