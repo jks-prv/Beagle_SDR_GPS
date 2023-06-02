@@ -170,6 +170,8 @@ void c2s_sound_setup(void *param)
 	send_msg(conn, SM_SND_DEBUG, "MSG freq_offset=%.3f", freq_offset_kHz);
 	send_msg(conn, SM_SND_DEBUG, "MSG center_freq=%d bandwidth=%d adc_clk_nom=%.0f", (int) ui_srate/2, (int) ui_srate, ADC_CLOCK_NOM);
 	send_msg(conn, SM_SND_DEBUG, "MSG audio_init=%d audio_rate=%d sample_rate=%.6f", conn->isLocal, snd_rate, frate);
+
+    dx_last_community_download();
 }
 
 static bool specAF_FFT(int rx_chan, int instance, int flags, int ratio, int ns_out, TYPECPX *samps)
@@ -404,7 +406,7 @@ void c2s_sound(void *param)
 			if (rx_common_cmd(STREAM_SOUND, conn, cmd)) {
                 #ifdef TR_SND_CMDS
                     if (tr_cmds++ < 32)
-                        clprintf(conn, "SND #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
+                        clprintf(conn, "SND #%02d [rx_common_cmd] <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
                 #endif
 				continue;
 			}
@@ -495,8 +497,8 @@ void c2s_sound(void *param)
                             snd->isSAM = (_mode >= MODE_SAM && _mode <= MODE_QAM);
                             if (snd->isSAM && n == 5) {
                                 SAM_mparam = mparam & MODE_FLAGS_SAM;
-                                cprintf(conn, "SAM DC_block=%d fade_leveler=%d chan_null=%d\n",
-                                    (SAM_mparam & DC_BLOCK)? 1:0, (SAM_mparam & FADE_LEVELER)? 1:0, SAM_mparam & CHAN_NULL_WHICH);
+                                //cprintf(conn, "SAM DC_block=%d fade_leveler=%d chan_null=%d\n",
+                                //    (SAM_mparam & DC_BLOCK)? 1:0, (SAM_mparam & FADE_LEVELER)? 1:0, SAM_mparam & CHAN_NULL_WHICH);
                             }
 
                             // reset SAM demod on non-SAM to SAM transition
@@ -711,7 +713,7 @@ void c2s_sound(void *param)
                     if (n == 2) {
                         squelch = _squelch;
                         squelched = false;
-                        //cprintf(conn, "SND SET squelch=%d param=%.2f %s", squelch, _squelch_param, mode_lc[mode]);
+                        //cprintf(conn, "SND SET squelch=%d param=%.2f %s\n", squelch, _squelch_param, mode_lc[mode]);
                         if (mode == MODE_NBFM || mode == MODE_NNFM) {
                             m_Squelch[rx_chan].SetSquelch(squelch, _squelch_param);
                         } else {
@@ -1426,7 +1428,6 @@ void c2s_sound(void *param)
                 //      www.embedded.com/design/configurable-systems/4212086/DSP-Tricks--Frequency-demodulation-algorithms-
                 //      www.pa3fwm.nl/technotes/tn24-fm-noise.html
                 #define MAX_NBFM_VAL 32767
-                #define CLIPPER_NBFM_VAL 8192
                 //#define PN_F_DEBUG
                 #ifdef PN_F_DEBUG
                     float max_val = p_f[1]? fabsf(p_f[1]) : MAX_NBFM_VAL;

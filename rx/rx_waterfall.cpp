@@ -239,6 +239,8 @@ void c2s_waterfall_setup(void *param)
 	send_msg(conn, SM_WF_DEBUG, "MSG wf_fft_size=1024 wf_fps=%d wf_fps_max=%d zoom_max=%d rx_chans=%d wf_chans=%d wf_chans_real=%d wf_cal=%d wf_setup",
 		WF_SPEED_FAST, WF_SPEED_MAX, MAX_ZOOM, rx_chans, conn->isWF_conn? wf_chans:0, wf_chans, waterfall_cal);
 	if (do_gps && !do_sdr) send_msg(conn, SM_WF_DEBUG, "MSG gps");
+
+    dx_last_community_download();
 }
 
 void c2s_waterfall(void *param)
@@ -368,7 +370,7 @@ void c2s_waterfall(void *param)
                         _zoom = CLAMP(_zoom, 0, MAX_ZOOM);
                         float halfSpan_Hz = (ui_srate / (1 << _zoom)) / 2;
                         cf = (_start * HZperStart) + halfSpan_Hz;
-                        #ifdef HONEY_POT
+                        #ifdef OPTION_HONEY_POT
                             cprintf(conn, "HONEY_POT W/F cf=%.3f\n", cf / kHz);
                         #endif
                         zoom_start_chg = true;
@@ -859,7 +861,7 @@ void c2s_waterfall(void *param)
 			new_map = FALSE;
 		}
 		
-        // admin requested that all clients get updated cfg
+        // admin requested that all clients get updated cfg (e.g. admin changed dx type menu)
         if (cfg_update_seq != cfg_cfg.update_seq) {
             rx_server_send_config(conn);
             cfg_update_seq = cfg_cfg.update_seq;
