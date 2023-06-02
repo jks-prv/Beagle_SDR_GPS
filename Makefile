@@ -1144,7 +1144,6 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
     DX = dx.json
     EXISTS_DX := $(shell test -f $(DIR_CFG)/$(DX) && echo true)
     DX_CFG = dx_config.json
-    EXISTS_DX_CFG := $(shell test -f $(DIR_CFG)/$(DX_CFG) && echo true)
     DX_SHA256 := $(shell test -f $(DIR_CFG)/$(DX) && sha256sum $(DIR_CFG)/$(DX) | cut -c1-8)
     DX_NEEDS_UPDATE := $(findstring $(DX_SHA256),612d92da f607e7c7 574fb11d)
 
@@ -1289,18 +1288,13 @@ ifneq ($(EXISTS_DX),true)
 	cp $(DIR_CFG_SRC)/dist.$(DX) $(DIR_CFG)/$(DX)
 endif
 
-ifneq ($(EXISTS_DX_CFG),true)
-	@echo "\nINSTALLING $(DIR_CFG)/$(DX_CFG)"
-	cp $(DIR_CFG_SRC)/dist.$(DX_CFG) $(DIR_CFG)/$(DX_CFG)
-endif
-
 	@echo "\nDX_SHA256=$(DX_SHA256) DX_NEEDS_UPDATE=$(DX_NEEDS_UPDATE)"
 
 ifneq ($(DX_NEEDS_UPDATE),)
 	@echo "\nUPDATING $(DIR_CFG)/$(DX)"
 	cp --backup=numbered $(DIR_CFG)/$(DX) $(DIR_CFG)/$(DX).save
 	cp $(DIR_CFG_SRC)/dist.$(DX) $(DIR_CFG)/$(DX)
-# if dx.json hasn't changed then presume a conversion from config.js isn't necessary
+    # if dx.json hasn't changed then presume a conversion from config.js isn't necessary
 	@echo "\nINSTALLING $(DIR_CFG)/$(DX_CFG)"
 	cp $(DIR_CFG_SRC)/dist.$(DX_CFG) $(DIR_CFG)/$(DX_CFG)
 endif
