@@ -12,5 +12,5 @@ FILES_ALWAYS2 += $(subst web/,,$(wildcard web/kiwi/gfx/*.png))
 FILES_ALWAYS2 += $(subst web/,,$(wildcard web/kiwi/*.jpg))
 FILES_ALWAYS2 += $(subst web/,,$(wildcard web/kiwi/*.png))
 
-CLEAN_KIWI = admin_sdr admin kiwi kiwi_util w3_util monitor
+CLEAN_KIWI = admin_sdr admin kiwi kiwi_ui kiwi_util w3_util monitor
 CLEAN_MIN_GZ += $(addprefix web/kiwi/,$(addsuffix .min.js, $(CLEAN_KIWI))) $(addprefix web/kiwi/,$(addsuffix .min.js.gz, $(CLEAN_KIWI)))

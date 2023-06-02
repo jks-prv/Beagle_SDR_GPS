@@ -120,6 +120,7 @@ typedef struct conn_st {
 	bool try_geoloc;
 	
 	// debug
+	int debug;
 	int wf_frames;
 	u4_t wf_loop, wf_lock, wf_get;
 	u4_t audio_underrun, sequence_errors;
