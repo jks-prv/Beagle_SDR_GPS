@@ -3536,7 +3536,7 @@ function admin_draw(sdr_mode)
 
 function admin_nav_focus(id, cb_arg)
 {
-   console.log('admin_nav_focus id='+ id);
+   //console.log('admin_nav_focus id='+ id);
    admin.current_tab_name = id;
    w3_click_nav(id, id);
    writeCookie('last_admin_navbar', id);
