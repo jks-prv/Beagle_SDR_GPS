@@ -85,7 +85,7 @@
     display: inline-block;
     outline: 0;
     padding: 6px 16px;
-    vertical-align: inherit;    /* so w3-middle etc. works from parent(s) */
+    vertical-align: bottom;     /* so baseline level with surrounding plain text */
     overflow: hidden;
     text-decoration: none !important;
     color: #fff;
@@ -93,6 +93,10 @@
     text-align: left;
     white-space: nowrap;
 	cursor: default;
+}
+
+.w3-text-bottom {
+    vertical-align: bottom
 }
 
 .w3-ext-btn
@@ -751,6 +755,10 @@ input[type=range]::-moz-range-thumb {
     padding: 0 0 8px 0
 }
 
+.w3-round-3px {
+    border-radius: 3px !important
+}
+
 .w3-text-in-circle
 {
     display: flex;
@@ -783,6 +791,8 @@ input[type=range]::-moz-range-thumb {
 /* css-tricks.com/snippets/css/a-guide-to-flexbox */
 
 .w3-flex { display: flex }
+
+.w3-flex-noshrink { flex: 0 0 auto }
 
 .w3-flex-col, w3-flex-ttb { display: flex; flex-direction: column }
 .w3-flex-col-rev, w3-flex-btt { display: flex; flex-direction: column-reverse }
@@ -1213,6 +1223,11 @@ input[type=range]::-moz-range-thumb {
 .w3-text-css-red
 {
     color: red;
+}
+
+.w3-text-css-grey
+{
+    color: #808080;
 }
 
 .w3-css-pink
