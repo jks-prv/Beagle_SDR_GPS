@@ -2,6 +2,181 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.602  Apr 3, 2023
+    Only one admin connection at a time allowed:
+        To eliminate problems with corrupted configuration files multiple simultaneous admin
+        connections are no longer allowed. If you attempt to do so, and supply the admin password
+        if required, you will be given the opportunity to "kick" the other admin connection
+        (i.e. close it so that the current connection may now connect).
+    
+        This "kick" feature is designed to solve the following problem: You have a Kiwi located at a
+        remote location, say, a two hours drive away. You unintentionally leave a computer at that
+        location connected as admin to the Kiwi. When you got home you would be unable to connect as
+        admin to the Kiwi without the "kick" feature (unless you could screen-share with the remote
+        computer and close its browser admin connection directly).
+
+    Why is my Kiwi restarting occasionally?
+        The admin status tab now shows a list of all possible reasons a nightly restart might occur.
+        And also describes where all the option settings are located to disable the restart cause.
+    
+    DX label system -- many improvements and changes:
+        Default dx.json database update:
+            As you may know the default stored label database (dx.json file) dates from 2016.
+            It was really just everything we heard when the Kiwi first started working.
+            The hope was that it would serve as an example and Kiwi admins would customize it.
+            Well of course that didn't happen in many case. And lots of public Kiwis are now stuck
+            with an outdated and inappropriate set of labels.
+        
+            So this release addresses that problem. The dx.json file is checked. And if it has never
+            been modified then a new, updated dx.json replaces it. We stress that if any change
+            whatsoever has been made to the dx.json file then this replacement will not occur
+            (i.e. no changes made by the owner/admin will be lost). The only exception is that
+            that label-related information contained in kiwi.json will be moved to the new file
+            dx_config.json as described below. Although the information itself will not be changed.
+        
+        Community database:
+            It occurred to us that this idea could be extended as follows. A third database could be
+            added with this updated dx.json file as the starting point. It would be stored on
+            kiwisdr.com and periodically downloaded using the same mechanism as exist for updating
+            the IP blacklist. Changes to this database, called the "community" database, would be
+            made and discussed on the forum. We would consolidate the changes and maintain the file
+            as we do the IP blacklist.
+        
+            So the community database appears as a third menu entry in the label edit panel of a
+            user connection. The shortcut keys also cycle through the database etc. And an admin can
+            set the default database that a new connection to a Kiwi will use via a menu entry at
+            the top of the admin DX tab. There is also a switch that determines if nightly
+            auto checking/downloading will occur. And a "Download now" button for manual control.
+        
+            The current database is available for viewing:
+                Links on the kiwisdr.com webpage
+                kiwisdr.com/dx/dx_community.json
+                kiwisdr.com/dx/dx_community_config.json
+            
+            Note that, just as with the ip blacklist, disabling auto downloading will prevent your
+            Kiwi from restarting during the nightly update window (if a new community database is
+            available).
+                
+        Migrating label information out of kiwi.json:
+            In addition to the label information stored in dx.json additional information is stored
+            as part of the general kiwi.json config file. However this causes a problem when the
+            admin config "clone" function is used in the mode that only copies the label information
+            (and not the entire configuration). The label-related information cannot be easily
+            isolated from the rest of kiwi.json  To solve this problem this release extracts the
+            label information out of kiwi.json and places it in a new file, dx_config.json, that
+            compliments dx.json  These two files are then copied during a label-only clone operation.
+            A full admin clone also moves dx_config.json along with all the other config files.
+
+            CAUTION: Don't clone across the v1.{601,602} boundary. That is, Kiwis running v1.602
+            must not clone from Kiwis running v1.601 (or less). And vice versa. Let all your Kiwis
+            update to v1.602 (or greater) then resume cloning between them.
+        
+        User interface changes:
+            Labels specifying an extension:
+                A black bar will now appear on the right side of the label. This gives user interface
+                consistency with mobile devices where there is no equivalent of the mouse-over
+                color change which occurs with the desktop interface.
+        
+            Mobile device labels that specify an extension no longer always open the extension
+            when the label is touched. You must now touch-hold the label for longer than half a second.
+        
+            The last database in use is saved in a browser cookie and restored when reconnecting.
+        
+            Shortcut keys:
+                For EiBi you now use alt/ctrl-click (or shift-click) to not open the extension (if any).
+                This is now consistent with how the other databases work.
+                For desktop, mousing over the label shows all the valid key combinations in the popup.
+
+                The first time you click shift-\ (i.e. '|') the label panel appears as usual,
+                but for the current database rather than the following one.
+        
+                Alt/ctrl '\' toggles the "filter by time/day-of-week" checkbox for the current database.
+        
+            The right-click menu has entries to open all but the current label database
+            (now that we have more than two databases).
+        
+            When changes are made in the label edit panel (from a user connection) the "modify" or
+            "add" buttons now highlight to remind you they need to be clicked to commit the changes.
+        
+        EiBi database improvements:
+            Updated to the A32 version.
+            Service classification improvements (e.g. some entries now correctly classified as Aero).
+            The service counts on the control panel are no longer inflated by multiple schedule entries.
+                i.e. there are really only about 6000 EiBi entries, not 17000 as reported previously.
+            Time station passbands and extension settings optimized.
+            Fixed: Not all schedule entries were showing in the label popup for zoom levels 0-5.
+        
+        Signal bandwidth:
+            A new label parameter "signal bandwidth" was added. When a label is clicked that has
+            this parameter specified a blue line appears below the label. The width of this line
+            represents the bandwidth of the signal. It is intended to be used for signals that are
+            much wider than the passband of the receiver (e.g. OTHR, CODAR, HFT, etc). The field
+            "sig bw" (kHz) now appears in the user label edit panel and admin DX tab.
+            The JSON/CSV export/import function handles the new field and will continue to accept
+            older files that don't contain the field. Further work may be needed to refine this idea
+            (suggested by Martin).
+        
+        Admin DX tab, "Band bars" panel:
+            The freq/mode field on the right now allows an optional zoom to be specified.
+            Same format as "f=" URL parameter: freq[mode][zoom] e.g. 5154cwnz14
+            This was inspired by the Russian markers (single letter beacons), e.g. 5154 kHz,
+            where multiple labels are spaced 100 Hz apart and you really need to zoom in to see them.
+        
+        Extension field frequency:
+            Many extensions interpret the first parameter of the label extension field (and also of
+            the URL parameters) as a frequency to match in the extension's preset menus.
+            So for example a label for frequency 4210 kHz (MSI safety, SITOR-B) could have an
+            extension field of "fsk,4210". But entering the same freq, 4210, in the extension field
+            is redundant and prone to error. So now an entry of "*" (e.g. "fsk,*") will simply pass
+            the label's frequency through to the extension. You can still specify a numeric frequency
+            for those few cases where the two frequencies are actually different.
+
+    (end DX label system improvements)
+        
+    Antenna disconnect detector:
+        The SNR measurement process on the Kiwi now attempts to detect if the antenna is disconnected.
+        The consequences of this are:
+            1) A new field "ant_connected=1|0" will appear in a /status query (e.g. my_kiwi:8073/status)
+            2) rx.kiwisdr.com now shows the two SNR values (all:HF) in the listing for all Kiwis.
+                And a message plus red background will appear for any Kiwi with a disconnection.
+        There are criteria for deciding if there is a disconnect to hopefully prevent false-positives.
+        They are:
+            1) Only Kiwis operating at HF are considered (i.e. the admin config tab "freq scale offset"
+                field is zero. This is because other frequency ranges (especially V/UHF) can have
+                much more frequent periods of no signals compared to HF.
+            2) The "all" frequency SNR value (first one of the two displayed) is less than 4 dB.
+            3) There are no more than two signal peaks stronger than -100 dBm at HF (1.8 - 30/32 MHz).
+                This is needed because there were a number of public Kiwis observed that have greatly
+                attenuated reception (for whatever reason). There are signals there, but they are
+                very weak. The attenuation causes the SNR < 4 dB criteria above to be met.
+    
+    FSK extension parameter aliases:
+        There are many parameters required to configure the fsk extension. Some aliases have now
+        been added to make things easier. Suppose you have a DX label for a SITOR-B signal with an
+        extension field of "fsk,*,s:170,b:100,4/7,i:0,CCIR476" Now you can simply say
+        "fsk,*,sitor-b" instead.
+        The available aliases are:
+            sitor-b     s:170,b:100,4/7,i:0,CCIR476
+            wx          s:450,b:50,5N1.5,i:1,ITA2
+            dsc         s:170,b:100,7/3,i:1,DSC
+            selcall     s:170,b:100,7/3,i:0,Selcall
+            ham         s:170,b:45.45,5N1.5,i:0,ITA2
+        More can be added as needed. Use the extension help button to see the full/current list.
+
+    Spectrum peak hold buttons ('P1' & 'P2'):
+        If you hold shift while clicking the buttons toggle in reverse.
+        That is off->on->hold->off becomes off->hold->on->off
+        This means for example fewer clicks are required to go back-and-forth between on and hold.
+    
+    Spectrum shortcut:
+        Typing alt/ctrl-s will toggle the spectrum selection in reverse:
+        That is off->RF->AF->off becomes off->AF->RF->off (shift-s already used for auto-scale)
+    
+    Misc:
+        NBFM squelch fixed. Squelch should now close at a more reasonable slider setting.
+        Admin console column width now scales with window width.
+        Fixed problem with SPI device name for systems using latest BBAI-64 update.
+
 v1.601  Apr 25, 2023
     Admin page:
         Debian version now shown on status tab.
@@ -1694,7 +1869,7 @@ v1.398  July 3, 2020
 v1.397  June 18, 2020
     Fixed problem when using double-quotes in some admin page fields.
     SIGHUP of Kiwi server creates kiwi.config/info.json file with full precision GPS location.
-    Added NBDP frequencies to Navtex HF menu (thanks @rikvanriel)
+    Added Safety/NBDP frequencies to Navtex HF menu (thanks @rikvanriel)
 
 v1.396  June 12, 2020
     Remove more references to sdr.hu
