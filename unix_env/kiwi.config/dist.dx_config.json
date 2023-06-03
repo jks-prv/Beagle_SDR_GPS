@@ -1,0 +1,1013 @@
+{
+  "dx_type": [
+    {
+      "key": 0,
+      "name": "active",
+      "color": "cyan"
+    },
+    {
+      "key": 1,
+      "name": "watch-list",
+      "color": "lightPink"
+    },
+    {
+      "key": 2,
+      "name": "sub-band",
+      "color": "aquamarine"
+    },
+    {
+      "key": 3,
+      "name": "UNID",
+      "color": "lavender"
+    },
+    {
+      "key": 4,
+      "name": "special event",
+      "color": "violet"
+    },
+    {
+      "key": 5,
+      "name": "interference",
+      "color": "violet"
+    },
+    {
+      "key": 6,
+      "name": "",
+      "color": ""
+    },
+    {
+      "key": 7,
+      "name": "",
+      "color": ""
+    },
+    {
+      "key": 8,
+      "name": "",
+      "color": ""
+    },
+    {
+      "key": 9,
+      "name": "",
+      "color": ""
+    },
+    {
+      "key": 10,
+      "name": "",
+      "color": ""
+    },
+    {
+      "key": 11,
+      "name": "",
+      "color": ""
+    },
+    {
+      "key": 12,
+      "name": "",
+      "color": ""
+    },
+    {
+      "key": 13,
+      "name": "",
+      "color": ""
+    },
+    {
+      "key": 14,
+      "name": "",
+      "color": ""
+    },
+    {
+      "key": 15,
+      "name": "masked",
+      "color": "lightGrey"
+    }
+  ],
+  "band_svc": [
+    {
+      "key": "B",
+      "name": "Broadcast",
+      "color": "red"
+    },
+    {
+      "key": "U",
+      "name": "Utility",
+      "color": "green"
+    },
+    {
+      "key": "A",
+      "name": "Amateur",
+      "color": "blue"
+    },
+    {
+      "key": "L",
+      "name": "Beacons",
+      "color": "blue"
+    },
+    {
+      "key": "0",
+      "name": "Marine",
+      "color": "lightSeaGreen",
+      "longName": "Maritime"
+    },
+    {
+      "key": "X",
+      "name": "Aero",
+      "color": "steelBlue",
+      "longName": "Aeronautical"
+    },
+    {
+      "key": "I",
+      "name": "ISM",
+      "color": "orange",
+      "longName": "Industrial/Scientific"
+    },
+    {
+      "key": "M",
+      "name": "Markers",
+      "color": "purple"
+    }
+  ],
+  "bands": [
+    {
+      "min": 153,
+      "max": 279,
+      "name": "LW",
+      "svc": "B",
+      "itu": 1,
+      "sel": "",
+      "chan": 9
+    },
+    {
+      "min": 153,
+      "max": 198,
+      "name": "LW",
+      "svc": "B",
+      "itu": 2,
+      "sel": "",
+      "chan": 9
+    },
+    {
+      "min": 153,
+      "max": 198,
+      "name": "LW",
+      "svc": "B",
+      "itu": 3,
+      "sel": "",
+      "chan": 9
+    },
+    {
+      "min": 530,
+      "max": 1700,
+      "name": "MW",
+      "svc": "B",
+      "itu": 2,
+      "sel": "1000am",
+      "chan": 10
+    },
+    {
+      "min": 531,
+      "max": 1602,
+      "name": "MW",
+      "svc": "B",
+      "itu": 1,
+      "sel": "1000am",
+      "chan": 9
+    },
+    {
+      "min": 531,
+      "max": 1602,
+      "name": "MW",
+      "svc": "B",
+      "itu": 3,
+      "sel": "1000am",
+      "chan": 9
+    },
+    {
+      "min": 2300,
+      "max": 2495,
+      "name": "120m",
+      "svc": "B",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 3200,
+      "max": 3400,
+      "name": "90m",
+      "svc": "B",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 3900,
+      "max": 4000,
+      "name": "75m",
+      "svc": "B",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 4750,
+      "max": 5060,
+      "name": "60m",
+      "svc": "B",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 5900,
+      "max": 6200,
+      "name": "49m",
+      "svc": "B",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 7200,
+      "max": 7450,
+      "name": "41m",
+      "svc": "B",
+      "itu": 1,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 7200,
+      "max": 7450,
+      "name": "41m",
+      "svc": "B",
+      "itu": 3,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 7300,
+      "max": 7450,
+      "name": "41m",
+      "svc": "B",
+      "itu": 2,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 9400,
+      "max": 9900,
+      "name": "31m",
+      "svc": "B",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 11600,
+      "max": 12100,
+      "name": "25m",
+      "svc": "B",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 13570,
+      "max": 13870,
+      "name": "22m",
+      "svc": "B",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 15100,
+      "max": 15800,
+      "name": "19m",
+      "svc": "B",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 17480,
+      "max": 17900,
+      "name": "16m",
+      "svc": "B",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 18900,
+      "max": 19020,
+      "name": "15m",
+      "svc": "B",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 21450,
+      "max": 21850,
+      "name": "13m",
+      "svc": "B",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 25600,
+      "max": 26100,
+      "name": "11m",
+      "svc": "B",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 10,
+      "max": 30,
+      "name": "VLF",
+      "svc": "U",
+      "itu": 0,
+      "sel": "15.25lsb",
+      "chan": 0
+    },
+    {
+      "min": 31,
+      "max": 100,
+      "name": "LF",
+      "svc": "U",
+      "itu": 0,
+      "sel": "60cwn",
+      "chan": 0
+    },
+    {
+      "min": 200,
+      "max": 472,
+      "name": "NDB",
+      "svc": "U",
+      "itu": 3,
+      "sel": "346amn",
+      "chan": 0
+    },
+    {
+      "min": 283.5,
+      "max": 472,
+      "name": "NDB",
+      "svc": "U",
+      "itu": 1,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 190,
+      "max": 535,
+      "name": "NDB",
+      "svc": "U",
+      "itu": 2,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 2500,
+      "max": 2500,
+      "name": "Time 2.5",
+      "svc": "U",
+      "itu": 5,
+      "sel": "2500amn",
+      "chan": 0
+    },
+    {
+      "min": 3330,
+      "max": 3330,
+      "name": "Time 3.33",
+      "svc": "U",
+      "itu": 5,
+      "sel": "3330usb",
+      "chan": 0
+    },
+    {
+      "min": 5000,
+      "max": 5000,
+      "name": "Time 5",
+      "svc": "U",
+      "itu": 5,
+      "sel": "5000amn",
+      "chan": 0
+    },
+    {
+      "min": 7850,
+      "max": 7850,
+      "name": "Time 7.85",
+      "svc": "U",
+      "itu": 5,
+      "sel": "7850usb",
+      "chan": 0
+    },
+    {
+      "min": 10000,
+      "max": 10000,
+      "name": "Time 10",
+      "svc": "U",
+      "itu": 5,
+      "sel": "10000amn",
+      "chan": 0
+    },
+    {
+      "min": 14670,
+      "max": 14670,
+      "name": "Time 14.67",
+      "svc": "U",
+      "itu": 5,
+      "sel": "14670usb",
+      "chan": 0
+    },
+    {
+      "min": 15000,
+      "max": 15000,
+      "name": "Time 15",
+      "svc": "U",
+      "itu": 5,
+      "sel": "15000amn",
+      "chan": 0
+    },
+    {
+      "min": 20000,
+      "max": 20000,
+      "name": "Time 20",
+      "svc": "U",
+      "itu": 5,
+      "sel": "20000amn",
+      "chan": 0
+    },
+    {
+      "min": 135.7,
+      "max": 137.8,
+      "name": "LF",
+      "svc": "A",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 472,
+      "max": 479,
+      "name": "MF",
+      "svc": "A",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 1810,
+      "max": 2000,
+      "name": "160m",
+      "svc": "A",
+      "itu": 1,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 1800,
+      "max": 2000,
+      "name": "160m",
+      "svc": "A",
+      "itu": 2,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 1800,
+      "max": 2000,
+      "name": "160m",
+      "svc": "A",
+      "itu": 3,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 3500,
+      "max": 3800,
+      "name": "80m",
+      "svc": "A",
+      "itu": 1,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 3500,
+      "max": 4000,
+      "name": "80m",
+      "svc": "A",
+      "itu": 2,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 3500,
+      "max": 3900,
+      "name": "80m",
+      "svc": "A",
+      "itu": 3,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 5250,
+      "max": 5450,
+      "name": "60m",
+      "svc": "A",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 7000,
+      "max": 7200,
+      "name": "40m",
+      "svc": "A",
+      "itu": 1,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 7000,
+      "max": 7300,
+      "name": "40m",
+      "svc": "A",
+      "itu": 2,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 7000,
+      "max": 7300,
+      "name": "40m",
+      "svc": "A",
+      "itu": 3,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 10100,
+      "max": 10150,
+      "name": "30m",
+      "svc": "A",
+      "itu": 1,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 10100,
+      "max": 10150,
+      "name": "30m",
+      "svc": "A",
+      "itu": 2,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 10100,
+      "max": 10157.3,
+      "name": "30m",
+      "svc": "A",
+      "itu": 3,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 14000,
+      "max": 14350,
+      "name": "20m",
+      "svc": "A",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 18068,
+      "max": 18168,
+      "name": "17m",
+      "svc": "A",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 21000,
+      "max": 21450,
+      "name": "15m",
+      "svc": "A",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 24890,
+      "max": 24990,
+      "name": "12m",
+      "svc": "A",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 28000,
+      "max": 29700,
+      "name": "10m",
+      "svc": "A",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 14100,
+      "max": 14100,
+      "name": "IBP 20m",
+      "svc": "L",
+      "itu": 5,
+      "sel": "14100cwn",
+      "chan": 0
+    },
+    {
+      "min": 18110,
+      "max": 18110,
+      "name": "IBP 17m",
+      "svc": "L",
+      "itu": 5,
+      "sel": "18110cwn",
+      "chan": 0
+    },
+    {
+      "min": 21150,
+      "max": 21150,
+      "name": "IBP 15m",
+      "svc": "L",
+      "itu": 5,
+      "sel": "21150cwn",
+      "chan": 0
+    },
+    {
+      "min": 24930,
+      "max": 24930,
+      "name": "IBP 12m",
+      "svc": "L",
+      "itu": 5,
+      "sel": "24930cwn",
+      "chan": 0
+    },
+    {
+      "min": 28200,
+      "max": 28200,
+      "name": "IBP 10m",
+      "svc": "L",
+      "itu": 5,
+      "sel": "28200cwn",
+      "chan": 0
+    },
+    {
+      "min": 505,
+      "max": 526.5,
+      "name": "MF",
+      "svc": "0",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 2173.5,
+      "max": 2190.5,
+      "name": "2 MHz",
+      "svc": "0",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 4063,
+      "max": 4438,
+      "name": "4 MHz",
+      "svc": "0",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 6200,
+      "max": 6525,
+      "name": "6 MHz",
+      "svc": "0",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 8195,
+      "max": 8815,
+      "name": "8 MHz",
+      "svc": "0",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 12230,
+      "max": 13200,
+      "name": "12 MHz",
+      "svc": "0",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 22000,
+      "max": 22855,
+      "name": "22 MHz",
+      "svc": "0",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 25070,
+      "max": 25121,
+      "name": "25 MHz",
+      "svc": "0",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 2850,
+      "max": 3155,
+      "name": "2 MHz",
+      "svc": "X",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 3400,
+      "max": 3500,
+      "name": "3 MHz",
+      "svc": "X",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 3900,
+      "max": 3950,
+      "name": "3 MHz",
+      "svc": "X",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 4650,
+      "max": 4750,
+      "name": "4 MHz",
+      "svc": "X",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 5450,
+      "max": 5730,
+      "name": "5 MHz",
+      "svc": "X",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 6525,
+      "max": 6765,
+      "name": "6 MHz",
+      "svc": "X",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 8815,
+      "max": 9040,
+      "name": "8 MHz",
+      "svc": "X",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 10005,
+      "max": 10100,
+      "name": "10 MHz",
+      "svc": "X",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 11175,
+      "max": 11400,
+      "name": "11 MHz",
+      "svc": "X",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 13200,
+      "max": 13360,
+      "name": "13 MHz",
+      "svc": "X",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 15010,
+      "max": 15100,
+      "name": "15 MHz",
+      "svc": "X",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 17900,
+      "max": 18030,
+      "name": "17 MHz",
+      "svc": "X",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 21924,
+      "max": 22000,
+      "name": "22 MHz",
+      "svc": "X",
+      "itu": 0,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 6765,
+      "max": 6795,
+      "name": "ISM",
+      "svc": "I",
+      "itu": 4,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 13553,
+      "max": 13567,
+      "name": "ISM",
+      "svc": "I",
+      "itu": 4,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 26957,
+      "max": 27283,
+      "name": "ISM",
+      "svc": "I",
+      "itu": 4,
+      "sel": "",
+      "chan": 0
+    },
+    {
+      "min": 3594,
+      "max": 3594,
+      "name": "3594",
+      "svc": "M",
+      "itu": 5,
+      "sel": "3594cwnz13",
+      "chan": 0
+    },
+    {
+      "min": 4558,
+      "max": 4558,
+      "name": "4558",
+      "svc": "M",
+      "itu": 5,
+      "sel": "4558cwnz13",
+      "chan": 0
+    },
+    {
+      "min": 5154,
+      "max": 5154,
+      "name": "5154",
+      "svc": "M",
+      "itu": 5,
+      "sel": "5154cwnz13",
+      "chan": 0
+    },
+    {
+      "min": 5156,
+      "max": 5156,
+      "name": "5156 L",
+      "svc": "M",
+      "itu": 5,
+      "sel": "5156.8cwnz13",
+      "chan": 0
+    },
+    {
+      "min": 5292,
+      "max": 5292,
+      "name": "5292 D/B",
+      "svc": "M",
+      "itu": 5,
+      "sel": "5292.73cwnz13",
+      "chan": 0
+    },
+    {
+      "min": 6928,
+      "max": 6928,
+      "name": "6928 V",
+      "svc": "M",
+      "itu": 5,
+      "sel": "6928cwnz13",
+      "chan": 0
+    },
+    {
+      "min": 7039,
+      "max": 7039,
+      "name": "7039",
+      "svc": "M",
+      "itu": 5,
+      "sel": "7039.3cwnz13",
+      "chan": 0
+    },
+    {
+      "min": 7509,
+      "max": 7509,
+      "name": "7509",
+      "svc": "M",
+      "itu": 5,
+      "sel": "7509cwnz13",
+      "chan": 0
+    },
+    {
+      "min": 8000,
+      "max": 8000,
+      "name": "8000 C",
+      "svc": "M",
+      "itu": 5,
+      "sel": "8000.0cwnz13",
+      "chan": 0
+    },
+    {
+      "min": 8495,
+      "max": 8495,
+      "name": "8495",
+      "svc": "M",
+      "itu": 5,
+      "sel": "8495cwnz13",
+      "chan": 0
+    },
+    {
+      "min": 10872,
+      "max": 10872,
+      "name": "10872",
+      "svc": "M",
+      "itu": 5,
+      "sel": "10872cwnz13",
+      "chan": 0
+    },
+    {
+      "min": 13528,
+      "max": 13528,
+      "name": "13528",
+      "svc": "M",
+      "itu": 5,
+      "sel": "13528cwnz13",
+      "chan": 0
+    },
+    {
+      "min": 16332,
+      "max": 16332,
+      "name": "16332",
+      "svc": "M",
+      "itu": 5,
+      "sel": "16332.0cwnz13",
+      "chan": 0
+    },
+    {
+      "min": 20048,
+      "max": 20048,
+      "name": "20048",
+      "svc": "M",
+      "itu": 5,
+      "sel": "20048cwnz13",
+      "chan": 0
+    }
+  ]
+}

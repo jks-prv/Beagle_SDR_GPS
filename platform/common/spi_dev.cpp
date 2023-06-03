@@ -197,9 +197,20 @@ static void _spi_dev_init(int spi_clkg, int spi_speed)
         #else
             spi_devname = "/dev/spidev0.0";
         #endif
-		lprintf("### using SPI_DEV %s\n", spi_devname);
+		lprintf("### open SPI_DEV %s\n", spi_devname);
 	
-		if ((spi_fd = open(spi_devname, O_RDWR)) < 0) sys_panic("open spidev");
+		spi_fd = open(spi_devname, O_RDWR);
+		if (spi_fd < 0) {
+            #if defined(CPU_TDA4VM)
+                spi_devname = "/dev/spidev9.0";     // name changed with a kernel update around 11/2022
+		        lprintf("### open SPI_DEV %s\n", spi_devname);
+		        spi_fd = open(spi_devname, O_RDWR);
+		        if (spi_fd < 0)
+		            sys_panic("open spidev");
+            #else
+		        sys_panic("open spidev");
+            #endif
+        }
 	
 		u4_t max_speed = 0, check_speed;
 		if (spi_speed == SPI_48M) max_speed = 48000000; else

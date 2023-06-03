@@ -35,8 +35,8 @@ typedef struct {
 int ip_blacklist_add_iptables(char *ip_s);
 void ip_blacklist_init();
 bool check_ip_blacklist(char *remote_ip, bool log=false);
-void ip_blacklist_dump();
+void ip_blacklist_dump(bool show_all);
 
-#define BL_DOWNLOAD     0
-#define BL_CHECK_ONLY   1
-void bl_GET(void *param);
+#define BL_DOWNLOAD_RELOAD          0
+#define BL_DOWNLOAD_DIFF_RESTART    1
+bool ip_blacklist_get(bool download_diff_restart);

@@ -202,7 +202,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
         } else
 
         // convert CSV data to JSON before writing dx.json file
-        // Freq kHz;Mode;Ident;Notes;Extension;Type;Passband low;Passband high;Offset;DOW;Begin;End
+        // Freq kHz;Mode;Ident;Notes;Extension;Type;Passband low;Passband high;Offset;DOW;Begin;End[;Sig bw]
         if (strcmp(vname, "csv") == 0) {
             type = TYPE_CSV;
             #define NS_SIZE 256
@@ -232,7 +232,9 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
                 n = kiwi_split(sb, &r_buf, delim, qs, NQS,
                     KSPLIT_NO_SKIP_EMPTY_FIELDS | KSPLIT_HANDLE_EMBEDDED_DELIMITERS);
                 
-                if (n != 12 && line == 0 && delim[0] == ';') {
+                #define N_CSV_FIELDS 12
+                #define N_CSV_FIELDS_SIG_BW 13
+                if ((n != N_CSV_FIELDS && n != N_CSV_FIELDS_SIG_BW) && line == 0 && delim[0] == ';') {
                     delim = (char *) ",";
                     n = kiwi_split(sb, &r_buf, delim, qs, NQS,
                         KSPLIT_NO_SKIP_EMPTY_FIELDS | KSPLIT_HANDLE_EMBEDDED_DELIMITERS);
@@ -249,7 +251,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
                     }
                 #endif
 
-                if (n != 12) { rc = 10; goto fail; }
+                if (n != N_CSV_FIELDS && n != N_CSV_FIELDS_SIG_BW) { rc = 10; goto fail; }
                 
                 // skip what looks like a CSV field legend
                 if (line != 0 || strncasecmp(qs[0], "freq", 4) != 0) {
@@ -305,6 +307,12 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
                     if (_dx_parse_csv_field(CSV_FLT, qs[11], &end)) { rc = 23; goto fail; }
                     if ((begin != 0 || end != 0) && (begin != 0 && end != 2400))
                         sb3 = kstr_asprintf(sb3, "%s\"b0\":%.0f, \"e0\":%.0f", sb3? ", " : "", begin, end);
+
+                    // N_CSV_FIELDS_SIG_BW field is optional for backward compatibility
+                    float sig_bw = 0;
+                    if (n == N_CSV_FIELDS_SIG_BW && _dx_parse_csv_field(CSV_FLT, qs[12], &sig_bw)) { rc = 24; goto fail; }
+                    if (sig_bw != 0)
+                        sb3 = kstr_asprintf(sb3, "%s\"s\":%.0f", sb3? ", " : "", sig_bw);
                     
                     if (!ext_empty) {
                         sb3 = kstr_asprintf(sb3, "%s\"p\":%s%s%s", sb3? ", " : "",
@@ -564,6 +572,7 @@ fail:
 		bool has_masked = (dx.masked_len > 0);
 		bool has_limits = (has_tlimit || has_masked);
 		bool have_DRM_ext = (DRM_enable && (snd_rate == SND_RATE_4CH));
+		dx_db_t *dx_db = &dx.dx_db[DB_STORED];
 		
 		asprintf(&sb,
 			"status=%s\n%soffline=%s\n"
@@ -579,6 +588,7 @@ fail:
 			"sw_version=%s%d.%d\n"
 			"antenna=%s\n"
 			"snr=%d,%d\n"
+			"ant_connected=%d\n"
 			"adc_ov=%u\n"
 			"clk_ext_gps=%d,%d\n"
 			"uptime=%d\n"
@@ -627,7 +637,7 @@ fail:
 			s5,
 			"KiwiSDR_v", version_maj, version_min,
 			(s6 = cfg_string("rx_antenna", NULL, CFG_OPTIONAL)),
-			snr_all, snr_HF,
+			snr_all, snr_HF, ant_connected,
 			dpump.rx_adc_ovfl_cnt,
 			clk.ext_ADC_clk? 1:0, clk.do_corrections,
 			timer_sec(),
@@ -638,7 +648,7 @@ fail:
 			#endif
 			utc_ctime_static(),
 			net.ip_blacklist_hash,
-			dx.stored_len, dx.file_hash, dx.file_size
+			dx_db->actual_len, dx_db->file_hash, dx_db->file_size
 			);
 
 		kiwi_ifree(name);

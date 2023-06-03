@@ -46,6 +46,8 @@ var admin_sdr = {
    
    CAT_baud_s: [ 'disabled', 115200 ],
    
+   cfg_fields: [ 'min', 'max', 'chan' ],
+   
    _last_: 0
 };
 
@@ -64,7 +66,7 @@ var SPI_clock_i = [ '48 MHz', '24 MHz' ];
 var led_brightness_i = [ 'brighest', 'medium', 'dimmer', 'dimmest', 'off' ];
 
 var clone_host = '', clone_pwd = '';
-var clone_files_s = [ 'complete config', 'dx labels only' ];
+var clone_files_s = [ 'complete config', 'dx label config only' ];
 
 function config_html()
 {
@@ -244,7 +246,10 @@ function config_html()
          '<header class="w3-container w3-yellow"><h6>' +
          'Clone configuration from another Kiwi. <b>Use with care.</b> Current configuration is <b><i>not</i></b> saved. ' +
          'This Kiwi immediately restarts after cloning.' +
-         '</h6></header>'
+         '<ul>' +
+         '<li><b>CAUTION:</b> Kiwis running v1.602 or later must clone <b>ONLY</b> from Kiwis running v1.602 or later.</li>' +
+         '<li><b>CAUTION:</b> Kiwis running v1.601 or earlier must <b>NOT</b> clone from Kiwis running v1.602 or later.</li>' +
+         '</ul></h6></header>'
       ) +
 		w3_inline_percent('w3-text-teal/w3-container',
 			w3_input('', 'Clone config from Kiwi host', 'clone_host', '', 'w3_string_cb', 'enter hostname (no port number)'), 25,
@@ -363,7 +368,7 @@ function config_mode_cb(path, idx, first)
    if (first) return;
    var mode_s = kiwi.mode_menu[+idx].toLowerCase();
 	console.log('config_mode_cb: path='+ path +' idx='+ idx +' mode_s='+ mode_s);
-   ext_set_cfg_param(path, mode_s, true);
+   ext_set_cfg_param(path, mode_s, EXT_SAVE);
 }
 
 function config_freq_offset(path, val, first)
@@ -393,8 +398,8 @@ function config_status_cb(o)
 
 function config_focus()
 {
-   console.log('config_focus');
-   config_pb_mode('', admin_sdr.pmi, false);
+   //console.log('config_focus');
+   config_pb_mode('', admin_sdr.pmi, /* first */ false, /* no_save */ true);
    config_wf_show();
    
    // remove last_lo/hi unnecessarily stored in cfg.passbands
@@ -451,14 +456,14 @@ function config_pb_reset(id, idx)
 	config_pb_val('pbc', admin_sdr.pbc, false);
 }
 
-function config_pb_mode(path, idx, first)
+function config_pb_mode(path, idx, first, no_save)
 {
    if (first) return;      // cfg.passbands not available yet
    idx = +idx;
    admin_sdr.pmi = idx;
    var mode = kiwi.mode_menu[idx].toLowerCase();
    admin_sdr.pbm = mode;
-   console.log('config_pb_mode idx='+ idx +' mode='+ mode);
+   console.log('config_pb_mode idx='+ idx +' mode='+ mode +' no_save='+ no_save);
 
 	admin_sdr.pbl = cfg.passbands[mode].lo;
 	admin_sdr.pbh = cfg.passbands[mode].hi;
@@ -477,10 +482,10 @@ function config_pb_mode(path, idx, first)
    w3_set_value('admin_sdr.pbw', admin_sdr.pbw);
    w3_set_value('admin_sdr.pbc_lock', admin_sdr.pbc_lock);
 
-	config_pb_val('pbl', admin_sdr.pbl, false);
+	config_pb_val('pbl', admin_sdr.pbl, /* first */ false, /* cb */ null, no_save);
 }
 	
-function config_pb_val(path, val, first, cb)
+function config_pb_val(path, val, first, cb, no_save)
 {
    if (first) return;      // cfg.passbands not available yet
    var which = path.slice(-3);
@@ -609,10 +614,11 @@ function config_pb_val(path, val, first, cb)
    w3_set_value('admin_sdr.pbw', admin_sdr.pbw);
    w3_checkbox_set('admin_sdr.pbc_lock', admin_sdr.pbc_lock);
    
+   var save = (isArg(no_save) && no_save == true)? EXT_NO_SAVE : EXT_SAVE;
    ext_set_cfg_param('cfg.passbands.'+ admin_sdr.pbm +'.lo', admin_sdr.pbl, EXT_NO_SAVE);
    ext_set_cfg_param('cfg.passbands.'+ admin_sdr.pbm +'.hi', admin_sdr.pbh, EXT_NO_SAVE);
    ext_set_cfg_param('cfg.passbands.'+ admin_sdr.pbm +'.c', admin_sdr.pbc, EXT_NO_SAVE);
-   ext_set_cfg_param('cfg.passbands.'+ admin_sdr.pbm +'.lock', admin_sdr.pbc_lock, EXT_SAVE);
+   ext_set_cfg_param('cfg.passbands.'+ admin_sdr.pbm +'.lock', admin_sdr.pbc_lock, save);
 }
 
 function config_pbc_lock(path, val, first)
@@ -627,7 +633,7 @@ function config_wfmin_cb(path, val, first)
 {
    val = +val;
    var ok = (val < cfg.init.max_dB);
-   if (ok) admin_int_cb(path, val, first);
+   if (ok) admin_int_cb(path, val, /* save */ !first);
    w3_show_hide('id-wfmin-error', !ok);
 }
 
@@ -635,7 +641,7 @@ function config_wfmax_cb(path, val, first)
 {
    val = +val;
    var ok = (val > cfg.init.min_dB);
-   if (ok) admin_int_cb(path, val, first);
+   if (ok) admin_int_cb(path, val, /* save */ !first);
    w3_show_hide('id-wfmax-error', !ok);
 }
 
@@ -643,7 +649,7 @@ function config_zoom_cb(path, val, first)
 {
    val = +val;
    var ok = (val >= 0 && val <= 14);
-   if (ok) admin_int_cb(path, val, first);
+   if (ok) admin_int_cb(path, val, /* save */ !first);
    w3_show_hide('id-zoom-error', !ok);
 }
 
@@ -652,7 +658,7 @@ function config_ident_len_cb(path, val, first)
    val = +val;
    if (val < 16) val = 16;
    if (val > 64) val = 64;
-   admin_int_cb(path, val, first);
+   admin_int_cb(path, val, /* save */ !first);
 }
 
 function config_OV_counts_cb(path, val, complete, first)
@@ -660,7 +666,7 @@ function config_OV_counts_cb(path, val, complete, first)
    //console.log('config_OV_counts_cb path='+ path +' val='+ val);
    val = +val;
 	var ov_counts = 1 << val;
-	admin_int_cb(path, val);
+	admin_int_cb(path, val, /* save */ !first);
 	w3_set_label('S-meter OV if &ge; '+ ov_counts +' ADC OV per 64k samples', path);
 	ext_send('SET ov_counts='+ ov_counts);
 }
@@ -669,19 +675,22 @@ function overload_mute_cb(path, val, complete, first)
 {
    //console.log('overload_mute_cb path='+ path +' val='+ val);
    val = +val;
-	admin_int_cb(path, val);
+	admin_int_cb(path, val, /* save */ !first);
 	var s = 'Passband overload mute '+ val +' dBm';
 	if (val >= -73) s += ' (S9+'+ (val - -73) +')';
-	w3_set_label(s, path);
+	w3_set_label(s, path, /* save */ !first);
 }
 
 function config_clone_cb(id, idx)
 {
    var msg;
 
-   if (clone_host == '') {
-      msg = 'please enter host to clone from';
-   } else {
+   if (clone_host == '')
+      msg = 'please enter Kiwi host to clone from';
+   else
+   if (clone_pwd == '')
+      msg = 'please enter root password of Kiwi host';
+   else {
       msg = 'cloning from '+ clone_host;
       ext_send('SET config_clone host='+ encodeURIComponent(clone_host) +' pwd=x'+ encodeURIComponent(clone_pwd) +' files='+ clone_files);
    }
@@ -693,10 +702,14 @@ function config_clone_status_cb(status)
 {
    var msg;
    
-   if (status == 0) {
-      msg = 'clone complete, restarting Kiwi';
+   if (status >= 0 && status <= 2) {
+      switch (status) {
+         case 0: msg = 'Full configuration cloned.'; break;
+         case 1: msg = 'DX configuration cloned.'; break;
+         case 2: msg = 'DX configuration cloned, but no dx_config.json file found on Kiwi host.'; break;
+      }
       ext_send('SET restart');
-      admin_wait_then_reload(60, 'Configuration cloned, restarting KiwiSDR server');
+      admin_wait_then_reload(60, msg +' Restarting KiwiSDR server.');
    } else
    if (status == 0x500)
       msg = 'wrong password';
@@ -733,7 +746,7 @@ function config_ext_freq_cb(path, val, first)
       f = Math.floor(f);
       if (f < 65000000 || f > 69000000) f = null;
    }
-   admin_int_cb(path, f, first);
+   admin_int_cb(path, f);
 }
 
 
@@ -1004,7 +1017,7 @@ function webpage_focus()
 function webpage_string_cb(path, val)
 {
 	w3_string_set_cfg_cb(path, val);
-	ext_send('SET reload_index_params');
+	ext_send_after_cfg_save('SET reload_index_params');
 }
 
 function webpage_photo_height_cb(path, val)
@@ -1018,7 +1031,7 @@ function webpage_photo_height_cb(path, val)
 	   val = w3_clamp(val, 0, 4000, 0);
 		w3_set_value(path, val);
 	   w3_num_set_cfg_cb(path, val);
-	   ext_send('SET reload_index_params');
+	   ext_send_after_cfg_save('SET reload_index_params');
 	}
 }
 
@@ -1158,7 +1171,7 @@ function kiwisdr_com_register_cb(path, idx)
    admin_radio_YN_cb(path, idx);
 
    // make sure server side notices change promptly
-	ext_send("SET public_wakeup");
+	ext_send_after_cfg_save("SET public_wakeup");
    //console.log('kiwisdr_com_register_cb adm.kiwisdr_com_register='+ adm.kiwisdr_com_register);
 }
 
@@ -1196,7 +1209,7 @@ function sdr_hu_focus()
 	};
 
 	// only get updates while the sdr_hu tab is selected
-	ext_send("SET public_update");
+	ext_send_after_cfg_save("SET public_update");
 	sdr_hu_interval = setInterval(function() {ext_send("SET public_update");}, 5000);
 	
 	// display initial switch state
@@ -1295,19 +1308,20 @@ function dx_html()
 	   return w3_div('id-dx w3-hide', w3_div('w3-container w3-margin-top', 'Not available on mobile devices.'));
 	
 	// one-time conversion of kiwi.config/config.js bands[] to kiwi.json configuration file
-	if (isUndefined(cfg.bands) || isUndefined(cfg.band_svc) || isUndefined(cfg.dx_type)) {
+	if (isUndefined(dxcfg.bands) || isUndefined(dxcfg.band_svc) || isUndefined(dxcfg.dx_type)) {
       bandwidth = [30, 32][cfg.max_freq] * 1e6;
       zoom_nom = ZOOM_NOMINAL;
       bands_init();
-	   console.log('BANDS: saving new cfg.bands');
-      cfg_save_json('config.js', 'cfg.bands');
+	   console.log('BANDS: saving new dxcfg.bands ---------------------------------------------------');
+      cfg_save_json('config.js', 'dxcfg.bands');
    } else {
-	   console.log('BANDS: using stored cfg.bands');
-      bands_addl_info();
+	   console.log('BANDS: using stored dxcfg.bands -------------------------------------------------');
+      bands_addl_info(1);
    }
    
    dx.LEGEND = -1;
    dx.SAVE_NOW = true;
+   dx.SAVE_LATER = false;
    dx.DX_DOW_BASE = dx.DX_DOW >> dx.DX_DOW_SFT;
    dx.spacer = w3_div('w3-font-fixed w3-text-in-circle w3-wh-24px w3-pale-blue', '&nbsp;');
    dx.button_section = 'w3-font-fixed w3-aqua w3-text-in-circle w3-wh-28px||title="show&slash;hide section"';
@@ -1345,107 +1359,116 @@ function dx_html()
          ),
          '<hr>'
       );
+   
+   var s2 =
+      w3_inline('/w3-margin-top',
+         w3_select_get_param('/w3-label-inline w3-text-teal/w3-text-red',
+            'Default DX label database:', '', 'dx_default_db', dx.db_s, 'admin_select_cb'),
+         w3_switch_label('w3-margin-L-64/w3-label-inline w3-label-left w3-text-teal/',
+            'Automatically download community database?', 'Yes', 'No', 'adm.dx_comm_auto_download', adm.dx_comm_auto_download, 'admin_radio_YN_cb'),
+         w3_button('w3-aqua w3-margin-L-64 w3-restart', 'Download now', 'dx_comm_download_cb'),
+         w3_text('w3-margin-L-8 w3-text-black', '(requires restart)')
+      ) +
+      w3_hr('w3-margin-T-16 w3-margin-B-8');
 
    // reminder: "Nvh" means N% of the viewport (browser window) height
    var vh = '63vh';
    //var vh = '32vh';
-	s =
-      w3_div('id-dx w3-hide',
-         s1,
 
-         // dx labels
-         w3_inline('w3-margin-T-16 w3-halign-space-between/',
-            w3_inline('/w3-margin-between-16 w3-valign',
-               w3_button(dx.button_section, '-', 'dx_expand_cb', 0),
-               w3_link(dx.link1, 'http://kiwisdr.com/quickstart/index.html#id-config-DX-list', 'DX labels'),
-               w3_text('id-dx-list-saved w3-margin-left w3-padding-medium w3-text-black w3-hide', 'Changes saved')
+   // dx labels
+   var s3 =
+      w3_inline('w3-margin-T-16 w3-halign-space-between/',
+         w3_inline('/w3-margin-between-16 w3-valign',
+            w3_button(dx.button_section, '-', 'dx_expand_cb', 0),
+            w3_link(dx.link1, 'http://kiwisdr.com/quickstart/index.html#id-config-DX-list', 'Stored DX labels'),
+            w3_text('id-dx-list-saved w3-margin-left w3-padding-medium w3-text-black w3-hide', 'Changes saved')
+         ),
+         w3_inline('/w3-margin-between-16 w3-valign',
+            w3_text('id-dx-export-label w3-padding-medium w3-padding-R-0 w3-text-teal w3-bold', dx.export_label),
+            w3_inline('w3-margin-between-8',
+               w3_button('w3-blue w3-font-12px w3-padding-tiny||title="export to JSON file"', 'JSON', 'dx_export_cb', dx.DX_JSON),
+               w3_button('w3-blue w3-font-12px w3-padding-tiny||title="export to CSV file"', 'CSV', 'dx_export_cb', dx.DX_CSV)
             ),
-            w3_inline('/w3-margin-between-16 w3-valign',
-               w3_text('id-dx-export-label w3-padding-medium w3-padding-R-0 w3-text-teal w3-bold', dx.export_label),
-               w3_inline('w3-margin-between-8',
-                  w3_button('w3-blue w3-font-12px w3-padding-tiny||title="export to JSON file"', 'JSON', 'dx_export_cb', dx.DX_JSON),
-                  w3_button('w3-blue w3-font-12px w3-padding-tiny||title="export to CSV file"', 'CSV', 'dx_export_cb', dx.DX_CSV)
-               ),
-               w3_text('id-dx-import-label w3-padding-medium w3-padding-R-0 w3-text-teal w3-bold', dx.import_label),
-               w3_inline('w3-margin-between-8',
-                  w3_button('w3-red w3-font-12px w3-padding-tiny||title="import from JSON file"', 'JSON', 'dx_import_cb', dx.DX_JSON),
-                  w3_button('w3-red w3-font-12px w3-padding-tiny||title="import from CSV file"', 'CSV', 'dx_import_cb', dx.DX_CSV),
-                  w3_input('//w3-hide w3-no-styling||type="file"', '', 'id-dx-import-form', '', 'dx_file_upload_cb')
-               ),
-               w3_text('w3-padding-medium w3-padding-R-0 w3-text-teal w3-bold', 'Search:'),
-               w3_input('w3-text-black/w3-label-inline/w3-padding-small w3-retain-input-focus|width:75px|title="finds nearest freq"',
-                  'Freq', 'dx.o.search_f', '', 'dx_search_freq_cb'),
-               w3_input('w3-text-black/w3-label-inline/w3-padding-small w3-retain-input-focus w3-input-any-change|width:150px' +
-                  '|title="Search ident fields.\nUse return&slash;enter key to find next. Wraps."',
-                  'Ident', 'dx.o.search_i', '', 'dx_search_ident_cb'),
-               w3_input('w3-text-black/w3-label-inline/w3-padding-small w3-retain-input-focus w3-input-any-change|width:150px' +
-                  '|title="Search notes fields.\nUse return&slash;enter key to find next. Wraps."',
-                  'Notes', 'dx.o.search_n', '', 'dx_search_notes_cb')
-            )
-         ),
-         w3_div('id-dx-list-msg w3-margin-T-8 w3-padding-tiny w3-hide'),
-         w3_div('id-dx-list-container w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
-            w3_div('id-dx-list-legend w3-margin-R-15'),
-            w3_div('id-dx-list w3-margin-bottom w3-padding-B-8 w3-black-box w3-scroll-y|height:'+ vh +'|onscroll="dx_list_scroll();"')
-         ),
-
-
-         // dx type menu
-         w3_inline('w3-margin-T-24 w3-halign-space-between/',
-            w3_inline('/w3-margin-between-16 w3-valign',
-               w3_button(dx.button_section, '+', 'dx_expand_cb', 1),
-               w3_link(dx.link2, 'http://kiwisdr.com/quickstart/index.html#id-config-DX-type', 'DX type menu'),
-               w3_text('w3-margin-left w3-text-black',
-                  'Defines content of <b>Type</b> menu in <i>DX labels</i> section above.<br>' +
-                  'Follow link at left for important info before making changes.'),
-               w3_text('id-dx-type-saved w3-margin-left w3-padding-medium w3-text-black w3-hide', 'Changes saved')
+            w3_text('id-dx-import-label w3-padding-medium w3-padding-R-0 w3-text-teal w3-bold', dx.import_label),
+            w3_inline('w3-margin-between-8',
+               w3_button('w3-red w3-font-12px w3-padding-tiny||title="import from JSON file"', 'JSON', 'dx_import_cb', dx.DX_JSON),
+               w3_button('w3-red w3-font-12px w3-padding-tiny||title="import from CSV file"', 'CSV', 'dx_import_cb', dx.DX_CSV),
+               w3_input('//w3-hide w3-no-styling||type="file"', '', 'id-dx-import-form', '', 'dx_file_upload_cb')
             ),
-            dx.hover_over
-         ),
-         w3_div('id-dx-type-container w3-hide w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
-            w3_div('id-dx-type-list-legend w3-margin-R-15'),
-            w3_div('id-dx-type-list w3-margin-bottom w3-padding-B-8 w3-black-box w3-scroll-y|height:'+ vh)
-         ),
-
-
-         // band bars
-         w3_inline('w3-margin-T-24 w3-halign-space-between/',
-            w3_inline('/w3-margin-between-16 w3-valign',
-               w3_button(dx.button_section, '+', 'dx_expand_cb', 2),
-               w3_link(dx.link2, 'http://kiwisdr.com/quickstart/index.html#id-config-band-bars', 'Band bars'),
-               w3_text('w3-margin-left w3-text-black',
-                  'Defines content of band bars and <b>select band</b> menu on user page.<br>' +
-                  'Follow link at left for important info before making changes.'),
-               w3_text('id-band-bar-saved w3-margin-left w3-padding-medium w3-text-black w3-hide', 'Changes saved')
-            ),
-            dx.hover_over
-         ),
-         w3_div('id-band-bar-container w3-hide w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
-            w3_div('id-band-bar-list-legend w3-margin-R-15'),
-            w3_div('id-band-bar-list w3-margin-bottom w3-padding-B-8 w3-black-box w3-scroll-y|height:'+ vh)
-         ),
-
-
-         // band service menu
-         w3_inline('w3-margin-TB-24 w3-halign-space-between/',
-            w3_inline('/w3-margin-between-16 w3-valign',
-               w3_button(dx.button_section, '+', 'dx_expand_cb', 3),
-               w3_link(dx.link2, 'http://kiwisdr.com/quickstart/index.html#id-config-band-svc', 'Band service menu'),
-               w3_text('w3-margin-left w3-text-black',
-                  'Defines content of <b>Service</b> menu in <i>Band bars</i> section above.<br>' +
-                  'Follow link at left for important info before making changes.'),
-               w3_text('id-band-svc-saved w3-margin-left w3-padding-medium w3-text-black w3-hide', 'Changes saved')
-            ),
-            dx.hover_over
-         ),
-         w3_div('id-band-svc-container w3-hide w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
-            w3_div('id-band-svc-list-legend w3-margin-R-15'),
-            w3_div('id-band-svc-list w3-margin-bottom w3-padding-B-8 w3-black-box w3-scroll-y|height:'+ vh)
+            w3_text('w3-padding-medium w3-padding-R-0 w3-text-teal w3-bold', 'Search:'),
+            w3_input('w3-text-black/w3-label-inline/w3-padding-small w3-retain-input-focus|width:75px|title="finds nearest freq"',
+               'Freq', 'dx.o.search_f', '', 'dx_search_freq_cb'),
+            w3_input('w3-text-black/w3-label-inline/w3-padding-small w3-retain-input-focus w3-input-any-change|width:150px' +
+               '|title="Search ident fields.\nUse return&slash;enter key to find next. Wraps."',
+               'Ident', 'dx.o.search_i', '', 'dx_search_ident_cb'),
+            w3_input('w3-text-black/w3-label-inline/w3-padding-small w3-retain-input-focus w3-input-any-change|width:150px' +
+               '|title="Search notes fields.\nUse return&slash;enter key to find next. Wraps."',
+               'Notes', 'dx.o.search_n', '', 'dx_search_notes_cb')
          )
+      ) +
+      w3_div('id-dx-list-msg w3-margin-T-8 w3-padding-tiny w3-hide') +
+      w3_div('id-dx-list-container w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
+         w3_div('id-dx-list-legend w3-margin-R-15'),
+         w3_div('id-dx-list w3-margin-bottom w3-padding-B-8 w3-black-box w3-scroll-y|height:'+ vh +'|onscroll="dx_list_scroll();"')
       );
 
-   //console.log(s);
-   return s;
+   // dx type menu
+   var s4 =
+      w3_inline('w3-margin-T-24 w3-halign-space-between/',
+         w3_inline('/w3-margin-between-16 w3-valign',
+            w3_button(dx.button_section, '+', 'dx_expand_cb', 1),
+            w3_link(dx.link2, 'http://kiwisdr.com/quickstart/index.html#id-config-DX-type', 'DX type menu'),
+            w3_text('w3-margin-left w3-text-black',
+               'Defines content of <b>Type</b> menu in <i>DX labels</i> section above.<br>' +
+               'Follow link at left for important info before making changes.'),
+            w3_text('id-dx-type-saved w3-margin-left w3-padding-medium w3-text-black w3-hide', 'Changes saved')
+         ),
+         dx.hover_over
+      ) +
+      w3_div('id-dx-type-container w3-hide w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
+         w3_div('id-dx-type-list-legend w3-margin-R-15'),
+         w3_div('id-dx-type-list w3-margin-bottom w3-padding-B-8 w3-black-box w3-scroll-y|height:'+ vh)
+      );
+
+
+   // band bars
+   var s5 =
+      w3_inline('w3-margin-T-24 w3-halign-space-between/',
+         w3_inline('/w3-margin-between-16 w3-valign',
+            w3_button(dx.button_section, '+', 'dx_expand_cb', 2),
+            w3_link(dx.link2, 'http://kiwisdr.com/quickstart/index.html#id-config-band-bars', 'Band bars'),
+            w3_text('w3-margin-left w3-text-black',
+               'Defines content of band bars and <b>select band</b> menu on user page.<br>' +
+               'Follow link at left for important info before making changes.'),
+            w3_text('id-band-bar-saved w3-margin-left w3-padding-medium w3-text-black w3-hide', 'Changes saved')
+         ),
+         dx.hover_over
+      ) +
+      w3_div('id-band-bar-container w3-hide w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
+         w3_div('id-band-bar-list-legend w3-margin-R-15'),
+         w3_div('id-band-bar-list w3-margin-bottom w3-padding-B-8 w3-black-box w3-scroll-y|height:'+ vh)
+      );
+
+
+   // band service menu
+   var s6 =
+      w3_inline('w3-margin-TB-24 w3-halign-space-between/',
+         w3_inline('/w3-margin-between-16 w3-valign',
+            w3_button(dx.button_section, '+', 'dx_expand_cb', 3),
+            w3_link(dx.link2, 'http://kiwisdr.com/quickstart/index.html#id-config-band-svc', 'Band service menu'),
+            w3_text('w3-margin-left w3-text-black',
+               'Defines content of <b>Service</b> menu in <i>Band bars</i> section above.<br>' +
+               'Follow link at left for important info before making changes.'),
+            w3_text('id-band-svc-saved w3-margin-left w3-padding-medium w3-text-black w3-hide', 'Changes saved')
+         ),
+         dx.hover_over
+      ) +
+      w3_div('id-band-svc-container w3-hide w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
+         w3_div('id-band-svc-list-legend w3-margin-R-15'),
+         w3_div('id-band-svc-list w3-margin-bottom w3-padding-B-8 w3-black-box w3-scroll-y|height:'+ vh)
+      );
+
+	return w3_div('id-dx w3-hide', s1 + s2 + w3_div('id-dx-stored', s3 + s4 + s5 + s6));
 }
 
 function dx_convert_label_foff_cb(path, idx)
@@ -1461,12 +1484,23 @@ function dx_convert_label_foff_cb(path, idx)
 	      function() {
             adm.dx_labels_converted = true;
             cfg_save_json('dx_convert_label_foff_cb', 'adm.dx_labels_converted');
-            ext_send('SET DX_UPD g=-9 f=-1');
+            ext_send_after_cfg_save('SET DX_UPD g=-9 f=-1');
             admin_wait_then_reload(60, 'DX labels converted, restarting KiwiSDR server');
 	      }
 	   );
    }
 }
+
+/*
+function dx_default_db_cb(path, idx)
+{
+   console.log('dx_default_db_cb idx='+ idx);
+   var stored = (+idx == 0);
+   w3_hide2('id-dx-stored', !stored);
+   if (stored) ext_send('SET GET_DX_SIZE');
+   admin_select_cb(path, idx);
+}
+*/
 
 function dx_expand_cb(path, which)
 {
@@ -1529,9 +1563,9 @@ function dx_blur()
    if (!dx.enabled) return;
    //console.log('dx_blur');
    
-   // not during *_blur() calls during admin page load
+   // don't do this during *_blur() calls made on admin page load
    if (!admin.init) {
-      dx_save('id-band-svc-saved', dx.SAVE_NOW);
+      dx_save('id-band-svc-saved', dx.SAVE_LATER);
       dx_save('id-band-bar-saved', dx.SAVE_NOW);
    }
 }
@@ -1556,20 +1590,33 @@ function dx_save(id, now)
 	      w3_hide2(id);
 	   }, fade + 250);
 	   
-	   // only for the UI effect when called by the dx list (i.e. don't do save)
+	   // only do the UI effect when called by the dx list (i.e. don't do cfg save)
 	   if (id != 'id-dx-list-saved') {
 	      console.log('BANDS: saving cfg.{band_svc,bands}');
-         cfg_save_json('dx_save', 'cfg.bands');
+	      if (now != dx.SAVE_LATER)
+            cfg_save_json('dx_save', 'dxcfg.bands');
       }
 
       // after any admin change to dx label or band bar:
       // ask user connections to reload cfg *after* we've saved modified version
       // and get new dx list and band bars
-      ext_send('SET GET_DX_LIST');
+      ext_send_after_cfg_save('SET GET_DX_LIST');
    }
 }
 
 function dx_btn(c) { return 'w3-font-fixed w3-text-in-circle w3-wh-24px '+ c; }
+
+function dx_comm_download_cb(id, idx)
+{
+	ext_send('SET dx_comm_download=1');
+}
+
+function dx_restart_cancel_cb()
+{
+   // Cancel pending dx_community download (if any) on a cancelled restart.
+   // Does no harm to call this if there is no download outstanding.
+	ext_send('SET dx_comm_download=0');
+}
 
 
 // dx: labels
@@ -1602,10 +1649,10 @@ function dx_render(obj)
    }
    
    // show "Tn" in type menu entries that are otherwise blank but have list entry users
-   var type_menu = kiwi_deep_copy(cfg.dx_type);
+   var type_menu = kiwi_deep_copy(dxcfg.dx_type);
    for (i = 0; i < dx.DX_N_STORED; i++) {
       if (hdr.tc[i] != 0 && type_menu[i].name == '') {
-         type_menu[i].name = '(T'+ i +')';    // make placeholder entry in menu, but not cfg.dx_type
+         type_menu[i].name = '(T'+ i +')';    // make placeholder entry in menu, but not dxcfg.dx_type
          //console.log('empty type menu entry: T'+ i +' #'+ hdr.tc[i]);
       }
    }
@@ -1659,12 +1706,12 @@ function dx_render(obj)
 
       var d = null;
       var freq, mo, id, no = '';
-      var pb = '', ty = 0, os, ext = '';
+      var pb = '', ty = 0, os, sb, ext = '';
       var dow, begin, end, has_sched = false;
       var mode_menu_idx;
    
       // done this way so all the s_new code can be reused to construct the legend
-      var h = function(psa) { return (i == dx.LEGEND)? 'w3-hide' : psa; }
+      var h = function(psa) { return (i == dx.LEGEND)? 'w3-margin-L-16/w3-padding-small/w3-hide' : ('w3-margin-L-16//'+ psa); }
       var l = function(label) { return (i == dx.LEGEND)? label : ''; }
 
       if (i != dx.LEGEND) {
@@ -1678,6 +1725,7 @@ function dx_render(obj)
          if (d.n) no = kiwi_decodeURIComponent('dx_no', d.n);
          if (d.p) ext = kiwi_decodeURIComponent('dx_ext', d.p);
          os = d.o;
+         sb = d.s;
 
          var lo = d.lo, hi = d.hi;
          if (lo || hi) {
@@ -1711,7 +1759,7 @@ function dx_render(obj)
       //console.log('i='+ i +' mo='+ mo +' ty='+ ty);
       //console.log(d);
       var s_new =
-         w3_inline_percent('w3-valign w3-text-black/w3-margin-T-8 w3-hspace-16 w3-margin-RE-16',
+         w3_inline_percent('w3-valign w3-text-black/w3-margin-T-8 w3-hspace-16x w3-margin-RE-16',
             w3_inline('w3-margin-L-8',
                (i == dx.LEGEND)? dx.spacer : w3_button(dx_btn(dx.button_add), '+', 'dx_list_add_cb', i),
                (i == dx.LEGEND)? dx.spacer : w3_button(dx_btn(dx.button_del), '-', 'dx_list_del_cb', i),
@@ -1721,12 +1769,13 @@ function dx_render(obj)
             //i.toString(), 4,     // debug
             w3_input(h('w3-padding-small||size=8'), l('Freq kHz'), 'dx.o.fr_'+i, freq, 'dx_freq_cb'), 19,
             w3_select(h('w3-text-red'), l('Mode'), '', 'dx.o.mm_'+i, mode_menu_idx, kiwi.mode_menu, 'dx_sel_cb'), 15,
-            w3_input(h('w3-padding-small||size=4'), l('Passband Hz'), 'dx.o.pb_'+i, pb, 'dx_passband_cb'), 25,
+            w3_input(h('w3-padding-small||size=4'), l('Passband<br>&nbsp;&nbsp;Hz'), 'dx.o.pb_'+i, pb, 'dx_passband_cb'), 19,
             w3_select(h('w3-text-red'), l('Type'), '', 'dx.o.ft_'+i, ty, type_menu, 'dx_sel_cb'), 25,
-            w3_input(h('w3-padding-small||size=2'), l('Offset Hz'), 'dx.o.o_'+i, os, 'dx_num_cb'), 18,
+            w3_input(h('w3-padding-small||size=2'), l('Offset<br>&nbsp;&nbsp;Hz'), 'dx.o.o_'+i, os, 'dx_num_cb'), 16,
+            w3_input(h('w3-padding-small||size=2'), l('Sig bw<br>&nbsp;&nbsp;kHz'), 'dx.o.s_'+i, sb, 'dx_num_cb'), 19,
             w3_input(h('w3-padding-small'), l('Ident'), 'dx.o.i_'+i, id, 'dx_string_cb'), 40,
             w3_input(h('w3-padding-small'), l('Notes'), 'dx.o.n_'+i, no, 'dx_string_cb'), 40,
-            w3_input(h('w3-padding-small'), l('Extension'), 'dx.o.p_'+i, ext, 'dx_string_cb'), 25
+            w3_input(h('w3-padding-small'), l('Extension'), 'dx.o.p_'+i, ext, 'dx_string_cb'), 23
          );
       
       if (has_sched) {
@@ -1755,7 +1804,7 @@ function dx_render(obj)
                w3_inline('w3-margin-L-8', dx.spacer, dx.spacer,
                   w3_button('w3-padding-0', w3_icon('w3-pale-blue||title="delete schedule time"', 'fa-trash-o', 26), 'dx_list_sched_del_cb', i)
                ), 6,
-               dow_s, 15,
+               dow_s, 13,
                w3_input('w3-label-inline/w3-padding-small', 'Begin', 'dx.o.b_'+i, begin_s, 'dx_sched_time_cb'), 10,
                w3_input('w3-label-inline/w3-padding-small', 'End', 'dx.o.e_'+i, end_s, 'dx_sched_time_cb'), 9
             );
@@ -1872,7 +1921,7 @@ function dx_list_sched_del_cb(path, idx)
    dx.o.last_fd[idx] = dx.DX_DOW_BASE;
    w3_set_value('dx.o.b_'+ idx, 0);
    w3_set_value('dx.o.e_'+ idx, 2400);
-   dx_update_check(idx, dx.UPD_MOD);
+   dx_update_check(idx, dx.UPD_MOD);   // dx_update_check() calls dx_save()
    dx.ignore_dx_update = false;
    dx_update_admin();      // refresh list
 }
@@ -1999,13 +2048,14 @@ function dx_export_cb2(obj)
          type = type? (dq('T'+ type) +':1') : '';
          var pb = (o.lo != 0 || o.hi != 0)? (dqc('lo') + o.lo +', '+  dqc('hi') + o.hi) : '';
          var off = o.o? (dqc('o') + o.o) : '';
+         var sig_bw = o.s? (dqc('s') + o.s) : '';
          var ext = (o.p && o.p != '')? (dqc('p') + dx_dq(o.p)) : '';
          var dow = (o.fl & dx.DX_DOW);
          dow = (dow != 0 && dow != dx.DX_DOW)? (dqc('d0') + (dow >> dx.DX_DOW_SFT)) : '';
          var begin = o.b, end = o.e;
          var time = (begin != 0 || end != 2400)? (dqc('b0') + begin +', '+ dqc('e0') + end) : '';
 
-         opt = w3_sbc(', ', type, pb, off, dow, time, ext);
+         opt = w3_sbc(', ', type, pb, off, dow, time, ext, sig_bw);
          if (opt != '') opt = ', {'+ opt +'}';
          dx.export_s_a[gid] = '['+ freq +', '+ mode +', '+ ident +', '+ notes + opt +']'+ comma +'\n';
       });
@@ -2017,7 +2067,7 @@ function dx_export_cb2(obj)
       obj.forEach(function(o, i) {
          if (1) {
             if (i == 0) {
-               dx.export_s_a[0] = 'Freq kHz;"Mode";"Ident";"Notes";"Extension";"Type";PB low;PB high;Offset;"DOW";Begin;End\n';
+               dx.export_s_a[0] = 'Freq kHz;"Mode";"Ident";"Notes";"Extension";"Type";PB low;PB high;Offset;"DOW";Begin;End;Sig bw\n';
                return;
             }
             var gid = o.g;
@@ -2028,6 +2078,7 @@ function dx_export_cb2(obj)
             var lo = o.lo, hi = o.hi;
             if (lo == 0 && hi == 0) lo = hi = '';
             var off = o.o? o.o : '';
+            var sig_bw = o.s? o.s : '';
          
             var dow = (o.fl & dx.DX_DOW) >> dx.DX_DOW_SFT;
             dow_s = '';
@@ -2050,12 +2101,12 @@ function dx_export_cb2(obj)
             var notes = o.n? dx_dq(o.n) : '';
             var ext = o.p? dx_dq(o.p) : '';
 
-            var s = [ o.f, mode, ident, notes, ext, type, lo, hi, off, dow_s, begin, end ];
+            var s = [ o.f, mode, ident, notes, ext, type, lo, hi, off, dow_s, begin, end, sig_bw ];
             dx.export_s_a[gid+1] = s.join(';') +'\n';    // gid+1 because export_s_a[0] has CSV column legend
          } else {
             // test exporting CSV files with comma delimiters and non-quoted string fields (unless they contain delimiter)
             if (i == 0) {
-               dx.export_s_a[0] = 'Freq kHz,"Mode","Ident","Notes","Extension","Type",PB low,PB high,Offset,"DOW",Begin,End\n';
+               dx.export_s_a[0] = 'Freq kHz,"Mode","Ident","Notes","Extension","Type",PB low,PB high,Offset,"DOW",Begin,End,Sig bw\n';
                return;
             }
             var gid = o.g;
@@ -2066,6 +2117,7 @@ function dx_export_cb2(obj)
             var lo = o.lo, hi = o.hi;
             if (lo == 0 && hi == 0) lo = hi = '';
             var off = o.o? o.o : '';
+            var sig_bw = o.s? o.s : '';
          
             var dow = (o.fl & dx.DX_DOW) >> dx.DX_DOW_SFT;
             dow_s = '';
@@ -2087,7 +2139,7 @@ function dx_export_cb2(obj)
             var notes = o.n? dx_dq2(o.n) : '';
             var ext = o.p? dx_dq2(o.p) : '';
 
-            var s = [ o.f, mode, ident, notes, ext, type, lo, hi, off, dow_s, begin, end ];
+            var s = [ o.f, mode, ident, notes, ext, type, lo, hi, off, dow_s, begin, end, sig_bw ];
             dx.export_s_a[gid+1] = s.join(',') +'\n';    // gid+1 because export_s_a[0] has CSV column legend
          }
       });
@@ -2112,12 +2164,11 @@ function dx_export_cb2(obj)
       wrap_begin = wrap_end = '';
    }
    
-   var tstamp = kiwi_host() +'_'+ new Date().toISOString().replace(/:/g, '_').replace(/\.[0-9]+Z$/, 'Z');
    var txt = new Blob([wrap_begin + dx.export_s_a.join('') + wrap_end], { type: mime_type });
    var a = document.createElement('a');
    a.style = 'display: none';
    a.href = window.URL.createObjectURL(txt);
-   a.download = 'dx.'+ tstamp + file_ext;
+   a.download = kiwi_timestamp_filename('dx.', file_ext);
    document.body.appendChild(a);
    //console.log('dx_export_cb2: '+ a.download);
    a.click();
@@ -2241,6 +2292,8 @@ function dx_file_uploaded(o)
          break;
       case 23:
          e = csv_line +'expected end time number in field 12';
+      case 24:
+         e = csv_line +'expected signal bandwidth number in field 13';
          break;
       default:
          e = 'Undefined error?';
@@ -2275,15 +2328,15 @@ function dx_type_render()
    var test_i = 'How the colors of the labels with\nthis type value should appear.';
    var test_l = 'Test '+ w3_icon(icon +'||title='+ dq(test_i), 'fa-info-circle', 20);
 
-   for (var i = -1; i < cfg.dx_type.length; i++) {
+   for (var i = -1; i < dxcfg.dx_type.length; i++) {
       var legend = (i == dx.LEGEND);
-      type = legend? {} : cfg.dx_type[i];
+      type = legend? {} : dxcfg.dx_type[i];
 
       // done this way so all the s_new code can be reused to construct the legend
       var h = function(psa) { return legend? 'w3-hide' : psa; }
       var l = function(label) { return legend? label : ''; }
       var i_s = legend? w3_label(i_psa, type_l) : w3_div(i_psa, 'T'+ i.toFixed(0));
-      var masked = (i == cfg.dx_type.length - 1);
+      var masked = (i == dxcfg.dx_type.length - 1);
       var input_psa = w3_psa_mix('w3-padding-small||size=8', masked? 'w3-cursor-not-allowed':'', '', masked? 'disabled':'');
    
       var s_new =
@@ -2316,18 +2369,18 @@ function dx_type_render()
    w3_innerHTML('id-dx-type-list', s_a.join(''));
 
    dx_color_init();
-   for (var i = 0; i < (cfg.dx_type.length - 1); i++) {     // length -1 to skip DX_MASKED
+   for (var i = 0; i < (dxcfg.dx_type.length - 1); i++) {     // length -1 to skip DX_MASKED
       dx_type_bar_test(i);
    }
 }
 
 function dx_type_bar_test(i)
 {
-   type = cfg.dx_type[i];
+   type = dxcfg.dx_type[i];
    var el = w3_el(i +'_type.ex');
    if (!el) return;
    el.innerHTML = type.name;
-   el.style.background = cfg.dx_type[i].color;
+   el.style.background = dxcfg.dx_type[i].color;
    var el = w3_el(i +'_type.exf');
    el.innerHTML = type.name;
    el.style.background = dx.stored_colors_light[i];
@@ -2337,7 +2390,7 @@ function dx_type_field_cb(path, val, first, a_cb)
 {
    if (first) return;
    var i = parseInt(path);
-   var obj = cfg.dx_type[i];
+   var obj = dxcfg.dx_type[i];
    console.log('dx_type_field_cb path='+ path +' val='+ val +' i='+ i +' obj='+ obj);
    //console.log(obj);
    var key = obj.key;
@@ -2345,14 +2398,14 @@ function dx_type_field_cb(path, val, first, a_cb)
    console.log('dx_type_field_cb key='+ key +' which='+ which);
    
    if (which == 0) {
-      console.log('cfg.dx_type['+ key +'].name='+ val);
-      cfg.dx_type[i].name = val;
+      console.log('dxcfg.dx_type['+ key +'].name='+ val);
+      dxcfg.dx_type[i].name = val;
       dx_type_render();
       dx_update_admin();      // have to rebuild dx type menus when type names change
    } else
    
    if (which == 1) {
-      console.log('cfg.dx_type['+ key +'].color='+ val);
+      console.log('dxcfg.dx_type['+ key +'].color='+ val);
       var el = w3_el(path);
       var colorObj = w3color(val);
       if (!colorObj.valid) {
@@ -2361,7 +2414,7 @@ function dx_type_field_cb(path, val, first, a_cb)
          return;
       }
       el.style.background = '';     // remove any prior red
-      cfg.dx_type[i].color = val;
+      dxcfg.dx_type[i].color = val;
       dx_color_init();
       dx_type_bar_test(i);
    }
@@ -2389,11 +2442,11 @@ function band_bar_render()
    var itu_l = 'ITU / Visibility '+ w3_icon(icon +'||title='+ dq(itu_i), 'fa-info-circle', 20);
    var chan_i = 'Defines the band channel spacing (kHz).\nFor example with LW and MW bands.';
    var chan_l = 'Chan '+ w3_icon(icon +'||title='+ dq(chan_i), 'fa-info-circle', 20);
-   var fms_i = 'Optional frequency and mode to set\nwhen select band entry used.';
-   var fms_l = 'Band freq/mode '+ w3_icon(icon +'||title='+ dq(fms_i), 'fa-info-circle', 20);
+   var fms_i = 'Optional frequency, mode and zoom\n to set when select band entry used.';
+   var fms_l = 'Freq/mode/zoom '+ w3_icon(icon +'||title='+ dq(fms_i), 'fa-info-circle', 20);
    
-   for (i = dx.LEGEND; i < cfg.bands.length; i++) {
-      b1 = (i != dx.LEGEND)? cfg.bands[i] : {};
+   for (i = dx.LEGEND; i < dxcfg.bands.length; i++) {
+      b1 = (i != dx.LEGEND)? dxcfg.bands[i] : {};
 
       // done this way so all the s_new code can be reused to construct the legend
       var h = function(psa) { return (i == dx.LEGEND)? 'w3-hide' : psa; }
@@ -2404,7 +2457,7 @@ function band_bar_render()
          svc = null;
       } else {
          svc = band_svc_lookup(b1.svc);   // remember, b1.svc is a key e.g. 'B' = bcast
-         if (svc != null) svc = svc.i;    // svc could be null if corresponding cfg.band_svc has disappeared (menu will show 'unknown')
+         if (svc != null) svc = svc.i;    // svc could be null if corresponding dxcfg.band_svc has disappeared (menu will show 'unknown')
       }
       var itu = (b1.itu > 0)? b1.itu : 0;
       
@@ -2417,7 +2470,7 @@ function band_bar_render()
             w3_input(h('w3-padding-small||size=8'), l(freq_l), i+'_bands.min', b1.min, cbf +'0'), 10,
             w3_input(h('w3-padding-small||size=8'), l('Max kHz'), i+'_bands.max', b1.max, cbf +'1'), 10,
             w3_input(h('w3-padding-small'), l(band_l), i+'_bands.n', b1.name, 'band_bar_field_cb|0'), 25,
-            w3_select(h('w3-text-red'), l(svc_l), '', i+'_bands.s', svc, cfg.band_svc, 'band_bar_select_cb', 's'), 12,
+            w3_select(h('w3-text-red'), l(svc_l), '', i+'_bands.s', svc, dxcfg.band_svc, 'band_bar_select_cb', 's'), 12,
             w3_select(h('w3-text-red'), l(itu_l), '', i+'_bands.i', itu, kiwi.ITU_s, 'band_bar_select_cb', 'i'), 25,
             w3_input(h('w3-padding-small||size=6'), l(chan_l), i+'_bands.c', b1.chan, cbf +'2'), 7,
             w3_input(h('w3-padding-small||size=8'), l(fms_l), i+'_bands.fms', b1.sel, 'band_bar_field_cb|1'), 15
@@ -2425,7 +2478,7 @@ function band_bar_render()
       
       if (i == dx.LEGEND) {
          w3_innerHTML('id-band-bar-list-legend', s_new);
-         if (cfg.bands.length == 0) {
+         if (dxcfg.bands.length == 0) {
             s_a[0] = w3_button(dx_btn('w3-margin-L-8 w3-margin-T-8 w3-css-lime'), '+', 'band_bar_add_cb', i);
          }
       } else {
@@ -2445,14 +2498,14 @@ function band_bar_add_cb(path, val, first)
    if (i == dx.LEGEND) {      // when only a circle-plus is shown generate a default entry
       add = { min:530, max:1600, name:'new band bar', svc:null, itu:0, sel:'', chan:0 };
    } else {
-      if (i < 0 || i >= cfg.bands.length) return;
-      var b = cfg.bands[i];
+      if (i < 0 || i >= dxcfg.bands.length) return;
+      var b = dxcfg.bands[i];
       add = { min:b.min, max:b.max, name:b.name, svc:b.svc, itu:b.itu, sel:b.sel, chan:b.chan };
    }
    
-   cfg.bands.splice(i+1, 0, add);
+   dxcfg.bands.splice(i+1, 0, add);
    dx_save('id-band-bar-saved', dx.SAVE_NOW);
-   bands_addl_info();
+   bands_addl_info(1);
    band_bar_render();
 }
 
@@ -2461,10 +2514,10 @@ function band_bar_del_cb(path, val, first)
    if (first) return;
    var i = +val;
    console.log('band_bar_del_cb path='+ path +' i='+ i);
-   if (i < 0 || i >= cfg.bands.length) return;
-   cfg.bands.splice(i, 1);
+   if (i < 0 || i >= dxcfg.bands.length) return;
+   dxcfg.bands.splice(i, 1);
    dx_save('id-band-bar-saved', dx.SAVE_NOW);
-   bands_addl_info();
+   bands_addl_info(1);
    band_bar_render();
 }
 
@@ -2472,9 +2525,9 @@ function band_bar_float_cb(path, val, first, a_cb)
 {
    if (first) return;
    var i = parseInt(path);
-   if (i < 0 || i >= cfg.bands.length) return;
+   if (i < 0 || i >= dxcfg.bands.length) return;
    var which = +(a_cb[1])
-   var prior = cfg.bands[i][kiwi.cfg_fields[which]];
+   var prior = dxcfg.bands[i][admin_sdr.cfg_fields[which]];
 
    val = parseFloat(val);
    console.log('band_bar_float_cb path='+ path +' val='+ val +' i='+ i +' which='+ which +' prior='+ prior);
@@ -2483,16 +2536,16 @@ function band_bar_float_cb(path, val, first, a_cb)
    w3_set_value(path, val? val : '');  // remove any non-numeric part from field, blank zero value
    
    if (which == 0) {
-      console.log('cfg.bands['+ i +'].min='+ val);
-      cfg.bands[i].min = val;
+      console.log('dxcfg.bands['+ i +'].min='+ val);
+      dxcfg.bands[i].min = val;
    } else
    if (which == 1) {
-      console.log('cfg.bands['+ i +'].max='+ val);
-      cfg.bands[i].max = val;
+      console.log('dxcfg.bands['+ i +'].max='+ val);
+      dxcfg.bands[i].max = val;
    } else
    if (which == 2) {
-      console.log('cfg.bands['+ i +'].chan='+ val);
-      cfg.bands[i].chan = val;
+      console.log('dxcfg.bands['+ i +'].chan='+ val);
+      dxcfg.bands[i].chan = val;
    }
    
    dx_sched_save('id-band-bar-saved');
@@ -2503,14 +2556,14 @@ function band_bar_field_cb(path, val, first, a_cb)
    if (first) return;
    var i = parseInt(path);
    console.log('band_bar_field_cb path='+ path +' val='+ val +' i='+ i);
-   if (i < 0 || i >= cfg.bands.length) return;
+   if (i < 0 || i >= dxcfg.bands.length) return;
    var which = +(a_cb[1])
    if (which == 0 && val == '') {      // prevent blank menu entries
       val = '(blank)';
       w3_set_value(path, val);
    }
-   if (which == 0) cfg.bands[i].name = val; else
-   if (which == 1) cfg.bands[i].sel = val;
+   if (which == 0) dxcfg.bands[i].name = val; else
+   if (which == 1) dxcfg.bands[i].sel = val;
    dx_sched_save('id-band-bar-saved');
 }
 
@@ -2520,16 +2573,16 @@ function band_bar_select_cb(path, val, first, which)
    var i = parseInt(path);
    val = +val;
    console.log('band_bar_select_cb path='+ path +' val='+ val +' i='+ i +' which='+ which);
-   if (i < 0 || i >= cfg.bands.length) return;
+   if (i < 0 || i >= dxcfg.bands.length) return;
 
    if (which == 's') {
-      var key = cfg.band_svc[val].key;
-      console.log('cfg.bands['+ i +'].svc='+ key);
-      cfg.bands[i].svc = key;
+      var key = dxcfg.band_svc[val].key;
+      console.log('dxcfg.bands['+ i +'].svc='+ key);
+      dxcfg.bands[i].svc = key;
    } else
    if (which == 'i') {
-      console.log('cfg.bands['+ i +'].itu='+ val);
-      cfg.bands[i].itu = val;
+      console.log('dxcfg.bands['+ i +'].itu='+ val);
+      dxcfg.bands[i].itu = val;
    }
 
    dx_sched_save('id-band-bar-saved');
@@ -2553,8 +2606,8 @@ function band_svc_render()
    var test_i = 'Example of how band bar will look.';
    var test_l = '&nbsp;Test '+ w3_icon(icon +'||title='+ dq(test_i), 'fa-info-circle', 20);
 
-   for (var i = -1; i < cfg.band_svc.length; i++) {
-      svc = (i != dx.LEGEND)? cfg.band_svc[i] : {};
+   for (var i = -1; i < dxcfg.band_svc.length; i++) {
+      svc = (i != dx.LEGEND)? dxcfg.band_svc[i] : {};
 
       // done this way so all the s_new code can be reused to construct the legend
       var h = function(psa) { return (i == dx.LEGEND)? 'w3-hide' : psa; }
@@ -2585,14 +2638,14 @@ function band_svc_render()
 
    w3_innerHTML('id-band-svc-list', s_a.join(''));
 
-   for (var i = 0; i < cfg.band_svc.length; i++) {
+   for (var i = 0; i < dxcfg.band_svc.length; i++) {
       band_svc_bar_test(i);
    }
 }
 
 function band_svc_bar_test(i)
 {
-   svc = cfg.band_svc[i];
+   svc = dxcfg.band_svc[i];
    var el = w3_el(i +'_svc.ex');
    el.innerHTML = (isDefined(svc.longName) && svc.longName != '')? svc.longName : svc.name;
 
@@ -2605,7 +2658,7 @@ function band_svc_bar_test(i)
 function band_svc_new_key()
 {
    var max = -1;
-   cfg.band_svc.forEach(function(a, i) {
+   dxcfg.band_svc.forEach(function(a, i) {
       var key = +a.key;
       if (isNumber(key) && key > max) max = key;
    });
@@ -2620,15 +2673,15 @@ function band_svc_add_cb(path, val, first)
    if (first) return;
    var i = +val;
    console.log('band_svc_add_cb path='+ path +' i='+ i);
-   if (i < 0 || i >= cfg.band_svc.length) return;
-   var s = cfg.band_svc[i];
+   if (i < 0 || i >= dxcfg.band_svc.length) return;
+   var s = dxcfg.band_svc[i];
    console.log(s);
    var key = band_svc_new_key();
    var add = { key:key, name:s.name, color:s.color };
    if (s.longName) add.longName = s.longName;
-   cfg.band_svc.splice(i+1, 0, add);
+   dxcfg.band_svc.splice(i+1, 0, add);
    dx_save('id-band-svc-saved', dx.SAVE_NOW);
-   bands_addl_info();
+   bands_addl_info(1);
    band_svc_render();
    band_bar_render();   // have to rebuild band bar service menus when services added/deleted
 }
@@ -2638,10 +2691,10 @@ function band_svc_del_cb(path, val, first)
    if (first) return;
    var i = +val;
    console.log('band_svc_del_cb path='+ path +' i='+ i);
-   if (i < 0 || i >= cfg.band_svc.length || cfg.band_svc.length <= 1) return;
-   cfg.band_svc.splice(i, 1);
+   if (i < 0 || i >= dxcfg.band_svc.length || dxcfg.band_svc.length <= 1) return;
+   dxcfg.band_svc.splice(i, 1);
    dx_save('id-band-svc-saved', dx.SAVE_NOW);
-   bands_addl_info();
+   bands_addl_info(1);
    band_svc_render();
    band_bar_render();   // have to rebuild band bar service menus when services added/deleted
 }
@@ -2650,7 +2703,7 @@ function band_svc_field_cb(path, val, first, a_cb)
 {
    if (first) return;
    var i = parseInt(path);
-   var obj = cfg.band_svc[i];
+   var obj = dxcfg.band_svc[i];
    console.log('band_svc_field_cb path='+ path +' val='+ val +' i='+ i +' obj='+ obj);
    if (obj == null) return;
    console.log(obj);
@@ -2664,13 +2717,13 @@ function band_svc_field_cb(path, val, first, a_cb)
          val = '(blank)';
          w3_set_value(path, val);
       }
-      console.log('cfg.band_svc['+ key +'].name='+ val);
-      cfg.band_svc[i].name = val;
+      console.log('dxcfg.band_svc['+ key +'].name='+ val);
+      dxcfg.band_svc[i].name = val;
       rebuild_band_bar_menus = true;
    } else
    
    if (which == 1) {
-      console.log('cfg.band_svc['+ key +'].color='+ val);
+      console.log('dxcfg.band_svc['+ key +'].color='+ val);
       var el = w3_el(path);
       var colorObj = w3color(val);
       if (val == '' || !colorObj.valid) {
@@ -2679,17 +2732,17 @@ function band_svc_field_cb(path, val, first, a_cb)
          return;
       }
       el.style.background = '';     // remove any prior red
-      cfg.band_svc[i].color = val;
+      dxcfg.band_svc[i].color = val;
    } else
    
    if (which == 2) {
-      console.log('cfg.band_svc['+ key +'].longName='+ val);
-      cfg.band_svc[i].longName = val;
+      console.log('dxcfg.band_svc['+ key +'].longName='+ val);
+      dxcfg.band_svc[i].longName = val;
    }
    
    band_svc_bar_test(i);
    dx_sched_save('id-band-svc-saved');
-   bands_addl_info();
+   bands_addl_info(1);
    if (rebuild_band_bar_menus)
       band_bar_render();      // have to rebuild band bar service menus when service names change
 }

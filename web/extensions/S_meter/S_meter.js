@@ -88,7 +88,7 @@ function S_meter_recv(data)
 		switch (param[0]) {
 
 			case "ready":
-				kiwi_load_js(['pkgs/js/graph.js'], 'S_meter_controls_setup');
+				kiwi_load_js('pkgs/js/graph.js', 'S_meter_controls_setup');
 				break;
 
 			case "smeter":
@@ -227,12 +227,12 @@ function S_meter_range_select_cb(path, idx, first)
    S_meter_auto_man();
 }
 
-function S_meter_maxdb_cb(path, val, complete)
+function S_meter_maxdb_cb(path, val, complete, first)
 {
    var maxdb = +val;
    maxdb = Math.max(S_meter.mindb, maxdb);		// don't let min & max cross
    if (isAdmin())    // because label needs to update during admin config
-      w3_int_set_cfg_cb(path, maxdb.toString());
+      w3_int_set_cfg_cb(path, maxdb.toString(), first);
    else {
 	   w3_num_cb(path, maxdb.toString());
       S_meter_auto_man();
@@ -240,12 +240,12 @@ function S_meter_maxdb_cb(path, val, complete)
 	w3_set_label('Scale max '+ maxdb.toString() +' dBm', path);
 }
 
-function S_meter_mindb_cb(path, val, complete)
+function S_meter_mindb_cb(path, val, complete, first)
 {
    var mindb = +val;
    mindb = Math.min(mindb, S_meter.maxdb);		// don't let min & max cross
    if (isAdmin())    // because label needs to update during admin config
-      w3_int_set_cfg_cb(path, mindb.toString());
+      w3_int_set_cfg_cb(path, mindb.toString(), first);
    else {
 	   w3_num_cb(path, mindb.toString());
       S_meter_auto_man();
@@ -253,12 +253,12 @@ function S_meter_mindb_cb(path, val, complete)
 	w3_set_label('Scale min '+ mindb.toString() +' dBm', path);
 }
 
-function S_meter_speed_cb(path, val, complete)
+function S_meter_speed_cb(path, val, complete, first)
 {
 	var val_i = +val;
    var speed_pow2 = Math.round(Math.pow(2, S_meter.speed_max - val_i));
    if (isAdmin())    // because label needs to update during admin config
-      w3_int_set_cfg_cb(path, val_i.toString());
+      w3_int_set_cfg_cb(path, val_i.toString(), first);
    else {
 	   w3_num_cb(path, val_i.toString());
 	   graph_speed(S_meter.gr, speed_pow2);

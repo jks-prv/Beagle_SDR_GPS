@@ -892,48 +892,6 @@ html, body
 	height: 100%;
 }
 
-.cl-dx-label
-{
-	position: absolute;
-	/*font-family: Courier;*/
-	font-size: 11px;
-	/*font-weight: bold;*/
-	padding: 3px;
-	border: 1px solid black;
-	border-radius: 3px;
-	cursor: pointer;
-	-moz-border-radius: 3px;
-	/*background-color: cyan;*/
-	z-index: 120;
-}
-
-.cl-dx-label.cl-dx-label-filtered
-{
-    border: 1px dashed black;
-}
-
-/* an experiment not currently used */
-.cl-dx-label.cl-dx-label-active
-{
-	border-width: 1px 1px 1px 4px;
-	border-color: black black black red;
-}
-
-/*
-.cl-dx-label:hover
-{
-	background-color: yellow;
-}
-*/
-
-.cl-dx-line
-{
-	width: 1px;
-	position: absolute;
-	background-color: black;
-	z-index: 110;
-}
-
 .class-button
 {
 	display: inline;

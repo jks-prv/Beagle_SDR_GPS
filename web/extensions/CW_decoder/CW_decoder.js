@@ -58,7 +58,7 @@ function cw_decoder_recv(data)
 		switch (param[0]) {
 
 			case "ready":
-				kiwi_load_js(['pkgs/js/graph.js'], 'cw_decoder_controls_setup');
+				kiwi_load_js('pkgs/js/graph.js', 'cw_decoder_controls_setup');
 				break;
 
 			case "cw_chars":
@@ -136,6 +136,8 @@ function cw_decoder_controls_setup()
 			)
 		);
 	
+	cw.saved_setup = ext_save_setup();
+	ext_set_mode('cw');
 	ext_panel_show(controls_html, data_html, null);
 	time_display_setup('cw');
 
@@ -163,7 +165,7 @@ function cw_decoder_controls_setup()
 
 function CW_decoder_environment_changed(changed)
 {
-   // detect passband offset change and inform C-side
+   // detect passband offset change and inform C-side so detection filter can be adjusted
    var pboff = Math.abs(ext_get_passband_center_freq() - ext_get_carrier_freq());
    if (cw.pboff != pboff) {
       var first_and_locked = (cw.pboff == -1 && cw.pboff_locked);
@@ -199,12 +201,11 @@ function cw_log_mins_cb(path, val)
 
 function cw_log_cb()
 {
-   var ts = kiwi_host() +'_'+ new Date().toISOString().replace(/:/g, '_').replace(/\.[0-9]+Z$/, 'Z') +'_'+ w3_el('id-freq-input').value +'_'+ cur_mode;
    var txt = new Blob([cw.log_txt], { type: 'text/plain' });
    var a = document.createElement('a');
    a.style = 'display: none';
    a.href = window.URL.createObjectURL(txt);
-   a.download = 'CW.'+ ts +'.log.txt';
+   a.download = kiwi_timestamp_filename('CW.', '.log.txt');
    document.body.appendChild(a);
    console.log('cw_log: '+ a.download);
    a.click();
@@ -248,6 +249,7 @@ function CW_decoder_blur()
 	ext_set_data_height();     // restore default height
 	ext_send('SET cw_stop');
    kiwi_clearInterval(cw.log_interval);
+	ext_restore_setup(cw.saved_setup);
 }
 
 // called to display HTML for configuration parameters in admin interface

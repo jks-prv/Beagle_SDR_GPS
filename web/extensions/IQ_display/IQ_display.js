@@ -292,9 +292,9 @@ function iq_display_controls_setup()
 					),
 					w3_inline('w3-tspace-8/w3-margin-between-16',
 						w3_button('w3-padding-small', 'Clear', 'iq_display_clear_cb'),
-						w3_button('w3-padding-small', '2.4k', 'iq_display_AM_bw_cb', 2400),
-						w3_button('w3-padding-small', '160', 'iq_display_AM_bw_cb', 160),
-						w3_button('w3-padding-small', '40', 'iq_display_AM_bw_cb', 40)
+						w3_button('w3-padding-small', '2.4k', 'iq_display_bw_cb', 2400),
+						w3_button('w3-padding-small', '140', 'iq_display_bw_cb', 140),
+						w3_button('w3-padding-small', '40', 'iq_display_bw_cb', 40)
 					),
 					'<hr style="margin:10px 0">',
 					w3_col_percent('w3-tspace-8/',
@@ -406,10 +406,9 @@ function iq_display_clear_cb(path, val)
 	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);
 }
 
-function iq_display_AM_bw_cb(path, val)
+function iq_display_bw_cb(path, val)
 {
    var hbw = +val/2;
-   ext_set_mode('am');
    ext_set_passband(-hbw, hbw);
 	setTimeout(function() { iq_display_clear() }, 500);
 }
@@ -454,8 +453,8 @@ function iq_balance_default()
    confirmation_panel_close();
    console.log('mode_20kHz='+ iq.mode_20kHz +' iq_balance_default='+ iq.DC_offset_default[iq.mode_20kHz]);
    cfg[iq.DC_offset_I] = cfg[iq.DC_offset_Q] = iq.DC_offset_default[iq.mode_20kHz];
-   ext_set_cfg_param('cfg.'+ iq.DC_offset_I, cfg[iq.DC_offset_I], true);
-   ext_set_cfg_param('cfg.'+ iq.DC_offset_Q, cfg[iq.DC_offset_Q], true);
+   ext_set_cfg_param('cfg.'+ iq.DC_offset_I, cfg[iq.DC_offset_I], EXT_NO_SAVE);
+   ext_set_cfg_param('cfg.'+ iq.DC_offset_Q, cfg[iq.DC_offset_Q], EXT_SAVE);
 }
 
 function iq_balance_confirm()
@@ -464,9 +463,9 @@ function iq_balance_confirm()
    console.log('iq_balance_confirm: PREV I='+ cfg[iq.DC_offset_I].toFixed(6) +' Q='+ cfg[iq.DC_offset_Q].toFixed(6));
    console.log('iq_balance_confirm: INCR ADJ I='+ (-iq.cmaI) +' Q='+ (-iq.cmaQ));
    cfg[iq.DC_offset_I] += -iq.cmaI;
-   ext_set_cfg_param('cfg.'+ iq.DC_offset_I, cfg[iq.DC_offset_I], true);
+   ext_set_cfg_param('cfg.'+ iq.DC_offset_I, cfg[iq.DC_offset_I], EXT_NO_SAVE);
    cfg[iq.DC_offset_Q] += -iq.cmaQ;
-   ext_set_cfg_param('cfg.'+ iq.DC_offset_Q, cfg[iq.DC_offset_Q], true);
+   ext_set_cfg_param('cfg.'+ iq.DC_offset_Q, cfg[iq.DC_offset_Q], EXT_SAVE);
    console.log('iq_balance_confirm: NEW I='+ cfg[iq.DC_offset_I].toFixed(6) +' Q='+ cfg[iq.DC_offset_Q].toFixed(6));
 }
 
@@ -483,7 +482,7 @@ function iq_display_IQ_cal_jog_cb(path, val)
          console.log('jog ADC clock: ADJ TOO LARGE');
       } else {
          ext_send('SET clk_adj='+ new_adj);
-         ext_set_cfg_param('cfg.clk_adj', new_adj, true);
+         ext_set_cfg_param('cfg.clk_adj', new_adj, EXT_SAVE);
          iq_display_clk_adj();
       }
 	});
@@ -514,10 +513,10 @@ function IQ_display_help(show)
    if (show) {
       var s = 
          w3_text('w3-medium w3-bold w3-text-aqua', 'IQ display help') +
-         '<br>URL parameters: <br>' +
-         'gain:<i>num</i> &nbsp; density|points &nbsp; IQ|carrier &nbsp; off|on|BPSK|QPSK|8PSK|MSK100|MSK200 <br>' +
-         'cmax:<i>num</i> &nbsp; cmin:<i>num</i> &nbsp; pll_bw:<i>num</i> <br>' +
-         'Non-numeric values are those appearing in their respective menus. <br>' +
+         '<br><br>URL parameters: <br>' +
+         w3_text('|color:orange', 'gain:<i>num</i> &nbsp; density|points &nbsp; IQ|carrier &nbsp; off|on|BPSK|QPSK|8PSK|MSK100|MSK200 <br>' +
+         'cmax:<i>num</i> &nbsp; cmin:<i>num</i> &nbsp; pll_bw:<i>num</i>') +
+         '<br> Non-numeric values are those appearing in their respective menus. <br>' +
          'Keywords are case-insensitive and can be abbreviated. <br>' +
          'So for example this is valid: <i>ext=iq,g:75,poi,car,q,pll:8</i> <br>' +
          '';

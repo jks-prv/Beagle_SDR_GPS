@@ -19,7 +19,7 @@ This file is part of OpenWebRX.
 
 */
 
-// Copyright (c) 2015 - 2022 John Seamons, ZL/KF6VO
+// Copyright (c) 2015-2023 John Seamons, ZL/KF6VO
 
 // Note: we don't support older browsers using the Mozilla audio API since it is now depreciated
 // see https://wiki.mozilla.org/Audio_Data_API
@@ -414,12 +414,12 @@ function audio_rate(input_rate)
 	audio_input_rate = input_rate;
 
 	if (audio_input_rate == 0) {
-		snd_send("SET x-DEBUG user's browser gave zero audio_input_rate?");
+		kiwi_debug("user's browser gave zero audio_input_rate?");
 		kiwi_serious_error("Audio initialization problem.");
 	} else
 	if (audio_output_rate == 0) {
-		snd_send("SET x-DEBUG user's browser doesn't support WebAudio");
-		snd_send("SET x-DEBUG "+ navigator.userAgent);
+		kiwi_debug("user's browser doesn't support WebAudio");
+		kiwi_debug(""+ navigator.userAgent);
 		kiwi_serious_error("Browser doesn\'t support WebAudio:<br>"+ navigator.userAgent +"<br><br>"+
 		   "Please update to the latest version of your browser.");
 	} else {
@@ -482,10 +482,10 @@ function audio_start()
 	try {
 		demodulator_analog_replace(init_mode);		// needs audio_output_rate to exist
 	} catch(ex) {
-		snd_send("SET x-DEBUG audio_start.demodulator_analog_replace: catch: "+ ex.toString());
+		kiwi_debug("audio_start.demodulator_analog_replace: catch: "+ ex.toString());
 
 		// message too big -- causes server crash
-		//snd_send("SET x-DEBUG audio_start.demodulator_analog_replace: catch: "+ ex.stack);
+		//kiwi_debug("audio_start.demodulator_analog_replace: catch: "+ ex.stack);
 	}
 }
 
@@ -1434,9 +1434,9 @@ function audio_stats()
    
    if (isNaN(out_sps)) out_sps = 0;
    w3_innerHTML('id-status-audio',
-      w3_text(optbar_prefix_color, 'WF'),
+      w3_text('w3-text-css-orange', 'WF'),
       w3_text('', kiwi.wf_fps.toFixed(0) +' fps'),
-      w3_text(optbar_prefix_color, 'Audio'),
+      w3_text('w3-text-css-orange', 'Audio'),
       w3_text('', (out_sps/1000).toFixed(1) +'k, Qlen '+ audio_prepared_buffers.length)
    );
 

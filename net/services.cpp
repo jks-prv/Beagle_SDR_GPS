@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2023 John Seamons, ZL/KF6VO
 
 #include "kiwi.h"
 #include "types.h"
@@ -30,6 +30,7 @@ Boston, MA  02110-1301, USA.
 #include "nbuf.h"
 #include "cfg.h"
 #include "net.h"
+#include "ip_blacklist.h"
 #include "str.h"
 #include "jsmn.h"
 #include "gps.h"
@@ -345,19 +346,18 @@ static void misc_NET(void *param)
     
     bool my_kiwi = admcfg_bool("my_kiwi", NULL, CFG_REQUIRED);
     if (my_kiwi) {
+        cmd_p2 = (char *) "";
         if (root_pwd_unset || debian_pwd_default)
-            asprintf(&cmd_p2, "&r=%d&d=%d", root_pwd_unset, debian_pwd_default);
-        else
-            cmd_p2 = NULL;
+            cmd_p2 = kstr_asprintf(cmd_p2, "&r=%d&d=%d", root_pwd_unset, debian_pwd_default);
 
         char *kiwisdr_com = DNS_lookup_result("my_kiwi", "kiwisdr.com", &net.ips_kiwisdr_com);
         asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 5 "
-            "\"%s/php/my_kiwi.php?auth=308bb2580afb041e0514cd0d4f21919c&pub=%s&pvt=%s&port=%d&serno=%d%s\"",
-            kiwisdr_com, net.ip_pub, net.ip_pvt, net.use_ssl? net.port_http_local : net.port,
-            net.serno, cmd_p2? cmd_p2:"");
+            "\"%s/php/my_kiwi.php?auth=308bb2580afb041e0514cd0d4f21919c&pub=%s&pvt=%s&port=%d&serno=%d&jq=%d&deb=%d.%d&ver=%d.%d%s\"",
+            kiwisdr_com, net.ip_pub, net.ip_pvt, net.use_ssl? net.port_http_local : net.port, net.serno,
+            kiwi_file_exists("/usr/bin/jq"), debian_maj, debian_min, version_maj, version_min, kstr_sp(cmd_p2));
 
         kstr_free(non_blocking_cmd(cmd_p, &status));
-        kiwi_ifree(cmd_p); kiwi_ifree(cmd_p2);
+        kiwi_ifree(cmd_p); kstr_free(cmd_p2);
         lprintf("MY_KIWI: registered\n");
     }
 }
@@ -491,7 +491,7 @@ static void UPnP_port_open_task(void *param)
     char *cmd_p;
     int status, exit_status;
     int delete_nat = (int) FROM_VOID_PARAM(param);
-    //printf("UPnP_port_open_task: delete_nat=%d\n", delete_nat);
+    printf("UPnP_port_open_task: delete_nat=%d\n", delete_nat);
 
     if (delete_nat) {
         asprintf(&cmd_p, "upnpc %s-d %d TCP 2>&1",
@@ -559,6 +559,7 @@ void UPnP_port(nat_delete_e nat_delete)
     // Saves Kiwi admin the hassle of figuring out how to do this manually on their router.
     net.auto_nat = 0;
     bool add_nat = admcfg_bool("auto_add_nat", NULL, CFG_REQUIRED);
+    printf("UPnP_port: auto_add_nat=%d\n", add_nat);
     if (debian_ver == 7 && net.pvt_valid == IPV6) {
         lprintf("auto NAT: not with Debian 7 and IPV6\n");
     } else {
@@ -754,7 +755,29 @@ static int _reg_public(void *param)
 	return status;
 }
 
+int reg_kiwisdr_com_tid;
 int reg_kiwisdr_com_status;
+
+bool wakeup_reg_kiwisdr_com(wakeup_reg_e wakeup_reg)
+{
+    bool woke = false;
+    
+    if (wakeup_reg == WAKEUP_REG) {
+        if (reg_kiwisdr_com_tid) {
+            TaskWakeupF(reg_kiwisdr_com_tid, TWF_CANCEL_DEADLINE);
+            woke = true;
+        }
+    } else
+    if (wakeup_reg == WAKEUP_REG_STATUS) {
+        if (reg_kiwisdr_com_status && reg_kiwisdr_com_tid) {
+            TaskWakeupF(reg_kiwisdr_com_tid, TWF_CANCEL_DEADLINE);
+            woke = true;
+        }
+        reg_kiwisdr_com_status = 0;
+    }
+    
+    return woke;
+}
 
 static void reg_public(void *param)
 {
@@ -839,7 +862,42 @@ static void reg_public(void *param)
 	}
 }
 
-int reg_kiwisdr_com_tid;
+void file_GET(void *param)
+{
+    // called from _update_task() or check_for_update()
+	bool download_diff_restart = ((int) FROM_VOID_PARAM(param) == FILE_DOWNLOAD_DIFF_RESTART);
+	
+	// called from services_start() below
+	bool download_reload = !download_diff_restart;
+	
+	lprintf("file_GET: running, %s..\n", download_diff_restart? "download/diff/restart only" : "download/diff/update-or-use-previous");
+    bool restart = false;
+	
+	
+	// IP blacklist
+	
+	bool ip_blacklist_auto_download = (admcfg_bool("ip_blacklist_auto_download", NULL, CFG_REQUIRED) == true);
+    
+    if (ip_blacklist_auto_download) {
+        restart |= ip_blacklist_get(download_diff_restart);
+    } else
+    
+    // simply use the list we already have (if any)
+    if (download_reload && !ip_blacklist_auto_download) {
+        ip_blacklist_init();
+        kiwi.allow_admin_conns = true;
+    }
+    
+    
+    // DX community database
+    restart |= dx_community_get(download_diff_restart);
+    
+    
+    if (restart) {
+        lprintf("file_GET: RESTARTING...\n");
+        kiwi_exit(0);
+    }
+}
 
 void services_start()
 {
@@ -852,18 +910,12 @@ void services_start()
 	CreateTask(pub_NET, 0, SERVICES_PRIORITY);
 	CreateTask(get_TZ, 0, SERVICES_PRIORITY);
 	CreateTask(misc_NET, 0, SERVICES_PRIORITY);
-    CreateTask(SNR_meas, 0, SERVICES_PRIORITY);
+    SNR_meas_tid = CreateTask(SNR_meas, 0, SERVICES_PRIORITY);
 	//CreateTask(git_commits, 0, SERVICES_PRIORITY);
 
     if (!disable_led_task)
         CreateTask(led_task, NULL, ADMIN_PRIORITY);
 
     reg_kiwisdr_com_tid = CreateTask(reg_public, 0, SERVICES_PRIORITY);
-
-    if (admcfg_bool("ip_blacklist_auto_download", NULL, CFG_REQUIRED) == true) {
-        CreateTask(bl_GET, BL_DOWNLOAD, SERVICES_PRIORITY);
-    } else {
-        ip_blacklist_init();
-        kiwi.allow_admin_conns = true;
-    }
+    CreateTask(file_GET, FILE_DOWNLOAD_RELOAD, SERVICES_PRIORITY);
 }

@@ -121,7 +121,7 @@ function ft8_output_chars(c)
 
 function ft8_controls_setup()
 {
-	ft8.saved_mode = ext_get_mode();
+	ft8.saved_setup = ext_save_setup();
    ext_tune(null, 'usb', ext_zoom.ABS, 11, ft8.PASSBAND_LO, ft8.PASSBAND_HI);
 
    var data_html =
@@ -380,7 +380,7 @@ function FT8_config_focus()
 function FT8_blur()
 {
 	ext_set_data_height();     // restore default height
-	ext_set_mode(ft8.saved_mode);
+	ext_restore_setup(ft8.saved_setup);
 	ext_send('SET ft8_close');
    kiwi_clearInterval(ft8.log_interval);
 }

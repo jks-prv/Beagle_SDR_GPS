@@ -283,7 +283,7 @@ static void called_every_second()
 		if (c->ext_api_determined) continue;
 		int served = web_served(c);
 		
-		#ifdef HONEY_POT
+		#ifdef OPTION_HONEY_POT
             cprintf(c, "API: rx%d arrival=%d served=%d type=%s ext_api%d isLocal%d internal%d\n",
                 ch, now - c->arrival, served, rx_conn_type(c),
                 c->ext_api, c->isLocal, c->internal_connection);
@@ -337,7 +337,8 @@ static void called_every_second()
                     float floor_kHz = floorf(f_kHz);
                     bool freq_trig = (floor_kHz == 58.0f || floor_kHz == 175.0f);
                     bool hasDelimiter = (c->ident_user != NULL && strpbrk(c->ident_user, "-_.`,/+~") != NULL);
-                    bool trig = (c->type == STREAM_WATERFALL && freq_trig && hasDelimiter && c->zoom == 8);
+                    //bool trig = (c->type == STREAM_WATERFALL && freq_trig && hasDelimiter && c->zoom == 8);
+                    bool trig = (c->type == STREAM_WATERFALL && freq_trig && c->zoom == 8);
                     clprintf(c, "API: TRIG=%d %s(%d) f_kHz=%.3f freq_trig=%d hasDelimiter=%d z=%d\n",
                         trig, rx_conn_type(c), c->type, f_kHz, freq_trig, hasDelimiter, c->zoom);
                     if (trig) {

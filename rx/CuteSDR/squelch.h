@@ -32,7 +32,6 @@ private:
 	bool m_SquelchState, m_SetSquelch;
 	TYPEREAL m_SampleRate;
 	TYPEREAL m_SquelchHPFreq;
-	TYPEREAL m_OutGain;
 	TYPEREAL m_FreqErrorDC;
 	TYPEREAL m_DcAlpha;
 	TYPEREAL m_NcoPhase;

@@ -1,5 +1,47 @@
+# For the benefit of Beagle_SDR_GPS non-tree builds like liquid-dsp that don't want
+# the default of "CC=gcc" but which is otherwise difficult to specify any other way.
+# Benefits platform-conditional parts of bashrc as well.
+#
+# DANGER: Can't use any "echo ..." in below otherwise scp's to the Kiwi will silently FAIL.
+# Do an "export xx=yy" and "pe xx" instead to see what's happening.
+
+BBG_BBB="$(cat /proc/device-tree/model | grep -q -s "AM335x" && echo "true" || echo "false")"
+BBAI_64="$(cat /proc/device-tree/model | grep -q -s "BeagleBone AI-64" && echo "true" || echo "false")"
+BBAI="$(cat /proc/device-tree/model | sed "s/\(.*\)./\1x/" | grep -q -s "BeagleBone AIx" && echo "true" || echo "false")"
+DEBIAN_7="$(cat /etc/debian_version | grep -q -s "7\." && echo "true" || echo "false")"
+RPI="$(cat /proc/device-tree/model | grep -q -s "Raspberry Pi" && echo "true" || echo "false")"
+
+APT_GET_FORCE=
+
+if [ "x${BBAI_64}" == "xtrue" ] ; then
+    export CC="clang-11"
+    export CPU="TDA4VM"
+fi
+
+if [ "x${BBAI}" == "xtrue" ] ; then
+    export CC="clang-7"
+    export CPU="AM5729"
+fi
+
+if [ "x${BBG_BBB}" == "xtrue" ] ; then
+    export CC="clang-6.0"
+    export CPU="AM3359"
+    APT_GET_FORCE="--force-yes"
+fi
+
+if [ "x${DEBIAN_7}" == "xtrue" ] ; then
+    export CC="gcc"
+    export CPU="AM3359"
+    APT_GET_FORCE="--force-yes"
+fi
+
+if [ "x${RPI}" == "xtrue" ] ; then
+    export CC="clang-7"
+    export CPU="BCM2837"
+fi
+
 if [ -f ~/.bashrc.local ]; then
-  . ~/.bashrc.local
+    . ~/.bashrc.local
 fi
 
 export COLOR='--color=auto'
@@ -189,7 +231,8 @@ alias gurl="git config --get remote.origin.url"
 alias gfo="git fetch origin"
 alias gcl="git clean -fd"
 alias gco="git checkout"
-alias gcomaster="git checkout master"
+alias gcomast="git checkout master"
+alias gcodevl="git checkout develop"
 alias gpu="git pull -v"
 alias gup="gcl; gco .; gpu"
 alias gdi="git diff"
@@ -200,7 +243,8 @@ alias gclone="function _gclone () { git clone https://github.com/jks-prv/\$1.git
 
 # git commits
 # current commit
-alias gcom="gsh --oneline -s"
+#alias gcom="gsh --oneline -s"
+alias gcom="git log --pretty=format:'%h %ad %s' --date=short | head -n 1"
 # list all commits <= current HEAD position
 alias gcoms="git log --pretty=format:'%h %ad %s' --date=short"
 # gco <sha>
@@ -233,13 +277,13 @@ alias pkver="apt-cache showpkg"
 alias pkvers="apt-cache madison"
 alias pkpol="apt-cache policy"
 alias pkch="apt-get update --allow-releaseinfo-change"
-alias pkup="apt-get -y install debian-archive-keyring; apt-get update; apt-get -y install ca-certificates; apt-get update"
+alias pkup="apt-get -y ${APT_GET_FORCE} install debian-archive-keyring; apt-get update; apt-get -y ${APT_GET_FORCE} install ca-certificates; apt-get update"
 # update(upgrade) single package
 alias pkupp="apt-get install --only-upgrade"
-alias pkug="apt-get -y dist-upgrade"
-#alias pkuug="apt-get -y upgrade"
+alias pkug="apt-get -y ${APT_GET_FORCE} dist-upgrade"
+#alias pkuug="apt-get -y ${APT_GET_FORCE} upgrade"
 #alias pkfug="apt-get full-upgrade"
-alias pki="apt-get -y install"
+alias pki="apt-get -y ${APT_GET_FORCE} install"
 alias pkc="df; apt-get clean; echo; df"
 alias pksz="dpkg-query -W -f='\${Installed-Size;8}\t\${Status;1}\t\${Package}\n' | gr -v '\\sd\\s' | sort -n | cut -f1,3-"
 alias pkf="apt-file search"
@@ -257,24 +301,33 @@ alias pkco="apt-get upgrade bb-cape-overlays"
 d_sys=`uname -r`
 # following gives e.g. 4.19.94-ti-r42 => 4.19-ti
 d_ver=`uname -r | sed "s/\([0-9]*\.[0-9]*\)\..*/\1-ti/"`
-alias cdgpio="cd /sys/class/gpio"
-alias midt="make install_kiwi_device_tree"
 
 # BBAI-64
-alias cdpm="cd /sys/kernel/debug/pinctrl/11c000.pinctrl-pinctrl-single"
-d_dt="/opt/source/dtb-${d_ver}-arm64"
-d_dt2="/opt/source/dtb-${d_ver}-arm64/src/arm64"
+if [ "x${BBAI_64}" == "xtrue" ] ; then
+    export PLATFORM="BBAI-64"
+    d_dt="/opt/source/dtb-${d_ver}-arm64"
+    d_dt2="/opt/source/dtb-${d_ver}-arm64/src/arm64"
+    alias cdpm="cd /sys/kernel/debug/pinctrl/11c000.pinctrl-pinctrl-single"
+    alias idt="echo BBAI-64; echo cd: cdbo cdbdt; echo dt: cddt cpdt m cpdt2 \(cpdtr2\); echo gpio: pmux wdt cdsdt cdpm"
+fi
+
+alias midt="make install_kiwi_device_tree"
 
 # BBAI
-alias ai="echo cd: cdbo cdbdt; echo dt: cddt cpdt m cpdt2 \(cpdtr2\); echo gpio: pmux wdt cdsdt cdpm ver"
+if [ "x${BBAI}" == "xtrue" ] ; then
+    export PLATFORM="BBAI"
+    d_dt="/opt/source/dtb-${d_ver}"
+    d_dt2="/opt/source/dtb-${d_ver}/src/arm"
+    alias cdpm="echo no cdpm on BBAI"
+    alias idt="echo BBAI; echo cd: cdbo cdbdt; echo dt: cddt cpdt m cpdt2 \(cpdtr2\); echo gpio: pmux wdt cdsdt ver"
+fi
+
+# BBAI/BBAI-64 common
 # cd
 alias cdbo="cd /boot"
 alias cdbdt="cd /boot/dtbs/${d_sys}"
 # dt
 # procedure: cddt; cpdt; m; cpdt2; reboot
-#d_dt="/opt/source/dtb-${d_ver}"
-#d_dt2="/opt/source/dtb-${d_ver}/src/arm"
-d_bb="~/Beagle_SDR_GPS/platform/beaglebone"
 d_ai="~/Beagle_SDR_GPS/platform/beaglebone_AI"
 f_dts="am5729-beagleboneai.dts"
 f_dtb="am5729-beagleboneai.dtb"
@@ -291,12 +344,11 @@ alias cpdt3="cp ${d_dt2}/${f_dtb} /boot/dtbs/${d_sys}; sum ${d_dt2}/${f_dtb} /bo
 #f_rcape=am5729-beagleboneai-roboticscape
 #alias cpdtr2="cp /boot/dtbs/${d_sys}/${f_rcape}.dtb /boot/dtbs/${d_sys}/${f_dtb}; sum /boot/dtbs/${d_sys}/${f_rcape}.dtb /boot/dtbs/${d_sys}/${f_dtb}"
 # gpio
+alias cdgpio="cd /sys/class/gpio"
 alias cdsdt="cd /sys/firmware/devicetree/base"
 alias cdfdt="cd /sys/firmware/devicetree/base"
 alias cdfw="cd /lib/firmware"
 alias cdpc="cd /sys/kernel/debug/pinctrl"
-#alias cdpm="cd /sys/kernel/debug/pinctrl/4a003400.pinmux"
-alias pmux="${d_bb}/show-pins.pl"
 alias wdt="strings /boot/dtbs/${d_sys}/${f_dtb} | grep '.dts'"
 alias cdi2c="cd /sys/bus/i2c/devices"
 alias ver="/opt/scripts/tools/version.sh"
@@ -328,6 +380,13 @@ alias cm="while true; do date; ct; cf; vmstat; sleep 2; done"
 alias opp="omapconf show opp"
 
 # BBG/BBB
+if [ "x${BBG_BBB}" == "xtrue" ] ; then
+    export PLATFORM="BBG_BBB"
+    alias cdpm="cd /sys/kernel/debug/pinctrl/4a003400.pinmux"
+    #alias pmux="more /sys/kernel/debug/pinctrl/44e10800.pinmux/pinmux-pins"
+    alias idt="echo BBG/BBB; echo gpio: pmux cdsdt"
+fi
+
 type lsb_release >/dev/null 2>&1 || { lsb_release() { :; } ; }
 alias dog="echo Debian `cat /etc/debian_version`; more /etc/dogtag; uname -a; lsb_release -ds"
 alias tag=dog
@@ -337,13 +396,16 @@ alias slots="cat /sys/devices/platform/bone_capemgr/slots"
 alias unslot7="echo > /sys/devices/bone_capemgr.*/slots"
 alias unslot8="echo > /sys/devices/platform/bone_capemgr/slots"
 alias pins="more /sys/kernel/debug/pinctrl/44e10800.pinmux/pins"
-#alias pmux="more /sys/kernel/debug/pinctrl/44e10800.pinmux/pinmux-pins"
 alias db="systemctl reload-or-restart dropbear.socket"
 alias dk="diff -r . merge"
 led=/sys/class/leds/beaglebone\:green\:usr
 # cpu busy indication is not is the list of possibilities if you do a "cat ${led}0/trigger ?
 alias leds="echo heartbeat >${led}0/trigger; echo mmc0 >${led}1/trigger; echo none >${led}2/trigger; echo mmc1 >${led}3/trigger"
 alias hbeat="echo heartbeat >${led}0/trigger; echo heartbeat >${led}1/trigger; echo heartbeat >${led}2/trigger; echo heartbeat >${led}3/trigger"
+
+# BeagleBone common
+d_bb="~/Beagle_SDR_GPS/platform/beaglebone"
+alias pmux="${d_bb}/show-pins.pl"
 
 # BB USB-to-serial (outbound)
 # probably need "pki screen". In screen do "^A?" (ctrl-A ?) for help. "^A\" (ctrl-A \) to exit.
@@ -376,6 +438,9 @@ alias mu="make users"
 alias ja="jq '.' /root/kiwi.config/admin.json"
 alias jk="jq '.' /root/kiwi.config/kiwi.json"
 alias jd="jq '.' /root/kiwi.config/dx.json"
+alias jdc="jq '.' /root/kiwi.config/dx_config.json"
+alias jc="jq '.' /root/kiwi.config/dx_community.json"
+alias jcc="jq '.' /root/kiwi.config/dx_community_config.json"
 alias scD="git clone https://github.com/jks-prv/Beagle_SDR_GPS.git"
 alias urldecode='sed "s@+@ @g;s@%@\\\\x@g" | xargs -0 printf "%b"'
 alias wk="json_pp -t dumper < ~root/kiwi.config/kiwi.json | grep rx_name | urldecode"

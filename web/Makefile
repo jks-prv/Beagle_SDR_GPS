@@ -57,8 +57,11 @@ web/kiwisdr.min.js: $(FILES_EMBED_JS_PKG)
 	gzip --fast --keep --force web/kiwisdr.min.js
 
 web/kiwisdr.min.css: $(FILES_EMBED_CSS_PKG)
-#	cat $(FILES_EMBED_CSS_KEEP_MIN) `$(FILE_OPTIM) -t7 -u -css $(FILES_EMBED_CSS_F)` >web/kiwisdr.min.css
-	cat $(FILES_EMBED_CSS_KEEP_MIN) `$(FILE_OPTIM) -t7 -u -css $(FILES_EMBED_CSS_F1)` $(FILES_EMBED_CSS_KEEP_MIN2) `$(FILE_OPTIM) -t7 -u -css $(FILES_EMBED_CSS_F2)` >web/kiwisdr.min.css
+	echo "/* $(FILES_EMBED_CSS_KEEP_MIN) */\n" >web/kiwisdr.min.css
+	cat $(FILES_EMBED_CSS_KEEP_MIN) >>web/kiwisdr.min.css
+	cat `$(FILE_OPTIM) -t7 -u -css $(FILES_EMBED_CSS_F1)` >>web/kiwisdr.min.css
+#	cat $(FILES_EMBED_CSS_KEEP_MIN2) >>web/kiwisdr.min.css
+	cat `$(FILE_OPTIM) -t7 -u -css $(FILES_EMBED_CSS_F2)` >>web/kiwisdr.min.css
 	gzip --fast --keep --force web/kiwisdr.min.css
 
 .PHONY: loptim_embed

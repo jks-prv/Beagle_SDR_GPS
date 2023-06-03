@@ -220,7 +220,7 @@ var navtex_canvas;
 function navtex_controls_setup()
 {
    nt.th = nt.dataH;
-	nt.saved_mode = ext_get_mode();
+	nt.saved_setup = ext_save_setup();
 
 	nt.jnx = new JNX();
 	nt.freq = ext_get_freq()/1e3;
@@ -378,17 +378,20 @@ function navtex_controls_setup()
 	
 	nt.kmap = kiwi_map_init('navtex', [12.5, 112.5], 5, 17);
 
-	w3_do_when_rendered('id-navtex-menus', function() {
-	   nt.ext_url = kiwi_SSL() +'files.kiwisdr.com/navtex/NAVTEX_freq_menus.cjson';
-	   nt.int_url = kiwi_url_origin() +'/extensions/NAVTEX/NAVTEX_freq_menus.cjson';
-	   nt.using_default = false;
-	   nt.double_fault = false;
-	   if (0 && dbgUs) {
-         kiwi_ajax(nt.ext_url +'.xxx', 'navtex_get_menus_cb', 0, -500);
-	   } else {
-         kiwi_ajax(nt.ext_url, 'navtex_get_menus_cb', 0, 10000);
+	w3_do_when_rendered('id-navtex-menus',
+	   function() {
+         nt.ext_url = kiwi_SSL() +'files.kiwisdr.com/navtex/NAVTEX_freq_menus.cjson';
+         nt.int_url = kiwi_url_origin() +'/extensions/NAVTEX/NAVTEX_freq_menus.cjson';
+         nt.using_default = false;
+         nt.double_fault = false;
+         if (0 && dbgUs) {
+            kiwi_ajax(nt.ext_url +'.xxx', 'navtex_get_menus_cb', 0, -500);
+         } else {
+            kiwi_ajax(nt.ext_url, 'navtex_get_menus_cb', 0, 10000);
+         }
       }
-   });
+   );
+   // REMINDER: w3_do_when_rendered() returns immediately
 
 	// receive the network-rate, post-decompression, real-mode samples
 	ext_register_audio_data_cb(navtex_audio_data_cb);
@@ -576,7 +579,7 @@ function navtex_clear_menus(except)
    // reset frequency menus
    console.log('navtex_clear_menus except='+ except);
    for (var i = 0; i < nt.n_menu; i++) {
-      if (!isArg(except) || i != except)
+      if (isNoArg(except) || i != except)
          w3_select_value('nt.menu'+ i, -1);
    }
 }
@@ -596,12 +599,11 @@ function navtex_log_mins_cb(path, val)
 
 function navtex_log_cb()
 {
-   var ts = kiwi_host() +'_'+ new Date().toISOString().replace(/:/g, '_').replace(/\.[0-9]+Z$/, 'Z') +'_'+ w3_el('id-freq-input').value +'_'+ cur_mode;
    var txt = new Blob([nt.log_txt], { type: 'text/plain' });
    var a = document.createElement('a');
    a.style = 'display: none';
    a.href = window.URL.createObjectURL(txt);
-   a.download = ((nt.type == nt.TYPE_DSC)? 'DSC.' : 'NAVTEX.') + ts +'.log.txt';
+   a.download = kiwi_timestamp_filename((nt.type == nt.TYPE_DSC)? 'DSC.' : 'NAVTEX.', '.log.txt');
    document.body.appendChild(a);
    console.log('navtex_log: '+ a.download);
    a.click();
@@ -862,7 +864,7 @@ function navtex_test_cb(path, idx, first)
 function NAVTEX_blur()
 {
 	ext_unregister_audio_data_cb();
-	ext_set_mode(nt.saved_mode);
+	ext_restore_setup(nt.saved_setup);
    navtex_crosshairs(0);
    kiwi_clearInterval(nt.log_interval);
    kiwi_clearInterval(nt.locations_age_interval);

@@ -108,7 +108,7 @@ void c2s_mfg(void *param)
 			i = strcmp(cmd, "SET microSD_write");
 			if (i == 0) {
 				mprintf_ff("MFG: received microSD_write\n");
-				rx_server_user_kick(KICK_ALL);      // kick everything (including autorun) off to speed up copy
+				rx_server_kick(KICK_ALL);      // kick everything (including autorun) off to speed up copy
 
 				#define NBUF 256
 				char *buf = (char *) kiwi_malloc("c2s_mfg", NBUF);

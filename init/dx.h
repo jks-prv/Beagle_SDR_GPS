@@ -39,38 +39,50 @@ typedef struct {
 	int low_cut;
 	int high_cut;
 	int offset;
+	int sig_bw;
 } dx_t;
 
-typedef enum { DB_STORED = 0, DB_EiBi } dx_db_e;
-
-typedef enum { DX_JSON = 0, DX_CSV = 1 } dx_upload_e;
+#define DB_STORED       0
+#define DB_EiBi         1
+#define DB_COMMUNITY    2
+#define DB_N            3
 
 typedef struct {
-    dx_db_e db;
-} dx_rx_t;
+    int db;
+	int lines;
+	int json_parse_errors, dx_format_errors;
+	#define N_DX_FILE_HASH_BYTES 4      // 4 bytes = 8 chars
+    char file_hash[N_DX_FILE_HASH_BYTES*2 + SPACE_FOR_NULL];
+    int file_size;
+    
+    bool init;
+    dx_t *list;
+	#define DX_LIST_ALLOC_CHUNK 256
+    int actual_len, alloc_size;
+	bool hidden_used;
+	char *json;
+	bool json_up_to_date;
+	double last_freq;
+} dx_db_t;
+
+typedef enum { DX_JSON = 0, DX_CSV = 1 } dx_upload_e;
 
 typedef struct {
 	int masked_lo, masked_hi;   // Hz
 } dx_mask_t;
 
 typedef struct {
-    dx_rx_t dx_rx[MAX_RX_CHANS + 1];    // +1 for STREAM_ADMIN use at end
-	dx_t *stored_list, *eibi_list;
-	int stored_len, eibi_len;
-	#define DX_LIST_ALLOC_CHUNK 256
-	int stored_alloc_size;
-	bool eibi_init;
-	bool hidden_used;
-	bool json_up_to_date;
+    dx_db_t dx_db[DB_N];
+    dx_db_t *rx_db[MAX_RX_CHANS + 1];   // +1 for STREAM_ADMIN use at end
+    time_t last_community_download;
+    
+    bool types_n_counted;
+    #define DX_N_STORED 16
+    int stored_types_n[DX_N_STORED];
+
 	dx_mask_t *masked_list;
 	int masked_len;
 	u4_t update_seq;
-	char *json;
-	int lines;
-	int json_parse_errors, dx_format_errors;
-	#define N_DX_FILE_HASH_BYTES 4      // 4 bytes = 8 chars
-    char file_hash[N_DX_FILE_HASH_BYTES*2 + SPACE_FOR_NULL];
-    int file_size;
 } dxlist_t;
 
 extern dxlist_t dx;
@@ -84,7 +96,7 @@ extern dxlist_t dx;
 #define DX_STORED_FLAGS_TYPEIDX(flags)  (  ((flags) & DX_TYPE)            >> DX_TYPE_SFT )
 #define DX_EiBi_FLAGS_TYPEIDX(flags)    ( (((flags) & DX_TYPE) - DX_EiBi) >> DX_TYPE_SFT )
 
-#define DX_N_STORED 16
+// DX_N_STORED
 #define DX_STORED   0x00000000  // stored: 0x000, 0x010, ... 0x0f0 (16)
 #define	DX_MASKED   0x000000f0	// masked
 
@@ -128,13 +140,17 @@ extern dxlist_t dx;
 
 extern const int eibi_counts[DX_N_EiBi];
 
-void dx_reload();
+void dx_label_init();
 void update_masked_freqs(dx_t *_dx_list = NULL, int _dx_list_len = 0);
-void dx_prep_list(bool need_sort, dx_t *_dx_list, int _dx_list_len_prev, int _dx_list_len_new);
+void dx_prep_list(dx_db_t *dx_db, bool need_sort, dx_t *_dx_list, int _dx_list_len_prev, int _dx_list_len_new);
 void dx_eibi_init();
+void dx_last_community_download(bool capture_time = false);
+bool dx_community_get(bool download_diff_restart);
 
 #define DX_LABEL_FOFF_CONVERT true
-void dx_save_as_json(bool dx_label_foff_convert = false);
+void dx_save_as_json(dx_db_t *dx_db, bool dx_label_foff_convert = false);
+
+#define DX_DOWNLOAD_ONESHOT_FN "/tmp/.kiwi_dx_community_download"
 
 
 // AJAX_DX support

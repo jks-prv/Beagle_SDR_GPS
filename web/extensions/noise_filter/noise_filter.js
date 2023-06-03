@@ -289,7 +289,7 @@ function noise_filter_save_defaults()
 
 	cfg.nr_de = noise_filter.denoise;
 	cfg.nr_an = noise_filter.autonotch;
-   ext_set_cfg_param('cfg.nr_algo', noise_filter.algo, true);
+   ext_set_cfg_param('cfg.nr_algo', noise_filter.algo, EXT_SAVE);
 }
 
 function noise_filter_send(type)

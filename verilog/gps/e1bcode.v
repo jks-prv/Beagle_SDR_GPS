@@ -37,7 +37,7 @@ module E1BCODE (
 
     input  wire [(GPS_CHANS * E1B_CODEBITS)-1:0] nchip_n,
     input  wire [GPS_CHANS-1:0] full_chip,
-    output reg  [GPS_CHANS-1:0] code_o
+    output wire [GPS_CHANS-1:0] code_o
 );
 
 `include "kiwi.gen.vh"
@@ -80,9 +80,9 @@ module E1BCODE (
     generate
         for (ch_c = 0; ch_c < GPS_CHANS; ch_c = ch_c + 1)
         begin : e1b_code_c
-            always @*
-                if (full_chip[ch_c])
-                    code_o[ch_c] = code_n[ch_c];
+        
+            // transparent latch, i.e. uses combi mux to get code_n in clk prior to latched value
+            t_latch code_latch(clk, full_chip[ch_c], code_n[ch_c], code_o[ch_c]);
         end
     endgenerate
 

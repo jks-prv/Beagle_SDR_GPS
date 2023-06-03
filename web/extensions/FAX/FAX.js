@@ -326,20 +326,23 @@ function fax_controls_setup()
    // no dynamic resize used because id-fax-data uses left:0 and the canvas begins at the window left edge
 
    ext_set_controls_width_height(550, 200);
-	fax.saved_mode = ext_get_mode();
+	fax.saved_setup = ext_save_setup();
 	ext_set_mode('usb');
    
-	w3_do_when_rendered('id-fax-menus', function() {
-	   fax.ext_url = kiwi_SSL() +'files.kiwisdr.com/fax/FAX_freq_menus.cjson';
-	   fax.int_url = kiwi_url_origin() +'/extensions/FAX/FAX_freq_menus.cjson';
-	   fax.using_default = false;
-	   fax.double_fault = false;
-	   if (0 && dbgUs) {
-         kiwi_ajax(fax.ext_url +'.xxx', 'fax_get_menus_cb', 0, -500);
-	   } else {
-         kiwi_ajax(fax.ext_url, 'fax_get_menus_cb', 0, 10000);
+	w3_do_when_rendered('id-fax-menus',
+	   function() {
+         fax.ext_url = kiwi_SSL() +'files.kiwisdr.com/fax/FAX_freq_menus.cjson';
+         fax.int_url = kiwi_url_origin() +'/extensions/FAX/FAX_freq_menus.cjson';
+         fax.using_default = false;
+         fax.double_fault = false;
+         if (0 && dbgUs) {
+            kiwi_ajax(fax.ext_url +'.xxx', 'fax_get_menus_cb', 0, -500);
+         } else {
+            kiwi_ajax(fax.ext_url, 'fax_get_menus_cb', 0, 10000);
+         }
       }
-   });
+   );
+   // REMINDER: w3_do_when_rendered() returns immediately
 	
    fax_start_stop(1);
 }
@@ -428,7 +431,7 @@ function fax_clear_menus(except)
 {
    // reset frequency menus
    for (var i = 0; i < fax.n_menu; i++) {
-      if (!isArg(except) || i != except)
+      if (isNoArg(except) || i != except)
          w3_select_value('fax.menu'+ i, -1);
    }
 }
@@ -587,7 +590,7 @@ function FAX_blur()
 	ext_send('SET fax_stop');
 	ext_send('SET fax_close');
    ext_set_data_height();
-	ext_set_mode(fax.saved_mode);
+	ext_restore_setup(fax.saved_setup);
 }
 
 // called to display HTML for configuration parameters in admin interface
@@ -614,9 +617,9 @@ function FAX_help(show)
          'you want moved to the left edge. <br><br>' +
 
          'URL parameters: <br>' +
-         'First parameter can be a frequency matching an entry in station menus. <br>' +
-         'align<i>[:0|1]</i> &nbsp; stop<i>[:0|1]</i> &nbsp; lpm:<i>value</i> <br>' +
-         'So for example this is valid: <i>ext=fax,3855,auto,stop</i> <br>' +
+         'First parameter can be a frequency matching an entry in the station menus. <br>' +
+         w3_text('|color:orange', 'align<i>[:0|1]</i> &nbsp; stop<i>[:0|1]</i> &nbsp; lpm:<i>value</i>') +
+         '<br> So for example this is valid: <i>ext=fax,3855,align,stop</i> <br>' +
          '';
       confirmation_show_content(s, 620, 325);
    }

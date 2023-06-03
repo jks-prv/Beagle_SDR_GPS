@@ -27,9 +27,9 @@ Boston, MA  02110-1301, USA.
 // configuration
 
 typedef struct {
-	bool init, init_load, isJSON;
+	bool init, init_load;
 	lock_t lock;    // FIXME: now that parsing the dx list is yielding probably need to lock
-	int flags;
+	u4_t flags;
 	const char *filename;
 	u4_t update_seq;
 
@@ -40,7 +40,7 @@ typedef struct {
 	jsmntok_t *tokens;
 } cfg_t;
 
-extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
+extern cfg_t cfg_cfg, cfg_adm, cfg_dx, cfg_dxcfg, cfg_dxcomm, cfg_dxcomm_cfg;
 
 #define CFG_NONE		0x0000
 #define CFG_OPTIONAL	0x0000
@@ -57,6 +57,8 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define CFG_DEBUG       0x0800
 #define CFG_NO_PARSE    0x1000
 #define CFG_INT_BASE10  0x2000
+#define CFG_LOAD_ONLY   0x4000
+#define CFG_IS_JSON     0x8000
 
 #define CFG_LOOKUP_LVL1 ((jsmntok_t *) -1)
 
@@ -89,6 +91,9 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define cfg_set_string_save(name, val)		_cfg_set_string(&cfg_cfg, name, val, CFG_SET | CFG_SAVE, 0)
 #define cfg_rem_string(name)				_cfg_set_string(&cfg_cfg, name, NULL, CFG_REMOVE, 0)
 #define cfg_default_string(name, val, err)	_cfg_default_string(&cfg_cfg, name, val, err)
+
+#define cfg_array(name, err, flags)		    _cfg_array(&cfg_cfg, name, err, flags)
+#define cfg_array_free(val)				    _cfg_free(&cfg_cfg, val)
 
 #define cfg_object(name, err, flags)		_cfg_object(&cfg_cfg, name, err, flags)
 #define cfg_object_free(val)				_cfg_free(&cfg_cfg, val)
@@ -134,34 +139,36 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define admcfg_rem_object(name)				_cfg_set_object(&cfg_adm, name, NULL, CFG_REMOVE, 0)
 #define admcfg_default_object(name, val, err) _cfg_default_object(&cfg_adm, name, val, err)
 
-#define dxcfg_init()						_cfg_init(&cfg_dx, CFG_NO_UPDATE, NULL)
-#define	dxcfg_get_json(size)				_cfg_get_json(&cfg_dx, size)
-#define dxcfg_save_json(json)				_cfg_save_json(&cfg_dx, json)
-#define dxcfg_walk(id, cb, param)			_cfg_walk(&cfg_dx, id, cb, param)
+// DX databases
+#define dx_init()						    _cfg_init(&cfg_dx, CFG_NO_UPDATE, NULL)
+#define dx_save_json(json)				    _cfg_save_json(&cfg_dx, json)
+#define dxcfg_init()						_cfg_init(&cfg_dxcfg, CFG_NO_UPDATE | CFG_LOAD_ONLY, NULL)
+#define	dxcfg_get_json(size)				_cfg_get_json(&cfg_dxcfg, size)
+#define dxcfg_save_json(json)			    _cfg_save_json(&cfg_dxcfg, json)
 
-#define dxcfg_int(name, err, flags)			_cfg_int(&cfg_dx, name, err, flags)
-#define dxcfg_float(name, err, flags)		_cfg_float(&cfg_dx, name, err, flags)
-#define dxcfg_bool(name, err, flags)		_cfg_bool(&cfg_dx, name, err, flags)
-#define dxcfg_string(name, err, flags)		_cfg_string(&cfg_dx, name, err, flags)
-#define dxcfg_string_free(val)				_cfg_free(&cfg_dx, val)
+#define dxcomm_init()						_cfg_init(&cfg_dxcomm, CFG_NO_UPDATE, NULL)
+#define dxcomm_cfg_init()					_cfg_init(&cfg_dxcomm_cfg, CFG_NO_UPDATE | CFG_LOAD_ONLY, NULL)
+#define	dxcomm_cfg_get_json(size)			_cfg_get_json(&cfg_dxcomm_cfg, size)
 
 // process from a particular token, usually from an array
-#define dxcfg_int_json(jt, val)				_cfg_int_json(&cfg_dx, jt, val)
-#define dxcfg_float_json(jt, val)			_cfg_float_json(&cfg_dx, jt, val)
-#define dxcfg_bool_json(jt, val)			_cfg_bool_json(&cfg_dx, jt, val)
-#define dxcfg_string_json(jt, val)			_cfg_type_json(&cfg_dx, JSMN_STRING, jt, val)
-#define dxcfg_lookup_json(id)				_cfg_lookup_json(&cfg_dx, id, CFG_OPT_NONE)
+#define cfg_int_tok(cfg, jt, val)           _cfg_int_json(cfg, jt, val)
+#define cfg_float_tok(cfg, jt, val)         _cfg_float_json(cfg, jt, val)
+#define cfg_bool_tok(cfg, jt, val)          _cfg_bool_json(cfg, jt, val)
+#define cfg_string_tok(cfg, jt, val)        _cfg_type_json(cfg, JSMN_STRING, jt, val)
+#define cfg_string_tok_free(cfg, val)       _cfg_free(cfg, val)
+#define cfg_lookup_tok(cfg, id)             _cfg_lookup_json(cfg, id, CFG_OPT_NONE)
 
 // process JSON from a buffer
-#define json_init(cfg, json)				_cfg_init(cfg, CFG_NONE, json)
-#define json_init_flags(cfg, f, json)       _cfg_init(cfg, f, json)
+#define json_init(cfg, json)				_cfg_init(cfg, CFG_IS_JSON, json)
+#define json_init_flags(cfg, f, json)       _cfg_init(cfg, (f) | CFG_IS_JSON, json)
+#define json_init_file(cfg)				    _cfg_init(cfg, CFG_IS_JSON, NULL)
 #define json_release(cfg)                   _cfg_release(cfg)
 #define json_walk(cfg, id, cb, param)       _cfg_walk(cfg, id, cb, param)
 
 #define json_int(cfg, name, err, flags)		_cfg_int(cfg, name, err, flags)
 #define json_set_int(cfg, name, val)		_cfg_set_int(cfg, name, val, CFG_SET, 0)
 #define json_rem_int(cfg, name)				_cfg_set_int(cfg, name, 0, CFG_REMOVE, 0)
-#define json_default_int(cfg, name, val, err) _cfg_default_int(cfg, name, val, err)
+#define json_default_int(cfg, name, val, e) _cfg_default_int(cfg, name, val, e)
 
 #define json_float(cfg, name, err, flags)	_cfg_float(cfg, name, err, flags)
 #define json_set_float(cfg, name, val)		_cfg_set_float(cfg, name, val, CFG_SET, 0)
@@ -198,6 +205,8 @@ bool _cfg_default_bool(cfg_t *cfg, const char *name, u4_t val, bool *error);
 const char *_cfg_string(cfg_t *cfg, const char *name, bool *error, u4_t flags);
 int _cfg_set_string(cfg_t *cfg, const char *name, const char *val, u4_t flags, int pos);
 void _cfg_default_string(cfg_t *cfg, const char *name, const char *val, bool *error);
+
+const char *_cfg_array(cfg_t *cfg, const char *name, bool *error, u4_t flags);
 
 const char *_cfg_object(cfg_t *cfg, const char *name, bool *error, u4_t flags);
 int _cfg_set_object(cfg_t *cfg, const char *name, const char *val, u4_t flags, int pos);

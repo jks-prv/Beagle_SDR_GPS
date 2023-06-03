@@ -28,6 +28,7 @@
 #include "gps.h"
 #include "spi.h"
 #include "printf.h"
+#include "services.h"
 
 typedef struct {
 	int lo_dop, ca_sft;
@@ -159,8 +160,7 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
             	gps.ttff = (timer_ms() - gps.start)/1000;
             	
             	// run kiwisdr.com registration so kiwi.gps.json gets updated
-            	if (reg_kiwisdr_com_tid)
-            	    TaskWakeupF(reg_kiwisdr_com_tid, TWF_CANCEL_DEADLINE);
+            	wakeup_reg_kiwisdr_com(WAKEUP_REG);
             }
             break;
         case STAT_LON:

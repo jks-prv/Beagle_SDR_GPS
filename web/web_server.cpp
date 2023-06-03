@@ -341,7 +341,7 @@ void web_server_init(ws_init_t type)
             net.port_http_local = admcfg_default_int("port_http_local", net.port + 100, &update_admcfg);
         #endif
 
-        if (update_admcfg) admcfg_save_json(cfg_adm.json);  // because during init doesn't conflict with admin cfg
+        if (update_admcfg) admcfg_save_json(cfg_adm.json);      // during init doesn't conflict with admin cfg
 
         if (!background_mode) {
             struct stat st;

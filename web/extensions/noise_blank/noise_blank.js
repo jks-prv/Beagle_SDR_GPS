@@ -198,7 +198,7 @@ function noise_blank_save_defaults()
    cfg.nb_samps = noise_blank.impulse_samples;
 
    cfg.nb_wf = noise_blank.wf;
-   ext_set_cfg_param('cfg.nb_algo', noise_blank.algo, true);
+   ext_set_cfg_param('cfg.nb_algo', noise_blank.algo, EXT_SAVE);
 }
 
 // Don't have multiple simultaneous types, like the noise filter, to handle.

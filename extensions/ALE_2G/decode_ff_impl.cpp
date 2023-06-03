@@ -1122,7 +1122,7 @@ namespace ale {
                 if (activity_cnt >= 2 && !active) {
                     ext_send_msg(rx_chan, false, "EXT active=%.2f", frequency);
                     //real_printf("#%d#", slot(frequency)); fflush(stdout);
-                    //snd_send_msg(rx_chan, true, "MSG audio_flags2=active:%.2f", frequency);
+                    //snd_send_msg_encoded(rx_chan, true, "MSG", "audio_flags2", "active:%.2f", frequency);
                     active = 1;
                 }
         
@@ -1143,7 +1143,7 @@ namespace ale {
                     active = 0;
                     ext_send_msg(rx_chan, false, "EXT active=0");
                     //real_printf("///"); fflush(stdout);
-                    //snd_send_msg(rx_chan, true, "MSG audio_flags2=active:0");
+                    //snd_send_msg_encoded(rx_chan, true, "MSG", "audio_flags2", "active:0");
                     //modem_reset();
                 }
 

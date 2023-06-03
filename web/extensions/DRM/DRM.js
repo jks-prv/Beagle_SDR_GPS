@@ -257,7 +257,7 @@ function drm_recv(data)
 		switch (param[0]) {
 
 			case "ready":
-				kiwi_load_js(['pkgs/js/graph.js', 'pkgs/js/sprintf/sprintf.js'], 'drm_lock_setup');
+				kiwi_load_js('pkgs/js/graph.js', 'drm_lock_setup');
 				break;
 			
 			case "inuse":
@@ -1411,7 +1411,8 @@ function drm_controls_setup()
    drm_saved_mode();
    console.log('drm_controls_setup saved_mode='+ drm.saved_mode);
    drm.saved_passband = ext_get_passband();
-   
+   drm.saved_zoom = ext_get_zoom();
+
    drm.is_stopped = 0;
    console.log('drm_controls_setup is_stopped='+ drm.is_stopped);
 
@@ -1768,6 +1769,7 @@ function DRM_blur()
    ext_send('SET lock_clear');
    //alert('# DRM SET lock_clear');
    ext_set_data_height();     // restore default height
+   ext_set_zoom(ext_zoom.ABS, drm.saved_zoom);
 }
 
 function DRM_help(show)
@@ -1781,8 +1783,6 @@ function DRM_help(show)
                'Use menu to sort schedule by service, time or frequency. <br>' +
                'Gray vertical lines are spaced 1 hour apart beginning at 00:00 UTC on the left. <br>' +
                'Red line shows current UTC time and updates while the extension is running. <br>' +
-               '<span class="w3-text-yellow-highlight">New</span> ' +
-               'A database menu allows selection of the source of schedule information. <br>' +
                '<br>' +
             
                'With DRM selective fading can prevent even the strongest signals from being received properly. ' +

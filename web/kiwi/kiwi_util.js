@@ -1,6 +1,6 @@
 // KiwiSDR utilities
 //
-// Copyright (c) 2014-2022 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2023 John Seamons, ZL/KF6VO
 
 
 // isUndeclared(v) => use inline "typeof(v) === 'undefined'" (i.e. can't pass undeclared v as func arg)
@@ -16,6 +16,7 @@ function isNonEmptyArray(v) { return (isArray(v) && v.length > 0); }
 function isFunction(v) { return (typeof(v) === 'function'); }
 function isObject(v) { return (typeof(v) === 'object'); }
 function isArg(v) { return (isUndefined(v) || isNull(v))? false:true; }
+function isNoArg(v) { return (isUndefined(v) || isNull(v))? true:false; }
 function kiwi_typeof(v) { return isNull(v)? 'null' : (isArray(v)? 'array' : typeof(v)); }
 
 function ifString(s, alt) { return (isString(s)? s : alt); }
@@ -67,8 +68,11 @@ document.onreadystatechange = function() {
 	//console.log("onreadystatechange="+document.readyState);
 	//if (document.readyState == "interactive") {
 	if (document.readyState == "complete") {
+	   var website = false;
+	   var el = w3_el('id-kiwi-container');
+	   if (el && el.getAttribute('data-type') == 'website') website = true;
 		var s = navigator.userAgent;
-		console.log(s);
+		if (!website) console.log(s);
 		//alert(s);
 		kiwi_iOS = (s.includes('iPhone') || s.includes('iPad'));
 		kiwi_iPhone = s.includes('iPhone');
@@ -94,7 +98,7 @@ document.onreadystatechange = function() {
 		}
 		
 		
-		console.log(
+		if (!website) console.log(
 		   'MacOS='+ kiwi_MacOS +
 		   ' Linux='+ kiwi_linux +
 		   ' Windows='+ kiwi_Windows +
@@ -114,16 +118,31 @@ document.onreadystatechange = function() {
 		   if (kiwi_browserVersion) kiwi_safari[1] = kiwi_browserVersion[1];
 		}
 
-		console.log('Safari='+ kiwi_isSafari() + ' Firefox='+ kiwi_isFirefox() + ' Chrome='+ kiwi_isChrome() + ' Opera='+ kiwi_isOpera());
+		if (!website) console.log('Safari='+ kiwi_isSafari() + ' Firefox='+ kiwi_isFirefox() + ' Chrome='+ kiwi_isChrome() + ' Opera='+ kiwi_isOpera());
 
-		if (typeof(kiwi_check_js_version) !== 'undefined') {
-			// done as an AJAX because needed long before any websocket available
-			kiwi_ajax("/VER", 'kiwi_version_cb');
-		} else {
-		   if (typeof(kiwi_bodyonload) != 'undefined')
-			   kiwi_bodyonload('');
-		}
+      // packages to load early on
+      if (!website) {
+         kiwi_load_js('pkgs/js/sprintf/sprintf.js',
+            function() {
+               //console.log(sprintf('%s', 'sprintf loaded'));
+               kiwi_load2();
+            }
+         );
+      } else {
+         kiwi_load2();
+      }
 	}
+}
+
+function kiwi_load2()
+{
+   if (typeof(kiwi_check_js_version) !== 'undefined') {
+      // done as an AJAX because needed long before any websocket available
+      kiwi_ajax("/VER", 'kiwi_version_cb');
+   } else {
+      if (typeof(kiwi_bodyonload) !== 'undefined')
+         kiwi_bodyonload('');
+   }
 }
 
 function kiwi_is_iOS() { return kiwi_iOS; }
@@ -455,6 +474,7 @@ Number.prototype.toHex = function(digits)
 	return s;
 }
 
+// minimum number of digits: remove trailing zeros and/or decimal point
 Number.prototype.toFixedNZ = function(d)
 {
 	var n = Number(this);
@@ -817,7 +837,7 @@ function event_dump(evt, id, oneline)
       console.log('event_dump '+ id +' |'+ evt.type +'| k='+ key +' T='+ evt.target.id +' Tcur='+ ct_id + trel);
    } else {
       console.log('================================');
-      if (!isArg(evt)) {
+      if (isNoArg(evt)) {
          console.log('EVENT_DUMP: '+ id +' bad evt');
          kiwi_trace();
          return;
@@ -1079,6 +1099,18 @@ function kiwi_remove_escape_sequences(s)
    return a2.join('');
 }
 
+function kiwi_timestamp()
+{
+   return new Date().toISOString().replace(/:/g, '_').replace(/\.[0-9]+Z$/, 'Z');
+}
+
+function kiwi_timestamp_filename(pre, post)
+{
+   var el = w3_el('id-freq-input');
+   var freq_mode = el? ('_'+ el.value +'_'+ ext_get_mode()) : '';
+   return pre + kiwi_host() +'_'+ kiwi_timestamp() + freq_mode + post;
+}
+
 
 ////////////////////////////////
 // HTML helpers
@@ -1205,7 +1237,7 @@ function html(id_or_name)
 
 function px(s)
 {
-   if (!isArg(s) || s == '') return '0';
+   if (isNoArg(s) || s == '') return '0';
    var num = parseFloat(s);
    if (isNaN(num)) {
       console.log('px num='+ s);
@@ -1360,7 +1392,7 @@ function deleteCookie(cookie)
 function kiwi_storeGet(s, init)
 {
    var rv;
-   if (!isArg(s)) return null;
+   if (isNoArg(s)) return null;
 	try {
 	   if (localStorage == null) return null;
 	   rv = localStorage.getItem(s);
@@ -1391,7 +1423,7 @@ function kiwi_storeGet(s, init)
 
 function kiwi_storeSet(s, v)
 {
-   if (!isArg(v)) return null;
+   if (isNoArg(v)) return null;
 	try {
 	   if (localStorage == null) return null;
 	   localStorage.setItem(s, v);
@@ -1412,7 +1444,7 @@ function getVarFromString(path)
 		var scope_name = scopeSplit[i];
 		scope = scope[scope_name];
 		if (isUndefined(scope)) {
-			console.log('getVarFromString: NO SCOPE '+ path +' scope_name='+ scope_name);
+			//console.log('getVarFromString: NO SCOPE '+ path +' scope_name='+ scope_name);
 			throw 'no scope';
 		}
 	}
@@ -1590,7 +1622,7 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
 		}
 	//}
 
-	ajax.kiwi_id = ajax_id;
+	ajax.kiwi_id = ajax_id;       // ajax{} => ajax_requests[] link
 	ajax_requests[ajax_id] = {};
 
 	ajax_requests[ajax_id].didTimeout = false;

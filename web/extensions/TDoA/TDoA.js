@@ -2665,10 +2665,11 @@ function TDoA_help(show)
                '<br><br>' +
 
                'URL parameters: <br>' +
-               'lat:<i>num</i> lon:<i>num</i> z|zoom:<i>num</i> (map control) <br>' +
-               'List of sampling stations and/or reference station IDs. Case-insensitive and can be abbreviated ' +
+               w3_text('|color:orange', 'lat:<i>num</i> lon:<i>num</i> z|zoom:<i>num</i> (samp/ref station list) all: hosts:0 submit:') +
+               '<br> List of sampling stations and/or reference station IDs. Case-insensitive and can be abbreviated ' +
                '(e.g. "dcf" matches "DCF77", "cyp2" matches "OTHR/CYP2") <br>' +
-               'submit: (start TDoA process) &nbsp; &nbsp; all: (check "show all results" checkbox)<br>' +
+               'all: (check "show all results" checkbox) &nbsp; hosts:0 (uncheck "Kiwi hosts" checkbox)<br>' +
+               'submit: (start TDoA process)<br>' +
                'Example: <i>ext=tdoa,lat:35,lon:35,z:6,cyp2,iu8cri,ur5vib,kuwait,all:,submit:</i> <br>' +
                ''
             )

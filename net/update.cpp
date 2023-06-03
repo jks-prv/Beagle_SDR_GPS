@@ -146,8 +146,8 @@ static void report_result(conn_t *conn)
 }
 
 static bool daily_restart = false;
-static bool ip_auto_download_check = false;
-static bool ip_auto_download_oneshot = false;
+static bool file_auto_download_check = false;
+static bool file_auto_download_oneshot = false;
 
 /*
     // task
@@ -282,8 +282,8 @@ static void _update_task(void *param)
 		lprintf("UPDATE: building new version..\n");
 
         #ifndef PLATFORM_raspberrypi
-            update_in_progress = true;  // NB: must be before rx_server_user_kick() to prevent new connections
-            rx_server_user_kick(KICK_ALL);      // kick everything (including autorun) off to speed up build
+            update_in_progress = true;  // NB: must be before rx_server_kick() to prevent new connections
+            rx_server_kick(KICK_ALL);      // kick everything (including autorun) off to speed up build
             TaskSleepReasonSec("kick delay", 5);
         #endif
 
@@ -318,10 +318,10 @@ static void _update_task(void *param)
 	}
 
 common_return:
-	if (ip_auto_download_oneshot) {
-	    ip_auto_download_oneshot = false;
-        //printf("bl_GET: update check normal\n");
-	    bl_GET(TO_VOID_PARAM(BL_CHECK_ONLY));
+	if (file_auto_download_oneshot) {
+	    file_auto_download_oneshot = false;
+        //printf("file_GET: update check normal\n");
+	    file_GET(TO_VOID_PARAM(FILE_DOWNLOAD_DIFF_RESTART));
 	}
 
 	if (conn) conn->update_check = WAIT_UNTIL_NO_USERS;     // restore default
@@ -336,10 +336,10 @@ void check_for_update(update_check_e type, conn_t *conn)
 	if (!force && admcfg_bool("update_check", NULL, CFG_REQUIRED) == false) {
 		//printf("UPDATE: exiting because admin update check not enabled\n");
 	
-        if (ip_auto_download_check) {
-            ip_auto_download_check = false;
-            //printf("bl_GET: update check false\n");
-            bl_GET(TO_VOID_PARAM(BL_CHECK_ONLY));
+        if (file_auto_download_check) {
+            file_auto_download_check = false;
+            //printf("file_GET: update check false\n");
+            file_GET(TO_VOID_PARAM(FILE_DOWNLOAD_DIFF_RESTART));
         }
 
 		return;
@@ -357,9 +357,9 @@ void check_for_update(update_check_e type, conn_t *conn)
 		}
 	}
 	
-	if (ip_auto_download_check) {
-	    ip_auto_download_oneshot = true;
-	    ip_auto_download_check = false;
+	if (file_auto_download_check) {
+	    file_auto_download_oneshot = true;
+	    file_auto_download_check = false;
 	}
 
 	if ((force || (update_pending && rx_count_server_conns(EXTERNAL_ONLY) == 0)) && !update_task_running) {
@@ -367,8 +367,6 @@ void check_for_update(update_check_e type, conn_t *conn)
 		CreateTask(_update_task, TO_VOID_PARAM(conn), ADMIN_PRIORITY);
 	}
 }
-
-//#define TEST_UPDATE     // enables printf()s and simulates local time entering update window
 
 static bool update_on_startup = true;
 static int 	prev_update_window = -1;
@@ -386,6 +384,7 @@ void schedule_update(int min)
     int local_hour;
     (void) local_hour_min_sec(&local_hour);
 
+    //#define TEST_UPDATE     // enables printf()s and simulates local time entering update window
 	#ifdef TEST_UPDATE
         int utc_hour;
         time_hour_min_sec(utc_time(), &utc_hour);
@@ -403,8 +402,9 @@ void schedule_update(int min)
 		int serno = serial_number;
 		
 		#ifdef TEST_UPDATE
-            #define SERNO_MIN_TRIG 1
-		    serno = SERNO_MIN_TRIG;
+            #define SERNO_MIN_TRIG1 1   // set to minute in the future test update should start
+            #define SERNO_MIN_TRIG2 2   // set to minute in the future test update should start
+		    serno = (mins_now <= SERNO_MIN_TRIG1)? SERNO_MIN_TRIG1 : SERNO_MIN_TRIG2;
 		    int mins_trig = serno % UPDATE_SPREAD_MIN;
 		    int hr_trig = UPDATE_START_HOUR + mins_trig/60;
 		    int min_trig = mins_trig % 60;
@@ -438,11 +438,10 @@ void schedule_update(int min)
     #endif
     
     daily_restart = first_update_window && !update_on_startup && (admcfg_bool("daily_restart", NULL, CFG_REQUIRED) == true);
-    ip_auto_download_check = first_update_window && !update_on_startup && (admcfg_bool("ip_blacklist_auto_download", NULL, CFG_REQUIRED) == true);
+    file_auto_download_check = first_update_window && !update_on_startup;
 
-    //printf("min=%d ip_auto_download_check=%d update_window=%d update_on_startup=%d auto=%d\n",
-    //    timer_sec()/60, ip_auto_download_check, update_window, update_on_startup,
-    //    (admcfg_bool("ip_blacklist_auto_download", NULL, CFG_REQUIRED) == true));
+    //printf("min=%d file_auto_download_check=%d update_window=%d update_on_startup=%d\n",
+    //    timer_sec()/60, file_auto_download_check, update_window, update_on_startup);
     
     if (update_on_startup && admcfg_int("restart_update", NULL, CFG_REQUIRED) != 0) {
 		lprintf("UPDATE: update on restart delayed until update window\n");

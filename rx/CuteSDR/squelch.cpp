@@ -39,6 +39,7 @@
 
 #include "squelch.h"
 #include "datatypes.h"
+#include "rx_sound.h"
 
 //#define FMPLL_RANGE 15000.0	//maximum deviation limit of PLL
 #define FMPLL_RANGE 9600.0	//maximum deviation limit of PLL
@@ -49,10 +50,10 @@
 
 #define FMDC_ALPHA	0.001	//time constant for DC removal filter
 
-//#define MAX_FMOUT 100000.0
 #define MAX_FMOUT (K_AMPMAX * K_AMPMAX)
 
-#define SQUELCH_MAX 3000.0		//roughly the maximum noise average with no signal
+//#define SQUELCH_MAX 3000.0		//roughly the maximum noise average with no signal
+#define SQUELCH_MAX CLIPPER_NBFM_VAL    //roughly the maximum noise average with no signal
 #define SQUELCHAVE_TIMECONST .02
 #define SQUELCH_HYSTERESIS 50.0
 
@@ -100,8 +101,6 @@ void CSquelch::SetupParameters(int rx_chan, TYPEREAL samplerate)
 	m_PllBeta_F = 0.002;
 	m_PllAlpha_P = MSQRT(m_PllBeta_F);
 
-	m_OutGain = MAX_FMOUT/m_NcoHLimit;	//audio output level gain value
-
 	//DC removal filter time constant
 	m_DcAlpha = (1.0 - MEXP(-1.0/(m_SampleRate*FMDC_ALPHA)) );
 
@@ -114,7 +113,7 @@ void CSquelch::SetupParameters(int rx_chan, TYPEREAL samplerate)
 	//m_LpFir.InitLPFilter(0, 1.0, 50.0, VOICE_BANDWIDTH, 1.6*VOICE_BANDWIDTH, m_SampleRate);
 
 	InitNoiseSquelch();
-	//printf("PLL SR %f norm %f Alpha %.9f Beta %.9f Gain %f\n", m_SampleRate, norm, m_PllAlpha_P, m_PllBeta_F, m_OutGain);
+	//printf("PLL SR %f norm %f Alpha %.9f Beta %.9f\n", m_SampleRate, norm, m_PllAlpha_P, m_PllBeta_F);
 
 	Reset();
 }
@@ -127,9 +126,9 @@ void CSquelch::SetSquelch(int Value, int SquelchMax)
 {
     m_SquelchValue = Value;
 	if (SquelchMax == 0) SquelchMax = SQUELCH_MAX;
-	m_SquelchThreshold = (TYPEREAL)(SquelchMax - (( SquelchMax*Value)/99));
+	m_SquelchThreshold = (TYPEREAL) (SquelchMax - (( SquelchMax * Value) / 99));
 	m_SetSquelch = true;
-    //printf("SQ th %.0f/%d %d ===================================\n", m_SquelchThreshold, SquelchMax, Value);
+    //printf("SQ-SET th=%.0f max=%d val=%d ===================================\n", m_SquelchThreshold, SquelchMax, Value);
 }
 
 
@@ -190,13 +189,13 @@ int CSquelch::PerformFMSquelch(int InLength, TYPEREAL* pInData, TYPEMONO16* pOut
 	} else
 	
 	if (m_SquelchState)	{
-		if (m_SquelchAve < (m_SquelchThreshold-SQUELCH_HYSTERESIS)) {
+		if (m_SquelchAve < (m_SquelchThreshold - SQUELCH_HYSTERESIS)) {
             // squelched => not squelched
 			nsq_nc_sq = -1;
 			m_SquelchState = false;
 		}
 	} else {
-		if (m_SquelchAve >= (m_SquelchThreshold+SQUELCH_HYSTERESIS)) {
+		if (m_SquelchAve >= (m_SquelchThreshold + SQUELCH_HYSTERESIS)) {
 		    // not squelched => squelched
 			nsq_nc_sq = 1;
 			m_SquelchState = true;
@@ -223,9 +222,9 @@ int CSquelch::PerformFMSquelch(int InLength, TYPEREAL* pInData, TYPEMONO16* pOut
         m_SetSquelch = false;
     }
 
-	#if 1
+	#if 0
 		if (nsq_nc_sq != 0) {
-			//printf("SQ th %f av %f %s\n", m_SquelchThreshold, m_SquelchAve, m_SquelchState? "SQ'd":"OPEN");
+			printf("SQ-CHG th=%.0f av=%.0f %s\n", m_SquelchThreshold, m_SquelchAve, m_SquelchState? "SQ'd":"OPEN");
 		}
 	#endif
 	

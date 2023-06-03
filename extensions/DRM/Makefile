@@ -55,10 +55,10 @@ else
             endif
         
             /usr/lib/$(LIB_ARCH)/libsndfile.so:
-	            -apt-get -y --force-yes install libsndfile1-dev
+	            -apt-get -y $(APT_GET_FORCE) install libsndfile1-dev
         
             /usr/lib/$(LIB_ARCH)/libz.so:
-	            -apt-get -y --force-yes install zlib1g-dev
+	            -apt-get -y $(APT_GET_FORCE) install zlib1g-dev
         else
             LIBS += -lfdk-aac
 
