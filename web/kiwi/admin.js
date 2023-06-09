@@ -1184,12 +1184,29 @@ var network = {
    ip_blacklist_check_mtime: true,
    
    // this ordering gives a remapping of the old 0/1 values: 100M(0) => auto, 10M(1) => same
-   ethernet_speed_s: [ 'auto', '10 Mbps', '100 Mbps' ],
+   ethernet_speed_s: [ ['auto', 1], ['10 Mbps', 1], ['100 Mbps', 1] ],
+   ESPEED_10M: 1,
+   ESPEED_ENA: 1,
    ethernet_mtu_s: [ '1500 (default)', '1440', '1400' ]
 };
 
 function network_html()
 {
+   // check for interference between simultaneous cfg/admcfg saves
+   //ext_set_cfg_param('cfg.snr_local_time', true, EXT_SAVE)
+   //ext_set_cfg_param('adm.ip_blacklist_auto_download', false, EXT_SAVE)
+   
+   if (!isDefined(adm.ip_address)) {
+      console.log('network_html: adm.ip_address is undefined? -- initializing');
+      adm.ip_address = {};
+      adm.ip_address.use_static = false;
+      adm.ip_address.ip = '';
+      adm.ip_address.netmask = '';
+      adm.ip_address.gateway = '';
+      adm.ip_address.dns1 = '';
+      adm.ip_address.dns2 = '';
+   }
+
    network.ip_blacklist_file = 'http://'+ network.ip_blacklist_file_base;
    network.ip_blacklist_file_SSL = kiwi_SSL() + network.ip_blacklist_file_base;
    network.ip_blacklist_file_SSL_mtime = kiwi_SSL() + network.ip_blacklist_file_base +'.mtime';
@@ -1214,7 +1231,15 @@ function network_html()
       kiwi_ajax(network.ip_blacklist_file_SSL_mtime, 'network_blacklist_mtime_cb', 0, 10000);
       network.ip_blacklist_check_mtime = false;
    }
-   
+
+   var spd_s;
+   if (kiwi.platform == kiwi.PLATFORM_BB_AI64) {
+      network.ethernet_speed_s[network.ESPEED_10M][network.ESPEED_ENA] = 0;
+      spd_s = '10 Mbps setting not available <br> on BBAI-64.';
+   } else {
+      spd_s = 'Select 10 Mbps to reduce <br> Ethernet spurs. Try changing <br> while looking at waterfall.';
+   }
+
 	var s1 =
 		w3_div('id-net-auto-nat-msg w3-valign w3-hide') +
 
@@ -1237,9 +1262,8 @@ function network_html()
             w3_switch_label_get_param('w3-center', 'IP address<br>(only static IPv4 for now)',
                'DHCP', 'Static', 'adm.ip_address.use_static', 0, false, 'network_use_static_cb'),
             w3_divs('w3-center/',
-               w3_select('w3-width-auto', 'Ethernet interface speed', '', 'ethernet_speed', cfg.ethernet_speed, network.ethernet_speed_s, 'network_ethernet_speed'),
-               w3_div('w3-text-black',
-                  'Select 10 Mbps to reduce <br> Ethernet spurs. Try changing <br> while looking at waterfall.')
+               w3_select_conditional('w3-width-auto', 'Ethernet interface speed', '', 'ethernet_speed', cfg.ethernet_speed, network.ethernet_speed_s, 'network_ethernet_speed'),
+               w3_div('w3-text-black', spd_s)
             ),
             w3_divs('w3-center/',
                w3_select('w3-width-auto', 'Ethernet interface MTU', '', 'ethernet_mtu', cfg.ethernet_mtu, network.ethernet_mtu_s, 'network_ethernet_mtu'),
