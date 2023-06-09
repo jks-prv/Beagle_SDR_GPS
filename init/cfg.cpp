@@ -1360,6 +1360,7 @@ static void _cfg_write_file(void *param)
     cfg_t *cfg = (cfg_t *) FROM_VOID_PARAM(param);
 	FILE *fp;
 
+    //real_printf("_cfg_write_file %s %d\n", cfg->filename, strlen(cfg->json_write));
 	scallz("_cfg_write_file fopen", (fp = fopen(cfg->filename, "w")));
 	fprintf(fp, "%s\n", cfg->json_write);
 	fclose(fp);
@@ -1372,6 +1373,7 @@ void _cfg_save_json(cfg_t *cfg, char *json)
 
     // file writes can sometimes take a long time -- use a child task and wait via NextTask()
 	cfg->json_write = json;
+    //real_printf("_cfg_save_json %s %d\n", cfg->filename, strlen(json));
     int status = child_task("kiwi.cfg", _cfg_write_file, POLL_MSEC(100), TO_VOID_PARAM(cfg));
     int exit_status;
     if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {

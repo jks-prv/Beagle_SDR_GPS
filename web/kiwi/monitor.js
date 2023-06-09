@@ -35,7 +35,7 @@ function kiwi_monitor()
          w3_inline('w3-margin-L-8 w3-margin-T-4/w3-margin-right w3-valign',
             w3_button('id-queue-button w3-medium w3-padding-smaller w3-green', 'Enter queue', 'kiwi_queue_cb'),
             w3_text('id-queue-pos w3-text-black'),
-            w3_button('id-queue-button w3-medium w3-padding-smaller w3-yellow', 'Reload page', 'kiwi_queue_reload_cb'),
+            w3_button('id-queue-button w3-medium w3-padding-smaller w3-yellow', 'Reload page', 'kiwi_queue_reload_cb')
          ),
          w3_text('id-queue-status w3-margin-T-4 w3-text-black', ''),
 

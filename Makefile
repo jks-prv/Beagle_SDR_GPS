@@ -1344,6 +1344,10 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 enable disable start stop restart status:
 	-systemctl --full --lines=250 $@ kiwid.service || true
 
+avahi-enable avahi-disable avahi-start avahi-stop avahi-status:
+	-systemctl --full --lines=250 $(subst avahi-,,$@) avahi-daemon.service || true
+	-systemctl --full --lines=250 $(subst avahi-,,$@) avahi-daemon.socket || true
+
 # SIGUSR1 == SIG_DUMP
 reload dump:
 	-killall -q -s USR1 kiwid

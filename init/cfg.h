@@ -162,6 +162,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx, cfg_dxcfg, cfg_dxcomm, cfg_dxcomm_cfg;
 #define json_init(cfg, json)				_cfg_init(cfg, CFG_IS_JSON, json)
 #define json_init_flags(cfg, f, json)       _cfg_init(cfg, (f) | CFG_IS_JSON, json)
 #define json_init_file(cfg)				    _cfg_init(cfg, CFG_IS_JSON, NULL)
+#define json_save(cfg, json)                _cfg_save_json(cfg, json)
 #define json_release(cfg)                   _cfg_release(cfg)
 #define json_walk(cfg, id, cb, param)       _cfg_walk(cfg, id, cb, param)
 
