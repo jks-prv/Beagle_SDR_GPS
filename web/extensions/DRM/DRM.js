@@ -1173,7 +1173,7 @@ function drm_desktop_controls_setup(w_multi)
    if (drm.wrong_srate) {
       controls_inner =
             w3_text('w3-medium w3-text-css-yellow',
-               'Currently, DRM does not support Kiwis configured for 20 kHz wide channels.'
+               'Currently, DRM does not support Kiwis <br> configured for 20 kHz wide channels.'
             );
    } else
    
@@ -1189,16 +1189,16 @@ function drm_desktop_controls_setup(w_multi)
          var drm_nreg_chans = cfg.DRM.nreg_chans;
          console_log('drm_nreg_chans', drm_nreg_chans);
          if (drm_nreg_chans == 0)
-            s = 'Requires exclusive use of the Kiwi. There can be no other connections.';
+            s = 'Requires exclusive use of the Kiwi. <br> There can be no other connections.';
          else {
             if (drm_nreg_chans == 1)
-               s = 'Can only run DRM with one other Kiwi connection.<br>' +
-                   'And the other connection is not using any extensions.';
+               s = 'Can only run DRM with one other <br> Kiwi connection.' +
+                   'And the other connection <br> is not using any extensions. ';
             else
-               s = 'Can only run DRM with '+ drm_nreg_chans +' or fewer other Kiwi connections.<br>' +
-                   'And the other connections are not using any extensions.';
+               s = 'Can only run DRM with '+ drm_nreg_chans +' or fewer other <br> Kiwi connections. ' +
+                   'And the other connections <br> are not using any extensions. ';
          }
-         s += '<br>Please try again when these conditions are met.';
+         s += 'Please try again <br> when these conditions are met.';
       }
       controls_inner = w3_text('w3-medium w3-text-css-yellow', s);
    } else {
