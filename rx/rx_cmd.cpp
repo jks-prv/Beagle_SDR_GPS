@@ -722,7 +722,8 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     conn->isPassword = is_password;
                 
                     if (stream_snd_or_wf || stream_admin_or_mfg) {
-                        send_msg(conn, SM_NO_DEBUG, "MSG version_maj=%d version_min=%d debian_ver=%d", version_maj, version_min, debian_ver);
+                        send_msg(conn, SM_NO_DEBUG, "MSG version_maj=%d version_min=%d debian_ver=%d platform=%d",
+                            version_maj, version_min, debian_ver, platform);
                     }
 
                     // send cfg once to javascript
@@ -803,13 +804,13 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 
     // -dx 0xhh
     
-	#define DX_PRINT_DOW_TIME 0x01
-	#define dx_print_dow_time(cond, fmt, ...) \
-		if ((dx_print & DX_PRINT_DOW_TIME) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
-
-	#define DX_PRINT_MKRS 0x02
+	#define DX_PRINT_MKRS 0x01
 	#define dx_print_mkrs(cond, fmt, ...) \
 		if ((dx_print & DX_PRINT_MKRS) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
+
+	#define DX_PRINT_MKRS_ALL 0x02
+	#define dx_print_mkrs_all(cond, fmt, ...) \
+		if ((dx_print & DX_PRINT_MKRS_ALL) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
 
 	#define DX_PRINT_ADM_MKRS 0x04
 	#define dx_print_adm_mkrs(fmt, ...) \
@@ -827,16 +828,21 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 	#define dx_print_filter(cond, fmt, ...) \
 		if ((dx_print & DX_PRINT_FILTER) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
 
-	#define DX_PRINT_DEBUG 0x40
+	#define DX_PRINT_DOW_TIME 0x40
+	#define dx_print_dow_time(cond, fmt, ...) \
+		if ((dx_print & DX_PRINT_DOW_TIME) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
+
+	#define DX_PRINT_DEBUG 0x80
 	#define dx_print_debug(cond, fmt, ...) \
 		if ((dx_print & DX_PRINT_DEBUG) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
 #else
-	#define dx_print_dow_time(cond, fmt, ...)
 	#define dx_print_mkrs(cond, fmt, ...)
+	#define dx_print_mkrs_all(cond, fmt, ...)
 	#define dx_print_adm_mkrs(fmt, ...)
 	#define dx_print_upd(fmt, ...)
 	#define dx_print_search(cond, fmt, ...)
 	#define dx_print_filter(cond, fmt, ...)
+	#define dx_print_dow_time(cond, fmt, ...)
 	#define dx_print_debug(cond, fmt, ...)
 #endif
 
@@ -1085,7 +1091,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
         if (kiwi_str_begins_with(cmd, "SET MARKER")) {
             int chan = (conn->type == STREAM_ADMIN)? MAX_RX_CHANS : conn->rx_channel;
             double freq, min, max, bw;
-            int db, zoom, width, dir = 1, filter_tod = 0, anti_clutter = 0, clutter_filtered = 0;
+            int db, zoom = -1, width, dir = 1, filter_tod = 0, anti_clutter = 0, clutter_filtered = 0;
             int idx1, idx2;
             u4_t eibi_types_mask = 0;
             char *ident = NULL, *notes = NULL;
@@ -1122,7 +1128,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 func = DX_ADM_SEARCH_NOTES;
                 db = DB_STORED;
             } else {
-                dx_print_debug(true, "CMD_MARKER: unknown varient [%s]\n", cmd);
+                cprintf(conn, "CMD_MARKER: unknown varient [%s]\n", cmd);
                 return true;
             }
             if (dx_print) cprintf(conn, "DX_MKR func=%s\n", func_s[func]);
@@ -1474,15 +1480,17 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     // reduce dx label clutter
                     if (func == DX_MKRS && anti_clutter && zoom <= DX_SPACING_ZOOM_THRESHOLD) {
                         int x = ((dp->freq - min) / bw) * width;
-                        int diff = x - dx_lastx;
-                        //dx_print_mkrs(db_stored_comm, "DX_MKR spacing %d %d %d %s\n", dx_lastx, x, diff, dp->ident_s);
+                        int diff_x = x - dx_lastx;
+                        //dx_print_mkrs(true, "DX_MKR spacing %d-%d=%d %s\n", x, dx_lastx, diff_x, dp->ident_s);
                         
-                        // EiBi: let all same freq markers through that have different dow info
-                        if (!first && ((db_eibi && diff >= 1) || (!db_eibi && diff >= 0)) && diff < DX_SPACING_THRESHOLD_PX) {
-                            if (clutter_filtered < 32) {
-                                dx_print_mkrs(db_eibi, "DX_MKR anti-clutter EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident_s);
-                                dx_print_mkrs(db_stored_comm, "DX_MKR anti-clutter #%d %.2f flags=%05x o=%d b=%d e=%d \"%s\"\n",
-                                    dp->idx, freq, dp->flags, dp->offset, time_begin, time_end, kiwi_str_decode_static((char *) dp->ident));
+                        // EiBi: Let all same freq markers through that have different dow info (via diff_x == 0)
+                        // JS side will have to limit e.g. > 2 labels w/ unique idents at same x location at low zoom.
+                        if (!first && ((db_eibi && diff_x >= 1) || (!db_eibi && diff_x >= 0)) && diff_x < DX_SPACING_THRESHOLD_PX) {
+                            if (dx_print & DX_PRINT_MKRS && clutter_filtered < 32) {
+                                dx_print_mkrs_all(db_eibi, "DX_MKR anti-clutter EiBi %d: %.2f(#%d,x%d) %s\n",
+                                    send, freq, dp->idx, dx_lastx, dp->ident_s);
+                                dx_print_mkrs_all(db_stored_comm, "DX_MKR anti-clutter %d: %.2f(#%d,x%d) flags=%05x o=%d b=%d e=%d \"%s\"\n",
+                                    send, freq, dp->idx, dx_lastx, dp->flags, dp->offset, time_begin, time_end, kiwi_str_decode_static((char *) dp->ident));
                             }
                             clutter_filtered++;
                             continue;
@@ -1548,9 +1556,10 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                                 dp->ident,
                                 dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"",
                                 dp->params? ",\"p\":\"":"", dp->params? dp->params:"", dp->params? "\"":"");
-                            dx_print_mkrs(db_eibi, "DX_MKR EiBi %d: %.2f(%d) %s\n", send, freq, dp->idx, dp->ident_s);
-                            dx_print_mkrs(db_stored_comm, "DX_MKR #%d %.2f flags=%05x o=%d s=%d b=%d e=%d \"%s\"\n", dp->idx, freq, dp->flags, dp->offset, dp->sig_bw,
-                                time_begin, time_end, kiwi_str_decode_static((char *) dp->ident));
+                            dx_print_mkrs_all(db_eibi, "DX_MKR EiBi %d: %.2f(i%d,x%d) %s\n",
+                                send, freq, dp->idx, dx_lastx, dp->ident_s);
+                            dx_print_mkrs_all(db_stored_comm, "DX_MKR %d: %.2f(i%d,x%d) flags=%05x o=%d s=%d b=%d e=%d \"%s\"\n",
+                                send, freq, dp->idx, dx_lastx, dp->flags, dp->offset, dp->sig_bw, time_begin, time_end, kiwi_str_decode_static((char *) dp->ident));
                             send++;
                         }
                     }
@@ -1560,6 +1569,9 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                         dx_print_search(true, "DX_STEP found\n");
                         break;
                     }
+                    
+                    if ((send & 0xf) == 0xf)
+                        NextTask("DX_MKR");
                 }
             }
         
@@ -1801,7 +1813,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
         if (n == 1) {
             if (conn->mc == NULL) return true;	// we've seen this
             char *status = (char*) cfg_string("status_msg", NULL, CFG_REQUIRED);
-            send_msg_encoded(conn, "MSG", "status_msg_html", "\f%s", status);
+            send_msg_encoded(conn, "MSG", "status_msg_html", "%s", status);
             cfg_string_free(status);
             return true;
         }

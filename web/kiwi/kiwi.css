@@ -214,7 +214,7 @@ hr
 .cl-dx-filtered
 {
 	color: black;
-	background-color: pink !important;
+	background-color: rgba(255, 182, 193, 0.4) !important;  /* pink */
 }
 
 .cl-dx-label
@@ -271,8 +271,6 @@ hr
 	position: relative;
 	top: 70px;
 	height: 10px;
-	background-color: blue;
-	opacity: 0.3;
 }
 
 .cl-ext-help
