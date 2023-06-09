@@ -518,6 +518,23 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
             default: panic("save_config"); break;
         }
 
+        //#define TEST_COW
+        #ifdef TEST_COW
+            if (key == CMD_SAVE_ADM) {
+                cfg_t cow_json = {0};
+                cow_json.filename = DIR_CFG "/test.json";
+                real_printf(">>> %s\n", cow_json.filename);
+                //if (json_init(&cow_json, (char *) "{\"foo\":1138}") == true) {
+                if (json_init_file(&cow_json) == true) {
+                    real_printf("SAVE %d\n", strlen(sp));
+                    sp = strdup(sp);
+                    json_save(&cow_json, sp);
+                    kiwi_ifree(sp);
+                }
+                json_release(&cow_json);
+            }
+        #endif
+
         kstr_free(cfg->json);
         cfg->json = NULL;        // NB: extremely important
         update_vars_from_config();      // update C copies of vars
@@ -903,14 +920,14 @@ int SNR_calc(SNR_meas_t *meas, int meas_type, int f_lo, int f_hi)
         // Disconnected if:
         // 1) freq_offset_kHz == 0 (via meas_type == SNR_MEAS_HF),
         //      i.e. no V/UHF transverter setups that might be inherently quiet when no signals.
-        // 2) snr <= 3
+        // 2) HF snr <= 3
         // 3) Not greater than 2 peaks stronger than -100 dBm
-        if (meas_type == SNR_MEAS_HF && data->snr <= 3) {
+        if (meas_type == SNR_MEAS_HF) {
             int peaks = 0;
             for (i = 0; i < len; i++) {
                 if (dB[i] >= -100) peaks++;
             }
-            int _ant_connected = (peaks <= 2)? 0:1;
+            int _ant_connected = (data->snr <= 3 && peaks <= 2)? 0:1;
             if (ant_connected != _ant_connected) {
             
                 // wakeup the registration process (if any) so that the change in
@@ -1027,5 +1044,6 @@ void SNR_meas(void *param)      // task
         // if disabled check again in an hour to see if re-enabled
         u64_t hrs = snr_meas_interval_hrs? snr_meas_interval_hrs : 1;
         TaskSleepSec(hrs * 60 * 60);
+        //TaskSleepSec(60);
     } while (1);
 }
