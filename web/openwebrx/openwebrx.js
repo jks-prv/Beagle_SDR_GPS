@@ -190,6 +190,33 @@ function kiwi_main()
 
 function kiwi_main_ready()
 {
+   /*
+      // keyboard modifier event tester
+      var el = w3_el('id-kiwi-container');
+      w3_innerHTML(el, 'Keyboard modifier test');
+	   if (1) window.addEventListener("keydown",
+	      function(ev) {
+	         event_dump(ev, 'KD', true);
+	      }
+	   );
+	   if (1) window.addEventListener("keypress",
+	      function(ev) {
+	         event_dump(ev, 'KP', true);
+	      }
+	   );
+	   if (1) window.addEventListener("keyup",
+	      function(ev) {
+	         event_dump(ev, 'KU', true);
+	      }
+	   );
+	   if (1) window.addEventListener("click",
+	      function(ev) {
+	         event_dump(ev, 'click', true);
+	      }
+	   );
+      return;
+   */
+   
 	override_freq = parseFloat(readCookie('last_freq'));
 	override_mode = readCookie('last_mode');
 	override_zoom = parseFloat(readCookie('last_zoom'));
@@ -684,15 +711,13 @@ function init_rx_photo()
    el.src = cfg.index_html_params.RX_PHOTO_FILE;
    el.alt = el.title = cfg.index_html_params.RX_PHOTO_DESC;
 
-   el.style.paddingLeft = RX_PHOTO_LEFT_MARGIN? '50px' : 0;
-	RX_PHOTO_HEIGHT += rx_photo_spacer_height;
-	w3_el("id-top-photo-clip").style.maxHeight = px(RX_PHOTO_HEIGHT);
-	//window.setTimeout(function() { animate(html("id-rx-photo-title"),"opacity","",1,0,1,500,30); },1000);
-	//window.setTimeout(function() { animate(html("id-rx-photo-desc"),"opacity","",1,0,1,500,30); },1500);
+   el.style.paddingLeft = cfg.index_html_params.RX_PHOTO_LEFT_MARGIN? '50px' : 0;
+	owrx.RX_PHOTO_HEIGHT = +(cfg.index_html_params.RX_PHOTO_HEIGHT) + rx_photo_spacer_height;
+	w3_el("id-top-photo-clip").style.maxHeight = px(owrx.RX_PHOTO_HEIGHT);
 	if (dbgUs || kiwi_isMobile()) {
 		close_rx_photo();
 	} else {
-		window.setTimeout(function() { close_rx_photo() },3000);
+		window.setTimeout(function() { close_rx_photo() }, 3000);
 	}
 }
 
@@ -703,7 +728,7 @@ function open_rx_photo()
 	rx_photo_state=1;
 	html("id-rx-photo-desc").style.opacity=1;
 	html("id-rx-photo-title").style.opacity=1;
-	animate_to(html("id-top-photo-clip"),"maxHeight","px",RX_PHOTO_HEIGHT,0.93,kiwi_isMobile()? 1:1000,60,function(){resize_waterfall_container(true);});
+	animate_to(html("id-top-photo-clip"), "maxHeight", "px", owrx.RX_PHOTO_HEIGHT, 0.93, kiwi_isMobile()? 1:1000, 60, function(){resize_waterfall_container(true);});
 	w3_hide('id-rx-details-arrow-down');
 	w3_show_block('id-rx-details-arrow-up');
 }
@@ -711,7 +736,7 @@ function open_rx_photo()
 function close_rx_photo()
 {
 	rx_photo_state=0;
-	animate_to(html("id-top-photo-clip"),"maxHeight","px",rx_photo_spacer_height,0.93,kiwi_isMobile()? 1:1000,60,function(){resize_waterfall_container(true);});
+	animate_to(html("id-top-photo-clip"), "maxHeight", "px", rx_photo_spacer_height, 0.93, kiwi_isMobile()? 1:1000, 60, function(){resize_waterfall_container(true);});
 	w3_show_block('id-rx-details-arrow-down');
 	w3_hide('id-rx-details-arrow-up');
 }
@@ -1517,7 +1542,7 @@ function demodulator_set_offset_frequency(which, offset)
 	try_freqset_update_ui(which);
 }
 
-function owrx_cfg()
+function owrx_init_cfg()
 {
    w3_do_when_rendered('id-rx-gmap',
       function() {
@@ -2113,10 +2138,11 @@ function resize_scale(a)
 	dx_ctx.canvas.height = dx_car_h;
 	dx_canvas.style.top = px(scale_canvas_top - dx_car_h + 2);
 	dx_canvas.style.left = 0;
-	dx_canvas.style.zIndex = 99;
+   dx_canvas.style.zIndex = 100;
+	dx_show(false);
 	
 	// the dx canvas is used to form the "carrier" marker symbol (yellow triangle) seen when
-	// an NDB dx label is entered by the mouse
+	// an NDB dx label is entered by the mouse (and used by labels with non-zero sig bw)
    dx_ctx.miterLimit = 2;
    dx_ctx.lineJoin = "round";
 	dx_ctx.beginPath();
@@ -3407,7 +3433,7 @@ function zoom_step(dir, arg2)
 	vfo_update();
    zoom_finally();
 
-   if (dbgUs) {
+   if (0 && dbgUs) {
       var f = get_visible_freq_range();
       console.log('^ZOOM z'+ zoom_level +' '+ (f.start/1e3).toFixed(0) +'|'+
          (f.center/1e3).toFixed(0) +'|'+ (f.end/1e3).toFixed(0) +' ('+ (f.bw/1e3).toFixed(0) +' kHz)');
@@ -5474,6 +5500,7 @@ function freqmode_set_dsp_kHz(fdsp, mode, opt)
 	//console.log("freqmode_set_dsp_kHz: fdsp="+fdsp+' mode='+mode);
 	if (dont_clear_wf == false) wf.audioFFT_clear_wf = true;
 	if (!no_clear_last_gid) owrx.dx_click_gid_last_until_tune = undefined;
+	dx.last_stepped_gid = -1;
 	//console.log('$dx_click_gid_last_until_tune='+ owrx.dx_click_gid_last_until_tune);
 
 	if (isArg(mode) && (mode != cur_mode || open_ext == true)) {
@@ -7035,6 +7062,11 @@ function admin_pwd_cb2(el, val)
 ////////////////////////////////
 
 var dx = {
+   step_dbg: 0,
+   step_superDARN: 0,
+   sig_bw_vis: 'hidden',
+   sig_bw_left: '0px',
+   
    url_p: null,
    help: false,
    
@@ -7052,6 +7084,8 @@ var dx = {
    INIT_BANDS_YES: 1,
 
    DX_STEP: 2,
+   DX_MKRS: 4,
+   
    DX_JSON: 0,
    DX_CSV:1,
    IDX_USER: null,
@@ -7139,6 +7173,9 @@ var dx = {
    
    list: [],
    displayed: [],
+   
+   sig_bw_render_gid: -1,
+   last_stepped_gid: -1,
 
    filter_ident: '',
    filter_notes: '',
@@ -7208,6 +7245,13 @@ function dx_init()
    }
 
    dx_database_cb('', dx.db);
+   
+   if (dx.step_superDARN) setTimeout(
+      function() {
+         dx.filter_ident = 'superDARN';
+         dx_filter_cb();
+      }, 1000
+   );
 }
 
 function dx_decode_mode(flags)
@@ -7294,20 +7338,29 @@ function dx_update_request()
    // REMINDER: w3_do_when_cond() returns immediately
 }
 
+function dx_show(show, gid)
+{
+   w3_visible(dx_canvas, show);
+   dx.sig_bw_vis  = dx_canvas.style.visibility;
+   dx.sig_bw_left = dx_canvas.style.left;
+   w3_hide2('id-dx-sig', !show);
+   if (isArg(gid)) dx.sig_bw_render_gid = gid;
+}
+
 var dx_update_delay = 350;
-var dx_update_timeout, dx_seq=0;
+var dx_update_timeout;
 
 function dx_schedule_update()
 {
 	kiwi_clearTimeout(dx_update_timeout);
-	dx_div.innerHTML = "";
+	dx_div.innerHTML = '';
+   dx_show(false);
 	dx_update_timeout = setTimeout(dx_update, dx_update_delay);
 }
 
 function dx_update()
 {
    var eibi = (dx.db == dx.DB_EiBi);
-	dx_seq++;
 	//g_range = get_visible_freq_range();
 	//console_log_dbgUs("DX min="+(g_range.start/1000)+" max="+(g_range.end/1000));
 	
@@ -7318,6 +7371,7 @@ function dx_update()
 	wf_send('SET MARKER db='+ dx.db +' min='+ min +' max='+ max +
 	   ' zoom='+ zoom_level +' width='+ waterfall_width +' eibi_types_mask='+ dx.eibi_types_mask.toHex() +
 	   ' filter_tod='+ dx.filter_tod[dx.db] +' anti_clutter='+ anti_clutter);
+	if (dx.step_dbg) console.log('UPDATE list');
 
 	// refresh every 5 minutes to catch schedule changes
    kiwi_clearTimeout(dx.dx_refresh_timeout);
@@ -7330,7 +7384,8 @@ function dx_update()
 	   //console_log_dbgUs('$ SET dx_refresh_timeout rem='+ (ms_rem/1e3).toFixed(3));
 	   dx.dx_refresh_timeout = setTimeout(function() {
 	      //console_log_dbgUs('$ GO dx_refresh_timeout ');
-	      dx_div.innerHTML = "";
+	      dx_div.innerHTML = '';
+         dx_show(false);
 	      dx_update();
 	   }, ms_rem + ms_delay);
 	}
@@ -7364,10 +7419,11 @@ var dx_ibp_stations = {
 	'YV5B':		{ value:17, text: 'Venezuela' }
 };
 
-function dx_label_cb(arr)
+function dx_label_render_cb(arr)
 {
 	var i, j, k;
 	var hdr = arr[0];
+	
 	var obj;
    var _dxcfg = dx_cfg_db();
    var stored = (dx.db == dx.DB_STORED);
@@ -7380,12 +7436,12 @@ function dx_label_cb(arr)
    
    dx_color_init();
 
-	// reply to label step request
+	// process reply sent in response to our label step request
 	if (hdr.t == dx.DX_STEP) {
 	   var dl = arr[1];
 	   if (dl) {
-	      //console_log_dbgUs('dx_label_cb: type=2 f='+ dl.f);
-	      //console_log_dbgUs(dl);
+	      if (dx.step_dbg) console.log('dx_label_render_cb: DX_STEP [[[RESP]]] gid='+ dl.g +' f='+ dl.f);
+	      if (dx.step_dbg) console.log(JSON.stringify(dl));
 	      var mode = kiwi.modes_lc[dx_decode_mode(dl.fl)];
          freqmode_set_dsp_kHz(dl.f, mode);
          if (dl.lo != 0 && dl.hi != 0) {
@@ -7394,8 +7450,10 @@ function dx_label_cb(arr)
             var dpb = kiwi_passbands(mode);
             ext_set_passband(dpb.lo, dpb.hi);   // need to force default pb in case cpb is not default
          }
+         dx.sig_bw_render_gid = dl.g;
       } else {
-	      //console_log_dbgUs('dx_label_cb: type=2 NO LABEL FOUND');
+	      if (dx.step_dbg) console.log('dx_label_render_cb: DX_STEP [[[RESP]]]: NO LABEL FOUND');
+         dx.sig_bw_render_gid = -1;
       }
 	   return;
 	}
@@ -7424,6 +7482,8 @@ function dx_label_cb(arr)
 	dx.color_fixup = [];
 	dx.f_same = [];
    var same_x, lock_z = 0;
+   var center_x1 = Math.floor(wf_container.clientWidth/2) - 1;
+   var center_x2 = center_x1 + 2;
 	var s_a = [];
 
 	var optimize_label_layout = function(x, z, f) {
@@ -7476,7 +7536,7 @@ function dx_label_cb(arr)
 	};
 	
 	if (dbg_lbl) {
-	   console.log('######## dx_label_cb db='+ dx.db +' arr.len='+ arr.length);
+	   console.log('######## dx_label_render_cb db='+ dx.db +' arr.len='+ arr.length);
 	   console.log(arr);
 	}
 
@@ -7524,7 +7584,7 @@ function dx_label_cb(arr)
       // always place label at center of passband
 		var f_base_label_Hz = f_baseHz + passband_offset_dxlabel(kiwi.modes_lc[dx_decode_mode(flags)], params, obj.lo, obj.hi);
 		var x = scale_px_from_freq(f_base_label_Hz, g_range) - 1;	// fixme: why are we off by 1?
-		var cmkr_x = 0;		// optional carrier marker for NDBs
+		var cmkr_x = 0;		// optional carrier marker for NDBs and sig_bw
 		var carrier = f_baseHz - mkr_off;
 		if (mkr_off) cmkr_x = scale_px_from_freq(carrier, g_range);
 	
@@ -7541,7 +7601,7 @@ function dx_label_cb(arr)
          }
 		}
 		var top = dx_label_top + (gap * (dx_idx & 1));    // stagger the labels vertically
-      dx.post_render[dx_idx] = { top: top, ltop: top, x: x /*, f: f_base_label_Hz/1e3, ident: ident*/ };
+      dx.post_render[dx_idx] = { top: top, ltop: top, x: x /* , f: f_base_label_Hz/1e3, ident: ident */ };
 		dx.last_f_base = f_base_label_Hz;
 
       var color;
@@ -7558,25 +7618,26 @@ function dx_label_cb(arr)
 		if (!eibi && color_idx == 0 && (ident == 'IBP' || ident == 'IARU%2fNCDXF')) {
 		   color = 'aquamarine';
 		}
-		console_log_lbl('DX '+ dx_seq +':'+ dx_idx +' f='+ freq +' k='+ mkr_off +' FL='+ flags.toHex(8)
+		console_log_lbl('DX '+ dx_idx +' f='+ freq +' k='+ mkr_off +' FL='+ flags.toHex(8)
 		   +' m='+ kiwi.modes_uc[dx_decode_mode(flags)] +' <'+ ident +'> <'+ notes +'>');
 		
 		carrier = freq * 1000 - mkr_off;
 		carrier /= 1000;
-		dx.list[gid] = { "gid":gid, "carrier":carrier, "lo":obj.lo, "hi":obj.hi, "freq":freq, "mkr_off":mkr_off, "sig_bw":obj.s,
-		   "flags":flags, "begin":obj.b, "end":obj.e, "ident":ident, "notes":notes, "params":params };
-	   console_log_lbl('dx_label_cb db='+ dx.db +' dx_idx='+ dx_idx +'/'+ arr.length +' gid='+ gid +' dx.list.len='+ dx.list.length +' '+ freq.toFixed(2) +' x='+ x);
+		var center = (x >= center_x1 && x <= center_x2)? 1:0;
+		dx.list[gid] = { gid:gid, carrier:carrier, lo:obj.lo, hi:obj.hi, freq:freq, f_label:f_base_label_Hz, mkr_off:mkr_off, sig_bw:obj.s,
+		   flags:flags, begin:obj.b, end:obj.e, ident:ident, notes:notes, params:params, color:color, center:center };
+	   console_log_lbl('dx_label_render_cb db='+ dx.db +' dx_idx='+ dx_idx +'/'+ arr.length +' gid='+ gid +' dx.list.len='+ dx.list.length +' '+ freq.toFixed(2) +' x='+ center_x1 +'|'+ x +'|'+ center_x2 +' center='+ center);
       dx.displayed[dx_idx] = dx.list[gid];
 		console_log_lbl(dx.list[gid]);
 		var has_ext = (params != '');
 		
 	   var _class = w3_sb('w3-custom-events w3-hold cl-dx-label', has_ext? 'dx-has-ext':'',
 	      filtered? 'cl-dx-label-filtered':'', (has_ext && !filtered)? 'cl-dx-label-ext':'');
-	   var _style_attr = sprintf('|left:%s; z-index:%d; background:%s|id="%s-id-dx-label"',
+	   var _style_attr = sprintf('|left:%s; z-index:%d; background:%s|id="id-dx-label_%s"',
 	      px(x-10), dx_z, color, dx_idx);
 		s_a[dx_idx] =
-		   w3_button_path(_class + _style_attr, gid +'-gid', '', 'dx_evt', w3_sbc(',', gid, cmkr_x)) +
-		   w3_div(sprintf('cl-dx-line|left:%s; z-index:110|id="%s-id-dx-line"', px(x), dx_idx));
+		   w3_button_path(_class + _style_attr, 'dx-'+ gid, '', 'dx_evt', w3_sbc(',', gid, cmkr_x)) +
+		   w3_div(sprintf('cl-dx-line|left:%s; z-index:110|id="id-dx-line_%s"', px(x), dx_idx));
 		
 		dx_z++;
 	}
@@ -7584,17 +7645,30 @@ function dx_label_cb(arr)
 	console_log_lbl(dx.list);
 	console_log_lbl(dx.displayed);
 	
-   var s = w3_div('id-dx-sig cl-dx-sig w3-hide');
-	for (i = 0; i < arr.length-1; i++)
-	   if (isDefined(s_a[i]))
-	      s += s_a[i];
-	dx_div.innerHTML = s;
+	// render labels
+   w3_innerHTML(dx_div, w3_div('id-dx-sig cl-dx-sig w3-hide'));
+   if (dx.step_dbg) console.log('RENDER START func='+ hdr.t +' len='+ (arr.length-1) +' sig_bw_render_gid='+ dx.sig_bw_render_gid);
+   var j = 0;
+   var ds='';
+	for (i = 0; i < arr.length-1; i++) {
+	   if (!isDefined(s_a[i])) continue;
+      w3_create_appendElement(dx_div, 'div', s_a[i]);
+      gid = dx.displayed[i].gid;
+      if (dx.step_dbg) ds += ' '+ gid +'('+ i +')';
+      if (gid == dx.sig_bw_render_gid) {
+         if (dx.step_dbg) console.log('RENDER dx_sig_bw() gid='+ gid);
+         dx_sig_bw(gid);
+         dx.last_stepped_gid = gid;
+      }
+      j++;
+	}
+   if (dx.step_dbg) console.log('RENDER '+ j +' labels'+ ds);
 	dx.last_freq = 0;
 	dx.last_ident = '';
 
    // postpone text width sorting until first label render establishes dx.font info for use by getTextWidth()
 	if (!dx.font) {
-	   var el = w3_el('0-id-dx-label');
+	   var el = w3_el('id-dx-label_0');
 	   if (el) {
 	      dx.font = css_style(el, 'font-size') +' '+ css_style(el, 'font-family');
 	      console_log_lbl('dx.font=<'+ dx.font +'>');
@@ -7643,7 +7717,7 @@ function dx_label_cb(arr)
 		if (eibi) {
 		   if (ident == dx.last_ident && freq == dx.last_freq) {
 		      console_log_lbl('2222 dx_idx='+ dx_idx +' last_dx_idx='+ dx.last_dx_idx +' '+ obj.f +' SAME AS LAST '+ ident);
-		      el = w3_el(dx.last_dx_idx +'-id-dx-label');
+		      el = w3_el('id-dx-label_'+ dx.last_dx_idx);
 		      el.title += '\n'+ dx_title(obj);
 		      continue;
 		   }
@@ -7654,17 +7728,21 @@ function dx_label_cb(arr)
       if (eibi) console_log_lbl('2222 dx_idx='+ dx_idx +' '+ obj.f +' OK '+ ident);
 
 		var notes = (isDefined(obj.n))? obj.n : '';
-		el = w3_el(dx_idx +'-id-dx-label');
+		el = w3_el('id-dx-label_'+ dx_idx);
 		if (!el) continue;
 		var _ident = kiwi_decodeURIComponent('dx_ident2', ident).trim();
 		if (_ident == '') _ident = '&nbsp;&nbsp;';
       el.innerHTML = _ident.replace(/\\n/g, '<br>');
+      //el.innerHTML += ' '+ obj.g;      // debug: add gid to label text
 		var idx = dx_type2idx(obj.fl & dx.DX_TYPE);
 
       if (eibi) {
-		   var ex = (flags & dx.DX_HAS_EXT)? '\nshift or alt/ctrl-click to not open extension' : '';
+         /*
+		   var ex = (flags & dx.DX_HAS_EXT)? '\nshift or alt-click to not open extension' : '';
 		   console_log_lbl(obj.i +' '+ idx +' '+ dx.eibi_ext[idx] +' '+ ex);
          el.title = dx.eibi_svc_s[idx] +' // home country: '+ obj.c + ex +'\n'+ dx_title(obj);
+         */
+         el.title = dx.eibi_svc_s[idx] +' // home country: '+ obj.c +'\n'+ dx_title(obj);
       } else {
          var title = kiwi_decodeURIComponent('dx_notes', notes);
          
@@ -7672,9 +7750,11 @@ function dx_label_cb(arr)
          // the notes field with a proper newline escape '\n' so the text correctly spans multiple lines
 	      title = title.replace(/<br>/g, '\n');
 	      title = title.replace(/\\n/g, '\n');
+	      /*
 	      if (stored) title = w3_nl(title) +'shift-click to edit label\nshift-option-click to toggle active';
 	      if (w3_contains(el, 'dx-has-ext'))
-	         title = w3_nl(title) + (stored? '':'shift or ') +'alt/ctrl-click to not open extension';
+	         title = w3_nl(title) + (stored? '':'shift or ') +'alt-click to not open extension';
+	      */
 	      
 	      // only add schedule info to title popup if non-default
 	      var dow = obj.fl & dx.DX_DOW;
@@ -7698,7 +7778,7 @@ function dx_label_cb(arr)
             el.style.left = px(left);
             if (isDefined(sparse.z)) el.style.zIndex = sparse.z;
 
-            var el_line = w3_el(dx_idx +'-id-dx-line');
+	         var el_line = w3_el('id-dx-line_'+ dx_idx);
             top = sparse.ltop;
             el_line.style.top = px(top);
             el_line.style.height = px(dx_container_h - top);
@@ -7732,7 +7812,7 @@ function dx_label_cb(arr)
 						//console_log_dbgUs('IBP '+ min +':'+ sec +' slot='+ slot +' off='+ off +' s='+ s);
 						
 						// label may now be out of DOM if we're panning & zooming around
-						el = w3_el(dx_ibp_list[i].idx +'-id-dx-label');
+						el = w3_el('id-dx-label_'+ dx_ibp_list[i].idx);
 						var call, location;
 						w3_obj_enum(dx_ibp_stations, function(key, i, o) {
 						   if (i == s) { call = key; location = o.text; }
@@ -7794,7 +7874,7 @@ function dx_filter_panel_close()
 function dx_filter_cb(path, val, first, no_close)
 {
    if (first) return;
-	w3_string_cb(path, val);
+	if (path) w3_string_cb(path, val);
 	var filtered = (dx.filter_ident != '' || dx.filter_notes != '');
    //console.log('dx_filter_cb path='+ path +' val='+ val +' filtered='+ filtered);
    //console.log('DX_FILTER ident=<'+ dx.filter_ident +'> notes=<'+ dx.filter_notes +
@@ -7836,44 +7916,60 @@ function dx_filter_field_err(err)
 // If at display extremes request that server search for next available label (possibly filtered).
 function dx_label_step(dir)
 {
-   //console.log('dx_label_step f='+ freq_car_Hz +'/'+ freq_displayed_Hz +' m='+ cur_mode);
+   //if (dx.step_dbg) console.log('dx_label_step f='+ (freq_car_Hz/1e3).toFixed(2) +'/'+ (freq_displayed_Hz/1e3).toFixed(2) +' m='+ cur_mode);
    var i, dl;
    var eibi = (dx.db == dx.DB_EiBi);
-
+   var f_pbc_Hz = freq_passband_center();
+   
    if (dir == 1) {
       for (i = 0; i < dx.displayed.length; i++) {
          dl = dx.displayed[i];
          if (!dl) continue;
-         var f = Math.round(dl.freq * 1e3);
-         //console.log('consider #'+ i +' '+ f);
-         if (f > freq_displayed_Hz) break;
+         var f = Math.round(dl.f_label);
+         var same_gid = (dl.gid == dx.last_stepped_gid);
+         var f_ok = (f > f_pbc_Hz);
+         //if (dx.step_dbg) console.log('>>> STEP consider #'+ i +' '+ dl.gid +'('+ dx.last_stepped_gid +') '+ (f/1e3).toFixed(2) +'|'+ (f_pbc_Hz/1e3).toFixed(2) + (same_gid? ' same_gid':'') + (f_ok? ' f_OK':' f_lo'));
+         if (same_gid) continue;
+         if (f_ok) break;
       }
+      
+      // search above frequency for match
       if (i == dx.displayed.length) {
 	      wf_send('SET MARKER db='+ dx.db +' dir=1 freq='+ (freq_displayed_Hz/1e3).toFixed(3)
 	         +' eibi_types_mask='+ dx.eibi_types_mask.toHex()
 	         +' filter_tod='+ dx.filter_tod[dx.db]);
+	      if (dx.step_dbg) console.log('>>> STEP DX_STEP [[[REQ]]]');
+	      dx.last_stepped_gid = -1;
          return;
       }
    } else {
       for (i = dx.displayed.length - 1; i >= 0 ; i--) {
          dl = dx.displayed[i];
          if (!dl) continue;
-         var f = Math.round(dl.freq * 1e3);
-         //console.log('consider #'+ i +' '+ f);
-         if (f < freq_displayed_Hz) break;
+         var f = Math.round(dl.f_label);
+         var same_gid = (dl.gid == dx.last_stepped_gid);
+         var f_ok = (f < f_pbc_Hz);
+         //if (dx.step_dbg) console.log('<<< STEP consider #'+ i +' '+ dl.gid +'('+ dx.last_stepped_gid +') '+ (f/1e3).toFixed(2) +'|'+ (f_pbc_Hz/1e3).toFixed(2) + (same_gid? ' same_gid':'') + (f_ok? ' f_OK':' f_hi'));
+         if (same_gid) continue;
+         if (f_ok) break;
       }
+      
+      // search below frequency for match
       if (i < 0) {
 	      wf_send('SET MARKER db='+ dx.db +' dir=-1 freq='+ (freq_displayed_Hz/1e3).toFixed(3)
 	         +' eibi_types_mask='+ dx.eibi_types_mask.toHex()
 	         +' filter_tod='+ dx.filter_tod[dx.db]);
+	      if (dx.step_dbg) console.log('<<< STEP DX_STEP [[[REQ]]]');
+	      dx.last_stepped_gid = -1;
          return;
       }
    }
    
-   // after changing display to this frequency the normal dx_schedule_update() process will
-   // acquire a new set of labels
+   // After changing display to this frequency the normal dx_schedule_update() process will
+   // acquire a new set of labels.
+   // i.e. freqset_update_ui() => waterfall_pan_canvases() => dx_schedule_update() => (server) => dx_update()
    var mode_s = kiwi.modes_lc[dx_decode_mode(dl.flags)];
-   //console.log('FOUND #'+ i +' '+ f +' '+ dl.ident +' '+ mode_s +' '+ dl.lo +' '+ dl.hi);
+   if (dx.step_dbg) console.log('STEP FOUND #'+ i +' f='+ (f/1e3).toFixed(2) +' f_pbc_Hz='+ (f_pbc_Hz/1e3).toFixed(2) +' dl.freq='+ dl.freq +' '+ dl.ident +' '+ mode_s +' '+ dl.lo +' '+ dl.hi);
    freqmode_set_dsp_kHz(dl.freq, mode_s);
    if (dl.lo != 0 && dl.hi != 0) {
       ext_set_passband(dl.lo, dl.hi);     // label has custom pb
@@ -7882,6 +7978,10 @@ function dx_label_step(dir)
       //console.log(dpb);
       ext_set_passband(dpb.lo, dpb.hi);   // need to force default pb in case cpb is not default
    }
+   
+   if (dx.step_dbg) console.log('STEP RENDER dx_sig_bw() gid='+ dl.gid);
+   dx_sig_bw(dl.gid);
+   dx.last_stepped_gid = dl.gid;
 }
 
 var dx_keys;
@@ -7954,7 +8054,7 @@ function dx_show_edit_panel2()
          //console.log('DX EDIT new entry');
          console.log('DX EDIT new f='+ freq_car_Hz +'|'+ freq_displayed_Hz +'|'+ freq_kHz_str +' m='+ mode);
          dx.o.fr = +(freq_kHz_str) + kiwi.freq_offset_kHz;
-         dx.o.lo = dx.o.hi = dx.o.o = 0;
+         dx.o.lo = dx.o.hi = dx.o.o = dx.o.s = 0;
          dx.o.fm = kiwi.modes_idx[mode];
          dx.o.ft = dx.DX_QUICK_0;
          dx.o.fd = dx.DX_DOW_BASE;
@@ -8311,6 +8411,7 @@ function dx_add_cb(id, val)
 	dx_send_update('DX_ADD', -1, dx.o.fr, flags, dx.o);
 	setTimeout(function() {dx_close_edit_panel(id);}, 250);
 	owrx.dx_click_gid_last_until_tune = owrx.dx_click_gid_last_stored = undefined;    // because gid's may get renumbered
+   dx_show(false, -1);
 }
 
 function dx_delete_cb(id, val)
@@ -8321,6 +8422,7 @@ function dx_delete_cb(id, val)
 	dx_send_update('DX_DELETE', dx.o.gid, -1, 0, null);
 	setTimeout(function() {dx_close_edit_panel(id);}, 250);
 	owrx.dx_click_gid_last_until_tune = owrx.dx_click_gid_last_stored = undefined;    // because gid's may get renumbered
+   dx_show(false, -1);
 }
 
 function dx_evt(path, cb_param, first, evt)
@@ -8344,23 +8446,43 @@ function dx_evt(path, cb_param, first, evt)
    return rv;
 }
 
-function dx_sig(gid, show)
+function dx_sig_bw(gid)
 {
-   var label = dx.list[gid];
-   var el = w3_el('id-dx-sig');
-   if (show && isArg(label.sig_bw) && label.sig_bw != 0) {
+   var label = (gid >= 0)? dx.list[gid] : null;
+   if (label && isArg(label.sig_bw) && label.sig_bw != 0) {
+      var el = w3_el('id-dx-sig');
+      if (!el) {
+         // Possible that label is currently off-screen because labels haven't been refreshed yet.
+         // So mark it such that the refresh render process will find it.
+         dx.sig_bw_render_gid = gid;
+         if (dx.step_dbg) console.log('$dx_sig_bw OFF SCREEN sig_bw_render_gid='+ gid);
+         return;
+      }
+      
       var hbw = label.sig_bw/2;
-	   var freq = label.freq;
-	   var f_base = freq - kiwi.freq_offset_kHz;
+	   var f_base = label.freq - kiwi.freq_offset_kHz;
+		var f_baseHz = f_base * 1000;
+      // place sig bw around center of passband where label is
       var xl = scale_px_from_freq((f_base - hbw) * 1000, g_range);
       var xr = scale_px_from_freq((f_base + hbw) * 1000, g_range);
-      console.log('$dx_sig f='+ f_base +' hbw='+ hbw +' xl='+ xl +' xr='+ xr);
+		var mkr_Hz = f_baseHz + passband_offset_dxlabel(kiwi.modes_lc[dx_decode_mode(label.flags)], label.params, label.lo, label.hi);
+      //console.log('$dx_sig_bw f='+ f_base +' hbw='+ hbw +' xl='+ xl +' xr='+ xr +' mkr_Hz='+ mkr_Hz +' mkr_off='+ label.mkr_off);
+      //console.log(label);
       el.style.left = px(xl);
       el.style.width = px(xr-xl);
-      w3_hide2(el, false);
+      el.style.background = label.color;
+
+      // check if mkr is already being used by offset (e.g. NDB label)
+      if (label.mkr_off != 0) return;
+      dx_canvas.style.left = px(scale_px_from_freq(mkr_Hz, g_range)-dx_car_w/2);
+      dx_show(true);
+      if (dx.step_dbg) console.log('$dx_sig_bw SHOW gid='+ gid);
+      dx.sig_bw_render_gid = gid;
    } else {
-      w3_hide2(el, true);
-      console.log('$dx_sig OFF');
+      // this label has no sig-bw
+      if (dx.step_dbg) console.log('$dx_sig_bw OFF');
+		dx_show(false);
+      dx.sig_bw_render_gid = -1;
    }
 }
 
@@ -8375,7 +8497,7 @@ function dx_click(ev, gid)
 	   // easier to do this way since it's about the only element that
 	   // intercepts mousedown/touchstart without subsequent propagation
 	   w3_menu_close('dx_click');
-	   dx_sig(gid, true);
+	   dx_sig_bw(gid);
 	   
 	   owrx.dx_click_gid_last_stored = (dx.db == dx.DB_STORED)? gid : undefined;
 	   owrx.dx_click_gid_last_until_tune = gid;
@@ -8403,7 +8525,7 @@ function dx_click(ev, gid)
          extint.param = ext.join(',');
       }
       var extname = extint.extname? extint.extname : '';
-		console_log_dbgUs('dx_click gid='+ gid +' f='+ freq +'|'+ f_base +' mode='+ mode +' cur_mode='+ cur_mode +' lo='+ lo +' hi='+ hi +' params=<'+ params +'> extname=<'+ extname +'> param=<'+ extint.param +'>');
+		//console_log_dbgUs('dx_click gid='+ gid +' f='+ freq +'|'+ f_base +' mode='+ mode +' cur_mode='+ cur_mode +' lo='+ lo +' hi='+ hi +' params=<'+ params +'> extname=<'+ extname +'> param=<'+ extint.param +'>');
 
       // EiBi database frequencies are dial/carrier (i.e. not pbc)
       if (dx.db == dx.DB_EiBi) {
@@ -8468,38 +8590,38 @@ function dx_ext_open()
 // so use the number embedded in id="" to create a reference.
 // Even the "data-" thing doesn't work.
 
-var dx_z_save, dx_bg_color_save;
-
 function dx_enter(ev, cmkr_x)
 {
-   var dx = ev.target;
-	dx_z_save = dx.style.zIndex;
-	dx.style.zIndex = 999;
-	dx_bg_color_save = dx.style.backgroundColor;
-	dx.style.backgroundColor = w3_contains(dx, 'cl-dx-label-filtered')? 'lightGrey' : (w3_contains(dx, 'dx-has-ext')? 'magenta' : 'yellow');
+   var tgt = ev.target;
+	dx.z_save = tgt.style.zIndex;
+	tgt.style.zIndex = 999;
+	dx.bg_color_save = tgt.style.backgroundColor;
+	tgt.style.backgroundColor = w3_contains(tgt, 'cl-dx-label-filtered')? 'lightGrey' : (w3_contains(tgt, 'dx-has-ext')? 'magenta' : 'yellow');
 
-	var dx_line = w3_el(parseInt(dx.id)+'-id-dx-line');
+	var dx_line = w3_el('id-dx-line_'+ tgt.id.parseIntEnd());
+	//console.log('tgt.id='+ tgt.id +' id-dx-line_'+ tgt.id.parseIntEnd() +'='+ dx_line);
 	dx_line.zIndex = 998;
 	dx_line.style.width = '3px';
 	
-	if (cmkr_x) {
+	if (+cmkr_x) {
 		dx_canvas.style.left = px(cmkr_x-dx_car_w/2);
-		dx_canvas.style.zIndex = 100;
+      w3_visible(dx_canvas, true);
 	}
 }
 
 function dx_leave(ev, cmkr_x)
 {
-   var dx = ev.target;
-	dx.style.zIndex = dx_z_save;
-	dx.style.backgroundColor = dx_bg_color_save;
+   var tgt = ev.target;
+	tgt.style.zIndex = dx.z_save;
+	tgt.style.backgroundColor = dx.bg_color_save;
 
-	var dx_line = w3_el(parseInt(dx.id)+'-id-dx-line');
+	var dx_line = w3_el('id-dx-line_'+ tgt.id.parseIntEnd());
 	dx_line.zIndex = 110;
 	dx_line.style.width = '1px';
 	
-	if (cmkr_x) {
-		dx_canvas.style.zIndex = 99;
+	if (+cmkr_x) {
+      dx_canvas.style.visibility = dx.sig_bw_vis;
+      dx_canvas.style.left = dx.sig_bw_left;
 	}
 }
 
@@ -8554,9 +8676,16 @@ function dx_help(show)
                      '<li>Extension labels are magenta when moused-over as opposed to the usual yellow.</li>' +
                      '<li>Labels outside their scheduled time (if any) will mouse-over grey.</li>' +
                      '<li>Clicking the label sets the freq/mode and opens the extension.</li>' +
-                     '<li>Alt/ctrl-click sets the freq/mode without openning the extension.</li>' +
-                     '<li>Shift-option-click to toggle the label active (admin only).</li>' +
                      '<li>For the stored database shift-clicking opens the label edit panel (admin only).</li>' +
+                     '<li>PC</li><ul>' +
+                        '<li>Alt-click sets the freq/mode without openning the extension.</li>' +
+                        '<li>Shift-alt-click to toggle the label active (admin only).</li>' +
+                     '</ul>' +
+                     '<li>Mac</li><ul>' +
+                        '<li>Alt/option-click sets the freq/mode without openning the extension.</li>' +
+                        '<li>Shift-alt/option-click to toggle the label active (admin only).</li>' +
+                        '<li>On Mac the control key can be used in place of alt/option.</li>' +
+                     '</ul>' +
                   '</ul>' +
                'Mobile:' +
                   '<ul>' +
@@ -8821,6 +8950,13 @@ function ident_keyup(el, evt, which)
 // shortcuts (keyboard)
 ////////////////////////////////
 
+// abcdefghijklmnopqrstuvwxyz `~!@#$%^&*()-_=+[]{}\|;:'"<>? 0123456789.,/kM
+// ..........F........ ......   ..        F .     .. F  ... FFFFFFFFFFFFFFF
+// .. ..  ...  F. .  .  ..  .                               F: frequency entry keys
+// ABCDEFGHIJKLMNOPQRSTUVWXYZ
+// :space: :tab: :arrow-UDLR:
+//    .
+
 var shortcut = {
    nav_off: 0,
    keys: null,
@@ -8856,30 +8992,31 @@ function keyboard_shortcut_init()
       w3_div('',
          w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', 'Keys', 25, 'Function'),
          w3_inline_percent('w3-padding-tiny', 'g =', 25, 'select frequency entry field'),
-         w3_inline_percent('w3-padding-tiny', 'j i LR-arrow-keys', 25, 'frequency step down/up, add shift or alt/ctrl for faster<br>&nbsp;&nbsp;&nbsp;shift plus alt/ctrl to step to next/prev DX label'),
+         w3_inline_percent('w3-padding-tiny', 'j i LR-arrow-keys', 25, 'frequency step down/up, add shift or alt for faster<br>&nbsp;&nbsp;&nbsp;shift plus alt to step to next/prev DX label'),
          w3_inline_percent('w3-padding-tiny', 'm n N', 25, 'toggle frequency memory menu, VFO A/B, VFO A=B'),
          w3_inline_percent('w3-padding-tiny', 'b B', 25, 'scroll band menu'),
          w3_inline_percent('w3-padding-tiny', 'e E', 25, 'scroll extension menu'),
-         w3_inline_percent('w3-padding-tiny', 'a A d l u c f q', 25, 'toggle modes: AM SAM DRM LSB USB CW NBFM IQ<br>add alt/ctrl to toggle backwards (e.g. SAM modes)'),
-         w3_inline_percent('w3-padding-tiny', 'p P alt/ctrl-p', 25, 'passband narrow/widen, restore default'),
-         w3_inline_percent('w3-padding-tiny', 'UD-arrow-keys', 25, 'passband adjust both, right(shift), left(alt/ctrl) edges'),
+         w3_inline_percent('w3-padding-tiny', 'a A d l u c f q', 25, 'toggle modes: AM SAM DRM LSB USB CW NBFM IQ<br>add alt to toggle backwards (e.g. SAM modes)'),
+         w3_inline_percent('w3-padding-tiny', 'p P alt-p', 25, 'passband narrow/widen, restore default'),
+         w3_inline_percent('w3-padding-tiny', 'UD-arrow-keys', 25, 'passband adjust both, right(shift), left(alt) edges'),
          w3_inline_percent('w3-padding-tiny', 'r', 25, 'toggle audio recording'),
-         w3_inline_percent('w3-padding-tiny', 'z Z', 25, 'zoom in/out, add alt/ctrl for max in/out'),
+         w3_inline_percent('w3-padding-tiny', 'z Z', 25, 'zoom in/out, add alt for max in/out'),
          w3_inline_percent('w3-padding-tiny', '< >', 25, 'waterfall page down/up'),
-         w3_inline_percent('w3-padding-tiny', 'w W', 25, 'waterfall min dB slider -/+ 1 dB, add alt/ctrl for -/+ 10 dB'),
+         w3_inline_percent('w3-padding-tiny', 'w W', 25, 'waterfall min dB slider -/+ 1 dB, add alt for -/+ 10 dB'),
          w3_inline_percent('w3-padding-tiny', 'S D', 25, 'waterfall auto-scale, spectrum slow device mode'),
-         w3_inline_percent('w3-padding-tiny', 's alt/ctrl-s', 25, 'spectrum RF/AF/off toggle, add alt/ctrl to toggle backwards'),
+         w3_inline_percent('w3-padding-tiny', 's alt-s', 25, 'spectrum RF/AF/off toggle, add alt to toggle backwards'),
          w3_inline_percent('w3-padding-tiny', 'v V space', 25, 'volume less/more, mute'),
          w3_inline_percent('w3-padding-tiny', 'o', 25, 'toggle between option bar "off" and "stats" mode,<br>others selected by related shortcut key'),
          w3_inline_percent('w3-padding-tiny', '!', 25, 'toggle aperture manual/auto menu'),
          w3_inline_percent('w3-padding-tiny', '@', 25, 'DX label filter'),
-         w3_inline_percent('w3-padding-tiny', '\\ |', 25, 'toggle (& open) DX stored/EiBi/community database<br>&nbsp;&nbsp;&nbsp;alt/ctrl to toggle "filter by time/day-of-week" checkbox'),
+         w3_inline_percent('w3-padding-tiny', '\\ |', 25, 'toggle (& open) DX stored/EiBi/community database<br>&nbsp;&nbsp;&nbsp;alt to toggle "filter by time/day-of-week" checkbox'),
          //w3_inline_percent('w3-padding-tiny', '#', 25, 'Open user preferences extension'),
          w3_inline_percent('w3-padding-tiny', 'x y', 25, 'toggle visibility of control panels, top bar'),
          w3_inline_percent('w3-padding-tiny', 'esc', 25, 'close/cancel action'),
          w3_inline_percent('w3-padding-tiny', '? h', 25, 'toggle this help list'),
-         w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', '', 25, 'Windows, Linux: use alt, not ctrl'),
-         w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', '', 25, 'Mac: use ctrl or alt/option')
+         w3_inline_percent('w3-padding-tiny', 'H', 25, 'Open extension help'),
+         w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', '', 25, 'Windows, Linux: use alt key, not control key'),
+         w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', '', 25, 'Mac: use alt/option or control key')
       );
 
 	w3_el('id-kiwi-body').addEventListener('keydown', keyboard_shortcut_event, true);
@@ -8887,7 +9024,7 @@ function keyboard_shortcut_init()
 
 function keyboard_shortcut_help()
 {
-   confirmation_show_content(shortcut.help, 550, 600);   // height +15 per added line
+   confirmation_show_content(shortcut.help, 550, 625);   // height +15 per added line
 }
 
 // FIXME: animate (light up) control panel icons?
@@ -8906,13 +9043,6 @@ function keyboard_shortcut_url_keys()
    keyboard_shortcut(key, 0, 0);
    setTimeout(keyboard_shortcut_url_keys, 200);
 }
-
-// abcdefghijklmnopqrstuvwxyz `~!@#$%^&*()-_=+[]{}\|;:'"<>? 0123456789.,/kM
-// ..........F........ ......   ..        F .     .. F  ... FFFFFFFFFFFFFFF
-// .. ..   ..  F. .  .  ..  .                               F: frequency entry keys
-// ABCDEFGHIJKLMNOPQRSTUVWXYZ
-// :space: :tab: :arrow-UDLR:
-//    .
 
 function keyboard_shortcut(key, key_mod, ctlAlt, keyCode)
 {
@@ -9010,6 +9140,7 @@ function keyboard_shortcut(key, key_mod, ctlAlt, keyCode)
    case 'e': extension_scroll(1); break;
    case 'E': extension_scroll(-1); break;
    case '?': case 'h': keyboard_shortcut_help(); break;
+   case 'H': if (extint.current_ext_name) w3_call(extint.current_ext_name +'_help', true); break;
 
    case '|':
       if (!ext_panel_displayed('dx')) no_step = true;
@@ -9033,6 +9164,8 @@ function keyboard_shortcut(key, key_mod, ctlAlt, keyCode)
 
 function keyboard_shortcut_event(evt)
 {
+   //event_dump(evt, 'shortcut', true);
+   
    if (!evt.target) {
       //console.log('KEY no EVT');
       return;
@@ -9672,8 +9805,8 @@ function panels_setup()
 		'<li> Or use the "select band" menu to jump to a pre-defined band. </li>' +
 		'<li> Use the zoom icons to control the waterfall span. </li>' +
 		'<li> Tune by clicking on the waterfall, spectrum or the cyan/red-colored station labels. </li>' +
-		'<li> Ctrl-shift or alt-shift click in the waterfall to lookup frequency in online databases. </li>' +
-		'<li> Control or option/alt click to page spectrum down and up in frequency. </li>' +
+		'<li> Control-shift or alt-shift click in the waterfall to lookup frequency in online databases. </li>' +
+		'<li> Control or alt click to page spectrum down and up in frequency. </li>' +
 		'<li> Adjust the "WF min" slider for best waterfall colors or use the "Auto Scale" button. </li>' +
 		"<li> Type 'h' or '?' to see the list of keyboard shortcuts. </li>" +
 		'<li> See the <a href="http://www.kiwisdr.com/quickstart/" target="_blank">Operating information</a> page ' +
@@ -10451,6 +10584,7 @@ function toggle_or_set_hide_panels(set)
       hide_panels = set;
    else
 	   hide_panels ^= 1;
+
    //console.log('toggle_or_set_hide_panels set='+ set +' hide_panels='+ hide_panels);
    w3_iterate_children('id-panels-container', function(el) {
       if (w3_contains(el, 'class-panel')) {

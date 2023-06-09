@@ -442,6 +442,16 @@ String.prototype.filterInt = function() {
 	return NaN;
 }
 
+String.prototype.parseIntEnd = function() {
+	var s = String(this);
+	var a = s.match(/[^-\d]+([-\d]+$)/);
+	//console.log('parseIntEnd <'+ s +'>');
+	//console.log(a);
+	if (a.length == 2 && isNumber(+a[1]))
+		return Number(a[1]);
+	return NaN;
+}
+
 String.prototype.withSign = function()
 {
 	var s = this;

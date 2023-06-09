@@ -80,6 +80,7 @@ int main_argc;
 char **main_argv;
 char *fpga_file;
 static bool _kiwi_restart;
+platform_e platform;
 
 void kiwi_restart()
 {
@@ -136,6 +137,22 @@ int main(int argc, char *argv[])
 		scall("setrlimit", setrlimit(RLIMIT_CORE, &unlim));
 		system("rm -f /tmp/core-kiwi.*-*");     // remove old core files
 		set_cpu_affinity(0);
+	#endif
+	
+	#ifdef PLATFORM_beaglebone_black
+	    platform = PLATFORM_BBG_BBB;
+	#endif
+	
+	#ifdef PLATFORM_beaglebone_ai
+	    platform = PLATFORM_BB_AI;
+	#endif
+	
+	#ifdef PLATFORM_beaglebone_ai64
+	    platform = PLATFORM_BB_AI64;
+	#endif
+	
+	#ifdef PLATFORM_raspberrypi
+	    platform = PLATFORM_RPI;
 	#endif
 	
 	kstr_init();

@@ -2,7 +2,25 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.602  Apr 3, 2023
+v1.603  Jun 10, 2023
+    DX label popups no longer have modifier key explanations. Refer to DX label help button instead.
+
+    Extension help keyboard shortcut: When an extension is open (or the DX label panel) typing 'H'
+    will open the extension's help panel. The global help panel is still opened with 'h' or '?'
+    
+    Clarified use of alt and control keys in global help panel and DX label help panel.
+
+    Bug fixes:
+        DX label panel "add" button now working.
+        Various fixes to labels with non-zero signal bandwidths.
+        Antenna disconnect detector now works properly for disconnect/reconnect transitions.
+        When displaying a large number of EiBi labels the audio should no longer glitch.
+        For BBAi-64 10 Mbps Ethernet mode is disabled due to the Ethernet interface hanging.
+        Fixed problem where 'x' shortcut key caused all subsequent shortcuts to stop functioning.
+        Fixed dist.admin.json recovery file.
+        Optimized size of DRM extension control panel.
+
+v1.602  Jun 3, 2023
     Only one admin connection at a time allowed:
         To eliminate problems with corrupted configuration files multiple simultaneous admin
         connections are no longer allowed. If you attempt to do so, and supply the admin password

@@ -360,7 +360,7 @@ function ext_set_mode(mode, freq, opt)
    if (new_drm)
       extint.prev_mode = cur_mode;
 
-   console.log('### ext_set_mode '+ mode +' prev='+ extint.prev_mode);
+   //console.log('### ext_set_mode '+ mode +' prev='+ extint.prev_mode);
 	demodulator_analog_replace(mode, freq);
 	
 	var open_ext = w3_opt(opt, 'open_ext', false);
@@ -906,7 +906,7 @@ function ext_panel_redisplay(s) { w3_innerHTML('id-ext-controls-container', s); 
 
 function extint_panel_hide(skip_calling_hide_spec)
 {
-	console.log('extint_panel_hide using_data_container='+ extint.using_data_container +' skip_calling_hide_spec='+ skip_calling_hide_spec);
+	//console.log('extint_panel_hide using_data_container='+ extint.using_data_container +' skip_calling_hide_spec='+ skip_calling_hide_spec);
 
 	if (extint.using_data_container) {
 		w3_hide('id-ext-data-container');

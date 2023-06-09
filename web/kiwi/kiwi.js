@@ -5,6 +5,12 @@
 var kiwi = {
    d: {},      // debug
    
+   PLATFORM_BBG_BBB: 0,
+   PLATFORM_BB_AI:   1,
+   PLATFORM_BB_AI64: 2,
+   PLATFORM_RPI:     3,
+   platform: -1,
+   
    cfg:   { seq:0, name:'cfg',   cmd:'save_cfg',   lock:0, timeout:null },
    dxcfg: { seq:0, name:'dxcfg', cmd:'save_dxcfg', lock:0, timeout:null },
    adm:   { seq:0, name:'adm',   cmd:'save_adm',   lock:0, timeout:null },
@@ -506,6 +512,15 @@ var adm = { };
 function config_save(cfg_s, cfg)
 {
    var kiwi_cfg = kiwi[cfg_s];
+   if (!isArg(kiwi_cfg) || !isArg(kiwi_cfg.cmd)) {
+      kiwi_debug('DANGER: config_save() cfg_s=<'+ cfg_s +'> NOT FOUND in kiwi[] ???', true);
+      return;
+   }
+   var cfg_len = JSON.stringify(cfg).length;
+   if (cfg_len < 32) {
+      kiwi_debug('DANGER: config_save() cfg_s=<'+ cfg_s +'> cfg_len='+ cfg_len +' TOO SMALL???', true);
+      return;
+   }
    
    // Can't do this because it defeats the kiwi.cfg.lock mechanism!
    // Better to just fix the places where back-to-back requests are occurring.
@@ -2678,6 +2693,21 @@ function kiwi_set_freq_offset(freq_offset_kHz)
    kiwi.offset_frac = (freq_offset_kHz % 1000) * 1000;
 }
 
+function kiwi_init_cfg()
+{
+   kiwi_set_freq_offset(cfg.freq_offset);
+   
+   var page_title = cfg.index_html_params.PAGE_TITLE;
+   if (page_title == '') page_title = 'KiwiSDR';
+   var el = w3_el('id-page-title');    // in user and admin html
+   if (el) el.innerHTML += page_title;
+   
+   w3_innerHTML('id-rx-photo-title', cfg.index_html_params.RX_PHOTO_TITLE);
+   w3_innerHTML('id-rx-photo-desc', cfg.index_html_params.RX_PHOTO_DESC);
+   w3_innerHTML('id-rx-title', decodeURIComponent(cfg.index_html_params.RX_TITLE));
+   w3_innerHTML('id-owner-info', decodeURIComponent(cfg.owner_info));
+}
+
 
 ////////////////////////////////
 // control messages
@@ -2706,6 +2736,10 @@ function kiwi_msg(param, ws)
 
 		case "debian_ver":
 			debian_ver = parseInt(param[1]);
+			break;
+
+		case "platform":
+			kiwi.platform = parseInt(param[1]);
 			break;
 
 		case "client_public_ip":
@@ -2758,8 +2792,8 @@ function kiwi_msg(param, ws)
          //setTimeout(function() {
             //console.log('### DELAYED load_cfg '+ ws.stream +' '+ cfg_json.length);
             cfg = kiwi_JSON_parse('load_cfg', cfg_json);
-	         kiwi_set_freq_offset(cfg.freq_offset);
-            owrx_cfg();
+            kiwi_init_cfg();
+            owrx_init_cfg();
          //}, 2000);
 			break;
 
@@ -2842,7 +2876,7 @@ function kiwi_msg(param, ws)
 			var mkr = param[1];
 			//console.log('MKR '+ mkr);
 			var obj = kiwi_JSON_parse('mkr', mkr);
-			if (obj) dx_label_cb(obj);
+			if (obj) dx_label_render_cb(obj);
 			break;
 
 		case "user_cb":
@@ -2906,7 +2940,7 @@ function kiwi_msg(param, ws)
 
 		case "status_msg_html":
 		   var s = kiwi_decodeURIComponent('status_msg_html', param[1]);
-		   //console.log('status_msg_html: '+ s);
+		   //console.log('status_msg_html: <'+ s +'>');
 			w3_innerHTML('id-status-msg', s);		// overwrites last status msg
 			w3_innerHTML('id-msg-status', s);		// overwrites last status msg
 			break;

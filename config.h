@@ -26,6 +26,11 @@ Boston, MA  02110-1301, USA.
 // LOGGING_HOST, KIWI_UI_LIST, REPO
 // {EDATA_DEVEL, EDATA_EMBED}
 
+typedef enum { PLATFORM_BBG_BBB, PLATFORM_BB_AI, PLATFORM_BB_AI64, PLATFORM_RPI } platform_e;
+extern platform_e platform;
+
+typedef enum { ESPEED_AUTO = 0, ESPEED_10M = 1, ESPEED_100M = 2 } espeed_e;
+
 #define FW_SEL_SDR_RX4_WF4  0
 #define FW_SEL_SDR_RX8_WF2  1
 #define FW_SEL_SDR_RX3_WF3  2

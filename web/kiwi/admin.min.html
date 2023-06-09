@@ -1,28 +1,44 @@
-<!DOCTYPE html>
-<meta http-equiv=Content-Type content="text/html;charset=utf-8">
+<!DOCTYPE HTML>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+
+<!-- Copyright (c) 2014-2019 John Seamons, ZL/KF6VO -->
+
 <html>
-<head>
-<title>Admin %[PAGE_TITLE]</title>
-<meta name=viewport content="width=device-width,initial-scale=1">
-<meta charset=utf-8>
-%[GEN_LIST_CSS]
-<script>var kiwi_check_js_version=[]</script>
-<script src=config/config.js></script>
-%[GEN_LIST_JS]
-<script src=admin.js></script>
-<script src=admin_sdr.js></script>
-%[EXT_LIST_JS]
-</head>
-<body class=id-kiwi-body>
-<div class=id-kiwi-msg-container>
-<div id=id-kiwi-msg-logo-container>
-<a href=http://bluebison.net target=_blank><img id=id-left-logo src=gfx/kiwi-with-headphones.51x67.png></a>
-<div id=id-left-logo-text><a href=http://bluebison.net target=_blank>&copy; bluebison.net</a></div>
-</div>
-<div id=id-kiwi-msg></div>
-</div>
-<div class="id-kiwi-container w3-scroll" data-type=admin>
-<div class="id-admin w3-container"></div>
-</div>
-</body>
+	<head>
+		<title id="id-page-title">Admin </title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta charset="utf-8">
+
+		<!-- web.cpp:reload_index_params() creates content of GEN_LIST_CSS and GEN_LIST_JS -->
+
+		%[GEN_LIST_CSS]
+
+		<script type="text/javascript">
+			/* must be before inclusion of any .js files below */
+			var kiwi_check_js_version = [];
+		</script>
+		
+		<script src="config/config.js"></script>
+		%[GEN_LIST_JS]
+
+		<script src="admin.js"></script>
+		<script src="admin_sdr.js"></script>
+
+		<!-- extensions are here because admin config parameters must be loaded from them -->
+		%[EXT_LIST_JS]
+	</head>
+
+	<body class="id-kiwi-body">
+		<div class="id-kiwi-msg-container">
+            <div id="id-kiwi-msg-logo-container">
+                <a href="http://bluebison.net" target="_blank"><img id="id-left-logo" src="gfx/kiwi-with-headphones.51x67.png" /></a>
+                <div id="id-left-logo-text"><a href="http://bluebison.net" target="_blank">&copy; bluebison.net</a></div>
+            </div>
+			<div id="id-kiwi-msg"></div>
+		</div>
+
+		<div class="id-kiwi-container w3-scroll" data-type="admin">
+			<div class="id-admin w3-container"></div>
+		</div>
+	</body>
 </html>

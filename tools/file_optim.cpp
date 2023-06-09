@@ -130,8 +130,11 @@ void minify(const char *ext_s, u4_t mflags, const char *svc, const char *ext, ch
             }
         #else
             if (mflags & MF_HTML) {
-                asprintf(&cmd, "curl -Ls -X POST --http1.0 --data \'type=html\' --data \'fn=%s\' --data-urlencode \'input@%s\' %s >%s",
-                    fn, fn, svc, fn_min);
+                // our HTML minifier just doesn't work -- too many problems
+                //asprintf(&cmd, "curl -Ls -X POST --http1.0 --data \'type=html\' --data \'fn=%s\' --data-urlencode \'input@%s\' %s >%s",
+                //    fn, fn, svc, fn_min);
+                asprintf(&cmd, "cat %s >%s",
+                    fn, fn_min);
             } else
             if (mflags & (MF_JS|MF_CSS)) {
                 asprintf(&cmd, "echo '\n\n/* %s (%s = %.24s) */' >%s; "

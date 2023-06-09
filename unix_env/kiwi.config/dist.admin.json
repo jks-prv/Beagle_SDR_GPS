@@ -9,5 +9,13 @@
 "update_check":true,
 "update_install":true,
 "sdr_hu_register":false,
-"api_key":""
+"api_key":"",
+"ip_address": {
+    "use_static": false,
+    "ip": "",
+    "netmask": "",
+    "gateway": "",
+    "dns1": "",
+    "dns2": ""
+}
 }

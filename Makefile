@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 602
+VERSION_MIN = 603
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -1343,6 +1343,10 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 enable disable start stop restart status:
 	-systemctl --full --lines=250 $@ kiwid.service || true
+
+avahi-enable avahi-disable avahi-start avahi-stop avahi-status:
+	-systemctl --full --lines=250 $(subst avahi-,,$@) avahi-daemon.service || true
+	-systemctl --full --lines=250 $(subst avahi-,,$@) avahi-daemon.socket || true
 
 # SIGUSR1 == SIG_DUMP
 reload dump:
