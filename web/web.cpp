@@ -457,11 +457,7 @@ bool index_params_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, i
 		char *encoded = (char *) kiwi_imalloc("index_params_cb", n + SPACE_FOR_NULL);
 		kiwi_strncpy(encoded, s, n + SPACE_FOR_NULL);
 		//printf("index_params_cb: %d %d/%d/%d/%d VAL %s: <%s>\n", n_iparams, seq, hit, lvl, rem, id_last, encoded);
-		if (strcmp(id_last, "PAGE_TITLE") == 0 && *encoded == '\0') {
-		    iparams_add(id_last, (char *) "KiwiSDR");
-		} else {
-		    iparams_add(id_last, encoded);
-		}
+		iparams_add(id_last, encoded);
 		kiwi_ifree(id_last);
 		kiwi_ifree(encoded);
 	}
@@ -479,10 +475,6 @@ void reload_index_params()
 	n_iparams = 0;
 	//cfg_walk("index_html_params", cfg_print_tok, NULL);
 	cfg_walk("index_html_params", index_params_cb, NULL);
-
-	sb = (char *) cfg_string("owner_info", NULL, CFG_REQUIRED);
-	iparams_add("OWNER_INFO", sb);
-	cfg_string_free(sb);
 	
 	
 	// To aid development, only use packages when running in embedded mode (i.e. background mode),
@@ -526,8 +518,8 @@ void reload_index_params()
 		    "openwebrx.js",
 		    "ima_adpcm.js",
 		    "audio.js",
-		    "pkgs/xdLocalStorage/xd-utils.js",
-		    "pkgs/xdLocalStorage/xdLocalStorage.js",
+		    //"pkgs/xdLocalStorage/xd-utils.js",
+		    //"pkgs/xdLocalStorage/xdLocalStorage.js",
 		    "extensions/ext.js",
 		    NULL
 		}, {

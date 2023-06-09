@@ -3,9 +3,7 @@ KIWI_UI_LIST += "{ \"openwebrx\", 1 },"
 FILES_EMBED_JS += web/openwebrx/openwebrx.js web/openwebrx/audio.js web/openwebrx/ima_adpcm.js
 FILES_EMBED_CSS += web/openwebrx/openwebrx.css
 
-# NB: FILES_EMBED_MISC and not FILES_EMBED_HTML for index.html
-# because the current html minimizer doesn't work correctly with %[] expansion
-FILES_EMBED_MISC += web/openwebrx/index.html web/openwebrx/robots.txt
+FILES_EMBED_HTML += web/openwebrx/index.html web/openwebrx/robots.txt
 
 ########
 
