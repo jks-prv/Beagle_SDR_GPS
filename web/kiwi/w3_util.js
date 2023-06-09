@@ -2977,7 +2977,8 @@ function w3_select_conditional(psa, label, title, path, sel, opts, cb, cb_param)
 
    opts.forEach(function(el) {
       if (isArray(el))
-         s += '<option value='+ dq(idx++) +' '+ (el[1]? '':'disabled') +'>'+ el[0] +'</option> ';
+         s += '<option value='+ dq(idx) +' '+ ((idx == sel)? 'selected':'') +' '+ (el[1]? '':'disabled') +'>'+ el[0] +'</option> ';
+         idx++;
    });
    
    return w3int_select(psa, label, title, path, sel, s, cb, cb_param);
