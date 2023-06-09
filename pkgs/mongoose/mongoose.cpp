@@ -888,8 +888,8 @@ static int ns_is_error(int n) {
 void ns_sock_to_str(sock_t sock, char *buf, size_t len, int flags) {
   union socket_address sa;
   socklen_t slen = sizeof(sa);
-  char buf2[48];
-  size_t len2 = 48;
+  #define BUF2_L 64
+  char buf2[BUF2_L];
 
   if (buf != NULL && len > 0) {
     buf[0] = '\0';
@@ -903,15 +903,16 @@ void ns_sock_to_str(sock_t sock, char *buf, size_t len, int flags) {
 #if defined(NS_ENABLE_IPV6)
       inet_ntop(sa.sa.sa_family, sa.sa.sa_family == AF_INET ?
                 (void *) &sa.sin.sin_addr :
-                (void *) &sa.sin6.sin6_addr, buf2, len2);
+                (void *) &sa.sin6.sin6_addr, buf2, BUF2_L);
 #elif defined(_WIN32)
       // Only Windoze Vista (and newer) have inet_ntop()
-      strncpy(buf2, inet_ntoa(sa.sin.sin_addr), len2);
+      strncpy(buf2, inet_ntoa(sa.sin.sin_addr), BUF2_L);
 #else
-      inet_ntop(sa.sa.sa_family, (void *) &sa.sin.sin_addr, buf2, (socklen_t)len2);
+      inet_ntop(sa.sa.sa_family, (void *) &sa.sin.sin_addr, buf2, (socklen_t)BUF2_L);
 #endif
     }
     if (flags & 2) {
+      buf2[BUF2_L-1] = '\0';    // safety net
 #if defined(NS_ENABLE_IPV6)
       if (flags & 1) {
         // IPv6 address, e.g. [3ffe:2a00:100:7031::1]:8080 or [::ffff:192.168.1.1]:8073
