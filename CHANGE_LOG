@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.603  Jun 10, 2023
+v1.603,604  Jun 10, 2023
     DX label popups no longer have modifier key explanations. Refer to DX label help button instead.
 
     Extension help keyboard shortcut: When an extension is open (or the DX label panel) typing 'H'
