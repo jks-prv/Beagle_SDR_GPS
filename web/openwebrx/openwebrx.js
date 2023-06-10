@@ -11154,13 +11154,13 @@ function toggle_or_set_spec(set, val, dir)
 		no_close_ext = ((set & toggle_e.NO_CLOSE_EXT) != 0);
       //console.log('toggle_or_set_spec SET val='+ val);
 	} else {
-	   if (isUndefined(dir) || dir == 1) {
+	   if (isUndefined(dir) || dir == false || dir == 1) {
 		   spec.source = (spec.source + 1) % spec.CHOICES;
 		} else {
 		   spec.source--;
 		   if (spec.source < 0) spec.source = spec.CHOICES - 1;
 		}
-      //console.log('toggle_or_set_spec NEXT spec.source='+ spec.source);
+      //console.log('toggle_or_set_spec NEXT spec.source='+ spec.source +' dir='+ dir);
 	}
    var isSpec = (spec.source != spec.NONE);
    //console.log('toggle_or_set_spec isSpec='+ isSpec);
