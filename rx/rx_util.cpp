@@ -219,14 +219,15 @@ void rx_server_kick(kick_e kick, int chan)
 	// kick users off (all or individual channel)
 	printf("rx_server_kick %s rx=%d\n", kick_s[kick], chan);
 	conn_t *c = conns;
-	const char *msg = (kick == KICK_CHAN)? "You were kicked!" : "Everyone was kicked!";
+	bool kick_chan_all = (kick == KICK_CHAN && chan == -1);
+	const char *msg = (kick == KICK_CHAN && chan != -1)? "You were kicked!" : "Everyone was kicked!";
 	
 	for (int i=0; i < N_CONNS; i++, c++) {
 		if (!c->valid)
 			continue;
 
-        bool kick_chan  = (kick == KICK_CHAN  && chan == c->rx_channel);
-        bool kick_users = (kick == KICK_USERS && !c->internal_connection);
+        bool kick_chan  = (kick == KICK_CHAN && chan == c->rx_channel);
+        bool kick_users = ((kick == KICK_USERS || kick_chan_all) && !c->internal_connection);
         bool kick_all   = (kick == KICK_ALL);
         bool kick_admin = (kick == KICK_ADMIN);
         //printf("rx_server_kick consider CONN-%02d rx=%d %s kick_chan=%d kick_users=%d kick_all=%d\n",
