@@ -693,8 +693,9 @@ function check_top_bar_congestion()
 
 function init_top_bar()
 {
+   var rx_loc = kiwi_decodeURIComponent('RX_LOC', cfg.index_html_params.RX_LOC);
    w3_innerHTML('id-rx-desc',
-      cfg.index_html_params.RX_LOC +' | Grid '+
+      rx_loc +' | Grid '+
       w3_link('', 'https://www.levinecentral.com/ham/grid_square.php?Grid='+ cfg.index_html_params.RX_QRA,
          cfg.index_html_params.RX_QRA, '', 'dont_toggle_rx_photo') +
       ', ASL '+ cfg.index_html_params.RX_ASL +', '+
@@ -708,8 +709,8 @@ var rx_photo_spacer_height = owrx.height_top_bar_parts;
 function init_rx_photo()
 {
    var el = w3_el('id-top-photo-img');
-   el.src = cfg.index_html_params.RX_PHOTO_FILE;
-   el.alt = el.title = cfg.index_html_params.RX_PHOTO_DESC;
+   el.src = kiwi_decodeURIComponent('RX_PHOTO_FILE', cfg.index_html_params.RX_PHOTO_FILE);
+   el.alt = el.title = kiwi_decodeURIComponent('RX_PHOTO_DESC', cfg.index_html_params.RX_PHOTO_DESC);
 
    el.style.paddingLeft = cfg.index_html_params.RX_PHOTO_LEFT_MARGIN? '50px' : 0;
 	owrx.RX_PHOTO_HEIGHT = +(cfg.index_html_params.RX_PHOTO_HEIGHT) + rx_photo_spacer_height;
@@ -1546,7 +1547,8 @@ function owrx_init_cfg()
 {
    w3_do_when_rendered('id-rx-gmap',
       function() {
-         w3_link_set('id-rx-gmap', 'https://www.google.com/maps/place/'+ cfg.index_html_params.RX_GMAP);
+         var rx_gmap = kiwi_decodeURIComponent('RX_GMAP', cfg.index_html_params.RX_GMAP);
+         w3_link_set('id-rx-gmap', 'https://www.google.com/maps/place/'+ rx_gmap);
       }
    );
    // REMINDER: w3_do_when_rendered() returns immediately

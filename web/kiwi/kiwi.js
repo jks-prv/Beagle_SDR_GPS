@@ -2697,15 +2697,15 @@ function kiwi_init_cfg()
 {
    kiwi_set_freq_offset(cfg.freq_offset);
    
-   var page_title = cfg.index_html_params.PAGE_TITLE;
+   var page_title = kiwi_decodeURIComponent('PAGE_TITLE', cfg.index_html_params.PAGE_TITLE);
    if (page_title == '') page_title = 'KiwiSDR';
    var el = w3_el('id-page-title');    // in user and admin html
    if (el) el.innerHTML += page_title;
    
-   w3_innerHTML('id-rx-photo-title', cfg.index_html_params.RX_PHOTO_TITLE);
-   w3_innerHTML('id-rx-photo-desc', cfg.index_html_params.RX_PHOTO_DESC);
-   w3_innerHTML('id-rx-title', decodeURIComponent(cfg.index_html_params.RX_TITLE));
-   w3_innerHTML('id-owner-info', decodeURIComponent(cfg.owner_info));
+   w3_innerHTML('id-rx-photo-title', kiwi_decodeURIComponent('RX_PHOTO_TITLE', cfg.index_html_params.RX_PHOTO_TITLE));
+   w3_innerHTML('id-rx-photo-desc', kiwi_decodeURIComponent('RX_PHOTO_DESC', cfg.index_html_params.RX_PHOTO_DESC));
+   w3_innerHTML('id-rx-title', kiwi_decodeURIComponent('RX_TITLE', cfg.index_html_params.RX_TITLE));
+   w3_innerHTML('id-owner-info', kiwi_decodeURIComponent('owner_info', cfg.owner_info));
 }
 
 
