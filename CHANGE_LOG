@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.605  Jun 14, 2023
+v1.605,606  Jun 14, 2023
     Fixed spec button toggle direction.
     Right-click menu: new option "show cursor frequency". State saved in a browser cookie.
     Increased size of waterfall cursor frequency text.
