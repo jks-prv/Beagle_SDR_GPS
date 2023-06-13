@@ -2693,15 +2693,14 @@ function kiwi_set_freq_offset(freq_offset_kHz)
    kiwi.offset_frac = (freq_offset_kHz % 1000) * 1000;
 }
 
-function kiwi_init_cfg()
+function kiwi_init_cfg(stream_name)
 {
    kiwi_set_freq_offset(cfg.freq_offset);
    
    var page_title = kiwi_decodeURIComponent('PAGE_TITLE', cfg.index_html_params.PAGE_TITLE);
    if (page_title == '') page_title = 'KiwiSDR';
    var el = w3_el('id-page-title');    // in user and admin html
-   if (el) el.innerHTML += page_title;
-   
+   if (el) el.innerHTML = ((stream_name == 'admin')? 'Admin ':'') + page_title;
    w3_innerHTML('id-rx-photo-title', kiwi_decodeURIComponent('RX_PHOTO_TITLE', cfg.index_html_params.RX_PHOTO_TITLE));
    w3_innerHTML('id-rx-photo-desc', kiwi_decodeURIComponent('RX_PHOTO_DESC', cfg.index_html_params.RX_PHOTO_DESC));
    w3_innerHTML('id-rx-title', kiwi_decodeURIComponent('RX_TITLE', cfg.index_html_params.RX_TITLE));
@@ -2792,7 +2791,7 @@ function kiwi_msg(param, ws)
          //setTimeout(function() {
             //console.log('### DELAYED load_cfg '+ ws.stream +' '+ cfg_json.length);
             cfg = kiwi_JSON_parse('load_cfg', cfg_json);
-            kiwi_init_cfg();
+            kiwi_init_cfg(ws.stream);
             owrx_init_cfg();
          //}, 2000);
 			break;
