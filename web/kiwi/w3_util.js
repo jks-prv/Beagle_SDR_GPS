@@ -472,13 +472,14 @@ function w3_ext_param_array_match_num(arr, n, func)
 
 // s:       name.startsWith(s)   case-insensitive
 // param:   name[:val]
-// returns: { match:true|false, has_value:true|false, num:parseFloat(val), string:val }
+// returns: { match:true|false, full_match:true|false, has_value:true|false, num:parseFloat(val), string:val }
 function w3_ext_param(s, param)
 {
+   var rv = { match:false, full_match:false };
    var pu = param.split(':');
    var pl = param.toLowerCase().split(':');
    if (s.startsWith(pl[0])) {
-      rv = { match: true };
+      rv.match = true;
       if (pl.length > 1) {
          rv.has_value = true;
          rv.num = parseFloat(pl[1]);
@@ -489,9 +490,9 @@ function w3_ext_param(s, param)
          rv.num = 0;
          rv.string = '';
       }
-      return rv;
    }
-   return { match: false }
+   if (s == pl[0]) rv.full_match = true;
+   return rv;
 }
 
 function w3_clamp(v, min, max, clamp_val)

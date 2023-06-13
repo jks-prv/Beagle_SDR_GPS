@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 604
+VERSION_MIN = 605
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -1480,10 +1480,14 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 # selectively transfer files to the target so everything isn't compiled each time
 EXCLUDE_RSYNC = ".DS_Store" ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" \
 	"verilog/kiwi.gen.vh" "web/edata*" "node_modules" "morse-pro-compiled.js"
-RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) $(addprefix --exclude , $(EXT_EXCLUDE_RSYNC)) . $(RSYNC_USER)@$(HOST):$(RSYNC_DIR)/$(REPO_NAME)
+RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) $(addprefix --exclude , $(EXT_EXCLUDE_RSYNC)) $(RSYNC_SRC) $(RSYNC_USER)@$(HOST):$(RSYNC_DST)
+RSYNC_ARGS_DRYRUN = -n $(RSYNC_ARGS)
 
 RSYNC_USER ?= root
 RSYNC_DIR ?= /root
+RSYNC_REPO ?= $(RSYNC_DIR)/$(REPO_NAME)
+RSYNC_SRC ?= .
+RSYNC_DST ?= $(RSYNC_REPO)
 PORT ?= 22
 
 ifeq ($(PORT),22)
@@ -1494,6 +1498,9 @@ endif
 
 rsync_su:
 	$(RSYNC) $(RSYNC_ARGS)
+
+rsync_dryrun:
+	$(RSYNC) $(RSYNC_ARGS_DRYRUN)
 
 endif
 

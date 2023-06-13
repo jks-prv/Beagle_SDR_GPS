@@ -22,7 +22,7 @@
 # THE SOFTWARE.
 
 # KiwiSDR
-#	modified to allow creation of smaller root partition
+#	Modified to allow creation of smaller root partition
 #	extra checking and interface to mfg web interface.
 #
 #	Added ${ext4_options} so uBoot 2018.01-rc2-00002-g23388d96ac doesn't fail with

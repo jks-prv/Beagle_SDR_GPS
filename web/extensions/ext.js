@@ -906,7 +906,7 @@ function ext_panel_redisplay(s) { w3_innerHTML('id-ext-controls-container', s); 
 
 function extint_panel_hide(skip_calling_hide_spec)
 {
-	//console.log('extint_panel_hide using_data_container='+ extint.using_data_container +' skip_calling_hide_spec='+ skip_calling_hide_spec);
+	console.log('extint_panel_hide using_data_container='+ extint.using_data_container +' skip_calling_hide_spec='+ skip_calling_hide_spec);
 
 	if (extint.using_data_container) {
 		w3_hide('id-ext-data-container');

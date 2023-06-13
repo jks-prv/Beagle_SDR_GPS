@@ -2,6 +2,17 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.605  Jun 14, 2023
+    Fixed spec button toggle direction.
+    Right-click menu: new option "show cursor frequency". State saved in a browser cookie.
+    Increased size of waterfall cursor frequency text.
+    New "dx" URL parameter "open" that shows DX labels panel. See DX labels panel help.
+    
+    DX community label database changes:
+        Adopted EiBi label type classification / color scheme.
+        Standardized on three letter country codes (except UK), two letter USA state codes.
+        DX labels panel shows type category names, colors and counts. Same as is done for EiBi.
+
 v1.603,604  Jun 10, 2023
     DX label popups no longer have modifier key explanations. Refer to DX label help button instead.
 
@@ -1220,8 +1231,8 @@ v1.473  November 13, 2021
     EiBi label database:
         Clicking HFDL labels now selects IQ mode and the special USB passband used by HFDL.
         Labels which automatically open an extension on shift-click now mention this fact in the
-        mouse-over popup (as a reminder). These are currently ALE, HFDL, Time, CW, FSK and Fax.
-        Clicking ALE, HFDL and Fax labels set the special passbands used by the associated extensions.
+        mouse-over popup (as a reminder). These are currently ALE, HFDL, Time, CW, FSK and FAX.
+        Clicking ALE, HFDL and FAX labels set the special passbands used by the associated extensions.
         Clicking an HFDL label should also select the corresponding menu entry of the HFDL extension.
         Corrections from the HFDL version 51 system table were applied to the EiBi database.
 
@@ -2262,7 +2273,7 @@ v1.319  August 28, 2019
         Now has a 2k line scroll-back buffer.
         Added phasing and autostop capabilities. Phasing will automatically align (shift) the image
         horizontally if the phasing signal at the beginning of the transmission is clear enough.
-        Autostop will stop the image buffer updating if the fax start/stop tones are clear enough.
+        Autostop will stop the image buffer updating if the FAX start/stop tones are clear enough.
     S-meter extension:
         Now has stop/start and "mark" buttons.
 

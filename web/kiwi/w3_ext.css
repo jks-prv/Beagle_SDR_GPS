@@ -745,6 +745,11 @@ input[type=range]::-moz-range-thumb {
     padding: 10px 0
 }
 
+.w3-padding-TB-15
+{
+    padding: 15px 0
+}
+
 .w3-padding-TB-24
 {
     padding: 24px 0
@@ -825,7 +830,9 @@ input[type=range]::-moz-range-thumb {
 
 .w3-gap-8 { gap: 8px }
 .w3-gap-10 { gap: 10px }
+.w3-gap-15 { gap: 15px }
 .w3-gap-16 { gap: 16px }
+.w3-gap-20 { gap: 20px }
 
 .w3-perfect-center, .w3-perfect-centering, .w3-perfectly-centered
 {

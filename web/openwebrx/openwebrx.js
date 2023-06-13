@@ -68,6 +68,7 @@ var owrx = {
    prev_squelched_overload: false,
    
    touch_hold_pressed: false,
+   show_cursor_freq: 0,
    tuning_locked: 0,
    
    dx_click_gid_last_stored: undefined,
@@ -2680,10 +2681,10 @@ function mouse_freq_add(evt)
    if (kiwi_isMobile() || wf.audioFFT_active) return;
    var ctx = canvas_annotation.ctx;
 
-   if (evt.target == canvas_annotation && any_modifier_key(evt)) {
+   if (evt.target == canvas_annotation && (any_modifier_key(evt) || owrx.show_cursor_freq)) {
       var cx = evt.offsetX;
       var cy = evt.offsetY + 16;
-      var tw, th = 12;
+      var tw, th = 15;
       ctx.font = px(th) +' monospace';
       if (owrx.mouse_freq.vis)
          ctx.clearRect(owrx.mouse_freq.tx, owrx.mouse_freq.cy, owrx.mouse_freq.tw,th);
@@ -2949,6 +2950,8 @@ function right_click_menu_init()
    m.push('<hr>'); i++;
 
    m.push('snap to nearest'); owrx.rcm_snap = i; i++;
+	owrx.show_cursor_freq = kiwi_storeGet('wf_showCurF', 0);
+   m.push((owrx.show_cursor_freq? 'hide' : 'show') +' cursor frequency'); owrx.rcm_cur_freq = i; i++;
    m.push('🔒 lock tuning'); owrx.rcm_lock = i; i++;
    m.push('restore passband'); owrx.rcm_pb = i; i++;
    m.push('save waterfall as JPG'); owrx.rcm_save = i; i++;
@@ -3032,6 +3035,12 @@ function right_click_menu_cb(idx, x, cbp)
       wf_snap();
       break;
 
+   case owrx.rcm_cur_freq:  // cursor freq
+      owrx.show_cursor_freq ^= 1;
+      kiwi_storeSet('wf_showCurF', owrx.show_cursor_freq);
+      owrx.right_click_menu_content[owrx.rcm_cur_freq] = (owrx.show_cursor_freq? 'hide' : 'show') +' cursor frequency';
+      break;
+      
    case owrx.rcm_lock:  // tuning lock
       owrx.tuning_locked ^= 1;
       owrx.right_click_menu_content[owrx.rcm_lock] = (owrx.tuning_locked? '🔓 unlock' : '🔒 lock') +' tuning';
@@ -7125,7 +7134,7 @@ var dx = {
    eibi_svc_s: [
       'Bcast',    'Utility',  'Time',
       'ALE',      'HFDL',     'Milcom',
-      'CW',       'FSK',      'Fax',
+      'CW',       'FSK',      'FAX',
       'Aero',     'Marine',   'Spy'
    ],
    eibi_ext: [
@@ -7173,6 +7182,24 @@ var dx = {
    
    eibi_types_mask: 0xffffffff,
    
+   // DB_COMMUNITY
+   DX_N_COMM:     15,
+   T0_RESERVED:   0,
+   T1_CHANNEL:    1,
+   T2_HAM:        2,
+   T3_BCAST:      3,
+   T4_UTIL:       4,
+   T5_TIME:       5,
+   T6_ALE:        6,
+   T7_HFDL:       7,
+   T8_MILCOM:     8,
+   T9_CW:         9,
+   T10_FSK:       10,
+   T11_FAX:       11,
+   T12_AERO:      12,
+   T13_MARINE:    13,
+   T14_SPY:       14,
+
    list: [],
    displayed: [],
    
@@ -7189,6 +7216,7 @@ var dx = {
 
 function dx_init()
 {
+   var open = false;
    dx.DX_DOW_BASE = dx.DX_DOW >> dx.DX_DOW_SFT;
 
    if ((dx.url_p = kiwi_url_param('dx', '', null)) != null) {
@@ -7200,14 +7228,11 @@ function dx_init()
             var el = w3_el('id-ext-controls'); return el? el.init : false;
          },
          function() {
-            console.log('DX url_p="'+ dx.url_p +'"');
+            console.log('DX URL '+ dq(dx.url_p));
             if (dx.url_p != '') {
                var r, p = dx.url_p.split(',');
                p.forEach(function(a, i) {
-                  console.log('DX url_p=<'+ a +'>');
-                  if (w3_ext_param('help', a).match) {
-                     dx.help = true;
-                  } else
+                  console.log('DX URL <'+ a +'>');
                   if ((i == 0 && a == 0) || w3_ext_param('sto', a).match) {
                      dx.db = dx.DB_STORED;
                      dx.filter_tod[dx.db] = 0;
@@ -7218,25 +7243,31 @@ function dx_init()
                   } else
                   if (w3_ext_param('none', a).match) {
                      dx.eibi_types_mask = 0;
-                     console.log('SET none dx.eibi_types_mask='+ dx.eibi_types_mask);
+                     console.log('DX URL SET none dx.eibi_types_mask='+ dx.eibi_types_mask);
                   } else
                   if ((r = w3_ext_param('filter', a)).match) {
                      dx.filter_tod[dx.db] = r.has_value? r.num : 1;
-                     console.log('SET filter_tod='+ dx.filter_tod[dx.db] +' r.has_value='+ r.has_value +' r.num='+ r.num);
-                  }
+                     console.log('DX URL SET filter_tod='+ dx.filter_tod[dx.db] +' r.has_value='+ r.has_value +' r.num='+ r.num);
+                  } else
+                  if (w3_ext_param('open', a).match) {
+                     open = true;
+                  } else
+                  if (w3_ext_param('help', a).full_match) {
+                     open = true;
+                     dx.help = true;
+                  } else
                   w3_ext_param_array_match_str(dx.eibi_svc_s, a, function(i,a) {
-                     var v = dx.eibi_types_mask & (1 << i);
-                     if (v)
-                        dx.eibi_types_mask &= ~(1 << i);
-                     else
-                        dx.eibi_types_mask |= 1 << i;
-                     console.log('MATCH '+ a +' v='+ v.toHex(8) +'('+ i +') dx.eibi_types_mask='+ dx.eibi_types_mask.toHex(8));
+                        var v = dx.eibi_types_mask & (1 << i);
+                        if (v)
+                           dx.eibi_types_mask &= ~(1 << i);
+                        else
+                           dx.eibi_types_mask |= 1 << i;
+                        console.log('DX URL MATCH '+ a +' v='+ v.toHex(8) +'('+ i +') dx.eibi_types_mask='+ dx.eibi_types_mask.toHex(8));
                   });
                });
             }
          
-            console.log('FINAL dx.eibi_types_mask='+ dx.eibi_types_mask.toHex(8) +' dx.help='+ dx.help);
-            dx_show_edit_panel(null, -1);
+            console.log('DX URL DONE db='+ dx.db +' open='+ open +' eibi_types_mask='+ dx.eibi_types_mask.toHex(8) +' help='+ dx.help);
             dx_schedule_update();
          }, null,
          500
@@ -7246,7 +7277,7 @@ function dx_init()
       dx.db = kiwi_storeGet('last_db', cfg.dx_default_db);     // default specified by configuration
    }
 
-   dx_database_cb('', dx.db);
+   dx_database_cb('', dx.db, false, {open:open});
    
    if (dx.step_superDARN) setTimeout(
       function() {
@@ -7299,7 +7330,8 @@ function dx_color_init()
          var color = (o.color == '')? 'white' : o.color;
          var colorObj = w3color(color);
          if (colorObj.valid) {   // only if the color name is valid
-            colorObj.lightness = dx.stored_lightness;
+            if (dx.db == dx.DB_STORED)
+               colorObj.lightness = dx.stored_lightness;
             dx.stored_colors_light[i] = colorObj.toHslString();
          }
       }
@@ -7425,11 +7457,13 @@ function dx_label_render_cb(arr)
 {
 	var i, j, k;
 	var hdr = arr[0];
+	dx.last_hdr = hdr;
 	
 	var obj;
    var _dxcfg = dx_cfg_db();
    var stored = (dx.db == dx.DB_STORED);
    var eibi = (dx.db == dx.DB_EiBi);
+   var community = (dx.db == dx.DB_COMMUNITY);
    var gap = eibi? 40 : 35;
    //var dbg_lbl = dbgUs;
    var dbg_lbl = false;
@@ -7468,6 +7502,11 @@ function dx_label_render_cb(arr)
 	if (eibi && isDefined(hdr.ec)) for (i = 0; i < dx.DX_N_EiBi; i++) {
 	   if (isDefined(hdr.ec[i]))
 	      w3_innerHTML('eibi-cbox'+ i +'-label', dx.eibi_svc_s[i] +' ('+ hdr.ec[i] +')');
+	}
+	
+	if (community && isDefined(hdr.tc)) for (i = 0; i <= dx.DX_N_COMM; i++) {
+	   if (isDefined(hdr.tc[i]))
+	      w3_innerHTML('id-dxcomm'+ i +'-label', dxcomm_cfg.dx_type[i].name +' ('+ hdr.tc[i] +')');
 	}
 	
 	dx.types_n = hdr.tc;
@@ -8046,6 +8085,8 @@ function dx_show_edit_panel(ev, gid, from_shortcut)
 
 function dx_show_edit_panel2()
 {
+   dx_color_init();
+
    if (dx.db != dx.DB_COMMUNITY) {
       var gid = dx.o.gid;
       var mode = isArg(cur_mode)? cur_mode : 'am';
@@ -8201,6 +8242,7 @@ function dx_show_edit_panel2()
    } else
    
    if (dx.db == dx.DB_EiBi) {
+      //console_log_dbgUs('dx_show_edit_panel2 DB_EiBi');
       var cbox_container = 'w3-halign-space-around/|flex-basis:130px';
       var cbox = '/w3-label-inline w3-label-not-bold w3-round w3-padding-small/';
       var checkbox = function(type) {
@@ -8245,20 +8287,54 @@ function dx_show_edit_panel2()
    
    // DB_COMMUNITY
    {
+      //console_log_dbgUs('dx_show_edit_panel2 DB_COMMUNITY');
+      var cbox_container = 'w3-margin-L-32 w3-halign-space-around/|flex-basis:130px';
+      var cbox = 'w3-round w3-padding-small';
+      var label = function(idx) {
+         var dx_type = dxcomm_cfg.dx_type[idx];
+         return w3_label(cbox, dx_type.name, 'dxcomm'+ idx);
+      };
+
       s2 =
-         w3_div('w3-margin-TB-16',
-            w3_checkbox('/w3-label-inline w3-label-not-bold w3-text-white/',
-               'filter by time/day-of-week', dx.DB_COMMUNITY.toString() +'-filter-tod', dx.filter_tod[dx.DB_COMMUNITY], 'dx_time_dow_cb'),
-            w3_text('w3-margin-top w3-text-css-yellow',
-               'The community database is read-only and downloaded periodically. <br>' +
-               dx.last_community_download)
+         w3_checkbox('w3-margin-T-8/w3-label-inline w3-label-not-bold w3-text-white/',
+            'filter by time/day-of-week', dx.DB_COMMUNITY.toString() +'-filter-tod', dx.filter_tod[dx.DB_COMMUNITY], 'dx_time_dow_cb') +
+         w3_text('w3-margin-TB-8 w3-text-css-yellow',
+            'The community database is read-only and downloaded periodically. <br>' +
+            dx.last_community_download) +
+
+         w3_div('w3-valign-col w3-round w3-padding-TB-15 w3-gap-15|background:whiteSmoke',
+            w3_inline(cbox_container,
+               label(dx.T3_BCAST),
+               label(dx.T4_UTIL),
+               label(dx.T5_TIME)
+            ),
+            w3_inline(cbox_container,
+               label(dx.T6_ALE),
+               label(dx.T7_HFDL),
+               label(dx.T8_MILCOM)
+            ),
+            w3_inline(cbox_container,
+               label(dx.T9_CW),
+               label(dx.T10_FSK),
+               label(dx.T11_FAX)
+            ),
+            w3_inline(cbox_container,
+               label(dx.T12_AERO),
+               label(dx.T13_MARINE),
+               label(dx.T14_SPY)
+            ),
+            w3_inline(cbox_container,
+               label(dx.T2_HAM),
+               label(dx.T1_CHANNEL),
+               label(dx.T0_RESERVED)
+            )
          );
    }
 	
 	// can't do this as initial val passed to w3_input above when string contains quoting
 	ext_panel_set_name('dx');
 	ext_panel_show(s1 + s2, null,
-	   function() {
+	   function() {      //show func
          if (dx.db == dx.DB_STORED) {
             var el = w3_el('dx.o.i');
             el.value = dx.o.i;
@@ -8274,6 +8350,17 @@ function dx_show_edit_panel2()
             for (var i = 0; i < dx.DX_N_EiBi; i++) {
                w3_color('eibi-cbox'+ i +'-label', 'black', dx.eibi_colors[i]);
             }
+         } else {    // DB_COMMUNITY
+            for (var i = 0; i <= dx.DX_N_COMM; i++) {
+               w3_color('id-dxcomm'+ i +'-label', 'black', dx.stored_colors_light[i]);
+               //console.log('dxcomm'+ i +' '+ dx.stored_colors_light[i]);
+            }
+         }
+         if (dx.help) {
+            setTimeout(function() {
+               extint_help_click_now();
+            }, 1000);
+            dx.help = false;
          }
       },
 	   function() {
@@ -8282,25 +8369,21 @@ function dx_show_edit_panel2()
 	   true     // show help button
    );
 	ext_set_controls_width_height(550, 290);
-	if (dx.help) {
-	   extint_help_click_now();
-	   dx.help = false;
-	}
 }
 
-function dx_database_cb(path, idx, first, key_mod, from_shortcut)
+function dx_database_cb(path, idx, first, opt, from_shortcut)
 {
    //console.log('first='+ first +' ctrlAlt='+ ctrlAlt);
    if (first) return;
    dx.list = [];
-   console_log_dbgUs('DX DB-SWITCHED db='+ dx.db +' key_mod='+ key_mod);
+   console_log_dbgUs('DX DB-SWITCHED db='+ dx.db +' opt='+ kiwi_JSON(opt));
 
-   if (key_mod == shortcut.CTL_ALT || key_mod == shortcut.SHIFT_PLUS_CTL_ALT) {
+   if (w3_opt(opt, 'toggle')) {
       dx.filter_tod[dx.db] ^= 1;
       dx_time_dow_cb(dx.db.toString() +'-filter-tod', dx.filter_tod[dx.db]);
    } else {
       dx.db = +idx;
-      if (key_mod == shortcut.SHIFT) {
+      if (w3_opt(opt, 'open')) {
          dx_show_edit_panel(null, -1, from_shortcut);
       } else {
          if (ext_panel_displayed('dx'))
@@ -8678,7 +8761,7 @@ function dx_help(show)
                      '<li>Extension labels are magenta when moused-over as opposed to the usual yellow.</li>' +
                      '<li>Labels outside their scheduled time (if any) will mouse-over grey.</li>' +
                      '<li>Clicking the label sets the freq/mode and opens the extension.</li>' +
-                     '<li>For the stored database shift-clicking opens the label edit panel (admin only).</li>' +
+                     '<li>For the stored database shift-clicking opens the DX labels panel (admin only).</li>' +
                      '<li>PC</li><ul>' +
                         '<li>Alt-click sets the freq/mode without openning the extension.</li>' +
                         '<li>Shift-alt-click to toggle the label active (admin only).</li>' +
@@ -8696,7 +8779,7 @@ function dx_help(show)
                      '<li>After touching a label use the right-click menu to open edit panel for that label.</li>' +
                   '</ul>' +
 
-               'For stored labels the extension is set per-label in the label edit panel and the extension opened when the label is clicked. ' +
+               'For stored labels the extension is set per-label in the DX labels panel and the extension opened when the label is clicked. ' +
                'For EiBi labels an extension is automatically assumed for many of the categories, ' +
                'but is only opened if the label is shift-clicked (note difference from stored label behavior, ' +
                'a non-shift click simply selects the frequency/mode).' +
@@ -8704,16 +8787,18 @@ function dx_help(show)
                
                'URL parameters: (use "dx=<i>comma separated parameters</i>" in the browser URL)<br>' +
                'Select database: ' + w3_text('|color:orange', '[012] <i>or</i> stored eibi community') + '<br>' +
-               'All: ' + w3_text('|color:orange', 'filter[:0] <br>') +
+               'All: ' + w3_text('|color:orange', 'open filter[:0] <br>') +
                '<br> EiBi: ' + w3_text('|color:orange', 'none bcast utility time ale hfdl milcom cw fsk fax aero marine spy <br>') + '<br>' +
                'An optional first digit specifies the database to display (EiBi "1" is the default). Or use the database name. ' +
+               'Specify <i>open</i> to also open the DX labels panel. ' +
                'For EiBi: By default all the category checkboxes and "<i>filter by time/day-of-week</i>" are checked. ' +
                'Specifying <i>none</i> will uncheck all the categories. Specifying the individual category names will then toggle the checkbox state.' +
                '<br><br>' +
 
-               'For example, to select only the EiBi ALE and Fax categories: <i>dx=none,ale,fax</i> <br>' +
+               'For example, to select only the EiBi ALE and FAX categories: <i>dx=none,ale,fax</i> <br>' +
                'To select all except the CW and Time categories: <i>dx=cw,time</i> <br>' +
-               'To just bring up the EiBi control panel: <i>dx</i> (e.g. <i>my_kiwi:8073/?dx</i>)<br>' +
+               'To just select the EiBi database: <i>dx</i> (e.g. <i>my_kiwi:8073/?dx</i>)<br>' +
+               'To also bring up the EiBi control panel: <i>dx=op</i> (e.g. <i>my_kiwi:8073/?dx=op</i>)<br>' +
                'Keywords are case-insensitive and can be abbreviated. For example: <br>' +
                '<i>dx=n,bc,f:0</i> (show only broadcast stations without time/day filtering) <br>' +
                'To select the stored label database: <i>dx=0</i> or <i>dx=sto</i><br>' +
@@ -8796,7 +8881,7 @@ function smeter_init(force_no_agc_thresh_smeter)
 		var x = smeter_dBm_biased_to_x(bars.dBm[i] + SMETER_BIAS);
 		line_stroke(sMeter_ctx, 1, 3, "white", x,y-8, x,y+8);
 		sMeter_ctx.fillText(bars.text[i], x, y-15);
-		//console.log("SM x="+x+' dBm='+bars.dBm[i]+' '+bars.text[i]);
+		//console.log('SM x='+ x +' y='+ y +' dBm='+ bars.dBm[i] +' '+ bars.text[i]);
 	}
 
 	line_stroke(sMeter_ctx, 0, 5, "black", 0,y, w,y);
@@ -9150,7 +9235,11 @@ function keyboard_shortcut(key, key_mod, ctlAlt, keyCode)
    case '\\':
       if (key_mod == shortcut.CTL_ALT || key_mod == shortcut.SHIFT_PLUS_CTL_ALT) no_step = true;
       if (!no_step) dx.db = (dx.db + 1) % dx.DB_N;
-      dx_database_cb('', dx.db, false, key_mod, /* from_shortcut */ true);
+      var opt = {};
+      if (key_mod == shortcut.CTL_ALT || key_mod == shortcut.SHIFT_PLUS_CTL_ALT) opt.toggle = 1;
+      else
+      if (key_mod == shortcut.SHIFT) opt.open = 1;
+      dx_database_cb('', dx.db, false, opt, /* from_shortcut */ true);
       break;
 
    default:
