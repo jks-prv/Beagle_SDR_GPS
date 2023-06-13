@@ -2682,6 +2682,7 @@ function mouse_freq_add(evt)
    var ctx = canvas_annotation.ctx;
 
    if (evt.target == canvas_annotation && (any_modifier_key(evt) || owrx.show_cursor_freq)) {
+      //console.log('CURSOR_FREQ annotation='+ (evt.target == canvas_annotation) +' mod_key='+ any_modifier_key(evt) +' show_cursor_freq='+ owrx.show_cursor_freq +' '+ typeof(owrx.show_cursor_freq));
       var cx = evt.offsetX;
       var cy = evt.offsetY + 16;
       var tw, th = 15;
@@ -2950,7 +2951,7 @@ function right_click_menu_init()
    m.push('<hr>'); i++;
 
    m.push('snap to nearest'); owrx.rcm_snap = i; i++;
-	owrx.show_cursor_freq = kiwi_storeGet('wf_showCurF', 0);
+	owrx.show_cursor_freq = +kiwi_storeGet('wf_showCurF', 0);
    m.push((owrx.show_cursor_freq? 'hide' : 'show') +' cursor frequency'); owrx.rcm_cur_freq = i; i++;
    m.push('🔒 lock tuning'); owrx.rcm_lock = i; i++;
    m.push('restore passband'); owrx.rcm_pb = i; i++;
