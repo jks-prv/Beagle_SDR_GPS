@@ -420,6 +420,7 @@ static jsmntok_t *dx_reload_element(cfg_t *cfg, dx_db_t *dx_db, jsmntok_t *jt, j
     
     //printf("dx-json %d %.2f 0x%x \"%s\" \"%s\"\n", i, dxp->freq, dxp->flags, dxp->ident, dxp->notes);
 
+    int i = 0;
     if (jt != end_tok && JSMN_IS_OBJECT(jt)) {
         jt++;
         while (jt != end_tok && !JSMN_IS_ARRAY(jt)) {
@@ -462,7 +463,7 @@ static jsmntok_t *dx_reload_element(cfg_t *cfg, dx_db_t *dx_db, jsmntok_t *jt, j
                 } else {
                     if (num) {
                         dx_flag(dxp, id);
-                        //printf("dx-json %d dx_flag %s\n", i, id);
+                        //if (dx_db->db == DB_COMMUNITY) printf("dx-json %d dx_flags: 0x%x %s\n", i, dxp->flags & DX_TYPE, id);
                     }
                 }
             } else
@@ -477,6 +478,7 @@ static jsmntok_t *dx_reload_element(cfg_t *cfg, dx_db_t *dx_db, jsmntok_t *jt, j
 
             cfg_string_tok_free(cfg, id);
             jt++;
+            i++;
         }
     }
     
