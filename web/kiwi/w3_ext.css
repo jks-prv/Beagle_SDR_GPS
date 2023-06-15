@@ -1165,6 +1165,12 @@ input[type=range]::-moz-range-thumb {
     background-color: lightGray;
 }
 
+/* e.g. to override black text of a w3-* color */
+.w3-text-css-white
+{
+    color: white !important;
+}
+
 .w3-text-css-lightGray
 {
     color: lightGray;

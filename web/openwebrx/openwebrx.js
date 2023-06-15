@@ -1443,6 +1443,13 @@ demodulator_default_analog.prototype = new demodulator();
 function mkenvelopes(visible_range) //called from mkscale
 {
 	scale_ctx.clearRect(0,0,scale_ctx.canvas.width,22); //clear the upper part of the canvas (where filter envelopes reside)
+
+	scale_ctx.font = '13px sans-serif';
+	scale_ctx.textBaseline = 'top';
+	scale_ctx.fillStyle = 'white';
+   scale_ctx.textAlign = "left";
+   scale_ctx.fillText('database: '+ dx.db_s[dx.db].split(' ')[0], 20, 7);
+
 	for (var i=0;i<demodulators.length;i++)
 	{
 		demodulators[i].envelope.draw(visible_range);
@@ -8395,7 +8402,7 @@ function dx_database_cb(path, idx, first, opt, from_shortcut)
    //console.log('last_db SAVE-select '+ dx.db);
    kiwi_storeSet('last_db', dx.db);
    bands_init();
-   mk_bands_scale();
+   mkscale();
    mk_band_menu();
 	dx_schedule_update();
 }
@@ -10492,7 +10499,7 @@ function toggle_or_set_slow_dev(set, val)
 function toggle_or_set_spec_peak(set, val, trace, ev)
 {
    var hold = (ev && ev.type == 'hold');
-   var shift = (ev && ev.type == 'click' && ev.shiftKey);
+   var shift_click = (ev && ev.type == 'click' && ev.shiftKey);
 
    // in active mode, if button held down more than one second clear trace (without changing the mode)
    // enabled by the use of w3-hold in w3_button() psa
@@ -10514,7 +10521,7 @@ function toggle_or_set_spec_peak(set, val, trace, ev)
 	} else {
 	   trace = +val;
       prev = spec.peak_show[trace];
-      if (shift) {
+      if (shift_click) {
          spec.peak_show[trace]--;
          if (spec.peak_show[trace] < 0) spec.peak_show[trace] = 2;
       } else {
@@ -11236,15 +11243,17 @@ function freq_vfo_cb()
 	ext_tune(vfo[1], mode, ext_zoom.ABS, zoom);
 }
 
-function toggle_or_set_spec(set, val, dir)
+function toggle_or_set_spec(set, val, dir, ev)
 {
    var no_close_ext = false;
+   var shift_click = (ev && ev.type == 'click' && ev.shiftKey);
+
 	if (isNumber(set) && (set & toggle_e.SET)) {
 		spec.source = +val;
 		no_close_ext = ((set & toggle_e.NO_CLOSE_EXT) != 0);
       //console.log('toggle_or_set_spec SET val='+ val);
 	} else {
-	   if (isUndefined(dir) || dir == false || dir == 1) {
+	   if ((isUndefined(dir) || dir == false || dir == 1) && !shift_click) {
 		   spec.source = (spec.source + 1) % spec.CHOICES;
 		} else {
 		   spec.source--;

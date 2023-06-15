@@ -1152,6 +1152,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     dx_db->init = true;
                 }
                 first = true;
+                dx.types_n_counted = false;
                 dx_print_debug(true, "DX_MKR: db SWITCHED to %s\n", db_s[dx_db->db]);
             }
             dx_print_debug(true, "DX_MKR: SET MARKER db=%s func=%d admin=%d\n",
@@ -1294,6 +1295,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     dx_t *dp = dx_db->list;
                     for (i = 0; i < dx_db->actual_len; i++, dp++) {
                         dx.stored_types_n[DX_STORED_FLAGS_TYPEIDX(dp->flags)]++;
+                        //if (db_comm) printf("DX %d type_idx %d\n", i, DX_STORED_FLAGS_TYPEIDX(dp->flags));
                     }
                     dx.types_n_counted = true;
                 }

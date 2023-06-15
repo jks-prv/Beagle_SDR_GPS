@@ -95,7 +95,7 @@
 
 .cl-drm-sched-options-time {
     width: 100px;
-    border-radius: 10px;
+    /* border-radius: 10px; */
     text-align: center;
     color: black;
     background-color: Pink;

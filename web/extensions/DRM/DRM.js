@@ -1313,25 +1313,25 @@ function drm_desktop_controls_setup(w_multi)
                ),
                
                w3_div('id-drm-options-EPG',
-                  w3_button('w3-btn w3-small w3-padding-smaller w3-grey w3-momentary', 'Reset', 'drm_EPG_reset_cb', 1)
+                  w3_button('w3-btn w3-small w3-padding-smaller w3-grey w3-text-css-white w3-momentary', 'Reset', 'drm_EPG_reset_cb', 1)
                ),
                
                w3_div('id-drm-options-journaline',
-                  w3_button('w3-btn w3-small w3-padding-smaller w3-grey w3-momentary', 'Reset', 'drm_journaline_reset_cb', 1)
+                  w3_button('w3-btn w3-small w3-padding-smaller w3-grey w3-text-css-white w3-momentary', 'Reset', 'drm_journaline_reset_cb', 1)
                ),
                
                w3_divs('id-drm-options-slideshow/w3-tspace-8',    // ugh, can't be doing dynamic w3_hide() on w3_inline()
                   w3_div('id-drm-nslides'),
                   
                   w3_inline('/w3-margin-between-8',
-                     w3_button('w3-btn w3-small w3-padding-smaller w3-cyan', 'First', 'drm_slideshow_step_cb', 0),
+                     w3_button('w3-btn w3-small w3-padding-smaller w3-cyan w3-text-css-white', 'First', 'drm_slideshow_step_cb', 0),
                      w3_button('w3-btn w3-small w3-padding-smaller w3-ext-btn', 'Next', 'drm_slideshow_step_cb', 1),
                      w3_button('w3-btn w3-small w3-padding-smaller w3-ext-btn', 'Prev', 'drm_slideshow_step_cb', -1)
                   ),
                   w3_inline('/w3-margin-between-8',
                      w3_icon('id-drm-btn-play w3-static||title="play slideshow"',
                         'fa-repeat fa-stack-1x', 22, '', 'drm_slideshow_step_cb', drm.SS_PLAY),
-                     w3_button('w3-btn w3-small w3-padding-smaller w3-grey', 'Reset', 'drm_slideshow_step_cb', drm.SS_RESET)
+                     w3_button('w3-btn w3-small w3-padding-smaller w3-grey w3-text-css-white', 'Reset', 'drm_slideshow_step_cb', drm.SS_RESET)
                   )
                )
             )
