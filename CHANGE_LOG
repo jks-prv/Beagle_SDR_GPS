@@ -2,17 +2,23 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.605,606  Jun 14, 2023
-    Fixed spec button toggle direction.
-    Right-click menu: new option "show cursor frequency". State saved in a browser cookie.
-    Increased size of waterfall cursor frequency text.
-    New "dx" URL parameter "open" that shows DX labels panel. See DX labels panel help.
+v1.605,606,607  Jun 15, 2023
+    Added variable sample time to TDoA extension (15, 30, 45, 60 seconds).
+    Right-click menu: new option "show cursor frequency". State is saved in a browser cookie.
+    Show selected label database on frequency scale.
+    Shift-click on "Spec RF/AF" button toggles in reverse (same effect as alt-s key).
+    New "dx" URL parameter "open" that shows DX labels panel.
+        i.e. "dx=2" vs "dx=2,open". See DX labels panel help.
     
     DX community label database changes:
         Adopted EiBi label type classification / color scheme.
         Standardized on three letter country codes (except UK), two letter USA state codes.
         DX labels panel shows type category names, colors and counts. Same as is done for EiBi.
 
+    Fixes:
+        Spec button toggle direction now correct.
+        Increased size of waterfall cursor frequency text.
+    
 v1.603,604  Jun 10, 2023
     DX label popups no longer have modifier key explanations. Refer to DX label help button instead.
 
