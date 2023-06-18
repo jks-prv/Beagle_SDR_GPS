@@ -360,7 +360,7 @@ function control_html()
 			),
 			w3_div('',
 				w3_input_get('', 'Time limit exemption password', 'adm.tlimit_exempt_pwd', 'w3_string_set_cfg_cb'),
-				w3_div('w3-text-black', 'Password users can give to override time limits.')
+				w3_div('w3-text-black', 'Password users can give to override time limits. <br> To specify in URL: my_kiwi:8073/?pwd=<i>password</i>')
 			)
 		) +
 
@@ -388,7 +388,7 @@ function control_html()
             //w3_switch_label('w3-center', 'Timestamp SNR with local time?', 'Yes', 'No', 'cfg.snr_local_time', cfg.snr_local_time, 'admin_radio_YN_cb')
             w3_checkbox_get_param('//w3-label-inline w3-restart', 'Non-Kiwi connections (kiwirecorder, TDoA) can preempt autorun processes', 'any_preempt_autorun', 'admin_bool_cb', true),
             w3_checkbox_get_param('//w3-label-inline', 'Timestamp SNR with local time', 'snr_local_time', 'admin_bool_cb', true),
-            w3_button('w3-aqua w3-margin-T-16', 'Force SNR measurement', 'control_snr_measure_cb')
+            w3_button('w3-aqua w3-margin-T-16', 'Measure SNR now', 'control_snr_measure_cb')
          )
 		) +
 		'<hr>';
@@ -3808,6 +3808,11 @@ function admin_recv(data)
             if (!network.ip_address_error)
                w3_innerHTML('id-ip-blacklist-status', 'updated');
 				break;
+			
+			case "ant_switch_nch":
+			   //console.log('ant_switch_nch='+ param[1]);
+			   w3_call('ant_switch_config_html2', +param[1]);
+			   break;
 				
 			default:
 				console.log('ADMIN UNKNOWN: '+ param[0] +'='+ param[1]);

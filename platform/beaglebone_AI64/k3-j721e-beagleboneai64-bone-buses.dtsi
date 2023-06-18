@@ -658,7 +658,11 @@
 	BONE_PIN(P8_10, gpio_pd,   P8_10(PIN_INPUT_PULLDOWN, 7))
 
 	/* P8_11 (AB24) PRG0_PRU0_GPO17 (gpio0_60) AB24_SYS_BOOTMODE7 */
+#ifdef KiwiSDR
+	BONE_PIN(P8_11, default,   P8_11(PIN_IO, 7))
+#else
 	BONE_PIN(P8_11, default,   P8_11(PIN_INPUT, 7))
+#endif
 	BONE_PIN(P8_11, pruout,    P8_11(PIN_OUTPUT, 0))	/* prg0_pru0_gpo17 */
 	BONE_PIN(P8_11, pruin,     P8_11(PIN_INPUT, 1))		/* prg0_pru0_gpi17 */
 	BONE_PIN(P8_11, gpio,      P8_11(PIN_INPUT, 7))
@@ -666,7 +670,11 @@
 	BONE_PIN(P8_11, gpio_pd,   P8_11(PIN_INPUT_PULLDOWN, 7))
 
 	/* P8_12 (AH28) PRG0_PRU0_GPO16 (gpio0_59) AH28_PRG0_PWM0_A2 */
+#ifdef KiwiSDR
+	BONE_PIN(P8_12, default,   P8_12(PIN_IO, 7))
+#else
 	BONE_PIN(P8_12, default,   P8_12(PIN_INPUT, 7))
+#endif
 	BONE_PIN(P8_12, pruout,    P8_12(PIN_OUTPUT, 0))	/* prg0_pru0_gpo16 */
 	BONE_PIN(P8_12, pruin,     P8_12(PIN_INPUT, 1))		/* prg0_pru0_gpi16 */
 	BONE_PIN(P8_12, gpio,      P8_12(PIN_INPUT, 7))
@@ -674,6 +682,11 @@
 	BONE_PIN(P8_12, gpio_pd,   P8_12(PIN_INPUT_PULLDOWN, 7))
 
 	/* P8_13 (V27) RGMII5_TD1 (gpio0_89) V27_EHRPWM0_B */
+#ifdef KiwiSDR
+	BONE_PIN(P8_13, default,   P8_13(PIN_IO, 7))
+#else
+	BONE_PIN(P8_13, default,   P8_13(PIN_INPUT, 7))
+#endif
 	BONE_PIN(P8_13, default,   P8_13(PIN_INPUT, 7))
 	BONE_PIN(P8_13, gpio,      P8_13(PIN_INPUT, 7))
 	BONE_PIN(P8_13, gpio_pu,   P8_13(PIN_INPUT_PULLUP, 7))
@@ -681,7 +694,11 @@
 	BONE_PIN(P8_13, pwm,       P8_13(PIN_OUTPUT, 6))	/* ehrpwm0_b */
 
 	/* P8_14 (AF27) PRG0_PRU1_GPO12 (gpio0_75) AF27_PRG0_PWM1_A0 */
+#ifdef KiwiSDR
+	BONE_PIN(P8_14, default,   P8_14(PIN_IO, 7))
+#else
 	BONE_PIN(P8_14, default,   P8_14(PIN_INPUT, 7))
+#endif
 	BONE_PIN(P8_14, pruout,    P8_14(PIN_OUTPUT, 0))	/* prg0_pru1_gpo12 */
 	BONE_PIN(P8_14, pruin,     P8_14(PIN_INPUT, 1))		/* prg0_pru1_gpi12 */
 	BONE_PIN(P8_14, gpio,      P8_14(PIN_INPUT, 7))
@@ -689,7 +706,11 @@
 	BONE_PIN(P8_14, gpio_pd,   P8_14(PIN_INPUT_PULLDOWN, 7))
 
 	/* P8_15 (AB29) PRG0_PRU0_GPO18 (gpio0_61) AB29_PRG0_ECAP0_IN_APWM_OUT */
+#ifdef KiwiSDR
+	BONE_PIN(P8_15, default,   P8_15(PIN_IO, 7))
+#else
 	BONE_PIN(P8_15, default,   P8_15(PIN_INPUT, 7))
+#endif
 	BONE_PIN(P8_15, pruout,    P8_15(PIN_OUTPUT, 0))	/* prg0_pru0_gpo18 */
 	BONE_PIN(P8_15, pruin,     P8_15(PIN_INPUT, 1))		/* prg0_pru0_gpi18 */
 	BONE_PIN(P8_15, gpio,      P8_15(PIN_INPUT, 7))
@@ -697,7 +718,11 @@
 	BONE_PIN(P8_15, gpio_pd,   P8_15(PIN_INPUT_PULLDOWN, 7))
 
 	/* P8_16 (AB28) PRG0_PRU0_GPO19 (gpio0_62) AB28_PRG0_PWM0_TZ_OUT */
+#ifdef KiwiSDR
+	BONE_PIN(P8_16, default,   P8_16(PIN_IO, 7))
+#else
 	BONE_PIN(P8_16, default,   P8_16(PIN_INPUT, 7))
+#endif
 	BONE_PIN(P8_16, pruout,    P8_16(PIN_OUTPUT, 0))	/* prg0_pru0_gpo19 */
 	BONE_PIN(P8_16, pruin,     P8_16(PIN_INPUT, 1))		/* prg0_pru0_gpi19 */
 	BONE_PIN(P8_16, gpio,      P8_16(PIN_INPUT, 7))
@@ -705,7 +730,11 @@
 	BONE_PIN(P8_16, gpio_pd,   P8_16(PIN_INPUT_PULLDOWN, 7))
 
 	/* P8_17 (AF22) PRG1_PRU0_GPO2 (gpio0_3) AF22_PRG1_PWM2_A0 */
+#ifdef KiwiSDR
+	BONE_PIN(P8_17, default,   P8_17(PIN_IO, 7))
+#else
 	BONE_PIN(P8_17, default,   P8_17(PIN_INPUT, 7))
+#endif
 	BONE_PIN(P8_17, pruout,    P8_17(PIN_OUTPUT, 0))	/* prg1_pru0_gpo2 */
 	BONE_PIN(P8_17, pruin,     P8_17(PIN_INPUT, 1))		/* prg1_pru0_gpi2 */
 	BONE_PIN(P8_17, gpio,      P8_17(PIN_INPUT, 7))
@@ -713,7 +742,11 @@
 	BONE_PIN(P8_17, gpio_pd,   P8_17(PIN_INPUT_PULLDOWN, 7))
 
 	/* P8_18 (AJ23) PRG1_PRU0_GPO3 (gpio0_4) AJ23_PRG1_PWM3_A2 */
+#ifdef KiwiSDR
+	BONE_PIN(P8_18, default,   P8_18(PIN_IO, 7))
+#else
 	BONE_PIN(P8_18, default,   P8_18(PIN_INPUT, 7))
+#endif
 	BONE_PIN(P8_18, pruout,    P8_18(PIN_OUTPUT, 0))	/* prg1_pru0_gpo3 */
 	BONE_PIN(P8_18, pruin,     P8_18(PIN_INPUT, 1))		/* prg1_pru0_gpi3 */
 	BONE_PIN(P8_18, gpio,      P8_18(PIN_INPUT, 7))
@@ -721,7 +754,11 @@
 	BONE_PIN(P8_18, gpio_pd,   P8_18(PIN_INPUT_PULLDOWN, 7))
 
 	/* P8_19 (V29) RGMII5_TD2 (gpio0_88) V29_EHRPWM0_A */
+#ifdef KiwiSDR
+	BONE_PIN(P8_19, default,   P8_19(PIN_IO, 7))
+#else
 	BONE_PIN(P8_19, default,   P8_19(PIN_INPUT, 7))
+#endif
 	BONE_PIN(P8_19, gpio,      P8_19(PIN_INPUT, 7))
 	BONE_PIN(P8_19, gpio_pu,   P8_19(PIN_INPUT_PULLUP, 7))
 	BONE_PIN(P8_19, gpio_pd,   P8_19(PIN_INPUT_PULLDOWN, 7))
@@ -779,7 +816,11 @@
 	BONE_PIN(P8_25, gpio_pd,   P8_25(PIN_INPUT_PULLDOWN, 7))
 
 	/* P8_26 (AC27) PRG0_PRU0_GPO8 (gpio0_51) AC27_PRG0_PWM2_A1 */
+#ifdef KiwiSDR
+	BONE_PIN(P8_26, default,   P8_26(PIN_IO, 7))
+#else
 	BONE_PIN(P8_26, default,   P8_26(PIN_INPUT, 7))
+#endif
 	BONE_PIN(P8_26, pruout,    P8_26(PIN_OUTPUT, 0))	/* prg0_pru0_gpo8 */
 	BONE_PIN(P8_26, pruin,     P8_26(PIN_INPUT, 1))		/* prg0_pru0_gpi8 */
 	BONE_PIN(P8_26, gpio,      P8_26(PIN_INPUT, 7))

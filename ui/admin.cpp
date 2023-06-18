@@ -1287,6 +1287,14 @@ void c2s_admin(void *param)
 				}
 				continue;
 			}
+
+			i = strcmp(cmd, "ADM get_ant_switch_nch");
+			if (i == 0) {
+			    //printf("ADM get_ant_switch_nch\n");
+                send_msg(conn, SM_NO_DEBUG, "ADM ant_switch_nch=%d", kiwi.ant_switch_nch);
+				continue;
+			}
+
 #endif
 
 

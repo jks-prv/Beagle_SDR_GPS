@@ -36,6 +36,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+// debugging
+//#define SHOW_CHECK_PMUX
+//#define SHOW_GPIO_STATE
+
 static volatile u4_t *prcm_m, *pmux_m;
 volatile u4_t *spi_m, *gpio_m[NGPIO];
 static bool init;
@@ -230,10 +234,6 @@ static char *pmux_deco(int i, u4_t pmux, gpio_t gpio)
     #endif
     return pmux_deco_s[i];
 }
-
-// debugging
-//#define SHOW_CHECK_PMUX
-//#define SHOW_GPIO_STATE
 
 static bool check_pmux(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_val1, u4_t pmux_val2)
 {
@@ -622,20 +622,46 @@ void peri_init()
 	gpio_setup(JTAG_TCK, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
 	gpio_setup(JTAG_TMS, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
 
-	gpio_setup(P811, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
-	gpio_setup(P812, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
-	gpio_setup(P813, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
-	gpio_setup(P814, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
-	gpio_setup(P815, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
+    gpio_setup(P811, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
+    gpio_setup(P812, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
+    gpio_setup(P813, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
+    gpio_setup(P814, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
+    gpio_setup(P815, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
     gpio_setup(P816, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
-	gpio_setup(P817, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
-	gpio_setup(P818, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
-	gpio_setup(P819, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
-	gpio_setup(P826, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
+    gpio_setup(P817, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
+    gpio_setup(P818, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
+    gpio_setup(P819, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
+    gpio_setup(P826, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
 	
 	if (any_bad) panic("devio_check() or gpio_setup() FAILED");
 
 	init = TRUE;
+}
+
+static gpio_t *idx_2_gpio[] = {
+    &P811, &P812, &P813, &P814, &P815, &P816, &P817, &P818, &P819,
+    NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  &P826
+};
+
+void gpio_test(int gpio_test_pin) {
+    gpio_t *gpio;
+    int idx = gpio_test_pin - 811;
+    if (gpio_test_pin >= 811 && gpio_test_pin <= 826 && (gpio = idx_2_gpio[idx]) != NULL) {
+        printf("testing GPIO pin P%d\n", gpio_test_pin);
+        gpio_t _gpio = *gpio;
+        GPIO_OUTPUT(_gpio);
+        while (1) {
+            printf("GPIO P%d=0\n", gpio_test_pin);
+            GPIO_WRITE_BIT(_gpio, 0);
+            TaskSleepSec(1);
+            printf("GPIO P%d=1\n", gpio_test_pin);
+            GPIO_WRITE_BIT(_gpio, 1);
+            TaskSleepSec(1);
+        }
+    } else {
+        printf("RANGE -gpio %d (811-826)\n", gpio_test_pin);
+        panic("GPIO test");
+    }
 }
 
 void peri_free() {

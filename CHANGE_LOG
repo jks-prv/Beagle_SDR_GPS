@@ -2,6 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.608  Jun 19, 2023
+    Antenna switch extension improvements:
+    Must install the latest extension from: github.com/jks-prv/KiwiSDR-antenna-switch-extension
+        Beagle GPIO backend now also works with BBAI and BBAI-64.
+        Beagle GPIO backend supports the full 10 channels, not just the default 8.
+        Selecting antenna via URL parameter when in password mode now works.
+
 v1.605,606,607  Jun 15, 2023
     Added variable sample time to TDoA extension (15, 30, 45, 60 seconds).
     Right-click menu: new option "show cursor frequency". State is saved in a browser cookie.
