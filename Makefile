@@ -12,7 +12,7 @@ REPO := https://github.com/jks-prv/$(REPO_NAME).git
 #
 # Makefile for KiwiSDR project
 #
-# Copyright (c) 2014-2021 John Seamons, ZL/KF6VO
+# Copyright (c) 2014-2023 John Seamons, ZL/KF6VO
 #
 # This Makefile can be run on both a build machine (I use a MacBook Pro) and the
 # BeagleBone Black target (Debian release).
@@ -1061,20 +1061,24 @@ DISABLE_WS:
     endif
 
 REBOOT = $(DIR_CFG)/.reboot
-ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-    DO_ONCE =
-else
-    DO_ONCE = $(DIR_CFG)/.do_once.dep
-endif
+FORCE_REBOOT = /tmp/.force_reboot
+DO_ONCE =
+DEV_TREE_DEP =
 
-$(DO_ONCE):
-	@mkdir -p $(DIR_CFG)
-	@touch $(DO_ONCE)
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
-    ifeq ($(INSTALL_KIWI_DEVICE_TREE),true)
-	    make install_kiwi_device_tree
-	    @touch $(REBOOT)
+    DO_ONCE = $(DIR_CFG)/.do_once.dep
+    ifeq ($(BBAI_64),true)
+        DEV_TREE_DEP = $(DIR_DTB2)/$(DTB_KIWI_TMP2)
+        DEV_TREE_DEP2 = platform/beaglebone_AI64/$(DTB_KIWI_TMP2)
     endif
+
+    $(DO_ONCE):
+	    @mkdir -p $(DIR_CFG)
+	    @touch $(DO_ONCE)
+        ifeq ($(INSTALL_KIWI_DEVICE_TREE),true)
+	        make install_kiwi_device_tree
+	        @touch $(REBOOT)
+        endif
 endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
@@ -1083,7 +1087,12 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
         DTB_KIWI_TMP2 = k3-j721e-beagleboneai64-bone-buses.dtsi
         DIR_DTB = /opt/source/dtb-$(SYS_MAJ).$(SYS_MIN)-ti-arm64
         DIR_DTB2 = $(DIR_DTB)/src/arm64
-        
+
+        $(DEV_TREE_DEP): $(DEV_TREE_DEP2)
+	        @echo "BBAI-64: re-install Kiwi device tree to configure GPIO pins"
+	        make install_kiwi_device_tree
+	        touch $(FORCE_REBOOT)
+
         install_kiwi_device_tree:
 	        @echo "BBAI-64: install Kiwi device tree to configure GPIO pins"
 	        cp platform/beaglebone_AI64/$(DTB_KIWI_TMP) $(DIR_DTB2)
@@ -1198,7 +1207,7 @@ endif
 endif
 
 .PHONY: make_install
-make_install: $(DO_ONCE) $(BUILD_DIR)/kiwid.bin
+make_install: $(DO_ONCE) $(DEV_TREE_DEP) $(BUILD_DIR)/kiwid.bin
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	@echo
 	@echo "############################################"
@@ -1216,6 +1225,10 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 	# remainder of "make install" only makes sense to run on target
 else
+    ifneq ($(DEV_TREE_DEP),)
+	    @ls -la $(DEV_TREE_DEP)
+	    @ls -la $(DEV_TREE_DEP2)
+    endif
 # don't strip symbol table while we're debugging daemon crashes
 	install -D -o root -g root $(BUILD_DIR)/kiwid.bin /usr/local/bin/kiwid
 	install -D -o root -g root $(GEN_DIR)/kiwi.aout /usr/local/bin/kiwid.aout
@@ -1332,6 +1345,7 @@ endif
 
 # must be last obviously
 	@if [ -f $(REBOOT) ]; then rm $(REBOOT); echo "\nMUST REBOOT FOR CHANGES TO TAKE EFFECT"; echo -n "Press \"return\" key to reboot else control-C: "; read in; reboot; fi;
+	@if [ -f $(FORCE_REBOOT) ]; then rm $(FORCE_REBOOT); echo "\nMUST REBOOT FOR CHANGES TO TAKE EFFECT. REBOOTING..."; reboot; fi;
 
 endif
 
@@ -1480,7 +1494,8 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 # selectively transfer files to the target so everything isn't compiled each time
 EXCLUDE_RSYNC = ".DS_Store" ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" \
 	"verilog/kiwi.gen.vh" "web/edata*" "node_modules" "morse-pro-compiled.js"
-RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) $(addprefix --exclude , $(EXT_EXCLUDE_RSYNC)) $(RSYNC_SRC) $(RSYNC_USER)@$(HOST):$(RSYNC_DST)
+RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) $(addprefix --exclude , $(EXT_EXCLUDE_RSYNC)) \
+    $(RSYNC_SRC) $(RSYNC_USER)@$(HOST):$(RSYNC_DST)
 RSYNC_ARGS_DRYRUN = -n $(RSYNC_ARGS)
 
 RSYNC_USER ?= root

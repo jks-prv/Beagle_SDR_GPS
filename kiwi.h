@@ -55,6 +55,8 @@ typedef struct {
 	
 	// low-res lat/lon from timezone process
 	int lowres_lat, lowres_lon;
+	
+	int ant_switch_nch;
 } kiwi_t;
 
 extern kiwi_t kiwi;

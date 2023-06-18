@@ -22,6 +22,9 @@
 
 `default_nettype none
 
+// for compatibility with antenna switch extension
+`define P8_ARE_INPUTS
+
 module KiwiSDR (
 
     input  wire	signed [ADC_BITS-1:0] ADC_DATA,
@@ -44,7 +47,19 @@ module KiwiSDR (
     output wire CMD_READY,  // ctrl[CTRL_CMD_READY]
     output wire SND_INTR,   // ctrl[CTRL_SND_INTR]
     output wire P926,		// inside pin row
-    
+
+`ifdef P8_ARE_INPUTS
+    input  wire P826,		// outside pin row
+    input  wire P819,
+    input  wire P817,
+    input  wire P818,		// outside pin row
+    input  wire P815,
+    input  wire P816,		// outside pin row
+    input  wire P813,
+    input  wire P814,		// outside pin row
+    input  wire P811,
+    input  wire P812,		// outside pin row
+`else
     output wire P826,		// outside pin row
     output wire P819,
     output wire P817,
@@ -55,6 +70,7 @@ module KiwiSDR (
     output wire P814,		// outside pin row
     output wire P811,
     output wire P812,		// outside pin row
+`endif
 
     output wire EWP
     );
@@ -84,6 +100,8 @@ module KiwiSDR (
     // P8: 26 24 22 20 18 16 14 12 10 08 06 04 02
     //     b9          b3 b2 b1 b0
     
+`ifdef P8_ARE_INPUTS
+`else
     wire [9:0] P8;
     
     assign P826 = P8[9];
@@ -96,6 +114,7 @@ module KiwiSDR (
     assign P816 = P8[2];
     assign P814 = P8[1];
     assign P812 = P8[0];
+`endif
 
     
     //////////////////////////////////////////////////////////////////////////
@@ -160,6 +179,8 @@ module KiwiSDR (
 	assign P9[1] = ctrl[CTRL_UNUSED_OUT];
 	assign P9[2] = ctrl[CTRL_UNUSED_OUT];
 
+`ifdef P8_ARE_INPUTS
+`else
 	assign P8[0] = ctrl[CTRL_UNUSED_OUT];
 	assign P8[1] = ctrl[CTRL_UNUSED_OUT];
 	assign P8[2] = ctrl[CTRL_UNUSED_OUT];
@@ -170,11 +191,15 @@ module KiwiSDR (
 	assign P8[7] = ctrl[CTRL_UNUSED_OUT];
 	assign P8[8] = ctrl[CTRL_UNUSED_OUT];
 	assign P8[9] = ctrl[CTRL_UNUSED_OUT];
+`endif
     
 	wire unused_inputs = IF_MAG | P915
 `ifdef USE_OTHER
         | unused_inputs_other
 `else
+`ifdef P8_ARE_INPUTS
+        | P812 | P813 | P814 | P815 | P816 | P817 | P818 | P819 | P826
+`endif
 `ifdef USE_SDR
 	    | ctrl[CTRL_0001] | ctrl[CTRL_0002] | ctrl[CTRL_0004] | ctrl[CTRL_0008]
 	    //| ctrl[CTRL_0010] | ctrl[CTRL_0020] | ctrl[CTRL_0040] | ctrl[CTRL_0080]
