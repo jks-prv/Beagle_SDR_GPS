@@ -1154,7 +1154,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
     EXISTS_DX := $(shell test -f $(DIR_CFG)/$(DX) && echo true)
     DX_CFG = dx_config.json
     DX_SHA256 := $(shell test -f $(DIR_CFG)/$(DX) && sha256sum $(DIR_CFG)/$(DX) | cut -c1-8)
-    DX_NEEDS_UPDATE := $(findstring $(DX_SHA256),612d92da f607e7c7 574fb11d)
+    DX_NEEDS_UPDATE := $(findstring $(DX_SHA256),612d92da 574fb11d f607e7c7 668dec9e)
 
     # If missing install DIR_CFG copies (initial versions).
     # If Internet connection exists subsequent updates will occur.

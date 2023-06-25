@@ -2,78 +2,78 @@
   "dx_type": [
     {
       "key": 0,
-      "name": "active",
-      "color": "cyan"
+      "name": "Reserved",
+      "color": "darkTurquoise"
     },
     {
       "key": 1,
-      "name": "watch-list",
+      "name": "Channel",
       "color": "lightPink"
     },
     {
       "key": 2,
-      "name": "sub-band",
+      "name": "Ham",
       "color": "aquamarine"
     },
     {
       "key": 3,
-      "name": "UNID",
-      "color": "lavender"
+      "name": "Bcast",
+      "color": "cyan"
     },
     {
       "key": 4,
-      "name": "special event",
-      "color": "violet"
+      "name": "Utility",
+      "color": "hsl(300,100%,80%)"
     },
     {
       "key": 5,
-      "name": "interference",
-      "color": "violet"
+      "name": "Time",
+      "color": "deepSkyBlue"
     },
     {
       "key": 6,
-      "name": "",
-      "color": ""
+      "name": "ALE",
+      "color": "silver"
     },
     {
       "key": 7,
-      "name": "",
-      "color": ""
+      "name": "HFDL",
+      "color": "hsl(50,100%,70%)"
     },
     {
       "key": 8,
-      "name": "",
-      "color": ""
+      "name": "Milcom",
+      "color": "peachPuff"
     },
     {
       "key": 9,
-      "name": "",
-      "color": ""
+      "name": "CW",
+      "color": "mediumAquaMarine"
     },
     {
       "key": 10,
-      "name": "",
-      "color": ""
+      "name": "FSK",
+      "color": "hsl(270,100%,80%)"
     },
     {
       "key": 11,
-      "name": "",
-      "color": ""
+      "name": "FAX",
+      "color": "hsl(180,100%,80%)"
     },
     {
       "key": 12,
-      "name": "",
-      "color": ""
+      "name": "Aero",
+      "color": "hsl(70,100%,45%)"
     },
     {
       "key": 13,
-      "name": "",
-      "color": ""
+      "name": "Marine",
+      "color": "springGreen"
     },
     {
       "key": 14,
-      "name": "",
-      "color": ""
+      "name": "Spy",
+      "color": "hsl(0,100%,75%)"
     },
     {
       "key": 15,
