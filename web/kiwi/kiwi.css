@@ -10,6 +10,21 @@ hr
     border-top: 1px solid #ddd;
 }
 
+x1
+{
+    padding: 0 4px;
+    color: black;
+	background: #d9d9d9;
+}
+			
+x2
+{
+    margin-left: 16px;
+    padding: 0 5px;
+    color: black;
+	background: #d9d9d9;
+}
+			
 .id-kiwi-msg-container
 {
 	display: none;

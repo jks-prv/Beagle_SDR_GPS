@@ -504,10 +504,10 @@ function kiwi_get_init_settings()
 // configuration
 ////////////////////////////////
 
-var cfg = { };
-var dxcfg = { };
-var dxcomm_cfg = { };   // read-only, doesn't appear in cfg_save_json()
-var adm = { };
+var cfg = {};
+var dxcfg = {};
+var dxcomm_cfg = {};    // read-only, doesn't appear in cfg_save_json()
+var adm = {};
 
 function config_save(cfg_s, cfg)
 {
@@ -555,6 +555,10 @@ function cfg_save_json(id, path)
 	   config_save('adm', adm);
 	} else
 	if (path.startsWith('dxcfg.')) {
+	   if (dx.dxcfg_parse_error) {
+	      console.log('$cfg_save_json dxcfg '+ id +': NOT SAVED DUE TO dxcfg_parse_error');
+	      return;
+	   }
 	   config_save('dxcfg', dxcfg);
 	} else {    // cfg.*
 	   config_save('cfg', cfg);
@@ -2799,13 +2803,45 @@ function kiwi_msg(param, ws)
 		case "load_dxcfg":
 			var dxcfg_json = decodeURIComponent(param[1]);
 			console.log('### load_dxcfg '+ ws.stream +' '+ dxcfg_json.length);
-         dxcfg = kiwi_JSON_parse('load_dxcfg', dxcfg_json);
+         dxcfg = kiwi_JSON_parse('load_dxcfg', dxcfg_json,
+            function(ex) {
+               dx.dxcfg_parse_error = ex;
+            }
+         );
+         
+         if (dx.dxcfg_parse_error) {
+            // null configuration so user page continues to work
+            dxcfg = {};
+            dxcfg.dx_type = [];
+            for (var i = 0; i < 16; i++) {
+               dxcfg.dx_type.push({key:i, name:'type-'+i, color:'white'});
+            }
+            dxcfg.band_svc = [];
+            dxcfg.bands = [];
+            console.log(dxcfg);
+         }
 			break;
 
 		case "load_dxcomm_cfg":
 			var dxcomm_cfg_json = decodeURIComponent(param[1]);
 			console.log('### load_dxcomm_cfg '+ ws.stream +' '+ dxcomm_cfg_json.length);
-         dxcomm_cfg = kiwi_JSON_parse('load_dxcomm_cfg', dxcomm_cfg_json);
+         dxcomm_cfg = kiwi_JSON_parse('load_dxcomm_cfg', dxcomm_cfg_json,
+            function(ex) {
+               dx.dxcomm_cfg_parse_error = ex;
+            }
+         );
+         
+         if (dx.dxcomm_cfg_parse_error) {
+            // null configuration so user page continues to work
+            dxcomm_cfg = {};
+            dxcomm_cfg.dx_type = [];
+            for (var i = 0; i < 16; i++) {
+               dxcomm_cfg.dx_type.push({key:i, name:'type-'+i, color:'white'});
+            }
+            dxcomm_cfg.band_svc = [];
+            dxcomm_cfg.bands = [];
+            console.log(dxcomm_cfg);
+         }
 			break;
 
 		case "load_adm":

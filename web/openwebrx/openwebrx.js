@@ -99,6 +99,10 @@ var owrx = {
    FSET_SCALE_TOUCH_DRAG_END: 9,
    fset_s: [ 'nop', 'add', 'fset', 'extSetPB', 'pbChg', 'drag', 'dragEnd', 'mouseClick', 'touchDrag', 'touchClick' ],
    
+   WF_POS_AT_FREQ: 0,
+   WF_POS_RECENTER_IF_OUTSIDE: 1,
+   waterfall_tuned: 0,
+   
    scale_canvas: {
 	   mouse_out: false,
       target: null,
@@ -1213,6 +1217,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		//if (mparam != '') console.log('$mode='+ mode +' mparam='+ mparam); else console.log('$mode='+ mode);
 		var s = 'SET mod='+ mode +' low_cut='+ locut +' high_cut='+ hicut +' freq='+ freq + mparam;
 		snd_send(s);
+      //kiwi_trace('doSet');
 		//console.log('$'+ s);
 
       var changed = null;
@@ -4296,10 +4301,11 @@ function waterfall_add(data_raw, audioFFT)
 	
 	var data_arr_u8, data, decomp_data;
    var w = wf_fft_size;
+   var x_bin_server;
 	
 	if (audioFFT == 0) {
       var u32View = new Uint32Array(data_raw, 4, 3);
-      var x_bin_server = u32View[0];		// bin & zoom from server at time data was queued
+      x_bin_server = u32View[0];    // bin & zoom from server at time data was queued
       var u32 = u32View[1];
       if (kiwi_gc_wf) u32View = null;	// gc
       var x_zoom_server = u32 & 0xffff;
@@ -4707,6 +4713,41 @@ function waterfall_zoom_canvases(dz, x)
 	});
 	
 	need_clear_wf_sp_avg = true;
+}
+
+function waterfall_position(pos, freq_kHz)
+{
+   //console.log('waterfall_position='+ pos +' freq_kHz='+ freq_kHz);
+   //kiwi_trace('waterfall_position');
+   var wf_middle_bin = x_bin + bins_at_cur_zoom()/2;
+
+   if (pos == owrx.WF_POS_AT_FREQ) {
+      freq_kHz = freq_kHz || 1e3;
+      var dbin = freq_to_bin(freq_kHz*1e3) - wf_middle_bin;    // < 0 = pan left (toward lower freqs)
+      waterfall_pan_canvases(dbin);
+   } else {    // WF_POS_RECENTER_IF_OUTSIDE
+      var pb_bin = -passband_visible() - 1;
+      if (pb_bin >= 0) {
+         //console.log("RECEN YES pb_bin="+pb_bin+" wfm="+wf_middle_bin+" dbins="+(pb_bin - wf_middle_bin));
+         waterfall_pan_canvases(pb_bin - wf_middle_bin);		// < 0 = pan left (toward lower freqs)
+      }
+   }
+	
+	// reset "select band" menu if freq is no longer inside band
+	check_band();
+}
+
+function waterfall_tune(f_kHz)
+{
+   //console.log('waterfall_tune f_kHz='+ f_kHz);
+   if (f_kHz == 0) {
+      waterfall_position(owrx.WF_POS_AT_FREQ, +ext_get_freq_kHz());
+   } else {
+      waterfall_position(owrx.WF_POS_AT_FREQ, f_kHz);
+      owrx.waterfall_tuned = 1;
+   }
+   w3_field_select('id-freq-input', {mobile:1, log:2});
+   freqset_restore_ui();
 }
 
 // window:
@@ -5586,6 +5627,20 @@ function freq_field_width()
    return (width +'em');
 }
 
+function freqset_restore_ui()
+{
+	var obj = w3_el('id-freq-input');
+	if (isNoArg(obj)) return null;      // can happen if SND comes up long before W/F
+
+   var f_kHz_with_freq_offset = (freq_displayed_Hz + kiwi.freq_offset_Hz)/1000;
+   freq_displayed_kHz_str_with_freq_offset = f_kHz_with_freq_offset.toFixed(freq_field_prec(f_kHz_with_freq_offset));
+   obj.value = freq_displayed_kHz_str_with_freq_offset;
+
+	//console.log("FUPD obj="+ typeof(obj) +" val="+ obj.value);
+	freqset_select();
+	return obj;
+}
+
 function freqset_update_ui(from)
 {
 	//console.log('FUPD-UI freq_car_Hz='+ freq_car_Hz +' cf+of='+(center_freq + demodulators[0].offset_frequency));
@@ -5599,27 +5654,10 @@ function freqset_update_ui(from)
 	
 	if (!waterfall_setup_done) return;
 	
-	var obj = w3_el('id-freq-input');
-	if (isUndefined(obj) || obj == null) return;		// can happen if SND comes up long before W/F
-
-   var f_kHz_with_freq_offset = (freq_displayed_Hz + kiwi.freq_offset_Hz)/1000;
-   freq_displayed_kHz_str_with_freq_offset = f_kHz_with_freq_offset.toFixed(freq_field_prec(f_kHz_with_freq_offset));
-   obj.value = freq_displayed_kHz_str_with_freq_offset;
-
-	//console.log("FUPD obj="+ typeof(obj) +" val="+ obj.value);
-	freqset_select();
+	if (freqset_restore_ui() == null) return;
 	
-	// re-center if the new passband is outside the current waterfall 
-	var pb_bin = -passband_visible() - 1;
-	//console.log("RECEN pb_bin="+pb_bin+" x_bin="+x_bin+" f(x_bin)="+bin_to_freq(x_bin));
-	if (pb_bin >= 0) {
-		var wf_middle_bin = x_bin + bins_at_cur_zoom()/2;
-		//console.log("RECEN YES pb_bin="+pb_bin+" wfm="+wf_middle_bin+" dbins="+(pb_bin - wf_middle_bin));
-		waterfall_pan_canvases(pb_bin - wf_middle_bin);		// < 0 = pan left (toward lower freqs)
-	}
-	
-	// reset "select band" menu if freq is no longer inside band
-	check_band();
+	// re-center if the new passband is outside the current waterfall
+	waterfall_position(owrx.WF_POS_RECENTER_IF_OUTSIDE);
 	
 	writeCookie('last_freq', freq_displayed_kHz_str_with_freq_offset);
 	freq_dsp_set_last = freq_displayed_kHz_str_with_freq_offset;
@@ -5788,29 +5826,38 @@ function freq_link_update_cb(path, param, first)
 
 function freqset_complete(from)
 {
+	if (owrx.waterfall_tuned > 0) {
+	   //kiwi_trace('freqset_complete: waterfall_tuned='+ owrx.waterfall_tuned);
+	   owrx.waterfall_tuned--;
+	   return;
+	}
+
 	var obj = w3_el('id-freq-input');
 	//console.log("FCMPL from="+ from +" obj="+ typeof(obj) +" val="+ (obj.value).toString());
 	kiwi_clearTimeout(freqset_tout);
 	if (isUndefined(obj) || obj == null) return;		// can happen if SND comes up long before W/F
-
+	
 	var iPhone = kiwi_is_iPhone();
    var a, f, pb;
    var adj_pbw = obj.value.includes('/');
    var adj_pbc = obj.value.includes(':');
+   var set_wf  = obj.value.startsWith('#');
 
-   if (!iPhone || adj_pbw || adj_pbc) {
-      // ff ff. ff.ff [/pbw] [/pblo,pbhi] [:pbc] [:pbc,pbw]
-      a = obj.value.split(/[\/\:]/);
-      f = a[0];
-      pb = (a.length >= 2)? a[1].split(',') : null;
-   } else {
-      // iPhone
-      // ff ff. ff.f ff.f.pbw [ff]..pbw [ff]..pblo.pbhi
-      a = obj.value.split('.');
-      f = (a.length == 1)? a[0] : (a[0] +'.'+ a[1]);
-      pb = a; pb.shift(); pb.shift();
-      if (pb.length == 0) pb = null;
-	   adj_pbw = true;
+   if (!set_wf) {
+      if (!iPhone || adj_pbw || adj_pbc) {
+         // ff ff. ff.ff [/pbw] [/pblo,pbhi] [:pbc] [:pbc,pbw]
+         a = obj.value.split(/[\/\:]/);
+         f = a[0];
+         pb = (a.length >= 2)? a[1].split(',') : null;
+      } else {
+         // iPhone
+         // ff ff. ff.f ff.f.pbw [ff]..pbw [ff]..pblo.pbhi
+         a = obj.value.split('.');
+         f = (a.length == 1)? a[0] : (a[0] +'.'+ a[1]);
+         pb = a; pb.shift(); pb.shift();
+         if (pb.length == 0) pb = null;
+         adj_pbw = true;
+      }
    }
 
 	// "/" alone resets to default passband (".." for iPhone)
@@ -5822,6 +5869,14 @@ function freqset_complete(from)
       return;
    }
    
+   if (set_wf) {
+      f = obj.value.slice(1);
+      if (f == '') {    // '#' alone resets to current rx freq
+         waterfall_tune(0);
+         return;
+      }
+   }
+   
 	var restore = true;
    if (f != '') {       // f == '' for "/pb" or "..pb" cases
       // 'k' suffix is simply ignored since default frequencies are in kHz
@@ -5829,9 +5884,14 @@ function freqset_complete(from)
       if (f > 0 && !isNaN(f)) {
          f -= kiwi.freq_offset_kHz;
          if (f > 0 && !isNaN(f)) {
-            freqmode_set_dsp_kHz(f, null);
+            if (set_wf) {
+               waterfall_tune(f);
+               return;
+            } else {
+               freqmode_set_dsp_kHz(f, null);
+               restore = false;
+            }
             w3_field_select(obj, {mobile:1, log:2});
-            restore = false;
          }
       }
 	}
@@ -6492,7 +6552,10 @@ function bands_init()
 
 function dx_cfg_db()
 {
-   return (dx.db == dx.DB_COMMUNITY)? dxcomm_cfg : dxcfg;
+   var db = (dx.db == dx.DB_COMMUNITY)? dxcomm_cfg : dxcfg;
+   //console.log('dx_cfg_db dxcfg='+ dxcfg +' dxcomm_cfg='+ dxcomm_cfg);
+   //console.log('dx_cfg_db '+ ((dx.db == dx.DB_COMMUNITY)? 'DB_COMMUNITY' : 'DB_STORED') +' '+ db);
+   return db;
 }
 
 function kiwi_bands_db(init_bands)
@@ -6759,6 +6822,9 @@ function parse_freq_pb_mode_zoom(s)
 // scroll to next/prev band menu entry, skipping null title entries
 function band_scroll(dir)
 {
+   // happens if .json config file corrupt
+   if (band_menu.length == 0 || (band_menu.length == 1 && band_menu[0] == null)) return;
+   
    var i = owrx.last_selected_band;
    var b;
 
@@ -7082,12 +7148,15 @@ function admin_pwd_cb2(el, val)
 
 var dx = {
    step_dbg: 0,
-   step_superDARN: 0,
+   step_superDARN: 0,      // testing
    sig_bw_vis: 'hidden',
    sig_bw_left: '0px',
    
    url_p: null,
    help: false,
+   
+   dxcfg_parse_error: null,
+   dxcomm_cfg_parse_error: null,
    
    DB_STORED: 0,
    DB_EiBi: 1,
@@ -7501,6 +7570,15 @@ function dx_label_render_cb(arr)
       }
 	   return;
 	}
+	
+	var errors = hdr.pe + hdr.fe;
+	if (errors) {
+	   var el = w3_el('id-dxcfg-err');
+	   if (el && !el.innerHTML.startsWith('Warning')) {   // don't override dx_config.json corruption warning
+         el.innerHTML = 'Warning: dx.json file has '+ errors +' label'+ plural(errors, ' error');
+         w3_add(el, 'w3-text-css-orange');
+      }
+   }
 	
 	kiwi_clearInterval(dx_ibp_interval);
 	dx_ibp_list = [];
@@ -8033,7 +8111,21 @@ function dx_label_step(dir)
    dx.last_stepped_gid = dl.gid;
 }
 
-var dx_keys;
+function dx_check_corrupt()
+{
+   if (dx.dxcfg_parse_error) {
+      var el = w3_el('id-dxcfg-err');
+      w3_innerHTML(el, 'Warning: corrupt dx_config.json file');
+      w3_add(el, 'w3-text-css-orange');
+   }
+
+   if (dx.dxcomm_cfg_parse_error) {
+      var el = w3_el('id-dxcomm-cfg-err');
+      w3_innerHTML(el, 'Warning: corrupt dx_community_config.json file');
+      w3_remove(el, 'w3-text-css-yellow');
+      w3_add(el, 'w3-text-css-orange');
+   }
+}
 
 function dx_admin_pwd_cb(path, val)
 {
@@ -8046,7 +8138,7 @@ function dx_admin_pwd_cb(path, val)
 // note that an entry can be cloned by selecting it, but then using the "add" button instead of "modify"
 function dx_show_edit_panel(ev, gid, from_shortcut)
 {
-	dx_keys = ev? { shift:ev.shiftKey, alt:ev.altKey, ctrl:ev.ctrlKey, meta:ev.metaKey } : { shift:0, alt:0, ctrl:0, meta:0 };
+	dx.keys = ev? { shift:ev.shiftKey, alt:ev.altKey, ctrl:ev.ctrlKey, meta:ev.metaKey } : { shift:0, alt:0, ctrl:0, meta:0 };
 	dx.o.gid = gid;
 	
 	//console.log('dx_show_edit_panel ws='+ ws_wf.stream);
@@ -8061,11 +8153,12 @@ function dx_show_edit_panel(ev, gid, from_shortcut)
                var s =
                   w3_inline('',
                      w3_div('w3-medium w3-text-aqua w3-bold', 'DX labels'),
-                     w3_select('w3-margin-L-32/w3-label-inline w3-text-white /w3-text-red', 'database:', '', 'dx.db', dx.db, dx.db_s, 'dx_database_cb')
+                     w3_select('w3-margin-L-32/w3-label-inline w3-text-white /w3-text-red', 'database:', '', 'dx.db', dx.db, dx.db_s, 'dx_database_cb', 0)
                   ) +
                   w3_div('w3-margin-T-16',
                      w3_checkbox('/w3-label-inline w3-label-not-bold w3-text-white/',
-                        'filter by time/day-of-week', dx.DB_STORED.toString() +'-filter-tod', dx.filter_tod[dx.DB_STORED], 'dx_time_dow_cb')
+                        'filter by time/day-of-week', dx.DB_STORED.toString() +'-filter-tod', dx.filter_tod[dx.DB_STORED], 'dx_time_dow_cb'),
+                     w3_text('id-dxcfg-err w3-block')
                   ) +
                   w3_div('w3-margin-T-16',
 			            w3_input('//w3-margin-T-8 w3-padding-small|width:80%', 'Admin password', 'dx.pwd', '', 'dx_admin_pwd_cb'),
@@ -8077,6 +8170,7 @@ function dx_show_edit_panel(ev, gid, from_shortcut)
                // put the cursor in (i.e. select) the password field
                if (from_shortcut != true)
                   w3_field_select('id-dx.pwd', {mobile:1});
+	            dx_check_corrupt();
             } else {
                dx_show_edit_panel2();
             }
@@ -8140,7 +8234,7 @@ function dx_show_edit_panel2()
       //console_log_dbgUs(dx.o);
    
       // quick key combo to toggle 'active' type without bringing up panel
-      if (dx.db == dx.DB_STORED && gid != -1 && dx_keys.shift && dx_keys.alt) {
+      if (dx.db == dx.DB_STORED && gid != -1 && dx.keys.shift && dx.keys.alt) {
          //console.log('DX COMMIT quick-active entry #'+ dx.o.gid +' f='+ dx.o.fr);
          //console.log(dx.o);
          var type = dx.o.ft;
@@ -8243,7 +8337,7 @@ function dx_show_edit_panel2()
                w3_div('w3-margin-T-4',
                   w3_checkbox('/w3-label-inline w3-label-not-bold w3-text-white/',
                      'filter by time/day-of-week', dx.DB_STORED.toString() +'-filter-tod', dx.filter_tod[dx.DB_STORED], 'dx_time_dow_cb'),
-                  w3_text('w3-margin-T-4', 'Create new label with Add button')
+                  w3_text('id-dxcfg-err w3-margin-T-4', 'Create new label with Add button')
                )
             )
          );
@@ -8306,37 +8400,38 @@ function dx_show_edit_panel2()
       s2 =
          w3_checkbox('w3-margin-T-8/w3-label-inline w3-label-not-bold w3-text-white/',
             'filter by time/day-of-week', dx.DB_COMMUNITY.toString() +'-filter-tod', dx.filter_tod[dx.DB_COMMUNITY], 'dx_time_dow_cb') +
-         w3_text('w3-margin-TB-8 w3-text-css-yellow',
-            'The community database is read-only and downloaded periodically. <br>' +
-            dx.last_community_download) +
+         w3_text('id-dxcomm-cfg-err w3-margin-T-4 w3-margin-B-12 w3-text-css-yellow',
+            'The community database is read-only and downloaded periodically. <br>' + dx.last_community_download);
 
-         w3_div('w3-valign-col w3-round w3-padding-TB-15 w3-gap-15|background:whiteSmoke',
-            w3_inline(cbox_container,
-               label(dx.T3_BCAST),
-               label(dx.T4_UTIL),
-               label(dx.T5_TIME)
-            ),
-            w3_inline(cbox_container,
-               label(dx.T6_ALE),
-               label(dx.T7_HFDL),
-               label(dx.T8_MILCOM)
-            ),
-            w3_inline(cbox_container,
-               label(dx.T9_CW),
-               label(dx.T10_FSK),
-               label(dx.T11_FAX)
-            ),
-            w3_inline(cbox_container,
-               label(dx.T12_AERO),
-               label(dx.T13_MARINE),
-               label(dx.T14_SPY)
-            ),
-            w3_inline(cbox_container,
-               label(dx.T2_HAM),
-               label(dx.T1_CHANNEL),
-               label(dx.T0_RESERVED)
-            )
-         );
+      if (!dx.dxcomm_cfg_parse_error)
+         s2 +=
+            w3_div('w3-valign-col w3-round w3-padding-TB-15 w3-gap-15|background:whiteSmoke',
+               w3_inline(cbox_container,
+                  label(dx.T3_BCAST),
+                  label(dx.T4_UTIL),
+                  label(dx.T5_TIME)
+               ),
+               w3_inline(cbox_container,
+                  label(dx.T6_ALE),
+                  label(dx.T7_HFDL),
+                  label(dx.T8_MILCOM)
+               ),
+               w3_inline(cbox_container,
+                  label(dx.T9_CW),
+                  label(dx.T10_FSK),
+                  label(dx.T11_FAX)
+               ),
+               w3_inline(cbox_container,
+                  label(dx.T12_AERO),
+                  label(dx.T13_MARINE),
+                  label(dx.T14_SPY)
+               ),
+               w3_inline(cbox_container,
+                  label(dx.T2_HAM),
+                  label(dx.T1_CHANNEL),
+                  label(dx.T0_RESERVED)
+               )
+            );
    }
 	
 	// can't do this as initial val passed to w3_input above when string contains quoting
@@ -8376,7 +8471,9 @@ function dx_show_edit_panel2()
 	   },
 	   true     // show help button
    );
+   
 	ext_set_controls_width_height(550, 290);
+	dx_check_corrupt();
 }
 
 function dx_database_cb(path, idx, first, opt, from_shortcut)
@@ -8384,18 +8481,23 @@ function dx_database_cb(path, idx, first, opt, from_shortcut)
    //console.log('first='+ first +' ctrlAlt='+ ctrlAlt);
    if (first) return;
    dx.list = [];
-   console_log_dbgUs('DX DB-SWITCHED db='+ dx.db +' opt='+ kiwi_JSON(opt));
+   console_log_dbgUs('DX DB-SWITCHED db='+ idx +'|'+ dx.db +' opt='+ kiwi_JSON(opt) +' from_shortcut='+ from_shortcut);
 
    if (w3_opt(opt, 'toggle')) {
       dx.filter_tod[dx.db] ^= 1;
       dx_time_dow_cb(dx.db.toString() +'-filter-tod', dx.filter_tod[dx.db]);
    } else {
       dx.db = +idx;
+      var called_from_menu = (opt == '0');
       if (w3_opt(opt, 'open')) {
          dx_show_edit_panel(null, -1, from_shortcut);
       } else {
-         if (ext_panel_displayed('dx'))
+         if (!called_from_menu && ext_panel_displayed('dx')) {
             dx_close_edit_panel();
+         }
+         if (called_from_menu) {
+            dx_show_edit_panel(null, -1, from_shortcut);    // show new panel contents
+         }
       }
    }
    
@@ -9042,11 +9144,11 @@ function ident_keyup(el, evt, which)
 
 
 ////////////////////////////////
-// shortcuts (keyboard)
+// #shortcuts (keyboard)
 ////////////////////////////////
 
 // abcdefghijklmnopqrstuvwxyz `~!@#$%^&*()-_=+[]{}\|;:'"<>? 0123456789.,/kM
-// ..........F........ ......   ..        F .     .. F  ... FFFFFFFFFFFFFFF
+// ..........F........ ......   ..F       F .     .. F  ... FFFFFFFFFFFFFFF
 // .. ..  ...  F. .  .  ..  .                               F: frequency entry keys
 // ABCDEFGHIJKLMNOPQRSTUVWXYZ
 // :space: :tab: :arrow-UDLR:
@@ -9085,13 +9187,13 @@ function keyboard_shortcut_init()
    
    shortcut.help =
       w3_div('',
-         w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', 'Keys', 25, 'Function'),
+         w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', 'Shortcut keys', 25, 'Function'),
          w3_inline_percent('w3-padding-tiny', 'g =', 25, 'select frequency entry field'),
-         w3_inline_percent('w3-padding-tiny', 'j i LR-arrow-keys', 25, 'frequency step down/up, add shift or alt for faster<br>&nbsp;&nbsp;&nbsp;shift plus alt to step to next/prev DX label'),
+         w3_inline_percent('w3-padding-tiny', 'j i LR-arrow-keys', 25, 'frequency step down/up, add shift or alt for faster,<br>shift plus alt to step to next/prev DX label'),
          w3_inline_percent('w3-padding-tiny', 'm n N', 25, 'toggle frequency memory menu, VFO A/B, VFO A=B'),
          w3_inline_percent('w3-padding-tiny', 'b B', 25, 'scroll band menu'),
          w3_inline_percent('w3-padding-tiny', 'e E', 25, 'scroll extension menu'),
-         w3_inline_percent('w3-padding-tiny', 'a A d l u c f q', 25, 'toggle modes: AM SAM DRM LSB USB CW NBFM IQ<br>add alt to toggle backwards (e.g. SAM modes)'),
+         w3_inline_percent('w3-padding-tiny', 'a A d l u c f q', 25, 'toggle modes: AM SAM DRM LSB USB CW NBFM IQ,<br>add alt to toggle backwards (e.g. SAM modes)'),
          w3_inline_percent('w3-padding-tiny', 'p P alt-p', 25, 'passband narrow/widen, restore default'),
          w3_inline_percent('w3-padding-tiny', 'UD-arrow-keys', 25, 'passband adjust both, right(shift), left(alt) edges'),
          w3_inline_percent('w3-padding-tiny', 'r', 25, 'toggle audio recording'),
@@ -9101,17 +9203,39 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny', 'S D', 25, 'waterfall auto-scale, spectrum slow device mode'),
          w3_inline_percent('w3-padding-tiny', 's alt-s', 25, 'spectrum RF/AF/off toggle, add alt to toggle backwards'),
          w3_inline_percent('w3-padding-tiny', 'v V space', 25, 'volume less/more, mute'),
-         w3_inline_percent('w3-padding-tiny', 'o', 25, 'toggle between option bar "off" and "stats" mode,<br>others selected by related shortcut key'),
+         w3_inline_percent('w3-padding-tiny', 'o', 25, 'toggle between option bar <x1>off</x1> and <x1>stats</x1> mode,<br>others selected by related shortcut key'),
          w3_inline_percent('w3-padding-tiny', '!', 25, 'toggle aperture manual/auto menu'),
          w3_inline_percent('w3-padding-tiny', '@', 25, 'DX label filter'),
-         w3_inline_percent('w3-padding-tiny', '\\ |', 25, 'toggle (& open) DX stored/EiBi/community database<br>&nbsp;&nbsp;&nbsp;alt to toggle "filter by time/day-of-week" checkbox'),
-         //w3_inline_percent('w3-padding-tiny', '#', 25, 'Open user preferences extension'),
+         w3_inline_percent('w3-padding-tiny', '\\ |', 25, 'toggle (& open) DX stored/EiBi/community database,<br>alt to toggle <x1>filter by time/day-of-week</x1> checkbox'),
          w3_inline_percent('w3-padding-tiny', 'x y', 25, 'toggle visibility of control panels, top bar'),
          w3_inline_percent('w3-padding-tiny', 'esc', 25, 'close/cancel action'),
          w3_inline_percent('w3-padding-tiny', '? h', 25, 'toggle this help list'),
-         w3_inline_percent('w3-padding-tiny', 'H', 25, 'Open extension help'),
+         w3_inline_percent('w3-padding-tiny', 'H', 25, 'toggle extension or frequency entry field help'),
          w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', '', 25, 'Windows, Linux: use alt key, not control key'),
          w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', '', 25, 'Mac: use alt/option or control key')
+      );
+   
+   shortcut.freq_help =
+      w3_div('',
+         w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', 'Frequency entry field options'),
+         w3_inline_percent('w3-padding-tiny', '<i>freq</i>', 15, 'set rx frequency in kHz or MHz using <x1>M</x1> suffix<br>e.g. <x1>7020</x1> or <x1>10M</x1>'),
+         w3_inline_percent('w3-padding-tiny', '<i>pb</i>', 15, 'set passband (described below) without changing frequency'),
+         w3_inline_percent('w3-padding-tiny', '<i>freq pb</i>', 15, 'set frequency and passband together, e.g. <x1>7020/2k</x1>'),
+         w3_inline_percent('w3-padding-tiny', '#<i>wf-freq</i>', 15, 'set waterfall frequency, e.g. <x1>#7020</x1> or <x1>#10M</x1>'),
+         w3_inline_percent('w3-padding-tiny', '#', 15, 'returns waterfall to rx frequency'),
+
+         w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua w3-margin-T-8', 'Passband specification'),
+         w3_inline_percent('w3-padding-tiny', '', 15,
+            'Passband values below are in Hz or kHz if followed by <x1>k</x1> <br>' +
+            'Positive values are above the carrier, negative below. <br>' +
+            'So a <i>low,high</i> of <x1>300,3k</x1> describes a USB passband <br>' +
+            'and <x1>-2.7k,300</x1> a LSB passband.'
+         ),
+         w3_inline_percent('w3-padding-tiny', '/<i>low,high</i>', 15, 'set passband low and high values'),
+         w3_inline_percent('w3-padding-tiny', '/<i>width</i>', 15, 'set width about current passband center'),
+         w3_inline_percent('w3-padding-tiny', '/', 15, 'returns passband to default for current mode'),
+         w3_inline_percent('w3-padding-tiny', ':<i>pbc</i>', 15, 'sets passband center retaining current width'),
+         w3_inline_percent('w3-padding-tiny', ':<i>pbc,pbw</i>', 15, 'sets passband by center and width')
       );
 
 	w3_el('id-kiwi-body').addEventListener('keydown', keyboard_shortcut_event, true);
@@ -9120,6 +9244,11 @@ function keyboard_shortcut_init()
 function keyboard_shortcut_help()
 {
    confirmation_show_content(shortcut.help, 550, 625);   // height +15 per added line
+}
+
+function freq_input_help()
+{
+   confirmation_show_content(shortcut.freq_help, 550, 380);
 }
 
 // FIXME: animate (light up) control panel icons?
@@ -9235,7 +9364,12 @@ function keyboard_shortcut(key, key_mod, ctlAlt, keyCode)
    case 'e': extension_scroll(1); break;
    case 'E': extension_scroll(-1); break;
    case '?': case 'h': keyboard_shortcut_help(); break;
-   case 'H': if (extint.current_ext_name) w3_call(extint.current_ext_name +'_help', true); break;
+   case 'H':
+      if (extint.current_ext_name)
+         w3_call(extint.current_ext_name +'_help', true);
+      else
+         freq_input_help();
+      break;
 
    case '|':
       if (!ext_panel_displayed('dx')) no_step = true;
@@ -9308,9 +9442,19 @@ function keyboard_shortcut_event(evt)
          (k >= '0' && k <= '9' && !ctl) ||
          k == '.' || k == ',' ||                // ',' is alternate decimal point to '.' and used in passband spec
          k == '/' || k == ':' || k == '-' ||    // for passband spec, have to allow for negative passbands (e.g. lsb)
+         k == '#' ||                            // for waterfall tuning
          k == 'k' || k == 'M' ||                // scale modifiers
          k == 'Enter' || k == 'Backspace' || k == 'Delete'
       );
+
+      if (k == 'h' || k == '?') {
+         var el = w3_elementAtPointer(owrx.last_pageX, owrx.last_pageY);
+         //console.log(el);
+         if (el && el.id == 'id-freq-input') {
+            freq_input_help();
+            return cancelEvent(evt);
+         }
+      }
 
    if (evt.target.nodeName != 'INPUT' || (id == 'id-freq-input' && !field_input_key)) {
       
