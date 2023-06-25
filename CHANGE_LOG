@@ -2,6 +2,27 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.609  Jun 26, 2023
+    DX label system:
+        The stored dx label database (only if never modified by admin) has been updated to a snapshot
+            of the current community database.
+        Better error handling when there is corruption of the various dx label *.json files.
+            Error messages will appear in the admin DX tab and also the user DX labels panel.
+        Selecting a database menu entry on the DX labels panel now keeps the panel open.
+    
+    Waterfall tuning: Type "#frequency" into the frequency entry box on the main control panel
+    to directly tune the waterfall center frequency (independently of the audio channel frequency).
+    For example if you're tuned to 7020 kHz listening to CW you could quickly tune the waterfall
+    to the 30m FT8 frequency by typing "#10136"  Type "#" alone to return the waterfall to the
+    current audio channel frequency. The "k" and "M" suffixes apply, e.g. "#10M" for 10 MHz.
+    Previously the waterfall could only be tuned by mouse/touch gestures, shortcut keys and the
+    page up/down buttons.
+    
+    Frequency entry field help: If the cursor is positioned over the frequency entry field,
+    and 'h' or '?' is typed, a help panel is shown with information about the optional passband
+    and waterfall tuning parameters. Typing 'h' or '?' with the cursor anywhere else shows the
+    standard help panel. Typing 'H' when no extension is open also opens shows this help.
+
 v1.608  Jun 19, 2023
     Antenna switch extension improvements:
     Must install the latest extension from: github.com/jks-prv/KiwiSDR-antenna-switch-extension
