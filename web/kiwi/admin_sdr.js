@@ -1298,22 +1298,60 @@ function public_update(p)
 
 function dx_html()
 {
-   var i, s;
-   dx.enabled = true;
+   var i, s = '';
 
-	if (!dx.enabled)
-	   return w3_div('id-dx w3-hide', w3_div('w3-container w3-margin-top', 'TODO..'));
-	
 	if (kiwi_isMobile())
 	   return w3_div('id-dx w3-hide', w3_div('w3-container w3-margin-top', 'Not available on mobile devices.'));
 	
-	// one-time conversion of kiwi.config/config.js bands[] to kiwi.json configuration file
+   var s2 =
+      w3_inline('/w3-margin-top',
+         w3_select_get_param('/w3-label-inline w3-text-teal/w3-text-red',
+            'Default DX label database:', '', 'dx_default_db', dx.db_s, 'admin_select_cb'),
+         w3_switch_label('w3-margin-L-64/w3-label-inline w3-label-left w3-text-teal/',
+            'Automatically download community database?', 'Yes', 'No', 'adm.dx_comm_auto_download', adm.dx_comm_auto_download, 'admin_radio_YN_cb'),
+         w3_button('w3-aqua w3-margin-L-64 w3-restart', 'Download now', 'dx_comm_download_cb'),
+         w3_text('w3-margin-L-8 w3-text-black', '(requires restart)')
+      ) +
+      w3_hr('w3-margin-TB-16');
+
+   var abort = false, color = ' w3-hide';
+	if (dx.dxcfg_parse_error) {
+	   s =
+	      w3_div('', 
+            w3_text('', 'Warning: The configuration file /root/kiwi.config/dxcfg.json is corrupt. <br>' +
+               'The error is: '+ dx.dxcfg_parse_error +
+               '<br>Please use a text editor to fix the file (for example "nano /root/kiwi.config/dxcfg.json" in the admin console tab), ' +
+               'or restore from backup, and restart the Kiwi. <br> Or ask for help on the Kiwi forum or email support@kiwisdr.com')
+         );
+      color = ' w3-red';
+	   abort = true;
+	}
+	
+	if (dx.dxcomm_cfg_parse_error) {
+	   s = w3_br(s) +
+	      w3_div('', 
+            w3_text('', 'Warning: The configuration file /root/kiwi.config/dx_community_config.json is corrupt. <br>' +
+               'The error is: '+ dx.dxcomm_cfg_parse_error +
+               '<br>Please use a text editor to fix the file (for example "nano /root/kiwi.config/dx_community_config.json" in the admin console tab), ' +
+               'or restore from backup, and restart the Kiwi. <br> Or ask for help on the Kiwi forum or email support@kiwisdr.com')
+         );
+      color = ' w3-red';
+	}
+	
+	s2 += w3_div('id-dx-err-msg w3-margin-T-8 w3-padding'+ color, s) +
+	      w3_div('id-dx-list-msg w3-margin-T-8 w3-padding w3-red w3-hide');
+
+	if (abort) {
+	   return w3_div('id-dx w3-hide', w3_div('w3-container w3-margin-top', s2));
+	}
+	
+	// one-time conversion of kiwi.config/config.js bands[] to dx_config.json configuration file
 	if (isUndefined(dxcfg.bands) || isUndefined(dxcfg.band_svc) || isUndefined(dxcfg.dx_type)) {
       bandwidth = [30, 32][cfg.max_freq] * 1e6;
       zoom_nom = ZOOM_NOMINAL;
       bands_init();
 	   console.log('BANDS: saving new dxcfg.bands ---------------------------------------------------');
-      cfg_save_json('config.js', 'dxcfg.bands');
+      cfg_save_json('config.js => dx_config.json', 'dxcfg.bands');
    } else {
 	   console.log('BANDS: using stored dxcfg.bands -------------------------------------------------');
       bands_addl_info(1);
@@ -1360,17 +1398,6 @@ function dx_html()
          '<hr>'
       );
    
-   var s2 =
-      w3_inline('/w3-margin-top',
-         w3_select_get_param('/w3-label-inline w3-text-teal/w3-text-red',
-            'Default DX label database:', '', 'dx_default_db', dx.db_s, 'admin_select_cb'),
-         w3_switch_label('w3-margin-L-64/w3-label-inline w3-label-left w3-text-teal/',
-            'Automatically download community database?', 'Yes', 'No', 'adm.dx_comm_auto_download', adm.dx_comm_auto_download, 'admin_radio_YN_cb'),
-         w3_button('w3-aqua w3-margin-L-64 w3-restart', 'Download now', 'dx_comm_download_cb'),
-         w3_text('w3-margin-L-8 w3-text-black', '(requires restart)')
-      ) +
-      w3_hr('w3-margin-T-16 w3-margin-B-8');
-
    // reminder: "Nvh" means N% of the viewport (browser window) height
    var vh = '63vh';
    //var vh = '32vh';
@@ -1406,7 +1433,6 @@ function dx_html()
                'Notes', 'dx.o.search_n', '', 'dx_search_notes_cb')
          )
       ) +
-      w3_div('id-dx-list-msg w3-margin-T-8 w3-padding-tiny w3-hide') +
       w3_div('id-dx-list-container w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
          w3_div('id-dx-list-legend w3-margin-R-15'),
          w3_div('id-dx-list w3-margin-bottom w3-padding-B-8 w3-black-box w3-scroll-y|height:'+ vh +'|onscroll="dx_list_scroll();"')
@@ -1517,7 +1543,7 @@ function dx_expand_cb(path, which)
 
 function dx_focus()
 {
-   if (!dx.enabled) return;
+   if (dx.dxcfg_parse_error) return;
    dx.open_sched = -1;
    dx.o.last_search_idx = 0;
 
@@ -1545,7 +1571,7 @@ function dx_focus()
 // callback from "dx_size=<len>"
 function dx_size(len)
 {
-   if (!dx.enabled) return;
+   if (dx.dxcfg_parse_error) return;
    //console.log('dx_size: entries='+ len);
    w3_innerHTML('id-dx-list-count', 'loading '+ len +' entries');
    
@@ -1560,7 +1586,7 @@ function dx_size(len)
 
 function dx_blur()
 {
-   if (!dx.enabled) return;
+   if (dx.dxcfg_parse_error) return;
    //console.log('dx_blur');
    
    // don't do this during *_blur() calls made on admin page load
@@ -1591,10 +1617,9 @@ function dx_save(id, now)
 	   }, fade + 250);
 	   
 	   // only do the UI effect when called by the dx list (i.e. don't do cfg save)
-	   if (id != 'id-dx-list-saved') {
-	      console.log('BANDS: saving cfg.{band_svc,bands}');
-	      if (now != dx.SAVE_LATER)
-            cfg_save_json('dx_save', 'dxcfg.bands');
+	   if (id != 'id-dx-list-saved' && now != dx.SAVE_LATER) {
+	      console.log('BANDS: saving dxcfg.{band_svc,bands}');
+         cfg_save_json('dx_save', 'dxcfg.bands');
       }
 
       // after any admin change to dx label or band bar:
@@ -1624,6 +1649,7 @@ function dx_restart_cancel_cb()
 // called in response to "admin_mkr=" sent from server processing "SET MARKER idx1= idx2="
 function dx_render(obj)
 {
+   //console.log('$dx_render');
    var i, j;
    
    if (dx.export_active) {
@@ -1644,7 +1670,8 @@ function dx_render(obj)
    if (hdr.pe || hdr.fe) {
       var el = w3_el('id-dx-list-msg');
       w3_remove_then_add(el, 'w3-green', 'w3-red');
-      el.innerHTML = 'Warning: dx.json file has '+ (hdr.pe + hdr.fe) +' labels with errors -- see Kiwi log tab for details';
+      var errors = hdr.pe + hdr.fe;
+      el.innerHTML = 'Warning: dx.json file has '+ errors + plural(errors, ' label')  +' with errors -- see admin log tab for details.';
       w3_show(el);
    }
    
