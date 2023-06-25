@@ -875,8 +875,9 @@ function event_dump(evt, id, oneline)
       console.log(evt.target);
       console.log(evt.currentTarget);
       console.log(evt.relatedTarget);
-      if (isNumber(evt.pageX) && isNumber(evt.pageY))
-         console.log(document.elementFromPoint(evt.pageX, evt.pageY));
+      var el_s = w3_elementAtPointer(evt);
+      if (el_s)
+         console.log(el_s);
       else
          console.log('(no x,y)');
       console.log('----');
@@ -1065,7 +1066,7 @@ function kiwi_JSON(json, pretty)
    return JSON.stringify(json, null, pretty? 3:undefined);
 }
 
-function kiwi_JSON_parse(tag, json)
+function kiwi_JSON_parse(tag, json, func)
 {
    var obj;
    try {
@@ -1074,6 +1075,7 @@ function kiwi_JSON_parse(tag, json)
       console.log('kiwi_JSON_parse('+ tag +'): JSON parse fail');
       console.log(json);
       console.log(ex);
+      w3_call(func, ex);
       obj = null;
    }
    return obj;

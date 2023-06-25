@@ -1458,6 +1458,13 @@ function w3_nl(s)
    return s;
 }
 
+// append <br> if s is not empty
+function w3_br(s)
+{
+   if (isArg(s) && s != '') s += '<br>';
+   return s;
+}
+
 // psa = prop|style|attr
 // => <div [class="[prop] [extra_prop]"] [style="[style] [extra_style]"] [attr] [extra_attr]>
 function w3_psa(psa, extra_prop, extra_style, extra_attr)
@@ -1663,6 +1670,20 @@ function w3_do_when_cond(cond_func, func, arg, poll_ms)
    // conf_func() is false for some number of setTimeout() periods.
    // That's not how javascript works (Web Workers aside). It is event driven and all threads
    // must complete without conditional delay.
+}
+
+// w3_elementAtPointer(evt)
+// w3_elementAtPointer(x, y)
+function w3_elementAtPointer(x, y)
+{
+   if (isObject(x)) {
+      var evt = x;
+      x = evt.pageX; y = evt.pageY;
+   }
+   if (isNumber(x) && isNumber(y)) {
+      return document.elementFromPoint(x,y);
+   }
+   return null;
 }
 
 
