@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.610  Jun 28, 2023
+    Possible fix for observed memory corruption bug (thanks Paul, VK3KHZ).
+
 v1.609  Jun 26, 2023
     DX label system:
         The stored dx label database (only if never modified by admin) has been updated to a snapshot

@@ -445,6 +445,7 @@ alias scD="git clone https://github.com/jks-prv/Beagle_SDR_GPS.git"
 alias urldecode='sed "s@+@ @g;s@%@\\\\x@g" | xargs -0 printf "%b"'
 alias wk="json_pp -t dumper < ~root/kiwi.config/kiwi.json | grep rx_name | urldecode"
 alias status="function _status () { curl --connect-timeout 5 \${*}:8073/status ; } ; _status"
+alias wstatus="function _wstatus () { while true; do curl \${*}:8073/status; curl -s \${*}:8073/users | jq '.'; curl -s \${*}:8073/snr; sleep 2; done ; } ; _wstatus"
 alias status80="function _status () { curl --connect-timeout 5 \${*}:80/status ; } ; _status"
 alias mdu="killall -q -s USR1 kiwid; killall -q -s USR1 kiwi.bin"
 alias kh="killall -q -s HUP kiwid; killall -q -s HUP kiwi.bin"

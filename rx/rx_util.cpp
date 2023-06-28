@@ -392,6 +392,7 @@ typedef struct {
     char *frag_prefix_s, *end_prefix_s;
     int seq;
     char *json;
+    int json_slen;
 } save_cfg_t;
 
 static save_cfg_t save_cfg = { "cfg" }, save_dxcfg = { "dxcfg" }, save_adm = { "adm" };
@@ -431,9 +432,11 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
         cfg->remote_port != conn->remote_port || cfg->tstamp != conn->tstamp) {
         // persists: init, frag_prefix_s, end_prefix_s
         cfg->seq = 0;
-        kstr_free(cfg->json);
-        if (dbug) clprintf(conn, "save_config: %s RESET cfg|conn CONN:%p|%p IP:%s|%s PORT:%d|%d TSTAMP:0x%llx|0x%llx\n",
-            cfg->name, cfg->conn, conn, cfg->remote_ip, conn->remote_ip, cfg->remote_port, conn->remote_port, cfg->tstamp, conn->tstamp);
+        if (dbug) clprintf(conn, "save_config: %s RESET cfg|conn %d|%d %p|%p IP:%s|%s PORT:%d|%d TSTAMP:0x%llx|0x%llx json %d|%d<%s>\n",
+            cfg->name, cfg->conn? cfg->conn->self_idx : -1, conn? conn->self_idx : -1, cfg->conn, conn,
+            cfg->remote_ip, conn->remote_ip, cfg->remote_port, conn->remote_port, cfg->tstamp, conn->tstamp,
+            cfg->json_slen, kstr_len(cfg->json), kstr_sp(cfg->json));
+        kstr_free(cfg->json); cfg->json = NULL; cfg->json_slen = 0;
         cfg->conn = conn;
         kiwi_strncpy(cfg->remote_ip, conn->remote_ip, NET_ADDRSTRLEN);
         cfg->remote_port = conn->remote_port;
@@ -468,12 +471,11 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
             return true;
         }
         if (cfg->json != NULL && seq > cfg->seq) {
-            kstr_free(cfg->json);
-            cfg->json = NULL;
+            kstr_free(cfg->json); cfg->json = NULL; cfg->json_slen = 0;
             if (dbug) clprintf(conn, "save_config: %s FRAG conn=%p seq=%d > cfg.seq=%d NEW SEQ, DISCARD ACCUMULATED FRAGS\n", cfg->name, conn, seq, cfg->seq);
         }
         cfg->seq = seq;     // lock to new seq
-        cfg->json = kstr_cat(cfg->json, kstr_wrap(sb));
+        cfg->json = kstr_cat(cfg->json, kstr_wrap(sb), &cfg->json_slen);
         return true;
     }
     
@@ -497,12 +499,11 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
         
         // this should only happen in the case of seq N being fragmented, but seq N+1 having no fragments (due to reduced size presumably)
         if (cfg->json != NULL && seq > cfg->seq) {
-            kstr_free(cfg->json);
-            cfg->json = NULL;
+            kstr_free(cfg->json); cfg->json = NULL; cfg->json_slen = 0;
             if (dbug) clprintf(conn, "save_config: %s END conn=%p seq=%d > cfg.seq=%d NEW SEQ, DISCARD ACCUMULATED FRAGS\n", cfg->name, conn, seq, cfg->seq);
         }
         cfg->seq = seq;     // lock to new seq
-        cfg->json = kstr_cat(cfg->json, kstr_wrap(sb));
+        cfg->json = kstr_cat(cfg->json, kstr_wrap(sb), &cfg->json_slen);
         
         // For cfg strings double URI encoding is effectively used since they are stored encoded and
         // another encoding is done for transmission.
@@ -536,8 +537,8 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
             }
         #endif
 
-        kstr_free(cfg->json);
-        cfg->json = NULL;        // NB: extremely important
+        // NB: cfg->json = NULL here is extremely important
+        kstr_free(cfg->json); cfg->json = NULL; cfg->json_slen = 0;
         update_vars_from_config();      // update C copies of vars
         if (dbug) clprintf(conn, "save_config: %s COMMIT conn=%p seq=%d\n", cfg->name, conn, cfg->seq);
         return true;

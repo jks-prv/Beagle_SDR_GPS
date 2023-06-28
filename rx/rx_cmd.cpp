@@ -242,7 +242,8 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
         }
         break;
 	
-	// SECURITY: auth command here is the only one allowed before auth check below (excluding keepalive & options above)
+	// SECURITY: auth command here is the only one allowed before auth check below
+	// (excluding keepalive, options & kick_admins above)
 	case CMD_AUTH:
         if (kiwi_str_begins_with(cmd, "SET auth")) {
     

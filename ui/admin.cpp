@@ -1343,7 +1343,13 @@ void c2s_admin(void *param)
             if (strcmp(cmd, "PING") == 0)
                 continue;
 
-			printf("ADMIN: unknown command: <%s>\n", cmd);
+            if (conn->auth != true || conn->auth_admin != true) {
+                clprintf(conn, "ADMIN: cmd after auth revoked? auth=%d auth_admin=%d %d %s <%.64s>\n",
+                    conn->auth, conn->auth_admin, conn->remote_ip, cmd);
+                continue;
+            } else {
+			    cprintf(conn, "ADMIN: unknown command: %s <%s>\n", conn->remote_ip, cmd);
+			}
 			continue;
 		}
 		
