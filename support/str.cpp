@@ -39,8 +39,8 @@ Boston, MA  02110-1301, USA.
 // any kstr_cstr argument = kstr_t|C-string|NULL
 // C-string: char array or string constant or NULL
 
-//#define kdebug(x) check(x)
-#define kdebug(x) assert(x)
+#define kdebug(x) check(x)
+//#define kdebug(x) assert(x)
 
 #if defined(HOST)
     #define KSTRINGS	1024
@@ -99,7 +99,7 @@ void kstr_init()
     #endif
 }
 
-static kstring_t *kstr_is(char *s_kstr_cstr)
+static kstring_t *kstr_obj(char *s_kstr_cstr)
 {
     // implicit: if (s_kstr_cstr == NULL) return NULL
 	kstring_t *ks = (kstring_t *) s_kstr_cstr;
@@ -118,7 +118,7 @@ static char *kstr_malloc(kstr_malloc_e type, char *s_kstr_cstr, int size)
     kstring_t *ks;
     
 	if (type == KSTR_REALLOC) {
-	    ks = kstr_is(s_kstr_cstr);
+	    ks = kstr_obj(s_kstr_cstr);
         kdebug(ks != NULL);
         kdebug(ks->sp != NULL);
         kdebug(size >= 0);
@@ -142,7 +142,7 @@ static char *kstr_malloc(kstr_malloc_e type, char *s_kstr_cstr, int size)
 	
     if (type == KSTR_EXT_MALLOC) {
         kdebug(s_kstr_cstr != NULL);
-        kdebug(!kstr_is(s_kstr_cstr));
+        kdebug(!kstr_obj(s_kstr_cstr));
         kdebug(size == 0);
         size = strlen(s_kstr_cstr) + SPACE_FOR_NULL;
         //printf("%3d ALLOC %4d %p {%p} EXT <%s>\n", ks-kstrings, size, ks, s_kstr_cstr, s_kstr_cstr);
@@ -166,7 +166,7 @@ static char *kstr_what(char *s_kstr_cstr)
 	char *p;
 	
 	if (s_kstr_cstr == NULL) return (char *) "NULL";
-	kstring_t *ks = kstr_is(s_kstr_cstr);
+	kstring_t *ks = kstr_obj(s_kstr_cstr);
 	if (ks) {
 		asprintf(&p, "#%d:%d/%d|%p|{%p}%s",
 			(int) (ks-kstrings), ks->size, (int) strlen(ks->sp), ks, ks->sp, (ks->flags & KS_EXT_MALLOCED)? "-EXT":"");
@@ -180,7 +180,7 @@ static char *kstr_what(char *s_kstr_cstr)
 // s_kstr_cstr: kstr|C-string|NULL
 char *kstr_sp(char *s_kstr_cstr)
 {
-	kstring_t *ks = kstr_is(s_kstr_cstr);
+	kstring_t *ks = kstr_obj(s_kstr_cstr);
 	
 	if (ks) {
 	    kdebug(ks->flags & KS_VALID);
@@ -194,7 +194,7 @@ char *kstr_sp(char *s_kstr_cstr)
 char *kstr_wrap(char *s_malloced)
 {
 	if (s_malloced == NULL) return NULL;
-	kdebug(!kstr_is(s_malloced));
+	kdebug(!kstr_obj(s_malloced));
 	return kstr_malloc(KSTR_EXT_MALLOC, s_malloced, 0);
 }
 
@@ -209,7 +209,7 @@ static char *_kstr_free(char *s_kstr_cstr, kstr_free_e mode)
 	if (s_kstr_cstr == NULL) return NULL;
 	char *rv = NULL;
 	
-	kstring_t *ks = kstr_is(s_kstr_cstr);
+	kstring_t *ks = kstr_obj(s_kstr_cstr);
 	
 	if (ks) {
 	    kdebug(ks->flags & KS_VALID);
@@ -239,13 +239,14 @@ int kstr_len(char *s_kstr_cstr)
 {
     if (s_kstr_cstr == NULL) return 0;
     
-	kstring_t *ks = kstr_is(s_kstr_cstr);
+	kstring_t *ks = kstr_obj(s_kstr_cstr);
     if (ks) {
         int size = ks->size - SPACE_FOR_NULL;
-        #ifdef DEBUG
+        //#define KSTR_LEN_CHK_SLEN
+        #ifdef KSTR_LEN_CHK_SLEN
             int check_size = strlen(ks->sp);
             if (size != check_size) {
-                printf("#### DANGER kstr_len: size(%d) != check_size(%d)\n", size, check_size);
+                printf("#### DANGER kstr_len: %p size(%d) != check_size(%d)\n", s_kstr_cstr, size, check_size);
                 return check_size;
             }
         #endif
@@ -256,30 +257,29 @@ int kstr_len(char *s_kstr_cstr)
 }
 
 // will kstr_free() cs2 argument
-char *kstr_cat(char *s1, const char *cs2)
+char *kstr_cat(char *s1, const char *cs2, int *_slen)
 {
 	char *s2 = (char *) cs2;
-    kstring_t *s1k = kstr_is(s1);
-    //kstring_t *s2k = kstr_is(s2);
-	char *s1p, *s1c;
+	char *s1k, *s1p, *s1c;
 	int slen = kstr_len(s1) + kstr_len(s2) + SPACE_FOR_NULL;
 	//printf("kstr_cat s1=%s s2=%s\n", kstr_what(s1), kstr_what(s2));
 	
-	if (s1k != NULL) {
+	if (kstr_obj(s1) != NULL) {
 	    // s1 is a kstr
-	    s1 = kstr_malloc(KSTR_REALLOC, s1, slen);
-	    s1p = kstr_sp(s1);
+	    check(s1 != s2);    // better not be same two kstrs
+	    s1k = kstr_malloc(KSTR_REALLOC, s1, slen);
+	    s1p = kstr_sp(s1k);
 	} else
 	if (s1 != NULL) {
 	    // s1 is a C-string
 	    s1c = s1;
-	    s1 = kstr_malloc(KSTR_ALLOC, NULL, slen);
-	    s1p = kstr_sp(s1);
+	    s1k = kstr_malloc(KSTR_ALLOC, NULL, slen);
+	    s1p = kstr_sp(s1k);
 	    strcpy(s1p, s1c);       // safe since lengths already checked and space allocated
 	} else {
 	    // s1 is NULL
-	    s1 = kstr_malloc(KSTR_ALLOC, NULL, slen);
-	    s1p = kstr_sp(s1);
+	    s1k = kstr_malloc(KSTR_ALLOC, NULL, slen);
+	    s1p = kstr_sp(s1k);
 		s1p[0] = '\0';
 	}
 	
@@ -288,7 +288,8 @@ char *kstr_cat(char *s1, const char *cs2)
 		kstr_free(s2);
 	}
 	
-	return s1;
+	if (_slen != NULL) *_slen = kstr_len(s1k);
+	return s1k;
 }
 
 
