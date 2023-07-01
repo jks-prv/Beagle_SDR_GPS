@@ -1306,13 +1306,12 @@ ifneq ($(EXISTS_KIWI),true)
 	@echo "\nINSTALLING $(DIR_CFG)/$(CFG_KIWI)"
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_KIWI) $(DIR_CFG)/$(CFG_KIWI)
+endif
 
-# don't prevent admin.json transition process
-	ifneq ($(EXISTS_ADMIN),true)
-	    @echo "\nINSTALLING $(DIR_CFG)/$(CFG_ADMIN)"
-	    @mkdir -p $(DIR_CFG)
-	    cp $(DIR_CFG_SRC)/dist.$(CFG_ADMIN) $(DIR_CFG)/$(CFG_ADMIN)
-	endif
+ifneq ($(EXISTS_ADMIN),true)
+	@echo "\nINSTALLING $(DIR_CFG)/$(CFG_ADMIN)"
+	@mkdir -p $(DIR_CFG)
+	cp $(DIR_CFG_SRC)/dist.$(CFG_ADMIN) $(DIR_CFG)/$(CFG_ADMIN)
 endif
 
 ifneq ($(EXISTS_DX),true)
