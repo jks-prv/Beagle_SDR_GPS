@@ -209,7 +209,7 @@ bool ip_blacklist_get(bool download_diff_restart)
     mg_bin2str(net.ip_blacklist_hash, hash, N_IP_BLACKLIST_HASH_BYTES);
     lprintf("ip_blacklist_get: ip_blacklist_hash = %s\n", net.ip_blacklist_hash);
 
-    if (json_init(&bl_json, dl_sp) == false) {
+    if (json_init(&bl_json, dl_sp, "bl_json") == false) {
         lprintf("ip_blacklist_get: JSON parse failed for %s/%s\n", kiwisdr_com, BLACKLIST_FILE);
         goto fail;
     }

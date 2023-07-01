@@ -317,7 +317,7 @@ int PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, s1_t snr
     
     if (pr->task_created) {
         conn_t *conn = rx_channels[rx_chan].conn;
-        u4_t freq = conn->freqHz + passband_freq;
+        u4_t freq = conn->freqHz + ft8_conf.freq_offset_Hz + passband_freq;
         const char *mode = (protocol == FTX_PROTOCOL_FT8)? "FT8" : "FT4";
         time_t time = (time_t) slot_time;
         rcprintf(rx_chan, "PSKReporter spot %s %9.3f %8s %s %+3d %5dkm %s\n", mode, (double) freq / 1e3, call, grid, snr, km, var_ctime_static(&time));

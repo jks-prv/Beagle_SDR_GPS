@@ -240,7 +240,7 @@ void dx_save_as_json(dx_db_t *dx_db, bool dx_label_foff_convert)
     tsize += n;
 	TMEAS(printf("DX_UPD tsize=%d\n", tsize);)
     cfg->json = dx_db->json;
-    cfg->json_buf_size = tsize;
+    cfg->json_buf_size = tsize + SPACE_FOR_NULL;
 
 	TMEAS(u4_t split2 = timer_ms(); printf("DX_UPD dx_save_as_json: dx struct -> json string %.3f sec\n", TIME_DIFF_MS(split2, split));)
 	dx_save_json(cfg->json);
@@ -532,6 +532,8 @@ static void _dx_reload_file(cfg_t *cfg, int db)
 
     lprintf("reading configuration from file %s\n", cfg->filename);
     scallz("_dx_reload_file fopen", (fp = fopen(cfg->filename, "r")));
+    char *dx_list_fn;
+    asprintf(&dx_list_fn, "dx_list:%s", cfg->filename);
 
     #define LBUF 512
     char lbuf[LBUF], *s;
@@ -546,7 +548,7 @@ static void _dx_reload_file(cfg_t *cfg, int db)
 	check(cfg->tok_size == 0);
 	#define NTOK 32
 	cfg->tok_size = NTOK;
-    cfg->tokens = (jsmntok_t *) kiwi_malloc("cfg tokens", sizeof(jsmntok_t) * cfg->tok_size);
+    cfg->tokens = (jsmntok_t *) kiwi_malloc("dx tokens", sizeof(jsmntok_t) * cfg->tok_size);
     
 	int size_i = 0;
 	dx_t *_dx_list = NULL;
@@ -560,7 +562,7 @@ static void _dx_reload_file(cfg_t *cfg, int db)
     do {
         for (i = 0; !done; i++) {
             if (i >= size_i) {
-                _dx_list = (dx_t *) kiwi_table_realloc("dx_list", _dx_list, size_i, DX_LIST_ALLOC_CHUNK, sizeof(dx_t));
+                _dx_list = (dx_t *) kiwi_table_realloc(dx_list_fn, _dx_list, size_i, DX_LIST_ALLOC_CHUNK, sizeof(dx_t));
                 size_i = size_i + DX_LIST_ALLOC_CHUNK;
             }
 
@@ -623,7 +625,7 @@ static void _dx_reload_file(cfg_t *cfg, int db)
     lprintf("\n");
 
     fclose(fp);
-    kiwi_free("cfg tokens", cfg->tokens);
+    kiwi_free("dx tokens", cfg->tokens); cfg->tokens = NULL;
     
     BYTE hash[SHA256_BLOCK_SIZE];
     sha256_final(&ctx, hash);

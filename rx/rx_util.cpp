@@ -526,7 +526,7 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
                 cfg_t cow_json = {0};
                 cow_json.filename = DIR_CFG "/test.json";
                 real_printf(">>> %s\n", cow_json.filename);
-                //if (json_init(&cow_json, (char *) "{\"foo\":1138}") == true) {
+                //if (json_init(&cow_json, (char *) "{\"foo\":1138}", "cow_json") == true) {
                 if (json_init_file(&cow_json) == true) {
                     real_printf("SAVE %d\n", strlen(sp));
                     sp = strdup(sp);
@@ -694,8 +694,9 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
     //cprintf(conn, "GEOLOC: returned <%s>\n", shmem->status_str_large);
 
 	cfg_t cfg_geo;
-    if (json_init(&cfg_geo, shmem->status_str_large) == false) {
+    if (json_init(&cfg_geo, shmem->status_str_large, "cfg_geo") == false) {
         clprintf(conn, "GEOLOC: JSON parse failed for %s\n", geo_host_ip_s);
+	    json_release(&cfg_geo);
         return false;
     }
     

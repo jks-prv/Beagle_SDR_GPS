@@ -71,6 +71,7 @@ void kiwi_ifree(const char *from, void *ptr)
 //#define MALLOC_DEBUG_PRF
 #if defined(MALLOC_DEBUG_PRF) && !defined(USE_VALGRIND)
  #define kmprintf(x) printf x;
+ //#define kmprintf(x) if (strstr(from, ".json")) printf x;
 #else
  #define kmprintf(x)
 #endif
@@ -85,6 +86,23 @@ struct mtrace_t {
 
 static int nmt;
 
+// call from gdb: "p mt_dump()"
+void mt_dump()
+{
+    int i, j;
+	mtrace_t *mt;
+
+    printf("nmt=%d\n", nmt);
+	for (i=0; i<NMT; i++) {
+		mt = &mtrace[i];
+		if (mt->ptr == NULL) continue;
+		bool dup = false;
+		for (j = i-1; j >= 0; j--) if (mtrace[j].ptr == mt->ptr) dup = true;
+		printf("#%d|%d size=%d %p%s \"%s\"\n",
+		    i, mt->i, mt->size, mt->ptr, dup? "(DUP)":"", mt->from);
+	}
+}
+
 static int mt_enter(const char *from, void *ptr, int size)
 {
 	int i;
@@ -97,7 +115,7 @@ static int mt_enter(const char *from, void *ptr, int size)
 	for (i=0; i<NMT; i++) {
 		mt = &mtrace[i];
 		if (mt->ptr == ptr) {
-			kmprintf(("  mt_enter \"%s\" #%d (\"%s\") %d %p\n", from, i, mt->from, size, ptr));
+			kmprintf(("  mt_enter \"%s\" #%d (\"%s\") size=%d %p\n", from, i, mt->from, size, ptr));
 			panic("mt_enter dup");
 		}
 		if (mt->ptr == NULL) {
@@ -144,7 +162,7 @@ static void mt_remove(const char *from, void *ptr)
 void *kiwi_malloc(const char *from, size_t size)
 {
 	//if (size > MALLOC_MAX) panic("malloc > MALLOC_MAX");
-	kmprintf(("kiwi_malloc-1 \"%s\" %d\n", from, size));
+	kmprintf(("kiwi_malloc-1 \"%s\" size=%d\n", from, size));
 	void *ptr = malloc(size);
 	memset(ptr, 0, size);
     #ifdef MALLOC_DEBUG_PRF
@@ -152,14 +170,14 @@ void *kiwi_malloc(const char *from, size_t size)
     #else
         mt_enter(from, ptr, size);
     #endif
-	kmprintf(("kiwi_malloc-2 \"%s\" #%d %d %p\n", from, i, size, ptr));
+	kmprintf(("kiwi_malloc-2 \"%s\" #%d size=%d %p\n", from, i, size, ptr));
 	return ptr;
 }
 
 void *kiwi_realloc(const char *from, void *ptr, size_t size)
 {
 	//if (size > MALLOC_MAX) panic("malloc > MALLOC_MAX");
-	kmprintf(("kiwi_realloc-1 \"%s\" %d %p\n", from, size, ptr));
+	kmprintf(("kiwi_realloc-1 \"%s\" size=%d %p\n", from, size, ptr));
 	mt_remove(from, ptr);
 	ptr = realloc(ptr, size);
     #ifdef MALLOC_DEBUG_PRF
@@ -167,7 +185,7 @@ void *kiwi_realloc(const char *from, void *ptr, size_t size)
     #else
         mt_enter(from, ptr, size);
     #endif
-	kmprintf(("kiwi_realloc-2 \"%s\" #%d %d %p\n", from, i, size, ptr));
+	kmprintf(("kiwi_realloc-2 \"%s\" #%d size=%d %p\n", from, i, size, ptr));
 	return ptr;
 }
 

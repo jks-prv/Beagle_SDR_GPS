@@ -344,7 +344,15 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
                                         if (strcmp(grid, "RR73") != 0) {
                                             u4_t passband_freq = (u4_t) roundf(freq_hz);
                                             s1_t snr_i = (s1_t) roundf(snr);
-                                            km = PSKReporter_spot(rx_chan, call, passband_freq, snr_i, ft8->protocol, grid, ft8->decode_time, ft8->slot);
+                                            #ifdef PR_TESTING
+                                            #else
+                                                // unless PR_TESTING don't spot if in test mode
+                                                if (!ft8_conf.test)
+                                            #endif
+                                                    {
+                                                        km = PSKReporter_spot(rx_chan, call, passband_freq, snr_i, ft8->protocol,
+                                                            grid, ft8->decode_time, ft8->slot);
+                                                    }
                                             ht->uploaded = 1;
                                             uploaded = true;
                                             num_spots++;

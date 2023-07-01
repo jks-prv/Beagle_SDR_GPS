@@ -545,10 +545,16 @@ function config_save2(kiwi_cfg, cfg)
    ext_send_cfg(kiwi_cfg, s);
 }
 
-function cfg_save_json(id, path)
+function cfg_save_json(id, path, val)
 {
-	console.log('cfg_save_json: from='+ id +' path='+ path +' BEGIN');
-	//kiwi_trace();
+   // ignore first spurious cfg save from ant switch extension
+   if (path == 'cfg.ant_switch.denyswitching' && !kiwi.ant_sw_first_set_ignored) {
+      kiwi.ant_sw_first_set_ignored = true;
+      return;
+   }
+   
+	//console.log('cfg_save_json: BEGIN from='+ id +' path='+ path + (isArg(val)? (' val='+ val) : ''));
+	if (path.includes('kiwisdr_com_register')) kiwi_trace();
 
 	var s;
 	if (path.startsWith('adm.')) {
@@ -561,7 +567,7 @@ function cfg_save_json(id, path)
 	   }
 	   config_save('dxcfg', dxcfg);
 	} else {    // cfg.*
-	   config_save('cfg', cfg);
+      config_save('cfg', cfg);
 	}
 	//console.log('cfg_save_json: from='+ id +' path='+ path +' DONE');
 }
@@ -743,7 +749,7 @@ function time_display_html(ext_name, top)
 
 
 ////////////////////////////////
-// ANSI output
+// #ANSI #console output
 ////////////////////////////////
 
 var ansi = {

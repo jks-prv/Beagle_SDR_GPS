@@ -119,11 +119,12 @@ int child_task(const char *pname, funcP_t func, int poll_msec, void *param)
     // a zombie process unless we eventually wait for it.
     // We accomplish this by waiting for all child processes in the waitpid() below and detect the zombies.
 
-    //real_printf("CHILD_TASK ENTER %s poll_msec=%d\n", pname, poll_msec);
+    //lprintf("CHILD_TASK ENTER %s poll_msec=%d\n", pname, poll_msec);
 	pid_t child_pid;
 	scall("fork", (child_pid = fork()));
 	
-	if (child_pid == 0) {
+	// CAUTION: Only use real_printf() in the child
+	if (child_pid == 0) {   // child
 		TaskForkChild();
 
         #ifdef HOST
@@ -138,6 +139,7 @@ int child_task(const char *pname, funcP_t func, int poll_msec, void *param)
         kiwi_snprintf_ptr(main_argv[0], sl, "%-*.*s", sl-1, sl-1, pname);    // have to blank fill, and not overrun, old argv[0]
         
 		func(param);	// this function should child_exit() with some other value if it wants
+        //real_printf("child_task: child_exit\n");
 		child_exit(EXIT_SUCCESS);
 	}
 	
@@ -146,7 +148,7 @@ int child_task(const char *pname, funcP_t func, int poll_msec, void *param)
     //lprintf("==== child_task: child_pid=%d %s pname=%s\n", child_pid, (poll_msec == 0)? "NO_WAIT":"WAIT", pname);
 	if (poll_msec == NO_WAIT) {
 	    register_zombie(child_pid);
-        //real_printf("CHILD_TASK EXIT %s child_pid=%d\n", pname, child_pid);
+        //lprintf("CHILD_TASK EXIT %s child_pid=%d\n", pname, child_pid);
 	    return child_pid;   // don't wait
 	}
 	
@@ -170,7 +172,7 @@ int child_task(const char *pname, funcP_t func, int poll_msec, void *param)
         printf("child_task WARNING: child returned without WIFEXITED status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",
             status, WIFEXITED(status), WEXITSTATUS(status));
 
-    //real_printf("CHILD_TASK EXIT %s status=%d\n", pname, status);
+    //lprintf("CHILD_TASK EXIT %s status=%d\n", pname, status);
     return status;
 }
 

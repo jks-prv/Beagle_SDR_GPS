@@ -156,7 +156,7 @@ void rx_server_init()
 			down = TRUE;
 	}
 
-    json_init(&cfg_ipl, (char *) "{}");
+    json_init(&cfg_ipl, (char *) "{}", "cfg_ipl");
     
     ov_mask = 0xfc00;
 

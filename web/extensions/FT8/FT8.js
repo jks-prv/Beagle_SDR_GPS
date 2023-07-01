@@ -332,7 +332,8 @@ function ft8_autorun_public_check()
 	   if (cfg.ft8['autorun'+ i] != 0 && cfg.ft8['preempt'+ i] == ft8.PREEMPT_NO)
 	      num_autorun++;
 	}
-	ext_set_cfg_param('ft8.autorun', num_autorun, EXT_SAVE);
+	if (cfg.ft8.autorun != num_autorun)
+	   ext_set_cfg_param('ft8.autorun', num_autorun, EXT_SAVE);
 	
 	var full = (adm.kiwisdr_com_register && num_autorun >= rx_chans);
    w3_remove_then_add_cond('id-ft8-warn-full', full, 'w3-red', 'w3-yellow');
@@ -364,8 +365,9 @@ function ft8_autorun_all_regular_cb(path, idx, first)
    for (var i = 0; i < rx_chans; i++) {
       var path = 'ft8.autorun'+ i;
       w3_select_value(path, 0);
-      admin_select_cb(path, 0);
+      admin_select_cb(path, 0, /* first: true => no save */ true);
    }
+   ext_set_cfg_param('ft8.autorun', 0, EXT_SAVE);
    w3_show('id-ft8-restart');
 	var el = w3_el('id-kiwi-container');
 	w3_scrollDown(el);   // keep menus visible

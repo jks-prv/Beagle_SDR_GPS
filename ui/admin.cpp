@@ -865,6 +865,13 @@ void c2s_admin(void *param)
 				continue;
 			}
 
+			int my_kiwi;
+			i = sscanf(cmd, "SET my_kiwi=%d", &my_kiwi);
+			if (i == 1) {
+                my_kiwi_register(my_kiwi? true:false);
+				continue;
+			}
+
 
 ////////////////////////////////
 // GPS

@@ -2589,7 +2589,6 @@ function w3_input(psa, label, path, val, cb, placeholder)
 	return s;
 }
 
-
 function w3_input_force(path, cb, input)
 {
    var el = w3_el(path);
@@ -2599,6 +2598,7 @@ function w3_input_force(path, cb, input)
    el.dispatchEvent(new CustomEvent('input', { detail: path +'|'+ cb}));
    el.removeEventListener('input', w3_input_input, true);
 }
+
 /*
 function w3int_input_set_id(id)
 {
