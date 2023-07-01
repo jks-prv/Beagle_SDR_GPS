@@ -676,7 +676,8 @@ function wspr_autorun_public_check()
 	   if (cfg.WSPR['autorun'+ i] != 0 && cfg.WSPR['preempt'+ i] == wspr.PREEMPT_NO)
 	      num_autorun++;
 	}
-	ext_set_cfg_param('WSPR.autorun', num_autorun, EXT_SAVE);
+	if (cfg.WSPR.autorun != num_autorun)
+	   ext_set_cfg_param('WSPR.autorun', num_autorun, EXT_SAVE);
 	
 	var full = (adm.kiwisdr_com_register && num_autorun >= rx_chans);
    w3_remove_then_add_cond('id-wspr-warn-full', full, 'w3-red', 'w3-yellow');
@@ -707,8 +708,9 @@ function wspr_autorun_all_regular_cb(path, idx, first)
    for (var i = 0; i < rx_chans; i++) {
       var path = 'WSPR.autorun'+ i;
       w3_select_value(path, 0);
-      admin_select_cb(path, 0);
+      admin_select_cb(path, 0, /* first: true => no save */ true);
    }
+   ext_set_cfg_param('WSPR.autorun', 0, EXT_SAVE);
    w3_show('id-wspr-restart');
 	var el = w3_el('id-kiwi-container');
 	w3_scrollDown(el);   // keep menus visible

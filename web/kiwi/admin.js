@@ -1105,8 +1105,11 @@ function backup_html()
 
 function backup_focus()
 {
-	w3_el('id-progress-container').style.width = px(300);
-	w3_el('id-output-msg').style.height = px(300);
+	var el;
+	el = w3_el('id-progress-container');
+	if (el) el.style.width = px(300);
+	el = w3_el('id-output-msg');
+	if (el) el.style.height = px(300);
 
    w3_do_when_cond(
       function() { return isNumber(kiwi.debian_maj); },
@@ -1329,7 +1332,7 @@ function network_html()
          ),
          w3_div('w3-center w3-text-teal',
             w3_switch_label('w3-center', 'Register this Kiwi on my.kiwisdr.com<br>on each reboot?',
-               'Yes', 'No', 'adm.my_kiwi', adm.my_kiwi, 'admin_radio_YN_cb'),
+               'Yes', 'No', 'adm.my_kiwi', adm.my_kiwi, 'network_my_kiwi_cb'),
             w3_text('w3-block w3-center w3-text-black',
                'Registering on <a href="http://my.kiwisdr.com" target="_blank">my.kiwisdr.com</a> allows the local ip address of Kiwis <br>' +
                'to be easily discovered. Set to "no" if you don\'t want your Kiwi <br>' +
@@ -1404,6 +1407,15 @@ function network_html()
       '<hr>';
 
 	return w3_div('id-network w3-hide', s1 + s2 + s3);
+}
+
+function network_my_kiwi_cb(path, idx, first)
+{
+	idx = +idx;
+	var enabled = (idx == 0);
+	//console.log('network_my_kiwi_cb: first='+ first +' enabled='+ enabled);
+	if (!first) ext_send('SET my_kiwi='+ (enabled? 1:0));
+	admin_bool_cb(path, enabled, first);
 }
 
 function network_ssl_container_init()
@@ -2070,11 +2082,11 @@ function gps_acq_cb(path, val, first)
    w3_bool_set_cfg_cb(path, val);
 }
 
-function gps_graph_cb(id, idx)
+function gps_graph_cb(id, idx, first)
 {
    idx = +idx;
    //console.log('gps_graph_cb idx='+ idx);
-   admin_int_cb(id, idx);
+   admin_int_cb(id, idx, first);
    ext_send('SET gps_IQ_data_ch='+ ((idx == _gps.IQ)? _gps.iq_ch:0));
 
    w3_show_hide('id-gps-pos-scale', idx == _gps.POS);
@@ -2170,7 +2182,7 @@ function gps_focus2(id)
 	// only get updates while the gps tab is selected
 	ext_send("SET gps_update");
 	gps_interval = setInterval(function() {ext_send("SET gps_update");}, 1000);
-	gps_graph_cb('adm.rssi_azel_iq', adm.rssi_azel_iq);
+	gps_graph_cb('adm.rssi_azel_iq', adm.rssi_azel_iq, true);
 }
 
 function gps_blur(id)
@@ -3146,6 +3158,47 @@ function console_key_cb(ev, called_from_w3_input)
       ev.preventDefault();
 }
 
+function console_paste_char(i)
+{
+   var c = admin.console.pasted_text[i];
+   //console.log(i +'>>> '+ c);
+   ext_send('SET console_w2c='+ encodeURIComponent(c));
+   i++;
+   if (i < admin.console.pasted_text_len) {
+	   setTimeout(function(i) { console_paste_char(i); }, 10, i);
+	}
+}
+
+function console_paste_chars(s)
+{
+   var sl = Math.min(s.length, 32);
+   var s1 = s.slice(0, sl);
+   var s2 = s.slice(sl);
+   ext_send('SET console_w2c='+ encodeURIComponent(s1));
+   if (s2 != '') {
+	   setTimeout(function(s) { console_paste_chars(s); }, 10, s2);
+	}
+}
+
+function console_paste_cb(ev)
+{
+	//event_dump(ev, 'console_paste_cb', 1);
+	//console.log(ev);
+	var s = ev.clipboardData.getData('text');
+   if (admin.console.is_char_oriented) {
+      if (0) {
+         admin.console.pasted_text = s.split('');
+         admin.console.pasted_text_len = admin.console.pasted_text.length;
+         //console.log(admin.console.pasted_text);
+         //console.log(admin.console.pasted_text_len);
+         console_paste_char(0);
+      } else {
+         console_paste_chars(s);
+      }
+   }
+	ev.preventDefault();
+}
+
 function console_ctrl_button_cb(id, ch)
 {
    console.log('console_ctrl_button_cb ch='+ ord(ch));
@@ -3234,12 +3287,14 @@ function console_resize()
 function console_focus(id)
 {
 	document.addEventListener("keydown", console_key_cb, false);
+	document.addEventListener("paste", console_paste_cb, false);
 	console_resize();
 }
 
 function console_blur(id)
 {
 	document.removeEventListener("keydown", console_key_cb, false);
+	document.removeEventListener("paste", console_paste_cb, false);
 }
 
 
@@ -3908,7 +3963,7 @@ function admin_reboot_cancel_cb()
 
 function admin_int_cb(path, val, first)
 {
-	console.log('admin_int_cb '+ path +'='+ val +' save='+ save);
+	//console.log('admin_int_cb '+ path +'='+ val +' first='+ first);
 	val = parseInt(val);
 	if (isNaN(val)) {
 	   // put old value back
@@ -3916,6 +3971,7 @@ function admin_int_cb(path, val, first)
 	} else {
       // if first time don't save, otherwise always save
       var save = isArg(first)? (first? false : true) : true;
+      //if (path.includes('rssi_azel_iq')) { console.log('admin_int_cb '+ path +' save='+ save); kiwi_trace(); }
 	   ext_set_cfg_param(path, val, save);
 	}
    w3_set_value(path, val);   // remove any fractional part from field
@@ -3964,9 +4020,14 @@ function admin_set_decoded_value(path)
 }
 
 // translate radio button yes/no index to bool value
-function admin_radio_YN_cb(id, idx)
+function admin_radio_YN_cb(path, idx, first)
 {
-	admin_bool_cb(id, idx? 0:1);     // idx: 0 = 'yes', 1 = 'no'
+	var val = +idx? 0:1;    // idx: 0 = 'yes', 1 = 'no'
+   // first is used by direct callers to prevent a save
+	var save = isArg(first)? (first? false : true) : true;
+	//console.log('admin_radio_YN_cb path='+ path +' val='+ val +' first='+ first +' save='+ save);
+   //if (path.includes('kiwisdr_com_register')) { console.log('admin_radio_YN_cb '+ path +' save='+ save); kiwi_trace(); }
+	ext_set_cfg_param(path, val? true:false, save);
 }
 
 function admin_select_cb(path, idx, first)

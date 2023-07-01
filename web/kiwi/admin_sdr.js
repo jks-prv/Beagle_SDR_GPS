@@ -633,7 +633,7 @@ function config_wfmin_cb(path, val, first)
 {
    val = +val;
    var ok = (val < cfg.init.max_dB);
-   if (ok) admin_int_cb(path, val, /* save */ !first);
+   if (ok) admin_int_cb(path, val, first);
    w3_show_hide('id-wfmin-error', !ok);
 }
 
@@ -641,7 +641,7 @@ function config_wfmax_cb(path, val, first)
 {
    val = +val;
    var ok = (val > cfg.init.min_dB);
-   if (ok) admin_int_cb(path, val, /* save */ !first);
+   if (ok) admin_int_cb(path, val, first);
    w3_show_hide('id-wfmax-error', !ok);
 }
 
@@ -649,7 +649,7 @@ function config_zoom_cb(path, val, first)
 {
    val = +val;
    var ok = (val >= 0 && val <= 14);
-   if (ok) admin_int_cb(path, val, /* save */ !first);
+   if (ok) admin_int_cb(path, val, first);
    w3_show_hide('id-zoom-error', !ok);
 }
 
@@ -658,7 +658,7 @@ function config_ident_len_cb(path, val, first)
    val = +val;
    if (val < 16) val = 16;
    if (val > 64) val = 64;
-   admin_int_cb(path, val, /* save */ !first);
+   admin_int_cb(path, val, first);
 }
 
 function config_OV_counts_cb(path, val, complete, first)
@@ -666,19 +666,19 @@ function config_OV_counts_cb(path, val, complete, first)
    //console.log('config_OV_counts_cb path='+ path +' val='+ val);
    val = +val;
 	var ov_counts = 1 << val;
-	admin_int_cb(path, val, /* save */ !first);
+	admin_int_cb(path, val, first);
 	w3_set_label('S-meter OV if &ge; '+ ov_counts +' ADC OV per 64k samples', path);
 	ext_send('SET ov_counts='+ ov_counts);
 }
 
 function overload_mute_cb(path, val, complete, first)
 {
-   //console.log('overload_mute_cb path='+ path +' val='+ val);
+   console.log('overload_mute_cb path='+ path +' val='+ val +' complete='+ complete +' first='+ first);
    val = +val;
-	admin_int_cb(path, val, /* save */ !first);
+	admin_int_cb(path, val, first);
 	var s = 'Passband overload mute '+ val +' dBm';
 	if (val >= -73) s += ' (S9+'+ (val - -73) +')';
-	w3_set_label(s, path, /* save */ !first);
+	w3_set_label(s, path);
 }
 
 function config_clone_cb(id, idx)
@@ -1126,7 +1126,7 @@ function kiwi_reg_html()
 	return w3_div('id-sdr_hu w3-text-teal w3-hide', s1 + s2);
 }
 
-function kiwisdr_com_register_cb(path, idx)
+function kiwisdr_com_register_cb(path, idx, no_save)
 {
    idx = +idx;
    //console.log('kiwisdr_com_register_cb idx='+ idx);
@@ -1168,7 +1168,7 @@ function kiwisdr_com_register_cb(path, idx)
    
    w3_innerHTML('id-kiwisdr_com-reg-status', text);
    w3_remove_then_add_cond('id-kiwisdr_com-reg-status', error, 'w3-red w3-text-white', 'w3-pale-blue w3-text-black');
-   admin_radio_YN_cb(path, idx);
+   admin_radio_YN_cb(path, idx, /* first: true => no save */ true);
 
    // make sure server side notices change promptly
 	ext_send_after_cfg_save("SET public_wakeup");

@@ -206,11 +206,13 @@ function ext_set_cfg_param(path, val, save)
 {
 	path = w3_add_toplevel(path);	
 	setVarFromString(path, val);
+	save = (isArg(save) && save == EXT_SAVE)? true : false;
+	//console.log('ext_set_cfg_param: path='+ path +' val='+ val +' save='+ save);
 	
 	// save only if EXT_SAVE specified
-	if (isArg(save) && save == EXT_SAVE) {
+	if (save) {
 		//console.log('ext_set_cfg_param: SAVE path='+ path +' val='+ val);
-		cfg_save_json('ext_set_cfg_param', path);
+		cfg_save_json('ext_set_cfg_param', path, val);
 	}
 }
 
