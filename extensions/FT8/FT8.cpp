@@ -131,6 +131,7 @@ static void ft8_task(void *param)
             e->seq++;
 		    
 		    //real_printf("%d ", e->rd_pos); fflush(stdout);
+		    ft8_conf.test = e->test;
 		    decode_ft8_samples(rx_chan, &rx->real_samples[e->rd_pos][0], FASTFIR_OUTBUF_SIZE, conn->freqHz, &e->start_test);
 			e->rd_pos = (e->rd_pos+1) & (N_DPBUF-1);
 		}
@@ -183,6 +184,7 @@ bool ft8_msgs(char *msg, int rx_chan)
 	    e->proto = proto;
         conn_t *conn = rx_channels[e->rx_chan].conn;
 		e->last_freq_kHz = conn->freqHz/1e3;
+        ft8_conf.freq_offset_Hz = (u4_t) (freq_offset_kHz * 1e3);
 		//rcprintf(rx_chan, "FT8 start %s\n", proto? "FT4" : "FT8");
 		decode_ft8_init(rx_chan, proto? 1:0);
 
@@ -301,9 +303,8 @@ bool ft8_update_vars_from_config(bool called_at_init_or_restart)
             num_autorun = num_non_preempt = 0;
         }
         ft8_conf2.num_autorun = num_autorun;
-        cfg_set_int("ft8.autorun", num_non_preempt);
+        cfg_update_int("ft8.autorun", num_non_preempt, &update_cfg);
         //printf("FT8 autorun: num_autorun=%d ft8.autorun=%d(non-preempt) rx_chans=%d\n", num_autorun, num_non_preempt, rx_chans);
-        update_cfg = true;
     }
 
     ft8_conf.SNR_adj = cfg_default_int("ft8.SNR_adj", -22, &update_cfg);

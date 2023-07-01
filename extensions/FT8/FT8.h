@@ -9,9 +9,12 @@
 #define FT8_PASSBAND_HI     3100
 
 typedef struct {
+    u4_t freq_offset_Hz;
+    
     float SNR_adj;
     float dT_adj;
 
+    int test;
     s2_t *s2p_start, *s2p_end;
     int tsamps;
 } ft8_conf_t;

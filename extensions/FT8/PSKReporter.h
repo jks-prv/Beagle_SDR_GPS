@@ -7,6 +7,7 @@
 
 //#define PR_TESTING
 #ifdef PR_TESTING
+    // report at: pskreporter.info/cgi-bin/psk-analysis.pl
     #define PR_UPLOAD_PORT      14739   // report.pskreporter.info (test)
     #define PR_UPLOAD_MINUTES   1
     #define PR_INFO_DESC_RPT    1
