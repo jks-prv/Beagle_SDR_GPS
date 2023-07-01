@@ -43,9 +43,6 @@
    
       "Kodiak_NOJ AK":   [ 2054, 4298, 8459, 12412.5 ],
    
-// www.metservice.com/marine/radio/zklf-radiofax-schedule
-      "Wellington_ZKLF NZ":  [ 3247.4, 5807, 9459, 13550.5, 16340.1 ],
-   
 // www.bom.gov.au/marine/radio-sat/vmc-technical-guide.shtml
       "Charleville_VMC AU":   [ 2628, 5100, 11030, 13920, 20469 ],
    
