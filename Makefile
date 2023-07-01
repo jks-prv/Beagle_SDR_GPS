@@ -1063,13 +1063,19 @@ DISABLE_WS:
 REBOOT = $(DIR_CFG)/.reboot
 FORCE_REBOOT = /tmp/.force_reboot
 DO_ONCE =
-DEV_TREE_DEP =
+DTS_DEP_DST =
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
     DO_ONCE = $(DIR_CFG)/.do_once.dep
+
     ifeq ($(BBAI_64),true)
-        DEV_TREE_DEP = $(DIR_DTB2)/$(DTB_KIWI_TMP2)
-        DEV_TREE_DEP2 = platform/beaglebone_AI64/$(DTB_KIWI_TMP2)
+        DTS_DEP_DST = $(DIR_DTB)/$(DTS)
+        DTS_DEP_SRC = $(DIR_DTS)/$(DTS)
+    endif
+
+    ifeq ($(BBAI),true)
+        DTS_DEP_DST = $(DIR_DTB)/$(DTS)
+        DTS_DEP_SRC = $(DIR_DTS)/$(DTS)
     endif
 
     $(DO_ONCE):
@@ -1083,39 +1089,53 @@ endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
     ifeq ($(BBAI_64),true)
-        DTB_KIWI_TMP = k3-j721e-beagleboneai64.dts
-        DTB_KIWI_TMP2 = k3-j721e-beagleboneai64-bone-buses.dtsi
-        DIR_DTB = /opt/source/dtb-$(SYS_MAJ).$(SYS_MIN)-ti-arm64
-        DIR_DTB2 = $(DIR_DTB)/src/arm64
+        DTS = k3-j721e-beagleboneai64-bone-buses.dtsi
+        DTS2 = k3-j721e-beagleboneai64.dts
+        DIR_DTS = platform/beaglebone_AI64
+        DIR_DTB_BASE = /opt/source/dtb-$(SYS_MAJ).$(SYS_MIN)-ti-arm64
+        DIR_DTB = $(DIR_DTB_BASE)/src/arm64
 
-        $(DEV_TREE_DEP): $(DEV_TREE_DEP2)
+        # re-install device tree if changes made to *.dts source file
+        $(DTS_DEP_DST): $(DTS_DEP_SRC)
 	        @echo "BBAI-64: re-install Kiwi device tree to configure GPIO pins"
 	        make install_kiwi_device_tree
 	        touch $(FORCE_REBOOT)
 
         install_kiwi_device_tree:
 	        @echo "BBAI-64: install Kiwi device tree to configure GPIO pins"
-	        cp platform/beaglebone_AI64/$(DTB_KIWI_TMP) $(DIR_DTB2)
-	        cp platform/beaglebone_AI64/$(DTB_KIWI_TMP2) $(DIR_DTB2)
-	        (cd $(DIR_DTB); make all)
-	        (cd $(DIR_DTB); make install)
+	        @echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
+	        cp $(DIR_DTS)/$(DTS) $(DIR_DTB)
+	        cp $(DIR_DTS)/$(DTS2) $(DIR_DTB)
+	        (cd $(DIR_DTB_BASE); make all)
+	        (cd $(DIR_DTB_BASE); make install)
     endif
 
     ifeq ($(BBAI),true)
+        DTS = am5729-beagleboneai-kiwisdr-cape.dts
+        DTS2 = am5729-beagleboneai.dts
+        DIR_DTS = platform/beaglebone_AI
+        DIR_DTB_BASE = /opt/source/dtb-$(SYS_MAJ).$(SYS_MIN)-ti
+        DIR_DTB = $(DIR_DTB_BASE)/src/arm
+
         DTB_KIWI = am5729-beagleboneai-kiwisdr-cape.dtb
         DTB_DEB_NEW = am5729-beagleboneai-custom.dtb
         UENV_HAS_DTB_NEW := $(shell grep -qi '^dtb=$(DTB_DEB_NEW)' /boot/uEnv.txt && echo true)
-        DIR_DTB = /opt/source/dtb-$(SYS_MAJ).$(SYS_MIN)-ti
-        DIR_DTB2 = $(DIR_DTB)/src/arm
+
+        # re-install device tree if changes made to *.dts source file
+        $(DTS_DEP_DST): $(DTS_DEP_SRC)
+	        @echo "BBAI: re-install Kiwi device tree to configure GPIO pins"
+	        make install_kiwi_device_tree
+	        touch $(FORCE_REBOOT)
 
         install_kiwi_device_tree:
 	        @echo "BBAI: install Kiwi device tree to configure GPIO/SPI pins"
 	        @echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
-	        cp platform/beaglebone_AI/am5729-beagleboneai-kiwisdr-cape.dts $(DIR_DTB2)
-	        (cd $(DIR_DTB); make)
-	        cp $(DIR_DTB2)/$(DTB_KIWI) /boot
-	        cp $(DIR_DTB2)/$(DTB_KIWI) /boot/dtbs/$(SYS)
-	        cp $(DIR_DTB2)/$(DTB_KIWI) /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb
+	        cp $(DIR_DTS)/$(DTS) $(DIR_DTB)
+	        (cd $(DIR_DTB_BASE); make)
+	        # intentionally don't do "make install" -- instead only copy single .dtb below
+	        cp $(DIR_DTB)/$(DTB_KIWI) /boot
+	        cp $(DIR_DTB)/$(DTB_KIWI) /boot/dtbs/$(SYS)
+	        cp $(DIR_DTB)/$(DTB_KIWI) /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb
 	        @echo "UENV_HAS_DTB_NEW = $(UENV_HAS_DTB_NEW)"
             ifeq ($(UENV_HAS_DTB_NEW),true)
 	            -cp --backup=numbered /boot/uEnv.txt /boot/uEnv.txt.save
@@ -1207,7 +1227,7 @@ endif
 endif
 
 .PHONY: make_install
-make_install: $(DO_ONCE) $(DEV_TREE_DEP) $(BUILD_DIR)/kiwid.bin
+make_install: $(DO_ONCE) $(DTS_DEP_DST) $(BUILD_DIR)/kiwid.bin
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	@echo
 	@echo "############################################"
@@ -1225,9 +1245,9 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 	# remainder of "make install" only makes sense to run on target
 else
-    ifneq ($(DEV_TREE_DEP),)
-	    @ls -la $(DEV_TREE_DEP)
-	    @ls -la $(DEV_TREE_DEP2)
+    ifneq ($(DTS_DEP_DST),)
+	    @ls -la $(DTS_DEP_DST)
+	    @ls -la $(DTS_DEP_SRC)
     endif
 # don't strip symbol table while we're debugging daemon crashes
 	install -D -o root -g root $(BUILD_DIR)/kiwid.bin /usr/local/bin/kiwid
