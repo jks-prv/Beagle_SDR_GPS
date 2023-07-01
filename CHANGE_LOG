@@ -2,6 +2,18 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.611  July 1, 2023
+    Reduced occurrences of unnecessary config file updates.
+
+    Hopefully eliminated problems with corrupted configuration files by double checking json format
+    integrity immediately before file is written.
+    
+    Added frequency offset to FT8 spots sent to pskreporter.info  For example a Kiwi setup with a
+    6m downconverter will now send spots with the correct frequency.
+    
+    For BBAI added Makefile dependency rule to automatically do "make install_kiwi_device_tree"
+    when required (same as BBAI-64 does now).
+
 v1.610  Jun 28, 2023
     Possible fix for observed memory corruption bug (thanks Paul, VK3KHZ).
 
