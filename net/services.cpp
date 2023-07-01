@@ -127,29 +127,29 @@ static void get_TZ(void *param)
 			goto retry;
 		}
 	
-		json_init(&cfg_tz, kstr_sp(reply));
+		json_init(&cfg_tz, kstr_sp(reply), "cfg_tz");
 		kstr_free(reply);
 		err = false;
 		s = (char *) json_string(&cfg_tz, "status", &err, CFG_OPTIONAL);
-		if (err) goto retry;
+		if (err) goto retry_tz;
 		if (strcmp(s, "OK") != 0) {
 			lprintf("TIMEZONE: %s returned status \"%s\"\n", TZ_SERVER, s);
 			err = true;
 		}
 	    json_string_free(&cfg_tz, s);
-		if (err) goto retry;
+		if (err) goto retry_tz;
 		
 		#ifdef TIMEZONE_DB_COM
             utc_offset = json_int(&cfg_tz, "gmtOffset", &err, CFG_OPTIONAL);
-            if (err) goto retry;
+            if (err) goto retry_tz;
             dst_offset = 0;     // gmtOffset includes dst offset
             tzone_id = (char *) json_string(&cfg_tz, "abbreviation", NULL, CFG_OPTIONAL);
             tzone_name = (char *) json_string(&cfg_tz, "zoneName", NULL, CFG_OPTIONAL);
         #else
             utc_offset = json_int(&cfg_tz, "rawOffset", &err, CFG_OPTIONAL);
-            if (err) goto retry;
+            if (err) goto retry_tz;
             dst_offset = json_int(&cfg_tz, "dstOffset", &err, CFG_OPTIONAL);
-            if (err) goto retry;
+            if (err) goto retry_tz;
             tzone_id = (char *) json_string(&cfg_tz, "timeZoneId", NULL, CFG_OPTIONAL);
             tzone_name = (char *) json_string(&cfg_tz, "timeZoneName", NULL, CFG_OPTIONAL);
         #endif
@@ -162,6 +162,9 @@ static void get_TZ(void *param)
 		
 	    json_release(&cfg_tz);
 		return;
+retry_tz:
+	    json_release(&cfg_tz);
+
 retry:
 		if (report) lprintf("TIMEZONE: will retry..\n");
 		if (report) report--;
@@ -193,6 +196,26 @@ static void set_pwd_task(void *param)
     scall("P close PIPE_R", close(si[PIPE_R]));
     scall("P write PIPE_W", write(si[PIPE_W], cmd_p, strlen(cmd_p)));
     scall("P close PIPE_W", close(si[PIPE_W]));
+}
+
+void my_kiwi_register(bool reg, int root_pwd_unset, int debian_pwd_default)
+{
+    char *cmd_p, *cmd_p2;
+    int status;
+
+    cmd_p2 = (char *) "";
+    if (root_pwd_unset || debian_pwd_default)
+        cmd_p2 = kstr_asprintf(cmd_p2, "&r=%d&d=%d", root_pwd_unset, debian_pwd_default);
+
+    char *kiwisdr_com = DNS_lookup_result("my_kiwi", "kiwisdr.com", &net.ips_kiwisdr_com);
+    asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 5 "
+        "\"%s/php/my_kiwi.php?auth=308bb2580afb041e0514cd0d4f21919c&reg=%d&pub=%s&pvt=%s&port=%d&serno=%d&jq=%d&deb=%d.%d&ver=%d.%d%s\"",
+        kiwisdr_com, reg? 1:0, net.ip_pub, net.ip_pvt, net.use_ssl? net.port_http_local : net.port, net.serno,
+        kiwi_file_exists("/usr/bin/jq"), debian_maj, debian_min, version_maj, version_min, kstr_sp(cmd_p2));
+
+    kstr_free(non_blocking_cmd(cmd_p, &status));
+    kiwi_ifree(cmd_p); kstr_free(cmd_p2);
+    lprintf("MY_KIWI: %sregister\n", reg? "":"un");
 }
 
 static void misc_NET(void *param)
@@ -346,19 +369,7 @@ static void misc_NET(void *param)
     
     bool my_kiwi = admcfg_bool("my_kiwi", NULL, CFG_REQUIRED);
     if (my_kiwi) {
-        cmd_p2 = (char *) "";
-        if (root_pwd_unset || debian_pwd_default)
-            cmd_p2 = kstr_asprintf(cmd_p2, "&r=%d&d=%d", root_pwd_unset, debian_pwd_default);
-
-        char *kiwisdr_com = DNS_lookup_result("my_kiwi", "kiwisdr.com", &net.ips_kiwisdr_com);
-        asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 5 "
-            "\"%s/php/my_kiwi.php?auth=308bb2580afb041e0514cd0d4f21919c&pub=%s&pvt=%s&port=%d&serno=%d&jq=%d&deb=%d.%d&ver=%d.%d%s\"",
-            kiwisdr_com, net.ip_pub, net.ip_pvt, net.use_ssl? net.port_http_local : net.port, net.serno,
-            kiwi_file_exists("/usr/bin/jq"), debian_maj, debian_min, version_maj, version_min, kstr_sp(cmd_p2));
-
-        kstr_free(non_blocking_cmd(cmd_p, &status));
-        kiwi_ifree(cmd_p); kstr_free(cmd_p2);
-        lprintf("MY_KIWI: registered\n");
+        my_kiwi_register(true, root_pwd_unset, debian_pwd_default);
     }
 }
 
@@ -395,10 +406,11 @@ static bool ipinfo_json(int https, const char *url, const char *path, const char
 
 	cfg_t cfg_ip;
     //rp[0]=':';    // inject parse error for testing
-	bool ret = json_init(&cfg_ip, rp);
+	bool ret = json_init(&cfg_ip, rp, "cfg_ip");
 	if (ret == false) {
         lprintf("IPINFO: JSON parse failed for %s\n", url);
         kstr_free(reply);
+	    json_release(&cfg_ip);
 	    return false;
 	}
 	//json_walk(&cfg_ip, NULL, cfg_print_tok, NULL);

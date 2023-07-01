@@ -31,6 +31,8 @@ typedef struct {
 	lock_t lock;    // FIXME: now that parsing the dx list is yielding probably need to lock
 	u4_t flags;
 	const char *filename;
+	#define CFG_ID_N 64
+	char id_tokens[CFG_ID_N], id_json[CFG_ID_N];
 	u4_t update_seq;
 
 	char *json, *json_write;
@@ -72,6 +74,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx, cfg_dxcfg, cfg_dxcomm, cfg_dxcomm_cfg;
 #define cfg_set_int_save(name, val)			_cfg_set_int(&cfg_cfg, name, val, CFG_SET | CFG_SAVE, 0)
 #define cfg_rem_int(name)					_cfg_set_int(&cfg_cfg, name, 0, CFG_REMOVE, 0)
 #define cfg_default_int(name, val, err)	    _cfg_default_int(&cfg_cfg, name, val, err)
+#define cfg_update_int(name, val, changed)  _cfg_update_int(&cfg_cfg, name, val, changed)
 
 #define cfg_float(name, err, flags)			_cfg_float(&cfg_cfg, name, err, flags)
 #define cfg_set_float(name, val)			_cfg_set_float(&cfg_cfg, name, val, CFG_SET, 0)
@@ -159,8 +162,8 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx, cfg_dxcfg, cfg_dxcomm, cfg_dxcomm_cfg;
 #define cfg_lookup_tok(cfg, id)             _cfg_lookup_json(cfg, id, CFG_OPT_NONE)
 
 // process JSON from a buffer
-#define json_init(cfg, json)				_cfg_init(cfg, CFG_IS_JSON, json)
-#define json_init_flags(cfg, f, json)       _cfg_init(cfg, (f) | CFG_IS_JSON, json)
+#define json_init(cfg, json, id)            _cfg_init(cfg, CFG_IS_JSON, json, id)
+#define json_init_flags(cfg, f, json, id)   _cfg_init(cfg, (f) | CFG_IS_JSON, json, id)
 #define json_init_file(cfg)				    _cfg_init(cfg, CFG_IS_JSON, NULL)
 #define json_save(cfg, json)                _cfg_save_json(cfg, json)
 #define json_release(cfg)                   _cfg_release(cfg)
@@ -186,7 +189,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx, cfg_dxcfg, cfg_dxcomm, cfg_dxcomm_cfg;
 
 void cfg_reload();
 
-bool _cfg_init(cfg_t *cfg, int flags, char *buf);
+bool _cfg_init(cfg_t *cfg, int flags, char *buf, const char *id = NULL);
 void _cfg_release(cfg_t *cfg);
 void _cfg_save_json(cfg_t *cfg, char *json);
 void _cfg_update_json(cfg_t *cfg);
@@ -194,6 +197,7 @@ void _cfg_update_json(cfg_t *cfg);
 int _cfg_int(cfg_t *cfg, const char *name, bool *error, u4_t flags);
 int _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags, int pos);
 int _cfg_default_int(cfg_t *cfg, const char *name, int val, bool *error);
+int _cfg_update_int(cfg_t *cfg, const char *name, int val, bool *changed);
 
 double _cfg_float(cfg_t *cfg, const char *name, bool *error, u4_t flags);
 int _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags, int pos);

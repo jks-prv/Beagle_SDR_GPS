@@ -964,9 +964,8 @@ bool wspr_update_vars_from_config(bool called_at_init_or_restart)
             num_autorun = num_non_preempt = 0;
         }
         wspr_c.num_autorun = num_autorun;
-        cfg_set_int("WSPR.autorun", num_non_preempt);
+        cfg_update_int("WSPR.autorun", num_non_preempt, &update_cfg);
         //printf("WSPR autorun: num_autorun=%d WSPR.autorun=%d(non-preempt) rx_chans=%d\n", num_autorun, num_non_preempt, rx_chans);
-        update_cfg = true;
     }
 
     wspr_c.GPS_update_grid = cfg_default_bool("WSPR.GPS_update_grid", false, &update_cfg);

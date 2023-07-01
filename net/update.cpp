@@ -424,7 +424,8 @@ void schedule_update(int min)
 
 		if (update_window) {
 		    printf("TLIMIT-IP 24hr cache cleared\n");
-            json_init(&cfg_ipl, (char *) "{}");     // clear 24hr ip address connect time limit cache
+		    json_release(&cfg_ipl);
+            json_init(&cfg_ipl, (char *) "{}", "cfg_ipl");      // clear 24hr ip address connect time limit cache
         }
 	}
 	
