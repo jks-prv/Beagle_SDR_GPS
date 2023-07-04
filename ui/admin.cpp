@@ -72,11 +72,19 @@ Boston, MA  02110-1301, USA.
     #include <pty.h>
 #endif
 
+typedef struct {
+    bool have_pushback;
+    char produce[32], consume[32];
+} pushback_t;
+
+static pushback_t pushback;
+        
 void c2s_admin_setup(void *param)
 {
 	conn_t *conn = (conn_t *) param;
 
 	// send initial values
+	memset(&pushback, 0, sizeof(pushback));
 	send_msg(conn, SM_NO_DEBUG, "ADM admin_sdr_mode=%d", VAL_USE_SDR);
 	#ifdef MULTI_CORE
 	    send_msg(conn, SM_NO_DEBUG, "ADM is_multi_core");
@@ -212,15 +220,49 @@ static void console_task(void *param)
             
             // FIXME: why, when we write > 50 chars to the shell input, does the echoed
             // output get mangled with multiple STX (0x02) characters?
-        #if 0
-            real_printf("read %d %d >>>", n, strlen(buf));
-            for (i=0; i<strlen(buf); i++) {
-                real_printf("%s", ASCII[buf[i]]);
-            }
-            real_printf("<<<\n");
-        #endif
+            //real_printf("read %d %d >>>%s<<<\n", n, strlen(buf), kiwi_str_ASCII_static(buf));
         
-            send_msg_encoded(c, "ADM", "console_c2w", "%s", buf);
+             // UTF-8 end-of-buffer fragmentation possibilities:
+             //
+             // NN = 0xxx_xxxx 0x00-0x7f non-encoded
+             // CC = 10xx_xxxx 0x80-0xb3 continuation byte
+             // LL = 11xx_xxxx 0xc0-0xff leading byte
+             //    L1 = 110x_xxxx %c0-%df [CC]
+             //    L2 = 1110_xxxx %e0-%ef [CC] [CC]
+             //    L3 = 1111_0xxx %f0-%f7 [CC] [CC] [CC]
+             //
+             // 987 654 321    [len-N]
+             //  c8  c5  c2
+             //         %LL    i.e. %L1 or %L2 or %L3
+             //     %L2 %CC
+             //     %L3 %CC
+             // %L3 %CC %CC
+
+            bool do_pushback = false;
+            char *cp = &buf[n-1];
+            while ((u1_t) *cp >= 0x80) {
+                do_pushback = true;
+                if ((u1_t) *cp >= 0xc0 || cp == buf) break;
+                cp--;
+            }
+            if (cp == buf) do_pushback = false;
+
+            if (do_pushback) {
+                strcpy(pushback.produce, cp);
+                //real_printf("pushback PRODUCE %d <%s>\n", strlen(pushback.produce), kiwi_str_ASCII_static(pushback.produce));
+                *cp = '\0';
+                pushback.have_pushback = true;
+            }
+        
+            //real_printf("console_c2w %d <%s> %d <%s>\n", strlen(pushback.consume), kiwi_str_ASCII_static(pushback.consume, 0), strlen(buf), kiwi_str_ASCII_static(buf, 1));
+            send_msg_encoded(c, "ADM", "console_c2w", "%s%s", pushback.consume, buf);
+
+            if (pushback.have_pushback) {
+                strcpy(pushback.consume, pushback.produce);
+                pushback.have_pushback = false;
+            } else {
+                pushback.consume[0] = '\0';
+            }
         }
 
         // process out-of-band chars

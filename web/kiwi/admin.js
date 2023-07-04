@@ -1855,13 +1855,13 @@ function network_ip_nm_check(val, ip)
 	if (p != null) {
 		//console.log('regexp p='+ p);
 		a = parseInt(p[1]);
-		a = (a > 255)? Math.NaN : a;
+		a = (a > 255)? NaN : a;
 		b = parseInt(p[2]);
-		b = (b > 255)? Math.NaN : b;
+		b = (b > 255)? NaN : b;
 		c = parseInt(p[3]);
-		c = (c > 255)? Math.NaN : c;
+		c = (c > 255)? NaN : c;
 		d = parseInt(p[4]);
-		d = (d > 255)? Math.NaN : d;
+		d = (d > 255)? NaN : d;
 	}
 	
 	if (p == null || isNaN(a) || isNaN(b) || isNaN(c) || isNaN(d)) {
@@ -2936,7 +2936,8 @@ function console_html()
       scroll_only_at_bottom: true, inline_returns: true, process_return_alone: false, remove_returns: false,
       rows: 10, cols: 140,
       show_cursor: true,
-      is_char_oriented: false
+      is_char_oriented: false,
+      paste_state: 0
    };
    
    admin.console.isMobile = kiwi_isMobile();
@@ -2951,8 +2952,8 @@ function console_html()
             w3_label('w3-show-inline', 'Beagle Debian console'),
             w3_button('w3-aqua|margin-left:10px', 'Connect', 'console_connect_cb'),
 
-            (0 && dbgUs)?
-               w3_button('w3-aqua|margin-left:16px', 'top', 'console_cmd_cb', 'console_input_cb|top -c')
+            (dbgUs)?
+               w3_button('w3-aqua|margin-left:16px', 'ANSI', 'console_cmd_cb', 'console_input_cb|cd tools;mr')
                :
                w3_button('w3-green|margin-left:32px', 'monitor build progress', 'console_cmd_cb',
                   'console_input_cb|tail -fn 500 /root/build.log'),
@@ -2984,7 +2985,14 @@ function console_html()
 			
 			admin.console.always_char_oriented?
             w3_text('id-console-debug w3-text-black w3-margin-T-8',
-               'New scheme: After connecting just start typing. Keyboard input appears immediately in console window.'
+               kiwi_isWindows()?
+                  'Windows: Type <x1>control-v</x1> twice (quickly) for clipboard paste. Once to get a normal <x1>control-v</x1>. ' +
+                  'Control-w alternatives: nano <x1>fn-f6</x1>, bash <x1>esc</x1> <x1>control-h</x1> (see ' +
+                  w3_link('w3-link-darker-color',
+                     'https://forum.kiwisdr.com/index.php?p=/discussion/2927/windows-and-running-nano-text-editor-in-admin-console#p1',
+                     'forum') +')'
+               :
+                  'Mac: Type <x1>command-v</x1> for clipboard paste.'
             )
 			:
             w3_div('id-console-line',
@@ -3128,6 +3136,28 @@ function console_key_cb(ev, called_from_w3_input)
       
       if (redo) { ord_k = ord(k2); ctrl_k = ord_k & 0x1f; }
       var ctrl = ev.ctrlKey;
+      
+      // hack to get clipboard paste on Windows without sacrificing ctrl-v (nano "page next")
+      if (kiwi_isWindows() && ctrl && k == 'v') {
+         //console.log('Windows ctrl-v paste_state='+ admin.console.paste_state);
+         
+         if (admin.console.paste_state == 0) {
+            admin.console.paste_timeout = setTimeout(
+               function() {
+                  // happened once within window -- treat as regular ctrl-v
+                  ext_send('SET console_oob_key='+ (ord('v') & 0x1f));
+                  admin.console.paste_state = 0;
+               }, 500
+            );
+            admin.console.paste_state = 1;
+            ok = false;
+         } else {
+            // happened twice within window -- let paste event through
+            kiwi_clearTimeout(admin.console.paste_timeout);
+            admin.console.paste_state = 0;
+            return;
+         }
+      }
 
       if (0 && dbgUs) {
          var ctrl1 = (k2.length == 1 && ord_k < 32);  // not ev.ctrlKey but still single char with ord_k < 32
@@ -3158,6 +3188,7 @@ function console_key_cb(ev, called_from_w3_input)
       ev.preventDefault();
 }
 
+// paste single char every 10 msec
 function console_paste_char(i)
 {
    var c = admin.console.pasted_text[i];
@@ -3169,6 +3200,7 @@ function console_paste_char(i)
 	}
 }
 
+// paste multiple chars every 10 msec
 function console_paste_chars(s)
 {
    var sl = Math.min(s.length, 32);
@@ -3184,17 +3216,14 @@ function console_paste_cb(ev)
 {
 	//event_dump(ev, 'console_paste_cb', 1);
 	//console.log(ev);
-	var s = ev.clipboardData.getData('text');
    if (admin.console.is_char_oriented) {
-      if (0) {
-         admin.console.pasted_text = s.split('');
-         admin.console.pasted_text_len = admin.console.pasted_text.length;
-         //console.log(admin.console.pasted_text);
-         //console.log(admin.console.pasted_text_len);
-         console_paste_char(0);
-      } else {
-         console_paste_chars(s);
-      }
+	   var s = ev.clipboardData.getData('text');
+      //admin.console.pasted_text = s.split('');
+      //admin.console.pasted_text_len = admin.console.pasted_text.length;
+      //console.log(admin.console.pasted_text);
+      //console.log(admin.console.pasted_text_len);
+      //console_paste_char(0);
+      console_paste_chars(s);
    }
 	ev.preventDefault();
 }
@@ -3221,9 +3250,9 @@ function console_calc_rows_cols(init)
    if (0 && dbgUs) w3_append_innerHTML('id-console-debug', ' w_msgs='+ w_msgs +' cols: '+ w_ratio.toFixed(2) +' '+ cols);
 
    if (init || rows != admin.console.rows || cols != admin.console.cols) {
-      //console.log('$console_calc_rows_cols init='+ init);
+      //console_nv('$console_calc_rows_cols', {init}, {rows}, {cols});
       //kiwi_trace('$');
-      admin.console.init = false;
+      admin.console.resized = true;
       // let server-side know so it can send a TIOCSWINSZ to libcurses et al
       ext_send('SET console_rows_cols='+ rows +','+ cols);
       admin.console.rows = rows;
@@ -3281,7 +3310,7 @@ function console_resize()
 	el.style.width = px(console_width);
 	//w3_innerHTML('id-console-debug', window.innerHeight +' '+ w3_el("id-admin-header-container").clientHeight +' '+ console_height);
 
-   console_calc_rows_cols();
+   console_calc_rows_cols(0);
 }
 
 function console_focus(id)

@@ -1,9 +1,16 @@
-include ../Makefile.comp.inc
 
-UTIL = audio
-UTILS = audio integrate hog multiply ext64 decimate security wspr e1b_fec viterbi27_test e1b_code multiply2 dx_huge
+UTIL = ansi
+UTILS = ansi audio integrate hog multiply ext64 decimate security wspr e1b_fec viterbi27_test e1b_code multiply2 dx_huge
 
 CMD =
+
+ifeq ($(GET_TOOLS_EXCLUDE_RSYNC),true)
+    ifeq ($(UTIL),ansi)
+        TOOLS_EXCLUDE_RSYNC =  "ansi" "ansi.o" "ansi.d"
+    endif
+else
+
+include ../Makefile.comp.inc
 
 ifeq ($(UTIL),viterbi27_test)
     MORE = viterbi27_port.o
@@ -54,3 +61,5 @@ run: $(UTIL)
 
 clean:
 	rm -f $(UTILS) *.o *.d *.dat *.xz $(CLEAN)
+
+endif

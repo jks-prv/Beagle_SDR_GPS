@@ -497,7 +497,7 @@ function w3_ext_param(s, param)
 
 function w3_clamp(v, min, max, clamp_val)
 {
-   if (isNaN(v)) return (isDefined(clamp_val)? clamp_val : Math.NaN);
+   if (isNaN(v)) return (isDefined(clamp_val)? clamp_val : NaN);
    
    if (isObject(min)) {
       var o = min;
@@ -522,8 +522,13 @@ function w3_clamp(v, min, max, clamp_val)
    return v;
 }
 
+// to conditionally test for out-of-range use as:
+// if (w3_clamp3(v, min, max)) { in-range } else { out-of-range }
 function w3_clamp3(v, min, max, clamp_min, clamp_max, clamp_NaN)
 {
+   if (isUndefined(clamp_min)) clamp_min = NaN;
+   if (isUndefined(clamp_max)) clamp_max = NaN;
+   if (isUndefined(clamp_NaN)) clamp_NaN = NaN;
    if (isNaN(v)) return clamp_NaN;
    if (v < min) return clamp_min;
    if (v > max) return clamp_max;
