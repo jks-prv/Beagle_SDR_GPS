@@ -965,7 +965,7 @@ function extint_environment_changed(changed)
    
    setTimeout(
       function() {
-         //console_log_fqn('extint_environment_changed', 'extint.current_ext_name');
+         //console_nv('extint_environment_changed', 'extint.current_ext_name');
          if (extint.current_ext_name) {
             w3_call(extint.current_ext_name +'_environment_changed', changed);
          }

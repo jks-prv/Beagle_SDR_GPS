@@ -72,7 +72,7 @@ function iframe_controls_setup()
    if (iframe.helptext == '') iframe.helptext = '';
    if (iframe.url == '') iframe.url = '/gfx/kiwi-with-headphones.51x67.png';
    if (iframe.title == '') iframe.title = 'iframe extension';
-   //console_log_fqn('iframe', 'iframe.url', 'iframe.html', 'iframe.title', 'iframe.width', 'iframe.height', 'iframe.helptext');
+   //console_nv('iframe', 'iframe.url', 'iframe.html', 'iframe.title', 'iframe.width', 'iframe.height', 'iframe.helptext');
    
    var controls_html =
       w3_div('w3-text-white',

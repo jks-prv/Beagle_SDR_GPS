@@ -1526,11 +1526,11 @@ function drm_stop(from_stop_button)
       drm_set_mode('iq');
    } else {
       if (isDefined(drm.saved_passband)) {
-         console_log_fqn('drm_stop RESTORE', 'drm.saved_passband.low', 'drm.saved_passband.high');
+         console_nv('drm_stop RESTORE', 'drm.saved_passband.low', 'drm.saved_passband.high');
          ext_set_passband(drm.saved_passband.low, drm.saved_passband.high);
       }
       if (isDefined(drm.saved_mode)) {
-         console_log_fqn('drm_stop RESTORE', 'drm.saved_mode');
+         console_nv('drm_stop RESTORE', 'drm.saved_mode');
          drm_set_mode(drm.saved_mode);
       }
    }
@@ -1585,7 +1585,7 @@ function drm_set_passband()
       console.log('drm_set_passband pb_lo,hi='+ drm.pb_lo +','+ drm.pb_hi +' override_pb='+ extint.override_pb);
    } else
    if (drm.special_passband) {   // can't simply clear on first use because special pb needs to get set several times
-      console_log_fqn('drm_set_passband SPECIAL PB', 'drm.special_passband.low', 'drm.special_passband.high');
+      console_nv('drm_set_passband SPECIAL PB', 'drm.special_passband.low', 'drm.special_passband.high');
       ext_set_passband(drm.special_passband.low, drm.special_passband.high);
    } else {
       console.log('drm_set_passband DEFAULT PB');
