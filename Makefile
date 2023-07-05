@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 611
+VERSION_MIN = 612
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -1511,9 +1511,12 @@ endif
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 # selectively transfer files to the target so everything isn't compiled each time
+GET_TOOLS_EXCLUDE_RSYNC := true
+-include tools/Makefile
 EXCLUDE_RSYNC = ".DS_Store" ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" \
 	"verilog/kiwi.gen.vh" "web/edata*" "node_modules" "morse-pro-compiled.js"
-RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) $(addprefix --exclude , $(EXT_EXCLUDE_RSYNC)) \
+RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) \
+    $(addprefix --exclude , $(EXT_EXCLUDE_RSYNC)) $(addprefix --exclude , $(TOOLS_EXCLUDE_RSYNC)) \
     $(RSYNC_SRC) $(RSYNC_USER)@$(HOST):$(RSYNC_DST)
 RSYNC_ARGS_DRYRUN = -n $(RSYNC_ARGS)
 

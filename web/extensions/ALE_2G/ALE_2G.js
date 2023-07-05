@@ -151,6 +151,7 @@ function ale_2g_recv(data)
             if (ale.testing) {
                w3_hide('id-ale_2g-bar-container');
                w3_show('id-ale_2g-record');
+               ale.testing = false;
             }
 			   break;
 
@@ -1097,11 +1098,16 @@ function ale_2g_resamp_cb(path, idx, first)
 
 function ale_2g_test_cb(path, val, first)
 {
+   if (+val == 0) kiwi_trace();
    if (first) return;
+   if (ext_nom_sample_rate() != 12000) {     // our sample file is 12k only
+      ale.testing = false;
+      return;
+   }
    val = +val;
    if (dbgUs) console.log('ale_2g_test_cb: val='+ val);
-   ale.testing = val;
 	w3_el('id-ale_2g-bar').style.width = '0%';
+   ale.testing = val;
    w3_show_hide('id-ale_2g-bar-container', ale.testing);
    w3_show_hide('id-ale_2g-record', !ale.testing);
    
@@ -1188,6 +1194,17 @@ function ALE_2G_environment_changed(changed)
    }
 }
 
+function ALE_2G_focus()
+{
+   ale.perodic_test = setInterval(
+      function() {
+         console.log('ale_2g: periodic test');
+         w3_el('id-ale_2g-test').click();
+      //}, 4*60*1000      // every 4 hours
+      }, 45*1000,
+   );
+}
+
 function ALE_2G_blur()
 {
    // anything that needs to be done when extension blurred (closed)
@@ -1197,6 +1214,7 @@ function ALE_2G_blur()
 	console.log('ALE_2G_blur saved_mode='+ ale.saved_mode);
 	ext_set_mode(ale.saved_mode);
    kiwi_clearInterval(ale.log_interval);
+   kiwi_clearInterval(ale.perodic_test);
 }
 
 function ALE_2G_help(show)

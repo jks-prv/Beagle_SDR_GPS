@@ -759,24 +759,24 @@ var ansi = {
       // regular and bright pallet are the same because MacOS regular colors were too dim
 
       // regular
-      [0,0,0],
-      [252,57,31],
-      [49,231,34],
-      [234,236,35],
-      [88,51,255],
-      [249,53,248],
-      [20,240,240],
-      [233,235,235],
+      [0,0,0],          // black
+      [252,57,31],      // red
+      [49,231,34],      // green
+      [234,236,35],     // yellow
+      [88,51,255],      // blue
+      [249,53,248],     // magenta
+      [68,249,249],     // cyan
+      [233,235,235],    // grey
       
       // bright
-      [0,0,0],
-      [252,57,31],
-      [49,231,34],
-      [234,236,35],
-      [88,51,255],
-      [249,53,248],
-      [20,240,240],
-      [233,235,235]
+      [0,0,0],          // black
+      [252,57,31],      // red
+      [49,231,34],      // green
+      [234,236,35],     // yellow
+      [88,51,255],      // blue
+      [249,53,248],     // magenta
+      [68,249,249],     // cyan
+      [233,235,235],    // grey
 
    /*
       // MacOS Terminal.app colors
@@ -801,6 +801,8 @@ var ansi = {
       [20,240,240],
       [233,235,235]
    */
+   
+      null
    ],
    
    BRIGHT: 8,
@@ -984,12 +986,13 @@ function kiwi_output_msg(id, id_scroll, p)
 {
    var i, j;
    var dbg = (0 && dbgUs);
-   if (dbg) kiwi.d.p = p;
+   var dbg2 = ((0 && dbgUs) || dbg);
+   if (dbgUs) kiwi.d.p = p;
    
-   if (1 && dbg) {
+   if (0 && dbg) {
       console.log('$kiwi_output_msg id='+ id +' init='+ p.init +' isAltBuf='+ p.isAltBuf +' s='+ p.s);
       console.log('$ '+ kiwi_JSON(p));
-      if (!p.init) kiwi_trace();
+      //if (!p.init) kiwi_trace();
    }
 
 	var parent_el = w3_el(id);
@@ -1023,13 +1026,16 @@ function kiwi_output_msg(id, id_scroll, p)
 	var render2 = function() {
 	   var fg = null, bg = null, span = false;
 	   //var r_s = '';
-	   for (var r = 1; r <= p.rows; r++) {
+	   for (var r = 1; r <= p.nrows; r++) {
          if (!p.dirty[r]) continue;
          //r_s += r +' ';
          p.dirty[r] = false;
          var s = '';
          for (var c = 1; c <= p.cols; c++) {
             var color = p.color[r][c];
+            if (isUndefined(color)) {
+               console_nv('color undef', {r}, {c});
+            }
             if (color.fg != fg || color.bg != bg) {
                if (span) s += '</span>';
                if (color.fg || color.bg) {
@@ -1054,7 +1060,6 @@ function kiwi_output_msg(id, id_scroll, p)
 
             // cursor
             if (p.show_cursor && r == p.r && c == p.c) {
-               if (dbg) console.log('cursor '+ p.r +','+ p.c);
                s += console_cursor(ch);
                p.r_cursor = r; p.c_cursor = c;
             } else {
@@ -1074,10 +1079,12 @@ function kiwi_output_msg(id, id_scroll, p)
             }
          }
       }
+      //if (dbgUs) console.log('RENDER '+ (p.rend_seq++));
       //if (dbg) console.log('RENDER '+ r_s);
 	};
 	
 	var render = function() {
+	   //if (dbg) console.log(p);
 	   if (p.r_cursor != p.r && p.r_cursor != 0) {
 	      p.dirty[p.r_cursor] = true;      // re-render row with old cursor (if not the current row)
 	   }
@@ -1086,18 +1093,35 @@ function kiwi_output_msg(id, id_scroll, p)
 	
    // schedule rendering
 	var sched = function() {
+	   p.sched_time = Date.now();
+	   if (!p.metronome_running) {
+	      p.metronome_running = true;
+	      //if (dbg) console.log('RUN');
+	      p.metronome_interval = setInterval(
+	         function() {
+	            if (p.sched_time < (Date.now() - 200)) {
+                  kiwi_clearInterval(p.metronome_interval);
+                  p.metronome_running = false;
+	               //if (dbg) console.log('STOP');
+                  render();
+	            }
+	         }, 200
+	      );
+	   }
+	   /*
       kiwi_clearTimeout(p.rend_timeout);
 	   p.rend_timeout = setTimeout(function() { render(); }, 250);
+	   */
 	};
 	
 	var dirty = function() {
 	   p.dirty[p.r] = true;
 	};
 	
-	var screen_char = function(ch, shift_mode) {
+	var screen_char = function(ch, color, shift_mode) {
 	   var r = p.r, c = p.c;
       //if (dbg && p.traceEvery && ord(ch) > 0x7f)
-      //   console.log('$every '+ r +','+ c +' '+ ch +'('+ ord(ch) +')');
+         //console.log('$every '+ r +','+ c +' '+ ch +'('+ ord(ch) +')');
       
       if (shift_mode != p.NOSHIFT_MODE && p.insertMode) {
          for (i = r.cols-1; i >= c; i--) {
@@ -1118,13 +1142,21 @@ function kiwi_output_msg(id, id_scroll, p)
          }
 	   }
 	   
-	   p.color[r][c] = { fg: p.sgr.fg, bg: p.sgr.bg };
+      if (isUndefined(p.screen[r])) {
+         if (dbg) {
+            console_nv('screen_char', {r}, {c}, 'kiwi.d.p.nrows');
+            console.log(p);
+            //kiwi_trace();
+         }
+         return;
+      }
+	   p.color[r][c] = color? color : { fg: p.sgr.fg, bg: p.sgr.bg };
 	   dirty();
       p.c++;
       if (p.c > p.cols) {
          if (p.eol_wrap && shift_mode != p.NOSHIFT_MODE) {
             p.c = 1; p.r++;
-            if (p.r > p.rows) { p.r = 1; dirty(); }
+            if (p.r > p.nrows) { p.r = 1; dirty(); }
          } else {
             p.c = p.cols;
          }
@@ -1133,13 +1165,18 @@ function kiwi_output_msg(id, id_scroll, p)
 	};
 
 	var move_in_display = function(dr_start, sr_start, sr_end, step) {
+      //if (dbg) console_nv('move_in_display', {dr_start}, {sr_start}, {sr_end}, {step}, 'kiwi.d.p.nrows');
+      dr_start = w3_clamp(dr_start, 0, p.nrows);
+      sr_start = w3_clamp(sr_start, 0, p.nrows);
+      sr_end = w3_clamp(sr_end, 0, p.nrows);
 	   var row = dr_start;
 	   var down = (step > 0);
       for (var ri = sr_start; (down && ri <= sr_end) || (!down && ri >= sr_end); ri += step) {
          p.r = row; row += step;
          p.c = 1;
+         //if (dbg) console_nv('move_in_display', 'kiwi.d.p.r', {ri});
          for (var ci = 1; ci <= p.cols; ci++) {
-            screen_char(p.screen[ri][ci]);
+            screen_char(p.screen[ri][ci], p.color[ri][ci]);
          }
       }
 	};
@@ -1156,6 +1193,10 @@ function kiwi_output_msg(id, id_scroll, p)
 	var erase_in_display = function(r_start, r_end, c_start, c_end) {
       for (var r = r_start; r_start && r <= r_end; r++) {
          for (var c = c_start; c <= ((r == p.r)? c_end : p.cols); c++) {
+            if (isUndefined(p.screen[r])) {
+               console_nv('erase_in_display', {r}, {c}, 'kiwi.d.p.nrows', 'kiwi.d.p.ncols');
+               console.log(p);
+            }
             p.screen[r][c] = ' ';
             p.color[r][c] = { fg: null, bg: null };
          }
@@ -1206,6 +1247,46 @@ function kiwi_output_msg(id, id_scroll, p)
       return { s:s, a:a };
    };
    
+   var init_common = function(init) {
+      var r, c;
+      if (dbg2) console_nv('init_common', {init}, 'kiwi.d.p.nrows');
+
+      if (init == p.INIT_ONCE || init == p.INIT_RESIZE) {
+         p.screen = [];
+         p.color = [];
+         p.dirty = [];
+         p.els = [];
+
+         for (var r = 0; r <= p.nrows; r++) {
+            p.screen[r] = [];
+            p.color[r] = [];
+         }
+      }
+
+      if (init == p.INIT_ALTBUF || init == p.INIT_RESIZE) {
+         removeAllLines(parent_el);
+         
+         for (var r = 1; r <= p.nrows; r++) {
+            try {
+               for (var c = 1; c <= p.cols; c++) {
+                  p.screen[r][c] = ' ';
+                  p.color[r][c] = { fg: null, bg: null };
+               }
+            } catch(ex) {
+               if (dbg) {
+                  console.log('--------');
+                  console.log('r='+ r +' c='+ c);
+                  console.log(p.screen);
+                  console.log(ex);
+               }
+            }
+            p.dirty[r] = false;
+            p.els[r] = appendEmptyLine(parent_el);
+            p.els[r].innerHTML = '&nbsp;';      // force initial rendering
+         }
+      }
+   };
+   
 	var s;
 	if (isNoArg(p.no_decode) || p.no_decode != true) {
       try {
@@ -1216,6 +1297,7 @@ function kiwi_output_msg(id, id_scroll, p)
          console.log(p.s);
          s = p.s;
       }
+      if (s == null) s = '(kiwi_decodeURIComponent():null)';
    } else {
       s = p.s;
    }
@@ -1223,6 +1305,11 @@ function kiwi_output_msg(id, id_scroll, p)
    if (p.init != true) {
       //if (dbg) console.log('$console INIT '+ p.init);
       //kiwi_trace();
+      p.INIT_ONCE = 0;
+      p.INIT_RESIZE = 1;
+      p.INIT_ALTBUF = 2;
+      p.resized = false;
+
       removeAllLines(parent_el);
       p.el = appendEmptyLine(parent_el);
       p.cols = p.cols || 80;
@@ -1238,6 +1325,7 @@ function kiwi_output_msg(id, id_scroll, p)
       p.traceEvery = false;
       
       // line-oriented
+      // p.rows p.cols     set by caller
       p.ccol = 1;
       p.line = [];
       p.line_sgr = [];
@@ -1245,29 +1333,38 @@ function kiwi_output_msg(id, id_scroll, p)
       p.inc = 1;
       
       // char-oriented
+      p.nrows = p.rows;
       p.r = p.c = 1;
       p.margin_set = false;
       p.margin_top = 1;
-      p.margin_bottom = p.rows;
+      p.margin_bottom = p.nrows;    // initial value until changed by setting margins
       p.show_cursor = p.show_cursor || false;
       p.r_cursor = p.c_cursor = 0;
       p.insertMode = true;
       p.eol_wrap = false;     // NB: "top -c" doesn't like EOL wrapping
-      p.screen = [];
-      p.color = [];
-      p.dirty = [];
-      p.els = [];
-      for (var r = 0; r <= p.rows; r++) {
-         p.screen[r] = [];
-         p.color[r] = [];
-      }
+      init_common(p.INIT_ONCE);
       p.isAltBuf = false;
       p.altbuf_via_cursor_visible = false;
       p.altbuf_via_cup = false;
       p.alt_save = '';
-      p.rend_timeout = null;
+      //p.rend_timeout = null;
+      p.rend_seq = 0;
+      p.metronome_running = false;
+      p.sched_time = 0;
 
       p.init = true;
+   }
+   
+   if (p.resized && p.isAltBuf) {
+      if (dbg2) console.log('console resized nrows: '+ p.nrows +' => '+ p.rows +' #############################################################################################');
+      p.nrows = p.rows;
+      init_common(p.INIT_RESIZE);
+      p.margin_top = 1;
+      p.margin_bottom = p.nrows;    // initial value until changed by setting margins
+      p.r = p.c = 1; dirty();       // reset cursor
+      p.r_cursor = p.c_cursor = 0;
+      render();
+      p.resized = false;
    }
 
    var snew = '', stmp;
@@ -1352,14 +1449,23 @@ function kiwi_output_msg(id, id_scroll, p)
       // scroll text up
 		if (c == '\n' && p.isAltBuf) {
 		   if (p.margin_set) {
-            move_in_display(p.margin_top, p.margin_top + 1, p.margin_bottom, +1);
-            result = '\\n (scroll text up)';
+		      if (p.r < p.nrows) {
+               p.r++; p.c = 1;
+               dirty();
+               result = '\\n row++ ('+ p.r +'('+ p.nrows +'),'+ p.c +')';
+            } else {
+               //var save_r = p.r, save_c = p.c;
+               move_in_display(p.margin_top, p.margin_top + 1, p.margin_bottom, +1);
+               //p.r = save_r; p.c = save_c;
+               result = '\\n (scroll text up) nrows='+ p.nrows;
+            }
          } else {
             p.c = 1;
             if (p.r < p.rows) p.r++;
             dirty();
             result = '\\n row++ ('+ p.r +','+ p.c +')';
          }
+         if (dbg) console.log('scroll text up FIN: '+ p.r +' '+ p.c +' '+ p.r_cursor +' '+ p.c_cursor +' '+ result);
       } else
       
 		if (c == '\b') {
@@ -1493,7 +1599,7 @@ function kiwi_output_msg(id, id_scroll, p)
             }
 		      
             // CSI handled: (* = non-isAltBuf)
-            // ESC [    A B C* D d G H J* K* M m* P* r S T X 4 ? @ t
+            // ESC [    A B C* D d G H J* K* M m* P* r S T X 4 ? @ t *p
 		      if (first == '[') {
 
 		         // ANSI color escapes
@@ -1538,12 +1644,12 @@ function kiwi_output_msg(id, id_scroll, p)
                      var r_start, r_end, c_start, c_end;
 
                      if (second == '0' || second == 'J') {     // [J  [0J
-                        r_start = p.r, r_end = p.rows;
+                        r_start = p.r, r_end = p.nrows;
                         c_start = p.c, c_end = p.cols;
                         result = 'erase cur to EOS';
                      } else
                      if (second == '2' || second == '3') {     // [2J  [3J
-                        r_start = 1, r_end = p.rows;
+                        r_start = 1, r_end = p.nrows;
                         c_start = 1, c_end = p.cols;
                         result = 'erase full screen';
                      } else
@@ -1573,7 +1679,9 @@ function kiwi_output_msg(id, id_scroll, p)
                if (c == 'H') {      // cursor position
                   result = 'move '+ n1 +','+ n2;
                   if (p.isAltBuf) {
-                     dirty(); p.r = n1; p.c = n2; dirty();
+                     if (w3_clamp3(n1, 0, p.nrows)) {
+                        dirty(); p.r = n1; p.c = n2; dirty();
+                     }
                   } else {
                      error = 1;
                   }
@@ -1584,7 +1692,9 @@ function kiwi_output_msg(id, id_scroll, p)
                   //p.r = n1; p.c = 1;
                   result = 'move row '+ n1;
                   if (p.isAltBuf) {
-                     dirty(); p.r = n1; dirty();
+                     if (w3_clamp3(n1, 0, p.nrows)) {
+                        dirty(); p.r = n1; dirty();
+                     }
                   } else {
                      error = 1;
                   }
@@ -1600,9 +1710,22 @@ function kiwi_output_msg(id, id_scroll, p)
                } else
 		      
 		         // see: pubs.opengroup.org/onlinepubs/7908799/xcurses/terminfo.html
-               if (second == '?' && last_hl) {     // esc[ ? # h  esc[ ? # l
-                  n1 = parseInt(p.esc.s.substr(2));
-                  result = (enable? 'SET':'RESET') +' ';
+               // esc [ ? # h  esc[ ? # l
+               // esc [ ! p
+               if ((second == '?' && last_hl) || (second == '!' && c == 'p')) {
+                  var as = p.esc.s.substr(2);
+                  aa = as.split(';');
+                  n1 = parseInt(aa[0]);
+                  n2 = parseInt(aa[1]);
+                  if (dbg) console_nv(as, {n1}, {n2});
+
+                  if (second == '?') {
+                     result = (enable? 'SET':'RESET') +' ';
+                  } else {
+                     result = 'soft term reset: ';
+                     n1 = 1049;
+                     enable = false;
+                  }
                   var enter_altbuf = false, exit_altbuf = false, exit_altbuf_no_restore = false;
 
                   switch (n1) {
@@ -1612,6 +1735,7 @@ function kiwi_output_msg(id, id_scroll, p)
                      // 5 [hl]   screen mode light/dark, used in flashing screen:
                      //          flash=\E[?5h$<100/>\E[?5l ($<100/> is time delay)
                      // 6 [hl]   origin mode
+                     // 69 [hl]  
                      // other hl: 42 95 96 98 34 64 61 35 36 104
                      //
                      // non-hl:
@@ -1622,6 +1746,12 @@ function kiwi_output_msg(id, id_scroll, p)
                      // see: stackoverflow.com/questions/13585131/keyboard-transmit-mode-in-vt100-terminal-emulator
                      case 1: result += 'cursor keys mode'; break;
 
+                     case 3: result += 'col mode 132/80 (ignored)'; break;
+                     case 4: result += 'scrolling smooth/jump (ignored)'; break;
+                     
+                     // init_2string   is2=\E[!p\E[?3;4l\E[4l\E>  col-mode-80/scroll-jump, replace-mode
+                     // reset_2string  rs2=\E[!p\E[?3;4l\E[4l\E>
+
                      // [sr]mam=\E[?7 [hl]
                      case 7: result += 'vertical autowrap'; break;
 
@@ -1630,7 +1760,9 @@ function kiwi_output_msg(id, id_scroll, p)
                      // cnorm=\E[?12l \E[?25h
                      // ?25 = cursor visible(h)/invisible(l)
                      // ?12 = make cursor very visible(h) / normal(l)
-                     case 12: result += 'cursor bold'; break;
+                     case 12: result += 'cursor bold ';
+                              if (n2 != 25) break;
+                              // "12;25" fall through ...
                      case 25: result += 'cursor visible';
                               p.show_cursor = enable? true:false;
                               if (!enable && !p.isAltBuf) {
@@ -1643,10 +1775,16 @@ function kiwi_output_msg(id, id_scroll, p)
                               }
                               break;
 
+                     // clear_margins mgc=\E[?69l
+                     // set_lr_margin smglr=\E[?69h\E[%i%p1%d;%p2%ds
+                     case 69: result += 'LR margins (ignored)';
+                              break;
+
                      // enter/exit "cup" (cursor position) mode: [sr]mcup=\E[?1049 [hl]
                      case 1049:
                         result += 'alt screen buf';
                         if (enable && !p.isAltBuf) {
+                           if (dbg) console.log('1049: p.nrows='+ p.nrows);
                            enter_altbuf = true;
                            p.altbuf_via_cup = true;
                         } else
@@ -1659,39 +1797,24 @@ function kiwi_output_msg(id, id_scroll, p)
                   }
                   
                   if (enter_altbuf) {
-                     if (dbg) console.log('$ENTER alt buf via '+ (p.altbuf_via_cup? 'cup' : 'cursor_visible') +
-                        ' ====================================');
+                     p.nrows = p.rows;    // in case partial margin still in effect
+                     if (dbg2) console.log('$ENTER alt buf via '+ (p.altbuf_via_cup? 'cup' : 'cursor_visible') +
+                        ' nrows='+ p.nrows +' rows='+ p.rows +' ====================================');
 
                      // remove any cursor at end that we don't want to display on restore
                      p.alt_save = parent_el.innerHTML.replace(/<pre><span class="cl-admin-console-cursor">.*<\/span><\/pre>$/, '');
                      if (dbg) console.log(kiwi_JSON(p.alt_save));
-                     removeAllLines(parent_el);
-                     for (var r = 1; r <= p.rows; r++) {
-                        p.dirty[r] = false;
-                        try {
-                           for (var c = 1; c <= p.cols; c++) {
-                              p.screen[r][c] = ' ';
-                              p.color[r][c] = { fg: null, bg: null };
-                           }
-                        } catch(ex) {
-                           if (dbg) {
-                              console.log('--------');
-                              console.log('r='+ r +' c='+ c);
-                              console.log(p.screen);
-                              console.log(ex);
-                           }
-                        }
-                        p.els[r] = appendEmptyLine(parent_el);
-                        p.els[r].innerHTML = '&nbsp;';      // force initial rendering
-                     }
-                     console_is_char_oriented(true);
+                     init_common(p.INIT_ALTBUF);
+                     if (isAdmin()) console_is_char_oriented(true);
                      p.margin_set = false;
                      p.isAltBuf = true;
+                     p.r = p.c = 1; dirty();    // reset cursor
+                     if (dbg2) console.log('1049: '+ p.r +' '+ p.c +' '+ p.r_cursor +' '+ p.c_cursor);
                   } else
                   
                   if (exit_altbuf) {
-                     if (dbg) console.log('$EXIT alt buf via '+ (p.altbuf_via_cup? 'cup' : 'cursor_visible') +
-                        ' ====================================');
+                     if (dbg2) console.log('$EXIT alt buf via '+ (p.altbuf_via_cup? 'cup' : 'cursor_visible') +
+                        ' nrows='+ p.nrows +' rows='+ p.rows +' ====================================');
                      p.altbuf_via_cursor_visible = false;
                      p.altbuf_via_cup = false;
 
@@ -1699,36 +1822,44 @@ function kiwi_output_msg(id, id_scroll, p)
                      parent_el.innerHTML = p.alt_save;
                      p.el = appendEmptyLine(parent_el);
                      p.must_scroll_down = true;
-                     console_is_char_oriented();
+                     if (isAdmin()) console_is_char_oriented();
                      p.isAltBuf = false;
                   } else
 
                   if (exit_altbuf_no_restore) {
-                     if (dbg) console.log('$EXIT alt buf NO RESTORE =====================================');
+                     if (dbg2) console.log('$EXIT alt buf NO RESTORE =====================================');
                      p.must_scroll_down = true;
-                     console_is_char_oriented();
+                     if (isAdmin()) console_is_char_oriented();
                      p.isAltBuf = false;
                   }
                } else
                
                // insert/replace mode
-               if (second == '4' && p.isAltBuf && last_hl) {      // esc[4h  esc[4l
+               if (second == '4' /* && p.isAltBuf */ && last_hl) {      // esc[4h  esc[4l
                   p.insertMode = enable;
                   result = enable? 'INSERT mode' : 'REPLACE mode';
                } else
                
                // erase characters
-               if (c == 'X' && p.isAltBuf) {    // ech=\E[%p1%dX
+               if (c == 'X') {      // ech=\E[%p1%dX
                   if (n1 == 0) n1 = 1;
-                  var col;
-                  for (var ci = 0, col = p.c; ci < n1 && col <= p.cols; ci++, col++) {
-                     //if (dbg) console.log('erase '+ p.r +','+ col +'|'+ ci +'/'+ n1);
-                     p.screen[p.r][col] = ' ';
-                     p.color[p.r][col] = { fg: null, bg: null };
+                  if (p.isAltBuf) {
+                     var col;
+                     for (var ci = 0, col = p.c; ci < n1 && col <= p.cols; ci++, col++) {
+                        //if (dbg) console.log('erase '+ p.r +','+ col +'|'+ ci +'/'+ n1);
+                        p.screen[p.r][col] = ' ';
+                        p.color[p.r][col] = { fg: null, bg: null };
+                     }
+                     dirty();
+                     sched();
+                     result = 'erase '+ n1 +' chars';
+                  } else {
+                     var col;
+                     for (var ci = 0, col = p.ccol; ci < n1 && col <= p.line.length; ci++, col++) {
+                        //if (dbg) console.log('erase '+ p.r +','+ col +'|'+ ci +'/'+ n1);
+                        p.line[ci] = null;
+                     }
                   }
-                  dirty();
-                  sched();
-                  result = 'erase '+ n1 +' chars';
                } else
                
                // delete characters (shift left)
@@ -1789,17 +1920,23 @@ function kiwi_output_msg(id, id_scroll, p)
                // set top and bottom margin, defaults: top = 1, bottom = lines-per-screen
                // AKA: change scroll region
                if (c == 'r' && p.isAltBuf) {
+                  if (dbg) console.log('margin set: PREV p.nrows='+ p.nrows +' NEW p.nrows='+ n2);
                   p.margin_top = n1;
                   p.margin_bottom = n2;
                   p.margin_set = true;
-                  result = 'set margins, top='+ n1 +', bottom='+ n2;
+                  p.nrows = n2;
+                  result = 'set margins, top='+ n1 +', bottom/nrows='+ n2;
                } else
                
                // pan down (text moves up)
                if (c == 'S' && p.isAltBuf) {
                   move_in_display(p.margin_top, p.margin_top + n1, p.margin_bottom, +1);
-                  erase_in_display(p.r, p.margin_bottom, 1, p.cols);
+                  if (p.r < p.nrows) {
+                     p.r++;
+                     erase_in_display(p.r, p.margin_bottom, 1, p.cols);
+                  }
                   p.insertMode = save_insertMode;
+                  p.r = p.c = 1; dirty();    // reset cursor
                   result = 'pan down '+ n1;
                } else
                
@@ -1807,9 +1944,10 @@ function kiwi_output_msg(id, id_scroll, p)
                if (c == 'T' && p.isAltBuf) {
                   var save_insertMode = p.insertMode;
                   p.insertMode = false;
-                  move_in_display(p.margin_bottom, p.margin_top + n1 - 1, p.margin_top, -1);
+                  move_in_display(p.margin_bottom, p.margin_bottom - n1, p.margin_top, -1);
                   erase_in_display(p.margin_top, p.margin_top + n1 - 1, 1, p.cols);
                   p.insertMode = save_insertMode;
+                  p.r = p.c = 1; dirty();    // reset cursor
                   result = 'pan up '+ n1;
                } else
                
@@ -1837,7 +1975,7 @@ function kiwi_output_msg(id, id_scroll, p)
                } else
                if (c == 'B') {   // done via esc[#d
                   if (p.isAltBuf) {
-                     if (p.r < p.rows) { dirty(); p.r++; dirty(); }
+                     if (p.r < p.nrows) { dirty(); p.r++; dirty(); }
                      result = 'arrow down';
                   } else {
                   }
@@ -1868,12 +2006,20 @@ function kiwi_output_msg(id, id_scroll, p)
 
 
             // non-CSI handled:
-            // ESC   H M c 7 8 ( > =
+            // ESC   (* ]*
+            // ESC   H M c 7 8 > =
 
             // esc (
 		      if (first == '(') {
                result = 'define char set';
                //p.traceEvery = true;
+		      } else
+		      
+		      // ESC ]
+            // orig_colors oc=\E]104\007  rs1=\Ec\E]104\007  
+            // initc=\E]4;%p1%d;rgb\:%p2%{255}%*%{1000}%/%2.2X/%p3%{255}%*%{1000}%/%2.2X/%p4%{255}%*%{1000}%/%2.2X\E\\
+		      if (first == ']') {
+               result = 'define colors (ignored)';
 		      } else
 		      
 		      switch (c) {
@@ -1952,6 +2098,7 @@ function kiwi_output_msg(id, id_scroll, p)
                // ordinary chars
                snew_add(c);
                if (p.isAltBuf) {
+                  //if (dbg) console.log('ord char: '+ p.r +' '+ p.c +' '+ p.r_cursor +' '+ p.c_cursor);
                   screen_char(c);
                } else {
                   if (p.inc) {
@@ -1969,7 +2116,7 @@ function kiwi_output_msg(id, id_scroll, p)
                wasScrolledDown = w3_isScrolledDown(el_scroll);
                if (p.isAltBuf) {
                   p.c = 1; dirty(); p.r++; dirty();
-                  if (p.r > p.rows) p.r = 1;    // \n
+                  if (p.r > p.nrows) p.r = 1;    // \n
                } else {
                   var stmp = line_join(1).s;
                   p.el.innerHTML = (stmp == '')? '&nbsp;' : stmp;
@@ -2045,7 +2192,10 @@ function kiwi_output_msg(id, id_scroll, p)
       //if (dbg) console.log('w3_scrollDown()');
    }
 
-   if (p.isAltBuf) sched();
+   if (p.isAltBuf) {
+      //if (dbg) { console.log(p); kiwi_trace(); }
+      sched();
+   }
    snew_dump('end');
 }
 

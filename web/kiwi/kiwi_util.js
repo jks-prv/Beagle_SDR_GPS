@@ -608,30 +608,43 @@ function console_log()
    console.log('CONSOLE_LOG '+ s);
 }
 
-// usage: console_log_fqn('id', 'fully.qualified.name0', 'fully.qualified.name1', ...)
-// prints: "<id>: <name0>=<fqn0_value> <name1>=<fqn1_value> ..."
-function console_log_fqn()
+// usage: console_nv('id', {arg0}, {arg1}, 'a.b.c' (i.e. FQN) ...)
+// prints: "<id>: 'actual_arg0_name'=<arg0_value> 'actual_arg1_name'=<arg1_value> ..."
+//
+// So this works for:
+// local/global simple (incl obj): YES
+// local obj deref: NO
+// global deref (FQN only): YES (use string arg)
+function console_nv()
 {
-   //console.log('console_log_fqn: '+ typeof(arguments));
-   //console.log(arguments);
    var s;
    for (var i = 0; i < arguments.length; i++) {
       var arg = arguments[i];
       if (i == 0) {
          s = arg +': ';
       } else {
-         var val;
-         try {
-            val = getVarFromString(arg);
-         } catch(ex) {
-            val = '[not defined]';
+         var name, val;
+         if (isObject(arg)) {
+            name = Object.keys(arg)[0];
+            val = arg[name];
+            s += name +'='+ JSON.stringify(val) +' ';
+         } else
+         if (isString(arg)) {
+            try {
+               val = getVarFromString(arg);
+            } catch(ex) {
+               val = '[not defined]';
+            }
+            //var lio = arg.lastIndexOf('.');
+            //name = (lio == -1)? arg : arg.substr(lio+1);
+            name = arg;
+            s += name +'='+ val +' ';
+         } else {
+            s += '[arg'+ (i-1) +' unknown] ';
          }
-         var lio = arg.lastIndexOf('.');
-         var name = (lio == -1)? arg : arg.substr(lio+1);
-         s += name +'='+ val +' ';
       }
    }
-   console.log('FQN '+ s);
+   console.log('CONSOLE_NV '+ s);
 }
 
 function console_log_dbgUs()
@@ -950,7 +963,7 @@ function kiwi_decodeURIComponent(id, uri)
       } catch(ex) {
          console.log('$kiwi_decodeURIComponent('+ id +'): decode fail');
          console.log(uri);
-         //console.log(ex);
+         console.log(ex);
       
          if (double_fail) {
             console.log('kiwi_decodeURIComponent('+ id +'): DOUBLE DECODE FAIL');
@@ -959,7 +972,7 @@ function kiwi_decodeURIComponent(id, uri)
             return null;
          }
 
-	      // v1.464
+         // v1.464
          // Recover from broken UTF-8 sequences stored in cfg.
          // Remove all "%xx" sequences, for xx >= 0x80, whenever decodeURIComponent() fails.
          // User will have to manually repair UTF-8 sequences since information has been lost.
@@ -968,14 +981,17 @@ function kiwi_decodeURIComponent(id, uri)
          // and this code will not be triggered. That way corrections made to broken fields will persist in the cfg.
          // This is why bulk removal of >= %80 sequences cannot be done in _cfg_load_json() on the server side.
          // Doing that would always eliminate *any* UTF-8 sequence. Even valid ones.
-         for (var i = 0; i < uri.length - 2; i++) {
+         var i, j, k;
+         for (i = 0; i < uri.length - 2; i++) {
             var c1 = uri.charAt(i+1);
             var c2 = uri.charAt(i+2);
             if (uri.charAt(i) == '%' && isHexDigit(c1) && isHexDigit(c2)) {
                //console.log(c1 +' '+ ((c1 >= '8')? 'T':'F'));
                if (c1 >= '8') {
-                  var x0 = uri.charAt(i-1);
-                  x0 = x0.charCodeAt(0);
+                  //var x0 = uri.charAt(i-1);
+                  //x0 = x0.charCodeAt(0);
+                  j = Math.max(i-5, 0); k = Math.min(i+6, uri.length);
+                  console.log('BAD @'+ i +' '+ uri.slice(j,k));
                   uri = uri.substr(0,i) + uri.substr(i+3);
                   i = 0;
                   //console.log('FIX <'+ uri +'>');
@@ -983,6 +999,8 @@ function kiwi_decodeURIComponent(id, uri)
                }
             }
          }
+         //console.log(s);
+         console.log('FINAL FIX <'+ uri +'>');
 
          obj = null;
       }
