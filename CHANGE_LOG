@@ -2,6 +2,21 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.612  July 5, 2023
+    Admin console improvements:
+        Can now paste from system clipboard into console (e.g. shell or text editor).
+        Mac: Use the usual command-v key.
+        Windows: Use the usual control-v, but type it twice in quick succession. This is because
+            control-v is used by the "nano" text editor for "page down". So there needs to be a
+            way for a control-v to get through that is not interpreted as a system paste. And this
+            is accomplished by typing control-v once, instead of twice, within a small time window.
+        The bottom line of the admin console tab displays a summary of these changes.
+
+        Many fixes to the ANSI command interpreter. This makes full screen programs like htop
+        (alias 'ht') and text editors work much better.
+    
+    ALE-2G extension: Test function run every 4 hours as a workaround to prevent scanning lockup.
+
 v1.611  July 1, 2023
     Reduced occurrences of unnecessary config file updates.
 
