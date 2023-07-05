@@ -986,9 +986,10 @@ function kiwi_output_msg(id, id_scroll, p)
 {
    var i, j;
    var dbg = (0 && dbgUs);
+   var dbg2 = ((0 && dbgUs) || dbg);
    if (dbgUs) kiwi.d.p = p;
    
-   if (1 && dbg) {
+   if (0 && dbg) {
       console.log('$kiwi_output_msg id='+ id +' init='+ p.init +' isAltBuf='+ p.isAltBuf +' s='+ p.s);
       console.log('$ '+ kiwi_JSON(p));
       //if (!p.init) kiwi_trace();
@@ -1192,7 +1193,6 @@ function kiwi_output_msg(id, id_scroll, p)
 	var erase_in_display = function(r_start, r_end, c_start, c_end) {
       for (var r = r_start; r_start && r <= r_end; r++) {
          for (var c = c_start; c <= ((r == p.r)? c_end : p.cols); c++) {
-            //jksx
             if (isUndefined(p.screen[r])) {
                console_nv('erase_in_display', {r}, {c}, 'kiwi.d.p.nrows', 'kiwi.d.p.ncols');
                console.log(p);
@@ -1247,41 +1247,43 @@ function kiwi_output_msg(id, id_scroll, p)
       return { s:s, a:a };
    };
    
-   var resize_init = function(init) {
+   var init_common = function(init) {
       var r, c;
-      removeAllLines(parent_el);
-      p.screen = [];
-      p.color = [];
-      p.dirty = [];
-      p.els = [];
-      for (var r = 1; r <= p.nrows; r++) {
-         p.screen[r] = [];
-         p.color[r] = [];
-         try {
-            for (var c = 1; c <= p.cols; c++) {
-               p.screen[r][c] = ' ';
-               p.color[r][c] = { fg: null, bg: null };
-            }
-         } catch(ex) {
-            if (dbg) {
-               console.log('--------');
-               console.log('r='+ r +' c='+ c);
-               console.log(p.screen);
-               console.log(ex);
-            }
-         }
-         p.dirty[r] = false;
-         p.els[r] = appendEmptyLine(parent_el);
-         p.els[r].innerHTML = '&nbsp;';      // force initial rendering
-      }
-      p.margin_set = false;
-      p.r = p.c = p.r_cursor = p.c_cursor = 1;
+      if (dbg2) console_nv('init_common', {init}, 'kiwi.d.p.nrows');
 
-      if (init) {
-         if (isAdmin())
-            console_is_char_oriented(true);
-         p.isAltBuf = true;
-         p.r_cursor = p.c_cursor = 0;
+      if (init == p.INIT_ONCE || init == p.INIT_RESIZE) {
+         p.screen = [];
+         p.color = [];
+         p.dirty = [];
+         p.els = [];
+
+         for (var r = 0; r <= p.nrows; r++) {
+            p.screen[r] = [];
+            p.color[r] = [];
+         }
+      }
+
+      if (init == p.INIT_ALTBUF || init == p.INIT_RESIZE) {
+         removeAllLines(parent_el);
+         
+         for (var r = 1; r <= p.nrows; r++) {
+            try {
+               for (var c = 1; c <= p.cols; c++) {
+                  p.screen[r][c] = ' ';
+                  p.color[r][c] = { fg: null, bg: null };
+               }
+            } catch(ex) {
+               if (dbg) {
+                  console.log('--------');
+                  console.log('r='+ r +' c='+ c);
+                  console.log(p.screen);
+                  console.log(ex);
+               }
+            }
+            p.dirty[r] = false;
+            p.els[r] = appendEmptyLine(parent_el);
+            p.els[r].innerHTML = '&nbsp;';      // force initial rendering
+         }
       }
    };
    
@@ -1303,6 +1305,12 @@ function kiwi_output_msg(id, id_scroll, p)
    if (p.init != true) {
       //if (dbg) console.log('$console INIT '+ p.init);
       //kiwi_trace();
+      p.INIT_ONCE = 0;
+      p.INIT_RESIZE = 1;
+      p.INIT_ALTBUF = 2;
+      p.resized = false;
+
+      removeAllLines(parent_el);
       p.el = appendEmptyLine(parent_el);
       p.cols = p.cols || 80;
       p.NONE = 0;
@@ -1315,7 +1323,6 @@ function kiwi_output_msg(id, id_scroll, p)
       p.return_pending = false;
       p.must_scroll_down = false;
       p.traceEvery = false;
-      p.resized = false;
       
       // line-oriented
       // p.rows p.cols     set by caller
@@ -1327,13 +1334,15 @@ function kiwi_output_msg(id, id_scroll, p)
       
       // char-oriented
       p.nrows = p.rows;
+      p.r = p.c = 1;
+      p.margin_set = false;
       p.margin_top = 1;
       p.margin_bottom = p.nrows;    // initial value until changed by setting margins
       p.show_cursor = p.show_cursor || false;
       p.r_cursor = p.c_cursor = 0;
       p.insertMode = true;
       p.eol_wrap = false;     // NB: "top -c" doesn't like EOL wrapping
-      resize_init(true);
+      init_common(p.INIT_ONCE);
       p.isAltBuf = false;
       p.altbuf_via_cursor_visible = false;
       p.altbuf_via_cup = false;
@@ -1347,11 +1356,12 @@ function kiwi_output_msg(id, id_scroll, p)
    }
    
    if (p.resized && p.isAltBuf) {
-      if (dbg) console.log('console resized nrows: '+ p.nrows +' => '+ p.rows +' #############################################################################################');
+      if (dbg2) console.log('console resized nrows: '+ p.nrows +' => '+ p.rows +' #############################################################################################');
       p.nrows = p.rows;
-      resize_init();
+      init_common(p.INIT_RESIZE);
       p.margin_top = 1;
       p.margin_bottom = p.nrows;    // initial value until changed by setting margins
+      p.r = p.c = 1; dirty();       // reset cursor
       p.r_cursor = p.c_cursor = 0;
       render();
       p.resized = false;
@@ -1787,20 +1797,24 @@ function kiwi_output_msg(id, id_scroll, p)
                   }
                   
                   if (enter_altbuf) {
-                     if (dbg) console.log('$ENTER alt buf via '+ (p.altbuf_via_cup? 'cup' : 'cursor_visible') +
-                        ' ====================================');
+                     p.nrows = p.rows;    // in case partial margin still in effect
+                     if (dbg2) console.log('$ENTER alt buf via '+ (p.altbuf_via_cup? 'cup' : 'cursor_visible') +
+                        ' nrows='+ p.nrows +' rows='+ p.rows +' ====================================');
 
                      // remove any cursor at end that we don't want to display on restore
                      p.alt_save = parent_el.innerHTML.replace(/<pre><span class="cl-admin-console-cursor">.*<\/span><\/pre>$/, '');
                      if (dbg) console.log(kiwi_JSON(p.alt_save));
-                     resize_init();
+                     init_common(p.INIT_ALTBUF);
+                     if (isAdmin()) console_is_char_oriented(true);
+                     p.margin_set = false;
                      p.isAltBuf = true;
-                     if (dbg) console.log('1049: '+ p.r +' '+ p.c +' '+ p.r_cursor +' '+ p.c_cursor);
+                     p.r = p.c = 1; dirty();    // reset cursor
+                     if (dbg2) console.log('1049: '+ p.r +' '+ p.c +' '+ p.r_cursor +' '+ p.c_cursor);
                   } else
                   
                   if (exit_altbuf) {
-                     if (dbg) console.log('$EXIT alt buf via '+ (p.altbuf_via_cup? 'cup' : 'cursor_visible') +
-                        ' ====================================');
+                     if (dbg2) console.log('$EXIT alt buf via '+ (p.altbuf_via_cup? 'cup' : 'cursor_visible') +
+                        ' nrows='+ p.nrows +' rows='+ p.rows +' ====================================');
                      p.altbuf_via_cursor_visible = false;
                      p.altbuf_via_cup = false;
 
@@ -1808,14 +1822,14 @@ function kiwi_output_msg(id, id_scroll, p)
                      parent_el.innerHTML = p.alt_save;
                      p.el = appendEmptyLine(parent_el);
                      p.must_scroll_down = true;
-                     console_is_char_oriented();
+                     if (isAdmin()) console_is_char_oriented();
                      p.isAltBuf = false;
                   } else
 
                   if (exit_altbuf_no_restore) {
-                     if (dbg) console.log('$EXIT alt buf NO RESTORE =====================================');
+                     if (dbg2) console.log('$EXIT alt buf NO RESTORE =====================================');
                      p.must_scroll_down = true;
-                     console_is_char_oriented();
+                     if (isAdmin()) console_is_char_oriented();
                      p.isAltBuf = false;
                   }
                } else
@@ -1906,7 +1920,7 @@ function kiwi_output_msg(id, id_scroll, p)
                // set top and bottom margin, defaults: top = 1, bottom = lines-per-screen
                // AKA: change scroll region
                if (c == 'r' && p.isAltBuf) {
-                  if (dbg) console.log('margin set: PREV p.nrows='+ p.nrows);
+                  if (dbg) console.log('margin set: PREV p.nrows='+ p.nrows +' NEW p.nrows='+ n2);
                   p.margin_top = n1;
                   p.margin_bottom = n2;
                   p.margin_set = true;

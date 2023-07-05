@@ -3240,23 +3240,30 @@ function console_calc_rows_cols(init)
    var h_msg = 15.6;
    var h_ratio = h_msgs / h_msg;
    var rows = Math.floor(h_ratio);
-   if (0 && dbgUs) w3_innerHTML('id-console-debug', 'h_msgs='+ h_msgs +' rows: '+ h_ratio.toFixed(2) +' '+ rows);
+   if (rows < 1) rows = 1;
 
    var w_msgs = parseInt(w3_el('id-console-msg').style.width) - /* margins +5 */ 25;
    var w_msg = 7.4;
    var w_ratio = w_msgs / w_msg;
-   var cols = Math.floor(w_ratio);
-   if (cols > 256) cols = 256;
-   if (0 && dbgUs) w3_append_innerHTML('id-console-debug', ' w_msgs='+ w_msgs +' cols: '+ w_ratio.toFixed(2) +' '+ cols);
+   var cols = w3_clamp(Math.floor(w_ratio), 1, 256);
+
+   if (1 && dbgUs)
+      w3_innerHTML('id-console-debug', 'h_msgs='+ h_msgs +' rows: '+ h_ratio.toFixed(2) +' <x1>'+ rows +'</x1>  ' +
+         'w_msgs='+ w_msgs +' cols: '+ w_ratio.toFixed(2) +' <x1>'+ cols +'</x1>');
 
    if (init || rows != admin.console.rows || cols != admin.console.cols) {
       //console_nv('$console_calc_rows_cols', {init}, {rows}, {cols});
       //kiwi_trace('$');
-      admin.console.resized = true;
-      // let server-side know so it can send a TIOCSWINSZ to libcurses et al
-      ext_send('SET console_rows_cols='+ rows +','+ cols);
-      admin.console.rows = rows;
-      admin.console.cols = cols;
+      kiwi_clearTimeout(admin.resize_timeout);
+      admin.resize_timeout = setTimeout(
+         function() {
+            admin.console.resized = true;
+            // let server-side know so it can send a TIOCSWINSZ to libcurses et al
+            ext_send('SET console_rows_cols='+ rows +','+ cols);
+            admin.console.rows = rows;
+            admin.console.cols = cols;
+         }, init? 1:1000
+      );
    }
 }
 
