@@ -1200,8 +1200,8 @@ function ALE_2G_focus()
       function() {
          console.log('ale_2g: periodic test');
          w3_el('id-ale_2g-test').click();
-      //}, 4*60*1000      // every 4 hours
-      }, 45*1000,
+      }, 4*60*1000      // every 4 hours
+      //}, 45*1000,
    );
 }
 
