@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.612,613  July 5, 2023
+v1.612,613,614  July 5, 2023
     Admin console improvements:
         Can now paste from system clipboard into console (e.g. shell or text editor).
         Mac: Use the usual command-v key.
