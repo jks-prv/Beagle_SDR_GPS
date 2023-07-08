@@ -223,7 +223,7 @@ bool _cfg_init(cfg_t *cfg, int flags, char *buf, const char *id)
 
 	if (cfg == &cfg_dx) {
 		cfg->filename = DX_FN;
-		flags |= CFG_NO_PARSE | CFG_INT_BASE10;
+		flags |= CFG_NO_PARSE | CFG_INT_BASE10 | CFG_YIELD;
     } else
 
 	if (cfg == &cfg_dxcfg) {
@@ -1219,7 +1219,7 @@ void *_cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb, void *param)
 static bool _cfg_parse_json(cfg_t *cfg, u4_t flags)
 {
     // the dx list can be huge, so yield during the time-consuming parsing process
-    bool yield = (cfg == &cfg_dx && !cfg->init_load);
+    bool yield = ((cfg->flags & CFG_YIELD) && !cfg->init_load);
     TMEAS(printf("cfg_parse_json: START %s yield=%d\n", cfg->filename, yield);)
     
 	if (cfg->tok_size == 0)
@@ -1408,10 +1408,11 @@ void _cfg_save_json(cfg_t *cfg, char *json)
     #ifdef CHECK_JSON_INTEGRITY_BEFORE_SAVE
         cfg_t tcfg;
         memset(&tcfg, 0, sizeof(tcfg));
+        tcfg.flags = CFG_YIELD;
         asprintf((char **) &tcfg.filename, "tcfg:%s", cfg->filename);
         tcfg.json = cfg->json_write;
         tcfg.json_buf_size = cfg->json_buf_size;
-        printf("cfg_save_json %s %d|%d\n", tcfg.filename, strlen(tcfg.json), tcfg.json_buf_size);
+        printf("cfg_save_json START %s %d|%d\n", tcfg.filename, strlen(tcfg.json), tcfg.json_buf_size);
     
         //#define TEST_JSON_INTEGRITY_CHECK
         #ifdef TEST_JSON_INTEGRITY_CHECK
@@ -1423,6 +1424,7 @@ void _cfg_save_json(cfg_t *cfg, char *json)
         #endif
         
         bool parsed_ok = _cfg_parse_json(&tcfg);
+        printf("cfg_save_json END %s %d|%d\n", tcfg.filename, strlen(tcfg.json), tcfg.json_buf_size);
         kiwi_free(tcfg.filename, tcfg.tokens);
         free((char *) tcfg.filename);
     
