@@ -2499,17 +2499,17 @@ function w3int_input_keyup(ev, path, cb)
 }
 
 // event generated from w3_input_force()
-function w3_input_input(ev)
+function w3_input_process(ev)
 {
    var a = ev.detail.split('|');
    var path = a[0];
    var cb = a[1];
-   //console.log('w3_input_input path='+ path +' cb='+ cb);
+   //console_nv('w3_input_process', {ev}, {a}, {path}, {cb});
 	var el = w3_el(path);
 	if (el) {
       var trace = w3_contains(el, 'w3-trace');
-      if (trace) console.log('w3_input_input path='+ path +' val='+ el.value +' cb='+ cb);
-      w3_input_change(path, cb, 'w3_input_input');
+      if (trace) console.log('w3_input_process path='+ path +' val='+ el.value +' cb='+ cb);
+      w3_input_change(path, cb, 'w3_input_process');
    }
 }
 
@@ -2547,6 +2547,19 @@ function w3_input_change(path, cb, from)
       w3int_post_action();
 }
 
+function w3int_input_up_down_cb(path, cb_param, first, ev)
+{
+   //event_dump(ev, path, 1);
+   if (ev.type != 'click' && ev.type != 'touch') return;
+   var cb_a = cb_param.split('|');
+   var delta = +cb_a[0];
+   var id_s = cb_a[1];
+   var cb_s = cb_a[2];
+   var val = +w3_el(id_s).value + delta;
+   //console_nv('w3int_input_up_down_cb', {cb_param}, {ev});
+   w3_input_force(id_s, cb_s, val.toFixed(0))
+}
+
 // No cb_param here because w3_input_change() passes the input value as the callback parameter.
 // But can specify a composite callback name (i.e. "cb|param0|param1") that is passed to callback routine.
 //
@@ -2582,12 +2595,25 @@ function w3_input(psa, label, path, val, cb, placeholder)
 	var type = psa3.right.includes('type=')? '' : 'type="text"';
 	var psa_inner = w3_psa(psa3.right, w3_sb(id, style, label_spacing), '', w3_sb(type, phold));
 	if (dump) console.log('O:['+ psa_outer +'] L:['+ psa_label +'] I:['+ psa_inner +']');
+	
+   // NB: include id in an id= for benefit of keyboard shortcut field detection
+	var in_s = '<input id='+ dq(id) +' '+ psa_inner + val + events +'>';
+	var cb_s = '|'+ id +'|'+ cb;
+	
+	if (psa.includes('w3-up-down')) {
+	   in_s = w3_inline('',
+	      w3_div('w3-flex-col w3-margin-R-4',
+	         w3_icon('w3-momentary w3-pointer w3-margin-B-1||title="up"', 'fa-arrow-up', 15, 'orange', 'w3int_input_up_down_cb', '1'+ cb_s),
+	         w3_icon('w3-momentary w3-pointer w3-margin-T-1||title="down"', 'fa-arrow-down', 15, 'cyan', 'w3int_input_up_down_cb', '-1'+ cb_s)
+	      ),
+	      in_s
+	   );
+   }
 
 	var s =
 	   '<div '+ psa_outer +'>' +
          w3_label(psa_label, label, path) +
-		   // NB: include id in an id= for benefit of keyboard shortcut field detection
-         '<input id='+ dq(id) +' '+ psa_inner + val + events +'>' +
+         in_s +
       '</div>';
 	//if (path == 'freq-input') console.log(s);
 	//w3int_input_set_id(id);
@@ -2596,12 +2622,13 @@ function w3_input(psa, label, path, val, cb, placeholder)
 
 function w3_input_force(path, cb, input)
 {
+   //console_nv('w3_input_force', {path}, {cb}, {input});
    var el = w3_el(path);
    if (!el) return;
-   el.addEventListener('input', w3_input_input, true);
+   el.addEventListener('input', w3_input_process, true);
    el.value = input.replace('&vbar;', '|');
-   el.dispatchEvent(new CustomEvent('input', { detail: path +'|'+ cb}));
-   el.removeEventListener('input', w3_input_input, true);
+   el.dispatchEvent(new CustomEvent('input', { detail: path +'|'+ cb }));
+   el.removeEventListener('input', w3_input_process, true);
 }
 
 /*

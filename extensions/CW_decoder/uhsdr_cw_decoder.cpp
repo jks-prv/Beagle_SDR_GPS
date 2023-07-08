@@ -48,10 +48,14 @@
 #include <limits.h>
 
 //#define SIGNAL_TAU			0.01
-#define SIGNAL_TAU			0.1
-#define	ONEM_SIGNAL_TAU     (1.0 - SIGNAL_TAU)
+#define SIGNAL_TAU			    0.1
+#define	ONEM_SIGNAL_TAU         (1.0 - SIGNAL_TAU)
+#define AUTO_WEIGHT_LINEAR      32000   // ~45 dB
+#define AUTO_THRESHOLD_LINEAR   15849   // ~42 dB
 
+#define TRAINING_STABLE     32
 #define CW_TIMEOUT			3  // Time, in seconds, to trigger display of last Character received
+#define ERROR_TIMEOUT       8
 #define ONE_SECOND			(snd_rate / cw->blocksize) // sample rate / decimation rate / block size
 
 #define CW_ONE_BIT_SAMPLE_COUNT (ONE_SECOND / 58.3) // = 6.4 works ! standard word PARIS has 14 pulses & 14 spaces, assumed: 25WPM
@@ -81,11 +85,12 @@ typedef struct {
 
 typedef struct
 {
-	unsigned initialized :1; // Do we have valid time duration measurements?
-	unsigned dash :1; // Dash flag
-	unsigned wspace :1; // Word Space flag
-	unsigned timeout :1; // Timeout flag
-	unsigned overload :1; // Overload flag
+	unsigned initialized :1;// Do we have valid time duration measurements?
+	unsigned dash :1;       // Dash flag
+	unsigned wspace :1;     // Word Space flag
+	unsigned timeout :1;    // Timeout flag
+	unsigned overload :1;   // Overload flag
+	unsigned track :1;      // Track timing changes continuously
 } bflags_t;
 
 typedef struct
@@ -101,6 +106,7 @@ typedef struct
 typedef struct {
     int rx_chan;
     bool process_samples;
+    u4_t wpm_fixed;
     u4_t wpm_update;
     int wsc;
     int err_cnt, err_timeout;
@@ -108,7 +114,9 @@ typedef struct {
 	float32_t sampling_freq;
 	float32_t target_freq;
 	uint8_t speed;
-	uint32_t thresh;
+	bool isAutoThreshold;
+	uint32_t weight_linear;
+	uint32_t threshold_linear;
 	uint8_t blocksize;
 
 	uint8_t noisecancel_enable;
@@ -116,7 +124,6 @@ typedef struct {
 #define CW_SPIKECANCEL_MODE_OFF 0
 #define CW_SPIKECANCEL_MODE_SPIKE 1
 #define CW_SPIKECANCEL_MODE_SHORT 2
-	bool auto_threshold;
 
     float32_t raw_signal_buffer[CW_DECODER_BLOCKSIZE_MAX];  // audio signal buffer
     Goertzel goertzel;
@@ -162,6 +169,7 @@ typedef struct {
     bool initializing;          // Bool for first time init of progress counter
     bool spike;
     bool processed;
+    int training_interval;
     
 } cw_decoder_t;
 
@@ -325,30 +333,60 @@ static float32_t decayavg(float32_t average, float32_t input, int weight)
 	}
 	else
 	{
-		retval = ( ( input - average ) / (float32_t)weight ) + average ;
+		retval = ( ( input - average ) / (float32_t) weight ) + average ;
 	}
 	return retval;
 }
 
-void CwDecode_Init(int rx_chan)
+// called by:
+//  "SET cw_start="
+//  "SET cw_train="
+//  "SET cw_wpm=" => CwDecode_wpm()
+void CwDecode_Init(int rx_chan, int wpm, int training_interval)
 {
     cw_code_init();
     
     cw_decoder_t *cw = &cw_decoder[rx_chan];
+    printf("CwDecode_Init wpm=%d %s\n", wpm, wpm? "FIXED":"AUTO");
     memset(cw, 0, sizeof(cw_decoder_t));
     cw->rx_chan = rx_chan;
     cw->wsc = 1;
-    
     cw->old_siglevel = 0.001;
-
     cw->timer_stepsize = 1;
     cw->sampling_freq = ext_update_get_sample_rateHz(rx_chan);
-    cw->speed = 25;
-    cw->thresh = 32000;
+    cw->isAutoThreshold = false;
     cw->blocksize = CW_DECODER_BLOCKSIZE_DEFAULT;
     cw->noisecancel_enable = 1;
     cw->spikecancel = 0;
-    cw->auto_threshold = false;
+    
+    if (wpm != 0) {
+        cw->speed_wpm_avg = wpm;
+	    float32_t blk_per_ms = cw->sampling_freq / 1e3 / CW_DECODER_BLOCKSIZE_DEFAULT;
+	    //#define N_ELEM_PARIS 46
+	    #define N_ELEM_PARIS 50
+	    float32_t ms_per_elem = 60000.0 / ((float32_t) wpm * N_ELEM_PARIS);
+		cw->times.dot_avg = blk_per_ms * ms_per_elem;
+		cw->times.dash_avg = cw->times.dot_avg * 3;
+		cw->times.cwspace_avg = cw->times.dot_avg * 4.2;
+		cw->times.symspace_avg = cw->times.dot_avg * 0.93;
+        cw->times.pulse_avg = (cw->times.dot_avg / 4 + cw->times.dash_avg) / 2.0;
+
+	    float32_t spdcalc = 10.0 * cw->times.dot_avg + 4.0 * cw->times.dash_avg + 9.0 * cw->times.symspace_avg + 5.0 * cw->times.cwspace_avg;
+		float32_t speed_ms_per_word = spdcalc * 1000.0 / (cw->sampling_freq / (float32_t)cw->blocksize);
+		float32_t speed_wpm_raw = (0.5 + 60000.0 / speed_ms_per_word); // calculate words per minute
+        printf("CW WPM FIXED INIT %.0f|%.1f spdcalc %.3f MSPW %.3f pulse %.1f dot %.1f dash %.1f space %.1f sym %.1f wsc %d threshold %s %d (%.1f dB)\n",
+            cw->speed_wpm_avg, speed_wpm_raw, spdcalc, speed_ms_per_word,
+            cw->times.pulse_avg, cw->times.dot_avg, cw->times.dash_avg, cw->times.cwspace_avg, cw->times.symspace_avg, cw->wsc,
+            cw->isAutoThreshold? "AUTO" : "FIXED", cw->threshold_linear, 10.0 * log10f((float) cw->threshold_linear + 1e-30));
+
+	    cw->b.track = FALSE;
+		cw->b.initialized = TRUE;   // Indicate we're done and return
+		cw->initializing = FALSE;   // Allow for correct setup of progress if cw_train() is invoked a second time
+        ext_send_msg(cw->rx_chan, false, "EXT cw_train=0");
+    } else {
+        cw->training_interval = training_interval;
+	    cw->b.track = TRUE;
+    }
     
     // CwDecode_pboff() needs to be called before starting to process samples
 }
@@ -358,7 +396,7 @@ void CwDecode_pboff(int rx_chan, u4_t pboff)
     cw_decoder_t *cw = &cw_decoder[rx_chan];
 
 	// set Goertzel parameters for CW decoding
-	printf("CwDecode_pboff %d\n", pboff);
+	//printf("CwDecode_pboff %d\n", pboff);
 	AudioFilter_CalcGoertzel(&cw->goertzel, pboff, cw->blocksize, 1.0, cw->sampling_freq);
 	cw->process_samples = true;
 }
@@ -405,44 +443,58 @@ static void CW_Decode_exe(cw_decoder_t *cw)
     siglevel = magnitudeSquared;
 
 	//    4b.) automatic threshold correction
-	if (cw->auto_threshold)
+	if (cw->isAutoThreshold)
 	{
         cw->CW_mag = siglevel;
-        cw->CW_env = decayavg(cw->CW_env, cw->CW_mag, (cw->CW_mag > cw->CW_env)?
-                        //(CW_ONE_BIT_SAMPLE_COUNT / 4) : (CW_ONE_BIT_SAMPLE_COUNT * 16));
-                        (cw->thresh /1000 / 4) : (cw->thresh /1000 * 16));
+
+        cw->CW_env = decayavg(
+                        cw->CW_env,     // average
+                        cw->CW_mag,     // input
+                        (cw->CW_mag > cw->CW_env)?      // weight
+                            (cw->weight_linear /1000 / 4)   // (CW_ONE_BIT_SAMPLE_COUNT / 4)
+                        :
+                            (cw->weight_linear /1000 * 16)  // (CW_ONE_BIT_SAMPLE_COUNT * 16)
+                    );
     
-        cw->CW_noise = decayavg(cw->CW_noise, cw->CW_mag, (cw->CW_mag < cw->CW_noise)?
-                        //(CW_ONE_BIT_SAMPLE_COUNT / 4) : (CW_ONE_BIT_SAMPLE_COUNT * 48));
-                        (cw->thresh /1000 / 4) : (cw->thresh /1000 * 48));
+        cw->CW_noise = decayavg(
+                            cw->CW_noise,   // average
+                            cw->CW_mag,     // input
+                            (cw->CW_mag < cw->CW_noise)?    // weight
+                                (cw->weight_linear /1000 / 4)   // (CW_ONE_BIT_SAMPLE_COUNT / 4)
+                            :
+                                (cw->weight_linear /1000 * 48)  // (CW_ONE_BIT_SAMPLE_COUNT * 48)
+                        );
     
-        CW_clipped = cw->CW_mag > cw->CW_env? cw->CW_env: cw->CW_mag;
+        CW_clipped = CLAMP(cw->CW_env, cw->CW_noise, cw->CW_mag);
     
-        if (CW_clipped < cw->CW_noise)
-        {
-            CW_clipped = cw->CW_noise;
-        }
-    
-        float32_t v1 = (CW_clipped - cw->CW_noise) * (cw->CW_env - cw->CW_noise) -
-                        0.8 * ((cw->CW_env - cw->CW_noise) * (cw->CW_env - cw->CW_noise));
+        //float32_t CW_env_to_noise = cw->CW_env - cw->CW_noise;
+        //float32_t v1 = (CW_clipped - cw->CW_noise) * CW_env_to_noise -
+        //                0.8 * (CW_env_to_noise * CW_env_to_noise);
+
+        float32_t CW_env_to_noise = CW_clipped - cw->CW_noise;
+        float32_t v1 = (CW_clipped - cw->CW_noise) * CW_env_to_noise -
+                        0.8 * (CW_env_to_noise * CW_env_to_noise);
+        v1 = sqrtf(fabsf(v1)) * ((v1 < 0)? -1:1);
     
         // lowpass
         siglevel = v1 * SIGNAL_TAU + ONEM_SIGNAL_TAU * cw->old_siglevel;
         cw->old_siglevel = v1;
-        newstate = (siglevel < 0)? false:true;
+        //newstate = (siglevel >= 0)? true:false;
+		newstate = (siglevel >= cw->threshold_linear)? true:false;
 	}
 
-	//    5.) signal state determination
-	//----------------
-	// Signal State sampling
-
+	//    4c.) fixed threshold
 	else
 	{
 	    // lowpass
 		siglevel = siglevel * SIGNAL_TAU + ONEM_SIGNAL_TAU * cw->old_siglevel;
 		cw->old_siglevel = magnitudeSquared;
-		newstate = (siglevel >= cw->thresh);
+		newstate = (siglevel >= cw->threshold_linear)? true:false;
 	}
+
+	//    5.) signal state determination
+	//----------------
+	// Signal State sampling
 
 	// noise cancel requires at least two consecutive samples to be
 	// of same (changed state) to accept change (i.e. a single sample change is ignored).
@@ -466,9 +518,12 @@ static void CW_Decode_exe(cw_decoder_t *cw)
 	
 	static int slowdown;
 	if (slowdown++ == 2) {
-	    float dB = 10.0 * log10f(siglevel + 1e-30);
-        ext_send_msg(cw->rx_chan, false, "EXT cw_plot=%.3f", dB);
-        //real_printf("%.0f|%.0f ", siglevel, dB); fflush(stdout);
+	    float sig = cw->isAutoThreshold? fabsf(siglevel): siglevel;
+	    float dB = 10.0 * log10f(sig + 1e-30);
+	    dB = CLAMP(dB, 0, 100.0);
+	    float threshold_log = 10.0 * log10f(cw->threshold_linear);
+        ext_send_msg(cw->rx_chan, false, "EXT cw_plot=%.2f,%d,%.2f", dB, siglevel >= 0, threshold_log);
+        //real_printf("%.0f|%.0f ", sig, dB); fflush(stdout);
         slowdown = 0;
     }
 
@@ -497,8 +552,8 @@ static void CW_Decode_exe(cw_decoder_t *cw)
 		// Zero circular buffer when at max
 		cw->sig_lastrx = ring_idx_increment(cw->sig_lastrx, CW_SIG_BUFSIZE);
 
-		cw->sig_timer = 0;                                // Zero the signal timer.
-		cw->prevstate = cw->state;                            // Update state
+		cw->sig_timer = 0;              // Zero the signal timer.
+		cw->prevstate = cw->state;      // Update state
 	}
 
 	//----------------
@@ -507,28 +562,44 @@ static void CW_Decode_exe(cw_decoder_t *cw)
 
 	if (cw->sig_timer > ONE_SECOND * CW_TIMEOUT)
 	{
-		cw->sig_timer = ONE_SECOND * CW_TIMEOUT; // Impose a MAXTIME second boundary for overflow time
+		cw->sig_timer = ONE_SECOND * CW_TIMEOUT;    // Impose a MAXTIME second boundary for overflow time
 	}
 
-	cw->sig_incount = cw->sig_lastrx;                         // Current Incount pointer
+	cw->sig_incount = cw->sig_lastrx;   // Current Incount pointer
 	cw->cur_time = cw->sig_timer;
 
 	//    7.) CW Decode
-	CW_Decode(cw);                                     // Do all the heavy lifting
+	CW_Decode(cw);      // Do all the heavy lifting
 
 	// calculation of speed of the received morse signal on basis of the standard "PARIS"
-	float32_t spdcalc =  10.0 * cw->times.dot_avg + 4.0 * cw->times.dash_avg + 9.0 * cw->times.symspace_avg + 5.0 * cw->times.cwspace_avg;
+	float32_t spdcalc = 10.0 * cw->times.dot_avg + 4.0 * cw->times.dash_avg + 9.0 * cw->times.symspace_avg + 5.0 * cw->times.cwspace_avg;
 
-	// update only if initialized and prevent division  by zero
-	if(cw->b.initialized == true && spdcalc > 0)
+	// update only if initialized and prevent division by zero
+	if (cw->b.initialized == true && spdcalc > 0)
 	{
 		// Convert to Milliseconds per Word
 		float32_t speed_ms_per_word = spdcalc * 1000.0 / (cw->sampling_freq / (float32_t)cw->blocksize);
 		float32_t speed_wpm_raw = (0.5 + 60000.0 / speed_ms_per_word); // calculate words per minute
 		cw->speed_wpm_avg = speed_wpm_raw * 0.3 + 0.7 * cw->speed_wpm_avg; // a little lowpass filtering
+
+        #if 0
+            static int cnt;
+            if ((cnt & 0xff) == 0) {
+                printf("CW WPM %s %.0f|%.1f spdcalc %.3f MSPW %.3f pulse %.1f dot %.1f dash %.1f space %.1f sym %.1f %s %d (%.1f dB)"
+                    " %.0f %.0f|(%.0f,%.0f)|%.0f\n",
+                    cw->b.track? "TRACK" : "FIXED",
+                    cw->speed_wpm_avg, speed_wpm_raw, spdcalc, speed_ms_per_word,
+                    cw->times.pulse_avg, cw->times.dot_avg, cw->times.dash_avg, cw->times.cwspace_avg, cw->times.symspace_avg,
+                    cw->isAutoThreshold? "AUTO" : "FIXED", cw->threshold_linear, 10.0 * log10f((float) cw->threshold_linear + 1e-30),
+                    cw->old_siglevel, cw->CW_noise, CW_clipped, cw->CW_env, cw->CW_mag
+                );
+            }
+            cnt++;
+        #endif
 	}
 	else
 	{
+	    //printf("b.init=%d (spd>0)=%d\n", cw->b.initialized, spdcalc > 0);
 		cw->speed_wpm_avg = 0; // we have no calculated speed, i.e. not synchronized to signal
 	}
 
@@ -554,6 +625,14 @@ void CwDecode_RxProcessor(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps)
 }
 
 
+void CwDecode_wpm(int rx_chan, int wpm, int training_interval)
+{
+    cw_decoder_t *cw = &cw_decoder[rx_chan];
+    cw->wpm_fixed = wpm;
+    CwDecode_Init(rx_chan, wpm, training_interval);
+}
+
+
 //------------------------------------------------------------------
 //
 // Initialization Function (non-blocking-style)
@@ -566,8 +645,8 @@ void CwDecode_RxProcessor(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps)
 //------------------------------------------------------------------
 static void cw_train(cw_decoder_t *cw)
 {
-	int16_t processed;              // Number of states that have been processed
-	float32_t t;                     // We do timing calculations in floating point
+	int16_t processed;      // Number of states that have been processed
+	float32_t t;            // We do timing calculations in floating point
 
 	// to gain a little bit of precision when low
 	// sampling rate
@@ -577,7 +656,7 @@ static void cw_train(cw_decoder_t *cw)
 		cw->startpos = cw->sig_outcount;        // We start at last processed mark/space
 		cw->progress = cw->sig_outcount;
 		cw->initializing = TRUE;
-		cw->times.pulse_avg = 0;                         // Reset CW timing variables to 0
+		cw->times.pulse_avg = 0;                // Reset CW timing variables to 0
 		cw->times.dot_avg = 0;
 		cw->times.dash_avg = 0;
 		cw->times.symspace_avg = 0;
@@ -585,11 +664,14 @@ static void cw_train(cw_decoder_t *cw)
 		cw->times.w_space = 0;
 	}
 
+	if (cw->b.track == FALSE)       // no training if fixed WPM
+	    return;
+
 	// Determine number of states waiting to be processed
 	processed = ring_distanceFromTo(cw->startpos, cw->progress);
-    ext_send_msg(cw->rx_chan, false, "EXT cw_train=%d", processed >= 98? 0 : processed);
+    ext_send_msg(cw->rx_chan, false, "EXT cw_train=%d", processed >= cw->training_interval? 0 : processed);
 
-	if (processed >= 98)
+	if (processed >= cw->training_interval)
 	{
 		cw->b.initialized = TRUE;   // Indicate we're done and return
 		cw->initializing = FALSE;   // Allow for correct setup of progress if cw_train() is invoked a second time
@@ -600,13 +682,13 @@ static void cw_train(cw_decoder_t *cw)
 	    #endif
 	}
 	
-	if (cw->progress != cw->sig_incount)                      // Do we have a new state?
+	if (cw->progress != cw->sig_incount)            // Do we have a new state?
 	{
 		t = cw->sig[cw->progress].time;
 
-		if (cw->sig[cw->progress].state)                               // Is it a pulse?
+		if (cw->sig[cw->progress].state)            // Is it a pulse?
 		{
-			if (processed > 32)                  // More than 32, getting stable
+			if (processed > TRAINING_STABLE)        // More than TRAINING_STABLE, getting stable
 			{
 				if (t > cw->times.pulse_avg)
 				{
@@ -617,7 +699,7 @@ static void cw_train(cw_decoder_t *cw)
 					cw->times.dot_avg = cw->times.dot_avg + (t - cw->times.dot_avg) / 4.0;       // (e.q. 4.4)
 				}
 			}
-			else                           // Less than 32, still quite unstable
+			else                           // Less than TRAINING_STABLE, still quite unstable
 			{
 				if (t > cw->times.pulse_avg)
 				{
@@ -632,7 +714,7 @@ static void cw_train(cw_decoder_t *cw)
 		}
 		else          // Not a pulse - determine character_word space avg
 		{
-			if (processed > 32)
+			if (processed > TRAINING_STABLE)
 			{
 				if (t > cw->times.pulse_avg)                              // Symbol space?
 				{
@@ -741,27 +823,30 @@ static bool cw_DataRecognition(cw_decoder_t *cw, bool* new_char_p)
 				cw->processed = FALSE; // Indicate that incoming character is not processed
 
 				// Determine if Dot or Dash (e.q. 4.10)
-				if ((cw->times.pulse_avg - t) >= 0)                         // It is a Dot
+				if ((cw->times.pulse_avg - t) >= 0)         // It is a Dot
 				{
-					cw->b.dash = FALSE;                           // Clear Dash flag
-					cw->data[cw->data_len].state = 0;                   // Store as Dot
-					cw->times.dot_avg = cw->times.dot_avg + (t - cw->times.dot_avg) / 8.0; // Update cw->times.dot_avg (e.q. 4.6)
+					cw->b.dash = FALSE;                     // Clear Dash flag
+					cw->data[cw->data_len].state = 0;       // Store as Dot
+					if (cw->b.track)
+					    cw->times.dot_avg = cw->times.dot_avg + (t - cw->times.dot_avg) / 8.0; // Update cw->times.dot_avg (e.q. 4.6)
 				}
 				//-----------------------------------
 				// Is it a Dash?
 				else
 				{
-					cw->b.dash = TRUE;                              // Set Dash flag
-					cw->data[cw->data_len].state = 1;                   // Store as Dash
+					cw->b.dash = TRUE;                      // Set Dash flag
+					cw->data[cw->data_len].state = 1;       // Store as Dash
 					if (t <= 5 * cw->times.dash_avg)        // Store time if not stuck key
 					{
-						cw->times.dash_avg = cw->times.dash_avg + (t - cw->times.dash_avg) / 8.0; // Update dash_avg (e.q. 4.7)
+					    if (cw->b.track)
+						    cw->times.dash_avg = cw->times.dash_avg + (t - cw->times.dash_avg) / 8.0; // Update dash_avg (e.q. 4.7)
 					}
 				}
 
 				cw->data[cw->data_len].time = (uint32_t) t;     // Store associated time
-				cw->data_len++;                         // Increment by one dot/dash
-				cw->times.pulse_avg = (cw->times.dot_avg / 4 + cw->times.dash_avg) / 2.0; // Update pulse_avg (e.q. 4.3)
+				cw->data_len++;                                 // Increment by one dot/dash
+                if (cw->b.track)
+				    cw->times.pulse_avg = (cw->times.dot_avg / 4 + cw->times.dash_avg) / 2.0; // Update pulse_avg (e.q. 4.3)
 			}
 
 			//-----------------------------------
@@ -778,7 +863,8 @@ static bool cw_DataRecognition(cw_decoder_t *cw, bool* new_char_p)
 				                            - cw->times.pulse_avg) / 4.0); // (e.q. 4.12, corrected)
 				    if (eq4_12 < 0) // Return on symbol space - not a full char yet
 				    {
-				        cw->times.symspace_avg = cw->times.symspace_avg + (t - cw->times.symspace_avg) / 8.0; // New EQ, to assist calculating Rat
+					    if (cw->b.track)
+				            cw->times.symspace_avg = cw->times.symspace_avg + (t - cw->times.symspace_avg) / 8.0; // New EQ, to assist calculating Rat
 				        full_char_detected = false;
 				    }
 				    else if (t <= 10 * cw->times.dash_avg) // Current space is not a timeout
@@ -799,12 +885,14 @@ static bool cw_DataRecognition(cw_decoder_t *cw, bool* new_char_p)
 					// (e.q. 4.11)
 					if ((t - cw->times.pulse_avg) < 0) // Return on symbol space - not a full char yet
 					{
-						cw->times.symspace_avg = cw->times.symspace_avg + (t - cw->times.symspace_avg) / 8.0; // New EQ, to assist calculating Rate
+					    if (cw->b.track)
+						    cw->times.symspace_avg = cw->times.symspace_avg + (t - cw->times.symspace_avg) / 8.0; // New EQ, to assist calculating Rate
 						full_char_detected = false;
 					}
 					else if (t <= 10 * cw->times.dash_avg) // Current space is not a timeout
 					{
-						cw->times.cwspace_avg = cw->times.cwspace_avg + (t - cw->times.cwspace_avg) / 8.0; // (e.q. 4.9)
+					    if (cw->b.track)
+						    cw->times.cwspace_avg = cw->times.cwspace_avg + (t - cw->times.cwspace_avg) / 8.0; // (e.q. 4.9)
 
 						// (e.q. 4.13)
 						if ((t - cw->times.cwspace_avg) >= 0)        // It is a Word space
@@ -881,7 +969,7 @@ static void PrintCharFunc(cw_decoder_t *cw, uint8_t c)
 	const char *s;
 	char s2[2] = { '\0', '\0' };
 	
-    if (c == 0xff) {
+    if (c >= 0x7f) {
         s = "[err]";
     } else
     if (c < ' ') {
@@ -935,16 +1023,20 @@ void CwDecode_wsc(int rx_chan, int wsc)
     cw->wsc = wsc;
 }
 
-void CwDecode_thresh(int rx_chan, int type, int thresh)
+void CwDecode_threshold(int rx_chan, int type, int param)
 {
     cw_decoder_t *cw = &cw_decoder[rx_chan];
     
     if (type == 0) {
-        cw->auto_threshold = thresh? true : false;
-        printf("CW auto_threshold=%d\n", thresh);
+        cw->isAutoThreshold = param? true : false;
+        if (cw->isAutoThreshold) {
+            cw->weight_linear = AUTO_WEIGHT_LINEAR;
+            cw->threshold_linear = AUTO_THRESHOLD_LINEAR;
+        }
+        printf("CW (type=0) isAutoThreshold=%d\n", param);
     } else {
-        cw->thresh = thresh;
-        printf("CW threshold=%d\n", thresh);
+        cw->threshold_linear = param;
+        printf("CW (type=1) threshold_linear=%d (%.1f dB)\n", param, 10.0 * log10f((float) param + 1e-30F));
     }
 }
 
@@ -1070,7 +1162,8 @@ static bool ErrorCorrectionFunc(cw_decoder_t *cw)
 
 			CodeGenFunc(cw);                 // Generate a dot/dash pattern string
 			decoded[0] = CwGen_CharacterIdFunc(cw->code); // Convert dot/dash data into a character
-			if (decoded[0] != 0xff)
+			//if (decoded[0] != 0xff)
+			if (decoded[0] < 0xfe)
 			{
 				PrintCharFunc(cw, decoded[0]);
 				result = TRUE;                // Error correction had success.
@@ -1118,7 +1211,8 @@ static bool ErrorCorrectionFunc(cw_decoder_t *cw)
 			CodeGenFunc(cw);                 // Generate a dot/dash pattern string
 			decoded[1] = CwGen_CharacterIdFunc(cw->code); // Convert dot/dash pattern into a character
 
-			if ((decoded[0] != 0xff) && (decoded[1] != 0xff)) // If successful error resolution
+			//if ((decoded[0] != 0xff) && (decoded[1] != 0xff)) // If successful error resolution
+			if ((decoded[0] < 0xfe) && (decoded[1] < 0xfe)) // If successful error resolution
 			{
 				PrintCharFunc(cw, decoded[0]);
 				PrintCharFunc(cw, decoded[1]);
@@ -1159,11 +1253,11 @@ static void CW_Decode(cw_decoder_t *cw)
 
 	if ((cw->b.initialized == TRUE) || (cw->cur_time >= ONE_SECOND * CW_TIMEOUT))
 	{
-		bool received;                       // True on a symbol received
+		bool received;                          // True on a symbol received
 		cw_DataRecognition(cw, &received);      // True if new character received
-		if (received && (cw->data_len > 0))      // also make sure it is not a spike
+		if (received && (cw->data_len > 0))     // also make sure it is not a spike
 		{
-			CodeGenFunc(cw);                 	// Generate a dot/dash pattern string
+			CodeGenFunc(cw);                    // Generate a dot/dash pattern string
 
 			uint8_t decoded = CwGen_CharacterIdFunc(cw->code);
 			// Identify the Character
@@ -1174,13 +1268,13 @@ static void CW_Decode(cw_decoder_t *cw)
 				PrintCharFunc(cw, decoded);     // Print character
 				WordSpaceFunc(cw, decoded);     // Print Word Space
 			}
-			else if (decoded == 0xff)                // Attempt Error Correction
+			else if (decoded == 0xff)           // Attempt Error Correction
 			{
 				// If Error Correction function cannot resolve, then reinitialize speed
-				if (ErrorCorrectionFunc(cw) == FALSE)
+				if (ErrorCorrectionFunc(cw) == FALSE && cw->b.track)
 				{
 				    cw->err_cnt++;
-				    cw->err_timeout = timer_sec() + 8;
+				    cw->err_timeout = timer_sec() + ERROR_TIMEOUT;
                     ext_send_msg(cw->rx_chan, false, "EXT cw_train=%d", -(cw->err_cnt));
                     if (cw->err_cnt > 3) {
                         // re-train
@@ -1192,7 +1286,7 @@ static void CW_Decode(cw_decoder_t *cw)
 			}
 			
 			// timeout error counting after a while
-			if (cw->err_timeout && timer_sec() >= cw->err_timeout) {
+			if (cw->b.track && cw->err_timeout && timer_sec() >= cw->err_timeout) {
                 cw->err_cnt = 0;
                 cw->err_timeout = 0;
                 ext_send_msg(cw->rx_chan, false, "EXT cw_train=0");

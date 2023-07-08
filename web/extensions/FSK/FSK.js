@@ -589,10 +589,10 @@ function fsk_controls_setup()
                   w3_inline('id-fsk-framing w3-hide/w3-margin-between-16',
                      w3_button('w3-padding-smaller', 'Sample', 'fsk_sample_cb', 0),
                      w3_select(fsk.sfmt, '', 'word', 'fsk.fr_bpw_i', fsk.fr_bpw_i, '5:15', 'fsk_bpw_cb'),
-                     w3_inline('/w3-hspace-4',
+                     w3_inline('/w3-hspace-3',
                         w3_div('id-fsk-phase w3-font-14px', '\u03d500'),
-                        w3_icon('w3-text-pink', 'fa-plus-square', 22, '', 'fsk_phase_cb', 1),
-                        w3_icon('w3-text-blue', 'fa-minus-square', 22, '', 'fsk_phase_cb', -1)
+                        w3_icon('w3-text-orange', 'fa-arrow-up', 22, '', 'fsk_phase_cb', 1),
+                        w3_icon('w3-text-aqua', 'fa-arrow-down', 22, '', 'fsk_phase_cb', -1)
                      ),
                      w3_select(fsk.sfmt, '', 'data', 'fsk.fr_bpd_i', fsk.fr_bpd_i, fsk_bpd_s, 'fsk_bpd_cb')
                   ),

@@ -5,6 +5,7 @@
 #include "kiwi.h"
 #include "coroutines.h"
 #include "data_pump.h"
+#include "mem.h"
 #include "uhsdr_cw_decoder.h"
 
 #include <stdio.h>
@@ -12,6 +13,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <strings.h>
+#include <sys/mman.h>
 
 //#define DEBUG_MSG	true
 #define DEBUG_MSG	false
@@ -27,9 +29,52 @@ typedef struct {
 	int rd_pos;
 	bool seq_init;
 	u4_t seq;
+
+	bool test;
+    int nsamps;
+    s2_t *s2p;
 } cw_decoder_t;
 
 static cw_decoder_t cw_decoder[MAX_RX_CHANS];
+
+typedef struct {
+    s2_t *s2p_start, *s2p_end;
+    int tsamps;
+} cw_conf_t;
+
+static cw_conf_t cw_conf;
+
+static void cw_file_data(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps, int freqHz)
+{
+    cw_decoder_t *e = &cw_decoder[rx_chan];
+
+    if (!e->test) return;
+    /*
+    if (e->s2p >= cw_conf.s2p_end) {
+        ext_send_msg(rx_chan, false, "EXT test_done");
+        e->test = false;
+        return;
+    }
+    */
+    
+    if (e->test) {
+        //real_printf("#"); fflush(stdout);
+        for (int i = 0; i < nsamps; i++) {
+            if (e->s2p > cw_conf.s2p_end) {
+                e->s2p = cw_conf.s2p_start;
+                e->nsamps = 0;
+            }
+            *samps++ = (s2_t) FLIP16(*e->s2p);
+            e->s2p++;
+        }
+
+        int pct = e->nsamps * 100 / cw_conf.tsamps;
+        e->nsamps += nsamps;
+        pct = CLAMP(pct, 3, 100);
+        ext_send_msg(rx_chan, false, "EXT bar_pct=%d", pct);
+    }
+
+}
 
 void cw_task(void *param)
 {
@@ -52,6 +97,7 @@ void cw_task(void *param)
             }
             e->seq++;
 		    
+		    //real_printf("%d ", e->rd_pos); fflush(stdout);
 		    CwDecode_RxProcessor(rx_chan, 0, FASTFIR_OUTBUF_SIZE, &rx->real_samples[e->rd_pos][0]);
 			e->rd_pos = (e->rd_pos+1) & (N_DPBUF-1);
 		}
@@ -85,9 +131,14 @@ bool cw_decoder_msgs(char *msg, int rx_chan)
 		return true;
 	}
 
-	if (strcmp(msg, "SET cw_start") == 0) {
-		//printf("CW rx%d start\n", rx_chan);
-		CwDecode_Init(rx_chan);
+	int training_interval;
+	if (sscanf(msg, "SET cw_start=%d", &training_interval) == 1) {
+		printf("CW rx%d start training_interval=%d\n", rx_chan, training_interval);
+		CwDecode_Init(rx_chan, 0, training_interval);
+		
+		if (cw_conf.tsamps != 0) {
+            ext_register_receive_real_samps(cw_file_data, rx_chan);
+		}
 
         if (!e->task_created) {
 			e->tid = CreateTaskF(cw_task, TO_VOID_PARAM(rx_chan), EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL));
@@ -104,12 +155,23 @@ bool cw_decoder_msgs(char *msg, int rx_chan)
 	if (strcmp(msg, "SET cw_stop") == 0) {
 		//printf("CW rx%d stop\n", rx_chan);
 		cw_close(rx_chan);
+		e->test = false;
 		return true;
 	}
 	
-	if (strcmp(msg, "SET cw_reset") == 0) {
-		//printf("CW rx%d reset\n", rx_chan);
-		CwDecode_Init(rx_chan);
+	if (sscanf(msg, "SET cw_train=%d", &training_interval) == 1) {
+		printf("CW rx%d train %d\n", rx_chan, training_interval);
+		CwDecode_Init(rx_chan, 0, training_interval);
+		//e->test = false;
+		return true;
+	}
+	
+	int test;
+	if (sscanf(msg, "SET cw_test=%d", &test) == 1) {
+		printf("CW rx%d test=%d\n", rx_chan, test);
+        e->s2p = cw_conf.s2p_start;
+        e->nsamps = 0;
+        e->test = test? true:false;
 		return true;
 	}
 	
@@ -120,6 +182,13 @@ bool cw_decoder_msgs(char *msg, int rx_chan)
 		return true;
 	}
 	
+	int wpm;
+	if (sscanf(msg, "SET cw_wpm=%d,%d", &wpm, &training_interval) == 2) {
+		printf("CW rx%d wpm %d\n", rx_chan, wpm);
+		CwDecode_wpm(rx_chan, wpm, training_interval);
+		return true;
+	}
+	
 	int wsc;
 	if (sscanf(msg, "SET cw_wsc=%d", &wsc) == 1) {
 		//printf("CW rx%d wsc %d\n", rx_chan, wsc);
@@ -127,17 +196,17 @@ bool cw_decoder_msgs(char *msg, int rx_chan)
 		return true;
 	}
 	
-	int thresh;
-	if (sscanf(msg, "SET cw_thresh=%d", &thresh) == 1) {
-		//printf("CW rx%d thresh %d\n", rx_chan, thresh);
-		CwDecode_thresh(rx_chan, 0, thresh);
+	int isAutoThreshold;
+	if (sscanf(msg, "SET cw_auto_thresh=%d", &isAutoThreshold) == 1) {
+		printf("CW rx%d isAutoThreshold=%d\n", rx_chan, isAutoThreshold);
+		CwDecode_threshold(rx_chan, 0, isAutoThreshold);
 		return true;
 	}
 	
-	int threshold;
-	if (sscanf(msg, "SET cw_threshold=%d", &threshold) == 1) {
-		//printf("CW rx%d threshold %d\n", rx_chan, threshold);
-		CwDecode_thresh(rx_chan, 1, threshold);
+	int threshold_lin;
+	if (sscanf(msg, "SET cw_threshold=%d", &threshold_lin) == 1) {
+		printf("CW rx%d threshold_lin=%d\n", rx_chan, threshold_lin);
+		CwDecode_threshold(rx_chan, 1, threshold_lin);
 		return true;
 	}
 	
@@ -158,4 +227,35 @@ ext_t cw_decoder_ext = {
 void CW_decoder_main()
 {
 	ext_register(&cw_decoder_ext);
+
+    //const char *fn = cfg_string("CW.test_file", NULL, CFG_OPTIONAL);
+    const char *fn = "CW.test.au";
+    if (!fn || *fn == '\0') return;
+    char *fn2;
+    asprintf(&fn2, "%s/samples/%s", DIR_CFG, fn);
+    //cfg_string_free(fn);
+    printf("CW: mmap %s\n", fn2);
+    int fd = open(fn2, O_RDONLY);
+    if (fd < 0) {
+        printf("CW: open failed\n");
+        return;
+    }
+    off_t fsize = kiwi_file_size(fn2);
+    kiwi_ifree(fn2);
+    char *file = (char *) mmap(NULL, fsize, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (file == MAP_FAILED) {
+        printf("CW: mmap failed\n");
+        return;
+    }
+    close(fd);
+    int words = fsize/2;
+    cw_conf.s2p_start = (s2_t *) file;
+    u4_t off = *(cw_conf.s2p_start + 3);
+    off = FLIP16(off);
+    printf("CW: off=%d size=%ld\n", off, fsize);
+    off /= 2;
+    cw_conf.s2p_start += off;
+    words -= off;
+    cw_conf.s2p_end = cw_conf.s2p_start + words;
+    cw_conf.tsamps = words;
 }
