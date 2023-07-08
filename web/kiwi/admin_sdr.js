@@ -1126,10 +1126,10 @@ function kiwi_reg_html()
 	return w3_div('id-sdr_hu w3-text-teal w3-hide', s1 + s2);
 }
 
-function kiwisdr_com_register_cb(path, idx, no_save)
+function kiwisdr_com_register_cb(path, idx, first)
 {
    idx = +idx;
-   //console.log('kiwisdr_com_register_cb idx='+ idx);
+   //console.log('kiwisdr_com_register_cb idx='+ idx +' first='+ first);
    
    var text, error = false;
    var no_url = (cfg.server_url == '');
@@ -1163,12 +1163,11 @@ function kiwisdr_com_register_cb(path, idx, no_save)
       text = '(waiting for kiwisdr.com response, can take several minutes in some cases)';
    } else {    // w3_SWITCH_NO_IDX
       text = '(registration not enabled)';
-      w3_switch_set_value(path, w3_SWITCH_NO_IDX);    // for benefit of direct callers
    }
    
    w3_innerHTML('id-kiwisdr_com-reg-status', text);
    w3_remove_then_add_cond('id-kiwisdr_com-reg-status', error, 'w3-red w3-text-white', 'w3-pale-blue w3-text-black');
-   admin_radio_YN_cb(path, idx, /* first: true => no save */ true);
+   admin_radio_YN_cb(path, idx, /* first: true => no save */ first);
 
    // make sure server side notices change promptly
 	ext_send_after_cfg_save("SET public_wakeup");
@@ -1213,7 +1212,7 @@ function sdr_hu_focus()
 	sdr_hu_interval = setInterval(function() {ext_send("SET public_update");}, 5000);
 	
 	// display initial switch state
-	kiwisdr_com_register_cb('adm.kiwisdr_com_register', adm.kiwisdr_com_register? w3_SWITCH_YES_IDX : w3_SWITCH_NO_IDX);
+	kiwisdr_com_register_cb('adm.kiwisdr_com_register', adm.kiwisdr_com_register? w3_SWITCH_YES_IDX : w3_SWITCH_NO_IDX, /* first */ true);
 }
 
 function sdr_hu_input_grid(path, val)
