@@ -138,7 +138,7 @@ var tdoa = {
 
 function TDoA_main()
 {
-   tdoa.url_base =   kiwi_add_end(cfg.tdoa.server_url, '/');
+   tdoa.url_base =   kiwi_add_end(cfg.tdoa.server, '/');
    tdoa.url =        tdoa.url_base +'tdoa/';
    tdoa.url_files =  tdoa.url +'files/';
    tdoa.rep_files =  kiwi_remove_protocol(tdoa.url) +'files';  // NB: not full URL, and no trailing /
@@ -2792,7 +2792,7 @@ function TDoA_config_html()
 
       w3_inline_percent('w3-container',
          w3_div('',
-            w3_input_get('w3-restart', 'TDoA server URL', 'tdoa.server_url', 'w3_url_set_cfg_cb', 'http://tdoa.kiwisdr.com'),
+            w3_input_get('w3-restart', 'TDoA server URL', 'tdoa.server', 'w3_url_set_cfg_cb', 'http://tdoa.kiwisdr.com'),
             w3_div('w3-margin-T-8 w3-text-black',
                'Change <b>only</b> if you have implemented an alternate TDoA server. <br>' +
                'Set to "http://tdoa.kiwisdr.com" for the default TDoA server.'
