@@ -223,7 +223,7 @@ bool _cfg_init(cfg_t *cfg, int flags, char *buf, const char *id)
 
 	if (cfg == &cfg_dx) {
 		cfg->filename = DX_FN;
-		flags |= CFG_NO_PARSE | CFG_INT_BASE10 | CFG_YIELD;
+		flags |= CFG_NO_PARSE | CFG_INT_BASE10 | CFG_YIELD | CFG_NO_INTEG;
     } else
 
 	if (cfg == &cfg_dxcfg) {
@@ -336,14 +336,16 @@ static bool _cfg_lookup_json_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq,
 	char *id2 = (char *) param;
 	int id2_len = strlen(id2);
 	
-	//cfg_print_tok(cfg, param, jt, seq, hit, lvl, rem, rval);
 	if (!JSMN_IS_ID(jt)) return false;
+	//cfg_print_tok(cfg, param, jt, seq, hit, lvl, rem, rval);
 	char *s = &cfg->json[jt->start];
 	int n = jt->end - jt->start;
-	//printf("_cfg_lookup_json_cb 2-scope: TEST id=\"%.*s\" WANT id2=\"%s\"\n", n, s, id2);
-	if (n != id2_len || strncmp(s, id2, n) != 0) return false;
-	if (rval) *rval = jt+1;
-	return true;
+	
+	bool rv = true;
+	if (n != id2_len || strncmp(s, id2, n) != 0) rv = false;
+	if (rv == true && rval) *rval = jt+1;
+	//printf("_cfg_lookup_json_cb 2-scope: TEST id=\"%.*s\" WANT id2=\"%s\" =%s\n", n, s, id2, rv? "T":"F");
+	return rv;
 }
 
 jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id, cfg_lookup_e option)
@@ -1404,48 +1406,49 @@ void _cfg_save_json(cfg_t *cfg, char *json)
     //printf("cfg_save_json START %s\n", cfg->filename);
 	cfg->json_write = strdup(cfg->json);
 
-    //#define CHECK_JSON_INTEGRITY_BEFORE_SAVE
+    #define CHECK_JSON_INTEGRITY_BEFORE_SAVE
     #ifdef CHECK_JSON_INTEGRITY_BEFORE_SAVE
-        cfg_t tcfg;
-        memset(&tcfg, 0, sizeof(tcfg));
-        tcfg.flags = CFG_YIELD;
-        asprintf((char **) &tcfg.filename, "tcfg:%s", cfg->filename);
-        tcfg.json = cfg->json_write;
-        tcfg.json_buf_size = cfg->json_buf_size;
-        //printf("cfg_save_json START %s %d|%d\n", tcfg.filename, strlen(tcfg.json), tcfg.json_buf_size);
+        if (!(cfg->flags & CFG_NO_INTEG)) {
+            cfg_t tcfg;
+            memset(&tcfg, 0, sizeof(tcfg));
+            tcfg.flags = CFG_YIELD;
+            asprintf((char **) &tcfg.filename, "tcfg:%s", cfg->filename);
+            tcfg.json = cfg->json_write;
+            tcfg.json_buf_size = cfg->json_buf_size;
+            //printf("cfg_save_json START %s %d|%d\n", tcfg.filename, strlen(tcfg.json), tcfg.json_buf_size);
     
-        //#define TEST_JSON_INTEGRITY_CHECK
-        #ifdef TEST_JSON_INTEGRITY_CHECK
-            static int pass;
-            if ((pass % 5) == 4) {
-                tcfg.json[0] = '!';     // test that re-parse failure works
-            }
-            pass++;
-        #endif
-        
-        bool parsed_ok = _cfg_parse_json(&tcfg);
-        //printf("cfg_save_json END %s %d|%d\n", tcfg.filename, strlen(tcfg.json), tcfg.json_buf_size);
-        kiwi_free(tcfg.filename, tcfg.tokens);
-        free((char *) tcfg.filename);
-    
-        if (!parsed_ok) {
-            lprintf("cfg_save_json: %s JSON PARSE ERROR -- FILE SAVE ABORTED!\n", cfg->filename);
-            #define PANIC_ON_INTEGRITY_FAIL
-            #ifdef PANIC_ON_INTEGRITY_FAIL
-                panic("json integrity fail");
-            #else
-                free(cfg->json_write);
-                return;
+            //#define TEST_JSON_INTEGRITY_CHECK
+            #ifdef TEST_JSON_INTEGRITY_CHECK
+                static int pass;
+                if ((pass % 5) == 4) {
+                    tcfg.json[0] = '!';     // test that re-parse failure works
+                }
+                pass++;
             #endif
-        } else
-    #endif
-        {
-            int status = child_task("kiwi.cfg", _cfg_write_file, POLL_MSEC(100), TO_VOID_PARAM(cfg));
-            int exit_status;
-            if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
-                printf("cfg_write_file exit_status=0x%x\n", exit_status);
+        
+            bool parsed_ok = _cfg_parse_json(&tcfg);
+            //printf("cfg_save_json END\n");
+            kiwi_free(tcfg.filename, tcfg.tokens);
+            free((char *) tcfg.filename);
+    
+            if (!parsed_ok) {
+                lprintf("cfg_save_json: %s JSON PARSE ERROR -- FILE SAVE ABORTED!\n", cfg->filename);
+                #define PANIC_ON_INTEGRITY_FAIL
+                #ifdef PANIC_ON_INTEGRITY_FAIL
+                    panic("json integrity fail");
+                #else
+                    free(cfg->json_write);
+                    return;
+                #endif
             }
         }
+    #endif
+
+    int status = child_task("kiwi.cfg", _cfg_write_file, POLL_MSEC(100), TO_VOID_PARAM(cfg));
+    int exit_status;
+    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
+        printf("cfg_write_file exit_status=0x%x\n", exit_status);
+    }
 
     free(cfg->json_write);
     //printf("cfg_save_json DONE\n");

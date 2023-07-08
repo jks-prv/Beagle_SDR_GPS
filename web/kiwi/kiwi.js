@@ -554,7 +554,7 @@ function cfg_save_json(id, path, val)
    }
    
 	//console.log('cfg_save_json: BEGIN from='+ id +' path='+ path + (isArg(val)? (' val='+ val) : ''));
-	if (path.includes('kiwisdr_com_register')) kiwi_trace();
+	//if (path.includes('kiwisdr_com_register')) kiwi_trace();
 
 	var s;
 	if (path.startsWith('adm.')) {

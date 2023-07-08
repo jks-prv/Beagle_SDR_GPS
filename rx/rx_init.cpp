@@ -249,7 +249,15 @@ void update_vars_from_config(bool called_at_init)
     // TDoA extension related
     cfg_default_object("tdoa", "{}", &update_cfg);
     // FIXME: switch to using new SSL version of TDoA service at some point: https://tdoa2.kiwisdr.com
-    cfg_default_string("tdoa.server_url", "http://tdoa.kiwisdr.com", &update_cfg);
+    // workaround to prevent collision with 1st-level "server_url" until we can fix cfg code
+	if ((s = cfg_string("tdoa.server_url", NULL, CFG_OPTIONAL)) != NULL) {
+		cfg_set_string("tdoa.server", s);
+	    cfg_string_free(s);
+	    cfg_rem_string("tdoa.server_url");
+	    update_cfg = true;
+	} else {
+        cfg_default_string("tdoa.server", "http://tdoa.kiwisdr.com", &update_admcfg);
+    }
 
 
     // fix any broken UTF-8 sequences via cfg_default_string()

@@ -2,8 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.615  July 8, 2023
+v1.615,616  July 8, 2023
     Fixed problem with DX label edits causing audio glitching.
+    Fixed problem causing some Kiwis to not be seen on rx.kiwisdr.com list or
+        respond to admin network tab "check port open" button.
 
 v1.612,613,614  July 5, 2023
     Admin console improvements:

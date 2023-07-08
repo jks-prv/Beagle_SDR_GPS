@@ -5,9 +5,7 @@ UTILS = cw ansi audio integrate hog multiply ext64 decimate security wspr e1b_fe
 CMD =
 
 ifeq ($(GET_TOOLS_EXCLUDE_RSYNC),true)
-    ifeq ($(UTIL),ansi)
-        TOOLS_EXCLUDE_RSYNC =  "ansi" "ansi.o" "ansi.d"
-    endif
+    TOOLS_EXCLUDE_RSYNC =  "$(UTIL)" "$(UTIL).o" "$(UTIL).d"
 else
 
 include ../Makefile.comp.inc
