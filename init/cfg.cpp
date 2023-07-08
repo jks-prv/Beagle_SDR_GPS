@@ -1404,7 +1404,7 @@ void _cfg_save_json(cfg_t *cfg, char *json)
     //printf("cfg_save_json START %s\n", cfg->filename);
 	cfg->json_write = strdup(cfg->json);
 
-    #define CHECK_JSON_INTEGRITY_BEFORE_SAVE
+    //#define CHECK_JSON_INTEGRITY_BEFORE_SAVE
     #ifdef CHECK_JSON_INTEGRITY_BEFORE_SAVE
         cfg_t tcfg;
         memset(&tcfg, 0, sizeof(tcfg));
@@ -1412,7 +1412,7 @@ void _cfg_save_json(cfg_t *cfg, char *json)
         asprintf((char **) &tcfg.filename, "tcfg:%s", cfg->filename);
         tcfg.json = cfg->json_write;
         tcfg.json_buf_size = cfg->json_buf_size;
-        printf("cfg_save_json START %s %d|%d\n", tcfg.filename, strlen(tcfg.json), tcfg.json_buf_size);
+        //printf("cfg_save_json START %s %d|%d\n", tcfg.filename, strlen(tcfg.json), tcfg.json_buf_size);
     
         //#define TEST_JSON_INTEGRITY_CHECK
         #ifdef TEST_JSON_INTEGRITY_CHECK
@@ -1424,7 +1424,7 @@ void _cfg_save_json(cfg_t *cfg, char *json)
         #endif
         
         bool parsed_ok = _cfg_parse_json(&tcfg);
-        printf("cfg_save_json END %s %d|%d\n", tcfg.filename, strlen(tcfg.json), tcfg.json_buf_size);
+        //printf("cfg_save_json END %s %d|%d\n", tcfg.filename, strlen(tcfg.json), tcfg.json_buf_size);
         kiwi_free(tcfg.filename, tcfg.tokens);
         free((char *) tcfg.filename);
     
