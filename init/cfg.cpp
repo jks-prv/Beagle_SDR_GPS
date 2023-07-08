@@ -1404,7 +1404,7 @@ void _cfg_save_json(cfg_t *cfg, char *json)
     //printf("cfg_save_json START %s\n", cfg->filename);
 	cfg->json_write = strdup(cfg->json);
 
-    #define CHECK_JSON_INTEGRITY_BEFORE_SAVE
+    //#define CHECK_JSON_INTEGRITY_BEFORE_SAVE
     #ifdef CHECK_JSON_INTEGRITY_BEFORE_SAVE
         cfg_t tcfg;
         memset(&tcfg, 0, sizeof(tcfg));
