@@ -44,24 +44,25 @@ typedef struct {
 
 extern cfg_t cfg_cfg, cfg_adm, cfg_dx, cfg_dxcfg, cfg_dxcomm, cfg_dxcomm_cfg;
 
-#define CFG_NONE		0x0000
-#define CFG_OPTIONAL	0x0000
-#define CFG_PRINT		0x0001
-#define CFG_REQUIRED	0x0002
-#define CFG_SAVE        0x0004
-#define CFG_YIELD       0x0008
-#define CFG_SET			0x0010
-#define CFG_REMOVE		0x0020
-#define CFG_COPY		0x0040
-#define CFG_CHANGE		0x0080
-#define CFG_NO_DOT		0x0100
-#define CFG_NO_UPDATE   0x0200
-#define CFG_PARSE_VALID 0x0400
-#define CFG_DEBUG       0x0800
-#define CFG_NO_PARSE    0x1000
-#define CFG_INT_BASE10  0x2000
-#define CFG_LOAD_ONLY   0x4000
-#define CFG_IS_JSON     0x8000
+#define CFG_NONE		0x00000
+#define CFG_OPTIONAL	0x00000
+#define CFG_PRINT		0x00001
+#define CFG_REQUIRED	0x00002
+#define CFG_SAVE        0x00004
+#define CFG_YIELD       0x00008
+#define CFG_SET			0x00010
+#define CFG_REMOVE		0x00020
+#define CFG_COPY		0x00040
+#define CFG_CHANGE		0x00080
+#define CFG_NO_DOT		0x00100
+#define CFG_NO_UPDATE   0x00200
+#define CFG_PARSE_VALID 0x00400
+#define CFG_DEBUG       0x00800
+#define CFG_NO_PARSE    0x01000
+#define CFG_INT_BASE10  0x02000
+#define CFG_LOAD_ONLY   0x04000
+#define CFG_IS_JSON     0x08000
+#define CFG_NO_INTEG    0x10000
 
 #define CFG_LOOKUP_LVL1 ((jsmntok_t *) -1)
 
