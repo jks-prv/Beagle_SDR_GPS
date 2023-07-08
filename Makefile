@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 614
+VERSION_MIN = 615
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -238,10 +238,11 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 		CFG_PREFIX =
 
         ifeq ($(DEBIAN_10_AND_LATER),true)
-#		    INT_FLAGS += -DUSE_CRYPT
-#	        LIBS += -lcrypt
-            INT_FLAGS += -DUSE_SSL
-            LIBS += -lssl
+#           USE_SSL isn't compatible with gdb. So for now we revert to USE_CRYPT
+            INT_FLAGS += -DUSE_CRYPT
+            LIBS += -lcrypt
+#            INT_FLAGS += -DUSE_SSL
+#            LIBS += -lssl
         else
             INT_FLAGS += -DUSE_CRYPT
             LIBS += -lcrypt
@@ -266,10 +267,11 @@ else
 
 # currently a bug where -lcrypt and -lssl can't be used together for some reason (crash at startup)
 	ifeq ($(DEBIAN_10_AND_LATER),true)
-#		INT_FLAGS += -DUSE_CRYPT
-#	    LIBS += -lcrypt
-		INT_FLAGS += -DUSE_SSL
-	    LIBS += -lssl
+#       USE_SSL isn't compatible with gdb. So for now we revert to USE_CRYPT
+		INT_FLAGS += -DUSE_CRYPT
+	    LIBS += -lcrypt
+#		INT_FLAGS += -DUSE_SSL
+#	    LIBS += -lssl
 		CMD_DEPS += /usr/include/openssl/ssl.h
 	else
 		INT_FLAGS += -DUSE_CRYPT
