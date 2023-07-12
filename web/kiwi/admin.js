@@ -3023,10 +3023,10 @@ function console_html()
 
 function console_reclone_confirm(cmd)
 {
-   control_confirm_show('Really re-clone?',
+   control_confirm_show('Really re-clone? Will overwrite /root/Beagle_SDR_GPS directory.',
       function() {
          console_cmd_cb('console_reclone_confirm',
-            'console_input_cb|cd /root; rm -rf Beagle_SDR_GPS; git clone https://github.com/jks-prv/Beagle_SDR_GPS.git');
+            'console_input_cb|cd /root; rm -rf Beagle_SDR_GPS; git clone https://github.com/'+ admin.repo_git);
          control_confirm_cancel_cb();
       }
    );
@@ -3789,6 +3789,10 @@ function admin_recv(data)
 				//console.log("ADMIN init rx_chans="+rx_chans);
             admin_draw(admin_sdr_mode);
             ext_send('SET extint_load_extension_configs');
+				break;
+
+			case "repo_git":
+			   admin.repo_git = decodeURIComponent(param[1]);
 				break;
 
 			case "ext_call":

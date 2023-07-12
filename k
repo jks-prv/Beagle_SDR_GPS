@@ -34,7 +34,7 @@ fi
 
 BBAI_64=$(cat /proc/device-tree/model | grep -q -s "BeagleBone AI-64" && echo true)
 BBAI=$(cat /proc/device-tree/model | grep -q -s "BeagleBone AI$" && echo true)
-RPI=$(cat /proc/device-tree/model | grep -q -s "Raspberry Pi 3" && echo true)
+RPI=$(cat /proc/device-tree/model | grep -q -s "Raspberry Pi" && echo true)
 
 if [ "x${BBAI_64}" = "xtrue" ] ; then
     SBC="BBAI-64"

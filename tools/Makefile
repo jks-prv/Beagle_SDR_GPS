@@ -1,5 +1,5 @@
 
-UTIL = dx_huge
+UTIL = audio
 UTILS = cw ansi audio integrate hog multiply ext64 decimate security wspr e1b_fec viterbi27_test e1b_code multiply2 dx_huge
 
 CMD =

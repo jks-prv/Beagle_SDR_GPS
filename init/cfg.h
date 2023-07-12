@@ -69,7 +69,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx, cfg_dxcfg, cfg_dxcomm, cfg_dxcomm_cfg;
 #define cfg_init()							_cfg_init(&cfg_cfg, CFG_NONE, NULL)
 #define	cfg_get_json(size)					_cfg_get_json(&cfg_cfg, size)
 #define cfg_save_json(json)					_cfg_save_json(&cfg_cfg, json)
-#define cfg_walk(id, cb, param)				_cfg_walk(&cfg_cfg, id, cb, param)
+#define cfg_walk(id, cb, p1, p2)            _cfg_walk(&cfg_cfg, id, cb, p1, p2)
 
 #define cfg_int(name, err, flags)			_cfg_int(&cfg_cfg, name, err, flags)
 #define cfg_set_int(name, val)				_cfg_set_int(&cfg_cfg, name, val, CFG_SET, 0)
@@ -110,7 +110,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx, cfg_dxcfg, cfg_dxcomm, cfg_dxcomm_cfg;
 #define admcfg_init()						_cfg_init(&cfg_adm, CFG_NONE, NULL)
 #define	admcfg_get_json(size)				_cfg_get_json(&cfg_adm, size)
 #define admcfg_save_json(json)				_cfg_save_json(&cfg_adm, json)
-#define admcfg_walk(id, cb, param)			_cfg_walk(&cfg_adm, id, cb, param)
+#define admcfg_walk(id, cb, p1, p2)         _cfg_walk(&cfg_adm, id, cb, p1, p2)
 
 #define admcfg_int(name, err, flags)		_cfg_int(&cfg_adm, name, err, flags)
 #define admcfg_set_int(name, val)			_cfg_set_int(&cfg_adm, name, val, CFG_SET, 0)
@@ -169,7 +169,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx, cfg_dxcfg, cfg_dxcomm, cfg_dxcomm_cfg;
 #define json_init_file(cfg)				    _cfg_init(cfg, CFG_IS_JSON, NULL)
 #define json_save(cfg, json)                _cfg_save_json(cfg, json)
 #define json_release(cfg)                   _cfg_release(cfg)
-#define json_walk(cfg, id, cb, param)       _cfg_walk(cfg, id, cb, param)
+#define json_walk(cfg, id, cb, p1, p2)      _cfg_walk(cfg, id, cb, p1, p2)
 
 #define json_int(cfg, name, err, flags)		_cfg_int(cfg, name, err, flags)
 #define json_set_int(cfg, name, val)		_cfg_set_int(cfg, name, val, CFG_SET, 0)
@@ -222,8 +222,8 @@ void _cfg_default_object(cfg_t *cfg, const char *name, const char *val, bool *er
 char *_cfg_get_json(cfg_t *cfg, int *size);
 
 bool cfg_print_tok(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem, void **rval);
-typedef bool (*cfg_walk_cb_t)(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem, void **rval);
-void *_cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb, void *param);
+typedef bool (*cfg_walk_cb_t)(cfg_t *cfg, void *param1, void *param2, jsmntok_t *jt, int seq, int hit, int lvl, int rem, void **rval);
+void *_cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb, void *param1 = NULL, void *param2 = NULL);
 
 bool _cfg_int_json(cfg_t *cfg, jsmntok_t *jt, int *num);
 bool _cfg_float_json(cfg_t *cfg, jsmntok_t *jt, double *num);
