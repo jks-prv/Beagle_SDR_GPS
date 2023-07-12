@@ -32,7 +32,7 @@ var gri_s = [
    '5990 Caucasus',
    '5991 USA west coast (eLoran)',
    '6000 China BPL Pucheng',
-   '6731 Anthorn UK',
+   '6730 Anthorn UK',
    '6780 China South Sea',
    '7430 China North Sea',
    '7950 Eastern Russia (Chayka)',
@@ -89,7 +89,7 @@ var emission_delay = {
 			
 	6000: [ { s:'M Pucheng', d:0 } ],	// LoranView (DE) shows chain reception
 
-	6731: [ { s:'M Anthorn', d:0 },		// LoranView (DE) shows chain reception
+	6730: [ { s:'M Anthorn', d:0 },		// LoranView (DE) shows chain reception
 			  { s:'Y Anthorn', d:27300.00 }
 			],
 
