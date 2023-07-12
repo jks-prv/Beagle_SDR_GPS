@@ -23,6 +23,7 @@
 `default_nettype none
 
 // for compatibility with antenna switch extension
+// i.e. let Beagle drive these, not FPGA
 `define P8_ARE_INPUTS
 
 module KiwiSDR (
@@ -36,17 +37,17 @@ module KiwiSDR (
     input  wire IF_MAG,
     input  wire GPS_TCXO,
 
-    input  wire	BBB_SCLK,
-    input  wire [1:0] BBB_CS_N,
-    input  wire BBB_MOSI,
-    output wire BBB_MISO,
+    input  wire	BBB_SCLK,       // P922
+    input  wire [1:0] BBB_CS_N, // 1=P916 0=P917
+    input  wire BBB_MOSI,       // P918
+    output wire BBB_MISO,       // P921
 
-    output wire P911,
-    output wire P913,
-    input  wire P915,
-    output wire CMD_READY,  // ctrl[CTRL_CMD_READY]
-    output wire SND_INTR,   // ctrl[CTRL_SND_INTR]
-    output wire P926,		// inside pin row
+    output wire P911,       // P911, GPIO 0_30, unused debug out
+    output wire P913,       // P913, GPIO 0_31, unused debug out
+    input  wire P915,       // P915, GPIO 1_0-2_0, unused debug in
+    output wire CMD_READY,  // P923, ctrl[CTRL_CMD_READY]
+    output wire SND_INTR,   // P924, ctrl[CTRL_SND_INTR]
+    output wire P926,		// P926, GPIO 0_14, unused debug out
 
 `ifdef P8_ARE_INPUTS
     input  wire P826,		// outside pin row
@@ -90,9 +91,9 @@ module KiwiSDR (
     
     wire [2:0] P9;
     
-    assign P926 = P9[2];    // P9-26
-    assign P913 = P9[1];    // P9-13
-    assign P911 = P9[0];    // P9-11
+    assign P926 = P9[2];    // P926
+    assign P913 = P9[1];    // P913
+    assign P911 = P9[0];    // P911
 
     // P8: 25 23 21 19 17 15 13 11 09 07 05 03 01
     //              b8 b7 b6 b5 b4

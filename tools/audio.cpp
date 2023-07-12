@@ -26,9 +26,9 @@ void interp_decim(int net_rate, int out_rate, double target_rem)
 void decim_search(int in_rate, int decim1, int decim2, int out_rate1, int out_rate2, double target_rem)
 {
 	int out_rate, i_decim;
-	double decim, decim_rem;
+	double irate = (double)in_rate/1e6, decim, decim_rem;
 
-	printf("in_rate %d, decim %d:%d, out_rate %d:%d, target_rem %f\n", in_rate, decim1, decim2, out_rate1, out_rate2, target_rem);
+	printf("in_rate %.6f, decim %d:%d, out_rate %d:%d, target_rem %f\n", irate, decim1, decim2, out_rate1, out_rate2, target_rem);
     for (out_rate = out_rate1; out_rate <= out_rate2; out_rate++) {
         for (i_decim = decim1; i_decim <= decim2; i_decim++) {
             decim = (double) in_rate / i_decim;
@@ -49,9 +49,9 @@ int min_decim1, min_decim2;
 void decim_2stage(int in_rate, int out_rate, double target_rem)
 {
 	int decim1, decim2_i;
-	double decim2, decim_rem, decim2_round, decim_rate;
+	double irate = (double)in_rate/1e6, decim2, decim_rem, decim2_round, decim_rate;
 
-	printf("in_rate %d, out_rate %d, decim %.3f\n", in_rate, out_rate, (double) in_rate / out_rate);
+	printf("in_rate %.6f, out_rate %d, decim %.3f\n", irate, out_rate, (double) in_rate / out_rate);
 	min_decim_rem = 9999;
 	for (decim1 = 1; decim1 <= 1024; decim1++) {
 		decim2 =  ((double) in_rate / decim1) / out_rate;
@@ -82,8 +82,9 @@ void decim_2stage(int in_rate, int out_rate, double target_rem)
 
 int main()
 {
-    #define ADC_CLOCK 66666600
-    //#define ADC_CLOCK 66665900
+    //#define ADC_CLOCK 66660000    // 66.66
+    #define ADC_CLOCK 66666600    // 66.6666
+    //#define ADC_CLOCK 66665900    // 66.6659
 
 	#define DECIM_REM 0.0001
 	int net_rate = 22250, out_rate = 44100;
