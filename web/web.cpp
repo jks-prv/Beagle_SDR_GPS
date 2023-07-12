@@ -437,7 +437,7 @@ void iparams_add(const char *id, char *encoded)
 	n_iparams++;
 }
 
-bool index_params_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem, void **rval)
+bool index_params_cb(cfg_t *cfg, void *param1, void *param2, jsmntok_t *jt, int seq, int hit, int lvl, int rem, void **rval)
 {
 	char *json = cfg_get_json(NULL);
 	if (json == NULL || rem == 0)
@@ -473,8 +473,8 @@ void reload_index_params()
 	// don't free previous on reload because not all were kiwi_imalloc()'d
 	// (the memory loss is very small)
 	n_iparams = 0;
-	//cfg_walk("index_html_params", cfg_print_tok, NULL);
-	cfg_walk("index_html_params", index_params_cb, NULL);
+	//cfg_walk("index_html_params", cfg_print_tok, NULL, NULL);
+	cfg_walk("index_html_params", index_params_cb, NULL, NULL);
 	
 	
 	// To aid development, only use packages when running in embedded mode (i.e. background mode),

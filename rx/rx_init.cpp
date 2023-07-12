@@ -480,11 +480,11 @@ void update_vars_from_config(bool called_at_init)
     }
     cfg_string_free(rx_name); rx_name = NULL;
 
-    char *rx_title = (char *) cfg_string("RX_TITLE", NULL, CFG_REQUIRED);
+    char *rx_title = (char *) cfg_string("index_html_params.RX_TITLE", NULL, CFG_REQUIRED);
     // shrinking, so same memory space
 	nsm = kiwi_str_replace(rx_title, " at <a href='http://kiwisdr.com' target='_blank' onclick='dont_toggle_rx_photo()'>ZL/KF6VO</a>", "");
 	if (nsm) {
-        cfg_set_string("RX_TITLE", nsm);
+        cfg_set_string("index_html_params.RX_TITLE", nsm);
         update_cfg = true;
     }
     cfg_string_free(rx_title); rx_title = NULL;
