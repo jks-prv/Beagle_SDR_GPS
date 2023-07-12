@@ -3,12 +3,6 @@ VERSION_MIN = 616
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
-REPO_NAME := Beagle_SDR_GPS
-REPO := https://github.com/jks-prv/$(REPO_NAME).git
-
-# for any config-specific options/dependencies
--include ../kiwi.config/Makefile.kiwi.inc
-
 #
 # Makefile for KiwiSDR project
 #
@@ -38,6 +32,14 @@ REPO := https://github.com/jks-prv/$(REPO_NAME).git
 ################################
 
 include Makefile.comp.inc
+
+# for any config-specific options/dependencies
+-include ../kiwi.config/Makefile.kiwi.inc
+
+REPO_USER := jks-prv
+REPO_NAME := Beagle_SDR_GPS
+REPO_GIT  := $(REPO_USER)/$(REPO_NAME).git
+REPO := https://github.com/$(REPO_GIT)
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
@@ -460,7 +462,7 @@ V = -Dv$(VERSION_MAJ)_$(VERSION_MIN)
 INT_FLAGS += $(VERSION) -DKIWI -DKIWISDR
 INT_FLAGS += -DARCH_$(ARCH) -DCPU_$(CPU) -DARCH_CPU=$(CPU) -DARCH_CPU_S=STRINGIFY\($(CPU)\) $(addprefix -DPLATFORM_,$(PLATFORMS))
 INT_FLAGS += -DDIR_CFG=STRINGIFY\($(DIR_CFG)\) -DDIR_DATA=STRINGIFY\($(DIR_DATA)\) -DCFG_PREFIX=STRINGIFY\($(CFG_PREFIX)\)
-INT_FLAGS += -DBUILD_DIR=STRINGIFY\($(BUILD_DIR)\) -DREPO=STRINGIFY\($(REPO)\) -DREPO_NAME=STRINGIFY\($(REPO_NAME)\)
+INT_FLAGS += -DBUILD_DIR=STRINGIFY\($(BUILD_DIR)\) -DREPO_NAME=STRINGIFY\($(REPO_NAME)\)  -DREPO_GIT=STRINGIFY\($(REPO_GIT)\)
 
 
 ################################
@@ -704,18 +706,26 @@ vars: make_prereq
 .PHONY: make_vars
 make_vars: check_device_detect
 	@echo version $(VER)
+	@echo
 	@echo UNAME = $(UNAME)
 	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
 	@echo DEBIAN = $(DEBIAN_VERSION)
 	@echo DEBIAN_10_AND_LATER = $(DEBIAN_10_AND_LATER)
+	@echo
 	@echo BBAI_64 = $(BBAI_64)
 	@echo BBAI = $(BBAI)
 	@echo RPI = $(RPI)
 	@echo BBG_BBB = $(BBG_BBB)
+	@echo
 	@echo PROJECT = $(PROJECT)
 	@echo ARCH = $(ARCH)
 	@echo CPU = $(CPU)
 	@echo PLATFORMS = $(PLATFORMS)
+	@echo
+	@echo REPO_USER = $(REPO_USER)
+	@echo REPO_GIT = $(REPO_GIT)
+	@echo REPO = $(REPO)
+	@echo
 	@echo BUILD_DIR = $(BUILD_DIR)
 	@echo OTHER_DIR = $(OTHER_DIR)
 	@echo EXISTS_OTHER_BITFILE = $(shell test -f $(V_DIR)/KiwiSDR.other.bit && echo true)
@@ -1456,14 +1466,14 @@ git:
 	@# remove local changes from development activities before the pull
 	git clean -fd
 	git checkout .
-	git pull -v $(GIT_PROTO)://github.com/jks-prv/Beagle_SDR_GPS.git
+	git pull -v $(GIT_PROTO)://github.com/$(REPO_GIT)
 
 GITHUB_COM_IP = "52.64.108.95"
 git_using_ip:
 	@# remove local changes from development activities before the pull
 	git clean -fd
 	git checkout .
-	git pull -v $(GIT_PROTO)://$(GITHUB_COM_IP)/jks-prv/Beagle_SDR_GPS.git
+	git pull -v $(GIT_PROTO)://$(GITHUB_COM_IP)/$(REPO_GIT)
 
 update_check:
 	git fetch origin

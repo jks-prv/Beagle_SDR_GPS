@@ -84,7 +84,7 @@ static void update_build_ctask(void *param)
         struct stat st;
         bool use_git_proto = kiwi_file_exists(DIR_CFG "/opt.git_no_https");
 	    asprintf(&cmd_p, "cd /root/" REPO_NAME "; " \
-	        "git pull -v %s://github.com/jks-prv/Beagle_SDR_GPS.git >>/root/build.log 2>&1; ", \
+	        "git pull -v %s://github.com/" REPO_GIT " >>/root/build.log 2>&1; ", \
 		    use_git_proto? "git" : "https" \
 		);
 		status = system(cmd_p);
@@ -95,7 +95,7 @@ static void update_build_ctask(void *param)
         // must use git: protocol otherwise https: cert mismatch error will occur
         if (status != 0) {
             asprintf(&cmd_p, "cd /root/" REPO_NAME "; " \
-                "git pull -v git://" GITHUB_COM_PUBLIC_IP "/jks-prv/Beagle_SDR_GPS.git >>/root/build.log 2>&1; "
+                "git pull -v git://" GITHUB_COM_PUBLIC_IP "/" REPO_GIT " >>/root/build.log 2>&1; "
             );
             status = system(cmd_p);
             kiwi_ifree(cmd_p);
