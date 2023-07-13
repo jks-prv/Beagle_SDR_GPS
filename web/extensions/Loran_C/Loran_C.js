@@ -32,7 +32,7 @@ var gri_s = [
    '5990 Caucasus',
    '5991 USA west coast (eLoran)',
    '6000 China BPL Pucheng',
-   '6730 Anthorn UK',
+   '6731 Anthorn UK',
    '6780 China South Sea',
    '7430 China North Sea',
    '7950 Eastern Russia (Chayka)',
@@ -89,7 +89,7 @@ var emission_delay = {
 			
 	6000: [ { s:'M Pucheng', d:0 } ],	// LoranView (DE) shows chain reception
 
-	6730: [ { s:'M Anthorn', d:0 },		// LoranView (DE) shows chain reception
+	6731: [ { s:'M Anthorn', d:0 },		// LoranView (DE) shows chain reception
 			  { s:'Y Anthorn', d:27300.00 }
 			],
 
@@ -293,8 +293,7 @@ function loran_c_update_gri(ch, path_to_menu, gri)
 
 	loran_c_draw_legend(ch, gri, path_to_menu);
 	
-	// remove odd GRI value used for UI purposes (e.g. 5991 vs 5990)
-	ext_send('SET gri'+ ch +'='+ (gri & ~1));
+	ext_send('SET gri'+ ch +'='+ ((gri == 5991)? 5990 : gri));     // hack for 5990 eLoran test
 }
 
 function loran_c_param_val(algo, slider_val)

@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.617  July 13, 2023
+v1.617,618  July 13, 2023
     Loran-C extension: add entry for US west coast eLoran test GRI.
     Misc fixes and improvements.
 
