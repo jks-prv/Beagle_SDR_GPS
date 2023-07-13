@@ -80,11 +80,10 @@ var emission_delay = {
 			  { s:'Z Caucasian North', d:46440 }
 			],
 			
-	5991: [ { s:'M George', d:0 },      // US west coast eLoran test
-			  { s:'W Havre', d:8294 },    // just a guess
-			  { s:'X ', d:16587 },
-			  { s:'Y ', d:31304 },
-			  { s:'Z Fallon', d:46440 }
+	5991: [ { s:'M George', d:0 },         // US west coast eLoran test
+			  { s:'X Havre', d:13343.60 },   // emission delays from DF6NM 2015 data
+			  { s:'Y ', d:28927.36 },
+			  { s:'Z Fallon', d:42266.63 }
 			],
 			
 	6000: [ { s:'M Pucheng', d:0 } ],	// LoranView (DE) shows chain reception
