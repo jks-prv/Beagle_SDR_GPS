@@ -41,6 +41,7 @@ function kiwi_monitor()
 
          w3_div('id-camp-container',
             w3_hr('w3-margin-16'),
+            w3_text('id-monitor-disconnect w3-nobk w3-css-orange w3-width-fit w3-hide', '&nbsp;Channel has disconnected'),
             w3_text('w3-margin-T-4 w3-text-black w3-show-block', camp_s),
             w3_text('id-camp-status w3-margin-T-4 w3-text-black', '')
          ),
@@ -106,8 +107,12 @@ function kiwi_monitor()
                            w3_icon('', 'fa-times fa-right', 12, '', 'toggle_or_set_mute')
                         )
                      )
-                  ) +
-                  w3_div('id-control-smeter w3-margin-T-4')
+                  ),
+                  
+                  w3_inline('',
+                     w3_div('id-control-smeter w3-margin-T-4'),
+                     w3_text('id-monitor-masked w3-margin-left w3-red w3-text-white w3-hide', '&nbsp;Frequency is masked')
+                  )
                );
             } else {
                s = 'Too many campers on channel RX'+ rx;
@@ -118,7 +123,15 @@ function kiwi_monitor()
 	         toggle_or_set_mute(0);
             break;
          
-         case 'camp_stop':
+         case 'isMasked':
+            var masked = (+a[0])? true:false;
+            w3_show_hide('id-monitor-masked', masked);
+            break;
+
+         case 'camp_disconnect':
+            w3_show_hide('id-monitor-masked', false);
+            w3_show_hide('id-monitor-disconnect', true);
+            console.log('camp_disconnect');
             kiwi_camp_stop_cb();
             break;
 
@@ -150,6 +163,7 @@ function kiwi_camp_update(rx, s)
 function camp(ch, freq, mode, zoom)
 {
    console.log('camp ch'+ ch);
+   w3_show_hide('id-monitor-disconnect', false);
    if (cfg.n_camp)
       msg_send('SET MON_CAMP='+ ch);
 }
