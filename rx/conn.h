@@ -102,6 +102,7 @@ typedef struct conn_st {
 	// set only in STREAM_MONITOR
 	bool queued;
 	bool camp_init, camp_passband;
+    bool isMasked;
 
 	// set only in STREAM_ADMIN
 	int log_last_sent, log_last_not_shown;

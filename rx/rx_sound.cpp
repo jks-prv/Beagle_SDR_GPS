@@ -288,7 +288,8 @@ void c2s_sound(void *param)
 	
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
-	bool change_LPF = false, change_freq_mode = false, restart = false, masked = false;
+	bool change_LPF = false, change_freq_mode = false, restart = false;
+	bool masked = false, masked_area = false;
 	bool allow_gps_tstamp = admcfg_bool("GPS_tstamp", NULL, CFG_REQUIRED);
 	
 	memset(&snd->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
@@ -576,8 +577,8 @@ void c2s_sound(void *param)
                     if (!no_mode_change) conn->mode = snd->mode = mode;
                 
                     // apply masked frequencies
-                    masked = false;
-                    if (dx.masked_len != 0 && !conn->tlimit_exempt_by_pwd) {
+                    masked = masked_area = false;
+                    if (dx.masked_len != 0) {
                         int f = round(freq*kHz);
                         int pb_lo = f + locut;
                         int pb_hi = f + hicut;
@@ -585,7 +586,8 @@ void c2s_sound(void *param)
                         for (j=0; j < dx.masked_len; j++) {
                             dx_mask_t *dmp = &dx.masked_list[j];
                             if (!((pb_hi < dmp->masked_lo || pb_lo > dmp->masked_hi))) {
-                                masked = true;
+                                masked_area = true;     // needed by c2s_sound_camp()
+                                masked = conn->tlimit_exempt_by_pwd? false : true;
                                 //printf("MASKED");
                                 break;
                             }
@@ -1840,7 +1842,7 @@ void c2s_sound(void *param)
 
         //printf("hdr %d S%d\n", sizeof(out_pkt.h), bc); fflush(stdout);
         int aud_bytes;
-        int c2s_sound_camp(rx_chan_t *rxc, conn_t *conn, u1_t flags, char *bp, int bytes, int aud_bytes);
+        int c2s_sound_camp(rx_chan_t *rxc, conn_t *conn, u1_t flags, char *bp, int bytes, int aud_bytes, bool masked_area);
 
         if (IQ_or_DRM_or_stereo) {
             // allow GPS timestamps to be seen by internal extensions
@@ -1854,13 +1856,13 @@ void c2s_sound(void *param)
             app_to_web(conn, (char*) &snd->out_pkt_iq, bytes);
             aud_bytes = sizeof(snd->out_pkt_iq.h.smeter) + bc;
             if (rxc->n_camp)
-                aud_bytes += c2s_sound_camp(rxc, conn, *flags, (char*) &snd->out_pkt_iq, bytes, aud_bytes);
+                aud_bytes += c2s_sound_camp(rxc, conn, *flags, (char*) &snd->out_pkt_iq, bytes, aud_bytes, masked_area);
         } else {
             const int bytes = sizeof(snd->out_pkt_real.h) + bc;
             app_to_web(conn, (char*) &snd->out_pkt_real, bytes);
             aud_bytes = sizeof(snd->out_pkt_real.h.smeter) + bc;
             if (rxc->n_camp)
-                aud_bytes += c2s_sound_camp(rxc, conn, *flags, (char*) &snd->out_pkt_real, bytes, aud_bytes);
+                aud_bytes += c2s_sound_camp(rxc, conn, *flags, (char*) &snd->out_pkt_real, bytes, aud_bytes, masked_area);
         }
 
         audio_bytes[rx_chan] += aud_bytes;
@@ -1870,7 +1872,7 @@ void c2s_sound(void *param)
 	}
 }
 
-int c2s_sound_camp(rx_chan_t *rxc, conn_t *conn, u1_t flags, char *bp, int bytes, int aud_bytes)
+int c2s_sound_camp(rx_chan_t *rxc, conn_t *conn, u1_t flags, char *bp, int bytes, int aud_bytes, bool masked_area)
 {
     int i, n;
     int rx_chan = conn->rx_channel;
@@ -1878,35 +1880,48 @@ int c2s_sound_camp(rx_chan_t *rxc, conn_t *conn, u1_t flags, char *bp, int bytes
     int additional_bytes = 0;
     
     for (i = 0, n = 0; i < n_camp; i++) {
-        conn_t *c = rxc->camp_conn[i];
-        if (c == NULL) continue;
+        conn_t *conn_mon = rxc->camp_conn[i];
+        if (conn_mon == NULL) continue;
         
         // detect camping connection has gone away
-        if (!c->valid || c->type != STREAM_MONITOR || c->remote_port != rxc->camp_id[i]) {
+        if (!conn_mon->valid || conn_mon->type != STREAM_MONITOR || conn_mon->remote_port != rxc->camp_id[i]) {
             //cprintf(conn, ">>> CAMPER gone rx%d type=%d id=%d/%d slot=%d/%d\n",
-            //    rx_chan, c->type, c->remote_port, rxc->camp_id[i], i+1, n_camp);
+            //    rx_chan, conn_mon->type, conn_mon->remote_port, rxc->camp_id[i], i+1, n_camp);
             rxc->camp_conn[i] = NULL;
             rxc->n_camp--;
             continue;
         }
 
-        if (!c->camp_init) {
-            //cprintf(conn, ">>> CAMP init rx%d slot=%d/%d\n", rx_chan, i+1, n_camp);
+        if (!conn_mon->camp_init) {
+            //cprintf(conn_mon, ">>> CAMP init rx%d slot=%d/%d\n", rx_chan, i+1, n_camp);
             double frate = ext_update_get_sample_rateHz(-1);
-            send_msg(c, SM_SND_DEBUG, "MSG center_freq=%d bandwidth=%d adc_clk_nom=%.0f", (int) ui_srate/2, (int) ui_srate, ADC_CLOCK_NOM);
-            send_msg(c, SM_SND_DEBUG, "MSG audio_camp=0,%d audio_rate=%d sample_rate=%.6f", conn->isLocal, snd_rate, frate);
-            send_msg(c, SM_SND_DEBUG, "MSG audio_adpcm_state=%d,%d", snd->adpcm_snd.index, snd->adpcm_snd.previousValue);
+            send_msg(conn_mon, SM_SND_DEBUG, "MSG center_freq=%d bandwidth=%d adc_clk_nom=%.0f", (int) ui_srate/2, (int) ui_srate, ADC_CLOCK_NOM);
+            send_msg(conn_mon, SM_SND_DEBUG, "MSG audio_camp=0,%d audio_rate=%d sample_rate=%.6f", conn->isLocal, snd_rate, frate);
+            send_msg(conn_mon, SM_SND_DEBUG, "MSG audio_adpcm_state=%d,%d", snd->adpcm_snd.index, snd->adpcm_snd.previousValue);
             //cprintf(c, "MSG audio_adpcm_state=%d,%d seq=%d\n", snd->adpcm_snd.index, snd->adpcm_snd.previousValue, snd->seq);
-            c->camp_init = c->camp_passband = true;
+            conn_mon->isMasked = false;
+            conn_mon->camp_init = conn_mon->camp_passband = true;
         } else {
-            if (c->camp_passband || (flags & SND_FLAG_LPF)) {
-                send_msg(c, SM_SND_DEBUG, "MSG audio_passband=%.0f,%.0f", snd->locut, snd->hicut);
-                //cprintf(c, "MSG audio_passband=%.0f,%.0f\n", snd->locut, snd->hicut);
-                c->camp_passband = false;
+            if (conn_mon->camp_passband || (flags & SND_FLAG_LPF)) {
+                send_msg(conn_mon, SM_SND_DEBUG, "MSG audio_passband=%.0f,%.0f", snd->locut, snd->hicut);
+                //cprintf(conn_mon, "MSG audio_passband=%.0f,%.0f\n", snd->locut, snd->hicut);
+                conn_mon->camp_passband = false;
             }
             
             // adpcm state has to be sent *before* generation/transmission of new compressed data
-            app_to_web(c, bp, bytes);
+            //cprintf(conn_mon, "rx%d masked_area=%d isMasked=%d\n", rx_chan, masked_area, conn_mon->isMasked);
+            if (masked_area && !conn_mon->isMasked && !conn_mon->tlimit_exempt_by_pwd) {
+                send_msg(conn_mon, false, "MSG isMasked=1");
+                conn_mon->isMasked = true;
+            } else
+            if (!masked_area && conn_mon->isMasked) {
+                send_msg(conn_mon, false, "MSG isMasked=0");
+                conn_mon->isMasked = false;
+            }
+            
+            if (!conn_mon->isMasked) {
+                app_to_web(conn_mon, bp, bytes);
+            }
             additional_bytes += aud_bytes;
         }
         

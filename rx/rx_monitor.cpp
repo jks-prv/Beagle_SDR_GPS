@@ -192,8 +192,9 @@ void c2s_mon(void *param)
                     cprintf(conn_mon, "CAMP: channel gone rx%d type=%d id=%d/%d slot=%d/%d\n",
                         camped_rx, c->type, c->remote_port, rxc->camp_id[i], i+1, n_camp);
                 */
-                send_msg(conn_mon, false, "MSG camp_stop");
+                send_msg(conn_mon, false, "MSG camp_disconnect");
                 camped_rx = -1;
+                conn_mon->camp_init = false;
             }
 		}
 		

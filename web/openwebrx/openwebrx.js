@@ -173,6 +173,7 @@ var no_geoloc = false;
 var force_mobile = false;
 var mobile_laptop_test = false;
 var user_url = null;
+var url_1Hz = null;
 
 var wf_rates = { '0':0, 'off':0, '1':1, '1hz':1, 's':2, 'slow':2, 'm':3, 'med':3, 'f':4, 'fast':4 };
 
@@ -325,6 +326,7 @@ function kiwi_main_ready()
 	s = 'm'; if (q[s]) force_mobile = true;
 	s = 'mobile'; if (q[s]) force_mobile = true;
 	s = 'mem'; if (q[s]) owrx.override_fmem = q[s];
+	s = '1hz'; if (q[s] || q['1Hz']) url_1Hz = true;
 	// 'no_wf' is handled in kiwi_util.js
 	// 'foff' is handled in {rx_server,rx_cmd}.cpp
 
@@ -1033,8 +1035,13 @@ function kiwi_passbands(mode)
       return pb;
    } else {
       console.log('kiwi_passbands('+ mode +') fallback:');
-      console.log(passbands_fallback[mode]);
-      return passbands_fallback[mode];
+      if (isUndefined(mode)) {
+         kiwi_trace();
+         return passbands_fallback['am'];
+      } else {
+         console.log(passbands_fallback[mode]);
+         return passbands_fallback[mode];
+      }
    }
 }
 
@@ -1490,7 +1497,7 @@ function demodulator_analog_replace(subtype, freq)
 		var i_freqHz = Math.round((init_frequency - kiwi.freq_offset_kHz) * 1000);
       offset = (i_freqHz <= 0 || i_freqHz > bandwidth)? 0 : (i_freqHz - center_freq);
 		//console.log('### init_freq='+ init_frequency +' freq_offset_kHz='+ kiwi.freq_offset_kHz +' i_freqHz='+ i_freqHz +' offset='+ offset +' init_mode='+ init_mode);
-		subtype = init_mode;
+		subtype = isArg(init_mode)? init_mode : 'am';
 	}
 	
 	// initial offset, but doesn't consider demod.isCW since it isn't valid yet
@@ -5587,7 +5594,7 @@ function freq_field_prec(f_kHz)
 {
    // limit to 9 characters max: 12345.789 or 123456.89
    var limit = 100e3 - (cfg.max_freq? 32e3 : 30e3);
-   var prec = (kiwi.freq_offset_kHz >= limit)? 2 : (cfg.show_1Hz? 3 : 2);
+   var prec = (kiwi.freq_offset_kHz >= limit)? 2 : ((cfg.show_1Hz || url_1Hz)? 3 : 2);
    return prec;
 }
 
@@ -5596,25 +5603,25 @@ function freq_field_width()
 /*
    var b, width;
 
-   if (kiwi_isFirefox()) { b = 'Firefox'; size = cfg.show_1Hz? 11:10; }
+   if (kiwi_isFirefox()) { b = 'Firefox'; size = (cfg.show_1Hz || url_1Hz)? 11:10; }
    else
-   if (kiwi_isChrome()) { b = 'Chrome'; size = cfg.show_1Hz? 9:8; }
+   if (kiwi_isChrome()) { b = 'Chrome'; size = (cfg.show_1Hz || url_1Hz)? 9:8; }
    else
-   if (kiwi_isSafari()) { b = 'Safari'; size = cfg.show_1Hz? 8:7; }
+   if (kiwi_isSafari()) { b = 'Safari'; size = (cfg.show_1Hz || url_1Hz)? 8:7; }
    else {
-      b = 'Firefox'; size = cfg.show_1Hz? 9:8;
+      b = 'Firefox'; size = (cfg.show_1Hz || url_1Hz)? 9:8;
    }
 
-   if (kiwi_isFirefox()) { b = 'Firefox'; width = cfg.show_1Hz? 11:10; }
+   if (kiwi_isFirefox()) { b = 'Firefox'; width = (cfg.show_1Hz || url_1Hz)? 11:10; }
    else
-   if (kiwi_isChrome()) { b = 'Chrome'; width = cfg.show_1Hz? 9:8; }
+   if (kiwi_isChrome()) { b = 'Chrome'; width = (cfg.show_1Hz || url_1Hz)? 9:8; }
    else
-   if (kiwi_isSafari()) { b = 'Safari'; width = cfg.show_1Hz? 8:7; }
+   if (kiwi_isSafari()) { b = 'Safari'; width = (cfg.show_1Hz || url_1Hz)? 8:7; }
    else {
-      b = 'Firefox'; width = cfg.show_1Hz? 9:8;
+      b = 'Firefox'; width = (cfg.show_1Hz || url_1Hz)? 9:8;
    }
 
-   var s = 'FFS: '+ b + (cfg.show_1Hz? ' 1Hz' : ' 10Hz') +' '+ width +'em';
+   var s = 'FFS: '+ b + ((cfg.show_1Hz || url_1Hz)? ' 1Hz' : ' 10Hz') +' '+ width +'em';
    //console.log(s);
    //canvas_log2(s);
    return width +'em';
@@ -5622,8 +5629,8 @@ function freq_field_width()
    
    // limit to 9 characters max: 12345.789 or 123456.89
    var limit = 100e3 - (cfg.max_freq? 32e3 : 30e3);
-   //var width = (kiwi.freq_offset_kHz >= limit)? 6.5 : (cfg.show_1Hz? 6.5 : 6);
-   var width = (kiwi.freq_offset_kHz >= limit)? 6.25 : (cfg.show_1Hz? 6.25 : 5.75);
+   //var width = (kiwi.freq_offset_kHz >= limit)? 6.5 : ((cfg.show_1Hz || url_1Hz)? 6.5 : 6);
+   var width = (kiwi.freq_offset_kHz >= limit)? 6.25 : ((cfg.show_1Hz || url_1Hz)? 6.25 : 5.75);
    return (width +'em');
 }
 
@@ -6172,7 +6179,7 @@ function freq_memory_init()
 	var fmem;
 	if (isNonEmptyString(owrx.override_fmem)) {
 	   fmem = owrx.override_fmem.split(',');
-	   var prec = cfg.show_1Hz? 3:2;
+	   var prec = (cfg.show_1Hz || url_1Hz)? 3:2;
 	   fmem.forEach(function(s, i) {
 	      if (isNumber(s)) s = s.toString();
 	      var f = s.parseFloatWithUnits('kM', 1e-3);
@@ -9649,7 +9656,7 @@ function panels_setup()
 	
 	w3_el("id-control-freq2").innerHTML =
 	   w3_inline('w3-halign-space-between w3-margin-T-4/',
-         //w3_div('id-mouse-freq w3-hide||title="frequency under cursor"', '-----.--'+ (cfg.show_1Hz? '-' : '')),
+         //w3_div('id-mouse-freq w3-hide||title="frequency under cursor"', '-----.--'+ ((cfg.show_1Hz || url_1Hz)? '-' : '')),
 
          w3_icon('id-freq-menu w3-menu-button', 'fa-bars w3-text-white', 20, '', 'freq_memory_menu_show'),
 

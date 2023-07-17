@@ -480,7 +480,8 @@ function audio_start()
 	audio_periodic_interval = setInterval(audio_periodic, audio_periodic_interval_ms);
 
 	try {
-		demodulator_analog_replace(init_mode);		// needs audio_output_rate to exist
+	   var mode = isArg(init_mode)? init_mode : 'am';
+		demodulator_analog_replace(mode);   // needs audio_output_rate to exist
 	} catch(ex) {
 		kiwi_debug("audio_start.demodulator_analog_replace: catch: "+ ex.toString());
 

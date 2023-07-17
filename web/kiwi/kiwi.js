@@ -2583,7 +2583,7 @@ function users_init(called_from)
                'IP blacklist /24', 'network_user_blacklist_cb', i+100);
             */
          }
-         s2 = w3_div('id-campers-'+ i +' w3-css-orange w3-padding-LR-8');
+         s2 = w3_div('id-campers-'+ i +' w3-css-orange w3-padding-LR-4');
          w3_el('id-users-list').innerHTML += w3_inline('/w3-hspace-8', w3_div('id-user-'+ i + pad, 'RX'+ i), w3_div(id_prefix + i), s1, s2);
       }
    }

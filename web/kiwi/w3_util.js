@@ -3960,8 +3960,9 @@ function w3_col_percent(psa)
 // the w3-text makes it inline-block, so no surrounding w3_inline() needed
 function w3_text(psa, text)
 {
-   var pad = (psa.includes('w3-padding') || psa.includes('w3-nopad'))? '' : 'padding:0 4px 0 0; ';
-	var s = w3_div(w3_psa_mix(psa, 'w3-text', pad +'background-color:inherit'), text? text:' ');
+   var style = (psa.includes('w3-padding') || psa.includes('w3-nopad'))? '' : 'padding:0 4px 0 0';
+   if (!psa.includes('w3-nobk')) style += '; background-color:inherit';
+	var s = w3_div(w3_psa_mix(psa, 'w3-text', style), text? text:' ');
 	//console.log(s);
 	return s;
 }
