@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2020 John Seamons, ZL/KF6VO
+// Copyright (c) 2016-2023 John Seamons, ZL/KF6VO
 
 /*
 
@@ -39,9 +39,9 @@ var gri_s = [
    '8000 Western Russia (Chayka)',
    '8390 China East Sea',
    '8830 Saudi Arabia North',
-   '8970 Wildwood USA (eLoran)',
+   '8970 USA east coast (eLoran)',
    '9930 Korea',
-   '9960 Wildwood USA (eLoran)'
+   '9960 USA east coast (eLoran)'
 ];
 
 var gri_2s = [
@@ -56,15 +56,15 @@ var gri_2s = [
    'Western Russia', '(Chayka)',
    'China Sea', 'East',
    'Saudi Arabia', 'North',
-   'Wildwood USA', '(eLoran)',
+   'USA east coast', '(eLoran)',
    'Korea', '',
-   'Wildwood USA', '(eLoran)'
+   'USA east coast', '(eLoran)'
 ];
 
 var loran_c_default_chain1 = 7;
 var loran_c_default_chain2 = 3;
 
-// Emission delay data from Markus Vester, DF6NM
+// Emission (tx) delay data from Markus Vester, DF6NM
 // LoranView: df6nm.bplaced.net/LoranView/LoranGrabber.htm
 
 var emission_delay = {
@@ -79,11 +79,12 @@ var emission_delay = {
 			  { s:'Y Caucasian East', d:31304 },
 			  { s:'Z Caucasian North', d:46440 }
 			],
-			
-	5991: [ { s:'M George', d:0 },         // US west coast eLoran test
-			  { s:'X Havre', d:13343.60 },   // emission delays from DF6NM 2015 data
-			  { s:'Y ', d:28927.36 },
-			  { s:'Z Fallon', d:42266.63 }
+
+         // US west coast eLoran test
+	5991: [ { s:'M George | Variable: Fallon, Havre', d:0 }
+			  //{ s:'X ', d:13343.60 },     // emission (tx) delays from DF6NM 2015 data
+			  //{ s:'Y ', d:28927.36 },
+			  //{ s:'Z ', d:42266.63 }
 			],
 			
 	6000: [ { s:'M Pucheng', d:0 } ],	// LoranView (DE) shows chain reception
