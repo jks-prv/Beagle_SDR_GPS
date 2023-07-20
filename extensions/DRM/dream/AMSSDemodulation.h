@@ -33,7 +33,6 @@
 #include "util/Modul.h"
 #include "util/Vector.h"
 #include "matlib/Matlib.h"
-#include "resample/Resample.h"
 
 #define AMSS_PLL_LOOP_GAIN						((CReal) 0.00015)
 #define AMSS_PLL_LOOP_FILTER_LAMBDA				((CReal) 0.99)

@@ -68,4 +68,5 @@ else
     endif
 
     LIBS += -lz -lsndfile
+    #LIBS += -lsamplerate
 endif

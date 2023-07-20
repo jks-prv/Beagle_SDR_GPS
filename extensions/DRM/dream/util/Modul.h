@@ -155,7 +155,7 @@ public:
 									std::vector< CSingleBuffer<TOutput> >& vecOutputBuffer);
 	virtual bool	WriteData(CParameter& Parameter,
 								  CBuffer<TInput>& InputBuffer);
-	void                Setid() {id = 1;}
+	void                SetTrigger() { trigger = 1; }
 
 protected:
 	void SetBufReset1() {bResetBuf = true;}
@@ -188,7 +188,7 @@ private:
 	bool			bResetBuf3;
 	std::vector<bool>	vecbResetBuf;
 	
-	int id;
+	int trigger;
 };
 
 
@@ -519,7 +519,7 @@ CReceiverModul<TInput, TOutput>::CReceiverModul()
 	bResetBuf2 = false;
 	bResetBuf3 = false;
 	bDoInit = false;
-	id = 0;
+	trigger = 0;
 }
 
 template<class TInput, class TOutput> void
@@ -692,7 +692,10 @@ bool CReceiverModul<TInput, TOutput>::
 	   introduced the flag */
 	if (bDoInit)
 	{
-        //if (id) printf("PD-INIT "); fflush(stdout);
+        if (trigger) {
+            printf("PD-INIT\n"); //fflush(stdout);
+        }
+        
 		/* Call init routine */
 		Init(Parameter, OutputBuffer);
 
@@ -1058,6 +1061,10 @@ void CReceiverModul<TInput, TOutput>::
 	   introduced the flag */
 	if (bDoInit)
 	{
+        if (trigger) {
+            printf("Modul-INIT\n"); //fflush(stdout);
+        }
+        
 		/* Call init routine */
 		Init(Parameter, OutputBuffer);
 

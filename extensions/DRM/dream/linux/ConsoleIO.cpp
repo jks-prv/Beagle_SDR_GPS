@@ -36,6 +36,8 @@
  *
 \******************************************************************************/
 
+// Copyright (c) 2017-2023 John Seamons, ZL/KF6VO
+
 #include "mem.h"
 
 #include "DRM_main.h"
@@ -112,23 +114,32 @@ CConsoleIO::Update(drm_t *drm)
         pDRMReceiver->GetFACMLC()->GetVectorSpace(facIQ);
         pDRMReceiver->GetSDCMLC()->GetVectorSpace(sdcIQ);
         pDRMReceiver->GetMSCMLC()->GetVectorSpace(mscIQ);
-        #define N_IQDATA (64*2 + 256*2 + 2048*2)
-        u1_t u1[N_IQDATA];
-        int i, j;
-        for (i = j = 0; i < 64; i++, j++) {
-            u1[j*2]   = (facIQ[i].real() + 1.5) * 255.0 / 3.0;
-            u1[j*2+1] = (facIQ[i].imag() + 1.5) * 255.0 / 3.0;
+        
+        // NB: limited due to N_DATABUF in DRM.h
+        int n_fac = MIN(64, facIQ.Size()), n_sdc = MIN(255, sdcIQ.Size()), n_msc = MIN(2048, mscIQ.Size());
+
+        if (n_fac && n_sdc && n_msc) {
+            int i, o;
+            int len = 4 + (n_fac + n_sdc + n_msc) * 2;
+            u1_t u1[len];
+            u1[0] = n_fac; u1[1] = n_sdc; u1[2] = n_msc & 0xff; u1[3] = n_msc >> 8;
+            o = 4;
+            
+            for (i = 0; i < n_fac; i++) {
+                u1[o++] = (facIQ[i].real() + 1.5) * 255.0 / 3.0;
+                u1[o++] = (facIQ[i].imag() + 1.5) * 255.0 / 3.0;
+            }
+            for (i = 0; i < n_sdc; i++) {
+                u1[o++] = (sdcIQ[i].real() + 1.5) * 255.0 / 3.0;
+                u1[o++] = (sdcIQ[i].imag() + 1.5) * 255.0 / 3.0;
+            }
+            for (i = 0; i < n_msc; i++) {
+                u1[o++] = (mscIQ[i].real() + 1.5) * 255.0 / 3.0;
+                u1[o++] = (mscIQ[i].imag() + 1.5) * 255.0 / 3.0;
+            }
+            //printf("%d|%d|%d(%d,%d) ", n_fac, n_sdc, n_msc, u1[3], u1[2]); fflush(stdout);
+            DRM_data((u1_t) DRM_DAT_IQ, u1, len);
         }
-        for (i = 0; i < 256; i++, j++) {
-            u1[j*2]   = (sdcIQ[i].real() + 1.5) * 255.0 / 3.0;
-            u1[j*2+1] = (sdcIQ[i].imag() + 1.5) * 255.0 / 3.0;
-        }
-        for (i = 0; i < 2048; i++, j++) {
-            u1[j*2]   = (mscIQ[i].real() + 1.5) * 255.0 / 3.0;
-            u1[j*2+1] = (mscIQ[i].imag() + 1.5) * 255.0 / 3.0;
-        }
-        DRM_data((u1_t) DRM_DAT_IQ, u1, N_IQDATA);
-        //printf("%d|%d|%d ", facIQ.Size(), sdcIQ.Size(), mscIQ.Size()); fflush(stdout);
     }
 
 

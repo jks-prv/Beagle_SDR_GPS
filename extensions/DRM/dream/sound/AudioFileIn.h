@@ -26,13 +26,20 @@
  *
 \******************************************************************************/
 
+// Copyright (c) 2017-2023 John Seamons, ZL/KF6VO
+
 #ifndef _AUDIOFILEIN
 #define _AUDIOFILEIN
 
 #include "soundinterface.h"
 #include "../util/Pacer.h"
 #include "../util/FileTyper.h"
-#include "../resample/caudioresample.h"
+#include "../resample/AudioResample.h"
+
+//#define USE_SRC
+#ifdef USE_SRC
+    #include "../resample/SRCResample.h"
+#endif
 
 /* Classes ********************************************************************/
 class CAudioFileIn : public CSoundInInterface
@@ -53,7 +60,8 @@ public:
 	virtual std::string GetVersion() { return "Dream Audio File Reader"; }
 
 protected:
-    std::string				strInFileName;
+    std::string         strInFileName;
+    int                 interleaved;
     CVector<_REAL>		vecTempResBufIn;
     CVector<_REAL>		vecTempResBufOut;
     enum { fmt_txt, fmt_raw_mono, fmt_raw_stereo, fmt_other, fmt_direct } eFmt;
@@ -64,13 +72,16 @@ protected:
     int					iFileSampleRate;
     int					iFileChannels;
     CPacer*				pacer;
+#ifdef USE_SRC
+    CSRCResample*		ResampleObjL;
+    CSRCResample*		ResampleObjR;
+#else
     CAudioResample*		ResampleObjL;
     CAudioResample*		ResampleObjR;
+#endif
     short*				buffer;
-    uint64_t            buffer_sum;
-    int                 buffer_sum_ct, buffer_sum_seq;
     int					iOutBlockSize;
-    std::string				sCurrentDevice;
+    std::string         sCurrentDevice;
 };
 
 #endif

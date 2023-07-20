@@ -64,7 +64,7 @@
 /* Number of FAC frames until the acquisition is activated in case a signal
    was successfully decoded */
 #ifdef KIWISDR
-    #define	NUM_FAC_FRA_U_ACQ_WITH			(10*2)
+    #define	NUM_FAC_FRA_U_ACQ_WITH			(10*3)
 #else
     #define	NUM_FAC_FRA_U_ACQ_WITH			10
 #endif
@@ -72,7 +72,7 @@
 /* Number of OFDM symbols until the acquisition is activated in case no signal
    could be decoded after previous acquisition try */
 #ifdef KIWISDR
-    #define	NUM_OFDMSYM_U_ACQ_WITHOUT		(150*2)
+    #define	NUM_OFDMSYM_U_ACQ_WITHOUT		(150*3)
 #else
     #define	NUM_OFDMSYM_U_ACQ_WITHOUT		150
 #endif

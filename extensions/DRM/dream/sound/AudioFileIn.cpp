@@ -26,8 +26,10 @@
  *
 \******************************************************************************/
 
+// Copyright (c) 2017-2023 John Seamons, ZL/KF6VO
+
 #include "DRM_main.h"
-#include "audiofilein.h"
+#include "AudioFileIn.h"
 
 #include <iostream>
 #ifdef HAVE_LIBSNDFILE
@@ -210,7 +212,7 @@ CAudioFileIn::Init(int iNewSampleRate, int iNewBufferSize, bool bNewBlocking)
         //if (drm->pace)
         //    interval_ns -= interval_ns / drm->pace;
         pacer = new CPacer(interval_ns);
-        //printf("CAudioFileIn::Init iNewBufferSize=%d iNewSampleRate=%d interval=%f\n", iNewBufferSize, iNewSampleRate, interval);
+        //printf("CAudioFileIn::Init iNewBufferSize=%d iNewSampleRate=%d iFileSampleRate=%d interval=%f\n", iNewBufferSize, iNewSampleRate, iFileSampleRate, interval);
     }
 
     if (pFileReceiver == nullptr && eFmt != fmt_direct)
@@ -220,36 +222,46 @@ CAudioFileIn::Init(int iNewSampleRate, int iNewBufferSize, bool bNewBlocking)
 
 	if (iSampleRate != iNewSampleRate)
     {
+        //printf("CAudioFileIn::Init SR-CHANGE iSampleRate=%d <= iNewSampleRate=%d SETTING bChanged\n", iSampleRate, iNewSampleRate);
         iSampleRate = iNewSampleRate;
         bChanged = true;
     }
 
     if (iBufferSize != iNewBufferSize || bChanged)
     {
+        //printf("CAudioFileIn::Init BUF-CHANGE iBufferSize=%d <= iNewBufferSize=%d bChanged=%d\n", iBufferSize, iNewBufferSize, bChanged);
         iBufferSize = iNewBufferSize;
         if (buffer)
             delete[] buffer;
+        
         /* Create a resampler object if the file's sample rate isn't supported */
         if (iNewSampleRate != iFileSampleRate)
         {
             iOutBlockSize = iNewBufferSize / 2; /* Mono */
-            //printf("CAudioFileIn::Init #### RESAMPLER REQUIRED #### iOutBlockSize=%d iFileSampleRate=%d iNewSampleRate=%d\n", iOutBlockSize, iFileSampleRate, iNewSampleRate);
-            if (ResampleObjL == nullptr)
-                ResampleObjL = new CAudioResample();
-            ResampleObjL->Init(iOutBlockSize, iFileSampleRate, iNewSampleRate);
-            if (iFileChannels == 2)
-            {
-                if (ResampleObjR == nullptr)
-                    ResampleObjR = new CAudioResample();
-                ResampleObjR->Init(iOutBlockSize, iFileSampleRate, iNewSampleRate);
-            }
+            //printf("CAudioFileIn::Init RESAMPLER REQUIRED iOutBlockSize=%d iFileSampleRate=%d iNewSampleRate=%d\n", iOutBlockSize, iFileSampleRate, iNewSampleRate);
+            
+            #ifdef USE_SRC
+                if (ResampleObjL == nullptr)
+                    ResampleObjL = new CSRCResample();
+                ResampleObjL->Init(iOutBlockSize, iFileSampleRate, iNewSampleRate, iFileChannels);
+                interleaved = 2;
+            #else
+                if (ResampleObjL == nullptr)
+                    ResampleObjL = new CAudioResample();
+                ResampleObjL->Init(iOutBlockSize, iFileSampleRate, iNewSampleRate);
+                if (iFileChannels == 2)
+                {
+                    if (ResampleObjR == nullptr)
+                        ResampleObjR = new CAudioResample();
+                    ResampleObjR->Init(iOutBlockSize, iFileSampleRate, iNewSampleRate);
+                }
+                interleaved = 1;
+            #endif
+            
             const int iMaxInputSize = ResampleObjL->GetMaxInputSize();
-            vecTempResBufIn.Init(iMaxInputSize, (_REAL) 0.0);
-            vecTempResBufOut.Init(iOutBlockSize, (_REAL) 0.0);
+            vecTempResBufIn.Init(iMaxInputSize * interleaved, (_REAL) 0.0);
+            vecTempResBufOut.Init(iOutBlockSize * interleaved, (_REAL) 0.0);
             buffer = new short[iMaxInputSize * 2];
-
-            buffer_sum = 0;
-            buffer_sum_ct = buffer_sum_seq = 0;
 
             if (bChanged)
             {
@@ -388,7 +400,7 @@ CAudioFileIn::Read(CVector<short>& psData)
                 } else {
                 
                     // NB v1.470: Because of the C_LINKAGE(void *_TaskSleep(...)) change
-                    // we need to touch this file so that ../build/obj_keep/audiofilein.o
+                    // we need to touch this file so that ../build/obj_keep/AudioFileIn.o
                     // gets rebuilt and doesn't end up with a link time error.
 
                     //real_printf("[wait%d] ", iq->iq_wr_pos); fflush(stdout);
@@ -471,46 +483,49 @@ CAudioFileIn::Read(CVector<short>& psData)
 
     if (ResampleObjL)
     {   /* Resampling is needed */
+    
         if (iFileChannels == 2)
         {   /* Stereo */
-            /* Left channel*/
-            for (i = 0; i < iFrames; i++) {
-                short b = buffer[2*i];
-                vecTempResBufIn[i] = b;
 
-            #if 0
-            //jks
-                buffer_sum += (uint16_t) b;
-                buffer_sum_ct++;
-                if (buffer_sum_ct == 12000) {
-                    printf("#### buffer_sum = %08x %08x %d\n",
-                        (uint32_t) ((buffer_sum >> 32) & 0xffffffff), (uint32_t) (buffer_sum & 0xffffffff), buffer_sum_seq);
-                    buffer_sum_ct = 0;
-                    buffer_sum_seq++;
+            #ifdef USE_SRC
+                #define _2CH 2
+                for (i = 0; i < iFrames * _2CH; i++) {
+                    vecTempResBufIn[i] = buffer[i];
+                }
+                ResampleObjL->Resample(vecTempResBufIn, vecTempResBufOut);
+                for (i = 0; i < iOutBlockSize * _2CH; i++) {
+                    psData[i] = Real2Sample(vecTempResBufOut[i]);
+                }
+            #else
+                /* Left channel */
+                for (i = 0; i < iFrames; i++) {
+                    short b = buffer[2*i];
+                    vecTempResBufIn[i] = b;
+                }
+
+                ResampleObjL->Resample(vecTempResBufIn, vecTempResBufOut);
+                for (i = 0; i < iOutBlockSize; i++)
+                    psData[i*2] = Real2Sample(vecTempResBufOut[i]);
+
+                /* Right channel */
+                for (i = 0; i < iFrames; i++) {
+                    short b = buffer[2*i+1];
+                    vecTempResBufIn[i] = b;
+                }
+                ResampleObjR->Resample(vecTempResBufIn, vecTempResBufOut);
+                for (i = 0; i < iOutBlockSize; i++) {
+                    psData[i*2+1] = Real2Sample(vecTempResBufOut[i]);
                 }
             #endif
-            }
-
-            ResampleObjL->Resample(vecTempResBufIn, vecTempResBufOut);
-            for (i = 0; i < iOutBlockSize; i++)
-                psData[i*2] = Real2Sample(vecTempResBufOut[i]);
-            /* Right channel*/
-            for (i = 0; i < iFrames; i++) {
-                short b = buffer[2*i+1];
-                vecTempResBufIn[i] = b;
-                //buffer_sum += (uint16_t) b;   //jks
-            }
-            ResampleObjR->Resample(vecTempResBufIn, vecTempResBufOut);
-            for (i = 0; i < iOutBlockSize; i++)
-                psData[i*2+1] = Real2Sample(vecTempResBufOut[i]);
         }
         else
         {   /* Mono */
             for (i = 0; i < iFrames; i++)
                 vecTempResBufIn[i] = buffer[i];
             ResampleObjL->Resample(vecTempResBufIn, vecTempResBufOut);
-            for (i = 0; i < iOutBlockSize; i++)
+            for (i = 0; i < iOutBlockSize; i++) {
                 psData[i*2] = psData[i*2+1] = Real2Sample(vecTempResBufOut[i]);
+            }
         }
     }
     else

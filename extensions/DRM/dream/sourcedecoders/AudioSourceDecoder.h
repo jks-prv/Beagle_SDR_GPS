@@ -31,7 +31,6 @@
 #include "../util/Modul.h"
 #include "../util/CRC.h"
 #include "../TextMessage.h"
-#include "../resample/Resample.h"
 #include "../datadecoding/DataDecoder.h"
 #include "../util/Utilities.h"
 #include "AudioCodec.h"
@@ -41,7 +40,7 @@
 #ifdef HAVE_SPEEX
 # include "../resample/speexresampler.h"
 #else
-# include "../resample/caudioresample.h"
+# include "../resample/AudioResample.h"
 #endif
 
 /* Classes ********************************************************************/

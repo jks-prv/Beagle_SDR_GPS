@@ -10,6 +10,7 @@ var kiwi = {
    PLATFORM_BB_AI64: 2,
    PLATFORM_RPI:     3,
    platform: -1,
+   platform_s: [ 'BBG/B', 'BBAI', 'BBAI-64', 'RPi' ],
    
    cfg:   { seq:0, name:'cfg',   cmd:'save_cfg',   lock:0, timeout:null },
    dxcfg: { seq:0, name:'dxcfg', cmd:'save_dxcfg', lock:0, timeout:null },
@@ -2408,12 +2409,14 @@ function cpu_stats_cb(o, uptime_secs, ecpu, waterfall_fps)
    var temp_color = o.cc? ((o.cc >= 60)? 'w3-text-css-red w3-bold' : ((o.cc >= 50)? 'w3-text-css-yellow' : 'w3-text-css-lime')) : '';
    var cputemp = cputempC? (cputempC.toFixed(0) +'&deg;C '+ cputempF.toFixed(0) +'&deg;F ') : '';
    var cpufreq = (o.cf >= 1000)? ((o.cf/1000).toFixed(1) +' GHz') : (o.cf.toFixed(0) +' MHz');
+   var platform = kiwi.platform_s[kiwi.platform];
+   
 	kiwi_cpu_stats_str =
-	   w3_text('w3-text-css-orange', 'BB ') +
+	   w3_text('w3-text-css-orange', platform +' ') +
 	   w3_text('', o.cu[0] +','+ o.cs[0] +','+ o.ci[0] +' usi% ') +
 	   (cputempC? w3_text(temp_color, cputemp) :'') +
 	   w3_text('', cpufreq +' ') +
-	   w3_text('w3-text-css-orange', 'FPGA') +
+	   w3_text('w3-text-css-orange', 'eCPU') +
 	   w3_text('', ecpu.toFixed(0) +'%');
 	kiwi.wf_fps = waterfall_fps;
 
@@ -2433,7 +2436,7 @@ function cpu_stats_cb(o, uptime_secs, ecpu, waterfall_fps)
    }
 	kiwi_cpu_stats_str_long =
 	   w3_inline('',
-         w3_text('w3-text-black', 'Beagle: '+ cpus +' '+ user +' usr | '+ sys +' sys | '+ idle +' idle,' + (cputempC? '':' ')) +
+         w3_text('w3-text-black', platform +': '+ cpus +' '+ user +' usr | '+ sys +' sys | '+ idle +' idle,' + (cputempC? '':' ')) +
          (cputempC? ('&nbsp;'+ w3_text(temp_color +' w3-text-outline w3-large', cputemp) +'&nbsp;') :'') +
          w3_text('w3-text-black', cpufreq + ', ') +
          w3_text('w3-text-black', 'FPGA eCPU: '+ ecpu.toFixed(0) +'%')
