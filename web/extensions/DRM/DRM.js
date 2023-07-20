@@ -16,6 +16,7 @@ var drm = {
    hacked: false,
 
    run: 0,
+   test: 0,
    is_stopped: 0,
    is_monitor: 0,
    freq_s: '',
@@ -197,6 +198,14 @@ function drm_recv(data)
       */
       
 		case drm.DRM_DAT_IQ:
+		   var n_fac = d[0];
+		   var n_sdc = d[1];
+		   var n_msc_lo = d[2];
+		   var n_msc_hi = d[3];
+		   var n_msc = (n_msc_hi << 8) + n_msc_lo;
+		   //console_nv('drm', {n_fac}, {n_sdc}, {n_msc}, {n_msc_hi}, {n_msc_lo});
+		   var o = 4;
+		   
          ct.fillStyle = 'white';
          ct.fillRect(0,0, w,h);
          ct.fillStyle = 'grey';
@@ -205,29 +214,29 @@ function drm_recv(data)
          
          if (drm.display == drm.IQ_ALL || drm.display == drm.FAC) {
             ct.fillStyle = 'green';
-            for (i = 0; i < 64; i++) {
-               var x = d[i*2]   / 255.0 * w;
-               var y = d[i*2+1] / 255.0 * h;
+            for (i = 0; i < n_fac; i++) {
+               var x = d[o+i*2]   / 255.0 * w;
+               var y = d[o+i*2+1] / 255.0 * h;
                ct.fillRect(x,y, 2,2);
             }
          }
-         i = 64;
+         o += n_fac*2;
          
          if (drm.display == drm.IQ_ALL || drm.display == drm.SDC) {
             ct.fillStyle = 'red';
-            for (; i < 64+256; i++) {
-               var x = d[i*2]   / 255.0 * w;
-               var y = d[i*2+1] / 255.0 * h;
+            for (i = 0; i < n_sdc; i++) {
+               var x = d[o+i*2]   / 255.0 * w;
+               var y = d[o+i*2+1] / 255.0 * h;
                ct.fillRect(x,y, 2,2);
             }
          }
-         i = 64+256;
+         o += n_sdc*2;
 
          if (drm.display == drm.IQ_ALL || drm.display == drm.MSC) {
             ct.fillStyle = 'blue';
-            for (; i < 64+256+2048; i++) {
-               var x = d[i*2]   / 255.0 * w;
-               var y = d[i*2+1] / 255.0 * h;
+            for (i = 0; i < n_msc; i++) {
+               var x = d[o+i*2]   / 255.0 * w;
+               var y = d[o+i*2+1] / 255.0 * h;
                ct.fillRect(x,y, 2,2);
             }
          }
@@ -764,6 +773,7 @@ function drm_click(idx)
    /**/
    
    drm_station('');
+   w3_show('id-drm-station');
    w3_hide('id-drm-bar-container');
    drm_pre_set_freq(o.f, o.s);
 }
@@ -1353,15 +1363,10 @@ function drm_desktop_controls_setup(w_multi)
          w3_inline('w3-margin-T-8/w3-margin-between-16',
             //w3_select('w3-text-red', '', 'database', 'drm.database', drm.database, drm.database_s, 'drm_database_cb'),
             w3_button('id-drm-stop-button w3-padding-smaller w3-pink', 'Stop', 'drm_stop_start_cb'),
-            w3_button('w3-padding-smaller w3-pink', 'Monitor IQ', 'drm_monitor_IQ_cb'),
+            w3_button('id-drm-btn-monitor w3-padding-smaller w3-pink', 'Monitor IQ', 'drm_monitor_IQ_cb'),
             //w3_button('w3-padding-smaller w3-css-yellow', 'Reset', 'drm_reset_cb'),
-            w3_button('w3-padding-smaller w3-aqua', 'Test 1', 'drm_test_cb', 1),
-            w3_button('w3-padding-smaller w3-aqua', 'Test 2', 'drm_test_cb', 2)
-            /*
-            w3_div('id-drm-bar-container w3-progress-container w3-round-large w3-white w3-hide|width:100px; height:16px',
-               w3_div('id-drm-bar w3-progressbar w3-round-large w3-light-green|width:'+ 50 +'%', '&nbsp;')
-            )
-            */
+            w3_button('id-drm-test1 w3-padding-smaller w3-aqua', 'Test 1', 'drm_test_cb', 1),
+            w3_button('id-drm-test2 w3-padding-smaller w3-aqua', 'Test 2', 'drm_test_cb', 2)
          );
    }
 
@@ -1399,6 +1404,12 @@ function drm_desktop_controls_setup(w_multi)
 	drm.w_IQ = w_multi - pad*2;
 	drm.h_IQ = h - pad*2;
 	
+	// our sample file is 12k only
+	if (!drm._12k) {
+	   w3_add('id-drm-test1', 'w3-disabled');
+	   w3_add('id-drm-test2', 'w3-disabled');
+	}
+
 	drm.desktop = 1;
 }
 
@@ -1408,6 +1419,8 @@ function drm_controls_setup()
    console.log('drm_controls_setup saved_mode='+ drm.saved_mode);
    drm.saved_passband = ext_get_passband();
    drm.saved_zoom = ext_get_zoom();
+   drm._12k = (ext_nom_sample_rate() == 12000);
+
 
    drm.is_stopped = 0;
    console.log('drm_controls_setup is_stopped='+ drm.is_stopped);
@@ -1424,7 +1437,12 @@ function drm_controls_setup()
          console.log('DRM param1 <'+ a +'>');
          var a1 = a.split(':');
          a1 = a1[a1.length-1].toLowerCase();
-         w3_ext_param_array_match_str(drm.display_idx_s, a, function(i) { drm.display_idx = drm.display_idx_si[i]; });
+         w3_ext_param_array_match_str(drm.display_idx_s, a,
+            function(i) {
+               drm.display_idx = drm.display_idx_si[i];
+               drm.display_url = true;
+            }
+         );
          var r;
          if ((r = w3_ext_param('svc', a)).match) {
             drm.csvc = w3_clamp(r.num, 1, drm.nsvcs);
@@ -1477,6 +1495,9 @@ function drm_controls_setup()
          if (w3_ext_param('help', a).match) {
             extint_help_click();
          } else
+         if (w3_ext_param('mon', a).match) {
+            drm_monitor_IQ_cb('id-drm-btn-monitor');
+         } else
          if ((r = w3_ext_param('test', a)).match) {
             var test = r.has_value? r.num : 1;
             test = w3_clamp(test, 1, 2, 1);
@@ -1511,6 +1532,7 @@ function drm_run(run)
 function drm_test(test)
 {
    //console.log('drm_test test='+ test);
+   drm.test = test;
    ext_send('SET test='+ test);
 }
 
@@ -1521,6 +1543,7 @@ function drm_stop(from_stop_button)
    drm_reset_status();
    drm_station('');
    w3_hide('id-drm-bar-container');
+   w3_show('id-drm-station');
    
    if (from_stop_button) {
       drm_set_mode('iq');
@@ -1631,22 +1654,30 @@ function drm_reset_cb(path, val, first)
 function drm_test_cb(path, val, first)
 {
    console.log('drm_test_cb '+ val);
-   //drm_station('Test Recording '+ val);
-   drm_station('', true);
+   
+   // require 20.25k filename when in 20.25k mode
+   if (!drm._12k && !cfg.DRM['test_file'+val].includes('20.25k')) {
+      console.log('DRM: in 20.25k mode test filename must contain "20.25k"');
+      return;
+   }
+   
    drm_run(0);
    drm_start();
    drm_test(val);
+   //drm_station('Test Recording '+ val);
+   drm_station('', true);
    drm_set_mode('drm');
+   w3_hide('id-drm-station');
    w3_show('id-drm-bar-container');
    drm_annotate('magenta');
    
-   if (cfg.DRM['test_file'+val] == 'DRM.BBC.Journaline.au') {
+   if (drm.display_url != true && cfg.DRM['test_file'+val].startsWith('DRM.BBC.Journaline')) {
       drm.display_idx = drm.JOURNALINE_IDX;
       drm_display_cb('drm.display_idx', drm.display_idx);
       drm_svcs_cbox_cb('drm.svc2', true);
-   }
+   } else
 
-   if (cfg.DRM['test_file'+val] == 'DRM.KTWR.slideshow.au') {
+   if (drm.display_url != true && cfg.DRM['test_file'+val].startsWith('DRM.KTWR.slideshow')) {
       drm.display_idx = drm.SLIDESHOW_IDX;
       drm_display_cb('drm.display_idx', drm.display_idx);
       drm_svcs_cbox_cb('drm.svc2', true);
@@ -1738,7 +1769,7 @@ function drm_station(s, hide)
    if (!el) return;
    el.innerHTML = '<b>'+ (s.replace('_', ' ')) +'</b>';
    drm_annotate('magenta');
-   w3_hide2(el, hide == true);
+   w3_hide2(el, hide == true || drm.test != 0);
 }
 
 function DRM_environment_changed(changed)

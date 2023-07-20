@@ -1,0 +1,101 @@
+// Copyright (c) 2017-2023 John Seamons, ZL/KF6VO
+
+// 7/2023
+// We started work on this, but then found our problem with AudioResample()
+// So this was never completed/tested. Note that it requires -lsamplerate in DRM/Makefile
+
+#include "SRCResample.h"
+
+CSRCResample::CSRCResample()
+{
+
+}
+
+CSRCResample::~CSRCResample()
+{
+
+}
+
+void CSRCResample::Resample(CVector<_REAL>& rInput, CVector<_REAL>& rOutput)
+{
+    int j;
+
+    if (rRatio == (_REAL) 1.0)
+    {
+        /* If ratio is 1, no resampling is needed, just copy vector */
+        for (j = 0; j < iOutputBlockSize; j++)
+            rOutput[j] = rInput[j];
+    } else {
+        SRC_DATA *sd = &srcData;
+        sd->input_frames = 0;
+        sd->output_frames = 0;
+        sd->end_of_input = 0;
+        sd->src_ratio = rRatio;
+        sd->data_in = &rInput[0];
+        sd->data_out = &rOutput[0];
+        
+        int error = src_process(srcState, sd);
+        if (error != 0) {
+            printf("CSRCResample::Resample src_process() error=%d \"%s\"\n", error, src_strerror(error));
+            exit(-1);
+        }
+    
+    
+        /* Move old data from the end to the history part of the buffer and
+           add new data (shift register) */
+        vecrIntBuff.AddEnd(rInput, iInputBlockSize);
+
+        /* Main loop */
+        #if 0
+        for (j = 0; j < iOutputBlockSize; j++)
+        {
+            /* Phase for the linear interpolation-taps */
+            const int ip =
+                (int) (j * INTERP_DECIM_I_D / rRatio) % INTERP_DECIM_I_D;
+
+            /* Sample position in input vector */
+            const int in = (int) (j / rRatio) + RES_FILT_NUM_TAPS_PER_PHASE;
+
+            /* Convolution */
+            _REAL ry = (_REAL) 0.0;
+            for (int i = 0; i < RES_FILT_NUM_TAPS_PER_PHASE; i++)
+                ry += fResTaps1To1[ip][i] * vecrIntBuff[in - i];
+
+            rOutput[j] = ry;
+        }
+        #endif
+    }
+}
+
+void CSRCResample::Init(const int iNewOutputBlockSize, const int iInputSamplerate, const int iOutputSamplerate, const int n_chan)
+{
+    int error;
+    srcState = src_new(SRC_SINC_BEST_QUALITY, n_chan, &error);
+    if (srcState == NULL) {
+        printf("CSRCResample::Init src_new() error=%d \"%s\"\n", error, src_strerror(error));
+        exit(-1);
+    }
+
+    rRatio = _REAL(iOutputSamplerate) / _REAL(iInputSamplerate);
+    iInputBlockSize = (int) round((double) iNewOutputBlockSize / rRatio);
+    iOutputBlockSize = iNewOutputBlockSize;
+    printf("CSRCResample::Init rRatio=%f iInputBlockSize=%d iOutputBlockSize=%d\n", rRatio, iInputBlockSize, iOutputBlockSize);
+    Reset();
+}
+
+int CSRCResample::GetMaxInputSize() const
+{
+    return iInputBlockSize;
+}
+
+int CSRCResample::GetFreeInputSize() const
+{
+    return iInputBlockSize;
+}
+
+void CSRCResample::Reset()
+{
+    /* Allocate memory for internal buffer, clear sample history */
+    vecrIntBuff.Init(iInputBlockSize, (_REAL) 0.0);
+    src_reset(srcState);
+}

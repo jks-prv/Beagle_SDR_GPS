@@ -1,6 +1,6 @@
 #pragma once
 
-#include "caudioresample.h"     // from DRM/dream/resample
+#include "AudioResample.h"     // from DRM/dream/resample
 
 #define HFDL_MIN_SRATE  (18000*2)
 

@@ -276,7 +276,8 @@ bool hfdl_msgs(char *msg, int rx_chan)
         e->test_f = test_f;
         e->nsamps = 0;
 
-        bool test = (test_f != 0) && (snd_rate != SND_RATE_3CH);
+        //bool test = (test_f != 0) && (snd_rate != SND_RATE_3CH);
+        bool test = (test_f != 0);
         //printf("HFDL: test=%d test_f=%.2f\n", test, e->test_f);
         if (test) {
             // misuse ext_register_receive_iq_samps() to pushback audio samples from the test file

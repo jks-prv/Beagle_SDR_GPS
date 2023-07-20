@@ -34,7 +34,7 @@
 #ifdef HAVE_SPEEX
 # include "../resample/speexresampler.h"
 #else
-# include "../resample/caudioresample.h"
+# include "../resample/AudioResample.h"
 #endif
 #include "../datadecoding/DataEncoder.h"
 #include "../util/Utilities.h"

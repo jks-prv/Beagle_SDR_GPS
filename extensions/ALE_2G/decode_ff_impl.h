@@ -70,7 +70,7 @@ Each 24-bit baseband word is Golay FEC encoded to 49-bits (48 + 1 stuff bit).
 #define PI                          M_PI
 
 #include "decode_ff.h"
-#include "caudioresample.h"     // from DRM/dream/resample
+#include "AudioResample.h"     // from DRM/dream/resample
 
 #include <fftw3.h>
 

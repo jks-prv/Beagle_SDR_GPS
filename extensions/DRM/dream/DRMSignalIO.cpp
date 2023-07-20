@@ -30,7 +30,7 @@
 #include "UpsampleFilter.h"
 #include <iostream>
 #include "sound/sound.h"
-#include "sound/audiofilein.h"
+#include "sound/AudioFileIn.h"
 #include "util/FileTyper.h"
 #include "matlib/MatlibSigProToolbox.h"
 
@@ -637,6 +637,7 @@ void CReceiveData::InitInternal(CParameter& Parameters)
     }
 
     try {
+        //printf("CReceiveData::InitInternal iSampleRate=%d iUpscaleRatio=%d iOutputBlockSize=%d\n", iSampleRate, iUpscaleRatio, iOutputBlockSize);
         const bool bChanged = (pSound == nullptr)? true : pSound->Init(iSampleRate / iUpscaleRatio, iOutputBlockSize * 2 / iUpscaleRatio, true);
 
         /* Clear input data buffer on change samplerate change */
