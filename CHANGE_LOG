@@ -2,13 +2,20 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.621  July 21, 2023
+    DRM extension now works in Kiwi 3-channel, 20.25 kHz mode. This allows reception of
+    18 and 20 kHz wide DRM channels, e.g. India mediumwave (AM BCB).
+
+    Show platform (BBG/B, BBAI, BBAI-64, RPi) in user stats tab and admin status tab instead of
+        the previous fixed text of "BB" and "Beagle".
+
 v1.620  July 17, 2023
     New URL parameter "1hz" increasing frequency resolution to 1 Hz if Kiwi configured for 10 Hz.
         Example: kiwi_name:8073/?1hz  kiwi_name:8073/?...&1hz
     
     Camping-mode panel now shows a message when:
         The channel user has tuned to a masked frequency and the camper does not have masked
-            listening privileges (i.e. "pwd=(time-limit-password)" not given.
+            listening privileges i.e. "pwd=(time-limit-password)" not given.
         The channel user disconnects.
 
 v1.617,618,619  July 13, 2023
