@@ -2416,7 +2416,7 @@ function cpu_stats_cb(o, uptime_secs, ecpu, waterfall_fps)
 	   w3_text('', o.cu[0] +','+ o.cs[0] +','+ o.ci[0] +' usi% ') +
 	   (cputempC? w3_text(temp_color, cputemp) :'') +
 	   w3_text('', cpufreq +' ') +
-	   w3_text('w3-text-css-orange', 'FPGA') +
+	   w3_text('w3-text-css-orange', 'eCPU') +
 	   w3_text('', ecpu.toFixed(0) +'%');
 	kiwi.wf_fps = waterfall_fps;
 
