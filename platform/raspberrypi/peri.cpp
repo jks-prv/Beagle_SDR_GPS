@@ -96,6 +96,9 @@ void peri_init()
     init = TRUE;
 }
 
+void gpio_test(int gpio_test_pin) {
+}
+
 void peri_free()
 {
     assert(init);
