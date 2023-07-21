@@ -64,6 +64,7 @@ void _devio_check(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_val);
 void _gpio_setup(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t initial, u4_t pmux_val1, u4_t pmux_val2);
 
 void peri_init();
+void gpio_test(int gpio_test);
 void peri_free();
 
 #define FPGA_INIT_PIN 6
