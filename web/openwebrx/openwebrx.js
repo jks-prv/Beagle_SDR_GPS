@@ -9637,7 +9637,8 @@ function panels_setup()
             // Form1.browser.ExecuteScriptAsync(jsFreqKiwiSDR)
             '<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
                w3_input('w3-custom-events w3-font-16px|margin: 2px 0 0 2px; padding:0 4px; width:'+ freq_field_width() +
-               '|type="text"' + mobile + ' onchange="freqset_complete(1)" onkeyup="freqset_keyup(this, event)"', '', 'id-freq-input') +
+               '|type="text" title="type h or ? for help"' + mobile +
+               ' onchange="freqset_complete(1)" onkeyup="freqset_keyup(this, event)"', '', 'id-freq-input') +
             '</form>'
          ) +
 
@@ -9658,7 +9659,7 @@ function panels_setup()
 	   w3_inline('w3-halign-space-between w3-margin-T-4/',
          //w3_div('id-mouse-freq w3-hide||title="frequency under cursor"', '-----.--'+ ((cfg.show_1Hz || url_1Hz)? '-' : '')),
 
-         w3_icon('id-freq-menu w3-menu-button', 'fa-bars w3-text-white', 20, '', 'freq_memory_menu_show'),
+         w3_icon('id-freq-menu w3-menu-button||title="freq memory"', 'fa-bars w3-text-white', 20, '', 'freq_memory_menu_show'),
 
          w3_button('id-freq-vfo w3-text-in-circle w3-wh-20px w3-aqua||title="VFO A&slash;B"', 'A', 'freq_vfo_cb'),
 
