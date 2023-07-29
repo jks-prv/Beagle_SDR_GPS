@@ -45,8 +45,8 @@ module KiwiSDR (
     output wire P911,       // P911, GPIO 0_30, unused debug out
     output wire P913,       // P913, GPIO 0_31, unused debug out
     input  wire P915,       // P915, GPIO 1_0-2_0, unused debug in
-    output wire CMD_READY,  // P923, ctrl[CTRL_CMD_READY]
-    output wire SND_INTR,   // P924, ctrl[CTRL_SND_INTR]
+    output wire CMD_READY,  // P923, GPIO 1_17, ctrl[CTRL_CMD_READY]
+    output wire SND_INTR,   // P924, GPIO 0_15, ctrl[CTRL_SND_INTR]
     output wire P926,		// P926, GPIO 0_14, unused debug out
 
 `ifdef P8_ARE_INPUTS
