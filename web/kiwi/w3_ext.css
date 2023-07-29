@@ -596,6 +596,11 @@ input[type=range]::-moz-range-thumb {
     margin: 10px 0 0 10px
 }
 
+.w3-margin-TRL-10
+{
+    margin: 10px 10px 0 10px
+}
+
 .w3-margin-B-4
 {
     margin-bottom: 4px !important
