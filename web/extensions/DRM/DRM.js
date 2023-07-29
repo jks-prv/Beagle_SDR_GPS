@@ -1288,7 +1288,7 @@ function drm_desktop_controls_setup(w_multi)
                ),
 
                w3_div(sprintf('id-drm-panel-1-journaline w3-absolute w3-light-blue w3-text-black|width:%dpx; height:100%%;', w_multi),
-                  w3_div('id-drm-journaline w3-margin-TL-10 w3-absolute w3-width-full w3-height-full w3-scroll-y')
+                  w3_div('id-drm-journaline w3-margin-TRL-10 w3-absolute w3-width-fit w3-height-full w3-scroll-y')
                ),
 
                w3_div(sprintf('id-drm-panel-1-slideshow w3-relative w3-light-blue|width:%dpx; height:100%%;', w_multi),
