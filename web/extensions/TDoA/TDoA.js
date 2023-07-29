@@ -1,4 +1,4 @@
-// Copyright (c) 2017 John Seamons, ZL/KF6VO
+// Copyright (c) 2017-2023 John Seamons, ZL/KF6VO
 
 var tdoa = {
    ext_name:   'TDoA',  // NB: must match tdoa.cpp:tdoa_ext.name
@@ -613,7 +613,10 @@ function tdoa_place_host_marker(h, map)
       }
       title += '\nTDoA channels: '+ h.tc;
    }
-   title += '\nAntenna: '+ h.a +'\n'+ h.fm +' GPS fixes/min';
+   title += '\nAntenna: '+ h.a;
+   if (h.snr > 0)
+      title += '\nS/N score: '+ h.snr +' dB';
+   title += '\n'+ h.fm +' GPS fixes/min';
 
    if (tdoa.leaflet) {
       var icon =
@@ -630,7 +633,9 @@ function tdoa_place_host_marker(h, map)
       // when not using MarkerCluster add marker to map here
       if (map != tdoa.kiwi_map) {
          marker.kiwi_mkr_2_ref_or_host = h;     // needed before call to tdoa_style_marker()
-         tdoa_style_marker(h.mkr, h.idx, h.id, 'host', map);
+         var id = h.id;
+         if (h.snr > 0) id += ' '+ h.snr;
+         tdoa_style_marker(h.mkr, h.idx, id, 'host', map);
       }
    } else {
       var latlon = new google.maps.LatLng(h.lat, h.lon);
@@ -2408,12 +2413,14 @@ function tdoa_rebuild_hosts(opts)
    for (var i = 0; i < tdoa.hosts.length; i++) {
       var h = tdoa.hosts[i];
       if (h.mkr) {
+         var id = h.id;
+         if (h.snr > 0) id += ' '+ h.snr;
          if (h.selected) {
             //console.log('outside cluster: '+ h.call);
-            if (tdoa.leaflet) tdoa_style_marker(h.mkr, h.idx, h.id, 'host', tdoa.kiwi_map); else h.mkr.setMap(tdoa.kiwi_map);
+            if (tdoa.leaflet) tdoa_style_marker(h.mkr, h.idx, id, 'host', tdoa.kiwi_map); else h.mkr.setMap(tdoa.kiwi_map);
          } else {
             if (show_hosts) {
-               if (tdoa.leaflet) tdoa_style_marker(h.mkr, h.idx, h.id, 'host');
+               if (tdoa.leaflet) tdoa_style_marker(h.mkr, h.idx, id, 'host');
                tdoa.cur_host_markers.push(h.mkr);
             }
          }
