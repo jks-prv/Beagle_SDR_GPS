@@ -40,7 +40,7 @@ void gps_main(int argc, char *argv[]);
 
 // SE4150L
 #define FC 4.092e6		// Carrier @ 2nd IF
-#define FS 16.368e6		// Sampling rate
+#define FS 16.368e6     // Sampling rate
 #define FS_I 16368000
 
 #define CPS 1.023e6		// Chip rate

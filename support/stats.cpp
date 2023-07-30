@@ -365,7 +365,7 @@ static void called_every_second()
             int tdoa_ch = cfg_int("tdoa_nchans", NULL, CFG_REQUIRED);
             if (tdoa_ch == -1) tdoa_ch = rx_chans;      // has never been set
             int tdoa_users = rx_count_server_conns(TDOA_USERS);
-            cprintf(c, "TDoA_service tdoa_users=%d >? tdoa_ch=%d %s\n", tdoa_users, tdoa_ch, (tdoa_users > tdoa_ch)? "T":"F");
+            cprintf(c, "TDoA_service tdoa_users=%d >? tdoa_ch=%d %s\n", tdoa_users, tdoa_ch, (tdoa_users > tdoa_ch)? "T(DENY)":"F(OKAY)");
             if (tdoa_users > tdoa_ch) {
                 send_msg(c, SM_NO_DEBUG, "MSG too_busy=%d", tdoa_ch);
                 c->kick = true;
