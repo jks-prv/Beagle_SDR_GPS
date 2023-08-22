@@ -84,7 +84,7 @@ static int ale_2g_input(int rx_chan, s2_t **inp = NULL, int *freqHz = NULL)
 
                     return FASTFIR_OUTBUF_SIZE;
                 } else {
-                    ext_send_msg(rx_chan, true, "EXT test_done");
+                    ext_send_msg(rx_chan, false, "EXT test_done");
                     e->test = false;
                 }
             }
@@ -347,7 +347,7 @@ bool ale_2g_msgs(char *msg, int rx_chan)
 
         //e->test = (test_f != 0) && (snd_rate != SND_RATE_3CH);
         e->test = (test_f != 0);
-        printf("ALE_2G: test=%d test_f=%.2f\n", e->test, e->test_f);
+        //printf("ALE_2G: test=%d test_f=%.2f\n", e->test, e->test_f);
         if (e->test) {
             e->decode.modem_init(e->rx_chan, e->use_new_resampler, ext_update_get_sample_rateHz(rx_chan), FASTFIR_OUTBUF_SIZE);
 		    e->decode.set_freq(fabs(e->test_f));

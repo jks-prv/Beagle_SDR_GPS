@@ -42,7 +42,10 @@ module RECEIVER (
     input  wire        wrEvt2,
     
     input  wire        use_gen_C,
-    input  wire        gen_fir_C
+    input  wire        gen_fir_C,
+    
+    input  wire        self_test_en_C,
+    output wire        self_test
 	);
 	
 `include "kiwi.gen.vh"
@@ -149,7 +152,7 @@ module RECEIVER (
         localparam RX_IN_WIDTH = 18;
 
         wire use_gen_A;
-        SYNC_WIRE sync_use_gen (.in(use_gen_C), .out_clk(adc_clk), .out(use_gen_A));
+        SYNC_WIRE sync_use_gen (.in(use_gen_C && !self_test_en_C), .out_clk(adc_clk), .out(use_gen_A));
 
         wire signed [RX_IN_WIDTH-1:0] gen_data;
         wire signed [RX_IN_WIDTH-1:0] adc_ext_data = { adc_data, {RX_IN_WIDTH-ADC_BITS{1'b0}} };
@@ -157,6 +160,8 @@ module RECEIVER (
         // only allow gen to be used on channel 0 to prevent disruption to others when multiple channels in use
         wire [(V_RX_CHANS * RX_IN_WIDTH)-1:0] rx_data = { {V_RX_CHANS-1{adc_ext_data}}, use_gen_A? gen_data : adc_ext_data };
         wire [(V_WF_CHANS * RX_IN_WIDTH)-1:0] wf_data = { {V_WF_CHANS-1{adc_ext_data}}, use_gen_A? gen_data : adc_ext_data };
+        
+        assign self_test = gen_data[RX_IN_WIDTH-1] & self_test_en_C;
 
         wire set_gen_freqH_C = (wrReg2 & op_11[SET_GEN_FREQ]) && !freq_l;
         wire set_gen_freqL_C = (wrReg2 & op_11[SET_GEN_FREQ]) &&  freq_l;

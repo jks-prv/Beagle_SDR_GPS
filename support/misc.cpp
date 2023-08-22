@@ -133,16 +133,48 @@ u2_t ctrl_get()
 	return rv;
 }
 
+static void stat_dump(const char *id)
+{
+    stat_reg_t stat = stat_get();
+    printf("%s stat_get=0x%04x %4s|%3s|%5s|%s\n", id, stat.word,
+        (stat.word & 0x80)? "READ" : "",
+        (stat.word & 0x40)? "CLK" : "",
+        (stat.word & 0x20)? "SHIFT" : "",
+        (stat.word & 0x10)? "D1" : "D0"
+        );
+}
+
+// NB: the eCPU maintains a latched shadow value of SET_CTRL[]
+// This means if a bit is given in the set parameter it persists until given in the clr parameter.
+// But it doesn't have to be given in subsequent set parameters to persist due to the latching.
 void ctrl_clr_set(u2_t clr, u2_t set)
 {
 	spi_set_noduplex(CmdCtrlClrSet, clr, set);
-	//printf("ctrl_clr_set(0x%04x, 0x%04x) ctrl_get=0x%04x\n", clr, set, ctrl_get());
+	//printf("ctrl_clr_set(0x%04x, 0x%04x) ctrl_get=0x%04x ", clr, set, ctrl_get());
+	//stat_dump("SET");
 }
 
 void ctrl_positive_pulse(u2_t bits)
 {
+    //printf("ctrl_positive_pulse 0x%x\n", bits);
 	spi_set_noduplex(CmdCtrlClrSet, bits, bits);
+	//printf("ctrl_positive_pulse(0x%04x, 0x%04x) ctrl_get=0x%04x ", bits, bits, ctrl_get());
+	//stat_dump("RISE");
 	spi_set_noduplex(CmdCtrlClrSet, bits, 0);
+	//printf("ctrl_positive_pulse(0x%04x, 0x%04x) ctrl_get=0x%04x ", bits, 0,    ctrl_get());
+	//stat_dump("FALL");
+}
+
+void ctrl_set_ser_dev(u2_t ser_dev)
+{
+    //printf("ctrl_set_ser_dev 0x%x\n", ser_dev);
+    ctrl_clr_set(CTRL_SER_MASK, ser_dev);
+}
+
+void ctrl_clr_ser_dev()
+{
+    //printf("ctrl_set_ser_dev\n");
+    ctrl_clr_set(CTRL_SER_MASK, CTRL_SER_NONE);
 }
 
 stat_reg_t stat_get()

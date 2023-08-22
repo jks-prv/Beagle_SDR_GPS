@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "options.h"
 #include "config.h"
 #include "kiwi.h"
+#include "printf.h"
 #include "rx.h"
 #include "rx_util.h"
 #include "clk.h"
@@ -237,7 +238,7 @@ void c2s_sound(void *param)
 	//static u4_t ncnt[MAX_RX_CHANS];
 	const char *s;
 	
-	double freq=-1, _freq, gen=-1, _gen, locut=0, _locut, hicut=0, _hicut, mix;
+	double freq=-1, _freq, gen=-1, locut=0, _locut, hicut=0, _hicut;
 	int mode=-1, _mode, genattn=0, _genattn, mute=0, test=0, deemp=0, deemp_nfm=0;
 	u4_t mparam=0;
 	double z1 = 0;
@@ -604,7 +605,7 @@ void c2s_sound(void *param)
                     if (n < 0 || n >= N_SND_WINF) n = 0;
                     snd->window_func = n;
                     m_PassbandFIR[rx_chan].SetupWindowFunction(snd->window_func);
-                    cprintf(conn, "SND window_func=%d\n", snd->window_func);
+                    //cprintf(conn, "SND window_func=%d\n", snd->window_func);
                     did_cmd = true;                
                 }
                 break;
@@ -637,7 +638,7 @@ void c2s_sound(void *param)
             case CMD_REINIT:
                 if (strcmp(cmd, "SET reinit") == 0) {
                     did_cmd = true;
-                    cprintf(conn, "SND restart\n");
+                    //cprintf(conn, "SND restart\n");
                     if (cmd_recv & CMD_AGC)
                         m_Agc[rx_chan].SetParameters(agc, hang, thresh, manGain, slope, decay, frate);
                     memset(&snd->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
@@ -654,23 +655,19 @@ void c2s_sound(void *param)
                 break;
 
             case CMD_GEN_FREQ:
-                n = sscanf(cmd, "SET gen=%lf mix=%lf", &_gen, &mix);
-                if (n == 2) {
+                n = sscanf(cmd, "SET gen=%lf", &gen);
+                if (n == 1) {
                     did_cmd = true;
-                    //printf("MIX %f %d\n", mix, (int) mix);
-                    if (gen != _gen) {
-                        gen = _gen;
-                        f_phase = gen * kHz / conn->adc_clock_corrected;
-                        i_phase = (u64_t) round(f_phase * pow(2,48));
-                        //printf("sound %d: %s %.3f kHz phase %.3f 0x%012llx\n", rx_chan, gen? "GEN_ON":"GEN_OFF", gen, f_phase, i_phase);
-                        if (do_sdr) {
-                            spi_set3(CmdSetGenFreq, rx_chan, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
-                            ctrl_clr_set(CTRL_USE_GEN, gen? CTRL_USE_GEN:0);
-                        }
-                        if (rx_chan == 0) g_genfreq = gen * kHz / ui_srate;
+                    u4_t self_test = (gen < 0)? CTRL_STEN : 0;
+                    gen = fabs(gen);
+                    f_phase = gen * kHz / conn->adc_clock_corrected;
+                    i_phase = (u64_t) round(f_phase * pow(2,48));
+                    //cprintf(conn, "%s %.3f kHz phase %.3f 0x%012llx self_test=%d\n", gen? "GEN_ON":"GEN_OFF", gen, f_phase, i_phase, self_test? 1:0);
+                    if (do_sdr) {
+                        spi_set3(CmdSetGenFreq, rx_chan, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
+                        ctrl_clr_set(CTRL_USE_GEN | CTRL_STEN, gen? (CTRL_USE_GEN | self_test):0);
                     }
-                    if (rx_chan == 0) g_mixfreq = mix;
-                    //conn->ext_api = true;
+                    if (rx_chan == 0) g_genfreq = gen * kHz / ui_srate;
                 }
                 break;
 
@@ -681,10 +678,9 @@ void c2s_sound(void *param)
                     if (1 || genattn != _genattn) {
                         genattn = _genattn;
                         if (do_sdr) spi_set(CmdSetGenAttn, 0, (u4_t) genattn);
-                        //printf("===> CmdSetGenAttn %d 0x%x\n", genattn, genattn);
+                        //cprintf(conn, "GEN_ATTN %d 0x%x\n", genattn, genattn);
                         if (rx_chan == 0) g_genampl = genattn / (float)((1<<17)-1);
                     }
-                    //conn->ext_api = true;
                 }
                 break;
 
@@ -699,7 +695,7 @@ void c2s_sound(void *param)
                     slope = _slope;
                     decay = _decay;
                     manGain = _manGain;
-                    //printf("AGC %d hang=%d thresh=%d slope=%d decay=%d manGain=%d srate=%.1f\n",
+                    //cprintf(conn, "AGC %d hang=%d thresh=%d slope=%d decay=%d manGain=%d srate=%.1f\n",
                     //	agc, hang, thresh, slope, decay, manGain, frate);
                     m_Agc[rx_chan].SetParameters(agc, hang, thresh, manGain, slope, decay, frate);
                     cmd_recv |= CMD_AGC;
@@ -884,7 +880,7 @@ void c2s_sound(void *param)
                 n = sscanf(cmd, "SET test=%d", &test);
                 if (n == 1) {
                     did_cmd = true;
-                    printf("test %d\n", test);
+                    cprintf(conn, "test %d\n", test);
                     test_flag = test;
                 }
                 break;

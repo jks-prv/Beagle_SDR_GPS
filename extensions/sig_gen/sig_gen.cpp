@@ -25,9 +25,10 @@ typedef struct {
 	int rx_chan;
 	#define GEN_RF_TONE     0x01
 	#define GEN_AF_NOISE    0x02
-	#define GEN_CICF_SW     0x04
-	#define GEN_CICF_HW     0x08
-	#define GEN_CICF_FW     0x10
+	#define GEN_SELF_TEST   0x04
+	#define GEN_CICF_SW     0x08
+	#define GEN_CICF_HW     0x10
+	#define GEN_CICF_FW     0x20
 	int run;
 	int attn;
 
@@ -148,9 +149,10 @@ bool gen_msgs(char *msg, int rx_chan)
 
 	n = sscanf(msg, "SET run=%d", &e->run);
 	if (n == 1) {
-        printf("sig_gen run=%d%s%s%s%s%s CICF=%d\n", e->run,
+        printf("sig_gen run=0x%x%s%s%s%s%s%s CICF=%d\n", e->run,
             (e->run & GEN_RF_TONE)? " RF_TONE" : "",
             (e->run & GEN_AF_NOISE)? " AF_NOISE" : "",
+            (e->run & GEN_SELF_TEST)? " SELF_TEST" : "",
             (e->run & GEN_CICF_SW)? " CICF_SW" : "",
             (e->run & GEN_CICF_HW)? " CICF_HW" : "",
             (e->run & GEN_CICF_FW)? " CICF_FW" : "",

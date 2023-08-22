@@ -9,14 +9,24 @@ var gen = {
 	step: 0.1,
 	dwell: 300,
 	attn_dB: 80,
+	attn_dB_max: 100,
 	attn_ampl: 0,
 	filter: 0,
 
-   func: 1,
+   mode: 1,
    OFF: 0,
    RF: 1,
    AF: 2,
-   func_s: ['off', 'RF tone', 'AF noise'],
+   SELF_TEST: 3,
+   mode_s: ['off', 'RF tone', 'AF noise', 'Self test'],
+   
+   RF_TONE: 0x01,
+   AF_NOISE: 0x02,
+   STEST: 0x04,
+   CICF_SW: 0x08,
+   CICF_HF: 0x10,
+   CICF_FW: 0x20,
+   
 	rf_enable: true,
 	sweeping: 0,
 	cicf: 0,
@@ -87,19 +97,55 @@ function gen_controls_setup()
 {
 	gen.attn_offset_s[1] = 'waterfall cal '+ cfg.waterfall_cal +'dB';
    gen.save_freq = gen.freq;
-   var do_sweep = 0;
+   var do_sweep = 0, do_help = false;
 	
 	gen.url_params = ext_param();
 	var p = gen.url_params;
    if (p) {
       p = p.split(',');
-      if (isDefined(p[0])) gen.freq = +p[0];
-      if (isDefined(p[1])) gen.freq_stop = +p[1];
-      if (isDefined(p[2])) gen.step = +p[2];
-      if (isDefined(p[3])) gen.dwell = +p[3];
-      if (isDefined(p[4])) gen.attn_dB = +p[4];
-      if (isDefined(p[5])) do_sweep = +p[5];
-      if (gen.attn_dB < 0) gen.attn_dB = -gen.attn_dB;
+      p.forEach(function(a, i) {
+         var r, v;
+         //console.log('i='+ i +' a='+ a);
+         if (w3_ext_param('help', a).match) {
+            do_help = true;
+         } else
+         if ((r = w3_ext_param('mode', a)).match) {
+            if (isNumber(r.num)) {
+               gen.mode = w3_clamp(r.num, 0, gen.mode_s.length-1, 0);
+            }
+         } else
+         if ((r = w3_ext_param('freq', a)).match || (i == 0 && (r = w3_ext_param(null, a)).match)) {
+            if (r.has_value) {
+               v = r.string_case.parseFloatWithUnits('kM', 1e-3);
+               if (isNumber(v)) gen.freq = v;
+            }
+         } else
+         if ((r = w3_ext_param('attn', a)).match) {
+            if (isNumber(r.num)) {
+               gen.attn_dB = w3_clamp(Math.abs(r.num), 0, gen.attn_dB_max, 80);
+            }
+         } else
+         if ((r = w3_ext_param('stop', a)).match) {
+            if (r.has_value) {
+               v = r.string_case.parseFloatWithUnits('kM', 1e-3);
+               if (isNumber(v)) gen.freq_stop = v;
+            }
+         } else
+         if ((r = w3_ext_param('step', a)).match) {
+            if (r.has_value) {
+               v = r.string_case.parseFloatWithUnits('kM', 1e-3);
+               if (isNumber(v)) gen.step = v;
+            }
+         } else
+         if ((r = w3_ext_param('dwell', a)).match) {
+            if (isNumber(r.num)) {
+               gen.dwell = r.num;
+            }
+         } else
+         if ((r = w3_ext_param('sweep', a)).match) {
+            do_sweep = 1;
+         }
+      });
    }
    
 	var controls_html =
@@ -108,14 +154,13 @@ function gen_controls_setup()
 				w3_div('w3-medium w3-text-aqua', '<b>Signal generator</b>'),
 				w3_div('', 'All frequencies in kHz'),
             w3_inline('',
-               w3_input('w3-padding-small w3-width-90 w3-margin-right', 'Start', 'gen.freq', gen.freq, 'gen_freq_cb'),
+               w3_input('w3-padding-small w3-width-90 w3-margin-right', 'Freq', 'gen.freq', gen.freq, 'gen_freq_cb'),
                w3_input('w3-padding-small w3-width-90 w3-margin-right', 'Stop', 'gen.freq_stop', gen.freq_stop, 'gen_stop_cb'),
                w3_input('w3-padding-small w3-width-90 w3-margin-right', 'Step', 'gen.step', gen.step, 'gen_step_cb'),
                w3_input('w3-padding-small w3-width-90', 'Dwell (ms)', 'gen.dwell', gen.dwell, 'w3_num_cb')
             ),
 				w3_inline('w3-margin-top/w3-margin-between-16 w3-valign',
-				   //w3_switch('', 'On', 'Off', 'gen.rf_enable', gen.rf_enable, 'gen_enable_cb'),
-               w3_select('w3-text-red', 'Function', '', 'gen.func', gen.func, gen.func_s, 'gen_func_cb'),
+               w3_select('w3-text-red', 'Mode', '', 'gen.mode', gen.mode, gen.mode_s, 'gen_mode_cb'),
 				   w3_button('w3-red', '-Step', 'gen_step_up_down_cb', -1),
 				   w3_button('w3-green', '+Step', 'gen_step_up_down_cb', +1),
 				   w3_button('id-gen-sweep w3-css-yellow', 'Sweep', 'gen_sweep_cb'),
@@ -124,7 +169,7 @@ function gen_controls_setup()
                dbgUs? w3_checkbox('w3-label-inline w3-label-not-bold', 'FW<br>filter', 'gen.cicw', gen.cicw, 'gen_cicw_cb'):''
 				),
 				w3_col_percent('w3-margin-top',
-               w3_slider('', 'Attenuation', 'gen.attn_dB', gen.attn_dB, 0, 100, 5, 'gen_attn_cb'), 35,
+               w3_slider('id-gen-attn//', 'Attenuation', 'gen.attn_dB', gen.attn_dB, 0, gen.attn_dB_max, 5, 'gen_attn_cb'), 35,
                w3_div(''), 10,
                w3_div('',
 				      w3_div('', 'Offset attenuation by:'),
@@ -148,41 +193,30 @@ function gen_controls_setup()
 	if (spec.saved_audio_comp) ext_set_audio_comp(false);
 	ext_send('SET wf_comp=0');
 	if (do_sweep) gen_sweep_cb();
+   if (do_help) extint_help_click();
 }
 
-function gen_set(freq, attn, always)
+function gen_set(freq, ampl, always)
 {
-   //console.log('gen_set f='+ freq +' a='+ attn);
+   console.log('gen_set f='+ freq +' ampl='+ ampl +' attn='+ gen.attn_dB +' self_test='+ (gen.SELF_TEST? 1:0));
    //kiwi_trace();
-   if (always == true || gen.rf_enable) set_gen(freq, attn);
+   if (always == true || gen.rf_enable) set_gen((gen.mode == gen.SELF_TEST)? -freq : freq, ampl);
 }
-
-/*
-function gen_enable_cb(path, idx, first)
-{
-	idx = +idx;
-	gen.rf_enable = (idx == 0);
-	//console.log('gen_enable_cb rf_enable='+ gen.rf_enable +' f='+ (gen.rf_enable? gen.freq : 0));
-	if (!gen.rf_enable && gen.sweeping) gen_sweep_cancel();
-	gen_set(gen.rf_enable? gen.freq : 0, gen.attn_ampl, true);
-   colormap_update();
-   ext_send('SET run='+ (gen.rf_enable? '1':'0'));
-}
-*/
 
 function gen_run()
 {
-   var run = ((gen.func == gen.RF)? 1 : ((gen.func == gen.AF)? 2:0)) | (gen.cicf? 4:0) | (gen.cich? 8:0) | (gen.cicw? 16:0);
+   var run = ((gen.mode == gen.RF)? gen.RF_TONE : ((gen.mode == gen.AF)? gen.AF_NOISE: ((gen.mode == gen.SELF_TEST)? gen.STEST :0))) |
+      (gen.cicf? gen.CICF_SW :0) | (gen.cich? gen.CICF_HF :0) | (gen.cicw? gen.CICF_FW :0);
    ext_send('SET run='+ run);
 }
 
-function gen_func_cb(path, idx, first)
+function gen_mode_cb(path, idx, first)
 {
-	gen.func = +idx;
-	gen.rf_enable = (gen.func == gen.RF);
-	//console.log('gen_func_cb func='+ gen.func +' f='+ (gen.rf_enable? gen.freq : 0));
+	gen.mode = +idx;
+	gen.rf_enable = (gen.mode == gen.RF || gen.mode == gen.SELF_TEST);
+	console.log('gen_mode_cb mode='+ gen.mode +' f='+ (gen.rf_enable? gen.freq : 0) +' attn='+ gen.attn_dB);
 	if (!gen.rf_enable && gen.sweeping) gen_sweep_cancel();
-	gen_attn_cb('gen.attn_dB', gen.attn_dB, true);     // add/remove gen.attn_offset_val for RF/AF mode
+	gen_attn_cb('gen.attn_dB', gen.attn_dB, true);     // add/remove gen.attn_offset_val depending on mode setting
 	gen_set(gen.rf_enable? gen.freq : 0, gen.attn_ampl, true);
    colormap_update();
    gen_run();
@@ -283,13 +317,14 @@ function gen_sweep_cb(path, val, first)
 function gen_attn_cb(path, val, complete)
 {
    gen.attn_dB = +val;
-	var dB = gen.attn_dB + ((gen.func == gen.RF)? gen.attn_offset_val : 0);
+	var dB = gen.attn_dB + ((gen.mode == gen.RF || gen.mode == gen.SELF_TEST)? gen.attn_offset_val : 0);
 	if (dB < 0) dB = 0;
-	var attn_ampl = Math.pow(10, -dB/20);		// use the amplitude form since we are multipling a signal
-	gen.attn_ampl = 0x1ffff * attn_ampl;      // hardware gen_attn is 18-bit signed so max pos is 0x1ffff
-	//console.log('gen_attn gen.attn_dB='+ gen.attn_dB +' attn_offset_val='+ gen.attn_offset_val +' dB='+ dB +' attn_ampl='+ gen.attn_ampl.toFixed(1) +' / '+ gen.attn_ampl.toHex());
+	var attn_ampl = Math.pow(10, -dB/20);     // use the amplitude form since we are multipling a signal
+	gen.attn_ampl = Math.round(0x1ffff * attn_ampl);   // hardware gen_attn is 18-bit signed so max pos is 0x1ffff
+	console.log('gen_attn gen.attn_dB='+ gen.attn_dB +' attn_offset_val='+ gen.attn_offset_val +' dB='+ dB +' attn_ampl='+ gen.attn_ampl +' / '+ gen.attn_ampl.toHex());
 	w3_num_cb(path, gen.attn_dB);
 	w3_set_label('Attenuation '+ (-gen.attn_dB).toString() +' dB', path);
+	w3_hide2('id-gen-attn', gen.mode == gen.SELF_TEST);
 	
 	if (complete) {
 		gen_set(gen.freq, gen.attn_ampl);
@@ -314,6 +349,41 @@ function sig_gen_blur()
 	if (spec.saved_audio_comp) ext_set_audio_comp(true);
 	ext_send('SET wf_comp=1');
    toggle_or_set_spec(toggle_e.SET, spec.NONE);
+}
+
+function sig_gen_help(show)
+{
+   if (show) {
+      var s = 
+         w3_text('w3-medium w3-bold w3-text-aqua', 'Signal generator help') +
+         w3_div('w3-margin-T-8 w3-scroll-y|height:90%',
+            w3_div('w3-margin-R-8',
+               'The signal generator has three modes:' +
+               '<ul><li><x1>RF tone</x1> mode replaces the data from the Kiwi ADC with ' +
+               'an RF tone from a digital oscillator. This oscillator has limited SFDR, so some distortion products ' +
+               'will be noted especially at large attenuation levels.</li>' +
+               
+               '<li><x1>AF noise</x1> replaces the audio channel with broadband noise with variable attenuation. ' +
+               'It is useful for testing some of the internal Kiwi features such as de-emphasis.' +
+               
+               '<li><x1>Self test</x1> (KiwiSDR 2 and later) The digital oscillator described above is routed as an ' +
+               'output to the <x1>EXT CLK &amp; TEST</x1> SMA connector. It is intended to be looped-back to the RF antenna input SMA ' +
+               'via a short SMA-to-SMA cable. In this way the Kiwi\'s RF front end and ADC prior to the FPGA can be tested ' +
+               'against the known signal source.</li></ul>' +
+                        
+               'URL parameters: <br>' +
+               w3_text('|color:orange', '<i>kHz</i> or freq:<i>kHz</i>&nbsp; mode:[<i>0123</i>] &nbsp; attn:<i>dB</i> &nbsp; stop:<i>kHz</i> &nbsp; ' +
+               'step:<i>kHz</i> &nbsp; dwell:<i>msecs</i> &nbsp; sweep') +
+               
+               '<br><br>Frequencies are in kHz and can use the <x1>k</x1> and <x1>M</x1> suffix notation (e.g. 7.1M). ' +
+               'The mode numbers 0-3 correspond to the four Mode menu entries.'
+            )
+         );
+
+      confirmation_show_content(s, 610, 375);
+      w3_el('id-confirmation-container').style.height = '100%';   // to get the w3-scroll-y above to work
+   }
+   return true;
 }
 
 // called to display HTML for configuration parameters in admin interface

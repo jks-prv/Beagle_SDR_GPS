@@ -541,7 +541,7 @@ namespace ale {
 
             case S_TO:
                 cprintf(ALL, DBG, CYAN, "[To: %s] [His BER: %d]", cur, ber);
-                ext_send_msg(rx_chan, true, "EXT call_est_test");
+                ext_send_msg(rx_chan, false, "EXT call_est_test");
                 event = true;
                 break;
 

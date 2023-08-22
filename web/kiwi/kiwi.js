@@ -29,6 +29,7 @@ var kiwi = {
    BADP_DATABASE_UPDATE_IN_PROGRESS:   6,
    BADP_ADMIN_CONN_ALREADY_OPEN:       7,
    
+   conn_tstamp: 0,
    isOffset: false,
    is_local: [],
    loaded_files: {},
@@ -155,7 +156,7 @@ function kiwi_bodyonload(error)
 	} else
 	
 	{
-	   if (initCookie('ident', "").startsWith('ZL/KF6VO')) dbgUs = true;
+	   if (initCookie('ident', "").endsWith('KF6VO')) dbgUs = true;
 	   
 	   // for testing a clean webpage, e.g. kiwi:8073/test
 	   /*
@@ -174,9 +175,6 @@ function kiwi_bodyonload(error)
 		
       w3int_init();
 
-      var d = new Date();
-		timestamp = d.getTime();
-		
 		if (conn_type == 'kiwi') {
 		
 			// A slight hack. For a user connection extint.ws is set here to ws_snd so that

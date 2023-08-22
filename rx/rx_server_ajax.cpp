@@ -92,7 +92,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
 	//	Returns JSON
 	//	Done as an AJAX because needed for .js file version checking long before any websocket available
 	case AJAX_VERSION:
-		asprintf(&sb, "{\"maj\":%d,\"min\":%d}", version_maj, version_min);
+		asprintf(&sb, "{\"maj\":%d,\"min\":%d,\"ts\":%lld}", version_maj, version_min, rx_conn_tstamp());
 		break;
 
 	// SECURITY:

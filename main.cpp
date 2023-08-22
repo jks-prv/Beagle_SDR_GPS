@@ -445,6 +445,11 @@ int main(int argc, char *argv[])
 		ctrl_clr_set(0, ctrl);
 
 		// read device DNA
+		#define CTRL_DNA_CLK    CTRL_SER_CLK
+		#define CTRL_DNA_READ   CTRL_SER_LE_CSN
+		#define CTRL_DNA_SHIFT  CTRL_SER_DATA
+
+		ctrl_set_ser_dev(CTRL_SER_DNA);
 		ctrl_clr_set(CTRL_DNA_CLK | CTRL_DNA_SHIFT, CTRL_DNA_READ);
 		ctrl_positive_pulse(CTRL_DNA_CLK);
 		ctrl_clr_set(CTRL_DNA_CLK | CTRL_DNA_READ, CTRL_DNA_SHIFT);
@@ -455,6 +460,7 @@ int main(int argc, char *argv[])
 		    ctrl_positive_pulse(CTRL_DNA_CLK);
 		}
 		ctrl_clr_set(CTRL_DNA_CLK | CTRL_DNA_READ | CTRL_DNA_SHIFT, 0);
+		ctrl_clr_ser_dev();
 		printf("device DNA %08x|%08x\n", PRINTF_U64_ARG(net.dna));
 	}
 	

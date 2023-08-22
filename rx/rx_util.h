@@ -34,6 +34,9 @@ Boston, MA  02110-1301, USA.
 typedef enum { ARUN_NONE = 0, ARUN_FT8 = 1, ARUN_WSPR = 2 } arun_e;
 
 typedef struct {
+    #define NEW_TSTAMP_SPACE (1LL << 62)    // i.e. 0x4...
+	u64_t last_conn_tstamp;
+
 	arun_e arun_which[MAX_RX_CHANS];
 	int arun_band[MAX_RX_CHANS];
 	u4_t arun_evictions[MAX_RX_CHANS];
@@ -93,6 +96,7 @@ const char * const kick_s[] = { "KICK_CHAN", "KICK_USERS", "KICK_ALL", "KICK_ADM
 void rx_server_kick(kick_e kick, int chan = -1);
 
 void show_conn(const char *prefix, u4_t printf_type, conn_t *cd);
+u64_t rx_conn_tstamp();
 void rx_autorun_clear();
 int rx_autorun_find_victim();
 void rx_autorun_restart_victims(bool initial);

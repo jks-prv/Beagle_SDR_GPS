@@ -58,6 +58,7 @@ var ale = {
    isActive: false,
    ignore_resume: false,
    testing: false,
+   periodic_self_test: false,
    
    REC: 0x1,
    LOG: 0x2,
@@ -151,12 +152,12 @@ function ale_2g_recv(data)
             if (ale.testing) {
                w3_hide('id-ale_2g-bar-container');
                w3_show('id-ale_2g-record');
-               ale.testing = false;
+               ale.testing = ale.periodic_self_test = false;
             }
 			   break;
 
 			case "chars":
-				ale_2g_decoder_output_chars(param[1]);
+			   if (!ale.periodic_self_test) ale_2g_decoder_output_chars(param[1]);
 				break;
 
 			case "tune_ack":
@@ -1098,16 +1099,17 @@ function ale_2g_resamp_cb(path, idx, first)
 
 function ale_2g_test_cb(path, val, first)
 {
-   if (+val == 0) kiwi_trace();
+   //if (+val == 0) kiwi_trace();
    if (first) return;
    if (ext_nom_sample_rate() != 12000) {     // our sample file is 12k only
-      ale.testing = false;
+      ale.testing = ale.periodic_self_test = false;
       return;
    }
    val = +val;
    if (dbgUs) console.log('ale_2g_test_cb: val='+ val);
 	w3_el('id-ale_2g-bar').style.width = '0%';
    ale.testing = val;
+   if (!val) ale.periodic_self_test = false;
    w3_show_hide('id-ale_2g-bar-container', ale.testing);
    w3_show_hide('id-ale_2g-record', !ale.testing);
    
@@ -1199,6 +1201,8 @@ function ALE_2G_focus()
    ale.perodic_test = setInterval(
       function() {
          console.log('ale_2g: periodic test');
+         ale_2g_decoder_output_chars('[periodic self test]\n');
+         ale.periodic_self_test = true;
          w3_el('id-ale_2g-test').click();
       }, 4*60*60*1000   // every 4 hours
       //}, 45*1000,

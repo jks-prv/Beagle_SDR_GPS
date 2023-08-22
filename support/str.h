@@ -64,10 +64,11 @@ int kiwi_strnlen(const char *s, int limit);
 char *kiwi_strncpy(char *dst, const char *src, size_t n);
 char *kiwi_strncat(char *dst, const char *src, size_t n);
 
-int kiwi_snprintf_int(const char *buf, size_t buflen, const char *fmt, ...);
+int _kiwi_snprintf_int(const char *buf, size_t buflen, const char *fmt, ...);
 // NB: check that caller buf is const (i.e. not a pointer) so sizeof(buf) is valid
-#define kiwi_snprintf_buf(buf, fmt, ...) kiwi_snprintf_int(buf, sizeof(buf), fmt, ## __VA_ARGS__)
-#define kiwi_snprintf_ptr(ptr, buflen, fmt, ...) kiwi_snprintf_int(ptr, buflen, fmt, ## __VA_ARGS__)
+#define kiwi_snprintf_buf(buf, fmt, ...) _kiwi_snprintf_int(buf, sizeof(buf), fmt, ## __VA_ARGS__)
+#define kiwi_snprintf_buf_plus_space_for_null(buf, fmt, ...) _kiwi_snprintf_int(buf, sizeof(buf) + SPACE_FOR_NULL, fmt, ## __VA_ARGS__)
+#define kiwi_snprintf_ptr(ptr, buflen, fmt, ...) _kiwi_snprintf_int(ptr, buflen, fmt, ## __VA_ARGS__)
 
 bool kiwi_sha256_strcmp(char *str, const char *key);
 
