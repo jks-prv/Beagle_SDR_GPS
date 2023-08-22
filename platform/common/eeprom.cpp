@@ -226,16 +226,16 @@ void eeprom_write(next_serno_e type, int serno)
 	int ww = (ord_date - weekday + 10) / 7;
 	if (ww < 1) ww = 1;
 	if (ww > 52) ww = 52;
-	kiwi_snprintf_buf(e->week, "%2d", ww);	// caution: leaves '\0' at start of next field (year)
+	kiwi_snprintf_buf_plus_space_for_null(e->week, "%2d", ww);	// caution: leaves '\0' at start of next field (year)
 
 	int yy = tm.tm_year - 100;
-	kiwi_snprintf_buf(e->year, "%2d", yy);	// caution: leaves '\0' at start of next field (assembly)
+	kiwi_snprintf_buf_plus_space_for_null(e->year, "%2d", yy);	// caution: leaves '\0' at start of next field (assembly)
 
 	SET_CHARS(e->assembly, "0001", ' ');
 
 	if (type == SERNO_ALLOC)
 		serno = eeprom_next_serno(SERNO_ALLOC, 0);
-	kiwi_snprintf_buf(e->serial_no, "%4d", serno);	// caution: leaves '\0' at start of next field (n_pins)
+	kiwi_snprintf_buf_plus_space_for_null(e->serial_no, "%4d", serno);	// caution: leaves '\0' at start of next field (n_pins)
 	
 	e->n_pins = FLIP16(2*26);
 	int pin;
@@ -260,6 +260,7 @@ void eeprom_write(next_serno_e type, int serno)
     // NB: have to change WP before fopen() and after fclose() because writes don't
     // fully complete (flush) until after fclose() returns!
 	ctrl_clr_set(CTRL_EEPROM_WP, 0);    // takes effect about 600 us before last write
+	kiwi_msleep(1);
 
 	fn = debian7? EEPROM_DEV_DEBIAN7 : EEPROM_DEV;
 
@@ -274,6 +275,7 @@ void eeprom_write(next_serno_e type, int serno)
 
 	mprintf("EEPROM write: wrote %d bytes\n", n);
 	fclose(fp);
+	kiwi_msleep(1);
 	ctrl_clr_set(0, CTRL_EEPROM_WP);    // takes effect about 200 us after last write
 }
 

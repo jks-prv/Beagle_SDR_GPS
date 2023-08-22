@@ -765,7 +765,7 @@ char *kiwi_strncat(char *dst, const char *src, size_t n)
 //
 // If setting gdb breakpoints in here must use "noinline" attribute to prevent false breakpoints:
 //__attribute__((noinline))
-int kiwi_vsnprintf_int(char *buf, size_t buflen, const char *fmt, va_list ap) {
+static int kiwi_vsnprintf_int(char *buf, size_t buflen, const char *fmt, va_list ap) {
     int n;
     if (buflen < 1) {
         printf("WARNING kiwi_vsnprintf_int: buflen=%d which is < 1\n", buflen);
@@ -783,7 +783,7 @@ int kiwi_vsnprintf_int(char *buf, size_t buflen, const char *fmt, va_list ap) {
     return n;
 }
 
-int kiwi_snprintf_int(const char *buf, size_t buflen, const char *fmt, ...) {
+int _kiwi_snprintf_int(const char *buf, size_t buflen, const char *fmt, ...) {
     va_list ap;
     int n;
     va_start(ap, fmt);
