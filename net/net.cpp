@@ -30,6 +30,7 @@ Boston, MA  02110-1301, USA.
 #include "nbuf.h"
 #include "cfg.h"
 #include "net.h"
+#include "rx_util.h"
 
 #include <string.h>
 #include <time.h>
@@ -740,7 +741,7 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
     struct mg_connection *mc_fail, *mcs = NULL, *mcw = NULL, *mce = NULL;
     conn_t *csnd = NULL, *cwf, *cext;
     int local_port = port_base + instance * 3;
-    u64_t tstamp = timer_us64();    // CAUTION: tstamp must be unique even if called in rapid succession!
+    u64_t tstamp = rx_conn_tstamp();
     bool ident_geo_sent = false;
     memset(iconn, 0, sizeof(internal_conn_t));
     

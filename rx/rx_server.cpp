@@ -174,8 +174,11 @@ void rx_server_remove(conn_t *c)
         //cprintf(c, "EXT remove from=conn-%02d rx_chan=%d tstamp=%016llx\n", c->self_idx, c->rx_channel, c->tstamp);
         //dump();
 	    for (conn_t *conn = conns; conn < &conns[N_CONNS]; conn++) {
-	        if (conn->type == STREAM_EXT && conn->rx_channel == c->rx_channel && conn->tstamp == c->tstamp)
+	        if (!conn->valid) continue;
+	        if (conn->type == STREAM_EXT && conn->rx_channel == c->rx_channel && conn->tstamp == c->tstamp) {
+	            //cprintf(c, "ext_kick rx_channel=%d\n", conn->rx_channel);
 	            ext_kick(conn->rx_channel);
+	        }
 	    }
     }
     
@@ -401,8 +404,10 @@ retry:
 		conn_printf("CONN-%02d IS %p type=%d(%s) ip=%s:%d:%016llx rx=%d auth=%d other=%s%ld mc=%p\n", cn, c, c->type, rx_conn_type(c),
 		    c->remote_ip, c->remote_port, c->tstamp, c->rx_channel, c->auth, c->other? "CONN-":"", c->other? c->other-conns:-1, c->mc);
 
-        // link streams to each other, e.g. snd <=> wf, snd => ext
-		if (c->tstamp == tstamp && (strcmp(ip_forwarded, c->remote_ip) == 0)) {
+        // Link streams to each other, e.g. snd <=> wf, snd => ext
+        // If using the new tstamp space ignore IP address matching to compensate for VPN services that
+        // fragment the source IP into multiple addresses (e.g. Cloudflare WARP).
+		if (c->tstamp == tstamp && ((tstamp & NEW_TSTAMP_SPACE) || strcmp(ip_forwarded, c->remote_ip) == 0)) {
 			if (snd_or_wf_or_ext && c->type == st->type) {
 				conn_printf("CONN-%02d DUPLICATE!\n", cn);
 				return NULL;

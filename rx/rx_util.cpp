@@ -56,6 +56,22 @@ Boston, MA  02110-1301, USA.
 
 rx_util_t rx_util;
 
+// CAUTION: returned tstamp must be unique even if called in rapid succession!
+u64_t rx_conn_tstamp()
+{
+    u64_t tstamp = timer_us64();
+    
+    // very unlikely given use of timer_us64(), but guarantee monotonic
+    if (rx_util.last_conn_tstamp >= tstamp)
+        tstamp = rx_util.last_conn_tstamp + 1;
+    rx_util.last_conn_tstamp = tstamp;
+    
+    // Mark tstamp space that should skip IP address matching,
+    // and also avoid collisions with older tstamp space based on msec TOD (e.g. kiwirecorder).
+    tstamp |= NEW_TSTAMP_SPACE;
+    return tstamp;
+}
+
 void rx_loguser(conn_t *c, logtype_e type)
 {
 	u4_t now = timer_sec();

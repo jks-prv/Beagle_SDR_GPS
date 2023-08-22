@@ -140,6 +140,7 @@ function kiwi_load2()
       // done as an AJAX because needed long before any websocket available
       kiwi_ajax("/VER", 'kiwi_version_cb');
    } else {
+		kiwi.conn_tstamp = (new Date()).getTime();   // fallback
       if (typeof(kiwi_bodyonload) !== 'undefined')
          kiwi_bodyonload('');
    }
@@ -194,6 +195,11 @@ function kiwi_version_cb(response_obj)
 	
 	if (kiwi_version_fail)
 	   s += '<br>'+ w3_button('w3-css-yellow', 'Continue anyway', 'kiwi_version_continue_cb');
+	
+	kiwi.conn_tstamp = isDefined(response_obj.ts)? response_obj.ts : (new Date()).getTime();
+	//console.log(response_obj);
+	//console.log('conn_tstamp='+ kiwi.conn_tstamp);
+	
 	kiwi_bodyonload(s);
 }
 
@@ -1950,7 +1956,7 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	}
 	
 	var no_wf = (window.location.href.includes('?no_wf') || window.location.href.includes('&no_wf'));
-	ws_url = ws_protocol + ws_url +'/'+ (no_wf? 'no_wf/':'kiwi/') + timestamp +'/'+ stream;
+	ws_url = ws_protocol + ws_url +'/'+ (no_wf? 'no_wf/':'kiwi/') + kiwi.conn_tstamp +'/'+ stream;
 	if (isNonEmptyString(window.location.search))
 	   ws_url += window.location.search;      // pass query string to support "&foff="
 	if (no_wf) wf.no_wf = true;
