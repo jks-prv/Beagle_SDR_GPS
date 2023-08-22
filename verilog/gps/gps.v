@@ -25,7 +25,10 @@ module GPS (
     input  wire		   adc_clk,
     input  wire		   host_srq,
 
-    input  wire		   I_data,
+    input  wire		   I_sign,
+    input  wire		   I_mag,
+    input  wire		   Q_sign,
+    input  wire		   Q_mag,
     output wire        gps_rd,
     output wire [15:0] gps_dout,
     
@@ -37,10 +40,14 @@ module GPS (
     input  wire        rdBit,
     input  wire        rdReg,
     input  wire        wrReg,
-    input  wire        wrEvt
+    input  wire        wrEvt,
+    
+    output wire        unused_inputs
     );
 
 `include "kiwi.gen.vh"
+
+    assign unused_inputs = I_mag | Q_sign | Q_mag;
 
     //////////////////////////////////////////////////////////////////////////
     // Channel select
@@ -146,7 +153,7 @@ module GPS (
     reg         sample;
 
     always @ (posedge clk)
-        sample <= I_data;
+        sample <= I_sign;
 
     SAMPLER sampler (
         .clk    (clk),

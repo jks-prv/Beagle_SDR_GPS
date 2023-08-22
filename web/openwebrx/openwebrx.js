@@ -410,16 +410,17 @@ function kiwi_main_ready()
       function() {
          if (rx_chan != 0) return;
 
+         var attn_ampl = 0;
          if (gen_attn != 0) {
             var dB = gen_attn + cfg.waterfall_cal;
             var ampl_gain = Math.pow(10, -dB/20);		// use the amplitude form since we are multipling a signal
-            gen_attn = 0x01ffff * ampl_gain;
-            //console.log('### GEN dB='+ dB +' ampl_gain='+ ampl_gain +' attn='+ gen_attn +' / '+ gen_attn.toHex() +' offset='+ cfg.waterfall_cal);
+            attn_ampl = 0x01ffff * ampl_gain;
+            //console.log('### GEN dB='+ dB +' ampl_gain='+ ampl_gain +' attn_ampl='+ attn_ampl +' / '+ attn_ampl.toHex() +' offset='+ cfg.waterfall_cal);
          }
    
-         // always setup gen so it will get disables (attn=0) if an rx0 page reloads using a URL where no gen is
+         // always setup gen so it will get disabled (attn=0) if an rx0 page reloads using a URL where no gen is
          // specified, but it was previously enabled by the URL (i.e. so the gen doesn't continue to run).
-         set_gen(gen_freq, gen_attn);
+         set_gen(gen_freq, attn_ampl);
       },
       null, 500
    );
@@ -11772,10 +11773,10 @@ function add_problem(what, append, sticky, el_id)
 	}
 }
 
-function set_gen(freq, attn)
+function set_gen(freq, attn_ampl)
 {
-   //console.log('set_gen freq='+ freq +' attn='+ attn);
-	snd_send("SET genattn="+ attn.toFixed(0));
+   //console.log('set_gen freq='+ freq +' attn_ampl='+ attn_ampl);
+	snd_send("SET genattn="+ attn_ampl.toFixed(0));
 	snd_send("SET gen="+ freq +" mix=-1");
 }
 

@@ -39,6 +39,8 @@ void release_misc_mosi();
 u2_t ctrl_get();
 void ctrl_clr_set(u2_t clr, u2_t set);
 void ctrl_positive_pulse(u2_t bits);
+void ctrl_set_ser_dev(u2_t ser_dev);
+void ctrl_clr_ser_dev();
 
 typedef union {
     u2_t word;

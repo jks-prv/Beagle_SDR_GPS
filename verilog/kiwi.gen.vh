@@ -7,6 +7,7 @@
 	localparam NUM_CMDS_OTHER = 0;    // DEFp 0x0
 //`define DEF_NUM_CMDS_OTHER
 `define USE_SDR 1    // DEFh 0x1
+//`define USE_24K_WIDE    // DEFh 0x0
 `define USE_GPS 1    // DEFh 0x1
 `define ARTIX_7A35 1    // DEFh 0x1
 //`define ZYNQ_7007    // DEFh 0x0
@@ -67,10 +68,10 @@
 `define DEF_CICF_DECIM_BY_2 1
 	localparam MAX_SND_RATE = 20250;    // DEFp 0x4f1a
 `define DEF_MAX_SND_RATE 1
-	localparam MIN_SND_RATE = 12000;    // DEFp 0x2ee0
-`define DEF_MIN_SND_RATE 1
 	localparam SND_RATE_3CH = 20250;    // DEFp 0x4f1a
 `define DEF_SND_RATE_3CH 1
+	localparam MIN_SND_RATE = 12000;    // DEFp 0x2ee0
+`define DEF_MIN_SND_RATE 1
 	localparam SND_RATE_4CH = 12000;    // DEFp 0x2ee0
 `define DEF_SND_RATE_4CH 1
 	localparam SND_RATE_8CH = 12000;    // DEFp 0x2ee0
@@ -270,23 +271,32 @@
 	localparam STAT_FW_ID = 28672;    // DEFp 0x7000
 `define DEF_STAT_FW_ID 1
 	localparam STAT_OVFL = 15;    // DEFb: bit number for value: 0x8000
-	localparam CTRL_0001 = 0;    // DEFb: bit number for value: 0x1
-	localparam CTRL_0002 = 1;    // DEFb: bit number for value: 0x2
-	localparam CTRL_0004 = 2;    // DEFb: bit number for value: 0x4
-	localparam CTRL_0008 = 3;    // DEFb: bit number for value: 0x8
-	localparam CTRL_0010 = 4;    // DEFb: bit number for value: 0x10
-	localparam CTRL_0020 = 5;    // DEFb: bit number for value: 0x20
-	localparam CTRL_0040 = 6;    // DEFb: bit number for value: 0x40
-	localparam CTRL_USE_GEN = 10;    // DEFb: bit number for value: 0x400
-	localparam CTRL_GEN_FIR = 7;    // DEFb: bit number for value: 0x80
+	localparam CTRL_SER_NONE = 0;    // DEFp 0x0
+//`define DEF_CTRL_SER_NONE
+	localparam CTRL_SER_DNA = 1;    // DEFp 0x1
+`define DEF_CTRL_SER_DNA 1
+	localparam CTRL_SER_DA = 2;    // DEFp 0x2
+`define DEF_CTRL_SER_DA 1
+	localparam CTRL_SER_GS = 3;    // DEFp 0x3
+`define DEF_CTRL_SER_GS 1
+	localparam CTRL_SER_MASK = 3;    // DEFp 0x3
+`define DEF_CTRL_SER_MASK 1
+	localparam CTRL_SER_LE_CSN = 2;    // DEFb: bit number for value: 0x4
+	localparam CTRL_SER_CLK = 3;    // DEFb: bit number for value: 0x8
+	localparam CTRL_SER_DATA = 4;    // DEFb: bit number for value: 0x10
+	localparam CTRL_STEN = 5;    // DEFb: bit number for value: 0x20
+	localparam CTRL_DEBUG1 = 6;    // DEFb: bit number for value: 0x40
+	localparam CTRL_DEBUG2 = 7;    // DEFb: bit number for value: 0x80
 	localparam CTRL_OSC_EN = 8;    // DEFb: bit number for value: 0x100
 	localparam CTRL_EEPROM_WP = 9;    // DEFb: bit number for value: 0x200
-	localparam CTRL_UNUSED_OUT = 9;    // DEFb: bit number for value: 0x200
+	localparam CTRL_USE_GEN = 10;    // DEFb: bit number for value: 0x400
 	localparam CTRL_CMD_READY = 11;    // DEFb: bit number for value: 0x800
 	localparam CTRL_SND_INTR = 12;    // DEFb: bit number for value: 0x1000
-	localparam CTRL_DNA_READ = 13;    // DEFb: bit number for value: 0x2000
-	localparam CTRL_DNA_SHIFT = 14;    // DEFb: bit number for value: 0x4000
-	localparam CTRL_DNA_CLK = 15;    // DEFb: bit number for value: 0x8000
+	localparam CTRL_2000 = 13;    // DEFb: bit number for value: 0x2000
+	localparam CTRL_4000 = 14;    // DEFb: bit number for value: 0x4000
+	localparam CTRL_8000 = 15;    // DEFb: bit number for value: 0x8000
+	localparam CTRL_UNUSED_OUT = 9;    // DEFb: bit number for value: 0x200
+	localparam CTRL_GEN_FIR = 7;    // DEFb: bit number for value: 0x80
 
 
 // from verilog/kiwi.inline.vh
