@@ -305,6 +305,7 @@ void update_vars_from_config(bool called_at_init)
     cfg_default_int("init.cw_offset", 500, &update_cfg);
     cfg_default_int("init.colormap", 0, &update_cfg);
     cfg_default_int("init.aperture", 1, &update_cfg);
+    cfg_default_float("init.rf_attn", 0, &update_cfg);
     cfg_default_int("S_meter_OV_counts", 10, &update_cfg);
     cfg_default_bool("webserver_caching", true, &update_cfg);
     max_thr = (float) cfg_default_int("overload_mute", -15, &update_cfg);
@@ -360,8 +361,8 @@ void update_vars_from_config(bool called_at_init)
     // ethtool doesn't seem to have a way to go back to auto speed once a forced speed is set?
     int espeed = cfg_default_int("ethernet_speed", 0, &update_cfg);
     static int current_espeed;
-    if (espeed != current_espeed || (platform == PLATFORM_BB_AI64 && current_espeed == ESPEED_10M)) {
-        if (platform == PLATFORM_BB_AI64 && (espeed == ESPEED_10M || current_espeed == ESPEED_10M)) {
+    if (espeed != current_espeed || (kiwi.platform == PLATFORM_BB_AI64 && current_espeed == ESPEED_10M)) {
+        if (kiwi.platform == PLATFORM_BB_AI64 && (espeed == ESPEED_10M || current_espeed == ESPEED_10M)) {
             lprintf("ETH0 CAUTION: BBAI-64 doesn't support 10 mbps. Reverting to auto speed.\n");
             espeed = ESPEED_AUTO;
             if (called_at_init)
@@ -518,7 +519,6 @@ void update_vars_from_config(bool called_at_init)
     admcfg_default_string("duc_pass", "", &update_admcfg);
     admcfg_default_string("duc_host", "", &update_admcfg);
     admcfg_default_int("duc_update", 3, &update_admcfg);
-    admcfg_default_bool("daily_restart", false, &update_admcfg);
     admcfg_default_int("restart_update", 0, &update_admcfg);
     admcfg_default_int("update_restart", 0, &update_admcfg);
     admcfg_default_string("ip_address.dns1", "1.1.1.1", &update_admcfg);
@@ -537,6 +537,17 @@ void update_vars_from_config(bool called_at_init)
     admin_keepalive = admcfg_default_bool("admin_keepalive", true, &update_admcfg);
     log_local_ip = admcfg_default_bool("log_local_ip", true, &update_admcfg);
     admcfg_default_bool("dx_comm_auto_download", true, &update_admcfg);
+    
+    // convert daily_restart switch bool => menu int
+    bool daily_restart_bool = admcfg_bool("daily_restart", &err, CFG_OPTIONAL);
+    daily_restart_e daily_restart;
+    if (!err) {
+        daily_restart = daily_restart_bool? DAILY_RESTART : DAILY_RESTART_NO;
+        admcfg_rem_bool("daily_restart");
+    } else {
+        daily_restart = DAILY_RESTART_NO;   // default if it doesn't already exist
+    }
+    kiwi.daily_restart = (daily_restart_e) admcfg_default_int("daily_restart", daily_restart, &update_admcfg);
 
     // decouple rx.kiwisdr.com and sdr.hu registration
     bool sdr_hu_register = admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED);
