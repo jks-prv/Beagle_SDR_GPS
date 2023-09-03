@@ -275,10 +275,10 @@
 //`define DEF_CTRL_SER_NONE
 	localparam CTRL_SER_DNA = 1;    // DEFp 0x1
 `define DEF_CTRL_SER_DNA 1
-	localparam CTRL_SER_DA = 2;    // DEFp 0x2
-`define DEF_CTRL_SER_DA 1
-	localparam CTRL_SER_GS = 3;    // DEFp 0x3
-`define DEF_CTRL_SER_GS 1
+	localparam CTRL_SER_ATTN = 2;    // DEFp 0x2
+`define DEF_CTRL_SER_ATTN 1
+	localparam CTRL_SER_GPS = 3;    // DEFp 0x3
+`define DEF_CTRL_SER_GPS 1
 	localparam CTRL_SER_MASK = 3;    // DEFp 0x3
 `define DEF_CTRL_SER_MASK 1
 	localparam CTRL_SER_LE_CSN = 2;    // DEFb: bit number for value: 0x4

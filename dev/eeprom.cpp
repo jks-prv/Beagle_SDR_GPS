@@ -26,6 +26,8 @@ Boston, MA  02110-1301, USA.
 #include "spi.h"
 #include "coroutines.h"
 #include "eeprom.h"
+#include "fpga.h"
+#include "printf.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -130,7 +132,7 @@ static bool debian7 = true;
  #define EEPROM_DEV     "/sys/bus/i2c/devices/2-0054/eeprom"
 #endif
 
-int eeprom_check()
+int eeprom_check(model_e *model)
 {
 	eeprom_t *e = &eeprom;
 	const char *fn;
@@ -180,14 +182,26 @@ int eeprom_check()
 	n = sscanf(serial_no, "%d", &serno);
 	mprintf("EEPROM check: read serial_no \"%s\" %d\n", serial_no, serno);
 	if (n != 1 || serno <= 0 || serno > 9999) {
-		mlprintf("EEPROM check: scan failed\n");
+		mlprintf("EEPROM check: scan failed (serno)\n");
 		return -1;
 	}
+	
+	char part_no[sizeof(e->part_no) + SPACE_FOR_NULL];
+	GET_CHARS(e->part_no, part_no);
+
+	int _model = -1;
+	n = sscanf(part_no, "KiwiSDR %d", &_model);
+	if (n != 1 || _model <= 0) {
+	    mlprintf("EEPROM check: read model \"%s\" %d\n", part_no, _model);
+		mlprintf("EEPROM check: scan failed (model)\n");
+		return -1;
+	}
+	if (model != NULL) *model = (model_e) _model;
 	
 	return serno;
 }
 
-void eeprom_write(next_serno_e type, int serno)
+void eeprom_write(next_serno_e type, int serno, int model)
 {
 	int n;
 	const char *fn;
@@ -213,8 +227,9 @@ void eeprom_write(next_serno_e type, int serno)
 
 	SET_CHARS(e->version, "v1.1", ' ');
 
-	SET_CHARS(e->mfg, "Seeed.cc", ' ');
-	SET_CHARS(e->part_no, "KIWISDR10", ' ');
+	SET_CHARS(e->mfg, "kiwisdr.com", ' ');
+	
+	SET_CHARS(e->part_no, stprintf("KiwiSDR %d", model), ' ');
 
 	// we use the WWYY fields as "date of last EEPROM write" rather than "date of production"
 	time_t t = utc_time();

@@ -145,7 +145,6 @@ static void report_result(conn_t *conn)
 	kiwi_ifree(time_m);
 }
 
-static bool daily_restart = false;
 static bool file_auto_download_check = false;
 static bool file_auto_download_oneshot = false;
 
@@ -175,6 +174,7 @@ static bool file_auto_download_oneshot = false;
         return status
 */
 
+static bool do_daily_restart = false;
 static void _update_task(void *param)
 {
 	conn_t *conn = (conn_t *) FROM_VOID_PARAM(param);
@@ -312,10 +312,17 @@ static void _update_task(void *param)
 		lprintf("UPDATE: version %d.%d is current\n", version_maj, version_min);
 	}
 	
-	if (daily_restart) {
-	    lprintf("UPDATE: daily restart..\n");
-	    kiwi_exit(0);
-	}
+	if (do_daily_restart) {
+        if (kiwi.daily_restart == DAILY_RESTART) {
+            lprintf("UPDATE: daily restart..\n");
+            kiwi_exit(0);
+        }
+
+        if (kiwi.daily_restart == DAILY_REBOOT) {
+            lprintf("UPDATE: daily reboot..\n");
+            system("sleep 3; reboot");
+        }
+    }
 
 common_return:
 	if (file_auto_download_oneshot) {
@@ -438,7 +445,7 @@ void schedule_update(int min)
         }
     #endif
     
-    daily_restart = first_update_window && !update_on_startup && (admcfg_bool("daily_restart", NULL, CFG_REQUIRED) == true);
+    do_daily_restart = first_update_window && !update_on_startup && (kiwi.daily_restart != DAILY_RESTART_NO);
     file_auto_download_check = first_update_window && !update_on_startup;
 
     //printf("min=%d file_auto_download_check=%d update_window=%d update_on_startup=%d\n",

@@ -31,6 +31,7 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "debug.h"
 #include "data_pump.h"
+#include "fpga.h"
 
 #include <string.h>
 #include <stdio.h>

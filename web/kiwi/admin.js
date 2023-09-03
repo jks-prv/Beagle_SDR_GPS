@@ -260,6 +260,8 @@ function firmware_sel_cb_focus(path)
 // control
 ////////////////////////////////
 
+var daily_restart_u = { 0: 'no', 1: 'restart server', 2: 'reboot Beagle' };
+
 function control_html()
 {
 	var s1 =
@@ -273,10 +275,11 @@ function control_html()
             )
          ),
 			w3_div('w3-container w3-center',
-            w3_switch_label('w3-center', 'Daily restart?', 'Yes', 'No', 'adm.daily_restart', adm.daily_restart, 'admin_radio_YN_cb'),
+            //w3_switch_label('w3-center', 'Daily restart?', 'Yes', 'No', 'adm.daily_restart', adm.daily_restart, 'admin_radio_YN_cb'),
+            w3_select('w3-center//w3-width-auto', 'Daily restart?', '', 'adm.daily_restart', adm.daily_restart, daily_restart_u, 'admin_select_cb'),
 				w3_div('w3-text-black w3-tspace-8',
 					"Set if you're having problems with the server<br>after it has run for a period of time.<br>" +
-					"Restart occurs at the same time as updates (0100-0600 Local)<br> and will wait until there are no connections."
+					"Restart occurs at the same time as updates (0100-0600 Local)<br> and will wait until there are no active user connections."
 				)
 			)
       );
@@ -4072,7 +4075,7 @@ function admin_radio_YN_cb(path, idx, first)
 
 function admin_select_cb(path, idx, first)
 {
-	//console.log('admin_select_cb idx='+ idx +' path='+ path+' first='+ first);
+	console.log('admin_select_cb idx='+ idx +' path='+ path +' first='+ first);
 	idx = +idx;
 	if (idx != -1) {
       // if first time don't save, otherwise always save

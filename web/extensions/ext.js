@@ -19,6 +19,7 @@ var extint = {
    mode_prior_to_dx_click: null,
    seq: 0,
    scanning: 0,
+   in_rf_tab: false,
    
    web_socket_fragmentation: 8192,
    send_hiwat: 0,
@@ -27,6 +28,7 @@ var extint = {
    // extensions not subject to DRM lockout
    // FIXME: allow C-side API to specify
    no_lockout: [ 'noise_blank', 'noise_filter', 'ant_switch', 'iframe', 'colormap', 'devl', 'prefs' ],
+   use_rf_tab: [ /* 'ant_switch' */ ],
    excl_devl: [ 'devl', 's4285', 'prefs' ],
    
    OPT_NOLOCAL: 1,
@@ -207,6 +209,7 @@ function ext_set_cfg_param(path, val, save)
 	path = w3_add_toplevel(path);	
 	setVarFromString(path, val);
 	save = (isArg(save) && save == EXT_SAVE)? true : false;
+	//if (path.includes('model'))
 	//console.log('ext_set_cfg_param: path='+ path +' val='+ val +' save='+ save);
 	
 	// save only if EXT_SAVE specified
@@ -840,6 +843,7 @@ function ext_hide_spectrum()
 function extint_panel_show(controls_html, data_html, show_func, hide_func, show_help_button)
 {
    //console.log('extint_panel_show: extint.displayed='+ extint.displayed);
+   var el;
    
 	extint.using_data_container = (data_html? true:false);
 	//console.log('extint_panel_show using_data_container='+ extint.using_data_container);
@@ -860,9 +864,22 @@ function extint_panel_show(controls_html, data_html, show_func, hide_func, show_
       confirmation_panel_close();
       extint.help_displayed = false;
    }
+   
+   var ext_name = extint.current_ext_name;
+   el = w3_el('id-optbar-rf-container');
+   if (extint.use_rf_tab.includes(ext_name)) {
+      console.log('extint_panel_show: rf optbar '+ ext_name);
+      el.innerHTML = controls_html;
+      extint.in_rf_tab = true;
+      keyboard_shortcut_nav('rf');
+      return;
+   } else {
+      el.innerHTML = '';
+      extint.in_rf_tab = false;
+   }
 
 	// hook the close icon to call extint_panel_hide()
-	var el = w3_el('id-ext-controls-close');
+	el = w3_el('id-ext-controls-close');
 	el.onclick = function() { toggle_panel("ext-controls"); extint_panel_hide(); };
 	//console.log('extint_panel_show onclick='+ el.onclick);
 	
@@ -871,7 +888,7 @@ function extint_panel_show(controls_html, data_html, show_func, hide_func, show_
 	w3_el('id-ext-controls').style.zIndex = 150;
    w3_create_attribute('id-ext-controls-close-img', 'src', 'icons/close.24.png');
 	
-	var el = w3_el('id-ext-controls-container');
+	el = w3_el('id-ext-controls-container');
 	el.innerHTML = controls_html;
 	//console.log(controls_html);
 	
@@ -1055,10 +1072,10 @@ function extint_blur_prev(restore)
 function extint_focus(is_locked)
 {
    // dynamically load extension (if necessary) before calling <ext>_main()
-   var ext = extint.current_ext_name;
-	console.log('extint_focus: loading '+ ext +'.js');
+   var ext_name = extint.current_ext_name;
+	console.log('extint_focus: loading '+ ext_name +'.js');
 	
-	if (is_locked && !extint.no_lockout.includes(ext)) {
+	if (is_locked && !extint.no_lockout.includes(ext_name)) {
 	   var s =
          w3_text('w3-medium w3-text-css-yellow',
             'Cannot use extensions while <br> another channel is in DRM mode.'
@@ -1068,14 +1085,15 @@ function extint_focus(is_locked)
       return;
 	}
 
-   kiwi_load_js_dir('extensions/'+ ext +'/'+ ext, ['.js', '.css'],
+   kiwi_load_js_dir('extensions/'+ ext_name +'/'+ ext_name, ['.js', '.css'],
 
       // post-load
       function() {
-         console.log('extint_focus: calling '+ ext +'_main()');
-         //setTimeout('ext_set_controls_width_height(); w3_call('+ ext +'_main);', 3000);
-         ext_set_controls_width_height();
-         w3_call(ext +'_main');
+         console.log('extint_focus: calling '+ ext_name +'_main()');
+         //setTimeout('ext_set_controls_width_height(); w3_call('+ ext_name +'_main);', 3000);
+         if (!extint.use_rf_tab.includes(ext_name))
+            ext_set_controls_width_height();
+         w3_call(ext_name +'_main');
          
          if (isNonEmptyArray(shortcut.keys))
 	         setTimeout(keyboard_shortcut_url_keys, 3000);
@@ -1083,10 +1101,9 @@ function extint_focus(is_locked)
 
       // pre-load
       function(loaded) {
-         console.log('extint_focus: '+ ext +' loaded='+ loaded);
-         if (loaded) {
-            var s = 'loading extension...';
-            extint_panel_show(s, null, null, null, 'off');
+         console.log('extint_focus: '+ ext_name +' loaded='+ loaded);
+         if (loaded && !extint.use_rf_tab.includes(ext_name)) {
+            extint_panel_show('loading extension...', null, null, null, 'off');
             ext_set_controls_width_height(325, 45);
             if (kiwi.is_locked)
                console.log('==== IS_LOCKED =================================================');

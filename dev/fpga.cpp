@@ -31,11 +31,126 @@ Boston, MA  02110-1301, USA.
 #include "gps.h"
 #include "coroutines.h"
 #include "debug.h"
+#include "fpga.h"
 
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <ctype.h>
+
+u2_t ctrl_get()
+{
+	SPI_MISO *ctrl = get_misc_miso();
+	
+	spi_get_noduplex(CmdCtrlGet, ctrl, sizeof(ctrl->word[0]));
+	u2_t rv = ctrl->word[0];
+	release_misc_miso();
+	return rv;
+}
+
+static void stat_dump(const char *id)
+{
+    stat_reg_t stat = stat_get();
+    printf("%s stat_get=0x%04x %4s|%3s|%5s|%s\n", id, stat.word,
+        (stat.word & 0x80)? "READ" : "",
+        (stat.word & 0x40)? "CLK" : "",
+        (stat.word & 0x20)? "SHIFT" : "",
+        (stat.word & 0x10)? "D1" : "D0"
+        );
+}
+
+// NB: the eCPU maintains a latched shadow value of SET_CTRL[]
+// This means if a bit is given in the set parameter it persists until given in the clr parameter.
+// But it doesn't have to be given in subsequent set parameters to persist due to the latching.
+void ctrl_clr_set(u2_t clr, u2_t set)
+{
+	spi_set_noduplex(CmdCtrlClrSet, clr, set);
+	//printf("ctrl_clr_set(0x%04x, 0x%04x) ctrl_get=0x%04x ", clr, set, ctrl_get());
+	//stat_dump("SET");
+}
+
+void ctrl_positive_pulse(u2_t bits)
+{
+    //printf("ctrl_positive_pulse 0x%x\n", bits);
+	spi_set_noduplex(CmdCtrlClrSet, bits, bits);
+	//printf("ctrl_positive_pulse(0x%04x, 0x%04x) ctrl_get=0x%04x ", bits, bits, ctrl_get());
+	//stat_dump("RISE");
+	spi_set_noduplex(CmdCtrlClrSet, bits, 0);
+	//printf("ctrl_positive_pulse(0x%04x, 0x%04x) ctrl_get=0x%04x ", bits, 0,    ctrl_get());
+	//stat_dump("FALL");
+}
+
+void ctrl_set_ser_dev(u2_t ser_dev)
+{
+    //printf("ctrl_set_ser_dev 0x%x\n", ser_dev);
+    ctrl_clr_set(CTRL_SER_MASK, ser_dev & CTRL_SER_MASK);
+}
+
+void ctrl_clr_ser_dev()
+{
+    //printf("ctrl_set_ser_dev\n");
+    ctrl_clr_set(CTRL_SER_MASK, CTRL_SER_NONE);
+}
+
+stat_reg_t stat_get()
+{
+    SPI_MISO *status = get_misc_miso();
+    stat_reg_t stat;
+    
+    spi_get_noduplex(CmdGetStatus, status, sizeof(stat));
+	release_misc_miso();
+    stat.word = status->word[0];
+
+    return stat;
+}
+
+u2_t getmem(u2_t addr)
+{
+	SPI_MISO *mem = get_misc_miso();
+	
+	memset(mem->word, 0x55, sizeof(mem->word));
+	spi_get_noduplex(CmdGetMem, mem, 4, addr);
+	release_misc_miso();
+	assert(addr == mem->word[1]);
+	
+	return mem->word[0];
+}
+
+void printmem(const char *str, u2_t addr)
+{
+	printf("%s %04x: %04x\n", str, addr, (int) getmem(addr));
+}
+
+
+////////////////////////////////
+// FPGA DNA
+////////////////////////////////
+
+u64_t fpga_dna()
+{
+    #define CTRL_DNA_CLK    CTRL_SER_CLK
+    #define CTRL_DNA_READ   CTRL_SER_LE_CSN
+    #define CTRL_DNA_SHIFT  CTRL_SER_DATA
+
+    ctrl_set_ser_dev(CTRL_SER_DNA);
+        ctrl_clr_set(CTRL_DNA_CLK | CTRL_DNA_SHIFT, CTRL_DNA_READ);
+        ctrl_positive_pulse(CTRL_DNA_CLK);
+        ctrl_clr_set(CTRL_DNA_CLK | CTRL_DNA_READ, CTRL_DNA_SHIFT);
+        u64_t dna = 0;
+        for (int i=0; i < 64; i++) {
+            stat_reg_t stat = stat_get();
+            dna = (dna << 1) | ((stat.word & STAT_DNA_DATA)? 1ULL : 0ULL);
+            ctrl_positive_pulse(CTRL_DNA_CLK);
+        }
+        ctrl_clr_set(CTRL_DNA_CLK | CTRL_DNA_READ | CTRL_DNA_SHIFT, 0);
+    ctrl_clr_ser_dev();
+    return dna;
+}
+
+
+////////////////////////////////
+// FPGA init
+////////////////////////////////
 
 //#define TEST_FLAG_SPI_RFI
 

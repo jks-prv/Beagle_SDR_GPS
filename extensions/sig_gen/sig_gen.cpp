@@ -14,6 +14,7 @@
 
 #include "options.h"
 #include "rx_sound.h"
+#include "fpga.h"
 
 //#define DEBUG_MSG	true
 #define DEBUG_MSG	false

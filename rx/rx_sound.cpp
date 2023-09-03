@@ -56,6 +56,8 @@ Boston, MA  02110-1301, USA.
 #include "rx_sound.h"
 #include "rx_waterfall.h"
 #include "wdsp.h"
+#include "fpga.h"
+#include "rf_attn.h"
 
 #ifdef DRM
  #include "DRM.h"
@@ -127,6 +129,7 @@ static str_hashes_t snd_cmd_hashes[] = {
     { "SET sam_", CMD_SAM_PLL },
     { "SET wind", CMD_SND_WINDOW_FUNC },
     { "SET spc_", CMD_SPEC },
+    { "SET rf_a", CMD_RF_ATTN },
     { 0 }
 };
 
@@ -242,6 +245,7 @@ void c2s_sound(void *param)
 	int mode=-1, _mode, genattn=0, _genattn, mute=0, test=0, deemp=0, deemp_nfm=0;
 	u4_t mparam=0;
 	double z1 = 0;
+	float rf_attn_dB;
 
 	double frate = ext_update_get_sample_rateHz(rx_chan);      // FIXME: do this in loop to get incremental changes
 	//printf("### frate %f snd_rate %d\n", frate, snd_rate);
@@ -599,6 +603,16 @@ void c2s_sound(void *param)
 			    kiwi_ifree(mode_m);
 			    break;
 			}
+			
+			case CMD_RF_ATTN:
+			    if (kiwi.model != KiwiSDR_1) {
+			        if (sscanf(cmd, "SET rf_attn=%f", &rf_attn_dB) == 1) {
+			            //cprintf(conn, "rf_attn=%.1f\n", rf_attn_dB);
+			            rf_attn_set(rf_attn_dB);
+                        did_cmd = true;                
+			        }
+			    }
+			    break;
 			
             case CMD_SND_WINDOW_FUNC:
                 if (sscanf(cmd, "SET window_func=%d", &n) == 1) {

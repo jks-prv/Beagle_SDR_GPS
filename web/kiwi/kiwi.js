@@ -5,6 +5,10 @@
 var kiwi = {
    d: {},      // debug
    
+   KiwiSDR_1: 1,
+   KiwiSDR_2: 2,
+   model: 1,   
+   
    PLATFORM_BBG_BBB: 0,
    PLATFORM_BB_AI:   1,
    PLATFORM_BB_AI64: 2,
@@ -116,6 +120,8 @@ var kiwi = {
    
    bands: null,
    bands_community: null,
+   
+   rf_attn: 0,
    
    _ver_: 1.578,
    _last_: null
@@ -2446,11 +2452,11 @@ function cpu_stats_cb(o, uptime_secs, ecpu, waterfall_fps)
 	var hr  = Math.trunc(t % 24); t = Math.trunc(t/24);
 	var days = t;
 
-	var s = ' ';
+   var s = ' up ';
 	if (days) s += days +'d:';
 	s += hr +':'+ min.leadingZeros(2) +':'+ sec.leadingZeros(2);
 	w3_innerHTML('id-status-config',
-      w3_text('w3-text-css-orange', 'Up'),
+      w3_text('w3-text-css-orange', 'KiwiSDR '+ kiwi.model),
       w3_text('', s +', '+ kiwi_config_str)
 	);
 
@@ -2471,9 +2477,9 @@ function cpu_stats_cb(o, uptime_secs, ecpu, waterfall_fps)
 
 function config_str_update(rx_chans, gps_chans, vmaj, vmin)
 {
-	kiwi_config_str = 'v'+ vmaj +'.'+ vmin +', '+ rx_chans +' SDR ch, '+ gps_chans +' GPS ch';
+	kiwi_config_str = 'v'+ vmaj +'.'+ vmin +', ch: '+ rx_chans +' SDR '+ gps_chans +' GPS';
 	w3_innerHTML('id-status-config', kiwi_config_str);
-	kiwi_config_str_long = 'Config: v'+ vmaj +'.'+ vmin +', '+ rx_chans +' SDR channels, '+ gps_chans +' GPS channels';
+	kiwi_config_str_long = 'KiwiSDR '+ kiwi.model +', v'+ vmaj +'.'+ vmin +', '+ rx_chans +' SDR channels, '+ gps_chans +' GPS channels';
 	w3_innerHTML('id-msg-config', kiwi_config_str);
 }
 
@@ -2896,6 +2902,10 @@ function kiwi_msg(param, ws)
 
 		case "debian_ver":
 			debian_ver = parseInt(param[1]);
+			break;
+
+		case "model":
+			kiwi.model = parseInt(param[1]);
 			break;
 
 		case "platform":

@@ -44,15 +44,20 @@ Boston, MA  02110-1301, USA.
 
 bool sd_copy_in_progress;
 
+static void mfg_send_info(conn_t *conn)
+{
+	int next_serno = eeprom_next_serno(SERNO_READ, 0);
+	model_e model;
+	int serno = eeprom_check(&model);
+	send_msg(conn, SM_NO_DEBUG, "MFG next_serno=%d serno=%d model=%d", next_serno, serno, model);
+}
+
 void c2s_mfg_setup(void *param)
 {
 	conn_t *conn = (conn_t *) param;
 
 	send_msg(conn, SM_NO_DEBUG, "MFG ver_maj=%d ver_min=%d", version_maj, version_min);
-
-	int next_serno = eeprom_next_serno(SERNO_READ, 0);
-	int serno = eeprom_check();
-	send_msg(conn, SM_NO_DEBUG, "MFG next_serno=%d serno=%d", next_serno, serno);
+	mfg_send_info(conn);
 }
 
 void c2s_mfg(void *param)
@@ -79,16 +84,14 @@ void c2s_mfg(void *param)
 			if (rx_common_cmd(STREAM_MFG, conn, cmd))
 				continue;
 			
-			printf("MFG: <%s>\n", cmd);
+			//printf("MFG: <%s>\n", cmd);
 
-			i = strcmp(cmd, "SET write");
-			if (i == 0) {
-				printf("MFG: received write\n");
-				eeprom_write(SERNO_ALLOC, 0);
-
-				serno = eeprom_check();
-				next_serno = eeprom_next_serno(SERNO_READ, 0);
-				send_msg(conn, SM_NO_DEBUG, "MFG next_serno=%d serno=%d", next_serno, serno);
+			int _model = 0;
+			i = sscanf(cmd, "SET write model=%d", &_model);
+			if (i == 1 && _model > 0) {
+				printf("MFG: received write, model=%d\n", _model);
+				eeprom_write(SERNO_ALLOC, 0, _model);
+				mfg_send_info(conn);
 				continue;
 			}
 
@@ -97,10 +100,7 @@ void c2s_mfg(void *param)
 			if (i == 1) {
 				printf("MFG: received set_serno=%d\n", next_serno);
 				eeprom_next_serno(SERNO_WRITE, next_serno);
-
-				serno = eeprom_check();
-				next_serno = eeprom_next_serno(SERNO_READ, 0);
-				send_msg(conn, SM_NO_DEBUG, "MFG next_serno=%d serno=%d", next_serno, serno);
+                mfg_send_info(conn);
 				continue;
 			}
 

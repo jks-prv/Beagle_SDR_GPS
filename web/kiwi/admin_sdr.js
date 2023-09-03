@@ -79,6 +79,7 @@ function config_html()
 	var init_colormap = ext_get_cfg_param('init.colormap', 0);
 	var init_aperture = ext_get_cfg_param('init.aperture', 1);
 	var init_AM_BCB_chan = ext_get_cfg_param('init.AM_BCB_chan', 0);
+	var init_rf_attn = ext_get_cfg_param('init.rf_attn', 0);
 	var init_ITU_region = ext_get_cfg_param('init.ITU_region', 0);
 	var max_freq = ext_get_cfg_param('max_freq', 0);
 	var max_freq = ext_get_cfg_param('max_freq', 0);
@@ -91,11 +92,12 @@ function config_html()
 			w3_inline('/w3-halign-space-around/w3-center',
 				w3_select('', 'Mode', '', 'init.mode', mode_menu_idx, kiwi.mode_menu, 'config_mode_cb'),
 				w3_select('', 'Colormap', '', 'init.colormap', init_colormap, kiwi.cmap_s, 'admin_select_cb'),
-				w3_select('', 'Aperture', '', 'init.aperture', init_aperture, kiwi.aper_s, 'config_aperture_cb')
-			),
-			w3_div('w3-center w3-tspace-8',
-				w3_select('w3-width-auto', 'AM BCB channel spacing', '', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'admin_select_cb')
-			)
+				w3_select('', 'Aperture', '', 'init.aperture', init_aperture, kiwi.aper_s, 'config_aperture_cb'),
+            w3_div('w3-center w3-tspace-8',
+               w3_select('w3-width-auto', 'MW chan', '', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'admin_select_cb')
+            )
+         ),
+         w3_slider('id-rf-attn', 'RF Attn', 'init.rf_attn', init_rf_attn, 0, 31.5, 0.5, 'config_rf_attn_cb')
 		) +
 
 		w3_third('w3-text-teal', 'w3-container',
@@ -475,7 +477,7 @@ function config_pb_mode(path, idx, first, no_save)
 	
 	// Handle case of switch from higher b/w mode (e.g. 3-ch 20.25 kHz mode) to lower b/w
 	// mode where values might define an invalid pb. Show invalid values and let call to
-	// config_pb_val() below display error. Clamping in openwebrx will compensate.
+	// config_pb_val() below display error. Clamping in other code will compensate.
    w3_set_value('admin_sdr.pbl', admin_sdr.pbl);
    w3_set_value('admin_sdr.pbh', admin_sdr.pbh);
    w3_set_value('admin_sdr.pbc', admin_sdr.pbc);
@@ -659,6 +661,14 @@ function config_ident_len_cb(path, val, first)
    if (val < 16) val = 16;
    if (val > 64) val = 64;
    admin_int_cb(path, val, first);
+}
+
+function config_rf_attn_cb(path, val, complete, first)
+{
+   //console.log('config_rf_attn_cb path='+ path +' val='+ val);
+   val = +val;
+	admin_float_cb(path, val, first);
+	w3_set_label('RF Attn '+ val.toFixed(1) +' dB', path);
 }
 
 function config_OV_counts_cb(path, val, complete, first)

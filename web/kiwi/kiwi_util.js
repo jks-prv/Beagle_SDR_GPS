@@ -1941,7 +1941,7 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 {
 	if (!("WebSocket" in window) || !("CLOSING" in WebSocket)) {
 		console.log('WEBSOCKET TEST');
-		kiwi_serious_error("Your browser does not support WebSocket, which is required for OpenWebRX to run. <br> Please use an HTML5 compatible browser.");
+		kiwi_serious_error("Your browser does not support web sockets, which is required. <br> Please use an HTML5 compatible browser.");
 		return null;
 	}
 
