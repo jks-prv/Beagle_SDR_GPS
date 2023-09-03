@@ -168,14 +168,31 @@ void cfg_reload()
         cfg_test();
     #endif
     
+    model_e model;
+    int serno = eeprom_check(&model);
     if ((serial_number = cfg_int("serial_number", NULL, CFG_OPTIONAL)) > 0) {
         lprintf("serial number override from configuration: %d\n", serial_number);
     } else {
-        if ((serial_number = eeprom_check()) <= 0) {
+        if ((serial_number = serno) <= 0) {
             lprintf("can't read serial number from EEPROM and no configuration override\n");
             serial_number = 0;
         } else {
             lprintf("serial number from EEPROM: %d\n", serial_number);
+        }
+    }
+
+    bool err;
+    kiwi.model = (model_e) admcfg_int("kiwi_model", &err, CFG_OPTIONAL);
+    if (!err) {
+        lprintf("Kiwi model override from configuration: KiwiSDR %d\n", kiwi.model);
+    } else {
+        if (serno <= 0 || model <= 0) {
+            lprintf("can't read Kiwi model from EEPROM and no configuration override\n");
+            lprintf("assuming model: KiwiSDR 1\n");
+            kiwi.model = KiwiSDR_1;
+        } else {
+            kiwi.model = model;
+            lprintf("model: KiwiSDR %d\n", model);
         }
     }
 

@@ -38,6 +38,7 @@ Boston, MA  02110-1301, USA.
 #include "sanitizer.h"
 #include "shmem.h"      // shmem_init()
 #include "debug.h"
+#include "fpga.h"
 
 #include "other.gen.h"
 
@@ -80,7 +81,6 @@ int main_argc;
 char **main_argv;
 char *fpga_file;
 static bool _kiwi_restart;
-platform_e platform;
 
 void kiwi_restart()
 {
@@ -140,19 +140,19 @@ int main(int argc, char *argv[])
 	#endif
 	
 	#ifdef PLATFORM_beaglebone_black
-	    platform = PLATFORM_BBG_BBB;
+	    kiwi.platform = PLATFORM_BBG_BBB;
 	#endif
 	
 	#ifdef PLATFORM_beaglebone_ai
-	    platform = PLATFORM_BB_AI;
+	    kiwi.platform = PLATFORM_BB_AI;
 	#endif
 	
 	#ifdef PLATFORM_beaglebone_ai64
-	    platform = PLATFORM_BB_AI64;
+	    kiwi.platform = PLATFORM_BB_AI64;
 	#endif
 	
 	#ifdef PLATFORM_raspberrypi
-	    platform = PLATFORM_RPI;
+	    kiwi.platform = PLATFORM_RPI;
 	#endif
 	
 	kstr_init();
@@ -444,23 +444,7 @@ int main(int argc, char *argv[])
 		if (!(ext_clk || ext_ADC_clk)) ctrl |= CTRL_OSC_EN;
 		ctrl_clr_set(0, ctrl);
 
-		// read device DNA
-		#define CTRL_DNA_CLK    CTRL_SER_CLK
-		#define CTRL_DNA_READ   CTRL_SER_LE_CSN
-		#define CTRL_DNA_SHIFT  CTRL_SER_DATA
-
-		ctrl_set_ser_dev(CTRL_SER_DNA);
-		ctrl_clr_set(CTRL_DNA_CLK | CTRL_DNA_SHIFT, CTRL_DNA_READ);
-		ctrl_positive_pulse(CTRL_DNA_CLK);
-		ctrl_clr_set(CTRL_DNA_CLK | CTRL_DNA_READ, CTRL_DNA_SHIFT);
-		net.dna = 0;
-		for (int i=0; i < 64; i++) {
-		    stat_reg_t stat = stat_get();
-		    net.dna = (net.dna << 1) | ((stat.word & STAT_DNA_DATA)? 1ULL : 0ULL);
-		    ctrl_positive_pulse(CTRL_DNA_CLK);
-		}
-		ctrl_clr_set(CTRL_DNA_CLK | CTRL_DNA_READ | CTRL_DNA_SHIFT, 0);
-		ctrl_clr_ser_dev();
+		net.dna = fpga_dna();
 		printf("device DNA %08x|%08x\n", PRINTF_U64_ARG(net.dna));
 	}
 	
