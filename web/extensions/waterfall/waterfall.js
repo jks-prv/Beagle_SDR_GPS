@@ -1,7 +1,7 @@
 // Copyright (c) 2021 John Seamons, ZL/KF6VO
 
 
-var wfext = {    // "wf" is already in openwebrx.js
+var wfext = {    // "wf" is already used elsewhere
    ext_name: 'waterfall',     // NB: must match waterfall.cpp:waterfall_ext.name
    first_time: true,
    sfmt: 'w3-text-red w3-ext-retain-input-focus',
