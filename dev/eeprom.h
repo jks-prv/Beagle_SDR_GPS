@@ -19,6 +19,7 @@ Boston, MA  02110-1301, USA.
 
 #pragma once
 
+#include "kiwi.h"
 #include "peri.h"
 
 struct eeprom_t {
@@ -64,6 +65,6 @@ extern eeprom_t eeprom;
 typedef enum { SERNO_READ, SERNO_WRITE, SERNO_ALLOC } next_serno_e;
 
 int eeprom_next_serno(next_serno_e type, int set_serno);
-int eeprom_check();
-void eeprom_write(next_serno_e type, int serno);
+int eeprom_check(model_e *model = NULL);
+void eeprom_write(next_serno_e type, int serno = 0, int model = 0);
 void eeprom_update();

@@ -36,22 +36,6 @@ void release_misc_miso(int which = 0);
 SPI_MOSI *get_misc_mosi();
 void release_misc_mosi();
 
-u2_t ctrl_get();
-void ctrl_clr_set(u2_t clr, u2_t set);
-void ctrl_positive_pulse(u2_t bits);
-void ctrl_set_ser_dev(u2_t ser_dev);
-void ctrl_clr_ser_dev();
-
-typedef union {
-    u2_t word;
-    struct {
-        u2_t fpga_id:4, stat_user:4, fpga_ver:4, fw_id:3, ovfl:1;
-    };
-} stat_reg_t;
-stat_reg_t stat_get();
-
-u2_t getmem(u2_t addr);
-void printmem(const char *str, u2_t addr);
 float ecpu_use();
 
 int qsort_floatcomp(const void *elem1, const void *elem2);

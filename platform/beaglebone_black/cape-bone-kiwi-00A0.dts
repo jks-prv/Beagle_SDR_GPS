@@ -32,10 +32,10 @@
 					0x184 0x2f	/* p924 0_15 gpio io: rx pdis m7 */
 					0x180 0x2f	/* p926 0_14 gpio io: rx pdis m7 */
 
-					0x090 0x2f	/* p807 2_2 gpio io: rx pdis m7 */
-					0x094 0x2f	/* p808 2_3 gpio io: rx pdis m7 */
-					0x09c 0x2f	/* p809 2_5 gpio io: rx pdis m7 */
-					0x098 0x2f	/* p810 2_4 gpio io: rx pdis m7 */
+					0x090 0x2f	/* p807 2_2  gpio io: rx pdis m7 */
+					0x094 0x2f	/* p808 2_3  gpio io: rx pdis m7 */
+					0x09c 0x2f	/* p809 2_5  gpio io: rx pdis m7 */
+					0x098 0x2f	/* p810 2_4  gpio io: rx pdis m7 */
 					0x034 0x2f	/* p811 1_13 gpio io: rx pdis m7 */
 					0x030 0x2f	/* p812 1_12 gpio io: rx pdis m7 */
 					0x024 0x2f	/* p813 0_23 gpio io: rx pdis m7 */
@@ -43,7 +43,7 @@
 					0x03c 0x2f	/* p815 1_15 gpio io: rx pdis m7 */
 					0x038 0x2f	/* p816 1_14 gpio io: rx pdis m7 */
 					0x02c 0x2f	/* p817 0_27 gpio io: rx pdis m7 */
-					0x08c 0x2f	/* p818 2_1 gpio io: rx pdis m7 */
+					0x08c 0x2f	/* p818 2_1  gpio io: rx pdis m7 */
 					0x020 0x2f	/* p819 0_22 gpio io: rx pdis m7 */
 					0x07c 0x2f	/* p826 1_29 gpio io: rx pdis m7 */
 				>;
