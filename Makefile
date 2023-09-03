@@ -209,7 +209,7 @@ ifneq ($(RPI),true)
 endif
 _DIR_PLATFORMS = $(addprefix platform/, ${PLATFORMS})
 _DIRS_O3 += . $(PKGS_O3) platform/common $(_DIR_PLATFORMS) $(EXT_DIRS) $(EXT_SUBDIRS) \
-	$(RX) $(GPS) ui init support net web arch/$(ARCH)
+	$(RX) $(GPS) dev ui init support net web arch/$(ARCH)
 
 ifeq ($(OPT),0)
 	DIRS = $(_DIRS) $(_DIRS_O3)
@@ -1080,15 +1080,8 @@ DTS_DEP_DST =
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
     DO_ONCE = $(DIR_CFG)/.do_once.dep
 
-    ifeq ($(BBAI_64),true)
-        DTS_DEP_DST = $(DIR_DTB)/$(DTS)
-        DTS_DEP_SRC = $(DIR_DTS)/$(DTS)
-    endif
-
-    ifeq ($(BBAI),true)
-        DTS_DEP_DST = $(DIR_DTB)/$(DTS)
-        DTS_DEP_SRC = $(DIR_DTS)/$(DTS)
-    endif
+    DTS_DEP_DST = $(DIR_DTB)/$(DTS)
+    DTS_DEP_SRC = $(DIR_DTS)/$(DTS)
 
     $(DO_ONCE):
 	    @mkdir -p $(DIR_CFG)
@@ -1097,9 +1090,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	        make install_kiwi_device_tree
 	        @touch $(REBOOT)
         endif
-endif
 
-ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
     ifeq ($(BBAI_64),true)
         DTS = k3-j721e-beagleboneai64-bone-buses.dtsi
         DTS2 = k3-j721e-beagleboneai64.dts
@@ -1156,17 +1147,24 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
     endif
 
     ifeq ($(BBG_BBB),true)
+        DTS = cape-bone-kiwi-00A0.dts
+        DTS2 = cape-bone-kiwi-S-00A0.dts cape-bone-kiwi-P-00A0.dts
+        DIR_DTS = platform/beaglebone_black
+        DIR_DTB = /lib/firmware
+
+        # re-install device tree if changes made to *.dts source file
+        $(DTS_DEP_DST): $(DTS_DEP_SRC)
+	        @echo "BBG_BBB: re-install Kiwi device tree to configure GPIO pins"
+	        make install_kiwi_device_tree
+
         install_kiwi_device_tree:
 	        @echo "BBG_BBB: install Kiwi device tree to configure GPIO pins (but not SPI)"
 	        -cp --backup=numbered /boot/uEnv.txt /boot/uEnv.txt.save
 	        -sed -i -e 's/^#uboot_overlay_addr4=\/lib\/firmware\/<file4>.dtbo/uboot_overlay_addr4=\/lib\/firmware\/cape-bone-kiwi-00A0.dtbo/' /boot/uEnv.txt
+	        cp $(DIR_DTS)/$(DTS) $(DIR_DTB)
+	        cp $(addprefix $(DIR_DTS)/,$(DTS2)) $(DIR_DTB)
     endif
 endif
-
-DEV = kiwi
-CAPE = cape-bone-$(DEV)-00A0
-SPI  = cape-bone-$(DEV)-S-00A0
-PRU  = cape-bone-$(DEV)-P-00A0
 
 DIR_CFG_SRC = unix_env/kiwi.config
 
@@ -1287,9 +1285,6 @@ endif
 #
 	install -o root -g root unix_env/kiwid /etc/init.d
 	install -o root -g root -m 0644 unix_env/kiwid.service /etc/systemd/system
-	install -D -o root -g root -m 0644 unix_env/$(CAPE).dts /lib/firmware/$(CAPE).dts
-	install -D -o root -g root -m 0644 unix_env/$(SPI).dts /lib/firmware/$(SPI).dts
-	install -D -o root -g root -m 0644 unix_env/$(PRU).dts /lib/firmware/$(PRU).dts
 #
 	install -D -o root -g root $(GEN_DIR)/noip2 /usr/local/bin/noip2
 #
