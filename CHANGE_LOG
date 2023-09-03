@@ -2,6 +2,14 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.623  September 4, 2023
+    Added "RF" tab to user control panel. KiwiSDR 2 RF attenuator control is here.
+        In the future other functions will move here like the antenna switch.
+
+    Admin control tab: "daily restart" now a menu allowing restart or reboot (thanks Glenn, N6GN).
+
+    Other changes to support KiwiSDR 2.
+
 v1.622  August 23, 2023
     Instead of the full test message decode, ALE_2G extension will only show "[periodic self test]"
     in the decode panel during the periodic self test which occurs every 4 hours.
