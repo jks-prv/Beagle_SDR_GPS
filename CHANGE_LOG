@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.624  September 6, 2023
+    Fixed bug in DX label CSV file importing.
+
 v1.623  September 4, 2023
     Added "RF" tab to user control panel. KiwiSDR 2 RF attenuator control is here.
         In the future other functions will move here like the antenna switch.
