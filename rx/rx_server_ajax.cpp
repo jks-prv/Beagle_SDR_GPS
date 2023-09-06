@@ -259,17 +259,17 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
                     bool empty, ext_empty;
 
                     float freq;
-                    if (_dx_parse_csv_field(CSV_FLT, qs[0], &freq)) { rc = 11; goto fail; }
+                    if (_dx_parse_csv_field(CSV_FLOAT, qs[0], &freq)) { rc = 11; goto fail; }
                     //printf("freq=%.2f\n", rem, freq);
                 
                     char *mode, *ident, *notes, *ext;
-                    if (_dx_parse_csv_field(CSV_STR, qs[1], &mode)) { rc = 12; goto fail; }
-                    if (_dx_parse_csv_field(CSV_DEC, qs[2], &ident)) { rc = 13; goto fail; }
-                    if (_dx_parse_csv_field(CSV_DEC, qs[3], &notes)) { rc = 14; goto fail; }
-                    if (_dx_parse_csv_field(CSV_DEC, qs[4], &ext, &ext_empty)) { rc = 15; goto fail; }
+                    if (_dx_parse_csv_field(CSV_STRING, qs[1], &mode, CSV_EMPTY_NOK)) { rc = 12; goto fail; }
+                    if (_dx_parse_csv_field(CSV_DECODE, qs[2], &ident, CSV_EMPTY_NOK)) { rc = 13; goto fail; }
+                    if (_dx_parse_csv_field(CSV_DECODE, qs[3], &notes, CSV_EMPTY_OK)) { rc = 14; goto fail; }
+                    if (_dx_parse_csv_field(CSV_DECODE, qs[4], &ext, CSV_EMPTY_OK, &ext_empty)) { rc = 15; goto fail; }
 
                     char *type;
-                    if (_dx_parse_csv_field(CSV_STR, qs[5], &type, &empty)) { rc = 16; goto fail; }
+                    if (_dx_parse_csv_field(CSV_STRING, qs[5], &type, CSV_EMPTY_OK, &empty)) { rc = 16; goto fail; }
                     else {
                         if (!empty)
                             sb3 = kstr_asprintf(sb3, "%s%s%s:1",
@@ -277,18 +277,18 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
                     };
 
                     float pb_lo, pb_hi;
-                    if (_dx_parse_csv_field(CSV_FLT, qs[6], &pb_lo)) { rc = 17; goto fail; }
-                    if (_dx_parse_csv_field(CSV_FLT, qs[7], &pb_hi)) { rc = 18; goto fail; }
+                    if (_dx_parse_csv_field(CSV_FLOAT, qs[6], &pb_lo)) { rc = 17; goto fail; }
+                    if (_dx_parse_csv_field(CSV_FLOAT, qs[7], &pb_hi)) { rc = 18; goto fail; }
                     if (pb_lo != 0 || pb_hi != 0)
                         sb3 = kstr_asprintf(sb3, "%s\"lo\":%.0f, \"hi\":%.0f", sb3? ", " : "", pb_lo, pb_hi);
 
                     float offset;
-                    if (_dx_parse_csv_field(CSV_FLT, qs[8], &offset)) { rc = 19; goto fail; }
+                    if (_dx_parse_csv_field(CSV_FLOAT, qs[8], &offset)) { rc = 19; goto fail; }
                     if (offset != 0)
                         sb3 = kstr_asprintf(sb3, "%s\"o\":%.0f", sb3? ", " : "", offset);
 
                     char *dow_s;
-                    if (_dx_parse_csv_field(CSV_STR, qs[9], &dow_s, &empty)) { rc = 20; goto fail; }
+                    if (_dx_parse_csv_field(CSV_STRING, qs[9], &dow_s, CSV_EMPTY_OK, &empty)) { rc = 20; goto fail; }
                     else
                     if (!empty) {
                         int dow = 0;
@@ -303,14 +303,14 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
                     };
 
                     float begin, end;
-                    if (_dx_parse_csv_field(CSV_FLT, qs[10], &begin)) { rc = 22; goto fail; }
-                    if (_dx_parse_csv_field(CSV_FLT, qs[11], &end)) { rc = 23; goto fail; }
+                    if (_dx_parse_csv_field(CSV_FLOAT, qs[10], &begin)) { rc = 22; goto fail; }
+                    if (_dx_parse_csv_field(CSV_FLOAT, qs[11], &end)) { rc = 23; goto fail; }
                     if ((begin != 0 || end != 0) && (begin != 0 && end != 2400))
                         sb3 = kstr_asprintf(sb3, "%s\"b0\":%.0f, \"e0\":%.0f", sb3? ", " : "", begin, end);
 
                     // N_CSV_FIELDS_SIG_BW field is optional for backward compatibility
                     float sig_bw = 0;
-                    if (n == N_CSV_FIELDS_SIG_BW && _dx_parse_csv_field(CSV_FLT, qs[12], &sig_bw)) { rc = 24; goto fail; }
+                    if (n == N_CSV_FIELDS_SIG_BW && _dx_parse_csv_field(CSV_FLOAT, qs[12], &sig_bw)) { rc = 24; goto fail; }
                     if (sig_bw != 0)
                         sb3 = kstr_asprintf(sb3, "%s\"s\":%.0f", sb3? ", " : "", sig_bw);
                     

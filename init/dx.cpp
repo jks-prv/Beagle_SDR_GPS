@@ -801,12 +801,12 @@ void dx_eibi_init()
 
 // AJAX_DX support
 
-bool _dx_parse_csv_field(int type, char *field, void *val, bool *empty)
+bool _dx_parse_csv_field(int type, char *field, void *val, bool empty_ok, bool *empty)
 {
     bool fail = false;
     if (empty != NULL) *empty = false;
     
-    if (type == CSV_FLT) {
+    if (type == CSV_FLOAT) {
         int sl = kiwi_strnlen(field, 256);
         if (sl == 0) {
             *((float *) val) = 0;               // empty number field becomes zero
@@ -815,18 +815,20 @@ bool _dx_parse_csv_field(int type, char *field, void *val, bool *empty)
             if (field[0] == '\'') field++;      // allow for leading zero escape e.g. '0123
             char *endp;
             *((float *) val) = strtof(field, &endp);
-            if (endp == field) { fail = true; }
+            if (endp == field) { fail = true; }     // no number was found
         }
     } else
 
     // don't require that string fields be quoted (except when they contain field delimiter)
-    if (type == CSV_STR || type == CSV_DEC) {
+    if (type == CSV_STRING || type == CSV_DECODE) {
         char *s = field;
         int sl = kiwi_strnlen(s, 1024);
 
         if (sl == 0) {
-            *((char **) val) = (type == CSV_DEC)? strdup("\"\"") : (char *) "\"\"";     // empty string field becomes ""
+            *((char **) val) = (type == CSV_DECODE)? strdup("\"\"") : (char *) "\"\"";     // empty string field becomes ""
             if (empty != NULL) *empty = true;
+            if (!empty_ok) fail = true;
+            return fail;
         } else
 
         // remove the doubled-up double-quotes (if any)
@@ -836,7 +838,7 @@ bool _dx_parse_csv_field(int type, char *field, void *val, bool *empty)
         }
 
         // decode if requested
-        if (type == CSV_DEC) {
+        if (type == CSV_DECODE) {
             // replace beginning and ending " into something that won't get encoded (restore below)
             bool restore_sf = false, restore_sl = false;
             if (s[0] == '"') { s[0] = 'x'; restore_sf = true; }
@@ -846,7 +848,7 @@ bool _dx_parse_csv_field(int type, char *field, void *val, bool *empty)
             if (restore_sf) s[0] = '"';
             if (restore_sl) s[sl-1] = '"';
         }
-        *((char **) val) = s;       // if type == CSV_DEC caller must kiwi_ifree() val
+        *((char **) val) = s;       // if type == CSV_DECODE caller must kiwi_ifree() val
     } else
         panic("_dx_parse_csv_field");
     
