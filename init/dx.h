@@ -155,9 +155,12 @@ void dx_save_as_json(dx_db_t *dx_db, bool dx_label_foff_convert = false);
 
 // AJAX_DX support
 
-#define CSV_FLT 0
-#define CSV_STR 1
-#define CSV_DEC 2       // NB: if type == CSV_DEC, caller must kiwi_ifree(val)
+#define CSV_FLOAT   0
+#define CSV_STRING  1
+#define CSV_DECODE  2   // NB: if type == CSV_DECODE, caller must kiwi_ifree(val)
+
+#define CSV_EMPTY_OK    true
+#define CSV_EMPTY_NOK   false
 
 #define TYPE_JSON 0
 #define TYPE_CSV 1
@@ -170,5 +173,5 @@ typedef struct {
     int idx;
 } dx_param_t;
 
-bool _dx_parse_csv_field(int type, char *field, void *val, bool *empty = NULL);
+bool _dx_parse_csv_field(int type, char *field, void *val, bool empty_ok = CSV_EMPTY_OK, bool *empty = NULL);
 void _dx_write_file(void *param);
