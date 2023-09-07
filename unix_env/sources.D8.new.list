@@ -1,6 +1,10 @@
 deb http://archive.debian.org/debian/ jessie main contrib non-free
 #deb-src http://archive.debian.org/debian/ jessie main contrib non-free
 
+# to get clang-6.0 from Debian 9 (Stretch)
+deb http://archive.debian.org/debian stretch main contrib non-free
+deb http://archive.debian.org/debian stretch-backports main contrib non-free
+
 #deb http://archive.debian.org/debian jessie-backports main contrib non-free
 ##deb-src http://archive.debian.org/debian jessie-backports main contrib non-free
 
