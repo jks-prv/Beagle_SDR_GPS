@@ -190,12 +190,16 @@ int eeprom_check(model_e *model)
 	GET_CHARS(e->part_no, part_no);
 
 	int _model = -1;
-	n = sscanf(part_no, "KiwiSDR %d", &_model);
-	if (n != 1 || _model <= 0) {
-	    mlprintf("EEPROM check: read model \"%s\" %d\n", part_no, _model);
-		mlprintf("EEPROM check: scan failed (model)\n");
-		return -1;
-	}
+	if (strcmp(part_no, "KIWISDR10       ") == 0) {
+	    _model = KiwiSDR_1;
+	} else {
+        n = sscanf(part_no, "KiwiSDR %d", &_model);
+        if (n != 1 || _model <= 0) {
+            mlprintf("EEPROM check: read model \"%s\" %d\n", part_no, _model);
+            mlprintf("EEPROM check: scan failed (model)\n");
+            return -1;
+        }
+    }
 	if (model != NULL) *model = (model_e) _model;
 	
 	return serno;
