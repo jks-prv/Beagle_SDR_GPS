@@ -347,9 +347,10 @@ $(INSTALL_CERTIFICATES):
 # NB not a typo: "clang-6.0" vs "clang-7"
 
 /usr/bin/clang-6.0:
-	# only available recently?
+	# With D8 now archived, clang-6.0 must be obtained from the archived D9 backports.
+	# But that repo makes use of an interactive script that requires noninteractive handling.
 	-apt-get -y $(APT_GET_FORCE) update
-	apt-get -y $(APT_GET_FORCE) install clang-6.0
+	(UCF_FORCE_CONFOLD=1 DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y install clang-6.0)
 
 /usr/bin/clang-7:
 	-apt-get -y $(APT_GET_FORCE) update
