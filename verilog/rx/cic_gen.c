@@ -3,7 +3,7 @@
 // Original work Copyright (c) 2012 Rick Lyons (http://www.dsprelated.com/code.php?submittedby=14446)
 // Original work: http://www.dsprelated.com/showcode/269.php
 
-// Derivative work Copyright (c) 2014-2022 John Seamons, ZL/KF6VO
+// Derivative work Copyright (c) 2014-2022 John Seamons, ZL4VO/KF6VO
 
 /*
  * A C version of Rick Lyon's Matlab implementation of Hogenauer's CIC filter register pruning algorithm.

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 John Seamons, ZL/KF6VO
+// Copyright (c) 2017 John Seamons, ZL4VO/KF6VO
 
 var nt = {
    ext_name: 'NAVTEX',     // NB: must match navtex.c:navtex_ext.name

@@ -1,6 +1,6 @@
 // KiwiSDR data demodulator UI
 //
-// Copyright (c) 2014 John Seamons, ZL/KF6VO
+// Copyright (c) 2014 John Seamons, ZL4VO/KF6VO
 
 // TODO
 // sanity check upload data

@@ -25,7 +25,7 @@
  *
 \******************************************************************************/
 
-// Copyright (c) 2017-2023 John Seamons, ZL/KF6VO
+// Copyright (c) 2017-2023 John Seamons, ZL4VO/KF6VO
 
 #ifndef _DRM_KIWIAUDIO_H
 #define _DRM_KIWIAUDIO_H

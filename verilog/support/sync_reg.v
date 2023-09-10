@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2019 John Seamons, ZL/KF6VO
+// Copyright (c) 2019 John Seamons, ZL4VO/KF6VO
 
 // Use the synchronized handshake method of arbitrating a register transfer between two clock domains.
 // WIDTH specifies the register width.

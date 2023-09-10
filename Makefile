@@ -6,7 +6,7 @@ VERSION_MIN = 625
 #
 # Makefile for KiwiSDR project
 #
-# Copyright (c) 2014-2023 John Seamons, ZL/KF6VO
+# Copyright (c) 2014-2023 John Seamons, ZL4VO/KF6VO
 #
 # This Makefile can be run on both a build machine (I use a MacBook Pro) and the
 # BeagleBone Black target (Debian release).

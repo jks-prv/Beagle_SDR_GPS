@@ -1,4 +1,4 @@
-// Copyright (c) 2017 John Seamons, ZL/KF6VO
+// Copyright (c) 2017 John Seamons, ZL4VO/KF6VO
 
 var noise_blank = {
    ext_name: 'noise_blank',     // NB: must match noise_blank.cpp:noise_blank_ext.name

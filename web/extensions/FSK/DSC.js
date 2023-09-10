@@ -1,4 +1,4 @@
-// Copyright (c) 2022 John Seamons, ZL/KF6VO
+// Copyright (c) 2022 John Seamons, ZL4VO/KF6VO
 
 function DSC(init, output_cb) {
    var t = this;

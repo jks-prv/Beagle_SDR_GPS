@@ -1,5 +1,5 @@
 
-// Copyright (c) 2021 John Seamons, ZL/KF6VO
+// Copyright (c) 2021 John Seamons, ZL4VO/KF6VO
 
 var ale = {
    ext_name: 'ALE_2G',     // NB: must match ALE_2G.cpp:ale_2g_ext.name

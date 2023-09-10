@@ -1,4 +1,4 @@
-// Copyright (c) 2021 John Seamons, ZL/KF6VO
+// Copyright (c) 2021 John Seamons, ZL4VO/KF6VO
 
 var cmap = {
    ext_name: 'colormap',     // NB: must match colormap.cpp:colormap_ext.name

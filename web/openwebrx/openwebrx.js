@@ -19,7 +19,7 @@ This file is part of OpenWebRX.
 
 */
 
-// Copyright (c) 2015-2023 John Seamons, ZL/KF6VO
+// Copyright (c) 2015-2023 John Seamons, ZL4VO/KF6VO
 
 var owrx = {
    debug_drag: false,

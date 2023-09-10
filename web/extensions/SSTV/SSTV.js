@@ -1,4 +1,4 @@
-// Copyright (c) 2019 John Seamons, ZL/KF6VO
+// Copyright (c) 2019 John Seamons, ZL4VO/KF6VO
 
 var sstv = {
    ext_name: 'SSTV',    // NB: must match example.c:example_ext.name

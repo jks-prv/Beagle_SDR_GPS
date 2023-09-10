@@ -18,7 +18,7 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-// Copyright (c) 2015 John Seamons, ZL/KF6VO
+// Copyright (c) 2015 John Seamons, ZL4VO/KF6VO
 
 #include "types.h"
 #include "misc.h"

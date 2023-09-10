@@ -1,4 +1,4 @@
-// Copyright (c) 2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2016 John Seamons, ZL4VO/KF6VO
 
 var S_meter = {
    ext_name:      'S_meter',     // NB: must match S_meter.c:S_meter_ext.name

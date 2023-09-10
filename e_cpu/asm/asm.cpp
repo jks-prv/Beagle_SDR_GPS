@@ -23,7 +23,7 @@
 		need runtime args instead of hardcoded stuff
 */
 
-// Copyright (c) 2013-2019 John Seamons, ZL/KF6VO
+// Copyright (c) 2013-2019 John Seamons, ZL4VO/KF6VO
 
 #include "asm.h"
 

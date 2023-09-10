@@ -2,7 +2,7 @@ See the full copyright information in the individual _COPYRIGHT files in most su
 and also in individual files.
 
 KiwiSDR
-Copyright (c) 2014-2021 John Seamons, ZL/KF6VO
+Copyright (c) 2014-2021 John Seamons, ZL4VO/KF6VO
 Copyright (c) 2018-2021 Christoph Mayer, DL1CH
 
 OpenWebRX, CSDR
@@ -19,7 +19,7 @@ Copyright (C) 2013 Andrew Holme, http://www.holmea.demon.co.uk/GPS/Main.htm
     Kalman filter, SPP solver
         Copyright (c) 2018-2020 Christoph Mayer, DL1CH
     Galileo, QZSS support
-        Copyright (c) 2018-2020 John Seamons, ZL/KF6VO
+        Copyright (c) 2018-2020 John Seamons, ZL4VO/KF6VO
     GNSS-SDRLIB
         Copyright (C) 2014 Taro Suzuki <gnsssdrlib@gmail.com>
         Copyright (C) 2014 T. Takasu <http://www.rtklib.com>
@@ -97,7 +97,7 @@ Iframe
 Copyright (c) 2020 Kari Karvonen, OH1KK
 
 DSC / Selcall
-Copyright (c) 2022-2023 John Seamons, ZL/KF6VO
+Copyright (c) 2022-2023 John Seamons, ZL4VO/KF6VO
 
 SSTV
 Copyright (c) 2007-2013, Oona Räisänen (OH2EIQ [at] sral.fi)
@@ -107,7 +107,7 @@ Copyright (c) 2000-2016, C.H Brain, G4GUO
 
 TDoA
 Copyright (c) 2018-2020 Christoph Mayer, DL1CH
-Copyright (c) 2014-2020 John Seamons, ZL/KF6VO
+Copyright (c) 2014-2020 John Seamons, ZL4VO/KF6VO
 
 WSPR decoder
 Copyright (C) 2001-2015 by Joe Taylor, K1JT

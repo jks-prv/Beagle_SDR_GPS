@@ -1,5 +1,5 @@
 #!/bin/bash -e
-# Copyright (c) 2016-2019 John Seamons, ZL/KF6VO
+# Copyright (c) 2016-2019 John Seamons, ZL4VO/KF6VO
 
 # presumably "upDF/upD" alias was used to get customization scripts (and kiwiSDR-locale.gen) onto distro
 

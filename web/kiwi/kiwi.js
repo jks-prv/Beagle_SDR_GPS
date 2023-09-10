@@ -1,6 +1,6 @@
 // KiwiSDR
 //
-// Copyright (c) 2014-2023 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2023 John Seamons, ZL4VO/KF6VO
 
 var kiwi = {
    d: {},      // debug

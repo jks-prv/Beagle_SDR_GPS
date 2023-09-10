@@ -25,7 +25,7 @@
 #	Added ${ext4_options} so uBoot 2018.01-rc2-00002-g23388d96ac doesn't fail with
 #   filesystems built using mkfs.ext4 version >= 1.43 found in Debian 8.11
 #
-# Copyright (c) 2016 - 2019 John Seamons, ZL/KF6VO
+# Copyright (c) 2016 - 2019 John Seamons, ZL4VO/KF6VO
 
 #This script assumes, these packages are installed, as network may not be setup
 #dosfstools initramfs-tools rsync u-boot-tools

@@ -1,6 +1,6 @@
 #!/bin/sh
 # wrapper for running the app
-# Copyright (c) 2014-2022 John Seamons, ZL/KF6VO
+# Copyright (c) 2014-2022 John Seamons, ZL4VO/KF6VO
 
 DEV=kiwi
 BUILD_DIR=../build

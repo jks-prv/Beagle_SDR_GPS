@@ -1,4 +1,4 @@
-// Copyright (c) 2017 John Seamons, ZL/KF6VO
+// Copyright (c) 2017 John Seamons, ZL4VO/KF6VO
 
 // NB: To capitalize the name in the extension menu while using lowercase in program code
 // follow the capitalization used below, e.g.
