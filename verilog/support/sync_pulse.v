@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2014 John Seamons, ZL/KF6VO
+// Copyright (c) 2014 John Seamons, ZL4VO/KF6VO
 
 // Synchronize a single pulse (flag) across a clock domain.
 // from: fpga4fun.com/CrossClockDomain2.html

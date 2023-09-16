@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2020 John Seamons, ZL/KF6VO
+// Copyright (c) 2019-2020 John Seamons, ZL4VO/KF6VO
 
 var drm = {
    ext_name: 'DRM',     // NB: must match DRM.cpp:DRM_ext.name

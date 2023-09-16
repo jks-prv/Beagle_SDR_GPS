@@ -18,7 +18,7 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-// Copyright (c) 2014-2023 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2023 John Seamons, ZL4VO/KF6VO
 
 module CPU (
     input  wire        clk,
@@ -51,28 +51,32 @@ module CPU (
     //	1111 110000000000
     //	5432 109876543210
     
-    //	0... ............ push 0..0x7fff
+    //	0... .... ........ push 0..0x7fff
 
-    //	bbbb bbbb-------- op8 [7:0]
-    //	100p ppppR....... alu insns, R = rtn
-    //	100p ppppRiiiiiii  addi, imm [6:0] 0-127
-    //	100p ppppRCxxxxxx  add, C = carry-in
-    //	100p ppppRSSxxxxx  rdBit, SS selects 'ser' bit input
-    //	100p ppppRxxxxxxx  all others, EXCEPT R=1 illegal for: r, r_from, to_r
+    //  bbbb bbbb -------- op8 [7:0]
+    //	100p pppp R....... alu insns, R = rtn
+    //	100p pppp Riiiiiii  addi, imm [6:0] 0-127
+    //	100p pppp RCxxxxxx  add, C = carry-in
+    //	100p pppp RSSxxxxx  rdBit, SS selects 'ser' bit input
+    //	100p pppp Rxxxxxxx  all others, EXCEPT R=1 illegal for: r, r_from, to_r
 
-	//	bbbb -----------b op5 [15:0]
+    // branches
+	//  bbbb -----------b op5 [15:0]
     //	1010 ddddddddddd0 call 11:1 (:1 because of 16-bit insn width)
     //	1010 ddddddddddd1 BR 11:1
     //	1011 ddddddddddd0 BZ 11:1
     //	1011 ddddddddddd1 BN 11:1
-
     //	bbbb ------------ op4 [3:0]
-    //	1100 0........... rdReg 10:0
-    //	1100 1........... rdReg2 10:0
-    //	1101 0........... wrReg 10:0
-    //	1101 1........... wrReg2 10:0
-    //	1110 0........... wrEvt 10:0
-    //	1110 1........... wrEvt2 10:0
+    //	1100 dddddddddddL loop 11:1
+
+    // I/O
+    //	bbbb ------------ op4 [3:0]
+    //	1101 0........... rdReg 10:0
+    //	1101 1........... rdReg2 10:0
+    //	1110 0........... wrReg 10:0
+    //	1110 1........... wrReg2 10:0
+    //	1111 0........... wrEvt 10:0
+    //	1111 1........... wrEvt2 10:0
 
     localparam op_nop       = 16'h8000,
                op_dup       =  8'h81,
@@ -81,7 +85,7 @@ module CPU (
                op_over      =  8'h84,
                op_drop      =  8'h85,
                op_rot       =  8'h86,
-               op_addi      =  8'h87,        // op[6:0] = Immediate operand
+               op_addi      =  8'h87,       // op[6:0] = Immediate operand
                op_add       =  8'h88,
                op_sub       =  8'h89,
                op_mult      =  8'h8A,
@@ -96,25 +100,26 @@ module CPU (
                op_shr       =  8'h92,
                op_rdBit     =  8'h93,
                op_fetch16   =  8'h94,
-               op_store16   =  8'h95,        // leaves address+2 ( d a --> a+2 )
+               op_store16   =  8'h95,       // leaves address+2 ( d a --> a+2 )
+               op_sp_rp     =  8'h96,		// used by STACK_CHECK
 
-               op_sp        =  8'h96,		// STACK_CHECK
-               op_rp        =  8'h97,
+               op_r         =  8'h9B,
+               op_r_from    =  8'h9C,
+               op_to_r      =  8'h9D,
+               op_to_loop   =  8'h9E,
+               op_loop_from =  8'h9F,
 
-               op_r         =  8'h9C,
-               op_r_from    =  8'h9D,
-               op_to_r      =  8'h9E,
-
-               op_call      = 16'hA000,      // op[11:1] = Destination PC
-               op_branch    = 16'hA001,      // ditto
-               op_branchZ   = 16'hB000,      // ditto
-               op_branchNZ  = 16'hB001,      // ditto
+               op_call      = 16'hA000,     // op[11:1] = Destination PC
+               op_branch    = 16'hA001,     // ditto
+               op_branchZ   = 16'hB000,     // ditto
+               op_branchNZ  = 16'hB001,     // ditto
+               op_loop      =  4'hC,        // ditto
                
-               op_rdReg     =  4'hC,         // op[10:0] = I/O selects
-               op_wrReg     =  4'hD,         // ditto
-               op_wrEvt     =  4'hE;         // ditto
+               op_rdReg     =  4'hD,        // op[10:0] = I/O selects
+               op_wrReg     =  4'hE,        // ditto
+               op_wrEvt     =  4'hF;        // ditto
 
-    wire op_push = ~op[15]; // op[14:0] --> TOS
+    wire op_push = ~op[15];                 // {17'b0, op[14:0]} --> TOS
     
     wire opt_ret  = op[7] && op[15:13] == 3'b100;
     wire opt_cin  = op[6];
@@ -129,18 +134,22 @@ module CPU (
     wire [ 3:0] op4 = op[15:12];
     wire [15:0] op5 = op & 16'hF001;
     wire [ 7:0] op8 = op[15: 8];
+    wire        op0 = op[0];
 
-    wire nz = |tos[15:0];
+    wire nz      = |tos [15:0];
+    wire loop_nz = |loop[op0][15:0];
 
     wire jump = op5 == op_branchNZ && nz || op5 == op_branch ||
-                op5 == op_branchZ && ~nz || op5 == op_call;
+                op5 == op_branchZ && ~nz || op5 == op_call ||
+                op4 == op_loop && loop_nz;
 
     wire inc_sp = op_push || op4 == op_rdReg || op8 == op_dup  || op8 == op_r
-                                             || op8 == op_over || op8 == op_r_from;
+                                             || op8 == op_over || op8 == op_r_from || op8 == op_loop_from;
 
-    wire dec_sp = op4 == op_wrReg    || op8 == op_drop || op8 == op_and || op8 == op_mult ||
-                  op5 == op_branchZ  || op8 == op_add  || op8 == op_or  || op8 == op_to_r ||
-                  op5 == op_branchNZ || op8 == op_sub  || op8 == op_xor || op8 == op_store16;
+    wire dec_sp = op4 == op_wrReg    || op8 == op_drop || op8 == op_and || op8 == op_mult    ||
+                  op5 == op_branchZ  || op8 == op_add  || op8 == op_or  || op8 == op_to_r    ||
+                  op5 == op_branchNZ || op8 == op_sub  || op8 == op_xor || op8 == op_store16 ||
+                  op8 == op_to_loop;
 
     wire inc_rp = op8 == op_to_r   || op5 == op_call;
     wire dec_rp = op8 == op_r_from || opt_ret;
@@ -159,7 +168,8 @@ module CPU (
             op_swap, op_rot    : nos <= tos;
             op_shl64           : nos <= {nos[30:0], tos[31]};
             op_mult20          : nos <= {{24{prod40[39]}}, prod40[39:32]};  // 64-bit sign extend
-            default :
+            op_sp_rp           : nos <= rp;
+            default:
                 if      (inc_sp) nos <= tos;
                 else if (dec_sp) nos <= dstk_dout;
         endcase
@@ -167,64 +177,51 @@ module CPU (
     //////////////////////////////////////////////////////////////////////////
     // ALU
 
-    //reg  [17:0] xa18, xb18;
-    wire    [17:0] xa18, xb18;
-    wire [35:0] prod36;
     wire [19:0] xa20, xb20;
     wire [39:0] prod40;
     wire [31:0] sum;
-    wire co;
-    wire ci = (op8 == op_add && opt_cin && carry) || op8 == op_sub;
+    wire        co;
+    wire        ci = (op8 == op_add && opt_cin && carry) || op8 == op_sub || op4 == op_loop;
     reg  [31:0] a, b, alu;
     reg         carry;
 
-	// fixme: use a c_out instead and reduce s width to 32 from 33?
-	// FIXME: combine 36b & 40b multipliers?
-	// FIXME: combine adder & multipler(s) into a single DSP slice
+	// FIXME: use a c_out instead and reduce s width to 32 from 33?
+	// FIXME: combine adder & multipler(s) into a single DSP slice?
     ip_add_u32b cpu_sum (.a(a), .b(b), .s({co, sum}), .c_in(ci));
 
     always @ (posedge clk) if (op8 == op_add) carry <= co;
 
     always @*
-        if (op8 == op_addi)	a = op[6:0];
-        else if (mem_rd)	a = 2;
-        else				a = nos;
+        if (op8 == op_addi)	     a = op[6:0];
+        else if (op4 == op_loop) a = loop[op0];
+        else if (mem_rd)	     a = 2;
+        else				     a = nos;
 
     always @*
-        if (op8 == op_sub)	b = ~tos;
-        else				b =  tos;
+        if (op8 == op_sub)	     b = ~tos;
+        else if (op4 == op_loop) b = ~1;
+        else				     b =  tos;
 
     always @*
-        if     (op_push)    alu = op;       // side-effect alu[31:16] <= 0
-        else if (mem_rd)    alu = sum;
+        if      (op_push)                  alu = op;        // side-effect alu[31:16] <= 0
+        else if (mem_rd || op4 == op_loop) alu = sum;
+        
         else case (op8)
             op_add, op_addi,
             op_sub          : alu = sum;
-            op_mult         : alu = prod36[31:0];
-            op_mult20       : alu = prod40[31:0];
+            op_mult         : alu = prod40[31:0];
+            op_mult20       : alu = prod40[31:0];           // NB: nos <= sext(prod40[39:32]) above
             op_and          : alu = nos & tos;
             op_or           : alu = nos | tos;
-//			op_xor          : alu = nos ^ tos;
+			op_xor          : alu = nos ^ tos;
 			op_not          : alu =     ~ tos;
             op_shl, op_shl64: alu = {tos[30:0], 1'b0};
             op_shr          : alu = {tos[31], tos[31:1]};   // really an asr preserving the sign bit
             default         : alu = tos;
         endcase
 
-/*
-    always @*
-        if (op8 == op_mult) begin   // inferred latch
-            xa18 = {{2{nos[15]}}, nos[15:0]};
-            xb18 = {{2{tos[15]}}, tos[15:0]};
-        end
-*/
-
-    assign xa18 = {{2{nos[15]}}, nos[15:0]};
-    assign xb18 = {{2{tos[15]}}, tos[15:0]};
-    MULT18X18 mult_18b_18b_36b(.P(prod36), .A(xa18), .B(xb18));
-
-    assign xa20 = nos[19:0];
-    assign xb20 = tos[19:0];
+    assign xa20 = (op8 == op_mult20)? nos[19:0] : {{4{nos[15]}}, nos[15:0]};
+    assign xb20 = (op8 == op_mult20)? tos[19:0] : {{4{tos[15]}}, tos[15:0]};
     ipcore_mult_20b_20b_40b mult20(.P(prod40), .A(xa20), .B(xb20));
 
     //////////////////////////////////////////////////////////////////////////
@@ -237,19 +234,19 @@ module CPU (
         case (op4)
             op_branchZ[15:12], op_wrReg: next_tos = nos;    // branchNZ also
                                op_rdReg: next_tos = par;    // NB {16'b0, par}
+                               op_loop:  next_tos = tos;
             default :
                 case (op8)
                     op_swap, op_to_r,
-                    op_over, op_drop   : next_tos = nos;
+                    op_over, op_drop,
+                    op_to_loop         : next_tos = nos;
                     op_rot             : next_tos = dstk_dout;
                     op_r_from, op_r    : next_tos = rstk_dout;
+                    op_loop_from       : next_tos = loop[op0];
                     op_swap16          : next_tos = {tos[15:0], tos[31:16]};
                     op_rdBit           : next_tos = {tos[30:0], serial};        // 32-bit left shift
                     op_fetch16         : next_tos = mem_dout;                   // NB {16'b0, mem_dout}
-                    
-                    op_sp			   : next_tos = sp;		// STACK_CHECK
-                    op_rp			   : next_tos = rp;
-                    
+                    op_sp_rp           : next_tos = sp;
                     default            : next_tos = alu;
                 endcase
         endcase
@@ -277,8 +274,8 @@ module CPU (
 
     wire [11:0] pc_plus_2 = {pc + 1'b1, 1'b0};
 
-	// since code memory is now twice as large, and only first half is loaded by boot,
-	// must reset pc with 'boot_done' instead of letting it roll-over as before
+	// Since code memory is now twice as large, and only first half is loaded by boot,
+	// must reset pc with 'boot_done' instead of letting it roll-over as before.
 	// FIXME: this is not quite right as first two insns in insn BRAM are not executed!
     always @ (posedge clk) pc <= (|rst)? ( boot_done? 11'b0 : next_pc ) : 11'h7ff;
     always @ (posedge clk) sp <= rst[RUN]? next_sp :  8'b0;
@@ -293,10 +290,18 @@ module CPU (
     always @* next_rp = rp + inc_rp - dec_rp;
 
     //////////////////////////////////////////////////////////////////////////
+    // Loop register
+
+    reg [15:0] loop [0:1];
+
+    always @ (posedge clk)
+        if (op4 == op_loop)         loop[op0] <= alu;
+        else if (op8 == op_to_loop) loop[op0] <= tos;
+
+    //////////////////////////////////////////////////////////////////////////
     // 256 x 32-bit data and return stacks
     // WRITE_MODE doesn't matter because address spaces don't overlap
-    // But on Artix / Vivado WRITE_MODE = WRITE_FIRST on both ports is needed
-    // for correct functioning.
+    // But on Artix/Vivado WRITE_MODE = WRITE_FIRST (both ports) is needed for correct functioning.
     // On Artix 7 requires 36kb BRAM because true dual-port mode required (i.e. r/w on both ports)
     // even though memory requirement would fit in a 18kb BRAM (512 * 32b = 16kb).
 
@@ -315,10 +320,10 @@ module CPU (
     //////////////////////////////////////////////////////////////////////////
     // 2048 x 16-bit code and data memory
     // WRITE_MODE = WRITE_FIRST
-    // bram init values and reset value set to = op_nop
-    // N.B. Unlike stack mem above, address space here is _not_ separate.
-    // There are just two ports so opcode fetch and data i/o can overlap.
-    // Requires 36kb BRAM.
+    // BRAM init values and reset value set to = op_nop
+    // NB: Unlike stack mem above, address space here is _not_ separate.
+    // There are just two ports so opcode fetch and data I/O can overlap.
+    // Requires one 36kb BRAM.
     
     ipcore_bram_cpu_2k_16b cpu_code_data (
         .clka       (clk),          .clkb       (clk),

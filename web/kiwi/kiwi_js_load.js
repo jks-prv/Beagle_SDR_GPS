@@ -1,6 +1,6 @@
 // KiwiSDR
 //
-// Copyright (c) 2018 John Seamons, ZL/KF6VO
+// Copyright (c) 2018 John Seamons, ZL4VO/KF6VO
 
 console.log('kiwi_js_load.js RUNNING');
 

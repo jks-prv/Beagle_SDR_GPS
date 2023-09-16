@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2014-2023 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2023 John Seamons, ZL4VO/KF6VO
 
 module RECEIVER (
 	input wire		   adc_clk,
@@ -148,51 +148,46 @@ module RECEIVER (
     //////////////////////////////////////////////////////////////////////////
     
 `ifdef USE_GEN
-    `ifdef USE_WF
-        localparam RX_IN_WIDTH = 18;
+    localparam RX_IN_WIDTH = 18;
 
-        wire use_gen_A;
-        SYNC_WIRE sync_use_gen (.in(use_gen_C && !self_test_en_C), .out_clk(adc_clk), .out(use_gen_A));
+    wire use_gen_A;
+    SYNC_WIRE sync_use_gen (.in(use_gen_C && !self_test_en_C), .out_clk(adc_clk), .out(use_gen_A));
 
-        wire signed [RX_IN_WIDTH-1:0] gen_data;
-        wire signed [RX_IN_WIDTH-1:0] adc_ext_data = { adc_data, {RX_IN_WIDTH-ADC_BITS{1'b0}} };
+    wire signed [RX_IN_WIDTH-1:0] gen_data;
+    wire signed [RX_IN_WIDTH-1:0] adc_ext_data = { adc_data, {RX_IN_WIDTH-ADC_BITS{1'b0}} };
+
+    // only allow gen to be used on channel 0 to prevent disruption to others when multiple channels in use
+    wire [(V_RX_CHANS * RX_IN_WIDTH)-1:0] rx_data = { {V_RX_CHANS-1{adc_ext_data}}, use_gen_A? gen_data : adc_ext_data };
+`ifdef USE_WF
+    wire [(V_WF_CHANS * RX_IN_WIDTH)-1:0] wf_data = { {V_WF_CHANS-1{adc_ext_data}}, use_gen_A? gen_data : adc_ext_data };
+`endif
     
-        // only allow gen to be used on channel 0 to prevent disruption to others when multiple channels in use
-        wire [(V_RX_CHANS * RX_IN_WIDTH)-1:0] rx_data = { {V_RX_CHANS-1{adc_ext_data}}, use_gen_A? gen_data : adc_ext_data };
-        wire [(V_WF_CHANS * RX_IN_WIDTH)-1:0] wf_data = { {V_WF_CHANS-1{adc_ext_data}}, use_gen_A? gen_data : adc_ext_data };
-        
-        assign self_test = gen_data[RX_IN_WIDTH-1] & self_test_en_C;
+    assign self_test = gen_data[RX_IN_WIDTH-1] & self_test_en_C;
 
-        wire set_gen_freqH_C = (wrReg2 & op_11[SET_GEN_FREQ]) && !freq_l;
-        wire set_gen_freqL_C = (wrReg2 & op_11[SET_GEN_FREQ]) &&  freq_l;
-        wire set_gen_attn_C  =	wrReg2 & op_11[SET_GEN_ATTN];
+    wire set_gen_freqH_C = (wrReg2 & op_11[SET_GEN_FREQ]) && !freq_l;
+    wire set_gen_freqL_C = (wrReg2 & op_11[SET_GEN_FREQ]) &&  freq_l;
+    wire set_gen_attn_C  =	wrReg2 & op_11[SET_GEN_ATTN];
 
-        GEN gen_inst (
-            .adc_clk	        (adc_clk),
-            .gen_data	        (gen_data),
+    GEN gen_inst (
+        .adc_clk	        (adc_clk),
+        .gen_data	        (gen_data),
 
-            .cpu_clk	        (cpu_clk),
-            .freeze_tos_A       (freeze_tos_A),
+        .cpu_clk	        (cpu_clk),
+        .freeze_tos_A       (freeze_tos_A),
 
-            .set_gen_freqH_C    (set_gen_freqH_C),
-            .set_gen_freqL_C    (set_gen_freqL_C),
-            .set_gen_attn_C     (set_gen_attn_C)
-        );
-    `else
-        // sig gen doesn't fit when RX_CFG == 14
-        // and USE_WF is conveniently not defined when RX_CFG == 14 (rx14_wf0 configuration)
-        
-        localparam RX_IN_WIDTH = ADC_BITS;
-    
-        wire [RX_IN_WIDTH-1:0] rx_data = adc_data;
-        wire [RX_IN_WIDTH-1:0] wf_data = adc_data;
-
-    `endif
+        .set_gen_freqH_C    (set_gen_freqH_C),
+        .set_gen_freqL_C    (set_gen_freqL_C),
+        .set_gen_attn_C     (set_gen_attn_C)
+    );
 `else
 	localparam RX_IN_WIDTH = ADC_BITS;
 	
 	wire [RX_IN_WIDTH-1:0] rx_data = adc_data;
+`ifdef USE_WF
 	wire [RX_IN_WIDTH-1:0] wf_data = adc_data;
+`endif
+        
+    assign self_test = 0;
 
 `endif
 	
@@ -274,7 +269,6 @@ module RECEIVER (
 		.nrx_samps      (nrx_samps),
 		.rx_avail_A     (rxn_avail_A[0]),   // all DDCs should signal available at the same time since decimation is the same
 
-        .set_rx_nsamps_C (set_rx_nsamps_C),
 		.get_rx_srq_C   (get_rx_srq_C),
 		.get_rx_samp_C  (get_rx_samp_C),
 		.reset_bufs_C   (reset_bufs_C),

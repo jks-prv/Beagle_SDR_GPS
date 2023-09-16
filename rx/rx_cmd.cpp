@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2014-2023 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2023 John Seamons, ZL4VO/KF6VO
 
 #include "types.h"
 #include "config.h"
@@ -90,6 +90,16 @@ int bsearch_freqcomp(const void *key, const void *elem)
 }
 
 #endif
+
+static void _dx_done(conn_t *conn, u4_t mark, u4_t max_quanta, int loop=0, int nt_loop=0, int send=0, int nt_send=0)
+{
+    u4_t quanta = timer_ms() - mark;
+    max_quanta = MAX(quanta, max_quanta);
+    cprintf(conn, "DX_MKR DONE %.3f sec ", max_quanta/1e3);
+    if (loop || nt_loop || send || nt_send) printf("loop=%d|%d send=%d|%d", loop, nt_loop, send, nt_send);
+    printf("\n");
+}
+
 
 // if entries here are ordered by rx_common_cmd_key_e then the reverse lookup (str_hash_t *)->hashes[key].name
 // will work as a debugging aid
@@ -766,8 +776,10 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 if (badp == BADP_ADMIN_CONN_ALREADY_OPEN) {
                     send_msg(conn, false, "MSG badp=%d", badp);
                 } else {
-                    if (conn->auth && conn->auth_admin)
+                    // don't give WF isMaster here -- done in rx_server_websocket() at connection time
+                    if (conn->auth && conn->auth_admin && !stream_wf) {
                         conn->isMaster = true;
+                    }
                 }
             }
 
@@ -836,7 +848,14 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 	#define DX_PRINT_DEBUG 0x80
 	#define dx_print_debug(cond, fmt, ...) \
 		if ((dx_print & DX_PRINT_DEBUG) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
+
+    #define DX_DONE() \
+        if (dx_print) _dx_done(conn, mark, max_quanta, loop, nt_loop, send, nt_send)
+
 #else
+	#define DX_PRINT_MKRS 0
+	#define DX_PRINT_UPD 0
+	#define DX_PRINT_FILTER 0
 	#define dx_print_mkrs(cond, fmt, ...)
 	#define dx_print_mkrs_all(cond, fmt, ...)
 	#define dx_print_adm_mkrs(fmt, ...)
@@ -845,6 +864,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 	#define dx_print_filter(cond, fmt, ...)
 	#define dx_print_dow_time(cond, fmt, ...)
 	#define dx_print_debug(cond, fmt, ...)
+    #define DX_DONE()
 #endif
 
     dx_t *dp, *ldp, *upd;
@@ -1097,7 +1117,12 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             u4_t eibi_types_mask = 0;
             char *ident = NULL, *notes = NULL;
             bool db_changed = false;
-            if (dx_print) cprintf(conn, "--- DX_MKR [%s]\n", cmd);
+            u4_t quanta, max_quanta = 0;
+            u4_t mark = timer_ms();
+            int loop = 0, nt_loop = 0, send = 0, nt_send = 0;
+            if (dx_print) {
+                cprintf(conn, "--- DX_MKR [%s]\n", cmd);
+            }
 
             // values for compatibility with client side
             enum { DX_ADM_MKRS = 0, DX_ADM_SEARCH_FREQ = 1, DX_STEP = 2, DX_ADM_SEARCH_IDENT = 3, DX_MKRS = 4, DX_ADM_SEARCH_NOTES = 5 };
@@ -1130,6 +1155,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 db = DB_STORED;
             } else {
                 cprintf(conn, "CMD_MARKER: unknown varient [%s]\n", cmd);
+                DX_DONE();
                 return true;
             }
             if (dx_print) cprintf(conn, "DX_MKR func=%s\n", func_s[func]);
@@ -1169,6 +1195,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 dx_t *dp = (dx_t *) bsearch(&dx_min, cur_list, cur_len, sizeof(dx_t), bsearch_freqcomp);
                 dx_print_search(true, "DX_ADM_SEARCH_FREQ %.2f found #%d %.2f\n", freq, dp->idx, dp->freq);
                 send_msg(conn, false, "MSG mkr_search_pos=0,%d", dp->idx);
+                DX_DONE();
                 return true;
             } else
             
@@ -1204,6 +1231,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 }
                 dx_print_search(true, "DX_ADM_SEARCH_IDENT <%s> found #%d\n", ident, pos);
                 send_msg(conn, false, "MSG mkr_search_pos=1,%d", pos);
+                DX_DONE();
                 return true;
             } else
 
@@ -1239,11 +1267,13 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 }
                 dx_print_search(true, "DX_ADM_SEARCH_NOTES <%s> found #%d\n", notes, pos);
                 send_msg(conn, false, "MSG mkr_search_pos=2,%d", pos);
+                DX_DONE();
                 return true;
             }
             
             if (db_stored_comm && dx_db->actual_len == 0 && func != DX_ADM_MKRS) {
                 send_msg(conn, false, "MSG mkr=[{\"t\":%d}]", DX_MKRS);     // otherwise last marker won't get cleared
+                DX_DONE();
                 return true;
             }
         
@@ -1275,7 +1305,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             struct timespec ts;
             clock_gettime(CLOCK_REALTIME, &ts);
             u4_t msec = ts.tv_nsec/1000000;
-            int send = 0;
 
             // reset appending
             sb = kstr_asprintf(NULL, "[{\"t\":%d,\"n\":%d,\"s\":%ld,\"m\":%d,\"f\":%d,\"pe\":%d,\"fe\":%d",
@@ -1337,6 +1366,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 send_msg(conn, false, "MSG admin_mkr=%s", kstr_sp(sb));
                 kstr_free(sb);
                 dx_print_adm_mkrs("DX_ADM_MKRS DONE\n");
+                DX_DONE();
                 return true;
             } else {
                 // func == DX_MKRS, DX_STEP
@@ -1368,6 +1398,15 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
         
                 dx_print_search(db_eibi, "EiBi BSEARCH len=%d %.2f\n", cur_len, dp->freq);
                 for (; dp < &cur_list[cur_len] && dp >= cur_list; dp += dir) {
+                    loop++;
+                    if ((loop & 0x1f) == 0x1f) {
+                        quanta = timer_ms() - mark;
+                        max_quanta = MAX(quanta, max_quanta);
+                        nt_loop++;
+                        NextTask("DX_MKR loop");
+                        mark = timer_ms();
+                    }
+
                     u4_t flags = 0;
                     double freq = dp->freq + ((double) dp->offset / 1000.0);		// carrier plus offset
                     //dx_print_search(db_eibi, "DX_MKR EiBi CONSIDER %.2f\n", freq);
@@ -1573,8 +1612,13 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                         break;
                     }
                     
-                    if ((send & 0xf) == 0xf)
-                        NextTask("DX_MKR");
+                    if ((send & 0xf) == 0xf) {
+                        quanta = timer_ms() - mark;
+                        max_quanta = MAX(quanta, max_quanta);
+                        nt_send++;
+                        NextTask("DX_MKR send");
+                        mark = timer_ms();
+                    }
                 }
             }
         
@@ -1590,6 +1634,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             if (db_changed)
                 send_msg(conn, false, "MSG request_dx_update");     // get client to request updated dx list
 
+            DX_DONE();
             return true;
         }
 	    break;
@@ -1631,7 +1676,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
     case CMD_GET_CONFIG:
         if (strcmp(cmd, "SET GET_CONFIG") == 0) {
             asprintf(&sb, "{\"r\":%d,\"g\":%d,\"s\":%d,\"pu\":\"%s\",\"pe\":%d,\"pv\":\"%s\",\"pi\":%d,\"n\":%d,\"m\":\"%s\",\"v1\":%d,\"v2\":%d,\"d1\":%d,\"d2\":%d}",
-                rx_chans, GPS_CHANS, net.serno, net.ip_pub, net.port_ext, net.ip_pvt, net.port, net.nm_bits, net.mac, version_maj, version_min, debian_maj, debian_min);
+                rx_chans, gps_chans, net.serno, net.ip_pub, net.port_ext, net.ip_pvt, net.port, net.nm_bits, net.mac, version_maj, version_min, debian_maj, debian_min);
             send_msg(conn, false, "MSG config_cb=%s", sb);
             kiwi_ifree(sb);
             return true;

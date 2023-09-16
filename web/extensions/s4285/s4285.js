@@ -1,4 +1,4 @@
-// Copyright (c) 2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2016 John Seamons, ZL4VO/KF6VO
 
 var s4285 = {
    ext_name: 's4285',      // NB: must match s4285.c:s4285_ext.name

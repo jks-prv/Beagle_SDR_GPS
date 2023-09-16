@@ -1,5 +1,5 @@
 #!/bin/bash -e
-# Copyright (c) 2016-2022 John Seamons, ZL/KF6VO
+# Copyright (c) 2016-2022 John Seamons, ZL4VO/KF6VO
 
 # Debian 10.3
 # NB: this distro image is a flasher

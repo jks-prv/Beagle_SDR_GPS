@@ -30,11 +30,15 @@ module LOGGER (
     input  wire [15:0] din,
     output wire [15:0] dout);
         
+`include "kiwi.gen.vh"
+
+`ifdef USE_LOGGER
+
     reg [9:0] waddr;
     reg [9:0] raddr;
     reg       full;
     
-	ipcore_bram_1k_16b rx_buf (
+	ipcore_bram_1k_16b log_buf (
 		.clka	(clk),          .clkb	(clk),
 		.addra	(waddr),        .addrb	(raddr + rd),
 		.dina	(din),          .doutb	(dout),
@@ -48,5 +52,7 @@ module LOGGER (
             if (wr && ~full) {full, waddr} <= waddr + 1;
             raddr <= raddr + rd;
         end
+
+`endif
          
 endmodule

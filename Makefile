@@ -1,12 +1,12 @@
 VERSION_MAJ = 1
-VERSION_MIN = 625
+VERSION_MIN = 626
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
 #
 # Makefile for KiwiSDR project
 #
-# Copyright (c) 2014-2023 John Seamons, ZL/KF6VO
+# Copyright (c) 2014-2023 John Seamons, ZL4VO/KF6VO
 #
 # This Makefile can be run on both a build machine (I use a MacBook Pro) and the
 # BeagleBone Black target (Debian release).
@@ -1417,8 +1417,14 @@ log:
 	-@$(LOGS) | grep -a kiwid
 	@rm -f /tmp/kiwi.log
 
+LOGS_SHORT = \
+	cat /var/log/user.log.1 > /tmp/kiwi.log; \
+	cat /var/log/user.log >> /tmp/kiwi.log; \
+	cat /tmp/kiwi.log
+
 slog:
-	-@cat /var/log/user.log | grep -a kiwid
+	-@$(LOGS_SHORT) | grep -a kiwid
+	@rm -f /tmp/kiwi.log
 
 tlog:
 	-@cat /var/log/user.log | grep -a kiwid | tail -500

@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2016 John Seamons, ZL4VO/KF6VO
 
 #include "types.h"
 #include "config.h"
@@ -180,8 +180,8 @@ int eeprom_check(model_e *model)
 
 	int serno = -1;
 	n = sscanf(serial_no, "%d", &serno);
-	mprintf("EEPROM check: read serial_no \"%s\" %d\n", serial_no, serno);
 	if (n != 1 || serno <= 0 || serno > 9999) {
+	    mlprintf("EEPROM check: read serial_no \"%s\" %d\n", serial_no, serno);
 		mlprintf("EEPROM check: scan failed (serno)\n");
 		return -1;
 	}
@@ -200,6 +200,7 @@ int eeprom_check(model_e *model)
             return -1;
         }
     }
+    mprintf("EEPROM check: read model KiwiSDR %d, serial_no %d\n", _model, serno);
 	if (model != NULL) *model = (model_e) _model;
 	
 	return serno;

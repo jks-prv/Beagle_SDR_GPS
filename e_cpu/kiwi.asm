@@ -19,9 +19,19 @@
 ; http://www.holmea.demon.co.uk/GPS/Main.htm
 ; ============================================================================
 
-; Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+; Copyright (c) 2014-2016 John Seamons, ZL4VO/KF6VO
 
 #include ../kiwi.config
+
+				MACRO	loop_ct count
+				 push   count - 1
+                 to_loop
+				ENDM
+
+				MACRO	loop2_ct count
+				 push   count - 1
+                 to_loop2
+				ENDM
 
 				MACRO	FreezeTOS
 				 wrEvt2	FREEZE_TOS
@@ -75,16 +85,6 @@
 				 wrReg	reg
 				ENDM
 
-				MACRO	SvcGPS chan					; ... flag
-				 brZ	_svcGPS # chan
-			wrEvt2	CPU_CTR_ENA
-				 push	chan * sizeof GPS_CHAN + GPS_channels
-				 push	chan
-				 call	GPS_Method					; this ch#
-			wrEvt2	CPU_CTR_DIS
-_svcGPS # chan # :									; ...
-				ENDM
-
 ; ============================================================================
 
 Entry:
@@ -98,7 +98,7 @@ Entry:
 #endif
 
 				push	0							; disable any channel srqs
-				wrReg	SET_MASK
+				wrReg	SET_GPS_MASK
 				rdReg	GET_SRQ
 				pop
 
@@ -116,30 +116,51 @@ NoCmd:
 				rdBit0								; host_srq
 
 #if USE_GPS
-				REPEAT	GPS_CHANS
-				 push	0
-				 rdBit0
-				ENDR								; host_srq gps_srq(GPS_CHANS-1) ... (0)
+                loop_gps_chans
+gps_srq_loop:   push	0
+				rdBit0
+				loop    gps_srq_loop
+				                                    ; host_srq gps_srq(gps_chans-1) ... (0)
 #endif
 
 #if USE_SDR
-				rdReg	GET_RX_SRQ					; host_srq gps_srq(GPS_CHANS-1) ... (0) 0
-				rdBit1								; host_srq gps_srq(GPS_CHANS-1) ... (0) rx_srq
+				rdReg	GET_RX_SRQ					; host_srq gps_srq(gps_chans-1) ... (0) 0
+				rdBit1								; host_srq gps_srq(gps_chans-1) ... (0) rx_srq
 				
 				brZ		no_rx_svc
 			wrEvt2	CPU_CTR_ENA
 				call	RX_Buffer
 			wrEvt2	CPU_CTR_DIS
 
-				StackCheck	sp_rx (GPS_CHANS + 1)
-no_rx_svc:											; host_srq gps_srq(GPS_CHANS-1) ... (0)
+#if STACK_CHECK
+                // CAUTION: untested replacement code below for GPS_CHANS => gps_chans transition
+				//StackCheck	sp_rx (GPS_CHANS + 1)
+				
+				push	sp_rx                       ; which
+                call    push_gps_chans_m1           ; which #chans_m1
+				addi    2                           ; which expected(gps_chans_m1+2 = gps_chans+1)
+				call	stack_check
+#endif
+
+no_rx_svc:											; host_srq gps_srq(gps_chans-1) ... (0)
+
 #endif
 
 #if USE_GPS
-				REPEAT	GPS_CHANS
-				 SvcGPS	<iter>
-				 StackCheck	(sp_gps # <iter>) (GPS_CHANS - <iter>)
-				ENDR								; host_srq
+                call    loop2_gps_chans             ; host_srq gps_srq(gps_chans-1) ... (0)
+gps_svc_loop:                                       ; gps_srq
+                brZ     no_gps_svc                  ; 
+			wrEvt2	CPU_CTR_ENA
+                call    push_gps_chans_m1           ; #chans_m1
+                loop2_from                          ; #chans_m1 loop_ch#(11 10 ... 0)
+                sub                                 ; #ch(11-11=0 11-10=1 ... 11-0=11)
+                dup                                 ; ch# ch#
+                call    GetGPSchanPtr               ; ch# this
+                swap                                ; this ch#
+				call	GPS_Method					;
+			wrEvt2	CPU_CTR_DIS
+no_gps_svc:     loop2   gps_svc_loop                ; NB: loop2 because GPS_Method() uses shl64_n()::to_loop
+
 #endif
 				
 				brZ		NoCmd                       ; no host_srq pending
@@ -213,12 +234,13 @@ CmdPing:
 				push	0
 				push	0
 				push	0
-				push	0
-				sp						// sp should be +4 from entry at this point
-                wrReg	HOST_TX
-                pop
-                pop
-                pop
+				push	0                           ; 0 0 0 0
+				// sp should be +4 from entry at this point
+				sp_rp                               ; 0 0 rp sp
+                wrReg	HOST_TX                     ; 0 0 rp
+                pop                                 ; 0 0
+                pop                                 ; 0
+                pop                                 ;
                 
                 push	sp2_seq
                 fetch16
@@ -275,9 +297,8 @@ CmdGetSPRP:
 #if USE_DEBUG
 				wrEvt	HOST_RST
 				push    0                   ; 0
-				rp                          ; rp
-				push    0                   ; rp 0
-				sp                          ; rp sp
+				push    0                   ; 0 0
+				sp_rp                       ; rp sp
                 wrReg	HOST_TX             ; rp
                 wrReg	HOST_TX             ;
                 ret
@@ -329,19 +350,22 @@ tr_id:			u16		0
 
 #if STACK_CHECK
 stack_check:                                ; addr #sp
-				addi	3                   ; addr #sp+3			caller did 2 pushes, we're just about to do 1
-				push	0                   ; addr #sp+3 0
-				sp                          ; addr #sp+3 sp			'sp' just overwrites TOS
-				dup                         ; addr #sp+3 sp sp
-				rot                         ; addr sp sp #sp+3
-				sub                         ; addr sp (#sp+3 == sp)?
+				addi	3                   ; addr #sp+4			StackCheck macro did 2 pushes, we're just about to do 2 more
+				push	0                   ; addr #sp+4 0
+				push	0                   ; addr #sp+4 0 0
+				sp_rp                       ; addr #sp+4 rp sp
+				swap                        ; addr #sp+4 sp rp
+				pop                         ; addr #sp+4 sp
+				dup                         ; addr #sp+4 sp sp
+				rot                         ; addr sp sp #sp+4
+				sub                         ; addr sp (#sp+4 == sp)?
 				brNZ	stack_bad           ; addr sp
 				pop                         ; addr
-				pop.r
+				pop.r                       ;
 stack_bad:                                  ; addr sp
-				push	3                   ; correct by 3 from above
+				push	4                   ; correct by 4 from above
 				sub
-				swap                        ; sp-3 addr				the last bad sp value
+				swap                        ; sp-4 addr				the last bad sp value
 				store16                     ; addr
 				addi	2                   ; addr++				how many times it has happened
 				incr16                      ; *addr++
@@ -391,7 +415,7 @@ sp_ready:		u16		0			        ; the last bad sp value
 				u16		0			        ; how many times it has happened
 sp_rx:			u16		0
 				u16		0
-				REPEAT	GPS_CHANS
+				REPEAT	GPS_MAX_CHANS
 sp_gps # <iter> # :
 				 u16		0
 				 u16		0
@@ -448,6 +472,7 @@ Commands:
                 // GPS
 #if USE_GPS
 				u16		CmdSample
+				u16		CmdSetChans
 				u16		CmdSetMask
 				u16		CmdSetRateCG
 				u16		CmdSetRateLO
@@ -561,18 +586,13 @@ sub64:										; ah al bh bl
 				add64						; (a-b)h (a-b)l
                 ret
 
-shl64_n:									; i64H i64L n                   n+8
-                push	Shifted				; i64H i64L n Shifted
-                swap						; i64H i64L Shifted n
-                shl							; i64H i64L Shifted n*2
-                sub							; i64H i64L Shifted-n*2
-                to_r						; i64H i64L                     ; Shifted-n*2
-                ret							; computed jump
-
-                REPEAT	32
-                 shl64
-                ENDR
-Shifted:        ret					    	; i64H<<n i64L<<n
+shl64_n:									; i64H i64L n
+                push    1                   ; i64H i64L n 1
+                sub                         ; i64H i64L n-1
+                to_loop                     ; i64H i64L
+shl64_loop:     shl64
+                loop    shl64_loop
+                ret					    	; i64H<<n i64L<<n
 
 neg32:			push	0					; i32 0
 				swap						; 0 i32
@@ -673,28 +693,31 @@ abs64_1:		ret
 rdBit0_16:
 				push	0
 rdBit0_16z:
-				REPEAT	16
-				 rdBit0
-				ENDR
+                loop_ct 16
+rdBit0_loop:    rdBit0
+                loop    rdBit0_loop
 				ret
 
+// not used currently
+#if 0
 // rdBit1 a 16-bit word
 rdBit1_16:
 				push	0
 rdBit1_16z:
-				REPEAT	16
-				 rdBit1
-				ENDR
+                loop_ct 16
+rdBit1_loop:    rdBit1
+                loop    rdBit1_loop
 				ret
 
 // rdBit2 a 16-bit word
 rdBit2_16:
 				push	0
 rdBit2_16z:
-				REPEAT	16
-				 rdBit2
-				ENDR
+                loop_ct 16
+rdBit2_loop:    rdBit2
+                loop    rdBit2_loop
 				ret
+#endif
 
 // increment a u16 memory location and keep value on stack
 incr16:										; addr

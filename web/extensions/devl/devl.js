@@ -1,4 +1,4 @@
-// Copyright (c) 2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2016 John Seamons, ZL4VO/KF6VO
 
 var develop = {
    ext_name: 'devl',    // NB: must match iq.c:iq_display_ext.name

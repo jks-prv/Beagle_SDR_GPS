@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2014-2023 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2023 John Seamons, ZL4VO/KF6VO
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -39,7 +39,6 @@ module rx_audio_mem (
     input  wire [ 7:0] nrx_samps,
 	input  wire		   rx_avail_A,
 
-	input  wire		   set_rx_nsamps_C,
 	input  wire		   get_rx_srq_C,
 	input  wire		   get_rx_samp_C,
 	input  wire		   reset_bufs_C,

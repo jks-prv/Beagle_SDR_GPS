@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2021 John Seamons, ZL/KF6VO
+// Copyright (c) 2021 John Seamons, ZL4VO/KF6VO
 
 // tri-state buffer
 

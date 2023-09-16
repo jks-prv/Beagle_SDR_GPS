@@ -240,7 +240,7 @@ typedef struct {
     bool set_date, date_set;
     int tod_chan;
     int soln_type, E1B_plot_separately;
-	gps_chan_t ch[GPS_CHANS];
+	gps_chan_t ch[GPS_MAX_CHANS];
 	
 	//#define AZEL_NSAMP (4*60)
 	#define AZEL_NSAMP 60

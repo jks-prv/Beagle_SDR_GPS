@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2021 John Seamons, ZL/KF6VO
+// Copyright (c) 2016-2021 John Seamons, ZL4VO/KF6VO
 
 #include "ext.h"	// all calls to the extension interface begin with "ext_", e.g. ext_register()
 #include "example.h"

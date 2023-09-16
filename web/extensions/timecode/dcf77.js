@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2019 John Seamons, ZL/KF6VO
+// Copyright (c) 2017-2019 John Seamons, ZL4VO/KF6VO
 
 var dcf77 = {
    arm: 0,

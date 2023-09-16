@@ -55,7 +55,7 @@ module GPS (
     reg [3:0] cmd_chan;
 
     always @ (posedge clk)
-        if (wrReg & op_8[SET_CHAN]) cmd_chan <= tos[3:0];
+        if (wrReg & op_8[SET_GPS_CHAN]) cmd_chan <= tos[3:0];
 
     //////////////////////////////////////////////////////////////////////////
     // Service request flags and masks
@@ -64,7 +64,7 @@ module GPS (
     wire [GPS_CHANS-1:0] chan_srq;
 
     always @ (posedge clk)
-        if (wrReg & op_8[SET_MASK]) chan_mask <= tos[GPS_CHANS-1:0];
+        if (wrReg & op_8[SET_GPS_MASK]) chan_mask <= tos[GPS_CHANS-1:0];
 
 	localparam NSRQ = GPS_CHANS;		// GPS_CHANS, not GPS_CHANS-1, allows for host_srq
 

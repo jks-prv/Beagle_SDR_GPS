@@ -19,7 +19,7 @@
 ; http://www.holmea.demon.co.uk/GPS/Main.htm
 ; ============================================================================
 
-; Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+; Copyright (c) 2014-2016 John Seamons, ZL4VO/KF6VO
 
 
 ; ============================================================================
@@ -44,7 +44,7 @@
 				 u16    ch_LO_polarity  1
 				ENDS
 
-GPS_channels:	REPEAT	GPS_CHANS
+GPS_channels:	REPEAT	GPS_MAX_CHANS
 				 GPS_CHAN	
 				ENDR
 
@@ -107,9 +107,8 @@ GetGPSchanPtr:									; chan#
 GetCount:		push	0						; 0
 				rdBit0							; [17]
 GetCount2:
-				REPEAT 17
-				 rdBit0							; 
-				ENDR
+                rdBit0_16z
+				rdBit0							; 
 				ret								; [17:0]
 
 GetPower:		call	GetCount				; i[17:0]
@@ -127,9 +126,10 @@ GetPower:		call	GetCount				; i[17:0]
 GetCount:		push	0						; 0
 				rdBit0							; [19]
 GetCount2:
-				REPEAT 19
-				 rdBit0							; 
-				ENDR
+                rdBit0_16z
+				rdBit0							; 
+				rdBit0							; 
+				rdBit0							; 
 				ret								; [19:0]
 
 GetPower:		call	GetCount				; i[19:0]
@@ -157,7 +157,7 @@ GPS_Method:									; this ch#
 #if USE_LOGGER
                 swap                        ; ch# this
                 over                        ; ch# this ch#
-				wrReg	SET_CHAN			; ch# this
+				wrReg	SET_GPS_CHAN        ; ch# this
                 to_r						; ch#
                 push    iq_ch               ; ch# &iq_ch
                 fetch16                     ; ch# iq_ch
@@ -188,7 +188,7 @@ GPS_Method:									; this ch#
                 
                 br      g_continue          ; Inav ip qp
 #endif
-				wrReg	SET_CHAN			; this
+				wrReg	SET_GPS_CHAN        ; this
                 to_r						;
 
 g_method_reg:
@@ -494,9 +494,9 @@ E1B_nav:                                    ; Inav
 ; ============================================================================
 
 UploadChan:										; &GPS_channels[n]
-				REPEAT	sizeof GPS_CHAN / 2
-				 wrEvt	GET_MEMORY
-				ENDR
+				loop_ct (sizeof GPS_CHAN / 2)
+upload_ch_loop: wrEvt	GET_MEMORY
+				loop    upload_ch_loop
 				ret
 
 // "wrEvt GET_MEMORY" side-effect: auto mem ptr incr, i.e. 2x tos += 2 (explains "-4" below)
@@ -539,7 +539,7 @@ UploadGlitches:									; &GPS_channels + ch_NAV_GLITCH
 				 swap							; freq32 chan freq64H L=0 &freq
 				 store64						; freq32 chan &freq
 				 drop							; freq32 chan
-				 wrReg	SET_CHAN				; freq32
+				 wrReg	SET_GPS_CHAN            ; freq32
 				 wrReg	nco						;
 				ENDM
 
@@ -558,7 +558,26 @@ UploadGlitches:									; &GPS_channels + ch_NAV_GLITCH
 CmdSample:		wrEvt	GPS_SAMPLER_RST
             	ret
 
-CmdSetMask:     SetReg SET_MASK
+gps_chans_m1:   u16		GPS_MAX_CHANS - 1   ; NB: -1 due to how tp_loop[2] insn works
+
+CmdSetChans:    rdReg	HOST_RX             ; #chans
+                push    gps_chans_m1        ; #chans &gps_chans_m1
+                store16                     ; &gps_chans_m1
+                pop.r                       ;
+
+push_gps_chans_m1:
+                push    gps_chans_m1        ; &gps_chans_m1
+                fetch16.r                   ; #chans_m1
+
+loop_gps_chans:
+                call    push_gps_chans_m1   ; #chans_m1
+                to_loop.r                   ;
+
+loop2_gps_chans:
+                call    push_gps_chans_m1   ; #chans_m1
+                to_loop2.r                  ;
+
+CmdSetMask:     SetReg SET_GPS_MASK
                 ret
 
 CmdSetRateCG:   SetRate	ch_CG_FREQ SET_CG_NCO
@@ -575,7 +594,7 @@ CmdSetGainLO:   SetGain ch_LO_GAIN
 
 CmdSetSat:      rdReg	HOST_RX             ; chan#
                 dup                         ; chan# chan#
-                wrReg   SET_CHAN            ; chan#
+                wrReg   SET_GPS_CHAN        ; chan#
                 call    GetGPSchanPtr       ; this
                 rdReg	HOST_RX             ; this sat#
                 dup                         ; this sat# sat#
@@ -590,18 +609,18 @@ CmdSetSat:      rdReg	HOST_RX             ; chan#
 CmdSetE1Bcode:
                 push    E1B_CODE_LOOP2
 e1b_more:
-				REPEAT	E1B_CODE_RPT
-                 SetReg	SET_E1B_CODE
-				ENDR
+				loop_ct	E1B_CODE_RPT
+e1b_loop1:      SetReg	SET_E1B_CODE
+				loop    e1b_loop1
 				
 				push	1
 				sub
 				dup
 				brNZ	e1b_more
 
-				REPEAT	E1B_CODE_REM
-                 SetReg	SET_E1B_CODE
-				ENDR
+				loop_ct	E1B_CODE_REM
+e1b_loop2:      SetReg	SET_E1B_CODE
+				loop    e1b_loop2
 				drop.r
 
 CmdSetPolarity: rdReg	HOST_RX             ; chan#
@@ -612,7 +631,7 @@ CmdSetPolarity: rdReg	HOST_RX             ; chan#
                 store16                     ; &ch_LO_polarity
                 pop.r                       ;
 
-CmdPause:       SetReg	SET_CHAN
+CmdPause:       SetReg	SET_GPS_CHAN
                 SetReg	SET_PAUSE
                 ret
 
@@ -620,9 +639,9 @@ CmdGetGPSSamples:
 				wrEvt	HOST_RST
 				push	GPS_SAMPS_LOOP
 up_more:
-				REPEAT	GPS_SAMPS_RPT
-				 wrEvt	GET_GPS_SAMPLES
-				ENDR
+				loop_ct	GPS_SAMPS_RPT
+up_loop:        wrEvt	GET_GPS_SAMPLES
+				loop    up_loop
 
 				push	1
 				sub
@@ -646,22 +665,22 @@ CmdGetClocks:   wrEvt	HOST_RST
                 wrReg	HOST_TX
                 
                 push	0
-                REPEAT	GPS_CHANS
-                 rdBit0						; chan srq
-                ENDR
+                loop_gps_chans
+gps_chan_loop:  rdBit0						; chan srq
+                loop    gps_chan_loop
                 wrReg	HOST_TX
                 
                 push	GPS_channels + ch_NAV_MS
-                REPEAT	GPS_CHANS
-                 call	UploadClock
-                ENDR
+                loop2_gps_chans
+upload_loop:    call	UploadClock
+                loop2   upload_loop         ; NB: loop2 because UploadClock() eventually uses loop insn
                 drop.r
 
 CmdGetGlitches: wrEvt	HOST_RST
                 push	GPS_channels + ch_NAV_GLITCH
-                REPEAT	GPS_CHANS
-                 call	UploadGlitches
-                ENDR
+                loop_gps_chans
+glitch_loop:    call	UploadGlitches
+                loop    glitch_loop
                 drop.r
 
 iq_ch:			u16		0

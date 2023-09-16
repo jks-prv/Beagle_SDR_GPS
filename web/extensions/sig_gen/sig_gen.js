@@ -1,4 +1,4 @@
-// Copyright (c) 2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2016 John Seamons, ZL4VO/KF6VO
 
 var gen = {
    ext_name: 'sig_gen',    // NB: must match sig_gen.c:sig_gen.name

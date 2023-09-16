@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2021 John Seamons, ZL/KF6VO
+// Copyright (c) 2016-2021 John Seamons, ZL4VO/KF6VO
 
 var fft_a = { KRAS:1, NOVO:2, KHAB:3, REVD:4, SEYD:5, MULT:6 };
 

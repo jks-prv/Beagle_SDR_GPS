@@ -18,6 +18,8 @@ typedef signed char         s1_t;
 typedef float               f32_t;
 typedef double              d64_t;
 
+typedef unsigned int        bf_t;
+
 typedef void (*func_t)();
 typedef void (*funcPI_t)(int);
 typedef void (*funcPI2_t)(int, int);

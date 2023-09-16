@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2023 John Seamons, ZL/KF6VO
+// Copyright (c) 2017-2023 John Seamons, ZL4VO/KF6VO
 
 var tdoa = {
    ext_name:   'TDoA',  // NB: must match tdoa.cpp:tdoa_ext.name

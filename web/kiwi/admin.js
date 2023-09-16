@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2023 John Seamons, ZL/KF6VO
+// Copyright (c) 2016-2023 John Seamons, ZL4VO/KF6VO
 
 // TODO
 //		input range validation
@@ -2276,6 +2276,8 @@ function gps_update_admin_cb()
       for (var cn=0; cn < gps.ch.length; cn++) {
          s += w3_table_row('id-gps-ch-'+ cn, '');
       }
+
+      s += w3_table_row('','&nbsp;');
 
 	w3_el("id-gps-ch").innerHTML = s;
 	

@@ -39,7 +39,7 @@ int num_strings();
 // tokens
 
 typedef enum {
-	TT_EOL=0, TT_LABEL, TT_SYM, TT_NUM, TT_OPC, TT_PRE, TT_OPR, TT_DATA, TT_STRUCT, TT_ITER, TT_DEF, TT_FILE
+	TT_EOL=0, TT_LABEL, TT_SYM, TT_NUM, TT_OPC, TT_PRE, TT_OPR, TT_DATA, TT_STRUCT, TT_ITER, TT_DEF, TT_FILE, TT_STATS
 } token_type_e;
 
 #define	TF_RET		0x0001
@@ -69,6 +69,7 @@ extern tokens_t *tp_start, *tp_end;
 const char *ttype(token_type_e ttype_e);
 void token_dump(tokens_t *tp);
 void dump_tokens(const char *pass, tokens_t *f, tokens_t *l);
+void dump_tokens_until_eol(const char *id, tokens_t *f);
 void insert(int n, tokens_t *tp, tokens_t **ep);
 void pullup(tokens_t *dp, tokens_t *sp, tokens_t **ep);
 

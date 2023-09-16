@@ -1,4 +1,4 @@
-// Copyright (c) 2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2016 John Seamons, ZL4VO/KF6VO
 
 // TODO
 //		input range validation
@@ -712,22 +712,27 @@ function config_clone_status_cb(status)
 {
    var msg;
    
-   if (status >= 0 && status <= 2) {
+   if (status >= 0 && status <= 0xff) {
+      var restart = true;
       switch (status) {
          case 0: msg = 'Full configuration cloned.'; break;
          case 1: msg = 'DX configuration cloned.'; break;
          case 2: msg = 'DX configuration cloned, but no dx_config.json file found on Kiwi host.'; break;
+         default: msg = 'undefined error #'+ status; restart = false; break;
       }
-      ext_send('SET restart');
-      admin_wait_then_reload(60, msg +' Restarting KiwiSDR server.');
-   } else
-   if (status == 0x500)
-      msg = 'wrong password';
-   else
-   if (status == 256)
-      msg = 'host unknown/unresponsive';
-   else
-      msg = 'clone error #'+ status;
+      if (restart) {
+         ext_send('SET restart');
+         admin_wait_then_reload(60, msg +'<br>Restarting KiwiSDR server.');
+      }
+   } else {
+      status = (status >> 8) & 0xff;
+      switch (status) {
+         case 1: msg = 'host unknown/unresponsive.'; break;
+         case 5: msg = 'wrong password.'; break;
+         case 2: msg = 'DX configuration cloned, but no dx_config.json file found on Kiwi host.'; break;
+         default: msg = 'clone error #'+ status; break;
+      }
+   }
    
    w3_innerHTML('id-config-clone-status', msg);
 }

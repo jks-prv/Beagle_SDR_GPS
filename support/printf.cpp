@@ -25,7 +25,7 @@
 #include <time.h>
 #include <execinfo.h>
 
-static bool log_foreground_mode = false;
+bool log_foreground_mode = false;
 static bool log_ordinary_printfs = false;
 
 void kiwi_exit_dont_use(int err)

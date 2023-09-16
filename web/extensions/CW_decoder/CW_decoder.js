@@ -1,4 +1,4 @@
-// Copyright (c) 2018 John Seamons, ZL/KF6VO
+// Copyright (c) 2018 John Seamons, ZL4VO/KF6VO
 
 var cw = {
    ext_name: 'CW_decoder',    // NB: must match cw_decoder.cpp:cw_decoder_ext.name

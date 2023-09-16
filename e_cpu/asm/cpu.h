@@ -30,33 +30,34 @@
 #define	OC_RDBIT2 		0x9340
 #define	OC_FETCH16		0x9400
 #define	OC_STORE16		0x9500		/* leaves address ( d a --> a ) */
+#define	OC_SP_RP        0x9600		/* used by STACK_CHECK */
 
-//#define	OC_96			0x9600
-#define	OC_SP			0x9600		/* STACK_CHECK */
-//#define	OC_97			0x9700
-#define	OC_RP			0x9700
+#define	OC_97			0x9700
 #define	OC_98			0x9800
 #define	OC_99			0x9900
 #define	OC_9A			0x9A00
-#define	OC_9B			0x9B00
 
-#define	OC_R			0x9C00
-#define	OC_R_FROM		0x9D00
-#define	OC_TO_R  		0x9E00
-
-#define	OC_9F			0x9F00
+#define	OC_R			0x9B00
+#define	OC_R_FROM		0x9C00
+#define	OC_TO_R  		0x9D00
+#define	OC_TO_LOOP      0x9E00
+#define	OC_TO_LOOP2     0x9E01
+#define	OC_LOOP_FROM    0x9F00
+#define	OC_LOOP2_FROM   0x9F01
 
 // op5
 #define	OC_CALL			0xA000      /* op[11:1] = Destination PC */
 #define	OC_BR			0xA001      /* ditto */
 #define	OC_BRZ			0xB000      /* ditto */
 #define	OC_BRNZ			0xB001      /* ditto */
+// op4
+#define	OC_LOOP         0xC000      /* ditto */
+#define	OC_LOOP2        0xC001      /* ditto */
 
 // op4
-#define	OC_RDREG		0xC000		/* op[10:0] = I/O selects */
-#define	OC_RDREG2		0xC800		/* op[10:0] = I/O selects */
-#define	OC_WRREG		0xD000		/* op[10:0] = I/O selects */
-#define	OC_WRREG2		0xD800		/* op[10:0] = I/O selects */
-#define	OC_WREVT		0xE000		/* op[10:0] = I/O selects */
-#define	OC_WREVT2		0xE800		/* op[10:0] = I/O selects */
-#define OC_F0			0xF000
+#define	OC_RDREG		0xD000		/* op[10:0] = I/O selects */
+#define	OC_RDREG2		0xD800		/* op[10:0] = I/O selects */
+#define	OC_WRREG		0xE000		/* op[10:0] = I/O selects */
+#define	OC_WRREG2		0xE800		/* op[10:0] = I/O selects */
+#define	OC_WREVT		0xF000		/* op[10:0] = I/O selects */
+#define	OC_WREVT2		0xF800		/* op[10:0] = I/O selects */

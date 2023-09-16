@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2023 John Seamons, ZL/KF6VO
+// Copyright (c) 2021-2023 John Seamons, ZL4VO/KF6VO
 
 var prefs = {
    ext_name: 'prefs',    // NB: must match prefs.cpp:prefs_ext.name

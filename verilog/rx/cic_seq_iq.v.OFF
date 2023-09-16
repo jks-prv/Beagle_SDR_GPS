@@ -17,7 +17,7 @@ Boston, MA  02110-1301, USA.
 
 // Copyright (c) 2008 Alex Shovkoplyas, VE3NEA
 // Copyright (c) 2013 Phil Harman, VK6APH
-// Copyright (c) 2014 John Seamons, ZL/KF6VO
+// Copyright (c) 2014 John Seamons, ZL4VO/KF6VO
 
 
 //

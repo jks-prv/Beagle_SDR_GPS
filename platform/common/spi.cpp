@@ -18,7 +18,7 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-// Copyright (c) 2015 John Seamons, ZL/KF6VO
+// Copyright (c) 2015 John Seamons, ZL4VO/KF6VO
 
 #include "types.h"
 #include "misc.h"
@@ -267,7 +267,7 @@ struct stack_check_t {
 	u2_t sp_beef;
 	stack_entry_t sp_ready;
 	stack_entry_t sp_rx;
-	stack_entry_t sp_gps[GPS_CHANS];
+	stack_entry_t sp_gps[GPS_MAX_CHANS];
 	stack_entry_t sp_cmds[NUM_CMDS];
 	u2_t sp_seq;
 	u2_t sp_8bad;
@@ -320,7 +320,7 @@ static void stack_check(SPI_MISO *miso)
 	}
 	if (s->sp_ready.c) stack_nope("sp_ready", 0, &s->sp_ready, 0);
 	if (s->sp_rx.c) stack_nope("sp_rx", 0, &s->sp_rx, 13);
-	for (i=0; i < GPS_CHANS; i++) {
+	for (i=0; i < gps_chans; i++) {
 		if (s->sp_gps[i].c) stack_nope("sp_gps", i, &s->sp_gps[i], 12-i);
 	}
 	for (i=0; i < NUM_CMDS; i++) {

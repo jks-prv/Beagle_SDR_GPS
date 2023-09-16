@@ -26,7 +26,7 @@
  *
 \******************************************************************************/
 
-// Copyright (c) 2017-2023 John Seamons, ZL/KF6VO
+// Copyright (c) 2017-2023 John Seamons, ZL4VO/KF6VO
 
 // NB v1.470: Because of the C_LINKAGE() change
 

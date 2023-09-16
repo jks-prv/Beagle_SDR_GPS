@@ -18,7 +18,7 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-// Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2016 John Seamons, ZL4VO/KF6VO
 
 #ifndef	_COROUTINES_H_
 #define	_COROUTINES_H_
@@ -59,7 +59,7 @@ extern u4_t task_medium_priority;
 #define	NUM_PRIORITY		(HIGHEST_PRIORITY+1)
 
 #define	MISC_TASKS			7					// main, stats, spi pump, data pump, web server, registration, SNR meas
-#define GPS_TASKS			(GPS_CHANS + 3)		// chan*n + search + solve + stat
+#define GPS_TASKS			(GPS_MAX_CHANS + 3) // chan*n + search + solve + stat
 #define SND_EXT_TASKS       (MAX_RX_CHANS * (2 + N_CAMP))   // W/F handled below
 #define	EXTRA_TASKS			(MAX_RX_CHANS * 4)  // additional tasks created by extensions etc.
 

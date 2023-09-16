@@ -1,4 +1,4 @@
-// Copyright (c) 2017 John Seamons, ZL/KF6VO
+// Copyright (c) 2017 John Seamons, ZL4VO/KF6VO
 
 var fax = {
    ext_name: 'FAX',     // NB: must match fax.c:fax_ext.name

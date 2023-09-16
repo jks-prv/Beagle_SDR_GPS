@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2015 John Seamons, ZL/KF6VO
+// Copyright (c) 2015 John Seamons, ZL4VO/KF6VO
 
 #ifndef _DATA_PUMP_H_
 #define _DATA_PUMP_H_

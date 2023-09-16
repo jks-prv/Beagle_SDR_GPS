@@ -19,7 +19,7 @@
 ; http://www.holmea.demon.co.uk/GPS/Main.htm
 ; ============================================================================
 
-; Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+; Copyright (c) 2014-2016 John Seamons, ZL4VO/KF6VO
 
 
 ; ============================================================================
@@ -67,22 +67,22 @@ CmdGetRX:
 				                            ; cnt = nrx_samps_loop
 				
 rx_loop:									; cnt
-				REPEAT	NRX_SAMPS_RPT
-				 wrEvt2	GET_RX_SAMP			; move i
-				 wrEvt2	GET_RX_SAMP			; move q
-				 wrEvt2	GET_RX_SAMP			; move iq3
-				ENDR
+				loop_ct	NRX_SAMPS_RPT
+rx_loop2:       wrEvt2	GET_RX_SAMP			; move i
+				wrEvt2	GET_RX_SAMP			; move q
+				wrEvt2	GET_RX_SAMP			; move iq3
+				loop    rx_loop2
+
 				push	1					; cnt 1
 				sub							; cnt--
-				dup
-				brNZ	rx_loop
+				dup                         ; cnt cnt
+				brNZ	rx_loop             ; cnt
 				pop                         ; cnt = nrx_samps_rem
 				
 				// NB: nrx_samps_rem can be zero on entry -- that is why test is at top of loop
 rx_tail:                                    ; cnt
-				dup
-				brNZ	rx_tail2
-				pop
+				dup                         ; cnt cnt
+				brNZ	rx_tail2            ; cnt
 
 				wrEvt2	GET_RX_SAMP			; move ticks[3]
 				wrEvt2	GET_RX_SAMP
@@ -90,8 +90,9 @@ rx_tail:                                    ; cnt
 				
 				wrEvt2	GET_RX_SAMP         ; move stored buffer counter
 				wrEvt2  RX_GET_BUF_CTR      ; move current buffer counter
-				ret
-rx_tail2:
+				drop.r                      ;
+
+rx_tail2:                                   ; cnt
 				wrEvt2	GET_RX_SAMP			; move i
 				wrEvt2	GET_RX_SAMP			; move q
 				wrEvt2	GET_RX_SAMP			; move iq3
@@ -191,23 +192,25 @@ CmdGetWFSamples:
 				wrReg2	SET_WF_CHAN			;
 getWFSamples2:
 				wrEvt	HOST_RST
-				push	NWF_SAMPS_LOOP
-wf_more:
-				REPEAT	NWF_SAMPS_RPT
-				 wrEvt2	GET_WF_SAMP_I
-				 wrEvt2	GET_WF_SAMP_Q
-				ENDR
+				push	NWF_SAMPS_LOOP      ; cnt
+wf_more:                                    ; cnt
+				loop_ct NWF_SAMPS_RPT       ; cnt
+wf_loop1:
+				wrEvt2	GET_WF_SAMP_I
+				wrEvt2	GET_WF_SAMP_Q
+			    loop    wf_loop1
 				
-				push	1
-				sub
-				dup
-				brNZ	wf_more
+				push	1                   ; cnt 1
+				sub                         ; cnt
+				dup                         ; cnt cnt
+				brNZ	wf_more             ; cnt
 
-				REPEAT	NWF_SAMPS_REM
-				 wrEvt2	GET_WF_SAMP_I
-				 wrEvt2	GET_WF_SAMP_Q
-				ENDR
-				drop.r
+				loop_ct NWF_SAMPS_REM       ; cnt
+wf_loop2:
+				wrEvt2	GET_WF_SAMP_I
+				wrEvt2	GET_WF_SAMP_Q
+			    loop    wf_loop2
+				drop.r                      ;
 
 CmdGetWFContSamps:
 				rdReg	HOST_RX				; wf_chan

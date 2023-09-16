@@ -15,8 +15,8 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2018 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2023 John Seamons, ZL4VO/KF6VO
 
 #pragma once
 
-//#define USE_VALGRIND
+void gps_fe_init();

@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2014-2017 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2017 John Seamons, ZL4VO/KF6VO
 
 #pragma once
 
@@ -58,6 +58,7 @@ void kiwi_chrrep(char *str, const char from, const char to);
 bool kiwi_str_begins_with(char *s, const char *cs);
 char *kiwi_str_ends_with(char *s, const char *cs);
 char *kiwi_skip_over(char *s, const char *skip);
+char *kstr_sp_less_trailing_nl(char *s_kstr_cstr);
 
 char *kiwi_overlap_strcpy(char *dst, const char *src);
 int kiwi_strnlen(const char *s, int limit);

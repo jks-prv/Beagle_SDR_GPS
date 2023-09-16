@@ -1,4 +1,4 @@
-// Copyright (c) 2023 John Seamons, ZL/KF6VO
+// Copyright (c) 2023 John Seamons, ZL4VO/KF6VO
 
 var ft8 = {
    ext_name: 'FT8',     // NB: must match FT8.cpp:ft8_ext.name

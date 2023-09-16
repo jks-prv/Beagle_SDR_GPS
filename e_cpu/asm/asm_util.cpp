@@ -191,6 +191,17 @@ void dump_tokens(const char *pass, tokens_t *f, tokens_t *l)
 	printf("(END)\n\n");
 }
 
+void dump_tokens_until_eol(const char *id, tokens_t *f)
+{
+    printf("%s ", id);
+	tokens_t *t = f;
+	while (t->ttype != TT_EOL) {
+        token_dump(t);
+        t++;
+	}
+	printf("\n");
+}
+
 void insert(int n, tokens_t *tp, tokens_t **ep)
 {
 	tokens_t *t;
@@ -266,23 +277,23 @@ int def(tokens_t *tp, tokens_t **ep)
 // destructive (does pullups)
 tokens_t *expr_collapse(tokens_t *t, tokens_t **ep, int *val)
 {
-	tokens_t *tp = t;
+	tokens_t *tp = t, *t1 = t+1, *t2 = t+2, *t3 = t+3;
     int e_val;
 
     // NUM OPR NUM -> NUM
-    if (tp->ttype == TT_NUM && (tp+1)->flags & TF_2OPR && (tp+2)->ttype == TT_NUM) {
-        if (debug) printf("COLLAPSE %d %s %d = ", tp->num, (tp+1)->str, (tp+2)->num);
+    if (tp->ttype == TT_NUM && t1->flags & TF_2OPR && t2->ttype == TT_NUM) {
+        if (debug) printf("COLLAPSE %d %s %d -> ", tp->num, t1->str, t2->num);
         expr(tp, ep, &e_val, 0); tp->num = e_val;
         if (debug) printf("%d\n", e_val);
-        pullup(tp+1, tp+3, ep);
+        pullup(t1, t3, ep);
     } else
 
     // NUM OPR -> NUM
-    if (tp->ttype == TT_NUM && (tp+1)->flags & TF_1OPR) {
-        if (debug) printf("COLLAPSE %d %s = ", tp->num, (tp+1)->str);
+    if (tp->ttype == TT_NUM && t1->flags & TF_1OPR) {
+        if (debug) printf("COLLAPSE %d %s -> ", tp->num, t1->str);
         expr(tp, ep, &e_val, 0); tp->num = e_val;
         if (debug) printf("%d\n", e_val);
-        pullup(tp+1, tp+2, ep);
+        pullup(t1, t2, ep);
     } else {
         return NULL;
     }
@@ -310,6 +321,7 @@ tokens_t *cond(tokens_t *t, tokens_t **ep, int *val)
 	while ((tp+1)->ttype != TT_EOL) {
 
 		// NUM OPR NUM -> NUM or NUM OPR -> NUM
+		if (debug) dump_tokens_until_eol("eval:", tp);
 		if (expr_collapse(tp, ep, val) != NULL) {
 		    continue;
 		}
