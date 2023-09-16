@@ -40,7 +40,7 @@ debug: $(ASM)
 binary: $(ASM)
 	$(ASM) -n -b -o $(GEN_DIR) $(OTHER_DIR)
 
-stat: $(ASM)
+stat stats: $(ASM)
 	$(ASM) -n -s -o $(GEN_DIR) $(OTHER_DIR)
 
 gdb: $(ASM)
