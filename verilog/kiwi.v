@@ -53,8 +53,12 @@ module KiwiSDR (
     input  wire BBB_MOSI,       // P918
     output wire BBB_MISO,       // P921
 
+    // devl: orig
     input  wire P911,       // P911, GPIO 0_30, unused debug in
     input  wire P913,       // P913, GPIO 0_31, unused debug in
+    //output wire P911,       // P911, GPIO 0_30, unused debug in
+    //output wire P913,       // P913, GPIO 0_31, unused debug in
+
     input  wire P915,       // P915, GPIO 1_0-2_0, unused debug in
     output wire CMD_READY,  // P923, GPIO 1_17, ctrl[CTRL_CMD_READY]
     output wire SND_INTR,   // P924, GPIO 0_15, ctrl[CTRL_SND_INTR]
@@ -94,20 +98,21 @@ module KiwiSDR (
     // debug
     //////////////////////////////////////////////////////////////////////////
     
-    // P9: 25 23 21 19 17 15 13 11 09 07 05 03 01
+    // P9: 25 23 21 19 17 15 13 11 09 07 05 03 01   pcb top, outside row
     //                    b2 b1 b0
     //
-    // P9: 26 24 22 20 18 16 14 12 10 08 06 04 02
+    // P9: 26 24 22 20 18 16 14 12 10 08 06 04 02   pcb top, inside row
     //     b3
     
     wire [2:0] P9;
     
-    //jksx assign P926 = P9[2];    // P926
+    // devl: orig
+    assign P926 = P9[2];    // P926
 
-    // P8: 25 23 21 19 17 15 13 11 09 07 05 03 01
+    // P8: 25 23 21 19 17 15 13 11 09 07 05 03 01   pcb top, inside row
     //              b8 b7 b6 b5 b4
     //
-    // P8: 26 24 22 20 18 16 14 12 10 08 06 04 02
+    // P8: 26 24 22 20 18 16 14 12 10 08 06 04 02   pcb top, outside row
     //     b9          b3 b2 b1 b0
     
 `ifdef P8_ARE_INPUTS
@@ -167,7 +172,7 @@ module KiwiSDR (
     // global control & status registers
     //////////////////////////////////////////////////////////////////////////
 
-    reg [15:0] ctrl;
+    reg [12:0] ctrl;
     
     always @ (posedge cpu_clk)
     begin
@@ -175,17 +180,27 @@ module KiwiSDR (
     end
 
 	assign ADC_STENL = !ctrl[CTRL_STEN];
-
     wire [1:0] ser_sel = ctrl & CTRL_SER_MASK;
+
     wire ser_attn = (ser_sel == CTRL_SER_ATTN);
 	assign DA_DALE = ser_attn && ctrl[CTRL_SER_LE_CSN];
 	assign DA_DACLK = ser_attn && ctrl[CTRL_SER_CLK];
 	assign DA_DADAT = ser_attn && ctrl[CTRL_SER_DATA];
 
+	// devl: attn ser test
+	//assign P911 = DA_DACLK;
+	//assign P913 = DA_DADAT;
+	//assign P926 = DA_DALE;
+
     wire ser_gps = (ser_sel == CTRL_SER_GPS);
-	assign GPS_GSCS = !(ser_gps && ctrl[CTRL_SER_LE_CSN]);
+	assign GPS_GSCS = ser_gps && ctrl[CTRL_SER_LE_CSN];
 	assign GPS_GSCLK = ser_gps && ctrl[CTRL_SER_CLK];
 	assign GPS_GSDAT = ser_gps && ctrl[CTRL_SER_DATA];
+	
+	// devl: gps ser test
+	//assign P911 = GPS_GSCLK;
+	//assign P913 = GPS_GSDAT;
+	//assign P926 = GPS_GSCS;
 
     wire ser_dna = (ser_sel == CTRL_SER_DNA);
 	wire dna_read = ser_dna && ctrl[CTRL_SER_LE_CSN];
@@ -221,12 +236,14 @@ module KiwiSDR (
 	assign P8[9] = ctrl[CTRL_UNUSED_OUT];
 `endif
     
+    // devl: orig
 	wire unused_inputs = P911 | P913 | P915
+	//wire unused_inputs = P915
 `ifdef USE_OTHER
         | unused_inputs_other
 `else
 `ifdef P8_ARE_INPUTS
-        | P812 | P813 | P814 | P815 | P816 | P817 | P818 | P819 | P826
+        | P811 | P812 | P813 | P814 | P815 | P816 | P817 | P818 | P819 | P826
 `endif
 `ifdef USE_GPS
         | unused_inputs_gps
@@ -272,7 +289,7 @@ module KiwiSDR (
 	
 	wire self_test;
 	assign ADC_STSIG = self_test;
-	assign P926 = self_test;        //jksx self test devl
+	//assign P926 = self_test;        // devl: self test
 
     RECEIVER receiver (
     	.adc_clk	    (adc_clk),
