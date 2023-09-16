@@ -84,24 +84,24 @@ SATELLITE Sats[] = {
 */
 
     // QZSS (Japan) prn(saif) = 183++, prn(std) = 193++
-    // last checked: 28-Dec-2021
+    // last checked: 14-Sep-2023
     // sys.qzss.go.jp/dod/en/constellation.html [PNT L1 C/A entries]
-    {193, 339, 01050, QZSS},   // J01, QZS-1
-    {194, 208, 01607, QZSS},   // J02, QZS-2
-    {195, 711, 01747, QZSS},   // J03, QZS-4
-    {196, 189, 01305, QZSS},   // J04, QZS-1R
+//  {193, 339, 01050, QZSS},   // SVN1, QZS-1, outage 2022 059
+    {194, 208, 01607, QZSS},   // SVN2, QZS-2
+    {195, 711, 01747, QZSS},   // SVN4, QZS-4
+    {196, 189, 01305, QZSS},   // SVN5, QZS-1R
 //  {197, 263, 00540, QZSS},   //
 //  {198, 537, 01363, QZSS},   //
-    {199, 663, 00727, QZSS},   // J07, QZS-3
+    {199, 663, 00727, QZSS},   // SVN3, QZS-3
 //  {200, 942, 00147},
 //  {201, 173, 01206},
 //  {202, 900, 01045},
 
     // Galileo E1B
-    // last checked: 13 Sep 2022
+    // last checked: 14-Sep-2023
     // www.gsc-europa.eu/system-service-status/constellation-information
     // en.wikipedia.org/wiki/List_of_Galileo_satellites
-    { 1, 0, 0, E1B},    // gsat0210
+//  { 1, 0, 0, E1B},    // gsat0210 removed from active service
     { 2, 0, 0, E1B},    // gsat0211
     { 3, 0, 0, E1B},    // gsat0212
     { 4, 0, 0, E1B},    // gsat0213
@@ -114,15 +114,15 @@ SATELLITE Sats[] = {
     {11, 0, 0, E1B},    // gsat0101
     {12, 0, 0, E1B},    // gsat0102
     {13, 0, 0, E1B},    // gsat0220
-//  {14, 0, 0, E1B},    // gsat0202 not usable
+//  {14, 0, 0, E1B},    // gsat0202 unavailable
     {15, 0, 0, E1B},    // gsat0221
 //  {16, 0, 0, E1B},    // 
 //  {17, 0, 0, E1B},    // 
-//  {18, 0, 0, E1B},    // gsat0201 not usable
+//  {18, 0, 0, E1B},    // gsat0201 unavailable
     {19, 0, 0, E1B},    // gsat0103
 //  {20, 0, 0, E1B},    // gsat0104 not available
     {21, 0, 0, E1B},    // gsat0215
-//  {22, 0, 0, E1B},    // gsat0224 not usable
+//  {22, 0, 0, E1B},    // gsat0204 removed from active service
 //  {23, 0, 0, E1B},    // 
     {24, 0, 0, E1B},    // gsat0205
     {25, 0, 0, E1B},    // gsat0216
