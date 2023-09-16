@@ -2,13 +2,10 @@
 
 // from assembler DEF directives:
 
-	localparam GPS_CHANS = 12;    // DEFp 0xc
-`define DEF_GPS_CHANS 1
 	localparam NUM_CMDS_OTHER = 0;    // DEFp 0x0
 //`define DEF_NUM_CMDS_OTHER
 `define USE_SDR 1    // DEFh 0x1
 //`define USE_24K_WIDE    // DEFh 0x0
-`define USE_GPS 1    // DEFh 0x1
 `define ARTIX_7A35 1    // DEFh 0x1
 //`define ZYNQ_7007    // DEFh 0x0
 	localparam FPGA_VER = 4'd1;    // DEFp 0x1
@@ -19,10 +16,13 @@
 `define DEF_ADC_BITS 1
 	localparam DEFAULT_NSYNC = 2;    // DEFp 0x2
 `define DEF_DEFAULT_NSYNC 1
-//`define USE_RX_CICF    // DEFh 0x0
-`define USE_GEN 1    // DEFh 0x1
+	localparam GPS_CHANS = 12;    // DEFp 0xc
+`define DEF_GPS_CHANS 1
 `define USE_CPU_CTR 1    // DEFh 0x1
+`define USE_GEN 1    // DEFh 0x1
 `define USE_LOGGER 1    // DEFh 0x1
+`define USE_GPS 1    // DEFh 0x1
+//`define USE_RX_CICF    // DEFh 0x0
 `define USE_DEBUG 1    // DEFh 0x1
 //`define USE_RX_SEQ    // DEFh 0x0
 `define USE_VIVADO 1    // DEFh 0x1
@@ -45,9 +45,9 @@
 `define DEF_NUM_CMDS_BASE 1
 	localparam NUM_CMDS_SDR = 14;    // DEFp 0xe
 `define DEF_NUM_CMDS_SDR 1
-	localparam NUM_CMDS_GPS = 16;    // DEFp 0x10
+	localparam NUM_CMDS_GPS = 17;    // DEFp 0x11
 `define DEF_NUM_CMDS_GPS 1
-	localparam NUM_CMDS = 43;    // DEFp 0x2b
+	localparam NUM_CMDS = 44;    // DEFp 0x2c
 `define DEF_NUM_CMDS 1
 `define SPI_32 1    // DEFh 0x1
 	localparam SPIBUF_W = 2048;    // DEFp 0x800
@@ -149,8 +149,8 @@
 `define DEF_WF_1CIC_MAXD 1
 	localparam WF_2CIC_MAXD = 0;    // DEFp 0x0
 //`define DEF_WF_2CIC_MAXD
-	localparam MAX_GPS_CHANS = 12;    // DEFp 0xc
-`define DEF_MAX_GPS_CHANS 1
+	localparam GPS_MAX_CHANS = 12;    // DEFp 0xc
+`define DEF_GPS_MAX_CHANS 1
 	localparam GPS_INTEG_BITS = 20;    // DEFp 0x14
 `define DEF_GPS_INTEG_BITS 1
 	localparam GPS_REPL_BITS = 18;    // DEFp 0x12
@@ -214,8 +214,8 @@
 	localparam RDREG2_200 = 9;    // DEFb: bit number for value: 0x200
 	localparam RDREG2_400 = 10;    // DEFb: bit number for value: 0x400
 	localparam HOST_TX = 0;    // DEFb: bit number for value: 0x1
-	localparam SET_MASK = 1;    // DEFb: bit number for value: 0x2
-	localparam SET_CHAN = 2;    // DEFb: bit number for value: 0x4
+	localparam SET_GPS_MASK = 1;    // DEFb: bit number for value: 0x2
+	localparam SET_GPS_CHAN = 2;    // DEFb: bit number for value: 0x4
 	localparam SET_CG_NCO = 3;    // DEFb: bit number for value: 0x8
 	localparam SET_LO_NCO = 4;    // DEFb: bit number for value: 0x10
 	localparam SET_SAT = 5;    // DEFb: bit number for value: 0x20

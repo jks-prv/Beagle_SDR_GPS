@@ -2,6 +2,16 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.626  September 17, 2023
+    Error message and logging improvements to admin clone operation.
+    
+    DX label uploads: improved realtime response.
+    
+    In 14-channel mode (AI-64/AI/RPi only) GPS channels reduced from 12 to 10 to recover
+    needed FPGA space.
+    
+    Updated Galileo and QZSS sat constellation tables.
+
 v1.625  September 9, 2023
     Must continue to support old EEPROM version value for KiwiSDR 1.
 
