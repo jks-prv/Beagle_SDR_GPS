@@ -92,7 +92,7 @@ struct CHANNEL { // Locally-held channel data
     bool  GetSnapshot(uint16_t wr_pos, int *p_sat, int *p_bits, int *p_bits_tow, float *p_pwr);
 };
 
-static CHANNEL Chans[GPS_CHANS];
+static CHANNEL Chans[GPS_MAX_CHANS];
 
 static unsigned BusyFlags;
 
@@ -209,7 +209,7 @@ void CHANNEL::Reset(int sat, int codegen_init) {
             for (int j=0; j < E1B_CODE_LOOP; j++) {     // code amount needed that also fits in SPIBUF_W
                 u2_t *code = &code_buf->words[j+1];     // NB: spi_mosi_data_t.cmd is in words[0]
                 *code = 0;
-                for (int chan = 0; chan < GPS_CHANS; chan++) {
+                for (int chan = 0; chan < gps_chans; chan++) {
                     CHANNEL *c = &Chans[chan];
                     //int busy = BusyFlags & (1<<chan);
                     //int prn = (busy && c->isE1B)? Sats[c->sat].prn : 0;
@@ -218,7 +218,7 @@ void CHANNEL::Reset(int sat, int codegen_init) {
                     int bit = (prn > 0)? E1B_code1[prn-1][(i*E1B_CODE_LOOP)+j] : 0;
                     #if GPS_CHANS > 0
                         // this code won't even be reached if GPS_CHANS = 0
-                        *code = (*code >> 1) | (bit? (1 << (GPS_CHANS-1)): 0);  // ch0 in lsb
+                        *code = (*code >> 1) | (bit? (1 << (gps_chans-1)): 0);  // ch0 in lsb
                     #endif
                     //if (0 && j == 0) printf("ch%2d busy=%d isE1B=%d prn%02d code 0x%03x\n",
                     //    chan+1, busy? 1:0, busy? c->isE1B:0, prn, *code);

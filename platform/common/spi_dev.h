@@ -40,7 +40,7 @@ typedef struct {
 typedef struct {
     spi_dev_ipc_t spi_dev_ipc;
     SPI_MISO dpump_miso;
-    SPI_MISO gps_search_miso, gps_channel_miso[GPS_CHANS], gps_clocks_miso, gps_iqdata_miso, gps_glitches_miso[2];
+    SPI_MISO gps_search_miso, gps_channel_miso[GPS_MAX_CHANS], gps_clocks_miso, gps_iqdata_miso, gps_glitches_miso[2];
     SPI_MOSI gps_e1b_code_mosi;
     SPI_MISO wf_miso[MAX_RX_CHANS];
     SPI_MISO misc_miso[2];

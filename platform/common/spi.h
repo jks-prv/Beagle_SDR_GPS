@@ -67,6 +67,7 @@ typedef enum { // Embedded CPU commands, order must match 'Commands:' table in .
 	// GPS
 #ifdef USE_GPS
     CmdSample,
+    CmdSetChans,
     CmdSetMask,
     CmdSetRateCG,
     CmdSetRateLO,
@@ -112,6 +113,7 @@ typedef enum { // Embedded CPU commands, order must match 'Commands:' table in .
 
 #ifndef USE_GPS
     CmdSample = 0,
+    CmdSetChans = 0,
     CmdSetMask = 0,
     CmdSetRateCG = 0,
     CmdSetRateLO = 0,
@@ -169,6 +171,7 @@ static const char *cmds[] = {
 	// GPS
 #ifdef USE_GPS
     "CmdSample",
+    "CmdSetChans",
     "CmdSetMask",
     "CmdSetRateCG",
     "CmdSetRateLO",

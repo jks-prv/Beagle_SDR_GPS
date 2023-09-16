@@ -66,7 +66,7 @@ int fw_sel, fpga_id, rx_chans, wf_chans, nrx_bufs, nrx_samps, nrx_samps_loop, nr
 
 int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, tone, down,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, do_slice=-1,
-	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num, wf_num,
+	rx_yield=1000, gps_chans=GPS_MAX_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num, wf_num,
 	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, debian_ver, monitors_max,
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg,
 	print_stats, ecpu_cmds, ecpu_tcmds, use_spidev, debian_maj, debian_min, test_flag, dx_print,
@@ -178,6 +178,7 @@ int main(int argc, char *argv[])
 		if (ARG("-kiwi_reg")) kiwi_reg_debug = TRUE; else
 		if (ARG("-cmd_debug")) cmd_debug = TRUE; else
 		if (ARG("-bg")) { background_mode = TRUE; bg=1; } else
+		if (ARG("-log")) { log_foreground_mode = TRUE; } else
 		if (ARG("-fopt")) use_foptim = 1; else   // in EDATA_DEVEL mode use foptim version of files
 		if (ARG("-down")) down = 1; else
 		if (ARG("+gps")) p_gps = 1; else
@@ -368,6 +369,7 @@ int main(int argc, char *argv[])
         fpga_id = FPGA_ID_RX14_WF0;
         rx_chans = 14;
         wf_chans = 0;
+        gps_chans = 10;
         snd_rate = SND_RATE_14CH;
         rx_decim = RX_DECIM_14CH;
         nrx_bufs = RXBUF_SIZE_14CH / NRX_SPI;
@@ -386,7 +388,7 @@ int main(int argc, char *argv[])
         if (err) no_wf = false;
         if (no_wf) wf_chans = 0;
 
-        lprintf("firmware: rx_chans=%d wf_chans=%d\n", rx_chans, wf_chans);
+        lprintf("firmware: rx_chans=%d wf_chans=%d gps_chans=%d\n", rx_chans, wf_chans, gps_chans);
 
         assert(rx_chans <= MAX_RX_CHANS);
         assert(wf_chans <= MAX_WF_CHANS);
