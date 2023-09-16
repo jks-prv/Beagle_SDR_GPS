@@ -54,7 +54,7 @@ cv: $(GEN_VERILOG)
 	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog.Vivado.$(VIVADO_VER).ip/ $(V_DIR)/$(V_PROJ).Vivado.$(VIVADO_VER).ip
 	make cv2_dev V_SRC_DIR=$(V_SRC_DIR)
 
-sum:
+sum: $(BIN_DEPS)
 	sum *.bit
 
 endif

@@ -1417,8 +1417,14 @@ log:
 	-@$(LOGS) | grep -a kiwid
 	@rm -f /tmp/kiwi.log
 
+LOGS_SHORT = \
+	cat /var/log/user.log.1 > /tmp/kiwi.log; \
+	cat /var/log/user.log >> /tmp/kiwi.log; \
+	cat /tmp/kiwi.log
+
 slog:
-	-@cat /var/log/user.log | grep -a kiwid
+	-@$(LOGS_SHORT) | grep -a kiwid
+	@rm -f /tmp/kiwi.log
 
 tlog:
 	-@cat /var/log/user.log | grep -a kiwid | tail -500

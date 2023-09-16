@@ -394,7 +394,7 @@ kstr_t *non_blocking_cmd(const char *cmd, int *status)
 
 	// assuming we're always expecting a string
     evNT(EC_EVENT, EV_NEXTTASK, -1, "non_blocking_cmd", evprintf("pclose..."));
-	stat = pclose(pf);
+	stat = pclose(pf);      // yes, pclose returns exit status of cmd
     evNT(EC_EVENT, EV_NEXTTASK, -1, "non_blocking_cmd", evprintf("...pclose"));
 	if (status != NULL)
 		*status = stat;

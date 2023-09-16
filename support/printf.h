@@ -60,6 +60,8 @@ void _sys_panic(const char *str, const char *file, int line);
 void kiwi_exit(int err);
 void kiwi_exit_dont_use(int err);
 
+extern bool log_foreground_mode;
+
 #define scall(x, y) if ((y) < 0) sys_panic(x);
 #define scallz(x, y) if ((y) == 0) sys_panic(x);
 #define scalle(x, y) if ((y) < 0) perror(x);

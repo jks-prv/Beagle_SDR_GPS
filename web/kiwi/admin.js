@@ -2277,6 +2277,8 @@ function gps_update_admin_cb()
          s += w3_table_row('id-gps-ch-'+ cn, '');
       }
 
+      s += w3_table_row('','&nbsp;');
+
 	w3_el("id-gps-ch").innerHTML = s;
 	
 	var soln_color = (gps.stype == 0)? 'w3-green' : ((gps.stype == 1)? 'w3-yellow':'w3-red');

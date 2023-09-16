@@ -1409,7 +1409,9 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		mkenvelopes(this.visible_range);
 		freqset_car_Hz(this.parent.offset_frequency + center_freq);
 		this.parent.set();
-		freqset_update_ui(owrx.FSET_PB_CHANGE);
+		//console_nv('drag_move', {do_lo}, {do_hi});
+		freqset_update_ui((do_lo || do_hi)? owrx.FSET_PB_CHANGE : owrx.FSET_NOP);
+		//kiwi_trace();
 
 		//will have to change this when changing to multi-demodulator mode:
 		//html("id-control-freq1").innerHTML=format_frequency("{x} MHz",center_freq+this.parent.offset_frequency,1e6,4);
@@ -5676,7 +5678,8 @@ function freqset_update_ui(from)
 	vfo_update();
 	
 	// don't add to freq memory while tuning across scale except for final position
-	if (from != owrx.FSET_NOP && from != owrx.FSET_SCALE_DRAG && from != owrx.FSET_SCALE_TOUCH_DRAG) {
+	if (from != owrx.FSET_NOP && from != owrx.FSET_SCALE_DRAG && from != owrx.FSET_SCALE_TOUCH_DRAG && from != owrx.FSET_PB_CHANGE) {
+      //console.log('>>> freq_memory_update freq='+ freq_displayed_kHz_str_with_freq_offset);
 	   freq_memory_update(freq_displayed_kHz_str_with_freq_offset);
 	}
 
