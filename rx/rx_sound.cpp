@@ -605,13 +605,11 @@ void c2s_sound(void *param)
 			}
 			
 			case CMD_RF_ATTN:
-			    if (kiwi.model != KiwiSDR_1) {
-			        if (sscanf(cmd, "SET rf_attn=%f", &rf_attn_dB) == 1) {
-			            //cprintf(conn, "rf_attn=%.1f\n", rf_attn_dB);
-			            rf_attn_set(rf_attn_dB);
-                        did_cmd = true;                
-			        }
-			    }
+                if (sscanf(cmd, "SET rf_attn=%f", &rf_attn_dB) == 1) {
+                    //cprintf(conn, "rf_attn=%.1f\n", rf_attn_dB);
+                    rf_attn_set(rf_attn_dB);
+                    did_cmd = true;                
+                }
 			    break;
 			
             case CMD_SND_WINDOW_FUNC:
