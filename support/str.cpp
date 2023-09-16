@@ -190,6 +190,18 @@ char *kstr_sp(char *s_kstr_cstr)
 	}
 }
 
+// return C-string pointer from kstr object less trailing newline
+// s_kstr_cstr: kstr|C-string|NULL
+char *kstr_sp_less_trailing_nl(char *s_kstr_cstr)
+{
+	char *sp = kstr_sp(s_kstr_cstr);
+	if (sp == NULL) return NULL;
+	int sl = strlen(sp);
+	if (sl >= 1 && (sp[sl-1] == '\n' || sp[sl-1] == '\r')) sp[sl-1] = '\0';
+	if (sl >= 2 && (sp[sl-2] == '\n' || sp[sl-2] == '\r')) sp[sl-2] = '\0';
+	return sp;
+}
+
 // wrap a malloc()'d C-string in a kstr object so it is auto-freed later on
 char *kstr_wrap(char *s_malloced)
 {
@@ -730,7 +742,8 @@ char *kiwi_overlap_strcpy(char *dst, const char *src)
 }
 
 
-// version of strlen() with limit to handle a corrupt string without proper null-termination
+// Version of strlen() with limit to handle a corrupt string without proper null-termination.
+// Also, unlike strlen(), returns 0 for NULL string pointer.
 int kiwi_strnlen(const char *s, int limit)
 {
     int i;
