@@ -962,6 +962,7 @@ void c2s_sound(void *param)
 				nb_param[NB_BLANKER][NB_GATE] = nb;
 				nb_param[NB_BLANKER][NB_THRESHOLD] = th;
 				nb_enable[NB_BLANKER] = nb? 1:0;
+				//cprintf(conn, "NB gate=%d thresh=%d\n", nb, th);
 
 				if (nb) m_NoiseProc_snd[rx_chan].SetupBlanker("SND", frate, nb_param[NB_BLANKER]);
 				continue;
