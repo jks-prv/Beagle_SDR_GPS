@@ -91,13 +91,13 @@ int bsearch_freqcomp(const void *key, const void *elem)
 
 #endif
 
-static void _dx_done(conn_t *conn, u4_t mark, u4_t max_quanta, int loop=0, int nt_loop=0, int send=0, int nt_send=0)
+static void _dx_done(conn_t *conn, u4_t mark, u4_t max_quanta, int loop=0, int nt_loop=0, int send=0, int nt_send=0, int msg_sl=0)
 {
     u4_t quanta = timer_ms() - mark;
     max_quanta = MAX(quanta, max_quanta);
-    cprintf(conn, "DX_MKR DONE %.3f sec ", max_quanta/1e3);
-    if (loop || nt_loop || send || nt_send) printf("loop=%d|%d send=%d|%d", loop, nt_loop, send, nt_send);
-    printf("\n");
+    cprintf(conn, "DX_MKR DONE %.3f sec %s\n", max_quanta/1e3,
+        (loop || nt_loop || send || nt_send || msg_sl)?
+            stprintf("loop=%d|%d send=%d|%d msg_sl=%d", loop, nt_loop, send, nt_send, msg_sl) : "");
 }
 
 
@@ -850,7 +850,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 		if ((dx_print & DX_PRINT_DEBUG) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
 
     #define DX_DONE() \
-        if (dx_print) _dx_done(conn, mark, max_quanta, loop, nt_loop, send, nt_send)
+        if (dx_print) _dx_done(conn, mark, max_quanta, loop, nt_loop, send, nt_send, msg_sl)
 
 #else
 	#define DX_PRINT_MKRS 0
@@ -1119,7 +1119,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             bool db_changed = false;
             u4_t quanta, max_quanta = 0;
             u4_t mark = timer_ms();
-            int loop = 0, nt_loop = 0, send = 0, nt_send = 0;
+            int loop = 0, nt_loop = 0, send = 0, nt_send = 0, msg_sl = 0;
             if (dx_print) {
                 cprintf(conn, "--- DX_MKR [%s]\n", cmd);
             }
@@ -1431,11 +1431,15 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     // yesterday_Mo_0 which is now set to Fri (remember that today_Mo_0 and
                     // yesterday_Mo_0 always follow the current TOD when this code runs).
                     
-                    u2_t time_begin = dp->time_begin, time_end = dp->time_end;
                     if (dp->time_begin == 0 && dp->time_end == 0) {
                         cprintf(conn, "$DX_MKRS why is b=e=0? idx=%d f=%.2f\n", dp->idx, dp->freq);
                         dp->time_end = 2400;
                     }
+                    u2_t time_begin = dp->time_begin, time_end = dp->time_end;
+                    //#define DX_TEST_TIME_END
+                    #ifdef DX_TEST_TIME_END
+                        if (hr_min & 1 && loop & 1) time_end = hr_min;
+                    #endif
                     bool rev = (time_begin > time_end);
 
                     u2_t dow = (dp->flags & DX_DOW) >> DX_DOW_SFT;
@@ -1622,6 +1626,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 }
             }
         
+            if (dx_print) msg_sl = kstr_len(sb);    // no cost because stored internally
             sb = kstr_cat(sb, "]");
             send_msg(conn, false, "MSG mkr=%s", kstr_sp(sb));
             dx_print_mkrs(true, "DX_MKR send=%d anti_clutter=%d clutter_filtered=%d zoom=%d\n", send, anti_clutter, clutter_filtered, zoom);
