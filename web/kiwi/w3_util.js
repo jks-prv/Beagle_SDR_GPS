@@ -777,6 +777,22 @@ function w3_iterate_childNodes(el_id, func)
 	}
 }
 
+function w3_width_height(el_id, w, h)
+{
+	var el = w3_el(el_id);
+	if (!el) return null;
+	
+	if (isArg(w)) {
+	   if (isNumber(w)) w = px(w);
+	   el.style.width = w;
+	}
+
+	if (isArg(h)) {
+	   if (isNumber(h)) h = px(h);
+	   el.style.height = h;
+	}
+}
+
 // bounding box measured from the origin of parent
 function w3_boundingBox_children(el_id, debug)
 {
