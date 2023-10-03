@@ -100,10 +100,11 @@ debug: check_device_detect make_prereq
 check_device_detect:
     ifeq ($(BAD_DEV_DETECT),true)
 	    @echo "bad device detect"
-	    @echo BBAI_64 = $(BBAI_64)
-	    @echo BBAI = $(BBAI)
-	    @echo RPI = $(RPI)
-	    @echo BBG_BBB = $(BBG_BBB)
+	    @echo "BBAI_64 = $(BBAI_64)"
+	    @echo "BBAI = $(BBAI)"
+	    @echo "RPI = $(RPI)"
+	    @echo "BBG_BBB = $(BBG_BBB)"
+	    @echo "DEBIAN_VERSION = $(DEBIAN_VERSION)"
 	    @exit -1
     endif
 
@@ -1326,6 +1327,7 @@ ifneq ($(EXISTS_DX),true)
 	@echo "\nINSTALLING $(DIR_CFG)/$(DX)"
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(DX) $(DIR_CFG)/$(DX)
+	cp $(DIR_CFG_SRC)/dist.$(DX_CFG) $(DIR_CFG)/$(DX_CFG)
 endif
 
 	@echo "\nDX_SHA256=$(DX_SHA256) DX_NEEDS_UPDATE=$(DX_NEEDS_UPDATE)"
@@ -1701,24 +1703,27 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	apt-get -y $(APT_GET_FORCE) install xz-utils
 
 #
-# DANGER: "count=2400M" below (i.e. 1.6 GB) must be larger than the partition size (currently ~2.1 GB)
+# DANGER: "DD_SIZE := 2400M" below (i.e. 1.6 GB) must be larger than the partition size (currently ~2.1 GB)
 # computed by the tools/kiwiSDR-make-microSD-flasher-from-eMMC.sh script.
 # Otherwise the image file will have strange effects like /boot/uEnv.txt being the correct size but
 # filled with zeroed bytes (which of course is a disaster).
 #
-DEBIAN_VER := 10.11
-USE_MMC := 0
+DISTRO_DEBIAN_VER := 11.7
+SD_CARD_MMC := 0
+DD_SIZE := 2400M
+
 create_img_from_sd: /usr/bin/xz
 	@echo "--- this takes about an hour"
 	@echo "--- KiwiSDR server will be stopped to maximize write speed"
 	lsblk
-	@echo "CAUTION: USE_MMC = $(USE_MMC) -- VERIFY THIS ABOVE"
+	@echo "CAUTION: SD_CARD_MMC = $(SD_CARD_MMC)"
+	@echo "CAUTION: VERIFY FROM THE LIST ABOVE THAT THE SD CARD IS THE MMC NUMBER SHOWN"
 	@echo -n 'ARE YOU SURE? '
 	@read not_used
 	make stop
 	date
-	dd if=/dev/mmcblk$(USE_MMC) bs=1M iflag=count_bytes count=2400M | xz --verbose > ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER).img.xz
-	sha256sum ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER).img.xz
+	dd if=/dev/mmcblk$(SD_CARD_MMC) bs=1M iflag=count_bytes count=$(DD_SIZE) | xz --verbose > ~/KiwiSDR_$(VER)_BBB_Debian_$(DISTRO_DEBIAN_VER).img.xz
+	sha256sum ~/KiwiSDR_$(VER)_BBB_Debian_$(DISTRO_DEBIAN_VER).img.xz
 	date
 
 endif
