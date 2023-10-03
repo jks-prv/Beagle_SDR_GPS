@@ -922,7 +922,7 @@ void services_start()
 	CreateTask(pub_NET, 0, SERVICES_PRIORITY);
 	CreateTask(get_TZ, 0, SERVICES_PRIORITY);
 	CreateTask(misc_NET, 0, SERVICES_PRIORITY);
-    SNR_meas_tid = CreateTask(SNR_meas, 0, SERVICES_PRIORITY);
+    SNR_meas_tid = CreateTaskF(SNR_meas_task, 0, SERVICES_PRIORITY, CTF_NO_LOG);
 	//CreateTask(git_commits, 0, SERVICES_PRIORITY);
 
     if (!disable_led_task)
