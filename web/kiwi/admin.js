@@ -9,7 +9,6 @@ var admin = {
    console_open: false,
    
    long_running: false,
-   no_admin_reopen_retry: false,
    is_multi_core: false,
    reg_status: {},
    
@@ -475,7 +474,7 @@ function control_confirm_cb()
 	} else
 	if (pending_power_off) {
 		ext_send('SET power_off');
-		admin_wait_then_reload(0, 'Powering off Beagle');
+		wait_then_reload_page(0, 'Powering off Beagle');
 	} else {
 	   w3_call(control_confirm_cb_func);
 	}
@@ -1074,107 +1073,53 @@ function update_build_now_cb(id, idx)
 
 function backup_html()
 {
+   sd_backup_init();
+   
 	var s =
-	w3_div('id-backup w3-hide',
-		'<hr>',
-		w3_div('w3-section w3-text-teal w3-bold', 'Backup complete contents of KiwiSDR by writing Beagle filesystem onto a user provided micro-SD card'),
-      w3_div('id-backup-container w3-hide', 
-         w3_div('w3-container w3-text w3-red', 'WARNING: after SD card is written immediately remove from Beagle.<br>Otherwise on next reboot Beagle will be re-flashed from SD card.'),
+      w3_div('id-backup w3-hide',
          '<hr>',
-         w3_third('w3-container', 'w3-valign',
-            w3_button('w3-aqua w3-margin', 'Click to write micro-SD card', 'backup_sd_write'),
+         w3_div('w3-section w3-text-teal w3-bold', 'Backup complete contents of KiwiSDR by writing Beagle filesystem onto a user provided micro-SD card'),
 
-            w3_div('',
-               w3_div('id-progress-container w3-progress-container w3-round-large w3-gray w3-show-inline-block',
-                  w3_div('id-progress w3-progressbar w3-round-large w3-light-green w3-width-zero',
-                     w3_div('id-progress-text w3-container')
-                  )
-               ),
+         w3_div('id-sd-backup-container', 
+            w3_div('w3-container w3-text w3-red', 'WARNING: after SD card is written immediately remove from Beagle.<br>Otherwise on next reboot Beagle will be re-flashed from SD card.'),
+            '<hr>',
+
+            w3_div('w3-container w3-valign',
+               w3_button('w3-aqua w3-margin', 'Click to write micro-SD card', 'sd_backup_click_cb'),
+
+               w3_div('w3-margin-L-64',
+                  w3_div('id-sd-progress-container w3-progress-container w3-round-large w3-css-lightGray w3-show-inline-block',
+                     w3_div('id-sd-progress w3-progressbar w3-round-large w3-light-green w3-width-zero',
+                        w3_div('id-sd-progress-text w3-container')
+                     )
+                  ),
          
-               w3_div('w3-margin-T-8',
-                  w3_div('id-progress-time w3-show-inline-block') +
-                  w3_div('id-progress-icon w3-show-inline-block w3-margin-left')
+                  w3_inline('w3-margin-T-8/',
+                     w3_div('id-sd-backup-time'),
+                     w3_div('id-sd-backup-icon w3-margin-left'),
+                     w3_div('id-sd-backup-msg w3-margin-left')
+                  )
                )
             ),
+            '<hr>',
 
-            w3_div('id-sd-status class-sd-status')
-         ),
-         '<hr>',
-         w3_div('id-output-msg w3-container w3-text-output w3-scroll-down w3-small w3-margin-B-16')
-      )
-	);
+            w3_div('id-output-msg w3-container w3-text-output w3-scroll-down w3-small w3-margin-B-16')
+         )
+      );
 	return s;
 }
 
 function backup_focus()
 {
-	var el;
-	el = w3_el('id-progress-container');
-	if (el) el.style.width = px(300);
-	el = w3_el('id-output-msg');
-	if (el) el.style.height = px(300);
-
-   w3_do_when_cond(
-      function() { return isNumber(kiwi.debian_maj); },
-      function() {
-         if (kiwi.debian_maj >= 11) {
-            w3_innerHTML('id-backup-container',
-               w3_div('w3-container w3-text w3-red', 'Debian '+ kiwi.debian_maj +' does not yet support the backup function.'));
-         }
-         w3_show('id-backup-container', 'w3-show-inline');
-      }, null,
-      250
-   );
-   // REMINDER: w3_do_when_cond() returns immediately
+	w3_width_height('id-sd-progress-container', 300);
+	w3_width_height('id-output-msg', null, 300);
+	
+   sd_backup_focus();
 }
 
-var sd_progress, sd_progress_max = 12*60;    // measured estimate -- in secs (varies with SD card write speed)
-var backup_sd_interval;
-var backup_refresh_icon = w3_icon('', 'fa-refresh fa-spin', 20);
-
-function backup_sd_write(id, idx)
+function backup_blur()
 {
-	var el = w3_el('id-sd-status');
-	el.innerHTML = "writing the micro-SD card...";
-
-	w3_el('id-progress-text').innerHTML = w3_el('id-progress').style.width = '0%';
-
-	sd_progress = -1;
-	backup_sd_progress();
-	backup_sd_interval = setInterval(backup_sd_progress, 1000);
-
-	w3_el('id-progress-icon').innerHTML = backup_refresh_icon;
-
-	ext_send("SET microSD_write");
-}
-
-function backup_sd_progress()
-{
-	sd_progress++;
-	var pct = ((sd_progress / sd_progress_max) * 100).toFixed(0);
-	if (pct <= 99) {	// stall updates until we actually finish in case SD is writing slowly
-		w3_el('id-progress-text').innerHTML = w3_el('id-progress').style.width = pct +'%';
-	}
-	var secs = (sd_progress % 60).toFixed(0).leadingZeros(2);
-	var mins = Math.floor(sd_progress / 60).toFixed(0);
-	w3_el('id-progress-time').innerHTML = mins +':'+ secs;
-}
-
-function backup_sd_write_done(err)
-{
-	var el = w3_el('id-sd-status');
-	var msg = err? ('FAILED error '+ err.toString()) : 'WORKED';
-	if (err == 1) msg += '<br>No SD card inserted?';
-	if (err == 15) msg += '<br>rsync I/O error';
-	el.innerHTML = msg;
-	el.style.color = err? 'red':'lime';
-
-	if (!err) {
-		// force to max in case we never made it during updates
-		w3_el('id-progress-text').innerHTML = w3_el('id-progress').style.width = '100%';
-	}
-	kiwi_clearInterval(backup_sd_interval);
-	w3_el('id-progress-icon').innerHTML = '';
+   sd_backup_blur();
 }
 
 
@@ -1807,7 +1752,7 @@ function network_dhcp_static_update_cb(path, idx)
    if (debian_ver <= 9)    // Debian 10 and above use connmanctl which has immediate effect (no reboot required)
       w3_reboot_cb();      // show reboot button after confirm button pressed
    else
-		admin_wait_then_reload(10, 'Waiting for configuration change');
+		wait_then_reload_page(10, 'Waiting for configuration change');
 }
 
 function network_static_init()
@@ -2933,7 +2878,7 @@ function log_update()
 
 function console_html()
 {
-   // must set "remove_returns" since pty output lines are terminated with \r\n instead of \n alone
+   // must set "inline_returns" since pty output lines are terminated with \r\n instead of \n alone
    // otherwise the \r overwrite logic in kiwi_output_msg() will be triggered
    //console.log('$console SETUP');
    //kiwi_trace();
@@ -3672,10 +3617,10 @@ function admin_close()
 {
    // don't show message if reload countdown running
    kiwi_clearTimeout(admin.keepalive_timeoout);
-   if (admin.no_admin_reopen_retry) {
+   if (kiwi.no_reopen_retry) {
 	      w3_hide('id-kiwi-msg-container');      // in case password entry panel is being shown
          w3_show_block('id-kiwi-container');
-         admin_wait_then_reload(0, 'Server has closed connection.');
+         wait_then_reload_page(0, 'Server has closed connection.');
    } else
    if (isUndefined(adm.admin_keepalive) || adm.admin_keepalive == true) {
       if (!admin.reload_rem && !admin.long_running) {
@@ -3683,7 +3628,7 @@ function admin_close()
          w3_show_block('id-kiwi-container');
          //kiwi_show_msg('Server has closed connection.');
          //if (dbgUs) console.log('admin close'); else
-            admin_wait_then_reload(60, 'Server has closed connection. Will retry.');
+            wait_then_reload_page(60, 'Server has closed connection. Will retry.');
       }
    } else {
       //console.log('ignoring admin keepalive (websocket close)');
@@ -3740,6 +3685,7 @@ function admin_msg(param)
 		   break;
 
 		case "keepalive":
+         //console.log('ADMIN keepalive');
 		   kiwi_clearTimeout(admin.keepalive_timeoout);
 		   if (adm.admin_keepalive) {
 		      //console.log('admin keepalive');
@@ -3868,7 +3814,7 @@ function admin_recv(data)
 				break;
 
 			case "microSD_done":
-				backup_sd_write_done(parseFloat(param[1]));
+				sd_backup_write_done(parseFloat(param[1]));
 				break;
 
 			case "DUC_status":
@@ -3934,59 +3880,10 @@ function w3_reboot_cb()
 	w3_scrollTop('id-kiwi-container');
 }
 
-function admin_draw_pie() {
-	w3_el('id-admin-reload-secs').innerHTML = 'Admin page reload in '+ admin.reload_rem + ' secs';
-	if (admin.reload_rem > 0) {
-		admin.reload_rem--;
-		kiwi_draw_pie('id-admin-pie', admin.pie_size, (admin.reload_secs - admin.reload_rem) / admin.reload_secs);
-	} else {
-	   try {
-		   window.location.reload(true);
-		} catch(ex) {
-		   console.log('RELOAD FAILED?');
-		   console.log(ex);
-		}
-	}
-};
-
-function admin_wait_then_reload(secs, msg)
-{
-	var ael = w3_el("id-admin");
-	var s2;
-	
-	if (secs) {
-		s2 =
-			w3_divs('w3-valign w3-margin-T-8/w3-container',
-				w3_div('w3-show-inline-block', kiwi_pie('id-admin-pie', admin.pie_size, '#eeeeee', 'deepSkyBlue')),
-				w3_div('w3-show-inline-block',
-					w3_div('id-admin-reload-msg'),
-					w3_div('id-admin-reload-secs')
-				)
-			);
-	} else {
-		s2 =
-			w3_divs('w3-valign w3-margin-T-8/w3-container',
-				w3_div('id-admin-reload-msg')
-			);
-	}
-	
-	var s = '<header class="w3-container w3-teal"><h5>Admin interface</h5></header>'+ s2;
-	//console.log('s='+ s);
-	ael.innerHTML = s;
-	
-	if (msg) w3_el("id-admin-reload-msg").innerHTML = msg;
-	
-	if (secs) {
-		admin.reload_rem = admin.reload_secs = secs;
-		setInterval(admin_draw_pie, 1000);
-		admin_draw_pie();
-	}
-}
-
 function admin_restart_now_cb()
 {
 	ext_send('SET restart');
-	admin_wait_then_reload(60, 'Restarting KiwiSDR server');
+	wait_then_reload_page(60, 'Restarting KiwiSDR server');
 }
 
 function admin_restart_cancel_cb()
@@ -3998,7 +3895,7 @@ function admin_restart_cancel_cb()
 function admin_reboot_now_cb()
 {
 	ext_send('SET reboot');
-	admin_wait_then_reload(90, 'Rebooting Beagle');
+	wait_then_reload_page(90, 'Rebooting Beagle');
 }
 
 function admin_reboot_cancel_cb()
@@ -4077,7 +3974,7 @@ function admin_radio_YN_cb(path, idx, first)
 
 function admin_select_cb(path, idx, first)
 {
-	console.log('admin_select_cb idx='+ idx +' path='+ path +' first='+ first);
+	//console.log('admin_select_cb idx='+ idx +' path='+ path +' first='+ first);
 	idx = +idx;
 	if (idx != -1) {
       // if first time don't save, otherwise always save

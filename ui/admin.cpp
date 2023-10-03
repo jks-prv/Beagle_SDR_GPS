@@ -40,6 +40,7 @@ Boston, MA  02110-1301, USA.
 #include "dx.h"
 #include "wspr.h"
 #include "FT8.h"
+#include "kiwi_ui.h"
 
 #ifdef USE_SDR
  #include "data_pump.h"
@@ -315,7 +316,7 @@ static int clone_cmd(char *cmd_p)
     return status;
 }
 
-bool backup_in_progress, DUC_enable_start, rev_enable_start;
+bool DUC_enable_start, rev_enable_start;
 
 void c2s_admin(void *param)
 {
@@ -712,56 +713,10 @@ void c2s_admin(void *param)
 // backup
 ////////////////////////////////
 
-#define SD_CMD "cd /root/" REPO_NAME "/tools; ./kiwiSDR-make-microSD-flasher-from-eMMC.sh --called_from_kiwisdr_server"
 			i = strcmp(cmd, "SET microSD_write");
 			if (i == 0) {
 				mprintf_ff("ADMIN: received microSD_write\n");
-				backup_in_progress = true;  // NB: must be before rx_server_kick() to prevent new connections
-				rx_server_kick(KICK_ALL);      // kick everything (including autorun) off to speed up copy
-				// if this delay isn't here the subsequent non_blocking_cmd_popen() hangs for
-				// MINUTES, if there is a user connection open, for reasons we do not understand
-				TaskSleepReasonSec("kick delay", 5);
-				
-				// clear user list on status tab
-                sb = rx_users(/* include_ip */ true);
-                send_msg(conn, false, "MSG user_cb=%s", kstr_sp(sb));
-                kstr_free(sb);
-				
-				#define NBUF 256
-				char *buf = (char *) kiwi_malloc("c2s_admin", NBUF);
-				int n, err;
-				
-				sd_copy_in_progress = true;
-				non_blocking_cmd_t p;
-				p.cmd = SD_CMD;
-                //real_printf("microSD_write: non_blocking_cmd_popen..\n");
-				non_blocking_cmd_popen(&p);
-                //real_printf("microSD_write: ..non_blocking_cmd_popen\n");
-				do {
-					n = non_blocking_cmd_read(&p, buf, NBUF);
-					if (n > 0) {
-						//real_printf("microSD_write: mprintf %d %d <%s>\n", n, strlen(buf), buf);
-						mprintf("%s", buf);
-					}
-					TaskSleepMsec(250);
-					u4_t now = timer_sec();
-					if ((now - conn->keepalive_time) > 5) {
-					    send_msg(conn, false, "MSG keepalive");
-					    conn->keepalive_time = now;
-					}
-				} while (n >= 0);
-				err = non_blocking_cmd_pclose(&p);
-                //real_printf("microSD_write: err=%d\n", err);
-				sd_copy_in_progress = false;
-				
-				err = (err < 0)? err : WEXITSTATUS(err);
-				mprintf("ADMIN: system returned %d\n", err);
-				kiwi_free("c2s_admin", buf);
-				#undef NBUF
-                //real_printf("microSD_write: microSD_done=%d\n", err);
-				send_msg(conn, SM_NO_DEBUG, "ADM microSD_done=%d", err);
-				backup_in_progress = false;
-				rx_autorun_restart_victims(true);
+			    sd_backup(conn, true);
 				continue;
 			}
 

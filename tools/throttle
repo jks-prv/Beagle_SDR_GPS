@@ -1,0 +1,64 @@
+#!/bin/bash
+# originally: /usr/bin/env zsh
+# from: github.com/anko/zthrottle
+# Lets a line pass only once every $1 seconds.  If multiple lines arrive during
+# the cooldown interval, only the latest is passed on when the cooldown ends.
+
+INTERVAL="$1"
+
+CHILD_PID=
+BUFFER=$(mktemp)
+CAN_PRINT_IMMEDIATELY=1
+CAN_START_SUBPROCESS=1
+
+# Reset state when child process returns
+child-return () {
+    #echo "child rtn CAN_START_SUBPROCESS=$CAN_START_SUBPROCESS"
+    CAN_START_SUBPROCESS=1
+    CAN_PRINT_IMMEDIATELY=1
+}
+# see: superuser.com/questions/1206421/does-bash-have-a-hook-to-determine-when-child-shell-exits
+set -o monitor
+trap child-return CHLD
+
+# Clean up when quitting
+cleanup () {
+    kill -TERM "$CHILD_PID" &> /dev/null
+    rm "$BUFFER"
+    exit
+}
+trap cleanup TERM INT QUIT
+
+while read LINE; do
+    # If we're just starting, just print immediately
+    if [[ -n $CAN_PRINT_IMMEDIATELY ]]; then
+        #echo $LINE
+        CAN_PRINT_IMMEDIATELY=
+    else
+        # Otherwise, store the line for later
+        echo "$LINE" > $BUFFER
+        # And spawn a subprocess to handle it one interval later, unless one is
+        # already running.  With the SIGCHLD trap, the state variables will
+        # reset when it exits.
+        if [[ -n $CAN_START_SUBPROCESS ]]; then
+            #echo "YES start sub CAN_START_SUBPROCESS=$CAN_START_SUBPROCESS"
+            CAN_START_SUBPROCESS=
+            (
+                sleep $INTERVAL
+                tail -n1 $BUFFER
+                #echo "CHLD exit"
+            ) &
+            CHILD_PID=$!
+            #echo "CHILD_PID=$CHILD_PID"
+            #echo "CAN_START_SUBPROCESS=$CAN_START_SUBPROCESS"
+        #else
+            #echo "NO start sub CAN_START_SUBPROCESS=$CAN_START_SUBPROCESS"
+        fi
+    fi
+done
+
+# Once we exhaust stdin, wait for the last child process to finish, if any.
+if [[ -n $CHILD_PID ]]; then
+    wait $CHILD_PID &> /dev/null
+    cleanup
+fi

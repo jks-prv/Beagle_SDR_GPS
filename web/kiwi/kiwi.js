@@ -123,6 +123,7 @@ var kiwi = {
    
    rf_attn: 0,
    
+   no_reopen_retry: false,
    _ver_: 1.578,
    _last_: null
 };
@@ -999,7 +1000,7 @@ function kiwi_output_msg(id, id_scroll, p)
       console.log('$ '+ kiwi_JSON(p));
       //if (!p.init) kiwi_trace();
    }
-
+   
 	var parent_el = w3_el(id);
 	if (!parent_el) {
 	   console.log('kiwi_output_msg NOT_FOUND id='+ id);
@@ -1307,6 +1308,10 @@ function kiwi_output_msg(id, id_scroll, p)
       s = p.s;
    }
 	
+   if (p.intercept) {
+      p.intercept(s);
+   }
+
    if (p.init != true) {
       //if (dbg) console.log('$console INIT '+ p.init);
       //kiwi_trace();
@@ -1317,7 +1322,7 @@ function kiwi_output_msg(id, id_scroll, p)
 
       removeAllLines(parent_el);
       p.el = appendEmptyLine(parent_el);
-      p.cols = p.cols || 80;
+      p.cols = p.cols || 140;
       p.NONE = 0;
       p.ESC = 1;
       p.CSI = 2;
@@ -2883,7 +2888,7 @@ var reason_disabled = '';
 var version_maj = -1, version_min = -1, debian_ver = -1;
 var tflags = { INACTIVITY:1, WF_SM_CAL:2, WF_SM_CAL2:4 };
 var chan_no_pwd, chan_no_pwd_true;
-var kiwi_output_msg_p = { scroll_only_at_bottom: true, process_return_alone: false };
+var kiwi_output_msg_p = { scroll_only_at_bottom: true, inline_returns: true, process_return_alone: false, remove_returns: false };
 var client_public_ip;
 
 // includes msgs relevant for both user and admin modes
@@ -3157,8 +3162,8 @@ function kiwi_msg(param, ws)
 			kiwi.is_local[+p[0]] = +p[1];
 			break;
 		
-		case "no_admin_reopen_retry":
-			admin.no_admin_reopen_retry = true;
+		case "no_reopen_retry":
+			kiwi.no_reopen_retry = true;
 			break;
 
       /*

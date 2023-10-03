@@ -32,6 +32,7 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "debug.h"
 #include "printf.h"
+#include "kiwi_ui.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -57,6 +58,7 @@ void c2s_mfg_setup(void *param)
 	conn_t *conn = (conn_t *) param;
 
 	send_msg(conn, SM_NO_DEBUG, "MFG ver_maj=%d ver_min=%d", version_maj, version_min);
+	mprintf_ff("MFG interface\n");
 	mfg_send_info(conn);
 }
 
@@ -104,41 +106,10 @@ void c2s_mfg(void *param)
 				continue;
 			}
 
-#define SD_CMD "cd /root/" REPO_NAME "/tools; ./kiwiSDR-make-microSD-flasher-from-eMMC.sh --called_from_kiwisdr_server"
 			i = strcmp(cmd, "SET microSD_write");
 			if (i == 0) {
 				mprintf_ff("MFG: received microSD_write\n");
-				rx_server_kick(KICK_ALL);      // kick everything (including autorun) off to speed up copy
-
-				#define NBUF 256
-				char *buf = (char *) kiwi_malloc("c2s_mfg", NBUF);
-				int n, err;
-				
-				sd_copy_in_progress = true;
-				non_blocking_cmd_t p;
-				p.cmd = SD_CMD;
-				non_blocking_cmd_popen(&p);
-				do {
-					n = non_blocking_cmd_read(&p, buf, NBUF);
-					if (n > 0) {
-						mprintf("%s", buf);
-						//real_printf("mprintf %d %d <%s>\n", n, strlen(buf), buf);
-					}
-					TaskSleepMsec(250);
-					u4_t now = timer_sec();
-					if ((now - conn->keepalive_time) > 5) {
-					    send_msg(conn, false, "MSG keepalive");
-					    conn->keepalive_time = now;
-					}
-				} while (n >= 0);
-				err = non_blocking_cmd_pclose(&p);
-				sd_copy_in_progress = false;
-				
-				err = (err < 0)? err : WEXITSTATUS(err);
-				mprintf("MFG: system returned %d\n", err);
-				kiwi_free("c2s_mfg", buf);
-				#undef NBUF
-				send_msg(conn, SM_NO_DEBUG, "MFG microSD_done=%d", err);
+			    sd_backup(conn, false);
 				continue;
 			}
 

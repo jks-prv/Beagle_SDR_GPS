@@ -46,6 +46,7 @@ Boston, MA  02110-1301, USA.
 typedef enum { KiwiSDR_1 = 1, KiwiSDR_2 = 2 } model_e;
 
 typedef enum { PLATFORM_BBG_BBB, PLATFORM_BB_AI, PLATFORM_BB_AI64, PLATFORM_RPI } platform_e;
+const char * const platform_s[] = { "beaglebone", "bbai", "bbai64", "rpi" };
 
 typedef enum { DAILY_RESTART_NO = 0, DAILY_RESTART = 1, DAILY_REBOOT = 2} daily_restart_e;
 
