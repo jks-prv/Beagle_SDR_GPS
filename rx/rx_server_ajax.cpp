@@ -225,7 +225,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
                 }
 
                 #define NQS 15
-                char *qs[NQS+1];
+                str_split_t qs[NQS+1];
                 
                 sb2 = index(sb, '\n');
                 *sb2 = '\0';
@@ -247,29 +247,29 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
 
                 #if 0
                     for (i=0; i < n; i++) {
-                        printf("%d.%d <%s>\n", line, i, qs[i]);
+                        printf("%d.%d <%s>\n", line, i, qs[i].str);
                     }
                 #endif
 
                 if (n != N_CSV_FIELDS && n != N_CSV_FIELDS_SIG_BW) { rc = 10; goto fail; }
                 
                 // skip what looks like a CSV field legend
-                if (line != 0 || strncasecmp(qs[0], "freq", 4) != 0) {
+                if (line != 0 || strncasecmp(qs[0].str, "freq", 4) != 0) {
                     sb3 = NULL;
                     bool empty, ext_empty;
 
                     float freq;
-                    if (_dx_parse_csv_field(CSV_FLOAT, qs[0], &freq)) { rc = 11; goto fail; }
+                    if (_dx_parse_csv_field(CSV_FLOAT, qs[0].str, &freq)) { rc = 11; goto fail; }
                     //printf("freq=%.2f\n", rem, freq);
                 
                     char *mode, *ident, *notes, *ext;
-                    if (_dx_parse_csv_field(CSV_STRING, qs[1], &mode, CSV_EMPTY_NOK)) { rc = 12; goto fail; }
-                    if (_dx_parse_csv_field(CSV_DECODE, qs[2], &ident, CSV_EMPTY_NOK)) { rc = 13; goto fail; }
-                    if (_dx_parse_csv_field(CSV_DECODE, qs[3], &notes, CSV_EMPTY_OK)) { rc = 14; goto fail; }
-                    if (_dx_parse_csv_field(CSV_DECODE, qs[4], &ext, CSV_EMPTY_OK, &ext_empty)) { rc = 15; goto fail; }
+                    if (_dx_parse_csv_field(CSV_STRING, qs[1].str, &mode, CSV_EMPTY_NOK)) { rc = 12; goto fail; }
+                    if (_dx_parse_csv_field(CSV_DECODE, qs[2].str, &ident, CSV_EMPTY_NOK)) { rc = 13; goto fail; }
+                    if (_dx_parse_csv_field(CSV_DECODE, qs[3].str, &notes, CSV_EMPTY_OK)) { rc = 14; goto fail; }
+                    if (_dx_parse_csv_field(CSV_DECODE, qs[4].str, &ext, CSV_EMPTY_OK, &ext_empty)) { rc = 15; goto fail; }
 
                     char *type;
-                    if (_dx_parse_csv_field(CSV_STRING, qs[5], &type, CSV_EMPTY_OK, &empty)) { rc = 16; goto fail; }
+                    if (_dx_parse_csv_field(CSV_STRING, qs[5].str, &type, CSV_EMPTY_OK, &empty)) { rc = 16; goto fail; }
                     else {
                         if (!empty)
                             sb3 = kstr_asprintf(sb3, "%s%s%s:1",
@@ -277,18 +277,18 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
                     };
 
                     float pb_lo, pb_hi;
-                    if (_dx_parse_csv_field(CSV_FLOAT, qs[6], &pb_lo)) { rc = 17; goto fail; }
-                    if (_dx_parse_csv_field(CSV_FLOAT, qs[7], &pb_hi)) { rc = 18; goto fail; }
+                    if (_dx_parse_csv_field(CSV_FLOAT, qs[6].str, &pb_lo)) { rc = 17; goto fail; }
+                    if (_dx_parse_csv_field(CSV_FLOAT, qs[7].str, &pb_hi)) { rc = 18; goto fail; }
                     if (pb_lo != 0 || pb_hi != 0)
                         sb3 = kstr_asprintf(sb3, "%s\"lo\":%.0f, \"hi\":%.0f", sb3? ", " : "", pb_lo, pb_hi);
 
                     float offset;
-                    if (_dx_parse_csv_field(CSV_FLOAT, qs[8], &offset)) { rc = 19; goto fail; }
+                    if (_dx_parse_csv_field(CSV_FLOAT, qs[8].str, &offset)) { rc = 19; goto fail; }
                     if (offset != 0)
                         sb3 = kstr_asprintf(sb3, "%s\"o\":%.0f", sb3? ", " : "", offset);
 
                     char *dow_s;
-                    if (_dx_parse_csv_field(CSV_STRING, qs[9], &dow_s, CSV_EMPTY_OK, &empty)) { rc = 20; goto fail; }
+                    if (_dx_parse_csv_field(CSV_STRING, qs[9].str, &dow_s, CSV_EMPTY_OK, &empty)) { rc = 20; goto fail; }
                     else
                     if (!empty) {
                         int dow = 0;
@@ -303,14 +303,14 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
                     };
 
                     float begin, end;
-                    if (_dx_parse_csv_field(CSV_FLOAT, qs[10], &begin)) { rc = 22; goto fail; }
-                    if (_dx_parse_csv_field(CSV_FLOAT, qs[11], &end)) { rc = 23; goto fail; }
+                    if (_dx_parse_csv_field(CSV_FLOAT, qs[10].str, &begin)) { rc = 22; goto fail; }
+                    if (_dx_parse_csv_field(CSV_FLOAT, qs[11].str, &end)) { rc = 23; goto fail; }
                     if ((begin != 0 || end != 0) && (begin != 0 && end != 2400))
                         sb3 = kstr_asprintf(sb3, "%s\"b0\":%.0f, \"e0\":%.0f", sb3? ", " : "", begin, end);
 
                     // N_CSV_FIELDS_SIG_BW field is optional for backward compatibility
                     float sig_bw = 0;
-                    if (n == N_CSV_FIELDS_SIG_BW && _dx_parse_csv_field(CSV_FLOAT, qs[12], &sig_bw)) { rc = 24; goto fail; }
+                    if (n == N_CSV_FIELDS_SIG_BW && _dx_parse_csv_field(CSV_FLOAT, qs[12].str, &sig_bw)) { rc = 24; goto fail; }
                     if (sig_bw != 0)
                         sb3 = kstr_asprintf(sb3, "%s\"s\":%.0f", sb3? ", " : "", sig_bw);
                     
@@ -500,12 +500,13 @@ fail:
 		
 			// hack to include location description in name
 			#define NKWDS 8
-			char *kwds[NKWDS], *loc, *r_loc;
+			char *loc, *r_loc;
+			str_split_t kwds[NKWDS];
 			loc = strdup(s5);
 			n = kiwi_split((char *) loc, &r_loc, ",;-:/()[]{}<>| \t\n", kwds, NKWDS);
 			for (i=0; i < n; i++) {
-				//printf("KW%d: <%s>\n", i, kwds[i]);
-				if (strcasestr(name, kwds[i]))
+				//printf("KW%d: <%s> '%s'\n", i, kwds[i].str, ASCII[kwds[i].delim]);
+				if (strcasestr(name, kwds[i].str))
 					break;
 			}
 			kiwi_ifree(loc); kiwi_ifree(r_loc);

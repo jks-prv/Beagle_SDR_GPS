@@ -81,28 +81,29 @@ bool kiwi_crypt_file_read(const char *fn, int *seq, char **salt, char **hash)
     printf("### kiwi_crypt_file_read \"%s\" n=%d <%s>\n", fn, n, encrypted_s);
 
     #define N_FILE_FIELDS 4
-    char *r_buf, *cf[N_FILE_FIELDS + 1];
+    char *r_buf;
+    str_split_t cf[N_FILE_FIELDS + 1];
     n = kiwi_split(encrypted_s, &r_buf, "$", cf, N_FILE_FIELDS);
     if (n != N_FILE_FIELDS) {
         printf("kiwi_crypt_file_read FORMAT ERROR n=%d/%d\n", n, N_FILE_FIELDS);
         return false;
     }
 
-    n = strlen(cf[1]);
+    n = strlen(cf[1].str);
     if (n != N_SALT) {
         printf("kiwi_crypt_file_read SALT LEN n=%d\n", n);
         return false;
     }
-    if (salt) *salt = strdup(cf[1]);
+    if (salt) *salt = strdup(cf[1].str);
 
-    n = strlen(cf[2]);
+    n = strlen(cf[2].str);
     if (n != N_HASH) {
         printf("kiwi_crypt_file_read HASH LEN n=%d\n", n);
         return false;
     }
-    if (hash) *hash = strdup(cf[2]);
+    if (hash) *hash = strdup(cf[2].str);
 
-    if (seq) *seq = strtol(cf[3], NULL, 0);
+    if (seq) *seq = strtol(cf[3].str, NULL, 0);
 
     kiwi_ifree(r_buf);
     return true;
@@ -173,10 +174,11 @@ bool kiwi_crypt_validate(const char *key, char *salt, char *hash_o)
     }
     
     #define N_CRYPT_FIELDS 3
-    char *r_buf, *cf[N_CRYPT_FIELDS + 1];
+    char *r_buf;
+    str_split_t cf[N_CRYPT_FIELDS + 1];
     n = kiwi_split(encrypted, &r_buf, "$", cf, N_CRYPT_FIELDS);
     check(n == N_CRYPT_FIELDS);
-    char *hash_n = cf[2];
+    char *hash_n = cf[2].str;
 
     bool match = (strcmp(hash_o, hash_n) == 0 && strlen(hash_o) == strlen(hash_n))? true:false;
     printf("kiwi_crypt_validate: key=\"%s\" salt=%s match=%s\n", key, salt, match? "OK":"FAIL");
