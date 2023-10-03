@@ -222,9 +222,9 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 ext_send_msg(conn->rx_channel, false, "MSG keepalive");
             }
             
-            // for STREAM_ADMIN send a roundtrip keepalive so admin client can tell
+            // for STREAM_ADMIN and STREAM_MFG send a roundtrip keepalive so admin client can tell
             // when server has gone away
-            if (conn->type == STREAM_ADMIN) {
+            if (conn->type == STREAM_ADMIN || conn->type == STREAM_MFG) {
                 // conn->mc checked for == NULL above
                 send_msg(conn, false, "MSG keepalive");
             }
@@ -2127,7 +2127,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             for (i=0; i < N_CONNS; i++, c++) {
                 if (!c->valid || !(c->type == STREAM_ADMIN || c->type == STREAM_MFG))
                     continue;
-                send_msg(c, false, "MSG no_admin_reopen_retry");
+                send_msg(c, false, "MSG no_reopen_retry");
 	            show_conn("force_close_admin ", PRINTF_REG, c);
                 rx_server_remove(c);
             }

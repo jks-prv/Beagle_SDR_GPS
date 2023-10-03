@@ -722,7 +722,7 @@ function config_clone_status_cb(status)
       }
       if (restart) {
          ext_send('SET restart');
-         admin_wait_then_reload(60, msg +'<br>Restarting KiwiSDR server.');
+         wait_then_reload_page(60, msg +'<br>Restarting KiwiSDR server.');
       }
    } else {
       status = (status >> 8) & 0xff;
@@ -1525,7 +1525,7 @@ function dx_convert_label_foff_cb(path, idx)
             adm.dx_labels_converted = true;
             cfg_save_json('dx_convert_label_foff_cb', 'adm.dx_labels_converted');
             ext_send_after_cfg_save('SET DX_UPD g=-9 f=-1');
-            admin_wait_then_reload(60, 'DX labels converted, restarting KiwiSDR server');
+            wait_then_reload_page(60, 'DX labels converted, restarting KiwiSDR server');
 	      }
 	   );
    }
