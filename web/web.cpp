@@ -933,25 +933,26 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 
         int ctrace;
         #define NQS 32
-        char *r_buf, *qs[NQS+1];
+        char *r_buf;
+        str_split_t qs[NQS+1];
         n = kiwi_split((char *) mc->query_string, &r_buf, "&", qs, NQS);
         for (i=0; i < n; i++) {
-            if (strcmp(qs[i], "nocache") == 0) {
+            if (strcmp(qs[i].str, "nocache") == 0) {
                 web_nocache = true;
                 printf("WEB nocache\n");
             } else
-            if (strcmp(qs[i], "cache") == 0) {
+            if (strcmp(qs[i].str, "cache") == 0) {
                 web_nocache = false;
                 printf("WEB cache\n");
             } else
-            if (sscanf(qs[i], "ctrace=%d", &ctrace) == 1) {
+            if (sscanf(qs[i].str, "ctrace=%d", &ctrace) == 1) {
                 web_caching_debug = ctrace;
                 printf("WEB ctrace=%d\n", web_caching_debug);
             } else
             
             // needed before connection established, so can't use CMD_OPTIONS mechanism
             // (a slight race condition if there are multiple simultaneous connections)
-            if (strcmp(qs[i], "camp") == 0) {
+            if (strcmp(qs[i].str, "camp") == 0) {
                 force_camp = true;
             }
         }

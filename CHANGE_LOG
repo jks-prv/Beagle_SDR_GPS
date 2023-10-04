@@ -2,6 +2,18 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.627  October 5, 2023
+    Rework of admin backup tab:
+        Now works for Debian 11 and later. Debian 11 is currently used by the BBAI-64.
+        Progress bar now accurately shows sd card copy progress.
+        Should now correctly abort backup if admin page is reloaded while backup running.
+
+    Changes to support KiwiSDR 2.
+    
+    Fixed bug where audio wouldn't un-mute after underlying masked area removed (thanks Rob).
+
+    The SNR-measure task ARRIVED/LEAVING messages are no longer logged.
+
 v1.626  September 17, 2023
     Error message and logging improvements to admin clone operation.
     

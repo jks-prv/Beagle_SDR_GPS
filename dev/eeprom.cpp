@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2016 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2016-2023 John Seamons, ZL4VO/KF6VO
 
 #include "types.h"
 #include "config.h"
@@ -40,7 +40,7 @@ Boston, MA  02110-1301, USA.
 #include <time.h>
 
 //#define EEPROM_TEST_BAD_PART
-//#define EEPROM_TEST
+//#define EEPROM_TEST_VER_UPDATE
 
 #define	SEQ_SERNO_FILE "/root/kiwi.config/seq_serno.txt"
 #define	SEQ_START		"1014"
@@ -138,6 +138,7 @@ int eeprom_check(model_e *model)
 	const char *fn;
 	FILE *fp;
 	int n;
+	if (model != NULL) *model = (model_e) -1;
 	
 	fn = EEPROM_DEV_DEBIAN7;
 	fp = fopen(fn, "r");
@@ -171,20 +172,24 @@ int eeprom_check(model_e *model)
 	}
 	
 	#ifdef EEPROM_TEST_BAD_PART
-	    memset(e, 0, sizeof(eeprom_t));
+        if (test_flag & 1) memset(e, 0, sizeof(eeprom_t));
 	    //return -1;
 	#endif
 	
-	char serial_no[sizeof(e->serial_no) + SPACE_FOR_NULL];
-	GET_CHARS(e->serial_no, serial_no);
+    char serial_no[sizeof(e->serial_new) + SPACE_FOR_NULL];
+    GET_CHARS(e->serial_new, serial_no);
 
-	int serno = -1;
-	n = sscanf(serial_no, "%d", &serno);
-	if (n != 1 || serno <= 0 || serno > 9999) {
-	    mlprintf("EEPROM check: read serial_no \"%s\" %d\n", serial_no, serno);
-		mlprintf("EEPROM check: scan failed (serno)\n");
-		return -1;
-	}
+    int serno = -1;
+    n = sscanf(serial_no, "%d", &serno);
+    if (n != 1 || serno <= 0 || serno > 99999999) {
+        mlprintf("EEPROM check: read serial_no \"%s\" %d\n", serial_no, serno);
+        mlprintf("EEPROM check: scan failed (serno)\n");
+        return -1;
+    }
+    if (serno >= 10000 && serno <= 19999) {
+        mlprintf("EEPROM check: old format serial_no compatibility %d => %d\n", serno, serno - 10000);
+        serno -= 10000;
+    }
 	
 	char part_no[sizeof(e->part_no) + SPACE_FOR_NULL];
 	GET_CHARS(e->part_no, part_no);
@@ -213,7 +218,7 @@ void eeprom_write(next_serno_e type, int serno, int model)
 	FILE *fp;
 	
 	#ifdef EEPROM_TEST_BAD_PART
-	    return;
+	    if (test_flag & 1) return;
 	#endif
 	
 	eeprom_t *e = &eeprom;
@@ -224,7 +229,7 @@ void eeprom_write(next_serno_e type, int serno, int model)
 	
 	SET_CHARS(e->board_name, "KiwiSDR", ' ');
 
-	#ifdef EEPROM_TEST
+	#ifdef EEPROM_TEST_VER_UPDATE
 	if (test_flag) {
 		SET_CHARS(e->version, "v0.9", ' ');
 	} else
@@ -242,7 +247,7 @@ void eeprom_write(next_serno_e type, int serno, int model)
 	int ord_date = tm.tm_yday + 1;		// convert 0..365 to 1..366
 	int weekday = tm.tm_wday? tm.tm_wday : 7;	// convert Sunday = 0 to = 7
 
-	// formula from https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_of_a_given_date
+	// formula from en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_of_a_given_date
 	int ww = (ord_date - weekday + 10) / 7;
 	if (ww < 1) ww = 1;
 	if (ww > 52) ww = 52;
@@ -255,7 +260,10 @@ void eeprom_write(next_serno_e type, int serno, int model)
 
 	if (type == SERNO_ALLOC)
 		serno = eeprom_next_serno(SERNO_ALLOC, 0);
-	kiwi_snprintf_buf_plus_space_for_null(e->serial_no, "%4d", serno);	// caution: leaves '\0' at start of next field (n_pins)
+
+    // 4 to 8-digit serno migration: just write the specified value into the 8-digit field
+	//kiwi_snprintf_buf_plus_space_for_null(e->serial_old, "%4d", serno);	// caution: leaves '\0' at start of next field (n_pins)
+    kiwi_snprintf_buf_plus_space_for_null(e->serial_new, "%8d", serno);	// caution: leaves '\0' at start of next field (n_pins)
 	
 	e->n_pins = FLIP16(2*26);
 	int pin;
@@ -323,7 +331,7 @@ void eeprom_update()
 		return;
 	}
 	
-	#ifdef EEPROM_TEST
+	#ifdef EEPROM_TEST_VER_UPDATE
 	if (test_flag)
 		vf = 0.9;
 	#endif

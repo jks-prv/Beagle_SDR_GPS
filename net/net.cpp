@@ -649,11 +649,12 @@ int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const cha
 	kstr_t *reply = non_blocking_cmd(cmd_p, &status);
 	
 	if (reply != NULL && status >= 0 && WEXITSTATUS(status) == 0) {
-		char *ips[N_IPS], *r_buf;
+		char *r_buf;
+		str_split_t ips[N_IPS];
 		n = kiwi_split(kstr_sp(reply), &r_buf, "\n", ips, n_ips-1);
 
         for (i = 0; i < n; i++) {
-            ip_list[i] = strndup(ips[i], NET_ADDRSTRLEN);
+            ip_list[i] = strndup(ips[i].str, NET_ADDRSTRLEN);
             int slen = strlen(ip_list[i]);
             if (ip_list[i][slen-1] == '\n') ip_list[i][slen-1] = '\0';    // remove trailing \n
 	        printf("LOOKUP: \"%s\" %s\n", domain_name, ip_list[i]);

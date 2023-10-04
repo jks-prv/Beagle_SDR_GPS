@@ -121,7 +121,7 @@ void real_printf(const char *fmt, ...)
 }
 
 static bool appending;
-static char *buf, *last_s, *start_s;
+static char *buf, *last_s, *start_s, *holdover;
 static int brem;
 
 log_save_t *log_save_p;
@@ -139,6 +139,8 @@ void printf_init()
     }
     log_save_p->magic = LOG_MAGIC;
     log_save_p->init = true;
+    
+    holdover = (char *) "";
 }
 
 static void ll_printf(u4_t type, conn_t *conn, const char *fmt, va_list ap)
@@ -295,16 +297,42 @@ static void ll_printf(u4_t type, conn_t *conn, const char *fmt, va_list ap)
 	
 	// attempt to selectively record message remotely
 	if (type & PRINTF_MSG) {
-		for (conn_t *c = conns; c < &conns[N_CONNS]; c++) {
-			struct mg_connection *mc;
-			
+	    conn_t *c;
+		for (c = conns; c < &conns[N_CONNS]; c++) {
 			if (!c->valid || (c->type != STREAM_ADMIN && c->type != STREAM_MFG) || c->mc == NULL)
 				continue;
-			if (type & PRINTF_FF)
-				send_msg_encoded(c, "MSG", "status_msg_text", "\f%s", buf);
-			else
-				send_msg_encoded(c, "MSG", "status_msg_text", "%s", buf);
+			break;
 		}
+		
+		// there should only be one active admin connection
+		if (c != &conns[N_CONNS]) {
+		
+		    // Transmit one line at a time. Holdover last unterminated output until next call.
+            #define N_LINES 32
+            char *r_buf;
+            str_split_t lines[N_LINES];
+            n = kiwi_split(buf, &r_buf, "\r\n", lines, N_LINES);
+
+            for (i = 0; i < n; i++) {
+                const char *leading_nl = "";
+                if (i == 0 && buf[0] == '\n') leading_nl = "\n";
+                else
+                if (i == 0 && buf[0] == '\r') leading_nl = "\r";
+                //real_printf("%d leading_nl='%s' <%s%s> delim='%s'\n", i, ASCII[buf[0]], leading_nl, lines[i].str, ASCII[lines[i].delim]);
+                if (i == n-1 && lines[i].str[0] != '\0' && lines[i].delim == '\0') {
+                    asprintf(&holdover, "%s", lines[i].str);
+                    //real_printf("(holdover)\n");
+                } else {
+                    send_msg_encoded(c, "MSG", "status_msg_text", "%s%s%s%c",
+                        (i == 0 && (type & PRINTF_FF))? "\f" : holdover, leading_nl, lines[i].str, lines[i].delim);
+                    if (holdover[0] != '\0') {
+                        free(holdover);
+                        holdover = (char *) "";
+                    }
+                }
+            }
+            kiwi_ifree(r_buf);
+        }
 	}
 	
 	kiwi_ifree(buf);

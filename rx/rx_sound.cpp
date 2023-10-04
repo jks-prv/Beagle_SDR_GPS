@@ -294,7 +294,8 @@ void c2s_sound(void *param)
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
 	bool change_LPF = false, change_freq_mode = false, restart = false;
-	bool masked = false, masked_area = false;
+	u4_t dx_update_seq = 0;
+	bool masked = false, masked_area = false, check_masked = false;
 	bool allow_gps_tstamp = admcfg_bool("GPS_tstamp", NULL, CFG_REQUIRED);
 	
 	memset(&snd->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
@@ -580,25 +581,6 @@ void c2s_sound(void *param)
                 
                     conn->freqHz = round(nomfreq/10.0)*10;	// round 10 Hz
                     if (!no_mode_change) conn->mode = snd->mode = mode;
-                
-                    // apply masked frequencies
-                    masked = masked_area = false;
-                    if (dx.masked_len != 0) {
-                        int f = round(freq*kHz);
-                        int pb_lo = f + locut;
-                        int pb_hi = f + hicut;
-                        //printf("SND f=%d lo=%.0f|%d hi=%.0f|%d ", f, locut, pb_lo, hicut, pb_hi);
-                        for (j=0; j < dx.masked_len; j++) {
-                            dx_mask_t *dmp = &dx.masked_list[j];
-                            if (!((pb_hi < dmp->masked_lo || pb_lo > dmp->masked_hi))) {
-                                masked_area = true;     // needed by c2s_sound_camp()
-                                masked = conn->tlimit_exempt_by_pwd? false : true;
-                                //printf("MASKED");
-                                break;
-                            }
-                        }
-                        //printf("\n");
-                    }
                 }
 			    kiwi_ifree(mode_m);
 			    break;
@@ -962,6 +944,7 @@ void c2s_sound(void *param)
 				nb_param[NB_BLANKER][NB_GATE] = nb;
 				nb_param[NB_BLANKER][NB_THRESHOLD] = th;
 				nb_enable[NB_BLANKER] = nb? 1:0;
+				//cprintf(conn, "NB gate=%d thresh=%d\n", nb, th);
 
 				if (nb) m_NoiseProc_snd[rx_chan].SetupBlanker("SND", frate, nb_param[NB_BLANKER]);
 				continue;
@@ -1051,7 +1034,30 @@ void c2s_sound(void *param)
             rx_enable(rx_chan, RX_DATA_ENABLE);
 			conn->snd_cmd_recv_ok = true;
 		}
-			
+		
+		if (change_freq_mode || dx_update_seq != dx.update_seq) {
+
+            // apply masked frequencies
+            masked = masked_area = false;
+            if (dx.masked_len != 0) {
+                int f = round(freq*kHz);
+                int pb_lo = f + locut;
+                int pb_hi = f + hicut;
+                //printf("SND f=%d lo=%.0f|%d hi=%.0f|%d ", f, locut, pb_lo, hicut, pb_hi);
+                for (j=0; j < dx.masked_len; j++) {
+                    dx_mask_t *dmp = &dx.masked_list[j];
+                    if (!((pb_hi < dmp->masked_lo || pb_lo > dmp->masked_hi))) {
+                        masked_area = true;     // needed by c2s_sound_camp()
+                        masked = conn->tlimit_exempt_by_pwd? false : true;
+                        //printf("MASKED");
+                        break;
+                    }
+                }
+                //printf("\n");
+            }
+		    dx_update_seq = dx.update_seq;
+        }
+
         #ifdef OPTION_EXPERIMENT_CICF
             if (snd->cicf_setup) {
                 // defaults should give ntaps=17

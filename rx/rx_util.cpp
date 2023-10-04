@@ -74,6 +74,8 @@ u64_t rx_conn_tstamp()
 
 void rx_loguser(conn_t *c, logtype_e type)
 {
+    if (TaskFlags() & CTF_NO_LOG) return;
+    
 	u4_t now = timer_sec();
 	
 	if (!log_local_ip && c->isLocal_ip) {
@@ -264,7 +266,7 @@ void rx_server_kick(kick_e kick, int chan)
             }
 		} else
 		
-		if (kick_admin && c->type == STREAM_ADMIN) {
+		if (kick_admin && (c->type == STREAM_ADMIN || c->type == STREAM_MFG)) {
             c->kick = true;
             printf("rx_server_kick KICKING admin [%02d]\n", c->self_idx);
 		}
@@ -968,7 +970,7 @@ int SNR_calc(SNR_meas_t *meas, int meas_type, int f_lo, int f_hi)
 
 int SNR_meas_tid;
 
-void SNR_meas(void *param)      // task
+void SNR_meas_task(void *param)
 {
     int i, j, n, len;
     static internal_conn_t iconn;
@@ -986,7 +988,7 @@ void SNR_meas(void *param)      // task
         static int meas_idx;
 	
         for (int loop = 0; loop == 0 && snr_meas_interval_hrs; loop++) {   // so break can be used below
-            if (internal_conn_setup(ICONN_WS_WF, &iconn, 0, PORT_BASE_INTERNAL_SNR, WS_FL_PREEMPT_AUTORUN,
+            if (internal_conn_setup(ICONN_WS_WF, &iconn, 0, PORT_BASE_INTERNAL_SNR, WS_FL_PREEMPT_AUTORUN | WS_FL_NO_LOG,
                 NULL, 0, 0, 0,
                 "SNR-measure", "internal%20task", "SNR",
                 WF_ZOOM_MIN, 15000, -110, -10, SNR_MEAS_SELECT, WF_COMP_OFF) == false) {

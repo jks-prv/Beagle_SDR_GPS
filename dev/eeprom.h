@@ -35,8 +35,14 @@ struct eeprom_t {
 	char part_no[16];           // 0x3a
 	char week[2];               // 0x4a
 	char year[2];               // 0x4c
-	char assembly[4];           // 0x4e
-	char serial_no[4];          // 0x52
+	
+	union {
+	    struct {
+            char assembly[4];   // 0x4e
+            char serial_old[4]; // 0x52
+        };
+        char serial_new[8];     // 0x4e
+    };
 	
 	u2_t n_pins;                // 0x56
 	u2_t io_pins[EE_NPINS];     // 0x58

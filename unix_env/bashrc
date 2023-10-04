@@ -83,6 +83,7 @@ alias mac='cat /sys/class/net/eth0/address'
 alias df="/bin/df -h"
 alias df.="/bin/df -h ."
 alias d.="/bin/df -h ."
+alias d.mb="/bin/df --block-size=1048576 . | tail -n 1 | awk '{print \$3}'"
 alias tr="traceroute"
 alias cdp="cd \${PROJ}"
 alias cd2="cd \${PROJ2}"
@@ -108,6 +109,7 @@ alias col1="awk -- '{print \$1}'"
 alias json="echo \"jsonc <cmd>  jsonf <file>\""
 alias jsonc="function _json () { \$* | jq '.' ; } ; _json"
 alias jsonf="function _json () { cat \$* | jq '.' ; } ; _json"
+alias trunc="truncate -s 0"
 
 # pki colordiff
 p_diff_exclude="--exclude=.DS_Store --exclude=.git --exclude=.svn ${no_diff}"
@@ -269,7 +271,7 @@ alias scen="function _sys () { systemctl --lines=100 enable \${*}.service ; } ; 
 alias sa="service --status-all"
 
 # packages
-alias pk="echo pk: s=search_available ls=list_installed ver,vers,show,pol=versions i=install rm=remove ar=autoremove; echo pk: ch=allow-rel-info-chg up=update upp=single_pkg ug=dist-upgrade; echo pk: c=clean sz=sizes f,f2=which_pkg_has_file fu=file_update fi=files_installed co=cape_overlays"
+alias pk="echo pk: s=search_available ls=list_installed ver,vers,sh,pol=versions i=install rm=remove ar=autoremove; echo pk: ch=allow-rel-info-chg up=update upp=single_pkg ug=dist-upgrade; echo pk: c=clean sz=sizes f,f2=which_pkg_has_file fu=file_update fi=files_installed co=cape_overlays"
 alias pks="echo available pkgs:; apt-cache search"
 alias pkls="echo installed pkgs:; dpkg -l | gr"
 alias pksh="apt show"

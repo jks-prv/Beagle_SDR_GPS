@@ -107,13 +107,14 @@ static void ip_blacklist_init_list(const char *list)
     const char *bl_s = admcfg_string(list, NULL, CFG_REQUIRED);
     if (bl_s == NULL) return;
 
-    char *r_buf, *ips[N_IP_BLACKLIST+1];
+    char *r_buf;
+    str_split_t ips[N_IP_BLACKLIST+1];
     int n = kiwi_split((char *) bl_s, &r_buf, " ", ips, N_IP_BLACKLIST);
     //printf("ip_blacklist_init n=%d bl_s=\"%s\"\n", n, bl_s);
     lprintf("ip_blacklist_init_list: %d entries: %s\n", n, list);
     
     for (int i=0; i < n; i++) {
-        ip_blacklist_add_iptables(ips[i]);
+        ip_blacklist_add_iptables(ips[i].str);
     }
 
     kiwi_ifree(r_buf);

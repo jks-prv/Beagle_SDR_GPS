@@ -33,7 +33,6 @@
 #This script assumes, these packages are installed, as network may not be setup
 #dosfstools initramfs-tools rsync u-boot-tools
 
-called_from_kiwisdr_server=$1
 version_message="1.20151007: gpt partitions with raw boot..."
 
 http_spl="MLO-am335x_evm-v2015.07-r1"
@@ -162,9 +161,10 @@ check_running_system () {
 	fi
 	
 	rootfs_size="`/bin/df --block-size=1048576 . | tail -n 1 | awk '{print $3}'`"
-	message="actual rootfs size = ${rootfs_size}M" ; broadcast
 	conf_boot_endmb=$((${rootfs_size}+200))
 	message="setting micro-SD partition size to actual rootfs size + 200M = ${conf_boot_endmb}M" ; broadcast
+	message="rootfs_size ${conf_boot_endmb}M" ; broadcast
+	message="-----------------------------" ; broadcast
 
 	if [ ! -f /boot/config-$(uname -r) ] ; then
 		zcat /proc/config.gz > /boot/config-$(uname -r)
@@ -176,17 +176,6 @@ check_running_system () {
 		update-initramfs -c -k $(uname -r)
 	fi
 	flush_cache
-
-	##FIXME: quick check for rsync 3.1 (jessie)
-	unset rsync_check
-	unset rsync_progress
-	rsync_check=$(LC_ALL=C rsync --version | grep version | awk '{print $3}' || true)
-	if [ "x${rsync_check}" = "x3.1.1" ] ; then
-		# don't be verbose if called from KiwiSDR server mfg page
-		if [ "x${called_from_kiwisdr_server}" = "x" ] ; then
-			rsync_progress="--info=progress2 --human-readable"
-		fi
-	fi
 
 	if [ ! -e /sys/class/leds/beaglebone\:green\:usr0/trigger ] ; then
 		modprobe leds_gpio || true
@@ -354,11 +343,8 @@ copy_boot () {
 	fi
 
 	message="rsync: /boot/uboot/ -> /tmp/boot/" ; broadcast
-	if [ ! "x${rsync_progress}" = "x" ] ; then
-		message="rsync: note the % column is useless..." ; broadcast
-	fi
 	err=13
-	rsync -aAx ${rsync_progress} /boot/uboot/ /tmp/boot/ --exclude={MLO,u-boot.img,uEnv.txt} || write_failure
+	rsync -aAx /boot/uboot/ /tmp/boot/ --exclude={MLO,u-boot.img,uEnv.txt} || write_failure
 	flush_cache
 
 	flush_cache
@@ -367,6 +353,9 @@ copy_boot () {
 	flush_cache
 	umount /boot/uboot || umount -l /boot/uboot
 }
+
+tr="/usr/bin/tr '\\r' '\\n'"
+throttle="/root/Beagle_SDR_GPS/tools/throttle 3"
 
 copy_rootfs () {
 	message="Copying: ${source}p${media_rootfs} -> ${destination}p${media_rootfs}" ; broadcast
@@ -386,22 +375,19 @@ copy_rootfs () {
 	fi
 
 	message="rsync: / -> /tmp/rootfs/" ; broadcast
-	if [ ! "x${rsync_progress}" = "x" ] ; then
-		message="rsync: note the % column is useless..." ; broadcast
-	fi
+    message="rsync: note the % column is useless..." ; broadcast
 	err=15
-	rsync -aAx ${rsync_progress} /* /tmp/rootfs/ --exclude={/dev/*,/proc/*,/sys/*,/tmp/*,/run/*,/mnt/*,/media/*,/lost+found,/lib/modules/*,/uEnv.txt} || write_failure
+	( rsync -aAx --info=progress2 --human-readable /* /tmp/rootfs/ --exclude={/dev/*,/proc/*,/sys/*,/tmp/*,/run/*,/mnt/*,/media/*,/lost+found,/lib/modules/*,/uEnv.txt} | ${tr} | ${throttle} ) || write_failure
+	message="-----------------------------" ; broadcast
 	flush_cache
+	message="rootfs_size 1M" ; broadcast
 
 	mkdir -p /tmp/rootfs/lib/modules/$(uname -r)/ || true
 
 	message="Copying: Kernel modules" ; broadcast
 	message="rsync: /lib/modules/$(uname -r)/ -> /tmp/rootfs/lib/modules/$(uname -r)/" ; broadcast
-	if [ ! "x${rsync_progress}" = "x" ] ; then
-		message="rsync: note the % column is useless..." ; broadcast
-	fi
 	err=16
-	rsync -aAx ${rsync_progress} /lib/modules/$(uname -r)/* /tmp/rootfs/lib/modules/$(uname -r)/ || write_failure
+	rsync -aAx /lib/modules/$(uname -r)/* /tmp/rootfs/lib/modules/$(uname -r)/ || write_failure
 	flush_cache
 
 	message="Copying: ${source}p${media_rootfs} -> ${destination}p${media_rootfs} complete" ; broadcast

@@ -1,26 +1,13 @@
 #!/bin/bash -e
-# Copyright (c) 2016-2019 John Seamons, ZL4VO/KF6VO
+# Copyright (c) 2016-2023 John Seamons, ZL4VO/KF6VO
 
 # NB: this distro image is a flasher
 
 VER="v1.390"
 DEBIAN_VER="8.5"
 CKSUM="7723f566c5513916a3977c11706ac86e071f8c0cbc177b145098fab842524554"
-#DROPBOX="t7gxflg89n31wu3"
 
-#VER="v1.46"
-#DEBIAN_VER="8.4"
-#CKSUM="ff1f4b97173ccfe82823e1a5e9cf3f44695209ed3d89b33f0f8d78dbc2a97acd"
-#DROPBOX="bf5yl3qd2tvm216"
-
-#VER="v1.2"
-#DEBIAN_VER="8.4"
-#CKSUM="59efbe9d880a328c2971d9db4ac305889bc1f2f09defe5ae73791ce805dd6337"
-#DROPBOX="2v746athtmujte5"
-
-# image files are available on dropbox.com
 HOST="http://kiwisdr.com/files"
-#HOST="https://www.dropbox.com/s/${DROPBOX}"
 DISTRO="KiwiSDR_${VER}_BBB_Debian_${DEBIAN_VER}.img.xz"
 
 echo "--- get KiwiSDR distro image from net and create micro-SD flasher"

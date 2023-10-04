@@ -51,8 +51,8 @@ GPS_channels:	REPEAT	GPS_MAX_CHANS
 GetGPSchanPtr:									; chan#
 				push	sizeof GPS_CHAN			; chan# sizeof
 				mult							; offset
-				push	GPS_channels			; baseaddr
-				add.r							; baseaddr + offset
+				push	GPS_channels			; offset baseaddr
+				add.r							; offset + baseaddr
 
 ; ============================================================================
 ;   e64 = ext64(LO:ip*qp or CG:pe-pl)

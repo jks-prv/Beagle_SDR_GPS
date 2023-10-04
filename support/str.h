@@ -76,8 +76,12 @@ bool kiwi_sha256_strcmp(char *str, const char *key);
 enum { FEWER_ENCODED = true };
 char *kiwi_str_decode_selective_inplace(char *src, bool fewer_encoded DEF_FALSE);
 
+typedef struct {
+    char *str;
+    char delim;
+} str_split_t;
 enum { KSPLIT_NO_SKIP_EMPTY_FIELDS = 0x1, KSPLIT_HANDLE_EMBEDDED_DELIMITERS = 0x2 };
-int kiwi_split(char *ocp, char **mbuf, const char *delims, char *argv[], int nargs, int flags DEF_0);
+int kiwi_split(char *ocp, char **mbuf, const char *delims, str_split_t argv[], int nargs, int flags DEF_0);
 
 extern char ASCII[256][4];
 
