@@ -41,7 +41,7 @@ bool backup_in_progress;
 
 #define SD_CMD_DIR "cd /root/" REPO_NAME "/tools; "
 #define SD_CMD_OLD SD_CMD_DIR "./kiwiSDR-make-microSD-flasher-from-eMMC.sh"
-#define SD_CMD_NEW SD_CMD_DIR "cp /etc/beagle-flasher/%s-emmc-to-microsd /etc/default/beagle-flasher; ./beagle-flasher"
+#define SD_CMD_NEW SD_CMD_DIR "cp /etc/beagle-flasher/%s-emmc-to-microsd /etc/default/beagle-flasher; ./beagle-flasher.sh"
 
 void sd_backup(conn_t *conn, bool from_admin)
 {
@@ -72,6 +72,7 @@ void sd_backup(conn_t *conn, bool from_admin)
     //real_printf("microSD_write: ..non_blocking_cmd_popen\n");
     for (i = n = 0; n >= 0; i++) {
         n = non_blocking_cmd_read(&p, buf, NBUF);
+        //real_printf("microSD_write: n=%d\n", n);
         if (n > 0) {
             //real_printf("microSD_write: mprintf %d %d <%s>\n", n, strlen(buf), buf);
             mprintf("%s", buf);
