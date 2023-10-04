@@ -229,6 +229,7 @@ function sd_backup_click_cb(id, idx)
 {
    kiwi.backup_size = null;
    w3_innerHTML('id-sd-backup-msg', 'formatting micro-SD card');
+   w3_color('id-sd-backup-msg', '');
    
 	w3_innerHTML('id-sd-progress-text', '');
 	w3_el('id-sd-progress').style.width = '0%';
@@ -285,6 +286,6 @@ function sd_backup_write_done(err)
 	kiwi_clearInterval(kiwi.sd_interval);
 	w3_innerHTML('id-sd-backup-icon', '');
    w3_innerHTML('id-sd-backup-msg', msg);
-   w3_colors('id-sd-backup-msg', 'red', '', !err);
+   w3_color('id-sd-backup-msg', 'red', null, err);
 }
 

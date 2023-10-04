@@ -1226,9 +1226,10 @@ function w3_background_color(el_id, color)
 	return prev;
 }
 
-// colors = color1 and [, color2] if cond
-// color[12] =
-//    'css-fg-color'
+// c1 = fg-color if cond true/undefined
+// c2 = bg-color (optional) if cond true/undefined
+// c[12] =
+//    'css-[fb]g-color'
 //    ['css-fg-color', 'css-bg-color']
 //    'w3-color' or 'w3-text-color'
 // CSS color '' to revert to default color
