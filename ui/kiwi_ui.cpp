@@ -66,7 +66,7 @@ void sd_backup(conn_t *conn, bool from_admin)
     sd_copy_in_progress = true;
     non_blocking_cmd_t p;
     asprintf((char **) &p.cmd, (debian_ver >= 11)? SD_CMD_NEW : SD_CMD_OLD, platform_s[kiwi.platform]);
-    //real_printf("microSD_write: %s\n", p.cmd);
+    //real_printf("microSD_write: kiwi.platform=%d <%s>\n", kiwi.platform, p.cmd);
     //real_printf("microSD_write: non_blocking_cmd_popen..\n");
     non_blocking_cmd_popen(&p);
     //real_printf("microSD_write: ..non_blocking_cmd_popen\n");
