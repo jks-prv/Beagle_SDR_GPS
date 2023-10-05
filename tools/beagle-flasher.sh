@@ -467,7 +467,6 @@ partition_drive () {
 }
 
 if [ -f /etc/default/beagle-flasher ] ; then
-	clear
 	. /etc/default/beagle-flasher
 	message="--------------------------------------------------------------------------------" ; broadcast
 	message="Version: [${version_message}]"                                                    ; broadcast
