@@ -187,7 +187,7 @@ function tdoa_recv(data)
 			   tdoa.a[0] = enc(tdoa.a[0]);
 			   tdoa.a[1] = enc(tdoa.a[1]);
             tdoa.params = ext_param();
-            //console.log('### TDoA: tdoa.params='+ tdoa.params);
+            console.log('### TDoA: tdoa.params='+ tdoa.params);
             if (tdoa.params && tdoa.params.includes('gmap:')) { tdoa.leaflet = false; tdoa.gmap_param = true; }
             kiwi_load_js(tdoa.leaflet? tdoa.pkgs_maps_js : tdoa.gmap_js, 'tdoa_controls_setup');
 				break;
@@ -1017,7 +1017,7 @@ function tdoa_get_hosts_cb(hosts)
 
    // now that we have all Kiwi and ref markers we can process extension parameters
 	var lat, lon, zoom, maptype, init_submit;
-   //console.log(tdoa.params);
+   console.log(tdoa.params);
    if (tdoa.params) {
       var p = tdoa.params.split(',');
       tdoa.params = null;  // if extension is reloaded don't reprocess params
@@ -2717,7 +2717,7 @@ function TDoA_focus()
 	tdoa.optbar = ext_get_optbar();
 
    // switch optbar off to not obscure map
-   ext_set_optbar('optbar-off');
+   ext_set_optbar('optbar-off', 'init');
    
    tdoa.pie_size = 10;
    tdoa.pie_cnt = 0;
@@ -2738,7 +2738,7 @@ function TDoA_blur()
 	ext_set_data_height();     // restore default height
 	
 	// restore optbar if it wasn't changed
-	if (ext_get_optbar() == 'optbar-off')
+	if (ext_get_optbar() == 'optbar-off' && tdoa.optbar != 'optbar-off')
 	   ext_set_optbar(tdoa.optbar);
 
    kiwi_clearInterval(tdoa.pie_interval);

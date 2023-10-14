@@ -485,11 +485,11 @@ function ext_get_optbar()
    return optbar;
 }
 
-function ext_set_optbar(optbar)
+function ext_set_optbar(optbar, cb_param)
 {
    if (extint.optbars[optbar]) {
       writeCookie('last_optbar', optbar);
-      w3_el('id-nav-'+ optbar).click();
+      w3_click_nav(optbar, 'optbar', cb_param);
    }
 }
 
