@@ -54,6 +54,7 @@ typedef struct {
     model_e model;
     platform_e platform;
 
+    bool ext_clk;
     bool allow_admin_conns;
     bool spectral_inversion, spectral_inversion_lockout;
     

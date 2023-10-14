@@ -106,6 +106,7 @@ var kiwi = {
    
    ADC_CLK_CORR_DISABLED: 0,
    ADC_CLK_CORR_CONTINUOUS: 1,
+   ext_clk: false,
    
    // pre-record / pre-squelch buffer
    pre_samps: 0,
@@ -2915,6 +2916,10 @@ function kiwi_msg(param, ws)
 
 		case "platform":
 			kiwi.platform = parseInt(param[1]);
+			break;
+
+		case "ext_clk":
+			kiwi.ext_clk = parseInt(param[1]);
 			break;
 
 		case "client_public_ip":

@@ -233,9 +233,7 @@ struct {
         // 28C0402
 } max;
 
-static bool debug = false;
-
-static void _write_reg(const char *reg_s, int reg_no, u4_t word)
+static void _write_reg(const char *reg_s, bool debug, int reg_no, u4_t word)
 {
     int i, b;
 
@@ -264,33 +262,47 @@ static void _write_reg(const char *reg_s, int reg_no, u4_t word)
     ctrl_positive_pulse(CTRL_GPS_CLK);
     ctrl_clr_set(CTRL_GPS_CSN, 0);      // CSN returns to zero, but then idles high
     ctrl_clr_set(0, CTRL_GPS_CSN);
+    kiwi_msleep(1);
 }
 
 void gps_fe_init()
 {
+    bool debug = false;
+
     if (kiwi.model == KiwiSDR_1) return;
     
-    prf("GPS_FE reg defaults:\n");
-    #define show_reg_default(reg) prf("GPS_FE max." #reg " %07x\n", max.reg.word);
-    show_reg_default(conf1);
-    show_reg_default(conf2);
-    show_reg_default(conf3);
-    show_reg_default(pllconf);
-    show_reg_default(div);
-    show_reg_default(fdiv);
-    show_reg_default(strm);
-    show_reg_default(clk);
-    show_reg_default(test1);
-    show_reg_default(test2);
-    
+    #if 0
+        prf("GPS_FE reg defaults:\n");
+        #define show_reg_default(reg) prf("GPS_FE max." #reg " %07x\n", max.reg.word);
+        show_reg_default(conf1);
+        show_reg_default(conf2);
+        show_reg_default(conf3);
+        show_reg_default(pllconf);
+        show_reg_default(div);
+        show_reg_default(fdiv);
+        show_reg_default(strm);
+        show_reg_default(clk);
+        show_reg_default(test1);
+        show_reg_default(test2);
+    #endif
+
     // Need to change max.conf1.lnaconf to LNA2 from PON default LNA_BIAS_SEL.
     // Otherwise passive antennas that don't draw bias current won't be seen on LNA2 port.
     max.conf1.lnamode = LNA2;
 
-    #define write_reg(reg) _write_reg(#reg, /*max.reg.reg_no*/ 0xb, max.reg.word);
+    #define write_reg(reg) _write_reg(#reg, debug, max.reg.reg_no, max.reg.word);
     ctrl_set_ser_dev(CTRL_SER_GPS);
         do {
             write_reg(conf1);
+            write_reg(conf2);
+            write_reg(conf3);
+            write_reg(pllconf);
+            write_reg(div);
+            write_reg(fdiv);
+            write_reg(strm);
+            write_reg(clk);
+            write_reg(test1);
+            write_reg(test2);
             //debug = true;
         } while (debug);
     ctrl_clr_ser_dev();

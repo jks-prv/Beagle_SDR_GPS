@@ -18,7 +18,8 @@ var gen = {
    RF: 1,
    AF: 2,
    SELF_TEST: 3,
-   mode_s: ['off', 'RF tone', 'AF noise', 'Self test'],
+   SELF_TEST_EN: 1,
+   mode_s: [ 'off', 'RF tone', 'AF noise', 'Self test' ],
    
    RF_TONE: 0x01,
    AF_NOISE: 0x02,
@@ -98,7 +99,7 @@ function gen_controls_setup()
 	gen.attn_offset_s[1] = 'waterfall cal '+ cfg.waterfall_cal +'dB';
    gen.save_freq = gen.freq;
    var do_sweep = 0, do_help = false;
-	
+   
 	gen.url_params = ext_param();
 	var p = gen.url_params;
    if (p) {
@@ -112,6 +113,7 @@ function gen_controls_setup()
          if ((r = w3_ext_param('mode', a)).match) {
             if (isNumber(r.num)) {
                gen.mode = w3_clamp(r.num, 0, gen.mode_s.length-1, 0);
+               if (kiwi.ext_clk && gen.mode == gen.SELF_TEST) gen.mode = gen.OFF;
             }
          } else
          if ((r = w3_ext_param('freq', a)).match || (i == 0 && (r = w3_ext_param(null, a)).match)) {
@@ -160,7 +162,7 @@ function gen_controls_setup()
                w3_input('w3-padding-small w3-width-90', 'Dwell (ms)', 'gen.dwell', gen.dwell, 'w3_num_cb')
             ),
 				w3_inline('w3-margin-top/w3-margin-between-16 w3-valign',
-               w3_select('w3-text-red', 'Mode', '', 'gen.mode', gen.mode, gen.mode_s, 'gen_mode_cb'),
+               w3_select('id-gen-mode w3-text-red', 'Mode', '', 'gen.mode', gen.mode, gen.mode_s, 'gen_mode_cb'),
 				   w3_button('w3-red', '-Step', 'gen_step_up_down_cb', -1),
 				   w3_button('w3-green', '+Step', 'gen_step_up_down_cb', +1),
 				   w3_button('id-gen-sweep w3-css-yellow', 'Sweep', 'gen_sweep_cb'),
@@ -192,6 +194,7 @@ function gen_controls_setup()
 	spec.saved_audio_comp = ext_get_audio_comp();
 	if (spec.saved_audio_comp) ext_set_audio_comp(false);
 	ext_send('SET wf_comp=0');
+	if (kiwi.ext_clk) w3_select_set_disabled('id-gen-mode', gen.SELF_TEST, true, 'no self-test available when ext clk used');
 	if (do_sweep) gen_sweep_cb();
    if (do_help) extint_help_click();
 }

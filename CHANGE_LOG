@@ -2,6 +2,20 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.629  October 14, 2023
+    Admin backup tab: Disabled on Debian 11 again because it's still not working quite right.
+
+    Admin network tab:
+        Debian 11: Static/DHCP setting change now works. Fix needed due to the Beagle guys migrating
+        from connman to systemd-networkd.
+    
+    TDoA extension:
+        Top bar visibilities now correctly restored on extension close.
+
+    Changes to support KiwiSDR 2:
+        GPS clock startup hack.
+        Disable sig gen self-test menu item if ext clk enabled (both can't be used at the same time).
+
 v1.627,628  October 5, 2023
     Rework of admin backup tab:
         Now works for Debian 11 and later. Debian 11 is currently used by the BBAI-64.

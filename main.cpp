@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 {
 	int i;
 	int p_gps = 0, gpio_test_pin = 0;
-	bool ext_clk = false, err;
+	bool err;
 
 	#define FW_CONFIGURED   -2  // -2 because -1 means "other" firmware and 0-N is Kiwi firmware
 	#define FW_OTHER        -1
@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
 
 		if (ARG("-debian")) {} else     // dummy arg so Kiwi version can appear in e.g. htop
 		if (ARG("-ctrace")) { ARGL(web_caching_debug); } else
-		if (ARG("-ext")) ext_clk = true; else
+		if (ARG("-ext")) kiwi.ext_clk = true; else
 		if (ARG("-use_spidev")) { ARGL(use_spidev); } else
 		if (ARG("-eeprom")) create_eeprom = true; else
 		if (ARG("-sim")) wf_sim = 1; else
@@ -438,12 +438,12 @@ int main(int argc, char *argv[])
 		//pru_start();
 		eeprom_update();
 		
-		bool ext_ADC_clk = cfg_bool("ext_ADC_clk", &err, CFG_OPTIONAL);
-		if (err) ext_ADC_clk = false;
+		kiwi.ext_clk = cfg_bool("ext_ADC_clk", &err, CFG_OPTIONAL);
+		if (err) kiwi.ext_clk = false;
 		
 		u2_t ctrl = CTRL_EEPROM_WP;
 		ctrl_clr_set(0xffff, ctrl);
-		if (!(ext_clk || ext_ADC_clk)) ctrl |= CTRL_OSC_EN;
+		if (kiwi.ext_clk) ctrl |= CTRL_OSC_DIS;
 		ctrl_clr_set(0, ctrl);
 
 		net.dna = fpga_dna();
@@ -471,6 +471,11 @@ int main(int argc, char *argv[])
 		    gps_main(argc, argv);
 		#endif
 	}
+    
+    printf("switching GPS clock..\n");
+    kiwi_msleep(100);
+    ctrl_clr_set(0, CTRL_GPS_CLK_EN);
+    kiwi_msleep(100);
 	
 	CreateTask(stat_task, NULL, MAIN_PRIORITY);
 

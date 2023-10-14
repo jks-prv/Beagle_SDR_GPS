@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2019 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2019-2023 John Seamons, ZL4VO/KF6VO
 
 #pragma once
 
@@ -24,6 +24,7 @@ Boston, MA  02110-1301, USA.
 #include "options.h"
 #include "cuteSDR.h"
 #include "ima_adpcm.h"
+#include "rx_noise.h"
 #include "ext.h"
 
 
@@ -84,9 +85,8 @@ typedef struct {
 
     u4_t firewall[32];
 	u4_t seq;
-	int mode;
 	bool isSAM;
-	float locut, hicut, norm_locut, norm_hicut;
+	float norm_locut, norm_hicut;
     int window_func;
 	ima_adpcm_state_t adpcm_snd;
 
@@ -104,10 +104,30 @@ typedef struct {
         bool snd_seq_ck_init;
 	    u4_t snd_seq_ck;
     #endif
+
+	double freq, gen, locut, hicut;
+	int mode, genattn, mute, test, deemp, deemp_nfm;
+	u4_t mparam, SAM_mparam;
+	bool spectral_inversion;
+    u4_t cmd_recv;
+	int tr_cmds;
+	bool change_LPF, change_freq_mode, restart;
+	int compression;
+	bool little_endian;
+	int mute_overload;      // activate the muting when overloaded
+
+	int agc, _agc, hang, _hang;
+	int thresh, _thresh, manGain, _manGain, slope, _slope, decay, _decay;
+
+	int squelch, squelch_on_seq, tail_delay;
+	bool sq_changed, squelched;
+
+	int nb_algo, nr_algo;
+    int nb_enable[NOISE_TYPES], nr_enable[NOISE_TYPES];
+	float nb_param[NOISE_TYPES][NOISE_PARAMS], nr_param[NOISE_TYPES][NOISE_PARAMS];
 } snd_t;
 
 extern snd_t snd_inst[MAX_RX_CHANS];
-
 
 enum snd_cmd_key_e {
     CMD_AUDIO_START=1, CMD_TUNE, CMD_COMPRESSION, CMD_REINIT, CMD_LITTLE_ENDIAN,
@@ -115,3 +135,5 @@ enum snd_cmd_key_e {
     CMD_NR_TYPE, CMD_MUTE, CMD_OVLD_MUTE, CMD_DE_EMP, CMD_TEST, CMD_UAR, CMD_AR_OKAY, CMD_UNDERRUN,
     CMD_SEQ, CMD_LMS_AUTONOTCH, CMD_SAM_PLL, CMD_SND_WINDOW_FUNC, CMD_SPEC, CMD_RF_ATTN
 };
+
+bool specAF_FFT(int rx_chan, int instance, int flags, int ratio, int ns_out, TYPECPX *samps);
