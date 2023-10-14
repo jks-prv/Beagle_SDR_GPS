@@ -768,12 +768,22 @@ void c2s_admin(void *param)
 			}
 
             // FIXME: support wlan0
+            #define UNIX_ENV "/root/" REPO_NAME "/unix_env/"
 			char *static_ip_m = NULL, *static_nm_m = NULL, *static_gw_m = NULL;
-			i = sscanf(cmd, "SET static_ip=%32ms static_nm=%32ms static_gw=%32ms", &static_ip_m, &static_nm_m, &static_gw_m);
-			if (i == 3) {
-				clprintf(conn, "eth0: USE STATIC ip=%s nm=%s gw=%s\n", static_ip_m, static_nm_m, static_gw_m);
+			int static_nb;
+			i = sscanf(cmd, "SET static_ip=%32ms static_nb=%d static_nm=%32ms static_gw=%32ms", &static_ip_m, &static_nb, &static_nm_m, &static_gw_m);
+			if (i == 4) {
+				clprintf(conn, "eth0: USE STATIC ip=%s nm=%s(%d) gw=%s\n", static_ip_m, static_nm_m, static_nb, static_gw_m);
 
-                if (debian_ver > 9) {
+                if (debian_ver >= 11) {
+                    asprintf(&cmd_p, "sed -e s#IP#%s/%d# -e s/GW/%s/ %s >%s",
+                        static_ip_m, static_nb, static_gw_m,
+                        "/tmp/eth0.network", "/etc/systemd/network/eth0.network");
+                    system(cmd_p);
+                    kiwi_ifree(cmd_p);
+                    system("networkctl reload");
+                } else
+                if (debian_ver == 9 || debian_ver == 10) {
                     asprintf(&sb, "connmanctl config ethernet_%s_cable --ipv4 manual %s %s %s", net.mac_no_delim,
                         static_ip_m, static_nm_m, static_gw_m);
                     system(sb); kiwi_ifree(sb);
@@ -818,7 +828,16 @@ void c2s_admin(void *param)
                     inet4_d2h(dns2, &dns2_err);
     
                     if (!dns1_err || !dns2_err) {
-                        if (debian_ver > 9) {
+                        if (debian_ver >= 11) {
+                            // careful: "DNS=(empty)" means reset DNS list
+                            asprintf(&cmd_p, "sed -e s/DNS1/%s%s/ -e s/DNS2/%s%s/ %s >%s",
+                                dns1_err? "" : "DNS=", dns1_err? "" : dns1,
+                                dns2_err? "" : "DNS=", dns2_err? "" : dns2,
+                                UNIX_ENV "eth0.network.STATIC", "/tmp/eth0.network");
+                            system(cmd_p);
+                            kiwi_ifree(cmd_p);
+                        } else
+                        if (debian_ver == 9 || debian_ver == 10) {
                             asprintf(&sb, "connmanctl config ethernet_%s_cable --nameservers %s %s",
                                 net.mac_no_delim, dns1_err? "" : dns1, dns2_err? "" : dns2);
                             system(sb); kiwi_ifree(sb);
@@ -849,12 +868,16 @@ void c2s_admin(void *param)
 			if (i == 0) {
 				clprintf(conn, "eth0: USE DHCP\n");
 
-                if (debian_ver > 9) {
+                if (debian_ver >= 11) {
+                    system("cp " UNIX_ENV "eth0.network.DHCP /etc/systemd/network/eth0.network");
+                    system("networkctl reload");
+                } else
+                if (debian_ver == 9 || debian_ver == 10) {
                     asprintf(&sb, "connmanctl config ethernet_%s_cable --ipv4 dhcp", net.mac_no_delim);
                     system(sb); kiwi_ifree(sb);
                 } else {
                     system("cp /etc/network/interfaces /etc/network/interfaces.bak");
-                    system("cp /root/" REPO_NAME "/unix_env/interfaces.DHCP /etc/network/interfaces");
+                    system("cp " UNIX_ENV "interfaces.DHCP /etc/network/interfaces");
                 }
 				continue;
 			}

@@ -1,0 +1,13 @@
+[Match]
+Name=eth0
+Type=ether
+
+[Link]
+RequiredForOnline=yes
+
+[Network]
+DHCP=no
+Address=IP
+Gateway=GW
+DNS1
+DNS2

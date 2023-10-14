@@ -1242,8 +1242,8 @@ function network_html()
                   w3_div('id-network-check-gw w3-green')
                ),
                w3_third('w3-valign w3-margin-bottom w3-text-teal', 'w3-container',
-                  w3_input_get('', 'DNS-1 (n.n.n.n where n = 0..255)', 'adm.ip_address.dns1', 'w3_string_set_cfg_cb', ''),
-                  w3_input_get('', 'DNS-2 (n.n.n.n where n = 0..255)', 'adm.ip_address.dns2', 'w3_string_set_cfg_cb', ''),
+                  w3_input_get('', 'DNS-1 (n.n.n.n where n = 0..255)', 'adm.ip_address.dns1', 'net_set_dns_cb', ''),
+                  w3_input_get('', 'DNS-2 (n.n.n.n where n = 0..255)', 'adm.ip_address.dns2', 'net_set_dns_cb', ''),
                   w3_div('',
                      w3_label('', '<br>') +     // makes the w3-valign above work for button below
                      w3_button('w3-show-inline w3-aqua', 'Use well-known public DNS servers', 'net_public_dns_cb')
@@ -1741,7 +1741,7 @@ function network_dhcp_static_update_cb(path, idx)
    var use_static = adm.ip_address.use_static;
 	if (use_static) {
       ext_send('SET dns dns1=x'+ encodeURIComponent(adm.ip_address.dns1) +' dns2=x'+ encodeURIComponent(adm.ip_address.dns2));
-      ext_send('SET static_ip='+ kiwi_ip_str(network_ip) +' static_nm='+ kiwi_ip_str(network_nm) +' static_gw='+ kiwi_ip_str(network_gw));
+      ext_send('SET static_ip='+ kiwi_ip_str(network_ip) +' static_nb='+ network_nm.nm +' static_nm='+ kiwi_ip_str(network_nm) +' static_gw='+ kiwi_ip_str(network_gw));
 	} else {
 		ext_send('SET use_DHCP');
 	}
@@ -1749,9 +1749,10 @@ function network_dhcp_static_update_cb(path, idx)
    ext_set_cfg_param('adm.ip_address.commit_use_static', use_static, EXT_SAVE)
    w3_hide('id-net-need-update');
    
-   if (debian_ver <= 9)    // Debian 10 and above use connmanctl which has immediate effect (no reboot required)
+   if (debian_ver <= 9)
       w3_reboot_cb();      // show reboot button after confirm button pressed
    else
+      // Debian 10 and above use connmanctl/networkctl which has immediate effect (no reboot required)
 		wait_then_reload_page(10, 'Waiting for configuration change');
 }
 
@@ -1900,12 +1901,20 @@ function network_gw_address_cb(path, val, first)
 	network_show_check('network-check-gw', 'gateway', path, val, network_gw, first);
 }
 
+function net_set_dns_cb(path, s)
+{
+   //console.log('net_set_dns_cb path='+ path +' s='+ s);
+   w3_string_set_cfg_cb(path, s);
+	network_show_update(false);
+}
+
 function net_public_dns_cb(id, idx)
 {
 	w3_string_set_cfg_cb('adm.ip_address.dns1', '1.1.1.1');
 	w3_set_value('adm.ip_address.dns1', '1.1.1.1');
 	w3_string_set_cfg_cb('adm.ip_address.dns2', '8.8.8.8');
 	w3_set_value('adm.ip_address.dns2', '8.8.8.8');
+	network_show_update(false);
 }
 
 
