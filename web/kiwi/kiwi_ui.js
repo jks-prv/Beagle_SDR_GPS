@@ -218,6 +218,19 @@ function sd_backup_focus()
          //console.log('backup_progress='+ kiwi.backup_progress);
       }
    };
+
+   w3_do_when_cond(
+      function() { return isNumber(kiwi.debian_maj); },
+      function() {
+         if (kiwi.debian_maj >= 11) {
+            w3_innerHTML('id-sd-backup-container',
+               w3_div('w3-container w3-text w3-red', 'Debian '+ kiwi.debian_maj +' does not yet support the backup function.'));
+         }
+         w3_show('id-sd-backup-container', 'w3-show-inline');
+      }, null,
+      250
+   );
+   // REMINDER: w3_do_when_cond() returns immediately
 }
 
 function sd_backup_blur()
@@ -227,6 +240,12 @@ function sd_backup_blur()
 
 function sd_backup_click_cb(id, idx)
 {
+   console.log('sd_backup_click_cb debian_maj='+ kiwi.debian_maj);
+   if (kiwi.debian_maj >= 11) {
+      w3_innerHTML('id-sd-backup-msg', 'SD write not supported yet');
+      return;
+   }
+   
    kiwi.backup_size = null;
    w3_innerHTML('id-sd-backup-msg', 'formatting micro-SD card');
    w3_color('id-sd-backup-msg', '');
@@ -269,13 +288,14 @@ function sd_backup_progress()
 function sd_backup_write_done(err)
 {
 	var msg = 'backup complete';
-	var e = null;
+	var e;
 	switch (err) {
+	   case  0: e = null;
 	   case  1: e = 'no SD card inserted?'; break;
 	   case 15: e = 'SD card I/O error'; break;
 	   case 30: e = 'SD card already mounted?'; break;
 	   case 31: e = 'SD card format error'; break;
-	   default: break;
+	   default: e = 'code '+ err; break;
 	}
 	if (e) msg = '<b>ERROR: '+ e +'</b>';
 
