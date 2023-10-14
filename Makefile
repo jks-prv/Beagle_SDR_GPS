@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 628
+VERSION_MIN = 629
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -268,6 +268,10 @@ else
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
+	ifeq ($(DEBIAN_VERSION),10)
+	    CMD_DEPS += /usr/bin/connmanctl
+	endif
+
 # currently a bug where -lcrypt and -lssl can't be used together for some reason (crash at startup)
 	ifeq ($(DEBIAN_10_AND_LATER),true)
 #       USE_SSL isn't compatible with gdb. So for now we revert to USE_CRYPT
@@ -398,12 +402,14 @@ $(INSTALL_CERTIFICATES):
 /usr/bin/dtc:
 	-apt-get -y $(APT_GET_FORCE) install device-tree-compiler
 
+ifeq ($(DEBIAN_VERSION),10)
+    /usr/bin/connmanctl:
+	    -apt-get -y $(APT_GET_FORCE) install connman
+endif
+
 ifeq ($(DEBIAN_10_AND_LATER),true)
     /usr/include/openssl/ssl.h:
 	    -apt-get -y install openssl libssl1.1 libssl-dev
-
-    /usr/bin/connmanctl:
-	    -apt-get -y $(APT_GET_FORCE) install connman
 endif
 
 ifeq ($(BBAI_64),true)
@@ -711,7 +717,7 @@ make_vars: check_device_detect
 	@echo
 	@echo UNAME = $(UNAME)
 	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
-	@echo DEBIAN = $(DEBIAN_VERSION)
+	@echo DEBIAN_VERSION = $(DEBIAN_VERSION)
 	@echo DEBIAN_10_AND_LATER = $(DEBIAN_10_AND_LATER)
 	@echo
 	@echo BBAI_64 = $(BBAI_64)
