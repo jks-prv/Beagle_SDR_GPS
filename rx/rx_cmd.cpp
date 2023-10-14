@@ -733,8 +733,8 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     conn->isPassword = is_password;
                 
                     if (stream_snd_or_wf || stream_admin_or_mfg) {
-                        send_msg(conn, SM_NO_DEBUG, "MSG version_maj=%d version_min=%d debian_ver=%d model=%d platform=%d",
-                            version_maj, version_min, debian_ver, kiwi.model, kiwi.platform);
+                        send_msg(conn, SM_NO_DEBUG, "MSG version_maj=%d version_min=%d debian_ver=%d model=%d platform=%d ext_clk=%d",
+                            version_maj, version_min, debian_ver, kiwi.model, kiwi.platform, kiwi.ext_clk);
                     }
 
                     // send cfg once to javascript

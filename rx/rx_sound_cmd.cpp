@@ -341,7 +341,7 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
         n = sscanf(cmd, "SET gen=%lf", &s->gen);
         if (n == 1) {
             did_cmd = true;
-            u4_t self_test = (s->gen < 0)? CTRL_STEN : 0;
+            u4_t self_test = (s->gen < 0 && !kiwi.ext_clk)? CTRL_STEN : 0;
             s->gen = fabs(s->gen);
             f_phase = s->gen * kHz / conn->adc_clock_corrected;
             i_phase = (u64_t) round(f_phase * pow(2,48));

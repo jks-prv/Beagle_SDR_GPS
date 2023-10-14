@@ -138,15 +138,38 @@ module KiwiSDR (
 
 `ifdef USE_SDR
     wire adc_clk;
-    IBUF vcxo_ibuf(.I(ADC_CLKIN), .O(adc_clk));
+    IBUF xo_ibuf(.I(ADC_CLKIN), .O(adc_clk));
 
     wire gps_tcxo_buf;
-    IBUF tcxo_ibuf(.I(GPS_TCXO), .O(gps_tcxo_buf));   // 16.368 MHz TCXO
     wire cpu_clk = gps_tcxo_buf;
     wire gps_clk = gps_tcxo_buf;
+    
+    // KiwiSDR 2
+    //
+    // GPS_TCXO from MAX2769B (GCLK) does not start reliably at power-up.
+    // Workaround by using ADC_CLKIN/4 = 16.66665 MHz initially and then
+    // switch to GPS_TCXO after MAX2769B has been programmed via serial interface.
+
+    wire adc_div_4;
+    
+    BUFR #(.BUFR_DIVIDE("4")) BUFR_inst (
+        .CLR    (1'b0),
+        .I      (adc_clk),
+        .CE     (1'b1),
+        .O      (adc_div_4)
+    );
+    
+    BUFGMUX_CTRL BUFGMUX_CTRL_inst (
+        .I0     (adc_div_4),
+        .I1     (GPS_TCXO),
+        .S      (ctrl[CTRL_GPS_CLK_EN]),
+        .O      (gps_tcxo_buf)
+    );
+
+    //IBUF tcxo_ibuf(.I(GPS_TCXO), .O(gps_tcxo_buf));     // 16.368 MHz TCXO
 `endif
 
-	assign ADC_CLKEN = ctrl[CTRL_OSC_EN];
+	assign ADC_CLKEN = !ctrl[CTRL_OSC_DIS];
 
 `ifdef USE_SDR
 	reg signed [ADC_BITS-1:0] reg_adc_data;
@@ -172,7 +195,7 @@ module KiwiSDR (
     // global control & status registers
     //////////////////////////////////////////////////////////////////////////
 
-    reg [12:0] ctrl;
+    reg [13:0] ctrl;
     
     always @ (posedge cpu_clk)
     begin

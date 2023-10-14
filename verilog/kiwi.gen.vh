@@ -287,12 +287,12 @@
 	localparam CTRL_STEN = 5;    // DEFb: bit number for value: 0x20
 	localparam CTRL_DEBUG1 = 6;    // DEFb: bit number for value: 0x40
 	localparam CTRL_DEBUG2 = 7;    // DEFb: bit number for value: 0x80
-	localparam CTRL_OSC_EN = 8;    // DEFb: bit number for value: 0x100
+	localparam CTRL_OSC_DIS = 8;    // DEFb: bit number for value: 0x100
 	localparam CTRL_EEPROM_WP = 9;    // DEFb: bit number for value: 0x200
 	localparam CTRL_USE_GEN = 10;    // DEFb: bit number for value: 0x400
 	localparam CTRL_CMD_READY = 11;    // DEFb: bit number for value: 0x800
 	localparam CTRL_SND_INTR = 12;    // DEFb: bit number for value: 0x1000
-	localparam CTRL_2000 = 13;    // DEFb: bit number for value: 0x2000
+	localparam CTRL_GPS_CLK_EN = 13;    // DEFb: bit number for value: 0x2000
 	localparam CTRL_4000 = 14;    // DEFb: bit number for value: 0x4000
 	localparam CTRL_8000 = 15;    // DEFb: bit number for value: 0x8000
 	localparam CTRL_UNUSED_OUT = 9;    // DEFb: bit number for value: 0x200
