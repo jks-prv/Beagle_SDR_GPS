@@ -195,6 +195,8 @@
 [3900.00, "USB", "HFDL ISL", "Reykjavik", {"T7":1, "p":"hfdl,*"}],
 [4014.00, "USB", "FAX ZAF", "ZSJ", {"T11":1, "p":"fax,*"}],
 [4027.00, "USB", "FAX CHN", "UNID", {"T11":1, "p":"fax,*"}],
+[4095.29, "CW", "BEACON C&P #5 FSK <a href=%22https://www.hfunderground.com/wiki/Common_and_Precious_5%22 target=%22_blank%22>hfunderground.com</a>", "Berlin JO62", {"T10":1, "p":"fsk,sh:170,b:50,5N2,ITA2,i:1"}],
+[4095.38, "CWN", "BEACON C&P #5 CW <a href=%22https://www.hfunderground.com/wiki/Common_and_Precious_5%22 target=%22_blank%22>hfunderground.com</a>", "Berlin JO62", {"T9":1, "p":"cw,wpm:12,auto"}],
 [4153.00, "USB", "slot machine JPN", "", {"T8":1}],
 [4170.00, "USB", "FAX CHN", "XSG", {"T11":1, "p":"fax,*"}],
 [4199.80, "USB", "FAX CHN", "XSQ", {"T11":1, "p":"fax,*"}],
