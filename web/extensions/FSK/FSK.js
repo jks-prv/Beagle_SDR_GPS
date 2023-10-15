@@ -1131,13 +1131,13 @@ function FSK_help(show)
                '<br> Values are those appearing in their respective menus. <br>' +
                'Any number for shift and baud can be used. Not just the preset values in the menus. <br>' +
                'Keywords are case-insensitive and can be abbreviated. <br>' +
-               'So for example this is valid: <i>ext=fsk,147.3,s:425,b:200,a,i:0</i> &nbsp; <i>ext=fsk,2474,log:5</i> <br>' +
+               'So for example this is valid: <i>ext=fsk,147.3,sh:425,b:200,a,i:0</i> &nbsp; <i>ext=fsk,2474,log:5</i> <br>' +
                '<br> There are several aliases that combine the settings: <br>' +
-               w3_text('|color:orange', 'sitor-b') + ' &nbsp; <i>s:170,b:100,4/7,i:0,CCIR476</i> <br>' +
-               w3_text('|color:orange', 'wx') + ' &nbsp; <i>s:450,b:50,5N1.5,i:1,ITA2</i> <br>' +
-               w3_text('|color:orange', 'dsc') + ' &nbsp; <i>s:170,b:100,7/3,i:1,DSC</i> <br>' +
-               w3_text('|color:orange', 'selcall') + ' &nbsp; <i>s:170,b:100,7/3,i:0,Selcall</i> <br>' +
-               w3_text('|color:orange', 'ham') + ' &nbsp; <i>s:170,b:45.45,5N1.5,i:0,ITA2</i> <br>' +
+               w3_text('|color:orange', 'sitor-b') + ' &nbsp; <i>sh:170,b:100,4/7,i:0,CCIR476</i> <br>' +
+               w3_text('|color:orange', 'wx') + ' &nbsp; <i>sh:450,b:50,5N1.5,i:1,ITA2</i> <br>' +
+               w3_text('|color:orange', 'dsc') + ' &nbsp; <i>sh:170,b:100,7/3,i:1,DSC</i> <br>' +
+               w3_text('|color:orange', 'selcall') + ' &nbsp; <i>sh:170,b:100,7/3,i:0,Selcall</i> <br>' +
+               w3_text('|color:orange', 'ham') + ' &nbsp; <i>sh:170,b:45.45,5N1.5,i:0,ITA2</i> <br>' +
                ''
             )
          );
