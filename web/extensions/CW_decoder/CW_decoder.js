@@ -458,18 +458,28 @@ function CW_decoder_help(show)
    if (show) {
       var s = 
          w3_text('w3-medium w3-bold w3-text-aqua', 'CW decoder help') +
-         '<br><br>Use the CWN mode with its narrow passband to maximize the signal/noise ratio. <br>' +
-         'The decoder doesn\'t do very well with weak or fading signals. <br><br>' +
+         w3_div('w3-margin-T-8 w3-scroll-y|height:90%',
+            w3_div('w3-margin-R-8',
+               '<br>Use the CWN mode with its narrow passband to maximize the signal/noise ratio. <br>' +
+               'The decoder doesn\'t do very well with weak or fading signals. <br><br>' +
          
-         'Turning off <x1>auto</x1> WPM training and using a manual setting works best for CW signals ' +
-         'that are intermittent. <br><br>' +
+               'Turning off <x1>auto</x1> WPM training and using a manual setting works best for CW signals ' +
+               'that are intermittent. The <x1>interval</x1> menu sets the length of the training period. <br><br>' +
          
-         'Adjust the <x1>threshold</x1> value so the red line in the signal level display is just under the <br>' +
-         'average value of the signal peaks. Or use the <x1>auto</x1> mode.<br><br>' +
+               'Adjust the <x1>threshold</x1> value so the red line in the signal level display is just under the <br>' +
+               'average value of the signal peaks. Or use the <x1>auto</x1> mode.<br><br>' +
          
-         'The <x1>word space corr</x1> checkbox sets the algorithm used to determine word space corrections.' +
-         '';
-      confirmation_show_content(s, 600, 250);
+               'The <x1>word space corr</x1> checkbox sets the algorithm used to determine word space corrections.<br><br>' +
+
+               'URL parameters: <br>' +
+               w3_text('|color:orange', 'wpm:<i>num</i> &nbsp; auto') +
+               '<br> wpm sets a fixed value instead of the default auto WPM training. <br>' +
+               'auto will automatically determine the threshold value instead of the fixed default.' +
+               ''
+            )
+         );
+      confirmation_show_content(s, 600, 350);
+      w3_el('id-confirmation-container').style.height = '100%';   // to get the w3-scroll-y above to work
    }
    return true;
 }
