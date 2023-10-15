@@ -2439,7 +2439,8 @@ function canvas_contextmenu(evt)
 	if (evt && evt.currentTarget && evt.currentTarget.id == 'id-dx-container') {
 	   //console.log('canvas_contextmenu: synthetic ctrl-dx_click');
 	   dx.ctrl_click = true;
-	   w3_el(evt.target.id).click();
+	   if (evt.target.id != '')
+	      w3_el(evt.target.id).click();
 	}
 	
 	// must always cancel even so system context menu doesn't appear
@@ -8704,6 +8705,13 @@ function dx_click(ev, gid)
 	   // intercepts mousedown/touchstart without subsequent propagation
 	   w3_menu_close('dx_click');
 	   dx_sig_bw(gid);
+	   
+	   // allow anchor links within the ident to be clicked
+	   if (ev.target.nodeName == 'A') {
+	      console.log('dx_click: link within label');
+		   dx.ctrl_click = false;
+		   return ev;     // let click to through to anchor element
+	   }
 	   
 	   owrx.dx_click_gid_last_stored = (dx.db == dx.DB_STORED)? gid : undefined;
 	   owrx.dx_click_gid_last_until_tune = gid;
