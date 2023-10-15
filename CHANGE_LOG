@@ -2,7 +2,19 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.629  October 14, 2023
+v1.629,630  October 15, 2023
+    Allow clickable links in the DX label ident field. Example:
+    BEACON C&P #5 FSK <a href="https://www.hfunderground.com/wiki/Common_and_Precious_5"
+        target="_blank">hfunderground.com</a>
+    Results in the DX label: "BEACON C&P #5 FSK hfunderground.com" where the "hfunderground.com"
+    portion is an underlined clickable link. 'target="_blank"' makes the link open in a new tab.
+    
+    The DX community database has two of these links at 4095 kHz for the Berlin C&P #5 beacon.
+    The hfunderground.com link goes to the beacon's wiki page. One label starts the CW decoder and
+    the other label starts the FSK decoder, for the two modes sent by this beacon.
+    
+    Describe URL parameters in CW extension help.
+    
     Admin backup tab: Disabled on Debian 11 again because it's still not working quite right.
 
     Admin network tab:
