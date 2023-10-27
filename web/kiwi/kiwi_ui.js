@@ -290,7 +290,7 @@ function sd_backup_write_done(err)
 	var msg = 'backup complete';
 	var e;
 	switch (err) {
-	   case  0: e = null;
+	   case  0: e = null; break;
 	   case  1: e = 'no SD card inserted?'; break;
 	   case 15: e = 'SD card I/O error'; break;
 	   case 30: e = 'SD card already mounted?'; break;
