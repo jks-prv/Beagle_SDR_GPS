@@ -495,7 +495,7 @@ function w3_ext_param(s, param)
          rv.string_case = pu[1];
       } else {
          rv.num = 0;
-         rv.string = '';
+         rv.string = rv.string_case = '';
       }
    }
    if (s && s == pl[0]) rv.full_match = true;
@@ -1307,6 +1307,13 @@ function w3_fg_color_with_opacity_against_bk_color(fg, opacity, bg)
    var green  = Math.round(opacity * fg_color.green + _opacity * bg_color.green);
    var blue   = Math.round(opacity * fg_color.blue  + _opacity * bg_color.blue);
    return w3color(kiwi_rgb(red, green, blue));
+}
+
+function w3_opacity(el_id, opacity)
+{
+   var el = w3_el(el_id);
+   if (!el) return null;
+   el.style.opacity = opacity;
 }
 
 function w3_flash_fade(el_id, color, dwell_ms, fade_ms, color2)
