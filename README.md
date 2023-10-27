@@ -113,10 +113,6 @@ LF time station DCF77 77.5 kHz in Germany accurately located.
 
 [![](http://www.kiwisdr.com/README/TDoA.DCF77.780px.png)](http://www.kiwisdr.com/README/TDoA.DCF77.png)
 
-The second HF OTHR transmitter on Cypress (not Akrotiri) approximately located.
-
-[![](http://www.kiwisdr.com/README/TDoA.OTHR.780px.png)](http://www.kiwisdr.com/README/TDoA.OTHR.png)
-
 #### High Frequency Data Link (HFDL) decoding.
 Aircraft to ground station (green) data exchange system. Includes message decoding and aircraft positions (blue) on a map.
 
@@ -132,17 +128,20 @@ Aircraft to ground station (green) data exchange system. Includes message decodi
 
 #### Other decoders:
 
+IQ display showing the QPSK modulation of VLF station NLM4 North Dakota (25.2 kHz) as received in Kansas.
+
+[![](http://www.kiwisdr.com/README/IQ.780px.png)](http://www.kiwisdr.com/README/IQ.png)
+
+Decoding of time station WWVB (60 kHz, phase modulation) in Colorado.
+
+[![](http://www.kiwisdr.com/README/timecode.780px.png)](http://www.kiwisdr.com/README/timecode.png)
+
 When the Russian VLF Alpha navigation system is active there's a special decoder for that too.
 
 [![](http://www.kiwisdr.com/README/Alpha.780px.png)](http://www.kiwisdr.com/README/Alpha.png)
 
-A simple monitor for the experimental Loran-C/eLoran system. A recent West Coast USA eLoran test shown here.
+A simple monitor for the Loran-C and under-development eLoran system. A recent West Coast USA eLoran test shown here.
 
 [![](http://www.kiwisdr.com/README/eLoran.780px.png)](http://www.kiwisdr.com/README/eLoran.png)
-
-
-
-
-
 
 [end-of-document]
