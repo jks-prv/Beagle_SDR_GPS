@@ -8,6 +8,7 @@
 //
 // Updates:
 //
+// 26 oct 23 45.63.0.0/17 (0.0:127.255) constant/vultr/choopa - Famous Offender 45.63.74.199 - Waterfall abuse (114.0/24 => 0.0/17)
 //  5 jun 23 removed 178.174.128.0/17 (Bahnhof) because it blocks a Kiwi user, i.e. IPs are a mix of hosting and ISP.
 // 13 may 23 51.15.0.0/16 (0.0:255.255) Hosting Scaleway
 // 13 may 23 167.86.96.0/19 (96.0:127.255) Hosting Contabo
@@ -78,7 +79,7 @@
     "39.96.0.0/12",
     "45.32.0.0/16",
     "45.43.0.0/16",
-    "45.63.114.0/24",
+    "45.63.0.0/17",
     "45.76.0.0/16",
     "45.77.0.0/16",
     "46.165.245.0/24",
