@@ -2,6 +2,27 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.631  October 27, 2023
+    S-meter URL query:
+        From a browser or curl use "my_kiwi:8073/s-meter/?(freq_in_kHz)"
+        e.g. "my_kiwi:8073/s-meter/?7020" returns the text "/s-meter: 7020.00 kHz -xxx dBm"
+        A 60 Hz CW passband is used to sample a presumed carrier on the specified frequency.
+    
+    DX URL label filtering parameters added:
+        dx=(optional database specifier),ident:(ident),notes:(notes),case,grep
+        Populates the "DX label filter" panel with values as though you opened the panel
+        (e.g. with the "@" shortcut key). Example: my_kiwi:8073/f=15Mz0&dx=comm,id:HFDL
+        Where "comm" selects the community label database. "case" means the ident and notes values
+        are case sensitive. "grep" means the values are pattern-selecting regular expressions.
+    
+        New shortcut alt-@ to quickly clear all DX label filtering values without opening the panel.
+        
+        See the help button on the DX labels panel ("\" key) for more details.
+    
+    Changes to support KiwiSDR 2.
+        Update Github README.md file with KiwiSDR 2 info.
+        Show KiwiSDR 2 PCB as default photo when user first connects.
+
 v1.629,630  October 15, 2023
     Allow clickable links in the DX label ident field. Example:
     BEACON C&P #5 FSK <a href="https://www.hfunderground.com/wiki/Common_and_Precious_5"
