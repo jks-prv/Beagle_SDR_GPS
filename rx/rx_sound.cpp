@@ -85,9 +85,6 @@ snd_t snd_inst[MAX_RX_CHANS];
 
 #ifdef USE_SDR
 
-//#define TR_SND_CMDS
-#define SM_SND_DEBUG	false
-
 // 1st estimate of processing delay
 const double gps_delay    = 28926.838e-6;
 const double gps_week_sec = 7*24*3600.0;
@@ -516,7 +513,7 @@ void c2s_sound(void *param)
 		s2_t *bp_iq_s2    = s->out_pkt_iq.s2;
 		u1_t *flags    = (IQ_or_DRM_or_stereo? &s->out_pkt_iq.h.flags : &s->out_pkt_real.h.flags);
 		u1_t *seq      = (IQ_or_DRM_or_stereo? s->out_pkt_iq.h.seq    : s->out_pkt_real.h.seq);
-		char *smeter   = (IQ_or_DRM_or_stereo? s->out_pkt_iq.h.smeter : s->out_pkt_real.h.smeter);
+		u1_t *smeter   = (IQ_or_DRM_or_stereo? s->out_pkt_iq.h.smeter : s->out_pkt_real.h.smeter);
 
 		bool do_de_emp = (!IQ_or_DRM_or_stereo && ((isNBFM && s->deemp_nfm) || (!isNBFM && s->deemp)));
 		
@@ -1245,12 +1242,12 @@ void c2s_sound(void *param)
         NextTask("s2c begin");
                 
         // send s-meter data with each audio packet
+        // -127 -126 .. 3.4 dBm => 0 1 .. 130.4 (+127) => 0 10 .. 1304 (*10)
         #define SMETER_BIAS 127.0
         if (sMeter_dBm < -127.0) sMeter_dBm = -127.0; else
         if (sMeter_dBm >    3.4) sMeter_dBm =    3.4;
         u2_t sMeter = (u2_t) ((sMeter_dBm + SMETER_BIAS) * 10);
-        smeter[0] = (sMeter >> 8) & 0xff;
-        smeter[1] = sMeter & 0xff;
+        SET_BE_U16(smeter, sMeter);
 
         *flags = 0;
         if (dpump.rx_adc_ovfl) *flags |= SND_FLAG_ADC_OVFL;

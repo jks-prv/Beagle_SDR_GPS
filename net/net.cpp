@@ -757,6 +757,7 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
         csnd = rx_server_websocket(WS_INTERNAL_CONN, mcs, ws_flags);
         if (csnd == NULL) goto error;
         iconn->csnd = csnd;
+        csnd->internal_want_snd = true;
         input_msg_internal(csnd, (char *) "SET auth t=kiwi p=");
         input_msg_internal(csnd, (char *) "SET AR OK in=12000 out=44100");
         input_msg_internal(csnd, (char *) "SET agc=1 hang=0 thresh=-100 slope=6 decay=1000 manGain=50");
@@ -778,6 +779,7 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
         cwf = rx_server_websocket(WS_INTERNAL_CONN, mcw, ws_flags);
         if (cwf == NULL) goto error;
         iconn->cwf = cwf;
+        cwf->internal_want_wf = true;
         input_msg_internal(cwf, (char *) "SET auth t=kiwi p=");
         input_msg_internal(cwf, (char *) "SET zoom=%d cf=%.3f", zoom, cf_kHz);
         input_msg_internal(cwf, (char *) "SET maxdb=%d mindb=%d", max_dB, min_dB);

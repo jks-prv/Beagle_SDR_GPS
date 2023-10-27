@@ -28,9 +28,11 @@ Boston, MA  02110-1301, USA.
 #include "ext.h"
 
 
+//#define TR_SND_CMDS
+#define SM_SND_DEBUG	false
+
 #define SND_INSTANCE_FFT_PASSBAND   0
 #define SND_INSTANCE_FFT_CHAN_NULL  1
-
 
 #define CLIPPER_NBFM_VAL 8192
 
@@ -42,7 +44,7 @@ typedef struct {
 		char id[3];
 		u1_t flags;
 		u1_t seq[4];            // waterfall syncs to this sequence number on the client-side
-		char smeter[2];
+		u1_t smeter[2];
 	} __attribute__((packed)) h;
 	union {
 	    u1_t u1[FASTFIR_OUTBUF_SIZE * sizeof(s2_t)];
@@ -55,7 +57,7 @@ typedef struct {
 		char id[3];
 		u1_t flags;
 		u1_t seq[4];            // waterfall syncs to this sequence number on the client-side
-		char smeter[2];
+		u1_t smeter[2];
 		u1_t last_gps_solution; // time difference to last gps solution in seconds
 		u1_t dummy;
 		u4_t gpssec;            // GPS time stamp (GPS seconds)

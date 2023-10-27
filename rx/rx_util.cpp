@@ -1054,7 +1054,7 @@ void SNR_meas_task(void *param)
             }
 
             meas->valid = true;
-            rx_server_websocket(WS_MODE_CLOSE, &iconn.wf_mc);
+            internal_conn_shutdown(&iconn);
             
             #ifdef OPTION_HONEY_POT
                 snr_all = snr_HF = 55;

@@ -154,9 +154,11 @@ void web_to_app_done(conn_t *c, nbuf_t *nb)
 void app_to_web(conn_t *c, char *s, int sl)
 {
 	if (c->stop_data) return;
-	if (c->internal_connection && c->type != STREAM_WATERFALL) {
-	    //printf("SKIP app_to_webinternal_connection %s sl=%d\n", rx_conn_type(c), sl);
-	    return;
+	if (c->internal_connection) {
+	    if (!((c->type == STREAM_SOUND && c->internal_want_snd) || (c->type == STREAM_WATERFALL && c->internal_want_wf))) {
+	        //printf("SKIP app_to_webinternal_connection %s sl=%d\n", rx_conn_type(c), sl);
+	        return;
+	    }
 	}
     //printf("app_to_webinternal_connection %s sl=%d\n", rx_conn_type(c), sl);
 	nbuf_allocq(&c->s2c, s, sl);
