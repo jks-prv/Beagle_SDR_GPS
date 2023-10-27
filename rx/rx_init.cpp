@@ -274,6 +274,24 @@ void update_vars_from_config(bool called_at_init)
     cfg_default_string("rx_antenna", "", &update_cfg);
     cfg_default_string("owner_info", "", &update_cfg);
     cfg_default_string("reason_disabled", "", &update_cfg);
+    
+    // pcb.jpg => pcb.png since new pcb photo has alpha channel that only .png supports.
+    // Won't disturb an RX_PHOTO_FILE set to kiwi.config/photo.upload by admin photo upload process.
+	if ((s = cfg_string("index_html_params.RX_PHOTO_FILE", NULL, CFG_OPTIONAL)) != NULL) {
+	    if (strcmp(s, "kiwi/pcb.jpg") == 0) {
+		    cfg_set_string("index_html_params.RX_PHOTO_FILE", "kiwi/pcb.png");
+	    }
+	    cfg_string_free(s);
+	    update_cfg = true;
+	}
+
+	if ((s = cfg_string("index_html_params.RX_PHOTO_DESC", NULL, CFG_OPTIONAL)) != NULL) {
+	    if (strcmp(s, "First production PCB") == 0) {
+		    cfg_set_string("index_html_params.RX_PHOTO_DESC", "");
+	    }
+	    cfg_string_free(s);
+	    update_cfg = true;
+	}
 
     S_meter_cal = cfg_default_int("S_meter_cal", SMETER_CALIBRATION_DEFAULT, &update_cfg);
     waterfall_cal = cfg_default_int("waterfall_cal", WATERFALL_CALIBRATION_DEFAULT, &update_cfg);
