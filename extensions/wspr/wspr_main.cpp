@@ -1049,7 +1049,7 @@ void wspr_autorun(int instance, bool initial)
     w->iwbp = iwbp? true : false;
     if (iwbp) input_msg_internal(cext, (char *) "SET IWBP");
     input_msg_internal(cext, (char *) "SET dialfreq=%.2f centerfreq=%.2f cf_offset=%.0f", dial_freq_kHz, center_freq_kHz, cfo);
-    input_msg_internal(cext, (char *) "SET capture=1");
+    input_msg_internal(cext, (char *) "SET capture=1");     // ext task created here
 
     asprintf(&w->arun_stat_cmd, WSPR_STAT, wspr_c.rcall, wspr_c.rgrid, w->arun_cf_MHz, w->arun_cf_MHz);
     //printf("AUTORUN INIT %s\n", w->arun_stat_cmd);

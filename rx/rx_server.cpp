@@ -83,6 +83,7 @@ rx_stream_t rx_streams[] = {
 	{ AJAX_USERS,		"users" },
 	{ AJAX_SNR,         "snr" },
 	{ AJAX_ADC,         "adc" },
+	{ AJAX_S_METER,     "s-meter" },
 #endif
 	{ 0 }
 };

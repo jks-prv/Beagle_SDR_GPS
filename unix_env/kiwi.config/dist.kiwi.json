@@ -3,7 +3,7 @@
 "status_msg":"Try other KiwiSDRs world-wide at <a href='http://rx.kiwisdr.com' target='_blank'>rx.kiwisdr.com</a>",
 "index_html_params":{
 	"PAGE_TITLE":"KiwiSDR",
-	"RX_PHOTO_FILE":"kiwi/pcb.jpg",
+	"RX_PHOTO_FILE":"kiwi/pcb.png",
 	"RX_PHOTO_HEIGHT":"350",
 	"RX_PHOTO_TITLE":"KiwiSDR: software-defined receiver",
 	"RX_PHOTO_DESC":"First production PCB",

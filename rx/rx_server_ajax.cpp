@@ -35,6 +35,7 @@ Boston, MA  02110-1301, USA.
 #include "net.h"
 #include "dx.h"
 #include "rx.h"
+#include "rx_server_ajax.h"
 #include "rx_util.h"
 #include "security.h"
 
@@ -61,6 +62,8 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
 	bool isLocalIP = isLocal_ip(ip_unforwarded);
 	
 	if (*uri == '/') uri++;
+	int sl = strlen(uri);
+	if (sl >= 2 && uri[sl-1] == '/') uri[sl-1] = '\0';      // remove trailing '/'
 	
 	for (st = rx_streams; st->uri; st++) {
 		if (strcmp(uri, st->uri) == 0)
@@ -105,8 +108,8 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
 	// filesystem of the client. But a FormData() object passed to kiwi_ajax_send() can specify a file.
 	case AJAX_PHOTO: {
 		char vname[64], fname[64];		// mg_parse_multipart() checks size of these
-		const char *data;
-		int data_len, rc = 0;
+		const char *data = NULL;
+		int data_len = 0, rc = 0;
 		
 		printf("PHOTO UPLOAD REQUESTED from %s len=%d\n", ip_unforwarded, mc->content_len);
 		//printf("PHOTO UPLOAD REQUESTED key=%s ckey=%s\n", mc->query_string, current_authkey);
@@ -177,11 +180,6 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
         int s_size = 0;
 		char *r_buf = NULL;
 		
-        #define TMEAS(x) x
-        //#define TMEAS(x)
-        TMEAS(u4_t start = timer_ms();)
-        TMEAS(printf("DX UPLOAD: START saving to dx.json\n");)
-
 		key_cmp = -1;
 		if (mc->query_string && current_authkey) {
 			key_cmp = strcmp(mc->query_string, current_authkey);
@@ -189,8 +187,16 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
 		}
         kiwi_ifree(current_authkey);
         current_authkey = NULL;
-		if (key_cmp) { rc = 1; goto fail; }
+		if (key_cmp) {
+		    asprintf(&sb, "{\"rc\":1}");
+		    break;
+		}
 		
+        #define TMEAS(x) x
+        //#define TMEAS(x)
+        TMEAS(u4_t start = timer_ms();)
+        TMEAS(printf("DX UPLOAD: START saving to dx.json\n");)
+
         mg_parse_multipart(mc->content, mc->content_len,
             vname, sizeof(vname), fname, sizeof(fname), &data, &data_len);
 		//printf("DX UPLOAD: vname=%s fname=%s\n", vname, fname);
@@ -461,6 +467,66 @@ fail:
         u4_t _adc_level = (adc_level == COUNT_ADC_OVFL)? 0 : adc_level;
 		asprintf(&sb, "{ \"adc_level_dec\":%u, \"adc_level_hex\":\"0x%x\", \"adc_count\":%u, \"ver_maj\":%d, \"ver_min\":%d }\n",
 		    _adc_level, _adc_level, adc_count, version_maj, version_min);
+		break;
+	}
+
+	// SECURITY:
+	//	Returns simple S-meter value
+	case AJAX_S_METER: {
+	    if (mc->query_string == NULL) {
+            asprintf(&sb, "/s_meter: missing freq, try my_kiwi:8073/s-meter/?(freq in kHz)\n");
+            printf("%s", sb);
+            break;
+	    }
+	    
+        double dial_freq_kHz;
+        n = sscanf(mc->query_string, "%lf", &dial_freq_kHz);
+        if (n == 1) {
+            printf("/s_meter dial=%.2f freq_offset_kHz=%.2f ui_srate_kHz=%.2f ", dial_freq_kHz, freq_offset_kHz, ui_srate_kHz);
+            dial_freq_kHz -= freq_offset_kHz;
+            dial_freq_kHz = CLAMP(dial_freq_kHz, 0, ui_srate_kHz);
+            printf("FINAL=%.2f\n", dial_freq_kHz);
+        } else {
+            asprintf(&sb, "/s_meter: freq parse error \"%s\", just enter freq in kHz\n", mc->query_string);
+            printf("%s", sb);
+            break;
+        }
+
+        internal_conn_t iconn;
+        #define CW_BFO 500
+        bool ok = internal_conn_setup(ICONN_WS_SND, &iconn, 0, PORT_BASE_INTERNAL_S_METER, WS_FL_PREEMPT_AUTORUN | WS_FL_NO_LOG,
+            "cwn", CW_BFO-30, CW_BFO+30, dial_freq_kHz - CW_BFO/1e3, "S-meter", NULL, "S-meter");
+        if (!ok) {
+            asprintf(&sb, "s-meter: all channels busy\n");
+            break;
+        }
+        
+        int sMeter_dBm = 0;
+        nbuf_t *nb = NULL;
+        bool early_exit = false;
+        int nsamps;
+        for (nsamps = 0; nsamps < 4 && !early_exit;) {
+            do {
+                if (nb) web_to_app_done(iconn.csnd, nb);
+                n = web_to_app(iconn.csnd, &nb, /* internal_connection */ true);
+                if (n == 0) continue;
+                if (n == -1) {
+                    early_exit = true;
+                    break;
+                }
+                snd_pkt_real_t *snd = (snd_pkt_real_t *) nb->buf;
+                // 0 10 .. 1304 => 0 1 130.4 (/10) => -127 -126 .. 3.4 dBm (-127)
+                sMeter_dBm = GET_BE_U16(snd->h.smeter) / 10 - 127;
+                //printf("/s-meter nsamps=%d rcv=%d <%.3s> smeter=%02x|%02x|%d\n", nsamps, n, snd->h.id, snd->h.smeter[0], snd->h.smeter[1], sMeter_dBm);
+                if (strncmp(snd->h.id, "SND", 3) != 0) continue;
+                nsamps++;
+            } while (n);
+            TaskSleepMsec(100);
+        }
+        
+        internal_conn_shutdown(&iconn);
+        asprintf(&sb, "/s-meter: %.2f kHz %d dBm\n", dial_freq_kHz + freq_offset_kHz, sMeter_dBm);
+        cprintf(iconn.csnd, "%s", sb);
 		break;
 	}
 

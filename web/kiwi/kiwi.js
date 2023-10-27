@@ -688,8 +688,8 @@ function time_display(display_time)
 	w3_innerHTML('id-time-display-local', noLatLon? '?' : server_time_local);
 	w3_innerHTML('id-time-display-tzname', noLatLon? 'Lat/lon needed for local time' : server_tz);
 
-	w3_el('id-time-display-logo-inner').style.opacity = display_time? 0:1;
-	w3_el('id-time-display-inner').style.opacity = display_time? 1:0;
+	w3_opacity('id-time-display-logo-inner', display_time? 0:1);
+	w3_opacity('id-time-display-inner', display_time? 1:0);
 }
 
 function time_display_periodic()
@@ -3280,8 +3280,7 @@ function kiwi_debug(msg, syslog)
 	
 function kiwi_show_msg(s)
 {
-   // FIXME: necessary to use html() due to timing reasons? Can't remember..
-   html('id-kiwi-msg').innerHTML = s;
+   if (!w3_innerHTML('id-kiwi-msg', s)) return;
    if (s == '') {
 	   w3_hide('id-kiwi-msg-container');
       w3_el('id-kiwi-body').style.overflow = 'hidden';

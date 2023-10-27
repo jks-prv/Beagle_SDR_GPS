@@ -521,6 +521,8 @@ function ext_hasCredential(conn_type, cb, cb_param, ws)
 
 function ext_valpwd(conn_type, pwd, ws)
 {
+	if (conn_type == 'mfg') conn_type = 'admin';
+
 	// send and store the password encoded to prevent problems:
 	//		with scanf() on the server end, e.g. embedded spaces
 	//		with cookie storage that deletes leading and trailing whitespace

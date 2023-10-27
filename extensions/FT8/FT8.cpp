@@ -384,7 +384,7 @@ static void ft8_autorun(int instance, bool initial)
     e->arun_cext = cext;
     input_msg_internal(cext, (char *) "SET autorun");
     input_msg_internal(cext, (char *) "SET dialfreq=%.2f", dial_freq_kHz);
-    input_msg_internal(cext, (char *) "SET ft8_start=%d", ft4? 1:0);
+    input_msg_internal(cext, (char *) "SET ft8_start=%d", ft4? 1:0);    // ext task created here
 }
 
 void ft8_autorun_start(bool initial)
