@@ -1249,6 +1249,11 @@ function kiwi_remove_search_param(url, p)
    return url;
 }
 
+function html(el_id)
+{
+   return w3_el(el_id);
+}
+
 function px(s)
 {
    if (isNoArg(s) || s == '') return '0';

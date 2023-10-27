@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.631  October 27, 2023
+v1.631,632  October 27, 2023
     S-meter URL query:
         From a browser or curl use "my_kiwi:8073/s-meter/?(freq_in_kHz)"
         e.g. "my_kiwi:8073/s-meter/?7020" returns the text "/s-meter: 7020.00 kHz -xxx dBm"
