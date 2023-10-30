@@ -10,6 +10,8 @@ var admin = {
    
    long_running: false,
    is_multi_core: false,
+   
+   update_interval: null,
    reg_status: {},
    
    pie_size: 25,
@@ -3646,6 +3648,42 @@ function admin_close()
    }
 }
 
+function admin_update_start()
+{
+	ext_send_after_cfg_save("SET admin_update");
+	admin.update_interval = setInterval(function() {ext_send("SET admin_update");}, 5000);
+}
+
+function admin_update_stop()
+{
+	kiwi_clearInterval(admin.update_interval);
+}
+
+function admin_update(p)
+{
+	var i;
+	var json = decodeURIComponent(p);
+	//console.log('admin_update='+ json);
+   var obj = kiwi_JSON_parse('admin_update', json);
+	if (obj) admin.reg_status = obj;
+	
+	// rx.kiwisdr.com registration status
+	if (adm.kiwisdr_com_register && admin.reg_status.kiwisdr_com != undefined && admin.reg_status.kiwisdr_com != '') {
+	   w3_innerHTML('id-kiwisdr_com-reg-status', 'rx.kiwisdr.com registration: successful');
+	}
+	
+	// GPS has had a solution, show buttons
+	if (admin.reg_status.lat != undefined) {
+		w3_show_inline_block('id-webpage-grid-set');
+		w3_show_inline_block('id-public-grid-set');
+		w3_show_inline_block('id-webpage-gps-set');
+		w3_show_inline_block('id-public-gps-set');
+
+		w3_show_inline_block('id-wspr-grid-set');
+		w3_show_inline_block('id-ft8-grid-set');
+	}
+}
+
 // Process replies to our messages sent via ext_send('SET ...')
 // As opposed to admin_recv() below that processes unsolicited messages sent from C code.
 
@@ -3755,6 +3793,13 @@ function admin_recv(data)
 			   admin.repo_git = decodeURIComponent(param[1]);
 				break;
 
+			case "gps_info":
+				var func = admin_sdr.ext_cur_nav +'_gps_info_cb';
+				var param = decodeURIComponent(param[1]);
+				//console.log('gps_info: func='+ func +' param='+ param);
+				w3_call(func, param);
+				break;
+
 			case "ext_call":
 			   // assumes that '=' is a safe delimiter to split func/param
 				var ext_call = decodeURIComponent(param[1]).split('=');
@@ -3764,8 +3809,8 @@ function admin_recv(data)
 				w3_call(ext_func, ext_param);
 				break;
 
-			case "public_update":
-				public_update(param[1]);
+			case "admin_update":
+				admin_update(param[1]);
 				break;
 
 			case "auto_nat":

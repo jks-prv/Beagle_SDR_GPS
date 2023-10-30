@@ -657,33 +657,6 @@ void c2s_admin(void *param)
 ////////////////////////////////
 
 #ifdef USE_SDR
-			i = strcmp(cmd, "SET public_update");
-			if (i == 0) {
-                if (admcfg_bool("kiwisdr_com_register", NULL, CFG_REQUIRED) == false) {
-		            // force switch to short sleep cycle so we get status returned sooner
-		            wakeup_reg_kiwisdr_com(WAKEUP_REG_STATUS);
-                }
-
-				sb = kstr_asprintf(NULL, "{\"kiwisdr_com\":%d", reg_kiwisdr_com_status);
-				
-				if (gps.StatLat) {
-					latLon_t loc;
-					char grid6[6 + SPACE_FOR_NULL];
-					loc.lat = gps.sgnLat;
-					loc.lon = gps.sgnLon;
-					if (latLon_to_grid6(&loc, grid6))
-						grid6[0] = '\0';
-					else
-						grid6[6] = '\0';
-					sb = kstr_asprintf(sb, ",\"lat\":\"%4.2f\",\"lon\":\"%4.2f\",\"grid\":\"%s\"",
-						gps.sgnLat, gps.sgnLon, grid6);
-				}
-				sb = kstr_cat(sb, "}");
-				send_msg_encoded(conn, "ADM", "public_update", "%s", kstr_sp(sb));
-				kstr_free(sb);
-				continue;
-			}
-
 			i = strcmp(cmd, "SET public_wakeup");
 			if (i == 0) {
                 wakeup_reg_kiwisdr_com(WAKEUP_REG);
@@ -1323,8 +1296,8 @@ void c2s_admin(void *param)
 				continue;
 			}
 
-            // compute grid from GPS on-demand (similar to "SET public_update")
-			i = strcmp(cmd, "ADM wspr_gps_info");
+            // compute grid from GPS on-demand (similar to "SET admin_update")
+			i = strcmp(cmd, "ADM get_gps_info");
 			if (i == 0) {
 				if (gps.StatLat) {
 					latLon_t loc;
@@ -1333,8 +1306,10 @@ void c2s_admin(void *param)
 					loc.lon = gps.sgnLon;
 					if (latLon_to_grid6(&loc, grid6) == 0) {
 						grid6[6] = '\0';
-		                send_msg_encoded(conn, "ADM", "ext_call", "wspr_gps_info_cb={\"grid\":\"%s\"}", grid6);
+		                send_msg_encoded(conn, "ADM", "gps_info", "{\"grid\":\"%s\"}", grid6);
 	                    kiwi_strncpy(wspr_c.rgrid, grid6, LEN_GRID);
+	                    //kiwi_strncpy(ft8_conf2.rgrid, grid6, LEN_GRID);
+	                    //jksx FIXME need to do more when setting grid?
 					}
 				}
 				continue;
@@ -1358,6 +1333,35 @@ void c2s_admin(void *param)
 ////////////////////////////////
 // admin
 ////////////////////////////////
+
+#ifdef USE_SDR
+			i = strcmp(cmd, "SET admin_update");
+			if (i == 0) {
+                if (admcfg_bool("kiwisdr_com_register", NULL, CFG_REQUIRED) == false) {
+		            // force switch to short sleep cycle so we get status returned sooner
+		            wakeup_reg_kiwisdr_com(WAKEUP_REG_STATUS);
+                }
+
+				sb = kstr_asprintf(NULL, "{\"kiwisdr_com\":%d", reg_kiwisdr_com_status);
+				
+				if (gps.StatLat) {
+					latLon_t loc;
+					char grid6[6 + SPACE_FOR_NULL];
+					loc.lat = gps.sgnLat;
+					loc.lon = gps.sgnLon;
+					if (latLon_to_grid6(&loc, grid6))
+						grid6[0] = '\0';
+					else
+						grid6[6] = '\0';
+					sb = kstr_asprintf(sb, ",\"lat\":\"%4.2f\",\"lon\":\"%4.2f\",\"grid\":\"%s\"",
+						gps.sgnLat, gps.sgnLon, grid6);
+				}
+				sb = kstr_cat(sb, "}");
+				send_msg_encoded(conn, "ADM", "admin_update", "%s", kstr_sp(sb));
+				kstr_free(sb);
+				continue;
+			}
+#endif
 
 			i = strcmp(cmd, "SET extint_load_extension_configs");
 			if (i == 0) {
