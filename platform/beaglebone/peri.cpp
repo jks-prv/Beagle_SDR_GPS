@@ -589,10 +589,10 @@ void peri_init()
     // like BBAI, SPI pmux must be setup for Debian >= 9
 	if (!use_spidev || debian_ver >= 9) {
 	    printf("checking SPI pmux settings..\n");
-		devio_check(SPIn_SCLK, GPIO_DIR_OUT, PMUX_IO_PU  | PMUX_SPI, PMUX_NONE);
-		devio_check(SPIn_MISO, GPIO_DIR_IN,  PMUX_IN_PU  | PMUX_SPI, PMUX_NONE);
-		devio_check(SPIn_MOSI, GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_SPI, PMUX_IO_PU | PMUX_SPI);
-		devio_check(SPIn_CS0,  GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_SPI, PMUX_IO_PU | PMUX_SPI);
+		devio_check(SPIn_SCLK, GPIO_DIR_OUT, PMUX_IO_PU  | PMUX_SPI, PMUX_SLOW | PMUX_IO_PU  | PMUX_SPI);
+		devio_check(SPIn_MISO, GPIO_DIR_IN,  PMUX_IN_PU  | PMUX_SPI, PMUX_SLOW | PMUX_IN_PU  | PMUX_SPI);
+		devio_check(SPIn_MOSI, GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_SPI, PMUX_SLOW | PMUX_OUT_PU | PMUX_SPI);
+		devio_check(SPIn_CS0,  GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_SPI, PMUX_SLOW | PMUX_OUT_PU | PMUX_SPI);
 	}
 #endif
 	
@@ -600,10 +600,11 @@ void peri_init()
 
 #if defined(CPU_AM5729) || defined(CPU_TDA4VM)
     // BBAI has always used Debian >= 9
-    devio_check(SPIn_SCLK, GPIO_DIR_OUT, PMUX_IO_PU  | PMUX_SPI, PMUX_NONE);
+    // BBAI-64 has always used Debian >= 11
+    devio_check(SPIn_SCLK, GPIO_DIR_OUT, PMUX_IO_PU  | PMUX_SPI, PMUX_SLOW | PMUX_IO_PU  | PMUX_SPI);
     devio_check(SPIn_MISO, GPIO_DIR_IN,  PMUX_IN_PD  | PMUX_SPI, PMUX_NONE);
-    devio_check(SPIn_MOSI, GPIO_DIR_OUT, PMUX_OUT_PD | PMUX_SPI, PMUX_NONE);
-    devio_check(SPIn_CS0,  GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_SPI, PMUX_NONE);
+    devio_check(SPIn_MOSI, GPIO_DIR_OUT, PMUX_OUT_PD | PMUX_SPI, PMUX_SLOW | PMUX_OUT_PD | PMUX_SPI);
+    devio_check(SPIn_CS0,  GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_SPI, PMUX_SLOW | PMUX_OUT_PU | PMUX_SPI);
 #endif
 
 	gpio_setup(SPIn_CS1, GPIO_DIR_OUT, 1, PMUX_OUT_PU, PMUX_IO_PD);

@@ -2897,7 +2897,7 @@ function kiwi_msg(param, ws)
 {
 	var rtn = true;
 	
-	switch (param[0]) {
+	switch (param[0]) {     // #msg-proc
 		case "version_maj":
 			version_maj = parseInt(param[1]);
 			break;

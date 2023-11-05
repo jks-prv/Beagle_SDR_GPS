@@ -24,7 +24,6 @@
 
 #include "kiwi.h"
 #include "gps.h"
-#include "gps_fe.h"
 #include "spi.h"
 #include "printf.h"
 
@@ -48,7 +47,6 @@ void gps_main(int argc, char *argv[])
 
 	printf("GPS starting..\n");
     SearchParams(argc, argv);
-    gps_fe_init();
 
     // some configs (e.g. rx14wf0) only support a reduced number of GPS channels
     // due to FPGA space limitations

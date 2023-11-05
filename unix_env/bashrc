@@ -5,11 +5,11 @@
 # DANGER: Can't use any "echo ..." in below otherwise scp's to the Kiwi will silently FAIL.
 # Do an "export xx=yy" and "pe xx" instead to see what's happening.
 
-BBG_BBB="$(cat /proc/device-tree/model | grep -q -s "AM335x" && echo "true" || echo "false")"
-BBAI_64="$(cat /proc/device-tree/model | grep -q -s "BeagleBone AI-64" && echo "true" || echo "false")"
-BBAI="$(cat /proc/device-tree/model | sed "s/\(.*\)./\1x/" | grep -q -s "BeagleBone AIx" && echo "true" || echo "false")"
-DEBIAN_7="$(cat /etc/debian_version | grep -q -s "7\." && echo "true" || echo "false")"
-RPI="$(cat /proc/device-tree/model | grep -q -s "Raspberry Pi" && echo "true" || echo "false")"
+BBG_BBB="$(test -e /proc/device-tree && cat /proc/device-tree/model | grep -q -s "AM335x" && echo "true" || echo "false")"
+BBAI_64="$(test -e /proc/device-tree && cat /proc/device-tree/model | grep -q -s "BeagleBone AI-64" && echo "true" || echo "false")"
+BBAI="$(test -e /proc/device-tree && cat /proc/device-tree/model | sed "s/\(.*\)./\1x/" | grep -q -s "BeagleBone AIx" && echo "true" || echo "false")"
+DEBIAN_7="$(test -e /proc/device-tree && cat /etc/debian_version | grep -q -s "7\." && echo "true" || echo "false")"
+RPI="$(test -e /proc/device-tree && cat /proc/device-tree/model | grep -q -s "Raspberry Pi" && echo "true" || echo "false")"
 
 APT_GET_FORCE=
 

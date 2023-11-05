@@ -6,6 +6,8 @@
 
 
 var admin_sdr = {
+   ext_cur_nav: null,
+   
    pmi: 0,
    pbm: 'am',
    pbl: 0,
@@ -828,15 +830,17 @@ function webpage_html()
 		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
 			w3_input('', 'Location', 'index_html_params.RX_LOC', '', 'webpage_string_cb'),
-			w3_input('', w3_label('w3-bold', 'Grid square (4 or 6 char) ') +
-			   w3_div('id-webpage-grid-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large'),
+			w3_input('', w3_label('w3-bold', 'Grid square (4/6 char) ') +
+			   w3_div('id-webpage-grid-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large w3-margin-B-2') + ' ' +
+				w3_div('id-webpage-grid-set cl-admin-check w3-blue w3-btn w3-round-large w3-margin-B-2 w3-hide', 'set from GPS'),
 			   'index_html_params.RX_QRA', '', 'webpage_input_grid'
 			)
 		) +
 		w3_half('', 'w3-container',
 			w3_input('', 'Altitude (ASL meters)', 'index_html_params.RX_ASL', '', 'webpage_string_cb'),
          w3_input('', w3_label('w3-bold', 'Map (Google format or lat, lon) ') +
-            w3_div('id-webpage-map-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large'),
+            w3_div('id-webpage-map-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large w3-margin-B-2') + ' ' +
+            w3_div('id-webpage-gps-set cl-admin-check w3-blue w3-btn w3-round-large w3-margin-B-2 w3-hide', 'set from GPS'),
             'index_html_params.RX_GMAP', '', 'webpage_input_map'
          )
 		) +
@@ -1027,6 +1031,21 @@ function webpage_focus()
 
 	webpage_update_check_grid();
 	webpage_update_check_map();
+
+	w3_el('id-webpage-grid-set').onclick = function() {
+		var val = admin.reg_status.grid;
+		w3_set_value('index_html_params.RX_QRA', val);
+		w3_input_change('index_html_params.RX_QRA', 'webpage_input_grid');
+	};
+
+	w3_el('id-webpage-gps-set').onclick = function() {
+		var val = '('+ admin.reg_status.lat +', '+ admin.reg_status.lon +')';
+		w3_set_value('index_html_params.RX_GMAP', val);
+		w3_input_change('index_html_params.RX_GMAP', 'webpage_input_map');
+	};
+
+	// get updates while the webpage tab is selected
+	admin_update_start();
 }
 
 function webpage_string_cb(path, val)
@@ -1048,6 +1067,11 @@ function webpage_photo_height_cb(path, val)
 	   w3_num_set_cfg_cb(path, val);
 	   ext_send_after_cfg_save('SET reload_index_params');
 	}
+}
+
+function webpage_blur()
+{
+   admin_update_stop();
 }
 
 
@@ -1101,14 +1125,14 @@ function kiwi_reg_html()
 
 		w3_third('w3-margin-bottom w3-restart', 'w3-container',
 			w3_input('', w3_label('w3-bold', 'Grid square (4/6 char) ') +
-				w3_div('id-public-grid-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large') + ' ' +
-				w3_div('id-public-grid-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS'),
+				w3_div('id-public-grid-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large w3-margin-B-2') + ' ' +
+				w3_div('id-public-grid-set cl-admin-check w3-blue w3-btn w3-round-large w3-margin-B-2 w3-hide', 'set from GPS'),
 				'rx_grid', '', 'sdr_hu_input_grid'
 			),
 			w3_div('',
             w3_input('', w3_label('w3-bold', 'Location (lat, lon) ') +
-               w3_div('id-public-gps-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large') + ' ' +
-               w3_div('id-public-gps-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS'),
+               w3_div('id-public-gps-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large w3-margin-B-2') + ' ' +
+               w3_div('id-public-gps-set cl-admin-check w3-blue w3-btn w3-round-large w3-margin-B-2 w3-hide', 'set from GPS'),
                'rx_gps', '', 'public_check_gps_cb'
             ),
 				w3_div('w3-text-black', 'Format: (nn.nnnnnn, nn.nnnnnn)')
@@ -1189,8 +1213,6 @@ function kiwisdr_com_register_cb(path, idx, first)
    //console.log('kiwisdr_com_register_cb adm.kiwisdr_com_register='+ adm.kiwisdr_com_register);
 }
 
-var sdr_hu_interval;
-
 // because of the inline quoting issue, set value dynamically
 function sdr_hu_focus()
 {
@@ -1202,7 +1224,7 @@ function sdr_hu_focus()
 	admin_set_decoded_value('admin_email');
 
 	// The default in the factory-distributed kiwi.json is the kiwisdr.com NZ location.
-	// Detect this and ask user to change it so sdr.hu/map doesn't end up with multiple SDRs
+	// Detect this and ask user to change it so the Kiwi map doesn't end up with multiple SDRs
 	// defined at the kiwisdr.com location.
 	var gps = kiwi_decodeURIComponent('rx_gps', ext_get_cfg_param('rx_gps'));
 	public_check_gps_cb('rx_gps', gps, /* first */ true);
@@ -1222,10 +1244,9 @@ function sdr_hu_focus()
 		w3_input_change('rx_gps', 'public_check_gps_cb');
 	};
 
-	// only get updates while the sdr_hu tab is selected
-	ext_send_after_cfg_save("SET public_update");
-	sdr_hu_interval = setInterval(function() {ext_send("SET public_update");}, 5000);
-	
+	// get updates while the public tab is selected
+   admin_update_start();
+   	
 	// display initial switch state
 	kiwisdr_com_register_cb('adm.kiwisdr_com_register', adm.kiwisdr_com_register? w3_SWITCH_YES_IDX : w3_SWITCH_NO_IDX, /* first */ true);
 }
@@ -1280,29 +1301,9 @@ function public_update_check_map()
 	w3_el('id-public-gps-check').innerHTML = '<a href="https://google.com/maps/place/'+ gps +'" target="_blank">check map</a>';
 }
 
-function sdr_hu_blur(id)
+function sdr_hu_blur()
 {
-	kiwi_clearInterval(sdr_hu_interval);
-}
-
-function public_update(p)
-{
-	var i;
-	var json = decodeURIComponent(p);
-	//console.log('public_update='+ json);
-   var obj = kiwi_JSON_parse('public_update', json);
-	if (obj) admin.reg_status = obj;
-	
-	// rx.kiwisdr.com registration status
-	if (adm.kiwisdr_com_register && admin.reg_status.kiwisdr_com != undefined && admin.reg_status.kiwisdr_com != '') {
-	   w3_innerHTML('id-kiwisdr_com-reg-status', 'rx.kiwisdr.com registration: successful');
-	}
-	
-	// GPS has had a solution, show buttons
-	if (admin.reg_status.lat != undefined) {
-		w3_show_inline_block('id-public-grid-set');
-		w3_show_inline_block('id-public-gps-set');
-	}
+   admin_update_stop();
 }
 
 
@@ -2811,14 +2812,16 @@ function extensions_focus()
    if (w3_el('id-nav-wspr')) {
       w3_click_nav(kiwi_toggle(toggle_e.FROM_COOKIE | toggle_e.SET, 'wspr', 'wspr', 'last_admin_ext_nav'), 'extensions_nav');
    }
-}
 
-var ext_cur_nav;
+	// get updates while the extensions tab is selected
+	admin_update_start();
+}
 
 function extensions_blur()
 {
    //console.log('extensions_blur');
-   if (ext_cur_nav) w3_call(ext_cur_nav +'_config_blur');
+   if (admin_sdr.ext_cur_nav) w3_call(admin_sdr.ext_cur_nav +'_config_blur');
+	admin_update_stop();
 }
 
 function extensions_nav_focus(id, cb_arg)
@@ -2827,7 +2830,7 @@ function extensions_nav_focus(id, cb_arg)
    writeCookie('last_admin_ext_nav', id);
    w3_show(id +'-container');
    w3_call(id +'_config_focus');
-   ext_cur_nav = id;
+   admin_sdr.ext_cur_nav = id;
 }
 
 function extensions_nav_blur(id, cb_arg)

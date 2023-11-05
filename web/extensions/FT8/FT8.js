@@ -272,7 +272,10 @@ function FT8_config_html()
          w3_col_percent('w3-container/w3-margin-bottom',
             w3_input_get('w3-restart', 'Reporter callsign', 'ft8.callsign', 'w3_string_set_cfg_cb', ''), 22,
             '', 3,
-            w3_input_get('w3-restart', 'Reporter grid square', 'ft8.grid', 'w3_string_set_cfg_cb', '', '6-character grid square location'), 22,
+            w3_input_get('id-ft8-grid w3-restart', w3_label('w3-bold', 'Reporter grid square ') +
+               w3_div('id-ft8-grid-set cl-admin-check w3-blue w3-btn w3-round-large w3-margin-B-2 w3-hide', 'set from GPS'),
+               'ft8.grid', 'w3_string_set_cfg_cb', '', '6-character grid square location'
+               ), 22,
             '', 3,
             w3_input_get('', 'SNR correction', 'ft8.SNR_adj', 'w3_num_set_cfg_cb', ''), 22,
             '', 3,
@@ -377,6 +380,26 @@ function FT8_config_focus()
 {
    //console.log('ft8_config_focus');
    ft8_autorun_public_check();
+
+   var el = w3_el('id-ft8-grid-set');
+	if (el) el.onclick = function() {
+	   ft8.single_shot_update = true;
+	   ext_send("ADM get_gps_info");    // NB: must be sent as ADM command
+	};
+}
+
+function FT8_gps_info_cb(o)
+{
+   //console.log('FT8_gps_info_cb');
+   if (!cfg.ft8.GPS_update_grid && !ft8.single_shot_update) return;
+   //console.log(o);
+   var ft8_gps = kiwi_JSON_parse('FT8_gps_info_cb', o);
+   if (ft8_gps) {
+      //console.log(ft8_gps);
+      w3_set_value('id-ft8-grid', ft8_gps.grid);
+      w3_input_change('ft8.grid');     // for w3-restart
+   }
+   ft8.single_shot_update = false;
 }
 
 function FT8_blur()

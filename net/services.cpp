@@ -303,6 +303,10 @@ static void misc_NET(void *param)
 
         status = non_blocking_cmd_system_child("kiwi.chk_pwd", "grep -q '^root::' /etc/shadow", POLL_MSEC(250));
         root_pwd_unset = (WEXITSTATUS(status) == 0)? 1:0;
+        if (!root_pwd_unset && debian_ver >= 11) {
+            status = non_blocking_cmd_system_child("kiwi.chk_pwd", "grep -q '^root:$y$j9T$lTPmWl28QqgcbJAEAXpLG.$uZrtdkucDJ.DhOP32b2/9taPXDYIgNCNzYIcxZmCV18:' /etc/shadow", POLL_MSEC(250));
+            root_pwd_unset = (WEXITSTATUS(status) == 0)? 1:0;
+        }
         
         const char *what = "set to the default";
         status = non_blocking_cmd_system_child("kiwi.chk_pwd", "grep -q '^debian:rcdjoac1gVi9g:' /etc/shadow", POLL_MSEC(250));

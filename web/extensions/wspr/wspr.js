@@ -585,7 +585,7 @@ function wspr_config_html()
             '', 3,
             w3_divs('w3-restart',
                w3_input_get('', w3_label('w3-bold', 'Reporter grid square ') +
-                  w3_div('id-wspr-grid-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS'),
+                  w3_div('id-wspr-grid-set cl-admin-check w3-blue w3-btn w3-round-large w3-margin-B-2 w3-hide', 'set from GPS'),
                      'WSPR.grid', 'wspr_input_grid_cb', '', '4 or 6-character grid square location'
                )
             ), 22,
@@ -726,7 +726,7 @@ function wspr_config_focus()
    var el = w3_el('id-wspr-grid-set');
 	if (el) el.onclick = function() {
 	   wspr.single_shot_update = true;
-	   ext_send("ADM wspr_gps_info");   // NB: must be sent as ADM command
+	   ext_send("ADM get_gps_info");    // NB: must be sent as ADM command
 	};
 }
 

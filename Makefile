@@ -1090,6 +1090,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
     DTS_DEP_DST = $(DIR_DTB)/$(DTS)
     DTS_DEP_SRC = $(DIR_DTS)/$(DTS)
+    DTS2_DEP_SRC = $(addprefix $(DIR_DTS)/,$(DTS2))
 
     $(DO_ONCE):
 	    @mkdir -p $(DIR_CFG)
@@ -1107,7 +1108,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
         DIR_DTB = $(DIR_DTB_BASE)/src/arm64
 
         # re-install device tree if changes made to *.dts source file
-        $(DTS_DEP_DST): $(DTS_DEP_SRC)
+        $(DTS_DEP_DST): $(DTS_DEP_SRC) $(DTS2_DEP_SRC)
 	        @echo "BBAI-64: re-install Kiwi device tree to configure GPIO pins"
 	        make install_kiwi_device_tree
 	        touch $(FORCE_REBOOT)
@@ -1115,8 +1116,8 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
         install_kiwi_device_tree:
 	        @echo "BBAI-64: install Kiwi device tree to configure GPIO pins"
 	        @echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
-	        cp $(DIR_DTS)/$(DTS) $(DIR_DTB)
-	        cp $(DIR_DTS)/$(DTS2) $(DIR_DTB)
+	        cp $(DTS_DEP_SRC) $(DIR_DTB)
+	        cp $(DTS2_DEP_SRC) $(DIR_DTB)
 	        (cd $(DIR_DTB_BASE); make all)
 	        (cd $(DIR_DTB_BASE); make install)
     endif
@@ -1141,7 +1142,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
         install_kiwi_device_tree:
 	        @echo "BBAI: install Kiwi device tree to configure GPIO/SPI pins"
 	        @echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
-	        cp $(DIR_DTS)/$(DTS) $(DIR_DTB)
+	        cp $(DTS_DEP_SRC) $(DIR_DTB)
 	        (cd $(DIR_DTB_BASE); make)
 	        # intentionally don't do "make install" -- instead only copy single .dtb below
 	        cp $(DIR_DTB)/$(DTB_KIWI) /boot
@@ -1161,16 +1162,18 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
         DIR_DTB = /lib/firmware
 
         # re-install device tree if changes made to *.dts source file
-        $(DTS_DEP_DST): $(DTS_DEP_SRC)
+        $(DTS_DEP_DST): $(DTS_DEP_SRC) $(DTS2_DEP_SRC)
 	        @echo "BBG_BBB: re-install Kiwi device tree to configure GPIO pins"
 	        make install_kiwi_device_tree
+	        touch $(FORCE_REBOOT)
 
         install_kiwi_device_tree:
 	        @echo "BBG_BBB: install Kiwi device tree to configure GPIO pins (but not SPI)"
 	        -cp --backup=numbered /boot/uEnv.txt /boot/uEnv.txt.save
 	        -sed -i -e 's/^#uboot_overlay_addr4=\/lib\/firmware\/<file4>.dtbo/uboot_overlay_addr4=\/lib\/firmware\/cape-bone-kiwi-00A0.dtbo/' /boot/uEnv.txt
-	        cp $(DIR_DTS)/$(DTS) $(DIR_DTB)
-	        cp $(addprefix $(DIR_DTS)/,$(DTS2)) $(DIR_DTB)
+	        cp $(DTS_DEP_SRC) $(DIR_DTB)
+	        cp $(DTS2_DEP_SRC) $(DIR_DTB)
+#	        (cd /lib/firmware; dtc -O dtb -o cape-bone-kiwi-00A0.dtbo -b 0 -@ cape-bone-kiwi-00A0.dts);
     endif
 endif
 
