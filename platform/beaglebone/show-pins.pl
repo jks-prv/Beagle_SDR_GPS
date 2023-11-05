@@ -3,6 +3,8 @@
 # Matthijs van Duin - Dutch & Dutch
 #
 # sudo apt install libinline-files-perl
+#
+# 4 nov 2023    Added D11 support
 
 use v5.14;
 use strict;
@@ -122,6 +124,11 @@ while( <> ) {
 	my $addpre = $tda4 ? "11" : ($am5 ? "4a00" : "44e1");
 	if($tda4) {
 		/^pin (\d+) \(PIN\d+\) 0\:\? $addpre([0-9a-f]{4}) ([0-9a-f]{8}) pinctrl-single\z/ or die "parse error";
+		$pin = $1;
+		$reg = hex $2;
+		$mux = hex $3;
+	} elsif(/\d+:/) {
+		/^pin (\d+) \(PIN\d+\) \S* $addpre([0-9a-f]{4}) ([0-9a-f]{8}) pinctrl-single\z/ or die "parse error";
 		$pin = $1;
 		$reg = hex $2;
 		$mux = hex $3;
