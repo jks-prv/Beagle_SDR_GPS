@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.633  November 5, 2023
+    Adjusting waterfall cal on the admin config tab now has immediate effect, like S-meter cal has.
+    "set from GPS" buttons added to admin webpage tab and extensions FT8 subtab.
+    Changes to support KiwiSDR 2.
+
 v1.631,632  October 27, 2023
     S-meter URL query:
         From a browser or curl use "my_kiwi:8073/s-meter/?(freq_in_kHz)"
