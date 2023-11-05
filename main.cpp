@@ -31,6 +31,7 @@ Boston, MA  02110-1301, USA.
 #include "spi.h"
 #include "spi_dev.h"
 #include "gps.h"
+#include "gps_fe.h"
 #include "coroutines.h"
 #include "cfg.h"
 #include "net.h"
@@ -464,6 +465,9 @@ int main(int argc, char *argv[])
     #endif
 
 	web_server_init(WS_INIT_START);
+
+    // need to do gps clock switch even if gps is not enabled
+    gps_fe_init();
 
 	if (do_gps) {
 		if (!GPS_CHANS) panic("no GPS_CHANS configured");
