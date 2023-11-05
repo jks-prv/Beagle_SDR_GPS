@@ -11,6 +11,8 @@
     #define OUTPUT_EN		    (0 << TXDISABLE_SHIFT)
     #define OUTPUT_DISABLE		(1 << TXDISABLE_SHIFT)
 
+    #define OUTPUT_SLOW		    (1 << 20)
+
     /* k3.h:PIN_INPUT is really a PIN_IO because both rx & tx are enabled */
     #define PIN_IN		        (INPUT_EN | OUTPUT_DISABLE | PULL_DISABLE)
     #define PIN_IN_PULLUP	    (INPUT_EN | OUTPUT_DISABLE | PULL_UP)
@@ -23,6 +25,11 @@
     #define PIN_IO		        (INPUT_EN | PULL_DISABLE)
     #define PIN_IO_PULLUP	    (INPUT_EN | PULL_UP)
     #define PIN_IO_PULLDOWN	    (INPUT_EN | PULL_DOWN)
+
+    #define PIN_SPI_CS0         (OUTPUT_SLOW | INPUT_DISABLE | PULL_UP)     // PIN_OUT_PULLUP
+    #define PIN_SPI_CLK	        (OUTPUT_SLOW | INPUT_EN | PULL_UP)          // PIN_IO_PULLUP
+    #define PIN_SPI_MOSI        (OUTPUT_SLOW | INPUT_DISABLE | PULL_DOWN)   // PIN_OUT_PULLDOWN
+    #define PIN_SPI_MISO        (INPUT_EN | OUTPUT_DISABLE | PULL_DOWN)     // PIN_IN_PULLDOWN
 #endif
 
 /********/
@@ -1085,7 +1092,7 @@
 	BONE_PIN(P9_17, gpio_pd,   P9_17A(PIN_INPUT_PULLDOWN, 7) P9_17B(PIN_INPUT, 7))
 	BONE_PIN(P9_17, i2c,       P9_17A(PIN_INPUT, 7) P9_17B(PIN_INPUT_PULLUP, 2))	/* i2c6_scl */
 #ifdef KiwiSDR
-	BONE_PIN(P9_17, spi,       P9_17A(PIN_OUT_PULLUP, 4) P9_17B(PIN_INPUT, 7))  /* P9_17 SPIn_CS0 */
+	BONE_PIN(P9_17, spi,       P9_17A(PIN_SPI_CS0, 4) P9_17B(PIN_INPUT, 7))  /* P9_17 SPIn_CS0 */
 #else
 	BONE_PIN(P9_17, spi,       P9_17A(PIN_OUTPUT, 4) P9_17B(PIN_INPUT, 7))	/* spi6_cs0 */
 #endif
@@ -1099,7 +1106,7 @@
 	BONE_PIN(P9_18, gpio_pd,   P9_18A(PIN_INPUT_PULLDOWN, 7) P9_18B(PIN_INPUT, 7))
 	BONE_PIN(P9_18, i2c,       P9_18A(PIN_INPUT, 7) P9_18B(PIN_INPUT_PULLUP, 2))	/* i2c6_sda */
 #ifdef KiwiSDR
-	BONE_PIN(P9_18, spi,       P9_18A(PIN_OUT_PULLDOWN, 4) P9_18B(PIN_INPUT, 7))  /* P9_18 SPIn_MOSI */
+	BONE_PIN(P9_18, spi,       P9_18A(PIN_SPI_MOSI, 4) P9_18B(PIN_INPUT, 7))  /* P9_18 SPIn_MOSI */
 #else
 	BONE_PIN(P9_18, spi,       P9_18A(PIN_INPUT, 4) P9_18B(PIN_INPUT, 7))	/* spi6_d1 (tested PIN_INPUT) */
 #endif
@@ -1141,7 +1148,7 @@
 	BONE_PIN(P9_21, gpio_pd,   P9_21A(PIN_INPUT_PULLDOWN, 7) P9_21B(PIN_INPUT, 7))
 	BONE_PIN(P9_21, pwm,       P9_21A(PIN_INPUT, 7) P9_21B(PIN_OUTPUT, 6))	/* ehrpwm1_a */
 #ifdef KiwiSDR
-	BONE_PIN(P9_21, spi,       P9_21A(PIN_IN_PULLDOWN, 4) P9_21B(PIN_INPUT, 7))  /* P9_21 SPIn_MISO */
+	BONE_PIN(P9_21, spi,       P9_21A(PIN_SPI_MISO, 4) P9_21B(PIN_INPUT, 7))  /* P9_21 SPIn_MISO */
 #else
 	BONE_PIN(P9_21, spi,       P9_21A(PIN_OUTPUT, 4) P9_21B(PIN_INPUT, 7))	/* spi6_d0 */
 #endif
@@ -1156,7 +1163,7 @@
 	BONE_PIN(P9_22, i2c,       P9_22A(PIN_INPUT, 7) P9_22B(PIN_INPUT_PULLUP, 2))	/* i2c6_scl */
 	BONE_PIN(P9_22, pwm,       P9_22A(PIN_INPUT, 7) P9_22B(PIN_OUTPUT, 6))	/* ehrpwm1_b */
 #ifdef KiwiSDR
-	BONE_PIN(P9_22, spi,       P9_22A(PIN_IO_PULLUP, 4) P9_22B(PIN_INPUT, 7))  /* P9_22 SPIn_SCLK */
+	BONE_PIN(P9_22, spi,       P9_22A(PIN_SPI_CLK, 4) P9_22B(PIN_INPUT, 7))  /* P9_22 SPIn_SCLK */
 #else
 	BONE_PIN(P9_22, spi,       P9_22A(PIN_OUTPUT, 4) P9_22B(PIN_INPUT, 7))	/* spi6_clk */
 #endif

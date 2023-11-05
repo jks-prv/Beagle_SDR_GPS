@@ -8,6 +8,17 @@
 
 #include "am5729-beagleboneai.dts"
 
+#define KiwiSDR
+
+    #define OUTPUT_SLOW         (1 << 19)
+
+#ifdef KiwiSDR
+    #define PIN_SPI_CS0         (OUTPUT_SLOW | PIN_OUTPUT_PULLUP)
+    #define PIN_SPI_CLK	        (OUTPUT_SLOW | PIN_INPUT_PULLUP)
+    #define PIN_SPI_MOSI        (OUTPUT_SLOW | PIN_OUTPUT_PULLDOWN)
+    #define PIN_SPI_MISO        (PIN_INPUT_PULLDOWN)
+#endif
+
 / {
 	chosen {
 		base_dtb = "am5729-beagleboneai-kiwisdr-cape.dts";
@@ -107,9 +118,9 @@
 
             // spi2
 			DRA7XX_CORE_IOPAD(0x35B0, PIN_OUTPUT_PULLUP | MUX_MODE14)   // C5   P9.16   gpio4_26 spi2_cs1
-			DRA7XX_CORE_IOPAD(0x37CC, PIN_OUTPUT_PULLUP | MUX_MODE0)    // B24  P9.17a  spi2_cs0
+			DRA7XX_CORE_IOPAD(0x37CC, PIN_SPI_CS0 | MUX_MODE0)          // B24  P9.17a  spi2_cs0
 			DRA7XX_CORE_IOPAD(0x36B8, PULL_DIS | MUX_MODE15)            // F12  P9.17b  
-			DRA7XX_CORE_IOPAD(0x37C8, PIN_OUTPUT_PULLDOWN | MUX_MODE0)  // G17  P9.18a  spi2_d0 mosi
+			DRA7XX_CORE_IOPAD(0x37C8, PIN_SPI_MOSI | MUX_MODE0)         // G17  P9.18a  spi2_d0 mosi
 			DRA7XX_CORE_IOPAD(0x36B4, PULL_DIS | MUX_MODE15)            // G12  P9.18b  
 
             // i2c4 config eeproms: AI board and Kiwi cape
@@ -120,9 +131,9 @@
 
             // spi2
 			DRA7XX_CORE_IOPAD(0x34F0, PULL_DIS | MUX_MODE15)            // AF8  P9.21a  
-			DRA7XX_CORE_IOPAD(0x37C4, PIN_INPUT_PULLDOWN | MUX_MODE0)   // B22  P9.21b  spi2_d1 miso
+			DRA7XX_CORE_IOPAD(0x37C4, PIN_SPI_MISO | MUX_MODE0)         // B22  P9.21b  spi2_d1 miso
 			DRA7XX_CORE_IOPAD(0x369C, PULL_DIS | MUX_MODE15)            // B26  P9.22a  
-			DRA7XX_CORE_IOPAD(0x37C0, PIN_INPUT_PULLUP | MUX_MODE0)     // A26  P9.22b  spi2_sclk
+			DRA7XX_CORE_IOPAD(0x37C0, PIN_SPI_CLK | MUX_MODE0)          // A26  P9.22b  spi2_sclk
 
 			DRA7XX_CORE_IOPAD(0x37B4, PIN_INPUT | MUX_MODE14)           // A22  P9.23   gpio7_11 p923
 			DRA7XX_CORE_IOPAD(0x368C, PIN_INPUT | MUX_MODE14)           // F20  P9.24   gpio6_15 snd_intr
