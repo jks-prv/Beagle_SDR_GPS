@@ -266,6 +266,7 @@ void c2s_waterfall(void *param)
 	double adc_clock_corrected = 0;
 	u4_t cfg_update_seq = 0;
 	u4_t dx_update_seq = 0;
+	int wf_cal = waterfall_cal;
 	
 	wf = &WF_SHMEM->wf_inst[rx_chan];
 	memset(wf, 0, sizeof(wf_inst_t));
@@ -873,6 +874,12 @@ void c2s_waterfall(void *param)
             send_msg(conn, false, "MSG request_dx_update");
 		    dx_update_seq = dx.update_seq;
 		    new_scale_mask = true;
+		}
+		
+		// forward admin changes of waterfall cal to client side
+		if (waterfall_cal != wf_cal) {
+            send_msg(conn, false, "MSG wf_cal=%d", waterfall_cal);
+		    wf_cal = waterfall_cal;
 		}
 		
 		if (new_scale_mask) {

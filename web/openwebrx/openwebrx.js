@@ -412,10 +412,10 @@ function kiwi_main_ready()
 
          var attn_ampl = 0;
          if (gen_attn != 0) {
-            var dB = gen_attn + cfg.waterfall_cal;
+            var dB = gen_attn + wf.cal;
             var ampl_gain = Math.pow(10, -dB/20);		// use the amplitude form since we are multipling a signal
             attn_ampl = 0x01ffff * ampl_gain;
-            //console.log('### GEN dB='+ dB +' ampl_gain='+ ampl_gain +' attn_ampl='+ attn_ampl +' / '+ attn_ampl.toHex() +' offset='+ cfg.waterfall_cal);
+            //console.log('### GEN dB='+ dB +' ampl_gain='+ ampl_gain +' attn_ampl='+ attn_ampl +' / '+ attn_ampl.toHex() +' offset='+ wf.cal);
          }
    
          // always setup gen so it will get disabled (attn=0) if an rx0 page reloads using a URL where no gen is
@@ -5092,7 +5092,7 @@ function dB_wire_to_dBm(db_value)
 	if (db_value < 0) db_value = 0;
 	if (db_value > 255) db_value = 255;
 	var dBm = -(255 - db_value);
-	return (dBm + cfg.waterfall_cal);
+	return (dBm + wf.cal);
 }
 
 function color_index(db_value, sqrt)
@@ -10259,6 +10259,7 @@ var wf_speeds = ['off', '1 Hz', 'slow', 'med', 'fast'];
 
 var wf = {
    no_wf: false,
+   cal: 0,
    url_tstamp: 0,
    ts_tz: 0,
    
@@ -11888,7 +11889,7 @@ var zoom_server = 0;
 
 // Process owrx server-to-client MSGs from SND or W/F web sockets.
 // Not called if MSG handled first by kiwi.js:kiwi_msg()
-function owrx_msg_cb(param, ws)
+function owrx_msg_cb(param, ws)     // #msg-proc
 {
 	switch (param[0]) {
 		case "wf_setup":
@@ -11918,7 +11919,8 @@ function owrx_msg_cb(param, ws)
 			wf_fps = parseInt(param[1]);
 		   //console.log('# wf_fps='+ wf_fps);
 			break;
-		case "wf_cal":    // for benefit of kiwirecorder
+		case "wf_cal":    // for benefit of kiwirecorder as well
+		   wf.cal = parseInt(param[1]);
 		   break;
 		case "start":
 			bin_server = parseInt(param[1]);
