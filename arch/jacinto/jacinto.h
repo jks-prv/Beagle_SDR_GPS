@@ -38,22 +38,26 @@ Boston, MA  02110-1301, USA.
                                     // J721E_registers1.pdf 6.404 pdfpg 1048 padconfig1 reg
                                     // CAUTION: padconfig0 reg is different from all others (fields missing)
  #define	PMUX_TXDIS	0x00200000  // 21 TX disable
+
  #define	PMUX_DRIVE	0x00180000  // 20:19 LVCMOS drive strength
  #define	PMUX_SLOW	0x00100000
  #define	PMUX_FAST	0x00080000
  #define	PMUX_NOM	0x00000000
+
  #define	PMUX_RXEN	0x00040000  // 18 RX enable
+ 
  #define	PMUX_PU		0x00020000  // 17 1 = pull-up
  #define	PMUX_PD		0x00000000  // 17 0 = pull-down
  #define	PMUX_PDIS	0x00010000  // 16 1 = pull disable
+ 
  #define	PMUX_ST		0x00004000  // 14 schmitt trigger
  #define    PMUX_ATTR_S 20
  #define    PMUX_ATTR_E 14
 
+ #define	PMUX_MODE   0x0000000f  // mode bits
  #define	PMUX_SPI    0x00000004  // SPI6 = mode 4
  #define	PMUX_GPIO   0x00000007  // GPIO = mode 7
  #define	PMUX_OFF    0x0000000f  // mode 15
- #define	PMUX_MODE   0x0000000f  // mode bits
 #endif
 
 #define	PMUX_OUT	(PMUX_NOM | PMUX_PDIS)

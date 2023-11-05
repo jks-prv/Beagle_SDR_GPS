@@ -141,7 +141,7 @@ function mfg_recv(data)
 		param = params[i].split("=");
       console.log('mfg_recv: '+ param[0]);
 		
-		switch (param[0]) {
+		switch (param[0]) {     // #msg-proc
 			case "ver_maj":
 				mfg.ver_maj = parseFloat(param[1]);
 				break;

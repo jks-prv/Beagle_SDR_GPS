@@ -3771,7 +3771,7 @@ function admin_recv(data)
 		var param = params[i].split("=");
 
 		//console.log('admin_recv: '+ param[0]);
-		switch (param[0]) {
+		switch (param[0]) {     // #msg-proc
 
 			case "admin_sdr_mode":
 				admin_sdr_mode = (+param[1])? 1:0;
