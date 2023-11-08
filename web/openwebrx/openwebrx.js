@@ -3361,6 +3361,7 @@ function zoom_step(dir, arg2)
             //console.log('zoom_band f='+ f +' ITU_region=R'+ ITU_region);
             
             var _dxcfg = dx_cfg_db();
+            if (!_dxcfg) { zoom_finally(); return; };
             var _kiwi_bands = kiwi_bands_db(dx.INIT_BANDS_NO);
 				for (i=0; i < _dxcfg.bands.length; i++) {    // search for first containing band
 					b1 = _dxcfg.bands[i];
@@ -6355,6 +6356,7 @@ function band_svc_lookup(svc_key)
 {
    var idx = null;
    var _dxcfg = dx_cfg_db();
+   if (!_dxcfg) return null;
    _dxcfg.band_svc.forEach(function(a, i) {
       if (a.key == svc_key)
          idx = i;
@@ -6377,13 +6379,13 @@ function bands_init()
    
    var _dxcfg = dx_cfg_db();
    // already converted to saving in the appropriate configuration file
-	if (_dxcfg.bands && _dxcfg.band_svc && _dxcfg.dx_type) {
+	if (_dxcfg && _dxcfg.bands && _dxcfg.band_svc && _dxcfg.dx_type) {
 	   console.log('BANDS: using stored _dxcfg.bands db='+ dx.db +' ---------------------------------');
 	   bands_addl_info(0);
 	   dx_color_init();
 	   return;
 	}
-	
+   
 	// NB: The following ONLY applies to the stored database
 	//
 	// Should only get here if this is the first run after an update from a version prior to v1.602
@@ -6397,6 +6399,10 @@ function bands_init()
 	// an admin connection (or admin operation from a user connection) occurs that can store the
 	// converted values in kiwi.json
    console.log('BANDS: using old config.js/bands db='+ dx.db +'-------------------------------------');
+   if (dx.db != dx.DB_STORED) {
+      console.log('bands_init: DANGER! dx_cfg_db() is null but db != DB_STORED?!?');
+      return;
+   }
 
    // do this here even though it's related to the dx labels
    dxcfg.dx_type = [];
@@ -6572,8 +6578,11 @@ function bands_init()
 function dx_cfg_db()
 {
    var db = (dx.db == dx.DB_COMMUNITY)? dxcomm_cfg : dxcfg;
-   //console.log('dx_cfg_db dxcfg='+ dxcfg +' dxcomm_cfg='+ dxcomm_cfg);
-   //console.log('dx_cfg_db '+ ((dx.db == dx.DB_COMMUNITY)? 'DB_COMMUNITY' : 'DB_STORED') +' '+ db);
+   //console.log('dx_cfg_db dx.db='+ dx.db);
+   if (db == null) {
+      console.log('dx_cfg_db DANGER db=null dxcfg='+ dxcfg +' dxcomm_cfg='+ dxcomm_cfg);
+      console.log('dx_cfg_db DANGER dx.db('+ dx.db +')='+ ((dx.db == dx.DB_COMMUNITY)? 'DB_COMMUNITY' : 'DB_STORED'));
+   }
    return db;
 }
 
@@ -6602,6 +6611,7 @@ function bands_addl_info(isAdmin)
    }
    
    var _dxcfg = dx_cfg_db();
+   if (!_dxcfg) return;
    var _kiwi_bands = kiwi_bands_db(dx.INIT_BANDS_YES);
 
 	for (i=0; i < _dxcfg.bands.length; i++) {
@@ -6656,6 +6666,7 @@ function setup_band_menu()
 	var ITU_region = cfg.init.ITU_region + 1;    // cfg.init.ITU_region = 0:R1, 1:R2, 2:R3
 
    var _dxcfg = dx_cfg_db();
+   if (!_dxcfg) return '';
    var _kiwi_bands = kiwi_bands_db(dx.INIT_BANDS_NO);
 	for (i = 0; i < _dxcfg.bands.length; i++) {
 		var b1 = _dxcfg.bands[i];
@@ -6704,6 +6715,7 @@ function find_band(freq)
    //console.log('find_band f='+ freq +' ITU_region=R'+ ITU_region);
 
    var _dxcfg = dx_cfg_db();
+   if (!_dxcfg) return null;
    var _kiwi_bands = kiwi_bands_db(dx.INIT_BANDS_NO);
 	for (var i = 0; i < _dxcfg.bands.length; i++) {
 		var b1 = _dxcfg.bands[i];
@@ -6757,6 +6769,7 @@ function mk_bands_scale()
 	var ITU_region = cfg.init.ITU_region + 1;    // cfg.init.ITU_region = 0:R1, 1:R2, 2:R3
 
    var _dxcfg = dx_cfg_db();
+   if (!_dxcfg) return;
    var _kiwi_bands = kiwi_bands_db(dx.INIT_BANDS_NO);
 	for (i = 0; i < _dxcfg.bands.length; i++) {
 		var b1 = _dxcfg.bands[i];
@@ -7441,6 +7454,7 @@ function dx_color_init()
 {
    if (dx.db != dx.DB_EiBi) {
       var _dxcfg = dx_cfg_db();
+      if (!_dxcfg) return;
    
       for (var i = 0; i < _dxcfg.dx_type.length; i++) {
          var o = _dxcfg.dx_type[i];
@@ -7578,6 +7592,7 @@ function dx_label_render_cb(arr)
 	
 	var obj;
    var _dxcfg = dx_cfg_db();
+   if (!_dxcfg) return;
    var stored = (dx.db == dx.DB_STORED);
    var eibi = (dx.db == dx.DB_EiBi);
    var community = (dx.db == dx.DB_COMMUNITY);
@@ -10215,21 +10230,24 @@ function zoomCorrection()
 // rf controls
 ////////////////////////////////
 
-function rf_attn_cb(path, val, done, first)
+function rf_attn_cb(path, val, done, first, update)
 {
-   console.log('rf_attn_cb val='+ val +' done='+ done +' first='+ first +' kiwi.rf_attn='+ kiwi.rf_attn);
+   //console.log('rf_attn_cb val='+ val +' done='+ done +' first='+ first +' update='+ update +' kiwi.rf_attn='+ kiwi.rf_attn);
    //if (first) kiwi_trace();
    if (kiwi.model == kiwi.KiwiSDR_1) return;
+   
 	var attn = parseFloat(val);
    var input_attn = w3_el('id-rf-attn');
    var field_attn = w3_el('id-field-rf-attn');
+   if (!input_attn || !field_attn) return;
    kiwi.rf_attn = attn;
    input_attn.value = attn;
    field_attn.innerHTML = attn.toFixed(1) + ' dB';
-   field_attn.style.color = "white"; 
+   field_attn.style.color = "white";
+   if (update == true) return;
    
    if (!done || first) {
-      console.log('SET rf_attn='+ attn.toFixed(1));
+      //console.log('SET rf_attn='+ attn.toFixed(1));
       snd_send('SET rf_attn='+ attn.toFixed(1));
    } else {
       writeCookie('last_rf_attn', val);
@@ -11980,6 +11998,9 @@ function owrx_msg_cb(param, ws)     // #msg-proc
 			break;
 		case "last_community_download":
 		   dx.last_community_download = decodeURIComponent(param[1]);
+		   break;
+		case "rf_attn":
+         rf_attn_cb(null, +param[1], false, false, true);
 		   break;
 		default:
 		   return false;

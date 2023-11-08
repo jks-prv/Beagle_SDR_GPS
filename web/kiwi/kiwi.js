@@ -512,8 +512,8 @@ function kiwi_get_init_settings()
 ////////////////////////////////
 
 var cfg = {};
-var dxcfg = {};
-var dxcomm_cfg = {};    // read-only, doesn't appear in cfg_save_json()
+var dxcfg = null;
+var dxcomm_cfg = null;     // read-only, doesn't appear in cfg_save_json()
 var adm = {};
 
 function config_save(cfg_s, cfg)
@@ -2973,7 +2973,6 @@ function kiwi_msg(param, ws)
             //console.log('### DELAYED load_cfg '+ ws.stream +' '+ cfg_json.length);
             cfg = kiwi_JSON_parse('load_cfg', cfg_json);
             kiwi_init_cfg(ws.stream);
-            owrx_init_cfg();
          //}, 2000);
 			break;
 
@@ -3025,6 +3024,11 @@ function kiwi_msg(param, ws)
 			var adm_json = decodeURIComponent(param[1]);
 			console.log('### load_adm '+ ws.stream +' '+ adm_json.length);
 			adm = kiwi_JSON_parse('load_adm', adm_json);
+			break;
+		
+		case "cfg_loaded":
+			console.log('### cfg_loaded');
+         owrx_init_cfg();
 			break;
 		
 		case "no_admin_conns":

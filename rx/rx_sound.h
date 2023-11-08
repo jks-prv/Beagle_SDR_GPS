@@ -117,6 +117,7 @@ typedef struct {
 	int compression;
 	bool little_endian;
 	int mute_overload;      // activate the muting when overloaded
+	float rf_attn_dB;
 
 	int agc, _agc, hang, _hang;
 	int thresh, _thresh, manGain, _manGain, slope, _slope, decay, _decay;
