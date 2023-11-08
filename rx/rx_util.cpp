@@ -360,6 +360,8 @@ void rx_server_send_config(conn_t *conn)
 				send_msg_encoded(conn, "MSG", "load_adm", "%s", json);
 			}
 		}
+
+        send_msg(conn, false, "MSG cfg_loaded");
 	}
 }
 
