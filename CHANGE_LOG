@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.634  November 8, 2023
+    Fixed timing bug sometimes causing page reload failure when community dx labels selected.
+    Update RF attenuator slider when changed by other connections.
+        Note that admin-selectable adjustment policies are still not implemented yet.
+
 v1.633  November 5, 2023
     Adjusting waterfall cal on the admin config tab now has immediate effect, like S-meter cal has.
     "set from GPS" buttons added to admin webpage tab and extensions FT8 subtab.
