@@ -58,6 +58,8 @@ typedef struct {
     bool allow_admin_conns;
     bool spectral_inversion, spectral_inversion_lockout;
     
+    float rf_attn_dB;
+    
     int CAT_fd, CAT_ch;
     
     // lat/lon returned by ipinfo lookup

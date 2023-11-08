@@ -1055,6 +1055,14 @@ void c2s_sound(void *param)
                 last_max_thr = max_thr_t;
             }
 
+            // update UI with changes to RF attn from elsewhere
+            if (kiwi.rf_attn_dB != s->rf_attn_dB) {
+                send_msg(conn, false, "MSG rf_attn=%.1f", kiwi.rf_attn_dB);
+                //cprintf(conn, "UPD rf_attn=%.1f\n", kiwi.rf_attn_dB);
+                s->rf_attn_dB = kiwi.rf_attn_dB;
+            }
+
+
             ////////////////////////////////
             // copy to output buffer and send to client
             ////////////////////////////////

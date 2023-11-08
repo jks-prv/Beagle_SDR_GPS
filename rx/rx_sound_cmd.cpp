@@ -277,7 +277,10 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
     case CMD_RF_ATTN:
 	    float rf_attn_dB;
         if (sscanf(cmd, "SET rf_attn=%f", &rf_attn_dB) == 1) {
-            //cprintf(conn, "rf_attn=%.1f\n", rf_attn_dB);
+            //cprintf(conn, "SET rf_attn=%.1f\n", rf_attn_dB);
+            
+            // update s->rf_attn_dB here so we don't send UI update to ourselves
+            kiwi.rf_attn_dB = s->rf_attn_dB = rf_attn_dB;
             rf_attn_set(rf_attn_dB);
             did_cmd = true;                
         }
