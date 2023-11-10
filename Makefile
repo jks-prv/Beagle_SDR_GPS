@@ -1104,7 +1104,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
         DTS = k3-j721e-beagleboneai64-bone-buses.dtsi
         DTS2 = k3-j721e-beagleboneai64.dts
         DIR_DTS = platform/beaglebone_AI64
-        DIR_DTB_BASE = /opt/source/dtb-$(SYS_MAJ).$(SYS_MIN)-ti-arm64
+        DIR_DTB_BASE = $(wildcard /opt/source/dtb-$(SYS_MAJ).$(SYS_MIN)-*)
         DIR_DTB = $(DIR_DTB_BASE)/src/arm64
 
         # re-install device tree if changes made to *.dts source file
@@ -1126,7 +1126,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
         DTS = am5729-beagleboneai-kiwisdr-cape.dts
         DTS2 = am5729-beagleboneai.dts
         DIR_DTS = platform/beaglebone_AI
-        DIR_DTB_BASE = /opt/source/dtb-$(SYS_MAJ).$(SYS_MIN)-ti
+        DIR_DTB_BASE = $(wildcard /opt/source/dtb-$(SYS_MAJ).$(SYS_MIN)-*)
         DIR_DTB = $(DIR_DTB_BASE)/src/arm
 
         DTB_KIWI = am5729-beagleboneai-kiwisdr-cape.dtb
