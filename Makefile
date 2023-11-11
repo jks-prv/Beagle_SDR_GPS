@@ -1156,24 +1156,10 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
     endif
 
     ifeq ($(BBG_BBB),true)
-        DTS = cape-bone-kiwi-00A0.dts
-        DTS2 = cape-bone-kiwi-S-00A0.dts cape-bone-kiwi-P-00A0.dts
-        DIR_DTS = platform/beaglebone_black
-        DIR_DTB = /lib/firmware
-
-        # re-install device tree if changes made to *.dts source file
-        $(DTS_DEP_DST): $(DTS_DEP_SRC) $(DTS2_DEP_SRC)
-	        @echo "BBG_BBB: re-install Kiwi device tree to configure GPIO pins"
-	        make install_kiwi_device_tree
-	        touch $(FORCE_REBOOT)
-
         install_kiwi_device_tree:
 	        @echo "BBG_BBB: install Kiwi device tree to configure GPIO pins (but not SPI)"
 	        -cp --backup=numbered /boot/uEnv.txt /boot/uEnv.txt.save
 	        -sed -i -e 's/^#uboot_overlay_addr4=\/lib\/firmware\/<file4>.dtbo/uboot_overlay_addr4=\/lib\/firmware\/cape-bone-kiwi-00A0.dtbo/' /boot/uEnv.txt
-	        cp $(DTS_DEP_SRC) $(DIR_DTB)
-	        cp $(DTS2_DEP_SRC) $(DIR_DTB)
-#	        (cd /lib/firmware; dtc -O dtb -o cape-bone-kiwi-00A0.dtbo -b 0 -@ cape-bone-kiwi-00A0.dts);
     endif
 endif
 
