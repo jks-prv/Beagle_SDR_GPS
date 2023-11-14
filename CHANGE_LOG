@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.635,636  November 15, 2023
+    Support MMSSTV modes: MR73 MR90 MR115 MR140 MR175 MP73 MP115 MP140 MP175
+    Changes to support KiwiSDR 2.
+
 v1.634  November 8, 2023
     Fixed timing bug sometimes causing page reload failure when community dx labels selected.
     Update RF attenuator slider when changed by other connections.

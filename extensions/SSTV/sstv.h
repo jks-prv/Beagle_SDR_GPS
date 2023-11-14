@@ -104,6 +104,8 @@
 #define POWER(coeff) (coeff[0]*coeff[0] + coeff[1]*coeff[1])
 //#define POWER(coeff) (SSTV_MPOW(coeff[0],2) + SSTV_MPOW(coeff[1],2))
 
+enum { FMT_DEFAULT, FMT_BW, FMT_420, FMT_422, FMT_242, FMT_REV };
+
 typedef struct {
   char   *Name;
   char   *ShortName;
@@ -116,6 +118,7 @@ typedef struct {
   u2_t NumLines;
   u1_t  LineHeight;
   u1_t  ColorEnc;
+  u1_t format;
 } ModeSpec_t;
 extern ModeSpec_t ModeSpec[];
 
@@ -159,6 +162,7 @@ typedef struct {
 	bool reset, test;
 	int noadj;
 	state_t state;
+	bool mmsstv_only;
 	
 	bool task_created;
 	tid_t tid;
@@ -227,19 +231,20 @@ extern sstv_chan_t sstv_chan[MAX_RX_CHANS];
 
 // SSTV modes
 enum {
-    UNKNOWN=0,
+    UNKNOWN=0, VISX=1,
     M1,    M2,    M3,    M4,
     S1,    S2,    SDX,
     R72,   R36,   R24,   R24BW, R12BW, R8BW,
     W2120, W2180,
     PD50,  PD90,  PD120, PD160, PD180, PD240, PD290,
-    P3,    P5,    P7
+    P3,    P5,    P7,
+    MR73,  MR90,  MR115, MR140, MR175, MP73,  MP115, MP140, MP175
 };
 
 // Color encodings
 enum { GBR, RGB, YUV, BW };
 
-extern u1_t VISmap[];
+extern u1_t VISmap[], VISXmap[];
 
 void sstv_pcm_once(sstv_chan_t *e);
 void sstv_pcm_init(sstv_chan_t *e);

@@ -23,7 +23,7 @@ var sstv = {
    img_width: 0,
    
    //en.wikipedia.org/wiki/Slow-scan_television#Frequencies
-   freqs_s: [ '3630_ANZ', '3730_EU', '3845_NA', 7171, 14230, 14233, 21340, 28680 ]
+   freqs_s: [ '3630_ANZ', '3730_EU', '3845_NA', 7171, 7180, 14230, 14233, 21340, 28680 ]
 };
 
 function SSTV_main()
@@ -257,6 +257,9 @@ function sstv_controls_setup()
          if (w3_ext_param('help', a).match) {
             extint_help_click();
          } else
+         if (w3_ext_param('mmsstv', a).match) {
+            ext_send('SET mmsstv');
+         } else
          if (w3_ext_param('test', a).match) {
             sstv_test_cb();
          } else
@@ -402,6 +405,7 @@ function SSTV_help(show)
                   '<li>Robot: R72 R36 R24 R24-BW R12-BW R8-BW</li>' +
                   '<li>Wraase: SC-2-120 SC-2-180</li>' +
                   '<li>PD: PD-50 PD-90</li>' +
+                  '<li>MMSSTV: MR73 MR90 MR115 MR140 MR175 MP73 MP115 MP140 MP175</li>' +
                '</ul>' +
                'If the image is still slanted or offset after auto adjustment you can make a manual<br>' +
                'correction. If you see what looks like an edge in the image then click in two places along<br>' +
