@@ -1157,9 +1157,12 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
     ifeq ($(BBG_BBB),true)
         install_kiwi_device_tree:
-	        @echo "BBG_BBB: install Kiwi device tree to configure GPIO pins (but not SPI)"
+	        @echo "BBG_BBB: GPIO at runtime via capemgr, SPI at boottime via uEnv.txt"
 	        -cp --backup=numbered /boot/uEnv.txt /boot/uEnv.txt.save
-	        -sed -i -e 's/^#uboot_overlay_addr4=\/lib\/firmware\/<file4>.dtbo/uboot_overlay_addr4=\/lib\/firmware\/cape-bone-kiwi-00A0.dtbo/' /boot/uEnv.txt
+            # Debian 10
+	        -sed -i -e 's:^#uboot_overlay_addr4=/lib/firmware/<file4>.dtbo:uboot_overlay_addr4=/lib/firmware/cape-bone-kiwi-00A0.dtbo:' /boot/uEnv.txt
+            # Debian 11
+	        -sed -i -e 's:^#uboot_overlay_addr4=<file4>.dtbo:uboot_overlay_addr4=/lib/firmware/cape-bone-kiwi-00A0.dtbo:' /boot/uEnv.txt
     endif
 endif
 

@@ -48,6 +48,7 @@ else
     # Debian 7, SPIDEV: BB-SPIDEV0 loaded via echo > slots
     # Debian 8, PIO: load our cape-bone-S overlay via echo > slots
     # Debian 8, SPIDEV: Bug: BB-SPIDEV0 must be loaded via /boot/uEnv.txt to config pmux properly
+    #               i.e. cape_enable=bone_capemgr.enable_partno=BB-SPIDEV0
     # Debian 10+, SPIDEV: Kiwi device tree loaded via UBOOT_OVERLAY, config-pin to setup spi pins
 
     SBC="BBG/BBB"
