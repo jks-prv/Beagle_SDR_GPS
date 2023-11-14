@@ -21,6 +21,7 @@
  * NumLines      Number of scanlines
  * LineHeight    Height of one scanline in pixels (1 or 2)
  * ColorEnc      Color format (GBR, RGB, YUV, BW)
+ * Format        Format of scanline (sync, porch, pixel data etc.)
  *
  *
  * Note that these timings do not fully describe the workings of the different modes.
@@ -32,10 +33,13 @@
  *
  *             Dave Jones KB4YZ (1999): "SSTV modes - line timing".
  *             <http://www.tima.com/~djones/line.txt>
+ *
+ *             bruxy.regnet.cz/web/hamradio/EN/a-look-into-sstv-mode
  */
 
 ModeSpec_t ModeSpec[] = {
-    {},
+    {},     // UNKNOWN
+    {},     // VISX
 
   {  // N7CXI, 2000
     (char *) "Martin M1",
@@ -48,7 +52,8 @@ ModeSpec_t ModeSpec[] = {
     320,
     256,
     1,
-    GBR },
+    GBR,
+    FMT_DEFAULT },
 
   {  // N7CXI, 2000
     (char *) "Martin M2",
@@ -61,7 +66,8 @@ ModeSpec_t ModeSpec[] = {
     320,
     256,
     1,
-    GBR },
+    GBR,
+    FMT_DEFAULT },
 
   {   // KB4YZ, 1999
     (char *) "Martin M3",
@@ -74,7 +80,8 @@ ModeSpec_t ModeSpec[] = {
     320,
     128,
     2,
-    GBR },
+    GBR,
+    FMT_DEFAULT },
 
   {   // KB4YZ, 1999
     (char *) "Martin M4",
@@ -87,7 +94,8 @@ ModeSpec_t ModeSpec[] = {
     320,
     128,
     2,
-    GBR },
+    GBR,
+    FMT_DEFAULT },
 
   {  // N7CXI, 2000
     (char *) "Scottie S1",
@@ -100,7 +108,8 @@ ModeSpec_t ModeSpec[] = {
     320,
     256,
     1,
-    GBR },
+    GBR,
+    FMT_REV },
 
   {  // N7CXI, 2000
     (char *) "Scottie S2",
@@ -108,12 +117,13 @@ ModeSpec_t ModeSpec[] = {
     9e-3,
     1.5e-3,
     1.5e-3,
-    0.2752e-3,
-    277.692e-3,
+    0.2752e-3,      // GBR each = 0.2752 * 320 = 88.064
+    277.692e-3,     // ~71/256, but exactly s0s1Sp2 = 1.5 G 1.5 B 9 1.5 R
     320,
     256,
     1,
-    GBR },
+    GBR,
+    FMT_REV },
 
   {  // N7CXI, 2000
     (char *) "Scottie DX",
@@ -126,7 +136,8 @@ ModeSpec_t ModeSpec[] = {
     320,
     256,
     1,
-    GBR },
+    GBR,
+    FMT_REV },
 
 
     // correct Robot color timings from: github.com/n5ac/mmsstv/blob/master/Main.cpp LineR[NN] routines
@@ -135,27 +146,29 @@ ModeSpec_t ModeSpec[] = {
     (char *) "Robot 72",    // 4:2:2 format
     (char *) "R72",
     9e-3,
-    3e-3,
-    6e-3,
-    0.215625e-3,            // 138:69:69 ms
-    300e-3,                 // 200 LPM
+    3e-3,                   // porch
+    6e-3,                   // 4.5 separator + 1.5 porch
+    0.215625e-3,            // Tpixel 69/320, 138:69:69 ms, 0.215625 * 320 = 69
+    300e-3,                 // Tline 72s/240line = 0.3 s/line; 200 LPM: 72/240 = 60/x(200), Sp00s1s2 = 9+3+138+6+69+6+69 = 300
     320,
     240,
     1,
-    YUV },
+    YUV,
+    FMT_422 },
 
   {  // N7CXI, 2000
     (char *) "Robot 36",    // 4:2:0 format
     (char *) "R36",
     9e-3,
-    3e-3,
-    6e-3,
+    3e-3,                   // porch
+    6e-3,                   // 4.5 even/odd separator + 1.5 porch
     0.1375e-3,              // 88:44:0 ms
     150e-3,                 // 400 LPM
     320,
     240,
     1,
-    YUV },
+    YUV,
+    FMT_420 },
 
   {  // N7CXI, 2000
     (char *) "Robot 24",    // 4:2:2 format
@@ -163,12 +176,13 @@ ModeSpec_t ModeSpec[] = {
     6e-3,
     2e-3,
     4e-3,
-    0.14375e-3,             // 92:46:46 ms
-    200e-3,                 // 300 LPM
+    0.14375e-3,             // 46/320, 92:46:46 ms
+    200e-3,                 // 24s/120line = 0.2s/line, 300 LPM
     320,
     120,
     2,
-    YUV },
+    YUV,
+    FMT_422 },
 
   {  // N7CXI, 2000
     (char *) "Robot 24 B/W",
@@ -181,7 +195,8 @@ ModeSpec_t ModeSpec[] = {
     320,
     240,
     1,
-    BW },
+    BW,
+    FMT_BW },
 
   {  // N7CXI, 2000
     (char *) "Robot 12 B/W",
@@ -194,7 +209,8 @@ ModeSpec_t ModeSpec[] = {
     320,
     120,
     2,
-    BW },
+    BW,
+    FMT_BW },
 
   {  // N7CXI, 2000
     (char *) "Robot 8 B/W",
@@ -207,7 +223,8 @@ ModeSpec_t ModeSpec[] = {
     320,
     120,
     2,
-    BW },
+    BW,
+    FMT_BW },
 
   { // KB4YZ, 1999
     (char *) "Wraase SC-2 120",     // 2:4:2 format
@@ -220,7 +237,8 @@ ModeSpec_t ModeSpec[] = {
     320,
     256,
     1,
-    RGB },
+    RGB,
+    FMT_242 },
 
   {  // N7CXI, 2000
     (char *) "Wraase SC-2 180",
@@ -233,7 +251,8 @@ ModeSpec_t ModeSpec[] = {
     320,
     256,
     1,
-    RGB },
+    RGB,
+    FMT_DEFAULT },
 
   {  // N7CXI, 2000
     (char *) "PD-50",
@@ -242,11 +261,12 @@ ModeSpec_t ModeSpec[] = {
     2.08e-3,
     0e-3,
     0.286e-3,
-    388.16e-3,              // SpYYUV
+    388.16e-3,      // SpYUVY
     320,
     128,
     2,
-    YUV },
+    YUV,
+    FMT_DEFAULT },
 
   {  // N7CXI, 2000
     (char *) "PD-90",
@@ -254,12 +274,13 @@ ModeSpec_t ModeSpec[] = {
     20e-3,
     2.08e-3,
     0e-3,
-    0.532e-3,
-    703.04e-3,
+    0.532e-3,       // Tpixel 170.24/320
+    703.04e-3,      // Tline ~90/128, but exactly SpYUVY = 20+2.08+170.24+170.24+170.24+170.24 = 703.04
     320,
     128,
     2,
-    YUV },
+    YUV,
+    FMT_DEFAULT },
 
   {  // N7CXI, 2000
     (char *) "PD-120",
@@ -272,7 +293,8 @@ ModeSpec_t ModeSpec[] = {
     640,
     496,
     1,
-    YUV },
+    YUV,
+    FMT_DEFAULT },
 
   {  // N7CXI, 2000
     (char *) "PD-160",
@@ -285,7 +307,8 @@ ModeSpec_t ModeSpec[] = {
     512,
     400,
     1,
-    YUV },
+    YUV,
+    FMT_DEFAULT },
 
   {  // N7CXI, 2000
     (char *) "PD-180",
@@ -298,7 +321,8 @@ ModeSpec_t ModeSpec[] = {
     640,
     496,
     1,
-    YUV },
+    YUV,
+    FMT_DEFAULT },
 
   {  // N7CXI, 2000
     (char *) "PD-240",
@@ -311,7 +335,8 @@ ModeSpec_t ModeSpec[] = {
     640,
     496,
     1,
-    YUV },
+    YUV,
+    FMT_DEFAULT },
 
   {  // N7CXI, 2000
     (char *) "PD-290",
@@ -324,20 +349,22 @@ ModeSpec_t ModeSpec[] = {
     800,
     616,
     1,
-    YUV },
+    YUV,
+    FMT_DEFAULT },
 
   {  // N7CXI, 2000
     (char *) "Pasokon P3",
     (char *) "P3",
-    5.208e-3,
-    1.042e-3,
-    1.042e-3,
-    0.2083e-3,
-    409.375e-3,
+    5.208e-3,       // Tsync 25x Tpixel
+    1.042e-3,       // Tporch 5x Tpixel
+    1.042e-3,       // Tseptr 5x Tpixel
+    0.2083e-3,      // Tpixel i.e. 4800 Hz
+    409.375e-3,     // line
     640,
     496,
     1,
-    RGB },
+    RGB,
+    FMT_DEFAULT },
 
   {  // N7CXI, 2000
     (char *) "Pasokon P5",
@@ -345,12 +372,13 @@ ModeSpec_t ModeSpec[] = {
     7.813e-3,
     1.563e-3,
     1.563e-3,
-    0.3125e-3,
+    0.3125e-3,      // pixel i.e. 3200 Hz
     614.065e-3,
     640,
     496,
     1,
-    RGB },
+    RGB,
+    FMT_DEFAULT },
 
 {  // N7CXI, 2000
     (char *) "Pasokon P7",
@@ -358,12 +386,141 @@ ModeSpec_t ModeSpec[] = {
     10.417e-3,
     2.083e-3,
     2.083e-3,
-    0.4167e-3,
+    0.4167e-3,      // pixel i.e. 2400 Hz
     818.747e-3,
     640,
     496,
     1,
-    RGB }
+    RGB,
+    FMT_DEFAULT },
+
+// NB: the MR mode line timings are not Sp00s1s2 (as implied by FMT_422) but rather Sp00s1s2s (note trailing "s")
+{
+    (char *) "MMSSTV MR73",
+    (char *) "MR73",
+    9.0e-3,         // Tsync
+    1.0e-3,         // Tporch
+    0.1e-3,         // Tseptr
+    0.215625e-3,    // Tpixel 138/2/320
+    286.3e-3,       // Tline ~73/256, but exactly Sp00s1s2s = 9+1+138+.1+138/2+.1+138/2+.1 = 286.3
+    320,
+    256,
+    1,
+    YUV,
+    FMT_422 },
+
+{
+    (char *) "MMSSTV MR90",
+    (char *) "MR90",
+    9.0e-3,         // Tsync
+    1.0e-3,         // Tporch
+    0.1e-3,         // Tseptr
+    0.2671875e-3,   // Tpixel 171/2/320
+    352.3e-3,       // Tline ~90/256, but exactly Sp00s1s2s = 9+1+171+.1+171/2+.1+171/2+.1 = 352.3
+    320,
+    256,
+    1,
+    YUV,
+    FMT_422 },
+
+{
+    (char *) "MMSSTV MR115",
+    (char *) "MR115",
+    9.0e-3,         // Tsync
+    1.0e-3,         // Tporch
+    0.1e-3,         // Tseptr
+    0.34375e-3,     // Tpixel 220/2/320
+    450.3e-3,       // Tline ~115/256, but exactly Sp00s1s2s = 9+1+220+.1+220/2+.1+220/2+.1 = 450.3
+    320,
+    256,
+    1,
+    YUV,
+    FMT_422 },
+
+{
+    (char *) "MMSSTV MR140",
+    (char *) "MR140",
+    9.0e-3,         // Tsync
+    1.0e-3,         // Tporch
+    0.1e-3,         // Tseptr
+    0.4203125e-3,   // Tpixel 269/2/320
+    548.3e-3,       // Tline ~140/256, but exactly Sp00s1s2s = 9+1+269+.1+269/2+.1+269/2+.1 = 548.3
+    320,
+    256,
+    1,
+    YUV,
+    FMT_422 },
+
+{
+    (char *) "MMSSTV MR175",
+    (char *) "MR175",
+    9.0e-3,         // Tsync
+    1.0e-3,         // Tporch
+    0.1e-3,         // Tseptr
+    0.5265625e-3,   // Tpixel 337/2/320
+    684.3e-3,       // Tline ~175/256, but exactly Sp00s1s2s = 9+1+337+.1+337/2+.1+337/2+.1 = 684.3
+    320,
+    256,
+    1,
+    YUV,
+    FMT_422 },
+
+// MP is like PD: Yodd U V Yeven
+{
+    (char *) "MMSSTV MP73",
+    (char *) "MP73",
+    9.0e-3,         // Tsync
+    1.0e-3,         // Tporch
+    0e-3,           // Tseptr
+    0.4375e-3,      // Tpixel 140/320
+    570.0e-3,       // Tline ~73/128, but exactly SpYUVY = 9+1+140+140+140+140 = 570
+    320,
+    128,
+    2,
+    YUV,
+    FMT_DEFAULT },
+
+{
+    (char *) "MMSSTV MP115",
+    (char *) "MP115",
+    9.0e-3,         // Tsync
+    1.0e-3,         // Tporch
+    0e-3,           // Tseptr
+    0.696875e-3,    // Tpixel 223/320
+    902.0e-3,       // Tline ~115/128, but exactly SpYUVY = 9+1+223+223+223+223 = 902
+    320,
+    128,
+    2,
+    YUV,
+    FMT_DEFAULT },
+
+{
+    (char *) "MMSSTV MP140",
+    (char *) "MP140",
+    9.0e-3,         // Tsync
+    1.0e-3,         // Tporch
+    0e-3,           // Tseptr
+    0.84375e-3,     // Tpixel 270/320
+    1090.0e-3,      // Tline ~140/128, but exactly SpYUVY = 9+1+270+270+270+270 = 1090
+    320,
+    128,
+    2,
+    YUV,
+    FMT_DEFAULT },
+
+{
+    (char *) "MMSSTV MP175",
+    (char *) "MP175",
+    9.0e-3,         // Tsync
+    1.0e-3,         // Tporch
+    0e-3,           // Tseptr
+    1.0625e-3,      // Tpixel 340/320
+    1370.0e-3,      // Tline ~175/128, but exactly SpYUVY = 9+1+340+340+340+340 = 1370
+    320,
+    128,
+    2,
+    YUV,
+    FMT_DEFAULT }
 };
 
 /*
@@ -374,13 +531,30 @@ ModeSpec_t ModeSpec[] = {
  *
  */
 
-//                 x0    x1    x2    x3   x4    x5    x6    x7    x8    x9    xA    xB   xC   xD   xE    xF
+u1_t   VISmap[] = {
+//  x0     x1     x2     x3    x4     x5     x6     x7     x8     x9     xA     xB    xC    xD    xE     xF
+    0,     0,     R8BW,  0,    R24,   0,     R12BW, 0,     R36,   0,     R24BW, 0,    R72,  0,    0,     0,     // 0x
+    0,     0,     0,     0,    0,     0,     0,     0,     0,     0,     0,     0,    0,    0,    0,     0,     // 1x
+    M4,    0,     0,     VISX, M3,    0,     0,     0,     M2,    0,     0,     0,    M1,   0,    0,     0,     // 2x
+    0,     0,     0,     0,    0,     0,     0,     W2180, S2,    0,     0,     0,    S1,   0,    0,     W2120, // 3x
+    0,     0,     0,     0,    0,     0,     0,     0,     0,     0,     0,     0,    SDX,  0,    0,     0,     // 4x
+    0,     0,     0,     0,    0,     0,     0,     0,     0,     0,     0,     0,    0,    PD50, PD290, PD120, // 5x
+    PD180, PD240, PD160, PD90, 0,     0,     0,     0,     0,     0,     0,     0,    0,    0,    0,     0,     // 6x
+    0,     P3,    P5,    P7,   0,     0,     0,     0,     0,     0,     0,     0,    0,    0,    0,     0      // 7x
+};
 
-u1_t   VISmap[] = { 0,    0,    R8BW, 0,   R24,  0,    R12BW,0,    R36,  0,    R24BW,0,   R72, 0,   0,    0,     // 0x
-                    0,    0,    0,    0,   0,    0,    0,    0,    0,    0,    0,    0,   0,   0,   0,    0,     // 1x
-                    M4,   0,    0,    0,   M3,   0,    0,    0,    M2,   0,    0,    0,   M1,  0,   0,    0,     // 2x
-                    0,    0,    0,    0,   0,    0,    0,    W2180,S2,   0,    0,    0,   S1,  0,   0,    W2120, // 3x
-                    0,    0,    0,    0,   0,    0,    0,    0,    0,    0,    0,    0,   SDX, 0,   0,    0,     // 4x
-                    0,    0,    0,    0,   0,    0,    0,    0,    0,    0,    0,    0,   0,   PD50,PD290,PD120, // 5x
-                    PD180,PD240,PD160,PD90,0,    0,    0,    0,    0,    0,    0,    0,   0,   0,   0,    0,     // 6x
-                    0,    P3,   P5,   P7,  0,    0,    0,    0,    0,    0,    0,    0,   0,   0,   0,    0 };   // 7x
+/*
+ * MMSSTV extended VIS codes
+ */
+ 
+u1_t   VISXmap[] = {
+//  x0    x1    x2    x3   x4    x5    x6    x7    x8     x9     xA     xB   xC     xD   xE    xF
+    0,    0,    0,    0,   0,    0,    0,    0,    0,     0,     0,     0,   0,     0,   0,    0,     // 0x
+    0,    0,    0,    0,   0,    0,    0,    0,    0,     0,     0,     0,   0,     0,   0,    0,     // 1x
+    0,    0,    0,    0,   0,    MP73, 0,    0,    0,     MP115, MP140, 0,   MP175, 0,   0,    0,     // 2x
+    0,    0,    0,    0,   0,    0,    0,    0,    0,     0,     0,     0,   0,     0,   0,    0,     // 3x
+    0,    0,    0,    0,   0,    MR73, MR90, 0,    0,     MR115, MR140, 0,   MR175, 0,   0,    0,     // 4x
+    0,    0,    0,    0,   0,    0,    0,    0,    0,     0,     0,     0,   0,     0,   0,    0,     // 5x
+    0,    0,    0,    0,   0,    0,    0,    0,    0,     0,     0,     0,   0,     0,   0,    0,     // 6x
+    0,    0,    0,    0,   0,    0,    0,    0,    0,     0,     0,     0,   0,     0,   0,    0,     // 7x
+};

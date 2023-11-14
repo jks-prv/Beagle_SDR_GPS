@@ -19,7 +19,7 @@ void sstv_video_init(sstv_chan_t *e, SSTV_REAL rate, u1_t mode)
 {
     e->pic.Rate = rate;
     e->pic.Mode = mode;
-    ModeSpec_t  *m = &ModeSpec[mode];
+    ModeSpec_t *m = &ModeSpec[mode];
     e->pic.modespec = m;
 
     SSTV_REAL spp = rate * m->LineTime / m->ImgWidth;
@@ -122,10 +122,9 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
     // Starting times of video channels on every line, counted from beginning of line
     SSTV_REAL Tpixels;
     
-    switch (Mode) {
+    switch (m->format) {
 
-    // 4:2:0
-    case R36:
+    case FMT_420:
         // Sp00s[12]
         ChanLen[0]   = m->PixelTime * m->ImgWidth * 2;
         ChanLen[1]   = ChanLen[2] = m->PixelTime * m->ImgWidth;
@@ -134,9 +133,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
         ChanStart[2] = ChanStart[1];
         break;
 
-    // 4:2:2
-    case R24:
-    case R72:
+    case FMT_422:
         // Sp00s1s2
         ChanLen[0]   = m->PixelTime * m->ImgWidth * 2;
         ChanLen[1]   = ChanLen[2] = m->PixelTime * m->ImgWidth;
@@ -145,8 +142,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
         ChanStart[2] = ChanStart[1] + ChanLen[1] + m->SeptrTime;
         break;
 
-    // 2:4:2
-    case W2120:
+    case FMT_242:
     // NB: not true for W2180
         // S0112
         Tpixels      = m->PixelTime * m->ImgWidth * 3.0 / 4.0;
@@ -157,9 +153,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
         ChanStart[2] = ChanStart[1] + ChanLen[1];
         break;
 
-    case S1:
-    case S2:
-    case SDX:
+    case FMT_REV:
         // s0s1Sp2
         ChanLen[0]   = ChanLen[1] = ChanLen[2] = m->PixelTime * m->ImgWidth;
         ChanStart[0] = m->SeptrTime;
@@ -167,6 +161,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
         ChanStart[2] = ChanStart[1] + ChanLen[1] + m->SyncTime + m->PorchTime;
         break;
 
+    case FMT_DEFAULT:
     default:
         // Sp0s1s2
         ChanLen[0]   = ChanLen[1] = ChanLen[2] = m->PixelTime * m->ImgWidth;
@@ -177,22 +172,13 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
     }
 
     // Number of channels per line
-    switch(Mode) {
-
-    case R24BW:
-    case R12BW:
-    case R8BW:
+    if (m->format == FMT_BW)
         NumChans = 1;
-        break;
-
-    case R36:
+    else
+    if (m->format == FMT_420)
         NumChans = 2;
-        break;
-
-    default:
+    else
         NumChans = 3;
-        break;
-    }
 
     // Plan ahead the time instants (in samples) at which to take pixels out
     int PixelIdx = 0;
@@ -202,7 +188,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
             for (x=0; x < m->ImgWidth; x++) {
                 assert_array_dim(PixelIdx, e->PixelGrid_len);
 
-                if (Mode == R36) {
+                if (m->format == FMT_420) {
                     if (Channel == 1) {
                         if (y % 2 == 0)
                             PixelGrid[PixelIdx].Channel = 1;
@@ -443,7 +429,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
         (*e->image)[x][y][Channel] = e->StoredLum[SampleNum];
 
         // Some modes have R-Y & B-Y channels that are twice the height of the Y channel
-        if (Channel > 0 && Mode == R36)
+        if (Channel > 0 && m->format == FMT_420)
             (*e->image)[x][y+1][Channel] = e->StoredLum[SampleNum];
 
         // Calculate and draw pixels to pixbuf on line change

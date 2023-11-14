@@ -53,7 +53,6 @@ static void sstv_task(void *param)
         
         u1_t mode = sstv_get_vis(e);
         if (mode == UNKNOWN) continue;
-        printf("SSTV: VIS mode=%d\n", mode);
         e->state = BUSY;
         
         SSTV_REAL initial_rate;
@@ -262,6 +261,12 @@ bool sstv_msgs(char *msg, int rx_chan)
 		return true;
 	}
 	
+	if (strcmp(msg, "SET mmsstv") == 0) {
+		printf("SSTV: MMSSTV only\n");
+		e->mmsstv_only = true;
+		return true;
+	}
+	
 	return false;
 }
 
@@ -285,7 +290,7 @@ void SSTV_main() {
     int n;
     char *file;
     int fd;
-    #define SSTV_FNAME      DIR_CFG "/samples/s2.test.pattern.au"
+    #define SSTV_FNAME      DIR_CFG "/samples/SSTV.test.au"
     printf("SSTV: mmap " SSTV_FNAME "\n");
     scall("sstv open", (fd = open(SSTV_FNAME, O_RDONLY)));
     off_t fsize = kiwi_file_size(SSTV_FNAME);
