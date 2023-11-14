@@ -442,10 +442,7 @@ int main(int argc, char *argv[])
 		kiwi.ext_clk = cfg_bool("ext_ADC_clk", &err, CFG_OPTIONAL);
 		if (err) kiwi.ext_clk = false;
 		
-		u2_t ctrl = CTRL_EEPROM_WP;
-		ctrl_clr_set(0xffff, ctrl);
-		if (kiwi.ext_clk) ctrl |= CTRL_OSC_DIS;
-		ctrl_clr_set(0, ctrl);
+		ctrl_clr_set(0xffff, CTRL_EEPROM_WP);
 
 		net.dna = fpga_dna();
 		printf("device DNA %08x|%08x\n", PRINTF_U64_ARG(net.dna));
@@ -469,6 +466,18 @@ int main(int argc, char *argv[])
     // need to do gps clock switch even if gps is not enabled
     gps_fe_init();
 
+    printf("switching GPS clock..\n");
+    kiwi_msleep(100);
+    ctrl_clr_set(0, CTRL_GPS_CLK_EN);
+    kiwi_msleep(100);
+    
+    // switch to ext clock only after GPS clock switch occurs
+    if (kiwi.ext_clk) {
+        printf("switching to external ADC clock..\n");
+		ctrl_clr_set(0, CTRL_OSC_DIS);
+        kiwi_msleep(100);
+    }
+	
 	if (do_gps) {
 		if (!GPS_CHANS) panic("no GPS_CHANS configured");
         #ifdef USE_GPS
@@ -476,11 +485,6 @@ int main(int argc, char *argv[])
 		#endif
 	}
     
-    printf("switching GPS clock..\n");
-    kiwi_msleep(100);
-    ctrl_clr_set(0, CTRL_GPS_CLK_EN);
-    kiwi_msleep(100);
-	
 	CreateTask(stat_task, NULL, MAIN_PRIORITY);
 
     #ifdef USE_OTHER
