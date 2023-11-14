@@ -246,35 +246,31 @@ static bool check_pmux(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_
     check(pmux_reg_off != 0);
     _pmux = pmux_m[pmux_reg_off>>2];
     
-    if (debian_ver <= 8) {
-        bad = false;
-    } else {
-        val1_ok = val2_ok = true;
-        if (pmux_val1 && _pmux != pmux_val1) val1_ok = false;
-        if (pmux_val2 == PMUX_NONE || _pmux != pmux_val2) val2_ok = false;
-    
-        if (val1_ok || val2_ok) {
-            #ifdef SHOW_CHECK_PMUX
-                lprintf("PMUX %d_%-2d %s.%-2d %-9s 0x%04x OK  got 0x%02x%s want %s0x%02x%s ",
-                    GPIO_BANK(gpio), gpio.bit, (gpio.pin & P9)? "P9":"P8", gpio.pin & PIN_BITS, name, pmux_reg_off,
-                    _pmux, pmux_deco(0, _pmux, gpio), val1_ok? "*":" ", pmux_val1, pmux_deco(1, pmux_val1, gpio));
-                if (pmux_val2 != PMUX_NONE)
-                    lprintf("or %s0x%02x%s ", val2_ok? "*":" ", pmux_val2, pmux_deco(0, pmux_val2, gpio));
-                lprintf("\n");
-            #endif
-        } else {
-            lprintf("PMUX %d_%-2d %s.%-2d %-9s 0x%04x BAD got 0x%02x%s want  0x%02x%s ",
+    val1_ok = val2_ok = true;
+    if (pmux_val1 && _pmux != pmux_val1) val1_ok = false;
+    if (pmux_val2 == PMUX_NONE || _pmux != pmux_val2) val2_ok = false;
+
+    if (val1_ok || val2_ok) {
+        #ifdef SHOW_CHECK_PMUX
+            printf("PMUX %d_%-2d %s.%-2d %-9s 0x%04x OK  got 0x%02x%s want %s0x%02x%s ",
                 GPIO_BANK(gpio), gpio.bit, (gpio.pin & P9)? "P9":"P8", gpio.pin & PIN_BITS, name, pmux_reg_off,
-                _pmux, pmux_deco(0, _pmux, gpio), pmux_val1, pmux_deco(1, pmux_val1, gpio));
+                _pmux, pmux_deco(0, _pmux, gpio), val1_ok? "*":" ", pmux_val1, pmux_deco(1, pmux_val1, gpio));
             if (pmux_val2 != PMUX_NONE)
-                lprintf("or  0x%02x%s ", pmux_val2, pmux_deco(0, pmux_val2, gpio));
-            lprintf("\n");
-            bad = true;
-        }
+                printf("or %s0x%02x%s ", val2_ok? "*":" ", pmux_val2, pmux_deco(0, pmux_val2, gpio));
+            printf("\n");
+        #endif
+    } else {
+        printf("PMUX %d_%-2d %s.%-2d %-9s 0x%04x BAD got 0x%02x%s want  0x%02x%s ",
+            GPIO_BANK(gpio), gpio.bit, (gpio.pin & P9)? "P9":"P8", gpio.pin & PIN_BITS, name, pmux_reg_off,
+            _pmux, pmux_deco(0, _pmux, gpio), pmux_val1, pmux_deco(1, pmux_val1, gpio));
+        if (pmux_val2 != PMUX_NONE)
+            printf("or  0x%02x%s ", pmux_val2, pmux_deco(0, pmux_val2, gpio));
+        printf("\n");
+        //bad = true;
     }
 
     #ifdef SHOW_CHECK_PMUX
-        lprintf("\tPMUX check %-9s GPIO %d_%-2d %s.%-2d eeprom %3d/0x%02x has attr 0x%02x %s\n",
+        printf("\tPMUX check %-9s GPIO %d_%-2d %s.%-2d eeprom %3d/0x%02x has attr 0x%02x %s\n",
             name, gpio.bank, gpio.bit, (gpio.pin & P9)? "P9":"P8", gpio.pin & PIN_BITS, gpio.eeprom_off, gpio.eeprom_off,
             _pmux, pmux_deco(0, _pmux, gpio));
     #endif
