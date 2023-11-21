@@ -23,6 +23,7 @@
 #include <math.h>
 
 #include "kiwi.h"
+#include "mode.h"
 #include "clk.h"
 #include "misc.h"
 #include "gps.h"

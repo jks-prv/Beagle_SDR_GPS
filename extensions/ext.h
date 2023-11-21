@@ -91,6 +91,7 @@ ext_auth_e ext_auth(int rx_chan);
 void ext_notify_connected(int rx_chan, u4_t seq, char *msg);
 void ext_kick(int rx_chan);
 double ext_get_displayed_freq_kHz(int rx_chan);
+int ext_get_mode(int rx_chan);
 
 // routines to send messages to extension client-part
 C_LINKAGE(int ext_send_msg(int rx_chan, bool debug, const char *msg, ...));

@@ -11,6 +11,7 @@
 
 #include "types.h"
 #include "kiwi.h"
+#include "mode.h"
 #include "kiwi_assert.h"
 #include "wdsp.h"
 #include "fir.h"

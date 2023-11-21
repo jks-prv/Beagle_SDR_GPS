@@ -4,6 +4,7 @@
 
 #include "types.h"
 #include "kiwi.h"
+#include "mode.h"
 #include "printf.h"
 #include "clk.h"
 #include "cuteSDR.h"

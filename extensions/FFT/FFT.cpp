@@ -3,6 +3,7 @@
 #include "ext.h"	// all calls to the extension interface begin with "ext_", e.g. ext_register()
 
 #include "kiwi.h"
+#include "mode.h"
 #include "misc.h"
 #include "cuteSDR.h"
 #include "rx_sound.h"
@@ -49,7 +50,7 @@ typedef struct {
 		u1_t fft[INTEG_WIDTH];
 	} dsp;
 	
-	bool reset, stop, isSAM;
+	bool reset, stop;
 	double time, fft_sec;
 	int bins, last_bin;
 	double fi;
@@ -208,7 +209,6 @@ bool fft_msgs(char *msg, int rx_chan)
         
 		if (e->run != FUNC_OFF) {
 			float scale = 10.0 * 2.0 / (CUTESDR_MAX_VAL * CUTESDR_MAX_VAL * INTEG_WIDTH * INTEG_WIDTH);
-            e->isSAM = (snd->mode == MODE_SAM || snd->mode == MODE_SAL || snd->mode == MODE_SAU || snd->mode == MODE_SAS || snd->mode == MODE_QAM);
             float boost = 1;
 			
 			switch (e->run) {
@@ -219,10 +219,10 @@ bool fft_msgs(char *msg, int rx_chan)
 			        break;
 			
 			    case FUNC_SPEC:
-			        e->instance = e->isSAM? SND_INSTANCE_FFT_CHAN_NULL : SND_INSTANCE_FFT_PASSBAND;
+			        e->instance = snd->isSAM? SND_INSTANCE_FFT_CHAN_NULL : SND_INSTANCE_FFT_PASSBAND;
 
                     // scale up to roughly match WF spectrum values
-                    boost = e->isSAM? ( (snd->mode == MODE_QAM)? (P2_F? P2_F : 100) : (P1_F? P1_F : 100) ) : (P0_F? P0_F : 1e6);
+                    boost = snd->isSAM? ( (snd->mode == MODE_QAM)? (P2_F? P2_F : 100) : (P1_F? P1_F : 100) ) : (P0_F? P0_F : 1e6);
                     e->last_ms = 0;
 			        break;
 			
@@ -236,7 +236,7 @@ bool fft_msgs(char *msg, int rx_chan)
             e->fft_scale      = scale * boost;
 			ext_register_receive_FFT_samps(fft_data, rx_chan, POST_FILTERED);
             printf("FFT func=%s mode=%s isSAM=%d (scale=%g * boost=%.1g) => spectrum_scale=%g fft_scale=%g\n",
-                func_s[e->run+1], mode_uc[snd->mode], e->isSAM, scale, boost, e->spectrum_scale, e->fft_scale);
+                func_s[e->run+1], mode_uc[snd->mode], snd->isSAM, scale, boost, e->spectrum_scale, e->fft_scale);
 		} else {
 			ext_unregister_receive_FFT_samps(rx_chan);
 		}
