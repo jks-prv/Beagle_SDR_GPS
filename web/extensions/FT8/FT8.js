@@ -188,7 +188,7 @@ function ft8_controls_setup()
 	   w3_innerHTML('id-ft8-err',
 	      'FT8 extension only works on Kiwis configured for 12 kHz wide channels');
 	} else {
-	   ext_send('SET ft8_start='+ ft8.FT8);
+	   ext_send('SET ft8_start='+ ft8.FT8 +' debug='+ (dbgUs? 1:0));
 	}
 
 	ft8.url_params = ext_param();
