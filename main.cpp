@@ -76,7 +76,7 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 u4_t ov_mask, snd_intr_usec;
 
 bool create_eeprom, need_hardware, kiwi_reg_debug, have_ant_switch_ext, gps_e1b_only,
-    disable_led_task, is_multi_core, debug_printfs, cmd_debug, anti_aliased;
+    disable_led_task, is_multi_core, debug_printfs, cmd_debug;
 
 int main_argc;
 char **main_argv;
@@ -336,7 +336,7 @@ int main(int argc, char *argv[])
     }
     
     bool update_admcfg = false;
-    anti_aliased = admcfg_default_bool("anti_aliased", false, &update_admcfg);
+    kiwi.anti_aliased = admcfg_default_bool("anti_aliased", false, &update_admcfg);
     if (update_admcfg) admcfg_save_json(cfg_adm.json);      // during init doesn't conflict with admin cfg
     
     if (fw_sel == FW_SEL_SDR_RX4_WF4) {

@@ -149,11 +149,11 @@ TOOLS_DIR := $(BUILD_DIR)/tools
 DIR_DATA = /tmp/kiwi.data
 
 ifeq ($(OPT),0)
-	OBJ_DIR_DEFAULT = $(OBJ_DIR)
+    OBJ_DIR_DEFAULT = $(OBJ_DIR)
 else ifeq ($(OPT),1)
-	OBJ_DIR_DEFAULT = $(OBJ_DIR)
+    OBJ_DIR_DEFAULT = $(OBJ_DIR)
 else
-	OBJ_DIR_DEFAULT = $(OBJ_DIR_O3)
+    OBJ_DIR_DEFAULT = $(OBJ_DIR_O3)
 endif
 
 PKGS = 
@@ -199,28 +199,28 @@ EXTS = $(INT_EXTS) $(PVT_EXTS)
 
 ifeq ($(OTHER_DIR),)
     GPS = gps gps/ka9q-fec gps/GNSS-SDRLIB
-    RX = rx rx/CuteSDR rx/Teensy rx/wdsp rx/csdr rx/kiwi rx/CMSIS
+-include rx/Makefile
 else
     GPS =
     RX = rx
 endif
 
 ifneq ($(RPI),true)
-	_DIRS = pru $(PKGS)
+    _DIRS = pru $(PKGS)
 endif
 _DIR_PLATFORMS = $(addprefix platform/, ${PLATFORMS})
 _DIRS_O3 += . $(PKGS_O3) platform/common $(_DIR_PLATFORMS) $(EXT_DIRS) $(EXT_SUBDIRS) \
-	$(RX) $(GPS) dev ui init support net web arch/$(ARCH)
+    $(RX) $(GPS) dev ui init support net web arch/$(ARCH)
 
 ifeq ($(OPT),0)
-	DIRS = $(_DIRS) $(_DIRS_O3)
-	DIRS_O3 =
+    DIRS = $(_DIRS) $(_DIRS_O3)
+    DIRS_O3 =
 else ifeq ($(OPT),1)
-	DIRS = $(_DIRS) $(_DIRS_O3)
-	DIRS_O3 =
+    DIRS = $(_DIRS) $(_DIRS_O3)
+    DIRS_O3 =
 else
-	DIRS = $(_DIRS)
-	DIRS_O3 = $(_DIRS_O3)
+    DIRS = $(_DIRS)
+    DIRS_O3 = $(_DIRS_O3)
 endif
 
 VPATH = $(DIRS) $(DIRS_O3) $(EXT_SUBDIRS_KEEP)
@@ -1387,6 +1387,12 @@ endif
 	@if [ -f $(REBOOT) ]; then rm $(REBOOT); echo "\nMUST REBOOT FOR CHANGES TO TAKE EFFECT"; echo -n "Press \"return\" key to reboot else control-C: "; read in; reboot; fi;
 	@if [ -f $(FORCE_REBOOT) ]; then rm $(FORCE_REBOOT); echo "\nMUST REBOOT FOR CHANGES TO TAKE EFFECT. REBOOTING..."; reboot; fi;
 
+endif
+
+ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
+    restore_dx:
+	    cp unix_env/kiwi.config/dist.dx.json ../kiwi.config/dx.json
+	    cp unix_env/kiwi.config/dist.dx_config.json ../kiwi.config/dx_config.json
 endif
 
 
