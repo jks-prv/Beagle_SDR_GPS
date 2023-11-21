@@ -1227,12 +1227,12 @@ function w3_background_color(el_id, color)
 	return prev;
 }
 
-// c1 = fg-color if cond true/undefined
-// c2 = bg-color (optional) if cond true/undefined
+// c1 = color if cond false
+// c2 = color (optional) if cond true/undefined
 // c[12] =
-//    'css-[fb]g-color'
-//    ['css-fg-color', 'css-bg-color']
-//    'w3-color' or 'w3-text-color'
+//    'css-color(fg)'
+//    ['css-color(fg)', 'css-color(bg)']
+//    'w3-text-color'(fg) or 'w3-color'(bg)
 // CSS color '' to revert to default color
 function w3_colors(el_id, c1, c2, cond)
 {
@@ -2195,6 +2195,9 @@ function w3int_btn_evt(ev, path, cb, cb_param)
                kiwi_clearTimeout(timeout);
                if (triggered) {
                   //console.log('w3int_btn_evt HOLD_PREV_TRIGGERED, IGNORE CLICK');
+                  if (w3_contains(el, 'w3-hold-done')) {
+                     w3_call(cb, path, cb_param, /* first */ false, { type: 'hold-done' });
+                  }
                   w3int_post_action();
                   //canvas_log('HOLD2');
                   return ignore(ev);
