@@ -82,7 +82,7 @@ void fax_task(void *param)
             }
             e->seq++;
 		    
-		    m_FaxDecoder[rx_chan].ProcessSamples(&rx->real_samples[e->rd_pos][0], FASTFIR_OUTBUF_SIZE, e->shift);
+		    m_FaxDecoder[rx_chan].ProcessSamples(&rx->real_samples_s2[e->rd_pos][0], FASTFIR_OUTBUF_SIZE, e->shift);
             evFAX(EC_EVENT, EV_EXT, ev_dump, "FAX", evprintf("ProcessSamples "));
             NextTaskFast("fax_task");
 		    e->shift = 0;

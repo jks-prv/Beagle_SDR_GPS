@@ -98,7 +98,7 @@ void cw_task(void *param)
             e->seq++;
 		    
 		    //real_printf("%d ", e->rd_pos); fflush(stdout);
-		    CwDecode_RxProcessor(rx_chan, 0, FASTFIR_OUTBUF_SIZE, &rx->real_samples[e->rd_pos][0]);
+		    CwDecode_RxProcessor(rx_chan, 0, FASTFIR_OUTBUF_SIZE, &rx->real_samples_s2[e->rd_pos][0]);
 			e->rd_pos = (e->rd_pos+1) & (N_DPBUF-1);
 		}
     }

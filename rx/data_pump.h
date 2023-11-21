@@ -45,14 +45,14 @@ typedef struct {
 		    u4_t in_seq[N_DPBUF];
 		#endif
 		
-		TYPECPX agc_samples[FASTFIR_OUTBUF_SIZE];
+		TYPECPX agc_samples_c[FASTFIR_OUTBUF_SIZE];
 
-		TYPEREAL demod_samples[FASTFIR_OUTBUF_SIZE];
+		TYPEREAL demod_samples_r[FASTFIR_OUTBUF_SIZE];
 
         // real mode input buf for cw, sstv, fax decoders etc.
 		u4_t real_wr_pos, real_rd_pos;
 		u4_t real_seq, real_seqnum[N_DPBUF];
-		TYPEMONO16 real_samples[N_DPBUF][FASTFIR_OUTBUF_SIZE];
+		TYPEMONO16 real_samples_s2[N_DPBUF][FASTFIR_OUTBUF_SIZE];
 		
 		int freqHz[N_DPBUF];    // approx freq in effect when buffer captured
 	};

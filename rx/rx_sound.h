@@ -88,7 +88,7 @@ typedef struct {
     u4_t firewall[32];
 	u4_t seq;
 	bool isSAM;
-	float norm_locut, norm_hicut;
+	float norm_locut, norm_hicut, norm_pbc;
     int window_func;
 	ima_adpcm_state_t adpcm_snd;
 
@@ -106,6 +106,8 @@ typedef struct {
         bool snd_seq_ck_init;
 	    u4_t snd_seq_ck;
     #endif
+
+	ext_receive_FFT_samps_t rsid_FFT;
 
 	double freq, gen, locut, hicut;
 	int mode, genattn, mute, test, deemp, deemp_nfm;
