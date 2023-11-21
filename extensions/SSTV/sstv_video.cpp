@@ -143,7 +143,6 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
         break;
 
     case FMT_242:
-    // NB: not true for W2180
         // S0112
         Tpixels      = m->PixelTime * m->ImgWidth * 3.0 / 4.0;
         ChanLen[0]   = ChanLen[2] = Tpixels;

@@ -106,6 +106,8 @@
 
 enum { FMT_DEFAULT, FMT_BW, FMT_420, FMT_422, FMT_242, FMT_REV };
 
+#define UNSUPPORTED true
+
 typedef struct {
   char   *Name;
   char   *ShortName;
@@ -119,6 +121,7 @@ typedef struct {
   u1_t  LineHeight;
   u1_t  ColorEnc;
   u1_t format;
+  bool unsupported;
 } ModeSpec_t;
 extern ModeSpec_t ModeSpec[];
 
@@ -232,13 +235,16 @@ extern sstv_chan_t sstv_chan[MAX_RX_CHANS];
 // SSTV modes
 enum {
     UNKNOWN=0, VISX=1,
+    AVT,
     M1,    M2,    M3,    M4,
     S1,    S2,    SDX,
     R72,   R36,   R24,   R24BW, R12BW, R8BW,
-    W2120, W2180,
+    SC60,  SC120, SC180,
     PD50,  PD90,  PD120, PD160, PD180, PD240, PD290,
     P3,    P5,    P7,
-    MR73,  MR90,  MR115, MR140, MR175, MP73,  MP115, MP140, MP175
+    MP73,  MP115, MP140, MP175,
+    MR73,  MR90,  MR115, MR140, MR175,
+    ML180, ML240, ML280, ML320
 };
 
 // Color encodings
