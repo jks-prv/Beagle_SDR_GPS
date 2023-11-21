@@ -58,7 +58,7 @@ var kiwi = {
 
    queued: 0,
    
-   // CAUTION: must match order in kiwi.h
+   // CAUTION: must match order in mode.h
    // CAUTION: add new entries at the end
    modes_lc: [ 'am', 'amn', 'usb', 'lsb', 'cw', 'cwn', 'nbfm', 'iq', 'drm',
               'usn', 'lsn', 'sam', 'sau', 'sal', 'sas', 'qam', 'nnfm' ],
