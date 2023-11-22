@@ -28,6 +28,8 @@
 
 // Copyright (c) 2017-2023 John Seamons, ZL4VO/KF6VO
 
+// NB: CAudioResample is also used by the HFDL and ALE_2G extensions
+
 #ifndef CAUDIORESAMPLE_H
 #define CAUDIORESAMPLE_H
 

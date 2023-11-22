@@ -41,6 +41,7 @@
 #include "util/Utilities.h"
 #include "util/FileTyper.h"
 
+#include "mode.h"
 #include "sound/sound.h"
 #include "sound/soundnull.h"
 #include "sound/AudioFileIn.h"

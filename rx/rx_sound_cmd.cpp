@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "options.h"
 #include "config.h"
 #include "kiwi.h"
+#include "mode.h"
 #include "printf.h"
 #include "rx.h"
 #include "rx_util.h"
@@ -183,15 +184,16 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
                 if (s->mode != _mode || n == 5) {
 
                     // when switching out of IQ or DRM modes: reset AGC, compression state
-                    bool IQ_or_DRM_or_stereo = (s->mode == MODE_IQ || s->mode == MODE_DRM || s->mode == MODE_SAS || s->mode == MODE_QAM);
-                    bool new_IQ_or_DRM_or_stereo = (_mode == MODE_IQ || _mode == MODE_DRM || _mode == MODE_SAS || _mode == MODE_QAM);
+                    bool IQ_or_DRM_or_stereo = (mode_flags[s->mode] & IS_STEREO);
+                    bool new_IQ_or_DRM_or_stereo = (mode_flags[_mode] & IS_STEREO);
+            
                     if (IQ_or_DRM_or_stereo && !new_IQ_or_DRM_or_stereo && (s->cmd_recv & CMD_AGC)) {
                         //cprintf(conn, "SND out IQ mode -> reset AGC, compression\n");
                         m_Agc[rx_chan].SetParameters(s->agc, s->hang, s->thresh, s->manGain, s->slope, s->decay, frate);
                         memset(&s->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
                     }
             
-                    s->isSAM = (_mode >= MODE_SAM && _mode <= MODE_QAM);
+                    s->isSAM = mode_flags[_mode] & IS_SAM;
                     if (s->isSAM && n == 5) {
                         s->SAM_mparam = s->mparam & MODE_FLAGS_SAM;
                         //cprintf(conn, "SAM DC_block=%d fade_leveler=%d chan_null=%d\n",
@@ -199,7 +201,7 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
                     }
 
                     // reset SAM demod on non-SAM to SAM transition
-                    if (s->isSAM && !(s->mode >= MODE_SAM && s->mode <= MODE_QAM)) {
+                    if (s->isSAM && ((mode_flags[s->mode] & IS_SAM) == 0)) {
                         //cprintf(conn, "SAM_PLL_RESET\n");
                         wdsp_SAM_PLL(rx_chan, PLL_RESET);
                     }
@@ -208,13 +210,13 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
                     s->specAF_instance = SND_INSTANCE_FFT_PASSBAND;
 
                     s->mode = _mode;
-                    if (s->mode == MODE_NBFM || s->mode == MODE_NNFM)
+                    if (mode_flags[s->mode] & IS_NBFM)
                         new_nbfm = true;
                     s->change_freq_mode = true;
                     //cprintf(conn, "SND mode %s\n", mode_m);
                 }
 
-                if ((s->mode == MODE_NBFM || s->mode == MODE_NNFM) && (new_freq || new_nbfm)) {
+                if ((mode_flags[s->mode] & IS_NBFM) && (new_freq || new_nbfm)) {
                     m_Squelch[rx_chan].Reset();
                     conn->last_sample.re = conn->last_sample.im = 0;
                 }
@@ -233,6 +235,7 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
                 if (s->locut <= 0 && s->hicut >= 0) {     // straddles carrier
                     s->norm_locut = 0.0;
                     s->norm_hicut = MAX(-s->locut, s->hicut);
+                    s->norm_pbc = 0;
                 } else {
                     if (s->locut > 0) {
                         s->norm_locut = s->locut;
@@ -241,6 +244,7 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
                         s->norm_hicut = -s->locut;
                         s->norm_locut = -s->hicut;
                     }
+                    s->norm_pbc = s->norm_locut + (s->norm_hicut - s->norm_locut);
                 }
             
                 // hbw for post AM det is max of hi/lo filter cuts
@@ -399,7 +403,7 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
                 s->squelch = _squelch;
                 s->squelched = false;
                 //cprintf(conn, "SND SET squelch=%d param=%.2f %s\n", s->squelch, _squelch_param, mode_lc[s->mode]);
-                if (s->mode == MODE_NBFM || s->mode == MODE_NNFM) {
+                if (mode_flags[s->mode] & IS_NBFM) {
                     m_Squelch[rx_chan].SetSquelch(s->squelch, _squelch_param);
                 } else {
                     float squelch_tail = _squelch_param;
@@ -519,7 +523,7 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
         if (n == 1 || n == 2) {
             did_cmd = true;
             if (n == 1) {
-                _nfm = (s->mode == MODE_NBFM || s->mode == MODE_NNFM);
+                _nfm = (mode_flags[s->mode] & IS_NBFM);
                 //cprintf(conn, "DEEMP: _de_emp=%d mode=%d _nfm=%d (old kiwiclient API)\n", _de_emp, s->mode, _nfm);
             } else {
                 //cprintf(conn, "DEEMP: _de_emp=%d _nfm=%d\n", _de_emp, _nfm);

@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "mode.h"
 #include "rx.h"
 #include "rx_cmd.h"
 #include "rx_util.h"
@@ -55,6 +56,15 @@ Boston, MA  02110-1301, USA.
 #include <signal.h>
 
 rx_util_t rx_util;
+
+conn_t *conn_other(conn_t *conn, int type)
+{
+    conn_t *cother = conn->other;
+    if (cother && cother->type == type && cother->rx_channel == conn->rx_channel) {
+        return cother;
+    }
+    return NULL;
+}
 
 // CAUTION: returned tstamp must be unique even if called in rapid succession!
 u64_t rx_conn_tstamp()

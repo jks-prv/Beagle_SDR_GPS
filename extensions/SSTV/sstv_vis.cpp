@@ -147,9 +147,9 @@ u1_t sstv_get_vis(sstv_chan_t *e)
                         }
                     }
 
-                    // if a data bit in the k == 9 bit position then this might be an extended VIS-16
+                    // if a data bit in the d8 bit position (loop break at k == 9) then this might be an extended VIS-16
                     // commit to making the capture window larger
-                    // start d0 d1 d2 d3 d4 d5 d6 d7 | d8 d9
+                    // start d0 d1 d2 d3 d4 d5 d6 d7 | d8  x
                     //                            k7 | k8 k9
                     if (k == 9) {
                         printf("SSTV: tone_win => 70\n");
@@ -200,9 +200,11 @@ u1_t sstv_get_vis(sstv_chan_t *e)
                         } else
                         if (VISmap[VIS] == UNKNOWN) {
                             printf("SSTV: Unknown VIS\n");
+                            ext_send_msg_encoded(e->rx_chan, false, "EXT", "status", "unknown VIS-8 code 0x%02x", VIS);
                             gotvis = false;
                         } else
                         if (nbits == 16 && (VISmap[VIS] != VISX || VISXmap[VIS2] == UNKNOWN)) {
+                            ext_send_msg_encoded(e->rx_chan, false, "EXT", "status", "unknown VIS-16 code 0x%02x%02x", VIS, VIS2);
                             printf("SSTV: Unknown VISX\n");
                             gotvis = false;
                         } else {
@@ -220,9 +222,14 @@ u1_t sstv_get_vis(sstv_chan_t *e)
                                 ext_send_msg_encoded(e->rx_chan, false, "EXT", "status", "skipping %s", m->Name);
                                 return UNKNOWN;
                             }
-                            if (m->ImgWidth != 320) {
+                            if (m->unsupported) {
                                 printf("SSTV: mode not supported\n");
-                                ext_send_msg_encoded(e->rx_chan, false, "EXT", "status", "mode width not supported: %s", m->Name);
+                                ext_send_msg_encoded(e->rx_chan, false, "EXT", "status", "mode not supported: %s", m->Name);
+                                return UNKNOWN;
+                            }
+                            if (m->ImgWidth != 320) {
+                                printf("SSTV: mode width %d not supported\n", m->ImgWidth);
+                                ext_send_msg_encoded(e->rx_chan, false, "EXT", "status", "mode width %d not supported: %s", m->ImgWidth, m->Name);
                                 return UNKNOWN;
                             }
                             ext_send_msg_encoded(e->rx_chan, false, "EXT", "mode_name", "%s", m->Name);

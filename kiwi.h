@@ -53,6 +53,8 @@ typedef enum { DAILY_RESTART_NO = 0, DAILY_RESTART = 1, DAILY_REBOOT = 2} daily_
 typedef struct {
     model_e model;
     platform_e platform;
+    bool dbgUs;
+    bool anti_aliased;
 
     bool ext_clk;
     bool allow_admin_conns;
@@ -109,34 +111,6 @@ extern lock_t spi_lock;
 extern int p0, p1, p2;
 extern float p_f[8];
 extern int p_i[8];
-
-
-// CAUTION: must match order in kiwi.js
-// CAUTION: add new entries at the end
-const char * const mode_lc[] = {
-    "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq", "drm",
-    "usn", "lsn", "sam", "sau", "sal", "sas", "qam", "nnfm"
-};
-
-const char * const mode_uc[] = {
-    "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ", "DRM",
-    "USN", "LSN", "SAM", "SAU", "SAL", "SAS", "QAM", "NNFM"
-};
-
-const int mode_hbw[] = {
-    9800/2, 5000/2, 2400/2, 2400/2, 400/2, 60/2, 12000/2, 10000/2, 10000/2,
-    2100/2, 2100/2, 9800/2, 9800/2, 9800/2, 9800/2, 9800/2, 6000/2
-};
-
-const int mode_offset[] = {
-    0, 0, 1500, -1500, 0, 0, 0, 0, 0,
-    1350, -1350, 0, 0, 0, 0, 0, 0
-};
-
-typedef enum {
-    MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NBFM, MODE_IQ, MODE_DRM,
-    MODE_USN, MODE_LSN, MODE_SAM, MODE_SAU, MODE_SAL, MODE_SAS, MODE_QAM, MODE_NNFM
-} mode_e;
 
 
 typedef enum { DOM_SEL_NAM=0, DOM_SEL_DUC=1, DOM_SEL_PUB=2, DOM_SEL_SIP=3, DOM_SEL_REV=4 } dom_sel_e;

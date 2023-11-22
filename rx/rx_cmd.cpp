@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "mode.h"
 #include "rx.h"
 #include "rx_cmd.h"
 #include "rx_util.h"
@@ -2052,10 +2053,11 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 
 	// SECURITY: only used during debugging
     case CMD_DEBUG_VAL:
-        n = sscanf(cmd, "SET dbug_v=%d", &i);
-        if (n == 1) {
+        n = sscanf(cmd, "SET dbug_v=%d,%d", &i, &j);
+        if (n == 2) {
             debug_v = i;
-            //printf("SET dbug_v=%d\n", debug_v);
+            kiwi.dbgUs = j;
+            printf("SET dbug_v=%d dbgUs=%d\n", debug_v, kiwi.dbgUs);
             return true;
         }
 	    break;

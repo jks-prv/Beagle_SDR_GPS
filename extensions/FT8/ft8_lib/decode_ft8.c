@@ -24,8 +24,6 @@
 #define LOG_LEVEL LOG_WARN
 #include <ft8/debug_ft8.h>
 
-int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *cmd, const char *fmt, ...);
-
 #ifdef PR_USE_CALLSIGN_HASHTABLE
     #define CALLSIGN_HASHTABLE_MAX 1024
     #define CALLSIGN_AGE_MAX 60             // one hour
@@ -46,7 +44,10 @@ typedef struct {
 
 typedef struct {
     u4_t magic;
+    int rx_chan;
     bool init;
+    bool debug;
+    
     u4_t decode_time;
     int freqHz;
     ftx_protocol_t protocol;
@@ -119,7 +120,7 @@ static void hashtable_cleanup(int rx_chan, uint8_t max_age)
 
 static void hashtable_add(const char* callsign, uint32_t hash, int *hash_idx)
 {
-    decode_ft8_t *ft8 = (decode_ft8_t *) FROM_VOID_PARAM(TaskGetUserParam());
+    decode_ft8_t *ft8 = (decode_ft8_t *) &decode_ft8[FROM_VOID_PARAM(TaskGetUserParam())];
     uint16_t hash10 = (hash >> 12) & 0x3FFu;
     int idx_hash = (hash10 * 23) % CALLSIGN_HASHTABLE_MAX;
     callsign_hashtable_t *ht = &ft8->callsign_hashtable[idx_hash];
@@ -163,7 +164,7 @@ static void hashtable_add(const char* callsign, uint32_t hash, int *hash_idx)
 
 static bool hashtable_lookup(ftx_callsign_hash_type_t hash_type, uint32_t hash, char* callsign)
 {
-    decode_ft8_t *ft8 = (decode_ft8_t *) FROM_VOID_PARAM(TaskGetUserParam());
+    decode_ft8_t *ft8 = (decode_ft8_t *) &decode_ft8[FROM_VOID_PARAM(TaskGetUserParam())];
     uint8_t hash_shift = (hash_type == FTX_CALLSIGN_HASH_10_BITS) ? 12 : (hash_type == FTX_CALLSIGN_HASH_12_BITS ? 10 : 0);
     uint16_t hash10 = (hash >> (12 - hash_shift)) & 0x3FFu;
     int idx_hash = (hash10 * 23) % CALLSIGN_HASHTABLE_MAX;
@@ -294,7 +295,7 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
             char *f[4];
             int n, km = 0;
             ftx_message_rc_t unpack_status = ftx_message_decode(&message, &hash_if, text, &hash_idx);
-            if (unpack_status != FTX_MESSAGE_RC_OK && unpack_status != FTX_MESSAGE_RC_PSKR_OK)
+            if (unpack_status != FTX_MESSAGE_RC_OK && unpack_status != FTX_MESSAGE_RC_PSKR_OK && unpack_status != FTX_MESSAGE_RC_ERROR_TYPE)
             {
                 snprintf(text, sizeof(text), "Error [%d] while unpacking!", (int)unpack_status);
             }
@@ -309,16 +310,16 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
                     #ifdef PR_USE_CALLSIGN_HASHTABLE
                         callsign_hashtable_t *ht = &ft8->callsign_hashtable[hash_idx];
                         
-                        // n=3: call_to call_de grid4    CQ call_de grid4
-                        // n=4: CQ DX call_de grid4
-                        // n=4: call_to call_de R grid4
+                        // n=3: "call_to call_de grid4"  "{<...> DE QRZ CQ CQ_nnn CQ_ABCD} call_de grid4"
+                        // n=4: "CQ DX call_de grid4"
+                        // n=4: "call_to call_de R grid4"
                         char *call, *grid;
                         need_free = true;
                         for (n = 0; n < 4; n++) f[n] = NULL;
                         n = sscanf(text, "%ms %ms %ms %ms", &f[0], &f[1], &f[2], &f[3]);
                         //printf("FT8 n=%d <%s> | <%s> <%s> <%s> <%s>\n", n, text, f[0], f[1], f[2], f[3]);
-                        ext_send_msg_encoded(rx_chan, false, "EXT", "debug",
-                            "FT8 n=%d <%s> | <%s> <%s> <%s> <%s>\n", n, text, f[0], f[1], f[2], f[3]);
+                        //ext_send_msg_encoded(rx_chan, false, "EXT", "debug",
+                        //    "FT8 n=%d <%s> | <%s> <%s> <%s> <%s>\n", n, text, f[0], f[1], f[2], f[3]);
                         if (n == 3 || n == 4) {
                             pskr_ok = true;
                             grid = f[n-1];
@@ -373,8 +374,8 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
 
             if (need_header) {
                 ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
-                //   22:40:30 +11.0 +2.80 1931 nnnnn  CQ DH1NAS JO50
-                    "     UTC   SNR    dT Freq    km age  freq: %.2f  mode: %s\n",
+                //   22:40:30 +11.0 +2.80 1931 nnnnn  nn i.n  CQ DH1NAS JO50
+                    "     UTC   SNR    dT Freq    km age msg  freq: %.2f  mode: %s\n",
                     freqHz/1e3, ft8->protocol_s);
                 need_header = false;
             }
@@ -391,42 +392,62 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
                 snr, time_sec, freq_hz);
             ks = kstr_asprintf(ks, (km > 0)? " %5d" : "      ", km);
             ks = kstr_asprintf(ks, (age != 0)? "  %02d" : "    ", age);
+
+            uint8_t i3 = FTX_MSG_I3(&message);
+            if (i3)
+                ks = kstr_asprintf(ks, " %d.0 ", i3);
+            else
+                ks = kstr_asprintf(ks, " 0.%d*", FTX_MSG_N3(&message));
                 
             if (pskr_ok) {
-                char *call, *call_s, *grid, *grid_s;
+                char *call_to, *call_to_s = NULL, *call_de, *call_de_s, *grid_de, *grid_de_s;
                 if (n == 3)
-                    call = f[1], grid = f[2];
+                    call_to = f[0], call_de = f[1], grid_de = f[2];
                 else
                 if (n == 4)
-                    call = f[2], grid = f[3];
+                    call_to = NULL, call_de = f[2], grid_de = f[3];
                 else
-                    call = f[1], grid = f[3];
+                    call_to = f[0], call_de = f[1], grid_de = f[3];
 
                 // silently ignore incorrect encoding of RR73 (i.e. sent as grid code instead of MAXGRID4+3)
-                bool rr73 = (strcmp(grid, "RR73") == 0);
-                asprintf(&call_s, rr73? "%s" : "<a style=\"color:blue\" href=\"https://www.qrz.com/lookup/%s\" target=\"_blank\">%s</a>", call, call);
-                asprintf(&grid_s, rr73? "(RR73)" : "<a style=\"color:blue\" href=\"http://www.levinecentral.com/ham/grid_square.php?"
-                    "Grid=%s\" target=\"_blank\">%s</a>", grid, grid);
+                bool rr73 = (strcmp(grid_de, "RR73") == 0);
+                
+                // call_to
+                if (call_to &&
+                    strcmp(call_to, "&lt;...&gt;") != 0 &&
+                    strcmp(call_to, "CQ") != 0 &&
+                    strncmp(call_to, "CQ ", 3) != 0 &&
+                    strcmp(call_to, "DE") != 0 &&
+                    strcmp(call_to, "QRZ") != 0)
+                    asprintf(&call_to_s, "<a style=\"color:blue\" href=\"https://www.qrz.com/lookup/%s\" target=\"_blank\">%s</a>", call_to, call_to);
+                else {
+                    if (call_to) call_to_s = strdup(call_to);
+                }
+                
+                // call_de
+                asprintf(&call_de_s, "<a style=\"color:blue\" href=\"https://www.qrz.com/lookup/%s\" target=\"_blank\">%s</a>", call_de, call_de);
+                asprintf(&grid_de_s, rr73? "(RR73)" : "<a style=\"color:blue\" href=\"http://www.levinecentral.com/ham/grid_square.php?"
+                    "Grid=%s\" target=\"_blank\">%s</a>", grid_de, grid_de);
 
                 if (n == 3) {
                     // call_to call_de grid4
                     ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
-                        "%s  %s %s%s %s" NONL, kstr_sp(ks), f[0], uploaded? GREEN : "", call_s, grid_s);
+                        "%s %s%s %s%s %s" NONL, kstr_sp(ks), ft8->debug? "3> ":"", call_to_s, uploaded? GREEN : "", call_de_s, grid_de_s);
                 } else
                 if (n == 4) {
                     // CQ DX call_de grid4
                     ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
-                        "%s  %s %s %s%s %s" NONL, kstr_sp(ks), f[0], f[1], uploaded? GREEN : "", call_s, grid_s);
+                        "%s %s%s %s %s%s %s" NONL, kstr_sp(ks), ft8->debug? "4> ":"", f[0], f[1], uploaded? GREEN : "", call_de_s, grid_de_s);
                 } else {
                     // call_to call_de R grid4
                     ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
-                        "%s  %s %s%s %s %s" NONL, kstr_sp(ks), f[0], uploaded? GREEN : "", call_s, f[2], grid_s);
+                        "%s %s%s %s%s %s %s" NONL, kstr_sp(ks), ft8->debug? "9> ":"", call_to_s, uploaded? GREEN : "", call_de_s, f[2], grid_de_s);
                 }
                 
-                free(call_s); free(grid_s);
+                free(call_to_s); free(call_de_s); free(grid_de_s);
             } else {
                 ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
-                    "%s  %s\n", kstr_sp(ks), text);
+                    "%s %s%s\n", kstr_sp(ks), ft8->debug? "0> ":"", text);
             }
 
             kstr_free(ks);
@@ -470,10 +491,11 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
     }
 }
 
-void decode_ft8_setup(int rx_chan)
+void decode_ft8_setup(int rx_chan, int debug)
 {
     decode_ft8_t *ft8 = &decode_ft8[rx_chan];
-    TaskSetUserParam(TO_VOID_PARAM(ft8));
+    TaskSetUserParam(TO_VOID_PARAM(rx_chan));
+    ft8->debug = debug;
     int have_call_and_grid = PSKReporter_setup(rx_chan);
     if (have_call_and_grid != 0) ft8->have_call_and_grid = have_call_and_grid;
 }
@@ -541,6 +563,7 @@ void decode_ft8_init(int rx_chan, int proto)
     decode_ft8_t *ft8 = &decode_ft8[rx_chan];
     memset(ft8, 0, sizeof(decode_ft8_t));
     ft8->magic = 0xbeefcafe;
+    ft8->rx_chan = rx_chan;
     ftx_protocol_t protocol = proto? FTX_PROTOCOL_FT4 : FTX_PROTOCOL_FT8;
     ft8->protocol = protocol;
     float slot_period = ((protocol == FTX_PROTOCOL_FT8) ? FT8_SLOT_TIME : FT4_SLOT_TIME);

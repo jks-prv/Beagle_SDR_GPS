@@ -1,3 +1,6 @@
+#include "config.h"
+#include "coroutines.h"
+
 #include "message.h"
 #include "text.h"
 #include <stdio.h>
@@ -7,6 +10,8 @@
 
 #define LOG_LEVEL LOG_WARN
 #include "debug_ft8.h"
+
+static int debug[MAX_RX_CHANS];
 
 #define MAX22    ((uint32_t)4194304ul)
 #define NTOKENS  ((uint32_t)2063592ul)
@@ -25,7 +30,7 @@ static void add_brackets(char* result, const char* original, int length);
 /// @param[out] n10_out Pointer to store 10-bit hash value (can be NULL)
 /// @return True on success
 static bool save_callsign(const ftx_callsign_hash_interface_t* hash_if, const char* callsign, uint32_t* n22_out, uint16_t* n12_out, uint16_t* n10_out, int *hash_idx);
-static int lookup_callsign(const ftx_callsign_hash_interface_t* hash_if, ftx_callsign_hash_type_t hash_type, uint32_t hash, char* callsign);
+static void lookup_callsign(const ftx_callsign_hash_interface_t* hash_if, ftx_callsign_hash_type_t hash_type, uint32_t hash, char* callsign);
 
 static int32_t pack_basecall(const char* callsign, int length);
 
@@ -55,30 +60,14 @@ void ftx_message_init(ftx_message_t* msg)
     memset((void*)msg, 0, sizeof(ftx_message_t));
 }
 
-uint8_t ftx_message_get_i3(const ftx_message_t* msg)
-{
-    // Extract i3 (bits 74..76)
-    uint8_t i3 = (msg->payload[9] >> 3) & 0x07u;
-    return i3;
-}
-
-uint8_t ftx_message_get_n3(const ftx_message_t* msg)
-{
-    // Extract n3 (bits 71..73)
-    uint8_t n3 = ((msg->payload[8] << 2) & 0x04u) | ((msg->payload[9] >> 6) & 0x03u);
-    return n3;
-}
-
 ftx_message_type_t ftx_message_get_type(const ftx_message_t* msg)
 {
-    // Extract i3 (bits 74..76)
-    uint8_t i3 = (msg->payload[9] >> 3) & 0x07u;
+    uint8_t i3 = FTX_MSG_I3(msg);
 
     switch (i3)
     {
     case 0: {
-        // Extract n3 (bits 71..73)
-        uint8_t n3 = ((msg->payload[8] << 2) & 0x04u) | ((msg->payload[9] >> 6) & 0x03u);
+        uint8_t n3 = FTX_MSG_N3(msg);
 
         switch (n3)
         {
@@ -93,6 +82,8 @@ ftx_message_type_t ftx_message_get_type(const ftx_message_t* msg)
             return FTX_MESSAGE_TYPE_ARRL_FD;
         case 5:
             return FTX_MESSAGE_TYPE_TELEMETRY;
+        case 6:
+            return FTX_MESSAGE_TYPE_CONTESTING;
         default:
             return FTX_MESSAGE_TYPE_UNKNOWN;
         }
@@ -109,7 +100,7 @@ ftx_message_type_t ftx_message_get_type(const ftx_message_t* msg)
         return FTX_MESSAGE_TYPE_NONSTD_CALL;
         break;
     case 5:
-        return FTX_MESSAGE_TYPE_WWROF;
+        return FTX_MESSAGE_TYPE_WWDIGI;
     default:
         return FTX_MESSAGE_TYPE_UNKNOWN;
     }
@@ -299,10 +290,12 @@ ftx_message_rc_t ftx_message_decode(const ftx_message_t* msg, ftx_callsign_hash_
 {
     ftx_message_rc_t rc;
 
-    char buf[35]; // 13 + 13 + 6 (std/nonstd) / 14 (free text) / 19 (telemetry)
-    char* field1 = buf;
-    char* field2 = buf + 14;
-    char* field3 = buf + 14 + 14;
+    // 13+13+6 (std/nonstd) / 14 (free text) / 19 (telemetry) / 13+13+13+3 (DX)
+    char buf[4][32];
+    char* field1 = buf[0];
+    char* field2 = buf[1];
+    char* field3 = buf[2];
+    char* field4 = buf[3];
 
     message[0] = '\0';
 
@@ -311,29 +304,42 @@ ftx_message_rc_t ftx_message_decode(const ftx_message_t* msg, ftx_callsign_hash_
     {
     case FTX_MESSAGE_TYPE_STANDARD:
         rc = ftx_message_decode_std(msg, hash_if, field1, field2, field3, hash_idx);
+        field4 = NULL;
         break;
     case FTX_MESSAGE_TYPE_NONSTD_CALL:
         rc = ftx_message_decode_nonstd(msg, hash_if, field1, field2, field3);
+        field4 = NULL;
         break;
     case FTX_MESSAGE_TYPE_FREE_TEXT:
         ftx_message_decode_free(msg, field1);
         field2 = NULL;
-        field3 = NULL;
+        rc = FTX_MESSAGE_RC_OK;
+        break;
+    case FTX_MESSAGE_TYPE_DXPEDITION:
+        ftx_message_decode_DXpedition(msg, hash_if, field1, field2, field3, field4, hash_idx);
+        rc = FTX_MESSAGE_RC_OK;
+        break;
+    case FTX_MESSAGE_TYPE_CONTESTING:
+        ftx_message_decode_contesting(msg, hash_if, field1, field2, field3, hash_idx);
         rc = FTX_MESSAGE_RC_OK;
         break;
     case FTX_MESSAGE_TYPE_TELEMETRY:
         ftx_message_decode_telemetry_hex(msg, field1);
         field2 = NULL;
-        field3 = NULL;
         rc = FTX_MESSAGE_RC_OK;
         break;
     default:
         // not handled yet
+        // FTX_MESSAGE_TYPE_EU_VHF
+        // FTX_MESSAGE_TYPE_ARRL_FD
+        // FTX_MESSAGE_TYPE_WWDIGI
         field1 = NULL;
+        sprintf(message, "Unsupported message type");
         rc = FTX_MESSAGE_RC_ERROR_TYPE;
         break;
     }
 
+    char *m = message;
     if (field1 != NULL)
     {
         // TODO join fields via whitespace
@@ -346,18 +352,35 @@ ftx_message_rc_t ftx_message_decode(const ftx_message_t* msg, ftx_callsign_hash_
             {
                 message = append_string(message, " ");
                 message = append_string(message, field3);
+                if (field4 != NULL)
+                {
+                    message = append_string(message, " ");
+                    message = append_string(message, field4);
+                }
             }
+        }
+    }
+    
+    if (debug[FROM_VOID_PARAM(TaskGetUserParam())]) {
+        uint16_t i3 = FTX_MSG_I3(msg);
+        uint16_t n3 = FTX_MSG_N3(msg);
+        if (i3 == 4 || i3 == 0 || (i3 == 1 && field1 && strlen(field1) == 0)) {
+            ext_send_msg_encoded(0, false, "EXT", "chars", "%d.%d [%s] [%s] [%s] [%s] => [%s]\n",
+                i3, i3? 0:n3, field1, field2, field3, field4, m);
         }
     }
 
     return rc;
 }
 
-ftx_message_rc_t ftx_message_decode_std(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* call_to, char* call_de, char* extra, int *hash_idx)
+ftx_message_rc_t ftx_message_decode_std(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* call_to, char* call_de, char* grid, int *hash_idx)
 {
+    // 1.0: c28 r1 c28 r1 R1 g15
+    // 2.0: c28 p1 c28 p1 R1 g15
+    
     uint32_t n29a, n29b;
     uint16_t igrid4;
-    uint8_t ir;
+    uint8_t R1;
 
     // Extract packed fields
     n29a = (msg->payload[0] << 21);
@@ -369,16 +392,17 @@ ftx_message_rc_t ftx_message_decode_std(const ftx_message_t* msg, ftx_callsign_h
     n29b |= (msg->payload[5] << 10);
     n29b |= (msg->payload[6] << 2);
     n29b |= (msg->payload[7] >> 6);
-    ir = ((msg->payload[7] & 0x20u) >> 5);
+
+    R1 = ((msg->payload[7] & 0x20u) >> 5);
+
     igrid4 = ((msg->payload[7] & 0x1Fu) << 10);
     igrid4 |= (msg->payload[8] << 2);
     igrid4 |= (msg->payload[9] >> 6);
 
-    // Extract i3 (bits 74..76)
-    uint8_t i3 = (msg->payload[9] >> 3) & 0x07u;
-    LOG(LOG_DEBUG, "decode_std() n28a=%d ipa=%d n28b=%d ipb=%d ir=%d igrid4=%d i3=%d\n", n29a >> 1, n29a & 1u, n29b >> 1, n29b & 1u, ir, igrid4, i3);
+    uint8_t i3 = FTX_MSG_I3(msg);
+    LOG(LOG_DEBUG, "decode_std() n28a=%d ipa=%d n28b=%d ipb=%d R1=%d igrid4=%d i3=%d\n", n29a >> 1, n29a & 1u, n29b >> 1, n29b & 1u, R1, igrid4, i3);
 
-    call_to[0] = call_de[0] = extra[0] = '\0';
+    call_to[0] = call_de[0] = grid[0] = '\0';
 
     // Unpack both callsigns
     if (unpack28(n29a >> 1, n29a & 1u, i3, hash_if, call_to, NULL) < 0)
@@ -390,7 +414,7 @@ ftx_message_rc_t ftx_message_decode_std(const ftx_message_t* msg, ftx_callsign_h
     {
         return FTX_MESSAGE_RC_ERROR_CALLSIGN2;
     }
-    int rc_grid = unpackgrid(igrid4, ir, extra);
+    int rc_grid = unpackgrid(igrid4, R1, grid);
     if (rc_grid < 0)
     {
         return FTX_MESSAGE_RC_ERROR_GRID;
@@ -401,17 +425,20 @@ ftx_message_rc_t ftx_message_decode_std(const ftx_message_t* msg, ftx_callsign_h
         return FTX_MESSAGE_RC_PSKR_OK;
     }
 
-    LOG(LOG_INFO, "Decoded standard (type %d) message [%s] [%s] [%s]\n", i3, call_to, call_de, extra);
+    LOG(LOG_INFO, "Decoded standard (type %d) message [%s] [%s] [%s]\n", i3, call_to, call_de, grid);
     return FTX_MESSAGE_RC_OK;
 }
 
 // non-standard messages, code originally by KD8CEC
 ftx_message_rc_t ftx_message_decode_nonstd(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* call_to, char* call_de, char* extra)
 {
-    uint16_t n12, iflip, nrpt, icq;
+    // 4.0: h12 c58 h1 r2 c1
+    
+    uint16_t h12, iflip, nrpt, icq;
     uint64_t n58;
-    n12 = (msg->payload[0] << 4);  // 11 ~ 4 : 8
-    n12 |= (msg->payload[1] >> 4); // 3 ~ 0  : 12
+
+    h12 = (msg->payload[0] << 4);  // 11 ~ 4 : 8
+    h12 |= (msg->payload[1] >> 4); // 3 ~ 0  : 12
 
     n58 = ((uint64_t)(msg->payload[1] & 0x0Fu) << 54); // 57 ~ 54 : 4
     n58 |= ((uint64_t)msg->payload[2] << 46);          // 53 ~ 46 : 12
@@ -427,17 +454,16 @@ ftx_message_rc_t ftx_message_decode_nonstd(const ftx_message_t* msg, ftx_callsig
     nrpt |= (msg->payload[9] >> 7); // 76543210
     icq = ((msg->payload[9] >> 6) & 0x01u);
 
-    // Extract i3 (bits 74..76)
-    uint8_t i3 = (msg->payload[9] >> 3) & 0x07u;
-    LOG(LOG_DEBUG, "decode_nonstd() n12=%04x n58=%016" __UINT64_FMTx__ " iflip=%d nrpt=%d icq=%d i3=%d\n", n12, n58, iflip, nrpt, icq, i3);
+    uint8_t i3 = FTX_MSG_I3(msg);
+    LOG(LOG_DEBUG, "decode_nonstd() h12=%04x n58=%016" __UINT64_FMTx__ " iflip=%d nrpt=%d icq=%d i3=%d\n", h12, n58, iflip, nrpt, icq, i3);
 
     // Decode one of the calls from 58 bit encoded string
-    char call_decoded[14];
+    char call_decoded[32];
     unpack58(n58, hash_if, call_decoded);
 
     // Decode the other call from hash lookup table
-    char call_3[14];
-    lookup_callsign(hash_if, FTX_CALLSIGN_HASH_12_BITS, n12, call_3);
+    char call_3[32];
+    lookup_callsign(hash_if, FTX_CALLSIGN_HASH_12_BITS, h12, call_3);
 
     // Possibly flip them around
     char* call_1 = (iflip) ? call_decoded : call_3;
@@ -462,7 +488,112 @@ ftx_message_rc_t ftx_message_decode_nonstd(const ftx_message_t* msg, ftx_callsig
     }
     strcpy(call_de, call_2);
 
+    if (debug[FROM_VOID_PARAM(TaskGetUserParam())]) {
+        //ext_send_msg_encoded(0, false, "EXT", "debug", "non-std %d[%s] %d[%s] %d[%s]",
+        //    call_rr, call_to, h10, call_de, r5, report);
+    }
+    
     LOG(LOG_INFO, "Decoded non-standard (type %d) message [%s] [%s] [%s]\n", i3, call_to, call_de, extra);
+    return FTX_MESSAGE_RC_OK;
+}
+
+ftx_message_rc_t ftx_message_decode_DXpedition(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* call_rr, char* call_to, char* call_de, char* report, int *hash_idx)
+{
+    // 0.1: c28 c28 h10 r5
+    
+    uint32_t n28a, n28b;
+    uint16_t h10, r5;
+
+    // Extract packed fields
+    n28a = (msg->payload[0] << 20);
+    n28a |= (msg->payload[1] << 12);
+    n28a |= (msg->payload[2] << 4);
+    n28a |= (msg->payload[3] >> 4);
+
+    n28b = ((msg->payload[3] & 0x0fu) << 24);
+    n28b |= (msg->payload[4] << 16);
+    n28b |= (msg->payload[5] << 8);
+    n28b |= (msg->payload[6] << 0);
+
+    h10 = (msg->payload[7] << 2);
+    h10 |= ((msg->payload[8] & 0xc0u) >> 6);
+
+    r5 = ((msg->payload[8] & 0x3eu) >> 1);
+
+    uint8_t i3 = FTX_MSG_I3(msg);
+    LOG(LOG_DEBUG, "decode_DXpedition() n28a=%d n28b=%d h10=%d r5=%d i3=%d\n", n28a, n28b, h10, r5, i3);
+
+    call_rr[0] = call_to[0] = call_de[0] = report[0] = '\0';
+
+    // Unpack both callsigns
+    if (unpack28(n28a, 0, 0, hash_if, call_rr, NULL) < 0)
+    {
+        return FTX_MESSAGE_RC_ERROR_CALLSIGN1;
+    }
+    strcat(call_rr, " RR73;");
+    
+    if (unpack28(n28b, 0, 0, hash_if, call_to, NULL) < 0)
+    {
+        return FTX_MESSAGE_RC_ERROR_CALLSIGN2;
+    }
+
+    // Decode call_de from hash lookup table
+    lookup_callsign(hash_if, FTX_CALLSIGN_HASH_10_BITS, h10, call_de);
+
+    // r5: 0..31 => -30,-28..+30,+32
+    int_to_dd(report, r5*2 - 30, 2, true);
+    
+    if (debug[FROM_VOID_PARAM(TaskGetUserParam())]) {
+        ext_send_msg_encoded(0, false, "EXT", "chars", "DX [%s] [%s] h10=%d [%s] %d[%s]\n",
+            call_rr, call_to, h10, call_de, r5, report);
+    }
+
+    LOG(LOG_INFO, "Decoded DXpedition (type %d.1) message [%s] [%s] [%s] [%s]\n", i3, call_rr, call_to, call_de, report);
+    return FTX_MESSAGE_RC_OK;
+}
+
+ftx_message_rc_t ftx_message_decode_contesting(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* call_to, char* call_de, char* grid, int *hash_idx)
+{
+    // 0.6: c28 c28 g15
+
+    uint32_t n28a, n28b;
+    uint16_t g15;
+
+    // Extract packed fields
+    n28a = (msg->payload[0] << 20);
+    n28a |= (msg->payload[1] << 12);
+    n28a |= (msg->payload[2] << 4);
+    n28a |= (msg->payload[3] >> 4);
+
+    n28b = ((msg->payload[3] & 0x0fu) << 24);
+    n28b |= (msg->payload[4] << 16);
+    n28b |= (msg->payload[5] << 8);
+    n28b |= (msg->payload[6] << 0);
+
+    g15 = ((msg->payload[7] & 0x7fu) << 8);
+    g15 |= (msg->payload[8] << 0);
+
+    uint8_t i3 = FTX_MSG_I3(msg);
+    LOG(LOG_DEBUG, "decode_contesting() n28a=%d n28b=%d g15=%d i3=%d\n", n28a, n28b, g15, i3);
+
+    call_to[0] = call_de[0] = grid[0] = '\0';
+
+    // Unpack both callsigns
+    if (unpack28(n28a, 0, 0, hash_if, call_to, NULL) < 0)
+    {
+        return FTX_MESSAGE_RC_ERROR_CALLSIGN1;
+    }
+
+    if (unpack28(n28b, 0, 0, hash_if, call_de, hash_idx) < 0)
+    {
+        return FTX_MESSAGE_RC_ERROR_CALLSIGN2;
+    }
+
+    if (unpackgrid(g15, 0, grid) < 0) {
+        return FTX_MESSAGE_RC_ERROR_GRID;
+    }
+    
+    LOG(LOG_INFO, "Decoded contesting (type %d.6) message [%s] [%s] [%s]\n", i3, call_to, call_de, grid);
     return FTX_MESSAGE_RC_OK;
 }
 
@@ -557,10 +688,9 @@ static bool trim_brackets(char* result, const char* original, int length)
 
 static void add_brackets(char* result, const char* original, int length)
 {
-    result[0] = '<';
-    memcpy(result + 1, original, length);
-    result[length + 1] = '>';
-    result[length + 2] = '\0';
+    strcpy(result, "&lt;");
+    strcat(result, original);
+    strcat(result, "&gt;");
 }
 
 static bool save_callsign(const ftx_callsign_hash_interface_t* hash_if, const char* callsign, uint32_t* n22_out, uint16_t* n12_out, uint16_t* n10_out, int *hash_idx)
@@ -600,26 +730,31 @@ static bool save_callsign(const ftx_callsign_hash_interface_t* hash_if, const ch
     return true;
 }
 
-static int lookup_callsign(const ftx_callsign_hash_interface_t* hash_if, ftx_callsign_hash_type_t hash_type, uint32_t hash, char* callsign)
+static void lookup_callsign(const ftx_callsign_hash_interface_t* hash_if, ftx_callsign_hash_type_t hash_type, uint32_t hash, char* callsign)
 {
-    char c11[12];
+    char c11[32];
 
-    int found;
+    bool found;
     if (hash_if != NULL)
-        found = hash_if->lookup_hash(hash_type, hash, c11)? RC_PSKR : 0;
+        found = hash_if->lookup_hash(hash_type, hash, c11);
     else
         found = 0;
 
     if (!found)
     {
-        strcpy(callsign, "<...>");
+        strcpy(callsign, "&lt;...&gt;");
     }
     else
     {
         add_brackets(callsign, c11, strlen(c11));
     }
+
+    if (debug[FROM_VOID_PARAM(TaskGetUserParam())]) {
+        ext_send_msg_encoded(0, false, "EXT", "chars", "lookup_callsign hash=%d|%d found=%d callsign=%d[%s] c11=%d[%s]\n",
+            (hash_type == FTX_CALLSIGN_HASH_22_BITS) ? 22 : ((hash_type == FTX_CALLSIGN_HASH_12_BITS) ? 12 : 10),
+            hash, found, strlen(callsign), callsign, strlen(c11), c11);
+    }
     LOG(LOG_DEBUG, "lookup_callsign(n%s=%d) = '%s'\n", (hash_type == FTX_CALLSIGN_HASH_22_BITS ? "22" : (hash_type == FTX_CALLSIGN_HASH_12_BITS ? "12" : "10")), hash, callsign);
-    return found;
 }
 
 static int32_t pack_basecall(const char* callsign, int length)
@@ -788,7 +923,8 @@ static int unpack28(uint32_t n28, uint8_t ip, uint8_t i3, const ftx_callsign_has
     if (n28 < MAX22)
     {
         // This is a 22-bit hash of a result
-        return lookup_callsign(hash_if, FTX_CALLSIGN_HASH_22_BITS, n28, result);
+        lookup_callsign(hash_if, FTX_CALLSIGN_HASH_22_BITS, n28, result);
+        return 0;
     }
 
     // Standard callsign

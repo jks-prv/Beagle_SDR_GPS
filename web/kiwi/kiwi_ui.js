@@ -106,6 +106,12 @@ function dx_freq_cb(path, val, first)
    w3_set_value(path, val);      // NB: keep field numeric!
 	w3_num_cb(o.el, val);
    if (dx_update_check(o.idx, dx.UPD_MOD)) dx_button_highlight();
+
+   // with the admin DX tab make sure a changed frequency maintains a properly sorted list
+   if (o.idx != dx.IDX_USER) {
+      dx_update_admin();   // update (possibly re-sort) the list
+      ext_send('SET MARKER search_freq='+ val);    // force a freq search in case the entry is now off-screen
+   }
 }
 
 function dx_sel_cb(path, val, first)

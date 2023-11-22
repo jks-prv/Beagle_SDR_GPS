@@ -32,7 +32,7 @@ static void pcm_copy(sstv_chan_t *e, int idx, int nsamps)
         int cnt = MIN(nsamps, FASTFIR_OUTBUF_SIZE - e->rd_idx);
         assert(cnt > 0 && (idx+cnt) <= PCM_BUFLEN);
         //printf("idx=%d cnt=%d nsamps=%d\n", idx, cnt, nsamps);
-        memcpy(&e->pcm.Buffer[idx], &rx->real_samples[e->rd_pos][e->rd_idx], cnt * sizeof(s2_t));
+        memcpy(&e->pcm.Buffer[idx], &rx->real_samples_s2[e->rd_pos][e->rd_idx], cnt * sizeof(s2_t));
         nsamps -= cnt;
         idx += cnt;
         e->rd_idx += cnt;

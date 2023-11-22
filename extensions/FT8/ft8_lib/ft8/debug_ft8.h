@@ -24,4 +24,6 @@
     #define LOG(level, ...)
 #endif
 
+int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *cmd, const char *fmt, ...);
+
 #endif // _DEBUG_H_INCLUDED_

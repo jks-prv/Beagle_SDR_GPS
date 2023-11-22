@@ -402,7 +402,7 @@ function kiwi_main_ready()
 
 	// FIXME: eliminate most of these
 	snd_send("SERVER DE CLIENT openwebrx.js SND");
-	snd_send("SET dbug_v="+ debug_v);
+	snd_send("SET dbug_v="+ debug_v +','+ (dbgUs? 1:0));
 
    // setup gen when configuration loaded
    w3_do_when_cond(
@@ -5689,7 +5689,7 @@ function freqset_update_ui(from)
 	// don't add to freq memory while tuning across scale except for final position
 	if (from != owrx.FSET_NOP && from != owrx.FSET_SCALE_DRAG && from != owrx.FSET_SCALE_TOUCH_DRAG && from != owrx.FSET_PB_CHANGE) {
       //console.log('>>> freq_memory_update freq='+ freq_displayed_kHz_str_with_freq_offset);
-	   freq_memory_update(freq_displayed_kHz_str_with_freq_offset);
+	   //freq_memory_update(freq_displayed_kHz_str_with_freq_offset);
 	}
 
 	kiwi_clearTimeout(owrx.popup_keyboard_active_timeout);
@@ -6192,16 +6192,16 @@ function freq_memory_init()
 	var fmem;
 	if (isNonEmptyString(owrx.override_fmem)) {
 	   fmem = owrx.override_fmem.split(',');
-	   var prec = (cfg.show_1Hz || url_1Hz)? 3:2;
-	   fmem.forEach(function(s, i) {
-	      if (isNumber(s)) s = s.toString();
-	      var f = s.parseFloatWithUnits('kM', 1e-3);
-	      if (isNumber(f))
-	         fmem[i] = w3_clamp(f, 1, cfg.max_freq? 32000 : 30000).toFixed(prec);
-	   });
 	} else {
       fmem = kiwi_JSON_parse('freq_memory_init', readCookie('freq_memory'));
 	}
+   var prec = (cfg.show_1Hz || url_1Hz)? 3:2;
+   fmem.forEach(function(s, i) {
+      if (isNumber(s)) s = s.toString();
+      var f = s.parseFloatWithUnits('kM', 1e-3);
+      if (isNumber(f))
+         fmem[i] = w3_clamp(f, 1, cfg.max_freq? 32000 : 30000).toFixed(prec);
+   });
 	
 	if (fmem) {
       owrx.freq_memory =
@@ -6216,6 +6216,12 @@ function freq_memory_init()
                return rv;
             }
          );
+      owrx.freq_memory.forEach(function(s, i) {
+         if (isNumber(s)) s = s.toString();
+         var f = s.parseFloatWithUnits('kM', 1e-3);
+         if (isNumber(f))
+            owrx.freq_memory[i] = w3_clamp(f, 1, cfg.max_freq? 32000 : 30000).toFixed(prec);
+      });
       //console.log('freq_memory_init');
       //console.log(owrx.freq_memory);
    }
@@ -6242,6 +6248,7 @@ function freq_memory_menu_show(shortcut_key)
       x += ((x - 128) >= 0)? -128 : 16;
 
    var fmem_copy = kiwi_dup_array(owrx.freq_memory);
+   fmem_copy.unshift('store');
    fmem_copy.push('clear all');
    fmem_copy.push('VFO A=B');
    w3_menu_items('id-freq-memory-menu', fmem_copy, Math.min(fmem_copy.length, 10));
@@ -6265,6 +6272,19 @@ function freq_memory_menu_show(shortcut_key)
          return close;
       },
       x, y);
+}
+
+function freq_memory_menu_show_cb(set, val, trace, ev)
+{
+   var hold = (ev && ev.type == 'hold');
+   w3_colors('id-freq-menu', 'w3-text-white', 'w3-text-css-lime', hold);
+   if (hold) {
+	   freq_memory_update(freq_displayed_kHz_str_with_freq_offset);
+	} else
+   if (ev && ev.type == 'hold-done') {
+   } else {
+      freq_memory_menu_show(false);
+   }
 }
 
 function freq_memory_update(f)
@@ -6291,21 +6311,25 @@ function freq_memory_menu_cb(idx, x)
    if (idx == -1) return;
    
    var f, set_f = false;
-   if (idx == owrx.freq_memory.length) {
-      //console.log('CLEAR ALL');
-      f = owrx.freq_memory[0];
-      set_f = true;
-      owrx.freq_memory = [f];
-      //canvas_log('clr_all top='+ f);
+   if (idx == 0) {
+      //console.log('STORE');
+	   freq_memory_update(freq_displayed_kHz_str_with_freq_offset);
    } else
    if (idx == owrx.freq_memory.length + 1) {
+      //console.log('CLEAR ALL');
+      //f = owrx.freq_memory[0];
+      f = freq_displayed_kHz_str_with_freq_offset;
+      owrx.freq_memory = [f];
+	   writeCookie('freq_memory', JSON.stringify(owrx.freq_memory));
+      //canvas_log('clr_all top='+ f);
+   } else
+   if (idx == owrx.freq_memory.length + 2) {
       //console.log('VFO A=B');
       vfo_update(true);
    } else
-   if (idx <= owrx.freq_memory.length - 1) {
-      //canvas_log('idx='+ idx);
-      //canvas_log('M='+ owrx.freq_memory);
-      f = owrx.freq_memory[idx];
+   if (idx <= owrx.freq_memory.length) {
+      //canvas_log('idx='+ idx +' M='+ owrx.freq_memory);
+      f = owrx.freq_memory[idx-1];     // -1 because "store" is idx == 0
       set_f = true;
       //canvas_log('sel='+ f);
       owrx.freq_memory.unshift(f);
@@ -9722,7 +9746,7 @@ function panels_setup()
 	   w3_inline('w3-halign-space-between w3-margin-T-4/',
          //w3_div('id-mouse-freq w3-hide||title="frequency under cursor"', '-----.--'+ ((cfg.show_1Hz || url_1Hz)? '-' : '')),
 
-         w3_icon('id-freq-menu w3-menu-button||title="freq memory"', 'fa-bars w3-text-white', 20, '', 'freq_memory_menu_show'),
+         w3_icon('id-freq-menu w3-menu-button w3-hold w3-hold-done||title="freq memory"', 'fa-bars w3-text-white', 20, '', 'freq_memory_menu_show_cb'),
 
          w3_button('id-freq-vfo w3-text-in-circle w3-wh-20px w3-aqua||title="VFO A&slash;B"', 'A', 'freq_vfo_cb'),
 
@@ -11917,8 +11941,19 @@ function owrx_msg_cb(param, ws)     // #msg-proc
 			extint_list_json(param[1]);
 			
 			// now that we have the list of extensions see if there is an override
-			if (override_ext)
-				extint_open(override_ext, 3000);
+			if (override_ext) {
+            w3_do_when_cond(
+               function() {
+                  //console.log('### '+ (waterfall_setup_done? 'GO' : 'WAIT') +' dx_update(waterfall_setup_done)');
+                  return waterfall_setup_done;
+               },
+               function() {
+				      extint_open(override_ext, 3000);
+               }, null,
+               200
+            );
+            // REMINDER: w3_do_when_cond() returns immediately
+			}
 			break;
 		case "bandwidth":
 			bandwidth = parseInt(param[1]);

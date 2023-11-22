@@ -95,6 +95,7 @@ enum kick_e { KICK_CHAN, KICK_USERS, KICK_ALL, KICK_ADMIN };
 const char * const kick_s[] = { "KICK_CHAN", "KICK_USERS", "KICK_ALL", "KICK_ADMIN" };
 void rx_server_kick(kick_e kick, int chan = -1);
 
+conn_t *conn_other(conn_t *conn, int type);
 void show_conn(const char *prefix, u4_t printf_type, conn_t *cd);
 u64_t rx_conn_tstamp();
 void rx_autorun_clear();

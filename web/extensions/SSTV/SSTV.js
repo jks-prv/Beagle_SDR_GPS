@@ -403,9 +403,17 @@ function SSTV_help(show)
                   '<li>Martin: M1 M2 M3 M4</li>' +
                   '<li>Scottie: S1 S2 SDX</li>' +
                   '<li>Robot: R72 R36 R24 R24-BW R12-BW R8-BW</li>' +
-                  '<li>Wraase: SC-2-120 SC-2-180</li>' +
+                  '<li>Wraase: SC120 SC180</li>' +
                   '<li>PD: PD-50 PD-90</li>' +
                   '<li>MMSSTV: MR73 MR90 MR115 MR140 MR175 MP73 MP115 MP140 MP175</li>' +
+               '</ul>' +
+               'Unsupported modes:' +
+               '<ul>' +
+                  '<li>Wraase: SC60</li>' +
+                  '<li>Amiga: AVT</li>' +
+                  '<li>Pasokon: P3 P5 P7</li>' +
+                  '<li>PD: PD-120 PD-160 PD-180 PD-240 PD-290</li>' +
+                  '<li>MMSSTV: MN73 MN110 MN140 MC110 MC140 MC180</li>' +
                '</ul>' +
                'If the image is still slanted or offset after auto adjustment you can make a manual<br>' +
                'correction. If you see what looks like an edge in the image then click in two places along<br>' +

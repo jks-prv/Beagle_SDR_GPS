@@ -41,6 +41,21 @@ ModeSpec_t ModeSpec[] = {
     {},     // UNKNOWN
     {},     // VISX
 
+  {
+    (char *) "Amiga Video Transceiver",
+    (char *) "AVT",
+    0,
+    0,
+    0e-3,
+    0,
+    0,
+    320,
+    256,
+    1,
+    RGB,
+    FMT_DEFAULT,
+    UNSUPPORTED },
+
   {  // N7CXI, 2000
     (char *) "Martin M1",
     (char *) "M1",
@@ -186,7 +201,7 @@ ModeSpec_t ModeSpec[] = {
 
   {  // N7CXI, 2000
     (char *) "Robot 24 B/W",
-    (char *) "R24BW",
+    (char *) "R24-BW",
     7e-3,
     0e-3,
     0e-3,
@@ -200,7 +215,7 @@ ModeSpec_t ModeSpec[] = {
 
   {  // N7CXI, 2000
     (char *) "Robot 12 B/W",
-    (char *) "R12BW",
+    (char *) "R12-BW",
     7e-3,
     0e-3,
     0e-3,
@@ -214,7 +229,7 @@ ModeSpec_t ModeSpec[] = {
 
   {  // N7CXI, 2000
     (char *) "Robot 8 B/W",
-    (char *) "R8BW",
+    (char *) "R8-BW",
     7e-3,
     0e-3,
     0e-3,
@@ -227,12 +242,27 @@ ModeSpec_t ModeSpec[] = {
     FMT_BW },
 
   { // KB4YZ, 1999
+    (char *) "Wraase SC-2 60",      // 2:4:2 format
+    (char *) "SC60",
+    0,
+    0,
+    0e-3,
+    0,
+    0,
+    320,
+    256,
+    1,
+    RGB,
+    FMT_242,
+    UNSUPPORTED },
+
+  { // KB4YZ, 1999
     (char *) "Wraase SC-2 120",     // 2:4:2 format
-    (char *) "W2120",
+    (char *) "SC120",
     5e-3,
     1.0525e-3,
     0e-3,
-    0.489039081e-3,                 // (LT-sync) / (320*3)
+    0.489039081e-3,     // Tpixel (fixme)156.5/2/320      // (LT-sync) / (320*3)
     475.530018e-3,                  // 126.175 LPM
     320,
     256,
@@ -242,7 +272,7 @@ ModeSpec_t ModeSpec[] = {
 
   {  // N7CXI, 2000
     (char *) "Wraase SC-2 180",
-    (char *) "W2180",
+    (char *) "SC180",
     5.5225e-3,
     0.5e-3,
     0e-3,
@@ -355,11 +385,11 @@ ModeSpec_t ModeSpec[] = {
   {  // N7CXI, 2000
     (char *) "Pasokon P3",
     (char *) "P3",
-    5.208e-3,       // Tsync 25x Tpixel
-    1.042e-3,       // Tporch 5x Tpixel
-    1.042e-3,       // Tseptr 5x Tpixel
-    0.2083e-3,      // Tpixel i.e. 4800 Hz
-    409.375e-3,     // line
+    5.208333e-3,    // Tsync 25x Tpixel
+    1.041666e-3,    // Tporch 5x Tpixel
+    1.041666e-3,    // Tseptr 5x Tpixel
+    1.0/4800.0,     // Tpixel i.e. 4800 Hz
+    409.375e-3,     // Tline ~203/496, but exactly SpRsGsBs = (25+5+640+5+640+5+640+5)/4800 = 409.375
     640,
     496,
     1,
@@ -394,7 +424,64 @@ ModeSpec_t ModeSpec[] = {
     RGB,
     FMT_DEFAULT },
 
-// NB: the MR mode line timings are not Sp00s1s2 (as implied by FMT_422) but rather Sp00s1s2s (note trailing "s")
+// MP is like PD: Yodd U V Yeven
+{
+    (char *) "MMSSTV MP73",
+    (char *) "MP73",
+    9.0e-3,         // Tsync
+    1.0e-3,         // Tporch
+    0e-3,           // Tseptr
+    0.4375e-3,      // Tpixel 140/320
+    570.0e-3,       // Tline ~73/128, but exactly SpYUVY = 9+1+140+140+140+140 = 570
+    320,
+    128,
+    2,
+    YUV,
+    FMT_DEFAULT },
+
+{
+    (char *) "MMSSTV MP115",
+    (char *) "MP115",
+    9.0e-3,         // Tsync
+    1.0e-3,         // Tporch
+    0e-3,           // Tseptr
+    0.696875e-3,    // Tpixel 223/320
+    902.0e-3,       // Tline ~115/128, but exactly SpYUVY = 9+1+223+223+223+223 = 902
+    320,
+    128,
+    2,
+    YUV,
+    FMT_DEFAULT },
+
+{
+    (char *) "MMSSTV MP140",
+    (char *) "MP140",
+    9.0e-3,         // Tsync
+    1.0e-3,         // Tporch
+    0e-3,           // Tseptr
+    0.84375e-3,     // Tpixel 270/320
+    1090.0e-3,      // Tline ~140/128, but exactly SpYUVY = 9+1+270+270+270+270 = 1090
+    320,
+    128,
+    2,
+    YUV,
+    FMT_DEFAULT },
+
+{
+    (char *) "MMSSTV MP175",
+    (char *) "MP175",
+    9.0e-3,         // Tsync
+    1.0e-3,         // Tporch
+    0e-3,           // Tseptr
+    1.0625e-3,      // Tpixel 340/320
+    1370.0e-3,      // Tline ~175/128, but exactly SpYUVY = 9+1+340+340+340+340 = 1370
+    320,
+    128,
+    2,
+    YUV,
+    FMT_DEFAULT },
+
+// MR mode line timings are not Sp00s1s2 (as implied by FMT_422) but rather Sp00s1s2s (note trailing "s")
 {
     (char *) "MMSSTV MR73",
     (char *) "MR73",
@@ -465,62 +552,66 @@ ModeSpec_t ModeSpec[] = {
     YUV,
     FMT_422 },
 
-// MP is like PD: Yodd U V Yeven
-{
-    (char *) "MMSSTV MP73",
-    (char *) "MP73",
+  {
+    (char *) "MMSSTV ML180",
+    (char *) "ML180",
     9.0e-3,         // Tsync
     1.0e-3,         // Tporch
-    0e-3,           // Tseptr
-    0.4375e-3,      // Tpixel 140/320
-    570.0e-3,       // Tline ~73/128, but exactly SpYUVY = 9+1+140+140+140+140 = 570
-    320,
-    128,
-    2,
+    0.1e-3,         // Tseptr
+    0,
+    0,
+    640,
+    496,
+    1,
     YUV,
-    FMT_DEFAULT },
+    FMT_422,
+    UNSUPPORTED },
 
-{
-    (char *) "MMSSTV MP115",
-    (char *) "MP115",
+  {
+    (char *) "MMSSTV ML240",
+    (char *) "ML240",
     9.0e-3,         // Tsync
     1.0e-3,         // Tporch
-    0e-3,           // Tseptr
-    0.696875e-3,    // Tpixel 223/320
-    902.0e-3,       // Tline ~115/128, but exactly SpYUVY = 9+1+223+223+223+223 = 902
-    320,
-    128,
-    2,
+    0.1e-3,         // Tseptr
+    0,
+    0,
+    640,
+    496,
+    1,
     YUV,
-    FMT_DEFAULT },
+    FMT_422,
+    UNSUPPORTED },
 
-{
-    (char *) "MMSSTV MP140",
-    (char *) "MP140",
+  {
+    (char *) "MMSSTV ML280",
+    (char *) "ML280",
     9.0e-3,         // Tsync
     1.0e-3,         // Tporch
-    0e-3,           // Tseptr
-    0.84375e-3,     // Tpixel 270/320
-    1090.0e-3,      // Tline ~140/128, but exactly SpYUVY = 9+1+270+270+270+270 = 1090
-    320,
-    128,
-    2,
+    0.1e-3,         // Tseptr
+    0,
+    0,
+    640,
+    496,
+    1,
     YUV,
-    FMT_DEFAULT },
+    FMT_422,
+    UNSUPPORTED },
 
-{
-    (char *) "MMSSTV MP175",
-    (char *) "MP175",
+  {
+    (char *) "MMSSTV ML320",
+    (char *) "ML320",
     9.0e-3,         // Tsync
     1.0e-3,         // Tporch
-    0e-3,           // Tseptr
-    1.0625e-3,      // Tpixel 340/320
-    1370.0e-3,      // Tline ~175/128, but exactly SpYUVY = 9+1+340+340+340+340 = 1370
-    320,
-    128,
-    2,
+    0.1e-3,         // Tseptr
+    0,
+    0,
+    640,
+    496,
+    1,
     YUV,
-    FMT_DEFAULT }
+    FMT_422,
+    UNSUPPORTED }
+
 };
 
 /*
@@ -536,8 +627,8 @@ u1_t   VISmap[] = {
     0,     0,     R8BW,  0,    R24,   0,     R12BW, 0,     R36,   0,     R24BW, 0,    R72,  0,    0,     0,     // 0x
     0,     0,     0,     0,    0,     0,     0,     0,     0,     0,     0,     0,    0,    0,    0,     0,     // 1x
     M4,    0,     0,     VISX, M3,    0,     0,     0,     M2,    0,     0,     0,    M1,   0,    0,     0,     // 2x
-    0,     0,     0,     0,    0,     0,     0,     W2180, S2,    0,     0,     0,    S1,   0,    0,     W2120, // 3x
-    0,     0,     0,     0,    0,     0,     0,     0,     0,     0,     0,     0,    SDX,  0,    0,     0,     // 4x
+    0,     0,     0,     0,    0,     0,     0,     SC180, S2,    0,     0,     SC60, S1,   0,    0,     SC120, // 3x
+    0,     0,     0,     0,    AVT,   0,     0,     0,     0,     0,     0,     0,    SDX,  0,    0,     0,     // 4x
     0,     0,     0,     0,    0,     0,     0,     0,     0,     0,     0,     0,    0,    PD50, PD290, PD120, // 5x
     PD180, PD240, PD160, PD90, 0,     0,     0,     0,     0,     0,     0,     0,    0,    0,    0,     0,     // 6x
     0,     P3,    P5,    P7,   0,     0,     0,     0,     0,     0,     0,     0,    0,    0,    0,     0      // 7x
@@ -548,13 +639,13 @@ u1_t   VISmap[] = {
  */
  
 u1_t   VISXmap[] = {
-//  x0    x1    x2    x3   x4    x5    x6    x7    x8     x9     xA     xB   xC     xD   xE    xF
-    0,    0,    0,    0,   0,    0,    0,    0,    0,     0,     0,     0,   0,     0,   0,    0,     // 0x
-    0,    0,    0,    0,   0,    0,    0,    0,    0,     0,     0,     0,   0,     0,   0,    0,     // 1x
-    0,    0,    0,    0,   0,    MP73, 0,    0,    0,     MP115, MP140, 0,   MP175, 0,   0,    0,     // 2x
-    0,    0,    0,    0,   0,    0,    0,    0,    0,     0,     0,     0,   0,     0,   0,    0,     // 3x
-    0,    0,    0,    0,   0,    MR73, MR90, 0,    0,     MR115, MR140, 0,   MR175, 0,   0,    0,     // 4x
-    0,    0,    0,    0,   0,    0,    0,    0,    0,     0,     0,     0,   0,     0,   0,    0,     // 5x
-    0,    0,    0,    0,   0,    0,    0,    0,    0,     0,     0,     0,   0,     0,   0,    0,     // 6x
-    0,    0,    0,    0,   0,    0,    0,    0,    0,     0,     0,     0,   0,     0,   0,    0,     // 7x
+//  x0    x1    x2    x3   x4    x5     x6     x7    x8     x9     xA     xB   xC     xD   xE    xF
+    0,    0,    0,    0,   0,    ML180, ML240, 0,    0,     ML280, ML320, 0,   0,     0,   0,    0,     // 0x
+    0,    0,    0,    0,   0,    0,     0,     0,    0,     0,     0,     0,   0,     0,   0,    0,     // 1x
+    0,    0,    0,    0,   0,    MP73,  0,     0,    0,     MP115, MP140, 0,   MP175, 0,   0,    0,     // 2x
+    0,    0,    0,    0,   0,    0,     0,     0,    0,     0,     0,     0,   0,     0,   0,    0,     // 3x
+    0,    0,    0,    0,   0,    MR73,  MR90,  0,    0,     MR115, MR140, 0,   MR175, 0,   0,    0,     // 4x
+    0,    0,    0,    0,   0,    0,     0,     0,    0,     0,     0,     0,   0,     0,   0,    0,     // 5x
+    0,    0,    0,    0,   0,    0,     0,     0,    0,     0,     0,     0,   0,     0,   0,    0,     // 6x
+    0,    0,    0,    0,   0,    0,     0,     0,    0,     0,     0,     0,   0,     0,   0,    0,     // 7x
 };

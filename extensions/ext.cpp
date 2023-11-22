@@ -19,6 +19,7 @@ Boston, MA  02110-1301, USA.
 
 #include "types.h"
 #include "kiwi.h"
+#include "mode.h"
 #include "clk.h"
 #include "mem.h"
 #include "misc.h"
@@ -63,6 +64,13 @@ double ext_get_displayed_freq_kHz(int rx_chan)
     conn_t *conn = rx_channels[rx_chan].conn;
     if (conn == NULL) return 0;
     return ((double) conn->freqHz / kHz + freq_offset_kHz);
+}
+
+int ext_get_mode(int rx_chan)
+{
+    conn_t *conn = rx_channels[rx_chan].conn;
+    if (conn == NULL) return MODE_AM;
+    return conn->mode;
 }
 
 ext_auth_e ext_auth(int rx_chan)
