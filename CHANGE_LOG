@@ -2,6 +2,25 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.637  November 22, 2023
+    Frequency memory:
+        Items are now stored in the memory only on demand instead of automatically while tuning.
+        The current frequency is stored in the frequency memory when:
+            1) The "store" entry at the top of the memory menu is clicked.
+            2) Or the freq memory icon (3 horizontal lines) is click-held for more than one second.
+                (it will turn green when the store occurs)
+        The "clear all" entry leaves only the current frequency in the memory.
+    
+    FT8 extension:
+        Now decodes the DXpedition and Contest message formats.
+        Shows the "i3.n3" message format type under "msg" column.
+        Fixed some decoding bugs.
+
+    Waterfall tuning/zooming now resets the inactivity timer. For example if you're recording you
+    can reset the inactivity timer without having to change the frequency or mode.
+    
+    Admin DX tab: Prevent corruption when frequency entered in not in sorted order.
+
 v1.635,636  November 15, 2023
     Support MMSSTV modes: MR73 MR90 MR115 MR140 MR175 MP73 MP115 MP140 MP175
     Changes to support KiwiSDR 2.
