@@ -6195,6 +6195,7 @@ function freq_memory_init()
 	} else {
       fmem = kiwi_JSON_parse('freq_memory_init', readCookie('freq_memory'));
 	}
+	if (isNull(fmem)) fmem = [10000];
    var prec = (cfg.show_1Hz || url_1Hz)? 3:2;
    fmem.forEach(function(s, i) {
       if (isNumber(s)) s = s.toString();
@@ -6340,6 +6341,8 @@ function freq_memory_menu_cb(idx, x)
    if (set_f) {
       //canvas_log('mem1='+ owrx.freq_memory.join());
       freqmode_set_dsp_kHz(f - kiwi.freq_offset_kHz);
+   } else {
+      freqset_select();
    }
 }
 
