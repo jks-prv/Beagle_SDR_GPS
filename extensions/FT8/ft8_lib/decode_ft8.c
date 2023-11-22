@@ -68,7 +68,7 @@ typedef struct {
     int callsign_hashtable_size;
 } decode_ft8_t;
 
-decode_ft8_t decode_ft8[MAX_RX_CHANS];
+static decode_ft8_t decode_ft8[MAX_RX_CHANS];
 
 const int kMin_score = 10; // Minimum sync score threshold for candidates
 const int kMax_candidates = 140;

@@ -11,7 +11,7 @@
 #define LOG_LEVEL LOG_WARN
 #include "debug_ft8.h"
 
-int debug[MAX_RX_CHANS];
+static int debug[MAX_RX_CHANS];
 
 #define MAX22    ((uint32_t)4194304ul)
 #define NTOKENS  ((uint32_t)2063592ul)
