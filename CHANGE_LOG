@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.637  November 22, 2023
+v1.637,638  November 22, 2023
     Frequency memory:
         Items are now stored in the memory only on demand instead of automatically while tuning.
         The current frequency is stored in the frequency memory when:
