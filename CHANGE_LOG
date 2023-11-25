@@ -2,6 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.639  November 26, 2023
+    New frequency memory menu user interface:
+        Auto or manual save mode.
+        Click-hold of memory icon does save in manual save mode.
+        Optional save/restore of demod mode.
+        Memory recall shortcut keys: ^1 ^2 ... ^9
+        Click-hold of VFO A/B icon does VFO A=B.
+        Help panel.
+
 v1.637,638  November 22, 2023
     Frequency memory:
         Items are now stored in the memory only on demand instead of automatically while tuning.
