@@ -850,18 +850,25 @@ function kiwi_serializeEvent(e) {
   return '(null)';
 }
 
+function key_stringify(evt)
+{
+   if (!evt) return '(no evt?)';
+   var s = '';
+   if (evt.shiftKey) s += 'shift-';
+   if (evt.ctrlKey)  s += 'ctrl-';
+   if (evt.altKey)   s += 'alt-';
+   if (evt.metaKey)  s += 'meta-';
+   s += evt.key? evt.key : '(no key?)';
+   return s;
+}
+
 function event_dump(evt, id, oneline)
 {
    var k = evt.key || '(no key)';
 
    if (oneline) {
       var trel = (isDefined(evt.relatedTarget) && evt.relatedTarget)? (' Trel='+ evt.relatedTarget.id) : '';
-      var key = '';
-      if (evt.shiftKey) key += 'shift-';
-      if (evt.ctrlKey)  key += 'ctrl-';
-      if (evt.altKey)   key += 'alt-';
-      if (evt.metaKey)  key += 'meta-';
-      key += k;
+      var key = key_stringify(evt);
       var ct_id = evt.currentTarget? evt.currentTarget.id : '(null)';
       console.log('event_dump '+ id +' |'+ evt.type +'| k='+ key +' T='+ evt.target.id +' Tcur='+ ct_id + trel);
    } else {
@@ -872,7 +879,7 @@ function event_dump(evt, id, oneline)
          return;
       }
       console.log('EVENT_DUMP: '+ id +' type='+ evt.type);
-      console.log((evt.shiftKey? 'SFT ':'') + (evt.ctrlKey? 'CTL ':'') + (evt.altKey? 'ALT ':'') + (evt.metaKey? 'META ':'') +'key='+ k);
+      console.log('key: '+ key_stringify(evt));
       var ct_id = evt.currentTarget? evt.currentTarget.id : '(null)';
       console.log('this.id='+ this.id +' tgt.name='+ evt.target.nodeName +' tgt.id='+ evt.target.id +' ctgt.id='+ ct_id);
       var buttons = '';
