@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 638
+VERSION_MIN = 639
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -469,6 +469,7 @@ V = -Dv$(VERSION_MAJ)_$(VERSION_MIN)
 
 INT_FLAGS += $(VERSION) -DKIWI -DKIWISDR
 INT_FLAGS += -DARCH_$(ARCH) -DCPU_$(CPU) -DARCH_CPU=$(CPU) -DARCH_CPU_S=STRINGIFY\($(CPU)\) $(addprefix -DPLATFORM_,$(PLATFORMS))
+INT_FLAGS += -DARCH_DIR=STRINGIFY\($(ARCH_DIR)\)
 INT_FLAGS += -DDIR_CFG=STRINGIFY\($(DIR_CFG)\) -DDIR_DATA=STRINGIFY\($(DIR_DATA)\) -DCFG_PREFIX=STRINGIFY\($(CFG_PREFIX)\)
 INT_FLAGS += -DBUILD_DIR=STRINGIFY\($(BUILD_DIR)\) -DREPO_NAME=STRINGIFY\($(REPO_NAME)\)  -DREPO_GIT=STRINGIFY\($(REPO_GIT)\)
 
@@ -1293,7 +1294,7 @@ endif
 	install -D -o root -g root $(GEN_DIR)/noip2 /usr/local/bin/noip2
 #
 	install -D -o root -g root -m 0644 $(DIR_CFG_SRC)/frpc.template.ini $(DIR_CFG)/frpc.template.ini
-	install -D -o root -g root pkgs/frp/frpc /usr/local/bin/frpc
+	install -D -o root -g root pkgs/frp/$(ARCH_DIR)/frpc /usr/local/bin/frpc
 #
 	install -D -o root -g root -m 0644 unix_env/bashrc ~root/.bashrc
 	install -D -o root -g root -m 0644 unix_env/profile ~root/.profile

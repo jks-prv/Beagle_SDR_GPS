@@ -211,7 +211,7 @@ ifeq ($(BBAI_64),true)
     FP_FLAGS += -mtune=cortex-a72 -mcpu=cortex-a72
     #FP_FLAGS += -mfpu=neon-vfpv4 -mfloat-abi=hard
     INSTALL_KIWI_DEVICE_TREE = true
-    ARM_DIR = arm64
+    ARCH_DIR = arm64
     LIB_ARCH = aarch64-linux-gnu
 else ifeq ($(BBAI),true)
     ARCH := sitara
@@ -221,7 +221,7 @@ else ifeq ($(BBAI),true)
     FP_FLAGS += -mtune=cortex-a15 -mcpu=cortex-a15
     FP_FLAGS += -mfpu=neon-vfpv4 -mfloat-abi=hard
     INSTALL_KIWI_DEVICE_TREE = true
-    ARM_DIR = arm32
+    ARCH_DIR = arm32
     LIB_ARCH = arm-linux-gnueabihf
 else ifeq ($(RPI),true)
     ARCH := omap
@@ -230,7 +230,7 @@ else ifeq ($(RPI),true)
     CFLAGS += -DMULTI_CORE
     FP_FLAGS += -mtune=cortex-a53 -mcpu=cortex-a53
     FP_FLAGS += -mfpu=neon -mfloat-abi=hard
-    ARM_DIR = arm32
+    ARCH_DIR = arm32
     LIB_ARCH = arm-linux-gnueabihf
 else ifeq ($(BBG_BBB),true)
     ARCH := sitara
@@ -245,7 +245,7 @@ else ifeq ($(BBG_BBB),true)
     ifeq ($(DEBIAN_10_AND_LATER),true)
         INSTALL_KIWI_DEVICE_TREE = true
     endif
-    ARM_DIR = arm32
+    ARCH_DIR = arm32
     LIB_ARCH = arm-linux-gnueabihf
 else
     BAD_DEV_DETECT := true

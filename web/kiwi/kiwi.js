@@ -124,6 +124,12 @@ var kiwi = {
    
    rf_attn: 0,
    
+   freq_memory: [],
+   freq_memory_menu_shown: 0,
+   fmem_auto_save: 1,
+   fmem_mode_save: 0,
+   fmem_arr: null,
+   
    no_reopen_retry: false,
    _ver_: 1.578,
    _last_: null

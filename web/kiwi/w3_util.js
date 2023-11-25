@@ -204,6 +204,10 @@
 */
 
 
+var w3 = {
+   _last_: 0
+};
+
 var w3int = {
    menu_cur_id: null,
    menu_active: false,
@@ -3486,7 +3490,7 @@ function w3int_menu_onclick(ev, id, cb, cb_param)
       if (w3int.menu_debug)
          canvas_log('CALL: '+ idx);
       if (idx == -1) return;     // clicked/touched top/bottom border -- don't dismiss menu
-      w3_call(cb, idx, el.w3_menu_x, cb_param);
+      w3_call(cb, idx, el.w3_menu_x, cb_param, ev);
    }
 
    w3_visible(el, false);
