@@ -546,7 +546,7 @@ void c2s_admin(void *param)
                 if (background_mode)
                     system("/usr/local/bin/frpc -c " DIR_CFG "/frpc.ini &");
                 else
-                    system("./pkgs/frp/frpc -c " DIR_CFG "/frpc.ini &");
+                    system("./pkgs/frp/" ARCH_DIR "/frpc -c " DIR_CFG "/frpc.ini &");
 				
 				continue;
 			} else
