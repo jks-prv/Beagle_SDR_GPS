@@ -309,8 +309,9 @@ void fpga_init() {
 		kiwi_exit(-1);
 	}
 
-    // FIXME: remove
 	// download second 1k words via program command transfers
+    // NB: not needed now that SPI buf is same size as eCPU code memory (2k words / 4k bytes)
+    /*
     j = n;
     n = fread(code2, 1, 4096-n, fp);
     if (n < 0) panic("fread");
@@ -334,6 +335,7 @@ void fpga_init() {
 		}
 		//printf("\n");
 	}
+	*/
     fclose(fp);
 
 	printf("ping2..\n");
