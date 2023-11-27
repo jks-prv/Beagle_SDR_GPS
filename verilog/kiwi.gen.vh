@@ -249,7 +249,7 @@
 	localparam GET_RX_SAMP = 0;    // DEFb: bit number for value: 0x1
 	localparam RX_BUFFER_RST = 1;    // DEFb: bit number for value: 0x2
 	localparam RX_GET_BUF_CTR = 2;    // DEFb: bit number for value: 0x4
-	localparam SET_WF_CONTIN = 3;    // DEFb: bit number for value: 0x8
+	localparam WREVT_008 = 3;    // DEFb: bit number for value: 0x8
 	localparam GET_WF_SAMP_I = 4;    // DEFb: bit number for value: 0x10
 	localparam GET_WF_SAMP_Q = 5;    // DEFb: bit number for value: 0x20
 	localparam CLR_RX_OVFL = 6;    // DEFb: bit number for value: 0x40
