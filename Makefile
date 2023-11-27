@@ -264,7 +264,7 @@ else
 	LIBS += -lfftw3f -lutil
 	LIBS_DEP += /usr/lib/$(LIB_ARCH)/libfftw3f.a
 	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pgmtoppm /sbin/ethtool /usr/bin/sshpass
-	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget /usr/bin/htop
+	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget /usr/bin/htop /usr/bin/colordiff
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
@@ -377,6 +377,9 @@ $(INSTALL_CERTIFICATES):
 
 /usr/bin/htop:
 	-apt-get -y $(APT_GET_FORCE) install htop
+
+/usr/bin/colordiff:
+	-apt-get -y $(APT_GET_FORCE) install colordiff
 
 /usr/sbin/avahi-autoipd:
 	-apt-get -y $(APT_GET_FORCE) install avahi-daemon avahi-utils libnss-mdns avahi-autoipd
