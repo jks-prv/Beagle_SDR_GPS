@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "system.h"
 #include "services.h"
 #include "rx.h"
 #include "rx_util.h"
@@ -87,6 +88,9 @@ void c2s_admin_setup(void *param)
 	// send initial values
 	memset(&pushback, 0, sizeof(pushback));
 	send_msg(conn, SM_NO_DEBUG, "ADM admin_sdr_mode=%d", VAL_USE_SDR);
+	const char *proxy_server = admcfg_string("proxy_server", NULL, CFG_REQUIRED);
+	send_msg_encoded(conn, "ADM", "proxy_url", "%s:%d", proxy_server, PROXY_SERVER_PORT);
+	admcfg_string_free(proxy_server);
 	#ifdef MULTI_CORE
 	    send_msg(conn, SM_NO_DEBUG, "ADM is_multi_core");
 	#endif
@@ -714,9 +718,9 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET check_port_open");
 			if (i == 0) {
 	            const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
-                // proxy always uses port 8073
+                // proxy always uses a fixed port number
                 int dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
-                int server_port = (dom_sel == DOM_SEL_REV)? 8073 : net.port_ext;
+                int server_port = (dom_sel == DOM_SEL_REV)? PROXY_SERVER_PORT : net.port_ext;
                 int status;
 			    char *reply;
 		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"kiwisdr.com/php/check_port_open.php/?url=%s:%d\"",
@@ -1381,7 +1385,7 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET reboot");
 			if (i == 0) {
 				clprintf(conn, "ADMIN: reboot requested by admin..\n");
-				system("reboot");
+				system_reboot();
 				while (true)
 					kiwi_usleep(100000);
 			}
@@ -1389,7 +1393,7 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET power_off");
 			if (i == 0) {
 				clprintf(conn, "ADMIN: power off requested by admin..\n");
-				system("poweroff");
+				system_poweroff();
 				while (true)
 					kiwi_usleep(100000);
 			}
