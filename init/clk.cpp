@@ -66,9 +66,8 @@ void clock_init()
         printf("ADC_CLOCK: %s%.6f MHz\n", clk.adc_clock_base/MHz);
     #else
         clk.adc_clock_base = clk.ext_ADC_clk? ext_clk_freq : ADC_CLOCK_TYP;
-        printf("ADC_CLOCK: %s%.6f MHz\n",
-            clk.ext_ADC_clk? stprintf("EXTERNAL, J%d connector, ", (kiwi.model == KiwiSDR_1)? 5:2) : "",
-            clk.adc_clock_base/MHz);
+        printf("ADC_CLOCK: %.6f MHz %s\n",
+            clk.adc_clock_base/MHz, clk.ext_ADC_clk? "(ext clk connector)" : "");
     #endif
     
     clk.manual_adj = 0;
