@@ -57,7 +57,8 @@ module CPU (
     //	100p pppp R....... alu insns, R = rtn
     //	100p pppp Riiiiiii  addi, imm [6:0] 0-127
     //	100p pppp RCxxxxxx  add, C = carry-in
-    //	100p pppp RSSxxxxx  rdBit, SS selects 'ser' bit input
+    //	100p pppp R210xxxx  rdBit, 210 (one hot) selects 'ser' bit input
+    //	100p pppp RxTUxxxx  shl rol shr ror usr
     //	100p pppp Rxxxxxxx  all others, EXCEPT R=1 illegal for: r, r_from, to_r
 
     // branches
@@ -100,8 +101,10 @@ module CPU (
                op_shr       =  8'h92,
                op_rdBit     =  8'h93,
                op_fetch16   =  8'h94,
-               op_store16   =  8'h95,       // leaves address+2 ( d a --> a+2 )
-               op_sp_rp     =  8'h96,		// used by STACK_CHECK
+               op_store16   =  8'h95,       // leaves address ( d a --> a )
+               op_stk_rd    =  8'h96,
+               op_stk_wr    =  8'h97,       // no change ( d a --> d a )
+               op_sp_rp     =  8'h98,		// used by STACK_CHECK
 
                op_r         =  8'h9B,
                op_r_from    =  8'h9C,
@@ -123,9 +126,13 @@ module CPU (
     
     wire opt_ret  = op[7] && op[15:13] == 3'b100;
     wire opt_cin  = op[6];
-    wire ser_sel0 = (op[6:5] == 2'b00);
-    wire ser_sel1 = (op[6:5] == 2'b01);
-    wire ser_sel2 = (op[6:5] == 2'b10);
+
+    wire opt_rot  = op[5];
+    wire opt_uns  = op[4];
+
+    wire ser_sel0 = op[4];
+    wire ser_sel1 = op[5];
+    wire ser_sel2 = op[6];
     wire serial = ser_sel0? ser[0] : (ser_sel1? ser[1] : ser[2]);
 
     //////////////////////////////////////////////////////////////////////////
@@ -154,8 +161,10 @@ module CPU (
     wire inc_rp = op8 == op_to_r   || op5 == op_call;
     wire dec_rp = op8 == op_r_from || opt_ret;
 
-    wire dstk_wr = op8 == op_rot  || inc_sp;
+    wire dstk_wr = op8 == op_rot  || op8 == op_stk_wr || inc_sp;
     wire rstk_wr = op8 == op_to_r || op5 == op_call;
+    
+    wire stk_rw = op8 == op_stk_rd || op8 == op_stk_wr;
 
     //////////////////////////////////////////////////////////////////////////
     // Next on stack
@@ -184,6 +193,8 @@ module CPU (
     wire        ci = (op8 == op_add && opt_cin && carry) || op8 == op_sub || op4 == op_loop;
     reg  [31:0] a, b, alu;
     reg         carry;
+    wire        shl_lsb = opt_rot? tos[31] : 1'b0;
+    wire        shr_msb = opt_rot? tos[31] : (opt_uns? 1'b0 : tos[31]);
 
 	// FIXME: use a c_out instead and reduce s width to 32 from 33?
 	// FIXME: combine adder & multipler(s) into a single DSP slice?
@@ -215,8 +226,8 @@ module CPU (
             op_or           : alu = nos | tos;
 			op_xor          : alu = nos ^ tos;
 			op_not          : alu =     ~ tos;
-            op_shl, op_shl64: alu = {tos[30:0], 1'b0};
-            op_shr          : alu = {tos[31], tos[31:1]};   // really an asr preserving the sign bit
+            op_shl, op_shl64: alu = {tos[30:0], shl_lsb};
+            op_shr          : alu = {shr_msb, tos[31:1]};   // really an asr preserving the sign bit
             default         : alu = tos;
         endcase
 
@@ -240,7 +251,7 @@ module CPU (
                     op_swap, op_to_r,
                     op_over, op_drop,
                     op_to_loop         : next_tos = nos;
-                    op_rot             : next_tos = dstk_dout;
+                    op_rot, op_stk_rd  : next_tos = dstk_dout;
                     op_r_from, op_r    : next_tos = rstk_dout;
                     op_loop_from       : next_tos = loop[op0];
                     op_swap16          : next_tos = {tos[15:0], tos[31:16]};
@@ -305,10 +316,10 @@ module CPU (
     // On Artix 7 requires 36kb BRAM because true dual-port mode required (i.e. r/w on both ports)
     // even though memory requirement would fit in a 18kb BRAM (512 * 32b = 16kb).
 
-    wire [8:0] dstk_addr = {1'b0, next_sp};
-    wire [8:0] rstk_addr = {1'b1, next_rp};
+    wire [9:0] dstk_addr = {stk_rw, (op8 == op_stk_rd)? tos[8:0] : {1'b0, next_sp}};
+    wire [9:0] rstk_addr = {  1'b0, 1'b1, next_rp};
 
-    ipcore_bram_512_32b cpu_stacks (
+    ipcore_bram_1k_32b cpu_stacks (
         .clka   (clk),          .clkb   (clk),
         .ena    (rst[RUN]),		.enb    (rst[RUN]),
         .addra	(dstk_addr),    .addrb	(rstk_addr),
