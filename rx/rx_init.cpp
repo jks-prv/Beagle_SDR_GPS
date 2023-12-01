@@ -551,7 +551,7 @@ void update_vars_from_config(bool called_at_init)
     admcfg_default_bool("my_kiwi", true, &update_admcfg);
     admcfg_default_bool("onetime_password_check", false, &update_admcfg);
     admcfg_default_bool("dx_labels_converted", false, &update_admcfg);
-    admcfg_default_string("proxy_server", "proxy.kiwisdr.com", &update_admcfg);
+    admcfg_default_string("proxy_server", PROXY_SERVER_HOST, &update_admcfg);
     admcfg_default_bool("console_local", true, &update_admcfg);
     admin_keepalive = admcfg_default_bool("admin_keepalive", true, &update_admcfg);
     log_local_ip = admcfg_default_bool("log_local_ip", true, &update_admcfg);

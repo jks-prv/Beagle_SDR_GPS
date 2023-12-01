@@ -116,6 +116,11 @@ u2_t getmem(u2_t addr)
 	return mem->word[0];
 }
 
+void setmem(u2_t addr, u2_t data)
+{
+	spi_set_noduplex(CmdSetMem, addr, data);
+}
+
 void printmem(const char *str, u2_t addr)
 {
 	printf("%s %04x: %04x\n", str, addr, (int) getmem(addr));
@@ -309,8 +314,9 @@ void fpga_init() {
 		kiwi_exit(-1);
 	}
 
-    // FIXME: remove
 	// download second 1k words via program command transfers
+    // NB: not needed now that SPI buf is same size as eCPU code memory (2k words / 4k bytes)
+    /*
     j = n;
     n = fread(code2, 1, 4096-n, fp);
     if (n < 0) panic("fread");
@@ -319,7 +325,7 @@ void fpga_init() {
 		for (i=0; i<n; i+=2) {
 			u2_t insn = code2[i/2];
 			u4_t addr = j+i;
-			spi_set_noduplex(CmdLoad, insn, addr);
+			spi_set_noduplex(CmdSetMem, insn, addr);
 			u2_t readback = getmem(addr);
 			if (insn != readback) {
 				printf("%04x:%04x:%04x\n", addr, insn, readback);
@@ -334,6 +340,7 @@ void fpga_init() {
 		}
 		//printf("\n");
 	}
+	*/
     fclose(fp);
 
 	printf("ping2..\n");

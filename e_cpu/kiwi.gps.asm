@@ -26,7 +26,7 @@
 ; GPS
 ; ============================================================================
 
-				// UploadClock requires ch_NAV_MS and ch_NAV_BITS to be sequential
+				// UploadClock requires ch_NAV_MS and ch_NAV_BITS to be in the order shown
 				
 				STRUCT	GPS_CHAN
 				 u16	ch_NAV_MS		1						; Milliseconds 0 ... 19
@@ -108,8 +108,7 @@ GetCount:		push	0						; 0
 				rdBit0							; [17]
 GetCount2:
                 rdBit0_16z
-				rdBit0							; 
-				ret								; [17:0]
+				rdBit0.r                        ; [17:0]
 
 GetPower:		call	GetCount				; i[17:0]
 				dup                             ; i[17:0] i[17:0]
@@ -129,8 +128,7 @@ GetCount2:
                 rdBit0_16z
 				rdBit0							; 
 				rdBit0							; 
-				rdBit0							; 
-				ret								; [19:0]
+				rdBit0.r                        ; [19:0]
 
 GetPower:		call	GetCount				; i[19:0]
 				dup                             ; i[19:0] i[19:0]
@@ -310,16 +308,18 @@ E1B_AACF_sub:                               ;                               // p
                 sub64                       ; Inav (ACF-AACF)H L
 E1B_AACF_end:
                 // instead of dividing by 2 here the AGC is simply reduced by 2 when ACF mode is in effect
-
+                // fall through ...
 
 close_CG_loop:                              ; Inav errH L
 
                 CloseLoop ch_CG_FREQ ch_CG_GAIN SET_CG_NCO
                 
                 r                           ; Inav this
-                addi    ch_E1B_mode         ; Inav &ch_E1B_mode
-                fetch16                     ; Inav e1b_mode
-                brNZ    E1B_nav             ; Inav
+                dup                         ; Inav this this
+                addi    ch_E1B_mode         ; Inav this &ch_E1B_mode
+                fetch16                     ; Inav this e1b_mode
+                brNZ    NavSave             ; Inav this                     // E1B nav case
+                // fall through ...                                         // L1 C/A nav case
 
                 //
                 // L1 C/A nav
@@ -349,8 +349,7 @@ close_CG_loop:                              ; Inav errH L
 
 
 				// if Inav == ch_NAV_PREV goto NavSame
-L1_nav:
-                r							; Inav this
+                							; Inav this
                 addi	ch_NAV_PREV			; Inav &prev
                 fetch16						; Inav prev
                 over						; Inav prev Inav
@@ -364,8 +363,7 @@ L1_nav:
                 drop						;
                 
 				// if ch_NAV_MS == 0 then goto NavEdge
-                r							; this
-                addi	ch_NAV_MS			; &ms
+                r							; this(&ms)
                 fetch16						; ms
                 brZ		NavEdge
 
@@ -381,14 +379,12 @@ L1_nav:
 
 NavEdge:        // ch_NAV_MS = 1
 				push	1					; 1
-                r_from						; 1 this                    NB: pops final this from r stack
-                addi	ch_NAV_MS			; 1 &ms
+                r_from						; 1 this(&ms)               NB: pops final this from r stack
                 store16
                 drop.r						;
 
 NavSame:        // if ch_NAV_MS == 19 then goto NavSave
-				r							; Inav this
-                addi	ch_NAV_MS			; Inav &ms
+				r							; Inav this(&ms)
                 dup							; Inav &ms &ms
                 fetch16						; Inav &ms ms
                 push	19
@@ -398,66 +394,15 @@ NavSame:        // if ch_NAV_MS == 19 then goto NavSave
 				// else ch_NAV_MS++
                 fetch16						; Inav ms
                 addi	1					; Inav ms+1
-                r_from						; Inav ms+1 this            NB: pops final this from r stack
-                addi	ch_NAV_MS			; Inav ms+1 &ms
+                r_from						; Inav ms+1 this(&ms)       NB: pops final this from r stack
                 store16
                 drop						; Inav
                 drop.r						;
 
-NavSave:        // ch_NAV_MS = 0
-				push	0
-				swap						; Inav 0 &ms
-                store16
-                drop						; Inav
-                
-				// ch_NAV_BITS = (ch_NAV_BITS + 1) & (MAX_NAV_BITS - 1)
-                r							; Inav this
-                addi	ch_NAV_BITS			; Inav &cnt
-                fetch16						; Inav cnt
-                dup							; Inav cnt cnt
-                addi	1					; Inav cnt cnt+1
-                push	MAX_NAV_BITS - 1
-                and							; Inav cnt wrapped
-                r							; Inav cnt wrapped this
-                addi	ch_NAV_BITS			; Inav cnt wrapped &cnt
-                store16
-                drop						; Inav cnt
-
-				// ch_NAV_BUF[] <<= |= Inav
-				REPEAT	4
-				 shr						; Inav cnt/16
-				ENDR
-                shl							; Inav offset
-                r_from						; Inav offset this          NB: pops final this from r stack
-                addi	ch_NAV_BUF			; Inav offset buf
-                add							; Inav ptr
-                dup							; Inav ptr ptr
-                to_r						; Inav ptr
-                fetch16						; Inav old
-                shl							; Inav old<<1
-                add							; new
-                r_from						; new ptr
-                store16
-                drop.r						;
-
-                //
-                // E1B nav
-                //
-				// process NAV data (4 msec per bit @ 250 bps)
-				// remember: loop is running at 250 Hz (4 msec), so 1 sample per bit
-                //
-				//  ch_NAV_MS = 0
-				//  ch_NAV_BITS = (ch_NAV_BITS + 1) & (MAX_NAV_BITS - 1)
-				//  ch_NAV_BUF[] <<= |= Inav
-				//  return
-
-E1B_nav:                                    ; Inav
-                //br      L1_nav
-
+NavSave:                                    ; Inav &ms
                 // ch_NAV_MS = 0
-				push	0                   ; Inav 0
-				r							; Inav 0 this
-                addi	ch_NAV_MS			; Inav 0 &ms
+				push	0                   ; Inav &ms 0
+				swap						; Inav 0 &ms
                 store16                     ; Inav &ms
                 drop						; Inav
                 
@@ -490,6 +435,17 @@ E1B_nav:                                    ; Inav
                 r_from						; new ptr
                 store16                     ; ptr
                 drop.r						;
+
+                //
+                // E1B nav
+                //
+				// process NAV data (4 msec per bit @ 250 bps)
+				// remember: loop is running at 250 Hz (4 msec), so 1 sample per bit spanning 1 epoch.
+                //
+				//  ch_NAV_MS = 0
+				//  ch_NAV_BITS = (ch_NAV_BITS + 1) & (MAX_NAV_BITS - 1)
+				//  ch_NAV_BUF[] <<= |= Inav
+				//  return
 			
 ; ============================================================================
 
@@ -521,10 +477,6 @@ UploadClock:									; &GPS_channels + ch_NAV_MS
 #endif
 				addi.r	sizeof GPS_CHAN - 4		; &GPS_channels++
 
-UploadGlitches:									; &GPS_channels + ch_NAV_GLITCH
-				wrEvt	GET_MEMORY
-				addi.r	sizeof GPS_CHAN - 2		; &(GPS_channels+1) + ch_NAV_GLITCH
-
 ; ============================================================================
 
 				MACRO	SetRate member nco		;
@@ -550,7 +502,6 @@ UploadGlitches:									; &GPS_channels + ch_NAV_GLITCH
 				 call	GetGPSchanPtr			; kp,ki this
 				 addi	member					; kp,ki &gain
 				 store32						; &gain
-				 drop							;
 				ENDM
 
 ; ============================================================================
@@ -580,16 +531,31 @@ loop2_gps_chans:
 CmdSetMask:     SetReg SET_GPS_MASK
                 ret
 
-CmdSetRateCG:   SetRate	ch_CG_FREQ SET_CG_NCO
+CmdSetRateCG:
+                SetRate ch_CG_FREQ SET_CG_NCO
                 ret
 
-CmdSetRateLO:   SetRate	ch_LO_FREQ SET_LO_NCO
+CmdSetRateLO:
+                SetRate ch_LO_FREQ SET_LO_NCO
                 ret
 
-CmdSetGainCG:   SetGain ch_CG_GAIN
+set_gain:                                   ; gain
+                rdReg	HOST_RX				; gain chan
+                call	GetGPSchanPtr		; gain this
+                add             			; &gain
+                RdReg32 HOST_RX				; &gain kp,ki
+                swap						; kp,ki &gain
+                store32						; &gain
+                drop.r
+
+CmdSetGainCG:
+                push    ch_CG_GAIN
+                set_gain
                 ret
 
-CmdSetGainLO:   SetGain ch_LO_GAIN
+CmdSetGainLO:
+                push    ch_LO_GAIN
+                set_gain
                 ret
 
 CmdSetSat:      rdReg	HOST_RX             ; chan#
@@ -679,7 +645,9 @@ upload_loop:    call	UploadClock
 CmdGetGlitches: wrEvt	HOST_RST
                 push	GPS_channels + ch_NAV_GLITCH
                 loop_gps_chans
-glitch_loop:    call	UploadGlitches
+glitch_loop:                                ; &GPS_channels + ch_NAV_GLITCH
+				wrEvt	GET_MEMORY
+				addi.r	sizeof GPS_CHAN - 2 ; &(GPS_channels+1) + ch_NAV_GLITCH
                 loop    glitch_loop
                 drop.r
 

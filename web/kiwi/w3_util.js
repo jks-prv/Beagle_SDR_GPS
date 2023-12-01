@@ -2168,7 +2168,7 @@ function w3_switch_set_value(path, switch_idx)
 function w3int_btn_evt(ev, path, cb, cb_param)
 {
    if (!w3_contains(path, 'w3-disabled')) {
-      //console.log('w3int_btn_evt path='+ path +' cb='+ cb +' cb_param='+ cb_param);
+      //console.log('w3int_btn_evt ev.type='+ ev.type +' path='+ path +' cb='+ cb +' cb_param='+ cb_param);
       w3_check_restart_reboot(ev.currentTarget);
       
       var el = w3_el(path);
@@ -3475,6 +3475,7 @@ function w3int_menu_onclick(ev, id, cb, cb_param)
       var when = Date.now() - el.w3_realigned_time;
       if (when < 50) {
          if (w3int.menu_debug) canvas_log('XRe'+ when);
+         //console.log('w3int_menu_onclick: cancelEvent()');
          return cancelEvent(ev);
       }
       if (w3int.menu_debug) canvas_log('XOK'+ when);
@@ -3504,7 +3505,6 @@ function w3int_menu_onclick(ev, id, cb, cb_param)
 
    // allow right-button to select menu items
 	if (ev != null) {
-      //console.log('w3int_menu_onclick: cancelEvent()');
       if (w3int.menu_debug) canvas_log('Enull');
 	   return cancelEvent(ev);
 	}
@@ -3530,7 +3530,7 @@ function w3int_menu_event(evt)
 
 function w3_menu_close(from)
 {
-   //canvas_log('w3_menu_close '+ from +' id='+ w3int.menu_cur_id);
+   if (w3int.menu_debug) canvas_log('w3_menu_close '+ from +' id='+ w3int.menu_cur_id);
    if (!w3int.menu_cur_id) return;
    var el = w3_el(w3int.menu_cur_id);
    if (!el) return;

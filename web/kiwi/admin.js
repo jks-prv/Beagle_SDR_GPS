@@ -521,7 +521,7 @@ function connect_html()
 			'<header class="w3-container w3-yellow"><h5>' +
 			'If you are not able to make an incoming connection from the Internet to your Kiwi because ' +
 			'of problems <br> with your router or Internet Service Provider (ISP) then please consider using the KiwiSDR ' +
-			'<a href="http://proxy.kiwisdr.com" target="_blank">reverse proxy service</a>.' +
+			'<a href='+ dq('http://'+ admin.proxy_host) +' target="_blank">reverse proxy service</a>.' +
 			'</h5></header>'
 		) +
 		
@@ -628,7 +628,7 @@ function connect_html()
          w3_div('w3-container w3-valign',
             '<header class="w3-container w3-yellow"><h6>' +
             'Please read these instructions before use: ' +
-            '<a href="http://proxy.kiwisdr.com" target="_blank">reverse proxy service</a>' +
+            '<a href='+ dq('http://'+ admin.proxy_host) +' target="_blank">reverse proxy service</a>' +
             '</h6></header>'
          ),
 
@@ -640,7 +640,8 @@ function connect_html()
 
 			w3_col_percent('w3-text-teal/w3-container',
 			   w3_div('w3-text-teal w3-bold', 'Reverse proxy configuration'), 50,
-				w3_div('id-proxy-hdr w3-text-teal w3-bold w3-center w3-light-grey', 'Proxy information for proxy.kiwisdr.com'), 50
+				w3_div('id-proxy-hdr w3-text-teal w3-bold w3-center w3-light-grey',
+				   'Proxy information for '+ admin.proxy_host), 50
 			),
 			
 			w3_col_percent('w3-text-teal/w3-container',
@@ -677,7 +678,7 @@ function connect_html()
                w3_input_get('id-proxy-server', 'Proxy server hostname', 'adm.proxy_server', 'connect_proxy_server_cb'),
                w3_div('w3-text-black',
                   'Change <b>only</b> if you have implemented a private proxy server. <br>' +
-                  'Set to "proxy.kiwisdr.com" for the default proxy service.'
+                  'Set to '+ dq(admin.proxy_host) +' for the default proxy service.'
                )
             ),
             w3_div()
@@ -735,9 +736,12 @@ function connect_update_url()
       host_and_port += ':'+ adm.port_ext;
       w3_set_label('Based on above selection, and external port from Network tab, the URL to connect to your Kiwi is:', 'connect-url-text');
    } else {
-      host_and_port += ':8073';
-      if (adm.port_ext != 8073)
-         host_and_port += ' (proxy always uses port 8073 even though your external port is '+ adm.port_ext +')';
+      // using proxy
+      if (admin.proxy_port != 80) {
+         host_and_port += ':'+ admin.proxy_port;
+         if (adm.port_ext != admin.proxy_port)
+            host_and_port += ' (proxy always uses port '+ admin.proxy_port +' even though your external port is '+ adm.port_ext +')';
+      }
       w3_set_label('Based on the above selection the URL to connect to your Kiwi is:', 'connect-url-text');
    }
    
@@ -1662,11 +1666,11 @@ function network_ethernet_mtu(path, idx, first)
 
 function network_port_open_init()
 {
-   // proxy always uses port 8073
+   // proxy always uses a fixed port number
    w3_do_when_rendered('id-net-check-port-dom-q',
       function() {
          var el = w3_el('id-net-check-port-dom-q');
-         var port = (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)? 8073 : adm.port_ext;
+         var port = (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)? admin.proxy_port : adm.port_ext;
          el.innerHTML =
             (cfg.server_url != '')?
                'http://'+ cfg.server_url +':'+ port +' :' :
@@ -3776,6 +3780,13 @@ function admin_recv(data)
 			case "admin_sdr_mode":
 				admin_sdr_mode = (+param[1])? 1:0;
 				break;
+			
+			case "proxy_url":
+			   var s = kiwi_remove_protocol(decodeURIComponent(param[1])).split(':');
+			   admin.proxy_host = s[0];
+			   admin.proxy_port = s[1];
+			   console.log('PROXY '+ admin.proxy_host +':'+ admin.proxy_port);
+			   break;
 
 			case "is_multi_core":
 				admin.is_multi_core = true;

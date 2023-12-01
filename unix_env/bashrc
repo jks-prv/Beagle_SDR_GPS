@@ -9,35 +9,45 @@ BBG_BBB="$(test -e /proc/device-tree && cat /proc/device-tree/model | grep -q -s
 BBAI_64="$(test -e /proc/device-tree && cat /proc/device-tree/model | grep -q -s "BeagleBone AI-64" && echo "true" || echo "false")"
 BBAI="$(test -e /proc/device-tree && cat /proc/device-tree/model | sed "s/\(.*\)./\1x/" | grep -q -s "BeagleBone AIx" && echo "true" || echo "false")"
 DEBIAN_7="$(test -e /proc/device-tree && cat /etc/debian_version | grep -q -s "7\." && echo "true" || echo "false")"
+DEBIAN_8="$(test -e /proc/device-tree && cat /etc/debian_version | grep -q -s "8\." && echo "true" || echo "false")"
+DEBIAN_9="$(test -e /proc/device-tree && cat /etc/debian_version | grep -q -s "9\." && echo "true" || echo "false")"
+DEBIAN_10="$(test -e /proc/device-tree && cat /etc/debian_version | grep -q -s "10\." && echo "true" || echo "false")"
+DEBIAN_11="$(test -e /proc/device-tree && cat /etc/debian_version | grep -q -s "11\." && echo "true" || echo "false")"
 RPI="$(test -e /proc/device-tree && cat /proc/device-tree/model | grep -q -s "Raspberry Pi" && echo "true" || echo "false")"
 
 APT_GET_FORCE=
 
 if [ "x${BBAI_64}" == "xtrue" ] ; then
-    export CC="clang-11"
     export CPU="TDA4VM"
+    export CC="clang-11"
 fi
 
 if [ "x${BBAI}" == "xtrue" ] ; then
-    export CC="clang-7"
     export CPU="AM5729"
+    export CC="clang-7"
 fi
 
 if [ "x${BBG_BBB}" == "xtrue" ] ; then
-    export CC="clang-6.0"
     export CPU="AM3359"
-    APT_GET_FORCE="--force-yes"
-fi
-
-if [ "x${DEBIAN_7}" == "xtrue" ] ; then
-    export CC="gcc"
-    export CPU="AM3359"
-    APT_GET_FORCE="--force-yes"
+    if [ "x${DEBIAN_7}" == "xtrue" ] ; then
+        export CC="gcc"
+        APT_GET_FORCE="--force-yes"
+    fi
+    if [ "x${DEBIAN_8}" == "xtrue" ] ; then
+        export CC="clang-6.0"
+        APT_GET_FORCE="--force-yes"
+    fi
+    if [ "x${DEBIAN_10}" == "xtrue" ] ; then
+        export CC="clang-8"
+    fi
+    if [ "x${DEBIAN_11}" == "xtrue" ] ; then
+        export CC="clang-11"
+    fi
 fi
 
 if [ "x${RPI}" == "xtrue" ] ; then
-    export CC="clang-7"
     export CPU="BCM2837"
+    export CC="clang-7"
 fi
 
 if [ -f ~/.bashrc.local ]; then
@@ -100,6 +110,7 @@ alias py3="python3"
 alias sshrm="function _sshrm () { sudo ssh-keygen -R \$* ; ssh-keygen -R \$* ; } ; _sshrm"
 alias d+="function _d+ () { dig +short +noedns \$* A ; dig +short \$* AAAA ; } ; _d+"
 alias cata="tail -vn +1 \`find . -maxdepth 1 -type f -print\`"
+alias catf="tail -vn +1 "
 alias catar="tail -vn +1 \`find . -type f -print\`"
 alias catav="tail -vn +1 */v"
 alias du="/usr/bin/du -sh * | sort -h"

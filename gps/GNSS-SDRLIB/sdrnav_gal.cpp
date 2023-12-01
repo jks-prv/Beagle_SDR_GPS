@@ -347,6 +347,7 @@ extern int decode_page_e1b(const uint8_t *buff1, const uint8_t *buff2,
     case  6: decode_word6(buff, nav);       break;
     case  7: case 8: case 9:                break;  // almanac
     case 10: decode_word10(buff, nav);      break;
+    //case 16: case 17: case 18: case 19: case 20: break;     // seen recently (12/2023)
     case 63: break;                                 // dummy page (we've actually seen these)
     default:
         //printf("%s UNKNOWN W%d\n", PRN(nav->sat), id);
@@ -378,7 +379,7 @@ const char test_vector_syms[] = {
 };
 #endif
 
-extern int decode_e1b(sdrnav_t *nav, int *error)
+extern int E1B_subframe(sdrnav_t *nav, int *error)
 {
     int i,id=0,bits[500],bits_e1b[240];
     uint8_t enc_e1b[240],dec_e1b1[15],dec_e1b2[15];
@@ -467,7 +468,7 @@ extern int decode_e1b(sdrnav_t *nav, int *error)
     }
     
     /* CRC check */
-    if (!err && checkcrc_e1b(dec_e1b1,dec_e1b2)<0) {
+    if (!err && checkcrc_e1b(dec_e1b1,dec_e1b2) < 0) {
         //SDRPRINTF("error: E1B CRC mismatch\n");
         id = getbitu(dec_e1b1,2,6);
         //printf("%s CRC error, word #%d\n", PRN(nav->sat), id);
@@ -482,7 +483,7 @@ extern int decode_e1b(sdrnav_t *nav, int *error)
     if (!err) {
         /* decode navigation data */
         id = decode_page_e1b(dec_e1b1, dec_e1b2, nav, &err);
-        if (id<0 || id>10) {
+        if (id < 0 || id > 63) {
             //SDRPRINTF("%s error: E1B nav word number sfn=%d\n", PRN(nav->sat), id);
             err = GPS_ERR_PAGE;
         } else {

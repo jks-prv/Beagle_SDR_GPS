@@ -6265,10 +6265,10 @@ function freq_memory_init()
 
 function freq_memory_menu_init()
 {
-   w3_menu('id-freq-memory-menu', 'freq_memory_menu_cb');
+   w3_menu('id-freq-memory-menu', 'freq_memory_menu_item_cb');
 }
 
-function freq_memory_menu_show(shortcut_key)
+function freq_memory_menu_open(shortcut_key)
 {
    if (w3_isVisible('id-freq-memory-menu')) {
       kiwi.freq_memory_menu_shown = 0;
@@ -6278,17 +6278,19 @@ function freq_memory_menu_show(shortcut_key)
    kiwi.freq_memory_menu_shown = 1;
    //canvas_log('FMS1');
 
-   //console.log('freq_memory_menu_show='+ kiwi.freq_memory_menu_shown);
+   //console.log('freq_memory_menu_open='+ kiwi.freq_memory_menu_shown);
    var x = owrx.last_pageX, y = owrx.last_pageY;
    if (shortcut_key != true)
       x += ((x - 128) >= 0)? -128 : 16;
 
    var fmem_copy = kiwi_dup_array(kiwi.freq_memory);
+
    /*
+   // add per-freq delete icon
    fmem_copy.forEach(
       function(s, i) {
-         console.log('s=<'+ s +'> i='+ i +' fc=<'+ fmem_copy[i] +'>');
-         //if (i < 9) fmem_copy[i] = s +' '+ '^'+ (i+1);
+         //fmem_copy[i] = w3_icon('w3-margin-R-8', 'fa-times-circle', 14, '', 'freq_memory_menu_delete_cb', i) + s;
+         fmem_copy[i] = w3_icon('w3-margin-R-8', 'fa-times-circle', 14, '') + s;
       }
    );
    */
@@ -6336,7 +6338,7 @@ function freq_memory_menu_show(shortcut_key)
       x, y);
 }
 
-function freq_memory_menu_show_cb(el, val, trace, ev)
+function freq_memory_menu_icon_cb(el, val, trace, ev)
 {
    var hold = (!kiwi.fmem_auto_save && ev && ev.type == 'hold');
    var hold_done = (!kiwi.fmem_auto_save && ev && ev.type == 'hold-done');
@@ -6348,7 +6350,7 @@ function freq_memory_menu_show_cb(el, val, trace, ev)
    if (hold_done) {
       return;
    }
-   freq_memory_menu_show(/* shortcut_key */ false);
+   freq_memory_menu_open(/* shortcut_key */ false);
 }
 
 function freq_memory_at(idx)
@@ -6380,11 +6382,19 @@ function freq_memory_add(f, clear)
 	writeCookie('freq_memory', JSON.stringify(kiwi.freq_memory));
 }
 
-function freq_memory_menu_cb(idx, x, cb_param, ev)
+/*
+function freq_memory_menu_delete_cb(path, val, first, cb_param)
+{
+   console.log('freq_memory_menu_delete_cb path='+ path +' val='+ val +' cbp='+ cb_param);
+   console.log(cb_param);
+}
+*/
+
+function freq_memory_menu_item_cb(idx, x, cb_param, ev)
 {
    var rv = w3.CLOSE_MENU;
    idx = +idx;
-   //console.log('freq_memory_menu_cb idx='+ idx +' x='+ x);
+   //console.log('freq_memory_menu_item_cb idx='+ idx +' x='+ x);
    if (idx == -1) return rv;
    var f_m = null;
 
@@ -9541,7 +9551,7 @@ function keyboard_shortcut(key, key_mod, ctlAlt, evt)
 
    // frequency entry / memory list
    case 'g': case '=': freqset_select(); break;
-   case 'm': freq_memory_menu_show(/* shortcut_key */ true); break;
+   case 'm': freq_memory_menu_open(/* shortcut_key */ true); break;
    case 'b': band_scroll(1); break;
    case 'B': band_scroll(-1); break;
    case 'n': freq_vfo_cb(); break;
@@ -9879,7 +9889,7 @@ function panels_setup()
 	   w3_inline('w3-halign-space-between w3-margin-T-4/',
          //w3_div('id-mouse-freq w3-hide||title="frequency under cursor"', '-----.--'+ ((cfg.show_1Hz || url_1Hz)? '-' : '')),
 
-         w3_icon('id-freq-menu w3-menu-button w3-hold w3-hold-done||title="freq memory\nclick-hold to save\ntype h or ? for help"', 'fa-bars w3-text-white', 20, '', 'freq_memory_menu_show_cb'),
+         w3_icon('id-freq-menu w3-menu-button w3-hold w3-hold-done||title="freq memory\nclick-hold to save\ntype h or ? for help"', 'fa-bars w3-text-white', 20, '', 'freq_memory_menu_icon_cb'),
 
          w3_button('id-freq-vfo w3-text-in-circle w3-wh-20px w3-aqua w3-hold w3-hold-done||title="VFO A&slash;B\nclick-hold for A=B"', 'A', 'freq_vfo_cb'),
 

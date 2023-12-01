@@ -534,10 +534,10 @@ void SearchTask(void *param) {
             if (sp->type == QZSS && !gps.acq_QZSS) continue;
             if (sp->type == E1B && !gps.acq_Galileo) continue;
 
-            //jks2
-            if (gps_debug > 0 && sp->prn != gps_debug) continue;    //jks2
+            if (gps_debug > 0 && sp->prn != gps_debug) continue;
             if (gps_debug) if (sp->type == E1B) continue;
             if (gps_e1b_only && sp->type != E1B) continue;
+            //if (sp->type != E1B || sp->prn != 36) continue;
             //if (sp->type != Navstar) continue;
             //if (sp->type != E1B) continue;
             //if (sp->prn != 14) continue;

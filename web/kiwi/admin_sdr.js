@@ -282,7 +282,7 @@ function config_html()
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_divs('w3-restart/w3-center w3-tspace-8',
             w3_switch_label('w3-center', 'External ADC clock?', 'Yes', 'No', 'ext_ADC_clk', cfg.ext_ADC_clk, 'config_ext_clk_sel_cb'),
-				w3_text('w3-text-black', 'Set when external 66.666600 MHz (nominal) <br> clock connected to J5 connector/pad.')
+				w3_text('w3-text-black', 'Set when external 66.666600 MHz (nominal) <br> clock connected to ext clk connector/pad.')
 			),
 			w3_divs('w3-restart/w3-tspace-8',
 		      w3_input('', 'External clock frequency (enter in MHz or Hz)', 'ext_ADC_freq', cfg.ext_ADC_freq, 'config_ext_freq_cb'),

@@ -17,25 +17,19 @@ Boston, MA  02110-1301, USA.
 
 // Copyright (c) 2023 John Seamons, ZL4VO/KF6VO
 
-#pragma once
+#include <stdlib.h>
 
-#include "types.h"
+void system_reboot()
+{
+    system("reboot");
+}
 
-u2_t ctrl_get();
-void ctrl_clr_set(u2_t clr, u2_t set);
-void ctrl_positive_pulse(u2_t bits);
-void ctrl_set_ser_dev(u2_t ser_dev);
-void ctrl_clr_ser_dev();
+void system_halt()
+{
+    system("halt");
+}
 
-typedef union {
-    u2_t word;
-    struct {
-        u2_t fpga_id:4, stat_user:4, fpga_ver:4, fw_id:3, ovfl:1;
-    };
-} stat_reg_t;
-stat_reg_t stat_get();
-
-u64_t fpga_dna();
-u2_t getmem(u2_t addr);
-void setmem(u2_t addr, u2_t data);
-void printmem(const char *str, u2_t addr);
+void system_poweroff()
+{
+    system("poweroff");
+}

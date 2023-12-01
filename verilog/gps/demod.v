@@ -151,7 +151,7 @@ module DEMOD (
         // -HQ  l=p, chips, ms0
         // --Q  
 
-        if (e1b_mode) begin
+        if (e1b_mode) begin     // E1B
             if (full_chip_en)
                 nchip <= (nchip == (E1B_CODELEN-1))? 0 : (nchip+1);
 
@@ -177,7 +177,7 @@ module DEMOD (
             else
                 ms0 <= 0;
         end
-        else begin
+        else begin      // L1 C/A
             if (full_chip_en)
                 nchip <= (nchip == (L1_CODELEN-1))? 0 : (nchip+1);
                 

@@ -295,7 +295,7 @@ used by cpu.v:
 
 used by cpu.v:
     Component Name
-        ipcore_bram_512_32b
+        ipcore_bram_1k_32b
 	Basic
 		Interface Type
 			> native
@@ -311,9 +311,9 @@ used by cpu.v:
 		Read Width
 			> 32
 		Write Depth
-			> 512
+			> 1024
 		Read Depth
-			(512)
+			(1024)
 		Operating Mode
 			> write first
 		Enable Port Type
@@ -325,9 +325,9 @@ used by cpu.v:
 		Read Width
 			> 32
 		Write Depth
-			(512)
+			(1024)
 		Read Depth
-			(512)
+			(1024)
 		Operating Mode
 			> write first
 		Enable Port Type
@@ -336,7 +336,7 @@ used by cpu.v:
 	Other Options
 	    > none
 	Summary (if anything here is different you configured something incorrectly)
-		#18k:0 #36k:1 A-latency:1 B-latency:1 addr-A-width:9 addr-B-width:9
+		#18k:0 #36k:1 A-latency:1 B-latency:1 addr-A-width:10 addr-B-width:10
 
 used by host.v:
     Component Name

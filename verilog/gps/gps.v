@@ -185,6 +185,8 @@ module GPS (
     // Pause code generator (to align with sat)
 
     // must fit (FS_I/1000 * code_period_ms)-1
+    // C/A (16368 * 1 ms)-1 = 16367 0x3fef
+    // E1B (16368 * 4 ms)-1 = 65471 0xffbf
     reg  [15:0] cg_cnt;
     wire [15:0] cg_nxt;
     wire        cg_resume;

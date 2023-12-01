@@ -30,7 +30,7 @@ typedef struct {
 	bool init, init_load;
 	lock_t lock;    // FIXME: now that parsing the dx list is yielding probably need to lock
 	u4_t flags;
-	const char *filename;
+	const char *filename, *basename;
 	#define CFG_ID_N 64
 	char id_tokens[CFG_ID_N], id_json[CFG_ID_N];
 	u4_t update_seq;

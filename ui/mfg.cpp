@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "system.h"
 #include "rx.h"
 #include "rx_util.h"
 #include "mem.h"
@@ -115,7 +116,7 @@ void c2s_mfg(void *param)
 
 			i = strcmp(cmd, "SET mfg_power_off");
 			if (i == 0) {
-				system("halt");
+				system_halt();
 				while (true)
 					kiwi_usleep(100000);
 			}

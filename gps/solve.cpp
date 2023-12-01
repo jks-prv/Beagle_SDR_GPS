@@ -73,7 +73,7 @@ bool SNAPSHOT::LoadAtomic(int ch_, uint16_t *up, uint16_t *dn, int srq_) {
         isE1B = is_E1B(sat);
         srq = srq_;
         ms = up[0];
-        if (srq) ms += isE1B? 4:1;      // add one code period for un-serviced epochs
+        if (srq) ms += isE1B? E1B_CODE_PERIOD : L1_CODE_PERIOD;     // add one code period for un-serviced epochs
         chips = ((dn[0] & 0x3) << 10) | (dn[-1] & 0x3FF);
         //if (isE1B) printf("%s %d 0x%x = [0x%x,0x%x]\n", PRN(sat), chips, chips, dn[0], dn[-1]&0x3ff);
         cg_phase = dn[-1] >> 10;
@@ -179,8 +179,8 @@ double SNAPSHOT::GetClock() const {
             lprintf("E1B bits %d\n", bits);
             panic("E1B bits");
         }
-        assert(ms == 0 || ms == 4);     // because ms == 4 for un-serviced epochs (see code above)
-        assert(chips >= 0 && chips <= 4091);
+        assert(ms == 0 || ms == E1B_CODE_PERIOD);   // because ms == E1B_CODE_PERIOD for un-serviced epochs (see code above)
+        assert(chips >= 0 && chips <= (E1B_CODELEN-1));
         assert(cg_phase >= 0 && cg_phase <= 63);
     }
     

@@ -52,7 +52,7 @@ module HOST (
     output reg		   boot_done,
     
     input  wire [15:0] tos,
-    input  wire [3:0]  op_03_00,
+    input  wire [3:0]  op_4,
     input  wire        rdReg,
     input  wire        wrReg,
     input  wire        wrEvt
@@ -63,10 +63,10 @@ module HOST (
     //////////////////////////////////////////////////////////////////////////
     // Host instruction decoding
 
-    wire host_rd  = rdReg & op_03_00[HOST_RX];
-    wire host_wr  = wrReg & op_03_00[HOST_TX];
-    wire host_rst = wrEvt & op_03_00[HOST_RST];
-    wire host_rdy = wrEvt & op_03_00[HOST_RDY];
+    wire host_rd  = rdReg & op_4[HOST_RX];
+    wire host_wr  = wrReg & op_4[HOST_TX];
+    wire host_rst = wrEvt & op_4[HOST_RST];
+    wire host_rdy = wrEvt & op_4[HOST_RDY];
 
     //////////////////////////////////////////////////////////////////////////
     // Host interface
@@ -305,7 +305,7 @@ module HOST (
     //////////////////////////////////////////////////////////////////////////
     // Parallel data MUXing
 
-    assign mem_rd = wrEvt & op_03_00[GET_MEMORY];
+    assign mem_rd = wrEvt & op_4[GET_MEMORY];
 
     always @*
         if (gps_rd)  hb_din = gps_dout;  else
