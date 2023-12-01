@@ -40,14 +40,18 @@ typedef struct {
 	const char *str;
 	token_type_e ttype;
 	int val;
-	int flags;
+	union {
+	    u4_t flags;     // TF_* flags
+	    u4_t mask;      // opcode mask for TT_OPC entries
+	};
+	u4_t stats;
 } dict_t;
 
 #include <cpu.h>
 
 // dictionary of reserved symbols and tokens
 dict_t dict[] = {
-	{ "DEF",		TT_PRE,		PP_DEF,			0 },
+	{ "DEF",		TT_PRE,		PP_DEF },
 	{ "DEFc",		TT_PRE,		PP_DEF,			TF_CFG_H },		// gens RX_CFG in kiwi.cfg.vh
 	{ "DEFh",		TT_PRE,		PP_DEF,			TF_DOT_H },		// gens a '#define' in .h and '`define' in .vh
 	{ "DEFp",		TT_PRE,		PP_DEF,			TF_DOT_VP },	// gens a 'localparam' in .vh and '#define' in .h
@@ -65,55 +69,60 @@ dict_t dict[] = {
 	{ "#else",		TT_PRE,		PP_ELSE },
 	{ "#endif",		TT_PRE,		PP_ENDIF },
 
-	{ "push",		TT_OPC,		OC_PUSH },
-	{ "nop",		TT_OPC,		OC_NOP },
-	{ "ret",		TT_OPC,		OC_NOP + OPT_RET },
-	{ "dup",		TT_OPC,		OC_DUP },
-	{ "swap",		TT_OPC,		OC_SWAP },
-	{ "swap16",		TT_OPC,		OC_SWAP16 },
-	{ "over",		TT_OPC,		OC_OVER },
-	{ "pop",		TT_OPC,		OC_POP },
-	{ "drop",		TT_OPC,		OC_POP },
-	{ "rot",		TT_OPC,		OC_ROT },
-	{ "addi",		TT_OPC,		OC_ADDI },
-	{ "add",		TT_OPC,		OC_ADD },
-	{ "add.cin",    TT_STATS,   OC_ADD | OPT_CIN },     // only for benefit of stats
-	{ "sub",		TT_OPC,		OC_SUB },
-	{ "mult",		TT_OPC,		OC_MULT },
-	{ "mult20",		TT_OPC,		OC_MULT20 },
-	{ "and",		TT_OPC,		OC_AND },
-	{ "or",			TT_OPC,		OC_OR },
-	{ "xor",		TT_OPC,		OC_XOR },
-	{ "not",		TT_OPC,		OC_NOT },
-	{ "shl64",		TT_OPC,		OC_SHL64 },
-	{ "shl",		TT_OPC,		OC_SHL },
-	{ "shr",		TT_OPC,		OC_SHR },
-	{ "rdBit0",		TT_OPC,		OC_RDBIT0 },
-	{ "rdBit1",		TT_OPC,		OC_RDBIT1 },
-	{ "rdBit2",		TT_OPC,		OC_RDBIT2 },
-	{ "fetch16",	TT_OPC,		OC_FETCH16 },
-	{ "store16",	TT_OPC,		OC_STORE16 },
-	{ "sp_rp",      TT_OPC,		OC_SP_RP },
+	{ "push",		TT_OPC,		OC_PUSH,            OCM_CONST },
+	{ "nop",		TT_OPC,		OC_NOP,             OCM_NONE },
+	{ "ret",		TT_OPC,		OC_NOP | OPT_RET,   OCM_NONE },
+	{ "dup",		TT_OPC,		OC_DUP,             OPT_RET },
+	{ "swap",		TT_OPC,		OC_SWAP,            OPT_RET },
+	{ "swap16",		TT_OPC,		OC_SWAP16,          OPT_RET },
+	{ "over",		TT_OPC,		OC_OVER,            OPT_RET },
+	{ "pop",		TT_OPC,		OC_POP,             OPT_RET },
+	{ "drop",		TT_OPC,		OC_POP,             OPT_RET },
+	{ "rot",		TT_OPC,		OC_ROT,             OPT_RET },
+	{ "addi",		TT_OPC,		OC_ADDI,            OPT_RET },
+	{ "add",		TT_OPC,		OC_ADD,             OPT_RET },
+	{ "add.cin",    TT_STATS,   OC_ADD | OPT_CIN,   OPT_RET },     // only for benefit of stats
+	{ "sub",		TT_OPC,		OC_SUB,             OPT_RET },
+	{ "mult",		TT_OPC,		OC_MULT,            OPT_RET },
+	{ "mult20",		TT_OPC,		OC_MULT20,          OPT_RET },
+	{ "and",		TT_OPC,		OC_AND,             OPT_RET },
+	{ "or",			TT_OPC,		OC_OR,              OPT_RET },
+	{ "xor",		TT_OPC,		OC_XOR,             OPT_RET },
+	{ "not",		TT_OPC,		OC_NOT,             OPT_RET },
+	{ "shl64",		TT_OPC,		OC_SHL64,           OPT_RET },
+	{ "shl",		TT_OPC,		OC_SHL,             OPT_RET },
+	{ "rol",		TT_OPC,		OC_ROL,             OPT_RET },
+	{ "shr",		TT_OPC,		OC_SHR,             OPT_RET },
+	{ "ror",		TT_OPC,		OC_ROR,             OPT_RET },
+	{ "usr",		TT_OPC,		OC_USR,             OPT_RET },
+	{ "rdBit0",		TT_OPC,		OC_RDBIT0,          OPT_RET },
+	{ "rdBit1",		TT_OPC,		OC_RDBIT1,          OPT_RET },
+	{ "rdBit2",		TT_OPC,		OC_RDBIT2,          OPT_RET },
+	{ "fetch16",	TT_OPC,		OC_FETCH16,         OPT_RET },
+	{ "store16",	TT_OPC,		OC_STORE16,         OPT_RET },
+	{ "stk_rd",	    TT_OPC,		OC_STK_RD,          OPT_RET },
+	{ "stk_wr",	    TT_OPC,		OC_STK_WR,          OPT_RET },
+	{ "sp_rp",      TT_OPC,		OC_SP_RP,           OPT_RET },
 
-	{ "r",			TT_OPC,		OC_R },
-	{ "r_from",		TT_OPC,		OC_R_FROM },
-	{ "to_r",		TT_OPC,		OC_TO_R },
-	{ "call",		TT_OPC,		OC_CALL },
-	{ "br",			TT_OPC,		OC_BR },
-	{ "brZ",		TT_OPC,		OC_BRZ },
-	{ "brNZ",		TT_OPC,		OC_BRNZ },
-	{ "loop",		TT_OPC,		OC_LOOP },
-	{ "loop2",		TT_OPC,		OC_LOOP2 },
-	{ "to_loop",    TT_OPC,		OC_TO_LOOP },
-	{ "to_loop2",   TT_OPC,		OC_TO_LOOP2 },
-	{ "loop_from",  TT_OPC,		OC_LOOP_FROM },
-	{ "loop2_from", TT_OPC,		OC_LOOP2_FROM },
-	{ "rdReg",		TT_OPC,		OC_RDREG },
-	{ "rdReg2",		TT_OPC,		OC_RDREG2 },
-	{ "wrReg",		TT_OPC,		OC_WRREG },
-	{ "wrReg2",		TT_OPC,		OC_WRREG2 },
-	{ "wrEvt",		TT_OPC,		OC_WREVT },
-	{ "wrEvt2",		TT_OPC,		OC_WREVT2 },
+	{ "r",			TT_OPC,		OC_R,               OCM_NONE },
+	{ "r_from",		TT_OPC,		OC_R_FROM,          OCM_NONE },
+	{ "to_r",		TT_OPC,		OC_TO_R,            OCM_NONE },
+	{ "call",		TT_OPC,		OC_CALL,            OCM_ADDR },
+	{ "br",			TT_OPC,		OC_BR,              OCM_ADDR },
+	{ "brZ",		TT_OPC,		OC_BRZ,             OCM_ADDR },
+	{ "brNZ",		TT_OPC,		OC_BRNZ,            OCM_ADDR },
+	{ "loop",		TT_OPC,		OC_LOOP,            OCM_ADDR },
+	{ "loop2",		TT_OPC,		OC_LOOP2,           OCM_ADDR },
+	{ "to_loop",    TT_OPC,		OC_TO_LOOP,         OPT_RET },
+	{ "to_loop2",   TT_OPC,		OC_TO_LOOP2,        OPT_RET },
+	{ "loop_from",  TT_OPC,		OC_LOOP_FROM,       OPT_RET },
+	{ "loop2_from", TT_OPC,		OC_LOOP2_FROM,      OPT_RET },
+	{ "rdReg",		TT_OPC,		OC_RDREG,           OCM_IO },
+	{ "rdReg2",		TT_OPC,		OC_RDREG2,          OCM_IO },
+	{ "wrReg",		TT_OPC,		OC_WRREG,           OCM_IO },
+	{ "wrReg2",		TT_OPC,		OC_WRREG2,          OCM_IO },
+	{ "wrEvt",		TT_OPC,		OC_WREVT,           OCM_IO },
+	{ "wrEvt2",		TT_OPC,		OC_WREVT2,          OCM_IO },
 	
 	{ "u8",			TT_DATA,	1 },
 	{ "u16",		TT_DATA,	2 },
@@ -168,17 +177,6 @@ char *last_file;
 #define NIFILES_NEST 3
 char ifiles[NIFILES_NEST][32];
 int lineno[NIFILES_NEST];
-u4_t ocstat[256];
-
-const char *ocname[256] = {
-    // 0..31
-	"nop", "dup", "swap", "swap16", "over", "pop", "rot", "addi", "add", "sub", "mult", "and", "or", "xor", "not", "mult20",
-	"shl64", "shl", "shr", "rdbit0", "fetch16", "store16", "sp_rp", "0x97", "0x98", "0x99", "0x9A", "r", "r_from", "to_r", "to_loop", "loop_from",
-
-    // 32..(N_OCS-1)
-	"push", "add.cin", "rdbit1", "rdbit2", "call", "br", "brz", "brnz", "loop", "loop2",
-	"rdreg", "rdreg2", "wrreg", "wrreg2", "wrevt", "wrevt2"
-};
 
 int main(int argc, char *argv[])
 {
@@ -319,7 +317,10 @@ int main(int argc, char *argv[])
 					for (dp=dict; dp->str; dp++) {		// check for reserved names
 						if (strcmp(dp->str, sym) == 0) {
 							if (*cp==':') panic("resv name as label");
-							tp->ttype = dp->ttype; tp->str = (char *) dp->str; tp->num = dp->val; tp->flags = dp->flags;
+							tp->ttype = dp->ttype;
+							tp->str = (char *) dp->str;
+							tp->num = dp->val;
+						    tp->flags = (dp->ttype != TT_OPC)? dp->flags : 0;
 							if (strncmp(cp, ".r", 2) == 0) tp->flags |= TF_RET, cp+=2;
 							if (strncmp(cp, ".cin", 4) == 0) tp->flags |= TF_CIN, cp+=4;
 							break;
@@ -343,7 +344,12 @@ int main(int argc, char *argv[])
 					while (!isspace(*cp) && *cp!=')') *sp++ = *cp++; *sp = 0;
 				for (dp=dict; dp->str; dp++) {		// check for reserved names
 					if (strcmp(dp->str, sym) == 0) {
-						tp->ttype = dp->ttype; tp->str = (char *) dp->str; tp->num = dp->val; tp->flags = dp->flags; tp++; break;
+						tp->ttype = dp->ttype;
+						tp->str = (char *) dp->str;
+						tp->num = dp->val;
+						tp->flags = (dp->ttype != TT_OPC)? dp->flags : 0;
+						tp++;
+						break;
 					}
 				}
 				if (dp->str) continue;
@@ -1011,8 +1017,9 @@ int main(int argc, char *argv[])
 			
 			// check operand
 			switch (oc) {
-				case OC_PUSH:	syntax(oper >= 0 && oper < 0x8000, "constant outside range 0..0x7fff"); break;
+				case OC_PUSH:	syntax(oper >= 0 && oper <= 0x7fff, "constant outside range 0..0x7fff"); break;
 				case OC_ADDI:	syntax(oper >= 0 && oper <= 127, "constant outside range 0..127"); break;
+
 				case OC_CALL:
 				case OC_BR:
 				case OC_BRZ:
@@ -1020,16 +1027,21 @@ int main(int argc, char *argv[])
 				case OC_LOOP:
 				case OC_LOOP2:
 								syntax(!(oper&1), "destination address must be even");
-								syntax(oper >=0 && oper < (CPU_RAM_SIZE<<1), "destination address out of range");
+								syntax(oper >= 0 && oper < (CPU_RAM_SIZE<<1), "destination address out of range");
 								break;
+
 				case OC_RDREG:
 				case OC_RDREG2:
 				case OC_WRREG:
 				case OC_WRREG2:
 				case OC_WREVT:
-				case OC_WREVT2:
-								syntax(oper >=0 && oper <= 0x7ff, "i/o specifier outside range 0..0x7ff");
+				case OC_WREVT2: {
+								syntax(oper >= 1 && oper <= 0x7ff, "i/o specifier outside range 1..0x7ff: 0x%04x", oper);
+								int ones = count_ones(oper);
+								syntax(ones <= 2, "too many bits (%d) in i/o specifier 0x%04x", ones, oper);
 								break;
+				}
+
 				default:		if (operand_type != 3) {
 									syntax(0, "instruction takes no operand");
 								}
@@ -1059,70 +1071,16 @@ int main(int argc, char *argv[])
 			}
 
 			if (stats) {
-				#define OCS_PUSH		32
-				#define OCS_ADD_CIN		33
-				#define OCS_RDBIT1		34
-				#define OCS_RDBIT2		35
-				#define OCS_CALL		36
-				#define OCS_BR			37
-				#define OCS_BRZ			38
-				#define OCS_BRNZ		39
-				#define OCS_LOOP		40
-				#define OCS_LOOP2		41
-				#define OCS_REG_EVT		42	// 42..47
-				#define N_OCS			48
-				
-				if (oc == OC_PUSH) {
-					ocstat[OCS_PUSH]++;
-				} else
-				
-				if (op == (OC_ADD | OPT_CIN)) {		// note op, not oc
-					ocstat[OCS_ADD_CIN]++;
-				} else
-				
-				if (oc == OC_RDBIT1) {
-					ocstat[OCS_RDBIT1]++;
-				} else
-				
-				if (oc == OC_RDBIT2) {
-					ocstat[OCS_RDBIT2]++;
-				} else
-				
-				if (oc5 == OC_CALL) {
-					ocstat[OCS_CALL]++;
-				} else
-				
-				if (oc == OC_BR) {
-					ocstat[OCS_BR]++;
-				} else
-				
-				if (oc == OC_BRZ) {
-					ocstat[OCS_BRZ]++;
-				} else
-				
-				if (oc == OC_BRNZ) {
-					ocstat[OCS_BRNZ]++;
-				} else
-				
-				if (oc5 == OC_LOOP) {
-					ocstat[OCS_LOOP]++;
-				} else
-				
-				if (oc5 == OC_LOOP2) {
-					ocstat[OCS_LOOP2]++;
-				} else
-				
-				if (oc_io >= OC_RDREG && oc_io <= OC_WREVT2) {
-					ocstat[OCS_REG_EVT + ((oc_io - OC_RDREG) >> 11)]++;
-				} else
-				
-				{
-					if (oc < 0x8000 || oc > 0x9f00) {       // should have been handled above
-						printf("stats opcode 0x%04x\n", oc);
-						panic("stats");
-					}
-					ocstat[(oc >> 8) & 0x1f]++;		// 0..31
-				}
+                for (dp=dict; dp->str; dp++) {
+                    if (dp->ttype != TT_OPC) continue;
+                    if ((oc & ~(dp->mask)) != dp->val) continue;
+                    dp->stats++;
+                    break;
+                }
+                if (!dp->str) {
+                    printf("oc=0x%04x\n", oc);
+                    panic("stats opcode");
+                }
 			}
 			
 			if (compare_code) {
@@ -1189,17 +1147,11 @@ int main(int argc, char *argv[])
 	if (stats) {
 		printf("insn use statistics:\n");
 		int sum = 0;
-		for (i = 0; i < N_OCS; i++) {
-		    if (strncmp(ocname[i], "0x", 2) == 0) continue;
-            for (dp=dict; dp->str; dp++) {
-                if (strcasecmp(dp->str, ocname[i]) == 0) {
-			        printf("%02d: 0x%04x %4d %s\n", i, dp->val, ocstat[i], ocname[i]);
-			        break;
-			    }
-            }
-            if (!dp->str) { printf("stats: %s\n", ocname[i]); panic("no stat opcode"); }
-			sum += ocstat[i];
-		}
+        for (i=0, dp=dict; dp->str; dp++, i++) {
+            if (dp->ttype != TT_OPC) continue;
+            printf("%02d: 0x%04x %4d %s\n", i, dp->val, dp->stats, dp->str);
+            sum += dp->stats;
+        }
 		printf("sum insns = %d\n", sum);
 	}
 

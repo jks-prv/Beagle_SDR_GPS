@@ -9,8 +9,14 @@ char *fn, *bfs, *cfs, *hfs, *vfs, *efs;
 static void remove_files()
 {
 	char rm[256];
-	snprintf(rm, sizeof(rm), "rm -f %s %s %s %s", bfs, hfs, vfs, efs);
-	system(rm);
+	if (bfs || hfs || vfs || efs) {
+        if (!bfs) bfs = (char *) "";
+        if (!hfs) hfs = (char *) "";
+        if (!vfs) vfs = (char *) "";
+        if (!efs) efs = (char *) "";
+	    snprintf(rm, sizeof(rm), "rm -f %s %s %s %s", bfs, hfs, vfs, efs);
+	    system(rm);
+	}
 }
 
 static void _errmsg(char *str, tokens_t *t = NULL)
@@ -88,6 +94,14 @@ void _assert(int cond, const char *str, const char *file, int line)
 		printf("assert \"%s\" failed at %s:%d\n", str, file, line);
 		panic("assert");
 	}
+}
+
+int count_ones(u4_t v)
+{
+	int ones = 0;
+    for (int bit = 31; bit >= 0; bit--)
+        if (v & (1 << bit)) ones++;
+	return ones;
 }
 
 

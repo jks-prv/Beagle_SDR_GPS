@@ -163,5 +163,6 @@ void _assert(int cond, const char *str, const char *file, int line);
 void errmsg(const char *str, tokens_t *t = NULL);
 
 char *str_ends_with(char *s, const char *cs);
+int count_ones(u4_t v);
 
 #endif
