@@ -430,7 +430,7 @@ module KiwiSDR (
         .boot_done  (boot_done),
 
         .tos        (tos[15:0]),
-        .op_03_00   (op[3:0]),
+        .op_4   (op[3:0]),
         .rdReg      (rdReg),
         .wrReg      (wrReg),
         .wrEvt      (wrEvt)

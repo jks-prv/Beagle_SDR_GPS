@@ -37,4 +37,5 @@ stat_reg_t stat_get();
 
 u64_t fpga_dna();
 u2_t getmem(u2_t addr);
+void setmem(u2_t addr, u2_t data);
 void printmem(const char *str, u2_t addr);

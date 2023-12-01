@@ -116,6 +116,11 @@ u2_t getmem(u2_t addr)
 	return mem->word[0];
 }
 
+void setmem(u2_t addr, u2_t data)
+{
+	spi_set_noduplex(CmdSetMem, addr, data);
+}
+
 void printmem(const char *str, u2_t addr)
 {
 	printf("%s %04x: %04x\n", str, addr, (int) getmem(addr));
@@ -320,7 +325,7 @@ void fpga_init() {
 		for (i=0; i<n; i+=2) {
 			u2_t insn = code2[i/2];
 			u4_t addr = j+i;
-			spi_set_noduplex(CmdLoad, insn, addr);
+			spi_set_noduplex(CmdSetMem, insn, addr);
 			u2_t readback = getmem(addr);
 			if (insn != readback) {
 				printf("%04x:%04x:%04x\n", addr, insn, readback);

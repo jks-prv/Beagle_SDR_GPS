@@ -224,7 +224,7 @@ sp_cmds_save:	u16		0
 
 ; ============================================================================
 
-// CmdPing and CmdLoad must be in first 1K of CPU RAM (i.e. loaded by boot)
+// CmdPing and CmdSetMem must be in first 1K of CPU RAM (i.e. loaded by boot)
 CmdPing:
 				wrEvt	HOST_RST
                 push	0xcafe
@@ -265,8 +265,8 @@ sp2_seq:		u16		0xc00c
 #endif
                 ret
 
-CmdLoad:		rdReg	HOST_RX						; insn
-				rdReg	HOST_RX						; insn addr
+CmdSetMem:		rdReg	HOST_RX						; data
+				rdReg	HOST_RX						; data addr
 				store16								; addr
                 drop.r
 
@@ -438,7 +438,7 @@ CmdUploadStackCheck:
 Commands:
                 // general
 				u16		CmdPing
-				u16		CmdLoad
+				u16		CmdSetMem
 				u16		CmdPing2
 				u16		CmdGetCPUCtr
 				u16		CmdCtrlClrSet

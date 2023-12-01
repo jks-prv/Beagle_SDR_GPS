@@ -33,7 +33,7 @@ typedef enum { // Embedded CPU commands, order must match 'Commands:' table in .
 
     // general
     CmdPing = 0,
-    CmdLoad,
+    CmdSetMem,
     CmdPing2,
     CmdGetCPUCtr,
     CmdCtrlClrSet,
@@ -137,7 +137,7 @@ static const char *cmds[] = {
 
     // general
     "CmdPing",
-    "CmdLoad",
+    "CmdSetMem",
     "CmdPing2",
     "CmdGetCPUCtr",
     "CmdCtrlClrSet",
