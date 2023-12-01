@@ -85,7 +85,7 @@ module RECEIVER (
 	reg  [ADC_OVFL_CTR_BITS-1:0] adc_ovfl_ctr, adc_ovfl_cnt, cnt_mask_A;
     reg adc_ovfl_A;
 
-	wire set_cnt_mask_C = wrReg2 & op_11[SET_CNT_MASK];
+	wire set_cnt_mask_C = wrReg & op_11[SET_CNT_MASK];
 	wire set_cnt_mask_A;
 	SYNC_PULSE sync_set_cnt_mask (.in_clk(cpu_clk), .in(set_cnt_mask_C), .out_clk(adc_clk), .out(set_cnt_mask_A));
     always @ (posedge adc_clk)
