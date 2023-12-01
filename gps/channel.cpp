@@ -90,6 +90,7 @@ struct CHANNEL { // Locally-held channel data
     void  Status();
     int   RemoteBits(uint16_t wr_pos);
     bool  GetSnapshot(uint16_t wr_pos, int *p_sat, int *p_bits, int *p_bits_tow, float *p_pwr);
+    bool  isSat(sat_e type, int prn);
 };
 
 static CHANNEL Chans[GPS_MAX_CHANS];
@@ -121,7 +122,7 @@ static double GetFreq(uint16_t *u) { // Convert NCO command to Hertz
 const char L1preambleUpright [] = {1,0,0,0,1,0,1,1};
 const char L1preambleInverse [] = {0,1,1,1,0,1,0,0};
 
-static int parity(char *p, char *word, char D29, char D30) {
+static int L1_parity(char *p, char *word, char D29, char D30) {
     char *d = word-1;
     for (int i=1; i<25; i++) d[i] ^= D30;
     p[0] = D29 ^ d[1] ^ d[2] ^ d[3] ^ d[5] ^ d[6] ^ d[10] ^ d[11] ^ d[12] ^ d[13] ^ d[14] ^ d[17] ^ d[18] ^ d[20] ^ d[23];
@@ -142,6 +143,13 @@ static int parity(char *p, char *word, char D29, char D30) {
 
 const char E1BpreambleUpright [] = {0,1,0,1,1,0,0,0,0,0};
 const char E1BpreambleInverse [] = {1,0,1,0,0,1,1,1,1,1};
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+bool CHANNEL::isSat(sat_e type, int prn) {
+    SATELLITE *s = &Sats[sat];
+    return (s->type == type && s->prn == prn);
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -270,7 +278,7 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
     isE1B = is_E1B(sat);
     nav.sat = sat;
     Ephemeris[sat].Init(sat);
-    subframe_bits = isE1B? E1B_TSYM_PW:300;
+    subframe_bits = isE1B? E1B_TSYM_PW : 300;
     ACF_mode = 0;
 
     // Estimate Doppler from FFT bin shift
@@ -319,8 +327,8 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
 	GPSstat(STAT_DEBUG, secs, ch, ca_shift, code_creep, ca_pause);
 
 #ifndef QUIET
-    printf("Channel %d prn%d lo_dop %f lo_rate 0x%x ca_dop %f ca_rate 0x%x pause %d\n\n",
-    	ch, Sats[sat].prn, lo_dop, lo_rate, ca_dop, ca_rate, ca_pause-1);
+    printf("Channel %d %s lo_dop %f lo_rate 0x%x ca_dop %f ca_rate 0x%x pause %d\n\n",
+    	ch, PRN(sat), lo_dop, lo_rate, ca_dop, ca_rate, ca_pause-1);
 #endif
 }
 
@@ -360,7 +368,7 @@ void CHANNEL::Acquisition(bool delay) {
 	uint32_t lo_rate = f_lo_rate*pow(2,32);
 
 #ifndef QUIET
-	printf("Channel %d sat%d new lo_rate 0x%x\n", ch, Sats[sat].prn, lo_rate);
+	printf("Channel %d %s new lo_rate 0x%x\n", ch, PRN(sat), lo_rate);
 #endif
 
     spi_set(CmdSetRateLO, ch, lo_rate);
@@ -369,7 +377,6 @@ void CHANNEL::Acquisition(bool delay) {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 void CHANNEL::Tracking() {
-    //char buf[300 + MAX_NAV_BITS - 1];
     char buf[E1B_TSYM_PW + MAX_NAV_BITS - 1];
 
     const int POLLING_PS = 4;  // Poll 4 times per second
@@ -661,7 +668,7 @@ void CHANNEL::Subframe(char *buf) {
     #endif
 
     #ifndef	QUIET
-        printf("sat%02d sub %d ", Sats[sat].prn, sub);
+        printf("%s sub %d ", PRN(sat), sub);
         if (sub > 3) printf("page %02d", page);
         printf("\n");
     #endif
@@ -680,8 +687,8 @@ void CHANNEL::Subframe(char *buf) {
             }
             
             if (sub < 1 || sub > SUBFRAMES) {
-                lprintf("GPS: unknown subframe %d prn%02d preamble 0x%02x[0x8b] tlm %d[%d] tow %d[%d] alert/AS %d data-id %d page-id %d novfl %d tracking %d good %d frames %d par_errs %d\n",
-                    sub, Sats[sat].prn, bin(buf,8), tlm, last_good_tlm, tow, last_good_tow, bin(buf+47,2), bin(buf+60,2), page, gps.ch[ch].novfl, gps.tracking, gps.good, gps.ch[ch].frames, gps.ch[ch].par_errs);
+                lprintf("GPS: unknown subframe %d %s preamble 0x%02x[0x8b] tlm %d[%d] tow %d[%d] alert/AS %d data-id %d page-id %d novfl %d tracking %d good %d frames %d par_errs %d\n",
+                    sub, PRN(sat), bin(buf,8), tlm, last_good_tlm, tow, last_good_tow, bin(buf+47,2), bin(buf+60,2), page, gps.ch[ch].novfl, gps.tracking, gps.good, gps.ch[ch].frames, gps.ch[ch].par_errs);
                 for (int i=0; i<10; i++) {
                     lprintf("GPS: w%d b%3d %06x %02x\n", i, i*30, bin(buf+i*30,24), bin(buf+i*30+24,6));
                 }
@@ -692,8 +699,8 @@ void CHANNEL::Subframe(char *buf) {
             
             if (subframe_dump) {
                 if (!sub_seen[sub]) {
-                    lprintf("GPS: dump #%2d subframe %d page %2d prn%02d novfl %d tracking %d good %d frames %d par_errs %d\n",
-                        subframe_dump, sub, (sub > 3)? page : -1, Sats[sat].prn, gps.ch[ch].novfl, gps.tracking, gps.good, gps.ch[ch].frames, gps.ch[ch].par_errs);
+                    lprintf("GPS: dump #%2d subframe %d page %2d %s novfl %d tracking %d good %d frames %d par_errs %d\n",
+                        subframe_dump, sub, (sub > 3)? page : -1, PRN(sat), gps.ch[ch].novfl, gps.tracking, gps.good, gps.ch[ch].frames, gps.ch[ch].par_errs);
                     sub_seen[sub] = 1;
                     int prev = (sub == 1)? 5 : (sub-1);
                     sub_seen[prev] = 0;
@@ -718,7 +725,7 @@ void CHANNEL::Status() {
 	GPSstat(STAT_LO, lo_f, ch);
 	GPSstat(STAT_CA, ca_f, ch);
     #ifndef QUIET
-        printf("chan %d PRN %2d rssi %4.0f adj %2d freq %5.6f %6.6f ", ch, Sats[sat].prn, sqrt(GetPower()), gain_adj_lo, lo_f, ca_f);
+        printf("chan %d %s rssi %4.0f adj %2d freq %5.6f %6.6f ", ch, PRN(sat), sqrt(GetPower()), gain_adj_lo, lo_f, ca_f);
     #endif
 }
 
@@ -749,15 +756,18 @@ int CHANNEL::ParityCheck(char *buf, int *nbits) {
         nav.fbits = buf;
         nav.tow_updated = 0;
         int error = 0;
-        int id = decode_e1b(&nav, &error);
+        int id = E1B_subframe(&nav, &error);
         if (error) probation = 2;
         if (error == GPS_ERR_SLIP) return *nbits = E1B_TSYM_PP;     // need to slip by a page (half a word)
-        if (error && (error != GPS_ERR_ALERT && error != GPS_ERR_OOS))
+        if (error && (error != GPS_ERR_ALERT && error != GPS_ERR_OOS)) {
+            //if (isSat(E1B,36)) real_printf("e%d:%d ", error, id); fflush(stdout);
             return *nbits = subframe_bits;     // any other errors (CRC etc)
+        }
 
         if (nav.tow_updated)    // page had TOW so reset bit counter
             bits_tow = holding - subframe_bits;
 
+        //if (isSat(E1B,36)) real_printf("%d ", id); fflush(stdout);
         Status();
         if (id == 5) alert = (error == GPS_ERR_ALERT || error == GPS_ERR_OOS);
         if (id >= 1 && id <= 5) GPSstat(STAT_SUB, 0, ch, id, alert? (gps.include_alert_gps? 2:1) : 0);
@@ -771,6 +781,8 @@ int CHANNEL::ParityCheck(char *buf, int *nbits) {
         if (probation) probation--;
         *nbits = subframe_bits;
     } else {
+        // L1 C/A
+        
         // Upright or inverted preamble?  Setting of parity bits resolves phase ambiguity.
         if      (memcmp(buf, L1preambleUpright, L1_PRELEN) == 0) p[4]=p[5]=0;
         else if (memcmp(buf, L1preambleInverse, L1_PRELEN) == 0) p[4]=p[5]=1;
@@ -797,8 +809,8 @@ int CHANNEL::ParityCheck(char *buf, int *nbits) {
         expecting_preamble = 0;
         
         // Parity check up to ten 30-bit words ...
-        for (int i=0; i<300; i+=30) {
-            if (parity(p, buf+i, p[4], p[5])) {
+        for (int i = 0; i < subframe_bits; i += 30) {
+            if (L1_parity(p, buf+i, p[4], p[5])) {
                 Status();
     #ifndef QUIET
                 puts("parity");
@@ -816,7 +828,7 @@ int CHANNEL::ParityCheck(char *buf, int *nbits) {
         Ephemeris[sat].Subframe(buf);
         if (probation) probation--;
         bits_tow = holding - subframe_bits;
-        *nbits = 300;
+        *nbits = subframe_bits;
     }
 
     return 0;
