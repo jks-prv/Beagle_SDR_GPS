@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.641  December 6, 2023
+    DRM: Fix for audio high-frequency aliasing artifacts.
+
 v1.640  December 2, 2023
     Fixed problem with Galileo sats receiving newer subframe types incorrectly showing errors.
     Changes to support KiwiSDR 2.
