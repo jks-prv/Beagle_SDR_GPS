@@ -156,7 +156,10 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
                         _REAL rRatio = _REAL(outputSampleRate) / _REAL(inputSampleRate);
                         ResampleObjL.Init(vecTempResBufInLeft.Size(), rRatio);
                         ResampleObjR.Init(vecTempResBufInLeft.Size(), rRatio);
-
+                        init_LPF = true;
+                    }
+                    
+                    if (init_LPF) {
                         drm_t *drm = &DRM_SHMEM->drm[(int) FROM_VOID_PARAM(TaskGetUserParam())];
                         bool _20k = (outputSampleRate > 12000);
                         int attn = (drm->dbgUs && drm->p_i[0])? drm->p_i[0] : 30;
@@ -168,6 +171,7 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
                         lpfR.InitLPFilter(0, 1, attn, hbw, stop, inputSampleRate);
                         alt_printf("DRM LPF sr=%d|%d %d|%d|%d #taps=%d\n",
                             inputSampleRate, outputSampleRate, attn, hbw, stop, lpfL.m_NumTaps);
+                        init_LPF = false;
                     }
 
                     lpfL.ProcessFilter(vecTempResBufInLeft.Size(), &vecTempResBufInLeft[0], &vecTempResBufInLeft[0]);
@@ -428,6 +432,7 @@ CAudioSourceDecoder::InitInternal(CParameter & Parameters)
             /* Init resample objects */
             ResampleObjL.Init(iLenDecOutPerChan, rRatio);
             ResampleObjR.Init(iLenDecOutPerChan, rRatio);
+            init_LPF = true;
         }
 
         int iResOutBlockSize;
