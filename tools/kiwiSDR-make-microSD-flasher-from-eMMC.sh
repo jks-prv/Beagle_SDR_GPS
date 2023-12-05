@@ -33,6 +33,7 @@
 #This script assumes, these packages are installed, as network may not be setup
 #dosfstools initramfs-tools rsync u-boot-tools
 
+kiwisdr_message="D8-D10 BB/BBAI/BBAI-64 12/2023 tools/kiwiSDR-make-microSD-flasher-from-eMMC.sh"
 version_message="1.20151007: gpt partitions with raw boot..."
 
 http_spl="MLO-am335x_evm-v2015.07-r1"
@@ -54,6 +55,7 @@ error_exit () {
 #clear
 message="-----------------------------" ; broadcast
 message="KiwiSDR: copy eMMC image to micro-SD card" ; broadcast
+message="KiwiSDR: [${kiwisdr_message}]" ; broadcast
 message="Version: [${version_message}]" ; broadcast
 message="-----------------------------" ; broadcast
 

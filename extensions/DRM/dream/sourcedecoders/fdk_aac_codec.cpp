@@ -202,6 +202,18 @@ static void logNumbers(const CStreamInfo& info) {
 }
 #endif
 
+/*      FROM AACCodec:
+    In case of SBR, AAC sample rate is half the total sample rate. Length of output is doubled if SBR is used
+    if (AudioParam.eSBRFlag == CAudioParam::SB_USED)
+    {
+        iAudioSampleRate = iAACSampleRate * 2;
+    }
+    else
+    {
+        iAudioSampleRate = iAACSampleRate;
+    }
+*/
+
 bool
 FdkAacCodec::DecOpen(const CAudioParam& AudioParam, int& iAudioSampleRate)
 {
@@ -209,7 +221,28 @@ FdkAacCodec::DecOpen(const CAudioParam& AudioParam, int& iAudioSampleRate)
     UCHAR *t9;
     hDecoder = aacDecoder_Open (TRANSPORT_TYPE::TT_DRM, 3);
 
-    if (hDecoder == nullptr) {
+    // provide a default value for iAudioSampleRate in case we can't do better. TODO xHEAAC
+    int iDefaultSampleRate;
+    switch (AudioParam.eAudioSamplRate)
+    {
+    case CAudioParam::AS_12KHZ:
+        iDefaultSampleRate = 12000;
+        break;
+
+    case CAudioParam::AS_24KHZ:
+        iDefaultSampleRate = 24000;
+        break;
+    default:
+        iDefaultSampleRate = 12000;
+        break;
+    }
+    if (AudioParam.eSBRFlag == CAudioParam::SBR_USED)
+    {
+        iDefaultSampleRate = iDefaultSampleRate * 2;
+    }
+
+    if(hDecoder == nullptr) {
+        iAudioSampleRate = iDefaultSampleRate;
         return false;
     }
 
@@ -228,7 +261,7 @@ FdkAacCodec::DecOpen(const CAudioParam& AudioParam, int& iAudioSampleRate)
         CStreamInfo *pinfo = aacDecoder_GetStreamInfo(hDecoder);
         if (pinfo==nullptr) {
             cerr << "FDK DecOpen No stream info" << endl;
-            iAudioSampleRate = 48000;
+            iAudioSampleRate = iDefaultSampleRate;
             return true;// TODO
         }
         cerr << "FDK DecOpen";
@@ -246,7 +279,7 @@ FdkAacCodec::DecOpen(const CAudioParam& AudioParam, int& iAudioSampleRate)
         if (pinfo->extSamplingRate == 0) {
     #endif
             cerr << "FDK DecOpen codec returned sample rate = 0?" << endl;
-            iAudioSampleRate = 48000;
+            iAudioSampleRate = iDefaultSampleRate; // get from AudioParam if codec couldn't get it
         }
 
         if(pinfo->aot == AUDIO_OBJECT_TYPE::AOT_USAC) bUsac = true;
@@ -261,7 +294,7 @@ FdkAacCodec::DecOpen(const CAudioParam& AudioParam, int& iAudioSampleRate)
     drm_t *drm = &DRM_SHMEM->drm[(int) FROM_VOID_PARAM(TaskGetUserParam())];
     drm->i_epoch = drm->i_samples = drm->i_tsamples = 0;
 
-    iAudioSampleRate = 48000;
+    iAudioSampleRate = iDefaultSampleRate;  // get from AudioParam if codec couldn't get it
     return true; // TODO
  }
 

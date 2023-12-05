@@ -228,7 +228,7 @@ function sd_backup_focus()
    w3_do_when_cond(
       function() { return isNumber(kiwi.debian_maj); },
       function() {
-         if (kiwi.debian_maj >= 11) {
+         if (!dbgUs && kiwi.debian_maj >= 11) {
             w3_innerHTML('id-sd-backup-container',
                w3_div('w3-container w3-text w3-red', 'Debian '+ kiwi.debian_maj +' does not yet support the backup function.'));
          }
@@ -247,7 +247,7 @@ function sd_backup_blur()
 function sd_backup_click_cb(id, idx)
 {
    console.log('sd_backup_click_cb debian_maj='+ kiwi.debian_maj);
-   if (kiwi.debian_maj >= 11) {
+   if (!dbgUs && kiwi.debian_maj >= 11) {
       w3_innerHTML('id-sd-backup-msg', 'SD write not supported yet');
       return;
    }
@@ -301,6 +301,8 @@ function sd_backup_write_done(err)
 	   case 15: e = 'SD card I/O error'; break;
 	   case 30: e = 'SD card already mounted?'; break;
 	   case 31: e = 'SD card format error'; break;
+	   case 88: e = '(BBAI-64) must first update to latest Debian version'; break;
+	   case 89: e = 'SD card flasher enable failed!'; break;
 	   default: e = 'code '+ err; break;
 	}
 	if (e) msg = '<b>ERROR: '+ e +'</b>';

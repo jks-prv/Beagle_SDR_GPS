@@ -36,6 +36,7 @@
 #include "AudioCodec.h"
 #include "../MSC/audiosuperframe.h"
 #include "reverb.h"
+#include "fir.h"
 
 #ifdef HAVE_SPEEX
 # include "../resample/speexresampler.h"
@@ -86,6 +87,7 @@ protected:
     CVector<_BINARY> vecbiTextMessBuf;
 
     /* Resampling */
+    CFir lpfL, lpfR;
     int inputSampleRate, outputSampleRate;
 
 #ifdef HAVE_SPEEX

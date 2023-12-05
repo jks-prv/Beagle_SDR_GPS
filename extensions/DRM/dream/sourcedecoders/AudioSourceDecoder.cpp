@@ -156,9 +156,23 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
                         _REAL rRatio = _REAL(outputSampleRate) / _REAL(inputSampleRate);
                         ResampleObjL.Init(vecTempResBufInLeft.Size(), rRatio);
                         ResampleObjR.Init(vecTempResBufInLeft.Size(), rRatio);
+
+                        drm_t *drm = &DRM_SHMEM->drm[(int) FROM_VOID_PARAM(TaskGetUserParam())];
+                        bool _20k = (outputSampleRate > 12000);
+                        int attn = (drm->dbgUs && drm->p_i[0])? drm->p_i[0] : 30;
+                        int hbw  = (drm->dbgUs && drm->p_i[1])? drm->p_i[1] : (_20k?  8000 : 5000);
+                        int stop = (drm->dbgUs && drm->p_i[2])? drm->p_i[2] : (_20k? 10125 : 6000);
+
+                        // ntaps, scale, stopAttn, Fpass, Fstop, Fsr, dump
+                        lpfL.InitLPFilter(0, 1, attn, hbw, stop, inputSampleRate);
+                        lpfR.InitLPFilter(0, 1, attn, hbw, stop, inputSampleRate);
+                        alt_printf("DRM LPF sr=%d|%d %d|%d|%d #taps=%d\n",
+                            inputSampleRate, outputSampleRate, attn, hbw, stop, lpfL.m_NumTaps);
                     }
 
+                    lpfL.ProcessFilter(vecTempResBufInLeft.Size(), &vecTempResBufInLeft[0], &vecTempResBufInLeft[0]);
                     ResampleObjL.Resample(vecTempResBufInLeft, vecTempResBufOutCurLeft);
+                    lpfR.ProcessFilter(vecTempResBufInRight.Size(), &vecTempResBufInRight[0], &vecTempResBufInRight[0]);
                     ResampleObjR.Resample(vecTempResBufInRight, vecTempResBufOutCurRight);
                 } else {
                     //printf("$ ASF %d/%d ERROR inputSampleRate=%d \n", j, num_frames, inputSampleRate);
@@ -403,7 +417,7 @@ CAudioSourceDecoder::InitInternal(CParameter & Parameters)
         /* Since we do not do Mode E or correct for sample rate offsets here (yet), we do not
            have to consider larger buffers. An audio frame always corresponds to 400 ms */
         iMaxLenResamplerOutput = int(_REAL(outputSampleRate) * 0.4 /* 400ms */  * 2 /* for stereo */ );
-        iMaxLenResamplerOutput *= 2;    // KiwiSDR: to prevent buffer overruns with xHE-AAC (as detected by clang asan)
+        iMaxLenResamplerOutput *= 8;    // KiwiSDR: to prevent buffer overruns with xHE-AAC (as detected by clang asan)
         //printf("$ iMaxLenResamplerOutput=%d\n", iMaxLenResamplerOutput);
 
         if (inputSampleRate != outputSampleRate) {

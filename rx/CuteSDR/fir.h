@@ -28,6 +28,8 @@ class CFir
 public:
     CFir();
 
+	int m_NumTaps;
+
 	void InitConstFir(int NumTaps, const TYPEREAL* pCoef, TYPEREAL Fsamprate);
 	void InitConstFir(int NumTaps, const TYPEREAL* pICoef, const TYPEREAL* pQCoef, TYPEREAL Fsamprate);
 	int InitLPFilter(int NumTaps, TYPEREAL Scale, TYPEREAL Astop, TYPEREAL Fpass, TYPEREAL Fstop, TYPEREAL Fsamprate, bool dump = false);
@@ -42,7 +44,6 @@ public:
 private:
 	TYPEREAL Izero(TYPEREAL x);
 	TYPEREAL m_SampleRate;
-	int m_NumTaps;
 	int m_State;
 	TYPEREAL m_Coef[MAX_NUMCOEF*2];
 	TYPEREAL m_ICoef[MAX_NUMCOEF*2];

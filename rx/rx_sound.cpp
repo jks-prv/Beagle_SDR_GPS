@@ -172,7 +172,7 @@ void c2s_sound_setup(void *param)
 {
 	conn_t *conn = (conn_t *) param;
 
-	double frate = ext_update_get_sample_rateHz(-1);
+	double frate = ext_update_get_sample_rateHz(ADC_CLK_SYS);
 	wdsp_SAM_demod_init();
 
     //cprintf(conn, "rx%d c2s_sound_setup\n", conn->rx_channel);
@@ -1347,7 +1347,7 @@ int c2s_sound_camp(rx_chan_t *rxc, conn_t *conn, u1_t flags, char *bp, int bytes
 
         if (!conn_mon->camp_init) {
             //cprintf(conn_mon, ">>> CAMP init rx%d slot=%d/%d\n", rx_chan, i+1, n_camp);
-            double frate = ext_update_get_sample_rateHz(-1);
+            double frate = ext_update_get_sample_rateHz(ADC_CLK_SYS);
             send_msg(conn_mon, SM_SND_DEBUG, "MSG center_freq=%d bandwidth=%d adc_clk_nom=%.0f", (int) ui_srate/2, (int) ui_srate, ADC_CLOCK_NOM);
             send_msg(conn_mon, SM_SND_DEBUG, "MSG audio_camp=0,%d audio_rate=%d sample_rate=%.6f", conn->isLocal, snd_rate, frate);
             send_msg(conn_mon, SM_SND_DEBUG, "MSG audio_adpcm_state=%d,%d", s->adpcm_snd.index, s->adpcm_snd.previousValue);

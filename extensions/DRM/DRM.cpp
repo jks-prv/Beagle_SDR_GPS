@@ -176,8 +176,10 @@ bool DRM_msgs(char *msg, int rx_chan)
     
     int run = 0;
     if (sscanf(msg, "SET run=%d", &run) == 1) {
-        printf("DRM run=%d rx_chan=%d\n", run, rx_chan);
         d->run = run;
+        d->dbgUs = kiwi.dbgUs;
+        for (int i = 0; i < 4; i++) d->p_i[i] = p_i[i];
+        printf("DRM run=%d rx_chan=%d dbgUs=%d p_i[0]=%d\n", run, rx_chan, d->dbgUs, d->p_i[0]);
         return true;
     }
 

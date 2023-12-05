@@ -401,7 +401,7 @@ int main(int argc, char *argv[])
         lprintf("firmware: RX rx_decim=%d RX1_STD_DECIM=%d RX2_STD_DECIM=%d USE_RX_CICF=%d\n",
             rx_decim, RX1_STD_DECIM, RX2_STD_DECIM, VAL_USE_RX_CICF);
         lprintf("firmware: RX srate=%.3f(%d) bufs=%d samps=%d loop=%d rem=%d intr_usec=%d\n",
-            ext_update_get_sample_rateHz(-2), snd_rate, nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem, snd_intr_usec);
+            ext_update_get_sample_rateHz(ADC_CLK_TYP), snd_rate, nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem, snd_intr_usec);
 
         assert(nrx_bufs <= MAX_NRX_BUFS);
         assert(nrx_samps <= MAX_NRX_SAMPS);

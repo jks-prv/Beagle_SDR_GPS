@@ -185,6 +185,7 @@ alias mst="make stop"
 alias msa="make start"
 alias men="make enable"
 alias mdi="make disable"
+alias msd="make stop_disable"
 alias mn="make -n"
 alias mk="make -k"
 alias mw="make --dry-run --debug=b"
@@ -403,7 +404,7 @@ if [ "x${BBG_BBB}" == "xtrue" ] ; then
 fi
 
 type lsb_release >/dev/null 2>&1 || { lsb_release() { :; } ; }
-alias dog="echo Debian `cat /etc/debian_version`; more /etc/dogtag; uname -a; lsb_release -ds"
+alias dog="echo Debian `cat /etc/debian_version`; cat /etc/dogtag; uname -a; lsb_release -ds"
 alias tag=dog
 alias slots7="cat /sys/devices/bone_capemgr.*/slots"
 alias slots8="cat /sys/devices/platform/bone_capemgr/slots"

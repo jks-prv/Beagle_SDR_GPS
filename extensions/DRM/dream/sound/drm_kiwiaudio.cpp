@@ -93,7 +93,7 @@ CKiwiCommon::Init(int iSampleRate, int iNewBufferSize, bool bNewBlocking)
 
     unsigned long channels=2;
 
-    samplerate = double(iSampleRate);
+    samplerate = ext_update_get_sample_rateHz(RX_CHAN_CUR);
 
     if (is_capture)
         framesPerBuffer = iNewBufferSize / channels;

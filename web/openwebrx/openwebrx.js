@@ -4551,7 +4551,8 @@ function waterfall_add(data_raw, audioFFT)
       noise -= 10;
       
       if (wf.audioFFT_active) {
-         noise = (dbgUs && devl.p4)? Math.round(devl.p4) : -110;
+         //noise = (dbgUs && devl.p4)? Math.round(devl.p4) : -110;
+         noise = -110;
          console_log_dbgUs('audioFFT_active: force noise = '+ noise.toFixed(0) +' dBm');
       }
 

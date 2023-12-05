@@ -1715,7 +1715,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             float sum_kbps = audio_kbps[rx_chans] + waterfall_kbps[rx_chans] + http_kbps;
             sb = kstr_asprintf(sb, "\"ac\":%.0f,\"wc\":%.0f,\"fc\":%.0f,\"ah\":%.0f,\"as\":%.0f,\"sr\":%.6f,\"nsr\":%d",
                 audio_kbps[ch], waterfall_kbps[ch], waterfall_fps[ch], http_kbps, sum_kbps,
-                ext_update_get_sample_rateHz(-1), snd_rate);
+                ext_update_get_sample_rateHz(ADC_CLK_SYS), snd_rate);
 
             #ifdef USE_GPS
                 sb = kstr_asprintf(sb, ",\"ga\":%d,\"gt\":%d,\"gg\":%d,\"gf\":%d,\"gc\":%.6f,\"go\":%d",
@@ -2087,6 +2087,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
         if (n == 2) {
             if (i >= 0 && i <= 7) {
                 p_f[i] = pf;
+                p_i[i] = (int) round(pf);
                 printf("CMD_DEVL SET p_f[%d]=%lf\n", i, p_f[i]);
                 return true;
             }
