@@ -41,10 +41,10 @@ double ext_update_get_sample_rateHz(int rx_chan)
 {
     double adc_clk;
 
-    if (rx_chan == -1) {
+    if (rx_chan == ADC_CLK_SYS) {
         adc_clk = adc_clock_system();
     } else
-    if (rx_chan == -2) {
+    if (rx_chan == ADC_CLK_TYP) {
         adc_clk = ADC_CLOCK_TYP;
     } else {
         // FIXME XXX WRONG-WRONG-WRONG

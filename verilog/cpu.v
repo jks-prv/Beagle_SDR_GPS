@@ -310,11 +310,11 @@ module CPU (
         else if (op8 == op_to_loop) loop[op0] <= tos;
 
     //////////////////////////////////////////////////////////////////////////
-    // 256 x 32-bit data and return stacks
-    // WRITE_MODE doesn't matter because address spaces don't overlap
+    // 2 x 256 x 32-bit data and return stacks and 512 x 32-bit data memory (1k x 32b total)
+    // WRITE_MODE doesn't matter because address spaces don't overlap.
     // But on Artix/Vivado WRITE_MODE = WRITE_FIRST (both ports) is needed for correct functioning.
     // On Artix 7 requires 36kb BRAM because true dual-port mode required (i.e. r/w on both ports)
-    // even though memory requirement would fit in a 18kb BRAM (512 * 32b = 16kb).
+    // Requires one 36kb BRAM.
 
     wire [9:0] dstk_addr = {stk_rw, (op8 == op_stk_rd)? tos[8:0] : {1'b0, next_sp}};
     wire [9:0] rstk_addr = {  1'b0, 1'b1, next_rp};

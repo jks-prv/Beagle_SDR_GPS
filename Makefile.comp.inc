@@ -61,6 +61,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
         BBG_BBB := $(and $(if $(BBAI_64),,true), $(if $(BBAI),,true), $(if $(RPI),,true))
         DEBIAN_VERSION := $(shell cat $(KIWI_XC_REMOTE_FS)/etc/debian_version | sed "s/\([0-9]*\)\..*/\1/")
         DEBIAN_10_AND_LATER := $(shell [ $(DEBIAN_VERSION) -ge 10 ] && echo true)
+        DEBIAN_12_AND_LATER := $(shell [ $(DEBIAN_VERSION) -ge 12 ] && echo true)
 
         CC = clang
         CPP = clang++
@@ -84,16 +85,16 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
         OPT = 0
         CFLAGS += -DDEVSYS
         
-        # stops incorrect/pesky warnings:
-        # warning: 'sscanf' may overflow; destination buffer in argument 3 has size 8, but the corresponding specifier may require size 33 [-Wfortify-source]
-        # for sscanf("%m", (char **) &alloced_str_ptr)
-        CFLAGS += -Wno-fortify-source
-
         # platform choice when building on development machine
         BBAI_64 := 
         BBAI := 
         RPI := 
         BBG_BBB := $(and $(if $(BBAI_64),,true), $(if $(BBAI),,true), $(if $(RPI),,true))
+
+        # stops incorrect warning for GNU %Nms / %Nm[ automatic string alloc:
+        # warning: 'sscanf' may overflow; destination buffer in argument 3 has size 8, but the corresponding specifier may require size 33 [-Wfortify-source]
+        # for sscanf(s, "%32m", (char **) &alloced_str_ptr)
+        CFLAGS += -Wno-fortify-source
 
         ifeq ($(UNAME),Darwin)
             CC = clang
@@ -121,6 +122,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
     DEBIAN_VERSION := $(shell cat /etc/debian_version | sed "s/\([0-9]*\)\..*/\1/")
     DEBIAN_10_AND_LATER := $(shell [ $(DEBIAN_VERSION) -ge 10 ] && echo true)
+    DEBIAN_12_AND_LATER := $(shell [ $(DEBIAN_VERSION) -ge 12 ] && echo true)
 
     ifeq ($(BBAI_64),true)
         ifeq ($(DEBIAN_VERSION),11)
@@ -159,7 +161,15 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
         CPP_FLAGS += -std=gnu++11
         APT_GET_FORCE = --no-install-recommends --force-yes
     else ifeq ($(BBG_BBB),true)
-        ifeq ($(DEBIAN_VERSION),11)
+        ifeq ($(DEBIAN_12_AND_LATER),true)
+            CC = clang
+            CPP = clang++
+            VIS_OPT = -Ofast
+            # needed for iq_display.cpp et al
+            CPP_FLAGS += -std=gnu++11 -Wno-fortify-source
+            # clang still used by other things (e_cpu etc)
+            CMD_DEPS_DEBIAN := /usr/bin/clang
+        else ifeq ($(DEBIAN_VERSION),11)
             CC = clang-11
             CPP = clang++-11
             VIS_OPT = -Ofast
