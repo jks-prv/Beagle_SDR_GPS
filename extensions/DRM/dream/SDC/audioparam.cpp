@@ -62,6 +62,8 @@ bool CAudioParam::setFromType9Bits(CVector<_BINARY>& biData, unsigned numBytes)
 
         case 7: /* 111 */
             eAudioSamplRate = CAudioParam::AS_48KHZ;
+            break;
+            
         default: /* reserved */
             bError = true;
             break;
@@ -81,6 +83,8 @@ bool CAudioParam::setFromType9Bits(CVector<_BINARY>& biData, unsigned numBytes)
             break;
         case 7: /* 111 */
             bAudioSamplingRateValue7 = true;
+            bError = true;
+            break;
         default: /* reserved */
             bError = true;
             break;
@@ -106,18 +110,16 @@ bool CAudioParam::setFromType9Bits(CVector<_BINARY>& biData, unsigned numBytes)
     eSurround = ESurround(biData.Separate(3)); // no need to worry if not AAC/xHE-AAC
 
     /* rfa 2 bits */
-    unsigned rfa2 = biData.Separate(2);
-    (void) rfa2;
+    unsigned rfa2 = biData.Separate(2); (void)rfa2;
 
     /* rfa 1 bit */
-    unsigned rfa1 = biData.Separate(1);
-    (void) rfa1;
+    unsigned rfa1 = biData.Separate(1); (void)rfa1;
 
     if (eAudioCoding == CAudioParam::AC_xHE_AAC)
     {
         xHE_AAC_config.resize(numBytes-2);
         for(size_t i=0; i < xHE_AAC_config.size(); i++) {
-            xHE_AAC_config[i] = biData.Separate(8);
+            xHE_AAC_config[i] = uint8_t(biData.Separate(8));
         }
     }
     return bError;
@@ -217,11 +219,11 @@ void CAudioParam::EnqueueType9(CVector<_BINARY>& vecbiData) const
     else
     {
         /* rfa 5 bit */
-        vecbiData.Enqueue((uint32_t) 0, 5);
+        vecbiData.Enqueue(0, 5);
     }
 
     /* rfa 1 bit */
-    vecbiData.Enqueue((uint32_t) 0, 1);
+    vecbiData.Enqueue(0, 1);
 
     for(size_t i=0; i < xHE_AAC_config.size(); i++) {
         vecbiData.Enqueue(xHE_AAC_config[i], 8);

@@ -48,6 +48,8 @@ typedef struct {
 	bool monitor, reset;
 	int run;
 	u4_t debug;
+	bool dbgUs;
+	int p_i[4];
 	drm_info_t *info;
 	
 	u4_t i_epoch;
