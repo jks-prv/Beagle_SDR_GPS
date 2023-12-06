@@ -160,8 +160,8 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
                         init_LPF = true;
                     }
                     
-                    if (init_LPF) {
-                        drm_t *drm = &DRM_SHMEM->drm[(int) FROM_VOID_PARAM(TaskGetUserParam())];
+                    drm_t *drm = &DRM_SHMEM->drm[(int) FROM_VOID_PARAM(TaskGetUserParam())];
+                    if (init_LPF || use_LPF != drm->use_LPF) {
                         bool _20k = (outputSampleRate > 12000);
                         int attn = (drm->dbgUs && drm->p_i[0])? drm->p_i[0] : 20;
                         int hbw  = (drm->dbgUs && drm->p_i[1])? drm->p_i[1] : (_20k?  8000 : 5000);
@@ -170,7 +170,8 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
                         // ntaps, scale, stopAttn, Fpass, Fstop, Fsr, dump
                         lpfL.InitLPFilter(0, 1, attn, hbw, stop, inputSampleRate);
                         lpfR.InitLPFilter(0, 1, attn, hbw, stop, inputSampleRate);
-                        do_LPF = (attn > 1);
+                        use_LPF = drm->use_LPF;
+                        do_LPF = (drm->use_LPF && attn > 1);
                         if (do_LPF)
                             alt_printf("DRM LPF #frames=%d size=%d sr=%d|%d %d|%d|%d #taps=%d\n",
                                 num_frames, vecTempResBufInLeft.Size(), inputSampleRate, outputSampleRate,
