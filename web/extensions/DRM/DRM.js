@@ -17,6 +17,7 @@ var drm = {
 
    run: 0,
    test: 0,
+   lpf: 1,
    is_stopped: 0,
    is_monitor: 0,
    freq_s: '',
@@ -1366,7 +1367,8 @@ function drm_desktop_controls_setup(w_multi)
             w3_button('id-drm-btn-monitor w3-padding-smaller w3-pink', 'Monitor IQ', 'drm_monitor_IQ_cb'),
             //w3_button('w3-padding-smaller w3-css-yellow', 'Reset', 'drm_reset_cb'),
             w3_button('id-drm-test1 w3-padding-smaller w3-aqua', 'Test 1', 'drm_test_cb', 1),
-            w3_button('id-drm-test2 w3-padding-smaller w3-aqua', 'Test 2', 'drm_test_cb', 2)
+            w3_button('id-drm-test2 w3-padding-smaller w3-aqua', 'Test 2', 'drm_test_cb', 2),
+            w3_checkbox('/w3-label-inline w3-label-not-bold', 'LPF', 'drm.lpf', drm.lpf, 'drm_lpf_cbox_cb')
          );
    }
 
@@ -1693,6 +1695,12 @@ function drm_svcs_cbox_cb(path, checked, first)
       w3_checkbox_set('drm.svc'+ i, false);
    w3_checkbox_set(path, true);
    ext_send('SET svc='+ which);
+}
+
+function drm_lpf_cbox_cb(path, checked, first)
+{
+   //console.log('drm_lpf_cbox_cb path='+ path +' checked='+ checked);
+   ext_send('SET lpf='+ (checked? 1:0));
 }
 
 function drm_database_cb(path, idx, first)

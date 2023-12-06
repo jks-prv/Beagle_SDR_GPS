@@ -204,6 +204,13 @@ bool DRM_msgs(char *msg, int rx_chan)
         return true;
     }
     
+    int lpf = 0;
+    if (sscanf(msg, "SET lpf=%d", &lpf) == 1) {
+        d->use_LPF = lpf;
+        rcprintf(rx_chan, "DRM lpf=%d rx_chan=%d\n", lpf);
+        return true;
+    }
+
     int svc = 0;
     if (sscanf(msg, "SET svc=%d", &svc) == 1) {
         d->audio_service = svc - 1;
