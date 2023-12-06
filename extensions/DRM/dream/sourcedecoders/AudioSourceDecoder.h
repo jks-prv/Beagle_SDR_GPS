@@ -87,7 +87,7 @@ protected:
     CVector<_BINARY> vecbiTextMessBuf;
 
     /* Resampling */
-    bool init_LPF;
+    bool init_LPF, do_LPF;
     CFir lpfL, lpfR;
     int inputSampleRate, outputSampleRate;
 

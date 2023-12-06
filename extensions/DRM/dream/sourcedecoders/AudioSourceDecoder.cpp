@@ -29,6 +29,7 @@
 #include <DRM_main.h>
 #include "AudioSourceDecoder.h"
 #include "printf.h"
+#include "timer.h"
 
 #include <iostream>
 #include <sstream>
@@ -126,13 +127,13 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
     //real_printf(">%d ", inputSampleRate); fflush(stdout);
 
     int num_frames = pAudioSuperFrame->getNumFrames();
+    //u4_t start = timer_us();
     for (size_t j = 0; j < num_frames; j++)
     {
         bool bCodecUpdated = false;
         bool bCurBlockFaulty = false; // just for Opus or any other codec with FEC
 
-        if (j == 5)
-            drm_next_task("superFrame");
+        drm_next_task("superFrame");
         
         if (bGoodValues)
         {
@@ -162,21 +163,28 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
                     if (init_LPF) {
                         drm_t *drm = &DRM_SHMEM->drm[(int) FROM_VOID_PARAM(TaskGetUserParam())];
                         bool _20k = (outputSampleRate > 12000);
-                        int attn = (drm->dbgUs && drm->p_i[0])? drm->p_i[0] : 30;
+                        int attn = (drm->dbgUs && drm->p_i[0])? drm->p_i[0] : 20;
                         int hbw  = (drm->dbgUs && drm->p_i[1])? drm->p_i[1] : (_20k?  8000 : 5000);
                         int stop = (drm->dbgUs && drm->p_i[2])? drm->p_i[2] : (_20k? 10125 : 6000);
 
                         // ntaps, scale, stopAttn, Fpass, Fstop, Fsr, dump
                         lpfL.InitLPFilter(0, 1, attn, hbw, stop, inputSampleRate);
                         lpfR.InitLPFilter(0, 1, attn, hbw, stop, inputSampleRate);
-                        alt_printf("DRM LPF sr=%d|%d %d|%d|%d #taps=%d\n",
-                            inputSampleRate, outputSampleRate, attn, hbw, stop, lpfL.m_NumTaps);
+                        do_LPF = (attn > 1);
+                        if (do_LPF)
+                            alt_printf("DRM LPF #frames=%d size=%d sr=%d|%d %d|%d|%d #taps=%d\n",
+                                num_frames, vecTempResBufInLeft.Size(), inputSampleRate, outputSampleRate,
+                                attn, hbw, stop, lpfL.m_NumTaps);
+                        else
+                            alt_printf("DRM LPF OFF\n");
                         init_LPF = false;
                     }
 
-                    lpfL.ProcessFilter(vecTempResBufInLeft.Size(), &vecTempResBufInLeft[0], &vecTempResBufInLeft[0]);
+                    if (do_LPF) {
+                        lpfL.ProcessFilter(vecTempResBufInLeft.Size(), &vecTempResBufInLeft[0], &vecTempResBufInLeft[0]);
+                        lpfR.ProcessFilter(vecTempResBufInRight.Size(), &vecTempResBufInRight[0], &vecTempResBufInRight[0]);
+                    }
                     ResampleObjL.Resample(vecTempResBufInLeft, vecTempResBufOutCurLeft);
-                    lpfR.ProcessFilter(vecTempResBufInRight.Size(), &vecTempResBufInRight[0], &vecTempResBufInRight[0]);
                     ResampleObjR.Resample(vecTempResBufInRight, vecTempResBufOutCurRight);
                 } else {
                     //printf("$ ASF %d/%d ERROR inputSampleRate=%d \n", j, num_frames, inputSampleRate);
@@ -282,6 +290,7 @@ CAudioSourceDecoder::ProcessDataInternal(CParameter & Parameters)
         }
 
     }
+    //real_printf("%.1f ", (timer_us() - start)/1e3); fflush(stdout);
 }
 
 void
