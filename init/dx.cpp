@@ -656,10 +656,10 @@ static bool dx_download_file(const char *host, const char *src, const char *dst)
         char *sum2 = non_blocking_cmd_fmt(NULL, "sum %s", dst);
         char *sum1_s = kstr_sp(sum1);
         char *sum2_s = kstr_sp(sum2);
-        //printf("DX: sum1=%p sum1_s=<%s> sum2=%d sum2_s=<%s>\n", sum1, sum1_s, sum2, sum2_s);
-        if (sum1 == NULL || sum2 == NULL || sum1_s == NULL || sum2_s == NULL || strcmp(sum1_s, sum2_s) != 0) {
-            //lprintf("DX: sum1 <%.*s> %s\n", strlen(sum1_s)-1, sum1_s, tmp);
-            //lprintf("DX: sum2 <%.*s> %s\n", strlen(sum1_s)-1, sum2_s, dst);
+        //printf("DX: sum1=<%s> sum2=<%s>\n", sum1_s, sum2_s);
+        if (sum1 == NULL || sum2 == NULL || sum1_s == NULL || sum2_s == NULL || strncmp(sum1_s, sum2_s, 11) != 0) {
+            //if (sum1_s) lprintf("DX: sum1 <%.*s> %s\n", strlen(sum1_s)-1, sum1_s, tmp);
+            //if (sum2_s) lprintf("DX: sum2 <%.*s> %s\n", strlen(sum1_s)-1, sum2_s, dst);
             lprintf("DX: UPDATING %s\n", dst);
             blocking_system("mv %s %s", tmp, dst);
             rm_tmp = false;
