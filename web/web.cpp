@@ -798,8 +798,10 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     }
 
     while (*o_uri == '/') o_uri++;
+    //bool isIndex = false;
     if (*o_uri == '\0' || strcmp(o_uri, "index") == 0 || strcmp(o_uri, "index.html") == 0 || strcmp(o_uri, "index.htm") == 0) {
         o_uri = (char *) "index.html";
+        //isIndex = true;
 
         // Kiwi URL redirection
         // don't redirect if camp specified in URL
@@ -1188,6 +1190,13 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         if (ver != NULL) {
             mg_send_data(mc, ver, ver_size);
         }
+        
+        /*
+            if (isIndex) {
+                const char *ua = mg_get_header(mc, "User-Agent");
+                printf("UA <%s>\n", ua);
+            }
+        */
     }
     
     if (ver != NULL) {
