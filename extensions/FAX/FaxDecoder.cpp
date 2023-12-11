@@ -589,7 +589,7 @@ void FaxDecoder::FileClose()
     pgm_file_height(m_file, m_offset, m_fax_line);
     fclose(m_file);
     faxprintf("FAX %s wrote %d lines\n", m_fn, m_fax_line);
-    if (m_fn) kiwi_ifree(m_fn, "FileClose"); m_fn = NULL;
+    if (m_fn) kiwi_asfree(m_fn, "FileClose"); m_fn = NULL;
     m_file = NULL;
     m_fax_line = 0;
 }

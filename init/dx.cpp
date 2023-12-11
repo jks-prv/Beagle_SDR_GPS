@@ -134,7 +134,7 @@ void dx_save_as_json(dx_db_t *dx_db, bool dx_label_foff_convert)
 	    }
 	    int mode_i = DX_DECODE_MODE(dxp->flags);
 	    sb = kstr_asprintf(NULL, "[%.2f, \"%s\", \"%s\", \"%s\"", freq_kHz, mode_uc[mode_i], ident, notes);
-        free(ident); free(notes);   // not kiwi_ifree() because from strdup()
+        free(ident); free(notes);
 
 		u4_t type = dxp->flags & DX_TYPE;
 		if (type || dxp->low_cut || dxp->high_cut || dxp->offset || params) {
@@ -199,7 +199,7 @@ void dx_save_as_json(dx_db_t *dx_db, bool dx_label_foff_convert)
 			}
 			
 			sb = kstr_cat(sb, "}");
-			free(params);   // not kiwi_ifree() because from strdup()
+			free(params);
 		}
 
         sb = kstr_asprintf(sb, "]%s\n", (i != dx_db->actual_len-1)? ",":"");
@@ -213,7 +213,7 @@ void dx_save_as_json(dx_db_t *dx_db, bool dx_label_foff_convert)
 		}
 	}
 	
-	kiwi_ifree(dx_db->json);
+	kiwi_ifree(dx_db->json, "dx json");
 	TMEAS(u4_t split = timer_ms(); printf("DX_UPD sb_len=%d %.3f sec\n", sb_len, TIME_DIFF_MS(split, start));)
     int rem = sb_len + 32;      // 32 is for '{"dx":[...]}' below
 	dx_db->json = (char *) kiwi_imalloc("dx-json", rem);
@@ -226,7 +226,7 @@ void dx_save_as_json(dx_db_t *dx_db, bool dx_label_foff_convert)
 
 	for (i = 0; i < dx_db->actual_len; i++) {
 	    strcpy(cp, dx_a[i].sp);
-	    kiwi_ifree(dx_a[i].sp);
+	    kiwi_ifree(dx_a[i].sp, "dx_a[]");
 	    n = dx_a[i].sl;
 	    cp += n;
 	    rem -= n;
@@ -236,7 +236,7 @@ void dx_save_as_json(dx_db_t *dx_db, bool dx_label_foff_convert)
 		}
 	}
 
-	kiwi_ifree(dx_a);
+	kiwi_ifree(dx_a, "dx_a");
 	n = kiwi_snprintf_ptr(cp, rem, "]}");    // dx_save_json() adds final \n
     tsize += n;
 	TMEAS(printf("DX_UPD tsize=%d\n", tsize);)
@@ -288,7 +288,7 @@ void update_masked_freqs(dx_t *_dx_list, int _dx_list_len)
         if ((dxp->flags & DX_TYPE) == DX_MASKED && dxp->freq >= freq_offset_kHz && dxp->freq <= freq_offmax_kHz)
             dx.masked_len++;
     }
-    kiwi_ifree(dx.masked_list); dx.masked_list = NULL;
+    kiwi_ifree(dx.masked_list, "dx masked"); dx.masked_list = NULL;
     if (dx.masked_len > 0) dx.masked_list = (dx_mask_t *) kiwi_imalloc("update_masked_freqs", dx.masked_len * sizeof(dx_mask_t));
 
     for (i = j = 0, dxp = _dx_list; i < _dx_list_len; i++, dxp++) {
@@ -387,19 +387,19 @@ static jsmntok_t *dx_reload_element(cfg_t *cfg, dx_db_t *dx_db, jsmntok_t *jt, j
     if (cfg_string_tok(cfg, jt, &s) == false) { *error = E_IDENT; return NULL; }
     kiwi_str_unescape_quotes((char *) s);
     dxp->ident_s = strdup(s);
-    dxp->ident = kiwi_str_encode((char *) s);
+    dxp->ident = kiwi_str_encode((char *) s, "dx", USE_MALLOC);
     cfg_string_tok_free(cfg, s);
     jt++;
     
     if (cfg_string_tok(cfg, jt, &s) == false) { *error = E_NOTES; return NULL; }
     kiwi_str_unescape_quotes((char *) s);
     dxp->notes_s = strdup(s);
-    dxp->notes = kiwi_str_encode((char *) s);
-    cfg_string_tok_free(cfg, s);
-    if (*dxp->notes == '\0') {
-        cfg_string_tok_free(cfg, dxp->notes);
+    if (*s == '\0') {
         dxp->notes = NULL;
+    } else {
+        dxp->notes = kiwi_str_encode((char *) s, "dx", USE_MALLOC);
     }
+    cfg_string_tok_free(cfg, s);
     jt++;
     
     // deprecated
@@ -472,7 +472,7 @@ static jsmntok_t *dx_reload_element(cfg_t *cfg, dx_db_t *dx_db, jsmntok_t *jt, j
                 //printf("dx-json %s=<%s>\n", id, s);
                 if (strcmp(id, "p") == 0) {
                     kiwi_str_unescape_quotes((char *) s);
-                    dxp->params = kiwi_str_encode((char *) s);
+                    dxp->params = kiwi_str_encode((char *) s, "dx", USE_MALLOC);
                 }
                 cfg_string_tok_free(cfg, s);
             }
@@ -512,11 +512,11 @@ static void dx_reload_finalize(dx_db_t *dx_db, dx_t *_dx_list, int _dx_list_len)
 		
 		for (i = 0, dxp = prev_dx_list; i < prev_dx_list_len; i++, dxp++) {
 			// previous allocators better have used malloc(), strdup() et al for these and not kiwi_malloc()
-			kiwi_ifree((void *) dxp->ident_s);
-			kiwi_ifree((void *) dxp->ident);
-			kiwi_ifree((void *) dxp->notes_s);
-			kiwi_ifree((void *) dxp->notes);
-			kiwi_ifree((void *) dxp->params);
+			kiwi_asfree((void *) dxp->ident_s);
+			free((void *) dxp->ident);
+			kiwi_asfree((void *) dxp->notes_s);
+			free((void *) dxp->notes);
+			free((void *) dxp->params);
 		}
 	}
 	
@@ -656,10 +656,10 @@ static bool dx_download_file(const char *host, const char *src, const char *dst)
         char *sum2 = non_blocking_cmd_fmt(NULL, "sum %s", dst);
         char *sum1_s = kstr_sp(sum1);
         char *sum2_s = kstr_sp(sum2);
-        //printf("DX: sum1=%p sum1_s=<%s> sum2=%d sum2_s=<%s>\n", sum1, sum1_s, sum2, sum2_s);
-        if (sum1 == NULL || sum2 == NULL || sum1_s == NULL || sum2_s == NULL || strcmp(sum1_s, sum2_s) != 0) {
-            //lprintf("DX: sum1 <%.*s> %s\n", strlen(sum1_s)-1, sum1_s, tmp);
-            //lprintf("DX: sum2 <%.*s> %s\n", strlen(sum1_s)-1, sum2_s, dst);
+        //printf("DX: sum1=<%s> sum2=<%s>\n", sum1_s, sum2_s);
+        if (sum1 == NULL || sum2 == NULL || sum1_s == NULL || sum2_s == NULL || strncmp(sum1_s, sum2_s, 11) != 0) {
+            //if (sum1_s) lprintf("DX: sum1 <%.*s> %s\n", strlen(sum1_s)-1, sum1_s, tmp);
+            //if (sum2_s) lprintf("DX: sum2 <%.*s> %s\n", strlen(sum1_s)-1, sum2_s, dst);
             lprintf("DX: UPDATING %s\n", dst);
             blocking_system("mv %s %s", tmp, dst);
             rm_tmp = false;
@@ -673,7 +673,7 @@ static bool dx_download_file(const char *host, const char *src, const char *dst)
     if (rm_tmp) {
         blocking_system("rm -f %s", tmp);
     }
-    kiwi_ifree(cmd); kiwi_ifree(tmp);
+    kiwi_asfree(cmd); kiwi_asfree(tmp);
     return restart;
 }
 
@@ -777,11 +777,11 @@ void dx_eibi_init()
         n++;
         //f = dxp->freq;
         dxp->ident_s = eibi_ident[dxp->ident_idx];
-		dxp->ident = kiwi_str_encode((char *) dxp->ident_s);
+		dxp->ident = kiwi_str_encode((char *) dxp->ident_s, "dx", USE_MALLOC);
         //asprintf(&(dxp->notes_s), "%04d-%04d %s", dxp->time_begin, dxp->time_end, eibi_notes[dxp->notes_idx]);
         //dxp->notes_s = (char *) eibi_notes[dxp->notes_idx];
         dxp->notes_s = (char *) "";
-		dxp->notes = kiwi_str_encode((char *) dxp->notes_s);
+		dxp->notes = kiwi_str_encode((char *) dxp->notes_s, "dx", USE_MALLOC);
 		dxp->params = "";
 		dxp->idx = i;
 		
@@ -844,7 +844,7 @@ bool _dx_parse_csv_field(int type, char *field, void *val, bool empty_ok, bool *
             bool restore_sf = false, restore_sl = false;
             if (s[0] == '"') { s[0] = 'x'; restore_sf = true; }
             if (s[sl-1] == '"') { s[sl-1] = 'x'; restore_sl = true; }
-            s = kiwi_str_decode_selective_inplace(kiwi_str_encode(kiwi_str_decode_inplace(s)), FEWER_ENCODED);
+            s = kiwi_str_decode_selective_inplace(kiwi_str_encode(kiwi_str_decode_inplace(s), "dx csv"), FEWER_ENCODED);
             sl = strlen(s);
             if (restore_sf) s[0] = '"';
             if (restore_sl) s[sl-1] = '"';

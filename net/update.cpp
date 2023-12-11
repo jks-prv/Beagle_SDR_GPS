@@ -78,7 +78,7 @@ static void update_build_ctask(void *param)
 		    "git checkout . >>/root/build.log 2>&1; " \
 		);
 		status = system(cmd_p);
-		kiwi_ifree(cmd_p);
+		kiwi_asfree(cmd_p);
         child_status_exit(status);
 
         struct stat st;
@@ -88,7 +88,7 @@ static void update_build_ctask(void *param)
 		    use_git_proto? "git" : "https" \
 		);
 		status = system(cmd_p);
-		kiwi_ifree(cmd_p);
+		kiwi_asfree(cmd_p);
         status = child_status_exit(status, NO_ERROR_EXIT);
         
         // try again using github.com well-known public ip address (failure mode when ISP messes with github.com DNS)
@@ -98,7 +98,7 @@ static void update_build_ctask(void *param)
                 "git pull -v git://" GITHUB_COM_PUBLIC_IP "/" REPO_GIT " >>/root/build.log 2>&1; "
             );
             status = system(cmd_p);
-            kiwi_ifree(cmd_p);
+            kiwi_asfree(cmd_p);
             child_status_exit(status);
         }
 
@@ -141,8 +141,8 @@ static void report_result(conn_t *conn)
 	    "\"v1\":%d,\"v2\":%d,\"p1\":%d,\"p2\":%d,\"d\":\"%s\",\"t\":\"%s\"}",
 		fail_reason, update_pending, update_in_progress, rx_chans, gps_chans,
 		version_maj, version_min, pending_maj, pending_min, date_m, time_m);
-	kiwi_ifree(date_m);
-	kiwi_ifree(time_m);
+	kiwi_ifree(date_m, "date_m");
+	kiwi_ifree(time_m, "time_m");
 }
 
 static bool file_auto_download_check = false;

@@ -129,10 +129,10 @@ void cmd_debug_print(conn_t *c, char *s, int slen, bool tx)
     printf("%c %s %.3s %.4s%s%d ", tx? 'T':'<', Task_s(-1), rx_conn_type(c),
         s, (s[3] != ' ')? " " : "", sl);
     if (sl > 0) {
-        char *s2 = kiwi_str_encode(&s[4], true);
+        char *s2 = kiwi_str_encode(&s[4], NULL, FEWER_ENCODED);
         sl = strlen(s2);
         cprintf(c, "\"%.80s\" %s%s\n", s2, (sl > 80)? "... " : "", (sl > 80)? &s2[sl-8] : "");
-        kiwi_ifree(s2);
+        kiwi_ifree(s2, "cmd_debug_print");
     } else {
         cprintf(c, "\n");
     }
@@ -177,7 +177,7 @@ void send_msg(conn_t *c, bool debug, const char *msg, ...)
 	va_end(ap);
 	if (debug) cprintf(c, "send_msg: %p <%s>\n", c->mc, s);
 	send_msg_buf(c, s, strlen(s));
-	kiwi_ifree(s, "send_msg");
+	kiwi_asfree(s, "send_msg");
 }
 
 #define N_MSG_HDR 4
@@ -225,7 +225,7 @@ void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...)
 	size_t slen = strlen(s);
 	if (debug) printf("send_msg_mc: %d <%s>\n", slen, s);
 	mg_websocket_write(mc, WEBSOCKET_OPCODE_BINARY, s, slen);
-	kiwi_ifree(s, "send_msg_mc");
+	kiwi_asfree(s, "send_msg_mc");
 }
 
 void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char *fmt, ...)
@@ -240,7 +240,7 @@ void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char
 	va_end(ap);
 	
 	char *buf = kiwi_str_encode(s);
-	kiwi_ifree(s, "send_msg_encoded");
+	kiwi_asfree(s, "send_msg_encoded");
 	send_msg(conn, FALSE, "%s %s=%s", dst, cmd, buf);
 	kiwi_ifree(buf, "send_msg_encoded");
 }
@@ -259,7 +259,7 @@ void send_msg_mc_encoded(struct mg_connection *mc, const char *dst, const char *
 	va_end(ap);
 	
 	char *buf = kiwi_str_encode(s);
-	kiwi_ifree(s, "send_msg_mc_encoded");
+	kiwi_asfree(s, "send_msg_mc_encoded");
 	send_msg_mc(mc, FALSE, "%s %s=%s", dst, cmd, buf);
 	kiwi_ifree(buf, "send_msg_mc_encoded");
 }
@@ -289,7 +289,7 @@ int snd_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *c
 	    }
 	}
 	
-	kiwi_ifree(s, "snd_send_msg_encoded");
+	kiwi_asfree(s, "snd_send_msg_encoded");
 	kiwi_ifree(buf, "snd_send_msg_encoded");
 	return rv;
 }
@@ -315,7 +315,7 @@ void input_msg_internal(conn_t *conn, const char *fmt, ...)
 	
     //assert(conn->internal_connection);
 	nbuf_allocq(&conn->c2s, s, strlen(s));
-	kiwi_ifree(s, "input_msg_internal");
+	kiwi_asfree(s, "input_msg_internal");
 }
 
 float ecpu_use()

@@ -392,7 +392,7 @@ void web_server_init(ws_init_t type)
             lprintf("app already running in background?\ntry \"make stop\" (or \"m stop\") first\n");
             kiwi_exit(-1);
         }
-        kiwi_ifree(s_port);
+        kiwi_asfree(s_port);
         
     } else {	// WS_INIT_START
         bool err;

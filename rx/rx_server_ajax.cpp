@@ -120,7 +120,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
             int key_cmp = -1;
             if (mc->query_string && current_authkey) {
                 key_cmp = strcmp(mc->query_string, current_authkey);
-                kiwi_ifree(current_authkey);
+                kiwi_asfree(current_authkey);
                 current_authkey = NULL;
             }
             if (key_cmp != 0)
@@ -185,7 +185,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
 			key_cmp = strcmp(mc->query_string, current_authkey);
             //printf("DX UPLOAD: AUTH key=%s ckey=%s %s\n", mc->query_string, current_authkey, key_cmp? "FAIL" : "OK");
 		}
-        kiwi_ifree(current_authkey);
+        kiwi_asfree(current_authkey);
         current_authkey = NULL;
 		if (key_cmp) {
 		    asprintf(&sb, "{\"rc\":1}");
@@ -324,7 +324,6 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
                         sb3 = kstr_asprintf(sb3, "%s\"p\":%s%s%s", sb3? ", " : "",
                             (ext[0] != '"')? "\"" : "", ext, (ext[strlen(ext)-1] != '"')? "\"" : "");
                     }
-                    kiwi_ifree(ext);
 
                     char *opt_s = kstr_sp(sb3);
                     bool opt = (kstr_len(sb3) != 0);
@@ -336,8 +335,11 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
                         opt? ", {" : "", opt? opt_s : "", opt? "}" : "",
                         rem? ",":"");
                     kstr_free(sb3);
-                    kiwi_ifree(ident);
-                    kiwi_ifree(notes);
+
+                    // values returned by _dx_parse_csv_field(CSV_DECODE, ...) must use kiwi_ifree()
+                    kiwi_ifree(ext, "AJAX_DX ext");
+                    kiwi_ifree(ident, "AJAX_DX ident");
+                    kiwi_ifree(notes, "AJAX_DX notes");
                     
                     idx++;
                 }
@@ -363,8 +365,8 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
 fail:
         if (type == TYPE_CSV) {
             for (i = 0; i < s_size; i++)
-                kiwi_ifree(s_a[i]);
-            kiwi_ifree(r_buf);
+                kiwi_asfree(s_a[i]);
+            kiwi_ifree(r_buf, "AJAX_DX r_buf");
             kiwi_free("dx_csv", s_a);
         }
 
@@ -575,11 +577,11 @@ fail:
 				if (strcasestr(name, kwds[i].str))
 					break;
 			}
-			kiwi_ifree(loc); kiwi_ifree(r_loc);
+			kiwi_asfree(loc); kiwi_ifree(r_loc, "AJAX_STATUS r_loc");
 			if (i == n) {
 				char *name2;
 				asprintf(&name2, "%s | %s", name, s5);
-				kiwi_ifree(name);
+				kiwi_asfree(name);
 				name = name2;
 				//printf("KW <%s>\n", name);
 			}
@@ -718,8 +720,8 @@ fail:
 			dx_db->actual_len, dx_db->file_hash, dx_db->file_size
 			);
 
-		kiwi_ifree(name);
-		kiwi_ifree(ipinfo_lat_lon);
+		kiwi_asfree(name);
+		kiwi_asfree(ipinfo_lat_lon);
 		cfg_string_free(s3);
 		cfg_string_free(s4);
 		cfg_string_free(s5);

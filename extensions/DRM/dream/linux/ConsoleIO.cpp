@@ -356,7 +356,7 @@ CConsoleIO::Update(drm_t *drm)
             if (c2_s) c_s = c2_s;
             sb = kstr_asprintf(sb, "%s{\"i\":%d,\"l\":%d,\"s\":\"%s\"}",
                 comma? ",":"", i, iLink, c_s);
-            if (c2_s) kiwi_ifree(c2_s);
+            kiwi_ifree(c2_s, "drm console");
             comma = true;
 
             #if 0

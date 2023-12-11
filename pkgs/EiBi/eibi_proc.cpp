@@ -590,7 +590,7 @@ int main(int argc, char *argv[])
             }
         #endif
 
-        kiwi_ifree(rbuf);
+        kiwi_ifree(rbuf, "eibi");
         line++;
         entries++;
     }

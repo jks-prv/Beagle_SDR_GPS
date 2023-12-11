@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 643
+VERSION_MIN = 644
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -348,6 +348,10 @@ $(INSTALL_CERTIFICATES):
 
 /usr/lib/$(LIB_ARCH)/libfftw3f.a:
 	apt-get -y $(APT_GET_FORCE) install libfftw3-dev
+
+/usr/bin/clang:
+	-apt-get -y $(APT_GET_FORCE) update
+	apt-get -y $(APT_GET_FORCE) install clang
 
 # NB not a typo: "clang-6.0" vs "clang-7"
 
@@ -723,6 +727,7 @@ make_vars: check_device_detect
 	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
 	@echo DEBIAN_VERSION = $(DEBIAN_VERSION)
 	@echo DEBIAN_10_AND_LATER = $(DEBIAN_10_AND_LATER)
+	@echo DEBIAN_12_AND_LATER = $(DEBIAN_12_AND_LATER)
 	@echo
 	@echo BBAI_64 = $(BBAI_64)
 	@echo BBAI = $(BBAI)
@@ -1122,8 +1127,13 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	        @echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
 	        cp $(DTS_DEP_SRC) $(DIR_DTB)
 	        cp $(DTS2_DEP_SRC) $(DIR_DTB)
-	        (cd $(DIR_DTB_BASE); make all)
-	        (cd $(DIR_DTB_BASE); make install)
+            ifeq ($(DEBIAN_12_AND_LATER),true)
+	            (cd $(DIR_DTB_BASE); make)
+	            (cd $(DIR_DTB_BASE); make install_arm64)
+            else
+	            (cd $(DIR_DTB_BASE); make all)
+	            (cd $(DIR_DTB_BASE); make install)
+            endif
     endif
 
     ifeq ($(BBAI),true)
@@ -1263,9 +1273,9 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 	# remainder of "make install" only makes sense to run on target
 else
-    ifneq ($(DTS_DEP_DST),)
-	    @ls -la $(DTS_DEP_DST)
-	    @ls -la $(DTS_DEP_SRC)
+    ifneq ($(DTS_DEP_DST),/)
+	    -@ls -la $(DTS_DEP_DST)
+	    -@ls -la $(DTS_DEP_SRC)
     endif
 # don't strip symbol table while we're debugging daemon crashes
 	install -D -o root -g root $(BUILD_DIR)/kiwid.bin /usr/local/bin/kiwid
@@ -1407,6 +1417,10 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 enable disable start stop restart status:
 	-systemctl --full --lines=250 $@ kiwid.service || true
+
+stop_disable:
+	-systemctl --full --lines=250 stop kiwid.service || true
+	-systemctl --full --lines=250 disable kiwid.service || true
 
 avahi-enable avahi-disable avahi-start avahi-stop avahi-status:
 	-systemctl --full --lines=250 $(subst avahi-,,$@) avahi-daemon.service || true
@@ -1703,18 +1717,21 @@ copy_from_git:
 	make clean_dist
 	rsync -av --delete --exclude .git --exclude .DS_Store $(GITAPP)/$(REPO_NAME)/. .
 
-# used by gdiff alias
-gitdiff:
-	colordiff -br --exclude=.DS_Store --exclude=.git "--exclude=*.min.*" $(GITAPP)/$(REPO_NAME) . || true
-gitdiff_context:
-	colordiff -br -C 10 --exclude=.DS_Store --exclude=.git "--exclude=*.min.*" $(GITAPP)/$(REPO_NAME) . || true
-gitdiff_brief:
-	colordiff -br --brief --exclude=.DS_Store --exclude=.git $(GITAPP)/$(REPO_NAME) . || true
-gitdiff_no_big:
-	colordiff -br --exclude=.DS_Store --exclude=.git "--exclude=*.min.*" "--exclude=*.json" --exclude=EiBi.h --exclude=sked-current.csv $(GITAPP)/$(REPO_NAME) . || true
+# used by gdiff et al aliases
+GITDIFF_EXCLUDE := --exclude=.DS_Store --exclude=.git \
+    --exclude=d --exclude=g --exclude=kiwi --exclude=n --exclude=ng
+GITDIFF_EXCLUDE2 := $(GITDIFF_EXCLUDE) --exclude="*.min.*"
 
+gitdiff:
+	colordiff -br $(GITDIFF_EXCLUDE2) $(GITAPP)/$(REPO_NAME) . || true
+gitdiff_context:
+	colordiff -br -C 10 $(GITDIFF_EXCLUDE2) $(GITAPP)/$(REPO_NAME) . || true
+gitdiff_brief:
+	colordiff -br --brief $(GITDIFF_EXCLUDE) $(GITAPP)/$(REPO_NAME) . || true
+gitdiff_no_big:
+	colordiff -br $(GITDIFF_EXCLUDE2) --exclude="*.json" --exclude=EiBi.h --exclude=sked-current.csv $(GITAPP)/$(REPO_NAME) . || true
 gitdiff2:
-	colordiff -br --exclude=.DS_Store --exclude=.git "--exclude=*.min.*" ../../../sdr/KiwiSDR/$(REPO_NAME) . || true
+	colordiff -br $(GITDIFF_EXCLUDE2) ../../../sdr/KiwiSDR/$(REPO_NAME) . || true
 
 endif
 

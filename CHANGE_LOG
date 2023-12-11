@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.644  December 12, 2023
+    Fix memory leak.
+
 v1.641,642,643  December 6, 2023
     DRM: Fix for audio high-frequency aliasing artifacts.
 

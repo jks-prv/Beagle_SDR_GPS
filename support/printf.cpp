@@ -57,9 +57,9 @@ void kiwi_backtrace(const char *id, u4_t printf_type)
             syslog(LOG_ERR, "%s", buf);
         }
         lfprintf(printf_type, "%s", buf);
-        kiwi_ifree(buf);
+        kiwi_asfree(buf);
 	}
-	kiwi_ifree(sptr);    // free just the array, not the individual strings (says the manpage)
+	kiwi_asfree(sptr);    // free just the array, not the individual strings (says the manpage)
 }
 
 void _panic(const char *str, bool coreFile, const char *file, int line)
@@ -75,6 +75,23 @@ void _panic(const char *str, bool coreFile, const char *file, int line)
 	
 	printf("%s\n", buf);
 	kiwi_backtrace("panic");
+	if (coreFile) abort();
+	kiwi_exit(-1);
+}
+
+void _real_panic(const char *str, bool coreFile, const char *file, int line)
+{
+	char *buf;
+	
+	if (ev_dump) ev(EC_DUMP_CONT, EV_PRINTF, -1, "panic", "dump");
+	asprintf(&buf, "%s: \"%s\" (%s, line %d)", coreFile? "DUMP":"PANIC", str, file, line);
+
+	if (background_mode || log_foreground_mode) {
+		syslog(LOG_ERR, "%s\n", buf);
+	}
+	
+	real_printf("%s\n", buf);
+	//kiwi_backtrace("panic");
 	if (coreFile) abort();
 	kiwi_exit(-1);
 }
@@ -116,7 +133,7 @@ void real_printf(const char *fmt, ...)
     #undef printf
         printf("%s", buf);
     #define printf ALT_PRINTF
-    kiwi_ifree(buf);
+    kiwi_asfree(buf);
 	va_end(ap);
 }
 
@@ -160,7 +177,7 @@ static void ll_printf(u4_t type, conn_t *conn, const char *fmt, va_list ap)
 		
 		//evPrintf(EC_EVENT, EV_PRINTF, -1, "printf", buf);
 	
-		kiwi_ifree(buf);
+		kiwi_asfree(buf);
 		buf = NULL;
 		return;
 	}
@@ -331,11 +348,11 @@ static void ll_printf(u4_t type, conn_t *conn, const char *fmt, va_list ap)
                     }
                 }
             }
-            kiwi_ifree(r_buf);
+            kiwi_ifree(r_buf, "llprintf r_buf");
         }
 	}
 	
-	kiwi_ifree(buf);
+	kiwi_ifree(buf, "ll_printf buf");
 	buf = NULL;
 }
 
@@ -501,7 +518,7 @@ int esnprintf(char *str, size_t slen, const char *fmt, ...)
 	// so there is room to return the larger encoded result.
 	check(slen2 <= slen);
 	strcpy(str, str2);
-	kiwi_ifree(str2);
+	kiwi_ifree(str2, "esnprintf");
 
 	return slen2;
 }

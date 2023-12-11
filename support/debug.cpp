@@ -193,7 +193,7 @@ void ev(int cmd, int event, int param, const char *s, const char *s2)
 
 	// keep memory from filling up with un-freed vasprintf()s from evprintf()
 	if (e->prev_valid && e->free_s2) {
-		kiwi_ifree((void*) e->s2);
+		kiwi_asfree((void*) e->s2);
 	}
 	memset(e, 0, sizeof(*e));
 	

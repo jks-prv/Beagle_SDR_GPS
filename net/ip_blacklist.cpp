@@ -98,7 +98,7 @@ int ip_blacklist_add_iptables(char *ip_s)
     rv = non_blocking_cmd_system_child("kiwi.iptables", cmd_p, POLL_MSEC(200));
     rv = WEXITSTATUS(rv);
     lprintf("ip_blacklist_add_iptables: \"%s\" rv=%d\n", cmd_p, rv);
-    kiwi_ifree(cmd_p);
+    kiwi_asfree(cmd_p);
     return rv;
 }
 
@@ -117,7 +117,7 @@ static void ip_blacklist_init_list(const char *list)
         ip_blacklist_add_iptables(ips[i].str);
     }
 
-    kiwi_ifree(r_buf);
+    kiwi_ifree(r_buf, "ip_bl");
     admcfg_string_free(bl_s);
 }
 
@@ -191,7 +191,7 @@ bool ip_blacklist_get(bool download_diff_restart)
     //printf("ip_blacklist_get: <%s>\n", cmd_p);
     
     reply = non_blocking_cmd(cmd_p, &status);
-    kiwi_ifree(cmd_p);
+    kiwi_asfree(cmd_p);
 
     int exit_status = WEXITSTATUS(status);
     if (WIFEXITED(status) && exit_status != 0) {

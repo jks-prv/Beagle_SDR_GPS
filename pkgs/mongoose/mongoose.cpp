@@ -92,8 +92,23 @@
 // KiwiSDR
 #include "kiwi.h"
 #include "web.h"
+#include "mem.h"
 #define xreal_printf(fmt, ...)
 //#define xreal_printf real_printf
+
+#ifdef MALLOC_DEBUG
+#define NS_MALLOC KIWI_NS_MALLOC
+#define KIWI_NS_MALLOC(size) kiwi_imalloc("mg", size)
+
+#define NS_CALLOC KIWI_NS_CALLOC
+#define KIWI_NS_CALLOC(nel, size) kiwi_icalloc("mg", nel, size)
+
+#define NS_REALLOC KIWI_NS_REALLOC
+#define KIWI_NS_REALLOC(ptr, size) kiwi_irealloc("mg", ptr, size)
+
+#define NS_FREE KIWI_NS_FREE
+#define KIWI_NS_FREE(ptr) kiwi_ifree(ptr, "mg")
+#endif
 
 #ifdef _WIN32
 #ifdef _MSC_VER

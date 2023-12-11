@@ -417,12 +417,12 @@ static void subtract_signal2(float *id, float *qd, long np,
         }
     }
     
-    kiwi_ifree(refi);
-    kiwi_ifree(refq);
-    kiwi_ifree(ci);
-    kiwi_ifree(cq);
-    kiwi_ifree(cfi);
-    kiwi_ifree(cfq);
+    kiwi_ifree(refi, "subtract_signal2");
+    kiwi_ifree(refq, "subtract_signal2");
+    kiwi_ifree(ci, "subtract_signal2");
+    kiwi_ifree(cq, "subtract_signal2");
+    kiwi_ifree(cfi, "subtract_signal2");
+    kiwi_ifree(cfq, "subtract_signal2");
 
     return;
 }

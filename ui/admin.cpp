@@ -288,7 +288,7 @@ static void console_task(void *param)
     }
     if (c->master_pty_fd > 0)
         close(c->master_pty_fd);
-    kiwi_ifree(buf);
+    kiwi_ifree(buf, "console");
     c->master_pty_fd = 0;
     c->console_child_pid = 0;
     
@@ -306,7 +306,7 @@ static int clone_cmd(char *cmd_p)
     int status;
     lprintf("config clone: %s\n", cmd_p);
     reply = non_blocking_cmd(cmd_p, &status);
-    kiwi_ifree(cmd_p);
+    kiwi_asfree(cmd_p);
     char *rp = kstr_sp_less_trailing_nl(reply);
     if (status < 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0) {
         lprintf("config clone: ERROR status=0x%x(%d) WIFEXITED=%d WEXITSTATUS=%d <%s>\n",
@@ -468,12 +468,12 @@ void c2s_admin(void *param)
 				kiwi_str_decode_inplace(args_m);
 				asprintf(&cmd_p, "%s/noip2 -C -c " DIR_CFG "/noip2.conf -k %s -I eth0 2>&1",
 					background_mode? "/usr/local/bin" : (BUILD_DIR "/gen"), args_m);
-				kiwi_ifree(args_m);
+				kiwi_asfree(args_m);
 				printf("DUC: %s\n", cmd_p);
 				char *reply;
 				int stat;
 				reply = non_blocking_cmd(cmd_p, &stat);
-				kiwi_ifree(cmd_p);
+				kiwi_asfree(cmd_p);
 				if (stat < 0 || n <= 0) {
 					lprintf("DUC: noip2 failed?\n");
 					send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=300");
@@ -518,7 +518,7 @@ void c2s_admin(void *param)
 		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"%s/?u=%s&h=%s\"", proxy_server, user_m, host_m);
                 reply = non_blocking_cmd(cmd_p, &status);
                 printf("proxy register: %s\n", cmd_p);
-                kiwi_ifree(cmd_p);
+                kiwi_asfree(cmd_p);
                 if (reply == NULL || status < 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0) {
                     printf("proxy register: ERROR %p 0x%x\n", reply, status);
                     status = 900;
@@ -534,7 +534,7 @@ void c2s_admin(void *param)
 				send_msg(conn, SM_NO_DEBUG, "ADM rev_status=%d", status);
 				net.proxy_status = status;
 				if (status < 0 || status > 99) {
-				    kiwi_ifree(user_m); kiwi_ifree(host_m);
+				    kiwi_asfree(user_m); kiwi_asfree(host_m);
                     admcfg_string_free(proxy_server);
 				    continue;
 				}
@@ -543,8 +543,8 @@ void c2s_admin(void *param)
 				    proxy_server, user_m, host_m, net.port_ext, DIR_CFG "/frpc.template.ini", DIR_CFG "/frpc.ini");
                 printf("proxy register: %s\n", cmd_p);
 				system(cmd_p);
-                kiwi_ifree(cmd_p);
-				kiwi_ifree(user_m); kiwi_ifree(host_m);
+                kiwi_asfree(cmd_p);
+				kiwi_asfree(user_m); kiwi_asfree(host_m);
                 admcfg_string_free(proxy_server);
 
                 if (background_mode)
@@ -555,7 +555,7 @@ void c2s_admin(void *param)
 				continue;
 			} else
 			if (n == 1)
-                kiwi_ifree(user_m);
+                kiwi_asfree(user_m);
 		
 
 ////////////////////////////////
@@ -620,8 +620,8 @@ void c2s_admin(void *param)
                 if (rc == CLONED_SCP_ERROR) {
                     rc = (status << 8) & CLONED_SCP_ERROR;
                 }
-				kiwi_ifree(host_m);
-				kiwi_ifree(pwd_m);
+				kiwi_asfree(host_m);
+				kiwi_asfree(pwd_m);
 				send_msg(conn, SM_NO_DEBUG, "ADM config_clone_status=%d", rc);
 				continue;
 			}
@@ -727,7 +727,7 @@ void c2s_admin(void *param)
 		            server_url, server_port);
                 reply = non_blocking_cmd(cmd_p, &status);
                 printf("check_port_open: %s\n", cmd_p);
-                kiwi_ifree(cmd_p);
+                kiwi_asfree(cmd_p);
                 if (reply == NULL || status < 0 || WEXITSTATUS(status) != 0) {
                     printf("check_port_open: ERROR %p 0x%x\n", reply, status);
                     status = -2;
@@ -757,13 +757,13 @@ void c2s_admin(void *param)
                         static_ip_m, static_nb, static_gw_m,
                         "/tmp/eth0.network", "/etc/systemd/network/eth0.network");
                     system(cmd_p);
-                    kiwi_ifree(cmd_p);
+                    kiwi_asfree(cmd_p);
                     system("networkctl reload");
                 } else
                 if (debian_ver == 9 || debian_ver == 10) {
                     asprintf(&sb, "connmanctl config ethernet_%s_cable --ipv4 manual %s %s %s", net.mac_no_delim,
                         static_ip_m, static_nm_m, static_gw_m);
-                    system(sb); kiwi_ifree(sb);
+                    system(sb); kiwi_asfree(sb);
                 } else {
                     system("cp /etc/network/interfaces /etc/network/interfaces.bak");
                     FILE *fp;
@@ -784,10 +784,10 @@ void c2s_admin(void *param)
                     system("cp /tmp/interfaces.kiwi /etc/network/interfaces");
                 }
                 
-				kiwi_ifree(static_ip_m); kiwi_ifree(static_nm_m); kiwi_ifree(static_gw_m);
+				kiwi_asfree(static_ip_m); kiwi_asfree(static_nm_m); kiwi_asfree(static_gw_m);
 				continue;
 			}
-			kiwi_ifree(static_ip_m); kiwi_ifree(static_nm_m); kiwi_ifree(static_gw_m);
+			kiwi_asfree(static_ip_m); kiwi_asfree(static_nm_m); kiwi_asfree(static_gw_m);
 
             char *dns1_m = NULL, *dns2_m = NULL;
 			i = strncmp(cmd, "SET dns", 7);
@@ -812,32 +812,32 @@ void c2s_admin(void *param)
                                 dns2_err? "" : "DNS=", dns2_err? "" : dns2,
                                 UNIX_ENV "eth0.network.STATIC", "/tmp/eth0.network");
                             system(cmd_p);
-                            kiwi_ifree(cmd_p);
+                            kiwi_asfree(cmd_p);
                         } else
                         if (debian_ver == 9 || debian_ver == 10) {
                             asprintf(&sb, "connmanctl config ethernet_%s_cable --nameservers %s %s",
                                 net.mac_no_delim, dns1_err? "" : dns1, dns2_err? "" : dns2);
-                            system(sb); kiwi_ifree(sb);
+                            system(sb); kiwi_asfree(sb);
                         } else {
                             system("rm -f /etc/resolv.conf; touch /etc/resolv.conf");
         
                             if (!dns1_err) {
                                 asprintf(&sb, "echo nameserver %s >> /etc/resolv.conf", dns1);
-                                system(sb); kiwi_ifree(sb);
+                                system(sb); kiwi_asfree(sb);
                             }
                         
                             if (!dns2_err) {
                                 asprintf(&sb, "echo nameserver %s >> /etc/resolv.conf", dns2);
-                                system(sb); kiwi_ifree(sb);
+                                system(sb); kiwi_asfree(sb);
                             }
                         }
                     }
 
-                    kiwi_ifree(dns1_m); kiwi_ifree(dns2_m);
+                    kiwi_asfree(dns1_m); kiwi_asfree(dns2_m);
                     continue;
                 }
                 
-                kiwi_ifree(dns1_m); kiwi_ifree(dns2_m);
+                kiwi_asfree(dns1_m); kiwi_asfree(dns2_m);
 			}
 
             // FIXME: support wlan0
@@ -851,7 +851,7 @@ void c2s_admin(void *param)
                 } else
                 if (debian_ver == 9 || debian_ver == 10) {
                     asprintf(&sb, "connmanctl config ethernet_%s_cable --ipv4 dhcp", net.mac_no_delim);
-                    system(sb); kiwi_ifree(sb);
+                    system(sb); kiwi_asfree(sb);
                 } else {
                     system("cp /etc/network/interfaces /etc/network/interfaces.bak");
                     system("cp " UNIX_ENV "interfaces.DHCP /etc/network/interfaces");
@@ -875,7 +875,7 @@ void c2s_admin(void *param)
 				//printf("network_ip_blacklist %s\n", ip_m);
 				rv = ip_blacklist_add_iptables(ip_m);
                 send_msg_encoded(conn, "ADM", "network_ip_blacklist_status", "%d,%s", rv, ip_m);
-				kiwi_ifree(ip_m);
+				kiwi_asfree(ip_m);
 				continue;
 			}
 
@@ -1228,7 +1228,7 @@ void c2s_admin(void *param)
 				    }
 				} else
 				    //clprintf(conn, "CONSOLE: not open for write\n");
-				kiwi_ifree(buf_m);
+				kiwi_asfree(buf_m);
 				continue;
 			}
 
@@ -1404,7 +1404,7 @@ void c2s_admin(void *param)
                 continue;
 
             if (conn->auth != true || conn->auth_admin != true) {
-                clprintf(conn, "ADMIN: cmd after auth revoked? auth=%d auth_admin=%d %d %s <%.64s>\n",
+                clprintf(conn, "ADMIN: cmd after auth revoked? auth=%d auth_admin=%d %s <%.64s>\n",
                     conn->auth, conn->auth_admin, conn->remote_ip, cmd);
                 continue;
             } else {

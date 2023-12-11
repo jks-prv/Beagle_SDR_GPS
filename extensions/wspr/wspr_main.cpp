@@ -428,7 +428,7 @@ void wspr_send_decode(wspr_t *w, int seq)
         }
     }
     
-    kiwi_ifree(W_s);
+    kiwi_asfree(W_s);
 }
 
 // Pass result json back to main process via shmem->status_str_medium
@@ -540,7 +540,7 @@ void WSPR_Deco(void *param)
                         non_blocking_cmd_system_child("kiwi.wsprnet.org", cmd, NO_WAIT);
                     }
                 #endif
-                kiwi_ifree(cmd);
+                kiwi_asfree(cmd);
                 w->arun_decoded++;
             } else {
                 #ifdef TEST_UPLOADS
@@ -574,7 +574,7 @@ void WSPR_Deco(void *param)
 		        w->arun_last_status_sent = now;
 		        
 		        // in case wspr_c.rgrid has changed 
-		        kiwi_ifree(w->arun_stat_cmd);
+		        kiwi_asfree(w->arun_stat_cmd);
 		        #define WSPR_STAT "curl 'http://wsprnet.org/post?function=wsprstat&rcall=%s&rgrid=%s&rqrg=%.6f&tpct=0&tqrg=%.6f&dbm=0&version=1.4A+Kiwi' >/dev/null 2>&1"
                 asprintf(&w->arun_stat_cmd, WSPR_STAT, wspr_c.rcall, wspr_c.rgrid, w->arun_cf_MHz, w->arun_cf_MHz);
                 //printf("AUTORUN %s\n", w->arun_stat_cmd);
@@ -933,7 +933,7 @@ bool wspr_update_vars_from_config(bool called_at_init_or_restart)
     
     cfg_default_string("WSPR.callsign", "", &update_cfg);
     s = (char *) cfg_string("WSPR.callsign", NULL, CFG_REQUIRED);
-    kiwi_ifree(wspr_c.rcall);
+    kiwi_ifree(wspr_c.rcall, "wspr_main rcall");
 	wspr_c.rcall = kiwi_str_encode(s);
 	cfg_string_free(s);
 
@@ -1208,7 +1208,7 @@ void wspr_main()
         return;
     }
     off_t fsize = kiwi_file_size(fn2);
-    kiwi_ifree(fn2);
+    kiwi_asfree(fn2);
     char *file = (char *) mmap(NULL, fsize, PROT_READ, MAP_PRIVATE, fd, 0);
     if (file == MAP_FAILED) {
         printf("WSPR: mmap failed\n");

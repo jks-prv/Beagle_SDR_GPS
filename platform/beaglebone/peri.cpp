@@ -260,7 +260,7 @@ static bool check_pmux(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_
             printf("\n");
         #endif
     } else {
-        printf("PMUX %d_%-2d %s.%-2d %-9s 0x%04x BAD got 0x%02x%s want  0x%02x%s ",
+        printf("PMUX %d_%-2d %s.%-2d %-9s 0x%04x NOTE got 0x%02x%s want  0x%02x%s ",
             GPIO_BANK(gpio), gpio.bit, (gpio.pin & P9)? "P9":"P8", gpio.pin & PIN_BITS, name, pmux_reg_off,
             _pmux, pmux_deco(0, _pmux, gpio), pmux_val1, pmux_deco(1, pmux_val1, gpio));
         if (pmux_val2 != PMUX_NONE)

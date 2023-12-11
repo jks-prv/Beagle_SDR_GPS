@@ -274,7 +274,7 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
             conn->freqHz = round(nomfreq/10.0)*10;	// round 10 Hz
             if (!no_mode_change) conn->mode = s->mode;
         }
-        kiwi_ifree(mode_m);
+        kiwi_asfree(mode_m);
         break;
     }
     

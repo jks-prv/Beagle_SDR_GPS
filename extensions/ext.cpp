@@ -211,7 +211,7 @@ int ext_send_msg(int rx_chan, bool debug, const char *msg, ...)
 	va_end(ap);
 	if (debug) printf("ext_send_msg: RX%d(%p) <%s>\n", rx_chan, conn, s);
 	send_msg_buf(conn, s, strlen(s));
-	kiwi_ifree(s);
+	kiwi_asfree(s);
 	return 0;
 }
 
@@ -247,9 +247,9 @@ int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *c
 	va_end(ap);
 	
 	char *buf = kiwi_str_encode(s);
-	kiwi_ifree(s);
+	kiwi_asfree(s);
 	ext_send_msg(rx_chan, debug, "%s %s=%s", dst, cmd, buf);
-	kiwi_ifree(buf);
+	kiwi_ifree(buf, "ext_send_msg_encoded");
 	return 0;
 }
 
@@ -420,10 +420,10 @@ void extint_c2s(void *param)
                     }
                 }
 				
-			    kiwi_ifree(client_m);
+			    kiwi_asfree(client_m);
 				continue;
 			}
-			kiwi_ifree(client_m);
+			kiwi_asfree(client_m);
 			
 			i = sscanf(cmd, "SET ext_blur=%d", &ignored_rx_chan);
 			if (i == 1) {

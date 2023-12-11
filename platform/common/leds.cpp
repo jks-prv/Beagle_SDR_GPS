@@ -81,7 +81,7 @@ static void led_set_one(int led, int v)
     if (!fd) {
         asprintf(&s, "%s%d/trigger", LED_PATH, led);
         scall("led open trig", (fd = open(s, O_WRONLY)));
-        kiwi_ifree(s);
+        kiwi_asfree(s);
         scall("led write trig", write(fd, full_on? "none":"timer", full_on? 4:5));
         close(fd);
         
@@ -91,11 +91,11 @@ static void led_set_one(int led, int v)
         } else {
             asprintf(&s, "%s%d/delay_on", LED_PATH, led);
             scall("led open delay_on", (fd = open(s, O_WRONLY)));
-            kiwi_ifree(s);
+            kiwi_asfree(s);
             asprintf(&s, "%s%d/delay_off", LED_PATH, led);
             scall("led open delay_off", (led_fd[led][1] = open(s, O_WRONLY)));
         }
-        kiwi_ifree(s);
+        kiwi_asfree(s);
         led_fd[led][0] = fd;
     }
     

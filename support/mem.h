@@ -23,32 +23,58 @@ Boston, MA  02110-1301, USA.
 
 #include <stddef.h>
 
-//#define MALLOC_INTERCEPT
-#ifdef MALLOC_INTERCEPT
-    void *kiwi_imalloc(const char *from, size_t size);
-    void *kiwi_icalloc(const char *from, size_t nel, size_t size);
-    void *kiwi_irealloc(const char *from, void *ptr, size_t size);
-    void kiwi_ifree(void *ptr, const char *from = NULL);
-#else
-    #define kiwi_imalloc(from, size) malloc(size)
-    #define kiwi_icalloc(from, nel, size) calloc(nel, size)
-    #define kiwi_irealloc(from, ptr, size) realloc(ptr, size)
-    #define kiwi_ifree(ptr, ...) free(ptr)
-#endif
+typedef struct {
+    int nmt, hiwat;
+    size_t size;
+} mem_t;
 
-#define MALLOC_DEBUG
+extern mem_t mem;
+
+// allocated directly via asprintf(), sscanf("%ms"), strdup() etc.
+#define kiwi_asfree(ptr, ...) free(ptr)
+
+//#define MALLOC_DEBUG
 #ifdef MALLOC_DEBUG
 	void *kiwi_malloc(const char *from, size_t size);
+	void *kiwi_calloc(const char *from, size_t nel, size_t size);
 	void *kiwi_realloc(const char *from, void *ptr, size_t size);
 	void kiwi_free(const char *from, void *ptr);
 	char *kiwi_strdup(const char *from, const char *s);
 	int kiwi_malloc_stat();
+	void mt_dump();
 #else
 	#define kiwi_malloc(from, size) malloc(size)
+	#define kiwi_calloc(from, nel, size) calloc(nel, size)
 	#define kiwi_realloc(from, ptr, size) realloc(ptr, size)
 	#define kiwi_free(from, ptr) free(ptr)
 	#define kiwi_strdup(from, s) strdup(s)
 	#define kiwi_malloc_stat() 0
+	#define mt_dump() 0
+#endif
+
+//#define MALLOC_INTERCEPT_PRINTF
+//#define MALLOC_INTERCEPT_DEBUG
+
+#ifdef MALLOC_INTERCEPT_PRINTF
+    void *kiwi_imalloc(const char *from, size_t size);
+    void *kiwi_icalloc(const char *from, size_t nel, size_t size);
+    void *kiwi_irealloc(const char *from, void *ptr, size_t size);
+    void kiwi_ifree(void *ptr, const char *from);
+
+#elif defined(MALLOC_INTERCEPT_DEBUG)
+    #ifndef MALLOC_DEBUG
+        #error requires MALLOC_DEBUG
+    #endif
+    
+    #define kiwi_imalloc(from, size) kiwi_malloc(from, size)
+    #define kiwi_icalloc(from, nel, size) kiwi_calloc(from, nel, size)
+    #define kiwi_irealloc(from, ptr, size) kiwi_realloc(from, ptr, size)
+    #define kiwi_ifree(ptr, from) kiwi_free(from, ptr)
+#else
+    #define kiwi_imalloc(from, size) malloc(size)
+    #define kiwi_icalloc(from, nel, size) calloc(nel, size)
+    #define kiwi_irealloc(from, ptr, size) realloc(ptr, size)
+    #define kiwi_ifree(ptr, from) free(ptr)
 #endif
 
 void kiwi_str_redup(char **ptr, const char *from, const char *s);

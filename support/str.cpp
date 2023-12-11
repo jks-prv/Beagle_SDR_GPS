@@ -228,6 +228,9 @@ static char *_kstr_free(char *s_kstr_cstr, kstr_free_e mode)
 		//printf("%3d  FREE %4d %p {%p} %s\n", ks-kstrings, ks->size, ks, ks->sp, (ks->flags & KS_EXT_MALLOCED)? "EXT":"");
 		if (mode == KSTR_FREE_RTN_MALLOC) {
 		    rv = ks->sp;
+		} else
+		if (ks->flags & KS_EXT_MALLOCED) {
+		    free((char *) ks->sp);      // wasn't allocated with kiwi_imalloc()
 		} else {
 		    kiwi_ifree((char *) ks->sp, "kstr_free");
 		}
@@ -417,7 +420,7 @@ char *kiwi_str_replace(char *s, const char *from, const char *to, bool *caller_m
         do {
             char *ns;
             asprintf(&ns, "%.*s%s%s", (int) (fp-s), s, to, fp+flen);
-            if (!first) kiwi_ifree(s, "kiwi_str_replace");
+            if (!first) kiwi_asfree(s, "kiwi_str_replace");
             first = false;
             s = ns;
         } while ((fp = strstr(s, from)) != NULL);
@@ -516,7 +519,7 @@ char *kiwi_str_escape_HTML(char *str, int *printable, int *UTF)
 }
 
 // unlike mg_url_encode, never encodes any chars between [' ', '~']
-static void kiwi_alt_encode(const char *src, char *dst, size_t dst_len) {
+static void kiwi_fewer_encode(const char *src, char *dst, size_t dst_len) {
   static const char *hex = "0123456789abcdef";
   const char *end = dst + dst_len - 1;
 
@@ -535,7 +538,7 @@ static void kiwi_alt_encode(const char *src, char *dst, size_t dst_len) {
   *dst = '\0';
 }
 
-char *kiwi_str_encode(char *src, bool alt)
+char *kiwi_str_encode(char *src, const char *from, int flags)
 {
 	if (src == NULL) src = (char *) "null";		// JSON compatibility
 	size_t slen = strlen(src);
@@ -544,11 +547,11 @@ char *kiwi_str_encode(char *src, bool alt)
 	size_t dlen = (slen * ENCODE_EXPANSION_FACTOR) + SPACE_FOR_NULL;
 
 	// don't use kiwi_malloc() due to large number of these simultaneously active from dx list
-	// and also because dx list has to use kiwi_ifree() due to related allocations via strdup()
+	// and also because dx list has to use kiwi_asfree() due to related allocations via strdup()
 	check(dlen != 0);
-	char *dst = (char *) kiwi_imalloc("kiwi_str_encode", dlen);
-	if (alt)
-	    kiwi_alt_encode(src, dst, dlen);
+	char *dst = (char *) ((flags & USE_MALLOC)? malloc(dlen) : kiwi_imalloc(from? from : "kiwi_str_encode", dlen));
+	if (flags & FEWER_ENCODED)
+	    kiwi_fewer_encode(src, dst, dlen);
 	else
 	    mg_url_encode(src, slen, dst, dlen);
 	return dst;		// NB: caller must kiwi_ifree(dst)
@@ -574,14 +577,14 @@ char *kiwi_str_ASCII_static(char *src, int which)
 }
 
 // for use with e.g. an immediate printf argument
-char *kiwi_str_encode_static(char *src, bool alt)
+char *kiwi_str_encode_static(char *src, int flags)
 {
 	if (src == NULL) src = (char *) "null";		// JSON compatibility
 	size_t slen = strlen(src);
 	check((slen * ENCODE_EXPANSION_FACTOR) < N_DST_STATIC_BUF);
 
-	if (alt)
-	    kiwi_alt_encode(src, dst_static[0], N_DST_STATIC_BUF);
+	if (flags & FEWER_ENCODED)
+	    kiwi_fewer_encode(src, dst_static[0], N_DST_STATIC_BUF);
 	else
 	    mg_url_encode(src, slen, dst_static[0], N_DST_STATIC_BUF);
 	return dst_static[0];
@@ -642,10 +645,11 @@ static u1_t decode_table[128] = {
 // This is typically called on a fully-encoded string (via encodeURIComponent() or mg_url_encode())
 // before it is saved in one of the .json files.
 static void kiwi_url_decode_selective(const char *src, int src_len, char *dst,
-    int dst_len, bool fewer_encoded = false)
+    int dst_len, int flags = 0)
 {
     int i, j, a, b;
     u1_t c;
+    bool fewer_encoded = flags & FEWER_ENCODED;
     #define HEXTOI(x) (isdigit(x) ? x - '0' : x - 'W')
 
     //if (fewer_encoded) printf("%s\n", src);
@@ -678,14 +682,14 @@ static void kiwi_url_decode_selective(const char *src, int src_len, char *dst,
     dst[j] = '\0'; // Null-terminate the destination
 }
 
-char *kiwi_str_decode_selective_inplace(char *src, bool fewer_encoded)
+char *kiwi_str_decode_selective_inplace(char *src, int flags)
 {
 	if (src == NULL) return NULL;
 	int slen = strlen(src);
 	char *dst = src;
     // dst = src is okay because length dst always <= src since we are decoding
     // yes, kiwi_url_decode_selective() dst length includes SPACE_FOR_NULL
-    kiwi_url_decode_selective(src, slen, dst, slen + SPACE_FOR_NULL, fewer_encoded);
+    kiwi_url_decode_selective(src, slen, dst, slen + SPACE_FOR_NULL, flags);
 	return dst;
 }
 
