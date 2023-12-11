@@ -48,6 +48,7 @@ int esnprintf(char *str, size_t slen, const char *fmt, ...);
 
 void kiwi_backtrace(const char *id, u4_t printf_type=0);
 void _panic(const char *str, bool coreFile, const char *file, int line);
+void _real_panic(const char *str, bool coreFile, const char *file, int line);
 void _sys_panic(const char *str, const char *file, int line);
 
 #ifdef KIWI

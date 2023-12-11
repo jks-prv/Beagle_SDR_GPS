@@ -661,7 +661,7 @@ int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const cha
 	        r_ips->ip[i] = inet4_d2h(ip_list[i], NULL);
         }
         
-        kiwi_ifree(r_buf);
+        kiwi_ifree(r_buf, "DNS_lookup");
         r_ips->valid = true;
 	} else {
 	    if (ip_backup != NULL) {
@@ -674,7 +674,7 @@ int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const cha
             n = 0;
         }
 	}
-	kiwi_ifree(cmd_p);
+	kiwi_asfree(cmd_p);
 	kstr_free(reply);
     ip_list[n] = NULL;
     r_ips->n_ips = n;
@@ -726,7 +726,7 @@ bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_i
         }
     }
     
-    kiwi_ifree(ip_r);
+    kiwi_asfree(ip_r);
     return forwarded;
 }
 

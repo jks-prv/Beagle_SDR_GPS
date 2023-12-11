@@ -938,7 +938,7 @@ void TaskRemove(int id)
     collect_needed = TRUE;
     
     if (t->flags & CTF_TNAME_FREE) {
-        kiwi_ifree((void *) t->name);
+        kiwi_asfree((void *) t->name);
         t->name = NULL;
     }
 
@@ -1554,7 +1554,7 @@ const char *_TaskName(const char *name, bool free_name)
 	if (!ct) return "main";
 	if (name != NULL) {
         if (ct->flags & CTF_TNAME_FREE) {
-            kiwi_ifree((void *) ct->name);
+            kiwi_asfree((void *) ct->name);
             ct->flags &= ~CTF_TNAME_FREE;
         }
 		ct->name = name;

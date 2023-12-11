@@ -265,7 +265,7 @@ bool ft8_update_vars_from_config(bool called_at_init_or_restart)
     cfg_default_string("ft8.callsign", s, &update_cfg);
 	cfg_string_free(s);
     s = (char *) cfg_string("ft8.callsign", NULL, CFG_REQUIRED);
-    kiwi_ifree(ft8_conf2.rcall);
+    kiwi_ifree(ft8_conf2.rcall, "ft8 rcall");
 	ft8_conf2.rcall = kiwi_str_encode(s);
 	cfg_string_free(s);
 
@@ -488,7 +488,7 @@ void FT8_main()
         return;
     }
     off_t fsize = kiwi_file_size(fn2);
-    kiwi_ifree(fn2);
+    kiwi_asfree(fn2);
     char *file = (char *) mmap(NULL, fsize, PROT_READ, MAP_PRIVATE, fd, 0);
     if (file == MAP_FAILED) {
         printf("FT8: mmap failed\n");

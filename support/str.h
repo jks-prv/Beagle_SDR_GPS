@@ -48,8 +48,6 @@ char *kiwi_str_replace(char *s, const char *from, const char *to, bool *caller_m
 void kiwi_str_unescape_quotes(char *str);
 void kiwi_remove_unprintable_chars_inplace(char *str, int *printable DEF_NULL, int *UTF DEF_NULL);
 char *kiwi_str_escape_HTML(char *str, int *printable DEF_NULL, int *UTF DEF_NULL);
-char *kiwi_str_encode(char *s, bool alt DEF_FALSE);
-char *kiwi_str_encode_static(char *src, bool alt DEF_FALSE);
 char *kiwi_str_decode_inplace(char *src);
 char *kiwi_str_decode_static(char *src, int which DEF_0);
 char *kiwi_str_ASCII_static(char *src, int which DEF_0);
@@ -73,8 +71,10 @@ int _kiwi_snprintf_int(const char *buf, size_t buflen, const char *fmt, ...);
 
 bool kiwi_sha256_strcmp(char *str, const char *key);
 
-enum { FEWER_ENCODED = true };
-char *kiwi_str_decode_selective_inplace(char *src, bool fewer_encoded DEF_FALSE);
+enum { FEWER_ENCODED = 1, USE_MALLOC = 2 };
+char *kiwi_str_decode_selective_inplace(char *src, int flags DEF_0);
+char *kiwi_str_encode(char *s, const char *from DEF_NULL, int flags DEF_0);
+char *kiwi_str_encode_static(char *src, int flags DEF_0);
 
 typedef struct {
     char *str;

@@ -191,12 +191,12 @@ void rx_server_remove(conn_t *c)
     if (c->isMaster && c->arrived) rx_loguser(c, LOG_LEAVING);
 	webserver_connection_cleanup(c);
 	kiwi_free("ident_user", c->ident_user);
-	kiwi_ifree(c->geo);
-	kiwi_ifree(c->pref_id);
-	kiwi_ifree(c->pref);
-	kiwi_ifree(c->browser);
-	kiwi_ifree(c->dx_filter_ident);
-	kiwi_ifree(c->dx_filter_notes);
+	kiwi_asfree(c->geo);
+	kiwi_asfree(c->pref_id);
+	kiwi_asfree(c->pref);
+	kiwi_asfree(c->browser);
+	kiwi_asfree(c->dx_filter_ident);
+	kiwi_asfree(c->dx_filter_notes);
     if (c->dx_has_preg_ident) { regfree(&c->dx_preg_ident); c->dx_has_preg_ident = false; }
     if (c->dx_has_preg_notes) { regfree(&c->dx_preg_notes); c->dx_has_preg_notes = false; }
     
@@ -278,7 +278,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
 	    // kiwiclient / kiwirecorder
         if (sscanf(uri_ts, "%lld/%256m[^\?]", &tstamp, &uri_m) != 2) {
             printf("bad URI_TS format\n");
-            kiwi_ifree(uri_m);
+            kiwi_asfree(uri_m);
             return NULL;
         }
     }
@@ -297,10 +297,10 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
 	
 	if (!rx_streams[i].uri) {
 		lprintf("**** unknown stream type <%s>\n", uri_m);
-        kiwi_ifree(uri_m);
+        kiwi_asfree(uri_m);
 		return NULL;
 	}
-    kiwi_ifree(uri_m);
+    kiwi_asfree(uri_m);
     
 	// handle case of server initially starting disabled, but then being enabled later by admin
 #ifdef USE_SDR
@@ -355,7 +355,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
 			conn_printf("send_msg_mc MSG reason=<%s> down=%d\n", reason_disabled, type);
 			send_msg_mc(mc, SM_NO_DEBUG, "MSG reason_disabled=%s down=%d", reason_enc, type);
 			cfg_string_free(reason_disabled);
-			kiwi_ifree(reason_enc);
+			kiwi_ifree(reason_enc, "reason_enc");
             //printf("DOWN %s %s\n", rx_streams[st->type].uri, ip_forwarded);
 			return NULL;
 		} else
@@ -669,7 +669,7 @@ retry:
 		
 		if (id < 0) {
 	        conn_printf("CONN-%02d %p NO TASKS AVAILABLE\n", cn, c);
-            kiwi_ifree((void *) c->tname);
+            kiwi_asfree((void *) c->tname);
             mc->connection_param = NULL;
 			rx_enable(c->rx_channel, RX_CHAN_FREE);
             conn_init(c);

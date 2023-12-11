@@ -404,7 +404,7 @@ jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id, cfg_lookup_e option)
 		i = sscanf(id, "%m[^.].%ms", &id1_m, &id2_m);
 		//printf("_cfg_lookup_json 2-scope: key=\"%s\" n=%d id1=\"%s\" id2=\"%s\"\n", id, i, id1_m, id2_m);
 		if (i != 2) {
-            kiwi_ifree(id1_m); kiwi_ifree(id2_m);
+            kiwi_asfree(id1_m); kiwi_asfree(id2_m);
 		    return NULL;
 		}
 		if (strchr(id2_m, '.') != NULL) panic("_cfg_lookup_json: more than two levels of scope in id");
@@ -413,7 +413,7 @@ jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id, cfg_lookup_e option)
 		if (option == CFG_OPT_ID1) {
 		    //jt = _cfg_lookup_id(cfg, id1_m);
             jt = (jsmntok_t *) _cfg_walk(cfg, NULL, _cfg_lookup_json_cb, TO_VOID_PARAM(id1_m), TO_VOID_PARAM(LVL1_MATCH));
-            kiwi_ifree(id1_m); kiwi_ifree(id2_m);
+            kiwi_asfree(id1_m); kiwi_asfree(id2_m);
 		    return jt;
 		} else {
             // run callback for all second scope objects of id1
@@ -422,12 +422,12 @@ jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id, cfg_lookup_e option)
             
             // if id1 exists but id2 is missing then return this fact
             if (rtn_rval == NULL && _cfg_walk(cfg, NULL, _cfg_lookup_json_cb, TO_VOID_PARAM(id1_m), TO_VOID_PARAM(LVL1_MATCH)) != NULL) {
-                kiwi_ifree(id1_m); kiwi_ifree(id2_m);
+                kiwi_asfree(id1_m); kiwi_asfree(id2_m);
                 return CFG_LOOKUP_LVL1;
             }
             
             //printf("_cfg_lookup_json 2-scope: rtn_rval=%p id=%s\n", rtn_rval, id);
-            kiwi_ifree(id1_m); kiwi_ifree(id2_m);
+            kiwi_asfree(id1_m); kiwi_asfree(id2_m);
             return (jsmntok_t *) rtn_rval;
         }
         assert("not reached");
@@ -461,7 +461,7 @@ bool _cfg_type_json(cfg_t *cfg, jsmntype_t jt_type, jsmntok_t *jt, const char **
 void _cfg_free(cfg_t *cfg, const char *str)
 {
 	if (!cfg->init) return;
-	if (str != NULL) kiwi_ifree((char *) str);
+	if (str != NULL) kiwi_ifree((char *) str, "_cfg_free");
 }
 
 
@@ -646,7 +646,7 @@ int _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags, int pos)
 			}
 			_cfg_ins(cfg, pos, int_sval);
 			
-			kiwi_ifree(int_sval);
+			kiwi_asfree(int_sval);
 		} else {
 			pos = _cfg_set_int(cfg, name, 0, CFG_REMOVE, 0);
 			_cfg_set_int(cfg, name, val, CFG_CHANGE, pos);
@@ -779,7 +779,7 @@ int _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags, int pos
 			}
 			_cfg_ins(cfg, pos, float_sval);
 
-			kiwi_ifree(float_sval);
+			kiwi_asfree(float_sval);
 		} else {
 			pos = _cfg_set_float(cfg, name, 0, CFG_REMOVE, 0);
 			_cfg_set_float(cfg, name, val, CFG_CHANGE, pos);
@@ -902,7 +902,7 @@ int _cfg_set_bool(cfg_t *cfg, const char *name, u4_t val, u4_t flags, int pos)
 			}
 			_cfg_ins(cfg, pos, bool_sval);
 			
-			kiwi_ifree(bool_sval);
+			kiwi_asfree(bool_sval);
 		} else {
 			pos = _cfg_set_bool(cfg, name, 0, CFG_REMOVE, 0);
 			_cfg_set_bool(cfg, name, val, CFG_CHANGE, pos);
@@ -1015,7 +1015,7 @@ int _cfg_set_string(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 			}
 			_cfg_ins(cfg, pos, str_sval);
 			
-			kiwi_ifree(str_sval);
+			kiwi_asfree(str_sval);
 		} else {
 			pos = _cfg_set_string(cfg, name, NULL, CFG_REMOVE, 0);
 			_cfg_set_string(cfg, name, val, CFG_CHANGE, pos);
@@ -1053,10 +1053,10 @@ void _cfg_default_string(cfg_t *cfg, const char *name, const char *val, bool *er
                     char *uc2 = kiwi_str_encode(uc);
                         kiwi_str_decode_selective_inplace(uc2);
                         _cfg_set_string(cfg, name, uc2, CFG_SET, 0);
-                    kiwi_ifree(uc2);
+                    kiwi_ifree(uc2, "cfg utf8");
                     error = true;
                 }
-	        kiwi_ifree(uc);
+	        kiwi_asfree(uc);
 	    }
 		_cfg_free(cfg, s);
 	}
@@ -1169,7 +1169,7 @@ int _cfg_set_object(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 			}
 			_cfg_ins(cfg, pos, obj_sval);
 			
-			kiwi_ifree(obj_sval);
+			kiwi_asfree(obj_sval);
 		} else {
 			pos = _cfg_set_object(cfg, name, NULL, CFG_REMOVE, 0);
 			_cfg_set_object(cfg, name, val, CFG_CHANGE, pos);

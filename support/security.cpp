@@ -105,7 +105,7 @@ bool kiwi_crypt_file_read(const char *fn, int *seq, char **salt, char **hash)
 
     if (seq) *seq = strtol(cf[3].str, NULL, 0);
 
-    kiwi_ifree(r_buf);
+    kiwi_ifree(r_buf, "kiwi_crypt_file_read");
     return true;
 }
 
@@ -184,7 +184,7 @@ bool kiwi_crypt_validate(const char *key, char *salt, char *hash_o)
     printf("kiwi_crypt_validate: key=\"%s\" salt=%s match=%s\n", key, salt, match? "OK":"FAIL");
     printf("kiwi_crypt_validate: hash_o=%s\n", hash_o);
     printf("kiwi_crypt_validate: hash_n=%s\n", hash_n);
-    kiwi_ifree(r_buf);
+    kiwi_ifree(r_buf, "kiwi_crypt_validate");
 
     return match;
 }

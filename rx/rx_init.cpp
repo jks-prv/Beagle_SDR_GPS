@@ -486,7 +486,7 @@ void update_vars_from_config(bool called_at_init)
 	if (nsm) {
 	    nsm = kiwi_str_replace(nsm, "/?top=kiwi", "");  // shrinking, so nsm same memory space
 	    cfg_set_string("status_msg", nsm);
-	    if (caller_must_free) kiwi_ifree(nsm);
+	    if (caller_must_free) kiwi_ifree(nsm, "update_vars_from_config nsm");
 	    update_cfg = true;
     }
     cfg_string_free(status_msg); status_msg = NULL;

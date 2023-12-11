@@ -460,12 +460,11 @@ void stat_task(void *param)
 		if ((print_stats & STATS_TASK) && !(print_stats & STATS_GPS)) {
 			if (!background_mode) {
 				if (do_sdr) {
-					lprintf("ECPU %4.1f%%, cmds %d/%d, malloc %d, ",
-						ecpu_use(), ecpu_cmds, ecpu_tcmds, kiwi_malloc_stat());
+					printf("ECPU %4.1f%%, cmds %d/%d, malloc #%d|hi:%d|%s",
+						ecpu_use(), ecpu_cmds, ecpu_tcmds, mem.nmt, mem.hiwat, toUnits(mem.size));
 					ecpu_cmds = ecpu_tcmds = 0;
 				}
-				//TaskDump(PRINTF_REG);
-				TaskDump(PRINTF_LOG);
+				//printf(", "); TaskDump(PRINTF_REG);
 				printf("\n");
 			}
 		}

@@ -237,7 +237,7 @@ bool ale_2g_receive_cmds(u2_t key, char *cmd, int rx_chan)
 	        ale_2g_chan_t *e = &ale_2g_chan[rx_chan];
 	        e->tuned_f = freq;
             //printf("ALE_2G: CMD_TUNE freq=%.2f mode=%s\n", freq, mode_m);
-            kiwi_ifree(mode_m);
+            kiwi_asfree(mode_m);
             return true;
         }
     }

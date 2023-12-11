@@ -354,7 +354,7 @@ int blocking_system(const char *fmt, ...)
 	char *sb;
 	vasprintf(&sb, fmt, ap);
 	int rv = system(sb);
-	kiwi_ifree(sb);
+	kiwi_asfree(sb);
 	return rv;
 }
 
@@ -409,7 +409,7 @@ kstr_t *non_blocking_cmd_fmt(int *status, const char *fmt, ...)
 	char *cmd;
 	vasprintf(&cmd, fmt, ap);
     kstr_t *rv = non_blocking_cmd(cmd, status);
-	kiwi_ifree(cmd);
+	kiwi_asfree(cmd);
     return rv;
 }
 

@@ -223,7 +223,7 @@ void fpga_init() {
     //fp = fopen(stprintf("%sKiwiSDR.%s%s.bit", background_mode? "/usr/local/bin/":"",
     //    kiwi.anti_aliased? ".anti_aliased" : "", fpga_file) , "rb");
     if (!fp) panic("fopen config");
-    kiwi_ifree(fpga_file);
+    kiwi_asfree(fpga_file);
 
 	// byte-swap config data to match ended-ness of SPI
     while (1) {

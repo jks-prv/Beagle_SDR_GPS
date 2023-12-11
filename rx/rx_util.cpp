@@ -132,7 +132,7 @@ void rx_loguser(conn_t *c, logtype_e type)
     #endif
 	
 	// we don't do anything with LOG_UPDATE and LOG_UPDATE_NC at present
-	kiwi_ifree(s);
+	kiwi_asfree(s);
 }
 
 int rx_chan_free_count(rx_free_count_e flags, int *idx, int *heavy, int *preempt)
@@ -496,7 +496,7 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
         }
         if (dbug) clprintf(conn, "save_config: %s FRAG conn=%p seq=%d sl=%d\n", cfg->name, conn, seq, strlen(sb));
         if (seq < cfg->seq) {
-            kiwi_ifree(sb);
+            kiwi_asfree(sb);
             if (dbug) clprintf(conn, "save_config: %s FRAG conn=%p seq=%d < cfg.seq=%d IGNORE DELAYED, OUT-OF-SEQ FRAG\n", cfg->name, conn, seq, cfg->seq);
             return true;
         }
@@ -522,7 +522,7 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
         }
         if (dbug) clprintf(conn, "save_config: %s END conn=%p seq=%d sl=%d\n", cfg->name, conn, seq, strlen(sb));
         if (seq < cfg->seq) {
-            kiwi_ifree(sb);
+            kiwi_asfree(sb);
             if (dbug) clprintf(conn, "save_config: %s END conn=%p seq=%d < cfg.seq=%d IGNORE DELAYED, OUT-OF-SEQ FRAG\n", cfg->name, conn, seq, cfg->seq);
             return true;
         }
@@ -561,7 +561,7 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
                     real_printf("SAVE %d\n", strlen(sp));
                     sp = strdup(sp);
                     json_save(&cow_json, sp);
-                    kiwi_ifree(sp);
+                    kiwi_asfree(sp);
                 }
                 json_release(&cow_json);
             }
@@ -633,6 +633,7 @@ void dump()
 	TaskDump(TDUMP_LOG | TDUMP_HIST | PRINTF_LOG);
 	lock_dump();
 	ip_blacklist_dump(false);
+	mt_dump();
 }
 
 // can optionally configure SIG_DEBUG to call this debug handler
@@ -715,7 +716,7 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
     
     // NB: don't use non_blocking_cmd() here to prevent audio gliches
     int status = non_blocking_cmd_func_forall("kiwi.geo", cmd_p, _geo_task, 0, POLL_MSEC(1000));
-    kiwi_ifree(cmd_p);
+    kiwi_asfree(cmd_p);
     int exit_status;
     if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
         clprintf(conn, "GEOLOC: curl(%d) failed for %s\n", exit_status, geo_host_ip_s);
@@ -750,7 +751,7 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
     geo = kstr_cat(geo, country);   // NB: country freed here
 
     //clprintf(conn, "GEOLOC: %s <%s>\n", geo_host_ip_s, kstr_sp(geo));
-	kiwi_ifree(conn->geo);
+	kiwi_asfree(conn->geo);
     conn->geo = strdup(kstr_sp(geo));
     kstr_free(geo);
 
@@ -785,7 +786,7 @@ void geoloc_task(void *param)
             asprintf(&geo_host_ip_s, "http://ip-api.com/json/%s?fields=49177", ip);
             okay = geoloc_json(conn, geo_host_ip_s, "country", "regionName");
         }
-        kiwi_ifree(geo_host_ip_s);
+        kiwi_asfree(geo_host_ip_s);
         retry++;
     } while (!okay && retry < 10);
     if (okay)
@@ -884,9 +885,9 @@ char *rx_users(bool include_ip)
                     #endif
                     freq_offset_kHz, rx->n_camp,
                     extint.notify_chan, extint.notify_seq);
-                if (user) kiwi_ifree(user);
-                if (geo) kiwi_ifree(geo);
-                if (ext) kiwi_ifree(ext);
+                kiwi_ifree(user, "rx_users user");
+                kiwi_ifree(geo, "rx_users geo");
+                kiwi_ifree(ext, "rx_users ext");
                 n = 1;
             }
         }

@@ -120,7 +120,7 @@ static void get_TZ(void *param)
 
         //printf("TIMEZONE: using %s\n", TZ_SERVER);
 		reply = non_blocking_cmd(cmd_p, &status);
-		kiwi_ifree(cmd_p);
+		kiwi_asfree(cmd_p);
 		if (reply == NULL || status < 0 || WEXITSTATUS(status) != 0) {
 			lprintf("TIMEZONE: %s curl error\n", TZ_SERVER);
 		    kstr_free(reply);
@@ -214,7 +214,7 @@ void my_kiwi_register(bool reg, int root_pwd_unset, int debian_pwd_default)
         kiwi_file_exists("/usr/bin/jq"), debian_maj, debian_min, version_maj, version_min, kstr_sp(cmd_p2));
 
     kstr_free(non_blocking_cmd(cmd_p, &status));
-    kiwi_ifree(cmd_p); kstr_free(cmd_p2);
+    kiwi_asfree(cmd_p); kstr_free(cmd_p2);
     lprintf("MY_KIWI: %sregister\n", reg? "":"un");
 }
 
@@ -350,7 +350,7 @@ static void misc_NET(void *param)
             status = child_task("kiwi.set_pwd", set_pwd_task, POLL_MSEC(250), cmd_p);
             status = WEXITSTATUS(status);
             lprintf("SECURITY: \"root\" password set returned status=%d (%s)\n", status, status? "FAIL":"OK");
-            kiwi_ifree(cmd_p);
+            kiwi_asfree(cmd_p);
         }
 
         if (debian_pwd_default) {
@@ -360,10 +360,10 @@ static void misc_NET(void *param)
             status = child_task("kiwi.set_pwd", set_pwd_task, POLL_MSEC(250), cmd_p);
             status = WEXITSTATUS(status);
             lprintf("SECURITY: \"debian\" password set returned status=%d (%s)\n", status, status? "FAIL":"OK");
-            kiwi_ifree(cmd_p);
+            kiwi_asfree(cmd_p);
         }
 
-        kiwi_ifree(cmd_p2);
+        kiwi_asfree(cmd_p2);
     }
 
     // register for my.kiwisdr.com
@@ -397,7 +397,7 @@ static bool ipinfo_json(int https, const char *url, const char *path, const char
     //printf("IPINFO: <%s>\n", cmd_p);
     
     reply = non_blocking_cmd(cmd_p, &stat);
-    kiwi_ifree(cmd_p);
+    kiwi_asfree(cmd_p);
 
     int estat = WEXITSTATUS(stat);
     if (stat < 0 || estat != 0) {
@@ -528,7 +528,7 @@ static void UPnP_port_open_task(void *param)
     } else {
         net.auto_nat = 4;      // command failed
     }
-    kiwi_ifree(cmd_p);
+    kiwi_asfree(cmd_p);
     
     #ifdef USE_SSL
         if (delete_nat) return;
@@ -545,7 +545,7 @@ static void UPnP_port_open_task(void *param)
             } else {
                 printf("UPnP_port_open_task: ACME HTTP-01 port status=%d\n", status);
             }
-            kiwi_ifree(cmd_p);
+            kiwi_asfree(cmd_p);
         }
 
         //#define TEST_HTTP_LOCAL
@@ -562,7 +562,7 @@ static void UPnP_port_open_task(void *param)
                 } else {
                     printf("UPnP_port_open_task: local HTTP port %d status=%d\n", status);
                 }
-                kiwi_ifree(cmd_p);
+                kiwi_asfree(cmd_p);
             }
         #endif
     #endif
@@ -868,10 +868,10 @@ static void reg_public(void *param)
 		    retrytime_mins = RETRYTIME_KIWISDR_COM_FAIL;    // check frequently for registration to be re-enabled
 		}
 
-		kiwi_ifree(cmd_p);
-		//kiwi_ifree(server_enc);
+		kiwi_asfree(cmd_p);
+		//kiwi_ifree(server_enc, "server_enc");
         cfg_string_free(server_url);
-        kiwi_ifree(email);
+        kiwi_ifree(email, "email");
         
         if (kiwi_reg_debug) printf("reg_kiwisdr_com TaskSleepSec(min=%d)\n", retrytime_mins);
 		TaskSleepSec(MINUTES_TO_SEC(retrytime_mins));
