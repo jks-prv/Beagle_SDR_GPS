@@ -71,25 +71,7 @@ cRsId m_RsId[MAX_RX_CHANS];
 
 cRsId::cRsId()
 {
-}
-
-cRsId::~cRsId()
-{
-}
-
-void cRsId::init(int _rx_chan, int fixedInputSize)
-{
-    rx_chan = _rx_chan;
-    snd = &snd_inst[rx_chan];
-
     ResampleObj = new CAudioResample();
-    float ratio =  RSID_SAMPLE_RATE / ext_update_get_sample_rateHz(rx_chan);
-    ResampleObj->Init(fixedInputSize, ratio);
-    const int iMaxInputSize = ResampleObj->GetMaxInputSize();
-    vecTempResBufIn.Init(iMaxInputSize, (_REAL) 0.0);
-    const int iMaxOutputSize = ResampleObj->iOutputBlockSize;
-    vecTempResBufOut.Init(iMaxOutputSize, (_REAL) 0.0);
-    ResampleObj->Reset();
 
 	if (RSWINDOW) {
 		for (int i = 0; i < RSID_ARRAY_SIZE; i++)
@@ -114,11 +96,29 @@ void cRsId::init(int _rx_chan, int fixedInputSize)
 		Encode(rsid_ids_2[i].rs, c);
 	}
 
-	nBinLow = 3;
-	nBinHigh = RSID_FFT_SIZE - 32; // - RSID_NTIMES - 2
-
     ComplexIO = RSID_FFTW_ALLOC_COMPLEX(RSID_ARRAY_SIZE);
     ComplexFFT = RSID_FFTW_PLAN_DFT_1D(RSID_ARRAY_SIZE, ComplexIO, ComplexIO, FFTW_FORWARD, FFTW_ESTIMATE);
+}
+
+cRsId::~cRsId()
+{
+}
+
+void cRsId::init(int _rx_chan, int fixedInputSize)
+{
+    rx_chan = _rx_chan;
+    snd = &snd_inst[rx_chan];
+
+    float ratio =  RSID_SAMPLE_RATE / ext_update_get_sample_rateHz(rx_chan);
+    ResampleObj->Init(fixedInputSize, ratio);
+    const int iMaxInputSize = ResampleObj->GetMaxInputSize();
+    vecTempResBufIn.Init(iMaxInputSize, (_REAL) 0.0);
+    const int iMaxOutputSize = ResampleObj->iOutputBlockSize;
+    vecTempResBufOut.Init(iMaxOutputSize, (_REAL) 0.0);
+    ResampleObj->Reset();
+
+	nBinLow = 3;
+	nBinHigh = RSID_FFT_SIZE - 32; // - RSID_NTIMES - 2
     
     rsidTime = 0;
     WideSearch = true;

@@ -104,7 +104,7 @@ class cRsId {
         static const int rsid_ids_size2;
 
 	    double rsid_secondary_time_out;
-	    int hamming_resolution;
+	    int     hamming_resolution;
 
         // Span of FFT bins, in which the RSID will be searched for
         int		nBinLow;
