@@ -228,9 +228,12 @@ function sd_backup_focus()
    w3_do_when_cond(
       function() { return isNumber(kiwi.debian_maj); },
       function() {
-         if (!dbgUs && kiwi.debian_maj >= 11) {
+         var ng_D11 = (!dbgUs && kiwi.debian_maj == 11);
+         var ng_D12 = (kiwi.debian_maj > 12 || (kiwi.debian_maj == 12 && kiwi.debian_min > 2));
+         if (ng_D11 || ng_D12) {
             w3_innerHTML('id-sd-backup-container',
-               w3_div('w3-container w3-text w3-red', 'Debian '+ kiwi.debian_maj +' does not yet support the backup function.'));
+               w3_div('w3-container w3-text w3-red',
+                  'Debian '+ kiwi.debian_maj +'.'+  kiwi.debian_min +' does not yet support the backup function.'));
          }
          w3_show('id-sd-backup-container', 'w3-show-inline');
       }, null,
