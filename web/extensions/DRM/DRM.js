@@ -434,7 +434,8 @@ function drm_recv(data)
 			   //console.log(s);
             var o = kiwi_JSON_parse('drm_journaline_cb', s);
             if (isNull(o)) {
-               s = '&nbsp;(data error, see browser console log)';
+               s = w3_icon('w3-link-darker-color w3-margin-LR-4', 'fa-backward', 24, '', 'drm_journaline_back') +
+                  '&nbsp;(data error, see browser console log)';
                drm_status('journaline', drm.ST_YEL);
             } else {
                //console.log(o);

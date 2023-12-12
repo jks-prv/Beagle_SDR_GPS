@@ -43,7 +43,9 @@ extern mem_t mem;
 	int kiwi_malloc_stat();
 	void mt_dump();
 #else
-	#define kiwi_malloc(from, size) malloc(size)
+    // semantics of kiwi_malloc() is to clear mem which malloc() doesn't do
+	//#define kiwi_malloc(from, size) malloc(size)
+	void *kiwi_malloc(const char *from, size_t size);
 	#define kiwi_calloc(from, nel, size) calloc(nel, size)
 	#define kiwi_realloc(from, ptr, size) realloc(ptr, size)
 	#define kiwi_free(from, ptr) free(ptr)

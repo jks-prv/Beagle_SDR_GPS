@@ -191,19 +191,27 @@ static void mt_remove(const char *from, void *ptr)
 	mem.size -= size;
 }
 
+#endif  // MALLOC_DEBUG
+
 #define	MALLOC_MAX	PHOTO_UPLOAD_MAX_SIZE
 
 void *kiwi_malloc(const char *from, size_t size)
 {
 	//if (size > MALLOC_MAX) mt_gdb("malloc > MALLOC_MAX");
-	kmprintf(("kiwi_malloc-1 \"%s\" size=%d\n", from, size));
+    #ifdef MALLOC_DEBUG
+        kmprintf(("kiwi_malloc-1 \"%s\" size=%d\n", from, size));
+    #endif
 	void *ptr = malloc(size);
 	memset(ptr, 0, size);
-    int i = mt_enter(from, ptr, size);
-	kmprintf(("kiwi_malloc-2 \"%s\" #%d size=%d %p (total #%d|hi:%d|%s)\n",
-	    from, i, size, ptr, mem.nmt, mem.hiwat, toUnits(mem.size)));
+    #ifdef MALLOC_DEBUG
+        int i = mt_enter(from, ptr, size);
+        kmprintf(("kiwi_malloc-2 \"%s\" #%d size=%d %p (total #%d|hi:%d|%s)\n",
+            from, i, size, ptr, mem.nmt, mem.hiwat, toUnits(mem.size)));
+    #endif
 	return ptr;
 }
+
+#ifdef MALLOC_DEBUG
 
 void *kiwi_calloc(const char *from, size_t nel, size_t size)
 {
@@ -267,10 +275,10 @@ void kiwi_str_redup(char **ptr, const char *from, const char *s)
 	if (sl == 0 || sl > 1024) mt_gdb("strdup size");
 	if (*ptr) kiwi_free(from, (void *) *ptr);
 	*ptr = strdup(s);
-#ifdef MALLOC_DEBUG
-    int i = mt_enter(from, (void *) *ptr, sl);
-	kmprintf(("kiwi_str_redup \"%s\" #%d %d %p %p\n", from, i, sl, s, *ptr));
-#endif
+    #ifdef MALLOC_DEBUG
+        int i = mt_enter(from, (void *) *ptr, sl);
+        kmprintf(("kiwi_str_redup \"%s\" #%d %d %p %p\n", from, i, sl, s, *ptr));
+    #endif
 }
 
 void *kiwi_table_realloc(const char *id, void *cur_p, int cur_size, int inc_size, int el_size)
