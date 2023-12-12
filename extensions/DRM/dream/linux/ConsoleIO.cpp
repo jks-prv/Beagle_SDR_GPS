@@ -328,19 +328,27 @@ CConsoleIO::Update(drm_t *drm)
     if (new_ready != ready) { ready = new_ready; dirty = true; }
 
     if (dirty || reset) {
+        char *c2_s = NULL;
         //printf("new_total =%d|%d new_ready=%d|%d\n", new_total, total, new_ready, ready);
         char *c_s = (char *) News.sTitle.c_str();
         if (!c_s || *c_s == '\0') {
             c_s = (char *) "";
             if (new_total == 0)
                 drm->journaline_objID = 0;
+        } else {
+            c2_s = kiwi_str_escape_HTML(c_s);   // also removes non-printing chars
+            if (c2_s) c_s = c2_s;
         }
-        sb = kstr_asprintf(NULL, "{\"l\":%d,\"t\":\"%s\",\"a\":[", drm->journaline_objID, c_s);
+        sb = kstr_asprintf(NULL, "{\"l\":%d,\"t\":\"%s%s\",\"a\":[", drm->journaline_objID, c_s);
+        kiwi_ifree(c2_s, "drm console");
         
         bool comma = false;
         for (int i = 0; i < new_total; i++) {
             int iLink = News.vecItem[i].iLink;
             c_s = (char *) News.vecItem[i].sText.c_str();
+            if (!c_s || *c_s == '\0') {
+                c_s = (char *) "";
+            }
             
             #if 0
                 printf("JL%d %x %p sl=%d\n", i, iLink, c_s, strlen(c_s));
@@ -352,7 +360,7 @@ CConsoleIO::Update(drm_t *drm)
             #endif
             
             kiwi_str_replace(c_s, "\n", " ");
-            char *c2_s = kiwi_str_escape_HTML(c_s);     // also removes non-printing chars
+            c2_s = kiwi_str_escape_HTML(c_s);   // also removes non-printing chars
             if (c2_s) c_s = c2_s;
             sb = kstr_asprintf(sb, "%s{\"i\":%d,\"l\":%d,\"s\":\"%s\"}",
                 comma? ",":"", i, iLink, c_s);
