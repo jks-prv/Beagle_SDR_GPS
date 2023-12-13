@@ -339,7 +339,7 @@ CConsoleIO::Update(drm_t *drm)
             c2_s = kiwi_str_escape_HTML(c_s);   // also removes non-printing chars
             if (c2_s) c_s = c2_s;
         }
-        sb = kstr_asprintf(NULL, "{\"l\":%d,\"t\":\"%s%s\",\"a\":[", drm->journaline_objID, c_s);
+        sb = kstr_asprintf(NULL, "{\"l\":%d,\"t\":\"%s\",\"a\":[", drm->journaline_objID, c_s);
         kiwi_ifree(c2_s, "drm console");
         
         bool comma = false;
