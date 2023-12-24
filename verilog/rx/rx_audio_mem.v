@@ -257,7 +257,7 @@ module rx_audio_mem (
 	wire [15:0] rx_dout_A;
 	MUX #(.WIDTH(16), .SEL(V_RX_CHANS)) rx_mux(.in(rxn_dout_A), .sel(rxn_d[L2RX:0]), .out(rx_dout_A));
 	
-	reg  [15:0] buf_ctr;	
+	reg  [15:0] buf_ctr;
 	wire [15:0] buf_ctr_C;
 
     // continuously sync buf_ctr => buf_ctr_C

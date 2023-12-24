@@ -1719,7 +1719,7 @@ copy_from_git:
 
 # used by gdiff et al aliases
 GITDIFF_EXCLUDE := --exclude=.DS_Store --exclude=.git \
-    --exclude=d --exclude=g --exclude=kiwi --exclude=n --exclude=ng
+    --exclude=k --exclude=d --exclude=g --exclude=n --exclude=ng
 GITDIFF_EXCLUDE2 := $(GITDIFF_EXCLUDE) --exclude="*.min.*"
 
 gitdiff:

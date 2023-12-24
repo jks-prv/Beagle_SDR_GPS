@@ -285,8 +285,8 @@ void CFir::InitConstFir( int NumTaps, const TYPEREAL* pICoef, const TYPEREAL* pQ
 ////////////////////////////////////////////////////////////////////
 int CFir::InitLPFilter(int NumTaps, TYPEREAL Scale, TYPEREAL Astop, TYPEREAL Fpass, TYPEREAL Fstop, TYPEREAL Fsamprate, bool dump)
 {
-int n;
-TYPEREAL Beta;
+    int n;
+    TYPEREAL Beta;
 	m_SampleRate = Fsamprate;
 	//create normalized frequency parameters
 	TYPEREAL normFpass = Fpass/Fsamprate;
@@ -350,6 +350,7 @@ TYPEREAL Beta;
 	m_State = 0;
 
     if (dump) {
+        real_printf("CFir beta=%.5f\n", Beta);
         for(n=0; n<m_NumTaps; n++) {
             u4_t coef1 = (u4_t) (s4_t) roundf(m_Coef[n] * 256.0f);     // 1/0.00390625 = 256.0
             u4_t coef2 = (u4_t) (s4_t) roundf((m_Coef[n] * 256.0f) * 512.0f);
