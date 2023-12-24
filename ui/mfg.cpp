@@ -34,6 +34,7 @@ Boston, MA  02110-1301, USA.
 #include "debug.h"
 #include "printf.h"
 #include "kiwi_ui.h"
+#include "fpga.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -69,7 +70,7 @@ void c2s_mfg(void *param)
 	conn_t *conn = (conn_t *) param;
 	rx_common_init(conn);
 	
-	int next_serno, serno;
+	int next_serno;
 
 	nbuf_t *nb = NULL;
 	while (TRUE) {
@@ -89,11 +90,11 @@ void c2s_mfg(void *param)
 			
 			//printf("MFG: <%s>\n", cmd);
 
-			int _model = 0;
-			i = sscanf(cmd, "SET write model=%d", &_model);
-			if (i == 1 && _model > 0) {
-				printf("MFG: received write, model=%d\n", _model);
-				eeprom_write(SERNO_ALLOC, 0, _model);
+			int _type, _serno, _model = 0;
+			i = sscanf(cmd, "SET eeprom_write=%d serno=%d model=%d", &_type, &_serno, &_model);
+			if (i == 3 && _model > 0) {
+				printf("MFG: received write, type=%d serno=%d model=%d\n", _type, _serno, _model);
+				eeprom_write(_type? SERNO_WRITE : SERNO_ALLOC, _serno, _model);
 				mfg_send_info(conn);
 				continue;
 			}
@@ -114,11 +115,26 @@ void c2s_mfg(void *param)
 				continue;
 			}
 
+			i = strcmp(cmd, "SET mfg_restart");
+			if (i == 0) {
+				kiwi_restart();
+				while (true)
+					kiwi_usleep(100000);
+			}
+
 			i = strcmp(cmd, "SET mfg_power_off");
 			if (i == 0) {
 				system_halt();
 				while (true)
 					kiwi_usleep(100000);
+			}
+
+			i = strcmp(cmd, "SET get_dna");
+			if (i == 0) {
+			    u64_t dna = fpga_dna();
+		        printf("device DNA %08x|%08x\n", PRINTF_U64_ARG(dna));
+		        send_msg(conn, SM_NO_DEBUG, "MFG dna=%08x%08x", PRINTF_U64_ARG(dna));
+				continue;
 			}
 
 			printf("MFG: unknown command: <%s>\n", cmd);

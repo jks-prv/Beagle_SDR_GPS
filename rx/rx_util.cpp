@@ -363,8 +363,8 @@ void rx_server_send_config(conn_t *conn)
             send_msg_encoded(conn, "MSG", "load_dxcomm_cfg", "%s", json);
         }
 
-		// send admin config ONLY if this is an authenticated connection from the admin page
-		if (conn->type == STREAM_ADMIN && conn->auth_admin) {
+		// send admin config ONLY if this is an authenticated connection from the admin/mfg page
+		if ((conn->type == STREAM_ADMIN || conn->type == STREAM_MFG) && conn->auth_admin) {
 			json = admcfg_get_json(NULL);
 			if (json != NULL) {
 				send_msg_encoded(conn, "MSG", "load_adm", "%s", json);
@@ -399,7 +399,7 @@ static bool rx_auth_okay(conn_t *conn)
 
 static bool admin_auth_okay(conn_t *conn)
 {
-    if (conn->type != STREAM_ADMIN) {
+    if (conn->type != STREAM_ADMIN && conn->type != STREAM_MFG) {
         lprintf("** attempt to save admin config from non-STREAM_ADMIN! IP %s\n", conn->remote_ip);
         return false;
     }
