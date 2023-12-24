@@ -341,25 +341,16 @@ void c2s_sound(void *param)
 	nbuf_t *nb = NULL;
 
 	while (TRUE) {
-		double f_phase;
-		u64_t i_phase;
-		
 		// reload freq NCO if adc clock has been corrected
 		// reload freq NCO if spectral inversion changed
 		if (s->freq >= 0 && (adc_clock_corrected != conn->adc_clock_corrected || s->spectral_inversion != kiwi.spectral_inversion)) {
 		    //cprintf(conn, "SND UPD adc_clock_corrected=%lf conn->adc_clock_corrected=%lf\n", adc_clock_corrected, conn->adc_clock_corrected);
 			adc_clock_corrected = conn->adc_clock_corrected;
             s->spectral_inversion = kiwi.spectral_inversion;
-
-			double freq_kHz = s->freq * kHz;
-			double freq_inv_kHz = ui_srate - freq_kHz;
-			f_phase = (s->spectral_inversion? freq_inv_kHz : freq_kHz) / conn->adc_clock_corrected;
-            i_phase = (u64_t) round(f_phase * pow(2,48));
-            //cprintf(conn, "SND UPD freq %.3f kHz i_phase 0x%08x|%08x clk %.6f(%d)\n",
-            //    s->freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected, clk.adc_clk_corrections);
-            if (do_sdr) spi_set3(CmdSetRXFreq, rx_chan, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
-
+            rx_sound_set_freq(conn, s);
 		    //cprintf(conn, "SND freq updated due to ADC clock correction\n");
+		    
+            rx_gen_set_freq(conn, s);
 		}
 
         #ifdef SND_FREQ_SET_IQ_ROTATION_BUG_WORKAROUND
@@ -367,13 +358,7 @@ void c2s_sound(void *param)
                 //#define DOUBLE_SET_DELAY 500        // only 90% reliable!
                 #define DOUBLE_SET_DELAY 1500
                 if (timer_ms() > first_freq_time + DOUBLE_SET_DELAY) {
-                    double freq_kHz = s->freq * kHz;
-                    double freq_inv_kHz = ui_srate - freq_kHz;
-                    f_phase = (s->spectral_inversion? freq_inv_kHz : freq_kHz) / conn->adc_clock_corrected;
-                    i_phase = (u64_t) round(f_phase * pow(2,48));
-                    //cprintf(conn, "SND DOUBLE-SET freq %.3f kHz i_phase 0x%08x|%08x clk %.6f rx_chan=%d\n",
-                    //    s->freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected, rx_chan);
-                    spi_set3(CmdSetRXFreq, rx_chan, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
+                    rx_sound_set_freq(conn, s);
                     first_freq_set = false;
                 }
             }

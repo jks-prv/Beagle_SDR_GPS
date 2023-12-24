@@ -77,15 +77,39 @@ Boston, MA  02110-1301, USA.
 
 #include <algorithm>
 
+void rx_sound_set_freq(conn_t *conn, snd_t *s)
+{
+    int rx_chan = conn->rx_channel;
+    double freq_kHz = s->freq * kHz;
+    double freq_inv_kHz = ui_srate - freq_kHz;
+    double f_phase = (s->spectral_inversion? freq_inv_kHz : freq_kHz) / conn->adc_clock_corrected;
+    u64_t i_phase = (u64_t) round(f_phase * pow(2,48));
+    //cprintf(conn, "SND UPD freq %.3f kHz i_phase 0x%08x|%08x clk %.6f(%d)\n",
+    //    s->freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected, clk.adc_clk_corrections);
+    if (do_sdr) spi_set3(CmdSetRXFreq, rx_chan, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
+}
+
+void rx_gen_set_freq(conn_t *conn, snd_t *s)
+{
+    int rx_chan = conn->rx_channel;
+    u4_t self_test = (s->gen < 0 && !kiwi.ext_clk)? CTRL_STEN : 0;
+    s->gen = fabs(s->gen);
+    double f_phase = s->gen * kHz / conn->adc_clock_corrected;
+    u64_t i_phase = (u64_t) round(f_phase * pow(2,48));
+    //cprintf(conn, "%s %.3f kHz phase %.3f 0x%012llx self_test=%d\n", s->gen? "GEN_ON":"GEN_OFF", s->gen, f_phase, i_phase, self_test? 1:0);
+    if (do_sdr) {
+        spi_set3(CmdSetGenFreq, rx_chan, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
+        ctrl_clr_set(CTRL_USE_GEN | CTRL_STEN, s->gen? (CTRL_USE_GEN | self_test):0);
+    }
+    if (rx_chan == 0) g_genfreq = s->gen * kHz / ui_srate;
+}
+
 void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
 {
     int j, k;
 	int rx_chan = conn->rx_channel;
 	snd_t *s = &snd_inst[rx_chan];
 	wf_inst_t *wf = &WF_SHMEM->wf_inst[rx_chan];
-
-    double f_phase;
-    u64_t i_phase;
 
     cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
@@ -142,15 +166,8 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
             bool new_freq = false;
             if (s->freq != _freq) {
                 s->freq = _freq;
-                double freq_kHz = s->freq * kHz;
-                double freq_inv_kHz = ui_srate - freq_kHz;
-                f_phase = (s->spectral_inversion? freq_inv_kHz : freq_kHz) / conn->adc_clock_corrected;
-                i_phase = (u64_t) round(f_phase * pow(2,48));
-                //cprintf(conn, "SND SET freq %.3f kHz i_phase 0x%08x|%08x clk %.6f rx_chan=%d\n",
-                //    s->freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected, rx_chan);
+                rx_sound_set_freq(conn, s);
                 if (do_sdr) {
-                    spi_set3(CmdSetRXFreq, rx_chan, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
-                    
                     #ifdef SND_FREQ_SET_IQ_ROTATION_BUG_WORKAROUND
                         if (first_freq_trig) {
                             first_freq_set = true;
@@ -348,16 +365,7 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
         n = sscanf(cmd, "SET gen=%lf", &s->gen);
         if (n == 1) {
             did_cmd = true;
-            u4_t self_test = (s->gen < 0 && !kiwi.ext_clk)? CTRL_STEN : 0;
-            s->gen = fabs(s->gen);
-            f_phase = s->gen * kHz / conn->adc_clock_corrected;
-            i_phase = (u64_t) round(f_phase * pow(2,48));
-            //cprintf(conn, "%s %.3f kHz phase %.3f 0x%012llx self_test=%d\n", s->gen? "GEN_ON":"GEN_OFF", s->gen, f_phase, i_phase, self_test? 1:0);
-            if (do_sdr) {
-                spi_set3(CmdSetGenFreq, rx_chan, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
-                ctrl_clr_set(CTRL_USE_GEN | CTRL_STEN, s->gen? (CTRL_USE_GEN | self_test):0);
-            }
-            if (rx_chan == 0) g_genfreq = s->gen * kHz / ui_srate;
+            rx_gen_set_freq(conn, s);
         }
         break;
 

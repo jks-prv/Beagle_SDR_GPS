@@ -50,4 +50,6 @@ extern CFir m_am_ssb_deemp_FIR[MAX_RX_CHANS];
 
 extern CIir m_deemp_Biquad[MAX_RX_CHANS];      // see: tools/biquad.MZT.m
 
+void rx_sound_set_freq(conn_t *conn, snd_t *s);
+void rx_gen_set_freq(conn_t *conn, snd_t *s);
 void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd);
