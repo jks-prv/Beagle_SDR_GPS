@@ -45,10 +45,6 @@ extern CFastFIR m_chan_null_FIR[MAX_RX_CHANS];
 
 extern CFir m_AM_FIR[MAX_RX_CHANS];
 
-#ifdef OPTION_EXPERIMENT_CICF
-    extern CFir m_CICF_FIR[MAX_RX_CHANS];
-#endif
-
 extern CFir m_nfm_deemp_FIR[MAX_RX_CHANS];     // see: tools/FIR.m
 extern CFir m_am_ssb_deemp_FIR[MAX_RX_CHANS];
 

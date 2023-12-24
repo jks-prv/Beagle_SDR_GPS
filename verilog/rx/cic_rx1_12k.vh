@@ -1,12 +1,12 @@
 // generated file
 
-// CIC: INTEG_COMB|MODE_REAL N=3 R=505 M=1 Bin=22 Bout=18
-// growth 27 = ceil(N=3 * log2(R=505)=9)
-// Bin 22 + growth 27 = acc_max 49 
+// CIC: INTEG_COMB|MODE_REAL N=3 R=926 M=1 Bin=22 Bout=18
+// growth 30 = ceil(N=3 * log2(R=926)=10)
+// Bin 22 + growth 30 = acc_max 52 
 
-wire signed [48:0] integrator0_data;
-wire signed [48:0] integrator1_data;
-wire signed [48:0] integrator2_data;
+wire signed [51:0] integrator0_data;
+wire signed [51:0] integrator1_data;
+wire signed [51:0] integrator2_data;
 wire signed [25:0] integrator3_data;
 wire signed [25:0] comb0_data;
 wire signed [21:0] comb1_data;
@@ -17,19 +17,19 @@ wire signed [19:0] comb3_data;
 // so this assignment will sign-extend:
 assign integrator0_data = in;
 
-cic_integrator #(.WIDTH(49)) cic_integrator1_inst(
+cic_integrator #(.WIDTH(52)) cic_integrator1_inst(
 	.clock(clock),
 	.reset(reset),
 	.strobe(in_strobe),
-	.in_data(integrator0_data[48 -:49]),	// trunc 0 bits (should always be zero)
+	.in_data(integrator0_data[51 -:52]),	// trunc 0 bits (should always be zero)
 	.out_data(integrator1_data)
 );
 
-cic_integrator #(.WIDTH(49)) cic_integrator2_inst(
+cic_integrator #(.WIDTH(52)) cic_integrator2_inst(
 	.clock(clock),
 	.reset(reset),
 	.strobe(in_strobe),
-	.in_data(integrator1_data[48 -:49]),	// trunc 0 bits 
+	.in_data(integrator1_data[51 -:52]),	// trunc 0 bits 
 	.out_data(integrator2_data)
 );
 
@@ -37,7 +37,7 @@ cic_integrator #(.WIDTH(26)) cic_integrator3_inst(
 	.clock(clock),
 	.reset(reset),
 	.strobe(in_strobe),
-	.in_data(integrator2_data[48 -:26]),	// trunc 23 bits 
+	.in_data(integrator2_data[51 -:26]),	// trunc 26 bits 
 	.out_data(integrator3_data)
 );
 

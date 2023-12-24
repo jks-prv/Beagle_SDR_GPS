@@ -43,6 +43,9 @@
 //or implied, of Moe Wheatley.
 //==========================================================================================
 
+// Copyright (c) 2018-2023 Christoph Mayer, DL1CH
+// Copyright (c) 2018-2023 John Seamons, ZL4VO/KF6VO
+
 #include "cuteSDR.h"
 #include "fastfir.h"
 #include "ext_int.h"
@@ -88,7 +91,7 @@ CFastFIR::CFastFIR()
 	m_FHiCut = 1.0;
 	m_Offset = 1.0;
 	m_SampleRate = 1.0;
-	m_do_CIC_comp = true;
+	m_do_CIC_comp = (VAL_CICF_DECIM_BY_2 == 2)? false : true;
 }
 
 CFastFIR::~CFastFIR()
@@ -145,6 +148,7 @@ void CFastFIR::SetupWindowFunction(int window_func)
 void CFastFIR::SetupCICFilter(bool do_CIC_comp)
 {
     m_do_CIC_comp = do_CIC_comp;
+    //printf("CFastFIR::SetupCICFilter do_CIC_comp=%d\n", do_CIC_comp);
     
     for (int i = 0; i < CONV_FFT_SIZE; i++) {
         m_pFilterCoef_CIC[i].re = m_pFilterCoef[i].re * (do_CIC_comp? m_CIC_coeffs[i] : 1.0);

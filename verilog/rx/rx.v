@@ -24,7 +24,6 @@ module RX (
 	input  wire signed [IN_WIDTH-1:0] adc_data,
 
 	input  wire		   rx_sel_C,
-	input  wire		   use_FIR_A,
 
 	input  wire		   rd_i,
 	input  wire		   rd_q,
@@ -151,7 +150,6 @@ fir_iq #(.WIDTH(RXO_BITS))
     cicf(
 		.adc_clk        (adc_clk),
 		.reset			(1'b0),
-		.use_FIR_A      (use_FIR_A),
 		.in_strobe		(rx_cic2_avail),
 		.out_strobe		(rx_cicf_avail),
 		.in_data_i		(rx_cic2_out_i),

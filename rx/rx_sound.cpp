@@ -16,6 +16,7 @@ Boston, MA  02110-1301, USA.
 */
 
 // Copyright (c) 2014-2023 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2018-2023 Christoph Mayer, DL1CH
 
 #include "types.h"
 #include "options.h"
@@ -158,10 +159,6 @@ CFastFIR m_PassbandFIR[MAX_RX_CHANS];
 CFastFIR m_chan_null_FIR[MAX_RX_CHANS];
 
 CFir m_AM_FIR[MAX_RX_CHANS];
-
-#ifdef OPTION_EXPERIMENT_CICF
-    CFir m_CICF_FIR[MAX_RX_CHANS];
-#endif
 
 CFir m_nfm_deemp_FIR[MAX_RX_CHANS];     // see: tools/FIR.m
 CFir m_am_ssb_deemp_FIR[MAX_RX_CHANS];
@@ -486,19 +483,6 @@ void c2s_sound(void *param)
 		    dx_update_seq = dx.update_seq;
         }
 
-        #ifdef OPTION_EXPERIMENT_CICF
-            if (s->cicf_setup) {
-                // defaults should give ntaps=17
-                float pass = 1800;
-                float stop = 6000;
-                float attn = 90;
-                int ntaps = m_CICF_FIR[rx_chan].InitLPFilter(0, 1.0, attn, pass, stop, frate, true);
-                printf("m_CICF_FIR pass=%.0f stop=%.0f attn=%.0f, ntaps=%d\n", pass, stop, attn, ntaps);
-                s->cicf_run = true;
-                s->cicf_setup = false;
-            }
-        #endif
-		
 		#define	SND_FLAG_LPF		    0x01
 		#define	SND_FLAG_ADC_OVFL	    0x02
 		#define	SND_FLAG_NEW_FREQ	    0x04
@@ -637,13 +621,6 @@ void c2s_sound(void *param)
 		            m_NoiseProc_snd[rx_chan].ProcessBlanker(ns_in, in_samps_c, in_samps_c);
 		    #endif
 		    
-		    #ifdef OPTION_EXPERIMENT_CICF
-		        if (s->cicf_run) {
-                    m_CICF_FIR[rx_chan].ProcessFilter(ns_in, in_samps_c, in_samps_c);
-                    //real_printf("."); fflush(stdout);
-		        }
-		    #endif
-
             TYPECPX *fir_samps_c = &iq->iq_samples[iq->iq_wr_pos][0];
             ns_out  = m_PassbandFIR[rx_chan].ProcessData(rx_chan, ns_in, in_samps_c, fir_samps_c);
             fir_pos = m_PassbandFIR[rx_chan].FirPos();
