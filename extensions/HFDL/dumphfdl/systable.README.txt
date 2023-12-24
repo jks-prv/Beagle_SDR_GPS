@@ -1,0 +1,5 @@
+Make updates to systable by editing files:
+    web/extensions/HFDL/systable.backup.cjson           // cjson format read by HFDL.js
+    unix_env/kiwi.config/samples/HFDL_systable.conf     // specified by HFDL.cpp
+
+And then doing an scpr, scfr to copy the cjson
