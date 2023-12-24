@@ -21,6 +21,8 @@ Boston, MA  02110-1301, USA.
 
 typedef enum { WAIT_UNTIL_NO_USERS, FORCE_CHECK, FORCE_BUILD } update_check_e;
 
+enum { RESTART_INSTALL_UPDATES = 0, RESTART_DELAY_UPDATES = 1 };
+
 // "struct conn_st" because of forward reference from inclusion by conn.h
 struct conn_st;
 void check_for_update(update_check_e type, struct conn_st *conn);
