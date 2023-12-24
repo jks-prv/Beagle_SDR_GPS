@@ -156,6 +156,7 @@ set files [ list \
                 "[file normalize ${origin_dir}/cpu.v]" \
                 "[file normalize ${origin_dir}/rx/receiver.v]" \
                 "[file normalize ${origin_dir}/rx/rx.v]" \
+                "[file normalize ${origin_dir}/rx/rx_audio_mem.v]" \
                 "[file normalize ${origin_dir}/rx/rx_buffer.v]" \
                 "[file normalize ${origin_dir}/rx/waterfall_1cic.v]" \
                 "[file normalize ${origin_dir}/rx/gen.v]" \
@@ -172,6 +173,7 @@ set files [ list \
                 "[file normalize ${origin_dir}/rx/cic_rx3_20k.vh]" \
                 "[file normalize ${origin_dir}/rx/cic_wf1.vh]" \
                 "[file normalize ${origin_dir}/rx/cic_wf2.vh]" \
+                "[file normalize ${origin_dir}/rx/fir_iq.sv]" \
                 "[file normalize ${origin_dir}/gps/gps.v]" \
                 "[file normalize ${origin_dir}/gps/sampler.v]" \
                 "[file normalize ${origin_dir}/gps/demod.v]" \
@@ -182,6 +184,7 @@ set files [ list \
                 "[file normalize ${origin_dir}/support/sync_pulse.v]" \
                 "[file normalize ${origin_dir}/support/sync_wire.v]" \
                 "[file normalize ${origin_dir}/support/sync_reg.v]" \
+                "[file normalize ${origin_dir}/support/t_latch.v]" \
                 "[file normalize ${origin_dir}/ip/ip_add_u32b.v]" \
                 "[file normalize ${origin_dir}/ip/ip_add_u30b.v]" \
                 "[file normalize ${origin_dir}/ip/ip_acc_u32b.v]" \
@@ -369,7 +372,7 @@ proc build_rx4_wf4 {s_dir d_dir} {
     launch_runs impl_1 -to_step write_bitstream -jobs 6
     wait_on_run impl_1
     file copy -force $s_dir/KiwiSDR.bit $d_dir/KiwiSDR.rx4.wf4.bit
-    file copy -force $s_dir/usage_statistics_webtalk.html $d_dir/KiwiSDR.rx4.wf4.html
+    #file copy -force $s_dir/KiwiSDR_utilization_placed.rpt $d_dir/KiwiSDR.rx4.wf4.rpt
 }
 
 proc build_rx8_wf2 {s_dir d_dir} {
@@ -382,7 +385,7 @@ proc build_rx8_wf2 {s_dir d_dir} {
     launch_runs impl_1 -to_step write_bitstream -jobs 6
     wait_on_run impl_1
     file copy -force $s_dir/KiwiSDR.bit $d_dir/KiwiSDR.rx8.wf2.bit
-    file copy -force $s_dir/usage_statistics_webtalk.html $d_dir/KiwiSDR.rx8.wf2.html
+    #file copy -force $s_dir/KiwiSDR_utilization_placed.rpt $d_dir/KiwiSDR.rx8.wf2.rpt
 }
 
 proc build_rx3_wf3 {s_dir d_dir} {
@@ -395,7 +398,7 @@ proc build_rx3_wf3 {s_dir d_dir} {
     launch_runs impl_1 -to_step write_bitstream -jobs 6
     wait_on_run impl_1
     file copy -force $s_dir/KiwiSDR.bit $d_dir/KiwiSDR.rx3.wf3.bit
-    file copy -force $s_dir/usage_statistics_webtalk.html $d_dir/KiwiSDR.rx3.wf3.html
+    #file copy -force $s_dir/KiwiSDR_utilization_placed.rpt $d_dir/KiwiSDR.rx3.wf3.rpt
 }
 
 proc build_rx14_wf0 {s_dir d_dir} {
@@ -406,7 +409,7 @@ proc build_rx14_wf0 {s_dir d_dir} {
     launch_runs impl_1 -to_step write_bitstream -jobs 6
     wait_on_run impl_1
     file copy -force $s_dir/KiwiSDR.bit $d_dir/KiwiSDR.rx14.wf0.bit
-    file copy -force $s_dir/usage_statistics_webtalk.html $d_dir/KiwiSDR.rx14.wf0.html
+    #file copy -force $s_dir/KiwiSDR_utilization_placed.rpt $d_dir/KiwiSDR.rx14.wf0.rpt
 }
 
 set last_run "no"

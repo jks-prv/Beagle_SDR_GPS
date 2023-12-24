@@ -35,34 +35,34 @@ module E1BCODE (
     input  wire wr,
     input  wire [11:0] tos,
 
-    input  wire [(GPS_CHANS * E1B_CODEBITS)-1:0] nchip_n,
-    input  wire [GPS_CHANS-1:0] full_chip,
-    output wire [GPS_CHANS-1:0] code_o
+    input  wire [(V_GPS_CHANS * E1B_CODEBITS)-1:0] nchip_n,
+    input  wire [V_GPS_CHANS-1:0] full_chip,
+    output wire [V_GPS_CHANS-1:0] code_o
 );
 
 `include "kiwi.gen.vh"
 
-    localparam CH_MSB = clog2(GPS_CHANS) - 1;
+    localparam CH_MSB = clog2(V_GPS_CHANS) - 1;
     reg [CH_MSB:0] ch_p = 0;
 
-    wire [GPS_CHANS-1:0] code_t;
-    reg code_n [GPS_CHANS-1:0];
+    wire [V_GPS_CHANS-1:0] code_t;
+    reg code_n [V_GPS_CHANS-1:0];
 
     // can't get the timing on this mux to work, so do the nchip_n demuxing manually
-	//MUX #(.WIDTH(E1B_CODEBITS), .SEL(GPS_CHANS)) nchip_mux(.in(nchip_n), .sel(?), .out(nchip));
+	//MUX #(.WIDTH(E1B_CODEBITS), .SEL(V_GPS_CHANS)) nchip_mux(.in(nchip_n), .sel(?), .out(nchip));
 
 
     // sequential producer
 
-    wire [E1B_CODEBITS-1:0] nchip [GPS_CHANS-1:0];
-	wire [E1B_CODEBITS-1:0] raddr_m [GPS_CHANS-1:0];
+    wire [E1B_CODEBITS-1:0] nchip [V_GPS_CHANS-1:0];
+	wire [E1B_CODEBITS-1:0] raddr_m [V_GPS_CHANS-1:0];
 
     genvar ch_m;
     generate
-        for (ch_m = 0; ch_m < GPS_CHANS; ch_m = ch_m + 1)
+        for (ch_m = 0; ch_m < V_GPS_CHANS; ch_m = ch_m + 1)
         begin
             assign nchip[ch_m] = nchip_n[(ch_m * E1B_CODEBITS) +:E1B_CODEBITS];
-            assign raddr_m[ch_m] = (nchip[(ch_m+2) % GPS_CHANS] == (E1B_CODELEN-1))? 0 : (nchip[(ch_m+2) % GPS_CHANS]+1);
+            assign raddr_m[ch_m] = (nchip[(ch_m+2) % V_GPS_CHANS] == (E1B_CODELEN-1))? 0 : (nchip[(ch_m+2) % V_GPS_CHANS]+1);
         end
     endgenerate
 
@@ -70,7 +70,7 @@ module E1BCODE (
     begin
         raddr <= raddr_m[ch_p];
         code_n[ch_p] <= code_t[ch_p];
-        ch_p <= (ch_p == (GPS_CHANS - 1))? 0 : (ch_p + 1);
+        ch_p <= (ch_p == (V_GPS_CHANS - 1))? 0 : (ch_p + 1);
     end
 
 
@@ -78,7 +78,7 @@ module E1BCODE (
 
     genvar ch_c;
     generate
-        for (ch_c = 0; ch_c < GPS_CHANS; ch_c = ch_c + 1)
+        for (ch_c = 0; ch_c < V_GPS_CHANS; ch_c = ch_c + 1)
         begin : e1b_code_c
         
             // transparent latch, i.e. uses combi mux to get code_n in clk prior to latched value
