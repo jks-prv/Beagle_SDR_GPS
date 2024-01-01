@@ -54,7 +54,6 @@ typedef struct {
     model_e model;
     platform_e platform;
     bool dbgUs;
-    bool anti_aliased;
 
     bool ext_clk;
     bool allow_admin_conns;

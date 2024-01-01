@@ -20,10 +20,6 @@ endif
 
 VIVADO_VER = 2022.2
 
-proj:
-	@echo "V_PROJ = $(V_PROJ)"
-
-
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 ################################
@@ -165,3 +161,6 @@ clean:
 	rm -f kiwi.coe
 
 endif
+
+proj:
+	@echo "V_PROJ = $(V_PROJ)"

@@ -59,6 +59,16 @@ double factd(int n)
 	return d;
 }
 
+double nchoosek2(int n, int k) // this version of nchoosek avoids numerical overflow
+{
+	int i = 0;
+	double result = 1;
+	for (i = 1; i <= n-k; ++i) {
+	result *= (double)(k+i) / (double)(i);
+	}
+	return result;
+}
+
 double nchoosek(int n, int k)
 {
 	double fn = factd(n);
@@ -66,6 +76,7 @@ double nchoosek(int n, int k)
 	double fk = factd(k);
 	double nck = fn / (fnk * fk);
 	return nck;
+	// return nchoosek2(n,k);
 }
 
 #define MSB(w)  ((w)-1)

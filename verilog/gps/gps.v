@@ -60,13 +60,13 @@ module GPS (
     //////////////////////////////////////////////////////////////////////////
     // Service request flags and masks
 
-    reg  [GPS_CHANS-1:0] chan_mask;
-    wire [GPS_CHANS-1:0] chan_srq;
+    reg  [V_GPS_CHANS-1:0] chan_mask;
+    wire [V_GPS_CHANS-1:0] chan_srq;
 
     always @ (posedge clk)
-        if (wrReg & op_8[SET_GPS_MASK]) chan_mask <= tos[GPS_CHANS-1:0];
+        if (wrReg & op_8[SET_GPS_MASK]) chan_mask <= tos[V_GPS_CHANS-1:0];
 
-	localparam NSRQ = GPS_CHANS;		// GPS_CHANS, not GPS_CHANS-1, allows for host_srq
+	localparam NSRQ = V_GPS_CHANS;		// V_GPS_CHANS, not V_GPS_CHANS-1, allows for host_srq
 
     wire [NSRQ:0] srq_flags = {host_srq, chan_srq};		// lsb is highest servicing priority
     wire [NSRQ:0] srq_mask  = {1'b1,     chan_mask};
@@ -126,15 +126,15 @@ module GPS (
     //////////////////////////////////////////////////////////////////////////
     // Read clock replica snapshots
 
-	// i.e. { ticks[47:0], srq[GPS_CHANS-1:0], {GPS_CHANS {clock_replica[GPS_REPL_BITS-1:0]}} }
+	// i.e. { ticks[47:0], srq[V_GPS_CHANS-1:0], {V_GPS_CHANS {clock_replica[GPS_REPL_BITS-1:0]}} }
 
-    localparam ALL_REPLICA_BITS = GPS_CHANS * GPS_REPL_BITS;
-    localparam GPS_MSB = GPS_CHANS /* srq */ + ALL_REPLICA_BITS - 1;
+    localparam ALL_REPLICA_BITS = V_GPS_CHANS * GPS_REPL_BITS;
+    localparam GPS_MSB = V_GPS_CHANS /* srq */ + ALL_REPLICA_BITS - 1;
     
     reg  [48+GPS_MSB:0] snapshot;
     wire [48+GPS_MSB:0] replicas;
 
-    assign replicas[GPS_MSB -:GPS_CHANS] = chan_srq | srq_noted[GPS_CHANS-1:0]; // Unserviced epochs
+    assign replicas[GPS_MSB -:V_GPS_CHANS] = chan_srq | srq_noted[V_GPS_CHANS-1:0]; // Unserviced epochs
     assign replicas[48+GPS_MSB -:48] = ticks;
 
     always @ (posedge clk)
@@ -202,8 +202,8 @@ module GPS (
     //////////////////////////////////////////////////////////////////////////
     // Demodulators
 
-    reg  [GPS_CHANS-1:0] chan_wrReg, chan_shift, chan_rst;
-    wire [GPS_CHANS-1:0] chan_sout;
+    reg  [V_GPS_CHANS-1:0] chan_wrReg, chan_shift, chan_rst;
+    wire [V_GPS_CHANS-1:0] chan_sout;
 
     always @* begin
 
@@ -212,15 +212,15 @@ module GPS (
         // it is relative to the point at which the code generator was reset, namely here at the
         // beginning of the sampling process (chan_rst below is derived directly from sampler_rst).
         
-        chan_rst = {GPS_CHANS{sampler_rst}} & ~chan_mask;
+        chan_rst = {V_GPS_CHANS{sampler_rst}} & ~chan_mask;
         chan_wrReg = 0;
         chan_shift = 0;
         chan_wrReg[cmd_chan] = wrReg;
         chan_shift[cmd_chan] = ser_next[GET_CHAN_IQ];
     end
     
-    wire [(GPS_CHANS * E1B_CODEBITS)-1:0] nchip;
-    wire [GPS_CHANS-1:0] e1b_full_chip, e1b_code;
+    wire [(V_GPS_CHANS * E1B_CODEBITS)-1:0] nchip;
+    wire [V_GPS_CHANS-1:0] e1b_full_chip, e1b_code;
     
     wire e1b_wr = wrReg & op_8[SET_E1B_CODE];
 
@@ -239,8 +239,8 @@ module GPS (
     wire op_lo_nco    = op_8[SET_LO_NCO];
     wire op_cg_nco    = op_8[SET_CG_NCO];
 
-    //DEMOD #(.E1B(1)) demod [GPS_CHANS-1:0] (      // not used currently
-    DEMOD #(.E1B(0)) demod [GPS_CHANS-1:0] (
+    //DEMOD #(.E1B(1)) demod [V_GPS_CHANS-1:0] (      // not used currently
+    DEMOD #(.E1B(0)) demod [V_GPS_CHANS-1:0] (
         .clk            (clk),
         .rst            (chan_rst),
         .sample         (sample),

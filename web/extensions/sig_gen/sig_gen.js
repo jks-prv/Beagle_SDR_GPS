@@ -24,15 +24,9 @@ var gen = {
    RF_TONE: 0x01,
    AF_NOISE: 0x02,
    STEST: 0x04,
-   CICF_SW: 0x08,
-   CICF_HF: 0x10,
-   CICF_FW: 0x20,
    
 	rf_enable: true,
 	sweeping: 0,
-	cicf: 0,
-	cich: 0,
-	cicw: 0,
 
 	attn_offset_val: 0,
 	attn_offset: 1,
@@ -165,10 +159,7 @@ function gen_controls_setup()
                w3_select('id-gen-mode w3-text-red', 'Mode', '', 'gen.mode', gen.mode, gen.mode_s, 'gen_mode_cb'),
 				   w3_button('w3-red', '-Step', 'gen_step_up_down_cb', -1),
 				   w3_button('w3-green', '+Step', 'gen_step_up_down_cb', +1),
-				   w3_button('id-gen-sweep w3-css-yellow', 'Sweep', 'gen_sweep_cb'),
-               dbgUs? w3_checkbox('w3-label-inline w3-label-not-bold', 'CICF<br>filter', 'gen.cicf', gen.cicf, 'gen_cicf_cb'):'',
-               dbgUs? w3_checkbox('w3-label-inline w3-label-not-bold', 'HW<br>filter', 'gen.cich', gen.cich, 'gen_cich_cb'):'',
-               dbgUs? w3_checkbox('w3-label-inline w3-label-not-bold', 'FW<br>filter', 'gen.cicw', gen.cicw, 'gen_cicw_cb'):''
+				   w3_button('id-gen-sweep w3-css-yellow', 'Sweep', 'gen_sweep_cb')
 				),
 				w3_col_percent('w3-margin-top',
                w3_slider('id-gen-attn//', 'Attenuation', 'gen.attn_dB', gen.attn_dB, 0, gen.attn_dB_max, 5, 'gen_attn_cb'), 35,
@@ -208,8 +199,7 @@ function gen_set(freq, ampl, always)
 
 function gen_run()
 {
-   var run = ((gen.mode == gen.RF)? gen.RF_TONE : ((gen.mode == gen.AF)? gen.AF_NOISE: ((gen.mode == gen.SELF_TEST)? gen.STEST :0))) |
-      (gen.cicf? gen.CICF_SW :0) | (gen.cich? gen.CICF_HF :0) | (gen.cicw? gen.CICF_FW :0);
+   var run = (gen.mode == gen.RF)? gen.RF_TONE : ((gen.mode == gen.AF)? gen.AF_NOISE: ((gen.mode == gen.SELF_TEST)? gen.STEST :0));
    ext_send('SET run='+ run);
 }
 
@@ -222,27 +212,6 @@ function gen_mode_cb(path, idx, first)
 	gen_attn_cb('gen.attn_dB', gen.attn_dB, true);     // add/remove gen.attn_offset_val depending on mode setting
 	gen_set(gen.rf_enable? gen.freq : 0, gen.attn_ampl, true);
    colormap_update();
-   gen_run();
-}
-
-function gen_cicf_cb(path, checked, first)
-{
-   if (first) return;
-   w3_bool_cb(path, checked, first);
-   gen_run();
-}
-
-function gen_cich_cb(path, checked, first)
-{
-   if (first) return;
-   w3_bool_cb(path, checked, first);
-   gen_run();
-}
-
-function gen_cicw_cb(path, checked, first)
-{
-   if (first) return;
-   w3_bool_cb(path, checked, first);
    gen_run();
 }
 

@@ -97,11 +97,6 @@ typedef struct {
 	u4_t specAF_last_ms;
     bool isChanNull;
 	
-    #ifdef OPTION_EXPERIMENT_CICF
-        bool cicf_setup;
-        bool cicf_run;
-    #endif
-
     #ifdef SND_SEQ_CHECK
         bool snd_seq_ck_init;
 	    u4_t snd_seq_ck;

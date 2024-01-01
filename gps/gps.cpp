@@ -43,7 +43,7 @@ void gps_main(int argc, char *argv[])
     //      gps.v: "cmd_chan"
     //      ipcore_bram_gps_4k_12b
 
-    assert(GPS_CHANS <= GPS_MAX_CHANS);
+    assert(gps_chans <= GPS_MAX_CHANS);
 
 	printf("GPS starting..\n");
     SearchParams(argc, argv);

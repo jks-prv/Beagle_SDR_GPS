@@ -122,7 +122,7 @@ document.onreadystatechange = function() {
 
       // packages to load early on
       if (!website) {
-         kiwi_load_js('pkgs/js/sprintf/sprintf.js',
+         kiwi_load_js_dir('pkgs/js/', ['sprintf/sprintf.js', 'SHA256.js'],
             function() {
                //console.log(sprintf('%s', 'sprintf loaded'));
                kiwi_load2();

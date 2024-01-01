@@ -4,8 +4,12 @@
 
 `include "kiwi.cfg.vh"
 
+// Done this way because make_proj.tcl batch script modifies kiwi.cfg.vh for each build mode (e.g. rx4wf4)
+
 localparam V_RX_CHANS = (RX_CFG == 4)? 4 : ((RX_CFG == 8)? 8 : ((RX_CFG == 3)? 3 : ((RX_CFG == 14)? 14 : 0)));
 localparam V_WF_CHANS = (RX_CFG == 4)? 4 : ((RX_CFG == 8)? 2 : ((RX_CFG == 3)? 3 : ((RX_CFG == 14)?  0 : 0)));
+
+localparam V_GPS_CHANS = (RX_CFG == 4)? GPS_MAX_CHANS : ((RX_CFG == 8)? GPS_MAX_CHANS : ((RX_CFG == 3)? GPS_MAX_CHANS : ((RX_CFG == 14)?  GPS_RX14_CHANS : 0)));
 
 localparam RXBUF_SIZE = (RX_CFG == 4)? RXBUF_SIZE_4CH : ((RX_CFG == 8)? RXBUF_SIZE_8CH : ((RX_CFG == 3)? RXBUF_SIZE_3CH : ((RX_CFG == 14)? RXBUF_SIZE_14CH : 0)));
 localparam RXBUF_LARGE = (RX_CFG == 4)? 0 : ((RX_CFG == 8)? 1 : ((RX_CFG == 3)? 1 : ((RX_CFG == 14)? 2 : 0)));

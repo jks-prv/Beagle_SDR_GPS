@@ -447,11 +447,20 @@ void schedule_update(int min)
     
     do_daily_restart = first_update_window && !update_on_startup && (kiwi.daily_restart != DAILY_RESTART_NO);
     file_auto_download_check = first_update_window && !update_on_startup;
+    int restart_update = admcfg_int("restart_update", NULL, CFG_REQUIRED);
 
-    //printf("min=%d file_auto_download_check=%d update_window=%d update_on_startup=%d\n",
-    //    timer_sec()/60, file_auto_download_check, update_window, update_on_startup);
+    //printf("UPDATE: min=%d file_auto_download_check=%d update_window=%d update_on_startup=%d restart_update=%d\n",
+    //    timer_sec()/60, file_auto_download_check, update_window, update_on_startup, restart_update);
     
-    if (update_on_startup && admcfg_int("restart_update", NULL, CFG_REQUIRED) != 0) {
+    // Don't update after restarts just after a re-flash if the control file is present.
+    // The first subsequent update window will then remove the control file 
+    if (update_on_startup && restart_update == RESTART_INSTALL_UPDATES &&
+        kiwi_file_exists("/root/" REPO_NAME "/unix_env/reflash_delay_update")) {
+		lprintf("UPDATE: due to recent re-flash, update on restart delayed until update window\n");
+		update_on_startup = false;
+    }
+
+    if (update_on_startup && restart_update == RESTART_DELAY_UPDATES) {
 		lprintf("UPDATE: update on restart delayed until update window\n");
 		update_on_startup = false;
     }

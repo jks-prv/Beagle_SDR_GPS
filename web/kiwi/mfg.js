@@ -1,11 +1,18 @@
 // Copyright (c) 2016-2023 John Seamons, ZL4VO/KF6VO
 
 var mfg = {
+   w: 800,
+   h: 725,
+   th: 300,
+
    ver_maj: 0,
    ver_min: 0,
    
    serno: 0,
    next_serno: -1,
+   
+   dna: '',
+   seed_phrase_ok: false,
    
    model_i: 1,    // KiwiSDR 2
    model: 2,
@@ -71,28 +78,50 @@ function kiwi_ws_open(conn_type, cb, cbp)
 function mfg_html()
 {
 	var s =
-      w3_div('w3-container w3-section w3-dark-grey|width:800px',
-         w3_div('w3-text-aqua',
+      w3_div(sprintf('w3-container w3-section w3-dark-grey|width:%dpx;height:%dpx', mfg.w, mfg.h),
+         w3_div('w3-margin-bottom w3-text-aqua',
             '<h4><strong>Manufacturing interface</strong>&nbsp;&nbsp;' +
             '<small>(software version v'+ mfg.ver_maj +'.'+ mfg.ver_min +')</small></h4>'
          ),
 
-         w3_text('id-ee-status w3-bold'),
+         // status
+         w3_text('id-ee-status w3-bold w3-yellow w3-padding-LR-4 w3-padding-TB-0'),
+         '<hr>',
       
-         w3_col_percent('w3-margin-T-8 w3-valign/',
-            w3_div('id-ee-write w3-btn w3-round-large w3-margin-T-8||onclick="mfg_ee_write()"'), 45,
-            '&nbsp;', 15,
-            w3_button('id-power-off w3-css-magenta', 'click to halt<br>and power off', 'mfg_power_off'), 40
+         // write serno/model and register auto key
+         w3_div('id-mfg-not-kiwi1 w3-width-full w3-hide', 
+            w3_col_percent('w3-valign/',
+               w3_button('id-key-write w3-margin-T-8 w3-text-white', '', 'mfg_key_write_cb'), 45,
+               '&nbsp;', 15,
+            
+               w3_input('id-mfg-seed//w3-margin-3 w3-padding-small|width:300px', w3_label('w3-bold', 'Seed phrase ') +
+                  w3_div('id-mfg-seed-check cl-admin-check w3-btn w3-round-large w3-margin-B-8', ' '),
+                  'id-seed-phrase', '', 'mfg_set_seed_cb'
+               )
+            ),
+            '<hr>',
          ),
-         '<br>',
 
+         // write serno/model
          w3_col_percent('',
-            w3_button('id-seq-override w3-yellow', '', 'mfg_seq_override'), 45,
-            '<input id="id-seq-input" class="w3-input w3-border w3-width-auto w3-hover-shadow w3-hidden" type="text" size=4 onchange="mfg_seq_set()">', 15,
-            w3_select('', 'write EEPROM with model:', '', 'mfg.model_i', mfg.model_i, mfg.model_s, 'mfg_model_cb'), 40
+            w3_input('id-seq-input//w3-margin-T-4 w3-padding-small|width:70px', 'write EEPROM with serial number:',
+               'mfg.seq', 21000, 'mfg_seq_set_cb'), 45,
+            '&nbsp;', 15,
+
+            w3_select('', 'write EEPROM with model:', '', 'mfg.model_i', mfg.model_i, mfg.model_s, 'mfg_model_cb')
          ),
          '<hr>',
 
+         w3_col_percent('w3-valign/',
+            w3_button('id-sn-write w3-margin-T-8 w3-text-white', '', 'mfg_sn_write_cb'), 45,
+            '&nbsp;', 15,
+            
+            w3_button('id-mfg-restart w3-aqua', 'click to restart', 'mfg_restart_cb'), 20,
+            w3_button('id-mfg-power-off w3-css-magenta', 'click to halt<br>and power off', 'mfg_power_off_cb')
+         ),
+         '<hr>',
+
+      /*
          w3_div('w3-valign',
             w3_button('w3-aqua', 'Click to write micro-SD card', 'sd_backup_click_cb'),
 
@@ -111,25 +140,22 @@ function mfg_html()
             )
          ),
          '<hr>',
+      */
 
          w3_div('id-output-msg class-mfg-status w3-scroll-down w3-small')
       );
 	
 	var el = w3_innerHTML('id-mfg', s);
 	el.style.top = el.style.left = '10px';
+	if (kiwi.model != 1) w3_show('id-mfg-not-kiwi1');
 
-	w3_width_height('id-sd-progress-container', 300);
-	w3_width_height('id-output-msg', null, 300);
+	//w3_width_height('id-sd-progress-container', mfg.th);
+	w3_width_height('id-output-msg', null, mfg.th);
+
+   ext_send("SET get_dna");
 
    sd_backup_init();
    sd_backup_focus();
-}
-
-function mfg_model_cb(path, idx, first)
-{
-   mfg.model_i = +idx;
-   mfg.model = mfg.model_i + mfg.MODEL_BIAS;
-   mfg_set_button_text();
 }
 
 function mfg_recv(data)
@@ -177,6 +203,10 @@ function mfg_recv(data)
 				sd_backup_write_done(parseFloat(param[1]));
 				break;
 
+			case "dna":
+				mfg.dna = param[1];
+				break;
+
 			default:
 				console.log('MFG UNKNOWN: '+ param[0] +'='+ param[1]);
 				break;
@@ -184,55 +214,110 @@ function mfg_recv(data)
 	}
 }
 
+function mfg_model_cb(path, idx, first)
+{
+   mfg.model_i = +idx;
+   mfg.model = mfg.model_i + mfg.MODEL_BIAS;
+   mfg_set_button_text();
+}
+
 function mfg_set_status()
 {
    var invalid = (mfg.cur_model == -1 || mfg.serno == -1);
    var status = invalid? '(invalid)' : ('KiwiSDR '+ mfg.cur_model +', #'+ mfg.serno);
-   w3_innerHTML('id-ee-status', 'current EEPROM data: '+ status);
+   var el = w3_el('id-ee-status');
+   w3_innerHTML(el, 'current EEPROM data: '+ status);
+   w3_colors(el, 'w3-red', 'w3-yellow', !invalid);
 }
 
 function mfg_set_button_text()
 {
-   var button_text;
+   var el, button_text, sn_valid;
    
    if (mfg.serno <= 0) {		// write serno = 0 to force invalid for testing
       //button_text = 'invalid, click to write EEPROM<br>with next serial number: '+ mfg.next_serno +
       //   '<br>and model: KiwiSDR '+ mfg.model;
-      button_text = 'invalid, click to write EEPROM with:<br>model KiwiSDR '+ mfg.model +', #'+ mfg.next_serno;
-      button_color = 'red';
+      button_text = 'click to write EEPROM with:<br>model KiwiSDR '+ mfg.model +', #'+ mfg.next_serno;
+      sn_valid = false;
    } else {
       //button_text = 'valid, serial number = '+ mfg.serno +'<br>click to change to '+ mfg.next_serno +
       //   '<br>and model: KiwiSDR '+ mfg.model;
-      button_text = 'valid, click to change EEPROM to:<br>model KiwiSDR '+ mfg.model +', #'+ mfg.next_serno;
-      button_color = '#4CAF50';		// w3-green
+      button_text = 'click to change EEPROM to:<br>model KiwiSDR '+ mfg.model +', #'+ mfg.next_serno;
+      sn_valid = true;
    }
    
-   var el = w3_innerHTML('id-ee-write', button_text);
-   w3_background_color(el, button_color);
+   el = w3_el('id-key-write');
+   if (mfg.seed_phrase_ok) {
+      w3_innerHTML(el, button_text +'<br>AND send proxy key to kiwisdr.com');
+   } else {
+      w3_innerHTML(el, 'seed phrase incorrect');
+   }
+   w3_colors(el, 'w3-red', 'w3-green', sn_valid && mfg.seed_phrase_ok);
+
+   el = w3_innerHTML('id-sn-write', button_text);
+   w3_colors(el, 'w3-red', 'w3-green', sn_valid);
+   
+   w3_el('id-mfg.seq').value = mfg.next_serno;
 }
 
-function mfg_ee_write()
+function mfg_key_write_cb()
 {
-	ext_send("SET write model="+ mfg.model);
+   if (!mfg.seed_phrase_ok) return;
+   if (kiwi.model == 1) return;
+	ext_send("SET eeprom_write=1 serno="+ mfg.next_serno +" model="+ mfg.model);
+
+   var hash_key = mfg.next_serno +'_'+ mfg.dna;
+   var keygen = Sha256.hash(hash_key +'_'+ mfg.seed_phrase_hash);
+	var request = kiwi_GETrequest('proxy', 'http://proxy.kiwisdr.com/', {debug:1});
+	kiwi_GETrequest_param(request, "auth", 'eeb3f5150bdfb6dcfb6dcfb6dcfb6dcdc4fceeb3');
+	kiwi_GETrequest_param(request, "u", hash_key +'_'+ keygen);
+   kiwi_GETrequest_submit(request, { gc: 1 } );
+
+   var auto_key = keygen.slice(0,29);
+   ext_set_cfg_param('adm.rev_auto_user', auto_key);
+   ext_set_cfg_param('adm.rev_auto_host', mfg.next_serno.toString());
+   ext_set_cfg_param('adm.rev_auto', true, EXT_SAVE);
 }
 
-function mfg_seq_override()
+function mfg_sn_write_cb()
 {
-	w3_add('id-seq-input', 'w3-visible');
+	ext_send("SET eeprom_write=0 serno="+ mfg.next_serno +" model="+ mfg.model);
 }
 
-function mfg_seq_set()
+function mfg_set_seed_cb(path, val, first)
 {
-	mfg.next_serno = parseFloat(w3_el('id-seq-input').value).toFixed(0);
-	if (mfg.next_serno >= 0 && mfg.next_serno <= 99999999) {
+   if (first) return;
+   mfg.seed_phrase_hash = Sha256.hash(val);
+   //console.log('mfg_set_seed_cb: <'+ val +'> '+ mfg.seed_phrase_hash);
+   mfg.seed_phrase_ok = mfg.seed_phrase_hash.startsWith('e989cca6');
+   var el = w3_el('id-mfg-seed-check');
+   w3_innerHTML(el, mfg.seed_phrase_ok? 'Correct' : 'Incorrect');
+   w3_colors(el, 'w3-red', 'w3-green', mfg.seed_phrase_ok);
+   mfg_set_button_text();
+}
+
+function mfg_seq_set_cb(path, val, first)
+{
+	val = parseFloat(val).toFixed(0);
+	val = val || 21000;
+   console.log('mfg_seq_set_cb: next_serno='+ val);
+	if (val >= 0 && val <= 99999999) {
+	   mfg.next_serno = val;
 		ext_send("SET set_serno="+ mfg.next_serno);
 		mfg_set_button_text();
 	}
 }
 
-function mfg_power_off()
+function mfg_restart_cb()
 {
-	var el = w3_innerHTML('id-power-off', 'halting and<br>powering off...');
+	var el = w3_innerHTML('id-mfg-restart', 'restarting...');
+	w3_background_color(el, 'red');
+	ext_send("SET mfg_restart");
+}
+
+function mfg_power_off_cb()
+{
+	var el = w3_innerHTML('id-mfg-power-off', 'halting and<br>powering off...');
 	w3_background_color(el, 'red');
 	ext_send("SET mfg_power_off");
 }

@@ -88,7 +88,7 @@ void ctrl_set_ser_dev(u2_t ser_dev)
 
 void ctrl_clr_ser_dev()
 {
-    //printf("ctrl_set_ser_dev\n");
+    //printf("ctrl_clr_ser_dev\n");
     ctrl_clr_set(CTRL_SER_MASK, CTRL_SER_NONE);
 }
 
@@ -220,8 +220,6 @@ void fpga_init() {
 
 	// FPGA configuration bitstream
     fp = fopen(stprintf("%sKiwiSDR.%s.bit", background_mode? "/usr/local/bin/":"", fpga_file) , "rb");
-    //fp = fopen(stprintf("%sKiwiSDR.%s%s.bit", background_mode? "/usr/local/bin/":"",
-    //    kiwi.anti_aliased? ".anti_aliased" : "", fpga_file) , "rb");
     if (!fp) panic("fopen config");
     kiwi_asfree(fpga_file);
 

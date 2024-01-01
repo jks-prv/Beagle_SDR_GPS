@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 646
+VERSION_MIN = 647
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -1719,7 +1719,7 @@ copy_from_git:
 
 # used by gdiff et al aliases
 GITDIFF_EXCLUDE := --exclude=.DS_Store --exclude=.git \
-    --exclude=d --exclude=g --exclude=kiwi --exclude=n --exclude=ng
+    --exclude=k --exclude=d --exclude=g --exclude=n --exclude=ng
 GITDIFF_EXCLUDE2 := $(GITDIFF_EXCLUDE) --exclude="*.min.*"
 
 gitdiff:

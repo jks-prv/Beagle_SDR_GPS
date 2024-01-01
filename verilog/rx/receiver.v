@@ -42,7 +42,6 @@ module RECEIVER (
     input  wire        wrEvt2,
     
     input  wire        use_gen_C,
-    input  wire        gen_fir_C,
     
     input  wire        self_test_en_C,
     output wire        self_test
@@ -214,15 +213,11 @@ module RECEIVER (
 	// an "undriven" error for rd_* results.
 	wire rd_i, rd_q;
 
-    wire use_FIR_A;
-    SYNC_WIRE sync_use_FIR (.in(gen_fir_C), .out_clk(adc_clk), .out(use_FIR_A));
-
 	RX #(.IN_WIDTH(RX_IN_WIDTH)) rx_inst [V_RX_CHANS-1:0] (
 		.adc_clk		(adc_clk),
 		.adc_data		(rx_data),
 		
 		.rx_sel_C		(rxn_sel_C),
-		.use_FIR_A      (use_FIR_A),
 
 		.rd_i			(rd_i),
 		.rd_q			(rd_q),
@@ -235,7 +230,7 @@ module RECEIVER (
 		.set_rx_freqH_C	(set_rx_freqH_C),
 		.set_rx_freqL_C	(set_rx_freqL_C)
 	);
-	
+
 
     //////////////////////////////////////////////////////////////////////////
 	// rx audio shared sample memory

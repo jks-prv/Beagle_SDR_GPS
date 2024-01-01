@@ -185,7 +185,13 @@ static void spi_scan(int wait, SPI_MOSI *mosi, int tbytes=0, SPI_MISO *miso=junk
 	
 	int bytes = MAX(tx_bytes, prev->len_bytes);
 	spi.bytes += bytes;
-	//real_printf("%s-%d/%d ", &cmds[mosi->data.cmd][3], tx_bytes, prev->len_bytes); fflush(stdout);
+	
+	#if 0
+        if (mosi->data.cmd == CmdPing || mosi->data.cmd == CmdPing2)
+            real_printf("%s: tx%d(%dX)|Prx%d(%dX)=T%d(%dX) Crx%d(%dX) ", &cmds[mosi->data.cmd][3],
+                tx_bytes, tx_xfers, prev->len_bytes, SPI_B2X(prev->len_bytes), bytes, SPI_B2X(bytes),
+                rx_bytes, SPI_B2X(rx_bytes)); fflush(stdout);
+    #endif
 	
 	evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_scan", evprintf("ENTER %s(%d) mosi %p:%dx miso %p%s:%dB prev %p%s:%dx",
 		cmds[mosi->data.cmd], mosi->data.cmd, mosi, tx_xfers,

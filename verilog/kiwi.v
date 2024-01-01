@@ -172,10 +172,11 @@ module KiwiSDR (
 	assign ADC_CLKEN = !ctrl[CTRL_OSC_DIS];
 
 `ifdef USE_SDR
-	reg signed [ADC_BITS-1:0] reg_adc_data;
+	reg signed [ADC_BITS-1:0] reg_adc_data, reg2_adc_data;
     always @ (posedge adc_clk)
     begin
-    	reg_adc_data <= ADC_DATA;
+    	reg2_adc_data <= ADC_DATA;
+    	reg_adc_data  <= reg2_adc_data;
     end
 `endif
     
@@ -203,7 +204,7 @@ module KiwiSDR (
     end
 
 	assign ADC_STENL = !ctrl[CTRL_STEN];
-    wire [1:0] ser_sel = ctrl & CTRL_SER_MASK;
+    wire [1:0] ser_sel = ctrl[1:0];
 
     wire ser_attn = (ser_sel == CTRL_SER_ATTN);
 	assign DA_DALE = ser_attn && ctrl[CTRL_SER_LE_CSN];
@@ -293,9 +294,19 @@ module KiwiSDR (
     // device DNA
     //////////////////////////////////////////////////////////////////////////
     
-    // FIXME: Vivado ML is unhappy that we clock DNA_PORT.CLK statically
+    // level to single pulse
+    localparam RISE=2'b01;
+    reg [1:0] _dna_rd, _dna_sf;
+    wire dna_rd = (_dna_rd == RISE);
+    wire dna_sf = (_dna_sf == RISE);
+    always @ (posedge cpu_clk)
+        begin
+            _dna_rd <= {_dna_rd[0], dna_read && dna_clk};
+            _dna_sf <= {_dna_sf[0], dna_shift && dna_clk};
+        end
+
     wire dna_data;
-    DNA_PORT dna(.CLK(dna_clk), .READ(dna_read), .SHIFT(dna_shift), .DIN(1'b1), .DOUT(dna_data));
+    DNA_PORT dna(.CLK(cpu_clk), .READ(dna_rd), .SHIFT(dna_sf), .DIN(1'b1), .DOUT(dna_data));
 
 
     //////////////////////////////////////////////////////////////////////////
@@ -308,7 +319,6 @@ module KiwiSDR (
 	
 `ifdef USE_SDR
 	wire use_gen_C = ctrl[CTRL_USE_GEN];
-	wire gen_fir_C = ctrl[CTRL_GEN_FIR];
 	
 	wire self_test;
 	assign ADC_STSIG = self_test;
@@ -340,7 +350,6 @@ module KiwiSDR (
         .wrEvt2         (wrEvt2),
         
         .use_gen_C      (use_gen_C),
-        .gen_fir_C      (gen_fir_C),
         
         .self_test_en_C (ctrl[CTRL_STEN]),
         .self_test      (self_test)

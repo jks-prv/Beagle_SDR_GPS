@@ -16,6 +16,7 @@ Boston, MA  02110-1301, USA.
 */
 
 // Copyright (c) 2014-2023 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2018-2023 Christoph Mayer, DL1CH
 
 #include "types.h"
 #include "options.h"
@@ -158,10 +159,6 @@ CFastFIR m_PassbandFIR[MAX_RX_CHANS];
 CFastFIR m_chan_null_FIR[MAX_RX_CHANS];
 
 CFir m_AM_FIR[MAX_RX_CHANS];
-
-#ifdef OPTION_EXPERIMENT_CICF
-    CFir m_CICF_FIR[MAX_RX_CHANS];
-#endif
 
 CFir m_nfm_deemp_FIR[MAX_RX_CHANS];     // see: tools/FIR.m
 CFir m_am_ssb_deemp_FIR[MAX_RX_CHANS];
@@ -344,25 +341,16 @@ void c2s_sound(void *param)
 	nbuf_t *nb = NULL;
 
 	while (TRUE) {
-		double f_phase;
-		u64_t i_phase;
-		
 		// reload freq NCO if adc clock has been corrected
 		// reload freq NCO if spectral inversion changed
 		if (s->freq >= 0 && (adc_clock_corrected != conn->adc_clock_corrected || s->spectral_inversion != kiwi.spectral_inversion)) {
 		    //cprintf(conn, "SND UPD adc_clock_corrected=%lf conn->adc_clock_corrected=%lf\n", adc_clock_corrected, conn->adc_clock_corrected);
 			adc_clock_corrected = conn->adc_clock_corrected;
             s->spectral_inversion = kiwi.spectral_inversion;
-
-			double freq_kHz = s->freq * kHz;
-			double freq_inv_kHz = ui_srate - freq_kHz;
-			f_phase = (s->spectral_inversion? freq_inv_kHz : freq_kHz) / conn->adc_clock_corrected;
-            i_phase = (u64_t) round(f_phase * pow(2,48));
-            //cprintf(conn, "SND UPD freq %.3f kHz i_phase 0x%08x|%08x clk %.6f(%d)\n",
-            //    s->freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected, clk.adc_clk_corrections);
-            if (do_sdr) spi_set3(CmdSetRXFreq, rx_chan, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
-
+            rx_sound_set_freq(conn, s);
 		    //cprintf(conn, "SND freq updated due to ADC clock correction\n");
+		    
+            rx_gen_set_freq(conn, s);
 		}
 
         #ifdef SND_FREQ_SET_IQ_ROTATION_BUG_WORKAROUND
@@ -370,13 +358,7 @@ void c2s_sound(void *param)
                 //#define DOUBLE_SET_DELAY 500        // only 90% reliable!
                 #define DOUBLE_SET_DELAY 1500
                 if (timer_ms() > first_freq_time + DOUBLE_SET_DELAY) {
-                    double freq_kHz = s->freq * kHz;
-                    double freq_inv_kHz = ui_srate - freq_kHz;
-                    f_phase = (s->spectral_inversion? freq_inv_kHz : freq_kHz) / conn->adc_clock_corrected;
-                    i_phase = (u64_t) round(f_phase * pow(2,48));
-                    //cprintf(conn, "SND DOUBLE-SET freq %.3f kHz i_phase 0x%08x|%08x clk %.6f rx_chan=%d\n",
-                    //    s->freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected, rx_chan);
-                    spi_set3(CmdSetRXFreq, rx_chan, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
+                    rx_sound_set_freq(conn, s);
                     first_freq_set = false;
                 }
             }
@@ -486,19 +468,6 @@ void c2s_sound(void *param)
 		    dx_update_seq = dx.update_seq;
         }
 
-        #ifdef OPTION_EXPERIMENT_CICF
-            if (s->cicf_setup) {
-                // defaults should give ntaps=17
-                float pass = 1800;
-                float stop = 6000;
-                float attn = 90;
-                int ntaps = m_CICF_FIR[rx_chan].InitLPFilter(0, 1.0, attn, pass, stop, frate, true);
-                printf("m_CICF_FIR pass=%.0f stop=%.0f attn=%.0f, ntaps=%d\n", pass, stop, attn, ntaps);
-                s->cicf_run = true;
-                s->cicf_setup = false;
-            }
-        #endif
-		
 		#define	SND_FLAG_LPF		    0x01
 		#define	SND_FLAG_ADC_OVFL	    0x02
 		#define	SND_FLAG_NEW_FREQ	    0x04
@@ -637,13 +606,6 @@ void c2s_sound(void *param)
 		            m_NoiseProc_snd[rx_chan].ProcessBlanker(ns_in, in_samps_c, in_samps_c);
 		    #endif
 		    
-		    #ifdef OPTION_EXPERIMENT_CICF
-		        if (s->cicf_run) {
-                    m_CICF_FIR[rx_chan].ProcessFilter(ns_in, in_samps_c, in_samps_c);
-                    //real_printf("."); fflush(stdout);
-		        }
-		    #endif
-
             TYPECPX *fir_samps_c = &iq->iq_samples[iq->iq_wr_pos][0];
             ns_out  = m_PassbandFIR[rx_chan].ProcessData(rx_chan, ns_in, in_samps_c, fir_samps_c);
             fir_pos = m_PassbandFIR[rx_chan].FirPos();
