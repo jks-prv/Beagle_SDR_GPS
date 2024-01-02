@@ -2160,6 +2160,11 @@ function w3_switch_set_value(path, switch_idx)
 	});
 }
 
+function w3_switch_idx(val)
+{
+   return (val? w3_SWITCH_YES_IDX : w3_SWITCH_NO_IDX);
+}
+
 
 ////////////////////////////////
 // buttons: single, clickable icon
