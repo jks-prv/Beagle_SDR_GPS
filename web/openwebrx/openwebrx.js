@@ -9156,7 +9156,6 @@ var SMETER_INPUT_RANGE = (SMETER_BIAS + SMETER_INPUT_MAX);
 var SMETER_DISPLAY_MAX = -6;     // don't display all the way to SMETER_INPUT_MAX
 var SMETER_DISPLAY_RANGE = (SMETER_BIAS + SMETER_DISPLAY_MAX);
 var sMeter_ctx;
-var smeter_ovfl;
 
 // 6 dB / S-unit
 var bars = {
@@ -9179,13 +9178,13 @@ function smeter_init(force_no_agc_thresh_smeter)
 	
 	w3_innerHTML(smeter_control,
 		'<canvas id="id-smeter-scale" class="class-smeter-scale" width="0" height="0"></canvas>',
-		w3_div('id-smeter-ovfl w3-hide', 'OV'),
 		w3_div('id-smeter-dbm-value'),
-		w3_div('id-smeter-dbm-units', 'dBm')
+		w3_div('id-smeter-dbm-units', 'dBm'),
+		w3_div('id-smeter-ovfl w3-hide', 'OV'),
+		w3_div('id-smeter-attn w3-hide', 'Attn')
 	);
 
 	var sMeter_canvas = w3_el('id-smeter-scale');
-	smeter_ovfl = w3_el('smeter-ovfl');
 
    var width = divControl? divControl.activeWidth : 350;
    var canvas_LR_border_pad = html_LR_border_pad(sMeter_canvas);
@@ -9221,7 +9220,7 @@ function smeter_init(force_no_agc_thresh_smeter)
 
 var sm_px = 0, sm_timeout = 0, sm_interval = 10;
 var sm_ovfl_showing = false;
-//var audio_ext_adc_ovfl_test = 0;
+var sm_timer = 0;
 
 function update_smeter()
 {
@@ -9251,23 +9250,29 @@ function update_smeter()
 		}
 	}
 	
-	//audio_ext_adc_ovfl_test++;
-	//audio_ext_adc_ovfl = ((audio_ext_adc_ovfl_test % 32) < 16);
+	sm_timer++;
+	var attn_period = ((sm_timer & 0x1f) <= 0x07);
+	//audio_ext_adc_ovfl = ((sm_timer % 32) < 16);    // test
 	
-	if (audio_ext_adc_ovfl && !sm_ovfl_showing) {
-	   w3_hide('id-smeter-dbm-units');
-	   w3_show('id-smeter-ovfl');
-	   w3_call('S_meter_adc_ovfl', true);
-	   sm_ovfl_showing = true;
-	} else
-	if (!audio_ext_adc_ovfl && sm_ovfl_showing) {
-	   w3_hide('id-smeter-ovfl');
-	   w3_show('id-smeter-dbm-units');
-	   w3_call('S_meter_adc_ovfl', false);
-	   sm_ovfl_showing = false;
+	if (kiwi.rf_attn && attn_period) {
+      w3_show('id-smeter-attn');
+	   w3_innerHTML('id-smeter-dbm-value', (kiwi.rf_attn).toFixed(1));
+	} else {
+      w3_hide('id-smeter-attn');
+      if (audio_ext_adc_ovfl && !sm_ovfl_showing) {
+         w3_hide('id-smeter-dbm-units');
+         w3_show('id-smeter-ovfl');
+         w3_call('S_meter_adc_ovfl', true);
+         sm_ovfl_showing = true;
+      } else
+      if (!audio_ext_adc_ovfl && sm_ovfl_showing) {
+         w3_hide('id-smeter-ovfl');
+         w3_show('id-smeter-dbm-units');
+         w3_call('S_meter_adc_ovfl', false);
+         sm_ovfl_showing = false;
+      }
+	   w3_innerHTML('id-smeter-dbm-value', (owrx.sMeter_dBm).toFixed(0));
 	}
-	
-	w3_innerHTML('id-smeter-dbm-value', (owrx.sMeter_dBm).toFixed(0));
 }
 
 

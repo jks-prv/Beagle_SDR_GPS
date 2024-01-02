@@ -752,8 +752,25 @@ html, body
 	color: white;
 	border-style: solid;
 	border-color: red;
+	border-width: 1px 5px 1px 4px;
+	border-radius: 4px;
+	-moz-border-radius: 8px;
+}
+
+.id-smeter-attn
+{
+	position: absolute;
+	/* top: 2px; */
+	/* right: 7px; */
+	bottom: 6px;
+	right: 4px;
+	background: orange;
+	font-size: 9pt;
+	color: black;
+	border-style: solid;
+	border-color: orange;
 	border-width: 1px 4px 1px 4px;
-	border-radius: 8px;
+	border-radius: 4px;
 	-moz-border-radius: 8px;
 }
 
