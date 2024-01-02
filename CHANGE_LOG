@@ -2,12 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.647  January 2, 2024
+v1.647,648  January 2, 2024
     Finally fixed the long-standing problem with adjacent channel aliasing into the passband.
     Fixed with Christoph's addition of FPGA CIC compensation filtering which you can read about here:
     hcab14.blogspot.com/2024/01/kiwisdr-gets-cic-compensating-filters.html
     See Kiwi forum for further discussion.
     
+    If non-zero RF attenuator value shown in S-meter as a reminder.
     Updated HFDL system table to version 52.
 
 v1.646  December 13, 2023
