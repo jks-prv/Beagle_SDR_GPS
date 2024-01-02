@@ -92,6 +92,7 @@ void rx_sound_set_freq(conn_t *conn, snd_t *s)
 void rx_gen_set_freq(conn_t *conn, snd_t *s)
 {
     int rx_chan = conn->rx_channel;
+    if (rx_chan != 0 || !s->gen_enable) return;
     u4_t self_test = (s->gen < 0 && !kiwi.ext_clk)? CTRL_STEN : 0;
     s->gen = fabs(s->gen);
     double f_phase = s->gen * kHz / conn->adc_clock_corrected;
@@ -101,7 +102,7 @@ void rx_gen_set_freq(conn_t *conn, snd_t *s)
         spi_set3(CmdSetGenFreq, rx_chan, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
         ctrl_clr_set(CTRL_USE_GEN | CTRL_STEN, s->gen? (CTRL_USE_GEN | self_test):0);
     }
-    if (rx_chan == 0) g_genfreq = s->gen * kHz / ui_srate;
+    g_genfreq = s->gen * kHz / ui_srate;
 }
 
 void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
@@ -363,16 +364,19 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
 
     case CMD_GEN_FREQ:
         n = sscanf(cmd, "SET gen=%lf", &s->gen);
-        if (n == 1) {
+        if (n == 1 && rx_chan == 0) {
+            //cprintf(conn, "SET gen=%lf\n", &s->gen);
             did_cmd = true;
+            if (s->gen != 0 && !s->gen_enable) s->gen_enable = true;
             rx_gen_set_freq(conn, s);
+            if (s->gen == 0 && s->gen_enable) s->gen_enable = false;
         }
         break;
 
     case CMD_GEN_ATTN:
         int _genattn;
         n = sscanf(cmd, "SET genattn=%d", &_genattn);
-        if (n == 1) {
+        if (n == 1 && rx_chan == 0) {
             did_cmd = true;
             if (1 || s->genattn != _genattn) {
                 s->genattn = _genattn;

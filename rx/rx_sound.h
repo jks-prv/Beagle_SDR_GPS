@@ -106,6 +106,7 @@ typedef struct {
 
 	double freq, gen, locut, hicut;
 	int mode, genattn, mute, test, deemp, deemp_nfm;
+	bool gen_enable;
 	u4_t mparam, SAM_mparam;
 	bool spectral_inversion;
     u4_t cmd_recv;

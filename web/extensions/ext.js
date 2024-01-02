@@ -206,6 +206,11 @@ function ext_get_cfg_param_string(path, init_val, save)
 
 function ext_set_cfg_param(path, val, save)
 {
+   if (path.startsWith('id-')) {
+      console.log('$WARNING: ext_set_cfg_param path='+ path);
+      return;
+   }
+   
 	path = w3_add_toplevel(path);	
 	setVarFromString(path, val);
 	save = (isArg(save) && save == EXT_SAVE)? true : false;
