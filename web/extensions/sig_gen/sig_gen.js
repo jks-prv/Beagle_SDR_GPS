@@ -30,7 +30,7 @@ var gen = {
 
 	attn_offset_val: 0,
 	attn_offset: 1,
-	attn_offset_s: [ 'no offset', 'waterfall' ]
+	attn_offset_s: [ 'no offset', 'S-meter' ]
 };
 
 function sig_gen_main()
@@ -90,7 +90,7 @@ function gen_auth()
 
 function gen_controls_setup()
 {
-	gen.attn_offset_s[1] = 'waterfall cal '+ wf.cal +' dB';
+	gen.attn_offset_s[1] = 'S-meter cal '+ cfg.S_meter_cal +' dB';
    gen.save_freq = gen.freq;
    var do_sweep = 0, do_help = false;
    
@@ -308,7 +308,7 @@ function gen_attn_cb(path, val, complete)
 function gen_attn_offset_cb(path, idx, first)
 {
    idx = +idx;
-   gen.attn_offset_val = (idx == 0)? 0 : wf.cal;
+   gen.attn_offset_val = (idx == 0)? 0 : cfg.S_meter_cal;
    gen_attn_cb('gen.attn_dB', gen.attn_dB, true);
 }
 

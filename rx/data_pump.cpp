@@ -70,7 +70,8 @@ struct rx_trailer_t {
 static rx_trailer_t *rxt;
 
 // rescale factor from hardware samples to what CuteSDR code is expecting
-const TYPEREAL rescale = MPOW(2, -RXOUT_SCALE + CUTESDR_SCALE);
+// USE_RX_CICF: add 3 dB due to lower CIC gain when decimated by 2 (the CIC compensating FIR gain = 1)
+const TYPEREAL rescale = MPOW(2, -RXOUT_SCALE + CUTESDR_SCALE) * (VAL_USE_RX_CICF? MPOW(10, 3.0/20.0) : 1);
 static int rx_xfer_size;
 static u4_t last_run_us;
 
@@ -394,7 +395,7 @@ void data_pump_init()
 	// see rx_dpump_t.in_samps[][]
 	assert(FASTFIR_OUTBUF_SIZE > nrx_samps);
 	
-	//printf("data pump: rescale=%.6g\n", rescale);
+	//printf("data pump: rescale=%.6g VAL_USE_RX_CICF=%d\n", rescale, VAL_USE_RX_CICF);
 
 	CreateTaskF(data_pump, 0, DATAPUMP_PRIORITY, CTF_POLL_INTR);
 }
