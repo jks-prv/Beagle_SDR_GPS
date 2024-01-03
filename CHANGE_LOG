@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.647,648  January 2, 2024
+v1.647,648,649  January 2, 2024
     Finally fixed the long-standing problem with adjacent channel aliasing into the passband.
     Fixed with Christoph's addition of FPGA CIC compensation filtering which you can read about here:
     hcab14.blogspot.com/2024/01/kiwisdr-gets-cic-compensating-filters.html
