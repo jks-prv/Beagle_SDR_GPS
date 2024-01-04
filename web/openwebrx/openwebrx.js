@@ -9271,7 +9271,8 @@ function update_smeter()
          w3_call('S_meter_adc_ovfl', false);
          sm_ovfl_showing = false;
       }
-	   w3_innerHTML('id-smeter-dbm-value', (owrx.sMeter_dBm).toFixed(0));
+	   var prec = (owrx.sMeter_dBm <= -100)? 0:1;
+	   w3_innerHTML('id-smeter-dbm-value', (owrx.sMeter_dBm).toFixed(prec));
 	}
 }
 
