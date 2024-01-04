@@ -70,8 +70,9 @@ struct rx_trailer_t {
 static rx_trailer_t *rxt;
 
 // rescale factor from hardware samples to what CuteSDR code is expecting
-// USE_RX_CICF: add 3 dB due to lower CIC gain when decimated by 2 (the CIC compensating FIR gain = 1)
-const TYPEREAL rescale = MPOW(2, -RXOUT_SCALE + CUTESDR_SCALE) * (VAL_USE_RX_CICF? MPOW(10, 3.0/20.0) : 1);
+#define CICF_GAIN_dB 4.5    // empirical measurement using Kiwi sig gen
+const TYPEREAL rescale = MPOW(2, -RXOUT_SCALE + CUTESDR_SCALE) * (VAL_USE_RX_CICF? MPOW(10, CICF_GAIN_dB/20.0) : 1);
+
 static int rx_xfer_size;
 static u4_t last_run_us;
 

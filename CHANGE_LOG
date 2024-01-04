@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.650  January 4, 2024
+    Changed CIC compensation filter gain correction based on better measurements (+3 => +4.5 dB).
+    S-meter now shows 1/10 dB digit when value > -100 dBm.
+    Sig gen extension attenuation offset is now an independent value saved in browser storage.
+
 v1.647,648,649  January 2, 2024
     Finally fixed the long-standing problem with adjacent channel aliasing into the passband.
     Fixed with Christoph's addition of FPGA CIC compensation filtering which you can read about here:
