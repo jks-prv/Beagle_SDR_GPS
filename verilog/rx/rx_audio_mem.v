@@ -298,15 +298,9 @@ module rx_audio_mem (
 
 	wire rd = get_rx_samp_C;
 	
-	reg [47:0] ticks_latched_A;
-	
-	always @ (posedge adc_clk)
-		if (rx_avail_A)
-		    ticks_latched_A <= ticks_A;
-
 	wire [15:0] din =
 	    use_ts?
-	        ( (tsel == 0)? ticks_latched_A[15 -:16] : ( (tsel == 1)? ticks_latched_A[31 -:16] : ticks_latched_A[47 -:16]) ) :
+	        ( (tsel == 0)? ticks_A[15 -:16] : ( (tsel == 1)? ticks_A[31 -:16] : ticks_A[47 -:16]) ) :
 	        ( use_ctr? buf_ctr : rx_dout_A );
     wire [15:0] dout;
 

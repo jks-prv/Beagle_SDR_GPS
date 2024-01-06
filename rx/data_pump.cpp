@@ -154,12 +154,13 @@ static void snd_service()
             // check 48-bit ticks counter timestamp
             static int debug_ticks;
             if (debug_ticks >= 1024 && debug_ticks < 1024+8) {
-                for (int j=-1; j>-2; j--)
-                    printf("debug_iq3 %d %d %02d%04x %02d%04x\n", j, NRX_SAMPS*rx_chans+j,
-                        rxd->iq_t[NRX_SAMPS*rx_chans+j].i3, rxd->iq_t[NRX_SAMPS*rx_chans+j].i,
-                        rxd->iq_t[NRX_SAMPS*rx_chans+j].q3, rxd->iq_t[NRX_SAMPS*rx_chans+j].q);
-                printf("debug_ticks %04x[0] %04x[1] %04x[2]\n", rxd->ticks[0], rxd->ticks[1], rxd->ticks[2]);
-                printf("debug_bufcnt %04x\n", rxd->write_ctr_stored);
+                for (int j=-1; j>-2; j--) {
+                    real_printf("debug_iq3 %d %d(%d*%d) %02x%04x %02x%04x\n", j, nrx_samps*rx_chans+j, nrx_samps, rx_chans,
+                        rxd->iq_t[nrx_samps*rx_chans+j].i3, rxd->iq_t[nrx_samps*rx_chans+j].i,
+                        rxd->iq_t[nrx_samps*rx_chans+j].q3, rxd->iq_t[nrx_samps*rx_chans+j].q);
+                }
+                real_printf("debug_ticks %04x[2] %04x[1] %04x[0]\n", rxt->ticks[2], rxt->ticks[1], rxt->ticks[0]);
+                real_printf("debug_bufcnt %04x\n\n", rxt->write_ctr_stored);
             }
             debug_ticks++;
         #endif
