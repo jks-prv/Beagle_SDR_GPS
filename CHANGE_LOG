@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.651  January 6, 2024
+    Possible fix for TDoA problem.
+
 v1.650  January 4, 2024
     Changed CIC compensation filter gain correction based on better measurements (+3 => +4.5 dB).
     S-meter now shows 1/10 dB digit when value > -100 dBm.
