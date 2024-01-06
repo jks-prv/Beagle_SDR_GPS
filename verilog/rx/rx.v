@@ -29,6 +29,7 @@ module RX (
 	input  wire		   rd_q,
 	output wire [15:0] rx_dout_A,
 	output wire		   rx_avail_A,
+	output wire		   ticks_strobe,
 
 	input  wire		   cpu_clk,
     input  wire [31:0] freeze_tos_A,
@@ -152,6 +153,7 @@ fir_iq #(.WIDTH(RXO_BITS))
 		.reset			(1'b0),
 		.in_strobe		(rx_cic2_avail),
 		.out_strobe		(rx_cicf_avail),
+		.ticks_strobe   (ticks_strobe),
 		.in_data_i		(rx_cic2_out_i),
 		.in_data_q		(rx_cic2_out_q),
 		.out_data_i		(rx_cicf_out_i),
@@ -165,6 +167,7 @@ fir_iq #(.WIDTH(RXO_BITS))
     assign rx_avail_A   = rx_cic2_avail;
     assign rx_cic_out_i = rx_cic2_out_i;
     assign rx_cic_out_q = rx_cic2_out_q;
+    assign ticks_strobe = rx_cic2_avail;
 `endif
 
 	reg [15:0] rx_dout;

@@ -1352,7 +1352,7 @@ function tdoa_host_click_status_cb(obj, field_idx)
             tdoa_set_icon('listen', field_idx, 'fa-volume-up', 20, 'lime', 'tdoa_listen_cb', field_idx);
             var s = fixes_min? (fixes_min +' GPS fixes/min') : 'channel available';
             w3_innerHTML('id-tdoa-sample-status-'+ field_idx, s);
-            f.host.selected = true;
+            if (f.host) f.host.selected = true;
             tdoa_rebuild_hosts();
             if (f.mkr) tdoa_change_marker_style(f.mkr, 'red', 'white', 'cl-tdoa-gmap-selected-label');
             tdoa_update_link();
@@ -1702,8 +1702,8 @@ function tdoa_submit_status_new_cb(no_rerun_files)
    
    kiwi_ajax(tdoa.url_files + tdoa.response.key +'/status.json',
       function(j) {
-         //console.log('tdoa_submit_status_new_cb');
-         //console.log(j);
+         console.log('tdoa_submit_status_new_cb');
+         console.log(j);
          var okay = 0;
          var info = undefined;
          var err = 'unknown status returned';
@@ -1731,9 +1731,12 @@ function tdoa_submit_status_new_cb(no_rerun_files)
          if (okay == 0) {
             try { status = j.octave_error.identifier; } catch(ex) { status = undefined; }
             try { message = j.octave_error.message; } catch(ex) { message = undefined; }
-            if (status) {
-               err = status;
-               if (message) console.log(message);
+            console.log('status='+ status +' message='+ message);
+            if (status || message) {
+               if (status != '') err = status;
+               else
+               if (message != '') err = message;
+               console.log('err='+ err);
                okay = 3;
             } else {
                okay = 0;
