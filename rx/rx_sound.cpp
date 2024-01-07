@@ -92,14 +92,6 @@ snd_t snd_inst[MAX_RX_CHANS];
 const double gps_delay    = 28926.838e-6;
 const double gps_week_sec = 7*24*3600.0;
 
-struct gps_timestamp_t {
-    bool   init;
-	double gpssec;       // current gps timestamp
-	double last_gpssec;  // last gps timestamp
-};
-
-gps_timestamp_t gps_ts[MAX_RX_CHANS];
-
 float g_genfreq, g_genampl, g_mixfreq;
 
 // if entries here are ordered by snd_cmd_key_e then the reverse lookup (str_hash_t *)->hashes[key].name
@@ -310,16 +302,13 @@ void c2s_sound(void *param)
 	wdsp_SAM_PLL(rx_chan, PLL_MED);
 	wdsp_SAM_PLL(rx_chan, PLL_RESET);
 
-	gps_timestamp_t *gps_tsp = &gps_ts[rx_chan];
-	memset(gps_tsp, 0, sizeof(gps_timestamp_t));
-
-    // Compensate for audio sample buffer size in FPGA. Normalize to buffer size used for FW_SEL_SDR_RX4_WF4 mode.
+    // Compensate for audio sample buffer size in FPGA. Normalize to buffer size used for FW_SEL_SDR_RX8_WF2 mode.
 	int ref_nrx_samps = NRX_SAMPS_CHANS(8);     // 8-ch mode has the smallest FPGA buffer size
     int norm_nrx_samps;
     double gps_delay2 = 0;
 	switch (fw_sel) {
 	    // nrx_samps = 680/nch (config.h)
-	    // norm_nrx_samps typ: rx8:85 rx4:(170-85)=85 rx14:85 rx3:323.207
+	    // norm_nrx_samps typ: rx8:85 rx4:(170-85)=85 rx14:48 rx3:323.207
 	    case FW_SEL_SDR_RX4_WF4: norm_nrx_samps = nrx_samps - ref_nrx_samps; break;
 	    case FW_SEL_SDR_RX8_WF2: norm_nrx_samps = nrx_samps; break;
 	    case FW_SEL_SDR_RX14_WF0: norm_nrx_samps = nrx_samps; break;    // FIXME: this is now the smallest buffer size
@@ -545,27 +534,27 @@ void c2s_sound(void *param)
 
 			// check 48-bit ticks counter timestamp in audio IQ stream
 			const u64_t ticks   = rx->ticks[rx->rd_pos];
-			const u64_t dt      = time_diff48(ticks, clk.ticks);  // time difference to last GPS solution
+			const u64_t dticks  = time_diff48(ticks, clk.ticks);  // time difference to last GPS solution
 #if 0
 			static u64_t last_ticks[MAX_RX_CHANS] = {0};
 			static u4_t  tick_seq[MAX_RX_CHANS]   = {0};
 			const u64_t delta_ticks = time_diff48(ticks, last_ticks[rx_chan]); // time difference to last buffer
 			
 			if ((tick_seq[rx_chan] % 32) == 0)
-			    printf("ticks %08x|%08x delta %08x|%08x // clk.ticks %08x|%08x dt %08x|%08x #%d,%d GPST %f\n",
+			    printf("ticks %08x|%08x delta %08x|%08x // clk.ticks %08x|%08x dticks %08x|%08x #%d,%d GPST %f\n",
                     PRINTF_U64_ARG(ticks), PRINTF_U64_ARG(delta_ticks),
-                    PRINTF_U64_ARG(clk.ticks), PRINTF_U64_ARG(dt),
+                    PRINTF_U64_ARG(clk.ticks), PRINTF_U64_ARG(dticks),
                     clk.adc_gps_clk_corrections, clk.adc_clk_corrections, clk.gps_secs);
 			if (delta_ticks != rx_decim * nrx_samps)
-				printf("ticks %08x|%08x delta %08x|%08x // clk.ticks %08x|%08x dt %08x|%08x #%d,%d GPST %f (%d) UNEXPECTED DELTA *****\n",
+				printf("ticks %08x|%08x delta %08x|%08x // clk.ticks %08x|%08x dticks %08x|%08x #%d,%d GPST %f (%d) UNEXPECTED DELTA *****\n",
                     PRINTF_U64_ARG(ticks), PRINTF_U64_ARG(delta_ticks),
-                    PRINTF_U64_ARG(clk.ticks), PRINTF_U64_ARG(dt),
+                    PRINTF_U64_ARG(clk.ticks), PRINTF_U64_ARG(dticks),
                     clk.adc_gps_clk_corrections, clk.adc_clk_corrections, clk.gps_secs,
                     tick_seq[rx_chan]);
 			last_ticks[rx_chan] = ticks;
 			tick_seq[rx_chan]++;
 #endif
-			gps_tsp->gpssec = fmod(gps_week_sec + clk.gps_secs + dt/clk.adc_clock_base - gps_delay + gps_delay2, gps_week_sec);
+			s->gpssec = fmod(gps_week_sec + clk.gps_secs + (dticks/clk.adc_clock_base) - gps_delay + gps_delay2, gps_week_sec);
 
 		    #ifdef SND_SEQ_CHECK
 		        if (rx->in_seq[rx->rd_pos] != s->snd_seq_ck) {
@@ -650,17 +639,26 @@ void c2s_sound(void *param)
             //  (2) delay in AGC (if on)
             if (s->agc)
                 sample_filter_delays -= m_Agc[rx_chan].GetDelaySamples();
-            gps_tsp->gpssec = fmod(gps_week_sec + gps_tsp->gpssec + rx_decim * sample_filter_delays / clk.adc_clock_base,
-                                          gps_week_sec);
+
+            #ifdef OPTION_GPS_TUNE
+                static double gps_tune;
+                static int gps_dly;
+                if (p_f[0] != gps_tune || p_i[1] != gps_dly) {
+                    cprintf(conn, "GPS: gps_tune=%.9g gps_dly=%d\n", p_f[0], p_i[1]);
+                }
+                gps_tune = p_f[0]; gps_dly = p_i[1];
+                s->gpssec += gps_tune; sample_filter_delays += gps_dly;
+            #endif
+            s->gpssec = fmod(gps_week_sec + s->gpssec + (rx_decim * sample_filter_delays / clk.adc_clock_base), gps_week_sec);
     
-            s->out_pkt_iq.h.gpssec  = u4_t(gps_tsp->last_gpssec);
-            s->out_pkt_iq.h.gpsnsec = gps_tsp->init? u4_t(1e9*(gps_tsp->last_gpssec - s->out_pkt_iq.h.gpssec)) : 0;
-            const double dt_to_pos_sol = gps_tsp->last_gpssec - clk.gps_secs;
-            //real_printf("__GPS__ gpssec=%.9f diff=%.9f dt_to_pos_sol=%.9f %08x|%08x\n", gps_tsp->gpssec, gps_tsp->gpssec - gps_tsp->last_gpssec, dt_to_pos_sol, s->out_pkt_iq.h.gpssec, s->out_pkt_iq.h.gpsnsec);
-            s->out_pkt_iq.h.last_gps_solution = gps_tsp->init? ((clk.ticks == 0)? 255 : u1_t(std::min(254.0, dt_to_pos_sol))) : 0;
-            if (!gps_tsp->init) gps_tsp->init = true;
+            s->out_pkt_iq.h.gpssec  = u4_t(s->last_gpssec);
+            s->out_pkt_iq.h.gpsnsec = s->gps_init? u4_t(1e9*(s->last_gpssec - s->out_pkt_iq.h.gpssec)) : 0;
+            const double dt_to_pos_sol = s->last_gpssec - clk.gps_secs;
+            //real_printf("__GPS__ gpssec=%.9f diff=%.9f dt_to_pos_sol=%.9f %08x|%08x\n", s->gpssec, s->gpssec - s->last_gpssec, dt_to_pos_sol, s->out_pkt_iq.h.gpssec, s->out_pkt_iq.h.gpsnsec);
+            s->out_pkt_iq.h.last_gps_solution = s->gps_init? ((clk.ticks == 0)? 255 : u1_t(std::min(252.0, dt_to_pos_sol))) : 0;      // 253-254 used for error messages in Octave code
+            if (!s->gps_init) s->gps_init = true;
             s->out_pkt_iq.h.dummy = 0;
-            gps_tsp->last_gpssec = gps_tsp->gpssec;
+            s->last_gpssec = s->gpssec;
     
 			iq->iq_seqnum[iq->iq_wr_pos] = iq->iq_seq;
 			iq->iq_seq++;

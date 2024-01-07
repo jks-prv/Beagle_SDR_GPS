@@ -605,7 +605,7 @@ function tdoa_place_host_marker(h, map)
    h.hp = h.h +':'+ h.p;
    h.call = h.id.replace(/\-/g, '/');    // decode slashes
    
-   var title = h.n +'\nUsers: '+ h.u +'/'+ h.um;
+   var title = h.n +'\nUsers: '+ h.u +'/'+ h.um +'  v'+ h.v;
    if (h.tc) {
       if (h.tc <= 0) {
          console.log('TDoA OPT-OUT: '+ h.tc +' '+ h.id +' '+ h.h);

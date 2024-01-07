@@ -208,8 +208,6 @@ module RECEIVER (
 	wire [V_RX_CHANS-1:0] rxn_avail_A;
 	wire [V_RX_CHANS*16-1:0] rxn_dout_A;
 	
-	wire [V_RX_CHANS-1:0] rxn_ticks_strobe;
-
 	// Verilog note: if rd_i & rd_q are not declared before use in arrayed module RX below
 	// then automatic fanout of single-bit signal to all RX instances doesn't occur and
 	// an "undriven" error for rd_* results.
@@ -225,7 +223,6 @@ module RECEIVER (
 		.rd_q			(rd_q),
 		.rx_dout_A		(rxn_dout_A),
 		.rx_avail_A		(rxn_avail_A),
-		.ticks_strobe   (rxn_ticks_strobe),
 
 		.cpu_clk		(cpu_clk),
 		.freeze_tos_A   (freeze_tos_A),
@@ -252,9 +249,8 @@ module RECEIVER (
         if (set_nsamps_A) nrx_samps <= freeze_tos_A;
     
 	reg [47:0] ticks_latched_A;
-	
 	always @ (posedge adc_clk)
-		if (rxn_ticks_strobe[0])
+		if (rxn_avail_A[0])
 		    ticks_latched_A <= ticks_A;
 
 	rx_audio_mem rx_audio_mem_inst (
