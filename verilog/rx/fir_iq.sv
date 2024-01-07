@@ -24,7 +24,6 @@ module fir_iq #(
 	input  wire     reset,
 	input  wire     in_strobe,
 	output  reg     out_strobe,
-	output  reg     ticks_strobe,
 	input  wire signed [WIDTH-1:0] in_data_i,
 	input  wire signed [WIDTH-1:0] in_data_q,
 	output  reg signed [WIDTH-1:0] out_data_i,
@@ -201,12 +200,10 @@ module fir_iq #(
     /* FSM next-state logic */
     always_comb begin
         next_state = state;
-        ticks_strobe = 0;
 
         unique case (state)
             STATE_IDLE: begin
                 if (in_strobe) begin
-                    ticks_strobe = decim_by_2;
                     next_state = STATE_LATCH_INPUT;
                 end
             end

@@ -108,7 +108,7 @@ extern char *fpga_file;
 extern lock_t spi_lock;
 
 extern int p0, p1, p2;
-extern float p_f[8];
+extern double p_f[8];
 extern int p_i[8];
 
 

@@ -101,8 +101,15 @@ module rx_audio_mem (
 		//  count:  0                   1           168(nrx-2)          169(nrx-1)            170     0
 		//  rxn:    rx0 rx1 rx2 rx3 rx4 rx0 ... rx4 rx0 rx1 rx2 rx3 rx4 rx0 rx1 rx2 rx3 rx4|3 rx3 rx4 rx0
 		//  iq3:    iq3 iq3 iq3 iq3     iq3 ...     iq3 iq3 iq3 iq3     iq3 iq3 iq3 iq3 XYZ   xxC
-		//  evts:  AT               S  AT       S  AT               S ALT               -         S  AT
-		//  A:rx_avail_A, T:transfer=1, S(stop):transfer=0, -:note_no_stop, L:ticks_latch, XYZ:ticks_A, C:buf_ctr
+		//  evts:  AT               S  AT       S  AT               S  AT               -         S  AT
+		//                                                              L
+		//  A: rx_avail_A
+		//  T: transfer=1
+		//  S(stop): transfer=0
+		//  -: note no stop
+		//  L: ticks latch, the last rx_avail_A latching ticks_A before it's copied to buffer.
+		//  XYZ: ticks_A
+		//  C: buf_ctr
 		//  NB: "rx4" is a pseudo channel number that encodes "rxn == V_RX_CHANS" to signal all channel data moved.
 		
 		if (transfer) {

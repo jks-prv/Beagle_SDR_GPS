@@ -14,7 +14,7 @@
 //#define DEBUG_MSG	true
 #define DEBUG_MSG	false
 
-float p_f[8];
+double p_f[8];
 int p_i[8];
 
 // rx_chan is the receiver channel number we've been assigned, 0..rx_chans
