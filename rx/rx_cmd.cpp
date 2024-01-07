@@ -2088,7 +2088,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             if (i >= 0 && i <= 7) {
                 p_f[i] = pf;
                 p_i[i] = (int) round(pf);
-                printf("CMD_DEVL SET p_f[%d]=%lf\n", i, p_f[i]);
+                printf("CMD_DEVL SET p_f[%d]=%.9g\n", i, p_f[i]);
                 return true;
             }
         }
