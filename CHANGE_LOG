@@ -2,6 +2,17 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.654  January 14, 2024
+    Debian 11+ backups now working.
+    
+    TDoA working again after kiwirecorder bug fixed. TDoA extension now only shows sampling stations
+    running release v1.653 or later. Because pre and post CIC compensation filter Kiwis cannot be
+    mixed during a TDoA run.
+    
+    Better user interface reaction when you're connected to the admin page using a proxy URL
+    and then change the proxy host name or user key. The admin page is automatically reloaded
+    using the new host name and/or user key.
+
 v1.651,652,653  January 6, 2024
     Possible fix for TDoA problem.
 

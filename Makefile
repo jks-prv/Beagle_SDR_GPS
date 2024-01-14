@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 653
+VERSION_MIN = 654
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
