@@ -208,6 +208,7 @@ function ext_set_cfg_param(path, val, save)
 {
    if (path.startsWith('id-')) {
       console.log('$WARNING: ext_set_cfg_param path='+ path);
+      kiwi_trace();
       return;
    }
    

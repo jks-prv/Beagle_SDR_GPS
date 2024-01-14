@@ -56,7 +56,8 @@ else
     # Debian 8, SPIDEV: BB-SPIDEV0 must be loaded via /boot/uEnv.txt to config pmux properly
     #               i.e. cape_enable=bone_capemgr.enable_partno=BB-SPIDEV0
     # Debian 9, never used by BBG/BBB
-    # Debian 10+, SPIDEV: Kiwi device tree loaded via UBOOT_OVERLAY, config-pin to setup spi pins
+    # Debian 10-11, (always SPIDEV): Kiwi device tree loaded via UBOOT_OVERLAY, config-pin to setup SPI pins
+    # Debian 12+, (always SPIDEV): Kiwi device tree and SPI loaded via UBOOT_OVERLAY
 
     SBC="BBG/BBB"
     SLOTS7_FN=$(ls /sys/devices/bone_capemgr.*/slots 2>/dev/null)
@@ -121,6 +122,7 @@ elif [ "x${RPI}" = "xtrue" ] ; then
     modprobe at24
     echo "24c32 0x54" > /sys/class/i2c-adapter/i2c-1/new_device
 else
+    # If there is no .dts (e.g. Debian 12+) don't run dtc
     if test \( -f /lib/firmware/${CAPE}.dts \) -a \( \( ! -f /lib/firmware/${CAPE}.dtbo \) -o \( /lib/firmware/${CAPE}.dts -nt /lib/firmware/${CAPE}.dtbo \) \) ; then
         echo compile ${DEV} device tree;
         (cd /lib/firmware; dtc -O dtb -o ${CAPE}.dtbo -b 0 -@ ${CAPE}.dts);
@@ -139,6 +141,8 @@ else
             config-pin p9.18 spi
             config-pin p9.21 spi
             config-pin p9.22 spi_sclk
+        else
+            echo "BBG_BBB: SPI device tree loaded via U-boot overlay"
         fi
     else
         echo "BBG_BBB: Kiwi and SPI device tree loaded via capemgr"

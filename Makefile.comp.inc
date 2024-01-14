@@ -230,6 +230,7 @@ ifeq ($(BBAI_64),true)
     ARCH := jacinto
     CPU := TDA4VM
     PLATFORMS := beaglebone beaglebone_ai64
+    PLAT := BBAI_64
     CFLAGS += -DMULTI_CORE
     FP_FLAGS += -mtune=cortex-a72 -mcpu=cortex-a72
     #FP_FLAGS += -mfpu=neon-vfpv4 -mfloat-abi=hard
@@ -240,6 +241,7 @@ else ifeq ($(BBAI),true)
     ARCH := sitara
     CPU := AM5729
     PLATFORMS := beaglebone beaglebone_ai
+    PLAT := BBAI
     CFLAGS += -DMULTI_CORE
     FP_FLAGS += -mtune=cortex-a15 -mcpu=cortex-a15
     FP_FLAGS += -mfpu=neon-vfpv4 -mfloat-abi=hard
@@ -250,6 +252,7 @@ else ifeq ($(RPI),true)
     ARCH := omap
     CPU := BCM2837
     PLATFORMS := raspberrypi
+    PLAT := RPI
     CFLAGS += -DMULTI_CORE
     FP_FLAGS += -mtune=cortex-a53 -mcpu=cortex-a53
     FP_FLAGS += -mfpu=neon -mfloat-abi=hard
@@ -259,6 +262,7 @@ else ifeq ($(BBG_BBB),true)
     ARCH := sitara
     CPU := AM3359
     PLATFORMS := beaglebone beaglebone_black
+    PLAT := BBG_BBB
     FP_FLAGS += -mtune=cortex-a8 -mcpu=cortex-a8
     ifeq ($(DEBIAN_VERSION),7)
         FP_FLAGS += -mfpu=neon -mfloat-abi=hard

@@ -260,7 +260,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	endif
 
 else
-	# host machine (BBB), only build the FPGA-using version
+	# host machine, only build the FPGA-using version
 	LIBS += -lfftw3f -lutil
 	LIBS_DEP += /usr/lib/$(LIB_ARCH)/libfftw3f.a
 	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pgmtoppm /sbin/ethtool /usr/bin/sshpass
@@ -1125,12 +1125,15 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
         install_kiwi_device_tree:
 	        @echo "BBAI-64: install Kiwi device tree to configure GPIO pins"
 	        @echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
-	        cp $(DTS_DEP_SRC) $(DIR_DTB)
-	        cp $(DTS2_DEP_SRC) $(DIR_DTB)
             ifeq ($(DEBIAN_12_AND_LATER),true)
-	            (cd $(DIR_DTB_BASE); make)
-	            (cd $(DIR_DTB_BASE); make install_arm64)
+	            echo "BBAI-64 DEBIAN_12_AND_LATER FIXME SKIPPING.."
+	            #cp $(DTS_DEP_SRC) $(DIR_DTB)
+	            #cp $(DTS2_DEP_SRC) $(DIR_DTB)
+	            #(cd $(DIR_DTB_BASE); make)
+	            #(cd $(DIR_DTB_BASE); make install_arm64)
             else
+	            cp $(DTS_DEP_SRC) $(DIR_DTB)
+	            cp $(DTS2_DEP_SRC) $(DIR_DTB)
 	            (cd $(DIR_DTB_BASE); make all)
 	            (cd $(DIR_DTB_BASE); make install)
             endif
@@ -1157,15 +1160,20 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	        @echo "BBAI: install Kiwi device tree to configure GPIO/SPI pins"
 	        @echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
 	        cp $(DTS_DEP_SRC) $(DIR_DTB)
-	        (cd $(DIR_DTB_BASE); make)
-	        # intentionally don't do "make install" -- instead only copy single .dtb below
-	        cp $(DIR_DTB)/$(DTB_KIWI) /boot
-	        cp $(DIR_DTB)/$(DTB_KIWI) /boot/dtbs/$(SYS)
-	        cp $(DIR_DTB)/$(DTB_KIWI) /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb
-	        @echo "UENV_HAS_DTB_NEW = $(UENV_HAS_DTB_NEW)"
-            ifeq ($(UENV_HAS_DTB_NEW),true)
-	            -cp --backup=numbered /boot/uEnv.txt /boot/uEnv.txt.save
-	            -sed -i -e 's/^dtb=$(DTB_DEB_NEW)/dtb=$(DTB_KIWI)/' /boot/uEnv.txt
+            ifeq ($(DEBIAN_12_AND_LATER),true)
+	            (cd $(DIR_DTB_BASE); make)
+	            @echo "FIXME BBAI D12+"
+            else
+	            (cd $(DIR_DTB_BASE); make)
+	            # intentionally don't do "make install" -- instead only copy single .dtb below
+	            cp $(DIR_DTB)/$(DTB_KIWI) /boot
+	            cp $(DIR_DTB)/$(DTB_KIWI) /boot/dtbs/$(SYS)
+	            cp $(DIR_DTB)/$(DTB_KIWI) /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb
+	            @echo "UENV_HAS_DTB_NEW = $(UENV_HAS_DTB_NEW)"
+                ifeq ($(UENV_HAS_DTB_NEW),true)
+	                -cp --backup=numbered /boot/uEnv.txt /boot/uEnv.txt.save
+	                -sed -i -e 's/^dtb=$(DTB_DEB_NEW)/dtb=$(DTB_KIWI)/' /boot/uEnv.txt
+                endif
             endif
     endif
 
@@ -1421,6 +1429,10 @@ enable disable start stop restart status:
 stop_disable:
 	-systemctl --full --lines=250 stop kiwid.service || true
 	-systemctl --full --lines=250 disable kiwid.service || true
+
+enable_start:
+	-systemctl --full --lines=250 enable kiwid.service || true
+	-systemctl --full --lines=250 start kiwid.service || true
 
 avahi-enable avahi-disable avahi-start avahi-stop avahi-status:
 	-systemctl --full --lines=250 $(subst avahi-,,$@) avahi-daemon.service || true
@@ -1746,22 +1758,39 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 # Otherwise the image file will have strange effects like /boot/uEnv.txt being the correct size but
 # filled with zeroed bytes (which of course is a disaster).
 #
-DISTRO_DEBIAN_VER := 11.7
-SD_CARD_MMC := 0
+DISTRO_DEBIAN_VER := 12.4
+TO_IMG = ~/KiwiSDR_$(VER)_$(PLAT)_Debian_$(DISTRO_DEBIAN_VER).img.xz
+SD_CARD_MMC_TO_IMG := 0
 DD_SIZE := 2700M
 
 create_img_from_sd: /usr/bin/xz
 	@echo "--- this takes about an hour"
 	@echo "--- KiwiSDR server will be stopped to maximize write speed"
 	lsblk
-	@echo "CAUTION: SD_CARD_MMC = $(SD_CARD_MMC)"
+	@echo "CAUTION: SD_CARD_MMC_TO_IMG = $(SD_CARD_MMC_TO_IMG)"
 	@echo "CAUTION: VERIFY FROM THE LIST ABOVE THAT THE SD CARD IS THE MMC NUMBER SHOWN"
 	@echo -n 'ARE YOU SURE? '
 	@read not_used
 	make stop
 	date
-	dd if=/dev/mmcblk$(SD_CARD_MMC) bs=1M iflag=count_bytes count=$(DD_SIZE) | xz --verbose > ~/KiwiSDR_$(VER)_BBB_Debian_$(DISTRO_DEBIAN_VER).img.xz
-	sha256sum ~/KiwiSDR_$(VER)_BBB_Debian_$(DISTRO_DEBIAN_VER).img.xz
+	dd if=/dev/mmcblk$(SD_CARD_MMC_TO_IMG) bs=1M iflag=count_bytes count=$(DD_SIZE) | xz --verbose > $(TO_IMG)
+	sha256sum $(TO_IMG)
+	date
+
+FROM_IMG = bbai64-emmc-flasher-debian-12.2-minimal-arm64-2023-10-07-6gb.img.xz
+SD_CARD_MMC_FROM_IMG := 1
+
+create_sd_from_img: /usr/bin/xz
+	lsblk
+	@echo "CAUTION: SD_CARD_MMC_FROM_IMG = $(SD_CARD_MMC_FROM_IMG)"
+	@echo "CAUTION: VERIFY FROM THE LIST ABOVE THAT THE SD CARD IS THE MMC NUMBER SHOWN"
+	@echo -n 'ARE YOU SURE? '
+	@read not_used
+	@echo -n 'ARE YOU *REALLY* SURE? /dev/mmcblk$(SD_CARD_MMC_FROM_IMG) WILL BE OVERWRITTEN! '
+	@read not_used
+	date
+	xzcat -v $(FROM_IMG) | dd of=/dev/mmcblk$(SD_CARD_MMC_FROM_IMG) bs=1M
+	blockdev --flushbufs /dev/mmcblk$(SD_CARD_MMC_FROM_IMG)
 	date
 
 endif
