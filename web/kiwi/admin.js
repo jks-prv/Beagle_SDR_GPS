@@ -1072,6 +1072,8 @@ function connect_rev_status_cb(status)
       wait_then_reload_page(10, 'You changed the Kiwi\'s host name. <br>' +
          'Will reconnect to new name at <x1>'+ kiwi.reload_url +'</x1>');
 	}
+	
+   ext_send('SET rev_register reg=0 user='+ user +' host='+ host +' auto='+ auto);
 }
 
 function connect_proxy_server_cb(path, val)
