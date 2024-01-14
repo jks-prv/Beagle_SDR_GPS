@@ -1073,7 +1073,8 @@ function connect_rev_status_cb(status)
          'Will reconnect to new name at <x1>'+ kiwi.reload_url +'</x1>');
 	}
 	
-   ext_send('SET rev_register reg=0 user='+ user +' host='+ host +' auto='+ auto);
+	if (!proxy_conn)
+      ext_send('SET rev_register reg=0 user='+ user +' host='+ host +' auto='+ auto);
 }
 
 function connect_proxy_server_cb(path, val)
