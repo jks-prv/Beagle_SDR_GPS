@@ -47,6 +47,23 @@ void sd_backup(conn_t *conn, bool from_admin)
 {
 	char *sb, *sb2;
 	char *cmd_p, *buf_m;
+	
+	#if 0
+        if (!kiwi.dbgUs && (debian_maj == 11 || (debian_maj == 12 && debian_min < 4))) {
+            send_msg(conn, SM_NO_DEBUG, "%s microSD_done=87", from_admin? "ADM":"MFG");
+            return;
+        }
+    #endif
+
+    // On BBAI-64, backup script only supports dual-partition setups (i.e. /boot/firmware on p1)
+    if (kiwi.platform == PLATFORM_BB_AI64 && (
+        !kiwi_file_exists("/boot/firmware") ||
+        !kiwi_file_exists("/boot/firmware/extlinux") ||
+        !kiwi_file_exists("/boot/firmware/extlinux/extlinux.conf")
+        )) {
+        send_msg(conn, SM_NO_DEBUG, "%s microSD_done=88", from_admin? "ADM":"MFG");
+        return;
+    }
 
     backup_in_progress = true;  // NB: must be before rx_server_kick() to prevent new connections
     rx_server_kick(KICK_ALL);      // kick everything (including autorun) off to speed up copy

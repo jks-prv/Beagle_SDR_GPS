@@ -1,22 +1,71 @@
 #!/bin/bash -e
-# D11.7 /usr/sbin/beagle-flasher
 
 if ! id | grep -q root; then
-	echo "beagle-flasher must be run as root:"
-	echo "sudo beagle-flasher"
+	echo "must be run as root"
 	exit
 fi
 
-version_message="1.20230710.0, merged generic cleanups..."
+kiwisdr_message="D11+ BB/BBAI 1/11/2024 tools/beaglebone-black-flasher.sh"
+version_message="1.20231207.0, e2fsprogs (1.47.0) disable orphan_file..."
 
-#mke2fs -c
-#Check the device for bad blocks before creating the file system.
-#If this option is specified twice, then a slower read-write test is
-#used instead of a fast read-only test.
+# set in /etc/default/beagle-flasher
+#debug_over_display=tty0
+#source=/dev/mmcblk1
+#destination=/dev/mmcblk0
+#rfs_partition=single
+#rfs_rootfs_type=ext4
+#rfs_rootfs_startmb=4
+#bootloader=/opt/u-boot/bb-u-boot-am335x-evm/install-mmcblk0.sh
+#flash_back=beaglebone-black-microsd-to-emmc
 
-mkfs_options=""
-#mkfs_options="-c"
-#mkfs_options="-cc"
+#Debian 12, Ubuntu Lunar, Mantic, Noble
+#https://packages.debian.org/source/bookworm/e2fsprogs
+#e2fsprogs (1.47.0) added orphan_file first added in v5.15.x
+ext4_ver=$(mkfs.ext4 -V |& grep mke2fs | awk '{print $2}')
+function version_dot3 { echo "$@" | awk -F. '{ printf("%d%03d%03d\n", $1,$2,$3); }'; }
+if [ $(version_dot3 $ext4_ver) -ge $(version_dot3 "1.47.0") ] ; then
+    ext4_options="-O ^orphan_file"
+else
+    ext4_options=""
+fi
+echo "ext4_ver=$ext4_ver ext4_options=$ext4_options"
+
+# cmdline functionality in /boot/uEnv.txt moving to /boot/firmware/extlinux/extlinux.conf
+enable_flasher() {
+    uenv=/tmp/rootfs/boot/uEnv.txt
+    extl=/tmp/rootfs/boot/firmware/extlinux/extlinux.conf
+    
+	if [ -f ${uenv} ] ; then
+        message="INFO: enable sd card as flasher"                                                  ; broadcast
+        sed -i -e 's:#cmdline=init:cmdline=init:g' ${uenv}
+        message="`grep cmdline=init ${uenv} || true`"                                              ; broadcast
+        message="--------------------------------------------------------------------------------" ; broadcast
+        message="INFO: [cat ${uenv}]"                                                              ; broadcast
+        message="`cat ${uenv} || true`"                                                            ; broadcast
+        message="--------------------------------------------------------------------------------" ; broadcast
+
+	elif [ -f ${extl} ] ; then
+
+        # KiwiSDR: this is from /usr/sbin/enable-beagle-flasher
+        message="INFO: enable sd card as flasher"                                                  ; broadcast
+        sed -i -e 's:net.ifnames=0 quiet:net.ifnames=0 quiet init=/usr/sbin/init-beagle-flasher:g' ${extl}
+        systemctl disable grow_partition.service || true
+        message="`grep init= ${extl} || true`"                                                     ; broadcast
+        message="--------------------------------------------------------------------------------" ; broadcast
+
+        message="INFO: [cat ${extl}]"                                                              ; broadcast
+        message="`cat ${extl} || true`"                                                            ; broadcast
+        message="--------------------------------------------------------------------------------" ; broadcast
+    else
+        message="ERROR: sd card flasher enable failed!"                                            ; broadcast
+        message="--------------------------------------------------------------------------------" ; broadcast
+        err=89; failure
+    fi
+
+    echo `date` >/tmp/rootfs/root/_FLASHED_FROM_SD_
+    echo $kiwisdr_message >>/tmp/rootfs/root/_FLASHED_FROM_SD_
+    echo $version_message >>/tmp/rootfs/root/_FLASHED_FROM_SD_
+}
 
 cylon_leds() {
 	#ls /sys/class/leds/beaglebone\:green\:usr*
@@ -75,13 +124,36 @@ cylon_leds() {
 reset_leds() {
 	if [ "x${has_usr_leds}" = "xenable" ] ; then
 		if [ -e /proc/$CYLON_PID ]; then
-			kill $CYLON_PID > /dev/null 2>&1
+			#kill $CYLON_PID > /dev/null 2>&1
+		    message="INFO: [kill $CYLON_PID]"                                                                 ; broadcast
+			kill $CYLON_PID
 		fi
 
 		leds_pattern0=${leds_pattern0:-"heartbeat"}
 		leds_pattern1=${leds_pattern1:-"mmc0"}
 		leds_pattern2=${leds_pattern2:-"cpu0"}
 		leds_pattern3=${leds_pattern3:-"mmc1"}
+		leds_base=/sys/class/leds/beaglebone\:green\:usr
+
+		if [ -e ${leds_base}0/trigger ] ; then
+			echo ${leds_pattern0} > ${leds_base}0/trigger || true
+			echo ${leds_pattern1} > ${leds_base}1/trigger || true
+			echo ${leds_pattern2} > ${leds_base}2/trigger || true
+			echo ${leds_pattern3} > ${leds_base}3/trigger || true
+		fi
+	fi
+}
+
+error_leds() {
+	if [ "x${has_usr_leds}" = "xenable" ] ; then
+		if [ -e /proc/$CYLON_PID ]; then
+			kill $CYLON_PID > /dev/null 2>&1
+		fi
+
+		leds_pattern0=${leds_pattern0:-"heartbeat"}
+		leds_pattern1=${leds_pattern1:-"heartbeat"}
+		leds_pattern2=${leds_pattern2:-"heartbeat"}
+		leds_pattern3=${leds_pattern3:-"heartbeat"}
 		leds_base=/sys/class/leds/beaglebone\:green\:usr
 
 		if [ -e ${leds_base}0/trigger ] ; then
@@ -121,9 +193,7 @@ broadcast_over_display () {
 
 failure () {
 	message="error code ${err}" ; broadcast
-	if [ "x${has_usr_leds}" = "xenable" ] ; then
-		reset_leds
-	fi
+    reset_leds
 	exit ${err}
 }
 
@@ -140,6 +210,7 @@ format_failure () {
 
 write_failure () {
 	message="ERROR: writing to [destination=${destination}] failed..."                         ; broadcast
+	error_leds
 	message="--------------------------------------------------------------------------------" ; broadcast
 	flush_cache
 	if [ "x${destination}" != "x" ] ; then
@@ -149,6 +220,7 @@ write_failure () {
 	err=15; failure
 }
 
+# KiwiSDR: needed if an admin page reload restarts script
 unmount_previous () {
     NUM_MOUNTS=$(mount | grep -v none | grep "${destination}" | wc -l)
 
@@ -162,6 +234,12 @@ unmount_previous () {
 }
 
 check_running_system () {
+
+	message="INFO: /proc/cmdline"                                                              ; broadcast
+	message="INFO: [cat /proc/cmdline]"                                                        ; broadcast
+	cat /proc/cmdline
+	message="--------------------------------------------------------------------------------" ; broadcast
+
 	has_usr_leds="enable"
 	machine=$(cat /proc/device-tree/model | sed "s/ /_/g" | tr -d '\000')
 
@@ -180,14 +258,16 @@ check_running_system () {
 		message="--------------------------------------------------------------------------------" ; broadcast
 	fi
 
-	rootfs_size="`/bin/df --block-size=1048576 . | tail -n 1 | awk '{print $3}'`"
-	rootfs_size=$((${rootfs_size}+200))
-	message="setting micro-SD partition size to actual rootfs size + 200M = ${rootfs_size}M"       ; broadcast
-	message="rootfs_size ${rootfs_size}M"                                                          ; broadcast
+    # KiwiSDR: limit size of backup partition
+	kiwi_rootfs_size="`/bin/df --block-size=1048576 . | tail -n 1 | awk '{print $3}'`"
+	kiwi_rootfs_size=$((${kiwi_rootfs_size}+200))
+	message="setting micro-SD partition size to actual rootfs size + 200M = ${kiwi_rootfs_size}M"       ; broadcast
+	message="rootfs_size ${kiwi_rootfs_size}M"                                                          ; broadcast
     message="--------------------------------------------------------------------------------" ; broadcast
 
 	if [ "x${has_usr_leds}" = "xenable" ] ; then
 		cylon_leds & CYLON_PID=$!
+		echo "CYLON_PID=$CYLON_PID"
 	fi
 
 	if [ "x${source}" != "x" ] && [ "x${destination}" != "x" ] ; then
@@ -259,8 +339,8 @@ format_root () {
 }
 
 format_single_root () {
-	message="/sbin/mkfs.ext4 ${mkfs_options} ${destination}p1 -L ${single_root_label}"         ; broadcast
-	LC_ALL=C /sbin/mkfs.ext4 ${mkfs_options} ${destination}p1 -L ${single_root_label} || format_failure
+	message="/sbin/mkfs.ext4 ${ext4_options} ${destination}p1 -L ${single_root_label}"         ; broadcast
+	LC_ALL=C /sbin/mkfs.ext4 ${ext4_options} ${destination}p1 -L ${single_root_label} || format_failure
 	message="--------------------------------------------------------------------------------" ; broadcast
 	flush_cache
 }
@@ -277,11 +357,7 @@ copy_boot () {
 
 	umount /tmp/boot/ || umount -l /tmp/boot/ || write_failure
 	flush_cache
-	umount /boot/firmware || umount -l /boot/firmware || true
 }
-
-tr="/usr/bin/tr '\\r' '\\n'"
-throttle="/root/Beagle_SDR_GPS/tools/throttle 3"
 
 copy_rootfs () {
 	message="INFO: Copying: ${source}p${media_rootfs} -> ${destination}p${media_rootfs}"       ; broadcast
@@ -289,6 +365,9 @@ copy_rootfs () {
 
 	message="INFO: [mount ${destination}p${media_rootfs} /tmp/rootfs/ -o async,noatime]"       ; broadcast
 	mount ${destination}p${media_rootfs} /tmp/rootfs/ -o async,noatime
+
+    tr="/usr/bin/tr '\\r' '\\n'"
+    throttle="/root/Beagle_SDR_GPS/tools/throttle 3"
 
 	message="INFO: /usr/bin/rsync: (-aHAXx) [/ -> /tmp/rootfs/]"                               ; broadcast
 	message="INFO: rsync: note the % column is useless..."                                     ; broadcast
@@ -317,9 +396,7 @@ copy_rootfs () {
 	message="--------------------------------------------------------------------------------" ; broadcast
 	flush_cache
 
-    message="INFO: [cat /tmp/rootfs/boot/uEnv.txt]"                                            ; broadcast
-    message="`cat /tmp/rootfs/boot/uEnv.txt || true`"                                          ; broadcast
-    message="--------------------------------------------------------------------------------" ; broadcast
+    enable_flasher
 
 	if [ "x${flash_back}" != "x" ] ; then
 		if [ -f ${flash_back} ] ; then
@@ -348,10 +425,6 @@ copy_rootfs () {
 		message="--------------------------------------------------------------------------------" ; broadcast
 	fi
 
-	if [ -f /tmp/rootfs/etc/systemd/system/multi-user.target.wants/beagle-flasher-init-shutdown.service ] ; then
-		rm -rf /tmp/rootfs/etc/systemd/system/multi-user.target.wants/beagle-flasher-init-shutdown.service || true
-	fi
-
 	if [ -f /tmp/rootfs/etc/systemd/system/multi-user.target.wants/grow_partition.service ] ; then
 		rm -rf /tmp/rootfs/etc/systemd/system/multi-user.target.wants/grow_partition.service || true
 	fi
@@ -370,10 +443,7 @@ copy_rootfs () {
 	dd if=${destination} of=/dev/null count=100000 status=progress
 	message="--------------------------------------------------------------------------------" ; broadcast
 	flush_cache
-
-	if [ "x${has_usr_leds}" = "xenable" ] ; then
-		reset_leds
-	fi
+    reset_leds
 }
 
 partition_drive () {
@@ -401,7 +471,7 @@ partition_drive () {
 
 	if [ "x${rfs_partition}" = "xsingle" ] ; then
 		rfs_rootfs_startmb=${rfs_rootfs_startmb:-"4"}
-		rfs_rootfs_sizemb=${rootfs_size:-""}
+		rfs_rootfs_sizemb=${kiwi_rootfs_size:-""}
 		sfdisk_fstype=${sfdisk_fstype:-"L"}
 
 		single_root_label=${single_root_label:-"rootfs"}
@@ -423,16 +493,22 @@ partition_drive () {
 		format_single_root
 		message="INFO: Formatting: ${destination} complete"                                        ; broadcast
 		message="--------------------------------------------------------------------------------" ; broadcast
-        
+
 		media_rootfs="1"
 		copy_rootfs
 	elif [ "x${rfs_partition}" = "xdual" ] ; then
+
+        # KiwiSDR
+        message="ERROR: this script doesn't support dual partitions!"                              ; broadcast
+        message="--------------------------------------------------------------------------------" ; broadcast
+		err=99; failure
+        
 		rfs_boot_startmb=${rfs_boot_startmb:-"1"}
 		rfs_boot_size_mb=${rfs_boot_size_mb:-"64"}
 		rfs_sfdisk_fstype=${rfs_sfdisk_fstype:-"0xc"}
 
 		sfdisk_rootfs_startmb=$(($rfs_boot_startmb + $rfs_boot_size_mb))
-		sfdisk_rootfs_sizemb=${rootfs_size:-""}
+		sfdisk_rootfs_sizemb=${kiwi_rootfs_size:-""}
 
 		boot_label=${boot_label:-"FIRMWARE"}
 		rootfs_label=${rootfs_label:-"rootfs"}
@@ -469,6 +545,7 @@ partition_drive () {
 if [ -f /etc/default/beagle-flasher ] ; then
 	. /etc/default/beagle-flasher
 	message="--------------------------------------------------------------------------------" ; broadcast
+	message="KiwiSDR: [${kiwisdr_message}]"                                                    ; broadcast
 	message="Version: [${version_message}]"                                                    ; broadcast
 	message="--------------------------------------------------------------------------------" ; broadcast
 	message="cat /etc/default/beagle-flasher:"                                                 ; broadcast
@@ -477,6 +554,7 @@ if [ -f /etc/default/beagle-flasher ] ; then
 	message="--------------------------------------------------------------------------------" ; broadcast
 else
 	message="--------------------------------------------------------------------------------" ; broadcast
+	message="KiwiSDR: [${kiwisdr_message}]"                                                    ; broadcast
 	message="Version: [${version_message}]"                                                    ; broadcast
 	message="--------------------------------------------------------------------------------" ; broadcast
     message="ERROR: /etc/default/beagle-flasher doesn't exist!"                                ; broadcast
