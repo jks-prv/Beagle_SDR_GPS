@@ -14,6 +14,9 @@ var tdoa = {
    w_data:     1024,
    h_data:     445,
    
+   hosts_sel: 0,
+   hosts_sel_s: [ 'all', '&le;1.646', '&ge;1.653' ],
+   
    pkgs_maps_js: [
       'pkgs_maps/pkgs_maps.js',
       'pkgs_maps/pkgs_maps.css'  // DANGER: make sure components of this have the url() fix described in the Makefile
@@ -248,6 +251,7 @@ function tdoa_controls_setup()
 		      w3_div('id-tdoa-controls w3-medium w3-text-aqua', 
 		         '<b><a href="https://www.rtl-sdr.com/kiwisdr-tdoa-direction-finding-now-freely-available-for-public-use" target="_blank">TDoA</a> direction finding service</b>'
 		      ),
+            //w3_select('w3-text-red', '', 'hosts', 'tdoa.hosts_sel', tdoa.hosts_sel, tdoa.hosts_sel_s, 'tdoa_hosts_sel_cb'),
 		      w3_div('',
                w3_div('id-tdoa-info w3-small|color: hsl(0, 0%, 70%)'),
                w3_inline('',
@@ -2415,6 +2419,11 @@ function tdoa_rebuild_hosts(opts)
    tdoa.cur_host_markers = [];
    for (var i = 0; i < tdoa.hosts.length; i++) {
       var h = tdoa.hosts[i];
+      var v = +h.v;
+      if (tdoa.hosts_sel && ((tdoa.hosts_sel == 1 && v > 1.646) || (tdoa.hosts_sel == 2 && v < 1.653))) {
+         //console.log('TDoA filtering out '+ h.call +' v'+ h.v);
+         continue;
+      }
       if (h.mkr) {
          var id = h.id;
          if (h.snr > 0) id += ' '+ h.snr;
@@ -2491,6 +2500,13 @@ function tdoa_rebuild_hosts(opts)
          }
       });
    }
+}
+
+function tdoa_hosts_sel_cb(path, idx, first)
+{
+   console.log('tdoa_hosts_sel_cb: idx='+ idx);
+   tdoa.hosts_sel = +idx;
+   tdoa_rebuild_hosts();
 }
 
 function tdoa_rebuild_refs(opts)
