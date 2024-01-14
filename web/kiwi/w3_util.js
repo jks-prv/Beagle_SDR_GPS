@@ -1132,6 +1132,30 @@ function w3_disable(el_id, disable)
 	return el;
 }
 
+function w3_disable_multi(el_id, disable)
+{
+   w3_els(el_id,
+      function(el, i) {
+         console.log('w3_disable_multi disable='+ disable +' t/o(el)='+ typeof(el) +' nodeName='+ el.nodeName);
+         console.log(el);
+         w3_set_props(el, 'w3-disabled', disable);
+   
+         // for disabling menu popup
+         if (isDefined(el.nodeName) && (el.nodeName == 'SELECT' || el.nodeName == 'INPUT')) {
+            try {
+               if (disable)
+                  el.setAttribute('disabled', '');
+               else
+                  el.removeAttribute('disabled');
+            } catch(ex) {
+               console.log('w3_disable:Attribute');
+               console.log(ex);
+            }
+         }
+      }
+   );
+}
+
 function w3_visible(el_id, visible)
 {
 	var el = w3_el(el_id);

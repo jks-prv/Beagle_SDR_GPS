@@ -10074,18 +10074,32 @@ function panels_setup()
       );
 
    // rf
+   var fmt = 'id-rf-attn-disable w3-btn w3-padding-tiny w3-margin-R-8 ';
    kiwi.rf_attn = (kiwi.model == kiwi.KiwiSDR_1)? 0 : +initCookie('last_rf_attn', cfg.init.rf_attn);
 	w3_el("id-optbar-rf").innerHTML =
       w3_col_percent('w3-valign/class-slider',
          w3_text('w3-text-css-orange', 'RF attn'), 19,
-         w3_slider('id-rf-attn w3-wheel', '', '', kiwi.rf_attn, 0, 31.5, 0.5, 'rf_attn_cb'), 60,
+         w3_slider('id-rf-attn id-rf-attn-disable w3-wheel', '', '', kiwi.rf_attn, 0, 31.5, 0.5, 'rf_attn_cb'), 60,
          w3_div('id-field-rf-attn class-slider'), 19
       ) +
-      w3_hr('|border-color:grey; margin:4px 6px 4px 0') +
+      w3_col_percent('',
+         '&nbsp', 19,
+         w3_inline('',
+            w3_button(fmt +'w3-green', '0 dB', 'rf_attn_preset_cb', 0),
+            w3_button(fmt +'w3-grey-white', '5 dB', 'rf_attn_preset_cb', 5),
+            w3_button(fmt +'w3-grey-white', '10 dB', 'rf_attn_preset_cb', 10),
+            w3_button(fmt +'w3-grey-white', '20 dB', 'rf_attn_preset_cb', 20),
+            w3_button(fmt +'w3-grey-white', '30 dB', 'rf_attn_preset_cb', 30)
+         )
+      ) +
+      //w3_hr('|border-color:grey; margin:4px 6px 4px 0') +
+      w3_hr('|border-color:grey; margin:8px 6px 4px 0') +
       w3_div('id-optbar-rf-container');
+
    if (kiwi.model == kiwi.KiwiSDR_1) {
+      kiwi.rf_attn_disabled = true;
       var el = w3_el('id-rf-attn');
-      w3_disable(el, true);
+      w3_disable_multi('id-rf-attn-disable', true);
       el.title = 'no RF attenuator available';
    }
 
@@ -10404,11 +10418,11 @@ function zoomCorrection()
 // rf controls
 ////////////////////////////////
 
-function rf_attn_cb(path, val, done, first, update)
+function rf_attn_cb(path, val, done, first, ui_only)
 {
-   //console.log('rf_attn_cb val='+ val +' done='+ done +' first='+ first +' update='+ update +' kiwi.rf_attn='+ kiwi.rf_attn);
+   //console.log('rf_attn_cb val='+ val +' done='+ done +' first='+ first +' ui_only='+ ui_only +' kiwi.rf_attn='+ kiwi.rf_attn);
    //if (first) kiwi_trace();
-   if (kiwi.model == kiwi.KiwiSDR_1) return;
+   if (kiwi.rf_attn_disabled) return;
    
 	var attn = parseFloat(val);
    var input_attn = w3_el('id-rf-attn');
@@ -10418,12 +10432,11 @@ function rf_attn_cb(path, val, done, first, update)
    input_attn.value = attn;
    field_attn.innerHTML = attn.toFixed(1) + ' dB';
    field_attn.style.color = "white";
-   if (update == true) return;
-   
-   if (!done || first) {
-      //console.log('SET rf_attn='+ attn.toFixed(1));
-      snd_send('SET rf_attn='+ attn.toFixed(1));
-   } else {
+   if (ui_only == true) return;
+   //console.log('SET rf_attn='+ attn.toFixed(1));
+   snd_send('SET rf_attn='+ attn.toFixed(1));
+
+   if (done) {
       writeCookie('last_rf_attn', val);
       freqset_select();
    }
@@ -10431,8 +10444,15 @@ function rf_attn_cb(path, val, done, first, update)
 
 function rf_attn_wheel_cb()
 {
+   if (kiwi.rf_attn_disabled) return;
    var nval = w3_slider_wheel('rf_attn_wheel_cb', 'id-rf-attn', kiwi.rf_attn, 0.5, 1);
    rf_attn_cb(null, nval);
+}
+
+function rf_attn_preset_cb(path, val)
+{
+   //console.log('rf_attn_preset_cb: path='+ path +' val='+ val);
+   rf_attn_cb(null, val, true);
 }
 
 
