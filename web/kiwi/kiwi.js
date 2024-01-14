@@ -125,6 +125,7 @@ var kiwi = {
    bands_community: null,
    
    rf_attn: 0,
+   rf_attn_disabled: false,
    
    freq_memory: [],
    freq_memory_menu_shown: 0,
