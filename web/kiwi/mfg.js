@@ -86,9 +86,11 @@ function mfg_html()
 
          // status
          w3_text('id-ee-status w3-bold w3-yellow w3-padding-LR-4 w3-padding-TB-0'),
+         '<br>',
+         w3_text('id-ee-msg w3-bold w3-margin-T-8 w3-padding-LR-4 w3-padding-TB-0'),
          '<hr>',
       
-         // write serno/model and register auto key
+         // write serno/model and register proxy key
          w3_div('id-mfg-not-kiwi1 w3-width-full w3-hide', 
             w3_col_percent('w3-valign/',
                w3_button('id-key-write w3-margin-T-8 w3-text-white', '', 'mfg_key_write_cb'), 45,
@@ -113,7 +115,7 @@ function mfg_html()
          '<hr>',
 
          w3_col_percent('w3-valign/',
-            w3_button('id-sn-write w3-margin-T-8 w3-text-white', '', 'mfg_sn_write_cb'), 45,
+            w3_button('id-sn-write-k1 w3-margin-T-8 w3-text-white', '', 'mfg_sn_write_k1_cb'), 45,
             '&nbsp;', 15,
             
             w3_button('id-mfg-restart w3-aqua', 'click to restart', 'mfg_restart_cb'), 20,
@@ -147,7 +149,6 @@ function mfg_html()
 	
 	var el = w3_innerHTML('id-mfg', s);
 	el.style.top = el.style.left = '10px';
-	if (kiwi.model != 1) w3_show('id-mfg-not-kiwi1');
 
 	//w3_width_height('id-sd-progress-container', mfg.th);
 	w3_width_height('id-output-msg', null, mfg.th);
@@ -191,12 +192,17 @@ function mfg_recv(data)
 			
 			case "next_serno":
 				mfg.next_serno = parseFloat(param[1]);
+				//if (mfg.next_serno == 1) mfg.next_serno = 20017;
+            console.log("MFG next_serno="+ mfg.next_serno);
 				break;
 
 			case "model":
 			   mfg.cur_model = parseFloat(param[1]);
 			   mfg_set_status();
 				console.log("MFG cur_model="+ mfg.cur_model);
+            console.log('MFG: not-kiwi1 '+ mfg.cur_model);
+            //if (mfg.cur_model != 1)
+               w3_show('id-mfg-not-kiwi1');
 			   break;
 
 			case "microSD_done":
@@ -232,56 +238,75 @@ function mfg_set_status()
 
 function mfg_set_button_text()
 {
-   var el, button_text, sn_valid;
+   var button_k1  = 'click to write EEPROM with:<br>model KiwiSDR 1, #'+ mfg.next_serno;
+   var button_k2p = 'click to write EEPROM with:<br>model KiwiSDR '+ mfg.model +', #'+ mfg.next_serno;
+   var sn_valid = (mfg.serno > 0);     // write serno = 0 to force invalid for testing
    
-   if (mfg.serno <= 0) {		// write serno = 0 to force invalid for testing
-      //button_text = 'invalid, click to write EEPROM<br>with next serial number: '+ mfg.next_serno +
-      //   '<br>and model: KiwiSDR '+ mfg.model;
-      button_text = 'click to write EEPROM with:<br>model KiwiSDR '+ mfg.model +', #'+ mfg.next_serno;
-      sn_valid = false;
-   } else {
-      //button_text = 'valid, serial number = '+ mfg.serno +'<br>click to change to '+ mfg.next_serno +
-      //   '<br>and model: KiwiSDR '+ mfg.model;
-      button_text = 'click to change EEPROM to:<br>model KiwiSDR '+ mfg.model +', #'+ mfg.next_serno;
-      sn_valid = true;
-   }
-   
-   el = w3_el('id-key-write');
-   if (mfg.seed_phrase_ok) {
-      w3_innerHTML(el, button_text +'<br>AND send proxy key to kiwisdr.com');
-   } else {
+   var el = w3_el('id-key-write');
+   if (mfg.seed_phrase_ok)
+      w3_innerHTML(el, button_k2p +'<br>AND send proxy key to kiwisdr.com');
+   else
       w3_innerHTML(el, 'seed phrase incorrect');
-   }
    w3_colors(el, 'w3-red', 'w3-green', sn_valid && mfg.seed_phrase_ok);
 
-   el = w3_innerHTML('id-sn-write', button_text);
+   el = w3_innerHTML('id-sn-write-k1', button_k1);
    w3_colors(el, 'w3-red', 'w3-green', sn_valid);
    
    w3_el('id-mfg.seq').value = mfg.next_serno;
+}
+
+function mfg_key_ajax_cb(reply)
+{
+   console.log('mfg_key_ajax_cb: reply='+ reply);
+   console.log(reply);
+
+   var m = '', err = false;
+   if (isObject(reply) && reply.AJAX_error) {
+      if (reply.AJAX_error == 'status') reply.AJAX_error = reply.status;
+      switch (reply.AJAX_error) {
+         case 'timeout':   m = 'Timeout contacting proxy.kiwisdr.com'; break;
+         case 403:         m = 'DANGER!!! Wrong software installed. Contact jks@kiwisdr.com immediately.'; break;
+         default:          m = 'Unknown error reply "'+ reply.AJAX_error +'"'; break;
+      }
+      m = 'FAILED: '+ m;
+      err = true;
+   } else {
+      m = 'SUCCESS: proxy.kiwisdr.com updated with proxy key for serial number '+ mfg.next_serno;
+      ext_set_cfg_param('adm.rev_user', mfg.auto_key);
+      ext_set_cfg_param('adm.rev_auto_user', mfg.auto_key);
+      ext_set_cfg_param('adm.rev_auto_host', mfg.next_serno.toString());
+      ext_set_cfg_param('adm.rev_auto', true, EXT_SAVE);
+      ext_set_cfg_param('cfg.sdr_hu_dom_sel', kiwi.REV, EXT_SAVE);
+   }
+   w3_innerHTML('id-ee-msg', m);
+   w3_colors('id-ee-msg', 'w3-green', 'w3-red', err);
 }
 
 function mfg_key_write_cb()
 {
    if (!mfg.seed_phrase_ok) return;
    if (kiwi.model == 1) return;
-	ext_send("SET eeprom_write=1 serno="+ mfg.next_serno +" model="+ mfg.model);
 
    var hash_key = mfg.next_serno +'_'+ mfg.dna;
    var keygen = Sha256.hash(hash_key +'_'+ mfg.seed_phrase_hash);
-	var request = kiwi_GETrequest('proxy', 'http://proxy.kiwisdr.com/', {debug:1});
-	kiwi_GETrequest_param(request, "auth", 'eeb3f5150bdfb6dcfb6dcfb6dcfb6dcdc4fceeb3');
-	kiwi_GETrequest_param(request, "u", hash_key +'_'+ keygen);
+   mfg.auto_key = keygen.slice(0,29);
+	ext_send('SET eeprom_write=1 serno='+ mfg.next_serno +' model='+ mfg.model +' key='+ mfg.auto_key);
+   
+   var url = 'http://proxy.kiwisdr.com/?auth=eeb3f5150bdfb6dcfb6dcfb6dcfb6dcdc4fceeb3' +
+      '&u='+ hash_key +'_'+ keygen;
+   kiwi_ajax(url, 'mfg_key_ajax_cb', 0, 10000);
+   
+   /*
+   var request = kiwi_GETrequest('proxy', 'http://proxy.kiwisdr.com/', {debug:1});
+   kiwi_GETrequest_param(request, "auth", 'eeb3f5150bdfb6dcfb6dcfb6dcfb6dcdc4fceeb3');
+   kiwi_GETrequest_param(request, "u", hash_key +'_'+ keygen);
    kiwi_GETrequest_submit(request, { gc: 1 } );
-
-   var auto_key = keygen.slice(0,29);
-   ext_set_cfg_param('adm.rev_auto_user', auto_key);
-   ext_set_cfg_param('adm.rev_auto_host', mfg.next_serno.toString());
-   ext_set_cfg_param('adm.rev_auto', true, EXT_SAVE);
+   */
 }
 
-function mfg_sn_write_cb()
+function mfg_sn_write_k1_cb()
 {
-	ext_send("SET eeprom_write=0 serno="+ mfg.next_serno +" model="+ mfg.model);
+	ext_send('SET eeprom_write=0 serno='+ mfg.next_serno +' model=1');
 }
 
 function mfg_set_seed_cb(path, val, first)

@@ -43,7 +43,8 @@ Boston, MA  02110-1301, USA.
 //#define EEPROM_TEST_VER_UPDATE
 
 #define	SEQ_SERNO_FILE "/root/kiwi.config/seq_serno.txt"
-#define	SEQ_START		"1014"
+//#define	SEQ_START		"1014"
+#define	SEQ_START		"20017"
 #define SERNO_MAX       99999
 
 #ifdef TEST_FLAG_EEPROM
@@ -57,7 +58,7 @@ void eeprom_test()
     // full eeprom write takes just under 2 secs, so only start write every 4 secs (called at 1 Hz)
     static int wcount;
     if ((test_flag & 2) && (wcount++ & 3) == 0) {
-	    eeprom_write(SERNO_WRITE, 1006);
+	    eeprom_write(SERNO_WRITE, 1006, KiwiSDR_1);
         real_printf("W"); fflush(stdout);
 	}
 }
@@ -211,9 +212,9 @@ int eeprom_check(model_e *model)
 	return serno;
 }
 
-void eeprom_write(next_serno_e type, int serno, int model)
+void eeprom_write(next_serno_e type, int serno, int model, char *key)
 {
-	int n;
+	int i, n;
 	const char *fn;
 	FILE *fp;
 	
@@ -284,6 +285,13 @@ void eeprom_write(next_serno_e type, int serno, int model)
 	e->mA_5int = FLIP16(EE_MA_5INT);
 	e->mA_5ext = FLIP16(EE_MA_5INT);
 	e->mA_DC = FLIP16(EE_MA_DC);
+	
+	for (i = 0; i < 4; i++) {
+        if (key != NULL)
+            strncpy(e->key[i], key, EEPROM_KEY_LEN);
+        else
+            memset(e->key[i], 0xff, EEPROM_KEY_PAD);
+    }
 
     // NB: have to change WP before fopen() and after fclose() because writes don't
     // fully complete (flush) until after fclose() returns!
@@ -342,5 +350,5 @@ void eeprom_update()
 	}
 
 	printf("UPDATING EEPROM from v%.1f to v1.1\n", vf);
-	eeprom_write(SERNO_WRITE, serno);
+	eeprom_write(SERNO_WRITE, serno, KiwiSDR_1);
 }

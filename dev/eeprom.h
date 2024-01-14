@@ -22,6 +22,9 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "peri.h"
 
+#define EEPROM_KEY_LEN 29
+#define EEPROM_KEY_PAD 32
+
 struct eeprom_t {
 	#define	EE_HEADER	0xAA5533EE
 	u4_t header;                // 0x00
@@ -56,7 +59,9 @@ struct eeprom_t {
 	u2_t mA_5ext;               // 0xf0
 	u2_t mA_DC;                 // 0xf2
 	
-	u1_t free[1];               // 0xf4+
+	u1_t unused[12];            // 0xf4 - 0xff
+	
+	char key[4][EEPROM_KEY_PAD];
 } __attribute__((packed));
 
 extern eeprom_t eeprom;
@@ -72,5 +77,5 @@ typedef enum { SERNO_READ, SERNO_WRITE, SERNO_ALLOC } next_serno_e;
 
 int eeprom_next_serno(next_serno_e type, int set_serno);
 int eeprom_check(model_e *model = NULL);
-void eeprom_write(next_serno_e type, int serno = 0, int model = 0);
+void eeprom_write(next_serno_e type, int serno, int model, char *key = NULL);
 void eeprom_update();

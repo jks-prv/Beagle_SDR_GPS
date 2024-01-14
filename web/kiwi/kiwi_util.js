@@ -1880,12 +1880,16 @@ function page_draw_pie(which_s) {
 		which.reload_rem--;
 		kiwi_draw_pie(id_which('pie'), which.pie_size, (which.reload_secs - which.reload_rem) / which.reload_secs);
 	} else {
-	   try {
-		   window.location.reload(true);
-		} catch(ex) {
-		   console.log('RELOAD FAILED?');
-		   console.log(ex);
-		}
+	   if (kiwi.reload_url) {
+	      window.location.href = kiwi.reload_url;
+	   } else {
+         try {
+            window.location.reload(true);
+         } catch(ex) {
+            console.log('RELOAD FAILED?');
+            console.log(ex);
+         }
+      }
 	}
 };
 
