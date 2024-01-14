@@ -157,7 +157,7 @@ CmdSetOVMask:
 				rdReg	HOST_RX				; wparam
                 RdReg32	HOST_RX				; wparam lparam
 				FreezeTOS
-                wrReg2  SET_CNT_MASK		; wparam
+                wrReg   SET_CNT_MASK		; wparam
                 drop.r
 
 CmdGetADCCtr:
