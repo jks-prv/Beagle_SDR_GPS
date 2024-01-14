@@ -86,6 +86,8 @@ var kiwi = {
    
    RX4_WF4:0, RX8_WF2:1, RX3_WF3:2, RX14_WF0:3,
    
+   NAM:0, DUC:1, PUB:2, SIP:3, REV:4,
+   
    // colormap definitions needed by admin config
    cmap_s: [
       'Kiwi', 'CSDR', 'grey', 'linear', 'turbo', 'SdrDx',

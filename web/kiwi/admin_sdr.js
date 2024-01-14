@@ -1127,7 +1127,7 @@ function kiwi_reg_html()
 			w3_input('', w3_label('w3-bold', 'Grid square (4/6 char) ') +
 				w3_div('id-public-grid-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large w3-margin-B-2') + ' ' +
 				w3_div('id-public-grid-set cl-admin-check w3-blue w3-btn w3-round-large w3-margin-B-2 w3-hide', 'set from GPS'),
-				'rx_grid', '', 'sdr_hu_input_grid'
+				'rx_grid', '', 'public_check_grid_cb'
 			),
 			w3_div('',
             w3_input('', w3_label('w3-bold', 'Location (lat, lon) ') +
@@ -1162,7 +1162,7 @@ function kiwi_reg_html()
       ) +
       '<hr>';
 
-	return w3_div('id-sdr_hu w3-text-teal w3-hide', s1 + s2);
+	return w3_div('id-public w3-text-teal w3-hide', s1 + s2);
 }
 
 function kiwisdr_com_register_cb(path, idx, first)
@@ -1214,7 +1214,7 @@ function kiwisdr_com_register_cb(path, idx, first)
 }
 
 // because of the inline quoting issue, set value dynamically
-function sdr_hu_focus()
+function public_focus()
 {
 	admin_set_decoded_value('rx_name');
 	admin_set_decoded_value('rx_location');
@@ -1235,7 +1235,7 @@ function sdr_hu_focus()
 	w3_el('id-public-grid-set').onclick = function() {
 		var val = admin.reg_status.grid;
 		w3_set_value('rx_grid', val);
-		w3_input_change('rx_grid', 'sdr_hu_input_grid');
+		w3_input_change('rx_grid', 'public_check_grid_cb');
 	};
 
 	w3_el('id-public-gps-set').onclick = function() {
@@ -1248,10 +1248,10 @@ function sdr_hu_focus()
    admin_update_start();
    	
 	// display initial switch state
-	kiwisdr_com_register_cb('adm.kiwisdr_com_register', adm.kiwisdr_com_register? w3_SWITCH_YES_IDX : w3_SWITCH_NO_IDX, /* first */ true);
+	kiwisdr_com_register_cb('adm.kiwisdr_com_register', w3_switch_idx(adm.kiwisdr_com_register), /* first */ true);
 }
 
-function sdr_hu_input_grid(path, val)
+function public_check_grid_cb(path, val)
 {
 	w3_string_set_cfg_cb(path, val);
 	public_update_check_grid();
@@ -1301,7 +1301,7 @@ function public_update_check_map()
 	w3_el('id-public-gps-check').innerHTML = '<a href="https://google.com/maps/place/'+ gps +'" target="_blank">check map</a>';
 }
 
-function sdr_hu_blur()
+function public_blur()
 {
    admin_update_stop();
 }

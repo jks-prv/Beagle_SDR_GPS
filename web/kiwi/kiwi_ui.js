@@ -228,13 +228,15 @@ function sd_backup_focus()
    w3_do_when_cond(
       function() { return isNumber(kiwi.debian_maj); },
       function() {
-         var ng_D11 = (!dbgUs && kiwi.debian_maj == 11);
-         var ng_D12 = (kiwi.debian_maj > 12 || (kiwi.debian_maj == 12 && kiwi.debian_min > 2));
-         if (ng_D11 || ng_D12) {
-            w3_innerHTML('id-sd-backup-container',
-               w3_div('w3-container w3-text w3-red',
-                  'Debian '+ kiwi.debian_maj +'.'+  kiwi.debian_min +' does not yet support the backup function.'));
-         }
+         /*
+            var ng_D11 = (!dbgUs && kiwi.debian_maj == 11);
+            var ng_D12 = (kiwi.debian_maj > 12 || (kiwi.debian_maj == 12 && kiwi.debian_min < 4));
+            if (ng_D11 || ng_D12) {
+               w3_innerHTML('id-sd-backup-container',
+                  w3_div('w3-container w3-text w3-red',
+                     'Debian '+ kiwi.debian_maj +'.'+  kiwi.debian_min +' does not support the backup function.'));
+            }
+         */
          w3_show('id-sd-backup-container', 'w3-show-inline');
       }, null,
       250
@@ -250,10 +252,12 @@ function sd_backup_blur()
 function sd_backup_click_cb(id, idx)
 {
    console.log('sd_backup_click_cb debian_maj='+ kiwi.debian_maj);
-   if (!dbgUs && kiwi.debian_maj >= 11) {
-      w3_innerHTML('id-sd-backup-msg', 'SD write not supported yet');
-      return;
-   }
+   /*
+      if (!dbgUs && (kiwi.debian_maj == 11 || (kiwi.debian_maj == 12 && kiwi.debian_min < 4))) {
+         w3_innerHTML('id-sd-backup-msg', 'SD write not supported yet');
+         return;
+      }
+   */
    
    kiwi.backup_size = null;
    w3_innerHTML('id-sd-backup-msg', 'formatting micro-SD card');
@@ -304,6 +308,7 @@ function sd_backup_write_done(err)
 	   case 15: e = 'SD card I/O error'; break;
 	   case 30: e = 'SD card already mounted?'; break;
 	   case 31: e = 'SD card format error'; break;
+	   case 87: e = 'Backups not supported on this version of Debian'; break;
 	   case 88: e = '(BBAI-64) must first update to latest Debian version'; break;
 	   case 89: e = 'SD card flasher enable failed!'; break;
 	   default: e = 'code '+ err; break;

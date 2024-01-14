@@ -507,55 +507,50 @@ void c2s_admin(void *param)
 				continue;
 			}
 		
+		    int reg, rev_auto;
 			char *user_m = NULL, *host_m = NULL;
-			n = sscanf(cmd, "SET rev_register user=%256ms host=%256ms", &user_m, &host_m);
-			if (n == 2) {
-			    // FIXME: validate unencoded user & host for allowed characters
-				system("killall -q frpc; sleep 1");
-				const char *proxy_server = admcfg_string("proxy_server", NULL, CFG_REQUIRED);
+			n = sscanf(cmd, "SET rev_register reg=%d user=%256ms host=%256ms auto=%d", &reg, &user_m, &host_m, &rev_auto);
+			if (n == 4) {
+                const char *proxy_server = admcfg_string("proxy_server", NULL, CFG_REQUIRED);
 
-			    char *reply;
-		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"%s/?u=%s&h=%s\"", proxy_server, user_m, host_m);
-                reply = non_blocking_cmd(cmd_p, &status);
-                printf("proxy register: %s\n", cmd_p);
-                kiwi_asfree(cmd_p);
-                if (reply == NULL || status < 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-                    printf("proxy register: ERROR %p 0x%x\n", reply, status);
-                    status = 900;
+			    if (reg) {
+                    // FIXME: validate unencoded user & host for allowed characters
+                    char *reply;
+                    asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"%s/?u=%s&h=%s&a=%d\"", proxy_server, user_m, host_m, rev_auto);
+                    reply = non_blocking_cmd(cmd_p, &status);
+                    printf("proxy register: %s\n", cmd_p);
+                    if (reply == NULL || status < 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+                        printf("proxy register: ERROR %p 0x%x\n", reply, status);
+                        status = 900;
+                    } else {
+                        char *rp = kstr_sp(reply);
+                        printf("proxy register: reply: %s\n", rp);
+                        status = 901;
+                        n = sscanf(rp, "status=%d", &status);
+                        printf("proxy register: n=%d status=%d\n", n, status);
+                    }
+                    kstr_free(reply);
+
+                    send_msg(conn, SM_NO_DEBUG, "ADM rev_status=%d", status);
+                    net.proxy_status = status;
                 } else {
-                    char *rp = kstr_sp(reply);
-                    printf("proxy register: reply: %s\n", rp);
-                    status = 901;
-                    n = sscanf(rp, "status=%d", &status);
-                    printf("proxy register: n=%d status=%d\n", n, status);
+                    asprintf(&cmd_p, "sed -e s/SERVER/%s/ -e s/USER/%s/ -e s/HOST/%s/ -e s/PORT/%d/ %s >%s",
+                        proxy_server, user_m, host_m, net.port_ext, DIR_CFG "/frpc.template.ini", DIR_CFG "/frpc.ini");
+                    printf("proxy register: %s\n", cmd_p);
+                    system(cmd_p);
+
+                    system("killall -q frpc; sleep 1");
+                    if (background_mode)
+                        system("/usr/local/bin/frpc -c " DIR_CFG "/frpc.ini &");
+                    else
+                        system("./pkgs/frp/" ARCH_DIR "/frpc -c " DIR_CFG "/frpc.ini &");
                 }
-                kstr_free(reply);
-
-				send_msg(conn, SM_NO_DEBUG, "ADM rev_status=%d", status);
-				net.proxy_status = status;
-				if (status < 0 || status > 99) {
-				    kiwi_asfree(user_m); kiwi_asfree(host_m);
-                    admcfg_string_free(proxy_server);
-				    continue;
-				}
 				
-				asprintf(&cmd_p, "sed -e s/SERVER/%s/ -e s/USER/%s/ -e s/HOST/%s/ -e s/PORT/%d/ %s >%s",
-				    proxy_server, user_m, host_m, net.port_ext, DIR_CFG "/frpc.template.ini", DIR_CFG "/frpc.ini");
-                printf("proxy register: %s\n", cmd_p);
-				system(cmd_p);
                 kiwi_asfree(cmd_p);
-				kiwi_asfree(user_m); kiwi_asfree(host_m);
+                kiwi_asfree(user_m); kiwi_asfree(host_m);
                 admcfg_string_free(proxy_server);
-
-                if (background_mode)
-                    system("/usr/local/bin/frpc -c " DIR_CFG "/frpc.ini &");
-                else
-                    system("./pkgs/frp/" ARCH_DIR "/frpc -c " DIR_CFG "/frpc.ini &");
-				
 				continue;
-			} else
-			if (n == 1)
-                kiwi_asfree(user_m);
+			}
 		
 
 ////////////////////////////////

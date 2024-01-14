@@ -91,10 +91,12 @@ void c2s_mfg(void *param)
 			//printf("MFG: <%s>\n", cmd);
 
 			int _type, _serno, _model = 0;
-			i = sscanf(cmd, "SET eeprom_write=%d serno=%d model=%d", &_type, &_serno, &_model);
-			if (i == 3 && _model > 0) {
-				printf("MFG: received write, type=%d serno=%d model=%d\n", _type, _serno, _model);
-				eeprom_write(_type? SERNO_WRITE : SERNO_ALLOC, _serno, _model);
+			char *_key = NULL;
+			i = sscanf(cmd, "SET eeprom_write=%d serno=%d model=%d key=%64ms", &_type, &_serno, &_model, &_key);
+			if ((i == 3 || i == 4) && _model > 0) {
+				printf("MFG: received write, type=%d serno=%d model=%d key=%s\n", _type, _serno, _model, _key);
+				eeprom_write(_type? SERNO_WRITE : SERNO_ALLOC, _serno, _model, _key);
+				kiwi_asfree(_key);
 				mfg_send_info(conn);
 				continue;
 			}
@@ -132,7 +134,6 @@ void c2s_mfg(void *param)
 			i = strcmp(cmd, "SET get_dna");
 			if (i == 0) {
 			    u64_t dna = fpga_dna();
-		        printf("device DNA %08x|%08x\n", PRINTF_U64_ARG(dna));
 		        send_msg(conn, SM_NO_DEBUG, "MFG dna=%08x%08x", PRINTF_U64_ARG(dna));
 				continue;
 			}
