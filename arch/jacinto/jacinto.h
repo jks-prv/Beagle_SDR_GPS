@@ -37,6 +37,11 @@ Boston, MA  02110-1301, USA.
 #ifdef CPU_TDA4VM                   // TRM 5.1.3.3.1.1 pad configuration regs
                                     // J721E_registers1.pdf 6.404 pdfpg 1048 padconfig1 reg
                                     // CAUTION: padconfig0 reg is different from all others (fields missing)
+                                    // padconfig1 hw reset value 0x8214007
+ 
+ #define	PMUX_ISOBP	0x00800000  // 23 isolation bypass
+ #define	PMUX_ISOOV	0x00400000  // 22 isolation override
+
  #define	PMUX_TXDIS	0x00200000  // 21 TX disable
 
  #define	PMUX_DRIVE	0x00180000  // 20:19 LVCMOS drive strength
