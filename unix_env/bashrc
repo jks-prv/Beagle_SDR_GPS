@@ -154,6 +154,7 @@ alias li='for l in $(seq -40 -2); do printf "%s\n" "$l" ; done'
 
 # make
 alias m="make"
+alias mskip="make skip"
 alias masm="make ASM_OUT=1"
 alias mh="make help"
 alias m0="make OPT=0"
@@ -417,6 +418,7 @@ alias slots="cat /sys/devices/platform/bone_capemgr/slots"
 alias unslot7="echo > /sys/devices/bone_capemgr.*/slots"
 alias unslot8="echo > /sys/devices/platform/bone_capemgr/slots"
 alias pins="more /sys/kernel/debug/pinctrl/44e10800.pinmux/pins"
+alias spi="lsmod | grep -i spidev; ls -la /dev/*spi*"
 alias db="systemctl reload-or-restart dropbear.socket"
 alias dk="diff -r . merge"
 led=/sys/class/leds/beaglebone\:green\:usr

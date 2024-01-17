@@ -87,23 +87,33 @@ KIWI_XC_HOST_PORT ?= 22
 # "all" target must be first
 ################################
 .PHONY: all
-all: check_device_detect make_prereq
+all: check_detect make_prereq
+	@make $(MAKE_ARGS) build_makefile_inc
+	@make $(MAKE_ARGS) make_all
+
+.PHONY: skip
+skip: skip_cert_check check_detect make_prereq
 	@make $(MAKE_ARGS) build_makefile_inc
 	@make $(MAKE_ARGS) make_all
 
 .PHONY: debug
-debug: check_device_detect make_prereq
+debug: check_detect make_prereq
 	@make $(MAKE_ARGS) DEBUG=-DDEBUG build_makefile_inc
 	@make $(MAKE_ARGS) DEBUG=-DDEBUG make_all
 
-.PHONY: check_device_detect
-check_device_detect:
+.PHONY: check_detect
+check_detect:
     ifeq ($(BAD_DEV_DETECT),true)
 	    @echo "bad device detect"
 	    @echo "BBAI_64 = $(BBAI_64)"
 	    @echo "BBAI = $(BBAI)"
 	    @echo "RPI = $(RPI)"
 	    @echo "BBG_BBB = $(BBG_BBB)"
+	    @echo "DEBIAN_VERSION = $(DEBIAN_VERSION)"
+	    @exit -1
+    endif
+    ifeq ($(BAD_DEB_DETECT),true)
+	    @echo "bad Debian version detect"
 	    @echo "DEBIAN_VERSION = $(DEBIAN_VERSION)"
 	    @exit -1
     endif
@@ -312,7 +322,7 @@ endif
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 # runs only once per update of the .keyringN.dep filename
-KEYRING := $(DIR_CFG)/.keyring2.dep
+KEYRING := $(DIR_CFG)/.keyring3.dep
 $(KEYRING):
 	@echo "KEYRING.."
 ifeq ($(DEBIAN_VERSION),7)
@@ -344,6 +354,10 @@ $(INSTALL_CERTIFICATES):
 	make $(KEYRING)
 	-apt-get -y $(APT_GET_FORCE) install ca-certificates
 	-apt-get -y $(APT_GET_FORCE) update
+	touch $(INSTALL_CERTIFICATES)
+
+.PHONY: skip_cert_check
+skip_cert_check:
 	touch $(INSTALL_CERTIFICATES)
 
 /usr/lib/$(LIB_ARCH)/libfftw3f.a:
@@ -720,7 +734,7 @@ vars: make_prereq
 	make $(MAKE_ARGS) make_vars
 
 .PHONY: make_vars
-make_vars: check_device_detect
+make_vars: check_detect
 	@echo version $(VER)
 	@echo
 	@echo UNAME = $(UNAME)
@@ -1089,7 +1103,7 @@ DISABLE_WS:
         endif
     endif
 
-REBOOT = $(DIR_CFG)/.reboot
+ASK_REBOOT = $(DIR_CFG)/.ask_reboot
 FORCE_REBOOT = /tmp/.force_reboot
 DO_ONCE =
 DTS_DEP_DST =
@@ -1098,93 +1112,131 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
     DO_ONCE = $(DIR_CFG)/.do_once.dep
 
     DTS_DEP_DST = $(DIR_DTB)/$(DTS)
-    DTS_DEP_SRC = $(DIR_DTS)/$(DTS)
-    DTS2_DEP_SRC = $(addprefix $(DIR_DTS)/,$(DTS2))
+    DTS_DEP_DST2 = $(DIR_DTB)/$(DTS2)
+    DTS_DEP_SRC  = $(addprefix $(DIR_DTS)/,$(DTS))
+    DTS_DEP_SRC2 = $(addprefix $(DIR_DTS)/,$(DTS2))
 
     $(DO_ONCE):
 	    @mkdir -p $(DIR_CFG)
 	    @touch $(DO_ONCE)
-        ifeq ($(INSTALL_KIWI_DEVICE_TREE),true)
-	        make install_kiwi_device_tree
-	        @touch $(REBOOT)
-        endif
+	    make install_kiwi_device_tree
+	    @touch $(FORCE_REBOOT)
 
     ifeq ($(BBAI_64),true)
-        DTS = k3-j721e-beagleboneai64-bone-buses.dtsi
-        DTS2 = k3-j721e-beagleboneai64.dts
-        DIR_DTS = platform/beaglebone_AI64
+        DTS = k3-j721e-beagleboneai64.dts k3-j721e-beagleboneai64-bone-buses.dtsi
+        DTS2 = 
+        DIR_DTS  = platform/beaglebone_AI64/$(DEB)
         DIR_DTB_BASE = $(wildcard /opt/source/dtb-$(SYS_MAJ).$(SYS_MIN)-*)
-        DIR_DTB = $(DIR_DTB_BASE)/src/arm64
+        DIR_DTB  = $(DIR_DTB_BASE)/src/arm64
+        DIR_DTB2 = $(DIR_DTB_BASE)/src/arm64/overlays
+        ifeq ($(DEBIAN_12_AND_LATER),true)
+            #DTS2 = overlays/kiwisdr-cape.dts
+        endif
 
         # re-install device tree if changes made to *.dts source file
-        $(DTS_DEP_DST): $(DTS_DEP_SRC) $(DTS2_DEP_SRC)
-	        @echo "BBAI-64: re-install Kiwi device tree to configure GPIO pins"
-	        make install_kiwi_device_tree
-	        touch $(FORCE_REBOOT)
+#        $(DTS_DEP_DST) $(DTS_DEP_DST2): $(DTS_DEP_SRC) $(DTS_DEP_SRC2)
+#	        @echo "BBAI-64: re-install Kiwi device tree to configure GPIO pins"
+#	        make install_kiwi_device_tree
+#	        touch $(FORCE_REBOOT)
 
         install_kiwi_device_tree:
 	        @echo "BBAI-64: install Kiwi device tree to configure GPIO pins"
 	        @echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
             ifeq ($(DEBIAN_12_AND_LATER),true)
-	            echo "BBAI-64 DEBIAN_12_AND_LATER FIXME SKIPPING.."
-	            #cp $(DTS_DEP_SRC) $(DIR_DTB)
-	            #cp $(DTS2_DEP_SRC) $(DIR_DTB)
-	            #(cd $(DIR_DTB_BASE); make)
-	            #(cd $(DIR_DTB_BASE); make install_arm64)
+	            @cp -v $(DTS_DEP_SRC) $(DIR_DTB)
+#	            @cp -v $(DTS_DEP_SRC2) $(DIR_DTB2)
+	            (cd $(DIR_DTB_BASE); make)
+	            (cd $(DIR_DTB_BASE); make install_arm64)
             else
-	            cp $(DTS_DEP_SRC) $(DIR_DTB)
-	            cp $(DTS2_DEP_SRC) $(DIR_DTB)
+	            @cp -v $(DTS_DEP_SRC) $(DIR_DTB)
 	            (cd $(DIR_DTB_BASE); make all)
 	            (cd $(DIR_DTB_BASE); make install)
             endif
     endif
 
     ifeq ($(BBAI),true)
-        DTS = am5729-beagleboneai-kiwisdr-cape.dts
-        DTS2 = am5729-beagleboneai.dts
-        DIR_DTS = platform/beaglebone_AI
+        DTS = am5729-beagleboneai.dts am5729-beagleboneai-kiwisdr-cape.dts
+        DTS2 = 
+        DIR_DTS = platform/beaglebone_AI/$(DEB)
         DIR_DTB_BASE = $(wildcard /opt/source/dtb-$(SYS_MAJ).$(SYS_MIN)-*)
         DIR_DTB = $(DIR_DTB_BASE)/src/arm
+        DIR_DTB2 = $(DIR_DTB_BASE)/src/arm/overlays
+        ifeq ($(DEBIAN_12_AND_LATER),true)
+            #DTS2 = overlays/kiwisdr-cape.dts
+        endif
 
         DTB_KIWI = am5729-beagleboneai-kiwisdr-cape.dtb
         DTB_DEB_NEW = am5729-beagleboneai-custom.dtb
         UENV_HAS_DTB_NEW := $(shell grep -qi '^dtb=$(DTB_DEB_NEW)' /boot/uEnv.txt && echo true)
 
         # re-install device tree if changes made to *.dts source file
-        $(DTS_DEP_DST): $(DTS_DEP_SRC)
-	        @echo "BBAI: re-install Kiwi device tree to configure GPIO pins"
-	        make install_kiwi_device_tree
-	        touch $(FORCE_REBOOT)
+#        $(DTS_DEP_DST) $(DTS_DEP_DST2): $(DTS_DEP_SRC) $(DTS_DEP_SRC2)
+#	        @echo "BBAI: re-install Kiwi device tree to configure GPIO pins"
+#	        make install_kiwi_device_tree
+#	        touch $(FORCE_REBOOT)
 
         install_kiwi_device_tree:
 	        @echo "BBAI: install Kiwi device tree to configure GPIO/SPI pins"
 	        @echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
-	        cp $(DTS_DEP_SRC) $(DIR_DTB)
             ifeq ($(DEBIAN_12_AND_LATER),true)
+	            @cp -v $(DTS_DEP_SRC) $(DIR_DTB)
+#	            @cp -v $(DTS_DEP_SRC2) $(DIR_DTB2)
 	            (cd $(DIR_DTB_BASE); make)
-	            @echo "FIXME BBAI D12+"
+	            (cd $(DIR_DTB_BASE); make install_arm)
             else
+	            @cp -v $(DTS_DEP_SRC) $(DIR_DTB)
 	            (cd $(DIR_DTB_BASE); make)
 	            # intentionally don't do "make install" -- instead only copy single .dtb below
-	            cp $(DIR_DTB)/$(DTB_KIWI) /boot
-	            cp $(DIR_DTB)/$(DTB_KIWI) /boot/dtbs/$(SYS)
-	            cp $(DIR_DTB)/$(DTB_KIWI) /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb
+	            @cp -v $(DIR_DTB)/$(DTB_KIWI) /boot
+	            @cp -v $(DIR_DTB)/$(DTB_KIWI) /boot/dtbs/$(SYS)
+	            @cp -v $(DIR_DTB)/$(DTB_KIWI) /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb
 	            @echo "UENV_HAS_DTB_NEW = $(UENV_HAS_DTB_NEW)"
                 ifeq ($(UENV_HAS_DTB_NEW),true)
-	                -cp --backup=numbered /boot/uEnv.txt /boot/uEnv.txt.save
+	                -@cp -v --backup=numbered /boot/uEnv.txt /boot/uEnv.txt.save
 	                -sed -i -e 's/^dtb=$(DTB_DEB_NEW)/dtb=$(DTB_KIWI)/' /boot/uEnv.txt
                 endif
             endif
     endif
 
     ifeq ($(BBG_BBB),true)
+        DTS = cape-bone-kiwi-00A0.dts
+        DIR_DTS = platform/beaglebone_black
+        ifeq ($(DEBIAN_12_AND_LATER),true)
+            #DIR_DTB_BASE = $(wildcard /opt/source/dtb-$(SYS_MAJ).$(SYS_MIN)-*)
+            #DIR_DTB = $(DIR_DTB_BASE)/src/arm
+        else
+            DIR_DTB = /lib/firmware
+        endif
+
+        # re-install device tree if changes made to *.dts source file
+#        $(DTS_DEP_DST): $(DTS_DEP_SRC)
+#	        @echo "BBG_BBB: re-install Kiwi device tree to configure GPIO pins"
+#	        make install_kiwi_device_tree
+#	        touch $(FORCE_REBOOT)
+
         install_kiwi_device_tree:
-	        @echo "BBG_BBB: GPIO at runtime via capemgr, SPI at boottime via uEnv.txt"
-	        -cp --backup=numbered /boot/uEnv.txt /boot/uEnv.txt.save
-            # Debian 10
-	        -sed -i -e 's:^#uboot_overlay_addr4=/lib/firmware/<file4>.dtbo:uboot_overlay_addr4=/lib/firmware/cape-bone-kiwi-00A0.dtbo:' /boot/uEnv.txt
-            # Debian 11
-	        -sed -i -e 's:^#uboot_overlay_addr4=<file4>.dtbo:uboot_overlay_addr4=/lib/firmware/cape-bone-kiwi-00A0.dtbo:' /boot/uEnv.txt
+            ifeq ($(DEBIAN_12_AND_LATER),true)
+	            @echo "BBG_BBB: D12+, SPI at boottime via uEnv.txt"
+	            -sed -i -e 's:^#uboot_overlay_addr4=<file4>.dtbo:uboot_overlay_addr4=BB-SPIDEV0-00A0.dtbo:' /boot/uEnv.txt
+	            grep uboot_overlay_addr4 /boot/uEnv.txt || true
+            else ifeq ($(DEBIAN_10_AND_LATER),true)
+	            @echo "BBG_BBB: D10-11, check uEnv.txt for BB-SPIDEV0 and cape-bone-kiwi"
+                # For SPI uEnv.txt needs added by hand: cape_enable=bone_capemgr.enable_partno=BB-SPIDEV0
+	            grep BB-SPIDEV0 /boot/uEnv.txt || true
+	            grep uboot_overlay_addr4 /boot/uEnv.txt || true
+#	            @echo "BBG_BBB: D10-11, GPIO at runtime via capemgr, SPI at boottime via uEnv.txt"
+	            -@cp -v --backup=numbered /boot/uEnv.txt /boot/uEnv.txt.save
+                # Debian 10
+	            -sed -i -e 's:^#uboot_overlay_addr4=/lib/firmware/<file4>.dtbo:uboot_overlay_addr4=/lib/firmware/cape-bone-kiwi-00A0.dtbo:' /boot/uEnv.txt
+                # Debian 11
+	            -sed -i -e 's:^#uboot_overlay_addr4=<file4>.dtbo:uboot_overlay_addr4=/lib/firmware/cape-bone-kiwi-00A0.dtbo:' /boot/uEnv.txt
+            else
+	            @echo "BBG_BBB: D8, GPIO at runtime via capemgr, SPI at boottime via uEnv.txt"
+                # ./k and init:kiwid load cape-bone-kiwi-00A0 via capemgr and run dtc if necessary
+                # So we only have to place cape-bone-kiwi-00A0.dts in /lib/firmware
+	            @cp -v $(DTS_DEP_SRC) $(DIR_DTB)
+                # For SPI uEnv.txt needs added by hand: cape_enable=bone_capemgr.enable_partno=BB-SPIDEV0
+            endif
     endif
 endif
 
@@ -1406,7 +1458,7 @@ ifeq ($(MISSING_IPTABLES),true)
 endif
 
 # must be last obviously
-	@if [ -f $(REBOOT) ]; then rm $(REBOOT); echo "\nMUST REBOOT FOR CHANGES TO TAKE EFFECT"; echo -n "Press \"return\" key to reboot else control-C: "; read in; reboot; fi;
+	@if [ -f $(ASK_REBOOT) ]; then rm $(ASK_REBOOT); echo "\nMUST REBOOT FOR CHANGES TO TAKE EFFECT"; echo -n "Press \"return\" key to reboot else control-C: "; read in; reboot; fi;
 	@if [ -f $(FORCE_REBOOT) ]; then rm $(FORCE_REBOOT); echo "\nMUST REBOOT FOR CHANGES TO TAKE EFFECT. REBOOTING..."; reboot; fi;
 
 endif
@@ -1752,6 +1804,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 /usr/bin/xz: $(INSTALL_CERTIFICATES)
 	apt-get -y $(APT_GET_FORCE) install xz-utils
 
+
 #
 # DANGER: "DD_SIZE := 2700M" below must be ~200 MB larger than the partition "used" size
 # (currently ~2.5 GB) computed by the "d.mb" command alias.
@@ -1777,8 +1830,17 @@ create_img_from_sd: /usr/bin/xz
 	sha256sum $(TO_IMG)
 	date
 
-FROM_IMG = bbai64-emmc-flasher-debian-12.2-minimal-arm64-2023-10-07-6gb.img.xz
-SD_CARD_MMC_FROM_IMG := 1
+
+ifeq ($(BBAI_64),true)
+    FROM_IMG = bbai64-emmc-flasher-debian-12.2-minimal-arm64-2023-10-07-6gb.img.xz
+    SD_CARD_MMC_FROM_IMG := 1
+else ifeq ($(BBAI),true)
+    FROM_IMG = am57xx-eMMC-flasher-debian-12.2-minimal-armhf-2023-10-07-2gb.img.xz
+    SD_CARD_MMC_FROM_IMG := 0
+else ifeq ($(BBG_BBB),true)
+    FROM_IMG = am335x-eMMC-flasher-debian-12.2-minimal-armhf-2023-10-07-2gb.img.xz
+    SD_CARD_MMC_FROM_IMG := 0
+endif
 
 create_sd_from_img: /usr/bin/xz
 	lsblk
