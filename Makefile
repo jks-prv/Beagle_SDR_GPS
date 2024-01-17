@@ -335,6 +335,8 @@ ifeq ($(DEBIAN_VERSION),8)
 	@echo "switch to using Debian 8 (Jessie) archive repo"
 	-cp /etc/apt/sources.list /etc/apt/sources.list.orig
 	-cp unix_env/sources.D8.new.list /etc/apt/sources.list
+	-cp unix_env/sources.D8.new.list /etc/apt/
+	-cp unix_env/sources.D8.upgrade.list /etc/apt/
 endif
 ifeq ($(DEBIAN_VERSION),9)
 	@echo "switch to using Debian 9 (Stretch) archive repo"
