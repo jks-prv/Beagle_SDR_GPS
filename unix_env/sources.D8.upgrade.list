@@ -1,0 +1,21 @@
+deb http://archive.debian.org/debian/ jessie main contrib non-free
+#deb-src http://archive.debian.org/debian/ jessie main contrib non-free
+
+# to get clang-6.0 from Debian 9 (Stretch)
+deb http://archive.debian.org/debian stretch-backports main contrib non-free
+
+#deb http://archive.debian.org/debian jessie-backports main contrib non-free
+##deb-src http://archive.debian.org/debian jessie-backports main contrib non-free
+
+deb https://deb.nodesource.com/node_0.12 jessie main
+#deb-src https://deb.nodesource.com/node_0.12 jessie main
+
+
+#Kernel source (repos.rcn-ee.com) : https://github.com/RobertCNelson/linux-stable-rcn-ee
+#
+#git clone https://github.com/RobertCNelson/linux-stable-rcn-ee
+#cd ./linux-stable-rcn-ee
+#git checkout `uname -r` -b tmp
+#
+deb [arch=armhf] http://repos.rcn-ee.com/debian/ jessie main
+#deb-src [arch=armhf] http://repos.rcn-ee.com/debian/ jessie main

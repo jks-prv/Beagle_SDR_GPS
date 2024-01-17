@@ -322,7 +322,7 @@ endif
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 # runs only once per update of the .keyringN.dep filename
-KEYRING := $(DIR_CFG)/.keyring3.dep
+KEYRING := $(DIR_CFG)/.keyring4.dep
 $(KEYRING):
 	@echo "KEYRING.."
 ifeq ($(DEBIAN_VERSION),7)
@@ -335,6 +335,8 @@ ifeq ($(DEBIAN_VERSION),8)
 	@echo "switch to using Debian 8 (Jessie) archive repo"
 	-cp /etc/apt/sources.list /etc/apt/sources.list.orig
 	-cp unix_env/sources.D8.new.list /etc/apt/sources.list
+	-cp unix_env/sources.D8.new.list /etc/apt/
+	-cp unix_env/sources.D8.upgrade.list /etc/apt/
 endif
 ifeq ($(DEBIAN_VERSION),9)
 	@echo "switch to using Debian 9 (Stretch) archive repo"

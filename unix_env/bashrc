@@ -301,10 +301,6 @@ alias pkpol="apt-cache policy"
 alias pkch="apt-get update --allow-releaseinfo-change"
 alias pkup="apt-get -y ${APT_GET_FORCE} install debian-archive-keyring; apt-get update; apt-get -y ${APT_GET_FORCE} install ca-certificates; apt-get update"
 # update(upgrade) single package
-alias pkupp="apt-get install --only-upgrade"
-alias pkug="apt-get -y ${APT_GET_FORCE} dist-upgrade"
-#alias pkuug="apt-get -y ${APT_GET_FORCE} upgrade"
-#alias pkfug="apt-get full-upgrade"
 alias pki="apt-get -y ${APT_GET_FORCE} install"
 alias pkc="df; apt-get clean; echo; df"
 alias pksz="dpkg-query -W -f='\${Installed-Size;8}\t\${Status;1}\t\${Package}\n' | gr -v '\\sd\\s' | sort -n | cut -f1,3-"
@@ -317,6 +313,17 @@ alias pkrm="apt-get purge"
 #alias pkrm="apt-get remove"
 alias pkar="apt-get autoremove"
 alias pkco="apt-get upgrade bb-cape-overlays"
+
+#alias pkuug="apt-get -y ${APT_GET_FORCE} upgrade"
+#alias pkfug="apt-get full-upgrade"
+if [ "x${DEBIAN_8}" == "xtrue" ] ; then
+    alias pkupp="cp /etc/apt/sources.D8.upgrade.list /etc/apt/sources.list; apt-get install --only-upgrade; cp /etc/apt/sources.D8.new.list /etc/apt/sources.list"
+    alias pkug="cp /etc/apt/sources.D8.upgrade.list /etc/apt/sources.list; apt-get -y ${APT_GET_FORCE} dist-upgrade; cp /etc/apt/sources.D8.new.list /etc/apt/sources.list"
+else
+    alias pkupp="apt-get install --only-upgrade"
+    alias pkug="apt-get -y ${APT_GET_FORCE} dist-upgrade"
+fi
+
 
 # BBAI/BBAI-64 common
 # NB: /opt/source/dtb-* must match kernel version, hence based on "uname -r"
