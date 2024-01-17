@@ -659,6 +659,7 @@ fail:
 			"snr=%d,%d\n"
 			"ant_connected=%d\n"
 			"adc_ov=%u\n"
+			"clk_ext_freq=%d\n"
 			"clk_ext_gps=%d,%d\n"
 			"uptime=%d\n"
 			"gps_date=%d,%d\n"
@@ -708,6 +709,7 @@ fail:
 			(s6 = cfg_string("rx_antenna", NULL, CFG_OPTIONAL)),
 			snr_all, snr_HF, ant_connected,
 			dpump.rx_adc_ovfl_cnt,
+			cfg_int("ext_ADC_freq", NULL, CFG_OPTIONAL),
 			clk.ext_ADC_clk? 1:0, clk.do_corrections,
 			timer_sec(),
 			#ifdef USE_GPS
