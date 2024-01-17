@@ -322,7 +322,7 @@ endif
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 # runs only once per update of the .keyringN.dep filename
-KEYRING := $(DIR_CFG)/.keyring3.dep
+KEYRING := $(DIR_CFG)/.keyring4.dep
 $(KEYRING):
 	@echo "KEYRING.."
 ifeq ($(DEBIAN_VERSION),7)
