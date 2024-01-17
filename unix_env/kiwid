@@ -50,7 +50,8 @@ else
     # Debian 8, SPIDEV: BB-SPIDEV0 must be loaded via /boot/uEnv.txt to config pmux properly
     #               i.e. cape_enable=bone_capemgr.enable_partno=BB-SPIDEV0
     # Debian 9, never used by BBG/BBB
-    # Debian 10+, SPIDEV: Kiwi device tree loaded via UBOOT_OVERLAY, config-pin to setup spi pins
+    # Debian 10-11, (always SPIDEV): Kiwi device tree loaded via UBOOT_OVERLAY, config-pin to setup SPI pins
+    # Debian 12+, (always SPIDEV): Kiwi device tree and SPI loaded via UBOOT_OVERLAY
 
     SBC="BBG/BBB"
     SLOTS7_FN=$(ls /sys/devices/bone_capemgr.*/slots 2>/dev/null)
@@ -123,14 +124,16 @@ case "$1" in
         echo "24c32 0x54" > /sys/class/i2c-adapter/i2c-1/new_device
         sleep 1
     else
+        # If there is no .dts (e.g. Debian 12+) don't run dtc
         if test \( -f /lib/firmware/${CAPE}.dts \) -a \( \( ! -f /lib/firmware/${CAPE}.dtbo \) -o \( /lib/firmware/${CAPE}.dts -nt /lib/firmware/${CAPE}.dtbo \) \) ; then
             echo compile ${DEV} device tree;
             dtc -O dtb -o /lib/firmware/${CAPE}.dtbo -b 0 -@ /lib/firmware/${CAPE}.dts;
             # don't unload old slot because this is known to cause panics; must reboot
         fi
-    
+
         if [ "x${UBOOT_OVERLAY}" = "xtrue" ] ; then
             echo "BBG_BBB: Kiwi device tree loaded via U-boot overlay"
+            modprobe spidev
         
             # Debian 12+, no config-pin. Needs uEnv: uboot_overlay_addr4=BB-SPIDEV0-00A0.dtbo
             if test \( -f /usr/bin/config-pin \) ; then
@@ -141,12 +144,15 @@ case "$1" in
                 config-pin p9.18 spi
                 config-pin p9.21 spi
                 config-pin p9.22 spi_sclk
+            else
+                echo "BBG_BBB: SPI device tree loaded via U-boot overlay"
             fi
         else
             echo "BBG_BBB: Kiwi and SPI device tree loaded via capemgr"
 
             if ! grep -q ${DEVID} ${SLOTS_FN} ; then
                 echo load ${DEV} device tree;
+                echo "${DEVID} to ${SLOTS_FN}"
                 echo ${DEVID} > ${SLOTS_FN};
                 sleep 2;
             fi
@@ -157,7 +163,7 @@ case "$1" in
                 dtc -O dtb -o /lib/firmware/${SPI}.dtbo -b 0 -@ /lib/firmware/${SPI}.dts;
                 # don't unload old slot because this is known to cause panics; must reboot
             fi
-    
+
             if [ "x${LOAD_SPI}" = "xyes" ] ; then
                 if ! grep -q ${DEVID_SPI} ${SLOTS_FN} ; then
                     echo load ${DEV_SPI} device tree;
@@ -172,7 +178,7 @@ case "$1" in
             #    dtc -O dtb -o /lib/firmware/${PRU}.dtbo -b 0 -@ /lib/firmware/${PRU}.dts;
             #    # don't unload old slot because this is known to cause panics; must reboot
             #fi
-        
+
             #if ! grep -q ${DEVID_PRU} ${SLOTS_FN} ; then
             #    echo load ${DEV_PRU} device tree;
             #    echo ${DEVID_PRU} > ${SLOTS_FN};

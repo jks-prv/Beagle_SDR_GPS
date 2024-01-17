@@ -223,6 +223,22 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
             CMD_DEPS_DEBIAN := /usr/bin/clang
         endif
     endif
+
+    ifeq ($(DEBIAN_VERSION),7)
+        DEB := D7
+    else ifeq ($(DEBIAN_VERSION),8)
+        DEB := D8
+    else ifeq ($(DEBIAN_VERSION),9)
+        DEB := D9
+    else ifeq ($(DEBIAN_VERSION),10)
+        DEB := D10
+    else ifeq ($(DEBIAN_VERSION),11)
+        DEB := D11
+    else ifeq ($(DEBIAN_VERSION),12)
+        DEB := D12
+    else
+        BAD_DEB_DETECT := true
+    endif
 endif
 
 
@@ -234,7 +250,6 @@ ifeq ($(BBAI_64),true)
     CFLAGS += -DMULTI_CORE
     FP_FLAGS += -mtune=cortex-a72 -mcpu=cortex-a72
     #FP_FLAGS += -mfpu=neon-vfpv4 -mfloat-abi=hard
-    INSTALL_KIWI_DEVICE_TREE = true
     ARCH_DIR = arm64
     LIB_ARCH = aarch64-linux-gnu
 else ifeq ($(BBAI),true)
@@ -245,7 +260,6 @@ else ifeq ($(BBAI),true)
     CFLAGS += -DMULTI_CORE
     FP_FLAGS += -mtune=cortex-a15 -mcpu=cortex-a15
     FP_FLAGS += -mfpu=neon-vfpv4 -mfloat-abi=hard
-    INSTALL_KIWI_DEVICE_TREE = true
     ARCH_DIR = arm32
     LIB_ARCH = arm-linux-gnueabihf
 else ifeq ($(RPI),true)
@@ -269,15 +283,11 @@ else ifeq ($(BBG_BBB),true)
     else
         FP_FLAGS += -mfpu=neon-vfpv3 -mfloat-abi=hard
     endif
-    ifeq ($(DEBIAN_10_AND_LATER),true)
-        INSTALL_KIWI_DEVICE_TREE = true
-    endif
     ARCH_DIR = arm32
     LIB_ARCH = arm-linux-gnueabihf
 else
     BAD_DEV_DETECT := true
 endif
-
 
 ifneq ($(DEVSYS_BUT_NOT_XC),true)
     CFLAGS += $(FP_FLAGS)
