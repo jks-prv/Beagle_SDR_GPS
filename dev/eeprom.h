@@ -61,6 +61,7 @@ struct eeprom_t {
 	
 	u1_t unused[12];            // 0xf4 - 0xff
 	
+	char serial_backup[4][8];
 	char key[4][EEPROM_KEY_PAD];
 } __attribute__((packed));
 

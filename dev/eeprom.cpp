@@ -287,6 +287,8 @@ void eeprom_write(next_serno_e type, int serno, int model, char *key)
 	e->mA_DC = FLIP16(EE_MA_DC);
 	
 	for (i = 0; i < 4; i++) {
+	    memcpy(e->serial_backup[i], e->serial_new, 8);
+	    
         if (key != NULL)
             strncpy(e->key[i], key, EEPROM_KEY_LEN);
         else
