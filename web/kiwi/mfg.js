@@ -271,7 +271,9 @@ function mfg_key_ajax_cb(reply)
       m = 'FAILED: '+ m;
       err = true;
    } else {
-      m = 'SUCCESS: proxy.kiwisdr.com updated with proxy key for serial number '+ mfg.next_serno;
+      m = 'SUCCESS proxy.kiwisdr.com updated with proxy key for serial number: '+ mfg.next_serno;
+      m += '<br>Admin password: '+ reply;
+      ext_set_cfg_param('adm.admin_password', reply);
       ext_set_cfg_param('adm.rev_user', mfg.auto_key);
       ext_set_cfg_param('adm.rev_auto_user', mfg.auto_key);
       ext_set_cfg_param('adm.rev_auto_host', mfg.next_serno.toString());
@@ -292,6 +294,9 @@ function mfg_key_write_cb()
    mfg.auto_key = keygen.slice(0,29);
 	ext_send('SET eeprom_write=1 serno='+ mfg.next_serno +' model='+ mfg.model +' key='+ mfg.auto_key);
    
+   // setup frpc.ini file
+   ext_send('SET rev_config user='+ mfg.auto_key +' host='+ mfg.next_serno);
+
    var url = 'http://proxy.kiwisdr.com/?auth=eeb3f5150bdfb6dcfb6dcfb6dcfb6dcdc4fceeb3' +
       '&u='+ hash_key +'_'+ keygen;
    kiwi_ajax(url, 'mfg_key_ajax_cb', 0, 10000);
