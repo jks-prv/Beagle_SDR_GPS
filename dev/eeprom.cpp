@@ -44,7 +44,7 @@ Boston, MA  02110-1301, USA.
 
 #define	SEQ_SERNO_FILE "/root/kiwi.config/seq_serno.txt"
 //#define	SEQ_START		"1014"
-#define	SEQ_START		"20017"
+#define	SEQ_START		"21017"
 #define SERNO_MAX       99999
 
 #ifdef TEST_FLAG_EEPROM
@@ -225,74 +225,80 @@ void eeprom_write(next_serno_e type, int serno, int model, char *key)
 	eeprom_t *e = &eeprom;
 	memset(e, 0, sizeof(eeprom_t));		// v1.1 fix: zero unused e->io_pins
 
-	e->header = FLIP32(EE_HEADER);
-	SET_CHARS(e->fmt_rev, EE_FMT_REV, ' ');
-	
-	SET_CHARS(e->board_name, "KiwiSDR", ' ');
+    if (type != SERNO_RESET) {
+        e->header = FLIP32(EE_HEADER);
+        SET_CHARS(e->fmt_rev, EE_FMT_REV, ' ');
+    
+        SET_CHARS(e->board_name, "KiwiSDR", ' ');
 
-	#ifdef EEPROM_TEST_VER_UPDATE
-	if (test_flag) {
-		SET_CHARS(e->version, "v0.9", ' ');
-	} else
-	#endif
+        #ifdef EEPROM_TEST_VER_UPDATE
+        if (test_flag) {
+            SET_CHARS(e->version, "v0.9", ' ');
+        } else
+        #endif
 
-	SET_CHARS(e->version, "v1.1", ' ');
+        SET_CHARS(e->version, "v1.1", ' ');
 
-	SET_CHARS(e->mfg, "kiwisdr.com", ' ');
-	
-	SET_CHARS(e->part_no, stprintf("KiwiSDR %d", model), ' ');
+        SET_CHARS(e->mfg, "kiwisdr.com", ' ');
+    
+        SET_CHARS(e->part_no, stprintf("KiwiSDR %d", model), ' ');
 
-	// we use the WWYY fields as "date of last EEPROM write" rather than "date of production"
-	time_t t = utc_time();
-	struct tm tm; gmtime_r(&t, &tm);
-	int ord_date = tm.tm_yday + 1;		// convert 0..365 to 1..366
-	int weekday = tm.tm_wday? tm.tm_wday : 7;	// convert Sunday = 0 to = 7
+        // we use the WWYY fields as "date of last EEPROM write" rather than "date of production"
+        time_t t = utc_time();
+        struct tm tm; gmtime_r(&t, &tm);
+        int ord_date = tm.tm_yday + 1;		// convert 0..365 to 1..366
+        int weekday = tm.tm_wday? tm.tm_wday : 7;	// convert Sunday = 0 to = 7
 
-	// formula from en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_of_a_given_date
-	int ww = (ord_date - weekday + 10) / 7;
-	if (ww < 1) ww = 1;
-	if (ww > 52) ww = 52;
-	kiwi_snprintf_buf_plus_space_for_null(e->week, "%2d", ww);	// caution: leaves '\0' at start of next field (year)
+        // formula from en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_of_a_given_date
+        int ww = (ord_date - weekday + 10) / 7;
+        if (ww < 1) ww = 1;
+        if (ww > 52) ww = 52;
+        kiwi_snprintf_buf_plus_space_for_null(e->week, "%2d", ww);	// caution: leaves '\0' at start of next field (year)
 
-	int yy = tm.tm_year - 100;
-	kiwi_snprintf_buf_plus_space_for_null(e->year, "%2d", yy);	// caution: leaves '\0' at start of next field (assembly)
+        int yy = tm.tm_year - 100;
+        kiwi_snprintf_buf_plus_space_for_null(e->year, "%2d", yy);	// caution: leaves '\0' at start of next field (assembly)
 
-	SET_CHARS(e->assembly, "0001", ' ');
+        SET_CHARS(e->assembly, "0001", ' ');
 
-	if (type == SERNO_ALLOC)
-		serno = eeprom_next_serno(SERNO_ALLOC, 0);
+        if (type == SERNO_ALLOC) {
+            serno = eeprom_next_serno(SERNO_ALLOC, 0);
+	        mprintf("EEPROM write: SERNO_ALLOC serno=%d\n", serno);
+        } else {
+	        mprintf("EEPROM write: SERNO_WRITE serno=%d\n", serno);
+        }
 
-    // 4 to 8-digit serno migration: just write the specified value into the 8-digit field
-	//kiwi_snprintf_buf_plus_space_for_null(e->serial_old, "%4d", serno);	// caution: leaves '\0' at start of next field (n_pins)
-    kiwi_snprintf_buf_plus_space_for_null(e->serial_new, "%8d", serno);	// caution: leaves '\0' at start of next field (n_pins)
-	
-	e->n_pins = FLIP16(2*26);
-	int pin;
-	for (pin = 0; pin < EE_NPINS; pin++) {
-		pin_t *p = &eeprom_pins[pin];
-		u4_t off = EE_PINS_OFFSET_BASE + pin*2;
-		if (p->gpio.eeprom_off) {
-			e->io_pins[pin] = FLIP16(p->attrs);
-			assert(p->gpio.eeprom_off == off);
-			//printf("EEPROM %3d 0x%x %s-%02d 0x%04x\n", off, off,
-			//	(p->gpio.pin & P9)? "P9":"P8", p->gpio.pin & PIN_BITS, p->attrs);
-		} else {
-			//printf("EEPROM %3d 0x%x not used\n", off, off);
-		}
-	}
-	
-	e->mA_3v3 = FLIP16(EE_MA_3V3);
-	e->mA_5int = FLIP16(EE_MA_5INT);
-	e->mA_5ext = FLIP16(EE_MA_5INT);
-	e->mA_DC = FLIP16(EE_MA_DC);
-	
-	for (i = 0; i < 4; i++) {
-	    memcpy(e->serial_backup[i], e->serial_new, 8);
-	    
-        if (key != NULL)
-            strncpy(e->key[i], key, EEPROM_KEY_LEN);
-        else
-            memset(e->key[i], 0xff, EEPROM_KEY_PAD);
+        // 4 to 8-digit serno migration: just write the specified value into the 8-digit field
+        //kiwi_snprintf_buf_plus_space_for_null(e->serial_old, "%4d", serno);	// caution: leaves '\0' at start of next field (n_pins)
+        kiwi_snprintf_buf_plus_space_for_null(e->serial_new, "%8d", serno);	// caution: leaves '\0' at start of next field (n_pins)
+    
+        e->n_pins = FLIP16(2*26);
+        int pin;
+        for (pin = 0; pin < EE_NPINS; pin++) {
+            pin_t *p = &eeprom_pins[pin];
+            u4_t off = EE_PINS_OFFSET_BASE + pin*2;
+            if (p->gpio.eeprom_off) {
+                e->io_pins[pin] = FLIP16(p->attrs);
+                assert(p->gpio.eeprom_off == off);
+                //printf("EEPROM %3d 0x%x %s-%02d 0x%04x\n", off, off,
+                //	(p->gpio.pin & P9)? "P9":"P8", p->gpio.pin & PIN_BITS, p->attrs);
+            } else {
+                //printf("EEPROM %3d 0x%x not used\n", off, off);
+            }
+        }
+    
+        e->mA_3v3 = FLIP16(EE_MA_3V3);
+        e->mA_5int = FLIP16(EE_MA_5INT);
+        e->mA_5ext = FLIP16(EE_MA_5INT);
+        e->mA_DC = FLIP16(EE_MA_DC);
+    
+        for (i = 0; i < 4; i++) {
+            memcpy(e->serial_backup[i], e->serial_new, 8);
+        
+            if (key != NULL)
+                strncpy(e->key[i], key, EEPROM_KEY_LEN);
+            else
+                memset(e->key[i], 0xff, EEPROM_KEY_PAD);
+        }
     }
 
     // NB: have to change WP before fopen() and after fclose() because writes don't
@@ -317,10 +323,15 @@ void eeprom_write(next_serno_e type, int serno, int model, char *key)
 	ctrl_clr_set(0, CTRL_EEPROM_WP);    // takes effect about 200 us after last write
 }
 
-void eeprom_update()
+void eeprom_update(bool reset)
 {
 	int n, serno;
 	eeprom_t *e = &eeprom;
+	
+	if (reset) {
+	    eeprom_write(SERNO_RESET, 0, 0);
+	    return;
+	}
 
 	if ((serno = eeprom_check()) == -1) {
 		printf("eeprom_update: BAD serno\n");

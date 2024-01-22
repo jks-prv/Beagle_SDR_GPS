@@ -74,9 +74,9 @@ extern eeprom_t eeprom;
     #define eeprom_test()
 #endif
 
-typedef enum { SERNO_READ, SERNO_WRITE, SERNO_ALLOC } next_serno_e;
+typedef enum { SERNO_READ, SERNO_WRITE, SERNO_ALLOC, SERNO_RESET } next_serno_e;
 
 int eeprom_next_serno(next_serno_e type, int set_serno);
 int eeprom_check(model_e *model = NULL);
 void eeprom_write(next_serno_e type, int serno, int model, char *key = NULL);
-void eeprom_update();
+void eeprom_update(bool reset);

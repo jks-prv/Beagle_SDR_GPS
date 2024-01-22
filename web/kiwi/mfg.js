@@ -3,7 +3,7 @@
 var mfg = {
    w: 800,
    h: 725,
-   th: 300,
+   th: 230,
 
    ver_maj: 0,
    ver_min: 0,
@@ -118,8 +118,8 @@ function mfg_html()
             w3_button('id-sn-write-k1 w3-margin-T-8 w3-text-white', '', 'mfg_sn_write_k1_cb'), 45,
             '&nbsp;', 15,
             
-            w3_button('id-mfg-restart w3-aqua', 'click to restart', 'mfg_restart_cb'), 20,
-            w3_button('id-mfg-power-off w3-css-magenta', 'click to halt<br>and power off', 'mfg_power_off_cb')
+            w3_button('id-mfg-restart w3-aqua', 'restart and<br>load admin page', 'mfg_restart_cb'), 25,
+            w3_button('id-mfg-power-off w3-css-magenta', 'halt and<br>power off', 'mfg_power_off_cb')
          ),
          '<hr>',
 
@@ -152,8 +152,6 @@ function mfg_html()
 
 	//w3_width_height('id-sd-progress-container', mfg.th);
 	w3_width_height('id-output-msg', null, mfg.th);
-
-   ext_send("SET get_dna");
 
    sd_backup_init();
    sd_backup_focus();
@@ -192,7 +190,6 @@ function mfg_recv(data)
 			
 			case "next_serno":
 				mfg.next_serno = parseFloat(param[1]);
-				//if (mfg.next_serno == 1) mfg.next_serno = 20017;
             console.log("MFG next_serno="+ mfg.next_serno);
 				break;
 
@@ -287,7 +284,9 @@ function mfg_key_ajax_cb(reply)
 function mfg_key_write_cb()
 {
    if (!mfg.seed_phrase_ok) return;
-   if (kiwi.model == 1) return;
+   console.log('mfg_key_write_cb mfg.serno='+ mfg.serno +' kiwi.model='+ kiwi.model);
+   if (mfg.serno != -1 && kiwi.model == 1) return;
+   w3_clearInnerHTML('id-ee-msg');
 
    var hash_key = mfg.next_serno +'_'+ mfg.dna;
    var keygen = Sha256.hash(hash_key +'_'+ mfg.seed_phrase_hash);
@@ -342,6 +341,9 @@ function mfg_restart_cb()
 {
 	var el = w3_innerHTML('id-mfg-restart', 'restarting...');
 	w3_background_color(el, 'red');
+	kiwi.reload_url = kiwi_SSL() + mfg.serno +'.proxy.kiwisdr.com/admin';
+	console.log(kiwi.reload_url);
+   wait_then_reload_page(25, 'Reconnecting to admin page.', 'mfg');
 	ext_send("SET mfg_restart");
 }
 

@@ -24,7 +24,7 @@ Boston, MA  02110-1301, USA.
 #include "fpga.h"
 #include "support/printf.h"
 
-#define GPS_FE_DBG
+//#define GPS_FE_DBG
 #ifdef GPS_FE_DBG
 	#define prf(fmt, ...) \
 	    if (!debug) printf(fmt,  ## __VA_ARGS__)
@@ -269,7 +269,7 @@ void gps_fe_init()
 {
     bool debug = false;
 
-    if (kiwi.model == KiwiSDR_1) return;
+    //if (kiwi.model == KiwiSDR_1) return;
     
     #if 0
         prf("GPS_FE reg defaults:\n");

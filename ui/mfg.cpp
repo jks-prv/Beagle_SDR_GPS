@@ -60,7 +60,8 @@ void c2s_mfg_setup(void *param)
 {
 	conn_t *conn = (conn_t *) param;
 
-	send_msg(conn, SM_NO_DEBUG, "MFG ver_maj=%d ver_min=%d", version_maj, version_min);
+	send_msg(conn, SM_NO_DEBUG, "MFG ver_maj=%d ver_min=%d dna=%08x%08x",
+	    version_maj, version_min, PRINTF_U64_ARG(fpga_dna()));
 	mprintf_ff("MFG interface\n");
 	mfg_send_info(conn);
 }
@@ -130,13 +131,6 @@ void c2s_mfg(void *param)
 				system_halt();
 				while (true)
 					kiwi_usleep(100000);
-			}
-
-			i = strcmp(cmd, "SET get_dna");
-			if (i == 0) {
-			    u64_t dna = fpga_dna();
-		        send_msg(conn, SM_NO_DEBUG, "MFG dna=%08x%08x", PRINTF_U64_ARG(dna));
-				continue;
 			}
 
 			char *cmd_p, *user_m = NULL, *host_m = NULL;
