@@ -1198,6 +1198,23 @@ function kiwi_remove_protocol(url)
    return url.replace(/^http:\/\//, '').replace(/^https:\/\//, '');
 }
 
+function kiwi_reload_page(obj)   // { url, hp, path, qs, tab }
+{
+   var url = w3_opt(obj, 'url', null);
+   if (isNull(url)) {
+      var host_port = w3_opt(obj, 'hp', kiwi_host_port());
+      var pathname = w3_opt(obj, 'path', '', '/');
+      var query_string = w3_opt(obj, 'qs', '', '/?');
+      url = kiwi_SSL() + host_port + pathname + query_string;
+   }
+   console.log('kiwi_reload_page: '+ url);
+   if (w3_opt(obj, 'tab')) {
+      window.open(url, '_blank');
+   } else {
+      window.location.href = url;
+   }
+}
+
 function kiwi_add_end(s, end)
 {
    if (!s.endsWith(end)) s = s + end;
@@ -1736,8 +1753,8 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
             } else {
                var firstChar = response.charAt(0);
          
-               if (firstChar != '{' && firstChar != '[' && !(firstChar >= '0' && firstChar <= '9')) {
-                  dbug("AJAX: response didn't begin with JSON '{', '[' or digit? "+ response);
+               if (firstChar != '{' && firstChar != '[' && firstChar != '"' && !(firstChar >= '0' && firstChar <= '9')) {
+                  dbug("AJAX: response didn't begin with JSON '{' '[' '\"' or digit? "+ response);
                   obj = { AJAX_error:'JSON prefix', response:response };
                } else {
                   try {
@@ -1881,7 +1898,7 @@ function page_draw_pie(which_s) {
 		kiwi_draw_pie(id_which('pie'), which.pie_size, (which.reload_secs - which.reload_rem) / which.reload_secs);
 	} else {
 	   if (kiwi.reload_url) {
-	      window.location.href = kiwi.reload_url;
+	      kiwi_reload_page({ url:kiwi.reload_url });
 	   } else {
          try {
             window.location.reload(true);
@@ -1938,7 +1955,7 @@ function enc(s) { return s.replace(/./gi, function(c) { return String.fromCharCo
 var sendmail = function (to, subject) {
 	var s = "mailto:"+ enc(decodeURIComponent(to)) + (isDefined(subject)? ('?subject='+subject):'');
 	//console.log(s);
-	window.location.href = s;
+   kiwi_reload_page({ url:s });
 }
 
 function line_stroke(ctx, vert, linew, color, x1,y1,x2,y2)

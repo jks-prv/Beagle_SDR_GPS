@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 657
+VERSION_MIN = 658
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -780,6 +780,11 @@ make_vars: check_detect
 	@echo
 	@echo SUB_MAKE_DEPS = $(SUB_MAKE_DEPS)
 	@echo
+	@echo DTS_DEP_SRC = $(DTS_DEP_SRC)
+	@echo DTS_DEP_SRC2 = $(DTS_DEP_SRC2)
+	@echo DTS_DEP_DST = $(DTS_DEP_DST)
+	@echo DTS_DEP_DST2 = $(DTS_DEP_DST2)
+	@echo
 	@echo GEN_ASM = $(GEN_ASM)
 	@echo
 	@echo GEN_OTHER_ASM = $(GEN_OTHER_ASM)
@@ -1113,10 +1118,10 @@ DTS_DEP_DST =
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
     DO_ONCE = $(DIR_CFG)/.do_once.dep
 
-    DTS_DEP_DST = $(DIR_DTB)/$(DTS)
-    DTS_DEP_DST2 = $(DIR_DTB)/$(DTS2)
     DTS_DEP_SRC  = $(addprefix $(DIR_DTS)/,$(DTS))
     DTS_DEP_SRC2 = $(addprefix $(DIR_DTS)/,$(DTS2))
+    DTS_DEP_DST  = $(addprefix $(DIR_DTB)/,$(DTS))
+    DTS_DEP_DST2 = $(addprefix $(DIR_DTB)/,$(DTS2))
 
     $(DO_ONCE):
 	    @mkdir -p $(DIR_CFG)

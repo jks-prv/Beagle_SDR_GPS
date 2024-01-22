@@ -25,6 +25,7 @@ Boston, MA  02110-1301, USA.
 #include "rx_util.h"
 #include "mem.h"
 #include "misc.h"
+#include "net.h"
 #include "nbuf.h"
 #include "web.h"
 #include "eeprom.h"
@@ -59,7 +60,8 @@ void c2s_mfg_setup(void *param)
 {
 	conn_t *conn = (conn_t *) param;
 
-	send_msg(conn, SM_NO_DEBUG, "MFG ver_maj=%d ver_min=%d", version_maj, version_min);
+	send_msg(conn, SM_NO_DEBUG, "MFG ver_maj=%d ver_min=%d dna=%08x%08x",
+	    version_maj, version_min, PRINTF_U64_ARG(fpga_dna()));
 	mprintf_ff("MFG interface\n");
 	mfg_send_info(conn);
 }
@@ -131,10 +133,17 @@ void c2s_mfg(void *param)
 					kiwi_usleep(100000);
 			}
 
-			i = strcmp(cmd, "SET get_dna");
-			if (i == 0) {
-			    u64_t dna = fpga_dna();
-		        send_msg(conn, SM_NO_DEBUG, "MFG dna=%08x%08x", PRINTF_U64_ARG(dna));
+			char *cmd_p, *user_m = NULL, *host_m = NULL;
+			n = sscanf(cmd, "SET rev_config user=%256ms host=%256ms", &user_m, &host_m);
+			if (n == 2) {
+                const char *proxy_server = admcfg_string("proxy_server", NULL, CFG_REQUIRED);
+                asprintf(&cmd_p, "sed -e s/SERVER/%s/ -e s/USER/%s/ -e s/HOST/%s/ -e s/PORT/%d/ %s >%s",
+                    proxy_server, user_m, host_m, net.port_ext, DIR_CFG "/frpc.template.ini", DIR_CFG "/frpc.ini");
+                printf("proxy register: %s\n", cmd_p);
+                system(cmd_p);
+                kiwi_asfree(cmd_p);
+                kiwi_asfree(user_m); kiwi_asfree(host_m);
+                admcfg_string_free(proxy_server);
 				continue;
 			}
 

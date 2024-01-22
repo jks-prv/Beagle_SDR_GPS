@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.658  January 20, 2024
+    Added "clk_ext_freq=" to /status query for Rob.
+    Changes to support KiwiSDR 2.
+
 v1.655,656,657  January 15, 2024
     Fix S-meter ADC overflow indicator.
     Added RF attenuator preset buttons in addition to slider.

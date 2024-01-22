@@ -169,7 +169,7 @@ function gen_controls_setup()
                w3_div('',
 				      //w3_div('', 'Offset attenuation by:'),
                   //w3_select('w3-text-red w3-width-auto', '', '', 'gen.attn_offset', gen.attn_offset, gen.attn_offset_s, 'gen_attn_offset_cb')
-                  w3_input('w3-label-bold//w3-padding-small w3-width-64', 'Offset (dB)', 'gen.attn_offset_val', gen.attn_offset_val, 'gen_attn_val_cb')
+                  w3_input('id-gen-offset w3-label-bold//w3-padding-small w3-width-64', 'Offset (dB)', 'gen.attn_offset_val', gen.attn_offset_val, 'gen_attn_val_cb')
                ), 55
             )
 			)
@@ -301,6 +301,7 @@ function gen_attn_cb(path, val, complete)
 	w3_num_cb(path, gen.attn_dB);
 	w3_set_label('Attenuation '+ (-gen.attn_dB).toString() +' dB', path);
 	w3_hide2('id-gen-attn', gen.mode == gen.SELF_TEST);
+	w3_hide2('id-gen-offset', gen.mode == gen.SELF_TEST);
 	
 	if (complete) {
 		gen_set(gen.freq, gen.attn_ampl);
@@ -371,8 +372,43 @@ function sig_gen_help(show)
    return true;
 }
 
+function self_test_cb()
+{
+   kiwi_reload_page({ qs:'f=10Mcwz0&mute&ext=sig,mode:3', tab:true });
+}
+
 // called to display HTML for configuration parameters in admin interface
 function sig_gen_config_html()
 {
-   ext_config_html(gen, 'sig_gen', 'Sig Gen', 'Signal Generator configuration');
+   var s =
+      (kiwi.model != kiwi.KiwiSDR_1)?
+         w3_divs('w3-container',
+            w3_inline('/w3-margin-bottom w3-valign',
+               w3_text('w3-medium w3-bold w3-text-teal', 'Self-test function'),
+               w3_button('w3-aqua w3-margin-left', 'start self-test', 'self_test_cb')
+            ),
+            w3_divs('w3-container w3-width-half',
+               'To use the self-test function attach the short cable that came with your Kiwi ' +
+               'between the <x1>EXT CLK</x1> and <x1>RF IN</x1> connectors. ' +
+               'Make sure there are no user connections to your Kiwi (especially on the first channel rx0). ' +
+               'Then press the <x1>Self-test function</x1> button above to start the test.<br><br>' +
+               
+               'A user connection will be made and the signal generator extension opened in self-test mode ' +
+               '(this will only work on the first channel rx0). ' +
+               'Compare against these sample ' +
+               w3_link('w3-link-darker-color', 'kiwisdr.com/quickstart/index.html#id-self-test', 'test result images') +
+               '. Check at the different zoom levels shown.<br><br>' +
+               
+               'The generated 10 MHz test signal (plus harmonics and sidebands) is not precise. ' +
+               'So the exact levels and waveform characteristics will vary a bit. ' +
+               'The goal is to see if the RF front end is responding as it should. ' +
+               'The digital attenuator on the main control panel, RF tab, should accurately attenuate the signals ' +
+               'shown in the spectrum display and on the S-meter. There may be some lag in the spectrum values ' +
+               'adjusting depending on the filtering method in effect (especially for IIR filtering).' +
+               ''
+            )
+         )
+      : '';
+   
+   ext_config_html(gen, 'sig_gen', 'Sig Gen', 'Signal Generator configuration', s);
 }

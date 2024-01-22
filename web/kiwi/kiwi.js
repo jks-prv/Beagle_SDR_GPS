@@ -344,8 +344,7 @@ function kiwi_queue_or_camp_cb(path, val, first)
    console.log(url);
    url = url + kiwi_add_search_param(window.location, 'camp');
    console.log('--> '+ url);
-   window.location.href = url;
-
+   kiwi_reload_page({ url:url });
 }
 
 function kiwi_ask_pwd(conn_kiwi)

@@ -145,8 +145,7 @@ function kiwi_monitor()
 
 function kiwi_queue_reload_cb()
 {
-   var url = kiwi_remove_search_param(window.location.href, 'camp');
-   window.location.href = url;
+   kiwi_reload_page({ url:kiwi_remove_search_param(window.location.href, 'camp') });
 }
 
 function kiwi_camp_update(rx, s)

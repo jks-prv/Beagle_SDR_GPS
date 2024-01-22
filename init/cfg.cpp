@@ -204,8 +204,8 @@ void cfg_reload()
     } else {
         if (serno <= 0 || model <= 0) {
             lprintf("can't read Kiwi model from EEPROM and no configuration override\n");
-            lprintf("assuming model: KiwiSDR 1\n");
-            kiwi.model = KiwiSDR_1;
+            lprintf("assuming model: KiwiSDR 2\n");
+            kiwi.model = KiwiSDR_2;
         } else {
             kiwi.model = model;
             lprintf("model: KiwiSDR %d\n", model);
