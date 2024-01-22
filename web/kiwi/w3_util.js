@@ -356,17 +356,23 @@ function w3_second_value(v)
    return rv;
 }
 
-function w3_opt(opt, elem, default_val)
+function w3_opt(opt, elem, default_val, pre, post)
 {
    //console.log('w3_opt opt:');
    //console.log(opt);
+   var s;
    if (isDefined(opt) && isDefined(opt[elem])) {
       //console.log('w3_opt elem='+ elem +' DEFINED rv='+ opt[elem]);
-      return opt[elem];
+      s = opt[elem];
    } else {
       //console.log('w3_opt elem='+ elem +' NOT DEFINED rv='+ default_val);
-      return default_val;
+      s = default_val;
    }
+   if (isNonEmptyString(s)) {
+      if (isNonEmptyString(pre)) s = pre + s;
+      if (isNonEmptyString(post)) s = s + post;
+   }
+   return s;
 }
 
 function w3_obj_num(o)
