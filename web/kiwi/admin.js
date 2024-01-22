@@ -3637,7 +3637,11 @@ function admin_draw(sdr_mode)
 
 	ael.innerHTML =
 		w3_div('id-admin-header-container',
-			'<header class="w3-container w3-teal"><h5>Admin interface</h5></header>' +
+		   w3_inline_percent('',
+			   '<header class="w3-container w3-teal"><h5>Admin interface</h5></header>', 95,
+			   w3_button('w3-aqua w3-margin-left', 'User page', 'admin_user_page_cb')
+			) +
+			
 			w3_navbar('w3-border w3-light-grey', s) +
 	
 			w3_divs('id-confirm w3-hide/w3-valign',
@@ -3719,6 +3723,11 @@ function admin_draw(sdr_mode)
 	admin.init = false;
 	
 	setTimeout(function() { setInterval(status_periodic, 5000); }, 1000);
+}
+
+function admin_user_page_cb()
+{
+   kiwi_reload_page();
 }
 
 function admin_nav_focus(id, cb_arg)
