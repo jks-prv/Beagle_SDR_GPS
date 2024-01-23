@@ -1114,14 +1114,17 @@ ASK_REBOOT = $(DIR_CFG)/.ask_reboot
 FORCE_REBOOT = /tmp/.force_reboot
 DO_ONCE =
 DTS_DEP_DST =
+DTS_DEP_DST2 =
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
     DO_ONCE = $(DIR_CFG)/.do_once.dep
 
     DTS_DEP_SRC  = $(addprefix $(DIR_DTS)/,$(DTS))
     DTS_DEP_SRC2 = $(addprefix $(DIR_DTS)/,$(DTS2))
-    DTS_DEP_DST  = $(addprefix $(DIR_DTB)/,$(DTS))
-    DTS_DEP_DST2 = $(addprefix $(DIR_DTB)/,$(DTS2))
+    ifneq ($(DIR_DTB),)
+        DTS_DEP_DST  = $(addprefix $(DIR_DTB)/,$(DTS))
+        DTS_DEP_DST2 = $(addprefix $(DIR_DTB)/,$(DTS2))
+    endif
 
     $(DO_ONCE):
 	    @mkdir -p $(DIR_CFG)
