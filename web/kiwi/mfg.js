@@ -343,7 +343,7 @@ function mfg_restart_cb()
 	w3_background_color(el, 'red');
 	kiwi.reload_url = kiwi_SSL() + mfg.serno +'.proxy.kiwisdr.com/admin';
 	console.log(kiwi.reload_url);
-   wait_then_reload_page(25, 'Reconnecting to admin page.', 'mfg');
+   wait_then_reload_page(60, 'Reconnecting to admin page.', 'mfg');
 	ext_send("SET mfg_restart");
 }
 
