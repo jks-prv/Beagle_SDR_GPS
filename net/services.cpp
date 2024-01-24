@@ -220,7 +220,7 @@ void my_kiwi_register(bool reg, int root_pwd_unset, int debian_pwd_default)
 
 static void misc_NET(void *param)
 {
-    char *cmd_p, *cmd_p2;
+    char *cmd_p, *cmd_p2 = NULL;
     int status;
     int err;
     
@@ -298,7 +298,6 @@ static void misc_NET(void *param)
 
     if (onetime_password_check == false) {
         if (passwords_checked) admcfg_rem_bool("passwords_checked");    // for Kiwis that prematurely updated to v1.353
-        admcfg_set_bool_save("onetime_password_check", true);
         lprintf("SECURITY: One-time check of Linux passwords..\n");
 
         status = non_blocking_cmd_system_child("kiwi.chk_pwd", "grep -q '^root::' /etc/shadow", POLL_MSEC(250));
@@ -321,6 +320,7 @@ static void misc_NET(void *param)
             what = "unset";
         }
 
+        bool need_serno_but_zero = false;
         const char *which;
 
         #ifdef CRYPT_PW
@@ -328,43 +328,54 @@ static void misc_NET(void *param)
                 asprintf(&cmd_p2, "%d", net.serno);
                 which = "Kiwi serial number";
             } else {
-                asprintf(&cmd_p2, "kiwizero");
-                which = "\"kiwizero\" (because Kiwi serial number is zero!)";
+                need_serno_but_zero = true;
             }
         #else
-            const char *admin_pwd = admcfg_string("admin_password", &error, CFG_OPTIONAL);
-            if (!error && admin_pwd != NULL && *admin_pwd != '\0') {
-                cmd_p2 = strdup(admin_pwd);
-                which = "Kiwi admin password";
-                admcfg_string_free(admin_pwd);
-            } else
+            #if 0
+                const char *admin_pwd = admcfg_string("admin_password", &error, CFG_OPTIONAL);
+                if (!error && admin_pwd != NULL && *admin_pwd != '\0') {
+                    cmd_p2 = strdup(admin_pwd);
+                    which = "Kiwi admin password";
+                    admcfg_string_free(admin_pwd);
+                } else
+            #endif
             if (net.serno != 0) {
                 asprintf(&cmd_p2, "%d", net.serno);
-                which = "Kiwi serial number (because Kiwi admin password unset)";
+                //which = "Kiwi serial number (because Kiwi admin password unset)";
+                which = "Kiwi serial number";
             } else {
-                asprintf(&cmd_p2, "kiwizero");
-                which = "\"kiwizero\" (because Kiwi admin password unset AND Kiwi serial number is zero!)";
+                need_serno_but_zero = true;
             }
         #endif
 
-        if (root_pwd_unset) {
-            lprintf("SECURITY: WARNING Linux \"root\" password is unset!\n");
-            lprintf("SECURITY: Setting it to %s\n", which);
-            asprintf(&cmd_p, "root:%s", cmd_p2);
-            status = child_task("kiwi.set_pwd", set_pwd_task, POLL_MSEC(250), cmd_p);
-            status = WEXITSTATUS(status);
-            lprintf("SECURITY: \"root\" password set returned status=%d (%s)\n", status, status? "FAIL":"OK");
-            kiwi_asfree(cmd_p);
-        }
+        if (need_serno_but_zero) {
+            // NB: don't set onetime_password_check true because serno or admin pwd
+            // might be setup in the future and we'll have another chance to do this.
+            //lprintf("SECURITY: WARNING admin password unset AND serial number is zero, so no password changes made.\n");
+            lprintf("SECURITY: WARNING serial number is zero, so no password changes made.\n");
+        } else {
+            // 
+            admcfg_set_bool_save("onetime_password_check", true);
 
-        if (debian_pwd_default) {
-            lprintf("SECURITY: WARNING Linux \"debian\" account password is %s!\n", what);
-            lprintf("SECURITY: Setting it to %s\n", which);
-            asprintf(&cmd_p, "debian:%s", cmd_p2);
-            status = child_task("kiwi.set_pwd", set_pwd_task, POLL_MSEC(250), cmd_p);
-            status = WEXITSTATUS(status);
-            lprintf("SECURITY: \"debian\" password set returned status=%d (%s)\n", status, status? "FAIL":"OK");
-            kiwi_asfree(cmd_p);
+            if (root_pwd_unset) {
+                lprintf("SECURITY: WARNING Linux \"root\" password is unset!\n");
+                lprintf("SECURITY: Setting it to %s\n", which);
+                asprintf(&cmd_p, "root:%s", cmd_p2);
+                status = child_task("kiwi.set_pwd", set_pwd_task, POLL_MSEC(250), cmd_p);
+                status = WEXITSTATUS(status);
+                lprintf("SECURITY: \"root\" password set returned status=%d (%s)\n", status, status? "FAIL":"OK");
+                kiwi_asfree(cmd_p);
+            }
+
+            if (debian_pwd_default) {
+                lprintf("SECURITY: WARNING Linux \"debian\" account password is %s!\n", what);
+                lprintf("SECURITY: Setting it to %s\n", which);
+                asprintf(&cmd_p, "debian:%s", cmd_p2);
+                status = child_task("kiwi.set_pwd", set_pwd_task, POLL_MSEC(250), cmd_p);
+                status = WEXITSTATUS(status);
+                lprintf("SECURITY: \"debian\" password set returned status=%d (%s)\n", status, status? "FAIL":"OK");
+                kiwi_asfree(cmd_p);
+            }
         }
 
         kiwi_asfree(cmd_p2);
