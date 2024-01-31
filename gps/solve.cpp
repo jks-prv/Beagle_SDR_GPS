@@ -172,16 +172,41 @@ double SNAPSHOT::GetClock() const {
     // Un-processed bits remain in holding buffers.
     // 15 nsec resolution due to inclusion of cg_phase.
 
+    bool bad = false;
     if (isE1B) {
         if (bits < 0 && bits > 500+MAX_NAV_BITS) {
-            lprintf("GetClock %s tow=%d bits=%d ms=%d chips=0x%x cg_phase=%d\n",
-                PRN(sat), eph.tow, bits, ms, chips, cg_phase);
-            lprintf("E1B bits %d\n", bits);
-            panic("E1B bits");
+            lprintf("GPS E1B BAD bits\n");
+            //panic("E1B bits");
+            bad = true;
         }
-        assert(ms == 0 || ms == E1B_CODE_PERIOD);   // because ms == E1B_CODE_PERIOD for un-serviced epochs (see code above)
-        assert(chips >= 0 && chips <= (E1B_CODELEN-1));
-        assert(cg_phase >= 0 && cg_phase <= 63);
+        
+        //assert(ms == 0 || ms == E1B_CODE_PERIOD);   // because ms == E1B_CODE_PERIOD for un-serviced epochs (see code above)
+        if (ms != 0 && ms != E1B_CODE_PERIOD) {
+            lprintf("GPS E1B BAD ms E1B_CODE_PERIOD=%d\n", E1B_CODE_PERIOD);
+            bad = true;
+        }
+        
+        //assert(chips >= 0 && chips <= (E1B_CODELEN-1));
+        if (chips < 0 || chips > (E1B_CODELEN-1)) {
+            lprintf("GPS E1B BAD chips\n");
+            bad = true;
+        }
+        
+        //assert(cg_phase >= 0 && cg_phase <= 63);
+        if (cg_phase < 0 && cg_phase > 63) {
+            lprintf("GPS E1B BAD cg_phase\n");
+            bad = true;
+        }
+    } else {
+        if (ms < 0 && ms > (19+1)) {
+            lprintf("GPS C/A BAD ms\n");
+            bad = true;
+        }
+    }
+    if (bad) {
+        lprintf("GPS GetClock %s tow=%d bits=%d ms=%d chips=0x%x cg_phase=%d\n",
+            PRN(sat), eph.tow, bits, ms, chips, cg_phase);
+        return NAN;
     }
     
     //jks2
