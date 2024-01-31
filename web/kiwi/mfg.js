@@ -285,7 +285,6 @@ function mfg_key_write_cb()
 {
    if (!mfg.seed_phrase_ok) return;
    console.log('mfg_key_write_cb mfg.serno='+ mfg.serno +' kiwi.model='+ kiwi.model);
-   if (mfg.serno != -1 && kiwi.model == 1) return;
    w3_clearInnerHTML('id-ee-msg');
 
    var hash_key = mfg.next_serno +'_'+ mfg.dna;
