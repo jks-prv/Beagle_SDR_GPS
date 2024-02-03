@@ -362,8 +362,6 @@ f_dts="am5729-beagleboneai.dts"
 f_dtb="am5729-beagleboneai.dtb"
 f_cape="am5729-beagleboneai-kiwisdr-cape"
 alias cdov="cd /proc/device-tree/chosen/overlays"
-alias cddt="cd ${d_dt}"
-alias cddt2="cd ${d_dt2}"
 alias cddti="cd ${d_dt}/include/dt-bindings/board"
 #alias cpdt="pd ${d_ai}; echo *kiwisdr*[dts,dtsi] ; cp *kiwisdr*[dts,dtsi] ${d_dt2}; echo *allmem*; cp *allmem* ${d_dt2}/${f_dts}; popd"
 alias cpdt="pd ${d_ai}; echo *kiwisdr*[dts,dtsi] ; cp *kiwisdr*[dts,dtsi] ${d_dt2}; echo ${f_dts}; cp ${f_dts} ${d_dt2}; popd"
@@ -411,10 +409,15 @@ alias opp="omapconf show opp"
 # BBG/BBB
 if [ "x${BBG_BBB}" == "xtrue" ] ; then
     export PLATFORM="BBG_BBB"
+    d_dt="/opt/source/dtb-${d_ver}"
+    d_dt2="/opt/source/dtb-${d_ver}/src/arm"
     alias cdpm="cd /sys/kernel/debug/pinctrl/4a003400.pinmux"
     #alias pmux="more /sys/kernel/debug/pinctrl/44e10800.pinmux/pinmux-pins"
     alias idt="echo BBG/BBB; echo gpio: pmux cdsdt"
 fi
+
+alias cddt="cd ${d_dt}"
+alias cddt2="cd ${d_dt2}"
 
 type lsb_release >/dev/null 2>&1 || { lsb_release() { :; } ; }
 alias dog="echo Debian `cat /etc/debian_version`; cat /etc/dogtag; uname -a; lsb_release -ds"

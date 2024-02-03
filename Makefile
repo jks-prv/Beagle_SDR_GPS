@@ -1816,15 +1816,15 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 
 #
-# DANGER: "DD_SIZE := 2700M" below must be ~200 MB larger than the partition "used" size
-# (currently ~2.5 GB) computed by the "d.mb" command alias.
+# DANGER: "DD_SIZE := 3000M" below must be ~200 MB larger than the partition "used" size
+# (currently ~2820 GB) computed by the "d.mb" command alias.
 # Otherwise the image file will have strange effects like /boot/uEnv.txt being the correct size but
 # filled with zeroed bytes (which of course is a disaster).
 #
 DISTRO_DEBIAN_VER := 12.4
 TO_IMG = ~/KiwiSDR_$(VER)_$(PLAT)_Debian_$(DISTRO_DEBIAN_VER).img.xz
 SD_CARD_MMC_TO_IMG := 0
-DD_SIZE := 2700M
+DD_SIZE := 3000M
 
 create_img_from_sd: /usr/bin/xz
 	@echo "--- this takes about an hour"
@@ -1842,13 +1842,13 @@ create_img_from_sd: /usr/bin/xz
 
 
 ifeq ($(BBAI_64),true)
-    FROM_IMG = bbai64-emmc-flasher-debian-12.2-minimal-arm64-2023-10-07-6gb.img.xz
+    FROM_IMG = ~/bbai64-emmc-flasher-debian-12.2-minimal-arm64-2023-10-07-6gb.img.xz
     SD_CARD_MMC_FROM_IMG := 1
 else ifeq ($(BBAI),true)
-    FROM_IMG = am57xx-eMMC-flasher-debian-12.2-minimal-armhf-2023-10-07-2gb.img.xz
+    FROM_IMG = ~/am57xx-eMMC-flasher-debian-12.2-minimal-armhf-2023-10-07-2gb.img.xz
     SD_CARD_MMC_FROM_IMG := 0
 else ifeq ($(BBG_BBB),true)
-    FROM_IMG = am335x-eMMC-flasher-debian-12.2-minimal-armhf-2023-10-07-2gb.img.xz
+    FROM_IMG = ~/am335x-eMMC-flasher-debian-12.2-minimal-armhf-2023-10-07-2gb.img.xz
     SD_CARD_MMC_FROM_IMG := 0
 endif
 
