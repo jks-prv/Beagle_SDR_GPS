@@ -90,5 +90,9 @@ typedef struct {
 #define	SPI_3M			4
 #define	SPI_1_5M		5
 
+#define SPI_SETUP_MODE      0
+#define SPI_OPERATING_MODE  1
+
 void spi_dev_init(int spi_clkg, int spi_speed);
+void spi_dev_mode(int spi_mode);
 void spi_dev(SPI_SEL sel, SPI_MOSI *mosi, int tx_xfers, SPI_MISO *miso, int rx_xfers);

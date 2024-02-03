@@ -176,6 +176,16 @@ module HOST (
 
     //////////////////////////////////////////////////////////////////////////
     // Host serial I/O, byte aligned
+    
+    // SPI_32:
+    //  ha_rst: ha_st[] <= 1
+    //  ha_st[31] <= b31|b30 (i.e. stick)
+    //  ha_st[30:0] <= {ha_st[29:0], 0} (i.e. shl)
+
+    // status: first byte, sent msb first (L => R)
+    // 1001     flags: busy, 0, 0, ~ha_ack
+    //     1    ha_ovfl (adc ovfl)
+    //      xxx available (unused)
 
     reg [IDL:0] ha_disr;
     reg [ODL:0] ha_dosr;
@@ -185,6 +195,8 @@ module HOST (
 	always @ (posedge ha_clk or posedge ha_rst)
 		if (ha_rst)	ha_out <= 1;	// busy flag
 		else		ha_out <= | (ha_st & { ha_dosr[ODL], {(NST-4){1'b0}}, ha_ovfl, ~ha_ack, 2'b0 });
+		// NB: ha_st scans out bits in increasing order (b0, b1, ...) from above expression.
+		// And since SPI data is msb/MSB first the result is L => R as shown in "status:" above.
 
 	// delay lines
     always @ (posedge ha_clk) begin
@@ -194,7 +206,7 @@ module HOST (
 
 	// Be able to meet setup and hold times of Sitara MISO by adding
 	// a DFF on the output that is clocked on the negative ha_clk edge.
-	// This works because the first bit sent is always a '1' setup by
+	// This works because the first bit sent is always a '1' (busy flag) setup by
 	// the preset of ha_rst that occurs before the first ha_clk.
 	// All subsequent bits sent are pipelined properly.
 	//

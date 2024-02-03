@@ -35,8 +35,8 @@
  * matching <linux/spi/spi.h>
  */
 
-#define SPI_CPHA		0x01
-#define SPI_CPOL		0x02
+#define SPI_CPHA		0x01    // high means sample on second clk edge
+#define SPI_CPOL		0x02    // high means clk initial/idle high
 
 #define SPI_MODE_0		(0|0)
 #define SPI_MODE_1		(0|SPI_CPHA)
@@ -53,6 +53,10 @@
 #define SPI_TX_QUAD		0x200
 #define SPI_RX_DUAL		0x400
 #define SPI_RX_QUAD		0x800
+#define SPI_CS_WORD		0x1000
+#define SPI_TX_OCTAL		0x2000
+#define SPI_RX_OCTAL		0x4000
+#define SPI_3WIRE_HIZ		0x8000
 
 /*---------------------------------------------------------------------------*/
 
@@ -71,6 +75,9 @@
  * @delay_usecs: If nonzero, how long to delay after the last bit transfer
  *	before optionally deselecting the device before the next transfer.
  * @cs_change: True to deselect device before starting the next transfer.
+ * @word_delay_usecs: If nonzero, how long to wait between words within one
+ *	transfer. This property needs explicit support in the SPI controller,
+ *	otherwise it is silently ignored.
  *
  * This structure is mapped directly to the kernel spi_transfer structure;
  * the fields have the same meanings, except of course that the pointers
@@ -105,7 +112,8 @@ struct spi_ioc_transfer {
 	__u8		cs_change;
 	__u8		tx_nbits;
 	__u8		rx_nbits;
-	__u16		pad;
+	__u8		word_delay_usecs;
+	__u8		pad;
 
 	/* If the contents of 'struct spi_ioc_transfer' ever change
 	 * incompatibly, then the ioctl number (currently 0) must change;

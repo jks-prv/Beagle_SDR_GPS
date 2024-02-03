@@ -219,8 +219,14 @@ void fpga_init() {
 	}
 
 	// FPGA configuration bitstream
-    fp = fopen(stprintf("%sKiwiSDR.%s.bit", background_mode? "/usr/local/bin/":"", fpga_file) , "rb");
+	char *file;
+	asprintf(&file, "%sKiwiSDR.%s.bit", background_mode? "/usr/local/bin/":"", fpga_file);
+    char *sum = non_blocking_cmd_fmt(NULL, "sum %s", file);
+    lprintf("firmware: %s %.5s\n", file, kstr_sp(sum));
+    fp = fopen(file, "rb");
     if (!fp) panic("fopen config");
+    kstr_free(sum);
+    kiwi_asfree(file);
     kiwi_asfree(fpga_file);
 
 	// byte-swap config data to match ended-ness of SPI
@@ -297,6 +303,12 @@ void fpga_init() {
     assert(n <= sizeof(code.bytes));
     n = fread(code.msg, 1, n, fp);
     spi_dev(SPI_BOOT, &code, SPI_B2X(n), &readback, SPI_B2X(sizeof(readback.status) + n));
+    
+    // more favorable timing for kiwi.v:BBB_MISO
+    #ifdef PLATFORM_beaglebone
+        spin_ms(100);
+        spi_dev_mode(spi_mode);
+    #endif
     
 	spin_ms(100);
 	printf("ping..\n");

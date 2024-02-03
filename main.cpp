@@ -67,7 +67,8 @@ int fw_sel, fpga_id, rx_chans, wf_chans, nrx_bufs, nrx_samps, nrx_samps_loop, nr
 
 int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, tone, down,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, do_slice=-1,
-	rx_yield=1000, gps_chans=GPS_MAX_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num, wf_num,
+	rx_yield=1000, gps_chans=GPS_MAX_CHANS, wf_max, rx_num, wf_num,
+	spi_clkg, spi_speed = SPI_48M, spi_mode = SPI_OPERATING_MODE,
 	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, debian_ver, monitors_max,
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg,
 	print_stats, ecpu_cmds, ecpu_tcmds, use_spidev, debian_maj, debian_min, test_flag, dx_print,
@@ -113,7 +114,8 @@ int main(int argc, char *argv[])
 
 	#define FW_CONFIGURED   -2  // -2 because -1 means "other" firmware and 0-N is Kiwi firmware
 	#define FW_OTHER        -1
-	int fw_sel_override = FW_CONFIGURED;   
+	int fw_sel_override = FW_CONFIGURED;
+	int fw_test = 0;
 	
 	version_maj = VERSION_MAJ;
 	version_min = VERSION_MIN;
@@ -175,6 +177,7 @@ int main(int argc, char *argv[])
 	    }
 	
 		if (ARG("-fw")) { ARGL(fw_sel_override); printf("firmware select override: %d\n", fw_sel_override); } else
+		if (ARG("-fw_test")) { ARGL(fw_test); printf("firmware test: %d\n", fw_test); } else
 
 		if (ARG("-kiwi_reg")) kiwi_reg_debug = TRUE; else
 		if (ARG("-cmd_debug")) cmd_debug = TRUE; else
@@ -244,6 +247,7 @@ int main(int argc, char *argv[])
 		if (ARG("-rx")) { ARGL(rx_num); } else
 		if (ARG("-wf")) { ARGL(wf_num); } else
 		if (ARG("-spispeed")) { ARGL(spi_speed); } else
+		if (ARG("-spimode")) { ARGL(spi_mode); } else
 		if (ARG("-spi")) { ARGL(spi_delay); } else
 		if (ARG("-ch")) { ARGL(gps_chans); } else
 		if (ARG("-y")) { ARGL(rx_yield); } else
@@ -382,7 +386,7 @@ int main(int argc, char *argv[])
     if (fpga_id == FPGA_ID_OTHER) {
         fpga_file = strdup((char *) "other");
     } else {
-        asprintf(&fpga_file, "rx%d.wf%d", rx_chans, wf_chans);
+        asprintf(&fpga_file, "rx%d.wf%d%s", rx_chans, wf_chans, fw_test? ".test" : "");
     
         bool no_wf = cfg_bool("no_wf", &err, CFG_OPTIONAL);
         if (err) no_wf = false;
@@ -437,6 +441,7 @@ int main(int argc, char *argv[])
 		if (gpio_test_pin) gpio_test(gpio_test_pin);
 		//pru_start();
 		eeprom_update(reset_eeprom);
+		if (reset_eeprom) kiwi_exit(0);
 		
 		kiwi.ext_clk = cfg_bool("ext_ADC_clk", &err, CFG_OPTIONAL);
 		if (err) kiwi.ext_clk = false;

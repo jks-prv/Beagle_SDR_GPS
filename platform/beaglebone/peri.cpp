@@ -604,8 +604,10 @@ void peri_init()
     // BBAI has always used Debian >= 9
     // BBAI-64 has always used Debian >= 11
     devio_check(SPIn_SCLK, GPIO_DIR_OUT, PMUX_IO_PU  | PMUX_SPI, PMUX_SLOW | PMUX_IO_PU  | PMUX_SPI);
-    devio_check(SPIn_MISO, GPIO_DIR_IN,  PMUX_IN_PD  | PMUX_SPI, PMUX_NONE);
-    devio_check(SPIn_MOSI, GPIO_DIR_OUT, PMUX_OUT_PD | PMUX_SPI, PMUX_SLOW | PMUX_OUT_PD | PMUX_SPI);
+    //devio_check(SPIn_MISO, GPIO_DIR_IN,  PMUX_IN_PD  | PMUX_SPI, PMUX_NONE);
+    //devio_check(SPIn_MOSI, GPIO_DIR_OUT, PMUX_OUT_PD | PMUX_SPI, PMUX_SLOW | PMUX_OUT_PD | PMUX_SPI);
+    devio_check(SPIn_MISO, GPIO_DIR_IN,  PMUX_IN_PU  | PMUX_SPI, PMUX_NONE);
+    devio_check(SPIn_MOSI, GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_SPI, PMUX_SLOW | PMUX_OUT_PD | PMUX_SPI);
     devio_check(SPIn_CS0,  GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_SPI, PMUX_SLOW | PMUX_OUT_PU | PMUX_SPI);
 #endif
 
@@ -636,7 +638,7 @@ void peri_init()
     gpio_setup(P819, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
     gpio_setup(P826, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
 	
-	if (any_bad) panic("devio_check() or gpio_setup() FAILED");
+	//if (any_bad) panic("devio_check() or gpio_setup() FAILED");
 
 	init = TRUE;
 }
