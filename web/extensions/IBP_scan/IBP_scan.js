@@ -11,7 +11,6 @@ var ibp = {
    run: false,
    annotate: true,
    autosave: false,
-   lineCanvas: 0,
    mindb_band: [],
    canvasSaved: false,
    oldSlot: -1,
@@ -120,16 +119,7 @@ function ibp_controls_setup()
    ibp.autosave = readCookie('IBP_PNG_Autosave');
    if (ibp.autosave != 'true') ibp.autosave = false;
    w3_checkbox_set('id-IBP-Autosave', ibp.autosave);
-   
-   var c = document.createElement('canvas');
-   c.width = 16; c.height = 1;
-   var ctx = c.getContext('2d');
-   ctx.fillStyle = "white";
-   ctx.fillRect(0, 0, 8, 1);
-   ctx.fillStyle = "black";
-   ctx.fillRect(8, 0, 8, 1);
-   ibp.lineCanvas = c;
-   
+      
    var canv = w3_el('id-IBP-canvas');
    var label = '';
    if (canv) {
@@ -259,16 +249,7 @@ function ibp_save_Canvas(d)
 function ibp_annotate_waterfall(beaconN)
 {
    var c = wf_cur_canvas;
-   c.ctx.strokeStyle="red";
-   var al = wf_canvas_actual_line+1;
-   if (al > c.height) al -= 2; // fixes the 1 in 200 lines that go missing - oops, doesn't FIXME - try setting not done and returning
-   c.ctx.moveTo(0, al); 
-   c.ctx.lineTo(c.width, al);  
-   
-   c.ctx.rect(0, al, c.width, 1);
-   var pattern = c.ctx.createPattern(ibp.lineCanvas, 'repeat');
-   c.ctx.fillStyle = pattern;
-   c.ctx.fill();
+   waterfall_add_line(wf_canvas_actual_line+1);
    
    var call, location;
    w3_obj_enum(dx_ibp_stations, function(key, i, o) {
@@ -276,16 +257,8 @@ function ibp_annotate_waterfall(beaconN)
    });
 
    var sL = call +' '+ location;
-
-   al = wf_canvas_actual_line;
    var x = (c.width - c.ctx.measureText(sL).width)/2;
-   var yoff = 14;
-	w3_fillText_shadow(c, sL, x, al+yoff, 'Arial', 13, 'lime', 4);
-   
-   if (wf_canvas_actual_line+10 > c.height) {   // overlaps end of canvas
-      var c2 = wf_canvases[1];
-      if (c2) w3_fillText_shadow(c2, sL, x, al-c.height+yoff, 'Arial', 13, 'lime', 4);
-   }
+   waterfall_add_text(wf_canvas_actual_line, x, 14, sL, 'Arial', 13, 'lime', 4);
 }
 
 // called every waterfall update

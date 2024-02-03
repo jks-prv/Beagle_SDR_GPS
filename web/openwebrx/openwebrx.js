@@ -4253,19 +4253,46 @@ function resize_wf_canvases()
 */
 }
 
+function waterfall_add_line(line)
+{
+   var c;
+   
+   if (!wf.lineCanvas) {
+      c = document.createElement('canvas');
+      c.width = 16; c.height = 1;
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, 8, 1);
+      ctx.fillStyle = "black";
+      ctx.fillRect(8, 0, 8, 1);
+      wf.lineCanvas = c;
+   }
+   
+   c = wf_cur_canvas;
+   if (line > c.height) line -= 2; // fixes the 1 in 200 lines that go missing - oops, doesn't FIXME - try setting not done and returning
+   c.ctx.strokeStyle = "red";
+   c.ctx.moveTo(0, line); 
+   c.ctx.lineTo(c.width, line);  
+   c.ctx.rect(0, line, c.width, 1);
+   c.ctx.fillStyle = c.ctx.createPattern(wf.lineCanvas, 'repeat');
+   c.ctx.fill();
+}
+
+function waterfall_add_text(line, x, y, text, font, size, color, strokeWidth)
+{
+   var c = wf_cur_canvas;
+	w3_fillText_shadow(c, text, x, line + y, font, size, color, strokeWidth);
+
+   if (line + 10 > c.height)  {      // overlaps end of canvas
+      var c2 = wf_canvases[1];
+      if (c2) w3_fillText_shadow(c2, text, x, line - c.height + y, font, size, color, strokeWidth);
+   } 
+}
+
 function waterfall_timestamp()
 {
    var tstamp = (wf.ts_tz == 0)? ((new Date()).toUTCString().substr(17,8) +' UTC') : ((new Date()).toString().substr(16,8) +' L');
-   var al = wf_canvas_actual_line;
-
-   var c = wf_cur_canvas;
-   var off = 12;
-	w3_fillText_shadow(c, tstamp, off, al+off, 'Arial', 14, 'lime');
-
-   if (al+10 > c.height)  {      // overlaps end of canvas
-      var c2 = wf_canvases[1];
-      if (c2) w3_fillText_shadow(c2, tstamp, off, al-c.height+off, 'Arial', 14, 'lime');
-   } 
+   waterfall_add_text(wf_canvas_actual_line, 12, 12, tstamp, 'Arial', 14, 'lime');
 }
 
 function wf_snap(set)
@@ -4816,6 +4843,14 @@ var waterfall_queue = [];
 var waterfall_last_add = 0;
 
 function waterfall_add_queue(what, ws, firstChars)
+{
+   if (!kiwi.wf_preview_mode)
+      waterfall_add_queue2(what, ws, firstChars);
+   else
+	   if (kiwi_gc_wf) what = null;  // gc
+}
+
+function waterfall_add_queue2(what, ws, firstChars)
 {
    if (firstChars == 'DAT') {
       var u8View = new Uint8Array(what, 4);

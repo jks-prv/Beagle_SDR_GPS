@@ -134,6 +134,7 @@ var kiwi = {
    fmem_arr: null,
    
    no_reopen_retry: false,
+   wf_preview_mode: false,
    _ver_: 1.578,
    _last_: null
 };
