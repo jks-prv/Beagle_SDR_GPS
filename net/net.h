@@ -78,6 +78,8 @@ typedef struct {
 	u4_t ip[N_IPS];
 } ip_lookup_t;
 
+enum { BL_PORT_DEFAULT = 0, BL_PORT_YES = 1, BL_PORT_NO = 2 };
+
 typedef struct {
     // set by init_NET()
 	ipv46_e pvt_valid;
@@ -143,6 +145,7 @@ typedef struct {
     ip_lookup_t ips_kiwisdr_com;
     
     bool ip_blacklist_inuse;
+    int ip_blacklist_port_only;
     int ip_blacklist_len;
     ip_blacklist_t ip_blacklist[N_IP_BLACKLIST];
     char ip_blacklist_hash[N_IP_BLACKLIST_HASH_BYTES*2 + SPACE_FOR_NULL];

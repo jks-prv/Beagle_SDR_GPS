@@ -94,7 +94,11 @@ int ip_blacklist_add_iptables(char *ip_s)
 
     char *cmd_p;
     // NB: insert (-I) NOT append (-A) because we may be incrementally adding after RETURN rule (last) exists
-    asprintf(&cmd_p, "iptables -I KIWI -s %s -j %s", ip_s, whitelist? "RETURN" : "DROP");
+    if (net.ip_blacklist_port_only != BL_PORT_NO)
+        asprintf(&cmd_p, "iptables -I KIWI -s %s -p tcp --dport %d -j %s", ip_s, net.port, whitelist? "RETURN" : "DROP");
+    else
+        asprintf(&cmd_p, "iptables -I KIWI -s %s -j %s", ip_s, whitelist? "RETURN" : "DROP");
+
     rv = non_blocking_cmd_system_child("kiwi.iptables", cmd_p, POLL_MSEC(200));
     rv = WEXITSTATUS(rv);
     lprintf("ip_blacklist_add_iptables: \"%s\" rv=%d\n", cmd_p, rv);
