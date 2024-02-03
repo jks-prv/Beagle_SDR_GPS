@@ -2,6 +2,17 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.660  February 4, 2024
+    TDoA extension: Added fast waterfall preview of sampling stations. Shift-click on map host icons
+        or audio icon in host list. Waterfall (but not the audio) quickly switches to showing
+        what sampling station is receiving for 10 seconds, then switches back to current Kiwi.
+
+    Admin network tab: Added option to control if blacklist is limited to Kiwi server port or not.
+        Useful for special cases e.g. when a local service such as DDNS must talk to a
+        hosting provider that is in a blacklisted IP range.
+    
+    Changes to support KiwiSDR 2.
+
 v1.659  January 25, 2024
     Changes to support KiwiSDR 2.
 
