@@ -29,7 +29,7 @@
 				// UploadClock requires ch_NAV_MS and ch_NAV_BITS to be in the order shown
 				
 				STRUCT	GPS_CHAN
-				 u16	ch_NAV_MS		1						; Milliseconds 0 ... 19
+				 u16	ch_NAV_MS		1						; Milliseconds C/A: 0-19, E1B: 0
 				 u16	ch_NAV_BITS		1						; Bit count
 				 u16	ch_NAV_GLITCH	1						; Glitch count
 				 u16	ch_NAV_PREV		1						; Last data bit = ip[15]
@@ -495,15 +495,6 @@ UploadClock:									; &GPS_channels + ch_NAV_MS
 				 wrReg	nco						;
 				ENDM
 
-				MACRO	SetGain member			;
-				 rdReg	HOST_RX					; chan
-				 RdReg32 HOST_RX				; chan kp,ki
-				 swap							; kp,ki chan
-				 call	GetGPSchanPtr			; kp,ki this
-				 addi	member					; kp,ki &gain
-				 store32						; &gain
-				ENDM
-
 ; ============================================================================
 
 CmdSample:		wrEvt	GPS_SAMPLER_RST
@@ -647,7 +638,7 @@ CmdGetGlitches: wrEvt	HOST_RST
                 loop_gps_chans
 glitch_loop:                                ; &GPS_channels + ch_NAV_GLITCH
 				wrEvt	GET_MEMORY
-				addi.r	sizeof GPS_CHAN - 2 ; &(GPS_channels+1) + ch_NAV_GLITCH
+				addi	sizeof GPS_CHAN - 2 ; &(GPS_channels+1) + ch_NAV_GLITCH
                 loop    glitch_loop
                 drop.r
 
