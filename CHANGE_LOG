@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.660  February 4, 2024
+v1.660,661  February 5, 2024
     TDoA extension: Added fast waterfall preview of sampling stations. Shift-click on map host icons
         or audio icon in host list. Waterfall (but not the audio) quickly switches to showing
         what sampling station is receiving for 10 seconds (or until you click another),
