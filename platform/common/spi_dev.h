@@ -51,7 +51,9 @@ typedef struct {
 
 #include "shmem_config.h"
 
-#ifdef CPU_AM5729       // NB: not MULTI_CORE
+#ifdef CPU_TDA4VM   // NB: not MULTI_CORE
+        // shared memory enabled
+#elif CPU_AM5729    // NB: not MULTI_CORE
     //#define SPI_SHMEM_DISABLE_TEST
     #ifdef SPI_SHMEM_DISABLE_TEST
         #warning dont forget to remove SPI_SHMEM_DISABLE_TEST
@@ -94,5 +96,6 @@ typedef struct {
 #define SPI_OPERATING_MODE  1
 
 void spi_dev_init(int spi_clkg, int spi_speed);
+void spi_dev_init2();
 void spi_dev_mode(int spi_mode);
 void spi_dev(SPI_SEL sel, SPI_MOSI *mosi, int tx_xfers, SPI_MISO *miso, int rx_xfers);
