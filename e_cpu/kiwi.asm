@@ -315,11 +315,11 @@ CmdTestRead:
 				push	2048 / 2 / 2
 				//push	1024 / 2 / 2
 tr_more:
-				dup
-                wrReg	HOST_TX
-				push	tr_id
-				fetch16
-                wrReg	HOST_TX
+				dup                         ; ct ct
+                wrReg	HOST_TX             ; ct
+				push	tr_id               ; ct @tr_id
+				fetch16                     ; ct tr_id
+                wrReg	HOST_TX             ; ct
 #else
 				push	2048 / 8 / 4
 tr_more:
@@ -330,18 +330,18 @@ tr_more:
 				ENDR
 				pop
 #endif
-				push	1
-				sub
-				dup
-				brNZ	tr_more
+				push	1                   ; ct 1
+				sub                         ; ct-1
+				dup                         ; nct ct-1
+				brNZ	tr_more             ; nct
 #if SPI_32
-				push	tr_id
-				fetch16
-                addi	1
-				push	tr_id
-				store16
-				pop
-				drop.r
+				push	tr_id               ; nct @tr_id
+				fetch16                     ; nct tr_id
+                addi	1                   ; nct tr_id+1
+				push	tr_id               ; nct tr_id+1 @tr_id
+				store16                     ; nct @tr_id
+				pop                         ; nct
+				drop.r                      ; nct
 
 tr_id:			u16		0
 #else

@@ -48,6 +48,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd);
 const char *rx_conn_type(conn_t *c);
 
 typedef enum { WS_MODE_ALLOC, WS_MODE_LOOKUP, WS_MODE_CLOSE, WS_INTERNAL_CONN } websocket_mode_e;
+const char * const ws_mode_s[] = { "alloc", "lookup", "close", "internal" };
 #define WS_FL_NONE              0x00
 #define WS_FL_PREEMPT_AUTORUN   0x01    // should preempt an autorun
 #define WS_FL_IS_AUTORUN        0x02    // is an autorun

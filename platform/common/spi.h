@@ -279,6 +279,7 @@ typedef struct {
 		SPI_T msg[1];
 		struct {
             #define SPI_BUSY        (0x90 << SPI_SFT)   // previous request not yet serviced by embedded CPU
+            #define SPI_ACK         (0x80 << SPI_SFT)   // ~ha_ack in is bit 0x10 (host.v)
             #define SPI_BUSY_MASK   (0xf0 << SPI_SFT)
 			#define SPI_ADC_OVFL    (0x08 << SPI_SFT)
 			#define SPI_AVAILABLE   (0x07 << SPI_SFT)

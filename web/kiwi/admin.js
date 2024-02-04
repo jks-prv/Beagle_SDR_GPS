@@ -760,9 +760,10 @@ function connect_auto_proxy_cb(path, idx, first, cb_param)
 	w3_hide2('id-proxy-host', enabled);
 	w3_hide2('id-proxy-auto-host', !enabled);
 	
-	connect_rev_register_cb();
-	if (cb_param && cb_param == 'clicked')
+	if (cb_param && cb_param == 'clicked') {
+	   connect_rev_register_cb();
       connect_rev_usage();
+   }
 }
 
 function connect_update_url()
@@ -1073,7 +1074,7 @@ function connect_rev_status_cb(status)
          'Will reconnect to new name at <x1>'+ kiwi.reload_url +'</x1>');
 	}
 	
-	if (!proxy_conn)
+	if (!proxy_conn && cfg.sdr_hu_dom_sel == kiwi.REV)
       ext_send('SET rev_register reg=0 user='+ user +' host='+ host +' auto='+ auto);
 }
 
@@ -1250,7 +1251,11 @@ var network = {
    ethernet_speed_s: [ ['auto', 1], ['10 Mbps', 1], ['100 Mbps', 1] ],
    ESPEED_10M: 1,
    ESPEED_ENA: 1,
-   ethernet_mtu_s: [ '1500 (default)', '1440', '1400' ]
+   ethernet_mtu_s: [ '1500 (default)', '1440', '1400' ],
+
+   bl_port_s: [ 'default (yes)', 'yes', 'no' ],
+   
+   __last__: null
 };
 
 function network_html()
@@ -1371,33 +1376,41 @@ function network_html()
 		w3_div('id-net-config w3-container') +
 
 		'<hr>' +
-		w3_half('w3-container', '',
-         w3_div('',
-            w3_div('', 
-               w3_label('w3-show-inline w3-bold w3-text-teal', 'Check if your external router port is open:') +
-               w3_button('w3-show-inline w3-aqua|margin-left:10px', 'Check port open', 'net_port_open_cb')
+      w3_div('w3-container w3-text-teal',
+         w3_inline('w3-valign w3-halign-space-between/',
+            w3_div('',
+               w3_div('', 
+                  w3_label('w3-show-inline w3-bold w3-text-teal', 'Check if your external router port is open:') +
+                  w3_button('w3-show-inline w3-aqua|margin-left:10px', 'Check port open', 'net_port_open_cb')
+               ),
+               w3_text('w3-block w3-text-black',
+                  'Does kiwisdr.com successfully connect to your Kiwi using these URLs?<br>' +
+                  'If both respond "NO" then check the NAT port mapping on your router.<br>' +
+                  'If first responds "NO" and second "YES" then domain name of the first<br>' +
+                  'isn\'t resolving to the ip address of the second. Check DNS.'),
+               w3_div('', 
+                  w3_label('id-net-check-port-dom-q w3-show-inline-block w3-margin-LR-16 w3-text-teal') +
+                  w3_div('id-net-check-port-dom-s w3-show-inline-block w3-text-black w3-background-pale-aqua')
+               ),
+               w3_div('', 
+                  w3_label('id-net-check-port-ip-q w3-show-inline-block w3-margin-LR-16 w3-text-teal') +
+                  w3_div('id-net-check-port-ip-s w3-show-inline-block w3-text-black w3-background-pale-aqua')
+               )
             ),
-            'Does kiwisdr.com successfully connect to your Kiwi using these URLs?<br>' +
-            'If both respond "NO" then check the NAT port mapping on your router.<br>' +
-            'If first responds "NO" and second "YES" then domain name of the first<br>' +
-            'isn\'t resolving to the ip address of the second. Check DNS.',
-            w3_div('', 
-               w3_label('id-net-check-port-dom-q w3-show-inline-block w3-margin-LR-16 w3-text-teal') +
-               w3_div('id-net-check-port-dom-s w3-show-inline-block w3-text-black w3-background-pale-aqua')
+         
+            w3_div('w3-center w3-text-teal',
+               w3_switch_label('w3-center', 'Register this Kiwi on my.kiwisdr.com<br>on each reboot?',
+                  'Yes', 'No', 'adm.my_kiwi', adm.my_kiwi, 'network_my_kiwi_cb'),
+               w3_text('w3-block w3-center w3-text-black',
+                  'Registering on <a href="http://my.kiwisdr.com" target="_blank">my.kiwisdr.com</a> <br>' +
+                  'allows the local ip address of Kiwis to be easily discovered. <br>' +
+                  'Set to "no" if you don\'t want your Kiwi <br>' +
+                  'sending information to kiwisdr.com. Defaults to "yes".'
+               )
             ),
-            w3_div('', 
-               w3_label('id-net-check-port-ip-q w3-show-inline-block w3-margin-LR-16 w3-text-teal') +
-               w3_div('id-net-check-port-ip-s w3-show-inline-block w3-text-black w3-background-pale-aqua')
-            )
-         ),
-         w3_div('w3-center w3-text-teal',
-            w3_switch_label('w3-center', 'Register this Kiwi on my.kiwisdr.com<br>on each reboot?',
-               'Yes', 'No', 'adm.my_kiwi', adm.my_kiwi, 'network_my_kiwi_cb'),
-            w3_text('w3-block w3-center w3-text-black',
-               'Registering on <a href="http://my.kiwisdr.com" target="_blank">my.kiwisdr.com</a> allows the local ip address of Kiwis <br>' +
-               'to be easily discovered. Set to "no" if you don\'t want your Kiwi <br>' +
-               'sending information to kiwisdr.com. Defaults to "yes".'
-            )
+         
+            w3_switch_label('w3-center w3-margin-B-24 w3-text-teal', 'Prevent multiple connections<br>from the same IP address?',
+               'Yes', 'No', 'adm.no_dup_ip', adm.no_dup_ip, 'admin_radio_YN_cb')
          )
       );
 
@@ -1437,8 +1450,18 @@ function network_html()
             w3_switch_label('w3-center w3-margin-B-24', 'Automatically download<br>IP blacklist?',
                'Yes', 'No', 'adm.ip_blacklist_auto_download', adm.ip_blacklist_auto_download, 'admin_radio_YN_cb'),
             
-            w3_switch_label('w3-center w3-margin-B-24', 'Prevent multiple connections<br>from the same IP address?',
-               'Yes', 'No', 'adm.no_dup_ip', adm.no_dup_ip, 'admin_radio_YN_cb')
+            w3_div('w3-center w3-text-teal',
+               //w3_switch_label('w3-center w3-margin-B-24 w3-restart', 'Limit blacklist to Kiwi<br>local port number?',
+               //   'Yes', 'No', 'adm.ip_blacklist_port_only', adm.ip_blacklist_port_only, 'admin_radio_YN_cb'),
+               w3_select('w3-width-auto w3-restart', 'Limit blacklist to Kiwi<br>local port number?', '',
+                  'adm.ip_blacklist_port', adm.ip_blacklist_port, network.bl_port_s, 'admin_select_cb'),
+               w3_text('w3-block w3-center w3-text-black',
+                  'Set "yes" for special cases e.g. <br>' +
+                  'when a local service such as DDNS <br>' +
+                  'must talk to a hosting provider <br>' +
+                  'in a blacklisted IP range.'
+               )
+            )
          ),
          
          
@@ -3015,6 +3038,8 @@ function console_html()
    //admin.console.isMobile = true;
    admin.console.always_char_oriented = admin.console.isMobile? false : true;
    //admin.console.always_char_oriented = false;
+   
+   var dbg = (0 && dbgUs);
 
 	var s =
 	w3_div('id-console w3-margin-top w3-text-teal w3-hide',
@@ -3023,7 +3048,7 @@ function console_html()
             w3_label('w3-show-inline', 'Beagle Debian console'),
             w3_button('w3-aqua|margin-left:10px', 'Connect', 'console_connect_cb'),
 
-            (dbgUs)?
+            (dbg)?
                w3_button('w3-aqua|margin-left:16px', 'ANSI', 'console_cmd_cb', 'console_input_cb|cd tools;mr')
                :
                w3_button('w3-green|margin-left:32px', 'monitor build progress', 'console_cmd_cb',
@@ -3033,7 +3058,7 @@ function console_html()
             
             w3_button('w3-yellow|margin-left:16px', 'disk free', 'console_cmd_cb', 'console_input_cb|df .'),
 
-            (0 && dbgUs)?
+            (dbg)?
                w3_button('w3-aqua|margin-left:16px', 'nano j', 'console_cmd_cb', 'console_input_cb|nano j')
                :
                w3_button('w3-red|margin-left:16px|' +
@@ -3318,7 +3343,7 @@ function console_calc_rows_cols(init)
    var w_ratio = w_msgs / w_msg;
    var cols = w3_clamp(Math.floor(w_ratio), 1, 256);
 
-   if (1 && dbgUs)
+   if (0 && dbgUs)
       w3_innerHTML('id-console-debug', 'h_msgs='+ h_msgs +' rows: '+ h_ratio.toFixed(2) +' <x1>'+ rows +'</x1>  ' +
          'w_msgs='+ w_msgs +' cols: '+ w_ratio.toFixed(2) +' <x1>'+ cols +'</x1>');
 

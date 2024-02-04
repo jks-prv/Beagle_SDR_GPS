@@ -2005,7 +2005,7 @@ function msg_send(s)
    return -1;
 }
 
-function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_cb, close_cb)
+function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_cb, close_cb, opt)
 {
 	if (!("WebSocket" in window) || !("CLOSING" in WebSocket)) {
 		console.log('WEBSOCKET TEST');
@@ -2014,7 +2014,8 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	}
 
 	// replace http:// with ws:// on the URL that includes the port number
-	var ws_url = kiwi_url_origin().split("://")[1];
+	var opt_url = w3_opt(opt, 'url');
+	var ws_url = isNonEmptyString(opt_url)? opt_url : kiwi_url_origin().split("://")[1];
 	
 	// evaluate ws protocol
 	var ws_protocol = 'ws://';
@@ -2024,7 +2025,12 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	}
 	
 	var no_wf = (window.location.href.includes('?no_wf') || window.location.href.includes('&no_wf'));
-	ws_url = ws_protocol + ws_url +'/'+ (no_wf? 'no_wf/':'kiwi/') + kiwi.conn_tstamp +'/'+ stream;
+	var tstamp = (w3_opt(opt, 'new_ts') == true)? ((new Date()).getTime()) : kiwi.conn_tstamp;
+	ws_url = ws_protocol + ws_url +'/'+ (no_wf? 'no_wf/':'kiwi/') + tstamp +'/'+ stream;
+	var qs = w3_opt(opt, 'qs');
+	if (isString(qs))
+	   ws_url += '?'+ qs;
+	else
 	if (isNonEmptyString(window.location.search))
 	   ws_url += window.location.search;      // pass query string to support "&foff="
 	if (no_wf) wf.no_wf = true;
@@ -2038,6 +2044,7 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	ws.open_cb = open_cb;
 	ws.open_cb_param = open_cb_param;
 	ws.msg_cb = msg_cb;
+	ws.all_msg_cb = w3_opt(opt, 'all_msg_cb', null)
 	ws.recv_cb = recv_cb;
 	ws.error_cb = error_cb;
 	ws.close_cb = close_cb;
@@ -2133,14 +2140,18 @@ function on_ws_recv(evt, ws)
 				kiwi_flush_recv_input = false;
 			}
 			
-			claimed = kiwi_msg(msg_a, ws);
-			if (claimed == false) {
-			   if (ws.msg_cb) {
-               //if (ws.stream == 'EXT')
-               //console.log('>>> '+ ws.stream + ': not kiwi_msg: msg_cb='+ typeof(ws.msg_cb) +' '+ params[i]);
-               claimed = ws.msg_cb(msg_a, ws);
+			if (ws.all_msg_cb) {
+            claimed = ws.all_msg_cb(msg_a, ws);
+			} else {
+            claimed = kiwi_msg(msg_a, ws);
+            if (claimed == false) {
+               if (ws.msg_cb) {
+                  //if (ws.stream == 'EXT')
+                  //console.log('>>> '+ ws.stream + ': not kiwi_msg: msg_cb='+ typeof(ws.msg_cb) +' '+ params[i]);
+                  claimed = ws.msg_cb(msg_a, ws);
+               }
             }
-			}
+         }
 			
          if (claimed == false)
             console.log('>>> '+ ws.stream + ': message not claimed: '+ params[i]);

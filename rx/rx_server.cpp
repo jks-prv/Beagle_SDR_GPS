@@ -184,8 +184,13 @@ void rx_server_remove(conn_t *c)
     }
     
     if (st->shutdown) (st->shutdown)((void *) c);
-    
 	c->stop_data = TRUE;
+
+	struct mg_connection *mc = c->mc;
+    #ifdef CONN_PRINTF
+        cprintf(c, "rx_server_remove: c=%p mc=%p mc->connection_param=%p == %s\n",
+            c, mc, mc? mc->connection_param : NULL, (mc && c == (conn_t *) mc->connection_param)? "T":"F");
+    #endif
 	c->mc = NULL;
 
     if (c->isMaster && c->arrived) rx_loguser(c, LOG_LEAVING);
@@ -229,12 +234,23 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
 	bool internal = (mode == WS_INTERNAL_CONN);
 
     c = (conn_t*) mc->connection_param;
+
+    //#ifdef CONN_PRINTF
+    #if 0
+        printf("rx_server_websocket(%s): mc: %p %s:%d %s %s\n", ws_mode_s[mode], mc, mc->remote_ip, mc->remote_port, mc->uri, mc->query_string);
+        if (c != NULL)
+            printf("rx_server_websocket: (mc=%p == mc->c->mc=%p)? mc->c=%p mc->c->valid %d mc->c->magic=0x%x CN_MAGIC=0x%x mc->c->rport=%d\n",
+                mc, c->mc, c, c->valid, c->magic, CN_MAGIC, c->remote_port);
+        else
+            printf("rx_server_websocket: c == NULL\n");
+    #endif
+    
     if (c) {	// existing connection
         
         if (c->magic != CN_MAGIC || !c->valid || mc != c->mc || mc->remote_port != c->remote_port) {
             if (mode != WS_MODE_ALLOC && !internal) return NULL;
         #ifdef CONN_PRINTF
-            lprintf("rx_server_websocket(%s): BAD CONN MC PARAM\n", (mode == WS_MODE_LOOKUP)? "lookup" : "alloc");
+            lprintf("rx_server_websocket(%s): BAD CONN MC PARAM\n", ws_mode_s[mode]);
             lprintf("rx_server_websocket: (mc=%p == mc->c->mc=%p)? mc->c=%p mc->c->valid %d mc->c->magic=0x%x CN_MAGIC=0x%x mc->c->rport=%d\n",
                 mc, c->mc, c, c->valid, c->magic, CN_MAGIC, c->remote_port);
             lprintf("rx_server_websocket: mc: %s:%d %s\n", mc->remote_ip, mc->remote_port, mc->uri);

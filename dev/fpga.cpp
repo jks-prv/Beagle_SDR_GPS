@@ -219,8 +219,14 @@ void fpga_init() {
 	}
 
 	// FPGA configuration bitstream
-    fp = fopen(stprintf("%sKiwiSDR.%s.bit", background_mode? "/usr/local/bin/":"", fpga_file) , "rb");
+	char *file;
+	asprintf(&file, "%sKiwiSDR.%s.bit", background_mode? "/usr/local/bin/":"", fpga_file);
+    char *sum = non_blocking_cmd_fmt(NULL, "sum %s", file);
+    lprintf("firmware: %s %.5s\n", file, kstr_sp(sum));
+    fp = fopen(file, "rb");
     if (!fp) panic("fopen config");
+    kstr_free(sum);
+    kiwi_asfree(file);
     kiwi_asfree(fpga_file);
 
 	// byte-swap config data to match ended-ness of SPI
@@ -297,20 +303,35 @@ void fpga_init() {
     assert(n <= sizeof(code.bytes));
     n = fread(code.msg, 1, n, fp);
     spi_dev(SPI_BOOT, &code, SPI_B2X(n), &readback, SPI_B2X(sizeof(readback.status) + n));
-    
-	spin_ms(100);
-	printf("ping..\n");
-	SPI_MISO *ping = &SPI_SHMEM->pingx_miso;
-	memset(ping, 0, sizeof(*ping));
-	#ifdef USE_GPS
-        strcpy(&gps.a[13], "[Y5EyEWjA65g");
+    SPI_MISO *ping = &SPI_SHMEM->pingx_miso;
+
+    #ifdef PLATFORM_beaglebone
+        // more favorable timing for kiwi.v:BBB_MISO
+        do {
+            spin_ms(100);
+            spi_dev_mode(spi_mode);
+            spin_ms(100);
+            printf("ping..\n");
+            memset(ping, 0, sizeof(*ping));
+            spi_get_noduplex(CmdPing, ping, 2);
+            if (ping->word[0] != 0xcafe) {
+                lprintf("FPGA not responding: 0x%04x\n", ping->word[0]);
+                evSpi(EC_DUMP, EV_SPILOOP, -1, "main", "dump");
+                spi_mode = (spi_mode == SPI_OPERATING_MODE)? SPI_SETUP_MODE : SPI_OPERATING_MODE;
+            } else
+                break;
+        } while (1);
+    #else
+        spin_ms(100);
+        printf("ping..\n");
+        memset(ping, 0, sizeof(*ping));
+        spi_get_noduplex(CmdPing, ping, 2);
+        if (ping->word[0] != 0xcafe) {
+            lprintf("FPGA not responding: 0x%04x\n", ping->word[0]);
+            evSpi(EC_DUMP, EV_SPILOOP, -1, "main", "dump");
+            kiwi_exit(-1);
+        }
     #endif
-	spi_get_noduplex(CmdPing, ping, 2);
-	if (ping->word[0] != 0xcafe) {
-		lprintf("FPGA not responding: 0x%04x\n", ping->word[0]);
-		evSpi(EC_DUMP, EV_SPILOOP, -1, "main", "dump");
-		kiwi_exit(-1);
-	}
 
 	// download second 1k words via program command transfers
     // NB: not needed now that SPI buf is same size as eCPU code memory (2k words / 4k bytes)
@@ -348,6 +369,10 @@ void fpga_init() {
 		evSpi(EC_DUMP, EV_SPILOOP, -1, "main", "dump");
 		kiwi_exit(-1);
 	}
+
+	#ifdef USE_GPS
+        strcpy(&gps.a[13], "[Y5EyEWjA65g");
+    #endif
 
 	stat_reg_t stat = stat_get();
 	//printf("stat.word=0x%04x fw_id=0x%x fpga_ver=0x%x stat_user=0x%x fpga_id=0x%x\n",

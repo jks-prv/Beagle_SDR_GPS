@@ -259,7 +259,7 @@ function sd_backup_click_cb(id, idx)
       }
    */
    
-   kiwi.backup_size = null;
+   kiwi.backup_size = kiwi.backup_progress = null;
    w3_innerHTML('id-sd-backup-msg', 'formatting micro-SD card');
    w3_color('id-sd-backup-msg', '');
    

@@ -36,7 +36,7 @@
 const int PWR_LEN = 8;
 
 struct UPLOAD { // Embedded CPU CHANNEL structure
-    uint16_t nav_ms;                // Milliseconds 0 ... 19
+    uint16_t nav_ms;                // Milliseconds C/A: 0-19, E1B: 0
     uint16_t nav_bits;              // Bit count
     uint16_t nav_glitch;            // Glitch count
     uint16_t nav_prev;              // Last data bit
@@ -441,11 +441,11 @@ void CHANNEL::Tracking() {
         for(; avail; avail-=16) {
             int word = ul.nav_buf[rd_pos/16];
             for (int i=0; i<16; i++) {
-                word<<=1;
-                buf[holding++] = (word>>16) & 1;
+                word <<= 1;
+                buf[holding++] = (word >> 16) & 1;
             }
-            rd_pos+=16;
-            rd_pos&=MAX_NAV_BITS-1;
+            rd_pos += 16;
+            rd_pos &= MAX_NAV_BITS-1;
 			bits_tow += 16;
         }
 

@@ -106,6 +106,7 @@ set_property PACKAGE_PIN H1 [get_ports EWP]
 
 # outputs
 set_property DRIVE 4 [all_outputs]
+set_property DRIVE 12 [get_ports BBB_MISO]
 set_property SLEW SLOW [all_outputs]
 #set_property SLEW FAST [get_ports BBB_MISO]
 set_property OFFCHIP_TERM NONE [all_outputs]
@@ -140,6 +141,10 @@ set_input_delay -clock [get_clocks GPS_TCXO] -max -add_delay 54.095 [get_ports G
 # FIXME: is MISO timing marginal?
 set_output_delay -clock [get_clocks BBB_SCLK] -max -add_delay 2.290 [get_ports BBB_MISO]
 set_output_delay -clock [get_clocks BBB_SCLK] -min -add_delay -4.700 [get_ports BBB_MISO]
+
+#set_property IOB TRUE [get_ports BBB_MISO]
+#set_output_delay -clock [get_clocks BBB_SCLK] -max 4.290 [get_ports BBB_MISO]
+#set_output_delay -clock [get_clocks BBB_SCLK] -min -6.700 [get_ports BBB_MISO]
 
 # arbitrary amount to keep timing report from complaining
 set_output_delay -clock [get_clocks GPS_TCXO] -max -add_delay 1.000 [get_ports ADC_CLKEN]
