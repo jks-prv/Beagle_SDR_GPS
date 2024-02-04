@@ -274,6 +274,27 @@ void spi_dev_init(int spi_clkg, int spi_speed)
         #endif
     #endif
 
+        _spi_dev_init(spi_clkg, spi_speed);
+
+    #ifdef CPU_AM5729
+        #if 0
+            real_printf("after spi_dev_init SPI2_CHxCONF: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+                SPIn_CONF(0), SPIn_CONF(1), SPIn_CONF(2), SPIn_CONF(3));
+            real_printf("after spi_dev_init SPI2_CHxCTRL: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+                SPIn_CTRL(0), SPIn_CTRL(1), SPIn_CTRL(2), SPIn_CTRL(3));
+            conf = SPI0_CONF;
+            conf |=  0x00060000;  // ~IS ~DPE1
+            conf &= ~0x00010000;  // DPE0
+            SPI0_CONF = conf;
+            real_printf("after force2 SPI2_CH0CONF=0x%08x\n", SPI0_CONF);
+        #endif
+    #endif
+}
+
+// NB: start of SPI async task MUST be delayed until fpga init has
+// finished with all calls to spi_dev_mode()
+void spi_dev_init2()
+{
     #ifdef SPI_SHMEM_DISABLE
         printf("SPI: CPU_%s SPI_SHMEM_DISABLE\n", ARCH_CPU_S);
     #else
@@ -292,25 +313,14 @@ void spi_dev_init(int spi_clkg, int spi_speed)
             use_spidev = 1;
             use_async = 1;
         #endif
-    #endif
 
-        _spi_dev_init(spi_clkg, spi_speed);
+        #ifdef CPU_TDA4VM
+            use_spidev = 1;
+            use_async = 1;
+        #endif
+    #endif
 
         if (use_async) {
             shmem_ipc_setup("kiwi.spi", SIG_IPC_SPI, spi_dev_func);
         }
-
-    #ifdef CPU_AM5729
-        #if 0
-            real_printf("after spi_dev_init SPI2_CHxCONF: 0x%08x 0x%08x 0x%08x 0x%08x\n",
-                SPIn_CONF(0), SPIn_CONF(1), SPIn_CONF(2), SPIn_CONF(3));
-            real_printf("after spi_dev_init SPI2_CHxCTRL: 0x%08x 0x%08x 0x%08x 0x%08x\n",
-                SPIn_CTRL(0), SPIn_CTRL(1), SPIn_CTRL(2), SPIn_CTRL(3));
-            conf = SPI0_CONF;
-            conf |=  0x00060000;  // ~IS ~DPE1
-            conf &= ~0x00010000;  // DPE0
-            SPI0_CONF = conf;
-            real_printf("after force2 SPI2_CH0CONF=0x%08x\n", SPI0_CONF);
-        #endif
-    #endif
 }

@@ -393,4 +393,6 @@ void fpga_init() {
 		lprintf("\tbut expecting %d\n", FPGA_VER);
 		panic("mismatch");
 	}
+
+    spi_dev_init2();
 }
