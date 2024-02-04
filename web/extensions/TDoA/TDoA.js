@@ -2970,6 +2970,10 @@ function tdoa_waterfall_close()
       }
 
       if (tdoa.wf_up) {
+      
+         // Need to set correct start bin on this Kiwi so wf fixup logic
+         // doesn't get stuck.
+         wf_send("SET zoom=10 start="+ x_bin);
          waterfall_add_line(wf_canvas_actual_line+1);
          var c = wf_cur_canvas;
          var id = 'Back to this Kiwi';
@@ -2995,7 +2999,12 @@ function tdoa_wf_preview(mkr)
          tdoa.wf_ws.send("SERVER DE CLIENT openwebrx.js W/F");
          tdoa.wf_ws.send("SET ident_user=TDoA_preview");
          tdoa.wf_ws.send("SET send_dB=1");
-         tdoa.wf_ws.send("SET zoom=10 cf="+ freq_displayed_kHz_str_with_freq_offset);
+         
+         // Need to send the start bin, not cf, otherwise the wf preview autoscale
+         // doesn't work due to interaction with wf pan/zoom fixup
+         //tdoa.wf_ws.send("SET zoom=10 cf="+ freq_displayed_kHz_str_with_freq_offset);
+         tdoa.wf_ws.send("SET zoom=10 start="+ x_bin);
+
          tdoa.wf_ws.send("SET maxdb=0 mindb=-100");
 	      tdoa.wf_ws.send("SET wf_speed=3");
 
