@@ -4541,7 +4541,8 @@ function waterfall_add(data_raw, audioFFT)
          sb_trace=0;
       }
    }
-   
+
+   //console.log('need_autoscale='+ wf.need_autoscale +' fixup='+ fixup);
    if (wf.need_autoscale > 1) wf.need_autoscale--;
    
 	if (wf.need_autoscale == 1 && !fixup) {
@@ -4570,12 +4571,14 @@ function waterfall_add(data_raw, audioFFT)
       } else {
          signal = -110;
          noise = -120;
+         console_log_dbgUs('# autoscale len=0 sig=-110 noise=-120');
       }
       
       // empirical adjustments
 	   signal += 30;
 	   if (signal < -80) signal = -80;
       noise -= 10;
+      console_log_dbgUs('# autoscale FINAL noise(min)='+ noise +' signal(max)='+ signal);
       
       if (wf.audioFFT_active) {
          //noise = (dbgUs && devl.p4)? Math.round(devl.p4) : -110;
