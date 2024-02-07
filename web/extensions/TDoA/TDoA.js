@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2023 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2017-2024 John Seamons, ZL4VO/KF6VO
 
 var tdoa = {
    ext_name:   'TDoA',  // NB: must match tdoa.cpp:tdoa_ext.name
@@ -848,7 +848,7 @@ function tdoa_ref_marker_click(mkr)
    }
    tdoa.known_location_idx = r.idx;
    r.selected = true;
-   console.log('ref_click: select ref '+ r.id);
+   console.log('ref_click: select ref '+ r.id +' '+ r.f);
    tdoa_rebuild_refs();
    if (r.f)
       ext_tune(r.f, 'iq', ext_zoom.ABS, r.z, -r.p/2, r.p/2);
@@ -1016,13 +1016,13 @@ function tdoa_get_hosts_cb(hosts)
                if (h0.dither_idx == undefined) { h0.dither_idx = 1; }
                h.dither_idx = h0.dither_idx++;
                tdoa.hosts_dither.push(h);
-               console.log(h0.id +' '+ h.id +' spacing='+ spacing);
+               //console.log(h0.id +' '+ h.id +' spacing='+ spacing);
             }
          }
 
          // prevent duplicate IDs
          if (h0.id == h.id) {
-            console.log('TDoA duplicate ID: #'+ h.i +' '+ h.id +' #'+ h0.i +' '+ h0.id);
+            //console.log('TDoA duplicate ID: #'+ h.i +' '+ h.id +' #'+ h0.i +' '+ h0.id);
             if (h0.dup == undefined) h0.dup = 0;
             h0.dup++;
             h.id += '/'+ h0.dup;
@@ -1082,6 +1082,24 @@ function tdoa_get_hosts_cb(hosts)
             } else
             if (a.startsWith('hosts:')) {
                tdoa_hosts_visible_cb('tdoa.hosts_visible', false);
+            } else
+            if ((r = w3_ext_param('refs', a)).match) {
+               r.items.forEach(
+                  function(s, i) {
+                     if (i == 0) return;
+                     var n = +s;
+                     if (n == 0) {
+                        // turn them all off
+                        tdoa_refs_visible_cb('tdoa.refs_visible', false);
+                     } else
+                     if (n >= 1 && n <= 8) {
+                        // enable one-at-a-time
+                        var id = 'tdoa.refs_'+ tdoa.ref_ids[n-1];
+                        w3_el(id).checked = !w3_el(id).checked;
+                        tdoa_refs_cb(null, true);
+                     }
+                  }
+               );
             } else
             if (a.startsWith('old:')) {
                tdoa.old_algorithm = true;
@@ -1430,7 +1448,7 @@ function tdoa_submit_button_cb()
          var f = tdoa.field[i];
          //console.log('submit_cb: field'+ i +' good='+ f.good +' inuse='+ f.inuse +' use='+ f.use);
          if (!f.good) continue;
-         f.use = true;
+         //f.use = true;
          tdoa_set_icon('sample', i, 'fa-refresh', 20, 'lightGrey');
          tdoa_set_icon('download', i, '');
          w3_innerHTML('id-tdoa-sample-status-'+ i, 'stopped');
@@ -1460,7 +1478,7 @@ function tdoa_submit_button_cb2()
    tdoa.field.forEach(function(f, i) {
       //var use_s = (f.good && !tdoa.rerun)? 'T-override' : ((f.use == undefined)? 'F-undef' : f.use.toString());
       //if (f.inuse) console.log('submit_cb2: field'+ i +' good='+ f.good +' inuse='+ f.inuse +' use='+ use_s);
-      if (f.good && !tdoa.rerun) f.use = true;     // on a regular submit use all good entries independent of checkbox setting
+      //if (f.good && !tdoa.rerun) f.use = true;     // on a regular submit use all good entries independent of checkbox setting
       if (f.good && f.use) tdoa.ngood++;
    });
 
@@ -1633,9 +1651,10 @@ function tdoa_submit_button_cb2()
       tdoa.field.forEach(function(f, i) {
          if (f.good) {
             //tdoa_set_icon('sample', i, 'fa-refresh fa-spin', 20, 'lime');
-            w3_innerHTML('id-tdoa-sample-icon-c'+ i,
-               kiwi_pie('id-tdoa-pie', tdoa.pie_size, '#eeeeee', 'deepSkyBlue')
-            );
+            if (f.use)
+               w3_innerHTML('id-tdoa-sample-icon-c'+ i,
+                  kiwi_pie('id-tdoa-pie', tdoa.pie_size, '#eeeeee', 'deepSkyBlue')
+               );
             tdoa_set_icon('download', i, '');
             w3_innerHTML('id-tdoa-sample-status-'+ i, 'sampling started');
          }
@@ -2401,6 +2420,9 @@ function tdoa_refs_visible_cb(path, checked, first)
 {
    //console.log('### tdoa_refs_visible_cb checked='+ checked +' first='+ first);
    if (first) return;
+   
+   if (!checked)     // for benefit of direct callers
+      w3_checkbox_set('tdoa.refs_visible', checked? true:false);
 
    tdoa.ref_ids.forEach(function(id) {
       w3_checkbox_set('tdoa.refs_'+ id, checked? true:false);
@@ -2747,17 +2769,20 @@ function TDoA_help(show)
                '<br><br>' +
 
                'URL parameters: <br>' +
-               w3_text('|color:orange', 'lat:<i>num</i> lon:<i>num</i> z|zoom:<i>num</i> sample:<i>secs</i> (samp/ref station list) all: hosts:0 submit:') +
+               w3_text('|color:orange', '(samp/ref station list) lat:<i>num</i> lon:<i>num</i> z|zoom:<i>num</i> sample:<i>secs</i> all: <br>' +
+                  'hosts: refs:0 refs:[1-8] submit:') +
                '<br> List of sampling stations and/or reference station IDs. Case-insensitive and can be abbreviated ' +
                '(e.g. "dcf" matches "DCF77", "cyp2" matches "OTHR/CYP2") <br>' +
                'sample:<i>secs</i> (one of the time values from the "sample" menu) <br>' +
-               'all: (check "show all results" checkbox) &nbsp; hosts:0 (uncheck "Kiwi hosts" checkbox)<br>' +
-               'submit: (start TDoA process)<br>' +
-               'Example: <i>ext=tdoa,lat:35,lon:35,z:6,cyp2,iu8cri,ur5vib,kuwait,all:,submit:</i> <br>' +
+               'all: (check "show all results" checkbox) &nbsp; hosts: (uncheck "Kiwi hosts" checkbox) <br>' +
+               'refs:0 (uncheck "Reference locations" checkbox) <br>' +
+               'refs:[1-8] (cumulatively check/uncheck "Reference locations" checkboxes e.g. <i>refs:2:3</i>) <br>' +
+               'submit: (start TDoA process) <br>' +
+               'Example: <i>ext=tdoa,lat:35,lon:35,z:6,cyp2,ur5vib,kuwait,all:,refs:0:2:3,submit:</i> <br>' +
                ''
             )
          );
-      confirmation_show_content(s, 610, 350);
+      confirmation_show_content(s, 625, 350);
       w3_el('id-confirmation-container').style.height = '100%';   // to get the w3-scroll-y above to work
    }
    return true;
@@ -2767,8 +2792,9 @@ function TDoA_focus()
 {
    //console.log('TDoA_focus');
 	tdoa.optbar = ext_get_optbar();
+	zoom_center = 0.6;      // places waterfall signal half way between control panels
 
-   // switch optbar off to not obscure map
+   // switch optbar off to not obscure map on smaller screens
    ext_set_optbar('optbar-off', 'init');
    
    tdoa.pie_size = 10;
@@ -2791,6 +2817,7 @@ function TDoA_blur()
    tdoa_waterfall_close();
    tdoa_clear_all_hosts();
 	ext_set_data_height();     // restore default height
+	zoom_center = 0.5;         // restore
 	
 	// restore optbar if it wasn't changed
 	if (ext_get_optbar() == 'optbar-off' && tdoa.optbar != 'optbar-off')
@@ -2892,6 +2919,7 @@ function tdoa_chans_cb(path, idx, first)
 function tdoa_preview_click(mkr, ev)
 {
    if (tdoa.wf_ws != null) {
+      // there is an existing preview shown (wf_ws web socket active)
       tdoa.wf_mkr = mkr;
       // must delay call to tdoa_wf_preview() until tdoa_waterfall_close() has been called
       tdoa.wf_ws.close();
@@ -2922,7 +2950,7 @@ function tdoa_all_msg_cb(msg_a, ws)
          tdoa.wf_up = true;
          waterfall_add_line(wf_canvas_actual_line+1);
          var c = wf_cur_canvas;
-         var x = (c.width - c.ctx.measureText(tdoa.wf_id_snr).width)/2;
+         var x = freq_to_pixel(freq_passband_center()) - c.ctx.measureText(tdoa.wf_id_snr).width / 2;
          waterfall_add_text(wf_canvas_actual_line, x, 14, tdoa.wf_id_snr, 'Arial', 13, 'white', 4);
          break;
       case 'maxdb':
@@ -2957,6 +2985,7 @@ function tdoa_waterfall_close()
    kiwi_clearTimeout(tdoa.preview_timeo);
 
    if (tdoa.wf_ws != null && tdoa.wf_mkr != null) {
+      // there is another preview request queued up
       var mkr = tdoa.wf_mkr;
       tdoa.wf_mkr = null;
       tdoa_wf_preview(mkr);
@@ -2971,13 +3000,12 @@ function tdoa_waterfall_close()
 
       if (tdoa.wf_up) {
       
-         // Need to set correct start bin on this Kiwi so wf fixup logic
-         // doesn't get stuck.
-         wf_send("SET zoom=10 start="+ x_bin);
+         // need to set correct start bin on this Kiwi so wf fixup logic doesn't get stuck
+         wf_send('SET zoom='+ zoom_level +' start='+ x_bin);
          waterfall_add_line(wf_canvas_actual_line+1);
          var c = wf_cur_canvas;
          var id = 'Back to this Kiwi';
-         var x = (c.width - c.ctx.measureText(id).width)/2;
+         var x = freq_to_pixel(freq_passband_center()) - c.ctx.measureText(id).width / 2;
          waterfall_add_text(wf_canvas_actual_line, x, 14, id, 'Arial', 13, 'white', 4);
       }
    }
@@ -2995,6 +3023,7 @@ function tdoa_wf_preview(mkr)
 
    tdoa.wf_ws = open_websocket('W/F',
       function() {   // open_cb
+         //setTimeout(function() {
          tdoa.wf_ws.send("SET auth t=kiwi");
          tdoa.wf_ws.send("SERVER DE CLIENT openwebrx.js W/F");
          tdoa.wf_ws.send("SET ident_user=TDoA_preview");
@@ -3003,22 +3032,24 @@ function tdoa_wf_preview(mkr)
          // Need to send the start bin, not cf, otherwise the wf preview autoscale
          // doesn't work due to interaction with wf pan/zoom fixup
          //tdoa.wf_ws.send("SET zoom=10 cf="+ freq_displayed_kHz_str_with_freq_offset);
-         tdoa.wf_ws.send("SET zoom=10 start="+ x_bin);
+         tdoa.wf_ws.send('SET zoom='+ zoom_level +' start='+ x_bin);
 
          tdoa.wf_ws.send("SET maxdb=0 mindb=-100");
 	      tdoa.wf_ws.send("SET wf_speed=3");
 
          wf_aper_cb('wf.aper', 0);
          setTimeout(wf_autoscale_cb, 500);
+         tdoa.preview_timeo = setTimeout(function() { if (tdoa.wf_ws) tdoa.wf_ws.close(); }, 10000);
+         //}, 5000);
       },
-         null,                      // open_cb_param
-         null,                      // msg_cb
-         tdoa_waterfall_add_queue,  // recv_cb
-         on_ws_error,               // error_cb
-         tdoa_waterfall_close,      // close_cb
-         { url: tdoa.wf_url, new_ts: true, qs: '', all_msg_cb: tdoa_all_msg_cb });
+      null,                      // open_cb_param
+      null,                      // msg_cb
+      tdoa_waterfall_add_queue,  // recv_cb
+      on_ws_error,               // error_cb
+      tdoa_waterfall_close,      // close_cb
+      { url: tdoa.wf_url, new_ts: true, qs: '', all_msg_cb: tdoa_all_msg_cb }
+   );
 
    tdoa.wf_conn_bad = false;
-   tdoa.preview_timeo = setTimeout(function() { if (tdoa.wf_ws) tdoa.wf_ws.close(); }, 10000);
    kiwi.wf_preview_mode = true;
 }
