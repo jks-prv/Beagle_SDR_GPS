@@ -483,7 +483,7 @@ function w3_ext_param_array_match_num(arr, n, func)
 // s:       name.startsWith(s)   case-insensitive
 //          null                 wildcard
 // param:   name[:val]
-// returns: { match:true|false, full_match:true|false, has_value:true|false, num:parseFloat(val), string:val }
+// returns: { match:true|false, full_match:true|false, has_value:true|false, num:parseFloat(val), string:val, string_case:val, items:[] }
 function w3_ext_param(s, param)
 {
    var rv = { match:false, full_match:false, has_value:false };
@@ -497,15 +497,18 @@ function w3_ext_param(s, param)
          rv.num = parseFloat(param);
          rv.string = param;
          rv.string_case = param;
+         rv.items = [];
       } else
       if (pl.length > 1) {
          rv.has_value = true;
          rv.num = parseFloat(pl[1]);
          rv.string = pl[1];
          rv.string_case = pu[1];
+         rv.items = pu;
       } else {
          rv.num = 0;
          rv.string = rv.string_case = '';
+         rv.items = [];
       }
    }
    if (s && s == pl[0]) rv.full_match = true;

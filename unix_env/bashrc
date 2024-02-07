@@ -127,6 +127,8 @@ alias json="echo \"jsonc <cmd>  jsonf <file>\""
 alias jsonc="function _json () { \$* | jq '.' ; } ; _json"
 alias jsonf="function _json () { cat \$* | jq '.' ; } ; _json"
 alias trunc="truncate -s 0"
+alias keys="cd /root; mkdir -p .ssh; cd .ssh; cat >authorized_keys"
+alias keys2="cp authorized_keys authorized_keys2"
 
 # pki colordiff
 p_diff_exclude="--exclude=.DS_Store --exclude=.git --exclude=.svn ${no_diff}"
@@ -560,7 +562,7 @@ alias gk="gdb ../build/kiwi.bin"
 
 # KiwiSDR valgrind with gdb (deprecated, use clang ASAN)
 #   'vgh' alias below is a reminder of the sequence of commands
-#	start valgrind with a "--vgdb-error=0" varient below, e.g. vggdb
+#	start valgrind with a "--vgdb-error=0" variant below, e.g. vggdb
 #   it will wait for gdb to connect
 #   start gdb; bload; vg; the "target remote | vgdb" from the vg will auto-connect to the valgrind pid
 alias vgh="echo 'cdp; vggdb/vggdball [-gps etc]; in another window: cdp; gk, bload, vg, c'"
