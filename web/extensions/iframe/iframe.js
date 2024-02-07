@@ -121,9 +121,9 @@ function iframe_config_html()
             w3_select('w3-label-inline', 'Source', '', 'iframe.src', iframe.src, ['URL', 'HTML'], 'iframe_src_cb'),
             w3_input_get('id-iframe-url//', 'URL', 'iframe.url', 'w3_string_set_cfg_cb', ''),
             w3_textarea_get_param('id-iframe-html//w3-input-any-change|width:100%',
-               w3_div('',
+               w3_inline('',
                   w3_text('w3-bold w3-text-teal w3-show-block', 'HTML/Javascript'),
-                  w3_text('w3-text-black', 'Press enter(return) key while positioned at end of text to submit data.')
+                  w3_button('w3-margin-left w3-aqua', 'Save', 'iframe_src_save_cb')
                ),
                'iframe.html', 10, 50, 'webpage_string_cb', ''
             )
@@ -140,6 +140,15 @@ function iframe_config_html()
       );
 
    ext_config_html(iframe, 'iframe', 'iframe', 'iframe extension configuration', s);
+}
+
+function iframe_src_save_cb(path)
+{
+   //console.log('iframe_src_save_cb');
+   var el = w3_el('id-iframe.html');
+   //console.log('val='+ el.value);
+   webpage_string_cb('iframe.html', el.value);
+   w3_schedule_highlight(el);
 }
 
 function iframe_src_cb(path, idx, first)

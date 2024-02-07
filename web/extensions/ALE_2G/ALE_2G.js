@@ -1278,9 +1278,18 @@ function ALE_2G_help(show)
    return true;
 }
 
+function ale_2g_admin_menu_save_cb(path)
+{
+   //console.log('ale_2g_admin_menu_save_cb');
+   var el = w3_el('id-cfg.ale_2g.admin_menu');
+   //console.log('val='+ el.value);
+   ale_2g_admin_menu_cb('cfg.ale_2g.admin_menu', el.value);
+   w3_schedule_highlight(el);
+}
+
 function ale_2g_admin_menu_cb(path, val)
 {
-   //console.log('ale_2g_admin_menu_cb val='+ JSON.stringify(val));
+   //console.log('ale_2g_admin_menu_cb path='+ path +' val='+ JSON.stringify(val));
    var el = w3_el('id-ale_2g-admin-textarea');
    w3_set_value(path, val);
    
@@ -1314,7 +1323,8 @@ function ALE_2G_config_html()
          w3_textarea_get_param('id-ale_2g-admin-textarea w3-input-any-change|width:100%',
             w3_inline('',
                w3_text('w3-bold w3-text-teal', 'Admin menu'),
-               w3_text('w3-text-black w3-margin-left', 'Data in JSON format. Press enter (return) key while positioned at end of text to change menu data.')
+               w3_text('w3-text-black w3-margin-left', 'Data in JSON format.'),
+               w3_button('w3-margin-left w3-aqua', 'Save', 'ale_2g_admin_menu_save_cb')
             ),
             'cfg.ale_2g.admin_menu', 16, 100, 'ale_2g_admin_menu_cb',
          
