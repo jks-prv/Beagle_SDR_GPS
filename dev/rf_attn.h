@@ -19,4 +19,8 @@ Boston, MA  02110-1301, USA.
 
 #pragma once
 
+#define RF_ATTN_ALLOW_EVERYONE 0
+#define RF_ATTN_ALLOW_LOCAL_ONLY 1
+#define RF_ATTN_ALLOW_LOCAL_OR_PASSWORD_ONLY 2
+
 void rf_attn_set(float attn_dB);

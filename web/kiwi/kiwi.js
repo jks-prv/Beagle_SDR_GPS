@@ -33,9 +33,14 @@ var kiwi = {
    BADP_DATABASE_UPDATE_IN_PROGRESS:   6,
    BADP_ADMIN_CONN_ALREADY_OPEN:       7,
    
+   AUTH_LOCAL: 0,
+   AUTH_PASSWORD: 1,
+   AUTH_USER: 2,
+   is_local: [],
+   tlimit_exempt_by_pwd: [],
+
    conn_tstamp: 0,
    isOffset: false,
-   is_local: [],
    loaded_files: {},
    WSPR_rgrid: '',
    GPS_fixes: 0,
@@ -123,7 +128,10 @@ var kiwi = {
    
    bands: null,
    bands_community: null,
-   
+
+   RF_ATTN_ALLOW_EVERYONE: 0,
+   RF_ATTN_ALLOW_LOCAL_ONLY: 1,
+   RF_ATTN_ALLOW_LOCAL_OR_PASSWORD_ONLY: 2,
    rf_attn: 0,
    rf_attn_disabled: false,
    
@@ -3179,6 +3187,7 @@ function kiwi_msg(param, ws)
 		   var p = param[1].split(',');
 		   console.log('kiwi_msg rx_chan='+ p[0] +' is_local='+ p[1]);
 			kiwi.is_local[+p[0]] = +p[1];
+			kiwi.tlimit_exempt_by_pwd[+p[0]] = +p[2];
 			break;
 		
 		case "no_reopen_retry":

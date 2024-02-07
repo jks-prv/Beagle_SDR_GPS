@@ -360,7 +360,11 @@ function control_html()
 			),
 			w3_div('',
 				w3_input_get('', 'Time limit exemption password', 'adm.tlimit_exempt_pwd', 'w3_string_set_cfg_cb'),
-				w3_div('w3-text-black', 'Password users can give to override time limits. <br> To specify in URL: my_kiwi:8073/?pwd=<i>password</i>')
+				w3_div('w3-text-black',
+				   'Password users can give to override time limits. <br>' +
+				   'To specify in URL: my_kiwi:8073/?pwd=<i>password</i> <br>' +
+               'Also password for RF attenuator and antenna switch <br> (if configured).'
+            )
 			)
 		) +
 
@@ -1476,13 +1480,13 @@ function network_html()
          ),
          
          w3_textarea_get_param('w3-margin-T-32//w3-input-any-change|width:100%',
-            w3_div('w3-flex',
+            w3_div('w3-flex w3-valign',
                w3_text('w3-bold  w3-text-teal', 'Local blacklist (writeable)'),
-               w3_text('w3-text-black w3-margin-left',
-                  'Press enter(return) key while positioned at end of text to submit data.<br>' +
-                  'Always add whitelist entries ("+" character before ip address) after corresponding ip range, ' +
-                  'e.g. 1.2.3.0/24 +1.2.3.22'
-               )
+               w3_button('w3-margin-left w3-aqua', 'Save', 'network_user_blacklist_save_cb')
+            ) +
+            w3_text('w3-text-black w3-margin-T-6',
+               'Always add whitelist entries ("+" character before ip address) after corresponding ip range, ' +
+               'e.g. 1.2.3.0/24 +1.2.3.22'
             ),
             'adm.ip_blacklist_local', 8, 100, 'network_user_blacklist_cb', ''
          )
@@ -1535,6 +1539,15 @@ function network_download_clear_cb(id, idx, first)
 {
    network_ip_blacklist_cb('adm.ip_blacklist', '');
    w3_int_set_cfg_cb('adm.ip_blacklist_mtime', 0);
+}
+
+function network_user_blacklist_save_cb(path)
+{
+   //console.log('network_user_blacklist_save_cb');
+   var el = w3_el('id-adm.ip_blacklist_local');
+   //console.log('val='+ el.value);
+   network_ip_blacklist_cb('adm.ip_blacklist_local', el.value);
+   w3_schedule_highlight(el);
 }
 
 function network_user_blacklist_cb(path, val)
