@@ -19,6 +19,8 @@ v1.662  February 8, 2024
         Waterfall adjusted so passband center is half way between extension and main control panels.
         
         Sampling station waterfall preview mode bug fixes.
+        
+        Fixed problem since v1.660 with map markers disappearing before you could click on them.
 
         New URL parameter "refs:" that presets the "Reference station" checkboxes.
         Use "refs:0" to uncheck all. Then "refs:[1-8]" cumulatively to add checkboxes from

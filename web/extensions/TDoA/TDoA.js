@@ -914,7 +914,6 @@ function tdoa_style_marker(marker, idx, name, type, map)
                   //console.log('tooltip mouseenter');
                   //console.log(ev);
                   if (!rh.selected) w3_color(el, 'black', 'yellow');
-                  tdoa_reset_spiderfied();
                });
                el.addEventListener('mouseleave', function(ev) {
                   //console.log('tooltip mouseleave');
