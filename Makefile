@@ -1343,7 +1343,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 	# remainder of "make install" only makes sense to run on target
 else
-    ifneq ($(DTS_DEP_DST),/)
+    ifneq ($(DTS_DEP_DST),)
 	    -@ls -la $(DTS_DEP_DST)
 	    -@ls -la $(DTS_DEP_SRC)
     endif
