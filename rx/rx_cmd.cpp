@@ -689,7 +689,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             send_msg(conn, false, "MSG chan_no_pwd=%d", rx_chan_no_pwd());  // potentially corrected from cfg.chan_no_pwd
             send_msg(conn, false, "MSG chan_no_pwd_true=%d", rx_chan_no_pwd(PWD_CHECK_YES));
             if (badp == BADP_OK && (stream_snd || conn->type == STREAM_ADMIN)) {
-                send_msg(conn, false, "MSG is_local=%d,%d", conn->rx_channel, is_local? 1:0);
+                send_msg(conn, false, "MSG is_local=%d,%d,%d", conn->rx_channel, is_local? 1:0, conn->tlimit_exempt_by_pwd);
                 //pdb_printf("PWD %s %s\n", type_m, uri);
             }
             send_msg(conn, false, "MSG max_camp=%d", N_CAMP);
@@ -1155,8 +1155,15 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 func = DX_ADM_SEARCH_NOTES;
                 db = DB_STORED;
             } else {
-                cprintf(conn, "CMD_MARKER: unknown varient [%s]\n", cmd);
+                clprintf(conn, "CMD_MARKER: unknown variant [%s]\n", cmd);
                 DX_DONE();
+                
+                #ifdef OPTION_DENY_APP_FINGERPRINT_CONN
+                    clprintf(conn, "API: non-Kiwi app fingerprint was denied connection\n");
+                    send_msg(conn, SM_NO_DEBUG, "MSG too_busy=%d", cfg_int("ext_api_nchans", NULL, CFG_REQUIRED));
+                    conn->kick = true;
+                #endif
+
                 return true;
             }
             if (dx_print) cprintf(conn, "DX_MKR func=%s\n", func_s[func]);

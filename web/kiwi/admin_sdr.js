@@ -50,6 +50,8 @@ var admin_sdr = {
    
    cfg_fields: [ 'min', 'max', 'chan' ],
    
+   rf_attn_allow_s: [ 'everyone', 'local connections only', 'local connections or password only' ],
+   
    _last_: 0
 };
 
@@ -221,31 +223,49 @@ function config_html()
 
 	var s4 =
 		'<hr>' +
-		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
-			w3_divs('w3-restart/w3-center w3-tspace-8',
-				w3_select_get_param('w3-width-auto', 'SPI clock', '', 'SPI_clock', SPI_clock_i, 'admin_select_cb', 0),
-				w3_div('w3-text-black',
-					'Set to 24 MHz to reduce interference <br> on 2 meters (144-148 MHz).'
-				)
-			),
+		w3_div('w3-container',
+         w3_inline('w3-margin-bottom w3-text-teal w3-halign-space-between/',
+            w3_divs('w3-restart/w3-center w3-tspace-8',
+               w3_select_get_param('w3-width-auto', 'SPI clock', '', 'SPI_clock', SPI_clock_i, 'admin_select_cb', 0),
+               w3_div('w3-text-black',
+                  'Set to 24 MHz to reduce interference <br> on 2 meters (144-148 MHz).'
+               )
+            ),
 
-			w3_divs('w3-restart/w3-center w3-tspace-8',
-				w3_select_get_param('w3-width-auto', 'Status LED brightness', '', 'led_brightness', led_brightness_i, 'admin_select_cb', 0),
-				w3_div('w3-text-black',
-					'Sets brightness of the 4 LEDs <br> that show status info.'
-				)
-			),
+            w3_divs('w3-restart/w3-center w3-tspace-8',
+               w3_select_get_param('w3-width-auto', 'Status LED brightness', '', 'led_brightness', led_brightness_i, 'admin_select_cb', 0),
+               w3_div('w3-text-black',
+                  'Sets brightness of the 4 LEDs <br> that show status info.'
+               )
+            ),
 
-			w3_divs('w3-restart/w3-center w3-tspace-8',
-				w3_select_get_param('w3-width-auto', 'CAT interface baud rate', '', 'CAT_baud', admin_sdr.CAT_baud_s, 'admin_select_cb', 0),
-				w3_div('w3-text-black',
-					'Attach an optional USB/serial adapter to the Kiwi <br> for CAT interface reporting of frequency tuning.'
-				)
-			)
+            w3_divs('w3-restart/w3-center w3-tspace-8',
+               w3_select_get_param('w3-width-auto', 'CAT interface baud rate', '', 'CAT_baud', admin_sdr.CAT_baud_s, 'admin_select_cb', 0),
+               w3_div('w3-text-black',
+                  'Attach an optional USB/serial adapter to the Kiwi <br> for CAT interface reporting of frequency tuning.'
+               )
+            ),
+         
+            w3_divs('w3-restart/w3-center w3-tspace-8',
+               w3_select_get_param('w3-width-auto', 'Allow RF attenuator switching by:', '',
+                  'cfg.rf_attn_allow', admin_sdr.rf_attn_allow_s, 'admin_select_cb', 0
+               ),
+               w3_div('w3-text-black',
+                  'Determines who can adjust the RF attenuator control. <br>' +
+                  'Password is the time limit exemption password on the <br>' +
+                  'admin page control tab, not the user login password. <br>'
+               )
+            ),
+         )
 		);
 
    var s5 =
 		'<hr>' +
+      w3_div('w3-valign w3-container w3-section',
+         '<header class="w3-container w3-red"><h6>' +
+         "If the Kiwi you're cloning from is running Debian 9 or above root logins must be manually enabled. See the Kiwi forum for details." +
+         '</h6></header>'
+      ) +
       w3_div('w3-valign w3-container w3-section',
          '<header class="w3-container w3-yellow"><h6>' +
          'Clone configuration from another Kiwi. <b>Use with care.</b> Current configuration is <b><i>not</i></b> saved. ' +
@@ -878,10 +898,10 @@ function webpage_html()
 		'<hr>' +
       w3_div('w3-container',
          w3_textarea_get_param('w3-input-any-change|width:100%',
-            w3_div('',
+            w3_div('w3-valign',
                w3_text('w3-bold w3-text-teal w3-show-block',
                   'Additional HTML/Javascript for HTML &lt;head&gt; element (e.g. Google analytics or user customization)'),
-               w3_text('w3-text-black', 'Press enter(return) key while positioned at end of text to submit data.')
+               w3_button('w3-margin-left w3-aqua', 'Save', 'webpage_html_save_cb')
             ),
             'index_html_params.HTML_HEAD', 10, 100, 'webpage_string_cb', ''
          )
@@ -889,6 +909,15 @@ function webpage_html()
 		'<hr>';
 
    return w3_div('id-webpage w3-text-teal w3-hide', s1 + s2 + s3);
+}
+
+function webpage_html_save_cb(path)
+{
+   //console.log('webpage_html_save_cb');
+   var el = w3_el('id-index_html_params.HTML_HEAD');
+   //console.log('val='+ el.value);
+   webpage_string_cb('index_html_params.HTML_HEAD', el.value);
+   w3_schedule_highlight(el);
 }
 
 function webpage_input_grid(path, val)

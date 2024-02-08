@@ -42,7 +42,7 @@
 { "r":"vm", "id":"NDI", "t":"MSK", "f":54.0, "p":400, "z":11, "lat":26.317152, "lon":127.845972, "mz":18 },
 { "r":"vm", "id":"NRK", "t":"FSK", "f":57.4, "p":100, "z":12, "lat":63.850543, "lon":-22.453, "mz":16 },
 // same loc as Anthorn Loran-C
-{ "r":"vt", "id":"MSF", "t":"time station", "f":60, "p":100, "z":8, "lat":54.9117, "lon":-3.276, "mz":16 },
+{ "r":"vt", "id":"MSF", "t":"time station", "f":60, "p":100, "z":9, "lat":54.9117, "lon":-3.276, "mz":16 },
 { "r":"vt", "id":"WWVB", "t":"time station", "f":60, "p":100, "z":12, "lat":40.678124, "lon":-105.046774, "mz":16 },
 { "r":"vt", "id":"JJY/60", "t":"time station", "f":60, "p":100, "z":12, "lat":33.465736, "lon":130.176090, "mz":18 },
 { "r":"vt", "id":"RBU", "t":"time station", "f":66.666, "p":700, "z":12, "lat":56.733333, "lon":37.663333, "mz":15 },
@@ -50,7 +50,7 @@
 { "r":"vt", "id":"BPC", "t":"time station", "f":68.5, "p":100, "z":11, "lat":34.4565, "lon":115.8369, "mz":18 },
 { "r":"vt", "id":"DCF77", "t":"time station", "f":77.5, "p":1000, "z":10, "lat":50.014, "lon":9.0112, "mz":16 },
 // same loc as MSF
-{ "r":"vu", "id":"Anthorn", "t":"Loran-C nav", "f":100, "p":10000, "z":8, "lat":54.9117, "lon":-3.282, "mz":16 },
+{ "r":"vu", "id":"Anthorn", "t":"Loran-C nav", "f":100, "p":10000, "z":9, "lat":54.9117, "lon":-3.282, "mz":16 },
 { "r":"vm", "id":"SXJ", "t":"FSK", "f":124.5, "p":100, "z":11, "lat":35.4693, "lon":24.2403 },
 // same loc as DCF77
 { "r":"vu", "id":"DCF49", "t":"EFR Teleswitch", "f":129.1, "p":420, "z":11, "lat":50.016, "lon":9.0112, "mz":16 },

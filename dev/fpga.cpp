@@ -307,6 +307,8 @@ void fpga_init() {
 
     #ifdef PLATFORM_beaglebone
         // more favorable timing for kiwi.v:BBB_MISO
+        if (spi_mode == -1)
+            spi_mode = (kiwi.model == KiwiSDR_1)? SPI_KIWISDR_1_MODE : SPI_KIWISDR_2_MODE;
         do {
             spin_ms(100);
             spi_dev_mode(spi_mode);
@@ -317,7 +319,7 @@ void fpga_init() {
             if (ping->word[0] != 0xcafe) {
                 lprintf("FPGA not responding: 0x%04x\n", ping->word[0]);
                 evSpi(EC_DUMP, EV_SPILOOP, -1, "main", "dump");
-                spi_mode = (spi_mode == SPI_OPERATING_MODE)? SPI_SETUP_MODE : SPI_OPERATING_MODE;
+                spi_mode = (spi_mode == SPI_KIWISDR_1_MODE)? SPI_KIWISDR_2_MODE : SPI_KIWISDR_1_MODE;
             } else
                 break;
         } while (1);

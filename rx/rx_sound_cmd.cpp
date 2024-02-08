@@ -299,11 +299,22 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
     case CMD_RF_ATTN:
 	    float rf_attn_dB;
         if (sscanf(cmd, "SET rf_attn=%f", &rf_attn_dB) == 1) {
-            //cprintf(conn, "SET rf_attn=%.1f\n", rf_attn_dB);
-            
-            // update s->rf_attn_dB here so we don't send UI update to ourselves
-            kiwi.rf_attn_dB = s->rf_attn_dB = rf_attn_dB;
-            rf_attn_set(rf_attn_dB);
+        
+            // enforce access to rf attn since javascript can be manipulated on client side
+            bool deny = false;
+            ext_auth_e auth = ext_auth(rx_chan);
+            int allow = cfg_int("rf_attn_allow", NULL, CFG_REQUIRED);
+            if (allow == RF_ATTN_ALLOW_LOCAL_ONLY && auth != AUTH_LOCAL) deny = true;
+            if (allow == RF_ATTN_ALLOW_LOCAL_OR_PASSWORD_ONLY && auth == AUTH_USER) deny = true;
+            cprintf(conn, "rf_attn SET %.1f auth|allow=%d|%d\n", rf_attn_dB, auth, allow);
+
+            if (!deny) {
+                // update s->rf_attn_dB here so we don't send UI update to ourselves
+                kiwi.rf_attn_dB = s->rf_attn_dB = rf_attn_dB;
+                rf_attn_set(rf_attn_dB);
+            } else {
+                cprintf(conn, "rf_attn DENY\n");
+            }
             did_cmd = true;                
         }
         break;

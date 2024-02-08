@@ -93,7 +93,8 @@ typedef struct {
 #define	SPI_1_5M		5
 
 #define SPI_SETUP_MODE      0
-#define SPI_OPERATING_MODE  1
+#define SPI_KIWISDR_1_MODE  0
+#define SPI_KIWISDR_2_MODE  1
 
 void spi_dev_init(int spi_clkg, int spi_speed);
 void spi_dev_init2();

@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 661
+VERSION_MIN = 662
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -1343,7 +1343,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 	# remainder of "make install" only makes sense to run on target
 else
-    ifneq ($(DTS_DEP_DST),/)
+    ifneq ($(DTS_DEP_DST),)
 	    -@ls -la $(DTS_DEP_DST)
 	    -@ls -la $(DTS_DEP_SRC)
     endif
@@ -1815,54 +1815,59 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	apt-get -y $(APT_GET_FORCE) install xz-utils
 
 
+ifeq ($(BBAI_64),true)
+    SD_CARD_MMC_COPY := 1
+else ifeq ($(BBAI),true)
+    SD_CARD_MMC_COPY := 0
+else ifeq ($(BBG_BBB),true)
+    SD_CARD_MMC_COPY := 0
+endif
+
 #
 # DANGER: "DD_SIZE := 3000M" below must be ~200 MB larger than the partition "used" size
 # (currently ~2820 GB) computed by the "d.mb" command alias.
 # Otherwise the image file will have strange effects like /boot/uEnv.txt being the correct size but
 # filled with zeroed bytes (which of course is a disaster).
 #
-DISTRO_DEBIAN_VER := 12.4
+#DISTRO_DEBIAN_VER := 12.4
+DISTRO_DEBIAN_VER := 11.8
 TO_IMG = ~/KiwiSDR_$(VER)_$(PLAT)_Debian_$(DISTRO_DEBIAN_VER).img.xz
-SD_CARD_MMC_TO_IMG := 0
 DD_SIZE := 3000M
 
 create_img_from_sd: /usr/bin/xz
 	@echo "--- this takes about an hour"
 	@echo "--- KiwiSDR server will be stopped to maximize write speed"
 	lsblk
-	@echo "CAUTION: SD_CARD_MMC_TO_IMG = $(SD_CARD_MMC_TO_IMG)"
+	@echo "CAUTION: SD_CARD_MMC_COPY = $(SD_CARD_MMC_COPY)"
 	@echo "CAUTION: VERIFY FROM THE LIST ABOVE THAT THE SD CARD IS THE MMC NUMBER SHOWN"
 	@echo -n 'ARE YOU SURE? '
 	@read not_used
 	make stop
 	date
-	dd if=/dev/mmcblk$(SD_CARD_MMC_TO_IMG) bs=1M iflag=count_bytes count=$(DD_SIZE) | xz --verbose > $(TO_IMG)
+	dd if=/dev/mmcblk$(SD_CARD_MMC_COPY) bs=1M iflag=count_bytes count=$(DD_SIZE) | xz --verbose > $(TO_IMG)
 	sha256sum $(TO_IMG)
 	date
 
 
 ifeq ($(BBAI_64),true)
     FROM_IMG = ~/bbai64-emmc-flasher-debian-12.2-minimal-arm64-2023-10-07-6gb.img.xz
-    SD_CARD_MMC_FROM_IMG := 1
 else ifeq ($(BBAI),true)
     FROM_IMG = ~/am57xx-eMMC-flasher-debian-12.2-minimal-armhf-2023-10-07-2gb.img.xz
-    SD_CARD_MMC_FROM_IMG := 0
 else ifeq ($(BBG_BBB),true)
     FROM_IMG = ~/am335x-eMMC-flasher-debian-12.2-minimal-armhf-2023-10-07-2gb.img.xz
-    SD_CARD_MMC_FROM_IMG := 0
 endif
 
 create_sd_from_img: /usr/bin/xz
 	lsblk
-	@echo "CAUTION: SD_CARD_MMC_FROM_IMG = $(SD_CARD_MMC_FROM_IMG)"
+	@echo "CAUTION: SD_CARD_MMC_COPY = $(SD_CARD_MMC_COPY)"
 	@echo "CAUTION: VERIFY FROM THE LIST ABOVE THAT THE SD CARD IS THE MMC NUMBER SHOWN"
 	@echo -n 'ARE YOU SURE? '
 	@read not_used
-	@echo -n 'ARE YOU *REALLY* SURE? /dev/mmcblk$(SD_CARD_MMC_FROM_IMG) WILL BE OVERWRITTEN! '
+	@echo -n 'ARE YOU *REALLY* SURE? /dev/mmcblk$(SD_CARD_MMC_COPY) WILL BE OVERWRITTEN! '
 	@read not_used
 	date
-	xzcat -v $(FROM_IMG) | dd of=/dev/mmcblk$(SD_CARD_MMC_FROM_IMG) bs=1M
-	blockdev --flushbufs /dev/mmcblk$(SD_CARD_MMC_FROM_IMG)
+	xzcat -v $(FROM_IMG) | dd of=/dev/mmcblk$(SD_CARD_MMC_COPY) bs=1M
+	blockdev --flushbufs /dev/mmcblk$(SD_CARD_MMC_COPY)
 	date
 
 endif

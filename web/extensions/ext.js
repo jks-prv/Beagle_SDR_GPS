@@ -243,7 +243,6 @@ var ext_zoom = {
 	MAX_OUT: -9
 };
 
-
 var extint_ext_is_tuning = false;
 
 // mode, zoom and passband are optional
@@ -363,7 +362,7 @@ function ext_get_prev_mode()
 	return extint.prev_mode;
 }
 
-function ext_set_mode(mode, freq, opt)
+function ext_set_mode(mode, freq_Hz, opt)
 {
    if (isUndefined(mode)) return;
 
@@ -372,7 +371,7 @@ function ext_set_mode(mode, freq, opt)
       extint.prev_mode = cur_mode;
 
    //console.log('### ext_set_mode '+ mode +' prev='+ extint.prev_mode);
-	demodulator_analog_replace(mode, freq);
+	demodulator_analog_replace(mode, freq_Hz);
 	
 	var open_ext = w3_opt(opt, 'open_ext', false);
 	var no_drm_proc = w3_opt(opt, 'no_drm_proc', false);
@@ -391,7 +390,7 @@ function ext_set_mode(mode, freq, opt)
       if (!new_drm && drm_active) {
          // shutdown DRM (if active) when mode changed
          extint_panel_hide();
-         demodulator_analog_replace(mode, freq);   // don't use mode restored by DRM_blur()
+         demodulator_analog_replace(mode, freq_Hz);   // don't use mode restored by DRM_blur()
       }
    }
 }
@@ -1190,15 +1189,22 @@ function extint_names_enum(func)
    }
 }
 
+function ext_auth()
+{
+   if (kiwi.is_local[rx_chan]) return kiwi.AUTH_LOCAL;
+   if (kiwi.tlimit_exempt_by_pwd[rx_chan]) return kiwi.AUTH_PASSWORD;
+   return kiwi.AUTH_USER;
+}
+
 function extint_select_build_menu()
 {
-   //console.log('extint_select_menu rx_chan='+ rx_chan +' is_local='+ kiwi.is_local[rx_chan]);
+   //console.log('extint_select_menu rx_chan='+ rx_chan +' ext_auth='+ ext_auth());
 	var s = '';
 	if (extint_names && isArray(extint_names)) {
 	   extint_names_enum(function(i, value, id, id_en) {
          var enable = ext_get_cfg_param(id_en +'.enable');
          //console.log('extint_select_menu id_en='+ id_en +' en='+ enable);
-         if (enable == null || kiwi.is_local[rx_chan]) enable = true;   // enable if no cfg param or local connection
+         if (enable == null || ext_auth() == kiwi.AUTH_LOCAL) enable = true;   // enable if no cfg param or local connection
          if (id == 'DRM') kiwi.DRM_enable = enable;
          
          // menu entry name exceptions
@@ -1215,7 +1221,7 @@ function extint_select_build_menu()
 
 function extint_open(name, delay)
 {
-   //console.log('extint_open rx_chan='+ rx_chan +' is_local='+ kiwi.is_local[rx_chan]);
+   //console.log('extint_open rx_chan='+ rx_chan +' ext_auth='+ ext_auth());
    name = name.toLowerCase();
    
    // aliases, for the benefit of dx.json file
@@ -1226,7 +1232,7 @@ function extint_open(name, delay)
    var found = 0;
    extint_names_enum(function(i, value, id, id_en) {
       var enable = ext_get_cfg_param(id_en +'.enable');
-      if (enable == null || kiwi.is_local[rx_chan]) enable = true;   // enable if no cfg param or local connection
+      if (enable == null || ext_auth() == kiwi.AUTH_LOCAL) enable = true;   // enable if no cfg param or local connection
 
       if (!found && enable && id.toLowerCase().includes(name)) {
          //console.log('extint_open match='+ id);

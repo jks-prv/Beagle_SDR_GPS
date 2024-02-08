@@ -2,6 +2,36 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.662  February 8, 2024
+    RF attenuator policy (KiwiSDR 2). Admin page control tab menu allows access by:
+        1) Everyone, 2) Local connections only, 3) Local connections or password only
+        These are the same choices as with the antenna switch. The password is the time limit
+        exemption password (admin control tab), specified in the URL by password= or pwd=,
+        not the user connection password (admin security tab).
+
+    Frequency undo/redo: When the frequency entry field is highlighted (almost all of the time)
+    type shift-return to undo/redo the last frequency change. Useful for old codgers like me who
+    keep misclicking or accidentally hitting the trackpad causing unwanted frequency changes.
+    
+    TDoA extension:
+        The sampling station exclusion checkboxes are working again.
+        
+        Waterfall adjusted so passband center is half way between extension and main control panels.
+        
+        Sampling station waterfall preview mode bug fixes.
+        
+        Fixed problem since v1.660 with map markers disappearing before you could click on them.
+
+        New URL parameter "refs:" that presets the "Reference station" checkboxes.
+        Use "refs:0" to uncheck all. Then "refs:[1-8]" cumulatively to add checkboxes from
+        the subcategories. For example "refs:0:2:3" to check milcom and radar.
+        Omit ":0" to make ":[1-8]" remove subcategories. I.e. "refs:2:3" selects
+        all except milcom and radar.
+    
+    Added "save" buttons to admin text entry areas:
+        webpage tab > additional HTML/Javascript; network tab > local blacklist;
+        extensions tab > ALE_2G > admin menu; extensions tab > iframe > HTML/Javascript
+
 v1.660,661  February 5, 2024
     TDoA extension: Added fast waterfall preview of sampling stations. Shift-click on map host icons
         or audio icon in host list. Waterfall (but not the audio) quickly switches to showing
