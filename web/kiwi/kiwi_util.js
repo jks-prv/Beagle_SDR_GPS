@@ -734,6 +734,7 @@ function canvas_log_clear()
 
 function canvas_log(s)
 {
+   if (!isString(s)) s = s.toString();
    if (isUndefined(owrx.news_acc_s)) owrx.news_acc_s = '<br>';
 
    if (s == '\f') {
