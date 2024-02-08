@@ -1164,6 +1164,9 @@ function TDoA_environment_changed(changed)
       var left = Math.max(0, (window.innerWidth - tdoa.w_data - time_display_width()) / 2);
       //console.log('tdoa_resize wiw='+ window.innerWidth +' tdoa.w_data='+ tdoa.w_data +' time_display_width='+ time_display_width() +' left='+ left);
       el.style.left = px(left);
+      //canvas_log(window.innerHeight);
+      if (zoom_center != 0.5)
+         zoom_step(ext_zoom.CUR);      // initial offset
       return;
    }
    
@@ -2791,7 +2794,9 @@ function TDoA_focus()
 {
    //console.log('TDoA_focus');
 	tdoa.optbar = ext_get_optbar();
-	zoom_center = 0.6;      // places waterfall signal half way between control panels
+
+	if (window.innerHeight < 970)
+	   zoom_center = 0.6;      // places waterfall signal half way between control panels
 
    // switch optbar off to not obscure map on smaller screens
    ext_set_optbar('optbar-off', 'init');

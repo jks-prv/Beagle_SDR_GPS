@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.662  February 8, 2024
+v1.662,663  February 9, 2024
     RF attenuator policy (KiwiSDR 2). Admin page control tab menu allows access by:
         1) Everyone, 2) Local connections only, 3) Local connections or password only
         These are the same choices as with the antenna switch. The password is the time limit
@@ -16,7 +16,8 @@ v1.662  February 8, 2024
     TDoA extension:
         The sampling station exclusion checkboxes are working again.
         
-        Waterfall adjusted so passband center is half way between extension and main control panels.
+        Waterfall adjusted so passband center is half way between extension and main control panels
+        if using a smaller sized display.
         
         Sampling station waterfall preview mode bug fixes.
         
