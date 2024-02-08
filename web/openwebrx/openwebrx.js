@@ -12238,7 +12238,7 @@ function owrx_msg_cb(param, ws)     // #msg-proc
 			if (override_ext) {
             w3_do_when_cond(
                function() {
-                  //console.log('### '+ (waterfall_setup_done? 'GO' : 'WAIT') +' dx_update(waterfall_setup_done)');
+                  //console.log('### '+ (waterfall_setup_done? 'GO' : 'WAIT') +' extint_open('+ override_ext +')');
                   return waterfall_setup_done;
                },
                function() {
