@@ -3356,6 +3356,11 @@ function zoom_step(dir, arg2)
 	   if (znew == ozoom) return;
 	   dir = (znew > ozoom)? ext_zoom.IN : ext_zoom.OUT;
 	}
+	
+	if (dir == ext_zoom.CUR) {
+	   dir = ext_zoom.ABS;
+	   arg2 = zoom_level;
+	}
 
 	if (sb_trace) console.log('zoom_step dir='+ dir +'('+ zoom_dir_s(dir) +') arg2='+ arg2);
 	if (dir == ext_zoom.MAX_OUT) {		// max out
@@ -3416,7 +3421,7 @@ function zoom_step(dir, arg2)
 		if (dir == ext_zoom.ABS) {
 			if (arg2 == undefined) { zoom_finally(); return; }		// no abs zoom value specified
 			var znew = arg2;
-			//console.log('zoom_step ABS znew='+ znew +' zmax='+ zoom_levels_max +' zcur='+ zoom_level);
+			//console.log('zoom_step ABS znew='+ znew +' zmax='+ zoom_levels_max +' zcur='+ zoom_level +' zoom_center='+ zoom_center);
 			if ((znew < 0 || znew > zoom_levels_max || znew == zoom_level) && zoom_center == 0.5) {
 			   zoom_finally();
 			   return;
@@ -3425,8 +3430,8 @@ function zoom_step(dir, arg2)
 			zoom_level = znew;
 			// center waterfall at middle of passband
 			x_bin = freq_to_bin(freq_passband_center());
+			//console.log('ZOOM ABS z='+ znew +' out='+ out +' fpc='+ freq_passband_center() +' b='+ x_bin +'|'+ norm_to_bins(0.5) +'|'+ norm_to_bins(zoom_center));
 			x_bin -= norm_to_bins(zoom_center);
-			//console.log("ZOOM ABS z="+znew+" out="+out+" b="+x_bin);
 		} else
 		
 		if (dir == ext_zoom.NOM_IN || dir == ext_zoom.MAX_IN) {
@@ -5756,7 +5761,12 @@ function freqset_update_ui(from)
 	if (freqset_restore_ui() == null) return;
 	
 	// re-center if the new passband is outside the current waterfall
-	waterfall_position(owrx.WF_POS_RECENTER_IF_OUTSIDE);
+   if (from == owrx.FSET_SET_FREQ && zoom_center != 0.5) {
+      // let the zoom code handle it since it seems to work
+      zoom_step(ext_zoom.ABS, zoom_level);
+   } else {
+	   waterfall_position(owrx.WF_POS_RECENTER_IF_OUTSIDE);
+	}
 	
 	writeCookie('last_freq', freq_displayed_kHz_str_with_freq_offset);
 	freq_dsp_set_last = freq_displayed_kHz_str_with_freq_offset;
@@ -5976,7 +5986,7 @@ function freqset_complete(from, ev)
    
    if (set_wf) {
       f = obj.value.slice(1);
-      if (f == '') {    // '#' alone resets to current rx freq
+      if (f == '') {    // '#' alone resets wf to current rx freq
          waterfall_tune(0);
          return;
       }
