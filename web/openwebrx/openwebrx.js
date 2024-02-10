@@ -4605,22 +4605,22 @@ function waterfall_add(data_raw, audioFFT)
          pwr_dBm.sort(function(a,b) {return a-b});
          var noise = pwr_dBm[Math.floor(0.50 * len)];
          var signal = pwr_dBm[Math.floor(0.95 * len)];
-         console_log_dbgUs('# autoscale len='+ len +' min='+ pwr_dBm[0] +' noise='+ noise +' signal='+ signal +' max='+ pwr_dBm[len-1]);
+         //console_log_dbgUs('# autoscale len='+ len +' min='+ pwr_dBm[0] +' noise='+ noise +' signal='+ signal +' max='+ pwr_dBm[len-1]);
 
          var _10 = pwr_dBm[Math.floor(0.10 * len)];
          var _20 = pwr_dBm[Math.floor(0.20 * len)];
-         console_log_dbgUs('# autoscale min='+ pwr_dBm[0] +' 10%='+ _10 +' 20%='+ _20 +' 50%(noise)='+ noise +' 95%(signal)='+ signal +' max='+ pwr_dBm[len-1]);
+         //console_log_dbgUs('# autoscale min='+ pwr_dBm[0] +' 10%='+ _10 +' 20%='+ _20 +' 50%(noise)='+ noise +' 95%(signal)='+ signal +' max='+ pwr_dBm[len-1]);
       } else {
          signal = -110;
          noise = -120;
-         console_log_dbgUs('# autoscale len=0 sig=-110 noise=-120');
+         //console_log_dbgUs('# autoscale len=0 sig=-110 noise=-120');
       }
       
       // empirical adjustments
 	   signal += 30;
 	   if (signal < -80) signal = -80;
       noise -= 10;
-      console_log_dbgUs('# autoscale FINAL noise(min)='+ noise +' signal(max)='+ signal);
+      //console_log_dbgUs('# autoscale FINAL noise(min)='+ noise +' signal(max)='+ signal);
       
       if (wf.audioFFT_active) {
          //noise = (dbgUs && devl.p4)? Math.round(devl.p4) : -110;
@@ -5763,7 +5763,7 @@ function freqset_update_ui(from)
 	// re-center if the new passband is outside the current waterfall
    if (from == owrx.FSET_SET_FREQ && zoom_center != 0.5) {
       // let the zoom code handle it since it seems to work
-      zoom_step(ext_zoom.ABS, zoom_level);
+      zoom_step(ext_zoom.CUR);
    } else {
 	   waterfall_position(owrx.WF_POS_RECENTER_IF_OUTSIDE);
 	}
