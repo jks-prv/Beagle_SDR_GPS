@@ -257,8 +257,7 @@ function ibp_annotate_waterfall(beaconN)
    });
 
    var sL = call +' '+ location;
-   var x = (c.width - c.ctx.measureText(sL).width)/2;
-   waterfall_add_text(wf_canvas_actual_line, x, 14, sL, 'Arial', 13, 'lime', 4);
+   waterfall_add_text(wf_canvas_actual_line+4, c.width/2, 12, sL, 'Arial', 14, 'lime');
 }
 
 // called every waterfall update

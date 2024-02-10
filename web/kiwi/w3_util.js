@@ -1366,12 +1366,15 @@ function w3_flash_fade(el_id, color, dwell_ms, fade_ms, color2)
    return el;
 }
 
-function w3_fillText_shadow(canvas, text, x, y, font, fontSize, color, strokeWidth) {
-   strokeWidth = strokeWidth || Math.floor(fontSize / 3);   // rule of thumb for good looking shadow
+function w3_fillText_shadow(canvas, text, x, y, font, fontSize, color, opts) {
+   var strokeWidth = w3_opt(opts, 'stroke', Math.floor(fontSize / 3));  // rule of thumb for good looking shadow
+
    var ctx = canvas.getContext("2d");
    ctx.font = px(fontSize) +' '+ font;
    ctx.miterLimit = 2;
    ctx.lineJoin = "circle";
+   var tw = ctx.measureText(text).width;
+   if (!w3_opt(opts, 'left')) x -= tw/2;     // i.e. centered
 
    ctx.strokeStyle = "black";
    ctx.lineWidth = strokeWidth;
@@ -1382,15 +1385,17 @@ function w3_fillText_shadow(canvas, text, x, y, font, fontSize, color, strokeWid
    ctx.fillText(text, x, y);
 };
 
-function w3_fillText(ctx, x, y, text, color, font, lineWidth, align, baseline)
+function w3_fillText(ctx, x, y, text, color, opts)
 {
-   if (color) ctx.fillStyle = color;
-   if (font) ctx.font = font;
-   if (lineWidth) ctx.lineWidth = lineWidth;
-   if (align) ctx.textAlign = align;
-   if (baseline) ctx.textBaseline = baseline;
+   color = color || 'black';                    ctx.fillStyle = color;
+   var font = w3_opt(opts, 'font');             if (isDefined(font)) ctx.font = font;
+   var lineWidth = w3_opt(opts, 'lineWidth');   if (isDefined(lineWidth)) ctx.lineWidth = lineWidth;
+   var align = w3_opt(opts, 'align');           if (isDefined(align)) ctx.textAlign = align;
+   var baseline = w3_opt(opts, 'baseline');     if (isDefined(baseline)) ctx.textBaseline = baseline;
+
    var tw = ctx.measureText(text).width;
-   ctx.fillText(text, x-tw/2, y);
+   if (!w3_opt(opts, 'left')) x -= tw/2;     // i.e. centered
+   ctx.fillText(text, x, y);
 }
 
 function w3_check_restart_reboot(el_id)
