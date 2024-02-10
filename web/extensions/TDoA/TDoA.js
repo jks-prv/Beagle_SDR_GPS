@@ -3071,8 +3071,13 @@ function tdoa_preview_click(mkr, ev)
       // must delay call to tdoa_wf_preview() until tdoa_waterfall_close() has been called
       tdoa.wf_ws.close();
    } else {
-      console.log('TDoA aper SAVE '+ ((wf.aper == kiwi.aper_e.auto)? 'AUTO' : 'MAN'));
+      var auto = (wf.aper == kiwi.aper_e.auto);
       tdoa.aper_save = wf.aper;
+
+      // must also save/restore man maxdb/mindb_un, source depends on aperture mode
+      tdoa.maxdb_save = auto? wf.save_maxdb : maxdb;
+      tdoa.mindb_un_save = auto? wf.save_mindb_un : mindb_un;
+      //console.log('$TDoA aper SAVE '+ (auto? 'AUTO' : 'MAN') +' maxdb='+ tdoa.maxdb_save +' mindb='+ tdoa.mindb_un_save);
       tdoa_wf_preview(mkr);
    }
 }
@@ -3099,8 +3104,8 @@ function tdoa_all_msg_cb(msg_a, ws)
          tdoa.wf_up = true;
          waterfall_add_line(wf_canvas_actual_line+1);
          var c = wf_cur_canvas;
-         var x = freq_to_pixel(freq_passband_center()) - c.ctx.measureText(tdoa.wf_id_snr).width / 2;
-         waterfall_add_text(wf_canvas_actual_line, x, 14, tdoa.wf_id_snr, 'Arial', 13, 'white', 4);
+         var x = freq_to_pixel(freq_passband_center());
+         waterfall_add_text(wf_canvas_actual_line+4, x, 12, tdoa.wf_id_snr, 'Arial', 14, 'white');
          break;
       case 'maxdb':
       case 'mindb':
@@ -3125,9 +3130,9 @@ function tdoa_waterfall_add_queue(what, ws, firstChars)
    if (kiwi.wf_preview_mode)
       waterfall_add_queue2(what, ws, firstChars);
       tdoa.preview_lines++;
-      if (tdoa.preview_lines == 4) {
+      if (tdoa.preview_lines == 2) {
          wf_aper_cb('wf.aper', kiwi.aper_e.man);
-         setTimeout(wf_autoscale_cb, 250);
+         setTimeout(wf_autoscale_cb, 1);
       }
    else
 	   if (kiwi_gc_wf) what = null;  // gc
@@ -3146,12 +3151,13 @@ function tdoa_waterfall_close()
    } else {
       tdoa.wf_ws = tdoa.wf_mkr = null;
       kiwi.wf_preview_mode = false;
-
-      console.log('TDoA aper RESTORE '+ ((tdoa.aper_save == kiwi.aper_e.auto)? 'AUTO' : 'MAN'));
+      var auto = (wf.aper == kiwi.aper_e.auto);
+      //console.log('TDoA aper RESTORE '+ (auto? 'AUTO' : 'MAN') +' maxdb='+ tdoa.maxdb_save +' mindb='+ tdoa.mindb_un_save);
+      
+      // restore for both cases: returning to auto or man aperture mode
+      wf.save_maxdb = maxdb = tdoa.maxdb_save;
+      wf.save_mindb_un = mindb_un = tdoa.mindb_un_save;
       wf_aper_cb('wf.aper', tdoa.aper_save);
-      if (tdoa.aper_save == kiwi.aper_e.man) {
-         setTimeout(wf_autoscale_cb, 500);
-      }
 
       if (!tdoa.wf_conn_bad) {
          w3_clearInnerHTML('id-tdoa-submit-status');
@@ -3164,8 +3170,8 @@ function tdoa_waterfall_close()
          waterfall_add_line(wf_canvas_actual_line+1);
          var c = wf_cur_canvas;
          var id = 'Back to this Kiwi';
-         var x = freq_to_pixel(freq_passband_center()) - c.ctx.measureText(id).width / 2;
-         waterfall_add_text(wf_canvas_actual_line, x, 14, id, 'Arial', 13, 'white', 4);
+         var x = freq_to_pixel(freq_passband_center());
+         waterfall_add_text(wf_canvas_actual_line+4, x, 12, id, 'Arial', 14, 'white');
       }
    }
 
