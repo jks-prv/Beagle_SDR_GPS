@@ -538,6 +538,12 @@ fail:
 	case AJAX_STATUS: {
 		const char *s1, *s3, *s4, *s5, *s6, *s7;
 		
+		if (mc->query_string && strcmp(mc->query_string, "reset") == 0) {
+		    sb = kstr_asprintf(NULL, "{\"adc_ov\":%u}\n", dpump.rx_adc_ovfl_cnt);
+		    dpump.rx_adc_ovfl_cnt = 0;
+		    return sb;		// NB: return here because sb is already a kstr_t (don't want to do kstr_wrap() below)
+		}
+		
 		// if location hasn't been changed from the default try using ipinfo lat/log
 		// or, failing that, put us in Antarctica to be noticed
 		s4 = cfg_string("rx_gps", NULL, CFG_OPTIONAL);
