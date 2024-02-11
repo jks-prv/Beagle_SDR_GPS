@@ -491,6 +491,8 @@ alias bbfp="ping -c 1 forum.kiwisdr.com"
 alias mblog="tail -fn 100 ~/build.log"
 alias st="stty -a"
 alias adc="function _adc () { while true; do curl -s $_our_ip:8073/adc?level=\$1; sleep 0.5; done ; } ; _adc"
+alias adcov="function _adcov () { curl -s $_our_ip:8073/adc_ov } ; _adcov"
+alias adcovr="function _adcovr () { curl -s $_our_ip:8073/adc_ov?reset } ; _adcovr"
 
 
 # networking
