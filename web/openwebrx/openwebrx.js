@@ -12268,20 +12268,20 @@ function owrx_msg_cb(param, ws)     // #msg-proc
 			extint_list_json(param[1]);
 			
 			// now that we have the list of extensions see if there is an override
-			console.log('extint_list_json override_ext='+ override_ext +' waterfall_setup_done='+ waterfall_setup_done);
-			if (override_ext) {
-            w3_do_when_cond(
-               function() {
-                  console.log('### '+ (waterfall_setup_done? 'GO' : 'WAIT') +' extint_open('+ override_ext +')');
-                  return waterfall_setup_done;
-               },
-               function() {
-				      extint_open(override_ext, 3000);
-               }, null,
-               200
-            );
-            // REMINDER: w3_do_when_cond() returns immediately
-			}
+			//console.log('extint_list_json override_ext='+ override_ext +' waterfall_setup_done='+ waterfall_setup_done);
+         w3_do_when_cond(
+            function() {
+               //console.log('### '+ (waterfall_setup_done? 'GO' : 'WAIT') +' extint_open('+ override_ext +')');
+               return waterfall_setup_done;
+            },
+            function() {
+               if (override_ext) {
+                  extint_open(override_ext, 1000);
+               }
+            }, null,
+            200
+         );
+         // REMINDER: w3_do_when_cond() returns immediately
 			break;
 		case "bandwidth":
 			bandwidth = parseInt(param[1]);
