@@ -293,7 +293,7 @@ void extint_send_extlist(conn_t *conn)
 			elist = kstr_asprintf(elist, "\"%s\"%s", ext->name, (i < (n_exts-1))? ",":"]");
 		}
 	}
-	printf("elist = %s\n", kstr_sp(elist));
+	//printf("elist = %s\n", kstr_sp(elist));
 	send_msg_encoded(conn, "MSG", "extint_list_json", "%s", kstr_sp(elist));
 	kstr_free(elist);
 }

@@ -1128,7 +1128,7 @@ function extint_select(value)
 	value = +value;
 	var el = w3_el('id-select-ext');
 	if (!el) {
-	   console.log('$ extint_select NOT READY v='+ value);
+	   //console.log('$ extint_select NOT READY v='+ value);
 	   setTimeout(extint_select, 1000, value);
 	   return;
 	}
@@ -1218,7 +1218,7 @@ function extint_select_build_menu()
 
 function extint_open(name, delay)
 {
-   console.log('extint_open rx_chan='+ rx_chan +' ext_auth='+ ext_auth());
+   //console.log('extint_open rx_chan='+ rx_chan +' ext_auth='+ ext_auth());
    name = name.toLowerCase();
    
    // aliases, for the benefit of dx.json file
@@ -1234,10 +1234,10 @@ function extint_open(name, delay)
       if (!found && enable && id.toLowerCase().includes(name)) {
          //console.log('extint_open match='+ id);
          if (delay) {
-            console.log('extint_open '+ name +' delay='+ delay);
+            //console.log('extint_open '+ name +' delay='+ delay);
             setTimeout(function() { extint_select(value); }, delay);
          } else {
-            console.log('extint_open '+ name +' NO DELAY');
+            //console.log('extint_open '+ name +' NO DELAY');
             extint_select(value);
          }
          found = 1;
