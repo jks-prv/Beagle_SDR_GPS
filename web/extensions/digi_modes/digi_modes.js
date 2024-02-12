@@ -164,7 +164,7 @@ function digi_controls_setup()
             do_test = 1;
          }
          if (w3_ext_param('help', a).match) {
-            extint_help_click();
+            ext_help_click();
          }
       });
 

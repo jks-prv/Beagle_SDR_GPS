@@ -269,7 +269,7 @@ function cw_decoder_controls_setup()
 	cw_decoder_auto_wpm_cb('', cw.is_auto_wpm);     // prevent content flash when URL "wpm:N" used
    cw_clear_button_cb();
 	if (do_test) cw_test_cb();
-	if (do_help) extint_help_click();
+	if (do_help) ext_help_click();
 }
 
 function CW_decoder_environment_changed(changed)

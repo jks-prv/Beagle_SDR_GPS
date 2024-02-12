@@ -302,7 +302,7 @@ function fax_controls_setup()
       p.forEach(function(a, i) {
          //console.log('FAX param2 <'+ a +'>');
          if (w3_ext_param('help', a).match) {
-            extint_help_click();
+            ext_help_click();
          }
       });
    }

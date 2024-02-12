@@ -1496,7 +1496,7 @@ function drm_controls_setup()
          a1 = a1[a1.length-1].toLowerCase();
          var r;
          if (w3_ext_param('help', a).match) {
-            extint_help_click();
+            ext_help_click();
          } else
          if (w3_ext_param('mon', a).match) {
             drm_monitor_IQ_cb('id-drm-btn-monitor');

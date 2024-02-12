@@ -28,7 +28,8 @@ var extint = {
    // extensions not subject to DRM lockout
    // FIXME: allow C-side API to specify
    no_lockout: [ 'noise_blank', 'noise_filter', 'ant_switch', 'iframe', 'colormap', 'devl', 'prefs' ],
-   use_rf_tab: [ /* 'ant_switch' */ ],
+   use_rf_tab: [ ],
+   //use_rf_tab: [ 'ant_switch' ],
    excl_devl: [ 'devl', 'digi_modes', 's4285', 'prefs' ],
    
    OPT_NOLOCAL: 1,
@@ -787,6 +788,18 @@ function ext_render_menus(ctx, ext_name, ctx_name)
    console.log('ext_render_menus n_menu='+ ctx.n_menu);
 }
 
+function ext_help_click(delay)
+{
+   // will send click event even if w3-disabled!
+   if (w3_contains('id-ext-controls-help-btn', 'w3-disabled')) return;
+   console.log(extint.current_ext_name +'_help_click CLICKED');
+   
+   if (delay)
+      setTimeout(function() { extint_help_click_now(); }, 2000);
+   else
+      extint_help_click_now();
+}
+
 
 ////////////////////////////////
 // internal routines
@@ -808,7 +821,7 @@ function ext_panel_init()
 		w3_div('id-ext-controls-container w3-relative|width:100%;height:100%;') +
 		w3_div('id-ext-controls-vis class-vis') +
 		w3_div('id-ext-controls-help cl-ext-help',
-		   w3_button('id-ext-controls-help-btn w3-green w3-small w3-padding-small w3-disabled||onclick="extint_help_click()"', 'help')
+		   w3_button('id-ext-controls-help-btn w3-green w3-small w3-padding-small w3-disabled||onclick="ext_help_click()"', 'help')
 		);
 	
 	// close ext panel if escape key while input field has focus
@@ -962,18 +975,6 @@ function extint_panel_hide(skip_calling_hide_spec)
 function extint_help_click_now()
 {
 	extint.help_displayed = w3_call(extint.current_ext_name +'_help', true);
-}
-
-function extint_help_click(delay)
-{
-   // will send click event even if w3-disabled!
-   if (w3_contains('id-ext-controls-help-btn', 'w3-disabled')) return;
-   console.log(extint.current_ext_name +'_help_click CLICKED');
-   
-   if (delay)
-      setTimeout(function() { extint_help_click_now(); }, 2000);
-   else
-      extint_help_click_now();
 }
 
 function extint_environment_changed(changed)

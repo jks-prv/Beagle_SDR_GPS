@@ -770,7 +770,7 @@ function hfdl_get_systable_done_cb(stations)
                if (dbgUs) console.log('HFDL param2 <'+ a +'>');
                var r;
                if (w3_ext_param('help', a).match) {
-                  extint_help_click();
+                  ext_help_click();
                } else
                if (w3_ext_param('map', a).match) {
                   hfdl.show = hfdl.SHOW_MAP;

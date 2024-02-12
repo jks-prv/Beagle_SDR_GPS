@@ -1474,7 +1474,7 @@ function tdoa_get_hosts_cb(hosts)
                tdoa.prev_ui = true;
             } else
             if (a.startsWith('help:')) {
-               extint_help_click();
+               ext_help_click();
             } else
             if (a.startsWith('kml:')) {
                tdoa.kml = true;

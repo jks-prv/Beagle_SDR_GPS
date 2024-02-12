@@ -336,7 +336,7 @@ function fft_controls_setup()
          } else
          if (w3_ext_param('help', a).match) {
             // delay needed due to interference with spectrum display render
-            extint_help_click(true);
+            ext_help_click(true);
          }
       });
    }
