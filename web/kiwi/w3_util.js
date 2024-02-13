@@ -1612,7 +1612,7 @@ function w3_psa_mix(psa, extra_prop, extra_style, extra_attr)
 function w3_set_psa(el, psa)
 {
    var el = w3_el(el);
-   if (!el || !isNonEmptyString(psa)) return null;
+   if (!el || isEmptyString(psa)) return null;
    psa = psa.split('/')[0];
    psa = psa.split('|');
    var _class = psa[0];
