@@ -1811,28 +1811,49 @@ endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
-/usr/bin/xz: $(INSTALL_CERTIFICATES)
+/usr/bin/xz:
 	apt-get -y $(APT_GET_FORCE) install xz-utils
 
 
 ifeq ($(BBAI_64),true)
     SD_CARD_MMC_COPY := 1
+    SD_CARD_MMC_PART := p2
+    DISTRO_DEBIAN_VER := 11.7
+    DD_SIZE := 3500M
 else ifeq ($(BBAI),true)
     SD_CARD_MMC_COPY := 0
+    SD_CARD_MMC_PART := p1
+    DISTRO_DEBIAN_VER := 11.9
+    DD_SIZE := 3500M
 else ifeq ($(BBG_BBB),true)
     SD_CARD_MMC_COPY := 0
+    SD_CARD_MMC_PART := p1
+    DISTRO_DEBIAN_VER := 11.9
+    DD_SIZE := 3000M
 endif
 
+# zero sd card first so .img.xz file is more compact on subsequent compression
+backup_zero:
+	-dd if=/dev/zero of=/dev/mmcblk$(SD_CARD_MMC_COPY) bs=1M iflag=count_bytes count=$(DD_SIZE) status=progress
+	make backup
+	fsck /dev/mmcblk$(SD_CARD_MMC_COPY)$(SD_CARD_MMC_PART)
+
+# makefile version of admin backup tab
+backup:
+    ifeq ($(DEBIAN_11_AND_LATER),true)
+	    cp /etc/beagle-flasher/$(PLAT_BACKUP)-emmc-to-microsd /etc/default/beagle-flasher
+	    (cd /root/$(REPO_NAME)/tools; bash ./$(PLAT_BACKUP)-flasher.sh)
+    else
+	    (cd /root/$(REPO_NAME)/tools; bash ./kiwiSDR-make-microSD-flasher-from-eMMC.sh)
+    endif
+
+# Use "make backup_zero" above to make filesystem holes zeros for better compression.
 #
-# DANGER: "DD_SIZE := 3000M" below must be ~200 MB larger than the partition "used" size
-# (currently ~2820 GB) computed by the "d.mb" command alias.
+# DANGER: DD_SIZE must be larger than the partition "used" size computed by the "d.mb" command alias.
 # Otherwise the image file will have strange effects like /boot/uEnv.txt being the correct size but
 # filled with zeroed bytes (which of course is a disaster).
 #
-#DISTRO_DEBIAN_VER := 12.4
-DISTRO_DEBIAN_VER := 11.8
 TO_IMG = ~/KiwiSDR_$(VER)_$(PLAT)_Debian_$(DISTRO_DEBIAN_VER).img.xz
-DD_SIZE := 3000M
 
 create_img_from_sd: /usr/bin/xz
 	@echo "--- this takes about an hour"
@@ -1850,11 +1871,11 @@ create_img_from_sd: /usr/bin/xz
 
 
 ifeq ($(BBAI_64),true)
-    FROM_IMG = ~/bbai64-emmc-flasher-debian-12.2-minimal-arm64-2023-10-07-6gb.img.xz
+    FROM_IMG = ~/bbai64-emmc-flasher-debian-11.7-minimal-arm64-2023-09-02-6gb.img.xz
 else ifeq ($(BBAI),true)
-    FROM_IMG = ~/am57xx-eMMC-flasher-debian-12.2-minimal-armhf-2023-10-07-2gb.img.xz
+    FROM_IMG = ~/am57xx-eMMC-flasher-debian-11.7-minimal-armhf-2023-09-02-2gb.img.xz
 else ifeq ($(BBG_BBB),true)
-    FROM_IMG = ~/am335x-eMMC-flasher-debian-12.2-minimal-armhf-2023-10-07-2gb.img.xz
+    FROM_IMG = ~/am335x-eMMC-flasher-debian-11.8-minimal-armhf-2023-10-07-2gb.img.xz
 endif
 
 create_sd_from_img: /usr/bin/xz
