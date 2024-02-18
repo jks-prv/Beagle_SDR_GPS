@@ -156,6 +156,7 @@ alias li='for l in $(seq -40 -2); do printf "%s\n" "$l" ; done'
 
 # make
 alias m="make"
+alias mf="make force"
 alias mskip="make skip"
 alias masm="make ASM_OUT=1"
 alias mh="make help"
@@ -186,6 +187,8 @@ alias mr="make run"
 alias muc="make update_check"
 alias mfu="make force_update"
 alias mdu="make dump"
+alias mbu="make backup"
+alias mbuz="make backup_zero"
 alias mbuf="make backup_forum"
 alias mre="make restart"
 alias mst="make stop"
