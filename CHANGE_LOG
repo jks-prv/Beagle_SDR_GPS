@@ -2,6 +2,35 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.664  February 19, 2024
+    BBAI-64 Debian 11 backups:
+        If you've made any sd card backups using the admin backup tab then please do so again.
+        There was a bug in the backup script that causes that makes the backup unusable.
+
+    TDoA extension:
+        More fixes for waterfall preview mode colormap autoscaling.
+        
+        Experimental optimizations to "spiderfy" of host and reference markers clusters.
+        
+        1) When a host or ref cluster is expanded ("spiderfied") the other type of clusters are
+            temporarily removed. This eliminates the following annoyance. If the other type
+            of cluster is behind the expanded cluster (i.e. visible through the clear spaces of
+            the expanded cluster), and the mouse rolls over it, then the current cluster is closed
+            and the other type of cluster is expanded. This is almost always not what you want.
+
+        2) The last spiderfied cluster will now contract if the mouse moves far enough away from it.
+            Previously the only way for it to contract was to cause another cluster to spiderfy
+            (by rolling over it) or clicking in a clear area of the map (annoying).
+    
+    Use my_kiwi:8073/adc_ov to report accumulated ADC overflow value as JSON e.g. {"adc_ov":1234}
+    Use my_kiwi:8073/adc_ov?reset to report value and reset it to zero.
+    Effects "adc_ov=" value reported by /status query.
+
+    The 'o' shortcut key now cycles between the control panel tabs: Off, User and Stat instead of
+    just Off and Stat.
+    
+    Fix for timing bug where extensions specified in URL wouldn't always open.
+    
 v1.662,663  February 9, 2024
     RF attenuator policy (KiwiSDR 2). Admin page control tab menu allows access by:
         1) Everyone, 2) Local connections only, 3) Local connections or password only
