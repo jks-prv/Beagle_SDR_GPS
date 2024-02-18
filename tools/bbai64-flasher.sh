@@ -5,7 +5,7 @@ if ! id | grep -q root; then
 	exit
 fi
 
-kiwisdr_message="D11+ BBAI-64 1/11/2024 tools/beaglebone-black-flasher.sh"
+kiwisdr_message="D11+ BBAI-64 1/11/2024 tools/bbai64-flasher.sh"
 version_message="1.20230710.0, add swap to non-swap to swap..."
 
 # set in /etc/default/beagle-flasher
@@ -519,7 +519,7 @@ partition_drive () {
 
 	if [ "x${rfs_partition}" = "xsingle" ] ; then
 		partition_one_start_mb=${rfs_rootfs_startmb:-"4"}
-		partition_one_sizemb=${kiwi_rootfs_size:-""}
+		partition_one_size_mb=${kiwi_rootfs_size:-""}
 		partition_one_fstype=${rfs_sfdisk_fstype:-"L"}
 
 		single_root_label=${single_root_label:-"rootfs"}
@@ -529,11 +529,11 @@ partition_drive () {
 		message="INFO: Partitioning: ${destination}"                                               ; broadcast
 		message="INFO: /sbin/sfdisk: [$(LC_ALL=C /sbin/sfdisk --version)]"                         ; broadcast
 		message="INFO: /sbin/sfdisk: [/sbin/sfdisk ${sfdisk_options} ${destination}]"              ; broadcast
-		message="INFO: /sbin/sfdisk: [${partition_one_start_mb}M,${partition_one_sizemb}M,${partition_one_fstype},*]" ; broadcast
+		message="INFO: /sbin/sfdisk: [${partition_one_start_mb}M,${partition_one_size_mb}M,${partition_one_fstype},*]" ; broadcast
 		message="--------------------------------------------------------------------------------" ; broadcast
 
 		LC_ALL=C /sbin/sfdisk ${sfdisk_options} "${destination}" <<-__EOF__
-			${partition_one_start_mb}M,${partition_one_sizemb}M,${partition_one_fstype},*
+			${partition_one_start_mb}M,${partition_one_size_mb}M,${partition_one_fstype},*
 		__EOF__
 
 		flush_cache
@@ -551,11 +551,12 @@ partition_drive () {
 		partition_one_fstype=${rfs_sfdisk_fstype:-"0xc"}
 
 		partition_two_start_mb=$(($partition_one_start_mb + $partition_one_size_mb))
-		partition_two_sizemb=${kiwi_rootfs_size:-""}
+		partition_two_size_mb=${kiwi_rootfs_size:-""}
 
 		if [ "x${rfs_swap_size_mb}" != "x" ] ; then
 			partition_two_size_mb="${rfs_swap_size_mb}"
 			partition_three_start_mb=$(($partition_one_start_mb + $partition_one_size_mb + $partition_two_size_mb))
+		    partition_three_size_mb=${kiwi_rootfs_size:-""}
 		fi
 
 		boot_label=${boot_label:-"FIRMWARE"}
@@ -569,9 +570,9 @@ partition_drive () {
 		message="INFO: /sbin/sfdisk: [${partition_one_start_mb}M,${partition_one_size_mb}M,${partition_one_fstype},*]" ; broadcast
 		if [ "x${rfs_swap_size_mb}" != "x" ] ; then
 			message="INFO: /sbin/sfdisk: [${partition_two_start_mb}M,${partition_two_size_mb}M,0x82,-]" ; broadcast
-			message="INFO: /sbin/sfdisk: [${partition_three_start_mb}M,,,-]" ; broadcast
+			message="INFO: /sbin/sfdisk: [${partition_three_start_mb}M,${partition_three_size_mb}M,,-]" ; broadcast
 		else
-			message="INFO: /sbin/sfdisk: [${partition_two_start_mb}M,,,-]" ; broadcast
+			message="INFO: /sbin/sfdisk: [${partition_two_start_mb}M,${partition_two_size_mb}M,,-]" ; broadcast
 		fi
 		message="--------------------------------------------------------------------------------" ; broadcast
 
@@ -579,12 +580,12 @@ partition_drive () {
 			LC_ALL=C /sbin/sfdisk ${sfdisk_options} "${destination}" <<-__EOF__
 				${partition_one_start_mb}M,${partition_one_size_mb}M,${partition_one_fstype},*
 				${partition_two_start_mb}M,${partition_two_size_mb}M,0x82,-
-				${partition_three_start_mb}M,,,-
+				${partition_three_start_mb}M,${partition_three_size_mb}M,,-
 			__EOF__
 		else
 			LC_ALL=C /sbin/sfdisk ${sfdisk_options} "${destination}" <<-__EOF__
 				${partition_one_start_mb}M,${partition_one_size_mb}M,${partition_one_fstype},*
-				${partition_two_start_mb}M,,,-
+				${partition_two_start_mb}M,${partition_two_size_mb}M,,-
 			__EOF__
 		fi
 
