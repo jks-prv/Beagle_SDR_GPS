@@ -78,7 +78,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 #	OPT = 0
 endif
 
-KIWI_XC_REMOTE_FS ?= ${HOME}/mnt
+KIWI_XC_REMOTE_FS ?= $(HOME)/mnt
 KIWI_XC_HOST ?= kiwisdr
 KIWI_XC_HOST_PORT ?= 22
 
@@ -218,7 +218,7 @@ endif
 ifneq ($(RPI),true)
     _DIRS = pru $(PKGS)
 endif
-_DIR_PLATFORMS = $(addprefix platform/, ${PLATFORMS})
+_DIR_PLATFORMS = $(addprefix platform/, $(PLATFORMS))
 _DIRS_O3 += . $(PKGS_O3) platform/common $(_DIR_PLATFORMS) $(EXT_DIRS) $(EXT_SUBDIRS) \
     $(RX) $(GPS) dev ui init support net web arch/$(ARCH)
 
@@ -274,7 +274,7 @@ else
 	LIBS += -lfftw3f -lutil
 	LIBS_DEP += /usr/lib/$(LIB_ARCH)/libfftw3f.a
 	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pgmtoppm /sbin/ethtool /usr/bin/sshpass
-	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget /usr/bin/htop /usr/bin/colordiff
+	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget /usr/bin/htop /usr/bin/colordiff /usr/bin/file
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
@@ -425,6 +425,9 @@ skip_cert_check:
 /usr/bin/dtc:
 	-apt-get -y $(APT_GET_FORCE) install device-tree-compiler
 
+/usr/bin/file:
+	-apt-get -y $(APT_GET_FORCE) install file
+
 ifeq ($(DEBIAN_VERSION),10)
     /usr/bin/connmanctl:
 	    -apt-get -y $(APT_GET_FORCE) install connman
@@ -517,6 +520,7 @@ build_makefile_inc:
 	@echo PROJECT = $(PROJECT)
 	@echo ARCH = $(ARCH)
 	@echo CPU = $(CPU)
+	@echo PLAT = $(PLAT)
 	@echo PLATFORMS = $(PLATFORMS)
 	@echo DEBUG = $(DEBUG)
 	@echo GDB = $(GDB)
@@ -743,6 +747,7 @@ make_vars: check_detect
 	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
 	@echo DEBIAN_VERSION = $(DEBIAN_VERSION)
 	@echo DEBIAN_10_AND_LATER = $(DEBIAN_10_AND_LATER)
+	@echo DEBIAN_11_AND_LATER = $(DEBIAN_11_AND_LATER)
 	@echo DEBIAN_12_AND_LATER = $(DEBIAN_12_AND_LATER)
 	@echo
 	@echo BBAI_64 = $(BBAI_64)
@@ -935,7 +940,7 @@ endif
 $(BUILD_DIR)/kiwi.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(ALL_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(EXTS_DEPS)
 ifneq ($(SAN),1)
     ifeq ($(KIWI_SKIP_LINK),true)
-	    @echo "DEVSYS: SKIP OF KIWI.BIN LINK STEP"
+	    @echo "DEVSYS: SKIP OF kiwi.bin LINK STEP"
 	    touch $@
     else
 	    @echo $(CPP) $(LDFLAGS) "..." $(DEVEL_DEPS) $(EXTS_DEPS) $(LIBS) -o $(BUILD_OBJ)
@@ -1139,8 +1144,13 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
         DIR_DTB_BASE = $(wildcard /opt/source/dtb-$(SYS_MAJ).$(SYS_MIN)-*)
         DIR_DTB  = $(DIR_DTB_BASE)/src/arm64
         DIR_DTB2 = $(DIR_DTB_BASE)/src/arm64/overlays
-        ifeq ($(DEBIAN_12_AND_LATER),true)
+        ifeq ($(DEBIAN_11_AND_LATER),true)
             #DTS2 = overlays/kiwisdr-cape.dts
+            EXTLINUX := /boot/firmware/extlinux/extlinux.conf
+            EXISTS_EXTLINUX := $(shell test -e $(EXTLINUX) && echo true)
+            ifeq ($(EXISTS_EXTLINUX),true)
+                DEB := "D11.9+"
+            endif
         endif
 
         # re-install device tree if changes made to *.dts source file
@@ -1152,7 +1162,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
         install_kiwi_device_tree:
 	        @echo "BBAI-64: install Kiwi device tree to configure GPIO pins"
 	        @echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
-            ifeq ($(DEBIAN_12_AND_LATER),true)
+            ifeq ($(DEBIAN_11_AND_LATER),true)
 	            @cp -v $(DTS_DEP_SRC) $(DIR_DTB)
 #	            @cp -v $(DTS_DEP_SRC2) $(DIR_DTB2)
 	            (cd $(DIR_DTB_BASE); make)
@@ -1818,8 +1828,8 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 ifeq ($(BBAI_64),true)
     SD_CARD_MMC_COPY := 1
     SD_CARD_MMC_PART := p2
-    DISTRO_DEBIAN_VER := 11.7
-    DD_SIZE := 3500M
+    DISTRO_DEBIAN_VER := 11.9
+    DD_SIZE := 6000M
 else ifeq ($(BBAI),true)
     SD_CARD_MMC_COPY := 0
     SD_CARD_MMC_PART := p1
@@ -1834,6 +1844,7 @@ endif
 
 # zero sd card first so .img.xz file is more compact on subsequent compression
 backup_zero:
+	lsblk
 	-dd if=/dev/zero of=/dev/mmcblk$(SD_CARD_MMC_COPY) bs=1M iflag=count_bytes count=$(DD_SIZE) status=progress
 	make backup
 	fsck /dev/mmcblk$(SD_CARD_MMC_COPY)$(SD_CARD_MMC_PART)
