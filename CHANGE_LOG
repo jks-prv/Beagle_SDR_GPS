@@ -4,7 +4,8 @@ For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/ma
 
 v1.664  February 19, 2024
     BBAI-64 Debian 11 backups:
-        If you've made any sd card backups using the admin backup tab then please do so again.
+        If you've made any sd card backups using the admin backup tab, ON BBAI-64 ONLY,
+        then please do so again using this release.
         There was a bug in the backup script that causes that makes the backup unusable.
 
     TDoA extension:
