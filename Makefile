@@ -457,12 +457,27 @@ endif
 
 
 ################################
+# flags
+################################
+
+VERSION := -DVERSION_MAJ=$(VERSION_MAJ) -DVERSION_MIN=$(VERSION_MIN)
+VER := v$(VERSION_MAJ).$(VERSION_MIN)
+V := -Dv$(VERSION_MAJ)_$(VERSION_MIN)
+
+INT_FLAGS += $(VERSION) -DKIWI -DKIWISDR
+INT_FLAGS += -DARCH_$(ARCH) -DCPU_$(CPU) -DARCH_CPU=$(CPU) -DARCH_CPU_S=STRINGIFY\($(CPU)\) $(addprefix -DPLATFORM_,$(PLATFORMS))
+INT_FLAGS += -DARCH_DIR=STRINGIFY\($(ARCH_DIR)\)
+INT_FLAGS += -DDIR_CFG=STRINGIFY\($(DIR_CFG)\) -DDIR_DATA=STRINGIFY\($(DIR_DATA)\) -DCFG_PREFIX=STRINGIFY\($(CFG_PREFIX)\)
+INT_FLAGS += -DBUILD_DIR=STRINGIFY\($(BUILD_DIR)\) -DREPO_NAME=STRINGIFY\($(REPO_NAME)\)  -DREPO_GIT=STRINGIFY\($(REPO_GIT)\)
+
+
+################################
 # dependencies
 ################################
 
 #SRC_DEPS = Makefile
 SRC_DEPS = 
-BIN_DEPS = KiwiSDR.rx4.wf4.bit KiwiSDR.rx8.wf2.bit KiwiSDR.rx3.wf3.bit KiwiSDR.rx14.wf0.bit KiwiSDR.other.bit
+BIN_DEPS = KiwiSDR.rx4.wf4.bit KiwiSDR.rx8.wf2.bit KiwiSDR.rx3.wf3.bit KiwiSDR.rx14.wf0.bit
 #BIN_DEPS = 
 DEVEL_DEPS = $(OBJ_DIR_DEFAULT)/web_devel.o $(KEEP_DIR)/edata_always.o $(KEEP_DIR)/edata_always2.o
 EMBED_DEPS = $(OBJ_DIR_DEFAULT)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o $(KEEP_DIR)/edata_always2.o
@@ -483,21 +498,6 @@ make_prereq: DISABLE_WS $(SUB_MAKE_DEPS)
 .PHONY: make_all
 make_all: $(BUILD_DIR)/kiwi.bin
 	@echo "make_all DONE"
-
-
-################################
-# flags
-################################
-
-VERSION = -DVERSION_MAJ=$(VERSION_MAJ) -DVERSION_MIN=$(VERSION_MIN)
-VER = v$(VERSION_MAJ).$(VERSION_MIN)
-V = -Dv$(VERSION_MAJ)_$(VERSION_MIN)
-
-INT_FLAGS += $(VERSION) -DKIWI -DKIWISDR
-INT_FLAGS += -DARCH_$(ARCH) -DCPU_$(CPU) -DARCH_CPU=$(CPU) -DARCH_CPU_S=STRINGIFY\($(CPU)\) $(addprefix -DPLATFORM_,$(PLATFORMS))
-INT_FLAGS += -DARCH_DIR=STRINGIFY\($(ARCH_DIR)\)
-INT_FLAGS += -DDIR_CFG=STRINGIFY\($(DIR_CFG)\) -DDIR_DATA=STRINGIFY\($(DIR_DATA)\) -DCFG_PREFIX=STRINGIFY\($(CFG_PREFIX)\)
-INT_FLAGS += -DBUILD_DIR=STRINGIFY\($(BUILD_DIR)\) -DREPO_NAME=STRINGIFY\($(REPO_NAME)\)  -DREPO_GIT=STRINGIFY\($(REPO_GIT)\)
 
 
 ################################
@@ -687,18 +687,19 @@ EDATA_DEP = web/kiwi/Makefile web/openwebrx/Makefile web/pkgs/Makefile web/exten
 # OR a "make fopt/foptim" on the Kiwi to explicitly build the optimized files (but only if not NFS_READ_ONLY)
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-foptim_gen: foptim_files_embed foptim_ext foptim_files_maps
-	@echo
+    FOPTIM_DEP := foptim_gen
+    foptim_gen: foptim_files_embed foptim_ext foptim_files_maps
+	    @echo
 else
-foptim_gen:
+    FOPTIM_DEP :=
 endif
 
 ifeq ($(NFS_READ_ONLY),yes)
-fopt foptim:
-	@echo "can't do fopt/foptim because of NFS_READ_ONLY=$(NFS_READ_ONLY)"
-	@echo "(assumed foptim_gen performed on development machine with a make install)"
+    fopt foptim:
+	    @echo "can't do fopt/foptim because of NFS_READ_ONLY=$(NFS_READ_ONLY)"
+	    @echo "(assumed foptim_gen performed on development machine with a make install)"
 else
-fopt foptim: foptim_files_embed foptim_ext foptim_files_maps
+    fopt foptim: foptim_files_embed foptim_ext foptim_files_maps
 endif
 
 foptim_list: loptim_embed loptim_ext loptim_maps
@@ -920,15 +921,16 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
     EXISTS_OTHER := $(shell test -f KiwiSDR.other.bit && echo true)
     ifeq ($(EXISTS_OTHER),true)
+        OTHER_DEP = KiwiSDR.other.bit
     else
-        KiwiSDR.other.bit:
+        OTHER_DEP =
     endif
 endif
 
 #
 # IMPORTANT
 #
-# By not including foptim_gen in the dependency list for the development build target $(BUILD_DIR)/kiwi.bin
+# By not including $(FOPTIM_DEP) in the dependency list for the development build target $(BUILD_DIR)/kiwi.bin
 # the external optimization site won't be called all the time as incremental changes are made to
 # the js/css/html/image files.
 #
@@ -950,7 +952,7 @@ else
 	@echo loader skipped for static analysis
 endif
 
-$(BUILD_DIR)/kiwid.bin: foptim_gen $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(ALL_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS) $(EXTS_DEPS)
+$(BUILD_DIR)/kiwid.bin: $(FOPTIM_DEP) $(OTHER_DEP) $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(ALL_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS) $(EXTS_DEPS)
 ifneq ($(SAN),1)
     ifeq ($(KIWI_SKIP_LINK),true)
 	    @echo "DEVSYS: SKIP OF KIWID.BIN LINK STEP"
@@ -1167,6 +1169,9 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 #	            @cp -v $(DTS_DEP_SRC2) $(DIR_DTB2)
 	            (cd $(DIR_DTB_BASE); make)
 	            (cd $(DIR_DTB_BASE); make install_arm64)
+                ifeq ($(EXISTS_EXTLINUX),true)
+	                -sed -i -e 's:#fdtoverlays /overlays/<file>.dtbo:fdtoverlays /overlays/BONE-SPI0_0.dtbo:' $(EXTLINUX)
+                endif
             else
 	            @cp -v $(DTS_DEP_SRC) $(DIR_DTB)
 	            (cd $(DIR_DTB_BASE); make all)
@@ -1336,152 +1341,153 @@ endif
 
 .PHONY: make_install
 make_install: $(DO_ONCE) $(DTS_DEP_DST) $(BUILD_DIR)/kiwid.bin
-ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-	@echo
-	@echo "############################################"
-	@echo "# DANGER: CHECK FOR MINIMIZATION FAILURE"
-	@echo "# kiwi_js_load.min.js and xd-utils.min.js are okay to be in this list"
-	find . -name "*.min.js" -size -1k -ls
-#	@echo "# DANGER: REMOVING FILES ###############################################################"
-#	find . -name "*.min.js" -size -1k -exec rm "{}" \;
-	# report when something has gone wrong with the minimization process
-	find . -name "*.min.js" -exec grep -q "no minifier" "{}" \; -ls
-	find . -name "*.min.html" -exec grep -q "no minifier" "{}" \; -ls
-	find . -name "*.min.css" -exec grep -q "no minifier" "{}" \; -ls
-	@echo "############################################"
-	@echo
+    ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
+	    @echo
+	    @echo "############################################"
+	    @echo "# DANGER: CHECK FOR MINIMIZATION FAILURE"
+	    @echo "# kiwi_js_load.min.js and xd-utils.min.js are okay to be in this list"
+	    find . -name "*.min.js" -size -1k -ls
+#	    @echo "# DANGER: REMOVING FILES ###############################################################"
+#	    find . -name "*.min.js" -size -1k -exec rm "{}" \;
+	    # report when something has gone wrong with the minimization process
+	    find . -name "*.min.js" -exec grep -q "no minifier" "{}" \; -ls
+	    find . -name "*.min.html" -exec grep -q "no minifier" "{}" \; -ls
+	    find . -name "*.min.css" -exec grep -q "no minifier" "{}" \; -ls
+	    @echo "############################################"
+	    @echo
 
-	# remainder of "make install" only makes sense to run on target
-else
-    ifneq ($(DTS_DEP_DST),)
-	    -@ls -la $(DTS_DEP_DST)
-	    -@ls -la $(DTS_DEP_SRC)
+	    # remainder of "make install" only makes sense to run on target
+    else
+        ifneq ($(DTS_DEP_DST),)
+	        -@ls -la $(DTS_DEP_DST)
+	        -@ls -la $(DTS_DEP_SRC)
+        endif
+
+        # don't strip symbol table while we're debugging server crashes
+	    install -D -o root -g root $(BUILD_DIR)/kiwid.bin /usr/local/bin/kiwid
+	    install -D -o root -g root $(GEN_DIR)/kiwi.aout /usr/local/bin/kiwid.aout
+
+        ifeq ($(EXISTS_RX4_WF4),true)
+	        install -D -o root -g root KiwiSDR.rx4.wf4.bit /usr/local/bin/KiwiSDR.rx4.wf4.bit
+        endif
+
+        ifeq ($(EXISTS_RX8_WF2),true)
+	        install -D -o root -g root KiwiSDR.rx8.wf2.bit /usr/local/bin/KiwiSDR.rx8.wf2.bit
+        endif
+
+        ifeq ($(EXISTS_RX3_WF3),true)
+	        install -D -o root -g root KiwiSDR.rx3.wf3.bit /usr/local/bin/KiwiSDR.rx3.wf3.bit
+        endif
+
+        ifeq ($(EXISTS_RX14_WF0),true)
+	        install -D -o root -g root KiwiSDR.rx14.wf0.bit /usr/local/bin/KiwiSDR.rx14.wf0.bit
+        endif
+
+        ifeq ($(EXISTS_OTHER),true)
+	        install -D -o root -g root KiwiSDR.other.bit /usr/local/bin/KiwiSDR.other.bit
+        endif
+
+	    install -o root -g root unix_env/kiwid /etc/init.d
+	    install -o root -g root -m 0644 unix_env/kiwid.service /etc/systemd/system
+
+	    install -D -o root -g root $(GEN_DIR)/noip2 /usr/local/bin/noip2
+
+	    install -D -o root -g root -m 0644 $(DIR_CFG_SRC)/frpc.template.ini $(DIR_CFG)/frpc.template.ini
+	    install -D -o root -g root pkgs/frp/$(ARCH_DIR)/frpc /usr/local/bin/frpc
+
+	    install -D -o root -g root -m 0644 unix_env/bashrc ~root/.bashrc
+	    install -D -o root -g root -m 0644 unix_env/profile ~root/.profile
+
+	    install -D -o root -g root -m 0644 unix_env/gdbinit ~root/.gdbinit
+	    install -D -o root -g root -m 0644 unix_env/gdb_break ~root/.gdb_break
+	    install -D -o root -g root -m 0644 unix_env/gdb_valgrind ~root/.gdb_valgrind
+
+	    install -D -o root -g root -m 0644 $(DIR_CFG_SRC)/v.sed $(DIR_CFG)/v.sed
+	    install -D -o root -g root -m 0644 $(DIR_CFG_SRC)/rsyslog.sed $(DIR_CFG)/rsyslog.sed
+
+	    rsync -av --delete $(DIR_CFG_SRC)/samples/ $(DIR_CFG)/samples
+
+        # only install post-customized config files if they've never existed before
+        ifneq ($(EXISTS_BASHRC_LOCAL),true)
+	        @echo "\nINSTALLING .bashrc.local"
+	        cp unix_env/bashrc.local ~root/.bashrc.local
+        endif
+
+        ifneq ($(EXISTS_KIWI),true)
+	        @echo "\nINSTALLING $(DIR_CFG)/$(CFG_KIWI)"
+	        @mkdir -p $(DIR_CFG)
+	        cp $(DIR_CFG_SRC)/dist.$(CFG_KIWI) $(DIR_CFG)/$(CFG_KIWI)
+        endif
+
+        ifneq ($(EXISTS_ADMIN),true)
+	        @echo "\nINSTALLING $(DIR_CFG)/$(CFG_ADMIN)"
+	        @mkdir -p $(DIR_CFG)
+	        cp $(DIR_CFG_SRC)/dist.$(CFG_ADMIN) $(DIR_CFG)/$(CFG_ADMIN)
+        endif
+
+        ifneq ($(EXISTS_DX),true)
+	        @echo "\nINSTALLING $(DIR_CFG)/$(DX)"
+	        @mkdir -p $(DIR_CFG)
+	        cp $(DIR_CFG_SRC)/dist.$(DX) $(DIR_CFG)/$(DX)
+	        cp $(DIR_CFG_SRC)/dist.$(DX_CFG) $(DIR_CFG)/$(DX_CFG)
+        endif
+
+	    @echo "\nDX_SHA256=$(DX_SHA256) DX_NEEDS_UPDATE=$(DX_NEEDS_UPDATE)"
+
+        ifneq ($(DX_NEEDS_UPDATE),)
+	        @echo "\nUPDATING $(DIR_CFG)/$(DX)"
+	        cp --backup=numbered $(DIR_CFG)/$(DX) $(DIR_CFG)/$(DX).save
+	        cp $(DIR_CFG_SRC)/dist.$(DX) $(DIR_CFG)/$(DX)
+            # if dx.json hasn't changed then presume a conversion from config.js isn't necessary
+	        @echo "\nINSTALLING $(DIR_CFG)/$(DX_CFG)"
+	        cp $(DIR_CFG_SRC)/dist.$(DX_CFG) $(DIR_CFG)/$(DX_CFG)
+        endif
+
+        ifneq ($(EXISTS_DX_COMM),true)
+	        @echo "\nINSTALLING $(DIR_CFG)/$(DX_COMM)"
+	        @mkdir -p $(DIR_CFG)
+	        cp $(DIR_CFG_SRC)/dist.$(DX_COMM) $(DIR_CFG)/$(DX_COMM)
+        endif
+
+        ifneq ($(EXISTS_DX_COMM_CFG),true)
+	        @echo "\nINSTALLING $(DIR_CFG)/$(DX_COMM_CFG)"
+	        @mkdir -p $(DIR_CFG)
+	        cp $(DIR_CFG_SRC)/dist.$(DX_COMM_CFG) $(DIR_CFG)/$(DX_COMM_CFG)
+        endif
+
+        ifneq ($(EXISTS_CONFIG),true)
+	        @echo "\nINSTALLING $(DIR_CFG)/$(CFG_CONFIG)"
+	        @mkdir -p $(DIR_CFG)
+	        cp $(DIR_CFG_SRC)/dist.$(CFG_CONFIG) $(DIR_CFG)/$(CFG_CONFIG)
+        endif
+
+        ifeq ($(ETC_HOSTNAME_IS_BB),true)
+	        @echo "CHANGING /etc/hostname to kiwisdr"
+	        @echo 'kiwisdr' >/etc/hostname
+        endif
+
+        ifneq ($(ETC_HOSTS_HAS_KIWI),true)
+	        @echo "\nAPPENDING kiwisdr to /etc/hosts"
+	        @echo '127.0.0.1       kiwisdr' >>/etc/hosts
+        endif
+
+	    @echo
+	    systemctl enable kiwid.service
+
+        # remove public keys leftover from development
+        ifeq ($(EXISTS_SSH_KEYS),true)
+	        @-sed -i -e '/.*jks-/d' $(SSH_KEYS)
+        endif
+
+        ifeq ($(MISSING_IPTABLES),true)
+	        -apt-get -y $(APT_GET_FORCE) install iptables
+        endif
+
+        # must be last obviously
+	    @if [ -f $(ASK_REBOOT) ]; then rm $(ASK_REBOOT); echo "\nMUST REBOOT FOR CHANGES TO TAKE EFFECT"; echo -n "Press \"return\" key to reboot else control-C: "; read in; reboot; fi;
+	    @if [ -f $(FORCE_REBOOT) ]; then rm $(FORCE_REBOOT); echo "\nMUST REBOOT FOR CHANGES TO TAKE EFFECT. REBOOTING..."; reboot; fi;
+
     endif
-# don't strip symbol table while we're debugging daemon crashes
-	install -D -o root -g root $(BUILD_DIR)/kiwid.bin /usr/local/bin/kiwid
-	install -D -o root -g root $(GEN_DIR)/kiwi.aout /usr/local/bin/kiwid.aout
-#
-ifeq ($(EXISTS_RX4_WF4),true)
-	install -D -o root -g root KiwiSDR.rx4.wf4.bit /usr/local/bin/KiwiSDR.rx4.wf4.bit
-endif
-#
-ifeq ($(EXISTS_RX8_WF2),true)
-	install -D -o root -g root KiwiSDR.rx8.wf2.bit /usr/local/bin/KiwiSDR.rx8.wf2.bit
-endif
-#
-ifeq ($(EXISTS_RX3_WF3),true)
-	install -D -o root -g root KiwiSDR.rx3.wf3.bit /usr/local/bin/KiwiSDR.rx3.wf3.bit
-endif
-#
-ifeq ($(EXISTS_RX14_WF0),true)
-	install -D -o root -g root KiwiSDR.rx14.wf0.bit /usr/local/bin/KiwiSDR.rx14.wf0.bit
-endif
-#
-ifeq ($(EXISTS_OTHER),true)
-	install -D -o root -g root KiwiSDR.other.bit /usr/local/bin/KiwiSDR.other.bit
-endif
-#
-	install -o root -g root unix_env/kiwid /etc/init.d
-	install -o root -g root -m 0644 unix_env/kiwid.service /etc/systemd/system
-#
-	install -D -o root -g root $(GEN_DIR)/noip2 /usr/local/bin/noip2
-#
-	install -D -o root -g root -m 0644 $(DIR_CFG_SRC)/frpc.template.ini $(DIR_CFG)/frpc.template.ini
-	install -D -o root -g root pkgs/frp/$(ARCH_DIR)/frpc /usr/local/bin/frpc
-#
-	install -D -o root -g root -m 0644 unix_env/bashrc ~root/.bashrc
-	install -D -o root -g root -m 0644 unix_env/profile ~root/.profile
-#
-	install -D -o root -g root -m 0644 unix_env/gdbinit ~root/.gdbinit
-	install -D -o root -g root -m 0644 unix_env/gdb_break ~root/.gdb_break
-	install -D -o root -g root -m 0644 unix_env/gdb_valgrind ~root/.gdb_valgrind
-#
-	install -D -o root -g root -m 0644 $(DIR_CFG_SRC)/v.sed $(DIR_CFG)/v.sed
-	install -D -o root -g root -m 0644 $(DIR_CFG_SRC)/rsyslog.sed $(DIR_CFG)/rsyslog.sed
-#
-	rsync -av --delete $(DIR_CFG_SRC)/samples/ $(DIR_CFG)/samples
-
-# only install post-customized config files if they've never existed before
-ifneq ($(EXISTS_BASHRC_LOCAL),true)
-	@echo "\nINSTALLING .bashrc.local"
-	cp unix_env/bashrc.local ~root/.bashrc.local
-endif
-
-ifneq ($(EXISTS_KIWI),true)
-	@echo "\nINSTALLING $(DIR_CFG)/$(CFG_KIWI)"
-	@mkdir -p $(DIR_CFG)
-	cp $(DIR_CFG_SRC)/dist.$(CFG_KIWI) $(DIR_CFG)/$(CFG_KIWI)
-endif
-
-ifneq ($(EXISTS_ADMIN),true)
-	@echo "\nINSTALLING $(DIR_CFG)/$(CFG_ADMIN)"
-	@mkdir -p $(DIR_CFG)
-	cp $(DIR_CFG_SRC)/dist.$(CFG_ADMIN) $(DIR_CFG)/$(CFG_ADMIN)
-endif
-
-ifneq ($(EXISTS_DX),true)
-	@echo "\nINSTALLING $(DIR_CFG)/$(DX)"
-	@mkdir -p $(DIR_CFG)
-	cp $(DIR_CFG_SRC)/dist.$(DX) $(DIR_CFG)/$(DX)
-	cp $(DIR_CFG_SRC)/dist.$(DX_CFG) $(DIR_CFG)/$(DX_CFG)
-endif
-
-	@echo "\nDX_SHA256=$(DX_SHA256) DX_NEEDS_UPDATE=$(DX_NEEDS_UPDATE)"
-
-ifneq ($(DX_NEEDS_UPDATE),)
-	@echo "\nUPDATING $(DIR_CFG)/$(DX)"
-	cp --backup=numbered $(DIR_CFG)/$(DX) $(DIR_CFG)/$(DX).save
-	cp $(DIR_CFG_SRC)/dist.$(DX) $(DIR_CFG)/$(DX)
-    # if dx.json hasn't changed then presume a conversion from config.js isn't necessary
-	@echo "\nINSTALLING $(DIR_CFG)/$(DX_CFG)"
-	cp $(DIR_CFG_SRC)/dist.$(DX_CFG) $(DIR_CFG)/$(DX_CFG)
-endif
-
-ifneq ($(EXISTS_DX_COMM),true)
-	@echo "\nINSTALLING $(DIR_CFG)/$(DX_COMM)"
-	@mkdir -p $(DIR_CFG)
-	cp $(DIR_CFG_SRC)/dist.$(DX_COMM) $(DIR_CFG)/$(DX_COMM)
-endif
-
-ifneq ($(EXISTS_DX_COMM_CFG),true)
-	@echo "\nINSTALLING $(DIR_CFG)/$(DX_COMM_CFG)"
-	@mkdir -p $(DIR_CFG)
-	cp $(DIR_CFG_SRC)/dist.$(DX_COMM_CFG) $(DIR_CFG)/$(DX_COMM_CFG)
-endif
-
-ifneq ($(EXISTS_CONFIG),true)
-	@echo "\nINSTALLING $(DIR_CFG)/$(CFG_CONFIG)"
-	@mkdir -p $(DIR_CFG)
-	cp $(DIR_CFG_SRC)/dist.$(CFG_CONFIG) $(DIR_CFG)/$(CFG_CONFIG)
-endif
-
-ifeq ($(ETC_HOSTNAME_IS_BB),true)
-	@echo "CHANGING /etc/hostname to kiwisdr"
-	@echo 'kiwisdr' >/etc/hostname
-endif
-
-ifneq ($(ETC_HOSTS_HAS_KIWI),true)
-	@echo "\nAPPENDING kiwisdr to /etc/hosts"
-	@echo '127.0.0.1       kiwisdr' >>/etc/hosts
-endif
-
-	@echo
-	systemctl enable kiwid.service
-
-# remove public keys leftover from development
-ifeq ($(EXISTS_SSH_KEYS),true)
-	@-sed -i -e '/.*jks-/d' $(SSH_KEYS)
-endif
-
-ifeq ($(MISSING_IPTABLES),true)
-	-apt-get -y $(APT_GET_FORCE) install iptables
-endif
-
-# must be last obviously
-	@if [ -f $(ASK_REBOOT) ]; then rm $(ASK_REBOOT); echo "\nMUST REBOOT FOR CHANGES TO TAKE EFFECT"; echo -n "Press \"return\" key to reboot else control-C: "; read in; reboot; fi;
-	@if [ -f $(FORCE_REBOOT) ]; then rm $(FORCE_REBOOT); echo "\nMUST REBOOT FOR CHANGES TO TAKE EFFECT. REBOOTING..."; reboot; fi;
-
-endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
     restore_dx:
@@ -1685,71 +1691,75 @@ endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
-ifeq ($(XC),) ## do not copy bit streams from $(V_DIR) when cross-compiling
+    ifeq ($(XC),) ## do not copy bit streams from $(V_DIR) when cross-compiling
 
-    # FIXME: isn't there a better way to do this in GNU make?
+        # FIXME: isn't there a better way to do this in GNU make?
 
-    EXISTS_V_DIR_RX4_WF4 := $(shell test -f $(V_DIR)/KiwiSDR.rx4.wf4.bit && echo true)
-    ifeq ($(EXISTS_V_DIR_RX4_WF4),true)
-        KiwiSDR.rx4.wf4.bit: $(V_DIR)/KiwiSDR.rx4.wf4.bit
-	        rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit .
-    else
-        KiwiSDR.rx4.wf4.bit:
-    endif
-
-    EXISTS_V_DIR_RX8_WF2 := $(shell test -f $(V_DIR)/KiwiSDR.rx8.wf2.bit && echo true)
-    ifeq ($(EXISTS_V_DIR_RX8_WF2),true)
-        KiwiSDR.rx8.wf2.bit: $(V_DIR)/KiwiSDR.rx8.wf2.bit
-	        rsync -av $(V_DIR)/KiwiSDR.rx8.wf2.bit .
-    else
-        KiwiSDR.rx8.wf2.bit:
-    endif
-
-    EXISTS_V_DIR_RX3_WF3 := $(shell test -f $(V_DIR)/KiwiSDR.rx3.wf3.bit && echo true)
-    ifeq ($(EXISTS_V_DIR_RX3_WF3),true)
-        KiwiSDR.rx3.wf3.bit: $(V_DIR)/KiwiSDR.rx3.wf3.bit
-	        rsync -av $(V_DIR)/KiwiSDR.rx3.wf3.bit .
-    else
-        KiwiSDR.rx3.wf3.bit:
-    endif
-
-    EXISTS_V_DIR_RX14_WF0 := $(shell test -f $(V_DIR)/KiwiSDR.rx14.wf0.bit && echo true)
-    ifeq ($(EXISTS_V_DIR_RX14_WF0),true)
-        KiwiSDR.rx14.wf0.bit: $(V_DIR)/KiwiSDR.rx14.wf0.bit
-	        rsync -av $(V_DIR)/KiwiSDR.rx14.wf0.bit .
-    else
-        KiwiSDR.rx14.wf0.bit:
-    endif
-
-    EXISTS_OTHER_BITFILE := $(shell test -f $(V_DIR)/KiwiSDR.other.bit && echo true)
-    ifeq ($(OTHER_DIR),)
-        KiwiSDR.other.bit:
-    else
-        ifeq ($(EXISTS_OTHER_BITFILE),true)
-            KiwiSDR.other.bit: $(V_DIR)/KiwiSDR.other.bit
-	            rsync -av $(V_DIR)/KiwiSDR.other.bit .
+        EXISTS_V_DIR_RX4_WF4 := $(shell test -f $(V_DIR)/KiwiSDR.rx4.wf4.bit && echo true)
+        ifeq ($(EXISTS_V_DIR_RX4_WF4),true)
+            KiwiSDR.rx4.wf4.bit: $(V_DIR)/KiwiSDR.rx4.wf4.bit
+	            rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit .
         else
-            KiwiSDR.other.bit:
+            KiwiSDR.rx4.wf4.bit:
         endif
+
+        EXISTS_V_DIR_RX8_WF2 := $(shell test -f $(V_DIR)/KiwiSDR.rx8.wf2.bit && echo true)
+        ifeq ($(EXISTS_V_DIR_RX8_WF2),true)
+            KiwiSDR.rx8.wf2.bit: $(V_DIR)/KiwiSDR.rx8.wf2.bit
+	            rsync -av $(V_DIR)/KiwiSDR.rx8.wf2.bit .
+        else
+            KiwiSDR.rx8.wf2.bit:
+        endif
+
+        EXISTS_V_DIR_RX3_WF3 := $(shell test -f $(V_DIR)/KiwiSDR.rx3.wf3.bit && echo true)
+        ifeq ($(EXISTS_V_DIR_RX3_WF3),true)
+            KiwiSDR.rx3.wf3.bit: $(V_DIR)/KiwiSDR.rx3.wf3.bit
+	            rsync -av $(V_DIR)/KiwiSDR.rx3.wf3.bit .
+        else
+            KiwiSDR.rx3.wf3.bit:
+        endif
+
+        EXISTS_V_DIR_RX14_WF0 := $(shell test -f $(V_DIR)/KiwiSDR.rx14.wf0.bit && echo true)
+        ifeq ($(EXISTS_V_DIR_RX14_WF0),true)
+            KiwiSDR.rx14.wf0.bit: $(V_DIR)/KiwiSDR.rx14.wf0.bit
+	            rsync -av $(V_DIR)/KiwiSDR.rx14.wf0.bit .
+        else
+            KiwiSDR.rx14.wf0.bit:
+        endif
+
+        EXISTS_OTHER_BITFILE := $(shell test -f $(V_DIR)/KiwiSDR.other.bit && echo true)
+        ifeq ($(OTHER_DIR),)
+            KiwiSDR.other.bit:
+        else
+            ifeq ($(EXISTS_OTHER_BITFILE),true)
+                KiwiSDR.other.bit: $(V_DIR)/KiwiSDR.other.bit
+	                rsync -av $(V_DIR)/KiwiSDR.other.bit .
+            else
+                KiwiSDR.other.bit:
+            endif
+        endif
+    else
+        KiwiSDR.other.bit:
     endif
-else
-    KiwiSDR.other.bit:
+
+
+    # other_rsync is a rule that can be defined in an extension Makefile (i.e. CFG = other) to do additional source installation
+    other_rsync:
+    # other_post_rsync is invoked after the rsync, e.g. for augmenting server sources
+    other_post_rsync:
+
+    rsync_bit: $(BIN_DEPS) other_rsync
+	    $(RSYNC) $(RSYNC_ARGS)
+        ifneq ($(OTHER_DIR),)
+	        make other_post_rsync
+        endif
+
 endif
 
 
-# other_rsync is a rule that can be defined in an extension Makefile (i.e. CFG = other) to do additional source installation
-other_rsync:
-# other_post_rsync is invoked after the rsync, e.g. for augmenting server sources
-other_post_rsync:
-
-rsync_bit: $(BIN_DEPS) other_rsync
-	$(RSYNC) $(RSYNC_ARGS)
-    ifneq ($(OTHER_DIR),)
-	    make other_post_rsync
-    endif
-
-endif
-
+################################
+# development
+################################
 
 # files that have moved to $(BUILD_DIR) that are present in earlier versions (e.g. v1.2)
 clean_deprecated:
