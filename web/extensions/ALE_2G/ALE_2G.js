@@ -527,7 +527,7 @@ function ale_2g_get_nets_done_cb(nets)
          if (dbgUs) console.log('ALE param2 <'+ a +'>');
          var r;
          if (w3_ext_param('help', a).match) {
-            extint_help_click();
+            ext_help_click();
          } else
          if ((r = w3_ext_param('display', a)).match) {
             if (isNumber(r.num)) {

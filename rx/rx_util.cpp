@@ -902,6 +902,15 @@ char *rx_users(bool include_ip)
     return sb;
 }
 
+void rx_send_config(int rx_chan)
+{
+    char *sb;
+    asprintf(&sb, "{\"r\":%d,\"g\":%d,\"s\":%d,\"pu\":\"%s\",\"pe\":%d,\"pv\":\"%s\",\"pi\":%d,\"n\":%d,\"m\":\"%s\",\"v1\":%d,\"v2\":%d,\"d1\":%d,\"d2\":%d}",
+        rx_chans, gps_chans, net.serno, net.ip_pub, net.port_ext, net.ip_pvt, net.port, net.nm_bits, net.mac, version_maj, version_min, debian_maj, debian_min);
+    snd_send_msg(rx_chan, SM_NO_DEBUG, "MSG config_cb=%s", sb);
+    kiwi_asfree(sb);
+}
+
 int dB_wire_to_dBm(int db_value)
 {
     // (u1_t) 255..55 => 0 .. -200 dBm

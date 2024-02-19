@@ -4293,6 +4293,7 @@ function resize_wf_canvases()
 function waterfall_add_line(line)
 {
    var c;
+   var h = 2;
    line = Math.round(line);
    
    if (!wf.lineCanvas) {
@@ -4307,33 +4308,37 @@ function waterfall_add_line(line)
    }
    
    c = wf_cur_canvas;
-   if (line > c.height) line -= 2; // fixes the 1 in 200 lines that go missing - oops, doesn't FIXME - try setting not done and returning
-   c.ctx.strokeStyle = "red";
-   c.ctx.moveTo(0, line); 
-   c.ctx.lineTo(c.width, line);  
-   c.ctx.rect(0, line, c.width, 1);
+   c.ctx.rect(0, line, c.width, h);
    c.ctx.fillStyle = c.ctx.createPattern(wf.lineCanvas, 'repeat');
    c.ctx.fill();
+   
+   if (line + h > c.height) {       // overlaps end of canvas
+      var c2 = wf_canvases[1];
+      c2.ctx.rect(0, line - c.height + h, c2.width, h);
+      c2.ctx.fillStyle = c2.ctx.createPattern(wf.lineCanvas, 'repeat');
+      c2.ctx.fill();
+   }
 }
 
-function waterfall_add_text(line, x, y, text, font, size, color, strokeWidth)
+function waterfall_add_text(line, x, y, text, font, size, color, opts)
 {
    line = Math.round(line);
    x = Math.round(x);
    y = Math.round(y);
+   
    var c = wf_cur_canvas;
-	w3_fillText_shadow(c, text, x, line + y, font, size, color, strokeWidth);
+	w3_fillText_shadow(c, text, x, line + y, font, size, color, opts);
 
-   if (line + 10 > c.height)  {      // overlaps end of canvas
+   if (line + 10 > c.height)  {     // overlaps end of canvas
       var c2 = wf_canvases[1];
-      if (c2) w3_fillText_shadow(c2, text, x, line - c.height + y, font, size, color, strokeWidth);
+      if (c2) w3_fillText_shadow(c2, text, x, line - c.height + y, font, size, color, opts);
    } 
 }
 
 function waterfall_timestamp()
 {
    var tstamp = (wf.ts_tz == 0)? ((new Date()).toUTCString().substr(17,8) +' UTC') : ((new Date()).toString().substr(16,8) +' L');
-   waterfall_add_text(wf_canvas_actual_line, 12, 12, tstamp, 'Arial', 14, 'lime');
+   waterfall_add_text(wf_canvas_actual_line, 12, 12, tstamp, 'Arial', 14, 'lime', { left:1 });
 }
 
 function wf_snap(set)
@@ -4501,9 +4506,18 @@ function waterfall_add(data_raw, audioFFT)
          oneline_image.data[x*4+i] = ((color>>>0) >> ((3-i)*8)) & 0xff;
       }
       */
-      oneline_image.data[x*4  ] = color_map_r[z];
-      oneline_image.data[x*4+1] = color_map_g[z];
-      oneline_image.data[x*4+2] = color_map_b[z];
+      
+      /*
+      if (dbgUs && wf_canvas_actual_line == 0) {
+         oneline_image.data[x*4  ] = 0;
+         oneline_image.data[x*4+1] = 0xff;
+         oneline_image.data[x*4+2] = 0;
+      } else {
+      */
+         oneline_image.data[x*4  ] = color_map_r[z];
+         oneline_image.data[x*4+1] = color_map_g[z];
+         oneline_image.data[x*4+2] = color_map_b[z];
+      //}
       oneline_image.data[x*4+3] = 0xff;
    }
    
@@ -4605,22 +4619,22 @@ function waterfall_add(data_raw, audioFFT)
          pwr_dBm.sort(function(a,b) {return a-b});
          var noise = pwr_dBm[Math.floor(0.50 * len)];
          var signal = pwr_dBm[Math.floor(0.95 * len)];
-         console_log_dbgUs('# autoscale len='+ len +' min='+ pwr_dBm[0] +' noise='+ noise +' signal='+ signal +' max='+ pwr_dBm[len-1]);
+         //console_log_dbgUs('# autoscale len='+ len +' min='+ pwr_dBm[0] +' noise='+ noise +' signal='+ signal +' max='+ pwr_dBm[len-1]);
 
          var _10 = pwr_dBm[Math.floor(0.10 * len)];
          var _20 = pwr_dBm[Math.floor(0.20 * len)];
-         console_log_dbgUs('# autoscale min='+ pwr_dBm[0] +' 10%='+ _10 +' 20%='+ _20 +' 50%(noise)='+ noise +' 95%(signal)='+ signal +' max='+ pwr_dBm[len-1]);
+         //console_log_dbgUs('# autoscale min='+ pwr_dBm[0] +' 10%='+ _10 +' 20%='+ _20 +' 50%(noise)='+ noise +' 95%(signal)='+ signal +' max='+ pwr_dBm[len-1]);
       } else {
          signal = -110;
          noise = -120;
-         console_log_dbgUs('# autoscale len=0 sig=-110 noise=-120');
+         //console_log_dbgUs('# autoscale len=0 sig=-110 noise=-120');
       }
       
       // empirical adjustments
 	   signal += 30;
 	   if (signal < -80) signal = -80;
       noise -= 10;
-      console_log_dbgUs('# autoscale FINAL noise(min)='+ noise +' signal(max)='+ signal);
+      //console_log_dbgUs('# autoscale FINAL noise(min)='+ noise +' signal(max)='+ signal);
       
       if (wf.audioFFT_active) {
          //noise = (dbgUs && devl.p4)? Math.round(devl.p4) : -110;
@@ -5763,7 +5777,7 @@ function freqset_update_ui(from)
 	// re-center if the new passband is outside the current waterfall
    if (from == owrx.FSET_SET_FREQ && zoom_center != 0.5) {
       // let the zoom code handle it since it seems to work
-      zoom_step(ext_zoom.ABS, zoom_level);
+      zoom_step(ext_zoom.CUR);
    } else {
 	   waterfall_position(owrx.WF_POS_RECENTER_IF_OUTSIDE);
 	}
@@ -9537,7 +9551,7 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny', 'S D', 25, 'waterfall auto-scale, spectrum slow device mode'),
          w3_inline_percent('w3-padding-tiny', 's alt-s', 25, 'spectrum RF/AF/off toggle, add alt to toggle backwards'),
          w3_inline_percent('w3-padding-tiny', 'v V space', 25, 'volume less/more, mute'),
-         w3_inline_percent('w3-padding-tiny', 'o', 25, 'toggle between option bar <x1>off</x1> and <x1>stats</x1> mode,<br>others selected by related shortcut key'),
+         w3_inline_percent('w3-padding-tiny', 'o', 25, 'toggle between option bar <x1>off</x1> <x1>user</x1> and <x1>stats</x1> mode,<br>others selected by related shortcut key'),
          w3_inline_percent('w3-padding-tiny', '!', 25, 'toggle aperture manual/auto menu'),
          w3_inline_percent('w3-padding-tiny', '@ alt-@', 25, 'open DX label filter, quick clear'),
          w3_inline_percent('w3-padding-tiny', '\\ |', 25, 'toggle (& open) DX stored/EiBi/community database,<br>alt to toggle <x1>filter by time/day-of-week</x1> checkbox'),
@@ -9590,6 +9604,8 @@ function freq_input_help()
 
 function keyboard_shortcut_nav(nav)
 {
+   // bypass the "repeated click of OFF" calls toggle_or_set_hide_bars() behavior
+   virt_optbar_click = true;
    w3_el('id-nav-optbar-'+ nav).click();
    shortcut.nav_click = true;
 }
@@ -9691,7 +9707,12 @@ function keyboard_shortcut(key, key_mod, ctlAlt, evt)
 
    // misc
    //case '#': if (dbgUs) extint_open('prefs'); break;
-   case 'o': keyboard_shortcut_nav(shortcut.nav_off? 'status':'off'); shortcut.nav_off ^= 1; break;
+   case 'o':
+      var nav = ['off', 'users', 'status'][shortcut.nav_off];
+      keyboard_shortcut_nav(nav);
+      shortcut.nav_off = (shortcut.nav_off + 1) % 3;
+      break;
+
    case 'r': toggle_or_set_rec(); break;
    case 'x': toggle_or_set_hide_panels(); break;
    case 'y': toggle_or_set_hide_bars(); break;
@@ -10498,6 +10519,7 @@ function panels_setup()
 ////////////////////////////////
 
 var prev_optbar = null;
+var virt_optbar_click = false;
 
 function optbar_focus(next_id, cb_arg)
 {
@@ -10505,7 +10527,8 @@ function optbar_focus(next_id, cb_arg)
    
    var h;
    if (next_id == 'optbar-off') {
-      if (cb_arg != 'init' && prev_optbar == 'optbar-off') toggle_or_set_hide_bars();
+      if (cb_arg != 'init' && prev_optbar == 'optbar-off' && !virt_optbar_click) toggle_or_set_hide_bars();
+      virt_optbar_click = false;
       w3_hide('id-optbar-content');
       w3_el('id-control-top').style.paddingBottom = '8px';
    } else {
@@ -12245,19 +12268,20 @@ function owrx_msg_cb(param, ws)     // #msg-proc
 			extint_list_json(param[1]);
 			
 			// now that we have the list of extensions see if there is an override
-			if (override_ext) {
-            w3_do_when_cond(
-               function() {
-                  //console.log('### '+ (waterfall_setup_done? 'GO' : 'WAIT') +' extint_open('+ override_ext +')');
-                  return waterfall_setup_done;
-               },
-               function() {
-				      extint_open(override_ext, 3000);
-               }, null,
-               200
-            );
-            // REMINDER: w3_do_when_cond() returns immediately
-			}
+			//console.log('extint_list_json override_ext='+ override_ext +' waterfall_setup_done='+ waterfall_setup_done);
+         w3_do_when_cond(
+            function() {
+               //console.log('### '+ (waterfall_setup_done? 'GO' : 'WAIT') +' extint_open('+ override_ext +')');
+               return waterfall_setup_done;
+            },
+            function() {
+               if (override_ext) {
+                  extint_open(override_ext, 1000);
+               }
+            }, null,
+            200
+         );
+         // REMINDER: w3_do_when_cond() returns immediately
 			break;
 		case "bandwidth":
 			bandwidth = parseInt(param[1]);

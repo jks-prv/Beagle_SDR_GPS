@@ -663,7 +663,11 @@ static void pvt_NET(void *param)
             break;
         // if ipv6 only continue to search for an ipv4 address
         TaskSleepSec(10);
-    }	
+    }
+    
+    if (net.pvt_valid == IPV4) {
+        rx_send_config(SM_SND_ADM_ALL);
+    }
 }
 
 static void pub_NET(void *param)

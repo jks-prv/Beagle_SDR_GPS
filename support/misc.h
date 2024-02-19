@@ -47,9 +47,11 @@ int median_i(int *i, int len, int *pct_1 = NULL, int *pct_2 = NULL);
 #define SM_DEBUG	    true
 #define SM_NO_DEBUG	    false
 #define SM_RX_CHAN_ALL  -1
+#define SM_SND_ADM_ALL  -2
 
 void send_msg_buf(conn_t *c, char *s, int slen);
 void send_msg(conn_t *c, bool debug, const char *msg, ...);
+int snd_send_msg(int rx_chan, bool debug, const char *msg, ...);
 void send_msg_data(conn_t *c, bool debug, u1_t dst, u1_t *bytes, int nbytes);
 void send_msg_data2(conn_t *c, bool debug, u1_t dst, u1_t data2, u1_t *bytes, int nbytes);
 void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...);

@@ -1688,10 +1688,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 
     case CMD_GET_CONFIG:
         if (strcmp(cmd, "SET GET_CONFIG") == 0) {
-            asprintf(&sb, "{\"r\":%d,\"g\":%d,\"s\":%d,\"pu\":\"%s\",\"pe\":%d,\"pv\":\"%s\",\"pi\":%d,\"n\":%d,\"m\":\"%s\",\"v1\":%d,\"v2\":%d,\"d1\":%d,\"d2\":%d}",
-                rx_chans, gps_chans, net.serno, net.ip_pub, net.port_ext, net.ip_pvt, net.port, net.nm_bits, net.mac, version_maj, version_min, debian_maj, debian_min);
-            send_msg(conn, false, "MSG config_cb=%s", sb);
-            kiwi_asfree(sb);
+            rx_send_config((conn->rx_channel > 0)? conn->rx_channel : SM_SND_ADM_ALL);
             return true;
         }
 	    break;

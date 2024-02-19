@@ -423,7 +423,7 @@ function loran_c_controls_setup()
 	var p = loran_c.url_param;
 	if (p) p.split(',').forEach(function(a, i) {
       if (w3_ext_param('help', a).match) {
-         extint_help_click();
+         ext_help_click();
       }
 	});
 

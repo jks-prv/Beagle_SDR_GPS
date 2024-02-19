@@ -633,7 +633,7 @@ function fsk_controls_setup()
             ext_send('SET test');
          } else
          if (w3_ext_param('help', a).match) {
-            extint_help_click();
+            ext_help_click();
          }
       });
    }

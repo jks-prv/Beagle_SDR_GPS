@@ -3,10 +3,10 @@
 
 # NB: this distro image is a flasher
 
-PLAT="BBG_BBB"
+PLAT="BBAI_64"
 VER="v1.663"
 DEBIAN_VER="11.9"
-CKSUM="89eba38a9a5ed2f88d1d7c8b4e97e3850a4bfeec737b106548b4fbb241a13f6a"
+CKSUM="3c05043a852654c41122dc61aa088b4ed348309ec7e33e54aaeed63eb94d72a5"
 
 HOST="http://kiwisdr.com/files"
 DISTRO="KiwiSDR_${VER}_${PLAT}_Debian_${DEBIAN_VER}.img.xz"

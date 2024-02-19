@@ -37,15 +37,15 @@ BBAI=$(test -e /proc/device-tree && cat /proc/device-tree/model | grep -q -s "Be
 RPI=$(test -e /proc/device-tree && cat /proc/device-tree/model | grep -q -s "Raspberry Pi" && echo true)
 
 if [ "x${BBAI_64}" = "xtrue" ] ; then
-    SBC="BBAI-64"
+    PLATFORM="BBAI-64"
 	USE_SPIDEV=1
     USE_SPI="USE_SPIDEV"
 elif [ "x${BBAI}" = "xtrue" ] ; then
-    SBC="BBAI"
+    PLATFORM="BBAI"
 	USE_SPIDEV=1
     USE_SPI="USE_SPIDEV"
 elif [ "x${RPI}" = "xtrue" ] ; then
-    SBC="RPI"
+    PLATFORM="RPI"
 	USE_SPIDEV=1
     USE_SPI="USE_SPIDEV"
 else
@@ -59,7 +59,7 @@ else
     # Debian 10-11, (always SPIDEV): Kiwi device tree loaded via UBOOT_OVERLAY, config-pin to setup SPI pins
     # Debian 12+, (always SPIDEV): Kiwi device tree and SPI loaded via UBOOT_OVERLAY
 
-    SBC="BBG/BBB"
+    PLATFORM="BBG_BBB"
     SLOTS7_FN=$(ls /sys/devices/bone_capemgr.*/slots 2>/dev/null)
     SLOTS8_FN="/sys/devices/platform/bone_capemgr/slots"
 
@@ -110,12 +110,14 @@ else
 fi
 
 DEBIAN=$(cat /etc/debian_version)
-echo ${SBC} "Debian ${DEBIAN}" ${USE_SPI}
+echo ${PLATFORM} "Debian ${DEBIAN}" ${USE_SPI}
 
     # cape
     if [ "x${BBAI_64}" = "xtrue" ] ; then
         echo "BBAI-64 uses custom Kiwi device tree loaded via U-boot"
+        modprobe spidev
     elif [ "x${BBAI}" = "xtrue" ] ; then
+        modprobe spidev
         echo "BBAI uses custom Kiwi device tree loaded via U-boot"
     elif [ "x${RPI}" = "xtrue" ] ; then
         modprobe i2c-dev

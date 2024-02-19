@@ -454,7 +454,7 @@ function wspr_controls_setup()
             wspr_set_upload_cb('', false);
          } else
          if (a.startsWith('help')) {
-            extint_help_click();
+            ext_help_click();
          }
          console.log('WSPR unknown URL param <'+ a +'>');
       });

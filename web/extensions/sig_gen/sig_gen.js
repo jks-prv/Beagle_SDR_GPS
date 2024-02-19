@@ -190,7 +190,7 @@ function gen_controls_setup()
 	ext_send('SET wf_comp=0');
 	if (kiwi.ext_clk) w3_select_set_disabled('id-gen-mode', gen.SELF_TEST, true, 'no self-test available when ext clk used');
 	if (do_sweep) gen_sweep_cb();
-   if (do_help) extint_help_click();
+   if (do_help) ext_help_click();
 }
 
 function gen_set(freq, ampl, always)

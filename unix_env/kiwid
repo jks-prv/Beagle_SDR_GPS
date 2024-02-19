@@ -13,7 +13,7 @@
 
 DEV=kiwi
 KIWID=kiwid
-KIWID_EXEC=/usr/local/bin/$KIWID
+KIWID_EXEC=/usr/local/bin/${KIWID}
 KIWI_MAKEFILE=/root/Beagle_SDR_GPS/Makefile
 
 if test \( -f ${KIWI_MAKEFILE} \) ; then
@@ -24,22 +24,22 @@ else
     KIWID_ARGS="-bg"
 fi
 
-[ -x $KIWID_EXEC ] || exit 1
+[ -x ${KIWID_EXEC} ] || exit 1
 
 BBAI_64=$(test -e /proc/device-tree && cat /proc/device-tree/model | grep -q -s "BeagleBone AI-64" && echo true)
 BBAI=$(test -e /proc/device-tree && cat /proc/device-tree/model | sed "s/\(.*\)./\1x/" | grep -q -s "BeagleBone AIx" && echo true)
 RPI=$(test -e /proc/device-tree && cat /proc/device-tree/model | grep -q -s "Raspberry Pi" && echo true)
 
 if [ "x${BBAI_64}" = "xtrue" ] ; then
-    SBC="BBAI-64"
+    PLATFORM="BBAI-64"
 	USE_SPIDEV=1
     USE_SPI="USE_SPIDEV"
 elif [ "x${BBAI}" = "xtrue" ] ; then
-    SBC="BBAI"
+    PLATFORM="BBAI"
 	USE_SPIDEV=1
     USE_SPI="USE_SPIDEV"
 elif [ "x${RPI}" = "xtrue" ] ; then
-    SBC="RPI"
+    PLATFORM="RPI"
 	USE_SPIDEV=1
     USE_SPI="USE_SPIDEV"
 else
@@ -53,7 +53,7 @@ else
     # Debian 10-11, (always SPIDEV): Kiwi device tree loaded via UBOOT_OVERLAY, config-pin to setup SPI pins
     # Debian 12+, (always SPIDEV): Kiwi device tree and SPI loaded via UBOOT_OVERLAY
 
-    SBC="BBG/BBB"
+    PLATFORM="BBG_BBB"
     SLOTS7_FN=$(ls /sys/devices/bone_capemgr.*/slots 2>/dev/null)
     SLOTS8_FN="/sys/devices/platform/bone_capemgr/slots"
 
@@ -104,7 +104,7 @@ else
 fi
 
 DEBIAN=$(cat /etc/debian_version)
-echo ${SBC} "Debian ${DEBIAN}" ${USE_SPI}
+echo ${PLATFORM} "Debian ${DEBIAN}" ${USE_SPI}
 
 case "$1" in
 
@@ -114,9 +114,11 @@ case "$1" in
     # cape
     if [ "x${BBAI_64}" = "xtrue" ] ; then
         echo "BBAI-64 uses custom Kiwi device tree loaded via U-boot"
+        modprobe spidev
         sleep 1
     elif [ "x${BBAI}" = "xtrue" ] ; then
         echo "BBAI uses custom Kiwi device tree loaded via U-boot"
+        modprobe spidev
         sleep 1
     elif [ "x${RPI}" = "xtrue" ] ; then
         modprobe i2c-dev
@@ -187,7 +189,7 @@ case "$1" in
     fi
 
 	echo -n "Start kiwid: "
-	start-stop-daemon --start --background --exec $KIWID_EXEC -- "-use_spidev" ${USE_SPIDEV} $KIWID_ARGS
+	start-stop-daemon --start --background --exec ${KIWID_EXEC} -- "-use_spidev" ${USE_SPIDEV} ${KIWID_ARGS}
 	RETVAL=$?
 	if [ $RETVAL -eq 0 ] ; then
 		echo "OK"
@@ -201,7 +203,7 @@ case "$1" in
 
   stop)
 	echo -n "Stopping kiwid: "
-	start-stop-daemon --stop --name $KIWID
+	start-stop-daemon --stop --name ${KIWID}
 	RETVAL=$?
 	if [ $RETVAL -eq 0 ] ; then
 		echo "OK"
@@ -211,7 +213,7 @@ case "$1" in
     ;;
 
   status)
-    if [ -n "`/bin/pidof $KIWID`" ] ; then
+    if [ -n "`/bin/pidof ${KIWID}`" ] ; then
         echo "kiwid is running."
     else
         echo "kiwid is not running."

@@ -35,4 +35,5 @@ Boston, MA  02110-1301, USA.
 #define AJAX_USERS			11
 #define AJAX_SNR			12
 #define AJAX_ADC			13
-#define AJAX_S_METER        14
+#define AJAX_ADC_OV			14
+#define AJAX_S_METER        15

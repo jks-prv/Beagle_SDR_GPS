@@ -2378,14 +2378,10 @@ function kiwi_down(type, reason)
 }
 
 var stats_interval = 10000;
-var need_config = true;
 
 function stats_init()
 {
-	if (need_config) {
-		msg_send('SET GET_CONFIG');
-		need_config = false;
-	}
+   msg_send('SET GET_CONFIG');
 	stats_update();
 }
 

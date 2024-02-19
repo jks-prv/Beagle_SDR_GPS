@@ -1826,7 +1826,13 @@ function network_port_open_init()
    // REMINDER: w3_do_when_rendered() returns immediately
    
    w3_do_when_cond(
-      function() { return isArg(config_net.pvt_ip); },
+      function() {
+         if (isEmptyString(config_net.pvt_ip)) {
+            msg_send('SET GET_CONFIG');
+            return false;
+         }
+         return true;
+      },
       function() {
          w3_el('id-net-check-port-ip-q').innerHTML =
             'http://'+ config_net.pvt_ip +':'+ adm.port_ext +' :';

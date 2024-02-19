@@ -255,7 +255,7 @@ function sstv_controls_setup()
          var a = p[i];
          //console.log('SSTV: param <'+ a +'>');
          if (w3_ext_param('help', a).match) {
-            extint_help_click();
+            ext_help_click();
          } else
          if (w3_ext_param('mmsstv', a).match) {
             ext_send('SET mmsstv');

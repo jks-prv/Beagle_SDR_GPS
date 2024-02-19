@@ -180,6 +180,42 @@ void send_msg(conn_t *c, bool debug, const char *msg, ...)
 	kiwi_asfree(s, "send_msg");
 }
 
+// send to the SND web socket
+// note the conn_t difference below
+// rx_chan == SM_SND_ADM_ALL means send to all sound and admin connections
+// rx_chan == SM_RX_CHAN_ALL means send to all connected channels
+int snd_send_msg(int rx_chan, bool debug, const char *msg, ...)
+{
+    int rv = -1;
+	va_list ap;
+	char *s;
+
+	va_start(ap, msg);
+	vasprintf(&s, msg, ap);
+	va_end(ap);
+
+    if (rx_chan == SM_SND_ADM_ALL) {
+        for (conn_t *c = conns; c < &conns[N_CONNS]; c++) {
+            if (!c->valid || (c->type != STREAM_SOUND && c->type != STREAM_ADMIN)) continue;
+            send_msg_buf(c, s, strlen(s));
+            rv = 0;
+        }
+    } else {
+        for (int ch = 0; ch < rx_chans; ch++) {
+            if (rx_chan == SM_RX_CHAN_ALL || rx_chan == ch) {
+                conn_t *c = rx_channels[ch].conn;
+                if (!c) continue;
+                if (debug) printf("send_msg: RX%d(%p) <%s>\n", ch, c, s);
+                send_msg_buf(c, s, strlen(s));
+                rv = 0;
+            }
+        }
+    }
+
+	kiwi_asfree(s, "snd_send_msg");
+	return rv;
+}
+
 #define N_MSG_HDR 4
 void send_msg_data(conn_t *c, bool debug, u1_t cmd, u1_t *bytes, int nbytes)
 {
@@ -266,6 +302,7 @@ void send_msg_mc_encoded(struct mg_connection *mc, const char *dst, const char *
 
 // send to the SND web socket
 // note the conn_t difference below
+// rx_chan == SM_SND_ADM_ALL means send to all sound and admin connections
 // rx_chan == SM_RX_CHAN_ALL means send to all connected channels
 int snd_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *cmd, const char *msg, ...)
 {
@@ -279,15 +316,23 @@ int snd_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *c
 
 	char *buf = kiwi_str_encode(s);
 
-    for (int ch = 0; ch < rx_chans; ch++) {
-        if (rx_chan == SM_RX_CHAN_ALL || rx_chan == ch) {
-            conn_t *conn = rx_channels[ch].conn;
-            if (!conn) continue;
-	        if (debug) printf("snd_send_msg_encoded: RX%d(%p) <%s>\n", ch, conn, s);
-	        send_msg(conn, debug, "%s %s=%s", dst, cmd, buf);
-	        rv = 0;
-	    }
-	}
+    if (rx_chan == SM_SND_ADM_ALL) {
+        for (conn_t *c = conns; c < &conns[N_CONNS]; c++) {
+            if (!c->valid || (c->type != STREAM_SOUND && c->type != STREAM_ADMIN)) continue;
+            send_msg(c, debug, "%s %s=%s", dst, cmd, buf);
+            rv = 0;
+        }
+    } else {
+        for (int ch = 0; ch < rx_chans; ch++) {
+            if (rx_chan == SM_RX_CHAN_ALL || rx_chan == ch) {
+                conn_t *c = rx_channels[ch].conn;
+                if (!c) continue;
+                if (debug) printf("snd_send_msg_encoded: RX%d(%p) <%s>\n", ch, c, s);
+                send_msg(c, debug, "%s %s=%s", dst, cmd, buf);
+                rv = 0;
+            }
+        }
+    }
 	
 	kiwi_asfree(s, "snd_send_msg_encoded");
 	kiwi_ifree(buf, "snd_send_msg_encoded");

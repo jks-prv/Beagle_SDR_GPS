@@ -9,6 +9,7 @@ var tdoa = {
    prev_ui:    false,
    spiderfied: false,
    spiderfy_deferred: false,
+   orange_rect: false,
    ii:         0,
    leaflet:    true,
    w_data:     1024,
@@ -377,6 +378,7 @@ function tdoa_controls_setup()
       });
 
       m.on('click', tdoa_click_info_cb);
+      m.on('mousemove', tdoa_mouse_move_cb, this);
       m.on('moveend', function(e) { tdoa_pan_end(e); });
       m.on('zoomend', function(e) { tdoa_zoom_end(e); });
       
@@ -461,16 +463,6 @@ function tdoa_controls_setup()
    tdoa_ui_reset(true);
 	TDoA_environment_changed( {resize:1} );
    tdoa.state = tdoa.WAIT_HOSTS;
-}
-
-function tdoa_reset_spiderfied()
-{
-   //console.log('tdoa_reset_spiderfied '+ (tdoa.ii++) +' spiderfied='+ tdoa.spiderfied);
-   if (tdoa.spiderfied) {
-      tdoa.spiderfied.unspiderfy();
-      //kiwi_trace();
-   }
-   tdoa.spiderfied = false;
 }
 
 function tdoa_zoom_end(e)
@@ -585,6 +577,15 @@ function tdoa_update_link()
 // markers
 ////////////////////////////////
 
+function tdoa_marker_remove(mkr)
+{
+   if (tdoa.leaflet) {
+      mkr.unbindTooltip(); mkr.remove(); mkr.off();
+   } else {
+      mkr.setMap(null);
+   }
+}
+
 function tdoa_marker_click(marker, ev)
 {
    //console.log('tdoa_marker_click');
@@ -609,6 +610,7 @@ function tdoa_marker_dblclick(marker)
 
 function tdoa_place_host_marker(h, map)
 {
+   h.have_event_listeners = [];
    h.hp = h.h +':'+ h.p;
    h.call = h.id.replace(/\-/g, '/');    // decode slashes
    
@@ -756,6 +758,7 @@ function tdoa_place_ref_marker(idx, map, ref)
    } else {
       r = tdoa.refs[idx];
    }
+   r.have_event_listeners = [];
    r.idx = idx;
    var title;
    if (r.t != '')
@@ -897,29 +900,37 @@ function tdoa_style_marker(marker, idx, name, type, map)
       
       // sometimes multiple instances exist, so iterate to catch them all
       w3_iterate_classname('id-tdoa-'+ type +'-'+ rh.idx,
-         function(el) {
+         function(el, i) {
             if (el) {
+               rh.clientWidth = el.clientWidth;
+               //console.log(rh.idx +' '+ rh.id +' '+ el.clientWidth);
                if (rh.type_host) {
                   if (rh.selected) w3_color(el, 'black', 'yellow'); else w3_color(el, 'white', 'blue');
                }
                el.title = rh.title;
                el.kiwi_mkr_2_ref_or_host = rh;
-               el.addEventListener('click', function(ev) {
-                  tdoa_marker_click(ev.target, ev);
-               });
-               el.addEventListener('dblclick', function(ev) {
-                  tdoa_marker_dblclick(ev.target);
-               });
-               el.addEventListener('mouseenter', function(ev) {
-                  //console.log('tooltip mouseenter');
-                  //console.log(ev);
-                  if (!rh.selected) w3_color(el, 'black', 'yellow');
-               });
-               el.addEventListener('mouseleave', function(ev) {
-                  //console.log('tooltip mouseleave');
-                  //console.log(ev);
-                  if (!rh.selected) rh.type_host? w3_color(el, 'white', 'blue') : w3_color(el, 'black', 'lime');
-               });
+               
+               if (!rh.have_event_listeners[i]) {     // don't setup duplicate event handlers
+                  rh.have_event_listeners[i] = true;
+                  el.addEventListener('click', function(ev) {
+                     tdoa_marker_click(ev.target, ev);
+                  });
+                  el.addEventListener('dblclick', function(ev) {
+                     tdoa_marker_dblclick(ev.target);
+                  });
+                  el.addEventListener('mouseenter', function(ev) {
+                     console.log('tooltip mouseenter');
+                     console.log(ev);
+                     if (!rh.selected) w3_color(el, 'black', 'yellow');
+                     tdoa_clear_unspiderfy_timeout();
+                  });
+                  el.addEventListener('mouseleave', function(ev) {
+                     console.log('tooltip mouseleave');
+                     //console.log(ev);
+                     if (!rh.selected) rh.type_host? w3_color(el, 'white', 'blue') : w3_color(el, 'black', 'lime');
+                     tdoa_set_unspiderfy_timeout();
+                  });
+               }
             }
          }
       );
@@ -943,6 +954,398 @@ function tdoa_change_marker_style(mkr, body_color, outline_color, label_class)
       mkr.labelClass = label_class;
       mkr.icon = kiwi_mapPinSymbol(body_color, outline_color);
       mkr.setMap(tdoa.kiwi_map);
+   }
+}
+
+
+////////////////////////////////
+// cluster
+////////////////////////////////
+
+function tdoa_create_cluster_list(mc)
+{
+   var s = '';
+   mc.getAllChildMarkers().forEach(function(m) {
+      var r = m.kiwi_mkr_2_ref_or_host;
+      s += ((s != '')? '\n':'') + r.id;
+   });
+   mc._icon.title = s;
+}
+
+function tdoa_reset_spiderfied()
+{
+   //console.log('tdoa_reset_spiderfied '+ (tdoa.ii++) +' spiderfied='+ tdoa.spiderfied);
+   if (tdoa.spiderfied) {
+      tdoa.spiderfied.unspiderfy();
+      //kiwi_trace();
+   }
+   tdoa.spiderfied = false;
+}
+
+function tdoa_spiderfied(which, a)
+{
+   //console.log(a);
+   var m = tdoa.cur_map;
+   var cP = m.latLngToLayerPoint(a.cluster.getLatLng());
+   console.log(which, ' spiderfied ');
+   console.log(cP);
+   var nw = cP.clone(), se = cP.clone();
+   a.markers.forEach(
+      function(mkr,i) {
+         var cw = mkr.kiwi_mkr_2_ref_or_host.clientWidth;
+         var mP = m.latLngToLayerPoint(mkr.getLatLng());
+         if (mP.x < nw.x) nw.x = mP.x;
+         if (mP.y < nw.y) nw.y = mP.y;
+         if ((mP.x + cw) > se.x) se.x = mP.x + cw;
+         if (mP.y > se.y) se.y = mP.y;
+         //console.log(mkr.kiwi_mkr_2_ref_or_host.id +' '+ mP +' nw='+ nw +' se='+ se);
+         //console.log(mkr);
+      }
+   );
+   //console.log('nw='+ nw +' se='+ se);
+   var l = 10, r = 20, tb = 20;
+   var nwLL = m.layerPointToLatLng([nw.x-l, nw.y-tb]);
+   var seLL = m.layerPointToLatLng([se.x+r, se.y+tb]);
+   tdoa.clusterLLB = L.latLngBounds([nwLL, seLL])
+   if (tdoa.orange_rect) tdoa.orange_rect.removeFrom(m);
+   if (dbgUs) tdoa.orange_rect = L.rectangle(tdoa.clusterLLB, {color: "#ff7800", weight: 0.5}).addTo(m);
+}
+
+function tdoa_set_unspiderfy_timeout()
+{
+   if (!tdoa.spiderfied) return;
+   kiwi_clearTimeout(tdoa.spiderfied_timeo);
+   tdoa.spiderfied_timeo = setTimeout(
+      function() {
+         if (tdoa.spiderfied) {
+            if (tdoa.spiderfied_contains_mouse) {
+               tdoa_set_unspiderfy_timeout();
+               console.log('RE');
+            } else {
+               console.log('UN');
+               tdoa.spiderfied.unspiderfy();
+               tdoa.spiderfied = false;
+            }
+         }
+      }, 1000
+   );
+   console.log('SCHED');
+}
+
+function tdoa_clear_unspiderfy_timeout()
+{
+   kiwi_clearTimeout(tdoa.spiderfied_timeo);
+   tdoa.spiderfied_timeo = null;
+   console.log('CLR');
+}
+
+function tdoa_mouse_move_cb(ev)
+{
+   var m = tdoa.cur_map;
+
+   if (!tdoa.spiderfied) {
+      if (tdoa.orange_rect) {
+         tdoa.orange_rect.removeFrom(m);
+         tdoa.orange_rect = false;
+      }
+      tdoa.spiderfied_contains_mouse = false;
+      return;
+   }
+
+   var mLL = ev.latlng;
+   tdoa.spiderfied_contains_mouse = (tdoa.clusterLLB && tdoa.clusterLLB.contains(mLL));
+}
+
+
+////////////////////////////////
+// hosts
+////////////////////////////////
+
+function tdoa_hosts_visible_cb(path, checked, first)
+{
+   //console.log('### tdoa_hosts_visible_cb checked='+ checked +' first='+ first);
+   if (first) return;
+
+   tdoa.show_hosts = checked;
+   w3_checkbox_set(path, checked? true:false);
+   tdoa_rebuild_hosts();
+}
+
+function tdoa_remove_hosts()
+{
+   if (tdoa.cur_host_markers) {
+      tdoa.hosts.forEach(function(h) {
+         tdoa_marker_remove(h.mkr);
+      });
+      if (tdoa.leaflet && tdoa.hosts_clusterer) tdoa.hosts_clusterer.clearLayers(); else tdoa.hosts_clusterer.clearMarkers()
+   }
+}
+
+function tdoa_rebuild_hosts(opts)
+{
+   if (!tdoa.hosts) return;
+   
+   // remove previous
+   tdoa_remove_hosts();
+   
+   var show_hosts = (opts == undefined)? tdoa.show_hosts : opts.show;
+
+   // make hosts clusters contain only un-param-selected host markers
+   tdoa.cur_host_markers = [];
+   for (var i = 0; i < tdoa.hosts.length; i++) {
+      var h = tdoa.hosts[i];
+      var v = +h.v;
+      if (tdoa.hosts_sel && ((tdoa.hosts_sel == 1 && v > 1.646) || (tdoa.hosts_sel == 2 && v < 1.653))) {
+         //console.log('TDoA filtering out '+ h.call +' v'+ h.v);
+         continue;
+      }
+      if (h.mkr) {
+         h.have_event_listeners = [];
+         h.id_snr = h.id;
+         if (h.snr > 0) h.id_snr += ' '+ h.snr;
+         if (h.selected) {
+            //console.log('outside cluster: '+ h.call);
+            if (tdoa.leaflet) tdoa_style_marker(h.mkr, h.idx, h.id_snr, 'host', tdoa.kiwi_map); else h.mkr.setMap(tdoa.kiwi_map);
+         } else {
+            if (show_hosts) {
+               if (tdoa.leaflet) tdoa_style_marker(h.mkr, h.idx, h.id_snr, 'host');
+               tdoa.cur_host_markers.push(h.mkr);
+            }
+         }
+      }
+   }
+   console.log('tdoa_rebuild_hosts cur_host_markers='+ tdoa.cur_host_markers.length);
+
+   if (tdoa.leaflet) {
+      var mc = L.markerClusterGroup({
+         maxClusterRadius: tdoa.prev_ui? 30:80,
+         //spiderfyOnMaxZoom: false,
+         //disableClusteringAtZoom: 4,
+         spiderLegPolylineOptions: { weight: 1.5, color: 'white', opacity: 1.0 },
+         iconCreateFunction: function(mc) {
+		      return new L.DivIcon({
+		         html: '<div><span>' + mc.getChildCount() + '</span></div>',
+		         className: 'marker-cluster id-tdoa-marker-cluster-hosts',
+		         iconSize: new L.Point(40, 40)
+		      });
+         }
+      });
+      mc.addLayers(tdoa.cur_host_markers);
+      if (tdoa.prev_ui) {
+         mc.on('clustermouseover', function(a) { tdoa_create_cluster_list(a.layer); });
+      } else {
+		   mc.on('clustermouseover', function (a) {
+            //console.log('HOSTS clustermouseover '+ (tdoa.ii++) +' spiderfied='+ tdoa.spiderfied);
+		      if (tdoa.spiderfied) {
+		         if (tdoa.spiderfied == a.layer) {
+                  //console.log('HOSTS clustermouseover '+ (tdoa.ii++) +' SAME');
+		            return;
+		         }
+		         tdoa.spiderfied.unspiderfy();
+		         tdoa.spiderfy_deferred = a.layer;
+		      } else {
+		         tdoa_remove_refs();
+               a.layer.spiderfy();
+               tdoa.spiderfied = a.layer;
+            }
+		   });
+         mc.on('spiderfied', function(a) {
+            tdoa_spiderfied('HOSTS', a);
+            tdoa_set_unspiderfy_timeout();
+         });
+         mc.on('unspiderfied', function(a) {
+            //console.log('HOSTS unspiderfied '+ (tdoa.ii++) +' deferred='+ tdoa.spiderfy_deferred);
+            if (tdoa.spiderfy_deferred) {
+		         //tdoa_remove_refs();
+               tdoa.spiderfy_deferred.spiderfy();
+               tdoa.spiderfied = tdoa.spiderfy_deferred;
+               tdoa.spiderfy_deferred = false;
+            } else {
+               tdoa.spiderfied = false;
+               tdoa_clear_unspiderfy_timeout();
+               tdoa_rebuild_refs();
+            }
+         });
+         //mc.on('clustermouseout', function(a) { console.log('HOSTS mouse out '+ (tdoa.ii++)); });
+		}
+      tdoa.kiwi_map.addLayer(mc);
+      tdoa.hosts_clusterer = mc;
+   } else {
+      tdoa.hosts_clusterer = new MarkerClusterer(tdoa.kiwi_map, tdoa.cur_host_markers, {
+         averageCenter: true,
+         gridSize: 30,     // default 60
+         cssClass: 'cl-tdoa-cluster-base cl-tdoa-cluster-kiwi',
+         onMouseoverCluster: function(this_, ev) {
+            var s = '';
+            this_.cluster_.markers_.forEach(function(m) {
+               s += ((s != '')? '\n':'') + m.labelContent;
+            });
+            this_.div_.title = s;
+         }
+      });
+   }
+}
+
+function tdoa_hosts_sel_cb(path, idx, first)
+{
+   console.log('tdoa_hosts_sel_cb: idx='+ idx);
+   tdoa.hosts_sel = +idx;
+   tdoa_rebuild_hosts();
+}
+
+
+////////////////////////////////
+// refs
+////////////////////////////////
+
+function tdoa_refs_visible_cb(path, checked, first)
+{
+   //console.log('### tdoa_refs_visible_cb checked='+ checked +' first='+ first);
+   if (first) return;
+   
+   if (!checked)     // for benefit of direct callers
+      w3_checkbox_set('tdoa.refs_visible', checked? true:false);
+
+   tdoa.ref_ids.forEach(function(id) {
+      w3_checkbox_set('tdoa.refs_'+ id, checked? true:false);
+   });
+   
+   tdoa.show_refs = checked;
+   tdoa_rebuild_refs();
+}
+
+function tdoa_refs_cb(path, checked, first)
+{
+   if (first) return;
+   
+   if (checked) {
+      tdoa.show_refs = checked;
+      w3_checkbox_set('tdoa.refs_visible', true);
+   }
+   
+   //console.log('tdoa_refs_cb path='+ path +' checked='+ checked);
+   tdoa_rebuild_refs();
+}
+
+function tdoa_remove_refs()
+{
+   if (tdoa.cur_ref_markers) {
+      tdoa.refs_markers.forEach(function(mkr) {
+         tdoa_marker_remove(mkr);
+      });
+      if (tdoa.leaflet && tdoa.refs_clusterer) tdoa.refs_clusterer.clearLayers(); else tdoa.refs_clusterer.clearMarkers()
+   }
+}
+
+function tdoa_rebuild_refs(opts)
+{
+   if (!tdoa.refs) return;
+   
+   // remove previous
+   tdoa_remove_refs();
+   
+   // build new list
+   var ids = [];
+   tdoa.ref_ids.forEach(function(id) {
+      if (w3_checkbox_get('tdoa.refs_'+ id))
+         ids.push(id);
+   });
+   console.log('tdoa_rebuild_refs REFS <'+ ids +'> show_refs='+ tdoa.show_refs +' opts=...');
+   //console.log(opts);
+
+   // make ref clusters contain only un-selected ref markers
+   tdoa.cur_ref_markers = [];
+   var show_refs = (opts == undefined)? tdoa.show_refs : opts.show;
+   if (show_refs) {
+      for (var i = tdoa.FIRST_REF; i < tdoa.refs.length-1; i++) {
+         var r = tdoa.refs[i];
+         r.have_event_listeners = [];
+         var done = false;
+         //console.log(r.r +' '+ r.id);
+         ids.forEach(function(id) {
+            if (r.r.includes(id) && !done) {
+               if (r.selected) {
+                  //console.log('selected marker: '+ r.id);
+                  if (tdoa.leaflet)
+                     tdoa_style_marker(r.mkr, r.idx, r.id, 'ref', tdoa.kiwi_map);
+                  else
+                     r.mkr.setMap(tdoa.kiwi_map);
+               } else {
+                  if (tdoa.leaflet) tdoa_style_marker(r.mkr, r.idx, r.id, 'ref');
+                  tdoa.cur_ref_markers.push(r.mkr);
+               }
+               done = true;
+            }
+         });
+      }
+   }
+   //console.log('tdoa_rebuild_refs cur_ref_markers='+ tdoa.cur_ref_markers.length);
+
+   if (tdoa.leaflet) {
+      var mc = L.markerClusterGroup({
+         maxClusterRadius: tdoa.prev_ui? 30:80,
+         spiderLegPolylineOptions: { weight: 1.5, color: 'white', opacity: 1.0 },
+         iconCreateFunction: function(mc) {
+		      return new L.DivIcon({
+		         html: '<div><span>' + mc.getChildCount() + '</span></div>',
+		         className: 'marker-cluster id-tdoa-marker-cluster-refs',
+		         iconSize: new L.Point(40, 40)
+		      });
+         }
+      });
+      mc.addLayers(tdoa.cur_ref_markers);
+      if (tdoa.prev_ui) {
+         mc.on('clustermouseover', function(a) { tdoa_create_cluster_list(a.layer); });
+      } else {
+		   mc.on('clustermouseover', function (a) {
+            //console.log('REFS clustermouseover '+ (tdoa.ii++) +' spiderfied='+ tdoa.spiderfied);
+		      if (tdoa.spiderfied) {
+		         if (tdoa.spiderfied == a.layer) {
+                  //console.log('REFS clustermouseover '+ (tdoa.ii++) +' SAME');
+		            return;
+		         }
+		         tdoa.spiderfied.unspiderfy();
+		         tdoa.spiderfy_deferred = a.layer;
+		      } else {
+		         tdoa_remove_hosts();
+               a.layer.spiderfy();
+               tdoa.spiderfied = a.layer;
+            }
+		   });
+         mc.on('spiderfied', function(a) {
+            tdoa_spiderfied('REFS', a);
+            tdoa_set_unspiderfy_timeout();
+         });
+         mc.on('unspiderfied', function(a) {
+            //console.log('REFS unspiderfied '+ (tdoa.ii++) +' deferred='+ tdoa.spiderfy_deferred);
+            if (tdoa.spiderfy_deferred) {
+		         //tdoa_remove_hosts();
+               tdoa.spiderfy_deferred.spiderfy();
+               tdoa.spiderfied = tdoa.spiderfy_deferred;
+               tdoa.spiderfy_deferred = false;
+            } else {
+               tdoa.spiderfied = false;
+               tdoa_clear_unspiderfy_timeout();
+               tdoa_rebuild_hosts();
+            }
+         });
+         //mc.on('clustermouseout', function(a) { console.log('REFS mouse out '+ (tdoa.ii++)); });
+		}
+      tdoa.kiwi_map.addLayer(mc);
+      tdoa.refs_clusterer = mc;
+   } else {
+      tdoa.refs_clusterer = new MarkerClusterer(tdoa.kiwi_map, tdoa.cur_ref_markers, {
+         averageCenter: true,
+         gridSize: 30,     // default 60
+         cssClass: 'cl-tdoa-cluster-base cl-tdoa-cluster-refs',
+         onMouseoverCluster: function(this_, ev) {
+            var s = '';
+            this_.cluster_.markers_.forEach(function(m) {
+               s += ((s != '')? '\n':'') + m.labelContent;
+            });
+            this_.div_.title = s;
+         }
+      });
    }
 }
 
@@ -1071,7 +1474,7 @@ function tdoa_get_hosts_cb(hosts)
                tdoa.prev_ui = true;
             } else
             if (a.startsWith('help:')) {
-               extint_help_click();
+               ext_help_click();
             } else
             if (a.startsWith('kml:')) {
                tdoa.kml = true;
@@ -1632,7 +2035,7 @@ function tdoa_submit_button_cb2()
                }
             );
          }
-      }, 1000);
+      }, 500);
    } else {
       kiwi_ajax_progress(tdoa.url_base +'php/tdoa.php'+ tdoa.a[0] + s,
          function(json) {     // done callback
@@ -2253,7 +2656,7 @@ function tdoa_result_menu_click_cb(path, idx, first)
             if (f.mkr && f.host) {
                if (idx == tdoa.TDOA_MAP_NO_HOSTS) {      // remove host marker
                   var mkr = f.host.mkr;   // NB: can't use f.mkr above as sometime a <div> instead of object
-                  if (tdoa.leaflet) { mkr.unbindTooltip(); mkr.remove(); mkr.off(); } else mkr.setMap(null);
+                  tdoa_marker_remove(mkr);
                } else {
                   tdoa_place_host_marker(f.host, tdoa.result_map);
                }
@@ -2334,11 +2737,11 @@ function tdoa_clear_results_cb(path, idx, first)
    if (!(+idx)) return;
    tdoa.result_refs.forEach(function(ref, i) {
       if (tdoa.result_refs.length <= 1) return;
-      var m = tdoa.result_mkrs.shift();
+      var mkr = tdoa.result_mkrs.shift();
       tdoa.result_refs.shift();
-      if (m == null) return;
-      console.log(m);
-      if (tdoa.leaflet) { m.unbindTooltip(); m.remove(); m.off(); } else m.setMap(null);
+      if (mkr == null) return;
+      console.log(mkr);
+      tdoa_marker_remove(mkr);
    });
 }
 
@@ -2408,270 +2811,10 @@ function tdoa_graticule_visible_cb(path, checked, first)
    }
 }
 
-function tdoa_hosts_visible_cb(path, checked, first)
-{
-   //console.log('### tdoa_hosts_visible_cb checked='+ checked +' first='+ first);
-   if (first) return;
 
-   tdoa.show_hosts = checked;
-   w3_checkbox_set(path, checked? true:false);
-   tdoa_rebuild_hosts();
-}
-
-function tdoa_refs_visible_cb(path, checked, first)
-{
-   //console.log('### tdoa_refs_visible_cb checked='+ checked +' first='+ first);
-   if (first) return;
-   
-   if (!checked)     // for benefit of direct callers
-      w3_checkbox_set('tdoa.refs_visible', checked? true:false);
-
-   tdoa.ref_ids.forEach(function(id) {
-      w3_checkbox_set('tdoa.refs_'+ id, checked? true:false);
-   });
-   
-   tdoa.show_refs = checked;
-   tdoa_rebuild_refs();
-}
-
-function tdoa_refs_cb(path, checked, first)
-{
-   if (first) return;
-   
-   if (checked) {
-      tdoa.show_refs = checked;
-      w3_checkbox_set('tdoa.refs_visible', true);
-   }
-   
-   //console.log('tdoa_refs_cb path='+ path +' checked='+ checked);
-   tdoa_rebuild_refs();
-}
-
-function tdoa_create_cluster_list(mc)
-{
-   var s = '';
-   mc.getAllChildMarkers().forEach(function(m) {
-      var r = m.kiwi_mkr_2_ref_or_host;
-      s += ((s != '')? '\n':'') + r.id;
-   });
-   mc._icon.title = s;
-}
-
-function tdoa_rebuild_hosts(opts)
-{
-   if (!tdoa.hosts) return;
-   
-   // remove previous
-   if (tdoa.cur_host_markers) {
-      tdoa.hosts.forEach(function(h) {
-         if (tdoa.leaflet) { h.mkr.unbindTooltip(); h.mkr.remove(); h.mkr.off(); } else h.mkr.setMap(null);
-      });
-      if (tdoa.leaflet && tdoa.hosts_clusterer) tdoa.hosts_clusterer.clearLayers(); else tdoa.hosts_clusterer.clearMarkers()
-   }
-   
-   var show_hosts = (opts == undefined)? tdoa.show_hosts : opts.show;
-
-   // make hosts clusters contain only un-param-selected host markers
-   tdoa.cur_host_markers = [];
-   for (var i = 0; i < tdoa.hosts.length; i++) {
-      var h = tdoa.hosts[i];
-      var v = +h.v;
-      if (tdoa.hosts_sel && ((tdoa.hosts_sel == 1 && v > 1.646) || (tdoa.hosts_sel == 2 && v < 1.653))) {
-         //console.log('TDoA filtering out '+ h.call +' v'+ h.v);
-         continue;
-      }
-      if (h.mkr) {
-         h.id_snr = h.id;
-         if (h.snr > 0) h.id_snr += ' '+ h.snr;
-         if (h.selected) {
-            //console.log('outside cluster: '+ h.call);
-            if (tdoa.leaflet) tdoa_style_marker(h.mkr, h.idx, h.id_snr, 'host', tdoa.kiwi_map); else h.mkr.setMap(tdoa.kiwi_map);
-         } else {
-            if (show_hosts) {
-               if (tdoa.leaflet) tdoa_style_marker(h.mkr, h.idx, h.id_snr, 'host');
-               tdoa.cur_host_markers.push(h.mkr);
-            }
-         }
-      }
-   }
-   console.log('tdoa_rebuild_hosts cur_host_markers='+ tdoa.cur_host_markers.length);
-
-   if (tdoa.leaflet) {
-      var mc = L.markerClusterGroup({
-         maxClusterRadius: tdoa.prev_ui? 30:80,
-         //spiderfyOnMaxZoom: false,
-         //disableClusteringAtZoom: 4,
-         spiderLegPolylineOptions: { weight: 1.5, color: 'white', opacity: 1.0 },
-         iconCreateFunction: function(mc) {
-		      return new L.DivIcon({
-		         html: '<div><span>' + mc.getChildCount() + '</span></div>',
-		         className: 'marker-cluster id-tdoa-marker-cluster-hosts',
-		         iconSize: new L.Point(40, 40)
-		      });
-         }
-      });
-      mc.addLayers(tdoa.cur_host_markers);
-      if (tdoa.prev_ui) {
-         mc.on('clustermouseover', function(a) { tdoa_create_cluster_list(a.layer); });
-      } else {
-		   mc.on('clustermouseover', function (a) {
-            //console.log('HOSTS clustermouseover '+ (tdoa.ii++) +' spiderfied='+ tdoa.spiderfied);
-		      if (tdoa.spiderfied) {
-		         if (tdoa.spiderfied == a.layer) {
-                  //console.log('HOSTS clustermouseover '+ (tdoa.ii++) +' SAME');
-		            return;
-		         }
-		         tdoa.spiderfied.unspiderfy();
-		         tdoa.spiderfy_deferred = a.layer;
-		      } else {
-               a.layer.spiderfy();
-               tdoa.spiderfied = a.layer;
-            }
-		   });
-         mc.on('unspiderfied', function(a) {
-            //console.log('HOSTS unspiderfied '+ (tdoa.ii++) +' deferred='+ tdoa.spiderfy_deferred);
-            if (tdoa.spiderfy_deferred) {
-               tdoa.spiderfy_deferred.spiderfy();
-               tdoa.spiderfied = tdoa.spiderfy_deferred;
-               tdoa.spiderfy_deferred = false;
-            } else {
-               tdoa.spiderfied = false;
-            }
-         });
-         //mc.on('clustermouseout', function(a) { console.log('HOSTS mouse out '+ (tdoa.ii++)); });
-		}
-      tdoa.kiwi_map.addLayer(mc);
-      tdoa.hosts_clusterer = mc;
-   } else {
-      tdoa.hosts_clusterer = new MarkerClusterer(tdoa.kiwi_map, tdoa.cur_host_markers, {
-         averageCenter: true,
-         gridSize: 30,     // default 60
-         cssClass: 'cl-tdoa-cluster-base cl-tdoa-cluster-kiwi',
-         onMouseoverCluster: function(this_, ev) {
-            var s = '';
-            this_.cluster_.markers_.forEach(function(m) {
-               s += ((s != '')? '\n':'') + m.labelContent;
-            });
-            this_.div_.title = s;
-         }
-      });
-   }
-}
-
-function tdoa_hosts_sel_cb(path, idx, first)
-{
-   console.log('tdoa_hosts_sel_cb: idx='+ idx);
-   tdoa.hosts_sel = +idx;
-   tdoa_rebuild_hosts();
-}
-
-function tdoa_rebuild_refs(opts)
-{
-   if (!tdoa.refs) return;
-   
-   // remove previous
-   if (tdoa.cur_ref_markers) {
-      tdoa.refs_markers.forEach(function(m) {
-         if (tdoa.leaflet) { m.unbindTooltip(); m.remove(); m.off(); } else m.setMap(null);
-      });
-      if (tdoa.leaflet && tdoa.refs_clusterer) tdoa.refs_clusterer.clearLayers(); else tdoa.refs_clusterer.clearMarkers()
-   }
-
-   // build new list
-   var ids = [];
-   tdoa.ref_ids.forEach(function(id) {
-      if (w3_checkbox_get('tdoa.refs_'+ id))
-         ids.push(id);
-   });
-   //console.log('tdoa_rebuild_refs REFS <'+ ids +'> show_refs='+ tdoa.show_refs +' opts=...');
-   //console.log(opts);
-
-   // make ref clusters contain only un-selected ref markers
-   tdoa.cur_ref_markers = [];
-   var show_refs = (opts == undefined)? tdoa.show_refs : opts.show;
-   if (show_refs) {
-      for (var i = tdoa.FIRST_REF; i < tdoa.refs.length-1; i++) {
-         var r = tdoa.refs[i];
-         var done = false;
-         //console.log(r.r +' '+ r.id);
-         ids.forEach(function(id) {
-            if (r.r.includes(id) && !done) {
-               if (r.selected) {
-                  //console.log('selected marker: '+ r.id);
-                  if (tdoa.leaflet)
-                     tdoa_style_marker(r.mkr, r.idx, r.id, 'ref', tdoa.kiwi_map);
-                  else
-                     r.mkr.setMap(tdoa.kiwi_map);
-               } else {
-                  if (tdoa.leaflet) tdoa_style_marker(r.mkr, r.idx, r.id, 'ref');
-                  tdoa.cur_ref_markers.push(r.mkr);
-               }
-               done = true;
-            }
-         });
-      }
-   }
-   //console.log('tdoa_rebuild_refs cur_ref_markers='+ tdoa.cur_ref_markers.length);
-
-   if (tdoa.leaflet) {
-      var mc = L.markerClusterGroup({
-         maxClusterRadius: tdoa.prev_ui? 30:80,
-         spiderLegPolylineOptions: { weight: 1.5, color: 'white', opacity: 1.0 },
-         iconCreateFunction: function(mc) {
-		      return new L.DivIcon({
-		         html: '<div><span>' + mc.getChildCount() + '</span></div>',
-		         className: 'marker-cluster id-tdoa-marker-cluster-refs',
-		         iconSize: new L.Point(40, 40)
-		      });
-         }
-      });
-      mc.addLayers(tdoa.cur_ref_markers);
-      if (tdoa.prev_ui) {
-         mc.on('clustermouseover', function(a) { tdoa_create_cluster_list(a.layer); });
-      } else {
-		   mc.on('clustermouseover', function (a) {
-            //console.log('REFS clustermouseover '+ (tdoa.ii++) +' spiderfied='+ tdoa.spiderfied);
-		      if (tdoa.spiderfied) {
-		         if (tdoa.spiderfied == a.layer) {
-                  //console.log('REFS clustermouseover '+ (tdoa.ii++) +' SAME');
-		            return;
-		         }
-		         tdoa.spiderfied.unspiderfy();
-		         tdoa.spiderfy_deferred = a.layer;
-		      } else {
-               a.layer.spiderfy();
-               tdoa.spiderfied = a.layer;
-            }
-		   });
-         mc.on('unspiderfied', function(a) {
-            //console.log('REFS unspiderfied '+ (tdoa.ii++) +' deferred='+ tdoa.spiderfy_deferred);
-            if (tdoa.spiderfy_deferred) {
-               tdoa.spiderfy_deferred.spiderfy();
-               tdoa.spiderfied = tdoa.spiderfy_deferred;
-               tdoa.spiderfy_deferred = false;
-            } else {
-               tdoa.spiderfied = false;
-            }
-         });
-         //mc.on('clustermouseout', function(a) { console.log('REFS mouse out '+ (tdoa.ii++)); });
-		}
-      tdoa.kiwi_map.addLayer(mc);
-      tdoa.refs_clusterer = mc;
-   } else {
-      tdoa.refs_clusterer = new MarkerClusterer(tdoa.kiwi_map, tdoa.cur_ref_markers, {
-         averageCenter: true,
-         gridSize: 30,     // default 60
-         cssClass: 'cl-tdoa-cluster-base cl-tdoa-cluster-refs',
-         onMouseoverCluster: function(this_, ev) {
-            var s = '';
-            this_.cluster_.markers_.forEach(function(m) {
-               s += ((s != '')? '\n':'') + m.labelContent;
-            });
-            this_.div_.title = s;
-         }
-      });
-   }
-}
+////////////////////////////////
+// misc
+////////////////////////////////
 
 function tdoa_pan_zoom(map, latlon, zoom)
 {
@@ -2928,6 +3071,13 @@ function tdoa_preview_click(mkr, ev)
       // must delay call to tdoa_wf_preview() until tdoa_waterfall_close() has been called
       tdoa.wf_ws.close();
    } else {
+      var auto = (wf.aper == kiwi.aper_e.auto);
+      tdoa.aper_save = wf.aper;
+
+      // must also save/restore man maxdb/mindb_un, source depends on aperture mode
+      tdoa.maxdb_save = auto? wf.save_maxdb : maxdb;
+      tdoa.mindb_un_save = auto? wf.save_mindb_un : mindb_un;
+      //console.log('$TDoA aper SAVE '+ (auto? 'AUTO' : 'MAN') +' maxdb='+ tdoa.maxdb_save +' mindb='+ tdoa.mindb_un_save);
       tdoa_wf_preview(mkr);
    }
 }
@@ -2954,8 +3104,8 @@ function tdoa_all_msg_cb(msg_a, ws)
          tdoa.wf_up = true;
          waterfall_add_line(wf_canvas_actual_line+1);
          var c = wf_cur_canvas;
-         var x = freq_to_pixel(freq_passband_center()) - c.ctx.measureText(tdoa.wf_id_snr).width / 2;
-         waterfall_add_text(wf_canvas_actual_line, x, 14, tdoa.wf_id_snr, 'Arial', 13, 'white', 4);
+         var x = freq_to_pixel(freq_passband_center());
+         waterfall_add_text(wf_canvas_actual_line+4, x, 12, tdoa.wf_id_snr, 'Arial', 14, 'white');
          break;
       case 'maxdb':
       case 'mindb':
@@ -2979,6 +3129,11 @@ function tdoa_waterfall_add_queue(what, ws, firstChars)
    //console.log('tdoa_waterfall_add_queue');
    if (kiwi.wf_preview_mode)
       waterfall_add_queue2(what, ws, firstChars);
+      tdoa.preview_lines++;
+      if (tdoa.preview_lines == 2) {
+         wf_aper_cb('wf.aper', kiwi.aper_e.man);
+         setTimeout(wf_autoscale_cb, 1);
+      }
    else
 	   if (kiwi_gc_wf) what = null;  // gc
 }
@@ -2996,7 +3151,13 @@ function tdoa_waterfall_close()
    } else {
       tdoa.wf_ws = tdoa.wf_mkr = null;
       kiwi.wf_preview_mode = false;
-      setTimeout(wf_autoscale_cb, 500);
+      var auto = (wf.aper == kiwi.aper_e.auto);
+      //console.log('TDoA aper RESTORE '+ (auto? 'AUTO' : 'MAN') +' maxdb='+ tdoa.maxdb_save +' mindb='+ tdoa.mindb_un_save);
+      
+      // restore for both cases: returning to auto or man aperture mode
+      wf.save_maxdb = maxdb = tdoa.maxdb_save;
+      wf.save_mindb_un = mindb_un = tdoa.mindb_un_save;
+      wf_aper_cb('wf.aper', tdoa.aper_save);
 
       if (!tdoa.wf_conn_bad) {
          w3_clearInnerHTML('id-tdoa-submit-status');
@@ -3009,8 +3170,8 @@ function tdoa_waterfall_close()
          waterfall_add_line(wf_canvas_actual_line+1);
          var c = wf_cur_canvas;
          var id = 'Back to this Kiwi';
-         var x = freq_to_pixel(freq_passband_center()) - c.ctx.measureText(id).width / 2;
-         waterfall_add_text(wf_canvas_actual_line, x, 14, id, 'Arial', 13, 'white', 4);
+         var x = freq_to_pixel(freq_passband_center());
+         waterfall_add_text(wf_canvas_actual_line+4, x, 12, id, 'Arial', 14, 'white');
       }
    }
 
@@ -3028,6 +3189,7 @@ function tdoa_wf_preview(mkr)
    tdoa.wf_ws = open_websocket('W/F',
       function() {   // open_cb
          //setTimeout(function() {
+         tdoa.preview_lines = 0;
          tdoa.wf_ws.send("SET auth t=kiwi");
          tdoa.wf_ws.send("SERVER DE CLIENT openwebrx.js W/F");
          tdoa.wf_ws.send("SET ident_user=TDoA_preview");
@@ -3041,8 +3203,6 @@ function tdoa_wf_preview(mkr)
          tdoa.wf_ws.send("SET maxdb=0 mindb=-100");
 	      tdoa.wf_ws.send("SET wf_speed=3");
 
-         wf_aper_cb('wf.aper', 0);
-         setTimeout(wf_autoscale_cb, 500);
          tdoa.preview_timeo = setTimeout(function() { if (tdoa.wf_ws) tdoa.wf_ws.close(); }, 10000);
          //}, 5000);
       },
