@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.665  March 11, 2024
+    Fix EEPROMs with space in part number field.
+
 v1.664  February 19, 2024
     Fix to make photo file uploads on the admin webpage tab work again.
 
