@@ -76,7 +76,7 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 
 u4_t ov_mask, snd_intr_usec;
 
-bool reset_eeprom, need_hardware, kiwi_reg_debug, have_ant_switch_ext, gps_e1b_only,
+bool need_hardware, kiwi_reg_debug, have_ant_switch_ext, gps_e1b_only,
     disable_led_task, is_multi_core, debug_printfs, cmd_debug;
 
 int main_argc;
@@ -110,6 +110,7 @@ int main(int argc, char *argv[])
 {
 	int i;
 	int p_gps = 0, gpio_test_pin = 0;
+	eeprom_action_e eeprom_action = EE_NORM;
 	bool err;
 
 	#define FW_CONFIGURED   -2  // -2 because -1 means "other" firmware and 0-N is Kiwi firmware
@@ -208,7 +209,9 @@ int main(int argc, char *argv[])
 		if (ARG("-ctrace")) { ARGL(web_caching_debug); } else
 		if (ARG("-ext")) kiwi.ext_clk = true; else
 		if (ARG("-use_spidev")) { ARGL(use_spidev); } else
-		if (ARG("-eeprom_reset")) reset_eeprom = true; else
+		if (ARG("-eeprom_reset")) eeprom_action = EE_RESET; else
+		if (ARG("-eeprom_fix")) eeprom_action = EE_FIX; else
+		if (ARG("-eeprom_test")) eeprom_action = EE_TEST; else
 		if (ARG("-sim")) wf_sim = 1; else
 		if (ARG("-real")) wf_real = 1; else
 		if (ARG("-time")) wf_time = 1; else
@@ -440,8 +443,7 @@ int main(int argc, char *argv[])
 		fpga_init();
 		if (gpio_test_pin) gpio_test(gpio_test_pin);
 		//pru_start();
-		eeprom_update(reset_eeprom);
-		if (reset_eeprom) kiwi_exit(0);
+		eeprom_update(eeprom_action);
 		
 		kiwi.ext_clk = cfg_bool("ext_ADC_clk", &err, CFG_OPTIONAL);
 		if (err) kiwi.ext_clk = false;
@@ -481,7 +483,7 @@ int main(int argc, char *argv[])
 		ctrl_clr_set(0, CTRL_OSC_DIS);
         kiwi_msleep(100);
     }
-	
+    
 	if (do_gps) {
         #ifdef USE_GPS
 		    gps_main(argc, argv);

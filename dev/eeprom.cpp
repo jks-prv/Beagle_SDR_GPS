@@ -27,6 +27,7 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "eeprom.h"
 #include "fpga.h"
+#include "system.h"
 #include "printf.h"
 
 #include <errno.h>
@@ -41,6 +42,8 @@ Boston, MA  02110-1301, USA.
 
 //#define EEPROM_TEST_BAD_PART
 //#define EEPROM_TEST_VER_UPDATE
+//#define EEPROM_ALLOW_EE_TEST
+
 
 #define	SEQ_SERNO_FILE "/root/kiwi.config/seq_serno.txt"
 //#define	SEQ_START		"1014"
@@ -58,13 +61,13 @@ void eeprom_test()
     // full eeprom write takes just under 2 secs, so only start write every 4 secs (called at 1 Hz)
     static int wcount;
     if ((test_flag & 2) && (wcount++ & 3) == 0) {
-	    eeprom_write(SERNO_WRITE, 1006, KiwiSDR_1);
+	    eeprom_write(EE_SERNO_WRITE, 1006, KiwiSDR_1);
         real_printf("W"); fflush(stdout);
 	}
 }
 #endif
 
-int eeprom_next_serno(next_serno_e type, int set_serno)
+int eeprom_next_serno(eeprom_action_e action, int set_serno)
 {
 	int n, next_serno = 0, serno;
 	FILE *fp;
@@ -97,13 +100,13 @@ retry:
         goto retry;
 	}
 	
-	if (type == SERNO_READ)
+	if (action == EE_SERNO_READ)
 		return serno;
 	
-	if (type == SERNO_WRITE)
+	if (action == EE_SERNO_WRITE)
 		next_serno = serno = set_serno;
 	
-	if (type == SERNO_ALLOC)
+	if (action == EE_SERNO_ALLOC)
 		next_serno = serno + 1;
 	
 	rewind(fp);
@@ -133,13 +136,20 @@ static bool debian7 = true;
  #define EEPROM_DEV     "/sys/bus/i2c/devices/2-0054/eeprom"
 #endif
 
-int eeprom_check(model_e *model)
+int eeprom_check(model_e *model, bool *old_model_fmt)
 {
 	eeprom_t *e = &eeprom;
 	const char *fn;
 	FILE *fp;
 	int n;
-	if (model != NULL) *model = (model_e) -1;
+	if (model) *model = (model_e) -1;
+	if (old_model_fmt) *old_model_fmt = false;
+	
+	static bool init;
+	if (!init) {
+        //printf_highlight(1, "eeprom");
+        init = true;
+    }
 	
 	fn = EEPROM_DEV_DEBIAN7;
 	fp = fopen(fn, "r");
@@ -198,8 +208,18 @@ int eeprom_check(model_e *model)
 	int _model = -1;
 	if (strcmp(part_no, "KIWISDR10       ") == 0) {
 	    _model = KiwiSDR_1;
+	    // don't flag as old model format -- avoid any problems by just leaving it alone!
+	    //if (old_model_fmt) *old_model_fmt = true;
+	    //printf("EEPROM check: old model format KIWISDR10\n");
 	} else {
-        n = sscanf(part_no, "KiwiSDR %d", &_model);
+        // NB: scanf matches on both "KiwiSDR%d" and "KiwiSDR %d"
+        n = sscanf(part_no, "KiwiSDR%d", &_model);
+        bool fix_space = (strncmp(part_no, "KiwiSDR ", 8) == 0);
+        printf("EEPROM check: n=%d fix=%d old_model_fmt=%p\n", n, fix_space, old_model_fmt);
+        if (n == 1 && fix_space && old_model_fmt) {
+            *old_model_fmt = true;
+	        printf("EEPROM check: old model format\n");
+        }
         if (n != 1 || _model <= 0) {
             mlprintf("EEPROM check: read model \"%s\" %d\n", part_no, _model);
             mlprintf("EEPROM check: scan failed (model)\n");
@@ -212,7 +232,7 @@ int eeprom_check(model_e *model)
 	return serno;
 }
 
-void eeprom_write(next_serno_e type, int serno, int model, char *key)
+void eeprom_write(eeprom_action_e action, int serno, int model, char *key)
 {
 	int i, n;
 	const char *fn;
@@ -225,23 +245,31 @@ void eeprom_write(next_serno_e type, int serno, int model, char *key)
 	eeprom_t *e = &eeprom;
 	memset(e, 0, sizeof(eeprom_t));		// v1.1 fix: zero unused e->io_pins
 
-    if (type != SERNO_RESET) {
+    if (action != EE_RESET) {
         e->header = FLIP32(EE_HEADER);
         SET_CHARS(e->fmt_rev, EE_FMT_REV, ' ');
     
         SET_CHARS(e->board_name, "KiwiSDR", ' ');
 
         #ifdef EEPROM_TEST_VER_UPDATE
-        if (test_flag) {
-            SET_CHARS(e->version, "v0.9", ' ');
-        } else
+            if (test_flag) {
+                SET_CHARS(e->version, "v0.9", ' ');
+            } else
         #endif
 
         SET_CHARS(e->version, "v1.1", ' ');
 
         SET_CHARS(e->mfg, "kiwisdr.com", ' ');
     
-        SET_CHARS(e->part_no, stprintf("KiwiSDR %d", model), ' ');
+        #ifdef EEPROM_ALLOW_EE_TEST
+            if (action == EE_TEST) {
+                SET_CHARS(e->part_no, stprintf("KiwiSDR %d", model), ' ');
+            } else {
+                SET_CHARS(e->part_no, stprintf("KiwiSDR%d", model), ' ');
+            }
+        #else
+            SET_CHARS(e->part_no, stprintf("KiwiSDR%d", model), ' ');
+        #endif
 
         // we use the WWYY fields as "date of last EEPROM write" rather than "date of production"
         time_t t = utc_time();
@@ -253,21 +281,20 @@ void eeprom_write(next_serno_e type, int serno, int model, char *key)
         int ww = (ord_date - weekday + 10) / 7;
         if (ww < 1) ww = 1;
         if (ww > 52) ww = 52;
-        kiwi_snprintf_buf_plus_space_for_null(e->week, "%2d", ww);	// caution: leaves '\0' at start of next field (year)
+        kiwi_snprintf_buf_plus_space_for_null(e->week, "%02d", ww);	// caution: leaves '\0' at start of next field (year)
 
         int yy = tm.tm_year - 100;
-        kiwi_snprintf_buf_plus_space_for_null(e->year, "%2d", yy);	// caution: leaves '\0' at start of next field (assembly)
+        kiwi_snprintf_buf_plus_space_for_null(e->year, "%02d", yy);	// caution: leaves '\0' at start of next field (assembly)
 
-        SET_CHARS(e->assembly, "0001", ' ');
-
-        if (type == SERNO_ALLOC) {
-            serno = eeprom_next_serno(SERNO_ALLOC, 0);
-	        mprintf("EEPROM write: SERNO_ALLOC serno=%d\n", serno);
+        if (action == EE_SERNO_ALLOC) {
+            serno = eeprom_next_serno(EE_SERNO_ALLOC, 0);
+	        mprintf("EEPROM write: EE_SERNO_ALLOC serno=%d\n", serno);
         } else {
-	        mprintf("EEPROM write: SERNO_WRITE serno=%d\n", serno);
+	        mprintf("EEPROM write: EE_SERNO_WRITE serno=%d\n", serno);
         }
 
         // 4 to 8-digit serno migration: just write the specified value into the 8-digit field
+        //SET_CHARS(e->assembly, "0001", ' ');        // caution: leaves '\0' at start of next field (serial_old)
         //kiwi_snprintf_buf_plus_space_for_null(e->serial_old, "%4d", serno);	// caution: leaves '\0' at start of next field (n_pins)
         kiwi_snprintf_buf_plus_space_for_null(e->serial_new, "%8d", serno);	// caution: leaves '\0' at start of next field (n_pins)
     
@@ -323,17 +350,19 @@ void eeprom_write(next_serno_e type, int serno, int model, char *key)
 	ctrl_clr_set(0, CTRL_EEPROM_WP);    // takes effect about 200 us after last write
 }
 
-void eeprom_update(bool reset)
+void eeprom_update(eeprom_action_e action)
 {
 	int n, serno;
 	eeprom_t *e = &eeprom;
 	
-	if (reset) {
-	    eeprom_write(SERNO_RESET, 0, 0);
-	    return;
+	if (action == EE_RESET) {
+	    eeprom_write(EE_RESET, 0, 0);
+        kiwi_exit(0);
 	}
 
-	if ((serno = eeprom_check()) == -1) {
+    model_e model;
+    bool old_model_fmt;
+	if ((serno = eeprom_check(&model, &old_model_fmt)) == -1) {
 		printf("eeprom_update: BAD serno\n");
 		return;
 	}
@@ -353,15 +382,35 @@ void eeprom_update(bool reset)
 	}
 	
 	#ifdef EEPROM_TEST_VER_UPDATE
-	if (test_flag)
-		vf = 0.9;
+        if (test_flag)
+            vf = 0.9;
 	#endif
 
-	if (vf >= 1.1) {
-		//printf("eeprom_update: OKAY v%.1f\n", vf);
-		return;
+    bool update = false;
+    
+	if (vf < 1.1) {
+	    printf("EEPROM: UPDATING from v%.1f to v1.1\n", vf);
+	    update = true;
+	}
+	
+	if (old_model_fmt) {
+	    printf("EEPROM: UPDATING from old model format\n");
+	    update = true;
 	}
 
-	printf("UPDATING EEPROM from v%.1f to v1.1\n", vf);
-	eeprom_write(SERNO_WRITE, serno, KiwiSDR_1);
+    if (action == EE_TEST) {
+	    printf("EEPROM: WRITING old model format\n");
+        eeprom_write(EE_TEST, serno, model);
+        kiwi_exit(0);
+    } else {
+        if (update) {
+            eeprom_write(EE_SERNO_WRITE, serno, model);
+        }
+    }
+
+    if (action == EE_FIX) {
+        lprintf("EEPROM: FIX old model format\n");
+        sleep(5);
+        system_poweroff();
+    }
 }
