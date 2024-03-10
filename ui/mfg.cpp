@@ -50,7 +50,7 @@ bool sd_copy_in_progress;
 
 static void mfg_send_info(conn_t *conn)
 {
-	int next_serno = eeprom_next_serno(SERNO_READ, 0);
+	int next_serno = eeprom_next_serno(EE_SERNO_READ, 0);
 	model_e model;
 	int serno = eeprom_check(&model);
 	send_msg(conn, SM_NO_DEBUG, "MFG next_serno=%d serno=%d model=%d", next_serno, serno, model);
@@ -97,7 +97,7 @@ void c2s_mfg(void *param)
 			i = sscanf(cmd, "SET eeprom_write=%d serno=%d model=%d key=%64ms", &_type, &_serno, &_model, &_key);
 			if ((i == 3 || i == 4) && _model > 0) {
 				printf("MFG: received write, type=%d serno=%d model=%d key=%s\n", _type, _serno, _model, _key);
-				eeprom_write(_type? SERNO_WRITE : SERNO_ALLOC, _serno, _model, _key);
+				eeprom_write(_type? EE_SERNO_WRITE : EE_SERNO_ALLOC, _serno, _model, _key);
 				kiwi_asfree(_key);
 				mfg_send_info(conn);
 				continue;
@@ -107,7 +107,7 @@ void c2s_mfg(void *param)
 			i = sscanf(cmd, "SET set_serno=%d", &next_serno);
 			if (i == 1) {
 				printf("MFG: received set_serno=%d\n", next_serno);
-				eeprom_next_serno(SERNO_WRITE, next_serno);
+				eeprom_next_serno(EE_SERNO_WRITE, next_serno);
                 mfg_send_info(conn);
 				continue;
 			}
