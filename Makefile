@@ -1780,6 +1780,11 @@ clean: clean_ext clean_deprecated
 clean_dist: clean
 	-rm -rf $(BUILD_DIR)
 
+clean_logs:
+	-journalctl --disk-usage
+	-journalctl --vacuum-size=10M
+	-journalctl --disk-usage
+
 
 # The following support the development process
 # and are not used for ordinary software builds.
@@ -1830,6 +1835,15 @@ gitdiff2:
 endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
+    prep_distro: clean_logs
+	    -systemctl --full --lines=250 stop kiwid.service || true
+	    -systemctl --full --lines=250 enable kiwid.service || true
+	    (cd $(DIR_CFG); sed -i -e 's/\"onetime_password_check\": true/\"onetime_password_check\": false/' admin.json)
+	    (cd $(DIR_CFG); rm -f .do_once.dep .keyring4.dep frpc.ini seq_serno)
+	    -rm -f /tmp/.kiwi* /root/.ssh/auth*
+	    -touch unix_env/reflash_delay_update
+	    -cp unix_env/shadow /etc/shadow
+	    sum *.bit
 
 /usr/bin/xz:
 	apt-get -y $(APT_GET_FORCE) install xz-utils
