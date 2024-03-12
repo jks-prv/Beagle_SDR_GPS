@@ -320,7 +320,8 @@ int PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, s1_t snr
         u4_t freq = conn->freqHz + ft8_conf.freq_offset_Hz + passband_freq;
         const char *mode = (protocol == FTX_PROTOCOL_FT8)? "FT8" : "FT4";
         time_t time = (time_t) slot_time;
-        rcprintf(rx_chan, "PSKReporter spot %s %9.3f %8s %s %+3d %5dkm %s\n", mode, (double) freq / 1e3, call, grid, snr, km, var_ctime_static(&time));
+        rcfprintf(rx_chan, ft8_conf.syslog? (PRINTF_REG | PRINTF_LOG) : PRINTF_REG,
+            "PSKReporter spot %s %9.3f %8s %s %+3d %5dkm %s\n", mode, (double) freq / 1e3, call, grid, snr, km, var_ctime_static(&time));
         ext_send_msg_encoded(rx_chan, false, "EXT", "debug", "%s %.3f %s %s %+d %dkm %s", mode, (double) freq / 1e3, call, grid, snr, km, var_ctime_static(&time));
     
         u1_t *bp = pr->bp;
@@ -451,7 +452,7 @@ static void PSKreport(void *param)      // task
             pr_dump("upload", ping_pong, bbp, bbp, total_len);
         #endif
 
-        printf("PSKReporter upload %d spots %sto %s\n",
+        lfprintf(ft8_conf.syslog? (PRINTF_REG | PRINTF_LOG) : PRINTF_REG, "PSKReporter upload %d spots %sto %s\n",
             pr->spots[ping_pong], pr->sent_info_desc[ping_pong]? "(and info desc) " : "", pr->upload_url);
         ext_send_msg_encoded(/* rx_chan */ 0, false, "EXT", "debug",
             "PSKReporter upload %d spots %sto %s\n",

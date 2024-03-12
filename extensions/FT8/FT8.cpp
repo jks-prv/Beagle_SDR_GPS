@@ -321,7 +321,7 @@ bool ft8_update_vars_from_config(bool called_at_init_or_restart)
     }
 
     ft8_conf2.GPS_update_grid = cfg_default_bool("ft8.GPS_update_grid", false, &update_cfg);
-    ft8_conf2.syslog = cfg_default_bool("ft8.syslog", false, &update_cfg);
+    ft8_conf2.syslog = ft8_conf.syslog = cfg_default_bool("ft8.syslog", false, &update_cfg);
     ft8_conf2.spot_log = cfg_default_bool("ft8.spot_log", false, &update_cfg);
 
 	//printf("ft8_update_vars_from_config: rcall <%s> ft8_conf2.rgrid=<%s> ft8_conf2.GPS_update_grid=%d\n", ft8_conf2.rcall, ft8_conf2.rgrid, ft8_conf2.GPS_update_grid);
