@@ -20,6 +20,7 @@ var admin_sdr = {
    pb: {
       am:   { c:     0, w:  9800 },
       amn:  { c:     0, w:  5000 },
+      amw:  { c:     0, w: 12000 },
       usb:  { c:  1500, w:  2400 },
       usn:  { c:  1350, w:  2100 },
       lsb:  { c: -1500, w:  2400 },
@@ -101,7 +102,8 @@ function config_html()
                w3_select('w3-width-auto', 'MW chan', '', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'admin_select_cb')
             )
          ),
-         w3_slider('id-rf-attn', 'RF Attn', 'init.rf_attn', init_rf_attn, 0, 31.5, 0.5, 'config_rf_attn_cb')
+         w3_slider('id-rf-attn', 'RF Attn (default value at restart)', 'init.rf_attn', init_rf_attn,
+            0, 31.5, 0.5, 'config_rf_attn_cb')
 		) +
 
 		w3_third('w3-text-teal', 'w3-container',
@@ -690,7 +692,7 @@ function config_rf_attn_cb(path, val, complete, first)
    //console.log('config_rf_attn_cb path='+ path +' val='+ val);
    val = +val;
 	admin_float_cb(path, val, first);
-	w3_set_label('RF Attn '+ val.toFixed(1) +' dB', path);
+	w3_set_label('RF Attn '+ val.toFixed(1) +' dB (default value at restart)', path);
 }
 
 function config_OV_counts_cb(path, val, complete, first)
@@ -905,10 +907,35 @@ function webpage_html()
             ),
             'index_html_params.HTML_HEAD', 10, 100, 'webpage_string_cb', ''
          )
+		);
+		
+	var s4 =
+		'<hr>' +
+      w3_div('w3-container',
+         w3_textarea_get_param('w3-input-any-change|width:100%',
+            w3_div('w3-valign',
+               w3_text('w3-bold w3-text-teal w3-show-block',
+                  'HTML for README/welcome panel shown on connecting'),
+               w3_button('w3-margin-left w3-aqua', 'Save', 'webpage_panel_readme_save_cb')
+            ),
+            'panel_readme', 10, 100, 'webpage_string_cb', ''
+         )
+		) +
+		
+		'<hr>' +
+      w3_div('w3-container',
+         w3_textarea_get_param('w3-input-any-change|width:100%',
+            w3_div('w3-valign',
+               w3_text('w3-bold w3-text-teal w3-show-block',
+                  'Additional HTML for user login page (when a password is requested)'),
+               w3_button('w3-margin-left w3-aqua', 'Save', 'webpage_user_login_save_cb')
+            ),
+            'index_html_params.USER_LOGIN', 10, 100, 'webpage_string_cb', ''
+         )
 		) +
 		'<hr>';
 
-   return w3_div('id-webpage w3-text-teal w3-hide', s1 + s2 + s3);
+   return w3_div('id-webpage w3-text-teal w3-hide', s1 + s2 + s3 + s4);
 }
 
 function webpage_html_save_cb(path)
@@ -917,6 +944,24 @@ function webpage_html_save_cb(path)
    var el = w3_el('id-index_html_params.HTML_HEAD');
    //console.log('val='+ el.value);
    webpage_string_cb('index_html_params.HTML_HEAD', el.value);
+   w3_schedule_highlight(el);
+}
+
+function webpage_panel_readme_save_cb(path)
+{
+   console.log('webpage_panel_readme_save_cb');
+   var el = w3_el('id-panel_readme');
+   console.log('val='+ el.value);
+   webpage_string_cb('panel_readme', el.value);
+   w3_schedule_highlight(el);
+}
+
+function webpage_user_login_save_cb(path)
+{
+   //console.log('webpage_user_login_save_cb');
+   var el = w3_el('id-index_html_params.USER_LOGIN');
+   //console.log('val='+ el.value);
+   webpage_string_cb('index_html_params.USER_LOGIN', el.value);
    w3_schedule_highlight(el);
 }
 
@@ -1079,6 +1124,11 @@ function webpage_focus()
 
 function webpage_string_cb(path, val)
 {
+   console_nv('webpage_string_cb', {path}, {val});
+   //jksx
+   if (path == 'owner_info')
+	w3_json_set_cfg_cb(path, val);
+   else
 	w3_string_set_cfg_cb(path, val);
 	ext_send_after_cfg_save('SET reload_index_params');
 }
@@ -2827,7 +2877,7 @@ function extensions_html()
 {
 	var s =
 	w3_div('id-extensions w3-hide w3-section',
-      w3_sidenav('id-extensions-nav w3-margin-B-16'),
+      w3_sidenav('id-sidenav-ext w3-margin-B-16'),
 		w3_div('id-extensions-config')
 	);
 	return s;
@@ -2837,10 +2887,24 @@ function extensions_focus()
 {
    //console.log('extensions_focus');
    
-   // first time after page load ext_admin_config() hasn't been called yet from all extensions
-   if (w3_el('id-nav-wspr')) {
-      w3_click_nav(kiwi_toggle(toggle_e.FROM_COOKIE | toggle_e.SET, 'wspr', 'wspr', 'last_admin_ext_nav'), 'extensions_nav');
-   }
+   // wait for all extension to finish calling *_config_html()
+   w3_do_when_cond(
+      function() {
+         //console.log('### ext_configs_done '+ (admin.ext_configs_done? 'GO' : 'WAIT'));
+         return admin.ext_configs_done;
+      },
+      function() {
+         var ext_tab = kiwi_url_param(0);
+         if (ext_tab) ext_tab = ext_tab.split(',')[1]
+         if (isNonEmptyString(ext_tab)) {
+            writeCookie('last_admin_ext_nav', ext_tab);
+         }
+         
+         w3_click_nav('id-sidenav-ext', kiwi_toggle(toggle_e.FROM_COOKIE | toggle_e.SET, 'wspr', 'wspr', 'last_admin_ext_nav'), 'extensions_nav');
+      }, null,
+      200
+   );
+   // REMINDER: w3_do_when_cond() returns immediately
 
 	// get updates while the extensions tab is selected
 	admin_update_start();
@@ -2879,8 +2943,8 @@ function ext_admin_config(id, nav_text, ext_html, focus_blur_cb)
    if (focus_blur_cb == undefined) focus_blur_cb = null;
 
 	var ci = ext_seq % admin_colors.length;
-	w3_el('id-extensions-nav').innerHTML +=
-		w3_nav(admin_colors[ci] + ' w3-border', nav_text, id, 'extensions_nav');
+	w3_el('id-sidenav-ext').innerHTML +=
+		w3_nav(admin_colors[ci] + ' w3-border', nav_text, 'id-sidenav-ext', id, 'extensions_nav');
 	ext_seq++;
 	w3_el('id-extensions-config').innerHTML += w3_div('id-'+ id +'-container w3-hide|width:95%', ext_html);
 }
