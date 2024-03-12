@@ -238,6 +238,7 @@ void c2s_sound(void *param)
 	s->agc = 1; s->thresh = -90; s->decay = 50;
 	s->compression = 1;
 	s->nb_algo = NB_OFF; s->nr_algo = NR_OFF_;
+	s->rf_attn_dB = -1;     // so that users w/o adj permissions will see "0.0 dB" slider value
 	
 	m_RsId[rx_chan].init(rx_chan, FASTFIR_OUTBUF_SIZE);
 	
@@ -435,6 +436,12 @@ void c2s_sound(void *param)
 			conn->snd_cmd_recv_ok = true;
 		}
 		
+        // admin requested that all clients get updated cfg (e.g. admin changed dx type menu)
+        if (rxc->cfg_update_seq != cfg_cfg.update_seq) {
+            rxc->cfg_update_seq = cfg_cfg.update_seq;
+            rx_server_send_config(conn);
+        }
+
 		if (s->change_freq_mode || dx_update_seq != dx.update_seq) {
 
             // apply masked frequencies
@@ -760,7 +767,8 @@ void c2s_sound(void *param)
             switch (s->mode) {
             
             case MODE_AM:
-            case MODE_AMN: {
+            case MODE_AMN:
+            case MODE_AMW: {
                 // AM detector from CuteSDR
                 TYPECPX *agc_samps_c = rx->agc_samples_c;
                 m_Agc[rx_chan].ProcessData(ns_out, fir_samps_c, agc_samps_c);

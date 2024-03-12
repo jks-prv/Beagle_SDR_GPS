@@ -38,6 +38,7 @@ var kiwi = {
    AUTH_USER: 2,
    is_local: [],
    tlimit_exempt_by_pwd: [],
+   admin_save_pwd: false,
 
    conn_tstamp: 0,
    isOffset: false,
@@ -54,6 +55,11 @@ var kiwi = {
    foff_error_pend: 0,
    notify_seq: 0,
    ident_min: 16,    // e.g. "wsprdaemon_v3.0a" is 16 chars
+   
+   // fixed height instead of content dependent so height is constant between different optbar types
+   OPTBAR_CONTENT_HEIGHT: 150,
+   cur_optbar: null,
+   virt_optbar_click: false,
 
    volume: 50,
    volume_f: 1e-6,
@@ -66,12 +72,12 @@ var kiwi = {
    // CAUTION: must match order in mode.h
    // CAUTION: add new entries at the end
    modes_lc: [ 'am', 'amn', 'usb', 'lsb', 'cw', 'cwn', 'nbfm', 'iq', 'drm',
-              'usn', 'lsn', 'sam', 'sau', 'sal', 'sas', 'qam', 'nnfm' ],
+              'usn', 'lsn', 'sam', 'sau', 'sal', 'sas', 'qam', 'nnfm', 'amw' ],
    modes_uc: [],
    modes_idx: {},
    
    // order that modes appear in menus as opposed to new-entry-appending behavior of kiwi.modes_lc
-   mode_menu: [ 'AM', 'AMN', 'USB', 'USN', 'LSB', 'LSN', 'CW', 'CWN', 'NBFM', 'NNFM',
+   mode_menu: [ 'AM', 'AMN', 'AMW', 'USB', 'USN', 'LSB', 'LSN', 'CW', 'CWN', 'NBFM', 'NNFM',
                 'IQ', 'DRM', 'SAM', 'SAU', 'SAL', 'SAS', 'QAM' ],
 
    
@@ -103,7 +109,8 @@ var kiwi = {
       custom_1:6, custom_2:7, custom_3:8, custom_4:9
    },
    aper_s: [ 'man', 'auto' ],
-   aper_e: { man:0, auto:1 },
+   APER_MAN: 0,
+   APER_AUTO: 1,
    
    esc_lt: '\x11',   // ascii dc1
    esc_gt: '\x12',   // ascii dc2
@@ -353,7 +360,7 @@ function kiwi_queue_or_camp_cb(path, val, first)
    console.log(url);
    url = url + kiwi_add_search_param(window.location, 'camp');
    console.log('--> '+ url);
-   kiwi_reload_page({ url:url });
+   kiwi_open_or_reload_page({ url:url });
 }
 
 function kiwi_ask_pwd(conn_kiwi)
@@ -366,11 +373,14 @@ function kiwi_ask_pwd(conn_kiwi)
 	      'or camp on an existing channel: <br>' +
          w3_button('w3-medium w3-padding-smaller w3-aqua w3-margin-T-8', 'Queue or Camp', 'kiwi_queue_or_camp_cb');
 	}
-	
+
 	// "&& conn_kiwi" to ignore pathological "/admin?prot" etc.
    var prot = (kiwi_url_param(['p', 'prot', 'protected'], true, false) && conn_kiwi);
 	if (prot) s1 = 'You have requested a password protected channel<br>';
-	var s = "KiwiSDR: software-defined receiver <br>"+ s1 + try_again +
+
+	var user_login = w3_innerHTML('id-kiwi-user-login').trim();
+	var s = isNonEmptyString(user_login)? (user_login +'<br><br>') : 'KiwiSDR: software-defined receiver<br>';
+	s += s1 + try_again +
       w3_input('w3-retain-input-focus w3-margin-TB-8/w3-label-inline w3-label-not-bold/kiwi-pw|padding:1px|size=40', 'Password:', 'id-pwd', '', 'kiwi_ask_pwd_cb') +
       s2;
 
@@ -571,12 +581,6 @@ function config_save2(kiwi_cfg, cfg)
 
 function cfg_save_json(id, path, val)
 {
-   // ignore first spurious cfg save from ant switch extension
-   if (path == 'cfg.ant_switch.denyswitching' && !kiwi.ant_sw_first_set_ignored) {
-      kiwi.ant_sw_first_set_ignored = true;
-      return;
-   }
-   
 	//console.log('cfg_save_json: BEGIN from='+ id +' path='+ path + (isArg(val)? (' val='+ val) : ''));
 	//if (path.includes('kiwisdr_com_register')) kiwi_trace();
 	//if (path.includes('rev_')) kiwi_trace();
@@ -594,7 +598,7 @@ function cfg_save_json(id, path, val)
 	} else {    // cfg.*
       config_save('cfg', cfg);
 	}
-	//console.log('cfg_save_json: from='+ id +' path='+ path +' DONE');
+	console.log('cfg_save_json: from='+ id +' path='+ path +' val='+ val +' DONE');
 }
 
 ////////////////////////////////
@@ -2241,8 +2245,8 @@ function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_gps_clk_c
 	   w3_text('w3-text-css-orange', 'GPS'),
 	   w3_text('', 'acq '+ s)
 	);
-	extint_adc_clock_Hz = adc_clock * 1e6;
-	extint_adc_gps_clock_corr = adc_gps_clk_corrections;
+	extint.adc_clock_Hz = adc_clock * 1e6;
+	extint.adc_gps_clock_corr = adc_gps_clk_corrections;
 	if (adc_gps_clk_corrections) {
 	   s = adc_clock.toFixed(6) +' ('+ adc_gps_clk_corrections.toUnits() +' avgs)';
 	   var el = w3_el('id-msg-gps');
@@ -2520,11 +2524,12 @@ function config_cb(rx_chans, gps_chans, serno, pub, port_ext, pvt, port_int, nm,
 				w3_col_percent('',
 					w3_div('', 'Public IP address (outside your firewall/router): '+ pub +' [port '+ port_ext +']'), 50,
 					w3_div('', 'Ethernet MAC address: '+ mac.toUpperCase()), 30,
-					w3_div('', 'KiwiSDR serial number: '+ serno), 20
+					w3_div('', 'Model: KiwiSDR '+ kiwi.model), 20
 				),
 				w3_col_percent('',
 					w3_div('', 'Private IP address (inside your firewall/router): '+ pvt +' [port '+ port_int +']'), 50,
-					w3_div('', 'Private netmask: /'+ nm), 50
+					w3_div('', 'Private netmask: /'+ nm), 30,
+					w3_div('', 'Serial number: '+ serno), 20
 				)
 			);
 		config_net.pub_ip = pub;
@@ -2894,6 +2899,24 @@ function kiwi_init_cfg(stream_name)
    w3_innerHTML('id-owner-info', kiwi_decodeURIComponent('owner_info', cfg.owner_info));
 }
 
+function kiwi_snr_stats(all, hf)
+{
+   //console.log('SNR ', all, ':', hf, ' dB ');
+   if (hf == -1) {
+      // only show single SNR when transverter frequency offset
+      //w3_innerHTML('id-rx-snr', ', SNR: All ', all, ' dB');
+      w3_innerHTML('id-rx-snr', ', SNR ', all, ' dB');
+
+      w3_els('id-msg-snr', function(el) { w3_innerHTML(el, 'SNR: All ', all, ' dB'); });
+   } else {
+      //w3_innerHTML('id-rx-snr', ', SNR: All ', all, ' dB, HF ', hf, ' dB');
+      w3_innerHTML('id-rx-snr', ', SNR ', all, '/', hf, ' dB');
+      w3_title('id-rx-snr', all +' dB, 0-30 MHz\n'+ hf +' dB, 1.8-30 MHz');
+
+      w3_els('id-msg-snr', function(el) { w3_innerHTML(el, 'SNR: ', all, ' dB (0-30 MHz), ', hf, ' dB (1.8-30 MHz)'); });
+   }
+}
+
 
 ////////////////////////////////
 // control messages
@@ -3146,15 +3169,8 @@ function kiwi_msg(param, ws)
 				   //console.log('stat kiwi.WSPR_rgrid='+ kiwi.WSPR_rgrid);
 				}
 				
-				if (o.sh == -1) {
-				   // only show single SNR when transverter frequency offset
-               w3_innerHTML('id-rx-snr', ', SNR ', o.sa, ' dB');
-               w3_innerHTML('id-msg-snr', 'SNR: All ', o.sa, ' dB');
-				} else {
-               w3_innerHTML('id-rx-snr', ', SNR ', o.sa, ':', o.sh, ' dB');
-               w3_innerHTML('id-msg-snr', 'SNR: All ', o.sa, ' dB, HF ', o.sh, ' dB');
-				}
-
+				kiwi_snr_stats(o.sa, o.sh);
+				
 				admin_stats_cb(o.ad, o.au, o.ae, o.ar, o.an, o.ap, o.an2, o.ai);
 				w3_call('config_status_cb', o);
 				time_display_cb(o);
@@ -3203,7 +3219,7 @@ function kiwi_msg(param, ws)
 		   break;
 		
 		case "authkey_cb":
-			extint_authkey_cb(param[1]);
+			extint.authkey_cb(param[1]);
 			break;
 
 		case "down":
@@ -3256,7 +3272,7 @@ function kiwi_msg(param, ws)
 			break;
 
 		case 'adc_clk_nom':
-			extint_adc_clock_nom_Hz = +param[1];
+			extint.adc_clock_nom_Hz = +param[1];
 			break;
 
 		case 'notify_msg':
@@ -3276,8 +3292,17 @@ function kiwi_msg(param, ws)
          s = w3_div('', s);
          confirmation_show_content(s, 425, 75, null, 'red');
 			break;
+		
+		case 'snr_stats':
+		   var p = param[1].split(',');
+         kiwi_snr_stats(p[0], p[1]);
+         break;
 
 		default:
+		   if (param[0].startsWith('antsw_')) {
+		      if (ant_switch_msg(param))
+		         break;
+		   }
 			rtn = false;
 			break;
 	}

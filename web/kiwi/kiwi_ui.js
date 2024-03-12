@@ -9,9 +9,9 @@
 function dx_get_value(v) { return w3_get_value('dx.o.'+ v +'_'+ dx.o.gid); }
 
 // dx_mode(fm) to menu_mode(mm) mapping: (see kiwi.js)
-// fm: am amn usb lsb  cw cwn nbfm  iq  drm  usn lsn sam sau sal sas qam nnfm     modes_{lc,uc,idx}[]
-//      0   1   2   3   4   5    6   7    8    9  10  11  12  13  14  15   16
-// mm: AM AMN USB USN LSB LSN   CW CWN NBFM NNFM  IQ DRM SAM SAU SAL SAS  QAM     mode_menu[]
+// fm: am amn usb lsb  cw cwn nbfm  iq  drm  usn  lsn sam sau sal sas qam nnfm amw  modes_{lc,uc,idx}[]
+//      0   1   2   3   4   5    6   7    8    9   10  11  12  13  14  15   16  17
+// mm: AM AMN AMW USB USN LSB  LSN  CW  CWN NBFM NNFM  IQ DRM SAM SAU SAL  SAS QAM  mode_menu[]
 
 function dx_update_check(idx, upd, isPassband)
 {
