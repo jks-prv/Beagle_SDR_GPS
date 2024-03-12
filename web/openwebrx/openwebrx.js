@@ -3959,7 +3959,7 @@ function spectrum_update(data)
          }
          
          // don't show if it takes up the whole space (e.g. z14)
-         if (x1 > 0 && x2 < sw1 && wfext.spb_on) {
+         if ((x1 > 0 || x2 < sw1) && wfext.spb_on && zoom_level >= 5) {
             pbctx.fillStyle = wfext.spb_color;
             pbctx.fillRect(x1,0, x2-x1,sh);
             //console.log('fill '+ wfext.spb_color);
