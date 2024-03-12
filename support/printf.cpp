@@ -160,6 +160,18 @@ void printf_init()
     holdover = (char *) "";
 }
 
+#define N_HIGHLIGHT 2
+static int highlight_sl[N_HIGHLIGHT];
+char *highlight_s[N_HIGHLIGHT];
+
+void printf_highlight(int which, const char *prefix)
+{
+    which = CLAMP(which, 0, N_HIGHLIGHT-1);
+    kiwi_asfree(highlight_s[which]);
+    highlight_sl[which] = strlen(prefix);
+    if (highlight_sl[which]) highlight_s[which] = strdup(prefix);
+}
+
 static void ll_printf(u4_t type, conn_t *conn, const char *fmt, va_list ap)
 {
 	int i, n, sl;
@@ -265,7 +277,14 @@ static void ll_printf(u4_t type, conn_t *conn, const char *fmt, va_list ap)
 		
 		// remove our override and call the actual underlying printf
 		#undef printf
-            printf("%s%s %s %c %s", need_newline? "\n":"", tb, sp, want_logged? 'L':' ', buf);
+		    bool color = highlight_sl[0]? (strncasecmp(buf, highlight_s[0], highlight_sl[0]) == 0) : false;
+		    const char *color_s = CYAN " ";
+		    if (!color) {
+		        color = highlight_sl[1]? (strncasecmp(buf, highlight_s[1], highlight_sl[1]) == 0) : false;
+		        color_s = YELLOW " ";
+		    }
+            printf("%s%s %s %c %s%.*s%s", need_newline? "\n":"", tb, sp, want_logged? 'L':' ',
+                color? color_s : "", (int) strlen(buf)-1, buf, color? NONL : "\n");
             need_newline = false;
 		#define printf ALT_PRINTF
 

@@ -374,7 +374,7 @@ function sig_gen_help(show)
 
 function self_test_cb()
 {
-   kiwi_reload_page({ qs:'f=10Mcwz0&mute&ext=sig,mode:3', tab:true });
+   kiwi_open_or_reload_page({ qs:'f=10Mcwz0&mute&ext=sig,mode:3', tab:true });
 }
 
 // called to display HTML for configuration parameters in admin interface

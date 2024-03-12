@@ -45,6 +45,7 @@ char *stnprintf(int which, const char *fmt, ...);
 char *stprintf(const char *fmt, ...);   // extension API compatibility
 C_LINKAGE(const char *aspf(const char *fmt, ...));
 int esnprintf(char *str, size_t slen, const char *fmt, ...);
+void printf_highlight(int which, const char *prefix);
 
 void kiwi_backtrace(const char *id, u4_t printf_type=0);
 void _panic(const char *str, bool coreFile, const char *file, int line);

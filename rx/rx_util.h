@@ -72,7 +72,7 @@ extern SNR_meas_t SNR_meas_data[SNR_MEAS_MAX];
 extern int SNR_meas_tid;
 
 int dB_wire_to_dBm(int db_value);
-void SNR_meas_task(void *param);
+void SNR_meas(void *param);
 
 typedef enum { LOG_ARRIVED, LOG_UPDATE, LOG_UPDATE_NC, LOG_LEAVING } logtype_e;
 void rx_loguser(conn_t *c, logtype_e type);

@@ -248,7 +248,9 @@ void rx_server_kick(kick_e kick, int chan)
 	printf("rx_server_kick %s rx=%d\n", kick_s[kick], chan);
 	conn_t *c = conns;
 	bool kick_chan_all = (kick == KICK_CHAN && chan == -1);
-	const char *msg = (kick == KICK_CHAN && chan != -1)? "You were kicked!" : "Everyone was kicked!";
+	const char *msg =
+	        (kick == KICK_CHAN && chan != -1)? "You were kicked!" :
+	        ((kick == KICK_USERS)? "Kiwi down for maintenance." : "Everyone was kicked!");
 	
 	for (int i=0; i < N_CONNS; i++, c++) {
 		if (!c->valid)
@@ -431,7 +433,7 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
 {
     int n, seq;
     char *sb;
-    const bool dbug = false;
+    const bool dbug = true;
     save_cfg_t *cfg;
     
     switch (key) {
@@ -544,7 +546,7 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
         kiwi_str_decode_selective_inplace(sp);
 
         switch (key) {
-            case CMD_SAVE_CFG:   cfg_save_json(sp); break;
+            case CMD_SAVE_CFG:   printf("_cfg_save_json save_config:CMD_SAVE_CFG\n"); cfg_save_json(sp); break;
             case CMD_SAVE_DXCFG: dxcfg_save_json(sp); break;
             case CMD_SAVE_ADM:   admcfg_save_json(sp); break;
             default: panic("save_config"); break;
@@ -992,10 +994,11 @@ int SNR_calc(SNR_meas_t *meas, int meas_type, int f_lo, int f_hi)
 
 int SNR_meas_tid;
 
-void SNR_meas_task(void *param)
+void SNR_meas(void *param)
 {
     int i, j, n, len;
     static internal_conn_t iconn;
+	bool regular_wakeup;
     TaskSleepSec(20);
     
     //#define SNR_MEAS_SELECT WF_SELECT_1FPS
@@ -1081,12 +1084,18 @@ void SNR_meas_task(void *param)
             #ifdef OPTION_HONEY_POT
                 snr_all = snr_HF = 55;
             #endif
+
+            if (!regular_wakeup) {
+                printf("SNR_meas: admin measure now %d:%d\n", snr_all, freq_offset_kHz? -1 : snr_HF);
+                snd_send_msg(SM_SND_ADM_ALL, SM_NO_DEBUG,
+                    "MSG snr_stats=%d,%d", snr_all, freq_offset_kHz? -1 : snr_HF);
+            }
         }
         
         //TaskSleepSec(60);
         // if disabled check again in an hour to see if re-enabled
         u64_t hrs = snr_meas_interval_hrs? snr_meas_interval_hrs : 1;
-        TaskSleepSec(hrs * 60 * 60);
+        regular_wakeup = (bool) FROM_VOID_PARAM(TaskSleepSec(hrs * 60 * 60));
         //TaskSleepSec(60);
     } while (1);
 }

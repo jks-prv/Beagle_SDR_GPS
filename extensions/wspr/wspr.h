@@ -302,6 +302,8 @@ typedef struct {
 	int npk;
     wspr_pk_t pk_freq[MAX_NPK], pk_save[MAX_NPK];
     int send_decode_seq_parent, send_decode_seq;
+    #define N_SPOT_LOG (63 + SPACE_FOR_NULL)
+    char spot_log[N_SPOT_LOG];
 
 	bool test;
 	int skip_upload;

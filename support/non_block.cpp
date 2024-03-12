@@ -365,9 +365,10 @@ int blocking_system(const char *fmt, ...)
 //
 // The popen read can block, so do non-blocking i/o with an interspersed TaskSleep()
 // NB: assumes the reply is a string (kstr_t *), not binary with embedded NULLs
-kstr_t *non_blocking_cmd(const char *cmd, int *status)
+kstr_t *non_blocking_cmd(const char *cmd, int *status, int poll_msec)
 {
 	int n, stat;
+	if (poll_msec == 0) poll_msec = NON_BLOCKING_POLL_MSEC;
 	#define NBUF 256
 	char buf[NBUF + SPACE_FOR_NULL];
 	
@@ -382,7 +383,7 @@ kstr_t *non_blocking_cmd(const char *cmd, int *status)
 	char *reply = NULL;
 
 	do {
-		TaskSleepMsec(NON_BLOCKING_POLL_MSEC);
+		TaskSleepMsec(poll_msec);
 		n = read(pfd, buf, NBUF);
         evNT(EC_EVENT, EV_NEXTTASK, -1, "non_blocking_cmd", evprintf("after read()"));
 		if (n > 0) {

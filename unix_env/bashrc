@@ -176,6 +176,7 @@ alias msan="echo (try now w/ clang-6.0) the clang 3.5.0 static analyzer (SAN) us
 alias mi="make install"
 alias mc="make clean"
 alias mcd="make clean_dist"
+alias mcl="make clean_logs"
 alias md="make debug"
 alias mt="make test"
 alias me="make everything"
@@ -187,6 +188,7 @@ alias mr="make run"
 alias muc="make update_check"
 alias mfu="make force_update"
 alias mdu="make dump"
+alias mde="make dump_eeprom"
 alias mbu="make backup"
 alias mbuz="make backup_zero"
 alias mbuf="make backup_forum"
@@ -296,7 +298,7 @@ alias scen="function _sys () { systemctl --lines=100 enable \${*}.service ; } ; 
 alias sa="service --status-all"
 
 # packages
-alias pk="echo pk: s=search_available ls=list_installed ver,vers,sh,pol=versions i=install rm=remove ar=autoremove; echo pk: ch=allow-rel-info-chg up=update upp=single_pkg ug=dist-upgrade; echo pk: c=clean sz=sizes f,f2=which_pkg_has_file fu=file_update fi=files_installed co=cape_overlays"
+alias pk="echo pk: s=search_available ls=list_installed ver,vers,sh,pol=versions i=install rm=remove ar=autoremove; echo pk: ch=allow-rel-info-chg up=update upp=single_pkg ug,ugn=dist-upgrade; echo pk: c=clean sz=sizes f,f2=which_pkg_has_file fu=file_update fi=files_installed co=cape_overlays"
 alias pks="echo available pkgs:; apt-cache search"
 alias pkls="echo installed pkgs:; dpkg -l | gr"
 alias pksh="apt show"
@@ -324,9 +326,12 @@ alias pkco="apt-get upgrade bb-cape-overlays"
 if [ "x${DEBIAN_8}" == "xtrue" ] ; then
     alias pkupp="cp /etc/apt/sources.D8.upgrade.list /etc/apt/sources.list; apt-get install --only-upgrade; cp /etc/apt/sources.D8.new.list /etc/apt/sources.list"
     alias pkug="cp /etc/apt/sources.D8.upgrade.list /etc/apt/sources.list; apt-get -y ${APT_GET_FORCE} dist-upgrade; cp /etc/apt/sources.D8.new.list /etc/apt/sources.list"
+    alias pkugn="cp /etc/apt/sources.D8.upgrade.list /etc/apt/sources.list; apt-get --dry-run ${APT_GET_FORCE} dist-upgrade; cp /etc/apt/sources.D8.new.list /etc/apt/sources.list"
 else
     alias pkupp="apt-get install --only-upgrade"
-    alias pkug="apt-get -y ${APT_GET_FORCE} dist-upgrade"
+    alias pkug="apt-get -y dist-upgrade"
+    alias pkug="apt-get -y dist-upgrade"
+    alias pkugn="apt-get --dry-run dist-upgrade"
 fi
 
 

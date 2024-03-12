@@ -34,6 +34,7 @@ Boston, MA  02110-1301, USA.
 #include "non_block.h"
 #include "eeprom.h"
 #include "shmem.h"
+#include "ant_switch.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -42,7 +43,6 @@ Boston, MA  02110-1301, USA.
 #include <errno.h>
 #include <fcntl.h>
 
-int current_nusers;
 static int last_hour = -1, last_min = -1;
 
 // called periodically (currently every 10 seconds)
@@ -135,7 +135,7 @@ static void webserver_collect_print_stats(int print)
 		
 		nusers++;
 	}
-	current_nusers = nusers;
+	kiwi.current_nusers = nusers;
 
 	// construct cpu stats response
 	#define NCPU 4
@@ -417,7 +417,7 @@ void CAT_task(void *param)
 void stat_task(void *param)
 {
 	u64_t stats_deadline = timer_us64() + SEC_TO_USEC(1);
-	u64_t secs = 0;
+	u4_t secs = 0;      // 136 year overflow at 1 Hz update
 
     bool err;
     int baud = cfg_int("CAT_baud", &err, CFG_OPTIONAL);
@@ -449,6 +449,7 @@ void stat_task(void *param)
 			if (do_sdr) {
 				webserver_collect_print_stats(print_stats & STATS_TASK);
 				if (!do_gps) nbuf_stat();
+	            ant_switch_poll();
 			}
 
             cull_zombies();

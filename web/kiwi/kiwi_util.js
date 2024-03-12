@@ -124,7 +124,7 @@ document.onreadystatechange = function() {
 
       // packages to load early on
       if (!website) {
-         kiwi_load_js_dir('pkgs/js/', ['sprintf/sprintf.js', 'SHA256.js'],
+         kiwi_load_js_dir('pkgs/js/', ['sprintf/sprintf.js', 'SHA256.js', 'coloris/coloris.js'],
             function() {
                //console.log(sprintf('%s', 'sprintf loaded'));
                kiwi_load2();
@@ -178,7 +178,8 @@ var kiwi_version_fail = false;
 function kiwi_version_cb(response_obj)
 {
 	version_maj = response_obj.maj; version_min = response_obj.min;
-	//console.log('v'+ version_maj +'.'+ version_min +': KiwiSDR server');
+	kiwi.admin_save_pwd = response_obj.sp
+	//console.log('v'+ version_maj +'.'+ version_min +': KiwiSDR server asp='+ kiwi.admin_save_pwd);
 	var s='';
 	
 	kiwi_check_js_version.forEach(function(el) {
@@ -308,6 +309,22 @@ function kiwi_shallow_copy(obj)
 function kiwi_deep_copy(obj)
 {
    return JSON.parse(JSON.stringify(obj));
+}
+
+function kiwi_sort_numeric(a, b) {
+   return parseFloat(a) - parseFloat(b);
+}
+
+function kiwi_sort_numeric_reverse(a, b) {
+   return parseFloat(b) - parseFloat(a);
+}
+
+function kiwi_sort_ignore_case(a, b) {
+   a = a.toLowerCase();
+   b = b.toLowerCase();
+   if (a === b) return 0;
+   if (a < b) return -1;
+   return 1;
 }
 
 function kiwi_bitReverse(v, len) {
@@ -1201,7 +1218,7 @@ function kiwi_remove_protocol(url)
    return url.replace(/^http:\/\//, '').replace(/^https:\/\//, '');
 }
 
-function kiwi_reload_page(obj)   // { url, hp, path, qs, tab }
+function kiwi_open_or_reload_page(obj)   // { url, hp, path, qs, tab }
 {
    var url = w3_opt(obj, 'url', null);
    if (isNull(url)) {
@@ -1210,12 +1227,15 @@ function kiwi_reload_page(obj)   // { url, hp, path, qs, tab }
       var query_string = w3_opt(obj, 'qs', '', '/?');
       url = kiwi_SSL() + host_port + pathname + query_string;
    }
-   console.log('kiwi_reload_page: '+ url);
+   console.log('kiwi_open_or_reload_page: '+ url);
+   var rv;
    if (w3_opt(obj, 'tab')) {
-      window.open(url, '_blank');
+      rv = window.open(url, '_blank');
    } else {
       window.location.href = url;
+      rv = true;
    }
+   return rv;
 }
 
 function kiwi_add_end(s, end)
@@ -1228,6 +1248,8 @@ function kiwi_add_end(s, end)
 function kiwi_url_param(pnames, default_val, not_found_val)
 {
    var pn_isArray = isArray(pnames);
+   var pn_isString = isString(pnames);
+   var pn_isNumber = isNumber(pnames);
 	if (isUndefined(default_val)) default_val = true;
 	if (isUndefined(not_found_val)) not_found_val = null;
 
@@ -1236,7 +1258,7 @@ function kiwi_url_param(pnames, default_val, not_found_val)
 	if (!params) return not_found_val;
 	
    var rv = not_found_val;
-   params.split("&").forEach(function(pv) {
+   params.split("&").forEach(function(pv, i) {
       var pv_a = pv.split("=");
       if (pn_isArray) {
          pnames.forEach(function(pn) {
@@ -1244,11 +1266,16 @@ function kiwi_url_param(pnames, default_val, not_found_val)
             rv = (pv_a.length >= 2)? pv_a[1] : default_val;
             //console.log('kiwi_url_param '+ pn +'='+ rv);
          });
-      } else {
+      } else
+      if (pn_isString) {
          if (pnames == pv_a[0]) {
             rv = (pv_a.length >= 2)? pv_a[1] : default_val;
             //console.log('kiwi_url_param '+ pnames +'='+ rv);
          }
+      } else
+      if (pn_isNumber) {
+         if (i == +pnames)
+            rv = pv_a[0];
       }
    });
    
@@ -1901,7 +1928,7 @@ function page_draw_pie(which_s) {
 		kiwi_draw_pie(id_which('pie'), which.pie_size, (which.reload_secs - which.reload_rem) / which.reload_secs);
 	} else {
 	   if (kiwi.reload_url) {
-	      kiwi_reload_page({ url:kiwi.reload_url });
+	      kiwi_open_or_reload_page({ url:kiwi.reload_url });
 	   } else {
          try {
             window.location.reload(true);
@@ -1958,7 +1985,9 @@ function enc(s) { return s.replace(/./gi, function(c) { return String.fromCharCo
 var sendmail = function (to, subject) {
 	var s = "mailto:"+ enc(decodeURIComponent(to)) + (isDefined(subject)? ('?subject='+subject):'');
 	//console.log(s);
-   kiwi_reload_page({ url:s });
+	var o = { url: s };
+	if (!(kiwi_isSafari() || kiwi_isFirefox())) o.tab = 1;
+   kiwi_open_or_reload_page(o);
 }
 
 function line_stroke(ctx, vert, linew, color, x1,y1,x2,y2)
@@ -2027,7 +2056,7 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 		ws_protocol = 'wss://';
 	}
 	
-	var no_wf = (window.location.href.includes('?no_wf') || window.location.href.includes('&no_wf'));
+	var no_wf = kiwi_url_param('no_wf');
 	var tstamp = (w3_opt(opt, 'new_ts') == true)? ((new Date()).getTime()) : kiwi.conn_tstamp;
 	ws_url = ws_protocol + ws_url +'/'+ (no_wf? 'no_wf/':'kiwi/') + tstamp +'/'+ stream;
 	var qs = w3_opt(opt, 'qs');

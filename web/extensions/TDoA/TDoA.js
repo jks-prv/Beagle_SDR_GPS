@@ -723,7 +723,7 @@ function tdoa_open_window(host)
    var pb = ext_get_passband();
    url += '&pbw='+ (pb.high * 2).toFixed(0);
    console.log('tdoa_open_window '+ url);
-   var win = window.open(url, '_blank');
+   var win = kiwi_open_or_reload_page({ url:url, tab:1 });
    if (win) win.focus();
 }
 
@@ -3071,7 +3071,7 @@ function tdoa_preview_click(mkr, ev)
       // must delay call to tdoa_wf_preview() until tdoa_waterfall_close() has been called
       tdoa.wf_ws.close();
    } else {
-      var auto = (wf.aper == kiwi.aper_e.auto);
+      var auto = (wf.aper == kiwi.APER_AUTO);
       tdoa.aper_save = wf.aper;
 
       // must also save/restore man maxdb/mindb_un, source depends on aperture mode
@@ -3131,7 +3131,7 @@ function tdoa_waterfall_add_queue(what, ws, firstChars)
       waterfall_add_queue2(what, ws, firstChars);
       tdoa.preview_lines++;
       if (tdoa.preview_lines == 2) {
-         wf_aper_cb('wf.aper', kiwi.aper_e.man);
+         wf_aper_cb('wf.aper', kiwi.APER_MAN);
          setTimeout(wf_autoscale_cb, 1);
       }
    else
@@ -3151,7 +3151,7 @@ function tdoa_waterfall_close()
    } else {
       tdoa.wf_ws = tdoa.wf_mkr = null;
       kiwi.wf_preview_mode = false;
-      var auto = (wf.aper == kiwi.aper_e.auto);
+      var auto = (wf.aper == kiwi.APER_AUTO);
       //console.log('TDoA aper RESTORE '+ (auto? 'AUTO' : 'MAN') +' maxdb='+ tdoa.maxdb_save +' mindb='+ tdoa.mindb_un_save);
       
       // restore for both cases: returning to auto or man aperture mode

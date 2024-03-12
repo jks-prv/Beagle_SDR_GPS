@@ -68,10 +68,6 @@ typedef struct {
 extern log_save_t *log_save_p;
 
 
-#define N_SHMEM_STATUS              4
-#define N_SHMEM_STATUS_STR_MEDIUM   256
-#define N_SHMEM_STATUS_STR_LARGE    1024
-
 #ifndef linux
  #define SIGRTMIN 0
  #define SIGRTMAX 0
@@ -119,13 +115,22 @@ typedef struct {
     int CAT_last_freqHz;
 
     u4_t rv_u4_t[MAX_RX_CHANS];
+    #define N_SHMEM_STATUS_ANT_SW 0
+    #define N_SHMEM_STATUS 4
+    #define SHMEM_STATUS_IDLE 0
+    #define SHMEM_STATUS_START 1
+    #define SHMEM_STATUS_BUSY 2
+    #define SHMEM_STATUS_DONE 3
+    #define SHMEM_STATUS_ERROR 4
     u4_t status_u4[N_SHMEM_STATUS][MAX_RX_CHANS];
     double status_f[N_SHMEM_STATUS][MAX_RX_CHANS];
     
-    // users: (none currently)
-	char status_str_medium[N_SHMEM_STATUS_STR_MEDIUM];
+    // users: ant_switch
+    #define N_SHMEM_STATUS_STR_SMALL 16
+	char status_str_small[N_SHMEM_STATUS_STR_SMALL];
 
 	// users: geoloc
+    #define N_SHMEM_STATUS_STR_LARGE 1024
 	char status_str_large[N_SHMEM_STATUS_STR_LARGE];
 	
     shmem_ipc_t ipc[SIG_MAX_USED];
