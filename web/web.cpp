@@ -484,13 +484,14 @@ void reload_index_params()
 	// Currently this only applies to the kiwisdr.min.{js,css} package.
 	int embed = bg? 1 : (use_foptim? 1:0);
 
-	const char *gen_list_css[2][7] = {
+	const char *gen_list_css[2][8] = {
 	    {
 		    "pkgs/font-awesome-4.6.3/css/font-awesome.min.css",
 		    "pkgs/text-security/text-security-disc.css",
 		    "pkgs/w3.css",
 		    "kiwi/w3_ext.css",
 		    "openwebrx/openwebrx.css",
+		    "pkgs/js/coloris/coloris.css",
 		    "kiwi/kiwi.css",
 		    NULL
 		}, {
@@ -506,13 +507,17 @@ void reload_index_params()
 	iparams_add("GEN_LIST_CSS", kstr_sp(sb));
 	kstr_free(sb);
 	
-	const char *gen_list_js[2][14] = {
+	const char *gen_list_js[2][16] = {
 	    {
 		    "kiwi/kiwi_util.js",
 		    "kiwi/kiwi.js",
 		    "kiwi/kiwi_ui.js",
 		    "kiwi/kiwi_map.js",
+		    "kiwi/ant_switch.js",
+		    "kiwi/noise_blank.js",
+		    "kiwi/noise_filter.js",
 		    "kiwi/w3_util.js",
+		    "kiwi/waterfall.js",
 		    "pkgs/w3color.js",
 		    "kiwi/monitor.js",
 		    "openwebrx.js",
