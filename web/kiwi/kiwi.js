@@ -378,7 +378,7 @@ function kiwi_ask_pwd(conn_kiwi)
    var prot = (kiwi_url_param(['p', 'prot', 'protected'], true, false) && conn_kiwi);
 	if (prot) s1 = 'You have requested a password protected channel<br>';
 
-	var user_login = w3_innerHTML('id-kiwi-user-login').trim();
+	var user_login = conn_kiwi? w3_innerHTML('id-kiwi-user-login').trim() : '';
 	var s = isNonEmptyString(user_login)? (user_login +'<br><br>') : 'KiwiSDR: software-defined receiver<br>';
 	s += s1 + try_again +
       w3_input('w3-retain-input-focus w3-margin-TB-8/w3-label-inline w3-label-not-bold/kiwi-pw|padding:1px|size=40', 'Password:', 'id-pwd', '', 'kiwi_ask_pwd_cb') +
